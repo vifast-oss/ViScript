@@ -198,7 +198,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-99 | **R16 + ROADMAP bàn giao** (`agent/ROADMAP.md`: 8 hạng mục VS2 × mức × điều kiện để đóng + cách tiếp tục) | ST-98 | 2 h | **DONE** | MD+JSON; `report-check` PASS; ROADMAP ≤120 dòng |
 | ST-100 | **LSP** — hover cho **trường** bản ghi + `didClose` dọn cache + cache nạp module giữa `didChange` | ST-99 | 2,5 h | **DONE** | ≥5 ca; phân tích < 2 ms sau lần đầu; không phá 39 ca LSP |
 | ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **DONE** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
-| ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **READY** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
+| ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **DONE** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **READY** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1476,3 +1476,14 @@ APPROVED 2026-11-14 Agent 0
 > `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (152,7 s).
 > **Nợ nghiêm trọng đã tự khai**: **chưa escape** chuỗi JSON ⇒ **mở ST-101b** để đóng (JSON phải **parse được** với message có `"`,
 > `\`, newline). Các nợ khác: chẩn đoán tệp phụ nằm dưới `file` tệp chính; cắt theo **ký tự**; thiếu `severity`.
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-101b DONE — lỗ hổng JSON đã đóng (đo được trước/sau).** Commit `494788bc` (**Agent 2 tự commit, đã push**). **Trước**: hàm escape
+> của `test --json` **không** escape newline/tab/control ⇒ unit test **panic** `JSON không hợp lệ ở byte 13: ký tự điều khiển thô trong
+> string`. **Sau**: một nguồn [`json_esc.rs`](viscript/crates/vis-cli/src/json_esc.rs) (66 dòng) escape `"` `\` `\b` `\f` `\n` `\r` `\t`
+> + `<0x20` ⇒ `\u00XX`, **giữ UTF-8 thô**; áp cho **mọi** chuỗi của **cả hai** hợp đồng; **không** đổi khoá/thứ tự/TAP. Roundtrip qua
+> **`json.decode` của ViScript** (Việt + emoji **khôi phục đúng**, không thành `\u`) + integration `python3 json.load`. **6 test**.
+> Đo: **1027 test** · sem **447/22** · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (158,9 s).
+> Nợ: integration dùng **python3**; emoji không làm tên ca CLI (lexer); chưa fuzz chuỗi JSON; chẩn đoán tệp phụ vẫn dưới `file` tệp chính.
+> **ST-102 mở** (`pkg update` + `list --json`).
