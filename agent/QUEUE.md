@@ -197,7 +197,8 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-98 | **soak 30 phút**: cổng ×2 + diff 100k ×2 + host ×2 + cache ×2 tuần tự, ghi log, phát hiện flake | ST-97 | 1,5 h | **DONE** | ≥8 lần chạy; mọi lần xanh hoặc ghi `T-INFRA` có log |
 | ST-99 | **R16 + ROADMAP bàn giao** (`agent/ROADMAP.md`: 8 hạng mục VS2 × mức × điều kiện để đóng + cách tiếp tục) | ST-98 | 2 h | **DONE** | MD+JSON; `report-check` PASS; ROADMAP ≤120 dòng |
 | ST-100 | **LSP** — hover cho **trường** bản ghi + `didClose` dọn cache + cache nạp module giữa `didChange` | ST-99 | 2,5 h | **DONE** | ≥5 ca; phân tích < 2 ms sau lần đầu; không phá 39 ca LSP |
-| ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **READY** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
+| ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **DONE** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
+| ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **READY** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **READY** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1465,3 +1466,13 @@ APPROVED 2026-11-14 Agent 0
 > Nợ: cache **global/thread-local**; key `use` dùng **văn bản** (tệp dùng `pkg` **luôn** nạp lại); `didClose` xoá **toàn bộ** cache
 > (an toàn, hơi rộng); hover khai báo chỉ khi tên **duy nhất**; chưa `f().x`; chưa `didSave`.
 > **ST-101 mở** (`--json` cho `check`/`test`).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-101 DONE — đầu ra máy đọc (`--json`).** Commit `e2f25945` (**Agent 2 tự commit, đã push**). `check --json`: `{ok, files[{file,
+> diagnostics[{code,line,col,message}]}]}`, `line/col` **1-based**, thứ tự tệp = thứ tự đối số, stderr rỗng, exit **giữ nguyên**
+> 0/1/2; `test --json`: `{total,ok,failed,cases[{name,ok,message}]}`, message **một dòng ≤200**, đúng thứ tự; **không cờ** ⇒ TAP
+> **byte y hệt**. **6 ca** (5/6 đỏ trước vì `--json` là cờ lạ). Không serde (JSON viết tay). Đo: **1021 test** · sem **447/22** ·
+> `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (152,7 s).
+> **Nợ nghiêm trọng đã tự khai**: **chưa escape** chuỗi JSON ⇒ **mở ST-101b** để đóng (JSON phải **parse được** với message có `"`,
+> `\`, newline). Các nợ khác: chẩn đoán tệp phụ nằm dưới `file` tệp chính; cắt theo **ký tự**; thiếu `severity`.
