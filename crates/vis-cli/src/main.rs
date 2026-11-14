@@ -5,6 +5,7 @@ use std::process::ExitCode;
 
 mod cache;
 mod fsmock;
+mod json_esc;
 mod lsp;
 mod modules;
 mod net;
@@ -269,24 +270,6 @@ fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Vec<ChanDoanCheck>
     out
 }
 
-/// **ST-101**: escape chuỗi JSON (không dùng serde); `\n`/`\r`/`\t` thành escape, ký tự điều khiển
-/// khác thành `\u00XX`.
-fn json_esc(s: &str) -> String {
-    let mut o = String::with_capacity(s.len() + 8);
-    for c in s.chars() {
-        match c {
-            '"' => o.push_str("\\\""),
-            '\\' => o.push_str("\\\\"),
-            '\n' => o.push_str("\\n"),
-            '\r' => o.push_str("\\r"),
-            '\t' => o.push_str("\\t"),
-            c if (c as u32) < 0x20 => o.push_str(&format!("\\u{:04x}", c as u32)),
-            c => o.push(c),
-        }
-    }
-    o
-}
-
 /// **ST-101**: `vis check --json` — **một** object nén trên stdout; `line`/`col` **1-based**; thứ tự
 /// `files` = thứ tự đối số, `diagnostics` = thứ tự phát hiện; exit y hệt không cờ.
 fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCode {
@@ -301,7 +284,7 @@ fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCod
         }
         files.push_str(&format!(
             "{{\"file\":\"{}\",\"diagnostics\":[",
-            json_esc(path)
+            json_esc::esc(path)
         ));
         for (j, x) in d.iter().enumerate() {
             if j > 0 {
@@ -309,10 +292,10 @@ fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCod
             }
             files.push_str(&format!(
                 "{{\"code\":\"{}\",\"line\":{},\"col\":{},\"message\":\"{}\"}}",
-                json_esc(x.ma),
+                json_esc::esc(x.ma),
                 x.line,
                 x.col,
-                json_esc(&x.msg)
+                json_esc::esc(&x.msg)
             ));
         }
         files.push_str("]}");

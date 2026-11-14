@@ -18,6 +18,11 @@ fn usage() -> ExitCode {
     ExitCode::from(2)
 }
 
+/// **ST-101b (tạm)**: escape JSON hiện tại — tách để đo đỏ (sau thay bằng `json_esc`).
+fn esc_json(s: &str) -> String {
+    crate::json_esc::esc(s)
+}
+
 /// **ST-101**: thông điệp JSON **một dòng**, cắt ≤200 **ký tự** (char, không byte).
 fn mot_dong(m: &str) -> String {
     let s = m.replace(['\n', '\r', '\t'], " ");
@@ -356,7 +361,6 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     }
     if json_ra {
-        let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
         let mut ds = String::new();
         for (i, c) in cases.iter().enumerate() {
             if i > 0 {
@@ -364,9 +368,9 @@ pub fn run(args: &[String]) -> ExitCode {
             }
             ds.push_str(&format!(
                 "{{\"name\":\"{}\",\"ok\":{},\"message\":\"{}\"}}",
-                esc(&c.ten),
+                esc_json(&c.ten),
                 c.ok,
-                esc(&c.msg)
+                esc_json(&c.msg)
             ));
         }
         let body = format!(
@@ -389,3 +393,26 @@ pub fn run(args: &[String]) -> ExitCode {
 /// `vis test` chỉ dùng ở chế độ script/lệnh — giữ tham chiếu để `Mode` không bị bỏ (tài liệu hoá).
 #[allow(dead_code)]
 fn _mode(_: Mode) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vis_interp::json;
+    use vis_interp::value::Value;
+
+    /// Đo đỏ ST-101b: newline/tab/control trong `message` làm JSON **không parse được**.
+    #[test]
+    fn esc_json_newline_tab_control_parse_duoc() {
+        let goc = "a\"b\\c\n\t\r\u{1}";
+        let body = format!("{{\"m\":\"{}\"}}", esc_json(goc));
+        let v = json::decode(&body).expect("JSON phải hợp lệ");
+        let Value::Map(kv) = v else {
+            panic!("không phải map")
+        };
+        let m = kv.iter().find_map(|(k, v)| match (k, v) {
+            (Value::Str(k), Value::Str(v)) if k == "m" => Some(v.clone()),
+            _ => None,
+        });
+        assert_eq!(m.as_deref(), Some(goc));
+    }
+}

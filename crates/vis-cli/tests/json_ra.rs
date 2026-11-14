@@ -151,3 +151,75 @@ fn khong_json_tap_nguyen_ven() {
     assert_eq!(o, mong);
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// Parse JSON bằng **python3** (kiểm độc lập, không dùng code ViScript đang kiểm).
+fn py_json(code: &str, input: &str) -> String {
+    use std::io::Write;
+    use std::process::Stdio;
+    let mut c = Command::new("python3")
+        .arg("-c")
+        .arg(code)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn python3");
+    c.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+    let o = c.wait_with_output().expect("python3");
+    assert!(
+        o.status.success(),
+        "python3 lỗi: {}",
+        String::from_utf8_lossy(&o.stderr)
+    );
+    String::from_utf8_lossy(&o.stdout).to_string()
+}
+
+/// (g) `check --json` với **tên tệp chứa `"` và `\`** ⇒ JSON parse được, `file` khôi phục đúng,
+/// đúng **2** tệp + **1** chẩn đoán; không phá `files` order.
+#[test]
+fn check_json_ten_tep_dac_biet_parse_duoc() {
+    let d = tam("ten-db");
+    let sach = ghi(&d, "sach.vis", "fn main():\n    print(1)\n");
+    let ten = "a\"b\\c.vis";
+    let db = ghi(&d, ten, "fn main():\n    let x: int = \"s\"\n");
+    let (ma, o, e) = vis(&[
+        "check",
+        "--json",
+        sach.to_str().unwrap(),
+        db.to_str().unwrap(),
+    ]);
+    assert_eq!(ma, 1, "{e}");
+    assert_eq!(e, "");
+    let code = r#"import json,sys
+d=json.load(sys.stdin)
+print(d["files"][1]["file"])
+print(len(d["files"]))
+print(len(d["files"][1]["diagnostics"]))
+print(d["files"][1]["diagnostics"][0]["code"])"#;
+    let out = py_json(code, &o);
+    let dong: Vec<&str> = out.lines().collect();
+    assert_eq!(dong[0], db.to_str().unwrap(), "file phải khôi phục đúng");
+    assert_eq!(dong[1], "2");
+    assert_eq!(dong[2], "1");
+    assert_eq!(dong[3], "VS0412");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (h) `test --json` với **tên ca tiếng Việt** ⇒ parse được, `name` khôi phục UTF-8 thô.
+#[test]
+fn test_json_ten_tieng_viet() {
+    let d = tam("ten-viet");
+    ghi(&d, "v.vis", "test fn kiểm_tra():\n    assert 1 == 1\n");
+    let (ma, o, e) = vis(&["test", "--json", d.to_str().unwrap()]);
+    assert_eq!(ma, 0, "{e}");
+    assert_eq!(e, "");
+    let code = r#"import json,sys
+d=json.load(sys.stdin)
+print(d["cases"][0]["name"])
+print(d["total"])"#;
+    let out = py_json(code, &o);
+    let dong: Vec<&str> = out.lines().collect();
+    assert_eq!(dong[0], "kiểm_tra");
+    assert_eq!(dong[1], "1");
+    let _ = std::fs::remove_dir_all(&d);
+}

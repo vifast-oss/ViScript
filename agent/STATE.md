@@ -6,14 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-101 — đầu ra máy đọc: `vis check --json` + `vis test --json`** — xong, đã đo +
-                cổng + differential; **chưa commit**.
-Bước          : 3/3 (đỏ 5/6 → JSON nén một dòng, đủ chẩn đoán → 6 ca → 1021 test → diff 100k → cổng).
+Task          : **ST-101b — escape JSON đúng chuẩn (đóng nợ ST-101)** — xong, đã đo đỏ + cổng +
+                differential; **chưa commit**.
+Bước          : 3/3 (đỏ: JSON không parse được ở byte 13 → một hàm `json_esc::esc` dùng chung →
+                6 ca → 1027 test → diff 100k → cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:22:13Z**; **1021** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:34:09Z**; **1027** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (152,7 s) / JSON **6 ca**
-Việc dở       : commit `[ST-101]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,9 s) / JSON **parse OK**
+Việc dở       : commit `[ST-101b]` + push (đã được uỷ quyền)
+
+## ST-101b — escape JSON đúng chuẩn, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | Hàm escape của `test --json` chỉ thay `\` + `"`; message `a"b\c` + newline/tab/CR/`0x01` ⇒ JSON **không parse được**: **“JSON không hợp lệ ở byte 13: ký tự điều khiển thô trong string”** (unit test gọi trực tiếp; log `JOURNAL/st101b-red.log` sha256 `3fa8d91f…`). `check --json` escape riêng đủ hơn nhưng chưa có `\b`/`\f` tường minh/chưa test. |
+| 1 | **Sửa** | Một nguồn `src/json_esc.rs`: `"`→`\"`, `\`→`\\`, `\b`/`\f`/`\n`/`\r`/`\t`, `<0x20` ⇒ `\u00XX`; **giữ UTF-8 thô** (Việt/emoji). Dùng cho **mọi** chuỗi: `file`, `message`, `name`, `code` ở cả `check --json` + `test --json`; **không** đổi khoá/thứ tự/TAP. |
+| 2 | **6 ca** | Unit `json_esc`: (a) quote+backslash+`\b`/`\f`; (b) newline/tab/CR/control; (c) UTF-8 thô Việt+emoji. Unit `vistest`: message đặc biệt sinh JSON rồi **`json.decode`** khôi phục đúng. Integration `json_ra`: (d) `check --json` 2 tệp, tên tệp chứa `"`/`\` ⇒ **python3 `json.load`** parse, `file` khôi phục, đúng 2 tệp/1 chẩn đoán; (e) `test --json` tên ca **tiếng Việt** ⇒ python parse, `name` khôi phục. |
+| 3 | **Không đổi** | TAP/`#` không cờ byte y hệt (ca f cũ); hợp đồng JSON/khoá/thứ tự giữ nguyên; exit code giữ. |
+| 4 | **Đo** | **1027** test = 1021 + **6** (21+96+27+154+26+62+9+**632**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=158.9 toc_do=629/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**. `main.rs` **1160**, `vistest.rs` **418**, `json_esc.rs` **66**. |
+| 5 | **Nợ** | Unit test JSON dùng `vis_interp::json` (không serde) — đúng tinh thần; integration (d/e) phụ thuộc **python3** có trên máy; chưa test emoji trong **tên ca** qua CLI (lexer không nhận emoji — dùng tiếng Việt; emoji đã test ở unit UTF-8); chưa có test fuzz chuỗi JSON ngẫu nhiên; `check --json` diagnostics tệp phụ vẫn dưới file chính (nợ cũ). |
 
 ## ST-101 — JSON cho `check`/`test`, 2026-11-14
 
