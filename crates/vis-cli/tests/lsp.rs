@@ -1060,3 +1060,91 @@ fn lsp_completion_sau_cham_tat_dinh() {
         assert_eq!(body, frame_cuoi(&out2), "5 lần phải cùng byte");
     }
 }
+
+// ===== ST-100: hover trường + didClose/cache =====
+
+/// (a) hover `p.x` ⇒ `**x**: int` + “trường của `P`”.
+#[test]
+fn lsp_hover_truong_int() {
+    let text = "type P:\n    x: int\n    ten: str\n\nfn f(p: P) -> int:\n    p.x\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 5, 6))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains(r#"**x**: int"#), "{body}");
+    assert!(body.contains("trường của `P`"), "{body}");
+    assert!(body.contains(r#""line":5,"character":6"#), "{body}");
+}
+
+/// (b) hover `p.ten` ⇒ `**ten**: str`.
+#[test]
+fn lsp_hover_truong_str() {
+    let text = "type P:\n    x: int\n    ten: str\n\nfn f(p: P) -> int:\n    p.ten\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 5, 6))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains(r#"**ten**: str"#), "{body}");
+    assert!(body.contains("trường của `P`"), "{body}");
+}
+
+/// (c) `didClose` rồi `didOpen` lại ⇒ chẩn đoán **vẫn đúng** (cache không làm sai/không rò URI khác).
+#[test]
+fn lsp_close_roi_mo_lai_chan_doan() {
+    let text = "fn main():\n    let x: int = \"s\"\n";
+    let vao = format!(
+        "{}{}{}{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&did_close(URI)),
+        khung(&did_open(URI, text)),
+        khung(&req(3, "shutdown")),
+        khung(r#"{"jsonrpc":"2.0","method":"exit"}"#)
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        out.matches("VS0412").count(),
+        2,
+        "phải có 2 lần VS0412: {out}"
+    );
+    assert_eq!(out.matches(r#""diagnostics":[]"#).count(), 1, "{out}");
+    assert!(out.contains(r#""line":1,"character":17"#), "{out}");
+}
+
+/// (d) **5 `didChange`** liên tiếp ⇒ hover trả **byte y hệt** lần đầu (cùng id).
+#[test]
+fn lsp_5_did_change_ket_qua_nhu_lan_dau() {
+    let goc = "type P:\n    x: int\n\nfn f(p: P) -> int:\n    p.x\n";
+    let vao0 = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, goc)),
+        khung(&hover(2, URI, 4, 6))
+    );
+    let (_, out0, _) = chay(&vao0);
+    let chuan = frame_cuoi(&out0);
+    for k in 1..=5 {
+        let text = format!("{goc}{}", "# doi\n".repeat(k));
+        let vao = format!(
+            "{}{}{}{}",
+            khung(&init()),
+            khung(&did_open(URI, goc)),
+            khung(&did_change(URI, &text)),
+            khung(&hover(2, URI, 4, 6))
+        );
+        let (code, out, err) = chay(&vao);
+        assert_eq!(code, 0, "k={k}, stderr: {err}");
+        assert_eq!(chuan, frame_cuoi(&out), "k={k}: hover phải y hệt lần đầu");
+    }
+}

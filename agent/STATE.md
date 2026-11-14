@@ -6,16 +6,28 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-99 — R16 + ROADMAP bàn giao** — xong, `report-check --all` PASS, cổng PASS;
-                **chưa commit**.
-Bước          : 3/3 (ROADMAP 55 dòng + JSON 112 hàng QUEUE@a9892676 + MD §1..§8/§19 + đo lại + gate).
+Task          : **ST-100 — LSP: hover trường + `didClose` cache + cache module** — xong, đã đo + cổng +
+                differential; **chưa commit**.
+Bước          : 3/3 (đỏ 2/5 + perf 4,862 ms → hover trường/cache item → 5 ca → 1015 test → diff 100k →
+                cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T21:46:42Z** (report-check PASS: **16
-                báo cáo, 112 hàng QUEUE**); **1010** test / sem **447/22** / `vis test` **447 ok**
-                (`--vm` **447 ok + 0 SKIP**) / parity **398/398 + 49** / host **54/54 ×2** / soak
-                **8/8** (818 s) / differential **100.000 / 0 lệch** (164,9 s) / cache **520×4 / 0 lệch** /
-                fuzz parser **2.453.833 ca / 0 vi phạm** / targets **18/18 check** / fmt **497 tệp**
-Việc dở       : commit `[ST-99]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:02:45Z**; **1015** test / sem
+                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (152,2 s) / LSP **43 ca +
+                1 unit cache**
+Việc dở       : commit `[ST-100]` + push (đã được uỷ quyền)
+
+## ST-100 — LSP hoàn thiện nhỏ, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | hover `p.x`/`p.ten` ⇒ **`result:null`** (2 ca đỏ); cache module chưa có: **4,862 ms** cho 5 tệp phụ (unit test đỏ). Log `JOURNAL/st100-red.log` sha256 `c6725761…`; `didClose`/5 `didChange` vẫn xanh trước (không hồi quy). |
+| 1 | **Hover trường** | `KetQua.truong` lấy từ **cùng bảng** `thanh_vien::gom`; hover trên `x` trong `p.x` ⇒ **`**x**: int`** + “trường của `P`” (dùng kiểu `p` từ `bien`); khai báo trường duy nhất cũng hiện; `p.ten` ⇒ `**ten**: str`. Không viết lại bảng thành viên. |
+| 2 | **didClose + cache** | `didClose`: xoá `van_ban` + `xoa_cache_phu()` + `xoa_cache_module()`; URI khác vẫn chẩn đoán đúng. Cache **item module phụ** theo `(main use địa phương, từng tệp phụ mtime/size)`; **không cache tệp chính** (luôn `phan_tich(text)` từ buffer); đổi `mtime`/danh sách use ⇒ nạp lại. Cache văn bản tệp phụ `(mtime,size)` trong `modules.rs`. |
+| 3 | **5 ca** | `lsp.rs` 4 ca: (a) `p.x` int+trường; (b) `p.ten` str; (c) didClose→didOpen lại chẩn đoán VS0412 vẫn đúng; (d) 5 didChange ⇒ hover **byte y hệt** lần đầu. + **1 unit** `module.rs`: 5 tệp phụ, **min 3 vòng = 0,474 ms < 2 ms** (in-process). Tổng **+5 test**. |
+| 4 | **Giới hạn dòng** | `lsp/*.rs`: goi_y **278**, module **292**, mod **293**, phan_tich **259**, còn lại ≤219 ⇒ **mọi tệp ≤300**. |
+| 5 | **Đo** | **1015** test = 1010 + **5** (21+96+27+154+26+62+9+**620**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=152.2 toc_do=657/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**. |
+| 6 | **Nợ** | Cache item module **global thread-local** (một tiến trình LSP; chưa đa luồng); key dùng `use ./` văn bản (không phân giải `pkg`/đường dẫn lạ) ⇒ tệp dùng `pkg` vẫn nạp lại mỗi lần; `didClose` xoá **toàn bộ** cache (an toàn, hơi rộng); hover trường khai báo chỉ khi tên **duy nhất**; chưa hover field qua biểu thức phức tạp (`f().x`, `a.b.x`); `didSave` chưa xử lý. |
 
 ## ST-99 — R16 + ROADMAP bàn giao, 2026-11-14
 

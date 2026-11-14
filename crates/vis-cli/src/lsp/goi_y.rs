@@ -174,6 +174,43 @@ pub fn ds_goi_y(kq: &KetQua, byte: usize) -> Vec<GoiY> {
     ds
 }
 
+/// **ST-100**: hover **trường** — `p.x` (theo kiểu `p`) hoặc khai báo duy nhất `x: int` trong `type`.
+fn hover_truong(kq: &KetQua, text: &str, start: usize, tu: &str) -> Option<String> {
+    let mut chu_p = None;
+    let truoc = text[..start].trim_end();
+    if let Some(goc) = truoc.strip_suffix('.') {
+        let goc = goc.trim_end();
+        let i = goc
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .map(|i| i + 1)
+            .unwrap_or(0);
+        let recv = &goc[i..];
+        if !recv.is_empty() {
+            chu_p = kq
+                .bien
+                .iter()
+                .find(|(n, _)| n == recv)
+                .map(|(_, k)| k.clone());
+        }
+    }
+    let mut ung: Vec<(&str, &GoiY)> = kq
+        .truong
+        .iter()
+        .filter(|(_, g)| g.label == tu)
+        .map(|(k, g)| (k.as_str(), g))
+        .collect();
+    if let Some(p) = &chu_p {
+        ung.retain(|(k, _)| k == p);
+    }
+    let (chu, g) = match ung.as_slice() {
+        [(chu, g)] => (*chu, *g),
+        _ => return None,
+    };
+    let than = g.detail.as_deref()?;
+    let kieu = than.strip_prefix(&format!("{tu}: "))?;
+    Some(format!("**{tu}**: {kieu}\n\ntrường của `{chu}`"))
+}
+
 /// Giá trị hover (markdown) cho từ tại `byte` + **span** của từ; `None` ⇒ `result:null`.
 fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
     let (start, end) = tu_tai(&kq.text, byte);
@@ -186,6 +223,8 @@ fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
         format!("```vis\n{than}\n```")
     } else if let Some((_ten, kieu)) = kq.bien.iter().find(|(ten, _)| ten == tu) {
         format!("```vis\n{tu}: {kieu}\n```")
+    } else if let Some(v) = hover_truong(kq, &kq.text, start, tu) {
+        v
     } else if BUILTIN_VALUE_NAMES.contains(&tu) {
         format!("```vis\n<builtin {tu}>\n```")
     } else if KEYWORDS.binary_search(&tu).is_ok() {

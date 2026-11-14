@@ -9,8 +9,10 @@
 //! tệp một lần, tệp chính **cuối**. Hậu duyệt ⇒ khi hạ một tệp, mọi kiểu `pub` của phụ thuộc đã nằm
 //! trong bảng kiểu chung nên `RecId`/`EnumId` **ổn định** giữa các tệp.
 
-use std::collections::BTreeMap;
+use std::cell::RefCell;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use vis_diag::{MODULE_CODES, SYNTAX_CODES};
 
@@ -30,6 +32,50 @@ pub struct FileUnit {
     /// Đường dẫn tương đối so với **tệp chính** (ổn định khi đổi `cwd`).
     pub rel: String,
     pub text: String,
+}
+
+/// **ST-100**: cache **nội dung tệp phụ** theo `(đường dẫn, mtime, size)` — chỉ dùng cho LSP; tệp chính
+/// lấy từ buffer. `mtime` đổi ⇒ đọc lại; `didClose` ⇒ [`xoa_cache_phu`].
+struct MucTepPhu {
+    mtime: Option<SystemTime>,
+    size: u64,
+    text: String,
+}
+
+thread_local! {
+    static CACHE_PHU: RefCell<HashMap<std::path::PathBuf, MucTepPhu>> = RefCell::new(HashMap::new());
+}
+
+/// **ST-100**: dọn cache tệp phụ (gọi khi LSP `didClose`).
+pub fn xoa_cache_phu() {
+    CACHE_PHU.with(|c| c.borrow_mut().clear());
+}
+
+fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
+    let meta = std::fs::metadata(path)?;
+    let mtime = meta.modified().ok();
+    let size = meta.len();
+    if let Some(m) = CACHE_PHU.with(|c| {
+        c.borrow()
+            .get(path)
+            .map(|m| (m.mtime, m.size, m.text.clone()))
+    }) {
+        if m.0 == mtime && m.1 == size {
+            return Ok(m.2);
+        }
+    }
+    let text = std::fs::read_to_string(path)?;
+    CACHE_PHU.with(|c| {
+        c.borrow_mut().insert(
+            path.to_path_buf(),
+            MucTepPhu {
+                mtime,
+                size,
+                text: text.clone(),
+            },
+        );
+    });
+    Ok(text)
 }
 
 /// Kết quả nạp một đơn vị biên dịch.
@@ -383,7 +429,8 @@ impl Nap {
             },
             None => match match (&self.main_text, path == self.main) {
                 (Some(t), true) => Ok(t.clone()),
-                _ => std::fs::read_to_string(&path),
+                // **ST-100**: tệp phụ đọc qua cache (mtime+size); tệp chính luôn đọc theo buffer/đĩa.
+                _ => doc_cache_phu(&path),
             } {
                 Ok(t) => t,
                 Err(e) => {

@@ -5,12 +5,65 @@
 //! Chỉ **item** (label/kind/detail); `span` không dùng cho completion/hover module. `detail` ghi rõ
 //! **nguồn** (`util: fn tinh(x: int) -> int`) để người dùng biết ký hiệu đến từ đâu.
 
-use std::path::Path;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use vis_syntax::Mode;
 use vis_types::{HItem, TypeTable};
 
 use super::phan_tich::{self, GoiY, KetQua};
+
+/// **ST-100**: cache **item do module phụ sinh ra** (không cache tệp chính — tệp chính luôn phân tích
+/// lại từ buffer LSP). Khoá theo `(đường dẫn main, danh sách use địa phương)` + `(mtime,size)` từng tệp
+/// phụ; `mtime` đổi ⇒ nạp lại. `didClose` ⇒ [`xoa_cache_module`].
+struct MucPhu {
+    path: PathBuf,
+    mtime: Option<SystemTime>,
+    size: u64,
+}
+
+struct MucModule {
+    use_dp: Vec<PathBuf>,
+    phu: Vec<MucPhu>,
+    items: Vec<GoiY>,
+}
+
+thread_local! {
+    static CACHE_MOD: RefCell<HashMap<PathBuf, MucModule>> = RefCell::new(HashMap::new());
+}
+
+/// **ST-100**: dọn cache module (gọi cùng `didClose`).
+pub(crate) fn xoa_cache_module() {
+    CACHE_MOD.with(|c| c.borrow_mut().clear());
+}
+
+/// Các `use ./x` **địa phương** trong buffer (đủ để phát hiện đổi cấu trúc module mà không nạp lại).
+fn use_dia_phuong(text: &str, dir: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for l in text.lines() {
+        let Some(rest) = l.trim().strip_prefix("use ") else {
+            continue;
+        };
+        let Some(rel) = rest.trim().strip_prefix("./") else {
+            continue;
+        };
+        let rel = rel.split_whitespace().next().unwrap_or(rel);
+        out.push(dir.join(rel).with_extension("vis"));
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+fn phu_con_nguyen(phu: &[MucPhu]) -> bool {
+    phu.iter().all(|m| {
+        std::fs::metadata(&m.path)
+            .map(|x| x.modified().ok() == m.mtime && x.len() == m.size)
+            .unwrap_or(false)
+    })
+}
 
 fn ten_nguon(rel: &str) -> String {
     rel.trim_end_matches(".vis")
@@ -61,12 +114,32 @@ fn goi_y_std(m: &str, f: &vis_types::stdlib::StdFn) -> Option<GoiY> {
 }
 
 /// Phân tích tệp **có trên đĩa** kèm item module + `std.*` đã `use`; `None` nếu nạp lỗi.
+///
+/// **ST-100**: tệp chính luôn phân tích lại từ `text`; chỉ **item do module phụ** được cache khi danh
+/// sách `use ./…` và `(mtime,size)` của mọi tệp phụ không đổi.
 pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<KetQua> {
+    let dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let use_now = use_dia_phuong(text, dir);
+    let khoa = path.to_path_buf();
+    if let Some(m) = CACHE_MOD.with(|c| {
+        c.borrow()
+            .get(&khoa)
+            .and_then(|m| (m.use_dp == use_now && phu_con_nguyen(&m.phu)).then(|| m.items.clone()))
+    }) {
+        let mut kq = phan_tich::phan_tich(text, mode);
+        let mut da: HashSet<String> = kq.items.iter().map(|g| g.label.clone()).collect();
+        for g in m {
+            if da.insert(g.label.clone()) {
+                kq.items.push(g);
+            }
+        }
+        return Some(kq);
+    }
     let l = crate::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
     let mut kq = phan_tich::phan_tich(text, mode);
     let ten_chinh = path.file_name()?.to_string_lossy().to_string();
-    let mut da: std::collections::HashSet<String> =
-        kq.items.iter().map(|g| g.label.clone()).collect();
+    let mut da: HashSet<String> = kq.items.iter().map(|g| g.label.clone()).collect();
+    let mut phu_items: Vec<GoiY> = Vec::new();
     // 1) Item của module (không thuộc tệp chính), ưu tiên sau item tệp chính.
     for (i, it) in l.hir.items.iter().enumerate() {
         let rel = l.item_rel.get(i).cloned().unwrap_or_default();
@@ -76,7 +149,7 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
         let nguon = ten_nguon(&rel);
         if let Some(g) = goi_y_module(it, &l.types, &nguon) {
             if da.insert(g.label.clone()) {
-                kq.items.push(g);
+                phu_items.push(g);
             }
         }
     }
@@ -96,11 +169,38 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
             }
             if let Some(g) = goi_y_std(&m, f) {
                 if da.insert(g.label.clone()) {
-                    kq.items.push(g);
+                    phu_items.push(g);
                 }
             }
         }
     }
+    for g in &phu_items {
+        kq.items.push(g.clone());
+    }
+    // Chỉ giữ tệp phụ (tệp chính lấy từ buffer) + mtime/size hiện tại.
+    let mut phu = Vec::new();
+    for f in &l.files {
+        if f.rel == ten_chinh {
+            continue;
+        }
+        if let Ok(meta) = std::fs::metadata(&f.path) {
+            phu.push(MucPhu {
+                path: f.path.clone(),
+                mtime: meta.modified().ok(),
+                size: meta.len(),
+            });
+        }
+    }
+    CACHE_MOD.with(|c| {
+        c.borrow_mut().insert(
+            khoa,
+            MucModule {
+                use_dp: use_now,
+                phu,
+                items: phu_items,
+            },
+        );
+    });
     Some(kq)
 }
 
@@ -152,6 +252,41 @@ mod tests {
         }
         let ms = t.elapsed().as_millis();
         assert!(ms < 100, "nạp module 5 tệp mất {ms} ms (≥ 100 ms)");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-100**: sau lần đầu, một lần phân tích **5 tệp phụ nhỏ** phải **< 2 ms** (đo **trong tiến
+    /// trình**, min **3 vòng** — không wall-clock dưới tải //; bài học ST-84). Cache `(mtime,size)`.
+    #[test]
+    fn hieu_nang_cache_5_tep_duoi_2ms() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static DEM: AtomicUsize = AtomicUsize::new(0);
+        let n = DEM.fetch_add(1, Ordering::Relaxed);
+        let d = std::env::temp_dir().join(format!("vis-mod-cache-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tmp");
+        for i in 0..5 {
+            std::fs::write(
+                d.join(format!("u{i}.vis")),
+                format!("pub fn f{i}(x: int) -> int:\n    return x + {i}\n"),
+            )
+            .expect("ghi phụ");
+        }
+        let src =
+            "use ./u0\nuse ./u1\nuse ./u2\nuse ./u3\nuse ./u4\n\nfn main():\n    print(f0(1))\n";
+        let p = d.join("m.vis");
+        std::fs::write(&p, src).expect("ghi chính");
+        // Nạp ấm (lần 1).
+        assert!(phan_tich_module(&p, src, Mode::Script).is_some());
+        let mut tot = f64::MAX;
+        for _ in 0..3 {
+            let t = std::time::Instant::now();
+            let kq = phan_tich_module(&p, src, Mode::Script).expect("nạp module");
+            assert!(kq.items.iter().any(|g| g.label == "f0"));
+            tot = tot.min(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        eprintln!("ST-100 cache: 5 tệp phụ, min 3 vòng = {tot:.3} ms");
+        assert!(tot < 2.0, "cache 5 tệp mất {tot:.3} ms (≥ 2 ms)");
         let _ = std::fs::remove_dir_all(&d);
     }
 }

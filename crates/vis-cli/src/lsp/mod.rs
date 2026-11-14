@@ -138,6 +138,9 @@ pub fn run(args: &[String]) -> ExitCode {
             "textDocument/didClose" => {
                 if let Some(uri) = jsonrpc::uri_cua(kv) {
                     van_ban.remove(&uri);
+                    // **ST-100**: dọn cache nạp module; URI khác vẫn dùng lại bình thường.
+                    crate::modules::xoa_cache_phu();
+                    module::xoa_cache_module();
                     gui!(chan_doan::than(&uri, None, mode_cua(&uri)));
                 }
             }

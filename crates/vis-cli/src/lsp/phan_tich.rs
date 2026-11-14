@@ -23,6 +23,7 @@ pub struct ChanDoan {
 }
 
 /// Một gợi ý (completion) hoặc mục tra cứu (hover).
+#[derive(Clone)]
 pub struct GoiY {
     pub label: String,
     /// Mã `CompletionItemKind` của LSP (3 function, 6 variable, 11 interface, 13 enum, 14 keyword,
@@ -39,6 +40,8 @@ pub struct KetQua {
     pub items: Vec<GoiY>,
     /// Biến/tham số có kiểu suy ra: `(tên, kiểu đã `show`)`.
     pub bien: Vec<(String, String)>,
+    /// **ST-100**: trường của `type` — `(tên kiểu, gợi ý)` để hover `p.x` / khai báo `x: int`.
+    pub truong: Vec<(String, GoiY)>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -164,11 +167,13 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
     for st in &out.hir.stmts {
         gom_bien(st, &tbl, &mut bien);
     }
+    let truong = super::thanh_vien::gom(&out.hir, &syms, &tbl).truong;
     KetQua {
         text: lexed.text.clone(),
         ds,
         items,
         bien,
+        truong,
     }
 }
 
