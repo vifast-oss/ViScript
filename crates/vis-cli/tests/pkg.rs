@@ -636,3 +636,200 @@ fn entry_tuy_chon_khi_manifest_thieu() {
     assert!(lock.contains("\"entry\":\"src/main.vis\""), "lock: {lock}");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== ST-102: pkg update + list --json =====
+
+/// Tạo gói trong registry: `src/main.vis` + manifest băm đúng nội dung.
+fn tao_goi(reg: &Path, ten: &str, ver: &str, src: &str) {
+    let dir = reg.join(ten).join(ver);
+    ghi(&dir.join("src/main.vis"), src);
+    let sha = hex(&vis_bytecode::source_hash(src));
+    ghi(
+        &dir.join("manifest.json"),
+        &format!(
+            "{{\"name\":\"{ten}\",\"version\":\"{ver}\",\"entry\":\"src/main.vis\",\"files\":[{{\"path\":\"src/main.vis\",\"sha256\":\"{sha}\"}}]}}"
+        ),
+    );
+}
+
+fn cap_nhat(d: &Path, them: &[&str]) -> (i32, String, String) {
+    let mut args = vec!["pkg", "update", "--registry"];
+    let reg = d.join("reg");
+    let reg = reg.to_str().unwrap();
+    args.push(reg);
+    args.extend_from_slice(them);
+    vis(d, &args)
+}
+
+/// (a) update khi nguồn không đổi ⇒ **lock byte-identical**, exit 0, in “không đổi”.
+#[test]
+fn update_khong_doi_lock_byte_identical() {
+    let d = tmp_dir("upd-same");
+    let reg = d.join("reg");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    let (c, _, e) = vis(
+        &d,
+        &["pkg", "add", "a", "--registry", reg.to_str().unwrap()],
+    );
+    assert_eq!(c, 0, "{e}");
+    let lock1 = doc(&d.join("vis.lock"));
+    let (c2, o, e2) = cap_nhat(&d, &[]);
+    assert_eq!(c2, 0, "{e2}");
+    assert!(o.contains("không đổi"), "{o}");
+    assert_eq!(lock1, doc(&d.join("vis.lock")), "lock phải byte-identical");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (b) nguồn đổi cùng version ⇒ lock cập nhật sha + files, cài lại; lần 2 idempotent.
+#[test]
+fn update_doi_noi_dung_cung_version() {
+    let d = tmp_dir("upd-change");
+    let reg = d.join("reg");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    let (c, _, e) = vis(
+        &d,
+        &["pkg", "add", "a", "--registry", reg.to_str().unwrap()],
+    );
+    assert_eq!(c, 0, "{e}");
+    let lock1 = doc(&d.join("vis.lock"));
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    42\n");
+    let (c2, o, e2) = cap_nhat(&d, &[]);
+    assert_eq!(c2, 0, "{e2}");
+    assert!(o.contains("đã cập nhật"), "{o}");
+    let lock2 = doc(&d.join("vis.lock"));
+    assert_ne!(lock1, lock2, "lock phải đổi sha/files");
+    assert!(
+        doc(&d.join(".vis/pkg/a/1.0.0/src/main.vis")).contains("42"),
+        "phải cài nội dung mới"
+    );
+    let (c3, o3, e3) = cap_nhat(&d, &[]);
+    assert_eq!(c3, 0, "{e3}");
+    assert!(o3.contains("không đổi"), "{o3}");
+    assert_eq!(lock2, doc(&d.join("vis.lock")), "lần 2 phải idempotent");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (c) `update <tên>` chỉ đụng gói đó; gói khác (cây + sha trong lock) byte-identical.
+#[test]
+fn update_mot_ten_khong_dung_goi_khac() {
+    let d = tmp_dir("upd-one");
+    let reg = d.join("reg");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    tao_goi(&reg, "b", "1.0.0", "fn b() -> int:\n    2\n");
+    for ten in ["a", "b"] {
+        let (c, _, e) = vis(
+            &d,
+            &["pkg", "add", ten, "--registry", reg.to_str().unwrap()],
+        );
+        assert_eq!(c, 0, "{ten}: {e}");
+    }
+    let b_hash = cay_hash(&d.join(".vis/pkg/b"));
+    let lock1 = doc(&d.join("vis.lock"));
+    let b_sha = sha_goi_trong_lock(&lock1, "b");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    99\n");
+    let (c, o, e) = cap_nhat(&d, &["a"]);
+    assert_eq!(c, 0, "{e}");
+    assert!(o.contains("đã cập nhật a"), "{o}");
+    assert_eq!(b_hash, cay_hash(&d.join(".vis/pkg/b")), "b phải nguyên vẹn");
+    assert_eq!(
+        b_sha,
+        sha_goi_trong_lock(&doc(&d.join("vis.lock")), "b"),
+        "sha b trong lock phải nguyên vẹn"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// Lấy `sha256` của gói `name` trong `vis.lock` (chuỗi JSON thô, thứ tự khoá cố định).
+fn sha_goi_trong_lock(lock: &str, name: &str) -> String {
+    let i = lock
+        .find(&format!("\"name\":\"{name}\""))
+        .expect("không thấy gói trong lock");
+    let j = lock[i..].find("\"sha256\":\"").expect("thiếu sha") + i + 12;
+    lock[j..j + 64].to_string()
+}
+
+/// (d) `list --json` parse được (`json.decode`), đúng thứ tự tên + trường.
+#[test]
+fn list_json_parse_duoc_dung_thu_tu() {
+    let d = tmp_dir("list-json");
+    let reg = d.join("reg");
+    tao_goi(&reg, "b", "1.0.0", "fn b() -> int:\n    2\n");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    for ten in ["b", "a"] {
+        let (c, _, e) = vis(
+            &d,
+            &["pkg", "add", ten, "--registry", reg.to_str().unwrap()],
+        );
+        assert_eq!(c, 0, "{ten}: {e}");
+    }
+    let (c, o, e) = vis(&d, &["pkg", "list", "--json"]);
+    assert_eq!(c, 0, "{e}");
+    assert_eq!(o.lines().count(), 1, "một dòng JSON: {o}");
+    let v = vis_interp::json::decode(&o).expect("JSON hợp lệ");
+    let vis_interp::value::Value::Map(kv) = v else {
+        panic!("không phải object")
+    };
+    let Some(vis_interp::value::Value::List(ps)) = kv.iter().find_map(|(k, v)| {
+        matches!(k, vis_interp::value::Value::Str(s) if s == "packages").then_some(v)
+    }) else {
+        panic!("thiếu packages")
+    };
+    let mut ten = Vec::new();
+    for p in ps {
+        let vis_interp::value::Value::Map(m) = p else {
+            panic!("package không phải object")
+        };
+        let lay = |k: &str| {
+            m.iter().find_map(|(kk, vv)| match (kk, vv) {
+                (vis_interp::value::Value::Str(x), vis_interp::value::Value::Str(y)) if x == k => {
+                    Some(y.clone())
+                }
+                _ => None,
+            })
+        };
+        ten.push(lay("name").unwrap());
+        assert_eq!(lay("version").as_deref(), Some("1.0.0"));
+        assert_eq!(lay("entry").as_deref(), Some("src/main.vis"));
+        assert_eq!(lay("sha256").unwrap().len(), 64);
+    }
+    assert_eq!(ten, ["a", "b"], "sắp theo tên byte-order");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (e) `list` **không** cờ giữ byte y hệt (không bị `--json` làm đổi).
+#[test]
+fn list_khong_co_json_khong_doi() {
+    let d = tmp_dir("list-tap");
+    let reg = d.join("reg");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    let (c, _, e) = vis(
+        &d,
+        &["pkg", "add", "a", "--registry", reg.to_str().unwrap()],
+    );
+    assert_eq!(c, 0, "{e}");
+    let truoc = vis(&d, &["pkg", "list"]).1;
+    let _ = vis(&d, &["pkg", "list", "--json"]);
+    let sau = vis(&d, &["pkg", "list"]).1;
+    assert_eq!(truoc, sau, "`list` không cờ phải byte y hệt");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (f) `update <tên>` không có trong lock ⇒ exit **2**.
+#[test]
+fn update_ten_khong_co_exit2() {
+    let d = tmp_dir("upd-missing");
+    let reg = d.join("reg");
+    tao_goi(&reg, "a", "1.0.0", "fn a() -> int:\n    1\n");
+    let (c, _, e) = vis(
+        &d,
+        &["pkg", "add", "a", "--registry", reg.to_str().unwrap()],
+    );
+    assert_eq!(c, 0, "{e}");
+    let (c2, o, e2) = cap_nhat(&d, &["khong_co"]);
+    assert_eq!(c2, 2, "{o}{e2}");
+    assert!(
+        e2.contains("không có trong") || e2.contains("chưa cài"),
+        "{e2}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}

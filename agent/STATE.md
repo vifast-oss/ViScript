@@ -6,15 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-101b — escape JSON đúng chuẩn (đóng nợ ST-101)** — xong, đã đo đỏ + cổng +
+Task          : **ST-102 — `vis pkg update` + `pkg list --json`** — xong, đã đo + cổng +
                 differential; **chưa commit**.
-Bước          : 3/3 (đỏ: JSON không parse được ở byte 13 → một hàm `json_esc::esc` dùng chung →
-                6 ca → 1027 test → diff 100k → cổng).
+Bước          : 3/3 (đỏ 5/6 → update idempotent/registry + list JSON → 6 ca → 1033 test → diff 100k →
+                cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:34:09Z**; **1027** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:47:43Z**; **1033** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,9 s) / JSON **parse OK**
-Việc dở       : commit `[ST-101b]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,8 s) / pkg **24 ca**
+Việc dở       : commit `[ST-102]` + push (đã được uỷ quyền)
+
+## ST-102 — `pkg update` + `list --json`, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | `pkg update` là lệnh lạ + `list --json` là cờ lạ ⇒ **5/6 ca đỏ** (ca `list` không cờ vẫn xanh). Log `JOURNAL/st102-red.log` sha256 `b710f281…`. |
+| 1 | **`pkg update [<tên>]`** | Đọc `vis.lock`, với từng gói đọc lại registry **cùng version** (`gom_goi`, không mạng, không resolver); băm cây **không đổi** ⇒ in `không đổi <tên> <ver>`, **không ghi lock** (byte-identical); nguồn đổi ⇒ ghi blob mới, dựng lại `.vis/pkg`, cập nhật `entry`/`sha256`/`files`, in `đã cập nhật <tên> <ver>`; **không** đổi version. `update <tên>` chỉ đụng gói đó; tên không có ⇒ exit **2**. |
+| 2 | **`pkg list --json`** | Một object nén/dòng: `{"packages":[{name,version,entry,sha256}]}` sắp theo **tên byte-order**; dùng `json_esc` chung; **không cờ** giữ nguyên `tên ver sha[:12]`; `usage()` nêu update + `list [--json]`. |
+| 3 | **6 ca** | `pkg.rs`: (a) không đổi ⇒ lock byte-identical + “không đổi”; (b) nguồn đổi cùng version ⇒ sha/files đổi, cài lại, lần 2 idempotent; (c) update một tên, gói khác cây + sha lock nguyên vẹn; (d) `list --json` parse `json.decode`, đúng thứ tự + trường; (e) `list` không cờ không đổi; (f) update tên lạ exit 2. |
+| 4 | **Đo** | **1033** test = 1027 + **6** (21+96+27+154+26+62+9+**638**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=158.8 toc_do=630/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**; `pkg.rs` **927** dòng. |
+| 5 | **Nợ** | **Không resolver/version** (đúng yêu cầu); `update` chỉ ghi gói đích, **không** cập nhật phụ thuộc (dù `gom_goi` đọc chúng); blob cũ không GC (chỉ ghi thêm); `list --json` lock cũ thiếu `entry` ⇒ `""`; update đọc registry mặc định `registry`/`VIS_REGISTRY`; chưa mạng/ký số. |
 
 ## ST-101b — escape JSON đúng chuẩn, 2026-11-14
 

@@ -30,7 +30,7 @@ pub fn run(args: &[String]) -> ExitCode {
 }
 
 fn dung() -> &'static str {
-    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir>] | vis pkg install | vis pkg list | vis pkg remove <tên>"
+    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir>] | vis pkg install | vis pkg update [<tên>] [--registry <dir>] | vis pkg list [--json] | vis pkg remove <tên>"
 }
 
 fn chay(args: &[String]) -> Result<(), String> {
@@ -40,6 +40,7 @@ fn chay(args: &[String]) -> Result<(), String> {
     match lenh.as_str() {
         "add" => lenh_add(&args[1..]),
         "install" => lenh_install(&args[1..]),
+        "update" => lenh_update(&args[1..]),
         "list" => lenh_list(&args[1..]),
         "remove" => lenh_remove(&args[1..]),
         khac => Err(format!("lệnh lạ `{khac}` — {}", dung())),
@@ -728,14 +729,113 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// `vis pkg list` — `tên ver sha256[:12]`, sắp theo tên.
+/// `vis pkg update [<tên>] [--registry <dir>]` — đọc lại nguồn registry **cùng version**; băm cây khác
+/// ⇒ cài lại + cập nhật `sha256`/`files`/`entry`; **không** đổi version (không resolver), **không** mạng.
+fn lenh_update(args: &[String]) -> Result<(), String> {
+    let (ten, reg, entry) = tuy_chon(args, true)?;
+    if entry.is_some() {
+        return Err("`update` không nhận `--entry`".to_string());
+    }
+    let cwd = cwd()?;
+    let mut khoa = doc_khoa(&cwd.join("vis.lock"), true)?;
+    if let Some(t) = &ten {
+        if !khoa.iter().any(|g| &g.name == t) {
+            return Err(format!("chưa cài gói `{t}` — không có trong `vis.lock`"));
+        }
+    }
+    let reg = thu_muc_registry(reg);
+    let mut doi = false;
+    for g in &mut khoa {
+        if ten.as_ref().is_some_and(|t| t != &g.name) {
+            continue;
+        }
+        let mut ds = Vec::new();
+        let mut da = BTreeSet::new();
+        gom_goi(&reg, &g.name, &g.version, None, &mut ds, &mut da)?;
+        let Some(moi) = ds
+            .into_iter()
+            .find(|x| x.name == g.name && x.version == g.version)
+        else {
+            return Err(format!(
+                "registry `{}` không có `{}@{}`",
+                reg.display(),
+                g.name,
+                g.version
+            ));
+        };
+        if moi.sha256 == g.sha256 {
+            println!("không đổi {} {}", g.name, g.version);
+            continue;
+        }
+        for f in &moi.files {
+            ghi_atomic(
+                &cwd.join(".vis/store").join(&f.sha256),
+                f.noi_dung.as_bytes(),
+            )?;
+        }
+        let dich = cwd.join(".vis/pkg").join(&moi.name).join(&moi.version);
+        let _ = std::fs::remove_dir_all(&dich);
+        for f in &moi.files {
+            let p = dich.join(&f.path);
+            if let Some(d) = p.parent() {
+                std::fs::create_dir_all(d)
+                    .map_err(|e| format!("không tạo được `{}`: {e}", d.display()))?;
+            }
+            std::fs::write(&p, f.noi_dung.as_bytes())
+                .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
+        }
+        g.sha256 = moi.sha256;
+        g.entry = Some(moi.entry);
+        g.files = moi
+            .files
+            .iter()
+            .map(|f| TepKhoa {
+                path: f.path.clone(),
+                sha256: f.sha256.clone(),
+            })
+            .collect();
+        doi = true;
+        println!("đã cập nhật {} {}", g.name, g.version);
+    }
+    if doi {
+        ghi_lock(&cwd.join("vis.lock"), &khoa)?;
+    }
+    Ok(())
+}
+
+/// `vis pkg list [--json]` — không cờ: `tên ver sha256[:12]` (giữ nguyên); `--json`:
+/// `{"packages":[{name,version,entry,sha256}]}` sắp theo **tên byte-order**.
 fn lenh_list(args: &[String]) -> Result<(), String> {
-    let (ten, reg, entry) = tuy_chon(args, false)?;
+    let json_ra = args.iter().any(|a| a == "--json");
+    let args: Vec<String> = args
+        .iter()
+        .filter(|a| a.as_str() != "--json")
+        .cloned()
+        .collect();
+    let (ten, reg, entry) = tuy_chon(&args, false)?;
     if ten.is_some() || reg.is_some() || entry.is_some() {
         return Err(format!("`list` không nhận đối số — {}", dung()));
     }
     let cwd = cwd()?;
     let khoa = doc_khoa(&cwd.join("vis.lock"), true)?;
+    if json_ra {
+        let mut out = String::from("{\"packages\":[");
+        for (i, p) in khoa.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!(
+                "{{\"name\":\"{}\",\"version\":\"{}\",\"entry\":\"{}\",\"sha256\":\"{}\"}}",
+                crate::json_esc::esc(&p.name),
+                crate::json_esc::esc(&p.version),
+                crate::json_esc::esc(p.entry.as_deref().unwrap_or("")),
+                crate::json_esc::esc(&p.sha256)
+            ));
+        }
+        out.push_str("]}");
+        println!("{out}");
+        return Ok(());
+    }
     for p in &khoa {
         println!(
             "{} {} {}",
