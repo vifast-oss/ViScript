@@ -6,16 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-100 — LSP: hover trường + `didClose` cache + cache module** — xong, đã đo + cổng +
-                differential; **chưa commit**.
-Bước          : 3/3 (đỏ 2/5 + perf 4,862 ms → hover trường/cache item → 5 ca → 1015 test → diff 100k →
-                cổng).
+Task          : **ST-101 — đầu ra máy đọc: `vis check --json` + `vis test --json`** — xong, đã đo +
+                cổng + differential; **chưa commit**.
+Bước          : 3/3 (đỏ 5/6 → JSON nén một dòng, đủ chẩn đoán → 6 ca → 1021 test → diff 100k → cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:02:45Z**; **1015** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:22:13Z**; **1021** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (152,2 s) / LSP **43 ca +
-                1 unit cache**
-Việc dở       : commit `[ST-100]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (152,7 s) / JSON **6 ca**
+Việc dở       : commit `[ST-101]` + push (đã được uỷ quyền)
+
+## ST-101 — JSON cho `check`/`test`, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | `--json` ⇒ cờ lạ **exit 2** (5/6 ca đỏ; ca TAP không cờ xanh). Log `JOURNAL/st101-red.log` sha256 `1d7ca903…`. |
+| 1 | **`check --json`** | **Một object nén/dòng** trên stdout: `{"ok":bool,"files":[{"file":…,"diagnostics":[{"code","line","col","message"}]}]}`; `files` theo thứ tự đối số; `diagnostics` theo thứ tự phát hiện (**đủ**, không chỉ đầu); `line/col` **1-based**; exit y hệt không cờ (0/1/2); **stderr rỗng**. |
+| 2 | **`test --json`** | `{"total":N,"ok":N,"failed":N,"cases":[{"name","ok","message"}]}`; cases theo thứ tự xuất hiện; `message` **một dòng**, cắt **≤200 ký tự kể cả “…”**; exit 0/1 như TAP; stderr rỗng; `--vm` cùng JSON. |
+| 3 | **Không hồi quy** | Không cờ ⇒ `check` TAP + `test` TAP **byte y hệt** (ca f so chuỗi đầy đủ), stderr rỗng. `usage()` nêu `--json` cho cả hai; cờ lạ vẫn exit 2. |
+| 4 | **6 ca** | `json_ra.rs`: (a) check sạch exit0; (b) check **2 lỗi** đúng 2 chẩn đoán + line/col; (c) check **3 tệp** đúng thứ tự; (d) test 2/3 ok (VM cùng JSON); (e) test tất cả ok (VM); (f) không cờ TAP byte y hệt. |
+| 5 | **Đo** | **1021** test = 1015 + **6** (21+96+27+154+26+62+9+**626**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=152.7 toc_do=655/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**. |
+| 6 | **Nợ** | JSON tự viết tay (không serde); escape control đủ nhưng chưa test ký tự `"`/`\` trong message; `check` diagnostics của tệp phụ vẫn nằm dưới `file` **tệp chính** (không có trường `phu`); `test` message cắt 200 **ký tự** (không phải byte), dùng “…” (201? đã sửa 199+… = 200); JSON `check` không có `severity`; `test --json` vẫn chạy con `vis run --tap` (không đổi kiến trúc). |
 
 ## ST-100 — LSP hoàn thiện nhỏ, 2026-11-14
 

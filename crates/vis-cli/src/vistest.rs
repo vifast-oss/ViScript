@@ -14,8 +14,27 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--json] [thư mục|tệp]");
     ExitCode::from(2)
+}
+
+/// **ST-101**: thông điệp JSON **một dòng**, cắt ≤200 **ký tự** (char, không byte).
+fn mot_dong(m: &str) -> String {
+    let s = m.replace(['\n', '\r', '\t'], " ");
+    // ≤200 **kể cả** dấu “…” khi cắt.
+    if s.chars().count() <= 200 {
+        return s;
+    }
+    let mut o: String = s.chars().take(199).collect();
+    o.push('…');
+    o
+}
+
+/// **ST-101**: ca cho `--json`.
+struct CaJson {
+    ten: String,
+    ok: bool,
+    msg: String,
 }
 
 /// Bỏ dòng SPDX đầu của tệp kỳ vọng (QD §9.3 — fixture `.out` có header).
@@ -146,11 +165,14 @@ fn chan_doan(stderr: &str) -> Option<(String, u32, u32, String)> {
 pub fn run(args: &[String]) -> ExitCode {
     let mut vm = false;
     let mut strict = false;
+    // **ST-101**: `--json` — đầu ra máy đọc; không cờ ⇒ TAP y hệt.
+    let mut json_ra = false;
     let mut duong: Option<PathBuf> = None;
     for a in args {
         match a.as_str() {
             "--vm" => vm = true,
             "--strict-caps" => strict = true,
+            "--json" => json_ra = true,
             "-h" | "--help" => return usage(),
             s if s.starts_with('-') => {
                 eprintln!("vis test: không hỗ trợ cờ `{s}`");
@@ -202,6 +224,7 @@ pub fn run(args: &[String]) -> ExitCode {
     tap.push_str("TAP version 13\n");
     tap.push_str(&format!("1..{}\n", ca.len()));
     let mut hong = 0usize;
+    let mut cases: Vec<CaJson> = Vec::new();
     for (i, (p, bai_test)) in ca.iter().enumerate() {
         let n = i + 1;
         let ten = p
@@ -217,9 +240,13 @@ pub fn run(args: &[String]) -> ExitCode {
             let tep = d.join("t.vis");
             if let Err(e) = std::fs::write(&tep, src) {
                 hong += 1;
-                tap.push_str(&format!(
-                    "not ok {n} - {ten_test}\n# không ghi được bản sao: {e}\n"
-                ));
+                let m = format!("không ghi được bản sao: {e}");
+                tap.push_str(&format!("not ok {n} - {ten_test}\n# {m}\n"));
+                cases.push(CaJson {
+                    ten: ten_test.clone(),
+                    ok: false,
+                    msg: mot_dong(&m),
+                });
                 continue;
             }
             let mut c =
@@ -243,12 +270,22 @@ pub fn run(args: &[String]) -> ExitCode {
             let _ = std::fs::remove_dir_all(&d);
             if code == 0 {
                 tap.push_str(&format!("ok {n} - {ten_test}\n"));
+                cases.push(CaJson {
+                    ten: ten_test.clone(),
+                    ok: true,
+                    msg: String::new(),
+                });
             } else {
                 hong += 1;
                 tap.push_str(&format!("not ok {n} - {ten_test}\n"));
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or(("VS?".into(), 1, 1, String::new()));
                 tap.push_str(&format!("# {ten_test}:{dong}:{cot}: {ma} {msg}\n"));
+                cases.push(CaJson {
+                    ten: ten_test.clone(),
+                    ok: false,
+                    msg: mot_dong(&format!("{ma} {msg}")),
+                });
             }
             continue;
         }
@@ -267,12 +304,22 @@ pub fn run(args: &[String]) -> ExitCode {
             let ok = code == muon && stderr.contains(mong);
             if ok {
                 tap.push_str(&format!("ok {n} - {ten}\n"));
+                cases.push(CaJson {
+                    ten: ten.clone(),
+                    ok: true,
+                    msg: String::new(),
+                });
             } else {
                 hong += 1;
                 tap.push_str(&format!("not ok {n} - {ten}\n"));
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or((mong.to_string(), 1, 1, String::new()));
                 tap.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
+                cases.push(CaJson {
+                    ten: ten.clone(),
+                    ok: false,
+                    msg: mot_dong(&format!("{ma} {msg}")),
+                });
             }
             continue;
         }
@@ -281,6 +328,11 @@ pub fn run(args: &[String]) -> ExitCode {
         let want = bo_spdx(&want);
         if code == 0 && out == want {
             tap.push_str(&format!("ok {n} - {ten}\n"));
+            cases.push(CaJson {
+                ten: ten.clone(),
+                ok: true,
+                msg: String::new(),
+            });
         } else {
             hong += 1;
             tap.push_str(&format!("not ok {n} - {ten}\n"));
@@ -288,12 +340,45 @@ pub fn run(args: &[String]) -> ExitCode {
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or(("VS?".into(), 1, 1, String::new()));
                 tap.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
+                cases.push(CaJson {
+                    ten: ten.clone(),
+                    ok: false,
+                    msg: mot_dong(&format!("{ma} {msg}")),
+                });
             } else {
                 tap.push_str(&format!("# {ten}:1:1: VS0000 stdout khác kỳ vọng\n"));
+                cases.push(CaJson {
+                    ten: ten.clone(),
+                    ok: false,
+                    msg: "VS0000 stdout khác kỳ vọng".to_string(),
+                });
             }
         }
     }
-    print!("{tap}");
+    if json_ra {
+        let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
+        let mut ds = String::new();
+        for (i, c) in cases.iter().enumerate() {
+            if i > 0 {
+                ds.push(',');
+            }
+            ds.push_str(&format!(
+                "{{\"name\":\"{}\",\"ok\":{},\"message\":\"{}\"}}",
+                esc(&c.ten),
+                c.ok,
+                esc(&c.msg)
+            ));
+        }
+        let body = format!(
+            "{{\"total\":{},\"ok\":{},\"failed\":{},\"cases\":[{ds}]}}\n",
+            ca.len(),
+            ca.len().saturating_sub(hong),
+            hong
+        );
+        print!("{body}");
+    } else {
+        print!("{tap}");
+    }
     if hong > 0 {
         ExitCode::from(1)
     } else {

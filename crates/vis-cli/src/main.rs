@@ -139,7 +139,7 @@ fn dong_chan_doan(code: &str, line: u32, col: u32, message: &str) -> String {
 }
 
 fn usage_check() -> ExitCode {
-    eprintln!("dùng: vis check [--syntax] [--no-extern] <tệp…>");
+    eprintln!("dùng: vis check [--syntax] [--no-extern] [--json] <tệp…>");
     ExitCode::from(2)
 }
 
@@ -211,6 +211,121 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         msg: d.message.clone(),
         phu,
     })
+}
+
+/// **ST-101**: như [`check_mode`] nhưng trả **mọi** chẩn đoán (giữ thứ tự phát hiện) — cho `--json`.
+/// `vis check` TAP vẫn chỉ báo chẩn đoán **đầu** như trước; JSON cần đủ.
+fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Vec<ChanDoanCheck> {
+    if let Err(e) = std::fs::read_to_string(path) {
+        return vec![ChanDoanCheck {
+            ma: "VS0201",
+            line: 1,
+            col: 1,
+            msg: format!("không đọc được: {e}"),
+            phu: String::new(),
+        }];
+    }
+    let loaded = match modules::load_full(path, cho_ngoai, kiem_kieu) {
+        Ok(l) => l,
+        Err(e) => {
+            return vec![ChanDoanCheck {
+                ma: "VS0201",
+                line: 1,
+                col: 1,
+                msg: e.to_string(),
+                phu: String::new(),
+            }]
+        }
+    };
+    let la_vish = path.ends_with(".vish");
+    let chinh = path.rsplit('/').next().unwrap_or(path);
+    let mut out = Vec::new();
+    for (rel, d) in &loaded.diags {
+        let ma = d.code.short;
+        let phu = if rel == chinh {
+            String::new()
+        } else {
+            rel.clone()
+        };
+        if !kiem_kieu {
+            let giu = la_vish
+                || !phu.is_empty()
+                || ma.starts_with("VS01")
+                || ma.starts_with("VS02")
+                || ma.starts_with("VS06")
+                || ma.starts_with("VS07");
+            if !giu {
+                continue;
+            }
+        }
+        out.push(ChanDoanCheck {
+            ma,
+            line: d.line,
+            col: d.col,
+            msg: d.message.clone(),
+            phu,
+        });
+    }
+    out
+}
+
+/// **ST-101**: escape chuỗi JSON (không dùng serde); `\n`/`\r`/`\t` thành escape, ký tự điều khiển
+/// khác thành `\u00XX`.
+fn json_esc(s: &str) -> String {
+    let mut o = String::with_capacity(s.len() + 8);
+    for c in s.chars() {
+        match c {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            '\n' => o.push_str("\\n"),
+            '\r' => o.push_str("\\r"),
+            '\t' => o.push_str("\\t"),
+            c if (c as u32) < 0x20 => o.push_str(&format!("\\u{:04x}", c as u32)),
+            c => o.push(c),
+        }
+    }
+    o
+}
+
+/// **ST-101**: `vis check --json` — **một** object nén trên stdout; `line`/`col` **1-based**; thứ tự
+/// `files` = thứ tự đối số, `diagnostics` = thứ tự phát hiện; exit y hệt không cờ.
+fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCode {
+    let mut files = String::new();
+    let mut ok = true;
+    for (i, path) in args.iter().enumerate() {
+        let d = check_all(path, cho_ngoai, kiem_kieu);
+        let sach = d.is_empty();
+        ok &= sach;
+        if i > 0 {
+            files.push(',');
+        }
+        files.push_str(&format!(
+            "{{\"file\":\"{}\",\"diagnostics\":[",
+            json_esc(path)
+        ));
+        for (j, x) in d.iter().enumerate() {
+            if j > 0 {
+                files.push(',');
+            }
+            files.push_str(&format!(
+                "{{\"code\":\"{}\",\"line\":{},\"col\":{},\"message\":\"{}\"}}",
+                json_esc(x.ma),
+                x.line,
+                x.col,
+                json_esc(&x.msg)
+            ));
+        }
+        files.push_str("]}");
+    }
+    let body = format!("{{\"ok\":{},\"files\":[{files}]}}\n", ok);
+    if !xuat_stdout(&body) {
+        return ExitCode::from(2);
+    }
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::from(1)
+    }
 }
 
 /// **ST-85**: đếm dòng lệch thụt lề của `.vish` theo chuẩn **4 × độ sâu khối**; `None` nếu tệp
@@ -470,10 +585,20 @@ fn run_check(args: &[String]) -> ExitCode {
     // ST-28: `--syntax` — chỉ cú pháp/hạ (bỏ `tyck`), dùng cho cổng "khối mã trong tài liệu
     // **parse** được" (QD §7.4).
     let kiem_kieu = !args.iter().any(|a| a == "--syntax");
+    // **ST-101**: `--json` — đầu ra máy đọc, một dòng, stderr rỗng.
+    let json_ra = args.iter().any(|a| a == "--json");
     let args: Vec<&String> = args
         .iter()
-        .filter(|a| a.as_str() != "--no-extern" && a.as_str() != "--syntax")
+        .filter(|a| {
+            a.as_str() != "--no-extern" && a.as_str() != "--syntax" && a.as_str() != "--json"
+        })
         .collect();
+    if json_ra {
+        if args.is_empty() {
+            return usage_check();
+        }
+        return run_check_json(&args, cho_ngoai, kiem_kieu);
+    }
     if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
         eprintln!("vis check: không hỗ trợ cờ `{bad}`");
         return usage_check();
