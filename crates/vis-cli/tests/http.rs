@@ -341,3 +341,189 @@ fn http_body_rong() {
     assert_eq!(out, "()\n", "body rỗng phải `Ok(\"\")`, stdout: {out:?}");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== ST-104: chunked + redirect + Content-Length không đóng + timeout đọc =====
+
+/// Server loopback trả lời **theo request path** (f nhận `(request, addr)`); mỗi kết nối đọc header
+/// rồi ghi phản hồi; đóng sau khi ghi. Đủ `so` kết nối.
+fn server_theo_duong(so: usize, f: impl Fn(&str, &str) -> Vec<u8> + Send + 'static) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+    let addr = l.local_addr().expect("addr").to_string();
+    let addr2 = addr.clone();
+    std::thread::spawn(move || {
+        for _ in 0..so {
+            let Ok((mut s, _)) = l.accept() else { break };
+            let _ = s.set_read_timeout(Some(Duration::from_millis(2_000)));
+            let mut req = Vec::new();
+            let mut buf = [0u8; 4096];
+            while req.len() < 65_536 && !req.windows(4).any(|w| w == b"\r\n\r\n") {
+                match s.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(n) => req.extend_from_slice(&buf[..n]),
+                    Err(_) => break,
+                }
+            }
+            let r = f(&String::from_utf8_lossy(&req), &addr2);
+            let _ = s.write_all(&r);
+            let _ = s.shutdown(Shutdown::Both);
+        }
+    });
+    addr
+}
+
+fn dap_chunked(chunks: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut r =
+        b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n".to_vec();
+    for (ext, body) in chunks {
+        r.extend_from_slice(format!("{:x}{ext}\r\n", body.len()).as_bytes());
+        r.extend_from_slice(body);
+        r.extend_from_slice(b"\r\n");
+    }
+    r.extend_from_slice(b"0\r\n\r\n");
+    r
+}
+
+fn dap_302(loc: &str) -> Vec<u8> {
+    format!("HTTP/1.1 302 Found\r\nLocation: {loc}\r\nContent-Length: 0\r\n\r\n").into_bytes()
+}
+
+/// (a) chunked 3 chunk `"a"`,`"bc"`,`"def"` ⇒ `abcdef`.
+#[test]
+fn http_chunked_ba_chunk() {
+    let _k = kho();
+    let d = tam("chunked");
+    let addr = server_theo_duong(2, |_, _| {
+        dap_chunked(&[("", b"a"), ("", b"bc"), ("", b"def")])
+    });
+    let (code, out, err) = ca(&d, "chunked", &chuong_trinh(&format!("http://{addr}/")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "abcdef\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (b) chunk mở rộng `<hex>;ext=1` ⇒ bỏ phần mở rộng, ghép đúng.
+#[test]
+fn http_chunked_co_mo_rong() {
+    let _k = kho();
+    let d = tam("chunk-ext");
+    let addr = server_theo_duong(2, |_, _| dap_chunked(&[(";ext=1", b"aa"), (";x=y", b"bb")]));
+    let (code, out, err) = ca(&d, "ext", &chuong_trinh(&format!("http://{addr}/")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "aabb\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (c) redirect **tuyệt đối** 1 lần `/a` → `http://addr/b` ⇒ body `abs`.
+#[test]
+fn http_redirect_tuyet_doi() {
+    let _k = kho();
+    let d = tam("redir-abs");
+    let addr = server_theo_duong(4, |req, addr| {
+        if req.starts_with("GET /a ") {
+            dap_302(&format!("http://{addr}/b"))
+        } else {
+            dap_ung("200 OK", b"abs", 3)
+        }
+    });
+    let (code, out, err) = ca(&d, "abs", &chuong_trinh(&format!("http://{addr}/a")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "abs\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (d) redirect **tương đối** 2 lần `/a` → `/b` → `/c` ⇒ `rel`.
+#[test]
+fn http_redirect_tuong_doi_hai_lan() {
+    let _k = kho();
+    let d = tam("redir-rel");
+    let addr = server_theo_duong(6, |req, _| {
+        if req.starts_with("GET /a ") {
+            dap_302("/b")
+        } else if req.starts_with("GET /b ") {
+            dap_302("/c")
+        } else {
+            dap_ung("200 OK", b"rel", 3)
+        }
+    });
+    let (code, out, err) = ca(&d, "rel", &chuong_trinh(&format!("http://{addr}/a")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "rel\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (e) redirect vòng lặp: theo tối đa 5, lần thứ 6 ⇒ lỗi “quá 5 lần chuyển hướng”.
+#[test]
+fn http_redirect_qua_5_loi() {
+    let _k = kho();
+    let d = tam("redir-loop");
+    let addr = server_theo_duong(12, |_, _| dap_302("/loop"));
+    let p = ghi(&d, "loop", &chuong_trinh(&format!("http://{addr}/loop")));
+    let (code, out, err) = chay(&p, false, false, false);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert!(out.contains("quá 5 lần chuyển hướng"), "stdout: {out:?}");
+    let vm = chay(&p, true, true, false);
+    assert_eq!((code, out, err), vm, "hai đường phải cùng byte");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (f) `Content-Length` nhưng server **không đóng** ⇒ đọc đúng N byte rồi trả (không treo).
+#[test]
+fn http_content_length_khong_dong_connection() {
+    let _k = kho();
+    let d = tam("cl-hold");
+    // Server ghi 3 byte, giữ kết nối 1,5 s (không shutdown); client phải trả ngay sau 3 byte.
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+    let addr = l.local_addr().expect("addr").to_string();
+    std::thread::spawn(move || {
+        for _ in 0..2 {
+            let Ok((mut s, _)) = l.accept() else { break };
+            std::thread::spawn(move || {
+                let _ = s.set_read_timeout(Some(Duration::from_millis(1_000)));
+                let mut buf = [0u8; 4096];
+                let _ = s.read(&mut buf);
+                let _ = s.write_all(&dap_ung("200 OK", b"abc", 3));
+                std::thread::sleep(Duration::from_millis(1_500));
+            });
+        }
+    });
+    let p = ghi(&d, "cl", &chuong_trinh(&format!("http://{addr}/")));
+    for vm in [false, true] {
+        let t0 = Instant::now();
+        let (code, out, err) = chay(&p, vm, true, false);
+        let dt = t0.elapsed();
+        assert_eq!(code, 0, "vm={vm}: stderr: {err}");
+        assert_eq!(out, "abc\n", "vm={vm}: {out:?}");
+        assert!(dt.as_millis() < 1_200, "vm={vm}: treo {dt:?} chờ đóng");
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (g) server nhận request nhưng **không trả lời** ⇒ lỗi rõ trong **< 3 s**, mỗi đường.
+#[test]
+fn http_server_im_lang_timeout_duoi_3s() {
+    let _k = kho();
+    let d = tam("silent");
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+    let addr = l.local_addr().expect("addr").to_string();
+    std::thread::spawn(move || {
+        for _ in 0..2 {
+            let Ok((mut s, _)) = l.accept() else { break };
+            let mut buf = [0u8; 4096];
+            let _ = s.read(&mut buf);
+            std::thread::sleep(Duration::from_millis(3_000));
+        }
+    });
+    let p = ghi(&d, "silent", &chuong_trinh(&format!("http://{addr}/")));
+    for vm in [false, true] {
+        let t0 = Instant::now();
+        let (code, out, _err) = chay(&p, vm, true, false);
+        let dt = t0.elapsed();
+        assert_eq!(code, 0, "vm={vm}");
+        assert!(
+            out.contains("quá thời gian"),
+            "vm={vm}: phải báo timeout, stdout {out:?}"
+        );
+        assert!(dt.as_millis() < 3_000, "vm={vm}: treo {dt:?} (≥ 3 s)");
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}

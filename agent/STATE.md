@@ -6,16 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-103 — báo cáo R17** (chốt ST-100/101/101b/102) — xong, `report-check --all` PASS,
-                cổng PASS; **chưa commit**.
-Bước          : 3/3 (JSON 117 hàng QUEUE@7b3aca76 + MD §1..§8/§19 + đo lại + gate).
+Task          : **ST-104 — HTTP client: chunked + redirect + Content-Length/timeout** — xong, đã đo +
+                cổng + differential; **chưa commit**.
+Bước          : 3/3 (đỏ 6/7 → ghép chunked/redirect/CL → 16 ca http → 1040 test → diff 100k → cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:57:43Z** (report-check PASS: **17
-                báo cáo, 117 hàng QUEUE**); **1033** test / sem **447/22** / `vis test` **447 ok**
-                (`--vm` **447 ok + 0 SKIP**) / parity **398/398 + 49** / host **54/54 ×2** / soak
-                **8/8** (818 s, ST-98) / differential **100.000 / 0 lệch** (171,4 s) / cache **520×4 /
-                0 lệch** / fuzz parser **2.247.596 ca / 0 vi phạm** / targets **18/18 check** / fmt **497**
-Việc dở       : commit `[ST-103]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T23:52:45Z**; **1040** test / sem
+                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (157,5 s) / HTTP **16 ca**
+Việc dở       : commit `[ST-104]` + push (đã được uỷ quyền)
+
+## ST-104 — HTTP client thật hơn, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | Client cũ: chunked ⇒ body rỗng; redirect ⇒ `HTTP 302`; server im lặng ⇒ chờ tới khi server đóng, **3,3 s** rồi “header đóng sớm” (không phải timeout đọc). **6/7 ca đỏ** (CL không đóng đã đúng từ trước). Log `JOURNAL/st104-red.log` sha256 `1c0ea956…`. |
+| 1 | **Chunked** | `Transfer-Encoding: chunked` ⇒ ghép `<hex>[;ext]` (bỏ ext), dừng chunk `0`; **không** đọc `Content-Length`; ca 3 chunk `"a"`,`"bc"`,`"def"` ⇒ **`abcdef`**; ext ⇒ **`aabb`**. |
+| 2 | **Redirect** | Theo **tối đa 5**; `Location` tuyệt đối + tương đối (`/x`, `x`); giữ **GET**; thiếu `Location` ⇒ trả mã gốc; lần thứ 6 ⇒ **“quá 5 lần chuyển hướng HTTP (tối đa 5)”**; vẫn chỉ loopback (`tach_url`). Mẫu: `/a`→abs `abs`, `/a`→`/b`→`/c` `rel`. |
+| 3 | **CL/EOF + timeout** | `Content-Length` ⇒ đọc **đúng N** rồi trả (không chờ đóng); `Connection: close`/không CL ⇒ đọc tới EOF; mỗi lần đọc cap **2000 ms** (và `get_timeout` nhỏ hơn) ⇒ server im lặng lỗi **2,01 s** mỗi đường, `<3 s`, exit 0 (lỗi HTTP là dữ liệu `Err`). |
+| 4 | **7 ca** | `http.rs`: chunked 3 chunk; chunk ext; redirect tuyệt đối; redirect tương đối 2 lần; vượt 5 lỗi; CL không đóng connection; server im lặng timeout <3 s. Mỗi ca chạy **interp + `--vm`**, so byte. |
+| 5 | **Đo** | **1040** test = 1033 + **7** (21+96+27+154+26+62+9+**645**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=157.5 toc_do=635/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**; `net.rs` **333** dòng. |
+| 6 | **Nợ** | Chưa TLS/HTTP2/keep-alive; redirect chỉ GET, không giữ cookie/auth; timeout **mỗi lần đọc** 2 s (tổng request có thể lâu hơn với `get_timeout` lớn); chunk trailer bị bỏ qua; `Location` tương đối không resolve `..`/query-only đầy đủ; cap body 8 MiB; server test loopback. |
 
 ## ST-103 — báo cáo R17, 2026-11-14
 
