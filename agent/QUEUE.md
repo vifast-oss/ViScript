@@ -196,7 +196,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-97 | **`--grant` cho `cap[Proc]`** (allowlist lệnh) — đóng nợ "cap[Proc] không allowlist" | ST-96 | 2,5 h | **DONE** | ≥5 ca; hai đường cùng byte; mặc định không đổi |
 | ST-98 | **soak 30 phút**: cổng ×2 + diff 100k ×2 + host ×2 + cache ×2 tuần tự, ghi log, phát hiện flake | ST-97 | 1,5 h | **DONE** | ≥8 lần chạy; mọi lần xanh hoặc ghi `T-INFRA` có log |
 | ST-99 | **R16 + ROADMAP bàn giao** (`agent/ROADMAP.md`: 8 hạng mục VS2 × mức × điều kiện để đóng + cách tiếp tục) | ST-98 | 2 h | **DONE** | MD+JSON; `report-check` PASS; ROADMAP ≤120 dòng |
-| ST-100 | **LSP** — hover cho **trường** bản ghi + `didClose` dọn cache + cache nạp module giữa `didChange` | ST-99 | 2,5 h | **READY** | ≥5 ca; phân tích < 2 ms sau lần đầu; không phá 39 ca LSP |
+| ST-100 | **LSP** — hover cho **trường** bản ghi + `didClose` dọn cache + cache nạp module giữa `didChange` | ST-99 | 2,5 h | **DONE** | ≥5 ca; phân tích < 2 ms sau lần đầu; không phá 39 ca LSP |
 | ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **READY** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **READY** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
@@ -1454,3 +1454,14 @@ APPROVED 2026-11-14 Agent 0
 > Nợ: soak **818 s < 30 phút** (đúng 8 vòng theo đề — muốn 30 phút phải thêm vòng/seed, không tự nới); script giả định cargo ở
 > `~/.cargo/bin`; test chỉ kiểm tĩnh; chưa soak nền khác.
 > **ST-99 mở** (R16 + ROADMAP bàn giao).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-100 DONE — LSP hoàn thiện nhỏ (đo được).** Commit `45334bfc` (**Agent 2 tự commit, đã push**). `hover` trường: `p.x` ⇒ `**x**: int`
+> + "trường của `P`" (dùng **cùng** bảng `thanh_vien::gom`); `didClose` xoá cache **cả hai** (item module + văn bản tệp phụ), URI khác
+> vẫn đúng; cache **item module phụ** theo `use` + `mtime/size`, **không** cache tệp chính ⇒ lần 2 **0,466 ms** (từ **4,862 ms**,
+> đo in-process min 3 vòng). **5 ca** (4 tích hợp + 1 unit perf), 43/43 LSP xanh, `src/lsp/*` ≤300. Đo: **1015 test** · sem **447/22**
+> · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (152,2 s).
+> Nợ: cache **global/thread-local**; key `use` dùng **văn bản** (tệp dùng `pkg` **luôn** nạp lại); `didClose` xoá **toàn bộ** cache
+> (an toàn, hơi rộng); hover khai báo chỉ khi tên **duy nhất**; chưa `f().x`; chưa `didSave`.
+> **ST-101 mở** (`--json` cho `check`/`test`).
