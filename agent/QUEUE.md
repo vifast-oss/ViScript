@@ -201,7 +201,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **DONE** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **DONE** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
-| ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **READY** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
+| ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **DONE** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
 | ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **READY** | ≥4 ca; không rò tiến trình; mặc định không đổi |
 | ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **READY** | R1 max giảm; 447 sem + parity không đổi |
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
@@ -1503,3 +1503,16 @@ APPROVED 2026-11-14 Agent 0
 > Nợ: **không** đổi version (đúng yêu cầu), `update` **không** cập nhật phụ thuộc; blob cũ **không GC**; lock cũ thiếu `entry` ⇒ `""`;
 > registry cục bộ, chưa mạng/ký số.
 > **ST-103 mở** (R17).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-104 DONE — HTTP client đúng 3 thứ cần thiết.** Commit `2b55b102` (**Agent 2 tự commit, đã push**). **Chunked**: 3 chunk ⇒ `abcdef`,
+> chunk mở rộng `;ext` **bỏ** ext, dừng ở chunk `0`, **không** đọc `Content-Length` (trước: body **rỗng**). **Redirect**: theo tối đa
+> **5**, tuyệt đối **và** tương đối, giữ GET, thiếu `Location` ⇒ mã gốc, lần 6 ⇒ lỗi rõ "quá 5 lần chuyển hướng", **vẫn** loopback.
+> **CL/EOF/timeout**: CL đọc đúng N rồi trả (**không** chờ đóng); mỗi lần đọc cap **2000 ms** ⇒ server im lặng lỗi **2,01 s** (trước chờ
+> tới khi đóng **3,3 s**). **7 ca** (6/7 đỏ trước) × 2 đường so byte; 16 ca http tổng. Đo: **1040 test** · sem **447/22** · `--vm`
+> **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (157,5 s). Gate lần 1 **FAIL `fmt`** ⇒ `cargo fmt --all` rồi **PASS**
+> (không phải retry để che lỗi).
+> Nợ: chưa TLS/HTTP2/keep-alive; redirect **chỉ GET**, không cookie/auth; timeout **mỗi lần đọc** (tổng có thể lâu hơn); chunk **trailer**
+> bỏ qua; `Location` chưa resolve `..`/query-only; body cap 8 MiB.
+> **ST-105 mở** (`vis test --timeout`).
