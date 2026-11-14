@@ -6,15 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-102 — `vis pkg update` + `pkg list --json`** — xong, đã đo + cổng +
-                differential; **chưa commit**.
-Bước          : 3/3 (đỏ 5/6 → update idempotent/registry + list JSON → 6 ca → 1033 test → diff 100k →
-                cổng).
+Task          : **ST-103 — báo cáo R17** (chốt ST-100/101/101b/102) — xong, `report-check --all` PASS,
+                cổng PASS; **chưa commit**.
+Bước          : 3/3 (JSON 117 hàng QUEUE@7b3aca76 + MD §1..§8/§19 + đo lại + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:47:43Z**; **1033** test / sem
-                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,8 s) / pkg **24 ca**
-Việc dở       : commit `[ST-102]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T22:57:43Z** (report-check PASS: **17
+                báo cáo, 117 hàng QUEUE**); **1033** test / sem **447/22** / `vis test` **447 ok**
+                (`--vm` **447 ok + 0 SKIP**) / parity **398/398 + 49** / host **54/54 ×2** / soak
+                **8/8** (818 s, ST-98) / differential **100.000 / 0 lệch** (171,4 s) / cache **520×4 /
+                0 lệch** / fuzz parser **2.247.596 ca / 0 vi phạm** / targets **18/18 check** / fmt **497**
+Việc dở       : commit `[ST-103]` + push (đã được uỷ quyền)
+
+## ST-103 — báo cáo R17, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **JSON** | `R17-viscript.json` + `.license`: `round=17`, `head=7b3aca76`, **117 task** (116 DONE + ST-103 READY), `blocked=[]`, đúng **11 khoá**; `report-check --all` **PASS (17 báo cáo, 117 hàng)**. |
+| 1 | **MD** | `R17-viscript.md` **134 dòng**: tóm tắt 5 dòng; bảng ST-100/101/101b/102/103; §3 đo lại + **§3b bằng chứng mới** (JSON mẫu + escape roundtrip, hover `p.x`, cache **0,466 ms**, pkg update/lock); §4 §19 **8 hạng mục không đổi mức** + bằng chứng LSP/JSON/pkg; §5 R16 **77** + mới **78..82** = **82 mục**; §6 **VD-113**; §7 máy kiểm; §8 kết luận. |
+| 2 | **Đo lại** | **1033** test = 21+96+27+154+26+62+9+**638**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; diag **364/49/34**; host **54/54 ×2, 120 lần, VM 54/54**; diff **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=171.4 toc_do=583/s seed=20261115`**; cache **520×4, 0 lệch, 24,48 s**; fuzz parser **2.247.596 ca / 51.138.137 token / 0 vi phạm**; soak **8/8 818 s** (ST-98); targets **18/18 check**; fmt **497 (429+68)** + 8 cảnh báo; `VBC1` **53**; **32 mã**; allowlist **6**. |
+| 3 | **Cổng** | **PASS** `2026-11-14T22:57:43Z`; log `JOURNAL/st103-gate-fast.log`; 3 dòng cuối: `test result: ok. 0 passed; …` / `--- L0 test: OK` / `vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)`; report-check PASS trong cổng. |
+| 4 | **Nợ** | **82 mục** (R16 77 + mới 78..82): JSON thiếu severity; chẩn đoán tệp phụ dưới file chính; message cắt 200 ký tự; cache LSP global/pkg luôn nạp lại; pkg update không phụ thuộc/blob GC/registry cục bộ. |
 
 ## ST-102 — `pkg update` + `list --json`, 2026-11-14
 
