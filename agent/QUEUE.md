@@ -199,7 +199,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-100 | **LSP** — hover cho **trường** bản ghi + `didClose` dọn cache + cache nạp module giữa `didChange` | ST-99 | 2,5 h | **DONE** | ≥5 ca; phân tích < 2 ms sau lần đầu; không phá 39 ca LSP |
 | ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **DONE** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
 | ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **DONE** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
-| ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **READY** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
+| ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **DONE** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
@@ -1487,3 +1487,15 @@ APPROVED 2026-11-14 Agent 0
 > Đo: **1027 test** · sem **447/22** · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (158,9 s).
 > Nợ: integration dùng **python3**; emoji không làm tên ca CLI (lexer); chưa fuzz chuỗi JSON; chẩn đoán tệp phụ vẫn dưới `file` tệp chính.
 > **ST-102 mở** (`pkg update` + `list --json`).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-102 DONE — `pkg update` + `list --json`.** Commit `c20c90cf` (**Agent 2 tự commit, đã push**). `pkg update [<tên>] [--registry <dir>]`
+> **không mạng, không resolver**: nguồn cùng version **không đổi** ⇒ in `không đổi` + lock **byte-identical**; nguồn **đổi** ⇒ ghi blob mới,
+> dựng lại `.vis/pkg`, cập nhật `entry`/`sha256`/`files`, in `đã cập nhật`, lần 2 **idempotent**; `update <tên>` chỉ đụng gói đó;
+> tên lạ ⇒ exit **2**; **không** sửa `vis.toml`, **không** xoá blob còn dùng. `pkg list --json` = `{packages[{name,version,entry,sha256}]}`
+> sắp **tên byte-order**, dùng `json_esc`; **không cờ** giữ nguyên. **6 ca** (5/6 đỏ trước). Đo: **1033 test** · sem **447/22** ·
+> `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (158,8 s).
+> Nợ: **không** đổi version (đúng yêu cầu), `update` **không** cập nhật phụ thuộc; blob cũ **không GC**; lock cũ thiếu `entry` ⇒ `""`;
+> registry cục bộ, chưa mạng/ký số.
+> **ST-103 mở** (R17).
