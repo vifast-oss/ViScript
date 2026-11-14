@@ -200,7 +200,11 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-101 | **`vis check --json`** + `vis test --json` (đầu ra máy đọc) | ST-100 | 2,5 h | **DONE** | ≥6 ca; JSON ổn định (khoá cố định); TAP giữ nguyên khi không cờ |
 | ST-101b | **lỗ hổng JSON**: chuỗi chưa được **escape** (`"` `\` newline, ký tự < 0x20) ⇒ JSON **không hợp lệ** khi message chứa chúng | ST-101 | 1,5 h | **DONE** | ≥4 ca; parse lại bằng `json.decode` của chính ViScript; không đổi định dạng |
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **DONE** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
-| ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
+| ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
+| ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **READY** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
+| ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **READY** | ≥4 ca; không rò tiến trình; mặc định không đổi |
+| ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **READY** | R1 max giảm; 447 sem + parity không đổi |
+| ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |

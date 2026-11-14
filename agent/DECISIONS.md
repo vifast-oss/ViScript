@@ -867,3 +867,10 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   in JSON ra **stdout**, log khác ra stderr; **không** cờ ⇒ TAP/định dạng hiện tại **không đổi**. (2) LSP: **hover trường** (record field),
   `didClose` **dọn** cache, **cache** kết quả nạp module giữa `didChange` (đo < 2 ms sau lần đầu, có ca). (3) `vis pkg update` **không mạng**:
   cài lại từ registry **cục bộ** nếu nguồn không đổi ⇒ **sha không đổi**; `pkg list --json`. (4) Vẫn **không** nới ngưỡng; **không** thêm crate.
+
+- **VD-114** **Vòng 18 — HTTP thật hơn + timeout ca test + R1 headroom (ST-104..ST-107)**: (1) HTTP client (loopback) phải xử lý
+  **`Transfer-Encoding: chunked`** (ghép thân đúng, kể cả chunk mở rộng `;ext`), **redirect 3xx** (tối đa **5** lần, giữ phương thức GET,
+  `Location` tương đối **và** tuyệt đối, vượt 5 ⇒ lỗi rõ), **`Connection: close`** (đọc tới EOF) — heuristic **không** treo, có timeout.
+  (2) `vis test --timeout <ms>` (mặc định **không** đổi): ca vượt hạn ⇒ **`not ok`** với thông điệp "quá hạn", **giết** tiến trình con,
+  không rò; áp cho cả hai đường. (3) Tách `lower/cmd.rs` để **R1 max giảm** (mục tiêu ≤1.200 dòng) **không** đổi hành vi (447 sem +
+  parity **398+49** bất biến). (4) Không nới ngưỡng; không thêm crate.
