@@ -6,17 +6,27 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-113 — soak cuối 10 vòng + R20 + ROADMAP** — xong, `report-check --all` PASS, cổng
-                PASS; **chưa commit**.
-Bước          : 3/3 (soak 10/10 1255 s → ROADMAP 79 dòng / R20 142 dòng → gate).
+Task          : **ST-114a — thêm `Span.file` + luồn file-id lex→parse→lower** — xong, hành vi y hệt;
+                cổng PASS; **chưa commit**.
+Bước          : 3/3 (Span/file-id 0/1 quan sát → 1056 test y hệt/checksum trùng → gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T03:16:16Z** (report-check PASS: **20
-                báo cáo, 127 hàng QUEUE**); **1056** test / sem **447/22** (interp **27**) / `vis test`
-                **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** /
-                soak **10/10 = 1255 s** / differential **100.000 / 0 lệch** (3 lần) / cache **520×4 / 0
-                lệch** / fuzz **2.540.549 ca / 0 vi phạm** / targets **18/18 check** / **FUNCS 52** / R1
-                max **1060**
-Việc dở       : commit `[ST-113]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T03:58:18Z**; **1056** test / sem
+                **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
+                **398/398 + 49** / R1 max **1060**; checksum test **`6c1ea8bf…` trước = sau**; diff sha
+                **`62bdd699…` trùng**
+Việc dở       : commit `[ST-114a]` + push (đã được uỷ quyền)
+
+## ST-114a — `Span.file` + luồn file-id, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Span** | `Span { start, end, pub file: u16 }`, `new(start,end)` **giữ file 0**, thêm `new_file(file,start,end)`/`with_file`; **0** lời gọi `Span::new` cũ bị sửa; 4 literal nội bộ `lower/expr.rs` đổi sang `new_file(self.file, …)`. |
+| 1 | **Lex** | `lex_file(src,mode,file)` đặt `file` cho **mọi token + chẩn đoán**; `lex` cũ = `lex_file(...,0)` ⇒ hành vi một tệp không đổi. |
+| 2 | **Parse** | `parse_file`/`parse_voi_file` + `dat_file_cst`: gắn `file` vào **mọi node + token** CST và chẩn đoán; `parse`/`parse_voi` cũ vẫn file 0. |
+| 3 | **Lower** | `LowerOptions.file` (mặc định 0), `Lowerer.file`; span lấy từ CST đã mang file; `lower_into` giữ nguyên. |
+| 4 | **Modules** | `Nap.file_id` cấp theo **thứ tự nạp** (chính **0**, module theo `use`); `parse_file`/`lex_file`/`LowerOptions.file` dùng **cùng** chỉ số; `item_rel` giữ nguyên. **Chưa** đổi map chẩn đoán (ST-114b). |
+| 5 | **Bằng chứng** | Checksum **1056** test `6c1ea8bf…` **trước = sau**; diff bất biến sha **`62bdd699…` trùng**; sem **447/22**; `vis test`/`--vm` 447/0 SKIP; parity **398+49**; host **54/54**; R1 max **1060** (`cmd.rs`; `lower.rs` 996, `parse/mod.rs` 1452). Quan sát debug: a let `file=0`, b return `file=1` (đã gỡ debug). |
+| 6 | **Nợ** | Map chẩn đoán vẫn như cũ ⇒ chẩn đoán top-level vẫn lệch tệp (ST-114b mới dùng `file`); `Span::new` synthesized trong lower mặc định 0 (những chỗ không copy CST); chưa test trực tiếp `Span.file`; `VBC1`/bytecode `Span` **không đổi**. |
 
 ## ST-113 — soak 10 vòng + R20 + ROADMAP, 2026-11-15
 

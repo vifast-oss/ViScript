@@ -6,11 +6,28 @@
 pub struct Span {
     pub start: usize,
     pub end: usize,
+    /// **ST-114a**: chỉ số tệp trong đơn vị nạp (0 = tệp chính / dùng một tệp). Mặc định 0.
+    pub file: u16,
 }
 
 impl Span {
     pub const fn new(start: usize, end: usize) -> Self {
-        Self { start, end }
+        Self {
+            start,
+            end,
+            file: 0,
+        }
+    }
+
+    /// **ST-114a**: span thuộc tệp `file` — dùng ở tầng nạp đa tệp.
+    pub const fn new_file(file: u16, start: usize, end: usize) -> Self {
+        Self { start, end, file }
+    }
+
+    /// Gắn/đổi chỉ số tệp, giữ `start/end`.
+    pub const fn with_file(mut self, file: u16) -> Self {
+        self.file = file;
+        self
     }
 
     pub const fn len(&self) -> usize {

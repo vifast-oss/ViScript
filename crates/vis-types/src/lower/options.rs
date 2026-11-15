@@ -33,6 +33,9 @@ pub struct LowerOptions {
     /// Cho phép **chương trình ngoài** (ST-27). `false` (vd `vis check --no-extern`) ⇒ lệnh lạ báo
     /// `VS0601` như trước.
     pub cho_ngoai: bool,
+    /// **ST-114a**: chỉ số tệp trong đơn vị nạp (0 = một tệp / tệp chính). Mọi span do tệp này sinh
+    /// mang `Span.file = file` (xem `lex_file`/`parse_file`).
+    pub file: u16,
 }
 
 impl Default for LowerOptions {
@@ -45,6 +48,7 @@ impl Default for LowerOptions {
             trait_ngoai: Vec::new(),
             std_mods: Vec::new(),
             cho_ngoai: true,
+            file: 0,
         }
     }
 }

@@ -253,6 +253,8 @@ pub fn lower_into(
 type EnumTmpl = (String, Vec<String>, Vec<(String, Vec<Type>)>);
 
 struct Lowerer<'a> {
+    /// **ST-114a**: chỉ số tệp đang hạ (0 = một tệp).
+    file: u16,
     cst: &'a Cst,
     text: &'a str,
     opts: LowerOptions,
@@ -337,6 +339,7 @@ impl<'a> Lowerer<'a> {
             }
         }
         Self {
+            file: opts.file,
             generic_scope: Vec::new(),
             impls: Vec::new(),
             traits: Vec::new(),

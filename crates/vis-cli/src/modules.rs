@@ -331,6 +331,8 @@ struct Nap {
     cho_ngoai: bool,
     /// **ST-80**: văn bản tệp chính từ buffer LSP (`None` ⇒ đọc đĩa).
     main_text: Option<String>,
+    /// **ST-114a**: chỉ số tệp kế tiếp trong đơn vị nạp (chính = 0, module theo `use`).
+    file_id: u16,
 }
 
 impl Nap {
@@ -453,8 +455,11 @@ impl Nap {
         } else {
             self.mode
         };
-        let parsed = vis_syntax::parse(&text, mode);
-        let lexed = vis_syntax::lex(&text, mode);
+        // **ST-114a**: cấp chỉ số tệp theo **thứ tự nạp** (chính 0, module theo `use`).
+        let file_id = self.file_id;
+        self.file_id += 1;
+        let parsed = vis_syntax::parse_file(&text, mode, file_id);
+        let lexed = vis_syntax::lex_file(&text, mode, file_id);
         if !parsed.diagnostics.is_empty() {
             for d in &parsed.diagnostics {
                 self.diags.push((rel.clone(), d.clone()));
@@ -607,6 +612,7 @@ impl Nap {
             trait_ngoai: imported_traits,
             std_mods,
             cho_ngoai: self.cho_ngoai,
+            file: file_id,
         };
         let out = lower_into(
             &mut self.symbols,
@@ -772,6 +778,7 @@ fn load_full_voi(
         pub_traits: BTreeMap::new(),
         cho_ngoai,
         main_text: text_chinh.map(str::to_string),
+        file_id: 0,
     };
     n.tham(&main_path);
     let rel_chinh = rel_cua(&main_dir, &n.main);

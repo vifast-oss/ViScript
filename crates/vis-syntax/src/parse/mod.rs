@@ -71,6 +71,46 @@ pub fn parse_voi(text: &str, tokens: Vec<Token>, mode: Mode) -> ParseOutput {
     }
 }
 
+/// **ST-114a**: gắn `file` vào **mọi** span của cây CST (node + token) — đệ quy.
+pub fn dat_file_cst(cst: &mut Cst, file: u16) {
+    fn node(n: &mut Node, file: u16) {
+        n.span.file = file;
+        for e in &mut n.elems {
+            if let Elem::Node(c) = e {
+                node(c, file);
+            }
+        }
+    }
+    node(&mut cst.root, file);
+    for t in &mut cst.tokens {
+        t.span.file = file;
+    }
+}
+
+/// **ST-114a**: như [`parse_voi`] nhưng mọi span (CST + chẩn đoán) mang `file`.
+pub fn parse_voi_file(text: &str, tokens: Vec<Token>, mode: Mode, file: u16) -> ParseOutput {
+    let mut out = parse_voi(text, tokens, mode);
+    dat_file_cst(&mut out.cst, file);
+    for d in &mut out.diagnostics {
+        d.span.file = file;
+    }
+    out
+}
+
+/// **ST-114a**: parse tệp `file` (lex bằng [`lex::lex_file`], giữ nguyên hành vi `parse` cũ với file 0).
+pub fn parse_file(src: &str, mode: Mode, file: u16) -> ParseOutput {
+    let LexOutput {
+        text,
+        tokens,
+        diagnostics,
+    } = lex::lex_file(src, mode, file);
+    let mut out = parse_voi_file(&text, tokens, mode, file);
+    let mut ds = diagnostics;
+    ds.extend(out.diagnostics);
+    out.diagnostics = ds;
+    out
+}
+
 /// Parse một văn bản nguồn theo chế độ.
 pub fn parse(src: &str, mode: Mode) -> ParseOutput {
     let LexOutput {

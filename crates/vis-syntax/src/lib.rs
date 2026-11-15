@@ -34,9 +34,9 @@ pub use cst::{Cst, Elem, Node, NodeKind};
 pub use lex::lit;
 pub use lex::token::{is_keyword, Kind, Span, Token, KEYWORDS, PUNCTS};
 pub use lex::verify;
-pub use lex::{lex, Diagnostic, LexOutput, Mode};
+pub use lex::{lex, lex_file, Diagnostic, LexOutput, Mode};
 pub use parse::cmd::{
     dinh_danh_chua_bind, let_la_khai, let_la_khai_voi, ten_khai_bao, ten_mac_dinh, tham_so_cua,
     than_khai_lenh, than_khai_lenh_voi,
 };
-pub use parse::{parse, parse_voi, ParseOutput};
+pub use parse::{dat_file_cst, parse, parse_file, parse_voi, parse_voi_file, ParseOutput};

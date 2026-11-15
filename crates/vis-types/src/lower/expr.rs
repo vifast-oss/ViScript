@@ -458,10 +458,11 @@ impl<'a> Lowerer<'a> {
                         self.diag(
                             &vis_diag::SYNTAX_CODES[0],
                             "nội suy `{` không có `}` đóng (§A.6)",
-                            Span {
-                                start: span.start + ngoac + i,
-                                end: span.start + ngoac + trong.len(),
-                            },
+                            Span::new_file(
+                                self.file,
+                                span.start + ngoac + i,
+                                span.start + ngoac + trong.len(),
+                            ),
                         );
                         hong = true;
                         break;
@@ -515,10 +516,7 @@ impl<'a> Lowerer<'a> {
                 self.diag(
                     d.code,
                     d.message.clone(),
-                    Span {
-                        start: off,
-                        end: off + manh.len(),
-                    },
+                    Span::new_file(self.file, off, off + manh.len()),
                 );
             }
             return None;
@@ -539,19 +537,13 @@ impl<'a> Lowerer<'a> {
                 _ => self.diag(
                     &vis_diag::SYNTAX_CODES[0],
                     "nội suy `{…}` chỉ nhận **một biểu thức**",
-                    Span {
-                        start: off,
-                        end: off + manh.len(),
-                    },
+                    Span::new_file(self.file, off, off + manh.len()),
                 ),
             },
             _ => self.diag(
                 &vis_diag::SYNTAX_CODES[0],
                 "nội suy `{…}` chỉ nhận **một biểu thức**",
-                Span {
-                    start: off,
-                    end: off + manh.len(),
-                },
+                Span::new_file(self.file, off, off + manh.len()),
             ),
         }
         self.cst = cu_cst;

@@ -79,12 +79,23 @@ pub fn normalize_source(src: &str) -> String {
 
 /// Lex một văn bản nguồn theo chế độ (hàm thuần, SPEC-lex §0.2).
 pub fn lex(src: &str, mode: Mode) -> LexOutput {
+    lex_file(src, mode, 0)
+}
+
+/// **ST-114a**: lex cho tệp `file` — token/chẩn đoán mang `Span.file = file`; `lex` cũ giữ file 0.
+pub fn lex_file(src: &str, mode: Mode, file: u16) -> LexOutput {
     let text = normalize_source(src);
-    let (tokens, diagnostics) = {
+    let (mut tokens, mut diagnostics) = {
         let mut lx = Lexer::new(&text, mode);
         lx.run();
         (lx.tokens, lx.diags)
     };
+    for t in &mut tokens {
+        t.span.file = file;
+    }
+    for d in &mut diagnostics {
+        d.span.file = file;
+    }
     LexOutput {
         text,
         tokens,
