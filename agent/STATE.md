@@ -6,14 +6,24 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-116 — tách `parse/mod.rs` 1452 → 1069** (khai báo A.1 sang
-                `parse/khai_bao.rs` 391), thuần refactor; cổng PASS; **chưa commit**.
-Bước          : 3/3 (tách → checksum/sha trùng, 1062 test → gate).
+Task          : **ST-117 — LSP chẩn đoán đa tệp** — hành vi **đã đúng từ ST-114b**, chỉ thêm **4 ca**;
+                cổng PASS; **chưa commit**.
+Bước          : 3/3 (chứng minh 4/4 kịch bản đúng trước → 4 ca pass → 1066 test/gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:22:15Z**; **1062** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:32:10Z**; **1066** test / sem
                 **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
                 **398/398 + 49** / diff **100k / 0 lệch** / R1 max **1254** (`main.rs`)
-Việc dở       : commit `[ST-116]` + push (đã được uỷ quyền)
+Việc dở       : commit `[ST-117]` + push (đã được uỷ quyền)
+
+## ST-117 — LSP chẩn đoán đa tệp, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Trước** | `publishDiagnostics` đã đúng từ ST-114b: mở a (cả hai lỗi) chỉ a `1:13`; mở b chỉ b `3:4`; a sạch `[]` + b lỗi; didChange a `1:13`; log `st117-lsp-truoc.log`, `st117-truoc-sau.log`. |
+| 1 | **Quyết định** | **KHÔNG sửa** mã LSP — hành vi đúng, không đổi kiến trúc/`positionEncoding`/framing/snapshot; `src/lsp/*` tệp lớn nhất 293 ≤300. |
+| 2 | **4 ca** | `tests/lsp_da_tep.rs`: (a) mở a chỉ lỗi a; (b) mở b đúng b; (c) a sạch rỗng + b lỗi; (d) didChange a vẫn đúng a, không b. Tất cả pass. |
+| 3 | **Đo** | **1066** test = 1062 + 4; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398+49**; host **54/54**; diff **161,3 s, 0 lệch**; fmt/clippy sạch; R1 max **1254**. |
+| 4 | **Nợ** | Không thêm nợ; LSP **vẫn chưa** publish chẩn đoán **tệp phụ** cho tài liệu chính (chỉ tài liệu đang mở) — nợ 98 R21; không đổi `VBC1`/`all_codes`. |
 
 ## ST-116 — tách parse/mod.rs, 2026-11-15
 
