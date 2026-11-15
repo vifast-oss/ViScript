@@ -6,14 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-104 — HTTP client: chunked + redirect + Content-Length/timeout** — xong, đã đo +
-                cổng + differential; **chưa commit**.
-Bước          : 3/3 (đỏ 6/7 → ghép chunked/redirect/CL → 16 ca http → 1040 test → diff 100k → cổng).
+Task          : **ST-105 — `vis test --timeout <ms>`** — xong, đã đo + cổng + differential;
+                **chưa commit**.
+Bước          : 3/3 (đỏ 4/5 → poll `try_wait` 10 ms + kill + `not ok` → 5 ca → 1045 test → diff 100k →
+                cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-14T23:52:45Z**; **1040** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:05:39Z**; **1045** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (157,5 s) / HTTP **16 ca**
-Việc dở       : commit `[ST-104]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (154,0 s) / timeout **5 ca**
+Việc dở       : commit `[ST-105]` + push (đã được uỷ quyền)
+
+## ST-105 — `vis test --timeout`, 2026-11-14
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | `--timeout` là cờ lạ ⇒ exit **2** ngay; 4/5 ca đỏ (ca sai số vẫn exit2). Log `JOURNAL/st105-red.log` sha256 `956a47d2…`. |
+| 1 | **Cờ** | `vis test --timeout <ms>` (số nguyên **≥50**); thiếu/sai/0 ⇒ exit **2** + stderr nêu `--timeout`; **mặc định không giới hạn** (447 ca/host/soak giữ nguyên). |
+| 2 | **Ngữ nghĩa** | Chỉ nhánh **`test fn`** (không áp fixture `.out/.err`). Mỗi ca là tiến trình con `vis run`; poll `try_wait` mỗi **10 ms**; quá hạn ⇒ `kill` + `wait_with_output` (không rò), TAP `not ok N - <tên>` + dòng `# <tên>: quá hạn <ms> ms`, **tiếp tục** ca sau, exit 1 nếu có ca lỗi. `--json`: `ok:false`, `message:"quá hạn <ms> ms"`. |
+| 3 | **5 ca** | `test_timeout.rs`: (a) nhanh + 5000 ⇒ ok; (b) treo + 300 ⇒ `not ok`, `<3 s`, exit1, **không con sống** (`ps` lọc ppid); (c) treo + nhanh ⇒ ca nhanh `ok 2`; (d) `--timeout 300 --json` message đúng; (e) 0/abc/thiếu giá trị ⇒ exit2. |
+| 4 | **Đo** | **1045** test = 1040 + **5** (21+96+27+154+26+62+9+**650**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=154.0 toc_do=649/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**; `vistest.rs` **494** dòng. Đo tay ca treo+300: tổng **0,89 s** (2 ca), ca treo bị giết sau ~300 ms. |
+| 5 | **Nợ** | `--timeout` chỉ áp `test fn`, fixture `.out/.err` **không** áp (đúng yêu cầu, ghi rõ); không timeout cho **từng fixture**; poll 10 ms nên sai số kill ~10–20 ms; không kill **cả cây** tiến trình cháu (chỉ `vis run`); không timeout khi `--timeout` mặc định; `try_wait`+pipe có thể nghẽn nếu test in >pipe buffer (nhỏ, chưa xử lý). |
 
 ## ST-104 — HTTP client thật hơn, 2026-11-14
 

@@ -14,7 +14,7 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--json] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [thư mục|tệp]");
     ExitCode::from(2)
 }
 
@@ -167,17 +167,75 @@ fn chan_doan(stderr: &str) -> Option<(String, u32, u32, String)> {
     None
 }
 
+/// **ST-105**: chạy tiến trình con với hạn `ms`; quá hạn ⇒ `kill` + `wait`, trả `(mã, stdout, stderr,
+/// quá_hạn)`. Poll `try_wait` mỗi 10 ms (không crate mới, không `unsafe`).
+fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, bool) {
+    c.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let mut child = match c.spawn() {
+        Ok(x) => x,
+        Err(e) => return (-1, String::new(), format!("không chạy được: {e}"), false),
+    };
+    let bat = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                let o = child.wait_with_output().expect("đọc output con");
+                return (
+                    o.status.code().unwrap_or(-1),
+                    String::from_utf8_lossy(&o.stdout).to_string(),
+                    String::from_utf8_lossy(&o.stderr).to_string(),
+                    false,
+                );
+            }
+            Ok(None) => {
+                if bat.elapsed() >= std::time::Duration::from_millis(ms) {
+                    let _ = child.kill();
+                    let o = child.wait_with_output().expect("đọc output con sau kill");
+                    return (
+                        o.status.code().unwrap_or(-1),
+                        String::from_utf8_lossy(&o.stdout).to_string(),
+                        String::from_utf8_lossy(&o.stderr).to_string(),
+                        true,
+                    );
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(e) => return (-1, String::new(), format!("không chờ được con: {e}"), false),
+        }
+    }
+}
+
 pub fn run(args: &[String]) -> ExitCode {
     let mut vm = false;
     let mut strict = false;
     // **ST-101**: `--json` — đầu ra máy đọc; không cờ ⇒ TAP y hệt.
     let mut json_ra = false;
+    // **ST-105**: `--timeout <ms>` (≥50) chỉ áp cho **`test fn`**; mặc định **không** giới hạn.
+    let mut timeout_han: Option<u64> = None;
     let mut duong: Option<PathBuf> = None;
-    for a in args {
-        match a.as_str() {
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
             "--vm" => vm = true,
             "--strict-caps" => strict = true,
             "--json" => json_ra = true,
+            "--timeout" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--timeout` cần số nguyên ≥ 50 (ms)");
+                    return ExitCode::from(2);
+                };
+                let Ok(ms) = v.parse::<u64>() else {
+                    eprintln!("vis test: `--timeout` cần số nguyên ≥ 50 (ms), được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if ms < 50 {
+                    eprintln!("vis test: `--timeout` phải ≥ 50 ms, được {ms}");
+                    return ExitCode::from(2);
+                }
+                timeout_han = Some(ms);
+                i += 1;
+            }
             "-h" | "--help" => return usage(),
             s if s.starts_with('-') => {
                 eprintln!("vis test: không hỗ trợ cờ `{s}`");
@@ -185,6 +243,7 @@ pub fn run(args: &[String]) -> ExitCode {
             }
             s => duong = Some(PathBuf::from(s)),
         }
+        i += 1;
     }
     let goc = match duong {
         Some(p) => {
@@ -264,15 +323,32 @@ pub fn run(args: &[String]) -> ExitCode {
                 c.arg("--vm").arg("--no-cache");
             }
             c.arg(&tep);
-            let (code, _out, stderr) = match c.output() {
-                Ok(o) => (
-                    o.status.code().unwrap_or(-1),
-                    String::from_utf8_lossy(&o.stdout).to_string(),
-                    String::from_utf8_lossy(&o.stderr).to_string(),
-                ),
-                Err(e) => (-1, String::new(), format!("không chạy được: {e}")),
+            // **ST-105**: chỉ nhánh `test fn` mới áp `--timeout`; fixture `.out/.err` giữ nguyên.
+            let (code, _out, stderr, qua_han) = match timeout_han {
+                Some(ms) => chay_co_han(&mut c, ms),
+                None => match c.output() {
+                    Ok(o) => (
+                        o.status.code().unwrap_or(-1),
+                        String::from_utf8_lossy(&o.stdout).to_string(),
+                        String::from_utf8_lossy(&o.stderr).to_string(),
+                        false,
+                    ),
+                    Err(e) => (-1, String::new(), format!("không chạy được: {e}"), false),
+                },
             };
             let _ = std::fs::remove_dir_all(&d);
+            if qua_han {
+                hong += 1;
+                let ms = timeout_han.unwrap_or(0);
+                let m = format!("quá hạn {ms} ms");
+                tap.push_str(&format!("not ok {n} - {ten_test}\n# {ten_test}: {m}\n"));
+                cases.push(CaJson {
+                    ten: ten_test.clone(),
+                    ok: false,
+                    msg: mot_dong(&m),
+                });
+                continue;
+            }
             if code == 0 {
                 tap.push_str(&format!("ok {n} - {ten_test}\n"));
                 cases.push(CaJson {
