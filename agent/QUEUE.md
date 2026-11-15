@@ -202,7 +202,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-102 | **`vis pkg update`** + `pkg list --json` (không mạng) | ST-101 | 2 h | **DONE** | ≥5 ca; lock/store nhất quán; `update` không đổi sha nếu không đổi nguồn |
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **DONE** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
-| ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **READY** | ≥4 ca; không rò tiến trình; mặc định không đổi |
+| ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **DONE** | ≥4 ca; không rò tiến trình; mặc định không đổi |
 | ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **READY** | R1 max giảm; 447 sem + parity không đổi |
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1516,3 +1516,15 @@ APPROVED 2026-11-14 Agent 0
 > Nợ: chưa TLS/HTTP2/keep-alive; redirect **chỉ GET**, không cookie/auth; timeout **mỗi lần đọc** (tổng có thể lâu hơn); chunk **trailer**
 > bỏ qua; `Location` chưa resolve `..`/query-only; body cap 8 MiB.
 > **ST-105 mở** (`vis test --timeout`).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-105 DONE — `vis test --timeout` (mặc định không đổi).** Commit `c3afa7b1` (**Agent 2 tự commit, đã push**). Trước: ca treo
+> **treo vô hạn**; cờ **chưa có** ⇒ exit 2. Sau: `--timeout 300` ⇒ ca treo bị **giết sau ~300 ms**, `not ok N - <tên>` +
+> `# <tên>: quá hạn 300 ms`, **exit 1**, **tiếp tục** ca kế (ca nhanh `ok 2` vẫn chạy); tổng 2 ca **0,89 s**; **không rò** tiến trình
+> (kiểm `ps -axo pid=,ppid=` **rỗng** sau khi kết thúc); `--json` có `message` đúng; `0`/`abc` ⇒ exit 2. Cơ chế: **poll `try_wait`
+> 10 ms** + `kill` + `wait_with_output` (reap), **không** crate mới, **không** `unsafe`. Chỉ áp `test fn` (fixture `.out/.err` giữ nguyên).
+> **5 ca** (4/5 đỏ trước). Đo: **1045 test** · sem **447/22** · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (154,0 s).
+> Nợ: chỉ `test fn`; kill trễ ~10–20 ms; **không** kill cây tiến trình cháu; pipe có thể nghẽn nếu ca in quá buffer (chưa drain song song);
+> `--timeout` **tính cả** thời gian biên dịch của `vis run`.
+> **ST-106 mở** (tách `lower/cmd.rs`, hạ R1 max).
