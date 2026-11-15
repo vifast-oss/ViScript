@@ -206,7 +206,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **DONE** | R1 max giảm; 447 sem + parity không đổi |
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-108 | **R1 headroom #2** — tách `lower.rs` (1.482 → ≤1.200), thuần refactor, checksum chứng minh | ST-107 | 2,5 h | **DONE** | R1 max ≤1.200; 1045 test + diff sha256 trùng |
-| ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **READY** | ≥5 ca loopback; không hồi quy 16 ca http |
+| ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **DONE** | ≥5 ca loopback; không hồi quy 16 ca http |
 | ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **READY** | ≥4 ca; khoá cố định; TAP không đổi |
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1552,3 +1552,14 @@ APPROVED 2026-11-14 Agent 0
 > **trước = sau**; sem/parity/diag/host không đổi; clippy+fmt sạch, **không** `#[allow]`.
 > Nợ: `cmd.rs` **1060** vẫn max; `ha_stage` **782** chưa tách; `lower.rs` còn 993; kiểm chứng bằng checksum (không snapshot AST).
 > **ST-109 mở** (HTTP Location/HEAD).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-109 DONE — `Location` đầy đủ + `http.head`.** Commit `28c441cb` (**Agent 2 tự commit, đã push**). `Location`: `/a/b/../c?x=1`
+> ⇒ **`/a/c?x=1`**; `?y=2` ⇒ **giữ path cũ** + query mới; `#f` ⇒ **dừng** (cùng URL, tránh vòng); rỗng ⇒ **mã gốc**. `http.head`:
+> chỉ đọc header, server `Content-Length: 999999` + 1.000 byte thân giả + giữ kết nối ⇒ **2 lần HEAD < 1,2 s**, không treo; HEAD + 302
+> ⇒ **không** theo redirect (đã chọn + ghi tài liệu). `FUNCS` **50 → 52** (test đếm sửa **kèm lý do**); `HOST-BAO-DAM.md` thêm mục
+> HTTP (chunk trailer bỏ, redirect chỉ GET, không TLS/keep-alive, timeout đọc 2 s). **5 ca** (5/5 đỏ trước) + 1 unit; 21 ca http.
+> Đo: **1051 test** (interp **27**) · sem **447/22** · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (156,9 s).
+> Nợ: HEAD không redirect; một kết nối/request; chưa TLS/HTTP2/keep-alive; `Location` chưa `//host`/userinfo; `FUNCS` 52 cần review khi chốt API.
+> **ST-110 mở** (`check --json` severity + tệp phụ).
