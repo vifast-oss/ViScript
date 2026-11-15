@@ -27,6 +27,9 @@ pub enum Ty {
     ResultUnitStr,
     /// `Result[list[str], str]` — ST-33 (`std.fs.list`).
     ResultListStrStr,
+    /// `Result[map[str, {error}], str]` — ST-109 (`http.head`): map có `status` (int) + `headers`
+    /// (map), nên value để `{error}` (động, không ép sai kiểu).
+    ResultHead,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -49,6 +52,10 @@ impl Ty {
             Ty::ResultUnitStr => Type::Result(Box::new(Type::Unit), Box::new(Type::Str)),
             Ty::ResultListStrStr => Type::Result(
                 Box::new(Type::List(Box::new(Type::Str))),
+                Box::new(Type::Str),
+            ),
+            Ty::ResultHead => Type::Result(
+                Box::new(Type::Map(Box::new(Type::Str), Box::new(Type::Error))),
                 Box::new(Type::Str),
             ),
             Ty::Var(i) => Type::TypeRef {
@@ -75,6 +82,7 @@ impl Ty {
             Ty::ResultStrStr => "Result[str, str]",
             Ty::ResultUnitStr => "Result[(), str]",
             Ty::ResultListStrStr => "Result[list[str], str]",
+            Ty::ResultHead => "Result[map[str, {error}], str]",
             Ty::Var(_) => "biến kiểu",
             Ty::List(_) => "list",
             Ty::Map(..) => "map",
@@ -115,7 +123,7 @@ pub const MODULES: [&str; 9] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 50] = [
+pub const FUNCS: [StdFn; 52] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -380,6 +388,16 @@ pub const FUNCS: [StdFn; 50] = [
         name: "http.get_timeout",
         params: &[Ty::Str, Ty::Int],
         ret: Ty::ResultStrStr,
+    },
+    StdFn {
+        name: "http.head",
+        params: &[Ty::Str],
+        ret: Ty::ResultHead,
+    },
+    StdFn {
+        name: "http.head_timeout",
+        params: &[Ty::Str, Ty::Int],
+        ret: Ty::ResultHead,
     },
 ];
 

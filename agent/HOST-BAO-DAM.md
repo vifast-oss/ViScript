@@ -80,3 +80,14 @@ tệp mà **mọi** dòng thụt lề ⇒ chương trình **không in gì**, exi
 ⇒ **Không** chuẩn hoá thụt lề trong `vis fmt` (giữ nguyên văn). `vis fmt --check` chỉ **cảnh báo**
 (không đỏ) và `vis fmt --indent-report` **đếm** dòng lệch chuẩn `4 × độ sâu khối` (ước lượng theo dòng
 khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 dòng** trong `test/` lệch (không sửa).
+
+## HTTP client (ST-104, ST-109) — bảo đảm và giới hạn
+
+- **Chỉ** `http://`, **chỉ loopback** (`127.0.0.1`/`localhost`); **không** TLS, **không** HTTP/2.
+- **Chunked**: ghép chunk (bỏ `;ext`), dừng ở chunk `0`; **chunk trailer bị bỏ qua**.
+- **Redirect**: **chỉ GET**, tối đa **5** lần; theo `Location` tuyệt đối/tương đối, có `.`/`..`; query-only
+  giữ path; fragment bị bỏ. `HEAD` **không** theo redirect (trả mã gốc + `Location`).
+- **Không keep-alive**: mỗi request một kết nối (`Connection: close`); không cookie/auth tự động.
+- **`Content-Length`** đọc đúng N byte; **timeout đọc 2 s/lần** (server im lặng ⇒ `Err` rõ).
+- **`http.head`**: gửi `HEAD`, **không đọc thân** dù server gửi `Content-Length`/chunked; trả
+  `{status, headers}` (headers khoá chữ thường).

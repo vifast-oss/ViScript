@@ -3,9 +3,10 @@
 //! socket thô qua [`NetHost`], tự dựng/đọc **HTTP/1.1**. Nhờ vậy interp ↔ VM **cùng byte** và codegen
 //! **không** phải sửa (`std.http.*` hạ theo tên như mọi `std.*`).
 //!
-//! Phạm vi vòng 11: **chỉ** `http://`, **chỉ loopback** (`127.0.0.1`/`localhost`); **không** TLS,
-//! **không** redirect, **không** keep-alive; phản hồi cap **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt
-//! cap là `Err`, không OOM. Body giữ **byte** tới khi chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte.
+//! Phạm vi: **chỉ** `http://`, **chỉ loopback** (`127.0.0.1`/`localhost`); **không** TLS/HTTP2,
+//! **không** keep-alive; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect; phản hồi
+//! cap **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte** tới khi
+//! chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte. **Chunk trailer bị bỏ qua**; **không** TLS/keep-alive.
 
 use std::time::{Duration, Instant};
 
@@ -67,6 +68,8 @@ struct DauHttp {
     cl: Option<usize>,
     chunked: bool,
     location: Option<String>,
+    /// Header đã hạ **chữ thường**, giữ thứ tự; dùng cho `http.head`.
+    headers: Vec<(String, String)>,
 }
 
 /// Đọc status + `Content-Length` + `Transfer-Encoding` + `Location` từ khối header (không gồm
@@ -101,6 +104,7 @@ fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
             } else if k.eq_ignore_ascii_case("location") {
                 out.location = Some(v.to_string());
             }
+            out.headers.push((k.to_ascii_lowercase(), v.to_string()));
         }
     }
     Ok(out)
@@ -157,17 +161,56 @@ fn ghep_chunked(du: &[u8]) -> Result<Option<Vec<u8>>, String> {
     }
 }
 
-/// Ghép URL `Location` với URL hiện tại: tuyệt đối `http://…` giữ nguyên (qua `tach_url` — vẫn chỉ
-/// loopback), `/x` tuyệt đối theo authority, `x` tương đối theo thư mục target.
-fn noi_location(authority: &str, target: &str, location: &str) -> Result<String, String> {
+/// Chuẩn hoá path+query: bỏ `.`/`..`, giữ `/` đầu và query; `..` vượt gốc bị kẹp.
+fn chuan_hoa_target(target: &str) -> String {
+    let (path, query) = target.split_once('?').unwrap_or((target, ""));
+    let trailing = path.ends_with('/') && path != "/";
+    let mut seg: Vec<&str> = Vec::new();
+    for p in path.split('/') {
+        match p {
+            "" | "." => {}
+            ".." => {
+                seg.pop();
+            }
+            x => seg.push(x),
+        }
+    }
+    let mut out = format!("/{}", seg.join("/"));
+    if trailing && out != "/" {
+        out.push('/');
+    }
+    if !query.is_empty() {
+        out.push('?');
+        out.push_str(query);
+    }
+    out
+}
+
+/// Ghép `Location` với URL hiện tại (RFC 3986 mức đơn giản). `None` = **không theo** (rỗng/fragment
+/// thuần, hoặc URL sau khi chuẩn hoá **trùng** URL cũ ⇒ tránh vòng). `Err` = `Location` không hỗ trợ.
+fn noi_location(authority: &str, target: &str, location: &str) -> Result<Option<String>, String> {
     if location.starts_with("http://") || location.starts_with("https://") {
-        return Ok(location.to_string());
+        let (auth, t) = tach_url(location)?;
+        return Ok(Some(format!("http://{auth}{}", chuan_hoa_target(&t))));
     }
-    if location.starts_with('/') {
-        return Ok(format!("http://{authority}{location}"));
+    // Fragment không gửi lên server; `#f` một mình ⇒ cùng URL ⇒ không theo.
+    let loc = location.split('#').next().unwrap_or("");
+    if loc.is_empty() {
+        return Ok(None);
     }
-    let thu_muc = target.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
-    Ok(format!("http://{authority}{thu_muc}/{location}"))
+    let moi = if loc.starts_with('?') {
+        // Query-only: giữ **path cũ**, thay query.
+        let path = target.split('?').next().unwrap_or("/");
+        format!("{path}{loc}")
+    } else if loc.starts_with('/') {
+        chuan_hoa_target(loc)
+    } else {
+        // Tương đối theo **thư mục** của target hiện tại.
+        let path = target.split('?').next().unwrap_or("/");
+        let thu_muc = path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+        chuan_hoa_target(&format!("{thu_muc}/{loc}"))
+    };
+    Ok(Some(format!("http://{authority}{moi}")))
 }
 
 /// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body)`.
@@ -282,11 +325,15 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
             let Some(loc) = location else {
                 return Err(format!("HTTP {status}"));
             };
+            let Some(url) = noi_location(&authority, &target, &loc)? else {
+                // `Location` rỗng/fragment cùng URL ⇒ **trả mã gốc**, không lỗi, không theo.
+                return Err(format!("HTTP {status}"));
+            };
             so += 1;
             if so > 5 {
                 return Err("quá 5 lần chuyển hướng HTTP (tối đa 5)".to_string());
             }
-            hien_tai = noi_location(&authority, &target, &loc)?;
+            hien_tai = url;
             continue;
         }
         if !(200..300).contains(&status) {
@@ -296,9 +343,66 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
     }
 }
 
+/// `HEAD` — gửi `HEAD`, chỉ đọc **header**, trả `(status, headers)`. **Không** đọc thân (kể cả khi
+/// server gửi `Content-Length`/chunked); **không** theo redirect (trả mã gốc + `Location`), khớp tài
+/// liệu “redirect chỉ GET”.
+fn head_mot(
+    net: &mut dyn NetHost,
+    tay: &str,
+    authority: &str,
+    target: &str,
+    timeout: u64,
+) -> Result<(u16, Vec<(String, String)>), String> {
+    let req = format!("HEAD {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
+    let han = Instant::now() + Duration::from_millis(timeout.max(1));
+    net.write(tay, req.as_bytes())?;
+    let mut du: Vec<u8> = Vec::new();
+    loop {
+        let con = han.saturating_duration_since(Instant::now());
+        if con.is_zero() {
+            return Err(format!(
+                "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
+                timeout.max(1)
+            ));
+        }
+        let doc = net.read(tay, 16 * 1024, con.as_millis().clamp(1, 2_000) as u64)?;
+        if doc.is_empty() {
+            let i = tim_header(&du)
+                .ok_or_else(|| "phản hồi HTTP không đủ header (kết nối đóng sớm)".to_string())?;
+            let d = doc_header_day_du(&du[..i])?;
+            return Ok((d.status, d.headers));
+        }
+        du.extend_from_slice(&doc);
+        if let Some(i) = tim_header(&du) {
+            let d = doc_header_day_du(&du[..i])?;
+            return Ok((d.status, d.headers));
+        }
+        if du.len() > MAX_HEADER {
+            return Err(format!(
+                "phản hồi HTTP header quá lớn (> {MAX_HEADER} byte)"
+            ));
+        }
+    }
+}
+
+/// `http.head` — một request, không đọc thân, không theo redirect.
+pub fn http_head(
+    net: &mut dyn NetHost,
+    url: &str,
+    timeout_ms: u64,
+) -> Result<(u16, Vec<(String, String)>), String> {
+    let timeout = timeout_ms.max(1);
+    let (authority, target) = tach_url(url)?;
+    let tay = net.connect(&authority, timeout)?;
+    net.ghi_nhat_ky(&format!("NET http HEAD {authority}{target}"));
+    let kq = head_mot(net, &tay, &authority, &target, timeout);
+    let _ = net.close(&tay);
+    kq
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{doc_header, tach_url};
+    use super::{chuan_hoa_target, doc_header, noi_location, tach_url};
 
     #[test]
     fn tach_url_dung_va_chan_ngoai_loopback() {
@@ -314,6 +418,32 @@ mod tests {
         assert!(tach_url("https://127.0.0.1/").is_err());
         assert!(tach_url("http://example.com/").is_err());
         assert!(tach_url("http://127.0.0.1:99999/").is_err());
+    }
+
+    /// `..`/`.` chuẩn hoá, query-only giữ path, fragment/rỗng ⇒ **không theo**.
+    #[test]
+    fn chuan_hoa_va_location_day_du() {
+        assert_eq!(chuan_hoa_target("/a/b/../c?x=1"), "/a/c?x=1");
+        assert_eq!(chuan_hoa_target("/a/./b/"), "/a/b/");
+        assert_eq!(chuan_hoa_target("/../x"), "/x");
+        assert_eq!(
+            noi_location("127.0.0.1:1", "/a", "/a/b/../c?x=1").unwrap(),
+            Some("http://127.0.0.1:1/a/c?x=1".to_string())
+        );
+        assert_eq!(
+            noi_location("127.0.0.1:1", "/a?old=1", "?y=2").unwrap(),
+            Some("http://127.0.0.1:1/a?y=2".to_string())
+        );
+        assert_eq!(
+            noi_location("127.0.0.1:1", "/a/b", "c").unwrap(),
+            Some("http://127.0.0.1:1/a/c".to_string())
+        );
+        assert_eq!(noi_location("127.0.0.1:1", "/a", "#f").unwrap(), None);
+        assert_eq!(noi_location("127.0.0.1:1", "/a", "").unwrap(), None);
+        assert_eq!(
+            noi_location("127.0.0.1:1", "/a", "http://127.0.0.1:1/x/../y").unwrap(),
+            Some("http://127.0.0.1:1/y".to_string())
+        );
     }
 
     #[test]

@@ -78,7 +78,7 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             }
             Ty::FnKhoa => matches!(a, Value::Fn(_) | Value::Vm(_) | Value::Builtin(_)),
             // ST-33: `std.fs` trả `Result[..]` — kiểu **trả**, không dùng để kiểm đối số.
-            Ty::ResultStrStr | Ty::ResultUnitStr | Ty::ResultListStrStr => true,
+            Ty::ResultStrStr | Ty::ResultUnitStr | Ty::ResultListStrStr | Ty::ResultHead => true,
         };
         if !ok {
             return Err(loi(
@@ -511,6 +511,28 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 crate::net::http_get(host, url, timeout.max(0) as u64).map(Value::Str),
                 span,
             )
+        }
+        // **ST-109**: `http.head` — chỉ header, không đọc thân; không theo redirect.
+        "http.head" | "http.head_timeout" => {
+            let url = chuoi(name, &args[0], 0, span)?;
+            let timeout = if args.len() == 2 {
+                so(name, &args[1], 1, span)?
+            } else {
+                5_000
+            };
+            let host = host.net().ok_or_else(|| khong_host(name, span))?;
+            let kq = crate::net::http_head(host, url, timeout.max(0) as u64).map(|(st, hs)| {
+                let headers = Value::Map(
+                    hs.into_iter()
+                        .map(|(k, v)| (Value::Str(k), Value::Str(v)))
+                        .collect(),
+                );
+                Value::Map(vec![
+                    (Value::Str("status".to_string()), Value::Int(st as i64)),
+                    (Value::Str("headers".to_string()), headers),
+                ])
+            });
+            hop_nhat_fs(kq, span)
         }
         other => Err(loi(
             format!("`std.{other}` chưa cài (bảng chữ ký có nhưng tầng chạy thiếu)"),

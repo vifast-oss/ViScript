@@ -59,7 +59,8 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `MODULES` 8 → **9** (thêm `http`). Bỏ `http.body_len` — không cần cho ca cap (xem STATE ST-64).
     // **SỬA KÈM LÝ DO (ST-65)**: +5 hàm server `std.net.*` (listen, local_addr, accept,
     // accept_timeout, close_listen) ⇒ **50** hàm. Bỏ `net.is_listening` (không cần; 5 hàm vừa đủ).
-    assert_eq!(FUNCS.len(), 50, "bảng chữ ký phải đủ 50 hàm");
+    // **SỬA KÈM LÝ DO (ST-109)**: +2 hàm `std.http.*` (`http.head`, `http.head_timeout`) ⇒ **52** hàm.
+    assert_eq!(FUNCS.len(), 52, "bảng chữ ký phải đủ 52 hàm");
 }
 
 #[test]

@@ -527,3 +527,131 @@ fn http_server_im_lang_timeout_duoi_3s() {
     }
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== ST-109: Location đầy đủ + HEAD =====
+
+/// (a) `Location: /a/b/../c?x=1` ⇒ chuẩn hoá `/a/c?x=1` (bỏ `.`/`..`).
+#[test]
+fn http_location_chuan_hoa_dotdot() {
+    let _k = kho();
+    let d = tam("loc-dotdot");
+    let addr = server_theo_duong(4, |req, _| {
+        if req.starts_with("GET /start ") {
+            dap_302("/a/b/../c?x=1")
+        } else if req.starts_with("GET /a/c?x=1 ") {
+            dap_ung("200 OK", b"dot", 3)
+        } else {
+            dap_ung("200 OK", b"sai", 3)
+        }
+    });
+    let (code, out, err) = ca(&d, "dot", &chuong_trinh(&format!("http://{addr}/start")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "dot\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (b) `Location: ?y=2` ⇒ giữ path cũ + query mới.
+#[test]
+fn http_location_query_only() {
+    let _k = kho();
+    let d = tam("loc-query");
+    let addr = server_theo_duong(4, |req, _| {
+        if req.starts_with("GET /q?old=1 ") {
+            dap_302("?y=2")
+        } else if req.starts_with("GET /q?y=2 ") {
+            dap_ung("200 OK", b"query", 5)
+        } else {
+            dap_ung("200 OK", b"sai", 3)
+        }
+    });
+    let (code, out, err) = ca(
+        &d,
+        "query",
+        &chuong_trinh(&format!("http://{addr}/q?old=1")),
+    );
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "query\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (c) `Location: #f` ⇒ bỏ fragment, cùng URL ⇒ **dừng**, trả mã gốc `302` (không vòng).
+#[test]
+fn http_location_fragment_dung() {
+    let _k = kho();
+    let d = tam("loc-frag");
+    let addr = server_theo_duong(2, |_, _| dap_302("#f"));
+    let (code, out, err) = ca(&d, "frag", &chuong_trinh(&format!("http://{addr}/a")));
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "HTTP 302\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// Server ghi header + thân giả rồi **giữ kết nối** (HEAD không được đọc thân).
+fn server_thân_giả_giu(so: usize, resp: Vec<u8>, giu_ms: u64) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+    let addr = l.local_addr().expect("addr").to_string();
+    std::thread::spawn(move || {
+        for _ in 0..so {
+            let Ok((mut s, _)) = l.accept() else { break };
+            let r = resp.clone();
+            std::thread::spawn(move || {
+                let mut buf = [0u8; 4096];
+                let _ = s.read(&mut buf);
+                let _ = s.write_all(&r);
+                std::thread::sleep(Duration::from_millis(giu_ms));
+            });
+        }
+    });
+    addr
+}
+
+/// (d) `HEAD` với thân giả + `Content-Length` lớn ⇒ chỉ đọc header, 2 lần liên tiếp nhanh.
+#[test]
+fn http_head_khong_doc_than() {
+    let _k = kho();
+    let d = tam("head-body");
+    let mut resp = b"HTTP/1.1 200 OK\r\nContent-Length: 999999\r\nX-Test: yes\r\n\r\n".to_vec();
+    resp.extend_from_slice(&vec![b'X'; 1_000]);
+    let addr = server_thân_giả_giu(4, resp, 1_500);
+    let src = format!(
+        "use std.http\n\
+         match http.head(\"http://{addr}/x\"):\n\
+         \x20   Ok(m):\n\
+         \x20       print(m[\"status\"])\n\
+         \x20       print(m[\"headers\"][\"x-test\"])\n\
+         \x20   Err(e): print(e)\n\
+         match http.head(\"http://{addr}/x\"):\n\
+         \x20   Ok(m): print(m[\"status\"])\n\
+         \x20   Err(e): print(e)\n"
+    );
+    let p = ghi(&d, "head", &src);
+    for vm in [false, true] {
+        let t0 = Instant::now();
+        let (code, out, err) = chay(&p, vm, true, false);
+        let dt = t0.elapsed();
+        assert_eq!(code, 0, "vm={vm}: stderr {err}");
+        assert_eq!(out, "200\nyes\n200\n", "vm={vm}: {out:?}");
+        assert!(dt.as_millis() < 1_200, "vm={vm}: HEAD chờ thân {dt:?}");
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (e) `HEAD` + 302 ⇒ **không** theo redirect (đúng tài liệu “redirect chỉ GET”), trả 302 + Location.
+#[test]
+fn http_head_khong_theo_redirect() {
+    let _k = kho();
+    let d = tam("head-redir");
+    let addr = server_theo_duong(2, |_, _| dap_302("/b"));
+    let src = format!(
+        "use std.http\n\
+         match http.head(\"http://{addr}/a\"):\n\
+         \x20   Ok(m):\n\
+         \x20       print(m[\"status\"])\n\
+         \x20       print(m[\"headers\"][\"location\"])\n\
+         \x20   Err(e): print(e)\n"
+    );
+    let (code, out, err) = ca(&d, "hredir", &src);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, "302\n/b\n");
+    let _ = std::fs::remove_dir_all(&d);
+}

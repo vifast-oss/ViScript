@@ -6,14 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-108 — tách `lower.rs` để R1 max ≤1200 (thuần refactor)** — xong, đã đo trước/sau
-                + cổng + differential; **chưa commit**.
-Bước          : 3/3 (wc/checksum trước → `lower/khai_bao.rs` 497 → 1045 test y hệt + gate).
+Task          : **ST-109 — HTTP: Location đầy đủ + `http.head` + tài liệu** — xong, đã đo đỏ + cổng +
+                differential; **chưa commit**.
+Bước          : 3/3 (đỏ 5/5 → chuẩn hoá Location/HEAD → 21 ca http + 1 unit → 1051 test → diff → cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T01:25:06Z**; **1045** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:04:05Z**; **1051** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (155,5 s) / **R1 max 1060**
-Việc dở       : commit `[ST-108]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (156,9 s) / http **21 ca**
+Việc dở       : commit `[ST-109]` + push (đã được uỷ quyền)
+
+## ST-109 — HTTP Location + HEAD, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | `Location: /a/b/../c?x=1` ⇒ **không** chuẩn hoá (request sai); `?y=2` ⇒ path sai; `#f` ⇒ theo tới vòng lặp (“quá 5”); chưa có `http.head` ⇒ **VS0301 module không có hàm `head`**. **5/5 ca đỏ**. Log `JOURNAL/st109-red.log` sha256 `047879d8…`. |
+| 1 | **Location** | `chuan_hoa_target`: bỏ `.`/`..` (kẹp gốc), giữ `/` đầu/query; `noi_location`: tuyệt đối, tương đối theo thư mục, **query-only giữ path**, **bỏ fragment**; rỗng/fragment thuần ⇒ `None` ⇒ trả mã gốc (`HTTP 3xx`, không lỗi, không theo). |
+| 2 | **HEAD** | `std.http.head` + `head_timeout` (mặc định 5000): gửi `HEAD`, chỉ đọc header, **không** đọc thân dù có `Content-Length`/chunked; trả `{status, headers}` (header chữ thường); **không** theo redirect (trả 302 + `Location`, khớp tài liệu “redirect chỉ GET”). Thêm chữ ký `Ty::ResultHead` = `Result[map[str, {error}], str]`; `FUNCS` 50 → **52**. |
+| 3 | **5 ca** | `http.rs`: (a) `/a/b/../c?x=1` ⇒ `/a/c?x=1`; (b) `?y=2` giữ path; (c) `#f` ⇒ `HTTP 302` dừng; (d) HEAD thân giả + CL 999999 ⇒ 2 lần **<1,2 s**, không đọc thân; (e) HEAD + 302 ⇒ **302 + Location**, không theo. Tổng **21 ca http**; unit `chuan_hoa_va_location_day_du` +1. |
+| 4 | **Tài liệu** | `agent/HOST-BAO-DAM.md` mục **HTTP client (ST-104, ST-109)**: chỉ loopback, không TLS/HTTP2, chunk trailer **bỏ qua**, redirect **chỉ GET**/tối đa 5, **không keep-alive**, timeout đọc 2 s, HEAD không đọc thân. |
+| 5 | **Đo** | **1051** test = 1045 + **6** (5 integration + 1 unit) (21+96+27+154+**27** interp+62+9+**655** cli); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=156.9 toc_do=637/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**; `net.rs` **463**. |
+| 6 | **Nợ** | HEAD **không** theo redirect (chọn có ghi); HEAD vẫn một kết nối/request; chưa TLS/HTTP2/keep-alive; chunk trailer bỏ; `Location` absolute/relative cơ bản (không xử lý `//host`, userinfo); `Ty::ResultHead` dùng `{error}` cho value map (động); `FUNCS` đổi 50→52 (test đếm cập nhật kèm lý do). |
 
 ## ST-108 — tách `lower.rs`, 2026-11-15
 
