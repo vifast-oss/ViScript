@@ -53,15 +53,18 @@ target/release/vis-parse-fuzz --seconds 60 --seed 20261115 # 0 vi phạm
 - [`HOST-BAO-DAM.md`](HOST-BAO-DAM.md) — hợp chuẩn host 4 nền; HTTP client (ST-104/109).
 - [`STATE.md`](STATE.md) — trạng thái hiện tại + việc dở.
 
-## C. Nợ correctness ưu tiên (ST-112)
+## C. Nợ correctness đa tệp — **ĐÃ ĐÓNG Ở ST-114b** (2026-11-15)
 
-- **`Span` thiếu file-id** — mỗi tệp lex/parse bắt đầu `start = 0`; gộp HIR làm span chồng lấn ⇒ chẩn
-  đoán **cấp tệp** của tệp chính có thể bị gắn sang module (ST-110 chỉ sửa được lỗi trong item/`fn main`).
-  Tái hiện + vị trí map: `agent/JOURNAL/st112-chan-doan.log`.
-- **Kế hoạch**: `agent/JOURNAL/st112-ke-hoach.md` — thêm `file: u16` vào `Span`; ước lượng **>150 dòng**
-  (90 `Span::new`, 13 chỗ cắt text, `modules.rs` map, `interp::pos`, codegen, LSP) ⇒ **chưa sửa**.
-- **Không** tuyên bố “chẩn đoán đa tệp đúng hoàn toàn” cho tới khi đóng; ca kiểm: top-level a, fn a,
-  module b, cả hai, TAP `a.vis`/`b.vis` + sem/parity/host/diff.
+- **`Span.file`** (`u16`, mặc định 0) + `lex_file`/`parse_file`/`LowerOptions.file`: mọi token/node/diag
+  mang chỉ số tệp; `Nap.file_rel` cấp **chính 0, module theo `use`**. chẩn đoán tyck dùng
+  `d.span.file` (fallback heuristic cũ **chỉ** khi file-id ngoài bảng + log cảnh báo); `vi_tri` dùng
+  văn bản **đúng tệp** cho TAP/`--json`.
+- **Ca**: `crates/vis-cli/tests/chan_doan_da_tep.rs` **6 ca** — (a) top-level a, (b) `fn main` a, (c) b
+  dòng 5, (d) cả hai, (e) TAP, (f) b dài ≥100 dòng + lỗi a; red-first `st114b-red-test.log` (5/6 đỏ
+  trước khi sửa), sau **6/6 xanh**; JSON trước/sau `st114b-{truoc,sau}-json.log`.
+- **Hạn chế còn lại**: span **tổng hợp** do lower sinh (`Span::new` mặc định file 0) vẫn có thể thuộc
+  tệp chính nếu một chẩn đoán tyck rơi đúng node tổng hợp — chưa thấy ca thực tế; **LSP** chưa hiển thị
+  chẩn đoán tệp phụ theo file-id (hành vi không đổi); `VBC1`/bytecode `Span` **không** đổi.
 
 ## D. Điều kiện đóng **100%** (bàn giao cuối R20)
 

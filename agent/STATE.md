@@ -6,15 +6,25 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-114a — thêm `Span.file` + luồn file-id lex→parse→lower** — xong, hành vi y hệt;
-                cổng PASS; **chưa commit**.
-Bước          : 3/3 (Span/file-id 0/1 quan sát → 1056 test y hệt/checksum trùng → gate).
+Task          : **ST-114b — dùng `Span.file` trả chẩn đoán về đúng tệp** — xong: 6 ca mới xanh,
+                JSON/TAP đúng tệp+dòng, nợ ST-112 **đã đóng**; cổng PASS; **chưa commit**.
+Bước          : 3/3 (red-first 5/6 đỏ → map `file_rel` → 6/6 xanh, 1062 test, gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T03:58:18Z**; **1056** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T04:09:41Z**; **1062** test / sem
                 **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
-                **398/398 + 49** / R1 max **1060**; checksum test **`6c1ea8bf…` trước = sau**; diff sha
-                **`62bdd699…` trùng**
-Việc dở       : commit `[ST-114a]` + push (đã được uỷ quyền)
+                **398/398 + 49** / diff **100k / 0 lệch** / R1 max **1452** (`parse/mod.rs`) ≤1500
+Việc dở       : commit `[ST-114b]` + push (đã được uỷ quyền)
+
+## ST-114b — chẩn đoán đa tệp đúng tệp, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Red-first** | Thêm `tests/chan_doan_da_tep.rs` **6 ca** trước khi sửa; 5/6 **đỏ** với map cũ: (a) a→b, (d) cả hai dồn b, (e) TAP in b, (f) b dài vẫn b; log `st114b-red-test.log`. |
+| 1 | **Map** | `Nap.file_rel: Vec<String>` cấp cùng lúc `file_id` (chính 0, module theo `use`); tyck: `rel = file_rel[d.span.file]`; **fallback heuristic span cũ chỉ khi ngoài bảng** + `eprintln` cảnh báo. Không dùng văn bản tệp chính để tính dòng:cột — đã dùng `f.text` của rel (ST-110) nên tự đúng. |
+| 2 | **JSON/TAP** | `--json` giữ `files` DFS; (a) `a.vis 2:14`, (b) `a.vis 3:18`, (c) `b.vis 5:5`, (d) `a 2:14` + `b 5:5`; TAP `a.vis 2:14` (không `(b.vis:`); log `st114b-truoc-json.log` / `st114b-sau-json.log`. |
+| 3 | **Ca** | 6/6 xanh: a cấp tệp, fn main, b dòng 5, cả hai, TAP (a+d), b dài ≥100 dòng + lỗi a. |
+| 4 | **Đo** | **1062** test (1056 + 6); sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398+49**; host **54/54**; diff **163,5 s, 0 lệch**; R1 max **1452** (`parse/mod.rs`), `modules.rs` 866, `main.rs` 1254, `cmd.rs` 1060. |
+| 5 | **Nợ** | Map đa tệp **đã đóng**; còn hạn chế: span **tổng hợp** của lower mặc định file 0 (nếu chẩn đoán tyck rơi đúng node tổng hợp); **LSP** chưa dùng file-id để publish tệp phụ; `VBC1`/bytecode `Span` không đổi. Không đổi `all_codes`/thứ tự `files`. |
 
 ## ST-114a — `Span.file` + luồn file-id, 2026-11-15
 

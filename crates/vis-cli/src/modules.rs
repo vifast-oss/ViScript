@@ -333,6 +333,8 @@ struct Nap {
     main_text: Option<String>,
     /// **ST-114a**: chỉ số tệp kế tiếp trong đơn vị nạp (chính = 0, module theo `use`).
     file_id: u16,
+    /// **ST-114b**: bảng `file_id → rel` theo đúng thứ tự cấp ở [`Nap::tham`].
+    file_rel: Vec<String>,
 }
 
 impl Nap {
@@ -458,6 +460,7 @@ impl Nap {
         // **ST-114a**: cấp chỉ số tệp theo **thứ tự nạp** (chính 0, module theo `use`).
         let file_id = self.file_id;
         self.file_id += 1;
+        self.file_rel.push(rel.clone());
         let parsed = vis_syntax::parse_file(&text, mode, file_id);
         let lexed = vis_syntax::lex_file(&text, mode, file_id);
         if !parsed.diagnostics.is_empty() {
@@ -779,6 +782,7 @@ fn load_full_voi(
         cho_ngoai,
         main_text: text_chinh.map(str::to_string),
         file_id: 0,
+        file_rel: Vec::new(),
     };
     n.tham(&main_path);
     let rel_chinh = rel_cua(&main_dir, &n.main);
@@ -800,21 +804,33 @@ fn load_full_voi(
     };
     let item_rel = n.item_rel.clone();
     for d in &kq.diags {
-        let rel = hir
-            .items
-            .iter()
-            .enumerate()
-            .find(|(_, it)| {
-                let s = span_cua(it);
-                d.span.start >= s.start && d.span.start <= s.end
-            })
-            .map(|(i, _)| {
-                item_rel
-                    .get(i)
-                    .cloned()
+        // **ST-114b**: file-id do lex/parse gắn (ST-114a) quyết định tệp; chỉ fallback heuristic
+        // span khi `file_id` ngoài bảng (không bao giờ xảy ra với mã hiện tại — có log cảnh báo).
+        let rel = match n.file_rel.get(d.span.file as usize).cloned() {
+            Some(r) => r,
+            None => {
+                eprintln!(
+                    "vis: cảnh báo — chẩn đoán {} có file={} ngoài bảng {} tệp; dùng fallback span",
+                    d.code.short,
+                    d.span.file,
+                    n.file_rel.len()
+                );
+                hir.items
+                    .iter()
+                    .enumerate()
+                    .find(|(_, it)| {
+                        let s = span_cua(it);
+                        d.span.start >= s.start && d.span.start <= s.end
+                    })
+                    .map(|(i, _)| {
+                        item_rel
+                            .get(i)
+                            .cloned()
+                            .unwrap_or_else(|| rel_chinh.clone())
+                    })
                     .unwrap_or_else(|| rel_chinh.clone())
-            })
-            .unwrap_or_else(|| rel_chinh.clone());
+            }
+        };
         // Tyck không có văn bản ⇒ tự tính `dòng:cột` theo **tệp được gán** (ST-25 mục 3).
         let mut d2 = d.clone();
         if let Some(f) = n.files.iter().find(|f| f.rel == rel) {
