@@ -6,16 +6,24 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-107 — báo cáo R18** (chốt ST-104/105/106) — xong, `report-check --all` PASS, cổng
-                PASS; **chưa commit**.
-Bước          : 3/3 (JSON 121 hàng QUEUE@80067ef0 + MD §1..§7/§19 + đo lại + gate).
+Task          : **ST-108 — tách `lower.rs` để R1 max ≤1200 (thuần refactor)** — xong, đã đo trước/sau
+                + cổng + differential; **chưa commit**.
+Bước          : 3/3 (wc/checksum trước → `lower/khai_bao.rs` 497 → 1045 test y hệt + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:52:28Z** (report-check PASS: **18
-                báo cáo, 121 hàng QUEUE**); **1045** test / sem **447/22** / `vis test` **447 ok**
-                (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / soak **8/8**
-                (818 s, ST-98) / differential **100.000 / 0 lệch** (177,1 s) / cache **520×4 / 0 lệch** /
-                fuzz **2.100.646 ca / 0 vi phạm** / targets **18/18 check** / fmt **497** / R1 max **1482**
-Việc dở       : commit `[ST-107]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T01:25:06Z**; **1045** test / sem
+                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (155,5 s) / **R1 max 1060**
+Việc dở       : commit `[ST-108]` + push (đã được uỷ quyền)
+
+## ST-108 — tách `lower.rs`, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Trước** | `lower.rs` **1482** (max R1); 6 hàm lớn nhất: `resolve_type_body` 98, `predeclare_item` 74, `lower_enum` 67, `lower_params` 65, `lower_fn` 57, `lower_rec` 45. Checksum 1045 test `5c194bb8…`; diff bất biến `c40b9a84…`. |
+| 1 | **Tách** | `lower/khai_bao.rs` **497**: `predeclare_item` 74, `build_item` 35, `generics_of`, `lower_fn` 57, `lower_params` 65, `lower_extern`, `field_of`, `lower_rec` 45, `lower_enum` 67, `derives_of`, `lower_alias`, `lower_const`, `lower_trait`, `lower_impl` — toàn bộ nhóm khai báo item. Chỉ `pub(crate)` cho `predeclare_item`/`build_item`/`generics_of`/`derives_of`/`field_of` (dùng từ module khác); logic/thứ tự chẩn đoán/API công khai **không đổi**. |
+| 2 | **Sau** | `lower.rs` **1482 → 993**; `khai_bao.rs` **497** (≤700); `cmd.rs` **1060**; **R1 max 1482 → 1060** (`cmd.rs`, ≤1200); checksum test **vẫn `5c194bb8…` (1045)**; diff sha **`c40b9a84…`** trùng. |
+| 3 | **Đo** | **1045** test = 21+96+27+154+26+62+9+**650**; sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=155.5 toc_do=643/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**. Clippy `-D warnings`/fmt sạch, không `#[allow]`. |
+| 4 | **Nợ** | `cmd.rs` **1060** vẫn max (dưới 1200); `ha_stage` 782 chưa tách; `lower.rs` còn 993 (có thể tách `resolve_type_body` 98 nếu muốn <900); `khai_bao.rs` 497; kiểm bằng checksum, không snapshot AST. |
 
 ## ST-107 — báo cáo R18, 2026-11-15
 
