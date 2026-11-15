@@ -880,3 +880,10 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   **đầy đủ** (đường dẫn tương đối có `..`/`.`; query-only `?x=1`; fragment bỏ), ghi rõ **chunk trailer bị bỏ qua**, hỗ trợ **`HEAD`**
   (không đọc thân). (3) `check --json`: thêm `severity` (`error`/`warning`) và **`file` đúng tệp phụ** cho chẩn đoán module (nợ từ ST-101);
   **khoá cố định**, TAP **không đổi**. (4) Không nới ngưỡng; không thêm crate.
+
+- **VD-116** **Vòng 20 — đóng nợ correctness chẩn đoán đa tệp, rồi soak cuối + R20 (ST-112..ST-113)**: (1) **Chẩn đoán trước, sửa sau**:
+  phải **tái hiện** ca "câu lệnh cấp tệp ở tệp chính bị gắn sang module" và **chỉ đúng** dòng mã gây ra (không đoán). (2) Nếu cách sửa
+  **≤150 dòng** và không đổi API công khai ⇒ **làm**, với ca cho **cả hai chiều** (lỗi tệp chính ở cấp tệp; lỗi module) và 1056 test
+  xanh. (3) Nếu lớn hơn ⇒ **dừng**, viết **kế hoạch ≤30 dòng** (thiết kế `Span` có file-id hoặc offset base + bản đồ), **không** làm
+  nửa vời — và ghi thành nợ đầu bảng ROADMAP. (4) Sau đó **soak ≥10 vòng tuần tự** (gate/diff/host/cache) + **R20**, cập nhật
+  `ROADMAP.md` theo trạng thái cuối. (5) Không nới ngưỡng; không thêm crate.
