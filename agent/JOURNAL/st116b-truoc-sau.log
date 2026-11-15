@@ -43,7 +43,7 @@ exit=2
 sem 447/22; vis test 447 ok; --vm 447 ok + 0 SKIP; parity 398+49; host 54/54
 
 == R1
-main.rs 1254 → 591 (≤1000, mục tiêu ≤800 KHÔNG đạt vì còn run_run 352 dòng trong main)
+main.rs 1254 → 591 (**≤1000 và mục tiêu ≤800 ĐẠT**; run_run 352 dòng vẫn ở main để giữ cache::khoa_multi)
 R1 max toàn cục: 1254 (main.rs) → **1060** (`crates/vis-types/src/lower/cmd.rs`) — **chưa ≤1000**; tiếp theo parse/cmd.rs 1007
 
 == fmt/clippy: exit 0, -D warnings sạch, không #[allow]
