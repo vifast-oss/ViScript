@@ -207,7 +207,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-108 | **R1 headroom #2** — tách `lower.rs` (1.482 → ≤1.200), thuần refactor, checksum chứng minh | ST-107 | 2,5 h | **DONE** | R1 max ≤1.200; 1045 test + diff sha256 trùng |
 | ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **DONE** | ≥5 ca loopback; không hồi quy 16 ca http |
-| ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **READY** | ≥4 ca; khoá cố định; TAP không đổi |
+| ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **DONE** | ≥4 ca; khoá cố định; TAP không đổi |
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
@@ -1563,3 +1563,15 @@ APPROVED 2026-11-14 Agent 0
 > Đo: **1051 test** (interp **27**) · sem **447/22** · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (156,9 s).
 > Nợ: HEAD không redirect; một kết nối/request; chưa TLS/HTTP2/keep-alive; `Location` chưa `//host`/userinfo; `FUNCS` 52 cần review khi chốt API.
 > **ST-110 mở** (`check --json` severity + tệp phụ).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-110 DONE — `check --json` đúng tệp + severity.** Commit `5ae46d04` (**Agent 2 tự commit, đã push**). Trước: mọi chẩn đoán dồn dưới
+> **tệp đối số** (sai). Sau: `files` gồm **mọi tệp đã nạp** theo **thứ tự DFS `use`** (chính trước), mỗi chẩn đoán có
+> **`severity`** (`vis-diag` đã có `Code.severity`; chỉ thêm hàm ánh xạ — **không** thêm mã, `all_codes()` vẫn **32**); `VS0107` (tab
+> trong `.vish`) = **warning**, còn lại **error**; TAP **không đổi** byte. **5 ca** (4/5 đỏ trước). Đo: **1056 test** · sem **447/22**
+> · `--vm` **447 ok/0 SKIP** · host **54/54** · differential **100k/0 lệch** (166,3 s).
+> **Nợ QUAN TRỌNG (ghi rõ, chưa sửa)**: câu lệnh **cấp tệp** ở tệp chính vẫn có thể bị gắn sang **module** vì span HIR của mỗi tệp đều
+> **bắt đầu từ 0** ⇒ cần **offset/file-id cho `Span`** ở task sau. Đây là **hạn chế thật của chẩn đoán**, không chỉ của JSON.
+> Nợ khác: `check --json` nhiều đối số có thể lặp module; `files` chưa có metadata `main`/`phụ`; TAP chỉ báo chẩn đoán **đầu**.
+> **ST-111 mở** (R19).
