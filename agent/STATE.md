@@ -6,15 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-106 — tách `lower/cmd.rs` (thuần refactor)** — xong, đã đo trước/sau + cổng +
-                differential; **chưa commit**.
-Bước          : 3/3 (wc + checksum 1045 test/diff trước → tách `cmd/doc.rs` + `cmd/hop.rs` → 1045 test
-                y hệt + gate).
+Task          : **ST-107 — báo cáo R18** (chốt ST-104/105/106) — xong, `report-check --all` PASS, cổng
+                PASS; **chưa commit**.
+Bước          : 3/3 (JSON 121 hàng QUEUE@80067ef0 + MD §1..§7/§19 + đo lại + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:40:26Z**; **1045** test / sem
-                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,8 s)
-Việc dở       : commit `[ST-106]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:52:28Z** (report-check PASS: **18
+                báo cáo, 121 hàng QUEUE**); **1045** test / sem **447/22** / `vis test` **447 ok**
+                (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / soak **8/8**
+                (818 s, ST-98) / differential **100.000 / 0 lệch** (177,1 s) / cache **520×4 / 0 lệch** /
+                fuzz **2.100.646 ca / 0 vi phạm** / targets **18/18 check** / fmt **497** / R1 max **1482**
+Việc dở       : commit `[ST-107]` + push (đã được uỷ quyền)
+
+## ST-107 — báo cáo R18, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **JSON** | `R18-viscript.json` + `.license`: `round=18`, `head=80067ef0`, **121 task** (120 DONE + ST-107 READY), `blocked=[]`, đúng **11 khoá**; `report-check --all` **PASS (18 báo cáo, 121 hàng)**. |
+| 1 | **MD** | `R18-viscript.md` **129 dòng**: tóm tắt 5 dòng; bảng ST-104/105/106/107; §3 đo lại + **§3b bằng chứng mới** (chunked `abcdef`/`aabb`, redirect `abs`/`rel` ≤5, timeout đọc **2,01 s**, `test --timeout 300` → 2 ca **0,89 s**, không rò, R1 **1491→1482**, checksum test/diff trùng); §4 §19 **8 mức không đổi**; §5 R17 **82** + mới **83..91** = **91 mục**; §6 **VD-114**; §7 máy kiểm; §8 kết luận. |
+| 2 | **Đo lại** | **1045** test = 21+96+27+154+26+62+9+**650**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; diag **364/49/34**; host **54/54 ×2**; cache **520×4, 0 lệch, 23,92 s**; diff **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=177.1 toc_do=565/s seed=20261115`**; fuzz **2.100.646 ca / 47.798.025 token / 0 vi phạm**; soak **8/8 818 s** (ST-98); targets **18/18 check**; fmt **497 (429+68)** + 8 cảnh báo; `VBC1` **53**; **32 mã**; allowlist **6**; R1 max **1482** (`lower.rs`), `cmd.rs` **1060**. |
+| 3 | **Cổng** | **PASS** `2026-11-15T00:52:28Z`; log `JOURNAL/st107-gate-fast.log`; 3 dòng cuối: `test result: ok. 0 passed; …` / `--- L0 test: OK` / `vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)`; report-check PASS trong cổng. |
+| 4 | **Nợ** | **91 mục** (R17 82 + mới 83..91): TLS/HTTP2/keep-alive; redirect chỉ GET/không cookie; chunk trailer; `Location` chưa resolve `..`; `--timeout` chỉ `test fn`/không kill cây cháu/pipe nghẽn; `lower.rs` 1482 max; `ha_stage` 782. |
 
 ## ST-106 — tách `lower/cmd.rs`, 2026-11-15
 
