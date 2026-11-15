@@ -217,7 +217,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-116 | **R1 headroom #3** — tách `parse/mod.rs` (1.452 → ≤1.200), thuần refactor + checksum | ST-115 | 2,5 h | **DONE** | R1 max giảm; 1062 test + diff sha256 trùng |
 | ST-116b | **R1 headroom #4** — tách `crates/vis-cli/src/main.rs` (1.254 → ≤1.000): tách `run`/`check`/`test`/`fmt` sang `cli/*.rs`, thuần refactor | ST-116 | 2,5 h | **DONE** | R1 max ≤1.000; checksum 1062 test + diff sha256 trùng |
 | ST-117 | **LSP** — chẩn đoán **đa tệp** cho tài liệu đang mở dùng `file` (ca a+b cùng lỗi; tài liệu mở là module) | ST-116 | 2 h | **DONE** | ≥4 ca; publish **chỉ** cho tài liệu mở; sửa nếu sai |
-| ST-118 | **soak cuối 10 vòng + R22 + ROADMAP chốt** | ST-117 | 3 h | **READY** | 10/10 xanh hoặc T-INFRA có log; `report-check` PASS |
+| ST-118 | **soak cuối 10 vòng + R22 + ROADMAP chốt** | ST-117 | 3 h | **DONE** | 10/10 xanh hoặc T-INFRA có log; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
@@ -1651,3 +1651,19 @@ APPROVED 2026-11-14 Agent 0
 > **Ghi nhận thẳng**: mục tiêu **≤1.000 toàn cục** tôi nêu thêm **chưa** đạt (`lower/cmd.rs` **1060**, `parse/cmd.rs` **1007**) — **không**
 > tuyên bố đạt; muốn đạt phải có task riêng (ghi nợ). Mục tiêu **của VD-118 (≤1.200)** thì **đã đạt**.
 > **ST-118 mở** (soak cuối 10 vòng + R22 + ROADMAP chốt — task cuối của vòng 22).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-118 DONE — VÒNG 22 CHỐT (vòng kết thúc đợt chạy liên tục).** Commit `326cdfa0` (**Agent 2 tự commit, đã push**).
+> **Soak cuối 10/10 OK = 1297 s** (gate 256/253/258, diff 155/155/156 — **0 lệch** cả 3 lần, host 8/8, cache 25/23), load 2,04 → 1,83;
+> chạy **một lần**, **không** retry. `report-check` **PASS (22 báo cáo, 134 hàng QUEUE phủ đủ)**. `ROADMAP.md` chốt **64 dòng** với
+> **bảng 8 hạng mục × mức thật × điều kiện đóng 100%** + nơi đọc + lệnh chạy.
+> **Số cuối**: **1066 test** · sem **447/22 nhóm** · `vis test` **447 ok** · `--vm` **447 ok + 0 SKIP** · parity **398/398 + 49 lỗi biên dịch** ·
+> host suite **54 ca ×2 đường / 0 lệch** · differential **100k / 0 lệch** (155 s, seed `20261115`) · cache **520 tệp × 4 lần / 0 lệch** ·
+> fuzz parser **2.506.504 ca / 0 vi phạm** · **R1 max 1060** (`lower/cmd.rs`) · `FUNCS` **52** · `all_codes` **32** · `VBC1` **53** ·
+> allowlist **6** · targets **18/18 `check`** · fmt `--check` **497 tệp**.
+> **Nợ còn lại: 104 mục** (R22 §5). **VS2 CHƯA ĐÓNG** — đúng mức đã đo: Landlock **chỉ probe** (chưa cưỡng chế bằng kernel), 4 nền
+> **chỉ `check`** (chưa có runner), net **loopback/không TLS**, async **một luồng** (không song song), kênh **không rendezvous**,
+> quyền **chưa siết mặc định**, span **tổng hợp** `file=0`, LSP **chưa** publish chẩn đoán tệp phụ.
+> **ĐỢT CHẠY LIÊN TỤC KẾT THÚC Ở ĐÂY** (22 vòng, 134 hàng QUEUE, 22 báo cáo). Việc tiếp theo **cần quyết định của người** (duyệt crate
+> `landlock` hoặc `unsafe` đóng + runner Linux; duyệt thay đổi scheduler cho async song song; duyệt migration "siết mặc định caps").
