@@ -887,3 +887,10 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   xanh. (3) Nếu lớn hơn ⇒ **dừng**, viết **kế hoạch ≤30 dòng** (thiết kế `Span` có file-id hoặc offset base + bản đồ), **không** làm
   nửa vời — và ghi thành nợ đầu bảng ROADMAP. (4) Sau đó **soak ≥10 vòng tuần tự** (gate/diff/host/cache) + **R20**, cập nhật
   `ROADMAP.md` theo trạng thái cuối. (5) Không nới ngưỡng; không thêm crate.
+
+- **VD-117** **Vòng 21 — đóng nợ correctness `Span` (ST-114a/b, ST-115)**: theo kế hoạch `st112-ke-hoach.md`. (1) `Span` thêm **`file: u16`**
+  **mặc định 0** ⇒ `Span::new(start,end)` cũ **không đổi** hành vi (một tệp = file 0). (2) Luồn `file` qua **lex → parse → lower** bằng
+  **một** tham số `file` (không dùng thread-local) — mọi `Span` sinh ra trong tệp thứ i mang `file = i`. (3) Chẩn đoán map **theo
+  `file`** (không đoán theo khoảng span) và `vi_tri`/thông điệp dùng **đúng văn bản** của tệp đó; **TAP và `--json`** phải cùng đúng.
+  (4) **Bytecode (`VBC1`) không đổi** (span trong một tệp giữ nguyên); LSP dùng `file` để chọn tài liệu. (5) Chia 2 task ≤3 h; task 1
+  **không** đổi hành vi (checksum + diff sha256 trùng), task 2 mới đổi chẩn đoán + thêm ca. (6) Không nới ngưỡng; không thêm crate.

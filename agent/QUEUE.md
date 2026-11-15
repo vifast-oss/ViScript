@@ -210,7 +210,10 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **DONE** | ≥4 ca; khoá cố định; TAP không đổi |
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-112 | **nợ correctness**: chẩn đoán **đa tệp** — câu lệnh cấp tệp chính có thể bị gắn sang module (span mỗi tệp bắt đầu từ 0). Chẩn đoán → sửa tối thiểu hoặc **kế hoạch** nếu >150 dòng | ST-111 | 3 h | **DONE** | tái hiện + chỉ đúng chỗ; nếu sửa: 1056 test xanh, ca mới cho cả 2 chiều; nếu không: kế hoạch ≤30 dòng |
-| ST-113 | **soak cuối** (≥10 vòng tuần tự) + **R20** + cập nhật ROADMAP | ST-112 | 3 h | **READY** | 10/10 xanh hoặc T-INFRA có log; R20 `report-check` PASS |
+| ST-113 | **soak cuối** (≥10 vòng tuần tự) + **R20** + cập nhật ROADMAP | ST-112 | 3 h | **DONE** | 10/10 xanh hoặc T-INFRA có log; R20 `report-check` PASS |
+| ST-114a | **Span file-id (1/2)**: thêm `Span.file: u16` (mặc định 0 = y hệt), luồn file-id qua lex/parse/lower; **chưa** đổi chẩn đoán | ST-113 | 3 h | **READY** | 1056 test y hệt; `Span::new` cũ giữ nguyên; checksum + diff sha256 trùng |
+| ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **READY** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
+| ST-115 | báo cáo **R21** | ST-114a..ST-114b | 1,5 h | **READY** | MD+JSON; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
