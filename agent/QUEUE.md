@@ -214,7 +214,8 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-114a | **Span file-id (1/2)**: thêm `Span.file: u16` (mặc định 0 = y hệt), luồn file-id qua lex/parse/lower; **chưa** đổi chẩn đoán | ST-113 | 3 h | **DONE** | 1056 test y hệt; `Span::new` cũ giữ nguyên; checksum + diff sha256 trùng |
 | ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **DONE** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
 | ST-115 | báo cáo **R21** | ST-114a..ST-114b | 1,5 h | **DONE** | MD+JSON; `report-check` PASS |
-| ST-116 | **R1 headroom #3** — tách `parse/mod.rs` (1.452 → ≤1.200), thuần refactor + checksum | ST-115 | 2,5 h | **READY** | R1 max giảm; 1062 test + diff sha256 trùng |
+| ST-116 | **R1 headroom #3** — tách `parse/mod.rs` (1.452 → ≤1.200), thuần refactor + checksum | ST-115 | 2,5 h | **DONE** | R1 max giảm; 1062 test + diff sha256 trùng |
+| ST-116b | **R1 headroom #4** — tách `crates/vis-cli/src/main.rs` (1.254 → ≤1.000): tách `run`/`check`/`test`/`fmt` sang `cli/*.rs`, thuần refactor | ST-116 | 2,5 h | **READY** | R1 max ≤1.000; checksum 1062 test + diff sha256 trùng |
 | ST-117 | **LSP** — chẩn đoán **đa tệp** cho tài liệu đang mở dùng `file` (ca a+b cùng lỗi; tài liệu mở là module) | ST-116 | 2 h | **READY** | ≥4 ca; publish **chỉ** cho tài liệu mở; sửa nếu sai |
 | ST-118 | **soak cuối 10 vòng + R22 + ROADMAP chốt** | ST-117 | 3 h | **READY** | 10/10 xanh hoặc T-INFRA có log; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1617,3 +1618,13 @@ APPROVED 2026-11-14 Agent 0
 > Hạn chế còn lại (ghi rõ): span **tổng hợp** do lower sinh vẫn `file=0` (chưa thấy ca thực tế); **LSP chưa** dùng file-id để publish
 > chẩn đoán tệp phụ; **không** tuyên bố "mọi chẩn đoán đa tệp đúng 100%" cho node tổng hợp.
 > **ST-115 mở** (R21).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-116 DONE — tách `parse/mod.rs`.** Commit `167d7cc4` (**Agent 2 tự commit, đã push**). `parse/mod.rs` **1452 → 1069**, thêm
+> `parse/khai_bao.rs` (**391**) chứa khai báo A.1 (fn/cmd/test/extern · type/enum/alias/newtype + field/variant/derives · trait/impl ·
+> const · params/generics · grant_list/record_type); 19 method `pub(super)`, **API công khai không đổi**. **Checksum 1062 test
+> `c996f294…` trước = sau**; sha256 diff **`62bdd699…` trùng**; sem/parity/host không đổi. **R1 max 1452 → 1254** (`main.rs`).
+> **Chưa đạt ≤1.200** như VD-118 đặt ⇒ mở **ST-116b** (tách `main.rs` 1254 → ≤1.000) để đóng nốt; đây là **chênh lệch có ghi nhận**,
+> không tuyên bố đạt.
+> **ST-117 mở** (LSP chẩn đoán đa tệp).
