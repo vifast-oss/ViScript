@@ -203,7 +203,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-103 | báo cáo **R17** | ST-100..ST-102 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **DONE** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
 | ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **DONE** | ≥4 ca; không rò tiến trình; mặc định không đổi |
-| ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **READY** | R1 max giảm; 447 sem + parity không đổi |
+| ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **DONE** | R1 max giảm; 447 sem + parity không đổi |
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
@@ -1528,3 +1528,13 @@ APPROVED 2026-11-14 Agent 0
 > Nợ: chỉ `test fn`; kill trễ ~10–20 ms; **không** kill cây tiến trình cháu; pipe có thể nghẽn nếu ca in quá buffer (chưa drain song song);
 > `--timeout` **tính cả** thời gian biên dịch của `vis run`.
 > **ST-106 mở** (tách `lower/cmd.rs`, hạ R1 max).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-106 DONE — refactor thuần, R1 max giảm.** Commit `5d7b1353` (**Agent 2 tự commit, đã push**). `lower/cmd.rs` **1491 → 1060**,
+> tách `cmd/doc.rs` (**235**) + `cmd/hop.rs` (**213**); chuyển `ha_closure` (92), `run_shell_tu` (66), `kieu_stage` (62), `ngoai_call` (49),
+> `boc_render` (24) + `ha_dong`/`ha_pipeline`/`ten_lenh`; chỉ nới `pub(super)`, **không** đổi logic/api. **R1 max 1491 → 1482**
+> (`lower.rs`, tệp khác) — `cmd.rs` giảm **431**. Bằng chứng **trùng khớp**: checksum 1045 dòng test **trước = sau** (`5c194bb8…`),
+> differential 100k sha256 **trước = sau** (`62bdd699…`), sem **447/22**, parity **398+49**, host **54/54**, `VBC1` **53**, **32 mã**.
+> clippy/fmt sạch, **không** `#[allow]`. Nợ: `lower.rs` **1482** vẫn là max ⇒ tách ở task sau; `ha_stage` 782 còn trong `cmd.rs`.
+> **ST-107 mở** (R18).
