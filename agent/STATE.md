@@ -6,15 +6,27 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-110 — `check --json`: severity + `file` đúng tệp phụ** — xong, đã đo đỏ + cổng +
-                differential; **chưa commit**.
-Bước          : 3/3 (đỏ 4/5 → `KetQuaCheck` gom theo tệp nạp + `severity` → 5 ca → 1056 test → diff →
-                cổng).
+Task          : **ST-111 — báo cáo R19** (chốt ST-108/109/110) — xong, `report-check --all` PASS, cổng
+                PASS; **chưa commit**.
+Bước          : 3/3 (JSON 125 hàng QUEUE@a3368319 + MD §1..§7/§19 + đo lại + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:19:11Z**; **1056** test / sem
-                **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (166,3 s)
-Việc dở       : commit `[ST-110]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:31:12Z** (report-check PASS: **19
+                báo cáo, 125 hàng QUEUE**); **1056** test / sem **447/22** (interp **27**) / `vis test`
+                **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** /
+                soak **8/8** (818 s, ST-98) / differential **100.000 / 0 lệch** (166,3 s) / cache
+                **520×4 / 0 lệch** / fuzz **2.224.775 ca / 0 vi phạm** / targets **18/18 check** /
+                fmt **497** / **FUNCS 52** / R1 max **1060**
+Việc dở       : commit `[ST-111]` + push (đã được uỷ quyền)
+
+## ST-111 — báo cáo R19, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **JSON** | `R19-viscript.json` + `.license`: `round=19`, `head=a3368319`, **125 task** (124 DONE + ST-111 READY), `blocked=[]`, đúng **11 khoá**; `report-check --all` **PASS (19 báo cáo, 125 hàng)**. |
+| 1 | **MD** | `R19-viscript.md` **128 dòng**: tóm tắt 5 dòng; bảng ST-108/109/110/111; §3 đo lại + **§3b bằng chứng mới** (R1 **1482→1060**, Location 4 dạng, HEAD **<1,2 s**, JSON tệp phụ+severity, checksum trùng); §4 §19 **8 mức không đổi** + nợ correctness span; §5 R18 **91** + mới **92..96** = **96 mục**; §6 **VD-115**; §7 máy kiểm; kết luận. |
+| 2 | **Đo lại** | **1056** test = 21+96+27+154+**27**+62+9+**660**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; diag **364/49/34**; host **54/54 ×2**; cache **520×4, 0 lệch, 24,56 s**; diff **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=166.3 toc_do=601/s seed=20261115`**; fuzz **2.224.775 ca / 50.617.245 token / 0 vi phạm**; soak **8/8 818 s** (ST-98); targets **18/18 check**; fmt **497 (429+68)** + 8 cảnh báo; `FUNCS` **52**; `VBC1` **53**; **32 mã**; allowlist **6**; R1 max **1060** (`cmd.rs`), `lower.rs` **993**, `khai_bao.rs` **497**. |
+| 3 | **Cổng** | **PASS** `2026-11-15T02:31:12Z`; log `JOURNAL/st111-gate-fast.log`; 3 dòng cuối: `test result: ok. 0 passed; …` / `--- L0 test: OK` / `vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)`; report-check PASS trong cổng. |
+| 4 | **Nợ** | **96 mục** (R18 91 + mới 92..96): **`span` chưa file-id** (correctness — đầu tiên); HEAD không redirect; `FUNCS` 52 cần review; `cmd.rs` 1060 max; `ha_stage` 782; JSON nhiều đối số lặp module/severity 2 mức. |
 
 ## ST-110 — `check --json` severity/tệp phụ, 2026-11-15
 
