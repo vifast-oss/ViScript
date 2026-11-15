@@ -6,15 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-116b — tách `crates/vis-cli/src/main.rs` 1254 → 591** (`cli/check.rs` 335,
-                `cli/fmt.rs` 252, `cli/run.rs` 94), thuần refactor; cổng PASS; **chưa commit**.
-Bước          : 3/3 (tách → checksum/sha/usage trùng, 1066 test → gate).
+Task          : **ST-118 — soak cuối 10 vòng + R22 + ROADMAP chốt** — xong, `report-check --all`
+                PASS, cổng PASS; **chưa commit**.
+Bước          : 3/3 (soak 10/10 1297 s → ROADMAP 64 dòng / R22 142 dòng → gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:45:51Z**; **1066** test / sem
-                **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
-                **398/398 + 49** / diff **100k / 0 lệch** / main.rs **591**; R1 max toàn cục **1060**
-                (`vis-types/src/lower/cmd.rs`) — **chưa ≤1000**
-Việc dở       : commit `[ST-116b]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T06:22:31Z** (report-check PASS: **22
+                báo cáo, 134 hàng QUEUE**); **1066** test / sem **447/22** / `vis test` **447 ok** (`--vm`
+                **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / diff **100.000 / 0
+                lệch** / cache **520×4 / 0 lệch** / soak **10/10 = 1297 s** / fuzz **2.506.504 ca / 0 vi
+                phạm** / targets **18/18 check** / **FUNCS 52** / R1 max **1060**
+Việc dở       : commit `[ST-118]` + push (đã được uỷ quyền)
+
+## ST-118 — soak cuối + R22 + ROADMAP, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Soak** | `bin/vis-soak` **10 vòng** (gate×3, diff×3, host×2, cache×2), **10/10 OK, 1297 s**, load **2.04→1.83**; gate 256/253/258, diff 156/155/155 (0 lệch), host 8/8, cache 25/23; **không retry**, log `st118-soak.log`. |
+| 1 | **ROADMAP** | **64 dòng** (≤120): 8 hạng mục VS2 mức thật cuối, lệnh chạy, §C nợ đa tệp **đã đóng**, 9 điều kiện đóng 100% + số liệu (R1 1060, lower/cmd 1060, parse/cmd 1007). Không ngôn từ vượt mức. |
+| 2 | **R22** | `R22-viscript.{md,json,json.license}`: **142 dòng**, `round=22`, `head=1be37e6c`, **134 task** (133 DONE + ST-118 READY), 11 khoá; §9 bàn giao cuối; `report-check --all` **PASS (22 báo cáo, 134 hàng)**. |
+| 3 | **Đo** | **1066** test = 21+96+27+154+**27**+62+9+**670**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; host **54/54 ×2**; cache **520×4, 25/23 s**; diff **155 s, 0 lệch**; fuzz **2.506.504 ca / 57.029.776 token / 0 vi phạm**; soak **1297 s**; `FUNCS` **52**; `all_codes` **32**; `VBC1` **53**; targets **18/18**; fmt **497**; R1 max **1060**. |
+| 4 | **Nợ** | **104 mục** (R21 100 + 101..104): lower/cmd 1060/parse/cmd 1007 (>1000 nội bộ), main run_run 352, span tổng hợp `file=0`, LSP chưa publish tệp phụ; VS2 **chưa đóng**. |
 
 ## ST-116b — tách main.rs, 2026-11-15
 
