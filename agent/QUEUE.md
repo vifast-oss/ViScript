@@ -205,7 +205,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **DONE** | ≥4 ca; không rò tiến trình; mặc định không đổi |
 | ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **DONE** | R1 max giảm; 447 sem + parity không đổi |
 | ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
-| ST-108 | **R1 headroom #2** — tách `lower.rs` (1.482 → ≤1.200), thuần refactor, checksum chứng minh | ST-107 | 2,5 h | **READY** | R1 max ≤1.200; 1045 test + diff sha256 trùng |
+| ST-108 | **R1 headroom #2** — tách `lower.rs` (1.482 → ≤1.200), thuần refactor, checksum chứng minh | ST-107 | 2,5 h | **DONE** | R1 max ≤1.200; 1045 test + diff sha256 trùng |
 | ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **READY** | ≥5 ca loopback; không hồi quy 16 ca http |
 | ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **READY** | ≥4 ca; khoá cố định; TAP không đổi |
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
@@ -1542,3 +1542,13 @@ APPROVED 2026-11-14 Agent 0
 > differential 100k sha256 **trước = sau** (`62bdd699…`), sem **447/22**, parity **398+49**, host **54/54**, `VBC1` **53**, **32 mã**.
 > clippy/fmt sạch, **không** `#[allow]`. Nợ: `lower.rs` **1482** vẫn là max ⇒ tách ở task sau; `ha_stage` 782 còn trong `cmd.rs`.
 > **ST-107 mở** (R18).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-108 DONE — R1 max đạt ≤1.200.** Commit `0cd6d471` (**Agent 2 tự commit, đã push**). `lower.rs` **1482 → 993**, tách
+> [`lower/khai_bao.rs`](viscript/crates/vis-types/src/lower/khai_bao.rs) (**497**) chứa 6 bộ phận: `predeclare_item` (74), `lower_enum` (67),
+> `lower_params` (65), `lower_fn` (57), `lower_rec` (45), `lower_impl`/`lower_trait`/`lower_alias`/`lower_const`/`build_item`/`lower_extern`.
+> **R1 max 1482 → 1060** (`cmd.rs`) — **≤1.200**. Bằng chứng **trùng khớp**: checksum 1045 test `5c194bb8…`, sha256 diff `c40b9a84…`
+> **trước = sau**; sem/parity/diag/host không đổi; clippy+fmt sạch, **không** `#[allow]`.
+> Nợ: `cmd.rs` **1060** vẫn max; `ha_stage` **782** chưa tách; `lower.rs` còn 993; kiểm chứng bằng checksum (không snapshot AST).
+> **ST-109 mở** (HTTP Location/HEAD).
