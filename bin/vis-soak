@@ -1,16 +1,16 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT OR Apache-2.0
-# ST-98/VD-112 — soak tuần tự 8 vòng (KHÔNG chạy song song build/cổng khác — AGENTS §6).
+# ST-113/VD-116 — soak tuần tự 10 vòng (ST-98 mở rộng: thêm gate-3 + diff-3) (KHÔNG chạy song song build/cổng khác — AGENTS §6).
 # Không retry: vòng đỏ ⇒ ghi rõ + dừng (T-INFRA nếu do tải máy).
 set -u
 # `cargo` không nằm trong PATH của shell không đăng nhập (background job) — bổ sung tường minh.
 PATH="${HOME}/.cargo/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
 export PATH
 cd "$(dirname "$0")/.." || exit 2
-LOG=agent/JOURNAL/st98-soak.log
+LOG=agent/JOURNAL/st113-soak.log
 
 if [ "${1:-}" = "--dry-run" ]; then
-    printf '%s\n' gate-1 gate-2 diff-1 diff-2 host-1 host-2 cache-1 cache-2
+    printf '%s\n' gate-1 gate-2 gate-3 diff-1 diff-2 diff-3 host-1 host-2 cache-1 cache-2
     exit 0
 fi
 
@@ -20,7 +20,7 @@ tong=0
 truoc=$(uptime)
 head=$(git rev-parse --short HEAD 2>/dev/null)
 {
-    echo "# ST-98 — soak 8 vòng, bắt đầu $(date -u +%Y-%m-%dT%H:%M:%SZ), HEAD ${head:-?}"
+    echo "# ST-113 — soak 10 vòng, bắt đầu $(date -u +%Y-%m-%dT%H:%M:%SZ), HEAD ${head:-?}"
     echo "# load trước: $truoc"
 } | tee -a "$LOG"
 
@@ -52,10 +52,12 @@ chay gate-1 ../vis-dev gate --fast
 chay gate-2 ../vis-dev gate --fast
 chay diff-1 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay diff-2 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
+chay gate-3 ../vis-dev gate --fast
+chay diff-3 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay host-1 ./bin/vis-host-suite
 chay host-2 ./bin/vis-host-suite
 chay cache-1 cargo test -p vis-cli --test cache_khong_che
 chay cache-2 cargo test -p vis-cli --test cache_khong_che
 
 sau=$(uptime)
-echo "=== TỔNG | ${tong}s | 8/8 vòng OK | load sau: $sau" | tee -a "$LOG"
+echo "=== TỔNG | ${tong}s | 10/10 vòng OK | load sau: $sau" | tee -a "$LOG"

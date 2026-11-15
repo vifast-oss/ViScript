@@ -6,16 +6,28 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-112 — chẩn đoán đa tệp gắn sai tệp** — **KHÔNG sửa** (>150 dòng): đã tái hiện, chỉ
-                đúng `modules.rs:795-820`, viết kế hoạch `Span` file-id + cập nhật ROADMAP; cổng PASS;
-                **chưa commit**.
-Bước          : 3/3 (log `st112-chan-doan.log` + quyết định không sửa + `st112-ke-hoach.md` 30 dòng +
-                ROADMAP §C).
+Task          : **ST-113 — soak cuối 10 vòng + R20 + ROADMAP** — xong, `report-check --all` PASS, cổng
+                PASS; **chưa commit**.
+Bước          : 3/3 (soak 10/10 1255 s → ROADMAP 79 dòng / R20 142 dòng → gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:40:57Z**; **1056** test / sem
-                **447/22** / host **54/54** / R1 max **1060**; report-check **PASS (19 báo cáo, 127 hàng
-                QUEUE)**
-Việc dở       : commit `[ST-112]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T03:16:16Z** (report-check PASS: **20
+                báo cáo, 127 hàng QUEUE**); **1056** test / sem **447/22** (interp **27**) / `vis test`
+                **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** /
+                soak **10/10 = 1255 s** / differential **100.000 / 0 lệch** (3 lần) / cache **520×4 / 0
+                lệch** / fuzz **2.540.549 ca / 0 vi phạm** / targets **18/18 check** / **FUNCS 52** / R1
+                max **1060**
+Việc dở       : commit `[ST-113]` + push (đã được uỷ quyền)
+
+## ST-113 — soak 10 vòng + R20 + ROADMAP, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Soak** | `bin/vis-soak` mở **10 vòng** (gate×3, diff 100k×3, host×2, cache×2); **10/10 OK, 1255 s**, load 2.18→2.94; gate 249/239/238, diff 154/153/156 (0 lệch), host 8/8, cache 25/25. Attempt1 đỏ do `soak_script` còn 8 vòng → sửa test (8→10) rồi chạy lại **một lần**; log `st113-soak.log`, `st113-soak-attempt1.log`. |
+| 1 | **ROADMAP** | `ROADMAP.md` **79 dòng** (≤120): R1 **1060**, `FUNCS` **52**, test **1056**, soak 10/1255 s, HTTP Location/HEAD, JSON tệp phụ+severity, `test --timeout`; §C nợ `Span` file-id; §D **8 điều kiện đóng 100%**; giữ nguyên “chưa” Landlock/runner/TLS/async/mặc định caps/chẩn đoán đa tệp. |
+| 2 | **R20** | `R20-viscript.{md,json,json.license}`: **142 dòng**, `round=20`, `head=263c7722`, **127 task** (126 DONE + ST-113 READY), 11 khoá; `report-check --all` **PASS (20 báo cáo, 127 hàng)**. |
+| 3 | **Đo** | **1056** test = 21+96+27+154+**27**+62+9+**660**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; diag **364/49/34**; host **54/54 ×2**; cache **520×4, 25 s ×2**; diff **154,0 s**; fuzz **2.540.549 ca / 57.800.097 token / 0 vi phạm**; soak **1255 s**; `FUNCS` **52**; `VBC1` **53**; **32 mã**; allowlist **6**; targets **18/18**; fmt **497**; R1 **1060**. |
+| 4 | **Sửa test** | `soak_script` 8→10 vòng (kèm lý do ST-113) — cần cho script mới, **không** nới ngưỡng chất lượng; đã ghi rõ. |
+| 5 | **Nợ** | **96 mục** R19 giữ nguyên + nợ correctness **`Span` file-id** (ST-112 không sửa); **VS2 chưa đóng**; 8 điều kiện R20 §9. |
 
 ## ST-112 — chẩn đoán đa tệp: không sửa, kế hoạch, 2026-11-15
 

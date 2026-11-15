@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-98 (VD-112)** — `bin/vis-soak` chỉ **mô tả** 8 vòng tuần tự (không chạy soak trong test):
-//! tồn tại, có SPDX, `set -u`, không dùng `--ignore`/`|| true` để “chạy cho có”, và `--dry-run` in
-//! **đúng 8 tên vòng**.
+//! **ST-98/ST-113 (VD-112/VD-116)** — `bin/vis-soak` chỉ **mô tả** **10** vòng tuần tự (không chạy
+//! soak trong test): tồn tại, có SPDX, `set -u`, không dùng `--ignore`/`|| true`, và `--dry-run` in
+//! **đúng 10 tên vòng** (ST-113 thêm `gate-3` + `diff-3`).
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -10,12 +10,13 @@ fn script() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../bin/vis-soak")
 }
 
-const VONG: [&str; 8] = [
-    "gate-1", "gate-2", "diff-1", "diff-2", "host-1", "host-2", "cache-1", "cache-2",
+const VONG: [&str; 10] = [
+    "gate-1", "gate-2", "gate-3", "diff-1", "diff-2", "diff-3", "host-1", "host-2", "cache-1",
+    "cache-2",
 ];
 
 #[test]
-fn vis_soak_hop_le_va_in_du_8_vong() {
+fn vis_soak_hop_le_va_in_du_10_vong() {
     let p = script();
     assert!(p.exists(), "thiếu {}", p.display());
     #[cfg(unix)]
