@@ -6,14 +6,25 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-109 — HTTP: Location đầy đủ + `http.head` + tài liệu** — xong, đã đo đỏ + cổng +
+Task          : **ST-110 — `check --json`: severity + `file` đúng tệp phụ** — xong, đã đo đỏ + cổng +
                 differential; **chưa commit**.
-Bước          : 3/3 (đỏ 5/5 → chuẩn hoá Location/HEAD → 21 ca http + 1 unit → 1051 test → diff → cổng).
+Bước          : 3/3 (đỏ 4/5 → `KetQuaCheck` gom theo tệp nạp + `severity` → 5 ca → 1056 test → diff →
+                cổng).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:04:05Z**; **1051** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:19:11Z**; **1056** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (156,9 s) / http **21 ca**
-Việc dở       : commit `[ST-109]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (166,3 s)
+Việc dở       : commit `[ST-110]` + push (đã được uỷ quyền)
+
+## ST-110 — `check --json` severity/tệp phụ, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | Chẩn đoán tệp phụ nằm dưới `files[0].file = "a.vis"`; không có `severity`. **4/5 ca đỏ** (TAP không cờ vẫn xanh). Log `JOURNAL/st110-red.log` sha256 `dc73bd8a…`. |
+| 1 | **Sửa** | `KetQuaCheck { files: Vec<TepJson>, diags }`: `files` = **mọi tệp đã nạp**, DFS **tiền tự** theo `deps` (chính trước, module theo thứ tự `use`), tệp chính in **đường dẫn đối số**, module in `rel`; chẩn đoán gắn `phu`/file thật. `severity` lấy **trực tiếp** `vis_diag::Code.severity` qua `severity_cua` (`VS0107` tab = ***warning***, còn lại `error`); không thêm mã, không đổi TAP. |
+| 2 | **5 ca** | `json_ra.rs`: (a) lỗi trong `b.vis` ⇒ `a.vis` rỗng, `b.vis` có lỗi; (b) lỗi cả hai ⇒ 2 mục đúng thứ tự; (c) `severity:"error"`; (d) tab `.vish` ⇒ `VS0107`/`warning`; (e) không cờ ⇒ TAP **byte y hệt**. |
+| 3 | **Đo** | **1056** test = 1051 + **5** (21+96+27+154+**27**+62+9+**660**); sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=166.3 toc_do=601/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**; `main.rs` **1254** (≤1500), `vistest.rs` **494**. |
+| 4 | **Nợ** | **Chẩn đoán ở câu lệnh cấp tệp chính vẫn có thể gắn nhầm module** do span HIR các tệp trùng gốc (ST-110 mới sửa được lỗi trong item/`fn main`; ca top-level `let` + module phát hiện vẫn lệch — ghi rõ); `check --json` nhiều đối số có thể lặp module giữa các nhóm; severity chỉ `error/warning`; `files` không có `main`/`phu` metadata; TAP giữ chẩn đoán **đầu**. |
 
 ## ST-109 — HTTP Location + HEAD, 2026-11-15
 

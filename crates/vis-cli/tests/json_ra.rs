@@ -223,3 +223,95 @@ print(d["total"])"#;
     assert_eq!(dong[1], "1");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== ST-110: severity + `file` đúng tệp phụ =====
+
+/// (i) lỗi trong tệp phụ ⇒ `files` gồm **cả** a.vis (rỗng) + b.vis (lỗi), đúng thứ tự nạp.
+#[test]
+fn check_json_loi_trong_tep_phu() {
+    let d = tam("phu");
+    let a = ghi(&d, "a.vis", "use ./b\nprint(1)\n");
+    ghi(&d, "b.vis", "fn f() -> int:\n    return \"s\"\n");
+    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    assert_eq!(c, 1, "{e}");
+    assert_eq!(e, "");
+    let code = r#"import json,sys
+d=json.load(sys.stdin)
+print(len(d["files"]))
+print(d["files"][0]["file"].rsplit("/",1)[-1])
+print(len(d["files"][0]["diagnostics"]))
+print(d["files"][1]["file"].rsplit("/",1)[-1])
+print(d["files"][1]["diagnostics"][0]["code"])
+print(d["files"][1]["diagnostics"][0]["severity"])
+print(d["files"][1]["diagnostics"][0]["line"], d["files"][1]["diagnostics"][0]["col"])"#;
+    let out = py_json(code, &o);
+    assert_eq!(
+        out.lines().collect::<Vec<_>>(),
+        ["2", "a.vis", "0", "b.vis", "VS0412", "error", "2 5"],
+        "{o}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (j) lỗi ở **cả hai** ⇒ 2 mục `files`, mỗi mục 1 chẩn đoán, `a` trước `b`.
+#[test]
+fn check_json_loi_hai_tep() {
+    let d = tam("hai-phu");
+    let a = ghi(&d, "a.vis", "use ./b\nfn main():\n    let x: int = \"s\"\n");
+    ghi(&d, "b.vis", "fn f() -> int:\n    return \"t\"\n");
+    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    assert_eq!(c, 1, "{e}");
+    let code = r#"import json,sys
+d=json.load(sys.stdin)
+fs=d["files"]
+print(len(fs))
+print(fs[0]["file"].rsplit("/",1)[-1], len(fs[0]["diagnostics"]))
+print(fs[1]["file"].rsplit("/",1)[-1], len(fs[1]["diagnostics"]))
+print(fs[0]["diagnostics"][0]["severity"], fs[1]["diagnostics"][0]["severity"])"#;
+    let out = py_json(code, &o);
+    assert_eq!(out, "2\na.vis 1\nb.vis 1\nerror error\n");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (k) mọi chẩn đoán thường có `severity:"error"`.
+#[test]
+fn check_json_severity_error() {
+    let d = tam("severity");
+    let a = ghi(&d, "a.vis", "fn main():\n    let x: int = \"s\"\n");
+    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    assert_eq!(c, 1, "{e}");
+    assert!(o.contains(r#""severity":"error""#), "{o}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (l) tab trong `.vish` (`VS0107`) ⇒ `severity:"warning"` (ánh xạ từ `vis_diag::Severity`).
+#[test]
+fn check_json_severity_warning_tab() {
+    let d = tam("canh-bao");
+    let a = ghi(&d, "t.vish", "cmd x:\n\tprint(1)\n");
+    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    assert_eq!(c, 1, "{e}");
+    let code = r#"import json,sys
+d=json.load(sys.stdin)
+x=d["files"][0]["diagnostics"][0]
+print(x["code"], x["severity"], x["line"], x["col"])"#;
+    let out = py_json(code, &o);
+    assert_eq!(out, "VS0107 warning 2 1\n", "{o}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (m) **không** `--json` ⇒ TAP y hệt (không thêm trường/làm đổi dòng chẩn đoán).
+#[test]
+fn check_json_khong_co_tap_khong_doi() {
+    let d = tam("tap-check");
+    let a = ghi(&d, "a.vis", "fn main():\n    let x: int = \"s\"\n");
+    let f = a.to_str().unwrap();
+    let (c, o, e) = vis(&["check", f]);
+    assert_eq!(c, 1, "{e}");
+    assert_eq!(e, "");
+    let mong = format!(
+        "TAP version 13\n1..1\nnot ok 1 - {f}\n# VS0412 2:18 khai báo `let`: cần `int`, được `str`\n"
+    );
+    assert_eq!(o, mong);
+    let _ = std::fs::remove_dir_all(&d);
+}

@@ -154,6 +154,38 @@ struct ChanDoanCheck {
     msg: String,
     /// Tệp phụ (rỗng nếu chẩn đoán ở tệp chính).
     phu: String,
+    /// **ST-110**: `"error"` hoặc `"warning"` (lấy từ `vis_diag::Code.severity`).
+    severity: &'static str,
+}
+
+/// Tệp trong `check --json`: `rel` để khớp chẩn đoán, `hien` để in (tệp chính = đường dẫn đối số).
+struct TepJson {
+    rel: String,
+    hien: String,
+}
+
+/// Kết quả `check_all`: **mọi tệp đã nạp** (chính trước, module theo thứ tự `use`) + chẩn đoán.
+struct KetQuaCheck {
+    files: Vec<TepJson>,
+    diags: Vec<ChanDoanCheck>,
+}
+
+/// DFS **tiền tự** theo `deps`: chính trước, rồi module theo thứ tự `use` gặp.
+fn thu_tu_nap(
+    rel: &str,
+    deps: &[(String, Vec<String>)],
+    seen: &mut std::collections::BTreeSet<String>,
+    out: &mut Vec<String>,
+) {
+    if !seen.insert(rel.to_string()) {
+        return;
+    }
+    out.push(rel.to_string());
+    if let Some((_, con)) = deps.iter().find(|(r, _)| r == rel) {
+        for c in con {
+            thu_tu_nap(c, deps, seen, out);
+        }
+    }
 }
 
 #[allow(dead_code)] // giữ API cũ (mặc định kiểm kiểu) cho người đọc/tests.
@@ -170,6 +202,7 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
             col: 1,
             msg: format!("không đọc được: {e}"),
             phu: String::new(),
+            severity: "error",
         });
     }
     let loaded = modules::load_full(path, cho_ngoai, kiem_kieu).map_err(|e| ChanDoanCheck {
@@ -178,6 +211,7 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         col: 1,
         msg: e.to_string(),
         phu: String::new(),
+        severity: "error",
     })?;
     let la_vish = path.ends_with(".vish");
     let Some((rel, d)) = loaded.diags.first() else {
@@ -211,39 +245,76 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         col: d.col,
         msg: d.message.clone(),
         phu,
+        severity: severity_cua(d.code.severity),
     })
+}
+
+/// **ST-110**: ánh xạ **mức** của mã (`vis_diag::Severity`) — không thêm/chia lại sổ mã.
+fn severity_cua(s: vis_diag::Severity) -> &'static str {
+    match s {
+        vis_diag::Severity::Warning => "warning",
+        vis_diag::Severity::Error => "error",
+    }
 }
 
 /// **ST-101**: như [`check_mode`] nhưng trả **mọi** chẩn đoán (giữ thứ tự phát hiện) — cho `--json`.
 /// `vis check` TAP vẫn chỉ báo chẩn đoán **đầu** như trước; JSON cần đủ.
-fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Vec<ChanDoanCheck> {
+fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> KetQuaCheck {
     if let Err(e) = std::fs::read_to_string(path) {
-        return vec![ChanDoanCheck {
-            ma: "VS0201",
-            line: 1,
-            col: 1,
-            msg: format!("không đọc được: {e}"),
-            phu: String::new(),
-        }];
+        return KetQuaCheck {
+            files: vec![TepJson {
+                rel: path.to_string(),
+                hien: path.to_string(),
+            }],
+            diags: vec![ChanDoanCheck {
+                ma: "VS0201",
+                line: 1,
+                col: 1,
+                msg: format!("không đọc được: {e}"),
+                phu: String::new(),
+                severity: "error",
+            }],
+        };
     }
     let loaded = match modules::load_full(path, cho_ngoai, kiem_kieu) {
         Ok(l) => l,
         Err(e) => {
-            return vec![ChanDoanCheck {
-                ma: "VS0201",
-                line: 1,
-                col: 1,
-                msg: e.to_string(),
-                phu: String::new(),
-            }]
+            return KetQuaCheck {
+                files: vec![TepJson {
+                    rel: path.to_string(),
+                    hien: path.to_string(),
+                }],
+                diags: vec![ChanDoanCheck {
+                    ma: "VS0201",
+                    line: 1,
+                    col: 1,
+                    msg: e.to_string(),
+                    phu: String::new(),
+                    severity: "error",
+                }],
+            }
         }
     };
+    // `.vish` có thể có `FileUnit.rel` rỗng ⇒ fallback đúng đường dẫn đối số (không mất chẩn đoán).
+    let root = loaded
+        .files
+        .last()
+        .map(|f| f.rel.clone())
+        .filter(|r| !r.is_empty())
+        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(path).to_string());
+    let mut thu_tu = Vec::new();
+    let mut seen = std::collections::BTreeSet::new();
+    thu_tu_nap(&root, &loaded.deps, &mut seen, &mut thu_tu);
+    for f in &loaded.files {
+        if !seen.contains(&f.rel) {
+            thu_tu.push(f.rel.clone());
+        }
+    }
     let la_vish = path.ends_with(".vish");
-    let chinh = path.rsplit('/').next().unwrap_or(path);
-    let mut out = Vec::new();
+    let mut diags = Vec::new();
     for (rel, d) in &loaded.diags {
         let ma = d.code.short;
-        let phu = if rel == chinh {
+        let phu = if rel == &root {
             String::new()
         } else {
             rel.clone()
@@ -259,15 +330,27 @@ fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Vec<ChanDoanCheck>
                 continue;
             }
         }
-        out.push(ChanDoanCheck {
+        diags.push(ChanDoanCheck {
             ma,
             line: d.line,
             col: d.col,
             msg: d.message.clone(),
             phu,
+            severity: severity_cua(d.code.severity),
         });
     }
-    out
+    let files = thu_tu
+        .into_iter()
+        .map(|rel| TepJson {
+            hien: if rel == root {
+                path.to_string()
+            } else {
+                rel.clone()
+            },
+            rel,
+        })
+        .collect();
+    KetQuaCheck { files, diags }
 }
 
 /// **ST-101**: `vis check --json` — **một** object nén trên stdout; `line`/`col` **1-based**; thứ tự
@@ -276,29 +359,40 @@ fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCod
     let mut files = String::new();
     let mut ok = true;
     for (i, path) in args.iter().enumerate() {
-        let d = check_all(path, cho_ngoai, kiem_kieu);
-        let sach = d.is_empty();
-        ok &= sach;
+        let kq = check_all(path, cho_ngoai, kiem_kieu);
+        if !kq.diags.is_empty() {
+            ok = false;
+        }
         if i > 0 {
             files.push(',');
         }
-        files.push_str(&format!(
-            "{{\"file\":\"{}\",\"diagnostics\":[",
-            json_esc::esc(path)
-        ));
-        for (j, x) in d.iter().enumerate() {
+        for (j, tep) in kq.files.iter().enumerate() {
             if j > 0 {
                 files.push(',');
             }
             files.push_str(&format!(
-                "{{\"code\":\"{}\",\"line\":{},\"col\":{},\"message\":\"{}\"}}",
-                json_esc::esc(x.ma),
-                x.line,
-                x.col,
-                json_esc::esc(&x.msg)
+                "{{\"file\":\"{}\",\"diagnostics\":[",
+                json_esc::esc(&tep.hien)
             ));
+            let cua = kq
+                .diags
+                .iter()
+                .filter(|x| (tep.rel == kq.files[0].rel && x.phu.is_empty()) || x.phu == tep.rel);
+            for (k, x) in cua.enumerate() {
+                if k > 0 {
+                    files.push(',');
+                }
+                files.push_str(&format!(
+                    "{{\"code\":\"{}\",\"line\":{},\"col\":{},\"severity\":\"{}\",\"message\":\"{}\"}}",
+                    json_esc::esc(x.ma),
+                    x.line,
+                    x.col,
+                    x.severity,
+                    json_esc::esc(&x.msg)
+                ));
+            }
+            files.push_str("]}");
         }
-        files.push_str("]}");
     }
     let body = format!("{{\"ok\":{},\"files\":[{files}]}}\n", ok);
     if !xuat_stdout(&body) {
