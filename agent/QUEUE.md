@@ -212,7 +212,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-112 | **nợ correctness**: chẩn đoán **đa tệp** — câu lệnh cấp tệp chính có thể bị gắn sang module (span mỗi tệp bắt đầu từ 0). Chẩn đoán → sửa tối thiểu hoặc **kế hoạch** nếu >150 dòng | ST-111 | 3 h | **DONE** | tái hiện + chỉ đúng chỗ; nếu sửa: 1056 test xanh, ca mới cho cả 2 chiều; nếu không: kế hoạch ≤30 dòng |
 | ST-113 | **soak cuối** (≥10 vòng tuần tự) + **R20** + cập nhật ROADMAP | ST-112 | 3 h | **DONE** | 10/10 xanh hoặc T-INFRA có log; R20 `report-check` PASS |
 | ST-114a | **Span file-id (1/2)**: thêm `Span.file: u16` (mặc định 0 = y hệt), luồn file-id qua lex/parse/lower; **chưa** đổi chẩn đoán | ST-113 | 3 h | **DONE** | 1056 test y hệt; `Span::new` cũ giữ nguyên; checksum + diff sha256 trùng |
-| ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **READY** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
+| ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **DONE** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
 | ST-115 | báo cáo **R21** | ST-114a..ST-114b | 1,5 h | **READY** | MD+JSON; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
@@ -1602,3 +1602,15 @@ APPROVED 2026-11-14 Agent 0
 > ⇒ `file:0`, `return` trong `b.vis` ⇒ `file:1`. **Checksum 1056 test `6c1ea8bf…` trước = sau**; **sha256 diff `62bdd699…` trùng**;
 > sem **447/22**, parity **398+49**, host **54/54**, R1 max **1060**. Map chẩn đoán **chưa đổi** (đúng hợp đồng — ST-114b).
 > **ST-114b mở** (dùng `file` để map chẩn đoán + `vi_tri` theo đúng văn bản).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-114b DONE — NỢ CORRECTNESS ST-112 ĐÃ ĐÓNG.** Commit `614d55e0` (**Agent 2 tự commit, đã push**). `Nap.file_rel` cấp **cùng**
+> `file_id` (chính 0, module theo `use`); tyck `rel = file_rel[d.span.file]`; **fallback heuristic span cũ chỉ khi** file-id ngoài bảng
+> (**có `eprintln` cảnh báo**); `vi_tri` dùng **`f.text` của rel đúng** ⇒ **TAP và `--json`** đều đúng dòng:cột. **4 kịch bản**:
+> (a) a cấp tệp `b.vis 2:3` ❌ → **`a.vis 2:14`** ✅; (d) cả hai dồn `b.vis` ❌ → **`a.vis 2:14` + `b.vis 5:5`** ✅; (b)(c) vẫn đúng;
+> TAP không còn `(b.vis:` sai. **6 ca** (5/6 **đỏ** trước) gồm ca `b.vis` **dài ≥100 dòng**. Đo: **1062 test** · sem **447/22** ·
+> `--vm` **447 ok/0 SKIP** · host **54/54** · parity **398+49** · diff **100k/0 lệch** (163,5 s) · `VBC1` **53** **không đổi**.
+> Hạn chế còn lại (ghi rõ): span **tổng hợp** do lower sinh vẫn `file=0` (chưa thấy ca thực tế); **LSP chưa** dùng file-id để publish
+> chẩn đoán tệp phụ; **không** tuyên bố "mọi chẩn đoán đa tệp đúng 100%" cho node tổng hợp.
+> **ST-115 mở** (R21).
