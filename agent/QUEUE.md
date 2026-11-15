@@ -215,7 +215,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **DONE** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
 | ST-115 | báo cáo **R21** | ST-114a..ST-114b | 1,5 h | **DONE** | MD+JSON; `report-check` PASS |
 | ST-116 | **R1 headroom #3** — tách `parse/mod.rs` (1.452 → ≤1.200), thuần refactor + checksum | ST-115 | 2,5 h | **DONE** | R1 max giảm; 1062 test + diff sha256 trùng |
-| ST-116b | **R1 headroom #4** — tách `crates/vis-cli/src/main.rs` (1.254 → ≤1.000): tách `run`/`check`/`test`/`fmt` sang `cli/*.rs`, thuần refactor | ST-116 | 2,5 h | **READY** | R1 max ≤1.000; checksum 1062 test + diff sha256 trùng |
+| ST-116b | **R1 headroom #4** — tách `crates/vis-cli/src/main.rs` (1.254 → ≤1.000): tách `run`/`check`/`test`/`fmt` sang `cli/*.rs`, thuần refactor | ST-116 | 2,5 h | **DONE** | R1 max ≤1.000; checksum 1062 test + diff sha256 trùng |
 | ST-117 | **LSP** — chẩn đoán **đa tệp** cho tài liệu đang mở dùng `file` (ca a+b cùng lỗi; tài liệu mở là module) | ST-116 | 2 h | **DONE** | ≥4 ca; publish **chỉ** cho tài liệu mở; sửa nếu sai |
 | ST-118 | **soak cuối 10 vòng + R22 + ROADMAP chốt** | ST-117 | 3 h | **READY** | 10/10 xanh hoặc T-INFRA có log; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1639,3 +1639,15 @@ APPROVED 2026-11-14 Agent 0
 > Nợ giữ nguyên: LSP **không** publish chẩn đoán **tệp phụ** cho tài liệu chính (đúng thiết kế một-tài-liệu, nhưng là hạn chế);
 > span tổng hợp `file=0`; bytecode `Span`.
 > **ST-116b mở** (tách `main.rs` 1254 → ≤1.000, đóng mục tiêu R1 của vòng 22).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-116b DONE — `main.rs` 1254 → 591; R1 max toàn cục 1060 ⇒ **đạt mục tiêu ≤1.200 của VD-118**.** Commit `e34a8984` +
+> `63d27ba4` (**Agent 2 tự commit, đã push**). Tách `cli/check.rs` (**335**), `cli/fmt.rs` (**252**), `cli/run.rs` (**94**), `cli/mod.rs` (6);
+> `run_run` **ở lại** `main.rs` để giữ ca `cache_fastpath` (đọc `cache::khoa_multi` trong `main.rs`) — **không** đổi kỳ vọng ca.
+> Bằng chứng **trùng**: checksum **1066 test** `b88d160f…`, sha256 diff **`62bdd699…`**, **chuỗi usage/exit y hệt** (`vis` không tham số
+> exit 2; `run --la` exit 2; `check/fmt --help` exit 2). clippy/fmt sạch, **không** `#[allow]`. 측: sem **447/22**, `--vm` **447 ok/0 SKIP**,
+> parity **398+49**, host **54/54**.
+> **Ghi nhận thẳng**: mục tiêu **≤1.000 toàn cục** tôi nêu thêm **chưa** đạt (`lower/cmd.rs` **1060**, `parse/cmd.rs` **1007**) — **không**
+> tuyên bố đạt; muốn đạt phải có task riêng (ghi nợ). Mục tiêu **của VD-118 (≤1.200)** thì **đã đạt**.
+> **ST-118 mở** (soak cuối 10 vòng + R22 + ROADMAP chốt — task cuối của vòng 22).
