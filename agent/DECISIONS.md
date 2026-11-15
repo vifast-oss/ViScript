@@ -894,3 +894,9 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   `file`** (không đoán theo khoảng span) và `vi_tri`/thông điệp dùng **đúng văn bản** của tệp đó; **TAP và `--json`** phải cùng đúng.
   (4) **Bytecode (`VBC1`) không đổi** (span trong một tệp giữ nguyên); LSP dùng `file` để chọn tài liệu. (5) Chia 2 task ≤3 h; task 1
   **không** đổi hành vi (checksum + diff sha256 trùng), task 2 mới đổi chẩn đoán + thêm ca. (6) Không nới ngưỡng; không thêm crate.
+
+- **VD-118** **Vòng 22 — hạ R1 lần cuối, LSP đa tệp, soak chốt + R22 (ST-116..ST-118)**: (1) Tách `parse/mod.rs` (**1.452**) để **R1 max ≤1.200**,
+  **thuần refactor**, bằng chứng checksum 1062 test + sha256 differential trước = sau. (2) LSP: xác nhận **chẩn đoán chỉ publish cho tài
+  liệu đang mở** và **đúng tệp** nhờ `Span.file`; ca (a) tài liệu mở là tệp chính có module lỗi, (b) tài liệu mở **là** module, (c) hai
+  tệp cùng lỗi; nếu sai ⇒ sửa (không "đúng một nửa"). (3) **Soak cuối 10 vòng** tuần tự + **R22** + `ROADMAP.md` chốt trạng thái cuối
+  (kèm **điều kiện đóng 100%**). (4) Không nới ngưỡng; không thêm crate.
