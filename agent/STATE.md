@@ -6,14 +6,25 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-117 — LSP chẩn đoán đa tệp** — hành vi **đã đúng từ ST-114b**, chỉ thêm **4 ca**;
-                cổng PASS; **chưa commit**.
-Bước          : 3/3 (chứng minh 4/4 kịch bản đúng trước → 4 ca pass → 1066 test/gate).
+Task          : **ST-116b — tách `crates/vis-cli/src/main.rs` 1254 → 591** (`cli/check.rs` 335,
+                `cli/fmt.rs` 252, `cli/run.rs` 94), thuần refactor; cổng PASS; **chưa commit**.
+Bước          : 3/3 (tách → checksum/sha/usage trùng, 1066 test → gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:32:10Z**; **1066** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:45:51Z**; **1066** test / sem
                 **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
-                **398/398 + 49** / diff **100k / 0 lệch** / R1 max **1254** (`main.rs`)
-Việc dở       : commit `[ST-117]` + push (đã được uỷ quyền)
+                **398/398 + 49** / diff **100k / 0 lệch** / main.rs **591**; R1 max toàn cục **1060**
+                (`vis-types/src/lower/cmd.rs`) — **chưa ≤1000**
+Việc dở       : commit `[ST-116b]` + push (đã được uỷ quyền)
+
+## ST-116b — tách main.rs, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Trước** | `main.rs` **1254**; khối check 268, fmt 246, run 416, run_dry 21, còn lại core/main. |
+| 1 | **Tách** | `cli/check.rs` **335** (types/check_one/check_mode/check_all/run_check_json/run_check), `cli/fmt.rs` **252** (dem_lech/usage_fmt/FmtMode/gom_nguon/run_fmt), `cli/run.rs` **94** (ma_thoat/probe/in_sandbox/run_dry); **`run_run` ở lại main** để giữ `cache::khoa_multi` (ca `cache_fastpath` đọc main.rs); main **591**. |
+| 2 | **Bằng chứng** | Checksum **1066** test **`b88d160f…` trước = sau**; diff sha **`62bdd699…` trùng**; usage/exit **giống** (`vis` exit2, `vis run --la` exit2, `check/fmt --help` exit2); sem **447/22**; `vis test`/`--vm` 447/0 SKIP; parity **398+49**; host **54/54**; fmt/clippy `-D warnings` sạch, không `#[allow]`; log `st116b-truoc-sau.log`. |
+| 3 | **R1** | main.rs **1254 → 591** (≤1000); tuy nhiên **R1 max toàn cục 1254 → 1060** (`crates/vis-types/src/lower/cmd.rs`) — **chưa ≤1000**; kế tiếp `parse/cmd.rs` **1007**. |
+| 4 | **Nợ** | Mục tiêu "R1 max ≤1000" **chưa đạt** vì `lower/cmd.rs` 1060 + `parse/cmd.rs` 1007 ngoài phạm vi main.rs; cần ST-116c. Không đổi usage/exit/cache; 100 nợ R21 giữ nguyên. |
 
 ## ST-117 — LSP chẩn đoán đa tệp, 2026-11-15
 
