@@ -6,17 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-111 — báo cáo R19** (chốt ST-108/109/110) — xong, `report-check --all` PASS, cổng
-                PASS; **chưa commit**.
-Bước          : 3/3 (JSON 125 hàng QUEUE@a3368319 + MD §1..§7/§19 + đo lại + gate).
+Task          : **ST-112 — chẩn đoán đa tệp gắn sai tệp** — **KHÔNG sửa** (>150 dòng): đã tái hiện, chỉ
+                đúng `modules.rs:795-820`, viết kế hoạch `Span` file-id + cập nhật ROADMAP; cổng PASS;
+                **chưa commit**.
+Bước          : 3/3 (log `st112-chan-doan.log` + quyết định không sửa + `st112-ke-hoach.md` 30 dòng +
+                ROADMAP §C).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:31:12Z** (report-check PASS: **19
-                báo cáo, 125 hàng QUEUE**); **1056** test / sem **447/22** (interp **27**) / `vis test`
-                **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** /
-                soak **8/8** (818 s, ST-98) / differential **100.000 / 0 lệch** (166,3 s) / cache
-                **520×4 / 0 lệch** / fuzz **2.224.775 ca / 0 vi phạm** / targets **18/18 check** /
-                fmt **497** / **FUNCS 52** / R1 max **1060**
-Việc dở       : commit `[ST-111]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T02:40:57Z**; **1056** test / sem
+                **447/22** / host **54/54** / R1 max **1060**; report-check **PASS (19 báo cáo, 127 hàng
+                QUEUE)**
+Việc dở       : commit `[ST-112]` + push (đã được uỷ quyền)
+
+## ST-112 — chẩn đoán đa tệp: không sửa, kế hoạch, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Tái hiện** | `a.vis` (`use ./b` + `let x: int = "s"` cấp tệp), `b.vis` sạch ⇒ chẩn đoán nằm dưới **`b.vis`** (`line 2 col 3`), không phải `a.vis`. b có lỗi `return "s"` ⇒ **cả hai** dưới `b.vis` (2 chẩn đoán). TAP cũng in `(b.vis:2:3)`. Log `JOURNAL/st112-chan-doan.log` sha256 `25747ec8…`. |
+| 1 | **Chỉ đúng chỗ** | `modules.rs:795-820`: chỉ duyệt `hir.items` (`span_cua(it)`), **không** có file-id/main-stmt; item `b.vis` span **0..34** đứng trước; chẩn đoán `let` a span **21..24** và `return` b span **23..33** đều nằm trong ⇒ cả hai gán b; `vi_tri(&f.text, span)` tính dòng:cột trên văn bản b ⇒ sai. **Gốc**: `Span` không mang tệp, mỗi tệp bắt đầu `start = 0`, gộp HIR chồng lấn. |
+| 2 | **Quyết định** | **KHÔNG sửa** trong 150 dòng: cần thêm `file: u16` vào `Span` lan **90** `Span::new`/5 crate, **13** chỗ cắt text, `modules.rs` map, `interp::pos`, codegen, LSP; ước lượng >150, rủi ro vị trí runtime/`VBC1`. Kế hoạch `JOURNAL/st112-ke-hoach.md` **30 dòng**; ROADMAP §C "Nợ correctness ưu tiên". |
+| 3 | **Đo** | Không đổi mã ⇒ **1056** test; sem **447/22**; gate PASS; R1 max **1060** (`cmd.rs`), `main.rs` 1254; `report-check` PASS. |
+| 4 | **Nợ** | Nợ **span file-id** vẫn mở (correctness), **chưa** tuyên bố chẩn đoán đa tệp đúng hoàn toàn; cần task riêng 4–6 h + review; 96 mục R19 + nợ này đã ghi ROADMAP. |
 
 ## ST-111 — báo cáo R19, 2026-11-15
 

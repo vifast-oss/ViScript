@@ -53,3 +53,13 @@ target/release/vis-parse-fuzz --seconds 60 --seed 20261115 # 0 vi phạm
 - `reports/R1..R16` — báo cáo từng vòng (bắt đầu `R15`/`R16`).
 - [`HOST-BAO-DAM.md`](HOST-BAO-DAM.md) — hợp chuẩn host 4 nền.
 - [`STATE.md`](STATE.md) — trạng thái hiện tại + việc dở.
+
+## C. Nợ correctness ưu tiên (ST-112)
+
+- **`Span` thiếu file-id** — mỗi tệp lex/parse bắt đầu `start = 0`; gộp HIR làm span chồng lấn ⇒ chẩn
+  đoán **cấp tệp** của tệp chính có thể bị gắn sang module (ST-110 mới sửa được lỗi trong item/`fn main`).
+  Tái hiện + vị trí map: `agent/JOURNAL/st112-chan-doan.log`.
+- **Kế hoạch**: `agent/JOURNAL/st112-ke-hoach.md` — thêm `file: u16` vào `Span`; ước lượng **>150 dòng**
+  (90 `Span::new`, 13 chỗ cắt text, `modules.rs` map, `interp::pos`, codegen, LSP) ⇒ **chưa sửa**.
+- **Không** tuyên bố “chẩn đoán đa tệp đúng hoàn toàn” cho tới khi nợ này đóng; ca kiểm dự kiến:
+  top-level a, fn a, module b, cả hai, TAP `a.vis`/`b.vis` + sem/parity/host/diff.
