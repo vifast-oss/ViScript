@@ -6,15 +6,25 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-105 — `vis test --timeout <ms>`** — xong, đã đo + cổng + differential;
-                **chưa commit**.
-Bước          : 3/3 (đỏ 4/5 → poll `try_wait` 10 ms + kill + `not ok` → 5 ca → 1045 test → diff 100k →
-                cổng).
+Task          : **ST-106 — tách `lower/cmd.rs` (thuần refactor)** — xong, đã đo trước/sau + cổng +
+                differential; **chưa commit**.
+Bước          : 3/3 (wc + checksum 1045 test/diff trước → tách `cmd/doc.rs` + `cmd/hop.rs` → 1045 test
+                y hệt + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:05:39Z**; **1045** test / sem
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T00:40:26Z**; **1045** test / sem
                 **447/22 nhóm** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** /
-                parity **398/398 + 49** / differential **100.000 / 0 lệch** (154,0 s) / timeout **5 ca**
-Việc dở       : commit `[ST-105]` + push (đã được uỷ quyền)
+                parity **398/398 + 49** / differential **100.000 / 0 lệch** (158,8 s)
+Việc dở       : commit `[ST-106]` + push (đã được uỷ quyền)
+
+## ST-106 — tách `lower/cmd.rs`, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Trước** | `cmd.rs` **1491** dòng (max R1); `lower.rs` **1482**. Top 5: `ha_stage` **782**, `ha_closure` **92**, `run_shell_tu` **66**, `kieu_stage` **62**, `ngoai_call` **49**. Checksum 1045 test (dòng `test … ok` sort) `5c194bb8…`; diff bất biến `62bdd699…`. |
+| 1 | **Tách** | `cmd/doc.rs` **235**: `tach_tu`/`lit` + `ha_closure` (closure + span tuyệt đối), `ngoai_call` (`exec.*`, `--raw`), `boc_render`; `cmd/hop.rs` **213**: `run_shell_tu`, `ha_dong`, `ha_pipeline`, `kieu_stage`, `bien_gia_tri`, `ten_lenh`; `cmd.rs` **1060** giữ `ha_stage`, `chuyen_doi`, helper nhóm/`kieu_text`/`ten_kieu`. Chỉ đổi `pub(super)` cho method chuyển module; logic/thứ tự chẩn đoán/API công khai **không đổi**. |
+| 2 | **Sau** | `cmd.rs` **1491 → 1060**; R1 max **1491 (`cmd.rs`) → 1482 (`lower.rs`)**; tệp mới 235/213 ≤700; `lower.rs`/các tệp khác **không đổi**. Checksum test **vẫn `5c194bb8…` (1045)**, diff bất biến **vẫn `62bdd699…`**. |
+| 3 | **Đo** | **1045** test = 21+96+27+154+26+62+9+**650**; sem **447/22**; `vis test` **447 ok**; `--vm` **447 ok + 0 SKIP**; host **54/54**; parity **398/398 + 49**; `diag_cmp` **364/49/34**; differential **`tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=158.8 toc_do=630/s seed=20261115`**; `VBC1` **53**; **7 sổ/32 mã**; allowlist **6**. Clippy `-D warnings` sạch (không `#[allow]`), fmt sạch. |
+| 4 | **Nợ** | `lower.rs` **1482** vẫn là max R1 (chưa tách; ngoài phạm vi ST-106) — muốn max ≤1200 phải tách `lower.rs` ở task sau; `cmd.rs` vẫn 1060 (dưới 1200); `ha_stage` 782 vẫn lớn, chưa tách tiếp; thư mục mới `lower/cmd/` song song `cmd.rs`; kiểm chứng chỉ bằng test/checksum, không có snapshot AST. |
 
 ## ST-105 — `vis test --timeout`, 2026-11-14
 
