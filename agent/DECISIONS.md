@@ -874,3 +874,9 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   (2) `vis test --timeout <ms>` (mặc định **không** đổi): ca vượt hạn ⇒ **`not ok`** với thông điệp "quá hạn", **giết** tiến trình con,
   không rò; áp cho cả hai đường. (3) Tách `lower/cmd.rs` để **R1 max giảm** (mục tiêu ≤1.200 dòng) **không** đổi hành vi (447 sem +
   parity **398+49** bất biến). (4) Không nới ngưỡng; không thêm crate.
+
+- **VD-115** **Vòng 19 — hạ R1 max + HTTP/Location + `--json` chẩn đoán theo tệp (ST-108..ST-111)**: (1) Tách `lower.rs` để **R1 max ≤ 1.200**
+  dòng; **thuần refactor**, bằng chứng = **checksum 1045 dòng test** + **sha256 differential** trước = sau. (2) HTTP: resolve `Location`
+  **đầy đủ** (đường dẫn tương đối có `..`/`.`; query-only `?x=1`; fragment bỏ), ghi rõ **chunk trailer bị bỏ qua**, hỗ trợ **`HEAD`**
+  (không đọc thân). (3) `check --json`: thêm `severity` (`error`/`warning`) và **`file` đúng tệp phụ** cho chẩn đoán module (nợ từ ST-101);
+  **khoá cố định**, TAP **không đổi**. (4) Không nới ngưỡng; không thêm crate.

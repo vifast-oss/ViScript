@@ -204,7 +204,11 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-104 | **HTTP** — `Transfer-Encoding: chunked` + theo **redirect 3xx** (tối đa 5) + `Connection: close` | ST-103 | 3 h | **DONE** | ≥6 ca với server loopback; không treo; hai đường cùng byte |
 | ST-105 | **`vis test --timeout <ms>`** — ca treo bị **cắt** và đánh `not ok` rõ | ST-104 | 2,5 h | **DONE** | ≥4 ca; không rò tiến trình; mặc định không đổi |
 | ST-106 | **R1 headroom** — tách `lower/cmd.rs` (1.491 → ≤1.200) không đổi hành vi | ST-105 | 2 h | **DONE** | R1 max giảm; 447 sem + parity không đổi |
-| ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
+| ST-107 | báo cáo **R18** | ST-104..ST-106 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
+| ST-108 | **R1 headroom #2** — tách `lower.rs` (1.482 → ≤1.200), thuần refactor, checksum chứng minh | ST-107 | 2,5 h | **READY** | R1 max ≤1.200; 1045 test + diff sha256 trùng |
+| ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **READY** | ≥5 ca loopback; không hồi quy 16 ca http |
+| ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **READY** | ≥4 ca; khoá cố định; TAP không đổi |
+| ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **READY** | MD+JSON; nợ đánh số |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
