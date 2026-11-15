@@ -6,14 +6,26 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-114b — dùng `Span.file` trả chẩn đoán về đúng tệp** — xong: 6 ca mới xanh,
-                JSON/TAP đúng tệp+dòng, nợ ST-112 **đã đóng**; cổng PASS; **chưa commit**.
-Bước          : 3/3 (red-first 5/6 đỏ → map `file_rel` → 6/6 xanh, 1062 test, gate).
+Task          : **ST-115 — báo cáo R21** (chốt ST-114a/114b) — xong, `report-check --all` PASS, cổng
+                PASS; **chưa commit**.
+Bước          : 3/3 (JSON 130 hàng QUEUE@cfc68e8c + MD §1..§8/§19 + đo lại + gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T04:09:41Z**; **1062** test / sem
-                **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
-                **398/398 + 49** / diff **100k / 0 lệch** / R1 max **1452** (`parse/mod.rs`) ≤1500
-Việc dở       : commit `[ST-114b]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T04:20:31Z** (report-check PASS: **21
+                báo cáo, 130 hàng QUEUE**); **1062** test / sem **447/22** / `vis test` **447 ok** (`--vm`
+                **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / diff **100.000 / 0
+                lệch** / cache **520×4 / 0 lệch** / fuzz **2.503.726 ca / 0 vi phạm** / targets **18/18
+                check** / **FUNCS 52** / R1 max **1452** (`parse/mod.rs`)
+Việc dở       : commit `[ST-115]` + push (đã được uỷ quyền)
+
+## ST-115 — báo cáo R21, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **JSON** | `R21-viscript.json` + `.license`: `round=21`, `head=cfc68e8c`, **130 task** (129 DONE + ST-115 READY), `blocked=[]`, 11 khoá; `report-check --all` **PASS (21 báo cáo, 130 hàng)**. |
+| 1 | **MD** | `R21-viscript.md` **121 dòng**: tóm tắt 5 dòng; bảng ST-114a/114b/ST-115; §3 + **§3b bằng chứng mới** (Span.file 0/1, checksum `6c1ea8bf…` trùng, diff sha `62bdd699…` trùng, 4 kịch bản JSON trước/sau, TAP, 6 ca red-first); §4 §19 **8 mức không đổi** + đóng nợ đa tệp; §5 nợ **100** (96 + 97..100); §6 **VD-117**; §7 máy kiểm; §8 kết luận. |
+| 2 | **Đo** | **1062** test = 21+96+27+154+**27**+62+9+**666**; sem **447/22**; `vis test` **447 ok** / `--vm` **447 ok + 0 SKIP**; parity **398/398 + 49**; host **54/54 ×2**; cache **520×4, 0 lệch, 24,62 s**; diff **163,5 s, 0 lệch**; fuzz **2.503.726 ca / 56.966.444 token / 0 vi phạm**; soak **10/10 1255 s** (ST-113); targets **18/18**; fmt **497**; `FUNCS` **52**; `VBC1` **53**; **32 mã**; allowlist **6**; R1 max **1452**. |
+| 3 | **Cổng** | **PASS** `2026-11-15T04:20:31Z`; log `st115-gate-fast.log`; 3 dòng cuối: `test result: ok. 0 passed; …` / `--- L0 test: OK` / `vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)`. |
+| 4 | **Nợ** | **100 mục** (R20 96 + mới 97..100): span tổng hợp `file=0`; LSP chưa publish tệp phụ; bytecode `Span` không đổi; `parse/mod.rs` **1452** gần trần R1. Nợ correctness ST-112 **đã đóng** (trừ span tổng hợp). |
 
 ## ST-114b — chẩn đoán đa tệp đúng tệp, 2026-11-15
 
