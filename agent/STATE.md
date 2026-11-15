@@ -6,16 +6,24 @@ Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). C
 ```
 HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
 BUILD_ID      : —
-Task          : **ST-115 — báo cáo R21** (chốt ST-114a/114b) — xong, `report-check --all` PASS, cổng
-                PASS; **chưa commit**.
-Bước          : 3/3 (JSON 130 hàng QUEUE@cfc68e8c + MD §1..§8/§19 + đo lại + gate).
+Task          : **ST-116 — tách `parse/mod.rs` 1452 → 1069** (khai báo A.1 sang
+                `parse/khai_bao.rs` 391), thuần refactor; cổng PASS; **chưa commit**.
+Bước          : 3/3 (tách → checksum/sha trùng, 1062 test → gate).
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T04:20:31Z** (report-check PASS: **21
-                báo cáo, 130 hàng QUEUE**); **1062** test / sem **447/22** / `vis test` **447 ok** (`--vm`
-                **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / diff **100.000 / 0
-                lệch** / cache **520×4 / 0 lệch** / fuzz **2.503.726 ca / 0 vi phạm** / targets **18/18
-                check** / **FUNCS 52** / R1 max **1452** (`parse/mod.rs`)
-Việc dở       : commit `[ST-115]` + push (đã được uỷ quyền)
+Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T05:22:15Z**; **1062** test / sem
+                **447/22** / `vis test` **447 ok** (`--vm` **447 ok + 0 SKIP**) / host **54/54** / parity
+                **398/398 + 49** / diff **100k / 0 lệch** / R1 max **1254** (`main.rs`)
+Việc dở       : commit `[ST-116]` + push (đã được uỷ quyền)
+
+## ST-116 — tách parse/mod.rs, 2026-11-15
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Trước** | `parse/mod.rs` **1452**; 6 bộ phận lớn nhất: API 161, Parser core 241, file/item/use 112, **khai báo A.1 385**, type/pattern 226, suite/câu lệnh 327. |
+| 1 | **Tách** | Chuyển **385 dòng** khai báo A.1 (`fn/cmd/test/extern/type/enum/alias/newtype/trait/impl/const/params/generics/grant/record`) sang `parse/khai_bao.rs` **391** dòng; `mod khai_bao` **private**, 19 method `pub(super)`, không đổi API công khai/logic/thứ tự. `parse/mod.rs` **1069**. |
+| 2 | **Bằng chứng** | Checksum **1062** test **`c996f294…` trước = sau**; sha256 dòng diff **`62bdd699…` trùng**; sem **447/22**; `vis test`/`--vm` 447/0 SKIP; parity **398+49**; host **54/54**; fmt/clippy **-D warnings** sạch, không `#[allow]`; log `st116-truoc-sau.log`. |
+| 3 | **R1** | **1452 (`parse/mod.rs`) → 1254 (`main.rs`)**; `parse/mod.rs` 1069, `khai_bao.rs` 391, `cmd.rs` 1007, `expr.rs` 663. |
+| 4 | **Nợ** | Không thêm nợ; vẫn 100 mục R21 (span tổng hợp/LSP/bytecode/R1 main 1254). |
 
 ## ST-115 — báo cáo R21, 2026-11-15
 
