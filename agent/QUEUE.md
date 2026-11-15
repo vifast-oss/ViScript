@@ -209,7 +209,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-109 | **HTTP** — resolve `Location` đầy đủ (`..`, query-only) + tài liệu chunk trailer + `HEAD` | ST-108 | 2,5 h | **DONE** | ≥5 ca loopback; không hồi quy 16 ca http |
 | ST-110 | **`check --json`**: thêm `severity` + `file` **đúng tệp phụ** cho chẩn đoán module | ST-109 | 2 h | **DONE** | ≥4 ca; khoá cố định; TAP không đổi |
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
-| ST-112 | **nợ correctness**: chẩn đoán **đa tệp** — câu lệnh cấp tệp chính có thể bị gắn sang module (span mỗi tệp bắt đầu từ 0). Chẩn đoán → sửa tối thiểu hoặc **kế hoạch** nếu >150 dòng | ST-111 | 3 h | **READY** | tái hiện + chỉ đúng chỗ; nếu sửa: 1056 test xanh, ca mới cho cả 2 chiều; nếu không: kế hoạch ≤30 dòng |
+| ST-112 | **nợ correctness**: chẩn đoán **đa tệp** — câu lệnh cấp tệp chính có thể bị gắn sang module (span mỗi tệp bắt đầu từ 0). Chẩn đoán → sửa tối thiểu hoặc **kế hoạch** nếu >150 dòng | ST-111 | 3 h | **DONE** | tái hiện + chỉ đúng chỗ; nếu sửa: 1056 test xanh, ca mới cho cả 2 chiều; nếu không: kế hoạch ≤30 dòng |
 | ST-113 | **soak cuối** (≥10 vòng tuần tự) + **R20** + cập nhật ROADMAP | ST-112 | 3 h | **READY** | 10/10 xanh hoặc T-INFRA có log; R20 `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
@@ -1577,3 +1577,15 @@ APPROVED 2026-11-14 Agent 0
 > **bắt đầu từ 0** ⇒ cần **offset/file-id cho `Span`** ở task sau. Đây là **hạn chế thật của chẩn đoán**, không chỉ của JSON.
 > Nợ khác: `check --json` nhiều đối số có thể lặp module; `files` chưa có metadata `main`/`phụ`; TAP chỉ báo chẩn đoán **đầu**.
 > **ST-111 mở** (R19).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-112 DONE — chẩn đoán ĐÚNG (tái hiện + chỉ đúng chỗ), quyết định **KHÔNG sửa** là **đúng luật**.** Commit `7c3f5a49`
+> (**Agent 2 tự commit, đã push**). Tái hiện: `a.vis` có `use ./b` + `let x: int = "s"` cấp tệp ⇒ JSON gắn chẩn đoán vào
+> **`b.vis`** (`2:3`) và TAP in `not ok 1 - a.vis (b.vis:2:3)` — **sai tệp**. Chỉ đúng dòng: `modules.rs:795-820` map `span → rel`
+> **chỉ duyệt `hir.items`** (không có file-id) ⇒ item `b` (span 0..34) **đứng trước** thắng item `a`; `dòng:cột` tính lại trên
+> **văn bản b**. Gốc: **`Span` không mang tệp**, mỗi tệp bắt đầu `start = 0` ⇒ span **chồng lấn**. Ước lượng **>150 dòng**
+> (`Span` + **90** `Span::new` ở 5 crate + **13** chỗ cắt `&text[span]` + `vi_tri`/`interp::pos`/codegen/LSP) ⇒ dừng, viết
+> `st112-ke-hoach.md` (**30 dòng**: `Span.file: u16`, thứ tự, rủi ro, ca) + `ROADMAP.md` §C. **0 dòng code**; **không** tuyên bố
+> chẩn đoán đa tệp đúng hoàn toàn. Đo: **1056 test**, sem **447/22**, parity **398+49**, host **54/54**, R1 max **1060**.
+> **ST-113 mở** (soak cuối ≥10 vòng + R20).
