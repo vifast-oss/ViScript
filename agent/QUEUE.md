@@ -211,7 +211,7 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-111 | báo cáo **R19** | ST-108..ST-110 | 1,5 h | **DONE** | MD+JSON; nợ đánh số |
 | ST-112 | **nợ correctness**: chẩn đoán **đa tệp** — câu lệnh cấp tệp chính có thể bị gắn sang module (span mỗi tệp bắt đầu từ 0). Chẩn đoán → sửa tối thiểu hoặc **kế hoạch** nếu >150 dòng | ST-111 | 3 h | **DONE** | tái hiện + chỉ đúng chỗ; nếu sửa: 1056 test xanh, ca mới cho cả 2 chiều; nếu không: kế hoạch ≤30 dòng |
 | ST-113 | **soak cuối** (≥10 vòng tuần tự) + **R20** + cập nhật ROADMAP | ST-112 | 3 h | **DONE** | 10/10 xanh hoặc T-INFRA có log; R20 `report-check` PASS |
-| ST-114a | **Span file-id (1/2)**: thêm `Span.file: u16` (mặc định 0 = y hệt), luồn file-id qua lex/parse/lower; **chưa** đổi chẩn đoán | ST-113 | 3 h | **READY** | 1056 test y hệt; `Span::new` cũ giữ nguyên; checksum + diff sha256 trùng |
+| ST-114a | **Span file-id (1/2)**: thêm `Span.file: u16` (mặc định 0 = y hệt), luồn file-id qua lex/parse/lower; **chưa** đổi chẩn đoán | ST-113 | 3 h | **DONE** | 1056 test y hệt; `Span::new` cũ giữ nguyên; checksum + diff sha256 trùng |
 | ST-114b | **Span file-id (2/2)**: `modules.rs` map chẩn đoán **theo `file`** + `vi_tri` dùng **văn bản tệp đúng**; TAP/JSON đúng tệp | ST-114a | 3 h | **READY** | ≥5 ca (cấp tệp chính, fn chính, module, cả hai, `.vish`); parity/sem/host không đổi |
 | ST-115 | báo cáo **R21** | ST-114a..ST-114b | 1,5 h | **READY** | MD+JSON; `report-check` PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
@@ -1592,3 +1592,13 @@ APPROVED 2026-11-14 Agent 0
 > `st112-ke-hoach.md` (**30 dòng**: `Span.file: u16`, thứ tự, rủi ro, ca) + `ROADMAP.md` §C. **0 dòng code**; **không** tuyên bố
 > chẩn đoán đa tệp đúng hoàn toàn. Đo: **1056 test**, sem **447/22**, parity **398+49**, host **54/54**, R1 max **1060**.
 > **ST-113 mở** (soak cuối ≥10 vòng + R20).
+
+APPROVED 2026-11-14 Agent 0
+
+> **ST-114a DONE — `Span.file` đã có, hành vi **y hệt** (khoá bằng checksum).** Commit `bf11a21f` (**Agent 2 tự commit, đã push**).
+> `Span` thêm `pub file: u16`, `new` **giữ file 0**, thêm `new_file`/`with_file`; `lex_file`/`parse_file`/`parse_voi_file`/`dat_file_cst`
+> + `LowerOptions.file`/`Lowerer.file`; `modules.rs` cấp **chỉ số tệp theo thứ tự nạp** (chính **0**, module theo `use`), `item_rel`
+> giữ nguyên. **Số lời gọi `Span::new` phải đổi: 0** (chỉ thêm 4 chỗ `Span::new_file` nội bộ). Debug xác nhận: top-level `a.vis`
+> ⇒ `file:0`, `return` trong `b.vis` ⇒ `file:1`. **Checksum 1056 test `6c1ea8bf…` trước = sau**; **sha256 diff `62bdd699…` trùng**;
+> sem **447/22**, parity **398+49**, host **54/54**, R1 max **1060**. Map chẩn đoán **chưa đổi** (đúng hợp đồng — ST-114b).
+> **ST-114b mở** (dùng `file` để map chẩn đoán + `vi_tri` theo đúng văn bản).
