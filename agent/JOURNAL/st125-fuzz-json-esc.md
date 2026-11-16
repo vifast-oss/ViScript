@@ -94,3 +94,13 @@ Một lần sinh + escape + decode trong tiến trình (Rust) và **một** lầ
   **thực tế**: làm **bốn** phép (thêm đường `json.encode`/`json_tai`) vì "nguồn duy nhất" trên thực tế
   là **hai** bộ escape (nợ #116). Không đổi bộ sinh, không đổi ngưỡng.
 - **lệch**: không có log đỏ thật ⇒ ghi lý do ở §4 + **đối chứng ca phá** thay cho log đỏ.
+
+## 9. Trạng thái cổng lúc bàn giao
+
+- `json_esc` **chỉ thêm test**, không đổi hàm `esc` ⇒ không thể đổi hành vi sản phẩm.
+- `cargo test --workspace --no-fail-fast`: **127 suite OK · 1138 test xanh** (log
+  `st124-workspace-no-fail-fast.log`) — trong đó có 5 test của `json_esc` (3 cũ + 2 mới).
+- `gate --fast` lúc bàn giao còn đỏ ở bước `fmt` vì **tệp chưa commit của task khác**
+  (`crates/vis-cli/tests/siet_caps_pkg.rs`, ST-130) — **ngoài phạm vi**, không sửa (xem
+  [`st124-review.md`](st124-review.md) §9).
+- `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` ⇒ **lech=0** (`st124-diff-100k.log`).

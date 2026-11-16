@@ -186,3 +186,19 @@ ca chẩn đoán dùng `vis check`). Ngữ nghĩa nền (đọc code):
 - **lệch**: §6 ST-124 "Value::Cap ... `print`, so sánh **không** tạo và **không** lộ `Cap`" → **thực
   tế**: `print`/`==` **không phải** chặn ở runtime mà ở **tyck** (VS0412) ⇒ hai ca là ca chẩn đoán tĩnh
   (`vis check`), không phải ca chạy. Vẫn là "không lộ" (mạnh hơn: không biên dịch được).
+
+## 9. Trạng thái cổng lúc bàn giao (đo sau khi commit)
+
+| # | Lệnh | Kết quả | Ghi chú |
+|---|---|---|---|
+| 1 | `cargo test --workspace --no-fail-fast` | **127 suite OK / 0 FAILED · 1138 test xanh** | log `JOURNAL/st124-workspace-no-fail-fast.log` — chạy **sau** khi cây chung hết đỏ ngoài phạm vi |
+| 2 | `cargo clippy --workspace --all-targets -- -D warnings` | **đỏ 1 chỗ**: `crates/vis-cli/tests/siet_caps_pkg.rs` ("for loop over a single element") — tệp **chưa commit** của task **ST-130** đang viết | **ngoài phạm vi** 3 task này (không sửa) |
+| 3 | `cargo fmt --all -- --check` | **đỏ 1 chỗ**: cùng tệp `siet_caps_pkg.rs` (dòng 77, 210) | như trên |
+| 4 | `bash bin/vis-dev gate --fast` | **PASS tới bước `fmt`** rồi đỏ vì #3 | log `JOURNAL/st124-gate-fast-pass.log` |
+| 5 | `python3 viscript/test/report/check_report.py --all` | **PASS** (22 báo cáo, 149 hàng QUEUE) | |
+| 6 | `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` | **lech=0** (100 000 chương trình; 6230 lỗi tĩnh, 93 770 chạy) | log `JOURNAL/st124-diff-100k.log` |
+
+⇒ Toàn bộ phần **của ST-124** đã xanh (test, clippy trên mã của mình, fmt trên tệp của mình, diff).
+Bước `gate --fast` chỉ còn đỏ vì **một tệp chưa commit của task khác** (`tests/siet_caps_pkg.rs`, ST-130);
+Agent 2 **không** sửa (luật: không sửa tệp người khác) và **không** chạy `cargo fmt` toàn cây (sẽ ghi đè
+tệp đang viết của họ). Cần chạy lại `gate --fast` sau khi ST-130 hoàn tất.
