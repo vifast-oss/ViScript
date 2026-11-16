@@ -2,9 +2,10 @@
 
 **Task**: ST-145 (lập sổ) · **ST-148** (cập nhật số 142/143 theo **VD-149**) · **ST-149** (đóng **#136**) ·
 **ST-153** (ghi chú: ca 7 self-test của ST-147 **đóng ở ST-153**, §7.4 — không cấp số mới) ·
+**ST-151** (đóng **#135**) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-153**) · **HEAD khi cập nhật**: `4a805115`
+**Cập nhật**: 2026-11-17 (**ST-151** — đóng **#135**) · **HEAD khi cập nhật**: `9bd7d022`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -204,7 +205,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 132 | 3 ca âm dựng helper bằng `rustc`; thiếu `crt-static` ⇒ đỏ vì môi trường | R24 §5 · ST-132b | mở |
 | 133 | Ca `read_dir` mới kiểm luật chỉ-đọc, chưa kiểm luật ghi — **ST-150 đã bù**: ca `con_ghi_vao_thu_muc_chi_doc_bi_kernel_chan` (ca 14) cho tiến trình con **ghi** vào thư mục chỉ-đọc ⇒ `EACCES`, kèm đỏ-trước + đối chứng dương cùng ca + hai luật trong **một** ruleset. Biến thể `read_dir` trên thư mục **có quyền ghi** (ST-132b §7) **không** thuộc phạm vi hàng ST-150 — đề nghị cấp số ở đợt sau, chưa đưa vào bảng này | R24 §5 · ST-132b · QUEUE ST-150 · `JOURNAL/st150-landlock-ps.log` · `JOURNAL/st150-gate-macos.log` | đóng ở ST-150 |
 | 134 | `setup.sh` cài thêm `x86_64-pc-windows-msvc` (ngoài `wasm32`) để đạt 18/18 — cần Agent 0 chuẩn thuận (VD-146(1) + ST-144: 2/2 target đã cài) | R24 §5 · ST-134 · VD-146(1) · QUEUE ST-144 | đóng ở ST-144 |
-| 135 | `vis-linux` phải sync cả `vis-host-wasm/`; chưa có kiểm tự động danh sách sync | R24 §5 · ST-134 | mở |
+| 135 | `vis-linux` phải sync cả `vis-host-wasm/`; chưa có kiểm tự động danh sách sync — **ST-151 đã kiểm**: danh sách là **một nguồn** (`SYNC_DIRS`/`SYNC_FILES` ở đầu tệp, `sync_tree()` chỉ đọc hai biến) + **`--check-sync`** (8/8 mục, exit **0** đủ · **2** thiếu, không ssh/rsync) + **9 ca** `crates/vis-cli/tests/sync_list.rs` (bỏ một mục ⇒ đỏ) | R24 §5 · ST-134 · QUEUE ST-151 · `JOURNAL/st151-do-truoc.log` · `JOURNAL/st151-gate-macos-lan2.log` | đóng ở ST-151 |
 | 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá — **ST-149 đã sửa**: biến bind từ ngoài (`let`/`var`/`const` cấp tệp + tham số `cmd`/`fn`) **che** tên lệnh ⇒ thân là **biểu thức**; không bind ⇒ luật ST-134 nguyên vẹn | R24 §5 · ST-134 · QUEUE ST-149 · `JOURNAL/st149-do-truoc.log` · `JOURNAL/st149-tai-hien.log` | đóng ở ST-149 |
 | 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 | chuyển VS3 |
 | 138 | `/proc` phải đọc được trên Linux, nếu không ⇒ `VS0604` (hành vi đúng, nhưng người vận hành phải biết) | R24 §5 · ST-137 | mở |
@@ -328,15 +329,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **144** (1..143; #109 tách `a`/`b`) |
-| `mở` | **92** |
-| `đóng` | **30** |
+| `mở` | **91** |
+| `đóng` | **31** |
 | `chuyển VS3` | **20** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 92 mở + 30 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
+Kiểm: 91 mở + 31 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
 
 **Đóng trong đợt 24g (ST-148 đối chiếu lại, chỉ ghi khi có bằng chứng trong repo):** `#89` (ST-139 · PR #24 ·
 `ef6489d1` · `JOURNAL/st139-do-truoc.log`), `#130` (ST-142 · `JOURNAL/st142-ps-*.log`: 447/447 hai đường,
@@ -347,7 +348,9 @@ Kiểm: 92 mở + 30 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **14
 **Đóng trong đợt 25:** `#136` (ST-149 · nợ phân loại thân `cmd` — biến bind từ ngoài che tên lệnh;
 đỏ-trước `JOURNAL/st149-do-truoc.log`, tái hiện `JOURNAL/st149-tai-hien.log`, `cargo test --workspace` 1163/0),
 `#133` (ST-150 · ca âm **ghi** ở tiến trình con cho thư mục **chỉ-đọc**: `exit=7` + `Permission denied`/`EACCES`,
-tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xanh — `JOURNAL/st150-landlock-ps.log`).
+tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xanh — `JOURNAL/st150-landlock-ps.log`),
+`#135` (ST-151 · danh sách sync của `bin/vis-linux` thành **một nguồn** + `--check-sync` + **9 ca** khoá: bỏ một mục ⇒ đỏ;
+`JOURNAL/st151-do-truoc.log` + `JOURNAL/st151-gate-macos-lan2.log`).
 
 ## 9. Máy kiểm của task này
 
@@ -399,3 +402,25 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
   (header VD-136 + sha256 + `[exit=0]`, sha256 `6aa8b4f8…`). `vis-host-linux` **không** thuộc workspace `viscript/`.
 - Sau khi sửa sổ (`#133` đóng): đếm lại **144 dòng** = **92 mở / 30 đóng / 20 VS3 / 1 không làm / 1 điều hướng**;
   `python3 test/report/check_report.py --all` ⇒ **PASS (25 báo cáo, 171 hàng QUEUE)** — `JOURNAL/st150-check-report.log`.
+
+**ST-151 (nợ #135, HEAD `32b79d4a` + mã/ca ST-151 chưa commit)**:
+
+- `bin/vis-linux` **+44/−10**: `SYNC_DIRS="viscript docs/viscript vis-host-linux vis-host-wasm .git"` +
+  `SYNC_FILES="AGENTS.md vis-dev vis"` ở đầu tệp (sau `set -u`); `sync_tree()` chỉ đọc hai biến (bỏ 5 chỗ rải trong vòng lặp
+  + `rsync` `AGENTS.md` + vòng `vis-dev`/`vis`). **Không đổi hành vi**: 8 lời gọi `rsync` của bản cũ và bản mới trên cùng một
+  cây giả (stub `rsync`/`ssh`) **giống hệt** (thứ tự, `--delete`, exclude, đích); `AGENTS.md` vẫn best-effort
+  (`2>/dev/null || true`), hai shim vẫn `die 3` — `JOURNAL/st151-do-truoc.log` §[0].
+- `--check-sync`: in 8/8 mục `có|thiếu`; `exit=0` khi đủ, `exit=2` khi thiếu (`thiếu n/8`); **không** ssh/rsync
+  (ca tĩnh khoá `cmd_check_sync` không chứa `ssh`/`rsync`; nhánh `--check-sync` không gọi `pick_backend`).
+- **9 ca** `crates/vis-cli/tests/sync_list.rs` (khuôn `soak_script.rs`): đỏ-trước `error: no test target named sync_list`
+  (exit **101**) ⇒ xanh 9/9; **bỏ `vis-host-wasm` khỏi `SYNC_DIRS`** ⇒ **4 ca đỏ**; **rải lại `for d in AGENTS.md vis-dev vis`**
+  ⇒ ca `sync_tree_chi_dung_hai_bien` đỏ; hoàn nguyên sha256 `aedf781a…` — `JOURNAL/st151-do-truoc.log`
+  (sha256 `2bf3b11655627b6b7eeb6bf6d33f394445fd7eb1d824c17eee87b9f4946fd30f`).
+- `macOS` gate lần 1 **ĐỎ** ở L0 — ca **THỜI GIAN** `lsp::module::tests::hieu_nang_nap_module_5_tep` (`116 ms ≥ 100 ms`
+  dưới tải `7.39/6.18/5.27`, 12 core) ⇒ **T-INFRA** (D2-07), chạy riêng **5/5 xanh** (`JOURNAL/st151-lsp-hieu-nang.log`);
+  log đỏ giữ nguyên `JOURNAL/st151-gate-macos.log` (sha256 `8626ab3b…`). Lần 2 **PASS** `[exit=0]`, **10/10** bước,
+  L0 **1175/0** (**130** suite; = 1166 + 9 ca), report-check PASS (25 báo cáo, 171 hàng QUEUE), doc-examples OK (24 khối)
+  — `JOURNAL/st151-gate-macos-lan2.log` (sha256 `a53c38a829727829256a783982487f297f24aecf52208a518f6bbb6959aedd2e`).
+- `--check-sync` trên macOS: `exit=0`, 8/8 `có` — `JOURNAL/st151-check-sync-macos.log` (sha256 `935fb81f8927fee495ba780bcb64c84def36e5e5971853ff6ee12eb10d2bcc0d`).
+- Sau khi sửa sổ (`#135` đóng): đếm lại **144 dòng** = **91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng**;
+  trùng số 0, dải **1..143**.
