@@ -18,6 +18,7 @@
 #   bin/vis-linux probe [--log <tệp>]       # nền, kernel, lsm, syscall landlock, phiên bản cargo
 #   bin/vis-linux setup [--log <tệp>]       # tái lập toolchain (infra/linux/setup.sh): rustup target + log digest
 #   bin/vis-linux sync                      # chỉ đồng bộ cây nguồn
+#   bin/vis-linux --check-sync              # kiểm SYNC_DIRS/SYNC_FILES tại chỗ: KHÔNG ssh, KHÔNG rsync (ST-151)
 #   bin/vis-linux run [--] <lệnh> [đối số…] # chạy lệnh trong cây đã đồng bộ (tự gọi setup trước)
 #   bin/vis-linux gate                      # lối tắt: run bash viscript/bin/vis-dev gate --fast
 #   bin/vis-linux shell                     # ssh tương tác / docker shell
@@ -30,8 +31,14 @@
 #   VIS_LINUX_NO_SYNC  =1 ⇒ không rsync trước khi chạy (dùng cây đang có trên host)
 #   VIS_LINUX_NO_SETUP =1 ⇒ không gọi infra/linux/setup.sh trước khi chạy (ST-134, VD-136)
 #
-# Mã thoát: 0 xanh · 1 lệnh trên host trả lỗi · 2 dùng sai · 3 BLOCKED-ENV (không có nền Linux)
+# Mã thoát: 0 xanh · 1 lệnh trên host trả lỗi · 2 dùng sai (`--check-sync`: 2 = thiếu mục) ·
+#           3 BLOCKED-ENV (không có nền Linux)
 set -u
+
+# **ST-151 (nợ #135)**: danh sách đồng bộ là MỘT nguồn ở đây. `sync_tree()` chỉ đọc hai biến này,
+# `--check-sync` in trạng thái từng mục tại `$REPO_ROOT` — đừng thêm đường dẫn rải rác trong code.
+SYNC_DIRS="viscript docs/viscript vis-host-linux vis-host-wasm .git"
+SYNC_FILES="AGENTS.md vis-dev vis"
 
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$VIS_ROOT/.." && pwd)"
@@ -83,27 +90,53 @@ pick_backend() {
 
 # Đồng bộ cây nguồn sang host. `--delete` chỉ trong các cây con **của dòng ViScript**,
 # không bao giờ đồng bộ `crates/`, `v2/` (hai dòng sản phẩm dùng chung một repo).
+# Danh sách là `$SYNC_DIRS`/`$SYNC_FILES` ở đầu tệp (ST-151, nợ #135) — không rải đường dẫn ở đây.
 sync_tree() {
     if [ "$no_sync" = 1 ]; then say "bỏ đồng bộ (VIS_LINUX_NO_SYNC=1)"; return 0; fi
     local d
     # `vis-host-linux`/`vis-host-wasm` ở gốc repo (R4 cấm nằm trong `viscript/`): cần cho ST-132
     # (Landlock thật) và cho ma trận `bin/vis-targets` (ô `vis-host-wasm × wasm32`) — ST-134.
-    for d in viscript docs/viscript vis-host-linux vis-host-wasm .git; do
+    for d in $SYNC_DIRS; do
         [ -e "$REPO_ROOT/$d" ] || continue
         rsync -a --delete --exclude 'target/' --exclude '*.rlib' \
             "$REPO_ROOT/$d/" "$SSH_TARGET:$LINUX_DIR/$d/" ||
             die 3 "rsync '$d' thất bại (BLOCKED-ENV)"
     done
-    rsync -a "$REPO_ROOT/AGENTS.md" "$SSH_TARGET:$LINUX_DIR/AGENTS.md" 2>/dev/null || true
-    # ST-143: hai shim gốc repo (`vis-dev`, `vis`) — AGENTS §6 gọi `./vis-dev`/`./vis`. Thiếu chúng thì
+    # Tệp gốc repo. `AGENTS.md` giữ đúng hành vi cũ: **best-effort** (lỗi rsync bị bỏ qua, không chặn
+    # đồng bộ). Hai shim `vis-dev`/`vis` (ST-143) — AGENTS §6 gọi `./vis-dev`/`./vis`; thiếu chúng thì
     # `../vis-dev` trong `viscript/` **không tồn tại** trên host ⇒ gate của `vis-soak` exit 127 (ST-140 gặp:
-    # `JOURNAL/st140-gate-ps-lan1-sai-duong-dan.log`). Không `--delete`, không nới quyền: chỉ thêm hai tệp.
-    for d in vis-dev vis; do
+    # `JOURNAL/st140-gate-ps-lan1-sai-duong-dan.log`) ⇒ lỗi rsync là BLOCKED-ENV. Không `--delete`.
+    for d in $SYNC_FILES; do
         [ -e "$REPO_ROOT/$d" ] || continue
-        rsync -a "$REPO_ROOT/$d" "$SSH_TARGET:$LINUX_DIR/$d" ||
-            die 3 "rsync '$d' thất bại (BLOCKED-ENV)"
+        case "$d" in
+            AGENTS.md) rsync -a "$REPO_ROOT/$d" "$SSH_TARGET:$LINUX_DIR/$d" 2>/dev/null || true ;;
+            *) rsync -a "$REPO_ROOT/$d" "$SSH_TARGET:$LINUX_DIR/$d" ||
+                die 3 "rsync '$d' thất bại (BLOCKED-ENV)" ;;
+        esac
     done
     say "đã đồng bộ → $SSH_TARGET:$LINUX_DIR"
+}
+
+# **ST-151 (nợ #135)**: kiểm danh sách đồng bộ tại `$REPO_ROOT` — **không** ssh, **không** rsync.
+# In từng mục của `$SYNC_DIRS`/`$SYNC_FILES` kèm `có`/`thiếu` (thứ tự: thư mục trước, tệp sau).
+# Mã thoát: 0 đủ hết · 2 thiếu mục (in rõ mục thiếu).
+cmd_check_sync() {
+    local d thieu=0 tong=0
+    for d in $SYNC_DIRS $SYNC_FILES; do
+        tong=$((tong + 1))
+        if [ -e "$REPO_ROOT/$d" ]; then
+            echo "có    $d"
+        else
+            echo "thiếu $d"
+            thieu=$((thieu + 1))
+        fi
+    done
+    if [ "$thieu" -ne 0 ]; then
+        echo "--- check-sync: thiếu $thieu/$tong mục tại $REPO_ROOT" >&2
+        return 2
+    fi
+    echo "--- check-sync: đủ $tong/$tong mục tại $REPO_ROOT" >&2
+    return 0
 }
 
 ssh_script() { # stdin = script; $1 = thư mục làm việc
@@ -280,6 +313,7 @@ case "${1:-}" in
     probe) shift; cmd_probe "$@" ;;
     setup) shift; cmd_setup "$@" ;;
     sync) pick_backend; sync_tree ;;
+    --check-sync) shift; cmd_check_sync "$@" ;;
     run) shift; cmd_run "$@" ;;
     gate) pick_backend; cmd_run bash viscript/bin/vis-dev gate --fast ;;
     shell)
@@ -290,6 +324,6 @@ case "${1:-}" in
             docker) build_image; find_docker; exec "$docker_bin" run --rm -it -v "$REPO_ROOT:/src:ro" -v vifast-viscript-target:/target -w /src "$IMAGE" bash ;;
         esac
         ;;
-    "" | -h | --help | help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) die 2 "lệnh không hiểu: '$1' (probe|setup|sync|run|gate|shell)" ;;
+    "" | -h | --help | help) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) die 2 "lệnh không hiểu: '$1' (probe|setup|sync|--check-sync|run|gate|shell)" ;;
 esac
