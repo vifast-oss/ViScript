@@ -314,6 +314,62 @@ fn than_lenh_tren_thu_muc_that() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
+/// **ST-149 (nợ #136)**: biến **bind từ ngoài** thân (cấp tệp) **trùng tên lệnh** ⇒ thân `cmd` là
+/// **biểu thức** (đọc biến), **không** chạy lệnh. Trước ST-149 thân `ls` in **bảng thư mục**.
+#[test]
+fn bien_bind_cap_tep_trung_ten_lenh_la_bieu_thuc() {
+    let d = tam("bind-ngoai");
+    let src = "let ls = 3\n\ncmd foo():\n  ls\n\nfoo()\n";
+    let (c, o, e) = chay(&d, "l", src, None, false);
+    assert_eq!(c, 0, "stderr: {e}");
+    assert_eq!(
+        o, "3\n",
+        "biến `ls` phải đọc là biểu thức, không phải lệnh: {o:?}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **ST-149**: đường thoát `( … )` **vẫn** là biểu thức (hành vi có từ trước, giữ nguyên).
+#[test]
+fn duong_thoat_ngoac_van_la_bieu_thuc() {
+    let d = tam("ngoac");
+    let src = "let ls = 3\n\ncmd foo():\n  ( ls )\n\nfoo()\n";
+    let (c, o, e) = chay(&d, "l", src, None, false);
+    assert_eq!(c, 0, "stderr: {e}");
+    assert_eq!(o, "3\n", "{o:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **ST-149**: **không** có bind ⇒ tên trùng lệnh **vẫn là LỆNH** (khoá ST-134, khuôn
+/// `than_lenh_tren_thu_muc_that`).
+#[test]
+fn khong_bind_van_la_lenh() {
+    let d = tam("khong-bind");
+    let sub = d.join("that");
+    std::fs::create_dir_all(&sub).unwrap();
+    std::fs::write(sub.join("x.txt"), "abc").unwrap();
+    let src = format!(
+        "cmd loc() -> list[FileEntry]:\n  ls {}\n\nloc()\n",
+        sub.display()
+    );
+    let (c, o, e) = chay(&d, "l", &src, None, false);
+    assert_eq!(c, 0, "stderr: {e}");
+    assert!(o.contains("x.txt"), "{o}");
+    assert!(o.starts_with("name"), "{o}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **ST-149**: `let` **trong chính thân** vẫn là biểu thức (hành vi có từ trước, khoá hồi quy).
+#[test]
+fn let_trong_than_van_la_bieu_thuc() {
+    let d = tam("let-trong");
+    let src = "cmd foo() -> int:\n  let ls = 3\n  ls\n\nfoo()\n";
+    let (c, o, e) = chay(&d, "l", src, None, false);
+    assert_eq!(c, 0, "stderr: {e}");
+    assert_eq!(o, "3\n", "{o:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 #[test]
 fn interp_va_vm_cung_byte() {
     let d = tam("vm");

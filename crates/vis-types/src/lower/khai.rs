@@ -56,6 +56,31 @@ pub(crate) fn than_khai_lenh(dong: &[String], da_bind: &std::collections::HashSe
     vis_syntax::than_khai_lenh_voi(dong, da_bind)
 }
 
+/// **ST-149 (nợ #136)**: tên **biến** đã bind **trước** offset `den` — khai báo `let`/`var`/`const`
+/// ở cột 1 + **tham số** `cmd`/`fn`. **Không** gồm tên dựng sẵn và **không** gồm tên `cmd`/`fn`/`type`
+/// (những tên đó vẫn gọi được như **lệnh**): dùng để biết một **tên lệnh** có bị **biến che** không.
+pub(crate) fn ten_bien_bind_toi(text: &str, den: usize) -> std::collections::HashSet<String> {
+    let mut s = std::collections::HashSet::new();
+    let den = den.min(text.len());
+    for dong in text[..den].lines() {
+        if dong.starts_with([' ', '\t']) {
+            continue;
+        }
+        let la_bien = ["let ", "var ", "const "]
+            .iter()
+            .any(|k| dong.starts_with(k));
+        if la_bien {
+            if let Some(ten) = vis_syntax::ten_khai_bao(dong) {
+                s.insert(ten);
+            }
+        }
+        for p in vis_syntax::tham_so_cua(dong) {
+            s.insert(p);
+        }
+    }
+    s
+}
+
 /// **ST-60b**: tên đã bind **trước** offset `den` của tệp (khai báo cấp tệp + tham số `cmd`/`fn`).
 pub(crate) fn ten_da_bind_toi(text: &str, den: usize) -> std::collections::HashSet<String> {
     let mut s = vis_syntax::ten_mac_dinh();
@@ -342,10 +367,11 @@ pub(crate) fn than_cmd(text: &str, ten_lenh: &[String]) -> Vec<ThanLenh> {
                     .diagnostics
                     .is_empty()
             });
-            if crate::lower::khai::than_khai_lenh(
-                &dong_dedent,
-                &crate::lower::khai::ten_da_bind_toi(text, dau_than),
-            ) {
+            // **ST-60b**: tên đã bind **trước** thân (khai báo cấp tệp + tham số) — dùng cho
+            // [`than_khai_lenh`] và (ST-149) cho việc biến **che** tên lệnh.
+            let da_bind = crate::lower::khai::ten_da_bind_toi(text, dau_than);
+            let bien_bind = crate::lower::khai::ten_bien_bind_toi(text, dau_than);
+            if crate::lower::khai::than_khai_lenh(&dong_dedent, &da_bind) {
                 // **ST-59**: khai báo (`let …`) + **một** pipeline/biểu thức cuối ⇒ hạ **hai phần**
                 // (không còn `VS0201`); nhiều pipeline vẫn rơi xuống `Mixed`/lỗi như cũ.
                 KieuThan::KhaiLenh
@@ -360,8 +386,13 @@ pub(crate) fn than_cmd(text: &str, ten_lenh: &[String]) -> Vec<ThanLenh> {
                     .map(|l| l.trim_start())
                     .and_then(|l| l.split_whitespace().next())
                     .unwrap_or("");
-                let la_lenh_da_biet =
-                    !co_let && dong_dedent.len() == 1 && ten_lenh.iter().any(|t| t == dau);
+                let la_lenh_da_biet = !co_let
+                    && dong_dedent.len() == 1
+                    // **ST-149 (nợ #136)**: tên đã bị **biến bind từ ngoài** che (vd `let ls = 3`
+                    // ở cấp tệp, hoặc tham số `cmd`) ⇒ thân là **biểu thức** (đọc biến), không phải
+                    // lệnh. Không có bind ⇒ giữ nguyên luật ST-134 (tên lệnh đã biết ⇒ lệnh).
+                    && !bien_bind.contains(dau)
+                    && ten_lenh.iter().any(|t| t == dau);
                 if la_lenh_da_biet {
                     KieuThan::Command
                 } else if dong_dedent.len() == 1 || co_let {
