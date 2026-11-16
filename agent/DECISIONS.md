@@ -1006,3 +1006,6 @@ VS2 đóng về kỹ thuật với 8/8 hạng mục: (1) Async — xong phạm v
 
 ### VD-153 · Cấp số #144 + mở điều tra VS3 (2026-11-17)
 Vế còn lại của nợ #133 (`read_dir` trên thư mục **có quyền ghi**, đối chứng dương) nhận số **#144**, xử ở ST-154. Cho phép mở **ST-155**: điều tra **CHỈ ĐỌC** để chuẩn bị tài liệu thiết kế VS3 (async · kênh · TLS · quyền ghi · Windows): không sửa mã, không thêm crate, không đổi hành vi; kết quả là một tài liệu trong `agent/JOURNAL/` có dẫn chứng tệp/dòng và câu hỏi mở cho Agent 0. **Không** bắt đầu tính năng VS3 (VD-148 giữ nguyên).
+
+### VD-154 · Đính chính hiến chương VS3 + #143 → VS3 + số #145 (2026-11-17)
+(a) Hiến chương VS3 §5 (17) ghi nợ đường GHI là `#142/#109b` — **sai**: `#142` là `pkg update` ghim (VD-149); đúng là **`#140/#109b`**. (b) Nợ `#143` (`NamePolicy::Strict`) **chuyển VS3**: điều kiện VD-133 đã thoả (ca `st130b` xanh từ đợt 23) ⇒ sổ **90 mở / 31 đóng / 21 VS3**. (c) Cấp **#145** = "chú thích `rt.rs` nói sai đường chặn `chan(0)`: tyck không kiểm `cap`, runtime mới chặn (exit 1)"; **mở**, xử khi làm VS3 kênh. R27 đính chính số 91/20 của R26.
