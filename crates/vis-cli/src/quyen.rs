@@ -397,10 +397,23 @@ impl Quyen {
 
     /// Kiểm thao tác hệ tệp; `can_write=false` ⇒ chỉ cần root, `true` ⇒ root phải có `(write)`.
     pub fn kiem_fs(&self, p: &str, can_write: bool) -> Result<(), String> {
+        self.kiem_fs_canon(p, can_write).map(|_| ())
+    }
+
+    /// **ST-124 (VD-130b)**: như [`kiem_fs`](Self::kiem_fs) nhưng trả **đường dẫn canonicalize đã
+    /// kiểm** (`None` = chưa bật quyền) để bước sau xác nhận "tệp đã mở" vẫn đúng đường dẫn đó.
+    pub fn kiem_fs_canon(&self, p: &str, can_write: bool) -> Result<Option<PathBuf>, String> {
         if !self.bat {
-            return Ok(());
+            return Ok(None);
         }
         let c = Self::chuan(&self.tuyet_doi(p));
+        self.kiem_canon(&c, p, can_write)?;
+        Ok(Some(c))
+    }
+
+    /// Quyết định quyền trên **đường dẫn đã canonicalize** `c` (dùng chung cho kiểm trước và sau
+    /// khi mở — **ST-124**).
+    fn kiem_canon(&self, c: &Path, p: &str, can_write: bool) -> Result<(), String> {
         let mut trong_root = false;
         for q in &self.moc {
             if q.kind != "Dir" && q.kind != "File" {
@@ -424,6 +437,44 @@ impl Quyen {
             format!("[quyền] thiếu `cap[Dir]` cho `{p}`")
         };
         Err(format!("{DAU_QUYEN}{msg}"))
+    }
+
+    /// **ST-124 (VD-130b)**: xác nhận **sau khi đã mở** — đóng khe TOCTOU kiểm-rồi-mở.
+    ///
+    /// `truoc` = đường dẫn canonicalize đã qua kiểm **trước** khi mở; `danh_tinh` = `(dev, ino)` của
+    /// **handle vừa mở** (host báo; `(0, 0)` = không báo).
+    ///
+    /// - Có danh tính ⇒ đọc lại đường dẫn **bây giờ** (`sau`) và đòi `metadata(sau)` **trùng**
+    ///   `(dev, ino)` của handle: nếu trùng thì `sau` **đúng là** tệp đã mở ⇒ sau đó kiểm quyền trên
+    ///   `sau` (chứ không phải trên đường dẫn cũ). Lệch ⇒ đường dẫn bị đổi trong lúc mở ⇒ **từ chối**.
+    /// - Không có danh tính (mock/nền không inode) ⇒ so `sau != truoc` ⇒ **từ chối** (chặn được ca
+    ///   "đổi sang đường dẫn khác rồi để nguyên", không chặn được ca "đổi rồi đổi lại" — ghi ở nợ).
+    pub fn xac_nhan_sau_mo(
+        &self,
+        p: &str,
+        truoc: &Path,
+        danh_tinh: (u64, u64),
+    ) -> Result<(), String> {
+        let sau = Self::chuan(&self.tuyet_doi(p));
+        #[cfg(unix)]
+        if danh_tinh.0 != 0 {
+            use std::os::unix::fs::MetadataExt;
+            let loi = format!(
+                "{DAU_QUYEN}[quyền] `{p}` bị thay đổi trong khi mở (chống kiểm-rồi-mở: không đọc lại được đường dẫn)"
+            );
+            let md = std::fs::metadata(&sau).map_err(|_| loi.clone())?;
+            if (md.dev(), md.ino()) != danh_tinh {
+                return Err(loi);
+            }
+            return self.kiem_canon(&sau, p, false);
+        }
+        let _ = danh_tinh;
+        if sau != truoc {
+            return Err(format!(
+                "{DAU_QUYEN}[quyền] `{p}` bị thay đổi trong khi mở (chống kiểm-rồi-mở)"
+            ));
+        }
+        Ok(())
     }
 
     /// **ST-93 (VD-111)**: `--strict-caps` + **không** khai `cap[Proc]` ⇒ **không** cho chạy tiến
@@ -465,9 +516,19 @@ pub struct FsGuard<'a> {
 }
 
 impl FsHost for FsGuard<'_> {
+    /// **ST-124 (VD-130b)**: **mở-rồi-kiểm** thay cho kiểm-rồi-mở.
+    ///
+    /// 1. Kiểm **trước** (giữ nguyên thông điệp lỗi cũ, và **không mở** tệp đã biết là ngoài quyền).
+    /// 2. Mở tệp **một lần** qua host, lấy `(nội dung, dev, ino)` của chính handle.
+    /// 3. Xác nhận **sau khi mở**: đường dẫn canonicalize hiện tại phải trỏ **đúng** tệp đã mở, và
+    ///    quyền được kiểm lại trên **đường dẫn sau khi mở** ⇒ nội dung trả về luôn là tệp đã kiểm.
     fn read(&mut self, p: &str) -> Result<String, String> {
-        self.quyen.kiem_fs(p, false)?;
-        self.trong.read(p)
+        let da_kiem = self.quyen.kiem_fs_canon(p, false)?;
+        let (s, dev, ino) = self.trong.read_danh_tinh(p)?;
+        if let Some(truoc) = da_kiem {
+            self.quyen.xac_nhan_sau_mo(p, &truoc, (dev, ino))?;
+        }
+        Ok(s)
     }
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
         self.quyen.kiem_fs(p, true)?;
@@ -523,5 +584,171 @@ impl NetHost for NetGuard<'_> {
     }
     fn ghi_nhat_ky(&mut self, dong: &str) {
         self.trong.ghi_nhat_ky(dong);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vis_interp::builtin::FsHost;
+
+    fn tam(tag: &str) -> PathBuf {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static DEM: AtomicUsize = AtomicUsize::new(0);
+        let d = std::env::temp_dir().join(format!(
+            "vis-toctou-{tag}-{}-{}",
+            std::process::id(),
+            DEM.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tmp");
+        d
+    }
+
+    /// Quyền `cap[Dir]` = `root`, **strict-caps** bật, không `cap[Proc]`.
+    fn quyen_dir(root: &Path) -> Quyen {
+        Quyen {
+            moc: vec![QuyenCap {
+                pos: 0,
+                kind: "Dir".to_string(),
+                root: root.display().to_string(),
+                write: false,
+                allow: Vec::new(),
+            }],
+            bat: true,
+            siet: true,
+            goc: root.to_path_buf(),
+            allow_proc: None,
+        }
+    }
+
+    /// Thay `root/tep` bằng **symlink trỏ ra ngoài** (`ngoai`) hoặc bằng **tệp trong root**
+    /// (`TRONG`) — bằng `rename` nên **nguyên tử** (không có trạng thái nửa vời).
+    #[cfg(unix)]
+    fn dat_tep(root: &Path, tep: &Path, ngoai: &Path, toi_ngoai: bool) {
+        let tam = root.join(".tam");
+        let _ = std::fs::remove_file(&tam);
+        if toi_ngoai {
+            std::os::unix::fs::symlink(ngoai, &tam).expect("symlink");
+        } else {
+            std::fs::write(&tam, "TRONG").expect("ghi .tam");
+        }
+        std::fs::rename(&tam, tep).expect("rename");
+    }
+
+    /// Host giả **đổi symlink ngay bên trong `read`** — mô phỏng **tất định** khe thời gian giữa
+    /// bước KIỂM và bước MỞ (không phụ thuộc thời gian thật, không `sleep`).
+    #[cfg(unix)]
+    struct HostDoi {
+        root: PathBuf,
+        tep: PathBuf,
+        ngoai: PathBuf,
+    }
+
+    #[cfg(unix)]
+    impl FsHost for HostDoi {
+        fn read(&mut self, p: &str) -> Result<String, String> {
+            dat_tep(&self.root, &self.tep, &self.ngoai, true);
+            std::fs::read_to_string(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
+        }
+        fn write(&mut self, _p: &str, _s: &str) -> Result<(), String> {
+            Ok(())
+        }
+        fn exists(&mut self, _p: &str) -> bool {
+            false
+        }
+        fn list(&mut self, _p: &str) -> Result<Vec<String>, String> {
+            Ok(Vec::new())
+        }
+    }
+
+    /// **Ca tất định**: đường dẫn đã KIỂM (trong root) bị đổi thành symlink ra ngoài **đúng lúc**
+    /// mở ⇒ must be blocked; previously read outside content.
+    #[cfg(unix)]
+    #[test]
+    fn doi_symlink_dung_luc_mo_bi_chan() {
+        let d = tam("bien");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let ngoai = d.join("ngoai.txt");
+        std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut host = HostDoi {
+            root: root.clone(),
+            tep: tep.clone(),
+            ngoai,
+        };
+        let mut g = FsGuard {
+            trong: &mut host,
+            quyen: &q,
+        };
+        let kq = g.read(tep.to_str().expect("utf8"));
+        assert!(
+            kq.is_err(),
+            "phải CHẶN đọc tệp ngoài root, nhưng đọc được: {kq:?}"
+        );
+        assert!(
+            !kq.unwrap_or_default().contains("NGOAI"),
+            "nội dung ngoài root đã lọt ra"
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **Ca đua thật**: luồng phụ đổi symlink liên tục, luồng chính đọc `LAP` lần.
+    /// Không phụ thuộc **thời gian tuyệt đối** (chỉ đếm vòng), **lặp có giới hạn**.
+    /// Bất biến: **không lần nào** trả về nội dung của tệp ngoài root; và **phải có** lần đọc
+    /// thành công (`TRONG`) để ca không "xanh vì chặn tất".
+    #[cfg(unix)]
+    #[test]
+    fn dua_doi_symlink_lap_co_gioi_han() {
+        const LAP: usize = 50_000;
+        let d = tam("dua");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let ngoai = d.join("ngoai.txt");
+        std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut runner = crate::ngoai::Runner::default();
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let st = stop.clone();
+        let (r2, t2, n2) = (root.clone(), tep.clone(), ngoai.clone());
+        let phu = std::thread::spawn(move || {
+            let mut vong = 0usize;
+            while !st.load(std::sync::atomic::Ordering::Relaxed) {
+                dat_tep(&r2, &t2, &n2, vong.is_multiple_of(2));
+                vong += 1;
+            }
+            vong
+        });
+        let (mut ok_trong, mut ro_ri, mut chan) = (0usize, 0usize, 0usize);
+        let p = tep.to_str().expect("utf8");
+        {
+            let mut g = FsGuard {
+                trong: &mut runner,
+                quyen: &q,
+            };
+            for _ in 0..LAP {
+                match g.read(p) {
+                    Ok(s) if s == "TRONG" => ok_trong += 1,
+                    Ok(_) => ro_ri += 1,
+                    Err(_) => chan += 1,
+                }
+            }
+        }
+        stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        let vong = phu.join().expect("luồng phụ");
+        eprintln!(
+            "TOCTOU dua: lap={LAP} ok_trong={ok_trong} ro_ri={ro_ri} chan={chan} vong_doi={vong}"
+        );
+        assert_eq!(ro_ri, 0, "RÒ RỈ: đọc được nội dung ngoài root {ro_ri} lần");
+        assert!(
+            ok_trong > 0,
+            "ca vô nghĩa: không lần nào đọc được tệp trong root"
+        );
+        let _ = std::fs::remove_dir_all(&d);
     }
 }

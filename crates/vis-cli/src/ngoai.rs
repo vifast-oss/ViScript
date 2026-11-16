@@ -239,6 +239,22 @@ impl vis_interp::builtin::FsHost for Runner {
         std::fs::read_to_string(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
     }
 
+    /// **ST-124 (VD-130b)**: mở **một lần** rồi trả `(nội dung, dev, ino)` của **chính handle** đó —
+    /// tầng quyền dùng `(dev, ino)` để xác nhận "tệp đã mở" đúng là tệp mà đường dẫn canonicalize
+    /// trỏ tới (chống TOCTOU kiểm-rồi-mở) mà **không** cần `unsafe`.
+    #[cfg(unix)]
+    fn read_danh_tinh(&mut self, p: &str) -> Result<(String, u64, u64), String> {
+        use std::io::Read as _;
+        use std::os::unix::fs::MetadataExt;
+        self.nhat_ky("read", p);
+        let loi = |e: std::io::Error| format!("không đọc được `{p}`: {e}");
+        let mut f = std::fs::File::open(p).map_err(loi)?;
+        let md = f.metadata().map_err(loi)?;
+        let mut s = String::new();
+        f.read_to_string(&mut s).map_err(loi)?;
+        Ok((s, md.dev(), md.ino()))
+    }
+
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
         self.nhat_ky("write", p);
         std::fs::write(p, s).map_err(|e| format!("không ghi được `{p}`: {e}"))

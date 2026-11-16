@@ -131,6 +131,13 @@ pub trait FsHost {
     fn exists_quyen(&mut self, p: &str) -> Result<bool, String> {
         Ok(self.exists(p))
     }
+    /// **ST-124 (VD-130b)**: như [`read`](Self::read) nhưng trả **kèm danh tính tệp ĐÃ MỞ**
+    /// `(dev, ino)` để tầng quyền (`vis-cli::quyen::FsGuard`) xác nhận **mở-rồi-kiểm** chống TOCTOU
+    /// kiểm-rồi-mở. `(0, 0)` = host **không báo** danh tính (mock, hoặc nền không có inode) ⇒ tầng
+    /// quyền giữ hành vi cũ. Default: gọi `read` (impl cũ không đổi chữ ký).
+    fn read_danh_tinh(&mut self, p: &str) -> Result<(String, u64, u64), String> {
+        Ok((self.read(p)?, 0, 0))
+    }
     /// Tên các mục trong thư mục, **đã sắp xếp**, **không** đệ quy.
     fn list(&mut self, p: &str) -> Result<Vec<String>, String>;
 

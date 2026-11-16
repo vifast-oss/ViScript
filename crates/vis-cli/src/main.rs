@@ -78,6 +78,14 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.read(p),
         }
     }
+    /// **ST-124 (VD-130b)**: chỉ host **hệ tệp thật** báo được danh tính tệp đã mở; mock giữ
+    /// `(0, 0)` (default của trait) ⇒ tầng quyền giữ hành vi cũ.
+    fn read_danh_tinh(&mut self, p: &str) -> Result<(String, u64, u64), String> {
+        match self {
+            HostFs::That(r) => r.read_danh_tinh(p),
+            HostFs::Mock(m) => m.read_danh_tinh(p),
+        }
+    }
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
         match self {
             HostFs::That(r) => r.write(p, s),
