@@ -325,24 +325,6 @@ impl<'a> Resolver<'a> {
     }
 }
 
-/// Phiên bản **cao nhất** của **một** gói thoả `req` (không xét deps) — dùng cho đường cũ
-/// `pkg update` (ST-128 giữ hành vi, ST-129 mới giải lại toàn đồ thị).
-pub fn cao_nhat_thoa(reg: &Path, ten: &str, req: &VersionReq) -> Result<Version, LoiXungDot> {
-    let mut r = Resolver::moi(reg);
-    r.nap(ten)?;
-    let ds = r.chi_muc.get(ten).cloned().unwrap_or_default();
-    let co: Vec<Version> = ds.iter().map(|m| m.version).rev().collect();
-    ds.iter()
-        .find(|m| req.khop(&m.version))
-        .map(|m| m.version)
-        .ok_or_else(|| LoiXungDot {
-            ten: ten.to_string(),
-            rang_buoc: vec![("gốc".to_string(), req.clone())],
-            co,
-            loi_manh: r.loi_manh.get(ten).cloned().unwrap_or_default(),
-        })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -708,15 +690,19 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
     }
 
+    /// `cac_ban()` trả **tăng dần**, bỏ bản không hợp lệ; `VersionReq::khop` chọn đúng ứng viên.
     #[test]
-    fn cao_nhat_thoa_dung_cho_mot_goi() {
+    fn cac_ban_tang_dan_va_loc_theo_req() {
         let d = tam("cao-nhat-thoa");
         let reg = d.join("registry");
         goi(&reg, "x", "1.0.0", &[]);
         goi(&reg, "x", "1.4.0", &[]);
         goi(&reg, "x", "2.0.0", &[]);
-        assert_eq!(cao_nhat_thoa(&reg, "x", &req("^1")).unwrap(), v("1.4.0"));
-        assert!(cao_nhat_thoa(&reg, "x", &req("^3")).is_err());
+        let co = Resolver::moi(&reg).cac_ban("x");
+        assert_eq!(co, vec![v("1.0.0"), v("1.4.0"), v("2.0.0")]);
+        let cao = co.iter().rev().find(|x| req("^1").khop(x)).unwrap();
+        assert_eq!(*cao, v("1.4.0"), "cao nhất thoả ^1");
+        assert!(co.iter().all(|x| !req("^3").khop(x)), "^3 không có bản nào");
         let _ = fs::remove_dir_all(&d);
     }
 }

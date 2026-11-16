@@ -34,6 +34,17 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-129 — pkg CLI dùng resolver + lock định dạng 2, 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Đo trước** | Lock cũ (ST-128, binary dựng từ worktree ở `a7867d66`) = **510 byte** `{"lock":1,"packages":[…]}`, **không** có `roots`/`version_req` ⇒ không có khái niệm "còn thoả". Ví dụ cũ + mới dán ở JOURNAL + `st129-lock-do.log` (`5c924e58…`). |
+| 1 | **Định dạng 2** | `{"lock":2,"roots":{tên:req},"packages":[{…,"version_req":"…",…}]}`; `version_req` = **AND** ràng buộc gốc + mọi ràng buộc dep, in **chuẩn hoá** (bỏ trùng, sắp) ⇒ tất định. Thứ tự khoá cố định ⇒ ghi 2 lần **cùng byte** (đo: `95da92fe…` cả hai lần). |
+| 2 | **Hành vi** | `install`: lock 2 còn thoả ⇒ **không ghi**; lock cũ ⇒ migrate `=<version>` + ghi 1 lần; không còn thoả ⇒ exit 2 + "chạy `pkg update`". `update`: **giải lại** từ `roots` (có `<tên>` ⇒ ghim gói khác). `list --json` có `version_req`; `remove` bỏ cả `roots`. |
+| 3 | **Ca** | `pkg_lock` **8 ca** (giữ byte, migrate + 2 lần cùng byte, không còn thoả, nâng cấp trong khoảng, `version_req` JSON, roots 2 gói + AND, remove roots, update lock cũ 1 lần); `pkg` 24 + `pkg_resolver` 7 + `pkg::` 38 vẫn xanh. |
+| 4 | **Dọn** | bỏ `gom_goi`/`gom_theo_giai`/`cao_nhat_thoa` (resolver + `giai_va_doc` thay thế) ⇒ 0 cảnh báo dead-code. Clippy sạch cho phần của tôi (một lint của `quyen.rs` — tệp ST-124 — bị loại trừ minh bạch trong JOURNAL §8.4). |
+| 5 | **Nợ** | **#112** (lock không ghi quan hệ dep), **#113** (`update <tên>` ghim gói khác ⇒ có thể `VS0704` thay vì nâng dep chung). |
+
 ## ST-128 — resolver tất định + `VS0704`, 2026-11-16
 
 | # | Việc | Kết quả |

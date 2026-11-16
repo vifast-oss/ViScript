@@ -356,49 +356,6 @@ fn doc_goi(
     })
 }
 
-/// Gom **một gói + closure phụ thuộc** (đường `pkg update`): mỗi ràng buộc dep được giải thành
-/// phiên bản **cao nhất thoả** ([`resolver::cao_nhat_thoa`]) — **ST-128**.
-fn gom_goi(
-    reg: &Path,
-    name: &str,
-    version: &str,
-    entry_override: Option<&str>,
-    ds: &mut Vec<GoiCai>,
-    da: &mut BTreeSet<(String, String)>,
-) -> Result<(), String> {
-    if !da.insert((name.to_string(), version.to_string())) {
-        return Ok(());
-    }
-    let g = doc_goi(reg, name, version, entry_override)?;
-    let deps = g.deps.clone();
-    ds.push(g);
-    for (dn, dv) in &deps {
-        // **ST-128 (VD-125)**: dep là ràng buộc ⇒ chọn phiên bản cao nhất thoả.
-        let req = VersionReq::parse(dv)
-            .map_err(|e| format!("ràng buộc của dep `{dn}` không hợp lệ: {e}"))?;
-        let v = resolver::cao_nhat_thoa(reg, dn, &req).map_err(|e| loi_xung_dot(&e))?;
-        // Dep không nhận `--entry` của gói đích.
-        gom_goi(reg, dn, &v.to_string(), None, ds, da)?;
-    }
-    Ok(())
-}
-
-/// **ST-128**: gom **lời giải** đã chốt của resolver (mỗi gói **đúng một** phiên bản) ⇒ `GoiCai`.
-fn gom_theo_giai(
-    reg: &Path,
-    giai: &BTreeMap<String, Version>,
-    goc: &str,
-    entry_override: Option<&str>,
-) -> Result<Vec<GoiCai>, String> {
-    let mut ds = Vec::with_capacity(giai.len());
-    for (ten, ver) in giai {
-        // `--entry` chỉ áp cho **gói gốc** người dùng gọi (như trước ST-128).
-        let eo = if ten == goc { entry_override } else { None };
-        ds.push(doc_goi(reg, ten, &ver.to_string(), eo)?);
-    }
-    Ok(ds)
-}
-
 /// Đổi [`resolver::LoiXungDot`] thành thông điệp CLI có **mã `VS0704`** + **chuỗi ràng buộc**.
 fn loi_xung_dot(e: &resolver::LoiXungDot) -> String {
     // `vis_diag::code` = `VS` + 4 chữ số (hàm có sẵn của sổ mã) — không viết literal mã ở đây.
@@ -419,12 +376,40 @@ pub(crate) struct GoiKhoa {
     /// **ST-90 (VD-110)**: entry của gói; `None` = lock **cũ** (fallback quy ước).
     pub(crate) entry: Option<String>,
     pub(crate) files: Vec<TepKhoa>,
+    /// **ST-129 (VD-125)**: ràng buộc đã chọn ra phiên bản này (dạng **chuẩn hoá**);
+    /// `None` = lock **định dạng cũ** (không có trường) ⇒ khi ghi lại phải sinh `=<version>`.
+    pub(crate) version_req: Option<String>,
 }
 
-fn doc_khoa(duong: &Path, bat_buoc: bool) -> Result<Vec<GoiKhoa>, String> {
+/// Định dạng **hiện tại** của `vis.lock` (ST-129).
+pub(crate) const LOCK_PHIEN_BAN: u16 = 2;
+
+/// Toàn bộ `vis.lock` đã đọc: định dạng + **ràng buộc gốc** + các gói (ST-129, VD-125).
+pub(crate) struct Khoa {
+    /// `1` = định dạng cũ (ST-70..ST-128), `2` = định dạng có `roots`/`version_req`.
+    pub(crate) phien_ban: u16,
+    /// Ràng buộc **gốc** người dùng đòi (`pkg add`), đã chuẩn hoá — chỉ có ở định dạng 2.
+    pub(crate) roots: BTreeMap<String, String>,
+    pub(crate) goi: Vec<GoiKhoa>,
+}
+
+impl Khoa {
+    /// Lock định dạng cũ (hoặc thiếu trường mới) ⇒ cần **migrate** khi ghi.
+    pub(crate) fn can_migrate(&self) -> bool {
+        self.phien_ban < LOCK_PHIEN_BAN || self.goi.iter().any(|g| g.version_req.is_none())
+    }
+}
+
+fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
     let bytes = match std::fs::read(duong) {
         Ok(b) => b,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound && !bat_buoc => return Ok(Vec::new()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound && !bat_buoc => {
+            return Ok(Khoa {
+                phien_ban: LOCK_PHIEN_BAN,
+                roots: BTreeMap::new(),
+                goi: Vec::new(),
+            })
+        }
         Err(e) => return Err(format!("không đọc được `{}`: {e}", duong.display())),
     };
     let text =
@@ -433,9 +418,33 @@ fn doc_khoa(duong: &Path, bat_buoc: bool) -> Result<Vec<GoiKhoa>, String> {
     let Value::Map(kv) = &v else {
         return Err("`vis.lock` hỏng: phải là object".to_string());
     };
-    match lay(kv, "lock") {
-        Some(Value::Int(1)) => {}
-        _ => return Err("`vis.lock` hỏng: thiếu `lock` = 1".to_string()),
+    let phien_ban = match lay(kv, "lock") {
+        Some(Value::Int(1)) => 1u16,
+        Some(Value::Int(2)) => 2u16,
+        _ => {
+            return Err(format!(
+                "`vis.lock` hỏng: thiếu `lock` = 1 hoặc {LOCK_PHIEN_BAN}"
+            ))
+        }
+    };
+    // **ST-129**: `roots` chỉ có ở định dạng 2; vắng ⇒ map rỗng (không phải lỗi).
+    let mut roots: BTreeMap<String, String> = BTreeMap::new();
+    if let Some(rv) = lay(kv, "roots") {
+        let Value::Map(rm) = rv else {
+            return Err("`vis.lock` hỏng: `roots` phải là object".to_string());
+        };
+        for (k, v) in rm {
+            let Some(ten) = chuoi(k) else {
+                return Err("`vis.lock` hỏng: tên trong `roots` phải là chuỗi".to_string());
+            };
+            let Some(req) = chuoi(v) else {
+                return Err(format!("`vis.lock` hỏng: `roots.{ten}` phải là chuỗi"));
+            };
+            let chuan = VersionReq::parse(req)
+                .map_err(|e| format!("`vis.lock` hỏng: `roots.{ten}`: {e}"))?
+                .chuan_hoa();
+            roots.insert(ten.to_string(), chuan);
+        }
     }
     let Some(Value::List(ps)) = lay(kv, "packages") else {
         return Err("`vis.lock` hỏng: thiếu `packages`".to_string());
@@ -484,16 +493,35 @@ fn doc_khoa(duong: &Path, bat_buoc: bool) -> Result<Vec<GoiKhoa>, String> {
             }
             None => None, // lock cũ: fallback quy ước (không cảnh báo)
         };
+        // **ST-129**: `version_req` (định dạng cũ **không** có) — chuẩn hoá khi đọc.
+        let version_req = match lay_chuoi(p, "version_req") {
+            Some(r) => Some(
+                VersionReq::parse(&r)
+                    .map_err(|e| format!("`vis.lock` hỏng: `version_req` của `{name}`: {e}"))?
+                    .chuan_hoa(),
+            ),
+            None => None,
+        };
         out.push(GoiKhoa {
             name,
             version,
             sha256: sha256.to_ascii_lowercase(),
             entry,
             files,
+            version_req,
         });
     }
     out.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
-    Ok(out)
+    Ok(Khoa {
+        phien_ban,
+        roots,
+        goi: out,
+    })
+}
+
+/// Như [`doc_lock`] nhưng chỉ trả danh sách gói (đường cũ của `use pkg.*`/LSP).
+fn doc_khoa(duong: &Path, bat_buoc: bool) -> Result<Vec<GoiKhoa>, String> {
+    Ok(doc_lock(duong, bat_buoc)?.goi)
 }
 
 /// Đọc + validate `vis.lock` trong `dir` — dùng cho `use pkg.*` (ST-71).
@@ -501,8 +529,9 @@ pub(crate) fn doc_khoa_cua(dir: &Path) -> Result<Vec<GoiKhoa>, String> {
     doc_khoa(&dir.join("vis.lock"), true)
 }
 
-fn gia_tri_khoa(goi: &[GoiKhoa]) -> Value {
-    let ps: Vec<Value> = goi
+fn gia_tri_khoa(khoa: &Khoa) -> Value {
+    let ps: Vec<Value> = khoa
+        .goi
         .iter()
         .map(|p| {
             let fs: Vec<Value> = p
@@ -519,6 +548,12 @@ fn gia_tri_khoa(goi: &[GoiKhoa]) -> Value {
                 (Value::Str("name".into()), Value::Str(p.name.clone())),
                 (Value::Str("version".into()), Value::Str(p.version.clone())),
             ];
+            // **ST-129 (VD-125)**: luôn ghi `version_req` (định dạng 2).
+            let req = p
+                .version_req
+                .clone()
+                .unwrap_or_else(|| format!("={}", p.version));
+            kv.push((Value::Str("version_req".into()), Value::Str(req)));
             if let Some(e) = &p.entry {
                 kv.push((Value::Str("entry".into()), Value::Str(e.clone())));
             }
@@ -527,8 +562,17 @@ fn gia_tri_khoa(goi: &[GoiKhoa]) -> Value {
             Value::Map(kv)
         })
         .collect();
+    let rm: Vec<(Value, Value)> = khoa
+        .roots
+        .iter()
+        .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
+        .collect();
     Value::Map(vec![
-        (Value::Str("lock".into()), Value::Int(1)),
+        (
+            Value::Str("lock".into()),
+            Value::Int(i64::from(LOCK_PHIEN_BAN)),
+        ),
+        (Value::Str("roots".into()), Value::Map(rm)),
         (Value::Str("packages".into()), Value::List(ps)),
     ])
 }
@@ -543,11 +587,201 @@ fn ghi_atomic(p: &Path, bytes: &[u8]) -> Result<(), String> {
     std::fs::rename(&tmp, p).map_err(|e| format!("lỗi đổi tên `{}`: {e}", p.display()))
 }
 
-fn ghi_lock(p: &Path, goi: &[GoiKhoa]) -> Result<(), String> {
+fn ghi_lock(p: &Path, khoa: &Khoa) -> Result<(), String> {
     let mut s = String::new();
-    json(&gia_tri_khoa(goi), false, &mut s);
+    // `false` = **không** sắp lại khoá: thứ tự khoá **cố định** (lock/roots/packages, rồi từng gói)
+    // ⇒ ghi hai lần cho **cùng byte** (VD-125).
+    json(&gia_tri_khoa(khoa), false, &mut s);
     s.push('\n');
     ghi_atomic(p, s.as_bytes())
+}
+
+// ----- khoá: ràng buộc hiệu lực + kiểm "còn thoả" (ST-129) -----
+
+/// Ràng buộc **hiệu lực** của từng gói trong một lời giải = **AND** của ràng buộc gốc và mọi ràng
+/// buộc dep trỏ tới nó. In ra **chuẩn hoá** (bỏ trùng, sắp theo chuỗi) ⇒ tất định, ghi được vào
+/// `version_req` của lock (ST-129, VD-125).
+fn rang_buoc_hieu_luc(
+    roots: &BTreeMap<String, VersionReq>,
+    ds: &[GoiCai],
+) -> BTreeMap<String, String> {
+    let mut m: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (ten, req) in roots {
+        m.entry(ten.clone()).or_default().push(req.chuan_hoa());
+    }
+    for g in ds {
+        for (dn, dreq) in &g.deps {
+            if let Ok(r) = VersionReq::parse(dreq) {
+                m.entry(dn.clone()).or_default().push(r.chuan_hoa());
+            }
+        }
+    }
+    m.into_iter()
+        .map(|(k, mut v)| {
+            v.sort();
+            v.dedup();
+            (k, v.join(", "))
+        })
+        .collect()
+}
+
+/// `version` trong lock có thoả `req` không — **lỏng** với lock cũ (thiếu thành phần ⇒ điền 0).
+fn khoa_thoa(version: &str, req: &VersionReq) -> bool {
+    let Ok(ds) = so_phien_ban(version) else {
+        return false;
+    };
+    if ds.len() > 3 {
+        return false;
+    }
+    let mut v = [0u64; 3];
+    for (i, x) in ds.iter().enumerate() {
+        v[i] = *x;
+    }
+    req.khop(&Version::moi(v[0], v[1], v[2]))
+}
+
+/// Ràng buộc **gốc** suy từ lock: dùng `roots` nếu có; lock cũ ⇒ **ghim** `=<version>` từng gói
+/// (bảo toàn đúng phiên bản đang có — VD-125: "còn thoả thì giữ nguyên").
+fn roots_tu_lock(khoa: &Khoa) -> Result<BTreeMap<String, VersionReq>, String> {
+    let mut out = BTreeMap::new();
+    if !khoa.roots.is_empty() {
+        for (ten, req) in &khoa.roots {
+            let r = VersionReq::parse(req)
+                .map_err(|e| format!("`vis.lock` hỏng: `roots.{ten}`: {e}"))?;
+            out.insert(ten.clone(), r);
+        }
+        return Ok(out);
+    }
+    for g in &khoa.goi {
+        let r = VersionReq::parse(&format!("={}", g.version))
+            .map_err(|e| format!("`vis.lock` hỏng: version `{}`: {e}", g.version))?;
+        out.insert(g.name.clone(), r);
+    }
+    Ok(out)
+}
+
+/// Kiểm **toàn bộ** lock còn thoả: mỗi gói thoả `version_req` của chính nó và mỗi root có gói + thoả.
+fn lock_con_thoa(khoa: &Khoa) -> Result<(), String> {
+    for g in &khoa.goi {
+        if let Some(req_s) = &g.version_req {
+            let req = VersionReq::parse(req_s)
+                .map_err(|e| format!("`vis.lock` hỏng: `version_req` của `{}`: {e}", g.name))?;
+            if !khoa_thoa(&g.version, &req) {
+                return Err(format!(
+                    "gói `{}@{}` không còn thoả ràng buộc `{req_s}` — chạy `vis pkg update`",
+                    g.name, g.version
+                ));
+            }
+        }
+    }
+    for (ten, req_s) in &khoa.roots {
+        let req =
+            VersionReq::parse(req_s).map_err(|e| format!("`vis.lock` hỏng: `roots.{ten}`: {e}"))?;
+        let Some(g) = khoa.goi.iter().find(|g| &g.name == ten) else {
+            return Err(format!(
+                "`vis.lock` thiếu gói gốc `{ten}` (ràng buộc `{req_s}`) — chạy `vis pkg update`"
+            ));
+        };
+        if !khoa_thoa(&g.version, &req) {
+            return Err(format!(
+                "gói gốc `{ten}@{version}` không còn thoả ràng buộc `{req_s}` — chạy `vis pkg update`",
+                version = g.version
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Dựng [`Khoa`] định dạng **hiện tại** từ lời giải (đã có `GoiCai` + ràng buộc hiệu lực).
+fn tao_khoa(
+    roots: &BTreeMap<String, VersionReq>,
+    ds: &[GoiCai],
+    hieu_luc: &BTreeMap<String, String>,
+) -> Khoa {
+    let mut goi: Vec<GoiKhoa> = ds
+        .iter()
+        .map(|g| GoiKhoa {
+            name: g.name.clone(),
+            version: g.version.clone(),
+            sha256: g.sha256.clone(),
+            entry: Some(g.entry.clone()),
+            files: g
+                .files
+                .iter()
+                .map(|f| TepKhoa {
+                    path: f.path.clone(),
+                    sha256: f.sha256.clone(),
+                })
+                .collect(),
+            version_req: Some(
+                hieu_luc
+                    .get(&g.name)
+                    .cloned()
+                    .unwrap_or_else(|| format!("={}", g.version)),
+            ),
+        })
+        .collect();
+    goi.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
+    Khoa {
+        phien_ban: LOCK_PHIEN_BAN,
+        roots: roots
+            .iter()
+            .map(|(k, v)| (k.clone(), v.chuan_hoa()))
+            .collect(),
+        goi,
+    }
+}
+
+/// Giải **cả đồ thị** từ tập ràng buộc gốc, rồi đọc nội dung từng gói đã chọn.
+fn giai_va_doc(
+    reg: &Path,
+    roots: &BTreeMap<String, VersionReq>,
+    entry_override: Option<(&str, &str)>,
+) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
+    let ds_goc: Vec<(String, VersionReq)> =
+        roots.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    let mut bo = resolver::Resolver::moi(reg);
+    if let Some((ten, e)) = entry_override {
+        bo = bo.voi_entry_goc(ten, e);
+    }
+    let giai = bo.giai(&ds_goc).map_err(|e| loi_xung_dot(&e))?;
+    // `--entry` chỉ áp cho gói gốc được gọi; lời giải trả về **toàn bộ** gói.
+    let mut ds = Vec::with_capacity(giai.len());
+    for (ten, ver) in &giai {
+        let eo = match entry_override {
+            Some((t, e)) if t == ten.as_str() => Some(e),
+            _ => None,
+        };
+        ds.push(doc_goi(reg, ten, &ver.to_string(), eo)?);
+    }
+    ds.sort_by(|a, b| a.name.cmp(&b.name).then(a.version.cmp(&b.version)));
+    Ok((giai, ds))
+}
+
+/// Ghi blob + cây `.vis/pkg` cho danh sách gói (dùng chung `add`/`update`/`install`).
+fn ghi_cay(cwd: &Path, ds: &[GoiCai]) -> Result<(), String> {
+    for g in ds {
+        for f in &g.files {
+            ghi_atomic(
+                &cwd.join(".vis/store").join(&f.sha256),
+                f.noi_dung.as_bytes(),
+            )?;
+        }
+    }
+    for g in ds {
+        let dich = cwd.join(".vis/pkg").join(&g.name).join(&g.version);
+        let _ = std::fs::remove_dir_all(&dich);
+        for f in &g.files {
+            let p = dich.join(&f.path);
+            if let Some(d) = p.parent() {
+                std::fs::create_dir_all(d)
+                    .map_err(|e| format!("không tạo được `{}`: {e}", d.display()))?;
+            }
+            std::fs::write(&p, f.noi_dung.as_bytes())
+                .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
+        }
+    }
+    Ok(())
 }
 
 // ----- lệnh -----
@@ -636,74 +870,53 @@ fn cwd() -> Result<PathBuf, String> {
 ///
 /// **ST-128 (VD-125)**: giải đồ thị bằng [`resolver::Resolver`] — mỗi gói **đúng một** phiên bản,
 /// chọn **cao nhất thoả mọi ràng buộc**, quay lui khi xung đột; không giải được ⇒ `VS0704`.
+///
+/// **ST-129**: ghi `vis.lock` **định dạng 2** — `roots` (ràng buộc **gốc**) + `version_req` của
+/// từng gói (ràng buộc **hiệu lực** = AND của mọi ràng buộc trỏ tới nó). Không ghi `@` ⇒ root là
+/// `^<phiên bản đã chọn>` (giống "lấy bản mới nhất, ở lại major đó").
 fn lenh_add(args: &[String]) -> Result<(), String> {
     let (ten, reg, entry_override) = tuy_chon(args, true)?;
     let Some(spec) = ten else {
         return Err(format!("thiếu tên gói — {}", dung()));
     };
-    let (ten, req) = tach_ten(&spec)?;
+    let (ten, req_nguoi_dung) = tach_ten(&spec)?;
     let reg = thu_muc_registry(reg);
-    let req = req.unwrap_or_else(req_moi_phien_ban);
     let cwd = cwd()?;
     // Đọc lock cũ **trước** khi ghi gì (lock hỏng ⇒ dừng, không nửa vời).
-    let mut khoa = doc_khoa(&cwd.join("vis.lock"), false)?;
+    let khoa_cu = doc_lock(&cwd.join("vis.lock"), false)?;
+    let mut roots = roots_tu_lock(&khoa_cu)?;
+    // Ràng buộc **tạm** để giải: không ghi `@` ⇒ "mọi phiên bản" rồi sẽ thu về `^<đã chọn>`.
+    let req_tam = req_nguoi_dung.clone().unwrap_or_else(req_moi_phien_ban);
+    roots.insert(ten.clone(), req_tam);
     // Giải **trước** khi ghi bất cứ thứ gì: xung đột ⇒ không tạo `.vis/`, không sửa `vis.lock`.
-    let mut giai_bo = resolver::Resolver::moi(&reg);
-    if let Some(e) = entry_override.as_deref() {
-        // `--entry` chỉ áp cho **gói gốc** (manifest của nó có thể thiếu `entry`).
-        giai_bo = giai_bo.voi_entry_goc(&ten, e);
+    let (giai, ds) = giai_va_doc(
+        &reg,
+        &roots,
+        entry_override.as_deref().map(|e| (ten.as_str(), e)),
+    )?;
+    // Root **ghi vào lock**: `@req` ⇒ đúng req đó; không `@` ⇒ `^<phiên bản đã chọn>`.
+    if req_nguoi_dung.is_none() {
+        let v = giai
+            .get(&ten)
+            .ok_or_else(|| format!("lời giải thiếu gói gốc `{ten}`"))?;
+        let r = VersionReq::parse(&format!("^{v}"))
+            .map_err(|e| format!("không tạo được ràng buộc `^{v}`: {e}"))?;
+        roots.insert(ten.clone(), r);
     }
-    let giai = giai_bo
-        .giai(&[(ten.clone(), req.clone())])
-        .map_err(|e| loi_xung_dot(&e))?;
-    let mut ds = gom_theo_giai(&reg, &giai, &ten, entry_override.as_deref())?;
-    ds.sort_by(|a, b| a.name.cmp(&b.name).then(a.version.cmp(&b.version)));
-    // 1) blob nội dung (content-addressed) — chỉ sau khi **mọi** manifest hợp lệ.
-    for g in &ds {
-        for f in &g.files {
-            ghi_atomic(
-                &cwd.join(".vis/store").join(&f.sha256),
-                f.noi_dung.as_bytes(),
-            )?;
-        }
-    }
-    // 2) cây cài đặt: xoá đích rồi ghi từng tệp theo thứ tự sort (không còn tệp thừa).
-    for g in &ds {
-        let dich = cwd.join(".vis/pkg").join(&g.name).join(&g.version);
-        let _ = std::fs::remove_dir_all(&dich);
-        for f in &g.files {
-            let p = dich.join(&f.path);
-            if let Some(d) = p.parent() {
-                std::fs::create_dir_all(d)
-                    .map_err(|e| format!("không tạo được `{}`: {e}", d.display()))?;
-            }
-            std::fs::write(&p, f.noi_dung.as_bytes())
-                .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
-        }
-    }
-    // 3) lock cuối cùng (merge theo tên; gói mới thắng).
-    for g in ds {
-        khoa.retain(|x| x.name != g.name);
-        khoa.push(GoiKhoa {
-            name: g.name,
-            version: g.version,
-            sha256: g.sha256,
-            entry: Some(g.entry),
-            files: g
-                .files
-                .iter()
-                .map(|f| TepKhoa {
-                    path: f.path.clone(),
-                    sha256: f.sha256.clone(),
-                })
-                .collect(),
-        });
-    }
-    khoa.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
+    // 1) blob nội dung + 2) cây cài đặt (sau khi **mọi** manifest hợp lệ).
+    ghi_cay(&cwd, &ds)?;
+    // 3) lock định dạng 2: `roots` + `version_req` hiệu lực của từng gói.
+    let hieu_luc = rang_buoc_hieu_luc(&roots, &ds);
+    let khoa = tao_khoa(&roots, &ds, &hieu_luc);
     ghi_lock(&cwd.join("vis.lock"), &khoa)
 }
 
 /// `vis pkg install` — **chỉ** đọc `vis.lock` + `.vis/store`; không mở registry.
+///
+/// **ST-129 (VD-125)**: lock hiện có **còn thoả** ⇒ **giữ nguyên byte** (không ghi lại). Lock **định
+/// dạng cũ** ⇒ đọc được, **ghi lại định dạng mới** (migration, `version_req` = `=<version>` từng gói).
+/// Lock định dạng mới nhưng **không** còn thoả ⇒ lỗi rõ, chỉ đường `vis pkg update` (install không
+/// có registry nên **không** tự giải lại).
 fn lenh_install(args: &[String]) -> Result<(), String> {
     let (ten, reg, entry) = tuy_chon(args, false)?;
     if ten.is_some() || entry.is_some() {
@@ -713,7 +926,20 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
         return Err("`install` không nhận `--registry`".to_string());
     }
     let cwd = cwd()?;
-    let khoa = doc_khoa(&cwd.join("vis.lock"), true)?;
+    let lock_path = cwd.join("vis.lock");
+    let mut khoa = doc_lock(&lock_path, true)?;
+    // Migration: lock định dạng cũ ⇒ sinh `version_req` = `=<version>` cho từng gói rồi ghi lại
+    // **một lần**; lock định dạng 2 còn thoả ⇒ **không** chạm tệp (byte y hệt).
+    let can_ghi = khoa.can_migrate();
+    if can_ghi {
+        for g in &mut khoa.goi {
+            if g.version_req.is_none() {
+                g.version_req = Some(format!("={}", g.version));
+            }
+        }
+        khoa.phien_ban = LOCK_PHIEN_BAN;
+    }
+    lock_con_thoa(&khoa)?;
     // Kiểm **toàn bộ** blob trước khi chạm `.vis/pkg` (lock hỏng/thiếu blob ⇒ cây giữ nguyên).
     struct GoiLai {
         name: String,
@@ -721,7 +947,7 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
         files: Vec<(String, String)>,
     }
     let mut noi_dung: Vec<GoiLai> = Vec::new();
-    for g in &khoa {
+    for g in &khoa.goi {
         let mut fs = Vec::new();
         for f in &g.files {
             let blob = cwd.join(".vis/store").join(&f.sha256);
@@ -757,79 +983,83 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
                 .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
         }
     }
+    if can_ghi {
+        ghi_lock(&lock_path, &khoa)?;
+    }
     Ok(())
 }
 
-/// `vis pkg update [<tên>] [--registry <dir>]` — đọc lại nguồn registry **cùng version**; băm cây khác
-/// ⇒ cài lại + cập nhật `sha256`/`files`/`entry`; **không** đổi version (không resolver), **không** mạng.
+/// `vis pkg update [<tên>] [--registry <dir>]`.
+///
+/// **ST-129 (VD-125)**: **giải lại** từ `roots` của lock (lock cũ ⇒ mỗi gói thành root `=<version>`);
+/// gói được chọn lại theo ràng buộc, nội dung đổi ⇒ cài lại + cập nhật sha; ghi lại lock **định dạng
+/// mới**. Có `<tên>` ⇒ **ghim** các gói khác ở phiên bản đang có (chỉ giải lại nhánh liên quan).
 fn lenh_update(args: &[String]) -> Result<(), String> {
     let (ten, reg, entry) = tuy_chon(args, true)?;
     if entry.is_some() {
         return Err("`update` không nhận `--entry`".to_string());
     }
     let cwd = cwd()?;
-    let mut khoa = doc_khoa(&cwd.join("vis.lock"), true)?;
+    let lock_path = cwd.join("vis.lock");
+    let khoa_cu = doc_lock(&lock_path, true)?;
     if let Some(t) = &ten {
-        if !khoa.iter().any(|g| &g.name == t) {
+        if !khoa_cu.goi.iter().any(|g| &g.name == t) {
             return Err(format!("chưa cài gói `{t}` — không có trong `vis.lock`"));
         }
     }
     let reg = thu_muc_registry(reg);
-    let mut doi = false;
-    for g in &mut khoa {
-        if ten.as_ref().is_some_and(|t| t != &g.name) {
-            continue;
-        }
-        let mut ds = Vec::new();
-        let mut da = BTreeSet::new();
-        gom_goi(&reg, &g.name, &g.version, None, &mut ds, &mut da)?;
-        let Some(moi) = ds
-            .into_iter()
-            .find(|x| x.name == g.name && x.version == g.version)
-        else {
-            return Err(format!(
-                "registry `{}` không có `{}@{}`",
-                reg.display(),
-                g.name,
-                g.version
-            ));
-        };
-        if moi.sha256 == g.sha256 {
-            println!("không đổi {} {}", g.name, g.version);
-            continue;
-        }
-        for f in &moi.files {
-            ghi_atomic(
-                &cwd.join(".vis/store").join(&f.sha256),
-                f.noi_dung.as_bytes(),
-            )?;
-        }
-        let dich = cwd.join(".vis/pkg").join(&moi.name).join(&moi.version);
-        let _ = std::fs::remove_dir_all(&dich);
-        for f in &moi.files {
-            let p = dich.join(&f.path);
-            if let Some(d) = p.parent() {
-                std::fs::create_dir_all(d)
-                    .map_err(|e| format!("không tạo được `{}`: {e}", d.display()))?;
+    let mut roots = roots_tu_lock(&khoa_cu)?;
+    // Có `<tên>` ⇒ **ghim** mọi gói khác ở phiên bản đang có (update một gói không đụng gói khác).
+    if let Some(t) = &ten {
+        for g in &khoa_cu.goi {
+            if &g.name != t {
+                let r = VersionReq::parse(&format!("={}", g.version))
+                    .map_err(|e| format!("`vis.lock` hỏng: version `{}`: {e}", g.version))?;
+                roots.insert(g.name.clone(), r);
             }
-            std::fs::write(&p, f.noi_dung.as_bytes())
-                .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
         }
-        g.sha256 = moi.sha256;
-        g.entry = Some(moi.entry);
-        g.files = moi
-            .files
-            .iter()
-            .map(|f| TepKhoa {
-                path: f.path.clone(),
-                sha256: f.sha256.clone(),
-            })
-            .collect();
-        doi = true;
-        println!("đã cập nhật {} {}", g.name, g.version);
     }
+    // Giải **lại** toàn bộ (tất định) rồi so với lock cũ để biết gói nào đổi.
+    let (giai, ds) = giai_va_doc(&reg, &roots, None)?;
+    let cu: BTreeMap<&str, &GoiKhoa> = khoa_cu.goi.iter().map(|g| (g.name.as_str(), g)).collect();
+    let mut doi = khoa_cu.can_migrate() || khoa_cu.roots.is_empty();
+    let mut can_cai: Vec<GoiCai> = Vec::new();
+    for g in &ds {
+        let v = giai.get(&g.name).map(|v| v.to_string()).unwrap_or_default();
+        match cu.get(g.name.as_str()) {
+            Some(c) if c.version == g.version && c.sha256 == g.sha256 => {
+                println!("không đổi {} {}", g.name, g.version);
+            }
+            _ => {
+                println!("đã cập nhật {} {}", g.name, g.version);
+                can_cai.push(GoiCai {
+                    name: g.name.clone(),
+                    version: g.version.clone(),
+                    entry: g.entry.clone(),
+                    sha256: g.sha256.clone(),
+                    files: g
+                        .files
+                        .iter()
+                        .map(|f| TepCai {
+                            path: f.path.clone(),
+                            sha256: f.sha256.clone(),
+                            noi_dung: f.noi_dung.clone(),
+                        })
+                        .collect(),
+                    deps: g.deps.clone(),
+                });
+                let _ = v;
+                doi = true;
+            }
+        }
+    }
+    if !can_cai.is_empty() {
+        ghi_cay(&cwd, &can_cai)?;
+    }
+    let hieu_luc = rang_buoc_hieu_luc(&roots, &ds);
+    let khoa = tao_khoa(&roots, &ds, &hieu_luc);
     if doi {
-        ghi_lock(&cwd.join("vis.lock"), &khoa)?;
+        ghi_lock(&lock_path, &khoa)?;
     }
     Ok(())
 }
@@ -848,17 +1078,24 @@ fn lenh_list(args: &[String]) -> Result<(), String> {
         return Err(format!("`list` không nhận đối số — {}", dung()));
     }
     let cwd = cwd()?;
-    let khoa = doc_khoa(&cwd.join("vis.lock"), true)?;
+    let khoa = doc_lock(&cwd.join("vis.lock"), true)?.goi;
     if json_ra {
         let mut out = String::from("{\"packages\":[");
         for (i, p) in khoa.iter().enumerate() {
             if i > 0 {
                 out.push(',');
             }
+            // **ST-129 (VD-125)**: thêm `version_req`; lock cũ chưa có ⇒ in `=<version>` (giá trị
+            // hiệu lực khi migrate) để đầu ra **không phụ thuộc** việc lock đã migrate hay chưa.
+            let req = p
+                .version_req
+                .clone()
+                .unwrap_or_else(|| format!("={}", p.version));
             out.push_str(&format!(
-                "{{\"name\":\"{}\",\"version\":\"{}\",\"entry\":\"{}\",\"sha256\":\"{}\"}}",
+                "{{\"name\":\"{}\",\"version\":\"{}\",\"version_req\":\"{}\",\"entry\":\"{}\",\"sha256\":\"{}\"}}",
                 crate::json_esc::esc(&p.name),
                 crate::json_esc::esc(&p.version),
+                crate::json_esc::esc(&req),
                 crate::json_esc::esc(p.entry.as_deref().unwrap_or("")),
                 crate::json_esc::esc(&p.sha256)
             ));
@@ -890,13 +1127,16 @@ fn lenh_remove(args: &[String]) -> Result<(), String> {
     }
     let cwd = cwd()?;
     let khoa_path = cwd.join("vis.lock");
-    let mut khoa = doc_khoa(&khoa_path, true)?;
-    let Some(pos) = khoa.iter().position(|g| g.name == *ten) else {
+    let mut khoa = doc_lock(&khoa_path, true)?;
+    let Some(pos) = khoa.goi.iter().position(|g| g.name == *ten) else {
         return Err(format!("chưa cài gói `{ten}` — không có trong `vis.lock`"));
     };
-    let goi = khoa.remove(pos);
+    let goi = khoa.goi.remove(pos);
+    // **ST-129**: bỏ cả ràng buộc gốc (nếu là gói người dùng đòi) — lock vẫn nhất quán.
+    khoa.roots.remove(ten);
     // Blob còn dùng bởi gói khác (so **sha**, không theo tên).
     let con_dung: BTreeSet<String> = khoa
+        .goi
         .iter()
         .flat_map(|g| g.files.iter().map(|f| f.sha256.clone()))
         .collect();
