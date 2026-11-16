@@ -361,9 +361,13 @@ pub const RUNTIME_CODES: [Code; 6] = [
 
 /// **Sổ thứ bảy** — `07xx` module (ST-25, VD-57): `use` không thấy tệp, vòng phụ thuộc, `use` trùng.
 ///
-/// `07xx` được cấp ở **ST-25** cho khung module; `std.*` vẫn **hoãn** (ST-26) và `pkg.*` hoãn (VS2)
-/// — cả hai báo `VS0701` với thông điệp riêng (VD-57).
-pub const MODULE_CODES: [Code; 3] = [
+/// `07xx` được cấp ở **ST-25** cho khung module; `std.*` vẫn **hoãn** (ST-26) và `pkg.*` trước ST-71
+/// hoãn — cả hai báo `VS0701` với thông điệp riêng (VD-57).
+///
+/// **ST-128 (VD-125)**: cấp **`VS0704`** trong **cùng khối `07xx`** — "không giải được ràng buộc gói";
+/// thông điệp **kèm chuỗi ràng buộc** gây xung đột. Chọn số **kế tiếp của khối** (`704`) theo VD-125;
+/// **không** dùng `next_block()` (nó trả `801` vì suy từ khối đã dành trước — xem JOURNAL ST-128 §7).
+pub const MODULE_CODES: [Code; 4] = [
     Code {
         id: 701,
         short: "VS0701",
@@ -386,6 +390,14 @@ pub const MODULE_CODES: [Code; 3] = [
         message_vi: "`use` trùng hoặc mơ hồ (hai đường dẫn cùng một module)",
         message_en: "duplicate or ambiguous `use` (two paths to the same module)",
         message_ja: "重複または曖昧な `use` (同じモジュールへの2つの経路)",
+        severity: Severity::Error,
+    },
+    Code {
+        id: 704,
+        short: "VS0704",
+        message_vi: "không giải được ràng buộc gói: không phiên bản nào thoả đồng thời các ràng buộc (kèm chuỗi ràng buộc)",
+        message_en: "package dependency resolution failed: no version satisfies all constraints (constraint chain included)",
+        message_ja: "パッケージの依存解決に失敗しました: すべての制約を同時に満たすバージョンがありません（制約の連鎖付き）",
         severity: Severity::Error,
     },
 ];
@@ -647,7 +659,10 @@ mod tests {
         // **SỬA KÈM LÝ DO (ST-60)**: +**VS0506** ⇒ **30** mã (sổ runtime 3 → 4).
         // **SỬA KÈM LÝ DO (ST-61)**: +**VS0504**/**VS0505** (kênh: gửi sau close, deadlock) ⇒ **32**
         // mã (sổ runtime 4 → **6**, thêm **ở cuối** nên index 0..3 không đổi).
-        assert_eq!(all_codes().count(), 32);
+        // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** ("không giải được ràng buộc gói", khối
+        // `07xx`, số **kế tiếp** của khối) ⇒ **33** mã (sổ module 3 → **4**, thêm **ở cuối** nên
+        // index 0..2 không đổi); `BOOKS` vẫn **7**; `next_block()` vẫn **801** (không đổi).
+        assert_eq!(all_codes().count(), 33);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(
@@ -656,10 +671,10 @@ mod tests {
             );
         }
         // **SỬA KÈM LÝ DO (ST-25)**: `07xx` nay đã cấp cho module (`VS0701/0702/0703`).
-        for id in [701u16, 702, 703] {
+        for id in [701u16, 702, 703, 704] {
             assert!(
                 lookup(id).is_some(),
-                "mã {id} phải có ở ST-25 (khối `07xx` module)"
+                "mã {id} phải có ở ST-25/ST-128 (khối `07xx` module)"
             );
         }
         assert!(

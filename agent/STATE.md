@@ -34,6 +34,17 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-128 — resolver tất định + `VS0704`, 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Resolver** | `crates/vis-cli/src/pkg/resolver.rs` (470 dòng): DFS **quay lui**, mỗi gói **đúng một** phiên bản, chọn **cao nhất thoả**, ứng viên giảm dần, duyệt `BTreeMap` ⇒ **tất định**; ghi xung đột "nhiều ràng buộc nhất" ⇒ thông điệp **chuỗi ràng buộc** (`^2` (từ a@1.0.0) + `<1.5` (từ b@1.0.0); registry có: …). |
+| 1 | **Mã mới** | **`VS0704`** trong `MODULE_CODES` (khối `07xx`, số kế tiếp `704`), đủ **vi/en/ja**; `vis explain VS0704 --lang {vi,en,ja}` đo được; **`all_codes` = 33** (7 khối); `next_block()` vẫn 801. |
+| 2 | **Nối CLI** | `pkg add` giải **toàn đồ thị** (`gom_theo_giai`), `deps` manifest nay là **ràng buộc**, `--entry` áp cho gói gốc; lỗi ⇒ `VS0704` + exit 2, **không** tạo `.vis`/lock. `@1.2.3` vẫn **ghim** (tương thích ST-70); `@^1`, `@<1.9` là ràng buộc. |
+| 3 | **Ca** | resolver **17** ca (cao nhất, AND, quay lui 1 & 2 tầng, xung đột + nguồn, bỏ bản không hợp lệ, vòng, tất định 2 lần cùng byte) + **7** ca CLI (`pkg_resolver.rs`: `@^1.0`→1.10.0, ghim, `@<1.9`, `VS0704` exit 2, xung đột qua dep, 2 thư mục ⇒ lock **byte y hệt**, cú pháp sai). |
+| 4 | **Đếm chỗ cập nhật** | `vis-diag/src/lib.rs`, `vis-diag/tests/messages.rs` (`MODULE_CODES` 4), `explain_moi.rs` (4 chỗ), `st83_no_nho.rs` (vi/en/ja), `API-CODES.txt` (sinh lại). `pkg::tests` 24 ca cũ vẫn xanh. |
+| 5 | **Nợ** | **#109** (`next_block()` = 801 vs khối 07xx còn chỗ), **#110** (`@1.2.3` ghim ≠ "không toán tử ⇒ ^" — chờ Agent 0), **#111** (yanked/mạng/chữ ký — VS3). |
+
 ## ST-127 — semver `Version`/`VersionReq`, 2026-11-16
 
 | # | Việc | Kết quả |

@@ -18,9 +18,16 @@ use std::process::ExitCode;
 use vis_interp::stdlib::json;
 use vis_interp::value::Value;
 
+/// **ST-128 (VD-125)**: resolver **tất định** trên registry nhiều phiên bản (chọn cao nhất thoả,
+/// quay lui khi xung đột; không giải được ⇒ `VS0704` kèm chuỗi ràng buộc).
+pub mod resolver;
 /// **ST-127 (VD-125)**: semver tối giản (`Version`/`VersionReq`) — resolver dùng ở ST-128, lock ghi
 /// `version_req` ở ST-129. Không crate mới.
 pub mod semver;
+
+use std::collections::BTreeMap;
+
+use semver::{Version, VersionReq};
 
 /// Chạy `vis pkg …`; lỗi ⇒ `vis pkg: …` + exit **2** (mẫu `vis cache`, không mã mới).
 pub fn run(args: &[String]) -> ExitCode {
@@ -235,7 +242,14 @@ fn doc_manifest(duong: &Path, entry_override: Option<&str>) -> Result<Manifest, 
                     duong.display()
                 ));
             };
-            so_phien_ban(dver)?;
+            // **ST-128 (VD-125)**: `deps` là **ràng buộc** semver (`^1.2`, `>=1, <2`, `1.0.0`…),
+            // không còn bắt buộc là version chính xác. Chẩn đoán nêu đúng tên gói + chuỗi sai.
+            VersionReq::parse(dver).map_err(|e| {
+                format!(
+                    "manifest `{}`: ràng buộc của dep `{dn}` không hợp lệ: {e}",
+                    duong.display()
+                )
+            })?;
             deps.push((dn.to_string(), dver.to_string()));
         }
     }
@@ -264,58 +278,6 @@ fn so_phien_ban(v: &str) -> Result<Vec<u64>, String> {
     Ok(ds)
 }
 
-fn cmp_phien_ban(a: &str, b: &str) -> Result<std::cmp::Ordering, String> {
-    let mut x = so_phien_ban(a)?;
-    let mut y = so_phien_ban(b)?;
-    let n = x.len().max(y.len());
-    x.resize(n, 0);
-    y.resize(n, 0);
-    Ok(x.cmp(&y))
-}
-
-/// Chọn version cao nhất trong `registry/<tên>/*` (nếu không ghi `@ver`).
-fn chon_cao_nhat(reg: &Path, ten: &str) -> Result<String, String> {
-    let dir = reg.join(ten);
-    let ds = std::fs::read_dir(&dir).map_err(|e| {
-        format!(
-            "không thấy gói `{ten}` trong registry `{}`: {e}",
-            reg.display()
-        )
-    })?;
-    let mut tot: Option<String> = None;
-    for it in ds {
-        let it = it.map_err(|e| format!("lỗi đọc registry: {e}"))?;
-        if !it.file_type().map_err(|e| e.to_string())?.is_dir() {
-            continue;
-        }
-        let Some(v) = it.file_name().to_str().map(str::to_string) else {
-            continue;
-        };
-        // **ST-127 (VD-125)**: version trong registry phải đúng `MAJOR.MINOR.PATCH` số nguyên
-        // (không prerelease/build) — `semver::Version` là cổng kiểm; so **thứ tự** vẫn dùng
-        // `cmp_phien_ban` (với 3 thành phần hợp lệ, hai cách cho cùng kết quả).
-        if semver::Version::parse(&v).is_err() {
-            continue;
-        }
-        if !reg.join(ten).join(&v).join("manifest.json").is_file() {
-            continue;
-        }
-        let tot_hon = match &tot {
-            None => true,
-            Some(t) => cmp_phien_ban(&v, t)? == std::cmp::Ordering::Greater,
-        };
-        if tot_hon {
-            tot = Some(v);
-        }
-    }
-    tot.ok_or_else(|| {
-        format!(
-            "gói `{ten}` không có version hợp lệ trong registry `{}`",
-            reg.display()
-        )
-    })
-}
-
 // ----- gom closure để cài -----
 
 struct TepCai {
@@ -330,19 +292,17 @@ struct GoiCai {
     entry: String,
     sha256: String,
     files: Vec<TepCai>,
+    /// **ST-128**: deps dạng **ràng buộc** (đường `pkg update`).
+    deps: Vec<(String, String)>,
 }
 
-fn gom_goi(
+/// Đọc **một** gói cụ thể trong registry ⇒ [`GoiCai`] (kiểm symlink, chuẩn hoá, băm tệp, `tree_sha`).
+fn doc_goi(
     reg: &Path,
     name: &str,
     version: &str,
     entry_override: Option<&str>,
-    ds: &mut Vec<GoiCai>,
-    da: &mut BTreeSet<(String, String)>,
-) -> Result<(), String> {
-    if !da.insert((name.to_string(), version.to_string())) {
-        return Ok(());
-    }
+) -> Result<GoiCai, String> {
     let dir = reg.join(name).join(version);
     let m = doc_manifest(&dir.join("manifest.json"), entry_override)?;
     if m.name != name || m.version != version {
@@ -386,18 +346,63 @@ fn gom_goi(
         .map(|f| (f.path.clone(), f.sha256.clone()))
         .collect();
     let sha256 = bam_cay(&cap);
-    ds.push(GoiCai {
+    Ok(GoiCai {
         name: m.name.clone(),
         version: m.version.clone(),
         entry: m.entry.clone(),
         sha256,
         files,
-    });
-    for (dn, dv) in &m.deps {
+        deps: m.deps.clone(),
+    })
+}
+
+/// Gom **một gói + closure phụ thuộc** (đường `pkg update`): mỗi ràng buộc dep được giải thành
+/// phiên bản **cao nhất thoả** ([`resolver::cao_nhat_thoa`]) — **ST-128**.
+fn gom_goi(
+    reg: &Path,
+    name: &str,
+    version: &str,
+    entry_override: Option<&str>,
+    ds: &mut Vec<GoiCai>,
+    da: &mut BTreeSet<(String, String)>,
+) -> Result<(), String> {
+    if !da.insert((name.to_string(), version.to_string())) {
+        return Ok(());
+    }
+    let g = doc_goi(reg, name, version, entry_override)?;
+    let deps = g.deps.clone();
+    ds.push(g);
+    for (dn, dv) in &deps {
+        // **ST-128 (VD-125)**: dep là ràng buộc ⇒ chọn phiên bản cao nhất thoả.
+        let req = VersionReq::parse(dv)
+            .map_err(|e| format!("ràng buộc của dep `{dn}` không hợp lệ: {e}"))?;
+        let v = resolver::cao_nhat_thoa(reg, dn, &req).map_err(|e| loi_xung_dot(&e))?;
         // Dep không nhận `--entry` của gói đích.
-        gom_goi(reg, dn, dv, None, ds, da)?;
+        gom_goi(reg, dn, &v.to_string(), None, ds, da)?;
     }
     Ok(())
+}
+
+/// **ST-128**: gom **lời giải** đã chốt của resolver (mỗi gói **đúng một** phiên bản) ⇒ `GoiCai`.
+fn gom_theo_giai(
+    reg: &Path,
+    giai: &BTreeMap<String, Version>,
+    goc: &str,
+    entry_override: Option<&str>,
+) -> Result<Vec<GoiCai>, String> {
+    let mut ds = Vec::with_capacity(giai.len());
+    for (ten, ver) in giai {
+        // `--entry` chỉ áp cho **gói gốc** người dùng gọi (như trước ST-128).
+        let eo = if ten == goc { entry_override } else { None };
+        ds.push(doc_goi(reg, ten, &ver.to_string(), eo)?);
+    }
+    Ok(ds)
+}
+
+/// Đổi [`resolver::LoiXungDot`] thành thông điệp CLI có **mã `VS0704`** + **chuỗi ràng buộc**.
+fn loi_xung_dot(e: &resolver::LoiXungDot) -> String {
+    // `vis_diag::code` = `VS` + 4 chữ số (hàm có sẵn của sổ mã) — không viết literal mã ở đây.
+    format!("{}: {e}", vis_diag::code(704))
 }
 
 // ----- vis.lock -----
@@ -547,18 +552,37 @@ fn ghi_lock(p: &Path, goi: &[GoiKhoa]) -> Result<(), String> {
 
 // ----- lệnh -----
 
-/// Tách `tên[@version]`.
-fn tach_ten(spec: &str) -> Result<(String, Option<String>), String> {
+/// Đọc phần sau `@` của spec CLI thành **ràng buộc** (ST-128, VD-125).
+///
+/// Luật giữ **tương thích** với `pkg add tên@ver` của ST-70: nếu phần sau `@` là một phiên bản
+/// **đủ ba thành phần, không toán tử** thì hiểu là **ghim đúng** (`=ver`); mọi dạng khác là ràng
+/// buộc (`^1.2`, `~1`, `>=1, <2`, `1.2`…). Không có `@` ⇒ ràng buộc "mọi phiên bản"
+/// (`>=0.0.0`), resolver chọn **cao nhất**.
+fn doc_req_cli(ver: &str) -> Result<VersionReq, String> {
+    let t = ver.trim();
+    if Version::parse(t).is_ok() {
+        let ghim = format!("={t}");
+        return VersionReq::parse(&ghim).map_err(|e| e.to_string());
+    }
+    VersionReq::parse(t).map_err(|e| format!("ràng buộc `{ver}` không hợp lệ: {e}"))
+}
+
+/// Tách `tên[@ràng buộc]`.
+fn tach_ten(spec: &str) -> Result<(String, Option<VersionReq>), String> {
     match spec.rsplit_once('@') {
         Some((ten, ver)) => {
             if ten.is_empty() || ver.is_empty() {
-                return Err(format!("tên gói `{spec}` không hợp lệ (dạng `tên[@ver]`)"));
+                return Err(format!("tên gói `{spec}` không hợp lệ (dạng `tên[@req]`)"));
             }
-            so_phien_ban(ver)?;
-            Ok((ten.to_string(), Some(ver.to_string())))
+            Ok((ten.to_string(), Some(doc_req_cli(ver)?)))
         }
         None => Ok((spec.to_string(), None)),
     }
+}
+
+/// Ràng buộc "mọi phiên bản" — dùng khi `pkg add <tên>` không ghi `@` (resolver chọn **cao nhất**).
+fn req_moi_phien_ban() -> VersionReq {
+    VersionReq::parse(">=0.0.0").expect("hằng ràng buộc `>=0.0.0` phải hợp lệ")
 }
 
 /// `(tên, registry, entry)` từ đối số CLI.
@@ -608,31 +632,31 @@ fn cwd() -> Result<PathBuf, String> {
     std::env::current_dir().map_err(|e| format!("không lấy được thư mục hiện tại: {e}"))
 }
 
-/// `vis pkg add <tên>[@<ver>] [--registry <dir>]`.
+/// `vis pkg add <tên>[@<ràng buộc>] [--registry <dir>]`.
+///
+/// **ST-128 (VD-125)**: giải đồ thị bằng [`resolver::Resolver`] — mỗi gói **đúng một** phiên bản,
+/// chọn **cao nhất thoả mọi ràng buộc**, quay lui khi xung đột; không giải được ⇒ `VS0704`.
 fn lenh_add(args: &[String]) -> Result<(), String> {
     let (ten, reg, entry_override) = tuy_chon(args, true)?;
     let Some(spec) = ten else {
         return Err(format!("thiếu tên gói — {}", dung()));
     };
-    let (ten, ver) = tach_ten(&spec)?;
+    let (ten, req) = tach_ten(&spec)?;
     let reg = thu_muc_registry(reg);
-    let ver = match ver {
-        Some(v) => v,
-        None => chon_cao_nhat(&reg, &ten)?,
-    };
+    let req = req.unwrap_or_else(req_moi_phien_ban);
     let cwd = cwd()?;
     // Đọc lock cũ **trước** khi ghi gì (lock hỏng ⇒ dừng, không nửa vời).
     let mut khoa = doc_khoa(&cwd.join("vis.lock"), false)?;
-    let mut ds = Vec::new();
-    let mut da = BTreeSet::new();
-    gom_goi(
-        &reg,
-        &ten,
-        &ver,
-        entry_override.as_deref(),
-        &mut ds,
-        &mut da,
-    )?;
+    // Giải **trước** khi ghi bất cứ thứ gì: xung đột ⇒ không tạo `.vis/`, không sửa `vis.lock`.
+    let mut giai_bo = resolver::Resolver::moi(&reg);
+    if let Some(e) = entry_override.as_deref() {
+        // `--entry` chỉ áp cho **gói gốc** (manifest của nó có thể thiếu `entry`).
+        giai_bo = giai_bo.voi_entry_goc(&ten, e);
+    }
+    let giai = giai_bo
+        .giai(&[(ten.clone(), req.clone())])
+        .map_err(|e| loi_xung_dot(&e))?;
+    let mut ds = gom_theo_giai(&reg, &giai, &ten, entry_override.as_deref())?;
     ds.sort_by(|a, b| a.name.cmp(&b.name).then(a.version.cmp(&b.version)));
     // 1) blob nội dung (content-addressed) — chỉ sau khi **mọi** manifest hợp lệ.
     for g in &ds {
@@ -889,7 +913,8 @@ fn lenh_remove(args: &[String]) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{bam, bam_cay, chuan_hoa, cmp_phien_ban, so_phien_ban};
+    use super::semver;
+    use super::{bam, bam_cay, chuan_hoa, so_phien_ban};
 
     /// CRLF/BOM khác nhau nhưng chuẩn hoá ⇒ **cùng** băm; đổi 1 byte ⇒ đổi băm; ghim 1 hex.
     #[test]
@@ -913,22 +938,21 @@ mod tests {
         assert_ne!(fs, khac);
     }
 
-    /// So version theo **số**: `1.10.0 > 1.9.0`; `1.0` = `1.0.0`.
+    /// `so_phien_ban` = parser **lỏng** cho lock cũ (đọc được `1.0`, `1.0.0`), dùng **chỉ** khi đọc
+    /// lock/manifest cũ; phép so **thứ tự** và kiểm phiên bản **mới** nay do `semver::Version`
+    /// (ST-127/ST-128 — `cmp_phien_ban` đã bỏ, ca so thứ tự ở `semver::tests::version_in_ra_va_thu_tu`
+    /// và `resolver::tests::chon_cao_nhat_khi_moi_ban_deu_thoa`).
     #[test]
-    fn so_phien_ban_theo_so() {
-        assert_eq!(
-            cmp_phien_ban("1.10.0", "1.9.0").unwrap(),
-            std::cmp::Ordering::Greater
-        );
-        assert_eq!(
-            cmp_phien_ban("1.0.0", "1.0").unwrap(),
-            std::cmp::Ordering::Equal
-        );
-        assert_eq!(
-            cmp_phien_ban("1.9.0", "1.10.0").unwrap(),
-            std::cmp::Ordering::Less
-        );
+    fn so_phien_ban_long_cho_lock_cu() {
+        assert_eq!(so_phien_ban("1.10.0").unwrap(), vec![1, 10, 0]);
+        assert_eq!(so_phien_ban("1.0").unwrap(), vec![1, 0]);
         assert!(so_phien_ban("1.x").is_err());
         assert!(so_phien_ban("").is_err());
+        // Tương thích: lock cũ ghi `1.0` vẫn đọc được; lock mới ghi `semver::Version` (3 thành phần).
+        assert!(
+            semver::Version::parse("1.0").is_err(),
+            "Version **chặt** 3 thành phần"
+        );
+        assert!(semver::Version::parse("1.0.0").is_ok());
     }
 }

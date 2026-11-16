@@ -445,7 +445,8 @@ fn snapshot_9_ca_so_module_07xx() {
             want
         );
     }
-    assert_eq!(vis_diag::MODULE_CODES.len(), 3);
+    // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (không giải được ràng buộc gói) ⇒ 4 mã module.
+    assert_eq!(vis_diag::MODULE_CODES.len(), 4);
     assert_eq!(vis_diag::BOOKS.len(), 7, "ST-25: bảy sổ mã");
     // **SỬA KÈM LÝ DO (ST-50, Agent 0: VS0605 sai sổ — trường là lỗi kiểu)**: `VS0605` đổi tên
     // thành **VS0405**, chuyển sang sổ `04xx` ⇒ `06xx` **4**, `04xx` **5**; `all_codes()` **vẫn 29**
@@ -458,6 +459,7 @@ fn snapshot_9_ca_so_module_07xx() {
     );
     // **SỬA KÈM LÝ DO (ST-60)**: +**VS0506** (lỗi thân tác vụ `async`) ⇒ **30** mã.
     // **SỬA KÈM LÝ DO (ST-61)**: +**VS0504**/**VS0505** (kênh) ⇒ **32** mã.
-    assert_eq!(vis_diag::all_codes().count(), 32);
+    // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (resolver không giải được ràng buộc) ⇒ **33** mã.
+    assert_eq!(vis_diag::all_codes().count(), 33);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }

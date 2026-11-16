@@ -36,3 +36,4 @@ VS0604	error: tính năng chưa hỗ trợ ở VS0 (ví dụ chạy nền `&`)
 VS0701	error: không thấy tệp module (hoặc `std`/`pkg` chưa hỗ trợ)
 VS0702	error: vòng phụ thuộc giữa các tệp module
 VS0703	error: `use` trùng hoặc mơ hồ (hai đường dẫn cùng một module)
+VS0704	error: không giải được ràng buộc gói: không phiên bản nào thoả đồng thời các ràng buộc (kèm chuỗi ràng buộc)
