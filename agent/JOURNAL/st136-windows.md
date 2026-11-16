@@ -11,7 +11,8 @@ số chính trong tệp này) · lần đo 1 ở **`e369698a`** (phụ lục §3
 > log gốc ở §11. Chỗ nào là suy luận thì ghi rõ **"phỏng đoán"**.
 
 > Vì sao có hai lần đo: lúc bắt đầu đo (07:53:59Z) `origin/main` = `e369698a`; trong lúc đo, **ST-134 land** (commit
-> `76b6e22e` + lật QUEUE `7881eb30`, `origin/main` → `632e1fba`). Để số liệu phản ánh **code cuối** (đúng ý 23f §2:
+> `6e6673bd` + lật QUEUE `7881eb30`; sau đó là các commit dòng OS `6d59c74a`, `76b6e22e`, `f6357d3f`, `632e1fba`,
+> **không** chạm `viscript/crates`, `origin/main` → `632e1fba`). Để số liệu phản ánh **code cuối** (đúng ý 23f §2:
 > "Windows đo sau cùng"), toàn bộ 4 lệnh được **đo lại** trên `632e1fba`; số của lần 1 giữ nguyên trong phụ lục.
 
 ---
