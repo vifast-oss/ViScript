@@ -1012,3 +1012,6 @@ Vế còn lại của nợ #133 (`read_dir` trên thư mục **có quyền ghi**
 
 ### VD-155 · Đính chính số sổ sau ST-154 (2026-11-17)
 Sổ sau ST-154 là **146 mục = 91 mở / 32 đóng / 21 VS3 / 1 không làm / 1 điều hướng** (thêm #144 đã đóng và #145 mở). Con số "90 mở/31 đóng/21 VS3" trong VD-154(b) đúng cho sổ **144 mục trước khi thêm hai dòng đó**; R27 trích **146/91/32/21**. Không xoá dòng lịch sử nào; `st154-kiem-trung.log` (0 trùng, dải 1..145) là bằng chứng.
+
+### VD-156 · Đợt 28: parity argv (#110) + một nguồn đếm khối (#129) (2026-11-17)
+Cho phép sửa TỐI THIỂU hai nợ: (a) #110 — VM phải đưa `argv` (`list[str]`) vào **tham số không-`cap`** của `main` **như interp** (`interp.rs:221-234`), có ca đỏ-trước chạy cả hai đường và so byte; (b) #129 — gom danh sách **số dòng khối tài liệu** đang chép ở 4 tệp test về **một nguồn** duy nhất (một hằng/module dùng chung), không đổi số kỳ vọng. Không đổi ngữ nghĩa khác, không nới ngưỡng, không `unsafe`/crate mới; gate macOS PASS (L0 1175/0 hoặc số thật nếu thêm ca) là điều kiện commit. Không mở task VS3.

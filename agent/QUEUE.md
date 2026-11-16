@@ -345,6 +345,10 @@ GHI CHÚ 2026-11-17 Agent 0 (17c §5) · ST-154 gộp thêm việc sổ: `#143` 
 | ST-156 | **R27** + cập nhật ROADMAP/STATE (chốt đêm 17/11: ST-154, ST-155, đính chính sổ 146) | ST-154, ST-155 | 1,25 h | **DONE** | đủ hàng phụ thuộc (ST-154/155/152) + trạng thái; đính chính sổ **146/91/32/21**; số 3 nền; 5 câu VD-131; check_report PASS (27 báo cáo, 173 hàng) |
 > CHỜ DUYỆT Agent 1 · dd088322 · R27 xong: 27 báo cáo, check_report PASS; gate macOS PASS L0 1175/0; sổ 146 (91 mở/32 đóng/21 VS3)
 
+| ST-157 | **Nợ #110**: VM đưa `argv` vào tham số không-`cap` của `main` (parity với interp) | ST-156 | 1 h | **READY** | ca đỏ-trước: chương trình đọc tham số `main` in `[a b]` — interp và `--vm` **cùng byte**; sửa ≤100 dòng; gate macOS PASS; log st157-* |
+| ST-158 | **Nợ #129**: gom danh sách số dòng khối tài liệu về **một nguồn** (4 tệp test) | ST-156 | 0,75 h | **READY** | một hằng/nguồn duy nhất; 4 tệp tham chiếu (không chép số); số kỳ vọng không đổi; gate macOS PASS; log st158-* |
+| ST-159 | **R28** (chốt phần sau R27) | ST-157, ST-158 | 0,75 h | **READY** | 28 báo cáo, **177** hàng; check_report PASS; gate macOS PASS; sổ đếm khớp; log st159-* |
+
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
