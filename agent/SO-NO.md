@@ -201,7 +201,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 130 | Linux chưa chạy `vis test`/differential/cache (mới có `cargo test` + host suite) (ST-142: 447/447 hai đường, `lech=0`) | R23 §6 · ST-133 · QUEUE ST-142 · JOURNAL/st142-ps-vis-test.log · JOURNAL/st142-ps-diff-100k.log · JOURNAL/st142-ps-cache.log | đóng ở ST-142 |
 | 131 | hàng `ST-132b` do Agent 2 tự thêm vào QUEUE (ngoài ủy quyền) — cần Agent 0 nhận hoặc xoá (đính chính: hàng do Agent 0 mở, không phải Agent 2 tự thêm) | R23 §6 · ST-133 · R24 §1 hàng 5 | đóng ở ST-00 (đính chính R23/R24 §1) |
 | 132 | 3 ca âm dựng helper bằng `rustc`; thiếu `crt-static` ⇒ đỏ vì môi trường | R24 §5 · ST-132b | mở |
-| 133 | Ca `read_dir` mới kiểm luật chỉ-đọc, chưa kiểm luật ghi | R24 §5 · ST-132b | mở |
+| 133 | Ca `read_dir` mới kiểm luật chỉ-đọc, chưa kiểm luật ghi — **ST-150 đã bù**: ca `con_ghi_vao_thu_muc_chi_doc_bi_kernel_chan` (ca 14) cho tiến trình con **ghi** vào thư mục chỉ-đọc ⇒ `EACCES`, kèm đỏ-trước + đối chứng dương cùng ca + hai luật trong **một** ruleset. Biến thể `read_dir` trên thư mục **có quyền ghi** (ST-132b §7) **không** thuộc phạm vi hàng ST-150 — đề nghị cấp số ở đợt sau, chưa đưa vào bảng này | R24 §5 · ST-132b · QUEUE ST-150 · `JOURNAL/st150-landlock-ps.log` · `JOURNAL/st150-gate-macos.log` | đóng ở ST-150 |
 | 134 | `setup.sh` cài thêm `x86_64-pc-windows-msvc` (ngoài `wasm32`) để đạt 18/18 — cần Agent 0 chuẩn thuận (VD-146(1) + ST-144: 2/2 target đã cài) | R24 §5 · ST-134 · VD-146(1) · QUEUE ST-144 | đóng ở ST-144 |
 | 135 | `vis-linux` phải sync cả `vis-host-wasm/`; chưa có kiểm tự động danh sách sync | R24 §5 · ST-134 | mở |
 | 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá — **ST-149 đã sửa**: biến bind từ ngoài (`let`/`var`/`const` cấp tệp + tham số `cmd`/`fn`) **che** tên lệnh ⇒ thân là **biểu thức**; không bind ⇒ luật ST-134 nguyên vẹn | R24 §5 · ST-134 · QUEUE ST-149 · `JOURNAL/st149-do-truoc.log` · `JOURNAL/st149-tai-hien.log` | đóng ở ST-149 |
@@ -317,15 +317,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **144** (1..143; #109 tách `a`/`b`) |
-| `mở` | **93** |
-| `đóng` | **29** |
+| `mở` | **92** |
+| `đóng` | **30** |
 | `chuyển VS3` | **20** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 93 mở + 29 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
+Kiểm: 92 mở + 30 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
 
 **Đóng trong đợt 24g (ST-148 đối chiếu lại, chỉ ghi khi có bằng chứng trong repo):** `#89` (ST-139 · PR #24 ·
 `ef6489d1` · `JOURNAL/st139-do-truoc.log`), `#130` (ST-142 · `JOURNAL/st142-ps-*.log`: 447/447 hai đường,
@@ -334,7 +334,9 @@ Kiểm: 93 mở + 29 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **14
 `HOST-BAO-DAM.md`; sửa kỹ thuật thuộc VS3).
 
 **Đóng trong đợt 25:** `#136` (ST-149 · nợ phân loại thân `cmd` — biến bind từ ngoài che tên lệnh;
-đỏ-trước `JOURNAL/st149-do-truoc.log`, tái hiện `JOURNAL/st149-tai-hien.log`, `cargo test --workspace` 1163/0).
+đỏ-trước `JOURNAL/st149-do-truoc.log`, tái hiện `JOURNAL/st149-tai-hien.log`, `cargo test --workspace` 1163/0),
+`#133` (ST-150 · ca âm **ghi** ở tiến trình con cho thư mục **chỉ-đọc**: `exit=7` + `Permission denied`/`EACCES`,
+tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xanh — `JOURNAL/st150-landlock-ps.log`).
 
 ## 9. Máy kiểm của task này
 
@@ -370,3 +372,19 @@ Kiểm: 93 mở + 29 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **14
 - `cd viscript && ../vis-dev gate --fast` ⇒ **PASS**, `[exit=0]`, **10/10** bước `--- …: OK`, L0 **1163/0** (129 suite),
   report-check PASS (25 báo cáo, 171 hàng QUEUE), doc-examples OK (24 khối) — `JOURNAL/st149-gate-macos.log`
   (header VD-136 + sha256 + `[exit=0]`, sha256 `ad574c8e1994a0e48e62b2214e957dd0eb74fa504a5ef06878b2803451005c2f`).
+
+**ST-150 (nợ #133, HEAD `8abb0c81` + ca ST-150 chưa commit, đo trên `ps`)**:
+
+- Ca 14 `con_ghi_vao_thu_muc_chi_doc_bi_kernel_chan` trong `vis-host-linux/tests/landlock.rs` (**+101** dòng, ca cũ
+  không sửa): đỏ-trước `exit=0` + nội dung `truoc ruleset`; sau ruleset (2 luật trong **một** `ap`) tiến trình con
+  `ghi` vào thư mục chỉ-đọc ⇒ `exit=7` + `loi: Permission denied (os error 13)` (`EACCES`), `x.txt` **không** được tạo;
+  đối chứng dương cùng ca `ghi` vào thư mục `ghi: true` ⇒ `exit=0` + `duoc ghi`.
+- `ps`: **14/14 xanh** (13 ca cũ vẫn xanh), `test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+  finished in 0.33s` — `JOURNAL/st150-landlock-ps.log` (sha256 `614b124a…`, 4 699 byte, header VD-136).
+- sha256 tệp đo **hai phía khớp**: local `fa2aab0fd1bfd122fb11eee1783adee50639e935b8dde324b6b64d37deaa1461` =
+  `ssh root@ps sha256sum /root/vifast-linux/vis-host-linux/tests/landlock.rs` (cùng giá trị); HEAD `8abb0c81` hai phía.
+- `cd viscript && ../vis-dev gate --fast` ⇒ **PASS**, `[exit=0]`, **10/10** bước, L0 **1163/0** (129 suite),
+  report-check PASS (25 báo cáo, 171 hàng QUEUE), doc-examples OK (24 khối) — `JOURNAL/st150-gate-macos.log`
+  (header VD-136 + sha256 + `[exit=0]`, sha256 `6aa8b4f8…`). `vis-host-linux` **không** thuộc workspace `viscript/`.
+- Sau khi sửa sổ (`#133` đóng): đếm lại **144 dòng** = **92 mở / 30 đóng / 20 VS3 / 1 không làm / 1 điều hướng**;
+  `python3 test/report/check_report.py --all` ⇒ **PASS (25 báo cáo, 171 hàng QUEUE)** — `JOURNAL/st150-check-report.log`.
