@@ -1,10 +1,6 @@
-# STATE — ViScript (vòng 27 — **ST-156 DONE (chờ duyệt)** tại `head` `dd088322`: **R27** chốt đêm 17/11 — sau R26 đêm đóng nốt **#144** (ST-154: ca **15** **dương** `read_dir` trên thư mục **có quyền ghi** trong `vis-host-linux`, `ps` **15/15** xanh, sha256 tệp đo **hai phía khớp** `7102e90b…`), **#143 → VS3** (VD-154(b): ca `st130b` xanh) và thêm **#145** **mở** (chú thích `rt.rs` nói sai đường chặn `chan(0)` — tyck không kiểm `cap`), **ST-155** = **bộ đầu vào thiết kế VS3** (`JOURNAL/st155-vs3-dieu-tra.md` 222 dòng, 57 dẫn chứng, `[ƯL]` **19–28** task ≈ **57–84 h**, §8 Top 5 câu hỏi, §9 6 việc đề nghị KHÔNG làm); sổ **146 mục** (**91 mở** / **32 đóng** / **21 VS3** / 1 không làm / 1 điều hướng, VD-155); **macOS** gate `--fast` **PASS** `[exit=0]` **10/10** bước, L0 **1175/0** (**130** suite), report-check PASS (**27** báo cáo, **174** hàng QUEUE); **Linux `ps`** gate PASS L0 **1169/0** (129 suite — **số TRƯỚC** 9 ca ST-151, **chưa đo lại**) + `vis-host-linux` **15/15**; **Windows `psvn` CHỈ ĐO** (self-test **12/12**, cổng đi **9/10 bước**, dừng **L0** vì `/bin/echo`); **Task kế: không** — chờ **Agent 0** ban hành **tài liệu thiết kế VS3** (phải trả lời **5 câu hỏi** `st155` §8 trước); VS2 đóng kỹ thuật **8/8** (VD-151); **R26** = `b1c07802`; đêm 17/11: **8 hàng công việc DONE** (ST-147 · ST-148 · ST-149 · ST-150 · ST-151 · ST-153 · ST-154 · ST-155) + **2 hàng báo cáo vòng** (ST-152 · ST-156))
+# STATE — ViScript (vòng 27 — **ST-157 DONE (chờ duyệt)** tại `head` `567350e1`: **nợ #110 ĐÓNG** — VM đưa `argv` (`list[str]`) vào tham số **không-`cap`** của `main` như interp (`interp.rs:221-234`), `Value::Cap` vẫn đúng **chỉ số** (ST-72b). Gốc lệch: codegen bọc `fn main` trong "vỏ" `Call(main, 0); Halt` **0 tham số** (`vis-bytecode/src/codegen.rs`) nên VM cũ chỉ đặt `argv` khi `arity == 0` ⇒ `fn main(args: list[str])` nhận `()` trên `--vm`. Sửa **`crates/vis-vm/src/vm.rs` +40/−6** (chạy thẳng `main` khi entry là vỏ và `main` có tham số; `main()` không tham số giữ nguyên). Ca đỏ-trước `crates/vis-cli/tests/vm_main_argv.rs` **4** ca so **byte** hai đường: **3/4 ĐỎ** trước sửa (interp `[a, b]` vs VM `()`, `JOURNAL/st157-do-truoc.log` `[exit=101]`), **4/4 xanh** sau sửa; ca cũ `cap_khong_lo::doi_so_dong_lenh_la_str` (vốn **ghim** sự lệch) cập nhật để khẳng định parity — ca **duy nhất** đổi kỳ vọng, có lý do VD-156. `cargo test -p vis-cli` **778/0** (77 suite); **gate macOS** `../vis-dev gate --fast` **PASS** `[exit=0]` **10/10** bước, L0 **1179/0** (**131** dòng `test result` = 1175 + 4 ca mới); `vis test test/sem` **447/447** interp + **447/447** `--vm`; **sổ 146 mục = 90 mở / 33 đóng / 21 VS3 / 1 không làm / 1 điều hướng** (`#110` → **đóng ở ST-157**; `JOURNAL/st157-kiem-trung.log` PASS); **task kế: ST-158** (nợ #129 — một nguồn đếm khối tài liệu)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-156** (**R27** chốt đêm 17/11: **#144** đóng, **#143** → VS3, **#145** mở, bộ đầu vào VS3 đã có, sổ **146 = 91/32/21**; cổng macOS PASS L0 **1175/0**, report-check **27/174**; task kế **không** — chờ Agent 0 ban hành tài liệu thiết kế VS3) (nợ **#144** đóng: ca 15 **dương** `read_dir` trên thư mục
-có quyền ghi, `ps` 15/15 + sha256 hai phía khớp; sổ theo **VD-154**: `#143` → VS3, `#144` đóng, thêm `#145`; gate macOS PASS
-L0 **1175/0**; sổ **146 mục** = 91 mở/32 đóng/21 VS3/1 không làm/1 điều hướng). Header **ST-155** (điều tra VS3 **chỉ đọc**: 6 mục hiến chương §5 +
-kích thước `[ƯL]` + rủi ro + câu hỏi cho Agent 0 — `JOURNAL/st155-vs3-dieu-tra.md`; gate macOS PASS L0 **1175/0**;
-nền số của R26 giữ nguyên: VS2 đóng kỹ thuật 8/8, nợ 144 mục (91 mở/20 VS3), 26 báo cáo, 173 hàng QUEUE, 2026-11-17).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-157** (nợ **#110** đóng — VM truyền `argv` cho tham số không-`cap` của `main`, parity interp↔VM; ca mới 4 ca so byte, gate macOS PASS L0 **1179/0**, sổ **146 = 90/33/21/1/1**; task kế **ST-158**) (nền số R27 giữ nguyên: VS2 đóng kỹ thuật **8/8** (VD-151), 27 báo cáo, 174 hàng QUEUE, sổ trước ST-157 = 146 mục 91/32/21/1/1, gate macOS L0 1175/0 — `reports/R27-viscript.md`)
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -35,23 +31,25 @@ Nguồn (ST-155): `QUEUE.md` hàng ST-155 · `DECISIONS.md` **VD-153** (mở đi
 
 Nguồn (ST-154): `QUEUE.md` hàng ST-154 + `GHI CHÚ 2026-11-17 Agent 0 (17c §5)` · `DECISIONS.md` **VD-153** (cấp #144) + **VD-154** (#143 → VS3, cấp #145) + VD-120/VD-132/VD-136/VD-138 · `JOURNAL/quyet-dinh-a0-2026-11-17c.md` §2/§3/§5 · `vis-host-linux/tests/landlock.rs` (ca 13/14 làm khuôn: `dung_helper`, `chay_con`, `ap`, `tam`) · `JOURNAL/st154-landlock-ps.log` · `JOURNAL/st154-landlock-ps-lan1-truoc-fmt.log` · `JOURNAL/st154-gate-macos.log` (đỏ `fmt`) · `JOURNAL/st154-gate-macos-lan2.log` · `JOURNAL/st154-kiem-trung.log` · `JOURNAL/st154-check-report.log` · `agent/SO-NO.md` #133/#143/#144/#145 · `JOURNAL/2026-11-17.md` §ST-154.
 Nguồn (ST-156): `reports/R27-viscript.md` · `reports/R27-viscript.json` · `reports/R26-viscript.md` §3 (số cũ, không sửa) · `agent/SO-NO.md` §8 (146 = 91/32/21/1/1) · `DECISIONS.md` **VD-154**/**VD-155** + VD-142/VD-143/VD-145/VD-147/VD-148/VD-151 · `JOURNAL/quyet-dinh-a0-2026-11-17c.md` §1–§6 · `JOURNAL/st155-vs3-dieu-tra.md` (§7/§8/§9) · `JOURNAL/st156-gate-macos.log` · `JOURNAL/st154-landlock-ps.log` · `st154-kiem-trung.log` · `st155-gate-macos.log` · `QUEUE.md` hàng ST-152/ST-154/ST-155/ST-156 · `JOURNAL/2026-11-17.md` §ST-154/§ST-155.
+Nguồn (ST-157): `QUEUE.md` hàng ST-157 + dòng `> CHỜ DUYỆT Agent 1 · 567350e1` · `DECISIONS.md` **VD-156**(kèm VD-103/VD-106 của ST-72b, VD-147(3)) · `JOURNAL/quyet-dinh-a0-2026-11-17d.md` §1/§2 · `crates/vis-interp/src/interp.rs:221-234` (chuẩn interp) · `crates/vis-bytecode/src/codegen.rs` (mục `main` — "vỏ" `Call(fi, 0); Halt`) · `crates/vis-vm/src/vm.rs` (`chay_chuong_trinh`) · `crates/vis-cli/tests/vm_main_argv.rs` · `crates/vis-cli/tests/cap_khong_lo.rs` · `JOURNAL/st157-do-truoc.log` · `JOURNAL/st157-gate-macos.log` · `JOURNAL/st157-vis-test.log` · `JOURNAL/st157-vis-test-vm.log` · `JOURNAL/st157-kiem-trung.log` · `agent/SO-NO.md` #110 + §8/§9 · `JOURNAL/2026-11-17.md` §ST-157.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 26 — **R26 chốt đợt 25** (`head` `b1c07802`): ST-147 **DONE** theo phạm vi **VD-150** (`fd16d7d1`;
+Vòng          : 27 — **R27 chốt đợt 27** (`reports/R27-viscript.md`, `head` `c9249b79`); đợt 28 (VD-156): ST-157 **DONE (chờ duyệt)** (`567350e1`), ST-158/ST-159 **READY**.
+                Đợt 25 — **R26 chốt** (`head` `b1c07802`): ST-147 **DONE** theo phạm vi **VD-150** (`fd16d7d1`;
                 ca 7 đóng ở ST-153) · ST-148 **DONE** (`cfce6b86`) · ST-149 **DONE** (`6ce972ef`) ·
                 ST-150 **DONE** (`9eeb936b`) · ST-151 **DONE** (`9bd7d022`) · ST-153 **DONE** (`4a805115`)
-Task đang làm : —  ·  **ST-154 DONE (chờ duyệt)**: nợ **#144** (ca 15 `read_dir` dương, `ps` 15/15) + sổ VD-154
-                (`#143` → VS3, `#144` đóng, `#145` mở) ⇒ 146 mục (91/32/21/1/1); gate macOS PASS L0 1175/0.
-                **Đợt 25 xong 6/6 hàng; VS2 đóng kỹ thuật 8/8 (VD-151)** · **ST-155 DONE (chờ duyệt)**: điều tra
-                CHỈ ĐỌC cho VS3 ⇒ `JOURNAL/st155-vs3-dieu-tra.md` **222 dòng** (6 mục × 5 khối + §7 bảng + §8 Top 5
-                câu hỏi + §9 6 việc không làm; **57** dẫn chứng `tệp:dòng`; `[ƯL]` 12/`[ĐO]` 11/`[GT]` 7) — **không**
-                sửa mã, không crate mới; R26: 26 báo cáo, `check_report --all` PASS (**173** hàng QUEUE); 5 câu VD-131
-                nguyên văn; 8 hạng mục VS2 (hạng mục 4 = **15 ca** `vis-host-linux`, hạng mục 7 = Windows **9/10 bước**).
-Task kế       : **KHÔNG** — hết hàng `READY` của dòng ViScript; chờ **Agent 0** ban hành tài liệu thiết kế VS3
-                (VD-148/VD-151; hiến chương `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5) + duyệt ST-154/ST-155. Hàng chờ
-                duyệt: ST-154, ST-155 (`QUEUE.md`).
+Task đang làm : —  ·  **ST-157 DONE (chờ duyệt)** (`567350e1`): nợ **#110** đóng — VM đặt `argv` vào tham số
+                **không-`cap`** của `main` (chạy thẳng `main`, bỏ qua "vỏ" `Call(main, 0); Halt` của codegen),
+                `Value::Cap` đúng chỉ số (ST-72b); ca mới `vm_main_argv.rs` 4 ca **so byte** (3/4 đỏ trước sửa ⇒ 4/4 xanh);
+                gate macOS PASS L0 **1179/0**; `vis test test/sem` 447/447 interp + 447/447 `--vm`; sổ **146 = 90/33/21/1/1**.
+                **ST-154 DONE (chờ duyệt)**: nợ **#144** (ca 15 `read_dir` dương, `ps` 15/15) + sổ VD-154; **ST-155 DONE
+                (chờ duyệt)**: `JOURNAL/st155-vs3-dieu-tra.md` **222 dòng** (6 mục × 5 khối + §7/§8/§9; 57 dẫn chứng);
+                **ST-156 DONE (chờ duyệt)**: R27 (`c9249b79`); VS2 đóng kỹ thuật 8/8 (VD-151).
+Task kế       : **ST-158** (nợ **#129** — gom danh sách số dòng khối tài liệu về **một nguồn**, 4 tệp test;
+                0,75 h; gate macOS PASS; log st158-*), rồi **ST-159** (R28). Hàng chờ duyệt: ST-154, ST-155, ST-156,
+                ST-157 (`QUEUE.md`).
 Nhánh         : main
 ```
 

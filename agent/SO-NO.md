@@ -4,9 +4,10 @@
 **ST-153** (ghi chú: ca 7 self-test của ST-147 **đóng ở ST-153**, §7.4 — không cấp số mới) ·
 **ST-151** (đóng **#135**) ·
 **ST-154** (đóng **#144**; `#143` → **chuyển VS3** theo **VD-154(b)**; thêm **#145** theo **VD-154(c)**) ·
-**Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154)
+**ST-157** (đóng **#110** — VM đưa `argv` vào tham số **không-`cap`** của `main`, parity interp↔VM theo **VD-156**) ·
+**Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-154** — đóng **#144**, `#143` → VS3, thêm **#145**) · **HEAD khi cập nhật**: `b1c07802`
+**Cập nhật**: 2026-11-17 (**ST-157** — đóng **#110**, sổ **146 mục = 90 mở / 33 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -183,7 +184,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 108 | `Command::new(tên)` để OS phân giải `PATH` lần nữa sau khi kiểm | R23 §6 · ST-123 | mở |
 | 109a | `next_block()` trả `801` trong khi khối `07xx` vẫn còn chỗ (`704` đã cấp): hàm là “khối mới”, không phải “số kế tiếp” | JOURNAL/st128-resolver.md §8 · ST-128 · QUEUE ST-128 · R23 §6 #116 | chuyển VS3 |
 | 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3; **dòng giới hạn đã có trong `HOST-BAO-DAM.md`**; sửa kỹ thuật thuộc VS3 | R23 §6 · ST-124 · R24 §5 #140 · JOURNAL/st124-review.md §7 · HOST-BAO-DAM.md §4 | mở |
-| 110 | VM không đưa `argv` vào tham số không-`cap` của `main` (interp `list[str]`, VM `()`) | R23 §6 · ST-124 | mở |
+| 110 | VM không đưa `argv` vào tham số không-`cap` của `main` (interp `list[str]`, VM `()`) — **ST-157**: VM chạy thẳng `main` (bỏ qua "vỏ" `Call(main, 0); Halt` của codegen) và đặt `argv` vào mọi tham số **không-`cap`**, `Value::Cap` đúng chỉ số (ST-72b); ca mới `vm_main_argv.rs` 4 ca **so byte** hai đường | R23 §6 · ST-124 · ST-157 · `JOURNAL/st157-do-truoc.log` · QUEUE ST-157 | đóng ở ST-157 |
 | 111 | tyck chấp nhận `let e: cap[Dir] = json.decode(...)` | R23 §6 · ST-124 | mở |
 | 112 | Thực tế có 2 bộ escape JSON (`json_esc` + `json_tai`); VD-130e “nguồn duy nhất” chưa đúng | R23 §6 · ST-124 | mở |
 | 113 | `TEN_THE` không ràng buộc lúc biên dịch | R23 §6 · ST-126 · JOURNAL/st126-dong-bang-api.md §8 | chuyển VS3 |
@@ -335,15 +336,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **146** (1..145; #109 tách `a`/`b`) |
-| `mở` | **91** |
-| `đóng` | **32** |
+| `mở` | **90** |
+| `đóng` | **33** |
 | `chuyển VS3` | **21** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 91 mở + 32 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **146** dòng.
+Kiểm: 90 mở + 33 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **146** dòng.
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =
 91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng (ST-151). ST-154 làm **ba** việc trên sổ: (1) `#143` **mở → chuyển VS3**
@@ -372,6 +373,11 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
 
 **Chuyển VS3 trong đợt 25:** `#143` (ST-154 · **VD-154(b)**: ca khoá `st130b` **đã xanh** ⇒ điều kiện VD-133 đã thoả).
 **Thêm số trong đợt 25:** `#144` (VD-153), `#145` (VD-154(c) — chú thích `rt.rs` nói sai đường chặn `chan(0)`, **mở**).
+
+**Đóng trong đợt 28 (ST-157):** `#110` — VM đưa `argv` (`list[str]`) vào tham số **không-`cap`** của `main` như interp
+(`interp.rs:221-234`; ST-72b giữ `Value::Cap` đúng **chỉ số**), ca đỏ-trước **3/4 đỏ** (interp `[a, b]` vs VM `()`,
+`JOURNAL/st157-do-truoc.log`), sau sửa **4/4 xanh** + `cap_khong_lo::doi_so_dong_lenh_la_str` (ca **ghim** sự lệch cũ)
+cập nhật để khẳng định **parity** thay vì ghim lệch. Sổ **146 mục = 90 mở / 33 đóng / 21 VS3 / 1 không làm / 1 điều hướng**.
 
 ## 9. Máy kiểm của task này
 
@@ -473,3 +479,15 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
   sửa fmt rồi chạy **lần 2**, log đỏ giữ nguyên `JOURNAL/st154-gate-macos.log` (2 449 byte, sha256
   `3b0a12649934c5df71b5f5e2bd6c4d264b8d193cb3d541ae117c94704cea2429`).
 - `python3 viscript/test/report/check_report.py --all` ⇒ **PASS (26 báo cáo, 173 hàng QUEUE)** — `JOURNAL/st154-check-report.log`.
+
+
+**ST-157 (đóng #110, HEAD `567350e1`)**:
+
+- `cargo test -p vis-cli` ⇒ **xanh**: 77 suite, **778 / 0** (gồm ca mới `vm_main_argv` **4/4**).
+- Ca đỏ-trước: `cargo test -p vis-cli --test vm_main_argv` **3/4 ĐỎ** (interp `[a, b]` vs `--vm` `()`) — `JOURNAL/st157-do-truoc.log`
+  (`[exit=101]`), chạy **trước** khi sửa.
+- `cd viscript && ../vis-dev gate --fast` ⇒ **PASS** `[exit=0]`, **10/10** bước `--- …: OK`, L0 **1179/0** (**131** dòng
+  `test result`, cơ sở 1175 + 4 ca mới) — `JOURNAL/st157-gate-macos.log` (header VD-136 + sha256 + `[exit=0]`).
+- `target/debug/vis test test/sem` ⇒ **447/447**, exit 0 — `JOURNAL/st157-vis-test.log`; `--vm` cũng **447/447**
+  (0 `not ok`) — `JOURNAL/st157-vis-test-vm.log`.
+- Sổ: `#110` **mở → đóng ở ST-157**; §8 **146 = 90/33/21/1/1**; §9 khối này.
