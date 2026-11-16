@@ -42,27 +42,15 @@ fn loi(ma: &'static vis_diag::Code, msg: impl Into<String>, span: Span) -> Abort
     Abort::Trap(Trap::new(ma, msg, span))
 }
 
-/// **ST-97**: lệnh `ten` khớp grant `g` nếu **basename** bằng nhau hoặc **đường dẫn canonicalize**
-/// bằng nhau (`echo` khớp `/bin/echo`; `/bin/echo` khớp grant `echo`).
+/// **ST-123 (VD-130c)**: lệnh `ten` khớp grant `g` ⇔ **đường dẫn tuyệt đối đã canonicalize bằng
+/// nhau**. `g` đã được phân giải **một lần lúc khởi động** (`quyen::tao`); `ten` phân giải theo
+/// **cùng** luật tại thời điểm chạy. **Không** còn so **basename** — bản sao cùng tên ở thư mục khác
+/// (**ST-123** red) bị chặn; tên trần (`echo`) khớp `/bin/echo` qua `PATH`, không qua tên.
 fn khop_lenh(ten: &str, g: &str) -> bool {
-    if ten == g {
-        return true;
+    match crate::quyen::chuan_lenh(ten) {
+        Some(d) => d.as_path() == std::path::Path::new(g),
+        None => false,
     }
-    let base = |s: &str| {
-        std::path::Path::new(s)
-            .file_name()
-            .map(|x| x.to_string_lossy().to_string())
-            .unwrap_or_else(|| s.to_string())
-    };
-    if base(ten) == base(g) {
-        return true;
-    }
-    let canon = |s: &str| {
-        std::fs::canonicalize(s)
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| s.to_string())
-    };
-    canon(ten) == canon(g)
 }
 
 /// Cap **stdin** mỗi stage ngoài (ST-34): 8 MiB. Vượt ⇒ `VS0501` **trước khi spawn**.
@@ -91,7 +79,9 @@ impl Runner {
             ));
         }
         // **ST-97 (VD-112)**: allowlist chỉ áp khi người dùng đã `--grant` cho `cap[Proc]`; không grant
-        // ⇒ không giới hạn (tương thích). So **basename** HOẶC **đường dẫn canonicalize**.
+        // ⇒ không giới hạn (tương thích).
+        // **ST-123 (VD-130c)**: khớp theo **đường dẫn tuyệt đối đã canonicalize** (hai phía), không
+        // theo basename.
         if let Some(ds) = &self.allow_proc {
             if !ds.iter().any(|g| khop_lenh(ten, g)) {
                 return Err(loi(

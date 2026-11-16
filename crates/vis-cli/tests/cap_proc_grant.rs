@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-97 (VD-112)** — `--grant` cho `cap[Proc]` = **allowlist lệnh**:
-//! lặp `--grant p=<lệnh>`; khớp **basename** hoặc **đường dẫn canonicalize**; không grant ⇒ không giới
-//! hạn (tương thích). Grant Proc gán cho `cap[Dir]` ⇒ lỗi kiểu rõ. Mọi ca chạy **cả hai đường**, so byte.
+//! lặp `--grant p=<lệnh>`; không grant ⇒ không giới hạn (tương thích). Grant Proc gán cho
+//! `cap[Dir]` ⇒ lỗi kiểu rõ. Mọi ca chạy **cả hai đường**, so byte.
+//!
+//! **ST-123 (VD-130c)**: luật so khớp đổi từ **basename** sang **đường dẫn tuyệt đối đã
+//! canonicalize** (giá trị không có `/` phân giải qua `PATH` một lần lúc khởi động). Ca (c)
+//! `--grant p=echo` + chạy `/bin/echo` **vẫn xanh** vì `PATH` phân giải `echo` ⇒ `/bin/echo`, không
+//! phải vì basename; ca mới cho bản sao trùng tên ở `tests/grant_proc_canon.rs`.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

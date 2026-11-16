@@ -208,18 +208,27 @@ pub fn tao(
                 .filter(|(n, _)| n == &c.name)
                 .map(|(_, v)| v.clone())
                 .collect();
+            // **ST-123 (VD-130c)**: phân giải **một lần lúc khởi động** thành đường dẫn tuyệt đối
+            // đã canonicalize; allowlist so **bằng** đường dẫn đó, không so basename.
+            let mut allow: Vec<String> = Vec::new();
+            for v in &ds_grant {
+                match phan_giai_lenh(v, goc) {
+                    Ok(p) => allow.push(p.to_string_lossy().to_string()),
+                    Err(e) => return Err(format!("`--grant {}={v}`: {e}", c.name)),
+                }
+            }
             let root = if ds_grant.is_empty() {
                 c.path.clone()
             } else {
                 ds_grant.join(":")
             };
-            allow_proc.extend(ds_grant.iter().cloned());
+            allow_proc.extend(allow.iter().cloned());
             moc.push(QuyenCap {
                 pos: c.pos,
                 kind: c.kind.clone(),
                 root,
                 write: false,
-                allow: ds_grant,
+                allow,
             });
             continue;
         }
@@ -272,15 +281,73 @@ pub fn tao(
 /// **ST-97**: tệp thực thi (Unix) — dùng để bắt `--grant` Proc gán nhầm cho `cap[Dir]`.
 #[cfg(unix)]
 fn la_tep_thuc_thi(p: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::metadata(p)
-        .map(|m| m.is_file() && (m.permissions().mode() & 0o111) != 0)
-        .unwrap_or(false)
+    la_tep_lenh(p)
 }
 
 #[cfg(not(unix))]
 fn la_tep_thuc_thi(_p: &Path) -> bool {
     false
+}
+
+/// **ST-123 (VD-130c)**: tệp **chạy được** — Unix: tệp thường + bit `x`; nền khác: tệp thường.
+fn la_tep_lenh(p: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(p)
+            .map(|m| m.is_file() && (m.permissions().mode() & 0o111) != 0)
+            .unwrap_or(false)
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::metadata(p).map(|m| m.is_file()).unwrap_or(false)
+    }
+}
+
+/// **ST-123 (VD-130c)**: phân giải **giá trị `--grant` của `cap[Proc]`** thành đường dẫn tuyệt đối
+/// **đã canonicalize**, **một lần lúc khởi động** (không phải mỗi lần chạy lệnh).
+///
+/// - Giá trị **không có `/`** ⇒ dò `PATH` (chỉ nhận [tệp chạy được](la_tep_lenh)), mục khớp đầu
+///   tiên — **cùng** luật `execvp` sẽ dùng khi chạy.
+/// - Giá trị **có `/`** ⇒ ghép `goc` nếu tương đối, rồi `canonicalize` (theo symlink).
+/// - Không phân giải được ⇒ `Err` có chẩn đoán rõ (CLI in ra rồi exit 2), **không** im lặng nhận.
+pub fn phan_giai_lenh(v: &str, goc: &Path) -> Result<PathBuf, String> {
+    if !v.contains('/') {
+        let path = std::env::var_os("PATH").unwrap_or_default();
+        for thu_muc in std::env::split_paths(&path) {
+            let ung = thu_muc.join(v);
+            if let Ok(c) = std::fs::canonicalize(&ung) {
+                if la_tep_lenh(&c) {
+                    return Ok(c);
+                }
+            }
+        }
+        return Err(format!(
+            "không thấy lệnh `{v}` trong `PATH` — cần đường dẫn tuyệt đối tới tệp thực thi có thật lúc khởi động"
+        ));
+    }
+    let p = Path::new(v);
+    let ung = if p.is_absolute() {
+        p.to_path_buf()
+    } else {
+        goc.join(p)
+    };
+    let c = std::fs::canonicalize(&ung)
+        .map_err(|e| format!("không phân giải được `{}`: {e}", ung.display()))?;
+    if !la_tep_lenh(&c) {
+        return Err(format!(
+            "`{}` không phải tệp thực thi (cần tệp thường có quyền chạy)",
+            c.display()
+        ));
+    }
+    Ok(c)
+}
+
+/// **ST-123 (VD-130c)**: phân giải **lệnh sẽ chạy** (`ten` do chương trình gọi) theo **cùng luật**
+/// với `--grant`, tại thời điểm chạy; `None` = không phân giải được ⇒ không thể khớp allowlist.
+pub fn chuan_lenh(ten: &str) -> Option<PathBuf> {
+    let goc = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    phan_giai_lenh(ten, &goc).ok()
 }
 
 impl Quyen {
