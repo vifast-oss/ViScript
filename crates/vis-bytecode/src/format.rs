@@ -301,6 +301,107 @@ impl Instr {
     }
 }
 
+/// **ST-126 (VD-129)** — tên của **từng** thẻ `VBC1`, theo đúng **số thẻ** (`TEN_THE[n]` = lệnh có
+/// `tag() == n`). Đây là **nguồn chuẩn** cho tệp đóng băng `viscript/agent/API-VBC1.txt` **và** cho
+/// khoá cache bytecode (xem [`bang_the_hash`]): khoá cache **phải** đổi khi bảng thẻ đổi (VD-129).
+///
+/// Luật: **thêm** lệnh ⇒ thêm tên vào **cuối**; **không** đổi số, **không** đổi tên, **không** đổi
+/// nghĩa thẻ đã có. Đổi nghĩa ⇒ định dạng mới `VBC2` (VD-129).
+pub const TEN_THE: [&str; 53] = [
+    "Const",
+    "LoadLocal",
+    "StoreLocal",
+    "Assign",
+    "LoadCaptured",
+    "Pop",
+    "Bin",
+    "Un",
+    "Call",
+    "CallBuiltin",
+    "CallMethod",
+    "Jump",
+    "JumpIfFalse",
+    "JumpIfNotTrue",
+    "JumpIfNone",
+    "JumpIfSome",
+    "Return",
+    "Halt",
+    "MakeList",
+    "MakeSet",
+    "MakeTuple",
+    "MakeMap",
+    "MakeRecord",
+    "MakeEnum",
+    "MakeSome",
+    "MakeNone",
+    "MakeOk",
+    "MakeErr",
+    "MakeClosure",
+    "Field",
+    "Index",
+    "Set",
+    "With",
+    "Interp",
+    "IterInit",
+    "IterNext",
+    "TestLit",
+    "TestCtor",
+    "TestTuple",
+    "TestList",
+    "TestRecord",
+    "TestRange",
+    "BindLocal",
+    "Try",
+    "Dup",
+    "Unwrap",
+    "CallValue",
+    "UnwrapOpt",
+    "IsUnit",
+    "BoolOr",
+    "BoolAnd",
+    "Swap",
+    "PushUnit",
+];
+
+/// Số thẻ hiện có (`TEN_THE.len()`).
+pub const SO_THE: u8 = TEN_THE.len() as u8;
+
+/// Tên thẻ `t`; ngoài phạm vi ⇒ `None` (không panic).
+pub fn ten_the(t: u8) -> Option<&'static str> {
+    TEN_THE.get(t as usize).copied()
+}
+
+/// Văn bản **chuẩn** của bảng thẻ cho một danh sách tên bất kỳ: mỗi dòng `số\tTên`, tăng dần.
+///
+/// Tách thành hàm nhận tham số để **test** đo được "đổi bảng thẻ ⇒ hash đổi" mà không sửa code
+/// thật (ST-126).
+pub fn bang_the_van_ban_voi(the: &[&str]) -> String {
+    let mut s = String::with_capacity(16 * the.len());
+    for (i, ten) in the.iter().enumerate() {
+        s.push_str(&i.to_string());
+        s.push('\t');
+        s.push_str(ten);
+        s.push('\n');
+    }
+    s
+}
+
+/// [`bang_the_van_ban_voi`] cho bảng thẻ **thật**.
+pub fn bang_the_van_ban() -> String {
+    bang_the_van_ban_voi(&TEN_THE)
+}
+
+/// SHA-256 của bảng thẻ (`bang_the_van_ban_voi`) — thành phần **bắt buộc** của khoá cache bytecode
+/// (VD-129: "khoá cache bytecode phải đổi khi bảng thẻ đổi").
+pub fn bang_the_hash_voi(the: &[&str]) -> [u8; HASH_LEN] {
+    source_hash(&bang_the_van_ban_voi(the))
+}
+
+/// [`bang_the_hash_voi`] cho bảng thẻ **thật**.
+pub fn bang_the_hash() -> [u8; HASH_LEN] {
+    bang_the_hash_voi(&TEN_THE)
+}
+
 /// Tag **ổn định** cho `BinOp` (một nguồn ngữ nghĩa: enum của `vis-types`) — **hàm tự do** vì
 /// `impl` ngoài crate là lỗi.
 pub fn binop_tag(op: BinOp) -> u8 {

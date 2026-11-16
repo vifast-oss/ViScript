@@ -34,6 +34,16 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-126 — đóng băng API + khoá cache mang bảng thẻ, 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **3 tệp cam kết** (VD-129) | `agent/API-STD.txt` **52** mục (kèm chữ ký), `agent/API-CODES.txt` **32** mục (7 khối), `agent/API-VBC1.txt` **53** thẻ; sinh **từ code**, sắp xếp ổn định, có sidecar `.license` (R3). |
+| 1 | **Test chặn** | `crates/vis-cli/tests/api_dong_bang.rs`: đỏ khi thêm/xoá/đổi tên/đổi nghĩa, thông điệp nêu **đích danh** mục + nhắc `VD-129`; đo bằng ca sửa tay: `THÊM/XOÁ/ĐỔI` đúng từng mục (log `st126-do-red-khai.log`). |
+| 2 | **Khoá cache** | **Đo trước**: khoá **không** phủ bảng thẻ ⇒ thiếu so với VD-129. **Sửa** (`cache.rs`, ≈40 dòng): khoá phủ `bang_the_hash()`; khoá đổi `799713b8…b7cd5` → `6d11672c…4ccf`; 6 chiều ca kiểm (đổi tên/số/thêm thẻ, `duong_dan` khác, đổi nguồn/chế độ) xanh; khoá bị **ghim** hex. |
+| 3 | **Đo** | `cargo test --workspace` **1077 passed / 0 failed**; `api_dong_bang` 3, `cache::tests` 2, `cache_khong_che` 5 (520 tệp ×4 / 0 lệch), `vis-bytecode` 46; số khoá **không đổi** (sem 447/22, parity 398+49, FUNCS 52, all_codes 32, VBC1 53). |
+| 4 | **Nợ** | **#105** (`TEN_THE` không ràng buộc lúc biên dịch), **#106** (trường `hash nguồn` VBC1 ≠ khoá cache, loader không đối chiếu). |
+
 ## ST-118 — soak cuối + R22 + ROADMAP, 2026-11-15
 
 | # | Việc | Kết quả |

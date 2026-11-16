@@ -2,7 +2,8 @@
 //! **Cache bytecode** theo hash closure (ST-23, VD-52 #3): `.../vifast/vis/<hash>.vbc`.
 //!
 //! Hash (FNV-1a 64 bit × 4, VD-54) phủ: **văn bản nguồn** + **phiên bản compiler** + **phiên bản
-//! định dạng VBC1** + **chế độ** (`.vis`/`.vish`) — tức "closure" của nguồn và phụ thuộc biên dịch.
+//! định dạng VBC1** + **bảng thẻ VBC1** (ST-126, VD-129) + **chế độ** (`.vis`/`.vish`) — tức
+//! "closure" của nguồn và phụ thuộc biên dịch.
 //!
 //! **Luôn** nạp qua [`vis_bytecode::load_verified`]: bytes hỏng/lệch ⇒ biên dịch lại và ghi lại;
 //! **không bao giờ** chạy bytecode chưa xác minh (VD-52 #3).
@@ -25,7 +26,22 @@ pub fn thu_muc() -> Option<PathBuf> {
 /// Khoá cache cho **đơn vị biên dịch nhiều tệp** (ST-25): hash closure trên (phiên bản, mode, thứ tự
 /// tất định các tệp `(rel, nội dung)`). Vì `files` ở **hậu duyệt DFS** theo thứ tự `use` trong nguồn,
 /// kết quả **tất định**; sửa bất kỳ tệp phụ thuộc nào ⇒ khoá đổi.
+///
+/// **ST-126 (VD-129)**: khoá phủ thêm **bảng thẻ `VBC1`** ([`vis_bytecode::format::bang_the_hash`]) —
+/// bytecode đã ghi bằng bảng thẻ khác **không** được dùng lại (verifier **không** biết ngữ nghĩa thẻ,
+/// nên không thể là hàng rào cho việc đổi bảng). Đổi bảng thẻ ⇒ bytecache cũ thành **vô hiệu**.
 pub fn khoa_multi(files: &[crate::modules::FileUnit], mode: vis_syntax::Mode) -> [u8; 32] {
+    khoa_multi_voi(files, mode, &vis_bytecode::format::TEN_THE)
+}
+
+/// Như [`khoa_multi`] nhưng nhận **bảng thẻ** tường minh — **chỉ** để test đo "đổi bảng thẻ ⇒ đổi
+/// khoá" (ST-126) mà không phải sửa code thật; đường chạy thật luôn truyền
+/// [`vis_bytecode::format::TEN_THE`].
+pub fn khoa_multi_voi(
+    files: &[crate::modules::FileUnit],
+    mode: vis_syntax::Mode,
+    the: &[&str],
+) -> [u8; 32] {
     let che_do = if mode == vis_syntax::Mode::Command {
         "vish"
     } else {
@@ -37,10 +53,15 @@ pub fn khoa_multi(files: &[crate::modules::FileUnit], mode: vis_syntax::Mode) ->
             .map(|f| f.rel.len() + f.text.len() + 2)
             .sum::<usize>(),
     );
-    s.push_str("vifast-vis-cache-v2\n");
+    s.push_str("vifast-vis-cache-v3\n");
     s.push_str(PHIEN_BAN);
     s.push('\n');
     s.push_str(&vis_bytecode::VERSION.to_string());
+    s.push('\n');
+    // **VD-129**: bảng thẻ là một phần của **định dạng** ⇒ phải nằm trong khoá.
+    for b in vis_bytecode::format::bang_the_hash_voi(the) {
+        s.push_str(&format!("{b:02x}"));
+    }
     s.push('\n');
     s.push_str(che_do);
     s.push('\n');
@@ -113,4 +134,113 @@ pub fn xoa() -> usize {
         }
     }
     n
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::FileUnit;
+    use std::path::PathBuf;
+
+    fn hex(k: &[u8; 32]) -> String {
+        let mut s = String::with_capacity(64);
+        for b in k {
+            s.push_str(&format!("{b:02x}"));
+        }
+        s
+    }
+
+    /// Đơn vị biên dịch **cố định** (2 tệp) — đầu vào của ca ghim khoá.
+    fn don_vi() -> Vec<FileUnit> {
+        vec![
+            FileUnit {
+                path: PathBuf::from("/tmp/vis/vis-module-a.vis"),
+                rel: "a.vis".to_string(),
+                text: "fn a() -> int:\n    1\n".to_string(),
+            },
+            FileUnit {
+                path: PathBuf::from("/tmp/vis/vis-module-f.vis"),
+                rel: "f.vis".to_string(),
+                text: "use ./a\n\nprint(a())\n".to_string(),
+            },
+        ]
+    }
+
+    /// **ST-126 (VD-129)** — khoá cache của một đơn vị **cố định** bị **ghim** bằng hex.
+    #[test]
+    fn khoa_cache_ghim() {
+        let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
+        assert_eq!(
+            k, "6d11672ccddf93ea56afa3d8c1bc3a47981e999be3dae418308127f623384ccf",
+            "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+    }
+
+    /// **ST-126 (VD-129) — phần khó**: **đổi bảng thẻ ⇒ đổi khoá cache**, nên bytecode cũ **không**
+    /// bị dùng nhầm. Giả lập "bảng thẻ đổi" bằng **tham số** của [`khoa_multi_voi`] (không sửa code
+    /// thật): đổi **tên** một thẻ, rồi thêm/đổi **số** thẻ.
+    #[test]
+    fn khoa_cache_doi_khi_bang_the_doi() {
+        let files = don_vi();
+        let goc = khoa_multi(&files, vis_syntax::Mode::Script);
+        let bang_that = &vis_bytecode::format::TEN_THE;
+
+        // (a) Khoá **thật** đúng bằng khoá tính với `bang_the_hash()` của bảng thật ⇒ bảng thẻ
+        //     thật sự là đầu vào của `khoa_multi` (không phải nhánh chết).
+        let bang_that_hash = vis_bytecode::format::bang_the_hash();
+        assert_eq!(
+            goc,
+            khoa_multi_voi(&files, vis_syntax::Mode::Script, bang_that),
+            "khoa_multi phải dùng đúng bảng thẻ thật"
+        );
+        assert_eq!(
+            hex(&bang_that_hash),
+            hex(&vis_bytecode::format::bang_the_hash_voi(bang_that))
+        );
+
+        // (b) Đổi **tên** một thẻ.
+        let mut doi_ten: Vec<&str> = bang_that.to_vec();
+        doi_ten[5] = "PopDoiTen";
+        assert_ne!(
+            hex(&vis_bytecode::format::bang_the_hash_voi(&doi_ten)),
+            hex(&bang_that_hash),
+            "đổi tên thẻ phải đổi hash bảng thẻ"
+        );
+        assert_ne!(
+            hex(&khoa_multi_voi(&files, vis_syntax::Mode::Script, &doi_ten)),
+            hex(&goc),
+            "đổi tên thẻ phải đổi khoá cache (nếu không, bytecode cũ bị dùng nhầm)"
+        );
+
+        // (c) Thêm **một thẻ mới** ở cuối (lệnh mới).
+        let mut them: Vec<&str> = bang_that.to_vec();
+        them.push("TheMoi");
+        assert_ne!(
+            hex(&khoa_multi_voi(&files, vis_syntax::Mode::Script, &them)),
+            hex(&goc),
+            "thêm thẻ phải đổi khoá cache"
+        );
+
+        // (d) Đổi **số** thẻ (hoán vị hai tên) — cùng số phần tử, khác ánh xạ.
+        let mut hoan_vi: Vec<&str> = bang_that.to_vec();
+        hoan_vi.swap(5, 6);
+        assert_ne!(
+            hex(&khoa_multi_voi(&files, vis_syntax::Mode::Script, &hoan_vi)),
+            hex(&goc),
+            "đổi số thẻ phải đổi khoá cache"
+        );
+
+        // (e) Đường dẫn tệp cache khác nhau ⇒ tệp bytecode cũ **không** được tìm thấy cho bảng mới.
+        assert_ne!(
+            duong_dan(&khoa_multi_voi(&files, vis_syntax::Mode::Script, &them)),
+            duong_dan(&goc),
+            "hai bảng thẻ khác nhau phải trỏ hai tệp cache khác nhau"
+        );
+
+        // (f) Bảng thẻ **không** làm mất tính chất cũ: đổi nguồn / đổi chế độ vẫn đổi khoá.
+        let mut khac = files.clone();
+        khac[1].text.push('\n');
+        assert_ne!(khoa_multi(&khac, vis_syntax::Mode::Script), goc);
+        assert_ne!(khoa_multi(&files, vis_syntax::Mode::Command), goc);
+    }
 }
