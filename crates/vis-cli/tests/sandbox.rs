@@ -102,6 +102,11 @@ fn sandbox_check_luon_in_cuong_che() {
             assert!(out.contains("landlock: "), "stdout: {out}");
         }
     }
+    // VD-146(3): nền không phải macOS/Linux không dùng `code`/`err` ⇒ dùng tường minh cho clippy sạch.
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = (&code, &err);
+    }
     let _ = std::fs::remove_dir_all(&d);
 }
 

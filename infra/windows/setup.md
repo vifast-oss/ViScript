@@ -8,7 +8,7 @@ từ cùng một toolchain, không cài tay.
 
 | Tệp | Vai trò |
 |---|---|
-| `setup.ps1` | Kiểm + bảo đảm **đúng toolchain 1.99.1** (bản `ps` đang đo) và in log môi trường; **chỉ báo** target thiếu, không tự cài |
+| `setup.ps1` | Kiểm + bảo đảm **đúng toolchain 1.99.1** (bản `ps` đang đo) và **hai target std** của `bin/vis-targets` (VD-146(1)), in log môi trường; `-Check` thì chỉ kiểm, không cài |
 | `setup.md` | Tệp này: cách gọi, cái gì được cài, cái gì **không**, và môi trường đã đo |
 
 ## 2. Vì sao phải ghim toolchain
@@ -31,17 +31,17 @@ $env:CARGO_TERM_COLOR = "never"
 
 ## 3. `setup.ps1` cài gì / không cài gì
 
-**Cài:** chỉ toolchain `1.99.1-x86_64-pc-windows-msvc` **nếu thiếu** (đúng phiên bản `ps`, VD-140).
-**Không:** `rustup update`, không đổi toolchain mặc định, không cài target phụ, không `sudo`, không Build Tools,
-không gói OS, không reboot.
+**Cài:** toolchain `1.99.1-x86_64-pc-windows-msvc` **nếu thiếu** (đúng phiên bản `ps`, VD-140) và **hai target std**
+của `bin/vis-targets` **nếu thiếu** (VD-146(1), 2026-11-16) — mỗi lần cài ghi `rustup target list --installed` trước/sau.
+**Không:** `rustup update`, không đổi toolchain mặc định, không cài target nào khác, không `sudo`, không Build Tools,
+không gói OS, không reboot. `-Check` chỉ kiểm, **không cài** (thiếu ⇒ exit 1).
 
-**Target cho `bin/vis-targets`:** toolchain 1.99.1 trên `psvn` **chỉ** có `x86_64-pc-windows-msvc`, nên 10/18 ô
-(stds `wasm32-unknown-unknown`, `x86_64-unknown-linux-gnu`) đỏ vì `E0463`. Script **báo** chứ **không cài** (ngoài
-phạm vi được phép của ST-136). Khi Agent 0 cho phép:
+**Target cho `bin/vis-targets`:** toolchain 1.99.1 trên `psvn` chỉ có `x86_64-pc-windows-msvc`; **VD-146(1) cho phép
+cài** std `wasm32-unknown-unknown` + `x86_64-unknown-linux-gnu` để ma trận 18/18 đo được. Lệnh (script tự ghim
+`RUSTUP_TOOLCHAIN`; gọi từ gốc repo để log kèm hash):
 
 ```powershell
-$env:RUSTUP_TOOLCHAIN = "1.99.1-x86_64-pc-windows-msvc"
-rustup target add wasm32-unknown-unknown x86_64-unknown-linux-gnu
+powershell -NoProfile -ExecutionPolicy Bypass -File ...\repo\viscript\infra\windows\setup.ps1 -Log C:\vis-setup.log
 ```
 
 ## 4. Chạy
@@ -58,7 +58,7 @@ powershell -NoProfile -File ...\setup.ps1 -Check
 
 | Mã thoát | Nghĩa |
 |---|---|
-| 0 | xanh (đủ toolchain; target phụ thiếu chỉ là cảnh báo) |
+| 0 | xanh (đủ toolchain + đủ 2 target std) |
 | 1 | `-Check` và thiếu thành phần |
 | 3 | BLOCKED-ENV (không có `rustup` trong PATH) |
 

@@ -135,6 +135,7 @@ def resolve_bin(vis_bin: str | None) -> Path | None:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if build.returncode != 0:
             raise SystemExit(f"doc-examples: build vis thất bại: {build.stderr.strip()}")
@@ -174,6 +175,7 @@ def vis_check(files: list[Path], vis_bin: str | None) -> dict[str, tuple[bool, s
         [*cmd, "check", "--syntax", *[str(f) for f in files]],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     res: dict[str, tuple[bool, str]] = {}
     pending: str | None = None

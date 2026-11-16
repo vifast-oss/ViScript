@@ -7,15 +7,20 @@
 # `RUSTUP_TOOLCHAIN=1.99.1-x86_64-pc-windows-msvc`.
 #
 # Dùng:
-#   powershell -NoProfile -File setup.ps1                   # kiểm + cài toolchain 1.99.1 (idempotent)
-#   powershell -NoProfile -File setup.ps1 -Check            # CHỈ kiểm; thiếu ⇒ exit 1, không cài
+#   powershell -NoProfile -File setup.ps1                   # kiểm + cài toolchain 1.99.1 + 2 target std (idempotent)
+#   powershell -NoProfile -File setup.ps1 -Check            # CHỈ kiểm; thiếu ⇒ exit 1, không cài gì
 #   powershell -NoProfile -File setup.ps1 -Log C:\env.log   # ghi thêm log môi trường (mặc định $HOME\vis-setup.log)
 #
-# Mã thoát: 0 xanh · 1 thiếu thành phần (chế độ -Check) · 3 BLOCKED-ENV (không có rustup).
+# Mã thoát: 0 xanh · 1 thiếu thành phần (chế độ -Check) · 3 BLOCKED-ENV (không có rustup / cài lỗi).
 #
-# KHÔNG làm gì khác: không `rustup update`, không đổi toolchain mặc định, không cài target phụ,
-# không cài Build Tools/gói OS, không reboot (VD-140: Build Tools chỉ cập nhật khi build lỗi do
-# bản cũ VÀ có log lỗi trước; trình cài đòi khởi động lại ⇒ dừng, BLOCKED-ENV).
+# ĐƯỢC PHÉP CÀI (nguồn: **VD-146(1)**, 2026-11-16; kèm VD-136, VD-140) — đúng hai target std
+# `wasm32-unknown-unknown` + `x86_64-unknown-linux-gnu` của toolchain đang đo, chỉ để `bin/vis-targets`
+# đo được đủ ma trận 18/18. Đây là **hạ tầng máy đo**, KHÔNG phải tuyên bố hỗ trợ Windows (VD-121).
+# `-Check` thì chỉ kiểm, không cài; mọi lần cài đều ghi `rustup target list --installed` TRƯỚC và SAU.
+#
+# KHÔNG làm gì khác: không `rustup update`, không đổi toolchain mặc định, không cài target nào khác
+# hai target trên, không cài Build Tools/gói OS, không reboot (VD-140: Build Tools chỉ cập nhật khi
+# build lỗi do bản cũ VÀ có log lỗi trước; trình cài đòi khởi động lại ⇒ dừng, BLOCKED-ENV).
 #
 # CẢNH BÁO: đừng chạy `rustup`/`cargo` "trần" trong cây repo — `rust-toolchain.toml` khai
 # channel = "stable" và rustup sẽ TỰ cài/cập nhật "stable" (đã xảy ra 2026-11-16T07:55:32Z).
@@ -72,16 +77,32 @@ LogEnv ("targets=" + ($tg -join ","))
 $cp = @(rustup component list --installed)
 LogEnv ("components=" + ($cp -join ","))
 
-# Không tự cài target phụ (ngoài phạm vi được phép của ST-136) — chỉ BÁO.
+# VD-146(1): cài hai target std còn thiếu (chỉ khi KHÔNG có -Check), có log TRƯỚC/SAU (VD-140).
 $installed = (@(rustup target list --installed) -join "`n")
 $missing = @()
 foreach ($t in $WantedTargets) {
     if ($installed -notmatch [regex]::Escape($t)) { $missing += $t }
 }
 if ($missing.Count -gt 0) {
-    Say ("setup: THIẾU target std: " + ($missing -join " ") + "  ⇒ bin/vis-targets sẽ đỏ các ô này")
-    Say ("setup: muốn đủ ma trận 18/18, chạy (cần Agent 0 cho phép): rustup target add " + ($missing -join " "))
-    if ($Check) { exit 1 }
+    if ($Check) {
+        Say ("setup: THIẾU target std: " + ($missing -join " ") + " (chế độ -Check, không cài)")
+        exit 1
+    }
+    LogEnv ("target-truoc=" + ($installed -replace "`n", ","))
+    Say ("setup: cài target std thiếu của toolchain " + $Toolchain + ": " + ($missing -join " ") + "  (VD-146(1))")
+    rustup target add $missing
+    if ($LASTEXITCODE -ne 0) { Say "setup: cài target lỗi ⇒ BLOCKED-ENV"; exit 3 }
+    $installedSau = (@(rustup target list --installed) -join "`n")
+    LogEnv ("target-sau=" + ($installedSau -replace "`n", ","))
+    $still = @()
+    foreach ($t in $missing) {
+        if ($installedSau -notmatch [regex]::Escape($t)) { $still += $t }
+    }
+    if ($still.Count -gt 0) {
+        Say ("setup: VẪN THIẾU target std sau khi cài: " + ($still -join " ") + " ⇒ BLOCKED-ENV")
+        exit 3
+    }
+    Say ("setup: đã cài đủ target std: " + ($missing -join " "))
 }
 
 # Hash của cây nguồn nếu đang đứng trong repo (đủ mục "hash đang đo" của VD-136).
@@ -96,5 +117,10 @@ try {
     }
 } catch { }
 
-Say "setup: OK (toolchain $Toolchain; target thiếu: $($missing.Count))"
+$installedCuoi = (@(rustup target list --installed) -join "`n")
+$thieuCuoi = @()
+foreach ($t in $WantedTargets) {
+    if ($installedCuoi -notmatch [regex]::Escape($t)) { $thieuCuoi += $t }
+}
+Say "setup: OK (toolchain $Toolchain; target thiếu: $($thieuCuoi.Count))"
 exit 0
