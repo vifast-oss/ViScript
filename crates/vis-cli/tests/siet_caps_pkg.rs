@@ -227,3 +227,38 @@ fn hai_co_mau_thuan_exit_2() {
     assert_eq!(out, "", "không được chạy: {out}");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// (h) **Ca thứ 8 (VD-133, 23b §2)** — chương trình có **`use` module nội bộ** (`use ./util`) +
+/// `use std.fs`, **không** `pkg.*`, **không** khai `cap`, đọc một tệp ⇒ chạy được, **không** `VS0604`.
+///
+/// Đây là ca khoá câu: "chương trình có `use` nhưng **không** dùng `pkg.*` phải giữ hành vi cũ về
+/// caps". Sự tồn tại của `use`, kể cả `use` module nội bộ (kéo theo `NamePolicy::Strict`), **không**
+/// được bật siết caps.
+///
+/// **Đối chứng ngay trong ca** (để ca không vô nghĩa): cùng chương trình, chỉ thêm `--strict-caps`
+/// ⇒ đường đọc tệp bị siết **thật**, `VS0604` + exit 2.
+#[test]
+fn use_module_noi_bo_va_std_nhung_khong_pkg_giu_hanh_vi_cu() {
+    let d = tam("h");
+    ghi(&d.join("a.txt"), "x");
+    // Module nội bộ **thật**: `g()` phải trả 7 ⇒ `use ./util` thực sự được nạp, không phải import rỗng.
+    ghi(&d.join("util.vis"), "pub fn g() -> int:\n    7\n");
+    ghi(
+        &d.join("f.vis"),
+        "use ./util\nuse std.fs\n\nfn main():\n    match fs.read(\"a.txt\"):\n        ok(s):\n            print(s)\n            print(g())\n        err(e):\n            print(\"err\")\n",
+    );
+    let (c, out, err) = ca(&d, &[], "f.vis");
+    assert_eq!(c, 0, "không dùng gói ⇒ hành vi cũ, không siết: {err}");
+    assert_eq!(out, "x\n7\n", "đọc tệp + gọi module nội bộ: {out:?}");
+    assert!(
+        !err.contains("VS0604"),
+        "có `use` mà không `pkg.*` ⇒ **không** được siết caps: {err:?}"
+    );
+    // **Đối chứng**: cùng chương trình + `--strict-caps` ⇒ siết thật (`VS0604`, exit 2, không in gì).
+    let (c2, out2, err2) = ca(&d, &["--strict-caps"], "f.vis");
+    assert_eq!(c2, 2, "stderr: {err2}");
+    assert!(err2.contains("VS0604"), "{err2}");
+    assert!(err2.contains("cap[Dir]"), "phải nêu cap cần khai: {err2}");
+    assert_eq!(out2, "", "không được in gì khi bị chặn: {out2}");
+    let _ = std::fs::remove_dir_all(&d);
+}

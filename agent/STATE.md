@@ -35,6 +35,16 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-130b — ca thứ 8: có `use` mà không `pkg.*` vẫn giữ hành vi caps cũ (VD-133), 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Yêu cầu** (23f §2) | thêm ca thứ 8 vào `crates/vis-cli/tests/siet_caps_pkg.rs`: `use` module nội bộ + `use std.fs`, **không** `pkg.*`, **không** `cap`, đọc tệp ⇒ chạy được, **không** `VS0604`, cả interp và `--vm --no-cache` |
+| 1 | **Đỏ-trước** | **không có log đỏ thật** — hành vi đã đúng ⇒ **ca khoá hồi quy**; đối chứng cùng chương trình + `--strict-caps` ⇒ `VS0604` exit 2 (log `st130b-do-xanh-doi-chung.log` `8c22c403…`), **nhúng cả trong `#[test]`**; **0 dòng** sản phẩm |
+| 2 | **Ca** | `siet_caps_pkg` **8 `#[test]`** (7 cũ + `use_module_noi_bo_va_std_nhung_khong_pkg_giu_hanh_vi_cu`) — **8 passed / 0 failed**; không sửa ca cũ, không `#[ignore]`, không nới ngưỡng |
+| 3 | **Đo** | sem **447/22 không đổi**; `vis test` **447 ok** / `--vm` **447 ok**; diff 100k **lech=0** (`81bf140e…`); **`gate --fast` PASS** trên worktree sạch (HEAD `3ea7176d` + đúng tệp test, L0 **1154/0**, `52592bf7…`); report-check PASS |
+| 4 | **Ghi chú** | cổng lần 1 đỏ **T-INFRA** `net_server::accept_het_gio` (426 ms > 400 ms; tải 13.75/12 core do agent khác); cây chia sẻ có 6 tệp agent khác sửa dở ⇒ cổng đo ở worktree sạch (JOURNAL §6.2/6.3). Không sửa gì ngoài tệp test + tài liệu |
+
 ## ST-130 — siết caps mặc định khi dùng gói, 2026-11-16
 
 | # | Việc | Kết quả |
