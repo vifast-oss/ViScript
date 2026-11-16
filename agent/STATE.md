@@ -1,15 +1,16 @@
 # STATE — ViScript (vòng 24 — VS2 đã chốt về kỹ thuật, chờ dán APPROVED)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23f/24 (ST-138, 2026-11-16).
-Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143 · `reports/R24-viscript.md`.
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23f/24 (ST-138b gate --fast, 2026-11-16).
+Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143 · `reports/R24-viscript.md` ·
+`JOURNAL/st138b-gate-fast.log`.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
 Vòng          : 24 — 7/7 hàng đợt 23f DONE (ST-130, ST-132b, ST-134, ST-135, ST-136, ST-137, ST-138)
-Task đang làm : —  ·  ST-138 để `READY` có ghi chú (VD-143: chờ Agent 1 dán APPROVED mới lật DONE)
-Task kế       : đợt 25 theo R24 §5 — duyệt ST-137, quyết giới hạn đường GHI (#140), macOS fd→path (#137),
-                VD thứ 3 cho ca coreutils (#139), chạy vis test/diff/cache trên Linux (R23 nợ #130)
+Task đang làm : —  ·  ST-138b DONE (gate --fast PASS, dòng CHỜ DUYỆT dưới hàng); ST-138 để `READY` có ghi chú (VD-143: chờ Agent 1 dán APPROVED mới lật DONE)
+Task kế       : ST-140 — ca coreutils theo VD-144 (đỏ trước trên ps; sau: xanh ps + macOS, `cargo test --workspace`
+                trên ps 0 đỏ, `gate --fast` trên ps PASS); sau đó ST-141, ST-142, ST-143, ST-144, ST-145, ST-146 (R25)
 Nhánh         : main
 ```
 
@@ -28,7 +29,10 @@ BLOCKED        : không có hàng BLOCKED.
 Cần Agent 0/1  : (1) dán APPROVED ST-137 (và ST-130/132b/134/136) để hạng mục Quyền chính thức đóng;
                  (2) VD thứ 3 cho ca coreutils multicall trên runner (#139); (3) một dòng giới hạn đường GHI
                  trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3.
-Cổng gần nhất  : macOS gate PASS · soak 10/10 = 1352 s · report-check PASS (24 báo cáo, 156 hàng QUEUE).
+Cổng gần nhất  : macOS `gate --fast` **PASS @ `69112900`** (ST-138b, 15 ph 48 s, exit 0): L0 **1159/0** (129 suite),
+                 10 bước OK, report-check PASS (24 báo cáo, 164 hàng QUEUE), doc-examples OK;
+                 log `JOURNAL/st138b-gate-fast.log` sha256 `1c6e3d18b4eeb435a4a38cad09138c39169322ec85010590cc08f51916cc58d6`.
+                 Trước đó: soak 10/10 = 1352 s · report-check PASS (24 báo cáo, 156 hàng QUEUE).
 Việc dở        : —
 ```
 
