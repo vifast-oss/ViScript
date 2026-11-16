@@ -127,7 +127,10 @@ fn ghi_trong_thu_muc_chi_doc_bi_chan() {
 
 /// **Bằng chứng kernel ở TIẾN TRÌNH CON** (VD-120): dựng một helper **tĩnh** (`crt-static`) để nó
 /// không cần `ld.so` (execve một binary động cần quyền `EXECUTE` trên cả interpreter), rồi cho
-/// tiến trình con đọc/ghi **ngoài** ruleset — nó không đi qua `FsGuard` nào.
+/// tiến trình con đọc/ghi/liệt kê **ngoài** ruleset — nó không đi qua `FsGuard` nào.
+///
+/// **ST-132b**: thêm chế độ `ls <thư mục>` (`fs::read_dir`) để ca âm thứ ba chứng minh kernel chặn
+/// **mở thư mục** ngoài phạm vi (`EACCES` ở `openat(O_DIRECTORY)`), không chỉ chặn đọc tệp.
 fn dung_helper(d: &Path) -> PathBuf {
     let src = d.join("h.rs");
     let out = d.join("helper");
@@ -135,13 +138,22 @@ fn dung_helper(d: &Path) -> PathBuf {
         &src,
         r#"fn main() {
     let a: Vec<String> = std::env::args().collect();
-    if a.len() < 3 { eprintln!("dung: doc|ghi <tep> [noi-dung]"); std::process::exit(2); }
-    let kq: std::io::Result<()> = if a[1] == "doc" {
-        std::fs::read_to_string(&a[2]).map(|_| ())
-    } else {
-        std::fs::write(&a[2], a.get(3).cloned().unwrap_or_default())
+    if a.len() < 3 { eprintln!("dung: doc|ghi|ls <tep|thu-muc> [noi-dung]"); std::process::exit(2); }
+    let kq: std::io::Result<Vec<String>> = match a[1].as_str() {
+        "doc" => std::fs::read_to_string(&a[2]).map(|_| Vec::new()),
+        "ghi" => std::fs::write(&a[2], a.get(3).cloned().unwrap_or_default()).map(|_| Vec::new()),
+        "ls" => std::fs::read_dir(&a[2]).and_then(|it| {
+            let mut ten = Vec::new();
+            for e in it { ten.push(e?.file_name().to_string_lossy().into_owned()); }
+            ten.sort();
+            Ok(ten)
+        }),
+        _ => { eprintln!("che do la: {}", a[1]); std::process::exit(2); }
     };
-    match kq { Ok(()) => std::process::exit(0), Err(e) => { eprintln!("loi: {e}"); std::process::exit(7); } }
+    match kq {
+        Ok(ten) => { for t in ten { println!("{t}"); } std::process::exit(0); }
+        Err(e) => { eprintln!("loi: {e}"); std::process::exit(7); }
+    }
 }
 "#,
     )
@@ -234,6 +246,72 @@ fn con_doc_trong_pham_vi_chay_duoc() {
         "con đọc trong phạm vi phải OK: {out:?}"
     );
     let _ = fs::remove_dir_all(&d);
+}
+
+/// **ST-132b — ca âm thứ ba (VD-138)**: tiến trình con `read_dir` **thư mục ngoài** phạm vi ⇒ kernel
+/// trả `PermissionDenied`/`EACCES` (`openat` mở thư mục), **không** qua `FsGuard`.
+///
+/// Cùng ca có **đối chứng dương** (`read_dir` **trong** phạm vi vẫn liệt kê được — không "xanh vì chặn
+/// tất") và **đỏ-trước** (trước khi áp ruleset, chính helper đó liệt kê được thư mục ngoài; in ra để
+/// log `--nocapture` giữ lại).
+#[test]
+fn con_read_dir_ngoai_pham_vi_bi_kernel_chan() {
+    let trong = tam("con5-trong");
+    let ngoai = tam("con5-ngoai");
+    let helper = dung_helper(&trong);
+    fs::write(ngoai.join("bi-mat.txt"), "bi mat\n").expect("tệp ngoài");
+    fs::write(trong.join("duoc.txt"), "duoc\n").expect("tệp trong");
+
+    // **ĐỎ-TRƯỚC**: chưa áp ruleset ⇒ cùng helper liệt kê được thư mục ngoài. Dòng in này là bằng
+    // chứng "đỏ" (không sandbox thì đọc được), nên nó phải nằm trong log của lần đo.
+    let truoc = chay_con(&helper, &["ls", ngoai.to_str().unwrap()]);
+    let truoc_out = String::from_utf8_lossy(&truoc.stdout).to_string();
+    println!(
+        "ĐỎ-TRƯỚC (không áp ruleset): exit={:?} stdout={:?}",
+        truoc.status.code(),
+        truoc_out.trim()
+    );
+    assert_eq!(
+        truoc.status.code(),
+        Some(0),
+        "chưa áp sandbox phải liệt kê được thư mục ngoài: {truoc:?}"
+    );
+    assert!(
+        truoc_out.contains("bi-mat.txt"),
+        "đỏ-trước: phải thấy bi-mat.txt: {truoc_out}"
+    );
+
+    ap(&[ChoPhep {
+        duong: trong.clone(),
+        ghi: false,
+        la_tep: false,
+    }]);
+
+    // Kernel chặn **mở thư mục** ngoài phạm vi (không phải FsGuard: helper gọi thẳng `std::fs`).
+    let out = chay_con(&helper, &["ls", ngoai.to_str().unwrap()]);
+    assert_eq!(
+        out.status.code(),
+        Some(7),
+        "con read_dir ngoài phải bị từ chối: {out:?}"
+    );
+    let loi = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        loi.contains("Permission denied"),
+        "kernel phải trả Permission denied ở read_dir: {loi}"
+    );
+
+    // Đối chứng dương **trong cùng ca**: cùng helper, cùng domain, `read_dir` trong phạm vi chạy được.
+    let trong_out = chay_con(&helper, &["ls", trong.to_str().unwrap()]);
+    assert_eq!(
+        trong_out.status.code(),
+        Some(0),
+        "read_dir trong phạm vi phải OK: {trong_out:?}"
+    );
+    let ds = String::from_utf8_lossy(&trong_out.stdout);
+    assert!(ds.contains("duoc.txt"), "phải liệt kê duoc.txt: {ds}");
+
+    let _ = fs::remove_dir_all(&trong);
+    let _ = fs::remove_dir_all(&ngoai);
 }
 
 /// Không có luật nào ⇒ **mọi** truy cập hệ tệp bị chặn (deny-by-default của Landlock).
