@@ -2,6 +2,13 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # Case âm bắt buộc của ST-01: mỗi luật của `vis-dev` phải CHỨNG MINH nó bắt được vi phạm.
 set -u
+# **SỬA KÈM LÝ DO (ST-147, VD-150)**: cùng lý do với bin/vis-dev — trên Windows (psvn) python3 mặc
+# định ghi stdout/stderr bằng cp1252 + backslashreplace nên các câu kỳ vọng UTF-8 grep bên dưới
+# (`phải đúng 6 mục`, `khối đỏ không khai báo`, `cũ hơn mã nguồn`, …) trượt. Chạy độc lập
+# (`bash test/fixtures/run_fixtures.sh`, không qua vis-dev) vẫn phải UTF-8, nên đặt ngay ở đây.
+# Kỳ vọng/ca/ngưỡng giữ nguyên; macOS/Linux vốn đã UTF-8 nên không đổi hành vi.
+export PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1
 VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)

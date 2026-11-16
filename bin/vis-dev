@@ -5,6 +5,14 @@
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
+# **SỬA KÈM LÝ DO (ST-147, VD-150)**: trên Windows (psvn) python3 ghi stdout/stderr bằng bảng mã
+# console (cp1252) + backslashreplace, nên mọi chuỗi tiếng Việt của doc_examples.py / check_report.py
+# ra `ph\u1ea3i \u0111�ng …` thay vì UTF-8 ⇒ `grep` của test/fixtures/run_fixtures.sh trượt và 7 ca
+# "bị bắt nhưng sai lý do". Ép UTF-8 cho MỌI lần gọi python3 của cổng (doc-examples, check_report,
+# self-test, fixture báo cáo) bằng biến môi trường kế thừa xuống tiến trình con. Không đổi kỳ vọng,
+# không xoá ca, không nới ngưỡng; macOS/Linux vốn đã UTF-8 nên không đổi hành vi.
+export PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$VIS_ROOT/.." && pwd)"
 MANIFEST="$VIS_ROOT/Cargo.toml"
