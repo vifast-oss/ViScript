@@ -92,3 +92,54 @@ pub(crate) fn run_dry(tep: &str, text: &str, mode: Mode) -> ExitCode {
     }
     ExitCode::SUCCESS
 }
+
+/// **ST-132 (VD-120)**: `vis run --sandbox` — cưỡng chế quyền bằng **kernel** (Landlock) trên Linux.
+///
+/// Áp **sau** khi đã nạp xong chương trình/module và **trước** khi chạy: Landlock chỉ chặn được
+/// truy cập phát sinh **sau** lời gọi. Chỉ **hệ tệp** (`cap[Dir]`/`cap[File]`); `cap[Net]` và
+/// `cap[Proc]` vẫn cưỡng chế ở runtime như cũ.
+///
+/// Trả `Err(exit)` khi phải dừng: **3** = nền không hỗ trợ (giống `--sandbox-check`), **2** = lỗi
+/// dựng luật (đường dẫn không tồn tại, kernel từ chối).
+#[cfg(target_os = "linux")]
+pub(crate) fn ap_sandbox(q: &quyen::Quyen) -> Result<(), ExitCode> {
+    use vis_host_linux::sandbox::{ap_dung, ChoPhep, LoiSandbox, Muc};
+    let cho: Vec<ChoPhep> = q
+        .moc
+        .iter()
+        .filter(|c| (c.kind == "Dir" || c.kind == "File") && !c.root.is_empty())
+        .map(|c| ChoPhep {
+            duong: std::path::PathBuf::from(&c.root),
+            ghi: c.write,
+            la_tep: c.kind == "File",
+        })
+        .collect();
+    match ap_dung(&cho) {
+        Ok(kq) => {
+            eprintln!("{}", kq.dong());
+            if matches!(kq.muc, Muc::Khong) {
+                eprintln!("sandbox: kernel KHÔNG cưỡng chế được (exit 3)");
+                return Err(ExitCode::from(3));
+            }
+            Ok(())
+        }
+        Err(LoiSandbox::KhongHoTro(s)) => {
+            eprintln!("sandbox: {s} (exit 3)");
+            Err(ExitCode::from(3))
+        }
+        Err(e) => {
+            eprintln!("sandbox: {e}");
+            Err(ExitCode::from(2))
+        }
+    }
+}
+
+/// Nền không phải Linux: `--sandbox` **không** cưỡng chế được ⇒ exit **3** như `--sandbox-check`.
+#[cfg(not(target_os = "linux"))]
+pub(crate) fn ap_sandbox(_q: &quyen::Quyen) -> Result<(), ExitCode> {
+    eprintln!(
+        "sandbox: chỉ hỗ trợ trên Linux (nền này: {}) (exit 3)",
+        std::env::consts::OS
+    );
+    Err(ExitCode::from(3))
+}

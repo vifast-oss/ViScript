@@ -3,6 +3,8 @@
 
 use std::process::ExitCode;
 
+#[cfg(test)]
+mod audit_span;
 mod cache;
 mod cli;
 mod fsmock;
@@ -152,6 +154,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut dry = false;
     // **ST-73 (VD-107)**: probe Landlock (chỉ đọc) + mức cưỡng chế runtime; **không** chạy chương trình.
     let mut sandbox_check = false;
+    // **ST-132 (VD-120)**: cưỡng chế **thật** bằng kernel (Landlock) khi chạy — opt-in, chỉ Linux.
+    let mut sandbox = false;
     // **ST-72b (VD-103)**: `--grant <tên>=<path>` thay root của cap đã khai (không thêm quyền mới).
     let mut grants: Vec<(String, String)> = Vec::new();
     let mut explain_perms = false;
@@ -176,6 +180,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--dry" => dry = true,
             "--strict-caps" => strict_caps = true,
             "--sandbox-check" => sandbox_check = true,
+            "--sandbox" => sandbox = true,
             "--grant" => {
                 i += 1;
                 let Some(v) = rest.get(i) else {
@@ -221,7 +226,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     }
     let Some(tep) = tep else {
         eprintln!(
-            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox-check] [--strict-caps] [--grant tên=path] [--no-cache] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết)"
+            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--grant tên=path] [--no-cache] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết)"
         );
         return ExitCode::from(2);
     };
@@ -334,6 +339,15 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // ST-54: chẩn đoán front end (parse/hạ/tyck) cho **cửa codegen** — defense-in-depth.
     let chan_doan: Vec<vis_syntax::Diagnostic> =
         loaded.diags.iter().map(|(_, d)| d.clone()).collect();
+    // **ST-132 (VD-120)**: `--sandbox` — áp ruleset Landlock lên luồng này (luồng chạy kế tiếp thừa
+    // hưởng) **sau** khi đã nạp xong chương trình/module, **trước** khi chạy. Tắt cache: trong
+    // domain, ghi/đọc thư mục cache nằm ngoài `cap` ⇒ luôn trượt, bật chỉ tổ nhiễu.
+    if sandbox {
+        if let Err(ma) = cli::run::ap_sandbox(&quyen) {
+            return ma;
+        }
+        dung_cache = false;
+    }
     // 4) chạy — **trong luồng có stack lớn** (ST-15): đệ quy sâu (đến cap `MAX_CALL_DEPTH` = 10^4)
     //    không được làm tràn stack process; cap vượt ⇒ `VS0501` bình thường.
     // **ST-56b (VD-97 (5))**: phần tử thứ 4 = **lỗi codegen** (đường `--vm`) ⇒ exit ≠ 0.

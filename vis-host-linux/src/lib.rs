@@ -5,11 +5,15 @@
 //! `/sys/kernel/security/lsm`; tập LSM chứa `landlock` ⇒ [`Probe::Co`], không ⇒ [`Probe::Khong`],
 //! lỗi đọc ⇒ [`Probe::KhongRo`].
 //!
-//! **Giới hạn bằng chứng**: đây là **khung** + probe; crate **chưa** cưỡng chế quyền bằng kernel.
-//! Muốn Landlock thật cần một trong hai (VD-107 (4)): (a) crate `landlock` được duyệt vào allowlist,
-//! hoặc (b) `unsafe` **đóng** trong crate này + runner Linux để đo.
+//! **Giới hạn bằng chứng**: [`probe`] chỉ **đọc** LSM; **chưa** cưỡng chế gì.
+//!
+//! **ST-132 (VD-120)** đã đóng giới hạn đó bằng nhánh (a) của VD-107 (4): crate `landlock`
+//! (MIT OR Apache-2.0, ghim `=0.4.7`) được duyệt **chỉ trong crate này**, và mô-đun
+//! [`sandbox`] **tạo ruleset + `restrict_self()`** để kernel chặn thật trên hệ tệp.
 
 #![cfg(target_os = "linux")]
+
+pub mod sandbox;
 
 use std::fs;
 

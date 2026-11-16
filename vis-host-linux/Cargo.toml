@@ -5,7 +5,13 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.99.1"
-description = "Probe Landlock chỉ đọc cho ViScript trên Linux (khung; chưa cưỡng chế bằng kernel)"
+description = "Host Linux cho ViScript: probe Landlock + cưỡng chế hệ tệp bằng kernel (ST-132)"
 
 # Workspace riêng: **không** thuộc workspace OS gốc và **không** thuộc `viscript/` (R4).
 [workspace]
+
+# **ST-132 (VD-120)**: crate `landlock` được duyệt CÓ ĐIỀU KIỆN — chỉ trong crate này,
+# chỉ trên Linux, giấy phép MIT OR Apache-2.0 (khớp D2-21). Log kiểm giấy phép:
+# `agent/JOURNAL/st132-license.log`. Không thêm crate nào khác.
+[dependencies]
+landlock = "=0.4.7"
