@@ -49,3 +49,9 @@ Khi phát sinh (SPEC thiếu/mâu thuẫn): ghi ở đây kèm dẫn chứng (`t
 `v2/agent/QUEUE.md` còn KT-05/KT-12 READY (đã xong, chờ lật); KT-09 BLOCKED; KT-04d/T26 DONE ⇒ dòng ViScript được chạy (D2-20). Hai dòng độc lập; KT-04d REVIEW không cản dòng ViScript.
 
 Câu hỏi mở của dòng ViScript: **YC-14** trong `v2/agent/BLOCKED.md` §3 (duyệt ST-02a đúng mẫu, xung đột `04xx`, lật ST-02b/ST-03).
+
+## 5. BLOCKED ngoài phạm vi quyết định (đợt 25, 2026-11-17)
+
+| Task | Chặn bởi | Cần gì để mở |
+|---|---|---|
+| **ST-147** (**BLOCKED phần Windows**, `fd16d7d1`) | Hạ tầng cổng đã xong theo **VD-150** (`bin/vis-dev` + `test/fixtures/run_fixtures.sh` export `PYTHONIOENCODING=utf-8`, `PYTHONUTF8=1`): gate **macOS PASS** `[exit=0]`, **10/10** bước, L0 **1159/0**. Trên `psvn` self-test **11/12** (ST-144: 7/12 — 6 ca lỗi encoding đã xanh) nhưng cổng **dừng ở bước self-test**, chưa qua bước 5. Ca 7 còn đỏ vì **mã sản phẩm**, không phải encoding: `crates/vis-cli/src/cli/check.rs:82` tách basename bằng `path.rsplit('/')` ⇒ trên Windows `phu` luôn khác rỗng ⇒ nhánh `--syntax` (dòng 97) **giữ** chẩn đoán kiểu ⇒ khối `x = 1` trong ca bị coi là đỏ ⇒ câu `ngoại lệ cũ: …` không bao giờ in. VD-150 chỉ cho hạ tầng cổng; VD-146 cấm sửa sản phẩm cho Windows ⇒ **không sửa**. | Agent 0 cấp **VD + task VS3** cho **một dòng** sửa `check.rs` (dùng `Path::file_name`, hoặc tách cả `'/'` và `'\\'`) **kèm ca khoá** cho cả hai dấu phân cách (vì sửa mà không có ca thì có thể tái phát). Sau đó ca 7 xanh ⇒ self-test **12/12** và cổng đi qua bước 5 (dự kiến dừng ở `doc-examples` hoặc L0 — ~100 ca đỏ Windows thuộc VS3). Bằng chứng: `JOURNAL/st147-gate-psvn.log` (sha256 `25e57182828198e8accdc62f8eb003c1a9156869bf42009cf88e07aa7c94fe46`, khớp hai phía), `JOURNAL/st147-chan-doan-psvn.log` (sha256 `5e2123c27083d8951db2255ff4f0a45adf031be10e53d345070604a062dc613c`, khớp hai phía), `JOURNAL/st147-psvn-env.log` (VD-136). |

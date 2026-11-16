@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 25 — ST-148 DONE: **sổ nợ `SO-NO.md` theo VD-149** · **144 mục** (94 mở/28 đóng/20 VS3/1 không làm/1 điều hướng) · **#142/#143** cấp số (`#113b`/`#114b`) · đóng `#130/#139/#89` · trùng số **0** · check_report PASS 25 báo cáo/**170** hàng · gate macOS PASS L0 **1159/0** · task kế: **ST-147**)
+# STATE — ViScript (vòng 25 — ST-147 **BLOCKED phần Windows**: UTF-8 cho mọi lần gọi python của cổng (**VD-150**) đã xong — gate macOS **PASS** `[exit=0]` **10/10** bước, L0 **1159/0** (129 suite), report-check PASS 25 báo cáo/**170** hàng · `psvn` **11/12** self-test (từ 7/12), cổng **dừng ở bước self-test** (chưa qua bước 5); ca 7 còn đỏ **không phải encoding** — `crates/vis-cli/src/cli/check.rs` tách basename bằng `'/'` (mã sản phẩm, VS3, cần VD) · task kế: **ST-149**)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-148** (sổ nợ theo VD-149, 2026-11-17).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-147** (sổ nợ theo VD-149, 2026-11-17).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -14,6 +14,10 @@ Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD
 `agent/SO-NO.md` · `JOURNAL/st145-trich-no.log` · `st145-kiem-trung.log` · `st145-gate-macos.log`.
 Nguồn (ST-146): `reports/R25-viscript.md` · `reports/R25-viscript.json` · `agent/SO-NO.md` ·
 `JOURNAL/st146-gate-macos.log` · `JOURNAL/2026-11-16.md` §ST-146 · `QUEUE.md` hàng ST-138b/ST-140..ST-146.
+Nguồn (ST-147): `DECISIONS.md` **VD-150** · `bin/vis-dev` · `test/fixtures/run_fixtures.sh` ·
+`JOURNAL/st147-gate-macos.log` · `JOURNAL/st147-gate-psvn.log` · `JOURNAL/st147-psvn-env.log` ·
+`JOURNAL/st147-chan-doan-psvn.log` · `JOURNAL/2026-11-17.md` §ST-147 · `QUEUE.md` hàng ST-147 ·
+`crates/vis-cli/src/cli/check.rs:82,97` (dẫn chứng, KHÔNG sửa).
 Nguồn (ST-148): `DECISIONS.md` **VD-149** · `agent/SO-NO.md` · `JOURNAL/st148-kiem-trung.log` ·
 `JOURNAL/st148-check-report.log` · `JOURNAL/st148-gate-macos.log` · `JOURNAL/2026-11-17.md` §ST-148 ·
 `QUEUE.md` hàng ST-148 · `HOST-BAO-DAM.md` §4 (dòng giới hạn đường ghi).
@@ -22,7 +26,7 @@ Nguồn (ST-148): `DECISIONS.md` **VD-149** · `agent/SO-NO.md` · `JOURNAL/st14
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
 Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25) · đợt 25: **ST-148 DONE** (`cfce6b86`)
-Task đang làm : —  ·  ST-148 DONE: **`agent/SO-NO.md` cập nhật theo VD-149** — thêm **#142** (`#113b` =
+Task đang làm : —  ·  đợt 25: **ST-147 BLOCKED** phần Windows (UTF-8 xong; ca 7 chờ VD cho `check.rs`) ·  ST-148 DONE: **`agent/SO-NO.md` cập nhật theo VD-149** — thêm **#142** (`#113b` =
                 `pkg update` ghim mọi gói khác) và **#143** (`#114b` = `NamePolicy::Strict` cho mọi tệp có `use`),
                 cả hai **mở**; **ánh xạ §7.3** `#113b → #142`, `#114b → #143` (giữ số cũ trong ngoặc);
                 **đóng đợt 24g có bằng chứng**: `#89` (ST-139 · PR #24 · `ef6489d1`), `#130` (ST-142 ·
@@ -30,9 +34,8 @@ Task đang làm : —  ·  ST-148 DONE: **`agent/SO-NO.md` cập nhật theo VD-
                 **giữ mở** `#109b`/`#140` + ghi chú "dòng giới hạn đã có trong `HOST-BAO-DAM.md`; sửa kỹ thuật
                 thuộc VS3"; sổ **144 mục** (94 mở / 28 đóng / 20 VS3 / 1 không làm / 1 điều hướng), dải **1..143**;
                 **trùng số 0**; `check_report PASS (25 báo cáo, 170 hàng QUEUE)`; gate macOS PASS L0 **1159/0**
-Task kế       : **ST-147** — **Windows gate bước 5**: đặt UTF-8 cho mọi lần gọi python của cổng (**VD-150**);
-                phụ thuộc ST-144 (DONE). READY kế tiếp: **ST-149** (nợ #136), **ST-150** (nợ #133),
-                **ST-151** (nợ #135), **ST-152** (R26 — cần ST-147..ST-151 xong).
+Task kế       : **ST-149** — **nợ #136**: ca khoá phân loại thân `cmd` khi biến TRÙNG TÊN LỆNH (đường
+                thoát `( … )`); READY kế tiếp: **ST-150**, **ST-151**, **ST-152** (R26 — cần ST-147..ST-151).
 Nhánh         : main
 ```
 
