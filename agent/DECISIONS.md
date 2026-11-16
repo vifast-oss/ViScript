@@ -961,3 +961,9 @@ Bổ sung VD-119. Agent 1 được dán nguyên văn văn bản quyết định 
 
 ### VD-138 · Chấp nhận runner Linux qua SSH cho ST-121 (2026-11-16)
 ST-121 đạt bằng backend SSH tới máy ps (kernel thật, lsm có landlock, Landlock ABI 8, log thăm dò có sha256), thay cho tiêu chí container. viscript/infra/linux/Dockerfile giữ lại, ghi rõ chưa build, không phải đường đo của VS2. Bằng chứng Landlock của ST-132 tính cho hạng mục 4 sau khi đủ 3 ca âm ở tiến trình con.
+
+### VD-139 · Agent 1 thêm chú thích theo văn bản quyết định (2026-11-16)
+Bổ sung VD-137. Agent 1 được thêm dòng chú thích vào tệp không phải mã (Dockerfile, script cấu hình, tài liệu infra) CHỈ khi văn bản quyết định của Agent 0 trích nguyên văn dòng đó; không đổi hành vi, không build, không chạy. Khi câu chữ quyết định xung đột luật có sẵn (ví dụ SPDX dòng đầu), luật có sẵn thắng; Agent 1 đặt ở vị trí gần nhất hợp luật và báo lại. Dòng CHƯA DÙNG ở dòng 2 của viscript/infra/linux/Dockerfile (commit 09c8f999) hợp lệ theo VD này.
+
+### VD-140 · Cập nhật công cụ trên psvn cho ST-136 (2026-11-16)
+Người dùng cho phép cập nhật công cụ trên psvn. Phạm vi: (1) Rust toolchain qua rustup, ĐÚNG phiên bản đang đo trên ps (hoặc bản ghim trong rust-toolchain.toml nếu có), không lấy bản mới nhất; ghi vào script tái lập trong viscript/infra/windows/. (2) Visual Studio Build Tools chỉ cập nhật khi build lỗi do phiên bản cũ, có log lỗi trước. Không cập nhật phần mềm khác. Trình cài đòi khởi động lại máy thì dừng, BLOCKED-ENV, báo người dùng; không reboot qua SSH. Log ghi phiên bản trước và sau của mọi thứ đã cập nhật.
