@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 25 — ST-146 DONE: **R25 chốt đợt 24g** · 8/8 hạng mục VS2 đóng kỹ thuật · hạng mục 7 Linux **"chạy thật"** (1162/0 + gate PASS trên `ps`) · check_report PASS 25 báo cáo/164 hàng · gate macOS PASS L0 1159/0 · task kế: **không**, chờ Agent 0)
+# STATE — ViScript (vòng 25 — ST-148 DONE: **sổ nợ `SO-NO.md` theo VD-149** · **144 mục** (94 mở/28 đóng/20 VS3/1 không làm/1 điều hướng) · **#142/#143** cấp số (`#113b`/`#114b`) · đóng `#130/#139/#89` · trùng số **0** · check_report PASS 25 báo cáo/**170** hàng · gate macOS PASS L0 **1159/0** · task kế: **ST-147**)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-146** (R25 chốt đợt 24g, 2026-11-16).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-148** (sổ nợ theo VD-149, 2026-11-17).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -14,21 +14,25 @@ Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD
 `agent/SO-NO.md` · `JOURNAL/st145-trich-no.log` · `st145-kiem-trung.log` · `st145-gate-macos.log`.
 Nguồn (ST-146): `reports/R25-viscript.md` · `reports/R25-viscript.json` · `agent/SO-NO.md` ·
 `JOURNAL/st146-gate-macos.log` · `JOURNAL/2026-11-16.md` §ST-146 · `QUEUE.md` hàng ST-138b/ST-140..ST-146.
+Nguồn (ST-148): `DECISIONS.md` **VD-149** · `agent/SO-NO.md` · `JOURNAL/st148-kiem-trung.log` ·
+`JOURNAL/st148-check-report.log` · `JOURNAL/st148-gate-macos.log` · `JOURNAL/2026-11-17.md` §ST-148 ·
+`QUEUE.md` hàng ST-148 · `HOST-BAO-DAM.md` §4 (dòng giới hạn đường ghi).
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25)
-Task đang làm : —  ·  ST-146 DONE: **`reports/R25-viscript.{md,json,json.license}`** — R25 chốt đợt 24g:
-                **8/8 hạng mục VS2 đóng theo nghĩa kỹ thuật**; hạng mục 7 Đa nền tảng: Linux **"chạy thật"**
-                (ST-140: `cargo test` **1162/0** + gate `--fast` PASS trên `ps`), Windows **chỉ đo** (VD-146),
-                wasm **chỉ check** (VD-121); **đính chính R24 đủ 3 điểm** (VD-142); **5 câu VD-131** nguyên văn;
-                nợ trích **theo số trong `SO-NO.md`** (**142 mục**: 92 mở / 28 đóng / 20 VS3 / 1 không làm
-                + 1 điều hướng; **không** trích `#113b`/`#114b` bằng số); **hash đo từng nền** (VD-147(4));
-                `check_report --all` PASS (**25 báo cáo, 164 hàng QUEUE**); gate macOS **PASS** L0 **1159/0**, 328 s
-Task kế       : **không** — chờ **Agent 0** (VD-148: VS3 **chưa** mở tính năng tới khi có tài liệu thiết kế VS3).
-                Ba việc chờ quyết: (1) ID **`ST-138b`** (16g §4 còn ghi `ST-139`); (2) số nợ **142/143** cho
-                `#113b`/`#114b`; (3) đính chính `HOST-BAO-DAM.md` (mục "bộ hợp chuẩn host" còn câu cũ)
+Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25) · đợt 25: **ST-148 DONE** (`cfce6b86`)
+Task đang làm : —  ·  ST-148 DONE: **`agent/SO-NO.md` cập nhật theo VD-149** — thêm **#142** (`#113b` =
+                `pkg update` ghim mọi gói khác) và **#143** (`#114b` = `NamePolicy::Strict` cho mọi tệp có `use`),
+                cả hai **mở**; **ánh xạ §7.3** `#113b → #142`, `#114b → #143` (giữ số cũ trong ngoặc);
+                **đóng đợt 24g có bằng chứng**: `#89` (ST-139 · PR #24 · `ef6489d1`), `#130` (ST-142 ·
+                `JOURNAL/st142-ps-*`), `#139` (ST-140 · VD-144), `#126` (ST-132 · VD-135), `#131` (ST-00 đính chính);
+                **giữ mở** `#109b`/`#140` + ghi chú "dòng giới hạn đã có trong `HOST-BAO-DAM.md`; sửa kỹ thuật
+                thuộc VS3"; sổ **144 mục** (94 mở / 28 đóng / 20 VS3 / 1 không làm / 1 điều hướng), dải **1..143**;
+                **trùng số 0**; `check_report PASS (25 báo cáo, 170 hàng QUEUE)`; gate macOS PASS L0 **1159/0**
+Task kế       : **ST-147** — **Windows gate bước 5**: đặt UTF-8 cho mọi lần gọi python của cổng (**VD-150**);
+                phụ thuộc ST-144 (DONE). READY kế tiếp: **ST-149** (nợ #136), **ST-150** (nợ #133),
+                **ST-151** (nợ #135), **ST-152** (R26 — cần ST-147..ST-151 xong).
 Nhánh         : main
 ```
 
@@ -61,7 +65,8 @@ Linux : hash đo `02fb7320` (cargo test + gate) / `ee58a518` (vis test, diff, ca
         · diff 100k lech=0 40,9 s · cache 0 lệch 6,33 s · host 54/54 · targets 18/18 · soak 10/10 = 250 s
 Windows: hash đo `3dc13342` — CHỈ ĐO: cargo test **1053/100** · host **39/54** · targets **18/18**
         · gate dừng bước 5/10 (self-test `doc-examples`, stderr cp1252 — VS3; `clippy` đã OK)
-Sổ nợ : 142 mục = 92 mở / 28 đóng / 20 VS3 / 1 không làm + 1 điều hướng (`agent/SO-NO.md`, VD-147(3))
+Sổ nợ : 144 mục = 94 mở / 28 đóng / 20 VS3 / 1 không làm + 1 điều hướng (`agent/SO-NO.md`,
+        VD-147(3) + VD-149; dải 1..143, `#142`=`#113b`, `#143`=`#114b`; trùng số 0)
 ```
 
 ```
@@ -71,7 +76,11 @@ Cần Agent 0/1  : (0) **ST-146 (R25) chờ Agent 1 đối chiếu** + dán APPR
                  (2) ~~VD thứ 3 cho ca coreutils multicall trên runner (#139)~~ đã có **VD-144**, làm ở ST-140 (chờ duyệt); (3) một dòng giới hạn đường GHI
                  trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3 — sau ST-144
                  gate Windows dừng ở **bước 5/10** (stderr `cp1252` của `doc_examples.py`), chỉ sửa được khi mở VS3.
-Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-146**, `[exit=0]`) trên cây HEAD `43b19dfe` + báo cáo R25 (chưa commit):
+Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-148**, `[exit=0]`) trên cây HEAD `b855caa3` + 3 tệp tài liệu
+                 chưa commit: L0 **1159/0** (129 suite), **10/10** bước `--- …: OK`, report-check PASS
+                 (**25 báo cáo, 170 hàng QUEUE**), doc-examples OK (24 khối), chạy **một** lần; log
+                 `JOURNAL/st148-gate-macos.log` sha256 `ba80ea698067bba8ab749fbe3d2a11d85ada9b7ec61899b952f6474b52b19114`.
+                 Trước đó: ST-146 **PASS** `[exit=0]` trên cây HEAD `43b19dfe` + báo cáo R25 (chưa commit):
                  L0 **1159/0** (129 suite), **10/10** dòng `--- …: OK`, report-check PASS (**25 báo cáo, 164 hàng QUEUE**),
                  doc-examples OK (24 khối), **328 s**, chạy **một** lần; log `JOURNAL/st146-gate-macos.log` sha256
                  `47b4055380bfdd5181441070250fe947855047e6af37176ee0fbbd1859cf1932`.
