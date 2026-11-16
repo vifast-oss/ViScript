@@ -21,37 +21,32 @@ const TOTAL_VIS_BLOCKS: usize = 22;
 // **SỬA KÈM LÝ DO (ST-27)**: khối 662 (`extern cmd git(…, ...rest: str)`) nay parse **sạch**
 // vì variadic đã có ⇒ 16 khối đủ thân sạch, 6 khối loại trừ.
 const FULL_BODIED: usize = 16;
-const EXCLUDED_COUNT: usize = 6;
 
-/// Khối **loại trừ tường minh** — (dòng bắt đầu ```vis trong `ViScript-thiet-ke.md`, lý do).
-const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
-    (
-        305,
-        "`...` ở 312-315 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
-    ),
-    (
-        432,
-        "`...` ở 436 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
-    ),
-    (
-        445,
-        "`...` ở 450 (`fn show(self) -> str: ...`) — thân lược",
-    ),
-    (
-        614,
-        "`...` ở 617 (`pub cmd ls(...): ...`) — thân lược",
-    ),
-    (
-        745,
-        "`...` ở 747 (`fn main(...): ...`) — thân lược",
-    ),
-    (
-        1420,
-        "lỗi đầu: `Entry(path: str(e.path), size: …, modified: …)` ở 1437 — constructor có **trường tên** \
-         không có trong §A.3 (lỗ hổng 1); `assert xs == [3, 2, 1]` ở 1446 cũng không có trong §A.1/A.2 \
-         (lỗ hổng 2 của tài liệu) — VD-36, ghi ở báo cáo R2",
-    ),
+// **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ theo VD-36 nằm ở
+// `test/doc_excluded.rs`; vis-syntax loại trừ **6** khối (`DOC_EXCLUDED_SYNTAX` = bản 7 khối
+// trừ khối 666 `extern cmd git(…, ...rest: str)` — khối này **parse sạch** từ ST-27 vì variadic
+// đã có, nên 16/22 khối đủ thân). Số dòng không chép lại ở đây; chỉ giữ **lý do** từng khối.
+include!("../../../test/doc_excluded.rs");
+
+const EXCLUDED_COUNT: usize = DOC_EXCLUDED_SYNTAX.len();
+
+/// Lý do loại trừ — **cùng thứ tự** với `DOC_EXCLUDED_SYNTAX` (số dòng lấy từ nguồn duy nhất).
+const LY_DO: [&str; EXCLUDED_COUNT] = [
+    "`...` ở 312-315 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
+    "`...` ở 436 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
+    "`...` ở 450 (`fn show(self) -> str: ...`) — thân lược",
+    "`...` ở 617 (`pub cmd ls(...): ...`) — thân lược",
+    "`...` ở 747 (`fn main(...): ...`) — thân lược",
+    "lỗi đầu: `Entry(path: str(e.path), size: …, modified: …)` ở 1437 — constructor có **trường tên** \
+     không có trong §A.3 (lỗ hổng 1); `assert xs == [3, 2, 1]` ở 1446 cũng không có trong §A.1/A.2 \
+     (lỗ hổng 2 của tài liệu) — VD-36, ghi ở báo cáo R2",
 ];
+
+/// Khối **loại trừ tường minh** — (dòng bắt đầu ```vis trong `ViScript-thiet-ke.md`, lý do);
+/// số dòng dẫn xuất từ `DOC_EXCLUDED_SYNTAX`, lý do từ `LY_DO` theo **cùng thứ tự**.
+fn excluded() -> Vec<(usize, &'static str)> {
+    DOC_EXCLUDED_SYNTAX.iter().copied().zip(LY_DO).collect()
+}
 
 struct Block {
     /// Dòng (1-based) của ```vis mở khối.
@@ -122,7 +117,7 @@ fn fixture_tai_lieu_dung_22_khoi_vis() {
     // 7 khối loại trừ phải có thật trong tài liệu (không loại trừ khối ma).
     let blocks = extract_vis_blocks(&doc_file_with_blocks());
     let starts: Vec<usize> = blocks.iter().map(|b| b.start_line).collect();
-    for (line, reason) in EXCLUDED {
+    for (line, reason) in excluded() {
         assert!(
             !reason.is_empty(),
             "khối loại trừ dòng {line} phải có lý do"
@@ -165,13 +160,13 @@ fn fixture_tai_lieu_15_khoi_du_than_parse_sach() {
     // Mỗi khối đủ thân phải sạch; mỗi khối loại trừ phải **hỏng** (đúng vai trò) và đúng 1 lỗi.
     let mut unexpected: Vec<String> = Vec::new();
     for (line, msg) in &failing {
-        if !EXCLUDED.iter().any(|(l, _)| l == line) {
+        if !DOC_EXCLUDED_SYNTAX.contains(line) {
             unexpected.push(format!(
                 "khối dòng {line} (đủ thân) KHÔNG parse sạch: {msg}"
             ));
         }
     }
-    for (line, _) in EXCLUDED {
+    for line in DOC_EXCLUDED_SYNTAX {
         if !failing.iter().any(|(l, _)| *l == line) {
             unexpected.push(format!(
                 "khối loại trừ dòng {line} lại parse sạch — bảng loại trừ đã lệch tài liệu"
@@ -198,7 +193,7 @@ fn fixture_tai_lieu_15_khoi_du_than_parse_sach() {
 fn khoi_loai_tru_dung_mot_loi_dau() {
     // VD-35: lỗi đầu rồi dừng ⇒ mỗi khối loại trừ đúng **1** chẩn đoán (không báo dồn).
     let blocks = extract_vis_blocks(&doc_file_with_blocks());
-    for (line, reason) in EXCLUDED {
+    for (line, reason) in excluded() {
         let b = blocks
             .iter()
             .find(|b| b.start_line == line)

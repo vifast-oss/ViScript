@@ -8,6 +8,11 @@ use std::path::PathBuf;
 use vis_fmt::format;
 use vis_syntax::{lex, Kind, Mode};
 
+// **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ VD-36 nằm ở
+// `test/doc_excluded.rs` (kèm lý do + cách dịch toạ độ ST-120b). `include!` phải ở **vị trí
+// item** (không lồng trong thân hàm: "non-statement macro in statement position").
+include!("../../../test/doc_excluded.rs");
+
 fn fixture_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test/fmt")
 }
@@ -26,9 +31,6 @@ fn doc_blocks() -> Vec<String> {
     let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../../docs/viscript/ViScript-thiet-ke.md");
     let text = std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("đọc {}: {e}", p.display()));
-    // **SỬA KÈM LÝ DO (ST-120b)**: 4 dòng trỏ `> Mức hiện thực VS2: …` (Phụ lục B, đợt 23) làm
-    // 4 khối dịch dòng: 610→614, 662→666, 737→745, 1412→1420. Nội dung 7 khối không đổi.
-    const EXCLUDED: [usize; 7] = [305, 432, 445, 614, 666, 745, 1420];
     let mut out = Vec::new();
     let mut it = text.lines().enumerate();
     while let Some((idx, line)) = it.next() {
@@ -42,7 +44,7 @@ fn doc_blocks() -> Vec<String> {
                 body.push_str(l);
                 body.push('\n');
             }
-            if !EXCLUDED.contains(&start) {
+            if !DOC_EXCLUDED.contains(&start) {
                 out.push(body);
             }
         }

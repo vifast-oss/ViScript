@@ -67,33 +67,12 @@ fn lower_and_check(src: &str) -> HirOutput {
 const TOTAL_VIS_BLOCKS: usize = 22;
 /// Số khối **đủ thân** (VD-36).
 const FULL_BODIED: usize = 15;
-/// Số khối **loại trừ tường minh** (VD-36: 6 khối `...` + khối 1412).
-const EXCLUDED_COUNT: usize = 7;
 
-/// Khối loại trừ — (dòng mở ```vis, lý do). Trùng `docs/viscript/doc-examples-allow.txt`
-/// **ST-120b**: 4 dòng trỏ của đợt 23 làm dịch 610→614, 662→666, 737→745, 1412→1420.
-/// (7 mục, mỗi mục **thật đỏ** khi parse) + `tests/doc_fixtures.rs` của ST-05.
-const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
-    (
-        305,
-        "`...` ở 312-315 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture",
-    ),
-    (
-        432,
-        "`...` ở 436 (`fn max_by[...] -> T?: ...`) — thân hàm lược",
-    ),
-    (445, "`...` ở 450 (`fn show(self) -> str: ...`) — thân hàm lược"),
-    (614, "`...` ở 617 (`pub cmd ls(...): ...`) — thân hàm lược"),
-    (
-        666,
-        "`...` ở 667 (`extern cmd git(..., ...rest: str)`) — không có token `...` trong SPEC-lex §1",
-    ),
-    (745, "`...` ở 747 (`fn main(...): ...`) — thân hàm lược"),
-    (
-        1420,
-        "`Entry(trường: …)` ở 1437 + `assert` ở 1446 — hai lỗ hổng tài liệu (VD-36), không tự thêm cú pháp",
-    ),
-];
+// **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ theo VD-36 nằm ở
+// `test/doc_excluded.rs` (số dòng + lý do từng khối + cách dịch toạ độ ST-120b:
+// 610→614, 662→666, 737→745, 1412→1420). Trùng `docs/viscript/doc-examples-allow.txt`
+// (ST-120b) về **nội dung** khối, không chép số dòng ở đây.
+include!("../../../test/doc_excluded.rs");
 
 /// (dòng mở khối, số item, số câu lệnh cấp tệp, số **khai báo** ngoài 8 tên dựng sẵn).
 ///
@@ -161,14 +140,14 @@ fn khoi_tai_lieu_22_15_7() {
     let excluded: Vec<usize> = blocks
         .iter()
         .map(|(l, _)| *l)
-        .filter(|l| EXCLUDED.iter().any(|(x, _)| x == l))
+        .filter(|l| DOC_EXCLUDED.contains(l))
         .collect();
     assert_eq!(
         excluded,
-        EXCLUDED.iter().map(|(l, _)| *l).collect::<Vec<_>>(),
+        DOC_EXCLUDED.to_vec(),
         "danh sách khối loại trừ phải khớp đúng dòng"
     );
-    assert_eq!(blocks.len() - EXCLUDED.len(), FULL_BODIED);
+    assert_eq!(blocks.len() - DOC_EXCLUDED.len(), FULL_BODIED);
 }
 
 #[test]
@@ -176,7 +155,7 @@ fn ha_15_khoi_tai_lieu_0_chan_doan_va_dung_so_khai_bao() {
     let blocks = doc_blocks();
     let mut checked = 0usize;
     for (line, body) in &blocks {
-        if EXCLUDED.iter().any(|(l, _)| l == line) {
+        if DOC_EXCLUDED.contains(line) {
             continue;
         }
         let want = DOC_BLOCKS
@@ -573,7 +552,7 @@ fn kieu_hien_thi_on_dinh_va_type_ref() {
 fn khong_panic_tren_7_khoi_loai_tru_va_rac() {
     let blocks = doc_blocks();
     for (line, body) in &blocks {
-        if !EXCLUDED.iter().any(|(l, _)| l == line) {
+        if !DOC_EXCLUDED.contains(line) {
             continue;
         }
         // Parse lỗi là chuyện của ST-05 — chỉ cần `lower` **không panic** (VD-44 #6).
