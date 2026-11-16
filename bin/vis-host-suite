@@ -3,7 +3,8 @@
 # ST-75 (VD-104(3)) — chạy bộ hợp chuẩn host (`test/host/suite.txt`) qua harness Rust và in bảng.
 #
 # Mỗi ca chạy **cả** `vis run` và `vis run --vm --no-cache` (trừ khi ca khai `vm:vs0604` = kỳ vọng
-# VS0604 ở VM vì VM không có host Ngoai). Mức bằng chứng: CHẠY THẬT trên macOS; nền khác chưa đo.
+# VS0604 ở VM vì VM không có host Ngoai). Mức bằng chứng: CHẠY THẬT trên nền đang chạy — dòng cuối in
+# nền thật bằng `uname -sm` (ST-141/VD-147(5): không ghi cứng "macOS" khi chạy trên Linux `ps`).
 # Exit 1 nếu suite/harness thiếu hoặc có ca đỏ; in số ca.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,7 +34,7 @@ grep -E '^(ok|not ok) [0-9]+ - ' "$LOG" | while IFS= read -r dong; do
   fi
 done
 so_ok=$(grep -c -E '^ok [0-9]+ - ' "$LOG" || true)
-echo "vis-host-suite: $so_ok/$so_ca ca xanh (chạy thật trên macOS; 3 nền còn lại chưa đo)"
+echo "vis-host-suite: $so_ok/$so_ca ca xanh (nền: $(uname -sm); các nền khác chưa đo)"
 if [ "$so_ok" -ne "$so_ca" ]; then
   echo "vis-host-suite: số ca không khớp suite" >&2
   exit 1
