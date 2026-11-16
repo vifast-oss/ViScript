@@ -991,3 +991,12 @@ Giữ VD-121, VD-136: Windows chỉ đo, không tuyên bố hỗ trợ, không s
 
 ### VD-148 · Chốt VS2 (2026-11-16)
 R24 chốt VS2 về kỹ thuật cho 7/8 hạng mục. Hạng mục 7 Đa nền tảng: Linux ở trạng thái "chờ" theo VD-134 tới khi cargo test và gate --fast PASS trên ps (ST-140); R25 ghi kết quả. Windows chỉ đo (VD-146), wasm chỉ check (VD-121). VS3 không bắt đầu tính năng cho tới khi Agent 0 ban hành tài liệu thiết kế VS3; trong lúc chờ, Agent 2 chỉ làm việc dọn dẹp, đo và nợ VS2.
+
+### VD-149 · Cấp số nợ 142/143 (2026-11-17)
+Nợ #113b (pkg update ghim mọi gói khác; nguồn JOURNAL/st129) nhận số 142. Nợ #114b (NamePolicy::Strict cho mọi tệp có use; nguồn JOURNAL/st130) nhận số 143. Không đánh lại số cũ; SO-NO.md ghi thêm dòng ánh xạ #113b→#142, #114b→#143; các báo cáo sau trích theo số mới, kèm số cũ trong ngoặc.
+
+### VD-150 · Windows: UTF-8 cho mọi lần gọi python của cổng (2026-11-17)
+Bổ sung VD-146. Được phép sửa HẠ TẦNG CỔNG để Windows đo được: đặt PYTHONIOENCODING=utf-8 và PYTHONUTF8=1 cho MỌI lần gọi python3 trong bin/vis-dev (gồm doc-examples, check_report, self-test) và trong test/fixtures/run_fixtures.sh nếu cần; không đổi kỳ vọng, không xoá ca, không ignore, không cfg-bỏ ca, không sửa sản phẩm. Điều kiện: gate macOS và Linux vẫn PASS với cùng số bước; trên psvn bước self-test phải 12/12 và cổng phải đi QUA bước 5 (dừng ở bước nào thì ghi đúng bước đó). Mọi ca lệch còn lại của Windows vẫn thuộc VS3.
+
+### VD-151 · VS2 đóng về kỹ thuật (2026-11-17)
+VS2 đóng về kỹ thuật với 8/8 hạng mục: (1) Async — xong phạm vi VS2, "không song song" (VD-123); (2) Kênh — xong phạm vi VS2, "không rendezvous" (VD-123); (3) Net/HTTP — xong phạm vi VS2, "không TLS/HTTP2/keep-alive" (VD-122); (4) Quyền — đóng, macOS có giới hạn văn bản (VD-145), Linux có Landlock thật + TOCTOU đường đọc 0/50 000; (5) LSP — đóng (VD-126); (6) Gói — đóng phạm vi VS2, mạng/chữ ký VS3 (VD-125); (7) Đa nền tảng — Linux "chạy thật" (cargo test 1162/0 + gate --fast PASS trên ps tại 02fb7320), Windows "chỉ đo" (VD-146), wasm "chỉ check" (VD-121); (8) Hợp chuẩn host — đóng (54/54 trên macOS và Linux). 5 câu bắt buộc VD-131 vẫn nguyên văn. Từ đây không mở task VS2 mới trừ nợ trong SO-NO.md, đính chính tài liệu và báo cáo vòng. Tính năng VS3 chỉ bắt đầu khi Agent 0 ban hành tài liệu thiết kế VS3.

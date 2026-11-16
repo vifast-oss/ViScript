@@ -33,12 +33,12 @@ Mã thoát: `0` = Linux có `landlock`; `3` = không có / nền khác; `4` = Li
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
 | `vis-host-wasm` | — | check xanh (khung; `probe()` = “runtime kiểm, không có sandbox OS”) | **check** |
-| `vis-host-*` chạy thật | **chưa có runner** | **chưa có runner** | không có |
+| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13; host suite 54/54) |
 
 Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “chạy trên Windows/wasm”;
 đúng là “**check** biên dịch chéo xanh, **chưa chạy**”.
 
-## Bộ hợp chuẩn host — chạy THẬT trên macOS (ST-75)
+## Bộ hợp chuẩn host — chạy THẬT trên macOS và Linux (ST-75, ST-131/ST-142)
 
 **54 ca**, mỗi ca chạy **cả** `vis run` và `vis run --vm --no-cache` (**120 lần chạy**), so **byte**
 stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
@@ -52,8 +52,9 @@ stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
 | Determinism | 3 | mỗi ca chạy **3 lần** mỗi đường, cùng stdout |
 
 Lệnh: `viscript/bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu/đỏ). Log:
-`agent/JOURNAL/st75-suite.log`. **Windows/Linux/wasm: CHƯA ĐO** — mới chỉ **check** biên dịch chéo
-(ST-74); không có runner.
+Log: `agent/JOURNAL/st75-suite.log` (macOS, ST-75); `st137-host-suite-macos.log`, `st137-host-suite-ps.log`,
+`st142-*`, `st144-host-suite.log` (Windows). **Linux: đã đo** (54/54, ST-142). **Windows: đã đo, chỉ đo**
+(39/54, VD-146/VD-121 — chưa hỗ trợ). **wasm: chưa đo** (chỉ check, VD-121).
 
 ## Cấm ngôn từ
 
