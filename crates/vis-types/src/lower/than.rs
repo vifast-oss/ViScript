@@ -275,16 +275,19 @@ impl<'a> super::Lowerer<'a> {
             .chain(self.cmd_sigs.clone())
             .collect();
         for t in ds {
+            // **ST-122 (VD-127)**: span **tổng hợp** của thân `cmd` phải mang `file` của tệp đang
+            // hạ — `Span::new` cũ cho `file = 0` (tệp chính), nên chẩn đoán của thân trong **module**
+            // bị báo sang tệp chính.
             let span = match (t.map.first(), t.map.last()) {
-                (Some(&a), Some(&b)) => Span::new(a, b.min(self.text.len())),
-                _ => Span::new(0, 0),
+                (Some(&a), Some(&b)) => Span::new(a, b.min(self.text.len())).with_file(self.file),
+                _ => Span::new(0, 0).with_file(self.file),
             };
             let dat_loi = |l: &mut Self, t: &crate::lower::khai::ThanLenh| {
                 if let Some(HItem::Fn(f)) = l.items.iter_mut().find(
                     |it| matches!(it, HItem::Fn(g) if g.name == t.ten && g.kind == FnKind::Cmd),
                 ) {
                     f.body = vec![HStmt::Expr(HExpr::Error {
-                        span: Span::new(0, 0),
+                        span: Span::new(0, 0).with_file(l.file),
                     })];
                 }
             };
@@ -323,7 +326,8 @@ impl<'a> super::Lowerer<'a> {
                     .copied()
                     .map(|x| x + 1)
                     .unwrap_or(a);
-                tk.span = Span::new(a, b);
+                // **ST-122**: token re-lex từ bản `dedent` ⇒ phải **gắn lại `file`** của tệp đang hạ.
+                tk.span = Span::new(a, b).with_file(self.file);
             }
             if !loi.is_empty() {
                 for d in loi.drain(..) {
@@ -331,7 +335,11 @@ impl<'a> super::Lowerer<'a> {
                 }
                 continue;
             }
-            let parsed = vis_syntax::parse_voi(self.text, toks, vis_syntax::Mode::Command);
+            // **ST-122 (VD-127)**: `parse_voi` **không** gắn `file` vào span **node** (`elems_span` dựng
+            // `Span::new(start, end)`); `parse_voi_file` mới gắn đủ cây CST ⇒ node tổng hợp dẫn xuất
+            // từ node CST (Lambda, stage…) mang đúng tệp.
+            let parsed =
+                vis_syntax::parse_voi_file(self.text, toks, vis_syntax::Mode::Command, self.file);
             let out = crate::lower::lower_than(
                 self.symbols,
                 self.tbl,
@@ -474,13 +482,15 @@ impl<'a> super::Lowerer<'a> {
                 .copied()
                 .map(|x| x + 1)
                 .unwrap_or(a);
-            tk.span = Span::new(a, b);
+            // **ST-122**: như `ha_than_cmd` — token re-lex phải mang `file` của tệp đang hạ.
+            tk.span = Span::new(a, b).with_file(self.file);
         }
         if !loi.is_empty() {
             loi.clear();
             return None;
         }
-        let parsed = vis_syntax::parse_voi(self.text, toks, mode);
+        // **ST-122 (VD-127)**: như `ha_than_cmd` — `file` phải có trên **node** CST, không chỉ token.
+        let parsed = vis_syntax::parse_voi_file(self.text, toks, mode, self.file);
         Some((
             parsed.cst,
             LexOutput {
@@ -509,9 +519,12 @@ impl<'a> super::Lowerer<'a> {
         }
         let mut toks = lexed.tokens.clone();
         for tk in &mut toks {
-            tk.span = Span::new(tk.span.start + at, tk.span.end + at);
+            // **ST-122**: nhóm `( … )` re-lex từ văn bản con ⇒ gắn lại `file` của tệp đang hạ.
+            tk.span = Span::new(tk.span.start + at, tk.span.end + at).with_file(self.file);
         }
-        let parsed = vis_syntax::parse_voi(self.text, toks, vis_syntax::lex::Mode::Command);
+        // **ST-122 (VD-127)**: như `ha_than_cmd` — `file` phải có trên **node** CST, không chỉ token.
+        let parsed =
+            vis_syntax::parse_voi_file(self.text, toks, vis_syntax::lex::Mode::Command, self.file);
         let out = crate::lower::lower_nhom(
             self.symbols,
             self.tbl,

@@ -429,7 +429,10 @@ impl<'a> super::Lowerer<'a> {
         prefix: &str,
     ) {
         let prefix = &prefix[..moc.min(prefix.len())];
-        let po = vis_syntax::parse::parse(prefix, vis_syntax::lex::Mode::Script);
+        // **ST-122 (VD-127)**: vùng khai báo của `.vish` được **parse lại** từ bản tiền tố ⇒ mọi token
+        // (và do đó mọi node HIR của item trong `.vish`) phải mang `file` của tệp đang hạ; `parse`/
+        // `lex` cũ để `file = 0` ⇒ chẩn đoán trong item ở **module** bị báo sang tệp chính.
+        let po = vis_syntax::parse_file(prefix, vis_syntax::lex::Mode::Script, self.file);
         for d in &po.diagnostics {
             self.diags.push(d.clone());
         }
@@ -441,7 +444,7 @@ impl<'a> super::Lowerer<'a> {
                 self.diag(&vis_diag::NAME_CODES[1], msg, span);
             }
         }
-        let lex = vis_syntax::lex::lex(prefix, vis_syntax::lex::Mode::Script);
+        let lex = vis_syntax::lex::lex_file(prefix, vis_syntax::lex::Mode::Script, self.file);
         let mut opts = self.opts.clone();
         for (n, id) in prelude {
             opts.imported_types
@@ -452,7 +455,7 @@ impl<'a> super::Lowerer<'a> {
         self.stmts.extend(out.hir.stmts);
         self.diags.extend(out.diagnostics);
         if let Some((line, col)) = khai_sau_stage(self.text, moc) {
-            let sp = super::Lowerer::span_dong_cot(self.text, line, col);
+            let sp = super::Lowerer::span_dong_cot(self.text, line, col, self.file);
             self.diag(
                 &vis_diag::SYNTAX_CODES[0],
                 "khai báo phải đứng **trước** stage đầu tiên (`.vish`: item ở đầu tệp, rồi mới tới\
@@ -463,22 +466,26 @@ impl<'a> super::Lowerer<'a> {
     }
 
     /// Đổi `(dòng, cột)` — cột đếm theo **Unicode scalar** như chẩn đoán — thành `Span` byte.
-    pub(crate) fn span_dong_cot(text: &str, line: u32, col: u32) -> vis_syntax::Span {
+    ///
+    /// **ST-122 (VD-127)**: span **tổng hợp** (không copy từ CST) nên phải mang `file` của tệp đang
+    /// hạ — trước đây trả `Span::new(…)` (`file = 0`) nên chẩn đoán ở **module** bị báo sang tệp chính.
+    pub(crate) fn span_dong_cot(text: &str, line: u32, col: u32, file: u16) -> vis_syntax::Span {
         let mut off = 0usize;
         for (i, d) in text.split_inclusive('\n').enumerate() {
             if i as u32 + 1 == line {
                 let mut byte = off;
                 for (k, ch) in d.char_indices() {
                     if k as u32 + 1 == col {
-                        return vis_syntax::Span::new(off + k, off + k + ch.len_utf8());
+                        return vis_syntax::Span::new(off + k, off + k + ch.len_utf8())
+                            .with_file(file);
                     }
                     byte = off + k;
                 }
                 let _ = byte;
-                return vis_syntax::Span::new(off, off + d.trim_end().len().max(1));
+                return vis_syntax::Span::new(off, off + d.trim_end().len().max(1)).with_file(file);
             }
             off += d.len();
         }
-        vis_syntax::Span::new(0, 0)
+        vis_syntax::Span::new(0, 0).with_file(file)
     }
 }

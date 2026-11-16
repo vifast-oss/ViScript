@@ -64,7 +64,12 @@ impl<'a> Lowerer<'a> {
                 .find(p)
                 .map(|i| start + i)
                 .unwrap_or(start);
-            ten.push((p.to_string(), Span::new(off, off + p.len())));
+            // **ST-122 (VD-127)**: span **tổng hợp** của tên trường (không có token riêng) ⇒ mang
+            // `file` của tệp đang hạ.
+            ten.push((
+                p.to_string(),
+                Span::new(off, off + p.len()).with_file(self.file),
+            ));
             bo.push(p.to_string());
         }
         let _ = bo;

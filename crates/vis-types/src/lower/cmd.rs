@@ -12,6 +12,22 @@ mod doc;
 mod hop;
 
 /// Tên kiểu ngắn để đưa vào thông điệp `VS0602`/`VS0603`.
+/// **ST-122 (VD-127)**: giá trị `default` của builtin được dựng **một lần** trong
+/// [`crate::cmdsig::BuiltinSigs::mac_dinh`] với `Span::new(0, 0)` (`file = 0`). Khi **chép** nó vào
+/// HIR của một tệp, node đó là **node tổng hợp của tệp đang hạ** ⇒ phải mang `file` của tệp ấy.
+/// Giữ nguyên `start/end` (giá trị mặc định **không có** vị trí nguồn — chỉ `file` là thông tin đúng).
+fn mac_dinh_theo_tep(e: HExpr, file: u16) -> HExpr {
+    match e {
+        HExpr::Lit { lit, ty, span } => HExpr::Lit {
+            lit,
+            ty,
+            span: span.with_file(file),
+        },
+        // Các dạng khác chưa có trong bảng builtin; nếu thêm, **audit** (`audit_span`) sẽ bắt.
+        other => other,
+    }
+}
+
 impl<'a> Lowerer<'a> {
     /// ST-37: hạ **nội dung** stage `( … )` — parser chỉ giữ token nên hạ lại văn bản trong ngoặc
     /// ở chế độ script. Chỉ dùng cho **biểu thức thuần** (literal/phép toán); biến trong nhóm chưa hỗ trợ.
@@ -80,8 +96,11 @@ impl<'a> Lowerer<'a> {
         let pad = bat_dau.saturating_sub(dau.len());
         // Bọc `let` để **giữ** biểu thức (câu lệnh trần bị bỏ ở cấp tệp) — không chạy tyck ở đây.
         let src = format!("{dau}{}{}", " ".repeat(pad), txt.trim());
-        let lexed = vis_syntax::lex(&src, vis_syntax::Mode::Script);
-        let parsed = vis_syntax::parse(&src, vis_syntax::Mode::Script);
+        // **ST-122 (VD-127)**: `src` chỉ **đệm** cho span tuyệt đối; token phải mang `file` của tệp
+        // đang hạ (`lex`/`parse` cũ cho `file = 0` ⇒ mọi node của `( biểu thức )` ở **module** bị quy
+        // sang tệp chính).
+        let lexed = vis_syntax::lex_file(&src, vis_syntax::Mode::Script, self.file);
+        let parsed = vis_syntax::parse_file(&src, vis_syntax::Mode::Script, self.file);
         // ST-46: thân **không** phải biểu thức script (vd `ls ./photos`) ⇒ trả `None` để nơi gọi
         // thử đường **lệnh trong ngoặc** (stage) hoặc báo lỗi rõ (đối số).
         if !parsed.diagnostics.is_empty() {
@@ -936,7 +955,10 @@ impl<'a> Lowerer<'a> {
                 if let Some(i) = sig.params.iter().position(|p| p.named && &p.name == ten_co) {
                     for (j, o) in vi_tri.iter_mut().enumerate().take(i) {
                         if o.is_none() {
-                            *o = sig.params[j].default.clone();
+                            *o = sig.params[j]
+                                .default
+                                .clone()
+                                .map(|d| mac_dinh_theo_tep(d, self.file));
                         }
                     }
                     vi_tri[i] = Some(gt.clone());
@@ -947,7 +969,10 @@ impl<'a> Lowerer<'a> {
             // nếu không `day_du` sai ⇒ cờ bị **bỏ** khỏi call.
             for (j, o) in vi_tri.iter_mut().enumerate() {
                 if o.is_none() {
-                    *o = sig.params[j].default.clone();
+                    *o = sig.params[j]
+                        .default
+                        .clone()
+                        .map(|d| mac_dinh_theo_tep(d, self.file));
                 }
             }
             let day_du = vi_tri.iter().all(|x| x.is_some());

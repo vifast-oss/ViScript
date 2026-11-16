@@ -397,7 +397,7 @@ impl<'a> Lowerer<'a> {
             // **ST-85b (VD-109)**: dòng cấp tệp thụt lề **không** thuộc khối nào ⇒ `VS0201` rõ
             // (trước đây bị `khai::tach` nuốt im lặng). `.vis` (script) không đi nhánh này.
             for (line, col) in khai::dong_thut_sai(self.text) {
-                let sp = Lowerer::span_dong_cot(self.text, line, col);
+                let sp = Lowerer::span_dong_cot(self.text, line, col, self.file);
                 self.diag(
                     &vis_diag::SYNTAX_CODES[0],
                     "câu lệnh cấp tệp không được thụt lề (`.vish` không có block cấp tệp)",
@@ -415,7 +415,7 @@ impl<'a> Lowerer<'a> {
                 self.ha_than_cmd(&ds_than);
             } else if let Some((line, col)) = khai::khai_sau_stage(self.text, 0) {
                 // Tệp **không** mở đầu bằng khai báo nhưng có khai báo ở cột 1 ⇒ lỗi rõ.
-                let sp = Lowerer::span_dong_cot(self.text, line, col);
+                let sp = Lowerer::span_dong_cot(self.text, line, col, self.file);
                 self.diag(
                     &vis_diag::SYNTAX_CODES[0],
                     "khai báo phải đứng **trước** stage đầu tiên (`.vish`: item ở đầu tệp, rồi mới\

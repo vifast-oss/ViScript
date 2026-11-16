@@ -41,7 +41,9 @@ fn tach_tu(s: &str) -> Vec<String> {
     out
 }
 
-fn lit(kind: LitKind, text: &str) -> HExpr {
+/// **ST-122 (VD-127)**: literal **tổng hợp** (đối số thô của stage lệnh) — `span` **bắt buộc** lấy từ
+/// node nguồn (stage), không được để `Span::new(0, 0)` (`file = 0` ⇒ chẩn đoán sang tệp chính).
+fn lit(kind: LitKind, text: &str, span: Span) -> HExpr {
     let l = Lit {
         kind,
         text: text.to_string(),
@@ -49,7 +51,7 @@ fn lit(kind: LitKind, text: &str) -> HExpr {
     HExpr::Lit {
         ty: l.ty(),
         lit: l,
-        span: Span::new(0, 0),
+        span,
     }
 }
 impl<'a> Lowerer<'a> {
@@ -106,8 +108,11 @@ impl<'a> Lowerer<'a> {
         }
         let pad = body_start - prefix.len();
         let src = format!("{prefix}{}{body}", " ".repeat(pad));
-        let lexed = vis_syntax::lex(&src, vis_syntax::Mode::Script);
-        let parsed = vis_syntax::parse(&src, vis_syntax::Mode::Script);
+        // **ST-122 (VD-127)**: `src` là văn bản **đệm** để span tuyệt đối — nhưng token vẫn phải mang
+        // `file` của tệp đang hạ (`lex`/`parse` cũ cho `file = 0` ⇒ node HIR của closure trong
+        // **module** bị quy sang tệp chính).
+        let lexed = vis_syntax::lex_file(&src, vis_syntax::Mode::Script, self.file);
+        let parsed = vis_syntax::parse_file(&src, vis_syntax::Mode::Script, self.file);
         // ST-46: thân **không** phải biểu thức script (vd `ls ./photos`) ⇒ trả `None` để nơi gọi
         // thử đường **lệnh trong ngoặc** (stage) hoặc báo lỗi rõ (đối số).
         if !parsed.diagnostics.is_empty() {
@@ -171,7 +176,7 @@ impl<'a> Lowerer<'a> {
         }
         let items: Vec<HExpr> = tu
             .iter()
-            .map(|w| lit(LitKind::Str, &format!("{w:?}")))
+            .map(|w| lit(LitKind::Str, &format!("{w:?}"), node.span))
             .collect();
         let ds = HExpr::List {
             items,
@@ -185,7 +190,7 @@ impl<'a> Lowerer<'a> {
         };
         // ST-34: đối số thứ 2 = **stdin** (giá trị từ pipe) — `builtin::call` quy đổi (một quy tắc).
         let vao = stdin.unwrap_or_else(|| {
-            let mut rong = lit(LitKind::Str, "\"\"");
+            let mut rong = lit(LitKind::Str, "\"\"", node.span);
             if let HExpr::Lit { span, .. } = &mut rong {
                 *span = node.span;
             }

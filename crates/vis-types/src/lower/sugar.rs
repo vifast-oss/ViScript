@@ -157,7 +157,9 @@ impl<'a> super::Lowerer<'a> {
         while i < toks.len() {
             if toks[i].0 == "it" && toks.get(i + 1).map(|t| t.0 == ".").unwrap_or(false) {
                 if let Some(f) = toks.get(i + 2) {
-                    let span = Span::new(base + f.1, base + f.2);
+                    // **ST-122 (VD-127)**: span **tổng hợp** (tính từ `toks` của văn bản thân) ⇒ phải
+                    // mang `file` của tệp đang hạ.
+                    let span = Span::new(base + f.1, base + f.2).with_file(self.file);
                     match rec.fields.iter().find(|x| x.name == f.0) {
                         None => self.diag(
                             vis_diag::ma_truong(),
@@ -178,7 +180,8 @@ impl<'a> super::Lowerer<'a> {
                                                 ten_kieu(&fd.ty),
                                                 ten_kieu(&lt)
                                             ),
-                                            Span::new(base + lit.1, base + lit.2),
+                                            Span::new(base + lit.1, base + lit.2)
+                                                .with_file(self.file),
                                         );
                                     }
                                 }
@@ -294,9 +297,12 @@ impl<'a> super::Lowerer<'a> {
         }
         let pad = start - prefix.len();
         let src = format!("{prefix}{}{src_body}", " ".repeat(pad));
-        let lexed2 = vis_syntax::lex(&src, vis_syntax::Mode::Script);
-        let parsed = vis_syntax::parse(&src, vis_syntax::Mode::Script);
-        self.push_frame(FrameKind::Fn, Span::new(start, end));
+        // **ST-122 (VD-127)**: `src` đệm cho span tuyệt đối; token phải mang `file` của tệp đang hạ
+        // (`lex`/`parse` cũ cho `file = 0` ⇒ lambda `it` của **module** bị quy sang tệp chính).
+        let lexed2 = vis_syntax::lex_file(&src, vis_syntax::Mode::Script, self.file);
+        let parsed = vis_syntax::parse_file(&src, vis_syntax::Mode::Script, self.file);
+        // **ST-122 (VD-127)**: span khung **tổng hợp** ⇒ mang `file` của tệp đang hạ.
+        self.push_frame(FrameKind::Fn, Span::new(start, end).with_file(self.file));
         let scope = self.scope.clone();
         let mut sub = super::Lowerer::new(
             &parsed.cst,
