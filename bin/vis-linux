@@ -84,7 +84,8 @@ pick_backend() {
 sync_tree() {
     if [ "$no_sync" = 1 ]; then say "bỏ đồng bộ (VIS_LINUX_NO_SYNC=1)"; return 0; fi
     local d
-    for d in viscript docs/viscript .git; do
+    # `vis-host-linux` ở gốc repo (R4 cấm nằm trong `viscript/`): cần cho ST-132 (Landlock thật).
+    for d in viscript docs/viscript vis-host-linux .git; do
         [ -e "$REPO_ROOT/$d" ] || continue
         rsync -a --delete --exclude 'target/' --exclude '*.rlib' \
             "$REPO_ROOT/$d/" "$SSH_TARGET:$LINUX_DIR/$d/" ||
