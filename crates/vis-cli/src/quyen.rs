@@ -8,7 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
-use vis_interp::builtin::{FsHost, MucFs, NetHost};
+use vis_interp::builtin::{DocQuaHandle, DuongDanHandle, FsHost, MucFs, NetHost};
 use vis_interp::stdlib::DAU_QUYEN;
 use vis_interp::value::Value;
 use vis_syntax::{Kind, Mode, NodeKind};
@@ -439,7 +439,10 @@ impl Quyen {
         Err(format!("{DAU_QUYEN}{msg}"))
     }
 
-    /// **ST-124 (VD-130b)**: xác nhận **sau khi đã mở** — đóng khe TOCTOU kiểm-rồi-mở.
+    /// **ST-124 (VD-130b)**: xác nhận **sau khi đã mở** trên **tên** — nay chỉ dùng làm **dự phòng**
+    /// cho host/nền **không** báo được đường dẫn thật của handle (`KhongCo`: `--fs-mock`, macOS —
+    /// ST-137 §4). Trên Linux, `xac_nhan_handle` quyết định trên đường dẫn **của handle** và **không**
+    /// đi qua hàm này.
     ///
     /// `truoc` = đường dẫn canonicalize đã qua kiểm **trước** khi mở; `danh_tinh` = `(dev, ino)` của
     /// **handle vừa mở** (host báo; `(0, 0)` = không báo).
@@ -449,6 +452,10 @@ impl Quyen {
     ///   `sau` (chứ không phải trên đường dẫn cũ). Lệch ⇒ đường dẫn bị đổi trong lúc mở ⇒ **từ chối**.
     /// - Không có danh tính (mock/nền không inode) ⇒ so `sau != truoc` ⇒ **từ chối** (chặn được ca
     ///   "đổi sang đường dẫn khác rồi để nguyên", không chặn được ca "đổi rồi đổi lại" — ghi ở nợ).
+    ///
+    /// **Giới hạn đã biết (ST-137)**: `chuan` (syscall 1, trả **chuỗi**) và `metadata(sau)` (syscall 2,
+    /// theo **tên**) có thể thấy hai trạng thái khác nhau ⇒ kẻ tấn công chen vào **giữa hai syscall**
+    /// làm quyết định rơi trên chuỗi cũ. Vì vậy trên Linux **không** dùng đường này nữa.
     pub fn xac_nhan_sau_mo(
         &self,
         p: &str,
@@ -475,6 +482,32 @@ impl Quyen {
             ));
         }
         Ok(())
+    }
+
+    /// **ST-137 (VD-141)**: quyết định quyền trên **handle đã mở** — nguồn: **đường dẫn thật của
+    /// chính handle** do host báo.
+    ///
+    /// - `Co(dd)` (Linux `/proc/self/fd`): quyết định trên `dd` — **vật** đã mở, không trên tên.
+    ///   Đường dẫn của handle là đường dẫn **sau cùng** của vật đó (kernel giải symlink), nên tên
+    ///   bị đổi trong lúc mở **không** làm sai quyết định.
+    /// - `KhongLayDuoc` (host thật, `/proc` lỗi/không mount): **từ chối** (`VS0604`) — không quay
+    ///   về kiểm theo tên (nếu quay về thì cửa sổ TOCTOU mở lại).
+    /// - `KhongCo` (mock, hoặc nền không có primitive fd→path như macOS): giữ bước xác nhận của
+    ///   ST-124 ([`xac_nhan_sau_mo`](Self::xac_nhan_sau_mo)).
+    pub fn xac_nhan_handle(&self, p: &str, truoc: &Path, d: &DocQuaHandle) -> Result<(), String> {
+        match &d.duong_dan {
+            DuongDanHandle::Co(dd) => self.kiem_canon(dd, p, false).map_err(|e| {
+                format!(
+                    "{e} (tệp ĐÃ MỞ nằm ở `{}` — chống kiểm-rồi-mở theo handle, ST-137)",
+                    dd.display()
+                )
+            }),
+            DuongDanHandle::KhongLayDuoc(ly_do) => Err(format!(
+                "{DAU_QUYEN}[quyền] không xác định được đường dẫn thật của tệp đã mở cho `{p}` \
+                 ({ly_do}) ⇒ từ chối (không quay về kiểm theo tên; ST-137)"
+            )),
+            DuongDanHandle::KhongCo => self.xac_nhan_sau_mo(p, truoc, d.danh_tinh),
+        }
     }
 
     /// **ST-93 (VD-111)**: `--strict-caps` + **không** khai `cap[Proc]` ⇒ **không** cho chạy tiến
@@ -516,19 +549,21 @@ pub struct FsGuard<'a> {
 }
 
 impl FsHost for FsGuard<'_> {
-    /// **ST-124 (VD-130b)**: **mở-rồi-kiểm** thay cho kiểm-rồi-mở.
+    /// **ST-124 (VD-130b) → ST-137 (VD-141)**: **mở-rồi-kiểm**, nhưng quyết định quyền trên
+    /// **đường dẫn thật của handle** (khi host báo được — Linux `/proc/self/fd`), không trên tên.
     ///
     /// 1. Kiểm **trước** (giữ nguyên thông điệp lỗi cũ, và **không mở** tệp đã biết là ngoài quyền).
-    /// 2. Mở tệp **một lần** qua host, lấy `(nội dung, dev, ino)` của chính handle.
-    /// 3. Xác nhận **sau khi mở**: đường dẫn canonicalize hiện tại phải trỏ **đúng** tệp đã mở, và
-    ///    quyền được kiểm lại trên **đường dẫn sau khi mở** ⇒ nội dung trả về luôn là tệp đã kiểm.
+    /// 2. Mở tệp **một lần** qua host, lấy `(nội dung đọc TỪ handle, (dev,ino), đường dẫn thật)`.
+    /// 3. Xác nhận **sau khi mở** trên đường dẫn của **chính handle** ⇒ tên bị đổi giữa các bước
+    ///    không thể làm nội dung trả về khác vật mà quyết định quyền đã áp. Host **thật** mà
+    ///    không lấy được đường dẫn handle ⇒ **từ chối** (`VS0604`).
     fn read(&mut self, p: &str) -> Result<String, String> {
         let da_kiem = self.quyen.kiem_fs_canon(p, false)?;
-        let (s, dev, ino) = self.trong.read_danh_tinh(p)?;
+        let d = self.trong.read_theo_handle(p)?;
         if let Some(truoc) = da_kiem {
-            self.quyen.xac_nhan_sau_mo(p, &truoc, (dev, ino))?;
+            self.quyen.xac_nhan_handle(p, &truoc, &d)?;
         }
-        Ok(s)
+        Ok(d.noi_dung)
     }
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
         self.quyen.kiem_fs(p, true)?;
@@ -749,6 +784,222 @@ mod tests {
             ok_trong > 0,
             "ca vô nghĩa: không lần nào đọc được tệp trong root"
         );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-137 (VD-141)** — host mô phỏng **kẻ tấn công thắng ở bước MỞ**: đổi `root/tep` thành
+    /// **symlink ra ngoài** ngay trước `File::open` ⇒ handle = tệp NGOÀI root. Đường dẫn thật của
+    /// handle (`/proc/self/fd`) phải chỉ ra ngoài root ⇒ tầng quyền **từ chối**; không được trả
+    /// nội dung `NGOAI`. Đây là ca **tất định** cho đúng trật tự đã lọt trước ST-137.
+    #[cfg(target_os = "linux")]
+    struct HostThangOMo {
+        root: PathBuf,
+        tep: PathBuf,
+        ngoai: PathBuf,
+    }
+
+    #[cfg(target_os = "linux")]
+    impl FsHost for HostThangOMo {
+        fn read(&mut self, p: &str) -> Result<String, String> {
+            std::fs::read_to_string(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
+        }
+        fn read_theo_handle(&mut self, p: &str) -> Result<DocQuaHandle, String> {
+            dat_tep(&self.root, &self.tep, &self.ngoai, true);
+            crate::ngoai::doc_theo_handle(p, std::path::Path::new("/proc/self/fd"))
+        }
+        fn write(&mut self, _p: &str, _s: &str) -> Result<(), String> {
+            Ok(())
+        }
+        fn exists(&mut self, _p: &str) -> bool {
+            false
+        }
+        fn list(&mut self, _p: &str) -> Result<Vec<String>, String> {
+            Ok(Vec::new())
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn handle_ngoai_root_bi_chan_tat_dinh() {
+        let d = tam("st137-thang");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let ngoai = d.join("ngoai.txt");
+        std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut host = HostThangOMo {
+            root: root.clone(),
+            tep: tep.clone(),
+            ngoai,
+        };
+        let mut g = FsGuard {
+            trong: &mut host,
+            quyen: &q,
+        };
+        let kq = g.read(tep.to_str().expect("utf8"));
+        match &kq {
+            Err(e) => {
+                assert!(e.contains("VS0604"), "phải là lỗi quyền VS0604: {e}");
+                assert!(
+                    e.contains("ĐÃ MỞ") || e.contains("đã mở"),
+                    "thông điệp phải nêu tệp ĐÃ MỞ: {e}"
+                );
+            }
+            Ok(s) => panic!("đọc được tệp ngoài root (handle ra ngoài): {s:?}"),
+        }
+        assert!(
+            !kq.unwrap_or_default().contains("NGOAI"),
+            "nội dung ngoài root đã lọt ra"
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-137 (VD-141)** — host đổi tên **sau khi đã mở+đọc**: nội dung phải là nội dung **của
+    /// handle** (`TRONG`), quyết định quyền theo **đường dẫn thật của handle**, không theo tên đã
+    /// đổi (tên lúc này trỏ ra ngoài). Trước ST-137 ca này trả `VS0604` oan (hoặc lọt `NGOAI`).
+    #[cfg(target_os = "linux")]
+    struct HostDoiSauKhiMo {
+        root: PathBuf,
+        tep: PathBuf,
+        ngoai: PathBuf,
+    }
+
+    #[cfg(target_os = "linux")]
+    impl FsHost for HostDoiSauKhiMo {
+        fn read(&mut self, p: &str) -> Result<String, String> {
+            std::fs::read_to_string(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
+        }
+        fn read_theo_handle(&mut self, p: &str) -> Result<DocQuaHandle, String> {
+            let d = crate::ngoai::doc_theo_handle(p, std::path::Path::new("/proc/self/fd"))?;
+            dat_tep(&self.root, &self.tep, &self.ngoai, true);
+            Ok(d)
+        }
+        fn write(&mut self, _p: &str, _s: &str) -> Result<(), String> {
+            Ok(())
+        }
+        fn exists(&mut self, _p: &str) -> bool {
+            false
+        }
+        fn list(&mut self, _p: &str) -> Result<Vec<String>, String> {
+            Ok(Vec::new())
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn doc_lay_tu_handle_khi_ten_da_bi_doi() {
+        let d = tam("st137-sau");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let ngoai = d.join("ngoai.txt");
+        std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut host = HostDoiSauKhiMo {
+            root: root.clone(),
+            tep: tep.clone(),
+            ngoai,
+        };
+        let mut g = FsGuard {
+            trong: &mut host,
+            quyen: &q,
+        };
+        let kq = g.read(tep.to_str().expect("utf8"));
+        assert_eq!(
+            kq.as_deref(),
+            Ok("TRONG"),
+            "phải trả nội dung CỦA HANDLE (TRONG), không theo tên đã đổi"
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-137 (VD-141)** — host **thật** nhưng không lấy được đường dẫn thật của handle
+    /// (`/proc` lỗi/không mount) ⇒ tầng quyền **từ chối** `VS0604`, **không** quay về kiểm theo tên.
+    /// Host giả ở đây trả đúng thứ tự: trước ST-137 nó đã đọc được `NGOAI` rồi; nay phải bị chặn.
+    struct HostKhongProc;
+
+    impl FsHost for HostKhongProc {
+        fn read(&mut self, _p: &str) -> Result<String, String> {
+            Ok("NGOAI".to_string())
+        }
+        fn read_theo_handle(&mut self, _p: &str) -> Result<DocQuaHandle, String> {
+            Ok(DocQuaHandle {
+                noi_dung: "NGOAI".to_string(),
+                danh_tinh: (7, 7),
+                duong_dan: DuongDanHandle::KhongLayDuoc(
+                    "không đọc được `/proc/self/fd/3`: No such file or directory".to_string(),
+                ),
+            })
+        }
+        fn write(&mut self, _p: &str, _s: &str) -> Result<(), String> {
+            Ok(())
+        }
+        fn exists(&mut self, _p: &str) -> bool {
+            false
+        }
+        fn list(&mut self, _p: &str) -> Result<Vec<String>, String> {
+            Ok(Vec::new())
+        }
+    }
+
+    #[test]
+    fn proc_khong_doc_duoc_thi_tu_choi() {
+        let d = tam("st137-proc");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut host = HostKhongProc;
+        let mut g = FsGuard {
+            trong: &mut host,
+            quyen: &q,
+        };
+        let kq = g.read(tep.to_str().expect("utf8"));
+        let e = kq.expect_err("phải TỪ CHỐI khi không đọc được /proc/self/fd");
+        assert!(e.contains("VS0604"), "phải là VS0604: {e}");
+        assert!(e.contains("/proc"), "thông điệp phải nêu /proc: {e}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-137** — kiểm **thẳng** host thật: `/proc` không có (tham số `goc_proc` trỏ thư mục
+    /// không tồn tại) ⇒ `KhongLayDuoc`; `/proc` thật ⇒ `Co(đường dẫn trong root)`.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn doc_theo_handle_bao_dung_duong_dan_cua_proc() {
+        let d = tam("st137-doc");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let root_c = std::fs::canonicalize(&root).expect("canon root");
+        let p = tep.to_str().expect("utf8");
+        // /proc "không đọc được": trỏ vào một thư mục không tồn tại (không cần unmount procfs).
+        let khong_proc = d.join("khong-co-proc");
+        let d1 = crate::ngoai::doc_theo_handle(p, &khong_proc).expect("mở được tệp");
+        assert!(
+            matches!(&d1.duong_dan, DuongDanHandle::KhongLayDuoc(m) if m.contains("khong-co-proc")),
+            "phải báo KhongLayDuoc khi không đọc được /proc: {:?}",
+            d1.duong_dan
+        );
+        // /proc thật: đường dẫn handle phải nằm trong root và là tệp đã mở.
+        let d2 = crate::ngoai::doc_theo_handle(p, std::path::Path::new("/proc/self/fd"))
+            .expect("mở được tệp");
+        match &d2.duong_dan {
+            DuongDanHandle::Co(dd) => {
+                assert!(
+                    dd.starts_with(&root_c),
+                    "đường dẫn handle phải trong root: {}",
+                    dd.display()
+                );
+            }
+            khac => panic!("phải là Co(đường dẫn handle), gặp {khac:?}"),
+        }
+        assert_eq!(d2.noi_dung, "TRONG");
+        assert!(d2.danh_tinh.0 != 0, "phải báo danh tính (dev, ino)");
         let _ = std::fs::remove_dir_all(&d);
     }
 }

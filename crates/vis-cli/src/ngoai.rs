@@ -5,10 +5,12 @@
 //! định 10 s), cap đồng thời = 1 (VS0/VS1 chưa có job). `exit != 0` ⇒ `VS0501` kèm **stderr** của
 //! tiến trình (không trộn stdout). Mỗi lần chạy in một dòng `EXEC …` khi `--explain-perms`.
 
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use vis_diag::{COMMAND_CODES, RUNTIME_CODES};
+use vis_interp::builtin::{DocQuaHandle, DuongDanHandle};
 use vis_interp::{Abort, Trap, Value};
 use vis_syntax::Span;
 
@@ -229,6 +231,67 @@ fn tach_dong(s: &str) -> Value {
     Value::List(dong)
 }
 
+/// **ST-137 (VD-141)**: mở tệp **một lần**, lấy **đường dẫn thật của chính handle** rồi **đọc từ
+/// handle** — trả nội dung + danh tính + [`DuongDanHandle`].
+///
+/// Thứ tự có chủ ý: lấy đường dẫn handle **trước** khi đọc nội dung ⇒ `/proc` lỗi/không mount thì
+/// **từ chối ngay** (`KhongLayDuoc`), **không** kéo nội dung ngoài vùng cấp vào bộ nhớ và **không**
+/// quay về cách cũ (kiểm theo tên).
+///
+/// `goc_proc` = `/proc/self/fd` ở production; **tham số hoá** để test được nhánh "không đọc được
+/// `/proc`" mà không cần unmount procfs.
+pub(crate) fn doc_theo_handle(p: &str, goc_proc: &Path) -> Result<DocQuaHandle, String> {
+    use std::io::Read as _;
+    let loi = |e: std::io::Error| format!("không đọc được `{p}`: {e}");
+    let mut f = std::fs::File::open(p).map_err(loi)?;
+    #[cfg(unix)]
+    let danh_tinh = {
+        use std::os::unix::fs::MetadataExt;
+        let md = f.metadata().map_err(loi)?;
+        (md.dev(), md.ino())
+    };
+    #[cfg(not(unix))]
+    let danh_tinh = {
+        f.metadata().map_err(loi)?;
+        (0u64, 0u64)
+    };
+    let duong_dan = duong_dan_cua_handle(&f, goc_proc);
+    let mut noi_dung = String::new();
+    f.read_to_string(&mut noi_dung).map_err(loi)?;
+    Ok(DocQuaHandle {
+        noi_dung,
+        danh_tinh,
+        duong_dan,
+    })
+}
+
+/// Linux: `/proc/self/fd/<fd>` là đường dẫn **thật** của vật đã mở (kernel giải hết symlink).
+#[cfg(target_os = "linux")]
+fn duong_dan_cua_handle(f: &std::fs::File, goc_proc: &Path) -> DuongDanHandle {
+    use std::os::fd::AsRawFd;
+    let lien_ket = goc_proc.join(f.as_raw_fd().to_string());
+    match std::fs::read_link(&lien_ket) {
+        Ok(p) => DuongDanHandle::Co(p),
+        Err(e) => {
+            DuongDanHandle::KhongLayDuoc(format!("không đọc được `{}`: {e}", lien_ket.display()))
+        }
+    }
+}
+
+/// Nền **không có** `/proc` (macOS): std an toàn **không** có primitive fd→path —
+/// `read_link("/dev/fd/N")` trả `EINVAL`, `canonicalize("/dev/fd/N")` trả đường dẫn giả của
+/// `fdesc`, `fcntl(F_GETPATH)` cần `libc`/`unsafe` (ngoài VS2) ⇒ `KhongCo`: tầng quyền giữ bước
+/// xác nhận của ST-124 (đo **0/50 000**), ghi thành nợ ở ST-137.
+#[cfg(all(unix, not(target_os = "linux")))]
+fn duong_dan_cua_handle(_f: &std::fs::File, _goc_proc: &Path) -> DuongDanHandle {
+    DuongDanHandle::KhongCo
+}
+
+#[cfg(not(unix))]
+fn duong_dan_cua_handle(_f: &std::fs::File, _goc_proc: &Path) -> DuongDanHandle {
+    DuongDanHandle::KhongCo
+}
+
 /// **Host hệ thống tệp** (ST-33) — `std::fs` **chỉ** ở đây; `vis-interp`/`vis-vm` chỉ thấy trait.
 ///
 /// Chốt an toàn (Agent 0 duyệt): **cho phép** đường dẫn tuyệt đối và `..` (không sandbox — consent
@@ -253,6 +316,13 @@ impl vis_interp::builtin::FsHost for Runner {
         let mut s = String::new();
         f.read_to_string(&mut s).map_err(loi)?;
         Ok((s, md.dev(), md.ino()))
+    }
+
+    /// **ST-137 (VD-141)**: đọc **từ handle** + báo **đường dẫn thật của handle** để tầng quyền
+    /// quyết định trên vật đã mở (Linux: `/proc/self/fd`).
+    fn read_theo_handle(&mut self, p: &str) -> Result<DocQuaHandle, String> {
+        self.nhat_ky("read", p);
+        doc_theo_handle(p, Path::new("/proc/self/fd"))
     }
 
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {

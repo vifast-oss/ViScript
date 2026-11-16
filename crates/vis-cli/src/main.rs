@@ -86,6 +86,14 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.read_danh_tinh(p),
         }
     }
+    /// **ST-137 (VD-141)**: host **thật** báo được đường dẫn thật của handle (Linux `/proc`);
+    /// mock không có không gian tên ⇒ default của trait (`KhongCo`) ⇒ tầng quyền giữ bước ST-124.
+    fn read_theo_handle(&mut self, p: &str) -> Result<vis_interp::builtin::DocQuaHandle, String> {
+        match self {
+            HostFs::That(r) => r.read_theo_handle(p),
+            HostFs::Mock(m) => m.read_theo_handle(p),
+        }
+    }
     fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
         match self {
             HostFs::That(r) => r.write(p, s),
