@@ -98,6 +98,7 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 ### FsGuard: mức bảo đảm chống đổi tệp giữa kiểm và dùng (sau ST-124)
 
 - **Đường đọc**: mở handle trước, so (dev, ino) trước và sau canonicalize, trả nội dung đọc từ handle. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
+  - **Giới hạn tạm thời trên Linux (VD-141, tới khi ST-137 APPROVED):** bất biến trên chưa đạt trên Linux. Ca đua đổi symlink lặp đo được 798/50 000 lần lọt (macOS 0/50 000). Trên Linux, chạy với --sandbox để Landlock chặn đọc ngoài vùng được cấp ở mức kernel.
 - **Đường ghi: giới hạn đã biết.** FsGuard kiểm đường dẫn rồi mới ghi, vì mở trước để lấy handle là đã tạo hoặc cắt tệp. Trong khoảng giữa hai bước, nếu bên khác ghi được vào thư mục cha, đường dẫn có thể bị thay bằng symlink trỏ ra ngoài vùng được cấp. Sửa triệt để cần mở theo thư mục và không theo symlink (openat, O_NOFOLLOW), tức cần unsafe hoặc crate ngoài; chưa có trong VS2. Trên Linux khi chạy với --sandbox, Landlock chặn việc ghi ra ngoài vùng được cấp ở mức kernel; không có --sandbox thì giới hạn này còn nguyên.
 - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
 - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.

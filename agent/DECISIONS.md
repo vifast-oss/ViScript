@@ -967,3 +967,12 @@ Bổ sung VD-137. Agent 1 được thêm dòng chú thích vào tệp không ph�
 
 ### VD-140 · Cập nhật công cụ trên psvn cho ST-136 (2026-11-16)
 Người dùng cho phép cập nhật công cụ trên psvn. Phạm vi: (1) Rust toolchain qua rustup, ĐÚNG phiên bản đang đo trên ps (hoặc bản ghim trong rust-toolchain.toml nếu có), không lấy bản mới nhất; ghi vào script tái lập trong viscript/infra/windows/. (2) Visual Studio Build Tools chỉ cập nhật khi build lỗi do phiên bản cũ, có log lỗi trước. Không cập nhật phần mềm khác. Trình cài đòi khởi động lại máy thì dừng, BLOCKED-ENV, báo người dùng; không reboot qua SSH. Log ghi phiên bản trước và sau của mọi thứ đã cập nhật.
+
+### VD-141 · Rò rỉ TOCTOU đường đọc trên Linux là lỗi chặn VS2 (2026-11-16)
+R23 đo được rò rỉ 798/50 000 ở quyen::tests::dua_doi_symlink_lap_co_gioi_han trên Linux (macOS 0/50 000). Đây là lỗi sản phẩm trái bất biến đường đọc trong HOST-BAO-DAM.md, sửa trong VS2 bằng ST-137, không chuyển VS3. Hướng ưu tiên: kiểm đường dẫn thật của handle đã mở qua /proc/self/fd, đọc từ chính handle; /proc không dùng được thì từ chối. Không unsafe, không crate mới. Cho tới khi ST-137 APPROVED: hạng mục 4 Quyền ghi "macOS đóng, Linux chưa đóng", và HOST-BAO-DAM.md mang đoạn giới hạn tạm thời.
+
+### VD-142 · Báo cáo đã commit không sửa; đính chính ở báo cáo kế tiếp (2026-11-16)
+Báo cáo R## đã commit là bản ghi lịch sử, không sửa nội dung. Sai sót được đính chính bằng một dòng trong QUEUE ngay khi phát hiện, và báo cáo kế tiếp có mục "Đính chính R##" liệt kê từng điểm: câu sai, câu đúng, căn cứ.
+
+### VD-143 · Task chốt không lật DONE trước điều kiện (2026-11-16)
+Task chốt (báo cáo R##, chốt VS#) chỉ được lật DONE khi mọi hàng nó phụ thuộc theo thứ tự trong tệp quyết định đã DONE, APPROVED hoặc BLOCKED-ENV có văn bản. Trước khi lật, Agent 2 dán danh sách các hàng đó kèm trạng thái vào báo cáo. ST-133 (R23) lật DONE sớm được giữ, nhưng R23 chỉ là báo cáo chốt đợt 23, không chốt VS2; chốt VS2 là ST-138 (R24).
