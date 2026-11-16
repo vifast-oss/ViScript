@@ -951,3 +951,7 @@ Thành phần toolchain (rustup target, component) được cài trong runner, n
 
 ### VD-135 · Gói: ghim khi thêm và khi migration (2026-11-16)
 pkg add tên@X.Y.Z ghi vào manifest ràng buộc có toán tử tường minh "=X.Y.Z" (không ghi chuỗi trần), để không trái luật "không toán tử là ^" của VD-125. Migration lock cũ ghi "=<version>" để giữ đúng hành vi cũ. Giấy phép unicode-ident đã hợp lệ theo QD §9.3 và VD-33; không cần duyệt thêm.
+
+### VD-136 · Máy đo thật qua SSH: Linux (ps) và Windows (psvn) (2026-11-16)
+Sửa VD-134: runner Linux là máy ps truy cập qua SSH từ mps; container không bắt buộc. Tái lập bằng script trong repo (viscript/infra/<nền>/setup.md hoặc .sh) ghi rõ toolchain và target đã cài. Mỗi lần chạy, log đầu tiên ghi: tên máy, phiên bản OS, kernel/build, rustc -Vv, rustup target list --installed, hash commit đang đo. Thành phần toolchain (rustup target, component) được cài qua rustup và ghi vào script; phần mềm hệ thống (Build Tools, gói OS) không tự cài, thiếu thì BLOCKED-ENV.
+Windows (psvn) trong VS2 chỉ ĐO: cargo test --workspace, host suite và gate nếu chạy được. Không sửa code, không đổi kỳ vọng test, không thêm cfg cho Windows. Repo clone với core.autocrlf=false; target dir riêng; mã nguồn đồng bộ qua git đúng hash đang đo. Trạng thái Windows trong VS2 vẫn là "chưa có" (VD-121); R23 ghi thêm "đã đo, N lệch" kèm danh sách. Việc sửa cho Windows do Agent 0 mở task ở VS3.

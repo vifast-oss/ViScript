@@ -262,6 +262,7 @@ XEM LẠI Agent 0 · thiếu: ca âm thứ 3 ở tiến trình con chứng minh 
 | ST-133 | **R23 + soak 10 + ROADMAP chốt VS2** (VD-131) | tất cả trên | 1,5 h | **READY** | R23 có đủ số khoá, 5 câu bắt buộc, trạng thái 8 hạng mục theo 3 loại; soak 10/10; check_report PASS |
 | ST-134 | **Vá runner + ca theo nền**: rustup target trong Dockerfile (VD-134); 2 ca theo VD-132; điều tra ca (iv) 1 h | ST-131 | 2 h | **READY** | digest mới trong log; 2 ca có nhánh nền khẳng định giá trị cụ thể, diff trong báo cáo; ca (iv) có kết luận 1 trong 3 loại hoặc kế hoạch; macOS gate PASS |
 | ST-135 | **Chạy lại đầy đủ trên Linux** sau ST-134 | ST-134 | 1 h | **READY** | số đo cargo test, gate --fast, host suite trên Linux đặt cạnh macOS; còn đỏ thì liệt kê, không sửa |
+| ST-136 | **Đo trên Windows (psvn) qua SSH**, chỉ đo theo VD-136 | ST-135 | 2 h | **READY** | log môi trường đủ mục VD-136; số đo cargo test và host suite đặt cạnh macOS/Linux; mỗi ca lệch: tên ca, đầu ra mong đợi, đầu ra Windows, nhóm nguyên nhân phỏng đoán (đường dẫn / CRLF / tiến trình / quyền / khác), ghi rõ "phỏng đoán"; không có diff code ngoài infra/ và JOURNAL; thiếu Build Tools thì BLOCKED-ENV kèm hướng dẫn cho người dùng |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
