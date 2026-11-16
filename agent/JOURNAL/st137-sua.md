@@ -133,11 +133,11 @@ không "xanh vì chặn tất".
 | 1 | `bash viscript/bin/vis-host-suite` (macOS) | **54/54** | `st137-host-suite-macos.log` `a0f4f7de…` |
 | 2 | `VIS_LINUX_DIR=/root/vifast-st137 bash bin/vis-linux run bash -c 'cd viscript && bash bin/vis-host-suite'` (**ps**) | **54/54** | `st137-host-suite-ps.log` `e44e1d51…` |
 | 3 | `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` (macOS) | **`lech=0`** (`tong=100000 loi_tinh=6230 chay=93770`) | `st137-diff-100k.log` `2a660b59…` |
-| 4 | `bash viscript/bin/vis-dev gate --fast` (macOS, **worktree sạch**, commit đo `1097a81c` = cây của `e47cfb2f`) | **PASS**, L0 **1155 passed / 0 failed** | `st137-gate-fast-macos.log` `31a09787…` |
+| 4 | `bash viscript/bin/vis-dev gate --fast` (macOS, **worktree sạch** tại **commit đã push `a85193bd`**) | **PASS**, L0 **1159 passed / 0 failed**, `fmt/clippy/luật R1..R4/doc-examples` đều OK | `st137-gate-fast-macos.log` `1bd6aba0…` (chạy lại lần 2 trên HEAD đã push; lần 1 trên `1097a81c` — L0 **1155/0** — cũng **PASS**) |
 | 5 | `python3 viscript/test/report/check_report.py --all` | **PASS** (23 báo cáo, 155 hàng QUEUE) | `st137-report-check.log` `b8ef857f…` |
 | 6 | `git diff` không `unsafe`, không crate mới | **0/0** | `st137-diff-khong-unsafe.log` `1fd647e7…` |
 
-Ghi chú #4–#6: chạy trên **worktree sạch** tại commit `1097a81c` (`git worktree add --detach /tmp/vis-st137 1097a81c`; sau khi rebase lên `origin/main`, cùng cây là `e47cfb2f`)
+Ghi chú #4–#6: chạy trên **worktree sạch** (`git worktree add --detach /tmp/vis-st137 …`) tại commit `1097a81c` **và chạy lại lần 2** tại `a85193bd` (HEAD đã push, sau khi rebase lên `origin/main` có các commit `[ST-139]`) — **cả hai PASS**, để cổng đo mã **của ST-137** chứ không đo tệp chưa commit của agent khác
 để cổng chỉ đo mã **của ST-137** — cây chung lúc đo còn tệp **chưa commit của agent khác** (ST-134: `bin/vis-linux`,
 `tests/pipeline.rs`, `tests/sandbox.rs`; nhánh OS: `v2/kernel/*`), ngoài phạm vi ST-137.
 
