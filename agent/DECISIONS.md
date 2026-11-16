@@ -976,3 +976,18 @@ Báo cáo R## đã commit là bản ghi lịch sử, không sửa nội dung. Sa
 
 ### VD-143 · Task chốt không lật DONE trước điều kiện (2026-11-16)
 Task chốt (báo cáo R##, chốt VS#) chỉ được lật DONE khi mọi hàng nó phụ thuộc theo thứ tự trong tệp quyết định đã DONE, APPROVED hoặc BLOCKED-ENV có văn bản. Trước khi lật, Agent 2 dán danh sách các hàng đó kèm trạng thái vào báo cáo. ST-133 (R23) lật DONE sớm được giữ, nhưng R23 chỉ là báo cáo chốt đợt 23, không chốt VS2; chốt VS2 là ST-138 (R24).
+
+### VD-144 · Ca symlink_canonicalize_hai_phia không phụ thuộc chương trình hệ thống (2026-11-16)
+Trên ps, /usr/bin/echo là coreutils multicall, từ chối chạy khi argv[0] khác tên; ca đỏ vì môi trường. Cho phép sửa CHÍNH CA: đích của symlink là một binary do workspace build (env!("CARGO_BIN_EXE_<tên>") của một binary đã có trong workspace); không có binary phù hợp thì dùng /bin/sh -c. Symlink do ca tự tạo trong thư mục tạm. Giữ nguyên hai chiều khẳng định: grant qua symlink chạy được; grant đường dẫn thật chặn bản sao cùng tên. Không xoá ca, không ignore, không cfg-bỏ, không nới ngưỡng; chú thích ca ghi lý do và VD-144. Không áp cho ca nào khác.
+
+### VD-145 · macOS không có fd→path trong VS2 (2026-11-16)
+Trên macOS, std an toàn không lấy được đường dẫn thật của handle đã mở. VS2 giữ bước xác nhận (dev, ino) trước/sau canonicalize của ST-124 trên macOS; đo 0/50 000 nhưng KHÔNG bảo đảm theo cơ chế. Giới hạn ghi trong HOST-BAO-DAM.md. Sửa cần libc hoặc unsafe, là việc VS3, phải có VD riêng. Hạng mục 4 Quyền đóng trong VS2 với giới hạn này.
+
+### VD-146 · Windows trong VS2: chỉ đo, cổng chạy được (2026-11-16)
+Giữ VD-121, VD-136: Windows chỉ đo, không tuyên bố hỗ trợ, không sửa sản phẩm cho Windows. Cho phép ba việc hạ tầng: (1) rustup target add wasm32-unknown-unknown và x86_64-unknown-linux-gnu trên psvn, ghi vào viscript/infra/windows/, theo VD-140; (2) viscript/test/doc-examples/doc_examples.py đọc ống bằng encoding="utf-8"; (3) crates/vis-cli/tests/sandbox.rs: xử lý biến không dùng khi mọi nhánh cfg(target_os) bị loại, bằng cách dùng biến trong nhánh mặc định hoặc đặt allow(unused) đúng một biến; không đổi kỳ vọng, không xoá ca, không ignore, không cfg-bỏ ca. Các nhóm lệch /bin/*, escape \, CRLF, tiến trình là việc VS3.
+
+### VD-147 · Quy trình sau đợt 24 (2026-11-16)
+(1) Bổ sung VD-137: Agent 1 được chạy các bước kiểm tài liệu chỉ đọc (check_report.py, doc_examples.py --gate) và ghi kết quả vào báo cáo; vẫn không chạy cargo, clippy, L0, gate, soak. (2) Dòng APPROVED phải ghi người đối chiếu và căn cứ. (3) Sổ nợ duy nhất viscript/agent/SO-NO.md: một số một nghĩa, không tái dùng số; cột: số, mô tả, nguồn (task/báo cáo), trạng thái (mở / đóng ở task X / chuyển VS3 / không làm có lý do). Số trùng nghĩa cũ được tách bằng hậu tố (#109a, #109b), không đánh lại số. Báo cáo từ R25 trích nợ bằng số trong sổ này. (4) Mỗi báo cáo ghi hash commit đo cho TỪNG nền. (5) Log bằng chứng không được ghi đè log của task khác; mỗi lần chạy công cụ dài (soak, host suite) ghi tệp mang ID task đang chạy.
+
+### VD-148 · Chốt VS2 (2026-11-16)
+R24 chốt VS2 về kỹ thuật cho 7/8 hạng mục. Hạng mục 7 Đa nền tảng: Linux ở trạng thái "chờ" theo VD-134 tới khi cargo test và gate --fast PASS trên ps (ST-140); R25 ghi kết quả. Windows chỉ đo (VD-146), wasm chỉ check (VD-121). VS3 không bắt đầu tính năng cho tới khi Agent 0 ban hành tài liệu thiết kế VS3; trong lúc chờ, Agent 2 chỉ làm việc dọn dẹp, đo và nợ VS2.
