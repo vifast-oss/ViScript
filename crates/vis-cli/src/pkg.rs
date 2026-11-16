@@ -18,6 +18,10 @@ use std::process::ExitCode;
 use vis_interp::stdlib::json;
 use vis_interp::value::Value;
 
+/// **ST-127 (VD-125)**: semver tối giản (`Version`/`VersionReq`) — resolver dùng ở ST-128, lock ghi
+/// `version_req` ở ST-129. Không crate mới.
+pub mod semver;
+
 /// Chạy `vis pkg …`; lỗi ⇒ `vis pkg: …` + exit **2** (mẫu `vis cache`, không mã mới).
 pub fn run(args: &[String]) -> ExitCode {
     match chay(args) {
@@ -287,7 +291,10 @@ fn chon_cao_nhat(reg: &Path, ten: &str) -> Result<String, String> {
         let Some(v) = it.file_name().to_str().map(str::to_string) else {
             continue;
         };
-        if so_phien_ban(&v).is_err() {
+        // **ST-127 (VD-125)**: version trong registry phải đúng `MAJOR.MINOR.PATCH` số nguyên
+        // (không prerelease/build) — `semver::Version` là cổng kiểm; so **thứ tự** vẫn dùng
+        // `cmp_phien_ban` (với 3 thành phần hợp lệ, hai cách cho cùng kết quả).
+        if semver::Version::parse(&v).is_err() {
             continue;
         }
         if !reg.join(ten).join(&v).join("manifest.json").is_file() {

@@ -34,6 +34,16 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-127 — semver `Version`/`VersionReq`, 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Kiểu + so khớp** | `crates/vis-cli/src/pkg/semver.rs` (622 dòng): `Version` (đúng 3 thành phần số), `VersionReq` (7 toán tử, `,` = AND, không toán tử ⇒ `^`), từ chối prerelease/build + `||`/`*`/`!=`/khoảng `a - b`; luật `^0.x` theo Cargo phụ thuộc **số thành phần đã ghi**. |
+| 1 | **Ca** | 19 test / **114 `assert`** + 27 ca vòng `for` (≥40 ca theo QUEUE): mọi toán tử, `^0`/`^0.0`/`^0.0.3`, `~1`/`~1.2`, AND 2–3 khoang, chuẩn hoá `Display`, bình đẳng ngữ nghĩa. |
+| 2 | **Đo hành vi cũ** | `vis pkg add "http@^1.0"` ⇒ exit 2 `version '^1.0' không phải số` (`st127-truoc-range.log`) — khoảng trống mà ST-128/129 lấp. |
+| 3 | **Đo** | `pkg::semver` 19 passed; `--test pkg` 24 passed (không hồi quy); clippy `-D warnings` OK; `cargo fmt --check` OK; số khoá không đổi. |
+| 4 | **Nợ** | **#107** (`allow(dead_code)` tạm tới ST-129), **#108** (quy ước "điền 0" cho so sánh thiếu thành phần — của Agent 2, không phải VD-125). |
+
 ## ST-126 — đóng băng API + khoá cache mang bảng thẻ, 2026-11-16
 
 | # | Việc | Kết quả |
