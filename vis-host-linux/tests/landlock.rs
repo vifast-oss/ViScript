@@ -314,6 +314,107 @@ fn con_read_dir_ngoai_pham_vi_bi_kernel_chan() {
     let _ = fs::remove_dir_all(&ngoai);
 }
 
+/// **ST-150 — nợ #133 (VD-120/VD-132/VD-138)**: ca âm **GHI** ở tiến trình con trên thư mục
+/// **CHỈ-ĐỌC**.
+///
+/// ST-132b đã khoá đường **đọc** (`read_dir`) ở tiến trình con; nợ #133 ghi rõ chưa có ca **ghi** vào
+/// thư mục chỉ-đọc. Ca này bù đúng chỗ đó, đủ **bốn** phần:
+/// 1. **đỏ-trước** — chưa áp ruleset, cùng helper ghi được tệp trong `trong`;
+/// 2. sau ruleset, cùng helper ghi vào `trong` ⇒ `EACCES` (`exit 7` + `Permission denied`) và tệp
+///    **không** được tạo;
+/// 3. **đối chứng dương cùng ca** — cùng helper, cùng domain ghi vào `trong-ghi` (được cấp
+///    `ghi: true`) ⇒ `exit 0` + nội dung đúng, nên không phải "xanh vì chặn tất";
+/// 4. **cả hai luật nằm trong MỘT ruleset** ⇒ luật ghi phân biệt đúng **từng** thư mục.
+///
+/// Helper gọi thẳng `std::fs::write` — **không** đi qua `FsGuard` nào ⇒ `EACCES` là **kernel**
+/// (Landlock) chặn, đúng VD-120. Chạy bằng `root` trên `ps` nên quyền POSIX (DAC) không giải thích
+/// được lỗi này.
+#[test]
+fn con_ghi_vao_thu_muc_chi_doc_bi_kernel_chan() {
+    let trong = tam("con6-trong");
+    let trong_ghi = tam("con6-trong-ghi");
+    let helper = dung_helper(&trong);
+    let tf = trong.join("x.txt");
+
+    // (1) ĐỎ-TRƯỚC: **chưa** áp ruleset ⇒ cùng helper ghi được vào `trong`. Dòng in này là bằng
+    // chứng "đỏ" (không sandbox thì ghi được), nên nó phải nằm trong log của lần đo `--nocapture`.
+    let truoc = chay_con(&helper, &["ghi", tf.to_str().unwrap(), "truoc ruleset\n"]);
+    println!(
+        "ĐỎ-TRƯỚC (không áp ruleset): exit={:?} nội dung={:?}",
+        truoc.status.code(),
+        doc(&tf).map(|s| s.trim().to_string()).unwrap_or_default()
+    );
+    assert_eq!(
+        truoc.status.code(),
+        Some(0),
+        "chưa áp sandbox phải ghi được vào thư mục: {truoc:?}"
+    );
+    assert_eq!(
+        doc(&tf).expect("đỏ-trước: tệp phải có nội dung"),
+        "truoc ruleset\n"
+    );
+    // Dọn tệp của lần đỏ-trước: để lại thì khẳng định "tệp KHÔNG được tạo" ở (2) vô nghĩa.
+    fs::remove_file(&tf).expect("dọn tệp của lần đỏ-trước");
+    assert!(
+        !tf.exists(),
+        "tệp đỏ-trước phải đã được dọn trước khi áp ruleset"
+    );
+
+    // (4) **MỘT** ruleset, **HAI** luật: `trong` chỉ-đọc, `trong-ghi` được ghi.
+    let kq = ap(&[
+        ChoPhep {
+            duong: trong.clone(),
+            ghi: false,
+            la_tep: false,
+        },
+        ChoPhep {
+            duong: trong_ghi.clone(),
+            ghi: true,
+            la_tep: false,
+        },
+    ]);
+    assert_eq!(kq.so_luat, 2, "ruleset phải có đúng hai luật: {kq:?}");
+
+    // (2) Tiến trình con ghi vào thư mục CHỈ-ĐỌC ⇒ kernel trả `EACCES` (helper gọi thẳng `std::fs`).
+    let out = chay_con(&helper, &["ghi", tf.to_str().unwrap(), "sau ruleset\n"]);
+    let loi = String::from_utf8_lossy(&out.stderr).to_string();
+    println!(
+        "SAU RULESET (trong, ghi=false): exit={:?} stderr={:?}",
+        out.status.code(),
+        loi.trim()
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(7),
+        "con ghi vào thư mục chỉ-đọc phải bị từ chối: {out:?}"
+    );
+    assert!(
+        loi.contains("Permission denied"),
+        "kernel phải trả Permission denied ở ghi: {loi}"
+    );
+    assert!(!tf.exists(), "tệp trong thư mục chỉ-đọc KHÔNG được tạo");
+
+    // (3) Đối chứng dương **trong cùng ca**: cùng helper, cùng domain, ghi vào `trong-ghi` chạy được.
+    let dich = trong_ghi.join("x.txt");
+    let duong = chay_con(&helper, &["ghi", dich.to_str().unwrap(), "duoc ghi\n"]);
+    println!(
+        "ĐỐI CHỨNG DƯƠNG (trong-ghi, ghi=true): exit={:?}",
+        duong.status.code()
+    );
+    assert_eq!(
+        duong.status.code(),
+        Some(0),
+        "con ghi trong thư mục được phép phải OK: {duong:?}"
+    );
+    assert_eq!(
+        doc(&dich).expect("đối chứng dương: tệp phải được tạo"),
+        "duoc ghi\n"
+    );
+
+    let _ = fs::remove_dir_all(&trong);
+    let _ = fs::remove_dir_all(&trong_ghi);
+}
+
 /// Không có luật nào ⇒ **mọi** truy cập hệ tệp bị chặn (deny-by-default của Landlock).
 #[test]
 fn khong_co_luat_nao_thi_chan_het() {
