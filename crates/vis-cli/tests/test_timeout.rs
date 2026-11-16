@@ -118,6 +118,42 @@ fn timeout_sai_exit2() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
+/// Ca **in nhiều** (~200 KB > buffer pipe ~64 KiB) rồi kết thúc ngay.
+const IN_NHIEU_OK: &str = "test fn in_nhieu():\n    var i = 0\n    while i < 20000:\n        print(\"0123456789\")\n        i = i + 1\n    assert 1 == 1\n";
+const IN_NHIEU_SAI: &str = "test fn in_nhieu_sai():\n    var i = 0\n    while i < 20000:\n        print(\"0123456789\")\n        i = i + 1\n    assert 1 == 2\n";
+
+/// (f) nợ #89 (issue #23): con in quá buffer pipe **không** được bị báo “quá hạn” oan —
+/// cha phải đọc stdout/stderr **trong lúc** chờ, không đợi con thoát rồi mới đọc.
+#[test]
+fn in_nhieu_khong_bi_qua_han_oan() {
+    let _k = kho();
+    let d = tam("in-nhieu");
+    ghi(&d, "a.vis", IN_NHIEU_OK);
+    let t0 = Instant::now();
+    let (c, o, e) = vis(&["test", "--timeout", "3000", d.to_str().unwrap()]);
+    let dt = t0.elapsed();
+    assert_eq!(o, "TAP version 13\n1..1\nok 1 - in_nhieu\n", "stderr: {e}");
+    assert_eq!(c, 0, "{e}");
+    assert!(
+        dt.as_millis() < 3_000,
+        "tổng {dt:?} ≥ hạn 3 s ⇒ vẫn nghẽn pipe"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (g) in nhiều **rồi fail** ⇒ `not ok` với lỗi assert thật, **không** phải “quá hạn”.
+#[test]
+fn in_nhieu_roi_fail_bao_dung_loi() {
+    let _k = kho();
+    let d = tam("in-nhieu-sai");
+    ghi(&d, "a.vis", IN_NHIEU_SAI);
+    let (c, o, e) = vis(&["test", "--timeout", "3000", d.to_str().unwrap()]);
+    assert_eq!(c, 1, "{e}");
+    assert!(o.contains("not ok 1 - in_nhieu_sai"), "{o}");
+    assert!(!o.contains("quá hạn"), "báo quá hạn oan: {o}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 /// Đếm tiến trình con **còn sống** của chính test runner (macOS/Linux `ps`).
 fn con_cua_minh() -> Vec<String> {
     let pid = std::process::id().to_string();

@@ -167,8 +167,30 @@ fn chan_doan(stderr: &str) -> Option<(String, u32, u32, String)> {
     None
 }
 
+/// Sau khi con đã thoát/bị kill, chờ hai luồng đọc ống **tối đa** chừng này. Cháu (nợ #88) có thể
+/// còn giữ đầu ghi ⇒ không bao giờ có EOF; hết hạn thì bỏ phần output chưa về, **không** chờ.
+const HAN_GOM_OUTPUT: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// Một luồng đọc `ong` tới EOF rồi gửi `(la_stderr, byte)` về kênh. Luồng chạy **song song** với
+/// vòng poll ⇒ con in quá buffer pipe (~64 KiB) không bị chặn ở `write` (nợ #89, issue #23).
+fn doc_nen(
+    ong: Option<impl std::io::Read + Send + 'static>,
+    la_stderr: bool,
+    tx: std::sync::mpsc::Sender<(bool, Vec<u8>)>,
+) {
+    let Some(mut ong) = ong else { return };
+    std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = ong.read_to_end(&mut b);
+        let _ = tx.send((la_stderr, b));
+    });
+}
+
 /// **ST-105**: chạy tiến trình con với hạn `ms`; quá hạn ⇒ `kill` + `wait`, trả `(mã, stdout, stderr,
 /// quá_hạn)`. Poll `try_wait` mỗi 10 ms (không crate mới, không `unsafe`).
+///
+/// stdout **và** stderr được đọc bởi hai luồng nền **trong lúc** poll (chỉ một ống đầy là đủ
+/// deadlock); gom kết quả bằng `recv_timeout` có hạn [`HAN_GOM_OUTPUT`] ⇒ không bao giờ treo.
 fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, bool) {
     c.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -176,34 +198,39 @@ fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, bool) {
         Ok(x) => x,
         Err(e) => return (-1, String::new(), format!("không chạy được: {e}"), false),
     };
+    let (tx, rx) = std::sync::mpsc::channel();
+    doc_nen(child.stdout.take(), false, tx.clone());
+    doc_nen(child.stderr.take(), true, tx);
     let bat = std::time::Instant::now();
-    loop {
+    let (status, qua_han) = loop {
         match child.try_wait() {
-            Ok(Some(_)) => {
-                let o = child.wait_with_output().expect("đọc output con");
-                return (
-                    o.status.code().unwrap_or(-1),
-                    String::from_utf8_lossy(&o.stdout).to_string(),
-                    String::from_utf8_lossy(&o.stderr).to_string(),
-                    false,
-                );
-            }
-            Ok(None) => {
-                if bat.elapsed() >= std::time::Duration::from_millis(ms) {
-                    let _ = child.kill();
-                    let o = child.wait_with_output().expect("đọc output con sau kill");
-                    return (
-                        o.status.code().unwrap_or(-1),
-                        String::from_utf8_lossy(&o.stdout).to_string(),
-                        String::from_utf8_lossy(&o.stderr).to_string(),
-                        true,
-                    );
+            Ok(Some(s)) => break (s, false),
+            Ok(None) if bat.elapsed() >= std::time::Duration::from_millis(ms) => {
+                let _ = child.kill();
+                match child.wait() {
+                    Ok(s) => break (s, true),
+                    Err(e) => return (-1, String::new(), format!("không chờ được con: {e}"), true),
                 }
-                std::thread::sleep(std::time::Duration::from_millis(10));
             }
+            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(10)),
             Err(e) => return (-1, String::new(), format!("không chờ được con: {e}"), false),
         }
+    };
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let cuoi = std::time::Instant::now() + HAN_GOM_OUTPUT;
+    for _ in 0..2 {
+        match rx.recv_timeout(cuoi.saturating_duration_since(std::time::Instant::now())) {
+            Ok((false, b)) => out = b,
+            Ok((true, b)) => err = b,
+            Err(_) => break,
+        }
     }
+    (
+        status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&out).to_string(),
+        String::from_utf8_lossy(&err).to_string(),
+        qua_han,
+    )
 }
 
 pub fn run(args: &[String]) -> ExitCode {
@@ -490,5 +517,49 @@ mod tests {
             _ => None,
         });
         assert_eq!(m.as_deref(), Some(goc));
+    }
+
+    /// `sh -c <script>` — `test fn` ViScript không in được ra stderr, cũng không chạy được lệnh
+    /// ngoài, nên hai ca dưới gọi thẳng `chay_co_han` với một con `sh`.
+    ///
+    /// **ST-139 (Agent 0)**: chỉ Unix — `/bin/sh` không có trên Windows. `test_timeout.rs` cũng đã
+    /// dùng `ps` (Unix) từ ST-105, nhưng ca **unit** này chạy trong `cargo test --workspace` của
+    /// cổng trên mọi nền, nên phải tự chặn để `gate --fast` không đỏ trên Windows (ST-136).
+    #[cfg(unix)]
+    fn sh(script: &str) -> Command {
+        let mut c = Command::new("/bin/sh");
+        c.arg("-c").arg(script);
+        c
+    }
+
+    /// Nợ #89 (issue #23): con in ~200 KB ra **stderr** (> buffer pipe ~64 KiB) rồi thoát ngay ⇒
+    /// không được báo quá hạn oan, stderr phải về **đủ**.
+    #[cfg(unix)]
+    #[test]
+    fn stderr_nhieu_khong_bi_qua_han_oan() {
+        let t0 = std::time::Instant::now();
+        let (ma, _out, err, qua_han) = chay_co_han(
+            &mut sh("i=0; while [ $i -lt 20000 ]; do echo 0123456789 >&2; i=$((i+1)); done"),
+            3_000,
+        );
+        assert!(!qua_han, "báo quá hạn oan sau {:?}", t0.elapsed());
+        assert_eq!(ma, 0);
+        assert_eq!(err.len(), 20_000 * 11, "stderr phải về đủ");
+        assert!(t0.elapsed().as_millis() < 3_000);
+    }
+
+    /// Quá hạn **không bao giờ treo**: con bị kill nhưng **cháu** (`sleep 5`, nợ #88 chưa kill
+    /// cây cháu) còn giữ đầu ghi stdout/stderr ⇒ vẫn phải trả `quá hạn` trong < 3 s.
+    #[cfg(unix)]
+    #[test]
+    fn chau_giu_ong_khong_lam_treo() {
+        let t0 = std::time::Instant::now();
+        let (_ma, _out, _err, qua_han) = chay_co_han(&mut sh("sleep 5 & sleep 10"), 300);
+        let dt = t0.elapsed();
+        assert!(qua_han);
+        assert!(
+            dt.as_millis() < 3_000,
+            "{dt:?} ≥ 3 s ⇒ đang chờ cháu đóng ống"
+        );
     }
 }
