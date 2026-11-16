@@ -34,6 +34,16 @@ Việc dở        : —
 
 --- LỊCH SỬ (không cập nhật) ---
 
+## ST-130 — siết caps mặc định khi dùng gói, 2026-11-16
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 0 | **Luật mới** (VD-124) | `co_pkg = loaded.files.iter().any(rel.starts_with("pkg/"))`; `siet = --strict-caps \|\| (co_pkg && !--no-strict-caps)`. Cờ `--no-strict-caps` ⇒ chạy + **đúng 1 dòng** cảnh báo ra **stderr**; hai cờ mâu thuẫn ⇒ exit 2. Thực hiện: **37 dòng thêm / 9 bớt** (dưới 150 ⇒ làm, không cần kế hoạch). |
+| 1 | **Lỗi chặn tính năng (sửa 9 dòng)** | `use pkg.*` làm tệp rơi `NamePolicy::Strict`; `lower_var_use` phát `VS0301` cho cả tên **module std** ⇒ `use pkg.*` + `use std.fs` **không biên dịch được** (đo: `VS0301 tên không tồn tại: fs`). Sửa: tên trong `opts.std_mods` **không** phát `VS0301`. |
+| 2 | **Ca** | `siet_caps_pkg` **7 ca** × interp/`--vm`: pkg+thiếu cap ⇒ `VS0604` exit 2; `--no-strict-caps` ⇒ chạy + 1 cảnh báo; **không pkg ⇒ cũ, 0 cảnh báo**; `--strict-caps` tường minh; pkg-only + cờ; khai đủ `cap[Dir]`; hai cờ mâu thuẫn. |
+| 3 | **Đo** | sem **447/22** + `vis test` **447 ok** / `--vm` **447 ok** (không đổi); differential **100k lech=0** (`lech=0 giay=161.2`); `strict_caps` 7, `cap_proc` 6, `pkg` 24, `cache_khong_che` 5 (26 s); **`cargo test --workspace` 1153 passed / 0 failed**; **`gate --fast` PASS** (log `st130-gate-fast.log`, `2d84b18d…`). |
+| 4 | **Nợ** | **#114** (Strict bật cho mọi tệp có `use` — chính sách nên xét lại), **#115** (`vis test`/host suite chưa áp strict mặc định cho pkg). |
+
 ## ST-129 — pkg CLI dùng resolver + lock định dạng 2, 2026-11-16
 
 | # | Việc | Kết quả |

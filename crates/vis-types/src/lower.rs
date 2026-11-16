@@ -668,7 +668,15 @@ impl<'a> Lowerer<'a> {
                 span,
             },
             None => {
-                if self.opts.names == NamePolicy::Strict && !self.suppress_name_diag {
+                // **ST-130 (VD-124)**: tên **module `std`** đã `use` (`fs`, `net`, …) không phải biến —
+                // nó là **tiền tố** của lời gọi `fs.exists(…)` nên phải **im lặng** cả dưới Strict.
+                // Trước ST-130, tệp vừa `use pkg.*` (⇒ Strict) vừa `use std.fs` bị `VS0301` ở `fs`,
+                // tức chương trình dùng gói **không thể** chạm fs/net ⇒ không kiểm được VD-124.
+                let la_module_std = self.opts.std_mods.iter().any(|m| m == name);
+                if self.opts.names == NamePolicy::Strict
+                    && !self.suppress_name_diag
+                    && !la_module_std
+                {
                     // ST-25: nếu tên **có** ở module khác thì nêu tên module và lý do bị chặn.
                     let msg = match self.module_cua_ten(name) {
                         Some(m) => format!(

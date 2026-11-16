@@ -169,6 +169,9 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut explain_perms = false;
     // **ST-81 (VD-108)**: mọi truy cập fs/net phải nằm trong `cap` đã khai (mặc định: không siết).
     let mut strict_caps = false;
+    // **ST-130 (VD-124)**: thoát **tường minh** khỏi chế độ siết mặc định khi chương trình dùng gói
+    // (`use pkg.*`) — khi đó in **một** dòng cảnh báo ra stderr.
+    let mut no_strict_caps = false;
     // `vis run --no-extern`: tắt chương trình ngoài (lệnh lạ ⇒ `VS0601`).
     let mut co_no_extern = false;
     let mut tep: Option<String> = None;
@@ -187,6 +190,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--dump-deps" => dump_deps = true,
             "--dry" => dry = true,
             "--strict-caps" => strict_caps = true,
+            "--no-strict-caps" => no_strict_caps = true,
             "--sandbox-check" => sandbox_check = true,
             "--sandbox" => sandbox = true,
             "--grant" => {
@@ -234,10 +238,15 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     }
     let Some(tep) = tep else {
         eprintln!(
-            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--grant tên=path] [--no-cache] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết)"
+            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr"
         );
         return ExitCode::from(2);
     };
+    // **ST-130 (VD-124)**: hai cờ mâu thuẫn nhau ⇒ lỗi rõ, không đoán ý người dùng.
+    if strict_caps && no_strict_caps {
+        eprintln!("vis run: `--strict-caps` và `--no-strict-caps` mâu thuẫn nhau");
+        return ExitCode::from(2);
+    }
     // ST-18: `.vish` chạy được (parse → `cmd_lower` → tyck → interp), không còn `Bail out!`.
     let fs_mock: Option<fsmock::FsMock> = match &mock_tep {
         None => None,
@@ -278,15 +287,10 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         return run_dry(&tep, &text, che_do);
     }
     // **ST-72b (VD-103/VD-106)**: quyền theo `cap` của `main` + `--grant`.
+    // **ST-130 (VD-124)**: khối `quyen::tao` **dời xuống sau** `modules::load_with` — chế độ siết mặc
+    // định phụ thuộc **đồ thị import** (có `pkg.*` hay không).
     let ds_cap = quyen::ds_cap(&text, che_do);
     let goc = std::env::current_dir().unwrap_or_default();
-    let quyen = match quyen::tao(&ds_cap, &grants, &goc, strict_caps) {
-        Ok(q) => q,
-        Err(e) => {
-            eprintln!("vis run: {e}");
-            return ExitCode::from(2);
-        }
-    };
     if tap {
         eprintln!("TAP version 13");
         eprintln!("1..1");
@@ -323,6 +327,22 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         }
         return ExitCode::from(2);
     }
+    // **ST-130 (VD-124)**: chương trình **dùng gói** (`use pkg.*`) ⇒ strict-caps **mặc định** bật;
+    // thoát bằng `--no-strict-caps` (một dòng cảnh báo ra **stderr**, không ra stdout).
+    let co_pkg = loaded.files.iter().any(|f| f.rel.starts_with("pkg/"));
+    let siet = strict_caps || (co_pkg && !no_strict_caps);
+    if co_pkg && no_strict_caps && !strict_caps {
+        eprintln!(
+            "vis run: cảnh báo: chương trình dùng gói nhưng chạy với `--no-strict-caps` — KHÔNG siết quyền (VD-124)"
+        );
+    }
+    let quyen = match quyen::tao(&ds_cap, &grants, &goc, siet) {
+        Ok(q) => q,
+        Err(e) => {
+            eprintln!("vis run: {e}");
+            return ExitCode::from(2);
+        }
+    };
     let mut h = vis_types::HirOutput {
         hir: loaded.hir,
         diagnostics: Vec::new(),
