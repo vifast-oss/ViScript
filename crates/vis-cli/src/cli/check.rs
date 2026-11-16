@@ -58,6 +58,13 @@ fn check_one_co(path: &str, cho_ngoai: bool) -> Result<(), ChanDoanCheck> {
     check_mode(path, cho_ngoai, true)
 }
 
+/// **ST-153 (VD-152)**: tên gốc của `path`, tách theo **cả** `/` (Unix) và `\` (Windows).
+/// Dùng để so với `rel` của chẩn đoán: sai ở đây thì trên Windows `phu` luôn khác rỗng và bộ lọc
+/// `--syntax` (QD §7.4) **giữ** chẩn đoán kiểu. Không đổi hành vi Unix.
+fn ten_goc(path: &str) -> &str {
+    path.rsplit(['/', '\\']).next().unwrap_or(path)
+}
+
 /// `kiem_kieu = false` ⇒ `--syntax`: chỉ cú pháp/hạ (bỏ `tyck`).
 fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDoanCheck> {
     if let Err(e) = std::fs::read_to_string(path) {
@@ -83,7 +90,7 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         return Ok(());
     };
     let ma = d.code.short;
-    let chinh = path.rsplit('/').next().unwrap_or(path);
+    let chinh = ten_goc(path);
     let phu = if rel == chinh {
         String::new()
     } else {
@@ -331,5 +338,27 @@ pub(crate) fn run_check(args: &[String]) -> ExitCode {
         ExitCode::from(1)
     } else {
         ExitCode::SUCCESS
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// **ST-153 (VD-152)**: đường dẫn Windows dùng `\` ⇒ tên gốc **không** còn dấu phân cách
+    /// (trước ST-153 hàm này trả nguyên cả đường dẫn).
+    #[test]
+    fn ten_goc_windows() {
+        assert_eq!(super::ten_goc(r"C:\x\a.vis"), "a.vis");
+    }
+
+    /// **ST-153 (VD-152)**: đường dẫn Unix giữ **nguyên** hành vi cũ (`rsplit('/')`).
+    #[test]
+    fn ten_goc_unix() {
+        assert_eq!(super::ten_goc("d/a.vis"), "a.vis");
+    }
+
+    /// **ST-153 (VD-152)**: tên **không** có dấu phân cách ⇒ nguyên vẹn.
+    #[test]
+    fn ten_goc_khong_co_dau() {
+        assert_eq!(super::ten_goc("a.vis"), "a.vis");
     }
 }
