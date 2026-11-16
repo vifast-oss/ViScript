@@ -94,3 +94,41 @@ cache **520×4 0 lệch**, host **54/54 ×2**, soak **10/10 (1297 s)**, fuzz **0
 **Số khoá R23**: 1153 test (129 suite) macOS · 1147/6 Linux · sem 447/22 · `vis test` 447 ok · `--vm` 447 ok + 0 SKIP ·
 differential 100k `lech=0` (3 lần: 174/162/181 s) · cache 520×4 `lech=0` · host 54/54 hai nền · targets 18/18 `check` ·
 R1 max **1498** · FUNCS **52** · all_codes **33** · VBC1 **53** · allowlist **6** · soak **10/10 = 1447 s**.
+
+### Trạng thái cuối **sau đợt 25** — R26, `head` `b1c07802` (2026-11-17)
+
+> Khối này **thêm** sau khối R23; số cũ **không xoá** (VD-142). Nguồn: `reports/R26-viscript.md`.
+
+**VS2 đóng về kỹ thuật 8/8 hạng mục** (**VD-151**, 2026-11-17). Từ đây **không** mở task VS2 mới trừ: nợ đã có
+số trong [`SO-NO.md`](SO-NO.md), đính chính tài liệu, và báo cáo vòng. **Không** bắt đầu tính năng **VS3** cho tới
+khi Agent 0 ban hành **tài liệu thiết kế VS3** (VD-148 giữ nguyên; hiến chương VS3 = `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5).
+
+| # | Hạng mục | Trạng thái (3 loại của VD-131) | Ghi chú |
+|---|---|---|---|
+| 1 | Async | **chưa có trong VS2** → VS3 | tuần tự một luồng, run-to-completion (VD-123) |
+| 2 | Kênh | **chưa có trong VS2** → VS3 | `chan(0)` bị từ chối `VS0505`; rendezvous/select/timeout = VS3 |
+| 3 | Net/HTTP | **chưa có trong VS2** → VS3 | HTTP/1.1 loopback; không TLS/HTTP2/keep-alive (VD-122) |
+| 4 | Quyền | **ĐÓNG** (macOS giới hạn VD-145) | Linux Landlock thật **14/14** ca (thêm ca âm **GHI** ở ST-150) + TOCTOU **0/50 000**; macOS bảo đảm theo **đo** |
+| 5 | LSP | **ĐÓNG** | publish chỉ tài liệu đang mở (VD-126) |
+| 6 | Gói | **ĐÓNG** (phạm vi VS2) | semver + resolver + lock định dạng 2; mạng/chữ ký = VS3 |
+| 7 | Đa nền tảng | **ĐÓNG theo nghĩa kỹ thuật** | Linux **"chạy thật"** (`ps` gate PASS L0 **1169/0**) · Windows **"chỉ đo"** · wasm **"chỉ check"** |
+| 8 | Hợp chuẩn host | **ĐÓNG** | 54/54 trên **macOS và Linux**; `vis-host-linux` **14/14**; Windows **39/54** (chỉ đo) |
+
+**Số khoá sau đợt 25** (R26 §3; log trong `JOURNAL/`, hash đo từng nền theo VD-147(4)):
+
+```
+macOS (@ b1c07802) : gate --fast PASS · L0 **1175/0** (**130** suite; = 1166 + 9 ca ST-151) · 10/10 bước
+        vis test 447/447 ×2 (0 SKIP) · diff 100k lech=0 · cache 520×4 0 lệch · host 54/54 · targets 18/18
+        soak 10/10 = 1352 s (**đo ở HEAD cũ** 3079dede — không chạy lại) · R1 1498 · FUNCS 52 · all_codes 33 · VBC1 53
+Linux ps (@ 32b79d4a/4a805115): gate --fast PASS · L0 **1169/0** (129 suite) — **số TRƯỚC 9 ca ST-151, CHƯA đo lại**
+        · cargo test 1162/0 (ST-140) · `vis-host-linux` **14/14** (@ 9eeb936b) · vis test 447/447 ×2 · diff lech=0
+        · cache 0 lệch · host 54/54 · targets 18/18 · soak 10/10 = 250 s (@ 2866f8c2) · TOCTOU 0/50 000
+Windows psvn (@ 3dc13342; cổng @ 4a805115) — **CHỈ ĐO, "chưa hỗ trợ"**:
+        self-test **12/12** (7/12 → 11/12 → 12/12) · cổng đi **qua 9/10 bước**, dừng ở **L0** (fail-fast `cap_proc`
+        **150/4** vì `/bin/echo` — VS3) · cargo test **1053/100** · host **39/54** · targets **18/18**
+Sổ nợ : **144 mục** = **91 mở** / **31 đóng** / **20 VS3** / 1 không làm / 1 điều hướng (`SO-NO.md`; §8)
+```
+
+**Đợt 25 đã đóng**: **6/6 hàng** (ST-147 · ST-148 · ST-149 · ST-150 · ST-151 · ST-153) — nợ **#136**, **#133**,
+**#135** và **ca 7 self-test của ST-147** (không cấp số mới); thêm số **#142/#143** (VD-149).
+**Còn lại**: nợ trong sổ (**91 mở** / **20 VS3**) và **Windows** (hỗ trợ thật = **VS3**).

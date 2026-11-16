@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 25 — **ST-151 DONE**: **nợ #135** — danh sách sync của `bin/vis-linux` thành **MỘT nguồn**: `SYNC_DIRS="viscript docs/viscript vis-host-linux vis-host-wasm .git"` + `SYNC_FILES="AGENTS.md vis-dev vis"` ở đầu tệp (sau `set -u`), `sync_tree()` **chỉ** đọc hai biến (không đổi `--delete`/exclude/thứ tự/hành vi: 8 lời gọi `rsync` bản cũ = bản mới, `AGENTS.md` vẫn best-effort, hai shim vẫn `die 3`), thêm **`--check-sync`** (in 8/8 mục `có|thiếu`, exit **0** đủ · **2** thiếu, **không** ssh/rsync) + **9 ca** `crates/vis-cli/tests/sync_list.rs` (bỏ một mục khỏi biến ⇒ **4 ca đỏ**; rải lại đường dẫn vào `sync_tree()` ⇒ **1 ca đỏ**; đỏ-trước/xanh-sau `JOURNAL/st151-do-truoc.log`); macOS gate lần 1 **ĐỎ** ở L0 vì ca **THỜI GIAN** `lsp::module::tests::hieu_nang_nap_module_5_tep` (116 ms ≥ 100 ms dưới tải, 12 core) ⇒ **T-INFRA** (chạy riêng **5/5 xanh**, D2-07), lần 2 **PASS** `[exit=0]` **10/10** bước L0 **1175/0** (**130** suite) · task kế: **ST-152**)
+# STATE — ViScript (vòng 26 — **R26 chốt đợt 25** tại `head` `b1c07802`: **VS2 đóng kỹ thuật 8/8** (**VD-151**); đợt 25 xong **6/6 hàng** — ST-147 **DONE theo phạm vi VD-150** (`fd16d7d1`; ca 7 đóng ở ST-153) · ST-148 (`cfce6b86`) · ST-149 (`6ce972ef`) · ST-150 (`9eeb936b`) · ST-151 (`9bd7d022`) · ST-153 (`4a805115`); **macOS** gate `--fast` **PASS** `[exit=0]` **10/10** bước, L0 **1175/0** (**130** suite), report-check PASS (**26** báo cáo, **171** hàng QUEUE); **`ps`** L0 **1169/0** (129 suite) — **số TRƯỚC 9 ca ST-151, CHƯA đo lại**; **Windows `psvn` CHỈ ĐO**: self-test **12/12**, cổng **đi qua 9/10 bước**, dừng ở **L0** (fail-fast `cap_proc` **150/4** vì `/bin/echo` — VS3), cargo test 1053/100, host 39/54, targets 18/18; sổ nợ **144 mục** (**91 mở** / **31 đóng** / **20 VS3** / 1 không làm / 1 điều hướng); **task kế: KHÔNG** — chờ Agent 0 ban hành **tài liệu thiết kế VS3**, không mở task VS2 mới ngoài nợ đã có số/đính chính/báo cáo vòng)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-151** (nợ #135 — danh sách sync `bin/vis-linux` thành **một nguồn** + `--check-sync` + 9 ca khoá, 2026-11-17).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-152** (**R26** — chốt đợt 25: VS2 đóng kỹ thuật 8/8, nợ 144 mục (91 mở/20 VS3), 26 báo cáo, 171 hàng QUEUE, 2026-11-17).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -25,25 +25,21 @@ Nguồn (ST-149): `QUEUE.md` hàng ST-149/ST-147 · `agent/SO-NO.md` #136 · `cr
 Nguồn (ST-150): `QUEUE.md` hàng ST-150 · `agent/SO-NO.md` #133 · `vis-host-linux/tests/landlock.rs` (`dung_helper`, `chay_con`, `ap`, `tam`) · `vis-host-linux/src/sandbox.rs` (`quyen`: `ghi:false ⇒ chi_doc` = `from_read` − `Execute`; `ghi:true ⇒ toan_bo`) · `DECISIONS.md` VD-120/VD-132/VD-136/VD-138 · `JOURNAL/st132b-read-dir.md` (khuôn) · `JOURNAL/st150-landlock-ps.log` · `JOURNAL/st150-gate-macos.log` · `JOURNAL/2026-11-17.md` §ST-150.
 Nguồn (ST-153): `QUEUE.md` hàng ST-153 · `DECISIONS.md` **VD-152** (và VD-150) · `JOURNAL/st147-chan-doan-psvn.log` (chẩn đoán gốc ca 7) · `crates/vis-cli/src/cli/check.rs` (`ten_goc`, `check_mode` dòng `let chinh = ten_goc(path);`) · `JOURNAL/st153-gate-macos.log` (lần 1 đỏ T-INFRA) · `JOURNAL/st153-gate-macos-lan2.log` · `JOURNAL/st153-symlink-lap.log` · `JOURNAL/st153-gate-ps.log` · `JOURNAL/st153-gate-psvn.log` · `JOURNAL/st153-psvn-env.log` · `JOURNAL/st153-psvn-ca7.log` · `JOURNAL/2026-11-17.md` §ST-153.
 Nguồn (ST-151): `QUEUE.md` hàng ST-151 · `agent/SO-NO.md` #135 · `bin/vis-linux` (`SYNC_DIRS`/`SYNC_FILES`, `sync_tree`, `cmd_check_sync`) · `crates/vis-cli/tests/sync_list.rs` · `crates/vis-cli/tests/soak_script.rs` (khuôn) · `JOURNAL/st151-do-truoc.log` · `JOURNAL/st151-check-sync-macos.log` · `JOURNAL/st151-gate-macos.log` (lần 1 đỏ T-INFRA) · `JOURNAL/st151-lsp-hieu-nang.log` · `JOURNAL/st151-gate-macos-lan2.log` · `JOURNAL/2026-11-17.md` §ST-151.
+Nguồn (ST-152): `reports/R26-viscript.md` · `reports/R26-viscript.json` · `agent/SO-NO.md` §8 · `JOURNAL/2026-11-17.md` §ST-152 · `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5 (hiến chương VS3) + `…-11-17b.md` §1/§4 · `DECISIONS.md` VD-142/VD-143/VD-145..VD-152 · `JOURNAL/st152-gate-macos.log` · `QUEUE.md` hàng ST-147..ST-153 · `reports/R25-viscript.md` §3 (số cũ, không sửa).
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25) · đợt 25: **ST-148 DONE** (`cfce6b86`) · **ST-149 DONE** (`6ce972ef`) · **ST-150 DONE** (`9eeb936b`) · **ST-153 DONE** (`4a805115` + commit số đo) · **ST-151 DONE** (`9bd7d022` + commit số đo) · **ST-147 DONE** theo `ĐÓNG HÀNG 2026-11-17 Agent 0`
-Task đang làm : —  ·  đợt 25: **ST-151 DONE** (`9bd7d022`) — **nợ #135**: `bin/vis-linux` **+44/−10**,
-                `SYNC_DIRS`/`SYNC_FILES` ở đầu tệp (sau `set -u`); `sync_tree()` chỉ đọc hai biến (bỏ 5 chỗ rải trong vòng lặp
-                + 1 `rsync` `AGENTS.md` + vòng `vis-dev`/`vis`) · **không đổi hành vi**: 8 lời gọi `rsync` bản cũ = bản mới
-                (thứ tự, `--delete`, exclude, đích), `AGENTS.md` vẫn best-effort (`2>/dev/null || true`), hai shim vẫn `die 3`
-                · **`--check-sync`**: 8/8 mục `có|thiếu`, exit **0**/đủ · **2**/thiếu, **không** ssh/rsync · **9 ca**
-                `crates/vis-cli/tests/sync_list.rs`: đỏ-trước "no test target" (exit **101**) ⇒ 9/9 xanh; bỏ `vis-host-wasm`
-                ⇒ 4 ca đỏ; rải lại `for d in AGENTS.md vis-dev vis` ⇒ 1 ca đỏ; hoàn nguyên sha256 `aedf781a…` · **macOS**:
-                gate lần 1 **ĐỎ** ở L0 vì ca **THỜI GIAN** `lsp::module::tests::hieu_nang_nap_module_5_tep` (`116 ms ≥ 100 ms`;
-                load `7.39` trên 12 core) ⇒ phân loại **T-INFRA** (chạy riêng **5/5 xanh**, D2-07), gate lần 2 **PASS**
-                `[exit=0]` **10/10** bước, L0 **1175/0** (**130** suite; = 1166 + 9 ca) · sổ nợ **144 mục** (**91 mở** /
-                **31 đóng** / 20 VS3 / 1 không làm / 1 điều hướng)
-Task kế       : **ST-152** — **R26** + cập nhật ROADMAP/STATE (chốt đợt 25): đầu báo cáo liệt kê hàng phụ thuộc +
-                trạng thái (VD-143), đính chính nếu có, số đo từng nền, nợ trích theo SO-NO, 5 câu VD-131, check_report
-                PASS (26 báo cáo); phụ thuộc **ST-147..ST-151** — nay **DONE đủ**.
+Vòng          : 26 — **R26 chốt đợt 25** (`head` `b1c07802`): ST-147 **DONE** theo phạm vi **VD-150** (`fd16d7d1`;
+                ca 7 đóng ở ST-153) · ST-148 **DONE** (`cfce6b86`) · ST-149 **DONE** (`6ce972ef`) ·
+                ST-150 **DONE** (`9eeb936b`) · ST-151 **DONE** (`9bd7d022`) · ST-153 **DONE** (`4a805115`)
+Task đang làm : —  ·  **đợt 25 xong 6/6 hàng; VS2 đóng kỹ thuật 8/8 (VD-151)**. R26: 26 báo cáo, `check_report --all`
+                PASS (171 hàng QUEUE); 5 câu VD-131 nguyên văn; 8 hạng mục VS2 (cập nhật hạng mục 4 = **14 ca**
+                `vis-host-linux` sau ca âm GHI #133, hạng mục 7 = Windows **qua 9/10 bước / dừng L0**, vẫn "chỉ đo");
+                nợ trích theo số trong `SO-NO.md` (VD-147(3)).
+Task kế       : **không** — chờ **Agent 0 ban hành tài liệu thiết kế VS3** (VD-148/VD-151; hiến chương:
+                `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5). Trong lúc chờ: chỉ nợ đã có số trong `SO-NO.md`,
+                đính chính tài liệu và báo cáo vòng.
 Nhánh         : main
 ```
 
@@ -141,14 +137,45 @@ Ca      : 9 ca `crates/vis-cli/tests/sync_list.rs` (so **tập**, `sync_tree` ch
 Sổ nợ   : 144 mục = **91 mở** / **31 đóng** / 20 VS3 / 1 không làm + 1 điều hướng (`#135` đóng ở ST-151)
 ```
 
+**Số khoá R26** (chốt đợt 25; log `JOURNAL/st152-gate-macos.log` + `st147-*`/`st148-*`/`st149-*`/`st150-*`/`st151-*`/`st153-*`):
+
+```
+macOS (hash đo `b1c07802`): gate --fast **PASS** `[exit=0]` · **10/10** bước · L0 **1175/0** (**130** suite) ·
+        report-check PASS (**26** báo cáo, **171** hàng QUEUE) · doc-examples OK (24 khối) · chạy **một** lần
+        · log `st152-gate-macos.log` 75 529 B sha256 `39171d100b18834c66f0d03f3cadfcb717d0da7c38ce37c8b8607883a7311b50`
+        · mốc L0 trong đợt: **1159** (ST-148) → **1163** (ST-149 +4) → **1163** (ST-150, ngoài workspace) →
+          **1166** (ST-153 +3) → **1175** (ST-151 +9, **130** suite)
+        · vis test 447/447 ×2 (0 SKIP) · diff 100k lech=0 · cache 520×4 0 lệch · host 54/54 · targets 18/18
+        · soak 10/10 = 1352 s **đo ở HEAD cũ** `3079dede` (không chạy lại) · R1 1498 · FUNCS 52 · all_codes 33 · VBC1 53
+Linux ps (hash đo `32b79d4a`/`4a805115` cổng; `9eeb936b` Landlock; `ee58a518` vis test/diff/cache; `2866f8c2` soak):
+        · gate --fast **PASS** `[exit=0]` **10/10** bước · L0 **1169/0** (129 suite) — **TRƯỚC 9 ca ST-151, CHƯA đo lại**
+          (dự kiến 1178 **không** phải số đo) · log `st153-gate-ps.log` sha256 `f38a2b8876d1a1b6…`
+        · `vis-host-linux` **14/14** (thêm ca 14 âm **GHI**, `exit=7` + `EACCES`, đối chứng dương) · TOCTOU 0/50 000
+        · cargo test 1162/0 (ST-140) · vis test 447/447 ×2 · diff lech=0 40,9 s · cache 0 lệch 6,33 s
+        · host 54/54 · targets 18/18 · soak 10/10 = 250 s (ST-143)
+Windows psvn (hash đo `3dc13342`; cổng `4a805115`) — **CHỈ ĐO, "chưa hỗ trợ" (VD-121/VD-146)**:
+        · self-test **12/12** (7/12 → 11/12 → 12/12) · cổng **qua 9/10 bước**, dừng **L0** (fail-fast `cap_proc` **150/4**)
+        · cargo test **1053/100** · host **39/54** · targets **18/18** · gate log sha256 hai phía `a229d743…`
+Sổ nợ : **144 mục** = **91 mở** / **31 đóng** / **20 VS3** / 1 không làm / 1 điều hướng (`SO-NO.md` §8)
+        · đóng trong đợt: **#136** (ST-149) · **#133** (ST-150) · **#135** (ST-151) · ca 7 ST-147 (ST-153, không cấp số)
+        · thêm: **#142/#143** (VD-149, ST-148) · **chưa cấp số**: vế `read_dir` trên thư mục **có quyền ghi**
+```
+
 ```
 BLOCKED        : không có hàng BLOCKED.
-Cần Agent 0/1  : (0) **ST-146 (R25) chờ Agent 1 đối chiếu** + dán APPROVED cho ST-138b/ST-140..ST-145;
+Cần Agent 0/1  : (0) **ST-152 (R26) chờ Agent 1 đối chiếu** + dán APPROVED cho đợt 25 (ST-147..ST-153);
+                 (0b) **ST-146 (R25)** đã có APPROVED (17 §2);
                  (1) dán APPROVED ST-137 (và ST-130/132b/134/136) để hạng mục Quyền chính thức đóng;
                  (2) ~~VD thứ 3 cho ca coreutils multicall trên runner (#139)~~ đã có **VD-144**, làm ở ST-140 (chờ duyệt); (3) một dòng giới hạn đường GHI
-                 trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3 — sau ST-144
-                 gate Windows dừng ở **bước 5/10** (stderr `cp1252` của `doc_examples.py`), chỉ sửa được khi mở VS3.
-Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-151** lần 2, `[exit=0]`) trên cây HEAD `32b79d4a` + mã/ca ST-151
+                 trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3 — sau
+                 **ST-153** cổng Windows đã **qua 9/10 bước** và dừng ở **L0** (`cap_proc` 150/4 vì `/bin/echo`), phần còn lại
+                 chỉ sửa được khi mở VS3; (5) **ban hành tài liệu thiết kế VS3** (VD-148) — hiện **không** còn hàng nào
+                 `READY` sau ST-152; (6) cấp số cho vế `read_dir` trên thư mục **có quyền ghi** (từ #133).
+Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-152**, `[exit=0]`) trên cây HEAD `b1c07802` + R26 (chưa commit):
+                 L0 **1175/0** (**130** suite), **10/10** bước, report-check PASS (**26** báo cáo, **171** hàng QUEUE),
+                 doc-examples OK (24 khối), chạy **một** lần, không đỏ; log `JOURNAL/st152-gate-macos.log` 75 529 B
+                 sha256 `39171d100b18834c66f0d03f3cadfcb717d0da7c38ce37c8b8607883a7311b50` (header VD-136 + `[exit=0]`).
+                 Trước đó: macOS `gate --fast` **PASS** (**ST-151** lần 2, `[exit=0]`) trên cây HEAD `32b79d4a` + mã/ca ST-151
                  (chưa commit): L0 **1175/0** (**130** suite; = 1166 + 9 ca ST-151), **10/10** bước, report-check PASS
                  (**25 báo cáo, 171 hàng QUEUE**), doc-examples OK (24 khối); lần 1 **ĐỎ** ở L0 vì ca **THỜI GIAN**
                  `lsp::module::tests::hieu_nang_nap_module_5_tep` (116 ms ≥ 100 ms) ⇒ **T-INFRA** (chạy riêng **5/5 xanh**),
@@ -170,7 +197,9 @@ Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-151** lần 2, `[exit=
                  L0 **1159/0** (129 suite), **10/10** dòng `--- …: OK`, report-check PASS (**25 báo cáo, 164 hàng QUEUE**),
                  doc-examples OK (24 khối), **328 s**, chạy **một** lần; log `JOURNAL/st146-gate-macos.log` sha256
                  `47b4055380bfdd5181441070250fe947855047e6af37176ee0fbbd1859cf1932`.
-                 Cổng trên **Windows** (`psvn` @ `3dc13342`, chỉ ĐO): dừng ở **bước 5/10** — `self-test case âm` 7/12
+                 Cổng trên **Windows** (`psvn` @ `4a805115`, chỉ ĐO — ST-153): **qua 9/10 bước**, dừng ở **L0** (fail-fast
+                 `cap_proc` **150/4** vì `/bin/echo`; self-test **12/12**) — `JOURNAL/st153-gate-psvn.log` sha256
+                 `a229d743…`. Trước đó (ST-144, chỉ ĐO): dừng ở **bước 5/10** — `self-test case âm` 7/12
                  (7 fixture `doc-examples` "sai lý do" vì stderr `doc_examples.py` là cp1252; `fmt`/`clippy`/`luật` OK);
                  log `JOURNAL/st144-gate-fast.log` sha256 `498b1e56…`.
                  Trước đó: ST-145 L0 1159/0 @ `4f1c4d9f` (`st145-gate-macos.log` `8767e547…`),
