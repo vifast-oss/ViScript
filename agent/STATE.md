@@ -1,6 +1,8 @@
-# STATE — ViScript (vòng 26 — **R26 chốt đợt 25** tại `head` `b1c07802`: **VS2 đóng kỹ thuật 8/8** (**VD-151**); đợt 25 xong **6/6 hàng** — ST-147 **DONE theo phạm vi VD-150** (`fd16d7d1`; ca 7 đóng ở ST-153) · ST-148 (`cfce6b86`) · ST-149 (`6ce972ef`) · ST-150 (`9eeb936b`) · ST-151 (`9bd7d022`) · ST-153 (`4a805115`); **macOS** gate `--fast` **PASS** `[exit=0]` **10/10** bước, L0 **1175/0** (**130** suite), report-check PASS (**26** báo cáo, **171** hàng QUEUE); **`ps`** L0 **1169/0** (129 suite) — **số TRƯỚC 9 ca ST-151, CHƯA đo lại**; **Windows `psvn` CHỈ ĐO**: self-test **12/12**, cổng **đi qua 9/10 bước**, dừng ở **L0** (fail-fast `cap_proc` **150/4** vì `/bin/echo` — VS3), cargo test 1053/100, host 39/54, targets 18/18; sổ nợ **144 mục** (**91 mở** / **31 đóng** / **20 VS3** / 1 không làm / 1 điều hướng); **task kế: ST-154** — **ST-155 DONE (chờ duyệt)**: tài liệu điều tra VS3 **chỉ đọc** (`JOURNAL/st155-vs3-dieu-tra.md`, 222 dòng, 57 dẫn chứng, 6 mục × 5 khối + §7/§8/§9), **không** sửa mã/crate; vẫn chờ Agent 0 ban hành **tài liệu thiết kế VS3**, không mở tính năng VS3)
+# STATE — ViScript (vòng 26 — **ST-154 DONE (chờ duyệt)** tại `head` `0582913b`: **nợ #144 đóng** — ca 15 **dương** `read_dir` trên thư mục **có quyền ghi** trong `vis-host-linux`, `ps` **15/15** xanh, sha256 tệp đo **hai phía khớp** `7102e90b…` + **sổ theo VD-154** (`#143` → **VS3** vì ca `st130b` xanh, `#144` **đóng**, thêm `#145` **mở**) ⇒ sổ **146 mục** (**91 mở** / **32 đóng** / **21 VS3** / 1 không làm / 1 điều hướng); **macOS** gate `--fast` **PASS** `[exit=0]` **10/10** bước, L0 **1175/0** (**130** suite), report-check PASS (**26** báo cáo, **173** hàng QUEUE); **task kế: KHÔNG** — chờ Agent 0 ban hành tài liệu thiết kế VS3 (VS2 đóng kỹ thuật 8/8, **VD-151**); **ST-155 DONE (chờ duyệt)** — điều tra VS3 **chỉ đọc** 222 dòng; đợt 25 xong **6/6 hàng** — ST-147 (`fd16d7d1`, ca 7 đóng ở ST-153) · ST-148 (`cfce6b86`) · ST-149 (`6ce972ef`) · ST-150 (`9eeb936b`) · ST-151 (`9bd7d022`) · ST-153 (`4a805115`); **R26** (`b1c07802`); **Windows `psvn` CHỈ ĐO** (VD-146: self-test **12/12**, cổng dừng ở L0 vì `/bin/echo` — VS3); **Linux `ps`** gate PASS L0 **1169/0** (129 suite, ST-153))
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-155** (điều tra VS3 **chỉ đọc**: 6 mục hiến chương §5 +
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-154** (nợ **#144** đóng: ca 15 **dương** `read_dir` trên thư mục
+có quyền ghi, `ps` 15/15 + sha256 hai phía khớp; sổ theo **VD-154**: `#143` → VS3, `#144` đóng, thêm `#145`; gate macOS PASS
+L0 **1175/0**; sổ **146 mục** = 91 mở/32 đóng/21 VS3/1 không làm/1 điều hướng). Header **ST-155** (điều tra VS3 **chỉ đọc**: 6 mục hiến chương §5 +
 kích thước `[ƯL]` + rủi ro + câu hỏi cho Agent 0 — `JOURNAL/st155-vs3-dieu-tra.md`; gate macOS PASS L0 **1175/0**;
 nền số của R26 giữ nguyên: VS2 đóng kỹ thuật 8/8, nợ 144 mục (91 mở/20 VS3), 26 báo cáo, 173 hàng QUEUE, 2026-11-17).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
@@ -31,20 +33,24 @@ Nguồn (ST-152): `reports/R26-viscript.md` · `reports/R26-viscript.json` · `a
 
 Nguồn (ST-155): `QUEUE.md` hàng ST-155 · `DECISIONS.md` **VD-153** (mở điều tra) + VD-148/VD-151/VD-123/VD-122/VD-125/VD-145 · `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5 (hiến chương VS3) · `JOURNAL/st155-vs3-dieu-tra.md` (tài liệu điều tra: 6 mục + §7/§8/§9) · `agent/SO-NO.md` §5 (20 nợ VS3) + #109b/#140/#137 · `agent/HOST-BAO-DAM.md` §4 · `reports/R26-viscript.md` §3.3 (Windows) · `JOURNAL/st144-host-suite.log`, `st144-cargo-test.log`, `st153-gate-psvn.log` · dẫn chứng mã: `crates/vis-interp/src/{rt.rs,value.rs,builtin.rs,net.rs}`, `crates/vis-interp/src/interp.rs`, `crates/vis-vm/src/vm.rs`, `crates/vis-cli/src/{quyen.rs,net.rs,ngoai.rs,pkg.rs}`, `crates/vis-types/src/tyck/expr/kenh.rs`, `test/host/suite.txt` · `docs/viscript/ViScript-thiet-ke.md` §7.2/§7.4/§10/§12 (đọc, không sửa) · `JOURNAL/st155-gate-macos.log`.
 
+Nguồn (ST-154): `QUEUE.md` hàng ST-154 + `GHI CHÚ 2026-11-17 Agent 0 (17c §5)` · `DECISIONS.md` **VD-153** (cấp #144) + **VD-154** (#143 → VS3, cấp #145) + VD-120/VD-132/VD-136/VD-138 · `JOURNAL/quyet-dinh-a0-2026-11-17c.md` §2/§3/§5 · `vis-host-linux/tests/landlock.rs` (ca 13/14 làm khuôn: `dung_helper`, `chay_con`, `ap`, `tam`) · `JOURNAL/st154-landlock-ps.log` · `JOURNAL/st154-landlock-ps-lan1-truoc-fmt.log` · `JOURNAL/st154-gate-macos.log` (đỏ `fmt`) · `JOURNAL/st154-gate-macos-lan2.log` · `JOURNAL/st154-kiem-trung.log` · `JOURNAL/st154-check-report.log` · `agent/SO-NO.md` #133/#143/#144/#145 · `JOURNAL/2026-11-17.md` §ST-154.
+
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
 Vòng          : 26 — **R26 chốt đợt 25** (`head` `b1c07802`): ST-147 **DONE** theo phạm vi **VD-150** (`fd16d7d1`;
                 ca 7 đóng ở ST-153) · ST-148 **DONE** (`cfce6b86`) · ST-149 **DONE** (`6ce972ef`) ·
                 ST-150 **DONE** (`9eeb936b`) · ST-151 **DONE** (`9bd7d022`) · ST-153 **DONE** (`4a805115`)
-Task đang làm : —  ·  **đợt 25 xong 6/6 hàng; VS2 đóng kỹ thuật 8/8 (VD-151)** · **ST-155 DONE (chờ duyệt)**: điều tra
+Task đang làm : —  ·  **ST-154 DONE (chờ duyệt)**: nợ **#144** (ca 15 `read_dir` dương, `ps` 15/15) + sổ VD-154
+                (`#143` → VS3, `#144` đóng, `#145` mở) ⇒ 146 mục (91/32/21/1/1); gate macOS PASS L0 1175/0.
+                **Đợt 25 xong 6/6 hàng; VS2 đóng kỹ thuật 8/8 (VD-151)** · **ST-155 DONE (chờ duyệt)**: điều tra
                 CHỈ ĐỌC cho VS3 ⇒ `JOURNAL/st155-vs3-dieu-tra.md` **222 dòng** (6 mục × 5 khối + §7 bảng + §8 Top 5
                 câu hỏi + §9 6 việc không làm; **57** dẫn chứng `tệp:dòng`; `[ƯL]` 12/`[ĐO]` 11/`[GT]` 7) — **không**
                 sửa mã, không crate mới; R26: 26 báo cáo, `check_report --all` PASS (**173** hàng QUEUE); 5 câu VD-131
-                nguyên văn; 8 hạng mục VS2 (hạng mục 4 = **14 ca** `vis-host-linux`, hạng mục 7 = Windows **9/10 bước**).
-Task kế       : **ST-154** (nợ **#144**: ca dương `read_dir` trên thư mục **có quyền ghi**, 0,75 h — `QUEUE.md`).
-                Điều tra VS3 **không** mở tính năng VS3: vẫn chờ **Agent 0 ban hành tài liệu thiết kế VS3**
-                (VD-148/VD-151; hiến chương `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5).
+                nguyên văn; 8 hạng mục VS2 (hạng mục 4 = **15 ca** `vis-host-linux`, hạng mục 7 = Windows **9/10 bước**).
+Task kế       : **KHÔNG** — hết hàng `READY` của dòng ViScript; chờ **Agent 0** ban hành tài liệu thiết kế VS3
+                (VD-148/VD-151; hiến chương `JOURNAL/quyet-dinh-a0-2026-11-17.md` §5) + duyệt ST-154/ST-155. Hàng chờ
+                duyệt: ST-154, ST-155 (`QUEUE.md`).
 Nhánh         : main
 ```
 
