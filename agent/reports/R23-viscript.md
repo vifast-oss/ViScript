@@ -60,7 +60,7 @@ cưỡng chế thật** bằng kernel, có ca âm ở tiến trình con.
 | 1 | **Async** | **chưa có trong VS2** (chuyển VS3, có văn bản) | VD-123: task tuần tự, một luồng, run-to-completion; không song song/suspend/GC. VS3 mới có thiết kế riêng |
 | 2 | **Kênh** | **chưa có trong VS2** (chuyển VS3) | VD-123: `chan(n≥1)` đủ send/recv/close; `chan(0)` **từ chối** `VS0505`; rendezvous/select/timeout là VS3 |
 | 3 | **Net/HTTP** | **chưa có trong VS2** (chuyển VS3) | VD-122: HTTP/1.1 **loopback**, không TLS/HTTP2/keep-alive; "chưa có", không phải "vĩnh viễn ngoài phạm vi" |
-| 4 | **Quyền** | **đã đóng trên macOS; CHƯA đóng trên Linux** | macOS: runtime `FsGuard`/`NetGuard` + `--strict-caps` + ST-123 + ST-124 (**0/50 000** rò rỉ). Linux: Landlock thật **12/12** ca (ST-132) **nhưng** ca đua TOCTOU rò rỉ **798/50 000** ⇒ chưa đóng (xem §4.4 #2) |
+| 4 | **Quyền** | **đã đóng trên macOS; CHƯA đóng trên Linux** | macOS: runtime `FsGuard`/`NetGuard` + `--strict-caps` + ST-123 + ST-124 (**0/50 000** rò rỉ). Linux: Landlock thật **12/12** ca (ST-132); VD-138 đòi **3** ca âm tiến trình con (mới có **2**, cần **ST-132b**); ca đua TOCTOU rò rỉ **798/50 000** ⇒ **chưa đóng** (§4.4 #2, §7) |
 | 5 | **LSP** | **đã đóng** (quyết định cuối, VD-126) | publish **chỉ** tài liệu đang mở; nợ #104 đóng ở trạng thái "không làm, có lý do" |
 | 6 | **Gói** | **đã đóng** (trong phạm vi VS2) | ST-127..129: semver + resolver tất định + lock định dạng 2 + migration; **chưa** có registry mạng/chữ ký (VS3, có văn bản) |
 | 7 | **Đa nền tảng** | **một phần**: Linux **đã chạy thật**, Windows/wasm **chỉ check** | ST-121/131/132: Ubuntu 26.04 chạy `cargo test`/gate/host suite; Windows/wasm vẫn `cargo check` (VD-121) |
@@ -144,3 +144,20 @@ hoá lại một dãy duy nhất** theo thứ tự hợp nhất, ghi rõ nguồn
 4. Siết `cfg(target_os)` cho các ca kiểm đang giả định macOS (#121..#124).
 5. Gom danh sách dòng-khối về một nguồn (#129).
 6. Duyệt hàng loạt 15 hàng `CHỜ DUYỆT` và cập nhật `ROADMAP.md` + `docs/` theo quyết định mới.
+
+## 7. Diễn biến song song: Agent 0 ra tiếp VD-132..VD-140 trong đợt này
+
+Trong lúc 15 hàng đang chạy, **Agent 0 đã ra thêm ba đợt quyết định** (Agent 1 dán: commit `8a8b87d8`,
+`09c8f999`, `daccbb9f` — `[ST-00] dán quyết định Agent 0 đợt 23c/23d/23e`). Ba điểm **trực tiếp sửa
+kết luận của R23**, phải đọc kèm:
+
+| VD | Nội dung | Ảnh hưởng tới R23 |
+|---|---|---|
+| **VD-138** | Chấp nhận **runner Linux qua SSH** tới máy `ps` cho ST-121 (thay tiêu chí container); Dockerfile giữ lại, **ghi rõ chưa build**; "bằng chứng Landlock của ST-132 tính cho hạng mục 4 **sau khi đủ 3 ca âm ở tiến trình con**" | Lệch §2 của ST-121 được **chuẩn thuận**. Nhưng hạng mục **Quyền** cần **3** ca âm tiến trình con; ST-132 hiện có **2** ⇒ phải làm **ST-132b** (hàng Agent 0 đã mở) trước khi tính là đóng |
+| **VD-132** | Cho phép đổi kỳ vọng của **ca test phụ thuộc nền** với hai ca được nêu đích danh: tiền tố thông điệp `grep`, và exit của `--sandbox-check` (macOS 3, Linux 0) | Nợ **#121**, **#122** từ "lỗi ca kiểm" thành **việc được phép làm**, có điều kiện (không xoá ca, không `cfg` bỏ, mỗi nhánh khẳng định giá trị cụ thể, dán diff) |
+| **VD-135** | `unicode-ident` **đã hợp lệ** theo QD §9.3 và VD-33, "không cần duyệt thêm" | Nợ **#126** (giấy phép) **ĐÓNG** — ST-132 không còn điểm chờ duyệt về giấy phép |
+| **VD-136/140** | Windows (`psvn`) trong VS2 **chỉ đo**; cho phép cập nhật toolchain trên `psvn` theo phạm vi chặt | Mở hàng **ST-134..ST-136** (không thuộc 15 hàng của đợt); hạng mục 7 sẽ có thêm số đo Windows |
+
+Vì vậy: các mục "cần Agent 0 quyết" ở §4.4 và §6 **đã có trả lời** cho #121/#122/#126; **còn thật sự
+cần quyết**: (i) `ST-132b` nhận hay không (ảnh hưởng hạng mục 4), (ii) rò rỉ TOCTOU Linux (#128) sửa
+theo hướng nào, (iii) `ST-134..ST-136` do ai làm.
