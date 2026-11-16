@@ -61,6 +61,9 @@ Lệnh: `viscript/bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nế
 - **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)”; “**probe** Landlock (ST-73) — chỉ đọc, chưa cưỡng chế”.
 - `vis-host-linux` hiện là **khung probe**; nó **không** gọi syscall và **không** hạn chế quyền.
 
+- Cấm nói "async song song", "chạy đồng thời", "rendezvous", "HTTPS", "sandbox kernel" khi mô tả VS2 (VD-122, VD-123, VD-120).
+- Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
+
 ## Điều kiện để có Landlock thật (VD-107 (4))
 
 Cần **một** trong hai, kèm runner Linux để **đo**:

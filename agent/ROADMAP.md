@@ -17,6 +17,21 @@ nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt c
 | 7 | **Đa nền tảng** | **Chỉ `cargo check`**: ma trận **18/18 `PASS`**; **chưa runner** Windows/Linux/wasm | ST-58/73/86; `vis-targets` 18/18; R22 §3 | **Runner thật**: wasm32-wasip1 (wasmtime), Linux (Landlock), Windows; CI 54 host trên ≥2 nền |
 | 8 | **Hợp chuẩn host** | **54 ca chạy thật macOS ×2, 0 lệch**; **VM 54/54**; cache **520×4 0 lệch**; net **không** nằm trong suite | ST-87/88/89/98; `HOST-BAO-DAM.md`; soak 10/10 | 54 ca × **4 nền thật**; net/TLS trong suite; CI lặp; đo hiệu năng từng nền |
 
+### Quyết định Agent 0 cho điều kiện đóng (2026-11-16, VD-119..VD-131)
+
+| # | Hạng mục | Trạng thái sau quyết định | Việc |
+|---|---|---|---|
+| 1 | Async | Chưa có trong VS2: song song, suspend, GC (VD-123) | VS3 thiết kế riêng |
+| 2 | Kênh | Chưa có trong VS2: rendezvous, select, timeout (VD-123) | VS3 |
+| 3 | Net/HTTP | Chưa có trong VS2: TLS, HTTP/2, keep-alive (VD-122) | VS3 |
+| 4 | Quyền | Siết khi dùng gói: ST-130. Landlock: ST-132, chờ runner Linux | ST-130, ST-131, ST-132 |
+| 5 | LSP | Một tài liệu là quyết định cuối (VD-126); nợ #104 đóng | không |
+| 6 | Gói | Ranges + resolver: ST-127..129. Mạng/chữ ký: VS3 | ST-127..129 |
+| 7 | Đa nền tảng | Linux: ST-121, ST-131. Windows, wasm: chỉ check trong VS2 (VD-121) | ST-121, ST-131 |
+| 8 | Hợp chuẩn host | Nền thứ hai = Linux qua ST-131 | ST-131 |
+
+R1: ngưỡng duy nhất ≤1.500 dòng/tệp (VD-128); bỏ mục tiêu nội bộ ≤1.000.
+
 ## B. Lệnh chạy (tuần tự, **không** song song build/cổng khác — AGENTS §6)
 
 ```bash

@@ -501,6 +501,8 @@ Khối `else` phải trả giá trị cùng kiểu hoặc thoát (`return`, `bre
 
 Cho vi phạm bất biến, kể cả lỗi số học: tràn, chia 0, `%0`, mũ âm với `int`, chỉ số ngoài phạm vi, `assert`. **Payload của panic là `AnyError`** (QD §7.3): `panic(err)` nhận `E: Error`; `panic("chuỗi")` là đường tắt tạo `AnyError` với `message`. panic dừng task hiện tại, in vết ngăn xếp có vị trí nguồn. Không bắt được trong code thường; chỉ ranh giới task/shell bắt để báo cáo.
 
+> Mức hiện thực VS2: xem mục "Mức hiện thực VS2".
+
 ### 6.5 Lỗi trong `main` và mã thoát
 
 `fn main(...) -> Result[(), AnyError]`: lỗi được in đẹp, mã thoát 1.
@@ -516,6 +518,8 @@ Cho vi phạm bất biến, kể cả lỗi số học: tràn, chia 0, `%0`, mũ
 | 130 | Bị huỷ (Ctrl-C, `Cancel`) | tín hiệu, job control |
 
 Bảng này đúng QD §7.3 và khớp quy ước POSIX cho 126/127/130; `| complete` trả `code`/`how` theo cùng phân loại (9.5).
+
+> Mức hiện thực VS2: xem mục "Mức hiện thực VS2".
 
 ### 6.6 Ranh giới lệnh trong ViShell
 
@@ -713,6 +717,8 @@ async fn fetch_all(net: cap[Net], urls: list[str]) -> list[Result[str, AnyError]
 
 `chan[T](capacity)` trả `(Sender[T], Receiver[T])`. Receiver là `stream[T]`.
 
+> Mức hiện thực VS2: xem mục "Mức hiện thực VS2".
+
 ### 10.3 Song song thật
 
 `parallel.map(xs, f)` và `thread.spawn` chạy trên luồng OS; giá trị qua lại phải `Send`. Mỗi luồng một VM với heap riêng.
@@ -731,6 +737,8 @@ Vòng sự kiện trong runtime: POSIX dùng epoll/kqueue, Windows IOCP, ViFastO
 - Capability chỉ có ba nguồn: tham số `main`, `ctx` của phiên shell, hoặc dẫn xuất hẹp hơn từ capability đang có (`dir.subdir("logs")`, `net.restrict("api.example.com")`).
 - Hệ kiểu bảo đảm thư viện chỉ có quyền được truyền vào.
 - `print` là stdio của **chính tiến trình**, không phải capability; `sh "..."` cần `cap[Proc]` (QD §7.3).
+
+> Mức hiện thực VS2: xem mục "Mức hiện thực VS2".
 
 ### 11.2 Khai báo trong `main`
 
@@ -1463,3 +1471,17 @@ fn tính_tổng(danh_sách: list[int]) -> int:
         tổng += số
     tổng
 ```
+
+## Mức hiện thực VS2 (đồng bộ 2026-11-16)
+
+Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong viscript/agent/reports/. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
+
+- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với --strict-caps. Cưỡng chế ở biên host (tầng runtime), vi phạm báo VS0604 exit 2. Kernel sandbox (Landlock) chưa có; --sandbox-check chỉ thăm dò.
+- **Async**: task chạy tuần tự, một luồng, run-to-completion khi join. Không song song, không suspend giữa thân hàm, không GC. Đồng thời thật là đích VS3.
+- **Kênh**: chan(n) với n ≥ 1 có send/recv/close. chan(0) bị từ chối lúc tạo bằng VS0505. Rendezvous, select và timeout là đích VS3.
+- **assert <điều kiện>**: có từ ST-83.
+- **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
+- **HTTP**: HTTP/1.1 loopback, có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Chưa có TLS, HTTP/2, keep-alive.
+- **Gói**: registry cục bộ, lock có SHA-256. Chưa có registry mạng và chữ ký.
+- **LSP**: chỉ publish chẩn đoán cho tài liệu đang mở (VD-126).
+- **Nền tảng**: chạy thật trên macOS; Linux, Windows, wasm32 ở mức biên dịch kiểm tra (VD-104, VD-121).
