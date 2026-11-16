@@ -110,7 +110,7 @@ macOS : gate lần 1 **ĐỎ** ở L0 — `quyen::tests::dua_doi_symlink_lap_co_
 Linux : backend ssh `root@ps`, kernel 7.0.0-43-generic x86_64, Ubuntu 26.04.1, rustc 1.93.1, cargo 1.93.1
         · gate **PASS** `[exit=0]` **10/10** bước · L0 **1169/0** (129 suite; = 1162 + 4 ca ST-149 + 3 ca ST-153)
         · sha256 `check.rs` **hai phía khớp** `9761b5dd603d1f9cfedb4b3767b42eb961bbacc1c90b654bd7f581f334bd7a00`
-        · log `st153-gate-ps.log` sha256 `d19d2285aa82f9e4e3c8f5813f713c3ce59b496ef681e462003cb3d6b5a34f97`
+        · log `st153-gate-ps.log` sha256 `f38a2b88aa82f9e4e3c8f5813f713c3ce59b496ef681e462003cb3d6b5a34f97`
         · `cargo test --workspace -- --list`: mac **1166** / ps **1169** (chênh **+3**: 4 ca `cfg(target_os = "linux")`
           − 1 ca `sandbox_check_macos`)
 Windows (psvn, CHỈ ĐO): HEAD đo `4a805115` · cargo 1.100.0, rustc 1.99.1 (`RUSTUP_TOOLCHAIN=1.99.1`), Python 3.13.3

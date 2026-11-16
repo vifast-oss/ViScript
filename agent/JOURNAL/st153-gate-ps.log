@@ -2035,8 +2035,8 @@ vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
 # sha256(crates/vis-cli/src/cli/check.rs tai cho)=9761b5dd603d1f9cfedb4b3767b42eb961bbacc1c90b654bd7f581f334bd7a00
 # ---------------------------------------------------------------------------
 # ghi chu cua ST-153 (them SAU khi gate chay xong; output cac buoc o tren nguyen van):
-#   L0 tren ps = 1169 passed / 0 failed (129 suite). Cach dem: tong moi doan '<n> passed' trong log,
-#   vi v1.93 tren ps in output cua cac binary test xen ke (mot vai dong 'test result: ok' bi cat lam hai
+#   L0 tren ps = 1169 xanh / 0 do (129 suite). Cach dem: tong moi doan '<n> passed' trong PHAN OUTPUT CUA GATE
+#   (truoc dong '# -----' nay), vi v1.93 tren ps in output cua cac binary test xen ke (mot vai dong 'test result: ok' bi cat lam hai
 #   do stdio cua cargo/harness dung chung fd) => dem tho theo 'test result:' cho ra 1158/thieu 11; dem theo
 #   'running N tests' cung lech. Dem theo moi doan '<n> passed' cho 1169 = 1162 (ST-140) + 4 (ST-149) + 3 (ST-153).
 #   Doi chieu doc lap: 'cargo test --workspace -- --list' tren ps = 1169 dong ': test'; tren macOS = 1166.
