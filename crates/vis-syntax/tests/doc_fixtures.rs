@@ -38,17 +38,17 @@ const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
         "`...` ở 450 (`fn show(self) -> str: ...`) — thân lược",
     ),
     (
-        610,
-        "`...` ở 613 (`pub cmd ls(...): ...`) — thân lược",
+        614,
+        "`...` ở 617 (`pub cmd ls(...): ...`) — thân lược",
     ),
     (
-        737,
-        "`...` ở 739 (`fn main(...): ...`) — thân lược",
+        745,
+        "`...` ở 747 (`fn main(...): ...`) — thân lược",
     ),
     (
-        1412,
-        "lỗi đầu: `Entry(path: str(e.path), size: …, modified: …)` ở 1429 — constructor có **trường tên** \
-         không có trong §A.3 (lỗ hổng 1); `assert xs == [3, 2, 1]` ở 1438 cũng không có trong §A.1/A.2 \
+        1420,
+        "lỗi đầu: `Entry(path: str(e.path), size: …, modified: …)` ở 1437 — constructor có **trường tên** \
+         không có trong §A.3 (lỗ hổng 1); `assert xs == [3, 2, 1]` ở 1446 cũng không có trong §A.1/A.2 \
          (lỗ hổng 2 của tài liệu) — VD-36, ghi ở báo cáo R2",
     ),
 ];

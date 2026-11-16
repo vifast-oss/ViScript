@@ -26,7 +26,9 @@ fn doc_blocks() -> Vec<String> {
     let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../../docs/viscript/ViScript-thiet-ke.md");
     let text = std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("đọc {}: {e}", p.display()));
-    const EXCLUDED: [usize; 7] = [305, 432, 445, 610, 662, 737, 1412];
+    // **SỬA KÈM LÝ DO (ST-120b)**: 4 dòng trỏ `> Mức hiện thực VS2: …` (Phụ lục B, đợt 23) làm
+    // 4 khối dịch dòng: 610→614, 662→666, 737→745, 1412→1420. Nội dung 7 khối không đổi.
+    const EXCLUDED: [usize; 7] = [305, 432, 445, 614, 666, 745, 1420];
     let mut out = Vec::new();
     let mut it = text.lines().enumerate();
     while let Some((idx, line)) = it.next() {

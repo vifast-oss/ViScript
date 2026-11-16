@@ -321,7 +321,13 @@ fn doc_blocks() -> (usize, Vec<(usize, String)>) {
 }
 
 /// 7 khối **loại trừ tường minh** theo VD-36 (6 khối `...` + khối `Entry(trường: …)`/`assert`).
-const DOC_EXCLUDED: [usize; 7] = [305, 432, 445, 610, 662, 737, 1412];
+///
+/// **SỬA KÈM LÝ DO (ST-120b)**: danh sách là **số dòng** trong tài liệu, nên 4 dòng trỏ
+/// `> Mức hiện thực VS2: …` (Phụ lục B của quyết định đợt 23) làm 4 mục dịch xuống:
+/// 610→614, 662→666, 737→745, 1412→1420. **Nội dung 7 khối không đổi** (vẫn đúng 7 khối
+/// `...`/`Entry`/`assert`); chỉ toạ độ đổi. Đây là hệ quả của việc sửa tài liệu, không phải
+/// nới ngưỡng: tổng số khối vẫn phải đúng 22 và mỗi khối vẫn phải `not ok` đúng 1 chẩn đoán.
+const DOC_EXCLUDED: [usize; 7] = [305, 432, 445, 614, 666, 745, 1420];
 
 fn tmp_dir(tag: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("vis-check-{}-{}", tag, std::process::id()));

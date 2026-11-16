@@ -71,6 +71,7 @@ const FULL_BODIED: usize = 15;
 const EXCLUDED_COUNT: usize = 7;
 
 /// Khối loại trừ — (dòng mở ```vis, lý do). Trùng `docs/viscript/doc-examples-allow.txt`
+/// **ST-120b**: 4 dòng trỏ của đợt 23 làm dịch 610→614, 662→666, 737→745, 1412→1420.
 /// (7 mục, mỗi mục **thật đỏ** khi parse) + `tests/doc_fixtures.rs` của ST-05.
 const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
     (
@@ -82,15 +83,15 @@ const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
         "`...` ở 436 (`fn max_by[...] -> T?: ...`) — thân hàm lược",
     ),
     (445, "`...` ở 450 (`fn show(self) -> str: ...`) — thân hàm lược"),
-    (610, "`...` ở 613 (`pub cmd ls(...): ...`) — thân hàm lược"),
+    (614, "`...` ở 617 (`pub cmd ls(...): ...`) — thân hàm lược"),
     (
-        662,
-        "`...` ở 663 (`extern cmd git(..., ...rest: str)`) — không có token `...` trong SPEC-lex §1",
+        666,
+        "`...` ở 667 (`extern cmd git(..., ...rest: str)`) — không có token `...` trong SPEC-lex §1",
     ),
-    (737, "`...` ở 739 (`fn main(...): ...`) — thân hàm lược"),
+    (745, "`...` ở 747 (`fn main(...): ...`) — thân hàm lược"),
     (
-        1412,
-        "`Entry(trường: …)` ở 1429 + `assert` ở 1438 — hai lỗ hổng tài liệu (VD-36), không tự thêm cú pháp",
+        1420,
+        "`Entry(trường: …)` ở 1437 + `assert` ở 1446 — hai lỗ hổng tài liệu (VD-36), không tự thêm cú pháp",
     ),
 ];
 
@@ -98,7 +99,10 @@ const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
 ///
 /// Số khai báo = ký hiệu `Symbols` **trừ** `SymKind::Builtin`: item cấp tệp + tham số + `let`/`var`
 /// + binding pattern + generic + nhãn `scope`. Đếm tay từ nguồn khối, không lấy từ log.
-const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
+// **SỬA KÈM LÝ DO (ST-120b)**: 4 dòng trỏ `> Mức hiện thực VS2: …` (Phụ lục B, đợt 23) làm dịch
+// số dòng của 6 khối: 535→539, 549→553, 571→575, 684→688, 698→702, 1459→1467. Số kỳ vọng
+// (item/sym/khai báo/chẩn đoán) **không đổi** — chỉ toạ độ đổi.
+    const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // **SỬA KÈM LÝ DO (ST-57)**: `derives Eq, Show` **sinh** `impl` ⇒ +1 item (`HImpl`) và +5
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
@@ -111,12 +115,12 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (422, 0, 1, 3),  // f + x (lambda) + y
     (473, 1, 0, 4),  // read_config + dir + text + cfg
     (488, 0, 1, 2),  // cfg + err (else)
-    (535, 0, 3, 2),  // a, b
-    (549, 0, 2, 2),  // counter, inc
-    (571, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (684, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (698, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1459, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (539, 0, 3, 2),  // a, b
+    (553, 0, 2, 2),  // counter, inc
+    (575, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (688, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (702, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1467, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
 ];
 
 fn doc_path() -> PathBuf {
