@@ -77,3 +77,20 @@ cache **520×4 0 lệch**, host **54/54 ×2**, soak **10/10 (1297 s)**, fuzz **0
 - [`QUEUE.md`](QUEUE.md) **134 hàng**; [`DECISIONS.md`](DECISIONS.md) VD-01..VD-118.
 - `reports/R1..R22` (bắt đầu R21/R22); [`HOST-BAO-DAM.md`](HOST-BAO-DAM.md) — host/HTTP.
 - [`STATE.md`](STATE.md) — trạng thái hiện tại.
+
+### Trạng thái cuối sau R23 (đo ở `c96506ba`, soak 10/10 = 1447 s)
+
+| # | Hạng mục | Trạng thái (đúng 3 loại của VD-131) | Ghi chú |
+|---|---|---|---|
+| 1 | Async | **chưa có trong VS2** → VS3 | tuần tự một luồng, run-to-completion (VD-123) |
+| 2 | Kênh | **chưa có trong VS2** → VS3 | `chan(0)` bị từ chối `VS0505`; rendezvous/select/timeout = VS3 |
+| 3 | Net/HTTP | **chưa có trong VS2** → VS3 | HTTP/1.1 loopback; không TLS/HTTP2/keep-alive (VD-122) |
+| 4 | Quyền | **macOS đã đóng · Linux CHƯA đóng** | Landlock thật 12/12 ca trên Linux (ST-132); **rò rỉ TOCTOU 798/50 000 trên Linux** ⇒ nợ #128 |
+| 5 | LSP | **đã đóng** | publish chỉ tài liệu đang mở (VD-126) |
+| 6 | Gói | **đã đóng** (phạm vi VS2) | semver + resolver + lock định dạng 2 + migration; mạng/chữ ký = VS3 |
+| 7 | Đa nền tảng | **một phần** | Linux **chạy thật** (ST-131); Windows/wasm **chỉ check** (VD-121) |
+| 8 | Hợp chuẩn host | **đã đóng** | 54/54 ca trên **cả** macOS và Linux, 0 lệch |
+
+**Số khoá R23**: 1153 test (129 suite) macOS · 1147/6 Linux · sem 447/22 · `vis test` 447 ok · `--vm` 447 ok + 0 SKIP ·
+differential 100k `lech=0` (3 lần: 174/162/181 s) · cache 520×4 `lech=0` · host 54/54 hai nền · targets 18/18 `check` ·
+R1 max **1498** · FUNCS **52** · all_codes **33** · VBC1 **53** · allowlist **6** · soak **10/10 = 1447 s**.

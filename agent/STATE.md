@@ -1,34 +1,35 @@
-# STATE — ViScript (vòng 23)
+# STATE — ViScript (vòng 23 — ĐÃ CHỐT, bàn giao đợt 24)
 
-Người ghi: **Agent 2** dòng ViScript. Header viết lại theo **ST-119** (2026-11-16). Cập nhật **sau mỗi bước**.
-Đợt 23: nguồn `viscript/agent/JOURNAL/quyet-dinh-a0-2026-11-16.md` (VD-119..VD-131, ST-119..ST-133).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23 (ST-133, 2026-11-16).
+Nguồn: `JOURNAL/quyet-dinh-a0-2026-11-16.md` (VD-119..VD-131) · báo cáo chốt `reports/R23-viscript.md`.
 
 ```
-HEAD (repo)   : 7bbc4b29 `[ST-00]` dán quyết định đợt 23
-HEAD ViScript : c1587398 (commit cuối của **code** dòng ViScript; dòng OS commit `KT-*` xen vào nên HEAD ≠ HEAD ViScript)
-Vòng          : 23
-Task đang làm : ST-122 (Agent 2 — Span tổng hợp mang file) · ST-119/ST-120/ST-121 (lead)
-Task kế       : ST-123 → ST-124 → ST-125 → ST-126 → ST-127 → ST-128 → ST-129 → ST-130 → ST-131 → ST-132 → ST-133
+HEAD (repo)   : xem `git log -1`
+HEAD ViScript : commit cuối của dòng ViScript trong `git log -- viscript/`
+Vòng          : 23 — **15/15 hàng ST-119..ST-133 DONE** (không còn READY/REVIEW/BLOCKED trong đợt)
+Task đang làm : —
+Task kế       : đợt 24 theo R23 §6 — ưu tiên 1: sửa rò rỉ TOCTOU trên Linux (nợ #128)
 Nhánh         : main
 ```
 
-**Số khoá đo được** (macOS, đo lần cuối 2026-11-15; không viết tay số mới vào đây, phải chạy lệnh):
+**Số khoá R23** (macOS đo trên `c96506ba`; không viết tay số mới, phải chạy lệnh):
 
 ```
-1066 test · sem 447/22 nhóm · vis test 447 ok · --vm 447 ok + 0 SKIP · parity 398/398 + 49 lỗi biên dịch
-host suite 54 ×2 / 0 lệch · differential 100k / 0 lệch · cache 520 tệp ×4 / 0 lệch · soak 10/10 = 1297 s
-R1 max 1060 · FUNCS 52 · all_codes 32 · VBC1 53 · allowlist doc-examples 6 · targets 18/18 `check`
+1153 test / 129 suite / 0 đỏ · sem 447/22 nhóm · vis test 447 ok · --vm 447 ok + 0 SKIP · parity 398 + 49
+differential 100k lech=0 (3 lần) · cache 520×4 lech=0 · host suite 54/54 (macOS và Linux) · targets 18/18 check
+R1 max 1498 · FUNCS 52 · all_codes 33 · VBC1 53 · allowlist 6 · soak 10/10 = 1447 s
+Linux (runner ps, Ubuntu 26.04, rustc 1.99.1, landlock ABI 8): cargo test 1147/6 · host suite 54/54 · Landlock 12/12 ca
 ```
 
-Lệnh tái lập: `bash viscript/bin/vis-dev gate --fast` · `cd viscript && VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` · `./bin/vis-host-suite` · `python3 viscript/test/report/check_report.py --all`.
+Lệnh tái lập: `bash viscript/bin/vis-dev gate --fast` · `cd viscript && cargo test --workspace` · `bin/vis-soak` ·
+`bash viscript/bin/vis-linux gate` (Linux) · `bash viscript/bin/vis-linux run bash -c 'cd vis-host-linux && cargo test'`.
 
 ```
 BLOCKED        : không có hàng BLOCKED.
-Chờ môi trường : ST-121 đang chạy; ST-131/ST-132 chỉ READY khi có runner Linux.
-                 Runner đã có: host `ps` qua tailscale (Ubuntu 26.04, x86_64, rustup 1.99.1, kernel có `landlock` trong lsm).
-Cổng gần nhất  : macOS `gate --fast` PASS 2026-11-15T06:22:31Z (report-check: 22 báo cáo, 134 hàng QUEUE).
-                 Linux (host `ps`): **FAIL** ở self-test case 5 (`thiếu cargo`) — `/usr/bin/cargo` 1.93.1 nằm trong PATH
-                 nên kịch bản "môi trường sạch không có cargo" không dựng được. Chưa sửa; xem JOURNAL/st121.
+Chờ môi trường : runner Linux thiếu `wasm32-unknown-unknown` ⇒ `targets.rs` đỏ trên Linux (nợ #123).
+Cần Agent 0    : (1) giấy phép `unicode-ident` ngoài allowlist hẹp (nợ #126); (2) hàng `ST-132b` do Agent 2
+                 tự thêm, chưa duyệt (nợ #131); (3) duyệt 15 hàng CHỜ DUYỆT; (4) rò rỉ TOCTOU Linux (#128).
+Cổng gần nhất  : macOS `gate --fast` PASS; soak 10/10 = 1447 s; report-check PASS (23 báo cáo, 153 hàng QUEUE).
 Việc dở        : —
 ```
 
