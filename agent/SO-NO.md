@@ -463,7 +463,7 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
 - Sổ theo **VD-154**: `#143` → **chuyển VS3** (ghi rõ `VD-154(b): chuyển VS3 vì ca st130b xanh`, **giữ** dòng lịch sử);
   `#144` **đóng ở ST-154** (vế 2 của `#133`); thêm **`#145`** (**mở**, xử khi có task VS3 kênh). Sổ **146 dòng** =
   **91 mở / 32 đóng / 21 VS3 / 1 không làm / 1 điều hướng**; trùng số **0**, dải **1..145** — `JOURNAL/st154-kiem-trung.log`
-  (PASS 10/10 mục kiểm, sha256 `1b2a964e435e1e76d760b2c2fac2125505b0e25b26266a31189e1771ce44f66b`).
+  (PASS 10/10 mục kiểm; sha256 của chính log này ghi ở hàng QUEUE ST-154 + JOURNAL §ST-154 — không tự trích trong tệp đang được băm).
 - `90 mở/31 đóng/21 VS3` (VD-154(b), lặp ở hàng QUEUE ST-154) là số của bảng **144 dòng** sau bước đổi `#143` và **trước**
   khi thêm hai dòng `#144`/`#145`; sổ cuối cùng **146 dòng = 91/32/21/1/1** — đối chiếu ở §8 + `st154-kiem-trung.log`.
 - `cd viscript && ../vis-dev gate --fast` ⇒ **PASS**, `[exit=0]`, **10/10** bước `--- …: OK`, L0 **1175/0** (**130** suite),

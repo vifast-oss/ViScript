@@ -1,13 +1,14 @@
 # ST-154 · máy kiểm SO-NO.md sau khi sửa sổ theo VD-154 (#143 → VS3, + #144, + #145)
-# Ngày: 2026-11-17 06:42 JST · Người làm: Agent 2 dòng ViScript
+# Ngày: 2026-11-17 06:52 JST · Người làm: Agent 2 dòng ViScript
 # Căn cứ: VD-147(3) (mỗi nợ một số/một dòng, bảng chính + §5 + §6 + §8) · VD-149 · VD-153 · VD-154
-# Lệnh: python3 /tmp/st154-kiem-trung.py (đọc viscript/agent/SO-NO.md, KHÔNG sửa)
+# Bản này chạy trên SO-NO.md CUỐI (đã có §9 của ST-154) — sha256 tệp dưới đây là sha256 của bản được commit.
+# Lệnh: python3 /tmp/st154-kiem-trung.py (đọc viscript/agent/SO-NO.md, KHÔNG sửa tệp)
 # script sha256: c57a33e966d3221b99c8e5b926577d88014fd87334ac950c456fa24a706954cd
 
 === ST-154 · kiểm SO-NO.md (VD-147(3), VD-153, VD-154) ===
-sha256 viscript/agent/SO-NO.md: b2112c519d12f82fc7dbce118898fea2b2f96556bda664b757e8fc4ac3cd418e
-so byte: 54250
-HEAD: 0582913b2d9ab08294ee390533d2baa5be8fa7f5
+sha256 viscript/agent/SO-NO.md: 53698202e127c392bbecbdf4b0ad8ccafd05c464d1d8be36391351b8569242db
+so byte: 57580
+HEAD: 704ea55f3a769678e39d71487a5407088171706a
 
 dòng bảng chính: 146
   mở: 91
@@ -38,6 +39,6 @@ PASS · #145 có trong bảng chính + đang mở: trạng thái: mở (xử khi
 
 KẾT LUẬN: PASS
 
-# Ghi chú: 'FAIL' không còn dòng nào. Con số 90 mở/31 đóng/21 VS3 trong hàng QUEUE ST-154 (VD-154(b)) là số của
+# Ghi chú: không còn dòng FAIL nào. Con số 90 mở/31 đóng/21 VS3 trong hàng QUEUE ST-154 (VD-154(b)) là số của
 # bảng 144 dòng SAU bước đổi #143 và TRƯỚC khi thêm hai dòng #144/#145; sổ cuối cùng 146 dòng = 91/32/21/1/1.
 # Không xoá dòng nào (luật SO-NO §3); #133 giữ nguyên dòng lịch sử "đóng ở ST-150".
