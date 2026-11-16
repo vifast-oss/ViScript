@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 26 — ST-144 DONE: Windows cài đủ 2 target std (VD-146(1)), clippy hết đỏ, targets 18/18, cargo test 1053/100 · gate macOS PASS)
+# STATE — ViScript (vòng 26 — ST-145 DONE: sổ nợ duy nhất `SO-NO.md` 142 mục (92 mở/28 đóng/20 VS3/1 không làm), #109 tách a/b, trùng số 0 · gate macOS PASS L0 1159/0)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối ST-144 (Windows: 3 việc hạ tầng VD-146 + đo lại trên `psvn`, 2026-11-16).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối ST-145 (sổ nợ duy nhất theo VD-147(3), 2026-11-16).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -10,17 +10,19 @@ Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD
 `st142-ps-cache.log` · `st142-gate-macos.log` ·
 `JOURNAL/st143-shim-ps.log` · `st143-soak.log` · `st143-soak-lan1-gate-1-do.log` · `st143-soak-env.log` ·
 `st143-gate-macos.log` · `JOURNAL/st144-setup-psvn.log` · `st144-setup-psvn-console.log` · `st144-cargo-test.log` ·
-`st144-host-suite.log` · `st144-vis-targets.log` · `st144-gate-fast.log` · `st144-gate-macos.log`.
+`st144-host-suite.log` · `st144-vis-targets.log` · `st144-gate-fast.log` · `st144-gate-macos.log` ·
+`agent/SO-NO.md` · `JOURNAL/st145-trich-no.log` · `st145-kiem-trung.log` · `st145-gate-macos.log`.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 26 — ST-138 lật **DONE** (`9e616960`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`1a275ffa`) · ST-144 **DONE** (commit `3dc13342` + commit sổ của task này)
-Task đang làm : —  ·  ST-144 DONE: **Windows @ `3dc13342`** — cài **2/2** target std (VD-146(1)), `clippy` **hết đỏ**
-                (VD-146(3)), `vis-targets` **18/18** (ST-136: 8/18), `cargo test` **1053/100** (ST-136: 1051/102),
-                host **39/54** (không đổi); `gate --fast` trên Windows dừng ở **bước 5/10** (self-test case âm 7/12 do
-                stderr `cp1252` của `doc_examples.py` — ngoài 3 việc VD-146 ⇒ VS3); gate macOS **PASS** L0 **1159/0**
-Task kế       : **ST-145** — sổ nợ duy nhất `agent/SO-NO.md` (VD-147(3)); sau đó ST-146 (R25)
+Vòng          : 26 — ST-138 lật **DONE** (`9e616960`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`1a275ffa`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (commit `4f1c4d9f` + commit sổ của task này)
+Task đang làm : —  ·  ST-145 DONE: **`agent/SO-NO.md` @ `4f1c4d9f`** — sổ nợ duy nhất (VD-147(3)):
+                **142 dòng** (1..141; `#109` tách `#109a`/`#109b`) = **92 mở / 28 đóng / 20 VS3 / 1 không làm**
+                + 1 mục điều hướng (`#141`); **trùng số 0**; mọi dòng có nguồn (R11..R24 §5/§6 + JOURNAL đợt 23);
+                2 nợ đợt 23 chưa có số chuẩn ghi ở §7.3 (`#113b`, `#114b`); `check_report --all` PASS (24 báo cáo,
+                164 hàng QUEUE); `gate --fast` macOS **PASS** L0 **1159/0** (129 suite), 10/10 dòng OK, 316 s
+Task kế       : **ST-146** — R25 (báo cáo vòng 25, trích nợ **theo số trong `SO-NO.md`**)
 Nhánh         : main
 ```
 
