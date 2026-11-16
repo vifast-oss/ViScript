@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
+# CHƯA DÙNG trong VS2: runner Linux là máy ps qua SSH (VD-136, VD-138). Tệp chưa build, chưa có digest.
 # Nền Linux của dòng ViScript (ST-121, VD-120) — backend `docker` của `bin/vis-linux`.
 #
 # Mục đích: có một nền Linux **chạy được** để đo các hạng mục VS2 còn thiếu (Landlock thật,
