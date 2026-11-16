@@ -218,6 +218,21 @@ Agent 0 đọc **JSON trước**, MD sau. JSON thiếu `project` bị trả lạ
 | ST-116b | **R1 headroom #4** — tách `crates/vis-cli/src/main.rs` (1.254 → ≤1.000): tách `run`/`check`/`test`/`fmt` sang `cli/*.rs`, thuần refactor | ST-116 | 2,5 h | **DONE** | R1 max ≤1.000; checksum 1062 test + diff sha256 trùng |
 | ST-117 | **LSP** — chẩn đoán **đa tệp** cho tài liệu đang mở dùng `file` (ca a+b cùng lỗi; tài liệu mở là module) | ST-116 | 2 h | **DONE** | ≥4 ca; publish **chỉ** cho tài liệu mở; sửa nếu sai |
 | ST-118 | **soak cuối 10 vòng + R22 + ROADMAP chốt** | ST-117 | 3 h | **DONE** | 10/10 xanh hoặc T-INFRA có log; `report-check` PASS |
+| ST-119 | **Văn bản quản trị**: AGENTS.md (root, chỉ phần ViScript) + viscript/AGENTS.md theo Phụ lục A; STATE.md viết lại header ≤60 dòng (G1/G2/G3) | ST-118 | 1,5 h | **READY** | `grep -c 'VD-88' AGENTS.md viscript/AGENTS.md` = 0; header STATE.md có hash c1587398, vòng 23, task kế; check_report PASS; gate PASS |
+| ST-120 | **Đồng bộ thiết kế**: docs/viscript/ViScript-thiet-ke.md + ROADMAP.md + HOST-BAO-DAM.md theo Phụ lục B/C/D (G5/G6, Q3..Q7, Q10, Q12) | ST-119 | 2,5 h | **READY** | 4 dòng trỏ G6 đã chèn; cổng doc-examples PASS; không có số đo viết tay mới trong docs/; gate PASS |
+| ST-121 | **Thăm dò runner Linux** (Q2a): phát hiện docker/podman/colima; nếu có: Dockerfile + bin/vis-linux chạy `uname -r`, `cat /sys/kernel/security/lsm`, build | ST-118 | 1 h | **READY** | log thăm dò có sha256; có công cụ ⇒ container build xanh + in lsm; không có ⇒ BLOCKED-ENV + lệnh người dùng cần chạy |
+| ST-122 | **Span tổng hợp mang file** (Q11, VD-127): test duyệt HIR fixture đa tệp + sửa các chỗ sinh node | ST-118 | 3 h | **READY** | test duyệt: 0 node module phụ có file=0; ≥4 ca mới chẩn đoán rơi trên node tổng hợp ở module phụ, JSON+TAP đúng tệp/dòng, cả interp và --vm; parity giữ phân hoạch |
+| ST-123 | **--grant Proc theo đường dẫn tuyệt đối** (VD-130c) | ST-118 | 2 h | **READY** | red: bản sao `echo` ở thư mục tạm chạy được khi grant /bin/echo; sau sửa: VS0604 exit 2; ≥6 ca (symlink, PATH, tương đối, trùng tên) × interp/--vm |
+| ST-124 | **Review FsGuard TOCTOU + Value::Cap** (VD-130a/b) | ST-118 | 3 h | **READY** | JOURNAL/st124-review.md: mỗi phát hiện có ca tái hiện hoặc lý do không tái hiện được; sửa không cần unsafe ⇒ sửa + ca; cần unsafe ⇒ ghi giới hạn vào HOST-BAO-DAM.md theo Phụ lục D2 |
+| ST-125 | **Fuzz json_esc 100k** (VD-130e) | ST-118 | 1,5 h | **READY** | seed cố định; 100.000 chuỗi; roundtrip json.decode và python3 json.loads; lech=0; có ký tự điều khiển, U+0000, U+2028/2029, ngoài BMP, `"` `\` |
+| ST-126 | **Đóng băng API + tương thích** (Q14/Q15, VD-129): tạo API-STD.txt, API-CODES.txt, API-VBC1.txt + test so + kiểm khoá cache | ST-118 | 2,5 h | **READY** | 3 tệp sinh từ code, đã sắp xếp; test đỏ khi xoá/đổi tên/thêm không khai; báo cáo: khoá cache có đổi khi bảng thẻ đổi không (đo bằng ca) |
+| ST-127 | **Semver: kiểu Version + VersionReq + so khớp** (Q9a, VD-125) | ST-126 | 2,5 h | **READY** | ≥40 ca đơn vị phủ mọi toán tử + ^0.x + từ chối prerelease; không crate mới |
+| ST-128 | **Resolver tất định + registry nhiều phiên bản** (VD-125) | ST-127 | 3 h | **READY** | ≥12 ca: chọn cao nhất, quay lui, xung đột ⇒ mã VS07xx mới (cập nhật đủ ≥7 chỗ đếm + API-CODES.txt theo VD-125); chạy 2 lần cùng byte |
+| ST-129 | **pkg CLI dùng resolver + migration lock cũ** (VD-125) | ST-128 | 2,5 h | **READY** | install không đổi lock khi còn thoả; update giải lại; lock cũ ⇒ lock mới, ghi lại 2 lần cùng byte; pkg list --json có version_req |
+| ST-130 | **Siết caps khi dùng gói** (Q8c, VD-124) | ST-129 | 3 h | **READY** | ≥6 ca × interp/--vm: có pkg + thiếu cap ⇒ VS0604 exit 2; --no-strict-caps ⇒ chạy + 1 dòng cảnh báo stderr; không pkg ⇒ hành vi cũ, 447 sem không đổi; >150 dòng ⇒ kế hoạch (VD-116) |
+| ST-131 | **Chạy đầy đủ trên runner Linux**: cargo test, gate --fast, host suite 54 | ST-121 | 3 h | **READY nếu ST-121 DONE**, ngược lại BLOCKED-ENV | số đo Linux đặt cạnh macOS; mọi lệch được liệt kê, KHÔNG sửa trong task này |
+| ST-132 | **Landlock thật** (Q1a, VD-120) | ST-131 | 3 h | **READY nếu lsm có landlock**, ngược lại BLOCKED-ENV | log giấy phép phụ thuộc; ≥8 ca cfg(linux) xanh trên runner, trong đó ≥3 ca âm chứng minh kernel chặn ở tiến trình con; macOS: --sandbox exit 3, ghi "chưa đo" |
+| ST-133 | **R23 + soak 10 + ROADMAP chốt VS2** (VD-131) | tất cả trên | 1,5 h | **READY** | R23 có đủ số khoá, 5 câu bắt buộc, trạng thái 8 hạng mục theo 3 loại; soak 10/10; check_report PASS |
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
@@ -1655,6 +1670,8 @@ APPROVED 2026-11-14 Agent 0
 APPROVED 2026-11-14 Agent 0
 
 > **ST-118 DONE — VÒNG 22 CHỐT (vòng kết thúc đợt chạy liên tục).** Commit `326cdfa0` (**Agent 2 tự commit, đã push**).
+> **2026-11-16 · mở lại đợt 23**: hàng ST-119..ST-133 ở trên thay cho khối này. Căn cứ: `viscript/agent/JOURNAL/quyet-dinh-a0-2026-11-16.md` (VD-119..VD-131). Khối dưới là **lịch sử đợt 1..22**, giữ nguyên.
+>
 > **Soak cuối 10/10 OK = 1297 s** (gate 256/253/258, diff 155/155/156 — **0 lệch** cả 3 lần, host 8/8, cache 25/23), load 2,04 → 1,83;
 > chạy **một lần**, **không** retry. `report-check` **PASS (22 báo cáo, 134 hàng QUEUE phủ đủ)**. `ROADMAP.md` chốt **64 dòng** với
 > **bảng 8 hạng mục × mức thật × điều kiện đóng 100%** + nơi đọc + lệnh chạy.

@@ -900,3 +900,42 @@ Nguồn: `docs/viscript/ViScript-thiet-ke.md` §21–§22 và `docs/QUYET-DINH-s
   liệu đang mở** và **đúng tệp** nhờ `Span.file`; ca (a) tài liệu mở là tệp chính có module lỗi, (b) tài liệu mở **là** module, (c) hai
   tệp cùng lỗi; nếu sai ⇒ sửa (không "đúng một nửa"). (3) **Soak cuối 10 vòng** tuần tự + **R22** + `ROADMAP.md` chốt trạng thái cuối
   (kèm **điều kiện đóng 100%**). (4) Không nới ngưỡng; không thêm crate.
+
+### VD-119 · Quy trình: Agent 0 soạn, Agent 2 dán (2026-11-16)
+Agent 0 không ghi repo trực tiếp. Văn bản trong tệp QUYET-DINH-A0-<ngày>.md được Agent 2 dán nguyên văn vào tệp Agent 0 sở hữu, commit riêng [ST-00] ghi "theo QUYET-DINH-A0-<ngày>". Không diễn giải; không áp được nguyên văn thì BLOCKED. Task xong ghi "CHỜ DUYỆT Agent 0 · <hash> · <số đo>"; chỉ Agent 0 ghi APPROVED qua tệp quyết định kế tiếp. Task phụ thuộc được chạy tiếp khi task trước ở trạng thái CHỜ DUYỆT.
+
+### VD-120 · Runner Linux bằng container + Landlock có điều kiện (2026-11-16)
+Runner Linux chạy bằng container trên máy dev. Không tự cài phần mềm hệ thống; thiếu công cụ thì BLOCKED-ENV và báo người dùng. Crate `landlock` được duyệt CÓ ĐIỀU KIỆN: chỉ trong vis-host-linux, chỉ cfg(target_os="linux"), toàn bộ phụ thuộc bắc cầu có giấy phép thuộc allowlist D2-21 (kiểm bằng cargo metadata, ghi log); một phụ thuộc ngoài allowlist thì BLOCKED. Không thêm `unsafe` trong code của ta. Landlock bật bằng cờ `--sandbox` (opt-in trong VS2); nền không hỗ trợ trả exit 3 như --sandbox-check. Ca âm phải chứng minh KERNEL chặn (tiến trình con bỏ qua FsGuard vẫn bị EACCES), không phải runtime chặn. Trước khi có runner: văn bản "cưỡng chế ở tầng runtime; kernel sandbox chưa có".
+
+### VD-121 · wasm và Windows: chỉ cargo check trong VS2 (2026-11-16)
+Mức bằng chứng wasm32 và windows-msvc trong VS2 là "biên dịch kiểm tra" (VD-104). Không tuyên bố hỗ trợ. VS3 xét đưa vis-interp/vis-types chạy được trên wasm32-wasip1 như thư viện nhúng.
+
+### VD-122 · HTTP: chưa có HTTPS trong VS2 (2026-11-16)
+HTTP client chỉ nói HTTP/1.1 loopback, không TLS, không HTTP/2, không keep-alive. Đây là trạng thái "chưa có", không phải "ngoài phạm vi vĩnh viễn". rustls được xét ở VS3 sau khi có runner Linux.
+
+### VD-123 · Async và chan(0) trong VS2 (2026-11-16)
+Ngữ nghĩa VS2: async là task chạy tuần tự, một luồng, run-to-completion khi join; không song song; không suspend giữa thân hàm; không GC. chan(0) bị từ chối lúc tạo bằng VS0505 (exit 1). Cả hai là trạng thái VS2, được văn bản hoá trong thiết kế và ROADMAP. Async đồng thời thật + rendezvous + select/timeout là dự án VS3 có tài liệu thiết kế riêng do Agent 0 viết; không làm trong task 3 h.
+
+### VD-124 · Siết caps mặc định cho chương trình dùng gói (2026-11-16)
+Nếu đồ thị import của chương trình có ít nhất một module `pkg.*`, chế độ strict-caps bật mặc định. Thoát bằng cờ tường minh `--no-strict-caps`, khi đó in một dòng cảnh báo ra stderr (không ra stdout). Chương trình không dùng gói: hành vi giữ nguyên. Siết mặc định toàn cục là nợ VS3.
+
+### VD-125 · Semver ranges + resolver tối giản (2026-11-16)
+Phiên bản: MAJOR.MINOR.PATCH số nguyên; prerelease/build metadata bị từ chối có chẩn đoán. Ràng buộc: `^`, `~`, `=`, `>`, `>=`, `<`, `<=`; dấu phẩy là AND; không có toán tử thì hiểu là `^` (giống Cargo, kể cả luật ^0.x). Mỗi gói có đúng một phiên bản trong đồ thị (VS2). Resolver tất định: chọn phiên bản cao nhất thoả mọi ràng buộc, quay lui khi xung đột; không thoả được thì mã lỗi MỚI trong khối VS07xx kèm chuỗi ràng buộc gây xung đột. Lock hiện có còn thoả ràng buộc thì giữ nguyên (`pkg install` không đổi lock); `pkg update` mới giải lại. Lock định dạng cũ được đọc và ghi lại định dạng mới; ghi lại hai lần cho ra cùng byte. Không mạng, không chữ ký (VS3).
+
+### VD-126 · LSP publish một tài liệu (2026-11-16)
+LSP chỉ publish chẩn đoán cho tài liệu client đang mở; lỗi ở module phụ được báo qua vị trí import trong tài liệu đang mở. Nợ #104 đóng ở trạng thái "không làm, có lý do": publish cho URI client chưa mở gây hiển thị không nhất quán giữa các client.
+
+### VD-127 · Span tổng hợp phải mang file (2026-11-16)
+Mọi node HIR do lower sinh ra (không copy từ CST) phải mang file-id của node nguồn sinh ra nó. Có test duyệt HIR của mọi fixture đa tệp: không node nào thuộc module phụ có file = 0.
+
+### VD-128 · R1 chỉ có một ngưỡng: ≤1.500 dòng/tệp (2026-11-16)
+Bỏ mục tiêu nội bộ ≤1.000. Không mở task tách tệp chỉ để đạt con số không có trong luật.
+
+### VD-129 · Đóng băng API std và cam kết tương thích (2026-11-16)
+Ba danh sách là cam kết tương thích: hàm std (FUNCS), mã chẩn đoán (all_codes), thẻ VBC1. Chúng được ghi thành tệp viscript/agent/API-STD.txt, API-CODES.txt, API-VBC1.txt (Agent 0 sở hữu sau lần tạo đầu). Test so code với tệp. Luật: không xoá, không đổi tên, không đổi ý nghĩa, không tái dùng số mã/số thẻ. Thêm mới chỉ khi có VD nêu đích danh tên được thêm. Đổi ý nghĩa thẻ VBC1 bắt buộc lên định dạng mới (VBC2). Khoá cache bytecode phải đổi khi bảng thẻ đổi. VBC1 không mang file trong Span ở VS2.
+
+### VD-130 · Kết luận review độc lập vòng 10+ (2026-11-16)
+(a) Value::Cap không được tạo từ dữ liệu ngoài (json.decode, đọc tệp, đối số) và không lộ quyền khi in/serialize. (b) FsGuard: kiểm TOCTOU; sửa nếu không cần `unsafe`, nếu cần thì ghi giới hạn có văn bản trong HOST-BAO-DAM.md. (c) `--grant` cho Proc so khớp ĐƯỜNG DẪN TUYỆT ĐỐI ĐÃ CANONICALIZE, không so basename. Giá trị grant không có `/` được phân giải qua PATH một lần lúc khởi động thành đường dẫn tuyệt đối. (e) json_esc phải qua fuzz chuỗi ngẫu nhiên 100k, đối chiếu json.decode và python3 json.loads.
+
+### VD-131 · Định nghĩa VS2 đóng + 5 câu bắt buộc (2026-11-16)
+VS2 đóng khi ST-119..ST-133 DONE hoặc BLOCKED-ENV có văn bản và R23 xác nhận số đo. Mỗi hạng mục ROADMAP ở một trong ba trạng thái: đã đóng (đo được) / chưa có trong VS2 (chuyển VS3, có văn bản) / chờ môi trường (BLOCKED-ENV, có lệnh tái lập). Mọi báo cáo R## từ R23 phải có nguyên văn 5 câu: "Async không song song." "Kênh không rendezvous." "Net không TLS." "Quyền chỉ siết mặc định khi dùng gói." "LSP chỉ publish tài liệu đang mở." Câu nào hết đúng thì Agent 0 sửa bằng VD mới.
