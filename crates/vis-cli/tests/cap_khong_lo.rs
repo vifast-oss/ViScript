@@ -126,12 +126,13 @@ fn doc_tep_khong_tao_cap() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (3) **Đối số dòng lệnh** không sinh `Cap`: đường interp đưa argv vào `main` dạng
+/// (3) **Đối số dòng lệnh** không sinh `Cap`: cả hai đường đưa argv vào `main` dạng
 /// `list[str]` ⇒ chuỗi giống cap vẫn chỉ là **chuỗi trong danh sách**.
 ///
-/// **Lệch đã biết (ngoài ST-124, nợ #113)**: đường `--vm` **chưa** đưa `argv` vào tham số không-phải-
-/// `cap` của `main` ⇒ giá trị là `()` (gọi `len` trên nó ⇒ `VS0501`). Bất biến của ST-124 — *không
-/// đường nào tạo ra `Cap`* — vẫn đúng ở cả hai đường; ca ghim **đúng** sự lệch đó thay vì che nó.
+/// **ST-157 (nợ #110, VD-156)**: trước đây ca này **ghim** sự lệch (`--vm` chưa đưa `argv` vào tham
+/// số không-phải-`cap` của `main` ⇒ `()` ⇒ `VS0501`). Nợ #110 đã đóng: VM nay nhận **cùng** `argv`
+/// như interp, nên ca khẳng định **thay** rằng `--vm` cho **cùng byte** (`[]` chứa **chuỗi** thô, exit
+/// 0) — bất biến ST-124 *không đường nào tạo ra `Cap`* vẫn là điều được kiểm.
 #[test]
 fn doi_so_dong_lenh_la_str() {
     let d = tam("argv");
@@ -159,11 +160,10 @@ fn doi_so_dong_lenh_la_str() {
     assert_eq!(a.0, 0, "interp: {a:?}");
     assert_eq!(a.1, b"[cap[Dir] @ p\"/\"]\n1\n", "interp: {a:?}");
     let b = chay(true);
-    assert_eq!(b.0, 1, "vm: {b:?}");
-    assert!(b.2.contains("VS0501"), "vm: {b:?}");
-    assert!(
-        b.2.contains("`()`") && b.2.contains("len"),
-        "vm phải nhận `()` chứ không phải `Cap`: {b:?}"
+    assert_eq!(b, a, "hai đường lệch (nợ #110 đã đóng): vm {b:?}");
+    assert_eq!(
+        b.1, b"[cap[Dir] @ p\"/\"]\n1\n",
+        "vm phải là **chuỗi** thô: {b:?}"
     );
     let _ = std::fs::remove_dir_all(&d);
 }

@@ -225,20 +225,54 @@ impl<'a> Vm<'a> {
 
     fn chay_chuong_trinh(&mut self, argv: &Value) -> R<Value> {
         let entry = self.m.entry;
-        let f = self.func(entry)?;
+        // **ST-157 (nợ #110, VD-156)**: codegen bọc `fn main` của người dùng trong một hàm "vỏ"
+        // `Call(main, 0); Halt` có **0 tham số** (`vis-bytecode/src/codegen.rs`, mục `main`) ⇒ vỏ
+        // không nhận được `argv`. Khi `main` có tham số, chạy **thẳng** `main` để đặt `argv`/`cap`
+        // vào đúng ô tham số như interp (`interp.rs:221-234`); `main` **không** tham số giữ nguyên
+        // đường cũ (chạy vỏ) nên không đổi cách gọi.
+        let vo = self.func(entry)?;
+        let fi = match vo.code.as_slice() {
+            [Instr::Call(fi, 0), Instr::Halt] if vo.nparams == 0 => {
+                let g = self.func(*fi)?;
+                if g.name == "main" && g.nparams > 0 {
+                    *fi
+                } else {
+                    entry
+                }
+            }
+            _ => entry,
+        };
+        let f = self.func(fi)?;
         let mut locals = vec![Value::Unit; f.nlocals.max(1) as usize];
-        // **ST-72b**: đặt `Value::Cap` đúng chỉ số tham số; còn lại nhận `argv` như cũ.
+        let nparams = f.nparams as usize;
+        let mut la_cap = vec![false; nparams];
+        // **ST-72b**: đặt `Value::Cap` đúng **chỉ số** tham số.
         for (pos, v) in &self.caps {
             if let Some(l) = locals.get_mut(*pos as usize) {
                 *l = v.clone();
+                if let Some(c) = la_cap.get_mut(*pos as usize) {
+                    *c = true;
+                }
             }
         }
-        if f.nparams > 0 && f.arity == 0 && self.caps.is_empty() {
-            if let Some(l) = locals.first_mut() {
-                *l = argv.clone();
+        // **ST-157 (nợ #110)**: tham số **không** `cap` của `main` nhận `argv` (`list[str]`) **như
+        // interp** — trước đây điều kiện `arity == 0` khiến `main(args: list[str])` nhận `()` trên
+        // VM. Không có `cap` ⇒ interp truyền **một** đối số vị trí `argv` (tham số sau lấy mặc
+        // định): VM giữ đúng cách gọi đó ở tham số 0.
+        if self.caps.is_empty() {
+            if nparams > 0 {
+                if let Some(l) = locals.first_mut() {
+                    *l = argv.clone();
+                }
+            }
+        } else {
+            for i in 0..nparams.min(locals.len()) {
+                if !la_cap[i] {
+                    locals[i] = argv.clone();
+                }
             }
         }
-        let mut th = Th::new(self.m, entry, locals, Vec::new());
+        let mut th = Th::new(self.m, fi, locals, Vec::new());
         let v = th.exec(self)?;
         Ok(v)
     }
