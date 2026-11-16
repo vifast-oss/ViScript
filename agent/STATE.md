@@ -1,19 +1,22 @@
-# STATE — ViScript (vòng 25 — ST-141 DONE: log bằng chứng không ghi đè (VD-147(5)) · gate macOS PASS)
+# STATE — ViScript (vòng 25 — ST-142 DONE: số Linux đầy đủ trên ps, đặt cạnh macOS cùng HEAD · gate macOS PASS)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối ST-141 (log không ghi đè, 2026-11-16).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối ST-142 (số Linux đầy đủ, 2026-11-16).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143/VD-144/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
-`JOURNAL/st141-gate-macos.log` · `JOURNAL/st141-gate-macos-lan2.log`.
+`JOURNAL/st141-gate-macos.log` · `JOURNAL/st141-gate-macos-lan2.log` ·
+`JOURNAL/st142-mac-vis-test.log` · `st142-mac-vis-test-vm.log` · `st142-mac-diff-100k.log` · `st142-mac-cache.log` ·
+`st142-ps-build.log` · `st142-ps-vis-test.log` · `st142-ps-vis-test-vm.log` · `st142-ps-diff-100k.log` ·
+`st142-ps-cache.log` · `st142-gate-macos.log`.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 25 — ST-138 lật **DONE** (`9e616960`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`)
-Task đang làm : —  ·  ST-141 DONE: `vis-soak` nhận `--log`/`VIS_SOAK_LOG`, tên mặc định theo ID task, cấm ghi đè (exit 2);
-                log soak vòng 20 khôi phục + tách soak đợt 24; `vis-host-suite` in nền thật `uname -sm`; dòng CHỜ DUYỆT dưới hàng
-Task kế       : **ST-142** — số Linux đầy đủ (nợ #130): `vis test test/sem` interp và `--vm`, diff 100k seed 20261115, cache,
-                trên `ps`; 447/447 cả hai đường, lech=0, số đặt cạnh macOS kèm hash; sau đó ST-143, ST-144, ST-145, ST-146 (R25)
+Vòng          : 25 — ST-138 lật **DONE** (`9e616960`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (commit của task này)
+Task đang làm : —  ·  ST-142 DONE: đo **cùng HEAD `ee58a518`** trên macOS và `ps` — `vis test` 447/447 hai đường (0 SKIP), diff 100k
+                lech=0, cache 520×4 0 lệch; số hai nền đặt cạnh nhau, lệch chỉ là thời gian (đã liệt kê); không sửa mã/test
+Task kế       : **ST-143** — soak 10 vòng trên `ps`: log `st143-soak.log`; 10/10 hoặc liệt kê vòng đỏ + phân loại T-INFRA
+                (chạy lại tối đa 1 lần chỉ để phân loại); sau đó ST-144, ST-145, ST-146 (R25)
 Nhánh         : main
 ```
 
@@ -26,6 +29,8 @@ Linux : cargo test 1161/1 (129 suite, tổng 1162) · host 54/54 · targets 18/1
         vis-host-linux 13/13 ca (3 ca âm tiến trình con) · TOCTOU 0/50 000 · gate 10/11 buớc (1 ca môi trường)
         **ST-140 (@ 02fb7320)**: cargo test **1162/0** (129 suite) · gate --fast **PASS** (L0 **1162/0**, 12/12 dòng OK)
         **ST-141 (@ f447f1b0)**: `st113-soak.log` d2840412… (khôi phục) · `st138-soak.log` d79df3c2… · host 54/54 in "Linux x86_64" trên ps
+        **ST-142 (@ ee58a518, cùng HEAD hai nền)**: vis test **447/447** hai đường (0 SKIP) · diff 100k **lech=0** · cache 520×4 **0 lệch**
+                  mac: 6 s / 6 s / 157,4 s / 25,43 s · ps: 4 s / 4 s / 40,9 s / 6,33 s · gate macOS PASS, L0 1159/0
 Windows (chỉ đo, psvn, hash 632e1fba): cargo test 1051/102 · host 39/54 · targets 8/18 · gate FAIL ở clippy
 ```
 
@@ -34,12 +39,12 @@ BLOCKED        : không có hàng BLOCKED.
 Cần Agent 0/1  : (1) dán APPROVED ST-137 (và ST-130/132b/134/136) để hạng mục Quyền chính thức đóng;
                  (2) ~~VD thứ 3 cho ca coreutils multicall trên runner (#139)~~ đã có **VD-144**, làm ở ST-140 (chờ duyệt); (3) một dòng giới hạn đường GHI
                  trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3.
-Cổng gần nhất  : macOS `gate --fast` **PASS** (ST-141, exit 0) trên cây `02aa96af` + 2 script ⇒ commit `f447f1b0`:
-                 L0 **1159/0** (129 suite), 12/12 dòng OK, report-check PASS (24 báo cáo, 164 hàng QUEUE), doc-examples OK (24 khối);
-                 log `JOURNAL/st141-gate-macos-lan2.log` sha256 `d62cb72ed5218a0981191fc646cbedf743a6bcd5d0964c63d7f6f1f3411b20de`.
-                 Lần 1 đỏ **T-INFRA** `vistest::tests::stderr_nhieu_khong_bi_qua_han_oan` (stderr 0/220000 byte trong L0 đủ tải;
-                 chạy riêng **5/5 xanh**); giữ log `JOURNAL/st141-gate-macos.log` sha256 `9e0fe26d…`, chạy lại **một** lần để phân loại.
-                 Trước đó: ST-140 gate macOS L0 1159/0 @ `02fb7320`, `ps` L0 1162/0 · ST-138b gate nền cũ @ `69112900` (L0 1159/0).
+Cổng gần nhất  : macOS `gate --fast` **PASS** (ST-142, exit 0) trên cây `ee58a518` (viscript/ sạch, chỉ thêm log):
+                 L0 **1159/0** (129 suite), **10/10** dòng `--- …: OK`, report-check PASS (24 báo cáo, 164 hàng QUEUE),
+                 doc-examples OK (24 khối), 295 s; log `JOURNAL/st142-gate-macos.log` sha256 `676f1ee24db86415560a872949398241ef1b3a07500163cc59428d2ea338e0c3`.
+                 Trước đó: ST-141 L0 1159/0 @ `02aa96af` (`st141-gate-macos-lan2.log` `d62cb72e…`; lần 1 đỏ T-INFRA
+                 `vistest::tests::stderr_nhieu_khong_bi_qua_han_oan`, chạy riêng 5/5 xanh); ST-140 gate macOS L0 1159/0 @ `02fb7320`,
+                 `ps` L0 1162/0; ST-138b gate nền cũ @ `69112900` (L0 1159/0).
 Việc dở        : —
 ```
 
