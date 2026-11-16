@@ -1,16 +1,18 @@
-# STATE — ViScript (vòng 24 — VS2 đã chốt về kỹ thuật, chờ dán APPROVED)
+# STATE — ViScript (vòng 25 — ST-140 DONE: ca coreutils theo VD-144 · VS2 chờ dán APPROVED)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23f/24 (ST-138b gate --fast, 2026-11-16).
-Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143 · `reports/R24-viscript.md` ·
-`JOURNAL/st138b-gate-fast.log`.
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối ST-140 (số đo hai nền, 2026-11-16).
+Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143/VD-144/VD-147/VD-148 ·
+`reports/R24-viscript.md` · `JOURNAL/st140-red-ps.log` · `JOURNAL/st140-cargo-test-ps.log` ·
+`JOURNAL/st140-gate-macos.log` · `JOURNAL/st140-gate-ps.log`.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 24 — 7/7 hàng đợt 23f DONE (ST-130, ST-132b, ST-134, ST-135, ST-136, ST-137, ST-138)
-Task đang làm : —  ·  ST-138b DONE (gate --fast PASS, dòng CHỜ DUYỆT dưới hàng); ST-138 để `READY` có ghi chú (VD-143: chờ Agent 1 dán APPROVED mới lật DONE)
-Task kế       : ST-140 — ca coreutils theo VD-144 (đỏ trước trên ps; sau: xanh ps + macOS, `cargo test --workspace`
-                trên ps 0 đỏ, `gate --fast` trên ps PASS); sau đó ST-141, ST-142, ST-143, ST-144, ST-145, ST-146 (R25)
+Vòng          : 25 — ST-138 lật **DONE** (16g §5.2, `9e616960`) + ST-140 **DONE** (ca coreutils theo VD-144, `02fb7320`)
+Task đang làm : —  ·  ST-140 DONE: ca `symlink_canonicalize_hai_phia` dùng `/bin/sh -c`, xanh **hai nền**; dòng CHỜ DUYỆT dưới hàng
+Task kế       : **ST-141** — log không ghi đè (VD-147(5)): `vis-soak` nhận `VIS_SOAK_LOG`/`--log`, mặc định tên theo ID
+                task; khôi phục `st113-soak.log`; tách `st138-soak.log`; `vis-host-suite` in nền thật; sau đó
+                ST-142, ST-143, ST-144, ST-145, ST-146 (R25)
 Nhánh         : main
 ```
 
@@ -21,18 +23,21 @@ macOS : gate --fast PASS · cargo test 1159/0 (129 suite) · vis test 447 ok · 
         host 54/54 · targets 18/18 · soak 10/10 = 1352 s · R1 1498 · FUNCS 52 · all_codes 33 · VBC1 53
 Linux : cargo test 1161/1 (129 suite, tổng 1162) · host 54/54 · targets 18/18 (sau infra/linux/setup.sh)
         vis-host-linux 13/13 ca (3 ca âm tiến trình con) · TOCTOU 0/50 000 · gate 10/11 buớc (1 ca môi trường)
+        **ST-140 (@ 02fb7320)**: cargo test **1162/0** (129 suite) · gate --fast **PASS** (L0 **1162/0**, 12/12 dòng OK)
 Windows (chỉ đo, psvn, hash 632e1fba): cargo test 1051/102 · host 39/54 · targets 8/18 · gate FAIL ở clippy
 ```
 
 ```
 BLOCKED        : không có hàng BLOCKED.
 Cần Agent 0/1  : (1) dán APPROVED ST-137 (và ST-130/132b/134/136) để hạng mục Quyền chính thức đóng;
-                 (2) VD thứ 3 cho ca coreutils multicall trên runner (#139); (3) một dòng giới hạn đường GHI
+                 (2) ~~VD thứ 3 cho ca coreutils multicall trên runner (#139)~~ đã có **VD-144**, làm ở ST-140 (chờ duyệt); (3) một dòng giới hạn đường GHI
                  trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3.
-Cổng gần nhất  : macOS `gate --fast` **PASS @ `69112900`** (ST-138b, 15 ph 48 s, exit 0): L0 **1159/0** (129 suite),
-                 10 bước OK, report-check PASS (24 báo cáo, 164 hàng QUEUE), doc-examples OK;
-                 log `JOURNAL/st138b-gate-fast.log` sha256 `1c6e3d18b4eeb435a4a38cad09138c39169322ec85010590cc08f51916cc58d6`.
-                 Trước đó: soak 10/10 = 1352 s · report-check PASS (24 báo cáo, 156 hàng QUEUE).
+Cổng gần nhất  : macOS `gate --fast` **PASS @ `02fb7320`** (ST-140, exit 0): L0 **1159/0** (129 suite), 12/12 dòng OK,
+                 report-check PASS (24 báo cáo, 164 hàng QUEUE), doc-examples OK;
+                 log `JOURNAL/st140-gate-macos.log` sha256 `62a25edeee8e0308bc3fd2684dff3945010baa00272d39dc7e9bcd49dffe3b63`.
+                 `ps` cùng hash: cargo test --workspace **1162/0** (129 suite), `gate --fast` **PASS** (L0 **1162/0**),
+                 log `JOURNAL/st140-gate-ps.log` sha256 `647c925be791f17cce4e70207bff173e0dd6c3d1270663865e567b3e0bbdc627`.
+                 Trước đó: ST-138b gate PASS @ `69112900` (L0 1159/0) · soak 10/10 = 1352 s.
 Việc dở        : —
 ```
 
