@@ -102,7 +102,7 @@ const EXCLUDED: [(usize, &str); EXCLUDED_COUNT] = [
 // **SỬA KÈM LÝ DO (ST-120b)**: 4 dòng trỏ `> Mức hiện thực VS2: …` (Phụ lục B, đợt 23) làm dịch
 // số dòng của 6 khối: 535→539, 549→553, 571→575, 684→688, 698→702, 1459→1467. Số kỳ vọng
 // (item/sym/khai báo/chẩn đoán) **không đổi** — chỉ toạ độ đổi.
-    const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
+const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // **SỬA KÈM LÝ DO (ST-57)**: `derives Eq, Show` **sinh** `impl` ⇒ +1 item (`HImpl`) và +5
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
