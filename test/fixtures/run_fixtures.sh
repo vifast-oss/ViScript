@@ -54,8 +54,18 @@ expect_fail "unsafe" "R2" "$tmp/3"
 mkdir -p "$tmp/4/vis-host-vifast"; printf '# SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/4/vis-host-vifast/Cargo.toml"
 expect_fail "vis-host-vifast trong viscript/" "R4" "$tmp/4"
 # 5) môi trường sạch không có cargo: phải báo "không thấy cargo", không được 127
+# **SỬA KÈM LÝ DO (ST-121)**: bản cũ dùng `PATH=/usr/bin:/bin` và ngầm giả định cargo **không**
+# nằm ở đó (đúng trên macOS — cargo chỉ ở ~/.cargo/bin). Trên Linux cargo của distro nằm ở
+# /usr/bin/cargo, cùng chỗ với coreutils ⇒ PATH đó vẫn CÓ cargo, kịch bản "máy sạch" không dựng
+# được (đo trên Ubuntu 26.04: rc=101 "failed to acquire package cache lock"). Nay dựng PATH theo
+# máy: chỉ trỏ tới coreutils tối thiểu mà `bin/vis` cần (`dirname`), không bao giờ có cargo.
+# Kỳ vọng của ca **không đổi**: rc ≠ 0, rc ≠ 127, thông điệp "không thấy cargo".
 n=$((n + 1))
-out=$(env -i HOME=/nonexistent PATH=/usr/bin:/bin bash "$VIS_ROOT/bin/vis" explain VS0107 2>&1)
+mkdir -p "$tmp/nocargo"
+for t in dirname; do
+    src=$(command -v "$t" 2>/dev/null) && ln -sf "$src" "$tmp/nocargo/$t"
+done
+out=$(env -i HOME=/nonexistent PATH="$tmp/nocargo" "$(command -v bash)" "$VIS_ROOT/bin/vis" explain VS0107 2>&1)
 rc=$?
 if [ "$rc" -eq 127 ]; then
     echo "not ok $n - thiếu cargo vẫn nổ 127"; bad=$((bad + 1))

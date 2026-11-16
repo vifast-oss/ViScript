@@ -5,7 +5,7 @@
 Mọi sự thật trong báo cáo phải đối chiếu được với máy: `head` tồn tại + là tổ tiên HEAD;
 mọi `commits[]` tồn tại; `status` khớp QUEUE **hoặc** có trường `queue` ghi đúng giá trị QUEUE
 (ghi cả hai khi sổ chưa lật); phủ đủ mọi hàng QUEUE; `blocked[]` phủ mọi hàng BLOCKED/REVIEW;
-YC phải có thật trong `v2/agent/BLOCKED.md`; `project == "viscript"`.
+YC phải có thật trong `viscript/agent/BLOCKED.md`; `project == "viscript"`.
 """
 import json
 import re
@@ -16,7 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 REPORTS = ROOT / "viscript/agent/reports"
 QUEUE = ROOT / "viscript/agent/QUEUE.md"
-BLOCKED = ROOT / "v2/agent/BLOCKED.md"
+# **SỬA KÈM LÝ DO (ST-121)**: bản cũ trỏ `v2/agent/BLOCKED.md` — tệp của **dòng OS**.
+# Hệ quả: cổng ViScript không chạy được trên một cây chỉ có `viscript/` (đo trên Linux:
+# `FileNotFoundError: /root/vifast-linux/v2/agent/BLOCKED.md`). Dòng ViScript có tệp chặn
+# riêng; không báo cáo ViScript nào dùng id `YC-` nên đổi đường dẫn không đổi kết luận.
+BLOCKED = ROOT / "viscript/agent/BLOCKED.md"
 
 KEYS = {"project", "round", "head", "build_id", "tasks", "gates",
         "sim", "coverage", "mutants", "perf", "blocked"}
