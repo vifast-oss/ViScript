@@ -415,6 +415,143 @@ fn con_ghi_vao_thu_muc_chi_doc_bi_kernel_chan() {
     let _ = fs::remove_dir_all(&trong_ghi);
 }
 
+/// **ST-154 — nợ #144 (VD-153)**: ca **DƯƠNG** `read_dir` trên thư mục **CÓ quyền ghi**.
+///
+/// ST-150 (nợ #133) phủ đường **ghi** ở tiến trình con. Vế còn lại của #133 — `read_dir` trên thư mục
+/// **có quyền ghi** (ST-132b §7) — chưa có ca nào khoá, nên nhận số **#144** (VD-153). Ca này đủ **bốn**
+/// phần:
+/// 1. **đỏ-trước** — chưa áp ruleset, cùng helper liệt kê được `trong-ghi`;
+/// 2. **MỘT** ruleset **HAI** luật (`trong` chỉ-đọc, `trong-ghi` được ghi) như ca 14 ⇒ luật ghi phân biệt
+///    đúng **từng** thư mục trong cùng domain;
+/// 3. **`read_dir` trên thư mục CÓ quyền ghi vẫn liệt kê được** ⇒ `exit 0` + danh sách có `co.txt`
+///    (tệp được ghi **trước** khi áp ruleset), kèm đối chứng luật ghi **thật sự** có hiệu lực: helper ghi
+///    được tệp mới trong `trong-ghi` rồi `ls` thấy **cả hai** tệp — nên không phải "thư mục gọi là có
+///    quyền ghi nhưng luật ghi không có tác dụng";
+/// 4. **âm ngoài phạm vi trong cùng ca** — cùng helper, cùng domain, `ls` thư mục thứ ba ⇒ `exit 7` +
+///    `Permission denied` (`EACCES`), nên không phải "xanh vì ruleset bỏ hết luật".
+///
+/// Helper gọi thẳng `std::fs::read_dir` — **không** đi qua `FsGuard` nào ⇒ lỗi ở (4) là **kernel**
+/// (Landlock) chặn, đúng VD-120. Chạy bằng `root` trên `ps` nên quyền POSIX (DAC) không giải thích được.
+/// Không sửa ca nào khác; không `#[ignore]`/`cfg`-bỏ.
+#[test]
+fn con_read_dir_thu_muc_co_quyen_ghi_van_liet_ke_duoc() {
+    let trong = tam("con7-trong");
+    let trong_ghi = tam("con7-trong-ghi");
+    let ngoai = tam("con7-ngoai");
+    let helper = dung_helper(&trong);
+
+    // `co.txt` phải có **trước** khi áp ruleset: chứng minh `read_dir` thấy nội dung **đã có sẵn**, không
+    // phải thấy tệp do chính lần đo tạo ra.
+    let co = trong_ghi.join("co.txt");
+    fs::write(&co, "co san\n").expect("ghi sẵn co.txt trong thư mục có quyền ghi");
+    fs::write(trong.join("duoc.txt"), "duoc\n").expect("tệp trong");
+    fs::write(ngoai.join("bi-mat.txt"), "bi mat\n").expect("tệp ngoài");
+
+    // (1) ĐỎ-TRƯỚC: **chưa** áp ruleset ⇒ cùng helper liệt kê được `trong-ghi`. Dòng in này là bằng chứng
+    // "đỏ" (không sandbox thì liệt kê được), nên nó phải nằm trong log của lần đo `--nocapture`.
+    let truoc = chay_con(&helper, &["ls", trong_ghi.to_str().unwrap()]);
+    let truoc_out = String::from_utf8_lossy(&truoc.stdout).to_string();
+    println!(
+        "ĐỎ-TRƯỚC (không áp ruleset, ls trong-ghi): exit={:?} stdout={:?}",
+        truoc.status.code(),
+        truoc_out.trim()
+    );
+    assert_eq!(
+        truoc.status.code(),
+        Some(0),
+        "chưa áp sandbox phải liệt kê được thư mục: {truoc:?}"
+    );
+    assert!(
+        truoc_out.contains("co.txt"),
+        "đỏ-trước: phải thấy co.txt: {truoc_out}"
+    );
+
+    // (2) **MỘT** ruleset, **HAI** luật: `trong` chỉ-đọc, `trong-ghi` được ghi.
+    let kq = ap(&[
+        ChoPhep {
+            duong: trong.clone(),
+            ghi: false,
+            la_tep: false,
+        },
+        ChoPhep {
+            duong: trong_ghi.clone(),
+            ghi: true,
+            la_tep: false,
+        },
+    ]);
+    assert_eq!(kq.so_luat, 2, "ruleset phải có đúng hai luật: {kq:?}");
+
+    // (3a) Nợ #144 — điểm chính: `read_dir` trên thư mục **CÓ quyền ghi** vẫn liệt kê được.
+    let out = chay_con(&helper, &["ls", trong_ghi.to_str().unwrap()]);
+    let ds = String::from_utf8_lossy(&out.stdout).to_string();
+    println!(
+        "SAU RULESET (trong-ghi, ghi=true): exit={:?} stdout={:?}",
+        out.status.code(),
+        ds.trim()
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "con read_dir trên thư mục có quyền ghi phải liệt kê được: {out:?}"
+    );
+    assert!(
+        ds.contains("co.txt"),
+        "phải liệt kê co.txt (ghi trước ruleset): {ds}"
+    );
+
+    // (3b) Đối chứng luật ghi **thật sự** có hiệu lực trong cùng thư mục: ghi được rồi `ls` thấy đủ hai tệp.
+    let moi = trong_ghi.join("moi.txt");
+    let duong = chay_con(&helper, &["ghi", moi.to_str().unwrap(), "moi ghi\n"]);
+    println!(
+        "ĐỐI CHỨNG GHI (trong-ghi, ghi=true): exit={:?}",
+        duong.status.code()
+    );
+    assert_eq!(
+        duong.status.code(),
+        Some(0),
+        "luật ghi trong thư mục được cấp phải có hiệu lực: {duong:?}"
+    );
+    assert_eq!(
+        doc(&moi).expect("đối chứng ghi: tệp phải được tạo"),
+        "moi ghi\n"
+    );
+    let lai = chay_con(&helper, &["ls", trong_ghi.to_str().unwrap()]);
+    let ds_lai = String::from_utf8_lossy(&lai.stdout).to_string();
+    assert_eq!(
+        lai.status.code(),
+        Some(0),
+        "read_dir lại sau khi ghi phải OK: {lai:?}"
+    );
+    for ten in ["co.txt", "moi.txt"] {
+        assert!(
+            ds_lai.contains(ten),
+            "phải thấy {ten} sau khi ghi: {ds_lai}"
+        );
+    }
+
+    // (4) Âm ngoài phạm vi **trong cùng ca**: cùng helper, cùng domain, thư mục thứ ba ⇒ `EACCES`.
+    let am = chay_con(&helper, &["ls", ngoai.to_str().unwrap()]);
+    let loi = String::from_utf8_lossy(&am.stderr).to_string();
+    println!(
+        "ÂM NGOÀI PHẠM VI (ls ngoai): exit={:?} stderr={:?}",
+        am.status.code(),
+        loi.trim()
+    );
+    assert_eq!(
+        am.status.code(),
+        Some(7),
+        "con read_dir ngoài phạm vi phải bị từ chối: {am:?}"
+    );
+    assert!(
+        loi.contains("Permission denied"),
+        "kernel phải trả Permission denied ở read_dir ngoài: {loi}"
+    );
+
+    let _ = fs::remove_dir_all(&trong);
+    let _ = fs::remove_dir_all(&trong_ghi);
+    let _ = fs::remove_dir_all(&ngoai);
+}
+
 /// Không có luật nào ⇒ **mọi** truy cập hệ tệp bị chặn (deny-by-default của Landlock).
 #[test]
 fn khong_co_luat_nao_thi_chan_het() {
