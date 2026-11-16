@@ -1,35 +1,34 @@
-# STATE — ViScript (vòng 23 — ĐÃ CHỐT, bàn giao đợt 24)
+# STATE — ViScript (vòng 24 — VS2 đã chốt về kỹ thuật, chờ dán APPROVED)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23 (ST-133, 2026-11-16).
-Nguồn: `JOURNAL/quyet-dinh-a0-2026-11-16.md` (VD-119..VD-131) · báo cáo chốt `reports/R23-viscript.md`.
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối đợt 23f/24 (ST-138, 2026-11-16).
+Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-141/VD-142/VD-143 · `reports/R24-viscript.md`.
 
 ```
 HEAD (repo)   : xem `git log -1`
-HEAD ViScript : commit cuối của dòng ViScript trong `git log -- viscript/`
-Vòng          : 23 — **15/15 hàng ST-119..ST-133 DONE** (không còn READY/REVIEW/BLOCKED trong đợt)
-Task đang làm : —
-Task kế       : đợt 24 theo R23 §6 — ưu tiên 1: sửa rò rỉ TOCTOU trên Linux (nợ #128)
+HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
+Vòng          : 24 — 7/7 hàng đợt 23f DONE (ST-130, ST-132b, ST-134, ST-135, ST-136, ST-137, ST-138)
+Task đang làm : —  ·  ST-138 để `READY` có ghi chú (VD-143: chờ Agent 1 dán APPROVED mới lật DONE)
+Task kế       : đợt 25 theo R24 §5 — duyệt ST-137, quyết giới hạn đường GHI (#140), macOS fd→path (#137),
+                VD thứ 3 cho ca coreutils (#139), chạy vis test/diff/cache trên Linux (R23 nợ #130)
 Nhánh         : main
 ```
 
-**Số khoá R23** (macOS đo trên `c96506ba`; không viết tay số mới, phải chạy lệnh):
+**Số khoá R24** (đo trên `7881eb30`/HEAD của đợt; lệnh tái lập ở R24 §2):
 
 ```
-1153 test / 129 suite / 0 đỏ · sem 447/22 nhóm · vis test 447 ok · --vm 447 ok + 0 SKIP · parity 398 + 49
-differential 100k lech=0 (3 lần) · cache 520×4 lech=0 · host suite 54/54 (macOS và Linux) · targets 18/18 check
-R1 max 1498 · FUNCS 52 · all_codes 33 · VBC1 53 · allowlist 6 · soak 10/10 = 1447 s
-Linux (runner ps, Ubuntu 26.04, rustc 1.99.1, landlock ABI 8): cargo test 1147/6 · host suite 54/54 · Landlock 12/12 ca
+macOS : gate --fast PASS · cargo test 1159/0 (129 suite) · vis test 447 ok · --vm 447 ok · diff 100k lech=0
+        host 54/54 · targets 18/18 · soak 10/10 = 1352 s · R1 1498 · FUNCS 52 · all_codes 33 · VBC1 53
+Linux : cargo test 1161/1 (129 suite, tổng 1162) · host 54/54 · targets 18/18 (sau infra/linux/setup.sh)
+        vis-host-linux 13/13 ca (3 ca âm tiến trình con) · TOCTOU 0/50 000 · gate 10/11 buớc (1 ca môi trường)
+Windows (chỉ đo, psvn, hash 632e1fba): cargo test 1051/102 · host 39/54 · targets 8/18 · gate FAIL ở clippy
 ```
-
-Lệnh tái lập: `bash viscript/bin/vis-dev gate --fast` · `cd viscript && cargo test --workspace` · `bin/vis-soak` ·
-`bash viscript/bin/vis-linux gate` (Linux) · `bash viscript/bin/vis-linux run bash -c 'cd vis-host-linux && cargo test'`.
 
 ```
 BLOCKED        : không có hàng BLOCKED.
-Chờ môi trường : runner Linux thiếu `wasm32-unknown-unknown` ⇒ `targets.rs` đỏ trên Linux (nợ #123).
-Cần Agent 0    : (1) giấy phép `unicode-ident` ngoài allowlist hẹp (nợ #126); (2) hàng `ST-132b` do Agent 2
-                 tự thêm, chưa duyệt (nợ #131); (3) duyệt 15 hàng CHỜ DUYỆT; (4) rò rỉ TOCTOU Linux (#128).
-Cổng gần nhất  : macOS `gate --fast` PASS; soak 10/10 = 1447 s; report-check PASS (23 báo cáo, 153 hàng QUEUE).
+Cần Agent 0/1  : (1) dán APPROVED ST-137 (và ST-130/132b/134/136) để hạng mục Quyền chính thức đóng;
+                 (2) VD thứ 3 cho ca coreutils multicall trên runner (#139); (3) một dòng giới hạn đường GHI
+                 trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3.
+Cổng gần nhất  : macOS gate PASS · soak 10/10 = 1352 s · report-check PASS (24 báo cáo, 156 hàng QUEUE).
 Việc dở        : —
 ```
 
