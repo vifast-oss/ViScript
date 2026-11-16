@@ -1,9 +1,9 @@
 # SO-NO.md — Sổ nợ duy nhất của dòng ViScript
 
-**Task**: ST-145 (lập sổ) · **ST-148** (cập nhật số 142/143 theo **VD-149**) ·
+**Task**: ST-145 (lập sổ) · **ST-148** (cập nhật số 142/143 theo **VD-149**) · **ST-149** (đóng **#136**) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-148**) · **HEAD khi cập nhật**: `b855caa3`
+**Cập nhật**: 2026-11-17 (**ST-149**) · **HEAD khi cập nhật**: `6ce972ef`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -204,7 +204,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 133 | Ca `read_dir` mới kiểm luật chỉ-đọc, chưa kiểm luật ghi | R24 §5 · ST-132b | mở |
 | 134 | `setup.sh` cài thêm `x86_64-pc-windows-msvc` (ngoài `wasm32`) để đạt 18/18 — cần Agent 0 chuẩn thuận (VD-146(1) + ST-144: 2/2 target đã cài) | R24 §5 · ST-134 · VD-146(1) · QUEUE ST-144 | đóng ở ST-144 |
 | 135 | `vis-linux` phải sync cả `vis-host-wasm/`; chưa có kiểm tự động danh sách sync | R24 §5 · ST-134 | mở |
-| 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá | R24 §5 · ST-134 | mở |
+| 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá — **ST-149 đã sửa**: biến bind từ ngoài (`let`/`var`/`const` cấp tệp + tham số `cmd`/`fn`) **che** tên lệnh ⇒ thân là **biểu thức**; không bind ⇒ luật ST-134 nguyên vẹn | R24 §5 · ST-134 · QUEUE ST-149 · `JOURNAL/st149-do-truoc.log` · `JOURNAL/st149-tai-hien.log` | đóng ở ST-149 |
 | 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 | chuyển VS3 |
 | 138 | `/proc` phải đọc được trên Linux, nếu không ⇒ `VS0604` (hành vi đúng, nhưng người vận hành phải biết) | R24 §5 · ST-137 | mở |
 | 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 · JOURNAL/st140-red-ps.log · JOURNAL/st140-cargo-test-ps.log | đóng ở ST-140 |
@@ -317,21 +317,24 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **144** (1..143; #109 tách `a`/`b`) |
-| `mở` | **94** |
-| `đóng` | **28** |
+| `mở` | **93** |
+| `đóng` | **29** |
 | `chuyển VS3` | **20** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 94 mở + 28 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
+Kiểm: 93 mở + 29 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
 
 **Đóng trong đợt 24g (ST-148 đối chiếu lại, chỉ ghi khi có bằng chứng trong repo):** `#89` (ST-139 · PR #24 ·
 `ef6489d1` · `JOURNAL/st139-do-truoc.log`), `#130` (ST-142 · `JOURNAL/st142-ps-*.log`: 447/447 hai đường,
 `lech=0`), `#139` (ST-140 · `JOURNAL/st140-red-ps.log` + `st140-cargo-test-ps.log`), `#126` (ST-132 · VD-135),
 `#131` (ST-00 · đính chính R23/R24 §1). Giữ **mở**: `#109b`/`#140` (đường ghi — dòng giới hạn đã có trong
 `HOST-BAO-DAM.md`; sửa kỹ thuật thuộc VS3).
+
+**Đóng trong đợt 25:** `#136` (ST-149 · nợ phân loại thân `cmd` — biến bind từ ngoài che tên lệnh;
+đỏ-trước `JOURNAL/st149-do-truoc.log`, tái hiện `JOURNAL/st149-tai-hien.log`, `cargo test --workspace` 1163/0).
 
 ## 9. Máy kiểm của task này
 
@@ -354,3 +357,16 @@ Kiểm: 94 mở + 28 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **14
   report-check PASS (25/170), doc-examples OK (24 khối) — `JOURNAL/st148-gate-macos.log` (header VD-136 + sha256
   + `[exit=0]`).
 
+**ST-149 (nợ #136, HEAD `456e8a4a` + mã/ca ST-149)**:
+
+- Đỏ-trước: `cargo test -p vis-cli --test vish_cmd_body -- --test-threads=1` ⇒ ca
+  `bien_bind_cap_tep_trung_ten_lenh_la_bieu_thuc` in **bảng `ls`** thay vì `3` (19/20 xanh) —
+  `JOURNAL/st149-do-truoc.log` (sha256 `63928844f57e640f5185f8b61f9c59041c626b7447d92a1abd72cee6807f8068`).
+- Sửa: `crates/vis-types/src/lower/khai.rs` **+37/−6** (helper `ten_bien_bind_toi` + `la_lenh_da_biet` loại trừ biến
+  bind từ ngoài); **4 ca mới** (20 ca) trong `crates/vis-cli/tests/vish_cmd_body.rs`; tái hiện in **`3`**
+  (`JOURNAL/st149-tai-hien.log`, sha256 `6beba7334be163a1e3a3c1eb0245236bd86b4263dea091599508819561273d8c`).
+- `cargo test --workspace` ⇒ **1163/0** (129 suite; 1159 + 4 ca) — `JOURNAL/st149-cargo-test.log`
+  (sha256 `96ab2705eedf4450d41e6108d7b6430b71bcd5b75bf76fc9e64330fdf47e2237`).
+- `cd viscript && ../vis-dev gate --fast` ⇒ **PASS**, `[exit=0]`, **10/10** bước `--- …: OK`, L0 **1163/0** (129 suite),
+  report-check PASS (25 báo cáo, 171 hàng QUEUE), doc-examples OK (24 khối) — `JOURNAL/st149-gate-macos.log`
+  (header VD-136 + sha256 + `[exit=0]`, sha256 `ad574c8e1994a0e48e62b2214e957dd0eb74fa504a5ef06878b2803451005c2f`).

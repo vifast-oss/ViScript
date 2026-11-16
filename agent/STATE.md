@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 25 — ST-147 **BLOCKED phần Windows**: UTF-8 cho mọi lần gọi python của cổng (**VD-150**) đã xong — gate macOS **PASS** `[exit=0]` **10/10** bước, L0 **1159/0** (129 suite), report-check PASS 25 báo cáo/**170** hàng · `psvn` **11/12** self-test (từ 7/12), cổng **dừng ở bước self-test** (chưa qua bước 5); ca 7 còn đỏ **không phải encoding** — `crates/vis-cli/src/cli/check.rs` tách basename bằng `'/'` (mã sản phẩm, VS3, cần VD) · task kế: **ST-149**)
+# STATE — ViScript (vòng 25 — **ST-149 DONE**: nợ **#136** đóng — thân `cmd` nhận **biến bind từ ngoài** trùng tên lệnh là **biểu thức** (`crates/vis-types/src/lower/khai.rs` **+37/−6**, **4 ca mới**); đỏ-trước in **bảng `ls`**, nay in **`3`**; `cargo test --workspace` **1163/0** (129 suite), gate macOS **PASS** `[exit=0]` **10/10** bước, L0 **1163/0**, report-check PASS 25 báo cáo/**171** hàng · **ST-147 lật DONE** theo `ĐÓNG HÀNG` của Agent 0 · task kế: **ST-150**)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-147** (sổ nợ theo VD-149, 2026-11-17).
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-149** (nợ #136 — thân `cmd` + biến bind từ ngoài, 2026-11-17).
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -21,21 +21,20 @@ Nguồn (ST-147): `DECISIONS.md` **VD-150** · `bin/vis-dev` · `test/fixtures/r
 Nguồn (ST-148): `DECISIONS.md` **VD-149** · `agent/SO-NO.md` · `JOURNAL/st148-kiem-trung.log` ·
 `JOURNAL/st148-check-report.log` · `JOURNAL/st148-gate-macos.log` · `JOURNAL/2026-11-17.md` §ST-148 ·
 `QUEUE.md` hàng ST-148 · `HOST-BAO-DAM.md` §4 (dòng giới hạn đường ghi).
+Nguồn (ST-149): `QUEUE.md` hàng ST-149/ST-147 · `agent/SO-NO.md` #136 · `crates/vis-types/src/lower/khai.rs` (`than_cmd`, `ten_bien_bind_toi`) · `crates/vis-cli/tests/vish_cmd_body.rs` · `JOURNAL/st149-do-truoc.log` · `JOURNAL/st149-tai-hien.log` · `JOURNAL/st149-cargo-test.log` · `JOURNAL/st149-gate-macos.log` · `JOURNAL/2026-11-17.md` §ST-149.
 
 ```
 HEAD (repo)   : xem `git log -1`
 HEAD ViScript : commit cuối dòng ViScript trong `git log -- viscript/`
-Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25) · đợt 25: **ST-148 DONE** (`cfce6b86`)
-Task đang làm : —  ·  đợt 25: **ST-147 BLOCKED** phần Windows (UTF-8 xong; ca 7 chờ VD cho `check.rs`) ·  ST-148 DONE: **`agent/SO-NO.md` cập nhật theo VD-149** — thêm **#142** (`#113b` =
-                `pkg update` ghim mọi gói khác) và **#143** (`#114b` = `NamePolicy::Strict` cho mọi tệp có `use`),
-                cả hai **mở**; **ánh xạ §7.3** `#113b → #142`, `#114b → #143` (giữ số cũ trong ngoặc);
-                **đóng đợt 24g có bằng chứng**: `#89` (ST-139 · PR #24 · `ef6489d1`), `#130` (ST-142 ·
-                `JOURNAL/st142-ps-*`), `#139` (ST-140 · VD-144), `#126` (ST-132 · VD-135), `#131` (ST-00 đính chính);
-                **giữ mở** `#109b`/`#140` + ghi chú "dòng giới hạn đã có trong `HOST-BAO-DAM.md`; sửa kỹ thuật
-                thuộc VS3"; sổ **144 mục** (94 mở / 28 đóng / 20 VS3 / 1 không làm / 1 điều hướng), dải **1..143**;
-                **trùng số 0**; `check_report PASS (25 báo cáo, 170 hàng QUEUE)`; gate macOS PASS L0 **1159/0**
-Task kế       : **ST-149** — **nợ #136**: ca khoá phân loại thân `cmd` khi biến TRÙNG TÊN LỆNH (đường
-                thoát `( … )`); READY kế tiếp: **ST-150**, **ST-151**, **ST-152** (R26 — cần ST-147..ST-151).
+Vòng          : 25 — **đợt 24g chốt**: ST-138b **DONE** (`c2d1ecee`) · ST-140 **DONE** (`02fb7320`) · ST-141 **DONE** (`f447f1b0`) · ST-142 **DONE** (`fe2bbdde`) · ST-143 **DONE** (`2866f8c2`) · ST-144 **DONE** (`3dc13342`) · ST-145 **DONE** (`4f1c4d9f`) · ST-146 **DONE** (commit R25) · đợt 25: **ST-148 DONE** (`cfce6b86`) · **ST-149 DONE** (`6ce972ef`) · **ST-147 DONE** theo `ĐÓNG HÀNG 2026-11-17 Agent 0`
+Task đang làm : —  ·  đợt 25: **ST-149 DONE** (`6ce972ef`) — **nợ #136 đóng**: thêm helper
+                `ten_bien_bind_toi` (`let`/`var`/`const` cột 1 + tham số `cmd`/`fn`; **không** gồm tên `cmd`/`fn`/`type`
+                hay tên dựng sẵn) và cho `la_lenh_da_biet` **loại trừ** tên đã bị biến che ⇒ thân `cmd` là **Script**;
+                không bind ⇒ luật ST-134 nguyên vẹn; **4 ca mới** (20 ca) ở `crates/vis-cli/tests/vish_cmd_body.rs`;
+                **đỏ-trước** in **bảng `ls`**, tái hiện nay in **`3`** · **ST-147 DONE** theo `ĐÓNG HÀNG 2026-11-17 Agent 0`
+                (giữ nguyên dòng ghi chú); sổ nợ **144 mục** (**93 mở** / **29 đóng** / 20 VS3 / 1 không làm / 1 điều hướng)
+Task kế       : **ST-150** — **nợ #133**: ca âm **GHI** cho thư mục chỉ-đọc trong `vis-host-linux` (chạy trên ps);
+                READY kế tiếp: **ST-151**, **ST-152** (R26 — cần ST-147..ST-151), **ST-153** (`check.rs` tên gốc, VD-152).
 Nhánh         : main
 ```
 
@@ -79,9 +78,13 @@ Cần Agent 0/1  : (0) **ST-146 (R25) chờ Agent 1 đối chiếu** + dán APPR
                  (2) ~~VD thứ 3 cho ca coreutils multicall trên runner (#139)~~ đã có **VD-144**, làm ở ST-140 (chờ duyệt); (3) một dòng giới hạn đường GHI
                  trong HOST-BAO-DAM (#140 — Agent 0 sở hữu); (4) quyết định Windows: giữ "chỉ đo" (VD-121) hay VS3 — sau ST-144
                  gate Windows dừng ở **bước 5/10** (stderr `cp1252` của `doc_examples.py`), chỉ sửa được khi mở VS3.
-Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-148**, `[exit=0]`) trên cây HEAD `b855caa3` + 3 tệp tài liệu
-                 chưa commit: L0 **1159/0** (129 suite), **10/10** bước `--- …: OK`, report-check PASS
-                 (**25 báo cáo, 170 hàng QUEUE**), doc-examples OK (24 khối), chạy **một** lần; log
+Cổng gần nhất  : macOS `gate --fast` **PASS** (**ST-149**, `[exit=0]`) trên cây HEAD `456e8a4a` + mã/ca ST-149
+                 (chưa commit): L0 **1163/0** (129 suite; 1159 + **4 ca**), **10/10** bước `--- …: OK`, report-check PASS
+                 (**25 báo cáo, 171 hàng QUEUE**), doc-examples OK (24 khối), chạy **một** lần; log
+                 `JOURNAL/st149-gate-macos.log` sha256 `ad574c8e1994a0e48e62b2214e957dd0eb74fa504a5ef06878b2803451005c2f`
+                 (header VD-136 + sha256 + `[exit=0]`).
+                 Trước đó: ST-148 **PASS** `[exit=0]` @ `b855caa3` + 3 tệp tài liệu chưa commit: L0 **1159/0**
+                 (129 suite), 10/10 bước OK, report-check PASS (25 báo cáo, 170 hàng QUEUE), doc-examples OK;
                  `JOURNAL/st148-gate-macos.log` sha256 `ba80ea698067bba8ab749fbe3d2a11d85ada9b7ec61899b952f6474b52b19114`.
                  Trước đó: ST-146 **PASS** `[exit=0]` trên cây HEAD `43b19dfe` + báo cáo R25 (chưa commit):
                  L0 **1159/0** (129 suite), **10/10** dòng `--- …: OK`, report-check PASS (**25 báo cáo, 164 hàng QUEUE**),
