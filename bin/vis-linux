@@ -95,6 +95,14 @@ sync_tree() {
             die 3 "rsync '$d' thất bại (BLOCKED-ENV)"
     done
     rsync -a "$REPO_ROOT/AGENTS.md" "$SSH_TARGET:$LINUX_DIR/AGENTS.md" 2>/dev/null || true
+    # ST-143: hai shim gốc repo (`vis-dev`, `vis`) — AGENTS §6 gọi `./vis-dev`/`./vis`. Thiếu chúng thì
+    # `../vis-dev` trong `viscript/` **không tồn tại** trên host ⇒ gate của `vis-soak` exit 127 (ST-140 gặp:
+    # `JOURNAL/st140-gate-ps-lan1-sai-duong-dan.log`). Không `--delete`, không nới quyền: chỉ thêm hai tệp.
+    for d in vis-dev vis; do
+        [ -e "$REPO_ROOT/$d" ] || continue
+        rsync -a "$REPO_ROOT/$d" "$SSH_TARGET:$LINUX_DIR/$d" ||
+            die 3 "rsync '$d' thất bại (BLOCKED-ENV)"
+    done
     say "đã đồng bộ → $SSH_TARGET:$LINUX_DIR"
 }
 
