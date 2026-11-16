@@ -1009,3 +1009,6 @@ Vế còn lại của nợ #133 (`read_dir` trên thư mục **có quyền ghi**
 
 ### VD-154 · Đính chính hiến chương VS3 + #143 → VS3 + số #145 (2026-11-17)
 (a) Hiến chương VS3 §5 (17) ghi nợ đường GHI là `#142/#109b` — **sai**: `#142` là `pkg update` ghim (VD-149); đúng là **`#140/#109b`**. (b) Nợ `#143` (`NamePolicy::Strict`) **chuyển VS3**: điều kiện VD-133 đã thoả (ca `st130b` xanh từ đợt 23) ⇒ sổ **90 mở / 31 đóng / 21 VS3**. (c) Cấp **#145** = "chú thích `rt.rs` nói sai đường chặn `chan(0)`: tyck không kiểm `cap`, runtime mới chặn (exit 1)"; **mở**, xử khi làm VS3 kênh. R27 đính chính số 91/20 của R26.
+
+### VD-155 · Đính chính số sổ sau ST-154 (2026-11-17)
+Sổ sau ST-154 là **146 mục = 91 mở / 32 đóng / 21 VS3 / 1 không làm / 1 điều hướng** (thêm #144 đã đóng và #145 mở). Con số "90 mở/31 đóng/21 VS3" trong VD-154(b) đúng cho sổ **144 mục trước khi thêm hai dòng đó**; R27 trích **146/91/32/21**. Không xoá dòng lịch sử nào; `st154-kiem-trung.log` (0 trùng, dải 1..145) là bằng chứng.
