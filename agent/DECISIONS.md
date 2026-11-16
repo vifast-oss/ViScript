@@ -939,3 +939,15 @@ Ba danh sách là cam kết tương thích: hàm std (FUNCS), mã chẩn đoán 
 
 ### VD-131 · Định nghĩa VS2 đóng + 5 câu bắt buộc (2026-11-16)
 VS2 đóng khi ST-119..ST-133 DONE hoặc BLOCKED-ENV có văn bản và R23 xác nhận số đo. Mỗi hạng mục ROADMAP ở một trong ba trạng thái: đã đóng (đo được) / chưa có trong VS2 (chuyển VS3, có văn bản) / chờ môi trường (BLOCKED-ENV, có lệnh tái lập). Mọi báo cáo R## từ R23 phải có nguyên văn 5 câu: "Async không song song." "Kênh không rendezvous." "Net không TLS." "Quyền chỉ siết mặc định khi dùng gói." "LSP chỉ publish tài liệu đang mở." Câu nào hết đúng thì Agent 0 sửa bằng VD mới.
+
+### VD-132 · Ca test phụ thuộc nền (2026-11-16)
+Được phép đổi kỳ vọng của một ca test theo nền CHỈ khi sản phẩm đúng hợp đồng trên cả hai nền và ca đang viết cứng cho một nền. Điều kiện: không xoá ca, không ignore, không cfg bỏ ca trên một nền; mỗi nhánh nền khẳng định giá trị cụ thể; diff dán vào báo cáo; mỗi ca được Agent 0 nêu đích danh. Ca được duyệt: kỳ vọng tiền tố tên chương trình trong thông báo grep; kỳ vọng exit của --sandbox-check (macOS 3, Linux có Landlock 0 kèm dòng báo ABI). Mọi ca khác cần VD mới.
+
+### VD-133 · ST-130: chi tiết siết caps khi dùng gói (2026-11-16)
+Bổ sung VD-124. --strict-caps cùng --no-strict-caps là lỗi dòng lệnh, exit 2, chẩn đoán nêu tên hai cờ. Khởi tạo quyền chạy sau khi nạp module; thứ tự lỗi mới được khoá bằng một ca. --no-strict-caps khi không dùng gói thì không cảnh báo. Sửa lỗi có sẵn trong lower (module std bị VS0301 khi bật chế độ chặt) được làm trong ST-130, có ca đỏ riêng. Chương trình có use nhưng không dùng pkg.* phải giữ hành vi cũ về caps; có ca khoá. Nợ #115 (vis test và host suite chưa siết) chuyển VS3. Nợ #114 chuyển VS3 chỉ khi ca khoá trên xanh.
+
+### VD-134 · Runner Linux tái lập được (2026-11-16)
+Thành phần toolchain (rustup target, component) được cài trong runner, nhưng chỉ qua Dockerfile; digest image ghi vào log mỗi lần build. Không cài tay trong container đang chạy. Hạng mục ROADMAP chỉ được ghi "Linux: chạy thật" khi cargo test --workspace và gate --fast PASS trên runner; host suite xanh một mình không đủ.
+
+### VD-135 · Gói: ghim khi thêm và khi migration (2026-11-16)
+pkg add tên@X.Y.Z ghi vào manifest ràng buộc có toán tử tường minh "=X.Y.Z" (không ghi chuỗi trần), để không trái luật "không toán tử là ^" của VD-125. Migration lock cũ ghi "=<version>" để giữ đúng hành vi cũ. Giấy phép unicode-ident đã hợp lệ theo QD §9.3 và VD-33; không cần duyệt thêm.
