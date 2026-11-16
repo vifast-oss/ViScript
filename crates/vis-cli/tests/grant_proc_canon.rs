@@ -115,17 +115,32 @@ fn sao_chep_trung_ten_bi_chan() {
 
 /// (3) **Symlink** tới binary được grant ⇒ chạy (canonicalize **hai phía**); grant chính symlink
 /// rồi chạy đích cũng khớp (cùng đường dẫn canonicalize).
+///
+/// **ST-140 — vì sao đích symlink là `/bin/sh -c` chứ không phải `/bin/echo` (VD-144).** Trên runner
+/// Linux `ps`, `/bin/echo` là symlink vào **coreutils multicall** (`/usr/lib/cargo/bin/coreutils/echo`);
+/// binary multicall **từ chối** chạy khi `argv[0]` khác tên nó:
+/// `Security violation: Requested utility 'ln-echo' does not match executable name` ⇒ `VS0501`, exit 1.
+/// Ca đỏ vì **môi trường**, không phải vì quyền: sản phẩm canonicalize rồi exec **đúng đường dẫn
+/// thật**, chính là điều ca này kiểm (đỏ-trước: `JOURNAL/st140-red-ps.log`).
+///
+/// VD-144 cho phép đổi **đích của symlink** sang binary do workspace build
+/// (`env!("CARGO_BIN_EXE_<tên>")`); không có binary phù hợp thì `/bin/sh -c`. Gói `vis-cli` chỉ lộ
+/// **một** binary qua `CARGO_BIN_EXE_` là `vis`, và `vis` **không** in lại đối số một cách tất định
+/// (`vis` trần in usage; `vis` không có `--version`) ⇒ dùng nhánh `/bin/sh -c` của VD-144.
+/// `/bin/sh` trên `ps` là `/usr/bin/dash` (binary thật, **không** multicall) nên chạy được qua symlink
+/// mang tên bất kỳ; `sh -c "echo a"` in tất định `a\n` ⇒ khẳng định stdout **giữ nguyên** `[a]\n`.
+/// Symlink vẫn do ca **tự tạo trong thư mục tạm**; hai chiều khẳng định và parity interp/`--vm` giữ nguyên.
 #[cfg(unix)]
 #[test]
 fn symlink_canonicalize_hai_phia() {
     let d = tam("symlink");
-    let ln = d.join("ln-echo");
-    std::os::unix::fs::symlink("/bin/echo", &ln).expect("symlink");
+    let ln = d.join("ln-sh");
+    std::os::unix::fs::symlink("/bin/sh", &ln).expect("symlink");
     let r = ca(
         &d,
         "c.vish",
-        &vish(&format!("{} a", ln.display())),
-        &["--strict-caps", "--grant", "p=/bin/echo"],
+        &vish(&format!("{} -c \"echo a\"", ln.display())),
+        &["--strict-caps", "--grant", "p=/bin/sh"],
     );
     assert_eq!(r.0, 0, "{r:?}");
     assert_eq!(r.1, b"[a]\n");
@@ -133,7 +148,7 @@ fn symlink_canonicalize_hai_phia() {
     let r2 = ca(
         &d,
         "c2.vish",
-        &vish("/bin/echo b"),
+        &vish("/bin/sh -c \"echo b\""),
         &["--strict-caps", "--grant", &format!("p={}", ln.display())],
     );
     assert_eq!(r2.0, 0, "{r2:?}");
