@@ -77,7 +77,7 @@ khoá đúng câu "có `use` (kể cả `use` module nội bộ) mà không `pkg
 | `./bin/vis test --vm test/sem` | **447 ok**, exit 0 | [`st130b-vis-test-vm.log`](st130b-vis-test-vm.log) `e6363412…` |
 | `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` | `tong=100000 loi_tinh=6230 chay=93770 **lech=0** giay=163.9` | [`st130b-diff-100k.log`](st130b-diff-100k.log) `81bf140e…` |
 | `bash bin/vis-dev gate --fast` (cây sạch, xem §6.3) | dòng cuối **`PASS`**; L0 **1154 passed / 0 failed** (129 suite) | [`st130b-gate-fast.log`](st130b-gate-fast.log) `52592bf7…` |
-| `python3 test/report/check_report.py --all` | `report-check: PASS (23 báo cáo, 155 hàng QUEUE phủ đủ)` | trước khi lật hàng: [`st130b-report-check-truoc-queue.log`](st130b-report-check-truoc-queue.log) `b0bc8c9d…`; chạy lại **sau** khi lật hàng: [`st130b-report-check.log`](st130b-report-check.log) (commit `[ST-130q]`) |
+| `python3 test/report/check_report.py --all` | `report-check: PASS (23 báo cáo, 155 hàng QUEUE phủ đủ)` | trước khi lật hàng: [`st130b-report-check-truoc-queue.log`](st130b-report-check-truoc-queue.log) `b0bc8c9d…`; chạy lại **sau** khi lật hàng ST-130 → DONE: [`st130b-report-check.log`](st130b-report-check.log) `1a6cace9…` (commit `[ST-130q]`) |
 
 Số khoá **không đổi**: sem **447 / 22 nhóm**, `vis test` **447 ok** / `--vm` **447 ok**, diff 100k
 **lech=0**. Không thêm crate, không `unsafe`, R1 của tệp test = 264 dòng (≤1.500).
