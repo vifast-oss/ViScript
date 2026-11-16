@@ -16,8 +16,9 @@
 #
 # Dùng:
 #   bin/vis-linux probe [--log <tệp>]       # nền, kernel, lsm, syscall landlock, phiên bản cargo
+#   bin/vis-linux setup [--log <tệp>]       # tái lập toolchain (infra/linux/setup.sh): rustup target + log digest
 #   bin/vis-linux sync                      # chỉ đồng bộ cây nguồn
-#   bin/vis-linux run [--] <lệnh> [đối số…] # chạy lệnh trong cây đã đồng bộ
+#   bin/vis-linux run [--] <lệnh> [đối số…] # chạy lệnh trong cây đã đồng bộ (tự gọi setup trước)
 #   bin/vis-linux gate                      # lối tắt: run bash viscript/bin/vis-dev gate --fast
 #   bin/vis-linux shell                     # ssh tương tác / docker shell
 #
@@ -27,6 +28,7 @@
 #   VIS_LINUX_BACKEND  auto | ssh | docker   (mặc định auto: ssh nếu ssh được, ngược lại docker)
 #   VIS_LINUX_IMAGE    tên image docker (mặc định `vifast-viscript-linux`)
 #   VIS_LINUX_NO_SYNC  =1 ⇒ không rsync trước khi chạy (dùng cây đang có trên host)
+#   VIS_LINUX_NO_SETUP =1 ⇒ không gọi infra/linux/setup.sh trước khi chạy (ST-134, VD-136)
 #
 # Mã thoát: 0 xanh · 1 lệnh trên host trả lỗi · 2 dùng sai · 3 BLOCKED-ENV (không có nền Linux)
 set -u
@@ -84,8 +86,9 @@ pick_backend() {
 sync_tree() {
     if [ "$no_sync" = 1 ]; then say "bỏ đồng bộ (VIS_LINUX_NO_SYNC=1)"; return 0; fi
     local d
-    # `vis-host-linux` ở gốc repo (R4 cấm nằm trong `viscript/`): cần cho ST-132 (Landlock thật).
-    for d in viscript docs/viscript vis-host-linux .git; do
+    # `vis-host-linux`/`vis-host-wasm` ở gốc repo (R4 cấm nằm trong `viscript/`): cần cho ST-132
+    # (Landlock thật) và cho ma trận `bin/vis-targets` (ô `vis-host-wasm × wasm32`) — ST-134.
+    for d in viscript docs/viscript vis-host-linux vis-host-wasm .git; do
         [ -e "$REPO_ROOT/$d" ] || continue
         rsync -a --delete --exclude 'target/' --exclude '*.rlib' \
             "$REPO_ROOT/$d/" "$SSH_TARGET:$LINUX_DIR/$d/" ||
@@ -158,8 +161,70 @@ docker_run() { # $@ = lệnh
 
 write_log() { # $1 = nội dung, $2 = tệp
     printf '%s\n' "$1" >"$2"
-    echo "sha256: $(shasum -a 256 "$2" 2>/dev/null | cut -d' ' -f1 || sha256sum "$2" | cut -d' ' -f1)"
+    echo "sha256: $(sha256_stdin <"$2")"
     echo "log: $2"
+}
+
+sha256_stdin() {
+    if command -v shasum >/dev/null 2>&1; then shasum -a 256 | cut -d' ' -f1
+    elif command -v sha256sum >/dev/null 2>&1; then sha256sum | cut -d' ' -f1
+    else echo "khong-co-sha256"; fi
+}
+
+# **ST-134 (VD-136)**: bước tái lập toolchain trong repo (`infra/linux/setup.sh`) — chỉ rustup
+# target, idempotent. Chạy **sau** sync/build, **trước** lệnh cần đo. Tắt bằng VIS_LINUX_NO_SETUP=1.
+setup_body() {
+    if [ "${VIS_LINUX_NO_SETUP:-0}" = 1 ]; then
+        say "bỏ setup toolchain (VIS_LINUX_NO_SETUP=1)"
+        return 0
+    fi
+    local out
+    case "$BE" in
+        ssh)
+            out="$(ssh -o BatchMode=yes "$SSH_TARGET" \
+                "cd $(printf '%q' "$LINUX_DIR") && export PATH=\"\$HOME/.cargo/bin:\$PATH\" && bash viscript/infra/linux/setup.sh")" ||
+                die 3 "setup toolchain trên '$SSH_TARGET' thất bại (BLOCKED-ENV)"
+            ;;
+        docker)
+            out="$(docker_run bash viscript/infra/linux/setup.sh)" ||
+                die 3 "setup toolchain trong container thất bại (BLOCKED-ENV)"
+            ;;
+        *) die 2 "setup: chưa chọn backend" ;;
+    esac
+    printf '%s\n' "$out"
+}
+
+# Gọi setup cho `run`/`gate`: chỉ in dòng tóm tắt (digest/target/setup) ra stderr để không đổi stdout.
+run_setup() {
+    local out
+    if ! out="$(setup_body)"; then
+        say "setup toolchain thất bại (BLOCKED-ENV) — bỏ qua bằng VIS_LINUX_NO_SETUP=1 nếu chỉ muốn đo môi trường hiện có"
+        exit 3
+    fi
+    printf '%s\n' "$out" | grep -E '^(digest-toolchain|target |setup:)' >&2 || true
+    return 0
+}
+
+cmd_setup() {
+    local log=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --log) log="${2:?--log cần tệp}"; shift 2 ;;
+            *) die 2 "setup: đối số lạ '$1'" ;;
+        esac
+    done
+    pick_backend
+    say "backend=$BE"
+    case "$BE" in
+        ssh) sync_tree ;;
+        docker) build_image ;;
+    esac
+    local out
+    out="$(setup_body)" || return $?
+    printf '%s\n' "$out"
+    echo "sha256: $(printf '%s\n' "$out" | sha256_stdin)"
+    [ -n "$log" ] && write_log "$out" "$log"
+    return 0
 }
 
 cmd_probe() {
@@ -189,6 +254,7 @@ cmd_run() {
     case "$BE" in
         ssh)
             sync_tree
+            run_setup
             local q="" a
             for a in "$@"; do q="$q $(printf '%q' "$a")"; done
             ssh -o BatchMode=yes "$SSH_TARGET" \
@@ -196,6 +262,7 @@ cmd_run() {
             ;;
         docker)
             build_image
+            run_setup
             docker_run "$@"
             ;;
     esac
@@ -203,6 +270,7 @@ cmd_run() {
 
 case "${1:-}" in
     probe) shift; cmd_probe "$@" ;;
+    setup) shift; cmd_setup "$@" ;;
     sync) pick_backend; sync_tree ;;
     run) shift; cmd_run "$@" ;;
     gate) pick_backend; cmd_run bash viscript/bin/vis-dev gate --fast ;;
@@ -214,6 +282,6 @@ case "${1:-}" in
             docker) build_image; find_docker; exec "$docker_bin" run --rm -it -v "$REPO_ROOT:/src:ro" -v vifast-viscript-target:/target -w /src "$IMAGE" bash ;;
         esac
         ;;
-    "" | -h | --help | help) sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) die 2 "lệnh không hiểu: '$1' (probe|sync|run|gate|shell)" ;;
+    "" | -h | --help | help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) die 2 "lệnh không hiểu: '$1' (probe|setup|sync|run|gate|shell)" ;;
 esac

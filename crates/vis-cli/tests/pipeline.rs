@@ -130,9 +130,19 @@ fn complete_giu_stderr_va_code_khac_0() {
     assert_eq!(c, 0, "stderr: {e}");
     // **SỬA KÈM LÝ DO (ST-41)**: `complete` trả **một bản ghi** ⇒ giá trị cuối pipeline in **khối
     // khoá–giá trị** (`Render`, §9.6): `stderr  […]` (hai dấu cách), không còn `stderr: […]`.
+    //
+    // **VD-132 (ST-134) — ca phụ thuộc nền**: thông điệp lỗi của `grep` in **tên chương trình** theo
+    // chuẩn của nền: GNU grep (Linux) in `argv[0]` nguyên văn — ta gọi `/usr/bin/grep` nên là
+    // `/usr/bin/grep:`; BSD grep (macOS) in tên chương trình `grep:`. Mỗi nhánh khẳng định **giá trị
+    // cụ thể**; record vẫn phải mang đủ stderr + `code 2` (sản phẩm không đổi).
+    let tien_to = if cfg!(target_os = "linux") {
+        "stderr  [/usr/bin/grep:"
+    } else {
+        "stderr  [grep:"
+    };
     assert!(
-        o.contains("stderr  [grep:"),
-        "stderr phải có trong record: {o}"
+        o.contains(tien_to),
+        "stderr phải có trong record với tiền tố {tien_to:?}: {o}"
     );
     assert!(o.contains("code    2"), "code 2: {o}");
     let _ = std::fs::remove_dir_all(&d);

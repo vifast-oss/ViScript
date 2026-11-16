@@ -218,9 +218,38 @@ pub(crate) struct ThanLenh {
     pub khai_dau: usize,
 }
 
+/// **ST-134**: tên các `cmd` khai ở **cột 1** trong văn bản — dùng để phân loại thân `cmd` một dòng.
+///
+/// Quét trước một lượt vì thân `cmd` có thể gọi **một `cmd` khai sau nó** trong cùng tệp.
+pub(crate) fn ten_cmd_khai(text: &str) -> Vec<String> {
+    let mut ds = Vec::new();
+    for dong in text.split('\n') {
+        let la_cmd = !dong.starts_with([' ', '\t'])
+            && dong
+                .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .next()
+                == Some("cmd")
+            && dong.get(3..4) == Some(" ");
+        if !la_cmd {
+            continue;
+        }
+        let ten = dong[3..]
+            .trim_start()
+            .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .next()
+            .unwrap_or("");
+        if !ten.is_empty() {
+            ds.push(ten.to_string());
+        }
+    }
+    ds
+}
+
 /// Quét các `cmd` cột 1 và phân loại thân. Chỉ trả mục **không** phải `Script` (thân script giữ
 /// nguyên đường ST-44); thân rỗng cũng trả (⇒ `VS0201`).
-pub(crate) fn than_cmd(text: &str) -> Vec<ThanLenh> {
+///
+/// `ten_lenh` = tên lệnh đã biết (bảng chuẩn + `cmd` khai trong tệp, xem [`ten_cmd_khai`]).
+pub(crate) fn than_cmd(text: &str, ten_lenh: &[String]) -> Vec<ThanLenh> {
     let mut ds = Vec::new();
     let mut p = 0usize;
     while p < text.len() {
@@ -321,7 +350,21 @@ pub(crate) fn than_cmd(text: &str) -> Vec<ThanLenh> {
                 // (không còn `VS0201`); nhiều pipeline vẫn rơi xuống `Mixed`/lỗi như cũ.
                 KieuThan::KhaiLenh
             } else if script && lenh {
-                if dong_dedent.len() == 1 || co_let {
+                // **ST-134 (lỗi ca iv)**: một dòng vừa parse được như biểu thức script vừa là
+                // pipeline hợp lệ. Nếu **từ đầu** dòng là **tên lệnh đã biết** thì thân là **lệnh**
+                // (ST-48: "thân = đúng một pipeline"), không phải biểu thức. Ví dụ `ls /tmp/x`:
+                // script đọc thành phép chia `ls / tmp / x` (`tmp` = tên chưa có ⇒ VS0501 lúc chạy),
+                // còn lệnh đọc thành `ls` + đường dẫn tuyệt đối — phải chọn lệnh.
+                let dau = dong_dedent
+                    .first()
+                    .map(|l| l.trim_start())
+                    .and_then(|l| l.split_whitespace().next())
+                    .unwrap_or("");
+                let la_lenh_da_biet =
+                    !co_let && dong_dedent.len() == 1 && ten_lenh.iter().any(|t| t == dau);
+                if la_lenh_da_biet {
+                    KieuThan::Command
+                } else if dong_dedent.len() == 1 || co_let {
                     KieuThan::Script
                 } else {
                     KieuThan::Mixed

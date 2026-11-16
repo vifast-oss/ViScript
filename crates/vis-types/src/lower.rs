@@ -408,7 +408,11 @@ impl<'a> Lowerer<'a> {
             // bảng ký hiệu/kiểu; stage chạy sau với mốc tách để **bỏ** các dòng đã hạ.
             let (moc, co_khai) = khai::tach(self.text);
             // ST-48: thân `cmd` **lệnh** thay bằng `()` trong bản sao tiền tố (giữ nguyên byte).
-            let ds_than = khai::than_cmd(self.text);
+            // **ST-134**: phân loại thân cần biết **tên lệnh** (bảng chuẩn + `cmd` khai trong tệp)
+            // để một dòng `ls /tmp/x` là **lệnh**, không bị đọc thành phép chia `tmp` (lỗi ca iv).
+            let mut ten_lenh = crate::cmdsig::ten_mac_dinh();
+            ten_lenh.extend(khai::ten_cmd_khai(self.text));
+            let ds_than = khai::than_cmd(self.text, &ten_lenh);
             let tien_to = khai::filler(self.text, &ds_than);
             if co_khai && moc > 0 {
                 self.ha_tien_to_khai(moc, &prelude, &tien_to);

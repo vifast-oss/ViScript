@@ -50,15 +50,58 @@ fn sandbox_check_macos() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Ca 2 — **luôn** in `cưỡng chế runtime:` và `cap điều kiện:`.
+/// Ca 2 — **luôn** in `cưỡng chế runtime:` và `cap điều kiện:`; exit theo **nền** (VD-132, ST-134).
+///
+/// macOS: không có Landlock ⇒ **3**. Linux **có** Landlock (runner `ps`) ⇒ **0**, kèm dòng báo LSM;
+/// đồng thời `--sandbox` phải áp ruleset thật và in **dòng báo ABI** (`sandbox: landlock ABI=…`).
 #[test]
 fn sandbox_check_luon_in_cuong_che() {
     let d = tmp_dir("in");
     ghi(&d.join("f.vis"), "fn main():\n    print(1)\n");
     let (code, out, err) = chay(&d, &["run", "--sandbox-check", "f.vis"]);
-    assert_eq!(code, 3, "macOS: {err}");
     assert!(out.contains("cưỡng chế runtime:"), "stdout: {out}");
     assert!(out.contains("cap điều kiện:"), "stdout: {out}");
+
+    // **VD-132**: mỗi nhánh nền khẳng định một **giá trị cụ thể**; không xoá ca, không cfg bỏ ca.
+    #[cfg(target_os = "macos")]
+    {
+        assert_eq!(code, 3, "macOS không có Landlock ⇒ 3: {err}\nstdout: {out}");
+        assert!(
+            out.contains("landlock: không hỗ trợ trên macos"),
+            "stdout: {out}"
+        );
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let lsm = std::fs::read_to_string("/sys/kernel/security/lsm").unwrap_or_default();
+        let co_landlock = lsm.split(',').any(|x| x.trim() == "landlock");
+        if co_landlock {
+            // Linux **có** Landlock (máy đo `ps`): probe chỉ đọc LSM ⇒ exit 0 + dòng "có (LSM: …)".
+            assert_eq!(code, 0, "Linux có Landlock ⇒ 0: {err}\nstdout: {out}");
+            assert!(out.contains("landlock: có (LSM: "), "stdout: {out}");
+            // **Dòng báo ABI**: `--sandbox` áp ruleset thật, in `sandbox: landlock ABI=… mức=… nnp=…`.
+            let (code_sb, _out_sb, err_sb) = chay(&d, &["run", "--sandbox", "f.vis"]);
+            assert_eq!(
+                code_sb, 0,
+                "--sandbox trên chương trình `print(1)` phải chạy được: {err_sb}"
+            );
+            assert!(
+                err_sb.contains("sandbox: landlock ABI="),
+                "thiếu dòng báo ABI: {err_sb}"
+            );
+            assert!(
+                err_sb.contains("mức=đầy đủ"),
+                "kernel phải cưỡng chế đầy đủ: {err_sb}"
+            );
+        } else {
+            // Linux **không** có Landlock: hợp đồng là 3 (LSM không có) / 4 (không đọc được).
+            assert!(
+                code == 3 || code == 4,
+                "Linux không có Landlock ⇒ 3/4, thật {code}: {err}"
+            );
+            assert!(out.contains("landlock: "), "stdout: {out}");
+        }
+    }
     let _ = std::fs::remove_dir_all(&d);
 }
 

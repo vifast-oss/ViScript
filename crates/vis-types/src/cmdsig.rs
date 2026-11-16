@@ -246,6 +246,21 @@ impl SigSource for BuiltinSigs {
     }
 }
 
+/// **ST-134 (lỗi ca iv)**: tên các lệnh **có sẵn** của chế độ lệnh (bảng chuẩn: `ls`, `open`, …).
+///
+/// Dùng cho **phân loại thân `cmd` một dòng**: một dòng có thể vừa parse được như **biểu thức
+/// script** (ví dụ `ls /tmp/x` ⇒ phép chia `ls / tmp / x`) vừa là **pipeline hợp lệ**. Nếu từ đầu
+/// dòng là tên lệnh đã biết thì thân phải là **lệnh** (ST-48: "thân = đúng một pipeline"), không
+/// phải biểu thức — nếu không, đường dẫn tuyệt đối trong thân `cmd` bị hiểu thành phép chia và báo
+/// `VS0501: tên 'tmp' chưa hỗ trợ` lúc chạy.
+pub fn ten_mac_dinh() -> Vec<String> {
+    BuiltinSigs::mac_dinh()
+        .sigs
+        .iter()
+        .map(|s| s.name.clone())
+        .collect()
+}
+
 /// Hợp nhất **một chiều** `mau` với `that` (ST-37): buộc được tham số kiểu thì `true`.
 /// `{error}` ở `that` **nhận mọi** kiểu (như tyck `hop_nhat`).
 pub fn hop_nhat_cmd(
