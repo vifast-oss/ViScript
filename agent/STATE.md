@@ -1,21 +1,38 @@
-# STATE — ViScript (vòng 2 / VS0)
+# STATE — ViScript (vòng 23)
 
-Người ghi: **Agent 2** dòng ViScript. Cập nhật **sau mỗi bước**.
-Khởi tạo: 2026-11-12 bởi người điều phối (vòng vá sau review). Cập nhật vòng 2 (VS0): 2026-11-13.
+Người ghi: **Agent 2** dòng ViScript. Header viết lại theo **ST-119** (2026-11-16). Cập nhật **sau mỗi bước**.
+Đợt 23: nguồn `viscript/agent/JOURNAL/quyet-dinh-a0-2026-11-16.md` (VD-119..VD-131, ST-119..ST-133).
 
 ```
-HEAD          : xem `git log -1` (vòng 2 mở ở `aae08d4`)
-BUILD_ID      : —
-Task          : **ST-118 — soak cuối 10 vòng + R22 + ROADMAP chốt** — xong, `report-check --all`
-                PASS, cổng PASS; **chưa commit**.
-Bước          : 3/3 (soak 10/10 1297 s → ROADMAP 64 dòng / R22 142 dòng → gate).
+HEAD (repo)   : 7bbc4b29 `[ST-00]` dán quyết định đợt 23
+HEAD ViScript : c1587398 (commit cuối của **code** dòng ViScript; dòng OS commit `KT-*` xen vào nên HEAD ≠ HEAD ViScript)
+Vòng          : 23
+Task đang làm : ST-122 (Agent 2 — Span tổng hợp mang file) · ST-119/ST-120/ST-121 (lead)
+Task kế       : ST-123 → ST-124 → ST-125 → ST-126 → ST-127 → ST-128 → ST-129 → ST-130 → ST-131 → ST-132 → ST-133
 Nhánh         : main
-Cổng gần nhất : `./vis-dev gate --fast` → **PASS** lúc **2026-11-15T06:22:31Z** (report-check PASS: **22
-                báo cáo, 134 hàng QUEUE**); **1066** test / sem **447/22** / `vis test` **447 ok** (`--vm`
-                **447 ok + 0 SKIP**) / host **54/54 ×2** / parity **398/398 + 49** / diff **100.000 / 0
-                lệch** / cache **520×4 / 0 lệch** / soak **10/10 = 1297 s** / fuzz **2.506.504 ca / 0 vi
-                phạm** / targets **18/18 check** / **FUNCS 52** / R1 max **1060**
-Việc dở       : commit `[ST-118]` + push (đã được uỷ quyền)
+```
+
+**Số khoá đo được** (macOS, đo lần cuối 2026-11-15; không viết tay số mới vào đây, phải chạy lệnh):
+
+```
+1066 test · sem 447/22 nhóm · vis test 447 ok · --vm 447 ok + 0 SKIP · parity 398/398 + 49 lỗi biên dịch
+host suite 54 ×2 / 0 lệch · differential 100k / 0 lệch · cache 520 tệp ×4 / 0 lệch · soak 10/10 = 1297 s
+R1 max 1060 · FUNCS 52 · all_codes 32 · VBC1 53 · allowlist doc-examples 6 · targets 18/18 `check`
+```
+
+Lệnh tái lập: `bash viscript/bin/vis-dev gate --fast` · `cd viscript && VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` · `./bin/vis-host-suite` · `python3 viscript/test/report/check_report.py --all`.
+
+```
+BLOCKED        : không có hàng BLOCKED.
+Chờ môi trường : ST-121 đang chạy; ST-131/ST-132 chỉ READY khi có runner Linux.
+                 Runner đã có: host `ps` qua tailscale (Ubuntu 26.04, x86_64, rustup 1.99.1, kernel có `landlock` trong lsm).
+Cổng gần nhất  : macOS `gate --fast` PASS 2026-11-15T06:22:31Z (report-check: 22 báo cáo, 134 hàng QUEUE).
+                 Linux (host `ps`): **FAIL** ở self-test case 5 (`thiếu cargo`) — `/usr/bin/cargo` 1.93.1 nằm trong PATH
+                 nên kịch bản "môi trường sạch không có cargo" không dựng được. Chưa sửa; xem JOURNAL/st121.
+Việc dở        : —
+```
+
+--- LỊCH SỬ (không cập nhật) ---
 
 ## ST-118 — soak cuối + R22 + ROADMAP, 2026-11-15
 
