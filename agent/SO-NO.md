@@ -1,9 +1,10 @@
 # SO-NO.md — Sổ nợ duy nhất của dòng ViScript
 
 **Task**: ST-145 (lập sổ) · **ST-148** (cập nhật số 142/143 theo **VD-149**) · **ST-149** (đóng **#136**) ·
+**ST-153** (ghi chú: ca 7 self-test của ST-147 **đóng ở ST-153**, §7.4 — không cấp số mới) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-149**) · **HEAD khi cập nhật**: `6ce972ef`
+**Cập nhật**: 2026-11-17 (**ST-153**) · **HEAD khi cập nhật**: `4a805115`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -311,6 +312,16 @@ R23 chuẩn hoá lại một dãy duy nhất theo thứ tự hợp nhất.” B�
 Nhãn `#113b`/`#114b` là **số cũ + hậu tố**, **không** phải số của dãy chuẩn: giữ lại ở đây làm ánh xạ,
 **không** đánh lại số cũ, **không** tái dùng số **142/143** cho nghĩa khác. Báo cáo R26 trở đi trích bằng
 số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
+
+### 7.4 Ca 7 self-test của ST-147 **không phải nợ có số** — **đóng ở ST-153** (VD-152, ghi chú)
+
+| Mục | Nội dung |
+|---|---|
+| Triệu chứng | psvn: self-test case âm **11/12** — ca **7** `doc-examples: ngoại lệ cũ đã xanh`; 6 ca encoding khác đã xanh nhờ **VD-150** (ST-147) |
+| Nguyên nhân | `crates/vis-cli/src/cli/check.rs` tách tên gốc bằng `rsplit('/')`; trên Windows (`\`) `phu` **luôn** khác rỗng ⇒ bộ lọc `--syntax` (QD §7.4) **giữ** chẩn đoán **kiểu** ⇒ khối `x = 1` đỏ ⇒ câu `ngoại lệ cũ: …` không bao giờ in (`JOURNAL/st147-chan-doan-psvn.log`) |
+| Sửa | **ST-153** (VD-152): MỘT hàm `ten_goc` tách tên gốc theo **cả** `/` và `\`, dùng đúng chỗ cũ; `phu`/`--syntax` **không** đổi gì khác; **+3 ca unit** chạy mọi nền |
+| Bằng chứng | psvn @ `4a805115`: self-test **12/12** + cổng **đi QUA bước 5** (dừng bước 10 `L0`, `cap_proc` 150/4 — VS3) — `JOURNAL/st153-gate-psvn.log`; `vis check --syntax C:\…\a.vis` ⇒ `ok 1` `RC=0` (trước ST-153: `not ok … VS0301`) — `JOURNAL/st153-psvn-ca7.log` |
+| Trạng thái | **đóng ở ST-153** — **không** cấp số nợ mới: không phải nợ VS3 (lỗi sản phẩm cross-platform đã sửa, không phải giới hạn có lý do) |
 
 ## 8. Tóm tắt
 
