@@ -132,3 +132,47 @@ Sổ nợ : **144 mục** = **91 mở** / **31 đóng** / **20 VS3** / 1 không 
 **Đợt 25 đã đóng**: **6/6 hàng** (ST-147 · ST-148 · ST-149 · ST-150 · ST-151 · ST-153) — nợ **#136**, **#133**,
 **#135** và **ca 7 self-test của ST-147** (không cấp số mới); thêm số **#142/#143** (VD-149).
 **Còn lại**: nợ trong sổ (**91 mở** / **20 VS3**) và **Windows** (hỗ trợ thật = **VS3**).
+
+### Trạng thái cuối **sau R26** — đêm 17/11 (2026-11-17), `head` `dd088322`
+
+> Khối này **thêm** sau khối R26; số cũ **không xoá** (VD-142). Nguồn: `reports/R27-viscript.md`.
+
+**Phần còn lại sau R26, đêm 17/11 đóng nốt** (ST-152 = R26 · **ST-154** · **ST-155** · **ST-156** = R27):
+
+| Việc | Nội dung | Trạng thái |
+|---|---|---|
+| Nợ **#144** | Ca **dương** `read_dir` trên thư mục **có quyền ghi** (`vis-host-linux` ca 15): `exit 0` + `co.txt`, đối chứng ghi `exit 0`, âm cùng ca `exit 7` + `EACCES` | **ĐÓNG** (ST-154) — `ps` **15/15** |
+| Nợ **#143** | `NamePolicy::Strict` cho mọi tệp có `use` — điều kiện VD-133 đã thoả (ca `st130b` xanh) | **chuyển VS3** (VD-154(b)) |
+| Nợ **#145** | Chú thích `rt.rs` nói **sai** đường chặn `chan(0)`: tyck **không** kiểm `cap`, runtime mới chặn (`exit 1`) | **mở** — xử khi có task VS3 kênh |
+| **Bộ đầu vào VS3** | `JOURNAL/st155-vs3-dieu-tra.md` **222 dòng**: 6 mục × 5 khối, **57** dẫn chứng `tệp:dòng`, `[ƯL]` **19–28 task ≈ 57–84 h**, §8 Top 5 câu hỏi, §9 6 việc đề nghị KHÔNG làm | **ĐÃ CÓ** (ST-155) — **chưa** có tài liệu thiết kế ⇒ **chưa** mở tính năng VS3 (VD-148) |
+
+| # | Hạng mục | Trạng thái (3 loại của VD-131) | Ghi chú |
+|---|---|---|---|
+| 1 | Async | **chưa có trong VS2** → VS3 | tuần tự một luồng, run-to-completion (VD-123) |
+| 2 | Kênh | **chưa có trong VS2** → VS3 | `chan(0)` bị từ chối `VS0505`; rendezvous/select/timeout = VS3; **#145** ghi lệch tài liệu–mã |
+| 3 | Net/HTTP | **chưa có trong VS2** → VS3 | HTTP/1.1 loopback; không TLS/HTTP2/keep-alive (VD-122) |
+| 4 | Quyền | **ĐÓNG** (macOS giới hạn VD-145) | Linux Landlock thật **15/15** (thêm ca **dương** `read_dir` — đóng #144) + TOCTOU **0/50 000**; macOS bảo đảm theo **đo** |
+| 5 | LSP | **ĐÓNG** | publish chỉ tài liệu đang mở (VD-126) |
+| 6 | Gói | **ĐÓNG** (phạm vi VS2) | semver + resolver + lock định dạng 2; mạng/chữ ký = VS3 |
+| 7 | Đa nền tảng | **ĐÓNG theo nghĩa kỹ thuật** | Linux **"chạy thật"** (`ps` gate PASS L0 **1169/0**) · Windows **"chỉ đo"** (**9/10 bước**, self-test **12/12**, dừng **L0**) · wasm **"chỉ check"** |
+| 8 | Hợp chuẩn host | **ĐÓNG** | 54/54 trên **macOS và Linux**; `vis-host-linux` **15/15**; Windows **39/54** (chỉ đo) |
+
+**Số khoá sau đêm 17/11** (R27 §3; log trong `JOURNAL/`, hash đo từng nền theo VD-147(4)):
+
+```
+macOS (@ dd088322) : gate --fast PASS · L0 **1175/0** (**130** suite) · 10/10 bước · check_report **27** báo cáo / **174** hàng
+        vis test 447/447 ×2 (0 SKIP) · diff 100k lech=0 (157,4 s) · cache 520×4 0 lệch (25,43 s) · host 54/54 · targets 18/18
+        soak 10/10 = 1352 s (**đo ở HEAD cũ** 3079dede — không chạy lại) · R1 1498 · FUNCS 52 · all_codes 33 · VBC1 53
+Linux ps (@ 32b79d4a; Landlock @ d203b664; vis test @ ee58a518; soak @ 2866f8c2): gate --fast PASS · L0 **1169/0**
+        (129 suite) — **số TRƯỚC 9 ca ST-151, CHƯA đo lại** · `vis-host-linux` **15/15** · vis test 447/447 ×2
+        · diff lech=0 (40,9 s) · cache 0 lệch (6,33 s) · host 54/54 · targets 18/18 · soak 10/10 = 250 s · TOCTOU 0/50 000
+Windows psvn (@ 3dc13342; cổng @ 4a805115) — **CHỈ ĐO, "chưa hỗ trợ"**:
+        self-test **12/12** · cổng đi **qua 9/10 bước**, dừng ở **L0** (`cap_proc` **150/4** vì `/bin/echo` — VS3)
+        · cargo test **1053/100** · host **39/54** · targets **18/18**
+Sổ nợ : **146 mục** = **91 mở** / **32 đóng** / **21 VS3** / 1 không làm / 1 điều hướng (`SO-NO.md` §8; VD-155)
+```
+
+**Đêm 17/11 đã đóng**: **8 hàng công việc** (ST-147 · ST-148 · ST-149 · ST-150 · ST-151 · ST-153 · **ST-154** ·
+**ST-155**) + **2 hàng báo cáo vòng** (ST-152 · ST-156); **không** hàng nào `BLOCKED`.
+**Còn lại**: nợ trong sổ (**91 mở** / **21 VS3**) và **Windows** (hỗ trợ thật = **VS3**).
+**Việc kế**: **Agent 0** trả lời **5 câu hỏi** (`st155` §8) rồi ban hành **tài liệu thiết kế VS3** (6 quyết định riêng).
