@@ -202,3 +202,26 @@ ca chẩn đoán dùng `vis check`). Ngữ nghĩa nền (đọc code):
 Bước `gate --fast` chỉ còn đỏ vì **một tệp chưa commit của task khác** (`tests/siet_caps_pkg.rs`, ST-130);
 Agent 2 **không** sửa (luật: không sửa tệp người khác) và **không** chạy `cargo fmt` toàn cây (sẽ ghi đè
 tệp đang viết của họ). Cần chạy lại `gate --fast` sau khi ST-130 hoàn tất.
+
+### 9b. Chứng minh `gate --fast` **PASS** trên đúng HEAD của ST-124/ST-125
+
+Vì cây chung đang bị task khác sửa **chưa commit**, `gate --fast` ở cây chung dừng ở bước `fmt`
+(§9 #3). Để có bằng chứng cổng **PASS** cho đúng mã đã commit, chạy cổng trên **worktree sạch tại
+`dd81c9fa`** (`git worktree add --detach /tmp/vis-gate HEAD`, đã `git worktree remove` sau khi đo):
+
+```
+bash bin/vis-dev gate --fast        # log: JOURNAL/st124-gate-clean-pass.log
+--- fmt: OK
+--- clippy: OK
+--- luật R1..R4: OK
+--- self-test case âm: OK
+--- vis explain: OK
+--- báo cáo: OK
+--- báo cáo fixtures: OK
+--- build: OK
+--- doc-examples: OK (24 khối tài liệu: 18 xanh + 6 ngoại lệ đỏ đúng; 12 fixture QD §7.1..7.3)
+--- L0 test: OK
+vis-dev gate --fast: PASS
+```
+
+Số đo: **128 suite / 1146 test / 0 đỏ** (toàn workspace, gồm 7 ca ST-123, 9 ca ST-124, 2 ca ST-125).

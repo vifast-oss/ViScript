@@ -104,3 +104,14 @@ Một lần sinh + escape + decode trong tiến trình (Rust) và **một** lầ
   (`crates/vis-cli/tests/siet_caps_pkg.rs`, ST-130) — **ngoài phạm vi**, không sửa (xem
   [`st124-review.md`](st124-review.md) §9).
 - `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` ⇒ **lech=0** (`st124-diff-100k.log`).
+
+## 10. Cổng cuối — `gate --fast` **PASS** trên đúng HEAD
+
+Trên **worktree sạch tại `dd81c9fa`** (cây chung đang bị task khác sửa chưa commit):
+
+```
+vis-dev gate --fast: PASS   # 128 suite / 1146 test / 0 đỏ (log: st124-gate-clean-pass.log)
+--- doc-examples: OK (24 khối: 18 xanh + 6 ngoại lệ đỏ đúng)
+```
+
+`json_esc` chỉ **thêm test**, không đổi `esc` ⇒ cổng xanh là xác nhận "không hồi quy".
