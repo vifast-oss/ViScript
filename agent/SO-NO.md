@@ -1,7 +1,9 @@
 # SO-NO.md — Sổ nợ duy nhất của dòng ViScript
 
-**Task**: ST-145 · **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148)
+**Task**: ST-145 (lập sổ) · **ST-148** (cập nhật số 142/143 theo **VD-149**) ·
+**Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
+**Cập nhật**: 2026-11-17 (**ST-148**) · **HEAD khi cập nhật**: `b855caa3`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -34,7 +36,7 @@ Máy trích: `JOURNAL/st145-trich-no.log` (lệnh + sha256 từng báo cáo + th
 | `R24-viscript.md` §5 | 132..141 | nợ mới đợt 24 (ST-132b/134/135/137/R24) |
 | `JOURNAL/st122..st132` §nợ | 105..116 (số cũ) | nguồn gốc từng nợ + mức VS3; xem §7 |
 | `QUEUE.md` | — | dòng `nợ #…` + hàng `CHỜ DUYỆT` để chốt trạng thái |
-| `DECISIONS.md` | — | VD-109/122/123/124/125/126/133/135/141/144/145/146 để chốt trạng thái |
+| `DECISIONS.md` | — | VD-109/122/123/124/125/126/133/135/141/144/145/146 để chốt trạng thái; **VD-149** cấp số **142/143** cho `#113b`/`#114b` (ST-148) |
 | `HOST-BAO-DAM.md` | — | dòng giới hạn **đường ghi** (nợ #109b/#140) |
 
 Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đánh số) và `R20` (ghi “giữ nguyên R19 §5”).
@@ -42,22 +44,27 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 
 ## 2. Quy ước số
 
-1. Dãy số của sổ là dãy **liên tục 1..141** theo thứ tự R11 → R24; R23 đã chuẩn hoá dãy 105..131.
-2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **142** trở đi.
+1. Dãy số của sổ là dãy **liên tục 1..143**: 1..141 theo thứ tự R11 → R24 (R23 đã chuẩn hoá dãy 105..131),
+   tiếp **142/143** cấp ngày 2026-11-17 theo **VD-149** từ hai nhãn tạm `#113b`/`#114b` (§7.3).
+2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **144** trở đi.
 3. Số trùng nghĩa cũ được **tách bằng hậu tố** `a/b`, **không** đổi số gốc: `#109a`/`#109b` (xem §7.1).
 4. Hậu tố `a/b` **không** tạo dãy mới: `#109a` và `#109b` là hai nợ khác nghĩa của cùng số cũ 109.
 5. Nguồn của mỗi mục ghi dạng `R## §5`/`R## §6`, kèm `ST-##`, `JOURNAL/<tệp>` hoặc `VD-###` khi cần chốt trạng thái.
+6. Số **142/143** cấp theo **VD-149** (không tái dùng số cũ); báo cáo trích theo số mới, **kèm số cũ trong ngoặc**:
+   `#142` (`#113b`), `#143` (`#114b`). Ánh xạ ghi ở §7.3.
 
 ## 3. Cách cập nhật (luật cho R25 trở đi)
 
 - **Chỉ thêm** dòng mới ở cuối bảng (số kế tiếp); **không xoá** dòng, **không sửa số**, **không đổi nghĩa**.
+- Cấp số chỉ khi có văn bản quyết định (như **VD-149**): số mới **không** tái dùng số cũ, nghĩa của số cũ **không** đổi;
+  nhãn tạm cũ (§7.3) giữ làm ánh xạ, không thay số cũ.
 - Đóng nợ: ghi `đóng ở <task>` **kèm nguồn** (báo cáo/hàng QUEUE/VD) — không đóng bằng suy đoán.
 - Chuyển VS3: ghi `chuyển VS3` + lý do 1 dòng ở §5.
 - Không làm: ghi `không làm có lý do` + văn bản quyết định (VD) ở §6.
 - Báo cáo R## **không** sửa nội dung (VD-142); sai sót đính chính bằng dòng trong QUEUE + mục “Đính chính R##” ở báo cáo kế tiếp.
 - Nợ phát sinh trong task: thêm số mới **ngay trong task đó**, không chờ báo cáo.
 
-## 4. Bảng nợ chính (142 dòng: 1..141, #109 tách a/b)
+## 4. Bảng nợ chính (144 dòng: 1..143, #109 tách a/b)
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -149,7 +156,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 86 | `Location` tương đối chưa resolve `..`/query-only: chỉ ghép thư mục hiện tại; `../x`/`?q` chưa chuẩn. (ST-109: `Location` đủ `..`/query-only/fragment) | R18 §5 · R19 §6 (ST-109) | đóng ở ST-109 |
 | 87 | `--timeout` chỉ `test fn`: fixture `.out/.err` không có timeout; không timeout theo ca/bộ | R18 §5 | mở |
 | 88 | `--timeout` không kill cây cháu: chỉ kill `vis run`; cháu (nếu có) có thể sống. | R18 §5 | mở |
-| 89 | Pipe stdout/stderr có thể nghẽn: `wait_with_output` sau khi con kết thúc; ca in quá buffer có thể treo. (ST-139: 3/3 unit + 7/7 tích hợp xanh) | R18 §5 · QUEUE ST-139 | đóng ở ST-139 |
+| 89 | Pipe stdout/stderr có thể nghẽn: `wait_with_output` sau khi con kết thúc; ca in quá buffer có thể treo. (ST-139: 3/3 unit + 7/7 tích hợp xanh) | R18 §5 · QUEUE ST-139 · PR #24 · `ef6489d1` · JOURNAL/st139-do-truoc.log | đóng ở ST-139 |
 | 90 | `lower.rs` 1482 vẫn max R1: ST-106 chỉ tách `cmd.rs`; muốn max ≤1200 phải tách `lower.rs`. (ST-108: `lower.rs` 1482→993) | R18 §5 · R19 §6 (ST-108) | đóng ở ST-108 |
 | 91 | `ha_stage` 782 vẫn lớn: chưa tách tiếp; `cmd.rs` còn 1060. | R18 §5 | mở |
 | 92 | Span HIR chưa có file-id (correctness): mỗi tệp hạ với span bắt đầu 0 ⇒ câu lệnh cấp tệp chính có thể bị quy sang module (ST-114a/b: `Span.file`) | R19 §5 · R21 §6 · R22 §1 | đóng ở ST-114a/b |
@@ -170,7 +177,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 107 | `test/sem` không chứa được ca đa tệp (5 harness một tầng + `vistest::gom` đệ quy) | R23 §6 · ST-122 | mở |
 | 108 | `Command::new(tên)` để OS phân giải `PATH` lần nữa sau khi kiểm | R23 §6 · ST-123 | mở |
 | 109a | `next_block()` trả `801` trong khi khối `07xx` vẫn còn chỗ (`704` đã cấp): hàm là “khối mới”, không phải “số kế tiếp” | JOURNAL/st128-resolver.md §8 · ST-128 · QUEUE ST-128 · R23 §6 #116 | chuyển VS3 |
-| 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3 | R23 §6 · ST-124 · R24 §5 #140 · JOURNAL/st124-review.md §7 | mở |
+| 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3; **dòng giới hạn đã có trong `HOST-BAO-DAM.md`**; sửa kỹ thuật thuộc VS3 | R23 §6 · ST-124 · R24 §5 #140 · JOURNAL/st124-review.md §7 · HOST-BAO-DAM.md §4 | mở |
 | 110 | VM không đưa `argv` vào tham số không-`cap` của `main` (interp `list[str]`, VM `()`) | R23 §6 · ST-124 | mở |
 | 111 | tyck chấp nhận `let e: cap[Dir] = json.decode(...)` | R23 §6 · ST-124 | mở |
 | 112 | Thực tế có 2 bộ escape JSON (`json_esc` + `json_tai`); VD-130e “nguồn duy nhất” chưa đúng | R23 §6 · ST-124 | mở |
@@ -191,7 +198,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 127 | `ap_dung` mới dùng `ABI::V1`; ABI 8 có thêm `REFER`/`TRUNCATE`/`IOCTL_DEV` chưa xét | R23 §6 · ST-132 · JOURNAL/st132-landlock.md §7 | chuyển VS3 |
 | 128 | RÒ RỈ TOCTOU trên Linux 798/50 000 — lỗi sản phẩm, ưu tiên cao nhất đợt 24 (ST-137: 0/50 000 trên `ps` và macOS) | R23 §6 · ST-133 · VD-141 · QUEUE ST-137 | đóng ở ST-137 |
 | 129 | Cùng danh sách số dòng khối tài liệu bị chép ở 4 tệp test (`check.rs`, `fmt.rs`, `doc_fixtures.rs`, `hir.rs`) — nên gom một nguồn | R23 §6 · ST-133 | mở |
-| 130 | Linux chưa chạy `vis test`/differential/cache (mới có `cargo test` + host suite) (ST-142: 447/447 hai đường, `lech=0`) | R23 §6 · ST-133 · QUEUE ST-142 | đóng ở ST-142 |
+| 130 | Linux chưa chạy `vis test`/differential/cache (mới có `cargo test` + host suite) (ST-142: 447/447 hai đường, `lech=0`) | R23 §6 · ST-133 · QUEUE ST-142 · JOURNAL/st142-ps-vis-test.log · JOURNAL/st142-ps-diff-100k.log · JOURNAL/st142-ps-cache.log | đóng ở ST-142 |
 | 131 | hàng `ST-132b` do Agent 2 tự thêm vào QUEUE (ngoài ủy quyền) — cần Agent 0 nhận hoặc xoá (đính chính: hàng do Agent 0 mở, không phải Agent 2 tự thêm) | R23 §6 · ST-133 · R24 §1 hàng 5 | đóng ở ST-00 (đính chính R23/R24 §1) |
 | 132 | 3 ca âm dựng helper bằng `rustc`; thiếu `crt-static` ⇒ đỏ vì môi trường | R24 §5 · ST-132b | mở |
 | 133 | Ca `read_dir` mới kiểm luật chỉ-đọc, chưa kiểm luật ghi | R24 §5 · ST-132b | mở |
@@ -200,9 +207,11 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá | R24 §5 · ST-134 | mở |
 | 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 | chuyển VS3 |
 | 138 | `/proc` phải đọc được trên Linux, nếu không ⇒ `VS0604` (hành vi đúng, nhưng người vận hành phải biết) | R24 §5 · ST-137 | mở |
-| 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 | đóng ở ST-140 |
-| 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900 | R24 §5 | mở |
+| 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 · JOURNAL/st140-red-ps.log · JOURNAL/st140-cargo-test-ps.log | đóng ở ST-140 |
+| 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900; **sửa kỹ thuật thuộc VS3** | R24 §5 · HOST-BAO-DAM.md §4 | mở |
 | 141 | Mục điều hướng: nợ cũ #121..#124, #128, #129, #130 đã xử lý hoặc chuyển VS3 — xem R23 §6 | R24 §5 | không phải nợ (điều hướng) |
+| 142 | **`pkg update <tên>` ghim mọi gói khác** (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách (trước là nhãn tạm `#113b`) | JOURNAL/st129-lock.md §9 · QUEUE ST-129 · VD-149 | mở |
+| 143 | **`NamePolicy::Strict` bật cho mọi tệp có `use`** (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 (trước là nhãn tạm `#114b`) | JOURNAL/st130-siet-caps.md §9 · QUEUE ST-130 · VD-133 · VD-149 | mở |
 
 ## 5. Nợ chuyển VS3 (20 mục)
 
@@ -277,9 +286,9 @@ R23 chuẩn hoá lại một dãy duy nhất theo thứ tự hợp nhất.” B�
 | 112 | `Command::new(tên)` phân giải `PATH` lần nữa (`JOURNAL/st123-va-grant.md` §8) | #108 |
 | 112 | lock không ghi quan hệ phụ thuộc (`JOURNAL/st129-lock.md` §9) | #119 |
 | 113 | VM không đưa `argv` vào tham số `main` (`JOURNAL/st124-review.md` §7) | #110 |
-| 113 | `pkg update` ghim mọi gói khác (`JOURNAL/st129` §9) | **#113b** — chưa có số chuẩn (§7.3) |
+| 113 | `pkg update` ghim mọi gói khác (`JOURNAL/st129` §9) | **#113b → #142** (VD-149; §7.3) |
 | 114 | tyck chấp nhận `let e: cap[Dir] = json.decode(…)` (`JOURNAL/st124` §7) | #111 |
-| 114 | `NamePolicy::Strict` bật cho mọi tệp có `use` (`JOURNAL/st130-siet-caps.md` §9) | **#114b** — chưa có số chuẩn (§7.3) |
+| 114 | `NamePolicy::Strict` bật cho mọi tệp có `use` (`JOURNAL/st130-siet-caps.md` §9) | **#114b → #143** (VD-149; §7.3) |
 | 115 | đường GHI kiểm-rồi-mở (`JOURNAL/st124` §7) | #109b |
 | 115 | `vis test`/host suite chưa áp strict-caps (`JOURNAL/st130` §9) | #120 |
 | 116 | hai bộ escape JSON (`JOURNAL/st125-fuzz-json-esc.md` §7) | #112 |
@@ -291,36 +300,57 @@ R23 chuẩn hoá lại một dãy duy nhất theo thứ tự hợp nhất.” B�
 - `QUEUE ST-128` ghi “nợ #109” = `next_block` ⇒ **#109a**; `QUEUE ST-124` ghi “nợ #115” = đường ghi ⇒ **#109b**.
 - `QUEUE ST-125` ghi “nợ #116” = hai bộ escape JSON ⇒ **#112** (R23 dùng #116 cho `next_block`).
 
-### 7.3 Hai nợ của đợt 23 **không** được R23 gộp vào dãy chuẩn
+### 7.3 Hai nợ của đợt 23 **không** được R23 gộp vào dãy chuẩn — nay đã có số **142/143** (VD-149)
 
-| Nhãn tạm | Nghĩa | Nguồn | Trạng thái |
+| Nhãn tạm | Nghĩa | Nguồn | Số chuẩn + trạng thái |
 |---|---|---|---|
-| **#113b** | `pkg update <tên>` ghim mọi gói khác (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách | `JOURNAL/st129-lock.md` §9 (số cũ 113) | chờ quyết (chưa có số chuẩn) |
-| **#114b** | `NamePolicy::Strict` bật cho **mọi** tệp có `use` (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 | `JOURNAL/st130-siet-caps.md` §9 (số cũ 114) · `VD-133` · `JOURNAL/st130b-ca-thu-8.md` | chuyển VS3 (ca khoá đã xanh) |
+| **#113b** | `pkg update <tên>` ghim mọi gói khác (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách | `JOURNAL/st129-lock.md` §9 (số cũ 113) · `QUEUE` ST-129 | **#142** (VD-149) — bảng chính: **mở** (VS2 **không** sửa; xét ở VS3 nếu cần) |
+| **#114b** | `NamePolicy::Strict` bật cho **mọi** tệp có `use` (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 | `JOURNAL/st130-siet-caps.md` §9 (số cũ 114) · `VD-133` · `JOURNAL/st130b-ca-thu-8.md` | **#143** (VD-149) — bảng chính: **mở**; VD-133 cho phép chuyển VS3 khi ca khoá xanh (ca `st130b` **đã xanh**) — chưa có task VS3 |
 
-Nhãn `#113b`/`#114b` là **số cũ + hậu tố**, **không phải** số chuẩn của dãy R23. R25 **không** trích hai mục này bằng số;
-đề nghị Agent 0 cấp số **142, 143** ở đợt 25 (không đánh lại số cũ).
+**Ánh xạ chính thức (VD-149, 2026-11-17): `#113b → #142`, `#114b → #143`.**
+Nhãn `#113b`/`#114b` là **số cũ + hậu tố**, **không** phải số của dãy chuẩn: giữ lại ở đây làm ánh xạ,
+**không** đánh lại số cũ, **không** tái dùng số **142/143** cho nghĩa khác. Báo cáo R26 trở đi trích bằng
+số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 ## 8. Tóm tắt
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **142** (1..141; #109 tách `a`/`b`) |
-| `mở` | **92** |
+| Tổng dòng bảng chính | **144** (1..143; #109 tách `a`/`b`) |
+| `mở` | **94** |
 | `đóng` | **28** |
 | `chuyển VS3` | **20** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
-| Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **2** |
+| Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 92 mở + 28 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **142** dòng.
+Kiểm: 94 mở + 28 đóng + 20 VS3 + 1 không làm + 1 điều hướng = **144** dòng.
+
+**Đóng trong đợt 24g (ST-148 đối chiếu lại, chỉ ghi khi có bằng chứng trong repo):** `#89` (ST-139 · PR #24 ·
+`ef6489d1` · `JOURNAL/st139-do-truoc.log`), `#130` (ST-142 · `JOURNAL/st142-ps-*.log`: 447/447 hai đường,
+`lech=0`), `#139` (ST-140 · `JOURNAL/st140-red-ps.log` + `st140-cargo-test-ps.log`), `#126` (ST-132 · VD-135),
+`#131` (ST-00 · đính chính R23/R24 §1). Giữ **mở**: `#109b`/`#140` (đường ghi — dòng giới hạn đã có trong
+`HOST-BAO-DAM.md`; sửa kỹ thuật thuộc VS3).
 
 ## 9. Máy kiểm của task này
 
+**ST-145 (lập sổ)**:
+
 - Trích nguồn: `JOURNAL/st145-trich-no.log` (script `/tmp/st145-trich-no.py`, sha256 ghi trong log).
-- Kiểm trùng số trong bảng chính: `JOURNAL/st145-kiem-trung.log` ⇒ **0 số trùng**.
+- Kiểm trùng số trong bảng chính: `JOURNAL/st145-kiem-trung.log` ⇒ **0 số trùng** (142 dòng).
 - `python3 test/report/check_report.py --all` ⇒ PASS (24 báo cáo, 164 hàng QUEUE).
 - `cd viscript && ../vis-dev gate --fast` ⇒ PASS (L0 1159/0, report-check 24/164, doc-examples 24 khối) —
   log `JOURNAL/st145-gate-macos.log` (header VD-136 + sha256 + `[exit=0]`).
+
+**ST-148 (cập nhật theo VD-149, HEAD `b855caa3`)**:
+
+- Thêm số: **#142** (`#113b`), **#143** (`#114b`); ánh xạ ở §7.3 — hai số **không** tái dùng số cũ.
+- Kiểm trùng số + dải + nguồn + ánh xạ + khớp §8: `JOURNAL/st148-kiem-trung.log` (script `/tmp/st148-kiem-trung.py`,
+  sha256 trong log) ⇒ **PASS, 0 số trùng**, dải **1..143** đủ, 144 dòng, trạng thái **94 mở / 28 đóng / 20 VS3 /
+  1 không làm / 1 điều hướng**.
+- `python3 test/report/check_report.py --all` ⇒ **PASS (25 báo cáo, 170 hàng QUEUE)** — `JOURNAL/st148-check-report.log`.
+- `cd viscript && ../vis-dev gate --fast` ⇒ **PASS**, `[exit=0]`, **10/10 bước OK**, L0 **1159/0** trên 129 suite,
+  report-check PASS (25/170), doc-examples OK (24 khối) — `JOURNAL/st148-gate-macos.log` (header VD-136 + sha256
+  + `[exit=0]`).
 
