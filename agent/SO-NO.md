@@ -5,9 +5,11 @@
 **ST-151** (đóng **#135**) ·
 **ST-154** (đóng **#144**; `#143` → **chuyển VS3** theo **VD-154(b)**; thêm **#145** theo **VD-154(c)**) ·
 **ST-157** (đóng **#110** — VM đưa `argv` vào tham số **không-`cap`** của `main`, parity interp↔VM theo **VD-156**) ·
+**ST-158** (đóng **#129** — danh sách 7 khối tài liệu bị loại trừ (VD-36) về **một nguồn** `test/doc_excluded.rs`;
+4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-157** — đóng **#110**, sổ **146 mục = 90 mở / 33 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
+**Cập nhật**: 2026-11-17 (**ST-158** — đóng **#129**, sổ **146 mục = 89 mở / 34 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -203,7 +205,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 126 | `unicode-ident` (`(MIT OR Apache-2.0) AND Unicode-3.0`, build-time) ngoài allowlist hẹp — cần Agent 0 quyết (VD-135: hợp lệ theo QD §9.3) | R23 §6 · ST-132 · VD-135 · QUEUE đính chính 2026-11-16 | đóng ở ST-132 (VD-135) |
 | 127 | `ap_dung` mới dùng `ABI::V1`; ABI 8 có thêm `REFER`/`TRUNCATE`/`IOCTL_DEV` chưa xét | R23 §6 · ST-132 · JOURNAL/st132-landlock.md §7 | chuyển VS3 |
 | 128 | RÒ RỈ TOCTOU trên Linux 798/50 000 — lỗi sản phẩm, ưu tiên cao nhất đợt 24 (ST-137: 0/50 000 trên `ps` và macOS) | R23 §6 · ST-133 · VD-141 · QUEUE ST-137 | đóng ở ST-137 |
-| 129 | Cùng danh sách số dòng khối tài liệu bị chép ở 4 tệp test (`check.rs`, `fmt.rs`, `doc_fixtures.rs`, `hir.rs`) — nên gom một nguồn | R23 §6 · ST-133 | mở |
+| 129 | Cùng danh sách số dòng khối tài liệu bị chép ở 4 tệp test (`check.rs`, `fmt.rs`, `doc_fixtures.rs`, `hir.rs`) — **ST-158**: gom về **một nguồn** `viscript/test/doc_excluded.rs` (`const DOC_EXCLUDED: [usize; 7]`, không đổi số); 4 tệp test dùng `include!("../../../test/doc_excluded.rs")`; vis-syntax dùng bản **6** khối dẫn xuất `DOC_EXCLUDED_SYNTAX` (khối 666 parse sạch từ ST-27); 4 target trước/sau giống: 13/13/3/10 | R23 §6 · ST-133 · ST-158 · `JOURNAL/st158-truoc.log` · `JOURNAL/st158-sau.log` · `JOURNAL/st158-gate-macos.log` · QUEUE ST-158 | đóng ở ST-158 |
 | 130 | Linux chưa chạy `vis test`/differential/cache (mới có `cargo test` + host suite) (ST-142: 447/447 hai đường, `lech=0`) | R23 §6 · ST-133 · QUEUE ST-142 · JOURNAL/st142-ps-vis-test.log · JOURNAL/st142-ps-diff-100k.log · JOURNAL/st142-ps-cache.log | đóng ở ST-142 |
 | 131 | hàng `ST-132b` do Agent 2 tự thêm vào QUEUE (ngoài ủy quyền) — cần Agent 0 nhận hoặc xoá (đính chính: hàng do Agent 0 mở, không phải Agent 2 tự thêm) | R23 §6 · ST-133 · R24 §1 hàng 5 | đóng ở ST-00 (đính chính R23/R24 §1) |
 | 132 | 3 ca âm dựng helper bằng `rustc`; thiếu `crt-static` ⇒ đỏ vì môi trường | R24 §5 · ST-132b | mở |
@@ -336,15 +338,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **146** (1..145; #109 tách `a`/`b`) |
-| `mở` | **90** |
-| `đóng` | **33** |
+| `mở` | **89** |
+| `đóng` | **34** |
 | `chuyển VS3` | **21** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 90 mở + 33 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **146** dòng.
+Kiểm: 89 mở + 34 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **146** dòng.
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =
 91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng (ST-151). ST-154 làm **ba** việc trên sổ: (1) `#143` **mở → chuyển VS3**
