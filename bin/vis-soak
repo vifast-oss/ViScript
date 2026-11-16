@@ -62,6 +62,13 @@ if [ -z "$LOG" ]; then
     fi
 fi
 
+# ST-143: `VIS_SOAK_LOG`/`VIS_SOAK_APPEND` là **cấu hình của script này**, không được rò vào lệnh con.
+# Vòng `gate-*` chạy `cargo test` ⇒ ca `soak_script` gọi lại `bin/vis-soak --dry-run` với môi trường kế thừa;
+# tệp log đang ghi (khác rỗng) ⇒ nhánh từ chối ghi đè exit 2 ⇒ L0 đỏ **tất định** (ST-143 lần 1: gate-1 31 s,
+# L0 1161/1, đúng ca `vis_soak_hop_le_va_in_du_10_vong`; log `st143-soak-lan1-gate-1-do.log`). Bỏ hai biến
+# sau khi đã đọc xong giá trị; `--log`/`--append` không bị ảnh hưởng.
+unset VIS_SOAK_LOG VIS_SOAK_APPEND
+
 # Từ chối ghi đè: tệp đích đã tồn tại và khác rỗng ⇒ exit 2, KHÔNG truncate (chỉ ghi tiếp khi --append).
 kiem_ghi_de() {
     if [ "$APPEND" -eq 1 ]; then
