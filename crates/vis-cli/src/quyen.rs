@@ -473,6 +473,16 @@ impl Quyen {
             if (md.dev(), md.ino()) != danh_tinh {
                 return Err(loi);
             }
+            #[cfg(all(test, unix))]
+            vet::them(format!(
+                "xac_nhan_sau_mo(truoc={}, sau={}, danh_tinh_handle=({},{}), metadata(sau)=({},{}))",
+                truoc.display(),
+                sau.display(),
+                danh_tinh.0,
+                danh_tinh.1,
+                md.dev(),
+                md.ino()
+            ));
             return self.kiem_canon(&sau, p, false);
         }
         let _ = danh_tinh;
@@ -542,6 +552,96 @@ impl Quyen {
     }
 }
 
+/// **ST-163 — vết chẩn đoán ca đua, CHỈ tồn tại khi biên dịch test (`cfg(all(test, unix))`)**:
+/// ghi lại *đường đi* của **lần đọc vừa xong** (kiểm trước → mở qua handle → xác nhận sau khi mở)
+/// để ca đua [`tests::dua_doi_symlink_lap_co_gioi_han`] in ra **vì sao** một lần đọc lọt nội dung
+/// ngoài root (nợ `#146`).
+///
+/// Bật bằng biến môi trường **`VIS_TOCTOU_TRACE=1`**; **mặc định tắt** ⇒ không syscall thêm, không
+/// đổi hành vi, **không** đổi kỳ vọng/ngưỡng của ca. Đây là **núm chẩn đoán** của ST-163, **không**
+/// phải cờ sản phẩm: khối này không tồn tại trong bản phát hành.
+#[cfg(all(test, unix))]
+mod vet {
+    use std::cell::RefCell;
+    use std::sync::OnceLock;
+
+    thread_local! {
+        static VET: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    }
+
+    fn bat() -> bool {
+        static BAT: OnceLock<bool> = OnceLock::new();
+        *BAT.get_or_init(|| std::env::var_os("VIS_TOCTOU_TRACE").is_some())
+    }
+
+    /// Đang bật chẩn đoán? (đọc biến môi trường **một lần**).
+    pub(super) fn dang_bat() -> bool {
+        bat()
+    }
+
+    /// Xoá vết của lần đọc trước (chỉ khi bật).
+    pub(super) fn bat_dau() {
+        if bat() {
+            VET.with(|v| v.borrow_mut().clear());
+        }
+    }
+
+    /// Thêm một dòng vết (chỉ khi bật).
+    pub(super) fn them(dong: String) {
+        if bat() {
+            VET.with(|v| v.borrow_mut().push(dong));
+        }
+    }
+
+    /// Lấy (và xoá) vết của lần đọc gần nhất; `None` = chưa bật chẩn đoán.
+    pub(super) fn lay() -> Option<String> {
+        if !bat() {
+            return None;
+        }
+        VET.with(|v| {
+            let d = std::mem::take(&mut *v.borrow_mut());
+            if d.is_empty() {
+                None
+            } else {
+                Some(d.join(" | "))
+            }
+        })
+    }
+}
+
+/// **ST-163**: mô tả **trạng thái quan sát được ngay sau** một lần đọc **thành công** — để phân
+/// biệt "nội dung tệp ngoài root lọt ra" với "đọc nhầm một tệp trong root". Chỉ dùng cho chẩn đoán
+/// (`cfg(test)`), không ảnh hưởng quyết định quyền.
+#[cfg(all(test, unix))]
+fn mo_ta_lan_doc(p: &str, d: &DocQuaHandle) -> String {
+    use std::os::unix::fs::MetadataExt;
+    let duong_dan = match &d.duong_dan {
+        DuongDanHandle::Co(dd) => format!("Co({})", dd.display()),
+        DuongDanHandle::KhongLayDuoc(e) => format!("KhongLayDuoc({e})"),
+        DuongDanHandle::KhongCo => "KhongCo".to_string(),
+    };
+    let symlink = match std::fs::symlink_metadata(p) {
+        Ok(m) => format!(
+            "symlink={},({},{})",
+            m.file_type().is_symlink(),
+            m.dev(),
+            m.ino()
+        ),
+        Err(e) => format!("symlink=LỖI({e})"),
+    };
+    let theo_ten = match std::fs::metadata(p) {
+        Ok(m) => format!("({},{})", m.dev(), m.ino()),
+        Err(e) => format!("LỖI({e})"),
+    };
+    format!(
+        "doc(dai={}, danh_tinh_handle=({},{}), duong_dan={duong_dan}) sau_doc: symlink_metadata={symlink}, metadata={theo_ten}, chuan(p)={}",
+        d.noi_dung.len(),
+        d.danh_tinh.0,
+        d.danh_tinh.1,
+        Quyen::chuan(std::path::Path::new(p)).display()
+    )
+}
+
 /// Bọc `FsHost` để **kiểm quyền trước** mọi thao tác.
 pub struct FsGuard<'a> {
     pub trong: &'a mut dyn FsHost,
@@ -558,10 +658,16 @@ impl FsHost for FsGuard<'_> {
     ///    không thể làm nội dung trả về khác vật mà quyết định quyền đã áp. Host **thật** mà
     ///    không lấy được đường dẫn handle ⇒ **từ chối** (`VS0604`).
     fn read(&mut self, p: &str) -> Result<String, String> {
+        #[cfg(all(test, unix))]
+        vet::bat_dau();
         let da_kiem = self.quyen.kiem_fs_canon(p, false)?;
         let d = self.trong.read_theo_handle(p)?;
         if let Some(truoc) = da_kiem {
             self.quyen.xac_nhan_handle(p, &truoc, &d)?;
+        }
+        #[cfg(all(test, unix))]
+        if vet::dang_bat() {
+            vet::them(mo_ta_lan_doc(p, &d));
         }
         Ok(d.noi_dung)
     }
@@ -731,14 +837,26 @@ mod tests {
         let _ = std::fs::remove_dir_all(&d);
     }
 
-    /// **Ca đua thật**: luồng phụ đổi symlink liên tục, luồng chính đọc `LAP` lần.
+    /// **Ca đua thật**: luồng phụ đổi symlink liên tục, luồng chính đọc `VIS_TOCTOU_LAP` lần
+    /// (mặc định **50 000**).
     /// Không phụ thuộc **thời gian tuyệt đối** (chỉ đếm vòng), **lặp có giới hạn**.
     /// Bất biến: **không lần nào** trả về nội dung của tệp ngoài root; và **phải có** lần đọc
     /// thành công (`TRONG`) để ca không "xanh vì chặn tất".
+    ///
+    /// **ST-163 — núm chẩn đoán, KHÔNG đổi kỳ vọng**: số vòng lấy từ biến môi trường
+    /// `VIS_TOCTOU_LAP` khi có (mặc định **50 000** như ca gốc) — chỉ để chạy **dài** hơn nhằm bắt
+    /// ca đua hiếm (`1/50 000` trên macOS, nợ `#146`). Biến này **không** đổi ngưỡng, **không** đổi
+    /// `assert_eq!(ro_ri, 0, …)`, **không** `#[ignore]`/cfg-bỏ. Khi có bất thường, ca in ra **vòng
+    /// thứ mấy**, **nội dung thật đọc được** (che 40 ký tự), **độ dài** ký tự/byte và mẫu `err`;
+    /// đặt `VIS_TOCTOU_TRACE=1` để in thêm **vết** đường đi của chính lần đọc đó.
     #[cfg(unix)]
     #[test]
     fn dua_doi_symlink_lap_co_gioi_han() {
-        const LAP: usize = 50_000;
+        let lap: usize = std::env::var("VIS_TOCTOU_LAP")
+            .ok()
+            .and_then(|s| s.trim().parse::<usize>().ok())
+            .filter(|&n| n > 0)
+            .unwrap_or(50_000);
         let d = tam("dua");
         let root = d.join("root");
         std::fs::create_dir_all(&root).expect("root");
@@ -760,25 +878,55 @@ mod tests {
             vong
         });
         let (mut ok_trong, mut ro_ri, mut chan) = (0usize, 0usize, 0usize);
+        let mut ca_ro_ri: Vec<String> = Vec::new();
+        let mut mau_loi: Vec<String> = Vec::new();
         let p = tep.to_str().expect("utf8");
+        let dong_ho = std::time::Instant::now();
         {
             let mut g = FsGuard {
                 trong: &mut runner,
                 quyen: &q,
             };
-            for _ in 0..LAP {
+            for vong in 0..lap {
                 match g.read(p) {
                     Ok(s) if s == "TRONG" => ok_trong += 1,
-                    Ok(_) => ro_ri += 1,
-                    Err(_) => chan += 1,
+                    Ok(s) => {
+                        ro_ri += 1;
+                        let vet = vet::lay();
+                        if ca_ro_ri.len() < 8 {
+                            let che: String = s.chars().take(40).collect();
+                            ca_ro_ri.push(format!(
+                                "RO_RI vong={vong} dai_byte={} dai_ky_tu={} noi_dung={:?} vet={}",
+                                s.len(),
+                                s.chars().count(),
+                                che,
+                                vet.as_deref()
+                                    .unwrap_or("(tắt — đặt VIS_TOCTOU_TRACE=1 để in vết)")
+                            ));
+                        }
+                    }
+                    Err(e) => {
+                        chan += 1;
+                        let gon: String = e.chars().take(90).collect();
+                        if mau_loi.len() < 4 && !mau_loi.contains(&gon) {
+                            mau_loi.push(gon);
+                        }
+                    }
                 }
             }
         }
+        let giay = dong_ho.elapsed().as_secs_f64();
         stop.store(true, std::sync::atomic::Ordering::Relaxed);
         let vong = phu.join().expect("luồng phụ");
         eprintln!(
-            "TOCTOU dua: lap={LAP} ok_trong={ok_trong} ro_ri={ro_ri} chan={chan} vong_doi={vong}"
+            "TOCTOU dua: lap={lap} ok_trong={ok_trong} ro_ri={ro_ri} chan={chan} vong_doi={vong} giay={giay:.1}"
         );
+        for dong in &ca_ro_ri {
+            eprintln!("{dong}");
+        }
+        for gon in &mau_loi {
+            eprintln!("TOCTOU dua err: {gon}");
+        }
         assert_eq!(ro_ri, 0, "RÒ RỈ: đọc được nội dung ngoài root {ro_ri} lần");
         assert!(
             ok_trong > 0,

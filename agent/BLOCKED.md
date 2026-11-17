@@ -55,3 +55,38 @@ Câu hỏi mở của dòng ViScript: **YC-14** trong `v2/agent/BLOCKED.md` §3 
 | Task | Chặn bởi | Cần gì để mở |
 |---|---|---|
 | **ST-147** (**BLOCKED phần Windows**, `fd16d7d1`) | Hạ tầng cổng đã xong theo **VD-150** (`bin/vis-dev` + `test/fixtures/run_fixtures.sh` export `PYTHONIOENCODING=utf-8`, `PYTHONUTF8=1`): gate **macOS PASS** `[exit=0]`, **10/10** bước, L0 **1159/0**. Trên `psvn` self-test **11/12** (ST-144: 7/12 — 6 ca lỗi encoding đã xanh) nhưng cổng **dừng ở bước self-test**, chưa qua bước 5. Ca 7 còn đỏ vì **mã sản phẩm**, không phải encoding: `crates/vis-cli/src/cli/check.rs:82` tách basename bằng `path.rsplit('/')` ⇒ trên Windows `phu` luôn khác rỗng ⇒ nhánh `--syntax` (dòng 97) **giữ** chẩn đoán kiểu ⇒ khối `x = 1` trong ca bị coi là đỏ ⇒ câu `ngoại lệ cũ: …` không bao giờ in. VD-150 chỉ cho hạ tầng cổng; VD-146 cấm sửa sản phẩm cho Windows ⇒ **không sửa**. | Agent 0 cấp **VD + task VS3** cho **một dòng** sửa `check.rs` (dùng `Path::file_name`, hoặc tách cả `'/'` và `'\\'`) **kèm ca khoá** cho cả hai dấu phân cách (vì sửa mà không có ca thì có thể tái phát). Sau đó ca 7 xanh ⇒ self-test **12/12** và cổng đi qua bước 5 (dự kiến dừng ở `doc-examples` hoặc L0 — ~100 ca đỏ Windows thuộc VS3). Bằng chứng: `JOURNAL/st147-gate-psvn.log` (sha256 `25e57182828198e8accdc62f8eb003c1a9156869bf42009cf88e07aa7c94fe46`, khớp hai phía), `JOURNAL/st147-chan-doan-psvn.log` (sha256 `5e2123c27083d8951db2255ff4f0a45adf031be10e53d345070604a062dc613c`, khớp hai phía), `JOURNAL/st147-psvn-env.log` (VD-136). |
+
+## 6. BLOCKED-CHO-A0 — chờ Agent 0 quyết định thiết kế (ST-163, nợ **#146**)
+
+**Trạng thái**: `#146` đã **phân loại (b) — TOCTOU THẬT, CHỈ macOS, khớp `VD-145`** (không phải lỗi test:
+nội dung lọt là `"NGOAI"` thật). Ca **không** bị sửa, kỳ vọng `ro_ri == 0` **không** đổi, `#146` **giữ mở**.
+
+**Cơ chế (đo được, có vết)**. Trên macOS `duong_dan_cua_handle` trả `KhongCo` (`crates/vis-cli/src/ngoai.rs:286-289`),
+nên `xac_nhan_handle` rơi về `xac_nhan_sau_mo` (`crates/vis-cli/src/quyen.rs:459-485`) — xác nhận **theo tên**:
+`sau = chuan(p)` (canonicalize) rồi **sau đó** đối chiếu `std::fs::metadata(&sau)` (`quyen.rs:472`) với
+`(dev, ino)` của handle. `std::fs::metadata` **đi theo symlink**, còn `sau` là **chuỗi lấy từ syscall trước**:
+kẻ đổi `root/tep` xen **giữa hai syscall** làm `metadata` trả inode của **tệp ngoài root** trên một **tên vẫn
+nằm trong root** ⇒ `kiem_canon(sau)` xanh ⇒ **trả nội dung ngoài**. Vết thật (`JOURNAL/st163-toctou-macos.log`,
+vòng 21 627):
+
+```
+xac_nhan_sau_mo(truoc=/…/root/tep, sau=/…/root/tep,
+                danh_tinh_handle=(16777229,57186948), metadata(sau)=(16777229,57186948))
+ | doc(dai=5, danh_tinh_handle=(16777229,57186948), duong_dan=KhongCo)
+   sau_doc: symlink_metadata=symlink=true,(16777229,57195256), metadata=(16777229,57186948),
+            chuan(p)=/…/ngoai.txt
+```
+
+Đo: mac **4 lần đỏ / 8 100 000 vòng** (nội dung `"NGOAI"`, 5 byte); `ps` **0 / 4 100 000** (Linux quyết định
+trên `/proc/self/fd`). **`VD-145` đã ghi đúng** ("đo 0/50 000 nhưng **KHÔNG** bảo đảm theo cơ chế") — ST-163 đo
+được **cơ chế hỏng** và **cửa sổ cụ thể**, không chỉ "đo được 0".
+
+| # | Phương án | Việc phải làm | Điều kiện / rủi ro | Ước lượng |
+|---|---|---|---|---|
+| **A** (đề xuất) | **Vá 1 dòng trong tầm VS2**: `quyen.rs:472` `std::fs::metadata(&sau)` → `std::fs::symlink_metadata(&sau)` | Khi tên vừa bị đổi thành symlink, `symlink_metadata` trả inode **của symlink** ≠ inode handle ⇒ **từ chối**; cửa sổ còn lại (giữa `chuan` và `symlink_metadata`) không còn tạo được "tên trong root + vật ngoài root" | Không đổi API/kỳ vọng/ca; phải chứng minh bằng **≥4M vòng** mac + 3 nền gate; vẫn là "kiểm theo tên" nên **không** thay `VD-145` | 0,5 h |
+| **B** | **Chờ VS3 `#137`** (fd→path trên macOS: `fcntl(F_GETPATH)`) — bỏ hẳn xác nhận theo tên | Đúng hướng thiết kế VS3 (mục 4 trong `JOURNAL/st155-vs3-dieu-tra.md` §7) | Cần `libc`/ngoại lệ `unsafe` ⇒ **ngoài VS2** (D2-17) | 2–3 task VS3 |
+| **C** | Giữ ca + **tách kỳ vọng theo nền** (`cfg(target_os = "macos")` cho phép `ro_ri` nhỏ) | Sửa **kỳ vọng ca cũ** | **Chỉ A0 được duyệt** (AGENTS §4.2); che lỗi thật; **không** đề xuất | 0,25 h |
+
+**Câu hỏi cho Agent 0.** (1) Chọn **A / B / C** (đề xuất **A**, rồi **B** ở VS3). (2) Nếu **A**: có cho phép sửa
+`xac_nhan_sau_mo` (đường đọc macOS) **trong VS2** dù `VD-145` đã hoãn fd→path sang VS3 không? (3) `#146` giữ **mở**
+tới khi có quyết định; ca **không** đổi, **không** `#[ignore]`, **không** đổi ngưỡng.
