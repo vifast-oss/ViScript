@@ -1039,3 +1039,6 @@ Dùng **hàm std** `recv_any(chans, timeout=None)` trả `(chi_so, gia_tri)`; h�
 
 ### VD-164 · VS3: xác nhận nợ đường GHI và ma trận phụ thuộc (2026-11-17)
 **Xác nhận** đường GHI = **`#140/#109b`** (VD-154a). **Ma trận**: mục 1 → mục 2/3/4; mục 3 → mục 6; **mục 5 độc lập**, chạy song song được. Tài liệu VS3 ghi ma trận **kèm TÊN mục**, không chỉ số.
+
+### VD-165 · (Agent 1 · **CHỜ A0 XÁC NHẬN**) Luật thay quyền Agent 0 khi A0 vắng (2026-11-17)
+Người điều phối ban hành, **áp dụng mọi dòng**. Khi Agent 0 vắng và người dùng cho phép, Agent 1 được tự quyết: (1) nợ nhỏ **không cần thiết kế**, việc sổ, đo đạc, báo cáo; (2) **thứ tự task** trong phạm vi đã được A0 duyệt; (3) **phân loại sự cố** khi đã có bằng chứng (log, diff, `file:dòng`). Agent 1 **KHÔNG** được tự quyết, phải ghi **BLOCKED-CHO-A0** và chuyển việc khác: (a) thiết kế/API/ABI mới hoặc thay đổi; (b) chính sách crate/giấy phép/unsafe; (c) đổi kỳ vọng ca cũ, đổi ngưỡng hoặc cách đo ngưỡng; (d) hạ phạm vi cổng/mốc đã duyệt hoặc tuyên bố đạt cổng/mốc. Mỗi quyết định thay phải có **mã riêng** (`17e`, `17f`, …), ghi **lý do + bằng chứng**, nhãn **“CHỜ A0 XÁC NHẬN”**, và được **liệt kê trong báo cáo kế tiếp** (`R29`) để A0 duyệt hồi tố. Ghi chú: các quyết định `17`/`17b`/`17c`/`17d` đã được A0 công nhận hồi tố ở **VD-157**.
