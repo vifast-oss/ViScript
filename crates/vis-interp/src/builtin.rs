@@ -1221,6 +1221,24 @@ pub fn method(
     args: Vec<Value>,
     span: Span,
 ) -> crate::interp::R<Value> {
+    // **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` — chỉ khi `f` **không** phải phương thức lõi.
+    let (m, loi) = match &recv {
+        Value::List(_) => (
+            "list",
+            "len get first last push map filter each sum join is_empty",
+        ),
+        Value::Str(_) => ("str", "len upper lower split chars contains is_empty"),
+        Value::Map(_) => ("map", "len get has keys values is_empty"),
+        _ => ("", ""),
+    };
+    if !m.is_empty() && !loi.split(' ').any(|x| x == name) {
+        let ngan = format!("{m}.{name}");
+        if vis_types::stdlib::sig_of(&ngan).is_some() {
+            let mut all = vec![recv.clone()];
+            all.extend(args.clone());
+            return call(host, &format!("std.{ngan}"), all, span);
+        }
+    }
     match recv {
         Value::List(xs) => list_method(host, xs, name, args, span),
         Value::Str(s) => str_method(host, s, name, args, span),

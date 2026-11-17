@@ -617,6 +617,10 @@ impl<'a> Checker<'a> {
             if let Some(t) = self.kiem_method(&recv, name, args, span) {
                 return t;
             }
+            // **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` — tham số đầu có kiểu của `x`.
+            if let Some(t) = super::expr::phu::kiem_std_method(self, &recv, name, args, span) {
+                return t;
+            }
         }
         // Hàm **khai trong tệp**: dùng chữ ký đầy đủ (có tên + mặc định).
         let sig = match callee {
@@ -909,16 +913,8 @@ impl<'a> Checker<'a> {
                         self.arg_ty(&arg_tys, 0, &Type::Str, name, args, span);
                         Type::Str
                     }
-                    _ => {
-                        self.diag(
-                            NO_FIELD,
-                            format!(
-                                "`list` không có phương thức `{name}` (ST-13: len get first last push map filter each sum join is_empty)"
-                            ),
-                            span,
-                        );
-                        Type::Error
-                    }
+                    // **R5c (VD-178)**: thử `std.list.<name>` trước khi báo lỗi.
+                    _ => return None,
                 }
             }
             Type::Str => match name {
@@ -945,14 +941,8 @@ impl<'a> Checker<'a> {
                     self.arg_ty(&arg_tys, 0, &Type::Str, name, args, span);
                     Type::List(Box::new(Type::Str))
                 }
-                _ => {
-                    self.diag(
-                        NO_FIELD,
-                        format!("`str` không có phương thức `{name}` (ST-13: len upper lower split chars contains is_empty)"),
-                        span,
-                    );
-                    Type::Error
-                }
+                // **R5c (VD-178)**: thử `std.str.<name>` trước khi báo lỗi.
+                _ => return None,
             },
             Type::Map(k, v) => {
                 let kk = (**k).clone();
@@ -981,14 +971,8 @@ impl<'a> Checker<'a> {
                         self.arity(args, 0, name, span);
                         Type::List(Box::new(vv))
                     }
-                    _ => {
-                        self.diag(
-                            NO_FIELD,
-                            format!("`map` không có phương thức `{name}` (ST-13: len get has keys values is_empty)"),
-                            span,
-                        );
-                        Type::Error
-                    }
+                    // **R5c (VD-178)**: thử `std.map.<name>` trước khi báo lỗi.
+                    _ => return None,
                 }
             }
             _ => return None,

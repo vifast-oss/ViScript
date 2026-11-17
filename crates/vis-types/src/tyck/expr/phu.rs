@@ -176,3 +176,39 @@ pub(super) fn kiem_try(
         }
     }
 }
+
+/// **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` khi **tham số đầu** của `f` có kiểu của `x`.
+pub(super) fn kiem_std_method(
+    c: &mut super::super::Checker,
+    recv: &Type,
+    name: &str,
+    args: &[crate::hir::HExpr],
+    span: vis_syntax::Span,
+) -> Option<Type> {
+    let m = match recv {
+        Type::Str => "str",
+        Type::List(_) => "list",
+        Type::Map(..) => "map",
+        _ => return None,
+    };
+    let full = format!("{m}.{name}");
+    let f = vis_types_stdlib_sig(&full)?;
+    let want = f.params.first()?.sang_type();
+    if !c.same(&want, recv) {
+        return None;
+    }
+    for (i, a) in args.iter().enumerate() {
+        let at = c.kiem_expr(a);
+        if let Some(p) = f.params.get(i + 1) {
+            let pt = p.sang_type();
+            c.coerce_e(a, &at, &pt, "đối số");
+        }
+    }
+    let _ = span;
+    Some(f.ret.sang_type())
+}
+
+/// Tách riêng để `phu.rs` không phải `use` cả crate `stdlib` ở đầu tệp.
+fn vis_types_stdlib_sig(name: &str) -> Option<&'static crate::stdlib::StdFn> {
+    crate::stdlib::sig_of(name)
+}

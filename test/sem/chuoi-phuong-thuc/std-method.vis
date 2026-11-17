@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` khi tham số đầu của `f` có kiểu của `x`.
+use std.str
+
+fn main():
+    print(" abc ".trim())
+    print("a,b".split(","))
+    print("xy".upper())

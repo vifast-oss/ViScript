@@ -441,7 +441,8 @@ fn chan_doan_runtime_co_dong_cot_that() {
 /// (pipeline thật chặn ở tyck bằng `VS0403`) — kiểm hành vi của riêng interp.
 #[test]
 fn phuong_thuc_ngoai_tap_bao_vs0501() {
-    let src = "let xs = [1]\nprint(xs.sort())";
+    // **R5c (VD-178)**: `sort` **đã** thành phương thức (std.list.sort) ⇒ dùng tên **không có**.
+    let src = "let xs = [1]\nprint(xs.khong_co())";
     let p = parse(src, Mode::Script);
     let h = lower(&p.cst, &lex(src, Mode::Script));
     let out = run(src, &h.hir, &h.symbols, &h.types, &[]);
