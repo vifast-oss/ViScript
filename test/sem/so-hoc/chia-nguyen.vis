@@ -10,3 +10,8 @@ fn main():
     var x = 7
     x //= 2
     print(x)
+    # **R7-fix (ST-197)**: số chia **âm** — `//` vẫn làm tròn xuống, `%` cùng dấu số chia.
+    print(7 // -2)
+    print(-7 // -2)
+    print(7 % -2)
+    print(-7 % -2)
