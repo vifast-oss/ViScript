@@ -7,6 +7,9 @@
 > `target/debug/vis` @ `f4005aed` (111 lượt chạy snippet); các mục **mới theo quyết định** được đánh nhãn trạng thái.
 > Nguồn sự thật của ngôn ngữ: code + `test/sem/**`,
 > [`docs/SPEC-lex.md`](docs/SPEC-lex.md), [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).
+>
+> **Doc-test (P0-3)**: ✔ = đã chạy thật, **tự động** bởi
+> [`crates/vis-cli/tests/cheatsheet.rs`](crates/vis-cli/tests/cheatsheet.rs) (**11 ca** — `test/cheatsheet/*.vis`).
 
 **Quy ước**
 
@@ -77,7 +80,7 @@ loop break continue return and or not true false none self async await scope tes
 | ViScript | Python | Rust | TS/JS | Ghi chú |
 |---|---|---|---|---|
 | `if x > 0: ...`<br>`elif x < 0: ...`<br>`else: ...` ✔ | y hệt | `if x > 0 { } else if ...` | `if (x > 0) { } else if ...` | `elif` (không phải `else if`) |
-| `let s = if ok: "y" else: "n"` ✔ | `"y" if ok else "n"` | `let s = if ok { "y" } else { "n" };` | `ok ? "y" : "n"` | `if` là biểu thức khi có `else` |
+| `let s = if ok: "y" else: "n"` ✔ | `"y" if ok else "n"` | `let s = if ok { "y" } else { "n" };` | `ok ? "y" : "n"` | `if` là biểu thức khi có `else`; **`ok` là tên ctor `Result`** — không dùng làm tên biến (ca test dùng `b`) |
 | `for i in 0..3:` ✔ | `for i in range(3):` | `for i in 0..3 {` | `for (let i = 0; i < 3; i++)` | `..` **không** gồm cận trên |
 | `for i in 0..=2:` ✔ | `for i in range(3):` | `for i in 0..=2 {` | như trên | `..=` gồm cận trên |
 | `for x in [1, 2, 3]:` ✔ | `for x in [1,2,3]:` | `for x in xs {` | `for (const x of xs)` | |
@@ -93,7 +96,7 @@ loop break continue return and or not true false none self async await scope tes
 | `Circle(r) if r > 100.0: "lớn"` ✔ | `case Circle(r) if r > 100:` | `Shape::Circle(r) if r > 100.0 => ...` | — | guard **không** tính vào coverage |
 | `A(x) \| B(x): x` ✔ | `case A(x) \| B(x):` | `A(x) \| B(x) => x` | — | or-pattern; `\|` **không** phải bit-or |
 | `_` | `case _:` | `_ =>` | `default:` | bắt buộc với kiểu vô hạn (`int`, `str`…) |
-| `if let Some(v) = x:`<br>`    print(v)` **[DỰ KIẾN]** | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3**: `if let`/`while let` nhận **pattern**; dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`**. Hiện tại `if let v = x:` chạy **[ĐANG LÀM]**, `if let Some(v) = x:` ⇒ VS0412 |
+| `if let Some(v) = x:`<br>`    print(v)` **[DỰ KIẾN]** | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3**: `if let`/`while let` nhận **pattern**; dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`**. Hiện tại `if let v = x:` chạy **[ĐANG LÀM]** (ca `test/cheatsheet/07-optional.vis`), `if let Some(v) = x:` ⇒ VS0412 |
 
 ## 5. Dữ liệu
 
@@ -109,7 +112,7 @@ loop break continue return and or not true false none self async await scope tes
 | `enum Shape:`<br>`    Circle(r: float)`<br>`    Empty` ✔ | `Enum` không mang dữ liệu | `enum Shape { Circle(f64), Empty }` | `type Shape = {kind:'circle', r:number} \| {kind:'empty'}` | enum **có dữ liệu** |
 | `Circle(2.0)` ✔ | `Circle(2.0)` | `Shape::Circle(2.0)` | `{kind:'circle', r:2.0}` | dựng variant bằng `Tên(...)` |
 | `a == b` trên bản ghi ✔ | `a == b` | `a == b` | `a === b` | so theo giá trị |
-| `newtype Email = str` ✖ | `NewType('Email', str)` | `struct Email(String);` | branded type | khai báo qua được, nhưng `Email("x")` ⇒ "`str` không phải hàm"; **R12 [DỰ KIẾN]**: thay bằng `type Email(str)`; `newtype` ⇒ **VS0203** |
+| `newtype Email = str` ✖ | `NewType('Email', str)` | `struct Email(String);` | branded type | khai báo ⇒ **VS0203** tại dòng khai (ST-179); **R12 [DỰ KIẾN]**: thay bằng `type Email(str)` |
 | `alias Id = int` ✔ | `Id = int` | `type Id = i64;` | `type Id = number;` | alias **cùng** kiểu; **R12 [DỰ KIẾN]**: thay bằng `type Id = int`; `alias` ⇒ **VS0203** |
 
 ## 6. Chuỗi & literal
@@ -147,7 +150,7 @@ loop break continue return and or not true false none self async await scope tes
 | `Some(5)` (dựng) ✔<br>`some(v)` / `none` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | hiện **dựng viết hoa, pattern viết thường** **[ĐANG LÀM]**; **R1/R2 [DỰ KIẾN]**: dựng **và pattern** đều viết hoa (`Some(v)`, `None`); `some(v)` chỉ còn **cảnh báo** + `vis fmt` tự sửa |
 | `Result[int, str]`, `Ok(7)`, `Err("hỏng")` ✔ | exception | `Result<i64, String>` | `throw` / union | |
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
-| `let v = f() else e:`<br>`    print(e)`<br>`    0` ✔ | `try/except` | `match f() { ... }` | `catch` | `else` phải trả **cùng kiểu** hoặc thoát |
+| `let v = f() else e:`<br>`    print(e)`<br>`    0` ✖ | `try/except` | `match f() { ... }` | `catch` | **chưa có ở HEAD**: `else` của `let` được parse nhưng **không hạ** — `v` vẫn là `Result`, khối `else` không chạy (P0-3); `else` phải trả **cùng kiểu** hoặc thoát |
 | `assert cond` ✔ | `assert` | `assert!(...)` | `console.assert` | |
 | `panic("hỏng")` ✖ | `raise` | `panic!` | `throw` | chưa có ở VS0 |
 | `AnyError` ✖ | — | `Box<dyn Error>` | `unknown` | chưa có — dùng `str` làm kiểu lỗi |
@@ -193,7 +196,7 @@ Method trên giá trị (không cần `use`):
 | Viết | Ghi chú |
 |---|---|
 | `ls ./photos \| where size > 5mb \| sort_by size --desc \| take 10` | pipeline trong `.vish` / ViShell |
-| `pub cmd ls(path: path = p".") -> stream[FileEntry]:` | `cmd` = hàm + tự sinh `--help` + cờ `--x` |
+| `pub cmd ls(path: path = p".") -> stream[FileEntry]:` | `cmd` = hàm + cờ `--x`; tự sinh `--help` **[DỰ KIẾN]** — chưa có ở HEAD (P0-3) |
 | `cmd { ls (dir) \| where size > 5mb }` | dùng pipeline ngay trong `.vis` |
 | `extern cmd git(sub: GitSub, --oneline: bool, ...rest: str)` | khai chữ ký cho chương trình ngoài |
 | `^ten` | ép gọi chương trình **ngoài** |
@@ -234,10 +237,14 @@ Method trên giá trị (không cần `use`):
 
 - **Cách kiểm**: mỗi ô ✔ là một snippet độc lập chạy `vis run`; ✖ là snippet trả mã lỗi, đã đọc thông điệp.
   Tổng **111 lượt chạy**, ngày 2026-11-16, binary `target/debug/vis` @ `f4005aed`.
+- **Doc-test (P0-3)**: `cargo test -p vis-cli --test cheatsheet` chạy **11 ca** `test/cheatsheet/*.vis`
+  (mỗi ca = một chương trình hoàn chỉnh ghép từ ô ✔; so **stdout** nếu tệp có dòng `# kỳ vọng:`).
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
   `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
   `AnyError` **chưa có** → dùng `str`; format spec `{x:.2}` **chưa có**;
-  `dyn` **chưa dùng được**; `panic(...)` **chưa có**; `newtype` khai báo được nhưng chưa dựng được;
+  `dyn` **chưa dùng được**; `panic(...)` **chưa có**; `newtype` báo **VS0203** tại dòng khai (ST-179);
+  `r"…"`/`b"…"`/`p"…"` chạy được nhưng giá trị **còn giữ tiền tố** (`print(r"abc")` in `r"abc"`,
+  `print(b"AB")` in `b"b\"AB\""`) — ca `test/cheatsheet/06c-tien-to.vis` chỉ khẳng định chạy được;
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
   - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let v = o:` chạy; đơn vị `5mb`/`2h30m` chạy; `p"…"` có nhưng **còn escape**; `print` 1 đối số; `assert cond` (không có thông điệp).

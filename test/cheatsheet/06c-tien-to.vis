@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §6 — literal có tiền tố `r"…"`, `b"…"`, `p"…"`
+# Chỉ khẳng định **chạy được** (exit 0): ở HEAD giá trị còn giữ tiền tố
+# (`print(r"abc")` in `r"abc"`, `print(b"AB")` in `b"b\"AB\""`) — xem CHEAT-SHEET §13.
+print(r"C:\x")
+print(b"\x41")
+print(p"./x")

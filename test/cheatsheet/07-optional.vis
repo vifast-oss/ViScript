@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §7 — Optional & xử lý lỗi
+# `let v = f()?` chỉ dùng **trong hàm** trả `Result` (§4.4) ⇒ đặt trong `g()`.
+# `if let` hiện nhận **ràng buộc** (`if let v = x:`), chưa nhận pattern `Some(v)` — [ĐANG LÀM] (R3).
+# kỳ vọng: 7
+# kỳ vọng: 5
+# kỳ vọng: 20
+# kỳ vọng: 5
+# kỳ vọng: 5
+# kỳ vọng: Ok(7)
+# kỳ vọng: Err(hỏng)
+# kỳ vọng: Ok(2)
+# kỳ vọng: 5
+# kỳ vọng: không
+# kỳ vọng: assert ok
+let a: int? = none
+print(a ?? 7)
+let b: int? = 5
+print(b ?? 7)
+
+type U:
+    name: str
+    age: int
+let u: U? = {name: "An", age: 20}
+print(u?.age ?? 0)
+
+let c: int? = Some(5)
+print(c ?? 0)
+match c:
+    some(v): print(v)
+    none: print(0)
+
+let r: Result[int, str] = Ok(7)
+print(r)
+let e: Result[int, str] = Err("hỏng")
+print(e)
+
+fn f() -> Result[int, str]:
+    Ok(1)
+
+fn g() -> Result[int, str]:
+    let v = f()?
+    Ok(v + 1)
+
+print(g())
+
+let x: int? = 5
+if let v = x:
+    print(v)
+else:
+    print("không")
+
+let y: int? = none
+if let v = y:
+    print(v)
+else:
+    print("không")
+
+assert 1 + 1 == 2
+print("assert ok")

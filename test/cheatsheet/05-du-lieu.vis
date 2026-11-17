@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §5 — Dữ liệu
+# kỳ vọng: [1, 2, 3]
+# kỳ vọng: {"a": 1, "b": 2}
+# kỳ vọng: [1, 2]
+# kỳ vọng: [1, a]
+# kỳ vọng: 1
+# kỳ vọng: a
+# kỳ vọng: {name: An, age: 20}
+# kỳ vọng: {name: An, age: 21}
+# kỳ vọng: true
+# kỳ vọng: Circle(2)
+# kỳ vọng: 7
+let xs: list[int] = [1, 2, 3]
+print(xs)
+
+let m: map[str, int] = {"a": 1, "b": 2}
+print(m)
+
+let s = set{1, 2}
+print(s)
+
+let t = (1, "a")
+print(t)
+let (n, chu) = t
+print(n)
+print(chu)
+
+type U:
+    name: str
+    age: int
+
+let u: U = {name: "An", age: 20}
+print(u)
+let v = u with age: 21
+print(v)
+
+let a: U = {name: "An", age: 20}
+let b: U = {name: "An", age: 20}
+print(a == b)
+
+enum Shape:
+    Circle(r: float)
+    Empty
+
+print(Circle(2.0))
+
+alias Id = int
+let i: Id = 7
+print(i)

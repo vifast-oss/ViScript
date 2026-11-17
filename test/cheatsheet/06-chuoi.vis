@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §6 — Chuỗi & literal (phần chuỗi)
+# kỳ vọng: Xin chào ViScript
+# kỳ vọng: {ok}
+# kỳ vọng: a
+# kỳ vọng: b
+# kỳ vọng: [a, b]
+# kỳ vọng: AB
+# kỳ vọng: ab
+# kỳ vọng: [a, b]
+# kỳ vọng: true
+# kỳ vọng: 2
+let name = "ViScript"
+print("Xin chào {name}")
+print("{{ok}}")
+print("""a
+b""")
+print("a,b".split(","))
+print("ab".upper())
+print("AB".lower())
+print("ab".chars())
+print("ab".contains("b"))
+print("ab".len())

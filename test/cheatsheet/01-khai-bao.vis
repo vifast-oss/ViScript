@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §1 — Khai báo & giá trị
+# kỳ vọng: hi
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: 10
+# kỳ vọng: 1
+# kỳ vọng: ok
+print("hi")
+
+let x = 1
+print(x)
+
+var y = 1
+y += 1
+print(y)
+
+const N: int = 10
+print(N)
+
+let z: int = 1
+print(z)
+
+assert 1 + 1 == 2
+print("ok")

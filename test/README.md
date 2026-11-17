@@ -8,6 +8,7 @@
 | `report/` | `check_report.py` + fixture cho báo cáo đợt (`agent/reports/R##-viscript.json`) |
 | `fixtures/` | `run_fixtures.sh` — ca âm cho luật cấu trúc R1–R4 |
 | `check/`, `cmd/`, `expr/`, `fmt/`, `host/`, `modules/`, `pkg/`, `sem/` | fixture theo từng mảng chức năng |
+| `cheatsheet/` | doc-test của `CHEAT-SHEET-ViScript.md` — mỗi `.vis` là một chương trình hoàn chỉnh từ ô ✔ (chạy bởi `crates/vis-cli/tests/cheatsheet.rs`) |
 | `doc_excluded.rs` | danh sách khối ví dụ **không** chạy (được `include!` từ test) |
 
 Chạy toàn bộ: `./vis-dev gate --fast` (hoặc `cargo test --workspace`).

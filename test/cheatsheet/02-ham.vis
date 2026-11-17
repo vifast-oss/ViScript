@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §2 — Hàm & closure
+# `test fn` không chạy bằng `vis run`; harness kiểm thêm `vis test` qua dòng `# kỳ vọng-test:`.
+# kỳ vọng: 3
+# kỳ vọng: 3
+# kỳ vọng: 6
+# kỳ vọng: 6
+# kỳ vọng: 6
+# kỳ vọng: 2
+# kỳ vọng: 7
+# kỳ vọng: 120
+# kỳ vọng-test: ok 1 - cong
+fn add(a: int, b: int) -> int:
+    a + b
+print(add(1, 2))
+
+fn f(a: int, b: int = 2) -> int:
+    a + b
+print(f(1))
+print(f(1, 5))
+
+fn g(a: int, --b: int = 2) -> int:
+    a + b
+print(g(1, --b: 5))
+
+let dbl = x => x * 2
+print(dbl(3))
+
+let inc = fn(x: int) -> int:
+    x + 1
+print(inc(1))
+
+fn id[T](x: T) -> T:
+    x
+print(id(7))
+
+fn fact(n: int) -> int:
+    if n <= 1: 1 else: n * fact(n - 1)
+print(fact(5))
+
+test fn cong():
+    assert add(1, 2) == 3

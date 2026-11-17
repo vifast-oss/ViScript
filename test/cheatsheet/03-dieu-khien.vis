@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §3 — Điều khiển
+# Ô §3 dùng tên `ok` — trùng tên ctor `Result` (VS0412); ca này dùng `b`.
+# `loop: if done(): break` không tự chứa (`done()` chưa định nghĩa) ⇒ dùng bộ đếm `n >= 3`.
+# kỳ vọng: dương
+# kỳ vọng: y
+# kỳ vọng: 0
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: 0
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: 3
+# kỳ vọng: a=1
+# kỳ vọng: 3
+# kỳ vọng: 3
+# kỳ vọng: 4
+let x = 5
+if x > 0:
+    print("dương")
+elif x < 0:
+    print("âm")
+else:
+    print("không")
+
+let b = true
+let s = if b: "y" else: "n"
+print(s)
+
+for i in 0..3:
+    print(i)
+
+for i in 0..=2:
+    print(i)
+
+for v in [1, 2, 3]:
+    print(v)
+
+let m = {"a": 1}
+for (k, v) in m:
+    print("{k}={v}")
+
+var i = 0
+while i < 3:
+    i += 1
+print(i)
+
+var n = 0
+loop:
+    n += 1
+    if n >= 3: break
+print(n)
+
+var c = 0
+for j in 0..5:
+    if j == 2: continue
+    c += 1
+print(c)

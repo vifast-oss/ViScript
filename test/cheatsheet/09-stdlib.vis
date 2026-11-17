@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §9 — Thư viện chuẩn (module + method trên giá trị)
+# kỳ vọng: true
+# kỳ vọng: [1, 2, 3]
+# kỳ vọng: [a]
+# kỳ vọng: a-b
+# kỳ vọng: a/b
+# kỳ vọng: Ok([1, 2])
+# kỳ vọng: 3
+# kỳ vọng: some(1)
+# kỳ vọng: some(1)
+# kỳ vọng: some(3)
+# kỳ vọng: [1, 2, 3]
+# kỳ vọng: [2, 4, 6]
+# kỳ vọng: [2, 3]
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: 3
+# kỳ vọng: 6
+# kỳ vọng: 1-2-3
+# kỳ vọng: 1
+# kỳ vọng: some(1)
+# kỳ vọng: true
+# kỳ vọng: [a]
+# kỳ vọng: [1]
+# kỳ vọng: 2
+# kỳ vọng: AB
+# kỳ vọng: ab
+# kỳ vọng: [a, ]
+# kỳ vọng: [a, b]
+# kỳ vọng: true
+use std.fs
+use std.list
+use std.map
+use std.str
+use std.path
+use std.json
+
+print(fs.exists("."))
+print(list.sort([3, 1, 2]))
+let m = {"a": 1}
+print(map.keys(m))
+print(str.join(["a", "b"], "-"))
+print(path.join("a", "b"))
+print(json.decode("[1,2]"))
+
+let xs = [1, 2, 3]
+print(xs.len())
+print(xs.get(0))
+print(xs.first())
+print(xs.last())
+var ys = [1, 2]
+ys.push(3)
+print(ys)
+print(xs.map(x => x * 2))
+print(xs.filter(x => x > 1))
+xs.each(x => print(x))
+print(xs.sum())
+print(xs.join("-"))
+
+print(m.len())
+print(m.get("a"))
+print(m.has("a"))
+print(m.keys())
+print(m.values())
+
+let s = "ab"
+print(s.len())
+print(s.upper())
+print(s.lower())
+print(s.split("b"))
+print(s.chars())
+print(s.contains("b"))

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §8 — Trait, `impl`, `derives`
+# kỳ vọng: Tôi là An
+# kỳ vọng: {ten: An}
+trait Hien:
+    fn hien(self) -> str
+
+type P derives Show:
+    ten: str
+
+impl Hien for P:
+    fn hien(self) -> str:
+        "Tôi là {self.ten}"
+
+let p: P = {ten: "An"}
+print(p.hien())
+print(p)

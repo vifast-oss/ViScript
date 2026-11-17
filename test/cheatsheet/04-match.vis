@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §4 — `match` & pattern
+# Variant **không dữ liệu** dựng bằng `Shape.Empty` (bare `Empty` ⇒ VS0501); pattern vẫn bare.
+# kỳ vọng: tròn 2
+# kỳ vọng: rỗng
+# kỳ vọng: lớn
+# kỳ vọng: nhỏ
+# kỳ vọng: 1
+# kỳ vọng: 2
+# kỳ vọng: khác
+enum Shape:
+    Circle(r: float)
+    Empty
+
+fn mo_ta(s: Shape) -> str:
+    match s:
+        Circle(r): "tròn {r}"
+        Empty: "rỗng"
+
+print(mo_ta(Circle(2.0)))
+print(mo_ta(Shape.Empty))
+
+fn co_lon(s: Shape) -> str:
+    match s:
+        Circle(r) if r > 100.0: "lớn"
+        Circle(r): "nhỏ"
+        Empty: "rỗng"
+
+print(co_lon(Circle(200.0)))
+print(co_lon(Circle(2.0)))
+
+enum Hai:
+    A(x: int)
+    B(x: int)
+
+fn lay(a: Hai) -> int:
+    match a:
+        A(x) | B(x): x
+
+print(lay(A(1)))
+print(lay(B(2)))
+
+let n = 5
+match n:
+    0: print("không")
+    _: print("khác")

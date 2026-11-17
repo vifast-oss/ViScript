@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CHEAT-SHEET §6 — Literal đặc biệt (int/float/size/duration/percent)
+# kỳ vọng: 1000
+# kỳ vọng: 255
+# kỳ vọng: 10
+# kỳ vọng: 3.14
+# kỳ vọng: 0.000000001
+# kỳ vọng: 5mb
+# kỳ vọng: 5kib
+# kỳ vọng: 250ms
+# kỳ vọng: 150m
+# kỳ vọng: 50pct
+print(1_000)
+print(0xff)
+print(0b1010)
+print(3.14)
+print(1e-9)
+print(5mb)
+print(5kib)
+print(250ms)
+print(2h30m)
+print(50pct)
