@@ -149,3 +149,86 @@ cmd dem(tep: str, --dem: bool = false) -> ():
             print(l)
 ```
 **8 dòng** vs Python **8** — **ngang** (sau khi `cmd` thân script + `--help` xong; hiện `cmd` không trộn script/lệnh — `cf` VS0201, tham số không thay được — `c6/c7`).
+
+---
+
+# PHẦN BỔ SUNG · R11–R21 (VD-172)
+**Căn cứ**: VD-172 (bổ sung vào phạm vi ST-172b) · probe HEAD `2f4e8302` (probe trong `/tmp/ergo/v2/*.vis`) · **giữ nguyên** các mục R1–R10 ở trên.
+**Mỗi mục**: hiện trạng (probe) → đặc tả → ca đỏ-trước → ảnh hưởng/task. **Không bàn lại hướng.**
+
+## R11 · Mọi hàm dựng là hàm
+**Hiện trạng**: dựng record theo tên `U(n: 1)` ⇒ **VS0201** (`t9`); khai báo biến thể enum **mang dữ liệu** `Circle(float)` ⇒ **VS0201** (`c2`,`c3`); biến thể **đơn vị** gọi `Shape.Empty` **chạy** (`c1` in `Empty`); `Some(1)` prelude chạy.
+**Đặc tả**: record, biến thể enum, kiểu bọc đều gọi **như hàm**: `Circle(2.0)`, `Circle(r: 2.0)`; **tên đứng sau vị trí**; cùng luật với `fn`.
+**Ca đỏ-trước**: `type C: r: float` + `C(2.0)` và `C(r: 2.0)`; `enum S: Circle(float)` + `Circle(2.0)`; `C(2.0, r: 1.0)` ⇒ lỗi (vị trí sau tên).
+**Ảnh hưởng**: parser (biến thể mang dữ liệu), tyck gọi, lower/interp, docs.
+**Task**: **R11a** (2 h) enum payload + gọi · **R11b** (1,5 h) record/wrapper ctor. **Phụ thuộc**: R2.
+
+## R12 · Gộp khai báo kiểu (`type X = T`, `type Email(str)`)
+**Hiện trạng**: `type X = int` ⇒ **VS0201** (`a1`); `type Email(str)` ⇒ **VS0201** (`a2`); **`alias X = int` CHẠY** (`d1`); `newtype Met = float` **bị bỏ qua im lặng** (`n11`) rồi dùng kiểu ⇒ VS0301 (`n8`).
+**Đặc tả**: **`type X = T`** thay `alias`; **`type Email(str)`** thay `newtype` (dựng `Email("…")`, mở bằng `let Email(s) = e`); **bỏ từ khoá `alias`, `newtype`**.
+**Ca đỏ-trước**: `type X = int`; `type Email(str)` + `Email("a@b")` + `let Email(s) = e`; `alias`/`newtype` ⇒ lỗi (hoặc cảnh báo chuyển).
+**Ảnh hưởng**: parser khai báo, tyck, lower, `KEYWORDS` (`token.rs:185`), docs.
+**Task**: **R12a** (2,5 h) `type =` + wrapper. **Phụ thuộc**: R9 (mã cho `alias/newtype`).
+
+## R13 · Biến thể enum: prelude + tiền tố khi trùng
+**Hiện trạng**: `Shape.Empty` (dùng `.`) **chạy** (`c1`); `Some/None/Ok/Err` prelude chạy; biến thể không tiền tố khi duy nhất — **chưa xác minh**; trùng tên giữa 2 enum — **chưa có** (do R11a chưa xong).
+**Đặc tả**: không cần tiền tố khi tên **duy nhất**; trùng tên ⇒ **bắt buộc `Shape.Empty`**, lỗi biên dịch **có gợi ý**; `Some/None/Ok/Err` **luôn trong prelude**.
+**Ca đỏ-trước**: `enum A: Empty` + `enum B: Empty` + `Empty` ⇒ lỗi + gợi ý `A.Empty`; `Shape.Empty` chạy; `Empty` đơn nhất chạy.
+**Task**: **R13** (1,5 h). **Phụ thuộc**: R11a.
+
+## R14 · Method người dùng: `impl P:` + `self`/`var self`
+**Hiện trạng**: `impl P:` + `fn len(self)` ⇒ **VS0302** “khai báo trùng `len`” rồi **VS0403** “không phân giải được phương thức” (`a5`); `fn f(var self)` ⇒ **VS0403** (`a6`); method khai trong thân `type` ⇒ **VS0201** (`d2`). ⇒ **method người dùng CHƯA có**; hiện chỉ method builtin (`str`, `list`, `map`).
+**Đặc tả**: `impl P:` cho method riêng; `fn f(self)` **chỉ đọc**; `fn f(var self)` **sửa được**, **chỉ gọi trên biến `var`**; `Self` viết hoa.
+**Ca đỏ-trước**: `p.tang()` trên `var p` chạy + đổi `x`; gọi trên `let p` ⇒ lỗi; `self.x = …` trong `fn f(self)` ⇒ lỗi.
+**Ảnh hưởng**: parser `impl`, tyck method lookup, lower, docs.
+**Task**: **R14a** (3 h) `impl` + `self` · **R14b** (2 h) `var self`. **Phụ thuộc**: R11.
+
+## R15 · Nối dòng + dấu phẩy cuối
+**Hiện trạng**: gọi hàm nhiều dòng trong `()` **chạy** (`a7`: 3 dòng + dấu phẩy cuối); chuỗi `.method()` trên một dòng chạy (`d7`); nối dòng khi dòng mới bắt đầu `.`/`|`/`??`/`and`/`or` — **chưa xác minh** (riêng `|` đầu dòng trong script ⇒ VS0201, `d7`).
+**Đặc tả**: tự nối trong `() [] {}`; nối khi dòng mới bắt đầu `.`, `|`, `??`, `and`, `or`; **dấu phẩy cuối** mọi nơi.
+**Ca đỏ-trước**: `xs\n    .filter(...)\n    .len()`; `let x = a\n    ?? b`; `f(\n 1,\n 2,\n)`; `[1, 2,]`.
+**Task**: **R15** (1,5 h). **Phụ thuộc**: —.
+
+## R16 · `let` che tên; `var` không khai lại
+**Hiện trạng**: `let x = 1; let x = "a"` ⇒ **VS0302** (`a8`) — cần **bỏ** cho `let`; `var x = 1; var x = 2` ⇒ **VS0302** (`a9`) — **đúng**.
+**Đặc tả**: `let` **được che tên** trong cùng phạm vi; `var` **không** khai lại.
+**Ca đỏ-trước**: `let x = 1; let x = "a"` chạy; `var x = 1; var x = 2` ⇒ lỗi.
+**Task**: **R16** (1 h). **Phụ thuộc**: —.
+
+## R17 · Điều kiện `if`/`while` chỉ `bool` + gợi ý
+**Hiện trạng**: `if xs:` ⇒ **VS0412** “điều kiện `if`: cần `bool`, được `list[int]`” (`b1`) — **kiểu đúng**, **thiếu gợi ý** `xs.is_empty()`.
+**Đặc tả**: chỉ `bool`; lỗi kèm **gợi ý** `xs.is_empty()` (với list/map/str).
+**Ca đỏ-trước**: `if xs:` ⇒ VS0412 + `gợi ý: xs.is_empty()`; `if xs.is_empty():` chạy.
+**Task**: **R17** (0,5 h). **Phụ thuộc**: R9 (dòng gợi ý).
+
+## R18 · Pattern mở rộng + `while let`
+**Hiện trạng**: literal + khoảng `1..=5` **chạy** (`b2`); tuple `(a, b)` **chạy** (`d3`); `as` ⇒ **VS0201** (`d4`); `while let` ⇒ **VS0201** (`d5`); record pattern `{name}` có trong test (`exhaustive.rs:151-163`).
+**Đặc tả**: thêm record `User(name, age: a)`, `as`, **`while let`**; pattern đã có: literal, khoảng, tuple, record.
+**Ca đỏ-trước**: `User(name, age: a)`; `v as x`; `while let v = o:`; `1..=5`.
+**Task**: **R18a** (2 h) as + record pattern · **R18b** (1,5 h) while let. **Phụ thuộc**: R2.
+
+## R19 · `0o755` · tràn i64 **panic** · bit method
+**Hiện trạng**: `0o755` ⇒ **VS0201** (`b3`); tràn i64 runtime ⇒ **VS0501** “tràn i64 lúc chạy” (`p2`) — cần **panic**; `5.bit_or(3)` ⇒ **VS0104** (`b4`: lexer đọc `5.` là float) — **xung đột cú pháp** cần xử lý; bit method chưa có.
+**Đặc tả**: `0o755`; tràn i64 **panic** (mã thoát 101); bit là **method** `bit_or/bit_and/bit_xor/shl/shr`.
+**Ca đỏ-trước**: `0o755` ⇒ 493; `i64::MAX+1` ⇒ panic 101; `5.bit_or(3)` ⇒ 7; `5 . bit_or(3)` phải như nhau (không phụ thuộc khoảng trắng).
+**Task**: **R19a** (1,5 h) 0o · **R19b** (1 h) panic · **R19c** (1 h) bit method + lexer. **Phụ thuộc**: R7.
+
+## R20 · `assert` · `use as` · `use {}` · list/range bổ sung
+**Hiện trạng**: `assert true, "m"` ⇒ **VS0201** (`b5`); `use std.fs as f` ⇒ **VS0201** (`b6`); `use std.fs.{exists}` ⇒ **VS0201** (`d6`); `xs.enumerate()` ⇒ **VS0403** (`b7`); `(1..5).step(2)` ⇒ **VS0403** (`b8`).
+**Đặc tả**: `assert cond, "thông điệp"`; `use std.fs as f`; `use std.fs.{read, write}`; `list` thêm `enumerate, zip, any, all, find, sort_by, is_empty`; range thêm `.step(n)`.
+**Ca đỏ-trước**: 5 dạng trên chạy; `assert false, "m"` ⇒ panic/thoát 101.
+**Task**: **R20a** (2 h) assert + use · **R20b** (1 h) list/range. **Phụ thuộc**: R5.
+
+## R21 · Pipeline `|` chỉ shell/cmd (ghi thiết kế)
+**Hiện trạng**: `1 | 2` trong script ⇒ **VS0201** (`d7`) — **đúng** hướng; `|>` là pipe biểu thức script (`parse/expr.rs:119`).
+**Đặc tả**: `|` chỉ trong **chế độ shell** và **khối `cmd`**; code thường dùng chuỗi method; hai bên **dùng chung hàm std**; ghi vào **thiết kế** (Agent 0 sở hữu).
+**Ca đỏ-trước**: `1 | 2` ⇒ lỗi + gợi ý; `x |> f` chạy.
+**Task**: **R21** (0,5 h, chỉ tài liệu). **Phụ thuộc**: —.
+
+## Kiểm thêm: generic `f[int](x)` vs chỉ số
+**Hiện trạng**: `f[int](1)` **chạy** (`b9`) — parser phân biệt được; **không** xung đột với `xs[i]`.
+**Ghi chú**: xung đột thật nằm ở **`5.bit_or(3)`** (`b4`: `5.` thành float) — thuộc **R19c**.
+
+## Thứ tự thực thi (VD-172 bổ sung)
+… → **R5** → **R11** → **R12** → **R13** → **R14** → **R15** → **R16** → **R17** → **R18** → **R7** → **R19** → **R10** → **R20** → **R21** (chỉ sửa tài liệu).
+**Cheat sheet**: cập nhật theo **toàn bộ R1–R21** sau khi thực thi; **mọi ví dụ là doc-test** (VD-170 P0 mục 3).
