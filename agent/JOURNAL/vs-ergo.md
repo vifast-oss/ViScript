@@ -26,13 +26,17 @@
 | **Tổng pha 1** | | | **30** | **≈ 62** | **≈ 120** |
 | R13 | biến thể không tiền tố + prelude | 2 | 1 | 1,5 | 0 |
 | R14 | method người dùng (`impl P:`, `self`, `var self`) — **đầu pha 2** | 2 | 2 | 5 | 0 |
+| M1–M3 | Nguyên tắc mô hình (doc) | — | 0 | 1 | 0 |
 | R15 | nối dòng `.`/`??`/`and`/`or` (phần `() [] {}` đã chạy) | 2 | 1 | 1,5 | 0 |
 | R18 | pattern `as`, record, `while let` | 2 | 2 | 3,5 | 0 |
 | R19a | `0o755`, bit method | 2 | 2 | 2,5 | 0 |
 | R20 | `assert`, `use as`, `use {}`, list/range | 2 | 2 | 3 | 0 |
 | R21 | pipeline chỉ shell/cmd (tài liệu) | 2 | 1 | 0,5 | 0 |
 | R10 | đơn vị in chuẩn hoá + trộn đơn vị | 2 | 2 | 3 | 3 (golden đơn vị) |
-| **Tổng pha 2** | | | **13** | **≈ 20** | **≈ 3** |
+| R22 | Trait là kiểu (`list[Shape]`, bảng ảo, đóng gói) | 2 | 2 | 9 | 0 |
+| R23 | Gán lồng sâu trên `var` (`u.addr.city = x`) | 2 | 3 | 4 | 0 |
+| R24 | Iterator lười + `.to_list()/.to_map()/.to_set()` (chốt trước R20) | 2 | 3 | 6 | 0 |
+| **Tổng pha 2** | | | **20** | **≈ 38** | **≈ 3** |
 
 ## R1 · Chữ hoa — **Pha 1**
 **Hiện trạng**: pattern nhận **cả `Some(v)` lẫn `some(v)`** (probe `c6`,`c8`); `None` là **builtin** in `<builtin None>` (probe `r2`); `lower.rs:53` có `None`; `true/false/none` viết thường.
@@ -239,6 +243,45 @@ enum Shape:
 **Ca đỏ-trước**: `p.tang()` trên `var p` chạy + đổi `x`; gọi trên `let p` ⇒ lỗi; `self.x = …` trong `fn f(self)` ⇒ lỗi có gợi ý; `Self` dùng được; trùng tên method impl/std ⇒ lỗi.
 **Ảnh hưởng**: parser `impl`, tyck method lookup (inherent > std > trait), lower, docs; **0 test hiện có** bị ảnh hưởng (tính năng mới).
 **Task**: **R14a** (3 h) `impl` + `self` + `Self` · **R14b** (2 h) `var self` + xung đột tên. **Phụ thuộc**: R11 (hàm dựng), R5 (method std).
+
+### Mô hình ViScript — nguyên tắc nền (VD-174 mục 1–3) — **chỉ tài liệu**
+1. **Không class, không kế thừa**; trừu tượng chỉ qua `type` + `trait` + `impl`; dùng lại bằng **method mặc định trong trait** hoặc **record chứa record**.
+2. **Không lifetime, con trỏ, tham chiếu, `unsafe`, macro người dùng** (trước 1.0); sinh code chỉ qua **derives có sẵn**.
+3. **Không tham chiếu dùng chung sửa được** (`Rc<RefCell>`) ở 1.0: trạng thái chung trong một luồng = **map + ID**; giữa luồng = **`Chan`**. Truyền theo giá trị ⇒ **không vòng tham chiếu**, đếm tham chiếu đủ.
+**Việc**: Agent 0 ghi vào thiết kế; **không** task mã. (0 task, ~1 h tài liệu, 0 test.)
+
+## R22 · Trait là kiểu (`list[Shape]`, gọi qua bảng ảo) — **Pha 2 (đầu, cùng R14)**
+**Hiện trạng**: `trait Shape:` + `impl Shape for Circle:` **parse được** (probe `t1`: chạy, in `1`); nhưng **tên trait không phải kiểu**: `let xs: list[Shape] = []`, `let s: Shape = 5` ⇒ **VS0301** “kiểu `Shape` không có trong VS0 … và không được khai trong tệp” (`t6`,`t7`,`t8`) ⇒ **trait-as-type CHƯA CÓ**.
+**Đặc tả (VD-174#4)**: trait dùng được làm **kiểu**; `list[Shape]` chứa **mọi kiểu cài `Shape`**; ViScript **tự đóng gói**, **không** cú pháp `Box`/`dyn`; gọi method **qua bảng ảo**.
+- **Luật an toàn đối tượng**: trait dùng làm kiểu được khi mọi method của trait **không có generic riêng**, **không trả `Self`**, **không nhận tham số `Self`** (nếu vi phạm ⇒ lỗi biên dịch có gợi ý thêm `where Self: Sized` — hoặc tương đương).
+- **Đóng gói tự động**: gán `Circle(…)`/`int` vào `Shape` ⇒ gói; gán ngược `Shape → Circle` ⇒ **lỗi tường minh** (không có downcast ở 1.0; dùng `match` nếu cần — ghi nợ).
+- **Bảng ảo**: gọi `s.area()` trên `Shape` ⇒ dispatch theo kiểu thật.
+**Ca đỏ-trước**: `list[Shape]` chứa **2 kiểu cài** (`Circle`, `Square`) + gọi `area()` qua vòng `for` ⇒ đúng kết quả từng kiểu; trait có method generic ⇒ lỗi an toàn đối tượng có gợi ý; `Shape → Circle` ⇒ lỗi.
+**Ảnh hưởng**: `ty.rs` (trait là kiểu), tyck method dispatch, lower/VM (bảng ảo), docs; **0 test hiện có**.
+**Task**: **R22a** (3 h) trait-as-type + an toàn đối tượng · **R22b** (3 h) 2 kiểu + bảng ảo + ca. **Phụ thuộc**: R14 (impl), R11.
+
+## R23 · Gán trường lồng sâu trên `var` — **Pha 2 (đầu, cùng R14)**
+**Hiện trạng**: `u.addr.city = "B"` ⇒ **VS0412** “gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) **chưa hỗ trợ ở VS0** — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)” (`t2`) ⇒ **CHƯA CÓ**, thông điệp đã có sẵn.
+**Đặc tả (VD-174#5)**: `u.addr.city = x` và `xs[i].name = x` **hợp lệ** trên biến `var`; **tự sao chép đúng đường dẫn** (copy-on-write từng tầng: sửa bản sao của `addr` rồi gán lại vào `u`), không tạo tham chiếu; trên `let` ⇒ lỗi như gán thường.
+**Ca đỏ-trước**: `var u = {addr: {city: "A"}}` + `u.addr.city = "B"` ⇒ `u.addr.city == "B"`; `xs[0].name = "x"`; trên `let u` ⇒ lỗi; đọc trước/sau để chứng minh không alias.
+**Ảnh hưởng**: tyck gán (bỏ chặn VS0412 cho đường lồng), lower/interp/VM (copy-on-path), docs §4.1; **0 test hiện có**.
+**Task**: **R23a** (2 h) tyck + lower · **R23b** (1,5 h) ca + `xs[i].f` · **R23c** (0,5 h) lỗi trên `let`. **Phụ thuộc**: R5 (record theo tên), R2.
+
+## R24 · Iterator lười + `.to_list()/.to_map()/.to_set()` — **Pha 2 (đầu, cùng R14) — chốt TRƯỚC R20**
+**Hiện trạng**: `xs.filter(…)`, `xs.map(…)` **trả list ngay** (eager; `t3`,`t4`: `print(ys)` in list); `.to_list()` ⇒ **VS0403** (`t3`); `.take` ⇒ **VS0403** (`t4`); `for y in ys` chạy (`t5`) ⇒ **chưa có iterator**.
+**Đặc tả (VD-174#6)**: chuỗi method trên `list`/`map`/`range` là **lười (iterator)**; tạo collection khi gọi **`.to_list()`/`.to_map()`/`.to_set()`** hoặc khi dùng trong **`for`**.
+**Kiểu trả về chốt** (trước R20):
+| Method | Trả về |
+|---|---|
+| `filter(f)` | `Iterator[T]` (lười) |
+| `map(f)` | `Iterator[U]` (lười) |
+| `take(n)` | `Iterator[T]` |
+| `enumerate()` | `Iterator[(int, T)]` |
+| `zip(other)` | `Iterator[(T, U)]` |
+| `to_list()` / `.to_map()` / `.to_set()` | collection cụ thể, **vật chất hoá** |
+**Ca đỏ-trước**: `xs.filter(f).map(g).take(2).to_list()` ⇒ đúng; `for x in xs.map(g):` ⇒ đúng; `xs.filter(f)` **không** in ra list được (phải `.to_list()` hoặc `for`); `zip` + `enumerate` đúng kiểu.
+**Ảnh hưởng**: tyck method (kiểu iterator), interp/VM (đánh giá lười), `stdlib.rs` (thêm `to_*`), docs; **0 test hiện có** (nhưng **R20** phải dựng trên kiểu này — **chốt trước R20**).
+**Task**: **R24a** (3 h) kiểu iterator + đánh giá lười · **R24b** (2 h) `to_*` + `for` · **R24c** (1 h) `enumerate/zip`. **Phụ thuộc**: R5, R20 chờ R24.
 
 ## R15 · Nối dòng + dấu phẩy cuối — **Pha 2**
 **Hiện trạng**: gọi hàm nhiều dòng trong `()` **chạy** (`a7`: 3 dòng + dấu phẩy cuối); chuỗi `.method()` trên một dòng chạy (`d7`); nối dòng khi dòng mới bắt đầu `.`/`|`/`??`/`and`/`or` — **chưa xác minh** (riêng `|` đầu dòng trong script ⇒ VS0201, `d7`).
