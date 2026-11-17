@@ -30,7 +30,7 @@ Quy ước: "scalar" = Unicode scalar value; mọi offset tính bằng byte, c�
 | `SIZE` | `INT` + `b\|kb\|mb\|gb\|tb\|kib\|mib\|gib\|tib` **không cách** | `5kb` | `kb`=1000, `kib`=1024 |
 | `DURATION` | `INT` + `ns\|us\|ms\|s\|m\|h\|d\|w`, ghép **giảm dần** không cách | `250ms`, `2h30m` | `2h30m` = **một** token |
 | `PERCENT` | `(INT | FLOAT)` + `pct` | `50pct`, `12.5pct` | **không còn** `50%` |
-| `PUNCT` | `( ) [ ] { } , : . .. ..= ; -> => = == != < <= > >= + - * / % ** & \| \|> ? ?. ?? ! @ # ## ^ ~ \\` | | xem §5 |
+| `PUNCT` | `( ) [ ] { } , : . .. ..= ; -> => = == != < <= > >= + - * / // % ** & \| \|> ? ?. ?? ! @ # ## ^ ~ \\` | | xem §5 |
 | `NEWLINE` | `\n` (chuẩn hoá CRLF→LF) | | trong ngoặc bị nuốt theo §4 |
 | `INDENT`/`DEDENT` | theo §4 | | |
 | `EOF` | hết tệp | | sinh DEDENT còn lại |
