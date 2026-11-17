@@ -152,6 +152,10 @@ impl<'a> Parser<'a> {
         while !self.at_kind(Kind::Dedent) && !self.at_eof() {
             let v = self.variant()?;
             Self::push_node(&mut elems, v);
+            // **R11 (VD-178)**: biến thể **cùng dòng**, ngăn bằng `,` (`Circle(float), Empty`).
+            if self.eat_punct(",").is_some() {
+                continue;
+            }
             self.require_line_end(&mut elems)?;
         }
         if let Some(d) = self.take_dedent() {
@@ -165,10 +169,19 @@ impl<'a> Parser<'a> {
         if self.at_punct("(") {
             elems.push(self.bump());
             while !self.at_punct(")") {
-                let mut f = vec![self.expect_ident()?, self.expect_punct(":")?];
-                let t = self.parse_type()?;
-                Self::push_node(&mut f, t);
-                Self::push_node(&mut elems, self.node(NodeKind::VariantField, f));
+                // **R11 (VD-178)**: `Circle(float)` — trường **vị trí** (không tên);
+                // `Circle(r: float)` vẫn là trường **có tên**.
+                if self.tok().kind == Kind::Ident && self.peek_punct(1, ":") {
+                    let mut f = vec![self.expect_ident()?, self.expect_punct(":")?];
+                    let t = self.parse_type()?;
+                    Self::push_node(&mut f, t);
+                    Self::push_node(&mut elems, self.node(NodeKind::VariantField, f));
+                } else {
+                    let t = self.parse_type()?;
+                    let mut f = Vec::new();
+                    Self::push_node(&mut f, t);
+                    Self::push_node(&mut elems, self.node(NodeKind::VariantField, f));
+                }
                 if self.eat_punct(",").is_none() {
                     break;
                 }

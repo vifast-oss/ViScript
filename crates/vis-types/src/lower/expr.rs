@@ -757,9 +757,18 @@ impl<'a> Lowerer<'a> {
         span: Span,
     ) -> HExpr {
         match &callee {
-            HExpr::Var {
-                name, sym: None, ..
-            } => {
+            HExpr::Var { name, .. } => {
+                // **R11 (VD-178)**: `U(n: 1)` — dựng bản ghi theo **tên kiểu**.
+                if !named.is_empty() {
+                    if let Some((_, rid)) = self.rec_names.iter().find(|(n, _)| n == name).cloned()
+                    {
+                        return HExpr::Record {
+                            fields: named,
+                            ty: Type::Record(rid),
+                            span,
+                        };
+                    }
+                }
                 if let Some((_, eid, _)) = self
                     .variant_index
                     .iter()

@@ -109,8 +109,8 @@ loop break continue return and or not true false none self async await scope tes
 | `type U:`<br>`    name: str`<br>`    age: int` ✔ | `@dataclass`<br>`class U:` | `struct U { name: String, age: i64 }` | `type U = { name: string; age: number }` | tên `type`, không `struct` |
 | `let u: U = {name: "An", age: 20}` ✔ | `U(name="An", age=20)` | `U { name: "An".into(), age: 20 }` | `const u: U = {name: "An", age: 20}` | record literal + **phải ghi kiểu** |
 | `u with age: 21` ✔ | `dataclasses.replace(u, age=21)` | `U { age: 21, ..u }` | `{...u, age: 21}` | trả bản ghi **mới** |
-| `enum Shape:`<br>`    Circle(r: float)`<br>`    Empty` ✔ | `Enum` không mang dữ liệu | `enum Shape { Circle(f64), Empty }` | `type Shape = {kind:'circle', r:number} \| {kind:'empty'}` | enum **có dữ liệu** |
-| `Circle(2.0)` ✔ | `Circle(2.0)` | `Shape::Circle(2.0)` | `{kind:'circle', r:2.0}` | dựng variant bằng `Tên(...)` |
+| `enum Shape:`<br>`    Circle(float), Empty` ✔ | `Enum` không mang dữ liệu | `enum Shape { Circle(f64), Empty }` | `type Shape = {kind:'circle', r:number} \| {kind:'empty'}` | **R11**: biến thể mang dữ liệu **vị trí** `Circle(float)` (hoặc có tên `Circle(r: float)`); nhiều biến thể **cùng dòng** ngăn `,` |
+| `Circle(2.0)` ✔ | `Circle(2.0)` | `Shape::Circle(2.0)` | `{kind:'circle', r:2.0}` | dựng variant bằng `Tên(...)`; **R11**: `U(n: 1)` dựng bản ghi theo **tên kiểu** |
 | `a == b` trên bản ghi ✔ | `a == b` | `a == b` | `a === b` | so theo giá trị |
 | `type Email(str)` ✔ | `NewType('Email', str)` | `struct Email(String);` | branded type | **R12a**: newtype **trong suốt** — `Email("a@b")` dựng, `let Email(s) = e` mở; `newtype` ⇒ **VS0203** |
 | `type Id = int` ✔ | `Id = int` | `type Id = i64;` | `type Id = number;` | **R12a**: `type X = T` thay `alias`; `alias` ⇒ **VS0203** + gợi ý |

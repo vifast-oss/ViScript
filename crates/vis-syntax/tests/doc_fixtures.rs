@@ -20,12 +20,12 @@ use vis_syntax::{parse, Mode};
 const TOTAL_VIS_BLOCKS: usize = 22;
 // **SỬA KÈM LÝ DO (ST-27)**: khối 662 (`extern cmd git(…, ...rest: str)`) nay parse **sạch**
 // vì variadic đã có ⇒ 16 khối đủ thân sạch, 6 khối loại trừ.
-const FULL_BODIED: usize = 16;
+const FULL_BODIED: usize = 17;
 
-// **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ theo VD-36 nằm ở
-// `test/doc_excluded.rs`; vis-syntax loại trừ **6** khối (`DOC_EXCLUDED_SYNTAX` = bản 7 khối
-// trừ khối 666 `extern cmd git(…, ...rest: str)` — khối này **parse sạch** từ ST-27 vì variadic
-// đã có, nên 16/22 khối đủ thân). Số dòng không chép lại ở đây; chỉ giữ **lý do** từng khối.
+// **Một nguồn duy nhất** (nợ #129, ST-158): 6 khối loại trừ theo VD-36 nằm ở
+// `test/doc_excluded.rs`; vis-syntax loại trừ **5** khối (`DOC_EXCLUDED_SYNTAX` = bản 6 khối
+// trừ khối 667 `extern cmd git(…, ...rest: str)` — khối này **parse sạch** từ ST-27 vì variadic
+// đã có, nên 17/22 khối đủ thân). Số dòng không chép lại ở đây; chỉ giữ **lý do** từng khối.
 include!("../../../test/doc_excluded.rs");
 
 const EXCLUDED_COUNT: usize = DOC_EXCLUDED_SYNTAX.len();
@@ -37,9 +37,6 @@ const LY_DO: [&str; EXCLUDED_COUNT] = [
     "`...` ở 450 (`fn show(self) -> str: ...`) — thân lược",
     "`...` ở 617 (`pub cmd ls(...): ...`) — thân lược",
     "`...` ở 747 (`fn main(...): ...`) — thân lược",
-    "lỗi đầu: `Entry(path: str(e.path), size: …, modified: …)` ở 1437 — constructor có **trường tên** \
-     không có trong §A.3 (lỗ hổng 1); `assert xs == [3, 2, 1]` ở 1446 cũng không có trong §A.1/A.2 \
-     (lỗ hổng 2 của tài liệu) — VD-36, ghi ở báo cáo R2",
 ];
 
 /// Khối **loại trừ tường minh** — (dòng bắt đầu ```vis trong `ViScript-thiet-ke.md`, lý do);

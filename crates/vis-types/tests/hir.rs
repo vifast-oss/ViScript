@@ -66,7 +66,7 @@ fn lower_and_check(src: &str) -> HirOutput {
 /// Tổng số khối ```vis trong tài liệu (ST-05/ST-09 khoá 22).
 const TOTAL_VIS_BLOCKS: usize = 22;
 /// Số khối **đủ thân** (VD-36).
-const FULL_BODIED: usize = 15;
+const FULL_BODIED: usize = 16;
 
 // **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ theo VD-36 nằm ở
 // `test/doc_excluded.rs` (số dòng + lý do từng khối + cách dịch toạ độ ST-120b:
@@ -101,6 +101,8 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (689, 1, 0, 5),  // backup_big + ctx + dir + files + f
     (703, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
     (1468, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    // **R11 (VD-178)**: khối 1421 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
+    (1421, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
 ];
 
 fn doc_path() -> PathBuf {

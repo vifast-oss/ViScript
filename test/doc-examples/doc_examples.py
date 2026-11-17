@@ -41,7 +41,7 @@ FENCE = re.compile(r"^```(vis|vish-session)\s*$")
 # sort_by modified --desc | take 10`, `VS0603 "take không có khe nhận error"` cũ) — vì lệnh lạ =
 # **chương trình ngoài** (§9.3) và khe ống **hợp nhất** theo khả năng nhận (VD-69) ⇒ bỏ khỏi allowlist;
 # **chặt hơn**, không nới ngưỡng. Mỗi mục còn lại vẫn phải **thật đỏ** khi `vis check`.
-ALLOW_COUNT = 6
+ALLOW_COUNT = 5
 BLOCK_COUNT = 24
 VISH_COUNT = 2
 QD_COUNT = 12

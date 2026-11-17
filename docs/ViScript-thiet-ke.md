@@ -1420,7 +1420,7 @@ shell_item      := use_decl | fn_decl | cmd_decl | shell_let | pipeline NEWLINE
 
 ```vis
 #!/usr/bin/env vis
-use std.fmt.json
+use std.json
 use std.time
 
 type Entry derives Json, Show:
@@ -1428,8 +1428,8 @@ type Entry derives Json, Show:
     size: size
     modified: datetime
 
-## Tìm 20 tệp lớn nhất đã sửa trong 7 ngày, ghi báo cáo JSON
 fn main(src: cap[Dir] @ p".", out: cap[Dir] @ p"./reports" (write)) -> Result[(), AnyError]:
+    ## Tìm 20 tệp lớn nhất đã sửa trong 7 ngày, ghi báo cáo JSON
     let since = time.now() - 7d
     let files = src.walk()
         |> filter(e => e.is_file() and e.modified >= since)

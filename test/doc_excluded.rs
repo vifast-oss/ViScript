@@ -25,7 +25,7 @@
 // `#[allow(dead_code)]`: mỗi tệp test chỉ dùng **một phần** danh sách (vis-syntax dùng bản 6 khối,
 // ba tệp còn lại dùng bản 7 khối) nên mục không dùng ở tệp này là mục dùng ở tệp khác.
 #[allow(dead_code)]
-const DOC_EXCLUDED: [usize; 7] = [306, 433, 446, 615, 667, 746, 1421];
+const DOC_EXCLUDED: [usize; 6] = [306, 433, 446, 615, 667, 746];
 
 /// Vị trí khối `666` trong `DOC_EXCLUDED` — khối **duy nhất** không bị vis-syntax loại trừ.
 #[allow(dead_code)]
@@ -35,8 +35,8 @@ const VI_TRI_KHOI_666: usize = 4;
 /// (`extern cmd git(…, ...rest: str)`) **parse sạch** từ ST-27 vì variadic đã có.
 /// Dẫn xuất từ `DOC_EXCLUDED`, không chép số.
 #[allow(dead_code)]
-const DOC_EXCLUDED_SYNTAX: [usize; 6] = {
-    let mut out = [0usize; 6];
+const DOC_EXCLUDED_SYNTAX: [usize; 5] = {
+    let mut out = [0usize; 5];
     let mut j = 0;
     let mut i = 0;
     while i < DOC_EXCLUDED.len() {

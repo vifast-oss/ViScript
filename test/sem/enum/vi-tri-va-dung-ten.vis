@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R11 (VD-178)**: biến thể mang dữ liệu **vị trí** `Circle(float)` + dựng bản ghi theo tên `U(n: 1)`.
+enum Shape:
+    Circle(float), Empty
+
+type U:
+    name: str
+    age: int
+
+fn main():
+    let c = Shape.Circle(2.0)
+    print(c)
+    let e = Shape.Empty
+    print(e)
+    let u = U(name: "An", age: 20)
+    print(u)

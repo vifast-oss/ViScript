@@ -130,6 +130,8 @@ struct Gen {
     fmap: HashMap<u32, u32>,
     /// `sym` enum → tên enum (để `E.A` thành `MakeEnum`, không phải `Field`).
     enums: HashMap<u32, String>,
+    /// **R11 (VD-178)**: `RecId` → tên bản ghi (để `U(n: 1)` in `U(...)`).
+    recs: HashMap<u32, String>,
     /// Tên hàm → chỉ số (dự phòng khi `sym` của lời gọi là `None`).
     fmap_ten: HashMap<String, u32>,
     /// Tên hàm → danh sách `(tên tham số, là named)` để xếp đối số theo **tên**.
@@ -212,6 +214,7 @@ pub fn compile(hir: &Hir, _symbols: &Symbols, text: &str) -> Result<Module, Code
         funcs: Vec::new(),
         fmap: HashMap::new(),
         enums: HashMap::new(),
+        recs: HashMap::new(),
         fmap_ten: HashMap::new(),
         fparams: HashMap::new(),
         cho: Vec::new(),
@@ -222,6 +225,10 @@ pub fn compile(hir: &Hir, _symbols: &Symbols, text: &str) -> Result<Module, Code
     for it in &hir.items {
         if let HItem::Enum(e) = it {
             g.enums.insert(e.sym, e.name.clone());
+        }
+        // **R11 (VD-178)**: ghi tên bản ghi để `MakeRecord` in đúng `U(...)`.
+        if let HItem::Rec(r) = it {
+            g.recs.insert(r.id.0, r.name.clone());
         }
         // ST-29: hàm `impl` cũng là hàm thường (dispatch tĩnh trỏ thẳng `sym`).
         let ham: Vec<&HFn> = match it {
@@ -1084,20 +1091,7 @@ impl<'g> Emit<'g> {
                 );
                 self.net_stack(*span)
             }
-            HExpr::Record { fields, span, .. } => {
-                for (n, v) in fields {
-                    let c = self.g.cst_str(n);
-                    self.f.push(Instr::Const(c), *span, 1);
-                    self.expr(v)?;
-                }
-                let t = self.g.cst_str("");
-                self.f.push(
-                    Instr::MakeRecord(t, fields.len() as u16),
-                    *span,
-                    1 - 2 * fields.len() as i32,
-                );
-                self.net_stack(*span)
-            }
+            HExpr::Record { fields, ty, span } => self.record_lit(fields, ty, *span),
             HExpr::EnumLit {
                 path,
                 variant,

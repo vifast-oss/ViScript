@@ -418,6 +418,13 @@ impl<'a> Parser<'a> {
                     na.push(Elem::Node(Box::new(v)));
                 }
                 elems.push(Elem::Node(Box::new(self.node(NodeKind::NamedArg, na))));
+            } else if self.tok().kind == Kind::Ident && self.peek_punct(1, ":") {
+                // **R11 (VD-178)**: `U(n: 1)` — đối số **có tên** (dựng bản ghi theo tên kiểu).
+                seen_named = true;
+                let mut na = vec![self.expect_ident()?, self.expect_punct(":")?];
+                let v = self.expr()?;
+                na.push(Elem::Node(Box::new(v)));
+                elems.push(Elem::Node(Box::new(self.node(NodeKind::NamedArg, na))));
             } else {
                 if seen_named {
                     return Err(self.err_here(
@@ -426,13 +433,6 @@ impl<'a> Parser<'a> {
                 }
                 let a = self.expr()?;
                 elems.push(Elem::Node(Box::new(a)));
-                // **R9 (VD-178)**: gợi ý cho mẫu `U(n: 1)` (dựng bản ghi bằng tên kiểu).
-                if self.at_punct(":") {
-                    return Err(self.err_code(
-                        &vis_diag::SYNTAX_CODES[4],
-                        "dựng bản ghi bằng tên kiểu — gợi ý: dùng `{n: 1}` (R11 sẽ cho `U(n: 1)`)",
-                    ));
-                }
             }
             if self.at_punct(",") {
                 elems.push(self.bump());

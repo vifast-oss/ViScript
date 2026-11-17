@@ -7,4 +7,3 @@ ViScript-thiet-ke.md:433 `...` ở 436 (`fn max_by[...] -> T?: ...`) — thân h
 ViScript-thiet-ke.md:446 `...` ở 450 (`fn show(self) -> str: ...`) — thân hàm lược
 ViScript-thiet-ke.md:615 `...` ở 617 (`pub cmd ls(...): ...`) — thân hàm lược
 ViScript-thiet-ke.md:746 `...` ở 747 (`fn main(...): ...`) — thân hàm lược
-ViScript-thiet-ke.md:1421 lỗi đầu `Entry(path: str(e.path), …)` ở 1437 — constructor có trường tên không có trong §A.3; `assert` ở 1446 cũng ngoài §A.1/A.2 (VD-36, hai lỗ hổng tài liệu ghi R2)

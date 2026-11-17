@@ -131,7 +131,11 @@ fn diem_bat_dong_tai_lieu_15_khoi() {
     // (a) khối tài liệu đủ thân đã đúng chuẩn (đo trước: không tab, không khoảng trắng cuối dòng,
     // thụt lề bội 4, LF, đúng 1 newline cuối) ⇒ phải là điểm bất động byte-for-byte.
     let blocks = doc_blocks();
-    assert_eq!(blocks.len(), 15, "15 khối đủ thân (VD-36)");
+    assert_eq!(
+        blocks.len(),
+        16,
+        "16 khối đủ thân (VD-36; R11 thêm khối 1421)"
+    );
     for (i, b) in blocks.iter().enumerate() {
         let f = format_ok(b);
         assert_eq!(&f, b, "khối tài liệu #{i} phải là điểm bất động của fmt");
@@ -164,9 +168,9 @@ fn idempotent_tren_moi_nguon() {
             }
         }
     }
-    // 15 khối + 30 golden (27 hợp lệ + 3 `!ERR`) + 6 fixture tĩnh ⇒ 48 nguồn format được.
-    assert_eq!(valid_sources().len(), 51, "15 khối + 30 golden + 6 fixture");
-    assert!(ok >= 48, "phải phủ đủ nguồn hợp lệ, thật {ok}");
+    // 16 khối + 30 golden (27 hợp lệ + 3 `!ERR`) + 6 fixture tĩnh ⇒ 49 nguồn format được.
+    assert_eq!(valid_sources().len(), 52, "16 khối + 30 golden + 6 fixture");
+    assert!(ok >= 49, "phải phủ đủ nguồn hợp lệ, thật {ok}");
 }
 
 #[test]

@@ -241,3 +241,30 @@ impl Emit<'_> {
         Ok(())
     }
 }
+
+impl Emit<'_> {
+    /// **R11 (VD-178)**: dựng bản ghi — tên kiểu lấy từ `recs` (rỗng nếu ẩn danh).
+    pub(super) fn record_lit(
+        &mut self,
+        fields: &[(String, HExpr)],
+        ty: &vis_types::Type,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        for (n, v) in fields {
+            let c = self.g.cst_str(n);
+            self.f.push(Instr::Const(c), span, 1);
+            self.expr(v)?;
+        }
+        let ten = match ty {
+            vis_types::Type::Record(id) => self.g.recs.get(&id.0).cloned().unwrap_or_default(),
+            _ => String::new(),
+        };
+        let t = self.g.cst_str(&ten);
+        self.f.push(
+            Instr::MakeRecord(t, fields.len() as u16),
+            span,
+            1 - 2 * fields.len() as i32,
+        );
+        self.net_stack(span)
+    }
+}

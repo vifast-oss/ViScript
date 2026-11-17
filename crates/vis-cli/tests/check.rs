@@ -319,7 +319,7 @@ fn doc_blocks() -> (usize, Vec<(usize, String)>) {
     (total, blocks)
 }
 
-// 7 khối **loại trừ tường minh** theo VD-36 (6 khối `...` + khối `Entry(trường: …)`/`assert`).
+// 6 khối **loại trừ tường minh** theo VD-36 (6 khối `...`); khối `Entry(trường: …)` nay xanh (R11).
 // **Một nguồn duy nhất** (nợ #129, ST-158): số dòng + lý do từng khối + cách dịch toạ độ
 // (ST-120b: 610→614, 662→666, 737→745, 1412→1420) nằm ở `test/doc_excluded.rs`.
 include!("../../../test/doc_excluded.rs");
@@ -340,7 +340,11 @@ fn fixture_tai_lieu_15_khoi_deu_ok() {
         .filter(|(line, _)| !DOC_EXCLUDED.contains(line))
         .map(|(_, body)| body)
         .collect();
-    assert_eq!(blocks.len(), 15, "15 khối đủ thân (VD-36)");
+    assert_eq!(
+        blocks.len(),
+        16,
+        "16 khối đủ thân (VD-36; R11 thêm khối 1421)"
+    );
     let dir = tmp_dir("doc-ok");
     let mut files = Vec::new();
     for (i, body) in blocks.iter().enumerate() {
@@ -352,11 +356,11 @@ fn fixture_tai_lieu_15_khoi_deu_ok() {
     let out = stdout(&o);
     let ls = lines(&o);
     assert_eq!(ls[0], "TAP version 13");
-    assert_eq!(ls[1], "1..15");
+    assert_eq!(ls[1], "1..16");
     assert_eq!(
         ls.iter().filter(|l| l.starts_with("ok ")).count(),
-        15,
-        "cả 15 khối phải ok; stdout=\n{out}"
+        16,
+        "cả 16 khối phải ok; stdout=\n{out}"
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -402,14 +406,14 @@ fn mixed_lex_va_syntax_phai_bao_vs0101() {
 
 #[test]
 fn khoi_loai_tru_tai_lieu_bao_not_ok_dung_mot_chan_doan() {
-    // 7 khối loại trừ (VD-36) phải `not ok`, exit 1, mỗi khối **đúng 1** dòng `# VS…`.
+    // 6 khối loại trừ (VD-36) phải `not ok`, exit 1, mỗi khối **đúng 1** dòng `# VS…`.
     let (total, all) = doc_blocks();
     assert_eq!(total, 22);
     let excluded: Vec<&(usize, String)> = all
         .iter()
         .filter(|(line, _)| DOC_EXCLUDED.contains(line))
         .collect();
-    assert_eq!(excluded.len(), 7, "đúng 7 khối loại trừ (VD-36)");
+    assert_eq!(excluded.len(), 6, "đúng 6 khối loại trừ (VD-36)");
     let dir = tmp_dir("doc-excluded");
     let mut files = Vec::new();
     for (i, (_, body)) in excluded.iter().enumerate() {
@@ -421,7 +425,7 @@ fn khoi_loai_tru_tai_lieu_bao_not_ok_dung_mot_chan_doan() {
     assert_eq!(o.status.code(), Some(1), "6 khối loại trừ phải exit 1");
     let ls = lines(&o);
     assert_eq!(ls[0], "TAP version 13");
-    assert_eq!(ls[1], "1..7");
+    assert_eq!(ls[1], "1..6");
     let mut not_ok = 0usize;
     let mut i = 2usize;
     while i < ls.len() {
@@ -442,13 +446,13 @@ fn khoi_loai_tru_tai_lieu_bao_not_ok_dung_mot_chan_doan() {
         }
     }
     assert_eq!(
-        not_ok, 6,
-        "6 khối còn lại phải `not ok` (khối variadic đã hợp lệ từ ST-27)"
+        not_ok, 5,
+        "5 khối còn lại phải `not ok` (khối variadic đã hợp lệ từ ST-27)"
     );
     assert_eq!(
         ls.iter().filter(|l| l.starts_with("# VS")).count(),
-        6,
-        "6 khối `not ok` — mỗi khối đúng 1 chẩn đoán (khối variadic đã hợp lệ, ST-27)"
+        5,
+        "5 khối `not ok` — mỗi khối đúng 1 chẩn đoán (khối variadic đã hợp lệ, ST-27)"
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
