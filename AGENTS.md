@@ -1,7 +1,7 @@
 # AGENTS.md — repo ViScript (luật gốc)
 
-**ST-171 (VD-165/VD-179 §4)**: repo này là **bản tách** của cây `viscript/` + `docs/viscript/` khỏi
-`ViFastOs`. Gốc repo **là** cây ViScript (`crates/`, `bin/`, `test/`, `agent/`, `docs/viscript/`,
+**ST-171 (VD-165/VD-179 §4)**: repo này là **bản tách** của cây `viscript/` + `docs/` khỏi
+`ViFastOs`. Gốc repo **là** cây ViScript (`crates/`, `bin/`, `test/`, `agent/`, `docs/`,
 `Cargo.toml`), không còn tiền tố `viscript/`.
 Luật chung của `ViFastOs` (`AGENTS.md` gốc, `docs/QUYET-DINH-sau-review.md` — **QD**) **vẫn áp** nhưng
 nay nằm ở repo `ViFastOs`; tệp này giữ phần ViScript tự chứa.
@@ -9,9 +9,9 @@ nay nằm ở repo `ViFastOs`; tệp này giữ phần ViScript tự chứa.
 ## 1. Thứ tự nguồn sự thật (áp cho ViScript)
 
 1. **Code + test** trong repo này: crate biên dịch được, golden, fuzz, TAP.
-2. **`SPEC`** — [`docs/viscript/SPEC-lex.md`](docs/viscript/SPEC-lex.md) (từ vựng + EBNF tự chứa) và `SPEC.md` (do ST-02a/ST-02b sinh); sửa **chỉ** qua Agent 0.
+2. **`SPEC`** — [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF tự chứa) và `SPEC.md` (do ST-02a/ST-02b sinh); sửa **chỉ** qua Agent 0.
 3. [`agent/DECISIONS.md`](agent/DECISIONS.md) — VD-01 trở đi; số mới nhất: `grep -o 'VD-[0-9]\+' agent/DECISIONS.md | sort -t- -k2 -n | tail -1` (QD §7, các câu Q1..Q5 của SPEC-lex, và các chỗ văn phạm chế độ lệnh/vis-fmt/vis-diag cần chốt).
-4. Tài liệu thiết kế [`docs/viscript/ViScript-thiet-ke.md`](docs/viscript/ViScript-thiet-ke.md) — tham chiếu.
+4. Tài liệu thiết kế [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md) — tham chiếu.
 
 QD thắng tài liệu thiết kế.
 
@@ -19,8 +19,8 @@ QD thắng tài liệu thiết kế.
 
 | Tệp | Vai trò |
 |---|---|
-| [`docs/viscript/ViScript-thiet-ke.md`](docs/viscript/ViScript-thiet-ke.md) | thiết kế đầy đủ (9.4 bảng xung đột chế độ lệnh, 14 cấu trúc crate, 20 quy trình, 22 quyết định) |
-| [`docs/viscript/SPEC-lex.md`](docs/viscript/SPEC-lex.md) | đặc tả từ vựng + EBNF tự chứa — sản phẩm của **ST-02a** |
+| [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md) | thiết kế đầy đủ (9.4 bảng xung đột chế độ lệnh, 14 cấu trúc crate, 20 quy trình, 22 quyết định) |
+| [`docs/SPEC-lex.md`](docs/SPEC-lex.md) | đặc tả từ vựng + EBNF tự chứa — sản phẩm của **ST-02a** |
 | [`agent/QUEUE.md`](agent/QUEUE.md) | mọi vòng; trạng thái từng task là nguồn duy nhất về tiến độ |
 | [`agent/DECISIONS.md`](agent/DECISIONS.md) | VD-01 trở đi; số mới nhất: `grep -o 'VD-[0-9]\+' agent/DECISIONS.md | sort -t- -k2 -n | tail -1` |
 | [`agent/STATE.md`](agent/STATE.md), [`agent/BLOCKED.md`](agent/BLOCKED.md) | trạng thái + chặn (Agent 2 ghi) |

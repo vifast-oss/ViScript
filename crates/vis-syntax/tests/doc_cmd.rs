@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! Hai khối ```vish-session của tài liệu phải parse **0 lỗi** ở `Mode::Command` + lossless (ST-06).
 //!
-//! Trích **tự động** từ `docs/viscript/ViScript-thiet-ke.md` (không chép tay); khoá đúng **2** khối
+//! Trích **tự động** từ `docs/ViScript-thiet-ke.md` (không chép tay); khoá đúng **2** khối
 //! để thêm/bớt là đỏ.
 
 use std::path::PathBuf;
 use vis_syntax::{parse, Mode};
 
 fn blocks() -> Vec<(usize, String)> {
-    let p =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript/ViScript-thiet-ke.md");
+    let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/ViScript-thiet-ke.md");
     let text = std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("đọc {}: {e}", p.display()));
     let mut out = Vec::new();
     let mut it = text.lines().enumerate();

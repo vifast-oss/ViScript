@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Giải mã literal — `docs/viscript/SPEC-lex.md` §2 (số), §3 (chuỗi/escape/nội suy).
+//! Giải mã literal — `docs/SPEC-lex.md` §2 (số), §3 (chuỗi/escape/nội suy).
 //!
 //! Lexer chỉ *tìm biên* token; mọi việc *hiểu* nội dung nằm ở đây để ST-05 trở đi dùng lại
 //! (parser/kiểm kiểu cần đúng các giá trị này), và để test golden đối chiếu **giá trị** chứ

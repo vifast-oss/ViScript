@@ -211,7 +211,7 @@ fn vish_duoc_kiem_bang_cmdcst() {
 fn hai_khoi_vish_session_qua_cli_deu_ok() {
     // DoD ST-06: 2 khối ```vish-session của tài liệu (trích tự động) phải `vis check` xanh.
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/viscript/ViScript-thiet-ke.md");
+        .join("../../docs/ViScript-thiet-ke.md");
     let text =
         std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("đọc {}: {e}", path.display()));
     let mut bodies = Vec::new();
@@ -295,8 +295,7 @@ fn khong_doc_duoc_tep_la_not_ok() {
 
 /// Trích **tự động** mọi khối ```vis từ tài liệu (kèm dòng bắt đầu) — không chép tay.
 fn doc_blocks() -> (usize, Vec<(usize, String)>) {
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript/ViScript-thiet-ke.md");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/ViScript-thiet-ke.md");
     let text =
         std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("đọc {}: {e}", path.display()));
     let mut total = 0usize;

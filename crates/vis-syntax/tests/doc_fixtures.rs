@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Fixture tài liệu — `docs/viscript/*.md` (ST-05, DoD "fixture tài liệu parse").
+//! Fixture tài liệu — `docs/*.md` (ST-05, DoD "fixture tài liệu parse").
 //!
 //! Trích **tự động** mọi khối ```vis từ tài liệu (không chép tay). Theo **VD-36** (Agent 0):
 //! - Bộ fixture của ST-05 = **đúng 15 khối đủ thân** phải parse 0 lỗi + CST lossless;
@@ -55,7 +55,7 @@ struct Block {
 }
 
 fn docs_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs")
 }
 
 fn md_files(dir: &Path) -> Vec<PathBuf> {

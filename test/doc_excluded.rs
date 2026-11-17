@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // **Một nguồn duy nhất** cho danh sách khối tài liệu bị loại trừ (VD-36, đóng nợ #129 ở ST-158).
 //
-// 7 khối: 6 khối `...` + khối `Entry(...)`/`assert` của `docs/viscript/ViScript-thiet-ke.md`.
+// 7 khối: 6 khối `...` + khối `Entry(...)`/`assert` của `docs/ViScript-thiet-ke.md`.
 // Đổi tài liệu ⇒ cập nhật **duy nhất** tệp này. Bốn tệp test `include!` nó (đường
 // `../../../test/doc_excluded.rs`), không chép số:
 //   crates/vis-cli/tests/check.rs · crates/vis-fmt/tests/fmt.rs ·

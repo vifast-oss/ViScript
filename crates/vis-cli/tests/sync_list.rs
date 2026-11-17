@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Tập mong đợi — đúng 14 mục: 9 thư mục + 5 tệp (ST-171: gốc repo mới **là** cây ViScript,
-/// nên danh sách đồng bộ là toàn bộ cây nguồn thay cho `viscript/` + `docs/viscript/` cũ).
+/// nên danh sách đồng bộ là toàn bộ cây nguồn thay cho `viscript/` + `docs/` cũ).
 const DIRS: [&str; 9] = [
     "crates",
     "bin",

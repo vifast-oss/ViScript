@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Golden token — `docs/viscript/SPEC-lex.md` §8, 60 ca (48 script + 12 lệnh).
+//! Golden token — `docs/SPEC-lex.md` §8, 60 ca (48 script + 12 lệnh).
 //!
 //! Đây là test **đỏ trước** của ST-04 (D2-05): viết xong, chạy khi lexer còn là khung rỗng,
 //! phải đỏ 60/60 (log ở `viscript/agent/JOURNAL/st04-red-golden.log`), rồi mới hiện thực.

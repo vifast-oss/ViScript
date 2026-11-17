@@ -3,13 +3,13 @@
 """Cổng "mọi khối mã trong tài liệu parse được" (QD §7.4) + fixture VT09 (ST-09).
 
 Ba chế độ:
-  * (mặc định)  kiểm fixture `test/doc-examples/doc-*` == khối trong `docs/viscript/*.md`
+  * (mặc định)  kiểm fixture `test/doc-examples/doc-*` == khối trong `docs/*.md`
   * `--regen`    sinh lại toàn bộ fixture `doc-*` từ tài liệu
   * `--gate`     bước cổng: đếm khối/fixture + chạy `vis check` trên **mọi** khối
                  (`.vis`/`.vish`), đối chiếu `doc-examples-allow.txt`, rồi kiểm fixture
                  viết tay `qd-*` theo dòng `# kỳ vọng:` của chúng
 
-Ngoại lệ phải khai báo **tường minh** ở `docs/viscript/doc-examples-allow.txt`
+Ngoại lệ phải khai báo **tường minh** ở `docs/doc-examples-allow.txt`
 (mỗi dòng `<tệp>:<dòng mở khối> <lý do>`); ngoại lệ cũ (không còn đỏ) và khối đỏ
 không khai báo đều làm cổng **đỏ**.
 
@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-DOCS = REPO / "docs" / "viscript"
+DOCS = REPO / "docs"
 FIXTURES = REPO / "test" / "doc-examples"
 SPDX = "# SPDX-License-Identifier: MIT OR Apache-2.0"
 FENCE = re.compile(r"^```(vis|vish-session)\s*$")
@@ -316,7 +316,7 @@ def main() -> int:
     ap.add_argument("--vis-bin", default=None, help="binary vis thay thế (kiểm cả freshness)")
     args = ap.parse_args()
     root = args.root
-    docs = (root / "docs" / "viscript") if root else DOCS
+    docs = (root / "docs") if root else DOCS
     fix = (root / "test" / "doc-examples") if root else FIXTURES
     if args.regen:
         regen(md_blocks(docs), fix)

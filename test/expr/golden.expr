@@ -2,7 +2,7 @@
 // 30 GOLDEN BIỂU THỨC — kỳ vọng do **Agent 0** chốt 2026-11-12 (VD-34), đầu vào test ĐỎ của ST-05.
 // Agent 2 KHÔNG sửa tệp này (kỳ vọng, không phải mã); nếu thấy sai/thiếu thì báo Agent 0.
 //
-// Nguồn: `docs/viscript/ViScript-thiet-ke.md` §4.5 (8 hệ quả ưu tiên bắt buộc có golden) +
+// Nguồn: `docs/ViScript-thiet-ke.md` §4.5 (8 hệ quả ưu tiên bắt buộc có golden) +
 // §A.5 (bảng ưu tiên 12 mức, kèm kết hợp) + §A.3 (văn phạm biểu thức) + `SPEC-lex.md` §8
 // (ca `50%` — L3 của `docs/DUYET-AGENT0-vong-va.md`: lỗi thuộc **parser**, kèm gợi ý `50pct`).
 //

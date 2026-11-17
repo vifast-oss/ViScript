@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! `vis-syntax` — lexer + parser + CST + `CmdCST` của dòng ViScript (tài liệu thiết kế §14.2).
 //!
-//! **ST-04** mới dựng **lexer** theo [`docs/viscript/SPEC-lex.md`] (APPROVED 2026-11-12).
+//! **ST-04** mới dựng **lexer** theo [`docs/SPEC-lex.md`] (APPROVED 2026-11-12).
 //! Parser/CST là ST-05.
 //!
 //! Luật của dòng ViScript: không `unsafe`, không tệp quá 1.500 dòng, SPDX `//` cho Rust.

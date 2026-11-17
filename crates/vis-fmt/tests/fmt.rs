@@ -28,8 +28,7 @@ fn format_ok(src: &str) -> String {
 
 /// 15 khối ```vis đủ thân của tài liệu (cùng bộ loại trừ VD-36 như ST-05/ST-08; trích tự động).
 fn doc_blocks() -> Vec<String> {
-    let p =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript/ViScript-thiet-ke.md");
+    let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/ViScript-thiet-ke.md");
     let text = std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("đọc {}: {e}", p.display()));
     let mut out = Vec::new();
     let mut it = text.lines().enumerate();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Kiểu token + bảng từ khoá + bảng dấu câu (`docs/viscript/SPEC-lex.md` §1).
+//! Kiểu token + bảng từ khoá + bảng dấu câu (`docs/SPEC-lex.md` §1).
 
 /// Vị trí byte `[start, end)` trong **văn bản đã NFC** (SPEC-lex §0.4: mọi offset tính bằng byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]

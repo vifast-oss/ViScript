@@ -2,8 +2,8 @@
 // 33 GOLDEN CmdCST — ST-06 (22 ca pha A + 1 ca `.vish` nhiều dòng + 10 ca bổ sung sau review vòng 1)
 // (D2-05: đỏ trước, pha B mới hiện thực `parse(Mode::Command)`).
 //
-// Nguồn: `docs/viscript/ViScript-thiet-ke.md` §9.3 (phân tích dòng lệnh), §9.4 (bảng xung đột 12
-// hàng), §9.5, §A.7 (văn phạm CmdCST); `docs/viscript/SPEC-lex.md` §5–§6 (token chế độ lệnh);
+// Nguồn: `docs/ViScript-thiet-ke.md` §9.3 (phân tích dòng lệnh), §9.4 (bảng xung đột 12
+// hàng), §9.5, §A.7 (văn phạm CmdCST); `docs/SPEC-lex.md` §5–§6 (token chế độ lệnh);
 // VD-21/VD-22 (hai pha: `vis-syntax` sinh CmdCST **chưa định kiểu**, `cmd_lower` ở vòng 2 quyết
 // kiểu chữ ký).
 //

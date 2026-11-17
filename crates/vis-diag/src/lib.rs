@@ -65,7 +65,7 @@ impl Code {
     }
 }
 
-/// Sổ mã lỗi **vòng 1**: đúng 10 mã `VS0101..VS0110` của `docs/viscript/SPEC-lex.md` §7.
+/// Sổ mã lỗi **vòng 1**: đúng 10 mã `VS0101..VS0110` của `docs/SPEC-lex.md` §7.
 ///
 /// **ĐỀ XUẤT quy tắc cấp** (chưa phải chuẩn — chờ Agent 0 duyệt qua YC-14; SPEC-lex là nơi
 /// *định nghĩa* chuẩn, crate này chỉ *thực thi*):
@@ -712,8 +712,8 @@ mod tests {
     #[test]
     fn so_khop_spec_lex_that() {
         // Đọc thẳng bảng §7 của SPEC-lex: sổ trong code không được lệch nguồn chuẩn.
-        let spec = std::fs::read_to_string("../../docs/viscript/SPEC-lex.md")
-            .expect("phải đọc được docs/viscript/SPEC-lex.md");
+        let spec = std::fs::read_to_string("../../docs/SPEC-lex.md")
+            .expect("phải đọc được docs/SPEC-lex.md");
         let mut rows: Vec<(String, String)> = Vec::new();
         for line in spec.lines() {
             let t = line.trim();

@@ -3,7 +3,7 @@
 //!
 //! Tệp này viết **trước** khi hiện thực `lower()` (log đỏ: `viscript/agent/JOURNAL/st11-red-types.log`);
 //! kỳ vọng lấy từ **nguồn của Agent 0**, không tự đặt:
-//! - **15 khối ```vis đủ thân** trong `docs/viscript/ViScript-thiet-ke.md` (VD-36) — parse sạch
+//! - **15 khối ```vis đủ thân** trong `docs/ViScript-thiet-ke.md` (VD-36) — parse sạch
 //!   (ST-05) **và** hạ **0 chẩn đoán**, đúng số **item / câu lệnh cấp tệp / khai báo**;
 //! - **30 golden biểu thức** trong `viscript/test/expr/golden.expr` (VD-34, Agent 0 soạn, **chỉ
 //!   đọc**): 27 ca hợp lệ phải hạ ra đúng **sexp HIR**; 3 ca `!ERR` dừng ở **parse**.
@@ -70,7 +70,7 @@ const FULL_BODIED: usize = 15;
 
 // **Một nguồn duy nhất** (nợ #129, ST-158): 7 khối loại trừ theo VD-36 nằm ở
 // `test/doc_excluded.rs` (số dòng + lý do từng khối + cách dịch toạ độ ST-120b:
-// 610→614, 662→666, 737→745, 1412→1420). Trùng `docs/viscript/doc-examples-allow.txt`
+// 610→614, 662→666, 737→745, 1412→1420). Trùng `docs/doc-examples-allow.txt`
 // (ST-120b) về **nội dung** khối, không chép số dòng ở đây.
 include!("../../../test/doc_excluded.rs");
 
@@ -103,7 +103,7 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
 ];
 
 fn doc_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript/ViScript-thiet-ke.md")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/ViScript-thiet-ke.md")
 }
 
 /// Trích **tại chỗ** mọi khối ```vis của tài liệu (không chép tay nội dung).

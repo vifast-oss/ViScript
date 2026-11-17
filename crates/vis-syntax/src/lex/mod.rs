@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Lexer ViScript — `docs/viscript/SPEC-lex.md` (APPROVED 2026-11-12), ST-04.
+//! Lexer ViScript — `docs/SPEC-lex.md` (APPROVED 2026-11-12), ST-04.
 //!
 //! Trình tự một lượt lex ([`lex`]):
 //! 1. **Chuẩn hoá NFC toàn tệp** trước khi lex (SPEC-lex §0.1, VD-11).
