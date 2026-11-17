@@ -104,6 +104,7 @@ loop break continue return and or not true false none self async await scope tes
 | ViScript | Python | Rust | TS/JS | Ghi chú |
 |---|---|---|---|---|
 | `[1, 2, 3]` / `list[int]` ✔ | `[1,2,3]` / `list[int]` | `vec![1,2,3]` / `Vec<i64>` | `[1,2,3]` / `number[]` | |
+| `xs[i]` (panic nếu ngoài) ✔<br>`xs[i]?` → `T?` ✔<br>`xs.get(i)` → `T?` ✔ | `xs[i]` (IndexError)<br>`xs[i] if i < len(xs) else None` | `xs[i]` (panic)<br>`xs.get(i)` → `Option<&T>` | `xs[i]` (undefined) | **R8**: `xs[i]?` chỉ số **có kiểm tra** (không panic); `xs[i]` ngoài phạm vi ⇒ `VS0503`; `xs[-1]` panic có thông điệp |
 | `{"a": 1, "b": 2}` / `map[str, int]` ✔ | `{"a": 1}` | `HashMap::from([("a",1)])` | `new Map([["a",1]])` | |
 | `set{1, 2}` ✔ | `{1, 2}` | `HashSet::from([1,2])` | `new Set([1,2])` | `set{` **dính liền** |
 | `(1, "a")` ✔ | `(1, "a")` | `(1, "a")` | `[1, "a"] as const` | `let (n, s) = t` ✔ |
