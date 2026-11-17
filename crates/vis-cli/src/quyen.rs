@@ -474,15 +474,23 @@ impl Quyen {
     /// `truoc` = đường dẫn canonicalize đã qua kiểm **trước** khi mở; `danh_tinh` = `(dev, ino)` của
     /// **handle vừa mở** (host báo; `(0, 0)` = không báo).
     ///
-    /// - Có danh tính ⇒ đọc lại đường dẫn **bây giờ** (`sau`) và đòi `metadata(sau)` **trùng**
-    ///   `(dev, ino)` của handle: nếu trùng thì `sau` **đúng là** tệp đã mở ⇒ sau đó kiểm quyền trên
-    ///   `sau` (chứ không phải trên đường dẫn cũ). Lệch ⇒ đường dẫn bị đổi trong lúc mở ⇒ **từ chối**.
+    /// - Có danh tính ⇒ đọc lại đường dẫn **bây giờ** (`sau`) và đòi `sau` **không phải symlink** +
+    ///   `(dev, ino)` của **chính mục tên đó** (`symlink_metadata`) **trùng** `(dev, ino)` của handle:
+    ///   nếu trùng thì `sau` **đúng là** tệp đã mở ⇒ sau đó kiểm quyền trên `sau` (chứ không phải trên
+    ///   đường dẫn cũ). Lệch ⇒ đường dẫn bị đổi trong lúc mở ⇒ **từ chối**.
     /// - Không có danh tính (mock/nền không inode) ⇒ so `sau != truoc` ⇒ **từ chối** (chặn được ca
     ///   "đổi sang đường dẫn khác rồi để nguyên", không chặn được ca "đổi rồi đổi lại" — ghi ở nợ).
     ///
-    /// **Giới hạn đã biết (ST-137)**: `chuan` (syscall 1, trả **chuỗi**) và `metadata(sau)` (syscall 2,
-    /// theo **tên**) có thể thấy hai trạng thái khác nhau ⇒ kẻ tấn công chen vào **giữa hai syscall**
-    /// làm quyết định rơi trên chuỗi cũ. Vì vậy trên Linux **không** dùng đường này nữa.
+    /// **ST-174 (VD-176 §1) — nợ `#146` đã vá**: bước kiểm dùng **`symlink_metadata`** (không đi theo
+    /// symlink) thay cho `metadata` (ST-137/ST-163). Trước bản vá, `chuan` (syscall 1, trả **chuỗi**)
+    /// và `metadata(sau)` (syscall 2, **đi theo symlink**) có thể thấy hai trạng thái khác nhau: kẻ tấn
+    /// công đổi `root/tep` thành symlink trỏ ra ngoài **đúng khe giữa hai syscall** thì `sau` vẫn là
+    /// **tên trong root** nhưng `metadata(sau)` trả **inode tệp ngoài** (trùng handle đã mở) ⇒
+    /// `kiem_canon` xanh ⇒ **nội dung ngoài lọt** (đo 4/8,1 triệu vòng trên macOS ở ST-163). Nay mục
+    /// tên là symlink ⇒ `(dev, ino)` của **symlink** ≠ `(dev, ino)` của handle ⇒ **từ chối**, tất định.
+    /// Bằng chứng tất định (không dựa số vòng): `quyen_st174.rs` — ca A/B + ca âm điểm chèn.
+    /// **Giới hạn còn lại** (chính sách, không phải lỗi đua): **hardlink** tệp ngoài vào trong root được
+    /// coi là **nằm trong root** — xem `agent/HOST-BAO-DAM.md`.
     pub fn xac_nhan_sau_mo(
         &self,
         p: &str,
@@ -490,13 +498,19 @@ impl Quyen {
         danh_tinh: (u64, u64),
     ) -> Result<(), String> {
         let sau = Self::chuan(&self.tuyet_doi(p));
+        // **ST-174 (VD-176 §2)** — điểm chèn **CHỈ TEST** giữa `canonicalize` (dòng trên) và bước kiểm
+        // (dòng dưới): ca tất định hoán đổi `root/tep` **đúng khe giữa hai syscall**. `cfg(test)` ⇒
+        // **không** có trong build thường (`cargo build`); chưa đăng ký hook ⇒ no-op.
+        #[cfg(all(test, unix))]
+        chen::chay(&sau, p);
         #[cfg(unix)]
         if danh_tinh.0 != 0 {
             use std::os::unix::fs::MetadataExt;
             let loi = format!(
                 "{DAU_QUYEN}[quyền] `{p}` bị thay đổi trong khi mở (chống kiểm-rồi-mở: không đọc lại được đường dẫn)"
             );
-            let md = std::fs::metadata(&sau).map_err(|_| loi.clone())?;
+            // **ST-174 (VD-176 §1)**: `symlink_metadata` — **không** đi theo symlink (nợ `#146`).
+            let md = std::fs::symlink_metadata(&sau).map_err(|_| loi.clone())?;
             if (md.dev(), md.ino()) != danh_tinh {
                 return Err(loi);
             }
@@ -577,6 +591,64 @@ impl Quyen {
             Err(format!(
                 "{DAU_QUYEN}[quyền] thiếu `cap[Net]` cho `{dia_chi}` (không khai host này)"
             ))
+        }
+    }
+}
+
+/// **ST-174 (VD-176 §2) — ĐIỂM CHÈN chỉ test**, nằm **giữa** `canonicalize` và bước kiểm
+/// (`symlink_metadata`) của [`Quyen::xac_nhan_sau_mo`] — chỗ mà `#146` lọt nội dung ngoài root.
+///
+/// Vì sao cần: ca đua thật của ST-163 chỉ tái hiện được **4/8,1 triệu vòng** trên macOS (phụ thuộc
+/// thời gian), nên **không** chứng minh được bản vá. Điểm chèn cho phép ca test dựng lại **đúng khe
+/// giữa hai syscall** ⇒ kết quả **100/100 tất định**, không dựa số vòng.
+///
+/// Bảo đảm:
+/// - **Chỉ `cfg(all(test, unix))`** ⇒ **không** tồn tại trong build thường (`cargo build`) — không có
+///   cờ sản phẩm, không đổi hành vi phát hành.
+/// - Chưa đăng ký hook ⇒ [`chay`] là **no-op** ⇒ đường mã chạy y như không có điểm chèn.
+/// - Hook **thread-local** (mỗi ca test một luồng) ⇒ ca chạy song song không nhiễu nhau.
+/// - **Ca âm** (ST-174 §6): [`so_lan`] đếm số lần điểm chèn **thực sự chạy**; nếu điểm chèn bị bỏ thì
+///   `so_lan == 0` ⇒ ca tất định **báo “không chạy được điểm chèn”**, không thể xanh im lặng.
+#[cfg(all(test, unix))]
+pub(crate) mod chen {
+    use std::cell::{Cell, RefCell};
+    use std::path::Path;
+
+    /// Hook của điểm chèn: `(sau, p)` — hai tham số của `xac_nhan_sau_mo`.
+    type Hook = Box<dyn FnMut(&Path, &str)>;
+
+    thread_local! {
+        static HOOK: RefCell<Option<Hook>> = const { RefCell::new(None) };
+        static DEM: Cell<usize> = const { Cell::new(0) };
+    }
+
+    /// Đăng ký hook cho **luồng hiện tại** (đặt lại bộ đếm).
+    pub(crate) fn dat(h: Hook) {
+        DEM.with(|d| d.set(0));
+        HOOK.with(|c| *c.borrow_mut() = Some(h));
+    }
+
+    /// Gỡ hook + đặt lại bộ đếm (ca test gọi ở cuối để không ảnh hưởng ca khác cùng luồng).
+    pub(crate) fn go() {
+        HOOK.with(|c| *c.borrow_mut() = None);
+        DEM.with(|d| d.set(0));
+    }
+
+    /// Số lần điểm chèn **đã chạy** trên luồng hiện tại; `0` = **không chạy được điểm chèn**.
+    pub(crate) fn so_lan() -> usize {
+        DEM.with(Cell::get)
+    }
+
+    /// **Điểm chèn**: gọi hook (nếu có) với `(sau, p)`. No-op khi chưa đăng ký ⇒ **không** đổi hành vi.
+    pub(crate) fn chay(sau: &Path, p: &str) {
+        if HOOK.with(|c| c.borrow().is_none()) {
+            return;
+        }
+        DEM.with(|d| d.set(d.get() + 1));
+        // `take` rồi trả lại để hook có thể `FnMut` (giữ trạng thái) mà không mượn `RefCell` khi chạy.
+        if let Some(mut h) = HOOK.with(|c| c.borrow_mut().take()) {
+            h(sau, p);
+            HOOK.with(|c| *c.borrow_mut() = Some(h));
         }
     }
 }

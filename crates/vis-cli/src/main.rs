@@ -15,6 +15,9 @@ mod net;
 mod ngoai;
 mod pkg;
 mod quyen;
+/// **ST-174 (VD-176 §2)** — ca **tất định** cho nợ `#146` (điểm chèn `quyen::chen`); **chỉ** test.
+#[cfg(test)]
+mod quyen_st174;
 mod vistest;
 
 use vis_diag::{all_codes, lookup_str, severity_label, Lang};
