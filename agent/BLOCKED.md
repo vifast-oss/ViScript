@@ -93,27 +93,27 @@ trên `/proc/self/fd`). **`VD-145` đã ghi đúng** ("đo 0/50 000 nhưng **KH�
 `xac_nhan_sau_mo` (đường đọc macOS) **trong VS2** dù `VD-145` đã hoãn fd→path sang VS3 không? (3) `#146` giữ **mở**
 tới khi có quyết định; ca **không** đổi, **không** `#[ignore]`, **không** đổi ngưỡng.
 
-## 7. BLOCKED-CHO-A0 — ST-171 (tách repo ViScript), 2026-11-17
+## 7. ĐÃ GỠ — ST-171 (tách repo ViScript), 2026-11-17 (gỡ 17/11 21:5x)
 
 Hai mục **ngoài phạm vi tự quyết** của Agent 2 (VD-165(g), VD-179 §4). Cả hai **không** chặn
 phần đã làm (repo mới build + gate PASS trên mac/ps); chỉ chặn bước **remote** và chốt **vị trí**
 crate host.
 
-### 7.1 Remote của repo `ViScript` — **CHƯA CÓ**
+### 7.1 Remote của repo `ViScript` — **ĐÃ GỠ**: `https://github.com/vifast-oss/ViScript` (public, tạo + push 17/11)
 
 | | |
 |---|---|
-| Chặn bởi | Không có URL remote và không có quyền tạo repo `vifast-oss/ViScript` |
+| Chặn bởi | (đã gỡ) người điều phối cấp quyền tạo repo |
 | Đã làm | Repo local `/Users/mps/dvchd/ViScript`, **459 commit** giữ lịch sử, **không** push (đúng luật "không tự commit/push") |
-| Cần để mở | A0 cấp **URL** + **quyền tạo** `vifast-oss/ViScript`; sau đó `git remote add origin <url>` + `git push -u origin main` |
-| Hệ quả | `psvn` **chưa** clone được repo mới (quy trình `git pull` đã kiểm trên repo cũ — xem báo cáo ST-171 §6) |
+| Đã mở | `gh repo create vifast-oss/ViScript --public --source=. --remote=origin --push` ⇒ remote `origin` = `https://github.com/vifast-oss/ViScript.git`, nhánh `main` đã đẩy |
+| Hệ quả | `psvn` clone được từ URL mới; `ps` đã trỏ `/root/viscript-moi` (cập nhật remote sang GitHub) |
 
-### 7.2 `vis-host-linux` là **path dep trỏ ra ngoài** `viscript/` — cần A0 chốt vị trí
+### 7.2 `vis-host-linux` là **path dep trỏ ra ngoài** `viscript/` — **ĐÃ CHỐT**: giữ trong repo `ViScript`; repo cũ đã xoá
 
 | | |
 |---|---|
 | Bằng chứng | `crates/vis-cli/Cargo.toml:24` — `vis-host-linux = { path = "../../../vis-host-linux" }` (bảng `[target.'cfg(target_os = "linux")'.dependencies]`) |
 | Vì sao không tự quyết | VD-179 §4 nói phạm vi tách gồm "mọi đường dẫn khác mà các crate đó phụ thuộc", nhưng luật ST-171 nói path dep ra ngoài `viscript/` ⇒ **BLOCKED-CHO-A0**, không tự quyết |
 | Đã làm (tạm) | **Đưa `vis-host-linux/` + `vis-host-wasm/` vào repo mới** (2 workspace riêng, `exclude` trong `Cargo.toml` gốc) và đổi path dep `../../../vis-host-linux` → `../../vis-host-linux`; **không có** tệp nào phải lấy từ repo cũ ⇒ `cargo build --workspace` + gate PASS |
-| Cần A0 chốt | (a) giữ `vis-host-linux`/`vis-host-wasm` **trong** repo `ViScript` (đang làm) — hay (b) tách thành repo riêng `vis-host` và để `ViScript` trỏ sang; (c) repo `ViFastOs` có **xoá** hai thư mục này không (hiện **giữ**, xem báo cáo §7) |
+| Đã chốt | (a) **giữ** `vis-host-linux`/`vis-host-wasm` trong repo `ViScript`; (c) repo `ViFastOs` **đã xoá** hai thư mục (`1a6a837c`) ⇒ không còn hai bản |
 | Rủi ro nếu A0 chọn (b) | Đổi 1 dòng `Cargo.toml` + 1 dòng `SYNC_DIRS`/`SYNC_FILES` trong `bin/vis-linux` + `sync_list.rs`; không đổi mã sản phẩm |
