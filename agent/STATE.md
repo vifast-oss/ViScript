@@ -1,6 +1,6 @@
-# STATE — ViScript (vòng 28 — **R28 xong (chờ duyệt)** tại `head` `fdb21d15`: **đợt 28 đóng #110 (parity argv interp↔VM — VM nhận `[a, b]` như interp) + #129 (một nguồn `test/doc_excluded.rs`)**; gate macOS PASS 10/10, L0 **1179/0** (131 suite), check_report **28** báo cáo / **177** hàng; sổ **146 = 89/34/21/1/1**; **task kế: không** (chờ Agent 0 trả lời 5 câu hỏi VS3))
+# STATE — ViScript (vòng 28 — **R28 xong (chờ duyệt)** tại `head` `fdb21d15`: **đợt 28 đóng #110 (parity argv interp↔VM — VM nhận `[a, b]` như interp) + #129 (một nguồn `test/doc_excluded.rs`)**; gate macOS PASS 10/10, L0 **1179/0** (131 suite), check_report **28** báo cáo / **177** hàng; sổ **146 = 89/34/21/1/1**; **task kế: ST-161**)
 
-Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-159** (R28 — chốt đợt 28: 28 báo cáo, **177** hàng, gate macOS PASS 10/10 L0 **1179/0** (131 suite), sổ **146 = 89/34/21/1/1**; task kế **không** — chờ Agent 0 trả lời 5 câu hỏi VS3) (nền số R27 giữ nguyên: VS2 đóng kỹ thuật **8/8** (VD-151), 27 báo cáo, 174 hàng QUEUE, L0 1175/0 — `reports/R27-viscript.md`)
+Người ghi: **Agent 2** dòng ViScript. Header cập nhật cuối **ST-162** (chuẩn hoá script bọc cổng từ xa — `bin/vis-remote`: đường tuyệt đối + `.exit` + log ngoài repo; sự cố R28 §5 #4/#5/#6 đóng; gate macOS PASS 10/10 L0 **1179/0** (131 suite) chạy qua chính `vis-remote mac`; task kế **ST-161**) [nền số **ST-159** (R28): 28 báo cáo, **177** hàng, L0 **1179/0**, sổ **146 = 89/34/21/1/1**] (nền số R27 giữ nguyên: VS2 đóng kỹ thuật **8/8** (VD-151), 27 báo cáo, 174 hàng QUEUE, L0 1175/0 — `reports/R27-viscript.md`)
 Nguồn: `KE-HOACH-CHOT-23f.md` · `DECISIONS.md` VD-131/VD-136/VD-140/VD-141/VD-142/VD-143/VD-144/VD-146/VD-147/VD-148 ·
 `reports/R24-viscript.md` · `JOURNAL/st140-*.log` · `JOURNAL/st141-khoi-phuc-log.log` ·
 `JOURNAL/st141-red-overwrite.log` · `JOURNAL/st141-host-suite-macos.log` · `JOURNAL/st141-host-suite-ps.log` ·
@@ -34,6 +34,7 @@ Nguồn (ST-156): `reports/R27-viscript.md` · `reports/R27-viscript.json` · `r
 Nguồn (ST-157): `QUEUE.md` hàng ST-157 + dòng `> CHỜ DUYỆT Agent 1 · 567350e1` · `DECISIONS.md` **VD-156**(kèm VD-103/VD-106 của ST-72b, VD-147(3)) · `JOURNAL/quyet-dinh-a0-2026-11-17d.md` §1/§2 · `crates/vis-interp/src/interp.rs:221-234` (chuẩn interp) · `crates/vis-bytecode/src/codegen.rs` (mục `main` — "vỏ" `Call(fi, 0); Halt`) · `crates/vis-vm/src/vm.rs` (`chay_chuong_trinh`) · `crates/vis-cli/tests/vm_main_argv.rs` · `crates/vis-cli/tests/cap_khong_lo.rs` · `JOURNAL/st157-do-truoc.log` · `JOURNAL/st157-gate-macos.log` · `JOURNAL/st157-vis-test.log` · `JOURNAL/st157-vis-test-vm.log` · `JOURNAL/st157-kiem-trung.log` · `agent/SO-NO.md` #110 + §8/§9 · `JOURNAL/2026-11-17.md` §ST-157.
 Nguồn (ST-158): `QUEUE.md` hàng ST-158 + dòng `> CHỜ DUYỆT Agent 1 · 8036b0a2` · `agent/SO-NO.md` #129 + §8 · `viscript/test/doc_excluded.rs` (mới) · `crates/vis-cli/tests/check.rs` · `crates/vis-fmt/tests/fmt.rs` · `crates/vis-syntax/tests/doc_fixtures.rs` · `crates/vis-types/tests/hir.rs` · `JOURNAL/st158-truoc.log` · `JOURNAL/st158-sau.log` · `JOURNAL/st158-gate-macos.log` · `JOURNAL/st158-check-report.log` · `docs/viscript/ViScript-thiet-ke.md` (đọc, không sửa) · `JOURNAL/2026-11-17.md` §ST-158.
 Nguồn (ST-159): `reports/R28-viscript.md` · `reports/R28-viscript.json` · `reports/R27-viscript.md` (số cũ, không sửa) · `agent/SO-NO.md` §8 (146 = 89/34/21/1/1) · `DECISIONS.md` **VD-156** + VD-142/VD-143/VD-145/VD-146/VD-147/VD-148/VD-151 · `JOURNAL/quyet-dinh-a0-2026-11-17d.md` §1–§3 · `JOURNAL/st157-gate-macos.log` · `st158-gate-macos.log` · `JOURNAL/st157-do-truoc.log` · `st158-truoc.log`/`st158-sau.log` · `JOURNAL/st159-gate-macos.log` · `JOURNAL/st159-check-report.log` · `JOURNAL/st159-gate-macos-lan1-shell-fail.log` (script bọc hỏng — cổng **chưa** chạy) · `QUEUE.md` hàng ST-157/ST-158/ST-159 · `JOURNAL/2026-11-17.md` §ST-159.
+Nguồn (ST-162): `bin/vis-remote` (mới, 397 dòng) · `bin/vis-linux` (`SYNC_DIRS`/`SYNC_FILES`, `--check-sync` — đọc, **không** sửa) · `JOURNAL/st162-exit-ps.log` · `JOURNAL/st162-exit-psvn.log` · `JOURNAL/st162-psvn-don.log` · `JOURNAL/st162-psvn-realrun.log` · `JOURNAL/st162-psvn-pull.log` · `JOURNAL/st162-ps-check.log` · `JOURNAL/st162-ps-check-cargo.log` · `JOURNAL/st162-gate-macos.log` · `JOURNAL/st162-check-report.log` · `JOURNAL/quyet-dinh-a0-2026-11-17-dot29.md` Phần C (hàng ST-162) · `reports/R28-viscript.md` §5 #4/#5/#6 · `QUEUE.md` hàng ST-162 · `JOURNAL/2026-11-17.md` §ST-162.
 
 ```
 HEAD (repo)   : xem `git log -1`
@@ -44,7 +45,11 @@ Vòng          : 28 — **R28 chốt đợt 28** (`reports/R28-viscript.md`, `he
                 Đợt 25 — **R26 chốt** (`head` `b1c07802`): ST-147 **DONE** theo phạm vi **VD-150** (`fd16d7d1`;
                 ca 7 đóng ở ST-153) · ST-148 **DONE** (`cfce6b86`) · ST-149 **DONE** (`6ce972ef`) ·
                 ST-150 **DONE** (`9eeb936b`) · ST-151 **DONE** (`9bd7d022`) · ST-153 **DONE** (`4a805115`)
-Task đang làm : —  ·  **ST-159 DONE (chờ duyệt)**: **R28** — 3 tệp `reports/R28-viscript.{md,json,json.license}`,
+Task đang làm : —  ·  **ST-162 DONE (chờ duyệt)**: `bin/vis-remote` (tệp mới) — ba bảo đảm: (1) `cargo`+log **tuyệt đối**,
+                (2) mã thoát ghi `<log>.exit` **bên trong bash máy đích** rồi **đọc lại từ tệp** ⇒ `exit 3` ⇒ `[exit=3]` trên `ps` và `psvn`,
+                (3) log mặc định `<home>/vislogs/` **ngoài repo** ⇒ `psvn` `git pull --ff-only` **không** bị chặn; header VD-136 mọi log;
+                gate macOS PASS 10/10 L0 **1179/0** (131 suite) chạy **qua chính `vis-remote mac`**; `check_report` PASS **28/188**.
+                **ST-159 DONE (chờ duyệt)**: **R28** — 3 tệp `reports/R28-viscript.{md,json,json.license}`,
                 **28** báo cáo, **177** hàng QUEUE (176 `DONE` + ST-159 `READY` tại `head` `fdb21d15`);
                 `check_report --all` **PASS (28 báo cáo, 177 hàng)**; gate macOS PASS 10/10, L0 **1179/0** (**131** suite),
                 doc-examples 24 khối; sổ **146 = 89/34/21/1/1** (#110 đóng ở ST-157, #129 đóng ở ST-158);
@@ -52,8 +57,9 @@ Task đang làm : —  ·  **ST-159 DONE (chờ duyệt)**: **R28** — 3 tệp 
                 **ST-157 DONE (chờ duyệt)** (`567350e1`): nợ **#110** — VM đặt `argv` vào tham số **không-`cap`** của `main`
                 (chạy thẳng `main`, bỏ qua "vỏ" `Call(main, 0); Halt`); ca `vm_main_argv.rs` **so byte**, 3/4 đỏ ⇒ 4/4 xanh.
                 **ST-158 DONE (chờ duyệt)** (`8036b0a2`): nợ **#129** — một nguồn `test/doc_excluded.rs`, 4 tệp `include!`.
-Task kế       : **không** — chờ **Agent 0** trả lời **5 câu hỏi VS3** (`JOURNAL/st155-vs3-dieu-tra.md` §8) rồi ban hành
-                thiết kế VS3 (VD-148: chưa mở tính năng VS3). Hàng chờ duyệt: ST-154..ST-159 (`QUEUE.md`).
+Task kế       : **ST-161** (đo lại cùng HEAD: `ps` gate --fast; `psvn` cargo test + self-test + cổng — **chỉ đo**).
+                Hàng chờ duyệt: ST-154..ST-160 (`QUEUE.md`). 5 câu hỏi VS3 **đã** được Agent 0 trả lời ở
+                `JOURNAL/quyet-dinh-a0-2026-11-17-dot29.md` Phần B (VD-160…VD-164) — thiết kế VS3 vẫn **chưa mở** (VD-148).
 Nhánh         : main
 ```
 
