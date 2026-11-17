@@ -40,22 +40,15 @@ fn strict(src: &str) -> HirOutput {
 // VS0302 — khai lại cùng khung
 // ---------------------------------------------------------------------------
 
+/// **R16 (VD-178)**: `let` **được che tên** trong cùng phạm vi — không còn `VS0302`.
 #[test]
-fn vs0302_let_trung_cung_khung() {
+fn let_che_ten_cung_khung_khong_loi() {
     let h = free("let x = 1\nlet x = 2\n");
-    assert_eq!(h.codes(), ["VS0302"], "hai `let x` cùng khung phải VS0302");
     assert!(
-        h.diagnostics[0].message.contains("x"),
-        "thông điệp phải nêu tên: {}",
-        h.diagnostics[0].message
+        h.codes().is_empty(),
+        "hai `let x` cùng khung **không** lỗi (R16), thật {:?}",
+        h.codes()
     );
-    assert!(
-        h.diagnostics[0].message.contains("trùng"),
-        "thông điệp phải nói 'trùng': {}",
-        h.diagnostics[0].message
-    );
-    // Vị trí: báo chỗ khai **thứ hai**.
-    assert_eq!(h.diagnostics[0].line, 2);
 }
 
 #[test]
@@ -66,11 +59,12 @@ fn vs0302_tham_so_trung_va_item_trung() {
     let h = free("fn f() -> int:\n    1\n\nfn f() -> int:\n    2\n");
     assert_eq!(h.codes(), ["VS0302"], "hai `fn f` cùng tệp ⇒ VS0302");
 
+    // **R16 (VD-178)**: `let` che được cả tên hàm — không còn `VS0302`.
     let h = free("fn f() -> int:\n    1\n\nlet f = 2\n");
-    assert_eq!(
-        h.codes(),
-        ["VS0302"],
-        "tên hàm và `let` cùng khung ⇒ VS0302 (§4.1 'cùng tên trong cùng scope')"
+    assert!(
+        h.codes().is_empty(),
+        "`let` che tên hàm cùng khung **không** lỗi (R16), thật {:?}",
+        h.codes()
     );
 }
 

@@ -590,12 +590,18 @@ impl<'a> Lowerer<'a> {
     }
 
     /// Khai một tên trong khung hiện tại; khai lại **cùng khung** ⇒ `VS0302` (VD-44 #2).
+    ///
+    /// **R16 (VD-178)**: `let` **được che tên** trong cùng phạm vi (`PatBind` không báo trùng);
+    /// `var` **không** khai lại (`SymKind::Var` vẫn báo).
     fn declare(&mut self, name: &str, kind: SymKind, span: Span, ty: Option<Type>) -> u32 {
         let frame = self.current_frame();
-        if let Some(prev) = self.symbols.in_frame(frame, name) {
-            let (pl, pc) = self.pos(prev.span);
-            let msg = format!("khai báo trùng `{name}` trong cùng phạm vi (đã khai ở {pl}:{pc})");
-            self.diag(&NAME_CODES[1], msg, span);
+        if kind != SymKind::PatBind {
+            if let Some(prev) = self.symbols.in_frame(frame, name) {
+                let (pl, pc) = self.pos(prev.span);
+                let msg =
+                    format!("khai báo trùng `{name}` trong cùng phạm vi (đã khai ở {pl}:{pc})");
+                self.diag(&NAME_CODES[1], msg, span);
+            }
         }
         let id = self.symbols.syms.len() as u32;
         self.symbols.syms.push(HSym {

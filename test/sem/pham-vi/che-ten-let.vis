@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R16 (VD-178)**: `let` được che tên trong cùng phạm vi; `var` thì không.
+fn main():
+    let x = 1
+    let x = "a"
+    print(x)
+    let x = [x, "b"]
+    print(x)

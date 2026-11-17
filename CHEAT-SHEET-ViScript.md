@@ -58,7 +58,7 @@ loop break continue return and or not true false none self async await scope tes
 | `var x = 1`<br>`x += 1` ✔ | `x = 1` | `let mut x = 1;` | `let x = 1` | biến đổi được |
 | `const N: int = 10` ✔ | — | `const N: i64 = 10;` | `const N = 10` | **bắt buộc ghi kiểu** (`const N = 10` ⇒ `VS0201`) |
 | `let x: int = 1` ✔ | `x: int = 1` | `let x: i64 = 1;` | `const x: number = 1` | kiểu đặt sau `:` |
-| `let x = 1` → `let x = 2` (cùng phạm vi) ✖ | OK | OK | OK | `VS0302` khai báo trùng; **khác** phạm vi thì che tên được ✔ |
+| `let x = 1` → `let x = 2` (cùng phạm vi) ✔ | OK | OK | OK | **R16**: `let` **được che tên** trong cùng phạm vi; `var x = 1` → `var x = 2` ⇒ `VS0302` |
 | `# chú thích` | `#` | `//` | `//` | `##` là doc-comment |
 | `assert 1 + 1 == 2` ✔ | `assert ...` | `assert!(...)` | `console.assert(...)` | **[ĐÃ CÓ]**; **R20 [DỰ KIẾN]**: `assert cond, "thông điệp"`; `assert false` ⇒ panic/thoát **101** |
 

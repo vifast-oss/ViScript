@@ -39,12 +39,14 @@
 //! assert!(sym.is_some(), "`x` phải phân giải được");
 //! ```
 //!
-//! # Ví dụ lỗi (`VS0302`: khai trùng cùng phạm vi)
+//! # Ví dụ lỗi (`VS0302`: `var` khai trùng cùng phạm vi)
+//!
+//! **R16 (VD-178)**: `let` **được che tên** trong cùng phạm vi; chỉ `var` mới báo trùng.
 //!
 //! ```
 //! use vis_syntax::{lex, parse, Mode};
 //!
-//! let src = "let x = 1\nlet x = 2\n";
+//! let src = "var x = 1\nvar x = 2\n";
 //! let out = parse(src, Mode::Script);
 //! let h = vis_types::lower(&out.cst, &lex(src, Mode::Script));
 //! assert_eq!(h.codes(), ["VS0302"]);
