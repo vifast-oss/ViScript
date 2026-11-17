@@ -384,6 +384,9 @@ APPROVED 2026-11-17 Agent 0 · ST-160 đạt: đủ 13 APPROVED, đủ VD-157…
 
 | ST-171 | **Tách ViScript thành repo riêng "ViScript"** (VD-165) — Agent 1 điều phối, Agent 2 thực thi | ST-170 | 3 h | **READY** | (a) `git filter-repo`/`subtree split` giữ đủ lịch sử; (b) chuyển sổ nợ/QUEUE/JOURNAL/báo cáo/check_report + cập nhật đường dẫn, `check_report --all` **PASS ở repo mới**; (c) giữ nguyên số nợ/task (#146, #140, ST-171…); (d) cổng repo mới mac/ps/psvn **cùng số đo R29**, lệch giải thích từng suite; (e) repo cũ xoá mã ViScript, giữ **một dòng trỏ sang**, không hai bản song song; (f) cập nhật `vis-remote` + clone ps/psvn, `git pull` psvn không bị chặn; (g) ngoài phạm vi ⇒ **BLOCKED-CHO-A0** |
 
+GHI CHÚ 2026-11-17 Agent 0 (VD-167(1)) · tách repo phải chuyển **cả `docs/viscript/`**, không chỉ `viscript/`
+| ST-172 | **(Agent 1) Tài liệu công thái học** `JOURNAL/vs-ergo.md` (7 mục a–g + VS0412 + cheat sheet; **chỉ đọc, 0 dòng mã**) | ST-169 | 2 h | **READY** | mỗi mục: hiện trạng `file:dòng`, đề xuất, ca đỏ-trước, ảnh hưởng mã/test; VS0412: kết luận có/không 2 lỗi + đề xuất tách mã; cheat sheet đổi nhãn "chưa có tại <commit>"; 0 dòng mã sửa |
+
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
