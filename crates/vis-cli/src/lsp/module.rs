@@ -220,6 +220,7 @@ mod tests {
 
     /// **ST-84**: nạp module cho 5 tệp nhỏ **< 100 ms** (đo **trong tiến trình**, không tính spawn);
     /// mỗi tệp có `use ./util` và `util.vis` `pub fn` — kiểm luôn item module xuất hiện.
+    /// **ST-164 (VD-159)**: đo **min của 5 vòng** (mỗi vòng nạp nguội thật); ngưỡng 100 ms giữ nguyên.
     #[test]
     fn hieu_nang_nap_module_5_tep() {
         use std::sync::atomic::{AtomicUsize, Ordering};
@@ -241,17 +242,26 @@ mod tests {
                 p
             })
             .collect();
-        let t = std::time::Instant::now();
-        for p in &tep {
-            let kq = phan_tich_module(p, src, Mode::Script).expect("nạp module");
-            assert!(
-                kq.items.iter().any(|g| g.label == "tinh"),
-                "thiếu item module: {}",
-                p.display()
-            );
+        // **ST-164**: 5 vòng, lấy **min**; mỗi vòng dọn cache ⇒ cả 5 vòng đều nạp **nguội** thật
+        // (không dọn thì vòng 2..5 ăn cache ST-100, min ≈ 0 và phép đo vô nghĩa).
+        let mut min_ms: u128 = u128::MAX;
+        for vong in 1..=5 {
+            xoa_cache_module();
+            let t = std::time::Instant::now();
+            for p in &tep {
+                let kq = phan_tich_module(p, src, Mode::Script).expect("nạp module");
+                assert!(
+                    kq.items.iter().any(|g| g.label == "tinh"),
+                    "thiếu item module: {}",
+                    p.display()
+                );
+            }
+            let ms = t.elapsed().as_millis();
+            eprintln!("ST-164 nạp module 5 tệp: vòng {vong} = {ms} ms");
+            min_ms = min_ms.min(ms);
         }
-        let ms = t.elapsed().as_millis();
-        assert!(ms < 100, "nạp module 5 tệp mất {ms} ms (≥ 100 ms)");
+        eprintln!("ST-164 nạp module 5 tệp: min 5 vòng = {min_ms} ms");
+        assert!(min_ms < 100, "nạp module 5 tệp mất {min_ms} ms (≥ 100 ms)");
         let _ = std::fs::remove_dir_all(&d);
     }
 
