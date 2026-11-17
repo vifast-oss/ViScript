@@ -389,6 +389,10 @@ GHI CHÚ 2026-11-17 Agent 0 (VD-167(1)) · tách repo phải chuyển **cả `do
 
 > CHỜ DUYỆT Agent 0 · `JOURNAL/vs-ergo.md` (7 mục a–g + §8 VS0412: **có** 4 nhóm lỗi chung mã, đề xuất VS0413/0414/0415/0416; §9 cheat sheet đã đổi nhãn); **0 dòng mã**
 GHI CHÚ 2026-11-17 (VD-168) · phạm vi mở rộng 12 mục a–l (thay mục 2,4 của VD-167) — đã bổ sung trong `vs-ergo.md`; ưu tiên P0=(c) AnyError; duyệt cùng 6 tài liệu VS3; mục được duyệt thực thi TRƯỚC VS3
+GHI CHÚ 2026-11-17 (VD-169) · hàng này **tách** thành **ST-172a** (dữ kiện) + **ST-172b** (đề xuất); nội dung `vs-ergo.md` hiện có là **bản nháp**, chưa được duyệt
+| ST-172a | **(Agent 1) Dữ kiện công thái học** `JOURNAL/vs-ergo-facts.md` — **chỉ dữ kiện, không đề xuất**; 8 nhóm, trạng thái [ĐÃ CÓ]/[THIẾT KẾ CÓ, CHƯA LÀM]/[CHƯA CÓ] | ST-169 | 2,5 h | **READY** | mục lục + `## 1..8`; mỗi mục có `file:dòng` + commit; `all_codes` đầy đủ + đánh dấu mã đa nghĩa; 3 script 50–200 dòng + bản Python; **0 dòng mã** sửa |
+| ST-172b | **(Agent 1) `JOURNAL/vs-ergo.md`** theo VD-168 (12 mục a–l, mức ưu tiên) | ST-172a | 2 h | **BLOCKED** | **Chờ Agent 0 gửi phân tích dựa trên `vs-ergo-facts.md`** (VD-169) rồi mới bắt đầu; 0 dòng mã |
+
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
