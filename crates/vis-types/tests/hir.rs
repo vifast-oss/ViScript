@@ -91,18 +91,18 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (291, 0, 5, 6),  // x, count, a, b, name, age
     (326, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
     (343, 0, 3, 3),  // e, domain, mail (if let)
-    (407, 1, 0, 5),  // greet + name + times + loud + s
-    (423, 0, 1, 3),  // f + x (lambda) + y
-    (474, 1, 0, 4),  // read_config + dir + text + cfg
-    (489, 0, 1, 2),  // cfg + err (else)
-    (540, 0, 3, 2),  // a, b
-    (554, 0, 2, 2),  // counter, inc
-    (576, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (689, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (703, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1468, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (409, 1, 0, 5),  // greet + name + times + loud + s
+    (425, 0, 1, 3),  // f + x (lambda) + y
+    (476, 1, 0, 4),  // read_config + dir + text + cfg
+    (491, 0, 1, 2),  // cfg + err (else)
+    (542, 0, 3, 2),  // a, b
+    (556, 0, 2, 2),  // counter, inc
+    (578, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (691, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (705, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1470, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
     // **R11 (VD-178)**: khối 1421 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1421, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
+    (1423, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
 ];
 
 fn doc_path() -> PathBuf {

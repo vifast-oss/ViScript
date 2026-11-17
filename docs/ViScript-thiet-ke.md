@@ -355,7 +355,9 @@ if let mail = user.email:
 
 ### 4.5 Toán tử
 
-Số học `+ - * / % **`; so sánh `== != < <= > >=`; logic `and or not`; bit bằng hàm `bit_and`, `bit_or`, `bit_xor`, `bit_not`, `shl`, `shr`, `ushr`; nối hàm `|>`: `xs |> filter(even) |> sum()`.
+Số học `+ - * / // % **`; so sánh `== != < <= > >=`; logic `and or not`; bit bằng hàm `bit_and`, `bit_or`, `bit_xor`, `bit_not`, `shl`, `shr`, `ushr`; nối hàm `|>`: `xs |> filter(even) |> sum()`.
+
+**R7 (VD-178)**: `/` **luôn** ra `float` (kể cả `int / int`); `//` chia lấy phần nguyên (làm tròn **xuống**, như Python); `%` khớp `//` nên phần dư **không âm** (`-7 % 2` = `1`); `//=` là gán ghép. `int / int` **không** còn ra `int`.
 
 **`|` không bao giờ là toán tử nhị phân trong biểu thức** (Q8 sửa, QD §7.3). Biểu thức chỉ có `|>`. `|` còn nghĩa ở đúng hai chỗ: **or-pattern** (4.3) và **pipe của chế độ lệnh** (9.3). Hệ quả: bit-or **phải** viết `bit_or(a, b)`.
 

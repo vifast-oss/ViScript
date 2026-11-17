@@ -25,7 +25,7 @@
 // `#[allow(dead_code)]`: mỗi tệp test chỉ dùng **một phần** danh sách (vis-syntax dùng bản 6 khối,
 // ba tệp còn lại dùng bản 7 khối) nên mục không dùng ở tệp này là mục dùng ở tệp khác.
 #[allow(dead_code)]
-const DOC_EXCLUDED: [usize; 6] = [306, 433, 446, 615, 667, 746];
+const DOC_EXCLUDED: [usize; 6] = [306, 435, 448, 617, 669, 748];
 
 /// Vị trí khối `666` trong `DOC_EXCLUDED` — khối **duy nhất** không bị vis-syntax loại trừ.
 #[allow(dead_code)]

@@ -3,7 +3,7 @@
 # Định dạng: <tệp>:<dòng mở khối ```> <lý do>. Mỗi mục phải THẬT SỰ đỏ khi `vis check`;
 # ngoại lệ cũ (đã xanh) hoặc khối đỏ không khai báo đều làm cổng đỏ.
 ViScript-thiet-ke.md:306 `...` ở 312-315 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, đây là ví dụ lược thân
-ViScript-thiet-ke.md:433 `...` ở 436 (`fn max_by[...] -> T?: ...`) — thân hàm lược, không phải chương trình
-ViScript-thiet-ke.md:446 `...` ở 450 (`fn show(self) -> str: ...`) — thân hàm lược
-ViScript-thiet-ke.md:615 `...` ở 617 (`pub cmd ls(...): ...`) — thân hàm lược
-ViScript-thiet-ke.md:746 `...` ở 747 (`fn main(...): ...`) — thân hàm lược
+ViScript-thiet-ke.md:435 `...` ở 438 (`fn max_by[...] -> T?: ...`) — thân hàm lược, không phải chương trình
+ViScript-thiet-ke.md:448 `...` ở 452 (`fn show(self) -> str: ...`) — thân hàm lược
+ViScript-thiet-ke.md:617 `...` ở 619 (`pub cmd ls(...): ...`) — thân hàm lược
+ViScript-thiet-ke.md:748 `...` ở 749 (`fn main(...): ...`) — thân hàm lược
