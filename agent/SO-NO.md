@@ -9,7 +9,7 @@
 4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-158** — đóng **#129**, sổ **146 mục = 89 mở / 34 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
+**Cập nhật**: 2026-11-17 (**ST-160** — dán đợt 29, mở **#146** (VD-158), sổ **147 mục = 90 mở / 34 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -54,7 +54,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
    tiếp **142/143** cấp ngày 2026-11-17 theo **VD-149** từ hai nhãn tạm `#113b`/`#114b` (§7.3), tiếp **144** cấp theo
    **VD-153** (vế còn lại của `#133`: `read_dir` trên thư mục **có quyền ghi**) và **145** cấp theo **VD-154(c)**
    (chú thích `rt.rs` nói sai đường chặn `chan(0)`).
-2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **146** trở đi.
+2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **147** trở đi.
 3. Số trùng nghĩa cũ được **tách bằng hậu tố** `a/b`, **không** đổi số gốc: `#109a`/`#109b` (xem §7.1).
 4. Hậu tố `a/b` **không** tạo dãy mới: `#109a` và `#109b` là hai nợ khác nghĩa của cùng số cũ 109.
 5. Nguồn của mỗi mục ghi dạng `R## §5`/`R## §6`, kèm `ST-##`, `JOURNAL/<tệp>` hoặc `VD-###` khi cần chốt trạng thái.
@@ -72,7 +72,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 - Báo cáo R## **không** sửa nội dung (VD-142); sai sót đính chính bằng dòng trong QUEUE + mục “Đính chính R##” ở báo cáo kế tiếp.
 - Nợ phát sinh trong task: thêm số mới **ngay trong task đó**, không chờ báo cáo.
 
-## 4. Bảng nợ chính (146 dòng: 1..145, #109 tách a/b)
+## 4. Bảng nợ chính (147 dòng: 1..146, #109 tách a/b)
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -222,6 +222,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 143 | **`NamePolicy::Strict` bật cho mọi tệp có `use`** (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 (trước là nhãn tạm `#114b`) | JOURNAL/st130-siet-caps.md §9 · QUEUE ST-130 · VD-133 · VD-149 · **VD-154(b)** | chuyển VS3 — VD-154(b): chuyển VS3 vì ca st130b xanh |
 | 144 | **Vế 2 của `#133`**: chưa có ca **dương** `read_dir` trên thư mục **CÓ quyền ghi** ở tiến trình con (ST-132b §7) — **ST-154 đã bù**: ca 15 `con_read_dir_thu_muc_co_quyen_ghi_van_liet_ke_duoc` trong `vis-host-linux/tests/landlock.rs` (**MỘT** ruleset **hai** luật: `trong` chỉ-đọc + `trong-ghi` ghi; `co.txt` ghi **trước** khi áp ruleset; helper `ls trong-ghi` ⇒ `exit 0` + danh sách có `co.txt`; helper `ghi` trong `trong-ghi` ⇒ `exit 0` rồi `ls` thấy `co.txt` + `moi.txt`; âm cùng ca: `ls ngoai` ⇒ `exit 7` + `Permission denied`) | JOURNAL/st154-landlock-ps.log · QUEUE ST-154 · VD-153 | đóng ở ST-154 |
 | 145 | **Chú thích `rt.rs` nói sai đường chặn `chan(0)`**: `rt.rs:128-129` nói literal `chan(0)` bị **tyck** chặn (exit 2); thực tế tyck **không** kiểm `cap` (`tyck/expr/kenh.rs:16-33` — `kiem_chan_new` chỉ kiểm `n` là `int`), **runtime** mới chặn (exit 1, `kenh_cap0.rs:57-68`); sửa chú thích hoặc thêm kiểm tyck | JOURNAL/st155-vs3-dieu-tra.md §2 · VD-154(c) | mở (xử khi có task VS3 kênh) |
+| 146 | **Ca đua `dua_doi_symlink_lap_co_gioi_han` đỏ 1/50 000** (R28 §5 #1) — **CHƯA-PHÂN-LOẠI** theo VD-158 (có thể là TOCTOU đường đọc **thật**); điều tra ở **ST-163** (500 000 vòng mac + ps) | R28 §5 #1 · VD-158 | mở |
 
 ## 5. Nợ chuyển VS3 (21 mục)
 
@@ -337,7 +338,7 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **146** (1..145; #109 tách `a`/`b`) |
+| Tổng dòng bảng chính | **147** (1..146; #109 tách `a`/`b`) |
 | `mở` | **89** |
 | `đóng` | **34** |
 | `chuyển VS3` | **21** |
@@ -346,7 +347,7 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 89 mở + 34 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **146** dòng.
+Kiểm: 90 mở + 34 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **147** dòng. (Dòng **#146** thêm bởi **VD-158** — ca đua symlink **CHƯA-PHÂN-LOẠI**, điều tra ST-163.)
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =
 91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng (ST-151). ST-154 làm **ba** việc trên sổ: (1) `#143` **mở → chuyển VS3**
