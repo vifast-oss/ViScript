@@ -381,6 +381,8 @@ impl<'a> Interp<'a> {
                             AssignOp::Sub => BinOp::Sub,
                             AssignOp::Mul => BinOp::Mul,
                             AssignOp::Div => BinOp::Div,
+                            // **R7 (VD-178)**: `//=` — chia lấy phần nguyên.
+                            AssignOp::FloorDiv => BinOp::FloorDiv,
                             _ => BinOp::Rem,
                         };
                         crate::builtin::bin(bop, cur, rhs, *span)?

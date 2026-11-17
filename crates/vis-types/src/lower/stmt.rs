@@ -286,6 +286,8 @@ impl<'a> Lowerer<'a> {
             "-" => AssignOp::Sub,
             "*" => AssignOp::Mul,
             "/" => AssignOp::Div,
+            // **R7 (VD-178)**: `//=` — chia lấy phần nguyên.
+            "//" => AssignOp::FloorDiv,
             "%" => AssignOp::Rem,
             _ => AssignOp::Set,
         };

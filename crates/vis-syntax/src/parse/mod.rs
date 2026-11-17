@@ -935,7 +935,8 @@ impl<'a> Parser<'a> {
         }
         let op = self.tok_at(1);
         let eq = self.tok_at(2);
-        matches!(op.text.as_str(), "+" | "-" | "*" | "/" | "%")
+        // **R7 (VD-178)**: `//=` — lexer tách `//` `=`.
+        matches!(op.text.as_str(), "+" | "-" | "*" | "/" | "//" | "%")
             && op.kind == Kind::Punct
             && eq.is_punct("=")
             && op.span.end == eq.span.start
