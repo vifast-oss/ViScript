@@ -107,8 +107,8 @@ const NANG_FLOAT: &[(&str, &str)] = &[
     ("let x = 1\nlet y: float = x\ny", "!VS0412"),
     // kỳ vọng: !VS0412 — so sánh biến int với float
     ("let x = 1\nx == 1.5", "!VS0412"),
-    // kỳ vọng: !VS0412 — cộng biến int với float
-    ("let x = 1\nx + 1.5", "!VS0412"),
+    // kỳ vọng: !VS0414 — cộng biến int với float (R9: toán tử ⇒ VS0414)
+    ("let x = 1\nx + 1.5", "!VS0414"),
     // kỳ vọng: !VS0412 — trả biến int ở vị trí float
     ("fn f(x: int) -> float:\n    x\nf(1)", "!VS0412"),
 ];
@@ -138,8 +138,8 @@ const GAN: &[(&str, &str)] = &[
         "type U:\n    name: str\nlet u: U = {name: \"a\"}\nu.name = \"b\"",
         "!VS0412",
     ),
-    // kỳ vọng: !VS0412 — `let` bất biến
-    ("let xs = [1, 2]\nxs[0] = 3", "!VS0412"),
+    // kỳ vọng: !VS0413 — `let` bất biến (R9: gán bất biến ⇒ VS0413)
+    ("let xs = [1, 2]\nxs[0] = 3", "!VS0413"),
     // kỳ vọng: ok(list[int]) — `var` gán phần tử được
     ("var xs = [1, 2]\nxs[0] = 3\nxs", "ok(list[int])"),
     // kỳ vọng: ok(int) — `var` gán lại
@@ -177,8 +177,8 @@ const PERCENT_FLOAT: &[(&str, &str)] = &[
     ("25pct < 0.3", "ok(bool)"),
     // kỳ vọng: ok(bool) — `0.5 < 50pct`
     ("0.5 < 50pct", "ok(bool)"),
-    // kỳ vọng: !VS0412 — cộng `percent` với `float` **không** được
-    ("50pct + 0.5", "!VS0412"),
+    // kỳ vọng: !VS0414 — cộng `percent` với `float` **không** được
+    ("50pct + 0.5", "!VS0414"),
 ];
 
 /// (7) `match` trên `unit`/tuple là **hữu hạn** — §4.3.
@@ -237,7 +237,7 @@ fn phep_cua_vs0_theo_vd48() {
     kiem("phép VS0", PHEP_VS0);
 }
 
-/// VD-48(a): kiểu ngoài VS0 vẫn `VS0301` **nhưng** thông điệp nêu "chưa hỗ trợ/vis-std".
+/// VD-48(a): kiểu ngoài VS0 vẫn `VS0303` (R9: kiểu không tồn tại) **nhưng** thông điệp nêu "chưa hỗ trợ/vis-std".
 ///
 /// **P0 (VD-170) mục 2**: bỏ nhãn `VS0` khỏi thông điệp ⇒ kỳ vọng đổi từ `contains("VS0")`
 /// sang `contains("chưa hỗ trợ")`; ý nghĩa ca (nêu rõ thuộc vis-std) **không đổi**.
@@ -246,12 +246,12 @@ fn phep_cua_vs0_theo_vd48() {
 /// `cap[...]` là **kiểu thật** (nên `f(1)` báo `VS0412` sai kiểu, không phải `VS0301`). Hành vi đổi
 /// có chủ đích; không xoá ca (AnyError/Json vẫn khoá đường `VS0301`).
 #[test]
-fn kieu_ngoai_vs0_bao_vs0301_ro_rang() {
+fn kieu_ngoai_vs0_bao_vs0303_ro_rang() {
     for src in ["let x: AnyError = none\nx", "let j: Json = none\nj"] {
         let (out, _) = run(src);
         assert!(
-            !out.codes().is_empty() && out.codes().iter().all(|c| *c == "VS0301"),
-            "mọi chẩn đoán phải là VS0301: {:?}\nnguồn: {src}",
+            !out.codes().is_empty() && out.codes().iter().all(|c| *c == "VS0303"),
+            "mọi chẩn đoán phải là VS0303: {:?}\nnguồn: {src}",
             out.codes()
         );
         assert!(
@@ -297,9 +297,10 @@ const SINH_TU_DONG: &[(&str, &str)] = &[
     // kỳ vọng: ok(()) — duyệt chuỗi cho `char`
     ("for c in \"ab\":\n    print(c)", "ok(())"),
     // kỳ vọng: !VS0412 — `char + int`
-    ("for c in \"ab\":\n    print(c + 1)", "!VS0412"),
+    ("for c in \"ab\":\n    print(c + 1)", "!VS0414"),
     // kỳ vọng: !VS0412 — VS0 chỉ duyệt range `int`
-    ("for x in 1s..3s:\n    print(x)", "!VS0412"),
+    // **R9 (VD-178)**: range không `int` ⇒ `VS0416` (tách khỏi `VS0412`).
+    ("for x in 1s..3s:\n    print(x)", "!VS0416"),
 ];
 
 #[test]

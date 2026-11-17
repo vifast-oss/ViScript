@@ -442,21 +442,24 @@ fn snapshot_9_ca_so_module_07xx() {
         );
     }
     // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (không giải được ràng buộc gói) ⇒ 4 mã module.
-    assert_eq!(vis_diag::MODULE_CODES.len(), 4);
+    // **R9 (VD-178)**: +**VS0705**/**VS0706**/**VS0707** ⇒ **7** mã module.
+    assert_eq!(vis_diag::MODULE_CODES.len(), 7);
     assert_eq!(vis_diag::BOOKS.len(), 7, "ST-25: bảy sổ mã");
     // **SỬA KÈM LÝ DO (ST-50, Agent 0: VS0605 sai sổ — trường là lỗi kiểu)**: `VS0605` đổi tên
     // thành **VS0405**, chuyển sang sổ `04xx` ⇒ `06xx` **4**, `04xx` **5**; `all_codes()` **vẫn 29**
     // (đổi tên, không thêm mã); `BOOKS` vẫn 7; `next_block()` vẫn **801**.
-    assert_eq!(vis_diag::COMMAND_CODES.len(), 4, "ST-50: 06xx còn 4 mã");
+    // **R9 (VD-178)**: 06xx 4 → **6** (VS0605/0606), 04xx 5 → **9** (VS0413..0416).
+    assert_eq!(vis_diag::COMMAND_CODES.len(), 6, "R9: 06xx có 6 mã");
     assert_eq!(
         vis_diag::TYPE_CODES.len(),
-        5,
-        "ST-50: 04xx có 5 mã (thêm VS0405)"
+        9,
+        "R9: 04xx có 9 mã (VS0405 + VS0412..0416)"
     );
     // **SỬA KÈM LÝ DO (ST-60)**: +**VS0506** (lỗi thân tác vụ `async`) ⇒ **30** mã.
     // **SỬA KÈM LÝ DO (ST-61)**: +**VS0504**/**VS0505** (kênh) ⇒ **32** mã.
     // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (resolver không giải được ràng buộc) ⇒ **33** mã.
-    assert_eq!(vis_diag::all_codes().count(), 33);
+    // **R9 (VD-178)**: +16 mã ⇒ **49** mã.
+    assert_eq!(vis_diag::all_codes().count(), 49);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }
 

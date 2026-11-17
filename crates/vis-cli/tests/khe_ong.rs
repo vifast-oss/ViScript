@@ -154,7 +154,8 @@ fn nhom_khong_phai_list_thi_bao_loi_luc_chay() {
     // `( 1 + 1 )` ⇒ `int` vào khe đầu của `take` (chưa suy được kiểu) ⇒ lỗi **lúc chạy** VS0501.
     let d = tam("int2");
     let (c, _, e) = chay(&d, "int2", "( 1 + 1 ) | take 1\n");
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(e.contains("`take` cần"), "stderr: {e}");
     let _ = std::fs::remove_dir_all(&d);

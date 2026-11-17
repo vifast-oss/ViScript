@@ -248,8 +248,8 @@ fn chan_doan_tuyet_doi_trong_nhom() {
     let d = tam("diag");
     let src = "print(1)\n( 1 / 0 )\n";
     let (c, _, e) = chay(&d, "l", src, None, false);
-    // Lỗi **lúc chạy** ⇒ exit **1** (exit 2 dành cho lỗi biên dịch).
-    assert_eq!(c, 1, "stderr: {e}");
+    // Lỗi **lúc chạy** ⇒ exit **101** (R9/C1; exit 2 dành cho lỗi biên dịch).
+    assert_eq!(c, 101, "stderr: {e}");
     // SPDX là dòng 1, `print(1)` dòng 2, `( 1 / 0 )` dòng 3; `1` ở **cột 3** của tệp.
     assert!(e.contains(":3:3: error VS0502"), "phải tuyệt đối: {e}");
     let _ = std::fs::remove_dir_all(&d);

@@ -332,6 +332,12 @@ impl<'a> Parser<'a> {
                 elems.push(self.bump());
                 let idx = self.expr()?;
                 elems.push(Elem::Node(Box::new(idx)));
+                // **R9 (VD-178)**: gợi ý cho mẫu `s[a:b]` (str không cắt).
+                if self.at_punct(":") {
+                    return Err(self.err_here(
+                        "không cắt được bằng `s[a:b]` — gợi ý: dùng `s.split(...)`/`s.chars()` hoặc `list.take/drop`",
+                    ));
+                }
                 elems.push(self.expect_punct("]")?);
                 base = self.node(NodeKind::Index, elems);
                 continue;
@@ -420,6 +426,13 @@ impl<'a> Parser<'a> {
                 }
                 let a = self.expr()?;
                 elems.push(Elem::Node(Box::new(a)));
+                // **R9 (VD-178)**: gợi ý cho mẫu `U(n: 1)` (dựng bản ghi bằng tên kiểu).
+                if self.at_punct(":") {
+                    return Err(self.err_code(
+                        &vis_diag::SYNTAX_CODES[4],
+                        "dựng bản ghi bằng tên kiểu — gợi ý: dùng `{n: 1}` (R11 sẽ cho `U(n: 1)`)",
+                    ));
+                }
             }
             if self.at_punct(",") {
                 elems.push(self.bump());
@@ -507,6 +520,12 @@ impl<'a> Parser<'a> {
             Kind::Punct if t.text == "(" => return self.paren_or_tuple(),
             Kind::Punct if t.text == "[" => return self.list_lit(),
             Kind::Punct if t.text == "{" => return self.map_or_record(),
+            // **R9 (VD-178)**: gợi ý cho mẫu `|x|` (closure dùng `x => expr`).
+            Kind::Punct if t.text == "|" => {
+                return Err(self.err_here(
+                    "closure dùng `x => expr` (không dùng `|x|`) — gợi ý: `xs.map(x => x + 1)`",
+                ));
+            }
             _ => {}
         }
         Err(self.err_here(format!(

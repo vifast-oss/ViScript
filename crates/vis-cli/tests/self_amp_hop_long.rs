@@ -99,7 +99,8 @@ fn self_amp_gan_ket_thuc_vao_receiver_that() {
         "type P:\n    n: int\n\nimpl P:\n    fn doc(&self) -> int:\n        self.khong_co\n\n\
                fn main():\n    let p: P = {n: 1}\n    print(p.doc())\n";
     let (c, _, e) = hai_duong(&d, "thieu-truong", src);
-    assert_eq!(c, 1, "phải là lỗi **lúc chạy**, stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "phải là lỗi **lúc chạy**, stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(e.contains("khong_co"), "nêu tên trường: {e}");
     let _ = std::fs::remove_dir_all(&d);

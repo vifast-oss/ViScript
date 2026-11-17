@@ -123,7 +123,7 @@ fn std_differential_interp_va_vm() {
 #[test]
 fn std_fs_bao_st27() {
     // **SỬA KÈM LÝ DO (ST-33)**: `std.fs` **đã có** (qua `Host`, VD-64 (2)) ⇒ `use std.fs` nay **hợp lệ**.
-    // Ca "module std chưa cấp ⇒ `VS0701`" giữ ở `std.io` (vẫn hoãn) — không nới luật, chỉ đổi tên.
+    // Ca "module std chưa cấp ⇒ `VS0705`" (R9: tách khỏi `VS0701`) giữ ở `std.io` (vẫn hoãn).
     let tmp = std::env::temp_dir().join(format!("vis-std-fs-{}.vis", std::process::id()));
     std::fs::write(&tmp, "use std.fs\nprint(1)\n").expect("ghi");
     let k = chay(&["run", tmp.to_str().unwrap()]);
@@ -134,17 +134,17 @@ fn std_fs_bao_st27() {
     let k2 = chay(&["run", tmp2.to_str().unwrap()]);
     let _ = std::fs::remove_file(&tmp2);
     assert_eq!(k2.code, 2, "stderr: {}", k2.err);
-    assert!(k2.err.contains("VS0701"), "stderr: {}", k2.err);
+    assert!(k2.err.contains("VS0705"), "stderr: {}", k2.err);
 }
 
 #[test]
-fn std_la_bao_vs0701() {
+fn std_la_bao_vs0705() {
     let tmp = std::env::temp_dir().join(format!("vis-std-la-{}.vis", std::process::id()));
     std::fs::write(&tmp, "use std.khong_co\nprint(1)\n").expect("ghi");
     let k = chay(&["run", tmp.to_str().unwrap()]);
     let _ = std::fs::remove_file(&tmp);
     assert_eq!(k.code, 2);
-    assert!(k.err.contains("VS0701"), "stderr: {}", k.err);
+    assert!(k.err.contains("VS0705"), "stderr: {}", k.err);
 }
 
 /// **SỬA KÈM LÝ DO (ST-33)**: `json.decode` **đã có** (VD-64 (2)) — trước đây ca này khoá `VS0301`
@@ -245,7 +245,8 @@ fn khong_use_thi_khong_goi_duoc_std() {
     std::fs::write(&tmp, "print(str.upper(\"a\"))\n").expect("ghi");
     let k = chay(&["run", tmp.to_str().unwrap()]);
     let _ = std::fs::remove_file(&tmp);
-    assert_eq!(k.code, 1, "stderr: {}", k.err);
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(k.code, 101, "stderr: {}", k.err);
     assert!(k.err.contains("VS0501"), "stderr: {}", k.err);
 }
 
@@ -256,7 +257,8 @@ fn str_repeat_am_la_vs0501() {
     std::fs::write(&tmp, "use std.str\nprint(str.repeat(\"ab\", 0 - 1))\n").expect("ghi");
     let k = chay(&["run", tmp.to_str().unwrap()]);
     let _ = std::fs::remove_file(&tmp);
-    assert_eq!(k.code, 1, "stderr: {}", k.err);
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(k.code, 101, "stderr: {}", k.err);
     assert!(k.err.contains("VS0501"), "stderr: {}", k.err);
     assert!(k.err.contains("str.repeat"), "phải nêu hàm: {}", k.err);
 }

@@ -178,16 +178,19 @@ fn explain_vs0405_thuoc_so_kieu() {
 }
 
 #[test]
-fn ma_cu_vs0605_khong_con() {
+fn vs0605_da_cap_lai_cho_chay_nen() {
     // **SỬA KÈM LÝ DO (ST-50, Agent 0: VS0605 sai sổ — trường là lỗi kiểu)**: `VS0605` đã **đổi
-    // tên** thành `VS0405` (cùng mã, khác sổ) ⇒ tra mã cũ phải **không** thấy; `all_codes()` vẫn 29
-    // (vis-diag khoá riêng).
+    // tên** thành `VS0405` (cùng mã, khác sổ).
+    // **SỬA KÈM LÝ DO (R9, VD-178)**: `VS0605` nay **cấp lại** cho "chạy nền `&`" ⇒ tra mã phải
+    // thấy, nghĩa mới; `VS0405` vẫn là "không có trường".
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
         .arg("explain")
         .arg("VS0605")
         .output()
-        .expect("chạy explain mã cũ");
-    assert_ne!(o.status.code().unwrap_or(-1), 0, "VS0605 phải là mã lạ");
+        .expect("chạy explain VS0605");
+    assert_eq!(o.status.code().unwrap_or(-1), 0, "VS0605 đã cấp lại");
+    let s = String::from_utf8_lossy(&o.stdout).to_string();
+    assert!(s.contains("chạy nền"), "nghĩa mới: {s}");
     let o2 = Command::new(env!("CARGO_BIN_EXE_vis"))
         .arg("explain")
         .arg("VS0405")

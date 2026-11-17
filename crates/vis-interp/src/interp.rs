@@ -25,6 +25,8 @@ pub const TASK_ERR: &Code = &RUNTIME_CODES[5];
 pub const SEND_CLOSED: &Code = &RUNTIME_CODES[3];
 /// **ST-61 (VD-96)** — `VS0505`: deadlock (kênh chặn, không còn tác vụ chạy được).
 pub const DEADLOCK: &Code = &RUNTIME_CODES[4];
+/// **R9 (VD-178)** — `VS0507`: tràn `i64` lúc chạy (tách khỏi `VS0501`).
+pub const OVERFLOW: &Code = &RUNTIME_CODES[6];
 /// `VS0412` — gán cho `let`/tham số (phòng thủ: tyck đã chặn trước).
 pub(crate) const MISMATCH: &Code = &TYPE_CODES[3];
 

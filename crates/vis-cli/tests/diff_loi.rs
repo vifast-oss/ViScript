@@ -73,7 +73,7 @@ fn thieu_cap_hai_duong() {
 /// **ST-86**: thiếu gói — chỉ CLI phân giải gói (`VS0701`), hai đường phải cùng mã.
 #[test]
 fn thieu_pkg_hai_duong() {
-    so_hai_duong("pkg", "use pkg.khong_co\n\nprint(1)\n", "VS0701");
+    so_hai_duong("pkg", "use pkg.khong_co\n\nprint(1)\n", "VS0706");
 }
 
 /// **ST-86/ST-94**: deadlock kênh **động** — `VS0505`, **không treo** (literal `0` đã bị tyck).

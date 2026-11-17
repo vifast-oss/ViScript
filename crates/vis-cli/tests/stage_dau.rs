@@ -134,7 +134,8 @@ fn bien_va_so_khong_duoc_nhan() {
     // **Nhập nhằng** với tên lệnh: `x | take 1` vẫn là **lệnh ngoài** `x` (không thành biểu thức).
     let d = tam("x");
     let (c, _, e) = chay(&d, "l", "x | take 1\n", None, false);
-    assert_eq!(c, 1, "phải chạy `x` như chương trình ngoài: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "phải chạy `x` như chương trình ngoài: {e}");
     assert!(e.contains("`x`"), "stderr: {e}");
     // `take 1` (không `|`, không upstream) vẫn là lệnh ⇒ lỗi khe như trước, **không** thành biểu thức.
     let (c2, _, e2) = chay(&d, "l2", "take 1\n", None, false);

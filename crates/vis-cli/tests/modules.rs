@@ -107,13 +107,13 @@ fn std_fs_bao_st27() {
 }
 
 // **SỬA KÈM LÝ DO (ST-71, VD-101 (5))**: `use pkg.*` **không còn hoãn** — đây là hành vi đổi có
-// chủ đích. Không có `vis.lock`/gói ⇒ `VS0701` nêu tên gói + gợi ý `vis pkg add`. Ca cũ khoá
-// thông điệp "hoãn/VS2" nên cập nhật kỳ vọng; **không** xoá ca.
+// chủ đích. Không có `vis.lock`/gói ⇒ `VS0706` (R9: tách khỏi `VS0701`) nêu tên gói + gợi ý
+// `vis pkg add`. Ca cũ khoá thông điệp "hoãn/VS2" nên cập nhật kỳ vọng; **không** xoá ca.
 #[test]
-fn pkg_chua_cai_bao_vs0701() {
+fn pkg_chua_cai_bao_vs0706() {
     let k = run("pkg/main.vis");
     assert_eq!(k.code, 2);
-    assert!(k.err.contains("VS0701"), "stderr: {}", k.err);
+    assert!(k.err.contains("VS0706"), "stderr: {}", k.err);
     assert!(k.err.contains("chưa cài gói `http`"), "stderr: {}", k.err);
     assert!(k.err.contains("vis pkg add http"), "stderr: {}", k.err);
 }

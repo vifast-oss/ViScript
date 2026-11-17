@@ -43,8 +43,16 @@ pub(crate) const NO_FIELD: &vis_diag::Code = &TYPE_CODES[2];
 pub(crate) const MISMATCH: &vis_diag::Code = &TYPE_CODES[4];
 /// Mã `VS0301` — tên **kiểu** không tồn tại (ST-12; ST-11 không báo).
 pub(crate) const NO_TYPE: &vis_diag::Code = &NAME_CODES[0];
-/// Mã `VS0501` — tính năng chưa hỗ trợ (P0/VD-170: `newtype` chưa hạ ⇒ báo **tại dòng khai**).
-pub(crate) const UNSUPPORTED: &vis_diag::Code = &vis_diag::RUNTIME_CODES[0];
+/// Mã `VS0303` — **kiểu** không tồn tại (R9/VD-178: tách khỏi `VS0301` tên giá trị).
+pub(crate) const NO_TYPE_NAME: &vis_diag::Code = &NAME_CODES[2];
+/// Mã `VS0413` — gán vào ràng buộc bất biến (`let`/tham số) — R9 (VD-178).
+pub(crate) const GAN_BAT_BIEN: &vis_diag::Code = &TYPE_CODES[5];
+/// Mã `VS0414` — toán tử không hỗ trợ cho kiểu — R9 (VD-178).
+pub(crate) const TOAN_TU: &vis_diag::Code = &TYPE_CODES[6];
+/// Mã `VS0415` — `async` sai chỗ — R9 (VD-178).
+pub(crate) const ASYNC_SAI_CHO: &vis_diag::Code = &TYPE_CODES[7];
+/// Mã `VS0416` — range không `int` — R9 (VD-178).
+pub(crate) const RANGE_KHONG_INT: &vis_diag::Code = &TYPE_CODES[8];
 
 /// Kết quả một lượt kiểm kiểu.
 #[derive(Debug, Clone, Default)]
@@ -666,7 +674,7 @@ impl<'a> Checker<'a> {
                 "tên không tồn tại: kiểu `{name}` chưa hỗ trợ (VD-43) và không được khai trong tệp"
             )
         };
-        self.diag(NO_TYPE, msg, span);
+        self.diag(NO_TYPE_NAME, msg, span);
         Type::Error
     }
 
@@ -793,9 +801,11 @@ impl<'a> Checker<'a> {
                     // lặng (trước P0: khai một mình xanh, dùng mới `VS0301` ở dòng dùng).
                     // Chỉ ở tầng tyck ⇒ `vis check --syntax` (cổng tài liệu QD §7.4) vẫn xanh.
                     if a.is_newtype {
+                        // **R9 (VD-178)**: `newtype` là từ khoá **đã bỏ** ⇒ `VS0203` (tách khỏi
+                        // `VS0501` của P0); gợi ý cú pháp mới của R12.
                         self.diag(
-                            UNSUPPORTED,
-                            "`newtype` chưa hỗ trợ — dùng `type Email(str)` (R12)",
+                            &vis_diag::SYNTAX_CODES[2],
+                            "`newtype` đã bỏ — dùng `type Email(str)` (R12)",
                             a.span,
                         );
                     }
@@ -830,7 +840,7 @@ impl<'a> Checker<'a> {
                 // **ST-60 (VD-95 (4))**: `async` chỉ cho hàm cấp tệp — method/`cmd` ⇒ `VS0412` (nợ R10).
                 if f.is_async && f.kind != crate::hir::FnKind::Fn {
                     self.diag(
-                        MISMATCH,
+                        ASYNC_SAI_CHO,
                         "`async` chỉ cho hàm cấp tệp (`async fn`) — method/`cmd` chưa hỗ trợ (nợ R10)",
                         f.span,
                     );
@@ -1084,7 +1094,7 @@ impl<'a> Checker<'a> {
                     Some(other) => {
                         let o = other.clone();
                         self.diag(
-                            MISMATCH,
+                            RANGE_KHONG_INT,
                             format!(
                                 "`for` chỉ duyệt được range `int`, được `{}` (§A.7)",
                                 self.show(&o)
@@ -1120,7 +1130,7 @@ impl<'a> Checker<'a> {
                     let kind = self.symbols.get(*id).map(|s| s.kind);
                     if !matches!(kind, Some(SymKind::Var)) {
                         self.diag(
-                            MISMATCH,
+                            GAN_BAT_BIEN,
                             "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
                             *span,
                         );
@@ -1246,7 +1256,7 @@ impl<'a> Checker<'a> {
                     return Type::Error;
                 }
                 if !mutable {
-                    self.diag(MISMATCH, GAN_PHAN_TU_LET, *span);
+                    self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
                     return Type::Error;
                 }
                 let _ = self.kiem_expr(base); // vẫn kiểm chẩn đoán của biểu thức gốc
@@ -1298,7 +1308,7 @@ impl<'a> Checker<'a> {
                         HExpr::Var { sym: Some(id), .. } => {
                             if !duoc_gan.contains(id) {
                                 self.diag(
-                                    MISMATCH,
+                                    GAN_BAT_BIEN,
                                     "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
                                     *span,
                                 );
@@ -1311,10 +1321,10 @@ impl<'a> Checker<'a> {
                                 if goc_la_var(target) {
                                     self.diag(MISMATCH, GAN_LONG, *span);
                                 } else {
-                                    self.diag(MISMATCH, GAN_TRUONG_LET, *span);
+                                    self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
                                 }
                             } else if !goc_la_var(target) {
-                                self.diag(MISMATCH, GAN_TRUONG_LET, *span);
+                                self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
                             }
                         }
                         HExpr::Index { .. } => {
@@ -1324,10 +1334,10 @@ impl<'a> Checker<'a> {
                                 if goc_la_var(target) {
                                     self.diag(MISMATCH, GAN_LONG, *span);
                                 } else {
-                                    self.diag(MISMATCH, GAN_PHAN_TU_LET, *span);
+                                    self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
                                 }
                             } else if !goc_la_var(target) {
-                                self.diag(MISMATCH, GAN_PHAN_TU_LET, *span);
+                                self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
                             }
                         }
                         _ => {}

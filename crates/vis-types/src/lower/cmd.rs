@@ -413,7 +413,7 @@ impl<'a> Lowerer<'a> {
         let Some(ten) = self.ten_lenh(node) else {
             // Chương trình ngoài (`^git`) — VS0 chưa có tiến trình ⇒ VS0604, không hạ no-op.
             self.diag(
-                &COMMAND_CODES[3],
+                &COMMAND_CODES[5],
                 "chương trình ngoài (`^…`) chưa hỗ trợ",
                 node.span,
             );

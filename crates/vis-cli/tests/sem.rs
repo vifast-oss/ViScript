@@ -2,7 +2,7 @@
 //! **ST-14 — harness ngữ nghĩa (TAP) chạy qua binary `vis run`.**
 //!
 //! Mỗi ca: `test/sem/<nhóm>/<ca>.vis` + **hoặc** `<ca>.out` (stdout kỳ vọng, so **từng byte**)
-//! **hoặc** `<ca>.err` (mã lỗi kỳ vọng: `VS05xx` ⇒ exit 1, `0xxx` ⇒ exit 2).
+//! **hoặc** `<ca>.err` (mã lỗi kỳ vọng: `VS05xx` ⇒ exit **101** (C1/R9), `0xxx` ⇒ exit 2).
 //!
 //! Chống xanh-giả: (i) so **byte** stdout, không cắt/normalize; (ii) đọc `steps=N` từ TAP
 //! (`vis run --tap`) và **đòi `N > 0`** cho ca chạy được — ca không chạy bước nào mà báo `ok` là
@@ -144,8 +144,10 @@ fn sem_323_ca_qua_binary() {
         // **SỬA KÈM LÝ DO (ST-72)**: +**6** ca nhóm **mới `cap/`** (cap[Dir]/cap[Net]/`@`/`(write)`
         // hợp lệ ×3; sai `@` trên int, `(write)` trên Net, so sánh/in cap ×3) ⇒ **447 ca / 22 nhóm**
         // (397 `.vis` + 50 `.vish`, **83** `.err`).
-        447,
-        "phải đúng 447 ca (397 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (R9, VD-178)**: +**1** ca `loi/range-khong-int` (`VS0416`) ⇒ **448 ca**
+        // (398 `.vis` + 50 `.vish`, **84** `.err`).
+        448,
+        "phải đúng 448 ca (398 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.
@@ -212,7 +214,7 @@ fn sem_323_ca_qua_binary() {
             }
             (None, Some(ma)) => {
                 let ma = ma.trim();
-                let muon_exit = if ma.starts_with("VS05") { 1 } else { 2 };
+                let muon_exit = if ma.starts_with("VS05") { 101 } else { 2 };
                 if code != muon_exit || !stderr.contains(ma) {
                     sai.push(format!(
                         "{mo_ta}: muốn exit {muon_exit} + stderr chứa `{ma}`, được exit {code}\n  stderr: {stderr}"

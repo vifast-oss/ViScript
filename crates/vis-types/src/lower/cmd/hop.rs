@@ -47,7 +47,7 @@ impl<'a> Lowerer<'a> {
                 NodeKind::CmdItems => self.ha_dong(child, &sigs),
                 NodeKind::CmdBg => {
                     self.diag(
-                        &COMMAND_CODES[3],
+                        &COMMAND_CODES[4],
                         "chạy nền `&` chưa hỗ trợ (chưa có tiến trình)",
                         child.span,
                     );
@@ -83,7 +83,7 @@ impl<'a> Lowerer<'a> {
             if con.kind == NodeKind::CmdBg {
                 // (a)4 — VS0 chưa có tiến trình: báo đúng **VS0604**, không hạ thành no-op.
                 self.diag(
-                    &COMMAND_CODES[3],
+                    &COMMAND_CODES[4],
                     "chạy nền `&` chưa hỗ trợ (chưa có tiến trình)",
                     con.span,
                 );

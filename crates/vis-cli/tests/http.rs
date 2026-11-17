@@ -252,7 +252,8 @@ fn http_sai_kieu() {
         .output()
         .expect("vis run");
     let err2 = String::from_utf8_lossy(&o2.stderr).to_string();
-    assert_eq!(o2.status.code(), Some(1), "stderr: {err2}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(o2.status.code(), Some(101), "stderr: {err2}");
     assert!(
         err2.contains("VS0501") && err2.contains("http"),
         "thiếu `use` phải báo tên `http` chưa hỗ trợ (VS0501): {err2}"

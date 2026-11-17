@@ -226,10 +226,11 @@ fn enum_generic_payload_khong_bi_khoa_kieu() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn kieu_tham_so_la_van_la_vs0301() {
+fn kieu_tham_so_la_van_la_vs0303() {
+    // **R9 (VD-178)**: kiểu không tồn tại ⇒ `VS0303` (tách khỏi `VS0301` tên giá trị).
     co(
         "fn f[T](x: U) -> int:\n    0\n\nfn main() -> ():\n    print(f(1))\n",
-        "VS0301",
+        "VS0303",
     );
 }
 

@@ -106,7 +106,8 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-59)**: +6 ca `vish/` ⇒ **394 ca** (345 `.vis` + 49 `.vish`).
     // **SỬA KÈM LÝ DO (ST-60)**: +22 ca `async/` ⇒ **416 ca** (367 `.vis` + 49 `.vish`).
     // **SỬA KÈM LÝ DO (ST-72)**: +6 ca `cap/` ⇒ 447 ca.
-    assert_eq!(tat_ca.len(), 447, "phải đủ 447 ca");
+    // **SỬA KÈM LÝ DO (R9, VD-178)**: +1 ca `loi/range-khong-int` ⇒ 448 ca.
+    assert_eq!(tat_ca.len(), 448, "phải đủ 448 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -179,18 +180,18 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-56b)**: +6 ca ⇒ **382**; **352** ca chạy được khớp + **30** ca lỗi biên dịch.
     assert_eq!(
         khop + so_biet + bien_dich,
-        447,
-        "447 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        448,
+        "448 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **ST-89 (VD-110)**: VM **đã có host `Ngoai`** ⇒ 7 ca `.vish` chương trình ngoài (4 xanh + 3
     // lỗi-chạy) nay khớp **thật** ở cả hai đường thay vì cùng `VS0604`; chúng **đã nằm trong 398**
-    // từ trước (447 = 398 chạy được + 49 lỗi biên dịch), nên phân hoạch **không đổi**: 398 + 49.
+    // từ trước (448 = 398 chạy được + 50 lỗi biên dịch), nên phân hoạch **không đổi**: 398 + 50.
     // Con số "405" không tồn tại trong phân hoạch này; 7 ca host là **tập con** của 398, không cộng thêm.
     assert_eq!(
         (khop, bien_dich),
-        (398, 49),
-        "398 ca chạy được khớp + 49 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        (398, 50),
+        "398 ca chạy được khớp + 50 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
     );
 }
 

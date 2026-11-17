@@ -234,29 +234,50 @@ fn chon_tep_pkg(goi: &GoiKhoa, duoi: &[String]) -> Result<String, String> {
 }
 
 /// Đọc + **kiểm sha** một tệp của gói theo `vis.lock`; trả nội dung **đã chuẩn hoá**.
-fn doc_tep_goi(main_dir: &Path, ten: &str, ver: &str, relpath: &str) -> Result<String, String> {
-    let khoa = doc_khoa_cua(main_dir)?;
+fn doc_tep_goi(
+    main_dir: &Path,
+    ten: &str,
+    ver: &str,
+    relpath: &str,
+) -> Result<String, (&'static vis_diag::Code, String)> {
+    // **R9 (VD-178)**: `pkg` lỗi ⇒ `VS0706`; băm lệch `vis.lock` ⇒ `VS0707`.
+    let khoa = doc_khoa_cua(main_dir).map_err(|e| (&MODULE_CODES[5], e))?;
     let goi = khoa
         .iter()
         .find(|g| g.name == ten && g.version == ver)
-        .ok_or_else(|| format!("gói `{ten}@{ver}` không có trong `vis.lock` (VS0701)"))?;
+        .ok_or_else(|| {
+            (
+                &MODULE_CODES[5],
+                format!("gói `{ten}@{ver}` không có trong `vis.lock`"),
+            )
+        })?;
     let tep = goi
         .files
         .iter()
         .find(|f| f.path == relpath)
-        .ok_or_else(|| format!("tệp `{relpath}` không có trong lock của `{ten}@{ver}` (VS0701)"))?;
+        .ok_or_else(|| {
+            (
+                &MODULE_CODES[5],
+                format!("tệp `{relpath}` không có trong lock của `{ten}@{ver}`"),
+            )
+        })?;
     let full = main_dir
         .join(".vis")
         .join("pkg")
         .join(ten)
         .join(ver)
         .join(relpath);
-    let bytes = std::fs::read(&full)
-        .map_err(|e| format!("không đọc được `{relpath}` của gói `{ten}@{ver}`: {e}"))?;
-    let text = chuan_hoa_noi_dung(&bytes)?;
+    let bytes = std::fs::read(&full).map_err(|e| {
+        (
+            &MODULE_CODES[5],
+            format!("không đọc được `{relpath}` của gói `{ten}@{ver}`: {e}"),
+        )
+    })?;
+    let text = chuan_hoa_noi_dung(&bytes).map_err(|e| (&MODULE_CODES[5], e))?;
     if bam_noi_dung(&text) != tep.sha256 {
-        return Err(format!(
-            "gói `{ten}@{ver}` bị sửa: `{relpath}` — băm lệch `vis.lock` (VS0701)"
+        return Err((
+            &MODULE_CODES[6],
+            format!("gói `{ten}@{ver}` bị sửa: `{relpath}` — băm lệch `vis.lock`"),
         ));
     }
     Ok(text)
@@ -373,7 +394,7 @@ impl Nap {
     ) -> Result<PathBuf, (&'static vis_diag::Code, String)> {
         let dau = seg.first().map(String::as_str).unwrap_or("");
         if dau == "std" {
-            return Err((&MODULE_CODES[0], "`std` chưa có — ST-26".to_string()));
+            return Err((&MODULE_CODES[4], "`std` chưa có — ST-26".to_string()));
         }
         if dau == "pkg" {
             return self.giai_pkg(seg);
@@ -394,18 +415,18 @@ impl Nap {
     fn giai_pkg(&self, seg: &[String]) -> Result<PathBuf, (&'static vis_diag::Code, String)> {
         let Some(ten) = seg.get(1).filter(|s| !s.is_empty()) else {
             return Err((
-                &MODULE_CODES[0],
+                &MODULE_CODES[5],
                 "`use pkg.<tên>` thiếu tên gói".to_string(),
             ));
         };
         if !self.main_dir.join("vis.lock").is_file() {
-            return Err((&MODULE_CODES[0], chua_cai(ten)));
+            return Err((&MODULE_CODES[5], chua_cai(ten)));
         }
-        let khoa = doc_khoa_cua(&self.main_dir).map_err(|e| (&MODULE_CODES[0], e))?;
+        let khoa = doc_khoa_cua(&self.main_dir).map_err(|e| (&MODULE_CODES[5], e))?;
         let Some(goi) = khoa.iter().find(|g| &g.name == ten) else {
-            return Err((&MODULE_CODES[0], chua_cai(ten)));
+            return Err((&MODULE_CODES[5], chua_cai(ten)));
         };
-        let relpath = chon_tep_pkg(goi, &seg[2..]).map_err(|e| (&MODULE_CODES[0], e))?;
+        let relpath = chon_tep_pkg(goi, &seg[2..]).map_err(|e| (&MODULE_CODES[5], e))?;
         Ok(self
             .main_dir
             .join(".vis")
@@ -425,8 +446,8 @@ impl Nap {
             // **ST-71**: tệp gói — đọc **nội dung đã chuẩn hoá** rồi so `file_sha` với lock.
             Some((ten, ver, relpath)) => match doc_tep_goi(&self.main_dir, &ten, &ver, &relpath) {
                 Ok(t) => t,
-                Err(msg) => {
-                    self.bao(&rel, &MODULE_CODES[0], msg, Span::new(0, 0));
+                Err((ma, msg)) => {
+                    self.bao(&rel, ma, msg, Span::new(0, 0));
                     self.mau.insert(rel, Mau::Xong);
                     return;
                 }
@@ -531,21 +552,21 @@ impl Nap {
                 } else if m2 == "fs" {
                     self.bao(
                         &rel,
-                        &MODULE_CODES[0],
+                        &MODULE_CODES[4],
                         "`std.fs` chưa có — ST-27 (cần host)".to_string(),
                         span,
                     );
                 } else if vis_types::stdlib::MODULES_HOAN.contains(&m2.as_str()) {
                     self.bao(
                         &rel,
-                        &MODULE_CODES[0],
+                        &MODULE_CODES[4],
                         format!("`std.{m2}` chưa hỗ trợ (VS1b)"),
                         span,
                     );
                 } else {
                     self.bao(
                         &rel,
-                        &MODULE_CODES[0],
+                        &MODULE_CODES[4],
                         format!(
                             "không có module `std.{m2}` (có: str/list/map/path/time/json/fs/net/http)"
                         ),

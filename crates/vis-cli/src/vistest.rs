@@ -4,7 +4,7 @@
 //! Quy ước bộ ca (giống harness `crates/vis-cli/tests/sem.rs`):
 //! - `<tên>.vis`/`.vish` **không** có `<tên>.err` ⇒ phải chạy **exit 0** và `stdout` **byte-khớp** `.out`
 //!   (bỏ dòng SPDX đầu của `.out`).
-//! - có `<tên>.err` ⇒ phải **đỏ** đúng mã trong `.err` (`VS05xx` ⇒ exit 1, còn lại ⇒ exit 2).
+//! - có `<tên>.err` ⇒ phải **đỏ** đúng mã trong `.err` (`VS05xx` ⇒ exit **101**, còn lại ⇒ exit 2).
 //!
 //! `--vm` chạy **đường VM** (`--no-cache`); không có `--vm` thì chạy interp (mặc định `vis run`, VD-56).
 
@@ -407,7 +407,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 .map(str::trim)
                 .find(|l| !l.is_empty() && !l.starts_with('#'))
                 .unwrap_or("");
-            let muon = if mong.starts_with("VS05") { 1 } else { 2 };
+            let muon = if mong.starts_with("VS05") { 101 } else { 2 };
             // ST-30b: hai đường **đã đồng bộ** chẩn đoán ⇒ `--vm` khoá **đúng mã** như interp.
             let ok = code == muon && stderr.contains(mong);
             if ok {

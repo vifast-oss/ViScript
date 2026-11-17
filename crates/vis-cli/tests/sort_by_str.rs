@@ -129,7 +129,8 @@ fn tron_int_va_str_la_vs0501_neu_kieu_that() {
         .expect("chạy `vis check`");
     assert_eq!(o.status.code().unwrap_or(-1), 0, "check phải **rỗng**");
     let (c, out, e) = hai_duong(&d, "tron", TRON, "vis");
-    assert_eq!(c, 1, "phải là lỗi **lúc chạy** (exit 1), stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "phải là lỗi **lúc chạy** (exit 101), stderr: {e}");
     assert!(out.is_empty(), "không được in gì trước lỗi: {out:?}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(
@@ -144,7 +145,8 @@ fn khoa_bool_bao_vs0501_va_neu_kieu_that() {
     let d = tam("bool");
     let src = "use std.list\nfn main():\n    print(list.sort_by([1, 2], x => x > 1))\n";
     let (c, _, e) = hai_duong(&d, "bool", src, "vis");
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     // Thông điệp nêu **giá trị khoá thật** (`show()` của `false` — cùng quy ước thông điệp cũ).
     assert!(e.contains("`false`"), "phải nêu khoá thật: {e}");
@@ -162,7 +164,8 @@ fn khoa_khong_goi_duoc_neu_ten_hien_thi_moi() {
     let d = tam("khong-goi");
     let src = "use std.list\nfn main():\n    print(list.sort_by([1, 2], 3))\n";
     let (c, _, e) = hai_duong(&d, "khong-goi", src, "vis");
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(
         e.contains("int | str"),

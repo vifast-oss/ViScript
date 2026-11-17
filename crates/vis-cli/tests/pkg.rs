@@ -344,9 +344,9 @@ fn use_pkg_chay_that() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Ca 8 (CLI) — sửa tay tệp trong `.vis/pkg` ⇒ `VS0701`, exit 2, không in kết quả.
+/// Ca 8 (CLI) — sửa tay tệp trong `.vis/pkg` ⇒ `VS0707` (R9: hash lệch), exit 2, không in kết quả.
 #[test]
-fn pkg_bi_sua_bao_vs0701() {
+fn pkg_bi_sua_bao_vs0707() {
     let d = tmp_dir("use-sua");
     cai_http(&d, "1.0.0");
     ghi(
@@ -358,7 +358,7 @@ fn pkg_bi_sua_bao_vs0701() {
     std::fs::write(&tep, format!("{cu}\n# sửa tay\n")).expect("sửa tệp gói");
     let (code, out, err) = vis(&d, &["run", "app.vis"]);
     assert_eq!(code, 2, "stderr: {err}");
-    assert!(err.contains("VS0701"), "stderr: {err}");
+    assert!(err.contains("VS0707"), "stderr: {err}");
     assert!(err.contains("bị sửa"), "phải nói gói bị sửa: {err}");
     assert_eq!(out, "", "không được in kết quả");
     let _ = std::fs::remove_dir_all(&d);

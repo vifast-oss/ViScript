@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-78** — `vis explain` cho 3 mã runtime mới (`VS0504`/`VS0505`/`VS0506`) đủ **3 ngôn ngữ**,
-//! `--list` phủ **33** mã đúng thứ tự, lỗi rõ cho mã/ngôn ngữ sai, và trợ giúp nêu đúng **số mã**.
+//! `--list` phủ **49** mã đúng thứ tự, lỗi rõ cho mã/ngôn ngữ sai, và trợ giúp nêu đúng **số mã**.
 
 use std::process::Command;
 
@@ -37,15 +37,15 @@ fn ba_ma_runtime_du_ba_ngon_ngu() {
     }
 }
 
-/// `--list` đúng **33 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
+/// `--list` đúng **49 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
 #[test]
-fn list_du_33_dong_dung_thu_tu() {
+fn list_du_49_dong_dung_thu_tu() {
     let (code, out, err) = vis(&["explain", "--list"]);
     assert_eq!(code, 0, "{err}");
     let dong: Vec<&str> = out.lines().collect();
-    assert_eq!(dong.len(), 33, "phải đúng 33 mã: {}", dong.len()); // ST-128: +VS0704 (VD-125)
+    assert_eq!(dong.len(), 49, "phải đúng 49 mã: {}", dong.len()); // R9: +16 mã (VD-178)
     let muon: Vec<String> = vis_diag::all_codes().map(|c| c.short.to_string()).collect();
-    assert_eq!(muon.len(), 33);
+    assert_eq!(muon.len(), 49);
     for (i, d) in dong.iter().enumerate() {
         let ma = d.split_whitespace().next().unwrap_or("");
         assert_eq!(ma, muon[i], "dòng {i} sai thứ tự");
@@ -84,11 +84,11 @@ fn tro_giup_neu_du_so_ma() {
     assert_eq!(code, 2, "thiếu tham số ⇒ 2");
     let text = format!("{out}{err}");
     assert!(text.contains("dùng:"), "{text}");
-    assert!(text.contains("33"), "phải nêu 33 mã: {text}"); // ST-128: +VS0704 (VD-125)
+    assert!(text.contains("49"), "phải nêu 49 mã: {text}"); // R9: +16 mã (VD-178)
     assert!(text.contains("7 khối"), "phải nêu 7 khối: {text}");
 }
 
-/// Quét **toàn bộ** sổ: cả 33 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
+/// Quét **toàn bộ** sổ: cả 49 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
 /// copy-paste lẫn ngôn ngữ).
 #[test]
 fn toan_bo_so_du_ba_ngon_ngu() {
@@ -106,5 +106,5 @@ fn toan_bo_so_du_ba_ngon_ngu() {
         assert_ne!(c.message_en, c.message_ja, "{} en == ja", c.short);
         n += 1;
     }
-    assert_eq!(n, 33, "sổ phải đúng 33 mã"); // ST-128: +VS0704
+    assert_eq!(n, 49, "sổ phải đúng 49 mã"); // R9: +16 mã (VD-178)
 }

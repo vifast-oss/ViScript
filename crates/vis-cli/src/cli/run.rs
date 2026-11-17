@@ -6,11 +6,15 @@ use crate::*;
 use std::process::ExitCode;
 
 /// **ST-72b**: lỗi **vượt quyền** (`VS0604`, message đánh dấu `[quyền]`) là lỗi **môi trường/dùng**
-/// ⇒ exit **2** (yêu cầu ST-72b); các lỗi runtime khác — kể cả `VS0604` **không do quyền** (thiếu
-/// host) — giữ exit **1** như trước (tương thích `pipeline::vm_khong_host_bao_vs0604`).
+/// ⇒ exit **2** (yêu cầu ST-72b).
+///
+/// **R9 (VD-178, C1)**: lỗi **lúc chạy** có mã (`VS05xx`) ⇒ exit **101** (panic), không phải 1.
+/// `VS0604` **không do quyền** (thiếu host) vẫn exit **1** như trước.
 pub(crate) fn ma_thoat_khi_loi(diags: &[(String, u32, u32, String)]) -> u8 {
     if diags.iter().any(|d| d.3.starts_with("[quyền]")) {
         2
+    } else if diags.iter().any(|d| d.0.starts_with("VS05")) {
+        101
     } else {
         1
     }

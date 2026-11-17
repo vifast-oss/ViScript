@@ -87,7 +87,8 @@ fn echo_qua_grep_tim_thay() {
 fn grep_khong_khop_van_la_loi_khi_khong_complete() {
     let d = tam("grep0");
     let (c, _, e) = chay(&d, "grep0", "/bin/echo x | /usr/bin/grep z\n", &[]);
-    assert_eq!(c, 1, "exit≠0 ⇒ VS0501 như VD-60");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "exit≠0 ⇒ VS0501 như VD-60");
     assert!(
         e.contains("VS0501") && e.contains("thoát mã 1"),
         "stderr: {e}"
@@ -225,7 +226,8 @@ fn timeout_neu_ro_stage() {
         "/bin/sleep 5 | /bin/cat\n",
         &[("VIS_CMD_TIMEOUT_MS", "50")],
     );
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(
         e.contains("stage `/bin/sleep`"),

@@ -16,24 +16,40 @@ VS0109	error: thụt lề không khớp đơn vị/DEDENT sai
 VS0110	error: `^` sai ngữ cảnh (lexer chế độ lệnh biết đầu stage)
 VS0201	error: lỗi cú pháp: token không mong đợi/thiếu vế
 VS0202	error: `%` dùng như phần trăm — viết `50pct`
+VS0203	error: từ khoá đã bỏ — dùng cú pháp mới (xem gợi ý)
+VS0204	error: `const` cần ghi kiểu khi vế phải không phải literal
+VS0205	error: dựng bản ghi bằng `{…}` — dùng `Tên(trường: …)` hoặc khoá chuỗi cho map
+VS0206	error: khối `else` của `let … else` phải thoát (return/break/continue/panic)
 VS0301	error: tên không tồn tại
 VS0302	error: khai báo trùng trong cùng phạm vi
+VS0303	error: kiểu không tồn tại
 VS0401	error: sai số lượng hoặc thứ tự đối số
 VS0402	error: `match` không xét hết trường hợp
 VS0403	error: trường, kiểu hoặc phương thức không tồn tại
 VS0405	error: không có trường này trên kiểu bản ghi (trường không tồn tại)
 VS0412	error: kiểu không khớp
+VS0413	error: gán vào ràng buộc bất biến (`let`) — dùng `var` nếu cần đổi
+VS0414	error: toán tử không hỗ trợ cho kiểu này
+VS0415	error: `async` sai chỗ — chỉ dùng cho hàm cấp tệp (`async fn`)
+VS0416	error: range chỉ nhận `int`
 VS0501	error: lỗi runtime: phép toán hoặc tính năng chưa hỗ trợ
 VS0502	error: chia hoặc lấy dư cho 0
 VS0503	error: chỉ số ngoài phạm vi
 VS0504	error: gửi vào kênh đã `close` (không nhận thêm phần tử)
 VS0505	error: deadlock: kênh bị chặn và không còn tác vụ nào chạy được (khoá)
 VS0506	error: tác vụ (`async fn`) lỗi: lỗi phát sinh trong thân tác vụ (kèm mã gốc)
+VS0507	error: tràn `i64` lúc chạy
+VS0508	error: giá trị không gửi được sang tác vụ khác (không `Sendable`)
 VS0601	error: không có lệnh này: tên không có trong bảng chữ ký (cmd/builtin/extern)
 VS0602	error: sai đối số lệnh: thiếu, thừa hoặc sai kiểu
 VS0603	error: pipeline không nối được: kiểu ra của stage trước ≠ kiểu vào của stage sau
 VS0604	error: tính năng chưa hỗ trợ (ví dụ chạy nền `&`)
-VS0701	error: không thấy tệp module (hoặc `std`/`pkg` chưa hỗ trợ)
+VS0605	error: chạy nền `&` chưa hỗ trợ
+VS0606	error: chương trình ngoài (`^…`) chưa hỗ trợ
+VS0701	error: không thấy tệp module
 VS0702	error: vòng phụ thuộc giữa các tệp module
 VS0703	error: `use` trùng hoặc mơ hồ (hai đường dẫn cùng một module)
 VS0704	error: không giải được ràng buộc gói: không phiên bản nào thoả đồng thời các ràng buộc (kèm chuỗi ràng buộc)
+VS0705	error: `std` chưa hỗ trợ
+VS0706	error: `pkg` chưa hỗ trợ
+VS0707	error: hash gói không khớp `vis.lock`/sổ

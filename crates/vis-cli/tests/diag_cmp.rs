@@ -33,9 +33,10 @@ use std::process::Command;
 /// async; VS0201: `async` trong `impl`) + 2 ca lỗi **lúc chạy** (`VS0506` ×2: thân tác vụ lỗi ở
 /// `await` và ở join cuối).
 // **SỬA KÈM LÝ DO (ST-72)**: 441 → **447** (+6 ca `cap/`: 3 xanh, 3 lỗi biên dịch).
-const TONG: usize = 447;
+// **SỬA KÈM LÝ DO (R9, VD-178)**: 447 → **448** (+1 ca `loi/range-khong-int` VS0416, lỗi biên dịch).
+const TONG: usize = 448;
 const XANH: usize = 364;
-const LOI_BIEN_DICH: usize = 49;
+const LOI_BIEN_DICH: usize = 50;
 const LOI_LUC_CHAY: usize = 34;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.
 const XANH_CAN_HOST: usize = 0;

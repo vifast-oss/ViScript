@@ -260,6 +260,14 @@ impl<'a> Parser<'a> {
         let mut elems = mods;
         elems.push(self.expect_kw("const")?);
         elems.push(self.expect_ident()?);
+        // **R9 (VD-178)**: gợi ý cho mẫu `const A = …` (VS0204 khi RHS không literal; R7 cho
+        // suy kiểu từ literal).
+        if !self.at_punct(":") {
+            return Err(self.err_code(
+                &vis_diag::SYNTAX_CODES[3],
+                "`const` cần kiểu khi vế phải không phải literal — gợi ý: `const A: int = 1` (R7 cho suy kiểu từ literal)",
+            ));
+        }
         elems.push(self.expect_punct(":")?);
         let t = self.parse_type()?;
         Self::push_node(&mut elems, t);

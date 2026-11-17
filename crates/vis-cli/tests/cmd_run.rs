@@ -68,10 +68,11 @@ fn hai_item_bang_cham_phay() {
 #[test]
 fn lenh_khong_ton_tai_la_vs0501() {
     // **SỬA KÈM LÝ DO (ST-27)**: lệnh lạ nay là **chương trình ngoài** (§9.3) — không tìm thấy
-    // chương trình là lỗi **lúc chạy** (`VS0501`, exit 1), không còn `VS0601` tĩnh (exit 2).
+    // chương trình là lỗi **lúc chạy** (`VS0501`), không còn `VS0601` tĩnh (exit 2).
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
     let (code, out, err) = chay("khong-co", "khong_co \"x\"\n");
     assert_eq!(
-        code, 1,
+        code, 101,
         "không tìm thấy chương trình = lỗi chạy: {err} / {out}"
     );
     assert!(err.contains("VS0501"), "stderr: {err}");
@@ -93,10 +94,11 @@ fn noi_khong_duoc_la_vs0603() {
 }
 
 #[test]
-fn chay_nen_la_vs0604() {
+fn chay_nen_la_vs0605() {
+    // **R9 (VD-178)**: chạy nền `&` ⇒ `VS0605` (tách khỏi `VS0604`).
     let (code, _, err) = chay("nen", "echo \"a\" &\n");
     assert_eq!(code, 2, "stderr: {err}");
-    assert!(err.contains("VS0604"), "stderr: {err}");
+    assert!(err.contains("VS0605"), "stderr: {err}");
 }
 
 #[test]

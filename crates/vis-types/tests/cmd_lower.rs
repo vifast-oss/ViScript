@@ -95,15 +95,17 @@ fn noi_khong_duoc_la_vs0603() {
 }
 
 #[test]
-fn chay_nen_la_vs0604() {
+fn chay_nen_la_vs0605() {
+    // **R9 (VD-178)**: chạy nền `&` ⇒ `VS0605` (tách khỏi `VS0604`).
     let (ma, _) = ha("echo \"a\" &\n");
-    assert!(ma.contains(&"VS0604".to_string()), "được: {ma:?}");
+    assert!(ma.contains(&"VS0605".to_string()), "được: {ma:?}");
 }
 
 #[test]
-fn chuong_trinh_ngoai_la_vs0604() {
+fn chuong_trinh_ngoai_la_vs0606() {
+    // **R9 (VD-178)**: `^`/chương trình ngoài ⇒ `VS0606` (tách khỏi `VS0604`).
     let (ma, _) = ha("^git status\n");
-    assert!(ma.contains(&"VS0604".to_string()), "được: {ma:?}");
+    assert!(ma.contains(&"VS0606".to_string()), "được: {ma:?}");
 }
 
 #[test]

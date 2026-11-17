@@ -110,7 +110,8 @@ fn chan_doan_tuyet_doi_trong_nhom_nhieu_dong() {
     let d = tam("diag");
     // Dòng 1 SPDX, dòng 2 `( 1 +`, dòng 3 `  0 / 0 )` ⇒ `0` ở **3:3**.
     let (c, _, e) = chay(&d, "l", "( 1 +\n  0 / 0 )\n", None, false);
-    assert_eq!(c, 1, "lỗi lúc chạy ⇒ exit 1: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "lỗi lúc chạy ⇒ exit 101: {e}");
     assert!(e.contains(":3:3: error VS0502"), "phải tuyệt đối: {e}");
     let _ = std::fs::remove_dir_all(&d);
 }

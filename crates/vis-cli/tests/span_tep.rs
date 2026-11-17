@@ -21,11 +21,12 @@ use std::process::Command;
 /// `(tên ca, mã, dòng, cột)` — vị trí **đúng** trong `mod.vish`. Số này đối chiếu độc lập với chạy
 /// **một tệp** cùng nội dung (`mod.vish` chép ra tệp tạm) — xem `da_tep_khop_tep_don`.
 const CA: [(&str, &str, u32, u32); 5] = [
-    ("cmd-than", "VS0412", 3, 5),
-    ("where-closure", "VS0412", 3, 26),
-    ("where-it", "VS0412", 3, 67),
-    ("nhom", "VS0412", 3, 7),
-    ("item-khai", "VS0412", 3, 5),
+    // **R9 (VD-178)**: toán tử không hỗ trợ cho kiểu ⇒ `VS0414` (tách khỏi `VS0412`).
+    ("cmd-than", "VS0414", 3, 5),
+    ("where-closure", "VS0414", 3, 26),
+    ("where-it", "VS0414", 3, 67),
+    ("nhom", "VS0414", 3, 7),
+    ("item-khai", "VS0414", 3, 5),
 ];
 
 fn goc() -> PathBuf {

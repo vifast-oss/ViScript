@@ -299,7 +299,8 @@ fn moi_ca_loi_bien_dich_khong_panic_va_bi_tu_choi() {
     // **SỬA KÈM LÝ DO (ST-60)**: **39** ca (+4 `VS0412` async, +`async/async-trong-impl` VS0201).
     // **SỬA KÈM LÝ DO (ST-72)**: **49** ca (+3 ca `cap/`: `@` trên `int`, `(write)` trên Net,
     // so sánh/in `cap` — đều VS0412 ở hạ/tyck).
-    assert_eq!(ds.len(), 49, "phải đúng 49 ca lỗi biên dịch");
+    // **SỬA KÈM LÝ DO (R9, VD-178)**: **50** ca (+`loi/range-khong-int` VS0416).
+    assert_eq!(ds.len(), 50, "phải đúng 50 ca lỗi biên dịch");
     for (src, ma) in ds {
         let (hir, syms, text, chan_doan) = phan_tich(&src);
         let kq = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

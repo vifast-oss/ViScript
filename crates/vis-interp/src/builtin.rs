@@ -11,7 +11,7 @@
 use vis_syntax::Span;
 use vis_types::hir::BinOp;
 
-use crate::interp::{Abort, Trap, DIV0, RT};
+use crate::interp::{Abort, Trap, DIV0, OVERFLOW, RT};
 use crate::value::Value;
 
 /// **Chủ nhà** cho các hàm ngữ nghĩa cần tác dụng phụ.
@@ -1455,5 +1455,6 @@ fn map_method(
 }
 /// Tràn `i64` — `VS0501` (VD-43 #2).
 fn overflow(span: Span) -> Abort {
-    trap(RT, "tràn i64 lúc chạy (VD-43 #2)", span)
+    // **R9 (VD-178)**: tràn `i64` ⇒ `VS0507` (tách khỏi `VS0501`).
+    trap(OVERFLOW, "tràn i64 lúc chạy (VD-43 #2)", span)
 }

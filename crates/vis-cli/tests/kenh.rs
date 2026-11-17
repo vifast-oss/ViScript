@@ -85,8 +85,9 @@ fn deadlock_khong_treo_va_bao_vs0505() {
             let (c, _, e) = chay(&p, vm);
             let dt = t0.elapsed();
             // **SỬA KÈM LÝ DO (ST-94)**: `chan[int](0)` bị **từ chối ngay khi tạo** (host,
-            // `VS0505`), không còn chờ tới `send`; vẫn exit 1 + < 1 s như ca deadlock runtime.
-            assert_eq!(c, 1, "{ten} (vm={vm}): stderr: {e}");
+            // `VS0505`), không còn chờ tới `send`; vẫn < 1 s như ca deadlock runtime.
+            // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+            assert_eq!(c, 101, "{ten} (vm={vm}): stderr: {e}");
             assert!(e.contains("VS0505"), "{ten} (vm={vm}): stderr: {e}");
             assert!(
                 dt.as_secs_f64() < 1.0,
@@ -112,7 +113,8 @@ fn send_sau_close_la_vs0504() {
     let d = tam("sau-close");
     let src = "fn main():\n    let c = chan[int](1)\n    c.close()\n    let _ = c.send(1)\n";
     let (c, _, e) = ca(&d, "sauclose", src);
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0504"), "stderr: {e}");
     let _ = std::fs::remove_dir_all(&d);
 }

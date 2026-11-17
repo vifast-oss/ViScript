@@ -495,8 +495,9 @@ impl<'a> Checker<'a> {
             | BinOp::RangeIncl => match num::so_hoc(op, l, r, l_lit, r_lit) {
                 Some(t) => t,
                 None => {
+                    // **R9 (VD-178)**: toán tử không hỗ trợ cho kiểu ⇒ `VS0414` (tách khỏi `VS0412`).
                     self.diag(
-                        MISMATCH,
+                        super::TOAN_TU,
                         format!(
                             "toán tử `{}`: `{}` và `{}` không cùng kiểu/đơn vị",
                             op.text(),

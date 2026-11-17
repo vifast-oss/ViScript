@@ -157,18 +157,19 @@ fn span_than_dung_khi_truoc_do_co_ky_tu_nhieu_byte() {
     );
     assert_eq!(c1, 2, "stderr: {e1}");
     assert_eq!(c2, 2, "stderr: {e2}");
+    // **R9 (VD-178)**: toán tử không hỗ trợ cho kiểu ⇒ `VS0414` (tách khỏi `VS0412`).
     assert!(
-        e1.contains("VS0412") && e2.contains("VS0412"),
+        e1.contains("VS0414") && e2.contains("VS0414"),
         "{e1} | {e2}"
     );
     // Cột trong **cùng** một dòng phải bằng nhau; chỉ **số dòng** được khác (2 vs 4).
     let cot = |e: &str| -> String {
-        let cuoi = e.lines().find(|l| l.contains("VS0412")).unwrap_or("");
+        let cuoi = e.lines().find(|l| l.contains("VS0414")).unwrap_or("");
         cuoi.split(':').nth(2).unwrap_or("?").trim().to_string()
     };
     assert_eq!(cot(&e1), cot(&e2), "cột lệch: {e1} | {e2}");
     let dong_cua = |e: &str| -> String {
-        let cuoi = e.lines().find(|l| l.contains("VS0412")).unwrap_or("");
+        let cuoi = e.lines().find(|l| l.contains("VS0414")).unwrap_or("");
         cuoi.split(':').nth(1).unwrap_or("?").to_string()
     };
     assert_eq!(dong_cua(&e1), "2");

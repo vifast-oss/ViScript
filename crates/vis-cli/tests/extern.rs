@@ -99,7 +99,8 @@ fn true_khong_in_gi() {
 fn false_thoat_ma_1_la_vs0501() {
     co("/usr/bin/false");
     let (c, _, e) = chay_vish("/usr/bin/false\n", &[]);
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     assert!(e.contains("thoát mã 1"), "phải nêu mã thoát: {e}");
 }
@@ -117,7 +118,7 @@ fn stderr_khong_tron_stdout() {
     // `/bin/cat /khong/co` ⇒ exit 1 + stderr thật, stdout **rỗng**.
     co("/bin/cat");
     let (c, o, e) = chay_vish("/bin/cat /khong/co/that\n", &[]);
-    assert_eq!(c, 1);
+    assert_eq!(c, 101, "R9/C1: lỗi chạy có mã ⇒ 101");
     assert_eq!(o, "", "stdout KHÔNG được trộn stderr");
     assert!(e.contains("VS0501"), "stderr: {e}");
 }
@@ -160,7 +161,8 @@ fn timeout_la_vs0501() {
     // `/bin/sleep 5` ⇒ chờ; timeout 50 ms ⇒ VS0501 "quá thời gian".
     co("/bin/sleep");
     let (c, _, e) = chay_vish("/bin/sleep 5\n", &[("VIS_CMD_TIMEOUT_MS", "50")]);
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(
         e.contains("VS0501") && e.contains("thời gian"),
         "stderr: {e}"

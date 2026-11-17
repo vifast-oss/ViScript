@@ -72,7 +72,7 @@ fn hai_duong(d: &Path, ten: &str, src: &str) -> (i32, String, String) {
 const P: &str = "type P:\n    x: int\n\n";
 
 #[test]
-fn self_bat_bien_la_vs0412_hai_duong() {
+fn self_bat_bien_la_vs0413_hai_duong() {
     // VD-97 (1): `self` (không `var`) là **tham số bất biến** ⇒ chặn ở **tyck**, span tại phép gán.
     let d = tam("self-bat-bien");
     let src = format!(
@@ -83,7 +83,8 @@ fn self_bat_bien_la_vs0412_hai_duong() {
     // `vis check` in TAP ra **stdout** (`not ok` + dòng `# VSxxxx d:c msg`).
     let (cc, co, ce) = check(&p);
     assert_eq!(cc, 1, "`check` phải đỏ: {co}{ce}");
-    assert!(co.contains("VS0412"), "check stdout: {co}");
+    // **R9 (VD-178)**: gán ràng buộc bất biến ⇒ `VS0413` (tách khỏi `VS0412`).
+    assert!(co.contains("VS0413"), "check stdout: {co}");
     // Tệp thử có thêm **1 dòng SPDX** ở đầu ⇒ phép gán `self.x = 2` ở **dòng 7, cột 9**.
     assert!(
         co.contains("7:9"),
@@ -94,7 +95,7 @@ fn self_bat_bien_la_vs0412_hai_duong() {
     // Lỗi **biên dịch** ⇒ exit **2** cả hai đường, **cùng** chẩn đoán (không lệch chữ).
     assert_eq!((a.0, b.0), (2, 2), "interp: {a:?}\nvm: {b:?}");
     assert_eq!(a.2, b.2, "chẩn đoán hai đường phải **y hệt**");
-    assert!(a.2.contains("VS0412"), "stderr: {}", a.2);
+    assert!(a.2.contains("VS0413"), "stderr: {}", a.2);
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -177,6 +178,7 @@ fn dich_gan_khong_ho_tro_la_vs0412() {
     let p = ghi(&d, "dich-la", &src);
     let (cc, co, ce) = check(&p);
     assert_eq!(cc, 1, "`check` phải đỏ: {co}{ce}");
+    // Bản ghi **bất biến** (khác nghĩa với ràng buộc bất biến `VS0413`) ⇒ vẫn `VS0412`.
     assert!(co.contains("VS0412"), "check stdout: {co}");
     let a = chay(&p, false);
     let b = chay(&p, true);
@@ -193,7 +195,8 @@ fn gan_truong_tren_kieu_khong_ro_cung_chan_doan_giong_nhau() {
     let d = tam("khong-ro");
     let src = "fn gan[T](x: T) -> int:\n    var y = x\n    y.f = 3\n    return 0\n\nfn main():\n    print(gan(1))\n";
     let (c, _, e) = hai_duong(&d, "khong-ro", src);
-    assert_eq!(c, 1, "phải là lỗi **lúc chạy**: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "phải là lỗi **lúc chạy**: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -218,7 +221,7 @@ fn codegen_loi_vm_phai_exit_khac_0() {
     assert!(e.contains("cmd-block"), "stderr phải nêu biến thể: {e}");
     // Interp: cùng chương trình ⇒ **lỗi động** `VS0501`, cũng exit ≠ 0.
     let (ci, _, ei) = chay(&p, false);
-    assert_eq!(ci, 1, "interp: {ei}");
+    assert_eq!(ci, 101, "interp (R9/C1): {ei}");
     assert!(ei.contains("VS0501"), "interp stderr: {ei}");
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -352,7 +355,8 @@ fn vish_shell_let_khong_thanh_khai_bao() {
     let (cc, co, _ce) = check(&p);
     assert_eq!(cc, 0, "`check` phải xanh (shell-let là stage): {co}");
     let (c, _, e) = chay(&p, false);
-    assert_eq!(c, 1, "stderr: {e}");
+    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
+    assert_eq!(c, 101, "stderr: {e}");
     assert!(
         e.contains("`out`") && !e.contains("`l`"),
         "phải báo `out` chưa bind (shell-let chưa hạ — nợ cũ), không phải `l`: {e}"

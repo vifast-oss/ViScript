@@ -122,8 +122,8 @@ const SO_HOC: &[(&str, &str)] = &[
     ("print(1 % 0)", "!VS0502"),
     // kỳ vọng: !VS0501 — mũ âm
     ("print(2 ** -1)", "!VS0501"),
-    // kỳ vọng: !VS0501 — tràn i64
-    ("print(9223372036854775807 + 1)", "!VS0501"),
+    // kỳ vọng: !VS0507 — tràn i64 (R9/VD-178: tách khỏi VS0501)
+    ("print(9223372036854775807 + 1)", "!VS0507"),
     // kỳ vọng: out("false\n")
     ("print(true and false)", "out(\"false\\n\")"),
     // kỳ vọng: out("true\n")

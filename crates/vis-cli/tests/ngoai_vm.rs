@@ -68,11 +68,11 @@ fn complete_ma_thoat_vm_cung_byte() {
     );
 }
 
-/// (d) lệnh không tồn tại ⇒ **cùng** `VS0501` + exit 1.
+/// (d) lệnh không tồn tại ⇒ **cùng** `VS0501` + exit **101** (R9/C1).
 #[test]
 fn lenh_khong_ton_tai_vm_cung_chan_doan() {
     let (ma, out, err) = so_hai("khong", "/khong/co/lenh\n");
-    assert_eq!(ma, 1);
+    assert_eq!(ma, 101);
     assert!(out.is_empty());
     assert!(String::from_utf8_lossy(&err).contains("VS0501"), "{err:?}");
     assert!(
