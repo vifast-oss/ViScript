@@ -395,6 +395,7 @@ GHI CHÚ 2026-11-17 (VD-176) · #146 **chọn phương án (A)** (`symlink_metad
 | ST-171 | **Tách ViScript thành repo riêng "ViScript"** (VD-165) — Agent 1 điều phối, Agent 2 thực thi | ST-170 | 3 h | **READY** | (a) `git filter-repo`/`subtree split` giữ đủ lịch sử; (b) chuyển sổ nợ/QUEUE/JOURNAL/báo cáo/check_report + cập nhật đường dẫn, `check_report --all` **PASS ở repo mới**; (c) giữ nguyên số nợ/task (#146, #140, ST-171…); (d) cổng repo mới mac/ps/psvn **cùng số đo R29**, lệch giải thích từng suite; (e) repo cũ xoá mã ViScript, giữ **một dòng trỏ sang**, không hai bản song song; (f) cập nhật `vis-remote` + clone ps/psvn, `git pull` psvn không bị chặn; (g) ngoài phạm vi ⇒ **BLOCKED-CHO-A0** |
 
 GHI CHÚ 2026-11-17 Agent 0 (VD-167(1)) · tách repo phải chuyển **cả `docs/viscript/`**, không chỉ `viscript/`
+GHI CHÚ 2026-11-17 Agent 0 · **ST-171 CHỈ chạy sau khi A0 duyệt đủ**: 6 tài liệu VS3 (`vs3-qd-1…6`), `st169`, và `vs-ergo.md`; **nếu tới lượt mà chưa duyệt ⇒ DỪNG ở ST-170, không tách repo**
 | ST-172 | **(Agent 1) Tài liệu công thái học** `JOURNAL/vs-ergo.md` (7 mục a–g + VS0412 + cheat sheet; **chỉ đọc, 0 dòng mã**) | ST-169 | 2 h | **DONE** | mỗi mục: hiện trạng `file:dòng`, đề xuất, ca đỏ-trước, ảnh hưởng mã/test; VS0412: kết luận có/không 2 lỗi + đề xuất tách mã; cheat sheet đổi nhãn "chưa có tại <commit>"; 0 dòng mã sửa |
 
 > CHỜ DUYỆT Agent 0 · `JOURNAL/vs-ergo.md` (7 mục a–g + §8 VS0412: **có** 4 nhóm lỗi chung mã, đề xuất VS0413/0414/0415/0416; §9 cheat sheet đã đổi nhãn); **0 dòng mã**
