@@ -466,6 +466,9 @@ GHI CHÚ 2026-11-17 · psvn clone sạch có **1 ca đỏ mới** `audit_span` (
 | ST-195 | **(Agent 2) R20a — `assert cond, "msg"`** (C3) | ST-194 | 1 h | **DONE** | `assert 1+1 == 2, "toán sai"` chạy; `assert false, "m"` ⇒ `VS0501` + exit **101**; `assert` nhận 1–2 đối số; ca `loi/assert-thong-diep`; tách `builtin_assert.rs` giữ R1; `vis-dev check` PASS |
 > CHỜ DUYỆT · `parse/mod.rs::assert_stmt` nhận `,`; `lower/stmt.rs` truyền 2 đối số; `builtin_assert.rs`; **chưa** `use as` / `use {}` (R20a phần 2)
 
+| ST-196 | **(Agent 2) R20b — list nâng cao** (C3) | ST-195 | 1 h | **DONE** | `xs.enumerate()` ⇒ `[[0, 10], …]`; `xs.any(f)`/`xs.all(f)` ⇒ `bool`; `xs.find(f)` ⇒ `T?`; tyck kiểm hàm 1 tham số trả `bool`; ca `list/duyet-nang-cao`; tách `builtin_list.rs` giữ R1; `vis-dev check` PASS |
+> CHỜ DUYỆT · `tyck/expr.rs` 4 nhánh mới; `builtin_list.rs`; **chưa** `range.step(n)` (R20b phần 2)
+
 GHI CHÚ 2026-11-17 (VD-178) · **ST-179 trở đi** (Agent 2): pha 1 công thái học theo **C3** — P0 → R9(+C1) → R6 → R17 → R1+R2 → R3 → R8 → R4 → R5 → R11 → R12 → R16 → R7 → R19b → R19c; mỗi task ≤3 h, đỏ-trước, gate PASS; **xen kẽ được VS3-5a/5d**; sau pha 1: VS3-QĐ-1 → (QĐ-2,3,4) → QĐ-6, QĐ-5 phần còn lại sau R6
 GHI CHÚ 2026-11-17 (VD-180) · **thay QĐ-6 mục 1, 2 của VD-178**: mô hình gói **phi tập trung kiểu Go** (tên = đường dẫn, tag semver, **MVS**, `vifast.org/x/…`, **sum.vifast.org** + `vis.lock` sha256, `VS0707`, `VIS_SUMDB=off`/`VIS_PRIVATE`, `VIS_PROXY=direct`); proxy **chỉ thiết kế**, chưa vận hành; **ST-178 sửa `vs3-qd-6.md`** + 4 ca đỏ-trước bắt buộc (tag đổi nội dung, MVS v1.2/v1.4, vanity → GitHub, offline + cache)
 GHI CHÚ 2026-11-17 (VD-181) · tên gói chốt **`vifast.org/vis/<tên>`** (path, không `vis.`); **`sum.`/`proxy.vifast.org`** ngang hàng, phục vụ mọi sản phẩm; `vis.vifast.org` chỉ website; `viscript.org` chỉ thương hiệu; **Traefik không phải hợp đồng (meta tag là)**; tên **bất biến** sau gói đầu tiên
