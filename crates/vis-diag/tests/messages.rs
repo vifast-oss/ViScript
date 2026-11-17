@@ -194,18 +194,14 @@ fn snapshot_9_ca_so_runtime_05xx() {
         (
             501,
             Lang::Vi,
-            "lỗi runtime: phép toán hoặc tính năng chưa hỗ trợ ở VS0",
+            "lỗi runtime: phép toán hoặc tính năng chưa hỗ trợ",
         ),
         (
             501,
             Lang::En,
-            "runtime error: operation or feature not supported in VS0",
+            "runtime error: operation or feature not supported",
         ),
-        (
-            501,
-            Lang::Ja,
-            "実行時エラー: VS0 では未対応の演算または機能です",
-        ),
+        (501, Lang::Ja, "実行時エラー: 未対応の演算または機能です"),
         (502, Lang::Vi, "chia hoặc lấy dư cho 0"),
         (502, Lang::En, "division or remainder by zero"),
         (502, Lang::Ja, "0 による除算または剰余"),
@@ -462,4 +458,29 @@ fn snapshot_9_ca_so_module_07xx() {
     // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (resolver không giải được ràng buộc) ⇒ **33** mã.
     assert_eq!(vis_diag::all_codes().count(), 33);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
+}
+
+/// **P0 (VD-170) mục 2**: không thông điệp nào trong sổ mã còn **nhãn** `VS0`.
+///
+/// Mã `VS0xxx` (ví dụ `VS0201`) vẫn hợp lệ — chỉ cấm chữ `VS0` **không** đi kèm chữ số
+/// (nhãn phiên bản cũ "ở VS0", "trong VS0", "VS0 では…").
+#[test]
+fn khong_thong_diep_nao_con_nhan_vs0() {
+    fn co_nhan_vs0(s: &str) -> bool {
+        let mut rest = s;
+        while let Some(pos) = rest.find("VS0") {
+            let after = rest[pos + 3..].chars().next();
+            if !after.is_some_and(|c| c.is_ascii_digit()) {
+                return true;
+            }
+            rest = &rest[pos + 3..];
+        }
+        false
+    }
+    for c in all_codes() {
+        for lang in [Lang::Vi, Lang::En, Lang::Ja] {
+            let m = c.message(lang);
+            assert!(!co_nhan_vs0(m), "{} {:?} còn nhãn VS0: {m}", c.short, lang);
+        }
+    }
 }

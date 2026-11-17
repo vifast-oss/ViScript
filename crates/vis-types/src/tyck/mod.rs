@@ -43,6 +43,8 @@ pub(crate) const NO_FIELD: &vis_diag::Code = &TYPE_CODES[2];
 pub(crate) const MISMATCH: &vis_diag::Code = &TYPE_CODES[4];
 /// Mã `VS0301` — tên **kiểu** không tồn tại (ST-12; ST-11 không báo).
 pub(crate) const NO_TYPE: &vis_diag::Code = &NAME_CODES[0];
+/// Mã `VS0501` — tính năng chưa hỗ trợ (P0/VD-170: `newtype` chưa hạ ⇒ báo **tại dòng khai**).
+pub(crate) const UNSUPPORTED: &vis_diag::Code = &vis_diag::RUNTIME_CODES[0];
 
 /// Kết quả một lượt kiểm kiểu.
 #[derive(Debug, Clone, Default)]
@@ -657,11 +659,11 @@ impl<'a> Checker<'a> {
         // là `VS0301` nhưng thông điệp phải nói rõ "không có ở VS0 (vis-std/vòng 2)".
         let msg = if la_kieu_ngoai_vs0(name) {
             format!(
-                "kiểu `{name}` không có ở VS0 — thuộc vis-std/vòng 2; ở VS0 dùng kiểu khác hoặc bỏ chú thích"
+                "kiểu `{name}` chưa hỗ trợ — thuộc vis-std/vòng 2; dùng kiểu khác hoặc bỏ chú thích"
             )
         } else {
             format!(
-                "tên không tồn tại: kiểu `{name}` không có trong VS0 (VD-43) và không được khai trong tệp"
+                "tên không tồn tại: kiểu `{name}` chưa hỗ trợ (VD-43) và không được khai trong tệp"
             )
         };
         self.diag(NO_TYPE, msg, span);
@@ -787,6 +789,16 @@ impl<'a> Checker<'a> {
                     self.item_types.push((e.name.clone(), ty));
                 }
                 HItem::Alias(a) => {
+                    // **P0 (VD-170)**: `newtype` chưa hạ ⇒ báo **ngay dòng khai báo**, không im
+                    // lặng (trước P0: khai một mình xanh, dùng mới `VS0301` ở dòng dùng).
+                    // Chỉ ở tầng tyck ⇒ `vis check --syntax` (cổng tài liệu QD §7.4) vẫn xanh.
+                    if a.is_newtype {
+                        self.diag(
+                            UNSUPPORTED,
+                            "`newtype` chưa hỗ trợ — dùng `type Email(str)` (R12)",
+                            a.span,
+                        );
+                    }
                     let ty = self.resolve_ann(&a.ty, a.span);
                     self.set_ty(a.sym, ty.clone());
                     self.item_types.push((a.name.clone(), ty));
@@ -1074,7 +1086,7 @@ impl<'a> Checker<'a> {
                         self.diag(
                             MISMATCH,
                             format!(
-                                "`for` chỉ duyệt được range `int` ở VS0, được `{}` (§A.7)",
+                                "`for` chỉ duyệt được range `int`, được `{}` (§A.7)",
                                 self.show(&o)
                             ),
                             span,
@@ -1145,7 +1157,7 @@ impl<'a> Checker<'a> {
                 if !matches!(op, crate::hir::AssignOp::Set) {
                     self.diag(
                         MISMATCH,
-                        "chỉ gán được `=` cho trường/phần tử ở VS0 (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)",
+                        "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)",
                         *span,
                     );
                     return Type::Error;
@@ -1169,7 +1181,7 @@ impl<'a> Checker<'a> {
                             self.diag(
                                 MISMATCH,
                                 format!(
-                                    "không gán được trường của `{}` ở VS0 (§4.1)",
+                                    "không gán được trường của `{}` (§4.1)",
                                     self.types.show(other)
                                 ),
                                 *span,
@@ -1200,7 +1212,7 @@ impl<'a> Checker<'a> {
                         self.diag(
                             MISMATCH,
                             format!(
-                                "không gán được trường của `{}` ở VS0 (§4.1)",
+                                "không gán được trường của `{}` (§4.1)",
                                 self.types.show(other)
                             ),
                             *span,
@@ -1215,7 +1227,7 @@ impl<'a> Checker<'a> {
                 if !matches!(op, crate::hir::AssignOp::Set) {
                     self.diag(
                         MISMATCH,
-                        "chỉ gán được `=` cho trường/phần tử ở VS0 (gán ghép `+=` … trên phần tử chưa hỗ trợ, §4.1)",
+                        "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên phần tử chưa hỗ trợ, §4.1)",
                         *span,
                     );
                     return Type::Error;
@@ -1350,7 +1362,7 @@ impl<'a> Checker<'a> {
 
 /// **ST-56b (VD-97)**: thông điệp gán ghép trên trường/phần tử (dùng chung cho thân `impl`).
 const GAN_GHEP: &str =
-    "chỉ gán được `=` cho trường/phần tử ở VS0 (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)";
+    "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)";
 /// Thông điệp gán **trường** của `let`/tham số.
 const GAN_TRUONG_LET: &str =
     "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)";
@@ -1359,7 +1371,7 @@ const GAN_PHAN_TU_LET: &str = "chỉ gán được phần tử của `var` — `
 /// **ST-60b**: đích **lồng** (sâu hơn một tầng trường/chỉ số) — gốc **đã** là `var` nên lỗi là do
 /// **hình dạng đích**, không phải do bất biến; nêu đúng vậy thay vì báo oan "let/tham số".
 const GAN_LONG: &str =
-    "gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ ở VS0 — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)";
+    "gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)";
 
 /// **ST-60b**: gốc của **đích gán** — đi xuống qua `Field`/`Index` tới `Var`.
 fn goc_dich(t: &HExpr) -> Option<u32> {

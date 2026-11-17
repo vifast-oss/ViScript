@@ -482,7 +482,7 @@ impl<'a> Interp<'a> {
                 if self.loop_depth == 0 {
                     return Err(Abort::Trap(Trap::new(
                         RT,
-                        "`break` ngoài vòng lặp (VS0 chỉ dùng trong `for`/`while`/`loop`)",
+                        "`break` ngoài vòng lặp (chỉ dùng trong `for`/`while`/`loop`)",
                         s.span(),
                     )));
                 }
@@ -984,7 +984,7 @@ impl<'a> Interp<'a> {
             }
             HExpr::Field { .. } | HExpr::Index { .. } => Err(Abort::Trap(Trap::new(
                 RT,
-                "gán vào trường/phần tử chưa hỗ trợ ở VS0 (dùng `with` cho bản ghi)",
+                "gán vào trường/phần tử chưa hỗ trợ (dùng `with` cho bản ghi)",
                 span,
             ))),
             _ => Err(Abort::Trap(Trap::new(RT, "đích gán không hợp lệ", span))),

@@ -1370,7 +1370,7 @@ fn list_method(
         }
         other => Err(trap(
             RT,
-            format!("`list.{other}()` chưa hỗ trợ ở VS0 (danh sách: len get first last push map filter each sum join)"),
+            format!("`list.{other}()` chưa hỗ trợ (danh sách: len get first last push map filter each sum join)"),
             span,
         )),
     }
@@ -1404,12 +1404,16 @@ fn str_method(
                 return Err(trap(RT, "`split` cần dấu ngăn khác rỗng", span));
             }
             Ok(Value::List(
-                s.split(sep.as_str()).map(|p| Value::Str(p.to_string())).collect(),
+                s.split(sep.as_str())
+                    .map(|p| Value::Str(p.to_string()))
+                    .collect(),
             ))
         }
         other => Err(trap(
             RT,
-            format!("`str.{other}()` chưa hỗ trợ ở VS0 (danh sách: len upper lower split chars contains)"),
+            format!(
+                "`str.{other}()` chưa hỗ trợ (danh sách: len upper lower split chars contains)"
+            ),
             span,
         )),
     }
@@ -1444,7 +1448,7 @@ fn map_method(
         "values" => Ok(Value::List(kv.into_iter().map(|(_, v)| v).collect())),
         other => Err(trap(
             RT,
-            format!("`map.{other}()` chưa hỗ trợ ở VS0 (danh sách: len get has keys values)"),
+            format!("`map.{other}()` chưa hỗ trợ (danh sách: len get has keys values)"),
             span,
         )),
     }

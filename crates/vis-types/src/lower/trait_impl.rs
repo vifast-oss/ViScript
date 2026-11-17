@@ -138,7 +138,7 @@ impl<'a> Lowerer<'a> {
             if !hop_le {
                 self.diag(
                     &TYPE_CODES[2],
-                    format!("không có `derives {d}` ở VS0 (chỉ có `Eq`, `Show`, `Json`)"),
+                    format!("không có `derives {d}` (chỉ có `Eq`, `Show`, `Json`)"),
                     node.span,
                 );
                 continue;
@@ -148,7 +148,9 @@ impl<'a> Lowerer<'a> {
             if !self.generics_of(node).is_empty() {
                 self.diag(
                     &TYPE_CODES[2],
-                    format!("derive `{d}` trên kiểu **generic** chưa hỗ trợ ở VS0 (không sinh mã — VD-98)"),
+                    format!(
+                        "derive `{d}` trên kiểu **generic** chưa hỗ trợ (không sinh mã — VD-98)"
+                    ),
                     node.span,
                 );
                 break;

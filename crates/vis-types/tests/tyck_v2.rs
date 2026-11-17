@@ -237,7 +237,10 @@ fn phep_cua_vs0_theo_vd48() {
     kiem("phép VS0", PHEP_VS0);
 }
 
-/// VD-48(a): kiểu ngoài VS0 vẫn `VS0301` **nhưng** thông điệp nêu "VS0/vis-std".
+/// VD-48(a): kiểu ngoài VS0 vẫn `VS0301` **nhưng** thông điệp nêu "chưa hỗ trợ/vis-std".
+///
+/// **P0 (VD-170) mục 2**: bỏ nhãn `VS0` khỏi thông điệp ⇒ kỳ vọng đổi từ `contains("VS0")`
+/// sang `contains("chưa hỗ trợ")`; ý nghĩa ca (nêu rõ thuộc vis-std) **không đổi**.
 ///
 /// **SỬA KÈM LÝ DO (ST-72)**: bỏ ca `cap[Dir]` khỏi danh sách "kiểu ngoài VS0" — từ **VD-106**
 /// `cap[...]` là **kiểu thật** (nên `f(1)` báo `VS0412` sai kiểu, không phải `VS0301`). Hành vi đổi
@@ -254,8 +257,8 @@ fn kieu_ngoai_vs0_bao_vs0301_ro_rang() {
         assert!(
             out.diags
                 .iter()
-                .any(|d| d.message.contains("VS0") && d.message.contains("vis-std")),
-            "phải có thông điệp nêu VS0/vis-std: {:?}\nnguồn: {src}",
+                .any(|d| d.message.contains("chưa hỗ trợ") && d.message.contains("vis-std")),
+            "phải có thông điệp nêu chưa hỗ trợ/vis-std: {:?}\nnguồn: {src}",
             out.diags
                 .iter()
                 .map(|d| d.message.clone())

@@ -414,7 +414,7 @@ impl<'a> Lowerer<'a> {
             // Chương trình ngoài (`^git`) — VS0 chưa có tiến trình ⇒ VS0604, không hạ no-op.
             self.diag(
                 &COMMAND_CODES[3],
-                "chương trình ngoài (`^…`) chưa hỗ trợ ở VS0",
+                "chương trình ngoài (`^…`) chưa hỗ trợ",
                 node.span,
             );
             return None;
@@ -699,11 +699,7 @@ impl<'a> Lowerer<'a> {
                         (false, String::new(), n.span, Some((**n).clone()))
                     }
                     NodeKind::CmdVar | NodeKind::CmdEnv => {
-                        self.diag(
-                            &COMMAND_CODES[3],
-                            "biến `$x`/`$env.X` chưa hỗ trợ ở VS0",
-                            n.span,
-                        );
+                        self.diag(&COMMAND_CODES[3], "biến `$x`/`$env.X` chưa hỗ trợ", n.span);
                         return None;
                     }
                     _ => (
@@ -806,7 +802,7 @@ impl<'a> Lowerer<'a> {
                         None => {
                             self.diag(
                                 &COMMAND_CODES[1],
-                                format!("cờ `{text}` cần giá trị nhưng chưa hỗ trợ ở VS0"),
+                                format!("cờ `{text}` cần giá trị nhưng chưa hỗ trợ"),
                                 con_span,
                             );
                             return None;

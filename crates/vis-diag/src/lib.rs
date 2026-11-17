@@ -295,9 +295,9 @@ pub const COMMAND_CODES: [Code; 4] = [
     Code {
         id: 604,
         short: "VS0604",
-        message_vi: "tính năng chưa hỗ trợ ở VS0 (ví dụ chạy nền `&`)",
-        message_en: "feature not supported in VS0 (e.g. background `&`)",
-        message_ja: "VS0 では未対応の機能です（例: バックグラウンド `&`）",
+        message_vi: "tính năng chưa hỗ trợ (ví dụ chạy nền `&`)",
+        message_en: "feature not supported (e.g. background `&`)",
+        message_ja: "未対応の機能です（例: バックグラウンド `&`）",
         severity: Severity::Error,
     },
 ];
@@ -306,9 +306,9 @@ pub const RUNTIME_CODES: [Code; 6] = [
     Code {
         id: 501,
         short: "VS0501",
-        message_vi: "lỗi runtime: phép toán hoặc tính năng chưa hỗ trợ ở VS0",
-        message_en: "runtime error: operation or feature not supported in VS0",
-        message_ja: "実行時エラー: VS0 では未対応の演算または機能です",
+        message_vi: "lỗi runtime: phép toán hoặc tính năng chưa hỗ trợ",
+        message_en: "runtime error: operation or feature not supported",
+        message_ja: "実行時エラー: 未対応の演算または機能です",
         severity: Severity::Error,
     },
     Code {
