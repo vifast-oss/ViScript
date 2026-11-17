@@ -413,7 +413,21 @@ impl Quyen {
 
     /// Quyết định quyền trên **đường dẫn đã canonicalize** `c` (dùng chung cho kiểm trước và sau
     /// khi mở — **ST-124**).
+    ///
+    /// **ST-165 (nợ #138) — thông điệp phải cho người vận hành biết VÌ SAO**, vì khi đọc `/proc`
+    /// có hai ca từ chối đúng nhưng thông điệp cũ gây hiểu nhầm là "khai thiếu `cap`":
+    /// - `c` **không phải đường dẫn tuyệt đối** (vd `/proc/self/fd/1` trỏ tới `pipe:[…]`): vật đã mở
+    ///   không có đường dẫn ⇒ không kiểm được theo vật ⇒ nói rõ, **không** báo "thiếu `cap[Dir]`".
+    /// - `p` tuyệt đối nhưng phân giải ra `c` khác (vd `/proc/self/fd/0` ⇒ `/dev/null`): nêu **đích
+    ///   thật**; nếu không, người khai `cap[Dir]` cho `/proc` tưởng cap của mình sai.
     fn kiem_canon(&self, c: &Path, p: &str, can_write: bool) -> Result<(), String> {
+        if !c.is_absolute() {
+            return Err(format!(
+                "{DAU_QUYEN}[quyền] `{p}` trỏ tới đối tượng không phải đường dẫn (`{}`) ⇒ \
+                 không xác định được vật để kiểm quyền ⇒ từ chối (ST-165 · nợ #138)",
+                c.display()
+            ));
+        }
         let mut trong_root = false;
         for q in &self.moc {
             if q.kind != "Dir" && q.kind != "File" {
@@ -428,15 +442,28 @@ impl Quyen {
             }
         }
         let co_fs = self.moc.iter().any(|q| q.kind == "Dir" || q.kind == "File");
-        let msg = if self.siet && !co_fs {
+        if self.siet && !co_fs {
             // **ST-81**: strict + **không** khai cap fs ⇒ nêu rõ **cần khai** gì.
-            format!("[quyền] cần khai `cap[Dir]` cho `{p}`")
-        } else if trong_root {
-            format!("[quyền] thiếu `(write)` trên `cap[Dir]` cho `{p}`")
+            return Err(format!("{DAU_QUYEN}[quyền] cần khai `cap[Dir]` cho `{p}`"));
+        }
+        if trong_root {
+            return Err(format!(
+                "{DAU_QUYEN}[quyền] thiếu `(write)` trên `cap[Dir]` cho `{p}`"
+            ));
+        }
+        // **ST-165**: nêu đích thật khi tên đã cho phân giải ra đường dẫn khác (chỉ khi `p` tuyệt
+        // đối — đường dẫn tương đối đã được ghép với `goc`, hiển thị `c` sẽ khó hiểu).
+        let them = if Path::new(p).is_absolute() && Path::new(p) != c {
+            format!(
+                " (`{p}` phân giải tới `{}` — ngoài mọi `cap[Dir]`/`cap[File]` đã khai)",
+                c.display()
+            )
         } else {
-            format!("[quyền] thiếu `cap[Dir]` cho `{p}`")
+            String::new()
         };
-        Err(format!("{DAU_QUYEN}{msg}"))
+        Err(format!(
+            "{DAU_QUYEN}[quyền] thiếu `cap[Dir]` cho `{p}`{them}"
+        ))
     }
 
     /// **ST-124 (VD-130b)**: xác nhận **sau khi đã mở** trên **tên** — nay chỉ dùng làm **dự phòng**
@@ -514,7 +541,9 @@ impl Quyen {
             }),
             DuongDanHandle::KhongLayDuoc(ly_do) => Err(format!(
                 "{DAU_QUYEN}[quyền] không xác định được đường dẫn thật của tệp đã mở cho `{p}` \
-                 ({ly_do}) ⇒ từ chối (không quay về kiểm theo tên; ST-137)"
+                 ({ly_do}) ⇒ từ chối (không quay về kiểm theo tên; ST-137). Trên Linux cần \
+                 procfs đọc được tại `/proc/self/fd`: thiếu procfs thì **mọi** lần đọc đều bị \
+                 từ chối — hãy kiểm/mount procfs (ST-165 · nợ #138)"
             )),
             DuongDanHandle::KhongCo => self.xac_nhan_sau_mo(p, truoc, d.danh_tinh),
         }
@@ -1149,5 +1178,107 @@ mod tests {
         assert_eq!(d2.noi_dung, "TRONG");
         assert!(d2.danh_tinh.0 != 0, "phải báo danh tính (dev, ino)");
         let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-165 (nợ #138)** — từ chối vì tên đã cho **phân giải ra đích khác** (vd
+    /// `/proc/self/fd/0` ⇒ `/dev/null`) thì thông điệp phải nêu **đích thật**: nếu chỉ nói
+    /// "thiếu `cap[Dir]` cho `/proc/self/fd/0`", người khai `cap[Dir]` cho `/proc` tưởng cap của
+    /// mình sai. Đỏ-trước: thông điệp cũ không có đích đã phân giải.
+    #[cfg(unix)]
+    #[test]
+    fn thong_diep_tu_choi_neu_dich_that_khac_ten() {
+        let d = tam("st165-dich");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let ngoai = d.join("ngoai.txt");
+        std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+        let link = root.join("link");
+        std::os::unix::fs::symlink(&ngoai, &link).expect("symlink");
+        let q = quyen_dir(&root);
+        let e = q
+            .kiem_fs(link.to_str().expect("utf8"), false)
+            .expect_err("phải TỪ CHỐI đích ngoài root");
+        assert!(e.contains("VS0604"), "phải là VS0604: {e}");
+        assert!(
+            e.contains("phân giải tới"),
+            "thông điệp phải nói tên đã phân giải: {e}"
+        );
+        let dich = std::fs::canonicalize(&ngoai).expect("canon đích");
+        assert!(
+            e.contains(&dich.display().to_string()),
+            "thông điệp phải nêu đích thật {}: {e}",
+            dich.display()
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-165 (nợ #138)** — `/proc/self/fd/1` trỏ tới `pipe:[…]`: vật đã mở **không có đường
+    /// dẫn** ⇒ phải nói rõ "không phải đường dẫn", **không** báo nhầm "thiếu `cap[Dir]`".
+    /// (Trước ST-165: rơi vào nhánh "ngoài root" ⇒ thông điệp sai chẩn đoán.)
+    #[test]
+    fn doi_tuong_khong_phai_duong_dan_bao_ro_ly_do() {
+        let d = tam("st165-pipe");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let q = quyen_dir(&root);
+        let e = q
+            .kiem_canon(Path::new("pipe:[123]"), "/proc/self/fd/1", false)
+            .expect_err("phải TỪ CHỐI đối tượng không phải đường dẫn");
+        assert!(e.contains("VS0604"), "phải là VS0604: {e}");
+        assert!(
+            e.contains("không phải đường dẫn"),
+            "phải nói rõ vật không có đường dẫn: {e}"
+        );
+        assert!(e.contains("pipe:[123]"), "phải nêu đích: {e}");
+        assert!(
+            !e.contains("thiếu `cap[Dir]`"),
+            "không được báo nhầm thiếu cap[Dir]: {e}"
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-165 (nợ #138)** — `/proc` **không đọc được** (host thật) thì người vận hành phải biết
+    /// **cần procfs** (không chỉ thấy "từ chối"): thông điệp phải nêu `procfs` + `/proc/self/fd`.
+    #[test]
+    fn thong_diep_khong_doc_duoc_proc_co_huong_dan_van_hanh() {
+        let d = tam("st165-khong-proc");
+        let root = d.join("root");
+        std::fs::create_dir_all(&root).expect("root");
+        let tep = root.join("tep");
+        std::fs::write(&tep, "TRONG").expect("tep");
+        let q = quyen_dir(&root);
+        let mut host = HostKhongProc;
+        let mut g = FsGuard {
+            trong: &mut host,
+            quyen: &q,
+        };
+        let e = g
+            .read(tep.to_str().expect("utf8"))
+            .expect_err("phải TỪ CHỐI khi không đọc được /proc/self/fd");
+        assert!(e.contains("VS0604"), "phải là VS0604: {e}");
+        assert!(
+            e.contains("procfs") && e.contains("/proc/self/fd"),
+            "phải hướng dẫn kiểm/mount procfs: {e}"
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// **ST-165 (nợ #138)** — khi `/proc` **đọc được** (Linux thật), đọc `/proc/self/status` dưới
+    /// `cap[Dir] /proc` **không** bị `VS0604`; bước kiểm theo tên + quyết định trên handle
+    /// (`/proc/<pid>/status`) đều nằm trong root. Đây là ca "xanh-sau" cho đúng yêu cầu của nợ:
+    /// `/proc` đọc được ⇒ đọc được thật.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn doc_proc_status_khi_proc_doc_duoc_khong_bi_vs0604() {
+        let q = quyen_dir(Path::new("/proc"));
+        let c = q
+            .kiem_fs_canon("/proc/self/status", false)
+            .expect("phải CHO đọc /proc/self/status khi cap[Dir] /proc");
+        let c = c.expect("quyền bật ⇒ phải trả đường dẫn đã canonicalize");
+        assert!(
+            c.starts_with("/proc"),
+            "đường dẫn canonicalize phải trong /proc: {}",
+            c.display()
+        );
     }
 }
