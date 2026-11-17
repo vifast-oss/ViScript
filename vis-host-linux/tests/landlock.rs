@@ -131,6 +131,18 @@ fn ghi_trong_thu_muc_chi_doc_bi_chan() {
 ///
 /// **ST-132b**: thêm chế độ `ls <thư mục>` (`fs::read_dir`) để ca âm thứ ba chứng minh kernel chặn
 /// **mở thư mục** ngoài phạm vi (`EACCES` ở `openat(O_DIRECTORY)`), không chỉ chặn đọc tệp.
+///
+/// **ST-166 (nợ #132)** — sửa **chỉ phần dựng helper**, kỳ vọng của mọi ca **không đổi**:
+/// - **Đường dựng không còn phụ thuộc PATH của runner**: `rustc` dò theo thứ tự `RUSTC` (cargo/rustup
+///   đặt) → `$CARGO_HOME/bin` → `$HOME/.cargo/bin` → PATH; PATH của **tiến trình rustc** được bổ sung
+///   thư mục toolchain + `/usr/bin:/bin` (nơi có trình liên kết `cc`). Trước đây gọi trần `"rustc"`
+///   ⇒ runner chạy qua `ssh`/CI có PATH rút gọn (sự cố R28 §5 #6, xem `viscript/bin/vis-remote`) làm
+///   **6 ca dùng helper** đỏ vì **môi trường** (3 ca âm + 3 ca đối chứng), không phải vì sản phẩm.
+/// - **Cờ tĩnh chỉ đặt trên Linux**: Landlock/`execve` của helper cần binary **tĩnh** (không `ld.so`
+///   phải mở thêm đường ngoài ruleset), nhưng `crt-static` không cần và không phải target nào cũng hỗ
+///   trợ (macOS: `cargo test` của crate này không chạy được vì `landlock` chỉ có trên Linux —
+///   `JOURNAL/st132b-read-dir.md` §6). Vì vậy cờ được chọn theo `cfg(target_os)`, phần còn lại giữ
+///   nguyên: vẫn `-O`, vẫn helper **tĩnh** trên Linux, không `#[ignore]`, không bỏ ca, không nới ngưỡng.
 fn dung_helper(d: &Path) -> PathBuf {
     let src = d.join("h.rs");
     let out = d.join("helper");
@@ -158,19 +170,82 @@ fn dung_helper(d: &Path) -> PathBuf {
 "#,
     )
     .expect("ghi nguồn helper");
-    let kq = Command::new("rustc")
-        .args(["-O", "-C", "target-feature=+crt-static", "-o"])
+    let rustc = duong_rustc();
+    let path = path_dung_helper();
+    let mut lenh = Command::new(&rustc);
+    lenh.env("PATH", &path).arg("-O");
+    if cfg!(target_os = "linux") {
+        lenh.args(["-C", "target-feature=+crt-static"]);
+    }
+    let kq = lenh
+        .arg("-o")
         .arg(&out)
         .arg(&src)
         .stdin(Stdio::inherit())
         .output()
-        .expect("chạy rustc để dựng helper tĩnh");
+        .unwrap_or_else(|e| panic!("chạy `{}` để dựng helper: {e}", rustc.display()));
     assert!(
         kq.status.success(),
-        "rustc phải dựng được helper tĩnh: {}",
+        "rustc phải dựng được helper tĩnh (rustc={}, PATH={}): {}",
+        rustc.display(),
+        path.display(),
         String::from_utf8_lossy(&kq.stderr)
     );
     out
+}
+
+/// **ST-166 (nợ #132)** — thư mục toolchain của rustup (`CARGO_HOME/bin`, `$HOME/.cargo/bin`): nơi
+/// `cargo`/`rustc` thật nằm khi runner **không** đặt nó trong PATH (phiên `ssh`/CI rút gọn).
+fn thu_muc_toolchain() -> Vec<PathBuf> {
+    let mut ds = Vec::new();
+    if let Some(g) = std::env::var_os("CARGO_HOME") {
+        ds.push(PathBuf::from(g).join("bin"));
+    }
+    if let Some(h) = std::env::var_os("HOME") {
+        ds.push(PathBuf::from(h).join(".cargo").join("bin"));
+    }
+    ds
+}
+
+/// **ST-166 (nợ #132)** — đường tới `rustc` dựng helper, **không** phụ thuộc PATH của runner:
+/// `RUSTC` → `$CARGO_HOME/bin/rustc` → `$HOME/.cargo/bin/rustc` → `rustc` (như cũ, để không đổi hành
+/// vi trên runner chuẩn).
+fn duong_rustc() -> PathBuf {
+    if let Some(r) = std::env::var_os("RUSTC") {
+        let p = PathBuf::from(r);
+        if p.is_file() {
+            return p;
+        }
+    }
+    for d in thu_muc_toolchain() {
+        let p = d.join("rustc");
+        if p.is_file() {
+            return p;
+        }
+    }
+    PathBuf::from("rustc")
+}
+
+/// **ST-166 (nợ #132)** — PATH cho **lần dựng helper**: giữ PATH hiện tại rồi **bổ sung** thư mục
+/// toolchain + thư mục hệ thống chuẩn (nơi có `cc`), bỏ trùng. Nhờ vậy helper vẫn dựng được khi PATH
+/// của runner bị rút gọn — đỏ-trước `JOURNAL/st166-do-truoc-ps.log` (mục B).
+fn path_dung_helper() -> std::ffi::OsString {
+    let mut muc: Vec<PathBuf> = std::env::var_os("PATH")
+        .map(|p| std::env::split_paths(&p).collect())
+        .unwrap_or_default();
+    for d in thu_muc_toolchain() {
+        muc.push(d);
+    }
+    for d in ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+        muc.push(PathBuf::from(d));
+    }
+    let mut ra: Vec<PathBuf> = Vec::new();
+    for m in muc {
+        if !ra.contains(&m) {
+            ra.push(m);
+        }
+    }
+    std::env::join_paths(ra).expect("ghép PATH cho lần dựng helper")
 }
 
 fn chay_con(helper: &Path, args: &[&str]) -> std::process::Output {
