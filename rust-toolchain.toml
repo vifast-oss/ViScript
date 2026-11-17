@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Ghim kênh toolchain để CI và máy dev dùng cùng một bản (ST-171i).
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
