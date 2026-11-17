@@ -895,14 +895,11 @@ impl<'g> Emit<'g> {
                         if !named.is_empty() {
                             if let Some(ds) = self.g.fparams.get(name).cloned() {
                                 let mut vt = 0usize;
-                                for (pname, la_named) in ds.iter() {
-                                    if !*la_named {
-                                        if let Some(a) = args.get(vt) {
-                                            self.expr(a)?;
-                                            vt += 1;
-                                        } else {
-                                            self.f.push(Instr::PushUnit, *span, 1);
-                                        }
+                                for (pname, _la_named) in ds.iter() {
+                                    // **R5a (VD-178)**: ưu tiên **vị trí**, rồi tới **tên**.
+                                    if let Some(a) = args.get(vt) {
+                                        self.expr(a)?;
+                                        vt += 1;
                                     } else if let Some((_, a)) =
                                         named.iter().find(|(n, _)| n == pname)
                                     {

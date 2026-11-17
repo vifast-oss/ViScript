@@ -69,7 +69,7 @@ loop break continue return and or not true false none self async await scope tes
 |---|---|---|---|---|
 | `fn add(a: int, b: int) -> int:`<br>`    a + b` ✔ | `def add(a, b):`<br>`    return a + b` | `fn add(a: i64, b: i64) -> i64 { a + b }` | `function add(a: number, b: number) { return a + b }` | **biểu thức cuối khối = giá trị trả về** |
 | `fn f(a: int, b: int = 2) -> int:` ✔ | `def f(a, b=2)` | — | `function f(a, b = 2)` | tham số mặc định |
-| `fn f(a: int, --b: int = 2) -> int:`<br>`f(1, --b: 5)` ✔ | `def f(a, b=2)`<br>`f(1, b=5)` | — | — | tham số tên kiểu **cờ CLI** |
+| `fn f(a: int, b: int) -> int:`<br>`f(1, b: 5)` ✔ | `def f(a, b=2)`<br>`f(1, b=5)` | — | — | **R5a**: đối số **có tên** `b: 5` khớp tham số theo **tên**; `--b` chỉ ở chế độ lệnh/`cmd` |
 | `x => x * 2` ✔ | `lambda x: x * 2` | `\|x\| x * 2` | `x => x * 2` | |
 | `fn(x: int) -> int:`<br>`    x + 1` ✔ | `lambda x: x + 1` | `\|x: i64\| x + 1` | `(x: number) => x + 1` | closure nhiều dòng |
 | `fn id[T](x: T) -> T:` ✔ | `def id[T](x: T) -> T:` (3.12) | `fn id<T>(x: T) -> T` | `function id<T>(x: T): T` | generic dùng **`[]`**, không `<>` |

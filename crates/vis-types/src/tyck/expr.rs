@@ -757,23 +757,15 @@ impl<'a> Checker<'a> {
         for (n, a) in named {
             let t = self.kiem_expr(a);
             match sig.params.iter().find(|p| &p.0 == n) {
-                Some(p) if p.3 => {
-                    // ST-12b MAJOR #5: `--tên` chỉ dùng cho tham số **khai `--`**, và không lặp.
+                // **R5a (VD-178)**: `f(1, b: 5)` — đối số **có tên** khớp tham số theo **tên**.
+                Some(p) => {
                     if da_gap.contains(&n.as_str()) {
-                        self.diag(ARG_COUNT, format!("đối số tên `--{n}` bị lặp"), a.span());
+                        self.diag(ARG_COUNT, format!("đối số tên `{n}` bị lặp"), a.span());
                     }
                     da_gap.push(n);
                     let want = p.1.clone();
                     self.coerce_e(a, &t, &want, "đối số có tên");
                 }
-                Some(_) => self.diag(
-                    ARG_COUNT,
-                    format!(
-                        "`{n}` là tham số **vị trí** của `{}` — không truyền bằng `--{n}` (§A.3)",
-                        sig.name
-                    ),
-                    a.span(),
-                ),
                 None => self.diag(
                     ARG_COUNT,
                     format!("hàm `{}` không có tham số tên `{n}`", sig.name),

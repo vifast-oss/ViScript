@@ -150,10 +150,11 @@ const GAN: &[(&str, &str)] = &[
 
 /// (5) `--tên` cho tham số không khai `--` ⇒ `VS0401`.
 const TEN_THAM_SO: &[(&str, &str)] = &[
-    // kỳ vọng: !VS0401 — `a` là tham số **vị trí**, không nhận `--a`
+    // **R5a (VD-178)**: đối số **có tên** khớp tham số theo **tên** — `--a` cũng nhận.
+    // kỳ vọng: ok(int)
     (
         "fn f(a: int, --b: int = 1) -> int:\n    a + b\nf(1, --a: 2)",
-        "!VS0401",
+        "ok(int)",
     ),
     // kỳ vọng: !VS0401 — đối số tên **lặp**
     (
@@ -329,7 +330,7 @@ fn gan_field_index_kiem_bat_bien() {
 }
 
 #[test]
-fn ten_tham_so_phai_khai_dau_hai_gach() {
+fn ten_tham_so_va_doi_so_co_ten() {
     kiem("tham số tên", TEN_THAM_SO);
 }
 

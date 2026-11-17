@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R5a (VD-178)**: `f(1, b: 5)` — đối số **có tên**; trường bản ghi **thiếu** lấy mặc định.
+fn f(a: int, b: int) -> int:
+    a + b
+
+type User:
+    name: str
+    age: int = 0
+
+fn main():
+    print(f(1, b: 5))
+    print(f(a: 2, b: 3))
+    let u = User(name: "An")
+    print(u)

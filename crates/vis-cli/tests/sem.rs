@@ -164,8 +164,10 @@ fn sem_323_ca_qua_binary() {
         // (409 `.vis` + 50 `.vish`, **84** `.err`).
         // **SỬA KÈM LÝ DO (R8, VD-178)**: +**1** ca `list/chi-so-an-toan` ⇒ **460 ca**
         // (410 `.vis` + 50 `.vish`, **84** `.err`).
-        460,
-        "phải đúng 460 ca (410 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (R5a, VD-178)**: +**1** ca `ham/goi-ten` ⇒ **461 ca**
+        // (411 `.vis` + 50 `.vish`, **84** `.err`).
+        461,
+        "phải đúng 461 ca (411 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.

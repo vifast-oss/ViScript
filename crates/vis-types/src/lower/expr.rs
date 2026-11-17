@@ -762,8 +762,22 @@ impl<'a> Lowerer<'a> {
                 if !named.is_empty() {
                     if let Some((_, rid)) = self.rec_names.iter().find(|(n, _)| n == name).cloned()
                     {
+                        // **R5a (VD-178)**: trường **thiếu** lấy **giá trị mặc định** của khai báo.
+                        let mut fields = named;
+                        if let Some(rec) = self.items.iter().find_map(|it| match it {
+                            crate::hir::HItem::Rec(r) if r.id == rid => Some(r.clone()),
+                            _ => None,
+                        }) {
+                            for f in &rec.fields {
+                                if !fields.iter().any(|(n, _)| n == &f.name) {
+                                    if let Some(d) = &f.default {
+                                        fields.push((f.name.clone(), d.clone()));
+                                    }
+                                }
+                            }
+                        }
                         return HExpr::Record {
-                            fields: named,
+                            fields,
                             ty: Type::Record(rid),
                             span,
                         };
