@@ -10,6 +10,7 @@
 # kỳ vọng: 7
 # kỳ vọng: 120
 # kỳ vọng-test: ok 1 - cong
+# kỳ vọng-test: ok 2 - cong_am
 fn add(a: int, b: int) -> int:
     a + b
 print(add(1, 2))
@@ -40,3 +41,7 @@ print(fact(5))
 
 test fn cong():
     assert add(1, 2) == 3
+
+test fn cong_am():
+    # **R20b-fix (VD-178)**: hai `test fn` trong **cùng** tệp — trước đây `VS0302` (tên `test` lặp).
+    assert add(-1, -2) == -3

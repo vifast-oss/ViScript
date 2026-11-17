@@ -409,7 +409,8 @@ pub fn bin(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value>
             _ => Err(trap(
                 RT,
                 format!(
-                    "`{op:?}` cần hai `int`, được `{}` và `{}`",
+                    "`{}` cần hai `int`, được `{}` và `{}`",
+                    op.text(),
                     l.show(),
                     r.show()
                 ),
@@ -545,18 +546,23 @@ fn arith(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
             Ok(Value::Float(a as f64 / b as f64))
         }
         // **R7 (VD-178)**: `//` chia lấy phần nguyên — làm tròn **xuống** (Python).
+        // **R7-fix**: `div_euclid` làm tròn **lên** khi `b < 0` ⇒ trừ 1 khi dư ≠ 0; dùng
+        // `checked_*` để `i64::MIN // -1` ra `VS0501` (tràn) thay vì panic Rust.
         (FloorDiv, Value::Int(a), Value::Int(b)) => {
             if b == 0 {
                 return Err(trap(DIV0, "chia cho 0 (`//0`)", span));
             }
-            Ok(Value::Int(a.div_euclid(b)))
+            let q = a.checked_div_euclid(b).ok_or_else(|| overflow(span))?;
+            let r = a.checked_rem_euclid(b).ok_or_else(|| overflow(span))?;
+            Ok(Value::Int(if r != 0 && b < 0 { q - 1 } else { q }))
         }
-        // **R7 (VD-178)**: `%` khớp `//` — phần dư **không âm** (Python).
+        // **R7 (VD-178)**: `%` khớp `//` — dư **cùng dấu số chia** (Python).
         (Rem, Value::Int(a), Value::Int(b)) => {
             if b == 0 {
                 return Err(trap(DIV0, "lấy dư cho 0 (`%0`)", span));
             }
-            Ok(Value::Int(a.rem_euclid(b)))
+            let r = a.checked_rem_euclid(b).ok_or_else(|| overflow(span))?;
+            Ok(Value::Int(if r != 0 && b < 0 { r + b } else { r }))
         }
         (Pow, Value::Int(a), Value::Int(b)) => {
             if b < 0 {

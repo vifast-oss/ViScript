@@ -103,7 +103,13 @@ pub(super) fn kiem_index_opt(
     span: vis_syntax::Span,
 ) -> Type {
     let bt = c.kiem_expr(base);
-    let _ = c.kiem_expr(index);
+    // **R8-fix (VD-178)**: chỉ số phải đúng kiểu — `int` cho `list`/`bytes`, `K` cho `map[K, V]`.
+    let it = c.kiem_expr(index);
+    let khoa = match &bt {
+        Type::Map(k, _) => (**k).clone(),
+        _ => Type::Int,
+    };
+    c.coerce_e(index, &it, &khoa, "chỉ số");
     let elem = match &bt {
         Type::List(e) => (**e).clone(),
         Type::Bytes => Type::Int,

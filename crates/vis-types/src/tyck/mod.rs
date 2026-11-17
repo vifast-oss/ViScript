@@ -1005,11 +1005,24 @@ impl<'a> Checker<'a> {
                             crate::hir::AssignOp::Sub => crate::hir::BinOp::Sub,
                             crate::hir::AssignOp::Mul => crate::hir::BinOp::Mul,
                             crate::hir::AssignOp::Div => crate::hir::BinOp::Div,
+                            // **R7-fix (VD-178)**: `//=` kiểm như `//` (trước đây rơi vào `%`).
+                            crate::hir::AssignOp::FloorDiv => crate::hir::BinOp::FloorDiv,
                             _ => crate::hir::BinOp::Rem,
                         };
                         let v_lit = is_int_lit(value);
                         if let Some(res) = num::so_hoc(op2, &wanted, &got, false, v_lit) {
                             self.coerce(&res, &wanted, value.span(), "gán ghép");
+                        } else if op2 == crate::hir::BinOp::FloorDiv {
+                            // **R7-fix (VD-178)**: `//=` chỉ có cho `int` — kiểu khác ⇒ `VS0414`.
+                            self.diag(
+                                TOAN_TU,
+                                format!(
+                                    "`//=` không hỗ trợ cho `{}` và `{}` (chỉ `int`)",
+                                    self.show(&wanted),
+                                    self.show(&got)
+                                ),
+                                value.span(),
+                            );
                         } else {
                             self.coerce_e(value, &got, &wanted, "gán ghép");
                         }

@@ -63,7 +63,16 @@ impl<'a> Lowerer<'a> {
             | NodeKind::AliasDecl
             | NodeKind::NewtypeDecl
             | NodeKind::ConstDecl => {
-                if let Some(name) = self.decl_name(node) {
+                // **R20b-fix (VD-178)**: `test fn tên()` — `test` cũng là `Ident` ⇒ lấy ident **thứ hai**.
+                let ten = if node.kind == NodeKind::TestDecl {
+                    node.tokens(&self.cst.tokens)
+                        .filter(|t| t.kind == Kind::Ident)
+                        .nth(1)
+                        .map(|t| t.text.clone())
+                } else {
+                    self.decl_name(node)
+                };
+                if let Some(name) = ten {
                     let id = self.declare(&name, SymKind::Item, node.span, None);
                     // ST-25: `pub` quyết định tầm nhìn ra module khác (`let`/`const` **chưa** hỗ trợ
                     // `pub` — nợ VS1b, ghi JOURNAL).
@@ -128,7 +137,16 @@ impl<'a> Lowerer<'a> {
     }
 
     fn lower_fn(&mut self, node: &Node, kind: FnKind) -> HFn {
-        let name = self.decl_name(node).unwrap_or_default();
+        // **R20b-fix (VD-178)**: `test fn tên()` — `test` cũng là `Ident` ⇒ lấy ident **thứ hai**.
+        let name = if kind == FnKind::Test {
+            node.tokens(&self.cst.tokens)
+                .filter(|t| t.kind == Kind::Ident)
+                .nth(1)
+                .map(|t| t.text.clone())
+                .unwrap_or_default()
+        } else {
+            self.decl_name(node).unwrap_or_default()
+        };
         let generics = self.generics_of(node);
         let is_pub = self.has_token(node, "pub");
         let is_async = self.has_token(node, "async");
