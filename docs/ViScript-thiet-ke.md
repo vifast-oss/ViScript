@@ -1305,7 +1305,7 @@ primary         := literal | 'self' | IDENT | 'ref' '(' expr ')' | '(' ')'
 
 args            := positional_args? named_args?
 positional_args := expr (',' expr)*
-named_args      := (',' '--' IDENT [':' expr])+
+named_args      := (',' ('--' IDENT [':' expr] | IDENT ':' expr))+
 
 field_updates   := IDENT ':' expr (',' IDENT ':' expr)*
 
