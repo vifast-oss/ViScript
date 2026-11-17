@@ -488,6 +488,23 @@ impl<'a> Checker<'a> {
         false
     }
 
+    /// **R17 (VD-178)**: điều kiện `if`/`while` chỉ `bool`; list/map/str ⇒ gợi ý `.is_empty()`.
+    pub(crate) fn coerce_cond(&mut self, e: &HExpr, t: &Type, what: &str) -> bool {
+        if matches!(t, Type::List(_) | Type::Map(..) | Type::Str) {
+            let ten = match e {
+                HExpr::Var { name, .. } => name.clone(),
+                _ => "xs".to_string(),
+            };
+            let msg = format!(
+                "{what}: cần `bool`, được `{}` — gợi ý: `{ten}.is_empty()`",
+                self.show(t)
+            );
+            self.diag(MISMATCH, msg, e.span());
+            return false;
+        }
+        self.coerce(t, &Type::Bool, e.span(), what)
+    }
+
     /// Ép kiểu **có biết biểu thức nguồn**: chỉ nâng `int → float` khi nguồn là **literal** số
     /// nguyên (§3.5, ngoại lệ duy nhất của "không chuyển đổi ngầm").
     pub(crate) fn coerce_e(&mut self, e: &HExpr, from: &Type, to: &Type, what: &str) -> bool {
@@ -1010,7 +1027,7 @@ impl<'a> Checker<'a> {
             }
             HStmt::While { cond, body, .. } => {
                 let t = self.kiem_expr(cond);
-                self.coerce(&t, &Type::Bool, cond.span(), "điều kiện `while`");
+                self.coerce_cond(cond, &t, "điều kiện `while`");
                 self.kiem_than_bo(body);
                 Type::Unit
             }

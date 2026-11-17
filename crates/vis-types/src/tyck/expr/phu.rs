@@ -83,3 +83,14 @@ pub(super) fn kiem_interp(c: &mut super::super::Checker, parts: &[crate::hir::In
         }
     }
 }
+
+/// **R17 (VD-178)**: `is_empty()` — 0 đối số, trả `bool` (list/map/str).
+pub(super) fn is_empty(
+    c: &mut super::super::Checker,
+    args: &[crate::hir::HExpr],
+    name: &str,
+    span: vis_syntax::Span,
+) -> Type {
+    c.arity(args, 0, name, span);
+    Type::Bool
+}

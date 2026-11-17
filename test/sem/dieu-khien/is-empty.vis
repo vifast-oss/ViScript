@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+let xs = [1, 2]
+if xs.is_empty():
+    print("rong")
+else:
+    print("co")
+let m = {"a": 1}
+print(m.is_empty())
+print("".is_empty())

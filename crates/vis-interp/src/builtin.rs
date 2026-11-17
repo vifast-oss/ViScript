@@ -1303,6 +1303,8 @@ fn list_method(
 ) -> crate::interp::R<Value> {
     match name {
         "len" => Ok(Value::Int(xs.len() as i64)),
+        // **R17 (VD-178)**: `is_empty()` cho list/map/str.
+        "is_empty" => Ok(Value::Bool(xs.is_empty())),
         "get" => {
             let Some(Value::Int(i)) = args.first() else {
                 return Err(trap(RT, "`get` cần chỉ số `int`", span));
@@ -1383,6 +1385,7 @@ fn str_method(
 ) -> crate::interp::R<Value> {
     match name {
         "len" => Ok(Value::Int(s.chars().count() as i64)),
+        "is_empty" => Ok(Value::Bool(s.is_empty())),
         "upper" => Ok(Value::Str(s.to_uppercase())),
         "lower" => Ok(Value::Str(s.to_lowercase())),
         "chars" => Ok(Value::List(
@@ -1426,6 +1429,7 @@ fn map_method(
 ) -> crate::interp::R<Value> {
     match name {
         "len" => Ok(Value::Int(kv.len() as i64)),
+        "is_empty" => Ok(Value::Bool(kv.is_empty())),
         "get" => {
             let Some(k) = args.first() else {
                 return Err(trap(RT, "`get` cần 1 khoá", span));

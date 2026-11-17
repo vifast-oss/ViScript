@@ -347,3 +347,26 @@ fn match_unit_tuple_la_huu_han() {
 fn phu_them_bieu_thuc_va_kieu() {
     kiem("phủ", PHU);
 }
+
+/// **R17 (VD-178)**: điều kiện `if`/`while` chỉ `bool`; list/map/str ⇒ gợi ý `.is_empty()`.
+#[test]
+fn dieu_kien_list_goi_y_is_empty() {
+    for src in [
+        "let xs = [1, 2]\nif xs:\n    print(1)\n",
+        "let xs = [1, 2]\nwhile xs:\n    print(1)\n",
+        "let m = {\"a\": 1}\nif m:\n    print(1)\n",
+        "if \"abc\":\n    print(1)\n",
+    ] {
+        let (out, _) = run(src);
+        assert!(
+            out.codes().contains(&"VS0412"),
+            "phải VS0412: {:?}\nnguồn: {src}",
+            out.codes()
+        );
+        assert!(
+            out.diags.iter().any(|d| d.message.contains("is_empty")),
+            "phải gợi ý `is_empty`: {:?}\nnguồn: {src}",
+            out.diags.iter().map(|d| &d.message).collect::<Vec<_>>()
+        );
+    }
+}

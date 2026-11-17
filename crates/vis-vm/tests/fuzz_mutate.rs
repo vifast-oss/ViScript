@@ -144,10 +144,11 @@ fn than_fuzz() {
     // **SỬA KÈM LÝ DO (ST-57)**: **329** module nguồn (388 ca − 59 `.err`).
     // **SỬA KÈM LÝ DO (ST-72)**: **364** module nguồn (447 ca − 83 `.err`).
     // **SỬA KÈM LÝ DO (R6, VD-178)**: **368** module nguồn (452 ca − 84 `.err`).
+    // **SỬA KÈM LÝ DO (R17, VD-178)**: **369** module nguồn (453 ca − 84 `.err`).
     assert_eq!(
         goc.len(),
-        368,
-        "phải đủ 368 module nguồn (ST-41: 452 ca − 84 `.err`)"
+        369,
+        "phải đủ 369 module nguồn (ST-41: 453 ca − 84 `.err`)"
     );
     let phut = so_phut();
     let bat_dau = std::time::Instant::now();

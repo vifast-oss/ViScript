@@ -420,7 +420,7 @@ impl<'a> Checker<'a> {
         match cond {
             HCond::Expr(e) => {
                 let t = self.kiem_expr(e);
-                self.coerce(&t, &Type::Bool, e.span(), "điều kiện `if`");
+                self.coerce_cond(e, &t, "điều kiện `if`");
             }
             HCond::Let { pat, value, .. } => {
                 let vt = self.kiem_expr(value);
@@ -938,6 +938,8 @@ impl<'a> Checker<'a> {
                         }
                         Type::Unit
                     }
+                    // **R17 (VD-178)**: `is_empty()` cho list/map/str — gợi ý của điều kiện.
+                    "is_empty" => phu::is_empty(self, args, name, span),
                     "sum" => {
                         self.arity(args, 0, name, span);
                         // ST-13b (mục 6): `sum` chỉ trên list **số**.
@@ -964,7 +966,7 @@ impl<'a> Checker<'a> {
                         self.diag(
                             NO_FIELD,
                             format!(
-                                "`list` không có phương thức `{name}` (ST-13: len get first last push map filter each sum join)"
+                                "`list` không có phương thức `{name}` (ST-13: len get first last push map filter each sum join is_empty)"
                             ),
                             span,
                         );
@@ -981,6 +983,7 @@ impl<'a> Checker<'a> {
                     self.arity(args, 0, name, span);
                     Type::Str
                 }
+                "is_empty" => phu::is_empty(self, args, name, span),
                 "chars" => {
                     self.arity(args, 0, name, span);
                     Type::List(Box::new(Type::Str))
@@ -998,7 +1001,7 @@ impl<'a> Checker<'a> {
                 _ => {
                     self.diag(
                         NO_FIELD,
-                        format!("`str` không có phương thức `{name}` (ST-13: len upper lower split chars contains)"),
+                        format!("`str` không có phương thức `{name}` (ST-13: len upper lower split chars contains is_empty)"),
                         span,
                     );
                     Type::Error
@@ -1022,6 +1025,7 @@ impl<'a> Checker<'a> {
                         self.arg_ty(&arg_tys, 0, &kk, name, args, span);
                         Type::Bool
                     }
+                    "is_empty" => phu::is_empty(self, args, name, span),
                     "keys" => {
                         self.arity(args, 0, name, span);
                         Type::List(Box::new(kk))
@@ -1033,7 +1037,7 @@ impl<'a> Checker<'a> {
                     _ => {
                         self.diag(
                             NO_FIELD,
-                            format!("`map` không có phương thức `{name}` (ST-13: len get has keys values)"),
+                            format!("`map` không có phương thức `{name}` (ST-13: len get has keys values is_empty)"),
                             span,
                         );
                         Type::Error
