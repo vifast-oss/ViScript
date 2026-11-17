@@ -1,13 +1,14 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
-Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-14.
+Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-17
+(ST-173: Landlock **chỉ Linux** — xem mục cuối tệp).
 
 ## Bảng nền tảng ↔ bảo đảm
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
-| macOS (máy phát triển) | **Có** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`, đã đo 8 ca interp+VM | **Không có** (không hỗ trợ) | `vis run --sandbox-check` in `landlock: không hỗ trợ trên macos`, exit 3 |
-| Linux | **Có** — cùng mã `vis-cli` (chưa đo trên máy Linux) | **Chỉ probe** — đọc `/sys/kernel/security/lsm`, **chưa** cưỡng chế bằng kernel | `cargo check --target x86_64-unknown-linux-gnu` xanh (biên dịch chéo, **chưa chạy**) |
+| macOS (máy phát triển) | **Có** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`, đã đo 8 ca interp+VM | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` được **cfg-out** (0 ca chạy, ST-173) | `vis run --sandbox-check` in `landlock: không hỗ trợ trên macos`, exit 3; `cargo test -p vis-host-linux` exit 0, **0 ca** |
+| Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **15/15 ca** trên `ps` (ST-150/ST-166/ST-173) | `cargo test -p vis-host-linux --test landlock` → `15 passed` (log `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`) |
 | Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
 
 ## Cách đọc `vis run --sandbox-check`
@@ -33,7 +34,7 @@ Mã thoát: `0` = Linux có `landlock`; `3` = không có / nền khác; `4` = Li
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
 | `vis-host-wasm` | — | check xanh (khung; `probe()` = “runtime kiểm, không có sandbox OS”) | **check** |
-| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13; host suite 54/54) |
+| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13 tại ST-137, **15/15** từ ST-150/ST-166/ST-173 — xem mục cuối; host suite 54/54) |
 
 Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “chạy trên Windows/wasm”;
 đúng là “**check** biên dịch chéo xanh, **chưa chạy**”.
@@ -58,9 +59,9 @@ Log: `agent/JOURNAL/st75-suite.log` (macOS, ST-75); `st137-host-suite-macos.log`
 
 ## Cấm ngôn từ
 
-- **Sai**: “đã cưỡng chế bằng Landlock”, “Landlock đã bảo vệ chương trình”, “cách ly kernel đã bật”.
-- **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)”; “**probe** Landlock (ST-73) — chỉ đọc, chưa cưỡng chế”.
-- `vis-host-linux` hiện là **khung probe**; nó **không** gọi syscall và **không** hạn chế quyền.
+- **Sai**: “đã cưỡng chế bằng Landlock” khi nói về **macOS/Windows**; “Landlock đã bảo vệ chương trình” trên nền không phải Linux; “cách ly kernel đã bật” chung chung.
+- **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)” trên **mọi** nền; “**Landlock cưỡng chế chỉ trên Linux** — đo **15/15** ca (ST-132/ST-150/ST-166/ST-173)”.
+- `vis-host-linux` **chỉ biên dịch trên Linux**: `src/lib.rs` và `tests/landlock.rs` có `#![cfg(target_os = "linux")]`, `landlock` nằm trong `[target.'cfg(target_os = "linux")'.dependencies]` (ST-173). Trên mac/Windows đây là crate **rỗng, 0 ca** — **giới hạn nền**, không phải thiếu sót; xem mục cuối tệp.
 
 - Cấm nói "async song song", "chạy đồng thời", "rendezvous", "HTTPS", "sandbox kernel" khi mô tả VS2 (VD-122, VD-123, VD-120).
 - Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
@@ -73,6 +74,10 @@ Cần **một** trong hai, kèm runner Linux để **đo**:
 2. Agent 0 duyệt `unsafe` **đóng** trong `vis-host-linux` + ca âm.
 
 Hiện cả hai đều **chưa** được duyệt (R2 cấm `unsafe`, allowlist crate đóng).
+
+**Cập nhật 2026-11-17 (ST-132/ST-166/ST-173):** điều kiện **1 đã đạt** — VD-120 duyệt crate
+`landlock =0.4.7` (MIT OR Apache-2.0) **chỉ** trong crate `vis-host-linux`; suite kernel **15/15**
+trên `ps`, nợ **#132 đóng** (ST-166). Điều kiện 2 (`unsafe`) **không** dùng.
 
 ## Thụt lề `.vish` — **có ngữ nghĩa ở cấp tệp** (ST-85, VD-109)
 
@@ -105,3 +110,41 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
 - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.
 - exists và list không trả nội dung tệp.
+
+## Landlock chỉ Linux — **giới hạn nền**, không phải thiếu sót (ST-173, VD-175 §2)
+
+**Kết luận một dòng:** Landlock là cơ chế **chỉ có trong nhân Linux**; `vis-host-linux` vì vậy **chỉ
+biên dịch và chỉ có ca kiểm trên Linux**. Trên macOS/Windows crate này **rỗng (0 ca)**, và **mọi** tuyên
+bố “kernel chặn” chỉ có bằng chứng từ Linux — đây là **giới hạn nền**, **không** phải lỗi, không phải
+test bị bỏ.
+
+### Cách cfg-hoá (ST-173)
+
+- `vis-host-linux/Cargo.toml`: `landlock = "=0.4.7"` nằm trong
+  `[target.'cfg(target_os = "linux")'.dependencies]` — trên nền khác crate **không** được kéo vào.
+- `vis-host-linux/src/lib.rs` và `vis-host-linux/tests/landlock.rs` có `#![cfg(target_os = "linux")]`
+  (có từ ST-132; ST-173 chỉ chuyển dependency, **không** sửa thân test).
+- **Không** `#[ignore]`, **không** bỏ ca, **không** đổi kỳ vọng/ngưỡng. Trên Linux dependency **vẫn bắt
+  buộc**: thiếu crate `landlock` ⇒ build Linux **đỏ** — không có đường “âm thầm bỏ bảo vệ”.
+
+### Hệ quả (đọc kỹ trước khi trích dẫn)
+
+1. **macOS/Windows không chạy ca Landlock.** `cargo test -p vis-host-linux` trên mac: **0 ca**
+   (trước ST-173: **đỏ biên dịch** crate `landlock`, 6 lỗi, `[exit=101]`; sau ST-173: `[exit=0]`, 0 ca).
+   Crate rỗng **không** phải “đã kiểm” — chỉ là “không áp dụng”.
+2. **Hành vi bảo vệ chỉ đo trên Linux.** Số ca trên `ps` (Linux `7.0.0-43-generic`, LSM có `landlock`):
+   **trước 15 passed / sau 15 passed** (`0 failed`, `[exit=0]`) — **KHÔNG đổi**. Log:
+   `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`.
+3. **Cổng trên mac không phát hiện hồi quy Landlock.** Muốn biết Landlock còn chặn thật phải chạy
+   `cargo test -p vis-host-linux --test landlock` trên **Linux** (runner `ps`).
+4. Trên mac/Windows, bảo đảm duy nhất là **cưỡng chế runtime** (`FsGuard`/`NetGuard`, ST-72b) —
+   **không** được suy rộng thành “có sandbox kernel”.
+
+| Nền | Biên dịch `vis-host-linux` | Số ca Landlock chạy | Bằng chứng |
+|---|---|---|---|
+| Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **15/15** | `st173-ps-truoc.log`, `st173-ps-sau.log` |
+| macOS 27.0.1 arm64 | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log` |
+| Windows | — | **0** (không áp dụng) | chưa có runner |
+
+**Không** dùng câu: “Landlock bảo vệ trên mac/Windows”; “không biên dịch được nên bỏ qua”; “mac thiếu
+sandbox kernel”. Đúng: “**Landlock chỉ Linux** — mac/Windows chỉ có `FsGuard`/`NetGuard` ở tầng runtime”.
