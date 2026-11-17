@@ -201,7 +201,7 @@ print(dien_tich(Hinh.Vuong(3.0)))
 ```vis
 let ds = [10, 20, 30]
 let o = ds.get(1)          # some(20)
-if let v = o:
+if let Some(v) = o:
     print("có {v}")
 else:
     print("không có")
@@ -213,7 +213,7 @@ có 20
 -1
 ```
 
-> `int?` là "int hoặc không có". `??` là giá trị thay thế khi không có. `if let` lấy giá trị ra an toàn.
+> `int?` là "int hoặc không có". `??` là giá trị thay thế khi không có. `if let Some(v) = o:` lấy giá trị ra an toàn — **phải viết pattern** (`Some(v)`), dạng `if let v = o:` là lỗi.
 
 ### 11. Xử lý lỗi (Result)
 
@@ -512,7 +512,7 @@ bai.vis:3:7: error VS0412: toán tử `+`: `str` và `str` không cùng kiểu/�
 
 Gõ `./vis explain VS0412` để xem nghĩa của mã lỗi (có tiếng Việt, English, 日本語).
 
-> **ĐANG LÀM (R9)**: mỗi mã lỗi một nghĩa, kèm gợi ý sửa ngay tại chỗ.
+> **ĐÃ CÓ (R9)**: mỗi mã lỗi một nghĩa, kèm gợi ý sửa ngay tại chỗ.
 
 ## Trạng thái ngôn ngữ
 
@@ -525,8 +525,15 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | Đơn vị đo | ✅ ĐÃ CÓ (cách in sẽ đổi theo R10) |
 | Thư viện chuẩn (fs, json, http, net…) | ✅ ĐÃ CÓ (API đóng băng) |
 | `str + str`, `print(a, b)`, format `{x:.2}`, `p"…"` | ✅ ĐÃ CÓ (R6) |
-| `if let Some(v) = o:` (pattern) | 🔜 ĐANG LÀM (R3) |
-| `/` ra float, `//` chia nguyên | 🔜 ĐANG LÀM (R7) |
+| `if let Some(v) = o:` (pattern) | ✅ ĐÃ CÓ (R3a) |
+| `let x = r else:` | ✅ ĐÃ CÓ (R3b) |
+| `/` ra float, `//` chia nguyên, `%` khớp `//` | ✅ ĐÃ CÓ (R7) |
+| `xs[i]?` chỉ số an toàn | ✅ ĐÃ CÓ (R8) |
+| `enum Shape: Circle(float), Empty` + `U(n: 1)` | ✅ ĐÃ CÓ (R11) |
+| `type X = T`, `type Email(str)` | ✅ ĐÃ CÓ (R12a) |
+| `let` che tên cùng phạm vi | ✅ ĐÃ CÓ (R16) |
+| `if xs:` ⇒ gợi ý `xs.is_empty()` | ✅ ĐÃ CÓ (R17) |
+| `f(1, b: 5)` đối số có tên | ✅ ĐÃ CÓ (R5a) |
 | Method người dùng (`impl P:`) | 🔜 DỰ KIẾN (R14) |
 | `.lazy()` iterator | 🔜 DỰ KIẾN (R24) |
 | Windows hỗ trợ đầy đủ | 🔜 VS3 |
