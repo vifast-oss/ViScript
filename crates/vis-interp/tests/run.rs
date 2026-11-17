@@ -334,7 +334,7 @@ const KIEU: &[(&str, &str)] = &[
     ),
     // kỳ vọng: out("0\n") — `T?` + match some/none
     (
-        "let x: int? = none\nmatch x:\n    some(v): print(v)\n    none: print(0)",
+        "let x: int? = none\nmatch x:\n    Some(v): print(v)\n    none: print(0)",
         "out(\"0\\n\")",
     ),
     // kỳ vọng: out("5\n") — `??` trên `some`

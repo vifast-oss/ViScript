@@ -321,22 +321,32 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     if dump_deps {
         eprint!("{}", modules::dump_deps(&loaded));
     }
+    // **R1a (VD-178)**: cảnh báo (`Severity::Warning`) **in** nhưng **không** làm đỏ.
+    // **R1a (VD-178)**: chỉ `VS0111` là cảnh báo **mềm**; `VS0107` (tab) vẫn đỏ (VD-12).
+    let loi: Vec<&(String, vis_syntax::Diagnostic)> = loaded
+        .diags
+        .iter()
+        .filter(|(_, d)| d.code.short != "VS0111")
+        .collect();
     if !loaded.diags.is_empty() {
         for (rel, d) in &loaded.diags {
+            let nhan = if d.code.short == "VS0111" {
+                "warning"
+            } else {
+                "error"
+            };
             eprintln!(
-                "{rel}:{}:{}: error {}: {}",
+                "{rel}:{}:{}: {nhan} {}: {}",
                 d.line, d.col, d.code.short, d.message
             );
         }
-        if tap {
-            let ma = loaded
-                .diags
-                .first()
-                .map(|(_, d)| d.code.short)
-                .unwrap_or("VS0201");
-            eprintln!("not ok 1 - {} ({ma})", tep);
+        if !loi.is_empty() {
+            if tap {
+                let ma = loi.first().map(|(_, d)| d.code.short).unwrap_or("VS0201");
+                eprintln!("not ok 1 - {} ({ma})", tep);
+            }
+            return ExitCode::from(2);
         }
-        return ExitCode::from(2);
     }
     // **ST-130 (VD-124)**: chương trình **dùng gói** (`use pkg.*`) ⇒ strict-caps **mặc định** bật;
     // thoát bằng `--no-strict-caps` (một dòng cảnh báo ra **stderr**, không ra stdout).

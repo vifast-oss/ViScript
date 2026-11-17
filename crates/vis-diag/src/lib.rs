@@ -75,7 +75,7 @@ impl Code {
 /// - mọi mã phải có mặt trong SPEC-lex/errata trước khi vào sổ; `message_vi` ở đây là **placeholder
 ///   vòng 1** — bảng vi/en/ja thuộc ST-03;
 /// - đổi nghĩa/đánh số lại phải qua Agent 0 (VD-08), không tự sửa.
-pub const CODES: [Code; 10] = [
+pub const CODES: [Code; 11] = [
     Code {
         id: 101,
         short: "VS0101",
@@ -155,6 +155,14 @@ pub const CODES: [Code; 10] = [
         message_en: "`^` out of context (command-mode lexer knows stage start)",
         message_ja: "`^` の文脈が不正です（コマンドモードの字句解析器が stage 先頭を判定）",
         severity: Severity::Error,
+    },
+    Code {
+        id: 111,
+        short: "VS0111",
+        message_vi: "tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`)",
+        message_en: "variant name should be UpperCamel (`Some`/`None`/`Ok`/`Err`)",
+        message_ja: "列挙型の名前は先頭を大文字にしてください（`Some`/`None`/`Ok`/`Err`）",
+        severity: Severity::Warning,
     },
 ];
 
@@ -686,10 +694,11 @@ mod tests {
     fn so_ma_lien_mach_va_dung_spec_lex() {
         let ids: Vec<u16> = CODES.iter().map(|c| c.id).collect();
         assert_eq!(ids.first(), Some(&101));
-        assert_eq!(ids.last(), Some(&110));
-        assert_eq!(ids.len(), 10);
+        // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **11** mã.
+        assert_eq!(ids.last(), Some(&111));
+        assert_eq!(ids.len(), 11);
         for (i, id) in ids.iter().enumerate() {
-            assert_eq!(CODES[i].id, 101 + i as u16, "sổ phải liền mạch 0101..0110");
+            assert_eq!(CODES[i].id, 101 + i as u16, "sổ phải liền mạch 0101..0111");
             assert_eq!(CODES[i].short, format!("VS{id:04}"));
             assert!(!CODES[i].message_vi.is_empty());
         }
@@ -698,7 +707,8 @@ mod tests {
     #[test]
     fn tra_ma_va_ma_la() {
         assert_eq!(lookup(103).map(|c| c.short), Some("VS0103"));
-        assert!(lookup(111).is_none());
+        // **R1a (VD-178)**: `VS0111` **đã** cấp ⇒ mã lạ là `VS0112`.
+        assert!(lookup(112).is_none());
         assert_eq!(
             lookup_str("VS0107").map(|c| c.severity),
             Some(Severity::Warning)
@@ -801,7 +811,8 @@ mod tests {
         // index 0..2 không đổi); `BOOKS` vẫn **7**; `next_block()` vẫn **801** (không đổi).
         // **R9 (VD-178)**: +16 mã (VS0203..0206, VS0303, VS0413..0416, VS0507/0508,
         // VS0605/0606, VS0705..0707) ⇒ **49** mã; `BOOKS` vẫn **7**; `next_block()` vẫn **801**.
-        assert_eq!(all_codes().count(), 49);
+        // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
+        assert_eq!(all_codes().count(), 50);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(
@@ -844,7 +855,8 @@ mod tests {
             SYNTAX_CODES[1].message_vi.contains("50pct"),
             "VS0202 phải gợi ý `50pct` (L3)"
         );
-        assert_eq!(CODES.len(), 10, "sổ từ vựng vẫn đúng 10 mã của §7");
+        // **R1a (VD-178)**: +**VS0111** ⇒ **11** mã từ vựng.
+        assert_eq!(CODES.len(), 11, "sổ từ vựng đúng 11 mã của §7");
         // Tra xuyên sổ: `vis explain VS0201` phải chạy.
         for (i, c) in SYNTAX_CODES.iter().enumerate() {
             assert_eq!(lookup(201 + i as u16).map(|x| x.short), Some(c.short));

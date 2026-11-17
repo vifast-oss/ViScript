@@ -2,5 +2,5 @@
 type P derives Eq:
     xs: Opt[list[float]]
 
-let p: P = {xs: some([1.0])}
+let p: P = {xs: Some([1.0])}
 print(p == p)

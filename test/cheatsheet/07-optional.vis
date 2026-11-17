@@ -27,7 +27,7 @@ print(u?.age ?? 0)
 let c: int? = Some(5)
 print(c ?? 0)
 match c:
-    some(v): print(v)
+    Some(v): print(v)
     none: print(0)
 
 let r: Result[int, str] = Ok(7)

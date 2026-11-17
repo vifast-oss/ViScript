@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 let x: int? = none
 match x:
-    some(v): print(v)
+    Some(v): print(v)
     none: print(0)

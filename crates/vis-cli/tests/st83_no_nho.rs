@@ -178,18 +178,18 @@ fn explain_help_theo_lang() {
     assert_eq!(
         vi,
         "dùng: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]\n\
-         sổ mã: 7 khối, 49 mã — `vis explain --list` in toàn bộ (mã + câu ngắn)\n"
+         sổ mã: 7 khối, 50 mã — `vis explain --list` in toàn bộ (mã + câu ngắn)\n"
     );
     let en = ki(&["explain", "--lang", "en"]);
     assert_eq!(
         en,
         "usage: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]\n\
-         code book: 7 blocks, 49 codes — `vis explain --list` prints all (code + short text)\n"
+         code book: 7 blocks, 50 codes — `vis explain --list` prints all (code + short text)\n"
     );
     let ja = ki(&["explain", "--lang", "ja"]);
     assert_eq!(
         ja,
         "使い方: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]\n\
-         コード帳: 7 ブロック、49 コード — `vis explain --list` で全件表示（コード + 短い説明）\n"
+         コード帳: 7 ブロック、50 コード — `vis explain --list` で全件表示（コード + 短い説明）\n"
     );
 }

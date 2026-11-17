@@ -150,7 +150,7 @@ fn strict_van_kiem_tren_fs_mock() {
     );
     ghi(
         &d.join("f.vis"),
-        "use std.fs\n\nfn main():\n    match fs.read(\"a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+        "use std.fs\n\nfn main():\n    match fs.read(\"a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
     );
     let (c, out, err) = ca(&d, &["--strict-caps", "--fs-mock", "mock.json"]);
     assert_eq!(c, 2, "stderr: {err}");
@@ -166,7 +166,7 @@ fn vis_test_strict_caps_truyen_co() {
     ghi(&d.join("in.txt"), "xin chào\n");
     ghi(
         &d.join("t.vis"),
-        "use std.fs\n\ntest fn t_doc():\n    match fs.read(\"in.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+        "use std.fs\n\ntest fn t_doc():\n    match fs.read(\"in.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
     );
     let (c1, o1, e1) = chay(&d, &["test", "--strict-caps", "t.vis"]);
     let (c2, o2, e2) = chay(&d, &["test", "--strict-caps", "--vm", "t.vis"]);

@@ -106,12 +106,12 @@ const CASES: &[(&str, &str)] = &[
     ),
     // kỳ vọng: ok(int) — `T?` xét `some`/`none`
     (
-        "let x: int? = 5\nlet y = match x:\n    some(v): v\n    none: 0\ny",
+        "let x: int? = 5\nlet y = match x:\n    Some(v): v\n    none: 0\ny",
         "ok(int)",
     ),
     // kỳ vọng: !VS0402 — thiếu `none`
     (
-        "let x: int? = 5\nlet y = match x:\n    some(v): v\ny",
+        "let x: int? = 5\nlet y = match x:\n    Some(v): v\ny",
         "!VS0402",
     ),
     // kỳ vọng: ok(int) — `Some`/`None` viết hoa cũng được

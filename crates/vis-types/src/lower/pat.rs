@@ -55,6 +55,19 @@ impl<'a> Lowerer<'a> {
             Kind::Ident if first.text == "_" => HPat::Wild { span },
             Kind::Ident => {
                 let name = first.text.clone();
+                // **R1a (VD-178)**: `some`/`ok`/`err` viết thường ⇒ **cảnh báo** `VS0111`.
+                if matches!(name.as_str(), "some" | "ok" | "err") {
+                    let hoa = match name.as_str() {
+                        "some" => "Some",
+                        "ok" => "Ok",
+                        _ => "Err",
+                    };
+                    self.diag(
+                        &vis_diag::CODES[10],
+                        format!("`{name}` nên viết hoa chữ đầu: `{hoa}` (R1)"),
+                        span,
+                    );
+                }
                 // `Ten(...)` — ctor có đối số (Kids = các pattern đối số).
                 if toks.len() >= 2 && toks[1].is_punct("(") {
                     // **R12a (VD-178)**: `Email(s)` — newtype **trong suốt** ⇒ hạ thẳng pattern con.

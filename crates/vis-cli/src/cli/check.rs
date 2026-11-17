@@ -86,7 +86,17 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         severity: "error",
     })?;
     let la_vish = path.ends_with(".vish");
-    let Some((rel, d)) = loaded.diags.first() else {
+    // **R1a (VD-178)**: `VS0111` (chữ hoa biến thể) **in** ra stderr nhưng **không** làm đỏ
+    // `vis check` — các mã `Warning` khác (`VS0107` tab) vẫn đỏ như cũ (VD-12).
+    for (r, w) in &loaded.diags {
+        if w.code.short == "VS0111" {
+            eprintln!(
+                "{r}:{}:{}: warning {}: {}",
+                w.line, w.col, w.code.short, w.message
+            );
+        }
+    }
+    let Some((rel, d)) = loaded.diags.iter().find(|(_, d)| d.code.short != "VS0111") else {
         return Ok(());
     };
     let ma = d.code.short;

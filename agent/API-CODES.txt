@@ -14,6 +14,7 @@ VS0107	warning: tab (cảnh báo-lỗi; tab = 4)
 VS0108	error: nội suy `{` không đóng
 VS0109	error: thụt lề không khớp đơn vị/DEDENT sai
 VS0110	error: `^` sai ngữ cảnh (lexer chế độ lệnh biết đầu stage)
+VS0111	warning: tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`)
 VS0201	error: lỗi cú pháp: token không mong đợi/thiếu vế
 VS0202	error: `%` dùng như phần trăm — viết `50pct`
 VS0203	error: từ khoá đã bỏ — dùng cú pháp mới (xem gợi ý)

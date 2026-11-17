@@ -188,6 +188,17 @@ fn render(out: &ParseOutput) -> String {
         if la_chu_thich {
             // Chú thích: giữ nguyên văn **thân** (kể cả tab bên trong), chỉ bỏ khoảng trắng cuối.
             dst.push_str(t.text.trim_end());
+        } else if t.kind == Kind::Ident
+            && matches!(t.text.as_str(), "some" | "ok" | "err")
+            && toks.get(i + 1).is_some_and(|n| n.is_punct("("))
+        {
+            // **R1a (VD-178)**: `some(`/`ok(`/`err(` ⇒ viết hoa chữ đầu (cùng `VS0111`).
+            let hoa = match t.text.as_str() {
+                "some" => "Some",
+                "ok" => "Ok",
+                _ => "Err",
+            };
+            dst.push_str(hoa);
         } else {
             dst.push_str(&t.text);
         }
