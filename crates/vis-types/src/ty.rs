@@ -357,11 +357,21 @@ impl TypeTable {
         self.enums.get_mut(id.0 as usize)
     }
 
-    /// Tên **có thật** của kiểu: bản ghi/enum đã khai in tên, chưa có tên in `record#N`/`enum#N`.
+    /// Tên **có thật** của kiểu: bản ghi/enum đã khai in tên; bản ghi **ẩn danh** in theo cú pháp
+    /// kiểu bản ghi `{a: int, b: str}` (trường theo thứ tự khai báo, kiểu trường in đệ quy bằng
+    /// `show`). Id không có trong bảng ⇒ [`Type::name`].
     pub fn show(&self, ty: &Type) -> String {
         match ty {
-            Type::Record(id) => match self.rec(*id).and_then(|r| r.name.as_deref()) {
-                Some(n) => n.to_string(),
+            Type::Record(id) => match self.rec(*id) {
+                Some(RecDef { name: Some(n), .. }) => n.clone(),
+                Some(r) => {
+                    let truong: Vec<String> = r
+                        .fields
+                        .iter()
+                        .map(|f| format!("{}: {}", f.name, self.show(&f.ty)))
+                        .collect();
+                    format!("{{{}}}", truong.join(", "))
+                }
                 None => ty.name(),
             },
             Type::Enum(id) => match self.enum_def(*id) {
@@ -485,7 +495,29 @@ mod tests {
             span: Span::new(0, 1),
             anonymous: true,
         });
-        assert_eq!(t.show(&Type::Record(anon)), format!("record#{}", anon.0));
+        // T-02: bản ghi ẩn danh in theo cú pháp kiểu bản ghi, không lộ id nội bộ.
+        assert_eq!(t.show(&Type::Record(anon)), "{}");
+        let anon2 = t.push_rec(RecDef {
+            name: None,
+            fields: vec![
+                FieldDef {
+                    name: "u".into(),
+                    ty: Type::Record(id),
+                    span: Span::new(0, 1),
+                    has_default: false,
+                },
+                FieldDef {
+                    name: "n".into(),
+                    ty: Type::Opt(Box::new(Type::List(Box::new(Type::Int)))),
+                    span: Span::new(0, 1),
+                    has_default: false,
+                },
+            ],
+            span: Span::new(0, 1),
+            anonymous: true,
+        });
+        assert_eq!(t.show(&Type::Record(anon2)), "{u: User, n: list[int]?}");
+        assert_eq!(Type::Record(anon2).name(), format!("record#{}", anon2.0));
         assert_eq!(t.rec(id).and_then(|r| r.name.as_deref()), Some("User"));
     }
 }

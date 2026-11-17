@@ -115,7 +115,7 @@ impl<'a> Lowerer<'a> {
             ket = truoc.clone();
         }
         // ST-41: hook `where`/`sort_by`/`get`/`select` đã đặt kiểu **chính xác** (giữ nguyên); nếu chưa
-        // (stage thường/group) ⇒ dùng `kieu_stage` (literal bản ghi ⇒ `list[record#N]`).
+        // (stage thường/group) ⇒ dùng `kieu_stage` (literal bản ghi ⇒ `list[{a: int}]`).
         if matches!(self.last_stage_ty, Type::Error) {
             if let Some(last) = stage.last() {
                 self.last_stage_ty = self.kieu_stage(last, sigs);

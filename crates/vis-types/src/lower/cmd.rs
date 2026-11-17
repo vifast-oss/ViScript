@@ -881,7 +881,10 @@ impl<'a> Lowerer<'a> {
                                 ) {
                                     self.diag(
                                         &TYPE_CODES[4],
-                                        format!("`sort_by`: khoá không so được: `{}`", k.name()),
+                                        format!(
+                                            "`sort_by`: khoá không so được: `{}`",
+                                            self.tbl.show(&k)
+                                        ),
                                         g.span,
                                     );
                                 }

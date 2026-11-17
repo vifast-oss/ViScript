@@ -36,7 +36,7 @@ impl<'a> Lowerer<'a> {
                 .tbl
                 .rec(*id)
                 .and_then(|r| r.name.clone())
-                .or_else(|| Some(format!("record#{}", id.0))),
+                .or_else(|| Some(ty.name())),
             Type::Enum(id) => self
                 .tbl
                 .enum_def(*id)
@@ -164,7 +164,7 @@ impl<'a> Lowerer<'a> {
                             &TYPE_CODES[2],
                             format!(
                                 "derive `Eq` không dùng được: trường `{}` (số thực/hàm so sánh không toàn phần — VD-93)",
-                                t.name()
+                                self.tbl.show(t)
                             ),
                             node.span,
                         );
