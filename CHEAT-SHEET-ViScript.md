@@ -96,7 +96,7 @@ loop break continue return and or not true false none self async await scope tes
 | `Circle(r) if r > 100.0: "lớn"` ✔ | `case Circle(r) if r > 100:` | `Shape::Circle(r) if r > 100.0 => ...` | — | guard **không** tính vào coverage |
 | `A(x) \| B(x): x` ✔ | `case A(x) \| B(x):` | `A(x) \| B(x) => x` | — | or-pattern; `\|` **không** phải bit-or |
 | `_` | `case _:` | `_ =>` | `default:` | bắt buộc với kiểu vô hạn (`int`, `str`…) |
-| `if let Some(v) = x:`<br>`    print(v)` **[DỰ KIẾN]** | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3**: `if let`/`while let` nhận **pattern**; dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`**. Hiện tại `if let v = x:` chạy **[ĐANG LÀM]** (ca `test/cheatsheet/07-optional.vis`), `if let Some(v) = x:` ⇒ VS0412 |
+| `if let Some(v) = x:`<br>`    print(v)` ✔ | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3a**: `if let`/`while let` nhận **pattern** (`Some(v)`/`Ok(v)`/`Err(e)`); dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`** |
 
 ## 5. Dữ liệu
 
@@ -246,8 +246,8 @@ Method trên giá trị (không cần `use`):
   `r"…"`/`b"…"`/`p"…"` **đã bóc tiền tố** (R6a: `print(p"C:\x")` in `C:\x`);
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
-  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let v = o:` chạy; đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
-  - **[ĐANG LÀM]** `if let` sẽ **bắt buộc pattern** (R3); đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
+  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` chạy (R3a); `let x = r else:` chạy (R3b); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
+  - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
   - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20); `type X = T`/`type Email(str)` thay `alias`/`newtype` (R12).
 - **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),

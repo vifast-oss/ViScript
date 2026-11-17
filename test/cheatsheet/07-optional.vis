@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # CHEAT-SHEET §7 — Optional & xử lý lỗi
 # `let v = f()?` chỉ dùng **trong hàm** trả `Result` (§4.4) ⇒ đặt trong `g()`.
-# `if let` hiện nhận **ràng buộc** (`if let v = x:`), chưa nhận pattern `Some(v)` — [ĐANG LÀM] (R3).
+# `if let` nhận **pattern** `Some(v)` (R3a) — dạng `if let Some(v) = x:` là lỗi.
 # kỳ vọng: 7
 # kỳ vọng: 5
 # kỳ vọng: 20
@@ -45,13 +45,13 @@ fn g() -> Result[int, str]:
 print(g())
 
 let x: int? = 5
-if let v = x:
+if let Some(v) = x:
     print(v)
 else:
     print("không")
 
 let y: int? = none
-if let v = y:
+if let Some(v) = y:
     print(v)
 else:
     print("không")

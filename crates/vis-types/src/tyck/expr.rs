@@ -424,15 +424,18 @@ impl<'a> Checker<'a> {
             }
             HCond::Let { pat, value, .. } => {
                 let vt = self.kiem_expr(value);
-                let inner = match &vt {
-                    Type::Opt(i) => (**i).clone(),
-                    Type::Error => Type::Error,
-                    other => {
-                        // `if let` trên giá trị không optional: vẫn cho, coi như kiểu đó.
-                        other.clone()
-                    }
-                };
-                self.bind_pat(pat, &inner);
+                // **R3a (VD-178)**: `if let` nhận **pattern** kiểm theo **kiểu đầy đủ** (`T?`),
+                // không bóc sẵn — `if let Some(v) = o:` mới đúng; `if let v = o:` (luôn khớp) ⇒ lỗi.
+                if matches!(pat, crate::hir::HPat::Bind { .. })
+                    && matches!(vt, Type::Opt(_) | Type::Result(..))
+                {
+                    self.diag(
+                        MISMATCH,
+                        "`if let` cần **pattern** — dùng `if let Some(v) = o:` (hoặc `Ok(v)`/`Err(e)`)",
+                        pat.span(),
+                    );
+                }
+                self.bind_pat(pat, &vt);
             }
         }
     }

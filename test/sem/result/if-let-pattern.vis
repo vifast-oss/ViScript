@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let o: int? = Some(5)
+    if let Some(v) = o:
+        print(v)
+    else:
+        print(0)
+    let r: Result[int, str] = Err("hong")
+    if let Ok(v) = r:
+        print(v)
+    else:
+        print("loi")

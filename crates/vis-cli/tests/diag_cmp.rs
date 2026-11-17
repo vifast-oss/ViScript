@@ -37,8 +37,9 @@ use std::process::Command;
 // **SỬA KÈM LÝ DO (R6, VD-178)**: 448 → **452** (+4 ca `chuoi/` xanh).
 // **SỬA KÈM LÝ DO (R17, VD-178)**: 452 → **453** (+`dieu-khien/is-empty` xanh).
 // **SỬA KÈM LÝ DO (R3b, VD-178)**: 453 → **454** (+`result/let-else` xanh).
-const TONG: usize = 454;
-const XANH: usize = 370;
+// **SỬA KÈM LÝ DO (R3a, VD-178)**: 454 → **455** (+`result/if-let-pattern` xanh).
+const TONG: usize = 455;
+const XANH: usize = 371;
 const LOI_BIEN_DICH: usize = 50;
 const LOI_LUC_CHAY: usize = 34;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.

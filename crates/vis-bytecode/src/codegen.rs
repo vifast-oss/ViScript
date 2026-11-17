@@ -10,6 +10,7 @@
 //! - `max_stack`: đếm **bảo thủ** trong lúc phát (upper bound ≥ độ sâu thật). **ST-21 kiểm lại
 //!   độc lập từ byte stream** — không tin giá trị này.
 
+mod if_expr;
 mod pattern;
 
 use std::collections::HashMap;
@@ -395,7 +396,10 @@ impl<'g> Emit<'g> {
             } => {
                 self.expr(init)?;
                 // Tự nâng `T → T?` theo **kiểu khai** (§4.4) — interp làm ở `let`.
-                if matches!(ty, Some(vis_types::Type::Opt(_))) && !matches!(init, HExpr::Opt { .. })
+                // **R2a (VD-178)**: `None` đã là `Opt` — không tự nâng lần nữa.
+                if matches!(ty, Some(vis_types::Type::Opt(_)))
+                    && !matches!(init, HExpr::Opt { .. })
+                    && !matches!(init, HExpr::Var { name, .. } if name == "None")
                 {
                     self.f.push(Instr::MakeSome, *span, 0);
                 }
@@ -541,6 +545,9 @@ impl<'g> Emit<'g> {
             } => {
                 let mut jend: Vec<usize> = Vec::new();
                 let mut jf = self.cond(cond)?;
+                // **R3a (VD-178)**: `if let` để **giá trị** trên ngăn xếp cho nhánh `then` bind;
+                // nhánh `else`/`elif` phải `Pop` nó trước.
+                let mut cond_let = matches!(cond, HCond::Let { .. });
                 self.khoi(then)?;
                 jend.push(self.f.here());
                 self.f.push(Instr::Jump(0), *span, 0);
@@ -550,7 +557,11 @@ impl<'g> Emit<'g> {
                     if let Some(p) = prev {
                         self.f.patch(p, at);
                     }
+                    if cond_let {
+                        self.f.push(Instr::Pop, *span, -1);
+                    }
                     let mut j = self.cond(c)?;
+                    cond_let = matches!(c, HCond::Let { .. });
                     self.khoi(body)?;
                     jend.push(self.f.here());
                     self.f.push(Instr::Jump(0), *span, 0);
@@ -559,6 +570,9 @@ impl<'g> Emit<'g> {
                 let at = self.f.here();
                 if let Some(p) = prev {
                     self.f.patch(p, at);
+                }
+                if cond_let {
+                    self.f.push(Instr::Pop, *span, -1);
                 }
                 if let Some(b) = else_ {
                     self.khoi(b)?;
@@ -771,6 +785,11 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HExpr::Var { sym, name, span } => {
+                // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải biến/hàm.
+                if name == "None" && !self.g.fmap.contains_key(&sym.unwrap_or(u32::MAX)) {
+                    self.f.push(Instr::MakeNone, *span, 1);
+                    return Ok(());
+                }
                 match sym {
                     Some(id) if self.g.fmap.contains_key(id) => {
                         // Tên hàm dùng như **giá trị** ⇒ closure 0 biến bắt.
@@ -1140,35 +1159,7 @@ impl<'g> Emit<'g> {
                 else_,
                 span,
                 ..
-            } => {
-                let mut jend: Vec<usize> = Vec::new();
-                let mut jf = self.cond(cond)?;
-                self.nhanh_gia_tri(then)?;
-                jend.push(self.f.here());
-                self.f.push(Instr::Jump(0), *span, 0);
-                let mut prev = jf.take();
-                for (c, body) in elifs {
-                    let at = self.f.here();
-                    if let Some(p) = prev {
-                        self.f.patch(p, at);
-                    }
-                    let mut j = self.cond(c)?;
-                    self.nhanh_gia_tri(body)?;
-                    jend.push(self.f.here());
-                    self.f.push(Instr::Jump(0), *span, 0);
-                    prev = j.take();
-                }
-                let at = self.f.here();
-                if let Some(p) = prev {
-                    self.f.patch(p, at);
-                }
-                self.nhanh_gia_tri(else_)?;
-                let end = self.f.here();
-                for j in jend {
-                    self.f.patch(j, end);
-                }
-                Ok(())
-            }
+            } => self.expr_if(cond, then, elifs, else_, *span),
             HExpr::Match {
                 subject,
                 arms,
@@ -1367,6 +1358,9 @@ impl<'g> Emit<'g> {
             } => {
                 let mut jend: Vec<usize> = Vec::new();
                 let mut jf = self.cond(cond)?;
+                // **R3a (VD-178)**: `if let` để giá trị cho nhánh `then` bind; nhánh `else`/`elif`
+                // phải `Pop` nó trước.
+                let mut cond_let = matches!(cond, HCond::Let { .. });
                 self.nhanh_gia_tri(then)?;
                 jend.push(self.f.here());
                 self.f.push(Instr::Jump(0), *span, 0);
@@ -1376,7 +1370,11 @@ impl<'g> Emit<'g> {
                     if let Some(p) = prev {
                         self.f.patch(p, at);
                     }
+                    if cond_let {
+                        self.f.push(Instr::Pop, *span, -1);
+                    }
                     let mut j = self.cond(c)?;
+                    cond_let = matches!(c, HCond::Let { .. });
                     self.nhanh_gia_tri(body)?;
                     jend.push(self.f.here());
                     self.f.push(Instr::Jump(0), *span, 0);
@@ -1385,6 +1383,9 @@ impl<'g> Emit<'g> {
                 let at = self.f.here();
                 if let Some(p) = prev {
                     self.f.patch(p, at);
+                }
+                if cond_let {
+                    self.f.push(Instr::Pop, *span, -1);
                 }
                 match else_ {
                     Some(b) => self.nhanh_gia_tri(b)?,
