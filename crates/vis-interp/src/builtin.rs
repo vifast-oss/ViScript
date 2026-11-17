@@ -260,7 +260,7 @@ pub trait Host {
 }
 
 /// Lỗi runtime kèm `span` (cùng cấu trúc với `Interp::trap`).
-fn trap(code: &'static vis_diag::Code, msg: impl Into<String>, span: Span) -> Abort {
+pub(crate) fn trap(code: &'static vis_diag::Code, msg: impl Into<String>, span: Span) -> Abort {
     Abort::Trap(Trap::new(code, msg, span))
 }
 
@@ -283,8 +283,9 @@ pub const SIGS: [BuiltinSig; 22] = [
     },
     BuiltinSig {
         name: "assert",
+        // **R20a (VD-178)**: `assert cond, "thông điệp"`.
         min: 1,
-        max: 1,
+        max: 2,
     },
     BuiltinSig {
         name: "len",
@@ -920,20 +921,7 @@ pub fn call(
         }
         // **ST-79 (VD-108)**: `assert(điều_kiện)` cho `test fn`; sai ⇒ trap `VS0501` để
         // `vis test` in `not ok` (không thêm mã mới — yêu cầu ST-79).
-        "assert" => {
-            if args.len() != 1 {
-                return Err(trap(RT, "`assert` cần 1 đối số", span));
-            }
-            match &args[0] {
-                Value::Bool(true) => Ok(Value::Unit),
-                Value::Bool(false) => Err(trap(RT, "assert thất bại", span)),
-                v => Err(trap(
-                    RT,
-                    format!("`assert` cần `bool`, được `{}`", v.show()),
-                    span,
-                )),
-            }
-        }
+        "assert" => crate::builtin_assert::assert_builtin(&args, span),
         // ST-18 — 3 lệnh builtin chế độ lệnh (`echo`/`lines`/`take`), thuần, không FS.
         "echo" => {
             if args.len() > 4 {

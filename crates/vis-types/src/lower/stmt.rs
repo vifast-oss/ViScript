@@ -129,18 +129,20 @@ impl<'a> Lowerer<'a> {
             }
             // **ST-83 (VD-109)**: `assert <expr>` ⇒ `Call(assert, [expr])` (giữ `assert(expr)` cũ).
             NodeKind::AssertStmt => {
-                let e = node
-                    .children()
-                    .next()
-                    .map(|c| self.lower_expr(c))
-                    .unwrap_or(HExpr::Error { span: node.span });
+                // **R20a (VD-178)**: `assert cond, "thông điệp"` — đối số thứ hai tuỳ chọn.
+                let args: Vec<HExpr> = node.children().map(|c| self.lower_expr(c)).collect();
+                let args = if args.is_empty() {
+                    vec![HExpr::Error { span: node.span }]
+                } else {
+                    args
+                };
                 Some(HStmt::Expr(HExpr::Call {
                     callee: Box::new(HExpr::Var {
                         name: "assert".to_string(),
                         sym: None,
                         span: node.span,
                     }),
-                    args: vec![e],
+                    args,
                     named: Vec::new(),
                     span: node.span,
                 }))

@@ -853,6 +853,12 @@ impl<'a> Parser<'a> {
         let mut elems = vec![self.bump()];
         let e = self.expr()?;
         Self::push_node(&mut elems, e);
+        // **R20a (VD-178)**: `assert cond, "thông điệp"` — đối số thứ hai tuỳ chọn.
+        if self.at_punct(",") {
+            elems.push(self.bump());
+            let m = self.expr()?;
+            Self::push_node(&mut elems, m);
+        }
         Ok(self.node(NodeKind::AssertStmt, elems))
     }
 

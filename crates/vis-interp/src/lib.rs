@@ -44,6 +44,7 @@
 //! assert_eq!(out.exit, 1);
 //! ```
 
+pub mod builtin_assert;
 mod gan;
 mod host;
 pub mod json;

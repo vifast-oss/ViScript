@@ -118,7 +118,8 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (R8, VD-178)**: +`list/chi-so-an-toan` ⇒ 460 ca.
     // **SỬA KÈM LÝ DO (R5a, VD-178)**: +`ham/goi-ten` ⇒ 461 ca.
     // **SỬA KÈM LÝ DO (R5c, VD-178)**: +`chuoi-phuong-thuc/std-method` ⇒ 462 ca.
-    assert_eq!(tat_ca.len(), 462, "phải đủ 462 ca");
+    // **SỬA KÈM LÝ DO (R20a, VD-178)**: +`assert/thong-diep` ⇒ 463 ca.
+    assert_eq!(tat_ca.len(), 463, "phải đủ 463 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -191,18 +192,18 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-56b)**: +6 ca ⇒ **382**; **352** ca chạy được khớp + **30** ca lỗi biên dịch.
     assert_eq!(
         khop + so_biet + bien_dich,
-        462,
-        "462 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        463,
+        "463 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **ST-89 (VD-110)**: VM **đã có host `Ngoai`** ⇒ 7 ca `.vish` chương trình ngoài (4 xanh + 3
     // lỗi-chạy) nay khớp **thật** ở cả hai đường thay vì cùng `VS0604`; chúng **đã nằm trong 398**
-    // từ trước (462 = 412 chạy được + 50 lỗi biên dịch), nên phân hoạch **không đổi**: 412 + 50.
+    // từ trước (463 = 413 chạy được + 50 lỗi biên dịch), nên phân hoạch **không đổi**: 413 + 50.
     // Con số "405" không tồn tại trong phân hoạch này; 7 ca host là **tập con** của 398, không cộng thêm.
     assert_eq!(
         (khop, bien_dich),
-        (412, 50),
-        "412 ca chạy được khớp + 50 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        (413, 50),
+        "413 ca chạy được khớp + 50 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
     );
 }
 
@@ -256,7 +257,7 @@ fn hai_duong_cung_so_chan_doan() {
             // vẫn **31** (2 ca `.err` mới là lỗi **biên dịch**, không tới lúc chạy).
             // **ST-89**: 398 ca chạy được **gồm 7 ca host** (nay khớp thật); tổng vẫn 398 + 49 lỗi biên dịch.
             // **R6 (VD-178)**: +4 ca `chuoi/` ⇒ **402** ca chạy được.
-            assert_eq!(so_ca, 412, "phải so đủ 412 ca chạy được");
+            assert_eq!(so_ca, 413, "phải so đủ 413 ca chạy được");
             assert_eq!(
                 // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
                 // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).

@@ -29,7 +29,8 @@ use std::process::Command;
 /// **SỬA KÈM LÝ DO (R8, VD-178)**: 459 → **460** (+`list/chi-so-an-toan`).
 /// **SỬA KÈM LÝ DO (R5a, VD-178)**: 460 → **461** (+`ham/goi-ten`).
 /// **SỬA KÈM LÝ DO (R5c, VD-178)**: 461 → **462** (+`chuoi-phuong-thuc/std-method`).
-const SO_CA: usize = 462;
+/// **SỬA KÈM LÝ DO (R20a, VD-178)**: 462 → **463** (+`assert/thong-diep`).
+const SO_CA: usize = 463;
 
 fn vis(args: &[&str]) -> (i32, String, String) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
