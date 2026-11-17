@@ -45,6 +45,7 @@
 //! ```
 
 pub mod builtin_assert;
+pub mod builtin_list;
 mod gan;
 mod host;
 pub mod json;

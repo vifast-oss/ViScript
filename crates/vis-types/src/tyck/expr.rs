@@ -863,6 +863,42 @@ impl<'a> Checker<'a> {
                         }
                         Type::List(Box::new(e))
                     }
+                    // **R20b (VD-178)**: `enumerate`/`any`/`all`/`find`.
+                    "enumerate" => {
+                        self.arity(args, 0, name, span);
+                        Type::List(Box::new(Type::TypeRef {
+                            name: "tuple".into(),
+                            args: vec![Type::Int, e],
+                        }))
+                    }
+                    "any" | "all" => {
+                        self.arity(args, 1, name, span);
+                        if let Some(Type::Fn(params, ret)) = arg_tys.first() {
+                            if params.len() != 1 {
+                                self.diag(
+                                    MISMATCH,
+                                    format!("`{name}` cần hàm **1 tham số**"),
+                                    span,
+                                );
+                            }
+                            if !matches!(**ret, Type::Bool | Type::Error) {
+                                self.diag(MISMATCH, format!("`{name}` cần hàm trả `bool`"), span);
+                            }
+                        }
+                        Type::Bool
+                    }
+                    "find" => {
+                        self.arity(args, 1, name, span);
+                        if let Some(Type::Fn(params, ret)) = arg_tys.first() {
+                            if params.len() != 1 {
+                                self.diag(MISMATCH, "`find` cần hàm **1 tham số**", span);
+                            }
+                            if !matches!(**ret, Type::Bool | Type::Error) {
+                                self.diag(MISMATCH, "`find` cần hàm trả `bool`", span);
+                            }
+                        }
+                        Type::Opt(Box::new(e))
+                    }
                     "each" => {
                         self.arity(args, 1, name, span);
                         // ST-13b (mục 6): `each` phải nhận **hàm 1 tham số**.

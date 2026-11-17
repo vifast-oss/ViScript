@@ -1385,9 +1385,13 @@ fn list_method(
             let parts: Vec<String> = xs.iter().map(Value::show).collect();
             Ok(Value::Str(parts.join(&sep)))
         }
+        // **R20b (VD-178)**: `enumerate`/`any`/`all`/`find` — tách sang `builtin_list.rs`.
+        "enumerate" | "any" | "all" | "find" => {
+            crate::builtin_list::duyet_nang_cao(host, xs, name, args, span)
+        }
         other => Err(trap(
             RT,
-            format!("`list.{other}()` chưa hỗ trợ (danh sách: len get first last push map filter each sum join)"),
+            format!("`list.{other}()` chưa hỗ trợ (danh sách: len get first last push map filter each sum join enumerate any all find)"),
             span,
         )),
     }
