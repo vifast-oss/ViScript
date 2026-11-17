@@ -274,6 +274,63 @@ print(p.hien())
 
 > `trait` giống interface: khai báo "làm được gì", `impl` viết "làm thế nào". Không có kế thừa.
 
+### 14. Mẹo mới — viết nhanh hơn
+
+```vis
+type User:
+    name: str
+    age: int = 0
+
+type Id = int
+type Email(str)
+
+enum Shape:
+    Circle(float), Empty
+
+fn cong(a: int, b: int) -> int:
+    a + b
+
+fn main():
+    # `/` luôn ra float; `//` chia lấy phần nguyên; `%` khớp `//` (không âm)
+    print(7 / 2)      # 3.5
+    print(7 // 2)     # 3
+    print(-7 % 2)     # 1
+
+    # `let` che tên được trong cùng phạm vi
+    let x = 1
+    let x = "a"
+    print(x)          # a
+
+    # đối số có tên + trường bản ghi có mặc định
+    print(cong(1, b: 5))      # 6
+    print(User(name: "An"))   # User(name: An, age: 0)
+
+    # `type X = T` (thay `alias`), `type Email(str)` (thay `newtype`)
+    let e = Email("a@b")
+    let Email(s) = e
+    print(s)          # a@b
+
+    # enum mang dữ liệu vị trí + nhiều biến thể cùng dòng
+    print(Shape.Circle(2.0))   # Circle(2)
+
+    # `xs[i]?` — chỉ số an toàn, trả `T?` thay vì panic
+    let xs = [10, 20, 30]
+    print(xs[9]?)     # none
+
+    # `if let` phải có pattern
+    let o: int? = Some(5)
+    if let Some(v) = o:
+        print(v)      # 5
+
+    # `let … else` — thoát sớm khi lỗi
+    let r: Result[int, str] = Err("hong")
+    let y = r else err:
+        return
+    print(y)
+```
+
+> Đây là các cải tiến của **pha 1 công thái học** (R3, R5a, R6, R7, R8, R11, R12a, R16, R17) — mỗi cái đều có ca test trong `test/sem/`.
+
 ## Bẫy thường gặp (đọc trước khi viết)
 
 | Bẫy | Cách đúng |
