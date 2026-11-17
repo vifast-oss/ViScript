@@ -162,7 +162,7 @@ fn hieu_ung(i: Instr) -> (i32, i32) {
         Instr::Dup => (1, 2),
         Instr::Swap => (2, 2),
         Instr::Bin(_) => (2, 1),
-        Instr::Un(_) => (1, 1),
+        Instr::Un(_) | Instr::Format(_) => (1, 1),
         Instr::Call(_, n) => (n as i32, 1),
         Instr::CallBuiltin(_, n) => (n as i32, 1),
         Instr::CallMethod(_, n) => (n as i32 + 1, 1),

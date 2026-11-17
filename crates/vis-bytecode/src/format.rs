@@ -148,6 +148,8 @@ pub enum Instr {
     With(u16),
     /// Nội suy chuỗi từ `n` mảnh (mảnh chữ là `Const`) — n→1.
     Interp(u16),
+    /// **R6c (VD-178)**: định dạng đỉnh ngăn xếp theo spec `consts[i]` (`.N`) — 1→1.
+    Format(u32),
     /// Khởi tạo vòng lặp trên đỉnh — 1→1.
     IterInit,
     /// Lấy phần tử kế: nhảy tới đích khi hết — 1→2 (giá trị + iterator mới).
@@ -226,6 +228,7 @@ impl Instr {
             Instr::Set => 31,
             Instr::With(_) => 32,
             Instr::Interp(_) => 33,
+            Instr::Format(_) => 53,
             Instr::IterInit => 34,
             Instr::IterNext(_) => 35,
             Instr::TestLit(_) => 36,
@@ -270,6 +273,7 @@ impl Instr {
             | Instr::MakeMap(_)
             | Instr::With(_)
             | Instr::Interp(_)
+            | Instr::Format(_)
             | Instr::TestTuple(_)
             | Instr::TestList(_)
             | Instr::BindLocal(_) => 2,
@@ -307,7 +311,7 @@ impl Instr {
 ///
 /// Luật: **thêm** lệnh ⇒ thêm tên vào **cuối**; **không** đổi số, **không** đổi tên, **không** đổi
 /// nghĩa thẻ đã có. Đổi nghĩa ⇒ định dạng mới `VBC2` (VD-129).
-pub const TEN_THE: [&str; 53] = [
+pub const TEN_THE: [&str; 54] = [
     "Const",
     "LoadLocal",
     "StoreLocal",
@@ -361,6 +365,7 @@ pub const TEN_THE: [&str; 53] = [
     "BoolAnd",
     "Swap",
     "PushUnit",
+    "Format",
 ];
 
 /// Số thẻ hiện có (`TEN_THE.len()`).

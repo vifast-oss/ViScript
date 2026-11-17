@@ -34,8 +34,9 @@ use std::process::Command;
 /// `await` và ở join cuối).
 // **SỬA KÈM LÝ DO (ST-72)**: 441 → **447** (+6 ca `cap/`: 3 xanh, 3 lỗi biên dịch).
 // **SỬA KÈM LÝ DO (R9, VD-178)**: 447 → **448** (+1 ca `loi/range-khong-int` VS0416, lỗi biên dịch).
-const TONG: usize = 448;
-const XANH: usize = 364;
+// **SỬA KÈM LÝ DO (R6, VD-178)**: 448 → **452** (+4 ca `chuoi/` xanh).
+const TONG: usize = 452;
+const XANH: usize = 368;
 const LOI_BIEN_DICH: usize = 50;
 const LOI_LUC_CHAY: usize = 34;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.

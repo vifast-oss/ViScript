@@ -53,7 +53,7 @@ loop break continue return and or not true false none self async await scope tes
 
 | ViScript | Python | Rust | TS/JS | Ghi chú |
 |---|---|---|---|---|
-| `print("hi")` ✔ | `print("hi")` | `println!("hi")` | `console.log("hi")` | `print` nhận **đúng 1** đối số (2 đối số ⇒ `VS0401`) **[ĐÃ CÓ]**; **R6 [DỰ KIẾN]**: `print(a, b, …)` nhiều đối số, cách nhau **1 dấu cách** |
+| `print("hi")` ✔ | `print("hi")` | `println!("hi")` | `console.log("hi")` | **R6**: `print(a, b, …)` nhiều đối số, cách nhau **1 dấu cách**; `print()` ⇒ dòng trống |
 | `let x = 1` ✔ | `x = 1` | `let x = 1;` | `const x = 1` | **bất biến** — gán lại ⇒ `VS0412` |
 | `var x = 1`<br>`x += 1` ✔ | `x = 1` | `let mut x = 1;` | `let x = 1` | biến đổi được |
 | `const N: int = 10` ✔ | — | `const N: i64 = 10;` | `const N = 10` | **bắt buộc ghi kiểu** (`const N = 10` ⇒ `VS0201`) |
@@ -127,8 +127,8 @@ loop break continue return and or not true false none self async await scope tes
 | `p"./x"` ✔ | `Path("./x")` | `Path::new("./x")` | — | literal đường dẫn, kiểu `path` |
 | `"a,b".split(",")` ✔ | `"a,b".split(",")` | `"a,b".split(',')` | `"a,b".split(",")` | |
 | `"ab".upper()` / `.lower()` / `.chars()` / `.contains("b")` / `.len()` ✔ | `.upper()` / `list(s)` / `"b" in s` / `len(s)` | `.to_uppercase()` / `.chars()` / `.contains('b')` / `.len()` | `.toUpperCase()` / `[...s]` / `.includes("b")` | **đúng 6** method của `str` |
-| `"a" + "b"` ✖ | `"a" + "b"` | `format!` / `String + &str` | `"a" + "b"` | **lỗi kiểu `VS0412`** → dùng `"{a}{b}"` hoặc `str.join`; **R6 [DỰ KIẾN]**: `str+str` **nối** được |
-| `"{n:.2}"` ✖ | `f"{n:.2f}"` | `format!("{n:.2}")` | `n.toFixed(2)` | format spec **chưa hỗ trợ** ở VS0; **R6 [DỰ KIẾN]**: `{expr:spec}` chạy ở runtime |
+| `"a" + "b"` ✔ | `"a" + "b"` | `format!` / `String + &str` | `"a" + "b"` | **R6**: `str+str` **nối** ⇒ `ab` |
+| `"{n:.2}"` ✔ | `f"{n:.2f}"` | `format!("{n:.2}")` | `n.toFixed(2)` | **R6**: `{expr:spec}` chạy ở runtime (`.N` = N chữ số thập phân) |
 
 **Literal đặc biệt** (không ngôn ngữ nào trong 3 cái kia có):
 
@@ -213,7 +213,7 @@ Method trên giá trị (không cần `use`):
 | `any` | `Json` + chuyển đổi tường minh | — | — | `any` |
 | `1 < x < 10` | `1 < x and x < 10` | **hợp lệ** | lỗi | lỗi |
 | `s[i]`, `s[1:3]` | `.chars()`, `xs.get(i)` | **hợp lệ** | không có | **hợp lệ** |
-| `"a" + "b"` | `"{a}{b}"`, `str.join` | **hợp lệ** | **hợp lệ** | **hợp lệ** |
+| `"a" + "b"` | **hợp lệ** (R6) | **hợp lệ** | **hợp lệ** | **hợp lệ** |
 | `1.` (float) | `1.0` | **hợp lệ** | **hợp lệ** | **hợp lệ** |
 | `++`, `--` | `x += 1` | — | — | **có** |
 | macro (`println!`) | `print(...)` | — | **có** | — |
@@ -223,14 +223,14 @@ Method trên giá trị (không cần `use`):
 
 1. **`let` là bất biến** — ngược với `let` của JS. Muốn gán lại: `var`.
 2. **`var` không phải `var` của JS** (không function-scope) — nó chỉ là "biến đổi được", giống `let mut`.
-3. **`"a" + "b"` là lỗi kiểu** — nối chuỗi bằng nội suy `"{a}{b}"`.
+3. **`"a" + "b"` nối được** (R6) — nhưng chỉ `str + str`; `"a" + 1` vẫn lỗi (`VS0414`).
 4. **`match` phải xét hết**; nhánh có `if` (guard) **không** được tính là đã xét.
 5. **`Some`/`None`/`Ok`/`Err` viết hoa khi dựng**; hiện pattern optional viết **thường** (`some(v)`, `none`) **[ĐANG LÀM]** — **R1/R2 [DỰ KIẾN]**: pattern cũng viết hoa (`Some(v)`, `None`), `some(v)` chỉ còn cảnh báo + `vis fmt` tự sửa, `none` ⇒ **VS0203**.
 6. **Record literal phải liệt kê đủ trường** — giá trị mặc định của `type` **không** tự áp:
    `type U: email: str? = none` thì vẫn phải viết `{name: …, email: none}`.
 7. **`const` phải ghi kiểu**: `const N: int = 10`.
 8. **`?` chỉ dùng cho `T?`/`Result`** — không có `xs[i]?`; chỉ số âm/ngoài phạm vi dùng `.last()` / `.get(i)`.
-9. **`print` nhận đúng 1 đối số** (khác Python) **[ĐÃ CÓ]** — **R6 [DỰ KIẾN]**: nhận nhiều đối số, cách nhau 1 dấu cách.
+9. **`print` nhận nhiều đối số** (R6), cách nhau 1 dấu cách — giống Python; `print()` in dòng trống.
 10. **Thụt lề**: đơn vị thụt lề do **cấp đầu tiên trong tệp** quyết định; trộn 2 và 4 dấu cách là lỗi; tab báo `VS0107` (vẫn lex tiếp để `vis fmt` sửa).
 
 ## 13. Phụ lục — cách kiểm chứng & chênh lệch đã biết
@@ -241,15 +241,14 @@ Method trên giá trị (không cần `use`):
   (mỗi ca = một chương trình hoàn chỉnh ghép từ ô ✔; so **stdout** nếu tệp có dòng `# kỳ vọng:`).
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
   `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
-  `AnyError` **chưa có** → dùng `str`; format spec `{x:.2}` **chưa có**;
+  `AnyError` **chưa có** → dùng `str`; format spec `{x:.2}` **đã có** (R6);
   `dyn` **chưa dùng được**; `panic(...)` **chưa có**; `newtype` báo **VS0203** tại dòng khai (ST-179);
-  `r"…"`/`b"…"`/`p"…"` chạy được nhưng giá trị **còn giữ tiền tố** (`print(r"abc")` in `r"abc"`,
-  `print(b"AB")` in `b"b\"AB\""`) — ca `test/cheatsheet/06c-tien-to.vis` chỉ khẳng định chạy được;
+  `r"…"`/`b"…"`/`p"…"` **đã bóc tiền tố** (R6a: `print(p"C:\x")` in `C:\x`);
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
-  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let v = o:` chạy; đơn vị `5mb`/`2h30m` chạy; `p"…"` có nhưng **còn escape**; `print` 1 đối số; `assert cond` (không có thông điệp).
-  - **[ĐANG LÀM]** `if let` sẽ **bắt buộc pattern** (R3); `p"…"` sẽ **thô hoàn toàn** (R6); đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
-  - **[DỰ KIẾN]** mã thoát **101** cho panic (C1/R9); `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20); `p"C:\thu muc\"` hợp lệ (R6); `str+str` nối (R6); `print(a, b)` (R6); `type X = T`/`type Email(str)` thay `alias`/`newtype` (R12).
-- **Nguồn đọc thêm**: `test/sem/**` (447 ca ngữ nghĩa chạy thật),
+  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let v = o:` chạy; đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
+  - **[ĐANG LÀM]** `if let` sẽ **bắt buộc pattern** (R3); đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
+  - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20); `type X = T`/`type Email(str)` thay `alias`/`newtype` (R12).
+- **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).

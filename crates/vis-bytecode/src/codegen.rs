@@ -1260,6 +1260,12 @@ impl<'g> Emit<'g> {
                             self.f.push(Instr::Const(c), *span, 1);
                         }
                         InterpPart::Expr(x) => self.expr(x)?,
+                        // **R6c (VD-178)**: `{expr:spec}` — đẩy giá trị rồi `Format(spec)`.
+                        InterpPart::ExprSpec { expr, spec } => {
+                            self.expr(expr)?;
+                            let c = self.g.cst(LitKind::Str, &format!("\"{spec}\""));
+                            self.f.push(Instr::Format(c), *span, 0);
+                        }
                     }
                 }
                 self.f.push(

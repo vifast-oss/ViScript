@@ -895,6 +895,11 @@ impl<'a> Interp<'a> {
                             let v = self.eval(e)?;
                             out.push_str(&v.show());
                         }
+                        // **R6c (VD-178)**: `{expr:spec}` — định dạng lúc chạy.
+                        vis_types::InterpPart::ExprSpec { expr, spec } => {
+                            let v = self.eval(expr)?;
+                            out.push_str(&dinh_dang(&v, spec, expr.span())?);
+                        }
                     }
                 }
                 Ok(Value::Str(out))
@@ -1138,7 +1143,8 @@ pub fn lit_value(lit: &Lit) -> std::result::Result<Value, String> {
         LitKind::Bytes => parse_bytes_lit(&lit.text)
             .map(Value::Bytes)
             .ok_or_else(|| format!("literal bytes không đọc được: `{}`", lit.text)),
-        LitKind::Path => Ok(Value::Path(parse_str_lit(&lit.text, false))),
+        // **R6a (VD-178)**: `p"…"` **không** escape (đường dẫn Windows).
+        LitKind::Path => Ok(Value::Path(parse_str_lit(&lit.text, true))),
         LitKind::Size => parse_size(&lit.text)
             .map(Value::Size)
             .ok_or_else(|| format!("literal size không đọc được: `{}`", lit.text)),
@@ -1246,4 +1252,28 @@ impl Value {
             ))),
         }
     }
+}
+
+/// **R6c (VD-178)**: định dạng `{expr:spec}` — hiện hỗ trợ `.N` (N chữ số thập phân).
+pub fn dinh_dang(v: &Value, spec: &str, span: Span) -> Result<String, Abort> {
+    let Some(n) = spec.strip_prefix('.') else {
+        return Err(Abort::Trap(Trap::new(
+            RT,
+            format!("format spec `{spec}` chưa hỗ trợ — dùng `.N`"),
+            span,
+        )));
+    };
+    let n: usize = n.parse().map_err(|_| {
+        Abort::Trap(Trap::new(
+            RT,
+            format!("format spec `{spec}` chưa hỗ trợ — dùng `.N`"),
+            span,
+        ))
+    })?;
+    Ok(match v {
+        Value::Float(f) => format!("{f:.n$}"),
+        Value::Int(i) => format!("{:.n$}", *i as f64),
+        Value::Str(s) => s.clone(),
+        other => other.show(),
+    })
 }

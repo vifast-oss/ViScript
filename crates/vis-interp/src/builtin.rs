@@ -277,8 +277,9 @@ pub struct BuiltinSig {
 pub const SIGS: [BuiltinSig; 22] = [
     BuiltinSig {
         name: "print",
-        min: 1,
-        max: 1,
+        // **R6d (VD-178)**: `print(a, b, …)` — cách nhau 1 dấu cách; `print()` ⇒ `\n`.
+        min: 0,
+        max: 255,
     },
     BuiltinSig {
         name: "assert",
@@ -521,6 +522,8 @@ fn arith(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
         }
     }
     match (op, l, r) {
+        // **R6b (VD-178)**: `str + str` **nối** chuỗi.
+        (Add, Value::Str(a), Value::Str(b)) => Ok(Value::Str(format!("{a}{b}"))),
         // int
         (Add, Value::Int(a), Value::Int(b)) => {
             Ok(Value::Int(a.checked_add(b).ok_or_else(|| overflow(span))?))
@@ -892,14 +895,9 @@ pub fn call(
     }
     match name {
         "print" => {
-            if args.len() != 1 {
-                return Err(trap(
-                    RT,
-                    format!("`print` cần 1 đối số, được {}", args.len()),
-                    span,
-                ));
-            }
-            host.out().push_str(&args[0].show());
+            // **R6d (VD-178)**: nhiều đối số cách nhau **1 dấu cách**; `print()` ⇒ chỉ `\n`.
+            let dong = args.iter().map(Value::show).collect::<Vec<_>>().join(" ");
+            host.out().push_str(&dong);
             host.out().push('\n');
             Ok(Value::Unit)
         }

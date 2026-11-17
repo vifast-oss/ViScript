@@ -53,6 +53,7 @@ pub fn encode_instr(out: &mut Vec<u8>, i: Instr) {
         | Instr::TestTuple(x)
         | Instr::TestList(x)
         | Instr::BindLocal(x) => u16b(out, x),
+        Instr::Format(x) => u32b(out, x),
         Instr::MakeRecord(t, n) | Instr::TestCtor(t, n) => {
             u32b(out, t);
             u16b(out, n);

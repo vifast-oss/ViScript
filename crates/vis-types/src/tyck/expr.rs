@@ -404,11 +404,7 @@ impl<'a> Checker<'a> {
             }
             // ST-14: chuỗi nội suy — kiểm **từng** phần biểu thức, kiểu của cả chuỗi là `str`.
             HExpr::Interp { parts, .. } => {
-                for p in parts {
-                    if let crate::hir::InterpPart::Expr(e) = p {
-                        self.kiem_expr(e);
-                    }
-                }
+                super::expr::phu::kiem_interp(self, parts);
                 Type::Str
             }
             HExpr::CmdBlock { .. } | HExpr::Error { .. } => Type::Error,
@@ -1303,19 +1299,15 @@ impl<'a> Checker<'a> {
         match name {
             "print" => {
                 // **ST-72 (VD-106 (1))**: `cap` chỉ dùng làm tham số — không in được.
-                if la_cap(&t0()) {
-                    self.diag(
-                        MISMATCH,
-                        format!("`cap` không in được (`{}`)", self.show(&t0())),
-                        span,
-                    );
-                }
-                if !arity(1) {
-                    self.diag(
-                        ARG_COUNT,
-                        format!("`print` cần 1 đối số, được {}", args.len()),
-                        span,
-                    );
+                // **R6d (VD-178)**: `print(a, b, …)` hợp lệ (cách nhau 1 dấu cách); `print()` ⇒ `\n`.
+                for t in &tys {
+                    if la_cap(t) {
+                        self.diag(
+                            MISMATCH,
+                            format!("`cap` không in được (`{}`)", self.show(t)),
+                            span,
+                        );
+                    }
                 }
                 Some(Type::Unit)
             }

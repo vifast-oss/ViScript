@@ -156,8 +156,8 @@ const SO_HOC: &[(&str, &str)] = &[
     ("2 ** -1", "ok(int)"),
     // kỳ vọng: !VS0414
     ("5mb ** 2", "!VS0414"),
-    // kỳ vọng: !VS0414 — không có `str + str`
-    ("\"a\" + \"b\"", "!VS0414"),
+    // kỳ vọng: ok(str) — **R6b (VD-178)**: `str + str` **nối** (trước: `VS0412`/`VS0414`)
+    ("\"a\" + \"b\"", "ok(str)"),
     // kỳ vọng: ok(int)
     ("1 % 2", "ok(int)"),
     // kỳ vọng: ok(size)

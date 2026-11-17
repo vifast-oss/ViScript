@@ -157,6 +157,7 @@ fn decode_instr(d: &mut Doc<'_>, n_code: u32) -> Result<Instr, DecodeError> {
         31 => Instr::Set,
         32 => Instr::With(d.u16()?),
         33 => Instr::Interp(d.u16()?),
+        53 => Instr::Format(d.u32()?),
         34 => Instr::IterInit,
         35 => Instr::IterNext(d.i32()?),
         36 => Instr::TestLit(d.u32()?),

@@ -18,7 +18,8 @@ use std::process::Command;
 /// **SỬA KÈM LÝ DO (ST-61)**: 426 → **441** (+15 ca nhóm `kenh/`).
 /// **SỬA KÈM LÝ DO (ST-72)**: 441 → **447** (+6 ca nhóm `cap/`).
 /// **SỬA KÈM LÝ DO (R9, VD-178)**: 447 → **448** (+`loi/range-khong-int` VS0416).
-const SO_CA: usize = 448;
+/// **SỬA KÈM LÝ DO (R6, VD-178)**: 448 → **452** (+4 ca `chuoi/`).
+const SO_CA: usize = 452;
 
 fn vis(args: &[&str]) -> (i32, String, String) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))

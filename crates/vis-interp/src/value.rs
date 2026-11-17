@@ -471,9 +471,20 @@ pub fn parse_char_lit(text: &str) -> Option<char> {
 }
 
 fn strip_quotes(text: &str) -> &str {
-    for q in ["\"\"\"", "\"", "'''", "'"] {
-        if let Some(rest) = text.strip_prefix(q) {
-            if let Some(inner) = rest.strip_suffix(q) {
+    // **R6a (VD-178)**: bóc cả **tiền tố** (`p"`, `r"`, `b"`) — trước đây giữ nguyên tiền tố
+    // (`p"abc".len()` = 6). Thứ tự: dài trước, ngắn sau.
+    for (open, close) in [
+        ("r\"\"\"", "\"\"\""),
+        ("p\"", "\""),
+        ("r\"", "\""),
+        ("b\"", "\""),
+        ("\"\"\"", "\"\"\""),
+        ("\"", "\""),
+        ("'''", "'''"),
+        ("'", "'"),
+    ] {
+        if let Some(rest) = text.strip_prefix(open) {
+            if let Some(inner) = rest.strip_suffix(close) {
                 return inner;
             }
         }

@@ -736,7 +736,8 @@ impl<'a> Lexer<'a> {
         let (open, close, escapes, interp) = match kind {
             Kind::Str => ("\"", "\"", true, true),
             Kind::MultiStr => ("\"\"\"", "\"\"\"", true, true),
-            Kind::Path => ("p\"", "\"", true, true),
+            // **R6a (VD-178)**: `p"…"` **không** escape (đường dẫn Windows), **có** nội suy.
+            Kind::Path => ("p\"", "\"", false, true),
             Kind::RawStr => ("r\"", "\"", false, false),
             Kind::RawMulti => ("r\"\"\"", "\"\"\"", false, false),
             Kind::Bytes => ("b\"", "\"", true, false),

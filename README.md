@@ -279,8 +279,8 @@ print(p.hien())
 | Bẫy | Cách đúng |
 |---|---|
 | `let` là **bất biến** — gán lại là lỗi | Muốn đổi giá trị thì dùng `var` |
-| `"a" + "b"` là **lỗi kiểu** | Nối bằng nội suy: `"{a}{b}"` |
-| `print(a, b)` là **lỗi** (hiện tại) | `print("{a} {b}")` — R6 sẽ cho nhiều đối số |
+| `"a" + "b"` **nối** được (từ R6) | `"a" + "b"` ⇒ `ab`; hoặc nội suy `"{a}{b}"` |
+| `print(a, b)` in **cách nhau 1 dấu cách** (từ R6) | `print("a", "b")` ⇒ `a b`; `print()` ⇒ dòng trống |
 | Đặt biến tên `ok`, `err`, `some`, `none` | Trùng tên hàm dựng — đổi tên khác (`dung`, `loi`, …) |
 | `match` thiếu nhánh | Phải xét **hết** mọi trường hợp, hoặc thêm `_` |
 | `ds[5]` ngoài phạm vi | Kiểm tra `.len()` trước, hoặc dùng `.get(5)` trả `int?` |
@@ -520,7 +520,7 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | Optional, Result, `?`, `else` | ✅ ĐÃ CÓ |
 | Đơn vị đo | ✅ ĐÃ CÓ (cách in sẽ đổi theo R10) |
 | Thư viện chuẩn (fs, json, http, net…) | ✅ ĐÃ CÓ (API đóng băng) |
-| `str + str`, `print(a, b)`, format `{x:.2}` | 🔜 ĐANG LÀM (R6) |
+| `str + str`, `print(a, b)`, format `{x:.2}`, `p"…"` | ✅ ĐÃ CÓ (R6) |
 | `if let Some(v) = o:` (pattern) | 🔜 ĐANG LÀM (R3) |
 | `/` ra float, `//` chia nguyên | 🔜 ĐANG LÀM (R7) |
 | Method người dùng (`impl P:`) | 🔜 DỰ KIẾN (R14) |

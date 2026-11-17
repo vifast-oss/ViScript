@@ -707,6 +707,8 @@ pub enum InterpPart {
     Str(String),
     /// `{expr}` — hạ như biểu thức bình thường.
     Expr(Box<HExpr>),
+    /// **R6c (VD-178)**: `{expr:spec}` — định dạng lúc chạy (`.N` = N chữ số thập phân).
+    ExprSpec { expr: Box<HExpr>, spec: String },
 }
 
 impl HExpr {
@@ -865,6 +867,9 @@ impl HExpr {
                     match p {
                         InterpPart::Str(t) => out.push_str(&format!(" \"{t}\"")),
                         InterpPart::Expr(e) => out.push_str(&format!(" {}", e.sexp())),
+                        InterpPart::ExprSpec { expr, spec } => {
+                            out.push_str(&format!(" (spec \"{spec}\" {})", expr.sexp()))
+                        }
                     }
                 }
                 out.push(')');

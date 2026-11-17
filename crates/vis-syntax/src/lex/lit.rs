@@ -215,7 +215,8 @@ fn string_body(kind: crate::lex::token::Kind, text: &str) -> Result<&str, LitErr
 /// Giải mã một literal chuỗi (mọi dạng trừ `b"…"`).
 ///
 /// - `RawStr`/`RawMulti`: **không** escape, **không** nội suy — `\` và `{` là ký tự thường (§3).
-/// - `Str`/`MultiStr`/`Path`: escape + nội suy; `{{`/`}}` cho ra `{`/`}`; `{` không đóng là
+/// - `Path` (**R6a/VD-178**): **không** escape (đường dẫn Windows), **có** nội suy.
+/// - `Str`/`MultiStr`: escape + nội suy; `{{`/`}}` cho ra `{`/`}`; `{` không đóng là
 ///   `VS0108`; escape sai là `VS0102`.
 pub fn decode_str(kind: crate::lex::token::Kind, text: &str) -> Result<StrLit, LitError> {
     use crate::lex::token::Kind;
@@ -229,9 +230,11 @@ pub fn decode_str(kind: crate::lex::token::Kind, text: &str) -> Result<StrLit, L
     let mut cur = String::new();
     let bytes = body.as_bytes();
     let mut i = 0usize;
+    // **R6a (VD-178)**: `p"…"` không escape — `\` là ký tự thường.
+    let no_escape = kind == Kind::Path;
     while i < bytes.len() {
         let ch = body[i..].chars().next().unwrap_or('\u{0}');
-        if ch == '\\' {
+        if ch == '\\' && !no_escape {
             let rest = &body[i + 1..];
             if let Some(e) = rest.chars().next() {
                 if e == 'u' {

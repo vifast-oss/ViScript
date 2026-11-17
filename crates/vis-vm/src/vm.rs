@@ -794,6 +794,16 @@ impl<'m> Th<'m> {
                     }
                     self.st.push(Value::Str(s));
                 }
+                // **R6c (VD-178)**: định dạng đỉnh ngăn xếp theo spec `consts[i]` (`.N`).
+                Instr::Format(i) => {
+                    let v = self.pop(vm, span)?;
+                    let spec = match vm.lit(i, span)? {
+                        Value::Str(s) => s,
+                        _ => return Err(vm.hong(VmError::BadIdx(i), span)),
+                    };
+                    let s = vis_interp::interp::dinh_dang(&v, &spec, span)?;
+                    self.st.push(Value::Str(s));
+                }
                 Instr::IterInit => {
                     let it = self.pop(vm, span)?;
                     let items = value::iter_items(it, span)?;
