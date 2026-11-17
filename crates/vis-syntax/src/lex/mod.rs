@@ -575,6 +575,30 @@ impl<'a> Lexer<'a> {
 
     // ---------------------------------------------------------------- số
 
+    /// `true` nếu `.` tại `self.i` là **truy cập method** chứ không phải dấu thập phân: ngay sau
+    /// nó là ký tự mở đầu định danh, **trừ** dạng số mũ `[eE][+-]?[0-9]+` — `1.e3` vẫn là literal
+    /// số sai (`VS0104`), không phải method `.e3` (R19c, VD-173#2/VD-178).
+    fn cham_mo_method(&self) -> bool {
+        // `.` là ASCII 1 byte ⇒ `self.i + 1` luôn là biên ký tự.
+        let Some(c) = self.src[self.i + 1..].chars().next() else {
+            return false;
+        };
+        if !(c == '_' || unicode_ident::is_xid_start(c)) {
+            return false;
+        }
+        let mut j = 1usize; // bỏ dấu `.`
+        if matches!(self.peek(j), Some(b'e' | b'E')) {
+            j += 1;
+            if matches!(self.peek(j), Some(b'+' | b'-')) {
+                j += 1;
+            }
+            if self.peek(j).is_some_and(|b| b.is_ascii_digit()) {
+                return false; // `1.e3` / `1.e+3` — float viết sai, không phải method
+            }
+        }
+        true
+    }
+
     fn scan_number(&mut self) {
         let start = self.i;
         let (line, col) = (self.line, self.col);
@@ -627,8 +651,12 @@ impl<'a> Lexer<'a> {
                         }
                         is_float = true;
                     }
+                    // R19c (VD-173#2, VD-178): `.` **chỉ** là dấu thập phân khi ngay sau là chữ
+                    // số. `.` mở định danh là truy cập method ⇒ **không** ăn `.`, để token sau
+                    // xử lý: `5.bit_or(3)` = `INT(5)` `.` `IDENT(bit_or)` `(` `INT(3)` `)`.
+                    _ if self.cham_mo_method() => {}
                     _ => {
-                        // §1: `1.` sai ⇒ VS0104 (dấu `.` để token sau xử lý).
+                        // §1: `1.` / `1.e3` sai ⇒ VS0104 (dấu `.` để token sau xử lý).
                         let off = self.i;
                         self.error_at(104, off);
                     }
