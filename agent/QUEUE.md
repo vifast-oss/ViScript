@@ -395,14 +395,19 @@ GHI CHÚ 2026-11-17 (VD-176) · #146 **chọn phương án (A)** (`symlink_metad
 
 | ST-168 | **(Agent 1) Soạn 6 tài liệu quyết định VS3** theo Phần B (mỗi mục: mục tiêu đo được, API, ca đỏ-trước, chia task ≤3 h, cổng, phụ thuộc) | ST-160 | 2 h | **DONE** | 6 tệp `JOURNAL/vs3-qd-1…6.md`; mỗi tệp dẫn chứng `file:dòng`; mục 2 (TLS) có **bảng phụ thuộc** theo B2; mục 5 có **bảng phân loại ~100 ca** theo B3 (dùng ST-169 nếu đã có) |
 > CHỜ DUYỆT Agent 0 · 6 tệp `JOURNAL/vs3-qd-1…6.md` (mục tiêu đo được + API + ca đỏ-trước + chia task ≤3 h + cổng + phụ thuộc; QĐ-3 có bảng phụ thuộc TLS; QĐ-5 có bảng tóm tắt 105 ca theo suite); **chưa** mở hàng VS3 (VD-148)
+APPROVED 2026-11-17 Agent 0 · 6 tài liệu VS3 **duyệt CÓ SỬA** (VD-178); các [SỬA] làm ở ST-178 trong repo ViScript mới
 | ST-169 | **(Agent 1) Bảng phân loại 100 ca Windows** (đầu vào cho ST-168 mục 5), dựa trên log ST-161 | ST-161 | 1 h | **DONE** | mỗi ca 1 dòng: tên, nhóm (a/b/c), bằng chứng log |
 > CHỜ DUYỆT Agent 1 · bảng 105 ca (a=48/b=15/c=42) từ `st161-cargo-test-psvn-nff.log` @0df923c2; đề nghị thử sửa 42 ca (c) trước khi lập danh sách kỳ vọng theo nền
+APPROVED 2026-11-17 Agent 0 · phân loại 105 ca Windows **duyệt**; áp QĐ-5 mục 1/2/4: sửa thành **48/15/42=105**, VS3-5b sau R6, danh sách nền về 0
 | ST-170 | (Agent 2) **Báo cáo `R29`** | ST-161, ST-162, ST-163, ST-164, ST-165, ST-166, ST-167, ST-168, ST-169 | 1 h | **READY** | check_report PASS; `head`, `blocked`, số đo **3 nền cùng HEAD** |
 
 | ST-171 | **Tách ViScript thành repo riêng "ViScript"** (VD-165) — Agent 1 điều phối, Agent 2 thực thi | ST-170 | 3 h | **READY** | (a) `git filter-repo`/`subtree split` giữ đủ lịch sử; (b) chuyển sổ nợ/QUEUE/JOURNAL/báo cáo/check_report + cập nhật đường dẫn, `check_report --all` **PASS ở repo mới**; (c) giữ nguyên số nợ/task (#146, #140, ST-171…); (d) cổng repo mới mac/ps/psvn **cùng số đo R29**, lệch giải thích từng suite; (e) repo cũ xoá mã ViScript, giữ **một dòng trỏ sang**, không hai bản song song; (f) cập nhật `vis-remote` + clone ps/psvn, `git pull` psvn không bị chặn; (g) ngoài phạm vi ⇒ **BLOCKED-CHO-A0** |
 
 GHI CHÚ 2026-11-17 Agent 0 (VD-167(1)) · tách repo phải chuyển **cả `docs/viscript/`**, không chỉ `viscript/`
 GHI CHÚ 2026-11-17 Agent 0 · **ST-171 CHỈ chạy sau khi A0 duyệt đủ**: 6 tài liệu VS3 (`vs3-qd-1…6`), `st169`, và `vs-ergo.md`; **nếu tới lượt mà chưa duyệt ⇒ DỪNG ở ST-170, không tách repo**
+| ST-178 | **(Agent 1) Sửa tài liệu theo VD-178** — mọi mục [SỬA] (QĐ-1…6, C1 mã thoát, C2 R1–R24, C3), cập nhật cheat sheet theo C1/R3/R10/R24 | ST-171 | 3 h | **BLOCKED** | chờ repo ViScript mới (ST-171); `check_report` PASS; mỗi [SỬA] ghi **“đã sửa: tệp:dòng”**; gửi A0 diff tóm tắt; **0 dòng mã** |
+
+GHI CHÚ 2026-11-17 (VD-178) · **ST-179 trở đi** (Agent 2): pha 1 công thái học theo **C3** — P0 → R9(+C1) → R6 → R17 → R1+R2 → R3 → R8 → R4 → R5 → R11 → R12 → R16 → R7 → R19b → R19c; mỗi task ≤3 h, đỏ-trước, gate PASS; **xen kẽ được VS3-5a/5d**; sau pha 1: VS3-QĐ-1 → (QĐ-2,3,4) → QĐ-6, QĐ-5 phần còn lại sau R6
 | ST-172 | **(Agent 1) Tài liệu công thái học** `JOURNAL/vs-ergo.md` (7 mục a–g + VS0412 + cheat sheet; **chỉ đọc, 0 dòng mã**) | ST-169 | 2 h | **DONE** | mỗi mục: hiện trạng `file:dòng`, đề xuất, ca đỏ-trước, ảnh hưởng mã/test; VS0412: kết luận có/không 2 lỗi + đề xuất tách mã; cheat sheet đổi nhãn "chưa có tại <commit>"; 0 dòng mã sửa |
 
 > CHỜ DUYỆT Agent 0 · `JOURNAL/vs-ergo.md` (7 mục a–g + §8 VS0412: **có** 4 nhóm lỗi chung mã, đề xuất VS0413/0414/0415/0416; §9 cheat sheet đã đổi nhãn); **0 dòng mã**
@@ -419,6 +424,7 @@ GHI CHÚ 2026-11-17 (VD-171) · phạm vi đổi thành **R1–R10** (thay mục
 GHI CHÚ 2026-11-17 (VD-172) · bổ sung **R11–R21** (hàm dựng, type gộp alias/newtype, biến thể enum không tiền tố, impl self/var self, nối dòng, let che tên, điều kiện bool, pattern + while let, 0o755 + panic tràn + bit method, assert/use-as/use-{}/list+range, pipeline chỉ shell/cmd); **thứ tự**: … R5 → R11…R21; cheat sheet theo R1–R21 sau khi thực thi
 GHI CHÚ 2026-11-17 (VD-173) · chia **2 pha**: Pha 1 (trước VS3, phá mã cũ) = P0 VD-170 + R9 + R17(gợi ý) + R6 + R1+R2 + R3+R4 + R5+R11 + R12 + R16 + R7 + R19c; Pha 2 = R14 (đầu pha) + R18 + R19(0o755,bit) + R20 + R10 + R15(./??/and/or) + R21; thêm **bảng tổng** đầu tệp; **không** sửa mã R trước khi A0 duyệt
 GHI CHÚ 2026-11-17 (VD-174) · nguyên tắc mô hình: không class/kế thừa, không lifetime/con trỏ/unsafe/macro; không chia sẻ sửa được (map+ID / `Chan`); **mục 4–6** = trait-as-type (`list[Shape]`, bảng ảo), sửa lồng sâu (`u.addr.city = x`), iterator lười + `.to_list()` — đứng **cùng R14 đầu pha 2**, đặc tả trước R20
+APPROVED 2026-11-17 Agent 0 · `vs-ergo.md` R1–R24 **duyệt CÓ SỬA** (VD-178); [SỬA] ở ST-178; pha 1 theo thứ tự C3; R24 đảo thành `.lazy()` (giữ filter/map trả collection)
 | ST-31 | báo cáo **R4** | ST-25..ST-30 | 1,5 h | **DONE** | MD+JSON, 36 hàng, số liệu tái lập |
 | ST-24 | báo cáo **R3** | ST-18..ST-23 | 1 h | **DONE** | MD+JSON, 27 hàng, số liệu tái lập |
 | ST-17 | báo cáo **R2** (`reports/R2-viscript.*`) | ST-11..ST-16 | 1 h | **DONE** | MD+JSON, 20 hàng QUEUE, số liệu tái lập được |
