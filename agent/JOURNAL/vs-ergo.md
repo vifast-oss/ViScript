@@ -1,136 +1,151 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# VS-ERGO · Đặc tả 13 mục công thái học (ST-172b, theo VD-170)
-**Trạng thái**: **CHỜ AGENT 0 DUYỆT** (cùng đợt 6 tài liệu VS3) · **Chỉ đọc, 0 dòng mã** · Căn cứ: `vs-ergo-facts.md` (ST-172a, APPROVED) + VD-170.
-**HEAD khi soạn**: `efa78295`. **Probe**: `target/debug/vis`; cây mã **không đổi** từ `0df923c2` (`git diff --stat 0df923c2..HEAD -- crates/` rỗng) nên kết quả probe của ST-172a vẫn đúng; các mục then chốt đã **probe lại** (`n9`, `r1`–`r4`, `c2`–`c7`, `t1`–`t10`).
-**Quy ước đường dẫn**: từ **gốc ViScript**. **Mức**: P0 sửa trước · P1 kế · P2 · P3 sau.
+# VS-ERGO · Bộ quy tắc công thái học ViScript (R1–R10) — ST-172b
+**Trạng thái**: **CHỜ AGENT 0 DUYỆT** (cùng đợt 6 tài liệu VS3) · **ST-172b** · **Chỉ đọc, 0 dòng mã**
+**Căn cứ**: **VD-171** (thay mục 7, 8, 10, 11, 13 của VD-170; sửa VD-19/Q2/§1.6) + `vs-ergo-facts.md` (ST-172a, APPROVED) + probe tại HEAD `6d01d8d3`.
+**Mỗi quy tắc**: Hiện trạng (probe + `file:dòng`) → Đặc tả → Ca đỏ-trước → Bảng chuyển đổi mã (nếu có) → Ảnh hưởng → Task ≤ 3 h → Phụ thuộc. **Không bàn lại hướng.**
 
-## §0. Phạm vi
-Theo **VD-170**: **bỏ** mục (h) `xs[i]→T?` (Q5/VD-18 đã chốt `xs[i]` panic, `xs[i]?`/`xs.get(i)` trả `T?` — chỉ **xác minh**) và **bỏ** phần tự gói `T→T?` của (a) (đã có, probe `n1`). 13 mục dưới đây là **đặc tả đã chốt hướng**, không bàn lại.
+## R1 · Chữ hoa
+**Hiện trạng**: pattern nhận **cả `Some(v)` lẫn `some(v)`** (probe `c6`,`c8`); `None` là **builtin** in `<builtin None>` (probe `r2`); `lower.rs:53` có `None`; `true/false/none` viết thường.
+**Đặc tả**: kiểu/trait/biến thể enum **UpperCamel** (`Some/None/Ok/Err/Circle`); biến/hàm/module/trường **snake_case**; hằng **UPPER_SNAKE**; `true/false` thường. **Dựng và pattern viết giống hệt nhau.** Pattern thường ⇒ **cảnh báo** + `vis fmt` **tự sửa**.
+**Ca đỏ-trước**: `some(v)` ⇒ cảnh báo + fmt sửa `Some(v)`; `Some(1)`/`none`/`None` xanh; `let Some = 1` ⇒ lỗi.
+**Chuyển đổi**: `some`/`none` pattern → `Some`/`None`; xoá `None` khỏi builtin (`lower.rs:53`), thêm **VS0111** (cảnh báo) + fmt.
+**Ảnh hưởng**: `tyck/pat.rs`, `lower.rs:53`, fmt, `all_codes`, golden, docs.
+**Task**: **172b-R1a** (1,5 h cảnh báo) · **R1b** (1 h fmt sửa) · **R1c** (1 h xoá `None`). **Phụ thuộc**: R9 (mã mới).
 
-## §1. [P0] `newtype` chưa hạ phải **báo lỗi ngay dòng khai báo**
-**Hiện trạng**: `newtype Met = float` **bị bỏ qua im lặng** — chương trình chạy, exit 0 (probe `n11`), nhưng dùng `Met` ⇒ `VS0301` tại **dòng dùng**, không phải dòng khai (`n8`: `t6.vis:3:18`). `newtype` có trong `KEYWORDS` (`token.rs:185`) nhưng parser không sinh khai báo.
-**Đặc tả**: gặp `newtype` ⇒ chẩn đoán **tại dòng khai**, mã mới (đề xuất **VS0203** “`newtype` chưa hỗ trợ”), kèm “gợi ý: dùng `type`/`alias`”; **không** được im lặng; vẫn tiếp tục phân tích để báo các lỗi khác.
-**Ca đỏ-trước**: `newtype Met = float` ⇒ đúng 1 chẩn đoán, `file:dòng` = dòng 1, exit 2; có `main` dùng `Met` ⇒ **không** thêm VS0301 trùng.
-**Ảnh hưởng**: parser/khaibao (`parse/khai_bao.rs`), `vis-diag` (thêm mã), golden, `all_codes` + `API-CODES.txt`.
-**Task**: **172b-1** (1 h) thêm mã + bắt lỗi; **172b-1b** (1 h) test âm/dương + API-CODES. **Phụ thuộc**: —.
+## R2 · Option/Result là enum std
+**Hiện trạng**: `none` là **từ khoá** (`token.rs:185`); `T??` ⇒ **VS0201** (probe `y2`); `Some(1)` dựng được, `some(1)` ⇒ VS0501 (probe `c4`); tự gói `T→T?` **đã có** (probe `n1`).
+**Đặc tả**: `enum Option[T]: Some(T), None`; `enum Result[T,E]: Ok(T), Err(E)`; `T?` = `Option[T]`; **bỏ từ khoá `none`** (`None` là biến thể); **cho phép `T??`**; tự gói **đủ số lớp**, `None` **lớp ngoài cùng**, lớp trong `Some(None)`.
+**Ca đỏ-trước** (bắt buộc theo A0):
+- `fn first[T](xs: list[T]) -> T?` gọi với `T = int?` ⇒ kiểu trả `int??`.
+- `map[str, int?].get` phân biệt **không có khoá** ⇒ `None` vs **khoá = None** ⇒ `Some(None)` vs **có giá trị** ⇒ `Some(Some(v))`.
+- `let x: int?? = 5` ⇒ `Some(Some(5))`; `let y: int?? = None` ⇒ `None`; `let z: int?? = Some(None)` ⇒ `Some(None)`.
+**Chuyển đổi**: bỏ `none` keyword; `None` thành biến thể; sửa VD-19 (A0).
+**Ảnh hưởng**: `ty.rs`, parser (`T?` lặp), tyck gói nhiều lớp, interp/VM, `lower.rs`, docs.
+**Task**: **172b-R2a** (3 h) enum std + bỏ `none`; **R2b** (3 h) `T??` + gói nhiều lớp; **R2c** (2 h) ca `first`/`map.get`. **Phụ thuộc**: R1.
 
-## §2. [P0] Bỏ chữ “VS0” khỏi mọi thông điệp
-**Hiện trạng**: nhiều thông điệp còn “VS0”: `VS0501` “tên `some` chưa hỗ trợ ở VS0” (`t7`), “`newtype`/`panic` chưa hỗ trợ ở VS0”, `VS0301` “… không có trong VS0 (VD-43)”, `VS0604`/`VS0701` tương tự.
-**Đặc tả**: thay bằng **“chưa hỗ trợ (nợ #N)”** khi có số nợ; không có số ⇒ “chưa hỗ trợ ở bản này”. Không đổi **mã**; phần lớn thông điệp **giữ nguyên** (luật đóng băng §5), chỉ thay cụm “ở VS0”.
-**Ca đỏ-trước**: `some(1)` ⇒ `VS0501: tên `some` chưa hỗ trợ (nợ #…)`, **không** chứa “VS0”; `all_codes` không còn chuỗi “VS0”.
-**Ảnh hưởng**: mọi `format!` trong `crates/vis-types`, `crates/vis-diag`, test so chuỗi thông điệp, `API-CODES.txt`.
-**Task**: **172b-2** (1,5 h) rà + thay; **172b-2b** (1 h) test so khớp. **Phụ thuộc**: —.
+## R3 · Vắng mặt/lỗi: `?`, `??`, `if let`, `let … else`
+**Hiện trạng** (probe mới, **khác** ST-172a):
+- `??` **chạy**: `o ?? 9` ⇒ `5` (`p5`).
+- **`if let` CÓ**: `if let v = o:` ⇒ `5` (`y6`); `if let Some(v) = o:` ⇒ **VS0412** “pattern ctor `Some` không khớp kiểu `int`” (`y4`) — pattern kiểm với **kiểu trong**, không phải `int?`.
+- **`let … else:` CÓ**: `let x = r else:` + khối `return` ⇒ chạy (`y7`); `else 0` ⇒ **VS0201** (`y5`) — đúng ý A0: **không** có `f() else 0`.
+**Đặc tả**: `?` đẩy lỗi lên; `??` giá trị mặc định; `if let` / `let … else` / `match` xử lý tại chỗ. **`let x = expr else e: <khối>`** — khối **bắt buộc thoát**; **Option không có `e`**; **không** có biểu thức `f() else 0`.
+**Ca đỏ-trước**: `if let Some(v) = o:` chạy (sửa kiểm pattern theo `T?`); `let x = r else:` không thoát ⇒ lỗi rõ; `f() else 0` ⇒ VS0201.
+**Ảnh hưởng**: `tyck` (pattern `if let`), parser `let else`, docs.
+**Task**: **172b-R3a** (1,5 h sửa if-let pattern) · **R3b** (1 h ràng buộc khối thoát). **Phụ thuộc**: R2.
 
-## §3. [P0] Cheat sheet thành **doc-test**
-**Hiện trạng**: `CHEAT-SHEET-ViScript.md` (161 dòng, **không track**) có ví dụ đánh dấu ✖/✔ nhưng **không ca nào được chạy**; nhiều ví dụ đã sai theo dữ kiện: `if let` (chưa có), `else e:` dạng biểu thức (chưa có, probe `z2`), `--help` (chưa sinh, probe `c2`), `AnyError` (chỉ thiết kế).
-**Đặc tả**: mọi ví dụ nhãn “chạy được” ⇒ **một ca test** (fixture + `vis run`/`vis check`) trong bộ test; ví dụ hỏng ⇒ **cổng đỏ**. Ví dụ chưa hỗ trợ ⇒ nhãn **“chưa hỗ trợ (nợ #N)”** + **không** chạy. Sửa nội dung theo dữ kiện (bỏ `if let`, `else`, `--help`, `AnyError` khỏi nhóm “chạy được”).
-**Ca đỏ-trước**: chạy **toàn bộ** ví dụ “chạy được” ⇒ 0 đỏ; cố tình sửa 1 ví dụ ⇒ cổng đỏ.
-**Ảnh hưởng**: `CHEAT-SHEET-ViScript.md`, bộ test mới (`crates/vis-cli/tests/cheatsheet.rs`), `vis-dev`/`vis script` (đường dẫn), cổng.
-**Task**: **172b-3** (2 h) tách ví dụ + sinh test; **172b-3b** (1 h) sửa nhãn sai. **Phụ thuộc**: §1, §2 (để nhãn “chưa hỗ trợ” đúng).
+## R4 · Lỗi: `Error` record + `Json` enum + `AnyError`
+**Hiện trạng**: probe `r4` (copy nguyên): `r4.vis:4:13: error VS0412: `?` trên `Result` chỉ dùng được khi hàm trả `Result[…, …]`, hàm này trả `str?` (§4.4)`; `json.decode(str)->V` (`API-STD.txt:15`); std trả `Result[_, str]`; `AnyError` chỉ là thiết kế (VD-20).
+**Đặc tả**: mọi hàm std trả **`Result[T, Error]`** với `Error` là **record cài `trait Error { message, source, span }`** thay `str`; `?` tự chuyển `E: Error → AnyError` (VD-20); `json.decode → Result[Json, Error]`, `Json` là **enum** (`Null/Bool/Num/Str/Arr/Obj`), **bỏ `V`**; `main` có thể trả `Result[(), AnyError]` (in lỗi, **exit 1**).
+**Ca chuẩn (2 dòng)**: `let s = fs.read(p)?` · `let v = json.decode(s)?`.
+**Ca đỏ-trước**: hàm trả `Result[T, AnyError]` dùng `fs.read()?` + `json.decode()?` chạy; lỗi giữ `message/source/span`; `json.decode` trả `Json`; `main` trả `Err` ⇒ exit **1**.
+**Bảng chuyển đổi**: `Result[_, str]` → `Result[_, Error]`; `V` → `Json`.
+**Ảnh hưởng**: `tyck/expr.rs:177,194`, `ty.rs`, `stdlib.rs`, mọi test std, docs §4.4. **Phụ thuộc**: R2, R9.
 
-## §4. [P1] `p"..."`: **không xử lý escape**, vẫn nội suy `{}`
-**Hiện trạng**: `p"C:\x"` ⇒ **VS0102** escape không hợp lệ (probe `r1`) tức p-string **đang** xử lý escape; SPEC-lex:29 ghi “có escape, có nội suy”; thiết kế:257 nói path literal tường minh.
-**Đặc tả** (VD-170#4): `p"..."` **không** xử lý escape (như raw) nhưng **giữ** nội suy `{expr}`; `\` là ký tự thường; **VS0102** thêm gợi ý “dùng `r"..."` cho chuỗi thô hoặc `p"..."` cho đường dẫn”. Cần **sửa SPEC-lex §3** — Agent 0 sở hữu (ST-02a), Agent 1 không sửa.
-**Ca đỏ-trước**: `p"C:\x"` ⇒ in nguyên `C:\x`; `p"a{b}"` ⇒ nội suy; `"a\q"` ⇒ VS0102 **kèm gợi ý**.
-**Ảnh hưởng**: lexer `lit.rs` (p-string), `vis-diag` thông điệp VS0102, golden, docs.
-**Task**: **172b-4** (1,5 h) lexer + hint. **Phụ thuộc**: —.
+## R5 · Gọi hàm: tên + record-theo-tên + method toàn std
+**Hiện trạng**: `f(1, b: 5)` ⇒ **VS0201** (`n3`); record **chỉ** `{name: …}` (`exhaustive.rs:151`); `x.f(a)` mới một phần (`z1`: `str.trim`; `s.upper` chạy); `str(5)` chạy (`r3`).
+**Đặc tả**: `f(1, b: 5)`; `--b` **chỉ** chế độ lệnh/`cmd`; `User(name: "An", age: 20)`, default **bỏ được**; `{…}` **chỉ map**; `x.f(a) ≡ mod.f(x, a)` khi **tham số đầu của `f` có kiểu của `x`** — **toàn bộ std**; báo **xung đột** `std.str`/`str`/builtin `str(x)`.
+**Ca đỏ-trước**: `f(1, b: 5)` chạy; `f(b: 5, 1)` lỗi; `User(name: "a")` với `age: int = 0` ⇒ `age==0`; `{name: "a"}` ⇒ lỗi; `" abc ".trim()` ⇒ `abc`; `str(5)` vẫn `5`.
+**Ảnh hưởng**: parser args/record, tyck call/method, `stdlib.rs`, docs, test record cũ.
+**Task**: **172b-R5a** (2 h) · **R5b** (2 h) · **R5c** (2 h) · **R5d** (2,5 h). **Phụ thuộc**: R3, R4.
 
-## §5. [P1] Luật thông điệp đóng băng + **dòng “gợi ý:”**
-**Hiện trạng**: 5 mẫu VS0201 **không gợi ý**: `const A = 1` ⇒ “mong `:`, thật `=`”; `s[a:b]` ⇒ “mong `]`, thật `:`”; `U(n: 1)` ⇒ “mong `)`, thật `:`”; `"{x:.2}"` ⇒ “mong xuống dòng…, thật `:`”; `|x|` ⇒ “mong biểu thức, thật `|`” (probe `t5`,`t8`,`t9`,`t10`,`p7`).
-**Đặc tả**: **giữ mã + thông điệp chính**; **được** thêm dòng thứ hai `gợi ý: …` (không đổi mã, không đổi câu chính):
-- `const A = 1` → `gợi ý: const cần kiểu: const A: int = 1`.
-- `s[a:b]` → `gợi ý: str không cắt theo chỉ số — dùng s.chars()/graphemes()`.
-- `U(n: 1)` → `gợi ý: dựng record bằng {n: 1}` (tới khi có §11 record-theo-tên).
-- `"{x:.2}"` → `gợi ý: format spec chưa hỗ trợ (nợ #…)` (tới khi §11).
-- `|x|` → `gợi ý: closure ViScript dùng x => expr`.
-**Ca đỏ-trước**: 5 ca so **chính xác** dòng chính (không đổi) + **có** dòng `gợi ý:`; 1 ca khác không có gợi ý (để không phá).
-**Ảnh hưởng**: `tyck`/`vis-diag` (thêm dòng), test so khớp, docs.
-**Task**: **172b-5** (2 h). **Phụ thuộc**: §2 (chuỗi thông điệp thống nhất trước).
+## R6 · Chuỗi
+**Hiện trạng**: `p"C:\x"` ⇒ **VS0102** (`r1`); `"a"+"b"` ⇒ VS0412 (`t1`); `"{n:.2}"` ⇒ VS0201 (`t10`); `print("a","b")` ⇒ VS0401 (`t4`).
+**Đặc tả**: `p"…"` **không escape**, **có** nội suy; `str+str` **nối**; `{expr:spec}` **runtime**; `print(a,b,…)` **cách 1 dấu cách**, `print()` ⇒ `\n`.
+**Ca đỏ-trước**: `p"C:\x"` in `C:\x`; `p"a{b}"` nội suy; `"a"+"b"` ⇒ `ab`; `"{3.14159:.2}"` ⇒ `3.14`; `print("a","b")` ⇒ `a b`.
+**Ảnh hưởng**: lexer `lit.rs`, `tyck/expr.rs:501,1303`, parser nội suy, interp, golden.
+**Task**: **172b-R6a** (1,5 h) · **R6b** (1,5 h) · **R6c** (2,5 h) · **R6d** (1 h). **Phụ thuộc**: —.
 
-## §6. [P1] Tách mã đa nghĩa VS0412 / VS0501
-**Hiện trạng**: `VS0412` phủ 4 nhóm (kiểu; **gán `let`** `tyck/mod.rs:1125`; **toán tử** `tyck/expr.rs:501`; async/range `mod.rs:818,1067`); `VS0501` phủ tính năng chưa hỗ trợ **và** tràn i64 lúc chạy (probe `p2`) **và** `some(1)` (probe `t7`).
-**Đặc tả**: mã cũ **chỉ còn phần chung**; mã mới:
-| Nghĩa | Mã mới (đề xuất) | Ghi chú |
+## R7 · Số
+**Hiện trạng**: `(Div, Int, Int) => Type::Int` (`crates/vis-types/src/tyck/num.rs:57`); runtime `builtin.rs:464`; **test dựa vào `int/int=int`**: `crates/vis-interp/tests/run.rs:98` (`7/2`→`3`), `:100` (`-7/2`→`-3`), `:112` (`5mb/5mb`→`1`), `interp_v2.rs:77` (`50pct/50pct`→`1`), `run.rs:120,429` (chia 0 ⇒ VS0502); `const A = 1` ⇒ VS0201 (`t5`); `1+1.5`⇒`2.5`, `let f: float = 1` (`p3`,`p4`).
+**Đặc tả**: chỉ `int→float` chuyển ngầm; **`/` luôn `float`**; **`//`** chia lấy phần nguyên; **`%` khớp `//`**; `const` suy kiểu từ literal; sửa **Q2** (A0).
+**Ca đỏ-trước**: `7/2` ⇒ `3.5`; `7 // 2` ⇒ `3`; `-7 // 2` ⇒ `-4`; `7 % 2` ⇒ `1`; `5mb/5mb` ⇒ `1.0`; `const A = 1` ⇒ `int`.
+**Test phải sửa**: 4 ca trên (run.rs:98,100,112; interp_v2.rs:77) — **đổi kỳ vọng** theo ngữ nghĩa mới, **không** nới ngưỡng; chia 0 giữ.
+**Ảnh hưởng**: `num.rs:57-65`, `builtin.rs:434,464`, parser `//`, test, docs Q2.
+**Task**: **172b-R7a** (2 h) · **R7b** (1,5 h) · **R7c** (1 h). **Phụ thuộc**: —.
+
+## R8 · Chỉ số (xác minh)
+**Hiện trạng**: `xs[0]?` ⇒ **VS0412** “`?` chỉ dùng cho `T?`/`Result`, được `int`” (`x2`) ⇒ **CHƯA**; `xs.get(1)` ⇒ **`some(2)`** (`x3`) ⇒ **CÓ**; `xs[5]` ⇒ VS0503 (`b4`); `s[0]` ⇒ VS0412 gợi ý; `s[0:2]` ⇒ VS0201 (`b3`).
+**Đặc tả**: giữ Q5/VD-18; chỉ **xác minh**.
+**Ca đỏ-trước**: `xs[i]?` chạy; `xs.get(i)`; `xs[i]` ngoài phạm vi ⇒ VS0503.
+**Task**: **172b-R8** (1 h). **Phụ thuộc**: R2.
+
+## R9 · Thông báo lỗi: mỗi mã một nghĩa
+**Hiện trạng**: `VS0412` phủ 4 nhóm (`tyck/mod.rs:1125`, `tyck/expr.rs:501`, `mod.rs:818,1067`); `VS0501` phủ tính năng + tràn i64 (`p2`) + `some(1)` (`t7`); `VS0201` gộp cú pháp; `VS0301` gộp tên/kiểu; `VS0604` gộp `&`/`^`/tiến trình; `VS0701` gộp module/std/pkg; nhiều thông điệp còn **“VS0”**.
+**Đặc tả**: mỗi mã **một nghĩa**; lỗi cú pháp hay gặp có **dòng “gợi ý:”**; **bỏ “VS0”**; từ khoá chưa làm (`newtype`…) **báo lỗi tại chỗ dùng**.
+**Bảng chuyển đổi đề xuất** (Agent 0 chốt số; `API-CODES.txt` A0 sở hữu):
+| Mã cũ | Nghĩa mới | Mã mới |
 |---|---|---|
-| Gán cho ràng buộc bất biến (`let`/tham số) | **VS0413** | thay chỗ `mod.rs:1125` |
-| Toán tử không hỗ trợ cho kiểu (`str+str`, đơn vị) | **VS0414** | thay `expr.rs:501` (trừ khi §10 cho phép nối) |
-| `async` đặt sai chỗ | **VS0415** | `mod.rs:818` |
-| Range không `int` | **VS0416** | `mod.rs:1067` |
-| Tràn i64 lúc chạy | **VS0507** | tách khỏi VS0501 |
-| Tính năng chưa hỗ trợ ở runtime | **VS0501** giữ | |
-**Bảng chuyển đổi** đầy đủ trong tài liệu `API-CODES.txt` (Agent 0 sở hữu) — Agent 1 **không** sửa tệp đó.
-**Ca đỏ-trước**: mỗi ca mã mới đúng 1 mã; ca cũ chuyển sang mã mới; `all_codes` có đủ.
-**Ảnh hưởng**: `vis-diag`, mọi test so mã, `API-CODES.txt`, docs; **không** đổi số mã cũ.
-**Task**: **172b-6** (2,5 h) + test. **Phụ thuộc**: §5 (thông điệp) — nếu đụng cùng tệp.
+| VS0412 | kiểu không khớp (chung) | **VS0412** |
+| | gán ràng buộc bất biến | **VS0413** |
+| | toán tử không hỗ trợ cho kiểu | **VS0414** |
+| | `async` sai chỗ | **VS0415** |
+| | range không `int` | **VS0416** |
+| VS0501 | tính năng chưa hỗ trợ | **VS0501** |
+| | tràn i64 lúc chạy | **VS0507** |
+| VS0201 | cú pháp chung | **VS0201** |
+| | `newtype` chưa hạ | **VS0203** |
+| | `const` thiếu kiểu | **VS0204** |
+| | dựng record bằng `{…}` | **VS0205** |
+| | `let…else` khối không thoát | **VS0206** |
+| VS0301 | tên không tồn tại | **VS0301** |
+| | kiểu không tồn tại | **VS0303** |
+| VS0604 | tính năng chung | **VS0604** |
+| | chạy nền `&` | **VS0605** |
+| | `^`/tiến trình ngoài | **VS0606** |
+| VS0701 | tệp module | **VS0701** |
+| | `std` chưa hỗ trợ | **VS0705** |
+| | `pkg` chưa hỗ trợ | **VS0706** |
+**Gợi ý cho 5 mẫu VS0201**: `const A = 1` → “const cần kiểu”; `s[a:b]` → “str không cắt”; `U(n: 1)` → “dựng record bằng tên kiểu”; `"{x:.2}"` → “format spec chưa hỗ trợ”; `|x|` → “closure dùng `x => expr`”.
+**Ca đỏ-trước**: mỗi ca mới đúng 1 mã; không thông điệp nào chứa “VS0”; `newtype` báo tại dòng khai.
+**Ảnh hưởng**: `vis-diag`, mọi test so mã, `API-CODES.txt`, docs.
+**Task**: **172b-R9a** (2 h) · **R9b** (1,5 h) · **R9c** (1 h). **Phụ thuộc**: —.
 
-## §7. [P2] Viết hoa `Some/Ok/Err`; `none/true/false` thường; **xoá builtin `None`**
-**Hiện trạng**: pattern nhận **cả** `Some(v)` và `some(v)` (probe `c6`,`c8`); constructor chỉ `Some`; `None` là builtin in `<builtin None>` (probe `r2`); `lower.rs:53` có `None`.
-**Đặc tả**: `Some/Ok/Err` viết hoa **ở cả dựng và pattern**; `none/true/false` thường; **xoá `None`** khỏi builtin; `some(v)` pattern ⇒ **cảnh báo** (mã mới, đề xuất **VS0111**) + `vis fmt` **tự sửa** thành `Some(v)`; sửa văn bản **VD-19** cho khớp (Agent 0).
-**Ca đỏ-trước**: `some(v)` ⇒ cảnh báo + fmt sửa; `None` ⇒ VS0301 (không còn builtin); `Some(1)`/`none` xanh.
-**Ảnh hưởng**: `tyck/pat.rs`, `lower.rs:53`, fmt, `all_codes`, test, docs.
-**Task**: **172b-7** (2 h). **Phụ thuộc**: §2.
+## R10 · Đơn vị
+**Hiện trạng**: `150m` in `150m`; `1h+30m` in `90m`; `5kb+5kb` ⇒ `10kb`; **`1kb+1kib` ⇒ `2024b`** (`y1`) — **trộn đơn vị KHÔNG báo lỗi**; `50pct+10pct` ⇒ `60pct` (`p9`).
+**Đặc tả**: in **chuẩn hoá** (`1h30m`, `1.5mb`); **xác minh** trộn đơn vị ⇒ theo A0 **báo lỗi** (nếu chốt vậy, đổi auto-convert sang VS0414/VS0412).
+**Ca đỏ-trước**: `150m` ⇒ `2h30m`; `1500kb` ⇒ `1.5mb`; `1kb+1kib` ⇒ lỗi (hoặc ghi rõ nếu giữ auto-convert); `45s` ⇒ `45s`.
+**Ảnh hưởng**: `Type::Duration/Size` Display, `tyck/num.rs`, golden, docs.
+**Task**: **172b-R10a** (2 h) · **R10b** (1 h). **Phụ thuộc**: R7.
 
-## §8. [P2] `AnyError` theo VD-20
-**Hiện trạng**: probe `n9`/`r4` (chép nguyên): `r4.vis:4:13: error VS0412: `?` trên `Result` chỉ dùng được khi hàm trả `Result[…, …]`, hàm này trả `str?` (§4.4)`. `json.decode(str)->V` (`API-STD.txt:15`) — **“V” là kiểu biến** (generic) không phải `any` (VD-01 cấm `any`); `?` giữa `fs.read` (Result) và `json.decode` (Option/`T?`) báo VS0412 vì **hai hàm trả hai kiểu khác nhau** (`Result` vs `T?`) — cần `AnyError` để dung hợp.
-**Đặc tả** (VD-20): `trait Error { message, source, span }`; `AnyError` xoá kiểu; **mọi `E: Error` tự chuyển** sang `AnyError` qua `?`; `main -> Result[(), AnyError]`; `json.decode` trả `Result[V, AnyError]` (hoặc giữ `V` + lỗi riêng — **Agent 0 chốt**).
-**Ca đỏ-trước**: hàm trả `Result[T, AnyError]` dùng `fs.read(...)?` + `json.decode(...)?` ⇒ **chạy**; lỗi giữ mã gốc; hai nguồn lỗi khác nhau bọc được.
-**Ảnh hưởng**: `tyck/expr.rs:177,194`, `ty.rs` (thêm `AnyError`), runtime, `stdlib.rs` (chữ ký), docs §4.4.
-**Task**: **172b-8a** (3 h) kiểu + `?`; **172b-8b** (3 h) chuyển chữ ký std + test; **172b-8c** (2 h) `main -> Result` + exit code. **Phụ thuộc**: §6 (mã lỗi).
+## Thứ tự thực thi (A0 chốt)
+**P0 của VD-170** (`newtype` báo lỗi tại chỗ dùng, bỏ “VS0”, cheat sheet doc-test) → **R9** → **R6** → **R1 + R2** → **R3 + R4** → **R5** → **R7** → **R10**. Tất cả **TRƯỚC VS3**.
 
-## §9. [P2] Gọi dạng phương thức cho `std.<mod>.f`
-**Hiện trạng**: `s.upper()/split()/len()` chạy; `s.trim()/replace` ⇒ VS0403 (`tyck/expr.rs:1004`); `use std.str` + `str.trim(" x ")` **chạy** (probe `z1`) — tức hàm **có**, chỉ thiếu dạng phương thức. Xung đột tên: kiểu `str` vs module `std.str` vs builtin `str(x)` (probe `r3`: `str(5)` ⇒ `5`).
-**Đặc tả**: hàm `std.<mod>.f` có **tham số đầu kiểu `T`** ⇒ gọi được `x.f(...)` (đường phương thức ưu tiên inherent; nếu không có thì module). **Kiểm xung đột**: `str(x)` giữ là **ép kiểu** (builtin), `str.upper` là **module**, `x.upper()` là **phương thức** — ba không gian tên riêng, ghi rõ trong docs.
-**Ca đỏ-trước**: `"  x ".trim()` ⇒ `x`; `[3,1].sort()` ⇒ `[1,3]`; `str(5)` vẫn `5`; tên trùng (`str.len`) không mơ hồ.
-**Ảnh hưởng**: `tyck/expr.rs` (method lookup), `stdlib.rs`, docs, thông điệp VS0403.
-**Task**: **172b-9** (2,5 h). **Phụ thuộc**: §8 (chữ ký std ổn định).
-
-## §10. [P2] `str + str` ⇒ **cho phép nối chuỗi**
-**Hiện trạng**: `"a"+"b"` ⇒ VS0412 “toán tử `+`: `str` và `str` không cùng kiểu/đơn vị” (`tyck/expr.rs:501`; probe `t1`).
-**Đặc tả**: `+` trên `str` ⇒ nối; giữ VS0412 cho **trộn đơn vị**; cân nhắc `+=`? (không có). **Không** đổi `+` số.
-**Ca đỏ-trước**: `"a"+"b"` ⇒ `ab`; `"a" + 1` ⇒ VS0412/VS0414 (không nối ngầm số); `1+"a"` cũng lỗi.
-**Ảnh hưởng**: `tyck/expr.rs:501` + `tyck/num.rs`, interp/VM, golden, docs.
-**Task**: **172b-10** (1,5 h). **Phụ thuộc**: §6 (mã lỗi).
-
-## §11. [P2] `print` nhiều đối số · format spec · record-theo-tên + default · `if let`
-**Hiện trạng**: `print("a","b")` ⇒ VS0401 (`expr.rs:1303-1319`); `"{x:.2}"` ⇒ VS0201 (probe `t10`); `U(n: 1)` ⇒ VS0201 (`t9`); `if let` **không có** trong từ khoá.
-**Đặc tả**: `print(a, b, …)` in **cách nhau 1 dấu cách**, newline cuối; `print()` ⇒ `\n`. `{expr:spec}` chạy runtime (`.N` cho float, làm tròn Agent 0 chốt). `U(name: …)` dựng record theo tên kiểu, **áp default** (cần default trường `field: T = expr` — nợ riêng). `if let` **chưa** làm (P2, ghi nợ).
-**Ca đỏ-trước**: `print("a","b")` ⇒ `a b`; `"{3.14159:.2}"` ⇒ `3.14`; `U(n: 1)` với `type U: n: int = 0` ⇒ `n==0`; `if let` ⇒ VS0201 (tới khi làm).
-**Ảnh hưởng**: `expr.rs:1303`, parser nội suy, parser record, tyck record, docs.
-**Task**: **172b-11a** (1 h print) · **172b-11b** (2,5 h format) · **172b-11c** (3 h record+default) · **172b-11d** (2 h if let). **Phụ thuộc**: §5.
-
-## §12. [P3] `const` suy kiểu · `duration` in chuẩn hoá · `cmd --help`
-**Hiện trạng**: `const A = 1` ⇒ VS0201 (`t5`); `150m` in `150m`, `1h+30m` in `90m` (probe `n7`,`p9`); `greet --help` ⇒ VS0602 “không có cờ `--help`” (probe `c2`).
-**Đặc tả**: `const` suy kiểu khi RHS **literal**; `duration` in `1h30m`/`45s`/`1s500ms` (quy tắc Agent 0 chốt); `cmd` tự sinh `--help` (mô tả tham số, cờ).
-**Ca đỏ-trước**: `const A = 1` ⇒ int; `150m` ⇒ `2h30m`; `dem --help` ⇒ văn bản trợ giúp, exit 0.
-**Ảnh hưởng**: parser const, Display duration, `cmdsig`/CLI.
-**Task**: **172b-12a** (1 h) · **172b-12b** (1,5 h) · **172b-12c** (2,5 h). **Phụ thuộc**: —.
-
-## §13. [P3] Q2: giữ chuyển ngầm `int→float` + số học trộn
-**Hiện trạng**: `1 + 1.5` ⇒ `2.5`; `let f: float = 1` ⇒ `1` (probe `p3`,`p4`); văn bản Q2 (`ViScript-thiet-ke.md:1104`) nói “không chuyển đổi ngầm” **mâu thuẫn mã**.
-**Đặc tả**: **giữ** hành vi mã (đã chốt VD-170#13); sửa **văn bản Q2** cho khớp (Agent 0 sở hữu thiết kế); thêm ca khoá.
-**Ca đỏ-trước**: `1+1.5` ⇒ `2.5`; `let f: float = 1` ⇒ `1.0`; `let n: int = 1.5` ⇒ lỗi.
-**Ảnh hưởng**: docs (Agent 0), test.
-**Task**: **172b-13** (0,5 h test + đề nghị sửa docs). **Phụ thuộc**: §2.
-
-## §14. Ba script theo thành ngữ (so số dòng với Python)
-**Script 1 — log** (`filter/len`, dùng closure `=>` — đã kiểm):
+## Scripts theo bộ quy tắc mới (dạng sẽ có sau khi làm; số dòng vs Python)
+**Script 1 — log** (`?`, `if let`, `print` nhiều đối số):
 ```
 use std.fs
 fn main():
-    match fs.read("/tmp/ergo/app.log"):
-        ok(noi):
-            let dong = noi.split("\n").filter(l => l.len() > 0)
-            print("tong dong: {dong.len()}")
-            print("ERROR: {dong.filter(l => l.contains("ERROR")).len()}")
-            print("WARN : {dong.filter(l => l.contains("WARN")).len()}")
-        err(x):
-            print("loi doc: {x}")
+    let noi = fs.read("/tmp/ergo/app.log")?
+    let dong = noi.split("\n").filter(l => l.len() > 0)
+    print("tong dong:", dong.len())
+    print("ERROR:", dong.filter(l => l.contains("ERROR")).len())
+    print("WARN :", dong.filter(l => l.contains("WARN")).len())
 ```
-**12 dòng** vs Python **6 dòng** — dài hơn vì **bắt buộc** xử lý `Result` (`match ok/err`) và `use std.fs`; Python ném exception. Ghi nguyên nhân: **an toàn kiểu + lỗi tường minh**, không phải cú pháp rườm.
+**7 dòng** vs Python **6** — hơn 1 dòng (`use std.fs`).
 
-**Script 2 — JSON**: (như ST-172a, **12 dòng** vs Python **8**) — dài hơn do `match` cho `fs.write`/`fs.read`; có thể rút khi có `?`/`AnyError` (§8).
+**Script 2 — JSON** (2 dòng bằng `?`):
+```
+use std.fs
+use std.json
+fn main() -> Result[(), AnyError]:
+    let ban = {"ten": "An", "lop": "10A"}
+    let ra = json.encode_pretty(ban)?
+    fs.write("/tmp/ergo/out.json", ra)?
+    let s = fs.read("/tmp/ergo/out.json")?
+    let v = json.decode(s)?
+    print("da ghi", ra.len(), "byte")
+```
+**8 dòng** vs Python **8** — **ngang** (nhờ `?` + `Result` main).
 
-**Script 3 — CLI có cờ**: `fn main(args)` **25 dòng** vs Python **8**; `cmd` **chưa dùng được** cho logic: `--help` chưa sinh (`c2`), thân `cmd` không trộn script/lệnh (`cf`: VS0201), tham số `cmd` **không thay được** vào pipeline (`c6`/`c7`: `open tep` đọc tên literal; `$tep` ⇒ VS0604). Khi §12c xong, script 3 rút còn ~10 dòng.
-
-## §15. Thứ tự thực thi đề nghị
-**P0**: §1 → §2 → §3 (3 tuần tự, ước 5–6 h). **P1**: §4 → §5 → §6 (5–6 h). **P2**: §7 → §9 → §10 → §11a → §11b → §11c → §8 (a/b/c) → §11d. **P3**: §12a/b/c → §13. Mọi task ≤ 3 h; mục ≥3 h đã tách (8a/8b/8c, 11a–d).
+**Script 3 — CLI** (`cmd` + `--help` sau R5/R12):
+```
+use std.fs
+cmd dem(tep: str, --dem: bool = false) -> ():
+    let dong = fs.read(tep)?.split("\n").filter(l => l.len() > 0)
+    if --dem:
+        print(dong.len(), "dong")
+    else:
+        for l in dong:
+            print(l)
+```
+**8 dòng** vs Python **8** — **ngang** (sau khi `cmd` thân script + `--help` xong; hiện `cmd` không trộn script/lệnh — `cf` VS0201, tham số không thay được — `c6/c7`).

@@ -418,3 +418,11 @@ NFC toàn tệp; float phải có chữ số sau `.`; `1..2` là range; literal 
 
 ### 8.4 Đã chốt **không làm**
 Không `class`/kế thừa (**VD-01/VD-03**: record + trait); không `any`/null; không JIT/`eval` (VD-07); không redirect `>`/`<` trong chế độ lệnh (SPEC-lex:96 — ghi tệp bằng `| save`); không `as` (đã bỏ khỏi từ khoá); không literal `50%`; không `defer` (21.1#14); không `s[i]` (VD-18); `\|` không phải toán tử nhị phân (VD-15).
+---
+
+## ĐÍNH CHÍNH (2026-11-17, sau probe cho VD-171)
+- **`if let` CÓ** (probe `y6`: `if let v = o:` ⇒ in `5`); bản §2.4 ghi “chưa có” là **sai**. Dạng `if let Some(v) = o:` ⇒ **VS0412** “pattern ctor `Some` không khớp kiểu `int`” (pattern kiểm sai tầng).
+- **`let … else:` CÓ** (probe `y7`: `let x = r else:` + khối `return` chạy); `else 0` ⇒ VS0201 (khối bắt buộc).
+- **`T??` CHƯA có** (`y2` ⇒ VS0201); **`xs[i]?` CHƯA có** (`x2` ⇒ VS0412); **`xs.get(i)` CÓ** (`x3` ⇒ `some(2)`).
+- **Trộn đơn vị KHÔNG báo lỗi**: `1kb+1kib` ⇒ `2024b` (probe `y1`).
+- `None` là builtin in `<builtin None>` (`r2`); `p"C:\x"` vẫn báo VS0102 (`r1`) — p-string đang xử lý escape.
