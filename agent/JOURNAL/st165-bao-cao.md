@@ -150,3 +150,15 @@ EXIT=2
   `DECISIONS.md`, `SO-NO.md`, `spec/`, `docs/`, `v2/`; **không** `unsafe`/crate mới/`#[ignore]`/nới ngưỡng.
 - **Commit**: `[ST-165]` ngay sau báo cáo này (sha do Agent 2 gửi Lead trong câu trả lời cuối) · **Push**:
   `git push origin main` (nếu bị từ chối: `git fetch` + `git merge --ff-only origin/main` rồi push lại).
+
+## 7. Bất thường phải ghi (không giấu) — commit đầu bị **cuốn 20 tệp `v2/`** đã staged sẵn
+
+- Commit `4cea479c` (đã push `63eb6681..4cea479c`) chứa **đủ 11 tệp `viscript/`** của ST-165 **và 20 tệp `v2/`**
+  (KT-77a/KT-80 của **dòng OS**) đã **staged sẵn trong index dùng chung** từ trước khi tôi bắt đầu (lúc mở việc
+  `git status` đã ghi "Staged: 11 files" nhóm `v2/`). `git add` của tôi chỉ thêm đường dẫn `viscript/`, nhưng
+  `git commit` (không kèm pathspec) **lấy toàn bộ index** ⇒ 20 tệp `v2/` đi cùng.
+- **Không** force-push/rewrite: commit đã lên `origin/main`, nhiều agent dùng chung cây; `git commit --amend`
+  + force sẽ phá lịch sử chung. Dữ liệu dòng OS **không mất** (đã vào `main`), nhưng nằm nhầm commit/thông điệp.
+- Đề nghị: dòng OS kiểm `git log 4cea479c` (20 tệp `v2/…`, `v2/bin/v2`, `v2/test/rules/*`) và tiếp tục từ trạng
+  thái đó; lần sau tôi dùng `git commit -m … -- <đường dẫn>` (pathspec) thay vì `git add` + `git commit`.
+- Commit bổ sung chỉ chứa tệp báo cáo này (pathspec tường minh) — xem `git log --oneline -2`.
