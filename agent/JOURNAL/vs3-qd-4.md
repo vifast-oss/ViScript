@@ -34,3 +34,5 @@
 
 ## 7. Rủi ro
 Nhân kernel cũ (openat2 < 5.6) ⇒ fallback; macOS vẫn còn khe hở bản chất (không fd→path) — phải nói thẳng; Windows không hứa.
+## 4b. Hướng dài hạn (VD-176(4)) — dùng chung cơ chế cho đường đọc và đường ghi
+Mở **từng thành phần đường dẫn** bằng **`openat` + `O_NOFOLLOW`** qua **`rustix`** (Linux: `openat2` với `RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS`), **bỏ hẳn kiểm theo đường dẫn** (không còn `canonicalize` rồi so). **Đường đọc và đường ghi dùng cùng một cơ chế**; đây là cùng hướng với `#140/#109b` (VS3). **Không** làm ở ST-174 (chỉ vá 1 dòng `symlink_metadata`).
