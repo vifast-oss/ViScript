@@ -15,6 +15,7 @@
 
 **Đếm**: **a = 48** · **b = 15** · **c = 42** (tổng **105**). Các ca **b** là **ứng viên**, cần Agent 0 xác nhận từng ca
 (đúng theo VD-162(3): danh sách kỳ vọng theo nền phải được duyệt).
+> **đã sửa**: `agent/JOURNAL/st169-bang-phan-loai-windows.md:@@L1@@` (ST-178) — số liệu chốt **48/15/42 = 105** (thêm ca `host_conformance_suite` vào nhóm b); nguồn: **bảng 105 dòng dưới đây** + `st161-cargo-test-psvn-nff.log` @ `0df923c2` + bảng tóm tắt theo suite ở `vs3-qd-5.md` §3b.
 
 ## Bảng (105 ca)
 
@@ -68,7 +69,7 @@
 | 46 | `sync_list::check_sync_thieu_mot_muc_thi_exit_2` | **a** | `crates/vis-cli/tests/sync_list.rs:309:5` | assertion `left == right` failed: thiếu mục ⇒ exit 2. stdout: "" |
 | 47 | `sync_list::help_co_check_sync` | **a** | `crates/vis-cli/tests/sync_list.rs:359:5` | assertion `left == right` failed: stderr: <3>WSL (9 - Relay) ERROR: CreateProcessCommon:88 |
 | 48 | `vish_main::main_rong_va_pipeline_hop_le` | **a** | `crates/vis-cli/tests/vish_main.rs:61:5` | assertion `left == right` failed: interp stderr: a.vish:4:1: error VS0501: không chạy được |
-| 49 | `?::host_conformance_suite` | **b** | `` | ok 1 - fs_read_thuong |
+| 49 | `host_conformance::host_conformance_suite` | **b** | `crates/vis-cli/tests/host_conformance.rs:109:5` | TAP dừng sớm: `ok 1 - fs_read_thuong` |
 | 50 | `json_ra::check_json_ba_tep_dung_thu_tu` | **b** | `crates/vis-cli/tests/json_ra.rs:97:52` | thiếu f1 |
 | 51 | `json_ra::check_json_loi_hai_tep` | **b** | `crates/vis-cli/tests/json_ra.rs:272:5` | assertion `left == right` failed |
 | 52 | `json_ra::check_json_loi_trong_tep_phu` | **b** | `crates/vis-cli/tests/json_ra.rs:248:5` | assertion `left == right` failed: {"ok":false,"files":[{"file":"C:\\Users\\ps\\AppData\\Lo |
@@ -131,8 +132,9 @@
 1. **a (48)**: chia 3 nhóm con — `/bin/*` trực tiếp (`cap_proc*`, `grant_proc_canon`, `extern`, `pipeline`, `ngoai_vm`, `vish_main`),
    `bash`/`sh` thiếu (`sync_list`), và `python3`/tệp thực thi Windows (`soak_script`, `json_ra::check_json_severity_warning_tab`).
    Cả 3 đều xử được bằng helper repo-built + biến môi trường, **không** sửa kỳ vọng.
-2. **b (15)**: `lsp` 6 (completion/hover rỗng, "LSP khác vis check", thiếu `VS0701`) · `net_server` 3 (không thấy tệp `addr`)
-   · `net` 1 (timeout nối) · `host_conformance` 1 (TAP) · `json_ra` 4 (tên tệp đặc biệt/`thiếu f1`/JSON đường dẫn). Cần Agent 0 chốt.
+2. **b (15)**: `lsp` **5** (completion/hover rỗng, "LSP khác vis check", thiếu `VS0701`) · `net_server` 3 (không thấy tệp `addr`)
+   · `net` 1 (timeout nối) · `host_conformance` **1** (TAP) · `json_ra` **5** (tên tệp đặc biệt/`thiếu f1`/JSON đường dẫn).
+   Tổng **5 + 3 + 1 + 1 + 5 = 15** (khớp cột **b** của bảng trên và `vs3-qd-5.md` §3b). Cần Agent 0 chốt.
 3. **c (42)**: chủ yếu là **dấu `\`** trong đường dẫn đưa vào mã `.vis`/golden ⇒ lỗi `escape không hợp lệ` (quyen 8, std_fs_json 7,
    strict_caps 2, st83 2, siet_caps 1, vm_main_argv 1) hoặc đường dẫn tuyệt đối trong TAP/golden (chan_doan_da_tep 5, vis_test 3,
    vish_cmd_body 2, vsh1b 1, ls_open 1, sem 1, span_tep 1, diag_cmp 1, json_ra 4). Cách xử lý **không** phải "sửa sản phẩm":

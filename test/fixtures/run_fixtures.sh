@@ -57,9 +57,9 @@ expect_fail "tệp 1.501 dòng" "R1" "$tmp/2"
 # 3) dùng unsafe
 mkdir -p "$tmp/3"; printf '// SPDX-License-Identifier: MIT OR Apache-2.0\nunsafe fn x() {}\n' > "$tmp/3/u.rs"
 expect_fail "unsafe" "R2" "$tmp/3"
-# 4) vis-host-vifast nằm trong viscript/
+# 4) vis-host-vifast nằm trong cây nguồn
 mkdir -p "$tmp/4/vis-host-vifast"; printf '# SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/4/vis-host-vifast/Cargo.toml"
-expect_fail "vis-host-vifast trong viscript/" "R4" "$tmp/4"
+expect_fail "vis-host-vifast trong cây nguồn" "R4" "$tmp/4"
 # 5) môi trường sạch không có cargo: phải báo "không thấy cargo", không được 127
 # **SỬA KÈM LÝ DO (ST-121)**: bản cũ dùng `PATH=/usr/bin:/bin` và ngầm giả định cargo **không**
 # nằm ở đó (đúng trên macOS — cargo chỉ ở ~/.cargo/bin). Trên Linux cargo của distro nằm ở

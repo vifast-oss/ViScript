@@ -79,9 +79,9 @@ run_rules() {
                 ;;
         esac
     done < <(find "$root" -type f -not -path '*/target/*' -print0 2>/dev/null)
-    # R4: `vis-host-vifast` KHÔNG được nằm trong viscript/ (QD §7.5, thiết kế §14.2)
+    # R4: `vis-host-vifast` KHÔNG được nằm trong cây nguồn (QD §7.5, thiết kế §14.2)
     if [ -d "$root/vis-host-vifast" ] || [ -d "$root/crates/vis-host-vifast" ]; then
-        echo "R4: vis-host-vifast nằm trong viscript/ — phải ở workspace ngoài" >&2
+        echo "R4: vis-host-vifast nằm trong cây nguồn — phải ở workspace ngoài" >&2
         found=1
     fi
     return "$found"
