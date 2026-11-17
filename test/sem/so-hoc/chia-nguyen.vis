@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R7 (VD-178)**: `/` luôn `float`; `//` chia lấy phần nguyên (làm tròn xuống); `%` khớp `//`.
+fn main():
+    print(7 / 2)
+    print(7 // 2)
+    print(-7 // 2)
+    print(7 % 2)
+    print(-7 % 2)
+    print(5mb / 5mb)

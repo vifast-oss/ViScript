@@ -397,6 +397,8 @@ pub enum AssignOp {
     Sub,
     Mul,
     Div,
+    /// **R7 (VD-178)**: `//` — chia lấy phần nguyên (làm tròn **xuống**).
+    FloorDiv,
     Rem,
 }
 
@@ -408,6 +410,7 @@ impl AssignOp {
             AssignOp::Sub => "-=",
             AssignOp::Mul => "*=",
             AssignOp::Div => "/=",
+            AssignOp::FloorDiv => "//=",
             AssignOp::Rem => "%=",
         }
     }
@@ -913,6 +916,8 @@ pub enum BinOp {
     Sub,
     Mul,
     Div,
+    /// **R7 (VD-178)**: `//` — chia lấy phần nguyên (làm tròn **xuống**).
+    FloorDiv,
     Rem,
     Pow,
     Range,
@@ -936,6 +941,7 @@ impl BinOp {
             BinOp::Sub => "-",
             BinOp::Mul => "*",
             BinOp::Div => "/",
+            BinOp::FloorDiv => "//",
             BinOp::Rem => "%",
             BinOp::Pow => "**",
             BinOp::Range => "..",
@@ -960,6 +966,7 @@ impl BinOp {
             "-" => BinOp::Sub,
             "*" => BinOp::Mul,
             "/" => BinOp::Div,
+            "//" => BinOp::FloorDiv,
             "%" => BinOp::Rem,
             "**" => BinOp::Pow,
             ".." => BinOp::Range,

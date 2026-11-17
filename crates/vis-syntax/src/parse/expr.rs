@@ -229,7 +229,7 @@ impl<'a> Parser<'a> {
                     "`%` chỉ là modulo; `50%` không phải phần trăm — dùng `50pct`",
                 ));
             }
-            let op = self.eat_any_punct(&["*", "/", "%"]);
+            let op = self.eat_any_punct(&["*", "/", "//", "%"]);
             match op {
                 Some(op) => {
                     let rhs = self.unary_expr()?;

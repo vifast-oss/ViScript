@@ -1,2 +1,3 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
+# **R7 (VD-178)**: `%` khớp `//` — phần dư **không âm** ⇒ `-7 % 3` = `2`.
 print(-7 % 3)

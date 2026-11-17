@@ -52,6 +52,7 @@ pub fn assign_binop(op: vis_types::AssignOp) -> Result<vis_types::BinOp, Codegen
         AssignOp::Sub => BinOp::Sub,
         AssignOp::Mul => BinOp::Mul,
         AssignOp::Div => BinOp::Div,
+        AssignOp::FloorDiv => BinOp::FloorDiv,
         AssignOp::Rem => BinOp::Rem,
     })
 }

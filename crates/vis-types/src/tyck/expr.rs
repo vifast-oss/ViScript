@@ -488,6 +488,7 @@ impl<'a> Checker<'a> {
             | BinOp::Sub
             | BinOp::Mul
             | BinOp::Div
+            | BinOp::FloorDiv
             | BinOp::Rem
             | BinOp::Pow
             | BinOp::Range

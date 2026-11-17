@@ -149,7 +149,8 @@ const SO_HOC: &[(&str, &str)] = &[
     // kỳ vọng: ok(float) — duration / duration
     ("250ms / 250ms", "ok(float)"),
     // kỳ vọng: ok(int) — chia 0 là **runtime**, không phải lỗi kiểu
-    ("1 / 0", "ok(int)"),
+    // **R7 (VD-178)**: `/` luôn `float`.
+    ("1 / 0", "ok(float)"),
     // kỳ vọng: ok(int)
     ("2 ** 3", "ok(int)"),
     // kỳ vọng: ok(int) — mũ âm là runtime

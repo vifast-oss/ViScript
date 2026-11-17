@@ -429,6 +429,7 @@ pub fn binop_tag(op: BinOp) -> u8 {
         BinOp::And => 15,
         BinOp::Or => 16,
         BinOp::Pipe => 17,
+        BinOp::FloorDiv => 18,
     }
 }
 
@@ -453,6 +454,7 @@ pub fn binop_from_tag(t: u8) -> Option<BinOp> {
         15 => BinOp::And,
         16 => BinOp::Or,
         17 => BinOp::Pipe,
+        18 => BinOp::FloorDiv,
         _ => return None,
     })
 }

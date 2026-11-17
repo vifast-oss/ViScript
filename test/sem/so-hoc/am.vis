@@ -1,3 +1,4 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
+# **R7 (VD-178)**: `/` luôn `float`; `%` khớp `//` (không âm).
 print(-7 / 2)
 print(-7 % 2)

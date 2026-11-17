@@ -401,6 +401,8 @@ pub fn builtin_name(name: &str) -> Option<&'static str> {
 pub fn bin(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
     use BinOp::*;
     match op {
+        // **R7 (VD-178)**: `//` — chia lấy phần nguyên (làm tròn **xuống**).
+        FloorDiv => arith(op, l, r, span),
         Range | RangeIncl => match (&l, &r) {
             (Value::Int(a), Value::Int(b)) => Ok(Value::Range(*a, *b, matches!(op, RangeIncl))),
             _ => Err(trap(
@@ -534,17 +536,26 @@ fn arith(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
         (Mul, Value::Int(a), Value::Int(b)) => {
             Ok(Value::Int(a.checked_mul(b).ok_or_else(|| overflow(span))?))
         }
+        // **R7 (VD-178)**: `/` **luôn** `float` (kể cả `int / int`).
         (Div, Value::Int(a), Value::Int(b)) => {
             if b == 0 {
                 return Err(trap(DIV0, "chia cho 0 (`/0`)", span));
             }
-            Ok(Value::Int(a.checked_div(b).ok_or_else(|| overflow(span))?))
+            Ok(Value::Float(a as f64 / b as f64))
         }
+        // **R7 (VD-178)**: `//` chia lấy phần nguyên — làm tròn **xuống** (Python).
+        (FloorDiv, Value::Int(a), Value::Int(b)) => {
+            if b == 0 {
+                return Err(trap(DIV0, "chia cho 0 (`//0`)", span));
+            }
+            Ok(Value::Int(a.div_euclid(b)))
+        }
+        // **R7 (VD-178)**: `%` khớp `//` — phần dư **không âm** (Python).
         (Rem, Value::Int(a), Value::Int(b)) => {
             if b == 0 {
                 return Err(trap(DIV0, "lấy dư cho 0 (`%0`)", span));
             }
-            Ok(Value::Int(a.wrapping_rem(b)))
+            Ok(Value::Int(a.rem_euclid(b)))
         }
         (Pow, Value::Int(a), Value::Int(b)) => {
             if b < 0 {

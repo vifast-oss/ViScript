@@ -94,12 +94,18 @@ fn kiem(ten: &str, cases: &[(&str, &str)]) {
 const SO_HOC: &[(&str, &str)] = &[
     // kỳ vọng: out("3\n")
     ("print(1 + 2)", "out(\"3\\n\")"),
+    // **R7 (VD-178)**: `/` **luôn** `float` ⇒ `7/2` = `3.5`.
+    // kỳ vọng: out("3.5\n")
+    ("print(7 / 2)", "out(\"3.5\\n\")"),
+    // kỳ vọng: out("-3.5\n")
+    ("print(-7 / 2)", "out(\"-3.5\\n\")"),
+    // **R7 (VD-178)**: `%` khớp `//` — phần dư **không âm** ⇒ `-7 % 2` = `1`.
+    // kỳ vọng: out("1\n")
+    ("print(-7 % 2)", "out(\"1\\n\")"),
     // kỳ vọng: out("3\n")
-    ("print(7 / 2)", "out(\"3\\n\")"),
-    // kỳ vọng: out("-3\n")
-    ("print(-7 / 2)", "out(\"-3\\n\")"),
-    // kỳ vọng: out("-1\n")
-    ("print(-7 % 2)", "out(\"-1\\n\")"),
+    ("print(7 // 2)", "out(\"3\\n\")"),
+    // kỳ vọng: out("-4\n")
+    ("print(-7 // 2)", "out(\"-4\\n\")"),
     // kỳ vọng: out("1024\n")
     ("print(2 ** 10)", "out(\"1024\\n\")"),
     // kỳ vọng: out("512\n")

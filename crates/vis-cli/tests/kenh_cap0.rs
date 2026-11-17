@@ -182,7 +182,7 @@ fn drain_task_loi_vs0506() {
     let (a, _) = ca(
         &d,
         "l",
-        "async fn hong() -> int:\n    1 / 0\n\nlet t = spawn hong()\nprint(\"main\")\n",
+        "async fn hong() -> int:\n    1 // 0\n\nlet t = spawn hong()\nprint(\"main\")\n",
     );
     assert_eq!(a.0, 101, "R9/C1: lỗi chạy có mã ⇒ 101: {:?}", a);
     assert!(a.2.contains("VS0506"));
