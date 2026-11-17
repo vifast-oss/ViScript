@@ -94,3 +94,85 @@ pub(super) fn is_empty(
     c.arity(args, 0, name, span);
     Type::Bool
 }
+
+/// **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?` (không cần hàm trả `T?`).
+pub(super) fn kiem_index_opt(
+    c: &mut super::super::Checker,
+    base: &crate::hir::HExpr,
+    index: &crate::hir::HExpr,
+    span: vis_syntax::Span,
+) -> Type {
+    let bt = c.kiem_expr(base);
+    let _ = c.kiem_expr(index);
+    let elem = match &bt {
+        Type::List(e) => (**e).clone(),
+        Type::Bytes => Type::Int,
+        Type::Map(_, v) => (**v).clone(),
+        Type::Error => Type::Error,
+        other => {
+            let o = other.clone();
+            c.diag(
+                super::super::MISMATCH,
+                format!("`xs[i]?` cần `list`/`map`/`bytes`, được `{}`", c.show(&o)),
+                span,
+            );
+            Type::Error
+        }
+    };
+    Type::Opt(Box::new(elem))
+}
+
+/// **R8 (VD-178) + §4.4**: `?` — `xs[i]?` là chỉ số có kiểm tra; còn lại đòi hàm trả `T?`/`Result`.
+pub(super) fn kiem_try(
+    c: &mut super::super::Checker,
+    expr: &crate::hir::HExpr,
+    span: vis_syntax::Span,
+) -> Type {
+    if let crate::hir::HExpr::Index { base, index, .. } = expr {
+        return kiem_index_opt(c, base, index, span);
+    }
+    let t = c.kiem_expr(expr);
+    match t {
+        Type::Opt(inner) => {
+            if c.try_hop_le(true) {
+                (*inner).clone()
+            } else {
+                c.diag(
+                    super::super::MISMATCH,
+                    format!(
+                        "`?` trên `{}` chỉ dùng được khi hàm trả `{}?`, hàm này trả `{}` (§4.4)",
+                        c.show(&Type::Opt(inner.clone())),
+                        c.show(&inner),
+                        c.show(&c.ham_tra())
+                    ),
+                    span,
+                );
+                Type::Error
+            }
+        }
+        Type::Result(inner, _) => {
+            if c.try_hop_le(false) {
+                (*inner).clone()
+            } else {
+                c.diag(
+                    super::super::MISMATCH,
+                    format!(
+                        "`?` trên `Result` chỉ dùng được khi hàm trả `Result[…, …]`, hàm này trả `{}` (§4.4)",
+                        c.show(&c.ham_tra())
+                    ),
+                    span,
+                );
+                Type::Error
+            }
+        }
+        Type::Error => Type::Error,
+        other => {
+            c.diag(
+                super::super::MISMATCH,
+                format!("`?` chỉ dùng cho `T?`/`Result`, được `{}`", c.show(&other)),
+                span,
+            );
+            Type::Error
+        }
+    }
+}

@@ -163,56 +163,7 @@ impl<'a> Checker<'a> {
                     Type::Opt(Box::new(t))
                 }
             },
-            HExpr::Try { expr, span } => {
-                let t = self.kiem_expr(expr);
-                match t {
-                    Type::Opt(inner) => {
-                        // ST-12b BLOCKER #1 (§4.4): `T?` chỉ dùng `?` khi hàm trả `U?`.
-                        if self.try_hop_le(true) {
-                            (*inner).clone()
-                        } else {
-                            self.diag(
-                                MISMATCH,
-                                format!(
-                                    "`?` trên `{}` chỉ dùng được khi hàm trả `{}?`, hàm này trả `{}` (§4.4)",
-                                    self.show(&Type::Opt(inner.clone())),
-                                    self.show(&inner),
-                                    self.show(&self.ham_tra())
-                                ),
-                                *span,
-                            );
-                            Type::Error
-                        }
-                    }
-                    Type::Result(inner, _) => {
-                        if self.try_hop_le(false) {
-                            (*inner).clone()
-                        } else {
-                            self.diag(
-                                MISMATCH,
-                                format!(
-                                    "`?` trên `Result` chỉ dùng được khi hàm trả `Result[…, …]`, hàm này trả `{}` (§4.4)",
-                                    self.show(&self.ham_tra())
-                                ),
-                                *span,
-                            );
-                            Type::Error
-                        }
-                    }
-                    Type::Error => Type::Error,
-                    other => {
-                        self.diag(
-                            MISMATCH,
-                            format!(
-                                "`?` chỉ dùng cho `T?`/`Result`, được `{}`",
-                                self.show(&other)
-                            ),
-                            *span,
-                        );
-                        Type::Error
-                    }
-                }
-            }
+            HExpr::Try { expr, span } => super::expr::phu::kiem_try(self, expr, *span),
             HExpr::With { base, fields, span } => {
                 let bt = self.kiem_expr(base);
                 match bt {

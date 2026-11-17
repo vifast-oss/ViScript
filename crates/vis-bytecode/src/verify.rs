@@ -182,6 +182,7 @@ fn hieu_ung(i: Instr) -> (i32, i32) {
         Instr::MakeSome | Instr::MakeOk | Instr::MakeErr => (1, 1),
         Instr::Field(_) => (1, 1),
         Instr::Index => (2, 1),
+        Instr::IndexOpt => (2, 1),
         Instr::Set => (3, 1),
         Instr::With(n) => (2 * n as i32 + 1, 1),
         Instr::IterInit => (1, 0),

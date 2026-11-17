@@ -171,7 +171,7 @@ mod tests {
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "1c87f5d40a1546e0beadd1960bc19699307d221af40e6403884d289262f52001",
+            k, "514d0ebb0e95523524e97376de981306f0e1720fb37fdd1c6bb9c039b8e8cd23",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
     }

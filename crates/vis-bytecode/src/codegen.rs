@@ -1128,6 +1128,13 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HExpr::Try { expr, span } => {
+                // **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?` (không panic).
+                if let HExpr::Index { base, index, .. } = &**expr {
+                    self.expr(base)?;
+                    self.expr(index)?;
+                    self.f.push(Instr::IndexOpt, *span, -1);
+                    return Ok(());
+                }
                 self.expr(expr)?;
                 self.f.push(Instr::Try, *span, 0);
                 Ok(())

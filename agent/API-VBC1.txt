@@ -58,3 +58,4 @@
 51	Swap
 52	PushUnit
 53	Format
+54	IndexOpt

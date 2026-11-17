@@ -254,6 +254,7 @@ fn moi_lenh() -> Vec<vis_bytecode::Instr> {
         I::PushUnit,
         // **R6c (VD-178)**: định dạng `{expr:spec}`.
         I::Format(0),
+        I::IndexOpt,
     ]
 }
 

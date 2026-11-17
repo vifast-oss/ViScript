@@ -142,6 +142,8 @@ pub enum Instr {
     Field(u32),
     /// Chỉ số `base[i]` — 2→1.
     Index,
+    /// **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra**, trả `T?` (2→1).
+    IndexOpt,
     /// Cập nhật `base[i] = v` (list/map) — 3→1.
     Set,
     /// `base with ten: v …` — base + `n` cặp tên/giá trị — 2n+1→1.
@@ -225,6 +227,7 @@ impl Instr {
             Instr::MakeClosure(..) => 28,
             Instr::Field(_) => 29,
             Instr::Index => 30,
+            Instr::IndexOpt => 54,
             Instr::Set => 31,
             Instr::With(_) => 32,
             Instr::Interp(_) => 33,
@@ -293,6 +296,7 @@ impl Instr {
             | Instr::MakeOk
             | Instr::MakeErr
             | Instr::Index
+            | Instr::IndexOpt
             | Instr::Set
             | Instr::IterInit
             | Instr::Try
@@ -311,7 +315,7 @@ impl Instr {
 ///
 /// Luật: **thêm** lệnh ⇒ thêm tên vào **cuối**; **không** đổi số, **không** đổi tên, **không** đổi
 /// nghĩa thẻ đã có. Đổi nghĩa ⇒ định dạng mới `VBC2` (VD-129).
-pub const TEN_THE: [&str; 54] = [
+pub const TEN_THE: [&str; 55] = [
     "Const",
     "LoadLocal",
     "StoreLocal",
@@ -366,6 +370,7 @@ pub const TEN_THE: [&str; 54] = [
     "Swap",
     "PushUnit",
     "Format",
+    "IndexOpt",
 ];
 
 /// Số thẻ hiện có (`TEN_THE.len()`).

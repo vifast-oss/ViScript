@@ -78,6 +78,7 @@ pub fn encode_instr(out: &mut Vec<u8>, i: Instr) {
         | Instr::MakeOk
         | Instr::MakeErr
         | Instr::Index
+        | Instr::IndexOpt
         | Instr::Set
         | Instr::IterInit
         | Instr::Try

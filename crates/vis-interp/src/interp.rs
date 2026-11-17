@@ -760,6 +760,29 @@ impl<'a> Interp<'a> {
                     e.span(),
                 )))
             }
+            // **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?` (không panic).
+            HExpr::Try { expr, .. } if matches!(&**expr, HExpr::Index { .. }) => {
+                let HExpr::Index { base, index, .. } = &**expr else {
+                    unreachable!()
+                };
+                let b = self.eval(base)?;
+                let i = self.eval(index)?;
+                Ok(match (&b, &i) {
+                    (Value::List(xs), Value::Int(n)) if *n >= 0 => match xs.get(*n as usize) {
+                        Some(v) => Value::Opt(Some(Box::new(v.clone()))),
+                        None => Value::Opt(None),
+                    },
+                    (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => match bs.get(*n as usize) {
+                        Some(x) => Value::Opt(Some(Box::new(Value::Int(*x as i64)))),
+                        None => Value::Opt(None),
+                    },
+                    (Value::Map(kv), k) => match kv.iter().find(|(kk, _)| kk.eq_value(k)) {
+                        Some((_, v)) => Value::Opt(Some(Box::new(v.clone()))),
+                        None => Value::Opt(None),
+                    },
+                    _ => Value::Opt(None),
+                })
+            }
             HExpr::Try { expr, .. } => match self.eval(expr)? {
                 Value::Opt(Some(v)) => Ok(*v),
                 Value::Opt(None) => Err(Abort::Ret(Value::Opt(None))),

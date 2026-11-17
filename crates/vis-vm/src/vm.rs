@@ -768,6 +768,13 @@ impl<'m> Th<'m> {
                     let v = index(&base, &idx, span)?;
                     self.st.push(v);
                 }
+                // **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra**, trả `T?`.
+                Instr::IndexOpt => {
+                    let idx = self.pop(vm, span)?;
+                    let base = self.pop(vm, span)?;
+                    let v = index_opt(&base, &idx);
+                    self.st.push(v);
+                }
                 Instr::Set => {
                     let v = self.pop(vm, span)?;
                     let idx = self.pop(vm, span)?;
@@ -1116,5 +1123,24 @@ fn with(base: &Value, pairs: Vec<(String, Value)>, span: Span) -> R<Value> {
             format!("`with` không dùng được cho `{}`", other.show()),
             span,
         ))),
+    }
+}
+
+/// **R8 (VD-178)**: `xs[i]?` — trả `Some(v)` nếu trong phạm vi, `None` nếu ngoài (không panic).
+fn index_opt(base: &Value, idx: &Value) -> Value {
+    match (base, idx) {
+        (Value::List(xs), Value::Int(i)) if *i >= 0 => match xs.get(*i as usize) {
+            Some(v) => Value::Opt(Some(Box::new(v.clone()))),
+            None => Value::Opt(None),
+        },
+        (Value::Bytes(bs), Value::Int(i)) if *i >= 0 => match bs.get(*i as usize) {
+            Some(b) => Value::Opt(Some(Box::new(Value::Int(*b as i64)))),
+            None => Value::Opt(None),
+        },
+        (Value::Map(kv), k) => match kv.iter().find(|(kk, _)| kk.eq_value(k)) {
+            Some((_, v)) => Value::Opt(Some(Box::new(v.clone()))),
+            None => Value::Opt(None),
+        },
+        _ => Value::Opt(None),
     }
 }

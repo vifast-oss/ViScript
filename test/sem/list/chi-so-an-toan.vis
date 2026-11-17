@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?`; `xs[i]` ngoài phạm vi vẫn panic.
+fn main():
+    let xs = [10, 20, 30]
+    print(xs[1]?)
+    print(xs[9]?)
+    print(xs.get(0))
+    let m = {"a": 1}
+    print(m["a"]?)
+    print(m["z"]?)
