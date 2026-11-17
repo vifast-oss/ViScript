@@ -232,6 +232,7 @@ Method trên giá trị (không cần `use`):
    `type U: email: str? = none` thì vẫn phải viết `{name: …, email: none}`.
 7. **`const` phải ghi kiểu**: `const N: int = 10`.
 8. **`?` chỉ dùng cho `T?`/`Result`** — **R8**: `xs[i]?` là **ngoại lệ** (chỉ số có kiểm tra, trả `T?`); `xs[i]` ngoài phạm vi vẫn panic `VS0503`; chỉ số âm dùng `.last()` / `.get(i)`.
+9. **Biến thể enum viết hoa chữ đầu** — **R1a**: `Some`/`None`/`Ok`/`Err`; viết `some(v)`/`ok(v)`/`err(v)` ⇒ **cảnh báo** `VS0111`, `vis fmt` tự sửa.
 9. **`print` nhận nhiều đối số** (R6), cách nhau 1 dấu cách — giống Python; `print()` in dòng trống.
 10. **Thụt lề**: đơn vị thụt lề do **cấp đầu tiên trong tệp** quyết định; trộn 2 và 4 dấu cách là lỗi; tab báo `VS0107` (vẫn lex tiếp để `vis fmt` sửa).
 
