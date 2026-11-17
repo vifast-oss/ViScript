@@ -712,7 +712,7 @@ mod tests {
     #[test]
     fn so_khop_spec_lex_that() {
         // Đọc thẳng bảng §7 của SPEC-lex: sổ trong code không được lệch nguồn chuẩn.
-        let spec = std::fs::read_to_string("../../../docs/viscript/SPEC-lex.md")
+        let spec = std::fs::read_to_string("../../docs/viscript/SPEC-lex.md")
             .expect("phải đọc được docs/viscript/SPEC-lex.md");
         let mut rows: Vec<(String, String)> = Vec::new();
         for line in spec.lines() {

@@ -5,40 +5,51 @@
 //! Khoá ba việc:
 //! 1. `SYNC_DIRS`/`SYNC_FILES` ở đầu tệp đúng **tập** mong đợi (so tập, không phụ thuộc thứ tự);
 //! 2. `sync_tree()` chỉ đọc hai biến ấy — không rải đường dẫn vào thân hàm (biến không phải trang trí);
-//! 3. `--check-sync` in đủ 8 mục và trả **0** khi đủ / **2** khi thiếu, **không** ssh, **không** rsync.
+//! 3. `--check-sync` in đủ 14 mục và trả **0** khi đủ / **2** khi thiếu, **không** ssh, **không** rsync.
 //!
 //! Bỏ một mục khỏi `SYNC_DIRS`/`SYNC_FILES`, hoặc rải lại đường dẫn vào `sync_tree()`, là test **đỏ**.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Tập mong đợi — đúng 8 mục: 5 thư mục + 3 tệp (ST-134 thêm `vis-host-wasm`, ST-143 thêm 2 shim).
-const DIRS: [&str; 5] = [
-    "viscript",
-    "docs/viscript",
+/// Tập mong đợi — đúng 14 mục: 9 thư mục + 5 tệp (ST-171: gốc repo mới **là** cây ViScript,
+/// nên danh sách đồng bộ là toàn bộ cây nguồn thay cho `viscript/` + `docs/viscript/` cũ).
+const DIRS: [&str; 9] = [
+    "crates",
+    "bin",
+    "test",
+    "agent",
+    "infra",
+    "docs",
     "vis-host-linux",
     "vis-host-wasm",
     ".git",
 ];
-const FILES: [&str; 3] = ["AGENTS.md", "vis-dev", "vis"];
-const TAT_CA: [&str; 8] = [
-    "viscript",
-    "docs/viscript",
+const FILES: [&str; 5] = ["AGENTS.md", "Cargo.toml", "Cargo.lock", "vis-dev", "vis"];
+const TAT_CA: [&str; 14] = [
+    "crates",
+    "bin",
+    "test",
+    "agent",
+    "infra",
+    "docs",
     "vis-host-linux",
     "vis-host-wasm",
     ".git",
     "AGENTS.md",
+    "Cargo.toml",
+    "Cargo.lock",
     "vis-dev",
     "vis",
 ];
 
-/// Gốc repo thật: `env!("CARGO_MANIFEST_DIR")` = `<repo>/viscript/crates/vis-cli`.
+/// Gốc repo thật: `env!("CARGO_MANIFEST_DIR")` = `<repo>/crates/vis-cli`.
 fn goc_repo() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 fn script() -> PathBuf {
-    goc_repo().join("viscript/bin/vis-linux")
+    goc_repo().join("bin/vis-linux")
 }
 
 fn doc_script(duong: &Path) -> String {
@@ -102,7 +113,7 @@ fn dong_ma(than: &str) -> Vec<String> {
         .collect()
 }
 
-/// Cây giả trong thư mục tạm — `viscript/bin/vis-linux` là **bản sao** script thật, để test
+/// Cây giả trong thư mục tạm — `bin/vis-linux` là **bản sao** script thật, để test
 /// được cả nhánh thiếu mục mà **không** sửa cây thật.
 struct CayGia(PathBuf);
 
@@ -110,8 +121,8 @@ impl CayGia {
     fn moi(ten: &str) -> Self {
         let goc = std::env::temp_dir().join(format!("vis-sync-list-{}-{ten}", std::process::id()));
         let _ = std::fs::remove_dir_all(&goc);
-        std::fs::create_dir_all(goc.join("viscript/bin")).expect("tạo cây giả");
-        std::fs::copy(script(), goc.join("viscript/bin/vis-linux")).expect("chép vis-linux");
+        std::fs::create_dir_all(goc.join("bin")).expect("tạo cây giả");
+        std::fs::copy(script(), goc.join("bin/vis-linux")).expect("chép vis-linux");
         Self(goc)
     }
 
@@ -120,7 +131,7 @@ impl CayGia {
     }
 
     fn script(&self) -> PathBuf {
-        self.0.join("viscript/bin/vis-linux")
+        self.0.join("bin/vis-linux")
     }
 }
 
@@ -130,7 +141,7 @@ impl Drop for CayGia {
     }
 }
 
-/// Dựng cây giả **đủ 8 mục** trừ những tên trong `bo` (cây giả luôn có `viscript`: đó là chỗ chứa script).
+/// Dựng cây giả **đủ 14 mục** trừ những tên trong `bo` (cây giả luôn có `bin`: đó là chỗ chứa script).
 fn dung_cay(cay: &CayGia, bo: &[&str]) {
     for d in DIRS {
         if bo.contains(&d) {
@@ -292,7 +303,7 @@ fn check_sync_tai_repo_that_in_du_8_muc_va_exit_0() {
         .map(|t| ("có".to_string(), t.to_string()))
         .collect();
     assert_eq!(tt, mong, "stdout: {out:?}");
-    assert_eq!(tt.len(), 8, "phải in đúng 8 mục: {out:?}");
+    assert_eq!(tt.len(), 14, "phải in đúng 14 mục: {out:?}");
     assert!(
         !out.contains("thiếu"),
         "cây thật không được thiếu mục: {out:?}"
@@ -302,7 +313,7 @@ fn check_sync_tai_repo_that_in_du_8_muc_va_exit_0() {
 #[test]
 fn check_sync_thieu_mot_muc_thi_exit_2() {
     // Ca nợ #135: **bỏ một mục** khỏi cây (ở đây `vis-host-wasm`, đúng thư mục từng bị quên) ⇒ exit 2,
-    // in đủ 8 mục và CHỈ đúng mục thiếu bị đánh dấu.
+    // in đủ 14 mục và CHỈ đúng mục thiếu bị đánh dấu.
     let cay = CayGia::moi("thieu-mot");
     dung_cay(&cay, &["vis-host-wasm"]);
     let (ma, out, err) = chay_check_sync(&cay.script(), cay.goc());
@@ -325,8 +336,8 @@ fn check_sync_thieu_mot_muc_thi_exit_2() {
         .collect();
     assert_eq!(tt, mong, "stdout: {out:?}");
     assert!(
-        err.contains("thiếu 1/8"),
-        "phải nói rõ số mục thiếu (1/8): {err:?}"
+        err.contains("thiếu 1/14"),
+        "phải nói rõ số mục thiếu (1/14): {err:?}"
     );
 }
 
@@ -341,7 +352,7 @@ fn check_sync_du_het_thi_exit_0_trong_cay_gia() {
         "đủ mục ⇒ exit 0. stdout: {out:?}\nstderr: {err:?}"
     );
     let tt = trang_thai(&out);
-    assert_eq!(tt.len(), 8, "phải in đúng 8 mục: {out:?}");
+    assert_eq!(tt.len(), 14, "phải in đúng 14 mục: {out:?}");
     assert!(
         tt.iter().all(|(t, _)| t == "có"),
         "cây giả đủ ⇒ mọi mục `có`: {out:?}"

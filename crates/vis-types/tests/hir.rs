@@ -103,7 +103,7 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
 ];
 
 fn doc_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../docs/viscript/ViScript-thiet-ke.md")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript/ViScript-thiet-ke.md")
 }
 
 /// Trích **tại chỗ** mọi khối ```vis của tài liệu (không chép tay nội dung).

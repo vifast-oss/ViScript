@@ -14,7 +14,7 @@ set -u
 export PYTHONIOENCODING=utf-8
 export PYTHONUTF8=1
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPO_ROOT="$(cd "$VIS_ROOT/.." && pwd)"
+REPO_ROOT="$VIS_ROOT"
 MANIFEST="$VIS_ROOT/Cargo.toml"
 fails=0
 
@@ -143,13 +143,13 @@ do_check() {
     fi
     echo "--- vis explain: OK"
     echo "--- báo cáo R*-viscript (Khối E)"
-    if (cd "$REPO_ROOT" && PYTHON="$PY" "$PY" viscript/test/report/check_report.py --all); then
+    if (cd "$REPO_ROOT" && PYTHON="$PY" "$PY" test/report/check_report.py --all); then
         echo "--- báo cáo: OK"
     else
         echo "--- báo cáo: FAIL" >&2; return 1
     fi
     echo "--- fixture âm của máy kiểm báo cáo"
-    if (cd "$REPO_ROOT" && PYTHON="$PY" bash viscript/test/report/run_fixtures.sh); then
+    if (cd "$REPO_ROOT" && PYTHON="$PY" bash test/report/run_fixtures.sh); then
         echo "--- báo cáo fixtures: OK"
     else
         echo "--- báo cáo fixtures: FAIL" >&2; return 1

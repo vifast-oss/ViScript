@@ -1,0 +1,18 @@
+# ST-171 — cổng repo ViScript MỚI trên macOS (lần 2; lần 1 đỏ ở clippy vì include! bị đổi nhầm)
+# máy: Darwin arm64 · UTC bắt đầu: 2026-11-17T11:53:16Z
+# HEAD: 9b1466b91907260dc532a50e04e130bb1d11ee22 (9b1466b)
+# git status --porcelain: 55 mục (bản tách chưa commit — Agent 1 commit)
+# cargo: cargo 1.99.1 (5f94df478 2026-08-27) · rustc: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+# lệnh: ./vis-dev gate --fast
+# ---------- BẮT ĐẦU ----------
+== vis-dev check ==
+--- fmt: OK
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+--- clippy: OK
+R3 agent/JOURNAL/st171-commit-map.txt: tệp cần sidecar .license
+R3 docs/viscript/doc-examples-allow.txt: tệp cần sidecar .license
+--- luật R1..R4: FAIL
+# ---------- KẾT ----------
+[exit=1]
+# giây: 19
+# UTC kết thúc: 2026-11-17T11:53:35Z

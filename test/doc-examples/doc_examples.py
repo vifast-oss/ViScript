@@ -28,9 +28,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
+REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / "docs" / "viscript"
-FIXTURES = REPO / "viscript" / "test" / "doc-examples"
+FIXTURES = REPO / "test" / "doc-examples"
 SPDX = "# SPDX-License-Identifier: MIT OR Apache-2.0"
 FENCE = re.compile(r"^```(vis|vish-session)\s*$")
 # Số do Agent 0 chốt cho VT09/QD §7.4 — ĐỔI là thay đổi ngưỡng, phải xin Agent 0.
@@ -109,8 +109,8 @@ def find_cargo() -> str | None:
 
 def resolve_bin(vis_bin: str | None) -> Path | None:
     """Binary `vis` phải **mới hơn mọi .rs** trong `crates/` (không dùng bản cũ)."""
-    path = Path(vis_bin) if vis_bin else REPO / "viscript" / "target" / "debug" / "vis"
-    newer = [p.stat().st_mtime for p in (REPO / "viscript" / "crates").rglob("*.rs")]
+    path = Path(vis_bin) if vis_bin else REPO / "target" / "debug" / "vis"
+    newer = [p.stat().st_mtime for p in (REPO / "crates").rglob("*.rs")]
     newest = max(newer) if newer else 0.0
     if not path.is_file():
         return None
@@ -127,7 +127,7 @@ def resolve_bin(vis_bin: str | None) -> Path | None:
                 cargo,
                 "build",
                 "--manifest-path",
-                str(REPO / "viscript" / "Cargo.toml"),
+                str(REPO / "Cargo.toml"),
                 "-p",
                 "vis-cli",
                 "--bin",
@@ -161,7 +161,7 @@ def vis_check(files: list[Path], vis_bin: str | None) -> dict[str, tuple[bool, s
             "run",
             "-q",
             "--manifest-path",
-            str(REPO / "viscript" / "Cargo.toml"),
+            str(REPO / "Cargo.toml"),
             "-p",
             "vis-cli",
             "--bin",
@@ -317,7 +317,7 @@ def main() -> int:
     args = ap.parse_args()
     root = args.root
     docs = (root / "docs" / "viscript") if root else DOCS
-    fix = (root / "viscript" / "test" / "doc-examples") if root else FIXTURES
+    fix = (root / "test" / "doc-examples") if root else FIXTURES
     if args.regen:
         regen(md_blocks(docs), fix)
         return 0

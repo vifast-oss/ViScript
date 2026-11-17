@@ -4,6 +4,10 @@
 # (HIR + giải tên, ST-11) và `vis-cli`.
 [workspace]
 resolver = "2"
+# **ST-171**: `vis-host-linux`/`vis-host-wasm` là workspace RIÊNG (giữ nguyên như bản gốc
+# `ViFastOs`, nơi chúng nằm ngoài `viscript/`). Nay gốc repo là cây ViScript nên chúng nằm
+# trong cây — phải `exclude` để cargo không báo "multiple workspace roots".
+exclude = ["vis-host-linux", "vis-host-wasm"]
 members = [
     "crates/vis-diag",
     "crates/vis-syntax",

@@ -70,7 +70,7 @@
 set -u
 
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPO_ROOT="$(cd "$VIS_ROOT/.." && pwd)"
+REPO_ROOT="$VIS_ROOT"
 
 PS_SSH="${VIS_REMOTE_PS_SSH:-root@ps}"
 PSVN_SSH="${VIS_REMOTE_PSVN_SSH:-psvn}"
@@ -79,8 +79,8 @@ PSVN_BASH="${VIS_REMOTE_PSVN_BASH:-C:\\Program Files\\Git\\bin\\bash.exe}"
 repo_of() {
     case "$1" in
         mac) echo "${VIS_REMOTE_MAC_REPO:-$REPO_ROOT}" ;;
-        ps) echo "${VIS_REMOTE_PS_REPO:-/root/vifast-linux}" ;;
-        psvn) echo "${VIS_REMOTE_PSVN_REPO:-/c/Users/ps/vifast-windows/repo}" ;;
+        ps) echo "${VIS_REMOTE_PS_REPO:-/root/viscript-moi}" ;;
+        psvn) echo "${VIS_REMOTE_PSVN_REPO:-/c/Users/ps/viscript-moi}" ;;
     esac
 }
 

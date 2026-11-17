@@ -55,7 +55,7 @@ struct Block {
 }
 
 fn docs_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../docs/viscript")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/viscript")
 }
 
 fn md_files(dir: &Path) -> Vec<PathBuf> {

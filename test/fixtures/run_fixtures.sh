@@ -40,12 +40,12 @@ expect_fail_dev() {
 }
 # qd fixtures (symlink) cho cây tạm: $1 = gốc, $2 = số lượng
 mk_qd() {
-    mkdir -p "$1/viscript/test/doc-examples"
+    mkdir -p "$1/test/doc-examples"
     local i=0 f
     for f in "$VIS_ROOT"/test/doc-examples/qd*; do
         i=$((i + 1))
         [ "$i" -gt "$2" ] && break
-        ln -sf "$f" "$1/viscript/test/doc-examples/"
+        ln -sf "$f" "$1/test/doc-examples/"
     done
 }
 # 1) thiếu SPDX
@@ -107,12 +107,12 @@ expect_fail_dev "doc-examples: ngoại lệ cũ đã xanh" "ngoại lệ cũ" \
 expect_fail_dev "doc-examples: allowlist sai số mục" "phải đúng 6 mục" \
     bash "$DEV" doc-examples --root "$tmp/7"
 # 9) fixture lệch byte so với tài liệu ⇒ đỏ
-mkdir -p "$tmp/9/docs/viscript" "$tmp/9/viscript/test/doc-examples"
-cp "$VIS_ROOT"/../docs/viscript/*.md "$tmp/9/docs/viscript/"
-cp "$VIS_ROOT"/../docs/viscript/doc-examples-allow.txt "$tmp/9/docs/viscript/"
-cp "$VIS_ROOT"/test/doc-examples/doc-* "$tmp/9/viscript/test/doc-examples/"
+mkdir -p "$tmp/9/docs/viscript" "$tmp/9/test/doc-examples"
+cp "$VIS_ROOT"/docs/viscript/*.md "$tmp/9/docs/viscript/"
+cp "$VIS_ROOT"/docs/viscript/doc-examples-allow.txt "$tmp/9/docs/viscript/"
+cp "$VIS_ROOT"/test/doc-examples/doc-* "$tmp/9/test/doc-examples/"
 mk_qd "$tmp/9" 12
-printf '\n# lệch byte\n' >> "$tmp/9/viscript/test/doc-examples/doc-ViScript-thiet-ke-305.vis"
+printf '\n# lệch byte\n' >> "$tmp/9/test/doc-examples/doc-ViScript-thiet-ke-305.vis"
 expect_fail_dev "doc-examples: fixture lệch byte" "KHÔNG khớp khối" \
     bash "$DEV" doc-examples --root "$tmp/9"
 # 10) thiếu fixture qd (10) ⇒ đỏ (số do Agent 0 chốt: đúng 12)
@@ -128,7 +128,7 @@ cp "$tmp/10/docs/viscript/clean.md" "$tmp/11/docs/viscript/"
 : > "$tmp/11/docs/viscript/doc-examples-allow.txt"
 mk_qd "$tmp/11" 13
 printf '# SPDX-License-Identifier: MIT OR Apache-2.0\n# QD 7.1: fixture thừa (case âm)\n# kỳ vọng: ok\nx = 1\n' \
-    > "$tmp/11/viscript/test/doc-examples/qd-extra.vis"
+    > "$tmp/11/test/doc-examples/qd-extra.vis"
 expect_fail_dev "doc-examples: qd-* = 13" "phải đúng 12 fixture qd" \
     bash "$DEV" doc-examples --root "$tmp/11" --temp-root
 # 12) binary `vis` cũ hơn mã nguồn ⇒ từ chối chạy (không dùng bản cũ)

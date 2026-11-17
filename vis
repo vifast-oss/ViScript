@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Shim gốc repo ViScript: gọi `./vis` (chưa cài vào PATH ở vòng 1).
+exec "$(cd "$(dirname "$0")" && pwd)/bin/vis" "$@"

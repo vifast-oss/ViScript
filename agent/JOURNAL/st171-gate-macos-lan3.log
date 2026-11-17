@@ -1,0 +1,57 @@
+# ST-171 — cổng repo ViScript MỚI trên macOS (lần 3; lần 2 đỏ ở R3: thiếu sidecar .license cho docs/viscript/doc-examples-allow.txt + st171-commit-map.txt)
+# máy: Darwin arm64 · UTC bắt đầu: 2026-11-17T11:53:47Z
+# HEAD: 9b1466b91907260dc532a50e04e130bb1d11ee22 (9b1466b)
+# git status --porcelain: 58 mục (bản tách chưa commit — Agent 1 commit)
+# cargo: cargo 1.99.1 (5f94df478 2026-08-27) · rustc: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+# lệnh: ./vis-dev gate --fast
+# ---------- BẮT ĐẦU ----------
+== vis-dev check ==
+--- fmt: OK
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+--- clippy: OK
+--- luật R1..R4: OK
+1..12
+ok 1 - thiếu SPDX bị bắt (R3)
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+ok 4 - vis-host-vifast trong viscript/ bị bắt (R4)
+ok 5 - thiếu cargo báo rõ (1)
+ok 6 - doc-examples: khối đỏ ngoài allowlist bị bắt (khối đỏ không khai báo)
+not ok 7 - doc-examples: ngoại lệ cũ đã xanh bị bắt nhưng sai lý do
+    doc-examples: qd71-nfc-nfd.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd71-percent.vis: kỳ vọng VS0202 nhưng thật ?
+    doc-examples: qd71-pipe-continue.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd71-tab.vis: kỳ vọng VS0107 nhưng thật ?
+    doc-examples: qd72-amp-end.vish: kỳ vọng VS0604 nhưng thật ?
+    doc-examples: qd73-float-dot.vis: kỳ vọng VS0104 nhưng thật ?
+    doc-examples: qd73-is-file.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-range.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-str-path.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-time-now.vis: kỳ vọng ok nhưng đỏ (?)
+    --- doc-examples: FAIL
+ok 8 - doc-examples: allowlist sai số mục bị bắt (phải đúng 6 mục)
+cp: /Users/mps/dvchd/ViScript/../docs/viscript/*.md: No such file or directory
+cp: /Users/mps/dvchd/ViScript/../docs/viscript/doc-examples-allow.txt: No such file or directory
+not ok 9 - doc-examples: fixture lệch byte bị bắt nhưng sai lý do
+    doc-examples: thiếu /var/folders/jp/05hgrzxj65bgh355l2zs2zz80000gn/T/tmp.oBIrxwpVGA/9/docs/viscript/doc-examples-allow.txt
+    --- doc-examples: FAIL
+ok 10 - doc-examples: qd-* = 10 bị bắt (phải đúng 12 fixture qd)
+ok 11 - doc-examples: qd-* = 13 bị bắt (phải đúng 12 fixture qd)
+not ok 12 - doc-examples: binary cũ bị từ chối bị bắt nhưng sai lý do
+    doc-examples: khối đỏ không khai báo: clean.md:3 (?)
+    doc-examples: qd71-nfc-nfd.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd71-percent.vis: kỳ vọng VS0202 nhưng thật ?
+    doc-examples: qd71-pipe-continue.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd71-tab.vis: kỳ vọng VS0107 nhưng thật ?
+    doc-examples: qd72-amp-end.vish: kỳ vọng VS0604 nhưng thật ?
+    doc-examples: qd73-float-dot.vis: kỳ vọng VS0104 nhưng thật ?
+    doc-examples: qd73-is-file.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-range.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-str-path.vis: kỳ vọng ok nhưng đỏ (?)
+    doc-examples: qd73-time-now.vis: kỳ vọng ok nhưng đỏ (?)
+# fixtures: FAIL (3)
+--- self-test case âm: FAIL
+# ---------- KẾT ----------
+[exit=1]
+# giây: 22
+# UTC kết thúc: 2026-11-17T11:54:09Z

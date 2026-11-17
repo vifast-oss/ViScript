@@ -1,15 +1,15 @@
 {
   "project": "viscript",
   "round": 1,
-  "head": "e4ac459",
+  "head": "b4d7d469eebfa3ea7bec749dbefe740051954ba1",
   "build_id": "—",
   "tasks": [
     {
       "id": "ST-01",
       "status": "DONE",
       "commits": [
-        "cbf512e",
-        "f6222a5"
+        "1b301a73e3aed28e5596bcf269c240b381163e54",
+        "ef71f7f3af62a745419e7e2c85387015abc2a6a9"
       ],
       "gates": [
         "fast"
@@ -29,8 +29,8 @@
       "id": "ST-02b",
       "status": "DONE",
       "commits": [
-        "a48857b",
-        "c666f57"
+        "9276448390d137cb93aae7a3fb1e0e89adb421b1",
+        "94b30624f864bc992d63653a8b27822877404d27"
       ],
       "gates": [
         "fast"

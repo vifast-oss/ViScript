@@ -8,8 +8,8 @@
 # wasm32-unknown-unknown không có tiến trình/socket/FS; đây không phải bằng chứng hỗ trợ runtime).
 # Nếu một ô kỳ vọng xanh mà đỏ ⇒ exit 1 (ô đỏ có chủ đích phải được ghi trong EXPECTED_RED).
 set -u
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-MANIFEST="$ROOT/viscript/Cargo.toml"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MANIFEST="$ROOT/Cargo.toml"
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
 TARGETS=(x86_64-pc-windows-msvc wasm32-unknown-unknown)
 CRATES=(vis-diag vis-syntax vis-types vis-bytecode vis-fmt vis-interp vis-vm vis-cli)

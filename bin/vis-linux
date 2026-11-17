@@ -37,11 +37,11 @@ set -u
 
 # **ST-151 (nợ #135)**: danh sách đồng bộ là MỘT nguồn ở đây. `sync_tree()` chỉ đọc hai biến này,
 # `--check-sync` in trạng thái từng mục tại `$REPO_ROOT` — đừng thêm đường dẫn rải rác trong code.
-SYNC_DIRS="viscript docs/viscript vis-host-linux vis-host-wasm .git"
-SYNC_FILES="AGENTS.md vis-dev vis"
+SYNC_DIRS="crates bin test agent infra docs vis-host-linux vis-host-wasm .git"
+SYNC_FILES="AGENTS.md Cargo.toml Cargo.lock vis-dev vis"
 
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPO_ROOT="$(cd "$VIS_ROOT/.." && pwd)"
+REPO_ROOT="$VIS_ROOT"
 SSH_TARGET="${VIS_LINUX_SSH-root@ps}"
 LINUX_DIR="${VIS_LINUX_DIR:-/root/vifast-linux}"
 BACKEND="${VIS_LINUX_BACKEND:-auto}"
@@ -223,11 +223,11 @@ setup_body() {
     case "$BE" in
         ssh)
             out="$(ssh -o BatchMode=yes "$SSH_TARGET" \
-                "cd $(printf '%q' "$LINUX_DIR") && export PATH=\"\$HOME/.cargo/bin:\$PATH\" && bash viscript/infra/linux/setup.sh")" ||
+                "cd $(printf '%q' "$LINUX_DIR") && export PATH=\"\$HOME/.cargo/bin:\$PATH\" && bash infra/linux/setup.sh")" ||
                 die 3 "setup toolchain trên '$SSH_TARGET' thất bại (BLOCKED-ENV)"
             ;;
         docker)
-            out="$(docker_run bash viscript/infra/linux/setup.sh)" ||
+            out="$(docker_run bash infra/linux/setup.sh)" ||
                 die 3 "setup toolchain trong container thất bại (BLOCKED-ENV)"
             ;;
         *) die 2 "setup: chưa chọn backend" ;;
@@ -315,7 +315,7 @@ case "${1:-}" in
     sync) pick_backend; sync_tree ;;
     --check-sync) shift; cmd_check_sync "$@" ;;
     run) shift; cmd_run "$@" ;;
-    gate) pick_backend; cmd_run bash viscript/bin/vis-dev gate --fast ;;
+    gate) pick_backend; cmd_run bash bin/vis-dev gate --fast ;;
     shell)
         shift
         pick_backend

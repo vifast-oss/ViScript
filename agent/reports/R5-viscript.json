@@ -1,571 +1,571 @@
 {
- "project": "viscript",
- "round": 5,
- "head": "58080a9",
- "build_id": "—",
- "tasks": [
-  {
-   "id": "ST-01",
-   "status": "DONE",
-   "commits": [
-    "f6222a5",
-    "cbf512e"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "workspace `viscript/` + `vis-dev` R1..R4 + 5 case âm"
+  "project": "viscript",
+  "round": 5,
+  "head": "10353111f6e5c00f08d0bfccd64f170dda735d35",
+  "build_id": "—",
+  "tasks": [
+    {
+      "id": "ST-01",
+      "status": "DONE",
+      "commits": [
+        "ef71f7f3af62a745419e7e2c85387015abc2a6a9",
+        "1b301a73e3aed28e5596bcf269c240b381163e54"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "workspace `viscript/` + `vis-dev` R1..R4 + 5 case âm"
+    },
+    {
+      "id": "ST-02a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "—"
+      ],
+      "note": "APPROVED ghi trong QUEUE (không commit riêng)"
+    },
+    {
+      "id": "ST-02b",
+      "status": "DONE",
+      "commits": [
+        "94b30624f864bc992d63653a8b27822877404d27",
+        "9276448390d137cb93aae7a3fb1e0e89adb421b1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "sổ mã VS + `vis explain`"
+    },
+    {
+      "id": "ST-03",
+      "status": "DONE",
+      "commits": [
+        "c895b5d53731d2cdfc527be5d4ce942f5f6f5100"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-diag`: cột theo Unicode scalar, render, bảng vi/en/ja; 20 snapshot `render` khoá hành vi"
+    },
+    {
+      "id": "ST-11",
+      "status": "DONE",
+      "commits": [
+        "056dbd4c900f15ba75d95d885c1e9f0b28a2a128"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-types`: Type/HIR/hạ CST→HIR (94a5342)"
+    },
+    {
+      "id": "ST-12",
+      "status": "DONE",
+      "commits": [
+        "1c943714f5719c4ac42756ca2546b2562142b3c7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "tyck VS0 + match xét hết (116 ca)"
+    },
+    {
+      "id": "ST-12b",
+      "status": "DONE",
+      "commits": [
+        "ef465bc833adea014174514d85a251a4e1b5b75c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "7 lỗi kiểm kiểu (review) + VD-48; 227 test"
+    },
+    {
+      "id": "ST-13",
+      "status": "DONE",
+      "commits": [
+        "4f575ffb07b8c862be6ef0cbe93a6e40060babf9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-interp` + builtins; 79/79 ca đỏ-trước"
+    },
+    {
+      "id": "ST-14",
+      "status": "DONE",
+      "commits": [
+        "7d707f9393ca0001b21aee5b2211f6bda9e9a387",
+        "9b0c75cd6c64c99e3fa3fe079f61eedcd3acad2f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis run` + TAP + 100 ca + nội suy `{expr}`; 247 test"
+    },
+    {
+      "id": "ST-15b",
+      "status": "DONE",
+      "commits": [
+        "e645b4594b61ab6d9feb0aaf63f2ebf934f2be85"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "4 lệch thiết kế: push CoW, closure snapshot, `{x,..}`, pattern trần; 4 ca sem mới + 1 kỳ vọng cũ sửa có lý do"
+    },
+    {
+      "id": "ST-15",
+      "status": "DONE",
+      "commits": [
+        "5d00cae16da03ec0c502a3b642acd1107e94f5a6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "302 ca/16 nhóm; cap độ sâu 2.000"
+    },
+    {
+      "id": "ST-16",
+      "status": "DONE",
+      "commits": [
+        "e1061afac2a0bf2ff6f504e3d342f3589b167230"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "fuzz parser 1 giờ 182.328.926 ca/0 vi phạm; `vis-dev nightly`"
+    },
+    {
+      "id": "ST-18",
+      "status": "DONE",
+      "commits": [
+        "02855f6f2e8a3d1f90eeee7e3b10f31d85b4433f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "chế độ lệnh `.vish` hạ xuống HIR + chạy được; **265 test / 323 ca**"
+    },
+    {
+      "id": "ST-19",
+      "status": "DONE",
+      "commits": [
+        "252ee8ac66816501e39ab88d4a92e25a5461eb1e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "định dạng **VBC1** + sinh mã từ HIR; **284 test**, 52→**53 tag**"
+    },
+    {
+      "id": "ST-20b",
+      "status": "DONE",
+      "commits": [
+        "aa41efeaa1f1412898e46122141e3c00b7b82c8e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "differential interp ↔ VM **272/272, 0 lệch**, `KNOWN_LECH` **rỗng** (khoá hai chiều)"
+    },
+    {
+      "id": "ST-20",
+      "status": "DONE",
+      "commits": [
+        "32aff4e5e9033ecaff1b853354282552bc1cdf9c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "**VM** chạy bytecode + refactor ngữ nghĩa dùng chung; **289 test**"
+    },
+    {
+      "id": "ST-21",
+      "status": "DONE",
+      "commits": [
+        "b4784a8f5155108c7c967e8b0a9eb38deccbeb37"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "**verifier**: 13 biến thể lỗi, fuzz 10 phút **0 vi phạm**; **316 test**"
+    },
+    {
+      "id": "ST-22",
+      "status": "DONE",
+      "commits": [
+        "de2c45452e1287129cadd7de7f45447785f0cc32"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "differential sinh tự động **100.000 chương trình, 0 lệch**"
+    },
+    {
+      "id": "ST-23",
+      "status": "DONE",
+      "commits": [
+        "5279416d68b9e8c225ea7ff5e231a61efed7b5be"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "cache bytecode theo hash closure; khởi động ấm **8,5–9,9 ms** trung vị"
+    },
+    {
+      "id": "ST-25",
+      "status": "DONE",
+      "commits": [
+        "3e7d99dee582906f4680ec578eee5dbd61dc839c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "module `use ./util` đa tệp, cấm vòng, hash closure gồm phụ thuộc; sổ `07xx`; **335 test**"
+    },
+    {
+      "id": "ST-26",
+      "status": "DONE",
+      "commits": [
+        "d807bdb8a3810db841d20b03171d2331704b9023"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-std` lõi (`std.str/list/map/path/time/json`); **70** fixture std; **344 test**, sem **18 nhóm**"
+    },
+    {
+      "id": "ST-27",
+      "status": "DONE",
+      "commits": [
+        "542eafa5c943b96aacfb67c8bf71bcb3bdff5866"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-host-posix`: chương trình ngoài (allowlist 8, timeout 10 s, exit≠0 ⇒ `VS0501`), **variadic**, `--x=v`; **357 test**, **13** ca extern"
+    },
+    {
+      "id": "ST-28",
+      "status": "DONE",
+      "commits": [
+        "66fcc041637600eecfa67410e7fe0f69155667e6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "generic hàm + kiểu `[T]` bằng **xoá kiểu** + hợp nhất call-site; **392 test**, **10** ca sem `generic/*`"
+    },
+    {
+      "id": "ST-29",
+      "status": "DONE",
+      "commits": [
+        "b9f1f07abe49bda7e222ecaf2818cf74ec29a105",
+        "14f6e613082250c210f5ba569856ab2dcfc88cf8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "trait/`impl`/`derives` + **dispatch tĩnh** ở tầng hạ (cùng HIR cho interp & VM, không bump `VBC1`); **421 test**"
+    },
+    {
+      "id": "ST-30",
+      "status": "DONE",
+      "commits": [
+        "d1b2a4a1154808d6fb383db4b78da276616f482a",
+        "17c5253c5e66d4a6161355bd926a7b874317e5df"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis test` TAP + **SHA-256 thật** (gỡ nợ VD-54(1)); **436 test**"
+    },
+    {
+      "id": "ST-30b",
+      "status": "DONE",
+      "commits": [
+        "17c5253c5e66d4a6161355bd926a7b874317e5df"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "đồng bộ chẩn đoán hai đường: **312/312 khớp, 0 lệch** (so đủ `(mã,dòng,cột,thông điệp)` trên 338 ca)"
+    },
+    {
+      "id": "ST-32",
+      "status": "DONE",
+      "commits": [
+        "d0fdd3c342be224066afec7d4807835d71c51d5b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "harness 3 tầng chẩn đoán + `CODEGEN_TIN_TYCK = 21`; **443 test** (lúc đóng)"
+    },
+    {
+      "id": "ST-33",
+      "status": "DONE",
+      "commits": [
+        "75f9078089e9c012d3b1a59189bcdfbc2b81a1e0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`json.decode` + `std.fs` qua `FsHost`; `VS0604` khoá **cả hai đường**; **466** test"
+    },
+    {
+      "id": "ST-34",
+      "status": "DONE",
+      "commits": [
+        "8fba57911c802bb7a86df82926424063347f0300"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`| complete` + pipe→stdin (`MAX_STDIN` 8 MiB, timeout nêu stage); **482** test"
+    },
+    {
+      "id": "ST-35",
+      "status": "DONE",
+      "commits": [
+        "7311a98b26fcb5276eda4ad0972dbde75a608fda"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "generic **thật**: `Hop[int] ≠ Hop[str]` (instantiation interned); **507** test, sem **346**"
+    },
+    {
+      "id": "ST-36",
+      "status": "READY",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-37",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-38",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-39",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-40a",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-40b",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-41",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-42",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-43",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [],
+      "note": "chưa bắt đầu"
+    },
+    {
+      "id": "ST-31",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "—"
+      ],
+      "note": "báo cáo này (R4) — task **đang viết**, QUEUE@head ghi `READY`"
+    },
+    {
+      "id": "ST-24",
+      "status": "DONE",
+      "commits": [
+        "59402ea3e861590ecf16b1078b70b88448b162f1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "báo cáo `R3-viscript` (chốt VS1-khung)"
+    },
+    {
+      "id": "ST-17",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "—"
+      ],
+      "note": "báo cáo này (R2) — task **đang viết**, QUEUE@head ghi READY"
+    },
+    {
+      "id": "ST-04",
+      "status": "DONE",
+      "commits": [
+        "e6e304d32c88eb34ceea11e52b82ad07e9fcb87e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "lexer SPEC-lex; 60 golden token; fuzz 10 phút"
+    },
+    {
+      "id": "ST-05",
+      "status": "DONE",
+      "commits": [
+        "ee94e34687551d8d8b9aa7546b597a936277227d"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "parser + CST lossless; 30 golden biểu thức"
+    },
+    {
+      "id": "ST-06",
+      "status": "DONE",
+      "commits": [
+        "4dd7e3c8174635aa59e1964c01052bc201b09076"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "CmdCST + golden 9.4"
+    },
+    {
+      "id": "ST-07",
+      "status": "DONE",
+      "commits": [
+        "0a6dcbfdef01e84ca274511bab992228501ac2ac"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "`vis-fmt` lossless/idempotent"
+    },
+    {
+      "id": "ST-08",
+      "status": "DONE",
+      "commits": [
+        "9c9d3ccf95f54ca08c740d4dee8d7e489fc5e379"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "runner `--check` TAP"
+    },
+    {
+      "id": "ST-09",
+      "status": "DONE",
+      "commits": [
+        "a6a31e638ea56221b5f627651b9ad43789de5dec"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "fixture QD §7.4"
+    },
+    {
+      "id": "ST-10",
+      "status": "DONE",
+      "commits": [
+        "635aa60abf2b154a9f287de22bd8fc402658a609"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "báo cáo `R1-viscript`"
+    }
+  ],
+  "gates": {
+    "fast": "PASS",
+    "full": "—",
+    "nightly": "PASS"
   },
-  {
-   "id": "ST-02a",
-   "status": "DONE",
-   "commits": [],
-   "gates": [
-    "—"
-   ],
-   "note": "APPROVED ghi trong QUEUE (không commit riêng)"
+  "sim": {
+    "seeds": 0,
+    "failures": 0
   },
-  {
-   "id": "ST-02b",
-   "status": "DONE",
-   "commits": [
-    "c666f57",
-    "a48857b"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "sổ mã VS + `vis explain`"
+  "coverage": {
+    "tokens": "—",
+    "fixtures": 346
   },
-  {
-   "id": "ST-03",
-   "status": "DONE",
-   "commits": [
-    "ada1ebc"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-diag`: cột theo Unicode scalar, render, bảng vi/en/ja; 20 snapshot `render` khoá hành vi"
+  "mutants": {
+    "killed": null,
+    "alive": null,
+    "measured": false
   },
-  {
-   "id": "ST-11",
-   "status": "DONE",
-   "commits": [
-    "94a5342"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-types`: Type/HIR/hạ CST→HIR (94a5342)"
+  "perf": {
+    "warm_start_ms_median": {
+      "interp": 11.73,
+      "vm_cache": 11.62,
+      "vm_no_cache": 11.16
+    },
+    "samples": 15,
+    "build": "debug"
   },
-  {
-   "id": "ST-12",
-   "status": "DONE",
-   "commits": [
-    "273a921"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "tyck VS0 + match xét hết (116 ca)"
-  },
-  {
-   "id": "ST-12b",
-   "status": "DONE",
-   "commits": [
-    "dec75e3"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "7 lỗi kiểm kiểu (review) + VD-48; 227 test"
-  },
-  {
-   "id": "ST-13",
-   "status": "DONE",
-   "commits": [
-    "5e9a962"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-interp` + builtins; 79/79 ca đỏ-trước"
-  },
-  {
-   "id": "ST-14",
-   "status": "DONE",
-   "commits": [
-    "9aafdb8",
-    "4d52164"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis run` + TAP + 100 ca + nội suy `{expr}`; 247 test"
-  },
-  {
-   "id": "ST-15b",
-   "status": "DONE",
-   "commits": [
-    "806e29a"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "4 lệch thiết kế: push CoW, closure snapshot, `{x,..}`, pattern trần; 4 ca sem mới + 1 kỳ vọng cũ sửa có lý do"
-  },
-  {
-   "id": "ST-15",
-   "status": "DONE",
-   "commits": [
-    "27aa6aa"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "302 ca/16 nhóm; cap độ sâu 2.000"
-  },
-  {
-   "id": "ST-16",
-   "status": "DONE",
-   "commits": [
-    "a89f036"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "fuzz parser 1 giờ 182.328.926 ca/0 vi phạm; `vis-dev nightly`"
-  },
-  {
-   "id": "ST-18",
-   "status": "DONE",
-   "commits": [
-    "57d9e1a"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "chế độ lệnh `.vish` hạ xuống HIR + chạy được; **265 test / 323 ca**"
-  },
-  {
-   "id": "ST-19",
-   "status": "DONE",
-   "commits": [
-    "750815b"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "định dạng **VBC1** + sinh mã từ HIR; **284 test**, 52→**53 tag**"
-  },
-  {
-   "id": "ST-20b",
-   "status": "DONE",
-   "commits": [
-    "516f668"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "differential interp ↔ VM **272/272, 0 lệch**, `KNOWN_LECH` **rỗng** (khoá hai chiều)"
-  },
-  {
-   "id": "ST-20",
-   "status": "DONE",
-   "commits": [
-    "65cb63b"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "**VM** chạy bytecode + refactor ngữ nghĩa dùng chung; **289 test**"
-  },
-  {
-   "id": "ST-21",
-   "status": "DONE",
-   "commits": [
-    "70a5d38"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "**verifier**: 13 biến thể lỗi, fuzz 10 phút **0 vi phạm**; **316 test**"
-  },
-  {
-   "id": "ST-22",
-   "status": "DONE",
-   "commits": [
-    "f071166"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "differential sinh tự động **100.000 chương trình, 0 lệch**"
-  },
-  {
-   "id": "ST-23",
-   "status": "DONE",
-   "commits": [
-    "213e691"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "cache bytecode theo hash closure; khởi động ấm **8,5–9,9 ms** trung vị"
-  },
-  {
-   "id": "ST-25",
-   "status": "DONE",
-   "commits": [
-    "4a03c6d"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "module `use ./util` đa tệp, cấm vòng, hash closure gồm phụ thuộc; sổ `07xx`; **335 test**"
-  },
-  {
-   "id": "ST-26",
-   "status": "DONE",
-   "commits": [
-    "3a54757"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-std` lõi (`std.str/list/map/path/time/json`); **70** fixture std; **344 test**, sem **18 nhóm**"
-  },
-  {
-   "id": "ST-27",
-   "status": "DONE",
-   "commits": [
-    "a98d0e8"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-host-posix`: chương trình ngoài (allowlist 8, timeout 10 s, exit≠0 ⇒ `VS0501`), **variadic**, `--x=v`; **357 test**, **13** ca extern"
-  },
-  {
-   "id": "ST-28",
-   "status": "DONE",
-   "commits": [
-    "0423e67"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "generic hàm + kiểu `[T]` bằng **xoá kiểu** + hợp nhất call-site; **392 test**, **10** ca sem `generic/*`"
-  },
-  {
-   "id": "ST-29",
-   "status": "DONE",
-   "commits": [
-    "7633a56",
-    "520c2fe"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "trait/`impl`/`derives` + **dispatch tĩnh** ở tầng hạ (cùng HIR cho interp & VM, không bump `VBC1`); **421 test**"
-  },
-  {
-   "id": "ST-30",
-   "status": "DONE",
-   "commits": [
-    "02b97ad",
-    "e11efae"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis test` TAP + **SHA-256 thật** (gỡ nợ VD-54(1)); **436 test**"
-  },
-  {
-   "id": "ST-30b",
-   "status": "DONE",
-   "commits": [
-    "e11efae"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "đồng bộ chẩn đoán hai đường: **312/312 khớp, 0 lệch** (so đủ `(mã,dòng,cột,thông điệp)` trên 338 ca)"
-  },
-  {
-   "id": "ST-32",
-   "status": "DONE",
-   "commits": [
-    "774369b"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "harness 3 tầng chẩn đoán + `CODEGEN_TIN_TYCK = 21`; **443 test** (lúc đóng)"
-  },
-  {
-   "id": "ST-33",
-   "status": "DONE",
-   "commits": [
-    "f9e6db5"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`json.decode` + `std.fs` qua `FsHost`; `VS0604` khoá **cả hai đường**; **466** test"
-  },
-  {
-   "id": "ST-34",
-   "status": "DONE",
-   "commits": [
-    "4ababc6"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`| complete` + pipe→stdin (`MAX_STDIN` 8 MiB, timeout nêu stage); **482** test"
-  },
-  {
-   "id": "ST-35",
-   "status": "DONE",
-   "commits": [
-    "a0b5525"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "generic **thật**: `Hop[int] ≠ Hop[str]` (instantiation interned); **507** test, sem **346**"
-  },
-  {
-   "id": "ST-36",
-   "status": "READY",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-37",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-38",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-39",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-40a",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-40b",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-41",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-42",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-43",
-   "status": "BLOCKED",
-   "commits": [],
-   "gates": [],
-   "note": "chưa bắt đầu"
-  },
-  {
-   "id": "ST-31",
-   "status": "DONE",
-   "commits": [],
-   "gates": [
-    "—"
-   ],
-   "note": "báo cáo này (R4) — task **đang viết**, QUEUE@head ghi `READY`"
-  },
-  {
-   "id": "ST-24",
-   "status": "DONE",
-   "commits": [
-    "c194ae7"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "báo cáo `R3-viscript` (chốt VS1-khung)"
-  },
-  {
-   "id": "ST-17",
-   "status": "DONE",
-   "commits": [],
-   "gates": [
-    "—"
-   ],
-   "note": "báo cáo này (R2) — task **đang viết**, QUEUE@head ghi READY"
-  },
-  {
-   "id": "ST-04",
-   "status": "DONE",
-   "commits": [
-    "663eacb"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "lexer SPEC-lex; 60 golden token; fuzz 10 phút"
-  },
-  {
-   "id": "ST-05",
-   "status": "DONE",
-   "commits": [
-    "49f2539"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "parser + CST lossless; 30 golden biểu thức"
-  },
-  {
-   "id": "ST-06",
-   "status": "DONE",
-   "commits": [
-    "590e9f7"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "CmdCST + golden 9.4"
-  },
-  {
-   "id": "ST-07",
-   "status": "DONE",
-   "commits": [
-    "b149fe9"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "`vis-fmt` lossless/idempotent"
-  },
-  {
-   "id": "ST-08",
-   "status": "DONE",
-   "commits": [
-    "2971a72"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "runner `--check` TAP"
-  },
-  {
-   "id": "ST-09",
-   "status": "DONE",
-   "commits": [
-    "ba777e9"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "fixture QD §7.4"
-  },
-  {
-   "id": "ST-10",
-   "status": "DONE",
-   "commits": [
-    "bc1dcf5"
-   ],
-   "gates": [
-    "fast"
-   ],
-   "note": "báo cáo `R1-viscript`"
-  }
- ],
- "gates": {
-  "fast": "PASS",
-  "full": "—",
-  "nightly": "PASS"
- },
- "sim": {
-  "seeds": 0,
-  "failures": 0
- },
- "coverage": {
-  "tokens": "—",
-  "fixtures": 346
- },
- "mutants": {
-  "killed": null,
-  "alive": null,
-  "measured": false
- },
- "perf": {
-  "warm_start_ms_median": {
-   "interp": 11.73,
-   "vm_cache": 11.62,
-   "vm_no_cache": 11.16
-  },
-  "samples": 15,
-  "build": "debug"
- },
- "blocked": [
-  {
-   "id": "ST-37",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-38",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-39",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-40a",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-40b",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-41",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-42",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  },
-  {
-   "id": "ST-43",
-   "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
-  }
- ]
+  "blocked": [
+    {
+      "id": "ST-37",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-38",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-39",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-40a",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-40b",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-41",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-42",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    },
+    {
+      "id": "ST-43",
+      "question": "chờ Agent 0 lật mở (VS2 hoặc phụ thuộc vòng trước)"
+    }
+  ]
 }
