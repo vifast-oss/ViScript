@@ -250,7 +250,7 @@ Method trên giá trị (không cần `use`):
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
   - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` chạy (R3a); `let x = r else:` chạy (R3b); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
-  - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
+  - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`ok(v)`/`err(v)` pattern **đã** cảnh báo `VS0111` (R1a); `none` sẽ bỏ ở R2.
   - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20).
 - **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),

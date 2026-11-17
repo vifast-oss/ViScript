@@ -335,7 +335,7 @@ match s:
 - **Or-pattern `|` giữ nguyên** (QD §7.3): `Circle(r) | Rect(w, h)` trong một arm. `|` **không bao giờ** là toán tử nhị phân trong biểu thức (Q8 sửa); bit-or là hàm `bit_or`.
 - **Guard không tính vào coverage**: nhánh có `if` **không** chứng minh được phủ, nên `Circle(r) if r > 100.0:` không làm `Circle` được coi là đã xét; phải có nhánh `Circle(r)` không guard hoặc `_`.
 - **Kiểu vô hạn** (`int`, `float`, `str`, `path`, `datetime`...) **bắt buộc** có `_`; range pattern **không** dùng để chứng minh phủ kiểu vô hạn.
-- Pattern đầy đủ: literal (kể cả `-1`), biến, `_`, tuple `(a, b)`, bản ghi `{name, age: 18..}`, enum `Circle(r)` / `Shape.Circle(r)`, list `[first, ..rest]`, range `0..10` / `0..=10`, or `|`, guard `if`. Pattern cho optional/Result: **`none`**, **`some(x)`**, **`ok(v)`**, **`err(e)`**.
+- Pattern đầy đủ: literal (kể cả `-1`), biến, `_`, tuple `(a, b)`, bản ghi `{name, age: 18..}`, enum `Circle(r)` / `Shape.Circle(r)`, list `[first, ..rest]`, range `0..10` / `0..=10`, or `|`, guard `if`. Pattern cho optional/Result: **`None`**, **`Some(x)`**, **`Ok(v)`**, **`Err(e)`** (**R1a**: viết thường ⇒ cảnh báo `VS0111` + `vis fmt` tự sửa).
 - `if let PAT = EXPR:` là đường tắt của `match` một nhánh, **không** xét hết.
 
 ### 4.4 Optional
@@ -1159,7 +1159,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 | VD-16 | Bảng ưu tiên chốt (cao → thấp): postfix (`. ?. () [] ? with`) → `**` → `-` một ngôi → `* / %` → `+ -` → `.. ..=` → `??` → so sánh (không kết hợp) → `not` → `and` → `or` → `|>`. `**` kết hợp **phải**, cao hơn `*`; mũ âm với int panic; có `checked_pow`. |
 | VD-17 | Float: NaN — `==` trả false; float **không** có `Eq/Ord/Hash`; kiểu chứa float không derive được `Eq/Hash`; dùng `total_cmp`. `percent` so sánh được với float theo tỉ lệ (`50pct == 0.5`); `ps.cpu` có kiểu `percent`. |
 | VD-18 | Chuỗi: **cấm `s[i]`**; dùng `.chars() .graphemes() .bytes() .byte_at(i)?`; có `byte_len()`, `char_count()`, `grapheme_count()`; so sánh theo dãy scalar. Index: thêm `xs[i]?` trả `T?`; `xs[-1]` panic có thông điệp. |
-| VD-19 | Optional: tự nâng `T → T?` ở gán, trả, đối số; `T??` là lỗi kiểu; `?` dùng được trên `T?` trong hàm trả `U?`; pattern `none`, `some(x)`, `ok(v)`, `err(e)`. |
+| VD-19 | Optional: tự nâng `T → T?` ở gán, trả, đối số; `T??` là lỗi kiểu; `?` dùng được trên `T?` trong hàm trả `U?`; pattern `None`, `Some(x)`, `Ok(v)`, `Err(e)` (**R1a**: viết thường ⇒ `VS0111`). |
 | VD-20 | Lỗi: `trait Error: Show { message, source, span }`; `AnyError` là kiểu xoá; mọi `E: Error` tự chuyển sang `AnyError` qua `?`; `main -> Result[(), AnyError]`; tên phía plugin Rust là `vis::Error`. Mã thoát: 0 ok, 1 lỗi từ main, 2 lỗi dùng/kiểu, 101 panic, 126 không chạy được, 127 không tìm thấy, 130 bị huỷ. |
 | VD-21 | Chế độ lệnh (QD §7.2): metachar là khoảng trắng, `( ) [ ] { } ; & $ ' " |`, `#` ở đầu từ; `"..."` có nội suy, `'...'` thô; `$x` biến phiên, `$env.NAME` môi trường; `;` tách pipeline; `&` nền chỉ khi là token cuối có khoảng trắng phía trước; `--` kết thúc cờ; `-5` là số nếu tham số kiểu số, ngược lại là cờ; `.vish`/REPL: `shell_item := use | let | fn | cmd | pipeline`. |
 | VD-22 | Parse chế độ lệnh **hai pha**: `vis-syntax` sinh `CmdCST` (từ trần chưa định kiểu) → `cmd_lower` trong `vis-types` dùng bảng chữ ký → **HIR**. Tiêu chí "cùng AST" đọc thành **"cùng HIR"**; vòng 1 chỉ làm `CmdCST` + golden, `cmd_lower` là task vòng 2. |
