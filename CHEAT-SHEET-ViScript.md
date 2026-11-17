@@ -61,7 +61,7 @@ loop break continue return and or not true false none self async await scope tes
 | `7 / 2` → `3.5`<br>`7 // 2` → `3`<br>`x //= 2` ✔ | `7 / 2` → `3.5`<br>`7 // 2` → `3`<br>`x //= 2` | `7 / 2` → `3` (int)<br>`7.0 / 2.0` → `3.5` | `7 / 2` → `3.5` | **R7**: `/` **luôn** `float`; `//` chia lấy phần nguyên (làm tròn **xuống**); `%` khớp `//` (`-7 % 2` = `1`); `//=` gán ghép |
 | `let x = 1` → `let x = 2` (cùng phạm vi) ✔ | OK | OK | OK | **R16**: `let` **được che tên** trong cùng phạm vi; `var x = 1` → `var x = 2` ⇒ `VS0302` |
 | `# chú thích` | `#` | `//` | `//` | `##` là doc-comment |
-| `assert 1 + 1 == 2` ✔ | `assert ...` | `assert!(...)` | `console.assert(...)` | **[ĐÃ CÓ]**; **R20 [DỰ KIẾN]**: `assert cond, "thông điệp"`; `assert false` ⇒ panic/thoát **101** |
+| `assert 1 + 1 == 2` ✔<br>`assert cond, "thông điệp"` ✔ | `assert ...` | `assert!(...)` | `console.assert(...)` | **R20a**: `assert cond, "msg"` (1–2 đối số); `assert false` ⇒ panic/thoát **101** |
 
 ## 2. Hàm & closure
 
