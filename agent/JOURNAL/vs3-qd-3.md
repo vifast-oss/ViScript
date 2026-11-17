@@ -5,7 +5,7 @@
 ## 1. Mục tiêu đo được
 1. `https://` chạy được: GET/POST tới **server thử trong fixtures** (chứng chỉ tự ký nhúng repo) ⇒ 200 + body đúng; **không** gọi mạng ngoài trong test. Ca 200 **khai báo CA riêng**: `http.client(ca: p"fixtures/ca.pem")`.
 2. Xác minh chứng chỉ: **mặc định** dùng **kho chứng chỉ hệ điều hành** (`rustls-platform-verifier`); chứng chỉ tự ký **không** nằm trong kho hệ thống và **không** khai `ca:` ⇒ **lỗi** rõ ràng (không im lặng bỏ qua). **Không có tuỳ chọn tắt xác minh** (kiểu insecure) ở 1.0.
-   > **đã sửa**: `agent/JOURNAL/vs3-qd-3.md:@@L1@@` (ST-178) — thêm tuỳ chọn `ca:` để ca 200 và ca từ chối không còn mâu thuẫn.
+   > **đã sửa**: `agent/JOURNAL/vs3-qd-3.md:6` (ST-178) — thêm tuỳ chọn `ca:` để ca 200 và ca từ chối không còn mâu thuẫn.
 3. Keep-alive: 2 request liên tiếp **cùng** kết nối (đếm accept ở server thử = 1).
 4. **Mặc định an toàn bắt buộc**: timeout kết nối và đọc, giới hạn số lần chuyển hướng, giới hạn kích thước body. **Số đề xuất (Agent 1) — chờ A0 chốt**:
 
@@ -17,7 +17,7 @@
    | `max_body` | **8 MiB** | vượt ⇒ lỗi rõ, **không** cắt im lặng |
 
    > **Trạng thái số**: **đề xuất, chờ A0 chốt** khi duyệt ST-178 (VD-178 QĐ-3 mục 2). Không dùng số này để “đạt” trước khi A0 chốt.
-   > **đã sửa**: `agent/JOURNAL/vs3-qd-3.md:@@L2@@` (ST-178) — thêm mục 4 (mặc định an toàn) với số đề xuất.
+   > **đã sửa**: `agent/JOURNAL/vs3-qd-3.md:14` (ST-178) — thêm mục 4 (mặc định an toàn) với số đề xuất.
 5. Cổng có bước kiểm **licenses + advisories** (`cargo-deny`), không mạng ⇒ dùng cache.
 
 ## 2. Hiện trạng (dẫn chứng)
@@ -64,5 +64,5 @@ Kho chứng chỉ HĐH khác nhau (mac/ps/psvn); proxy; wasm roots; `ring` build
 ## 8. Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| QĐ-3 mục 1 | Thêm `http.client(ca: p"…")`; mặc định kho HĐH; **không** insecure; nhánh dự phòng rustls+webpki | `agent/JOURNAL/vs3-qd-3.md:@@L1@@` |
-| QĐ-3 mục 2 (áp dụng) | Mặc định an toàn: timeout/redirect/body — **số đề xuất, chờ A0 chốt** | `agent/JOURNAL/vs3-qd-3.md:@@L2@@` |
+| QĐ-3 mục 1 | Thêm `http.client(ca: p"…")`; mặc định kho HĐH; **không** insecure; nhánh dự phòng rustls+webpki | `agent/JOURNAL/vs3-qd-3.md:6` |
+| QĐ-3 mục 2 (áp dụng) | Mặc định an toàn: timeout/redirect/body — **số đề xuất, chờ A0 chốt** | `agent/JOURNAL/vs3-qd-3.md:14` |

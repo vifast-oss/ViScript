@@ -163,7 +163,7 @@ loop break continue return and or not true false none self async await scope tes
 
 `derives` sinh sẵn: `Eq`, `Ord`, `Hash`, `Show`, `Json`, `Default` — không cần viết tay.
 
-## 9. Thư viện chuẩn (đóng băng — `viscript/agent/API-STD.txt`)
+## 9. Thư viện chuẩn (đóng băng — `agent/API-STD.txt`)
 
 Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 
@@ -233,7 +233,7 @@ Method trên giá trị (không cần `use`):
 ## 13. Phụ lục — cách kiểm chứng & chênh lệch đã biết
 
 - **Cách kiểm**: mỗi ô ✔ là một snippet độc lập chạy `vis run`; ✖ là snippet trả mã lỗi, đã đọc thông điệp.
-  Tổng **111 lượt chạy**, ngày 2026-11-16, binary `viscript/target/debug/vis` @ `f4005aed`.
+  Tổng **111 lượt chạy**, ngày 2026-11-16, binary `target/debug/vis` @ `f4005aed`.
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
   `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
   `AnyError` **chưa có** → dùng `str`; format spec `{x:.2}` **chưa có**;

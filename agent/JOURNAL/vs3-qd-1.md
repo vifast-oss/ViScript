@@ -4,7 +4,7 @@
 
 ## 1. Mục tiêu đo được
 1. **Song song thật**: chương trình `N` **task tính toán thuần** (vòng lặp cộng, không chia sẻ, **không** sleep/IO ảo — task sleep chạy chồng nhau được ngay cả trên 1 luồng nên **không** chứng minh song song thật) chạy trên `W` worker; đo **wall-clock** với `W = min(nproc, N)` và `W = 1`; **ngưỡng chốt: `W=min(nproc,N)` nhanh hơn `W=1` ít nhất `0,6 × min(nproc, N, 4)` lần** trên máy ≥ 4 nhân (giới hạn 4 để ngưỡng không phụ thuộc máy nhiều nhân). Ghi `nproc`, **load** trước/sau và **giữ khoá đo** (`~/.vifast-measure.lock`, VD-177 mục 3) vào log.
-   > **đã sửa**: `agent/JOURNAL/vs3-qd-1.md:@@L1@@` (ST-178) — thay ngưỡng cũ `0,80 × min(nproc, N)` và bỏ ca sleep/IO ảo.
+   > **đã sửa**: `agent/JOURNAL/vs3-qd-1.md:6` (ST-178) — thay ngưỡng cũ `0,80 × min(nproc, N)` và bỏ ca sleep/IO ảo.
 2. **Tất định**: cùng một chương trình **không chia sẻ** chạy `W=1` và `W=4` cho **cùng stdout/exit** (byte-for-byte), ở interp **và** VM.
 3. **Không `unsafe`**: `crates/vis-interp`, `crates/vis-vm`, `crates/vis-cli` giữ `#![forbid(unsafe_code)]`; chứng minh `Value: !Send` bằng **doctest `compile_fail`**.
 4. **Không rò qua closure**: gửi closure/handle tệp/Task qua `Chan` liên luồng ⇒ lỗi **lúc biên dịch** nếu biết, nếu không ⇒ mã lỗi lúc chạy **VS0508** (xem §3).
@@ -22,7 +22,7 @@
   - Giá trị trả về của task cũng phải **gửi được**, **sao chép sâu** khi await.
   - Kiểu gửi được: `int`, `float`, `bool`, `str`, `bytes`, đơn vị, `list/map/set/tuple/record/enum` chỉ chứa các kiểu này. **Closure, handle tệp, `Task`: không gửi được.**
   - Vi phạm: **lỗi biên dịch** khi biết kiểu; nếu không thì **lỗi lúc chạy**.
-  > **đã sửa**: `agent/JOURNAL/vs3-qd-1.md:@@L2@@` (ST-178) — thay luật cũ “await task khác worker bị chặn”.
+  > **đã sửa**: `agent/JOURNAL/vs3-qd-1.md:20` (ST-178) — thay luật cũ “await task khác worker bị chặn”.
 - Qua `Chan` giữa 2 worker: **sao chép sâu** cùng tập kiểu gửi được ở trên.
 - Chia sẻ `bytes`/`str` lớn bất biến qua `Arc`: **hoãn**, ghi nợ, chỉ làm khi có số đo.
 - **Mã lỗi chốt**: **VS0508** “giá trị không gửi được sang worker khác” (VS0507 đã dành cho tràn i64 ở R9).
@@ -52,5 +52,5 @@
 ## 8. Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| QĐ-1 mục 1 | Đo song song bằng **task CPU**; ngưỡng `0,6 × min(nproc,N,4)`; ghi `nproc`/load/khoá đo | `agent/JOURNAL/vs3-qd-1.md:@@L1@@` |
-| QĐ-1 mục 2 | **Bỏ cấm await worker khác**; luật Sendable + sao chép sâu; **VS0508** | `agent/JOURNAL/vs3-qd-1.md:@@L2@@` |
+| QĐ-1 mục 1 | Đo song song bằng **task CPU**; ngưỡng `0,6 × min(nproc,N,4)`; ghi `nproc`/load/khoá đo | `agent/JOURNAL/vs3-qd-1.md:6` |
+| QĐ-1 mục 2 | **Bỏ cấm await worker khác**; luật Sendable + sao chép sâu; **VS0508** | `agent/JOURNAL/vs3-qd-1.md:20` |

@@ -118,16 +118,16 @@ http = "github.com/vifast-oss/vis-http@v0.9.0"
 ## 10. Bảng [SỬA] VD-178/VD-180/VD-181 đã áp (ST-178)
 | Quyết định | Nội dung | đã sửa |
 |---|---|---|
-| VD-178 QĐ-6 mục 1 (bị thay) | Mô hình **phi tập trung kiểu Go**, không kho tập trung; tên = đường dẫn; tag semver; `/v2`; **MVS**; `pkg update X` (#142) | `agent/JOURNAL/vs3-qd-6.md:@@L1@@` |
-| VD-178 QĐ-6 mục 2 (bị thay) | **VS0707** = hash không khớp `vis.lock`/sổ (thay “chữ ký sai”); **VS0706** giữ “pkg chưa hỗ trợ” | `agent/JOURNAL/vs3-qd-6.md:@@L2@@` |
-| VD-180 mục 3 | `vis.lock` sha256 cây chuẩn hoá; `sum.vifast.org` chỉ ghi thêm; `VIS_SUMDB=off`; `VIS_PRIVATE` | `agent/JOURNAL/vs3-qd-6.md:@@L3@@` |
-| VD-180 mục 4 | `proxy.vifast.org` **chỉ thiết kế**; `VIS_PROXY=direct` mặc định | `agent/JOURNAL/vs3-qd-6.md:@@L4@@` |
-| VD-180 mục 5 | **4 ca đỏ-trước bắt buộc** | `agent/JOURNAL/vs3-qd-6.md:@@L5@@` |
-| VD-180 mục 6 | Ngoài phạm vi VS3 | `agent/JOURNAL/vs3-qd-6.md:@@L6@@` |
-| VD-181 mục 1 | `vifast.org/vis/<tên>` (path, không subdomain); `<tên>` `[a-z0-9-]`; không `/x/` | `agent/JOURNAL/vs3-qd-6.md:@@L7@@` |
-| VD-181 mục 2 | `sum.`/`proxy.vifast.org` ngang hàng, không lồng dưới `vis.` | `agent/JOURNAL/vs3-qd-6.md:@@L8@@` |
-| VD-181 mục 3 | `vis.vifast.org` **không** làm tiền tố module | `agent/JOURNAL/vs3-qd-6.md:@@L9@@` |
-| VD-181 mục 4 | `viscript.org` chỉ thương hiệu | `agent/JOURNAL/vs3-qd-6.md:@@L10@@` |
-| VD-181 mục 5 | **Bảng host → vai trò** | `agent/JOURNAL/vs3-qd-6.md:@@L11@@` |
-| VD-181 mục 6 | **Traefik không phải hợp đồng**; meta tag là hợp đồng | `agent/JOURNAL/vs3-qd-6.md:@@L12@@` |
-| VD-181 mục 7 | Tên **bất biến**; **quyết định không đảo** | `agent/JOURNAL/vs3-qd-6.md:@@L13@@` |
+| VD-178 QĐ-6 mục 1 (bị thay) | Mô hình **phi tập trung kiểu Go**, không kho tập trung; tên = đường dẫn; tag semver; `/v2`; **MVS**; `pkg update X` (#142) | `agent/JOURNAL/vs3-qd-6.md:9` |
+| VD-178 QĐ-6 mục 2 (bị thay) | **VS0707** = hash không khớp `vis.lock`/sổ (thay “chữ ký sai”); **VS0706** giữ “pkg chưa hỗ trợ” | `agent/JOURNAL/vs3-qd-6.md:22` |
+| VD-180 mục 3 | `vis.lock` sha256 cây chuẩn hoá; `sum.vifast.org` chỉ ghi thêm; `VIS_SUMDB=off`; `VIS_PRIVATE` | `agent/JOURNAL/vs3-qd-6.md:20` |
+| VD-180 mục 4 | `proxy.vifast.org` **chỉ thiết kế**; `VIS_PROXY=direct` mặc định | `agent/JOURNAL/vs3-qd-6.md:79` |
+| VD-180 mục 5 | **4 ca đỏ-trước bắt buộc** | `agent/JOURNAL/vs3-qd-6.md:88` |
+| VD-180 mục 6 | Ngoài phạm vi VS3 | `agent/JOURNAL/vs3-qd-6.md:26` |
+| VD-181 mục 1 | `vifast.org/vis/<tên>` (path, không subdomain); `<tên>` `[a-z0-9-]`; không `/x/` | `agent/JOURNAL/vs3-qd-6.md:15` |
+| VD-181 mục 2 | `sum.`/`proxy.vifast.org` ngang hàng, không lồng dưới `vis.` | `agent/JOURNAL/vs3-qd-6.md:42` |
+| VD-181 mục 3 | `vis.vifast.org` **không** làm tiền tố module | `agent/JOURNAL/vs3-qd-6.md:43` |
+| VD-181 mục 4 | `viscript.org` chỉ thương hiệu | `agent/JOURNAL/vs3-qd-6.md:44` |
+| VD-181 mục 5 | **Bảng host → vai trò** | `agent/JOURNAL/vs3-qd-6.md:34` |
+| VD-181 mục 6 | **Traefik không phải hợp đồng**; meta tag là hợp đồng | `agent/JOURNAL/vs3-qd-6.md:45` |
+| VD-181 mục 7 | Tên **bất biến**; **quyết định không đảo** | `agent/JOURNAL/vs3-qd-6.md:6` |

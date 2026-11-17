@@ -4,7 +4,7 @@
 
 ## 1. Mục tiêu đo được
 1. `chan(0)` = **rendezvous hợp lệ**: `send` **chặn** cho tới khi có `recv` (đo: gửi rồi không nhận trong 50 ms ⇒ chưa trả về; nhận ⇒ cả hai trả về). **Không** bị chặn ở tyck, **không** bị chặn ở runtime.
-   > **đã sửa**: `agent/JOURNAL/vs3-qd-2.md:@@L1@@` (ST-178) — chốt chan(0) hợp lệ, bỏ mâu thuẫn “vừa hợp lệ vừa bắt tyck báo lỗi”.
+   > **đã sửa**: `agent/JOURNAL/vs3-qd-2.md:6` (ST-178) — chốt chan(0) hợp lệ, bỏ mâu thuẫn “vừa hợp lệ vừa bắt tyck báo lỗi”.
 2. `recv_any(chans, timeout: …)` trả **`(int, T)?`**; hết giờ trả **`None`** (theo R2 — VS3 chạy sau pha 1, từ khoá `none` đã bị bỏ). Mọi kênh trong danh sách **cùng kiểu phần tử `T`**.
 3. **Công bằng**: khi nhiều kênh cùng sẵn sàng, chọn theo **vòng xoay** (không luôn chọn kênh đầu) để tránh đói; test kiểm bằng **bộ đếm, tất định**.
 4. `chan(0)` **không** bị chặn ở tyck và **không** bị chặn ở runtime; **#145** đóng bằng cách **xoá chú thích sai** `rt.rs:128-129` + **bỏ chặn runtime** — **không** thêm kiểm `cap == 0` ở tyck.
@@ -44,6 +44,6 @@
 ## 8. Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| QĐ-2 mục 1 | `chan(0)` = **rendezvous hợp lệ**; #145 = xoá chú thích sai + bỏ chặn runtime (không thêm tyck) | `agent/JOURNAL/vs3-qd-2.md:@@L1@@` |
-| QĐ-2 mục 2 (áp dụng) | `recv_any` trả `(int, T)?`; hết giờ ⇒ `None`; cùng kiểu `T` | `agent/JOURNAL/vs3-qd-2.md:@@L2@@` |
-| QĐ-2 mục 3 (áp dụng) | Công bằng **vòng xoay**, test bằng bộ đếm tất định | `agent/JOURNAL/vs3-qd-2.md:@@L3@@` |
+| QĐ-2 mục 1 | `chan(0)` = **rendezvous hợp lệ**; #145 = xoá chú thích sai + bỏ chặn runtime (không thêm tyck) | `agent/JOURNAL/vs3-qd-2.md:6` |
+| QĐ-2 mục 2 (áp dụng) | `recv_any` trả `(int, T)?`; hết giờ ⇒ `None`; cùng kiểu `T` | `agent/JOURNAL/vs3-qd-2.md:8` |
+| QĐ-2 mục 3 (áp dụng) | Công bằng **vòng xoay**, test bằng bộ đếm tất định | `agent/JOURNAL/vs3-qd-2.md:9` |

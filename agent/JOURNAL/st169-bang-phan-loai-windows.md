@@ -15,7 +15,7 @@
 
 **Đếm**: **a = 48** · **b = 15** · **c = 42** (tổng **105**). Các ca **b** là **ứng viên**, cần Agent 0 xác nhận từng ca
 (đúng theo VD-162(3): danh sách kỳ vọng theo nền phải được duyệt).
-> **đã sửa**: `agent/JOURNAL/st169-bang-phan-loai-windows.md:@@L1@@` (ST-178) — số liệu chốt **48/15/42 = 105** (thêm ca `host_conformance_suite` vào nhóm b); nguồn: **bảng 105 dòng dưới đây** + `st161-cargo-test-psvn-nff.log` @ `0df923c2` + bảng tóm tắt theo suite ở `vs3-qd-5.md` §3b.
+> **đã sửa**: `agent/JOURNAL/st169-bang-phan-loai-windows.md:16` (ST-178) — số liệu chốt **48/15/42 = 105** (thêm ca `host_conformance_suite` vào nhóm b); nguồn: **bảng 105 dòng dưới đây** + `st161-cargo-test-psvn-nff.log` @ `0df923c2` + bảng tóm tắt theo suite ở `vs3-qd-5.md` §3b.
 
 ## Bảng (105 ca)
 

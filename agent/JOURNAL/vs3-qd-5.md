@@ -18,19 +18,19 @@
 - **Nhóm a (48)**: thay `/bin/*` + `bash`/`sh` bằng **helper repo-built** (một binary test), dùng **cùng kỳ vọng** cả 3 nền.
   - Helper **chỉ cài các lệnh con mà test thật sự dùng**: `echo`, `cat`, `grep`, `printf`, `true`, `false`, `sleep`.
   - **Không viết lại `sh -c`**; test đang dùng `sh -c` được **viết lại bằng các lệnh con của helper**.
-  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:@@L1@@` (ST-178) — bỏ `sh -c` khỏi helper, chốt 7 lệnh con.
+  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:19` (ST-178) — bỏ `sh -c` khỏi helper, chốt 7 lệnh con.
 - **Nhóm b (15)**: **mặc định coi là lỗi sản phẩm cho tới khi chứng minh ngược lại**.
   - `lsp` (5): nghi chuyển đổi URI ↔ đường dẫn Windows (`file:///C:/…`). **Sửa sản phẩm.**
   - `net_server` (3), `net` (1): điều tra; **không** tăng timeout của test trước khi biết nguyên nhân. Riêng kết nối tới **cổng đóng** trên Windows: ViScript phải báo **“bị từ chối”**, **không** được báo “quá thời gian”.
   - `json_ra` (5): ca thiếu `python3` chuyển **nhóm a** (helper); ca **tên tệp đặc biệt** Windows cấm chuyển **nhóm c**; còn lại điều tra.
   - `host_conformance` (1): TAP — điều tra.
   - Chuyển một ca **b → c** cần **Agent 0 duyệt**.
-  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:@@L2@@` (ST-178) — chốt hướng nhóm b (trước: “điều tra từng ca”).
+  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:22` (ST-178) — chốt hướng nhóm b (trước: “điều tra từng ca”).
 - **Nhóm c (42)**: **VS3-5b chạy SAU R6** (R6 sửa thẳng nguyên nhân `VS0102` khi test chèn đường dẫn Windows có `\` vào mã `.vis`). Luật test mới:
   - Test **không** chèn đường dẫn vào chuỗi thường; dùng `p"…"`, hoặc truyền qua **argv/biến môi trường**.
   - Golden/TAP so đường dẫn **tương đối** với thư mục test.
   - **Mục tiêu: danh sách kỳ vọng theo nền về 0.** Ca nào còn lại mới vào danh sách, **Agent 0 duyệt từng dòng**.
-  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:@@L3@@` (ST-178) — đổi thứ tự 5b (sau R6) + luật test mới.
+  > **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:29` (ST-178) — đổi thứ tự 5b (sau R6) + luật test mới.
 - **CI**: runner Windows cho `gate --fast` + `vis-host-suite`; log ngoài repo (đã có `vis-remote`).
 - **Xen kẽ pha 1**: VS3-5a và VS3-5d được chạy xen kẽ trong pha 1 (không đụng ngôn ngữ).
 
@@ -69,7 +69,7 @@
 | `vsh1b` | 0 | 0 | 1 | 1 |
 | **Tổng** | **48** | **15** | **42** | **105** |
 
-> **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:@@L4@@` (ST-178) — thêm hàng `host_conformance` (b=1); tổng **48/15/42 = 105** (trước: 48/14/42 = 104, thiếu ca `host_conformance_suite`).
+> **đã sửa**: `agent/JOURNAL/vs3-qd-5.md:47` (ST-178) — thêm hàng `host_conformance` (b=1); tổng **48/15/42 = 105** (trước: 48/14/42 = 104, thiếu ca `host_conformance_suite`).
 
 ## 4. Chia task ≤ 3 h
 | Task | Nội dung | Điều kiện xong | Phụ thuộc |
@@ -92,8 +92,8 @@ Trên `psvn`: `gate --fast` 10/10, host 54/54, `cargo test` 0 đỏ; trên mac/p
 ## 8. Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| QĐ-5 mục 1 | Số liệu **48/15/42 = 105** (thêm `host_conformance_suite`) | `agent/JOURNAL/vs3-qd-5.md:@@L4@@` |
-| QĐ-5 mục 2 | VS3-5b **sau R6**; luật test mới (`p"…"`/argv, golden tương đối, mục tiêu 0) | `agent/JOURNAL/vs3-qd-5.md:@@L3@@` |
-| QĐ-5 mục 3 | Helper **chỉ** 7 lệnh con; **không** `sh -c` | `agent/JOURNAL/vs3-qd-5.md:@@L1@@` |
-| QĐ-5 mục 4 | Nhóm b **mặc định lỗi sản phẩm**; lsp 5, net_server 3, net 1, json_ra 5, host_conformance 1 | `agent/JOURNAL/vs3-qd-5.md:@@L2@@` |
-| QĐ-5 mục 5 | VS3-5a/5d xen kẽ pha 1 | `agent/JOURNAL/vs3-qd-5.md:@@L5@@` |
+| QĐ-5 mục 1 | Số liệu **48/15/42 = 105** (thêm `host_conformance_suite`) | `agent/JOURNAL/vs3-qd-5.md:47` |
+| QĐ-5 mục 2 | VS3-5b **sau R6**; luật test mới (`p"…"`/argv, golden tương đối, mục tiêu 0) | `agent/JOURNAL/vs3-qd-5.md:29` |
+| QĐ-5 mục 3 | Helper **chỉ** 7 lệnh con; **không** `sh -c` | `agent/JOURNAL/vs3-qd-5.md:19` |
+| QĐ-5 mục 4 | Nhóm b **mặc định lỗi sản phẩm**; lsp 5, net_server 3, net 1, json_ra 5, host_conformance 1 | `agent/JOURNAL/vs3-qd-5.md:22` |
+| QĐ-5 mục 5 | VS3-5a/5d xen kẽ pha 1 | `agent/JOURNAL/vs3-qd-5.md:35` |

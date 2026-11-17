@@ -14,7 +14,7 @@
 
 - Test hiện mong exit 1 cho **VS0502/VS0503** phải đổi sang **101** — **Agent 0 duyệt đổi kỳ vọng**, làm trong **R9**.
 - Lỗi chạy **có mã** vẫn in mã, nhưng thoát **101** (không phải 1).
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L1@@` (ST-178) — thêm bảng mã thoát C1 (0/1/2/**101**).
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:7` (ST-178) — thêm bảng mã thoát C1 (0/1/2/**101**).
 
 ## Bảng tổng (VD-173 — pha, task, giờ, ảnh hưởng)
 | R | Nội dung | Pha | Task | Giờ | Test/ví dụ hiện có bị ảnh hưởng |
@@ -57,7 +57,7 @@
 **Chuyển đổi**: `some` pattern → `Some`; thêm **VS0111** (cảnh báo) + fmt. **Không** xoá `None` ở R1 — `None` thành **biến thể của `Option`** ở **R2a**.
 **Ảnh hưởng**: `tyck/pat.rs`, `lower.rs:53`, fmt, `all_codes`, golden, docs.
 **Task**: **172b-R1a** (1,5 h cảnh báo) · **R1b** (1 h fmt sửa) — **gộp với R2a** (không còn R1c riêng). **Phụ thuộc**: R9 (mã mới).
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L2@@` (ST-178) — R1+R2 làm chung; bỏ “xoá builtin `None`” riêng ở R1c; bỏ ca “`none` xanh”.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:53` (ST-178) — R1+R2 làm chung; bỏ “xoá builtin `None`” riêng ở R1c; bỏ ca “`none` xanh”.
 
 ## R2 · Option/Result là enum std — **Pha 1**
 **Hiện trạng**: `none` là **từ khoá** (`token.rs:185`); `T??` ⇒ **VS0201** (probe `y2`); `Some(1)` dựng được, `some(1)` ⇒ VS0501 (probe `c4`); tự gói `T→T?` **đã có** (probe `n1`).
@@ -70,7 +70,7 @@
 **Chuyển đổi**: bỏ từ khoá `none` ⇒ **VS0203** + gợi ý `None` + fmt tự sửa; `None` thành biến thể; sửa VD-19 (A0).
 **Ảnh hưởng**: `ty.rs`, parser (`T?` lặp), tyck gói nhiều lớp, interp/VM, `lower.rs`, docs.
 **Task**: **172b-R2a** (3 h) enum std + bỏ từ khoá `none` (**gộp R1**); **R2b** (3 h) `T??` + gói nhiều lớp; **R2c** (2 h) ca `first`/`map.get`. **Phụ thuộc**: R1.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L3@@` (ST-178) — `None` là biến thể; từ khoá `none` ⇒ **VS0203** + gợi ý + fmt.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:62` (ST-178) — `None` là biến thể; từ khoá `none` ⇒ **VS0203** + gợi ý + fmt.
 
 ## R3 · Vắng mặt/lỗi: `?`, `??`, `if let`, `let … else` — **Pha 1**
 **Hiện trạng** (probe mới, **khác** ST-172a):
@@ -82,7 +82,7 @@
 **Ca đỏ-trước**: `if let Some(v) = o:` chạy (sửa kiểm pattern theo `T?`); `if let v = o:` ⇒ **lỗi + gợi ý `Some(v)`**; `let x = r else:` không thoát ⇒ lỗi rõ; `f() else 0` ⇒ VS0201.
 **Ảnh hưởng**: `tyck` (pattern `if let`/`while let`), parser `let else`, docs.
 **Task**: **172b-R3a** (1,5 h sửa if-let pattern) · **R3b** (1 h ràng buộc khối thoát). **Phụ thuộc**: R2.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L4@@` (ST-178) — `if let`/`while let` nhận **pattern**; dạng `if let v = o:` ⇒ lỗi + gợi ý.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:75` (ST-178) — `if let`/`while let` nhận **pattern**; dạng `if let v = o:` ⇒ lỗi + gợi ý.
 
 ## R4 · Lỗi: `Error` record + `Json` enum + `AnyError` — **Pha 1**
 **Hiện trạng**: probe `r4` (copy nguyên): `r4.vis:4:13: error VS0412: `?` trên `Result` chỉ dùng được khi hàm trả `Result[…, …]`, hàm này trả `str?` (§4.4)`; `json.decode(str)->V` (`API-STD.txt:15`); std trả `Result[_, str]`; `AnyError` chỉ là thiết kế (VD-20).
@@ -101,7 +101,7 @@
 **Ca đỏ-trước**: `f(1, b: 5)` chạy; `f(b: 5, 1)` lỗi; `User(name: "a")` với `age: int = 0` ⇒ `age==0`; `{name: "a"}` ⇒ **VS0205** + gợi ý; `" abc ".trim()` ⇒ `abc`; `str(5)` vẫn `5`.
 **Ảnh hưởng**: parser args/record, tyck call/method, `stdlib.rs`, docs, test record cũ.
 **Task**: **172b-R5a** (2 h) · **R5b** (2 h) · **R5c** (2 h) · **R5d** (2,5 h). **Phụ thuộc**: R3, R4.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L5@@` (ST-178) — `{ten: …}` ⇒ **VS0205**; method chỉ cho tham số đầu **kiểu cụ thể**; `str(x)` giữ là chuyển đổi.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:95` (ST-178) — `{ten: …}` ⇒ **VS0205**; method chỉ cho tham số đầu **kiểu cụ thể**; `str(x)` giữ là chuyển đổi.
 
 ## R6 · Chuỗi — **Pha 1**
 **Hiện trạng**: `p"C:\x"` ⇒ **VS0102** (`r1`); `"a"+"b"` ⇒ VS0412 (`t1`); `"{n:.2}"` ⇒ VS0201 (`t10`); `print("a","b")` ⇒ VS0401 (`t4`).
@@ -109,7 +109,7 @@
 **Ca đỏ-trước**: `p"C:\x"` in `C:\x`; `p"C:\thu muc\"` **hợp lệ** (không escape nên `\` cuối không ảnh hưởng); `p"a{b}"` nội suy; `"a"+"b"` ⇒ `ab`; `"{3.14159:.2}"` ⇒ `3.14`; `print("a","b")` ⇒ `a b`.
 **Ảnh hưởng**: lexer `lit.rs`, `tyck/expr.rs:501,1303`, parser nội suy, interp, golden.
 **Task**: **172b-R6a** (1,5 h) · **R6b** (1,5 h) · **R6c** (2,5 h) · **R6d** (1 h). **Phụ thuộc**: —.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L6@@` (ST-178) — thêm ví dụ `p"C:\thu muc\"` hợp lệ.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:106` (ST-178) — thêm ví dụ `p"C:\thu muc\"` hợp lệ.
 
 ## R7 · Số — **Pha 1**
 **Hiện trạng**: `(Div, Int, Int) => Type::Int` (`crates/vis-types/src/tyck/num.rs:57`); runtime `builtin.rs:464`; **test dựa vào `int/int=int`**: `crates/vis-interp/tests/run.rs:98` (`7/2`→`3`), `:100` (`-7/2`→`-3`), `:112` (`5mb/5mb`→`1`), `interp_v2.rs:77` (`50pct/50pct`→`1`), `run.rs:120,429` (chia 0 ⇒ VS0502); `const A = 1` ⇒ VS0201 (`t5`); `1+1.5`⇒`2.5`, `let f: float = 1` (`p3`,`p4`).
@@ -119,7 +119,7 @@
 **Test phải sửa**: 4 ca (run.rs:98,100,112; interp_v2.rs:77) — **Agent 0 duyệt đổi kỳ vọng**, **không** nới ngưỡng; chia 0 giữ.
 **Ảnh hưởng**: `num.rs:57-65`, `builtin.rs:434,464`, parser `//`, test, docs Q2.
 **Task**: **172b-R7a** (2 h) · **R7b** (1,5 h) · **R7c** (1 h). **Phụ thuộc**: —.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L7@@` (ST-178) — duyệt đổi 4 test; thêm `-7 % 2 ⇒ 1`; luật đơn vị khi chia.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:114` (ST-178) — duyệt đổi 4 test; thêm `-7 % 2 ⇒ 1`; luật đơn vị khi chia.
 
 ## R8 · Chỉ số (xác minh) — **Pha 1**
 **Hiện trạng**: `xs[0]?` ⇒ **VS0412** “`?` chỉ dùng cho `T?`/`Result`, được `int`” (`x2`) ⇒ **CHƯA**; `xs.get(1)` ⇒ **`some(2)`** (`x3`) ⇒ **CÓ**; `xs[5]` ⇒ VS0503 (`b4`); `s[0]` ⇒ VS0412 gợi ý; `s[0:2]` ⇒ VS0201 (`b3`).
@@ -130,7 +130,7 @@
 ## R9 · Thông báo lỗi: mỗi mã một nghĩa — **Pha 1**
 **Hiện trạng**: `VS0412` phủ 4 nhóm (`tyck/mod.rs:1125`, `tyck/expr.rs:501`, `mod.rs:818,1067`); `VS0501` phủ tính năng + tràn i64 (`p2`) + `some(1)` (`t7`); `VS0201` gộp cú pháp; `VS0301` gộp tên/kiểu; `VS0604` gộp `&`/`^`/tiến trình; `VS0701` gộp module/std/pkg; nhiều thông điệp còn **“VS0”**.
 **Đặc tả**: mỗi mã **một nghĩa**; lỗi cú pháp hay gặp có **dòng “gợi ý:”**; **bỏ “VS0”**; từ khoá chưa làm (`newtype`…) **báo lỗi tại chỗ dùng**.
-**Bảng chuyển đổi đề xuất** (Agent 0 chốt số; `API-CODES.txt` A0 sở hữu):
+**Bảng chuyển đổi** (VD-178 duyệt; `API-CODES.txt` A0 sở hữu):
 | Mã cũ | Nghĩa mới | Mã mới |
 |---|---|---|
 | VS0412 | kiểu không khớp (chung) | **VS0412** |
@@ -159,7 +159,7 @@
 **Ca đỏ-trước**: mỗi ca mới đúng 1 mã; không thông điệp nào chứa “VS0”; `newtype` báo tại dòng khai; lỗi chạy có mã vẫn in mã nhưng thoát **101** (C1).
 **Ảnh hưởng**: `vis-diag`, mọi test so mã, `API-CODES.txt`, docs.
 **Task**: **172b-R9a** (2 h) · **R9b** (1,5 h) · **R9c** (1 h). **Phụ thuộc**: —.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L8@@` (ST-178) — VS0203 = từ khoá đã bỏ; VS0204 = const cần kiểu khi không literal; thêm VS0508/VS0707; thoát 101.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:130` (ST-178) — VS0203 = từ khoá đã bỏ; VS0204 = const cần kiểu khi không literal; thêm VS0508/VS0707; thoát 101.
 
 ## R10 · Đơn vị — **Pha 2**
 **Hiện trạng**: `150m` in `150m`; `1h+30m` in `90m`; `5kb+5kb` ⇒ `10kb`; **`1kb+1kib` ⇒ `2024b`** (`y1`) — **trộn đơn vị KHÔNG báo lỗi**; `50pct+10pct` ⇒ `60pct` (`p9`).
@@ -170,11 +170,11 @@
 **Ca đỏ-trước**: `150m` ⇒ `2h30m`; `1500kb` ⇒ `1.5mb`; `1kb+1kib` ⇒ **hợp lệ** (tự quy đổi, không lỗi); `1h+30m` ⇒ `1h30m`; `5mb+1h` ⇒ **lỗi** (khác loại); `45s` ⇒ `45s`; `1.5mb.fmt_iec()` ⇒ `1.43mib`.
 **Ảnh hưởng**: `Type::Duration/Size` Display, `tyck/num.rs`, golden, docs.
 **Task**: **172b-R10a** (2 h) · **R10b** (1 h). **Phụ thuộc**: R7.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L9@@` (ST-178) — cộng cùng loại hợp lệ; chỉ khác loại lỗi; in ghép/thập phân + `.fmt_iec()`.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:164` (ST-178) — cộng cùng loại hợp lệ; chỉ khác loại lỗi; in ghép/thập phân + `.fmt_iec()`.
 
 ## Thứ tự thực thi (A0 chốt — **C3 của VD-178**)
 **P0 (VD-170)** → **R9 (+ C1)** → **R6** → **R17** → **R1+R2** → **R3** → **R8** → **R4** → **R5** → **R11** → **R12** → **R16** → **R7** → **R19b** → **R19c**. Xen kẽ được: **VS3-5a**, **VS3-5d**. Sau pha 1: VS3-QĐ-1 → (QĐ-2, QĐ-3, QĐ-4) → QĐ-6; QĐ-5 phần còn lại sau R6. Pha 2 chạy song song VS3 khi không đụng cùng tệp.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L10@@` (ST-178) — thay thứ tự cũ bằng **C3**.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:175` (ST-178) — thay thứ tự cũ bằng **C3**.
 
 ## Scripts theo bộ quy tắc mới (dạng sẽ có sau khi làm; số dòng vs Python)
 **Script 1 — log** (`?`, `if let`, `print` nhiều đối số):
@@ -249,7 +249,7 @@ enum Shape:
 **Ca đỏ-trước**: `type C: r: float` + `C(2.0)` và `C(r: 2.0)`; `enum S: Circle(float)` + `Circle(2.0)`; `C(2.0, r: 1.0)` ⇒ lỗi (vị trí sau tên).
 **Ảnh hưởng**: parser (biến thể mang dữ liệu), tyck gọi, lower/interp, docs.
 **Task**: **R11a** (2 h) enum payload + gọi · **R11b** (1,5 h) record/wrapper ctor. **Phụ thuộc**: R2.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L11@@` (ST-178) — sửa chú thích probe `c3` (là **khai báo**, không phải “gọi kèm tiền tố”).
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:225` (ST-178) — sửa chú thích probe `c3` (là **khai báo**, không phải “gọi kèm tiền tố”).
 
 ## R12 · Gộp khai báo kiểu (`type X = T`, `type Email(str)`) — **Pha 1**
 **Hiện trạng**: `type X = int` ⇒ **VS0201** (`a1`); `type Email(str)` ⇒ **VS0201** (`a2`); **`alias X = int` CHẠY** (`d1`); `newtype Met = float` **bị bỏ qua im lặng** (`n11`) rồi dùng kiểu ⇒ VS0301 (`n8`).
@@ -257,7 +257,7 @@ enum Shape:
 **Ca đỏ-trước**: `type X = int`; `type Email(str)` + `Email("a@b")` + `let Email(s) = e`; `alias`/`newtype` ⇒ **VS0203** (từ khoá đã bỏ) + gợi ý cách mới.
 **Ảnh hưởng**: parser khai báo, tyck, lower, `KEYWORDS` (`token.rs:185`), docs.
 **Task**: **R12a** (2,5 h) `type =` + wrapper. **Phụ thuộc**: R9 (mã cho `alias/newtype`).
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L12@@` (ST-178) — `alias`/`newtype` ⇒ **VS0203**.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:254` (ST-178) — `alias`/`newtype` ⇒ **VS0203**.
 
 ## R13 · Biến thể enum: prelude + tiền tố khi trùng — **Pha 2**
 **Hiện trạng**: `Shape.Empty` (dùng `.`) **chạy** (`c1`); `Some/None/Ok/Err` prelude chạy; biến thể không tiền tố khi duy nhất — **chưa xác minh**; trùng tên giữa 2 enum — **chưa có** (do R11a chưa xong).
@@ -278,7 +278,7 @@ enum Shape:
 **Ca đỏ-trước**: `p.tang()` trên `var p` chạy + đổi `x`; gọi trên `let p` ⇒ lỗi; `self.x = …` trong `fn f(self)` ⇒ lỗi có gợi ý; `Self` dùng được; trùng tên method impl/std ⇒ lỗi.
 **Ảnh hưởng**: parser `impl`, tyck method lookup (**trùng tên ⇒ lỗi**, không ưu tiên ngầm), lower, docs; **0 test hiện có** bị ảnh hưởng (tính năng mới).
 **Task**: **R14a** (3 h) `impl` + `self` + `Self` · **R14b** (2 h) `var self` + xung đột tên. **Phụ thuộc**: R11 (hàm dựng), R5 (method std).
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L13@@` (ST-178) — trùng tên ⇒ **lỗi** (bỏ ưu tiên ngầm); `impl P:` chỉ trong cùng module khai báo `P`.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:268` (ST-178) — trùng tên ⇒ **lỗi** (bỏ ưu tiên ngầm); `impl P:` chỉ trong cùng module khai báo `P`.
 
 ### Mô hình ViScript — nguyên tắc nền (VD-174 mục 1–3) — **chỉ tài liệu**
 1. **Không class, không kế thừa**; trừu tượng chỉ qua `type` + `trait` + `impl`; dùng lại bằng **method mặc định trong trait** hoặc **record chứa record**.
@@ -295,7 +295,7 @@ enum Shape:
 **Ca đỏ-trước**: `list[Shape]` chứa **2 kiểu cài** (`Circle`, `Square`) + gọi `area()` qua vòng `for` ⇒ đúng kết quả từng kiểu; trait có method generic ⇒ lỗi an toàn đối tượng có gợi ý; `Shape → Circle` ⇒ lỗi.
 **Ảnh hưởng**: `ty.rs` (trait là kiểu), tyck method dispatch, lower/VM (bảng ảo), docs; **0 test hiện có**.
 **Task**: **R22a** (3 h) trait-as-type + an toàn đối tượng · **R22b** (3 h) 2 kiểu + bảng ảo + ca. **Phụ thuộc**: R14 (impl), R11.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L14@@` (ST-178) — bỏ “dùng `match` nếu cần” để ép ngược; ghi nợ sau 1.0.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:289` (ST-178) — bỏ “dùng `match` nếu cần” để ép ngược; ghi nợ sau 1.0.
 
 ## R23 · Gán trường lồng sâu trên `var` — **Pha 2 (đầu, cùng R14)**
 **Hiện trạng**: `u.addr.city = "B"` ⇒ **VS0412** “gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) **chưa hỗ trợ ở VS0** — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)” (`t2`) ⇒ **CHƯA CÓ**, thông điệp đã có sẵn.
@@ -303,7 +303,7 @@ enum Shape:
 **Ca đỏ-trước**: `var u = U(addr: A(city: "A"))` + `u.addr.city = "B"` ⇒ `u.addr.city == "B"`; `xs[0].name = "x"`; trên `let u` ⇒ lỗi; đọc trước/sau để chứng minh không alias.
 **Ảnh hưởng**: tyck gán (bỏ chặn VS0412 cho đường lồng), lower/interp/VM (copy-on-path), docs §4.1; **0 test hiện có**.
 **Task**: **R23a** (2 h) tyck + lower · **R23b** (1,5 h) ca + `xs[i].f` · **R23c** (0,5 h) lỗi trên `let`. **Phụ thuộc**: R5 (record theo tên), R2.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L15@@` (ST-178) — ca đỏ-trước viết lại bằng `U(addr: A(city: "A"))` (đúng R5).
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:300` (ST-178) — ca đỏ-trước viết lại bằng `U(addr: A(city: "A"))` (đúng R5).
 
 ## R24 · `.lazy()` + `Iterator[T]` duyệt lại — **Pha 2 (đầu, cùng R14)** — **R20 KHÔNG chờ R24**
 **Hiện trạng**: `xs.filter(…)`, `xs.map(…)` **trả list ngay** (eager; `t3`,`t4`: `print(ys)` in list); `.to_list()` ⇒ **VS0403** (`t3`); `.take` ⇒ **VS0403** (`t4`); `for y in ys` chạy (`t5`) ⇒ **chưa có iterator**.
@@ -325,7 +325,7 @@ enum Shape:
 **Ca đỏ-trước**: `xs.filter(f).len()` chạy (eager, **không** cần `.to_list()`); `xs.lazy().filter(f).map(g).take(2).to_list()` ⇒ đúng; `for x in xs.lazy().map(g):` ⇒ đúng; `xs.lazy()` **không** in ra list được (phải `.to_list()` hoặc `for`); duyệt **hai lần** cùng một iterator ⇒ cùng kết quả (duyệt lại được); `zip` + `enumerate` đúng kiểu.
 **Ảnh hưởng**: tyck method (kiểu iterator), interp/VM (đánh giá lười), `stdlib.rs` (thêm `lazy`/`to_*`), docs; **0 test hiện có**.
 **Task**: **R24a** (3 h) kiểu iterator + đánh giá lười · **R24b** (2 h) `to_*` + `for` · **R24c** (1 h) `enumerate/zip`. **Phụ thuộc**: R5; **R20 không chờ R24**.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L16@@` (ST-178) — đảo: filter/map giữ collection; `.lazy()` trả `Iterator[T]`; duyệt lại được; R20 không chờ.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:308` (ST-178) — đảo: filter/map giữ collection; `.lazy()` trả `Iterator[T]`; duyệt lại được; R20 không chờ.
 
 ## R15 · Nối dòng + dấu phẩy cuối — **Pha 2**
 **Hiện trạng**: gọi hàm nhiều dòng trong `()` **chạy** (`a7`: 3 dòng + dấu phẩy cuối); chuỗi `.method()` trên một dòng chạy (`d7`); nối dòng khi dòng mới bắt đầu `.`/`|`/`??`/`and`/`or` — **chưa xác minh** (riêng `|` đầu dòng trong script ⇒ VS0201, `d7`).
@@ -356,7 +356,7 @@ enum Shape:
 **Đặc tả**: `0o755`; tràn i64 **panic** (mã thoát **101** theo C1); bit là **method** `bit_or/bit_and/bit_xor/shl/shr`.
 **Ca đỏ-trước**: `0o755` ⇒ 493; `i64::MAX+1` ⇒ panic 101; `5.bit_or(3)` ⇒ 7; `5 . bit_or(3)` phải như nhau (không phụ thuộc khoảng trắng).
 **Task**: **R19a** (1,5 h) 0o · **R19b** (1 h) panic · **R19c** (1 h) bit method + lexer. **Phụ thuộc**: R7.
-> **đã sửa**: `agent/JOURNAL/vs-ergo.md:@@L17@@` (ST-178) — panic tràn i64 thoát **101** theo C1.
+> **đã sửa**: `agent/JOURNAL/vs-ergo.md:354` (ST-178) — panic tràn i64 thoát **101** theo C1.
 
 
 ### R19c · Float literal chỉ khi có chữ số sau `.` — **Pha 1**
@@ -391,19 +391,19 @@ enum Shape:
 ## Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| C1 | Bảng mã thoát **0/1/2/101**; VS0502/VS0503 đổi kỳ vọng sang 101 (làm trong R9) | `agent/JOURNAL/vs-ergo.md:@@L1@@` |
-| R1 + R2 | Làm **chung một khối**; bỏ “xoá builtin `None`” riêng ở R1c; `None` là biến thể ở R2a; từ khoá `none` ⇒ **VS0203** + gợi ý + fmt | `agent/JOURNAL/vs-ergo.md:@@L2@@` · `agent/JOURNAL/vs-ergo.md:@@L3@@` |
-| R3 | `if let`/`while let` nhận **pattern**; `if let v = o:` ⇒ lỗi + gợi ý `Some(v)`; một quy tắc, không dạng tắt | `agent/JOURNAL/vs-ergo.md:@@L4@@` |
-| R5 | `{ten: …}` trần ⇒ **VS0205**; method chỉ cho tham số đầu **kiểu cụ thể**; `str(x)` giữ là chuyển đổi | `agent/JOURNAL/vs-ergo.md:@@L5@@` |
-| R6 | Thêm ví dụ `p"C:\thu muc\"` **hợp lệ** | `agent/JOURNAL/vs-ergo.md:@@L6@@` |
-| R7 | Duyệt đổi **4 test** (run.rs:98,100,112; interp_v2.rs:77); thêm `-7 % 2 ⇒ 1`; đơn vị chia số ⇒ đơn vị, làm tròn xuống | `agent/JOURNAL/vs-ergo.md:@@L7@@` |
-| R9 | **VS0203** = từ khoá đã bỏ; **VS0204** = const cần kiểu khi không literal; thêm **VS0508**, **VS0707**; lỗi chạy có mã thoát **101** | `agent/JOURNAL/vs-ergo.md:@@L8@@` |
-| R10 | Cộng **cùng loại** hợp lệ; chỉ **khác loại** lỗi; in ghép/thập phân + `.fmt_iec()` | `agent/JOURNAL/vs-ergo.md:@@L9@@` |
-| R11 (c3) | Sửa chú thích probe `c3` (là **khai báo**, không phải “gọi kèm tiền tố”) | `agent/JOURNAL/vs-ergo.md:@@L11@@` |
-| R12 | `alias`/`newtype` ⇒ **VS0203** | `agent/JOURNAL/vs-ergo.md:@@L12@@` |
-| R14 | **Trùng tên ⇒ lỗi** (bỏ ưu tiên ngầm); `impl P:` chỉ trong cùng module khai báo `P` | `agent/JOURNAL/vs-ergo.md:@@L13@@` |
-| R19 | Panic tràn i64 thoát **101** theo C1 | `agent/JOURNAL/vs-ergo.md:@@L17@@` |
-| R22 | Bỏ “dùng `match` nếu cần” để ép ngược; ghi nợ sau 1.0 | `agent/JOURNAL/vs-ergo.md:@@L14@@` |
-| R23 | Ca đỏ-trước viết lại bằng `U(addr: A(city: "A"))` | `agent/JOURNAL/vs-ergo.md:@@L15@@` |
-| R24 | **Đảo**: `filter/map` giữ collection; `.lazy()` trả `Iterator[T]`; `range`/`fs.lines` lười; duyệt lại được; R20 không chờ R24 | `agent/JOURNAL/vs-ergo.md:@@L16@@` |
-| C3 | Thứ tự pha 1 mới (P0 → R9+C1 → R6 → R17 → R1+R2 → R3 → R8 → R4 → R5 → R11 → R12 → R16 → R7 → R19b → R19c) | `agent/JOURNAL/vs-ergo.md:@@L10@@` |
+| C1 | Bảng mã thoát **0/1/2/101**; VS0502/VS0503 đổi kỳ vọng sang 101 (làm trong R9) | `agent/JOURNAL/vs-ergo.md:7` |
+| R1 + R2 | Làm **chung một khối**; bỏ “xoá builtin `None`” riêng ở R1c; `None` là biến thể ở R2a; từ khoá `none` ⇒ **VS0203** + gợi ý + fmt | `agent/JOURNAL/vs-ergo.md:53` · `agent/JOURNAL/vs-ergo.md:62` |
+| R3 | `if let`/`while let` nhận **pattern**; `if let v = o:` ⇒ lỗi + gợi ý `Some(v)`; một quy tắc, không dạng tắt | `agent/JOURNAL/vs-ergo.md:75` |
+| R5 | `{ten: …}` trần ⇒ **VS0205**; method chỉ cho tham số đầu **kiểu cụ thể**; `str(x)` giữ là chuyển đổi | `agent/JOURNAL/vs-ergo.md:95` |
+| R6 | Thêm ví dụ `p"C:\thu muc\"` **hợp lệ** | `agent/JOURNAL/vs-ergo.md:106` |
+| R7 | Duyệt đổi **4 test** (run.rs:98,100,112; interp_v2.rs:77); thêm `-7 % 2 ⇒ 1`; đơn vị chia số ⇒ đơn vị, làm tròn xuống | `agent/JOURNAL/vs-ergo.md:114` |
+| R9 | **VS0203** = từ khoá đã bỏ; **VS0204** = const cần kiểu khi không literal; thêm **VS0508**, **VS0707**; lỗi chạy có mã thoát **101** | `agent/JOURNAL/vs-ergo.md:130` |
+| R10 | Cộng **cùng loại** hợp lệ; chỉ **khác loại** lỗi; in ghép/thập phân + `.fmt_iec()` | `agent/JOURNAL/vs-ergo.md:164` |
+| R11 (c3) | Sửa chú thích probe `c3` (là **khai báo**, không phải “gọi kèm tiền tố”) | `agent/JOURNAL/vs-ergo.md:225` |
+| R12 | `alias`/`newtype` ⇒ **VS0203** | `agent/JOURNAL/vs-ergo.md:254` |
+| R14 | **Trùng tên ⇒ lỗi** (bỏ ưu tiên ngầm); `impl P:` chỉ trong cùng module khai báo `P` | `agent/JOURNAL/vs-ergo.md:268` |
+| R19 | Panic tràn i64 thoát **101** theo C1 | `agent/JOURNAL/vs-ergo.md:354` |
+| R22 | Bỏ “dùng `match` nếu cần” để ép ngược; ghi nợ sau 1.0 | `agent/JOURNAL/vs-ergo.md:289` |
+| R23 | Ca đỏ-trước viết lại bằng `U(addr: A(city: "A"))` | `agent/JOURNAL/vs-ergo.md:300` |
+| R24 | **Đảo**: `filter/map` giữ collection; `.lazy()` trả `Iterator[T]`; `range`/`fs.lines` lười; duyệt lại được; R20 không chờ R24 | `agent/JOURNAL/vs-ergo.md:308` |
+| C3 | Thứ tự pha 1 mới (P0 → R9+C1 → R6 → R17 → R1+R2 → R3 → R8 → R4 → R5 → R11 → R12 → R16 → R7 → R19b → R19c) | `agent/JOURNAL/vs-ergo.md:175` |

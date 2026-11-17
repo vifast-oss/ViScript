@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-178 — check_report --all trên repo ViScript (sau khi sửa tài liệu theo VD-178/180/181)
+# máy: Darwin arm64 · UTC: 2026-11-17T13:31:38Z · Agent 2 dòng ViScript
+# HEAD: 505deaa1e0756091cc8f2c8de0d7a8d706a1a893 (505deaa)
+# cây làm việc: 9 tệp sửa + 2 tệp mới CHƯA commit (Agent 1 commit) — không tệp mã nào đổi
+# lệnh: python3 test/report/check_report.py --all
+# ---------- BẮT ĐẦU ----------
+report-check: PASS (29 báo cáo, 197 hàng QUEUE phủ đủ)
+# ---------- KẾT ----------
+[exit=0]
+# giây: 135

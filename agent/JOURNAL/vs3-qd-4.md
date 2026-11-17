@@ -4,7 +4,7 @@
 
 ## 1. Mục tiêu đo được
 1. **Linux và macOS dùng cùng một cơ chế**: đi **từng thành phần đường dẫn** từ fd của thư mục gốc được cấp quyền — `openat(dirfd, thanh_phan, O_NOFOLLOW | O_DIRECTORY)` cho thư mục, `O_NOFOLLOW` cho tệp cuối; **đọc và ghi dùng chung một hàm**. Không còn `canonicalize` rồi so, **không cần fd→path**.
-   > **đã sửa**: `agent/JOURNAL/vs3-qd-4.md:@@L1@@` (ST-178) — thay thiết kế cũ “O_NOFOLLOW + so dev/ino sau khi mở”.
+   > **đã sửa**: `agent/JOURNAL/vs3-qd-4.md:6` (ST-178) — thay thiết kế cũ “O_NOFOLLOW + so dev/ino sau khi mở”.
 2. Linux ≥ 5.6: `openat2(RESOLVE_BENEATH | RESOLVE_NO_SYMLINKS)` là **đường nhanh**, có **fallback** đi từng thành phần; test chạy **cả hai đường**.
 3. `..`: xử lý **theo từ vựng trong phạm vi gốc**; ra ngoài gốc ⇒ **từ chối**.
 4. **macOS không còn khe hở bản chất** như §7 cũ ghi (nhờ không cần fd→path). Giới hạn **còn lại**: **hardlink** (VD-176 mục 3).
@@ -54,7 +54,7 @@ Mở **từng thành phần đường dẫn** bằng **`openat` + `O_NOFOLLOW`**
 ## 9. Bảng [SỬA] VD-178 đã áp (ST-178)
 | [SỬA] VD-178 | Nội dung | đã sửa |
 |---|---|---|
-| QĐ-4 mục 1 | §3 viết lại theo **đi từng thành phần**; `openat`+`O_NOFOLLOW`; `openat2` đường nhanh; macOS hết khe hở; hardlink còn lại | `agent/JOURNAL/vs3-qd-4.md:@@L1@@` |
-| QĐ-4 mục 2 | Chứng minh bằng **ca tất định** 100/100 (500k chỉ là phụ) | `agent/JOURNAL/vs3-qd-4.md:@@L2@@` |
-| QĐ-4 mục 3 (áp dụng) | **`rustix` được duyệt** (MIT, `cargo metadata`, API an toàn) | `agent/JOURNAL/vs3-qd-4.md:@@L3@@` |
-| QĐ-4 mục 4 (áp dụng) | Windows kiểm theo đường dẫn, **mức bảo đảm thấp hơn** | `agent/JOURNAL/vs3-qd-4.md:@@L4@@` |
+| QĐ-4 mục 1 | §3 viết lại theo **đi từng thành phần**; `openat`+`O_NOFOLLOW`; `openat2` đường nhanh; macOS hết khe hở; hardlink còn lại | `agent/JOURNAL/vs3-qd-4.md:6` · `agent/JOURNAL/vs3-qd-4.md:20` (§3) |
+| QĐ-4 mục 2 | Chứng minh bằng **ca tất định** 100/100 (500k chỉ là phụ) | `agent/JOURNAL/vs3-qd-4.md:34` |
+| QĐ-4 mục 3 (áp dụng) | **`rustix` được duyệt** (MIT, `cargo metadata`, API an toàn) | `agent/JOURNAL/vs3-qd-4.md:26` |
+| QĐ-4 mục 4 (áp dụng) | Windows kiểm theo đường dẫn, **mức bảo đảm thấp hơn** | `agent/JOURNAL/vs3-qd-4.md:11` |
