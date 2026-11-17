@@ -817,15 +817,9 @@ impl<'a> Checker<'a> {
                     // **P0 (VD-170)**: `newtype` chưa hạ ⇒ báo **ngay dòng khai báo**, không im
                     // lặng (trước P0: khai một mình xanh, dùng mới `VS0301` ở dòng dùng).
                     // Chỉ ở tầng tyck ⇒ `vis check --syntax` (cổng tài liệu QD §7.4) vẫn xanh.
-                    if a.is_newtype {
-                        // **R9 (VD-178)**: `newtype` là từ khoá **đã bỏ** ⇒ `VS0203` (tách khỏi
-                        // `VS0501` của P0); gợi ý cú pháp mới của R12.
-                        self.diag(
-                            &vis_diag::SYNTAX_CODES[2],
-                            "`newtype` đã bỏ — dùng `type Email(str)` (R12)",
-                            a.span,
-                        );
-                    }
+                    // **R12a (VD-178)**: `type Email(str)` là cú pháp **mới** — không còn `VS0203`
+                    // (từ khoá `newtype` bị parser chặn). Newtype **trong suốt**: kiểu = kiểu trong.
+                    let _ = a.is_newtype;
                     let ty = self.resolve_ann(&a.ty, a.span);
                     self.set_ty(a.sym, ty.clone());
                     self.item_types.push((a.name.clone(), ty));

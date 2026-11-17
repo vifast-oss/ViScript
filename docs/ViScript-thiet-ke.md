@@ -222,14 +222,15 @@ enum Shape derives Show:
     Rect(w: float, h: float)
     Empty
 
-alias UserId = int
-newtype Email = str             # kiểu mới, không tự chuyển đổi với str
+type UserId = int
+type Email(str)                 # kiểu mới, không tự chuyển đổi với str
 ```
 
 - `derives` sinh cài đặt trait chuẩn: `Eq`, `Ord`, `Hash`, `Show`, `Json`, `Default`. Kiểu chứa `float` **không** derive được `Eq`/`Hash` (3.6).
 - Tạo bản ghi: `User(name: "An", age: 20)`; tham số có tên bắt buộc khi bản ghi có hơn 2 trường.
 - Cập nhật: `u with age: 21` trả bản ghi mới. Trường **bất biến** ở bản này (không có `var` cho trường).
-- `alias` là tên khác của cùng kiểu; `newtype` là kiểu mới, phải chuyển đổi tường minh (`Email(s)` / `e.0`).
+- `type X = T` là tên khác của cùng kiểu; `type Email(str)` là kiểu mới, phải chuyển đổi tường minh
+  (`Email(s)` / `let Email(s) = e`). **R12a (VD-178)**: `alias`/`newtype` **đã bỏ** ⇒ `VS0203`.
 
 ### 3.3 Kiểu cấu trúc cho dữ liệu bảng
 

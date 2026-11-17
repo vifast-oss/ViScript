@@ -9,5 +9,5 @@ enum Shape derives Show:
     Rect(w: float, h: float)
     Empty
 
-alias UserId = int
-newtype Email = str             # kiểu mới, không tự chuyển đổi với str
+type UserId = int
+type Email(str)                 # kiểu mới, không tự chuyển đổi với str

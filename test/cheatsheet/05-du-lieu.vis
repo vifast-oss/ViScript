@@ -45,6 +45,6 @@ enum Shape:
 
 print(Circle(2.0))
 
-alias Id = int
+type Id = int
 let i: Id = 7
 print(i)

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **P0 (VD-170)** — `newtype` chưa hạ ⇒ **báo lỗi ngay dòng khai báo**, không im lặng.
+//! **P0 (VD-170) + R12a (VD-178)** — `newtype`/`alias` là từ khoá **đã bỏ** ⇒ `VS0203` ngay dòng
+//! khai báo; cú pháp mới `type X = T` / `type Email(str)` xanh.
 //!
-//! Đỏ-trước: trước P0, `newtype Met = float` một mình ⇒ `vis check` exit 0 (im lặng);
-//! dùng `Met` mới báo `VS0301` ở **dòng dùng**, không phải dòng khai.
-//!
-//! Cổng doc-examples chạy `vis check --syntax` (chỉ parse/hạ) ⇒ khối tài liệu
-//! `newtype Email = str` vẫn xanh; lỗi P0 chỉ ở tầng **kiểm kiểu**.
+//! Đỏ-trước (P0): trước P0, `newtype Met = float` một mình ⇒ `vis check` exit 0 (im lặng).
+//! **R12a**: parser chặn `alias`/`newtype` ⇒ `VS0203` + gợi ý; `type Met(float)` thay thế.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -35,7 +33,7 @@ fn stdout(o: &Output) -> String {
 }
 
 #[test]
-fn newtype_bao_loi_ngay_dong_khai_bao() {
+fn newtype_tu_khoa_da_bo() {
     let d = dir("decl");
     let f = write(&d, "a.vis", "newtype Met = float\n");
     let o = run(&["check", &f]);
@@ -43,29 +41,28 @@ fn newtype_bao_loi_ngay_dong_khai_bao() {
     assert_eq!(
         o.status.code(),
         Some(1),
-        "phải đỏ vì newtype chưa hỗ trợ: {out}"
+        "phải đỏ vì `newtype` đã bỏ: {out}"
     );
     assert!(out.contains("not ok"), "phải có dòng not ok: {out}");
     assert!(
-        out.contains("newtype"),
-        "thông điệp phải nêu `newtype`: {out}"
+        out.contains("VS0203"),
+        "phải là VS0203 (từ khoá đã bỏ): {out}"
+    );
+    assert!(
+        out.contains("type Email(str)"),
+        "gợi ý phải nêu cú pháp mới: {out}"
     );
     assert!(
         out.contains("1:1"),
-        "phải báo ở **dòng khai báo** (1:1), không phải dòng dùng: {out}"
-    );
-    assert!(
-        !out.contains("VS0 "),
-        "thông điệp không được chứa nhãn `VS0` (P0 mục 2): {out}"
+        "phải báo ở **dòng khai báo** (1:1): {out}"
     );
 }
 
 #[test]
-fn newtype_khong_lam_hong_cong_doc_syntax() {
-    // Cổng doc-examples (QD §7.4) chạy `vis check --syntax` — chỉ parse/hạ, không kiểm kiểu.
-    // Lỗi P0 ở tầng tyck nên khối tài liệu `newtype Email = str` vẫn xanh.
+fn type_newtype_cu_phap_moi_xanh() {
+    // Cổng doc-examples (QD §7.4) chạy `vis check --syntax` — cú pháp mới phải xanh.
     let d = dir("syntax");
-    let f = write(&d, "a.vis", "newtype Met = float\n");
+    let f = write(&d, "a.vis", "type Met(float)\n");
     let o = run(&["check", "--syntax", &f]);
     assert_eq!(
         o.status.code(),
@@ -76,7 +73,7 @@ fn newtype_khong_lam_hong_cong_doc_syntax() {
 }
 
 #[test]
-fn alias_van_xanh() {
+fn alias_tu_khoa_da_bo() {
     let d = dir("alias");
     let f = write(
         &d,
@@ -84,10 +81,11 @@ fn alias_van_xanh() {
         "alias Met = float\nlet x: Met = 1.5\nprint(x)\n",
     );
     let o = run(&["check", &f]);
-    assert_eq!(
-        o.status.code(),
-        Some(0),
-        "`alias` vẫn hợp lệ tới R12: {}",
-        stdout(&o)
+    let out = stdout(&o);
+    assert_eq!(o.status.code(), Some(1), "`alias` đã bỏ ⇒ đỏ: {out}");
+    assert!(out.contains("VS0203"), "phải là VS0203: {out}");
+    assert!(
+        out.contains("type X = T"),
+        "gợi ý phải nêu `type X = T`: {out}"
     );
 }

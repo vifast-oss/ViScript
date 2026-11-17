@@ -85,6 +85,18 @@ impl<'a> Parser<'a> {
             let d = self.derives()?;
             Self::push_node(&mut elems, d);
         }
+        // **R12a (VD-178)**: `type X = T` (thay `alias`) và `type Email(str)` (thay `newtype`).
+        if self.eat_punct("=").is_some() {
+            let t = self.parse_type()?;
+            Self::push_node(&mut elems, t);
+            return Ok(self.node(NodeKind::AliasDecl, elems));
+        }
+        if self.eat_punct("(").is_some() {
+            let t = self.parse_type()?;
+            Self::push_node(&mut elems, t);
+            elems.push(self.expect_punct(")")?);
+            return Ok(self.node(NodeKind::NewtypeDecl, elems));
+        }
         elems.push(self.expect_punct(":")?);
         elems.push(self.expect_newline()?);
         elems.push(self.expect_indent()?);
@@ -121,6 +133,18 @@ impl<'a> Parser<'a> {
         if self.at_kw("derives") {
             let d = self.derives()?;
             Self::push_node(&mut elems, d);
+        }
+        // **R12a (VD-178)**: `type X = T` (thay `alias`) và `type Email(str)` (thay `newtype`).
+        if self.eat_punct("=").is_some() {
+            let t = self.parse_type()?;
+            Self::push_node(&mut elems, t);
+            return Ok(self.node(NodeKind::AliasDecl, elems));
+        }
+        if self.eat_punct("(").is_some() {
+            let t = self.parse_type()?;
+            Self::push_node(&mut elems, t);
+            elems.push(self.expect_punct(")")?);
+            return Ok(self.node(NodeKind::NewtypeDecl, elems));
         }
         elems.push(self.expect_punct(":")?);
         elems.push(self.expect_newline()?);
@@ -163,13 +187,6 @@ impl<'a> Parser<'a> {
             Self::push_node(&mut elems, p);
         }
         Ok(self.node(NodeKind::Derives, elems))
-    }
-
-    pub(super) fn alias_decl(&mut self, kind: NodeKind) -> PResult<Node> {
-        let mut elems = vec![self.bump(), self.expect_ident()?, self.expect_punct("=")?];
-        let t = self.parse_type()?;
-        Self::push_node(&mut elems, t);
-        Ok(self.node(kind, elems))
     }
 
     pub(super) fn trait_decl(&mut self, mods: Vec<Elem>) -> PResult<Node> {

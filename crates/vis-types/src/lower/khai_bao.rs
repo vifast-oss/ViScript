@@ -418,6 +418,9 @@ impl<'a> Lowerer<'a> {
         // `alias` = tên khác của cùng kiểu; `newtype` = kiểu mới (ST-12 phân giải tiếp).
         if !is_newtype {
             self.aliases.push((name.clone(), ty.clone()));
+        } else {
+            // **R12a (VD-178)**: `type Email(str)` — newtype **trong suốt**.
+            self.newtypes.push(name.clone());
         }
         Some(HItem::Alias(HAlias {
             name,

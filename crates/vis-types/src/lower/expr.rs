@@ -249,6 +249,15 @@ impl<'a> Lowerer<'a> {
                         }
                     }
                 }
+                // **R12a (VD-178)**: `Email("a@b")` — newtype **trong suốt** ⇒ hạ thẳng đối số.
+                if let HExpr::Var { name, .. } = &callee {
+                    if self.newtypes.iter().any(|n| n == name)
+                        && args.len() == 1
+                        && named.is_empty()
+                    {
+                        return args.into_iter().next().unwrap();
+                    }
+                }
                 self.maybe_enum_lit(callee, args, named, span)
             }
             NodeKind::Index => {

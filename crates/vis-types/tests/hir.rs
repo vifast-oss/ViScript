@@ -86,20 +86,21 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
     (214, 6, 0, 11), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
-    (238, 1, 0, 4),  // fn total + R + rows + r (lambda)
-    (290, 0, 5, 6),  // x, count, a, b, name, age
-    (325, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
-    (342, 0, 3, 3),  // e, domain, mail (if let)
-    (406, 1, 0, 5),  // greet + name + times + loud + s
-    (422, 0, 1, 3),  // f + x (lambda) + y
-    (473, 1, 0, 4),  // read_config + dir + text + cfg
-    (488, 0, 1, 2),  // cfg + err (else)
-    (539, 0, 3, 2),  // a, b
-    (553, 0, 2, 2),  // counter, inc
-    (575, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (688, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (702, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1467, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    // **R12a (VD-178)**: +1 dòng ở §3.2 (`type Email(str)`) ⇒ mọi khối **sau** dòng 231 dịch +1.
+    (239, 1, 0, 4),  // fn total + R + rows + r (lambda)
+    (291, 0, 5, 6),  // x, count, a, b, name, age
+    (326, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
+    (343, 0, 3, 3),  // e, domain, mail (if let)
+    (407, 1, 0, 5),  // greet + name + times + loud + s
+    (423, 0, 1, 3),  // f + x (lambda) + y
+    (474, 1, 0, 4),  // read_config + dir + text + cfg
+    (489, 0, 1, 2),  // cfg + err (else)
+    (540, 0, 3, 2),  // a, b
+    (554, 0, 2, 2),  // counter, inc
+    (576, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (689, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (703, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1468, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
 ];
 
 fn doc_path() -> PathBuf {

@@ -57,6 +57,10 @@ impl<'a> Lowerer<'a> {
                 let name = first.text.clone();
                 // `Ten(...)` — ctor có đối số (Kids = các pattern đối số).
                 if toks.len() >= 2 && toks[1].is_punct("(") {
+                    // **R12a (VD-178)**: `Email(s)` — newtype **trong suốt** ⇒ hạ thẳng pattern con.
+                    if self.newtypes.iter().any(|n| n == &name) && kids.len() == 1 {
+                        return self.lower_pat(kids[0]);
+                    }
                     let args = kids.iter().map(|a| self.lower_pat(a)).collect();
                     return HPat::Ctor {
                         path: vec![name],

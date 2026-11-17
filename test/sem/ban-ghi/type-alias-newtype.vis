@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **R12a (VD-178)**: `type X = T` (thay `alias`) và `type Email(str)` (thay `newtype`).
+type X = int
+type Email(str)
+
+fn main():
+    let a: X = 5
+    print(a)
+    let e = Email("a@b")
+    let Email(s) = e
+    print(s)

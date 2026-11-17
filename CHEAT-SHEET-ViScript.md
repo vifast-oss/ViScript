@@ -44,8 +44,8 @@ vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tậ
 `let var const fn cmd type enum trait impl alias newtype pub use if elif else match for in while
 loop break continue return and or not true false none self async await scope test extern derives with has dyn ref`
 
-> **[DỰ KIẾN]** `alias`, `newtype` (R12) và `none` (R2) **bị bỏ** khỏi danh sách từ khoá;
-> thay bằng `type X = T`, `type Email(str)`, `None` (dùng `alias`/`newtype`/`none` ⇒ **VS0203** + gợi ý).
+> **R12a**: `alias`, `newtype` **bị bỏ** khỏi danh sách từ khoá; thay bằng `type X = T`,
+> `type Email(str)` (dùng `alias`/`newtype` ⇒ **VS0203** + gợi ý). `none` (R2) vẫn còn — sẽ bỏ sau.
 
 ---
 
@@ -112,8 +112,8 @@ loop break continue return and or not true false none self async await scope tes
 | `enum Shape:`<br>`    Circle(r: float)`<br>`    Empty` ✔ | `Enum` không mang dữ liệu | `enum Shape { Circle(f64), Empty }` | `type Shape = {kind:'circle', r:number} \| {kind:'empty'}` | enum **có dữ liệu** |
 | `Circle(2.0)` ✔ | `Circle(2.0)` | `Shape::Circle(2.0)` | `{kind:'circle', r:2.0}` | dựng variant bằng `Tên(...)` |
 | `a == b` trên bản ghi ✔ | `a == b` | `a == b` | `a === b` | so theo giá trị |
-| `newtype Email = str` ✖ | `NewType('Email', str)` | `struct Email(String);` | branded type | khai báo ⇒ **VS0203** tại dòng khai (ST-179); **R12 [DỰ KIẾN]**: thay bằng `type Email(str)` |
-| `alias Id = int` ✔ | `Id = int` | `type Id = i64;` | `type Id = number;` | alias **cùng** kiểu; **R12 [DỰ KIẾN]**: thay bằng `type Id = int`; `alias` ⇒ **VS0203** |
+| `type Email(str)` ✔ | `NewType('Email', str)` | `struct Email(String);` | branded type | **R12a**: newtype **trong suốt** — `Email("a@b")` dựng, `let Email(s) = e` mở; `newtype` ⇒ **VS0203** |
+| `type Id = int` ✔ | `Id = int` | `type Id = i64;` | `type Id = number;` | **R12a**: `type X = T` thay `alias`; `alias` ⇒ **VS0203** + gợi ý |
 
 ## 6. Chuỗi & literal
 
@@ -248,7 +248,7 @@ Method trên giá trị (không cần `use`):
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
   - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` chạy (R3a); `let x = r else:` chạy (R3b); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
   - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`none` pattern sẽ **cảnh báo/bỏ** (R1/R2).
-  - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20); `type X = T`/`type Email(str)` thay `alias`/`newtype` (R12).
+  - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20).
 - **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).

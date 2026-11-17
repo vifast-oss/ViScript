@@ -470,11 +470,18 @@ impl<'a> Parser<'a> {
         if self.at_kw("impl") {
             return self.impl_decl();
         }
+        // **R12a (VD-178)**: `alias`/`newtype` **đã bỏ** — dùng `type X = T` / `type Email(str)`.
         if self.at_kw("alias") {
-            return self.alias_decl(NodeKind::AliasDecl);
+            return Err(self.err_code(
+                &vis_diag::SYNTAX_CODES[2],
+                "`alias` đã bỏ — dùng `type X = T`",
+            ));
         }
         if self.at_kw("newtype") {
-            return self.alias_decl(NodeKind::NewtypeDecl);
+            return Err(self.err_code(
+                &vis_diag::SYNTAX_CODES[2],
+                "`newtype` đã bỏ — dùng `type Email(str)`",
+            ));
         }
         if self.at_kw("extern") {
             return self.extern_decl();

@@ -310,6 +310,8 @@ struct Lowerer<'a> {
     /// Tên biến thể trần → (enum, chỉ số biến thể).
     variant_index: Vec<(String, EnumId, usize)>,
     aliases: Vec<(String, Type)>,
+    /// **R12a (VD-178)**: tên `type Email(str)` — newtype **trong suốt** (dựng/mở = chính giá trị).
+    newtypes: Vec<String>,
     /// Tên item cấp tệp → chỉ số ký hiệu (khai ở lượt 1).
     item_syms: Vec<(String, u32)>,
     /// Đang hạ vế sau của or-pattern: khai tên đã có thì **dùng lại**, không báo `VS0302`.
@@ -372,6 +374,7 @@ impl<'a> Lowerer<'a> {
             enum_names,
             variant_index: Vec::new(),
             aliases,
+            newtypes: Vec::new(),
             item_syms: Vec::new(),
             suppress_dup: false,
             suppress_name_diag: false,
