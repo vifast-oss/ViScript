@@ -197,3 +197,47 @@ impl Emit<'_> {
         }
     }
 }
+
+impl Emit<'_> {
+    /// **R3b (VD-178)**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại chạy khối
+    /// `else` (nhận lỗi nếu có `else err:`).
+    pub(super) fn let_else(
+        &mut self,
+        pat: &HPat,
+        e: &vis_types::hir::HElse,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        let c_ok = self.g.cst_str("Ok");
+        let c_some = self.g.cst_str("Some");
+        self.f.push(Instr::Dup, span, 1);
+        self.f.push(Instr::TestCtor(c_ok, 1), span, 0);
+        self.f.push(Instr::Un(vis_types::hir::UnOp::Not), span, 0);
+        let j_ok = self.f.here();
+        self.f.push(Instr::JumpIfFalse(0), span, -1);
+        self.f.push(Instr::Dup, span, 1);
+        self.f.push(Instr::TestCtor(c_some, 1), span, 0);
+        let j_else = self.f.here();
+        self.f.push(Instr::JumpIfFalse(0), span, -1);
+        // nhánh khớp: bóc đối số rồi bind
+        let ok = self.f.here();
+        self.f.patch(j_ok, ok);
+        self.f.push(Instr::Unwrap(0), span, 0);
+        self.bind(pat, span, true)?;
+        let j_end = self.f.here();
+        self.f.push(Instr::Jump(0), span, 0);
+        // nhánh `else`
+        let le = self.f.here();
+        self.f.patch(j_else, le);
+        if let Some(sym) = e.bind_sym {
+            self.f.push(Instr::Unwrap(0), span, 0);
+            let slot = self.f.slot(sym, span)?;
+            self.f.push(Instr::BindLocal(slot), span, -1);
+        } else {
+            self.f.push(Instr::Pop, span, -1);
+        }
+        self.khoi(&e.body)?;
+        let lend = self.f.here();
+        self.f.patch(j_end, lend);
+        Ok(())
+    }
+}

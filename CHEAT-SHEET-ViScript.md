@@ -150,7 +150,7 @@ loop break continue return and or not true false none self async await scope tes
 | `Some(5)` (dựng) ✔<br>`some(v)` / `none` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | hiện **dựng viết hoa, pattern viết thường** **[ĐANG LÀM]**; **R1/R2 [DỰ KIẾN]**: dựng **và pattern** đều viết hoa (`Some(v)`, `None`); `some(v)` chỉ còn **cảnh báo** + `vis fmt` tự sửa |
 | `Result[int, str]`, `Ok(7)`, `Err("hỏng")` ✔ | exception | `Result<i64, String>` | `throw` / union | |
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
-| `let v = f() else e:`<br>`    print(e)`<br>`    0` ✖ | `try/except` | `match f() { ... }` | `catch` | **chưa có ở HEAD**: `else` của `let` được parse nhưng **không hạ** — `v` vẫn là `Result`, khối `else` không chạy (P0-3); `else` phải trả **cùng kiểu** hoặc thoát |
+| `let v = f() else e:`<br>`    print(e)`<br>`    0` ✔ | `try/except` | `match f() { ... }` | `catch` | **R3b**: `Ok`/`Some` bóc giá trị; `Err`/`None` chạy khối `else` (nhận lỗi nếu có `else e:`); khối `else` phải thoát |
 | `assert cond` ✔ | `assert` | `assert!(...)` | `console.assert` | |
 | `panic("hỏng")` ✖ | `raise` | `panic!` | `throw` | chưa có ở VS0 |
 | `AnyError` ✖ | — | `Box<dyn Error>` | `unknown` | chưa có — dùng `str` làm kiểu lỗi |

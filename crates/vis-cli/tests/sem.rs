@@ -150,8 +150,10 @@ fn sem_323_ca_qua_binary() {
         // `p-khong-escape`) ⇒ **452 ca** (402 `.vis` + 50 `.vish`, **84** `.err`).
         // **SỬA KÈM LÝ DO (R17, VD-178)**: +**1** ca `dieu-khien/is-empty` ⇒ **453 ca**
         // (403 `.vis` + 50 `.vish`, **84** `.err`).
-        453,
-        "phải đúng 453 ca (403 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (R3b, VD-178)**: +**1** ca `result/let-else` ⇒ **454 ca**
+        // (404 `.vis` + 50 `.vish`, **84** `.err`).
+        454,
+        "phải đúng 454 ca (404 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn f(o: int?) -> int:
+    let x = o else:
+        return 0
+    x
+
+fn g(r: Result[int, str]) -> str:
+    let x = r else err:
+        return "loi: {err}"
+    "ok: {x}"
+
+fn main():
+    print(f(Some(5)))
+    print(f(None))
+    print(g(Ok(7)))
+    print(g(Err("hong")))

@@ -289,9 +289,27 @@ impl<'a> Interp<'a> {
     fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
         self.steps += 1;
         match s {
-            HStmt::Let { pat, init, .. } => {
+            HStmt::Let {
+                pat, init, else_, ..
+            } => {
                 let v = self.eval(init)?;
-                self.bind_pat(pat, &v);
+                // **R3b (VD-178)**: `let x = r else:` — bóc `Ok`/`Some`; ngược lại chạy khối `else`.
+                if let Some(e) = else_ {
+                    match v {
+                        Value::Res(Ok(x)) => self.bind_pat(pat, &x),
+                        Value::Opt(Some(x)) => self.bind_pat(pat, &x),
+                        Value::Res(Err(err)) => {
+                            if let Some(sym) = e.bind_sym {
+                                self.env.borrow_mut().insert(sym, *err);
+                            }
+                            return self.exec_block(&e.body);
+                        }
+                        Value::Opt(None) => return self.exec_block(&e.body),
+                        other => self.bind_pat(pat, &other),
+                    }
+                } else {
+                    self.bind_pat(pat, &v);
+                }
                 Ok(Ctrl::Normal)
             }
             HStmt::Var { sym, init, .. } => {
@@ -575,6 +593,10 @@ impl<'a> Interp<'a> {
                     // `print`/`len`/`str`/`Ok`/... **có** `sym` (ST-11 khai 8 tên dựng sẵn) ⇒ tra tên.
                     if self.symbols.kind_of(*id) == Some(vis_types::lower::SymKind::Builtin) {
                         let n = self.symbols.name_of(*id).unwrap_or_default();
+                        // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải hàm.
+                        if n == "None" {
+                            return Ok(Value::Opt(None));
+                        }
                         if let Some(b) = builtin_name(n) {
                             return Ok(Value::Builtin(b));
                         }
@@ -586,6 +608,8 @@ impl<'a> Interp<'a> {
                     )))
                 }
                 None => match builtin_name(name) {
+                    // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải hàm.
+                    Some("None") => Ok(Value::Opt(None)),
                     Some(b) => Ok(Value::Builtin(b)),
                     None => Err(Abort::Trap(Trap::new(
                         RT,

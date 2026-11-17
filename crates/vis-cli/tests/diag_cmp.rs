@@ -36,8 +36,9 @@ use std::process::Command;
 // **SỬA KÈM LÝ DO (R9, VD-178)**: 447 → **448** (+1 ca `loi/range-khong-int` VS0416, lỗi biên dịch).
 // **SỬA KÈM LÝ DO (R6, VD-178)**: 448 → **452** (+4 ca `chuoi/` xanh).
 // **SỬA KÈM LÝ DO (R17, VD-178)**: 452 → **453** (+`dieu-khien/is-empty` xanh).
-const TONG: usize = 453;
-const XANH: usize = 369;
+// **SỬA KÈM LÝ DO (R3b, VD-178)**: 453 → **454** (+`result/let-else` xanh).
+const TONG: usize = 454;
+const XANH: usize = 370;
 const LOI_BIEN_DICH: usize = 50;
 const LOI_LUC_CHAY: usize = 34;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.

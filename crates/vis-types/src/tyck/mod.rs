@@ -921,17 +921,51 @@ impl<'a> Checker<'a> {
     /// Kiểm một câu lệnh; trả "kiểu giá trị" (chỉ `HStmt::Expr` có giá trị).
     pub(crate) fn kiem_stmt(&mut self, s: &HStmt) -> Type {
         match s {
-            HStmt::Let { pat, ty, init, .. } => {
+            HStmt::Let {
+                pat,
+                ty,
+                init,
+                else_,
+                ..
+            } => {
                 let got = self.kiem_expr(init);
+                // **R3b (VD-178)**: `let x = r else:` — bóc `Result[T, E]`/`T?` cho ràng buộc;
+                // khối `else` nhận lỗi (`E`) hoặc không có ràng buộc (`T?`).
+                let (declared, loi) = match else_ {
+                    Some(_) => match &got {
+                        Type::Result(t, e) => ((**t).clone(), Some((**e).clone())),
+                        Type::Opt(t) => ((**t).clone(), None),
+                        Type::Error => (Type::Error, None),
+                        other => {
+                            let o = other.clone();
+                            self.diag(
+                                MISMATCH,
+                                format!(
+                                    "`let … else` cần `Result[T, E]` hoặc `T?`, được `{}`",
+                                    self.show(&o)
+                                ),
+                                init.span(),
+                            );
+                            (Type::Error, None)
+                        }
+                    },
+                    None => (got, None),
+                };
                 let declared = match ty {
                     Some(ann) => {
                         let ann = self.resolve_ann(ann, init.span());
-                        self.coerce_e(init, &got, &ann, "khai báo `let`");
+                        self.coerce_e(init, &declared, &ann, "khai báo `let`");
                         ann
                     }
-                    None => got,
+                    None => declared,
                 };
                 self.bind_pat(pat, &declared);
+                if let Some(e) = else_ {
+                    if let Some(sym) = e.bind_sym {
+                        self.set_ty(sym, loi.unwrap_or(Type::Unit));
+                    }
+                    self.kiem_than_bo(&e.body);
+                }
                 Type::Unit
             }
             HStmt::Var {

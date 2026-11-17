@@ -390,8 +390,8 @@ impl<'g> Emit<'g> {
                 pat,
                 ty,
                 init,
+                else_,
                 span,
-                ..
             } => {
                 self.expr(init)?;
                 // Tự nâng `T → T?` theo **kiểu khai** (§4.4) — interp làm ở `let`.
@@ -399,7 +399,13 @@ impl<'g> Emit<'g> {
                 {
                     self.f.push(Instr::MakeSome, *span, 0);
                 }
-                self.bind(pat, *span, true)?;
+                // **R3b (VD-178)**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại
+                // chạy khối `else` (nhận lỗi nếu có `else err:`).
+                if let Some(e) = else_ {
+                    self.let_else(pat, e, *span)?;
+                } else {
+                    self.bind(pat, *span, true)?;
+                }
                 Ok(())
             }
             HStmt::Var {

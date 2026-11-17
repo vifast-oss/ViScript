@@ -304,6 +304,10 @@ print(p.hien())
 | Thiếu giá trị | `int?` / `none` / `??` | `int \| None` | `Option<i64>` |
 | Lỗi | `Result[T, E]` / `?` | `try/except` | `Result<T, E>` |
 | Đơn vị | `1kb + 1kib` | — | — |
+| Nối chuỗi | `"a" + "b"` | `"a" + "b"` | `format!("{a}{b}")` |
+| In nhiều giá trị | `print("a", "b")` | `print("a", "b")` | `println!("{} {}", a, b);` |
+| Định dạng số | `"{x:.2}"` | `f"{x:.2f}"` | `format!("{x:.2}")` |
+| Rỗng? | `xs.is_empty()` | `not xs` | `xs.is_empty()` |
 
 **Nếu bạn đã biết Python**: ViScript giống ở thụt lề, `for … in`, `elif`; khác ở chỗ có kiểu tĩnh, không có `class`, và không có `try/catch`.
 
