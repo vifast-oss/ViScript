@@ -2,7 +2,7 @@
 # LUẬT · Agent 1 quyết định thay Agent 0 khi A0 vắng (2026-11-17)
 
 **Nguồn**: người điều phối ban hành (2026-11-17, 09:55 JST). **Áp dụng mọi dòng**; dòng ViScript ghi ở
-`DECISIONS.md` **VD-165** với nhãn **CHỜ A0 XÁC NHẬN**.
+`DECISIONS.md` **VD-166** với nhãn **CHỜ A0 XÁC NHẬN**.
 
 ## Được tự quyết (khi A0 vắng và người dùng cho phép)
 1. Nợ nhỏ **không cần thiết kế**, việc sổ, đo đạc, báo cáo.
@@ -19,6 +19,9 @@
 - Có **mã riêng** (`17e`, `17f`, …), ghi **lý do + bằng chứng**.
 - Gắn nhãn **“CHỜ A0 XÁC NHẬN”**.
 - Được **liệt kê trong báo cáo kế tiếp** (`R29`…) để A0 duyệt hồi tố (công nhận hoặc đảo lại).
+
+## Đính chính số (2026-11-17)
+Mục luật này ban đầu ghi tạm ở số **VD-165**; Agent 0 cấp **VD-165** cho việc **tách repo ViScript**, nên luật chuyển sang **VD-166** (thay thế VD-157). Nội dung không đổi.
 
 ## Ghi chú
 Các quyết định `17`, `17b`, `17c`, `17d` (đêm 17/11) do Agent 1 ban hành thay A0 **đã được A0 công nhận hồi tố**
