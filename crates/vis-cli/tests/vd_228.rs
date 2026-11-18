@@ -101,3 +101,27 @@ fn vd228_early_return_lift() {
     assert_eq!(a.1, "Some(99)\n");
     assert_eq!(a.1, b.1);
 }
+
+/// (6) impl-method `-> int?` lift (hai engine).
+#[test]
+fn vd228_impl_method_lift() {
+    let [a, b] = chay_ca_hai(
+        "impl_lift",
+        "type P:\n    x: int\n\nimpl P:\n    fn pick(self) -> int?:\n        self.x\n\nfn main():\n    let p: P = {x: 42}\n    print(p.pick())\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "Some(42)\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (7) Không bọc hai lớp: `fn f() -> int?: Some(42)` ⇒ `Some(42)` (không phải `Some(Some(42))`).
+#[test]
+fn vd228_no_double_wrap() {
+    let [a, b] = chay_ca_hai(
+        "no_dbl",
+        "fn f() -> int?:\n    Some(42)\n\nfn main():\n    print(f())\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "Some(42)\n");
+    assert_eq!(a.1, b.1);
+}
