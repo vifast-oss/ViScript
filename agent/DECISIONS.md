@@ -1637,3 +1637,15 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 7. **`while let`**: VD-178 hứa nhưng mã merge không có ⇒ **ST-213 mới** thêm `while let` (pha 1, sau R4) — cấu trúc giống `if let` nhưng vòng lặp; A0 ratify hình thức khi review (đánh dấu VD-222 (7)).
 8. **Ghi chú ratify**: mọi mục trên là **proxy** — trong 09:00 báo cáo (§6 VD-220) liệt kê lại để A0 ký off; nếu A0 bác bỏ (1)–(4) thì ST-205/206/207 phải revert theo đúng nhánh.
 9. **Thứ tự**: ST-205 → ST-206 → ST-207 → R5d (ST-209 dưới mục VD-222 (item R5d)) → ST-210 (R30 + đóng pha 1 nếu mọi cổng xanh và 4 dấu proxy ghi rõ).
+
+### VD-223 · R5d chốt theo **uỷ quyền A0-proxy** (VD-221) — đêm 2026-11-18/19
+
+**Người ra quyết định**: Agent 1 **thay mặt Agent 0** (VD-221) · có thể bị A0 bác bỏ/sửa khi tiếp nhận.
+
+1. **(i)** `--b: bool` trong **hàm thường** ⇒ **lỗi `VS0209`** (Error): "tham số cờ `--b` chỉ hợp lệ trong chế độ lệnh (`cmd`); hàm thường dùng `b: bool`". Chỉ áp dụng cho `FnDecl` thường và `test fn`; `cmd` (và chế độ lệnh `.vish`) giữ nguyên luật `--cờ` theo thiết kế §9.4.
+2. **(ii)** **Xung đột tên** (`use std.str` + `let str = …`…):
+   - **Use-site ưu tiên**: trong vị trí **gọi thành viên** (`x.m(...)`), nếu `x` là biến đã khai trong phạm vi thì **ưu tiên dispatch trên giá trị** — tệp chỉ fallback sang `std.<module>` khi **không có** binding cho tên đó. (Trước VD-223: `str.len()` nuốt im lặng thành `std.str.len(...)` và báo `VS0301` sai nghĩa.)
+   - **Khai báo**: `let`/`var`/tham số/pattern-binding có tên **trùng tên module std đã `use`** ⇒ **cảnh báo `VS0211`** (Warning, không chặn): "tên `str` là module std đã import — `str.xxx(...)` được hiểu là thành viên của giá trị, không phải module".
+   - `str(…)` (tên trần) vẫn dẫn tới **builtin** `str(x)` như trước; `let str = "z"; str("a")` ⇒ `VS0412` "str không phải hàm" (giữ nguyên).
+3. **(iii)** Mã mới: **`VS0209`** (Error) và **`VS0211`** (Warning) — nhóm 02xx; tổng `all_codes()` **52 → 54**; `API-CODES.txt` regen theo đúng giao thức ST-126 (VD-222/VD-223 đích danh). Không chạm SPEC-lex §7 (không phải từ vựng).
+4. **Ghi chú ratify**: proxy; nếu A0 bác bỏ thì revert theo nhánh; `while let` (ST-213) **vẫn** là việc sau pha 1.
