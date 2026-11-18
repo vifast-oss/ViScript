@@ -593,7 +593,7 @@ Giá trị có ngữ nghĩa giá trị là `Send`. Khi gửi, nếu chỉ có m�
 - `pub` để xuất; mặc định riêng tư.
 - **Không có `as`** (đã bỏ khỏi từ khoá, 2.1): muốn tên ngắn thì `use` đúng mục cụ thể.
 - Cấm vòng phụ thuộc giữa module.
-- Gói: thư mục có `vis.toml` (tên, phiên bản, giấy phép, phụ thuộc theo đường dẫn, git URL + commit, hoặc registry sau này), `vis.lock` khoá phiên bản + hash nội dung.
+- Gói: **mô hình phi tập trung kiểu Go** — tên gói = **đường dẫn**, phiên bản = **tag git semver**, chọn bằng **MVS**, `vis.lock` = **sha256 của cây tệp chuẩn hoá**, sổ hash `sum.vifast.org`; **`[thiết kế VS3-6, chưa triển khai]`** — chi tiết ở **Phụ lục C**, trạng thái mã đang chạy ở **C.2**.
 - Script một tệp khai phụ thuộc ở đầu tệp:
 
 ```vis
@@ -1496,6 +1496,93 @@ fn tính_tổng(danh_sách: list[int]) -> int:
     tổng
 ```
 
+## Phụ lục C. Gói — mô hình **phi tập trung kiểu Go** `[thiết kế VS3-6, chưa triển khai]`
+
+> **Nhãn `[thiết kế VS3-6, chưa triển khai]` áp cho TOÀN BỘ phụ lục này.** Đây là **đích thiết kế**
+> (VD-180/VD-181; bản đầy đủ ở `agent/JOURNAL/vs3-qd-6.md`), **không** phải hành vi của mã đang chạy.
+> **Trạng thái hiện tại** của lệnh `vis pkg` ở **C.2** — đọc C.2 trước khi trích dẫn C.1. Mục 8 chỉ còn
+> **một dòng trỏ** về đây.
+
+### C.1 Thiết kế VS3-6
+
+**Không có kho tập trung ở 1.0.** Mô hình giống Go: **tên gói là đường dẫn**, **phiên bản là tag git**.
+
+| Thành phần | Thiết kế VS3-6 |
+|---|---|
+| Tên gói | **đường dẫn**: `vifast.org/vis/<tên>`, `github.com/<chủ>/<repo>`, hoặc domain riêng |
+| Tên chính thức | `vifast.org/vis/<tên>` — **path trên một host**, **không** subdomain; `<tên>` chữ thường `[a-z0-9-]`, **không** `_`/viết hoa; **không** alias `/x/` |
+| Phiên bản | **tag git semver** (`v1.2.3`); **major ≥ 2 phải có `/v2` trong đường dẫn** |
+| Chọn phiên bản | **Minimal Version Selection (MVS)** — **không** bộ giải ràng buộc, **không** "chọn bản mới nhất" |
+| `vis.toml` | `<tên ngắn> = "<đường dẫn>@<semver>"`; code chỉ `use <tên ngắn>`; **không** có trường "registry" |
+| `vis.lock` | **sha256 của cây tệp chuẩn hoá** cho mỗi `gói@phiên bản` |
+| Tin cậy | `sum.vifast.org` = sổ hash công khai **chỉ ghi thêm**; **không** có khoá ký registry |
+| Proxy | `proxy.vifast.org` — **chỉ thiết kế, chưa vận hành**; `VIS_PROXY=direct` mặc định |
+
+- **`vis.toml`**:
+
+  ```toml
+  [dependencies]
+  json = "vifast.org/vis/json@v1.2.3"
+  http = "github.com/vifast-oss/vis-http@v0.9.0"
+  ```
+
+  Code chỉ dùng **tên ngắn** (`use json`); major ≥ 2 nằm ở **đường dẫn**:
+  `vifast.org/vis/json/v2@v2.0.1`.
+- **`vifast.org/vis/<tên>`** = **trang tĩnh** trỏ nơi chứa mã (**meta tag**) để đổi nơi chứa mà **không**
+  đổi tên gói. Hợp đồng công khai là **nội dung meta tag**, **không** phải reverse proxy (Traefik chỉ là
+  lớp phục vụ, được phép thay). Tài liệu ở `vifast.org/docs/vis/…` để không đụng không gian tên gói.
+- **MVS**: mỗi phụ thuộc khai **phiên bản tối thiểu**; `vis` chọn **phiên bản lớn nhất trong các mức tối
+  thiểu** đó. Hai phụ thuộc cùng cần `X` `v1.2` và `v1.4` ⇒ chọn **`v1.4`**, **không** chọn `v1.9` dù có.
+  Major khác nhau = **đường dẫn khác** (`/v2`) ⇒ cùng tồn tại được.
+- **`pkg update X`** chỉ đổi **X và phụ thuộc bắt buộc của X**; `pkg update` không đối số cập nhật tất cả
+  (nợ **#142**).
+- **Tin cậy — thay khoá ký registry**: `vis.lock` ghi **sha256 của cây tệp chuẩn hoá** (đường dẫn tương
+  đối sắp theo byte + nội dung + bit thực thi 0/1; **không** mtime, **không** quyền đầy đủ, **không**
+  `.git`/`target`). **`sum.vifast.org`** = sổ hash công khai **chỉ ghi thêm** (giai đoạn đầu là repo git
+  có commit ký; `vis` **ghim khoá công khai** của sổ). **Lần đầu** tải ⇒ hash phải khớp **sổ** (nếu sổ
+  bật); **lần sau** ⇒ khớp **`vis.lock`**. Lệch ⇒ **VS0707** ("hash gói không khớp `vis.lock` hoặc sổ"),
+  **không** ghi `.vis/pkg/`. **Không có lệnh bỏ qua**; chỉ có **`VIS_SUMDB=off`** (tắt hỏi sổ, **ghi cảnh
+  báo** mỗi lần build). Gói riêng tư: **`VIS_PRIVATE=<mẫu đường dẫn>`** ⇒ **không** hỏi sổ, **không** qua
+  proxy, vẫn ghi `vis.lock` và vẫn kiểm hash.
+- **`proxy.vifast.org` — chỉ thiết kế, chưa vận hành ở VS3**: `GET /<đường_dẫn>@<phiên_bản>` ⇒
+  `application/x-vis-pkg` (tar.gz **cây chuẩn hoá**) + header `X-Vis-Hash`; `GET /<đường_dẫn>/@v/list` ⇒
+  danh sách phiên bản. Proxy **không** phải nguồn tin cậy duy nhất (hash luôn kiểm theo sổ/lock).
+  **`VIS_PROXY=direct` là mặc định**; `VIS_PROXY=proxy` là tuỳ chọn.
+- **Bảng host → vai trò**:
+
+  | Host | Vai trò |
+  |---|---|
+  | `vifast.org` | site + **namespace module** (`/vis/*`); tài liệu ở `/docs/vis/*` |
+  | `sum.vifast.org` | sổ hash công khai (chỉ ghi thêm) |
+  | `proxy.vifast.org` | proxy tải gói (**chưa vận hành**) |
+  | `os.` · `tts.` · `key.vifast.org` | **dịch vụ độc lập**, giữ subdomain; **không** phải nơi chứa gói |
+
+  `sum.`/`proxy.vifast.org` đặt **ngang hàng**, **không** lồng dưới `vis.` (phục vụ **mọi** sản phẩm).
+  `vis.vifast.org` **không** làm tiền tố module. `viscript.org` (nếu mua) chỉ là **tài sản thương hiệu**,
+  **không** đưa vào đường dẫn gói ở 1.0.
+- **Bất biến**: sau gói đầu tiên, tên/đường dẫn **không đổi** (đổi = phá mọi `use`). **Quyết định không
+  đảo.**
+- **Ca đỏ-trước bắt buộc** (VS3-6): (a) tag bị đổi nội dung sau khi ghi lock ⇒ **VS0707**; (b) MVS
+  `v1.2`/`v1.4` ⇒ chọn `v1.4`; (c) gói `vifast.org/vis/…` trỏ GitHub ⇒ tải đúng; (d) mạng tắt + có cache
+  ⇒ build chạy.
+- **Ngoài phạm vi VS3**: proxy chạy thật, `pkg.vifast.org` (tìm kiếm/tài liệu), yank/thu hồi phiên bản.
+
+### C.2 Trạng thái hiện tại của `vis pkg` (mã đang chạy, 2026-11-18)
+
+**Không** phải mô hình C.1. Cái **đang có**:
+
+- Lệnh: `vis pkg add <tên>[@<ràng buộc>] [--entry <path>] [--registry <dir>]`, `vis pkg install`,
+  `vis pkg update [<tên>] [--registry <dir>]`, `vis pkg list [--json]`, `vis pkg remove <tên>`
+  (`crates/vis-cli/src/pkg.rs`).
+- **Registry CỤC BỘ** (thư mục; mặc định `./registry`, đổi bằng `--registry`): **không** mạng, **không**
+  tải theo đường dẫn, **không** meta tag, **không** sổ hash, **không** proxy.
+- `vis.lock` ghi **tất cả** gói đã cài, có **SHA-256** (băm cây tệp chuẩn hoá); `install` chỉ đọc
+  `vis.lock` + kho blob `.vis/store/<sha256>` ⇒ **không** cần registry.
+- Chọn phiên bản: **bộ giải ràng buộc** semver (`^`/`~`/so sánh), **không** phải MVS.
+- **Chưa** có: tải theo đường dẫn, MVS, `sum.vifast.org`, `VIS_SUMDB`, `VIS_PRIVATE`, `VIS_PROXY`, chữ ký.
+- Nợ liên quan: **#142** (`pkg update X` ghim mọi gói khác), **#143** (`NamePolicy::Strict`), **#125**
+  (mạng/chữ ký).
+
 ## Mức hiện thực VS2 (đồng bộ 2026-11-16)
 
 Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong viscript/agent/reports/. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
@@ -1506,6 +1593,6 @@ Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. S�
 - **assert <điều kiện>**: có từ ST-83.
 - **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
 - **HTTP**: HTTP/1.1 loopback, có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Chưa có TLS, HTTP/2, keep-alive.
-- **Gói**: registry cục bộ, lock có SHA-256. Chưa có registry mạng và chữ ký.
+- **Gói**: `vis pkg add|install|update|list|remove` trên **registry cục bộ** (thư mục, `--registry`), `vis.lock` có SHA-256, chọn phiên bản bằng **bộ giải ràng buộc** semver. **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy, chữ ký — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
 - **LSP**: chỉ publish chẩn đoán cho tài liệu đang mở (VD-126).
 - **Nền tảng**: chạy thật trên macOS; Linux, Windows, wasm32 ở mức biên dịch kiểm tra (VD-104, VD-121).

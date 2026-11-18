@@ -1658,3 +1658,13 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 2. **`VS0209` bị xoá khỏi sổ mã; `all_codes()` 54 ⇒ 53**; `API-CODES.txt` regenerate kèm VD-224 đích danh (ST-126).
 3. **(ii) (VS0211 + ưu tiên dispatch biến cục bộ) giữ nguyên** — đó là phần R5d có giá trị (xung đột tên đúng nghĩa).
 4. **`ST-209 (R5d)`**: phần "xung đột tên std.str/str/builtin" theo VD-224; phần "`--b` chỉ chế độ lệnh" theo thiết kế, **không áp lỗi**.
+
+### VD-225 · Uỷ quyền kết thúc — Agent 1 quyết toàn bộ đợt VD-220/VD-221 (2026-11-18/19)
+
+**Người ra lệnh**: người dùng (vận hành, 2026-11-19) · **Áp dụng**: đóng pha 1 + ST-211 + phần còn lại của khung VD-220.
+
+1. Người dùng cho phép Agent 1 **quyết thay Agent 0 toàn bộ** các điểm còn treo trong khung này, gồm: ratify VD-221..224 (đã áp lên repo), ratify VD-186 (2 patch `DU-THAO-VD186`), đóng pha 1 (§5 VD-220), ST-211 (VS3-5-pre, VD-184) và ST-212 (VS3-QĐ-1, VD-185).
+2. Mọi quyết định vẫn ghi nhãn **proxy (VD-225, A0-uỷ-quyền)**; A0 có thể đảo khi tiếp nhận. Không được ghi là A0 duyệt chính thức.
+3. **Đóng pha 1 (ST-210)**: **ps-only** — mac không đo được trong khung này (ghi rõ waiver tại BAO-CAO §3.3 + ST-210 + ROADMAP). Điều kiện đóng VD-185 cho mac/A0: giữ nguyên nghĩa, chỉ là A0-proxy chấp nhận ps trước, A0 có thể mở lại khi có mac.
+4. **VD-186**: áp hai patch (`HOST-BAO-DAM-4.patch` + `ViScript-thiet-ke.patch`).
+5. **ST-211** (VS3-5-pre): làm sau khi đóng pha 1.
