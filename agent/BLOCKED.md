@@ -161,3 +161,13 @@ crate host.
 **Không tự quyết** — SPEC/biểu diễn ngôn ngữ (VD-196; `AGENTS.md`). **Cần gì để mở**: A0 chọn **(1, 2, 3, 4)** với các câu trả lời số; nếu A0 muốn (4-A), duyệt VD mới + phương án migration ~40 tests + cập nhật docs §3.2 và bảng `core` trong §13 nội dung "dữ liệu động".
 
 **Không chặn việc khác**: **ST-211 (VS3-5-pre, VD-184)** và **ST-212 (VS3-QĐ-1, VD-185)** **không** phụ thuộc quyết định này; **R4b/R4c** phụ thuộc câu trả lời 1; **R4a chỉ**.
+
+## 10. GỠ proxy 2026-11-19 (VD-221..VD-224, uỷ quyền A0-proxy — chờ A0 ratify)
+
+| Hạng mục | Trạng thái | Bằng chứng |
+|---|---|---|
+| **ST-205 (R4a) — khối §9** | **GỠ (proxy VD-222, A0 ratify)** | trait Error = (ii) ba phương thức mặc định-less; `source: Error?` đệ quy; `span: str?`; `Json` enum dựng sẵn `EnumId(0)`; bản ghi `Error` dựng sẵn `RecId(0)`; `json.decode` → `Result[Json, Error]`; **R4a/b/c merge** (`7471152`/`a6c200e`); `vd_205.rs` 10/10; cả hai đường byte-identical |
+| **ST-209 (R5d) — §ASK** | **GỠ (proxy VD-223→VD-224)** | `--b` hợp lệ ở mọi hàm (docs §5.1 — đảo ngược VD-223(i)); **VS0211** (Warning) ở khai báo trùng tên module std đã import; giữ `str(…)` sau bind ⇒ VS0412; std module call giữ tĩnh-std; `vd_223.rs` 5/5 |
+| **VD-186 (host patches)** | **CHỜ A0 duyệt diff** | `agent/DU-THAO-VD186/` — 7 tệp nhận diện; VD-221 không mở rộng tới VD-186 (không uỷ quyền patches cá nhân) |
+| **ST-210/Pha 1** | **ps-done; mac chờ; A0 rate-limit** | VD-185: 4 dấu kiểm proxy là **proxy**, không phải A0 thật; báo cáo `BAO-CAO-A0-2026-11-19-0900.md` Q1..Q9 |
+| **#152** | **giữ "chờ đo chuẩn"** | VM 1,129 / interp 1,109 (VD-220 lượt B); tối ưu ctor-enum chưa xếp lịch; **#147** mac vẫn mở (ps đo xong lượt 2) |
