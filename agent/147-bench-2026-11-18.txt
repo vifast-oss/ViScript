@@ -1,0 +1,11 @@
+máy rảnh — log đo VD-197/VD-220
+ngay=2026-11-18T22:52:25+09:00
+may=ps
+nen=Linux
+head=f3ea321d311ca957b67df528ae8c0d781894c4e2
+T_COMPILE_PS=0.064
+T_TEST_PS=27.563
+T_SOAK_OK=0
+T_SOAK_PS=277.373
+T_GATE_PS=0.495
+ghi_chu=ngưỡng 3x chỉ áp khi mac >= 10 s (VD-197 §4); dưới 10 s chỉ ghi số

@@ -22,7 +22,11 @@ fn tam(tag: &str) -> PathBuf {
 fn chay_ca_hai(tag: &str, src: &str) -> [(u32, String, String); 2] {
     let d = tam(tag);
     let p = d.join(format!("{tag}.vis"));
-    std::fs::write(&p, format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}")).expect("ghi tệp tạm");
+    std::fs::write(
+        &p,
+        format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+    )
+    .expect("ghi tệp tạm");
     let mo = |extra: &[&str]| {
         let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
         c.arg("run").arg("--no-cache");
@@ -66,7 +70,11 @@ fn trung_ten_module_std_ra_vs0211() {
         }
         c.arg(&p);
         let o = c.output().expect("vis run");
-        assert_eq!(o.status.code().unwrap_or(-1), 0, "thoát 0 (cảnh báo không chặn)");
+        assert_eq!(
+            o.status.code().unwrap_or(-1),
+            0,
+            "thoát 0 (cảnh báo không chặn)"
+        );
         let tho = String::from_utf8_lossy(&o.stderr).to_string();
         assert!(tho.contains("VS0211"), "phải có VS0211: {tho}");
     }
@@ -81,7 +89,11 @@ fn khong_use_thi_khong_canh_bao() {
     for r in [&a, &b] {
         assert_eq!(r.0, 0);
         assert_eq!(r.1, "z\n");
-        assert!(!r.2.contains("VS0211"), "không có VS0211 khi chưa use: {}", r.2);
+        assert!(
+            !r.2.contains("VS0211"),
+            "không có VS0211 khi chưa use: {}",
+            r.2
+        );
     }
 }
 
@@ -103,11 +115,18 @@ fn goi_tran_str_sau_bien_tru_vs0412() {
     let p = d.join("callshadow.vis");
     std::fs::write(&p, "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.str\n\nfn main():\n    let str = \"z\"\n    print(str(\"a\"))\n").expect("ghi");
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
-        .arg("run").arg(&p).output().expect("vis run");
+        .arg("run")
+        .arg(&p)
+        .output()
+        .expect("vis run");
     let stderr = String::from_utf8_lossy(&o.stderr).to_string();
     let tho = String::from_utf8_lossy(&o.stdout).to_string();
     let tho2 = format!("{tho}{stderr}");
-    assert_ne!(o.status.code().unwrap_or(-1), 0, "không được chạy thành công");
+    assert_ne!(
+        o.status.code().unwrap_or(-1),
+        0,
+        "không được chạy thành công"
+    );
     assert!(tho2.contains("VS0412"), "phải có VS0412: {tho2}");
     let _ = std::fs::remove_dir_all(&d);
 }
