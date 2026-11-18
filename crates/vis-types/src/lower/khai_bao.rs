@@ -210,6 +210,7 @@ impl<'a> Lowerer<'a> {
         for p in params.children().filter(|n| n.kind == NodeKind::Param) {
             let is_self = self.has_token(p, "self");
             let is_var_self = is_self && self.has_token(p, "var");
+            // `--tên` là tham số **có tên** (docs §5.1) — hợp lệ ở mọi hàm; là cờ ở chế độ lệnh.
             let named = p
                 .tokens(&self.cst.tokens)
                 .take(2)

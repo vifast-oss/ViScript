@@ -172,7 +172,10 @@ pub const CODES: [Code; 11] = [
 /// `%` dùng như phần trăm (thông điệp phải gợi ý `50pct`, L3 của `docs/DUYET-AGENT0-vong-va.md`).
 /// VD-215 (2026-11-18): +**VS0207** (`trộn loại khoá trong {…}`, lỗi) và +**VS0208**
 /// (`` `{[k]: …}` khoá là danh sách``, **cảnh báo**) — đăng ký theo VD-215 (không dùng lại `VS0205`).
-pub const SYNTAX_CODES: [Code; 8] = [
+/// VD-223 (2026-11-19, proxy A0): +**VS0211** (tên trùng module std đã import, **cảnh báo**).
+/// **VD-224 (2026-11-19, proxy A0)**: cấm `--b` (VS0209) **huỷ** — `--b` hợp lệ ở mọi hàm (docs §5.1)
+/// ⇒ **53** mã.
+pub const SYNTAX_CODES: [Code; 9] = [
     Code {
         id: 201,
         short: "VS0201",
@@ -243,6 +246,16 @@ pub const SYNTAX_CODES: [Code; 8] = [
         message_en: "`{[k]: …}` uses a list as key — use `{(k): v}`; write `{([k]): …}` to keep a list key",
         message_ja:
             "`{[k]: …}` はリストをキーにします — `{(k): v}` を使ってください。リストのキーを保持するなら `{([k]): …}` と書いてください",
+        severity: Severity::Warning,
+    },
+    // **VD-223 (2026-11-19, uỷ quyền A0-proxy)**: tên trần trùng module std đã import —
+    // `x.m(...)` hiểu là thành viên của giá trị (không còn route im lặng tới `std.<module>`).
+    Code {
+        id: 211,
+        short: "VS0211",
+        message_vi: "tên `X` là module std đã import — `X.xxx(...)` được hiểu là thành viên của giá trị",
+        message_en: "`X` is a std module you imported — `X.xxx(...)` is read as a member of the value",
+        message_ja: "`X` は import 済みの std モジュールです — `X.xxx(...)` は値のメンバー呼び出しとして解釈されます",
         severity: Severity::Warning,
     },
 ];
@@ -836,7 +849,8 @@ mod tests {
         // VS0605/0606, VS0705..0707) ⇒ **49** mã; `BOOKS` vẫn **7**; `next_block()` vẫn **801**.
         // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
         // **VD-215 (2026-11-18)**: +**VS0207**/**VS0208** ⇒ **52** mã.
-        assert_eq!(all_codes().count(), 52);
+        // **VD-223 (proxy A0)**: +**VS0211** ⇒ 53; **VD-224 (proxy A0)**: huỷ VS0209.
+        assert_eq!(all_codes().count(), 53);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(
@@ -868,7 +882,8 @@ mod tests {
     fn so_cu_phap_02xx_khoa_theo_vd35() {
         // Sổ cú pháp riêng: 6 mã (R9: +VS0203..0206), đúng thứ tự, đúng nghĩa, `CODES` KHÔNG bị đụng.
         let ids: Vec<u16> = SYNTAX_CODES.iter().map(|c| c.id).collect();
-        assert_eq!(ids, vec![201, 202, 203, 204, 205, 206, 207, 208]);
+        // **VD-224 (uỷ quyền A0-proxy)**: huỷ VS0209 ⇒ ids [201..208, 211].
+        assert_eq!(ids, vec![201, 202, 203, 204, 205, 206, 207, 208, 211]);
         assert_eq!(SYNTAX_CODES[0].short, "VS0201");
         assert_eq!(SYNTAX_CODES[1].short, "VS0202");
         assert_eq!(SYNTAX_CODES[2].short, "VS0203");
@@ -877,7 +892,9 @@ mod tests {
         assert_eq!(SYNTAX_CODES[5].short, "VS0206");
         assert_eq!(SYNTAX_CODES[6].short, "VS0207");
         assert_eq!(SYNTAX_CODES[7].short, "VS0208");
+        assert_eq!(SYNTAX_CODES[8].short, "VS0211");
         assert_eq!(SYNTAX_CODES[7].severity, Severity::Warning);
+        assert_eq!(SYNTAX_CODES[8].severity, Severity::Warning);
         assert!(
             SYNTAX_CODES[1].message_vi.contains("50pct"),
             "VS0202 phải gợi ý `50pct` (L3)"
@@ -885,8 +902,9 @@ mod tests {
         // **R1a (VD-178)**: +**VS0111** ⇒ **11** mã từ vựng.
         assert_eq!(CODES.len(), 11, "sổ từ vựng đúng 11 mã của §7");
         // Tra xuyên sổ: `vis explain VS0201` phải chạy.
-        for (i, c) in SYNTAX_CODES.iter().enumerate() {
-            assert_eq!(lookup(201 + i as u16).map(|x| x.short), Some(c.short));
+        // **VD-224**: ids **không liên tục** (209 bị huỷ) — tra theo đúng `id` của từng mã.
+        for c in SYNTAX_CODES.iter() {
+            assert_eq!(lookup(c.id).map(|x| x.short), Some(c.short));
             assert_eq!(lookup_str(c.short).map(|x| x.id), Some(c.id));
         }
     }

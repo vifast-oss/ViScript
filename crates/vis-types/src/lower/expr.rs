@@ -255,6 +255,11 @@ impl<'a> Lowerer<'a> {
                 } = &callee
                 {
                     if let HExpr::Var { name: m, .. } = &**base {
+                        // **VD-223 (điểm 2, amendment VD-224)**: gọi `str.join(…)` luôn rơi về
+                        // module std khi tài liệu đã `use std.str` — vị trí module là ý định;
+                        // user bind chỉ ảnh hưởng tới **dùng trần** tên (`str(…)`) — gọi trùng
+                        // `str(…)` sẽ là `VS0412` nếu `str` là biến (đã có thông điệp riêng).
+                        // Tên bị che ở vị trí module được báo **lúc khai báo** bằng `VS0211`.
                         if self.opts.std_mods.iter().any(|x| x == m) {
                             return self.std_call_named(m.clone(), f.clone(), args, named, span);
                         }

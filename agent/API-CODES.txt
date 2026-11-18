@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # ĐÓNG BĂNG sổ mã chẩn đoán — sinh từ crates/vis-diag/src/lib.rs::all_codes().
+# VD-224 (2026-11-19, uỷ quyền A0-proxy): +**VS0211** (tên trùng module std đã import; cảnh báo);
+# VD-223 (proxy A0): +**VS0209** (proxy — **huỷ ở VD-224**, `--b` hợp lệ mọi hàm); huỷ VS0111 (VD-212).
 #
 # CAM KẾT TƯƠNG THÍCH (VD-129): KHÔNG xoá, KHÔNG đổi tên, KHÔNG đổi nghĩa,
 # KHÔNG tái dùng số mã/số thẻ. Thêm mới CHỈ khi có VD nêu đích danh tên được thêm.
@@ -23,6 +25,7 @@ VS0205	error: dựng bản ghi bằng `{…}` — dùng `Tên(trường: …)` h
 VS0206	error: khối `else` của `let … else` phải thoát (return/break/continue/panic)
 VS0207	error: trộn loại khoá trong `{…}` — bản ghi và map không trộn được
 VS0208	warning: `{[k]: …}` khoá là danh sách — dùng `{(k): v}`; viết `{([k]): …}` nếu muốn giữ danh sách làm khoá
+VS0211	warning: tên `X` là module std đã import — `X.xxx(...)` được hiểu là thành viên của giá trị
 VS0301	error: tên không tồn tại
 VS0302	error: khai báo trùng trong cùng phạm vi
 VS0303	error: kiểu không tồn tại

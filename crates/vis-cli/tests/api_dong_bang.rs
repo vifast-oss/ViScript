@@ -190,7 +190,7 @@ fn ds_ma() -> DanhSach {
 fn api_codes_khop_code() {
     so_khop(
         "API-CODES.txt",
-        "ĐÓNG BĂNG sổ mã chẩn đoán — sinh từ crates/vis-diag/src/lib.rs::all_codes().",
+        "ĐÓNG BĂNG sổ mã chẩn đoán — sinh từ crates/vis-diag/src/lib.rs::all_codes().\n# VD-224 (2026-11-19, uỷ quyền A0-proxy): +**VS0211** (tên trùng module std đã import; cảnh báo);\n# VD-223 (proxy A0): +**VS0209** (proxy — **huỷ ở VD-224**, `--b` hợp lệ mọi hàm); huỷ VS0111 (VD-212).",
         ds_ma(),
     );
 }

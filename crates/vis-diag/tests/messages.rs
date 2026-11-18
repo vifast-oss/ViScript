@@ -461,7 +461,8 @@ fn snapshot_9_ca_so_module_07xx() {
     // **R9 (VD-178)**: +16 mã ⇒ **49** mã.
     // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
     // **VD-215 (2026-11-18)**: +**VS0207** (trộn khoá, lỗi) +**VS0208** (danh sách làm khoá, cảnh báo) ⇒ **52** mã.
-    assert_eq!(vis_diag::all_codes().count(), 52);
+    // **VD-224 (uỷ quyền A0-proxy, huỷ VS0209)**: +**VS0211** (tên trùng module std đã import, cảnh báo) ⇒ **53** mã.
+    assert_eq!(vis_diag::all_codes().count(), 53);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }
 

@@ -37,15 +37,15 @@ fn ba_ma_runtime_du_ba_ngon_ngu() {
     }
 }
 
-/// `--list` đúng **52 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
+/// `--list` đúng **53 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
 #[test]
-fn list_du_52_dong_dung_thu_tu() {
+fn list_du_53_dong_dung_thu_tu() {
     let (code, out, err) = vis(&["explain", "--list"]);
     assert_eq!(code, 0, "{err}");
     let dong: Vec<&str> = out.lines().collect();
-    assert_eq!(dong.len(), 52, "phải đúng 52 mã: {}", dong.len()); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208
+    assert_eq!(dong.len(), 53, "phải đúng 53 mã: {}", dong.len()); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208; VD-224 (proxy A0): +VS0211 (huỷ VS0209)
     let muon: Vec<String> = vis_diag::all_codes().map(|c| c.short.to_string()).collect();
-    assert_eq!(muon.len(), 52);
+    assert_eq!(muon.len(), 53);
     for (i, d) in dong.iter().enumerate() {
         let ma = d.split_whitespace().next().unwrap_or("");
         assert_eq!(ma, muon[i], "dòng {i} sai thứ tự");
@@ -84,11 +84,11 @@ fn tro_giup_neu_du_so_ma() {
     assert_eq!(code, 2, "thiếu tham số ⇒ 2");
     let text = format!("{out}{err}");
     assert!(text.contains("dùng:"), "{text}");
-    assert!(text.contains("52"), "phải nêu 52 mã: {text}"); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208
+    assert!(text.contains("53"), "phải nêu 53 mã: {text}"); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208; VD-224 (proxy A0): +VS0211
     assert!(text.contains("7 khối"), "phải nêu 7 khối: {text}");
 }
 
-/// Quét **toàn bộ** sổ: cả 52 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
+/// Quét **toàn bộ** sổ: cả 53 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
 /// copy-paste lẫn ngôn ngữ).
 #[test]
 fn toan_bo_so_du_ba_ngon_ngu() {
@@ -106,5 +106,5 @@ fn toan_bo_so_du_ba_ngon_ngu() {
         assert_ne!(c.message_en, c.message_ja, "{} en == ja", c.short);
         n += 1;
     }
-    assert_eq!(n, 52, "sổ phải đúng 52 mã"); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208
+    assert_eq!(n, 53, "sổ phải đúng 53 mã"); // R1a: +VS0111 (VD-178); VD-215: +VS0207/VS0208; VD-224 (proxy A0): +VS0211
 }

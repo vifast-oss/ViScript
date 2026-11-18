@@ -770,6 +770,18 @@ impl<'a> Lowerer<'a> {
                 span,
             );
         }
+        // **VD-223 (điểm 2)** — tên biến/tham số trùng tên module std đã import ⇒ cảnh báo `VS0211`.
+        if matches!(kind, SymKind::Var | SymKind::Param | SymKind::PatBind)
+            && self.opts.std_mods.iter().any(|m| m == name)
+        {
+            self.diag(
+                &vis_diag::SYNTAX_CODES[8],
+                format!(
+                    "tên `{name}` là module std đã import — `{name}.xxx(...)` được hiểu là thành viên của giá trị, không phải module"
+                ),
+                span,
+            );
+        }
         if kind != SymKind::PatBind {
             if let Some(prev) = self.symbols.in_frame(frame, name) {
                 let (pl, pc) = self.pos(prev.span);
