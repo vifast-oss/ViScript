@@ -290,9 +290,30 @@ impl<'a> Interp<'a> {
         self.steps += 1;
         match s {
             HStmt::Let {
-                pat, init, else_, ..
+                pat,
+                ty,
+                init,
+                else_,
+                ..
             } => {
                 let v = self.eval(init)?;
+                // **VD-226 §TEST (A0-proxy)**: tự nâng `T → T?` ở vế phải `let` khi chú thích
+                // là `T?` — đồng nhất với codegen (codegen.rs) và spec §4.4 ("tự nâng ở ba vị trí:
+                // gán let x: int? = …, trả về → int? …, đối số"). `Some(_)`/`None` giữ nguyên,
+                // `Result` giữ nguyên; khác đi thì bọc `Value::some`.
+                let v = if ty_là_opt(ty.as_ref()) {
+                    match &v {
+                        Value::Enum(ea, va, _)
+                            if (ea == "Option" || ea == "Result")
+                                && ["Some", "None", "Ok", "Err"].contains(&va.as_str()) =>
+                        {
+                            v
+                        }
+                        _ => Value::some(v),
+                    }
+                } else {
+                    v
+                };
                 // **R3b (VD-178)**: `let x = r else:` — bóc `Ok`/`Some`; ngược lại chạy khối `else`.
                 if let Some(e) = else_ {
                     match v {
@@ -1376,4 +1397,9 @@ pub fn dinh_dang(v: &Value, spec: &str, span: Span) -> Result<String, Abort> {
         Value::Str(s) => s.clone(),
         other => other.show(),
     })
+}
+
+/// `true` khi `let x: T? = …` (chú thích `Optional` — mọi lớp).
+fn ty_là_opt(t: Option<&vis_types::ty::Type>) -> bool {
+    matches!(t, Some(vis_types::ty::Type::Opt(_)))
 }
