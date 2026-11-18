@@ -291,3 +291,32 @@ impl<'a> P<'a> {
         }
     }
 }
+
+/// **VD-222 (điểm 4)** — bọc kết quả parse JSON vào cây enum `Json` thật
+/// (`Null`/`Bool`/`Num`/`Str`/`Arr`/`Obj`). Đầu vào là giá trị **cây cũ** (`Value::Int`,
+/// `Value::Map`, `Value::List`, `Value::none()`…) như `decode` sinh ra.
+pub fn boc(v: Value) -> Value {
+    match v {
+        Value::Int(n) => Value::Enum("Json".into(), "Num".into(), vec![Value::Int(n)]),
+        Value::Float(f) => Value::Enum("Json".into(), "Num".into(), vec![Value::Float(f)]),
+        Value::Bool(b) => Value::Enum("Json".into(), "Bool".into(), vec![Value::Bool(b)]),
+        Value::Str(s) => Value::Enum("Json".into(), "Str".into(), vec![Value::Str(s)]),
+        Value::List(xs) => Value::Enum(
+            "Json".into(),
+            "Arr".into(),
+            vec![Value::List(xs.into_iter().map(boc).collect())],
+        ),
+        Value::Map(kv) => Value::Enum(
+            "Json".into(),
+            "Obj".into(),
+            vec![Value::Map(
+                kv.into_iter().map(|(k, v)| (k, boc(v))).collect(),
+            )],
+        ),
+        // `null` (cây cũ dùng `Option.None`) ⇒ biến thể `Null`.
+        Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
+            Value::Enum("Json".into(), "Null".into(), vec![])
+        }
+        other => other,
+    }
+}

@@ -622,6 +622,15 @@ impl<'a> Checker<'a> {
             return self.resolve_cap(args, span);
         }
         let resolved: Vec<Type> = args.iter().map(|a| self.resolve_ann(a, span)).collect();
+        // **VD-222** — Json=EnumId(0)·Error=RecId(0)·AnyError=`{error}` (VS0302).
+        if args.is_empty() {
+            match name {
+                "Json" => return Type::Enum(crate::ty::EnumId(0)),
+                "Error" => return Type::Record(crate::ty::RecId(0)),
+                "AnyError" => return Type::Error,
+                _ => {}
+            }
+        }
         match (name, resolved.len()) {
             ("list", 1) => return Type::List(Box::new(resolved[0].clone())),
             ("map", 2) => {
@@ -689,8 +698,7 @@ impl<'a> Checker<'a> {
                 args: resolved,
             };
         }
-        // VD-48(a): kiểu **ngoài VS0** (`AnyError`, `cap`, `ref`, `Json`, `set`, `stream`, …) vẫn
-        // là `VS0301` nhưng thông điệp phải nói rõ "không có ở VS0 (vis-std/vòng 2)".
+        // VD-48(a): kiểu **ngoài VS0** (`ref`, `set`, `stream`, …) vẫn là `VS0301` (thông điệp nói rõ "chưa hỗ trợ (VD-43)").
         let msg = if la_kieu_ngoai_vs0(name) {
             format!(
                 "kiểu `{name}` chưa hỗ trợ — thuộc vis-std/vòng 2; dùng kiểu khác hoặc bỏ chú thích"
@@ -1478,16 +1486,7 @@ fn dich_ha_duoc(t: &HExpr) -> bool {
 fn la_kieu_ngoai_vs0(name: &str) -> bool {
     matches!(
         name,
-        "AnyError"
-            | "cap"
-            | "ref"
-            | "weak"
-            | "Json"
-            | "set"
-            | "stream"
-            | "Future"
-            | "datetime"
-            | "bigint"
-            | "decimal"
+        // **VD-222**: `AnyError` và `Json` nay là dựng sẵn — bỏ khỏi danh sách "ngoài VS0".
+        "cap" | "ref" | "weak" | "set" | "stream" | "Future" | "datetime" | "bigint" | "decimal"
     )
 }

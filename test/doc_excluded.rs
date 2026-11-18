@@ -16,6 +16,8 @@
 // ⇒ dịch +1: 305→306, 432→433, 445→446, 614→615, 666→667, 745→746, 1420→1421.
 // **VD-215 (2026-11-18)**: +12 dòng bảng quy tắc `{…}` sau bảng kiểu ⇒ dịch +12:
 // 306→318, 435→447, 448→460, 617→629, 669→681, 748→760.
+// **VD-222 (2026-11-18/19, proxy A0)**: +9 dòng ghi chú "Hiện thực VS2" ở §6.1 ⇒ dịch +9:
+// 629→638, 681→690, 760→769.
 // **Nội dung 7 khối không đổi** (vẫn đúng 7 khối
 // `...`/`Entry`/`assert`); chỉ toạ độ đổi. Đây là hệ quả của việc sửa tài liệu, không phải
 // nới ngưỡng: tổng số khối vẫn phải đúng 22 và mỗi khối vẫn phải `not ok` đúng 1 chẩn đoán.
@@ -27,7 +29,7 @@
 // `#[allow(dead_code)]`: mỗi tệp test chỉ dùng **một phần** danh sách (vis-syntax dùng bản 6 khối,
 // ba tệp còn lại dùng bản 7 khối) nên mục không dùng ở tệp này là mục dùng ở tệp khác.
 #[allow(dead_code)]
-const DOC_EXCLUDED: [usize; 6] = [318, 447, 460, 629, 681, 760];
+const DOC_EXCLUDED: [usize; 6] = [318, 447, 460, 638, 690, 769];
 
 /// Vị trí khối `666` trong `DOC_EXCLUDED` — khối **duy nhất** không bị vis-syntax loại trừ.
 #[allow(dead_code)]

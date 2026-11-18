@@ -7,6 +7,10 @@
 //! **ST-58 (VD-94/VD-99)**: chữ ký dùng **biến kiểu** (`Ty::Var`, `Ty::List`, `Ty::Map`) — `Ty::Any`
 //! đã **xoá hẳn** (chính nó là lỗ "bỏ kiểm kiểu im lặng"). `tyck` **hợp nhất** đối số thật với biến
 //! (trái→phải) rồi thay biến vào kiểu trả; biến **không gán** ⇒ `{error}` (giữ `json.decode`, VD-66).
+//! **VD-222** (18/11/2026, uỷ quyền A0-proxy): mọi lỗi chuẩn (`Result[_, str]`) đổi thành
+//! **bản ghi dựng sẵn `Error`** (`RecId(0)`; `message/source/span`; in `print` chỉ `{message}`);
+//! `std.json.decode` → `Result[Json, Error]` — cây JSON là enum dựng sẵn `Json` (`EnumId(0)`:
+//! `Null/Bool/Num/Str/Arr/Obj`), `json.decode` vẫn phải `match` (VD-66). `AnyError` := `{error}`.
 
 use crate::ty::Type;
 
@@ -27,9 +31,15 @@ pub enum Ty {
     ResultUnitStr,
     /// `Result[list[str], str]` — ST-33 (`std.fs.list`).
     ResultListStrStr,
-    /// `Result[map[str, {error}], str]` — ST-109 (`http.head`): map có `status` (int) + `headers`
-    /// (map), nên value để `{error}` (động, không ép sai kiểu).
+    /// `Result[map[str, {error}], Error]` — ST-109 (`http.head`): map có `status` (int) + `headers`
+    /// (map), nên value để `{error}` (động, không ép sai kiểu). **VD-222**: lỗi → bản ghi dựng sẵn `Error`.
     ResultHead,
+    /// Bản ghi dựng sẵn `Error` (VD-222 điểm 2–3) — `RecId(0)` trong mọi bảng.
+    Error,
+    /// Enum dựng sẵn `Json` (VD-222 điểm 4) — `EnumId(0)` trong mọi bảng.
+    Json,
+    /// `Result[Json, Error]` — chữ ký `std.json.decode` (VD-222 điểm 4; VD-187 dòng buộc).
+    ResultJsonErr,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -48,15 +58,27 @@ impl Ty {
             Ty::Str => Type::Str,
             Ty::Bool => Type::Bool,
             Ty::ListStr => Type::List(Box::new(Type::Str)),
-            Ty::ResultStrStr => Type::Result(Box::new(Type::Str), Box::new(Type::Str)),
-            Ty::ResultUnitStr => Type::Result(Box::new(Type::Unit), Box::new(Type::Str)),
+            // **VD-222 (điểm 2–3)**: mọi lỗi chuẩn **bản ghi dựng sẵn `Error`** (`RecId(0)` —
+            // dựng sẵn chốn đẩy vào bảng trước item đầu tiên, id `0` ổn định).
+            Ty::Error => Type::Record(crate::ty::RecId(0)),
+            Ty::Json => Type::Enum(crate::ty::EnumId(0)),
+            Ty::ResultJsonErr => Type::Result(
+                Box::new(Type::Enum(crate::ty::EnumId(0))),
+                Box::new(Type::Record(crate::ty::RecId(0))),
+            ),
+            Ty::ResultStrStr => {
+                Type::Result(Box::new(Type::Str), Box::new(Self::Error.sang_type()))
+            }
+            Ty::ResultUnitStr => {
+                Type::Result(Box::new(Type::Unit), Box::new(Self::Error.sang_type()))
+            }
             Ty::ResultListStrStr => Type::Result(
                 Box::new(Type::List(Box::new(Type::Str))),
-                Box::new(Type::Str),
+                Box::new(Self::Error.sang_type()),
             ),
             Ty::ResultHead => Type::Result(
                 Box::new(Type::Map(Box::new(Type::Str), Box::new(Type::Error))),
-                Box::new(Type::Str),
+                Box::new(Self::Error.sang_type()),
             ),
             Ty::Var(i) => Type::TypeRef {
                 name: ten_bien(i).to_string(),
@@ -79,10 +101,14 @@ impl Ty {
             Ty::ListStr => "list[str]",
             // ST-56: khoá nhận **cả** `str` ⇒ tên hiển thị nói đúng hợp đồng mới.
             Ty::FnKhoa => "fn(T) -> int | str",
-            Ty::ResultStrStr => "Result[str, str]",
-            Ty::ResultUnitStr => "Result[(), str]",
-            Ty::ResultListStrStr => "Result[list[str], str]",
-            Ty::ResultHead => "Result[map[str, {error}], str]",
+            Ty::Error => "Error",
+            Ty::Json => "Json",
+            Ty::ResultJsonErr => "Result[Json, Error]",
+            // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
+            Ty::ResultStrStr => "Result[str, Error]",
+            Ty::ResultUnitStr => "Result[(), Error]",
+            Ty::ResultListStrStr => "Result[list[str], Error]",
+            Ty::ResultHead => "Result[map[str, {error}], Error]",
             Ty::Var(_) => "biến kiểu",
             Ty::List(_) => "list",
             Ty::Map(..) => "map",
@@ -298,12 +324,12 @@ pub const FUNCS: [StdFn; 52] = [
         params: &[Ty::Var(0)],
         ret: Ty::Str,
     },
-    // ST-33/ST-58: `json.decode` trả `Result[<đã giải mã>, str]` — biến `V` **không** có trong
-    // tham số ⇒ `thay_gen` cho `{error}` (giữ VD-66: dữ liệu không kiểu vẫn phải `match`).
+    // ST-33/ST-58 (VD-222 điểm 4): `json.decode` trả `Result[Json, Error]` — dữ liệu JSON được
+    // bọc thành enum `Json` dựng sẵn; lỗi ⇒ bản ghi `Error` dựng sẵn (`message/source/span`).
     StdFn {
         name: "json.decode",
         params: &[Ty::Str],
-        ret: Ty::Var(2),
+        ret: Ty::ResultJsonErr,
     },
     // ----- std.fs (ST-33) — **đi qua `Host`**, không OS trong crate này -----
     StdFn {

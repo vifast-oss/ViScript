@@ -110,6 +110,18 @@ impl Value {
         }
     }
 
+    /// **VD-222 (điểm 2–3)** — dựng bản ghi `Error` dựng sẵn (`message`, `source = None`, `span = None`).
+    pub fn ban_ghi_error(message: impl Into<String>, span: Option<String>) -> Value {
+        Value::Record(
+            "Error".into(),
+            vec![
+                ("message".into(), Value::Str(message.into())),
+                ("source".into(), Value::none()),
+                ("span".into(), Value::opt(span.map(Value::Str))),
+            ],
+        )
+    }
+
     /// `Ok(v)` — enum `Result` thật (VD-204 (1)).
     pub fn ok(v: Value) -> Value {
         Value::Enum("Result".into(), "Ok".into(), vec![v])
@@ -199,6 +211,16 @@ impl Value {
                 format!("{{{}}}", body.join(", "))
             }
             Value::Record(name, fields) => {
+                // **VD-222 (điểm 4)** — bản ghi `Error` dựng sẵn in **thanh gọn** = chỉ `{message}`
+                // để các ca `Err(e): print(e)` byte-identical với thời `err(str)`; `source`/`span`
+                // vẫn hiện khi in đủ (`{e.message}`) hoặc in bằng `{e}` khi cần đầy đủ.
+                if name == "Error" {
+                    return fields
+                        .iter()
+                        .find(|(n, _)| n == "message")
+                        .map(|(_, v)| v.show())
+                        .unwrap_or_else(|| "{unknown Error}".to_string());
+                }
                 let body: Vec<String> = fields
                     .iter()
                     .map(|(n, v)| format!("{n}: {}", v.show()))

@@ -26,7 +26,9 @@ fn chay(args: &[&str]) -> (i32, String, String) {
     )
 }
 
-const TRAIT_SHOW: &str = "trait Show:\n    fn show(self) -> str\n\ntype Hop:\n    gia_tri: int\n\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n\nfn main() -> ():\n    let h: Hop = {gia_tri: 1}\n    print(h.show())\n";
+// **VD-222**: `Show` là trait dựng sẵn (`fn show(self) -> str`) — không khai lại (`VS0302`);
+// chỉ cần `impl Show for Hop:` với đúng chữ ký builtin.
+const TRAIT_SHOW: &str = "type Hop:\n    gia_tri: int\n\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n\nfn main() -> ():\n    let h: Hop = {gia_tri: 1}\n    print(h.show())\n";
 
 /// **Ca dispatch thật** (yêu cầu Agent 0): chạy **cả** interp và VM, in đúng, khớp nhau.
 #[test]

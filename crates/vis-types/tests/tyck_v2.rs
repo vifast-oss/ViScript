@@ -247,25 +247,24 @@ fn phep_cua_vs0_theo_vd48() {
 /// `cap[...]` là **kiểu thật** (nên `f(1)` báo `VS0412` sai kiểu, không phải `VS0301`). Hành vi đổi
 /// có chủ đích; không xoá ca (AnyError/Json vẫn khoá đường `VS0301`).
 #[test]
+/// **VD-222 (điểm 5, uỷ quyền A0-proxy)** — `AnyError` đã là đồng nghĩa `{error}` (dựng sẵn);
+/// `Json` là enum dựng sẵn. Trước 18/11 hai tên này là VS0303; nay **sạch** (dùng được), và một
+/// kiểu ngoài VS0 khác (vd `Set`) vẫn phải VS0303 rõ ràng.
 fn kieu_ngoai_vs0_bao_vs0303_ro_rang() {
     for src in ["let x: AnyError = None\nx", "let j: Json = None\nj"] {
         let (out, _) = run(src);
         assert!(
-            !out.codes().is_empty() && out.codes().iter().all(|c| *c == "VS0303"),
-            "mọi chẩn đoán phải là VS0303: {:?}\nnguồn: {src}",
+            out.codes().is_empty(),
+            "AnyError/Json nay sạch chẩn đoán (VD-222): {:?}\nnguồn: {src}",
             out.codes()
         );
-        assert!(
-            out.diags
-                .iter()
-                .any(|d| d.message.contains("chưa hỗ trợ") && d.message.contains("vis-std")),
-            "phải có thông điệp nêu chưa hỗ trợ/vis-std: {:?}\nnguồn: {src}",
-            out.diags
-                .iter()
-                .map(|d| d.message.clone())
-                .collect::<Vec<_>>()
-        );
     }
+    let (out, _) = run("let s: Set[int] = None\ns");
+    assert!(
+        out.codes().iter().all(|c| *c == "VS0303"),
+        "kiểu ngoài VS0 khác vẫn phải là VS0303: {:?}",
+        out.codes()
+    );
 }
 
 /// (10) **ST-13b** — `Never` (return-tail), thân vòng lặp bỏ giá trị, `for` trên `str`/range.

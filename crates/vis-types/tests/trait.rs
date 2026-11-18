@@ -67,7 +67,9 @@ fn ha_thanh_call_voi(src: &str, mong: &str) {
 }
 
 const TYPE_HOP: &str = "type Hop:\n    gia_tri: int\n";
-const TRAIT_SHOW: &str = "trait Show:\n    fn show(self) -> str\n";
+// **VD-222** (uỷ quyền A0-proxy): `Show` đã là trait dựng sẵn — người dùng không khai lại tên
+// này (`VS0302`). Ca dưới dùng `MoTa` để giữ kiểm tra "trait người dùng khai báo sạch".
+const TRAIT_MO_TA: &str = "trait MoTa:\n    fn mo_ta(self) -> str\n";
 
 // ---------------------------------------------------------------------------
 // 1) derives: hợp lệ / không hợp lệ
@@ -104,26 +106,29 @@ fn derives_json_hop_le_voi_list_int() {
 
 #[test]
 fn trait_khai_bao_sach() {
-    sach(TRAIT_SHOW);
+    sach(TRAIT_MO_TA);
 }
 
 #[test]
 fn impl_dung_chu_ky_sach() {
     sach(&format!(
-        "{TRAIT_SHOW}\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n"
+        "{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n"
     ));
 }
 
 #[test]
 fn impl_thieu_phuong_thuc_bao_vs0403() {
-    co(&format!("{TRAIT_SHOW}\n{TYPE_HOP}\nimpl Show for Hop:\n    fn khac(self) -> str:\n        \"x\"\n"), "VS0403");
+    co(
+        &format!("{TYPE_HOP}\nimpl Show for Hop:\n    fn khac(self) -> str:\n        \"x\"\n"),
+        "VS0403",
+    );
 }
 
 #[test]
 fn impl_thua_phuong_thuc_bao_vs0403() {
     co(
         &format!(
-            "{TRAIT_SHOW}\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n    fn them(self) -> int:\n        1\n"
+            "{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n    fn them(self) -> int:\n        1\n"
         ),
         "VS0403",
     );
@@ -132,9 +137,7 @@ fn impl_thua_phuong_thuc_bao_vs0403() {
 #[test]
 fn impl_sai_kieu_tra_bao_vs0412() {
     co(
-        &format!(
-            "{TRAIT_SHOW}\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> int:\n        1\n"
-        ),
+        &format!("{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> int:\n        1\n"),
         "VS0412",
     );
 }
@@ -165,7 +168,7 @@ fn ha_thanh_call(src: &str) {
 #[test]
 fn goi_phuong_thuc_impl_thanh_call_truc_tiep() {
     ha_thanh_call(&format!(
-        "{TRAIT_SHOW}\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n\nlet h: Hop = {{gia_tri: 1}}\nprint(h.show())\n"
+        "{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"hop\"\n\nlet h: Hop = {{gia_tri: 1}}\nprint(h.show())\n"
     ));
 }
 
@@ -217,7 +220,7 @@ fn phuong_thuc_khong_ton_tai_bao_vs0403() {
 fn mo_ho_giua_hai_impl_bao_vs0403() {
     co(
         &format!(
-            "{TRAIT_SHOW}\ntrait Eq2:\n    fn show(self) -> str\n\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"a\"\nimpl Eq2 for Hop:\n    fn show(self) -> str:\n        \"b\"\n\nlet h: Hop = {{gia_tri: 1}}\nprint(h.show())\n"
+            "trait Eq2:\n    fn show(self) -> str\n\n{TYPE_HOP}\nimpl Show for Hop:\n    fn show(self) -> str:\n        \"a\"\nimpl Eq2 for Hop:\n    fn show(self) -> str:\n        \"b\"\n\nlet h: Hop = {{gia_tri: 1}}\nprint(h.show())\n"
         ),
         "VS0403",
     );

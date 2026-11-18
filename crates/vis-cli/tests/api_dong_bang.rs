@@ -124,10 +124,15 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::Bool => "bool".to_string(),
         Ty::ListStr => "list[str]".to_string(),
         Ty::FnKhoa => "fn(T) -> int | str".to_string(),
-        Ty::ResultStrStr => "Result[str, str]".to_string(),
-        Ty::ResultUnitStr => "Result[(), str]".to_string(),
-        Ty::ResultListStrStr => "Result[list[str], str]".to_string(),
-        Ty::ResultHead => "Result[map[str, {error}], str]".to_string(),
+        Ty::ResultStrStr => "Result[str, Error]".to_string(),
+        Ty::ResultUnitStr => "Result[(), Error]".to_string(),
+        Ty::ResultListStrStr => "Result[list[str], Error]".to_string(),
+        Ty::ResultHead => "Result[map[str, {error}], Error]".to_string(),
+        // **VD-222 (18/11/2026, uỷ quyền A0-proxy)**: lỗi std → bản ghi dựng sẵn `Error`
+        // (`RecId(0)`); `std.json.decode` → `Result[Json, Error]` (enum dựng sẵn `EnumId(0)`).
+        Ty::Error => "Error".to_string(),
+        Ty::Json => "Json".to_string(),
+        Ty::ResultJsonErr => "Result[Json, Error]".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
         Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
         Ty::List(t) => format!("list[{}]", kieu_ty(t)),
@@ -159,7 +164,7 @@ fn ds_std() -> DanhSach {
 fn api_std_khop_code() {
     so_khop(
         "API-STD.txt",
-        "ĐÓNG BĂNG API std — sinh từ crates/vis-types/src/stdlib.rs::FUNCS (kèm chữ ký).",
+        "ĐÓNG BĂNG API std — sinh từ crates/vis-types/src/stdlib.rs::FUNCS (kèm chữ ký).\n# VD-222 (18/11/2026, uỷ quyền A0, Agent 1 thay mặt Agent 0): mọi `Result[_, str]` →\n# `Result[_, Error]` (lỗi std = bản ghi dựng sẵn `Error { message, source, span }`);\n# `json.decode` → `Result[Json, Error]`. Các mục đổi được nêu đích danh trong VD-222.",
         ds_std(),
     );
 }

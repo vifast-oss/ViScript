@@ -193,7 +193,7 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | `std.str` | `split` `join` `upper` `lower` `trim` `replace` `repeat` `starts_with` `ends_with` `contains` | `str.join(["a","b"], "-")` → `a-b` |
 | `std.path` | `join` `basename` `dirname` `ext` `stem` `is_abs` | `path.join("a","b")` → `a/b` |
 | `std.time` | `now_ms()` `monotonic_ms()` | |
-| `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok([1, 2])` |
+| `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
 | `std.net` | `listen` `connect` `read` `write` `accept` `close` | loopback, **không TLS** |
 | `std.http` | `get` `head` + `_timeout` | HTTP/1.1 loopback, chunked, redirect GET ≤5 |
 

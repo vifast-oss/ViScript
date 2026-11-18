@@ -81,8 +81,11 @@ fn json_decode_khong_tao_cap() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (1b) Gán kết quả `json.decode` vào biến **kiểu `cap[Dir]`** (tyck chấp nhận vì `V`/Any) ⇒
-/// **không** sinh quyền: đọc tệp ngoài vẫn bị `VS0604` exit 2.
+/// (1b) Gán kết quả `json.decode` vào biến **kiểu `cap[Dir]`** ⇒ **không** sinh quyền.
+/// **VD-222 (điểm 4, 18/11/2026)**: `json.decode` nay trả `Result[Json, Error]` — gán vào `cap[Dir]`
+/// là **lỗi tĩnh `VS0412`** (exit 2, chương trình không chạy). Trước 18/11: `{error}` nuốt lỗi tĩnh
+/// nên chương trình qua front-end và bị `VS0604` lúc chạy — bất biến "không cấp quyền từ JSON" nay
+/// mạnh hơn: **không biên dịch được**.
 #[test]
 fn gan_json_vao_bien_cap_khong_sinh_quyen() {
     let d = tam("json-cap");
@@ -93,7 +96,11 @@ fn gan_json_vao_bien_cap_khong_sinh_quyen() {
         &["--strict-caps"],
     );
     assert_eq!(r.0, 2, "{r:?}");
-    assert!(r.2.contains("VS0604"), "{}", r.2);
+    assert!(
+        r.2.contains("VS0412"),
+        "lỗi tĩnh, không phải quyền: {}",
+        r.2
+    );
     assert!(r.2.contains("cap[Dir]"), "{}", r.2);
     assert!(r.1.is_empty(), "không được đọc: {:?}", r.1);
     let _ = std::fs::remove_dir_all(&d);

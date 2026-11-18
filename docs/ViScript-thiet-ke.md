@@ -498,6 +498,15 @@ fn read_config(dir: cap[Dir]) -> Result[Config, AnyError]:
 - `?` trên `T?` chỉ trong hàm trả `U?` (4.4). `?` **không** tự bọc `Result` vào `Result` lồng; `T??` là lỗi kiểu.
 - `main -> Result[(), AnyError]`. Phía plugin Rust, tên của cùng trait là **`vis::Error`** (17).
 
+> **Hiện thực VS2 (VD-222, 18/11/2026 — quyết định proxy của Agent 1, A0 duyệt lại khi tiếp nhận)**:
+> `trait Error: Show` mang **3 phương thức mặc định-less** (`message(self) -> str`, `source(self) -> Error?`, `span(self) -> str?`); mọi lỗi std là
+> **bản ghi dựng sẵn `Error { message: str, source: Error?, span: str? }`** (đệ quy qua `Error?`; `span`
+> là chuỗi `path:line:col`). `AnyError` là **đồng nghĩa `{error}`** (không có `dyn`; `?` không kiểm
+> biến thể lỗi). `std.json.decode` → **`Result[Json, Error]`** với **enum dựng sẵn `Json`**
+> (`Null/Bool/Num/Str/Arr/Obj`; `Num` giữ cả `int` lẫn `float` ở payload `{error}`). Giá trị `Json`
+> dùng `match` được; bản ghi `Error` in `print` chỉ `{message}`. `main -> Result[_, AnyError]` compile
+> sạch; `Err` ở `main` ⇒ exit 1 (đã có, VD-178).
+
 ### 6.2 `else` xử lý tại chỗ
 
 ```vis

@@ -92,7 +92,7 @@ fn chuong_trinh_server(duong: &str) -> String {
         "use std.net\n\
          use std.fs\n\
          \n\
-         fn phuc_vu(duong: str) -> Result[(), str]:\n\
+         fn phuc_vu(duong: str) -> Result[(), Error]:\n\
          \x20   let l = net.listen(\"127.0.0.1:0\")?\n\
          \x20   let a = net.local_addr(l)?\n\
          \x20   fs.write(duong, a)?\n\
@@ -113,7 +113,7 @@ fn chuong_trinh_client(dia_chi: &str) -> String {
     format!(
         "use std.net\n\
          \n\
-         fn lay(a: str) -> Result[str, str]:\n\
+         fn lay(a: str) -> Result[str, Error]:\n\
          \x20   let c = net.connect(a)?\n\
          \x20   let s = net.read(c, 64, 2000)?\n\
          \x20   let _ = net.close(c)\n\
@@ -224,7 +224,7 @@ fn server_hai_ket_noi_lien_tiep() {
             "use std.net\n\
              use std.fs\n\
              \n\
-             fn phuc_vu(duong: str) -> Result[(), str]:\n\
+             fn phuc_vu(duong: str) -> Result[(), Error]:\n\
              \x20   let l = net.listen(\"127.0.0.1:0\")?\n\
              \x20   let a = net.local_addr(l)?\n\
              \x20   fs.write(duong, a)?\n\
@@ -282,7 +282,7 @@ fn accept_het_gio() {
     let d = tam("timeout");
     let src = "use std.net\n\
                \n\
-               fn thu() -> Result[str, str]:\n\
+               fn thu() -> Result[str, Error]:\n\
                \x20   let l = net.listen(\"127.0.0.1:0\")?\n\
                \x20   net.accept_timeout(l, 80)\n\
                \n\

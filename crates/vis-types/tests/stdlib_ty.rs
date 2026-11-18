@@ -130,7 +130,7 @@ fn muoi_sau_chu_ky_generic_dung_hinh_dang() {
         ("map.remove", &[map_kv, Ty::Str], map_kv),
         ("json.encode", &[t], Ty::Str),
         ("json.encode_pretty", &[t], Ty::Str),
-        ("json.decode", &[Ty::Str], Ty::Var(2)),
+        ("json.decode", &[Ty::Str], Ty::ResultJsonErr),
     ];
     for (ten, params, ret) in ca {
         let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));

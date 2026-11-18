@@ -111,31 +111,34 @@ fn khoa_int_cu_khong_doi() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// **SỬA KÈM LÝ DO (ST-58)**: `list.concat` nay là `(list[T], list[T]) -> list[T]` ⇒ `[1] + ["a"]`
-/// bị **tyck bắt tĩnh** (`VS0412`), không còn dựng được danh sách trộn. Ca **runtime** vẫn phải khoá:
-/// dựng danh sách trộn từ **dữ liệu không kiểu** `json.decode` (`Var` không gán ⇒ `{error}`) ⇒ front
-/// end **sạch**, lỗi vẫn ở **lúc chạy** `VS0501` (nêu cả `int` và `str`).
+/// **VD-222 (điểm 4, 18/11/2026, uỷ quyền A0-proxy) — ST-58 → thay thế**: giá trị từ `json.decode`
+/// nay có kiểu `Json` (enum thật), không còn `{error}` nuốt lỗi tĩnh. Danh sách trộn dựng từ JSON
+/// không còn "front end sạch" — `list.sort_by` cần `list[_]`, `Json` không phải `list` ⇒ **tyck tĩnh
+/// `VS0412`** (exit 2). Bất biến thay thế (thay ST-58): "dữ liệu không kiểu từ JSON không thể ghép
+/// vào `list.sort_by` im lặng" nay mạnh hơn — lỗi là tĩnh.
 const TRON: &str = "use std.json\nuse std.list\nfn main():\n    match json.decode(\"[1, \\\"a\\\"]\"):\n        Ok(xs):\n            print(list.sort_by(xs, x => x))\n        Err(e):\n            print(e)\n";
 
 #[test]
-fn tron_int_va_str_la_vs0501_neu_kieu_that() {
+fn tron_int_va_str_la_vs0412_tinh() {
     let d = tam("tron");
-    // `vis check` **không** chẩn đoán (lỗi động) ⇒ ca thuộc tầng lỗi lúc chạy.
     let p = ghi(&d, "tron", TRON, "vis");
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
         .arg("check")
         .arg(&p)
         .output()
         .expect("chạy `vis check`");
-    assert_eq!(o.status.code().unwrap_or(-1), 0, "check phải **rỗng**");
-    let (c, out, e) = hai_duong(&d, "tron", TRON, "vis");
-    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
-    assert_eq!(c, 101, "phải là lỗi **lúc chạy** (exit 101), stderr: {e}");
-    assert!(out.is_empty(), "không được in gì trước lỗi: {out:?}");
-    assert!(e.contains("VS0501"), "stderr: {e}");
+    assert_eq!(
+        o.status.code().unwrap_or(-1),
+        1,
+        "check phải bắt lỗi tĩnh (stdout TAP `not ok`): {}",
+        String::from_utf8_lossy(&o.stdout)
+    );
+    // `vis check` in TAP ra **stdout** (ngoại lệ `--json`): chẩn đoán nằm ở stdout.
+    let tho = String::from_utf8_lossy(&o.stdout);
+    assert!(tho.contains("VS0412"), "stdout TAP: {tho}");
     assert!(
-        e.contains("`int`") && e.contains("`str`"),
-        "thông điệp phải nêu **cả hai** kiểu thật (`int` và `str`): {e}"
+        tho.contains("Json"),
+        "thông điệp phải nêu kiểu `Json`: {tho}"
     );
     let _ = std::fs::remove_dir_all(&d);
 }

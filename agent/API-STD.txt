@@ -1,18 +1,21 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # ĐÓNG BĂNG API std — sinh từ crates/vis-types/src/stdlib.rs::FUNCS (kèm chữ ký).
+# VD-222 (18/11/2026, uỷ quyền A0, Agent 1 thay mặt Agent 0): mọi `Result[_, str]` →
+# `Result[_, Error]` (lỗi std = bản ghi dựng sẵn `Error { message, source, span }`);
+# `json.decode` → `Result[Json, Error]`. Các mục đổi được nêu đích danh trong VD-222.
 #
 # CAM KẾT TƯƠNG THÍCH (VD-129): KHÔNG xoá, KHÔNG đổi tên, KHÔNG đổi nghĩa,
 # KHÔNG tái dùng số mã/số thẻ. Thêm mới CHỈ khi có VD nêu đích danh tên được thêm.
 # Tệp thuộc Agent 0 sau lần tạo đầu (ST-126). Định dạng: <khoá><TAB><giá trị>.
 fs.exists	(str) -> bool
-fs.list	(str) -> Result[list[str], str]
-fs.read	(str) -> Result[str, str]
-fs.write	(str, str) -> Result[(), str]
-http.get	(str) -> Result[str, str]
-http.get_timeout	(str, int) -> Result[str, str]
-http.head	(str) -> Result[map[str, {error}], str]
-http.head_timeout	(str, int) -> Result[map[str, {error}], str]
-json.decode	(str) -> V
+fs.list	(str) -> Result[list[str], Error]
+fs.read	(str) -> Result[str, Error]
+fs.write	(str, str) -> Result[(), Error]
+http.get	(str) -> Result[str, Error]
+http.get_timeout	(str, int) -> Result[str, Error]
+http.head	(str) -> Result[map[str, {error}], Error]
+http.head_timeout	(str, int) -> Result[map[str, {error}], Error]
+json.decode	(str) -> Result[Json, Error]
 json.encode	(T) -> str
 json.encode_pretty	(T) -> str
 list.chunk	(list[T], int) -> list[list[T]]
@@ -28,16 +31,16 @@ map.keys	(map[K, V]) -> list[K]
 map.merge	(map[K, V], map[K, V]) -> map[K, V]
 map.remove	(map[K, V], str) -> map[K, V]
 map.values	(map[K, V]) -> list[V]
-net.accept	(str) -> Result[str, str]
-net.accept_timeout	(str, int) -> Result[str, str]
-net.close	(str) -> Result[(), str]
-net.close_listen	(str) -> Result[(), str]
-net.connect	(str) -> Result[str, str]
-net.connect_timeout	(str, int) -> Result[str, str]
-net.listen	(str) -> Result[str, str]
-net.local_addr	(str) -> Result[str, str]
-net.read	(str, int, int) -> Result[str, str]
-net.write	(str, str) -> Result[(), str]
+net.accept	(str) -> Result[str, Error]
+net.accept_timeout	(str, int) -> Result[str, Error]
+net.close	(str) -> Result[(), Error]
+net.close_listen	(str) -> Result[(), Error]
+net.connect	(str) -> Result[str, Error]
+net.connect_timeout	(str, int) -> Result[str, Error]
+net.listen	(str) -> Result[str, Error]
+net.local_addr	(str) -> Result[str, Error]
+net.read	(str, int, int) -> Result[str, Error]
+net.write	(str, str) -> Result[(), Error]
 path.basename	(str) -> str
 path.dirname	(str) -> str
 path.ext	(str) -> str

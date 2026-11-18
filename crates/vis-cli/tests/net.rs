@@ -174,7 +174,7 @@ fn tcp_het_gio_doc() {
          fn doc(t: str) -> str:\n\
          \x20   let r = match net.read(t, 64, 80):\n\
          \x20       Ok(s): s\n\
-         \x20       Err(e): e\n\
+         \x20       Err(e): e.message\n\
          \x20   r\n\
          fn main():\n\
          \x20   match net.connect(\"{addr}\"):\n\
@@ -291,7 +291,7 @@ fn tcp_explain_perms() {
          fn doc(t: str) -> str:\n\
          \x20   let r = match net.read(t, 64, 500):\n\
          \x20       Ok(s): s\n\
-         \x20       Err(e): e\n\
+         \x20       Err(e): e.message\n\
          \x20   r\n\
          fn main():\n\
          \x20   match net.connect(\"{addr}\"):\n\
@@ -411,7 +411,7 @@ fn tcp_explain_tong() {
         "use std.net\n\
          use std.http\n\
          \n\
-         fn lam(raw: str, web: str) -> Result[str, str]:\n\
+         fn lam(raw: str, web: str) -> Result[str, Error]:\n\
          \x20   let l = net.listen(\"127.0.0.1:0\")?\n\
          \x20   let _a = net.local_addr(l)?\n\
          \x20   let _ = net.accept_timeout(l, 60)\n\

@@ -5,5 +5,5 @@
 ViScript-thiet-ke.md:318 `...` ở 324-327 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, đây là ví dụ lược thân
 ViScript-thiet-ke.md:447 `...` ở 463 (`fn max_by[...] -> T?: ...`) — thân hàm lược, không phải chương trình
 ViScript-thiet-ke.md:460 `...` ở 476 (`fn show(self) -> str: ...`) — thân hàm lược
-ViScript-thiet-ke.md:629 `...` ở 619 (`pub cmd ls(...): ...`) — thân hàm lược
-ViScript-thiet-ke.md:760 `...` ở 749 (`fn main(...): ...`) — thân hàm lược
+ViScript-thiet-ke.md:638 `...` ở 628 (`pub cmd ls(...): ...`) — thân hàm lược
+ViScript-thiet-ke.md:769 `...` ở 758 (`fn main(...): ...`) — thân hàm lược

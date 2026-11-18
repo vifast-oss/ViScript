@@ -94,15 +94,15 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (421, 1, 0, 5),  // greet + name + times + loud + s
     (437, 0, 1, 3),  // f + x (lambda) + y
     (488, 1, 0, 4),  // read_config + dir + text + cfg
-    (503, 0, 1, 2),  // cfg + err (else)
-    (554, 0, 3, 2),  // a, b
-    (568, 0, 2, 2),  // counter, inc
-    (590, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (703, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (717, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1482, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (512, 0, 1, 2),  // cfg + err (else) — +9 dòng ghi chú VD-222 ở §6.1
+    (563, 0, 3, 2),  // a, b
+    (577, 0, 2, 2),  // counter, inc
+    (599, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (712, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (726, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1491, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
     // **R11 (VD-178)**: khối 1435 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1435, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
+    (1444, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
 ];
 
 fn doc_path() -> PathBuf {
