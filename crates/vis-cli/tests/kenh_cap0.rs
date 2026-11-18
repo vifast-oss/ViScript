@@ -118,7 +118,7 @@ fn chan_0_do_thoi_gian_khong_treo() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (5) `recv` **sau close** ⇒ `none` (cả hai đường, byte y hệt).
+/// (5) `recv` **sau close** ⇒ `None` (cả hai đường, byte y hệt).
 #[test]
 fn recv_sau_close_none() {
     let d = tam("recv");
@@ -128,7 +128,7 @@ fn recv_sau_close_none() {
         "fn main():\n    let c = chan[int](1)\n    c.close()\n    print(c.recv())\n    print(c.recv())\n",
     );
     assert_eq!(a.0, 0, "{:?}", a);
-    assert_eq!(a.1, b"none\nnone\n");
+    assert_eq!(a.1, b"None\nNone\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 

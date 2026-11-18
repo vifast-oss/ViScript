@@ -132,3 +132,20 @@ fn lossless_token_fixture_moi() {
     );
     let _ = Path::new("");
 }
+
+#[test]
+fn none_thanh_none_hoa() {
+    // **R2 (VD-178)**: từ khoá `none` đã bỏ — `vis fmt` sửa thành `None` (kèm `VS0203` lúc kiểm).
+    kiem(
+        "fn main():\n  let x: int? = none\n  print(x)\n",
+        "fn main():\n    let x: int? = None\n    print(x)\n",
+    );
+}
+
+#[test]
+fn none_trong_pattern_thanh_none_hoa() {
+    kiem(
+        "fn main():\n  let x: int? = None\n  match x:\n    some(v):\n      print(v)\n    none:\n      print(0)\n",
+        "fn main():\n    let x: int? = None\n    match x:\n        Some(v):\n            print(v)\n        None:\n            print(0)\n",
+    );
+}

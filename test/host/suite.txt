@@ -56,7 +56,7 @@ ls_where_size	vish:ls ./photos | where size > 5mb	--fs-mock {host}/mock.json	nam
 ls_sort_take	vish:ls ./photos | where size > 5mb | sort_by modified --desc | take 10	--fs-mock {host}/mock.json	name   size  modified  is_file\nb.jpg   6mb        2h  true\n	0
 ls_to_json	vish:ls ./photos | to json	--fs-mock {host}/mock.json	[{"name":"a.jpg","size":1000000,"modified":10800000000000,"is_file":true},{"name":"b.jpg","size":6000000,"modified":7200000000000,"is_file":true}]\n	0
 shell_take	vish:([3, 1, 2]) | sort_by it | take 2		[1, 2]\n	0
-shell_first	vish:([3, 1, 2]) | sort_by it | first		some(1)\n	0
+shell_first	vish:([3, 1, 2]) | sort_by it | first		Some(1)\n	0
 shell_count	vish:([3, 1, 2]) | count		3\n	0
 shell_select	vish:([ {ten: "b", n: 1}, {ten: "a", n: 2} ]) | sort_by ten | select ten		ten\na\nb\n	0
 cap_trong	use std.fs\nfn main(r: cap[Dir] @ p"{tmp}"):\n    match fs.read("{tmp}/in.txt"):\n        ok(s):\n            print(s)\n        err(e):\n            print("err")		xin chào\n	0

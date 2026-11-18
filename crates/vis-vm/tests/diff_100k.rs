@@ -113,7 +113,7 @@ impl Gen {
         let _ = self.dieu_kien();
         match self.rng.duoi(2) {
             0 => "None".to_string(),
-            _ => format!("some({})", self.so()),
+            _ => format!("Some({})", self.so()),
         }
     }
 

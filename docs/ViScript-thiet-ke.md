@@ -16,7 +16,7 @@ Bản này đã vá theo [`docs/QUYET-DINH-sau-review.md`](../QUYET-DINH-sau-rev
 | 2 | Từ vựng: NFC toàn tệp trước khi lex; thụt lề suy đơn vị; tab = `VS0107` nhưng **vẫn lex**; bảng literal mới; bỏ `50%` → `50pct`; escape/nội suy; cột theo Unicode scalar | 2.1–2.4, 3.5 |
 | 3 | Parse chế độ lệnh **hai pha**: `vis-syntax` → `CmdCST` → `cmd_lower` (trong `vis-types`) → HIR; "cùng AST" đổi thành "cùng **HIR**" | 9.1, 9.3, 14.1, 18.2 |
 | 4 | Ngữ nghĩa số: bảng đầy đủ `%`, `**`, bit, float/NaN, `size/duration/percent`; **bảng ưu tiên 12 mức** | 3.6, 4.5 |
-| 5 | Kiểu và optional: thêm `Future[T]`, `Task[T]`, `AnyError`; bỏ `s[i]`; tự nâng `T → T?`; pattern `None/Some/Ok/Err` | 3, 4.3–4.4 |
+| 5 | Kiểu và optional: thêm `Future[T]`, `Task[T]`, `AnyError`; bỏ `s[i]`; tự nâng `T → T?`; pattern `Some/None/Ok/Err` | 3, 4.3–4.4 |
 | 6 | Lỗi: `trait Error: Show`, `AnyError`, `?` tự chuyển; **bảng mã thoát**; panic payload + arena lệnh | 6 |
 | 7 | Chế độ lệnh: metachar, `$env.NAME`, `;`/`&`/`--`/`-5`, closure-arg, `shell_item`, `from json[T]`, `complete` | 9 |
 | 8 | Host/ViShell: proc suspend/resume/cancel + wait; shell sở hữu tty, con nhận pipe, pty để sau | 12, 15 |
@@ -1129,7 +1129,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 | 8 | `%` dấu theo số bị chia, `%0` panic, có `rem_euclid`/`mod_floor`; `**` phải-kết-hợp, cao hơn `*`, mũ âm panic | §7.3 |
 | 9 | Bit: thêm `bit_not`, `ushr`; `shr` số học; đếm ≥ 64 panic; có `checked_shl/shr` | §7.3 |
 | 10 | Bảng ưu tiên **12 mức** (postfix → `**` → một ngôi → `* / %` → `+ -` → `..` → `??` → so sánh → `not` → `and` → `or` → `\|>`) | §7.3 |
-| 11 | Optional: tự nâng `T → T?` ở gán/trả/đối số; `T??` lỗi; `?` trên `T?`; pattern `None/Some/Ok/Err` | §7.3 |
+| 11 | Optional: tự nâng `T → T?` ở gán/trả/đối số (nhiều lớp — `T??` hợp lệ); `?` trên `T?`; pattern `Some/None/Ok/Err` | §7.3 |
 | 12 | Xét hết: guard **không** tính coverage; kiểu vô hạn **bắt buộc** `_` | §7.3 |
 | 13 | `trait Error: Show { message, source, span }`; `AnyError` xoá kiểu; `?` tự chuyển; `main -> Result[(), AnyError]`; plugin dùng `vis::Error` | §7.3 |
 | 14 | Mã thoát 0/1/2/101/126/127/130; panic payload `AnyError`; ViShell bọc **mỗi lệnh** trong task arena riêng, panic giải phóng arena, giữ biến/cwd/job/lịch sử; chưa có `defer` | §7.3 |
@@ -1324,7 +1324,7 @@ match_expr      := 'match' expr ':' NEWLINE INDENT match_arm+ DEDENT
 pattern         := or_pattern
 or_pattern      := range_pattern ('|' range_pattern)*
 range_pattern   := atom_pattern [ '..' [atom_pattern] | '..=' atom_pattern ]
-atom_pattern    := '_' | literal | '-' INT | 'None' | dotted_path
+atom_pattern    := '_' | literal | '-' INT | 'None' | 'none' (đã bỏ — VS0203) | dotted_path
                  | '(' pattern (',' pattern)* ')'
                  | '[' [list_pat] ']'
                  | '{' [record_pat (',' record_pat)*] '}'

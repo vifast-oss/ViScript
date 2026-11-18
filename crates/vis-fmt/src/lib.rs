@@ -202,6 +202,9 @@ fn render(out: &ParseOutput) -> String {
                 _ => "Err",
             };
             dst.push_str(hoa);
+        } else if t.kind == Kind::Kw && t.text == "none" {
+            // **R2 (VD-178)**: từ khoá `none` đã bỏ — `vis fmt` sửa thành `None` (kèm `VS0203`).
+            dst.push_str("None");
         } else {
             dst.push_str(&t.text);
         }

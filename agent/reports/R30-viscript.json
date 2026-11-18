@@ -1,0 +1,2574 @@
+{
+  "project": "viscript",
+  "round": 30,
+  "head": "0d5e0e57c5c2ccac4d1c5904de7d07900137cb49",
+  "build_id": "—",
+  "tasks": [
+    {
+      "id": "ST-01",
+      "status": "DONE",
+      "commits": [
+        "ef71f7f3af62a745419e7e2c85387015abc2a6a9",
+        "1b301a73e3aed28e5596bcf269c240b381163e54"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-01] sửa find_cargo + sổ ViScript theo review #13"
+    },
+    {
+      "id": "ST-02a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "errata áp xong; **APPROVED 2026-11-12 Agent 0** (không commit riêng)"
+    },
+    {
+      "id": "ST-02b",
+      "status": "DONE",
+      "commits": [
+        "94b30624f864bc992d63653a8b27822877404d27",
+        "9276448390d137cb93aae7a3fb1e0e89adb421b1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-02b] sửa theo review #14: ./vis hết 127, cổng bắt DoD, sổ có răng, YC-14 thật"
+    },
+    {
+      "id": "ST-03",
+      "status": "DONE",
+      "commits": [
+        "c895b5d53731d2cdfc527be5d4ce942f5f6f5100"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-03] vis-diag: cột theo Unicode scalar, render 20 snapshot (Việt/emoji), bảng vi/en/ja"
+    },
+    {
+      "id": "ST-11",
+      "status": "DONE",
+      "commits": [
+        "056dbd4c900f15ba75d95d885c1e9f0b28a2a128"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-11] vis-types nền: Type + HIR + giải tên + hạ CST→HIR, 194 test"
+    },
+    {
+      "id": "ST-12",
+      "status": "DONE",
+      "commits": [
+        "1c943714f5719c4ac42756ca2546b2562142b3c7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-12] kiểm kiểu VS0 + match xét hết: 116 ca đỏ trước, 205 test"
+    },
+    {
+      "id": "ST-12b",
+      "status": "DONE",
+      "commits": [
+        "ef465bc833adea014174514d85a251a4e1b5b75c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-12b] sửa 7 lỗi kiểm kiểu (review ST-12) + coverage VD-48, 237 test"
+    },
+    {
+      "id": "ST-13",
+      "status": "DONE",
+      "commits": [
+        "4f575ffb07b8c862be6ef0cbe93a6e40060babf9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-13] vis-interp: thông dịch cây trên HIR + builtins lõi, 227 test"
+    },
+    {
+      "id": "ST-14",
+      "status": "DONE",
+      "commits": [
+        "9b0c75cd6c64c99e3fa3fe079f61eedcd3acad2f",
+        "7d707f9393ca0001b21aee5b2211f6bda9e9a387"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-14] Cargo.lock: ghi dep vis-types/vis-interp của vis-cli"
+    },
+    {
+      "id": "ST-15b",
+      "status": "DONE",
+      "commits": [
+        "e645b4594b61ab6d9feb0aaf63f2ebf934f2be85"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-15b] sửa 4 lệch thiết kế phát hiện khi viết 302 ca ngữ nghĩa, 309 ca sem"
+    },
+    {
+      "id": "ST-15",
+      "status": "DONE",
+      "commits": [
+        "5d00cae16da03ec0c502a3b642acd1107e94f5a6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-15] bộ test ngữ nghĩa 302 ca/16 nhóm, cap độ sâu 2.000, 247 test"
+    },
+    {
+      "id": "ST-16",
+      "status": "DONE",
+      "commits": [
+        "e1061afac2a0bf2ff6f504e3d342f3589b167230"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-16] fuzz parser 1 giờ (0 vi phạm) + `vis-dev nightly` chạy được, 247 test"
+    },
+    {
+      "id": "ST-18",
+      "status": "DONE",
+      "commits": [
+        "02855f6f2e8a3d1f90eeee7e3b10f31d85b4433f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-18] cmd_lower: chế độ lệnh .vish hạ xuống HIR + chạy được, 265 test / 323 ca"
+    },
+    {
+      "id": "ST-19",
+      "status": "DONE",
+      "commits": [
+        "252ee8ac66816501e39ab88d4a92e25a5461eb1e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-19] vis-bytecode: định dạng VBC1 + sinh mã từ HIR, 284 test"
+    },
+    {
+      "id": "ST-20b",
+      "status": "DONE",
+      "commits": [
+        "aa41efeaa1f1412898e46122141e3c00b7b82c8e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-20b] vis-vm: differential interp ↔ VM về 0 lệch (272/272)"
+    },
+    {
+      "id": "ST-20",
+      "status": "DONE",
+      "commits": [
+        "32aff4e5e9033ecaff1b853354282552bc1cdf9c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-20] vis-vm: máy ảo chạy bytecode VBC1 + refactor ngữ nghĩa dùng chung, 289 test"
+    },
+    {
+      "id": "ST-21",
+      "status": "DONE",
+      "commits": [
+        "b4784a8f5155108c7c967e8b0a9eb38deccbeb37"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-21] verifier bytecode: 13 biến thể lỗi, fuzz đột biến 10 phút 0 vi phạm, 316 test"
+    },
+    {
+      "id": "ST-22",
+      "status": "DONE",
+      "commits": [
+        "de2c45452e1287129cadd7de7f45447785f0cc32"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-22] differential trên chương trình sinh tự động: 100.000 chương trình, 0 lệch"
+    },
+    {
+      "id": "ST-23",
+      "status": "DONE",
+      "commits": [
+        "5279416d68b9e8c225ea7ff5e231a61efed7b5be"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-23] cache bytecode theo hash closure + đo khởi động ấm"
+    },
+    {
+      "id": "ST-25",
+      "status": "DONE",
+      "commits": [
+        "3e7d99dee582906f4680ec578eee5dbd61dc839c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-25] module: use ./util đa tệp, cấm vòng, hash closure gồm phụ thuộc, 335 test"
+    },
+    {
+      "id": "ST-26",
+      "status": "DONE",
+      "commits": [
+        "d807bdb8a3810db841d20b03171d2331704b9023"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-26] vis-std lõi: std.str/list/map/path/time/json, 344 test, 70 ca std"
+    },
+    {
+      "id": "ST-27",
+      "status": "DONE",
+      "commits": [
+        "542eafa5c943b96aacfb67c8bf71bcb3bdff5866"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-27] vis-host-posix: chương trình ngoài, variadic, --x=v, 357 test"
+    },
+    {
+      "id": "ST-28",
+      "status": "DONE",
+      "commits": [
+        "66fcc041637600eecfa67410e7fe0f69155667e6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-28] generic hàm + kiểu [T]: xoá kiểu + hợp nhất call-site, 392 test"
+    },
+    {
+      "id": "ST-29",
+      "status": "DONE",
+      "commits": [
+        "14f6e613082250c210f5ba569856ab2dcfc88cf8",
+        "b9f1f07abe49bda7e222ecaf2818cf74ec29a105"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-29] trait + derives: dispatch tĩnh ở tầng hạ, chạy cả interp và VM, 421 test"
+    },
+    {
+      "id": "ST-30",
+      "status": "DONE",
+      "commits": [
+        "17c5253c5e66d4a6161355bd926a7b874317e5df",
+        "d1b2a4a1154808d6fb383db4b78da276616f482a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-30] vis test (TAP) + SHA-256 thật + đồng bộ chẩn đoán hai đường (gộp ST-30b), 436 test"
+    },
+    {
+      "id": "ST-30b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "đồng bộ chẩn đoán interp↔VM + siết differential (312/312 khớp)"
+    },
+    {
+      "id": "ST-32",
+      "status": "DONE",
+      "commits": [
+        "d0fdd3c342be224066afec7d4807835d71c51d5b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-32] harness so chẩn đoán biên dịch hai đường, đóng nợ 26 ca (443 test, 0 lệch)"
+    },
+    {
+      "id": "ST-33",
+      "status": "DONE",
+      "commits": [
+        "75f9078089e9c012d3b1a59189bcdfbc2b81a1e0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-33] json.decode + std.fs tối thiểu qua Host, 466 test (sem giữ 338)"
+    },
+    {
+      "id": "ST-34",
+      "status": "DONE",
+      "commits": [
+        "8fba57911c802bb7a86df82926424063347f0300"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-34] | complete + pipe→stdin cho chương trình ngoài, 482 test (sem giữ 338)"
+    },
+    {
+      "id": "ST-35",
+      "status": "DONE",
+      "commits": [
+        "7311a98b26fcb5276eda4ad0972dbde75a608fda"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-35] generic THẬT: Hop[int] ≠ Hop[str], 507 test (sem 338→346)"
+    },
+    {
+      "id": "ST-36",
+      "status": "DONE",
+      "commits": [
+        "c19cc276067349a39b9309cac5d2f84fa06d4eb3"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-36] báo cáo R5 chốt VS1c: 507 test, sem 346/18 nhóm, parity 320/320, diff 100k 0 lệch"
+    },
+    {
+      "id": "ST-37",
+      "status": "DONE",
+      "commits": [
+        "97069d807844f25d6443152d483b35cc4bbdfa1a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-37] CmdSig generic + khe ống hợp nhất, 521 test (sem 346→349)"
+    },
+    {
+      "id": "ST-38",
+      "status": "DONE",
+      "commits": [
+        "4de153fab493ec69d1c4ae3049952d90e676a70b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-38] closure-arg + where/each/first/count + sugar `it`, 538 test (sem 349→355)"
+    },
+    {
+      "id": "ST-39",
+      "status": "DONE",
+      "commits": [
+        "74da7ec98d7233f1648d3ee48b16c052882c323b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-39] sort_by + --desc (khoá int/size/duration/str, ổn định hai chiều), 550 test (sem 355→359)"
+    },
+    {
+      "id": "ST-40a",
+      "status": "DONE",
+      "commits": [
+        "fe86c2e04eff3230879cea551b19d6215464f126"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-40a] prelude FileEntry/ProcEntry + `it` kiểu thật + VS0605, 563 test (sem 359→363)"
+    },
+    {
+      "id": "ST-40b",
+      "status": "DONE",
+      "commits": [
+        "714faea01ced045827058792451848e89d024c97"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-40b] get/select (chiếu trường, select ⇒ bản ghi ẩn danh), 576 test (sem 363→367)"
+    },
+    {
+      "id": "ST-41",
+      "status": "DONE",
+      "commits": [
+        "62957d3965c715978cc26cc5d65af23c1de12b6b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-41] Render: bảng/khối cho giá trị cuối pipeline (NFC, print không đổi), 592 test (sem 367→370)"
+    },
+    {
+      "id": "ST-42",
+      "status": "DONE",
+      "commits": [
+        "792b3b51ec84c3679956714028a6f3ce73e76846"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-42] ls/open qua FsHost + --fs-mock, khối 672 chạy thật, 606 test (sem 370 giữ nguyên)"
+    },
+    {
+      "id": "ST-43",
+      "status": "DONE",
+      "commits": [
+        "8b135e58686b01921b1331fbbb68a872e41fb2b6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-43] báo cáo R6 (chốt VSH1a): 606 test, sem 370/18, parity 344/344, diff 100k 0 lệch"
+    },
+    {
+      "id": "ST-44",
+      "status": "DONE",
+      "commits": [
+        "aa1a5c37722a7cab0c43eef053fc0db0cb4d1cff"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-44] .vish có khai báo kiểu (type/enum/cmd/let) ở đầu tệp; 622 test (sem 370 giữ nguyên)"
+    },
+    {
+      "id": "ST-45",
+      "status": "DONE",
+      "commits": [
+        "ad0a1847536360bc0eabf6f8b69adec328d70fb1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-45] where kiểm tĩnh đầy đủ, each không kiểm kiểu trả; 636 test (sem 370 giữ nguyên)"
+    },
+    {
+      "id": "ST-46",
+      "status": "DONE",
+      "commits": [
+        "5b8f0c019004a1866438823fa5a5cb9064e60c08"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-46] 3 nợ VSH1b: ls --long thật (mode/modified_time), ( … ) làm đối số, chẩn đoán tuyệt đối; 651 test"
+    },
+    {
+      "id": "ST-47",
+      "status": "DONE",
+      "commits": [
+        "92c99589860cc0cd3beab7275137aeb186951ba5"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-47] báo cáo R7 (chốt VSH1b): 651 test, sem 370/18, parity 344/344, diff 100k 0 lệch"
+    },
+    {
+      "id": "ST-48",
+      "status": "DONE",
+      "commits": [
+        "3d23606860f163f21d3d9ffd73473e25817a38b3"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-48] thân `cmd` bằng pipeline lệnh (VSH1b-2); 666 test, interp↔vm cùng byte"
+    },
+    {
+      "id": "ST-49",
+      "status": "DONE",
+      "commits": [
+        "1d654a6af1be84c907d43861a3255e48ba26bf1e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-49] nhóm `( … )`: lệnh có cờ + pipeline + nhiều dòng; 680 test"
+    },
+    {
+      "id": "ST-50",
+      "status": "DONE",
+      "commits": [
+        "f2f992fd5ee84fd4763c44c2c12eb78e0401a83f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-50] một mã trường VS0405 (đổi tên/đổi sổ) + `where` kiểm tĩnh; 692 test"
+    },
+    {
+      "id": "ST-51",
+      "status": "DONE",
+      "commits": [
+        "7510b664cb0d04ef00e59342f6624339c5aeb630"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-51] stage đầu là biểu thức đóng (hẹp nhất); 704 test"
+    },
+    {
+      "id": "ST-52",
+      "status": "DONE",
+      "commits": [
+        "c09360cc9f53dbfb7d50465fc7c19b2fa22124e2"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-52] báo cáo R8 (chốt VSH1c); report-check PASS"
+    },
+    {
+      "id": "ST-53",
+      "status": "DONE",
+      "commits": [
+        "e5fc740a8c84c25957002e3a4e4b07507f34cac1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-53] `select`→`to json` + hợp nhất hai `sort_by`; 718 test"
+    },
+    {
+      "id": "ST-54",
+      "status": "DONE",
+      "commits": [
+        "ae442a62b2eab3d0e7bb6d2c09451e09958ea2b6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-54] codegen từ chối HIR lỗi: `CODEGEN_TIN_TYCK` 21 → 0; 730 test"
+    },
+    {
+      "id": "ST-55",
+      "status": "DONE",
+      "commits": [
+        "c1c8695698c534234cc934a9f0fced11ad92520b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-55] báo cáo R9 (chốt VSH2) + kế hoạch VS2 có tiêu chí đo"
+    },
+    {
+      "id": "ST-56",
+      "status": "DONE",
+      "commits": [
+        "4fd04b264e1104ea388e9d5ff938ad7506eb17ab"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-56] nợ lõi A: khoá str cho std.list.sort_by, &self, ref(x) identity, khoá Hop[Hop[int]]"
+    },
+    {
+      "id": "ST-56b",
+      "status": "DONE",
+      "commits": [
+        "8e13ee786e21bc6a736514b7c074f1170d91b288"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-56b] một ngữ nghĩa cho phép gán: self bất biến VS0412, var/var self gán trường+phần tử (interp = --vm), ex"
+    },
+    {
+      "id": "ST-57",
+      "status": "DONE",
+      "commits": [
+        "5ff404c69c71ecd6322be7ed1785e9683291bc0a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-57] mồ côi đa tệp (trait module), siêu trait một tầng VS0403, derives Show/Eq sinh HIR ở lượt 1c"
+    },
+    {
+      "id": "ST-58",
+      "status": "DONE",
+      "commits": [
+        "0252d0d2453a6c89031896a54d78e640d6f43980"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-58] bỏ Ty::Any: biến kiểu Var/List/Map cho std.list/std.map/std.json, hợp nhất kiểu trả; 3 ca âm tĩnh VS04"
+    },
+    {
+      "id": "ST-59",
+      "status": "DONE",
+      "commits": [
+        "4000ffd34a2df4b60c8e06bb406a7bc044d31cc9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-59] nợ shell: let suy kiểu bind ở vùng item (một nguồn luật), biến làm stage đầu (stage biểu thức + kiểu t"
+    },
+    {
+      "id": "ST-60",
+      "status": "DONE",
+      "commits": [
+        "c1dad8c4854f8b52521398656996d97ae8f2735f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-60] VS2 #1 async: async fn/await/spawn + lập lịch tất định một luồng ($tac_vu/$spawn/$await, không thêm ta"
+    },
+    {
+      "id": "ST-60b",
+      "status": "DONE",
+      "commits": [
+        "1511bc52b8e209b50b4ce72f0a4003d469c16188"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-60b] hotfix review: gán trong closure (captured dùng ô cục bộ, () thật), gốc đích gán + thông điệp lồng, s"
+    },
+    {
+      "id": "ST-60c",
+      "status": "DONE",
+      "commits": [
+        "4d248c3b9d512937a763813491d985e6a07df1ed"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-60c] derives vào impl_pairs (hết VS0403 oan cho impl trait con), enum derives Show sinh mã thật, Eq chặn s"
+    },
+    {
+      "id": "ST-61",
+      "status": "DONE",
+      "commits": [
+        "03a4da42b5ce121c1d8539796458f2ba8cdb728a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-61] kênh chan[T]: send/recv/close, deadlock VS0505 không treo, VS0504 gửi sau close, 15 ca sem + 5 test Ru"
+    },
+    {
+      "id": "ST-62",
+      "status": "DONE",
+      "commits": [
+        "d1bc9c0b8acfc403496cf6b265dad761bdc42749"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-62] báo cáo R10 — nợ lõi ST-56..ST-59 + VS2 #1 async + VS2 #2 kênh; 787 test, sem 441/21, parity 395/395, "
+    },
+    {
+      "id": "ST-63",
+      "status": "DONE",
+      "commits": [
+        "fc4f5032c4764ab6ac6cb273ac1fc3e56dc060b6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-63] NetHost + TCP client std.net (connect_timeout/read/write/close, chỉ loopback, VS0604 không host), 6 ca"
+    },
+    {
+      "id": "ST-64",
+      "status": "DONE",
+      "commits": [
+        "b3323e2727fe0f832b31136e9a21c811961adef0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-64] http.get/get_timeout (giao thức HTTP trong vis-interp, chỉ loopback, cap 8 MiB, VS0604 không host), 7 "
+    },
+    {
+      "id": "ST-65",
+      "status": "DONE",
+      "commits": [
+        "be5a16fde83637dede717feed351a213b5474590"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-65] server TCP net.listen/local_addr/accept(_timeout)/close_listen (loopback, handle L, e2e 2 tiến trình q"
+    },
+    {
+      "id": "ST-66",
+      "status": "DONE",
+      "commits": [
+        "c5df3b4374113d030389fdaaadfcd994cde2bd18"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-66] ca biên net/http: read/write sau close, read cap 64, accept 2 lần, path+query, body rỗng, explain ≥4 d"
+    },
+    {
+      "id": "ST-67",
+      "status": "DONE",
+      "commits": [
+        "bdd0b17f47c73a992a2ffccaa228afb002a89da1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-67] vis lsp --stdio: khung Content-Length + JSON-RPC 2.0, initialize/initialized/shutdown/exit (7 snapshot"
+    },
+    {
+      "id": "ST-68",
+      "status": "DONE",
+      "commits": [
+        "0f372d220295ddb90d4f98a2b55f37218ef4a45b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-68] LSP diagnostics: didOpen/didChange/didClose → publishDiagnostics, lex+parse+lower+tyck, vị trí 0-based"
+    },
+    {
+      "id": "ST-69",
+      "status": "DONE",
+      "commits": [
+        "ed495485400be6e9b2681ecefb1881465f2f1a79"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-69] LSP completion + hover: item/biến/builtin/từ khoá, hover markdown + range UTF-16; tách vi_tri/chan_doa"
+    },
+    {
+      "id": "ST-70",
+      "status": "DONE",
+      "commits": [
+        "f2faccbe80e9b6b03e5933ccc2a05df466f19c51"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-70] vis pkg: registry local (add/install/list), manifest files[] tường minh, vis.lock tất định + .vis/stor"
+    },
+    {
+      "id": "ST-71",
+      "status": "DONE",
+      "commits": [
+        "810555632cd98f1f46a638897ea9baa35dd9ca97"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-71] use pkg.*: nạp gói theo vis.lock, rel pkg/<tên>/<ver>/…, kiểm sha lúc chạy (VS0701), vòng qua gói VS07"
+    },
+    {
+      "id": "ST-72",
+      "status": "DONE",
+      "commits": [
+        "c0797055445e9de073bf23e887d234317a16ea5b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-72] cap[...] là kiểu thật (TypeRef cap[Dir|File|Net|Proc|Env|Term]) + kiểm @/(write) ở lower + vis run --d"
+    },
+    {
+      "id": "ST-72b",
+      "status": "DONE",
+      "commits": [
+        "f6d82cfbbf97258610ba66e81d2e8ccd19038acd"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-72b] cưỡng chế quyền cap ở biên host: Value::Cap bind từ CST, FsGuard/NetGuard trả VS0604 (trap), --grant "
+    },
+    {
+      "id": "ST-73",
+      "status": "DONE",
+      "commits": [
+        "7a97f9bd9f33c9bfeeb127b65f83a0e5a4f021d5"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-73] vis run --sandbox-check probe Landlock chỉ đọc (exit 0/3/4) + khung vis-host-linux ngoài viscript (che"
+    },
+    {
+      "id": "ST-74",
+      "status": "DONE",
+      "commits": [
+        "7213b7370d547a9a5dd195be31290e0879bd8e74"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-74] ma trận cargo check --target thật (8 crate × windows/wasm; vis-cli check xanh nhưng không chạy), bin/v"
+    },
+    {
+      "id": "ST-75",
+      "status": "DONE",
+      "commits": [
+        "a41e02ddff04fb85be58d9175fb3652b575e6be3"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-75] bộ hợp chuẩn host 54 ca chạy thật trên macOS (harness so byte interp+VM, 0 lệch) + bin/vis-host-suite "
+    },
+    {
+      "id": "ST-76",
+      "status": "DONE",
+      "commits": [
+        "e00837df605e49ba671c6b576fba9b815fb71a08"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-76] báo cáo R11 (86 hàng QUEUE, số liệu chạy lại, §19 VS2 đúng mức, §5 nợ 37 mục, VD-100..107); report-che"
+    },
+    {
+      "id": "ST-77",
+      "status": "DONE",
+      "commits": [
+        "499fd44ed926f1b12ccb8147cabe21e0d27298dd"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-77] vis fmt: .vish (Mode::Command, giữ thụt lề cmd) + --check thư mục + cú pháp mới (12 ca; fmt --check te"
+    },
+    {
+      "id": "ST-78",
+      "status": "DONE",
+      "commits": [
+        "acf2103c0078750a1e21774ae0356bbfb1771eb6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-78] vis explain: sổ mã VS0504-0506 đủ vi/en/ja (0506 rõ nghĩa), trợ giúp nêu 7 khối/32 mã đếm động; 6 ca C"
+    },
+    {
+      "id": "ST-79",
+      "status": "DONE",
+      "commits": [
+        "7518d1551073875398671cd89d2f8d64c746e366"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-79] vis test: chạy test fn (TAP mỗi test, join cuối, VS0506/VS0505 không treo) + assert(bool) dùng chung i"
+    },
+    {
+      "id": "ST-80",
+      "status": "DONE",
+      "commits": [
+        "8ff5f396a56fbd3819f478afd20fe6dc666deec9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-80] LSP module-aware: nạp std/use từ đĩa cho tệp có thật, chẩn đoán tệp chính = vis check; 7 ca (6 + hiệu "
+    },
+    {
+      "id": "ST-81",
+      "status": "DONE",
+      "commits": [
+        "70acb0f73736f89e4967b3d58ad765abe4c1151d"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-81] --strict-caps: fs/net phải nằm trong cap, VS0604 \"cần khai cap[Dir]/cap[Net]\" + đường dẫn; mặc định kh"
+    },
+    {
+      "id": "ST-82",
+      "status": "DONE",
+      "commits": [
+        "723663a62f0dd6c450f76da056d4536246182546"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-82] báo cáo R12: 92 hàng QUEUE, 914 test/447 sem/parity 398/diff 100k 0 lệch; §19 mức thật; §5 đủ 44 nợ; r"
+    },
+    {
+      "id": "ST-83",
+      "status": "DONE",
+      "commits": [
+        "7a1815e9b81a9b85c26b87accfe0b3dcc63426a7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-83] đóng 3 nợ nhỏ: fs.exists ngoài quyền ⇒ VS0604 (cùng câu read), assert <đk> câu lệnh (soft keyword), he"
+    },
+    {
+      "id": "ST-84",
+      "status": "DONE",
+      "commits": [
+        "9efa420c4d7aca34581cf41fae32853f99956d66"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-84] LSP completion/hover module-aware: item pub của use ./x + std.* đã use, detail nêu nguồn, khử trùng ưu"
+    },
+    {
+      "id": "ST-85",
+      "status": "DONE",
+      "commits": [
+        "2e57b95f762ec6c03028854a51778e7bc5e29b73"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-85] .vish indent: đo được thụt lề cấp tệp CÓ ngữ nghĩa ⇒ nhánh B (không chuẩn hoá, 0 fixture đổi); thêm fm"
+    },
+    {
+      "id": "ST-85b",
+      "status": "DONE",
+      "commits": [
+        "7c0c0e636e97aba126c67740c035f6e2b8b78a9b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-85b] .vish: dòng cấp tệp thụt lề báo VS0201 (hết bỏ im lặng); 7 ca interp+VM, giữ .vis/cmd/nhóm nhiều dòng"
+    },
+    {
+      "id": "ST-86",
+      "status": "DONE",
+      "commits": [
+        "72c3701e8e471522101778a4294f4fecda2d6907"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-86] fuzz differential cú pháp mới: 8 nhóm (async/chan/cap/derives/trait/assert/lỗi tĩnh/chạy) + 5 ca Rust "
+    },
+    {
+      "id": "ST-87",
+      "status": "DONE",
+      "commits": [
+        "0d91fd4e10fc0f023c4766050ad0c84491c31cd9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-87] cache không che lỗi: 520 tệp × 3 chế độ (interp, --vm 2 lần, --no-cache) byte y hệt 0 lệch; mode/modul"
+    },
+    {
+      "id": "ST-87b",
+      "status": "DONE",
+      "commits": [
+        "57a72e375a4e18d0f4401379db87283374cbf50a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-87b] cache: bỏ fast-path chết (đọc khoá v1, không bao giờ hit) + cache::khoa; chỉ còn khoa_multi; 5 ca, đo"
+    },
+    {
+      "id": "ST-88",
+      "status": "DONE",
+      "commits": [
+        "5d21633a24b39037d44c8e89815c27bbcd41998c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-88] báo cáo R13: 100 hàng QUEUE, 961 test, diff 100k 0 lệch seed 20261115, cache 520×4 0 lệch, fuzz parser"
+    },
+    {
+      "id": "ST-89",
+      "status": "DONE",
+      "commits": [
+        "51ee0fa6429838c2e75203bfacf2786936641f5e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-89] VM có host Ngoai (cùng trait interp): --vm 447 ok 0 SKIP (từ 7), host suite 54/54 ×2, pipeline/vis_tes"
+    },
+    {
+      "id": "ST-90",
+      "status": "DONE",
+      "commits": [
+        "837d5ff1eec23df52b1ffc3665aeb24f01fd43c2"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-90] pkg: entry trong vis.lock (--entry, lock cũ fallback, VS0701 nêu tệp) + pkg remove (lock/store/blob cò"
+    },
+    {
+      "id": "ST-91",
+      "status": "DONE",
+      "commits": [
+        "b273d2760652e4189d31d47c6dbbf62aa6dee248"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-91] LSP completion sau . theo kiểu tĩnh: trường kind 5 + phương thức impl kind 2, sentinel cho p. dở, fall"
+    },
+    {
+      "id": "ST-92",
+      "status": "DONE",
+      "commits": [
+        "c4e7555de8bba877100c07f77d3019d78a88eb18"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-92] báo cáo R14: 104 hàng QUEUE, 978 test, --vm 0 SKIP, parity 398+49 (đính chính 405), diff 100k 0 lệch, "
+    },
+    {
+      "id": "ST-93",
+      "status": "DONE",
+      "commits": [
+        "b7370fa6e0ca68ea350214a9ebd8f3f71e18ea20"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-93] cap[Proc] dưới --strict-caps: Runner chặn VS0604 ở biên host (interp+VM), đọc cap main .vish, pipeline"
+    },
+    {
+      "id": "ST-93b",
+      "status": "DONE",
+      "commits": [
+        "640bed326f8acb45fae17cdc93d56769048d2b7c",
+        "826623da7ccbe03779818f3b034dada2512827c8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-93b] sửa fixture cap_proc: thân main dùng pass (câu lệnh thật nay VS0201)"
+    },
+    {
+      "id": "ST-94",
+      "status": "DONE",
+      "commits": [
+        "94585f55341b332041b09da801dd72022fda4e14"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-94] kênh: chan(0) bị từ chối runtime VS0505 (nhánh A, không treo), close/recv/send + drain task Moi; 10 ca"
+    },
+    {
+      "id": "ST-95",
+      "status": "DONE",
+      "commits": [
+        "a9fc6dc8ac0d0f3fba810463e2766bd954616259"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-95] báo cáo R15: 108 hàng QUEUE, 999 test, --vm 0 SKIP, parity 398+49, diff 100k 0 lệch, cache 520×4 0 lệc"
+    },
+    {
+      "id": "ST-96",
+      "status": "DONE",
+      "commits": [
+        "1ac45e429ab364f0736ed6d60d8ebd96abfa9b51"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-96] bất biến sổ mã: A⊆B, B\\A=DU_PHONG; bỏ literal VS0001 khỏi unit test định dạng; 4 ca; 1003 test"
+    },
+    {
+      "id": "ST-97",
+      "status": "DONE",
+      "commits": [
+        "8b6a1152b9249f72eda4f04fa22f4513e133a64e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-97] --grant cho cap[Proc]: allowlist lệnh (basename/canonical), VS0604 khi ngoài allowlist; grant lệnh cho"
+    },
+    {
+      "id": "ST-98",
+      "status": "DONE",
+      "commits": [
+        "5699ccccd586328952577a6444001eb2f23ea301"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-98] soak 8 vòng tuần tự: 8/8 OK 818 s, gate/diff/host/cache ×2, 0 flaky; script + test; 1010 test"
+    },
+    {
+      "id": "ST-99",
+      "status": "DONE",
+      "commits": [
+        "84b9960e61c74aa7cfea230d9ec283971936de5c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-99] R16 + ROADMAP bàn giao: 112 hàng QUEUE, 1010 test, soak 8/8 818 s, 77 nợ; report-check PASS"
+    },
+    {
+      "id": "ST-100",
+      "status": "DONE",
+      "commits": [
+        "e9199dcff5911054dc10fd393d71df23897ae871"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-100] LSP: hover trường (cùng bảng thành viên), didClose dọn cache, cache item module phụ <2 ms; 5 ca; 1015"
+    },
+    {
+      "id": "ST-101",
+      "status": "DONE",
+      "commits": [
+        "fd24dda1bdac1e842b5fc4cec0830fe021f0a0be"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-101] vis check/test --json: object nén một dòng, check đủ diagnostics 1-based, test cases thứ tự + message"
+    },
+    {
+      "id": "ST-101b",
+      "status": "DONE",
+      "commits": [
+        "cb24089ff5671c99f8ee29648eee1d851390720d"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-101b] escape JSON đúng chuẩn một nguồn (quote/backslash/\\b\\f\\n\\r\\t/control, UTF-8 thô) cho check/test --js"
+    },
+    {
+      "id": "ST-102",
+      "status": "DONE",
+      "commits": [
+        "de66bde59c13eb2c2f282cafa70d187478f20ff5"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-102] vis pkg update (đọc lại registry cùng version, idempotent, không resolver) + pkg list --json tên byte"
+    },
+    {
+      "id": "ST-103",
+      "status": "DONE",
+      "commits": [
+        "cbcdf3f7e1d4f82c5d99568abe262f95b414cd34"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-103] báo cáo R17: 117 hàng QUEUE, 1033 test, --vm 0 SKIP, diff 100k 0 lệch, cache 520×4 0 lệch, JSON/hover"
+    },
+    {
+      "id": "ST-104",
+      "status": "DONE",
+      "commits": [
+        "9614eea8ee36f86056c0945482bdda2a81c37d86"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-104] HTTP client: chunked (+ext), redirect tối đa 5 (abs/rel), Content-Length không cần đóng, timeout đọc "
+    },
+    {
+      "id": "ST-105",
+      "status": "DONE",
+      "commits": [
+        "44f98e85e60b2ac2f1b8e6af22dd557057e58fb2"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-105] vis test --timeout <ms>: poll 10 ms, kill tiến trình con, not ok \"quá hạn <ms> ms\", tiếp tục + JSON; "
+    },
+    {
+      "id": "ST-106",
+      "status": "DONE",
+      "commits": [
+        "6514d22485f4ab1842adcca2d880f107db85d1cb"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-106] tách lower/cmd.rs thành cmd/doc.rs (235) + cmd/hop.rs (213); cmd.rs 1491→1060; thuần refactor 1045 te"
+    },
+    {
+      "id": "ST-107",
+      "status": "DONE",
+      "commits": [
+        "98750564cf786f19975338fca71a29113f14c0aa"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-107] báo cáo R18: 121 hàng QUEUE, 1045 test, HTTP chunked/redirect/timeout, test --timeout 0,89 s, R1 1491"
+    },
+    {
+      "id": "ST-108",
+      "status": "DONE",
+      "commits": [
+        "efe834883dcbfe0c866b4d64678bee9002e7f41b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-108] tách lower.rs 1482→993 + lower/khai_bao.rs 497 (khai báo item); R1 max 1482→1060; thuần refactor 1045"
+    },
+    {
+      "id": "ST-109",
+      "status": "DONE",
+      "commits": [
+        "96e31bcae06dcfdf5473e5298964401728ee5583"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-109] HTTP Location đầy đủ (../., query-only, fragment) + http.head không đọc thân/không redirect + HOST do"
+    },
+    {
+      "id": "ST-110",
+      "status": "DONE",
+      "commits": [
+        "8c140dbf1e4702f5f26eb9f5db71873921a32bd0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-110] check --json: files theo tệp nạp thật (chính trước, module theo use) + severity error/warning; 5 ca; "
+    },
+    {
+      "id": "ST-111",
+      "status": "DONE",
+      "commits": [
+        "4a563129e17f9c8522c2898b7938b0ee05816978"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-111] báo cáo R19: 125 hàng QUEUE, 1056 test, R1 1482→1060, Location/HEAD, JSON tệp phụ+severity; 96 nợ (sp"
+    },
+    {
+      "id": "ST-112",
+      "status": "DONE",
+      "commits": [
+        "d4bd5283b333ff8fccd1dfaf863172f7b9d2cd43"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-112] tái hiện chẩn đoán đa tệp sai tệp + kế hoạch Span file-id; KHÔNG sửa (>150 dòng); ROADMAP nợ correctn"
+    },
+    {
+      "id": "ST-113",
+      "status": "DONE",
+      "commits": [
+        "f78509e658b0ccd8ce2664d52359abfc30fc1849"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-113] soak cuối 10/10 (1255 s) + R20 (127 hàng QUEUE, 1056 test) + ROADMAP 79 dòng; sửa soak_script 8→10; V"
+    },
+    {
+      "id": "ST-114a",
+      "status": "DONE",
+      "commits": [
+        "b6ddeb0e9ec7c72ea26e64e15d84c48c8b52bd39"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-114a] Span.file + file-id lex→parse→lower (main 0, module theo use); hành vi y hệt 1056 test, checksum/dif"
+    },
+    {
+      "id": "ST-114b",
+      "status": "DONE",
+      "commits": [
+        "76715ad0e966abc726d574f40dde0a8dde238672"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-114b] dùng Span.file + file_rel: chẩn đoán đa tệp đúng tệp/dòng (JSON+TAP), 6 ca red-first→xanh; 1062 test"
+    },
+    {
+      "id": "ST-115",
+      "status": "DONE",
+      "commits": [
+        "560d174be45ac7f390529ad7cb9d31005fa625f3"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-115] báo cáo R21: 130 hàng QUEUE, 1062 test, chẩn đoán đa tệp đúng tệp/dòng (đóng nợ ST-112, trừ span tổng"
+    },
+    {
+      "id": "ST-116",
+      "status": "DONE",
+      "commits": [
+        "8a3f6614852ff7fd934e26c3bb1e79b24fd0bc99"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-116] tách parse/mod.rs 1452→1069 (khai báo A.1 sang parse/khai_bao.rs 391); thuần refactor, checksum/diff "
+    },
+    {
+      "id": "ST-116b",
+      "status": "DONE",
+      "commits": [
+        "537b7ac407e7dcf328e629aef99f1157637ce819",
+        "33c587ea64a893e818596c001364762152e17ca7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-116b] sửa log: main.rs 591 đạt ≤800 (không phải không đạt); R1 max toàn cục vẫn 1060"
+    },
+    {
+      "id": "ST-117",
+      "status": "DONE",
+      "commits": [
+        "73072978fa399dcbe4ede3364a90ee767a181827"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-117] LSP chẩn đoán đa tệp: hành vi đã đúng từ ST-114b, chỉ thêm 4 ca (a/b/c/d) — 1066 test; không sửa mã L"
+    },
+    {
+      "id": "ST-118",
+      "status": "DONE",
+      "commits": [
+        "2bf12e88764461d0b415c56648e47a489dce7552"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-118] soak cuối 10/10 (1297 s) + R22 (134 hàng QUEUE, 1066 test) + ROADMAP chốt 64 dòng; chẩn đoán đa tệp đ"
+    },
+    {
+      "id": "ST-119",
+      "status": "DONE",
+      "commits": [
+        "30386b935f9c639d6e91df47699ddfd9a796ee19"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-119] văn bản quản trị: AGENTS.md ×2 theo Phụ lục A, header STATE.md vòng 23"
+    },
+    {
+      "id": "ST-120",
+      "status": "DONE",
+      "commits": [
+        "1c516da369e37cd0b39da42abd1c816f0f394ae0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-120] đồng bộ thiết kế theo Phụ lục B/C/D1 + sinh lại fixture doc-examples"
+    },
+    {
+      "id": "ST-121",
+      "status": "DONE",
+      "commits": [
+        "19ae70434baf26b2059db5cb7799e1e5fb80059c",
+        "54b3996ed43a8c8f9d0adc4d8699f051f9da9f2f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-121] bin/vis-linux: đồng bộ thêm vis-host-linux (cần cho ST-132)"
+    },
+    {
+      "id": "ST-122",
+      "status": "DONE",
+      "commits": [
+        "630013117acefb48f65addad1a05b37ba77bf51e",
+        "9d3d9f94a0c483aa02620f0d356fddfd33a6ba5f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-122] hàng QUEUE DONE + CHỜ DUYỆT Agent 0 (theo VD-119)"
+    },
+    {
+      "id": "ST-123",
+      "status": "DONE",
+      "commits": [
+        "c38e4011eaf161de8d22dd70d63316a7aade4cfe",
+        "2513406ca6ace6b1828c654b156c210006ef3078"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-123] hàng QUEUE DONE + CHỜ DUYỆT Agent 0"
+    },
+    {
+      "id": "ST-124",
+      "status": "DONE",
+      "commits": [
+        "de4a675a234111a4214a88a628a0f7bc74b10fea",
+        "5d902c40ee3deaa0892401b75e4562194ab71918",
+        "e83fc6d160ce12f6f8ad9100bba25327a38a9013",
+        "e103bebd984595a18706625e733a2d1ade5505aa"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-124] bằng chứng gate --fast PASS trên worktree sạch tại HEAD (128 suite/1146 test)"
+    },
+    {
+      "id": "ST-125",
+      "status": "DONE",
+      "commits": [
+        "ef4b07de71daf7c35e0ec50d0f9e8467af40512a",
+        "621a5be76291422188816b487162d3e11a981f6d"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-125] hàng QUEUE: hash thật cho ST-124 (e103bebd) và ST-125 (621a5be7)"
+    },
+    {
+      "id": "ST-126",
+      "status": "DONE",
+      "commits": [
+        "29a19919e49287f968c094b4c533ea075016b06c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-126] đóng băng API: 3 tệp sinh từ code + test chặn (VD-129) + khoá cache mang bảng thẻ"
+    },
+    {
+      "id": "ST-127",
+      "status": "DONE",
+      "commits": [
+        "4a8dc91bf408673b565858053750caaec6bdbcb4"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-127] semver: Version + VersionReq + so khớp theo VD-125 (19 test/114 assert, không crate mới)"
+    },
+    {
+      "id": "ST-128",
+      "status": "DONE",
+      "commits": [
+        "291396747eef94c3791b42b01da2eed5d64d9c90"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-128] resolver tất định + mã VS0704 (chuỗi ràng buộc), all_codes 33; 17+7 ca"
+    },
+    {
+      "id": "ST-129",
+      "status": "DONE",
+      "commits": [
+        "639c63adfe4bad460122e04a0ae8291d6735ee61"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-129] pkg dùng resolver + vis.lock định dạng 2 (roots/version_req) + migration, 8 ca"
+    },
+    {
+      "id": "ST-130",
+      "status": "DONE",
+      "commits": [
+        "d60d79713fd9bb135eaa526f95155c5183e81be6",
+        "da90b166c3b1123d75a14542763ae01f87b9fc0b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-130] ca thứ 8: use module nội bộ + std.fs, không pkg.* ⇒ hành vi caps cũ, không VS0604 (VD-133); 8 #[test]"
+    },
+    {
+      "id": "ST-131",
+      "status": "DONE",
+      "commits": [
+        "f0809939aa0f546e26acf1fb7aa839d1c408791b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-131] đo đầy đủ trên Linux: 1062/4 so với macOS 1066/0, 4 lệch liệt kê (không sửa)"
+    },
+    {
+      "id": "ST-132",
+      "status": "DONE",
+      "commits": [
+        "e676ef4f5171da521c5a8abdef0beea18cc6272d",
+        "444b72315ef8c2f87e7007264f947dfda0262dbd"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-132] viscript/Cargo.lock: ghim phụ thuộc landlock (thiếu ở commit trước)"
+    },
+    {
+      "id": "ST-132b",
+      "status": "DONE",
+      "commits": [
+        "e328b03658260c4f27c9c168e2329b8cbec23a44"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-132b] ca âm Landlock thứ 3: tiến trình con read_dir thư mục ngoài bị kernel chặn (13/13 ca trên ps, đỏ-trư"
+    },
+    {
+      "id": "ST-133",
+      "status": "DONE",
+      "commits": [
+        "ef43ce09a332eeaa09444dae1d912118a9188971",
+        "0425e0fe0a8690d3d3e1beba855199c640c9978f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-133] R23 §7: ghi nhận Agent 0 ra VD-132..VD-140 trong đợt (chuẩn thuận runner SSH, giấy phép unicode-ident"
+    },
+    {
+      "id": "ST-134",
+      "status": "DONE",
+      "commits": [
+        "fba1e375d433f2a7f5e1abe3baf06a4a9ceb26cb"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-134] vá runner Linux (script setup rustup target + sync vis-host-wasm) + 2 ca theo VD-132 + sửa lỗi thân c"
+    },
+    {
+      "id": "ST-135",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "chạy lại đầy đủ trên Linux sau ST-134 (không commit riêng)"
+    },
+    {
+      "id": "ST-136",
+      "status": "DONE",
+      "commits": [
+        "5e36415571b4d391758bc22f46cc795935912eaf",
+        "bb709c67e65cdde7205a30597e343127dd9112fe",
+        "4ea3ad8c49d57a801366be4f58aa124a261cd0b9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-136] đính chính hash ST-134 trong lời dẫn (fba1e375, không phải 76b6e22e)"
+    },
+    {
+      "id": "ST-137",
+      "status": "DONE",
+      "commits": [
+        "bca04040c985fa33bcaa44016d256ac905e8dfce",
+        "89e77a3eab0f85e7627e18cbe4f45de7c8f1e129",
+        "976751eda901c0f39d1412e74a3e031bb2de7370"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-137] gate --fast lần 2 trên HEAD đã push (89e77a3e): PASS, L0 1159/0 — cập nhật log + số đo trong JOURNAL/"
+    },
+    {
+      "id": "ST-138",
+      "status": "DONE",
+      "commits": [
+        "2b889239b53de22e82dfb5c32dcd714d3661ebdb",
+        "0a9f2703f11dd0c329ccd44e0866216eabe5448a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-138] lật DONE theo QUYET-DINH-A0-2026-11-16g §5.2"
+    },
+    {
+      "id": "ST-139",
+      "status": "DONE",
+      "commits": [
+        "969319733f5ebc483f7251841c4a8dad3f34d3c6",
+        "934ac99fcab5f74bd1e1c658730baed492dfd6f6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-139] hàng QUEUE + log đỏ-trước và log cổng --fast"
+    },
+    {
+      "id": "ST-138b",
+      "status": "DONE",
+      "commits": [
+        "dae6e8f649e55a8021731232d983623bd2f9ab06",
+        "6fd80baab02f3dc5b9a26772e0eb838281b9a56e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-138b] đính chính số dòng log bằng chứng trong JOURNAL (2001)"
+    },
+    {
+      "id": "ST-140",
+      "status": "DONE",
+      "commits": [
+        "9019312d9c8f366a8f56cb7c22dc80ec1ea5ff6e",
+        "eeeecd5ef6a79d262ccbd7adee4934c6dbdf7e53"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-140] số đo hai nền + lật hàng"
+    },
+    {
+      "id": "ST-141",
+      "status": "DONE",
+      "commits": [
+        "5df86c43a101f08d3c662f882cbb1b3b72a3935a",
+        "cde47a7349d3b8d8dd07a9297a3a714378473884"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-141] khôi phục st113-soak.log (d2840412…), tách soak đợt 24 sang st138-soak.log (d79df3c2…); số đo + lật h"
+    },
+    {
+      "id": "ST-142",
+      "status": "DONE",
+      "commits": [
+        "6d58b828c5d5ea89074acd0d8d328eb91f323b46"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-142] số Linux đầy đủ: vis test 447/447 hai đường, diff 100k lech=0, cache 520×4 0 lệch (ps + macOS, HEAD 5"
+    },
+    {
+      "id": "ST-143",
+      "status": "DONE",
+      "commits": [
+        "dd9bd5edc90162989db3fbf3a39abc3236905c3f",
+        "658d2c0143e244346b7df4e837f820bb7d2f155b",
+        "28a05198d13dc7c84f606aba73cc6fc675d575eb"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-143] soak 10 vòng trên ps: 10/10 = 250 s, shim ../vis-dev chạy được (+ log)"
+    },
+    {
+      "id": "ST-144",
+      "status": "DONE",
+      "commits": [
+        "d3c4ef41167f70d5ac1d611a61cd470270d805fe",
+        "88b3a8e4bccfc0b4c9f1e7a1fb9e542f63c4b706"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-144] Windows: cài 2 target, sửa 1 dòng doc_examples.py + nhánh nền sandbox.rs; đo lại trên psvn"
+    },
+    {
+      "id": "ST-145",
+      "status": "DONE",
+      "commits": [
+        "b8e24bc75972784692cb773dbc550101741b4be7",
+        "b1b8b46042ca989770bf7c208ab3f4b7cbcc38a7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-145] sổ + QUEUE/STATE/JOURNAL: DONE, gate macOS PASS L0 1159/0, chờ duyệt Agent 1"
+    },
+    {
+      "id": "ST-146",
+      "status": "DONE",
+      "commits": [
+        "eeb922d216ff58b10be011d95cc70c1b7755b3ea"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-146] R25: chốt đợt 24g — hạng mục 7 Linux \"chạy thật\" (1162/0 + gate PASS trên ps), đính chính R24, sổ nợ "
+    },
+    {
+      "id": "ST-147",
+      "status": "DONE",
+      "commits": [
+        "5782560be8aac3abcd3d2c8d952479fbe148632e",
+        "89bc64691ba71dfe4ca424e9343cae8ebc87e647"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-147] Windows: self-test 11/12 (từ 7/12), cổng dừng ở bước self-test; ca 7 BLOCKED vì check.rs (VS3)"
+    },
+    {
+      "id": "ST-148",
+      "status": "DONE",
+      "commits": [
+        "03386043a5f23d73038699211f16773818756309",
+        "36ee529e66c673dee2b7c49d4ca4be4d6dbe8d10"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-148] SO-NO + QUEUE/STATE/JOURNAL: DONE, gate macOS PASS L0 1159/0, chờ duyệt Agent 1"
+    },
+    {
+      "id": "ST-149",
+      "status": "DONE",
+      "commits": [
+        "f9b991623b3529172ec6c0d5eedf5ff6a8b83346",
+        "1699c957b044a5a5954fd489418cc7f756491018"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-149] số đo + lật hàng: #136 đóng, ST-149 DONE, ST-147 DONE theo ĐÓNG HÀNG Agent 0"
+    },
+    {
+      "id": "ST-150",
+      "status": "DONE",
+      "commits": [
+        "9122e575c459bb71773b07cf5b57c43bf3768944",
+        "b82063330ea23ff44ee1617b89e239e338408abc"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-150] số đo + lật hàng: #133 đóng, ST-150 DONE, 14/14 trên ps, sha256 hai phía khớp"
+    },
+    {
+      "id": "ST-151",
+      "status": "DONE",
+      "commits": [
+        "745b9d3df549228aded95868fd7521c53fa61b65",
+        "a203e1bcb228450dd247d866fb4b6375e85d898e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-151] số đo + lật hàng: #135 đóng, ST-151 DONE, L0 1175/0, --check-sync 8/8"
+    },
+    {
+      "id": "ST-152",
+      "status": "DONE",
+      "commits": [
+        "d17ac5c72dadc82daf51a9ac9abd2b9e80cb3383"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-152] R26: chốt đợt 25 — VS2 đóng kỹ thuật 8/8, cổng Windows qua 9/10 bước, nợ 91 mở/20 VS3"
+    },
+    {
+      "id": "ST-153",
+      "status": "DONE",
+      "commits": [
+        "0c624f8b6b2547a11267c7299df51b550530697a",
+        "0fb09b62048837f3c8be7d3e2024d92d353f4766",
+        "2287bad63b4551cb79c55a2ca83302920309ef99"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-153] log ps: ghi chú đếm L0 tránh mẫu số bị đếm đôi + sha mới"
+    },
+    {
+      "id": "ST-154",
+      "status": "DONE",
+      "commits": [
+        "6cf981005183a80695efda7f80dcfec8bb66edb0",
+        "029567fdbec5909308ddfa70ba5808619e5957a3",
+        "321592249c39b83d353bf812872a7dfb81ce8eb1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-154] kiem-trung: chạy lại trên SO-NO cuối (sha256 log tự khớp tệp đã commit)"
+    },
+    {
+      "id": "ST-155",
+      "status": "DONE",
+      "commits": [
+        "208751a377dc84df83133497ac6f2ddd55b0f12f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-155] điều tra VS3 (chỉ đọc): 6 mục + kích thước + rủi ro + câu hỏi cho Agent 0"
+    },
+    {
+      "id": "ST-156",
+      "status": "DONE",
+      "commits": [
+        "36412e2446c93582a4651b578b914114fef1ebb8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-156] R27: chốt đêm 17/11 — #144 đóng, #143→VS3, #145, sổ 146 (91/32/21), bộ đầu vào VS3"
+    },
+    {
+      "id": "ST-157",
+      "status": "DONE",
+      "commits": [
+        "0c1a404347d17442630a422f640e7a1f26ca8261",
+        "fea881b4295a2dacef77f5d9e2fd5c6376fbe0fa"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-157] số đo + lật hàng: #110 đóng, ST-157 DONE, gate macOS PASS L0 1179/0"
+    },
+    {
+      "id": "ST-158",
+      "status": "DONE",
+      "commits": [
+        "1366915a60a73d96e838bb65f9b5a2b1c03e3a49",
+        "09dcf69132c0637aef0d6021993604b9148f6b63"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-158] số đo + lật hàng: #129 đóng, ST-158 DONE, gate macOS PASS L0 1179/0"
+    },
+    {
+      "id": "ST-159",
+      "status": "DONE",
+      "commits": [
+        "ddf8f957fa32f6cb767d2babbad0505a90553200"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-159] R28: đợt 28 — #110 (parity argv) + #129 (một nguồn khối), L0 1179/0, sổ 146 (89/34/21)"
+    },
+    {
+      "id": "ST-160",
+      "status": "DONE",
+      "commits": [
+        "808293fd0e3239cbbb347d18e8320d601dad7bec"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-160] dán quyết định đợt 29: 13 APPROVED, VD-157..VD-164, nợ #146 (sổ 147), hàng ST-160..ST-170"
+    },
+    {
+      "id": "ST-161",
+      "status": "DONE",
+      "commits": [
+        "70798a0914aa6ecd41b6d7c518623b407cf0e8e4",
+        "ea6298c53f99b016d775d3a32875d4ac50bf3b94"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-161] check_report sau commit: PASS 28 báo cáo / 189 hàng (ST-171 của Agent 1 thêm vào QUEUE)"
+    },
+    {
+      "id": "ST-162",
+      "status": "DONE",
+      "commits": [
+        "6ad44d9151cfefa817fceae54ab8340aed313e58"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-162] vis-remote: đường tuyệt đối + .exit + log ngoài repo (sự cố R28 §5 #4/#5/#6)"
+    },
+    {
+      "id": "ST-163",
+      "status": "DONE",
+      "commits": [
+        "6f5c183ba216591d85d92872471a48bb554cf742"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-163] điều tra #146: 500k vòng mac+ps, phân loại b (TOCTOU thật, chỉ macOS), chẩn đoán trong ca"
+    },
+    {
+      "id": "ST-164",
+      "status": "DONE",
+      "commits": [
+        "c742f396f8dcb19600b2f12a13641a875291e7af",
+        "7b22a234cbc01f7feb1654f8ca6b18c4114a850b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-164] ghi nhận kết quả: min 8 ms ×3 lần, gate PASS L0 1179/0, chỉ phần đo"
+    },
+    {
+      "id": "ST-165",
+      "status": "DONE",
+      "commits": [
+        "822e5896e34327e7805005c3ff3d0a15a77e2b4c",
+        "4ce69b0a3bfbafe6dae998162b7d74ca7d0c336a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-165] ghi nhận bất thường: commit 4ce69b0a bị cuốn 20 tệp v2/ đã staged sẵn (index dùng chung); không force"
+    },
+    {
+      "id": "ST-166",
+      "status": "DONE",
+      "commits": [
+        "49c7cb719d06cb0c5970c6bde40521b51f94da48",
+        "75a6b002f0e396ed3e161954ec3551f3433f6ac9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-166] log cargo test toàn crate vis-host-linux trên ps: 15/15 xanh, [exit=0]"
+    },
+    {
+      "id": "ST-167",
+      "status": "DONE",
+      "commits": [
+        "6079eff6c0695a15b14a560deb93c7bd6e784592"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-167] soak 10 vòng cùng HEAD 795df046: mac 1696 s vs ps 254 s (6,68×) — đề nghị A0 mở nợ #147 điều tra hiệu"
+    },
+    {
+      "id": "ST-173",
+      "status": "DONE",
+      "commits": [
+        "9cda5e96f20b1b3d57cdf2e6656218df4a486590"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-173] landlock chỉ Linux: chuyển vào target cfg linux, mac hết lỗi biên dịch (0 ca), ps 15/15 không đổi, ga"
+    },
+    {
+      "id": "ST-174",
+      "status": "DONE",
+      "commits": [
+        "13fa9c8c8767f1860b524d82709f870c89f7dac1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-174] vá #146 (A): symlink_metadata + điểm chèn cfg(test); đỏ-trước 100/100, sau vá 100/100 trên mac+ps, ca"
+    },
+    {
+      "id": "ST-175",
+      "status": "DONE",
+      "commits": [
+        "c15896383306a7ce2844f6d99d942aa8008628c2"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-175] vis-remote từ chối cây bẩn (exit 6, --allow-dirty/--require-clean) + điều tra cây ps: viscript/ 0 xoá"
+    },
+    {
+      "id": "ST-176",
+      "status": "DONE",
+      "commits": [
+        "27e27f227e3487f239cb6c37f2787e12634ee5c9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-176] nợ #147: vis-lock (macOS không có flock) + đo lại có khoá: mac 1489 s vs ps 261 s = 5,70×, nguyên nhâ"
+    },
+    {
+      "id": "ST-168",
+      "status": "DONE",
+      "commits": [
+        "2f9ec08b71087ae14e41266d838f5a2519892493"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-168] 6 tài liệu quyết định VS3 (QĐ-1..6): mục tiêu đo được, API, ca đỏ-trước, chia task ≤3 h, cổng, phụ th"
+    },
+    {
+      "id": "ST-169",
+      "status": "DONE",
+      "commits": [
+        "8788a4dd49c37bae5cabeef59ec9e712865dc10a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-169] bảng phân loại 105 ca Windows (a=48/b=15/c=42) từ log ST-161 — đầu vào ST-168 mục 5"
+    },
+    {
+      "id": "ST-170",
+      "status": "DONE",
+      "commits": [
+        "2f62022a0a803b54732550b2b050760500700517",
+        "9b1466b91907260dc532a50e04e130bb1d11ee22"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-170] docs: SO-NO đồng bộ số đợt 29 (#146 đóng ST-174, #147 mở)"
+    },
+    {
+      "id": "ST-171",
+      "status": "DONE",
+      "commits": [
+        "61aff05988c9d0da99b63ee30519e9ae6dfca850"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-171] tách repo ViScript: 459 commit giữ lịch sử (454 [ST-*]), 2191 tệp; cập nhật đường dẫn check_report/vi"
+    },
+    {
+      "id": "ST-178",
+      "status": "DONE",
+      "commits": [
+        "c2594c778cb29e38820fc75f8a2c270f6811a2a7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-178] sửa tài liệu theo VD-178/180/181: 16 [SỬA] trong 6 tài liệu VS3 + vs-ergo + st169 + cheat sheet (C1 m"
+    },
+    {
+      "id": "ST-179",
+      "status": "DONE",
+      "commits": [
+        "dadbb1a07f9c7725c26f8a4704bdc87127e631ff"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-179] P0a: newtype báo lỗi tại dòng khai (VS0501) + bỏ nhãn \"VS0\" khỏi 29 thông điệp; API-CODES sinh lại; c"
+    },
+    {
+      "id": "ST-180",
+      "status": "DONE",
+      "commits": [
+        "9e80be7f98fea4b6e7bfa39f161c488f91f5e1f7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-180] R19c: float literal chỉ khi ngay sau '.' là chữ số — '5.bit_or(3)' lex INT(5) + method, '1.'/'1.e3' v"
+    },
+    {
+      "id": "ST-181",
+      "status": "DONE",
+      "commits": [
+        "8936316c64ecf16c99ee2d0eebdd3bd6275a8b83"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-181] P0-3: cheat sheet thành doc-test — 11 ca test/cheatsheet/ + harness; sửa 6 nhãn theo dữ kiện; phát hi"
+    },
+    {
+      "id": "ST-182",
+      "status": "DONE",
+      "commits": [
+        "877c1e930d6c08420c2c105081c6b159e36cc761"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-182] R9: mỗi mã một nghĩa — +16 mã (VS0203..0206, VS0303, VS0413..0416, VS0507/0508, VS0605/0606, VS0705.."
+    },
+    {
+      "id": "ST-183",
+      "status": "DONE",
+      "commits": [
+        "6a8da06f9c5038b7f8b80e9e1a6ca880ee11c72f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-183] R6: p\"…\" thô + nội suy, str+str nối, {expr:.N} runtime, print(a,b) cách 1 dấu cách; Instr::Format (VB"
+    },
+    {
+      "id": "ST-184",
+      "status": "DONE",
+      "commits": [
+        "32dbdabfd5b02d7c458f27df9989d79169807c2e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-184] R17: điều kiện if/while chỉ bool + gợi ý .is_empty(); thêm is_empty cho list/map/str (tyck + runtime)"
+    },
+    {
+      "id": "ST-185",
+      "status": "DONE",
+      "commits": [
+        "b9bbf4a9a4dfd97fbcf2c6ab72d5d1f8821d1f93"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-185] R3b: hạ let…else (tyck bóc Result/T?, interp + codegen nhánh Ok/Some vs else, None là biến thể trong "
+    },
+    {
+      "id": "ST-186",
+      "status": "DONE",
+      "commits": [
+        "eac690f0b384c2f00250bb9e5390c4cb2f51f17e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-186] R3a: if let nhận pattern Some(v)/Ok(v)/Err(e) (tyck kiểm theo T?, Pop nhánh else/elif ở 3 chỗ codegen"
+    },
+    {
+      "id": "ST-187",
+      "status": "DONE",
+      "commits": [
+        "4cc61a3d6125c92b6cb0926d4fe0c5571a87ab95"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-187] R16: let được che tên trong cùng phạm vi (PatBind không báo VS0302); var vẫn báo; ca pham-vi/che-ten-"
+    },
+    {
+      "id": "ST-188",
+      "status": "DONE",
+      "commits": [
+        "0470646d382183603e26540e0fd58f6253623031"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-188] R12a: type X = T thay alias, type Email(str) thay newtype (trong suốt: dựng Email(x), mở let Email(s)"
+    },
+    {
+      "id": "ST-189",
+      "status": "DONE",
+      "commits": [
+        "51fc0a70d107c9ba88bd049bfb3bc723f32c449e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-189] R11: biến thể enum mang dữ liệu vị trí Circle(float) + nhiều biến thể cùng dòng; dựng bản ghi theo tê"
+    },
+    {
+      "id": "ST-190",
+      "status": "DONE",
+      "commits": [
+        "472ee38a563d8e05993c7ee371274c241b5b1392"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-190] R7: / luôn float, // chia lấy phần nguyên (làm tròn xuống), % khớp // (không âm); BinOp::FloorDiv (ta"
+    },
+    {
+      "id": "ST-191",
+      "status": "DONE",
+      "commits": [
+        "396bd4b13cedd7127379c6ca1385d14487850c7f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-191] R8: xs[i]? chỉ số có kiểm tra trả T? (Instr::IndexOpt thẻ 54, VBC1 + khoá cache ghim lại); xs[i] ngoà"
+    },
+    {
+      "id": "ST-192",
+      "status": "DONE",
+      "commits": [
+        "f9f50be601361d12e6ac207bbd79615d7c1331d0",
+        "9c31bc33a4177cabd270ecb881a0ae7e5f7928d9",
+        "44be130c016ba1e8001e2a92dc24d34440eb7108"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-192] docs: README §14 Mẹo mới — ví dụ chạy được cho R3a/R3b/R5a/R7/R8/R11/R12a/R16/R17"
+    },
+    {
+      "id": "ST-193",
+      "status": "DONE",
+      "commits": [
+        "ca3963ce7531360203e0efdc1b58d53cbd99689b",
+        "a05f40005deb20af57a24c64cf37ae218bfee5f4",
+        "55621ed5c8261380044a3e3bc05a44b683f2d057",
+        "8246c706e5c59c655f71a6a4b22e244a74623ebe",
+        "463217650d9f1566f21970b730c4d042d59d80b8",
+        "25936c20eeb871191f7ddaeab6a48126aa84d57b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-193] docs: cheat-sheet §5 thêm hàng xs[i]? / xs.get(i) (R8)"
+    },
+    {
+      "id": "ST-194",
+      "status": "DONE",
+      "commits": [
+        "a73ec9b06578a34bfc0813707db56dc02c6bb47a",
+        "3550e06476a9ea75f999b77f87e0cb2a645f7131",
+        "22d6f78348e840d8fa88829b576dc95c40f8fe31"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-194] docs: thiết kế §4.3 + VD-19 pattern viết hoa (R1a); cheat-sheet phụ lục cập nhật"
+    },
+    {
+      "id": "ST-195",
+      "status": "DONE",
+      "commits": [
+        "8ff062a618abc048e0cf562658b2ae1f1e48e6f5",
+        "2357e54565edb7a15c5115db45915e4bf7832ed1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-195] docs: QUEUE/JOURNAL R20a + cheat-sheet assert có thông điệp"
+    },
+    {
+      "id": "ST-196",
+      "status": "DONE",
+      "commits": [
+        "6b7e391e5f61e0aaa486b32c3746195f0deea5b1",
+        "9dc14a97a7c0fb75658d745301c5039346376908",
+        "3c1351d132e7148739dd70510691a1bbb970ef8c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-196] docs: STATE header ST-178..ST-196; gate --fast PASS"
+    },
+    {
+      "id": "ST-197",
+      "status": "DONE",
+      "commits": [
+        "ed490d2152fea923d61c68f34348400429823988",
+        "ae3986d442a39855d5121698514b7a9ce678a6e6",
+        "e082bc642ec4888ff7c4b8caf25045747f8de53c"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-197] docs: QUEUE/JOURNAL hàng ST-197 (bổ sung hồi tố)"
+    },
+    {
+      "id": "ST-198",
+      "status": "DONE",
+      "commits": [
+        "1e65e6069c635756ac760fbcd90691ac03307103",
+        "f26c0a7e5e7167dd6ab651a56b718a28a94e6001"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-198] docs: QUEUE/STATE + log cổng cho ST-198/ST-199 (port PR #26/#27)"
+    },
+    {
+      "id": "ST-199",
+      "status": "DONE",
+      "commits": [
+        "4184371cf0031df211e2e57d030c417746fa70a8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-199] fix: chẩn đoán kiểu trong nhóm `( … )` ở đầu tệp `.vish` trỏ đúng biểu thức con"
+    },
+    {
+      "id": "ST-200",
+      "status": "DONE",
+      "commits": [
+        "6a322336d2583af720ad81eca13a41ea38afb61b",
+        "d4cee988659a7cf3b34c4c6ccf6511af61cf829e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-200] docs: QUEUE hàng ST-200 (brand icon)"
+    },
+    {
+      "id": "ST-201",
+      "status": "DONE",
+      "commits": [
+        "767d7b0bcaf5f9ddb60a1456add810341da706d7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-201] docs: đồng bộ ROADMAP/STATE/QUEUE sau đợt pha 1"
+    },
+    {
+      "id": "ST-202",
+      "status": "DONE",
+      "commits": [
+        "6dcd88f4de209c3c0d2692eff846fc2343e13ce3"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-202] R19b: tràn i64 mọi đường ⇒ VS0507 + exit 101"
+    },
+    {
+      "id": "ST-203",
+      "status": "DONE",
+      "commits": [
+        "9a0bed6ebba9ccc4f49147a0c60696bd448bde28"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-203] R2: bỏ từ khoá none (VS0203) + T?? lồng tuỳ ý + tự nâng nhiều lớp"
+    },
+    {
+      "id": "ST-204",
+      "status": "READY",
+      "commits": [
+        "0d5e0e57c5c2ccac4d1c5904de7d07900137cb49"
+      ],
+      "gates": [
+        "—"
+      ],
+      "note": "**R30** (báo cáo này) — QUEUE@head ghi `READY`; lật `DONE` ở **chính commit chứa báo cáo** sau khi `check_report --all` PASS và gate `--fast` PASS tại `0d5e0e5`"
+    },
+    {
+      "id": "ST-172",
+      "status": "DONE",
+      "commits": [
+        "f143d50524cf470b2372d4b970e6e2c23011dab0"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-172] vs-ergo: 7 điểm công thái học + VS0412 dùng 4 nhóm lỗi (đề xuất tách mã); cheat sheet đổi nhãn"
+    },
+    {
+      "id": "ST-172a",
+      "status": "DONE",
+      "commits": [
+        "cf5586a96e6e2340c8ab013821cc0fbbdda788e4"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-172a] vs-ergo-facts: dữ kiện 8 nhóm (cú pháp, kiểu, giá trị, lỗi, std, tính năng, trải nghiệm, quyết định)"
+    },
+    {
+      "id": "ST-172b",
+      "status": "DONE",
+      "commits": [
+        "7813194ba2d7942d4f64ea1df3612bd799c387d0",
+        "1b8a57f5551495bdc62988f26270ea3cf2a3e8fd"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-172b] vs-ergo: 13 mục P0-P3 theo VD-170 (newtype báo lỗi, bỏ 'VS0', cheat sheet doc-test, p-string, gợi ý,"
+    },
+    {
+      "id": "ST-31",
+      "status": "DONE",
+      "commits": [
+        "704ccdfab98c82f51656d350f40faefdaa8cb2d1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-31] báo cáo R4-viscript — chốt VS1b (436 test, 338 ca, parity 312/312, diff 100k 0 lệch)"
+    },
+    {
+      "id": "ST-24",
+      "status": "DONE",
+      "commits": [
+        "59402ea3e861590ecf16b1078b70b88448b162f1"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-24] báo cáo R3 — chốt VS1-khung (318 test, differential 100k 0 lệch, khởi động ấm 8,5–9,9 ms)"
+    },
+    {
+      "id": "ST-17",
+      "status": "DONE",
+      "commits": [
+        "92d71ae606ae8a4a5da13a9d4fdbd9fdb3859ecc",
+        "4107c9d66ce2a23ea3877958ce726c33604c29c8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-17] R2: phủ đủ 20 hàng QUEUE (ST-03, ST-15b), head 43107a4"
+    },
+    {
+      "id": "ST-04",
+      "status": "DONE",
+      "commits": [
+        "e6e304d32c88eb34ceea11e52b82ad07e9fcb87e"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-04] lexer theo SPEC-lex: 60/60 golden (đỏ trước), fuzz 10 phút, NFC/NFD"
+    },
+    {
+      "id": "ST-05",
+      "status": "DONE",
+      "commits": [
+        "ee94e34687551d8d8b9aa7546b597a936277227d"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-05] parser + CST lossless: 30/30 golden biểu thức (đỏ trước), 15/22 khối tài liệu, 1 lỗi đầu/tệp"
+    },
+    {
+      "id": "ST-06",
+      "status": "DONE",
+      "commits": [
+        "4dd7e3c8174635aa59e1964c01052bc201b09076"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-06] CmdCST chế độ lệnh: 33 golden (đỏ trước), .vish vào vis check, 142 test"
+    },
+    {
+      "id": "ST-07",
+      "status": "DONE",
+      "commits": [
+        "0a6dcbfdef01e84ca274511bab992228501ac2ac"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-07] vis-fmt: lossless + idempotent + sửa tab (17 ca đỏ trước), 105 test"
+    },
+    {
+      "id": "ST-08",
+      "status": "DONE",
+      "commits": [
+        "9c9d3ccf95f54ca08c740d4dee8d7e489fc5e379"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-08] runner `vis check` TAP: 12 ca đỏ trước, 78 test, lọc tầng 01xx trước 02xx"
+    },
+    {
+      "id": "ST-09",
+      "status": "DONE",
+      "commits": [
+        "a6a31e638ea56221b5f627651b9ad43789de5dec"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-09] cổng doc-examples: 24 khối (17 xanh + 7 ngoại lệ), 12 fixture QD, 12 case âm"
+    },
+    {
+      "id": "ST-10",
+      "status": "DONE",
+      "commits": [
+        "635aa60abf2b154a9f287de22bd8fc402658a609"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "[ST-10] báo cáo R1-viscript (MD 6 mục + JSON 11 khoá, project=viscript) + máy kiểm nối cổng"
+    }
+  ],
+  "gates": {
+    "fast": "PASS",
+    "full": "—",
+    "nightly": "—"
+  },
+  "sim": {
+    "seeds": 0,
+    "failures": 0
+  },
+  "coverage": {
+    "tokens": "—",
+    "fixtures": 469
+  },
+  "mutants": {
+    "killed": null,
+    "alive": null,
+    "measured": false
+  },
+  "perf": {
+    "head_do": "0d5e0e5",
+    "host": "ps (uname: host `ps`, Linux 7.0.0-43, Ubuntu 26.04.1; máy chạy đợt này)",
+    "test_count": 1217,
+    "suites": 136,
+    "sem_cases": 469,
+    "vis_test": {
+      "cases": 469,
+      "skip": 0,
+      "interp": 469,
+      "vm": 469
+    },
+    "workspace_failures": 0,
+    "host_suite": {
+      "cases": 54,
+      "linux_passed": 54,
+      "note": "trong `cargo test --workspace` (host_conformance PASS, 120 lần chạy)"
+    },
+    "gate_fast": {
+      "ps": "PASS — 10/10 bước tại `0d5e0e5` (report-check **29 báo cáo / 223 hàng**; doc-examples 24 khối: 19 xanh + 5 ngoại lệ)"
+    },
+    "doc_examples": {
+      "blocks": 24,
+      "green": 19,
+      "exceptions": 5
+    },
+    "giong_r29_trong_repo_moi": "R29 đo trên repo cũ (mac + ps clone sạch); đợt này chạy trên repo **mới** (`/home/ps/ViScript`, remote `github.com/vifast-oss/ViScript`)",
+    "canh_bao_macos": "**chưa đo lại macOS** trong đợt này — số mac chuẩn vẫn là R29 (`L0 1184/0` @ `39041b3f` repo cũ); các commit tách repo giữ nguyên cây mã",
+    "windows": "psvn **chỉ đo** ở các đợt trước (VD-146) — không đo lại trong R30; trạng thái Windows = **VS3**",
+    "leak_note": "#147 (mac chậm hơn ps 5,70×) vẫn **mở** từ R29 — chờ A0 quyết hướng",
+    "report_check": {
+      "reports": 30,
+      "queue_rows": 223,
+      "note": "`check_report --all` chạy lại khi commit R30"
+    }
+  },
+  "blocked": []
+}

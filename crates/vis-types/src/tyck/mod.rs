@@ -472,10 +472,22 @@ impl<'a> Checker<'a> {
         if self.same(from, to) {
             return true;
         }
-        if let Type::Opt(inner) = to {
-            if self.same(from, inner) {
-                return true; // tự nâng `T → T?` (§4.4)
-            }
+        // **R2 (VD-178)**: tự nâng **nhiều lớp** `T → T? → T??` (tĩnh-only, không đổi biểu diễn).
+        // Bóc `f` lớp `Opt` ở vế nguồn và `t` lớp ở đích; chấp nhận khi lõi khớp và `f ≤ t`.
+        let mut from_peel = from;
+        let mut from_layers = 0usize;
+        while let Type::Opt(inner) = from_peel {
+            from_layers += 1;
+            from_peel = inner;
+        }
+        let mut to_peel = to;
+        let mut to_layers = 0usize;
+        while let Type::Opt(inner) = to_peel {
+            to_layers += 1;
+            to_peel = inner;
+        }
+        if to_layers > 0 && self.same(from_peel, to_peel) && from_layers <= to_layers {
+            return true;
         }
         // ST-12b (BLOCKER #2): **không** nâng `int → float` đại trà — chỉ literal số nguyên
         // (§3.5). Việc nâng literal do `coerce_e` quyết định theo biểu thức nguồn.
@@ -569,10 +581,7 @@ impl<'a> Checker<'a> {
             | Type::Enum(_) => ty.clone(),
             Type::Opt(inner) => {
                 let t = self.resolve_ann(inner, span);
-                if t.is_opt() {
-                    self.diag(MISMATCH, "optional không lồng (`T??`, §4.4)", span);
-                    return Type::Error;
-                }
+                // **R2 (VD-178)**: `T??` hợp lệ — optional lồng tuỳ ý (`Opt[Opt[T]]`).
                 Type::Opt(Box::new(t))
             }
             Type::List(t) => Type::List(Box::new(self.resolve_ann(t, span))),

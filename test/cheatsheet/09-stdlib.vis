@@ -7,9 +7,9 @@
 # kỳ vọng: a/b
 # kỳ vọng: Ok([1, 2])
 # kỳ vọng: 3
-# kỳ vọng: some(1)
-# kỳ vọng: some(1)
-# kỳ vọng: some(3)
+# kỳ vọng: Some(1)
+# kỳ vọng: Some(1)
+# kỳ vọng: Some(3)
 # kỳ vọng: [1, 2, 3]
 # kỳ vọng: [2, 4, 6]
 # kỳ vọng: [2, 3]
@@ -19,7 +19,7 @@
 # kỳ vọng: 6
 # kỳ vọng: 1-2-3
 # kỳ vọng: 1
-# kỳ vọng: some(1)
+# kỳ vọng: Some(1)
 # kỳ vọng: true
 # kỳ vọng: [a]
 # kỳ vọng: [1]

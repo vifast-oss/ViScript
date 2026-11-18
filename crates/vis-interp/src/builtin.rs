@@ -662,7 +662,7 @@ pub fn un(op: vis_types::hir::UnOp, v: Value, span: Span) -> crate::interp::R<Va
             Value::Int(i) => i
                 .checked_neg()
                 .map(Value::Int)
-                .ok_or_else(|| trap(RT, "tràn i64 khi đổi dấu", span)),
+                .ok_or_else(|| overflow(span)),
             Value::Float(f) => Ok(Value::Float(-f)),
             other => Err(trap(
                 RT,
@@ -1249,7 +1249,7 @@ pub fn method(
 
 /// **ST-61 (VD-96)**: phương thức kênh. Chặn (`send` đầy, `recv` rỗng) ⇒ **drain** hàng đợi sẵn
 /// sàng ([`crate::rt::chay_mot`]) rồi thử lại; hết queue ⇒ **`VS0505`** (deadlock, **không** treo).
-/// `send` sau `close` ⇒ **`VS0504`**; `close` **idempotent**; `recv` sau close trả nốt hàng rồi `none`.
+/// `send` sau `close` ⇒ **`VS0504`**; `close` **idempotent**; `recv` sau close trả nốt hàng rồi `None`.
 fn chan_method(
     host: &mut dyn Host,
     c: std::rc::Rc<std::cell::RefCell<crate::rt::Chan>>,
@@ -1482,7 +1482,7 @@ fn map_method(
         )),
     }
 }
-/// Tràn `i64` — `VS0501` (VD-43 #2).
+/// Tràn `i64` — `VS0507` (tách khỏi `VS0501`, VD-43 #2/R9).
 fn overflow(span: Span) -> Abort {
     // **R9 (VD-178)**: tràn `i64` ⇒ `VS0507` (tách khỏi `VS0501`).
     trap(OVERFLOW, "tràn i64 lúc chạy (VD-43 #2)", span)

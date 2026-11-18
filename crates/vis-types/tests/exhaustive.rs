@@ -5,7 +5,7 @@
 //! ghi **trên** ca = `let y = match …` rồi `y` ⇒ kiểu của `y`; `!VS0402` = **đúng một** chẩn đoán.
 //!
 //! Luật xét hết (thiết kế §4.3 + VD-43 #5): enum ⇒ mọi biến thể; `bool` ⇒ `true`/`false`;
-//! `T?` ⇒ `Some`/`None`; `Result` ⇒ `ok`/`err`; kiểu **vô hạn** (`int`, `str`,
+//! `T?` ⇒ `Some`/`None`; `Result` ⇒ `Ok`/`Err`; kiểu **vô hạn** (`int`, `str`,
 //! `list`, `map`, …) ⇒ **bắt buộc `_`**; bản ghi ⇒ đủ **mọi** trường, không `..`; **guard không tính**;
 //! or-pattern tính cả hai vế.
 

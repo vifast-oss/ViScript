@@ -844,7 +844,7 @@ impl<'m> Th<'m> {
                     let ten = vm.ten(i, span)?;
                     let v = self.pop(vm, span)?;
                     let var_muon = ten.rsplit('.').next().unwrap_or(&ten).to_string();
-                    // `some`/`none`/`ok`/`err` là **biến thể dựng sẵn** của `Value::Opt`/`Value::Res`.
+                    // `Some`/`None`/`Ok`/`Err` là **biến thể dựng sẵn** của `Value::Opt`/`Value::Res`.
                     let thap = var_muon.to_lowercase();
                     let ok = match &v {
                         Value::Enum(_, var, args) => *var == var_muon && args.len() == n as usize,
@@ -990,7 +990,7 @@ fn lit_kind(k: u8) -> Option<LitKind> {
 }
 
 fn field(v: &Value, name: &str, span: Span) -> R<Value> {
-    // `.` trên `some(x)` tự bóc (interp làm vậy) — `?.` mới là đường có kiểm `none`.
+    // `.` trên `Some(x)` tự bóc (interp làm vậy) — `?.` mới là đường có kiểm `None`.
     if let Value::Opt(Some(x)) = v {
         return field(x, name, span);
     }

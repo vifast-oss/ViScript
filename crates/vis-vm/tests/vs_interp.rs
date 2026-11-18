@@ -120,7 +120,9 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (R5c, VD-178)**: +`chuoi-phuong-thuc/std-method` ⇒ 462 ca.
     // **SỬA KÈM LÝ DO (R20a, VD-178)**: +`assert/thong-diep` ⇒ 463 ca.
     // **SỬA KÈM LÝ DO (R20b, VD-178)**: +`list/duyet-nang-cao` ⇒ 464 ca.
-    assert_eq!(tat_ca.len(), 464, "phải đủ 464 ca");
+    // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507) ⇒ 465 ca.
+    // **SỬA KÈM LÝ DO (R2, VD-178)**: +4 ca ⇒ **469 ca**.
+    assert_eq!(tat_ca.len(), 469, "phải đủ 469 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -193,18 +195,17 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-56b)**: +6 ca ⇒ **382**; **352** ca chạy được khớp + **30** ca lỗi biên dịch.
     assert_eq!(
         khop + so_biet + bien_dich,
-        464,
-        "464 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        469,
+        "469 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
-    // **ST-89 (VD-110)**: VM **đã có host `Ngoai`** ⇒ 7 ca `.vish` chương trình ngoài (4 xanh + 3
-    // lỗi-chạy) nay khớp **thật** ở cả hai đường thay vì cùng `VS0604`; chúng **đã nằm trong 398**
-    // từ trước (464 = 414 chạy được + 50 lỗi biên dịch), nên phân hoạch **không đổi**: 414 + 50.
-    // Con số "405" không tồn tại trong phân hoạch này; 7 ca host là **tập con** của 398, không cộng thêm.
+    // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.
+    // **SỬA KÈM LÝ DO (R2, VD-178)**: +3 xanh (`optional/`) + `loi/none-bo` (SYNTAX, biên dịch) ⇒
+    //   **419 .vis chạy được khớp + 51 lỗi biên dịch = 469**.
     assert_eq!(
         (khop, bien_dich),
-        (414, 50),
-        "414 ca chạy được khớp + 50 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        (418, 51),
+        "418 ca chạy được khớp + 51 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
     );
 }
 
@@ -258,13 +259,15 @@ fn hai_duong_cung_so_chan_doan() {
             // vẫn **31** (2 ca `.err` mới là lỗi **biên dịch**, không tới lúc chạy).
             // **ST-89**: 398 ca chạy được **gồm 7 ca host** (nay khớp thật); tổng vẫn 398 + 49 lỗi biên dịch.
             // **R6 (VD-178)**: +4 ca `chuoi/` ⇒ **402** ca chạy được.
-            assert_eq!(so_ca, 414, "phải so đủ 414 ca chạy được");
+            // **R19b (VD-178)**: +1 ca `loi/doi-dau-tran` (VS0507, lỗi **lúc chạy**) ⇒ **415** ca chạy được.
+            // **R2 (VD-178)**: +3 ca `optional/` chạy được ⇒ **418**.
+            assert_eq!(so_ca, 418, "phải so đủ 418 ca chạy được");
+            // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
+            // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).
+            // **SỬA KÈM LÝ DO (R19b, VD-178)**: **38 → 39** (+`loi/doi-dau-tran` VS0507).
             assert_eq!(
-                // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
-                // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).
-                so_ca_co_chan_doan,
-                38,
-                "38 ca có chẩn đoán lúc chạy (hai đường cùng số)"
+                so_ca_co_chan_doan, 39,
+                "39 ca có chẩn đoán lúc chạy (hai đường cùng số)"
             );
         })
         .expect("tạo luồng")

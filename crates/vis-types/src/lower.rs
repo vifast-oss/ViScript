@@ -47,13 +47,10 @@ mod than;
 pub use than::is_builtin_value;
 pub(crate) use than::{lower_nhom, lower_than, ThanCtx};
 
-/// **10 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
-/// qua Agent 0). `true`/`false` là **literal**, không phải tên.
-///
-/// **R2a (VD-178)**: **bỏ `None`** — `None` là **biến thể** của `Option[T]`, hạ thẳng thành
-/// `HExpr::Opt { value: None }` (không còn là tên dựng sẵn).
-pub const BUILTIN_VALUE_NAMES: [&str; 10] = [
-    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "ref",
+/// **8 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
+/// qua Agent 0). `true`/`false` là **literal**; `none` đã **bỏ** (R2, `VS0203`).
+pub const BUILTIN_VALUE_NAMES: [&str; 11] = [
+    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
 ];
 
 mod options;
@@ -677,29 +674,6 @@ impl<'a> Lowerer<'a> {
 
     /// Hạ **một lần dùng tên giá trị**: phân giải + `VS0301` theo chính sách.
     fn lower_var_use(&mut self, name: &str, span: Span) -> HExpr {
-        // **R2a (VD-178)**: `none` là **từ khoá đã bỏ** ⇒ **VS0203** + gợi ý `None`.
-        // Vẫn hạ thành `Opt(None)` để không sinh thêm `VS0301` (một lỗi, một mã).
-        if name == "none" {
-            self.diag(
-                &vis_diag::SYNTAX_CODES[2],
-                "`none` đã bỏ — dùng `None` (biến thể của `Option[T]`)",
-                span,
-            );
-            return HExpr::Opt {
-                value: None,
-                ty: Type::Opt(Box::new(Type::Error)),
-                span,
-            };
-        }
-        // **R2a (VD-178)**: `None` là **biến thể** của `Option[T]` — hạ thẳng thành `Opt(None)`,
-        // không còn là tên dựng sẵn (bỏ khỏi [`BUILTIN_VALUE_NAMES`]).
-        if name == "None" {
-            return HExpr::Opt {
-                value: None,
-                ty: Type::Opt(Box::new(Type::Error)),
-                span,
-            };
-        }
         match self.resolve(name) {
             Some(sym) => HExpr::Var {
                 name: name.to_string(),
@@ -780,17 +754,27 @@ impl<'a> Lowerer<'a> {
     }
 
     fn resolve_type(&mut self, node: &Node) -> Type {
-        if let Some(Elem::Token(i)) = node.elems.last() {
-            if self.tok(*i).map(|t| t.is_punct("?")).unwrap_or(false) {
-                let inner = self.resolve_type_body(node);
-                if inner.is_opt() {
-                    // `T??` là lỗi kiểu (§4.4) — ST-12 báo; ST-11 giữ `{error}`.
-                    return Type::Error;
-                }
-                return Type::Opt(Box::new(inner));
-            }
+        // **R2 (VD-178)**: hậu tố optional lặp — đếm `?` (1 lớp) **và** cặp `??` (2 lớp) ở cuối.
+        let q_dau: usize = {
+            let toks: Vec<&Token> = node.tokens(&self.cst.tokens).collect();
+            toks.iter()
+                .rev()
+                .take_while(|t| t.is_punct("?") || t.is_punct("??"))
+                .map(|t| if t.is_punct("??") { 2 } else { 1 })
+                .sum()
+        };
+        if q_dau > 0 {
+            let inner = self.resolve_type_body(node);
+            return self.wrap_opt(inner, q_dau);
         }
         self.resolve_type_body(node)
+    }
+
+    fn wrap_opt(&mut self, mut t: Type, n: usize) -> Type {
+        for _ in 0..n {
+            t = Type::Opt(Box::new(t));
+        }
+        t
     }
 
     fn resolve_type_body(&mut self, node: &Node) -> Type {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-61 (VD-91/VD-96)** — **kênh** `chan[T]`: `send`/`recv`/`close`, **deadlock có chẩn đoán**
 //! (`VS0505`, **không** treo), gửi sau `close` (`VS0504`), `close` idempotent, `recv` sau close trả
-//! nốt hàng rồi `none`. Mọi ca chạy **cả hai đường** và so **byte**.
+//! nốt hàng rồi `None`. Mọi ca chạy **cả hai đường** và so **byte**.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -53,11 +53,11 @@ fn ca(d: &Path, ten: &str, src: &str) -> (i32, String, String) {
 #[test]
 fn tao_send_recv_va_fifo_hai_duong() {
     let d = tam("fifo");
-    // Đóng **trước** lần nhận thứ ba (rỗng + chưa close + không task ⇒ `VS0505`, không phải `none`).
+    // Đóng **trước** lần nhận thứ ba (rỗng + chưa close + không task ⇒ `VS0505`, không phải `None`).
     let src = "fn main():\n    let c = chan[int](3)\n    let _ = c.send(1)\n    let _ = c.send(2)\n    print(c.recv())\n    print(c.recv())\n    c.close()\n    print(c.recv())\n";
     let (c, o, e) = ca(&d, "fifo", src);
     assert_eq!(c, 0, "stderr: {e}");
-    assert_eq!(o, "some(1)\nsome(2)\nnone\n");
+    assert_eq!(o, "Some(1)\nSome(2)\nNone\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -104,7 +104,7 @@ fn close_idempotent_va_nhan_not_hang() {
     let src = "fn main():\n    let c = chan[int](2)\n    let _ = c.send(1)\n    let _ = c.send(2)\n    c.close()\n    c.close()\n    print(c.recv())\n    print(c.recv())\n    print(c.recv())\n";
     let (c, o, e) = ca(&d, "close", src);
     assert_eq!(c, 0, "stderr: {e}");
-    assert_eq!(o, "some(1)\nsome(2)\nnone\n");
+    assert_eq!(o, "Some(1)\nSome(2)\nNone\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -126,6 +126,6 @@ fn spawn_producer_voi_dem_du_hai_duong() {
     let src = "async fn san(c: Chan[int]) -> int:\n    let _ = c.send(1)\n    0\n\nfn main():\n    let c = chan[int](1)\n    let _ = spawn san(c)\n    print(c.recv())\n";
     let (c, o, e) = ca(&d, "spawn", src);
     assert_eq!(c, 0, "stderr: {e}");
-    assert_eq!(o, "some(1)\n");
+    assert_eq!(o, "Some(1)\n");
     let _ = std::fs::remove_dir_all(&d);
 }

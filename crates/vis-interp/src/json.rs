@@ -5,7 +5,7 @@
 //! - object ⇒ `map[str, Any]` giữ **thứ tự xuất hiện**; trùng khoá ⇒ **giá trị cuối**, vị trí **đầu**
 //! - array ⇒ `list[Any]`; number: **có** `.`/`e`/`E` ⇒ `float`, còn lại ⇒ `int` (tràn `i64` ⇒ lỗi)
 //! - string (giải escape **đủ**: `\" \\ \/ \b \f \n \r \t \uXXXX`, **surrogate pair** ghép thành một
-//!   scalar `\u{…}`; nửa cặp ⇒ lỗi); `true`/`false`; `null` ⇒ `none` (`Opt(None)`, kiểu `Opt(Error)`)
+//!   scalar `\u{…}`; nửa cặp ⇒ lỗi); `true`/`false`; `null` ⇒ `None` (`Opt(None)`, kiểu `Opt(Error)`)
 //!
 //! Lỗi ⇒ `Err("JSON không hợp lệ ở byte N: …")`, `N` là **byte** trong chuỗi gốc (không phải char).
 

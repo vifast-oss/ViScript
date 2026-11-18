@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# ROADMAP bàn giao — dòng ViScript (sau R22 / 22 vòng, 2026-11-15)
+# ROADMAP bàn giao — dòng ViScript
+
+> **Cập nhật 2026-11-18**: đọc **khối cuối tệp** (“Trạng thái cuối *sau R29*”) trước — VS2 đóng 8/8 (VD-151), repo đã tách riêng (ST-171), đang ở **pha 1 công thái học** (ST-179..ST-200); số R22 trong thân tệp đã lỗi thời.
 
 Tài liệu một trang cho người tiếp nhận: 8 hạng mục VS2, mức thật **đo được**, điều kiện đóng 100%,
 nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt cột điều kiện. Số đo cuối: `reports/R22-viscript.md`.
@@ -176,3 +178,39 @@ Sổ nợ : **146 mục** = **91 mở** / **32 đóng** / **21 VS3** / 1 không 
 **ST-155**) + **2 hàng báo cáo vòng** (ST-152 · ST-156); **không** hàng nào `BLOCKED`.
 **Còn lại**: nợ trong sổ (**91 mở** / **21 VS3**) và **Windows** (hỗ trợ thật = **VS3**).
 **Việc kế**: **Agent 0** trả lời **5 câu hỏi** (`st155` §8) rồi ban hành **tài liệu thiết kế VS3** (6 quyết định riêng).
+
+### Trạng thái cuối **sau R29** — tách repo + pha 1 công thái học (2026-11-18, HEAD `2f62022`)
+
+> Khối này **thêm** sau khối R27; số cũ **không xoá** (VD-142). Nguồn: `reports/R29-viscript.md`,
+> `agent/JOURNAL/2026-11-17-*.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ `39041b3f`.
+
+**Đã đóng trong đợt R29 (17/11):** **ST-174** (vá nợ #146 — TOCTOU symlink, phương án A VD-176; ca A đỏ-trước 100/100,
+sau vá 100/100 mac+ps, 6 000 000 vòng 0 đỏ; gate mac 3 lần PASS L0 **1184/0**) · **ST-175** (`vis-remote` từ chối cây bẩn) ·
+**ST-176** (`vis-lock`; #147 mở: mac 1489 s vs ps 261 s = **5,70×** > 3× — chưa đóng) · **ST-178** (sửa 6 tài liệu VS3 theo VD-178,
+0 dòng mã) · **ST-171** (**tách repo** — repo `https://github.com/vifast-oss/ViScript` public, 459 commit giữ lịch sử, gốc repo = cây
+ViScript; repo cũ đã xoá cây `viscript/` + `VISCRIPT.md` trỏ sang).
+
+**Pha 1 công thái học (đêm 17→18/11, theo C3 của VD-178) — đã làm:** ST-179 (P0a `newtype` báo lỗi dòng khai + bỏ “VS0”) ·
+ST-180 (R19c float literal cần chữ số sau `.`) · ST-181 (P0-3 cheat sheet thành doc-test, 11 ca khoá) · ST-182 (R9 — 49 mã,
+thoát **101**) · ST-183 (R6 — `p"…"`, `str+str`, format spec `{expr:spec}`, `print(a,b)`) · ST-184 (R17 — điều kiện chỉ `bool`) ·
+ST-185/186 (R3b/R3a — `let … else`, `if let` nhận pattern) · ST-187 (R16 — `let` che tên) · ST-188 (R12a — `type X = T`, `type Email(str)`) ·
+ST-189 (R11 — mọi hàm dựng là hàm) · ST-190 (R7 — `/` float, `//`, `%`) · ST-191 (R8 — `xs[i]?`) · ST-192 (R5a — named args, mặc định bản ghi) ·
+ST-193 (R5c — method toàn std) · ST-194 (R1a — `VS0111` + fmt tự sửa `Some/Ok/Err`) · ST-195 (R20a — `assert cond, "msg"`) ·
+ST-196 (R20b — `enumerate/any/all/find`) · ST-197 (review chéo R7/R8; hàng QUEUE bổ sung hồi tố 18/11) · ST-198 (PR #26 port — record ẩn danh in `{a: int}`) ·
+ST-199 (PR #27 port — nhóm `( … )` đầu tệp `.vish`) · ST-200 (brand — icon ViScript/ViShell).
+
+**Số đo (ST-198/199, `st198-199-gate-macos-lan2.log`)**: `gate --fast` **PASS** (10/10 bước) — **136 suite, 1211 test, 0 đỏ**;
+**Số đo (ST-202, 2026-11-18)**: `gate --fast` **PASS** — **136 suite, 1215 test, 0 đỏ**; `vis test` **465/465** ×2 đường;
+**Số đo (ST-203, 2026-11-18)**: `gate --fast` **PASS** — **136 suite, 1217 test, 0 đỏ**; `vis test` **469/469** ×2 đường;
+`sem` **464** ca; check gate macOS @ R29 HEAD `39041b3f`: L0 **1184/0** (131 suite); ps clone sạch: L0 **1188/0**; Windows **chỉ đo**
+(9/10 bước, L0 152/4 — VS3 mục 5, không tuyên bố hỗ trợ); VS2 **đóng 8/8** vẫn giữ nguyên (VD-151).
+
+**Còn thiếu — pha 1 (C3):** ~~R1+R2~~ (R1a xong ở ST-194; R2 xong ở ST-203 — `none` bỏ, `T??`, fmt tự sửa; **enum-hoá `Option/Result` prelude** vẫn chưa làm) ·
+**R4** (`Error` record + `Json` enum + `AnyError`; mọi hàm std trả `Result[T, Error]`) · **R5b** (`{…}` chỉ map, `{ten: …}` ⇒ `VS0205` — **mâu thuẫn với ST-198/json_sort (anonymous record `{a: 1}`) — cần A0 chọn, không tự làm**) ·
+**R5d** (chuẩn hoá `str(x)` vs method std.str) · ~~R19b~~ (đóng ở ST-202) · R20a phần 2 (`use std.fs as f`, `use std.fs.{..}`) ·
+R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-148; chờ pha 1 xong).
+
+**Sổ nợ**: **147 mục = 89 mở / 35 đóng / 21 VS3 / 1 không làm / 1 điều hướng** (R29 §4; #147 mở chờ A0 — macOS phạt syscall là giới hạn nền hay gộp `report-check`/`rules`).
+
+**Bất thường đã ghi nhận/bổ sung 18/11**: ST-197 thiếu hàng QUEUE khi làm (đã bổ sung hồi tố, commit `ed490d2`); `SO-NO.md` §8/header còn số cũ
+(đã đồng bộ, commit `2f62022`); `ROADMAP.md` thiếu khối sau R29 (khối này); chưa có báo cáo **R30** cho đợt pha 1 (STATE/QUEUE là nguồn thật trong lúc chờ).

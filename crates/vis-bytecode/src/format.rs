@@ -108,7 +108,7 @@ pub enum Instr {
     JumpIfFalse(i32),
     /// Nhảy nếu đỉnh **không truthy** nhưng **giữ** giá trị — 1→1 (cho `and`/`or`).
     JumpIfNotTrue(i32),
-    /// Nhảy nếu đỉnh là `none` (pop) — 1→0 (cho `??`).
+    /// Nhảy nếu đỉnh là `None` (pop) — 1→0 (cho `??`).
     JumpIfNone(i32),
     /// Nhảy nếu đỉnh là `some` (pop) — 1→0.
     JumpIfSome(i32),
@@ -130,7 +130,7 @@ pub enum Instr {
     MakeEnum(u32, u16),
     /// `some(v)` — 1→1.
     MakeSome,
-    /// `none` — 0→1.
+    /// `None` — 0→1.
     MakeNone,
     /// `ok(v)` — 1→1.
     MakeOk,
@@ -170,7 +170,7 @@ pub enum Instr {
     TestRange(u32, u32, u8),
     /// Gán đỉnh vào ô `i` (**không** pop) — 1→1.
     BindLocal(u16),
-    /// `expr?` — lan truyền `err`/`none` — 1→1.
+    /// `expr?` — lan truyền `Err`/`None` — 1→1.
     Try,
     /// Nhân đôi giá trị đỉnh — 1→2 (dùng cho match/destructuring).
     Dup,

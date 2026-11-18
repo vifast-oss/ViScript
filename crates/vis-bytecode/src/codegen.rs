@@ -1013,7 +1013,7 @@ impl<'g> Emit<'g> {
                     }
                 }
                 if *optional {
-                    // `x?.y`: `none` ⇒ `none`; `some(v)` ⇒ `some(v.y)`.
+                    // `x?.y`: `None` ⇒ `None`; `Some(v)` ⇒ `Some(v.y)`.
                     self.expr(base)?;
                     self.f.push(Instr::Dup, *span, 1);
                     let jn = self.f.here();

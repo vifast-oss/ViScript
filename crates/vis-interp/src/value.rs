@@ -134,8 +134,8 @@ impl Value {
                     format!("{variant}({})", body.join(", "))
                 }
             }
-            Value::Opt(None) => "none".into(),
-            Value::Opt(Some(v)) => format!("some({})", v.show()),
+            Value::Opt(None) => "None".into(),
+            Value::Opt(Some(v)) => format!("Some({})", v.show()),
             Value::Res(Ok(v)) => format!("Ok({})", v.show()),
             Value::Res(Err(e)) => format!("Err({})", e.show()),
             Value::Range(a, b, incl) => {
