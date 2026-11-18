@@ -214,3 +214,38 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 
 **Bất thường đã ghi nhận/bổ sung 18/11**: ST-197 thiếu hàng QUEUE khi làm (đã bổ sung hồi tố, commit `ed490d2`); `SO-NO.md` §8/header còn số cũ
 (đã đồng bộ, commit `2f62022`); `ROADMAP.md` thiếu khối sau R29 (khối này); chưa có báo cáo **R30** cho đợt pha 1 (STATE/QUEUE là nguồn thật trong lúc chờ).
+
+### Trạng thái cuối sau R30 — pha 1 đóng trên **ps** (2026-11-19 sáng, HEAD `d27e78d`)
+
+> Khối này **thêm** sau khối R29; số cũ **không xoá** (VD-142). Nguồn: `BAO-CAO-A0-2026-11-19-0900.md`,
+> `agent/DEM-2026-11-18.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ commit `a570d77` (HEAD ban đầu của phiên, nay `d27e78d`).
+
+**Đã đóng trong đợt R30 (18–19/11):** **ST-205** (R4a — `trait Error: Show` 3 phương thức mặc định-less; `Json` enum dựng sẵn
+`EnumId(0)`; bản ghi `Error` `RecId(0)`; `AnyError` := đồng nghĩa `{error}`; `print(e)` chỉ `{message}`; std fns → `Result[T, Error]`) ·
+**ST-206** (R4b — `?` giữ nguyên; VD-222 #5) · **ST-207** (R4c — migrate std; `vis test` 469/469 cả hai đường) ·
+**ST-208** (R5b′ — quy tắc khoá `{…}` theo VD-215: trộn loại khoá bất kể thứ tự ⇒ **VS0207**, gợi ý theo khoá đầu; `{[k]: …}`
+⇒ cảnh báo **VS0208** tắt bằng `{([k]): …}`; ca khoá `vd_215.rs` 6/6 hai đường) ·
+**ST-209** (R5d — warnings `VS0211` khi khai báo trùng tên module std; `vd_223.rs` 5/5; VD-224 đảo VD-223(i)) ·
+**ST-226** (R18b — `while let PAT = EXPR:`; `vd_226.rs` 8/8 hai đường byte-identical) ·
+**VD-227** (interp tự nâng `T → T?` tại `let x: int? = expr`; mirror `Instr::MakeSome` — `vd_227.rs` 6/6 byte-identical) ·
+**ST-211** (VS3-5-pre — `check.rs` root fallback `ten_goc()` tách cả `/` và `\\`; ca khoá `ten_goc_du`) ·
+**ST-213** (VD-186 patches — `HOST-BAO-DAM.md` + `docs/ViScript-thiet-ke.md` Phụ lục C; nhãn `[thiết kế VS3-6, chưa triển khai]`).
+
+**Ledger:** `VD-215` … `VD-228` ghi trong `DECISIONS.md`; `vd_205.rs`, `vd_206.rs`, `vd_213.rs`, `vd_215.rs`, `vd_216.rs`, `vd_218.rs`,
+`vd_223.rs`, `vd_226.rs`, `vd_227.rs` tất cả xanh; `./vis-dev gate --fast` **PASS 10/10** mọi commit; `vis explain` = **53 mã**
+(vắng `VS0206/VS0209/VS0210`); `api_dong_bang` (freeze) **xanh** — `FUNCS`+`CODES` khớp đúng;
+**report-check**: **PASS 30 báo cáo, 242 hàng QUEUE phủ đủ**; clone sạch ps gate **PASS 10/10**; **nightly** PASS (fuzz 18,98 M ca, 0 violation).
+
+**Ngắn gọn khi bàn giao tiếp theo (sau 9h sáng 2026-11-19):**
+
+- **pha 1 đóng trên ps; mac chờ**: gate `--fast` ps **PASS 10/10**; mac không đo được trong khung; R30 không viết lại;
+  A0 ratify VD-221..VD-227 (hoặc revert) bắt buộc trước khi nói “pha 1 đóng chính thức”.
+- `**ST-212**` (VS3-QĐ-1 — async song song thật): **HOÃN** — `agent/vd212-thiet-ke-ghi-chu.md`; re-scope ước tính ~2 tuần.
+- `**ST-228**` (proxy A0 — `fn f() -> int?:` return `T → T?` lift): **BLOCKED-CHO-A0** — Option A/B/C đề xuất.
+- `**#147**`: ps đo đủ; mac chưa đo; ngưỡng 3× của VD-197 vẫn áp nếu mac ≥ 10 s.
+- `**#149**`: `agent/PATH-SPLIT-AUDIT-2026-11-18.md` đã viết — `check.rs` sạch sau ST-211; các chỗ khác liệt kê ở audit, chỉ sửa khi đụng tệp.
+- `**#151**`: VS3 pha 2 (fixture đặt tên theo số dòng — `VD-198`);
+- `**#152**`: giữ “chờ đo chuẩn” (máy có tải, VM 1,129 / interp 1,109 — cả hai **CHƯA RÕ**);
+- `**check_report.py --all**`: PASS 30 báo cáo · 242 hàng QUEUE.
+- `vis` hiện thực đang chạy (phase 1) bằng `./vis-dev gate --fast` và `vis test test/sem` đều **xanh**.
+
