@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối *sau R29*”) trước; **pha 1 công thái học DONE trên ps** tại HEAD `54821da` (ST-205/206/207/208/209/210/211/226 + VD-227 merged); mac chờ + ratify A0. Lưu ý nội dung thân tệp (bài R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
+> **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối sau R30”) trước; **pha 1 đóng trên ps** tại HEAD `49b33b8` (ST-205…ST-211, ST-226, ST-228 + VD-215..VD-228); mac chờ + ratify A0. Lưu ý nội dung thân tệp (các khối R22/R23/R25/R26/R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
 
 Tài liệu một trang cho người tiếp nhận: 8 hạng mục VS2, mức thật **đo được**, điều kiện đóng 100%,
 nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt cột điều kiện. Số đo cuối: `reports/R22-viscript.md`.
@@ -215,7 +215,7 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 **Bất thường đã ghi nhận/bổ sung 18/11**: ST-197 thiếu hàng QUEUE khi làm (đã bổ sung hồi tố, commit `ed490d2`); `SO-NO.md` §8/header còn số cũ
 (đã đồng bộ, commit `2f62022`); `ROADMAP.md` thiếu khối sau R29 (khối này); chưa có báo cáo **R30** cho đợt pha 1 (STATE/QUEUE là nguồn thật trong lúc chờ).
 
-### Trạng thái cuối sau R30 — pha 1 đóng trên **ps** (2026-11-19 sáng, HEAD `d27e78d`)
+### Trạng thái cuối sau R30 — pha 1 đóng trên **ps** (2026-11-19 sáng, HEAD `49b33b8`)
 
 > Khối này **thêm** sau khối R29; số cũ **không xoá** (VD-142). Nguồn: `BAO-CAO-A0-2026-11-19-0900.md`,
 > `agent/DEM-2026-11-18.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ commit `a570d77` (HEAD ban đầu của phiên, nay `d27e78d`).
