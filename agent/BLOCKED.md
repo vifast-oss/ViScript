@@ -180,7 +180,7 @@ crate host.
 
 - interp: `opt_lift_fn_ret` ở `call_hfn_trong` — `None`/`Some`/`Ok`/`Err` giữ nguyên; còn lại gói `Value::some`.
 - VM: `ret_opt: bool` trên `Emit`; `codegen/than.rs::lift_ret_opt` chèn `Instr::MakeSome` ở (a) biên thân hàm (`HBody::Expr`/`HBody::Stmts`), (b) `HStmt::Return` sớm. `MakeSome` đã flat Option (không bọc hai lớp). `codegen/than.rs` tách để giữ **R1 ≤ 1.500** dòng.
-- **Closure KHÔNG nâng** (HIR chưa giữ `ret` cho closure); **argument-lift `g(42)` chưa nâng** (scope hẹp còn lại).
+- closure-biên & argument-lift: **đã đóng ở VD-229** (`004b145`); xem addendum ngay dưới.
 - **Bằng chứng**: `vd_228.rs` **5/5** byte-identical; `vis test` **469/469** hai engine; workspace **147 binary xanh / 0 đỏ**; gate **PASS 10/10**; `codegen.rs` 1492 dòng.
 
 
