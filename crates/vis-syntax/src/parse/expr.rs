@@ -491,7 +491,7 @@ impl<'a> Parser<'a> {
                 let e = self.bump();
                 return Ok(self.node(NodeKind::Ident, vec![e]));
             }
-            Kind::Kw if t.text == "true" || t.text == "false" => {
+            Kind::Kw if t.text == "true" || t.text == "false" || t.text == "none" => {
                 let e = self.bump();
                 return Ok(self.node(NodeKind::Literal, vec![e]));
             }

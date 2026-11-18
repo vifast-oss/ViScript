@@ -540,12 +540,10 @@ fn lsp_completion_sau_cham() {
             }
         })
         .collect();
-    // **SỬA KÈM LÝ DO (R2a, VD-178)**: 50 → **48** — bỏ `none` khỏi từ khoá (40 → 39) và
-    // bỏ `None` khỏi tên dựng sẵn (11 → 10); `None` là **biến thể** của `Option[T]`.
     assert_eq!(
         labels.len(),
-        48,
-        "10 builtin + 39 keyword − ref: {labels:?}"
+        50,
+        "11 builtin + 40 keyword − ref: {labels:?}"
     );
     assert!(labels.contains(&"print".to_string()));
     assert!(labels.contains(&"let".to_string()));
@@ -1034,13 +1032,12 @@ fn lsp_completion_sau_cham_kieu_khong_ho_tro() {
     assert!(ds.is_empty(), "str không có thành viên ⇒ rỗng: {ds:?}");
 }
 
-/// (d) biến **không rõ kiểu** (`foo()` chưa biết) ⇒ fallback **toàn bộ** như cũ (**48** mục —
-/// R2a bỏ `none` khỏi từ khoá và `None` khỏi tên dựng sẵn).
+/// (d) biến **không rõ kiểu** (`foo()` chưa biết) ⇒ fallback **toàn bộ** như cũ (50 mục).
 #[test]
 fn lsp_completion_sau_cham_khong_ro_kieu_fallback() {
     let text = "fn f():\n    let q = foo()\n    q.\n";
     let ds = goi_y(text, 2, 6);
-    assert_eq!(ds.len(), 48, "fallback 48 mục: {:?}", ds.len());
+    assert_eq!(ds.len(), 50, "fallback 50 mục: {:?}", ds.len());
     assert!(ds.iter().any(|(l, _, _)| l == "print"));
     assert!(ds.iter().any(|(l, _, _)| l == "let"));
 }
