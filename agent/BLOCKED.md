@@ -171,3 +171,24 @@ crate host.
 | **VD-186 (host patches)** | **CHỜ A0 duyệt diff** | `agent/DU-THAO-VD186/` — 7 tệp nhận diện; VD-221 không mở rộng tới VD-186 (không uỷ quyền patches cá nhân) |
 | **ST-210/Pha 1** | **ps-done; mac chờ; A0 rate-limit** | VD-185: 4 dấu kiểm proxy là **proxy**, không phải A0 thật; báo cáo `BAO-CAO-A0-2026-11-19-0900.md` Q1..Q9 |
 | **#152** | **giữ "chờ đo chuẩn"** | VM 1,129 / interp 1,109 (VD-220 lượt B); tối ưu ctor-enum chưa xếp lịch; **#147** mac vẫn mở (ps đo xong lượt 2) |
+
+## 11. BLOCKED-CHO-A0 — VD-228 (proposal, proxy A0-uỷ quyền): `-> T?` lift ở function-return & argument
+
+**Người ghi**: Agent 1 (uỷ quyền A0) · **Ngày**: 2026-11-19 · **Trạng thái**: **NOT IMPLEMENTED** — chờ A0 chốt
+
+**Ví triển VD-222/VD-227**: VD-227 interp tự nâng `T → T?` tại `let x: int? = …` (mirror codegen). Không nâng tại các điểm còn lại của §4.4:
+- `fn f() -> int?: 42` — **không** tự nâng (cả hai engine in `42`; VM cũng không làm).
+- `fn g(x: int?) -> ..; g(42)` — tham số chưa nâng.
+- `let x: int? = f(...)` — `f` return `int?` — đem plain `Int` qua `let` đã có lift ⇒ OK nhưng là lift ở `let`, không ở call-site.
+
+**Vì sao không tự áp (VD-225 vẫn cho phép)**
+- **Phản gợi ý thiết kế**: VD-228 §4.4 đặc tả rằng nâng là nghĩa vụ của **trình biên dịch**, không phải caller. Vật vẫn phải xảy ra ở cả VM, interp, bytecode và LSP—chưa làm hết.
+- **Rủi ro sập toàn bộ corpus**: test/sem + fixtures + cheatsheet đầu vào 700+ chỗ — quá tải soát nghiệm hiện không cần.
+- **VM không lift trong annot `-> int?`**: chấp nhận được ở scope hiện tại mà không bị lệch engine-level nếu **cả 2 engines** đều không lift; sửa một engine độc lập phá engine đồng nhất và golden byte-by-byte cho toàn bộ VM × interp.
+
+**Đề nghị**: A0 quyết, hoặc
+- **Option A** (giữ hiện trạng): interp + VM **đều không** lift - kiêm ghi chú §4.4 cho vòng 2.
+- **Option B**: lift ở **mọi** annot `-> int?` và tham số kiểu `int?`/`str?`/`…` — 2-3 h refactor + 1 engine audit VM + golden sweep.
+- **Option C**: dùng `T?` để buộc explicit `Some(…)` (nghiêm khắc, không tự nâng).
+
+**Auto-answer proxy (VD-225)**: đề xuất **Option A** — không tự động hoá từ nay — cho A0 chốt trong VD-228.
