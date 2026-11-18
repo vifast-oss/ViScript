@@ -250,7 +250,7 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 - `vis` hiện thực đang chạy (phase 1) bằng `./vis-dev gate --fast` và `vis test test/sem` đều **xanh**.
 
 
-### Đóng khung VD-220 ~09:00 (sáng 2026-11-19) — HEAD cuối `0259e20`
+### Đóng khung VD-220 ~09:00 (sáng 2026-11-19) — HEAD cuối khung `c98adb4`
 
 > Khối này **thêm** (sau khối “sau R30”) theo VD-142 — số cũ không xoá.
 
