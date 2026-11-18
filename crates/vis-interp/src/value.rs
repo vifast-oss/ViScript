@@ -53,9 +53,11 @@ pub enum Value {
     /// Tên kiểu (rỗng nếu ẩn danh) + trường theo thứ tự khai.
     Record(String, Vec<(String, Value)>),
     /// Tên enum + tên biến thể + đối số.
+    ///
+    /// **VD-204 (1)**: `Option`/`Result` **là enum std thật** — `Some(5)` của `Option[int]`
+    /// và `Ok("x")` của `Result[int, str]` được **dựng và so khớp như mọi biến thể enum khác**
+    /// (tên enum `Option`/`Result` được cất trong giá trị). Không còn biến thể riêng `Opt`/`Res`.
     Enum(String, String, Vec<Value>),
-    Opt(Option<Box<Value>>),
-    Res(Result<Box<Value>, Box<Value>>),
     /// Nội bộ: `a..b` / `a..=b` (chỉ dùng cho `for`).
     Range(i64, i64, bool),
     /// Nội bộ: hàm dựng sẵn chưa gọi.
@@ -88,6 +90,87 @@ impl Value {
     /// `true` nếu là `()` — tiện cho `each`.
     pub fn is_unit(&self) -> bool {
         matches!(self, Value::Unit)
+    }
+
+    /// `Some(v)` — enum `Option` thật (VD-204 (1)).
+    pub fn some(v: Value) -> Value {
+        Value::Enum("Option".into(), "Some".into(), vec![v])
+    }
+
+    /// `None` — enum `Option` thật (VD-204 (1)).
+    pub fn none() -> Value {
+        Value::Enum("Option".into(), "None".into(), Vec::new())
+    }
+
+    /// Dựng `Option` từ `Option<Value>` của Rust.
+    pub fn opt(o: Option<Value>) -> Value {
+        match o {
+            Some(v) => Value::some(v),
+            None => Value::none(),
+        }
+    }
+
+    /// `Ok(v)` — enum `Result` thật (VD-204 (1)).
+    pub fn ok(v: Value) -> Value {
+        Value::Enum("Result".into(), "Ok".into(), vec![v])
+    }
+
+    /// `Err(e)` — enum `Result` thật (VD-204 (1)).
+    pub fn err(e: Value) -> Value {
+        Value::Enum("Result".into(), "Err".into(), vec![e])
+    }
+
+    /// Bóc `Some(v)` (theo **tên enum**, không nhầm với biến thể `Some` của enum khác).
+    pub fn into_some(self) -> Option<Value> {
+        match self {
+            Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+                let mut ag = ag;
+                ag.pop()
+            }
+            _ => None,
+        }
+    }
+
+    /// `Some` payload by **reference** — tiện cho đường bóc `?.`/`x?.y` (không clone).
+    pub fn opt_payload(&self) -> Option<&Value> {
+        match self {
+            Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+                ag.first()
+            }
+            _ => None,
+        }
+    }
+
+    /// `true` nếu là `None` của enum `Option`.
+    pub fn is_none(&self) -> bool {
+        matches!(self, Value::Enum(ea, va, ag) if ea == "Option" && va == "None" && ag.is_empty())
+    }
+
+    /// `true` nếu là `Some(..)` của enum `Option`.
+    pub fn is_some(&self) -> bool {
+        matches!(self, Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1)
+    }
+
+    /// Bóc `Ok(v)` (theo **tên enum**).
+    pub fn into_ok(self) -> Option<Value> {
+        match self {
+            Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+                let mut ag = ag;
+                ag.pop()
+            }
+            _ => None,
+        }
+    }
+
+    /// Bóc `Err(e)` (theo **tên enum**).
+    pub fn into_err(self) -> Option<Value> {
+        match self {
+            Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
+                let mut ag = ag;
+                ag.pop()
+            }
+            _ => None,
+        }
     }
 
     /// `Show` — `str(x)` = `x.show()` (§3.5).
@@ -134,10 +217,7 @@ impl Value {
                     format!("{variant}({})", body.join(", "))
                 }
             }
-            Value::Opt(None) => "None".into(),
-            Value::Opt(Some(v)) => format!("Some({})", v.show()),
-            Value::Res(Ok(v)) => format!("Ok({})", v.show()),
-            Value::Res(Err(e)) => format!("Err({})", e.show()),
+            // **VD-204 (1)**: `Option`/`Result` in cùng luật với mọi biến thể enum (`Enum`).
             Value::Range(a, b, incl) => {
                 format!("{a}..{}{b}", if *incl { "=" } else { "" })
             }
@@ -193,19 +273,14 @@ impl Value {
                     && a.iter()
                         .all(|(n, v)| b.iter().any(|(n2, v2)| n == n2 && v.eq_value(v2)))
             }
-            (Value::Enum(_, va, aa), Value::Enum(_, vb, ab)) => {
-                va == vb && aa.len() == ab.len() && aa.iter().zip(ab).all(|(x, y)| x.eq_value(y))
+            (Value::Enum(ea, va, aa), Value::Enum(eb, vb, ab)) => {
+                // **VD-204 (1)**: so khớp **cả tên enum** — `Option.Some(5)` ≠ `Foo.Some(5)`
+                // (tránh nhập nhằng sau khi gộp `Opt`/`Res` vào `Enum`).
+                ea == eb
+                    && va == vb
+                    && aa.len() == ab.len()
+                    && aa.iter().zip(ab).all(|(x, y)| x.eq_value(y))
             }
-            (Value::Opt(a), Value::Opt(b)) => match (a, b) {
-                (None, None) => true,
-                (Some(x), Some(y)) => x.eq_value(y),
-                _ => false,
-            },
-            (Value::Res(a), Value::Res(b)) => match (a, b) {
-                (Ok(x), Ok(y)) => x.eq_value(y),
-                (Err(x), Err(y)) => x.eq_value(y),
-                _ => false,
-            },
             _ => false,
         }
     }

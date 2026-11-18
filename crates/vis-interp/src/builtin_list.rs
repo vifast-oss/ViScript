@@ -43,10 +43,10 @@ pub fn duyet_nang_cao(
             let f = args.first().cloned().unwrap_or(Value::Unit);
             for x in xs {
                 if host.call(&f, vec![x.clone()], span)?.truthy(span)? {
-                    return Ok(Value::Opt(Some(Box::new(x))));
+                    return Ok(Value::some(x));
                 }
             }
-            Ok(Value::Opt(None))
+            Ok(Value::none())
         }
     }
 }

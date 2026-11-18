@@ -42,10 +42,10 @@ vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tậ
 
 **Từ khoá** (đủ, không thêm bớt):
 `let var const fn cmd type enum trait impl alias newtype pub use if elif else match for in while
-loop break continue return and or not true false none self async await scope test extern derives with has dyn ref`
+loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
 
 > **R12a**: `alias`, `newtype` **bị bỏ** khỏi danh sách từ khoá; thay bằng `type X = T`,
-> `type Email(str)` (dùng `alias`/`newtype` ⇒ **VS0203** + gợi ý). `none` (R2) vẫn còn — sẽ bỏ sau.
+> `type Email(str)` (dùng `alias`/`newtype` ⇒ **VS0203** + gợi ý). R2: từ khoá cũ đã bỏ — dùng `None` (viết hoa).
 
 ---
 
@@ -147,10 +147,10 @@ loop break continue return and or not true false none self async await scope tes
 
 | ViScript | Python | Rust | TS/JS | Ghi chú |
 |---|---|---|---|---|
-| `int?` / `none` ✔ | `int \| None` / `None` | `Option<i64>` / `None` | `number \| undefined` | không có `null` toàn nơi; **R2 [DỰ KIẾN]**: bỏ từ khoá `none`, dùng `None` (dùng `none` ⇒ **VS0203**) |
+| `int?` / `None` ✔ | `int \| None` / `None` | `Option<i64>` / `None` | `number \| undefined` | không có `null` toàn nơi; **R2**: từ khoá cũ đã bỏ ⇒ **VS0203** — dùng `None` |
 | `x ?? 7` ✔ | `x if x is not None else 7` | `x.unwrap_or(7)` | `x ?? 7` | |
 | `u?.age` ✔ | — | `u.map(\|u\| u.age)` | `u?.age` | |
-| `Some(5)` (dựng) ✔<br>`some(v)` / `none` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | hiện **dựng viết hoa, pattern viết thường** **[ĐANG LÀM]**; **R1/R2 [DỰ KIẾN]**: dựng **và pattern** đều viết hoa (`Some(v)`, `None`); `some(v)` chỉ còn **cảnh báo** + `vis fmt` tự sửa |
+| `Some(5)` (dựng) ✔<br>`Some(v)` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | **R2**: dựng **và** pattern đều viết hoa (`Some(v)`, `None`); dạng viết thường ⇒ **VS0111** + `vis fmt` tự sửa |
 | `Result[int, str]`, `Ok(7)`, `Err("hỏng")` ✔ | exception | `Result<i64, String>` | `throw` / union | |
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
 | `let v = f() else e:`<br>`    print(e)`<br>`    0` ✔ | `try/except` | `match f() { ... }` | `catch` | **R3b**: `Ok`/`Some` bóc giá trị; `Err`/`None` chạy khối `else` (nhận lỗi nếu có `else e:`); khối `else` phải thoát |
@@ -211,7 +211,7 @@ Method trên giá trị (không cần `use`):
 |---|---|---|---|---|
 | `class`, kế thừa | `type` + `impl` | `class` | `struct` + `impl` | `class` |
 | `try/catch`, exception | `Result` + `?` + `else err:` | `try/except` | `Result` | `try/catch` |
-| `null` / `undefined` | `None` + `T?` (**R2 [DỰ KIẾN]**: bỏ `none`) | `None` | `Option` | `null/undefined` |
+| `null` / `undefined` | `None` + `T?` (**R2** xong) | `None` | `Option` | `null/undefined` |
 | `switch` | `match` | `match` | `match` | `switch` |
 | `any` | `Json` + chuyển đổi tường minh | — | — | `any` |
 | `1 < x < 10` | `1 < x and x < 10` | **hợp lệ** | lỗi | lỗi |
@@ -228,9 +228,9 @@ Method trên giá trị (không cần `use`):
 2. **`var` không phải `var` của JS** (không function-scope) — nó chỉ là "biến đổi được", giống `let mut`.
 3. **`"a" + "b"` nối được** (R6) — nhưng chỉ `str + str`; `"a" + 1` vẫn lỗi (`VS0414`).
 4. **`match` phải xét hết**; nhánh có `if` (guard) **không** được tính là đã xét.
-5. **`Some`/`None`/`Ok`/`Err` viết hoa khi dựng**; hiện pattern optional viết **thường** (`some(v)`, `none`) **[ĐANG LÀM]** — **R1/R2 [DỰ KIẾN]**: pattern cũng viết hoa (`Some(v)`, `None`), `some(v)` chỉ còn cảnh báo + `vis fmt` tự sửa, `none` ⇒ **VS0203**.
+5. **`Some`/`None`/`Ok`/`Err` viết hoa** (cả dựng và pattern) — **R1a/R2**: dạng viết thường ⇒ **VS0111** + `vis fmt` tự sửa; từ khoá cũ ⇒ **VS0203**.
 6. **Record literal phải liệt kê đủ trường** — giá trị mặc định của `type` **không** tự áp:
-   `type U: email: str? = none` thì vẫn phải viết `{name: …, email: none}`.
+   `type U: email: str? = None` thì vẫn phải viết `{name: …, email: None}`.
 7. **`const` phải ghi kiểu**: `const N: int = 10`.
 8. **`?` chỉ dùng cho `T?`/`Result`** — **R8**: `xs[i]?` là **ngoại lệ** (chỉ số có kiểm tra, trả `T?`); `xs[i]` ngoài phạm vi vẫn panic `VS0503`; chỉ số âm dùng `.last()` / `.get(i)`.
 9. **Biến thể enum viết hoa chữ đầu** — **R1a**: `Some`/`None`/`Ok`/`Err`; viết `some(v)`/`ok(v)`/`err(v)` ⇒ **cảnh báo** `VS0111`, `vis fmt` tự sửa.
@@ -251,7 +251,7 @@ Method trên giá trị (không cần `use`):
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
   - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` chạy (R3a); `let x = r else:` chạy (R3b); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
-  - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`ok(v)`/`err(v)` pattern **đã** cảnh báo `VS0111` (R1a); `none` sẽ bỏ ở R2.
+  - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); `some(v)`/`ok(v)`/`err(v)` pattern **đã** cảnh báo `VS0111` (R1a); từ khoá cũ (R2) đã bỏ — **VS0203**.
   - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20).
 - **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),

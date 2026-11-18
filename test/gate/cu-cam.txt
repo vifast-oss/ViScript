@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Danh sách cấm — cú pháp bị bỏ ở pha 1 (VD-205, R6).
+# Định dạng: <từ khoá ascii viết thường><TAB><ghi chú> (dòng bắt đầu `#` = chú thích).
+# Quét **cả văn xuôi lẫn khối mã** trong `docs/**/*.md` và `CHEAT-SHEET-ViScript.md`.
+# Ngoại lệ duy nhất: dòng chứa "cú pháp sai" (đánh dấu tường minh), hoặc dòng khớp một mục
+# của `test/gate/cu-cam-ngoai-le.txt` (chuỗi con, mỗi mục kèm lý do — dành cho bảng
+# cú pháp cũ → mới → mã lỗi, tiêu chí đóng pha 1 số 4).
+none	VS0203 — từ khoá đã bỏ (R2, VD-187); dùng `None` (biến thể của enum std Option)

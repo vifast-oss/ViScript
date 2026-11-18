@@ -1324,7 +1324,7 @@ match_expr      := 'match' expr ':' NEWLINE INDENT match_arm+ DEDENT
 pattern         := or_pattern
 or_pattern      := range_pattern ('|' range_pattern)*
 range_pattern   := atom_pattern [ '..' [atom_pattern] | '..=' atom_pattern ]
-atom_pattern    := '_' | literal | '-' INT | 'None' | 'none' (đã bỏ — VS0203) | dotted_path
+atom_pattern    := '_' | literal | '-' INT | 'None' | dotted_path
                  | '(' pattern (',' pattern)* ')'
                  | '[' [list_pat] ']'
                  | '{' [record_pat (',' record_pat)*] '}'

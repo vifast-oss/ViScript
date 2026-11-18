@@ -26,14 +26,14 @@ pub const DAU_QUYEN: &str = "\u{1}VS0604:";
 
 fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
     match r {
-        Ok(v) => Ok(Value::Res(Ok(Box::new(v)))),
+        Ok(v) => Ok(Value::ok(v)),
         Err(e) => match e.strip_prefix(DAU_QUYEN) {
             Some(msg) => Err(Abort::Trap(Trap::new(
                 &COMMAND_CODES[3],
                 msg.to_string(),
                 span,
             ))),
-            None => Ok(Value::Res(Err(Box::new(Value::Str(e))))),
+            None => Ok(Value::err(Value::Str(e))),
         },
     }
 }
@@ -377,8 +377,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "json.decode" => {
             let s = chuoi(name, &args[0], 0, span)?;
             match crate::json::decode(s) {
-                Ok(v) => Ok(Value::Res(Ok(Box::new(v)))),
-                Err(e) => Ok(Value::Res(Err(Box::new(Value::Str(e))))),
+                Ok(v) => Ok(Value::ok(v)),
+                Err(e) => Ok(Value::err(Value::Str(e))),
             }
         }
         "json.encode" => {
@@ -651,6 +651,30 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
             }
             out.push('}');
         }
+        // **VD-204 (1)**: `Option`/`Result` thật — biến thể dựng sẵn của enum `Option`/`Result`.
+        // `None` ⇒ `null`; `Some(x)` ⇒ encode `x`; `Result` ⇒ `{"ok": v}` / `{"err": e}`.
+        Value::Enum(ea, va, ag) if ea == "Option" && va == "None" => out.push_str("null"),
+        Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+            json_tai(&ag[0], pretty, depth, out)
+        }
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("ok", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            json_tai(&ag[0], pretty, depth + 1, out);
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("err", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            json_tai(&ag[0], pretty, depth + 1, out);
+            dong(pretty, depth, out);
+            out.push('}');
+        }
         Value::Enum(_, var, args) => {
             out.push('{');
             mo(pretty, depth, out);
@@ -677,26 +701,6 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
                     out.push(']');
                 }
             }
-            dong(pretty, depth, out);
-            out.push('}');
-        }
-        Value::Opt(None) => out.push_str("null"),
-        Value::Opt(Some(x)) => json_tai(x, pretty, depth, out),
-        Value::Res(Ok(x)) => {
-            out.push('{');
-            mo(pretty, depth, out);
-            esc("ok", out);
-            out.push_str(if pretty { ": " } else { ":" });
-            json_tai(x, pretty, depth + 1, out);
-            dong(pretty, depth, out);
-            out.push('}');
-        }
-        Value::Res(Err(e)) => {
-            out.push('{');
-            mo(pretty, depth, out);
-            esc("err", out);
-            out.push_str(if pretty { ": " } else { ":" });
-            json_tai(e, pretty, depth + 1, out);
             dong(pretty, depth, out);
             out.push('}');
         }

@@ -296,15 +296,32 @@ impl<'a> Interp<'a> {
                 // **R3b (VD-178)**: `let x = r else:` — bóc `Ok`/`Some`; ngược lại chạy khối `else`.
                 if let Some(e) = else_ {
                     match v {
-                        Value::Res(Ok(x)) => self.bind_pat(pat, &x),
-                        Value::Opt(Some(x)) => self.bind_pat(pat, &x),
-                        Value::Res(Err(err)) => {
+                        Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
+                            return self.exec_block(&e.body);
+                        }
+                        Value::Enum(ea, va, ag)
+                            if ea == "Result" && va == "Ok" && ag.len() == 1 =>
+                        {
+                            let mut ag = ag;
+                            self.bind_pat(pat, &ag.pop().expect("Ok luôn có một đối số"))
+                        }
+                        Value::Enum(ea, va, ag)
+                            if ea == "Option" && va == "Some" && ag.len() == 1 =>
+                        {
+                            let mut ag = ag;
+                            self.bind_pat(pat, &ag.pop().expect("Some luôn có một đối số"))
+                        }
+                        Value::Enum(ea, va, ag)
+                            if ea == "Result" && va == "Err" && ag.len() == 1 =>
+                        {
+                            let mut ag = ag;
                             if let Some(sym) = e.bind_sym {
-                                self.env.borrow_mut().insert(sym, *err);
+                                self.env
+                                    .borrow_mut()
+                                    .insert(sym, ag.pop().expect("Err luôn có một đối số"));
                             }
                             return self.exec_block(&e.body);
                         }
-                        Value::Opt(None) => return self.exec_block(&e.body),
                         other => self.bind_pat(pat, &other),
                     }
                 } else {
@@ -546,10 +563,17 @@ impl<'a> Interp<'a> {
             }
             HCond::Let { pat, value, .. } => {
                 let v = self.eval(value)?;
-                let target = match &v {
-                    Value::Opt(Some(x)) => (**x).clone(),
-                    Value::Opt(None) => return Ok(false),
-                    other => other.clone(),
+                // `if let Some(x) = o:` — `None` ⇒ nhánh sai; giá trị khác được khớp **theo pattern**.
+                let target = match v {
+                    Value::Enum(ea, va, ag) if ea == "Option" => match va.as_str() {
+                        "None" => return Ok(false),
+                        "Some" if ag.len() == 1 => {
+                            let mut ag = ag;
+                            ag.pop().expect("Some luôn có một đối số")
+                        }
+                        _ => Value::Enum(ea, va, ag),
+                    },
+                    other => other,
                 };
                 let snapshot = self.env.borrow().clone();
                 if !self.bind_pat_bool(pat, &target) {
@@ -597,7 +621,7 @@ impl<'a> Interp<'a> {
                         let n = self.symbols.name_of(*id).unwrap_or_default();
                         // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải hàm.
                         if n == "None" {
-                            return Ok(Value::Opt(None));
+                            return Ok(Value::none());
                         }
                         if let Some(b) = builtin_name(n) {
                             return Ok(Value::Builtin(b));
@@ -611,7 +635,7 @@ impl<'a> Interp<'a> {
                 }
                 None => match builtin_name(name) {
                     // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải hàm.
-                    Some("None") => Ok(Value::Opt(None)),
+                    Some("None") => Ok(Value::none()),
                     Some(b) => Ok(Value::Builtin(b)),
                     None => Err(Abort::Trap(Trap::new(
                         RT,
@@ -623,10 +647,13 @@ impl<'a> Interp<'a> {
             HExpr::Bin { op, lhs, rhs, span } => match op {
                 BinOp::Coalesce => {
                     let l = self.eval(lhs)?;
-                    match l {
-                        Value::Opt(Some(v)) => Ok(*v),
-                        Value::Opt(None) => self.eval(rhs),
-                        other => Ok(other),
+                    if l.is_some() {
+                        Ok(l.into_some().expect("vừa kiểm is_some"))
+                    } else if l.is_none() {
+                        self.eval(rhs)
+                    } else {
+                        // Không phải `Option` — `??` chỉ trên `T?`; giữ nguyên hành vi cũ (giá trị thô).
+                        Ok(l)
                     }
                 }
                 BinOp::And => {
@@ -677,8 +704,16 @@ impl<'a> Interp<'a> {
                 let b = self.eval(base)?;
                 let b = if *optional {
                     match b {
-                        Value::Opt(None) => return Ok(Value::Opt(None)),
-                        Value::Opt(Some(x)) => *x,
+                        // **VD-204 (1)**: enum `Option` thật — `None` ⇒ `None`; `Some(v)` ⇒ bóc `v`;
+                        // giá trị khác (không phải `Option`) đi thẳng như cũ.
+                        Value::Enum(ea, va, ag) if ea == "Option" => match va.as_str() {
+                            "None" => return Ok(Value::none()),
+                            "Some" if ag.len() == 1 => {
+                                let mut ag = ag;
+                                ag.pop().expect("Some luôn có một đối số")
+                            }
+                            _ => Value::Enum(ea, va, ag),
+                        },
                         other => other,
                     }
                 } else {
@@ -748,10 +783,10 @@ impl<'a> Interp<'a> {
                 Ok(Value::Enum(name, variant.clone(), vs))
             }
             HExpr::Opt { value, .. } => match value {
-                None => Ok(Value::Opt(None)),
+                None => Ok(Value::none()),
                 Some(v) => {
                     let inner = self.eval(v)?;
-                    Ok(Value::Opt(Some(Box::new(inner))))
+                    Ok(Value::some(inner))
                 }
             },
             HExpr::Try { expr, .. } if self.fn_depth == 0 => {
@@ -770,26 +805,35 @@ impl<'a> Interp<'a> {
                 let b = self.eval(base)?;
                 let i = self.eval(index)?;
                 Ok(match (&b, &i) {
-                    (Value::List(xs), Value::Int(n)) if *n >= 0 => match xs.get(*n as usize) {
-                        Some(v) => Value::Opt(Some(Box::new(v.clone()))),
-                        None => Value::Opt(None),
-                    },
-                    (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => match bs.get(*n as usize) {
-                        Some(x) => Value::Opt(Some(Box::new(Value::Int(*x as i64)))),
-                        None => Value::Opt(None),
-                    },
-                    (Value::Map(kv), k) => match kv.iter().find(|(kk, _)| kk.eq_value(k)) {
-                        Some((_, v)) => Value::Opt(Some(Box::new(v.clone()))),
-                        None => Value::Opt(None),
-                    },
-                    _ => Value::Opt(None),
+                    (Value::List(xs), Value::Int(n)) if *n >= 0 => {
+                        Value::opt(xs.get(*n as usize).cloned())
+                    }
+                    (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => {
+                        Value::opt(bs.get(*n as usize).map(|x| Value::Int(*x as i64)))
+                    }
+                    (Value::Map(kv), k) => Value::opt(
+                        kv.iter()
+                            .find(|(kk, _)| kk.eq_value(k))
+                            .map(|(_, v)| v.clone()),
+                    ),
+                    _ => Value::none(),
                 })
             }
             HExpr::Try { expr, .. } => match self.eval(expr)? {
-                Value::Opt(Some(v)) => Ok(*v),
-                Value::Opt(None) => Err(Abort::Ret(Value::Opt(None))),
-                Value::Res(Ok(v)) => Ok(*v),
-                Value::Res(Err(e)) => Err(Abort::Ret(Value::Res(Err(e)))),
+                // **VD-204 (1)**: `Option`/`Result` thật — `?` bóc `Some(v)`/`Ok(v)`, đẩy `None`/`Err(e)`
+                // về làm giá trị trả sớm; `?` trên kiểu khác ⇒ lỗi như cũ.
+                Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+                    Ok(ag.into_iter().next().expect("Some luôn có một đối số"))
+                }
+                Value::Enum(ea, va, ag) if ea == "Option" && va == "None" => {
+                    Err(Abort::Ret(Value::Enum(ea, va, ag)))
+                }
+                Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+                    Ok(ag.into_iter().next().expect("Ok luôn có một đối số"))
+                }
+                Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
+                    Err(Abort::Ret(Value::Enum(ea, va, ag)))
+                }
                 other => Err(Abort::Trap(Trap::new(
                     RT,
                     format!("`?` cần `T?`/`Result`, được `{}`", other.show()),
@@ -1060,6 +1104,12 @@ impl<'a> Interp<'a> {
                         span,
                     ))
                 }),
+            // **VD-204 (1)**: `Some(v)` không có trường; truy cập trường lên `Option`
+            // bóc `Some(v)` rồi lấy trường của `v` (tương thích hành vi cũ với `Value::Opt`).
+            Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
+                let mut args = args;
+                self.field_of(args.pop().expect("Some luôn có một đối số"), name, span)
+            }
             Value::Enum(en, variant, args) => {
                 if variant == name {
                     Ok(Value::Enum(en, variant, args))
@@ -1074,7 +1124,6 @@ impl<'a> Interp<'a> {
                     )))
                 }
             }
-            Value::Opt(Some(x)) => self.field_of(*x, name, span),
             other => Err(Abort::Trap(Trap::new(
                 RT,
                 format!("`{}` không có trường `{name}`", other.show()),
@@ -1292,8 +1341,9 @@ impl Value {
     pub fn truthy(&self, span: Span) -> R<bool> {
         match self {
             Value::Bool(b) => Ok(*b),
-            Value::Opt(None) => Ok(false),
-            Value::Opt(Some(_)) => Ok(true),
+            Value::Enum(ea, va, ag) if ea == "Option" => {
+                Ok(matches!((va.as_str(), ag.len()), ("Some", 1)))
+            }
             other => Err(Abort::Trap(Trap::new(
                 RT,
                 format!("điều kiện cần `bool`, được `{}`", other.show()),

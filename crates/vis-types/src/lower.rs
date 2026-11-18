@@ -598,6 +598,27 @@ impl<'a> Lowerer<'a> {
     /// `var` **không** khai lại (`SymKind::Var` vẫn báo).
     fn declare(&mut self, name: &str, kind: SymKind, span: Span, ty: Option<Type>) -> u32 {
         let frame = self.current_frame();
+        // **VD-204 (Q9 (4))**: tên của enum std (`Option`/`Result`) và biến thể dựng sẵn của
+        // chúng (`Some`/`None`/`Ok`/`Err`) là **tên dự trữ ở phạm vi toàn cục** — khai lại hay
+        // che tên ở đó ⇒ **VS0302** (mã `NAME_CODES[1]`, thông điệp nêu rõ lý do). Chỉ áp ở
+        // khung tệp (`FrameKind::File`); trong hàm vẫn tự do. Khai báo dựng sẵn của chính trình
+        // biên dịch (`SymKind::Builtin`, nạp **trước** mọi mục người dùng) được miễn.
+        if kind != SymKind::Builtin
+            && matches!(name, "Option" | "Result" | "Some" | "None" | "Ok" | "Err")
+            && self
+                .symbols
+                .frames
+                .get(frame as usize)
+                .is_some_and(|f| f.kind == FrameKind::File)
+        {
+            self.diag(
+                &NAME_CODES[1],
+                format!(
+                    "`{name}` là tên dự trữ của enum std (`Option`/`Result`) — không được khai lại ở phạm vi toàn cục"
+                ),
+                span,
+            );
+        }
         if kind != SymKind::PatBind {
             if let Some(prev) = self.symbols.in_frame(frame, name) {
                 let (pl, pc) = self.pos(prev.span);

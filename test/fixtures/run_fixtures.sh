@@ -13,7 +13,7 @@ VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-echo "1..12"
+echo "1..13"
 n=0; bad=0
 expect_fail() {
     n=$((n + 1))
@@ -142,5 +142,10 @@ touch -t 200001010000 "$tmp/12/fakevis"
 PY=$(command -v python3.12 || command -v python3.11 || command -v python3 || true)
 expect_fail_dev "doc-examples: binary cũ bị từ chối" "cũ hơn mã nguồn" \
     "$PY" "$VIS_ROOT/test/doc-examples/doc_examples.py" --gate --root "$tmp/12" --temp-root --vis-bin "$tmp/12/fakevis"
+# 13) R6 (VD-205): tài liệu chứa từ khoá bị bỏ ở pha 1 ⇒ đỏ
+mkdir -p "$tmp/13/docs" "$tmp/13/test/gate"
+printf '# tài liệu sạch\n\n```vis\nlet x: int? = none\n```\n' > "$tmp/13/docs/bad.md"
+cp "$VIS_ROOT/test/gate/cu-cam.txt" "$tmp/13/test/gate/cu-cam.txt"
+expect_fail_dev "danh sách cấm (R6): từ khoá cũ bị bắt" "R6" bash "$DEV" rules --root "$tmp/13"
 if [ "$bad" -ne 0 ]; then echo "# fixtures: FAIL ($bad)"; exit 1; fi
 echo "# fixtures: PASS (cây sạch phải xanh)"

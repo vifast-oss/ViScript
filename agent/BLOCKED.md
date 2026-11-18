@@ -117,3 +117,22 @@ crate host.
 | Đã làm (tạm) | **Đưa `vis-host-linux/` + `vis-host-wasm/` vào repo mới** (2 workspace riêng, `exclude` trong `Cargo.toml` gốc) và đổi path dep `../../../vis-host-linux` → `../../vis-host-linux`; **không có** tệp nào phải lấy từ repo cũ ⇒ `cargo build --workspace` + gate PASS |
 | Đã chốt | (a) **giữ** `vis-host-linux`/`vis-host-wasm` trong repo `ViScript`; (c) repo `ViFastOs` **đã xoá** hai thư mục (`1a6a837c`) ⇒ không còn hai bản |
 | Rủi ro nếu A0 chọn (b) | Đổi 1 dòng `Cargo.toml` + 1 dòng `SYNC_DIRS`/`SYNC_FILES` trong `bin/vis-linux` + `sync_list.rs`; không đổi mã sản phẩm |
+
+## 8. BLOCKED-CHO-A0 — enum-hoá `Option`/`Result` **tầng kiểu** (ST-217, VD-204 (1))
+
+**Người ghi**: Agent 2 · **Ngày**: 2026-11-18 · **HEAD khi chặn**: `7c256df` (trước commit ST-217)
+
+**Việc đã làm** (commit ST-217, không cần A0): enum std thật ở **tầng giá trị** (`Value::Opt`/`Value::Res` gộp vào `Value::Enum`; bytecode ISA `UnwrapOpt`/`IndexOpt`/… **không** đổi ⇒ VBC1 nguyên vẹn); mọi đường in xác nhận dùng enum; **0 tệp `.out` đổi** (VD-204 (2)); **ca khoá** (`crates/vis-cli/tests/vd_204.rs`): toàn cục `Option`/`Result`/`Some`/`None`/`Ok`/`Err` ⇒ **VS0302**; match đủ nhánh hồi quy (VS0402); `?` không đổi; cheat-sheet **8 dòng** + luật cổng **R6** (+ca âm 13) + grammar EBNF bỏ token cũ; benchmark (ps): VM **+23 %** · interp **+10 %** ⇒ **nợ #152** (VD-204 (5), không tự tối ưu).
+
+**Việc còn lại (đây là chặn)**: ở **tầng kiểu**, `Option`/`Result` vẫn là kiểu dựng sẵn (`Type::Opt`/`Type::Result`; 82 chỗ `Type::Opt` + 102 chỗ `Value::Opt` tiền-ST-217 trên 12 tệp). Enum-hoá trọn đòi **xoá `Type::Opt`** và dựng `Option`/`Result` thành enum trong bảng kiểu (`EnumDef`), tức:
+
+1. **Checker bất biến** — `tyck::check(hir, symbols, types: &TypeTable)`: mọi instantiation `Option[…]` do **tyck tự dựng tại chỗ** (đường `coerce` tự nâng `T → T?` và đường `erase_gen`/`thay_gen` cho hàm generic) không thể intern khi bảng kiểu là `&` bất biến ⇒ phải đổi Checker sang sở hữu/mutate bảng (`RefCell<TypeTable>` hoặc trả `TypeTable` mới), rà toàn bộ ~50 chỗ `self.types.enum_def/field/rec/find_*`, và cẩn thận phép hợp nhất kiểu (`hop_nhat`) khi hai instantiation "cùng args" nhưng khác id.
+2. **`Type::show` giữ `int?`** — VD-204 (2) khoá mọi chẩn đoán in `int?` (82 chỗ) + LSP hover dòng đó; bất kỳ sai sót in ra `Option[int]` là đổi byte hàng loạt golden + hover, xung đột trực tiếp VD-204 (2) ("mỗi tệp chỉ đổi đúng chuỗi này" — tức **không** được đổi).
+3. **VD-204 (1) không nói rõ** có muốn xoá `Type::Opt` hay chỉ muốn "tài liệu nói thật". Tài liệu thiết kế hiện hành (A0 soạn) gọi `Option`/`Result` là **kiểu dựng sẵn** của `core` (dòng 818 `docs/ViScript-thiet-ke.md`) — mâu thuẫn văn bản với VD-204 (1) ("khai thật ở R2b"), cần A0 chốt một trong ba:
+   - **(A)** Chấp nhận **tầng chạy thật + tầng kiểu dựng sẵn** là đáp án cuối (bảng `core` giữ nguyên; VD-204 (1) thoả ở mức tương đương ngữ nghĩa — không còn "kiểu giả" trong ngữ nghĩa chạy/hiển thị).
+   - **(B)** Refactor **tầng kiểu** đầy đủ (bảng kiểu nội hàm + intern lazy); ước lượng **1–2 ngày**, rủi ro **10–20 chẩn đoán/golden** đổi byte, cần **VD + task riêng** (không gộp pha 1), và benchmark trước vì `hop_nhat` tốn thêm.
+   - **(C)** Phương án trung: giữ `Type::Opt`, gắn cờ "std-enum" vào `EnumDef` dựng sẵn để hợp nhất logic với enum (giống tầng chạy đã làm); ít rủi ro nhất nhưng không xoá được `Type::Opt` ⇒ vẫn "kiểu dựng sẵn" về mặt loại.
+
+**Không tự quyết** — VD-196 cấm Agent 2 đổi phạm vi VD-204; SPEC/ngữ nghĩa ngôn ngữ thuộc Agent 0 (`AGENTS.md`). **Cần gì để mở**: A0 chọn **A / B / C**; nếu B thì duyệt **VD mới + task mới** (ước lượng, mốc đo, chiến lược golden); nếu A thì sửa 1 dòng `docs/ViScript-thiet-ke.md` §8 (bảng module core) cho khớp VD-204 — A0 duyệt diff đó; nếu C thì cấp VD cho cờ `std-enum`.
+
+**Không chặn việc khác**: pha 1 tiếp theo (R4 / R5b / R5d theo VD-207) **không phụ thuộc** quyết định này; chỉ chặn "R2b-1 hoàn tất 100 %" và tiêu chí đóng pha 1 ở phần nhắc `Option`/`Result` (bảng old→new→mã sẽ ghi rõ theo A / B / C khi ST-210 dựng bảng).

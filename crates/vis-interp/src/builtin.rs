@@ -1146,7 +1146,7 @@ pub fn call(
             let Value::List(xs) = &args[0] else {
                 return Err(trap(RT, "`first` cần `list`", span));
             };
-            Ok(Value::Opt(xs.first().cloned().map(Box::new)))
+            Ok(Value::opt(xs.first().cloned()))
         }
         "count" => {
             if args.len() != 1 {
@@ -1179,16 +1179,16 @@ pub fn call(
             }
             let mut it = args.into_iter();
             let v = it.next().unwrap_or(Value::Unit);
-            Ok(Value::Opt(Some(Box::new(v))))
+            Ok(Value::some(v))
         }
-        "None" => Ok(Value::Opt(None)),
+        "None" => Ok(Value::none()),
         "Ok" => {
             if args.len() != 1 {
                 return Err(trap(RT, "`Ok` cần 1 đối số", span));
             }
             let mut it = args.into_iter();
             let v = it.next().unwrap_or(Value::Unit);
-            Ok(Value::Res(Ok(Box::new(v))))
+            Ok(Value::ok(v))
         }
         "Err" => {
             if args.len() != 1 {
@@ -1196,7 +1196,7 @@ pub fn call(
             }
             let mut it = args.into_iter();
             let v = it.next().unwrap_or(Value::Unit);
-            Ok(Value::Res(Err(Box::new(v))))
+            Ok(Value::err(v))
         }
         // ST-56 (VD-92): `ref(x)` là **biểu thức** hạ identity — cái tên `ref` **không** phải hàm.
         "ref" => Err(trap(
@@ -1290,10 +1290,10 @@ fn chan_method(
             {
                 let mut ch = c.borrow_mut();
                 if let Some(v) = ch.buf.pop_front() {
-                    return Ok(Value::Opt(Some(Box::new(v))));
+                    return Ok(Value::some(v));
                 }
                 if ch.closed {
-                    return Ok(Value::Opt(None));
+                    return Ok(Value::none());
                 }
             }
             if !crate::rt::chay_mot(host)? {
@@ -1332,13 +1332,13 @@ fn list_method(
             let Some(Value::Int(i)) = args.first() else {
                 return Err(trap(RT, "`get` cần chỉ số `int`", span));
             };
-            Ok(Value::Opt(match xs.get(*i as usize) {
-                Some(v) if *i >= 0 => Some(Box::new(v.clone())),
+            Ok(Value::opt(match xs.get(*i as usize) {
+                Some(v) if *i >= 0 => Some(v.clone()),
                 _ => None,
             }))
         }
-        "first" => Ok(Value::Opt(xs.first().cloned().map(Box::new))),
-        "last" => Ok(Value::Opt(xs.last().cloned().map(Box::new))),
+        "first" => Ok(Value::opt(xs.first().cloned())),
+        "last" => Ok(Value::opt(xs.last().cloned())),
         "push" => {
             if args.len() != 1 {
                 return Err(trap(RT, "`push` cần 1 đối số", span));
@@ -1461,10 +1461,10 @@ fn map_method(
             let Some(k) = args.first() else {
                 return Err(trap(RT, "`get` cần 1 khoá", span));
             };
-            Ok(Value::Opt(
+            Ok(Value::opt(
                 kv.iter()
                     .find(|(kk, _)| kk.eq_value(k))
-                    .map(|(_, v)| Box::new(v.clone())),
+                    .map(|(_, v)| v.clone()),
             ))
         }
         "has" => {

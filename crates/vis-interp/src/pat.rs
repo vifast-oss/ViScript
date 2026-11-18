@@ -36,25 +36,14 @@ impl<'a> Interp<'a> {
                 let name = path.last().cloned().unwrap_or_default();
                 let low = name.to_ascii_lowercase();
                 match v {
+                    // **VD-204 (1)**: `Option`/`Result` là enum thật — cùng luật so khớp biến thể
+                    // theo **tên biến thể** (arity kiểm bằng `bind_all`).
                     Value::Enum(_, variant, vargs) => {
                         if variant != &name && variant.to_ascii_lowercase() != low {
                             return false;
                         }
                         self.bind_all(args, vargs)
                     }
-                    Value::Opt(Some(x)) => match low.as_str() {
-                        "some" => self.bind_all(args, &[(**x).clone()]),
-                        _ => false,
-                    },
-                    Value::Opt(None) => low == "none" && args.is_empty(),
-                    Value::Res(Ok(x)) => match low.as_str() {
-                        "ok" => self.bind_all(args, &[(**x).clone()]),
-                        _ => false,
-                    },
-                    Value::Res(Err(e)) => match low.as_str() {
-                        "err" => self.bind_all(args, &[(**e).clone()]),
-                        _ => false,
-                    },
                     Value::Bool(b) => match low.as_str() {
                         "true" => *b,
                         "false" => !*b,
@@ -63,7 +52,7 @@ impl<'a> Interp<'a> {
                     // `T → T?` nâng **ngầm** ở mức kiểu (ST-12): giá trị chạy có thể là `T` trần,
                     // nên `some(v)` phải khớp cả giá trị **chưa bọc** (ST-14, ca `optional/match-some`).
                     other if low == "some" => {
-                        if matches!(other, Value::Opt(None) | Value::Unit) {
+                        if matches!(other, Value::Unit) {
                             false
                         } else {
                             self.bind_all(args, std::slice::from_ref(other))

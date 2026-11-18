@@ -253,7 +253,7 @@ pub fn tra_loi_completion(kq: &KetQua, byte: usize, id: &Value) -> Vec<u8> {
 /// Phản hồi `textDocument/hover` (`contents` markdown + `range`), hoặc `result:null`.
 pub fn tra_loi_hover(kq: &KetQua, byte: usize, id: &Value) -> Vec<u8> {
     let Some((span, value)) = gia_tri_hover(kq, byte) else {
-        return phan_hoi(id, Value::Opt(None));
+        return phan_hoi(id, Value::none());
     };
     let ((l0, c0), (l1, c1)) = khoang(&kq.text, span);
     let pos = |line: u32, character: u32| {

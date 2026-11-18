@@ -5,7 +5,7 @@
 //! - object ⇒ `map[str, Any]` giữ **thứ tự xuất hiện**; trùng khoá ⇒ **giá trị cuối**, vị trí **đầu**
 //! - array ⇒ `list[Any]`; number: **có** `.`/`e`/`E` ⇒ `float`, còn lại ⇒ `int` (tràn `i64` ⇒ lỗi)
 //! - string (giải escape **đủ**: `\" \\ \/ \b \f \n \r \t \uXXXX`, **surrogate pair** ghép thành một
-//!   scalar `\u{…}`; nửa cặp ⇒ lỗi); `true`/`false`; `null` ⇒ `None` (`Opt(None)`, kiểu `Opt(Error)`)
+//!   scalar `\u{…}`; nửa cặp ⇒ lỗi); `true`/`false`; `null` ⇒ `None` (`Option` kiểu `{error}`)
 //!
 //! Lỗi ⇒ `Err("JSON không hợp lệ ở byte N: …")`, `N` là **byte** trong chuỗi gốc (không phải char).
 
@@ -60,7 +60,7 @@ impl<'a> P<'a> {
             b'"' => Ok(Value::Str(self.chuoi()?)),
             b't' => self.hang("true", Value::Bool(true)),
             b'f' => self.hang("false", Value::Bool(false)),
-            b'n' => self.hang("null", Value::Opt(None)),
+            b'n' => self.hang("null", Value::none()),
             b'-' | b'0'..=b'9' => self.so(),
             _ => Err(self.loi("ký tự không mở đầu giá trị JSON hợp lệ")),
         }

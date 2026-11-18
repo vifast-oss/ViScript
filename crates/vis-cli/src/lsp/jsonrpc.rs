@@ -35,7 +35,7 @@ pub fn so_json(v: &Value) -> String {
 
 /// `id` của lỗi "không xác định được request" — JSON `null`.
 pub fn id_null() -> Value {
-    Value::Opt(None)
+    Value::none()
 }
 
 /// Phản hồi thành công: `{"jsonrpc":"2.0","id":<id>,"result":<result>}`.

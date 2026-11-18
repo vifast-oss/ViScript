@@ -85,11 +85,9 @@ fn snapshot_show_hop_va_kieu_nguoi_dung() {
         f(Value::Enum("Shape".into(), "Empty".into(), vec![])),
         "Empty"
     );
-    assert_eq!(f(Value::Opt(None)), "None");
-    assert_eq!(f(Value::Opt(Some(Box::new(Value::Int(5))))), "Some(5)");
-    assert_eq!(f(Value::Res(Ok(Box::new(Value::Int(1))))), "Ok(1)");
-    assert_eq!(
-        f(Value::Res(Err(Box::new(Value::Str("âm".into()))))),
-        "Err(âm)"
-    );
+    // **VD-204 (1)**: `Option`/`Result` là enum std — hiển thị qua cùng luật `Enum`.
+    assert_eq!(f(Value::none()), "None");
+    assert_eq!(f(Value::some(Value::Int(5))), "Some(5)");
+    assert_eq!(f(Value::ok(Value::Int(1))), "Ok(1)");
+    assert_eq!(f(Value::err(Value::Str("âm".into()))), "Err(âm)");
 }

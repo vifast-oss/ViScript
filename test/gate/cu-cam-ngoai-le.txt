@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Ngoại lệ cho danh sách cấm (test/gate/cu-cam.txt, R6 — VD-205).
+# Định dạng: một **chuỗi con** mỗi dòng (không phải từ khoá nguyên văn); mọi dòng bị quét
+# chứa chuỗi con đó sẽ được bỏ qua. Dòng bắt đầu `#` = chú thích.
+#
+# Dành **riêng** cho: bảng cú pháp cũ → mới → mã lỗi (tiêu chí đóng pha 1 số 4) và các
+# ngoại lệ được Agent 0 duyệt khi áp bảng đó. Ngoại lệ phải kèm chú thích nêu bảng/mục —
+# cấm thêm ngoại lệ "vô nhân thân" (chuỗi con quá rộng, ví dụ `none` trần).
+#
+# (hiện chưa có mục — ST-210 sẽ mở khi tạo bảng old→new→mã)

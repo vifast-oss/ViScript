@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # vis-dev — cổng của dòng ViScript (ST-01).
-#   check      : fmt + clippy + luật R1..R5 + self-test case âm + build
+#   check      : fmt + clippy + luật R1..R6 + self-test case âm + build
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
@@ -32,6 +32,68 @@ relpath() {
 }
 
 rule_fail() { echo "$1" >&2; fails=$((fails + 1)); }
+
+# R6 (VD-205): **danh sách cấm** — cú pháp bị bỏ ở pha 1 không được xuất hiện ở
+# `docs/**/*.md` lẫn `CHEAT-SHEET-ViScript.md` (quét **cả văn xuôi lẫn khối mã**).
+#   Danh sách: `test/gate/cu-cam.txt` — mỗi dòng `<từ khoá ascii viết thường><TAB><lý do>`.
+#   Ngoại lệ duy nhất: dòng chứa "cú pháp sai" (case-insensitive, ví dụ đánh dấu tường minh)
+#     hoặc dòng khớp một mục của `test/gate/cu-cam-ngoai-le.txt` (chuỗi con, kèm lý do).
+#   Cây không có tệp nào bị quét ⇒ bỏ qua (cây tạm của self-test R1..R4); cây có docs/ nhưng
+#   thiếu danh sách ⇒ **đỏ** (chống "quên tạo tệp").
+#   Một tiến trình `awk` cho toàn bộ — không tạo tiến trình mỗi dòng/mỗi tệp.
+rule_forbidden_list() {
+    local root="$1"
+    local list="$root/test/gate/cu-cam.txt"
+    local except="$root/test/gate/cu-cam-ngoai-le.txt"
+    local f
+    local -a scan=()
+    if [ -d "$root/docs" ]; then
+        while IFS= read -r -d '' f; do scan+=("$f"); done < <(find "$root/docs" -type f -name '*.md' -print0 2>/dev/null)
+    fi
+    if [ -f "$root/CHEAT-SHEET-ViScript.md" ]; then
+        scan+=("$root/CHEAT-SHEET-ViScript.md")
+    fi
+    [ ${#scan[@]} -eq 0 ] && return 0
+    if [ ! -f "$list" ]; then
+        echo "R6 $(relpath "$list"): thiếu danh sách cấm (có tệp bị quét nhưng không có cu-cam.txt)" >&2
+        return 1
+    fi
+    local out rc
+    out=$(awk -v LIST="$list" -v EXC="$except" -v ROOT="$root" '
+        function rel(p) { sub("^" ROOT "/", "", p); return p }
+        BEGIN {
+            n = 0
+            while ((getline line < LIST) > 0) {
+                if (line ~ /^[ \t]*($|#)/) continue
+                split(line, a, "\t")
+                w = a[1]; sub(/^[ \t]+|[ \t]+$/, "", w)
+                if (w == "") continue
+                if (w !~ /^[A-Za-z0-9_]+$/) { printf "R6 %s: mục `%s` không phải từ khoá ascii đơn\n", LIST, w; bad = 1; continue }
+                pat[++n] = "([^A-Za-z0-9_]|^)" w "([^A-Za-z0-9_]|$)"
+                word[n] = w
+            }
+            close(LIST)
+            if (bad) exit 2
+            m = 0
+            while ((getline line < EXC) > 0) {
+                if (line ~ /^[ \t]*($|#)/) continue
+                exc[++m] = tolower(line)
+            }
+            if (EXC != "") close(EXC)
+        }
+        {
+            if (FILENAME != cur) { cur = FILENAME; relcur = rel(cur) }
+            low = tolower($0)
+            if (low ~ /cú pháp sai/) next
+            for (j = 1; j <= m; j++) if (index(low, exc[j]) > 0) next
+            for (i = 1; i <= n; i++) if ($0 ~ pat[i]) printf "R6 %s:%d: từ khoá bị bỏ ở pha 1 (`%s`) — dùng bản mới\n", relcur, FNR, word[i]
+        }
+    ' "${scan[@]}")
+    rc=$?
+    if [ $rc -eq 2 ]; then printf '%s\n' "$out" >&2; return 1; fi
+    if [ -n "$out" ]; then printf '%s\n' "$out" >&2; return 1; fi
+    return 0
+}
 
 # R5 (VD-195): bảng tóm tắt §8 của `agent/SO-NO.md` phải bằng **số đếm thật** của bảng nợ §4.
 #   §4: mỗi hàng dữ liệu (cột 1 là số nợ) ⇒ phân loại cột 4 thành mở / đóng / chuyển VS3 /
@@ -104,7 +166,7 @@ rule_so_no() {
     esac
 }
 
-# R1..R5 trên một cây bất kỳ (dùng cho self-test với --root).
+# R1..R6 trên một cây bất kỳ (dùng cho self-test với --root).
 # **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ tạo **một tiến trình cho mỗi tệp** — `wc`+`tr` cho R1,
 # `awk` cho R2, `head`+`grep` cho R3 — và **ba** lượt `find` đi qua cả `target/` (2,2 GB, 433 000 tệp).
 # macOS phạt tạo tiến trình 9,6× nên `rules` chậm 8,3× so với Linux. Nay: **một** lượt `find` (prune
@@ -217,6 +279,8 @@ run_rules() {
     fi
     # R5: §8 (tóm tắt sổ nợ) phải khớp §4 (bảng nợ chính) — VD-195.
     rule_so_no "$root" || found=1
+    # R6: danh sách cấm (VD-205) — cú pháp bị bỏ ở pha 1 không được lọt vào docs/cheatsheet.
+    rule_forbidden_list "$root" || found=1
     return "$found"
 }
 
@@ -264,9 +328,9 @@ do_check() {
     fi
     echo "--- clippy: OK"
     if ! run_rules "$VIS_ROOT"; then
-        echo "--- luật R1..R5: FAIL" >&2; return 1
+        echo "--- luật R1..R6: FAIL" >&2; return 1
     fi
-    echo "--- luật R1..R5: OK"
+    echo "--- luật R1..R6: OK"
     if ! bash "$VIS_ROOT/test/fixtures/run_fixtures.sh"; then
         echo "--- self-test case âm: FAIL" >&2; return 1
     fi
