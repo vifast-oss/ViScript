@@ -1610,3 +1610,30 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 
 > **Ghi chú B1..B3**: B1 (đo A/B #152), B2 (VS0111 ngừng phát + xoá bộ lọc), B3 (ca `$value:`) đều **đã xong và đã merge** trước 19:00 (commits `8ed1885`, `d50ad39`) — chỉ chạy lại xác nhận; **B4** (script đo chuẩn #147) là việc thật.
 > **Ghi chú A1**: ST-205 (R4a) **vẫn BLOCKED-CHO-A0** (BLOCKED.md §9) — VD-220 không trả lời 4 điểm §6.1; **A2/A3 lệ thuộc A1** nên cũng chờ; **A4 (ST-208/VD-215) đã merged** (`8ed1885`); **A5 (R5d, ST-209) — VD-187 vẫn chưa đủ rõ để tự làm**; §5 (không nhảy cóc) áp dụng.
+
+### VD-221 · Uỷ quyền Agent 0 cho Agent 1 trong khung đêm 2026-11-18→19 (proxy A0)
+
+**2026-11-19 (đêm)** · **Người ra lệnh**: người dùng (vận hành) · **Áp dụng**: phần còn lại của VD-220 (19:00 → 09:00 sáng 2026-11-19).
+
+1. Người dùng uỷ quyền **Agent 1 thay mặt Agent 0** ("Agent 0 proxy") để quyết định các điểm đang BLOCKED trong đợt này — gồm **4 điểm §6.1 của R4a (ST-205)** và **ST-209 (R5d)**, cùng các lệnh phụ cần để đóng pha 1.
+2. Mọi quyết định trong khung này mang nhãn **"A0-proxy (uỷ quyền 2026-11-18→19)"** và **có thể bị Agent 0 bác bỏ/sửa khi tiếp nhận**; không được ghi là A0 duyệt chính thức.
+3. VD-196/§1 vẫn áp dụng cho mọi thứ **ngoài** phạm vi uỷ quyền này (không SPEC ngoại lệ nào ngoài các VD sẽ ghi dưới đây; không tự đổi ngưỡng fixture; không `#[ignore]`; SPEC-lex chỉ sửa khi VD mới có tên).
+4. Thứ tự VD-219 giữ nguyên: (1) ST-205 → (2) đo A/B #152 (xong VD-220; không lặp) → (3) VS0111/VD = xong → (4) R4b/R4c → (5) ST-208/R5b′ (xong) → (6) R5d → (7) ST-210 → (8) ST-210.
+5. **VD-185**: "4 dấu kiểm ngẫu nhiên của Agent 0" — Agent 1 ghi nhãn **"kiểm ngẫu nhiên proxy — chờ A0 ratify"**; không được xử lý như 4 dấu A0 thật.
+6. **07:30–07:50** (khung đo #147) giữ đúng cam kết: dừng mọi làn; `test/vd220-147.sh`; log có chữ `máy rảnh`.
+7. Kết thúc khung: **09:00** — báo cáo tổng hợp (BAO-CAO) ghi rõ danh sách quyết định proxy và trạng thái ratify.
+
+### VD-222 · R4a chốt theo **uỷ quyền A0-proxy** (VD-221) — đêm 2026-11-18→19
+
+**Ngày**: 2026-11-19 (đêm) · **Người ra quyết định**: Agent 1 **thay mặt** Agent 0 (VD-221 — uỷ quyền của người dùng) · **Có thể bị A0 bác bỏ/sửa khi tiếp nhận**.
+
+1. **(Điểm 1)** `trait Error: Show` — **(i)** **marker rỗng** (siêu trait `Show`). Builtin traits `Show` (`fn show(self) -> str`) và `Error` (rỗng, siêu `Show`) được biên dịch trước mọi item người dùng; người dùng `impl Show for KiểuRiêng:` rồi `impl Error for KiểuRiêng:` để tham gia; dispatch tĩnh, không `dyn`. **Loại (ii)**: phương thức `message/source/span` gánh nghĩa vụ hiện thực cho mọi kiểu lỗi người dùng mà không tăng khả năng lập trình (biên dịch tĩnh vẫn là `Call(impl_fn)`); `e.message()` bằng một bản ghi `show` đã đủ. **Loại (iii)**: không đưa field-member vào traits trong khung này.
+2. **(Điểm 2)** `source: **Error?`** (đệ quy bản ghi thật) — trường lấy kiểu `Option[Error]` dựng sẵn; không đặt giới hạn kích thước tường minh ở tầng kiểu; giá trị `Value::Enum` là cây động nên không có vấn đề kích cỡ vô hạn; **ràng buộc**: không hủy vòng lặp `Error` trong trường khác `source` (chỉ `source` được đệ quy).
+3. **(Điểm 3)** `span: **str?`** — định dạng `path:line:col` (khớp chính sách diagnostics hiện có; không cấp kiểu `Span` mới ở pha 1).
+4. **(Điểm 4)** `Json` — **(A)** **EnumDef thật, đẩy vào mọi bảng kiểu trước item người dùng** (EnumId `Json` = **0** ổn định, RecId `Error` = **0** ổn định); biến thể `Null() | Bool(v: bool) | Num(v: {error}) | Str(v: str) | Arr(v: list[Json]) | Obj(v: map[str, Json])`; `Num` giữ cả `int` và `float` ở runtime với kiểu khai báo `{error}` (khớp wording VD-204 "Num payload {error}"). `json.decode` → **`Result[Json, Error]`**. `print` trên `Json`/`Error` dùng cú pháp ctor-ish: `Num(1)`, `Arr([Num(1)])`, `Obj({...})`; riêng **bản ghi `Error` in "thanh gọn" = chỉ `{message}`** (định nghĩa riêng ở `Value::Record` khi tên `Error`) — nhờ vậy các ca cũ `Err(e): print(e)` byte-identical với thời `str`-Err; `Span`+`source` vẫn `Show` đầy đủ khi in bằng `{Record}` thường.
+   - **(VD-66 giữ hiệu lực)**: dữ liệu không kiểu từ json vẫn phải `match`; `xs` trong `Ok(xs)` có kiểu `Json` — không còn là `{error}` ⇒ **không** gây lỗi tĩnh hàng loạt; các test Rust cũ được migrate thủ công kèm ghi chú.
+5. **ST-206 · R4b (thu gọn proxy)**: `AnyError` := **đồng nghĩa `{error}`** ở bảng kiểu (resolve `AnyError` → `Type::Error`); `?` giữ nguyên cơ chế hiện tại (không kiểm biến thể lỗi tại `?` — đã ghi nhận trade-off, A0 ratify sau); `main -> Result[_, AnyError]` compile sạch; `Err` ở `main` ⇒ **exit 1** (đã có, R8). **Không** dựng `dyn Error` machinery ở pha 1 này (không cần tồn kích).
+6. **ST-207 · R4c**: mọi std fns chuyển **`Result[T, str]` → `Result[T, Error]`** (builtin record); interp dựng `Value::Record("Error", …)` thay `Value::Str`; docs/bảng std cập nhật; các ca `Err(e): print(e)` byte-identical nhờ (4) ở trên ⇒ **0 golden đổi** cho đường print; `test/` cheatsheet/fixtures đổi được rõ ràng khi in `Json`-enums.
+7. **`while let`**: VD-178 hứa nhưng mã merge không có ⇒ **ST-213 mới** thêm `while let` (pha 1, sau R4) — cấu trúc giống `if let` nhưng vòng lặp; A0 ratify hình thức khi review (đánh dấu VD-222 (7)).
+8. **Ghi chú ratify**: mọi mục trên là **proxy** — trong 09:00 báo cáo (§6 VD-220) liệt kê lại để A0 ký off; nếu A0 bác bỏ (1)–(4) thì ST-205/206/207 phải revert theo đúng nhánh.
+9. **Thứ tự**: ST-205 → ST-206 → ST-207 → R5d (ST-209 dưới mục VD-222 (item R5d)) → ST-210 (R30 + đóng pha 1 nếu mọi cổng xanh và 4 dấu proxy ghi rõ).
