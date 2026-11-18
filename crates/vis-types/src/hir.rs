@@ -456,7 +456,7 @@ pub enum HPat {
         lit: Lit,
         span: Span,
     },
-    /// Biến thể enum / constructor: `Circle(r)`, `some(x)`, `ok(v)`, `Empty`, `none`.
+    /// Biến thể enum / constructor: `Circle(r)`, `Some(x)`, `Ok(v)`, `Empty`, `None`.
     Ctor {
         path: Vec<String>,
         args: Vec<HPat>,
@@ -637,7 +637,7 @@ pub enum HExpr {
         ty: Type,
         span: Span,
     },
-    /// `none` (value = `None`) và tự nâng `T → T?` (§4.4).
+    /// `None` (value = `None`) và tự nâng `T → T?` (§4.4).
     Opt {
         value: Option<Box<HExpr>>,
         ty: Type,
@@ -824,7 +824,7 @@ impl HExpr {
                 s
             }
             HExpr::Opt { value, .. } => match value {
-                None => "none".into(),
+                None => "None".into(),
                 Some(v) => format!("(opt {})", v.sexp()),
             },
             HExpr::Try { expr, .. } => format!("(try {})", expr.sexp()),
@@ -1122,7 +1122,7 @@ mod tests {
                 span: Span::new(0, 0)
             }
             .sexp(),
-            "none"
+            "None"
         );
     }
 

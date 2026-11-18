@@ -383,11 +383,20 @@ impl<'a> Lowerer<'a> {
         };
         if t.kind == Kind::Kw {
             return match t.text.as_str() {
-                "none" => HExpr::Opt {
-                    value: None,
-                    ty: Type::Opt(Box::new(Type::Error)),
-                    span,
-                },
+                // **R2 (VD-178)**: từ khoá `none` đã **bỏ** — dùng `None` (`VS0203`).
+                // Hạ vẫn tạo Opt(None) để biên dịch tiếp (chẩn đoán là cổng chặn).
+                "none" => {
+                    self.diag(
+                        &vis_diag::SYNTAX_CODES[2],
+                        "`none` đã bỏ — dùng `None` (từ khoá đã bỏ, dùng biến thể `None` của `Option`)",
+                        span,
+                    );
+                    HExpr::Opt {
+                        value: None,
+                        ty: Type::Opt(Box::new(Type::Error)),
+                        span,
+                    }
+                }
                 "true" | "false" => HExpr::Lit {
                     lit: Lit {
                         kind: LitKind::Bool,

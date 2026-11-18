@@ -48,7 +48,7 @@ pub use than::is_builtin_value;
 pub(crate) use than::{lower_nhom, lower_than, ThanCtx};
 
 /// **8 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
-/// qua Agent 0). `true`/`false`/`none` là **literal**, không phải tên.
+/// qua Agent 0). `true`/`false` là **literal**; `none` đã **bỏ** (R2, `VS0203`).
 pub const BUILTIN_VALUE_NAMES: [&str; 11] = [
     "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
 ];
@@ -754,17 +754,27 @@ impl<'a> Lowerer<'a> {
     }
 
     fn resolve_type(&mut self, node: &Node) -> Type {
-        if let Some(Elem::Token(i)) = node.elems.last() {
-            if self.tok(*i).map(|t| t.is_punct("?")).unwrap_or(false) {
-                let inner = self.resolve_type_body(node);
-                if inner.is_opt() {
-                    // `T??` là lỗi kiểu (§4.4) — ST-12 báo; ST-11 giữ `{error}`.
-                    return Type::Error;
-                }
-                return Type::Opt(Box::new(inner));
-            }
+        // **R2 (VD-178)**: hậu tố optional lặp — đếm `?` (1 lớp) **và** cặp `??` (2 lớp) ở cuối.
+        let q_dau: usize = {
+            let toks: Vec<&Token> = node.tokens(&self.cst.tokens).collect();
+            toks.iter()
+                .rev()
+                .take_while(|t| t.is_punct("?") || t.is_punct("??"))
+                .map(|t| if t.is_punct("??") { 2 } else { 1 })
+                .sum()
+        };
+        if q_dau > 0 {
+            let inner = self.resolve_type_body(node);
+            return self.wrap_opt(inner, q_dau);
         }
         self.resolve_type_body(node)
+    }
+
+    fn wrap_opt(&mut self, mut t: Type, n: usize) -> Type {
+        for _ in 0..n {
+            t = Type::Opt(Box::new(t));
+        }
+        t
     }
 
     fn resolve_type_body(&mut self, node: &Node) -> Type {

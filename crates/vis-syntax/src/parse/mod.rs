@@ -597,7 +597,9 @@ impl<'a> Parser<'a> {
                 )));
             }
         }
-        if self.at_punct("?") {
+        // **R2 (VD-178)**: hậu tố optional lặp — `?` = 1 lớp, `??` (cặp token `??` của coalesce) = 2 lớp.
+        // (`int??` lex thành `int` + `??`; không phải 2×`?`.)
+        while self.at_punct("?") || self.at_punct("??") {
             elems.push(self.bump());
         }
         Ok(self.node(NodeKind::Type, elems))

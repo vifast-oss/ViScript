@@ -543,7 +543,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
 
 /// Mã hoá JSON **compact** (hoặc pretty 2 dấu cách) cho giá trị VS0.
 ///
-/// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `none` ⇒ `null`; `Result` ⇒
+/// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `None` ⇒ `null`; `Result` ⇒
 /// `{"ok":…}`/`{"err":…}`; enum ⇒ `{"variant":…, "value":…}`. Khoá chuỗi được escape.
 pub fn json(v: &Value, pretty: bool, out: &mut String) {
     json_tai(v, pretty, 0, out);

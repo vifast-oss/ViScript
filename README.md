@@ -319,7 +319,7 @@ fn main():
 
     # `xs[i]?` — chỉ số an toàn, trả `T?` thay vì panic
     let xs = [10, 20, 30]
-    print(xs[9]?)     # none
+    print(xs[9]?)     # None
 
     # `if let` phải có pattern
     let o: int? = Some(5)
@@ -342,7 +342,7 @@ fn main():
 | `let` là **bất biến** — gán lại là lỗi | Muốn đổi giá trị thì dùng `var` |
 | `"a" + "b"` **nối** được (từ R6) | `"a" + "b"` ⇒ `ab`; hoặc nội suy `"{a}{b}"` |
 | `print(a, b)` in **cách nhau 1 dấu cách** (từ R6) | `print("a", "b")` ⇒ `a b`; `print()` ⇒ dòng trống |
-| Đặt biến tên `ok`, `err`, `some`, `none` | Trùng tên hàm dựng — đổi tên khác (`dung`, `loi`, …) |
+| Đặt biến tên `Ok`, `Err`, `Some`, `None` | Trùng tên hàm dựng — đổi tên khác (`dung`, `loi`, …) |
 | `match` thiếu nhánh | Phải xét **hết** mọi trường hợp, hoặc thêm `_` |
 | `ds[5]` ngoài phạm vi | Kiểm tra `.len()` trước, hoặc dùng `.get(5)` trả `int?` |
 | `1 < x < 10` | Viết `1 < x and x < 10` |
@@ -362,7 +362,7 @@ fn main():
 | Bản ghi | `type U:` + `{...}` | `@dataclass` | `struct U { }` |
 | Enum | `enum S:` + `S.Variant(...)` | `Enum` | `enum S { }` |
 | Match | `match x:` | `match x:` | `match x { }` |
-| Thiếu giá trị | `int?` / `none` / `??` | `int \| None` | `Option<i64>` |
+| Thiếu giá trị | `int?` / `None` / `??` | `int \| None` | `Option<i64>` |
 | Lỗi | `Result[T, E]` / `?` | `try/except` | `Result<T, E>` |
 | Đơn vị | `1kb + 1kib` | — | — |
 | Nối chuỗi | `"a" + "b"` | `"a" + "b"` | `format!("{a}{b}")` |

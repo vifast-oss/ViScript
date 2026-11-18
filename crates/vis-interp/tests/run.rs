@@ -332,15 +332,15 @@ const KIEU: &[(&str, &str)] = &[
         "enum E:\n    A\n    B\nlet x: E = E.A\nmatch x:\n    A | B: print(\"cả hai\")",
         "out(\"cả hai\\n\")",
     ),
-    // kỳ vọng: out("0\n") — `T?` + match some/none
+    // kỳ vọng: out("0\n") — `T?` + match Some/None
     (
-        "let x: int? = none\nmatch x:\n    Some(v): print(v)\n    none: print(0)",
+        "let x: int? = None\nmatch x:\n    Some(v): print(v)\n    None: print(0)",
         "out(\"0\\n\")",
     ),
     // kỳ vọng: out("5\n") — `??` trên `some`
     ("let x: int? = 5\nprint(x ?? 0)", "out(\"5\\n\")"),
-    // kỳ vọng: out("7\n") — `??` trên `none`
-    ("let y: int? = none\nprint(y ?? 7)", "out(\"7\\n\")"),
+    // kỳ vọng: out("7\n") — `??` trên `None`
+    ("let y: int? = None\nprint(y ?? 7)", "out(\"7\\n\")"),
     // kỳ vọng: out("âm\n") — `?` trên Result (trả sớm `Err`)
     (
         "fn f(n: int) -> Result[int, str]:\n    let r = if n > 0: Ok(n) else: Err(\"âm\")\n    r\nfn g(n: int) -> Result[int, str]:\n    let v = f(n)?\n    Ok(v * 2)\nmatch g(-1):\n    Ok(x): print(x)\n    Err(e): print(e)",

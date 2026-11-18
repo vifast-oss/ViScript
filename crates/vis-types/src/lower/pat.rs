@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! Hạ **pattern** CST → [`HPat`] (ST-11) — phần đuôi của [`crate::lower`].
 //!
-//! §A.4: `pattern := or_pattern`; `_' | literal | '-' INT | 'none' | dotted_path | '(' … ')' |
+//! §A.4: `pattern := or_pattern`; `_' | literal | '-' INT | 'None' | ('none' đã bỏ — VS0203) | dotted_path | '(' … ')' |
 //! '[' … ']' | '{' … '}' | dotted_path '(' … ')'`. Phân biệt **bind** với **ctor** theo luật:
 //! tên viết hoa hoặc đã khai là biến thể ⇒ `HPat::Ctor`; còn lại ⇒ `HPat::Bind` (khai tên trong
 //! khung hiện tại). Or-pattern: các vế **dùng chung** binding nên vế sau không báo `VS0302`.
@@ -56,6 +56,7 @@ impl<'a> Lowerer<'a> {
             Kind::Ident => {
                 let name = first.text.clone();
                 // **R1a (VD-178)**: `some`/`ok`/`err` viết thường ⇒ **cảnh báo** `VS0111`.
+                // (`none` là **từ khoá** (đã bỏ) — xử ở nhánh `Kind::Kw` bên dưới, `VS0203`.)
                 if matches!(name.as_str(), "some" | "ok" | "err") {
                     let hoa = match name.as_str() {
                         "some" => "Some",
@@ -100,11 +101,20 @@ impl<'a> Lowerer<'a> {
                     sym,
                 }
             }
-            Kind::Kw if first.text == "none" => HPat::Ctor {
-                path: vec!["none".into()],
-                args: Vec::new(),
-                span,
-            },
+            // **R2 (VD-178)**: từ khoá `none` đã **bỏ** — dùng `None` (`VS0203`); hạ vẫn khớp
+            // biến thể `None` để công cụ (fmt) sửa được và biên dịch hiểu ý nguồn.
+            Kind::Kw if first.text == "none" => {
+                self.diag(
+                    &vis_diag::SYNTAX_CODES[2],
+                    "`none` đã bỏ — dùng `None` (từ khoá đã bỏ, dùng biến thể `None` của `Option`)",
+                    span,
+                );
+                HPat::Ctor {
+                    path: vec!["None".into()],
+                    args: Vec::new(),
+                    span,
+                }
+            }
             Kind::Kw if first.text == "true" || first.text == "false" => HPat::Lit {
                 lit: Lit {
                     kind: LitKind::Bool,

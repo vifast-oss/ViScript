@@ -2,4 +2,4 @@
 let x: int? = 3
 match x:
     Some(v): print(v * 2)
-    none: print(0)
+    None: print(0)

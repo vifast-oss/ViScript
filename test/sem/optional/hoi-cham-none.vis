@@ -2,5 +2,5 @@
 type U:
     name: str
     age: int
-let u: U? = none
+let u: U? = None
 print(u?.age ?? 0)

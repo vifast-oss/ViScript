@@ -2,7 +2,7 @@
 type User derives Eq, Show, Json:
     name: str
     age: int
-    email: str? = none
+    email: str? = None
 
 enum Shape derives Show:
     Circle(r: float)

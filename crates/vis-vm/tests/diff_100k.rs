@@ -112,8 +112,8 @@ impl Gen {
         }
         let _ = self.dieu_kien();
         match self.rng.duoi(2) {
-            0 => "none".to_string(),
-            _ => format!("some({})", self.so()),
+            0 => "None".to_string(),
+            _ => format!("Some({})", self.so()),
         }
     }
 
@@ -189,7 +189,7 @@ impl Gen {
                 let p2 = self.so();
                 self.dong.push(format!("let {t} = match {o}:"));
                 self.dong.push(format!("    some(v): v + {p1}"));
-                self.dong.push(format!("    none: {p2}"));
+                self.dong.push(format!("    None: {p2}"));
                 self.bien.push((t, 0));
             }
             7 => {

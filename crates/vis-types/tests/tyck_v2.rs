@@ -248,7 +248,7 @@ fn phep_cua_vs0_theo_vd48() {
 /// có chủ đích; không xoá ca (AnyError/Json vẫn khoá đường `VS0301`).
 #[test]
 fn kieu_ngoai_vs0_bao_vs0303_ro_rang() {
-    for src in ["let x: AnyError = none\nx", "let j: Json = none\nj"] {
+    for src in ["let x: AnyError = None\nx", "let j: Json = None\nj"] {
         let (out, _) = run(src);
         assert!(
             !out.codes().is_empty() && out.codes().iter().all(|c| *c == "VS0303"),

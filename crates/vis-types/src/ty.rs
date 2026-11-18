@@ -157,7 +157,7 @@ pub struct FieldDef {
     pub name: String,
     pub ty: Type,
     pub span: Span,
-    /// Có giá trị mặc định trong khai báo (`email: str? = none`).
+    /// Có giá trị mặc định trong khai báo (`email: str? = None`).
     pub has_default: bool,
 }
 

@@ -2,7 +2,7 @@
 //! **ST-38 (VSH1a)** — hạ closure-arg trong `.vish` + `where`/`each`/`first`/`count`.
 //!
 //! Khoá: closure ⇒ `HExpr::Lambda` với **span tuyệt đối** (đệm theo **byte**), `where`/`count`/`first`
-//! chạy đúng, `first` trên list rỗng ⇒ `none`, `each` trả `()` và **không** nối tiếp được,
+//! chạy đúng, `first` trên list rỗng ⇒ `None`, `each` trả `()` và **không** nối tiếp được,
 //! lỗi kiểu trong thân ⇒ `VS0412` đúng **dòng:cột** (kể cả khi tệp có ký tự **nhiều byte** trước đó).
 
 use std::path::PathBuf;
@@ -75,7 +75,7 @@ fn first_lay_dau() {
     let d = tam("first");
     let (c, o, e) = chay(&d, "first", "( [1, 2] ) | first\n");
     assert_eq!(c, 0, "stderr: {e}");
-    assert_eq!(o, "some(1)\n");
+    assert_eq!(o, "Some(1)\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -85,7 +85,7 @@ fn first_tren_list_rong_la_none() {
     let d = tam("fempty");
     let (c, o, e) = chay(&d, "fempty", "( [] ) | first\n");
     assert_eq!(c, 0, "stderr: {e}");
-    assert_eq!(o, "none\n");
+    assert_eq!(o, "None\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 

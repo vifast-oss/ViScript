@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! Pattern: gán kiểu cho binding + **xét hết** `match` (`VS0402`, VD-43 #5).
 //!
-//! Luật xét hết: enum ⇒ **mọi** biến thể; `bool` ⇒ `true`/`false`; `T?` ⇒ `some`/`none`
+//! Luật xét hết: enum ⇒ **mọi** biến thể; `bool` ⇒ `true`/`false`; `T?` ⇒ `Some`/`None`
 //! (`Some`/`None` cũng được); `Result` ⇒ `ok`/`err`; bản ghi ⇒ **đủ mọi trường, không `..`**;
 //! kiểu vô hạn (`int`, `str`, `list`, `map`, …) ⇒ **bắt buộc `_`**; **guard không tính**;
 //! or-pattern tính **cả hai** vế.
@@ -128,7 +128,7 @@ impl<'a> Checker<'a> {
                             if args.len() != 1 {
                                 self.diag(
                                     ARG_COUNT,
-                                    format!("`some` cần 1 đối số, được {}", args.len()),
+                                    format!("`Some` cần 1 đối số, được {}", args.len()),
                                     *span,
                                 );
                             }
@@ -141,7 +141,7 @@ impl<'a> Checker<'a> {
                             if !args.is_empty() {
                                 self.diag(
                                     ARG_COUNT,
-                                    format!("`none` không có đối số, được {}", args.len()),
+                                    format!("`None` không có đối số, được {}", args.len()),
                                     *span,
                                 );
                             }
@@ -149,7 +149,7 @@ impl<'a> Checker<'a> {
                         _ => {
                             self.diag(
                                 NO_FIELD,
-                                format!("`{}` chỉ có `some`/`none`", self.show(subj)),
+                                format!("`{}` chỉ có `Some`/`None`", self.show(subj)),
                                 *span,
                             );
                         }
@@ -158,7 +158,7 @@ impl<'a> Checker<'a> {
                         "ok" => {
                             let t = (**a).clone();
                             if args.len() != 1 {
-                                self.diag(ARG_COUNT, "`ok` cần 1 đối số", *span);
+                                self.diag(ARG_COUNT, "`Ok` cần 1 đối số", *span);
                             }
                             for x in args {
                                 self.bind_pat(x, &t);
@@ -167,7 +167,7 @@ impl<'a> Checker<'a> {
                         "err" => {
                             let t = (**b).clone();
                             if args.len() != 1 {
-                                self.diag(ARG_COUNT, "`err` cần 1 đối số", *span);
+                                self.diag(ARG_COUNT, "`Err` cần 1 đối số", *span);
                             }
                             for x in args {
                                 self.bind_pat(x, &t);
@@ -176,7 +176,7 @@ impl<'a> Checker<'a> {
                         _ => {
                             self.diag(
                                 NO_FIELD,
-                                format!("`{}` chỉ có `ok`/`err`", self.show(subj)),
+                                format!("`{}` chỉ có `Ok`/`Err`", self.show(subj)),
                                 *span,
                             );
                         }
@@ -268,11 +268,22 @@ impl<'a> Checker<'a> {
                     ctor_names(p, &mut cov);
                 }
                 let need: &[&str] = match subj {
+                    // `ctor_names` so khớp **thường**; thông điệp in **hoa** chữ đầu (UpperCamel).
                     Type::Opt(_) => &["some", "none"],
                     _ => &["ok", "err"],
                 };
-                let missing: Vec<&str> =
-                    need.iter().copied().filter(|n| !cov.contains(*n)).collect();
+                let hoa = |n: &str| -> String {
+                    let mut c = n.chars();
+                    match c.next() {
+                        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                        None => n.to_string(),
+                    }
+                };
+                let missing: Vec<String> = need
+                    .iter()
+                    .filter(|n| !cov.contains(**n))
+                    .map(|n| hoa(n))
+                    .collect();
                 if !missing.is_empty() {
                     self.diag(
                         NON_EXHAUSTIVE,

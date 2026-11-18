@@ -3,4 +3,4 @@ let x: int? = 1
 match x:
     Some(v) if v > 0: print("dương")
     Some(v): print("khác")
-    none: print("không")
+    None: print("không")

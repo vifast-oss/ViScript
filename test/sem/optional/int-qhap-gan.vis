@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let x: int?? = 5
+    let y: int?? = None
+    let z: int?? = Some(None)
+    print(x ?? 0)
+    print(y ?? 100)
+    print(z)

@@ -84,7 +84,7 @@ fn tham_so_long_list_t_sach() {
 #[test]
 fn tham_so_map_str_t_sach() {
     sach(
-        "fn lay[T](m: map[str, T], k: str) -> T?:\n    none\n\nfn main() -> ():\n    let x: int? = lay({\"a\": 1}, \"a\")\n    print(x)\n",
+        "fn lay[T](m: map[str, T], k: str) -> T?:\n    None\n\nfn main() -> ():\n    let x: int? = lay({\"a\": 1}, \"a\")\n    print(x)\n",
     );
 }
 
@@ -182,7 +182,7 @@ fn tra_t_sai_ngu_canh_la_vs0412() {
 
 #[test]
 fn tra_t_optional_voi_match() {
-    sach("fn tim[T](xs: list[T]) -> T?:\n    none\n\nfn main() -> ():\n    match tim([1, 2]):\n        some(v): print(v)\n        none: print(\"khong\")\n");
+    sach("fn tim[T](xs: list[T]) -> T?:\n    None\n\nfn main() -> ():\n    match tim([1, 2]):\n        Some(v): print(v)\n        None: print(\"khong\")\n");
 }
 
 #[test]

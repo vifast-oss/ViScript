@@ -1249,7 +1249,7 @@ pub fn method(
 
 /// **ST-61 (VD-96)**: phương thức kênh. Chặn (`send` đầy, `recv` rỗng) ⇒ **drain** hàng đợi sẵn
 /// sàng ([`crate::rt::chay_mot`]) rồi thử lại; hết queue ⇒ **`VS0505`** (deadlock, **không** treo).
-/// `send` sau `close` ⇒ **`VS0504`**; `close` **idempotent**; `recv` sau close trả nốt hàng rồi `none`.
+/// `send` sau `close` ⇒ **`VS0504`**; `close` **idempotent**; `recv` sau close trả nốt hàng rồi `None`.
 fn chan_method(
     host: &mut dyn Host,
     c: std::rc::Rc<std::cell::RefCell<crate::rt::Chan>>,
