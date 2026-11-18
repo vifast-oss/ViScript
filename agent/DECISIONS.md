@@ -1649,3 +1649,12 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
    - `str(…)` (tên trần) vẫn dẫn tới **builtin** `str(x)` như trước; `let str = "z"; str("a")` ⇒ `VS0412` "str không phải hàm" (giữ nguyên).
 3. **(iii)** Mã mới: **`VS0209`** (Error) và **`VS0211`** (Warning) — nhóm 02xx; tổng `all_codes()` **52 → 54**; `API-CODES.txt` regen theo đúng giao thức ST-126 (VD-222/VD-223 đích danh). Không chạm SPEC-lex §7 (không phải từ vựng).
 4. **Ghi chú ratify**: proxy; nếu A0 bác bỏ thì revert theo nhánh; `while let` (ST-213) **vẫn** là việc sau pha 1.
+
+### VD-224 · Đảo ngược VD-223 (phần (i)) — uỷ quyền A0-proxy, sửa theo thiết kế đã chốt
+
+**Ngày**: 2026-11-19 · **Cần A0 ratify** (nếu A0 bác bỏ thì revert theo nhánh).
+
+1. **VD-223(i) (VS0209) bị huỷ toàn bộ**: theo thiết kế dòng ViScript đã chốt (**docs §5.1** "Hàm, closure, generic, trait", dòng `pub fn greet(name: str, times: int = 1, --loud: bool = false)` và gọi `greet("An", 2, --loud: true)`), **tham số có tên bắt đầu bằng `--` là hợp lệ ở mọi hàm** — chỉ truyền theo tên; trong chế độ lệnh chúng là cờ. `--b` trong `.vish`/`cmd` giữ vai trò cờ; `--b` trong `fn` thường không bị cấm.
+2. **`VS0209` bị xoá khỏi sổ mã; `all_codes()` 54 ⇒ 53**; `API-CODES.txt` regenerate kèm VD-224 đích danh (ST-126).
+3. **(ii) (VS0211 + ưu tiên dispatch biến cục bộ) giữ nguyên** — đó là phần R5d có giá trị (xung đột tên đúng nghĩa).
+4. **`ST-209 (R5d)`**: phần "xung đột tên std.str/str/builtin" theo VD-224; phần "`--b` chỉ chế độ lệnh" theo thiết kế, **không áp lỗi**.
