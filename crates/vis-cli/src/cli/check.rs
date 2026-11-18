@@ -188,7 +188,8 @@ fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> KetQuaCheck {
         .last()
         .map(|f| f.rel.clone())
         .filter(|r| !r.is_empty())
-        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(path).to_string());
+        // **ST-211 (VD-184)**: cùng luật tách như `ten_goc` (ST-153) — `--syntax` giữ trọn chẩn đoán.
+        .unwrap_or_else(|| ten_goc(path).to_string());
     let mut thu_tu = Vec::new();
     let mut seen = std::collections::BTreeSet::new();
     thu_tu_nap(&root, &loaded.deps, &mut seen, &mut thu_tu);
@@ -375,5 +376,21 @@ mod tests {
     #[test]
     fn ten_goc_khong_co_dau() {
         assert_eq!(super::ten_goc("a.vis"), "a.vis");
+    }
+
+    /// **ST-211 (VD-184)**: bộ ca khoá đầy đủ cho tên gốc đường dẫn — tương đối, tuyệt đối `/…`,
+    /// dấu Windows `C:\` + `C:/…`, tên chứa khoảng trắng, và Unix với dấu chết `\` (thái Long
+    /// lưu ý: tách theo **cả** `\` và `/` — ST-153).
+    #[test]
+    fn ten_goc_du() {
+        assert_eq!(super::ten_goc("./a.vis"), "a.vis"); // tương đối
+        assert_eq!(super::ten_goc("/etc/vis/a.vis"), "a.vis"); // tuyệt đối Unix
+        assert_eq!(super::ten_goc(r"C:\dir\a.vis"), "a.vis"); // Windows C:\
+        assert_eq!(super::ten_goc("C:/dir/a.vis"), "a.vis"); // Windows C:/
+        assert_eq!(super::ten_goc(r"C:/dir\a.vis"), "a.vis"); // hỗn hợp
+        assert_eq!(super::ten_goc("my dir/a.vis"), "a.vis"); // khoảng trắng
+        assert_eq!(super::ten_goc(""), ""); // rỗng (không panic)
+        assert_eq!(super::ten_goc("dir/"), ""); // đuôi cắt
+        assert_eq!(super::ten_goc("d\\a.vis"), "a.vis"); // \ trên cả Windows & Unix (ST-153)
     }
 }

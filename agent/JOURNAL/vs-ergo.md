@@ -413,3 +413,5 @@ enum Shape:
 | R23 | Ca đỏ-trước viết lại bằng `U(addr: A(city: "A"))` | `agent/JOURNAL/vs-ergo.md:300` |
 | R24 | **Đảo**: `filter/map` giữ collection; `.lazy()` trả `Iterator[T]`; `range`/`fs.lines` lười; duyệt lại được; R20 không chờ R24 | `agent/JOURNAL/vs-ergo.md:308` |
 | C3 | Thứ tự pha 1 mới (P0 → R9+C1 → R6 → R17 → R1+R2 → R3 → R8 → R4 → R5 → R11 → R12 → R16 → R7 → R19b → R19c) | `agent/JOURNAL/vs-ergo.md:175` |
+
+> VD-225 (2026-11-19): ST-211 (VS3-5-pre) DONE — `ten_goc` (tách cả `/` và `\`) dùng ở mọi đường nghiêng r split.
