@@ -1168,7 +1168,7 @@ Agent 1 được **tự quyết việc ghi sổ** (số hàng QUEUE, cách tách
 ### VD-205 · Q10 · Cheat-sheet → **sửa ngay** + thêm luật cổng (2026-11-18)
 (1) Sửa **7 dòng** trong **commit đầu tiên của R2b-1**. (2) Đây là **chỗ sót của R2a** (VD-187 yêu cầu migrate trong cùng task) — ghi vào báo cáo như một **sai lệch quy trình**, **không** cần làm lại R2a. (3) **Luật cổng mới** (gộp vào R2b-1, **≤ 30 phút**): mỗi cú pháp bị bỏ ở pha 1 có một mục trong **danh sách cấm** (bắt đầu bằng `none` dùng như từ khoá); cổng quét **cả văn xuôi lẫn khối mã** trong `docs/` và cheat-sheet; gặp thì **đỏ**. **Ngoại lệ duy nhất**: **bảng cú pháp cũ → mới → mã lỗi** (tiêu chí đóng pha 1 số 4) và các ví dụ được **đánh dấu tường minh** là "cú pháp sai". **Có ca âm**. (4) **R4, R5b, R5d** khi bỏ cú pháp nào thì **thêm mục vào danh sách cấm trong cùng task**.
 
-### VD-206 · Quy tắc đo hiệu năng (2026-11-18)
+### VD-206 · Quy tắc đo hiệu năng (2026-11-18) — **bổ sung bởi VD-217** (đo A/B xen kẽ cho câu hỏi tỉ lệ)
 (1) Số dùng làm **chuẩn** (ghi sổ nợ, tài liệu, báo cáo R) phải đo khi **không có agent khác chạy trên cùng máy**, và **ghi rõ điều đó trong log**. (2) Số đo khi máy có tải chỉ được ghi là **"tham khảo"**. (3) **Agent 1 điều phối lịch máy**, để mỗi lần đo chuẩn có một **khoảng máy rảnh**.
 
 ### VD-207 · Thứ tự tiếp theo (2026-11-18)
@@ -1223,7 +1223,7 @@ Agent 1 được **tự quyết việc ghi sổ** (số hàng QUEUE, cách tách
   biến thể còn dính tới lỗi ở VD-212, nên rất có thể sửa VD-212 sẽ tự làm giảm phần chậm này. Phải đo lại sau
   VD-212.
 
-### VD-210 · Mục 3 · R5b → **(ii) huỷ R5b**, chốt quy tắc khoá trong `{…}`
+### VD-210 · Mục 3 · R5b → **(ii) huỷ R5b**, chốt quy tắc khoá trong `{…}` — **BẢNG THAY BỞI VD-215**
 
 **Lý do**: bản ghi ẩn danh là tính năng cốt lõi cho một ngôn ngữ script. Nó phục vụ JSON, pipeline `select`,
 và giá trị trả nhanh từ hàm. R5b sinh ra để tránh nhầm map với record, nhưng đổi lại phải bỏ một tính năng có
@@ -1318,3 +1318,121 @@ Nếu Agent 2 đang làm R4a thì làm xong R4a rồi mới chuyển sang bướ
 - opt-bench sau VD-212 (số tham khảo cũng được).
 
 > **Nghĩa của VD-204 (1) đã được làm rõ bởi VD-208** (2026-11-18): Option/Result là enum std ở tầng chạy; tầng kiểu giữ dựng sẵn.
+
+### VD-215 đến VD-219 (2026-11-18) — dán nguyên văn A0 (Agent 1 chép, commit cùng [ST-208/VD-215])
+
+## 1. CÁC QUYẾT ĐỊNH
+
+### VD-215 · Mục 1 · Quy tắc `{…}` và khoá tính toán
+
+**Không thêm ký hiệu mới.** `(expr)` đã chạy được và dễ đọc: dấu ngoặc nghĩa là "tính giá trị này". A0 chốt
+`(expr)` là **cú pháp khoá tính toán chính thức**.
+
+Bảng chốt (thay bảng VD-210):
+
+| Viết | Nghĩa |
+|---|---|
+| `{ten: 1, tuoi: 2}` (mọi khoá là định danh trần) | **bản ghi** |
+| `{"ten": 1}` (khoá chuỗi literal) | **map** |
+| `{(k): 1}`, `{(k + "_id"): 1}` (khoá trong ngoặc) | **map**, khoá là giá trị của biểu thức |
+| trộn chuỗi và `(expr)` | **map**, hợp lệ |
+| trộn định danh trần với chuỗi hoặc `(expr)`, **bất kể thứ tự** | **lỗi có mã** |
+| `{}` | giữ đúng hiện trạng. Agent 2 ghi hiện trạng vào task, **không đổi** trong task này |
+
+Thực hiện:
+1. **Chế độ literal xét toàn bộ khoá**, không chỉ khoá đầu. Parser có thể vẫn đoán theo khoá đầu, nhưng phải
+   kiểm hết các khoá trước khi chốt.
+2. **Một mã lỗi cho cả hai chiều trộn** (đăng ký mã mới, **không** dùng lại VS0205). Thông báo lỗi nói rõ
+   khoá nào lệch, kèm gợi ý theo khoá đầu tiên:
+   - khoá đầu là định danh trần: "bản ghi cần mọi khoá là định danh; muốn map thì viết `"b"` hoặc `(b)`";
+   - khoá đầu là chuỗi hoặc `(expr)`: "map cần khoá chuỗi hoặc `(expr)`; `b` trần ở đây sẽ không phải biến,
+     hãy viết `"b"` hoặc `(b)`".
+   - `{a: 1, "b": 2}` hiện là **lỗi cú pháp chung**, phải đổi sang mã lỗi mới có gợi ý.
+3. **`{[k]: 1}`**: giữ hợp lệ (danh sách làm khoá vẫn là giá trị đúng), nhưng phát **cảnh báo có mã** kèm gợi ý
+   `{(k): 1}`. Lý do: người quen JavaScript sẽ viết đúng như vậy và nhận về một map khoá danh sách mà không
+   biết. Tắt cảnh báo bằng cách viết `{([k]): 1}`, ghi cách này trong thông báo.
+4. **Ca khoá** (đỏ-trước nếu là hành vi mới), chạy cả interp và VM:
+   - `{"a": 1, b: 2}` và `{a: 1, "b": 2}`: cùng mã lỗi;
+   - `{(k): 1}` với `k = "a"`: ra map `{"a": 1}`;
+   - `{k: 1}` với biến `k` trong phạm vi: ra bản ghi trường `k` (giữ hành vi);
+   - `{"a": 1, (k): 2}`: map hợp lệ;
+   - `{[k]: 1}`: cảnh báo + vẫn ra map khoá danh sách; `{([k]): 1}`: không cảnh báo;
+   - ST-53 và json_sort.rs: xanh, không đổi.
+5. **Migrate**: grep toàn repo (test .vis, chuỗi .vis nhúng trong Rust test, docs, ví dụ) tìm literal trộn
+   loại khoá. Sửa trong cùng commit, liệt kê trong commit message. Literal trộn có thể đang nằm trong golden,
+   đọc kỹ trước khi sinh lại.
+6. **Tài liệu**: cheat-sheet và docs ghi bảng trên. Thêm `{[k]: v}` (dạng JavaScript) vào bảng "cú pháp cũ →
+   mới → mã" của R30 dưới dạng "bẫy thường gặp".
+7. ST-208 (R5b′) ước lượng nâng lên **≤ 3 h**.
+
+### VD-216 · Mục 2 · VS0111
+
+- Sửa SPEC-lex §7, dòng VS0111: ghi "**ngừng phát từ VD-212**; sai hoa thường trong pattern nay báo VS0203".
+  **Giữ số**, không cấp lại cho lỗi khác. API-CODES.txt đánh dấu tương tự.
+- **Xoá bộ lọc VS0111** trong `vis check`/`--json`. Mã chết nói về một mã lỗi không còn tồn tại sẽ làm người đọc
+  sau tưởng nó còn phát. Điều kiện: commit message ghi kết quả grep chứng minh không còn chỗ nào phát VS0111.
+  Cổng phải xanh, 0 golden đổi.
+- Agent 1 áp cả hai trong một commit, gửi A0 diff SPEC trong báo cáo kế tiếp. Không cần chờ duyệt.
+
+### VD-217 · Mục 3 · #152 và cách đo khi máy không rảnh được → **(c)**, thêm cách đo A/B xen kẽ
+
+VD-206 giả định có máy rảnh. Nếu ps không bao giờ rảnh, quy tắc đó không thực hiện được. A0 sửa VD-206 như sau.
+
+**Với câu hỏi về tỉ lệ** (bản mới chậm hơn bản cũ bao nhiêu %, như #152), số chuẩn được phép đo bằng
+**A/B xen kẽ**:
+- Build hai binary: commit gốc trước enum-hoá và HEAD.
+- Chạy **xen kẽ** A, B, A, B… mỗi bên **≥ 20 lần** trong cùng một phiên. Nhiễu tải khi đó ảnh hưởng gần như
+  đều cho cả hai.
+- Báo **trung vị tỉ lệ B/A** kèm khoảng min đến max. Ghi rõ "A/B xen kẽ, máy có tải" trong log.
+- Nếu khoảng tỉ lệ cắt ngang ngưỡng 10 % (ví dụ 1,06 đến 1,14) thì kết luận "**chưa rõ**". Khi đó vẫn giữ
+  "chờ đo chuẩn".
+
+**Với câu hỏi về thời gian tuyệt đối** (#147, so mac với ps): vẫn cần máy rảnh. Agent 1 **xếp một khung 20
+phút dừng mọi agent trên ps**, ví dụ đầu hoặc cuối một phiên chạy qua đêm. Ghi giờ khung đó vào QUEUE.
+
+Áp cho #152:
+- Agent 2 đo A/B xen kẽ opt-bench (VM và interp) **ngay**. Việc này ≤ 30 phút, không phải chờ máy rảnh.
+- Trung vị ≤ 1,10 và cả khoảng ≤ 1,10 thì đóng #152.
+- Trung vị > 1,10 và cả khoảng > 1,10 thì giữ lịch tối ưu ctor-enum **sau đóng pha 1** (VD-214).
+- Còn lại thì giữ "chờ đo chuẩn" như (c).
+- Số tham khảo hiện có (VM 0,19 đến 0,20 s) **không** dùng làm mốc.
+
+### VD-218 · Mục 4 · `$value:<tên>` → **ghi nhận**, thêm điều kiện không lộ tên nội bộ
+
+Cách vá hợp lý: không đụng VBC1, người dùng không gõ được tên này. Điều kiện:
+- Tên `$value:…` **không được xuất hiện** ở bất kỳ đâu người dùng nhìn thấy: thông báo lỗi, stack trace, in giá
+  trị hàm (`print(Some)`), LSP hover, lệnh disassemble hoặc debug ở chế độ thường.
+- Ca khoá: truyền `Some` làm giá trị rồi gây lỗi bên trong hàm nhận. Stack trace và thông báo phải ghi `Some`,
+  không ghi `$value:Some`. Kiểm cả `print(Some)` cho interp và VM ra **cùng một chuỗi**.
+- Ghi cơ chế này vào tài liệu nội bộ của VM (một đoạn), kèm lý do: VBC1 đóng băng, không thêm opcode.
+
+### VD-219 · Thứ tự tiếp theo
+
+| # | Task | Nội dung | VD | Ước lượng |
+|---|---|---|---|---|
+| 1 | ST-205 (R4a) | Đang làm, tiếp tục | 187 | như cũ |
+| 2 | Đo A/B #152 | opt-bench xen kẽ ≥ 20 lần | 217 | 0,5 h |
+| 3 | VS0111 + ca `$value` | SPEC §7, xoá bộ lọc, ca khoá VD-218 | 216, 218 | 1 h |
+| 4 | R4b, R4c | | 187 | như cũ |
+| 5 | ST-208 (R5b′) | Quy tắc `{…}` theo VD-215 | 215 | ≤ 3 h |
+| 6 | R5d | | 187 | 2,5 h |
+| 7 | Đo chuẩn #147 | Trong khung 20 phút ps rảnh + mac | 197, 217 | 1 h |
+| 8 | ST-210 | Đóng pha 1, R30 | 185, 187 | 1 h |
+
+Các task còn lại sau ST-210 giữ như VD-214.
+
+---
+
+## 2. VIỆC AGENT 1 CẦN LÀM NGAY
+
+1. Ghi VD-215 … VD-219 vào DECISIONS.md. Ghi chú: VD-210 (bảng) đã được thay bởi VD-215; VD-206 đã được bổ sung
+   bởi VD-217.
+2. API-CODES.txt: đăng ký mã lỗi "trộn loại khoá" và mã cảnh báo "`{[k]: …}`"; đánh dấu VS0111 ngừng phát.
+3. QUEUE.md: bỏ BLOCKED của ST-208; thêm task đo A/B #152; xếp khung 20 phút ps rảnh và ghi giờ cụ thể.
+4. Giao Agent 2 theo §1 VD-219.
+
+**Báo cáo kế tiếp gửi kèm**: tỉ lệ A/B #152 (trung vị và khoảng), diff SPEC §7, danh sách literal trộn khoá đã
+migrate, hiện trạng `{}`.
+
+> **Nghĩa của VD-210** (bảng quy tắc `{…}`) đã được **thay bởi VD-215** (2026-11-18): cú pháp `(expr)` là khoá tính toán chính thức; chế độ literal xét **toàn bộ** khoá; trộn loại khoá (bất kể thứ tự) ⇒ một mã lỗi mới (không dùng lại VS0205); `{[k]: v}` ⇒ cảnh báo có mã + gợi ý.
+> **VD-206** (đo khi máy rảnh) đã được **bổ sung bởi VD-217** (2026-11-18): câu hỏi về **tỉ lệ** (#152) được phép đo **A/B xen kẽ** (≥ 20 lần mỗi bên, trung vị tỉ lệ B/A + khoảng min..max; nếu cắt ngưỡng 10 % thì "chưa rõ" ⇒ giữ trạng thái chờ; máy vẫn không rảnh thì #152 xử lý đúng VD-217).
