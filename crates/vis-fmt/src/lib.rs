@@ -192,7 +192,7 @@ fn render(out: &ParseOutput) -> String {
             && matches!(t.text.as_str(), "some" | "ok" | "err")
             && toks.get(i + 1).is_some_and(|n| n.is_punct("("))
         {
-            // **R1a (VD-178)**: `some(`/`ok(`/`err(` ⇒ viết hoa chữ đầu (cùng `VS0111`).
+            // **R1a/VD-212**: `some(`/`ok(`/`err(` ⇒ viết hoa chữ đầu (pattern nay là lỗi `VS0203`; fmt tự sửa).
             let hoa = match t.text.as_str() {
                 "some" => "Some",
                 "ok" => "Ok",

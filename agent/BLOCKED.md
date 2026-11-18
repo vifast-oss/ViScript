@@ -136,3 +136,28 @@ crate host.
 **Không tự quyết** — VD-196 cấm Agent 2 đổi phạm vi VD-204; SPEC/ngữ nghĩa ngôn ngữ thuộc Agent 0 (`AGENTS.md`). **Cần gì để mở**: A0 chọn **A / B / C**; nếu B thì duyệt **VD mới + task mới** (ước lượng, mốc đo, chiến lược golden); nếu A thì sửa 1 dòng `docs/ViScript-thiet-ke.md` §8 (bảng module core) cho khớp VD-204 — A0 duyệt diff đó; nếu C thì cấp VD cho cờ `std-enum`.
 
 **Không chặn việc khác**: pha 1 tiếp theo (R4 / R5b / R5d theo VD-207) **không phụ thuộc** quyết định này; chỉ chặn "R2b-1 hoàn tất 100 %" và tiêu chí đóng pha 1 ở phần nhắc `Option`/`Result` (bảng old→new→mã sẽ ghi rõ theo A / B / C khi ST-210 dựng bảng).
+
+## 9. BLOCKED-CHO-A0 — ST-205 (R4a) `Error` record + `Json` enum: §6.1 cần chốt (2026-11-18)
+
+**Người ghi**: Agent 2 · **Ngày**: 2026-11-18 · **HEAD khi chặn**: `d50ad39` (VD-219 thứ tự §1)
+
+**Việc đã làm**: khảo sát hiện trạng §6.1 — **ViScript traits không có phương thức mang dữ liệu** (`trait Error { message, … }` ⇒ lỗi cú pháp dòng đó, `VS0201`; chỉ tồn tại `fn` items); **`Span` không tồn tại ở tầng ngôn ngữ** (chỉ là tham số Rust nội bộ); **`AnyError` không tồn tại ở cả tầng giá trị lẫn tầng kiểu** (chỉ là `TypeRef` placeholder trong chữ ký `main -> Result[(), AnyError]`); `json.decode` hiện `Result[V, String]`, phá: `null` ⇒ `None`, lỗi ⇒ **chuỗi** và **in thẳng ra `print`**.
+
+**Bị chặn**: §6.1 có **ba** điểm thiết kế VD-187 không đủ để tự quyết (và mỗi điểm đổi ý thì đổi bảng chuyển đổi của hàng chục test treo trên `json.decode`):
+
+1. **`trait Error` thành viên thế nào?** Candidates:
+   - **(i)** marker trait `trait Error: Show` **rỗng** + `Error` là **record** với trường `message`/`source`/`span` truy cập trực tiếp (`e.message`) — gần nhật với §6.1 về field syntax nhưng không có trait ĐA PHƯƠNG THỨC nào (message/show riêng);
+   - **(ii)** trait `Error: Show` với **ba phương thức** `message(self) -> str`, `source(self) -> …`, `span(self) -> …` (phương thức mặc định hoặc khai báo abstract);
+   - **(iii)** space-shifting: A0 duyệt struct-level trait items trong ViScript (**thay đổi ngạo**ngôn ngữ; SPEC) trước khi ST-205 chạy.
+   Đề xuất: **(ii)** hiện thựcc thể (không đổi spec, không tiêu chí trait mới, chạy được ngay với traits hiện có).
+2. **`source` kiểu gì?** Candidates: **(a)** `Error?` (recursive record thật — compiler chịu được kiểu đệ quy bản ghi); **(b)** `AnyError?` (cần quyết `AnyError` có tồn tại là kiểu không); **(c)** `str?` (một dòng mô tả nguyên nhân lồng). Đề xuất: **(a)** (phù hợp §6.4 "nguyên nhân lồng"; `Error?` recursion tự nhiên).
+3. **`span` kiểu gì?** Candidates: **(a)** `str?` (tệp:dòng:cột dưới dạng chuỗi — không cần kiểu Span); **(b)** bỏ field ra khỏi record và giữ trong diagnostics (span không vào user-facing record); **(c)** kiểu `Span?` mới (cần SPEC, không khả thi pha 1). Đề xuất: **(a)**.
+4. **`Json` enum chạy năng lượng gì?** Candidates:
+   - **(A)** enum thật **làm compile-time + runtime** — EnumDef đăng ký trong bảng kiểu mọi lượt hạ (7 biến thể... 6: `Null Bool Num Str Arr Obj`); `Num` payload `{error}` (bọc int và {float}cùng dòng {error}); `match` trong ngôn ngữ chấp nhận `j: Null:…`; ĐỔI output của `json.decode` và docs; **~40 test Rust treo** migrate.
+   - **(B)** `TypeRef Json` tag **không EnumDef** — runtime cây giá trị như hiện tại (map/list/scalars); tyck không kiểm variants; `match j: Null:` **báo lỗi**, không usable cho người dùng; giá như "error path works: `match` works on Result arms (`Ok`/`Err`) chỉ trên vầng Ok — tức là giải pháp nửa vời.
+   - **(C)** JSON encode/decode tôn `derives Json` và giữ cây giá trị (status quo) + chỉ đổi chữ ký SIG → `Result[Json, Error]`.
+   Đề xuất: **(A)** (đây là mục tiêu thật của VD-187 "json decode được pattern match"): EnumDef `Json` đẩy vào **mọi** bảng kiểu (Builtin như Opt/Result).
+
+**Không tự quyết** — SPEC/biểu diễn ngôn ngữ (VD-196; `AGENTS.md`). **Cần gì để mở**: A0 chọn **(1, 2, 3, 4)** với các câu trả lời số; nếu A0 muốn (4-A), duyệt VD mới + phương án migration ~40 tests + cập nhật docs §3.2 và bảng `core` trong §13 nội dung "dữ liệu động".
+
+**Không chặn việc khác**: **ST-211 (VS3-5-pre, VD-184)** và **ST-212 (VS3-QĐ-1, VD-185)** **không** phụ thuộc quyết định này; **R4b/R4c** phụ thuộc câu trả lời 1; **R4a chỉ**.
