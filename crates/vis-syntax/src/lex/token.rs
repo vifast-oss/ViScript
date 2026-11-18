@@ -181,12 +181,15 @@ impl Token {
 
 /// Từ khoá tiếng Anh — tài liệu thiết kế §2.1, đã **bỏ `as`** và **bỏ `test`** (theo ngữ cảnh).
 ///
-/// 40 mục, xếp ABC để tra cứu bằng tìm nhị phân ở [`is_keyword`].
-pub const KEYWORDS: [&str; 40] = [
+/// **R2a (VD-178)**: **bỏ `none`** — `None` là **biến thể** của `Option[T]`; dùng `none` ⇒
+/// **VS0203** ("từ khoá đã bỏ") + gợi ý `None`, `vis fmt` tự sửa.
+///
+/// 39 mục, xếp ABC để tra cứu bằng tìm nhị phân ở [`is_keyword`].
+pub const KEYWORDS: [&str; 39] = [
     "alias", "and", "async", "await", "break", "cmd", "const", "continue", "derives", "dyn",
     "elif", "else", "enum", "extern", "false", "fn", "for", "has", "if", "impl", "in", "let",
-    "loop", "match", "newtype", "none", "not", "or", "pub", "ref", "return", "scope", "self",
-    "trait", "true", "type", "use", "var", "while", "with",
+    "loop", "match", "newtype", "not", "or", "pub", "ref", "return", "scope", "self", "trait",
+    "true", "type", "use", "var", "while", "with",
 ];
 
 /// `true` nếu `s` là từ khoá tiếng Anh của ngôn ngữ.

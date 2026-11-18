@@ -16,7 +16,7 @@ Bản này đã vá theo [`docs/QUYET-DINH-sau-review.md`](../QUYET-DINH-sau-rev
 | 2 | Từ vựng: NFC toàn tệp trước khi lex; thụt lề suy đơn vị; tab = `VS0107` nhưng **vẫn lex**; bảng literal mới; bỏ `50%` → `50pct`; escape/nội suy; cột theo Unicode scalar | 2.1–2.4, 3.5 |
 | 3 | Parse chế độ lệnh **hai pha**: `vis-syntax` → `CmdCST` → `cmd_lower` (trong `vis-types`) → HIR; "cùng AST" đổi thành "cùng **HIR**" | 9.1, 9.3, 14.1, 18.2 |
 | 4 | Ngữ nghĩa số: bảng đầy đủ `%`, `**`, bit, float/NaN, `size/duration/percent`; **bảng ưu tiên 12 mức** | 3.6, 4.5 |
-| 5 | Kiểu và optional: thêm `Future[T]`, `Task[T]`, `AnyError`; bỏ `s[i]`; tự nâng `T → T?`; pattern `none/some/ok/err` | 3, 4.3–4.4 |
+| 5 | Kiểu và optional: thêm `Future[T]`, `Task[T]`, `AnyError`; bỏ `s[i]`; tự nâng `T → T?`; pattern `None/Some/Ok/Err` | 3, 4.3–4.4 |
 | 6 | Lỗi: `trait Error: Show`, `AnyError`, `?` tự chuyển; **bảng mã thoát**; panic payload + arena lệnh | 6 |
 | 7 | Chế độ lệnh: metachar, `$env.NAME`, `;`/`&`/`--`/`-5`, closure-arg, `shell_item`, `from json[T]`, `complete` | 9 |
 | 8 | Host/ViShell: proc suspend/resume/cancel + wait; shell sở hữu tty, con nhận pipe, pty để sau | 12, 15 |
@@ -115,7 +115,7 @@ Phụ lục B. Chương trình mẫu
 - Phần mở rộng `.vis` (script), `.vish` (tệp ở chế độ lệnh, xem 9.1). UTF-8 bắt buộc. Dòng đầu tuỳ chọn `#!/usr/bin/env vis`.
 - **Chuẩn hoá NFC trước khi lex** (QD §7.1): **toàn bộ** tệp nguồn được chuẩn hoá Unicode NFC **trước** khi lex. Hệ quả: định danh, literal `str`/`char` và **cột chẩn đoán** đều tính trên dạng NFC; `'ố'` gõ dạng tổ hợp hay dựng sẵn đều là **một** Unicode scalar và là một literal `char` hợp lệ; `số_lượng` viết dạng tổ hợp (NFD) và dạng dựng sẵn (NFC) là **cùng một** tên. `vis fmt` ghi ra NFC. Vị trí báo lỗi vẫn trỏ được về tệp gốc vì cả lexer và editor cùng chuẩn hoá một cách tất định.
 - **Từ khoá tiếng Anh** (giống Python, Rust, JS/TS). Danh sách:
-  `let var const fn cmd type enum trait impl alias newtype pub use if elif else match for in while loop break continue return and or not true false none self async await scope test extern derives with has dyn ref`
+  `let var const fn cmd type enum trait impl alias newtype pub use if elif else match for in while loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
   - **Thêm `const`** (dùng cho `const_decl`, Phụ lục A).
   - **Bỏ `as`**: bản này không có cú pháp alias trong `use`; `as` là định danh bình thường.
   - **`test` là từ khoá theo ngữ cảnh**: chỉ là từ khoá khi đứng đầu item và ngay sau là `fn` (`test fn name():`). Ở vị trí khác `test` là định danh, nên `test.run()` hợp lệ.
@@ -215,7 +215,7 @@ Phụ lục B. Chương trình mẫu
 type User derives Eq, Show, Json:
     name: str
     age: int
-    email: str? = none
+    email: str? = None
 
 enum Shape derives Show:
     Circle(r: float)
@@ -397,7 +397,7 @@ Hệ quả, phải có golden test ở **ST-02a**:
 
 - **Đánh giá trái sang phải** [TK], tất định: toán hạng nhị phân, phần tử trong literal list/map/set/tuple, trường trong bản ghi, đối số trong lời gọi (vị trí trước, tên sau, giữ nguyên thứ tự viết).
 - `and`/`or` ngắn mạch: toán hạng phải **không được đánh giá** khi trái quyết định.
-- `??` ngắn mạch theo cùng luật: toán hạng phải chỉ đánh giá khi trái là `none`.
+- `??` ngắn mạch theo cùng luật: toán hạng phải chỉ đánh giá khi trái là `None`.
 - Thứ tự này là một phần của đặc tả: bộ vi sai interpreter/VM (18.2) dùng nó làm oracle.
 
 ---
@@ -434,7 +434,7 @@ Closure bắt biến theo giá trị. Muốn chia sẻ trạng thái biến đ�
 
 ```vis
 fn first[T](xs: list[T]) -> T?:
-    if xs.is_empty(): none else: xs[0]
+    if xs.is_empty(): None else: xs[0]
 
 fn max_by[T, K: Ord](xs: list[T], key: fn(T) -> K) -> T?: ...
 ```
@@ -1129,7 +1129,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 | 8 | `%` dấu theo số bị chia, `%0` panic, có `rem_euclid`/`mod_floor`; `**` phải-kết-hợp, cao hơn `*`, mũ âm panic | §7.3 |
 | 9 | Bit: thêm `bit_not`, `ushr`; `shr` số học; đếm ≥ 64 panic; có `checked_shl/shr` | §7.3 |
 | 10 | Bảng ưu tiên **12 mức** (postfix → `**` → một ngôi → `* / %` → `+ -` → `..` → `??` → so sánh → `not` → `and` → `or` → `\|>`) | §7.3 |
-| 11 | Optional: tự nâng `T → T?` ở gán/trả/đối số; `T??` lỗi; `?` trên `T?`; pattern `none/some/ok/err` | §7.3 |
+| 11 | Optional: tự nâng `T → T?` ở gán/trả/đối số; `T??` lỗi; `?` trên `T?`; pattern `None/Some/Ok/Err` | §7.3 |
 | 12 | Xét hết: guard **không** tính coverage; kiểu vô hạn **bắt buộc** `_` | §7.3 |
 | 13 | `trait Error: Show { message, source, span }`; `AnyError` xoá kiểu; `?` tự chuyển; `main -> Result[(), AnyError]`; plugin dùng `vis::Error` | §7.3 |
 | 14 | Mã thoát 0/1/2/101/126/127/130; panic payload `AnyError`; ViShell bọc **mỗi lệnh** trong task arena riêng, panic giải phóng arena, giữ biến/cwd/job/lịch sử; chưa có `defer` | §7.3 |
@@ -1324,7 +1324,7 @@ match_expr      := 'match' expr ':' NEWLINE INDENT match_arm+ DEDENT
 pattern         := or_pattern
 or_pattern      := range_pattern ('|' range_pattern)*
 range_pattern   := atom_pattern [ '..' [atom_pattern] | '..=' atom_pattern ]
-atom_pattern    := '_' | literal | '-' INT | 'none' | dotted_path
+atom_pattern    := '_' | literal | '-' INT | 'None' | dotted_path
                  | '(' pattern (',' pattern)* ')'
                  | '[' [list_pat] ']'
                  | '{' [record_pat (',' record_pat)*] '}'
@@ -1349,7 +1349,7 @@ record_type     := IDENT ':' type (',' IDENT ':' type)*
 
 (* ===== A.6 Token ===== *)
 
-literal         := INT | FLOAT | CHAR | BOOL | 'none'
+literal         := INT | FLOAT | CHAR | BOOL
                  | STRING | RAW_STRING | TRIPLE_STRING | RAW_TRIPLE_STRING
                  | BYTES | PATH_STRING | SIZE | DURATION | PERCENT   (* terminal một token, theo SPEC-lex *)
 path_lit        := PATH_STRING | STRING

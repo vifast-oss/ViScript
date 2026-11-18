@@ -659,7 +659,7 @@ impl<'a> Parser<'a> {
                 }
                 Ok(self.node(NodeKind::Pattern, elems))
             }
-            Kind::Kw if t.text == "none" || t.text == "true" || t.text == "false" => {
+            Kind::Kw if t.text == "true" || t.text == "false" => {
                 let e = self.bump();
                 Ok(self.node(NodeKind::Pattern, vec![e]))
             }

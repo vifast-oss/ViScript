@@ -5,4 +5,4 @@ match x:
         match v:
             3: print("ba")
             _: print("khác")
-    none: print("không")
+    None: print("không")

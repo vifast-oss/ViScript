@@ -3,5 +3,5 @@ type A:
     b: B
 type B:
     n: int
-let a: A? = none
+let a: A? = None
 print(a?.b ?? 0)

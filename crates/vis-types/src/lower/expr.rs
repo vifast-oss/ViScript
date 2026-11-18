@@ -383,11 +383,6 @@ impl<'a> Lowerer<'a> {
         };
         if t.kind == Kind::Kw {
             return match t.text.as_str() {
-                "none" => HExpr::Opt {
-                    value: None,
-                    ty: Type::Opt(Box::new(Type::Error)),
-                    span,
-                },
                 "true" | "false" => HExpr::Lit {
                     lit: Lit {
                         kind: LitKind::Bool,

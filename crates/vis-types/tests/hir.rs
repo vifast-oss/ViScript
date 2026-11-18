@@ -388,7 +388,7 @@ fn ba_ca_err_dung_o_parse_khong_lower() {
 }
 
 // ---------------------------------------------------------------------------
-// 3) Điền kiểu literal (VD-43) + `T?` + `none`
+// 3) Điền kiểu literal (VD-43) + `T?` + `None`
 // ---------------------------------------------------------------------------
 
 fn expr_of(src: &str) -> HExpr {
@@ -468,12 +468,12 @@ fn kieu_cau_truc_va_option() {
     assert_eq!(def.fields[0].ty, Type::Str);
     assert_eq!(def.fields[1].ty, Type::Int);
     assert!(def.anonymous);
-    // `none` ⇒ Opt(None); `xs[0]?` ⇒ Try
-    match expr_of("none") {
+    // **R2a (VD-178)**: `None` (biến thể) ⇒ Opt(None); `xs[0]?` ⇒ Try
+    match expr_of("None") {
         HExpr::Opt {
             value: None, ty, ..
-        } => assert!(ty.is_opt(), "`none` phải có kiểu `T?`"),
-        other => panic!("`none` phải là Opt(None), thật {other:?}"),
+        } => assert!(ty.is_opt(), "`None` phải có kiểu `T?`"),
+        other => panic!("`None` phải là Opt(None), thật {other:?}"),
     }
     match expr_of("xs[0]?") {
         HExpr::Try { expr, .. } => assert!(matches!(*expr, HExpr::Index { .. })),

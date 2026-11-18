@@ -47,10 +47,13 @@ mod than;
 pub use than::is_builtin_value;
 pub(crate) use than::{lower_nhom, lower_than, ThanCtx};
 
-/// **8 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
-/// qua Agent 0). `true`/`false`/`none` là **literal**, không phải tên.
-pub const BUILTIN_VALUE_NAMES: [&str; 11] = [
-    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
+/// **10 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
+/// qua Agent 0). `true`/`false` là **literal**, không phải tên.
+///
+/// **R2a (VD-178)**: **bỏ `None`** — `None` là **biến thể** của `Option[T]`, hạ thẳng thành
+/// `HExpr::Opt { value: None }` (không còn là tên dựng sẵn).
+pub const BUILTIN_VALUE_NAMES: [&str; 10] = [
+    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "ref",
 ];
 
 mod options;
@@ -674,6 +677,29 @@ impl<'a> Lowerer<'a> {
 
     /// Hạ **một lần dùng tên giá trị**: phân giải + `VS0301` theo chính sách.
     fn lower_var_use(&mut self, name: &str, span: Span) -> HExpr {
+        // **R2a (VD-178)**: `none` là **từ khoá đã bỏ** ⇒ **VS0203** + gợi ý `None`.
+        // Vẫn hạ thành `Opt(None)` để không sinh thêm `VS0301` (một lỗi, một mã).
+        if name == "none" {
+            self.diag(
+                &vis_diag::SYNTAX_CODES[2],
+                "`none` đã bỏ — dùng `None` (biến thể của `Option[T]`)",
+                span,
+            );
+            return HExpr::Opt {
+                value: None,
+                ty: Type::Opt(Box::new(Type::Error)),
+                span,
+            };
+        }
+        // **R2a (VD-178)**: `None` là **biến thể** của `Option[T]` — hạ thẳng thành `Opt(None)`,
+        // không còn là tên dựng sẵn (bỏ khỏi [`BUILTIN_VALUE_NAMES`]).
+        if name == "None" {
+            return HExpr::Opt {
+                value: None,
+                ty: Type::Opt(Box::new(Type::Error)),
+                span,
+            };
+        }
         match self.resolve(name) {
             Some(sym) => HExpr::Var {
                 name: name.to_string(),

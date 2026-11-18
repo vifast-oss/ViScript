@@ -2,5 +2,5 @@
 let x: int? = 5
 let v = match x:
     Some(y): y * 2
-    none: 0
+    None: 0
 print(v)

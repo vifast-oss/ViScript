@@ -188,6 +188,9 @@ fn render(out: &ParseOutput) -> String {
         if la_chu_thich {
             // Chú thích: giữ nguyên văn **thân** (kể cả tab bên trong), chỉ bỏ khoảng trắng cuối.
             dst.push_str(t.text.trim_end());
+        } else if t.kind == Kind::Ident && t.text == "none" {
+            // **R2a (VD-178)**: `none` là **từ khoá đã bỏ** ⇒ fmt tự sửa `None` (cùng `VS0203`).
+            dst.push_str("None");
         } else if t.kind == Kind::Ident
             && matches!(t.text.as_str(), "some" | "ok" | "err")
             && toks.get(i + 1).is_some_and(|n| n.is_punct("("))

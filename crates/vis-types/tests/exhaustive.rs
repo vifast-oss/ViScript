@@ -5,7 +5,7 @@
 //! ghi **trên** ca = `let y = match …` rồi `y` ⇒ kiểu của `y`; `!VS0402` = **đúng một** chẩn đoán.
 //!
 //! Luật xét hết (thiết kế §4.3 + VD-43 #5): enum ⇒ mọi biến thể; `bool` ⇒ `true`/`false`;
-//! `T?` ⇒ `some`/`none` (hoặc `Some`/`None`); `Result` ⇒ `ok`/`err`; kiểu **vô hạn** (`int`, `str`,
+//! `T?` ⇒ `Some`/`None`; `Result` ⇒ `ok`/`err`; kiểu **vô hạn** (`int`, `str`,
 //! `list`, `map`, …) ⇒ **bắt buộc `_`**; bản ghi ⇒ đủ **mọi** trường, không `..`; **guard không tính**;
 //! or-pattern tính cả hai vế.
 
@@ -104,12 +104,12 @@ const CASES: &[(&str, &str)] = &[
         "let x: bool = true\nlet y = match x:\n    true if false: 1\n    false: 2\ny",
         "!VS0402",
     ),
-    // kỳ vọng: ok(int) — `T?` xét `some`/`none`
+    // kỳ vọng: ok(int) — `T?` xét `Some`/`None`
     (
-        "let x: int? = 5\nlet y = match x:\n    Some(v): v\n    none: 0\ny",
+        "let x: int? = 5\nlet y = match x:\n    Some(v): v\n    None: 0\ny",
         "ok(int)",
     ),
-    // kỳ vọng: !VS0402 — thiếu `none`
+    // kỳ vọng: !VS0402 — thiếu `None`
     (
         "let x: int? = 5\nlet y = match x:\n    Some(v): v\ny",
         "!VS0402",

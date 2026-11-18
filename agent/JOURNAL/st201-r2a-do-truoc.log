@@ -1,0 +1,58 @@
+# R2a (ST-201) — lần chạy ĐỎ-TRƯỚC
+# Thời điểm: 2026-11-18 14:04:42 JST
+# Lệnh: cargo test -p vis-cli --test r2a_none
+# HEAD: 6a32233
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running tests/r2a_none.rs (target/debug/deps/r2a_none-d68f878da9bb5603)
+
+running 7 tests
+test fmt_tu_sua_none_thanh_none ... FAILED
+test none_gia_tri_la_vs0203_va_goi_y_none ... FAILED
+test none_pattern_la_vs0203 ... FAILED
+test some_thuong_van_vs0501 ... ok
+test some_van_chay ... ok
+test none_pattern_hop_le ... ok
+test none_la_bien_the_option ... ok
+
+failures:
+
+---- fmt_tu_sua_none_thanh_none stdout ----
+
+thread 'fmt_tu_sua_none_thanh_none' (75363317) panicked at crates/vis-cli/tests/r2a_none.rs:95:5:
+fmt phải sửa `none` → `None`: let x: int? = none
+match x:
+    Some(v): print(v)
+    none: print(0)
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- none_gia_tri_la_vs0203_va_goi_y_none stdout ----
+
+thread 'none_gia_tri_la_vs0203_va_goi_y_none' (75363318) panicked at crates/vis-cli/tests/r2a_none.rs:47:5:
+assertion `left == right` failed: `none` đã bỏ ⇒ `vis check` phải đỏ: TAP version 13
+1..1
+ok 1 - /var/folders/jp/05hgrzxj65bgh355l2zs2zz80000gn/T/vis-r2a-gia-tri-7301/a.vis
+
+  left: Some(0)
+ right: Some(1)
+
+---- none_pattern_la_vs0203 stdout ----
+
+thread 'none_pattern_la_vs0203' (75363321) panicked at crates/vis-cli/tests/r2a_none.rs:74:5:
+assertion `left == right` failed: pattern `none` đã bỏ ⇒ phải đỏ: TAP version 13
+1..1
+ok 1 - /var/folders/jp/05hgrzxj65bgh355l2zs2zz80000gn/T/vis-r2a-pattern-7301/a.vis
+
+  left: Some(0)
+ right: Some(1)
+
+
+failures:
+    fmt_tu_sua_none_thanh_none
+    none_gia_tri_la_vs0203_va_goi_y_none
+    none_pattern_la_vs0203
+
+test result: FAILED. 4 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+error: test failed, to rerun pass `-p vis-cli --test r2a_none`

@@ -55,6 +55,20 @@ impl<'a> Lowerer<'a> {
             Kind::Ident if first.text == "_" => HPat::Wild { span },
             Kind::Ident => {
                 let name = first.text.clone();
+                // **R2a (VD-178)**: `none` là **từ khoá đã bỏ** ⇒ **VS0203** + gợi ý `None`.
+                // Hạ thành ctor `None` để `match` vẫn đủ nhánh (một lỗi, một mã).
+                if name == "none" {
+                    self.diag(
+                        &vis_diag::SYNTAX_CODES[2],
+                        "`none` đã bỏ — dùng `None` (biến thể của `Option[T]`)",
+                        span,
+                    );
+                    return HPat::Ctor {
+                        path: vec!["None".into()],
+                        args: Vec::new(),
+                        span,
+                    };
+                }
                 // **R1a (VD-178)**: `some`/`ok`/`err` viết thường ⇒ **cảnh báo** `VS0111`.
                 if matches!(name.as_str(), "some" | "ok" | "err") {
                     let hoa = match name.as_str() {
@@ -100,11 +114,6 @@ impl<'a> Lowerer<'a> {
                     sym,
                 }
             }
-            Kind::Kw if first.text == "none" => HPat::Ctor {
-                path: vec!["none".into()],
-                args: Vec::new(),
-                span,
-            },
             Kind::Kw if first.text == "true" || first.text == "false" => HPat::Lit {
                 lit: Lit {
                     kind: LitKind::Bool,

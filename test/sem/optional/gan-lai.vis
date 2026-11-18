@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-var x: int? = none
+var x: int? = None
 x = 3
 print(x ?? 0)
