@@ -460,7 +460,8 @@ fn snapshot_9_ca_so_module_07xx() {
     // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (resolver không giải được ràng buộc) ⇒ **33** mã.
     // **R9 (VD-178)**: +16 mã ⇒ **49** mã.
     // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
-    assert_eq!(vis_diag::all_codes().count(), 50);
+    // **VD-215 (2026-11-18)**: +**VS0207** (trộn khoá, lỗi) +**VS0208** (danh sách làm khoá, cảnh báo) ⇒ **52** mã.
+    assert_eq!(vis_diag::all_codes().count(), 52);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }
 

@@ -86,17 +86,22 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
         severity: "error",
     })?;
     let la_vish = path.ends_with(".vish");
-    // **R1a (VD-178)**: `VS0111` (chữ hoa biến thể) **in** ra stderr nhưng **không** làm đỏ
-    // `vis check` — các mã `Warning` khác (`VS0107` tab) vẫn đỏ như cũ (VD-12).
+    // **VD-216 (VD-212, 2026-11-18)**: `VS0111` chết — bỏ bộ lọc chết. Mọi `Severity::Warning`
+    // khác (`VS0208` danh sách làm khoá, …) **in** ra stderr nhưng **không** làm đỏ;
+    // `VS0107` (tab) vẫn đỏ như cũ (VD-12).
+    const MEM: vis_diag::Severity = vis_diag::Severity::Warning;
+    let mem = |d: &(String, vis_syntax::Diagnostic)| {
+        d.1.code.severity == MEM && d.1.code.short != "VS0107"
+    };
     for (r, w) in &loaded.diags {
-        if w.code.short == "VS0111" {
+        if w.code.severity == MEM && w.code.short != "VS0107" {
             eprintln!(
                 "{r}:{}:{}: warning {}: {}",
                 w.line, w.col, w.code.short, w.message
             );
         }
     }
-    let Some((rel, d)) = loaded.diags.iter().find(|(_, d)| d.code.short != "VS0111") else {
+    let Some((rel, d)) = loaded.diags.iter().find(|x| !mem(x)) else {
         return Ok(());
     };
     let ma = d.code.short;

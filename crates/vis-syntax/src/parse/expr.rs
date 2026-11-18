@@ -9,6 +9,22 @@
 use super::{Elem, Node, NodeKind, PResult, Parser};
 use crate::lex::token::Kind;
 
+/// **VD-215 (2026-11-18)**: phân loại khoá của một entry trong `{…}` — chế độ literal quyết theo
+/// **toàn bộ** khoá, không chỉ khoá đầu.
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum KhoaKhoa {
+    /// Định danh trần + `:` (`a`, `ten`) — chế độ **bản ghi**.
+    Tran,
+    /// Chuỗi (`"a"`) — map.
+    Chuoi,
+    /// `[…]` — khoá là **danh sách** (hợp lệ nhưng cảnh báo `VS0208`) — map.
+    DanhSach,
+    /// `(…)` — **khoá tính toán chính thức** — map.
+    Ngoac,
+    /// Bất kỳ biểu thức khác (`x + "_id"`, `1`, …) — map.
+    BieuThuc,
+}
+
 /// Ba ca lỗi của golden cần hành vi riêng: `50%` (VS0202) và hai toán tử không kết hợp.
 impl<'a> Parser<'a> {
     /// `expr := lambda | pipe_expr`.
@@ -578,11 +594,39 @@ impl<'a> Parser<'a> {
         Ok(self.node(NodeKind::ListLit, elems))
     }
 
-    /// `{ IDENT ':'` ⇒ bản ghi; ngược lại map (ghi chú 4 A.5).
+    /// **VD-215 (2026-11-18)**: phân loại khoá của entry theo cách **ô đầu** (tokens đầu của key):
+    /// `Tran` = định danh trần + `:` · `Chuoi` = chuỗi · `DanhSach` = `[…]` · `Ngoac` = `(…)` · còn lại = biểu thức.
+    fn loai_khoa(&self) -> KhoaKhoa {
+        match self.tok().kind {
+            Kind::Ident if self.peek_punct(1, ":") => KhoaKhoa::Tran,
+            Kind::Str => KhoaKhoa::Chuoi,
+            Kind::Punct if self.tok().text == "[" => KhoaKhoa::DanhSach,
+            Kind::Punct if self.tok().text == "(" => KhoaKhoa::Ngoac,
+            _ => KhoaKhoa::BieuThuc,
+        }
+    }
+
+    /// `{ IDENT ':'` ⇒ bản ghi — chế độ quyết theo **toàn bộ** khoá (VD-215): mọi khoá là
+    /// định danh trần ⇒ bản ghi; còn lại ⇒ map; trộn ⇒ **VS0207** (trùng đầu tiên trong tệp).
     fn map_or_record(&mut self) -> PResult<Node> {
         let record = self.tok_at(1).kind == Kind::Ident && self.peek_punct(2, ":");
         let mut elems = vec![self.bump()];
         while !self.at_punct("}") {
+            // **VD-215**: chế độ literal xét **toàn bộ** khoá — khoá nào lệch chế độ đều báo `VS0207`.
+            let khoa = self.loai_khoa();
+            if (khoa == KhoaKhoa::Tran) != record {
+                return Err(if record {
+                    self.err_code(
+                        &vis_diag::SYNTAX_CODES[6],
+                        "trộn loại khoá — bản ghi cần mọi khoá là định danh; muốn map thì viết `\"ten\"` hoặc `(ten)`",
+                    )
+                } else {
+                    self.err_code(
+                        &vis_diag::SYNTAX_CODES[6],
+                        "trộn loại khoá — map cần khoá chuỗi hoặc `(expr)`; định danh trần ở đây sẽ không phải biến, hãy viết `\"ten\"` hoặc `(ten)`",
+                    )
+                });
+            }
             if record {
                 let mut f = vec![self.expect_ident()?];
                 f.push(self.expect_punct(":")?);

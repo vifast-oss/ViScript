@@ -14,7 +14,13 @@ pub fn dump(m: &Module) -> String {
         m.funcs.len()
     ));
     for (i, c) in m.consts.iter().enumerate() {
-        s.push_str(&format!("  const[{i}] kind={} {:?}\n", c.kind, c.text));
+        // **VD-218 (2026-11-18)**: tên dựng sẵn nội bộ `$value:<tên>` không xuất hiện ở
+        // disassemble (chế độ thường) — in `<builtin <tên>>` hợp nhất.
+        s.push_str(&format!(
+            "  const[{i}] kind={} {}\n",
+            c.kind,
+            hien_const(&c.text)
+        ));
     }
     for (fi, f) in m.funcs.iter().enumerate() {
         s.push_str(&format!(
@@ -35,6 +41,14 @@ pub fn dump(m: &Module) -> String {
         }
     }
     s
+}
+
+/// Hiển thị một const của module trong disassemble (VD-218): ẩn tiền tố nội bộ `$value:`.
+fn hien_const(t: &str) -> String {
+    match t.strip_prefix("$value:") {
+        Some(ten) => format!("<builtin {ten}>"),
+        None => format!("{t:?}"),
+    }
 }
 
 /// Số lệnh theo từng tag — tiện cho test "đã dùng bao nhiêu lệnh".

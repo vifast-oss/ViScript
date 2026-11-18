@@ -85,24 +85,24 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // **SỬA KÈM LÝ DO (ST-57)**: `derives Eq, Show` **sinh** `impl` ⇒ +1 item (`HImpl`) và +5
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
-    (214, 6, 0, 11), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
-    // **R12a (VD-178)**: +1 dòng ở §3.2 (`type Email(str)`) ⇒ mọi khối **sau** dòng 231 dịch +1.
-    (239, 1, 0, 4),  // fn total + R + rows + r (lambda)
-    (291, 0, 5, 6),  // x, count, a, b, name, age
-    (326, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
-    (343, 0, 3, 3),  // e, domain, mail (if let)
-    (409, 1, 0, 5),  // greet + name + times + loud + s
-    (425, 0, 1, 3),  // f + x (lambda) + y
-    (476, 1, 0, 4),  // read_config + dir + text + cfg
-    (491, 0, 1, 2),  // cfg + err (else)
-    (542, 0, 3, 2),  // a, b
-    (556, 0, 2, 2),  // counter, inc
-    (578, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (691, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (705, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1470, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
-    // **R11 (VD-178)**: khối 1421 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1423, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
+    (226, 6, 0, 11), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
+    // **VD-215 (2026-11-18)**: +12 dòng bảng quy tắc `{…}` sau bảng kiểu ⇒ mọi khối sau dịch +12.
+    (251, 1, 0, 4),  // fn total + R + rows + r (lambda)
+    (303, 0, 5, 6),  // x, count, a, b, name, age
+    (338, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
+    (355, 0, 3, 3),  // e, domain, mail (if let)
+    (421, 1, 0, 5),  // greet + name + times + loud + s
+    (437, 0, 1, 3),  // f + x (lambda) + y
+    (488, 1, 0, 4),  // read_config + dir + text + cfg
+    (503, 0, 1, 2),  // cfg + err (else)
+    (554, 0, 3, 2),  // a, b
+    (568, 0, 2, 2),  // counter, inc
+    (590, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (703, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (717, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1482, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    // **R11 (VD-178)**: khối 1435 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
+    (1435, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật)
 ];
 
 fn doc_path() -> PathBuf {

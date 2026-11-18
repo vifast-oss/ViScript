@@ -102,10 +102,21 @@ impl<'a> Lowerer<'a> {
             }
             NodeKind::MapLit => {
                 let mut entries = Vec::new();
+                // **VD-215 (2026-11-18)**: `{[k]: …}` (khoá là danh sách) ⇒ **cảnh báo** `VS0208`;
+                // `{([k]): …}` (lồng trong ngoặc) là cách tắt cảnh báo. Khoá tính toán là `(expr)`.
                 for e in node.children().filter(|n| n.kind == NodeKind::MapEntry) {
                     let mut it = e.children();
-                    let k = it
-                        .next()
+                    let knode = it.next();
+                    if let Some(kn) = &knode {
+                        if kn.kind == NodeKind::ListLit {
+                            self.diag(
+                                &vis_diag::SYNTAX_CODES[7],
+                                "`{[k]: …}` khoá là danh sách — dùng `{(k): v}`; viết `{([k]): …}` nếu muốn giữ danh sách làm khoá",
+                                kn.span,
+                            );
+                        }
+                    }
+                    let k = knode
                         .map(|n| self.lower_expr(n))
                         .unwrap_or(HExpr::Error { span: e.span });
                     let v = it

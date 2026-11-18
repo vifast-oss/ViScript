@@ -165,6 +165,18 @@ Phụ lục B. Chương trình mẫu
 | Tuple | `(1, "a")` | `(int, str)` |
 | Bản ghi ẩn danh | `{name: "An", age: 20}` | `{name: str, age: int}` |
 
+**Quy tắc `{…}` (VD-215)** — chế độ literal quyết theo **toàn bộ** khoá, không chỉ khoá đầu:
+
+| Viết | Nghĩa |
+|---|---|
+| `{ten: 1, tuoi: 2}` (mọi khoá là định danh trần) | **bản ghi** |
+| `{"ten": 1}` (khoá chuỗi literal) | **map** |
+| `{(k): 1}`, `{(k + "_id"): 1}` (khoá trong ngoặc — **cú pháp khoá tính toán chính thức**) | **map**, khoá là giá trị của biểu thức |
+| trộn chuỗi và `(expr)` | **map**, hợp lệ |
+| trộn định danh trần với chuỗi hoặc `(expr)`, **bất kể thứ tự** | **lỗi `VS0207`** (kèm gợi ý theo khoá đầu tiên) |
+| `{[k]: 1}` (khoá là danh sách — bẫy thường gặp từ JavaScript) | **map** với khoá là danh sách + **cảnh báo `VS0208`**; tắt cảnh báo bằng `{([k]): 1}` |
+| `{}` | như hiện trạng hiện tại (map rỗng) |
+
 **Năm dạng chuỗi** (QD §7.1):
 
 | Dạng | Escape | Nội suy | Nhiều dòng |
@@ -335,7 +347,7 @@ match s:
 - **Or-pattern `|` giữ nguyên** (QD §7.3): `Circle(r) | Rect(w, h)` trong một arm. `|` **không bao giờ** là toán tử nhị phân trong biểu thức (Q8 sửa); bit-or là hàm `bit_or`.
 - **Guard không tính vào coverage**: nhánh có `if` **không** chứng minh được phủ, nên `Circle(r) if r > 100.0:` không làm `Circle` được coi là đã xét; phải có nhánh `Circle(r)` không guard hoặc `_`.
 - **Kiểu vô hạn** (`int`, `float`, `str`, `path`, `datetime`...) **bắt buộc** có `_`; range pattern **không** dùng để chứng minh phủ kiểu vô hạn.
-- Pattern đầy đủ: literal (kể cả `-1`), biến, `_`, tuple `(a, b)`, bản ghi `{name, age: 18..}`, enum `Circle(r)` / `Shape.Circle(r)`, list `[first, ..rest]`, range `0..10` / `0..=10`, or `|`, guard `if`. Pattern cho optional/Result: **`None`**, **`Some(x)`**, **`Ok(v)`**, **`Err(e)`** (**R1a**: viết thường ⇒ cảnh báo `VS0111` + `vis fmt` tự sửa).
+- Pattern đầy đủ: literal (kể cả `-1`), biến, `_`, tuple `(a, b)`, bản ghi `{name, age: 18..}`, enum `Circle(r)` / `Shape.Circle(r)`, list `[first, ..rest]`, range `0..10` / `0..=10`, or `|`, guard `if`. Pattern cho optional/Result: **`None`**, **`Some(x)`**, **`Ok(v)`**, **`Err(e)`** (**VD-212**: sai hoa thường ⇒ **lỗi `VS0203`** + gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch).
 - `if let PAT = EXPR:` là đường tắt của `match` một nhánh, **không** xét hết.
 
 ### 4.4 Optional
@@ -1310,11 +1322,11 @@ named_args      := (',' ('--' IDENT [':' expr] | IDENT ':' expr))+
 field_updates   := IDENT ':' expr (',' IDENT ':' expr)*
 
 list_lit        := '[' [expr (',' expr)* ','?] ']'
-map_lit         := '{' [map_entry (',' map_entry)* ','?] '}'
-map_entry       := expr ':' expr
+map_lit         := '{' [map_entry (',' map_entry)* ','?] '}'        (* chế độ xét TOÀN BỘ khoá (VD-215) *)
+map_entry       := expr ':' expr                                    (* khoá (expr) = khoá tính toán chính thức *)
 set_lit         := 'set' '{' [expr (',' expr)* ','?] '}'
 record_lit      := '{' record_field (',' record_field)* ','? '}'
-record_field    := IDENT ':' expr | IDENT
+record_field    := IDENT ':' expr | IDENT                            (* trộn định danh trần với chuỗi trong cùng `{…}` ⇒ VS0207 *)
 
 if_expr         := 'if' if_cond ':' suite elif_arm* else_arm      (* else bắt buộc *)
 match_expr      := 'match' expr ':' NEWLINE INDENT match_arm+ DEDENT

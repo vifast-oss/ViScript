@@ -56,7 +56,7 @@ impl<'a> Lowerer<'a> {
             Kind::Ident => {
                 let name = first.text.clone();
                 // **VD-212 (A0)**: `some`/`ok`/`err` viết thường ⇒ **lỗi** `VS0203` (trước R1a là
-                // cảnh báo `VS0111`; A0 PHỦ QUYẾT giữ cảnh báo mềm — sai hoa thường phải là lỗi,
+                // cảnh báo `VS0111`; A0 **PHỦ QUYẾT** dạng mềm — sai hoa thường phải là lỗi,
                 // gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch).
                 if matches!(name.as_str(), "some" | "ok" | "err") {
                     let hoa = match name.as_str() {

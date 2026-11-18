@@ -106,7 +106,7 @@ loop break continue return and or not true false self async await scope test ext
 | `[1, 2, 3]` / `list[int]` ✔ | `[1,2,3]` / `list[int]` | `vec![1,2,3]` / `Vec<i64>` | `[1,2,3]` / `number[]` | |
 | `xs[i]` (panic nếu ngoài) ✔<br>`xs[i]?` → `T?` ✔<br>`xs.get(i)` → `T?` ✔ | `xs[i]` (IndexError)<br>`xs[i] if i < len(xs) else None` | `xs[i]` (panic)<br>`xs.get(i)` → `Option<&T>` | `xs[i]` (undefined) | **R8**: `xs[i]?` chỉ số **có kiểm tra** (không panic); `xs[i]` ngoài phạm vi ⇒ `VS0503`; `xs[-1]` panic có thông điệp |
 | `xs.enumerate()` ✔<br>`xs.any(f)` / `xs.all(f)` ✔<br>`xs.find(f)` → `T?` ✔ | `enumerate(xs)`<br>`any(f, xs)` / `all(f, xs)`<br>`next((x for x in xs if f(x)), None)` | `xs.iter().enumerate()`<br>`xs.iter().any(f)` / `.all(f)`<br>`xs.iter().find(\|x\| f(x))` | `xs.entries()`<br>`xs.some(f)` / `xs.every(f)`<br>`xs.find(f)` | **R20b**: `any`/`all`/`find` nhận hàm **1 tham số** trả `bool`; `enumerate` trả `list[tuple[int, T]]` |
-| `{"a": 1, "b": 2}` / `map[str, int]` ✔ | `{"a": 1}` | `HashMap::from([("a",1)])` | `new Map([["a",1]])` | |
+| `{"a": 1, "b": 2}` / `map[str, int]` ✔ | `{"a": 1}` | `HashMap::from([("a",1)])` | `new Map([["a",1]])` | **VD-215** quy tắc `{…}` (xem bảng dưới) |
 | `set{1, 2}` ✔ | `{1, 2}` | `HashSet::from([1,2])` | `new Set([1,2])` | `set{` **dính liền** |
 | `(1, "a")` ✔ | `(1, "a")` | `(1, "a")` | `[1, "a"] as const` | `let (n, s) = t` ✔ |
 | `type U:`<br>`    name: str`<br>`    age: int` ✔ | `@dataclass`<br>`class U:` | `struct U { name: String, age: i64 }` | `type U = { name: string; age: number }` | tên `type`, không `struct` |
@@ -117,6 +117,18 @@ loop break continue return and or not true false self async await scope test ext
 | `a == b` trên bản ghi ✔ | `a == b` | `a == b` | `a === b` | so theo giá trị |
 | `type Email(str)` ✔ | `NewType('Email', str)` | `struct Email(String);` | branded type | **R12a**: newtype **trong suốt** — `Email("a@b")` dựng, `let Email(s) = e` mở; `newtype` ⇒ **VS0203** |
 | `type Id = int` ✔ | `Id = int` | `type Id = i64;` | `type Id = number;` | **R12a**: `type X = T` thay `alias`; `alias` ⇒ **VS0203** + gợi ý |
+
+**Quy tắc `{…}` (VD-215)** — chế độ literal quyết theo **toàn bộ** khoá, không chỉ khoá đầu:
+
+| Viết | Nghĩa |
+|---|---|
+| `{ten: 1, tuoi: 2}` | **bản ghi** (mọi khoá phải là định danh trần) |
+| `{"ten": 1}` | **map** |
+| `{(k): 1}`, `{(k + "_id"): 1}` — `(expr)` là **cú pháp khoá tính toán chính thức** | **map** |
+| trộn chuỗi và `(expr)` | **map** hợp lệ |
+| trộn định danh trần với chuỗi hoặc `(expr)`, **bất kể thứ tự** ⇒ **VS0207** | bản ghi không tồn tại kiểu này |
+| `{[k]: 1}` (bẫy JavaScript — khoá là danh sách) | **map** + **cảnh báo `VS0208`**; tắt bằng `{([k]): 1}` |
+| `{}` | như hiện trạng hiện tại (map rỗng) |
 
 ## 6. Chuỗi & literal
 

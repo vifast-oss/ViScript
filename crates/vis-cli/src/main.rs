@@ -321,16 +321,17 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     if dump_deps {
         eprint!("{}", modules::dump_deps(&loaded));
     }
-    // **R1a (VD-178)**: cảnh báo (`Severity::Warning`) **in** nhưng **không** làm đỏ.
-    // **R1a (VD-178)**: chỉ `VS0111` là cảnh báo **mềm**; `VS0107` (tab) vẫn đỏ (VD-12).
-    let loi: Vec<&(String, vis_syntax::Diagnostic)> = loaded
-        .diags
-        .iter()
-        .filter(|(_, d)| d.code.short != "VS0111")
-        .collect();
+    // **VD-216 (VD-212, 2026-11-18)**: `VS0111` chết — bỏ bộ lọc chết. Mọi `Severity::Warning`
+    // khác (`VS0208`, …) **in** nhưng **không** làm đỏ; `VS0107` (tab) vẫn đỏ (VD-12).
+    let mem = |d: &(String, vis_syntax::Diagnostic)| {
+        d.1.code.severity == vis_diag::Severity::Warning && d.1.code.short != "VS0107"
+    };
+    let loi: Vec<&(String, vis_syntax::Diagnostic)> =
+        loaded.diags.iter().filter(|x| !mem(x)).collect();
     if !loaded.diags.is_empty() {
         for (rel, d) in &loaded.diags {
-            let nhan = if d.code.short == "VS0111" {
+            let nhan = if d.code.severity == vis_diag::Severity::Warning && d.code.short != "VS0107"
+            {
                 "warning"
             } else {
                 "error"

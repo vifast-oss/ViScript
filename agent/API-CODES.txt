@@ -14,15 +14,15 @@ VS0107	warning: tab (cảnh báo-lỗi; tab = 4)
 VS0108	error: nội suy `{` không đóng
 VS0109	error: thụt lề không khớp đơn vị/DEDENT sai
 VS0110	error: `^` sai ngữ cảnh (lexer chế độ lệnh biết đầu stage)
-VS0111	warning: tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`)
+VS0111	warning: tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`) — **ngừng phát từ VD-212** (sai hoa thường trong pattern nay báo `VS0203`)
 VS0201	error: lỗi cú pháp: token không mong đợi/thiếu vế
 VS0202	error: `%` dùng như phần trăm — viết `50pct`
 VS0203	error: từ khoá đã bỏ — dùng cú pháp mới (xem gợi ý)
 VS0204	error: `const` cần ghi kiểu khi vế phải không phải literal
-# VS0205 — **dành riêng, không dùng** (VD-210, 2026-11-18): R5b bị HUỶ (xung đột ca khoá ST-53);
-# không cấp mã này cho lỗi khác và không tái dùng. (Dòng chú thích, không phải mã — không sửa sổ.)
 VS0205	error: dựng bản ghi bằng `{…}` — dùng `Tên(trường: …)` hoặc khoá chuỗi cho map
 VS0206	error: khối `else` của `let … else` phải thoát (return/break/continue/panic)
+VS0207	error: trộn loại khoá trong `{…}` — bản ghi và map không trộn được
+VS0208	warning: `{[k]: …}` khoá là danh sách — dùng `{(k): v}`; viết `{([k]): …}` nếu muốn giữ danh sách làm khoá
 VS0301	error: tên không tồn tại
 VS0302	error: khai báo trùng trong cùng phạm vi
 VS0303	error: kiểu không tồn tại

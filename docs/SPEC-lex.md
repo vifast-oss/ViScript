@@ -110,7 +110,7 @@ Metachar: khoảng trắng, `( ) [ ] { } ; & $ ' " \|`; `#` khi đứng đầu t
 | VS0108 | nội suy `{` không đóng |
 | VS0109 | thụt lề không khớp đơn vị/DEDENT sai |
 | VS0110 | `^` sai ngữ cảnh (lexer chế độ lệnh biết đầu stage) |
-| VS0111 | tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`) |
+| VS0111 | tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`) — **ngừng phát từ VD-212** (sai hoa thường trong pattern nay báo `VS0203`) |
 
 Mọi mã có `vis explain VSxxxx`; bảng đầy đủ ở ST-02b.
 

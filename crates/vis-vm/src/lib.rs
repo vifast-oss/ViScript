@@ -18,6 +18,17 @@
 //!
 //! `steps` của VM đếm **lệnh đã thực thi**, của interp đếm **bước ngữ nghĩa** ⇒ test differential
 //! **không** so `steps` (chỉ `stdout`, `exit`, `(mã, dòng, cột)` của chẩn đoán).
+//!
+//! # Builtin làm giá trị — `$value:<tên>` (VD-208 (2), VD-218)
+//!
+//! Giá trị dựng sẵn (`Some`, `Ok`, …) dùng được **như hàm** ở cả hai đường: `let f = Some; f(5)`,
+//! `xs.map(Some)`. VBC1 đã **đóng băng** — không thêm mã `MakeBuiltin` (không thêm opcode nữa) —
+//! nên VM **dựng giá trị qua builtin nội bộ `$value:<tên>`** (opcode `CallBuiltin` + tên nội bộ
+//! `$value:...`; `:` không hợp lệ trong tên dựng sẵn nên người dùng không viết được). `None` vẫn
+//! là **literal** của enum `Option` (`MakeNone`). Tên `$value:<tên>` **không** bao giờ xuất hiện ở
+//! bề mặt người dùng: thông báo lỗi và stack trace chặn ở tầng thông điệp (tầng này chỉ in tên
+//! dựng sẵn trần qua `Value::Builtin`, ví dụ `<builtin Some>`), LSP hover/`print(f)` giữ nguyên,
+//! và disassemble (`vis run --dump-bytecode`) ẩn tiền tố (in `<builtin Some>`).
 
 pub mod dump;
 pub mod vm;

@@ -159,8 +159,9 @@ pub const CODES: [Code; 11] = [
     Code {
         id: 111,
         short: "VS0111",
-        message_vi: "tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`)",
-        message_en: "variant name should be UpperCamel (`Some`/`None`/`Ok`/`Err`)",
+        message_vi:
+            "tên biến thể nên viết **hoa** chữ đầu (`Some`/`None`/`Ok`/`Err`) — **ngừng phát từ VD-212** (sai hoa thường trong pattern nay báo `VS0203`)",
+        message_en: "variant name should be UpperCamel (`Some`/`None`/`Ok`/`Err`) — **stops emitting from VD-212** (wrong case in patterns now report `VS0203`)",
         message_ja: "列挙型の名前は先頭を大文字にしてください（`Some`/`None`/`Ok`/`Err`）",
         severity: Severity::Warning,
     },
@@ -169,7 +170,9 @@ pub const CODES: [Code; 11] = [
 /// Sổ **mã cú pháp** `02xx` (VD-35) — tách khỏi [`CODES`] để test "CODES khớp SPEC-lex §7" vẫn
 /// là hàng rào thật (không nới kỳ vọng cũ). Quy tắc cấp: `VS0201` lỗi cú pháp chung; `VS0202`
 /// `%` dùng như phần trăm (thông điệp phải gợi ý `50pct`, L3 của `docs/DUYET-AGENT0-vong-va.md`).
-pub const SYNTAX_CODES: [Code; 6] = [
+/// VD-215 (2026-11-18): +**VS0207** (`trộn loại khoá trong {…}`, lỗi) và +**VS0208**
+/// (`` `{[k]: …}` khoá là danh sách``, **cảnh báo**) — đăng ký theo VD-215 (không dùng lại `VS0205`).
+pub const SYNTAX_CODES: [Code; 8] = [
     Code {
         id: 201,
         short: "VS0201",
@@ -221,6 +224,26 @@ pub const SYNTAX_CODES: [Code; 6] = [
         message_ja:
             "`let … else` の `else` ブロックは脱出する必要があります（return/break/continue/panic）",
         severity: Severity::Error,
+    },
+    // **VD-215 (2026-11-18)**: `{…}` trộn loại khoá — bất kể thứ tự.
+    Code {
+        id: 207,
+        short: "VS0207",
+        message_vi: "trộn loại khoá trong `{…}` — bản ghi và map không trộn được",
+        message_en: "mixed key kinds in `{…}` — records and maps cannot be mixed",
+        message_ja: "`{…}` のキーの種類が混在しています — レコードとマップは混ぜられません",
+        severity: Severity::Error,
+    },
+    // **VD-215 (2026-11-18)**: `{[k]: …}` — danh sách làm khoá; gần quen JavaScript.
+    // `{([k]): …}` (lồng trong ngoặc) là cách tắt cảnh báo này.
+    Code {
+        id: 208,
+        short: "VS0208",
+        message_vi: "`{[k]: …}` khoá là danh sách — dùng `{(k): v}`; viết `{([k]): …}` nếu muốn giữ danh sách làm khoá",
+        message_en: "`{[k]: …}` uses a list as key — use `{(k): v}`; write `{([k]): …}` to keep a list key",
+        message_ja:
+            "`{[k]: …}` はリストをキーにします — `{(k): v}` を使ってください。リストのキーを保持するなら `{([k]): …}` と書いてください",
+        severity: Severity::Warning,
     },
 ];
 
@@ -812,7 +835,8 @@ mod tests {
         // **R9 (VD-178)**: +16 mã (VS0203..0206, VS0303, VS0413..0416, VS0507/0508,
         // VS0605/0606, VS0705..0707) ⇒ **49** mã; `BOOKS` vẫn **7**; `next_block()` vẫn **801**.
         // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
-        assert_eq!(all_codes().count(), 50);
+        // **VD-215 (2026-11-18)**: +**VS0207**/**VS0208** ⇒ **52** mã.
+        assert_eq!(all_codes().count(), 52);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(
@@ -844,13 +868,16 @@ mod tests {
     fn so_cu_phap_02xx_khoa_theo_vd35() {
         // Sổ cú pháp riêng: 6 mã (R9: +VS0203..0206), đúng thứ tự, đúng nghĩa, `CODES` KHÔNG bị đụng.
         let ids: Vec<u16> = SYNTAX_CODES.iter().map(|c| c.id).collect();
-        assert_eq!(ids, vec![201, 202, 203, 204, 205, 206]);
+        assert_eq!(ids, vec![201, 202, 203, 204, 205, 206, 207, 208]);
         assert_eq!(SYNTAX_CODES[0].short, "VS0201");
         assert_eq!(SYNTAX_CODES[1].short, "VS0202");
         assert_eq!(SYNTAX_CODES[2].short, "VS0203");
         assert_eq!(SYNTAX_CODES[3].short, "VS0204");
         assert_eq!(SYNTAX_CODES[4].short, "VS0205");
         assert_eq!(SYNTAX_CODES[5].short, "VS0206");
+        assert_eq!(SYNTAX_CODES[6].short, "VS0207");
+        assert_eq!(SYNTAX_CODES[7].short, "VS0208");
+        assert_eq!(SYNTAX_CODES[7].severity, Severity::Warning);
         assert!(
             SYNTAX_CODES[1].message_vi.contains("50pct"),
             "VS0202 phải gợi ý `50pct` (L3)"

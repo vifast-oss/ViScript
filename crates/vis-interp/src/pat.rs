@@ -37,7 +37,7 @@ impl<'a> Interp<'a> {
                 let low = name.to_ascii_lowercase();
                 match v {
                     // **VD-212 (A0)**: `Option`/`Result` là enum thật — cùng luật so khớp biến thể
-                    // theo **đúng tên biến thể**, phân biệt hoa thường (khác R1a/VS0111).
+                    // theo **đúng tên biến thể**, phân biệt hoa thường (VD-212).
                     Value::Enum(_, variant, vargs) => {
                         if variant != &name {
                             return false;

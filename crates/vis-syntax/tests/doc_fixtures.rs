@@ -3,10 +3,10 @@
 //!
 //! Trích **tự động** mọi khối ```vis từ tài liệu (không chép tay). Theo **VD-36** (Agent 0):
 //! - Bộ fixture của ST-05 = **đúng 15 khối đủ thân** phải parse 0 lỗi + CST lossless;
-//! - **7 khối loại trừ tường minh** (6 khối `...` + 1 khối khối 1412) — QD §7.4 cấm `...` trong
-//!   fixture nên đó là ví dụ lược thân, không phải chương trình; khối 1412 hỏng vì **`Entry(trường:
-//!   …)`** (dòng 1429, constructor có trường tên **không có trong §A.3**) và **`assert`** (dòng
-//!   1438, không có trong §A.1/A.2) — hai lỗ hổng tài liệu ghi ở báo cáo R2, **không** tự thêm
+//! - **7 khối loại trừ tường minh** (6 khối `...` + 1 khối khối 1436-hint) — QD §7.4 cấm `...` trong
+//!   fixture nên đó là ví dụ lược thân, không phải chương trình; khối 1436 hỏng vì **`Entry(trường:
+//!   …)`** (dòng 1441, constructor có trường tên **không có trong §A.3**) và **`assert`** (dòng
+//!   1450, không có trong §A.1/A.2) — hai lỗ hổng tài liệu ghi ở báo cáo R2, **không** tự thêm
 //!   cú pháp (VD-08).
 //!
 //! Máy kiểm: đúng **22** khối ```vis, đúng **15** parse sạch, đúng **7** loại trừ; thêm/bớt là đỏ.
@@ -32,11 +32,11 @@ const EXCLUDED_COUNT: usize = DOC_EXCLUDED_SYNTAX.len();
 
 /// Lý do loại trừ — **cùng thứ tự** với `DOC_EXCLUDED_SYNTAX` (số dòng lấy từ nguồn duy nhất).
 const LY_DO: [&str; EXCLUDED_COUNT] = [
-    "`...` ở 312-315 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
-    "`...` ở 436 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
-    "`...` ở 450 (`fn show(self) -> str: ...`) — thân lược",
-    "`...` ở 617 (`pub cmd ls(...): ...`) — thân lược",
-    "`...` ở 747 (`fn main(...): ...`) — thân lược",
+    "`...` ở 324-327 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
+    "`...` ở 448 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
+    "`...` ở 462 (`fn show(self) -> str: ...`) — thân lược",
+    "`...` ở 629 (`pub cmd ls(...): ...`) — thân lược",
+    "`...` ở 760 (`fn main(...): ...`) — thân lược",
 ];
 
 /// Khối **loại trừ tường minh** — (dòng bắt đầu ```vis trong `ViScript-thiet-ke.md`, lý do);
