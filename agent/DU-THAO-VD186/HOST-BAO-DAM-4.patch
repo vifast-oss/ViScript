@@ -1,0 +1,99 @@
+diff --git a/agent/HOST-BAO-DAM.md b/agent/HOST-BAO-DAM.md
+--- a/agent/HOST-BAO-DAM.md
++++ b/agent/HOST-BAO-DAM.md
+@@ -1,7 +1,8 @@
+ # Mức bảo đảm host của ViScript (ST-73, VD-107)
+ 
+-Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-17
+-(ST-173: Landlock **chỉ Linux** — xem mục cuối tệp).
++Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-18
++(ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **VD-186**: mục FsGuard ghi rõ **đường đọc đã đóng**,
++**đường ghi còn khe hở** tới khi VS3-QĐ-4 merge, **Windows mức bảo đảm thấp hơn**).
+ 
+ ## Bảng nền tảng ↔ bảo đảm
+ 
+@@ -11,6 +12,10 @@ Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên
+ | Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **15/15 ca** trên `ps` (ST-150/ST-166/ST-173) | `cargo test -p vis-host-linux --test landlock` → `15 passed` (log `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`) |
+ | Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
+ 
++> **Windows (VD-186)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
++> danh tính tệp** ⇒ mức bảo đảm **thấp hơn** macOS/Linux; Windows trong VS2 **chỉ đo**, **chưa hỗ trợ**
++> (VD-121/VD-146) — chi tiết ở mục **FsGuard**. wasm **chưa đo**.
++
+ ## Cách đọc `vis run --sandbox-check`
+ 
+ In ra **stdout**, **không** chạy chương trình:
+@@ -65,6 +70,11 @@ Log: `agent/JOURNAL/st75-suite.log` (macOS, ST-75); `st137-host-suite-macos.log`
+ 
+ - Cấm nói "async song song", "chạy đồng thời", "rendezvous", "HTTPS", "sandbox kernel" khi mô tả VS2 (VD-122, VD-123, VD-120).
+ - Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
++- **Sai (VD-186)**: “macOS không còn khe hở” / “macOS đã an toàn” khi **đường ghi** chưa vá; “Windows được
++  hỗ trợ” / “Windows có sandbox kernel”; “hardlink là lỗi đua”.
++- **Đúng (VD-186)**: “**đường đọc** đã đóng khe symlink trên macOS và Linux (`#146`, ST-174)”; “**đường
++  ghi** còn kiểm-rồi-mở trên **mọi nền Unix** (`#140`/`#109b`) cho tới khi **VS3-QĐ-4** merge”;
++  “**hardlink** là **giới hạn chính sách**”; “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
+ 
+ ## Điều kiện để có Landlock thật (VD-107 (4))
+ 
+@@ -103,10 +113,23 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d
+ 
+ ### FsGuard: mức bảo đảm chống đổi tệp giữa kiểm và dùng (sau ST-124)
+ 
+-- **Đường đọc**: mở handle trước, quyết định quyền trên đường dẫn thật của chính handle, rồi đọc nội dung từ chính handle đó. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
++**Trạng thái hiện tại (VD-186, 2026-11-18)** — đọc bảng này trước khi trích dẫn mục này:
++
++| Đường | Trạng thái trong **mã đang chạy** | Nguồn |
++|---|---|---|
++| **Đọc** | **Đã đóng** khe symlink trên **macOS và Linux** — nợ `#146` đóng ở ST-174 | VD-176 §1 · `JOURNAL/st174-*.log` |
++| **Ghi** | **Còn khe hở** kiểm-rồi-mở trên **mọi nền Unix** — nợ `#140`/`#109b` | VD-186 · VD-191 (VS3-QĐ-4) |
++| **Hardlink** | **Giới hạn chính sách**, **không** phải lỗi đua — mục riêng bên dưới | VD-176 §3 |
++| **Windows** | **Mức bảo đảm thấp hơn**: chỉ kiểm theo **đường dẫn**, không có danh tính tệp | VD-146 · VD-178 QĐ-4 |
++
++- **macOS còn khe hở — nhưng chỉ ở đường GHI**, cho tới khi **VS3-QĐ-4** merge (thiết kế `openat` +
++  `O_NOFOLLOW`, đi từng thành phần từ fd gốc; VD-191). Câu này **chỉ được xoá trong cùng commit merge
++  QĐ-4**, không xoá sớm hơn: đường đọc đã đóng, đường ghi **chưa**.
++
++- **Đường đọc — nợ `#146` ĐÃ ĐÓNG (ST-174, VD-176 §1): không còn đua symlink trên macOS và Linux.** Mở handle trước, quyết định quyền trên đường dẫn thật của chính handle, rồi đọc nội dung từ chính handle đó. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
+   - **Linux**: đường dẫn thật lấy qua /proc/self/fd/<fd>. /proc không đọc được thì từ chối, không quay về kiểm theo tên. Bảo đảm theo cơ chế (ST-137: 0/50 000).
+   - **macOS: cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) là việc VS3, cùng #140/#109b.
+-- **Đường ghi: giới hạn đã biết, còn nguyên trong VS2.** FsGuard kiểm đường dẫn rồi mới ghi, vì mở trước để lấy handle là đã tạo hoặc cắt tệp. Trong khoảng giữa hai bước, nếu bên khác ghi được vào thư mục cha, đường dẫn có thể bị thay bằng symlink trỏ ra ngoài vùng được cấp. Sửa triệt để cần openat và O_NOFOLLOW (cần unsafe hoặc crate ngoài), việc VS3. Trên Linux khi chạy với --sandbox, Landlock chặn ghi ra ngoài vùng được cấp ở mức kernel; không có --sandbox thì giới hạn này còn nguyên.
++- **Đường ghi: KHE HỞ HIỆN CÓ trên mọi nền Unix (nợ `#140`/`#109b`), chưa vá.** FsGuard **kiểm đường dẫn rồi mới ghi** (kiểm-rồi-mở), vì mở trước để lấy handle là đã tạo hoặc cắt tệp. Trong khoảng giữa hai bước, nếu bên khác ghi được vào thư mục cha, đường dẫn có thể bị thay bằng symlink trỏ ra ngoài vùng được cấp. Đây là **cùng một khe hở trên macOS và Linux**: bản vá `#146` (ST-174) **chỉ** đóng đường đọc, **không** đổi đường ghi. Sửa triệt để = **VS3-QĐ-4** (VD-191): đọc và ghi **chung một hàm** đi từng thành phần từ fd gốc bằng `openat` + `O_NOFOLLOW`/`O_DIRECTORY` (Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`), ca khoá đổi symlink giữa hai bước. Trên Linux khi chạy với `--sandbox`, Landlock chặn ghi ra ngoài vùng được cấp ở mức kernel; **không** có `--sandbox` thì giới hạn này còn nguyên, và Landlock **không** áp dụng trên macOS.
+ - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
+ - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.
+ - exists và list không trả nội dung tệp.
+@@ -115,7 +138,8 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d
+ 
+ **Kết luận một dòng:** một **hardlink** trỏ tới tệp **ngoài** root nhưng **nằm trong** root được **coi
+ là nằm trong root** — đọc được; bản vá ST-174 **không** (và không thể) chặn bằng `symlink_metadata`,
+-vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTOU).
++vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTOU). Sau khi `#146` đóng (ST-174), đây là
++**giới hạn còn lại duy nhất** của **đường đọc** (VD-186).
+ 
+ - **Vì sao không phải lỗi đua:** kể cả khi **không** có khe thời gian nào, hardlink trong root vẫn là
+   một **tên hợp lệ** trong vùng được cấp và trỏ tới **cùng inode** với tệp ngoài — hệ tệp coi đó là
+@@ -133,6 +157,25 @@ vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTO
+   `RESOLVE_BENEATH` + kiểm quyền trên **handle** ⇒ thuộc **VS3**, cùng #140/#109b. **Không** tự đổi
+   chính sách trong VS2.
+ 
++### Windows — mức bảo đảm **thấp hơn**, chỉ **đo** (VD-146, VD-178 QĐ-4, VD-186)
++
++**Kết luận một dòng:** trên Windows, `FsGuard` **chỉ kiểm theo đường dẫn** và **không có danh tính tệp**
++(`(dev, ino)` = `(0, 0)`), nên mức bảo đảm **thấp hơn** macOS/Linux; Windows trong VS2 **chỉ đo**, **chưa
++hỗ trợ** (VD-121/VD-146).
++
++- **Không có danh tính tệp:** `xac_nhan_sau_mo` chỉ so **đường dẫn trước ≠ đường dẫn sau** (nhánh
++  `#[cfg(not(unix))]` trong `crates/vis-cli/src/quyen.rs`) ⇒ chặn được ca "đổi sang đường dẫn khác rồi để
++  nguyên", **không** chặn được ca "đổi rồi đổi lại".
++- **Chỉ kiểm theo đường dẫn:** không có `openat`/`O_NOFOLLOW`; **đường ghi** vẫn kiểm-rồi-mở như mọi nền
++  Unix, **cộng** việc không xác nhận được danh tính ⇒ khe hở **rộng hơn**, không hẹp hơn.
++- **Không có Landlock:** Landlock **chỉ Linux** (mục cuối tệp) ⇒ không có lớp kernel nào bù.
++- **Số đo — chỉ để biết, KHÔNG phải tuyên bố hỗ trợ:** host suite **39/54**; `cargo test` **1053/100**;
++  L0 dừng ở suite `cap_proc` (`/bin/echo`, `/bin/sh` không tồn tại); `bin/vis-targets` **18/18**;
++  self-test **12/12**; cổng đi qua **9/10** bước rồi dừng ở L0 — `agent/reports/R26-viscript.md` §3.3,
++  log `st144-host-suite.log`, `st153-gate-psvn.log`.
++- **Điều kiện để nói khác đi:** chỉ khi VS3-5 (VD-188) xong và có runner Windows thật; **không** suy rộng
++  từ "cổng đi qua 9/10 bước" thành "Windows được hỗ trợ".
++
+ ## Landlock chỉ Linux — **giới hạn nền**, không phải thiếu sót (ST-173, VD-175 §2)
+ 
+ **Kết luận một dòng:** Landlock là cơ chế **chỉ có trong nhân Linux**; `vis-host-linux` vì vậy **chỉ

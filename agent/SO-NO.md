@@ -9,7 +9,7 @@
 4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-17 (**ST-160** — dán đợt 29, mở **#146** (VD-158), sổ **147 mục = 90 mở / 34 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
+**Cập nhật**: 2026-11-18 (**VD-182…VD-196** — mở **#148** (VD-183(6) hạn chót tổng HTTP), **#149** (VD-184(3) tách đường dẫn thủ công), **#150** (VD-192 psvn `audit_span`); §8 sửa khớp §4 theo **VD-195**: **151 mục = 91 mở / 37 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -72,7 +72,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 - Báo cáo R## **không** sửa nội dung (VD-142); sai sót đính chính bằng dòng trong QUEUE + mục “Đính chính R##” ở báo cáo kế tiếp.
 - Nợ phát sinh trong task: thêm số mới **ngay trong task đó**, không chờ báo cáo.
 
-## 4. Bảng nợ chính (147 dòng: 1..146, #109 tách a/b)
+## 4. Bảng nợ chính (151 dòng: 1..150, #109 tách a/b)
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -222,9 +222,12 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 143 | **`NamePolicy::Strict` bật cho mọi tệp có `use`** (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 (trước là nhãn tạm `#114b`) | JOURNAL/st130-siet-caps.md §9 · QUEUE ST-130 · VD-133 · VD-149 · **VD-154(b)** | chuyển VS3 — VD-154(b): chuyển VS3 vì ca st130b xanh |
 | 144 | **Vế 2 của `#133`**: chưa có ca **dương** `read_dir` trên thư mục **CÓ quyền ghi** ở tiến trình con (ST-132b §7) — **ST-154 đã bù**: ca 15 `con_read_dir_thu_muc_co_quyen_ghi_van_liet_ke_duoc` trong `vis-host-linux/tests/landlock.rs` (**MỘT** ruleset **hai** luật: `trong` chỉ-đọc + `trong-ghi` ghi; `co.txt` ghi **trước** khi áp ruleset; helper `ls trong-ghi` ⇒ `exit 0` + danh sách có `co.txt`; helper `ghi` trong `trong-ghi` ⇒ `exit 0` rồi `ls` thấy `co.txt` + `moi.txt`; âm cùng ca: `ls ngoai` ⇒ `exit 7` + `Permission denied`) | JOURNAL/st154-landlock-ps.log · QUEUE ST-154 · VD-153 | đóng ở ST-154 |
 | 145 | **Chú thích `rt.rs` nói sai đường chặn `chan(0)`**: `rt.rs:128-129` nói literal `chan(0)` bị **tyck** chặn (exit 2); thực tế tyck **không** kiểm `cap` (`tyck/expr/kenh.rs:16-33` — `kiem_chan_new` chỉ kiểm `n` là `int`), **runtime** mới chặn (exit 1, `kenh_cap0.rs:57-68`); sửa chú thích hoặc thêm kiểm tyck | JOURNAL/st155-vs3-dieu-tra.md §2 · VD-154(c) | mở (xử khi có task VS3 kênh) |
-| 147 | **mac chậm hơn ps** — đo lại có khoá (ST-176, máy rảnh): mac **1489 s** (số chuẩn, `lock=yes`, load 1,32→1,81) vs ps **261 s** (clone sạch, `lock=yes`) = **5,70×** > 3× ⇒ **chưa đóng**. Nguyên nhân: **tạo tiến trình + syscall macOS**, không phải CPU: `check` **15,5×** (190,0/12,3 s) chiếm 59 % gate mac; `report-check.py` **22,8×** (111,9/4,9 s — gọi `git` từng báo cáo); `vis-dev rules` **8,3×** (49,3/6,0 s — một `wc`/`grep` mỗi tệp); chi phí tạo tiến trình trần **9,6×** (15,4/1,6 ms); ca `#146` 50 000 vòng **20,8×** (8,51/0,41 s). 10 suite chênh lớn nhất = 77 % tổng chênh (`cache_khong_che` +23,1 s, `vis` +10,1, `diag_cmp` +10,0, `host_conformance` +7,2 …) | ST-167 · VD-177 · ST-176 | **mở** — số chuẩn mac **1489 s**; đề xuất A0: (i) gộp `report-check`/`rules` để **không tạo tiến trình mỗi tệp** (đo lại sau), (ii) ghi nhận macOS phạt syscall là **giới hạn nền**, không phải lỗi mã |
+| 147 | **mac chậm hơn ps** — đo lại có khoá (ST-176, máy rảnh): mac **1489 s** (số chuẩn, `lock=yes`, load 1,32→1,81) vs ps **261 s** (clone sạch, `lock=yes`) = **5,70×** > 3× ⇒ **chưa đóng**. Nguyên nhân: **tạo tiến trình + syscall macOS**, không phải CPU: `check` **15,5×** (190,0/12,3 s) chiếm 59 % gate mac; `report-check.py` **22,8×** (111,9/4,9 s — gọi `git` từng báo cáo); `vis-dev rules` **8,3×** (49,3/6,0 s — một `wc`/`grep` mỗi tệp); chi phí tạo tiến trình trần **9,6×** (15,4/1,6 ms); ca `#146` 50 000 vòng **20,8×** (8,51/0,41 s). 10 suite chênh lớn nhất = 77 % tổng chênh (`cache_khong_che` +23,1 s, `vis` +10,1, `diag_cmp` +10,0, `host_conformance` +7,2 …) | ST-167 · VD-177 · ST-176 · **VD-182** · ST-204 | **đóng ở ST-204 (VD-182)** — đã gộp tiến trình: `rules` **3 915 → 8** tiến trình (mac **27,51 → 1,27 s**, ps **6,06 → 0,14 s**), `report-check` **3 223 → 3** lời gọi `git` (mac **145,49 → 0,78 s**, ps **5,08 → 0,12 s**); output **giống hệt từng byte** (diff rỗng), 3+1 ca âm bị cả hai bắt. Tỉ lệ còn **9,07×** / **6,5×** > 3× ⇒ đóng theo **câu chữ VD-182**: *"giới hạn nền macOS (tạo tiến trình 9,6×)"*. **Đo lại cho thấy câu đó KHÔNG còn đúng**: khoảng cách tuyệt đối co **21,45 s → 1,13 s** và **140,4 s → 0,66 s**; phần còn lại không phải tạo tiến trình (8 × 15,4 ms ≈ 0,12 s) mà do **công cụ cũ trên mac** — bash 3.2.57 vs 5.3.9, BWK awk vs mawk 1.3.4, Python 3.9.6 vs 3.14.4 (tỉ lệ CPU 7,8× / 6,5×). **Cần A0 xác nhận câu chữ đóng** (xem `JOURNAL/vd182-do-lai.md`) |
 | 146 | **Ca đua `dua_doi_symlink_lap_co_gioi_han` đỏ 1/50 000** (R28 §5 #1) — **đóng ở ST-174 (VD-176, phương án A)**: TOCTOU thật chỉ macOS (`std::fs::metadata` đi theo symlink sau `canonicalize`); vá **1 dòng** `symlink_metadata` (`quyen.rs:513`) + **điểm chèn `#[cfg(all(test, unix))]`** giữa `canonicalize` và bước kiểm; **chứng minh tất định**: ca A đỏ **100/100** trên mã cũ (`ro_ri=100`), sau vá **100/100 xanh** trên **mac và ps**, ca B đối chứng `TRONG` 100/100, **ca âm** bỏ điểm chèn ⇒ “không chạy được điểm chèn”; **6 000 000 vòng** mac `ro_ri=0`; gate mac **3 lần liên tiếp PASS** L0 **1184/0**; `cfg(test)` không lọt build (`strings`/`nm` = 0); giới hạn **hardlink** ghi `HOST-BAO-DAM.md` | R28 §5 #1 · VD-158 · VD-176 · ST-163 · ST-174 · `JOURNAL/st174-*.log`, `st174-ghi-chu.md` | **đóng ở ST-174** |
 
+| 148 | **HTTP chưa có hạn chót TỔNG cho một request** — `timeout_read` chỉ là **giữa hai lần đọc**, nên server nhỏ giọt (slow-drip) giữ request mở vô hạn. VD-183(6) yêu cầu **mở nợ mới** thay vì thêm tham số "vô hạn/tắt" | VD-183(6) · VD-178 QĐ-3 | **mở** — cần tham số `timeout_total` (đề xuất 120 s) + ca đỏ-trước slow-drip; chưa làm ở VS3 |
+| 149 | **Tách đường dẫn thủ công còn rải rác** — VD-184(3): `check.rs:82` là **ngoại lệ có tên** cho VD-146, sửa bằng `Path::file_name()`; **mọi chỗ khác** tự tách `'/'`/`'\\'` phải **liệt kê** thành nợ, **không sửa** trong đợt này | VD-184(3) · VD-146 · ST-153 | **mở** — danh sách chốt ở task **VS3-5-pre** (ST-211); sửa dần khi đụng tệp |
+| 150 | **psvn `audit_span` đỏ** — gate psvn dừng ở **L0** (9/10) vì ca `audit_span`; VD-192: thành **nợ mới** kèm log **clone sạch**, **không** chặn mac/Linux | VD-192 · VD-188 · R29 §psvn | **mở** — cần log clone sạch + phân loại (mã hay nền); không chặn đóng pha 1 |
 ## 5. Nợ chuyển VS3 (21 mục)
 
 | Số | Lý do chuyển VS3 (1 dòng) | Nguồn |
@@ -339,16 +342,19 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **147** (1..146; #109 tách `a`/`b`) |
-| `mở` | **89** |
-| `đóng` | **34** |
+| Tổng dòng bảng chính | **151** (1..150; #109 tách `a`/`b`) |
+| `mở` | **90** |
+| `đóng` | **38** |
 | `chuyển VS3` | **21** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 90 mở + 34 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **147** dòng. (Dòng **#146** thêm bởi **VD-158** — ca đua symlink **CHƯA-PHÂN-LOẠI**, điều tra ST-163.)
+Kiểm: 90 mở + 38 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **151** dòng.
+**Luật (VD-195)**: bảng này phải **bằng** số đếm thật của §4; `./vis-dev check` đỏ nếu lệch (luật **R5** trong `bin/vis-dev`).
+**#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192** (18/11); trước đó sổ là **148 dòng = 88/37/21/1/1** (đúng số VD-195 yêu cầu).
+**#147 đóng ở ST-204** (VD-182) ⇒ mở −1, đóng +1.
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =
 91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng (ST-151). ST-154 làm **ba** việc trên sổ: (1) `#143` **mở → chuyển VS3**

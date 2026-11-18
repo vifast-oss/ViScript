@@ -48,7 +48,8 @@
 | R22 | Trait là kiểu (`list[Shape]`, bảng ảo, đóng gói); **bỏ ép ngược** | 2 | 2 | 9 | 0 |
 | R23 | Gán lồng sâu trên `var` (`u.addr.city = x`); ca `U(addr: A(city: "A"))` | 2 | 3 | 4 | 0 |
 | R24 | `.lazy()` → `Iterator[T]` duyệt lại; `filter/map` **giữ** collection; R20 **không** chờ R24 | 2 | 3 | 6 | 0 |
-| **Tổng pha 2** | | | **20** | **≈ 38** | **≈ 3** |
+| R19d | khoảng trắng quanh `.` **không đổi nghĩa** (`5.bit_or(3)` ≡ `5. bit_or(3)`); `5.` ⇒ lỗi gợi ý `5.0`; fmt chuẩn hoá **không cách** sau `.` (VD-193) | 2 | 1 | 1 | 1 |
+| **Tổng pha 2** | | | **21** | **≈ 39** | **≈ 4** |
 
 ## R1 · Chữ hoa — **Pha 1** (làm **chung một khối với R2**)
 **Hiện trạng**: pattern nhận **cả `Some(v)` lẫn `some(v)`** (probe `c6`,`c8`); `None` là **builtin** in `<builtin None>` (probe `r2`); `lower.rs:53` có `None`; `true/false/none` viết thường.
@@ -364,6 +365,11 @@ enum Shape:
 **Ca đỏ-trước**: `5.bit_or(3) == 7`; `5.0` là float (`5.0 + 1` ⇒ `6.0`); `1.` ⇒ VS0104; `1.e3` ⇒ VS0104; `5 . bit_or(3)` như nhau.
 **Ảnh hưởng**: lexer `lit.rs` (FLOAT), 1 khối test; **không** đổi `VS0104` cho trường hợp cấm.
 **Task**: **R19c** (1 h) lexer + ca. **Phụ thuộc**: R7.
+
+## R19d · Khoảng trắng quanh `.` — **Pha 2** (VD-193)
+**Đặc tả**: khoảng trắng quanh `.` **không đổi nghĩa** — `5.bit_or(3)` và `5. bit_or(3)` là **một** biểu thức. Float literal **cần chữ số sau dấu chấm** (`5.0`); `5.` nếu hiện hợp lệ thì **đổi thành lỗi** gợi ý `5.0`. `vis fmt` **chuẩn hoá không cách sau `.`**.
+**Ca đỏ-trước**: `5. bit_or(3)` ⇒ `7`; `5.` ⇒ lỗi + gợi ý `5.0`; `vis fmt` trên `5. bit_or(3)` ⇒ `5.bit_or(3)`.
+**Phụ thuộc**: R19c (đã xong ở ST-190).
 
 ## R20 · `assert` · `use as` · `use {}` · list/range bổ sung — **Pha 2**
 **Hiện trạng**: `assert true, "m"` ⇒ **VS0201** (`b5`); `use std.fs as f` ⇒ **VS0201** (`b6`); `use std.fs.{exists}` ⇒ **VS0201** (`d6`); `xs.enumerate()` ⇒ **VS0403** (`b7`); `(1..5).step(2)` ⇒ **VS0403** (`b8`).
