@@ -60,15 +60,31 @@ impl<'a> Lowerer<'a> {
                 })
             }
             NodeKind::WhileStmt => {
-                let cond = node
-                    .children()
-                    .find(|c| c.kind != NodeKind::Suite)
-                    .map(|c| self.lower_expr(c))
-                    .unwrap_or(HExpr::Error { span: node.span });
-                let body = node
-                    .child(NodeKind::Suite)
-                    .map(|s| self.lower_suite(s))
-                    .unwrap_or_default();
+                // **ST-226 (R18b)**: `while let PAT = EXPR:` — cũng lĩnh pattern như `if let`.
+                let cond_node = node.children().find(|c| c.kind != NodeKind::Suite);
+                let (cond, body) = match cond_node {
+                    Some(c) => {
+                        let is_let = self.is_let_cond(c);
+                        if is_let {
+                            self.push_frame(FrameKind::Block, c.span);
+                        }
+                        let cond = self.lower_cond(c);
+                        let body = node
+                            .child(NodeKind::Suite)
+                            .map(|s| self.lower_suite(s))
+                            .unwrap_or_default();
+                        if is_let {
+                            self.pop_frame();
+                        }
+                        (cond, body)
+                    }
+                    None => (
+                        HCond::Expr(HExpr::Error { span: node.span }),
+                        node.child(NodeKind::Suite)
+                            .map(|s| self.lower_suite(s))
+                            .unwrap_or_default(),
+                    ),
+                };
                 Some(HStmt::While {
                     cond,
                     body,

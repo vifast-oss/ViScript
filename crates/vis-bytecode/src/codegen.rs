@@ -626,9 +626,9 @@ impl<'g> Emit<'g> {
             }
             HStmt::While { cond, body, span } => {
                 let start = self.f.here();
-                self.expr(cond)?;
-                let jf = self.f.here();
-                self.f.push(Instr::JumpIfFalse(0), *span, -1);
+                // **ST-226 (R18b)**: `while let` dùng chung `cond` với `if let` (MV gán, true-branch Pop).
+                let at = self.cond(cond)?;
+                let jf = at.expect("cond() luôn trả Some(at)");
                 self.loops.push(Vong {
                     breaks: Vec::new(),
                     continue_t: start,

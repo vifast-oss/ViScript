@@ -996,7 +996,8 @@ impl<'a> Parser<'a> {
 
     fn while_stmt(&mut self) -> PResult<Node> {
         let mut elems = vec![self.expect_kw("while")?];
-        let e = self.expr()?;
+        // **ST-226 (R18b)**: `while let PAT = EXPR:` — dùng chung `if_cond` với `if let`/`elif`.
+        let e = self.if_cond()?;
         Self::push_node(&mut elems, e);
         elems.push(self.expect_punct(":")?);
         let s = self.suite()?;

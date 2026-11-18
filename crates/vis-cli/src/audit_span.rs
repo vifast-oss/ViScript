@@ -311,7 +311,7 @@ fn thu_stmt(s: &HStmt, v: &mut Vec<Nut>) {
             }
         }
         HStmt::While { cond, body, .. } => {
-            thu_expr(cond, v);
+            thu_cond(cond, v);
             for s in body {
                 thu_stmt(s, v);
             }

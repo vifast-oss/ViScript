@@ -475,7 +475,8 @@ impl<'a> Interp<'a> {
             HStmt::While { cond, body, .. } => {
                 let mut guard = 0usize;
                 self.loop_depth += 1;
-                while self.eval(cond)?.truthy(cond.span())? {
+                // **ST-226 (R18b)**: `while let` dùng chung bộ máy `eval_cond` với `if let`.
+                while self.eval_cond(cond)? {
                     guard += 1;
                     if guard > 10_000_000 {
                         return Err(Abort::Trap(Trap::new(

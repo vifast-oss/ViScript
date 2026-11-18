@@ -1084,8 +1084,8 @@ impl<'a> Checker<'a> {
                 Type::Unit
             }
             HStmt::While { cond, body, .. } => {
-                let t = self.kiem_expr(cond);
-                self.coerce_cond(cond, &t, "điều kiện `while`");
+                // **ST-226 (R18b)**: `while let` dùng chung `kiem_cond` với `if let`.
+                self.kiem_cond(cond);
                 self.kiem_than_bo(body);
                 Type::Unit
             }

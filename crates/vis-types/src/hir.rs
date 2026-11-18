@@ -296,7 +296,7 @@ pub enum HStmt {
         span: Span,
     },
     While {
-        cond: HExpr,
+        cond: HCond,
         body: Vec<HStmt>,
         span: Span,
     },
