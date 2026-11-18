@@ -28,6 +28,8 @@ pub struct Closure {
     pub params: Vec<u32>,
     pub body: HBody,
     pub env: Env,
+    /// **VD-228**: `-> T?` trên closure (`(x) -> int? …` / `fn(x) -> int?: …`) — biên nâng.
+    pub ret_opt: bool,
 }
 
 /// Giá trị lúc chạy của VS0.

@@ -179,8 +179,8 @@ impl<'a> Interp<'a> {
         }
         self.env = saved_env;
         match r {
-            Ok(v) => Ok(v),
-            Err(Abort::Ret(v)) => Ok(v),
+            Ok(v) => Ok(opt_lift_maybe(v, c.ret_opt)),
+            Err(Abort::Ret(v)) => Ok(opt_lift_maybe(v, c.ret_opt)),
             Err(t) => Err(t),
         }
     }
@@ -262,6 +262,8 @@ impl<'a> Interp<'a> {
                     }
                 },
             };
+            // **VD-228b**: tham số annot `T?` — nâng giá trị plain ở biên hàm (giống `let` + `-> T?`).
+            let v = opt_lift_maybe(v, matches!(p.ty, Type::Opt(_)));
             self.env.borrow_mut().insert(p.sym, v);
             if p.is_var_self {
                 self.mutable.insert(p.sym);
@@ -279,18 +281,18 @@ impl<'a> Interp<'a> {
             }
         }
         match r {
-            Ok(v) => Ok(opt_lift_fn_ret(v, &f.ret)),
-            Err(Abort::Ret(v)) => Ok(opt_lift_fn_ret(v, &f.ret)),
+            Ok(v) => Ok(opt_lift_maybe(v, matches!(f.ret, Type::Opt(_)))),
+            Err(Abort::Ret(v)) => Ok(opt_lift_maybe(v, matches!(f.ret, Type::Opt(_)))),
             Err(t) => Err(t),
         }
     }
 }
 
-/// **VD-228 (điểm mới, proxy A0)** — tự nâng `T → T?` tại ranh giới hàm `-> T?` (spec §4.4 —
-/// "trả về"). Chỉ nâng khi giá trị đang là nguyên thuỷ KHÔNG phải Enum Option/Result.
-/// Lệch VM hiện cũng lift cùng nguyên tắc (Instr::MakeSome ở hàm cuối).
-fn opt_lift_fn_ret(v: Value, ret: &Type) -> Value {
-    if !matches!(ret, Type::Opt(_)) {
+/// **VD-228 (điểm mới, proxy A0)** — tự nâng `T → T?` tại biên hàm (spec §4.4 —
+/// "trả về" + "tham số annot Optional"). Chỉ nâng khi giá trị đang là nguyên thuỷ KHÔNG phải
+/// Enum Option/Result. `liftable = false` ⇒ trả nguyên giá trị.
+fn opt_lift_maybe(v: Value, liftable: bool) -> Value {
+    if !liftable {
         return v;
     }
     match &v {

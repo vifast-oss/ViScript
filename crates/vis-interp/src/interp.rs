@@ -628,6 +628,7 @@ impl<'a> Interp<'a> {
                             params: f.params.iter().map(|p| p.sym).collect(),
                             body: HBody::Stmts(f.body.clone()),
                             env: self.env.clone(),
+                            ret_opt: matches!(f.ret, vis_types::Type::Opt(_)),
                         })));
                     }
                     // `enum`/`type` khai trong tệp: thẻ kiểu để `E.A` / `User(...)` chạy được.
@@ -926,10 +927,13 @@ impl<'a> Interp<'a> {
                     ))),
                 }
             }
-            HExpr::Lambda { params, body, .. } => Ok(Value::Fn(Rc::new(Closure {
+            HExpr::Lambda {
+                params, body, ret, ..
+            } => Ok(Value::Fn(Rc::new(Closure {
                 name: String::new(),
                 params: params.iter().map(|p| p.sym).collect(),
                 body: body.clone(),
+                ret_opt: matches!(ret, vis_types::Type::Opt(_)),
                 // ST-15b (mục 2): **chụp snapshot** môi trường tại điểm tạo closure — interp dùng
                 // một env phẳng và khôi phục tham số khi hàm trả về, nên nếu giữ `Rc` chung thì
                 // closure thoát khỏi hàm sẽ mất biến đã bắt. Chọn snapshot (ghi JOURNAL): biến

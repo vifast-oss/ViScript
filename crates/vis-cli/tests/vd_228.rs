@@ -125,3 +125,71 @@ fn vd228_no_double_wrap() {
     assert_eq!(a.1, "Some(42)\n");
     assert_eq!(a.1, b.1);
 }
+
+/// (8) Tham số annot `int?` — plain int 42 tự lift ở biên (interp + VM).
+#[test]
+fn vd228_param_int_lift() {
+    let [a, b] = chay_ca_hai(
+        "param_int",
+        "fn g(x: int?) -> int:\n    match x:\n        Some(v): v\n        None: 9\n\nfn main():\n    print(g(42))\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "42\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (9) `None` truyền thẳng cho `int?` — giữ nguyên None.
+#[test]
+fn vd228_param_none_passthrough() {
+    let [a, b] = chay_ca_hai(
+        "param_none",
+        "fn g(x: int?) -> int:\n    match x:\n        Some(v): v\n        None: 9\n\nfn main():\n    print(g(None))\n",
+    );
+    assert_eq!(a.1, "9\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (10) `Some(7)` truyền thẳng — không bọc hai lớp.
+#[test]
+fn vd228_param_some_passthrough() {
+    let [a, b] = chay_ca_hai(
+        "param_some",
+        "fn g(x: int?) -> int:\n    match x:\n        Some(v): v\n        None: 9\n\nfn main():\n    print(g(Some(7)))\n",
+    );
+    assert_eq!(a.1, "7\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (11) Tham số có tên `--n: int? = 3` (default plain int) — default nâng (interp + VM).
+#[test]
+fn vd228_param_named_default_lift() {
+    let [a, b] = chay_ca_hai(
+        "param_def",
+        "fn h(--n: int? = 3) -> int:\n    match n:\n        Some(v): v\n        None: 9\n\nfn main():\n    print(h())\n",
+    );
+    assert_eq!(a.1, "3\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (12) `str?` với default `\"mặc định\"` (named, plain str) — default nâng.
+#[test]
+fn vd228_param_named_str_default_lift() {
+    let [a, b] = chay_ca_hai(
+        "param_def_s",
+        "fn k(--q: str? = \"mac\") -> str:\n    match q:\n        Some(v): v\n        None: \"trong\"\n\nfn main():\n    print(k())\n",
+    );
+    assert_eq!(a.1, "mac\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (13) Closure `fn(x) -> int?:` thân plain — biên `-> T?` lift (interp + VM, byte-identical).
+#[test]
+fn vd228_closure_ret_lift() {
+    let [a, b] = chay_ca_hai(
+        "closure_ret",
+        "fn main():\n    let f = fn(x) -> int?:\n        x\n    let r = f(41)\n    match r:\n        Some(v): print(\"some-{v}\")\n        None: print(\"none\")\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "some-41\n");
+    assert_eq!(a.1, b.1);
+}

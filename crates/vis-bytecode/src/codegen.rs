@@ -153,6 +153,7 @@ struct Cho {
     body: HBody,
     captured: Vec<(u32, u16)>,
     name: String,
+    ret_opt: bool,
 }
 
 impl Gen {
@@ -292,6 +293,8 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
                     st.f.patch(j, end);
                 }
             }
+            // **VD-228b**: `int?`/`str?` annot trên tham số — nâng ngay trong biên hàm.
+            st.lift_params_opt(&f.params, f.span)?;
             st.than(&HBody::Stmts(f.body.clone()), f.params.len() as u16, f.span)?;
             st.f.push(Instr::Halt, f.span, 0);
             let done = st.f.finish()?;
@@ -340,7 +343,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
             f: F::new(c.name.clone()),
             loops: Vec::new(),
             captured: HashMap::new(),
-            ret_opt: false,
+            ret_opt: c.ret_opt,
         };
         st.f.arity = c.params.iter().filter(|p| !p.named).count() as u16;
         st.f.nparams = c.params.len() as u16;
@@ -1235,7 +1238,11 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HExpr::Lambda {
-                params, body, span, ..
+                params,
+                body,
+                span,
+                ret,
+                ..
             } => {
                 let idx = self.g.funcs.len() as u32;
                 self.g.funcs.push(Func {
@@ -1256,6 +1263,7 @@ impl<'g> Emit<'g> {
                     body: body.clone(),
                     captured: pair.clone(),
                     name: "<closure>".to_string(),
+                    ret_opt: matches!(ret, vis_types::Type::Opt(_)),
                 });
                 self.f.push(
                     Instr::MakeClosure(idx, pair.len() as u16),

@@ -13,6 +13,32 @@ impl Emit<'_> {
         }
     }
 
+    /// **VD-228b** — tự nâng `T → T?` ở biên **tham số** annot Optional: giá trị plain vào
+    /// ô cục bộ tham số ⇒ gói `Some(…)` (mirror interp ở `call_hfn_trong`).
+    pub(super) fn lift_params_opt(
+        &mut self,
+        params: &[vis_types::HParam],
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        for p in params {
+            if matches!(p.ty, vis_types::Type::Opt(_)) {
+                let slot = self
+                    .f
+                    .locals
+                    .get(&p.sym)
+                    .copied()
+                    .ok_or(CodegenError::Unsupported(
+                        "tham số không có ô cục bộ",
+                        p.span,
+                    ))?;
+                self.f.push(Instr::LoadLocal(slot), span, 1);
+                self.f.push(Instr::MakeSome, span, 0); // đã flat: Option ⇒ giữ nguyên
+                self.f.push(Instr::StoreLocal(slot), span, -1);
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn than(&mut self, b: &HBody, _base: u16, span: Span) -> Result<(), CodegenError> {
         match b {
             HBody::Expr(e) => {
