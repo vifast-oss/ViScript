@@ -95,15 +95,42 @@ impl<'a> Lowerer<'a> {
         let dau = "let __vach = ";
         let pad = bat_dau.saturating_sub(dau.len());
         // Bọc `let` để **giữ** biểu thức (câu lệnh trần bị bỏ ở cấp tệp) — không chạy tyck ở đây.
+        // Luôn bọc `let` (kể cả nhóm ở đầu tệp): ở đầu câu lệnh parser hiểu `fn`/`if`/`match`/…
+        // là khai báo/câu lệnh chứ không phải biểu thức, và lambda thân `:` không được đặt trong `( … )`.
         let src = format!("{dau}{}{}", " ".repeat(pad), txt.trim());
         // **ST-122 (VD-127)**: `src` chỉ **đệm** cho span tuyệt đối; token phải mang `file` của tệp
         // đang hạ (`lex`/`parse` cũ cho `file = 0` ⇒ mọi node của `( biểu thức )` ở **module** bị quy
         // sang tệp chính).
-        let lexed = vis_syntax::lex_file(&src, vis_syntax::Mode::Script, self.file);
-        let parsed = vis_syntax::parse_file(&src, vis_syntax::Mode::Script, self.file);
+        let mut lexed = vis_syntax::lex_file(&src, vis_syntax::Mode::Script, self.file);
+        // **T-01**: biểu thức bắt đầu **trước** byte `dau.len()` (nhóm ở đầu tệp: `( [1, "a"] )`)
+        // ⇒ `pad` bão hoà về 0, biểu thức nằm ở byte `dau.len()` thay vì `bat_dau` và mọi span lệch
+        // phải `lech` byte (chẩn đoán rơi về cuối dòng / dòng sau). Khi đó **dời span token** về vị
+        // trí tuyệt đối: token của biểu thức lùi `lech` byte, token của `let __vach =` thành rỗng ở
+        // byte 0; văn bản đi kèm được dựng lại (đệm dấu cách + biểu thức) để `text_of(span)` vẫn
+        // đọc đúng. `bat_dau == 0` (nhóm-không-ngoặc ST-51 ở byte 0) giữ nguyên đường cũ.
+        let lech = dau.len().saturating_sub(bat_dau);
+        if lech > 0 && bat_dau > 0 {
+            for t in &mut lexed.tokens {
+                if t.span.start >= dau.len() {
+                    t.span.start -= lech;
+                    t.span.end -= lech;
+                } else {
+                    t.span.start = 0;
+                    t.span.end = 0;
+                }
+            }
+            let than = lexed.text.get(dau.len()..).unwrap_or("").to_string();
+            lexed.text = format!("{}{}", " ".repeat(bat_dau), than);
+        }
+        let parsed = vis_syntax::parse_voi_file(
+            &lexed.text,
+            lexed.tokens.clone(),
+            vis_syntax::Mode::Script,
+            self.file,
+        );
         // ST-46: thân **không** phải biểu thức script (vd `ls ./photos`) ⇒ trả `None` để nơi gọi
         // thử đường **lệnh trong ngoặc** (stage) hoặc báo lỗi rõ (đối số).
-        if !parsed.diagnostics.is_empty() {
+        if !lexed.diagnostics.is_empty() || !parsed.diagnostics.is_empty() {
             return None;
         }
         // ST-38: hạ **vào bảng chung** (ST-25) — nếu hạ bằng bảng mới, `RecId` của bản ghi ẩn danh
