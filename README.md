@@ -1,4 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
+<p align="center">
+  <img src="resources/brand/viscript-icon.svg" alt="ViScript" width="104" height="104">
+</p>
+
 # ViScript
 
 **Ngôn ngữ lập trình dễ học cho người Việt.**
@@ -626,6 +630,7 @@ test/      bộ kiểm: ví dụ chạy được, fixture, báo cáo
 docs/      đặc tả ngôn ngữ (SPEC-lex.md) và thiết kế
 vi-du/     ví dụ chạy được cho người mới
 agent/     sổ quyết định, QUEUE, nhật ký, báo cáo từng đợt
+resources/ tài nguyên thương hiệu: icon ViScript + ViShell (brand/)
 ```
 
 ## Góp ý / phát triển
@@ -637,3 +642,6 @@ agent/     sổ quyết định, QUEUE, nhật ký, báo cáo từng đợt
 ## Giấy phép
 
 MIT OR Apache-2.0 — dùng, sửa, chia sẻ tự do.
+
+Logo, wordmark và tài nguyên thương hiệu trong [`resources/brand/`](resources/brand/) **không** thuộc
+phạm vi hai giấy phép đó — xem [`TRADEMARKS.md`](TRADEMARKS.md).
