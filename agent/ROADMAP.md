@@ -249,3 +249,22 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 - `**check_report.py --all**`: PASS 30 báo cáo · 242 hàng QUEUE.
 - `vis` hiện thực đang chạy (phase 1) bằng `./vis-dev gate --fast` và `vis test test/sem` đều **xanh**.
 
+
+### Đóng khung VD-220 ~09:00 (sáng 2026-11-19) — HEAD cuối `0259e20`
+
+> Khối này **thêm** (sau khối “sau R30”) theo VD-142 — số cũ không xoá.
+
+**Chứng minh cuối khung** (fresh clone ps từ origin/main @ `0259e20`): gate **PASS** toàn bộ
+(fmt, clippy, luật R1..R6, self-test case âm, build, doc-examples 24 khối, L0 tests);
+`report-check` **PASS (30 báo cáo, 243 hàng QUEUE)**; `cargo test --workspace` **147 binary xanh / 0 đỏ**;
+`vis test test/sem` **469/469** ×2 (interp, VM); `vis-dev nightly` **PASS** (fuzz 0 vi phạm; fmt vòng tròn bất động;
+fuzz 10’ = **94 028 787 ca** ở `894e826`); `./vis explain --list` = **53 mã** khớp `all_codes()`;
+`cargo doc --workspace --no-deps` exit 0 (22 warnings doc-link style, không mạch của session).
+
+**Mã đã merge đợt này** (branch main): VD-222..VD-229, ST-205..ST-229
+(recap: R4a/R4b/R4c, R5b′, R5d, while-let, VD-227, VD-228, VD-229, VD-218…); **R4a/R4b/R4c DONE**;
+pha 1 **đóng trên ps** — mac chờ; **A0 ratify/revert VD-221..VD-229** — Q1..Q12 trong `BAO-CAO-A0-2026-11-19-0900.md`.
+
+**Chờ ngoài khung** (không thuộc proxy authority để buột): mac measurement #147 (VD-197/206);
+phase-1 đóng chính thức trên mac; ST-212 async song song thật (deferred, `agent/vd212-thiet-ke-ghi-chu.md`);
+#151 VS3 pha 2; #152 “chờ đo chuẩn” (VD-217: VM 1,154 / interp 1,108 — khoảng cắt 1,10); #149 (path-split — audit liệt kê, sửa khi đụng tệp).
