@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+var a = -9223372036854775807
+var b = a - 1
+print(-b)

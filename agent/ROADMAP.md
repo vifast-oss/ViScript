@@ -200,12 +200,13 @@ ST-196 (R20b — `enumerate/any/all/find`) · ST-197 (review chéo R7/R8; hàng 
 ST-199 (PR #27 port — nhóm `( … )` đầu tệp `.vish`) · ST-200 (brand — icon ViScript/ViShell).
 
 **Số đo (ST-198/199, `st198-199-gate-macos-lan2.log`)**: `gate --fast` **PASS** (10/10 bước) — **136 suite, 1211 test, 0 đỏ**;
+**Số đo (ST-202, 2026-11-18)**: `gate --fast` **PASS** — **136 suite, 1215 test, 0 đỏ**; `vis test` **465/465** ×2 đường;
 `sem` **464** ca; check gate macOS @ R29 HEAD `39041b3f`: L0 **1184/0** (131 suite); ps clone sạch: L0 **1188/0**; Windows **chỉ đo**
 (9/10 bước, L0 152/4 — VS3 mục 5, không tuyên bố hỗ trợ); VS2 **đóng 8/8** vẫn giữ nguyên (VD-151).
 
 **Còn thiếu — pha 1 (C3):** **R1+R2** (enum `Option/Result` std, bỏ từ khoá `none` ⇒ `VS0203` + fmt tự sửa, `T??` gói nhiều lớp; phụ thuộc R2 là R4) ·
 **R4** (`Error` record + `Json` enum + `AnyError`; mọi hàm std trả `Result[T, Error]`) · **R5b** (`{…}` chỉ map, `{ten: …}` ⇒ `VS0205`) ·
-**R5d** (chuẩn hoá `str(x)` vs method std.str) · **R19b** (tràn i64 ⇒ panic, thoát 101) · R20a phần 2 (`use std.fs as f`, `use std.fs.{..}`) ·
+**R5d** (chuẩn hoá `str(x)` vs method std.str) · ~~R19b~~ (đóng ở ST-202) · R20a phần 2 (`use std.fs as f`, `use std.fs.{..}`) ·
 R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-148; chờ pha 1 xong).
 
 **Sổ nợ**: **147 mục = 89 mở / 35 đóng / 21 VS3 / 1 không làm / 1 điều hướng** (R29 §4; #147 mở chờ A0 — macOS phạt syscall là giới hạn nền hay gộp `report-check`/`rules`).

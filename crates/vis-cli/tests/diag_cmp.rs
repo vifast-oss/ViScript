@@ -47,10 +47,11 @@ use std::process::Command;
 // **SỬA KÈM LÝ DO (R5c, VD-178)**: 461 → **462** (+`chuoi-phuong-thuc/std-method` xanh).
 // **SỬA KÈM LÝ DO (R20a, VD-178)**: 462 → **463** (+`assert/thong-diep` xanh).
 // **SỬA KÈM LÝ DO (R20b, VD-178)**: 463 → **464** (+`list/duyet-nang-cao` xanh).
-const TONG: usize = 464;
+// **SỬA KÈM LÝ DO (R19b, VD-178)**: 464 → **465** (+`loi/doi-dau-tran` — lỗi **lúc chạy** VS0507).
+const TONG: usize = 465;
 const XANH: usize = 380;
 const LOI_BIEN_DICH: usize = 50;
-const LOI_LUC_CHAY: usize = 34;
+const LOI_LUC_CHAY: usize = 35;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.
 const XANH_CAN_HOST: usize = 0;
 /// **SỬA KÈM LÝ DO (ST-89)**: 3 → **0** — VM có host `Ngoai`, cả 3 ca lỗi-chạy cần host nay so
