@@ -1668,3 +1668,29 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 3. **Đóng pha 1 (ST-210)**: **ps-only** — mac không đo được trong khung này (ghi rõ waiver tại BAO-CAO §3.3 + ST-210 + ROADMAP). Điều kiện đóng VD-185 cho mac/A0: giữ nguyên nghĩa, chỉ là A0-proxy chấp nhận ps trước, A0 có thể mở lại khi có mac.
 4. **VD-186**: áp hai patch (`HOST-BAO-DAM-4.patch` + `ViScript-thiet-ke.patch`).
 5. **ST-211** (VS3-5-pre): làm sau khi đóng pha 1.
+
+### VD-226 · `while let` — ghi bổ sung (backfill, proxy A0 — VD-225)
+
+**Ngày**: 2026-11-18/19 · **Người ra lệnh**: người dùng (VD-225 uỷ quyền) · **Cần A0 ratify** (nếu A0 bác bỏ thì revert theo nhánh).
+
+1. **`while let PAT = EXPR:`** (R18b) — cấu trúc vòng lặp kiểu `if let` với pattern; dùng chung `HCond::Let` với `if let` (parser/`if_cond` tái sử dụng không đổi).
+2. **Semantics**: pattern không khớp ⇒ thoát vòng, **không** panic; khớp ⇒ bind rồi chạy thân, lặp lại.
+3. `HStmt::While { cond: HCond }` (thay `cond: HExpr`); interp và VM **byte-identical**; `vd_226.rs` 8/8 ca khoá hai đường xanh.
+4. **Không** đổi `SPEC-lex.md` trong khung này (§SPEC chỉ sửa qua A0 chính thức) — task **không** chạm EBNF; ghi chú chờ A0 cập nhật SPEC khi ratify.
+
+### VD-227 · Interp tự nâng `T → T?` tại `let` annotate — ghi bổ sung (backfill, proxy A0 — VD-225)
+
+**Ngày**: 2026-11-19 · **Cần A0 ratify** (nếu A0 bác bỏ thì revert theo nhánh).
+
+1. Interp **tự nâng** `T → T?` tại `let x: int? = expr` (annot Optional) — mirror codegen `Instr::MakeSome` (đã có từ VD-178 §4.4).
+2. **Chỉ `let` annotate** được nâng; **function-return** và **đối số** không nâng (scope hẹp, có chủ đích; xem VD-228).
+3. `vd_227.rs` **6/6** ca byte-identical hai engine; không đổi fixture nào; lệch cũ `Some(42)` vs `42` đóng.
+
+### VD-228 · Function-return `-> T?` lift `T → T?` — chốt proxy A0: Option B (impl) — cần A0 ratify
+
+**Ngày**: 2026-11-19 (đêm) · **Người quyết**: Agent 1 (uỷ quyền `VD-225`) · **Cần A0 ratify** (nếu A0 bác bỏ thì revert theo nhánh; không ghi “A0 đã duyệt”).
+
+1. **Option B được áp** (thay Option A “chờ A0” ghi ở BLOCKED §11 / BAO-CAO-A0 §9-Q10 lúc 01:00). Lý do: corpus chỉ có **1 ca** `-> T?` (`test/sem/optional/tra-bien.vis`), thực thi xong **an toàn, byte-identical, không đổi fixture**; §4.4 (nâng thuộc **trình biên dịch**) đúng cả interp lẫn VM.
+2. **Scope** (thực tế, hai engine): mọi `HFn` (cấp tệp, generic, **impl method**) — interp nâng ở biên `call_hfn_trong` (`opt_lift_fn_ret`); VM nâng bằng `ret_opt` trên `Emit` + `Instr::MakeSome` (đã **phẳng Option** nên không bọc hai lớp) tại (a) biên thân hàm `HBody::Expr`/`HBody::Stmts` (`codegen/than.rs::lift_ret_opt`), (b) `return` sớm (`HStmt::Return`). **Closure KHÔNG nâng** (HIR chưa giữ `fn ret` cho closure; cần field mới — task kế tiếp khi A0 yêu cầu). **Đối số truyền vào tham số `int?`/`str?`** — **chưa nâng** (Option-B phần argument vẫn còn mở nếu A0 muốn).
+3. **Bằng chứng**: `vd_228.rs` **5/5** byte-identical (plain int/str lift, `None` giữ nguyên, branch join hai nhánh, early return); `vis test` **469/469** ×2; `cargo test --workspace` **147 binary xanh / 0 đỏ**; `vis-dev gate --fast` **PASS 10/10**; R1 giữ (than.rs tách riêng, `codegen.rs` 1492 dòng).
+4. **Nếu A0 đảo Option A**: revert commit `1eea7ed` + xoá `codegen/than.rs`, `vd_228.rs`, khôi phục lift bản cũ; spec/cheatsheet chỉnh theo hướng đó. **Option B revert được toàn bộ** không đụng fixture.

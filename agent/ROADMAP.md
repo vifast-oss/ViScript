@@ -239,7 +239,7 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 **Ngắn gọn khi bàn giao tiếp theo (sau 9h sáng 2026-11-19):**
 
 - **pha 1 đóng trên ps; mac chờ**: gate `--fast` ps **PASS 10/10**; mac không đo được trong khung; R30 không viết lại;
-  A0 ratify VD-221..VD-227 (hoặc revert) bắt buộc trước khi nói “pha 1 đóng chính thức”.
+  A0 ratify VD-221..VD-228 (hoặc revert) bắt buộc trước khi nói “pha 1 đóng chính thức”.
 - `**ST-212**` (VS3-QĐ-1 — async song song thật): **HOÃN** — `agent/vd212-thiet-ke-ghi-chu.md`; re-scope ước tính ~2 tuần.
 - `**ST-228**` (proxy A0 — `fn f() -> int?:` return `T → T?` lift): **BLOCKED-CHO-A0** — Option A/B/C đề xuất.
 - `**#147**`: ps đo đủ; mac chưa đo; ngưỡng 3× của VD-197 vẫn áp nếu mac ≥ 10 s.

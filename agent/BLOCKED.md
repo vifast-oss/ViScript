@@ -172,23 +172,15 @@ crate host.
 | **ST-210/Pha 1** | **ps-done; mac chờ; A0 rate-limit** | VD-185: 4 dấu kiểm proxy là **proxy**, không phải A0 thật; báo cáo `BAO-CAO-A0-2026-11-19-0900.md` Q1..Q9 |
 | **#152** | **giữ "chờ đo chuẩn"** | VM 1,129 / interp 1,109 (VD-220 lượt B); tối ưu ctor-enum chưa xếp lịch; **#147** mac vẫn mở (ps đo xong lượt 2) |
 
-## 11. BLOCKED-CHO-A0 — VD-228 (proposal, proxy A0-uỷ quyền): `-> T?` lift ở function-return & argument
+## 11. RESOLVED (impl) — VD-228 (proxy A0, Option B) — cần A0 ratify, không còn BLOCKED
 
-**Người ghi**: Agent 1 (uỷ quyền A0) · **Ngày**: 2026-11-19 · **Trạng thái**: **NOT IMPLEMENTED** — chờ A0 chốt
+**Người ghi**: Agent 1 (uỷ quyền A0) · **Ngày**: 2026-11-19 (sáng ~01:40) · **Trạng thái**: **IMPLEMENTED** — xem `DECISIONS.md` mục VD-228; chờ A0 ratify/revert
 
-**Ví triển VD-222/VD-227**: VD-227 interp tự nâng `T → T?` tại `let x: int? = …` (mirror codegen). Không nâng tại các điểm còn lại của §4.4:
-- `fn f() -> int?: 42` — **không** tự nâng (cả hai engine in `42`; VM cũng không làm).
-- `fn g(x: int?) -> ..; g(42)` — tham số chưa nâng.
-- `let x: int? = f(...)` — `f` return `int?` — đem plain `Int` qua `let` đã có lift ⇒ OK nhưng là lift ở `let`, không ở call-site.
+**Cập nhật so với bản 01:00**: đề xuất Option A ("không tự động hoá") đã **bị huỷ** sau khi đo corpus thật: `test/sem` chỉ có **1 ca** `-> T?` (`test/sem/optional/tra-bien.vis`) — thực thi Option B an toàn, byte-identical, không đổi fixture. Commit `1eea7ed`:
 
-**Vì sao không tự áp (VD-225 vẫn cho phép)**
-- **Phản gợi ý thiết kế**: VD-228 §4.4 đặc tả rằng nâng là nghĩa vụ của **trình biên dịch**, không phải caller. Vật vẫn phải xảy ra ở cả VM, interp, bytecode và LSP—chưa làm hết.
-- **Rủi ro sập toàn bộ corpus**: test/sem + fixtures + cheatsheet đầu vào 700+ chỗ — quá tải soát nghiệm hiện không cần.
-- **VM không lift trong annot `-> int?`**: chấp nhận được ở scope hiện tại mà không bị lệch engine-level nếu **cả 2 engines** đều không lift; sửa một engine độc lập phá engine đồng nhất và golden byte-by-byte cho toàn bộ VM × interp.
+- interp: `opt_lift_fn_ret` ở `call_hfn_trong` — `None`/`Some`/`Ok`/`Err` giữ nguyên; còn lại gói `Value::some`.
+- VM: `ret_opt: bool` trên `Emit`; `codegen/than.rs::lift_ret_opt` chèn `Instr::MakeSome` ở (a) biên thân hàm (`HBody::Expr`/`HBody::Stmts`), (b) `HStmt::Return` sớm. `MakeSome` đã flat Option (không bọc hai lớp). `codegen/than.rs` tách để giữ **R1 ≤ 1.500** dòng.
+- **Closure KHÔNG nâng** (HIR chưa giữ `ret` cho closure); **argument-lift `g(42)` chưa nâng** (scope hẹp còn lại).
+- **Bằng chứng**: `vd_228.rs` **5/5** byte-identical; `vis test` **469/469** hai engine; workspace **147 binary xanh / 0 đỏ**; gate **PASS 10/10**; `codegen.rs` 1492 dòng.
 
-**Đề nghị**: A0 quyết, hoặc
-- **Option A** (giữ hiện trạng): interp + VM **đều không** lift - kiêm ghi chú §4.4 cho vòng 2.
-- **Option B**: lift ở **mọi** annot `-> int?` và tham số kiểu `int?`/`str?`/`…` — 2-3 h refactor + 1 engine audit VM + golden sweep.
-- **Option C**: dùng `T?` để buộc explicit `Some(…)` (nghiêm khắc, không tự nâng).
-
-**Auto-answer proxy (VD-225)**: đề xuất **Option A** — không tự động hoá từ nay — cho A0 chốt trong VD-228.
+**Đề nghị cho A0** (tương ứng §9-Q10 BAO-CAO-A0): giữ Option B như hiện tại (đề xuất), hoặc revert toàn bộ `1eea7ed` về Option A, hoặc chuyển sang Option C (explicit `Some(…)`).
