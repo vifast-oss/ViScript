@@ -183,4 +183,7 @@ crate host.
 - **Closure KHÔNG nâng** (HIR chưa giữ `ret` cho closure); **argument-lift `g(42)` chưa nâng** (scope hẹp còn lại).
 - **Bằng chứng**: `vd_228.rs` **5/5** byte-identical; `vis test` **469/469** hai engine; workspace **147 binary xanh / 0 đỏ**; gate **PASS 10/10**; `codegen.rs` 1492 dòng.
 
+
+
+**Cập nhật tiếp (VD-229 @ `004b145`, ~03:55 JST)**: phần **argument** (`fn g(x: int?)` nhận `42` ⇒ `Some(42)`) và **closure-biên** (`fn(x) -> T?` suite) đều **đã áp**, byte-identical interp ↔ VM; corpus **469/469 ×2**; `vd_228.rs` **13/13**. **Closure params** không nâng (lambda params **không** parse annotation — `VS0201 mong `)`, thật `:`). BLOCKED không còn nội dung trên máy — chỉ chờ A0 ratify/revert.
 **Đề nghị cho A0** (tương ứng §9-Q10 BAO-CAO-A0): giữ Option B như hiện tại (đề xuất), hoặc revert toàn bộ `1eea7ed` về Option A, hoặc chuyển sang Option C (explicit `Some(…)`).

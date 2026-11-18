@@ -1695,3 +1695,18 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 3. **Bằng chứng**: `vd_228.rs` **5/5** byte-identical (plain int/str lift, `None` giữ nguyên, branch join hai nhánh, early return); `vis test` **469/469** ×2; `cargo test --workspace` **147 binary xanh / 0 đỏ**; `vis-dev gate --fast` **PASS 10/10**; R1 giữ (than.rs tách riêng, `codegen.rs` 1492 dòng).
 4. **Nếu A0 đảo Option A**: revert commit `1eea7ed` + xoá `codegen/than.rs`, `vd_228.rs`, khôi phục lift bản cũ; spec/cheatsheet chỉnh theo hướng đó. **Option B revert được toàn bộ** không đụng fixture.
 **Bổ sung 2026-11-19 (~01:40–01:55, VD-225 amendment)**: từ `8726eee`, `vd_228.rs` mở rộng **7/7** — thêm ca (6) impl-method `-> T?` lift (`impl P: fn pick(self) -> int?: self.x`) và (7) không bọc hai lớp (`fn f() -> int?: Some(42)` ⇒ `Some(42)`). Không đổi kiến trúc lift; chỉ thêm ca khoá.
+
+### VD-229 · Argument-biên lift `T → T?` + closure-biên lift — chốt proxy A0 (VD-225 tiep tuc), 2026-11-19
+
+**Người quyết**: Agent 1 (uỷ quyền A0, tiếp VD-228) · **Cần A0 ratify** (nếu bác bỏ thì revert theo nhánh).
+
+1. **Argument-lift áp dụng** cho tham số annot `Opt(_)` của **mọi HFn** (cấp tệp, generic, impl method, cmd):
+   interp `call_hfn_trong` (sau resolve positional/named/default) gói plain→Some; VM phát `LoadLocal/MakeSome/StoreLocal`
+   cho mọi tham số annot `Opt` (`codegen/than.rs::lift_params_opt`) **sau** bước default-fill và trước thân hàm.
+2. **Closure-biên lift** (`fn p -> int?:` / `fn(x) -> T?:`, bao gồm body `HBody::Expr`): `Closure.ret_opt`/`Cho.ret_opt`
+   từ HIR `Lambda.ret`; interp `call_closure_trong` gói; VM `Cho.ret_opt` ⇒ sang closure-drain Emit.
+3. **Closure *params* không nâng** — đo thật: lambda params `(x: int?) => x` **không** parse được
+   (`VS0201 mong `)`, thật `:`) ⇒ không annot Opt trên closure params nên không có tham số để nâng; **dead code** (không thêm).
+4. **Byte-identical** interp ↔ VM; corpus **469/469 ×2**; `vd_228.rs` **13/13** (param plain/None/Some/default
+   `(..., --q:"mặc định")` lift; closure-ret lift; cả hai engine byte-identical); workspace **147 binary xanh / 0 đỏ**.
+5. **Nếu A0 đảo**: revert từng commit `004b145` (VD-229), sau đó `1eea7ed` (VD-228) về Option A (giữ `let` lift VD-227).
