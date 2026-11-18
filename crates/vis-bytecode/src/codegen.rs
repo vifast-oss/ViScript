@@ -13,6 +13,7 @@
 mod builtin_value;
 mod if_expr;
 mod pattern;
+mod than;
 
 use std::collections::HashMap;
 
@@ -270,6 +271,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
                 f: F::new(f.name.clone()),
                 loops: Vec::new(),
                 captured: HashMap::new(),
+                ret_opt: matches!(f.ret, vis_types::Type::Opt(_)),
             };
             st.f.arity = f.params.iter().filter(|p| !p.named).count() as u16;
             st.f.nparams = f.params.len() as u16;
@@ -303,6 +305,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
             f: F::new("main".to_string()),
             loops: Vec::new(),
             captured: HashMap::new(),
+            ret_opt: false,
         };
         // ST-28: **cùng** ngữ nghĩa với interp — nếu tệp khai `fn main` thì chạy **hàm đó**
         // (trước đây VM bỏ qua `main` ⇒ lệch interp; phát hiện khi làm generic).
@@ -337,6 +340,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
             f: F::new(c.name.clone()),
             loops: Vec::new(),
             captured: HashMap::new(),
+            ret_opt: false,
         };
         st.f.arity = c.params.iter().filter(|p| !p.named).count() as u16;
         st.f.nparams = c.params.len() as u16;
@@ -391,6 +395,8 @@ struct Emit<'g> {
     f: F,
     loops: Vec<Vong>,
     captured: HashMap<u32, u16>,
+    /// **VD-228**: hàm hiện tại có `-> T?` (annot Optional)? — tự nâng ở biên hàm.
+    ret_opt: bool,
 }
 
 impl<'g> Emit<'g> {
@@ -676,6 +682,7 @@ impl<'g> Emit<'g> {
                     // **ST-60b**: `return` trần ⇒ `()` **thật** (`PushUnit`), không phải `str("")`.
                     None => self.f.push(Instr::PushUnit, *span, 1),
                 }
+                self.lift_ret_opt(*span); // VD-228: nâng ở biên return sớm
                 self.f.push(Instr::Return, *span, -1);
                 self.net_stack(*span)
             }
@@ -1469,19 +1476,6 @@ impl<'g> Emit<'g> {
                 self.cau(other)?;
                 self.f.push(Instr::PushUnit, other.span(), 1);
                 Ok(())
-            }
-        }
-    }
-
-    /// Thân hàm: `HBody::Expr` ⇒ biểu thức; `HBody::Stmts` ⇒ câu lệnh (giá trị cuối giữ lại).
-    fn than(&mut self, b: &HBody, _base: u16, span: Span) -> Result<(), CodegenError> {
-        match b {
-            HBody::Expr(e) => self.expr(e),
-            HBody::Stmts(st) => {
-                // Câu lệnh cuối là biểu thức ⇒ **giữ** giá trị làm kết quả hàm (giống interp).
-                self.nhanh_gia_tri(st)?;
-                self.f.push(Instr::Return, span, 0);
-                self.net_stack(span)
             }
         }
     }

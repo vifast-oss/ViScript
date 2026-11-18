@@ -6,7 +6,7 @@
 //! như trước; `interp.rs` chỉ còn phần câu lệnh/biểu thức.
 
 use vis_syntax::Span;
-use vis_types::hir::*;
+use vis_types::{hir::*, ty::Type};
 
 use crate::interp::{builtin_name, Abort, Args, Interp, Trap, MAX_CALL_DEPTH, R, RT};
 use crate::value::*;
@@ -279,9 +279,27 @@ impl<'a> Interp<'a> {
             }
         }
         match r {
-            Ok(v) => Ok(v),
-            Err(Abort::Ret(v)) => Ok(v),
+            Ok(v) => Ok(opt_lift_fn_ret(v, &f.ret)),
+            Err(Abort::Ret(v)) => Ok(opt_lift_fn_ret(v, &f.ret)),
             Err(t) => Err(t),
         }
+    }
+}
+
+/// **VD-228 (điểm mới, proxy A0)** — tự nâng `T → T?` tại ranh giới hàm `-> T?` (spec §4.4 —
+/// "trả về"). Chỉ nâng khi giá trị đang là nguyên thuỷ KHÔNG phải Enum Option/Result.
+/// Lệch VM hiện cũng lift cùng nguyên tắc (Instr::MakeSome ở hàm cuối).
+fn opt_lift_fn_ret(v: Value, ret: &Type) -> Value {
+    if !matches!(ret, Type::Opt(_)) {
+        return v;
+    }
+    match &v {
+        Value::Enum(ea, va, _)
+            if (ea == "Option" || ea == "Result")
+                && ["Some", "None", "Ok", "Err"].contains(&va.as_str()) =>
+        {
+            v
+        }
+        _ => Value::some(v),
     }
 }
