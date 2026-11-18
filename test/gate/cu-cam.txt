@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # Danh sách cấm — cú pháp bị bỏ ở pha 1 (VD-205, R6).
-# Định dạng: <từ khoá ascii viết thường><TAB><ghi chú> (dòng bắt đầu `#` = chú thích).
+# Định dạng: <từ khoá ascii viết thường, tuỳ chọn hậu tố `(`><TAB><ghi chú> (dòng bắt đầu `#` = chú thích).
+# Hậu tố `(` nghĩa là **chỉ cấm dạng pattern `ok(`/`some(`/`err(`**, không chặn từ `ok` đứng đơn.
 # Quét **cả văn xuôi lẫn khối mã** trong `docs/**/*.md` và `CHEAT-SHEET-ViScript.md`.
 # Ngoại lệ duy nhất: dòng chứa "cú pháp sai" (đánh dấu tường minh), hoặc dòng khớp một mục
 # của `test/gate/cu-cam-ngoai-le.txt` (chuỗi con, mỗi mục kèm lý do — dành cho bảng
 # cú pháp cũ → mới → mã lỗi, tiêu chí đóng pha 1 số 4).
 none	VS0203 — từ khoá đã bỏ (R2, VD-187); dùng `None` (biến thể của enum std Option)
+ok(	VD-212 — `ok(` trong pattern không còn hợp lệ; dùng `Ok(` (viết hoa chữ đầu)
+err(	VD-212 — `err(` trong pattern không còn hợp lệ; dùng `Err(` (viết hoa chữ đầu)
+some(	VD-212 — `some(` trong pattern không còn hợp lệ; dùng `Some(` (viết hoa chữ đầu)

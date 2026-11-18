@@ -10,6 +10,7 @@
 //! - `max_stack`: đếm **bảo thủ** trong lúc phát (upper bound ≥ độ sâu thật). **ST-21 kiểm lại
 //!   độc lập từ byte stream** — không tin giá trị này.
 
+mod builtin_value;
 mod if_expr;
 mod pattern;
 
@@ -138,6 +139,8 @@ struct Gen {
     fparams: HashMap<String, Vec<(String, bool)>>,
     /// Closure chờ phát: (chỉ số hàm, thân, tham số, snapshot locals của cha).
     cho: Vec<Cho>,
+    /// `sym` dựng sẵn → tên dựng sẵn (`print`, `Ok`, …).
+    builtins: HashMap<u32, String>,
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     hash: [u8; HASH_LEN],
@@ -208,7 +211,7 @@ pub fn compile_kiem(
 
 /// Hạ một chương trình HIR xuống module VBC1 (API cũ — **không** kèm chẩn đoán; xem
 /// [`compile_kiem`] cho đường có cổng front end).
-pub fn compile(hir: &Hir, _symbols: &Symbols, text: &str) -> Result<Module, CodegenError> {
+pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, CodegenError> {
     let mut g = Gen {
         consts: Vec::new(),
         funcs: Vec::new(),
@@ -218,8 +221,9 @@ pub fn compile(hir: &Hir, _symbols: &Symbols, text: &str) -> Result<Module, Code
         fmap_ten: HashMap::new(),
         fparams: HashMap::new(),
         cho: Vec::new(),
-        hash: crate::format::source_hash(text),
         async_fns: std::collections::HashSet::new(),
+        builtins: crate::util::tinh_cac_builtin(symbols),
+        hash: crate::format::source_hash(text),
     };
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
     for it in &hir.items {
@@ -792,6 +796,12 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HExpr::Var { sym, name, span } => {
+                // **VD-208 (2)**: builtin là **giá trị dựng sẵn** (dùng được như hàm ở cả hai đường).
+                if let Some(id) = sym {
+                    if self.gia_tri_builtin_var(*id, *span)? {
+                        return Ok(());
+                    }
+                }
                 // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải biến/hàm.
                 if name == "None" && !self.g.fmap.contains_key(&sym.unwrap_or(u32::MAX)) {
                     self.f.push(Instr::MakeNone, *span, 1);

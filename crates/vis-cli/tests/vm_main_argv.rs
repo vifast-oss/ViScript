@@ -101,7 +101,7 @@ fn argv_dau_cap_sau() {
         &d,
         "h",
         &format!(
-            "use std.fs\n\nfn main(args: list[str], d: cap[Dir] @ p\"{r}\"):\n    print(args)\n    match fs.read(\"{r}/a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(args: list[str], d: cap[Dir] @ p\"{r}\"):\n    print(args)\n    match fs.read(\"{r}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             r = root.display()
         ),
     );

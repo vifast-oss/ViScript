@@ -51,7 +51,7 @@ fn ca(d: &Path, them: &[&str]) -> (i32, String, String) {
     r1
 }
 
-const DOC: &str = "use std.fs\n\nfn main():\n    match fs.read(\"in.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n";
+const DOC: &str = "use std.fs\n\nfn main():\n    match fs.read(\"in.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n";
 
 /// (a) **Không** cờ, **không** `cap` ⇒ chạy (khoá tương thích mặc định).
 #[test]
@@ -90,7 +90,7 @@ fn strict_cap_dir_trong_root() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             r.display(),
             r.display()
         ),
@@ -112,7 +112,7 @@ fn strict_cap_dir_ngoai_root() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             r.display(),
             r.display()
         ),
@@ -130,7 +130,7 @@ fn strict_khong_cap_net_thi_vs0604() {
     let d = tam("strict-net");
     ghi(
         &d.join("f.vis"),
-        "use std.net\n\nfn main():\n    match net.connect(\"127.0.0.1:9\"):\n        ok(_):\n            print(\"OK\")\n        err(e):\n            print(\"ERR\")\n",
+        "use std.net\n\nfn main():\n    match net.connect(\"127.0.0.1:9\"):\n        Ok(_):\n            print(\"OK\")\n        Err(e):\n            print(\"ERR\")\n",
     );
     let (c, out, err) = ca(&d, &["--strict-caps"]);
     assert_eq!(c, 2, "stderr: {err}");

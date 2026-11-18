@@ -36,10 +36,10 @@ impl<'a> Interp<'a> {
                 let name = path.last().cloned().unwrap_or_default();
                 let low = name.to_ascii_lowercase();
                 match v {
-                    // **VD-204 (1)**: `Option`/`Result` là enum thật — cùng luật so khớp biến thể
-                    // theo **tên biến thể** (arity kiểm bằng `bind_all`).
+                    // **VD-212 (A0)**: `Option`/`Result` là enum thật — cùng luật so khớp biến thể
+                    // theo **đúng tên biến thể**, phân biệt hoa thường (khác R1a/VS0111).
                     Value::Enum(_, variant, vargs) => {
-                        if variant != &name && variant.to_ascii_lowercase() != low {
+                        if variant != &name {
                             return false;
                         }
                         self.bind_all(args, vargs)

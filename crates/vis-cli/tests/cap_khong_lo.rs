@@ -89,7 +89,7 @@ fn gan_json_vao_bien_cap_khong_sinh_quyen() {
     let r = ca(
         &d,
         "b.vis",
-        "use std.json\nuse std.fs\n\nfn main():\n    let e: cap[Dir] = json.decode(\"\\{\\\"kind\\\":\\\"Dir\\\",\\\"root\\\":\\\"/\\\",\\\"write\\\":true\\}\")\n    match fs.read(\"/etc/hosts\"):\n        ok(s):\n            print(s.len())\n        err(x):\n            print(\"CHAN\")\n",
+        "use std.json\nuse std.fs\n\nfn main():\n    let e: cap[Dir] = json.decode(\"\\{\\\"kind\\\":\\\"Dir\\\",\\\"root\\\":\\\"/\\\",\\\"write\\\":true\\}\")\n    match fs.read(\"/etc/hosts\"):\n        Ok(s):\n            print(s.len())\n        Err(x):\n            print(\"CHAN\")\n",
         &["--strict-caps"],
     );
     assert_eq!(r.0, 2, "{r:?}");
@@ -109,7 +109,7 @@ fn doc_tep_khong_tao_cap() {
     let r = ca(
         &d,
         "c.vis",
-        "use std.fs\n\nfn main(d: cap[Dir] @ p\"./root\"):\n    match fs.read(\"root/tep-cap.txt\"):\n        ok(s):\n            print(s)\n        err(x):\n            print(\"ERR\")\n",
+        "use std.fs\n\nfn main(d: cap[Dir] @ p\"./root\"):\n    match fs.read(\"root/tep-cap.txt\"):\n        Ok(s):\n            print(s)\n        Err(x):\n            print(\"ERR\")\n",
         &[],
     );
     assert_eq!(r.0, 0, "{r:?}");
@@ -118,7 +118,7 @@ fn doc_tep_khong_tao_cap() {
     let r2 = ca(
         &d,
         "c2.vis",
-        "use std.fs\n\nfn main(d: cap[Dir] @ p\"./root\"):\n    let s = \"cap[Dir] @ p\\\"/\\\"\"\n    match fs.read(\"/etc/hosts\"):\n        ok(x):\n            print(x.len())\n        err(e):\n            print(\"CHAN\")\n",
+        "use std.fs\n\nfn main(d: cap[Dir] @ p\"./root\"):\n    let s = \"cap[Dir] @ p\\\"/\\\"\"\n    match fs.read(\"/etc/hosts\"):\n        Ok(x):\n            print(x.len())\n        Err(e):\n            print(\"CHAN\")\n",
         &[],
     );
     assert_eq!(r2.0, 2, "{r2:?}");

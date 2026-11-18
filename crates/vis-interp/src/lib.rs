@@ -61,6 +61,7 @@ pub mod ops {
 }
 
 pub mod builtin;
+mod builtin_value;
 pub mod interp;
 mod pat;
 

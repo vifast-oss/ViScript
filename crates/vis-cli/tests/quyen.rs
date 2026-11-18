@@ -61,7 +61,7 @@ fn doc_trong_quyen() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             root.display(),
             root.display()
         ),
@@ -82,7 +82,7 @@ fn doc_ngoai_quyen() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             root.display(),
             root.display()
         ),
@@ -104,7 +104,7 @@ fn ghi_thieu_co() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.write(\"{}/b.txt\", \"x\"):\n        ok(_):\n            print(\"GHI\")\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.write(\"{}/b.txt\", \"x\"):\n        Ok(_):\n            print(\"GHI\")\n        Err(e):\n            print(\"ERR\")\n",
             root.display(),
             root.display()
         ),
@@ -125,7 +125,7 @@ fn ghi_co_co() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\" (write)):\n    match fs.write(\"{}/b.txt\", \"noi dung\"):\n        ok(_):\n            match fs.read(\"{}/b.txt\"):\n                ok(s):\n                    print(s)\n                err(e):\n                    print(\"ERR-DOC\")\n        err(e):\n            print(\"ERR-GHI\")\n",
+            "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\" (write)):\n    match fs.write(\"{}/b.txt\", \"noi dung\"):\n        Ok(_):\n            match fs.read(\"{}/b.txt\"):\n                Ok(s):\n                    print(s)\n                Err(e):\n                    print(\"ERR-DOC\")\n        Err(e):\n            print(\"ERR-GHI\")\n",
             root.display(),
             root.display(),
             root.display()
@@ -146,7 +146,7 @@ fn khong_khai_cap_thi_khong_han_che() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main():\n    match fs.read(\"{}\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main():\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             ngoai.display()
         ),
     );
@@ -168,7 +168,7 @@ fn grant_doi_duong_dan() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/b.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n    match fs.read(\"{}/a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR\")\n",
+            "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/b.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
             a.display(),
             b.display(),
             a.display()
@@ -191,7 +191,7 @@ fn net_thieu_cap() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.net\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match net.connect(\"127.0.0.1:1\"):\n        ok(h):\n            print(\"NOI\")\n        err(e):\n            print(\"ERR\")\n",
+            "use std.net\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match net.connect(\"127.0.0.1:1\"):\n        Ok(h):\n            print(\"NOI\")\n        Err(e):\n            print(\"ERR\")\n",
             root.display()
         ),
     );
@@ -214,7 +214,7 @@ fn hai_cap_dir() {
     ghi(
         &d.join("f.vis"),
         &format!(
-            "use std.fs\n\nfn main(a: cap[Dir] @ p\"{}\", b: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR-A\")\n    match fs.read(\"{}/b.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR-B\")\n    match fs.read(\"{}/ngoai.txt\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"ERR-NGOAI\")\n",
+            "use std.fs\n\nfn main(a: cap[Dir] @ p\"{}\", b: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-A\")\n    match fs.read(\"{}/b.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-B\")\n    match fs.read(\"{}/ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-NGOAI\")\n",
             a.display(),
             b.display(),
             a.display(),

@@ -9,7 +9,7 @@
 4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-18 (**VD-182…VD-196** — mở **#148** (VD-183(6) hạn chót tổng HTTP), **#149** (VD-184(3) tách đường dẫn thủ công), **#150** (VD-192 psvn `audit_span`); §8 sửa khớp §4 theo **VD-195**: **153 mục = 92 mở / 37 đóng / 22 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** thêm (VD-198), **#152** thêm (**VD-204 (5)**, benchmark chậm >10 %)) · **HEAD khi cập nhật**: `567350e1`
+**Cập nhật**: 2026-11-18 (**VD-182…VD-196** — mở **#148** (VD-183(6) hạn chót tổng HTTP), **#149** (VD-184(3) tách đường dẫn thủ công), **#150** (VD-192 psvn `audit_span`); §8 sửa khớp §4 theo **VD-195**: **155 mục = 93 mở / 38 đóng / 22 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** thêm (VD-198), **#152** thêm (**VD-204 (5)**, benchmark chậm >10 %); **#153** thêm rồi **đóng ở ST-217** (VD-208 (2)); **#154** thêm (**VD-208**, phương án B không xếp lịch)) · **HEAD khi cập nhật**: `567350e1`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -72,7 +72,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 - Báo cáo R## **không** sửa nội dung (VD-142); sai sót đính chính bằng dòng trong QUEUE + mục “Đính chính R##” ở báo cáo kế tiếp.
 - Nợ phát sinh trong task: thêm số mới **ngay trong task đó**, không chờ báo cáo.
 
-## 4. Bảng nợ chính (153 dòng: 1..152, #109 tách a/b)
+## 4. Bảng nợ chính (155 dòng: 1..154, #109 tách a/b)
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -230,6 +230,9 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 150 | **psvn `audit_span` đỏ** — gate psvn dừng ở **L0** (9/10) vì ca `audit_span`; VD-192: thành **nợ mới** kèm log **clone sạch**, **không** chặn mac/Linux | VD-192 · VD-188 · R29 §psvn | **mở** — cần log clone sạch + phân loại (mã hay nền); không chặn đóng pha 1 |
 | 151 | **Tệp kiểm thử tài liệu đặt tên theo SỐ DÒNG** — `test/doc-examples/doc-<tên>-<dòng>.vis`; chèn một đoạn văn là phải sinh lại cả loạt, và rất dễ **che giấu một thay đổi kỳ vọng thật** giữa đám tệp đổi tên. Hướng sửa: đặt tên theo **định danh ổn định** (slug tiêu đề mục + số thứ tự khối trong mục, hoặc nhãn tường minh trong khối) | VD-198(2) · VD-186 · ST-213 | **chuyển VS3** — xếp **pha 2**, không chen pha 1 |
 | 152 | **Enum-hoá `Option`/`Result` thành enum std làm chậm hơn ngưỡng 10 %** (VD-204 (5)): benchmark vi mô `opt-bench` (100 000 vòng `map.get` + `match` + `??`; ps, 2026-11-18, số **tham khảo** theo VD-206): VM **0,17 → 0,21 s** (**+23 %**) · interp **0,31 → 0,34 s** (**+10 %**). Nghi nguyên nhân: `Value::Enum` mang **hai** `String` + một `Vec<Value>` (so với `Value::Opt`/`Value::Res` cũ chỉ một `Box`) | VD-204 (5) · ST-217 · `JOURNAL/2026-11-18.md` | mở |
+| 153 | **Lệch interp↔VM: builtin làm giá trị** — `let f = Some` / truyền `Some` vào `map` ở VM trả `() không phải hàm` (**VS0501**), interp chạy được; bytecode thiếu mã `MakeBuiltin` (VBC1 đóng băng) ⇒ VM dựng giá trị qua builtin nội bộ **`$value:<tên>`** (dùng lại `CallBuiltin`), `None` vẫn là literal `Option`; VM `TestCtor` chuyển về phân biệt hoa thường | VD-208 (2) · ST-217 · `JOURNAL/2026-11-18.md` | đóng ở ST-217 |
+| 154 | **Tầng kiểu `Option`/`Result` giữ dựng sẵn** (VD-208 chốt **A** — VD-204 (1) làm rõ: chỉ tầng chạy là enum std thật). Phương án **B** (bảng kiểu nội hàm + intern lazy, xóa `Type::Opt`) **không xếp lịch** — ước lượng: 1–2 ngày, 10–20 golden đổi byte, `hop_nhat` thêm tải; chỉ mở lại khi có tính năng thật sự cần (ví dụ người dùng `impl` trait cho `Option`) | VD-208 · ST-217 · `BLOCKED.md` §8 | mở |
+
 ## 5. Nợ chuyển VS3 (21 mục)
 
 | Số | Lý do chuyển VS3 (1 dòng) | Nguồn |
@@ -344,18 +347,18 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **153** (1..152; #109 tách `a`/`b`) |
-| `mở` | **92** |
-| `đóng` | **37** |
+| Tổng dòng bảng chính | **155** (1..154; #109 tách `a`/`b`) |
+| `mở` | **93** |
+| `đóng` | **38** |
 | `chuyển VS3` | **22** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 92 mở + 37 đóng + 22 VS3 + 1 không làm + 1 điều hướng = **153** dòng.
+Kiểm: 93 mở + 38 đóng + 22 VS3 + 1 không làm + 1 điều hướng = **155** dòng.
 **Luật (VD-195)**: bảng này phải **bằng** số đếm thật của §4; `./vis-dev check` đỏ nếu lệch (luật **R5** trong `bin/vis-dev`).
-**#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192**; **#151** thêm bởi **VD-198(2)** (18/11); **#152** thêm bởi **VD-204 (5)** (18/11).
+**#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192**; **#151** thêm bởi **VD-198(2)** (18/11); **#152** thêm bởi **VD-204 (5)** (18/11); **#153** thêm bởi **VD-208 (2)** rồi đóng ở ST-217; **#154** thêm bởi **VD-208** (phương án B, không xếp lịch) (18/11). **VD-211** không sinh nợ (tầng kiểu đã cấm `==` khác kiểu — VS0412 "so sánh khác kiểu").
 **#147 đóng ở ST-204 rồi MỞ LẠI bởi VD-197** ⇒ đóng −1, mở +1.
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =

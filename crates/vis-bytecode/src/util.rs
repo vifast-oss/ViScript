@@ -5,6 +5,18 @@ use vis_types::hir::HPat;
 use vis_types::{AssignOp, BinOp};
 
 use crate::codegen::CodegenError;
+use vis_types::Symbols;
+
+/// Chỉ số các ký hiệu dựng sẵn + tên (dùng tại `HExpr::Var` để dựng giá trị bằng `$value:<tên>`).
+pub(crate) fn tinh_cac_builtin(symbols: &Symbols) -> std::collections::HashMap<u32, String> {
+    let mut m = std::collections::HashMap::new();
+    for (i, s) in symbols.syms.iter().enumerate() {
+        if s.kind == vis_types::lower::SymKind::Builtin {
+            m.insert(i as u32, s.name.clone());
+        }
+    }
+    m
+}
 
 /// Pattern con có cần **test** không (literal/ctor/tuple/list/record/range/or).
 pub fn can_test(p: &HPat) -> bool {

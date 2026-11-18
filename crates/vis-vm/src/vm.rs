@@ -845,15 +845,11 @@ impl<'m> Th<'m> {
                     let ten = vm.ten(i, span)?;
                     let v = self.pop(vm, span)?;
                     let var_muon = ten.rsplit('.').next().unwrap_or(&ten).to_string();
-                    // **VD-204 (1)**: `Some`/`None`/`Ok`/`Err` là **biến thể dựng sẵn** của enum
-                    // `Option`/`Result` — cùng luật so khớp mọi biến thể enum. So **không phân
-                    // biệt hoa thường** như interp (`pat.rs`): pattern viết thường (`ok(s)`) vẫn khớp.
-                    let thap = var_muon.to_lowercase();
+                    // **VD-212 (A0)**: `Some`/`None`/`Ok`/`Err` là biến thể dựng sẵn của enum
+                    // `Option`/`Result` — so khớp biến thể **phân biệt hoa thường** (interp cũng vậy;
+                    // pattern viết sai hoa thường là lỗi lúc biên dịch, không bao giờ chạm VM).
                     let ok = match &v {
-                        Value::Enum(_, var, args) => {
-                            (*var == var_muon || var.to_ascii_lowercase() == thap)
-                                && args.len() == n as usize
-                        }
+                        Value::Enum(_, var, args) => *var == var_muon && args.len() == n as usize,
                         _ => false,
                     };
                     self.st.push(Value::Bool(ok));

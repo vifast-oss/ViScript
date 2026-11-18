@@ -55,8 +55,9 @@ impl<'a> Lowerer<'a> {
             Kind::Ident if first.text == "_" => HPat::Wild { span },
             Kind::Ident => {
                 let name = first.text.clone();
-                // **R1a (VD-178)**: `some`/`ok`/`err` viết thường ⇒ **cảnh báo** `VS0111`.
-                // (`none` là **từ khoá** (đã bỏ) — xử ở nhánh `Kind::Kw` bên dưới, `VS0203`.)
+                // **VD-212 (A0)**: `some`/`ok`/`err` viết thường ⇒ **lỗi** `VS0203` (trước R1a là
+                // cảnh báo `VS0111`; A0 PHỦ QUYẾT giữ cảnh báo mềm — sai hoa thường phải là lỗi,
+                // gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch).
                 if matches!(name.as_str(), "some" | "ok" | "err") {
                     let hoa = match name.as_str() {
                         "some" => "Some",
@@ -64,8 +65,8 @@ impl<'a> Lowerer<'a> {
                         _ => "Err",
                     };
                     self.diag(
-                        &vis_diag::CODES[10],
-                        format!("`{name}` nên viết hoa chữ đầu: `{hoa}` (R1)"),
+                        &vis_diag::SYNTAX_CODES[2],
+                        format!("`{name}` không còn hợp lệ trong pattern — dùng `{hoa}`"),
                         span,
                     );
                 }

@@ -1148,3 +1148,26 @@ fn lsp_5_did_change_ket_qua_nhu_lan_dau() {
         assert_eq!(chuan, frame_cuoi(&out), "k={k}: hover phải y hệt lần đầu");
     }
 }
+
+/// Ca 23 — hover biến `x: int?` ⇒ markdown chứa `int?`, **không** `Option[int]` (VD-208 (4)).
+#[test]
+fn lsp_hover_option_in_int() {
+    let text = "let x: int? = Some(5)\n\nx\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 1))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"contents\":{\"kind\":\"markdown\",\"value\":\"```vis\\nx: int?\\n```\"},\"range\":{\"start\":{\"line\":2,\"character\":0},\"end\":{\"line\":2,\"character\":1}}}}";
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+    assert!(
+        !out.contains("Option[int]"),
+        "hover không được in `Option[int]`: {out}"
+    );
+}

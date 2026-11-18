@@ -77,7 +77,7 @@ fn vs_lit(json: &str) -> String {
 /// Thân chương trình: `json.decode(<json>)` ⇒ in `json.encode(v)`, lỗi ⇒ `print("E")` + `print(e)`.
 fn ct_decode(json: &str) -> String {
     format!(
-        "    match json.decode(\"{}\"):\n        ok(v):\n            print(json.encode(v))\n        err(e):\n            print(\"E\")\n            print(e)\n",
+        "    match json.decode(\"{}\"):\n        Ok(v):\n            print(json.encode(v))\n        Err(e):\n            print(\"E\")\n            print(e)\n",
         vs_lit(json)
     )
 }
@@ -153,7 +153,7 @@ fn round_trip_ban_ghi_thanh_map() {
     let o = hai_duong(
         &d,
         "rec",
-        "use std.json\ntype Hop:\n    gia_tri: int\n    ten: str\n\nfn main() -> ():\n    let h: Hop = {gia_tri: 7, ten: \"a\"}\n    let enc = json.encode(h)\n    match json.decode(enc):\n        ok(v):\n            print(json.encode(v))\n        err(e):\n            print(\"E\")\n",
+        "use std.json\ntype Hop:\n    gia_tri: int\n    ten: str\n\nfn main() -> ():\n    let h: Hop = {gia_tri: 7, ten: \"a\"}\n    let enc = json.encode(h)\n    match json.decode(enc):\n        Ok(v):\n            print(json.encode(v))\n        Err(e):\n            print(\"E\")\n",
     );
     assert_eq!(o, "{\"gia_tri\":7,\"ten\":\"a\"}\n");
     let _ = std::fs::remove_dir_all(&d);
@@ -256,7 +256,7 @@ fn decode_van_la_result_that() {
     let o = hai_duong(
         &d,
         "res",
-        "use std.json\nfn main() -> ():\n    let v = json.decode(\"null\")\n    match v:\n        ok(x):\n            print(\"ok\")\n        err(e):\n            print(\"err\")\n",
+        "use std.json\nfn main() -> ():\n    let v = json.decode(\"null\")\n    match v:\n        Ok(x):\n            print(\"ok\")\n        Err(e):\n            print(\"err\")\n",
     );
     assert_eq!(o, "ok\n");
     let _ = std::fs::remove_dir_all(&d);
@@ -272,7 +272,7 @@ fn fs_write_read_round_trip() {
         &d,
         "rw",
         &format!(
-            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"xin chào\"):\n        ok(_):\n            print(\"w\")\n        err(e):\n            print(\"err\")\n    match fs.read(\"{}\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"err\")\n",
+            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"xin chào\"):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"err\")\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"err\")\n",
             p.display(),
             p.display()
         ),
@@ -291,7 +291,7 @@ fn fs_exists_va_read_thieu_la_err() {
         &d,
         "ex",
         &format!(
-            "use std.fs\nfn main() -> ():\n    print(fs.exists(\"{}\"))\n    print(fs.exists(\"{}\"))\n    match fs.read(\"{}\"):\n        ok(s):\n            print(\"ok\")\n        err(e):\n            print(\"err\")\n",
+            "use std.fs\nfn main() -> ():\n    print(fs.exists(\"{}\"))\n    print(fs.exists(\"{}\"))\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(\"ok\")\n        Err(e):\n            print(\"err\")\n",
             p.display(),
             thieu.display(),
             thieu.display()
@@ -314,7 +314,7 @@ fn fs_list_sap_xep_khong_de_quy() {
         &pdir,
         "ls",
         &format!(
-            "use std.fs\nfn main() -> ():\n    match fs.list(\"{}\"):\n        ok(xs):\n            for x in xs:\n                print(x)\n        err(e):\n            print(\"err\")\n",
+            "use std.fs\nfn main() -> ():\n    match fs.list(\"{}\"):\n        Ok(xs):\n            for x in xs:\n                print(x)\n        Err(e):\n            print(\"err\")\n",
             d.display()
         ),
     );
@@ -331,7 +331,7 @@ fn fs_ghi_vao_duong_dan_sai_la_err() {
         &d,
         "bad",
         &format!(
-            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        ok(_):\n            print(\"ok\")\n        err(e):\n            print(\"err\")\n",
+            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        Ok(_):\n            print(\"ok\")\n        Err(e):\n            print(\"err\")\n",
             p.display()
         ),
     );
@@ -347,7 +347,7 @@ fn fs_duong_dan_tuyet_doi_duoc_phep() {
         &d,
         "abs",
         &format!(
-            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"y\"):\n        ok(_):\n            print(fs.exists(\"{}\"))\n        err(e):\n            print(\"err\")\n",
+            "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"y\"):\n        Ok(_):\n            print(fs.exists(\"{}\"))\n        Err(e):\n            print(\"err\")\n",
             p.display(),
             p.display()
         ),
@@ -364,7 +364,7 @@ fn explain_perms_in_fs_nhat_ky() {
     std::fs::write(
         &tep,
         format!(
-            "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        ok(_):\n            print(\"w\")\n        err(e):\n            print(\"err\")\n",
+            "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"err\")\n",
             p.display()
         ),
     )
@@ -398,7 +398,7 @@ fn hir_cua(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTab
 
 #[test]
 fn khong_host_bao_vs0604_ca_interp_va_vm() {
-    let src = "use std.fs\nfn main() -> ():\n    match fs.read(\"/etc/hostname\"):\n        ok(s):\n            print(s)\n        err(e):\n            print(\"err\")\n";
+    let src = "use std.fs\nfn main() -> ():\n    match fs.read(\"/etc/hostname\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"err\")\n";
     let text = format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}");
     let (hir, syms, types) = hir_cua(src);
     // Đường **interp**: `run` (không host).
@@ -421,7 +421,7 @@ fn khong_host_json_van_chay_vi_thuan() {
     let o = hai_duong(
         &d,
         "thuan",
-        "use std.json\nfn main() -> ():\n    match json.decode(\"[1,2]\"):\n        ok(v):\n            print(json.encode(v))\n        err(e):\n            print(\"E\")\n",
+        "use std.json\nfn main() -> ():\n    match json.decode(\"[1,2]\"):\n        Ok(v):\n            print(json.encode(v))\n        Err(e):\n            print(\"E\")\n",
     );
     assert_eq!(o, "[1,2]\n");
     let _ = std::fs::remove_dir_all(&d);
@@ -437,7 +437,7 @@ fn differential_fs_va_json_khop_hai_duong() {
         &d,
         "diff",
         &format!(
-            "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.write(\"{}\", \"[1, 2]\", ):\n        ok(_):\n            print(\"w\")\n        err(e):\n            print(\"e\")\n",
+            "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.write(\"{}\", \"[1, 2]\", ):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"e\")\n",
             p.display()
         ),
     );
@@ -447,7 +447,7 @@ fn differential_fs_va_json_khop_hai_duong() {
         &d,
         "diff2",
         &format!(
-            "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.read(\"{}\"):\n        ok(s):\n            match json.decode(s):\n                ok(v):\n                    print(json.encode(v))\n                err(e):\n                    print(\"je\")\n        err(e):\n            print(\"fe\")\n",
+            "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.read(\"{}\"):\n        Ok(s):\n            match json.decode(s):\n                Ok(v):\n                    print(json.encode(v))\n                Err(e):\n                    print(\"je\")\n        Err(e):\n            print(\"fe\")\n",
             p.display()
         ),
     );

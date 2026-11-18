@@ -786,6 +786,17 @@ pub fn call(
     args: Vec<Value>,
     span: Span,
 ) -> crate::interp::R<Value> {
+    // **VD-208 (2)**: `$value:<tên>` — dựng **giá trị dựng sẵn** (dùng được như hàm ở cả hai
+    // đường). `:` không hợp lệ trong tên ⇒ người dùng không viết được; `vis_fmt`/`check` không đụng.
+    if let Some(ten) = name.strip_prefix("$value:") {
+        return crate::builtin_value::value_builtin(ten).ok_or_else(|| {
+            trap(
+                RT,
+                format!("`$value:{ten}`: giá trị dựng sẵn không xác định"),
+                span,
+            )
+        });
+    }
     // **ST-60 (VD-95)**: ba builtin **nội bộ** của async — tên có `$` ⇒ người dùng **không** viết
     // được. `Int` của chúng là **handle của host** (interp: `sym`; VM: chỉ số hàm bytecode),
     // **không** phải giá trị chương trình. Phòng thủ: bytecode đột biến ⇒ `VS0501`, **không** panic.

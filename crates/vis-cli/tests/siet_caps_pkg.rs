@@ -245,7 +245,7 @@ fn use_module_noi_bo_va_std_nhung_khong_pkg_giu_hanh_vi_cu() {
     ghi(&d.join("util.vis"), "pub fn g() -> int:\n    7\n");
     ghi(
         &d.join("f.vis"),
-        "use ./util\nuse std.fs\n\nfn main():\n    match fs.read(\"a.txt\"):\n        ok(s):\n            print(s)\n            print(g())\n        err(e):\n            print(\"err\")\n",
+        "use ./util\nuse std.fs\n\nfn main():\n    match fs.read(\"a.txt\"):\n        Ok(s):\n            print(s)\n            print(g())\n        Err(e):\n            print(\"err\")\n",
     );
     let (c, out, err) = ca(&d, &[], "f.vis");
     assert_eq!(c, 0, "không dùng gói ⇒ hành vi cũ, không siết: {err}");

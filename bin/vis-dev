@@ -68,8 +68,11 @@ rule_forbidden_list() {
                 split(line, a, "\t")
                 w = a[1]; sub(/^[ \t]+|[ \t]+$/, "", w)
                 if (w == "") continue
-                if (w !~ /^[A-Za-z0-9_]+$/) { printf "R6 %s: mục `%s` không phải từ khoá ascii đơn\n", LIST, w; bad = 1; continue }
-                pat[++n] = "([^A-Za-z0-9_]|^)" w "([^A-Za-z0-9_]|$)"
+                if (w !~ /^[A-Za-z0-9_(]+$/) { printf "R6 %s: mục `%s` không hợp lệ (từ khoá ascii, tuỳ chọn hậu tố `(`)\n", LIST, w; bad = 1; continue }
+                # Từ khoá kết thúc bằng `(` ⇒ không cần bờ phải (pattern `ok\(` khớp `ok(s)`);
+                # bờ TRÁI loại cả `.` (method gọi kiểu `xs.some(f)` là hợp lệ — không phải pattern).
+                if (w ~ /\($/) { wq = w; gsub(/\(/, "\\(", wq); pat[++n] = "([^A-Za-z0-9_.]|^)" wq }
+                else pat[++n] = "([^A-Za-z0-9_.]|^)" w "([^A-Za-z0-9_]|$)"
                 word[n] = w
             }
             close(LIST)

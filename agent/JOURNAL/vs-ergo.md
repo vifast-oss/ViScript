@@ -95,11 +95,11 @@
 
 ## R5 · Gọi hàm: tên + record-theo-tên + method toàn std — **Pha 1**
 **Hiện trạng**: `f(1, b: 5)` ⇒ **VS0201** (`n3`); record **chỉ** `{name: …}` (`exhaustive.rs:151`); `x.f(a)` mới một phần (`z1`: `str.trim`; `s.upper` chạy); `str(5)` chạy (`r3`).
-**Đặc tả**: `f(1, b: 5)`; `--b` **chỉ** chế độ lệnh/`cmd`; `User(name: "An", age: 20)`, default **bỏ được**; `{…}` **chỉ map**; `x.f(a) ≡ mod.f(x, a)` khi **tham số đầu của `f` có kiểu của `x`** — **toàn bộ std**; báo **xung đột** `std.str`/`str`/builtin `str(x)`.
-- **`{ten: …}` với khoá là định danh trần** ⇒ **VS0205** kèm gợi ý `"ten"` (map) hoặc `Kieu(ten: …)` (record).
+**Đặc tả**: `f(1, b: 5)`; `--b` **chỉ** chế độ lệnh/`cmd`; `User(name: "An", age: 20)`, default **bỏ được**; `x.f(a) ≡ mod.f(x, a)` khi **tham số đầu của `f` có kiểu của `x`** — **toàn bộ std**; báo **xung đột** `std.str`/`str`/builtin `str(x)`.
+- **R5b bị HUỶ (VD-210, 2026-11-18)** — giữ bản ghi ẩn danh (`{ten: 1}` với khoá định danh trần là **bản ghi**, không bao giờ là biến; `{"ten": 1}` khoá chuỗi là **map**; khoá là biểu thức ⇒ map theo cú pháp khoá tính toán; trộn hai loại trong cùng `{…}` ⇒ **lỗi có mã** + gợi ý). VS0205 **dành riêng, không dùng**. ST-208 đổi thành **R5b′** (VD-214).
 - **Gọi dạng method chỉ áp cho hàm std có tham số đầu là KIỂU CỤ THỂ**; hàm **generic** có tham số đầu `T` **không** thành method của mọi kiểu.
 - **`str(x)` vẫn là chuyển đổi**; module `std.str` **vẫn tồn tại**, hàm của nó gọi dạng method.
-**Ca đỏ-trước**: `f(1, b: 5)` chạy; `f(b: 5, 1)` lỗi; `User(name: "a")` với `age: int = 0` ⇒ `age==0`; `{name: "a"}` ⇒ **VS0205** + gợi ý; `" abc ".trim()` ⇒ `abc`; `str(5)` vẫn `5`.
+**Ca đỏ-trước**: `f(1, b: 5)` chạy; `f(b: 5, 1)` lỗi; `User(name: "a")` với `age: int = 0` ⇒ `age==0`; `" abc ".trim()` ⇒ `abc`; `str(5)` vẫn `5`.
 **Ảnh hưởng**: parser args/record, tyck call/method, `stdlib.rs`, docs, test record cũ.
 **Task**: **172b-R5a** (2 h) · **R5b** (2 h) · **R5c** (2 h) · **R5d** (2,5 h). **Phụ thuộc**: R3, R4.
 > **đã sửa**: `agent/JOURNAL/vs-ergo.md:95` (ST-178) — `{ten: …}` ⇒ **VS0205**; method chỉ cho tham số đầu **kiểu cụ thể**; `str(x)` giữ là chuyển đổi.

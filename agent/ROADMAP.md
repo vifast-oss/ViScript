@@ -205,8 +205,8 @@ ST-199 (PR #27 port — nhóm `( … )` đầu tệp `.vish`) · ST-200 (brand �
 `sem` **464** ca; check gate macOS @ R29 HEAD `39041b3f`: L0 **1184/0** (131 suite); ps clone sạch: L0 **1188/0**; Windows **chỉ đo**
 (9/10 bước, L0 152/4 — VS3 mục 5, không tuyên bố hỗ trợ); VS2 **đóng 8/8** vẫn giữ nguyên (VD-151).
 
-**Còn thiếu — pha 1 (C3):** ~~R1+R2~~ (R1a xong ở ST-194; R2 xong ở ST-203 — `none` bỏ, `T??`, fmt tự sửa; **enum-hoá `Option/Result` — tầng chạy xong ở ST-217 (chờ A0 cho tầng kiểu)**) ·
-**R4** (`Error` record + `Json` enum + `AnyError`; mọi hàm std trả `Result[T, Error]`) · **R5b** (`{…}` chỉ map, `{ten: …}` ⇒ `VS0205` — **mâu thuẫn với ST-198/json_sort (anonymous record `{a: 1}`) — cần A0 chọn, không tự làm**) ·
+**Còn thiếu — pha 1 (C3):** ~~R1+R2~~ (R1a xong ở ST-194; R2 xong ở ST-203 — `none` bỏ, `T??`, fmt tự sửa; **enum-hoá `Option/Result`** — VD-208 chốt **A**: tầng chạy = enum std thật (done ở ST-217); tầng kiểu giữ dựng sẵn) ·
+**R4** (`Error` record + `Json` enum + `AnyError`; mọi hàm std trả `Result[T, Error]`) · **R5b′** (huỷ R5b theo **VD-210** — giữ bản ghi ẩn danh, chốt quy tắc khoá `{…}` + gợi ý, ≤ 2 h) ·
 **R5d** (chuẩn hoá `str(x)` vs method std.str) · ~~R19b~~ (đóng ở ST-202) · R20a phần 2 (`use std.fs as f`, `use std.fs.{..}`) ·
 R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-148; chờ pha 1 xong).
 

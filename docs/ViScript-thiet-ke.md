@@ -815,7 +815,7 @@ pub trait Host: Send + Sync {
 
 | Module | Nội dung |
 |---|---|
-| `core` | kiểu dựng sẵn, helper Option/Result, trait chuẩn (`Show`, `Error`, `Render`), `Future`/`Task` |
+| `core` | kiểu dựng sẵn, helper Option/Result (**Option/Result hành xử như enum std** — tầng chạy là enum thật; trình kiểm kiểu xử lý như kiểu dựng sẵn để hiển thị `T?` và suy luận nhanh — VD-208), trait chuẩn (`Show`, `Error`, `Render`), `Future`/`Task` |
 | `text` | chuỗi, grapheme, chuẩn hoá Unicode, regex, định dạng, so sánh theo locale cơ bản |
 | `coll` | list, map, set, deque, heap, sắp xếp ổn định |
 | `stream` | map, filter, take, skip, chunk, zip, group_by, sort_by, uniq, sum, count, collect |

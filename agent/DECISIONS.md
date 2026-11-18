@@ -1111,7 +1111,7 @@ Ghi vào **thiết kế như nguyên tắc nền**; ST-172b soạn đặc tả +
 ### VD-186 · Tài liệu mô tả mã hiện tại (2026-11-18)
 **Q5 = B\*** (đồng ý, kèm điều kiện ràng buộc). (1) Tài liệu mô tả **mã hiện tại**, **không** mô tả tương lai. (2) Mọi câu nói về hành vi **chưa triển khai** phải gắn nhãn **`[thiết kế VS3, chưa triển khai]`**. (3) **Mỗi tệp một diff**; **Agent 0 duyệt ở lượt sau**. (4) `HOST-BAO-DAM.md` §4: giữ "macOS còn khe hở" nhưng **thu hẹp vào đường GHI** cho tới khi VS3-QĐ-4 merge; thêm giới hạn **hardlink**; thêm **Windows mức bảo đảm thấp hơn**. (5) `docs/ViScript-thiet-ke.md`: **bỏ** văn bản registry tập trung / `vis.lock` chứa khoá; **thay** bằng mô hình phi tập trung VD-180/VD-181, gắn nhãn `[thiết kế VS3-6, chưa triển khai]`.
 
-### VD-187 · Thứ tự pha 1 + tiêu chí đóng pha 1 (2026-11-18)
+### VD-187 · Thứ tự pha 1 + tiêu chí đóng pha 1 (2026-11-18) — **R5b huỷ bởi VD-210 (2026-11-18)**
 **Q6 = A**. (1) **Thứ tự**: **R2 → VD-182 → R4 → R5b → R5d**. (2) **R2 và R4 mỗi cái tách ≥ 3 task ≤ 3 h**, **mỗi task một commit**, **gate xanh**. (3) Cú pháp bị bỏ phải **báo lỗi kèm mã + gợi ý** (`none` ⇒ **VS0203**, đăng ký trong `API-CODES.txt`; R5b dùng **VS0205**); **migrate toàn bộ docs/cheatsheet/ví dụ trong cùng task**. (4) **Tiêu chí đóng pha 1**: **30/30 task vs-ergo DONE**; gate **PASS 10/10** trên mac **và** ps, **clone sạch**, **không chạy lại**; docs xanh; **bảng old→new→mã lỗi**.
 
 ### VD-188 · Windows "hỗ trợ thật" (2026-11-18)
@@ -1162,7 +1162,7 @@ Agent 1 được **tự quyết việc ghi sổ** (số hàng QUEUE, cách tách
 ### VD-203 · Q7 · Nhãn `[thiết kế VS3-6]` → **giữ 4 chỗ** (2026-11-18)
 **Không** gắn từng đoạn. Bổ sung: **blockquote đầu mục** ghi rõ **"Toàn bộ mục này là thiết kế, chưa triển khai"**, kèm **câu trạng thái hiện tại** của lệnh `pkg`. Khi **VS3-6 merge**, xoá **cả 4 nhãn trong cùng commit** (giống quy tắc VD-186).
 
-### VD-204 · Q8 + Q9 · Hiển thị `None`/`Some` và enum std thật → **đổi trong R2b, khai thật**, **chia R2b** (2026-11-18)
+### VD-204 · Q8 + Q9 · Hiển thị `None`/`Some` và enum std thật → **đổi trong R2b, khai thật**, **chia R2b** (2026-11-18) — **nghĩa đã được làm rõ bởi VD-208**
 (1) **Q9**: `Option`/`Result` khai thành **enum std thật**, đúng như tài liệu thiết kế R2. **Không** chấp nhận để tài liệu nói một đằng, mã làm một nẻo. (2) **Q8**: đổi hiển thị thành **`None`, `Some(1)`, `Ok(…)`, `Err(…)`**. Áp cho **mọi đường in**: `print`/`str(x)`, chuỗi nội suy, thông báo lỗi, REPL, LSP hover. Sinh lại **~6 tệp kết quả chuẩn**, **mỗi tệp chỉ được đổi đúng chuỗi này**; Agent 2 **diff và xác nhận không có thay đổi nào khác**. (3) **R2b quá lớn cho 3 h** ⇒ chia: **R2b-1** (≤3 h) enum thật + đổi hiển thị + sửa cheat-sheet (VD-205); **R2b-2** (≤3 h) `T??` + tự gói nhiều lớp; **R2c** (2 h) `first`/`map.get` (giữ nguyên). (4) **Ca khoá cho R2b-1** (đỏ-trước nếu là hành vi mới, nếu không thì là **ca hồi quy phải xanh trước và sau**): match trên `Option`/`Result` vẫn **bắt buộc đủ nhánh**; người dùng **không được** khai lại hoặc che tên `Option`/`Result`/`Some`/`None`/`Ok`/`Err` ở **phạm vi toàn cục** (lỗi **có mã**); toán tử `?` **hành xử không đổi**. (5) **Hiệu năng**: chạy lại một **benchmark vi mô** hiện có liên quan đến Option (nếu chưa có thì viết một cái nhỏ), **trước và sau**; chậm hơn **> 10 %** thì **ghi nợ và báo A0**, **không** tự tối ưu trong R2b-1. (6) Pha 1 **tăng khoảng 3 h** — chấp nhận.
 
 ### VD-205 · Q10 · Cheat-sheet → **sửa ngay** + thêm luật cổng (2026-11-18)
@@ -1186,3 +1186,135 @@ Agent 1 được **tự quyết việc ghi sổ** (số hàng QUEUE, cách tách
 | 10 | **ST-212** | VS3-QĐ-1 | 185 | theo thiết kế |
 
 **Agent 1 làm song song**: áp 2 patch VD-186 theo **VD-198…VD-203**. Thứ tự: **đối chiếu self-test (VD-202) → viết §8 → sinh lại tệp kiểm thử tài liệu → chạy cổng**. Áp xong gửi A0 **diff cuối** (chỉ phần khác bản thảo) trong báo cáo kế tiếp. **Không cần chờ A0 duyệt lại trước khi commit**, vì nội dung đã được duyệt ở đây.
+
+### VD-208 đến VD-214 (2026-11-18) — dán nguyên văn A0 (Agent 1 chép, commit cùng ST-217)
+
+## 1. CÁC QUYẾT ĐỊNH
+
+### VD-208 · Mục 1 · Option/Result ở tầng kiểu → **A**, kèm tiêu chí "người dùng không phân biệt được"
+
+- Nghĩa của "enum std thật" trong VD-204 (1) được làm rõ như sau: **mọi hành vi người dùng quan sát được**
+  phải giống một enum khai trong std. Cách cài đặt bên trong trình kiểm kiểu thì không bắt buộc.
+- Tầng chạy (Value::Enum) giữ như ST-217. Tầng kiểu giữ Type::Opt và kiểu dựng sẵn.
+- **Không chọn C.** Cờ "std-enum" chỉ làm đẹp mã bên trong, người dùng không được gì, lại thêm một nhánh đặc
+  biệt nữa phải bảo trì.
+- **Điều kiện đóng ST-217**: có ca khoá, xanh trên cả interp và VM, cho từng điểm dưới đây. Điểm nào đã có ca
+  thì trỏ tên ca, không viết lại.
+  1. match trên Option/Result bắt buộc đủ nhánh, thiếu nhánh thì báo lỗi.
+  2. `Some`, `None`, `Ok`, `Err` dùng được như hàm (truyền vào map, gán vào biến), giống constructor của enum
+     người dùng. Nếu enum người dùng làm được mà Option không làm được thì phải ghi rõ trong ca và báo A0.
+  3. Không được khai lại hay che tên Option/Result/Some/None/Ok/Err ở phạm vi toàn cục.
+  4. Thông báo lỗi và LSP hover vẫn in `int?`, giữ đúng VD-204 (2).
+- **Tài liệu**: sửa dòng 818 của docs/ViScript-thiet-ke.md thành ý: "Option/Result hành xử như enum std
+  (tầng chạy là enum thật); trình kiểm kiểu xử lý như kiểu dựng sẵn để hiển thị `T?` và suy luận nhanh."
+  Gửi A0 diff 1 dòng trong báo cáo kế tiếp. **Không cần chờ duyệt mới commit**, vì nội dung đã chốt ở đây.
+- **Phương án B** thành nợ mới, trạng thái "không xếp lịch". Chỉ mở lại khi có tính năng thật sự cần (ví dụ
+  người dùng viết `impl` trait cho Option). Ghi luôn chi phí và rủi ro đã ước lượng (1 đến 2 ngày, 10 đến 20
+  golden đổi byte, hop_nhat chậm thêm) để lần sau không phải phân tích lại.
+
+### VD-209 · Mục 2 · Nợ #152 chậm hơn 10 % → **(c) đo chuẩn trước, rồi (b) nếu cần**
+
+- Gộp phép đo opt-bench vào **khung đo chuẩn #147** (VD-197, đặt trước ST-210). Máy rảnh, không agent nào
+  khác chạy, 10 lần mỗi phép, lấy trung vị và ghi khoảng min đến max.
+- Nếu số chuẩn **≤ 10 % trên cả VM và interp** thì đóng #152 với số đo.
+- Nếu **> 10 %** thì xếp task tối ưu ctor-enum (dùng chỉ số hằng thay cho so chuỗi tên, ≤ 3 h) **ngay sau khi
+  đóng pha 1**, trước VS3-QĐ-1. Không làm trong pha 1.
+- Lý do không bỏ qua (a): VM là đường chạy nhanh, nên +23 % ở VM đáng lo hơn +10 % ở interp. Cách so chuỗi tên
+  biến thể còn dính tới lỗi ở VD-212, nên rất có thể sửa VD-212 sẽ tự làm giảm phần chậm này. Phải đo lại sau
+  VD-212.
+
+### VD-210 · Mục 3 · R5b → **(ii) huỷ R5b**, chốt quy tắc khoá trong `{…}`
+
+**Lý do**: bản ghi ẩn danh là tính năng cốt lõi cho một ngôn ngữ script. Nó phục vụ JSON, pipeline `select`,
+và giá trị trả nhanh từ hàm. R5b sinh ra để tránh nhầm map với record, nhưng đổi lại phải bỏ một tính năng có
+ích và phá ca khoá ST-53. Cách tốt hơn là **chốt một quy tắc cú pháp rõ ràng** để không còn nhầm:
+
+| Viết | Nghĩa |
+|---|---|
+| `{ten: 1}` (khoá là định danh trần) | **bản ghi**, `ten` là tên trường, **không bao giờ** là biến |
+| `{"ten": 1}` (khoá là chuỗi literal) | **map** |
+| khoá là giá trị của biến hoặc biểu thức | **map**, dùng cú pháp khoá tính toán hiện có của ViScript |
+| trộn định danh trần và khoá chuỗi trong cùng `{…}` | **lỗi có mã**, gợi ý chọn một loại |
+
+Thực hiện:
+- **Agent 2 kiểm hiện trạng trước**, ghi vào task:
+  - cú pháp khoá tính toán của map hiện là gì;
+  - `{k: v}` khi `k` là biến trong phạm vi hiện cho ra gì;
+  - trộn hai loại khoá hiện có bị báo lỗi không.
+  Chỗ nào chưa khớp bảng trên thì sửa trong task này. Nếu chưa có cú pháp khoá tính toán thì **dừng và báo A0**,
+  không tự chọn cú pháp.
+- **Lỗi có gợi ý**: khi bản ghi ẩn danh được dùng ở chỗ cần map (hoặc ngược lại), thông báo lỗi phải gợi ý cách
+  viết đúng. Có ca khoá.
+- **ST-53 giữ nguyên**, không đổi ca khoá nào của json_sort.rs.
+- **VS0205**: giữ số trong API-CODES.txt, đánh dấu "dành riêng, không dùng", **không** cấp lại cho lỗi khác.
+- Sửa vs-ergo §R5 thành "R5b huỷ (VD-210)" và trỏ bảng trên. Cập nhật cheat-sheet với bảng trên trong cùng
+  commit.
+- ST-208 đổi thành task mới **R5b′** gồm kiểm hiện trạng, sửa theo bảng, lỗi gợi ý và tài liệu. Ước lượng ≤ 2 h.
+
+### VD-211 · Mục 4 (a) · `Foo.A(5) == Bar.A(5)` nay là false → **chấp nhận**, kèm kiểm tầng kiểu
+
+- Hành vi mới đúng: hai enum khác loại thì không bằng nhau.
+- Agent 2 kiểm thêm: trình kiểm kiểu hiện **có chấp nhận** biểu thức `==` giữa hai kiểu enum khác nhau không.
+  Nếu có thì mở nợ (pha 2) để báo lỗi kiểu lúc biên dịch: so hai kiểu khác nhau gần như luôn là lỗi của người
+  viết. Không sửa trong pha 1.
+- Thêm một ca khoá cho hành vi mới.
+
+### VD-212 · Mục 4 (b) · VM khớp biến thể **không phân biệt hoa thường** → **PHỦ QUYẾT**
+
+Đây là lỗi thiết kế, không phải sửa lệch nhỏ. Nó **đi ngược trực tiếp R2a**: R2a vừa biến `none` thành lỗi
+VS0203 để chỉ còn một cách viết. Nếu pattern `ok(s)` vẫn âm thầm khớp `Ok`, thì `some(x)`, `none`, `err(e)`
+viết thường vẫn chạy được trong pattern. Kết quả là có hai cách viết cùng một thứ, đúng điều VD-204 (2) muốn
+tránh. Khớp không phân biệt hoa thường còn có thể làm hai biến thể `A` và `a` của enum người dùng va nhau.
+
+Quyết định:
+- **Cả interp lẫn VM khớp biến thể phân biệt hoa thường.** Sửa interp cho đúng, không sửa VM theo interp.
+- Pattern viết sai hoa thường (ví dụ `ok(s)`, `some(x)`) phải báo **lỗi lúc biên dịch có mã + gợi ý** dạng đúng
+  (`Ok(s)`). Dùng VS0203 nếu ngữ nghĩa khớp, nếu không thì đăng ký mã mới.
+- Thêm `some`, `ok`, `err` (viết thường, dùng trong pattern) vào **danh sách cấm** của VD-205.
+- Ca khoá đỏ-trước, xanh trên **cả interp và VM**: `ok(s)`, `some(x)`, `none` trong pattern; hai biến thể
+  `A`/`a` của cùng enum người dùng khớp đúng biến thể.
+- Nếu có ca .vis hiện hành nào đang dựa vào khớp không phân biệt hoa thường thì migrate trong cùng commit và
+  liệt kê trong commit message.
+- Làm **ngay**, gộp vào lúc đóng ST-217, vì đây là phần còn thiếu của R2a/R2b-1. Đo lại opt-bench sau khi sửa
+  (VD-209).
+
+### VD-213 · Mục 4 (c) · `let-err` ra VS0412 → **chấp nhận**, kèm gợi ý
+
+Đúng: `let Ctor(…) = …` là pattern. Điều kiện: thông báo VS0412 trong trường hợp này phải có gợi ý cho người
+dùng (ví dụ: dùng `match` hoặc `if let` khi pattern có thể không khớp). Có ca khoá kiểm câu gợi ý.
+
+### VD-214 · Thứ tự tiếp theo
+
+| # | Task | Nội dung | VD | Ước lượng |
+|---|---|---|---|---|
+| 1 | **Đóng ST-217** | 4 ca tiêu chí VD-208 + sửa hoa thường VD-212 + dòng 818 + VD-211, VD-213 | 208, 211–213 | ≤ 3 h |
+| 2 | R2b-2 | T?? + tự gói nhiều lớp | 204 | 3 h |
+| 3 | R2c | first / map.get ba trạng thái | 204 | 2 h |
+| 4 | R4a/b/c | (R4a có thể đã chạy, cứ tiếp) | 187 | 8 h |
+| 5 | **R5b′** | Quy tắc khoá `{…}` theo VD-210 | 210 | ≤ 2 h |
+| 6 | R5d | --b chỉ ở chế độ lệnh + xung đột tên | 187 | 2,5 h |
+| 7 | Đo chuẩn | #147 + opt-bench (#152), máy rảnh | 197, 206, 209 | 1,5 h |
+| 8 | ST-210 | Đóng pha 1, R30 (bảng old→new→mã ghi theo VD-208/210/212) | 185, 187 | 1 h |
+| 9 | Tối ưu ctor-enum | Chỉ khi #152 vẫn > 10 % | 209 | ≤ 3 h |
+| 10 | ST-211, ST-212 | VS3-5-pre, VS3-QĐ-1 | 184, 185 | như cũ |
+
+Nếu Agent 2 đang làm R4a thì làm xong R4a rồi mới chuyển sang bước 1. Không bỏ dở giữa chừng.
+
+---
+
+## 2. VIỆC AGENT 1 CẦN LÀM NGAY
+
+1. Ghi VD-208 … VD-214 vào DECISIONS.md. Ghi chú ở VD-204 (1) rằng nghĩa đã được làm rõ bởi VD-208. Ghi chú ở
+   VD-187 rằng R5b đã bị huỷ bởi VD-210.
+2. SO-NO.md: mở nợ "tầng kiểu Option/Result (phương án B), không xếp lịch". Mở nợ VD-211 nếu tầng kiểu chấp
+   nhận `==` khác kiểu. #152 giữ mở, chờ đo chuẩn.
+3. QUEUE.md: bỏ BLOCKED của ST-217, đổi ST-208 thành R5b′, thêm task đo opt-bench vào khung đo chuẩn.
+4. API-CODES.txt: đánh dấu VS0205 là dành riêng.
+5. Giao Agent 2 theo §1 VD-214.
+
+**Báo cáo kế tiếp gửi kèm**:
+- kết quả kiểm hiện trạng `{…}` (VD-210);
+- danh sách ca .vis đã migrate vì sửa hoa thường (VD-212);
+- opt-bench sau VD-212 (số tham khảo cũng được).
+
+> **Nghĩa của VD-204 (1) đã được làm rõ bởi VD-208** (2026-11-18): Option/Result là enum std ở tầng chạy; tầng kiểu giữ dựng sẵn.

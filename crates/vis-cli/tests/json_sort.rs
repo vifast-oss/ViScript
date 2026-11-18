@@ -245,7 +245,7 @@ fn round_trip_encode_decode_map_list_int_str() {
         ("\"xin chào\"", "\"xin chào\""),
     ] {
         let src = format!(
-            "use std.json\nfn main() -> ():\n    let s = json.encode({literal})\n    print(s)\n    match json.decode(s):\n        ok(v):\n            print(json.encode(v))\n        err(e):\n            print(\"E\")\n            print(e)\n"
+            "use std.json\nfn main() -> ():\n    let s = json.encode({literal})\n    print(s)\n    match json.decode(s):\n        Ok(v):\n            print(json.encode(v))\n        Err(e):\n            print(\"E\")\n            print(e)\n"
         );
         let (c, o, e) = chay_vis(&d, "rt", &src);
         assert_eq!(c, 0, "stderr: {e}");
