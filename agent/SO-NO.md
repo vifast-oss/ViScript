@@ -10,6 +10,7 @@
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
 **Cập nhật**: 2026-11-17 (**ST-160** — dán đợt 29, mở **#146** (VD-158), sổ **147 mục = 90 mở / 34 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `567350e1`
+**Cập nhật**: 2026-11-17 (**ST-174** — **#146 đóng** ở ST-174 (VD-176, phương án A); **ST-176/ST-167** — mở **#147** (mac chậm hơn ps 5,70×); **ST-174** cũng cập nhật dòng 146. Số cuối đợt 29 (R29 §4): sổ **147 mục = 89 mở / 35 đóng / 21 VS3 / 1 không làm / 1 điều hướng**) · **HEAD khi cập nhật**: `39041b3f`
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -341,14 +342,14 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 |---|---|
 | Tổng dòng bảng chính | **147** (1..146; #109 tách `a`/`b`) |
 | `mở` | **89** |
-| `đóng` | **34** |
+| `đóng` | **35** |
 | `chuyển VS3` | **21** |
 | `không làm có lý do` | **1** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 90 mở + 34 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **147** dòng. (Dòng **#146** thêm bởi **VD-158** — ca đua symlink **CHƯA-PHÂN-LOẠI**, điều tra ST-163.)
+Kiểm: 89 mở + 35 đóng + 21 VS3 + 1 không làm + 1 điều hướng = **147** dòng. (Dòng **#146** thêm bởi **VD-158** — **đóng ở ST-174** (VD-176).)
 
 **Vì sao 146 chứ không phải 144 — đối chiếu VD-154(b) (ghi lại thay vì giấu):** mức sổ **trước** ST-154 là **144 dòng** =
 91 mở / 31 đóng / 20 VS3 / 1 không làm / 1 điều hướng (ST-151). ST-154 làm **ba** việc trên sổ: (1) `#143` **mở → chuyển VS3**
@@ -382,6 +383,13 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
 (`interp.rs:221-234`; ST-72b giữ `Value::Cap` đúng **chỉ số**), ca đỏ-trước **3/4 đỏ** (interp `[a, b]` vs VM `()`,
 `JOURNAL/st157-do-truoc.log`), sau sửa **4/4 xanh** + `cap_khong_lo::doi_so_dong_lenh_la_str` (ca **ghim** sự lệch cũ)
 cập nhật để khẳng định **parity** thay vì ghim lệch. Sổ **146 mục = 90 mở / 33 đóng / 21 VS3 / 1 không làm / 1 điều hướng**.
+
+**Đóng trong đợt 29:** `#146` — ca đua symlink `dua_doi_symlink_lap_co_gioi_han` (TOCTOU thật, chỉ macOS) — **đóng ở ST-174** (VD-176,
+phương án A: `quyen.rs:513` `metadata` → `symlink_metadata` + điểm chèn `#[cfg(all(test, unix))]`); ca A đỏ-trước **100/100**, sau vá
+**100/100** mac và ps, **6 000 000 vòng** 0 đỏ; giới hạn **hardlink** thuộc chính sách (VS3 `#140/#109b`) — ghi `HOST-BAO-DAM.md`.
+**Mở trong đợt 29:** `#147` — mac chậm hơn ps **5,70×** (soak có khoá, số chuẩn 1489 s vs 261 s) > ngưỡng 3× (VD-177 §2b);
+nguyên nhân tạo tiến trình/syscall macOS, **không** phải CPU; chờ A0 quyết định hướng. Sổ **147 mục = 89 mở / 35 đóng / 21 VS3 /
+1 không làm / 1 điều hướng** (R29 §4).
 
 ## 9. Máy kiểm của task này
 
