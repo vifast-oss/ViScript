@@ -1436,3 +1436,177 @@ migrate, hiện trạng `{}`.
 
 > **Nghĩa của VD-210** (bảng quy tắc `{…}`) đã được **thay bởi VD-215** (2026-11-18): cú pháp `(expr)` là khoá tính toán chính thức; chế độ literal xét **toàn bộ** khoá; trộn loại khoá (bất kể thứ tự) ⇒ một mã lỗi mới (không dùng lại VS0205); `{[k]: v}` ⇒ cảnh báo có mã + gợi ý.
 > **VD-206** (đo khi máy rảnh) đã được **bổ sung bởi VD-217** (2026-11-18): câu hỏi về **tỉ lệ** (#152) được phép đo **A/B xen kẽ** (≥ 20 lần mỗi bên, trung vị tỉ lệ B/A + khoảng min..max; nếu cắt ngưỡng 10 % thì "chưa rõ" ⇒ giữ trạng thái chờ; máy vẫn không rảnh thì #152 xử lý đúng VD-217).
+
+### VD-220 · LỆNH CHẠY QUA ĐÊM (2026-11-18, hiệu lực 19:00 → 09:00 sáng 2026-11-19)
+
+# A0 LỆNH CHẠY QUA ĐÊM: VD-220 (dòng ViScript)
+
+**Ngày**: 2026-11-18 · **Người ra lệnh**: Agent 0 · **Gửi**: Agent 1 (leader) → các sub-agent Agent 2
+**Khung chạy**: **19:00 hôm nay → 09:00 sáng mai (2026-11-19)**, chạy liên tục, không chờ người dùng.
+**Bổ sung cho**: VD-215 … VD-219. Mọi VD cũ vẫn hiệu lực. Khi lệnh này mâu thuẫn với VD cũ thì **VD cũ thắng**,
+ghi vào BLOCKED.md.
+
+---
+
+## 0. TÓM TẮT
+
+- Agent 1 được tạo **tối đa 4 sub-agent Agent 2** chạy song song, chia theo **4 làn** ở §2.
+- **Chỉ làn A** sửa mã ngôn ngữ (parser, typeck, interp, VM). Các làn khác không đụng vào mã đó, để không xung
+  đột và không phải sinh lại golden hai lần.
+- **Chỉ Agent 1 merge** vào nhánh chính, lần lượt từng nhánh, cổng xanh sau **mỗi** lần merge.
+- Mục tiêu đêm nay: **đóng pha 1 (ST-210, R30)** nếu kịp. Không kịp thì dừng sạch ở ranh giới task và báo cáo.
+- **07:30–07:50**: dừng mọi agent trên ps để đo chuẩn #147 (VD-217).
+- **08:30**: đóng băng merge. **09:00**: báo cáo nằm sẵn trong repo.
+
+---
+
+## 1. QUYỀN QUYẾT THAY A0 TRONG ĐÊM
+
+Agent 1 được quyết thay A0 **chỉ** các việc sau:
+- chia task, đổi thứ tự **trong cùng một làn**, chuyển việc giữa các làn khi có làn rảnh;
+- đăng ký mã lỗi/cảnh báo mới đã được VD cho phép (VD-215: mã "trộn loại khoá", mã cảnh báo `{[k]: …}`);
+- câu chữ thông báo lỗi và gợi ý, miễn đúng ý VD;
+- revert một merge làm cổng đỏ;
+- sổ sách: DECISIONS, SO-NO, QUEUE, BLOCKED.
+
+Agent 1 **không** được quyết, gặp phải thì ghi BLOCKED.md và chuyển việc khác:
+- chọn **cú pháp mới** hoặc đổi ngữ nghĩa ngoài những gì VD đã chốt;
+- sửa **SPEC** ngoài các dòng VD đã chỉ định (VD-216);
+- đổi hoặc xoá **ca khoá của A0** (ST-53, json_sort.rs, các ca VD-2xx);
+- hạ ngưỡng, đổi cách đo, dùng `#[ignore]`, sửa kỳ vọng test cho xanh;
+- bắt đầu **VS3-QĐ-1** (ST-212). Việc này chờ A0 đọc R30 và kiểm 4 dấu (VD-185).
+
+---
+
+## 2. BỐN LÀN SONG SONG
+
+Mỗi làn có **worktree và nhánh riêng** (`dem/A`, `dem/B`, `dem/C`, `dem/D`). Thư mục target build riêng cho
+từng làn để không khoá lẫn nhau.
+
+### Làn A · Mã ngôn ngữ (đường găng, chạy tuần tự)
+
+| # | Task | VD | Ước lượng |
+|---|---|---|---|
+| A1 | ST-205 R4a (tiếp phần đang làm) | 187 | còn lại |
+| A2 | R4b | 187 | ≤ 3 h |
+| A3 | R4c (AnyError) | 187 | ≤ 3 h |
+| A4 | ST-208 R5b′, quy tắc `{…}` | 215 | ≤ 3 h |
+| A5 | R5d (`--b` chỉ ở chế độ lệnh) | 187 | 2,5 h |
+
+- Mỗi task một hoặc nhiều commit, mỗi commit qua cổng xanh trên nhánh trước khi xin merge.
+- Làn A là **làn duy nhất được sinh lại golden** (.out/.err). Mỗi lần sinh lại, commit message liệt kê tên tệp
+  và lý do, đúng quy tắc cũ.
+- Bỏ cú pháp nào thì thêm vào **danh sách cấm** trong cùng task (VD-205).
+- Ca đỏ-trước của A4 và A5 lấy từ làn D (xem dưới). Làn A không phải tự viết lại.
+
+### Làn B · Đo đạc, VM nhỏ, dọn mã chết
+
+| # | Task | VD | Ước lượng |
+|---|---|---|---|
+| B1 | Đo A/B xen kẽ #152 (opt-bench, VM + interp, ≥ 20 lần mỗi bên) | 217 | 0,5 h |
+| B2 | VS0111: sửa SPEC §7 + API-CODES + xoá bộ lọc chết | 216 | 0,5 h |
+| B3 | Ca khoá `$value:` không lộ ra người dùng + đoạn tài liệu VM | 218 | 0,5 h |
+| B4 | Chuẩn bị script đo chuẩn #147 (soak, cổng, cargo test tách biên dịch và chạy) để 07:30 chỉ cần bấm chạy | 197 | 0,5 h |
+
+- **Đo A/B (B1) không được chạy cùng lúc với một lần build lớn của làn khác** trên ps. Agent 1 chọn khoảng giữa
+  hai lần build. Ghi số lần build song song (nếu có) vào log.
+- B3 đụng VM. Nếu B3 cần sửa mã VM chứ không chỉ thêm test, thì **chuyển B3 sang làn A** sau A1, không làm ở
+  làn B.
+- Xong B1 đến B4, làn B rảnh thì nhận việc của làn C.
+
+### Làn C · Tài liệu và sổ sách (không sửa mã)
+
+| # | Task | VD |
+|---|---|---|
+| C1 | Bản nháp **bảng "cú pháp cũ → mới → mã lỗi"** cho R30, cập nhật dần theo task làn A đã merge | 187, 215 |
+| C2 | Cheat-sheet và docs: thêm bảng `{…}` của VD-215, mục "bẫy thường gặp" `{[k]: v}` | 215 |
+| C3 | Sửa dòng 818 docs/ViScript-thiet-ke.md (nếu chưa làm) | 208 |
+| C4 | Kiểm khớp sổ: SO-NO §8, QUEUE, DECISIONS ghi chú VD bị thay | 195, 219 |
+| C5 | Danh sách chỗ tách đường dẫn thủ công (chỉ lập danh sách, không sửa) | 184 |
+
+- **Tài liệu có tệp kiểm thử đặt theo số dòng** (nợ VD-198). Vì vậy làn C **không tự sinh lại** các tệp đó.
+  Agent 1 gom thay đổi docs, sinh lại **một lần** ngay trước khi merge, liệt kê đủ tên tệp.
+- Mô tả cú pháp trong docs chỉ được viết theo **mã đã merge**. Nội dung cho task làn A chưa xong thì để trong
+  nhánh, chờ task đó merge.
+
+### Làn D · Viết ca đỏ-trước trước cho làn A, và việc lấp chỗ trống
+
+| # | Task | VD |
+|---|---|---|
+| D1 | Viết **toàn bộ ca khoá của R5b′** theo VD-215 mục 4 (chỉ test, không sửa mã), xác nhận đỏ trên HEAD hiện tại ở đúng những ca phải đỏ | 215 |
+| D2 | Viết ca khoá của R5d | 187 |
+| D3 | Grep migrate: liệt kê mọi literal trộn loại khoá trong test, chuỗi .vis nhúng trong Rust, docs, ví dụ | 215 |
+| D4 | VS3-5a, VS3-5d (chỉ việc lấp chỗ trống, không đụng mã ngôn ngữ) | 188 |
+
+- D1, D2 giao lại cho làn A **dưới dạng nhánh test**, làn A cherry-pick khi bắt đầu A4, A5.
+- Ca nào D thấy đỏ mà **không nằm trong danh sách phải đỏ** thì báo Agent 1 ngay, vì đó có thể là lỗi mới.
+- D4 chỉ làm khi D1 đến D3 đã xong.
+
+---
+
+## 3. QUY TẮC MERGE VÀ CỔNG
+
+1. Agent 1 merge **lần lượt**, không gộp nhiều nhánh một lúc. Thứ tự ưu tiên khi nhiều nhánh cùng chờ: A, B, D, C.
+2. Sau **mỗi** merge: `gate --fast` trên ps phải PASS. Cuối mỗi task làn A, chạy thêm cổng trên **mac**.
+3. Cổng đỏ sau merge: sửa trong **≤ 30 phút**, nếu không được thì **revert merge** và trả nhánh về làn đó.
+4. Không merge nhánh nào đang đỏ để "sửa sau".
+5. Mỗi làn rebase lên nhánh chính sau mỗi lần merge của làn A.
+6. Một task kẹt **quá 45 phút** không tiến triển thì ghi BLOCKED.md (đã thử gì, kẹt ở đâu), chuyển sang task kế
+   tiếp trong làn.
+
+---
+
+## 4. KHUNG GIỜ CỐ ĐỊNH
+
+| Giờ | Việc |
+|---|---|
+| 19:00 | Agent 1 tạo 4 sub-agent, giao làn A đến D, ghi giờ bắt đầu vào QUEUE |
+| 23:00 | Mốc kiểm 1: Agent 1 ghi tiến độ 4 làn vào `agent/DEM-2026-11-18.md` (vài dòng mỗi làn) |
+| 03:00 | Mốc kiểm 2: như trên. Nếu làn A chậm hơn kế hoạch > 2 h thì quyết sớm task nào bỏ lại cho ngày mai (theo §5) |
+| **07:30–07:50** | **Khung đo chuẩn**: dừng mọi sub-agent trên ps, không build, không test. Chạy script B4 trên ps, cùng lúc đo trên mac, cùng HEAD. Ghi log có chữ "máy rảnh" |
+| 07:50 | Tiếp tục các làn |
+| **08:30** | **Đóng băng merge**. Không bắt đầu task mới. Task đang dở thì commit trên nhánh làn, **không** merge |
+| 08:30–09:00 | Agent 1 viết báo cáo §6, cổng cuối trên ps và mac tại HEAD cuối |
+
+---
+
+## 5. NẾU PHA 1 XONG TRƯỚC SÁNG, HOẶC KHÔNG KỊP
+
+**Nếu A5 merge trước khoảng 06:30**:
+1. ST-210: chạy tiêu chí đóng pha 1 (VD-187), cổng trên clone sạch 10/10 trên mac và ps, viết R30 kèm 4 dấu kiểm
+   ngẫu nhiên (VD-185) và bảng old→new→mã của làn C.
+2. ST-211 (VS3-5-pre, sửa check.rs theo VD-184), làm sau khung đo 07:30 nếu còn giờ.
+3. **Dừng ở đó.** Không bắt đầu ST-212. Thời gian còn lại dùng cho D4 và nợ nhỏ không đụng mã ngôn ngữ.
+
+**Nếu không kịp**: ưu tiên theo thứ tự **A1 → A2 → A3 → A4 → A5**. Không nhảy cóc để "trông như xong nhiều".
+R30 **không** viết khi còn task pha 1 chưa merge. Số đo 07:30 vẫn lấy, ghi rõ HEAD và "pha 1 chưa đóng".
+
+---
+
+## 6. BÁO CÁO 09:00
+
+Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
+
+1. **Một dòng trạng thái**: pha 1 đã đóng chưa, HEAD cuối, cổng ps/mac.
+2. **Bảng task**: mã task, làn, trạng thái (merge / trên nhánh / BLOCKED), commit, số test trước và sau.
+3. **Số đo**:
+   - #152: trung vị và khoảng tỉ lệ B/A, kết luận theo VD-217;
+   - #147: bảng chia thành phần (khung 07:30), kết luận theo VD-197.
+4. **Danh sách sinh lại**: golden và tệp kiểm thử tài liệu, mỗi lần một dòng kèm lý do.
+5. **Quyết định Agent 1 đã làm thay A0** (theo §1), mỗi cái một dòng, để A0 xác nhận hoặc đảo lại.
+6. **BLOCKED và câu hỏi cho A0**, đánh số Q1, Q2…, mỗi câu kèm phương án và đề xuất như các lần trước.
+7. **Nợ mới** mở trong đêm.
+8. Các phụ lục đã hẹn ở VD-219: diff SPEC §7, danh sách literal trộn khoá đã migrate, hiện trạng `{}`.
+
+---
+
+## 7. VIỆC AGENT 1 LÀM NGAY LÚC 19:00
+
+1. Ghi VD-220 vào DECISIONS.md.
+2. Tạo 4 worktree, 4 nhánh `dem/A` đến `dem/D`, thư mục target riêng.
+3. Tạo 4 sub-agent Agent 2, mỗi sub-agent nhận **đúng §1, §3 và phần làn của mình** trong tệp này.
+4. Ghi khung 07:30–07:50 vào QUEUE.md để mọi làn biết trước.
+5. Tạo `agent/DEM-2026-11-18.md` để ghi mốc kiểm.
+
+> **Ghi chú B1..B3**: B1 (đo A/B #152), B2 (VS0111 ngừng phát + xoá bộ lọc), B3 (ca `$value:`) đều **đã xong và đã merge** trước 19:00 (commits `8ed1885`, `d50ad39`) — chỉ chạy lại xác nhận; **B4** (script đo chuẩn #147) là việc thật.
+> **Ghi chú A1**: ST-205 (R4a) **vẫn BLOCKED-CHO-A0** (BLOCKED.md §9) — VD-220 không trả lời 4 điểm §6.1; **A2/A3 lệ thuộc A1** nên cũng chờ; **A4 (ST-208/VD-215) đã merged** (`8ed1885`); **A5 (R5d, ST-209) — VD-187 vẫn chưa đủ rõ để tự làm**; §5 (không nhảy cóc) áp dụng.
