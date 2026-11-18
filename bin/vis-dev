@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # vis-dev — cổng của dòng ViScript (ST-01).
-#   check      : fmt + clippy + luật R1..R4 + self-test case âm + build
+#   check      : fmt + clippy + luật R1..R5 + self-test case âm + build
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
@@ -33,42 +33,173 @@ relpath() {
 
 rule_fail() { echo "$1" >&2; fails=$((fails + 1)); }
 
-# R1..R4 trên một cây bất kỳ (dùng cho self-test với --root).
+# R5 (VD-195): bảng tóm tắt §8 của `agent/SO-NO.md` phải bằng **số đếm thật** của bảng nợ §4.
+#   §4: mỗi hàng dữ liệu (cột 1 là số nợ) ⇒ phân loại cột 4 thành mở / đóng / chuyển VS3 /
+#       không làm / điều hướng. §8: đọc bảng "Chỉ số | Số" ⇒ so từng chỉ số + tổng dòng.
+#   Lệch ⇒ đỏ. Không có `agent/SO-NO.md` trong cây ⇒ bỏ qua (cây tạm của self-test R1..R4).
+#   Một tiến trình `awk` cho cả hai bảng — không tạo tiến trình mỗi hàng.
+rule_so_no() {
+    local root="$1"
+    local f="$root/agent/SO-NO.md"
+    [ -f "$f" ] || return 0
+    local kq
+    kq="$(awk '
+        function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+        function norm(s) { gsub(/[`*]/, "", s); return trim(s) }
+        function firstint(s) { if (match(s, /[0-9]+/)) return substr(s, RSTART, RLENGTH) + 0; return -1 }
+        function row(line) { sub(/^[ \t]*\|/, "", line); sub(/[ \t]*\|[ \t]*$/, "", line); return line }
+        BEGIN { sec = 0; bad = "" }
+        /^## [0-9]+\./ { sec = $2 + 0; next }
+        sec == 4 && /^[ \t]*\|/ {
+            line = row($0); n = split(line, c, "|")
+            if (n < 4) next
+            so = trim(c[1])
+            if (so !~ /^[0-9]+[a-z]?$/) next
+            st = norm(c[4]); total4++
+            if (st ~ /^mở/) mo4++
+            else if (st ~ /^đóng/) dong4++
+            else if (st ~ /^chuyển VS3/) vs34++
+            else if (st ~ /^không làm/) kl4++
+            else if (st ~ /điều hướng/) dh4++
+            else bad = bad "§4 hàng " so ": trạng thái lạ (" st "); "
+            next
+        }
+        sec == 8 && /^[ \t]*\|/ {
+            line = row($0); n = split(line, c, "|")
+            if (n < 2) next
+            lab = norm(c[1]); v = firstint(c[2])
+            if (v < 0) next
+            if (lab ~ /^Tổng/) { t8 = v; ht = 1 }
+            else if (lab ~ /điều hướng/) { dh8 = v; hdh = 1 }
+            else if (lab ~ /^không làm/) { kl8 = v; hkl = 1 }
+            else if (lab ~ /^chuyển VS3/) { v8 = v; hv = 1 }
+            else if (lab ~ /^đóng/) { d8 = v; hd = 1 }
+            else if (lab ~ /^mở/) { m8 = v; hm = 1 }
+            next
+        }
+        END {
+            if (bad != "") { print "BAD " bad; exit }
+            miss = ""
+            if (!ht) miss = miss "Tổng dòng bảng chính; "
+            if (!hm) miss = miss "mở; "
+            if (!hd) miss = miss "đóng; "
+            if (!hv) miss = miss "chuyển VS3; "
+            if (!hkl) miss = miss "không làm có lý do; "
+            if (!hdh) miss = miss "điều hướng; "
+            if (miss != "") { print "BAD §8 thiếu hàng: " miss; exit }
+            d = ""
+            if (t8 != total4) d = d "tổng: §8 " t8 " ≠ §4 " total4 "; "
+            if (m8 != mo4) d = d "mở: §8 " m8 " ≠ §4 " mo4 "; "
+            if (d8 != dong4) d = d "đóng: §8 " d8 " ≠ §4 " dong4 "; "
+            if (v8 != vs34) d = d "chuyển VS3: §8 " v8 " ≠ §4 " vs34 "; "
+            if (kl8 != kl4) d = d "không làm: §8 " kl8 " ≠ §4 " kl4 "; "
+            if (dh8 != dh4) d = d "điều hướng: §8 " dh8 " ≠ §4 " dh4 "; "
+            if (d != "") { print "BAD " d; exit }
+            print "OK"
+        }' "$f" 2>/dev/null)" || kq="BAD không đọc được $f"
+    case "$kq" in
+        OK*) return 0 ;;
+        "BAD "*) echo "R5 $(relpath "$f"): ${kq#BAD }" >&2; return 1 ;;
+        *) echo "R5 $(relpath "$f"): máy kiểm §8 không chạy được ($kq)" >&2; return 1 ;;
+    esac
+}
+
+# R1..R5 trên một cây bất kỳ (dùng cho self-test với --root).
+# **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ tạo **một tiến trình cho mỗi tệp** — `wc`+`tr` cho R1,
+# `awk` cho R2, `head`+`grep` cho R3 — và **ba** lượt `find` đi qua cả `target/` (2,2 GB, 433 000 tệp).
+# macOS phạt tạo tiến trình 9,6× nên `rules` chậm 8,3× so với Linux. Nay: **một** lượt `find` (prune
+# `target/`), `wc -l` gom theo lô 400 tệp, R2/R3 gom về **một** `awk`. Phép kiểm, ngưỡng, thứ tự báo
+# lỗi và câu chữ giữ **nguyên văn**; chỉ giảm số tiến trình.
 run_rules() {
     local root="$1"
     local found=0
-    # R1: tệp nguồn ≤ 1.500 dòng
+    local f
+    local -a files=()
     while IFS= read -r -d '' f; do
+        files+=("$f")
+    done < <(find "$root" -type d -name target -prune -o -type f -not -path '*/target/*' -print0 2>/dev/null)
+    # R1: tệp nguồn ≤ 1.500 dòng
+    local -a r1=()
+    for f in "${files[@]}"; do
         case "$f" in
-            *.rs | *.vis | *.vish | *.vidl | *.toml | *.sh | *.py)
+            *.rs | *.vis | *.vish | *.vidl | *.toml | *.sh | *.py) r1+=("$f") ;;
+        esac
+    done
+    local i=0
+    while [ "$i" -lt "${#r1[@]}" ]; do
+        local -a lo=("${r1[@]:i:400}")
+        local -a dem=()
+        local line n k nd nl gom
+        while IFS= read -r line; do dem+=("$line"); done < <(wc -l "${lo[@]}" 2>/dev/null)
+        # `wc -l` in N dòng tệp + **một** dòng "total" khi N ≥ 2 (POSIX). Số dòng lệch ⇒
+        # `wc` bỏ dòng (tệp không đọc được) hoặc tên tệp có xuống dòng ⇒ lùi về đếm từng tệp.
+        nd=${#dem[@]}
+        nl=${#lo[@]}
+        gom=0
+        if [ "$nl" -eq 1 ]; then
+            [ "$nd" -eq 1 ] && gom=1
+        else
+            [ "$nd" -eq $((nl + 1)) ] && gom=1
+        fi
+        if [ "$gom" -eq 0 ]; then
+            # Giữ nguyên hành vi cũ (một `wc` cho mỗi tệp) cho ca hiếm này.
+            for f in "${lo[@]}"; do
                 n=$(wc -l <"$f" | tr -d ' ')
                 if [ "$n" -gt 1500 ]; then
                     echo "R1 $(relpath "$f"): $n dòng > 1500" >&2
                     found=1
                 fi
-                ;;
-        esac
-    done < <(find "$root" -type f -not -path '*/target/*' -print0 2>/dev/null)
-    # R2: cấm `unsafe` ngoài danh sách crate đóng (hiện danh sách TRỐNG ở vòng 1)
-    while IFS= read -r -d '' f; do
-        case "$f" in
-            *.rs)
-                # Bỏ chú thích trước khi tìm từ khoá: nhắc chữ "unsafe" trong docs không phải vi phạm.
-                hit=$(awk '{ sub(/\/\/.*/, ""); if ($0 ~ /(^|[^A-Za-z0-9_])unsafe([^A-Za-z0-9_]|$)/) { print FNR; exit } }' "$f")
-                if [ -n "$hit" ]; then
-                    echo "R2 $(relpath "$f"):$hit: có 'unsafe' — vòng 1 chưa crate nào được phép" >&2
+            done
+        else
+            k=0
+            for line in "${dem[@]}"; do
+                [ "$k" -ge "$nl" ] && break
+                n="${line#"${line%%[![:space:]]*}"}"
+                n="${n%% *}"
+                if [ "$n" -gt 1500 ]; then
+                    echo "R1 $(relpath "${lo[$k]}"): $n dòng > 1500" >&2
                     found=1
                 fi
-                ;;
-        esac
-    done < <(find "$root" -type f -name '*.rs' -not -path '*/target/*' -print0 2>/dev/null)
+                k=$((k + 1))
+            done
+        fi
+        i=$((i + 400))
+    done
+    # R2: cấm `unsafe` ngoài danh sách crate đóng (hiện danh sách TRỐNG ở vòng 1)
+    local -a r2=()
+    for f in "${files[@]}"; do
+        case "$f" in *.rs) r2+=("$f") ;; esac
+    done
+    if [ "${#r2[@]}" -gt 0 ]; then
+        # Bỏ chú thích trước khi tìm từ khoá: nhắc chữ "unsafe" trong docs không phải vi phạm.
+        local ln
+        while IFS=$'\t' read -r ln f; do
+            echo "R2 $(relpath "$f"):$ln: có 'unsafe' — vòng 1 chưa crate nào được phép" >&2
+            found=1
+        done < <(awk 'FNR == 1 { if (hit != "") { print hit "\t" prev; hit = "" } prev = FILENAME } hit == "" { s = $0; sub(/\/\/.*/, "", s); if (s ~ /(^|[^A-Za-z0-9_])unsafe([^A-Za-z0-9_]|$)/) hit = FNR } END { if (hit != "") print hit "\t" prev }' "${r2[@]}")
+    fi
     # R3: SPDX theo loại tệp (QD §9.3)
-    while IFS= read -r -d '' f; do
+    local -a r3=()
+    for f in "${files[@]}"; do
+        case "$f" in
+            *.rs | *.s | *.asm | *.vis | *.vish | *.vidl | *.toml | *.sh | *.py) r3+=("$f") ;;
+        esac
+    done
+    local -a thieu=()
+    if [ "${#r3[@]}" -gt 0 ]; then
+        # Một `awk` đọc 5 dòng đầu của **mọi** tệp cần SPDX (thay `head`+`grep` mỗi tệp).
+        while IFS= read -r f; do thieu+=("$f"); done < <(printf '%s\n' "${r3[@]}" | awk '{ f = $0; ok = 0; for (j = 0; j < 5; j++) { if ((getline line < f) <= 0) break; if (line ~ /SPDX-License-Identifier/) { ok = 1; break } } close(f); if (!ok) print f }')
+    fi
+    # Duyệt `files` theo đúng thứ tự `find` cũ để câu báo lỗi ra **cùng thứ tự** (SPDX xen sidecar).
+    local j=0
+    local nt=${#thieu[@]}
+    for f in "${files[@]}"; do
         case "$f" in
             *.rs | *.s | *.asm | *.vis | *.vish | *.vidl | *.toml | *.sh | *.py)
-                if ! head -5 "$f" | grep -q 'SPDX-License-Identifier'; then
+                if [ "$j" -lt "$nt" ] && [ "${thieu[$j]}" = "$f" ]; then
                     echo "R3 $(relpath "$f"): thiếu SPDX-License-Identifier trong 5 dòng đầu" >&2
                     found=1
+                    j=$((j + 1))
                 fi
                 ;;
             *.json | *.bin | *.txt)
@@ -78,12 +209,14 @@ run_rules() {
                 fi
                 ;;
         esac
-    done < <(find "$root" -type f -not -path '*/target/*' -print0 2>/dev/null)
+    done
     # R4: `vis-host-vifast` KHÔNG được nằm trong cây nguồn (QD §7.5, thiết kế §14.2)
     if [ -d "$root/vis-host-vifast" ] || [ -d "$root/crates/vis-host-vifast" ]; then
         echo "R4: vis-host-vifast nằm trong cây nguồn — phải ở workspace ngoài" >&2
         found=1
     fi
+    # R5: §8 (tóm tắt sổ nợ) phải khớp §4 (bảng nợ chính) — VD-195.
+    rule_so_no "$root" || found=1
     return "$found"
 }
 
@@ -131,9 +264,9 @@ do_check() {
     fi
     echo "--- clippy: OK"
     if ! run_rules "$VIS_ROOT"; then
-        echo "--- luật R1..R4: FAIL" >&2; return 1
+        echo "--- luật R1..R5: FAIL" >&2; return 1
     fi
-    echo "--- luật R1..R4: OK"
+    echo "--- luật R1..R5: OK"
     if ! bash "$VIS_ROOT/test/fixtures/run_fixtures.sh"; then
         echo "--- self-test case âm: FAIL" >&2; return 1
     fi

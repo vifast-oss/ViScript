@@ -33,13 +33,6 @@ def check(cond, msg):
         fails.append(msg)
 
 
-def git_ok(sha: str) -> bool:
-    if not re.fullmatch(r"[0-9a-f]{7,40}", sha or ""):
-        return False
-    return subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"],
-                          cwd=ROOT, capture_output=True, check=False).returncode == 0
-
-
 def split_row(line: str) -> list[str]:
     out, cur, i = [], "", 0
     line = line.strip()
@@ -56,30 +49,123 @@ def split_row(line: str) -> list[str]:
     return out
 
 
-def queue_at(head: str) -> dict[str, str]:
-    out = subprocess.run(["git", "show", f"{head}:agent/QUEUE.md"],
-                         cwd=ROOT, capture_output=True, text=True, check=False)
-    if out.returncode != 0:
-        return {}
+def parse_queue(text: str) -> dict[str, str]:
     rows = {}
-    for line in out.stdout.splitlines():
+    for line in text.splitlines():
         t = line.strip()
         if t.startswith("| ST-") or t.startswith("| KT-"):
             c = split_row(t)
             if len(c) >= 6:
                 rows[c[0]] = c[4].strip("`* ")
     return rows
+
+
+class Git:
+    """Gom **mọi** truy vấn git vào vài tiến trình (VD-182, nợ #147).
+
+    **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ gọi `git cat-file -e` cho **từng** commit
+    (3 107 lần trên cây này) + `git show` + `git merge-base` cho từng báo cáo ⇒ **3 223** tiến
+    trình. macOS phạt tạo tiến trình 9,6× nên `report-check` chậm 22,8× so với Linux. Nay:
+    **một** `cat-file --batch-check` cho mọi SHA, **một** `rev-list HEAD` cho quan hệ tổ tiên,
+    **một** `cat-file --batch` cho mọi `head:agent/QUEUE.md`. Phép kiểm, câu chữ, thứ tự báo
+    lỗi giữ **nguyên văn**; chỉ giảm số tiến trình.
+    """
+
+    def __init__(self, root: Path):
+        self.root = root
+        self._ok: dict[str, bool] = {}
+        self._oid: dict[str, str] = {}
+        self._ancestors = None
+        self._queue: dict[str, dict[str, str]] = {}
+
+    @staticmethod
+    def _la_sha(sha) -> bool:
+        return isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{7,40}", sha or "") is not None
+
+    def prefetch(self, shas, heads) -> None:
+        """Một lượt `cat-file --batch-check` cho mọi SHA + một lượt `cat-file --batch` cho QUEUE."""
+        can = sorted({s for s in shas if self._la_sha(s)})
+        if can:
+            inp = "".join(f"{s}^{{commit}}\n" for s in can)
+            out = subprocess.run(["git", "cat-file", "--batch-check"], cwd=self.root,
+                                 input=inp, capture_output=True, text=True, check=False)
+            for sha, line in zip(can, out.stdout.splitlines()):
+                parts = line.split()
+                if len(parts) >= 2 and parts[1] == "commit":
+                    self._ok[sha] = True
+                    self._oid[sha] = parts[0]
+                else:
+                    self._ok[sha] = False
+        can_head = sorted({str(h) for h in heads if h})
+        if can_head:
+            inp = "".join(f"{h}:agent/QUEUE.md\n" for h in can_head).encode()
+            out = subprocess.run(["git", "cat-file", "--batch"], cwd=self.root,
+                                 input=inp, capture_output=True, check=False)
+            data = out.stdout
+            pos = 0
+            for h in can_head:
+                nl = data.find(b"\n", pos)
+                if nl < 0:
+                    self._queue[h] = {}
+                    continue
+                parts = data[pos:nl].decode("utf-8", "replace").split()
+                pos = nl + 1
+                if len(parts) < 3 or parts[1] != "blob":
+                    self._queue[h] = {}
+                    continue
+                size = int(parts[2])
+                self._queue[h] = parse_queue(data[pos:pos + size].decode("utf-8", "replace"))
+                pos += size + 1
+
+    def ok(self, sha) -> bool:
+        if not self._la_sha(sha):
+            return False
+        if sha in self._ok:
+            return self._ok[sha]
+        # Không nằm trong lô (hiếm): hỏi thẳng, giữ nguyên hành vi cũ.
+        r = subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+                           cwd=self.root, capture_output=True, check=False)
+        self._ok[sha] = r.returncode == 0
+        return self._ok[sha]
+
+    def is_ancestor(self, sha) -> bool:
+        oid = self._oid.get(sha)
+        if oid is None:
+            r = subprocess.run(["git", "merge-base", "--is-ancestor", sha, "HEAD"],
+                               cwd=self.root, check=False)
+            return r.returncode == 0
+        if self._ancestors is None:
+            out = subprocess.run(["git", "rev-list", "HEAD"], cwd=self.root,
+                                 capture_output=True, text=True, check=False)
+            self._ancestors = set(out.stdout.split())
+        return oid in self._ancestors
+
+    def queue_at(self, head) -> dict[str, str]:
+        return self._queue.get(str(head), {})
+
+
+GIT = Git(ROOT)
+_btext = None
+
+
+def blocked_text() -> str:
+    """BLOCKED.md + QUEUE.md — đọc **một lần** cho cả lượt (bản cũ đọc lại mỗi báo cáo)."""
+    global _btext
+    if _btext is None:
+        _btext = BLOCKED.read_text() + QUEUE.read_text()
+    return _btext
+
+
+def git_ok(sha: str) -> bool:
+    return GIT.ok(sha)
+
+
+def queue_at(head: str) -> dict[str, str]:
+    return GIT.queue_at(head)
 
 
 def queue_statuses() -> dict[str, str]:
-    rows = {}
-    for line in QUEUE.read_text().splitlines():
-        t = line.strip()
-        if t.startswith("| ST-") or t.startswith("| KT-"):
-            c = split_row(t)
-            if len(c) >= 6:
-                rows[c[0]] = c[4].strip("`* ")
-    return rows
+    return parse_queue(QUEUE.read_text())
 
 
 def check_md(path: Path) -> None:
@@ -106,9 +192,7 @@ def check_report(path: Path, round_no: int, queue: dict[str, str]) -> None:
     head = str(data.get("head", ""))
     check(git_ok(head), f"{tag}: head {head!r} không tồn tại trong git")
     if git_ok(head):
-        anc = subprocess.run(["git", "merge-base", "--is-ancestor", head, "HEAD"],
-                             cwd=ROOT, check=False)
-        check(anc.returncode == 0, f"{tag}: head {head} không phải tổ tiên HEAD")
+        check(GIT.is_ancestor(head), f"{tag}: head {head} không phải tổ tiên HEAD")
 
     gates = data.get("gates") or {}
     for k in ("fast", "full", "nightly"):
@@ -153,7 +237,7 @@ def check_report(path: Path, round_no: int, queue: dict[str, str]) -> None:
     check(not sorted(set(seen) - set(queue)), f"{tag}: task lạ ngoài QUEUE")
 
     blocked = data.get("blocked") or []
-    btext = BLOCKED.read_text() + QUEUE.read_text()
+    btext = blocked_text()
     for b in blocked:
         check(bool(b.get("id")), f"{tag}: blocked có mục thiếu id")
         check(bool(b.get("question")), f"{tag}: blocked {b.get('id')} thiếu question")
@@ -190,6 +274,19 @@ def main() -> int:
         targets.append((REPORTS / f"R{n}-viscript.json", n))
     json_only = "--json-only" in args
     check(targets, "không có báo cáo nào để kiểm")
+    # Gom mọi SHA + mọi `head` của **toàn bộ** lượt rồi hỏi git một lần (VD-182, nợ #147).
+    shas: list = []
+    heads: list = []
+    for path, _n in targets:
+        data = json.loads(path.read_text())
+        head = str(data.get("head", ""))
+        heads.append(head)
+        shas.append(head)
+        for t in data.get("tasks") or []:
+            if isinstance(t, dict):
+                for c in t.get("commits") or []:
+                    shas.append(c)
+    GIT.prefetch(shas, heads)
     for path, n in targets:
         if not json_only:
             check_md(path.with_suffix(".md"))
