@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-18**: đọc **khối cuối tệp** (“Trạng thái cuối *sau R29*”) trước — VS2 đóng 8/8 (VD-151), repo đã tách riêng (ST-171), đang ở **pha 1 công thái học** (ST-179..ST-200); số R22 trong thân tệp đã lỗi thời.
+> **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối *sau R29*”) trước; **pha 1 công thái học DONE trên ps** tại HEAD `54821da` (ST-205/206/207/208/209/210/211/226 + VD-227 merged); mac chờ + ratify A0. Lưu ý nội dung thân tệp (bài R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
 
 Tài liệu một trang cho người tiếp nhận: 8 hạng mục VS2, mức thật **đo được**, điều kiện đóng 100%,
 nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt cột điều kiện. Số đo cuối: `reports/R22-viscript.md`.
