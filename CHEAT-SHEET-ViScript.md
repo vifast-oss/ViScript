@@ -258,14 +258,14 @@ Method trên giá trị (không cần `use`):
   (mỗi ca = một chương trình hoàn chỉnh ghép từ ô ✔; so **stdout** nếu tệp có dòng `# kỳ vọng:`).
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
   `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
-  `AnyError` **chưa có** → dùng `str`; format spec `{x:.2}` **đã có** (R6);
+  `AnyError` **là `{error}` poison** (VD-222 §5) — không phải `str` nữa — dùng bình thường qua `Result[T, Error]`; format spec `{x:.2}` **đã có** (R6);
   `dyn` **chưa dùng được**; `panic(...)` **chưa có**; `newtype` báo **VS0203** tại dòng khai (ST-179);
   `r"…"`/`b"…"`/`p"…"` **đã bóc tiền tố** (R6a: `print(p"C:\x")` in `C:\x`);
   `async` chạy **tuần tự một luồng**; `chan(0)` bị từ chối `VS0505`.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
-  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` chạy (R3a); `let x = r else:` chạy (R3b); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp).
+  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` (R3a); `let x = r else:` (R3b); `while let PAT = EXPR:` (**R18b** — cấu trúc vòng lặp `if let`-style với pattern, thoát khi `None`); đơn vị `5mb`/`2h30m` chạy; `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp). **VD-222/225/227**: `json.decode(s) → Result[Json, Error]` ở interp và VM (JSON enum thật: `Null/Bool/Num/Str/Arr/Obj`); `Error` bản ghi dựng sẵn `{message, source: Error?, span: str?}`; `print(e)` in chỉ `{message}`; `AnyError := {error}`; interp nâng `T → T?` (annotation) cho phù hợp VM (VD-227).
   - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); pattern viết thường đã **nâng** `VS0111` (R1a) ⇒ **lỗi `VS0203`** (VD-212); từ khoá cũ (R2) đã bỏ — **VS0203**.
-  - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20).
+  - **[DỰ KIẾN]** `main` trả `Err` ⇒ exit 1 (R4); `.lazy()` + `Iterator[T]` duyệt lại (R24); `assert cond, "msg"` (R20). **Lưu ý còn treo**: interp ↔ VM — interp auto-lift `let x: int? = expr` (VD-227) chỉ cho `let`; function-ret-plain chưa auto-lift (phụ thuộc A0 ratify VD-222 §4.4); `chan(0)` vẫn bị chặn `VS0505`.
 - **Nguồn đọc thêm**: `test/sem/**` (452 ca ngữ nghĩa chạy thật),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).
