@@ -74,3 +74,32 @@ Không đụng: auto-lift, `lift_opt`, pattern matching, flatten, `MakeSome`, AB
 ## 7. Trạng thái không đổi
 
 Windows = Tier 2 @ `349af67` (đã đóng phạm vi); `pha1-rc1` `05e42d0…` nguyên vẹn; VD portability vẫn BLOCKED (chờ pha 1 đóng chính thức); Phase B-3 vẫn chờ ratify riêng; lambda annotation / #155 quy trình riêng; Q-OPTION-1/2 đồng bộ theo đính chính A0 (e/f hợp lệ theo kiểu đích); Q-OPTION-3 giữ nguyên; mac #147/#152 hoãn chờ máy rảnh (load < 0,3).
+
+---
+
+## 8. ADDENDUM ĐÍNH CHÍNH — 2026-11-19 (đợt coercion Option, sau lệnh A0 cùng ngày)
+
+> Phần dưới đây **đính chính** các kết luận ở §5–§7; nội dung lịch sử phía trên **giữ nguyên, không sửa**. Nhánh: `rev/vd241-option-coercion-2026-11-19` (từ `4cdbad9`, tức `origin/main` lúc mở lệnh — nay `origin/main` đã tiến `f4ea00b`, chỉ docs).
+
+1. **Corpus 487 là số hiện hành** (không ép quay về 483): thêm `optional/long-option-matrix.vis` (+`.out`) — ma trận 3 spell × biên `let`/`var`/gán lại/đối số/thân hàm/`return` × bảng giá trị (xem §8.3). Pinned counters cập nhật đồng bộ: `sem.rs`, `vis_test.rs` (SO_CA=487), `diag_cmp.rs` (487/399/53/35), `roundtrip.rs`, `vs_interp.rs` (khớp 434), `fuzz_mutate.rs` (399), CHEAT-SHEET (487), FACTS §CẬP NHẬT 2026-11-19 (mục mới).
+2. **Ca e (`let e: int?? = None`)**: A0 chốt **hợp lệ kiểu** (VD-241 §7) **và** runtime phải giữ **`None` lớp ngoài**. Đúng theo bảng giá trị A0 (`None ⇒ None` lớp ngoài, mọi biên): `vis check` xanh · interp và VM đều in `none-out` · pattern arm `None` khớp. Kết luận §5.1/§5.2 cũ ("runtime == `Some(None)`") **không còn hiện hành** — đã sửa trong đợt này.
+3. **Bảng giá trị lúc chạy (cả hai engine, byte-identical)**: `None`⇒`None` · `Some(None)`⇒`Some(None)` · `Some(Some(42))`⇒giữ nguyên · `Some(42)`⇒**nâng một lớp** ⇒ `Some(Some(42))` · `42`⇒lỗi `VS0412` (không nâng hai lớp — kể cả spelled-out/alias; khoá trong `vd_205::vd241_forty_two_opt2_la_loi`).
+   - Áp dụng ở mọi biên: `let` · khai `var` · **gán lại** `x = v` (đích `var` có annot `Option`; nay nâng một lớp — trước đây **không** nâng) · đối số · thân hàm (cuối là `None`) · `return` tường minh.
+   - `var` **không annot** và đích **trường/chỉ số** (`x.f = v`, `x[i] = v`) **chưa** nâng theo annot (engine chưa có chỗ tra kiểu đích) — xem §8.6.
+4. **Bất đối xứng annot spell (finding (b) cũ §5.2/§6.3) — ĐÃ SỬA**: spelled-out `Option[Option[int]]` (và mọi hình `Option[…]`/`option[…]` tham một đối số, kể cả lồng bằng spelled-out) và alias (`type Y = Option[Option[int]]`) nay phân giải về `Type::Opt` **ngay ở hạ tầng lowering** (`lower::named_type`, cùng nhóm với `list`/`map`/`Result`) nên HIR annot của ba cách viết là cùng một kiểu — checker, biên lift, `match` đều **như nhau**. Kiểm: `let z: int?? = None` / `let z: Option[Option[int]] = None` / `let z: Y = None` đều in `None`; `match` arm `None` khớp ở cả ba.
+5. **VM `Unwrap` không trap trên arm không khớp** (`vis-vm vm.rs`): arm ctor (`Some(…)`) phát `Unwrap` để **tính thử** test con trước khi arm được chọn — với giá trị hỏng hình (`None` gặp arm `Some(…)` như arm đầu) trước đây trap `VS0501` (exit 101), interp vẫn xử lý đúng ⇒ lệch engine. Nay `Unwrap` đẩy `Unit` khi hỏng hình (mọi test `TestCtor`/`TestLit`/`TestRange`/`TestTuple`/`TestList`/`TestRecord`/or cho `false` với `Unit`) ⇒ arm bị loại đúng như interp. Bind/`let else` phát `Unwrap` **sau** `TestCtor(true)` nên không đổi hành vi ở chương trình hợp lệ. **Không** mở opcode/ABI.
+6. **Expected output đổi (cả hai engine cùng in)**:
+   - `test/sem/optional/long-none-e.out`: `sn` → **`none-out`** (+comment `.vis` cập nhật).
+   - `test/sem/optional/long-none-param.out`: `1000` → **`9999`** (+comment).
+   - `test/sem/optional/long-none-return.out`: `sn` → **`none-out`** (+comment).
+   - `test/sem/optional/t-qhap-generic.out`: dòng 2 `Some(None)` → **`None`** (+comment).
+   - `none-three-states.out` (42/sn/none-out) và `long-f`/`long-wrap-c`/`long-exact-b`/`long-return`/`long-param-b`: **giữ nguyên**.
+7. **`long-reject-e`**: kết luận cũ ("`.err` khoá hành vi VS0412 cho `None ⇒ int??`") **không còn hiện hành** — ca này đã đổi từ đợt §7 thành `long-none-e.vis` hợp lệ; từ đợt này output là `none-out` (không còn `sn`). Lỗi `42 ⇒ int??` vẫn `.err` (`long-reject-d.vis`) và nay được khoá thêm cho spelled-out + alias (`vd_205::vd241_forty_two_opt2_la_loi`).
+8. **Độ sâu ba lớp (`int???` / spelled-out 3 lớp)**: kiểm trực tiếp — `None`⇒`None` · `Some(None)`⇒`Some(Some(None))` (một lớp) · `Some(Some(None))`⇒giữ nguyên · `Some(Some(Some(42)))`⇒giữ nguyên. Không vá riêng `int?`/`T??`.
+9. **Docs**: `docs/ViScript-thiet-ke.md` đã cập nhật ngữ nghĩa chốt (mục "Cập nhật 2026-11-19 (đợt coercion Option — A0)", §3.1, §4.4, §6.1, §18, Phụ lục A EBNF, VD-19 đánh dấu supersede). `docs/SPEC-lex.md` **không đụng** (không thay đổi từ vựng). `SPEC.md` (nếu có chỗ tham chiếu `int??`) vẫn thuộc quyền A0 — Agent 2 không tự sửa.
+10. **Còn mở cho A0 chốt (không tự mở trong đợt này)**:
+    - `var` **không annot** gán thẳng giá trị plain vào ô có kiểu suy từ init (vd `var x = Some(7); x = 42`) — engine hiện chưa có kiểu đích ở gán lại ⇒ không nâng; checker vẫn chấp nhận theo suy diễn init (đường hở còn từ trước). Cùng một họ: gán lại/đích **trường/chỉ số** (`x.f = Some(7)`, `x[i] = Some(7)`) chưa nâng theo annot của trường/đích chỉ số.
+    - Lambda annotation: **không đổi** trong đợt này (ngoài phạm vi); lambda tham số annot `int??` được nâng đúng (đi cùng đường HParam) nhưng lambda **không annot** thân không có nâng (như cũ).
+    - Windows/macOS **chưa re-verify** bản này (chỉ chạy Linux worktree).
+    - Cache bytecode: `vis-cli cache::PHIEN_BAN` bump `+vd241-coercion-2026-11-19` (khoá cache cũ tự hết hạn; pin `khoa_cache_ghim` ghim lại kèm VD-129).
+11. **Review chéo vẫn bắt buộc** trước khi merge; Agent 2 không push/merge; `pha1-rc1`, SPEC-lex, API-STD, ABI VBC1, Windows Tier 2: **không đụng**.
