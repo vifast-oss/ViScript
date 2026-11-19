@@ -1986,9 +1986,9 @@ APPROVED 2026-11-14 Agent 0
 > `landlock` hoặc `unsafe` đóng + runner Linux; duyệt thay đổi scheduler cho async song song; duyệt migration "siết mặc định caps").
 
 
-> **[BACKLOG — A0 2026-11-19] VD "Windows test-suite portability"** — **CHƯA MỞ** (chỉ mở **sau khi pha 1 đóng chính thức**; không gộp với B-3 / Option-long / lambda-annotation / #147 / #152).
+> **[READY — pha 1 đóng chính thức] VD "Windows test-suite portability"** — **SẴN SÀNG MỞ khi A0 ra quyết định** (pha 1 đóng chính thức 2026-11-19 @ `05e42d0`); chi tiết kế hoạch: `agent/PLAN-WINDOWS-L0-PORTABILITY-2026-11-19.md`.
 > Base khởi điểm: `349af67`. Mục tiêu: phân loại từng test theo hợp đồng thật; port fixture/assertion khi ngữ nghĩa chung; tương đương native cho API đa nền tảng; chỉ `#[cfg(unix)]` cho Unix-integration thật.
 > Kết quả phải đạt: mọi API process đa nền tảng có coverage Windows (stdout/stderr/exit code≠0; capability grant/deny); **không giảm tổng số test process chỉ để xanh**; không "full Windows gate PASS" cho tới khi gate xanh thật (Tier 1 sau VD + required CI/Windows nightly).
 > Chính sách A0 đầy đủ: `agent/DECISIONS.md` block "Quyết định Agent 0 · 2026-11-19 (Windows @ 349af67)" · baseline: `agent/WINDOWS-BASELINE-2026-11-19.md` (25 suite đỏ / 101 ca / 90 tên duy nhất). **Đã merge `8355022`**; xem `agent/SNAPSHOT-2026-11-20.md`.
-> **Trạng thái**: BLOCKED (chờ đóng pha 1 chính thức + ratify mở VD) — không thi hành trong vòng này.
+> **Trạng thái**: READY (pha 1 đã đóng chính thức); kế hoạch trong `agent/PLAN-WINDOWS-L0-PORTABILITY-2026-11-19.md`; chỉ cần A0 ra lệnh mở VD là triển khai được theo plan. **Không thi hành trong vòng này (chưa có lệnh A0).**
 > **[HOÀN TẤT 2026-11-19] SQLite Gate 2** — merged `main` `8355022` (nhánh `rev/vd-sqlite-mvp-2026-11-19` ff-merge); A0 narrow freeze `+9 std.sqlite.*` trong `agent/API-STD.txt` (CODES/VBC1 không đổi); review chéo cuối SHIP; gate PASS @ HEAD `c333e8f` (workspace 149/149; sem 525/525 ×2; smoke **22/22** ×2; sqlite 15/15). Gate 2 KHÔNG mở rộng phạm vi sang Windows/macOS; `pha1-rc1` không di chuyển. Xem `agent/SNAPSHOT-2026-11-20.md` để đọc đầy đủ trạng thái.
