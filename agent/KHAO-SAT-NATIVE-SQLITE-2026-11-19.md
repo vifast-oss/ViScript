@@ -237,3 +237,50 @@ Không dùng JSON cho tất cả — `Value::Enum("Json", …)` làm trung gian 
 - Seam mở rộng native đầu tiên nên là **SQLite** — tiêu chí đúng (thư viện ổn định, public domain, may đo được, nhu cầu thật).
 - **Raw FFI từ script** để sau; **extension loading** mặc định tắt; capability cho tệp phụ SQLite phải là phần của hợp đồng, không phải chi tiết thực thi.
 - **Không triển khai** cho tới khi A0 chốt §9.
+
+
+---
+
+## Addendum — Quyết định A0 2026-11-19 (duyệt mở VD "SQLite MVP", hai cổng)
+
+> A0 duyệt mở VD **SQLite MVP**, chia hai cổng: **Cổng thiết kế + prototype nội bộ** (worktree riêng, **chưa merge API công khai**)
+> và **Cổng tích hợp** (chỉ sau reviewer độc lập xác nhận hợp đồng kiểu/tài nguyên/quyền). **Option fix không phải DONE** (coercion còn mở).
+> Hoãn vĩnh viễn đợt này: raw FFI, ORM, typed-row derive, callback SQL→script, loadable extensions.
+
+### Chỉnh sửa kiến trúc bắt buộc (không được thay bằng phương án khác nếu không có bằng chứng)
+
+1. **Không dùng keyword pre-scan làm ranh giới quyền** — dùng **SQLite authorizer callback** (`sqlite3_set_authorizer`, cài **trước khi** prepare SQL người dùng) để từ chối **hành động theo cấu trúc** SQL đã phân tích (xử lý VACUUM INTO, ATTACH, load_extension, PRAGMA-ngoài §H). Pre-scan **chỉ** dùng để cải thiện thông báo lỗi, không làm bằng chứng thực thi chính sách. Một số PRAGMA có tác dụng trong giai đoạn prepare — chặn sau prepare là quá muộn. Ngoài ATTACH: xét thêm **VACUUM INTO** (tạo db ở đường dẫn tuỳ ý).
+2. **`cap[Dir]` chưa tự động bảo vệ mọi I/O của SQLite** — SQLite tạo tệp tạm ngoài journal/WAL (TEMP db, transient indexes, sort…). Prototype phải làm rõ: db-file + phụ kiện; symlink/reparse point + thay đổi đường dẫn sau check; temporary storage; URI filename; tên rỗng; tên đặc biệt; chính sách mở db đã có WAL; cơ chế bảo vệ thực sự (**VFS / OS sandbox / phương án khác có bằng chứng**). **Nếu chưa bảo đảm file-backed strict-caps ⇒ từ chối rõ trong strict mode, không âm thầm hạ mức.** `:memory:` chấp nhận trước (vẫn phải kiểm soát temporary storage).
+3. **Bundled ≠ không cần toolchain native** — phải chứng minh C compiler/linker trên máy build; không ghi "không dev kit vẫn build" như bảo đảm chung; không ratify con số binary size/hiệu năng chưa đo.
+
+### Chốt A–N (theo nguyên văn quyết định của A0)
+
+- **A. Distribution**: **rusqlite bundled** cho CLI chính thức; ghim dependency; ghi phiên bản SQLite + compile options; không tự viết binding C thay thế để tránh dependency.
+- **B. Row shape**: kết quả `columns: list[str]` + `rows: list[list[SqlValue]]`; giữ nguyên thứ tự và tên cột; chưa streaming.
+- **C. SQL value**: **enum có kiểu** `SqlValue`: `Null`, `Integer(int)`, `Real(float)`, `Text(str)`, `Blob(bytes)`. **Không** dùng `Unit`/`Option` biểu diễn NULL; **không** tự suy `0/1` thành bool.
+- **D. Params**: danh sách `SqlValue` theo vị trí; bind đủ số lượng; thiếu/thừa ⇒ lỗi; chưa implicit heterogeneous conversion, chưa named params.
+- **E. Transaction**: cho SQL `BEGIN/COMMIT/ROLLBACK` trong `execute`; closure transaction wrapper hoãn; lỗi không được tự commit; không hứa transaction luôn còn hoạt động sau mọi lỗi — cần **cách đọc trạng thái transaction** (E-check, §hợp đồng bên dưới).
+- **F. Close**: `close()` tường minh + cleanup khi kết thúc **mỗi phiên chạy Host**, không chỉ lúc process exit; **không auto-commit**; cảnh báo tài nguyên chưa đóng **chỉ** ở chế độ diagnostics, **không** tự in stderr mặc định.
+- **G. Capability**: duyệt yêu cầu quyền thư mục cho file-backed DB nhưng **chưa duyệt** implementation "check path rồi open"; phải qua cổng bảo vệ I/O (mục 2.2 addendum); file-backed strict-caps chỉ mở khi có bằng chứng kiểm soát I/O đầy đủ — chưa đạt thì từ chối rõ.
+- **H. SQL policy**: MVP **cấm ATTACH/DETACH, load extension và VACUUM (INTO / VACUUM nói chung theo quyết định A0)** ở mọi chế độ; `PRAGMA` chỉ `table_info` và **đọc** `user_version`; **không cho ghi `user_version`**; thực thi bằng **authorizer**, không keyword scan.
+- **I. Open**: cho `:memory:`; file mặc định **read-write + create: true**; có `create: false`; chưa thêm read-only mode; từ chối **tên rỗng** và **URI filename** trong MVP.
+- **K. Module**: tên module **`std.sqlite`** duyệt; `SqlValue` **thuộc module**, không đưa vào prelude toàn cục.
+- **L. API freeze**: `api_dong_bang.rs` chỉ cập nhật sau khi chữ ký API qua cổng thiết kế; **không** tự đổi VBC1 hoặc thêm runtime Value variant.
+- **M. Nền tảng**: Linux trước; Windows/macOS phải chạy native build + SQLite tests trước khi tuyên bố hỗ trợ nền; **không** mở lại Windows Tier 2 cũ.
+- **N. Thời điểm**: mở VD và prototype **ngay**; chưa merge API công khai / phát hành trước cổng tích hợp.
+
+### Chốt kiến trúc kiểu & handle (lệnh A0)
+
+1. **`SqlValue` phải thực sự có kiểu** — dùng enum ngôn ngữ qua cơ chế enum runtime sẵn có: **`list[list[Value]]` ≠ `list[list[SqlValue]]`**. Agent 2 phải chứng minh checker, constructor, pattern và hai engine xử lý enum này đúng. Không dùng Any hoặc kiểu lỗi nội bộ để lách chữ ký. Nếu chưa làm được bằng cơ chế hiện tại mà không đổi ABI ⇒ **báo A0**, không tự mở rộng ABI.
+2. **Connection không được là chuỗi dễ giả mạo** — tái sử dụng có thể bảng handle của host nhưng phải: kiểm tra loại handle + chủ sở hữu phiên chạy; từ chối handle đã đóng; **không tái sử dụng ID** khiến handle cũ trỏ nhầm connection mới; biết chuỗi `"db:0"` **không** là bằng chứng quyền.
+3. `db.query()` method API là mục tiêu công thái học, **không phải lý do** mở rộng method dispatch ngoài phạm vi; prototype dùng **hàm module** trước, trình cách viết công khai sau.
+
+### Bổ sung giới hạn tài nguyên và kiểm thử
+
+- Giới hạn: **số hàng** và **tổng kích thước kết quả**; kích thước SQL, text/blob và số tham số; **thời gian thực thi / ngân sách thực thi có cơ chế ngắt**; **số connection** trong một phiên chạy. Vượt ⇒ **lỗi**, không trả dữ liệu bị cắt như kết quả thành công.
+- Test matrix (cổng kiểm thử): kết quả độc lập + parity interp/VM; NULL/BLOB rỗng/Unicode/số biên/cột trùng tên; bind thiếu/thừa; chuỗi chứa dấu nháy; từ chối nhiều statement (cơ chế parser/tail); commit/rollback/lỗi trong transaction + cleanup khi thoát sớm; hai connection tranh khóa với timeout ngắn do test cấu hình; handle giả/handle cũ/rò tài nguyên qua nhiều lần chạy trong cùng process; đường I/O ngoài quyền (không chỉ ATTACH); **mutation trên authorizer/kiểm soát I/O thực tế**, không phải mutation keyword scan.
+
+### Trạng thái các finding còn lại (A0 ghi chú)
+
+- `let x: int?? = None` runtime **còn sai** (bảng A0 Option-lồng: phải là `None` lớp ngoài); bất đối xứng Sugar/spelled-out/alias chưa chốt — đều **đang mở**, không ghi DONE.
+- RFC typed serialization và Windows Tier 2 không đụng tới quyết định này.
