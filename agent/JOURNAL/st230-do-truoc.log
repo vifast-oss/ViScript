@@ -1,0 +1,25 @@
+# ST-230 — ĐỎ-TRƯỚC: `vis test test/sem` trên máy sạch PATH (không có test-child)
+# Thời điểm: 2026-11-20 ~07:56 JST · HEAD 7d5acba · binary target/debug/vis dựng 02:00 (TRƯỚC sửa)
+# Máy: Linux x86_64 · kernel 7.0.0-43-generic · nproc 12
+# Lệnh: ./target/debug/vis test test/sem  (PATH không chứa target/debug)
+# Kết quả: exit=1 · 521 ok · 4 not ok (đúng 4 fixture gọi trợ giúp test-child)
+# sha256 vistest.rs TRƯỚC sửa: a7273f7fbd25278abef1203a90f8b93b0276e5ceff894438a9f93f61b1f32984
+# sha256 log này: (xem st230-do-truoc.sha256 sau khi ghi)
+
+TAP version 13
+1..525
+not ok 501 - vish/ngoai-echo.vish
+not ok 502 - vish/ngoai-printf.vish
+not ok 503 - vish/ngoai-raw.vish
+not ok 505 - vish/ngoai-true.vish
+
+--- 4 dòng lỗi chi tiết ---
+not ok 501 - vish/ngoai-echo.vish
+# vish/ngoai-echo.vish:1:1: VS0501 không chạy được chương trình ngoài `test-child`: No such file or directory (os error 2)
+not ok 502 - vish/ngoai-printf.vish
+# vish/ngoai-printf.vish:1:1: VS0501 không chạy được chương trình ngoài `test-child`: No such file or directory (os error 2)
+not ok 503 - vish/ngoai-raw.vish
+# vish/ngoai-raw.vish:1:1: VS0501 không chạy được chương trình ngoài `test-child`: No such file or directory (os error 2)
+--
+not ok 505 - vish/ngoai-true.vish
+# vish/ngoai-true.vish:1:1: VS0501 không chạy được chương trình ngoài `test-child`: No such file or directory (os error 2)

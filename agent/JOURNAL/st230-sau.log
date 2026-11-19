@@ -1,0 +1,18 @@
+# ST-230 — SAU SỬA: `vis test test/sem` (interp + --vm), máy sạch PATH
+# Thời điểm: 2026-11-20 ~07:59 JST · HEAD 7d5acba + sửa vistest.rs (chưa commit)
+# Máy: Linux x86_64 · kernel 7.0.0-43-generic · rustc rustc 1.99.1 (58cf8f9c3 2026-10-13)
+# sha256 vistest.rs SAU sửa: f07d20035b64e629d9cdd187ca8bbd08bed7d6e7a1e65872051bbdd4670bb866
+
+## ./target/debug/vis test test/sem
+exit=0  ok=525  not_ok=0
+TAP version 13
+1..525
+ok 524 - vish/than-khai-lenh.vish
+ok 525 - vish/thua-doi-so.vish
+
+## ./target/debug/vis test --vm test/sem
+exit=0  ok=525  not_ok=0
+TAP version 13
+1..525
+ok 524 - vish/than-khai-lenh.vish
+ok 525 - vish/thua-doi-so.vish

@@ -1,0 +1,9 @@
+
+running 4 tests
+test vistest::tests::esc_json_newline_tab_control_parse_duoc ... ok
+test vistest::tests::path_voi_muc_dau_them_dau_va_giu_phan_con_lai ... ok
+test vistest::tests::stderr_nhieu_khong_bi_qua_han_oan ... ok
+test vistest::tests::chau_giu_ong_khong_lam_treo ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 103 filtered out; finished in 0.81s
+
