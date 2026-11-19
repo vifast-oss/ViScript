@@ -252,10 +252,66 @@ fn encode_decode_round_trip() {
 fn anyerror_none_field_engine_parity() {
     let [a, b] = chay_ca_hai(
         "nonemsg",
-        "fn main() -> ():\n    let x: AnyError = None\n    print(x.message)\n",
+        "fn main() -> ():\n    let x = None\n    print(x.message)\n",
     );
     assert_eq!(a.0, 101, "interp phải exit 101; stderr={}", a.2);
     assert_eq!(a.1, "");
     assert_eq!(a.0, b.0);
     assert_eq!(a.2, b.2);
+}
+
+/// (11) **VD-238** ca khoá: `None` trần chỉ gán được cho `T?` — mọi annot non-Opt đều đỏ (`VS0412`).
+#[test]
+fn none_tran_chi_gan_duoc_cho_option() {
+    use std::process::Command;
+    for (tag, src) in [
+        (
+            "err_anyerror",
+            "fn main() -> ():\n    let x: AnyError = None\n    print(x)\n",
+        ),
+        (
+            "err_int",
+            "fn main() -> ():\n    let n: int = None\n    print(n)\n",
+        ),
+        (
+            "err_fn_ret",
+            "fn f() -> int:\n    None\n\nfn main() -> ():\n    print(f())\n",
+        ),
+        (
+            "err_arg_call",
+            "fn f(n: int) -> int:\n    n\n\nfn main() -> ():\n    print(f(None))\n",
+        ),
+    ] {
+        let d = tam(tag);
+        let p = d.join(format!("{tag}.vis"));
+        std::fs::write(
+            &p,
+            format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+        )
+        .expect("ghi tệp tạm");
+        let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+            .arg("check")
+            .arg(&p)
+            .output()
+            .expect("vis check");
+        let tho = String::from_utf8_lossy(&o.stdout).to_string();
+        assert_ne!(
+            o.status.code().unwrap_or(-1),
+            0,
+            "check phải đỏ cho {tag}\n{tho}"
+        );
+        assert!(tho.contains("VS0412"), "{tag}: phải chứa VS0412; {tho}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+/// (12) **VD-238** ca khoá xanh: `let x: int? = None` giữ nguyên.
+#[test]
+fn none_tran_cho_option_la_ok() {
+    let [a, b] = chay_ca_hai(
+        "ok_opt",
+        "fn main() -> ():\n    let x: int? = None\n    match x:\n        Some(v): print(v)\n        None: print(\"khong\")\n",
+    );
+    assert_eq!(a.1, "khong\n");
+    assert_eq!(a.1, b.1);
 }

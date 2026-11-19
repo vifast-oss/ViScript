@@ -251,7 +251,7 @@ fn phep_cua_vs0_theo_vd48() {
 /// `Json` là enum dựng sẵn. Trước 18/11 hai tên này là VS0303; nay **dùng được** và một kiểu ngoài
 /// VS0 khác (vd `Set`) vẫn phải VS0303 rõ ràng. `AnyError` nhận sai kiểu phải báo `VS0412`.
 fn kieu_ngoai_vs0_bao_vs0303_ro_rang() {
-    let (out, _) = run("let j: Json = None\nj");
+    let (out, _) = run("let j: Json = Null\nj");
     assert!(
         out.codes().is_empty(),
         "Json nay sạch chẩn đoán (VD-222): {:?}",

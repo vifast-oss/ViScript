@@ -44,7 +44,7 @@ impl<'a> Checker<'a> {
             HExpr::Bin { op, lhs, rhs, span } => {
                 let l = self.kiem_expr(lhs);
                 let r = self.kiem_expr(rhs);
-                let (l_lit, r_lit) = (super::is_int_lit(lhs), super::is_int_lit(rhs));
+                let (l_lit, r_lit) = (super::vd238::is_int_lit(lhs), super::vd238::is_int_lit(rhs));
                 self.kiem_bin(
                     *op,
                     (&l, &r),
