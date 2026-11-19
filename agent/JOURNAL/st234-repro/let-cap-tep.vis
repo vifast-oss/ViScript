@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+let base = 100
+
+fn add(x: int) -> int:
+    x + base
+
+print(add(1))

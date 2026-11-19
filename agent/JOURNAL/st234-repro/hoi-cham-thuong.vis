@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    name: str
+
+fn main():
+    let u: U = {name: "An"}
+    print(u?.name)
+    let x: int = u?.name.len()
+    print(x)

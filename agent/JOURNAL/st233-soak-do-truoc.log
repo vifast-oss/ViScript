@@ -1,0 +1,7 @@
+# ST-113 — soak 10 vòng, bắt đầu 2026-11-19T23:08:51Z, HEAD 4ee06c3
+# log: agent/JOURNAL/st233-soak.log · ID task: ? · chế độ: tệp-mới
+# load trước:  08:08:51 up 12 days,  4:53,  7 users,  load average: 1.64, 1.59, 0.84
+=== gate-1 | bắt đầu 2026-11-19T23:08:51Z
+./bin/vis-soak: 111: ../vis-dev: not found
+=== gate-1 | kết thúc 2026-11-19T23:08:51Z | 0s | exit=127 | KẾT LUẬN: ĐỎ (exit 127)
+soak: DỪNG ở gate-1 — KHÔNG retry; nếu do tải máy ghi T-INFRA (load:  08:08:51 up 12 days,  4:53,  7 users,  load average: 1.64, 1.59, 0.84)

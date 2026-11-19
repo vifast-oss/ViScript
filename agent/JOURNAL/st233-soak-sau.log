@@ -1,0 +1,19 @@
+# ST-113 — soak 10 vòng, bắt đầu 2026-11-19T23:10:06Z, HEAD 4ee06c3
+# log: agent/JOURNAL/st233-soak-sau.log · ID task: ? · chế độ: tệp-mới
+# load trước:  08:10:06 up 12 days,  4:54,  7 users,  load average: 0.71, 1.30, 0.80
+=== gate-1 | bắt đầu 2026-11-19T23:10:06Z
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.99.1; yêu cầu ≥ 1.99.1)
+== vis-dev check ==
+Diff in /home/ps/ViScript/crates/vis-cli/tests/soak_script.rs:117:
+     let m = std::fs::read_to_string(&marker).unwrap_or_default();
+     let so = m.lines().filter(|l| l.trim() == "GATE").count();
+     assert_eq!(
+[31m-        so, 3,
+(B[m[32m+        so,
+(B[m[32m+        3,
+(B[m         "vis-dev ở GỐC phải được gọi 3 lần (gate-1..3); stderr: {}",
+         String::from_utf8_lossy(&o.stderr)
+     );
+--- fmt: FAIL
+=== gate-1 | kết thúc 2026-11-19T23:10:06Z | 0s | exit=1 | KẾT LUẬN: ĐỎ (exit 1)
+soak: DỪNG ở gate-1 — KHÔNG retry; nếu do tải máy ghi T-INFRA (load:  08:10:06 up 12 days,  4:54,  7 users,  load average: 0.71, 1.30, 0.80)

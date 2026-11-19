@@ -77,3 +77,50 @@ fn vis_soak_hop_le_va_in_du_10_vong() {
         .collect();
     assert_eq!(dong, VONG, "danh sách vòng: {out:?}");
 }
+
+/// **ST-233 (hồi quy sau tách repo ST-171)**: `vis-soak` `cd` về **gốc repo** rồi chạy `./vis-dev`.
+/// Bản cũ gọi `../vis-dev` (đường của cây `viscript/` trước tách) ⇒ `exit 127` ngay `gate-1`.
+///
+/// Dựng cây giả: `vis-dev` ở **gốc** ghi marker mỗi lần gọi; `bin/vis-diff`/`bin/vis-host-suite` stub.
+/// Đòi `vis-dev` được gọi **3 lần** (gate-1..3); vòng `cache-*` dùng `cargo` thật trong cây không có
+/// manifest nên script dừng ở đó — không ảnh hưởng phép kiểm.
+#[test]
+fn vis_soak_goi_vis_dev_o_goc_repo() {
+    let d = std::env::temp_dir().join(format!("vis-soak-goc-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    std::fs::create_dir_all(d.join("bin")).expect("tạo cây giả");
+    std::fs::copy(script(), d.join("bin/vis-soak")).expect("chép vis-soak");
+    let marker = d.join("marker");
+    let viet = |p: &std::path::Path, noi: &str| {
+        std::fs::write(p, format!("#!/bin/sh\n{noi}\n")).expect("ghi stub");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut q = std::fs::metadata(p).expect("metadata").permissions();
+            q.set_mode(0o755);
+            std::fs::set_permissions(p, q).expect("chmod stub");
+        }
+    };
+    viet(
+        &d.join("vis-dev"),
+        &format!("echo GATE >> '{}'\nexit 0", marker.display()),
+    );
+    viet(&d.join("bin/vis-diff"), "exit 0");
+    viet(&d.join("bin/vis-host-suite"), "exit 0");
+
+    let o = Command::new(bash())
+        .arg(d.join("bin/vis-soak"))
+        .arg("--log")
+        .arg(d.join("soak.log"))
+        .output()
+        .expect("chạy soak giả");
+    let m = std::fs::read_to_string(&marker).unwrap_or_default();
+    let so = m.lines().filter(|l| l.trim() == "GATE").count();
+    assert_eq!(
+        so,
+        3,
+        "vis-dev ở GỐC phải được gọi 3 lần (gate-1..3); stderr: {}",
+        String::from_utf8_lossy(&o.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}

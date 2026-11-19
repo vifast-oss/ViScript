@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    name: str
+    age: int
+
+fn main():
+    let u: U? = Some({name: "An", age: 3})
+    print(u?.name)
+    let n = u?.name
+    print(n)
+    print(n ?? "?")
+    let a: U? = None
+    print(a?.name)

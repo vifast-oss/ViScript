@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    for i in 0..2:
+        for j in 0..3:
+            break
+        print(i)
+    print("done")

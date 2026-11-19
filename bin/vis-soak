@@ -126,11 +126,11 @@ chay() {
     fi
 }
 
-chay gate-1 ../vis-dev gate --fast
-chay gate-2 ../vis-dev gate --fast
+chay gate-1 ./vis-dev gate --fast
+chay gate-2 ./vis-dev gate --fast
 chay diff-1 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay diff-2 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
-chay gate-3 ../vis-dev gate --fast
+chay gate-3 ./vis-dev gate --fast
 chay diff-3 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay host-1 ./bin/vis-host-suite
 chay host-2 ./bin/vis-host-suite

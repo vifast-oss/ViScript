@@ -1,0 +1,14 @@
+# ST-113 — soak 10 vòng, bắt đầu 2026-11-19T23:10:23Z, HEAD 4ee06c3
+# log: agent/JOURNAL/st233-soak-sau2.log · ID task: ? · chế độ: tệp-mới
+# load trước:  08:10:23 up 12 days,  4:54,  7 users,  load average: 0.56, 1.23, 0.78
+=== gate-1 | bắt đầu 2026-11-19T23:10:23Z
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.99.1; yêu cầu ≥ 1.99.1)
+== vis-dev check ==
+--- fmt: OK
+    Checking vis-cli v0.1.0 (/home/ps/ViScript/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+--- clippy: OK
+R3 net.vis: thiếu SPDX-License-Identifier trong 5 dòng đầu
+--- luật R1..R6: FAIL
+=== gate-1 | kết thúc 2026-11-19T23:10:24Z | 1s | exit=1 | KẾT LUẬN: ĐỎ (exit 1)
+soak: DỪNG ở gate-1 — KHÔNG retry; nếu do tải máy ghi T-INFRA (load:  08:10:24 up 12 days,  4:54,  7 users,  load average: 0.56, 1.23, 0.78)
