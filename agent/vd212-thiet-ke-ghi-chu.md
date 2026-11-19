@@ -1,93 +1,115 @@
-# Thiết kế ST-212 (VS3-QĐ-1 — async song song thật) — 2 hướng, Agent 0 chọn
+# Thiết kế ST-212 (VS3-QĐ-1) — hai hướng, Agent 0 chọn (2026-11-19)
 
-**Người ghi**: Agent 1 · **Ngày**: 2026-11-19 (sau VD-235) · **Trạng thái**: **CHỈ TÀI LIỆU — KHÔNG merge mã**
-**Nguồn**: VD-235 (Agent 0 ratify, 2026-11-19) — chuyển ST-212 sang pha 2. **Agent 0 sẽ chọn hướng**.
+**Người ghi**: Agent 1 · **Ngày**: 2026-11-19 (~10:30) · **Trạng thái**: **CHỈ TÀI LIỆU — KHÔNG merge mã**
+**Quyết định**: **VD-235** (Agent 0, 2026-11-19) — ST-212 chuyển sang **pha 2**. Đây là bản thiết kế **để A0 chốt hướng**.
+**Ngân sách**: ~3 h, chỉ tài liệu; không refactor code ngoài `docs`.
+**Mục tiêu ST-212**: `async fn` + `spawn` chạy **song song thật** (nhiều luồng), thay vì scheduler một luồng run-to-completion hiện tại.
 
-## 1. Hiện trạng (điểm xuất phát, đã đo)
+## 1. Hiện trạng (dẫn tệp/thật)
 
-- `crates/vis-interp/src/rt.rs` — `Scheduler` một luồng, FIFO, `run-to-completion`; `Rc<Task>` mang `Rc<RefCell<Chan>>`.
-- `crates/vis-interp/src/value.rs` — `Value` chứa `Fn(Rc<Closure>)`, `Vm(Rc<VmFunc>)`, `Task/Async`, `Chan/RC<RefCell<…>>` → **không `Send`**.
-- VM (`crates/vis-bytecode`) sinh `$value:<tên>` để dựng giá trị; VM bản hiện tại cũng một luồng, step cap `10^7`.
-- `async fn` trong ViScript hiện chạy **tuần tự**; `spawn`-thời-điểm ghim `W=1` (một threaapoint); mọi đường đều FIFO.
-- Baseline (đo ps, máy 12-core, idle): `heavy(2000)*4*6` = **0,128 s interp / 0,077 s VM**; `heavy(50000)*100` interp ≈ **12,9 s** (VM vượt step cap sớm hơn).
+- `crates/vis-interp/src/rt.rs` — `Scheduler` một luồng (`Rc<Task>`, `Rc<RefCell<Chan>>`); FIFO; run-to-completion; không `"Send"` ở bất cứ đâu.
+- `crates/vis-interp/src/value.rs` (line 37-78) — `Value` gồm `Proc/…/Closure(Fn)`, `Vm(Rc<VmFunc>)`, `Task(Rc<Task>)`, `Chan(Rc<RefCell<Chan>>)`, `Cap { … }` ⇒ **không `Send`**.
+  - `Closure.env: Rc<RefCell<HashMap<u32, Value>>>` (`value.rs`) — environment điện tử dùng `RefCell` (khó `Sync`).
+  - `Chan` chứa `RefCell<Chan>` (`crates/vis-interp/src/value.rs`); đọc/ghi một luồng — không chia sẻ được.
+- `crates/vis-bytecode/src/codegen.rs` — VM cũng một luồng; cap `10^7` bước (cùng ngưỡng interp, `vm.rs:87`); `$value:<tên>` dựng builtin qua bytecode, vẫn đơn luồng.
+- Fixtures hiện hữu: `test/sem/async/*.vis` (35 ca, trong đó `spawn-*.vis` 4 ca; `await-trong-vong-lap.vis` 1 ca) — **mọi ca đều ngầm giả định một luồng** (output theo thứ tự khai báo).
+- `spawn` ngữ nghĩa hiện tại: **hàm async gọi sẽ trả `Task[T]` ngay** nhưng **KHÔNG chạy** cho tới `await`; output task chỉ hiện khi `await` — byte-identical giữa interp và VM.
 
-## 2. Điều kiện cứng cho mọi hướng
+## 2. Ràng buộc không được phá (cả 2 hướng)
 
-1. `chan(0)` **vẫn** bị từ chối `VS0505` (ràng buộc hiện hữu; không đổi).
-2. `recv` sau `close` trả `none`; `send` sau `close` trả `VS0504`; deadlock → `VS0505` không treo (đang có).
-3. Không đổi ngữ nghĩa spec cho các phần đã đóng pha 1 (VD-222..VD-229 đã được A0 ratify).
-4. `Value` vẫn có ngữ nghĩa giống nhau giữa interp và VM (byte-identical nếu chỉ quyết định nơi tính toán) — đây là điểm dễ lệch nhất.
+1. `chan(0)` trả `VS0505` (runtime) — code hiện reject (VD-90); **VD-178 QĐ-2** (chan-rendezvous, ratify của A0) và **VD-190 (Q9 = A)** cho phép mở rendezvous ở **pha 2** (SO-NO `#145` đang mở chuyển VS3). Doc này không tự mở `chan(0)`; chỉ đề cập "nếu A0 cho phép mở rendezvous, `chan(0)` nằm trong phạm vi pha 2" và ghi nhận drift hiện tại.
+2. `recv` sau `close` trả `None`; `send` sau `close` trả `VS0504`; deadlock → `VS0505` — giữ nguyên.
+3. Fixtures `test/sem/async/*.vis` chạy **byte-identical** interp vs VM cho mọi chương trình đã có (nhiều chương trình hiện tại in output theo thứ tự `spawn`/`await` trong **một** luồng — song song thật cũng phải cho output tương đương).
+4. Không đổi SPEC trong bước này (SPEC-lex chỉ sửa qua Agent 0).
 
-## 3. Hướng (a) — Worker pool **bên ngoài** `spawn`, gửi/nhận kênh bằng **sao chép sâu**
+## 3. Hướng (a) — Worker pool **ngoài `spawn`**; gửi/nhận qua kênh bằng **sao chép sâu**
 
-### 3.1 Kiến trúc
-- Giữ nguyên `spawn` API và hàm `Chan`. Thay `Rc<...>` bằng `Arc<Mutex<Chan>>` ở **một lớp bên ngoài** chỉ quanh queue sẵn sàng (`ready: Mutex<VecDeque<Task>>`).
-- `Value`: cho phép **đóng gói** thành `VisSendable` — một dạng sao chép sâu (deep clone) của giá trị vi phạm `Sendable` thì bị từ chối tại `spawn` với mã **VS0508**.
-- Pool: `W = min(nproc, 4)` worker thread; mỗi worker chạy `vish_tap` trên list[Loop] trong `VM/interp` **riêng**; giao việc qua queue; join cuối đóng với mọi worker.
-- `Chan`: `Arc<Mutex<Chan>>` + `Condvar`; gửi `Value` → **clone** (số học / giá trị dữ liệu); `Fn`/`Task`/`VmFunc` không gửi được ⇒ `VS0508` tại spawn (không tại `send`).
-- Deterministic join: giữ thứ tự in bằng cách gom output theo task-index (buffer); in sau khi join xong ⇒ golden **có thể** giữ nguyên cho mọi test song song.
-- `$await` luôn chạy task tới hoàn tất (không đổi). `spawn` trả `Task[T]` (handle, check_async trong `task_wait`).
+### 3.1 Cơ chế (theo VD-178 QĐ-1, nó ratify mô hình này)
 
-### 3.2 Tác động lên golden / fixture
-- Test plugin `tests/spawn*.vis`, `spawn-ben-trong-spawn.vis`: output order **đổi** theo thứ tự thread — cần **2 loại thân**: (i) test output không thứ tự: golden được chốt lại theo sorted; (ii) test print-trong-task: output gom lại ⇒ golden giữ nguyên nếu join-buffer duyệt theo index. Ước tính **shake 12–20 golden `.out`** + `spawn-*.vis` 8 cá.
-- VM: `$value:<tên>` lỏng tham chiếu queue-local; worker riêng cache có chủ đích ⇒ phải recalc từ scratch mỗi worker (step cap vẫn đúng mỗi worker).
+- **Thay đổi cấu trúc tối thiểu nằm ở ngoài `spawn`**:
+  - Một `ready: Mutex<VecDeque<TaskMsg>>`; `W = min(nproc, 4)` worker OS-thread.
+  - `TaskMsg = (fidx, args: Vec<u8>)` — **args tuần tự-hoá** (không chuyển `Value` muộn xuống luồng); `Value` được deep-clone trên đường vào queue (xã hội theo từng byte → tránh triệt để `Rc`/`RefCell` sang thread khác).
+  - Kết quả từ worker (MßJoinCell) được nhận theo thread-index (round-robin buffer); main-thread in theo index ⇒ **thứ tự in byte-identical** với một luồng phiên bản cũ nhất.
+- `Chan`: `Arc<Mutex<Chan>>` + `Condvar`; gửi giá trị-pointer (raw pointers / `Send`-able payload); chỉ dữ liệu (int/float/bool/size/`list`/`map`/`record`/`enum` chứa dữ liệu) và `&str` ghim vào nội dung được gửi.
+- **`spawn f(args)`**: deep-clone `args` (mọi closure không gửi được vì `env: Rc<RefCell<HashMap>>` không `Send`; `Fn`/`Task`/`VmFunc`/`Chan` — gửi bất kỳ → `VS0508`).
+- **Compile-time regex** trên AST: mọi giá trị đóng gói `spawn` phải `Sendable` (intène `Send`) — đồ để kiểm tra tại `let x: Some(Fn-x)` cũng trả `VS0508` ngay tại lower/check; tại runtime kiểm tra lần 2 không thừa.
 
-### 3.3 Rủi ro hai engine lệch
-- Output in trong task **lệch thứ tự giữa interp và VM** nếu giữ in trong worker thay vì buffer-then-join. **Chặn**: mọi `print` trong `async fn` chỉ ghi vào buffer, join in theo thứ tự task-index ⇒ interp & VM in giống byte.
-- `Task` handle đọc được độ trễ giữa worker threads nếu không mutex ⇒ panic tiềm tàng; đóng trong `Mutex<`**wait-list**.
-- VM step cap: mỗi worker 10^7 cap ⇒ hành vi chạy > cap round-robin mode **giống interp** nếu interp không cap — interp không có cap theo `MAX_CALL_DEPTH` recursion only.
+### 3.2 Tác động test/golden (ước lượng thận trọng)
 
-### 3.4 Công ước cho trường hợp drift
-- Nếu drift interp ≠ VM ở **mất độ FIFO** — chấp nhận loss `FIFO` (VD-185 đã chọn hướng này); cần **thêm VS0508** ở mọi gửi giá trị không clone-được ⇒ ít test hơn tổng số bình luận của một test song song.
+- `test/sem/async/print-trong-task-thu-tu.vis` — hiện kỳ vọng `print("f1")` rồi `print("f2")`; với buffer-then-join theo index, output vẫn `f1\nf2\n` ⇒ **golden giữ nguyên**.
+- `spawn-nhieu-join-cuoi.vis` — output `print(1)\nprint(2)\nprint(3)\nmain` theo thứ tự trái→phải-not → đổi thành `main` trước hay sau tùy buffer; golden **đã phải đổi** thành `main\n1\n2\n3` hoặc giữ `1\n2\n3\nmain` — cần dùng lại expected file với **".out" trong do cấu hình deterministic**.
 
-### 3.5 Ước lượng
-- Audit `#[derive(Clone)]` Value + mọi path capture Rc (≈ 3 h)
-- Rework queue/Channel + worker (≈ 8–12 h)
-- Sao chép sâu (serialization) Value→Bytes khi qua Worker (≈ 4–6 h) ⇒ tăng try-as-clone; Memory owned độc lập của mỗi worker
-- Golden sweep + re-trace (≈ 6–8 h)
-- Verification (gate + sem + fuzz) — 2 h
-- **Tổng: 2,0–2,5 tuần-người**, 1–2 golden-hash trên mỗi input là `spawn-ben-trong-spawn`
+| File async | Golden | Sau hướng (a) |
+|---|---|---|
+| print-trong-task-thu-tu | `f1\nf2\n` | giữ nguyên |
+| spawn-nhieu-join-cuoi | `1\n2\n3\nmain` (theo .out hiện hữu) | **đổi** (buffer order) — cần re-record |
+| task-in-trong-than | phụ thuộc await ordering | có thể giữ (FIFO thật) |
 
-## 4. Hướng (b) — **Giữ một luồng**, chỉ thêm test grid (không đổi mã chạy)
+- **Ước lượng thay đổi golden**: 3–6 `.out`; 12–16 file `test/sem/async/*.vis` + kiêm tra output lại.
+- Thay `MAX_CALL_DEPTH`/step cap nào cũng không chạm — mỗi worker có trong nội bộ mình.
 
-### 4.1 Kiến trúc
-- Không chạm scheduler, không thêm worker. Giữ FIFO run-to-completion.
-- Thêm **test grid** trong `test/sem/async/` hiển thị hành vi hiện có một cách hiển tường:
-  - `async-parallel-cy-1.vis`: 2 task CPU, in tuần tự (không song song thật; chạy tuần tự).
-  - `spawn-spawn-send.vis`: spawn gửi qua kênh với copy giá trị plain data.
-  - `async-join-timeout.vis`: join quanh task nhận lỗi — giống hệt ref hiện hữu.
-  - `chan-many-send.vis`: 100 gửi qua buffer `chan[1]` để xác nhận không treo (VS0505 path qua test).
-- Cải thiện docs/cheatsheet/comment về "async hiện một luồng"; gắn với backlog rõ ràng.
+### 3.3 Rủi ro hai engine lệch (chi tiết thật)
 
-### 4.2 Tác động lên golden
-- **0 golden đổi**. Mọi output `.out` giữ nguyên (hành vi không đổi).
-- Fuzz parser không đổi (không có path mới).
+- VM (một luồng có step cap; interp **cũng** có **10^7 bước** cho vòng lặp — `crates/vis-interp/src/interp.rs:502-530`). Nếu W worker chạy task CPU-intensity với ngắt 10^7 giữa kỳ lệch thì **interp vs VM không byte-identical** về state (nhưng byte-identical về behavior nếu phát hiện).
+- Capture semantics: closure không thể deep-cụpe `env` mà giữ mọi side-effect của `var` trên biến của hàm cha — đây là **điểm vỡ chính**; hướng này **không cho phép `spawn fn(…)` với closure capture `var`** ⇒ bật `VS0508` ở compile-time nếu bám `var` trong body async gửi đi.
+- `print` bên trong `async fn`: **buffer-then-join** trả ra sau join — **cần định nghĩa rõ** thêm Spec rõ ràng (VD nào tiếp theo phải bổ sung `spawn` semantics cho printed output).
+
+### 3.4 Ước lượng công
+
+- Phân tích Send từng biến thể `Value` (chỉ `Sendable` whitelist): **2–3 h**
+- `SendableValue` + deep-copy: **4–6 h** (dữ liệu) + serialization paths cho `Record/Enum list map`: **4 h** (20 đường khác nhau)
+- Worker pool + ready-queue + termination detection: **6–10 h**
+- Golden sweep & re-record (~5 files): **2–3 h**
+- Verification (gate + sem + workspace): **3 h**
+- **Tổng: 3,5–5 tuần-người** (thực tế khi trừ đất: ~4 tuần), phá 0 crate-level, giữ byte-identical nếu phát hiện nguy hiểm.
+- Nếu A0 muốn nhanh hơn: implementation "chỉ `spawn` cấp tệp`, không closure capture" thu hẹp surface (ước lượng ~2 tuần).
+
+## 4. Hướng (b) — **Giữ một luồng**, chỉ thêm test grid
+
+### 4.1 Cơ chế
+
+- **Không chạm scheduler**; không có worker; không đụng Queue; giữ FIFO run-to-completion.
+- Thêm **test grid** `test/sem/async/*.vis` để khoá hành vi một-luồng hiện hữu:
+  - `async-khong-goi-khong-chay.vis` — không gọi: chưa chạy ✓
+  - `spawn-*.vis` — spawn không chạy cho tới `await` ✓ (có sẵn; thêm ca spawn-task-throw)
+  - `await-trong-vong-lap.vis` — cache đúng một vòng ✓ (có sẵn)
+- **Docs cheatsheet note** ~ 5 dòng: "async/spawn hiện một luồng — chờ ST-212 (pha 2)".
+
+### 4.2 Tác động golden
+
+- **0 golden đổi** — hành vi chạy giữ nguyên, output không bị sắp xếp lại.
 
 ### 4.3 Rủi ro
-- **Lệch match gun chí mạng**: giữ "false advertising" — `news.spawn` converti Luật rất đơn giản nhưng callers hiểu nhầm là parallel-thật. Đây là rủi ro chính.
-- Không giải quyết VD-185/VS3-QĐ-1; chỉ hoãn rõ ràng.
+
+- **Lệch kỳ vọng người dùng**: `spawn` phải là "chạy song song" về mặt tinh thần lập trình — hướng (b) **không** giải quyết đâu, chỉ ghi rõ nó là một luồng.
+- Không decuple động viên-đóng (VD-185 pha 2).
 
 ### 4.4 Ước lượng
-- Viết ~8–12 ca `test/sem/async/*.vis` (≈ 1 buổi); cheatsheet note (≈ 20 phút); verify `vis test` xanh (≈ 30 phút).
+
+- Thêm 3–4 test marker `.vis` (~0,5 day)
+- Cheatsheet note + `docs/ViScript-thiet-ke.md` reflect: "hiện tại một luồng" (~0,5 h)
 - **Tổng: 0,5–1 ngày**.
 
 ## 5. Bảng so sánh
 
-| Tiêu chí | Hướng (a) worker pool | Hướng (b) một luồng + test grid |
+| Tiêu chí | (a) worker pool + deep-clone | (b) một luồng + test grid |
 |---|---|---|
-| Nội dung | Code mới: queue/Mutex/Condvar/Safe & clone | Test mới + ghi chú |
-| Golden đổi | 12–20 `.out` + 8 test song song | **0** |
-| Rủi ro hai engine lệch | Cao trung bình — cần buffer-then-join | Không tăng |
+| Phạm vi | Code lớn (sau pha 1) | Test + docs |
+| Golden đổi | **3–6 `.out`** | **0** |
+| Byte-identical giữ được? | Có, nếu `print buffer-then-join + index` | Có, không thay đổi |
+| Rủi ro hai engine | Trung bình (capture shared Rc) | None (hành vi không đổi) |
+| Công ước | ~3,5–5 tuần-người | ~0,5–1 ngày |
 | Sửa spec? | Không (thuộc pha 2) | Không |
-| Công ước | ~2 tuần-người | ~0,5–1 ngày |
-| `Value` → `Arc/Mutex` | Bắt buộc (chỉ ở struct send queue + channels) | Không |
-| `VS0508` | Bổ sung rõ ràng | Tài liệu ghi nhận |
-| Chọn khi nào | Nếu A0 muốn ViScript có song song thật ở pha 2 | Nếu A0 muốn "tạm giữ ngữ nghĩa đã chốt, không phá workspace" |
+| `Value → Arc` bắt buộc? | Không (chỉ bytes) | Không |
+| `chan(0)` rendezvous | **Có thể** mở nếu A0 cho phép (VD-178 QĐ-2 / VD-190) | Không |
+| `VS0508` | **Có** (chỉ gửi dữ liệu thuần) | Không cần |
+| Chọn khi nào | "Muốn async song song thật sớm" | "Muốn duy trì ổn định, treo async đến pha 1 chính thức xong" |
 
-## 6. Đề xuất cho A0 để chọn
+## 6. A0 chọn hướng — lưu ý trước khi ratify
 
-- **Nếu kèm điều kiện**: AST phải duyệt `spawn` trước khi ratify bất cứ hướng nào; cả hai đều không sửa SPEC trong cùng bước này.
-- **(a)** đúng ý "song song thật" VD-185/QĐ-1; cân nhắc thời điểm sau khi pha 1 đóng chính thức trên mac (VD-237).
-- **(b)** an toàn hơn về golden; nhỏ 2 h; rủi ro giữ nguyên một luồng (điểm VD-185 sẵn sàng) và cộng thêm ca trắc nghiệm cho đội người dùng hiểu rõ hiện trạng.
+1. **Trích dẫn**: VD-178 QĐ-1 (spawn = deep-copy; `VS0508` cho không-Send) + VD-178 QĐ-2 / VD-190 (chan(0) rendezvous = pha 2); VD-185 (VS3-QĐ-1 = async song song thật); VD-180/196 (pha 2); **không** dùng VD-185 làm căn cứ cho "loss FIFO" — UT-pre-existing đã ưu tiên một-luồng.
+2. Cả hai hướng đều **không chạm** các phần đã đóng pha 1 (VD-222..VD-229).
+3. (a) chi phí > **3 tuần** do capture semantics + serialization paths; nếu A0 muốn nhanh, (a) chỉ khả thi khi **capture loại bỏ** (spawn chỉ cho cấp tệp cấp chức năng cấp, không closure `var` bắt giữ) — thu hẹp surface ⇒ ~2 tuần.
+4. (b) chốt được **trong một buổi**; lệch giảm sát zero; đủ cho "người dùng biết rõ scheduler hiện tại một luồng".
 
-**Agent 0 chọn trong đợt kế, đọt pha 2.**
+**Agent 0 chọn khi tiếp nhận; Agent 1 chỉ thực thi theo quyết định đó.**

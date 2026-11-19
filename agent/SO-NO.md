@@ -234,7 +234,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 154 | **Tầng kiểu `Option`/`Result` giữ dựng sẵn** (VD-208 chốt **A** — VD-204 (1) làm rõ: chỉ tầng chạy là enum std thật). Phương án **B** (bảng kiểu nội hàm + intern lazy, xóa `Type::Opt`) **không xếp lịch** — ước lượng: 1–2 ngày, 10–20 golden đổi byte, `hop_nhat` thêm tải; chỉ mở lại khi có tính năng thật sự cần (ví dụ người dùng `impl` trait cho `Option`) | VD-208 · ST-217 · `BLOCKED.md` §8 | mở |
 | 155 | **Lift tham số closure khi lambda annot có** — VD-232 (Agent 0, 2026-11-19): lambda hiện **`(x: int?) =>` không parse** (`VS0201`), và `(x) -> int? suite`-form cũng không parse return-annot cho lambda params; closure-biên return đã nâng (VD-229), nhưng **closure params không nâng được** (không có annot) — phần code lift params cho closure **chưa có ≈ 0 dòng**; ghi nợ để làm khi có syntax annot lambda | VD-232 · `JOURNAL/vs-ergo.md` · `vd212-thiet-ke-ghi-chu.md` | **chuyển VS3** — cần syntax annot lambda, tránh phá grammar `SPEC-lex` |
 
-## 5. Nợ chuyển VS3 (22 mục)
+## 5. Nợ chuyển VS3 (23 mục)
 
 | Số | Lý do chuyển VS3 (1 dòng) | Nguồn |
 |---|---|---|
@@ -259,6 +259,8 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 127 | `JOURNAL/st132` §7 ghi VS3 | R23 §6 · ST-132 · JOURNAL/st132-landlock.md §7 |
 | 137 | VD-145: sửa cần libc/`unsafe` ⇒ VS3; VS2 giữ bước xác nhận + giới hạn trong `HOST-BAO-DAM.md` | R24 §5 · ST-137 · VD-145 |
 | 143 | VD-154(b): điều kiện VD-133 đã thoả (**ca `st130b` xanh** từ đợt 23) ⇒ `NamePolicy::Strict` chỉ bật cho tệp **trong cây module** là việc VS3 | JOURNAL/st130-siet-caps.md §9 · VD-133 · VD-149 · VD-154(b) |
+| 151 | VD-198(2): tệp kiểm thử đặt tên theo số dòng — nối hàng loạt, khó review, ẩn thay đổi kỳ vọng nhỏ — chuyển VS3, pha 2 | VD-198(2) · VD-186 · ST-213 |
+| 155 | VD-232: lambda params không parse annotation (VS0201) — lift params closure chỉ sau khi có syntax annot lambda; closure-biên return đã nâng (VD-229);  | VD-232 · `vd212-thiet-ke-ghi-chu.md` |
 
 ## 6. Nợ “không làm có lý do” (1 mục)
 

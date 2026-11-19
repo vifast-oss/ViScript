@@ -221,7 +221,7 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 > `agent/DEM-2026-11-18.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ commit `a570d77` (HEAD ban đầu của phiên, nay `d27e78d`).
 
 **Đã đóng trong đợt R30 (18–19/11):** **ST-205** (R4a — `trait Error: Show` 3 phương thức mặc định-less; `Json` enum dựng sẵn
-`EnumId(0)`; bản ghi `Error` `RecId(0)`; `AnyError` := đồng nghĩa `{error}`; `print(e)` chỉ `{message}`; std fns → `Result[T, Error]`) ·
+`EnumId(0)`; bản ghi `Error` `RecId(0)`; `AnyError` := alias bản ghi `Error` (**VD-231**, superseded VD-222 §5); `print(e)` chỉ `{message}`; std fns → `Result[T, Error]`) ·
 **ST-206** (R4b — `?` giữ nguyên; VD-222 #5) · **ST-207** (R4c — migrate std; `vis test` 469/469 cả hai đường) ·
 **ST-208** (R5b′ — quy tắc khoá `{…}` theo VD-215: trộn loại khoá bất kể thứ tự ⇒ **VS0207**, gợi ý theo khoá đầu; `{[k]: …}`
 ⇒ cảnh báo **VS0208** tắt bằng `{([k]): …}`; ca khoá `vd_215.rs` 6/6 hai đường) ·

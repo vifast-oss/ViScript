@@ -244,3 +244,18 @@ fn encode_decode_round_trip() {
         assert_eq!(r.1, "[1,true,null,3.5]\n");
     }
 }
+
+/// (10) **VD-231/VD-237 engine parity pin** — `let x: AnyError = None; print(x.message)`:
+/// hai engine đều `VS0501`, exit **101**, stdout rỗng. Trước fix (interp-bug #interp-enum-field),
+/// interp **bịa** `Value::Enum("Option", "message", [])`; VM đã VS0501.
+#[test]
+fn anyerror_none_field_engine_parity() {
+    let [a, b] = chay_ca_hai(
+        "nonemsg",
+        "fn main() -> ():\n    let x: AnyError = None\n    print(x.message)\n",
+    );
+    assert_eq!(a.0, 101, "interp phải exit 101; stderr={}", a.2);
+    assert_eq!(a.1, "");
+    assert_eq!(a.0, b.0);
+    assert_eq!(a.2, b.2);
+}

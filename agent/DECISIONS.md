@@ -1638,6 +1638,8 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 8. **Ghi chú ratify**: mọi mục trên là **proxy** — trong 09:00 báo cáo (§6 VD-220) liệt kê lại để A0 ký off; nếu A0 bác bỏ (1)–(4) thì ST-205/206/207 phải revert theo đúng nhánh.
 9. **Thứ tự**: ST-205 → ST-206 → ST-207 → R5d (ST-209 dưới mục VD-222 (item R5d)) → ST-210 (R30 + đóng pha 1 nếu mọi cổng xanh và 4 dấu proxy ghi rõ).
 
+> **Amendment (2026-11-19, Agent 2/1 — sau A0 ratify VD-222→điều kiện VD-231)**: VD-222 §5 (AnyError = `{error}`) **ĐÃ SUPERSEDED bởi VD-231** (AnyError = alias bản ghi `Error` RecId(0)). Tên `{error}` bị cấm dùng ở bề mặt người dùng; ở mã nội bộ vẫn ghi chú lịch sử (ST-205..).
+
 ### VD-223 · R5d chốt theo **uỷ quyền A0-proxy** (VD-221) — đêm 2026-11-18/19
 
 **Người ra quyết định**: Agent 1 **thay mặt Agent 0** (VD-221) · có thể bị A0 bác bỏ/sửa khi tiếp nhận.
