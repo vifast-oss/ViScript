@@ -1892,3 +1892,11 @@ Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính ch�
 - **Docs đã cập nhật**: `docs/ViScript-thiet-ke.md` (mục Cập nhật 2026-11-19, §3.1, §4.4, §6.1, §18, EBNF Phụ lục A; VD-19 đánh dấu supersede); `agent/BAO-CAO-A0-2026-11-19-OPTION-FIX.md` addendum §8 đính chính (nội dung cũ giữ nguyên); `DEM-2026-11-18`, `FACTS`. `docs/SPEC-lex.md` **không đụng**; SPEC.md (nếu có) vẫn thuộc A0.
 - **Cổng (Linux worktree, stable 1.99.1)**: `cargo test --workspace --no-fail-fast` **1299/0** (gồm ca wasm32 `targets_wasm_vis_types`); `vis test test/sem` **487/487** · `vis test --vm` **487/487** byte-identical; mutation theo lệnh A0 (xem báo cáo).
 - **A0 cần quyết** (không tự mở): (i) `var` không annot + plain assign vào ô suy-Option, và gán lại đích trường/chỉ số — nâng hay không; (ii) macOS/Windows re-verify; (iii) SPEC.md tham chiếu `int??` (nếu có).
+
+
+### Windows re-verify bản fix Option — 2026-11-19 (`cc7aef9`..`2c006af`)
+
+- psvn @ `2c006af`: build OK · sem **487/487 ×2** · CRLF 3/3 · **`vd_205` 22/22** (gồm `option_coercion_matrix` exact stdout + engine parity).
+- `./vis-dev gate --fast`: mọi bước **product** PASS (fmt/clippy/R1..R6/self-test/explain/report-check/build/doc-examples); dừng như cũ ở L0 test (baseline VS3 — không hồi quy).
+- Fix test-harness 2 commit `cc7aef9`+`2c006af`: `option_coercion_matrix` tag chứa `?` (không hợp lệ tên tệp Windows) ⇒ os error 123 ở hai chỗ (tên thư mục tạm + tên `.vis`). Không đụng sản phẩm.
+- **Không mở rộng tuyên bố OS hỗ trợ** (Windows vẫn Tier 2 tại `349af67`; bản fix `73780a5`+ test-only được re-verify — ghi nhận vào `agent/WINDOWS-BASELINE-2026-11-19.md` bổ sung).
