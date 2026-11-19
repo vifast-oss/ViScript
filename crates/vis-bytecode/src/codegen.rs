@@ -23,7 +23,7 @@ use vis_types::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir, InterpPart, L
 pub use crate::cerr::CodegenError;
 use crate::format::{binop_tag, unop_tag};
 use crate::format::{Const, Func, Instr, Module, HASH_LEN};
-use crate::util::{assign_binop, can_test, la_builtin};
+use crate::util::{assign_binop, can_test, la_builtin, Vong};
 
 /// Hàm đang phát.
 struct F {
@@ -142,6 +142,7 @@ struct Gen {
     cho: Vec<Cho>,
     /// `sym` dựng sẵn → tên dựng sẵn (`print`, `Ok`, …).
     builtins: HashMap<u32, String>,
+    sym_ty: HashMap<u32, vis_types::Type>,
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     hash: [u8; HASH_LEN],
@@ -225,6 +226,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
         cho: Vec::new(),
         async_fns: std::collections::HashSet::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
+        sym_ty: crate::util::sym_annot_map(symbols),
         hash: crate::format::source_hash(text),
     };
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
@@ -386,13 +388,6 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
     Ok(module)
 }
 
-struct Vong {
-    /// Đích cần vá khi gặp `break` (về cuối vòng).
-    breaks: Vec<usize>,
-    /// Đích nhảy của `continue` (về đầu vòng).
-    continue_t: usize,
-}
-
 struct Emit<'g> {
     g: &'g mut Gen,
     f: F,
@@ -416,12 +411,7 @@ impl<'g> Emit<'g> {
             } => {
                 self.expr(init)?;
                 // **VD-241 §3** — tự nâng theo annot; `$lift-opt` tới đủ lớp `Opt` (§4.4).
-                if let Some(t) = ty {
-                    let depth = than::opt_depth(t);
-                    if depth > 0 {
-                        self.lift_opt(depth, *span)?;
-                    }
-                }
+                self.lift_to_annot(ty.as_ref(), *span)?;
                 // **R3b (VD-178)**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại
                 // chạy khối `else` (nhận lỗi nếu có `else err:`).
                 if let Some(e) = else_ {
@@ -432,9 +422,14 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HStmt::Var {
-                sym, init, span, ..
+                sym,
+                init,
+                span,
+                ty,
+                ..
             } => {
                 self.expr(init)?;
+                self.lift_to_annot(ty.as_ref(), *span)?; // biên khai `var` như `let` (mirror interp)
                 let slot = self.f.slot(*sym, *span)?;
                 self.f.push(Instr::StoreLocal(slot), *span, -1);
                 self.net_stack(*span)
@@ -447,7 +442,10 @@ impl<'g> Emit<'g> {
             } => {
                 if let HExpr::Var { sym: Some(id), .. } = target {
                     match op {
-                        vis_types::AssignOp::Set => self.expr(value)?,
+                        vis_types::AssignOp::Set => {
+                            self.expr(value)?;
+                            self.lift_assign_set(target, *span)?; // gán lại `var` annot Optional: nâng một lớp; `None` giữ nguyên
+                        }
                         other => {
                             // `x += v` ⇒ `x = x <op> v`.
                             let slot = self.slot_cua(*id)?;

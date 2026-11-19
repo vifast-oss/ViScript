@@ -110,7 +110,9 @@ fn roundtrip_tren_toan_bo_323_ca() {
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca `optional/` (`none-three-states`,
     //   `long-none-param`, `long-none-return`); đổi `long-reject-e` (`.err`) → `long-none-e` hợp lệ
     //   ⇒ **486 ca** (436 `.vis` + 50 `.vish`, **88 `.err`**).
-    assert_eq!(tat_ca.len(), 486, "phải đủ 486 ca (436 .vis + 50 .vish)");
+    // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
+    //   ⇒ **487 ca** (437 `.vis` + 50 `.vish`, **88 `.err`**).
+    assert_eq!(tat_ca.len(), 487, "phải đủ 487 ca (437 .vis + 50 .vish)");
     // Ca **cố ý lỗi tĩnh** (có `.err`) không sinh mã — `sem.rs` kiểm chúng bằng chẩn đoán.
     let so_loi = so_ca_loi(&tat_ca);
     let ds: Vec<PathBuf> = tat_ca
@@ -118,7 +120,7 @@ fn roundtrip_tren_toan_bo_323_ca() {
         .filter(|p| !p.with_extension("err").exists())
         .cloned()
         .collect();
-    assert_eq!(ds.len() + so_loi, 486);
+    assert_eq!(ds.len() + so_loi, 487);
     let mut loi = Vec::new();
     let mut tong_lenh = 0usize;
     for p in &ds {

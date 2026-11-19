@@ -13,7 +13,7 @@ use std::path::PathBuf;
 /// Phiên bản compiler dùng trong hash (đổi ⇒ cache cũ tự vô hiệu).
 // **SỬA KÈM LÝ DO (ST-41)**: `Render` đổi **cách hiển thị** giá trị cuối pipeline ⇒ module đã cache
 // bằng bản cũ phải **hết hiệu lực**; gắn nhãn logic vào khoá (không đổi `CARGO_PKG_VERSION`).
-pub const PHIEN_BAN: &str = concat!(env!("CARGO_PKG_VERSION"), "+vd241-compiler-update");
+pub const PHIEN_BAN: &str = concat!(env!("CARGO_PKG_VERSION"), "+vd241-coercion-2026-11-19");
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
 pub fn thu_muc() -> Option<PathBuf> {
@@ -168,11 +168,13 @@ mod tests {
 
     /// **ST-126 (VD-129)** — khoá cache của một đơn vị **cố định** bị **ghim** bằng hex.
     /// Ghim lại: **VD-241 §3/T6** + VD-241 Phase B (2026-11-19) — sửa compiler ⇒ PHIEN_BAN đổi (memory VD-129).
+    /// Ghim lại lần nữa (2026-11-19, đợt coercion Option): compiler đổi `lift_opt`/`var`/gán lại/VM `Unwrap`
+    /// ⇒ `PHIEN_BAN` đổi ⇒ khoá đổi (memory VD-129).
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "a27fe3cba89bc4fb3ef56431da0dc0ae03cafa04e55f91c356e73fbec13c1419",
+            k, "61490404c641b377557720536e796538ae95e4974e1741246b36a4ac363aa7f5",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
     }

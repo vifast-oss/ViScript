@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-# VD-241 §7 (A0, 2026-11-19) — `None` trần cho `int??` **hợp lệ**: kiểu đích ngoài cùng là
-# `Option` (`T?? = Option[Option[T]]` lồng thật, không flatten) — §3/VD-238 "chỉ ở `T?` một lớp" đã bị A0 bác (None chỉ sai khi lớp **ngoài cùng** không phải `Option`).
-# Lưu ý biên: `let` tự nâng `None` theo auto-lift (VD-227/228, **không đổi** theo lệnh này)
-# ⇒ `e` lúc chạy bằng `Some(None)` và khớp arm `Some(None)` (không phải arm `None`).
+# VD-241 §7 + đợt coercion Option (A0, 2026-11-19) — `None` trần cho `int??` **hợp lệ** (`T?? = Option[Option[int]]` lồng thật, không flatten).
+# Biên `let` **giữ nguyên `None` lớp ngoài** theo bảng giá trị A0 (None trực tiếp hợp lệ với mọi đích rooted-Option — bước 1);
+# **không** bọc `Some(None)` nữa (hành vi trước ở 3b2c67e là sai theo ngữ nghĩa chốt).
 fn main():
     let e: int?? = None
     match e:

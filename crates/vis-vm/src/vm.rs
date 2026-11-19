@@ -933,14 +933,15 @@ impl<'m> Th<'m> {
                         Value::List(xs) => xs.get(i as usize).cloned(),
                         _ => None,
                     };
-                    let x = x.ok_or_else(|| {
-                        Abort::Trap(Trap::new(
-                            RT,
-                            format!("không lấy được đối số thứ {i}"),
-                            span,
-                        ))
-                    })?;
-                    self.st.push(x);
+                    // **VD-241 §3+ (A0, 2026-11-19)** — `pattern::test` phát `Unwrap` để **tính
+                    // thử** đối số của arm trước khi arm được chọn: giá trị hỏng hình (ví dụ
+                    // `None` gặp arm ctor `Some(…)`) **không được trap** — arm đó phải bị loại
+                    // (test con ra `false`, `BoolAnd` giữ `false`), như interp khớp cấu trúc
+                    // thật. Đẩy `Unit` khi hỏng hình; mọi test (`TestCtor`/`TestLit`/`TestRange`/
+                    // `TestTuple`/`TestList`/`TestRecord`/or) đều cho `false` với `Unit`. Các chỗ
+                    // bind/`let else` phát `Unwrap` **sau** `TestCtor(true)` nên không bao giờ
+                    // chạm nhánh hỏng hình trong chương trình hợp lệ.
+                    self.st.push(x.unwrap_or(Value::Unit));
                 }
                 Instr::Try => {
                     let v = self.pop(vm, span)?;

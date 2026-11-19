@@ -31,12 +31,15 @@ include!("../../../test/doc_excluded.rs");
 const EXCLUDED_COUNT: usize = DOC_EXCLUDED_SYNTAX.len();
 
 /// Lý do loại trừ — **cùng thứ tự** với `DOC_EXCLUDED_SYNTAX` (số dòng lấy từ nguồn duy nhất).
+// **SỬA KÈM LÝ DO (VD-241 đợt coercion Option, 2026-11-19)**: §4.4 tài liệu thiết kế cập nhật
+// ⇒ mọi khối dịch dòng; toạ độ 5 khối dịch: 332→ (fence 325), 474, 488, 664, 794 (xem
+// `test/doc_excluded.rs`). Chỉ số dòng trong lý do đổi, nội dung khối/lý do giữ nguyên.
 const LY_DO: [&str; EXCLUDED_COUNT] = [
-    "`...` ở 324-327 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
-    "`...` ở 448 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
-    "`...` ở 462 (`fn show(self) -> str: ...`) — thân lược",
-    "`...` ở 629 (`pub cmd ls(...): ...`) — thân lược",
-    "`...` ở 760 (`fn main(...): ...`) — thân lược",
+    "`...` ở 332-336 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, là ví dụ lược thân",
+    "`...` ở 474 (`fn max_by[...] -> T?: ...`) — thân lược, không phải chương trình",
+    "`...` ở 488 (`fn show(self) -> str: ...`) — thân lược",
+    "`...` ở 664 (`pub cmd ls(...): ...`) — thân lược",
+    "`...` ở 794 (`fn main(...): ...`) — thân lược",
 ];
 
 /// Khối **loại trừ tường minh** — (dòng bắt đầu ```vis trong `ViScript-thiet-ke.md`, lý do);

@@ -1075,6 +1075,16 @@ impl<'a> Lowerer<'a> {
             };
         }
         match (name, args.len()) {
+            ("Option" | "option", 1) => {
+                // **VD-241 §3+ (A0, 2026-11-19)** — spelled-out `Option[T]` phân giải về
+                // `Type::Opt` **ngay ở lowering** (như `list`/`map`/`Result`), không giữ
+                // `TypeRef` — nhờ vậy HIR (annot tham số / return / let / var / hằng) đi cùng
+                // đường với sugar `T?`, và biên annot/đối số/return nâng **như nhau** cho cả ba
+                // cách viết (sugar · spelled-out · alias). Alias không tham số được thay ngay
+                // bằng chính RHS đã hạ (`Option[Option[int]]` ⇒ `Opt(Opt(int))`).
+                let mut it = args.into_iter();
+                return Type::Opt(Box::new(it.next().unwrap_or(Type::Error)));
+            }
             ("list", 1) => {
                 let mut it = args.into_iter();
                 return Type::List(Box::new(it.next().unwrap_or(Type::Error)));

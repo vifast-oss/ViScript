@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3+ (A0, 2026-11-19) — `first(rong)` trả `None` (biên return `T?` giữ nguyên `None`);
+# `let y: int?? = None` giữ nguyên `None` lớp ngoài theo bảng giá trị A0 (trước ở 3b2c67e thành `Some(None)` — sai).
 fn first[T](xs: list[T]) -> T?:
     if xs.is_empty():
         return None

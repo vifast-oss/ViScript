@@ -26,8 +26,23 @@ pub(crate) fn opt_depth_val(v: &Value) -> usize {
     d
 }
 
+/// `true` nếu `v` là **`None` trần ở lớp ngoài cùng** (Option ngoài để vacant).
+fn la_none_tran(v: &Value) -> bool {
+    matches!(v, Value::Enum(ea, va, ag) if ea == "Option" && va == "None" && ag.is_empty())
+}
+
 /// Nâng `v` tới ít nhất `depth` lớp `Opt` (bọc `Value::some` các lớp còn thiếu).
+///
+/// **VD-241 §3+ (A0, 2026-11-19, đợt coercion)** — `None` **trần** là giá trị trực tiếp hợp lệ
+/// của **mọi** đích `Option[…]` (lớp ngoài vacant; lõi không bị ràng buộc), kể cả
+/// `Option[Option[T]]` trở lên — **giữ nguyên**, không bọc `Some(None)` ở biên annot/return/
+/// tham số/`let`. Giá trị khác (`Some(…)`, lõi plain) vẫn nâng **đúng một lớp** theo
+/// `opt_depth_val` như cũ; checker đã chặn nguồn cần nâng quá một lớp (VD-227/228, §3.5).
 pub(crate) fn lift_opt(v: Value, depth: usize) -> Value {
+    if la_none_tran(&v) {
+        // None ngoài vacant = lớp ngoài của đích đã có mặt — không bọc chồng.
+        return v;
+    }
     let mut dep = opt_depth_val(&v);
     let mut out = v;
     while dep < depth {

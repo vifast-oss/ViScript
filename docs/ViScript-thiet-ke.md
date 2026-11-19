@@ -25,6 +25,13 @@ Bản này đã vá theo [`docs/QUYET-DINH-sau-review.md`](../QUYET-DINH-sau-rev
 
 Ba quyết định lớn ảnh hưởng thi công: (a) QD §1 **Q-D** — parse chế độ lệnh hai pha; `VT06` cũ chỉ làm `CmdCST` + golden, `cmd_lower` là task vòng 2; (b) QD §7.4 — **ST-02a chặn ST-04..ST-09**; (c) QD §7.3 — **`|` không bao giờ là toán tử nhị phân trong biểu thức**, pattern vẫn dùng `|`.
 
+## Cập nhật 2026-11-19 (đợt coercion Option — A0)
+
+- **`T? = Option[T]`; `T?? = Option[Option[T]]`** — optional **lồng thật**, không làm phẳng, không “bỏ lớp trong”; `T???` cũng hợp lệ. Sugar (`int??`) ≡ spelled-out (`Option[Option[int]]`) ≡ alias (`type Y = …`), **cùng coercion, cùng runtime**.
+- **Bảng giá trị** (4.4): `None ⇒ None` lớp ngoài · `Some(None)` ⇒ `Some(None)` · `Some(Some(42))` ⇒ `Some(Some(42))` · `Some(42)` ⇒ **nâng một lớp** ⇒ `Some(Some(42))` · `42` ⇒ **lỗi `VS0412`** (không nâng hai lớp).
+- **Thứ tự kiểm tra chuyển đổi** (bước 1–4, mục 4.4) áp ở **mọi biên**: `let` · gán lại `var` · đối số · thân hàm · `return`. `None` trần **không** bị bọc `Some(None)` ở biên nào nữa.
+- Đây là ngữ nghĩa chốt của đợt A0 2026-11-19 (sau đính chính VD-241 §7); implementation đồng bộ trong nhánh `rev/vd241-option-coercion-2026-11-19`. Các ghi chú lịch sử "T?? là lỗi kiểu" bên dưới (VD-19) đã được đánh dấu supersede.
+
 
 ---
 
@@ -217,7 +224,7 @@ Phụ lục B. Chương trình mẫu
 
 - `Future[T]` là giá trị lười do gọi `async fn` sinh ra; `Task[T]` là future **đã được spawn** trong `scope`, có handle để `await`/huỷ (10.1).
 - `AnyError` là **kiểu lỗi xoá kiểu** dùng ở ranh giới (6.1).
-- `T??` là **lỗi kiểu** — optional không lồng (4.4).
+- `T??` là **`Option[Option[T]]` lồng thật** — optional **có** lồng (VD-241, đợt coercion Option 2026-11-19); xem (4.4).
 - `percent` so sánh được với `float` **theo tỉ lệ** (`50pct == 0.5`, 3.6); `ps.cpu` có kiểu `percent`.
 - `bigint`, `decimal` là thư viện, không nằm trong lõi.
 
@@ -360,7 +367,23 @@ if let mail = user.email:
 ```
 
 - **Tự nâng `T → T?`** ở ba vị trí: **gán** (`let x: int? = 5`), **trả về** (`-> int?` với `5`), **đối số** (`f(x)` với tham số `int?`). Chiều ngược lại **không** có: `T?` không tự thành `T`.
-- `T??` là **lỗi kiểu** (optional không lồng).
+- **`T?` ≡ `Option[T]`**; **`T??` ≡ `Option[Option[T]]`** — optional **có** lồng, **không làm phẳng**, không "bỏ lớp trong", không "gộp lớp". Mọi số lớp: `T???` ≡ `Option[Option[Option[T]]]`. `Some(x)` luôn thêm **đúng một** lớp.
+- **Bảng giá trị** (đợt coercion Option, A0 2026-11-19): với đích `T??`, giá trị lúc chạy giữ **đúng số lớp**:
+
+  | Nguồn | Đích `int??` | Kết quả |
+  |---|---|---|
+  | `None` | ✓ hợp lệ | `None` lớp **ngoài** (bước 1 — trực tiếp hợp lệ) |
+  | `Some(None)` | ✓ hợp lệ | `Some(None)` (giữ) |
+  | `Some(Some(42))` | ✓ hợp lệ | `Some(Some(42))` (giữ) |
+  | `Some(42)` | ✓ hợp lệ | **nâng một lớp** ⇒ `Some(Some(42))` |
+  | `42` | ✘ lỗi `VS0412` | cần nâng **hai** lớp — không lặp |
+
+  **Thứ tự kiểm tra chuyển đổi** (áp dụng ở mọi biên — `let` · gán lại `var` · đối số · thân hàm · `return`):
+  1. biểu thức hợp lệ **trực tiếp** theo kiểu đích ⇒ **giữ nguyên** cấu trúc giá trị (không nâng);
+  2. chỉ xét nâng **một lớp** khi bước 1 không áp dụng và kiểu nguồn phù hợp với kiểu phần tử;
+  3. **không** nâng lặp nhiều lớp một lần; **không** nâng ngầm trong pattern;
+  4. `None` có thể định kiểu trực tiếp là `Option` ngoài ⇒ giữ là `None` lớp ngoài, **không** được định kiểu thành `Option` trong rồi bọc thêm lớp.
+- **Sugar ≡ spelled-out ≡ alias** — `int??` ≡ `Option[Option[int]]` ≡ `type Y = Option[Option[int]]`: cùng coercion, cùng runtime (kiểu spelled-out/alias phân giải về `Option` ngay ở hạ tầng `lower`, như `list`/`map`/`Result`).
 - `?` dùng được trên `T?` khi hàm đang viết trả `U?`; trên `Result[T, E]` khi trả `Result[U, F]` với `E: Error` (6.1).
 - `?.` trên `T?` trả `T?`; `??` nhận toán hạng phải **cùng kiểu đã bỏ optional**.
 - `.get(i)`, `.first()`, `.last()`, `xs[i]?` trả `T?`; `xs[i]` panic (4.5, Q5).
@@ -495,7 +518,7 @@ fn read_config(dir: cap[Dir]) -> Result[Config, AnyError]:
 - `trait Error: Show { message, source, span }` (QD §7.3): mọi kiểu lỗi in được (`Show`) và cung cấp `message: str`, `source: Error?` (nguyên nhân lồng), `span: Span?` (vị trí nguồn).
 - `AnyError` là **kiểu xoá kiểu** (boxed `dyn` là chi tiết cài đặt): bọc mọi `E: Error`, dùng ở ranh giới (main, plugin, task).
 - **Mọi `E: Error` tự chuyển sang `AnyError` qua `?`** — không cần `impl Into`. `?` trên `Result[T, E]` trong hàm trả `Result[U, AnyError]` hợp lệ khi `E: Error`.
-- `?` trên `T?` chỉ trong hàm trả `U?` (4.4). `?` **không** tự bọc `Result` vào `Result` lồng; `T??` là lỗi kiểu.
+- `?` trên `T?` chỉ trong hàm trả `U?` (4.4). `?` **không** tự bọc `Result` vào `Result` lồng; `T??` là `Option[Option[T]]` lồng hợp lệ (bảng giá trị — 4.4).
 - `main -> Result[(), AnyError]`. Phía plugin Rust, tên của cùng trait là **`vis::Error`** (17).
 
 > **Hiện thực VS2 (VD-222, 18/11/2026 — quyết định proxy của Agent 1, A0 duyệt lại khi tiếp nhận)**:
@@ -1037,7 +1060,7 @@ mod image {
 | Chế độ lệnh | `bảng dòng lệnh → CmdCST` vàng cho **từng hàng bảng 9.4** + 10 ca mơ hồ (ST-06); "cùng HIR" chỉ kiểm sau khi có `cmd_lower` (vòng 2) |
 | Kiểm kiểu | tệp `.vis` có chú thích kỳ vọng `# error: VS0412` hoặc `# ok`; mỗi mã lỗi có ca dương và ca âm; snapshot thông báo lỗi |
 | Xét hết match | so với bộ liệt kê vét cạn trên enum nhỏ sinh ngẫu nhiên; **guard không tính**, **kiểu vô hạn cần `_`** |
-| Optional | `T → T?` tự nâng; `T??` lỗi; `?` trên `T?`; `if let`; `.get/.last` khi rỗng; `xs[i]?` |
+| Optional | `T → T?` tự nâng; `T??` = `Option[Option[T]]` lồng hợp lệ (không làm phẳng; bảng giá trị — 4.4); `?` trên `T?`; `if let`; `.get/.last` khi rỗng; `xs[i]?` |
 | Số | `%` dấu theo số bị chia; `%0` panic; `**` phải-kết-hợp; mũ âm panic; bit count ≥ 64 panic; NaN `==` false |
 | Interpreter | mô hình tham chiếu, giữ đơn giản |
 | Bytecode + VM | **vi sai**: bộ sinh chương trình đúng kiểu theo seed, chạy trên interpreter và VM, so đầu ra, mã thoát, lỗi; tự thu nhỏ ca lệch |
@@ -1180,7 +1203,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 | VD-16 | Bảng ưu tiên chốt (cao → thấp): postfix (`. ?. () [] ? with`) → `**` → `-` một ngôi → `* / %` → `+ -` → `.. ..=` → `??` → so sánh (không kết hợp) → `not` → `and` → `or` → `|>`. `**` kết hợp **phải**, cao hơn `*`; mũ âm với int panic; có `checked_pow`. |
 | VD-17 | Float: NaN — `==` trả false; float **không** có `Eq/Ord/Hash`; kiểu chứa float không derive được `Eq/Hash`; dùng `total_cmp`. `percent` so sánh được với float theo tỉ lệ (`50pct == 0.5`); `ps.cpu` có kiểu `percent`. |
 | VD-18 | Chuỗi: **cấm `s[i]`**; dùng `.chars() .graphemes() .bytes() .byte_at(i)?`; có `byte_len()`, `char_count()`, `grapheme_count()`; so sánh theo dãy scalar. Index: thêm `xs[i]?` trả `T?`; `xs[-1]` panic có thông điệp. |
-| VD-19 | Optional: tự nâng `T → T?` ở gán, trả, đối số; `T??` là lỗi kiểu; `?` dùng được trên `T?` trong hàm trả `U?`; pattern `None`, `Some(x)`, `Ok(v)`, `Err(e)` (**R1a**: viết thường ⇒ `VS0111`). |
+| VD-19 | Optional: tự nâng `T → T?` ở gán, trả, đối số; `T??` là lỗi kiểu (**supersede bởi VD-241 / đợt coercion Option A0 2026-11-19** — `T?? = Option[Option[T]]` lồng hợp lệ; xem 4.4); `?` dùng được trên `T?` trong hàm trả `U?`; pattern `None`, `Some(x)`, `Ok(v)`, `Err(e)` (**R1a**: viết thường ⇒ `VS0111`). |
 | VD-20 | Lỗi: `trait Error: Show { message, source, span }`; `AnyError` là kiểu xoá; mọi `E: Error` tự chuyển sang `AnyError` qua `?`; `main -> Result[(), AnyError]`; tên phía plugin Rust là `vis::Error`. Mã thoát: 0 ok, 1 lỗi từ main, 2 lỗi dùng/kiểu, 101 panic, 126 không chạy được, 127 không tìm thấy, 130 bị huỷ. |
 | VD-21 | Chế độ lệnh (QD §7.2): metachar là khoảng trắng, `( ) [ ] { } ; & $ ' " |`, `#` ở đầu từ; `"..."` có nội suy, `'...'` thô; `$x` biến phiên, `$env.NAME` môi trường; `;` tách pipeline; `&` nền chỉ khi là token cuối có khoảng trắng phía trước; `--` kết thúc cờ; `-5` là số nếu tham số kiểu số, ngược lại là cờ; `.vish`/REPL: `shell_item := use | let | fn | cmd | pipeline`. |
 | VD-22 | Parse chế độ lệnh **hai pha**: `vis-syntax` sinh `CmdCST` (từ trần chưa định kiểu) → `cmd_lower` trong `vis-types` dùng bảng chữ ký → **HIR**. Tiêu chí "cùng AST" đọc thành **"cùng HIR"**; vòng 1 chỉ làm `CmdCST` + golden, `cmd_lower` là task vòng 2. |
@@ -1355,7 +1378,7 @@ record_pat      := IDENT ':' pattern | IDENT | '..'
 
 (* ===== A.5 Kiểu ===== *)
 
-type            := type_primary ['?']                 (* T?? là lỗi kiểu, 4.4 *)
+type            := type_primary ('?' | '??')*         (* Option lồng — `T?? = Option[Option[T]]`, không làm phẳng (VD-241, 4.4) *)
 type_primary    := dotted_path ['[' types ']']
                  | 'ref' '[' type ']'
                  | 'weak' '[' type ']'

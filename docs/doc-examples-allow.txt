@@ -2,8 +2,11 @@
 # Ngoại lệ cổng "mọi khối mã trong tài liệu parse được" (QD §7.4, VD-36).
 # Định dạng: <tệp>:<dòng mở khối ```> <lý do>. Mỗi mục phải THẬT SỰ đỏ khi `vis check`;
 # ngoại lệ cũ (đã xanh) hoặc khối đỏ không khai báo đều làm cổng đỏ.
-ViScript-thiet-ke.md:318 `...` ở 324-327 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, đây là ví dụ lược thân
-ViScript-thiet-ke.md:447 `...` ở 463 (`fn max_by[...] -> T?: ...`) — thân hàm lược, không phải chương trình
-ViScript-thiet-ke.md:460 `...` ở 476 (`fn show(self) -> str: ...`) — thân hàm lược
-ViScript-thiet-ke.md:638 `...` ở 628 (`pub cmd ls(...): ...`) — thân hàm lược
-ViScript-thiet-ke.md:769 `...` ở 758 (`fn main(...): ...`) — thân hàm lược
+# **SỬA KÈM LÝ DO (VD-241 đợt coercion Option, 2026-11-19)**: §4.4 của tài liệu thiết kế được
+# cập nhật ngữ nghĩa chốt (bảng giá trị `T??`) ⇒ mọi khối sau đó dịch dòng; chỉ đổi số dòng,
+# nội dung khối/lý do giữ nguyên (fixtures sinh lại bằng `--regen`).
+ViScript-thiet-ke.md:325 `...` ở 332-336 (`for i in 0..10: ...`) — QD §7.4 cấm `...` trong fixture, đây là ví dụ lược thân
+ViScript-thiet-ke.md:470 `...` ở 474 (`fn max_by[...] -> T?: ...`) — thân hàm lược, không phải chương trình
+ViScript-thiet-ke.md:483 `...` ở 488 (`fn show(self) -> str: ...`) — thân hàm lược
+ViScript-thiet-ke.md:661 `...` ở 664 (`pub cmd ls(...): ...`) — thân hàm lược
+ViScript-thiet-ke.md:792 `...` ở 794 (`fn main(...): ...`) — thân hàm lược

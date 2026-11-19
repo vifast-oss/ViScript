@@ -368,10 +368,54 @@ fn none_tran_chi_gan_duoc_cho_option() {
     }
 }
 
+/// (11c-error) **VD-241 đợt coercion Option (A0, 2026-11-19)** — `42 ⇒ int??` (và spelled-out /
+/// alias của cùng kiểu) là **lỗi, không nâng hai lớp**: `VS0412` cho cả ba cách viết.
+#[test]
+fn vd241_forty_two_opt2_la_loi() {
+    use std::process::Command;
+    for (tag, src) in [
+        (
+            "err_42_int2q",
+            "fn main() -> ():\n    let d: int?? = 42\n    print(d)\n",
+        ),
+        (
+            "err_42_spelled",
+            "fn main() -> ():\n    let d: Option[Option[int]] = 42\n    print(d)\n",
+        ),
+        (
+            "err_42_alias",
+            "type Y = Option[Option[int]]\nfn main() -> ():\n    let d: Y = 42\n    print(d)\n",
+        ),
+    ] {
+        let d = tam(tag);
+        let p = d.join(format!("{tag}.vis"));
+        std::fs::write(
+            &p,
+            format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+        )
+        .expect("ghi tệp tạm");
+        let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+            .arg("check")
+            .arg(&p)
+            .output()
+            .expect("vis check");
+        let tho = String::from_utf8_lossy(&o.stdout).to_string();
+        assert_ne!(
+            o.status.code().unwrap_or(-1),
+            0,
+            "check phải đỏ cho {tag}\n{tho}"
+        );
+        assert!(tho.contains("VS0412"), "{tag}: phải chứa VS0412; {tho}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
 /// (11b) **VD-241 §7 (A0, 2026-11-19)** — ca xanh: `None` trần hợp lệ khi lớp **ngoài cùng** là `Option`
 /// (`T?`, `T??`, `T???`, alias phân giải về `Option`, thân-hàm cuối là `None`, `return None`); hai
-/// engine **byte-identical** (biên annot/tham số/return tự nâng → `Some(None)`; gán lại `x = None`
-/// giữ `None` ngoài thật). Lớp ngoài cùng non-Option vẫn đỏ — xem (11).
+/// engine **byte-identical**. **VD-241 đợt coercion Option (A0, 2026-11-19)**: `None` trần ở mọi biên
+/// (let/var/gán lại/tham số/thân hàm/return) **giữ nguyên `None` lớp ngoài** (bước 1 bảng giá trị A0);
+/// `Some(x)` nâng đúng **một lớp**; spelled-out `Option[Option[int]]` và alias phân giải thành
+/// `Type::Opt` ngay ở lowering nên ba cách viết tương đương. Đặt exact stdout cho từng ca.
 #[test]
 fn none_dich_ngoai_cung_option_la_ok() {
     // Mỗi ca chạy cả hai engine; stdout phải trùng từng byte + exit 0.
@@ -379,29 +423,153 @@ fn none_dich_ngoai_cung_option_la_ok() {
         (
             "ok_opt2",
             "fn main() -> ():\n    let x: int?? = None\n    print(x)\n",
+            "None\n",
         ),
         (
             "ok_opt3",
             "fn main() -> ():\n    let z: int??? = None\n    print(z)\n",
+            "None\n",
         ),
         (
             "ok_alias_opt2",
             "type Y = Option[Option[int]]\nfn main() -> ():\n    let y: Y = None\n    print(y)\n",
+            "None\n",
         ),
         (
             "ok_fn_ret_than_cuoi",
             "fn h() -> int??:\n    None\n\nfn main() -> ():\n    print(h())\n",
+            "None\n",
         ),
         (
             "ok_fn_ret_bang_return",
             "fn h() -> int??:\n    return None\n\nfn main() -> ():\n    print(h())\n",
+            "None\n",
+        ),
+        (
+            "ok_spelled_opt2",
+            "fn main() -> ():\n    let z: Option[Option[int]] = None\n    print(z)\n",
+            "None\n",
+        ),
+        (
+            "ok_spelled_opt3",
+            "fn main() -> ():\n    let z: Option[Option[Option[int]]] = None\n    print(z)\n",
+            "None\n",
         ),
     ];
-    for (tag, src) in ca {
+    for (tag, src, ky_vong) in ca {
         let [a, b] = chay_ca_hai(tag, src);
         assert_eq!(a.0, 0, "interp phải exit 0 cho {tag}; stderr={}", a.2);
-        assert_eq!(a.1, b.1, "{tag}: interp và VM phải byte-identical");
+        assert_eq!(a.1, *ky_vong, "{tag}: interp phải in kỳ vọng");
+        assert_eq!(b.0, 0, "vm phải exit 0 cho {tag}; stderr={}", b.2);
+        assert_eq!(
+            b.1, a.1,
+            "{tag}: interp và VM phải byte-identical; vm={}",
+            b.1
+        );
     }
+}
+
+/// (11c) **VD-241 đợt coercion Option (A0, 2026-11-19)** — **ma trận nghiệm thu**:
+/// 3 cách viết (sugar `int??` · spelled-out `Option[Option[int]]` · alias `type Y = …`)
+/// × biên (let · khai `var` · gán lại `var` · đối số · thân hàm cuối · return)
+/// × bảng giá trị: `None`⇒`None` · `Some(None)`⇒`Some(None)` · `Some(Some(42))`⇒giữ nguyên ·
+/// `Some(42)`⇒**nâng một lớp** · `42`⇒lỗi (xem (11) + `long-reject-d.vis`).
+/// Độ sâu ba lớp (`int???`) để không vá riêng `int?`. Hai engine phải **độc lập** cho output kỳ vọng.
+#[test]
+fn option_coercion_matrix() {
+    let type_3 = [
+        ("int??", ""),
+        ("Option[Option[int]]", ""),
+        ("Y", "type Y = Option[Option[int]]\n"),
+    ];
+    for (ann, tien_to) in type_3 {
+        let src = format!(
+            "{tien_to}fn main() -> ():\n    \
+             let a: {ann} = None\n    print(a)\n    \
+             let b: {ann} = Some(None)\n    print(b)\n    \
+             let c: {ann} = Some(Some(42))\n    print(c)\n    \
+             let d: {ann} = Some(42)\n    print(d)\n    \
+             var x: {ann} = Some(42)\n    print(x)\n    \
+             x = Some(7)\n    print(x)\n    \
+             x = None\n    print(x)\n    \
+             x = Some(None)\n    print(x)\n    \
+             x = Some(Some(9))\n    print(x)\n"
+        );
+        let ky_vong = "None\nSome(None)\nSome(Some(42))\nSome(Some(42))\nSome(Some(42))\nSome(Some(7))\nNone\nSome(None)\nSome(Some(9))\n";
+        let tag = format!("mx_{ann}")
+            .replace(['[', ']', ' '], "_")
+            .replace(['(', ')'], "");
+        let [a, b] = chay_ca_hai(&tag, &src);
+        assert_eq!(a.0, 0, "{tag}: interp; stderr={}", a.2);
+        assert_eq!(a.1, ky_vong, "{tag}: interp phải in bảng giá trị");
+        assert_eq!(b.1, ky_vong, "{tag}: VM phải in bảng giá trị (độc lập)");
+    }
+    // Biên đối số cho cả ba spell (một lớp nâng; `None` giữ nguyên).
+    for (ann, tien_to) in [
+        ("int??", ""),
+        ("Option[Option[int]]", ""),
+        ("Y", "type Y = Option[Option[int]]\n"),
+    ] {
+        let src = format!(
+            "{tien_to}fn g(x: {ann}) -> int:\n    \
+             match x:\n        \
+             Some(Some(v)): v\n        \
+             Some(None): 2000\n        \
+             Some(v): 1000\n        \
+             None: 9999\n\n\
+             fn main() -> ():\n    \
+             print(g(None))\n    \
+             print(g(Some(None)))\n    \
+             print(g(Some(42)))\n    \
+             print(g(Some(Some(42))))\n"
+        );
+        let ky_vong = "9999\n2000\n42\n42\n";
+        let tag = format!("arg_{ann}")
+            .replace(['[', ']', ' '], "_")
+            .replace(['(', ')'], "");
+        let [a, b] = chay_ca_hai(&tag, &src);
+        assert_eq!(a.0, 0, "{tag}: interp; stderr={}", a.2);
+        assert_eq!(a.1, ky_vong, "{tag}: interp phải in bảng giá trị");
+        assert_eq!(b.1, ky_vong, "{tag}: VM phải in bảng giá trị (độc lập)");
+    }
+    // Biên thân hàm cuối và `return` tường minh cho cả ba spell.
+    for (ann, tien_to) in [
+        ("int??", ""),
+        ("Option[Option[int]]", ""),
+        ("Y", "type Y = Option[Option[int]]\n"),
+    ] {
+        let src = format!(
+            "{tien_to}fn h() -> {ann}:\n    None\n\n\
+             fn k() -> {ann}:\n    return None\n\n\
+             fn u() -> {ann}:\n    Some(42)\n\n\
+             fn main() -> ():\n    \
+             print(h())\n    \
+             print(k())\n    \
+             print(u())\n"
+        );
+        let ky_vong = "None\nNone\nSome(Some(42))\n";
+        let tag = format!("ret_{ann}")
+            .replace(['[', ']', ' '], "_")
+            .replace(['(', ')'], "");
+        let [a, b] = chay_ca_hai(&tag, &src);
+        assert_eq!(a.0, 0, "{tag}: interp; stderr={}", a.2);
+        assert_eq!(a.1, ky_vong, "{tag}: interp phải in bảng giá trị");
+        assert_eq!(b.1, ky_vong, "{tag}: VM phải in bảng giá trị (độc lập)");
+    }
+    // Độ sâu ba lớp — không vá riêng `int?`/`int??`.
+    let src = "fn main() -> ():\n    \
+        let a: int??? = None\n    print(a)\n    \
+        let b: int??? = Some(None)\n    print(b)\n    \
+        let c: int??? = Some(Some(None))\n    print(c)\n    \
+        let d: int??? = Some(Some(Some(42)))\n    print(d)\n    \
+        let e: Option[Option[Option[int]]] = None\n    print(e)\n    \
+        let f: Option[Option[Option[int]]] = Some(None)\n    print(f)\n";
+    let ky_vong =
+        "None\nSome(Some(None))\nSome(Some(None))\nSome(Some(Some(42)))\nNone\nSome(Some(None))\n";
+    let [a, b] = chay_ca_hai("mx_depth3", src);
+    assert_eq!(a.0, 0, "mx_depth3: interp; stderr={}", a.2);
+    assert_eq!(a.1, ky_vong, "mx_depth3: interp phải in bảng giá trị");
+    assert_eq!(b.1, ky_vong, "mx_depth3: VM phải in bảng giá trị (độc lập)");
 }
 
 /// (12) **VD-238** ca khoá xanh: `let x: int? = None` giữ nguyên.

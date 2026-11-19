@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-# VD-241 §7 (A0, 2026-11-19) — thân hàm `-> int??` bằng `None` trần: hợp lệ (thân cuối là `None`).
-# Trước fix: VS0412 ở arm thân-hàm (`kiem_than`, VD-238/VD-241 §3 "một lớp"). Sau fix (VD-241 §7):
-# lớp **ngoài cùng** là `Option` ⇒ hợp lệ. Biên **return** tự nâng (VD-228, **không đổi**): lúc gọi
-# `h()`, `None` ⇒ `Some(None)` ⇒ khớp arm `Some(None)` (không phải arm `None`).
+# VD-241 §7 + đợt coercion Option (A0, 2026-11-19) — thân hàm `-> int??` bằng `None` trần: hợp lệ
+# (thân cuối là `None`; lớp ngoài cùng của `want` là `Option`). Bảng giá trị A0 cho `None` ở biên
+# **return** là **giữ nguyên** ⇒ `h()` lúc gọi bằng `None` ⇒ khớp arm `None`.
+# (Hành vi trước ở 3b2c67e nâng `None` thành `Some(None)` — sai theo ngữ nghĩa chốt.)
 fn h() -> int??:
     None
 

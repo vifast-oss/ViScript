@@ -68,3 +68,22 @@ pub fn assign_binop(op: vis_types::AssignOp) -> Result<vis_types::BinOp, Codegen
         AssignOp::Rem => BinOp::Rem,
     })
 }
+
+/// **VD-241 §3+ (A0, 2026-11-19)** — `sym` → kiểu annot (chỉ ký hiệu có annot `Some(…)`);
+/// dùng ở biên gán lại (mirror interp). Tách khỏi `codegen.rs` để file giữ **R1** ≤ 1.500 dòng.
+pub(crate) fn sym_annot_map(symbols: &Symbols) -> std::collections::HashMap<u32, vis_types::Type> {
+    symbols
+        .syms
+        .iter()
+        .enumerate()
+        .filter_map(|(i, s)| s.ty.clone().map(|t| (i as u32, t)))
+        .collect()
+}
+
+/// Vòng lặp (break/continue đích) — dùng chung `codegen`/`codegen::than`.
+pub(crate) struct Vong {
+    /// Đích cần vá khi gặp `break` (về cuối vòng).
+    pub(crate) breaks: Vec<usize>,
+    /// Đích nhảy của `continue` (về đầu vòng).
+    pub(crate) continue_t: usize,
+}

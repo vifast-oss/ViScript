@@ -54,8 +54,10 @@ use std::process::Command;
 // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: 483 → **486** (+3 ca `optional/`: `none-three-states`,
 //   `long-none-param`, `long-none-return`; đổi `long-reject-e` thành `long-none-e` hợp lệ) —
 //   ⇒ **398 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy** (`long-reject-e` rời nhóm lỗi biên dịch).
-const TONG: usize = 486;
-const XANH: usize = 398;
+// **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: 486 → **487** (+1 xanh `optional/long-option-matrix.vis`) —
+//   ⇒ **399 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy**.
+const TONG: usize = 487;
+const XANH: usize = 399;
 const LOI_BIEN_DICH: usize = 53;
 const LOI_LUC_CHAY: usize = 35;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.

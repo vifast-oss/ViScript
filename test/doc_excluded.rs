@@ -21,21 +21,24 @@
 // **Nội dung 7 khối không đổi** (vẫn đúng 7 khối
 // `...`/`Entry`/`assert`); chỉ toạ độ đổi. Đây là hệ quả của việc sửa tài liệu, không phải
 // nới ngưỡng: tổng số khối vẫn phải đúng 22 và mỗi khối vẫn phải `not ok` đúng 1 chẩn đoán.
-// Lý do từng khối (bản đầy đủ): khối 318 `for i in 0..10: ...`; 447 `fn max_by[...] -> T?: ...`;
-// 460 `fn show(self) -> str: ...`; 629 `pub cmd ls(...): ...`; 681 `extern cmd git(..., ...rest: str)`;
-// 760 `fn main(...): ...`; 1435 `Entry(trường: …)` (constructor có trường tên không có trong §A.3)
+// Lý do từng khối (bản đầy đủ): khối 325 `for i in 0..10: ...`; 470 `fn max_by[...] -> T?: ...`;
+// 483 `fn show(self) -> str: ...`; 661 `pub cmd ls(...): ...`; 713 `extern cmd git(..., ...rest: str)`;
+// 792 `fn main(...): ...`; 1467 `Entry(trường: …)` (constructor có trường tên không có trong §A.3)
 // + `assert xs == [3, 2, 1]` (không có trong §A.1/A.2) — hai lỗ hổng tài liệu, không tự thêm cú pháp.
+// **SỬA KÈM LÝ DO (VD-241 đợt coercion Option, 2026-11-19)**: §4.4 tài liệu thiết kế được cập
+// nhật ngữ nghĩa chốt (bảng giá trị `T??`) ⇒ mọi khối sau đó dịch dòng; toạ độ 6 khối loại trừ
+// dịch: 318→325, 447→470, 460→483, 638→661, 690→713, 769→792. Tổng số khối vẫn đúng 22.
 //
 // `#[allow(dead_code)]`: mỗi tệp test chỉ dùng **một phần** danh sách (vis-syntax dùng bản 6 khối,
 // ba tệp còn lại dùng bản 7 khối) nên mục không dùng ở tệp này là mục dùng ở tệp khác.
 #[allow(dead_code)]
-const DOC_EXCLUDED: [usize; 6] = [318, 447, 460, 638, 690, 769];
+const DOC_EXCLUDED: [usize; 6] = [325, 470, 483, 661, 713, 792];
 
-/// Vị trí khối `666` trong `DOC_EXCLUDED` — khối **duy nhất** không bị vis-syntax loại trừ.
+/// Vị trí khối `713` (`extern cmd git(…, ...rest: str)`) trong `DOC_EXCLUDED` — khối **duy nhất** không bị vis-syntax loại trừ.
 #[allow(dead_code)]
 const VI_TRI_KHOI_666: usize = 4;
 
-/// 6 khối loại trừ theo nghĩa **vis-syntax** (22 − 16 khối đủ thân): khối 666
+/// 6 khối loại trừ theo nghĩa **vis-syntax** (22 − 16 khối đủ thân): khối 713
 /// (`extern cmd git(…, ...rest: str)`) **parse sạch** từ ST-27 vì variadic đã có.
 /// Dẫn xuất từ `DOC_EXCLUDED`, không chép số.
 #[allow(dead_code)]

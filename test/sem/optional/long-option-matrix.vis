@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3+ (A0, 2026-11-19, đợt coercion Option) — **ma trận nghiệm thu**:
+# 3 cách viết cùng một kiểu `Option[Option[int]]` — sugar `int??` ≡ spelled-out `Option[Option[int]]`
+# ≡ alias (`type Y = …`) — × các biên — `let` · gán lại `var` · đối số · thân hàm (cuối là `None`)
+# · `return` tường minh — × bảng giá trị A0 (2026-11-19):
+#   `None` ⇒ `None` lớp ngoài · `Some(None)` ⇒ `Some(None)` · `Some(Some(42))` ⇒ `Some(Some(42))` ·
+#   `Some(42)` ⇒ **nâng một lớp** ⇒ `Some(Some(42))` · `42` ⇒ lỗi `VS0412` (xem `long-reject-d.vis`).
+# Hai engine (interp và VM) phải in **cùng từng dòng**; arm `None`/`Some(None)`/`Some(Some(v))`
+# phân biệt được bởi pattern.
+type Y = Option[Option[int]]
+
+fn g_sugar(x: int??) -> int:
+    match x:
+        Some(Some(v)): v
+        Some(None): 2000
+        Some(v): 1000
+        None: 9999
+
+fn g_spelled(x: Option[Option[int]]) -> int:
+    match x:
+        Some(Some(v)): v
+        Some(None): 2000
+        Some(v): 1000
+        None: 9999
+
+fn g_alias(x: Y) -> int:
+    match x:
+        Some(Some(v)): v
+        Some(None): 2000
+        Some(v): 1000
+        None: 9999
+
+fn tail_sugar() -> int??:
+    None
+
+fn tail_spelled() -> Option[Option[int]]:
+    None
+
+fn tail_alias() -> Y:
+    None
+
+fn ret_sugar() -> int??:
+    return None
+
+fn one_sugar() -> int??:
+    Some(42)
+
+fn main():
+    # --- biên `let`, cả ba spell ---
+    let a1: int?? = None
+    print(a1)
+    let a2: int?? = Some(None)
+    print(a2)
+    let a3: int?? = Some(Some(42))
+    print(a3)
+    let a4: int?? = Some(42)
+    print(a4)
+    let b1: Option[Option[int]] = None
+    print(b1)
+    let b2: Option[Option[int]] = Some(None)
+    print(b2)
+    let b3: Option[Option[int]] = Some(Some(42))
+    print(b3)
+    let b4: Option[Option[int]] = Some(42)
+    print(b4)
+    let c1: Y = None
+    print(c1)
+    let c2: Y = Some(None)
+    print(c2)
+    let c3: Y = Some(Some(42))
+    print(c3)
+    let c4: Y = Some(42)
+    print(c4)
+    # --- biên gán lại `var` (annot ⇒ nâng một lớp; `None` giữ nguyên) ---
+    var d1: int?? = Some(42)
+    print(d1)
+    d1 = Some(7)
+    print(d1)
+    d1 = None
+    print(d1)
+    d1 = Some(None)
+    print(d1)
+    d1 = Some(Some(9))
+    print(d1)
+    var d2: Option[Option[int]] = Some(42)
+    print(d2)
+    d2 = Some(7)
+    print(d2)
+    d2 = None
+    print(d2)
+    d2 = Some(None)
+    print(d2)
+    var d3: Y = Some(42)
+    print(d3)
+    d3 = Some(7)
+    print(d3)
+    d3 = None
+    print(d3)
+    d3 = Some(None)
+    print(d3)
+    # --- biên đối số ---
+    print(g_sugar(None))
+    print(g_spelled(None))
+    print(g_alias(None))
+    print(g_sugar(Some(None)))
+    print(g_spelled(Some(None)))
+    print(g_alias(Some(None)))
+    print(g_sugar(Some(42)))
+    print(g_spelled(Some(42)))
+    print(g_alias(Some(42)))
+    print(g_sugar(Some(Some(42))))
+    print(g_spelled(Some(Some(42))))
+    print(g_alias(Some(Some(42))))
+    # --- biên thân hàm: cuối là `None` (ba spell) ---
+    print(tail_sugar())
+    print(tail_spelled())
+    print(tail_alias())
+    # --- biên `return` tường minh: `None` trần ---
+    print(ret_sugar())
+    # --- biên `return`: `Some(42)` nâng một lớp ---
+    print(one_sugar())

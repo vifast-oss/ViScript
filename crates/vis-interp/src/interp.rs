@@ -346,8 +346,17 @@ impl<'a> Interp<'a> {
                 }
                 Ok(Ctrl::Normal)
             }
-            HStmt::Var { sym, init, .. } => {
+            HStmt::Var { sym, init, ty, .. } => {
                 let v = self.eval(init)?;
+                // **VD-241 §3+ (A0, 2026-11-19)** — biên **khai `var`** có annot Optional nâng
+                // giá trị như `let` (mirror codegen `HStmt::Var`): `var x: int?? = Some(7)` ⇒ `x`
+                // bằng `Some(Some(7))`. `None` trần giữ nguyên (bước 1 — `lift_opt`).
+                let v = if ty_là_opt(ty.as_ref()) {
+                    let target_d = ty.as_ref().map(opt_depth_ty).unwrap_or(0);
+                    opt_lift_maybe(v, target_d)
+                } else {
+                    v
+                };
                 self.env.borrow_mut().insert(*sym, v);
                 self.mutable.insert(*sym);
                 Ok(Ctrl::Normal)
@@ -407,6 +416,28 @@ impl<'a> Interp<'a> {
                 }
                 let cur = self.lvalue_get(target)?;
                 let rhs = self.eval(value)?;
+                // **VD-241 §3+ (A0, 2026-11-19)** — biên **gán lại `=`** nâng một lớp khi đích là
+                // biến `var` có annot Optional (`x = Some(7)` với `x: int??` ⇒ `x` bằng
+                // `Some(Some(7))`). Đích `let` không gán được (tyck chặn trước). `None` trần giữ
+                // nguyên (bước 1). **Chưa** nâng ở đích trường/chỉ số (`x.f = …`, `x[i] = …`) —
+                // xem báo cáo.
+                let rhs = match op {
+                    AssignOp::Set => match target {
+                        HExpr::Var { sym: Some(id), .. } => {
+                            let want = self
+                                .symbols
+                                .get(*id)
+                                .and_then(|s| s.ty.clone())
+                                .filter(|t| matches!(t, vis_types::Type::Opt(_)));
+                            match want {
+                                Some(t) => opt_lift_maybe(rhs, opt_depth_ty(&t)),
+                                None => rhs,
+                            }
+                        }
+                        _ => rhs,
+                    },
+                    _ => rhs,
+                };
                 let new = match op {
                     AssignOp::Set => rhs,
                     _ => {

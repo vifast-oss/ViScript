@@ -81,28 +81,32 @@ include!("../../../test/doc_excluded.rs");
 // **SỬA KÈM LÝ DO (ST-120b)**: 4 dòng trỏ `> Mức hiện thực VS2: …` (Phụ lục B, đợt 23) làm dịch
 // số dòng của 6 khối: 535→539, 549→553, 571→575, 684→688, 698→702, 1459→1467. Số kỳ vọng
 // (item/sym/khai báo/chẩn đoán) **không đổi** — chỉ toạ độ đổi.
+// **SỬA KÈM LÝ DO (VD-241 đợt coercion Option, 2026-11-19)**: §4.4 tài liệu thiết kế được cập
+// nhật ngữ nghĩa chốt ⇒ mọi khối dịch dòng; toạ độ 16 khối đủ thân dịch: 226→233, 251→258,
+// 303→310, 338→345, 355→362, 421→444, 437→460, 488→511, 512→535, 563→586, 577→600,
+// 599→622, 712→735, 726→749, 1491→1514, 1444→1467. Số kỳ vọng **không đổi** — chỉ toạ độ.
 const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // **SỬA KÈM LÝ DO (ST-57)**: `derives Eq, Show` **sinh** `impl` ⇒ +1 item (`HImpl`) và +5
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
-    (226, 6, 0, 11), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
+    (233, 6, 0, 11), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
     // **VD-215 (2026-11-18)**: +12 dòng bảng quy tắc `{…}` sau bảng kiểu ⇒ mọi khối sau dịch +12.
-    (251, 1, 0, 4),  // fn total + R + rows + r (lambda)
-    (303, 0, 5, 6),  // x, count, a, b, name, age
-    (338, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
-    (355, 0, 3, 3),  // e, domain, mail (if let)
-    (421, 1, 0, 5),  // greet + name + times + loud + s
-    (437, 0, 1, 3),  // f + x (lambda) + y
-    (488, 1, 0, 4),  // read_config + dir + text + cfg
-    (512, 0, 1, 2),  // cfg + err (else) — +9 dòng ghi chú VD-222 ở §6.1
-    (563, 0, 3, 2),  // a, b
-    (577, 0, 2, 2),  // counter, inc
-    (599, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
-    (712, 1, 0, 5),  // backup_big + ctx + dir + files + f
-    (726, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1491, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (258, 1, 0, 4),  // fn total + R + rows + r (lambda)
+    (310, 0, 5, 6),  // x, count, a, b, name, age
+    (345, 0, 1, 4),  // r (arm1), r (arm2 = or-pattern dùng chung), w, h
+    (362, 0, 3, 3),  // e, domain, mail (if let)
+    (444, 1, 0, 5),  // greet + name + times + loud + s
+    (460, 0, 1, 3),  // f + x (lambda) + y
+    (511, 1, 0, 4),  // read_config + dir + text + cfg
+    (535, 0, 1, 2),  // cfg + err (else) — +9 dòng ghi chú VD-222 ở §6.1
+    (586, 0, 3, 2),  // a, b
+    (600, 0, 2, 2),  // counter, inc
+    (622, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
+    (735, 1, 0, 5),  // backup_big + ctx + dir + files + f
+    (749, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
+    (1514, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
     // **R11 (VD-178)**: khối 1435 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1444, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
+    (1467, 6, 0, 14), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
 ];
 
 fn doc_path() -> PathBuf {

@@ -128,7 +128,9 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca `optional/` (`none-three-states`,
     //   `long-none-param`, `long-none-return`); đổi `long-reject-e` (`.err`) → `long-none-e` hợp lệ
     //   ⇒ **486 ca** (**436** `.vis` + 50 `.vish`, **88 `.err`**).
-    assert_eq!(tat_ca.len(), 486, "phải đủ 486 ca");
+    // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
+    //   ⇒ **487 ca** (**437** `.vis` + 50 `.vish`, **88 `.err`**).
+    assert_eq!(tat_ca.len(), 487, "phải đủ 487 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -201,10 +203,11 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-56b)**: +6 ca ⇒ **382**; **352** ca chạy được khớp + **30** ca lỗi biên dịch.
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca xanh + đổi `long-reject-e` thành `long-none-e`
     //   (lỗi biên dịch → xanh) ⇒ **(433, 53) = 486**.
+    // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh (ma trận) ⇒ **(434, 53) = 487**.
     assert_eq!(
         khop + so_biet + bien_dich,
-        486,
-        "486 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        487,
+        "487 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.
@@ -215,10 +218,11 @@ fn than_chay() {
     //   ⇒ **(429, 54) = 483**.
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +4 ca xanh (`long-none-e` từ `.err` + 3 ca mới)
     //   − 1 lỗi biên dịch ⇒ **(433, 53) = 486**.
+    // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh ⇒ **(434, 53) = 487**.
     assert_eq!(
         (khop, bien_dich),
-        (433, 53),
-        "433 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        (434, 53),
+        "434 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
     );
 }
 
@@ -277,7 +281,8 @@ fn hai_duong_cung_so_chan_doan() {
             // **VD-240-b (2026-11-19)**: +4 ca grid `async/grid-*` ⇒ **422**.
             // **VD-241 §3 (2026-11-19)**: +7 ca Option lồng ⇒ **429**.
             // **VD-241 §7 (2026-11-19)**: +4 ca xanh ⇒ **433**.
-            assert_eq!(so_ca, 433, "phải so đủ 433 ca chạy được");
+            // **VD-241 đợt coercion (2026-11-19)**: +1 ca xanh (ma trận) ⇒ **434**.
+            assert_eq!(so_ca, 434, "phải so đủ 434 ca chạy được");
             // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
             // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).
             // **SỬA KÈM LÝ DO (R19b, VD-178)**: **38 → 39** (+`loi/doi-dau-tran` VS0507).

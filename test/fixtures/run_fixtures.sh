@@ -107,12 +107,14 @@ expect_fail_dev "doc-examples: ngoại lệ cũ đã xanh" "ngoại lệ cũ" \
 expect_fail_dev "doc-examples: allowlist sai số mục" "phải đúng 5 mục" \
     bash "$DEV" doc-examples --root "$tmp/7"
 # 9) fixture lệch byte so với tài liệu ⇒ đỏ
+# **SỬA KÈM LÝ DO (VD-241 đợt coercion Option, 2026-11-19)**: tài liệu thiết kế được cập nhật
+# §4.4 (bảng giá trị `T??`) ⇒ khối `for i in 0..10: ...` dịch 318 → **325** (fixtures regen).
 mkdir -p "$tmp/9/docs" "$tmp/9/test/doc-examples"
 cp "$VIS_ROOT"/docs/*.md "$tmp/9/docs/"
 cp "$VIS_ROOT"/docs/doc-examples-allow.txt "$tmp/9/docs/"
 cp "$VIS_ROOT"/test/doc-examples/doc-* "$tmp/9/test/doc-examples/"
 mk_qd "$tmp/9" 12
-printf '\n# lệch byte\n' >> "$tmp/9/test/doc-examples/doc-ViScript-thiet-ke-318.vis"
+printf '\n# lệch byte\n' >> "$tmp/9/test/doc-examples/doc-ViScript-thiet-ke-325.vis"
 expect_fail_dev "doc-examples: fixture lệch byte" "KHÔNG khớp khối" \
     bash "$DEV" doc-examples --root "$tmp/9"
 # 10) thiếu fixture qd (10) ⇒ đỏ (số do Agent 0 chốt: đúng 12)

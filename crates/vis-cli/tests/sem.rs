@@ -188,8 +188,10 @@ fn sem_323_ca_qua_binary() {
         //   `long-none-e` **xanh** — `None` hợp lệ khi lớp **ngoài cùng** là `Option`, VD-238 sửa theo lệnh A0;
         //   +`none-three-states`, `long-none-param`, `long-none-return`) ⇒ **486 ca**
         //   (**436 `.vis`** + 50 `.vish`, **88 `.err`**).
-        486,
-        "phải đúng 486 ca (436 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
+        //   (ma trận Option lồng) ⇒ **487 ca** (**437 `.vis`** + 50 `.vish`, **88 `.err`**).
+        487,
+        "phải đúng 487 ca (437 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.
