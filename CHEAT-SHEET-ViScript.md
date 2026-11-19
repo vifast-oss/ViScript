@@ -180,7 +180,7 @@ loop break continue return and or not true false self async await scope test ext
 | `type P derives Show:` ✔ | — | `#[derive(Debug)]` | — |
 | `dyn Hien` ✖ | — | `dyn Trait` | — |
 
-`derives` sinh sẵn: `Eq`, `Ord`, `Hash`, `Show`, `Json`, `Default` — không cần viết tay.
+`derives` sinh sẵn: `Eq`, `Show`, `Json` — không cần viết tay (Ord/Hash/Default chưa có).
 
 ## 9. Thư viện chuẩn (đóng băng — `agent/API-STD.txt`)
 
