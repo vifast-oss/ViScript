@@ -1,6 +1,7 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
-Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-18
+Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify @ `be3322f` **đỏ 53 ca**; Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
+Cập nhật: 2026-11-18
 (ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **VD-186**: mục FsGuard ghi rõ **đường đọc đã đóng**,
 **đường ghi còn khe hở** tới khi VS3-QĐ-4 merge, **Windows mức bảo đảm thấp hơn**).
 

@@ -34,10 +34,13 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 | R27 | `dd088322` | PASS | 174 |
 | R28 | `fdb21d15` | PASS | 177 |
 | R29 | `39041b3f` | PASS | 197 |
+| R30 | `0d5e0e57` | PASS | 223 (222 DONE) |
 
 ## Mốc đáng chú ý
 
 - **R29** — số 3 nền cùng HEAD: mac **1184/0**, ps **1188/0**, psvn **152/4** (4 ca `cap_proc` do thiếu `/bin/echo`, `/bin/sh` trên Windows).
+- **R30** — pha 1 công thái học (C3 VD-178), tách repo; trạng thái theo `agent/reports/R30-viscript.{md,json}`.
+- **2026-11-20** — VD-winport: Linux xanh toàn workspace @ `be3322f` (gate/nightly PASS); **Windows verify @ `be3322f` đỏ 53 ca** — VD tiếp tục triển khai; `pha1-rc1` nguyên; Tier 2 giữ.
 - **ST-174** — đóng nợ **#146** (TOCTOU macOS): vá `symlink_metadata` + chứng minh tất định 100/100, 6 triệu vòng 0 đỏ.
 - **ST-171** — tách repo ViScript khỏi ViFastOs: 459 commit giữ lịch sử, gate mac/ps khớp R29.
 - **ST-176** — nợ **#147**: mac 1489 s vs ps 261 s = 5,70×; nguyên nhân tạo tiến trình/syscall macOS (chưa đóng).

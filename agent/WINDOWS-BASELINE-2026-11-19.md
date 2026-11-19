@@ -134,3 +134,13 @@ Windows re-verify (psvn clone `/c/Users/ps/vis-sqlite-check-git` @ `8355022`):
 - **PO-Windows portability VD** — chờ A0 mở (pha 1 chính thức đóng @ `05e42d0` 2026-11-19; queue BLOCKED line 1994).
 - **PO-Windows portability các ca trong CR/CW path/JSON/WinSock/mode classes** — vẫn chưa được port; vẫn ở baseline `349af67`.
 
+
+
+---
+
+## Addendum 2026-11-20 ~01:00 — verify @ `be3322f` (sau PR VD-winport nhóm A)
+
+- psvn pull `be3322f`; `cargo test --workspace --no-fail-fast` → **exit 101**; **53 ca đỏ** / 20 suite-binary
+  (log `/c/Users/ps/vislogs/be3322f-ws.out`; danh sách `/c/Users/ps/vislogs/be3322f-failed.txt`).
+- So với baseline `13c31cf` (101 đỏ / 25 suite): **còn ≈53 đỏ** — nhóm A (POSIX binaries) đã xanh trên Linux vì test-child; Windows còn lại thuộc B/C/D/E + ca còn lại.
+- **Windows Tier 2 giữ nguyên; chưa tuyên bố hỗ trợ.**
