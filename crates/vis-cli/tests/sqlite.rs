@@ -309,6 +309,9 @@ fn main():
 fn attach_bi_chan_va_khong_tao_tep() {
     let d = tam("attach");
     let db = d.join("xx-khong-duoc.db");
+    // **psvn (Windows, 2026-11-19)**: `C:\…` backslash nhúng thô vào chuỗi `.vis` ⇒ VS0102.
+    // Dùng `/` — Windows/SQLite chấp nhận và chuỗi không cần escape.
+    let path_for_sql = db.to_string_lossy().replace('\\', "/");
     let src = format!(
         r#"use std.sqlite
 fn main():
@@ -324,7 +327,7 @@ fn main():
             let _ = sqlite.close(h)
             print("xong")
 "#,
-        path = db.display()
+        path = path_for_sql
     );
     let (code, out, err) = ca_song_song(&d, "attach-chan", &src);
     assert_eq!(code, 0, "{err}");
