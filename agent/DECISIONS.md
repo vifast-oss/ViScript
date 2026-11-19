@@ -1908,7 +1908,7 @@ Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính ch�
 ### Quyết định Agent 0 · 2026-11-20 (phiên 2026-11-20, uỷ quyền "tự làm agent0 quyết định") — ghi nhận, không mở phạm vi
 
 **Người quyết định**: Agent 0 (qua uỷ quyền trực tiếp trong phiên của người dùng).
-**Mốc dữ liệu mọi quyết định**: HEAD `c12979f` (docs SYNC, 2026-11-20); Windows verify exit 0 @ `c7cef71`/`2d93101`/`5f4edd7`; Linux gate PASS ×3; nightly PASS @ `4cae3e3` (fuzz 19,073,168 ca, vi phạm 0); fresh-clone gate PASS @ `701d86e` + `4e2bdde`; report-check PASS (30 báo cáo / 243 hàng); `pha1-rc1` `05e42d0…` nguyên vẹn; **freeze** (+9 `std.sqlite.*`) nguyên vẹn.
+**Mốc dữ liệu mọi quyết định**: HEAD `7e23c59` (docs SYNC, 2026-11-20); Windows verify exit 0 @ `c7cef71`/`2d93101`/`5f4edd7`; Linux gate PASS ×3; nightly PASS @ `4cae3e3` (fuzz 19,073,168 ca, vi phạm 0); fresh-clone gate PASS @ `701d86e` + `4e2bdde`; report-check PASS (30 báo cáo / 243 hàng); `pha1-rc1` `05e42d0…` nguyên vẹn; **freeze** (+9 `std.sqlite.*`) nguyên vẹn.
 
 1. **VD-winport (Windows test-suite portability) = DONE kỹ thu"** — Windows verify **exit 0** toàn workspace @ `c7cef71` / `2d93101` / `5f4edd7` (150 khối `test result: ok`, 0 failed). **Tier 2 giữ nguyên**; Tier 1 **không tuyên bố** (cần VD riêng + required CI Windows + runner).
 2. **macOS verify không thực hiện được ở phiên này** — `vis-remote mac --check` báo `nhan: Linux 7.0.0-43-generic x86_64 / Ubuntu 26.04.1` (mapping `mac ⇒ bash -s LOCAL`); **không có máy Darwin/arm64** ở phiên này; "gate macOS" ghi ở DEM/JOURNAL phiên trước là chạy trên **chính máy Linux này**. — **Không tuyên bố macOS**; giữ nguyên "chưa verify; không kết luận" ở tài liệu hiện trạng; lịch sử giữ nguyên.
