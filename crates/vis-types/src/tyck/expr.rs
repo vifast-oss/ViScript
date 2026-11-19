@@ -271,9 +271,15 @@ impl<'a> Checker<'a> {
             }
             HExpr::Tuple { items, .. } => {
                 let tys: Vec<Type> = items.iter().map(|i| self.kiem_expr(i)).collect();
-                Type::TypeRef {
-                    name: "tuple".into(),
-                    args: tys,
+                // **VD-241 §6/B-A (A0, 2026-11-19)** — `()` là **một** kiểu (`Unit` ngay trong checker,
+                // khớp lower "Unit"); tuple chỉ tồn tại khi có phần tử.
+                if items.is_empty() {
+                    Type::Unit
+                } else {
+                    Type::TypeRef {
+                        name: "tuple".into(),
+                        args: tys,
+                    }
                 }
             }
             // **ST-56 (VD-92)**: `ref(x)` **giữ nguyên kiểu** của `x` — hạ **identity** ở cả hai
@@ -410,7 +416,13 @@ impl<'a> Checker<'a> {
             *acc = t.clone();
             return;
         }
-        if matches!(t, Type::Error) || self.same(acc, t) {
+        // **VD-241 §6/B-A (A0, 2026-11-19)** — `Never` khớp mọi kiểu; một nhánh toàn `return`/di
+        // không bao giờ ép bên kia.
+        if matches!(t, Type::Error) || matches!(t, Type::Never) || self.same(acc, t) {
+            return;
+        }
+        if matches!(acc, Type::Never) {
+            *acc = t.clone();
             return;
         }
         if let Type::Opt(inner) = acc {

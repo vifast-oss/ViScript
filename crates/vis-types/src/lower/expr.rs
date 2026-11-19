@@ -137,6 +137,7 @@ impl<'a> Lowerer<'a> {
             NodeKind::RecordLit => {
                 let mut fields: Vec<(String, HExpr)> = Vec::new();
                 let mut defs: Vec<FieldDef> = Vec::new();
+                let mut seen = std::collections::HashSet::with_capacity(8);
                 for f in node.children().filter(|n| n.kind == NodeKind::RecordField) {
                     let name = self.decl_name(f).unwrap_or_default();
                     let value = match f.children().next() {
@@ -147,6 +148,13 @@ impl<'a> Lowerer<'a> {
                             self.lower_var_use(&n2, f.span)
                         }
                     };
+                    if !seen.insert(name.clone()) {
+                        self.diag(
+                            &vis_diag::TYPE_CODES[4],
+                            format!("trường `{name}` xuất hiện nhiều lần trên bản ghi ẩn danh"),
+                            f.span,
+                        );
+                    }
                     defs.push(FieldDef {
                         name: name.clone(),
                         ty: self.type_of(&value),
@@ -804,6 +812,18 @@ impl<'a> Lowerer<'a> {
                     {
                         // **R5a (VD-178)**: trường **thiếu** lấy **giá trị mặc định** của khai báo.
                         let mut fields = named;
+                        // **VD-241 §6/B-B (A0, 2026-11-19)**: trường trùng tên ⇒ lỗi biên dịch.
+                        let mut seen = std::collections::HashSet::with_capacity(fields.len());
+                        for (n, _) in &fields {
+                            if !seen.insert(n.clone()) {
+                                self.diag(
+                                    &vis_diag::TYPE_CODES[4],
+                                    format!("trường `{}` xuất hiện nhiều lần trên bản ghi `{}`", n, name),
+                                    span,
+                                );
+                                return HExpr::Error { span };
+                            }
+                        }
                         if let Some(rec) = self.items.iter().find_map(|it| match it {
                             crate::hir::HItem::Rec(r) if r.id == rid => Some(r.clone()),
                             _ => None,
@@ -812,6 +832,14 @@ impl<'a> Lowerer<'a> {
                                 if !fields.iter().any(|(n, _)| n == &f.name) {
                                     if let Some(d) = &f.default {
                                         fields.push((f.name.clone(), d.clone()));
+                                    } else {
+                                        // **VD-241 §6/B-B (A0, 2026-11-19)**: trường bắt buộc thiếu ⇒ lỗi tĩnh.
+                                        self.diag(
+                                            &vis_diag::TYPE_CODES[4],
+                                            format!("thiếu trường bắt buộc `{}` của bản ghi `{}`", f.name, name),
+                                            span,
+                                        );
+                                        return HExpr::Error { span };
                                     }
                                 }
                             }

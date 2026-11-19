@@ -436,12 +436,16 @@ impl<'a> Checker<'a> {
         let (Some(rx), Some(ry)) = (self.types.rec(x), self.types.rec(y)) else {
             return false;
         };
+        // **VD-241 §6/B-B (A0, 2026-11-19)** — bản ghi so khớp theo **tên trường**; thứ tự khai báo
+        // không quyết định (`{b: 1, a: "s"}` ≡ `{a: "s", b: 1}`).
         rx.fields.len() == ry.fields.len()
-            && rx
-                .fields
-                .iter()
-                .zip(ry.fields.iter())
-                .all(|(f, g)| f.name == g.name && self.same(&f.ty, &g.ty))
+            && rx.fields.iter().all(|af| {
+                ry.fields
+                    .iter()
+                    .find(|bf| bf.name == af.name)
+                    .map(|bf| self.same(&af.ty, &bf.ty))
+                    .unwrap_or(false)
+            })
     }
 
     /// Ép `from` về `to` **có báo lỗi**: tự nâng `T → T?`, literal `int` ở vị trí `float` (§3.5).
@@ -1148,7 +1152,11 @@ impl<'a> Checker<'a> {
                 // ST-13b (mục 1): `return` **phân kỳ** — kiểu `never`, nhận mọi kiểu trả về.
                 Type::Never
             }
-            HStmt::Break { .. } | HStmt::Continue { .. } => Type::Unit,
+            HStmt::Break { .. } | HStmt::Continue { .. } => {
+                // **VD-241 §6/B-A (A0, 2026-11-19)** — `break`/`continue` là luồng **không tiếp tục**
+                // (như `return`): kiểu `Never`, tương thích mọi kiểu để `unify_branch`/`coerce` chấp nhận.
+                Type::Never
+            }
             HStmt::Match {
                 subject,
                 arms,

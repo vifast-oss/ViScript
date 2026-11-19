@@ -25,7 +25,7 @@ Kết quả:
 Xin chào, ViScript!
 ```
 
-> Lần chạy đầu sẽ tự biên dịch (vài phút). Cần cài Rust trước — xem [rustup.rs](https://rustup.rs).
+> Lần chạy đầu sẽ tự biên dịch (vài phút). Cần cài Rust **stable ≥ 1.99.1** — xem [rustup.rs](https://rustup.rs). `./vis-dev` sẽ tự chọn cargo phù hợp (PATH hoặc `~/.cargo/bin`) và báo rõ lựa chọn.
 
 ## Vì sao học ViScript?
 

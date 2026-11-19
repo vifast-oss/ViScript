@@ -248,6 +248,8 @@ impl Value {
             Value::Range(a, b, incl) => {
                 format!("{a}..{}{b}", if *incl { "=" } else { "" })
             }
+            // **VD-241 §7/8 (A0, 2026-11-19)** — closure Show đồng nhất một chuỗi: `<fn>` khắp
+            // mọi máy (interp lẫn VM), kể cả anonymous. Trước đây interp `<fn>` còn VM `<hàm>`.
             Value::Builtin(name) => format!("<builtin {name}>"),
             Value::Fn(c) => {
                 if c.name.is_empty() {
@@ -256,7 +258,7 @@ impl Value {
                     format!("<fn {}>", c.name)
                 }
             }
-            Value::Vm(_) => "<hàm>".to_string(),
+            Value::Vm(_) => "<fn>".to_string(),
             Value::Task(_) => "<tác vụ>".to_string(),
             Value::Chan(_) => "<kênh>".to_string(),
             Value::Cap { kind, root, .. } => {
