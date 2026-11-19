@@ -2,16 +2,17 @@
 //! **ST-123 (VD-130c)** — `--grant` cho `cap[Proc]` so **đường dẫn tuyệt đối ĐÃ CANONICALIZE**,
 //! không so **basename**.
 //!
-//! Đỏ trước (JOURNAL/st123-red.log): tệp thực thi **cùng tên** ở thư mục khác chạy được khi chỉ
-//! grant `/bin/echo` (basename khớp). Luật mới: giá trị grant **không có `/`** phân giải qua `PATH`
-//! **một lần lúc khởi động** thành đường dẫn tuyệt đối; hai phía (grant và lệnh sẽ chạy) đều
-//! `canonicalize` rồi so **bằng nhau**. Grant trỏ tệp không tồn tại/không chạy được ⇒ chẩn đoán rõ,
-//! exit 2.
+//! Luật: giá trị grant **không có `/`** phân giải qua `PATH` **một lần lúc khởi động** thành đường
+//! dẫn tuyệt đối; hai phía (grant và lệnh sẽ chạy) đều `canonicalize` rồi so **bằng nhau**.
+//! Grant trỏ tệp không tồn tại ⇒ chẩn đoán rõ, exit 2. Mọi binary giả trong file này là **bản sao
+//! của `test-child`** — xuyên nền (POSIX + Windows), tất định; không dùng shebang/shell ngoài.
 //!
 //! Mỗi ca chạy **cả** interp và `--vm --no-cache`, so **byte** (stdout + stderr + exit).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+const TC: &str = env!("CARGO_BIN_EXE_test-child");
 
 type Kq = (i32, Vec<u8>, String);
 
@@ -28,13 +29,26 @@ fn tam(tag: &str) -> PathBuf {
     d
 }
 
-fn chay(d: &Path, ten: &str, args: &[&str], vm: bool) -> Kq {
+fn duong_dan_voi_path(path_them: Option<&Path>) -> std::ffi::OsString {
+    let mut muc: Vec<PathBuf> = Vec::new();
+    if let Some(p) = path_them {
+        muc.push(p.to_path_buf());
+    }
+    let cur = std::env::var_os("PATH").unwrap_or_default();
+    for p in std::env::split_paths(&cur) {
+        muc.push(p);
+    }
+    std::env::join_paths(muc).expect("join PATH")
+}
+
+fn chay(d: &Path, ten: &str, args: &[&str], vm: bool, path_them: Option<&Path>) -> Kq {
     let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
     c.current_dir(d).arg("run").arg("--no-cache");
     if vm {
         c.arg("--vm");
     }
     c.args(args).arg(ten);
+    c.env("PATH", duong_dan_voi_path(path_them));
     let o = c.output().expect("chạy vis");
     (
         o.status.code().unwrap_or(-1),
@@ -45,9 +59,13 @@ fn chay(d: &Path, ten: &str, args: &[&str], vm: bool) -> Kq {
 
 /// Ghi tệp + chạy hai đường, đòi **byte y hệt** (interp vs `--vm`).
 fn ca(d: &Path, ten: &str, src: &str, args: &[&str]) -> Kq {
+    ca_path(d, ten, src, args, None)
+}
+
+fn ca_path(d: &Path, ten: &str, src: &str, args: &[&str], path_them: Option<&Path>) -> Kq {
     std::fs::write(d.join(ten), src).expect("ghi");
-    let a = chay(d, ten, args, false);
-    let b = chay(d, ten, args, true);
+    let a = chay(d, ten, args, false, path_them);
+    let b = chay(d, ten, args, true, path_them);
     assert_eq!(a, b, "hai đường lệch ({ten}):\n interp {a:?}\n vm {b:?}");
     a
 }
@@ -59,50 +77,53 @@ fn vish(cmd: &str) -> String {
     )
 }
 
-/// Tệp thực thi **cùng basename `echo`** trong thư mục tạm (chạy được trên mọi nền POSIX; in lại
-/// đối số để ca không-grant chứng minh nó **chạy thật**).
-///
-/// **Không** dùng bản sao `cp /bin/echo` của macOS: bản sao binary hệ thống (chữ ký nền tảng) bị
-/// kernel **SIGKILL (exit 137)** khi chạy — xem `JOURNAL/st123-red.log` §(1). Quyết định quyền chỉ
-/// dựa trên **đường dẫn**, nên tệp cùng tên là đủ để chứng minh lỗ hổng basename.
-fn dat_echo_trung_ten(d: &Path) -> PathBuf {
-    let p = d.join("echo");
-    std::fs::write(&p, "#!/bin/sh\necho \"$@\"\n").expect("ghi echo giả");
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut m = std::fs::metadata(&p).expect("meta").permissions();
-        m.set_mode(0o755);
-        std::fs::set_permissions(&p, m).expect("chmod");
+fn ten_file_echo() -> &'static str {
+    if cfg!(windows) {
+        "echo.exe"
+    } else {
+        "echo"
     }
+}
+
+/// Binary giả tên `echo` = **bản sao `test-child`** (`std::fs::copy` giữ bit thực thi trên Unix;
+/// trên Windows `.exe` luôn chạy được). Chạy dưới dạng `<fake> echo TU-DO` in tất định `TU-DO`.
+fn dat_echo_trung_ten(d: &Path, thu_muc: Option<&str>) -> PathBuf {
+    let muc = thu_muc
+        .map(|m| d.join(m))
+        .unwrap_or_else(|| d.to_path_buf());
+    std::fs::create_dir_all(&muc).expect("thư mục chứa echo giả");
+    let p = muc.join(ten_file_echo());
+    std::fs::copy(TC, &p).expect("copy test-child làm echo giả");
     p
 }
 
-/// (1) Đường dẫn tuyệt đối **khớp** ⇒ chạy (không đổi so trước).
+/// (1) Đường dẫn tuyệt đối **khớp** (sau canonicalize) ⇒ chạy.
 #[test]
 fn tuyet_doi_khop_thi_chay() {
     let d = tam("khop");
+    let g = format!("p={TC}");
     let r = ca(
         &d,
         "a.vish",
-        &vish("/bin/echo a"),
-        &["--strict-caps", "--grant", "p=/bin/echo"],
+        &vish(&format!("{TC} echo a")),
+        &["--strict-caps", "--grant", g.as_str()],
     );
     assert_eq!(r.0, 0, "{r:?}");
     assert_eq!(r.1, b"[a]\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (2) **Bản sao trùng tên** ở thư mục khác ⇒ `VS0604` exit 2 (đỏ trước: chạy được).
+/// (2) **Bản sao trùng tên** ở thư mục khác ⇒ `VS0604` exit 2 (grant trỏ test-child, chạy bản sao).
 #[test]
 fn sao_chep_trung_ten_bi_chan() {
     let d = tam("trung-ten");
-    let gia = dat_echo_trung_ten(&d);
+    let gia = dat_echo_trung_ten(&d, None);
+    let g = format!("p={TC}");
     let r = ca(
         &d,
         "b.vish",
-        &vish(&format!("{} SAO", gia.display())),
-        &["--strict-caps", "--grant", "p=/bin/echo"],
+        &vish(&format!("{} echo SAO", gia.display())),
+        &["--strict-caps", "--grant", g.as_str()],
     );
     assert_eq!(r.0, 2, "{r:?}");
     let e = &r.2;
@@ -113,43 +134,29 @@ fn sao_chep_trung_ten_bi_chan() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (3) **Symlink** tới binary được grant ⇒ chạy (canonicalize **hai phía**); grant chính symlink
-/// rồi chạy đích cũng khớp (cùng đường dẫn canonicalize).
-///
-/// **ST-140 — vì sao đích symlink là `/bin/sh -c` chứ không phải `/bin/echo` (VD-144).** Trên runner
-/// Linux `ps`, `/bin/echo` là symlink vào **coreutils multicall** (`/usr/lib/cargo/bin/coreutils/echo`);
-/// binary multicall **từ chối** chạy khi `argv[0]` khác tên nó:
-/// `Security violation: Requested utility 'ln-echo' does not match executable name` ⇒ `VS0501`, exit 1.
-/// Ca đỏ vì **môi trường**, không phải vì quyền: sản phẩm canonicalize rồi exec **đúng đường dẫn
-/// thật**, chính là điều ca này kiểm (đỏ-trước: `JOURNAL/st140-red-ps.log`).
-///
-/// VD-144 cho phép đổi **đích của symlink** sang binary do workspace build
-/// (`env!("CARGO_BIN_EXE_<tên>")`); không có binary phù hợp thì `/bin/sh -c`. Gói `vis-cli` chỉ lộ
-/// **một** binary qua `CARGO_BIN_EXE_` là `vis`, và `vis` **không** in lại đối số một cách tất định
-/// (`vis` trần in usage; `vis` không có `--version`) ⇒ dùng nhánh `/bin/sh -c` của VD-144.
-/// `/bin/sh` trên `ps` là `/usr/bin/dash` (binary thật, **không** multicall) nên chạy được qua symlink
-/// mang tên bất kỳ; `sh -c "echo a"` in tất định `a\n` ⇒ khẳng định stdout **giữ nguyên** `[a]\n`.
-/// Symlink vẫn do ca **tự tạo trong thư mục tạm**; hai chiều khẳng định và parity interp/`--vm` giữ nguyên.
+/// (3) **Symlink** tới binary được grant ⇒ chạy (canonicalize **hai phía**).
 #[cfg(unix)]
 #[test]
 fn symlink_canonicalize_hai_phia() {
     let d = tam("symlink");
-    let ln = d.join("ln-sh");
-    std::os::unix::fs::symlink("/bin/sh", &ln).expect("symlink");
+    let ln = d.join("ln-tc");
+    std::os::unix::fs::symlink(TC, &ln).expect("symlink");
+    let g = format!("p={TC}");
     let r = ca(
         &d,
         "c.vish",
-        &vish(&format!("{} -c \"echo a\"", ln.display())),
-        &["--strict-caps", "--grant", "p=/bin/sh"],
+        &vish(&format!("{} echo a", ln.display())),
+        &["--strict-caps", "--grant", g.as_str()],
     );
     assert_eq!(r.0, 0, "{r:?}");
     assert_eq!(r.1, b"[a]\n");
     // Chiều ngược: grant **symlink**, chạy **binary thật** ⇒ vẫn khớp sau canonicalize.
+    let g2 = format!("p={}", ln.display());
     let r2 = ca(
         &d,
         "c2.vish",
-        &vish("/bin/sh -c \"echo b\""),
-        &["--strict-caps", "--grant", &format!("p={}", ln.display())],
+        &vish(&format!("{TC} echo b")),
+        &["--strict-caps", "--grant", g2.as_str()],
     );
     assert_eq!(r2.0, 0, "{r2:?}");
     assert_eq!(r2.1, b"[b]\n");
@@ -157,49 +164,50 @@ fn symlink_canonicalize_hai_phia() {
 }
 
 /// (4) Grant **không có `/`** ⇒ phân giải qua `PATH` một lần lúc khởi động, rồi so **bằng** đường
-/// dẫn tuyệt đối: `/bin/echo` và `/usr/bin/printf` khớp grant `echo`/`printf`; lệnh khác bị chặn.
-///
-/// **Không** dùng `echo` trần làm *lệnh sẽ chạy*: trong chế độ lệnh `echo` là **builtin**, không
-/// spawn tiến trình ⇒ không đi qua allowlist (đúng ngữ nghĩa: quyền `cap[Proc]` chỉ áp cho tiến
-/// trình ngoài). Vì vậy ca dương dùng đường dẫn tuyệt đối / `printf` trần (lệnh ngoài thật).
+/// dẫn tuyệt đối. Tạo `PATH` giả trong thư mục tạm: `tc-echo` (bản sao test-child) — hermetic,
+/// không phụ thuộc `/usr/bin/echo` của nền.
 #[test]
 fn grant_ten_tran_phan_giai_path() {
     let d = tam("path");
-    let r = ca(
+    let bin = d.join("bindir");
+    let gia = dat_echo_trung_ten(&d, Some("bindir"));
+    let ten_gia = gia.file_name().unwrap().to_str().unwrap().to_string();
+    let g1 = format!("p={ten_gia}");
+    let r = ca_path(
         &d,
         "d1.vish",
-        &vish("/bin/echo a"),
-        &["--strict-caps", "--grant", "p=echo"],
+        &vish(&format!("{tc_echo} echo a", tc_echo = gia.display())),
+        &["--strict-caps", "--grant", g1.as_str()],
+        Some(&bin),
     );
     assert_eq!(r.0, 0, "{r:?}");
     assert_eq!(r.1, b"[a]\n");
-    // `printf` **không** phải builtin ⇒ chạy thật; grant tên trần phải phân giải qua `PATH`.
-    let r2 = ca(
+    // test-child thật **không** khớp grant tên trần (phân giải ra bản sao trong PATH) ⇒ chặn.
+    let g2 = format!("p={ten_gia}");
+    let r2 = ca_path(
         &d,
         "d2.vish",
-        &vish("printf abc"),
-        &["--strict-caps", "--grant", "p=printf"],
+        &vish(&format!("{TC} echo abc")),
+        &["--strict-caps", "--grant", g2.as_str()],
+        Some(&bin),
     );
-    assert_eq!(r2.0, 0, "{r2:?}");
-    assert_eq!(r2.1, b"[abc]\n");
-    // Cùng đường dẫn tuyệt đối của `printf` cũng khớp grant tên trần.
-    let r2b = ca(
-        &d,
-        "d2b.vish",
-        &vish("/usr/bin/printf abc"),
-        &["--strict-caps", "--grant", "p=printf"],
-    );
-    assert_eq!(r2b.0, 0, "{r2b:?}");
-    assert_eq!(r2b.1, b"[abc]\n");
-    // Lệnh ngoài **khác** grant ⇒ chặn.
-    let r3 = ca(
+    assert_eq!(r2.0, 2, "{r2:?}");
+    assert!(r2.2.contains("VS0604"), "{}", r2.2);
+    // Tên khác grant (test-child trần trong PATH giả cũng là `ten_gia` — không có) ⇒ chặn.
+    let r3 = ca_path(
         &d,
         "d3.vish",
-        &vish("/usr/bin/printf x"),
-        &["--strict-caps", "--grant", "p=/bin/cat"],
+        &vish(&format!("{tc_echo} echo x", tc_echo = gia.display())),
+        &["--strict-caps", "--grant", "p=khong_co_lenh_nay"],
+        Some(&bin),
     );
+    // Grant trỏ lệnh không có trong PATH ⇒ chẩn đoán rõ, exit 2 (kiểm cả nhánh chẩn đoán).
     assert_eq!(r3.0, 2, "{r3:?}");
-    assert!(r3.2.contains("VS0604"), "{}", r3.2);
+    assert!(
+        r3.2.contains("không thấy lệnh") && r3.2.contains("PATH"),
+        "{}",
+        r3.2
+    );
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -208,32 +216,31 @@ fn grant_ten_tran_phan_giai_path() {
 #[test]
 fn grant_duong_dan_tuong_doi() {
     let d = tam("tuong-doi");
-    std::fs::create_dir_all(d.join("bin")).expect("bin");
-    let trong = d.join("bin").join("echo");
-    std::fs::write(&trong, "#!/bin/sh\necho TUONG-DOI\n").expect("ghi");
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut m = std::fs::metadata(&trong).expect("meta").permissions();
-        m.set_mode(0o755);
-        std::fs::set_permissions(&trong, m).expect("chmod");
-    }
+    let _trong = dat_echo_trung_ten(&d, Some("bin"));
+    let cwd_rel = Path::new("bin").join(ten_file_echo());
+    // Lệnh .vish dùng `./bin/echo echo TUONG-DOI` (có `/` ⇒ không đi qua allowlist PATH mà qua
+    // canonicalize từ cwd).
+    let cmd = format!(
+        "./{} echo TUONG-DOI",
+        cwd_rel.display().to_string().replace('\\', "/")
+    );
+    let g = format!("p=./{}", cwd_rel.display());
     let r = ca(
         &d,
         "e.vish",
-        &vish("./bin/echo"),
-        &["--strict-caps", "--grant", "p=./bin/echo"],
+        &vish(&cmd),
+        &["--strict-caps", "--grant", g.as_str()],
     );
     assert_eq!(r.0, 0, "{r:?}");
-    // `.vish` in kết quả cấp tệp theo dạng danh sách ⇒ `[...]`.
     assert_eq!(r.1, b"[TUONG-DOI]\n");
     // Cùng tên, khác thư mục ⇒ chặn.
-    let gia = dat_echo_trung_ten(&d);
+    let gia = dat_echo_trung_ten(&d, None);
+    let g2 = format!("p=./{}", cwd_rel.display());
     let r2 = ca(
         &d,
         "e2.vish",
-        &vish(&format!("{} SAO", gia.display())),
-        &["--strict-caps", "--grant", "p=./bin/echo"],
+        &vish(&format!("{} echo KHAC", gia.display())),
+        &["--strict-caps", "--grant", g2.as_str()],
     );
     assert_eq!(r2.0, 2, "{r2:?}");
     assert!(r2.2.contains("VS0604"), "{}", r2.2);
@@ -247,7 +254,7 @@ fn grant_binary_khong_ton_tai() {
     let r = ca(
         &d,
         "f.vish",
-        &vish("/bin/echo KHONG"),
+        &vish(&format!("{TC} echo KHONG")),
         &["--strict-caps", "--grant", "p=/khong/co/lenh"],
     );
     assert_eq!(r.0, 2, "{r:?}");
@@ -261,7 +268,7 @@ fn grant_binary_khong_ton_tai() {
     let r2 = ca(
         &d,
         "f2.vish",
-        &vish("/bin/echo KHONG"),
+        &vish(&format!("{TC} echo KHONG")),
         &["--strict-caps", "--grant", "p=khong_co_lenh_nay_trong_path"],
     );
     assert_eq!(r2.0, 2, "{r2:?}");
@@ -277,11 +284,11 @@ fn grant_binary_khong_ton_tai() {
 #[test]
 fn khong_grant_khong_gioi_han() {
     let d = tam("khong-grant");
-    let gia = dat_echo_trung_ten(&d);
+    let gia = dat_echo_trung_ten(&d, None);
     let r = ca(
         &d,
         "g.vish",
-        &vish(&format!("{} TU-DO", gia.display())),
+        &vish(&format!("{} echo TU-DO", gia.display())),
         &["--strict-caps"],
     );
     assert_eq!(r.0, 0, "{r:?}");

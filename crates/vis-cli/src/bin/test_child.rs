@@ -49,7 +49,7 @@ fn main() {
                         0
                     }
                     Err(_) => {
-                        eprintln!("test-child: không mở được `{}`", &rest[0]);
+                        eprintln!("test-child: không mở được `{}`", rest[0]);
                         1
                     }
                 }
@@ -59,20 +59,45 @@ fn main() {
             }
         }
         "grep" => {
-            // grep <pattern> [file] — pattern literal substring match (không regex)
+            // grep [<pattern> [file]] hoặc grep -E [<pattern> [file]]; `-E` được nhận và bỏ qua
+            // (ta hỗ trợ `^` neo và substring — đủ cho test). Cờ không hợp lệ ⇒ exit 2 như GNU grep:
+            // stderr nêu tên chương trình (`<tên> grep: unrecognized option ...`).
             if rest.is_empty() {
                 eprintln!("test-child grep: cần pattern");
-                return; // err
+                exit(2);
             }
-            let pat = &rest[0];
+            for a in rest {
+                if a.starts_with('-') && a != "-E" {
+                    eprintln!("test-child grep: unrecognized option '{a}'");
+                    exit(2);
+                }
+            }
+            let effective_rest: Vec<String> = rest
+                .iter()
+                .filter(|a| a.as_str() != "-E")
+                .cloned()
+                .collect();
+            let pat = &effective_rest[0];
+            // **VD-PO-Windows-portability** — anchor `^` cho "bắt đầu với" (grep -E "^" tương k")
+            let anchored = pat.starts_with('^');
+            let core_pat: &str = if anchored { &pat[1..] } else { pat };
+            let matches_line = |line: &str| {
+                if anchored {
+                    line.starts_with(core_pat)
+                } else {
+                    line.contains(core_pat)
+                }
+            };
             let read_to_string = |p: Option<&str>| -> Result<String, ()> {
                 if let Some(p) = p {
-                    File::open(p).map(|mut f| {
-                        let mut s = String::new();
-                        use std::io::Read;
-                        let _ = f.read_to_string(&mut s);
-                        s
-                    }).map_err(|_| ())
+                    File::open(p)
+                        .map(|mut f| {
+                            let mut s = String::new();
+                            use std::io::Read;
+                            let _ = f.read_to_string(&mut s);
+                            s
+                        })
+                        .map_err(|_| ())
                 } else {
                     let stdin = io::stdin();
                     let mut s = String::new();
@@ -82,16 +107,20 @@ fn main() {
                     Ok(s)
                 }
             };
-            match read_to_string(rest.get(1).map(String::as_str)) {
+            match read_to_string(effective_rest.get(1).map(String::as_str)) {
                 Ok(s) => {
                     let mut matched = false;
                     for line in s.lines() {
-                        if line.contains(pat) {
+                        if matches_line(line) {
                             println!("{line}");
                             matched = true;
                         }
                     }
-                    if matched { 0 } else { 1 }
+                    if matched {
+                        0
+                    } else {
+                        1
+                    }
                 }
                 Err(()) => 1,
             }
@@ -99,8 +128,8 @@ fn main() {
         "true" => 0,
         "false" => 1,
         "printf" => {
-            // printf <fmt> [args…] — minimal: hỗ trợ %s, %d, %f, %%.
-            let mut out = format!("");
+            // printf <fmt> [args…] — minimal: hỗ trợ %s, %d, %f, %% và escape `\\n` `\\t` `\\\\` trong fmt.
+            let mut out = String::new();
             let fmt = match rest.first() {
                 Some(s) => s.clone(),
                 None => {
@@ -110,12 +139,33 @@ fn main() {
             };
             let args = &rest[1..];
             let mut ai = 0;
+            // Diễn giải escape trong fmt trước: `\\n` → newline, `\\t` → tab, `\\\\` → `\`, `\\b` → backspace.
+            // Giống hành vi printf thật khi định dạng tới từ biến môi trường/biểu thức.
+            let mut fmt_de: Vec<char> = Vec::with_capacity(fmt.len());
+            let mut dit = fmt.chars();
+            while let Some(c) = dit.next() {
+                if c == '\\' {
+                    match dit.next() {
+                        Some('n') => fmt_de.push('\n'),
+                        Some('t') => fmt_de.push('\t'),
+                        Some('b') => fmt_de.push('\u{8}'),
+                        Some('r') => fmt_de.push('\r'),
+                        Some('\\') => fmt_de.push('\\'),
+                        Some(other) => {
+                            fmt_de.push('\\');
+                            fmt_de.push(other);
+                        }
+                        None => fmt_de.push('\\'),
+                    }
+                } else {
+                    fmt_de.push(c);
+                }
+            }
             let mut i = 0;
-            let bs = fmt.as_bytes();
-            while i < bs.len() {
-                let c = bs[i] as char;
-                if c == '%' && i + 1 < bs.len() {
-                    let spec = bs[i + 1] as char;
+            while i < fmt_de.len() {
+                let c = fmt_de[i];
+                if c == '%' && i + 1 < fmt_de.len() {
+                    let spec = fmt_de[i + 1];
                     match spec {
                         's' => {
                             let v = args.get(ai).cloned().unwrap_or_default();
@@ -132,7 +182,9 @@ fn main() {
                             ai += 1;
                             out.push_str(&v.to_string());
                         }
-                        '%' => { out.push('%'); }
+                        '%' => {
+                            out.push('%');
+                        }
                         _ => {
                             out.push('%');
                             out.push(spec);
@@ -149,8 +201,9 @@ fn main() {
             0
         }
         "sleep" => {
-            let ms: u64 = rest.first().and_then(|s| s.parse().ok()).unwrap_or(0);
-            std::thread::sleep(std::time::Duration::from_millis(ms));
+            // sleep <giây> — chấp nhận số thực như GNU sleep (ví dụ `sleep 0.05`).
+            let secs: f64 = rest.first().and_then(|s| s.parse().ok()).unwrap_or(0.0);
+            std::thread::sleep(std::time::Duration::from_secs_f64(secs.max(0.0)));
             0
         }
         "sh" => {

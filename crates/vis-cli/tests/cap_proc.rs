@@ -6,6 +6,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+const TC: &str = env!("CARGO_BIN_EXE_test-child");
+
 fn tam(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static DEM: AtomicUsize = AtomicUsize::new(0);
@@ -59,15 +61,15 @@ fn ca_main_proc(d: &Path) -> PathBuf {
     ghi(
         d,
         "main.vish",
-        "fn main(p: cap[Proc]):\n    pass\n\n/bin/echo a\n",
+        &format!("fn main(p: cap[Proc]):\n    pass\n\n{} echo a\n", TC),
     )
 }
 
-/// (a) strict + **không** cap + `/bin/echo` ⇒ `VS0604` nêu `cap[Proc]`, exit 2.
+/// (a) strict + **không** cap + `{TC} echo` ⇒ `VS0604` nêu `cap[Proc]`, exit 2.
 #[test]
 fn strict_khong_cap_thi_chan() {
     let d = tam("a");
-    ghi(&d, "a.vish", "/bin/echo a\n");
+    ghi(&d, "a.vish", &format!("{} echo a\n", TC));
     let ((ma, out, err), _) = hai_duong(&d, "a.vish", true);
     assert_eq!(ma, 2, "stderr: {err}");
     assert!(out.is_empty(), "không được chạy: {out:?}");
@@ -93,7 +95,7 @@ fn strict_co_cap_proc_thi_chay_hai_duong() {
 #[test]
 fn khong_strict_khong_cap_van_chay() {
     let d = tam("c");
-    ghi(&d, "c.vish", "/bin/echo a\n");
+    ghi(&d, "c.vish", &format!("{} echo a\n", TC));
     let (a, b) = hai_duong(&d, "c.vish", false);
     assert_eq!(a.0, 0, "interp stderr: {}", a.2);
     assert_eq!(b.0, 0, "vm stderr: {}", b.2);
@@ -109,7 +111,10 @@ fn strict_cap_proc_sh_exit3() {
     ghi(
         &d,
         "d.vish",
-        "fn main(p: cap[Proc]):\n    pass\n\n/bin/sh -c \"exit 3\" | complete\n",
+        &format!(
+            "fn main(p: cap[Proc]):\n    pass\n\n{} sh -c \"exit 3\" | complete\n",
+            TC
+        ),
     );
     let (a, b) = hai_duong(&d, "d.vish", true);
     assert_eq!(a.0, 0, "stderr: {}", a.2);
@@ -127,7 +132,10 @@ fn strict_cap_proc_pipeline_hai_stage() {
     ghi(
         &d,
         "e.vish",
-        "fn main(p: cap[Proc]):\n    pass\n\n/bin/echo a | /bin/cat\n",
+        &format!(
+            "fn main(p: cap[Proc]):\n    pass\n\n{} echo a | {} cat\n",
+            TC, TC
+        ),
     );
     let (a, b) = hai_duong(&d, "e.vish", true);
     assert_eq!(a.0, 0, "stderr: {}", a.2);
@@ -137,14 +145,17 @@ fn strict_cap_proc_pipeline_hai_stage() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (f) strict + `cap[Dir]` (không Proc) + `/bin/echo` ⇒ `VS0604` nêu **`cap[Proc]`**, không nêu Dir.
+/// (f) strict + `cap[Dir]` (không Proc) + `{TC} echo` ⇒ `VS0604` nêu **`cap[Proc]`**, không nêu Dir.
 #[test]
 fn strict_cap_dir_khong_thay_the_proc() {
     let d = tam("f");
     ghi(
         &d,
         "f.vish",
-        "fn main(x: cap[Dir] @ p\"./\"):\n    pass\n\n/bin/echo a\n",
+        &format!(
+            "fn main(x: cap[Dir] @ p\"./\"):\n    pass\n\n{} echo a\n",
+            TC
+        ),
     );
     let ((ma, out, err), _) = hai_duong(&d, "f.vish", true);
     assert_eq!(ma, 2, "stderr: {err}");

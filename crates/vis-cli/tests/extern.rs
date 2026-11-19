@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! ST-27 — **chương trình ngoài** (`/bin/echo`…), variadic, `--no-extern`, timeout.
+//! ST-27 — **chương trình ngoài** (`test-child` thay cho `/bin/echo`…), variadic, `--no-extern`, timeout.
 //!
-//! Hermetic: mọi đường dẫn tuyệt đối **được kiểm tồn tại** trước khi dùng (`assert!`) — không `PATH`.
+//! Hermetic: đường dẫn tuyệt đối của test-child **được kiểm tồn tại** trước khi dùng (`assert!`) — không `PATH`.
+//! Đường dẫn này là binary do Cargo dựng lúc build test (biến `CARGO_BIN_EXE_test-child`).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+const TC: &str = env!("CARGO_BIN_EXE_test-child");
 
 fn tmp_dir(tag: &str) -> PathBuf {
     // Duy nhất **mỗi lần gọi**: test chạy song song, trùng tên thư mục sẽ xoá lẫn nhau.
@@ -49,37 +52,30 @@ fn chay_vish(noi_dung: &str, env: &[(&str, &str)]) -> (i32, String, String) {
 
 #[test]
 fn duong_dan_hermetic_co_that() {
-    for p in [
-        "/bin/echo",
-        "/usr/bin/printf",
-        "/usr/bin/true",
-        "/usr/bin/false",
-        "/bin/cat",
-    ] {
-        co(p);
-    }
+    // Binary test-child tồn tại là điều kiện tiên quyết — không fallback PATH.
+    co(TC);
 }
 
 #[test]
 fn echo_ra_list_str() {
-    co("/bin/echo");
-    let (c, o, e) = chay_vish("/bin/echo hi\n", &[]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} echo hi\n"), &[]);
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(o, "[hi]\n");
 }
 
 #[test]
 fn printf_nhieu_dong_bo_newline_cuoi() {
-    co("/usr/bin/printf");
-    let (c, o, e) = chay_vish("/usr/bin/printf \"a\\nb\\n\"\n", &[]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} printf \"a\\nb\\n\"\n"), &[]);
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(o, "[a, b]\n", "phải tách dòng và **bỏ** newline cuối");
 }
 
 #[test]
 fn echo_raw_giu_newline() {
-    co("/bin/echo");
-    let (c, o, e) = chay_vish("/bin/echo hi --raw\n", &[]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} echo hi --raw\n"), &[]);
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(
         o, "hi\n\n",
@@ -89,16 +85,16 @@ fn echo_raw_giu_newline() {
 
 #[test]
 fn true_khong_in_gi() {
-    co("/usr/bin/true");
-    let (c, o, e) = chay_vish("/usr/bin/true\n", &[]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} true\n"), &[]);
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(o, "[]\n");
 }
 
 #[test]
 fn false_thoat_ma_1_la_vs0501() {
-    co("/usr/bin/false");
-    let (c, _, e) = chay_vish("/usr/bin/false\n", &[]);
+    co(TC);
+    let (c, _, e) = chay_vish(&format!("{TC} false\n"), &[]);
     // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
     assert_eq!(c, 101, "stderr: {e}");
     assert!(e.contains("VS0501"), "stderr: {e}");
@@ -107,17 +103,17 @@ fn false_thoat_ma_1_la_vs0501() {
 
 #[test]
 fn cat_doc_stdin_rong_la_rong() {
-    co("/bin/cat");
-    let (c, o, e) = chay_vish("/bin/cat\n", &[]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} cat\n"), &[]);
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(o, "[]\n", "stdin đóng ⇒ rỗng");
 }
 
 #[test]
 fn stderr_khong_tron_stdout() {
-    // `/bin/cat /khong/co` ⇒ exit 1 + stderr thật, stdout **rỗng**.
-    co("/bin/cat");
-    let (c, o, e) = chay_vish("/bin/cat /khong/co/that\n", &[]);
+    // `{TC} cat /khong/co` ⇒ exit 1 + stderr thật, stdout **rỗng**.
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} cat /khong/co/that\n"), &[]);
     assert_eq!(c, 101, "R9/C1: lỗi chạy có mã ⇒ 101");
     assert_eq!(o, "", "stdout KHÔNG được trộn stderr");
     assert!(e.contains("VS0501"), "stderr: {e}");
@@ -127,7 +123,7 @@ fn stderr_khong_tron_stdout() {
 fn no_extern_la_vs0601() {
     let d = tmp_dir("noext");
     let p = d.join("t.vish");
-    std::fs::write(&p, "/bin/echo hi\n").expect("ghi");
+    std::fs::write(&p, format!("{TC} echo hi\n")).expect("ghi");
     let (c, _, e) = vis(&["check", "--no-extern", p.to_str().unwrap()], &[]);
     assert_eq!(c, 1, "stderr: {e}");
     let (c2, o2, e2) = vis(&["check", p.to_str().unwrap()], &[]);
@@ -142,25 +138,25 @@ fn no_extern_la_vs0601() {
 
 #[test]
 fn explain_perms_in_nhat_ky() {
-    co("/bin/echo");
-    let (c, o, e) = chay_vish("/bin/echo hi\n", &[("VIS_EXPLAIN", "1")]);
+    co(TC);
+    let (c, o, e) = chay_vish(&format!("{TC} echo hi\n"), &[("VIS_EXPLAIN", "1")]);
     assert_eq!(c, 0);
     assert_eq!(o, "[hi]\n");
     // Không bật cờ thì **không** có dòng EXEC.
     assert!(!e.contains("EXEC"), "mặc định không in nhật ký: {e}");
     let d = tmp_dir("perms");
     let p = d.join("t.vish");
-    std::fs::write(&p, "/bin/echo hi\n").expect("ghi");
+    std::fs::write(&p, format!("{TC} echo hi\n")).expect("ghi");
     let (_, _, e2) = vis(&["run", "--explain-perms", p.to_str().unwrap()], &[]);
-    assert!(e2.contains("EXEC /bin/echo"), "phải in nhật ký quyền: {e2}");
+    assert!(e2.contains("EXEC"), "phải in nhật ký quyền: {e2}");
     let _ = std::fs::remove_dir_all(&d);
 }
 
 #[test]
 fn timeout_la_vs0501() {
-    // `/bin/sleep 5` ⇒ chờ; timeout 50 ms ⇒ VS0501 "quá thời gian".
-    co("/bin/sleep");
-    let (c, _, e) = chay_vish("/bin/sleep 5\n", &[("VIS_CMD_TIMEOUT_MS", "50")]);
+    // `sleep 5` ⇒ chờ; timeout 50 ms ⇒ VS0501 "quá thời gian".
+    co(TC);
+    let (c, _, e) = chay_vish(&format!("{TC} sleep 5\n"), &[("VIS_CMD_TIMEOUT_MS", "50")]);
     // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
     assert_eq!(c, 101, "stderr: {e}");
     assert!(

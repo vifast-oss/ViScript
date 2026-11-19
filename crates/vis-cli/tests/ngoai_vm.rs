@@ -6,6 +6,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+const TC: &str = env!("CARGO_BIN_EXE_test-child");
+
 fn tam(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static DEM: AtomicUsize = AtomicUsize::new(0);
@@ -49,10 +51,10 @@ fn echo_vm_cung_byte() {
     assert_eq!(out, b"a\n");
 }
 
-/// (b) pipe qua `/bin/cat` ⇒ hai đường cùng `[a]\n`.
+/// (b) pipe qua `{TC} cat` ⇒ hai đường cùng `[a]\n`.
 #[test]
 fn cat_pipe_vm_cung_byte() {
-    let (ma, out, err) = so_hai("cat", "/bin/echo a | /bin/cat\n");
+    let (ma, out, err) = so_hai("cat", &format!("{} echo a | {} cat\n", TC, TC));
     assert_eq!(ma, 0, "{err:?}");
     assert_eq!(out, b"[a]\n");
 }
@@ -60,7 +62,7 @@ fn cat_pipe_vm_cung_byte() {
 /// (c) `| complete` giữ mã thoát ≠ 0 (`false` ⇒ code 1) ở **cả hai** đường.
 #[test]
 fn complete_ma_thoat_vm_cung_byte() {
-    let (ma, out, err) = so_hai("complete", "/usr/bin/false | complete\n");
+    let (ma, out, err) = so_hai("complete", &format!("{TC} false | complete\n"));
     assert_eq!(ma, 0, "{err:?}");
     assert!(
         String::from_utf8_lossy(&out).contains("code    1"),
@@ -84,7 +86,7 @@ fn lenh_khong_ton_tai_vm_cung_chan_doan() {
 /// (e) `sh -c "exit 3" | complete` ⇒ hai đường cùng `code    3`.
 #[test]
 fn sh_exit3_vm_cung_byte() {
-    let (ma, out, err) = so_hai("sh", "/bin/sh -c \"exit 3\" | complete\n");
+    let (ma, out, err) = so_hai("sh", &format!("{} sh -c \"exit 3\" | complete\n", TC));
     assert_eq!(ma, 0, "{err:?}");
     assert!(
         String::from_utf8_lossy(&out).contains("code    3"),

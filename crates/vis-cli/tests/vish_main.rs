@@ -6,6 +6,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+const TC: &str = env!("CARGO_BIN_EXE_test-child");
+
 type Kq = (i32, Vec<u8>, String);
 
 fn tam(tag: &str) -> PathBuf {
@@ -55,7 +57,7 @@ fn main_rong_va_pipeline_hop_le() {
     ghi(
         &d,
         "a.vish",
-        "fn main(p: cap[Proc]):\n    pass\n\n/bin/echo a\n",
+        &format!("fn main(p: cap[Proc]):\n    pass\n\n{} echo a\n", TC),
     );
     let (a, b) = hai_duong(&d, "a.vish");
     assert_eq!(a.0, 0, "interp stderr: {}", a.2);
@@ -72,7 +74,7 @@ fn main_co_lenh_bao_vs0201() {
     ghi(
         &d,
         "b.vish",
-        "fn main():\n    print(\"x\")\n\n/bin/echo a\n",
+        &format!("fn main():\n    print(\"x\")\n\n{} echo a\n", TC),
     );
     let (a, b) = hai_duong(&d, "b.vish");
     assert_eq!(a.0, 2, "stderr: {}", a.2);
@@ -91,7 +93,11 @@ fn main_co_lenh_bao_vs0201() {
 #[test]
 fn main_co_let_bao_vs0201() {
     let d = tam("c");
-    ghi(&d, "c.vish", "fn main():\n    let x = 1\n\n/bin/echo a\n");
+    ghi(
+        &d,
+        "c.vish",
+        &format!("fn main():\n    let x = 1\n\n{} echo a\n", TC),
+    );
     let (a, b) = hai_duong(&d, "c.vish");
     assert_eq!(a.0, 2, "stderr: {}", a.2);
     assert_eq!(b.0, 2, "stderr: {}", b.2);
@@ -120,7 +126,7 @@ fn main_co_assert_bao_vs0201() {
     ghi(
         &d,
         "e.vish",
-        "fn main():\n    assert 1 == 1\n\n/bin/echo a\n",
+        &format!("fn main():\n    assert 1 == 1\n\n{} echo a\n", TC),
     );
     let (a, b) = hai_duong(&d, "e.vish");
     assert_eq!(a.0, 2, "stderr: {}", a.2);
