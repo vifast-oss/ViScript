@@ -60,6 +60,6 @@
 
 ## Các nhiệm vụ VD-241 khác chạy bình thường; chỉ nhánh `int??` / VM pattern-lồng dừng chờ A0
 
-- Đợt **phân tích công thái học A0 yêu cầu (2026-11-19)** tiếp tục (chỉ đọc, không đổi mã): thu thập → `VISCRIPT-ERGONOMICS-{FACTS,EXAMPLES,DIAGNOSTICS}.md`.
+- Đợt **phân tích công thái học A0 yêu cầu (2026-11-19)** tiếp tục (chỉ đọc, không đổi mã): thu thập → `agent/VISCRIPT-ERGONOMICS-{FACTS,EXAMPLES,DIAGNOSTICS}.md`.
 - `#152-vế-mac` / `#147-mac`: vẫn chờ mps (người dùng chạy prompt trên mac).
 - `pha1-rc1` tuyệt đối không di chuyển/xoá.
