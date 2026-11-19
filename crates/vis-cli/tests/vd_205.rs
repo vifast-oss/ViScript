@@ -291,7 +291,11 @@ fn anyerror_none_field_engine_parity() {
     assert_eq!(a.2, b.2);
 }
 
-/// (11) **VD-238** ca khoá: `None` trần chỉ gán được cho `T?` — mọi annot non-Opt đều đỏ (`VS0412`).
+/// (11) **VD-238** ca khoá: `None` trần chỉ gán được cho lớp **ngoài cùng** là `Option`; mọi annot non-Option
+/// (kể cả Option lồng bên trong container non-Option) đều đỏ (`VS0412`).
+/// **VD-241 §7 (A0, 2026-11-19)**: trước đây pin "`T?` một lớp" (`int??`/`int???` đỏ); A0 chốt `None`
+/// hợp lệ khi lớp **ngoài cùng** là `Option` ⇒ `int?? = None` chuyển sang ca xanh
+/// (`none_dich_ngoai_cung_option_la_ok`). Các ca non-Option dưới đây **giữ nguyên**.
 #[test]
 fn none_tran_chi_gan_duoc_cho_option() {
     use std::process::Command;
@@ -315,6 +319,19 @@ fn none_tran_chi_gan_duoc_cho_option() {
         (
             "err_arg_call",
             "fn f(n: int) -> int:\n    n\n\nfn main() -> ():\n    print(f(None))\n",
+        ),
+        // **VD-241 §7 (A0, 2026-11-19)** — Option chỉ ở lớp **trong** hộc chứa non-Option ⇒ vẫn đỏ.
+        (
+            "err_list_opt",
+            "fn main() -> ():\n    let a: list[int?] = None\n    print(a)\n",
+        ),
+        (
+            "err_map_opt",
+            "fn main() -> ():\n    let b: map[str, int?] = None\n    print(b)\n",
+        ),
+        (
+            "err_result_opt",
+            "fn main() -> ():\n    let c: Result[int?, str] = None\n    print(c)\n",
         ),
     ] {
         let d = tam(tag);
@@ -348,6 +365,42 @@ fn none_tran_chi_gan_duoc_cho_option() {
             "{tag}: phải chứa thông điệp VD-238 ({marker}); {tho}"
         );
         let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+/// (11b) **VD-241 §7 (A0, 2026-11-19)** — ca xanh: `None` trần hợp lệ khi lớp **ngoài cùng** là `Option`
+/// (`T?`, `T??`, `T???`, alias phân giải về `Option`, thân-hàm cuối là `None`, `return None`); hai
+/// engine **byte-identical** (biên annot/tham số/return tự nâng → `Some(None)`; gán lại `x = None`
+/// giữ `None` ngoài thật). Lớp ngoài cùng non-Option vẫn đỏ — xem (11).
+#[test]
+fn none_dich_ngoai_cung_option_la_ok() {
+    // Mỗi ca chạy cả hai engine; stdout phải trùng từng byte + exit 0.
+    let ca = [
+        (
+            "ok_opt2",
+            "fn main() -> ():\n    let x: int?? = None\n    print(x)\n",
+        ),
+        (
+            "ok_opt3",
+            "fn main() -> ():\n    let z: int??? = None\n    print(z)\n",
+        ),
+        (
+            "ok_alias_opt2",
+            "type Y = Option[Option[int]]\nfn main() -> ():\n    let y: Y = None\n    print(y)\n",
+        ),
+        (
+            "ok_fn_ret_than_cuoi",
+            "fn h() -> int??:\n    None\n\nfn main() -> ():\n    print(h())\n",
+        ),
+        (
+            "ok_fn_ret_bang_return",
+            "fn h() -> int??:\n    return None\n\nfn main() -> ():\n    print(h())\n",
+        ),
+    ];
+    for (tag, src) in ca {
+        let [a, b] = chay_ca_hai(tag, src);
+        assert_eq!(a.0, 0, "interp phải exit 0 cho {tag}; stderr={}", a.2);
+        assert_eq!(a.1, b.1, "{tag}: interp và VM phải byte-identical");
     }
 }
 

@@ -125,7 +125,10 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: +4 ca grid ⇒ **473 ca**.
     // **SỬA KÈM LÝ DO (VD-241 §3, 2026-11-19)**: +10 ca Option lồng (9 xanh + 2 `.err` lỗi biên dịch,
     //   gồm thêm `long-param-b`, `long-return`, `long-match-nested`, `long-no-pseudo`) ⇒ **483 ca**.
-    assert_eq!(tat_ca.len(), 483, "phải đủ 483 ca");
+    // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca `optional/` (`none-three-states`,
+    //   `long-none-param`, `long-none-return`); đổi `long-reject-e` (`.err`) → `long-none-e` hợp lệ
+    //   ⇒ **486 ca** (**436** `.vis` + 50 `.vish`, **88 `.err`**).
+    assert_eq!(tat_ca.len(), 486, "phải đủ 486 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -196,10 +199,12 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-57)**: **388** ca; **356** ca chạy được khớp + **32** ca lỗi biên dịch.
     // **SỬA KÈM LÝ DO (ST-56)**: +6 ca ⇒ **376**; **348** ca chạy được khớp + **28** ca lỗi biên dịch.
     // **SỬA KÈM LÝ DO (ST-56b)**: +6 ca ⇒ **382**; **352** ca chạy được khớp + **30** ca lỗi biên dịch.
+    // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca xanh + đổi `long-reject-e` thành `long-none-e`
+    //   (lỗi biên dịch → xanh) ⇒ **(433, 53) = 486**.
     assert_eq!(
         khop + so_biet + bien_dich,
-        483,
-        "483 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        486,
+        "486 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.
@@ -208,10 +213,12 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: +4 ca grid `async/grid-*` (xanh) ⇒ **(422, 51) = 473**.
     // **SỬA KÈM LÝ DO (VD-241 §3, 2026-11-19)**: +7 ca Option lồng xanh + 3 `.err` (VS0412)
     //   ⇒ **(429, 54) = 483**.
+    // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +4 ca xanh (`long-none-e` từ `.err` + 3 ca mới)
+    //   − 1 lỗi biên dịch ⇒ **(433, 53) = 486**.
     assert_eq!(
         (khop, bien_dich),
-        (429, 54),
-        "429 ca chạy được khớp + 54 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        (433, 53),
+        "433 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
     );
 }
 
@@ -269,7 +276,8 @@ fn hai_duong_cung_so_chan_doan() {
             // **R2 (VD-178)**: +3 ca `optional/` chạy được ⇒ **418**.
             // **VD-240-b (2026-11-19)**: +4 ca grid `async/grid-*` ⇒ **422**.
             // **VD-241 §3 (2026-11-19)**: +7 ca Option lồng ⇒ **429**.
-            assert_eq!(so_ca, 429, "phải so đủ 429 ca chạy được");
+            // **VD-241 §7 (2026-11-19)**: +4 ca xanh ⇒ **433**.
+            assert_eq!(so_ca, 433, "phải so đủ 433 ca chạy được");
             // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
             // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).
             // **SỬA KÈM LÝ DO (R19b, VD-178)**: **38 → 39** (+`loi/doi-dau-tran` VS0507).

@@ -7,6 +7,7 @@
 > Các ca lệch hai engine được đánh dấu **[LỆCH ENGINE — BLOCKED-CHO-A0]** — không sửa, xem `agent/DUNG-CHO-A0.md` + câu hỏi cuối file.
 >
 > **CẬP NHẬT 2026-11-19 (sau khi A0 chốt ngữ nghĩa):** A0 đã ratify Option lồng — `T??` là `Option[Option[T]]` thật; hệ thống corpus đã được cập nhật thành **483 ca** (kéo thêm `long-*`); các lệch-byte (§6.1/6.2) đã được sửa theo đúng quyết định A0 — chi tiết xem `agent/QD-OPTION-LONG-2026-11-19.md` + `agent/DEM-2026-11-18.md` (~13:15). Các câu hỏi §9 của bản báo cáo gốc đã được A0 trả lời theo đúng thứ tự; các số cũ ở §3/§4/§5 dưới đây giữ nguyên lịch sử lúc 6fb72a7.
+> **CẬP NHẬT 2026-11-19 (đợt VD-241 §7 — `None` theo kiểu đích `Option`):** engine sửa theo lệnh A0 — `None` trần hợp lệ khi **lớp ngoài cùng** của kiểu đích là `Option` (`T?`/`T??`/`T???`…); `list[int?]`/`map[str,int?]`/`Result[.., int?]` vẫn **VS0412**. Corpus nay **486 ca** (**436 `.vis`** + 50 `.vish`, **88 `.err`**): `long-reject-e` (`.err`) → **`long-none-e.vis`** xanh; thêm `none-three-states`, `long-none-param`, `long-none-return`. Auto-lift **không đổi**: `None` ở biên annot/tham số/return lúc chạy thành `Some(None)`; `x = None` (gán lại) giữ `None` ngoài thật. Chi tiết: `agent/QD-OPTION-LONG-2026-11-19.md` (hàng e) + commit `rev/vd241-option-none-fix-2026-11-19`.
 
 ## 1. Mục tiêu & phạm vi
 
@@ -227,7 +228,7 @@ Theo `AGENTS.md` §1 (repo ViScript): **code + test > `SPEC-lex.md` > DECISIONS.
 | 8 | **Precedence & associativity** | postfix > `**` (phải) > `-` (unary) > `* / %` > `+ -` > `.. ..=` (không kết hợp) > **`??` (phải) > so sánh (KHÔNG kết hợp — `x == 1 == y` ⇒ VS0201 + nhắc ngoặc) > `not` > `and` > `or` > `|>` (trái)**. `2**3**2=512`; `-2**2=-4`; `o ?? 10 + 5 = 15` (`??` lỏng hơn `+`); `o ?? 0 == 3` → `true` (`??` chặt hơn `==`). Nguồn: `docs/ViScript-thiet-ke.md:376-391`, `A.5 (1408-1423)`, SPEC-lex §5. |
 | 9 | **Record vs map** | `{ten: 1}` record (khoá định danh trần) / `{"ten": 1}` map / `{(k): 1}` map computed / `{}` map rỗng / **`{[k]: 1}` ⇒ cảnh báo `VS0208`** (tắt `{([k]): 1}`) / trộn trần + chuỗi/`(expr)` bất kỳ thứ tự ⇒ **`VS0207`** (VD-215; đo 4/4). |
 | 10 | **Trùng tên** | type re-khai / impl method / trait trùng cùng file ⇒ **`VS0302`**; biến/param trùng module std đã import ⇒ **cảnh báo `VS0211`** và member position **vẫn rơi về module std** (§6.6). |
-| 11 | **Ngữ cảnh kiểu kỳ vọng** | Auto-lift `T → T?` ở biên annot (`let`/return/arg/closure-return — VD-227/228/229); literal int⇒float chỉ khi có annot float; `match Some(…)` khớp giá trị **chưa bọc**; `None` trần chỉ ở annot `T?` (VD-238). |
+| 11 | **Ngữ cảnh kiểu kỳ vọng** | Auto-lift `T → T?` ở biên annot (`let`/return/arg/closure-return — VD-227/228/229); literal int⇒float chỉ khi có annot float; `match Some(…)` khớp giá trị **chưa bọc**; `None` trần chỉ ở annot có lớp **ngoài cùng** là `Option` (`T?`/`T??`… — VD-238; **cập nhật VD-241 §7, A0 2026-11-19**: mọi lớp `Option` ở lớp ngoài cùng đều nhận `None`). |
 | 12 | **Some/None trong pattern** | Viết hoa (viết thường ⇒ **`VS0203`**, fmt không tự sửa); match phải đủ nhánh (**`VS0402`** kèm tên nhánh thiếu); `while let Some(v) = e:`; or-pattern `A(x) | B(x)`. |
 | 13 | **`??` và `?`** | `l ?? r`: rhs chỉ eval khi lhs `None` (đo thật); lhs không `T?` ⇒ `VS0412`. `?` chỉ trong fn (ngoài fn ⇒ **`VS0501` lúc chạy — tyck không chặn**); bóc `Some`/`Ok`; `let v = r else e:` (R3b) là cách thay thế có khối else bắt buộc thoát. |
 
@@ -492,7 +493,7 @@ Async một luồng · `chan(0)` VS0505 · closure params không annot · closur
 - **R4**: `main` Err ⇒ exit 1 — chưa nối dây (exit 0).
 - **R24**: `.lazy()` + `Iterator[T]` — chưa (`xs.lazy()` ⇒ VS0403).
 - **R10** (nửa sau): in đơn vị chuẩn hoá — chưa (in `2h30m` ⇒ `150m`).
-- **`T??` "tự gói nhiều lớp"** — code **phẳng một lớp** (§6.1).
+- **`T??` "tự gói nhiều lớp"** — `T??` = `Option[Option[T]]` lồng thật, **đã triển khai + ratify** (VD-241 §3, 2026-11-19); `None` trần hợp lệ khi lớp **ngoài cùng** là `Option` (VD-241 §7, 2026-11-19).
 - **assert label [DỰ KIẾN]** — thực tế đã làm.
 - **goroutine/select-timeout/rendezvous/GC** — VS3 (SO-NO #12/#16/#17/#19/#71/#72).
 - **escape `\u{…}`** — SPEC hứa, HEAD hỏng (§6.4).

@@ -1,5 +1,0 @@
-# SPDX-License-Identifier: MIT OR Apache-2.0
-# VD-241 §3 (A0, 2026-11-19) — `None` trần cho `int??` **sai**: thiếu lớp ngoài (VD-238, chỉ ở `T?`).
-fn main():
-    let e: int?? = None
-    print(e)

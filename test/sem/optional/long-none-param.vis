@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §7 (A0, 2026-11-19) — `None` trần truyền vào tham số `int??`: hợp lệ (kiểu đích ngoài cùng
+# là `Option`). Biên **tham số** cũng tự nâng (VD-228b, **không đổi** theo lệnh này): `None` vào ô
+# tham số ⇒ `Some(None)` ⇒ khớp arm `Some(v)` (không phải arm `None`), trả về 1000.
+fn g(x: int??) -> int:
+    match x:
+        Some(Some(v)): v
+        Some(v): 1000
+        None: 9999
+
+fn main():
+    print(g(None))

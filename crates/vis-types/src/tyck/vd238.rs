@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VD-238** helper — tách khỏi `mod.rs` để giữ **R1** ≤ 1.500.
 //!
-//! `None`-trần (`HExpr::Var{name:"None"}`) chỉ hợp lệ ở annot `T?`.
+//! `None`-trần (`HExpr::Var{name:"None"}`) chỉ hợp lệ khi **kiểu đích ngoài cùng** là `Option`
+//! (`T?`, `T??`, `T???`, …) — **VD-241 §7 (A0, 2026-11-19)**.
 
 use super::*;
 
@@ -9,14 +10,16 @@ pub(super) fn la_none_bare(e: &HExpr) -> bool {
     matches!(e, HExpr::Var { name, .. } if name == "None")
 }
 
-/// **VD-241 §3 (A0, 2026-11-19)** — `None` trần chỉ hợp lệ ở `T?` **một lớp** (bóc ở mọi vị trí
-/// kiểm kiểu: `let`, gán, tham số, return, thân hàm).
-pub(super) fn la_none_chep_duoc_opt_1(to: &Type) -> bool {
-    match to {
-        Type::Opt(inner) => !matches!(**inner, Type::Opt(_)),
-        Type::Never | Type::Error => true,
-        _ => false,
-    }
+/// **VD-241 §7 (A0, 2026-11-19)** — `None` trần hợp lệ khi **kiểu đích ngoài cùng** là
+/// `Type::Opt` (`T?`, `T??`, `T???`, …): `T?? = Option[Option[T]]` lồng thật, không flatten.
+/// `Option` lồng **bên trong** một kiểu non-Option (`list[int?]`, `map[str, int?]`,
+/// `Result[.., int?]`) **không** được nới — vẫn VS0412.
+/// Alias/type-alias (`type X = Option[…]`), `Option[T]`, và `int?`-cú pháp đều phân giải về
+/// `Type::Opt(_)` ở bước phân giải annot (`resolve_ann`/`resolve_named`/lower) trước khi tới đây
+/// ⇒ chấp nhận sau bước phân giải đó. Tham số kiểu đang mở (`T` trong `fn f[T]`) vẫn là
+/// `TypeRef` (chưa biết là Option) ⇒ từ chối. `Never`/`Error` giữ nguyên như VD-238.
+pub(super) fn la_none_dich_opt(to: &Type) -> bool {
+    matches!(to, Type::Opt(_) | Type::Never | Type::Error)
 }
 
 /// `true` nếu biểu thức là **literal số nguyên** (§3.5: chỉ literal được nâng `int → float`).

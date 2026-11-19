@@ -520,8 +520,8 @@ impl<'a> Checker<'a> {
     /// Ép kiểu **có biết biểu thức nguồn**: chỉ nâng `int → float` khi nguồn là **literal** số
     /// nguyên (§3.5, ngoại lệ duy nhất của "không chuyển đổi ngầm").
     pub(crate) fn coerce_e(&mut self, e: &HExpr, from: &Type, to: &Type, what: &str) -> bool {
-        // **VD-238** (giữ) + **VD-241 §3**: `None` chỉ ở `T?` một lớp.
-        if vd238::la_none_bare(e) && !vd238::la_none_chep_duoc_opt_1(to) {
+        // **VD-238** (giữ) + **VD-241 §7**: `None` hợp lệ khi kiểu đích **ngoài cùng** là `Option`.
+        if vd238::la_none_bare(e) && !vd238::la_none_dich_opt(to) {
             self.diag(
                 MISMATCH,
                 format!(
@@ -935,12 +935,12 @@ impl<'a> Checker<'a> {
     /// Kiểm một **thân** (suite) và ép kiểu giá trị về `want`.
     pub(crate) fn kiem_than(&mut self, body: &[HStmt], want: &Type, span: Span) {
         let at = body.last().map(HStmt::span).unwrap_or(span);
-        // **VD-238**: `fn f() -> int: None` — thân cuối là `None` trần ⇒ lỗi tĩnh khi `want` non-`T?`.
+        // **VD-238**: `fn f() -> int: None` — thân cuối là `None` trần ⇒ lỗi tĩnh khi lớp **ngoài cùng** của `want` không phải `Option`.
         let last_is_none =
             matches!(body.last(), Some(crate::hir::HStmt::Expr(e)) if vd238::la_none_bare(e));
         let t = self.than_value(body);
-        // **VD-241 §3**: `None` trả về chỉ ở `T?` **một lớp**.
-        if last_is_none && !vd238::la_none_chep_duoc_opt_1(want) {
+        // **VD-241 §7 (A0, 2026-11-19)**: `None` trả về hợp lệ khi `want` **ngoài cùng** là `Option`.
+        if last_is_none && !vd238::la_none_dich_opt(want) {
             self.diag(
                 MISMATCH,
                 format!(
@@ -1129,8 +1129,8 @@ impl<'a> Checker<'a> {
                 match value {
                     Some(e) => {
                         let t = self.kiem_expr(e);
-                        // **VD-238** (giữ) + **VD-241 §3**: `None` chỉ ở `T?` một lớp.
-                        if vd238::la_none_bare(e) && !vd238::la_none_chep_duoc_opt_1(&want) {
+                        // **VD-238** (giữ) + **VD-241 §7**: `None` trả về hợp lệ khi kiểu đích **ngoài cùng** là `Option`.
+                        if vd238::la_none_bare(e) && !vd238::la_none_dich_opt(&want) {
                             self.diag(
                                 MISMATCH,
                                 format!(

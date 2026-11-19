@@ -57,6 +57,8 @@ fn main():
 
 ## 2 — `int??` (Option lồng, VD-178 R2) — **hai engine lệch nhau, VM im lặng sai** (`c02*.vis`)
 
+> **CẬP NHẬT 2026-11-19 (VD-241 §3 + §7, A0 chốt — đợt Option lồng + fix `None`):** các hiện tượng đo lúc đó **đã được sửa theo đúng quyết định A0** — `T??` là `Option[Option[T]]` lồng thật (pattern khớp cấu trúc cả hai engine); `None` trần nay hợp lệ khi lớp **ngoài cùng** là `Option` (VD-238 gate sửa). Các số đo/repro trong § này giữ nguyên **lịch sử** (bản ghi lúc 6fb72a7) — xem `agent/QD-OPTION-LONG-2026-11-19.md` và `VISCRIPT-ERGONOMICS-FACTS.md` (CẬP NHẬT 2026-11-19).
+
 **Ý định**: dùng `int??` như "optional 2 tầng" (được phép theo VD-178 R2: hậu tố `?` đếm 2 lớp).
 ```
 let x: int?? = Some(Some(42))   # hoặc Some(42), hoặc 42, hoặc None — xem dưới
@@ -295,7 +297,7 @@ match x: None: print("none-arm") / _: print("other")
 
 ## Tổng hợp finding lớn (ưu tiên xử lý)
 
-1. **`int??`/optional lồng hỏng khác nhau hai engine** (ca 2, 16): interp mis-fire arm lồng; **VM crash VS0501 (exit 101) khi arm`None` duy nhất, và VM in zero-byte exit 0 im lặng khi chỉ arm `Some(Some(v))`**; `vis check` exit 0; `--dump-bytecode` cho thấy `JumpIfFalse` trỏ đúng entry fall-through của thân arm. Không có VD nào phủ `T??` semantics ⇒ đề nghị Agent 0/task riêng chốt (hoặc cấm annot `??` ở user code cho tới khi sửa codegen VM).
+1. **`int??`/optional lồng hỏng khác nhau hai engine** (ca 2, 16): interp mis-fire arm lồng; **VM crash VS0501 (exit 101) khi arm`None` duy nhất, và VM in zero-byte exit 0 im lặng khi chỉ arm `Some(Some(v))`**; `vis check` exit 0; `--dump-bytecode` cho thấy `JumpIfFalse` trỏ đúng entry fall-through của thân arm. Không có VD nào phủ `T??` semantics ⇒ đề nghị Agent 0/task riêng chốt (hoặc cấm annot `??` ở user code cho tới khi sửa codegen VM). **CẬP NHẬT 2026-11-19 (VD-241 §3/§7, A0 chốt): fixed** — `T??` = lồng thật, pattern khớp cấu trúc, byte-identical hai engine trên corpus `optional/long-*`; `None` hợp lệ khi lớp **ngoài cùng** là `Option` (sau VD-238 gate fix) — số đo cũ giữ lịch sử; xem `VISCRIPT-ERGONOMICS-FACTS.md` CẬP NHẬT 2026-11-19.
 2. **`vis check` PASS (exit 0) cho nhiều lỗi chỉ nổ runtime**: gọi/đọc tên không tồn tại (ca 14), closure unannotate kiểu sai (ca 7), record dựng thiếu field (ca 10), map key thiếu `m["k"]` (ca 10), `chan(0)` (ca 13), destructure giá trị không phải tuple (ca 20). Message runtime `VS0501 … chưa hỗ trợ ở VS0` / `tên không có giá trị` làm người dùng hiểu nhầm.
 3. **Thông điệp runtime không gợi ý sửa và lệch hai engine**: `<fn>` vs `<hàm>` (Show closure), destructure (ca 20), VS0501 chung chung. `vis explain VSxxxx` chỉ có 1 dòng, không có near-match/gợi ý.
 4. **Tài liệu vs mã lệch**: thiết kế §742/VD-19 nói chan trả tuple / "đối số không nâng" — mã: chan trả một `<kênh>`, biên hàm **có** lift (VD-228b trong `goi.rs`); `chan(0)` VD-178 QĐ-2 "hợp lệ rendezvous" nhưng mã từ chối bằng VS0505. Báo cáo dựa trên hành vi chạy thật.

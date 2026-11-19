@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §7 (A0, 2026-11-19) — ba trạng thái giá trị phân biệt được (không flatten) trên **cùng binding** `x: int??`:
+#   `Some(Some(42))` → in `42` · `Some(None)` → in `sn` · `None` → in `none-out`.
+# `x = None` đi qua biên **gán lại** (không phải biên annot/tham số/return) nên auto-lift không bọc thêm;
+# giá trị lưu là **`None` ngoài thật** (không flatten, không Some(…)). Arm `None` đặt **đầu** —
+# VM kiểm arm theo thứ tự; arm `None` khớp nhánh đầu trên giá trị `None` thật (không tới arm `Some(…)`).
+fn main():
+    var x: int?? = Some(Some(42))
+    match x:
+        None: print("none-out")
+        Some(None): print("sn")
+        Some(Some(v)): print("{v}")
+    x = Some(None)
+    match x:
+        None: print("none-out")
+        Some(None): print("sn")
+        Some(Some(v)): print("{v}")
+    x = None
+    match x:
+        None: print("none-out")
+        Some(None): print("sn")
+        Some(Some(v)): print("{v}")

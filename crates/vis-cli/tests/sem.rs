@@ -184,8 +184,12 @@ fn sem_323_ca_qua_binary() {
         // **SỬA KÈM LÝ DO (VD-241 §3, 2026-11-19)**: +**10** ca `optional/long-*` + `ban-ghi/field-optional`
         //   (9 Option lồng xanh + 1 `long-no-pseudo` err) ⇒ **483 ca**
         //   (**433 `.vis`** + 50 `.vish`, **89 `.err`**).
-        483,
-        "phải đúng 483 ca (435 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +**4** ca xanh `optional/` (`long-reject-e` đổi thành
+        //   `long-none-e` **xanh** — `None` hợp lệ khi lớp **ngoài cùng** là `Option`, VD-238 sửa theo lệnh A0;
+        //   +`none-three-states`, `long-none-param`, `long-none-return`) ⇒ **486 ca**
+        //   (**436 `.vis`** + 50 `.vish`, **88 `.err`**).
+        486,
+        "phải đúng 486 ca (436 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.
