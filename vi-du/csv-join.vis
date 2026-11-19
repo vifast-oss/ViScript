@@ -1,0 +1,330 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# csv-join.vis — Ghép hai tệp CSV theo cột `id` (bản demo nghiệp vụ — A0 duyệt 2026-11-19).
+#
+#   vis run vi-du/csv-join.vis -- <trái.csv> <phải.csv> <kết-quả.csv>
+#   vis run vi-du/csv-join.vis -- --output <kết-quả.csv> <trái.csv> <phải.csv>
+#
+# Lưu ý trình chạy: `vis run` chỉ nhận **một** tệp; mọi tham số của chương trình phải đặt
+#   **sau** `--` (argv khi đó là đúng 3 đường dẫn, không kể tên tệp .vis).
+#
+# Quy tắc (theo quyết định A0):
+#   * Cột `id` tìm theo tên **không phân biệt hoa thường** (`id` / `ID` / `Id`…) ở cả hai tệp;
+#     không thấy ⇒ báo lỗi, exit 1.
+#   * Ghép theo ID **dạng chuỗi** — `0012` giữ nguyên số 0 đầu.
+#   * Field thiếu trong một dòng ⇒ ô rỗng; ô thừa ⇒ cắt bớt.
+#   * CSV mini tự làm (§ bên dưới): ngoặc kép bao trường, dấu phẩy/xuống dòng trong ngoặc kép,
+#     dấu ngoặc kép nhân đôi `""` = một dấu ngoặc kép; BOM/CRLF của đầu vào được chấp nhận;
+#     bản ghi kết quả **luôn LF**.
+#   * ID thiếu ở một bên ⇒ in `# thiếu ID: <id>`; ID trùng ở bất kỳ bên ⇒ in `# ID trùng: <id>`
+#     (giữ **dòng đầu tiên** của ID trùng). Có lỗi thiếu/trùng ⇒ exit 1 (vẫn ghi tệp kết quả
+#     với các dòng ghép được, không ghi đè gì, không crash).
+#   * Kết quả **không** ghi đè đầu vào (đường dẫn kết quả trùng đầu vào ⇒ lỗi, exit 2).
+#   * Mã thoát: 0 = OK · 2 = tham số sai · 1 = dữ liệu/I-O lỗi.
+#   * ViScript chưa có `std.io` (không in được ra stderr) ⇒ mọi thông báo/thống kê in ra
+#     **stdout**; các dòng thống kê có tiền tố `# ` để không lẫn với dữ liệu.
+#   * So trùng ghi-đè dùng chuẩn hoá **đường dẫn văn bản** (bỏ `./`, gộp `//`, phân giải
+#     `.`/`..`); symlink/hard link/case-insensitive filesystem **không** phát hiện được.
+#
+# Giới hạn đã biết (ghi rõ, không làm quá phạm vi A0):
+#   * Không có chuẩn CSV parser chính thức cho ViScript hôm nay; đây là parser mini id-level.
+#   * Trường có dấu ngoặc kép **giữa** trường không ngoặc (vd `a"b`) được giữ nguyên văn.
+#   * Khoảng trắng quanh dấu phẩy **không** bị cắt (`a , b` giữ nguyên khoảng trắng).
+#   * BOM giữa tệp bị loại; CRLF/CR đơn trong dữ liệu (kể cả trong ngoặc kép) về LF.
+#   * Dòng trống hoàn toàn (một ô rỗng) bị bỏ qua, không tính vào thống kê.
+#   * Header trùng tên cột ở hai tệp (cùng tên tuyệt đối) ⇒ cột bên phải bị lược; cột `id`
+#     bên phải luôn lược vì ID đã có một lần ở đầu mỗi dòng kết quả.
+
+use std.fs
+use std.list
+use std.str
+
+# ---------------------------------------------------------------- CSV mini
+
+# Phân tích CSV, trả về danh sách bản ghi. Lỗi ⇒ Err(str).
+fn parse_csv(text: str) -> Result[list[list[str]], str]:
+    # Chuẩn hoá kết thúc dòng về LF (CRLF và CR đơn) trước khi quét ký tự.
+    var s = text.replace("\r\n", "\n").replace("\r", "\n")
+    # Bỏ BOM (U+FEFF) ở mọi nơi trong tệp (không chỉ đầu).
+    s = s.replace("\u{feff}", "")
+    let chars = s.chars()
+    var rows: list[list[str]] = []
+    var row: list[str] = []
+    var field: list[str] = []
+    var co_o = false          # trường hiện tại có nội dung (kể cả trường ngoặc kép rỗng)
+    var in_quotes = false
+    var i = 0
+    let n = chars.len()
+    loop:
+        if i >= n: break
+        let c = chars[i]
+        if in_quotes:
+            if c == "\"":
+                if i + 1 < n and chars[i + 1] == "\"":
+                    field.push("\"")   # `""` trong ngoặc kép = một dấu ngoặc kép
+                    i += 2
+                    continue
+                in_quotes = false
+                i += 1
+                continue
+            field.push(c)
+            i += 1
+            continue
+        if c == ",":
+            row.push(field.join(""))
+            field = []
+            co_o = false
+            i += 1
+            continue
+        if c == "\"":
+            if co_o:
+                field.push(c)        # dấu ngoặc giữa trường không ngoặc ⇒ giữ nguyên văn
+            if not co_o:
+                in_quotes = true       # bắt đầu trường ngoặc kép
+            co_o = true
+            i += 1
+            continue
+        if c == "\n":
+            row.push(field.join(""))
+            field = []
+            co_o = false
+            rows.push(row)
+            row = []
+            i += 1
+            continue
+        field.push(c)
+        co_o = true
+        i += 1
+    if in_quotes:
+        return Err("thiếu dấu ngoặc kép đóng ở cuối tệp")
+    if co_o or not row.is_empty():
+        row.push(field.join(""))
+        rows.push(row)
+    Ok(rows)
+
+    # Cắt/đệm bản ghi về đúng `w` ô (ô thiếu ⇒ rỗng, ô thừa ⇒ bỏ).
+fn pad_cat(row: list[str], w: int) -> list[str]:
+    var out: list[str] = []
+    var i = 0
+    for v in row:
+        if i >= w: break
+        out.push(v)
+        i += 1
+    while out.len() < w:
+        out.push("")
+    out
+
+    # Escape một giá trị theo RFC 4180 (chỉ khi cần).
+fn bao_csv(s: str) -> str:
+    if s.contains(",") or s.contains("\"") or s.contains("\n") or s.contains("\r"):
+        return "\"" + s.replace("\"", "\"\"") + "\""
+    s
+
+fn dong_csv(fields: list[str]) -> str:
+    var esc: list[str] = []
+    for f in fields:
+        esc.push(bao_csv(f))
+    esc.join(",")
+
+    # ---------------------------------------------------------------- Nạp bảng
+
+type Bang:
+    header: list[str]
+    cot_id: int               # chỉ số cột id trong header (không phân biệt hoa thường)
+    theo_id: map[str, list[str]]   # id → **dòng đầu tiên** (id trùng bỏ qua, đếm trong `trung`)
+    so_dong: int              # số dòng dữ liệu đọc được (không kể header, không kể dòng trống)
+    trung: list[str]          # danh sách id bị trùng (mỗi lần gặp lại một phần tử)
+
+fn tim_cot_id(header: list[str], name: str) -> Result[int, str]:
+    var j = 0
+    for h in header:
+        if str.trim(h).lower() == "id":
+            return Ok(j)
+        j += 1
+    Err("{name}: không tìm thấy cột id trong header")
+
+fn nap_van_ban(text: str, name: str) -> Result[Bang, str]:
+    let rows = match parse_csv(text):
+        Ok(r): r
+        Err(msg): return Err("{name}: {msg}")
+        # Bỏ các dòng trống hoàn toàn (đúng một ô rỗng).
+    var ban_ghi: list[list[str]] = []
+    for r in rows:
+        if r.len() == 1 and r[0] == "":
+            continue
+        ban_ghi.push(r)
+    if ban_ghi.is_empty():
+        return Err("{name}: tệp rỗng, không có header")
+    let header = ban_ghi[0]
+    let w = header.len()
+    let cot_id = match tim_cot_id(header, name):
+        Ok(j): j
+        Err(msg): return Err(msg)
+    var theo_id: map[str, list[str]] = {}
+    var trung: list[str] = []
+    var so_dong = 0
+    for r in list.drop(ban_ghi, 1):
+        so_dong += 1
+        let row = pad_cat(r, w)
+        let idv = row[cot_id]
+        if theo_id.has(idv):
+            trung.push(idv)
+            continue
+        theo_id[idv] = row
+    let b: Bang = {header: header, cot_id: cot_id, theo_id: theo_id, so_dong: so_dong, trung: trung}
+    Ok(b)
+
+fn nap(path: str) -> Result[Bang, str]:
+    match fs.read(path):
+        Ok(text): return nap_van_ban(text, path)
+        Err(_): return Err("không đọc được tệp: {path}")
+
+        # ---------------------------------------------------------------- Chương trình
+
+fn usage():
+    print("dùng: vis run vi-du/csv-join.vis [--output <p>] <trái.csv> <phải.csv> [<kết-quả.csv>]")
+    print("  ví dụ: vis run vi-du/csv-join.vis -- trai.csv phai.csv ket-qua.csv")
+    print("  hoặc:  vis run vi-du/csv-join.vis -- --output ket-qua.csv trai.csv phai.csv")
+    print("  tham số chương trình đặt **sau** `--`; kết quả không ghi đè tệp đầu vào")
+    print("  mã thoát: 0 = OK · 2 = tham số sai · 1 = dữ liệu/I-O lỗi")
+
+# Chuẩn hoá đường dẫn văn bản: bỏ `./` đầu, gộp `//`, phân giải `.` và `..` theo từng phần
+# đường (giữ nguyên dạng tuyệt đối/không). Chỉ dùng cho so khớp ghi-đè, **không** thay thế
+# hệ thống tệp (symlink/hard link/case-insensitive không được phát hiện — đã nêu trong giới hạn).
+fn chuan_hoa_duong_dan(s: str) -> str:
+    let sku = str.starts_with(s, "/")
+    let parts = str.split(s, "/")
+    var ok: list[str] = []
+    for part in parts:
+        if part == "" or part == ".":
+            continue
+        if part == "..":
+            if not ok.is_empty():
+                var new_ok: list[str] = []
+                var i: int = 0
+                for p in ok:
+                    if i < ok.len() - 1:
+                        new_ok.push(p)
+                    i += 1
+                ok = new_ok
+            continue
+        ok.push(part)
+    let out = ok.join("/")
+    if sku:
+        return "/" + out
+    out
+
+fn chay(left: str, right: str, out: str) -> int:
+    if chuan_hoa_duong_dan(out) == chuan_hoa_duong_dan(left) or chuan_hoa_duong_dan(out) == chuan_hoa_duong_dan(right):
+        print("lỗi: tệp kết quả trùng tệp đầu vào ({out})")
+        return 2
+    let bang_trai = match nap(left):
+        Ok(b): b
+        Err(msg):
+            print(msg)
+            return 1
+    let bang_phai = match nap(right):
+        Ok(b): b
+        Err(msg):
+            print(msg)
+            return 1
+            # Các cột bên phải được giữ: bỏ cột id của phải và bỏ cột trùng tên tuyệt đối với trái.
+    var giu: list[int] = []
+    var j = 0
+    for h in bang_phai.header:
+        var skip = j == bang_phai.cot_id
+        if not skip:
+            for hl in bang_trai.header:
+                if hl == h:
+                    skip = true
+                    break
+        if not skip:
+            giu.push(j)
+        j += 1
+    var header_gop: list[str] = list.concat(bang_trai.header, [])
+    for j in giu:
+        header_gop.push(bang_phai.header[j])
+        # Ghép theo id (giữ nguyên thứ tự tệp trái).
+    var lines: list[str] = []
+    lines.push(dong_csv(header_gop))
+    var n_kq = 0
+    var missing: list[str] = []
+    for (idv, row) in bang_trai.theo_id:
+        if bang_phai.theo_id.has(idv):
+            let rrow = bang_phai.theo_id.get(idv) ?? row
+            var fields = list.concat(row, [])
+            for j in giu:
+                fields.push(rrow[j])
+            lines.push(dong_csv(fields))
+            n_kq += 1
+        if not bang_phai.theo_id.has(idv):
+            missing.push(idv)
+    for (idv, _) in bang_phai.theo_id:
+        if not bang_trai.theo_id.has(idv):
+            missing.push(idv)
+    let ghi = fs.write(out, lines.join("\n") + "\n")
+    if let Err(_) = ghi:
+        print("lỗi: không ghi được tệp kết quả: {out}")
+        return 1
+        # Thông báo lỗi dữ liệu + thống kê (stdout; ViScript chưa có stderr — xem chú thích đầu tệp).
+    for idv in bang_trai.trung:
+        print("# ID trùng: {idv}")
+    for idv in bang_phai.trung:
+        print("# ID trùng: {idv}")
+    for idv in missing:
+        print("# thiếu ID: {idv}")
+    let so_trung = bang_trai.trung.len() + bang_phai.trung.len()
+    let so_thieu = missing.len()
+    print("# dòng đọc: trái={bang_trai.so_dong} phải={bang_phai.so_dong}")
+    print("# dòng kết quả: {n_kq}")
+    print("# thiếu ID: {so_thieu}")
+    print("# trùng ID: {so_trung}")
+    if so_thieu > 0 or so_trung > 0:
+        return 1
+    0
+
+fn main(argv: list[str]) -> int:
+    # Đọc argv bằng vòng `for` + chỉ số (như mẫu trong vi-du/danh-sach.vis).
+    var i: int = 0
+    var vi_tri_output: list[int] = []
+    for arg in argv:
+        if arg == "--output":
+            vi_tri_output.push(i)
+        i += 1
+    if vi_tri_output.len() > 1:
+        print("lỗi: --output lặp lại")
+        usage()
+        return 2
+    var dau_ra = ""
+    var co_out = false
+    if vi_tri_output.len() == 1:
+        let p = vi_tri_output[0]
+        match argv.get(p + 1):
+            Some(v):
+                dau_ra = v
+                co_out = true
+            None:
+                print("lỗi: --output thiếu giá trị")
+                usage()
+                return 2
+    var j: int = 0
+    var positional: list[str] = []
+    for arg in argv:
+        var la_output = false
+        if arg == "--output":
+            la_output = true
+        elif j > 0 and argv[j - 1] == "--output":
+            la_output = true          # giá trị của --output, đã lấy ở trên
+        if not la_output:
+            positional.push(arg)
+        j += 1
+    if co_out:
+        if positional.len() != 2:
+            print("lỗi: --output cần đúng 2 tệp đầu vào (trái, phải)")
+            usage()
+            return 2
+        return chay(positional[0], positional[1], dau_ra)
+    if positional.len() == 3:
+        return chay(positional[0], positional[1], positional[2])
+    print("lỗi: cần đúng 3 tham số (trái, phải, kết quả) — hoặc dùng --output")
+    usage()
+    2
