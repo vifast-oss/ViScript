@@ -202,7 +202,7 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.
     // **SỬA KÈM LÝ DO (R2, VD-178)**: +3 xanh (`optional/`) + `loi/none-bo` (SYNTAX, biên dịch) ⇒
-    //   **423 .vis chạy được khớp + 50 .vish lỗi biên dịch ⇒ (418, 51) = 469**.
+    //   **419 .vis (418 khớp + 1 `none-bo` biên dịch) + 50 .vish lỗi biên dịch ⇒ (418, 51) = 469**.
     // **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: +4 ca grid `async/grid-*` (xanh) ⇒ **(422, 51) = 473**.
     assert_eq!(
         (khop, bien_dich),

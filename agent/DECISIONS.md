@@ -1790,3 +1790,7 @@ Một tệp `agent/BAO-CAO-A0-<ngày>.md`, mỗi phần ngắn:
 6. Nợ mới.
 
 Mỗi số chỉ ghi một lần, kèm HEAD; không lặp số ở nhiều chỗ.
+
+### VD-241 (đính chính Agent 1, 2026-11-19) · §5 dòng "sem 469/469 ×2"
+
+Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính chính **số** lỗi thời sinh bởi merge VD-240: **469/469 → 473/473** (473 ca, hai engine). Có hiệu lực từ `6295c8e` (VD-240 grid, +4 ca). Không đổi luật, không đổi phạm vi.

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # VD-240 (b) grid: **một kênh, hai task** — Chan truyền vào task (như tham số), cap đủ lớn cho
-# không chặn (không `VS0505`). Thứ tự `recv` đúng thứ tự spawn (FIFO), cả hai engine byte-identical.
+# không chặn (không `VS0505`). Thứ tự `recv` FIFO = thứ tự **send** = thứ tự task chạy =
+# thứ tự **await** (task này await theo spawn order), cả hai engine byte-identical.
 async fn gui(c: Chan[int], n: int) -> ():
     let _ = c.send(n * 10)
 
