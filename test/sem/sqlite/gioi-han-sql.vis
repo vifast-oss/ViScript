@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let sql = "SELECT 1 WHERE '" + "a".repeat(70000) + "' = 'x'"
+            match sqlite.query(h, sql, []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("chan {e.message}")
+            let _ = sqlite.close(h)

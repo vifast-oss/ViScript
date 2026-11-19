@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    var so_luong = 0
+    var i = 0
+    while i < 17:
+        match sqlite.open(":memory:"):
+            Ok(_): so_luong = so_luong + 1
+            Err(e): print("chan {e.message}")
+        i = i + 1
+    print("mo duoc {so_luong}")

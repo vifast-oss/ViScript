@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.query(h, "SELECT 1 AS x, 2 AS x", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    print("so cot={rs.columns.len()}")
+                    print("cot 0={rs.columns.get(0)}")
+                    print("cot 1={rs.columns.get(1)}")
+                    for row in rs.rows:
+                        for cell in row:
+                            print(cell)
+            let _ = sqlite.close(h)

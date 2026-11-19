@@ -190,8 +190,13 @@ fn sem_323_ca_qua_binary() {
         //   (**436 `.vis`** + 50 `.vish`, **88 `.err`**).
         // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
         //   (ma trận Option lồng) ⇒ **487 ca** (**437 `.vis`** + 50 `.vish`, **88 `.err`**).
-        487,
-        "phải đúng 487 ca (437 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +**27** ca nhóm mới **`sqlite/`** (19 xanh,
+        //   8 `.err` VS0501) ⇒ **514 ca / 23 nhóm** (**464 `.vis`** + 50 `.vish`, **96 `.err`**).
+        // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +**11** ca `sqlite/` (`execute-tra-hang`,
+        //   `bind-inf`, ma trận authorizer 9 ca); mọi lỗi dữ liệu nay là `Result.Err` ⇒ 8 `.err` cũ đổi thành `.out`;
+        //   nhóm `sqlite/` không còn `.err` ⇒ **525 ca / 23 nhóm** (**475 `.vis`** + 50 `.vish`, **88 `.err`**).
+        525,
+        "phải đúng 525 ca (475 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.
@@ -200,8 +205,8 @@ fn sem_323_ca_qua_binary() {
     // **SỬA KÈM LÝ DO (ST-72)**: nhóm mới **`cap/`** ⇒ **22 nhóm**.
     assert_eq!(
         theo_nhom.len(),
-        22,
-        "phải đúng 22 nhóm (ST-28 `generic`; ST-57 `trait`; ST-60 `async`; ST-61 `kenh`; ST-72 `cap`), thật {theo_nhom:?}"
+        23,
+        "phải đúng 23 nhóm (ST-28 `generic`; ST-57 `trait`; ST-60 `async`; ST-61 `kenh`; ST-72 `cap`; VD-241 Gate 1 `sqlite`), thật {theo_nhom:?}"
     );
     // **Chống bỏ ca**: số tệp `.vis` trên đĩa phải **bằng** số ca đã gom (không ca nào bị lọc mất).
     let tren_dia: usize = std::fs::read_dir(sem_dir())

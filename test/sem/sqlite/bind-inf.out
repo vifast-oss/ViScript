@@ -1,0 +1,3 @@
+chan nan Real(NaN) — dùng `SqlValue.Null()` nếu muốn giá trị NULL
+real -inf
+real inf

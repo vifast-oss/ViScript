@@ -50,6 +50,15 @@ path.ext	(str) -> str
 path.is_abs	(str) -> bool
 path.join	(str, str) -> str
 path.stem	(str) -> str
+sqlite.begin	(str) -> Result[(), Error]
+sqlite.close	(str) -> Result[(), Error]
+sqlite.commit	(str) -> Result[(), Error]
+sqlite.execute	(str, str, list[SqlValue]) -> Result[int, Error]
+sqlite.in_transaction	(str) -> Result[bool, Error]
+sqlite.open	(str) -> Result[str, Error]
+sqlite.open_with	(str, bool, int) -> Result[str, Error]
+sqlite.query	(str, str, list[SqlValue]) -> Result[RowSet, Error]
+sqlite.rollback	(str) -> Result[(), Error]
 str.contains	(str, str) -> bool
 str.ends_with	(str, str) -> bool
 str.join	(list[str], str) -> str

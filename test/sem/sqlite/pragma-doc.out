@@ -1,0 +1,2 @@
+table_info ok cot=[cid, name, type, notnull, dflt_value, pk]
+user_version ok

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# Một row > 1 MiB (text+blob) ⇒ `Err`.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.query(h, "SELECT randomblob(1100000)", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("vuot gioi han row")
+            let _ = sqlite.close(h)

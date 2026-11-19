@@ -1,0 +1,5 @@
+cols=[id, name]
+Integer(1)
+Text(An)
+Integer(2)
+Text(Binh)

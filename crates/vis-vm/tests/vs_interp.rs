@@ -10,6 +10,37 @@ use std::path::PathBuf;
 use vis_bytecode::compile;
 use vis_interp::RunOutput;
 
+/// **VD-241 Gate 1** — hạ một tệp với `std_mods` quét từ chính nguồn (`use std.<tên>`), đúng
+/// cách `vis-cli/src/modules.rs` làm: nhờ vậy test/sem chạy được ca `use std.*` (trước Gate 1
+/// không có ca nào). Chỉ nhận module std hợp lệ (`vis_types::stdlib::module_ho_tro`).
+fn pha_std(text: &str) -> Vec<String> {
+    let mut ds = Vec::new();
+    for line in text.lines() {
+        let t = line.trim();
+        let Some(rest) = t.strip_prefix("use ") else {
+            continue;
+        };
+        let mut seg = rest.split('.').map(str::trim);
+        if seg.next() != Some("std") {
+            continue;
+        }
+        let m = seg.next().unwrap_or_default();
+        if vis_types::stdlib::module_ho_tro(m) && !ds.contains(&m.to_string()) {
+            ds.push(m.to_string());
+        }
+    }
+    ds
+}
+
+/// Như [`vis_types::lower`] nhưng nạp `std_mods` quét được (mặc định Permissive giữ nguyên).
+fn ha_std(cst: &vis_syntax::Cst, lex: &vis_syntax::LexOutput, text: &str) -> vis_types::HirOutput {
+    let opts = vis_types::LowerOptions {
+        std_mods: pha_std(text),
+        ..vis_types::LowerOptions::default()
+    };
+    vis_types::lower_with(cst, lex, opts)
+}
+
 fn goc() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../")
 }
@@ -43,7 +74,7 @@ fn chay_interp(text: &str, mode: vis_syntax::Mode) -> Option<RunOutput> {
         return None;
     }
     let lexed = vis_syntax::lex(text, mode);
-    let h = vis_types::lower(&parsed.cst, &lexed);
+    let h = ha_std(&parsed.cst, &lexed, text);
     if !h.is_clean() {
         return None;
     }
@@ -61,7 +92,7 @@ fn chay_vm(text: &str, mode: vis_syntax::Mode) -> Option<RunOutput> {
         return None;
     }
     let lexed = vis_syntax::lex(text, mode);
-    let h = vis_types::lower(&parsed.cst, &lexed);
+    let h = ha_std(&parsed.cst, &lexed, text);
     if !h.is_clean() {
         return None;
     }
@@ -130,14 +161,29 @@ fn than_chay() {
     //   ⇒ **486 ca** (**436** `.vis` + 50 `.vish`, **88 `.err`**).
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
     //   ⇒ **487 ca** (**437** `.vis` + 50 `.vish`, **88 `.err`**).
-    assert_eq!(tat_ca.len(), 487, "phải đủ 487 ca");
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +27 ca nhóm mới **`sqlite/`** (19 xanh +
+    //   8 `.err` VS0501 — hai engine cùng đường trap ⇒ khớp y hệt) ⇒ **514 ca** (**464** `.vis`
+    //   + 50 `.vish`, **96 `.err`**); sqlite/ **bỏ qua** ở harness này (27), còn lại (434 khớp
+    //   + 53 lỗi biên dịch) = 487.
+    // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +11 ca `sqlite/` (mọi lỗi dữ liệu nay là
+    //   `Result.Err`) ⇒ **525 ca** (**475** `.vis` + 50 `.vish`, **88 `.err`**); sqlite/ bỏ qua (38).
+    assert_eq!(tat_ca.len(), 525, "phải đủ 525 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
+    // **VD-241 Gate 1**: ca `sqlite/` cần **DbHost native** (vis-cli cài rusqlite thật) — harness
+    // in-process không gắn host nên hai đường đều `VS0604` (khớp nhưng rỗng nghĩa). Parity thật
+    // của sqlite chạy qua `vis test test/sem` và `vis test --vm test/sem` (CLI có host) +
+    // `crates/vis-cli/tests/sqlite.rs` (integration, hai engine byte-identical).
+    let mut bo_qua_sqlite = 0;
     for p in &tat_ca {
         // **SỬA KÈM LÝ DO (ST-30b)**: **không** bỏ ca `.err` nữa — chẩn đoán lúc chạy của hai đường
         // phải **trùng đủ** `(mã, dòng, cột, thông điệp)`; trước đây bỏ qua nên lọt 6 ca lệch mã
         // (`VS0503` interp ↔ `VS0501` VM).
+        if p.starts_with(goc().join("test/sem/sqlite").as_os_str()) {
+            bo_qua_sqlite += 1;
+            continue;
+        }
         let text = std::fs::read_to_string(p).expect("đọc");
         let mode = if p.extension().map(|x| x == "vish").unwrap_or(false) {
             vis_syntax::Mode::Command
@@ -150,7 +196,7 @@ fn than_chay() {
             // front end mới là cổng). Đếm riêng để khoá **đủ 346**.
             let lexed = vis_syntax::lex(&text, mode);
             let parsed = vis_syntax::parse(&text, mode);
-            let h = vis_types::lower(&parsed.cst, &lexed);
+            let h = ha_std(&parsed.cst, &lexed, text.as_str());
             let kq = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 compile(&h.hir, &h.symbols, &text)
             }));
@@ -204,10 +250,17 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +3 ca xanh + đổi `long-reject-e` thành `long-none-e`
     //   (lỗi biên dịch → xanh) ⇒ **(433, 53) = 486**.
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh (ma trận) ⇒ **(434, 53) = 487**.
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +27 ca `sqlite/` (nhóm mới, cần DbHost native)
+    //   ⇒ **514 ca**; sqlite/ **bỏ qua** (27), còn lại (434 khớp + 53 lỗi biên dịch) = 487.
+    // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +11 ca ⇒ sqlite/ bỏ qua **38**, tổng **525**.
     assert_eq!(
-        khop + so_biet + bien_dich,
-        487,
-        "487 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich})"
+        bo_qua_sqlite, 38,
+        "phải đúng 38 ca sqlite/ bỏ qua (cần host)"
+    );
+    assert_eq!(
+        khop + so_biet + bien_dich + bo_qua_sqlite,
+        525,
+        "525 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich} + sqlite bỏ qua {bo_qua_sqlite})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.
@@ -219,10 +272,11 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: +4 ca xanh (`long-none-e` từ `.err` + 3 ca mới)
     //   − 1 lỗi biên dịch ⇒ **(433, 53) = 486**.
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh ⇒ **(434, 53) = 487**.
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: sqlite/ **bỏ qua** ⇒ vẫn **(434, 53) = 487** chạy được.
     assert_eq!(
         (khop, bien_dich),
         (434, 53),
-        "434 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode, thật {khop}/{bien_dich}"
+        "434 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode (sqlite/ bỏ qua 27), thật {khop}/{bien_dich}"
     );
 }
 
@@ -237,6 +291,11 @@ fn hai_duong_cung_so_chan_doan() {
             let mut so_ca = 0;
             let mut so_ca_co_chan_doan = 0;
             for p in &tat_ca {
+                // **VD-241 Gate 1**: sqlite/ cần DbHost native ⇒ hai đường đều `VS0604` ở harness
+                // này (không có host) — bỏ qua; parity thật qua `vis test --vm test/sem`.
+                if p.starts_with(goc().join("test/sem/sqlite").as_os_str()) {
+                    continue;
+                }
                 let text = std::fs::read_to_string(p).expect("đọc");
                 let mode = if p.extension().map(|x| x == "vish").unwrap_or(false) {
                     vis_syntax::Mode::Command
@@ -282,6 +341,7 @@ fn hai_duong_cung_so_chan_doan() {
             // **VD-241 §3 (2026-11-19)**: +7 ca Option lồng ⇒ **429**.
             // **VD-241 §7 (2026-11-19)**: +4 ca xanh ⇒ **433**.
             // **VD-241 đợt coercion (2026-11-19)**: +1 ca xanh (ma trận) ⇒ **434**.
+            // **VD-241 Gate 1 (2026-11-19)**: sqlite/ **bỏ qua** (27 ca cần host) ⇒ vẫn **434**.
             assert_eq!(so_ca, 434, "phải so đủ 434 ca chạy được");
             // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
             // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).

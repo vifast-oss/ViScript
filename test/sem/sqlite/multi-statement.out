@@ -1,0 +1,1 @@
+chan execute: chỉ được **một** câu SQL mỗi lời gọi (multi-statement bị từ chối)

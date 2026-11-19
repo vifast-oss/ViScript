@@ -1,0 +1,5 @@
+attach bi chan
+vacuum into bi chan
+vacuum bi chan
+ghi user_version bi chan
+load_extension bi chan

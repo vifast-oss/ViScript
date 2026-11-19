@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)", [])
+            let _ = sqlite.execute(h, "INSERT INTO users (name) VALUES (?)", [SqlValue.Text("An")])
+            let _ = sqlite.execute(h, "INSERT INTO users (name) VALUES (?)", [SqlValue.Text("Binh")])
+            match sqlite.query(h, "SELECT id, name FROM users ORDER BY id", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    print("cols={rs.columns}")
+                    for row in rs.rows:
+                        for cell in row:
+                            print(cell)
+            let _ = sqlite.close(h)

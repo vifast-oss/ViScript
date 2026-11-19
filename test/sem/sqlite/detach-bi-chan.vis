@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# `ATTACH` bị chặn ⇒ `DETACH` cũng bị chặn.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.execute(h, "ATTACH ':memory:' AS other", []):
+                Ok(_): print("attach: KHONG DUOC PHU")
+                Err(_): print("attach bi chan")
+            match sqlite.execute(h, "DETACH other", []):
+                Ok(_): print("detach: KHONG DUOC PHU")
+                Err(_): print("detach bi chan")
+            let _ = sqlite.close(h)

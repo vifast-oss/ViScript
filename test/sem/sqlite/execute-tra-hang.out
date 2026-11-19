@@ -1,0 +1,2 @@
+chan câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`
+Integer(0)

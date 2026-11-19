@@ -56,8 +56,12 @@ use std::process::Command;
 //   ⇒ **398 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy** (`long-reject-e` rời nhóm lỗi biên dịch).
 // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: 486 → **487** (+1 xanh `optional/long-option-matrix.vis`) —
 //   ⇒ **399 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy**.
-const TONG: usize = 487;
-const XANH: usize = 399;
+// **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: 487 → **514** (+27 ca nhóm mới **`sqlite/`**:
+//   19 xanh + 8 lỗi lúc chạy `VS0501`) ⇒ **418 xanh / 53 lỗi biên dịch / 43 lỗi lúc chạy**.
+// **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: 514 → **525** (+11 ca `sqlite/`, mọi lỗi dữ liệu
+//   nay là `Result.Err` ⇒ 8 `.err` VS0501 đổi thành `.out` xanh) ⇒ **437 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy**.
+const TONG: usize = 525;
+const XANH: usize = 437;
 const LOI_BIEN_DICH: usize = 53;
 const LOI_LUC_CHAY: usize = 35;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.

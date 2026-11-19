@@ -51,11 +51,12 @@ pub fn run_with_hosts_caps<'a>(
     net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
-    run_with_full_hosts_caps(m, text, args, None, fs, net, caps)
+    run_with_full_hosts_caps(m, text, args, None, fs, net, None, caps)
 }
 
 /// **ST-89 (VD-110)**: như [`run_with_hosts_caps`] nhưng nhận **cả** host chương trình ngoài — cùng
 /// trait `vis_interp::builtin::Ngoai` mà interp dùng; VM **không** gọi `std::process`.
+/// **VD-241 (Gate 1)**: nhận thêm **host cơ sở dữ liệu** (`None` ⇒ `std.sqlite.*` ⇒ `VS0604`).
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_full_hosts_caps<'a>(
     m: &'a Module,
@@ -64,6 +65,7 @@ pub fn run_with_full_hosts_caps<'a>(
     ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
     fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
     net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     let mut vm = Vm::new(m, text);
@@ -75,6 +77,9 @@ pub fn run_with_full_hosts_caps<'a>(
     }
     if let Some(g) = net {
         vm.set_net(g);
+    }
+    if let Some(d) = db {
+        vm.set_db(d);
     }
     if !caps.is_empty() {
         vm.caps = caps.to_vec();
@@ -133,6 +138,9 @@ pub struct Vm<'a> {
     /// **ST-89 (VD-110)**: host **chương trình ngoài** — VM **không** gọi `std::process`, chỉ qua
     /// trait của `vis-interp`; `None` ⇒ `exec.*` ⇒ `VS0604`.
     ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
+    /// **VD-241 (Gate 1)**: host **cơ sở dữ liệu** — VM **không** biết backend native; `None` ⇒
+    /// `std.sqlite.*` ⇒ `VS0604`.
+    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_interp::rt`).
     sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
@@ -151,6 +159,7 @@ impl<'a> Vm<'a> {
             dinh: 0,
             fs: None,
             net: None,
+            db: None,
             ngoai: None,
             sched: std::cell::RefCell::new(vis_interp::rt::Scheduler::new()),
             caps: Vec::new(),
@@ -331,6 +340,11 @@ impl<'a> Vm<'a> {
         self.net = Some(n);
     }
 
+    /// **VD-241 (Gate 1)**: gắn host cơ sở dữ liệu — VM chỉ gọi qua trait, không biết native.
+    pub fn set_db(&mut self, d: &'a mut dyn vis_interp::builtin::DbHost) {
+        self.db = Some(d);
+    }
+
     /// **ST-89 (VD-110)**: gắn host chương trình ngoài — VM chỉ gọi qua trait, không chạm OS.
     pub fn set_ngoai(&mut self, n: &'a mut dyn vis_interp::builtin::Ngoai) {
         self.ngoai = Some(n);
@@ -353,6 +367,13 @@ impl Host for Vm<'_> {
         self.net
             .as_mut()
             .map(|n| &mut **n as &mut dyn vis_interp::builtin::NetHost)
+    }
+
+    /// **VD-241 (Gate 1)**: host cơ sở dữ liệu; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
+    fn db(&mut self) -> Option<&mut dyn vis_interp::builtin::DbHost> {
+        self.db
+            .as_mut()
+            .map(|d| &mut **d as &mut dyn vis_interp::builtin::DbHost)
     }
 
     /// **ST-89 (VD-110)**: chương trình ngoài; `None` ⇒ `VS0604`.

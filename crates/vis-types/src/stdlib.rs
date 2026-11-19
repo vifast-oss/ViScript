@@ -40,6 +40,18 @@ pub enum Ty {
     Json,
     /// `Result[Json, Error]` — chữ ký `std.json.decode` (VD-222 điểm 4; VD-187 dòng buộc).
     ResultJsonErr,
+    /// **VD-241 (Gate 1)** — enum `SqlValue` của module `std.sqlite` (`EnumId(1)`); **thuộc module**,
+    /// không phải prelude toàn cục (hạ gate).
+    SqlValue,
+    /// **VD-241 (Gate 1)** — bản ghi `RowSet` của module `std.sqlite` (`RecId(1)`): `columns`
+    /// + `rows`.
+    RowSet,
+    /// **VD-241 (Gate 1)** — `Result[int, Error]` (`std.sqlite.execute`).
+    ResultIntErr,
+    /// **VD-241 (Gate 1)** — `Result[bool, Error]` (`std.sqlite.in_transaction`).
+    ResultBoolErr,
+    /// **VD-241 (Gate 1)** — `Result[RowSet, Error]` (`std.sqlite.query`).
+    ResultRowSetErr,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -62,6 +74,20 @@ impl Ty {
             // dựng sẵn chốn đẩy vào bảng trước item đầu tiên, id `0` ổn định).
             Ty::Error => Type::Record(crate::ty::RecId(0)),
             Ty::Json => Type::Enum(crate::ty::EnumId(0)),
+            // **VD-241 (Gate 1)** — `SqlValue` `EnumId(1)` / `RowSet` `RecId(1)` (thứ tự dựng ở
+            // `lower`: Json=0, SqlValue=1; Error=0, RowSet=1 — id ổn định).
+            Ty::SqlValue => Type::Enum(crate::ty::EnumId(1)),
+            Ty::RowSet => Type::Record(crate::ty::RecId(1)),
+            Ty::ResultIntErr => {
+                Type::Result(Box::new(Type::Int), Box::new(Self::Error.sang_type()))
+            }
+            Ty::ResultBoolErr => {
+                Type::Result(Box::new(Type::Bool), Box::new(Self::Error.sang_type()))
+            }
+            Ty::ResultRowSetErr => Type::Result(
+                Box::new(Ty::RowSet.sang_type()),
+                Box::new(Self::Error.sang_type()),
+            ),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -104,6 +130,12 @@ impl Ty {
             Ty::Error => "Error",
             Ty::Json => "Json",
             Ty::ResultJsonErr => "Result[Json, Error]",
+            // **VD-241 (Gate 1)**
+            Ty::SqlValue => "SqlValue",
+            Ty::RowSet => "RowSet",
+            Ty::ResultIntErr => "Result[int, Error]",
+            Ty::ResultBoolErr => "Result[bool, Error]",
+            Ty::ResultRowSetErr => "Result[RowSet, Error]",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -141,15 +173,17 @@ impl StdFn {
 }
 
 /// Module `std` được hỗ trợ ở ST-26 (mỗi phần tử là tên ngắn).
-pub const MODULES: [&str; 9] = [
+pub const MODULES: [&str; 10] = [
     "str", "list", "map", "path", "time", "json", "fs", "net", "http",
+    // **VD-241 (Gate 1)** — `std.sqlite` MVP (prototype nội bộ, chưa freeze API).
+    "sqlite",
 ];
 
 /// `std.io` **chưa** làm — giữ tên để thông điệp rõ (ST-33: `std.fs` **đã có**).
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 52] = [
+pub const FUNCS: [StdFn; 61] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -424,6 +458,55 @@ pub const FUNCS: [StdFn; 52] = [
         name: "http.head_timeout",
         params: &[Ty::Str, Ty::Int],
         ret: Ty::ResultHead,
+    },
+    // ----- std.sqlite (VD-241, Gate 1 — prototype nội bộ, **chưa** đông băng API) -----
+    // Handle là token mờ `db:<32 hex>` (128 bit ngẫu nhiên, không đoán được từ output, không tái sử
+    // dụng trong phiên). Params positional `list[SqlValue]`.
+    // Mỗi câu SQL **một** statement; thiếu/thừa params ⇒ lỗi; giới hạn tài nguyên theo hợp đồng VD-241 §6.
+    StdFn {
+        name: "sqlite.open",
+        params: &[Ty::Str],
+        ret: Ty::ResultStrStr,
+    },
+    StdFn {
+        name: "sqlite.open_with",
+        params: &[Ty::Str, Ty::Bool, Ty::Int],
+        ret: Ty::ResultStrStr,
+    },
+    StdFn {
+        name: "sqlite.close",
+        params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    StdFn {
+        name: "sqlite.execute",
+        params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
+        ret: Ty::ResultIntErr,
+    },
+    StdFn {
+        name: "sqlite.query",
+        params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
+        ret: Ty::ResultRowSetErr,
+    },
+    StdFn {
+        name: "sqlite.begin",
+        params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    StdFn {
+        name: "sqlite.commit",
+        params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    StdFn {
+        name: "sqlite.rollback",
+        params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    StdFn {
+        name: "sqlite.in_transaction",
+        params: &[Ty::Str],
+        ret: Ty::ResultBoolErr,
     },
 ];
 

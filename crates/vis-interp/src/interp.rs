@@ -116,6 +116,8 @@ pub(crate) struct Interp<'a> {
     pub(crate) fs: Option<&'a mut dyn crate::builtin::FsHost>,
     /// **ST-63 (VD-105)**: host mạng; `None` ⇒ `VS0604` — interp **không** biết `std::net`.
     pub(crate) net: Option<&'a mut dyn crate::builtin::NetHost>,
+    /// **VD-241 (Gate 1)**: host cơ sở dữ liệu; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
+    pub(crate) db: Option<&'a mut dyn crate::builtin::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` (một `Scheduler` cho mỗi lần chạy).
     pub(crate) sched: std::cell::RefCell<crate::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)` theo thứ tự khai.
@@ -173,6 +175,7 @@ impl<'a> Interp<'a> {
             ngoai: None,
             fs: None,
             net: None,
+            db: None,
             sched: std::cell::RefCell::new(crate::rt::Scheduler::new()),
             caps: Vec::new(),
         }
@@ -194,6 +197,12 @@ impl<'a> Interp<'a> {
     #[allow(dead_code)]
     pub(crate) fn set_net(&mut self, n: &'a mut dyn crate::builtin::NetHost) {
         self.net = Some(n);
+    }
+
+    /// **VD-241 (Gate 1)**: gắn host cơ sở dữ liệu — chỉ dùng trong crate (`run_with_hosts…`).
+    #[allow(dead_code)]
+    pub(crate) fn set_db(&mut self, d: &'a mut dyn crate::builtin::DbHost) {
+        self.db = Some(d);
     }
 
     /// **ST-72b**: gắn giá trị quyền cho các tham số `cap` của `main`.
