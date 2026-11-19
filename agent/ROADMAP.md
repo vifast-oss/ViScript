@@ -48,7 +48,7 @@ bin/vis-soak                            # 10 vòng: gate×3, diff×3, host×2, c
 VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff   # 0 lệch
 target/release/vis-parse-fuzz --seconds 60 --seed 20261115 # 0 vi phạm
 ./bin/vis-host-suite                    # 54/54 macOS
-./bin/vis-targets                       # 18/18 check (CHỈ check)
+./bin/vis-targets                       # 18/18 check (số R22, TRƯỚC SQLite); 2026-11-20: **16/18** — nợ #156
 ```
 
 ## C. Nợ correctness đa tệp — **ĐÃ ĐÓNG** (ST-112 → ST-114b)

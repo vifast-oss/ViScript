@@ -9,7 +9,7 @@
 4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **156 mục = 93 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
+**Cập nhật**: 2026-11-20 (**ST-231** — thêm **#156**: `vis-targets` còn **16/18** sau SQLite MVP, `libsqlite3-sys` cần C toolchain cho msvc/wasm32; chỉ đo + ghi nợ); trước đó 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **157 mục = 94 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -72,7 +72,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 - Báo cáo R## **không** sửa nội dung (VD-142); sai sót đính chính bằng dòng trong QUEUE + mục “Đính chính R##” ở báo cáo kế tiếp.
 - Nợ phát sinh trong task: thêm số mới **ngay trong task đó**, không chờ báo cáo.
 
-## 4. Bảng nợ chính (156 dòng: 1..155, #109 tách a/b)
+## 4. Bảng nợ chính (157 dòng: 1..156, #109 tách a/b)
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -234,6 +234,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 153 | **Lệch interp↔VM: builtin làm giá trị** — `let f = Some` / truyền `Some` vào `map` ở VM trả `() không phải hàm` (**VS0501**), interp chạy được; bytecode thiếu mã `MakeBuiltin` (VBC1 đóng băng) ⇒ VM dựng giá trị qua builtin nội bộ **`$value:<tên>`** (dùng lại `CallBuiltin`), `None` vẫn là literal `Option`; VM `TestCtor` chuyển về phân biệt hoa thường | VD-208 (2) · ST-217 · `JOURNAL/2026-11-18.md` | đóng ở ST-217 |
 | 154 | **Tầng kiểu `Option`/`Result` giữ dựng sẵn** (VD-208 chốt **A** — VD-204 (1) làm rõ: chỉ tầng chạy là enum std thật). Phương án **B** (bảng kiểu nội hàm + intern lazy, xóa `Type::Opt`) **không xếp lịch** — ước lượng: 1–2 ngày, 10–20 golden đổi byte, `hop_nhat` thêm tải; chỉ mở lại khi có tính năng thật sự cần (ví dụ người dùng `impl` trait cho `Option`) | VD-208 · ST-217 · `BLOCKED.md` §8 | mở |
 | 155 | **Lift tham số closure khi lambda annot có** — VD-232 (Agent 0, 2026-11-19): lambda hiện **`(x: int?) =>` không parse** (`VS0201`), và `(x) -> int? suite`-form cũng không parse return-annot cho lambda params; closure-biên return đã nâng (VD-229), nhưng **closure params không nâng được** (không có annot) — phần code lift params cho closure **chưa có ≈ 0 dòng**; ghi nợ để làm khi có syntax annot lambda | VD-232 · `JOURNAL/vs-ergo.md` · `vd212-thiet-ke-ghi-chu.md` | **chuyển VS3** — cần syntax annot lambda, tránh phá grammar `SPEC-lex` |
+| 156 | **`vis-targets` còn 16/18 sau SQLite MVP**: `vis-cli` × `x86_64-pc-windows-msvc` và × `wasm32-unknown-unknown` đỏ vì `libsqlite3-sys` (rusqlite `bundled`) chạy `cc-rs` cần C toolchain cho target (msvc: thiếu `lib.exe`; wasm32: không có `cc`); tiêu chí VS2 "targets 18/18" (R22 §3; ST-74/75/134) **không còn đo được** trên host Linux. **Chưa** sửa mã/script/kỳ vọng; cần A0 quyết: (a) feature `sqlite` optional + ma trận đo `--no-default-features`, (b) ghi 2 ô `EXPECTED_RED` có văn bản, (c) cross C toolchain trong CI | ST-231 · `JOURNAL/st231-targets.log` (sha256 `79eeefbe3084ee3df7ef44407771c1747637f8b6216ebb4ff3117c8650d359b4`) · VD-241 (SQLite narrow freeze) | **mở** |
 
 ## 5. Nợ chuyển VS3 (23 mục)
 
@@ -351,8 +352,8 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **156** (1..155; #109 tách `a`/`b`) |
-| `mở` | **93** |
+| Tổng dòng bảng chính | **157** (1..156; #109 tách `a`/`b`) |
+| `mở` | **94** |
 | `đóng` | **38** |
 | `chuyển VS3` | **23** |
 | `không làm có lý do` | **1** |
@@ -360,7 +361,7 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 93 mở + 38 đóng + 23 VS3 + 1 không làm + 1 điều hướng = **156** dòng.
+Kiểm: 94 mở + 38 đóng + 23 VS3 + 1 không làm + 1 điều hướng = **157** dòng.
 **Luật (VD-195)**: bảng này phải **bằng** số đếm thật của §4; `./vis-dev check` đỏ nếu lệch (luật **R5** trong `bin/vis-dev`).
 **#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192**; **#151** thêm bởi **VD-198(2)** (18/11); **#152** thêm bởi **VD-204 (5)**; **VD-217 re-đo A/B (24 cặp): VM 1,154 / interp 1,143 — chưa rõ ⇒ giữ chờ đo chuẩn** (18/11, ST-219); **VD-220 làn B re-đo (load 1,27): VM 1,129 / interp 1,109 — chưa rõ** (18/11, nhánh dem/B merge `a0f2100`); **#153** thêm bởi **VD-208 (2)** rồi đóng ở ST-217; **#154** thêm bởi **VD-208** (phương án B, không xếp lịch) (18/11). **+ VD-231/VD-232 (19/11)**: **#155** (lift params closure khi lambda annot có) chuyển VS3. **VD-211** không sinh nợ (tầng kiểu đã cấm `==` khác kiểu — VS0412 "so sánh khác kiểu").
 **#147 đóng ở ST-204 rồi MỞ LẠI bởi VD-197** ⇒ đóng −1, mở +1.
@@ -392,6 +393,7 @@ tệp không được tạo, đối chứng dương ghi được; `ps` 14/14 xan
 
 **Chuyển VS3 trong đợt 25:** `#143` (ST-154 · **VD-154(b)**: ca khoá `st130b` **đã xanh** ⇒ điều kiện VD-133 đã thoả).
 **Thêm số trong đợt 25:** `#144` (VD-153), `#145` (VD-154(c) — chú thích `rt.rs` nói sai đường chặn `chan(0)`, **mở**).
+**Thêm số 2026-11-20 (ST-231):** `#156` — `vis-targets` còn **16/18** sau SQLite MVP (`libsqlite3-sys` cần C toolchain cho msvc/wasm32); chỉ **đo + ghi nợ**, không sửa mã/script/kỳ vọng; cần A0 quyết (`JOURNAL/st231-targets.log`).
 
 **Đóng trong đợt 28 (ST-157):** `#110` — VM đưa `argv` (`list[str]`) vào tham số **không-`cap`** của `main` như interp
 (`interp.rs:221-234`; ST-72b giữ `Value::Cap` đúng **chỉ số**), ca đỏ-trước **3/4 đỏ** (interp `[a, b]` vs VM `()`,

@@ -1,0 +1,43 @@
+# ST-231 — đo lại ma trận `bin/vis-targets` sau SQLite MVP (chỉ đo, không sửa)
+# 2026-11-20T08:02:52+09:00 · HEAD cd45ba5 · Linux x86_64 · rustc rustc 1.99.1 (58cf8f9c3 2026-10-13)
+# Lệnh: ./bin/vis-targets
+# Kết quả: 16/18 PASS · 2 FAIL (vis-cli × x86_64-pc-windows-msvc, vis-cli × wasm32-unknown-unknown)
+# Nguyên nhân (2 lần đo trực tiếp):
+#   - msvc: libsqlite3-sys (rusqlite bundled) → cc-rs: failed to find tool "lib.exe" (host Linux không có MSVC)
+#   - wasm32: libsqlite3-sys → không có C toolchain cho wasm32-unknown-unknown
+# Phân loại: hồi quy của tiêu chí VS2 'targets 18/18' sau khi thêm std.sqlite (rusqlite bundled, narrow freeze A0).
+# KHÔNG sửa mã/script/kỳ vọng trong task này; cần A0 quyết (feature optional / expected-red có văn bản / cross toolchain).
+
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       FAIL
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       FAIL
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+vis-targets: 2 ô kỳ vọng xanh bị đỏ
+[exit=1]
+
+## chi tiết một ô (msvc)
+  ARFLAGS_x86_64-pc-windows-msvc = None
+
+  --- stderr
+
+
+  error occurred in cc-rs: failed to find tool "lib.exe": No such file or directory (os error 2)
+
+
