@@ -1984,3 +1984,10 @@ APPROVED 2026-11-14 Agent 0
 > quyền **chưa siết mặc định**, span **tổng hợp** `file=0`, LSP **chưa** publish chẩn đoán tệp phụ.
 > **ĐỢT CHẠY LIÊN TỤC KẾT THÚC Ở ĐÂY** (22 vòng, 134 hàng QUEUE, 22 báo cáo). Việc tiếp theo **cần quyết định của người** (duyệt crate
 > `landlock` hoặc `unsafe` đóng + runner Linux; duyệt thay đổi scheduler cho async song song; duyệt migration "siết mặc định caps").
+
+
+> **[BACKLOG — A0 2026-11-19] VD "Windows test-suite portability"** — **CHƯA MỞ** (chỉ mở **sau khi pha 1 đóng chính thức**; không gộp với B-3 / Option-long / lambda-annotation / #147 / #152).
+> Base khởi điểm: `349af67`. Mục tiêu: phân loại từng test theo hợp đồng thật; port fixture/assertion khi ngữ nghĩa chung; tương đương native cho API đa nền tảng; chỉ `#[cfg(unix)]` cho Unix-integration thật.
+> Kết quả phải đạt: mọi API process đa nền tảng có coverage Windows (stdout/stderr/exit code≠0; capability grant/deny); **không giảm tổng số test process chỉ để xanh**; không "full Windows gate PASS" cho tới khi gate xanh thật (Tier 1 sau VD + required CI/Windows nightly).
+> Chính sách A0 đầy đủ: `agent/DECISIONS.md` block "Quyết định Agent 0 · 2026-11-19 (Windows @ 349af67)" · baseline: `agent/WINDOWS-BASELINE-2026-11-19.md` (25 suite đỏ / 101 ca / 90 tên duy nhất).
+> **Trạng thái**: BLOCKED (chờ đóng pha 1 chính thức + ratify mở VD) — không thi hành trong vòng này.
