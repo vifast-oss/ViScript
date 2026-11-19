@@ -1863,3 +1863,15 @@ Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính ch�
 - **Không** duyệt đề xuất VS0412-cho-f. **Không** đổi `long-f.vis` thành `.err`. `int-qhap-gan.vis` rà theo quy tắc cấu trúc.
 - **Agent 2 probe 2026-11-19 ~15:15 (hoàn tất)**: `let e: int?? = None` — check rc=1 `VS0412 2:20` (VD-238) · interp rc=2 · VM rc=2 (cả ba cửa; chỉ ở khai báo `let`; VM/interp nhất quán; không crash). **Finding ca e tái lập** — chưa sửa engine/golden; chờ xác định chính xác chỗ lệch; đề nghị đợt Option riêng. (f `Some(None)` rc=0 cả ba cửa; z `Some(Some(42))` rc=0 cả ba cửa; VM/interp nhất quán toàn bộ.)
 - **Sửa hồ sơ sai** (Agent 1 đã gán sai quyết định cho A0): QD-OPTION-LONG §3/§4/§5, DEM-2026-11-18 (~14:35), báo cáo Windows §7, và bullet 7 ở block A0 (Windows Tier 2) phía trên đều đã được đính chính theo nguyên văn này. Không còn bất kỳ tệp nào ghi "f=error theo A0".
+
+
+### Kết thúc đợt Option (lệnh A0 2026-11-19 — duyệt mở ngay, không chờ pha 1) · `3b2c67e`
+
+**Người thực thi**: Agent 2 (worktree `option-none-fix-2026-11-19`) / **review chéo**: Agent 2 khác tác giả — verdict **SHIP** · **Lead merge**: Agent 1 vào `main` `3b2c67e` (ff-only).
+
+- **Fix `la_none_chep_duoc_opt_1` → `la_none_dich_opt`** (`crates/vis-types/src/tyck/vd238.rs`): `None` trần hợp lệ khi **lớp ngoài cùng** của kiểu đích là `Option` (`T?`/`T??`/`T???`); `Never`/`Error` giữ nguyên; mọi annot ngoài cùng non-Option (kể cả chứa Option bên trong như `list[int?]`/`map[str,int?]`/`Result[..,int?]`) vẫn **VS0412**; alias phân giải về `Type::Opt` trước gate; tham số kiểu mở vẫn `TypeRef` ⇒ VS0412.
+- 3 call-site (`coerce_e`, `kiem_than`, Return-arm) nguyên khối một điểm sai; không đụng auto-lift/lift_opt/pattern/flatten/MakeSome/ABI/API-STD/SPEC.
+- **Corpus**: `long-reject-e` (.err) → `long-none-e.vis` xanh (`sn`); thêm `none-three-states` (42/sn/none-out), `long-none-param` (1000), `long-none-return` (sn); +3 ca âm `list/map/Result[int?]`; `vd_205::none_dich_ngoai_cung_option_la_ok` (5 ca xanh mới, hai engine byte-identical). **486 ca** (**436 `.vis` + 50 `.vish`**), **`.err` 89→88**; pins cập nhật mọi chỗ kèm lý do.
+- **Cổng**: workspace 1297/0 · sem 486/486 ×2 · gate PASS 11/11 (fresh clone `3b2c67e` PASS).
+- **Mutation**: revert ⇒ 4 ca khoá đỏ + 9 test pin đỏ; nới-quá ⇒ 3 ca âm mới đỏ.
+- **Open questions (theo dõi ở `agent/BAO-CAO-A0-2026-11-19-OPTION-FIX.md` §6, chờ A0)**: (1) 486 chốt; (2) `let x: T?? = None` runtime == `Some(None)` (lift ở biên annot giữ nguyên theo lệnh; `x = None` giữ `None`) — giữ hay VD riêng; (3) bất đối xứng sugar vs spelled-out/alias ở biên `let` (pre-existing, hai engine khớp) — VD riêng hay ghi chú; (4) docs `ViScript-thiet-ke.md` 4 chỗ "T?? là lỗi kiểu" chưa đụng (SPEC A0); (5) Windows/macOS chưa re-verify.
