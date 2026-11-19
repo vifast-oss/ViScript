@@ -1,7 +1,7 @@
 # PLAN — VD Windows L0 test-suite portability (nháp, 2026-11-19 ~21:30)
 
 > Agent 1 → A0 (plan) · **KHÔNG triển khai trong đợt này** · VD-winport-po
-> **Trạng thái 2026-11-20 ~00:55 @ HEAD `72db3f4`**: **VD đã mở 2026-11-19** (lệnh A0-dispatch ủy thác); đang triển khai. Nhóm A xong (test-child + 7 suite migrate); Linux workspace xanh 150 khối; gate/nightly PASS. **Windows verify @ `72db3f4`: ĐỎ — 53 ca** (`/c/Users/ps/vislogs/72db3f4-ws.out`, `vislogs/72db3f4-failed.txt`): PATH-sep trong test grant/echo (`:` thay vì `;` trên Windows), `/etc/hosts` không tồn tại, CRLF (`\r\n`) trong chan_doan_da_tep, WSL-stub (`sync_list`, `help_co_check_sync`), WinSock (`tcp_tu_choi`, `server_*`), UNIX mode (`long_tren_thu_muc_that`), span/json fixtures. **Không đổi ngữ nghĩa sản phẩm; Tier 2 giữ; pha1-rc1 nguyên vẹn; pha 2 chưa mở**.
+> **Trạng thái 2026-11-20 ~00:55 @ HEAD `00df00f`**: **VD đã mở 2026-11-19** (lệnh A0-dispatch ủy thác); đang triển khai. Nhóm A xong (test-child + 7 suite migrate); Linux workspace xanh 150 khối; gate/nightly PASS. **Windows verify @ `00df00f`: ĐỎ — 53 ca** (`/c/Users/ps/vislogs/00df00f-ws.out`, `vislogs/00df00f-failed.txt`): PATH-sep trong test grant/echo (`:` thay vì `;` trên Windows), `/etc/hosts` không tồn tại, CRLF (`\r\n`) trong chan_doan_da_tep, WSL-stub (`sync_list`, `help_co_check_sync`), WinSock (`tcp_tu_choi`, `server_*`), UNIX mode (`long_tren_thu_muc_that`), span/json fixtures. **Không đổi ngữ nghĩa sản phẩm; Tier 2 giữ; pha1-rc1 nguyên vẹn; pha 2 chưa mở**.
 
 ## 1. Hiện trạng đo được (psvn HEAD `8355022`)
 

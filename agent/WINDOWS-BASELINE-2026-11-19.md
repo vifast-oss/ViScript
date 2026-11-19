@@ -138,9 +138,9 @@ Windows re-verify (psvn clone `/c/Users/ps/vis-sqlite-check-git` @ `8355022`):
 
 ---
 
-## Addendum 2026-11-20 ~01:00 — verify @ `72db3f4` (sau PR VD-winport nhóm A)
+## Addendum 2026-11-20 ~01:00 — verify @ `00df00f` (sau PR VD-winport nhóm A)
 
-- psvn pull `72db3f4`; `cargo test --workspace --no-fail-fast` → **exit 101**; **21 ca đỏ** / 20 suite-binary
-  (log `/c/Users/ps/vislogs/72db3f4-ws.out`; danh sách `/c/Users/ps/vislogs/72db3f4-failed.txt`).
+- psvn pull `00df00f`; `cargo test --workspace --no-fail-fast` → **exit 101**; **21 ca đỏ** / 20 suite-binary
+  (log `/c/Users/ps/vislogs/00df00f-ws.out`; danh sách `/c/Users/ps/vislogs/00df00f-failed.txt`).
 - So với baseline `13c31cf` (101 đỏ / 25 suite): **còn ≈21 đỏ** — nhóm A (POSIX binaries) đã xanh trên Linux vì test-child; Windows còn lại thuộc B/C/D/E + ca còn lại.
 - **Windows Tier 2 giữ nguyên; chưa tuyên bố hỗ trợ.**
