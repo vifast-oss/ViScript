@@ -10,7 +10,22 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static DEM: AtomicU32 = AtomicU32::new(0);
 
+/// **VD-241 §7 (2026-11-19)** — tên tệp phải hợp lệ trên **mọi** nền: thay mọi ký tự không
+/// phải `[-a-z0-9_]` thành `_` (tag như `mx_int??` có `?` — Windows `os error 123`).
+fn tag_sach(t: &str) -> String {
+    t.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 fn tam(tag: &str) -> PathBuf {
+    let tag = tag_sach(tag);
     let n = DEM.fetch_add(1, Ordering::Relaxed);
     let d = std::env::temp_dir().join(format!("vis-vd205-{tag}-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
