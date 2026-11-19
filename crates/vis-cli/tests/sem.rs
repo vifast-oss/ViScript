@@ -192,8 +192,11 @@ fn sem_323_ca_qua_binary() {
         //   (ma trận Option lồng) ⇒ **487 ca** (**437 `.vis`** + 50 `.vish`, **88 `.err`**).
         // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +**27** ca nhóm mới **`sqlite/`** (19 xanh,
         //   8 `.err` VS0501) ⇒ **514 ca / 23 nhóm** (**464 `.vis`** + 50 `.vish`, **96 `.err`**).
-        514,
-        "phải đúng 514 ca (464 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +**11** ca `sqlite/` (`execute-tra-hang`,
+        //   `bind-inf`, ma trận authorizer 9 ca); mọi lỗi dữ liệu nay là `Result.Err` ⇒ 8 `.err` cũ đổi thành `.out`;
+        //   nhóm `sqlite/` không còn `.err` ⇒ **525 ca / 23 nhóm** (**475 `.vis`** + 50 `.vish`, **88 `.err`**).
+        525,
+        "phải đúng 525 ca (475 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.

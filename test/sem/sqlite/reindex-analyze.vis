@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# REINDEX / ANALYZE — được phép (ràng buộc cùng resource/policy hiện có).
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER)", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (1)", [])
+            let _ = sqlite.execute(h, "CREATE INDEX i_t ON t (a)", [])
+            match sqlite.execute(h, "ANALYZE t", []):
+                Ok(_): print("analyze ok")
+                Err(e): print("analyze: loi {e.message}")
+            match sqlite.execute(h, "REINDEX i_t", []):
+                Ok(_): print("reindex ok")
+                Err(e): print("reindex: loi {e.message}")
+            let _ = sqlite.close(h)

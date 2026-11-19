@@ -165,7 +165,9 @@ fn than_chay() {
     //   8 `.err` VS0501 — hai engine cùng đường trap ⇒ khớp y hệt) ⇒ **514 ca** (**464** `.vis`
     //   + 50 `.vish`, **96 `.err`**); sqlite/ **bỏ qua** ở harness này (27), còn lại (434 khớp
     //   + 53 lỗi biên dịch) = 487.
-    assert_eq!(tat_ca.len(), 514, "phải đủ 514 ca");
+    // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +11 ca `sqlite/` (mọi lỗi dữ liệu nay là
+    //   `Result.Err`) ⇒ **525 ca** (**475** `.vis` + 50 `.vish`, **88 `.err`**); sqlite/ bỏ qua (38).
+    assert_eq!(tat_ca.len(), 525, "phải đủ 525 ca");
     let mut khop = 0;
     let mut lech: Vec<String> = Vec::new();
     let mut bien_dich = 0;
@@ -250,14 +252,15 @@ fn than_chay() {
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh (ma trận) ⇒ **(434, 53) = 487**.
     // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +27 ca `sqlite/` (nhóm mới, cần DbHost native)
     //   ⇒ **514 ca**; sqlite/ **bỏ qua** (27), còn lại (434 khớp + 53 lỗi biên dịch) = 487.
+    // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +11 ca ⇒ sqlite/ bỏ qua **38**, tổng **525**.
     assert_eq!(
-        bo_qua_sqlite, 27,
-        "phải đúng 27 ca sqlite/ bỏ qua (cần host)"
+        bo_qua_sqlite, 38,
+        "phải đúng 38 ca sqlite/ bỏ qua (cần host)"
     );
     assert_eq!(
         khop + so_biet + bien_dich + bo_qua_sqlite,
-        514,
-        "514 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich} + sqlite bỏ qua {bo_qua_sqlite})"
+        525,
+        "525 ca (khớp {khop} + lệch {so_biet} + lỗi biên dịch {bien_dich} + sqlite bỏ qua {bo_qua_sqlite})"
     );
     // **SỬA KÈM LÝ DO (ST-72)**: +3 ca cap xanh, +3 ca cap lỗi biên dịch ⇒ (395,46) → (398,49).
     // **SỬA KÈM LÝ DO (R19b, VD-178)**: +`loi/doi-dau-tran` (VS0507, lỗi lúc chạy) ⇒ 465 ca.

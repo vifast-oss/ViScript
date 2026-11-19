@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# `CREATE VIRTUAL TABLE … USING fts5(x)` — authorizer chặn `SQLITE_CREATE_VTABLE` **trước**
+# khi SQLite kịp báo thiếu module.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.execute(h, "CREATE VIRTUAL TABLE t USING fts5(x)", []):
+                Ok(_): print("vtable: KHONG DUOC PHU")
+                Err(e):
+                    if e.message.contains("authorizer"):
+                        print("vtable bi chan boi authorizer")
+                    else:
+                        print("vtable loi khac")
+            let _ = sqlite.close(h)

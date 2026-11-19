@@ -460,7 +460,8 @@ pub const FUNCS: [StdFn; 61] = [
         ret: Ty::ResultHead,
     },
     // ----- std.sqlite (VD-241, Gate 1 — prototype nội bộ, **chưa** đông băng API) -----
-    // Handle là chuỗi mờ `db:N` (N không tái sử dụng trong phiên). Params positional `list[SqlValue]`.
+    // Handle là token mờ `db:<32 hex>` (128 bit ngẫu nhiên, không đoán được từ output, không tái sử
+    // dụng trong phiên). Params positional `list[SqlValue]`.
     // Mỗi câu SQL **một** statement; thiếu/thừa params ⇒ lỗi; giới hạn tài nguyên theo hợp đồng VD-241 §6.
     StdFn {
         name: "sqlite.open",

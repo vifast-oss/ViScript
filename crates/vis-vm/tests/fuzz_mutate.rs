@@ -196,10 +196,11 @@ fn than_fuzz() {
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: **399** (487 ca − 88 `.err`,
     //   +1 xanh `optional/long-option-matrix.vis`).
     // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: **418** (514 ca − 96 `.err`: +19 `sqlite/*` xanh).
+    // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: **437** (525 ca − 88 `.err`: +11 `sqlite/*` xanh, 8 `.err`→`.out`).
     assert_eq!(
         goc.len(),
-        418,
-        "phải đủ 418 module nguồn (ST-41: 514 ca − 96 `.err`)"
+        437,
+        "phải đủ 437 module nguồn (ST-41: 525 ca − 88 `.err`)"
     );
     let phut = so_phut();
     let bat_dau = std::time::Instant::now();

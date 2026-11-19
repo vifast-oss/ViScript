@@ -268,6 +268,6 @@ Method trên giá trị (không cần `use`):
   - **[ĐANG LÀM]** đơn vị sẽ **in chuẩn hoá** (R10); pattern viết thường đã **nâng** `VS0111` (R1a) ⇒ **lỗi `VS0203`** (VD-212); từ khoá cũ (R2) đã bỏ — **VS0203**.
   - **[ĐÃ CÓ]** `main` trả `Err` ⇒ exit **1**; `assert cond, "msg"` (R20a); `if let`/`while let`. **VD-241 đợt coercion Option (2026-11-19)**: `T?? = Option[Option[int]]` lồng thật ở **runtime**; `None` trần ở mọi biên (let/var/gán lại/đối số/thân hàm/return) giữ **`None` lớp ngoài**; `Some(x)` nâng đúng một lớp; spelled-out `Option[Option[int]]` ≡ sugar `int??` ≡ alias — cả ba cùng kiểu/runtime (`optional/long-option-matrix.vis`).
   - **[DỰ KIẾN]** `.lazy()` + `Iterator[T]` duyệt lại (R24). **Lưu ý còn treo**: interp ↔ VM — interp auto-lift `let x: int? = expr` (VD-227) và `fn f() -> T?` (VD-228 Option B) đều auto-lift; closure-boundary (`fn(x) -> T?`) và argument `g(42)` auto-lift từ **VD-229**; lambda params không annot ⇒ không lift; `chan(0)` vẫn bị chặn `VS0505`.
-- **Nguồn đọc thêm**: `test/sem/**` (514 ca ngữ nghĩa chạy thật: 487 + 27 ca `sqlite/` VD-241 Gate 1),
+- **Nguồn đọc thêm**: `test/sem/**` (525 ca ngữ nghĩa chạy thật: 487 + 27 ca `sqlite/` VD-241 Gate 1 + 11 ca `sqlite/` VD-241 pre-merge),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).

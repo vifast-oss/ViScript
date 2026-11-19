@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# `load_extension` / `sqlite_load_extension` — SQL function này **tắt ở tầng C** khi connection
+# không `sqlite3_enable_load_extension` (host không bật bao giờ) ⇒ câu lệnh lỗi mọi chế độ;
+# authorizer `Function(load_extension)` là lớp chặn thứ hai (xem unit test
+# `chinh_sach_ham_load_extension_bi_cam`).
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.execute(h, "SELECT load_extension('/tmp/khong-duoc.so')", []):
+                Ok(_): print("load_extension: KHONG DUOC PHU")
+                Err(_): print("load_extension bi tu choi")
+            match sqlite.execute(h, "SELECT sqlite_load_extension('/tmp/khong-duoc.so')", []):
+                Ok(_): print("sqlite_load_extension: KHONG DUOC PHU")
+                Err(_): print("sqlite_load_extension bi tu choi")
+            let _ = sqlite.close(h)

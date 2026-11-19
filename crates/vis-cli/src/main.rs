@@ -179,6 +179,9 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // **ST-72b (VD-103)**: `--grant <tên>=<path>` thay root của cap đã khai (không thêm quyền mới).
     let mut grants: Vec<(String, String)> = Vec::new();
     let mut explain_perms = false;
+    // **VD-241 pre-merge §8 (2026-11-19)**: opt-in thông điệp thô từ SQLite (có thể chứa SQL
+    // fragment/bound values); mặc định mọi thông điệp từ SQLite chỉ gồm mã lỗi + tên lớp + offset.
+    let mut sqlite_debug = false;
     // **ST-81 (VD-108)**: mọi truy cập fs/net phải nằm trong `cap` đã khai (mặc định: không siết).
     let mut strict_caps = false;
     // **ST-130 (VD-124)**: thoát **tường minh** khỏi chế độ siết mặc định khi chương trình dùng gói
@@ -219,6 +222,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             }
             // ST-27: in nhật ký quyền trước mỗi lần chạy chương trình ngoài.
             "--explain-perms" => explain_perms = true,
+            // VD-241 pre-merge §8: thông điệp thô từ SQLite (chỉ khi user chủ động bật).
+            "--sqlite-debug" => sqlite_debug = true,
             // ST-27: tắt chương trình ngoài ⇒ lệnh lạ `VS0601`.
             "--no-extern" => co_no_extern = true,
             // ST-42: `FsHost` **mock tất định** từ kịch bản JSON (test hermetic).
@@ -250,7 +255,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     }
     let Some(tep) = tep else {
         eprintln!(
-            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr"
+            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
         );
         return ExitCode::from(2);
     };
@@ -422,6 +427,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 let mut fs_tho = HostFs::tao(explain_perms, fs_mock.as_ref());
                 let mut net_tho = HostNet::moi(explain_perms);
                 let mut db_tho = db::Db::moi(explain_perms);
+                db_tho.dat_sqlite_debug(sqlite_debug);
                 let mut fs = quyen::FsGuard {
                     trong: &mut fs_tho,
                     quyen: &quyen,

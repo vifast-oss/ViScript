@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# DDL thường + maintenance: CREATE/DROP INDEX, ALTER TABLE, CREATE/DROP VIEW ⇒ được phép.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER, b TEXT)", [])
+            let _ = sqlite.execute(h, "CREATE INDEX i_t ON t (a)", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (1, 'x')", [])
+            let _ = sqlite.execute(h, "ALTER TABLE t ADD COLUMN c REAL", [])
+            let _ = sqlite.execute(h, "CREATE VIEW v AS SELECT a FROM t", [])
+            match sqlite.query(h, "SELECT c FROM t", []):
+                Err(e): print("alter: loi {e.message}")
+                Ok(_): print("alter ok")
+            match sqlite.query(h, "SELECT a FROM v", []):
+                Err(e): print("view: loi {e.message}")
+                Ok(_): print("view ok")
+            let _ = sqlite.execute(h, "DROP INDEX i_t", [])
+            let _ = sqlite.execute(h, "DROP VIEW v", [])
+            print("ddl-index-alter ok")
+            let _ = sqlite.close(h)

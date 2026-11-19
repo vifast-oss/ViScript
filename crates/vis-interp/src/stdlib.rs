@@ -24,12 +24,14 @@ use crate::value::{eq, Value};
 /// trường**, không phải dữ liệu chương trình).
 pub const DAU_QUYEN: &str = "\u{1}VS0604:";
 
-/// **VD-241 (Gate 1)**: dấu hiệu "lỗi **người gọi**" trong `Err` của host — tầng `std` đổi thành
-/// **trap `VS0501`** (đối số sai: thiếu/thừa bind, multi-statement, SQL > 64 KiB, params > 1_000,
-/// handle lạ/đã đóng, connection > 16/phiên, URI/tên rỗng). Lỗi **dữ liệu** (SQLite từ chối,
-/// authorizer chặn, busy timeout, giới hạn kết quả §6) **không** mang dấu này và chuyển thành
-/// `Err(Error)` dữ liệu.
-pub const DAU_LOI_GOI: &str = "\u{2}VS0501:";
+// **VD-241 pre-merge §1 (2026-11-19)**: `DAU_LOI_GOI` (VS0501) **đã bị bỏ** — mọi lỗi host
+// (handle giả/đã đóng/sai loại, SQL quá dài, params thiếu/thừa/quá, vượt rows/bytes/connections,
+// timeout, authorizer/policy từ chối, lỗi SQLite…) đều là **lỗi dữ liệu/runtime** ⇒ `Result.Err`
+// (`Err(Error)`), KHÔNG trap `VS0501`. Chỉ còn **hai** lớp ngoài `Result`: (a) lỗi tĩnh/checker-time
+// (sai kiểu/sai arity — tầng `kiem`, không đổi phạm vi), (b) bất biến nội bộ bị phá (bug nội bộ —
+// cơ chế chẩn đoán nội bộ hiện hành). Lỗi data **không** mang dấu prefix — cùng mẫu `DAU_QUYEN`
+// (lọc bằng `strip_prefix`), khác ở chỗ **không** cần dấu: mọi `Err` host không có `DAU_QUYEN`
+// ⇒ `Err(Error)` dữ liệu.
 
 fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
     match r {
@@ -40,14 +42,8 @@ fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
                 msg.to_string(),
                 span,
             ))),
-            None => match e.strip_prefix(DAU_LOI_GOI) {
-                Some(msg) => Err(Abort::Trap(Trap::new(
-                    &RUNTIME_CODES[0],
-                    msg.to_string(),
-                    span,
-                ))),
-                None => Ok(Value::err(Value::ban_ghi_error(e, None))),
-            },
+            // Mọi lỗi host khác ⇒ `Err(Error)` dữ liệu (VD-241 pre-merge §1).
+            None => Ok(Value::err(Value::ban_ghi_error(e, None))),
         },
     }
 }
@@ -570,8 +566,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             hop_nhat_fs(kq, span)
         }
         // ----- std.sqlite (VD-241, Gate 1) — **chỉ qua `Host::db`**, không backend trong crate này.
-        // Thiếu host ⇒ `VS0604`; lỗi **người gọi** (host đánh dấu [`DAU_LOI_GOI`]) ⇒ trap `VS0501`;
-        // còn lại (authorizer/lỗi SQLite/giới hạn) ⇒ `Err(Error)` dữ liệu. -----
+        // Thiếu host ⇒ `VS0604`; mọi lỗi host (handle/SQL/params/giới hạn/authorizer/timeout/lỗi
+        // SQLite) ⇒ `Err(Error)` dữ liệu (VD-241 pre-merge §1). -----
         "sqlite.open" => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;

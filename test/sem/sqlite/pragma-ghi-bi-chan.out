@@ -1,0 +1,5 @@
+ghi user_version bi chan
+journal_mode bi chan
+temp_store bi chan
+synchronous bi chan
+cache_size bi chan

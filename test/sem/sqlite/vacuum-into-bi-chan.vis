@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# `VACUUM INTO '<file>'` — luôn bị chặn, không tạo tệp.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER)", [])
+            match sqlite.execute(h, "VACUUM INTO '/tmp/xx-vac-khong-duoc.db'", []):
+                Ok(_): print("vacuum into: KHONG DUOC PHU")
+                Err(e): print("vacuum into bi chan")
+            let _ = sqlite.close(h)

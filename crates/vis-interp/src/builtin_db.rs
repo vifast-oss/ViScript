@@ -9,9 +9,11 @@ use crate::value::Value;
 /// **Host cơ sở dữ liệu** (VD-241, Gate 1) — `vis-interp`/`vis-vm` **không** biết backend native;
 /// `vis-cli` cài (rusqlite bundled). **Không** kiểu native nào rò vào trait: path/handle là **chuỗi**,
 /// params/ô dữ liệu là [`Value`] (`Enum("SqlValue", …)`), kết quả `(columns, rows)` là `Value`.
-/// Thiếu host ⇒ `VS0604` (cùng mẫu [`FsHost`]/[`NetHost`]). Handle là **chuỗi mờ** `db:N` —
-/// chương trình không thấy địa chỉ/con trỏ; **N không tái sử dụng** trong phiên; chủ sở hữu phiên
-/// == host tạo handle.
+/// Thiếu host ⇒ `VS0604` (cùng mẫu [`FsHost`]/[`NetHost`]). Handle là **token mờ** `db:<32 hex>` —
+/// **128 bit ngẫu nhiên** sinh mỗi lần mở; tra cứu khớp **toàn bộ** chuỗi; token **không** đoán
+/// được từ output, **không tái sử dụng** trong phiên; chủ sở hữu phiên == host tạo handle.
+/// Mọi lỗi host (sai dạng/không tồn tại/đã đóng/SQL/params/giới hạn/authorizer/timeout/lỗi
+/// SQLite) ⇒ `Err(String)` — tầng `std` chuyển thành `Result.Err` dữ liệu (không phải trap).
 pub trait DbHost {
     /// Mở db `path` (`":memory:"` hoặc đường dẫn tệp — **không** URI `file:…`; host từ chối rõ).
     /// `create` = cho phép tạo mới (read-write); `busy_ms` = busy_timeout (đã kẹp hữu hạn ≤ 60_000).

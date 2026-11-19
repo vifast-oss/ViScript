@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# `INSERT … RETURNING` qua `sqlite.execute`: phát hiện **trước** step ⇒ Err, **không** insert.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (id INTEGER PRIMARY KEY)", [])
+            match sqlite.execute(h, "INSERT INTO t VALUES (1) RETURNING id", []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("chan {e.message}")
+            match sqlite.query(h, "SELECT count(*) FROM t", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            print(cell)
+            let _ = sqlite.close(h)

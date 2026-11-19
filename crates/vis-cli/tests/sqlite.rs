@@ -251,18 +251,20 @@ fn main():
         Err(e): print("URI: {e.message}")
 "#;
     let (code, out, err) = ca(&d, "uri", src);
-    assert_eq!(code, 101, "{err}");
-    assert!(err.contains("VS0501"), "{err}");
-    let _ = out;
+    assert_eq!(code, 0, "{err}");
+    assert!(out.starts_with("URI: "), "phải là lỗi dữ liệu, được: {out}");
     let src2 = r#"use std.sqlite
 fn main():
     match sqlite.open(""):
         Ok(_): print("ten rong: khong duoc phu")
         Err(e): print("ten rong: {e.message}")
 "#;
-    let (code2, _, err2) = ca(&d, "ten-rong", src2);
-    assert_eq!(code2, 101, "{err2}");
-    assert!(err2.contains("VS0501"), "{err2}");
+    let (code2, out2, err2) = ca(&d, "ten-rong", src2);
+    assert_eq!(code2, 0, "{err2}");
+    assert!(
+        out2.starts_with("ten rong: "),
+        "phải là lỗi dữ liệu, được: {out2}"
+    );
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -298,9 +300,9 @@ fn main():
                 Ok(_): print("khong duoc phu")
                 Err(e): print("chan {e.message}")
 "#;
-    let (code, _, err) = ca(&d, "bind-thieu", src);
-    assert_eq!(code, 101, "{err}");
-    assert!(err.contains("VS0501"), "{err}");
+    let (code, out, err) = ca(&d, "bind-thieu", src);
+    assert_eq!(code, 0, "{err}");
+    assert!(out.starts_with("chan "), "phải là lỗi dữ liệu, được: {out}");
 }
 
 #[test]
@@ -411,9 +413,87 @@ fn main():
     let dt = t0.elapsed();
     assert_eq!(code, 0, "{err}");
     assert!(
-        out.contains("interrupted"),
-        "query dài phải bị ngắt ở 5 s, được: {out}"
+        out.contains("OperationInterrupted"),
+        "query dài phải bị ngắt ở 5 s (mã SQLite OperationInterrupted), được: {out}"
     );
     assert!(dt < std::time::Duration::from_secs(30), "quá lâu: {dt:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **VD-241 pre-merge §8 (2026-11-19)** — thông điệp lỗi mặc định **không** chứa SQL fragment /
+/// bound values / nội dung câu lệnh; chỉ mã SQLite + tên lớp lỗi (+ offset nếu có từ prepare).
+/// `--sqlite-debug` (opt-in) hiển thị thông điệp thô.
+#[test]
+fn thong_diep_mac_dinh_khong_lo_fragment() {
+    let d = tam("sqlite-debug");
+    let src = r#"use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a TEXT)", [])
+            match sqlite.execute(h, "INSERT INTO t VALUES ('O'Clock; SELECT secret')", []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("chan {e.message}")
+            let _ = sqlite.close(h)
+"#;
+    let p = ghi(&d, "weird", src);
+    for vm in [false, true] {
+        let (code, out, err) = chay(&p, vm, false);
+        assert_eq!(code, 0, "vm={vm}: {err}");
+        assert!(
+            !out.contains("O'Clock") && !out.contains("secret"),
+            "vm={vm}: thông điệp mặc định lộ fragment: {out}"
+        );
+        assert!(
+            out.contains("mã SQLite"),
+            "vm={vm}: phải có mã SQLite: {out}"
+        );
+        // Opt-in: thông điệp thô (có thể chứa fragment) chỉ hiện khi user chủ động bật.
+        let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+        c.arg("run").arg("--sqlite-debug");
+        if vm {
+            c.arg("--vm").arg("--no-cache");
+        }
+        let o = c.arg(&p).output().expect("chạy `vis run --sqlite-debug`");
+        let out2 = String::from_utf8_lossy(&o.stdout).to_string();
+        assert_eq!(o.status.code(), Some(0));
+        assert!(
+            out2.contains("O'Clock") || out2.contains("secret"),
+            "vm={vm}: --sqlite-debug phải thấy nội dung thô: {out2}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **VD-241 pre-merge §10 (2026-11-19)** — `:memory:` dưới workload lớn: 50_000 hàng,
+/// `SELECT sum(x), avg(x)` — tổng output < 16 MiB; chạy **cả hai engine**, so byte.
+#[test]
+fn workload_50k_rows_sum_avg_ca_hai_duong() {
+    let d = tam("workload-50k");
+    let src = r#"use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (x INTEGER)", [])
+            let kq = sqlite.execute(h, "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 50000) INSERT INTO t SELECT x FROM c", [])
+            match kq:
+                Ok(n): print("inserted {n}")
+                Err(e): print("loi insert {e.message}")
+            match sqlite.query(h, "SELECT sum(x), avg(x) FROM t", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            match cell:
+                                Integer(n): print("int {n}")
+                                Real(f): print("real {f}")
+                                _: print("khac")
+            let _ = sqlite.close(h)
+"#;
+    let (code, out, err) = ca(&d, "workload-50k", src);
+    assert_eq!(code, 0, "{err}");
+    assert_eq!(out, "inserted 50000\nint 1250025000\nreal 25000.5\n");
     let _ = std::fs::remove_dir_all(&d);
 }

@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# Mọi PRAGMA ngoài allow-list (`table_info` + đọc `user_version`) đều bị chặn — kể cả
+# ghi `user_version`, `temp_store`, `journal_mode`, `synchronous`, `cache_size`.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.execute(h, "PRAGMA user_version = 42", []):
+                Ok(_): print("ghi user_version: KHONG DUOC PHU")
+                Err(_): print("ghi user_version bi chan")
+            match sqlite.execute(h, "PRAGMA journal_mode = WAL", []):
+                Ok(_): print("journal_mode: KHONG DUOC PHU")
+                Err(_): print("journal_mode bi chan")
+            match sqlite.execute(h, "PRAGMA temp_store = FILE", []):
+                Ok(_): print("temp_store: KHONG DUOC PHU")
+                Err(_): print("temp_store bi chan")
+            match sqlite.execute(h, "PRAGMA synchronous = OFF", []):
+                Ok(_): print("synchronous: KHONG DUOC PHU")
+                Err(_): print("synchronous bi chan")
+            match sqlite.execute(h, "PRAGMA cache_size = -1", []):
+                Ok(_): print("cache_size: KHONG DUOC PHU")
+                Err(_): print("cache_size bi chan")
+            let _ = sqlite.close(h)

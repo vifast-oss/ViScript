@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# ±Inf bind/lưu/đọc lại được; NaN bị từ chối với thông điệp rõ (không NULL trá hình).
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (r REAL)", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (?)", [SqlValue.Real(1.0e999)])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (?)", [SqlValue.Real(-1.0e999)])
+            match sqlite.execute(h, "INSERT INTO t VALUES (?)", [SqlValue.Real(0.0 / 0.0)]):
+                Ok(_): print("nan: khong duoc phu")
+                Err(e): print("chan nan {e.message}")
+            match sqlite.query(h, "SELECT r FROM t ORDER BY r", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            match cell:
+                                Real(f): print("real {f}")
+                                Null: print("null")
+                                _: print("khac")
+            let _ = sqlite.close(h)
