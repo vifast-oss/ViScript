@@ -182,3 +182,16 @@ Trong `test/sem/` (hoặc `crates/vis-cli/tests/sqlite_*`), tối thiểu:
 - ABI VBC1, `Value` variants, `api_dong_bang.rs`, SPEC-lex, `pha1-rc1` — không đụng.
 - RFC typed serialization — không đụng; `typed-row derive` hoãn.
 - B-3 — chưa bắt đầu; không phụ thuộc đợt này.
+
+
+## 13. Portability constraints (A0 2026-11-19 — bắt buộc, bổ sung sau khi VD mở)
+
+SQLite sẽ được **build cho ViFastOs** trong một đợt port riêng (không có trong VD này). Kiến trúc phải tách bạch để script người dùng không thay đổi khi thay backend.
+
+1. **`DbHost` độc lập với backend hệ điều hành**: crate `vis-interp` chỉ định nghĩa trait; mọi rusqlite/`libsqlite3-sys` chỉ nằm ở `vis-cli` (hoặc host khác như `vis-host-linux` sau này). **Không** rò kiểu rusqlite (`Connection`, `Statement`, `Row`…) vào trait, vào `StdFn`, vào `Value`, vào span/diagnostic.
+2. **Không giả định mọi host có POSIX/dynamic loader/filesystem đầy đủ**: trait `DbHost` là **tùy chọn hiện thực** — host không có SQLite trả `Err` rõ ràng (mẫu `VS0604` fs/net), **không** panic, **không** làm hỏng các chức năng ViScript khác.
+3. **Không để lộ OS paths/native pointer vào API ViScript**: `std.sqlite.open(path: str)` nhận path như chuỗi dữ liệu, host tự quyết cách xử lý/kiểm tra cap; handle là chuỗi mờ + phiên chạy; không trả `Int`/địa chỉ thô.
+4. **Đường port ViFastOs** (ghi nhận, không triển khai trong VD này): khả năng sử dụng SQLite 3 source gộp (sqlite3.c) tích hợp vào ứng dụng user-space **tĩnh** — không cần dynamic loader hay kernel; rusqlite chỉ dùng được nếu ViFastOs có target Rust + std + C toolchain + build scripts hoạt động (chưa chứng minh). SQLite **VFS** (thậm chí `SQLITE_CONFIG_MALLOC`/`SQLITE_CONFIG_MUTEX`) là đường hợp lý nếu ViFastOs có API/capability riêng — **adapter nhỏ, không phải VFS của kernel**; ưu tiên **đường B** khi ViFastOs dùng API riêng. Đường A (POSIX tương thích đủ dùng) chỉ khi ngữ nghĩa **được kiểm chứng**, không chỉ có đủ tên hàm (locking, sync semantics).
+   - Mức hỗ trợ đề xuất (đánh dấu cho đợt port sau): (1) In-memory → (2) File-backed giới hạn → (3) Recovery (crash/lỗi ghi/hết đĩa/journal) → (4) Concurrency/WAL. Không giả lập sync/bỏ khóa.
+5. **Đợt port ViFastOs là task riêng**, phối hợp với Agent ViFastOs về user-space ABI, allocator, filesystem, locking, sync/FDATASYNC semantics; **không** mở trong VD này.
+6. **Đo trước khi hứa**: bundled không bảo đảm chạy trên OS mới; compile options + SQLite version phải được **log** khi build.
