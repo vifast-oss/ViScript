@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — `Some(None)`: lớp ngoài explicit `Some`, lớp trong `None` hợp lệ.
+fn main():
+    let f: int?? = Some(None)
+    match f:
+        Some(Some(v)): print("two {v}")
+        Some(None): print("s-None")
+        Some(v): print("one {v}")
+        None: print("none")

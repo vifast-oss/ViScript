@@ -153,7 +153,7 @@ struct Cho {
     body: HBody,
     captured: Vec<(u32, u16)>,
     name: String,
-    ret_opt: bool,
+    ret_depth: usize,
 }
 
 impl Gen {
@@ -272,7 +272,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
                 f: F::new(f.name.clone()),
                 loops: Vec::new(),
                 captured: HashMap::new(),
-                ret_opt: matches!(f.ret, vis_types::Type::Opt(_)),
+                ret_depth: than::opt_depth(&f.ret),
             };
             st.f.arity = f.params.iter().filter(|p| !p.named).count() as u16;
             st.f.nparams = f.params.len() as u16;
@@ -308,7 +308,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
             f: F::new("main".to_string()),
             loops: Vec::new(),
             captured: HashMap::new(),
-            ret_opt: false,
+            ret_depth: 0,
         };
         // ST-28: **cùng** ngữ nghĩa với interp — nếu tệp khai `fn main` thì chạy **hàm đó**
         // (trước đây VM bỏ qua `main` ⇒ lệch interp; phát hiện khi làm generic).
@@ -343,7 +343,7 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
             f: F::new(c.name.clone()),
             loops: Vec::new(),
             captured: HashMap::new(),
-            ret_opt: c.ret_opt,
+            ret_depth: c.ret_depth,
         };
         st.f.arity = c.params.iter().filter(|p| !p.named).count() as u16;
         st.f.nparams = c.params.len() as u16;
@@ -398,8 +398,8 @@ struct Emit<'g> {
     f: F,
     loops: Vec<Vong>,
     captured: HashMap<u32, u16>,
-    /// **VD-228**: hàm hiện tại có `-> T?` (annot Optional)? — tự nâng ở biên hàm.
-    ret_opt: bool,
+    /// **VD-228/VD-241 §3**: số lớp `Opt` của annot return (0 = không nâng).
+    ret_depth: usize,
 }
 
 impl<'g> Emit<'g> {
@@ -415,13 +415,12 @@ impl<'g> Emit<'g> {
                 span,
             } => {
                 self.expr(init)?;
-                // Tự nâng `T → T?` theo **kiểu khai** (§4.4) — interp làm ở `let`.
-                // **R2a (VD-178)**: `None` đã là `Opt` — không tự nâng lần nữa.
-                if matches!(ty, Some(vis_types::Type::Opt(_)))
-                    && !matches!(init, HExpr::Opt { .. })
-                    && !matches!(init, HExpr::Var { name, .. } if name == "None")
-                {
-                    self.f.push(Instr::MakeSome, *span, 0);
+                // **VD-241 §3** — tự nâng theo annot; `$lift-opt` tới đủ lớp `Opt` (§4.4).
+                if let Some(t) = ty {
+                    let depth = than::opt_depth(t);
+                    if depth > 0 {
+                        self.lift_opt(depth, *span)?;
+                    }
                 }
                 // **R3b (VD-178)**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại
                 // chạy khối `else` (nhận lỗi nếu có `else err:`).
@@ -685,7 +684,7 @@ impl<'g> Emit<'g> {
                     // **ST-60b**: `return` trần ⇒ `()` **thật** (`PushUnit`), không phải `str("")`.
                     None => self.f.push(Instr::PushUnit, *span, 1),
                 }
-                self.lift_ret_opt(*span); // VD-228: nâng ở biên return sớm
+                self.lift_ret_opt(*span)?; // VD-228: nâng ở biên return sớm
                 self.f.push(Instr::Return, *span, -1);
                 self.net_stack(*span)
             }
@@ -1041,7 +1040,8 @@ impl<'g> Emit<'g> {
                     self.f.push(Instr::UnwrapOpt, *span, 0);
                     let c = self.g.cst_str(name);
                     self.f.push(Instr::Field(c), *span, 0);
-                    self.f.push(Instr::MakeSome, *span, 0);
+                    // **VD-241 §3/VD-227** — `?.f` tới đủ `Opt` không bọc chồng field `B?`.
+                    self.lift_opt(1, *span)?;
                     let jend = self.f.here();
                     self.f.push(Instr::Jump(0), *span, 0);
                     let lnone = self.f.here();
@@ -1263,7 +1263,7 @@ impl<'g> Emit<'g> {
                     body: body.clone(),
                     captured: pair.clone(),
                     name: "<closure>".to_string(),
-                    ret_opt: matches!(ret, vis_types::Type::Opt(_)),
+                    ret_depth: than::opt_depth(ret),
                 });
                 self.f.push(
                     Instr::MakeClosure(idx, pair.len() as u16),

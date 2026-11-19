@@ -467,8 +467,9 @@ impl<'a> Checker<'a> {
         if self.same(from, to) {
             return true;
         }
-        // **R2 (VD-178)**: tự nâng **nhiều lớp** `T → T? → T??` (tĩnh-only, không đổi biểu diễn).
-        // Bóc `f` lớp `Opt` ở vế nguồn và `t` lớp ở đích; chấp nhận khi lõi khớp và `f ≤ t`.
+        // **VD-241 §3 (A0)**: nâng **một lớp** duy nhất ở chuyển đổi annot/đối số/return;
+        // `T??` = `Option[Option[T]]`; chấp nhận khi lõi khớp, đích ≥ 1 lớp `Opt`,
+        // `from_layers == to_layers - 1`.
         let mut from_peel = from;
         let mut from_layers = 0usize;
         while let Type::Opt(inner) = from_peel {
@@ -481,7 +482,7 @@ impl<'a> Checker<'a> {
             to_layers += 1;
             to_peel = inner;
         }
-        if to_layers > 0 && self.same(from_peel, to_peel) && from_layers <= to_layers {
+        if to_layers >= 1 && from_layers == to_layers - 1 && self.same(from_peel, to_peel) {
             return true;
         }
         // ST-12b (BLOCKER #2): **không** nâng `int → float` đại trà — chỉ literal số nguyên
@@ -515,8 +516,8 @@ impl<'a> Checker<'a> {
     /// Ép kiểu **có biết biểu thức nguồn**: chỉ nâng `int → float` khi nguồn là **literal** số
     /// nguyên (§3.5, ngoại lệ duy nhất của "không chuyển đổi ngầm").
     pub(crate) fn coerce_e(&mut self, e: &HExpr, from: &Type, to: &Type, what: &str) -> bool {
-        // **VD-238**: `None` trần chỉ hợp lệ ở `T?`.
-        if vd238::la_none_bare(e) && !matches!(to, Type::Opt(_) | Type::Never | Type::Error) {
+        // **VD-238** (giữ) + **VD-241 §3**: `None` chỉ ở `T?` một lớp.
+        if vd238::la_none_bare(e) && !vd238::la_none_chep_duoc_opt_1(to) {
             self.diag(
                 MISMATCH,
                 format!(
@@ -934,7 +935,8 @@ impl<'a> Checker<'a> {
         let last_is_none =
             matches!(body.last(), Some(crate::hir::HStmt::Expr(e)) if vd238::la_none_bare(e));
         let t = self.than_value(body);
-        if last_is_none && !matches!(want, Type::Opt(_) | Type::Never | Type::Error) {
+        // **VD-241 §3**: `None` trả về chỉ ở `T?` **một lớp**.
+        if last_is_none && !vd238::la_none_chep_duoc_opt_1(want) {
             self.diag(
                 MISMATCH,
                 format!(
@@ -1123,9 +1125,8 @@ impl<'a> Checker<'a> {
                 match value {
                     Some(e) => {
                         let t = self.kiem_expr(e);
-                        if vd238::la_none_bare(e)
-                            && !matches!(want, Type::Opt(_) | Type::Error | Type::Never)
-                        {
+                        // **VD-238** (giữ) + **VD-241 §3**: `None` chỉ ở `T?` một lớp.
+                        if vd238::la_none_bare(e) && !vd238::la_none_chep_duoc_opt_1(&want) {
                             self.diag(
                                 MISMATCH,
                                 format!(

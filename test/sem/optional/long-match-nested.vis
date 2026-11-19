@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — pattern lồng `Some(str)` với Option-Some: khớp cấu trúc thật hai engine.
+fn main():
+    let opt: Option[str]? = Some(Some("lavalamp"))
+    match opt:
+        Some(Some(s)): print("inner {s}")
+        Some(s): print("one {s}")
+        None: print("none")

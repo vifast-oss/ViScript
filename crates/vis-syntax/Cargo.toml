@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # `vis-syntax` — lexer + parser + CST + CmdCST (tài liệu thiết kế §14.2). ST-04 mới dựng lexer.
 [package]
+rust-version.workspace = true
 name = "vis-syntax"
 version.workspace = true
 edition.workspace = true

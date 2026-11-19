@@ -213,13 +213,17 @@ impl<'a> Vm<'a> {
                 exit: 1,
                 steps: self.steps,
             },
-            Err(Abort::Ret(v)) => RunOutput {
-                stdout: self.take_stdout(),
-                diagnostics: Vec::new(),
-                value: Some(v),
-                exit: 0,
-                steps: self.steps,
-            },
+            Err(Abort::Ret(v)) => {
+                // **VD-241 §3/T5 (A0, 2026-11-19)** — `Result::Err` ⇒ exit 1; dùng chung `value::exit_code`.
+                let exit = value::exit_code(&v);
+                RunOutput {
+                    stdout: self.take_stdout(),
+                    diagnostics: Vec::new(),
+                    value: Some(v),
+                    exit,
+                    steps: self.steps,
+                }
+            }
         }
     }
 
@@ -684,12 +688,9 @@ impl<'m> Th<'m> {
                     }
                 }
                 Instr::Return | Instr::Halt => {
-                    // `Halt` **không** lấy giá trị đỉnh (chương trình kết thúc bằng câu lệnh ⇒ `()`).
-                    let v = if matches!(ins, Instr::Halt) {
-                        Value::Unit
-                    } else {
-                        self.st.pop().unwrap_or(Value::Unit)
-                    };
+                    // **VD-241 §3/T5 (A0, 2026-11-19)** — `Halt` giữ nguyên giá trị trên ngăn xếp
+                    // (không ép về `()`); `Result::Err` của `main` đi thẳng ra `RunOutput.exit` ⇒ CLI exit 1.
+                    let v = self.st.pop().unwrap_or(Value::Unit);
                     self.frames.pop();
                     match self.frames.last_mut() {
                         None => return Ok(v),
@@ -734,12 +735,10 @@ impl<'m> Th<'m> {
                 }
                 Instr::MakeSome => {
                     let v = self.pop(vm, span)?;
-                    // **Không** bọc hai lớp: `T?` → `T?` (giữ phẳng như interp).
-                    match v {
-                        // **VD-204 (1)**: enum `Option` thật — giữ phẳng (`Option` ⇒ `Option`).
-                        Value::Enum(ref ea, ..) if ea == "Option" => self.st.push(v),
-                        other => self.st.push(Value::some(other)),
-                    }
+                    // **VD-241 §3 (A0, 2026-11-19)**: `Some(x)` luôn thêm **đúng một lớp** —
+                    // không giữ phẳng, không bọc chồng người dùng đã `Some(..)`; guard chọn
+                    // vị trí này nằm ở emit-site (`opt_wrap`), không phải tại đây.
+                    self.st.push(Value::some(v));
                 }
                 Instr::MakeNone => self.st.push(Value::none()),
                 Instr::MakeOk => {

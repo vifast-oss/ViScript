@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — `Some(Some(v))` **không** khớp `Some(42)`; lối vào `_`/arm kế tiếp.
+fn main():
+    match Some(42):
+        Some(Some(v)): print("ko biet")
+        Some(v): print("mot {v}")
+        None: print("none")

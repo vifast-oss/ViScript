@@ -31,7 +31,17 @@ impl Emit<'_> {
                 Ok(None)
             }
             HPat::Ctor { path, args, .. } => {
-                let mut dem = 0usize;
+                // **VD-241 §3 (A0, 2026-11-19)**: kiểm ctor + từng đối số vào ô tạm `Bool`, rồi gộp;
+                // giá trị gốc giữ trên ngăn xếp đến cuối rồi `Swap`+`Pop` — luôn đúng thứ tự, tránh
+                // nhầm `Unwrap` lên `Bool` (vòng trước) cũng như outer-test tiêu thụ `Bool` (bản đầu).
+                let ten = path.last().cloned().unwrap_or_default();
+                let n = self.g.cst_str(&ten);
+                self.f.push(Instr::Dup, span, 1);
+                self.f.push(Instr::TestCtor(n, args.len() as u16), span, 0);
+                let slot = self.f.nlocals;
+                self.f.nlocals += 1;
+                self.f.push(Instr::StoreLocal(slot), span, -1);
+                let mut tmps = vec![slot];
                 for (i, sub) in args.iter().enumerate() {
                     if !can_test(sub) {
                         continue;
@@ -39,18 +49,36 @@ impl Emit<'_> {
                     self.f.push(Instr::Dup, span, 1);
                     self.f.push(Instr::Unwrap(i as u16), span, 0);
                     let _ = self.test(sub, span)?;
-                    dem += 1;
+                    let s2 = self.f.nlocals;
+                    self.f.nlocals += 1;
+                    self.f.push(Instr::StoreLocal(s2), span, -1);
+                    tmps.push(s2);
                 }
-                let ten = path.last().cloned().unwrap_or_default();
-                let n = self.g.cst_str(&ten);
-                self.f.push(Instr::TestCtor(n, args.len() as u16), span, 0);
-                for _ in 0..dem {
+                for t in &tmps {
+                    self.f.push(Instr::LoadLocal(*t), span, 1);
+                }
+                for _ in 0..tmps.len().saturating_sub(1) {
                     self.f.push(Instr::BoolAnd, span, -1);
                 }
+                // `[value, bool]` ⇒ `[bool]` (giá trị của arm bị bỏ, như cũ).
+                self.f.push(Instr::Swap, span, 0);
+                self.f.push(Instr::Pop, span, -1);
                 Ok(None)
             }
             HPat::Tuple { items, .. } | HPat::List { items, .. } => {
-                let mut dem = 0usize;
+                // **VD-241 §3 (A0, 2026-11-19)**: kiểm Tuple/List + phần tử vào ô tạm `Bool`, rồi gộp;
+                // giá trị gốc giữ trên ngăn xếp đến cuối rồi `Swap`+`Pop` (như Ctor ở trên).
+                self.f.push(Instr::Dup, span, 1);
+                let n = items.len() as u16;
+                if matches!(p, HPat::Tuple { .. }) {
+                    self.f.push(Instr::TestTuple(n), span, 0);
+                } else {
+                    self.f.push(Instr::TestList(n), span, 0);
+                }
+                let slot = self.f.nlocals;
+                self.f.nlocals += 1;
+                self.f.push(Instr::StoreLocal(slot), span, -1);
+                let mut tmps = vec![slot];
                 for (i, sub) in items.iter().enumerate() {
                     if !can_test(sub) {
                         continue;
@@ -60,21 +88,35 @@ impl Emit<'_> {
                     self.f.push(Instr::Const(c), span, 1);
                     self.f.push(Instr::Index, span, -1);
                     let _ = self.test(sub, span)?;
-                    dem += 1;
+                    let s2 = self.f.nlocals;
+                    self.f.nlocals += 1;
+                    self.f.push(Instr::StoreLocal(s2), span, -1);
+                    tmps.push(s2);
                 }
-                let n = items.len() as u16;
-                if matches!(p, HPat::Tuple { .. }) {
-                    self.f.push(Instr::TestTuple(n), span, 0);
-                } else {
-                    self.f.push(Instr::TestList(n), span, 0);
+                for t in &tmps {
+                    self.f.push(Instr::LoadLocal(*t), span, 1);
                 }
-                for _ in 0..dem {
+                for _ in 0..tmps.len().saturating_sub(1) {
                     self.f.push(Instr::BoolAnd, span, -1);
                 }
+                self.f.push(Instr::Swap, span, 0);
+                self.f.push(Instr::Pop, span, -1);
                 Ok(None)
             }
             HPat::Record { fields, open, .. } => {
-                let mut dem = 0usize;
+                // **VD-241 §3 (A0, 2026-11-19)**: kiểm Record + trường vào ô tạm `Bool`, rồi gộp;
+                // giá trị gốc giữ trên ngăn xếp đến cuối rồi `Swap`+`Pop` (như Ctor ở trên).
+                self.f.push(Instr::Dup, span, 1);
+                let t = self.g.cst_str("");
+                self.f.push(
+                    Instr::TestRecord(t, fields.len() as u16, u8::from(*open)),
+                    span,
+                    0,
+                );
+                let slot = self.f.nlocals;
+                self.f.nlocals += 1;
+                self.f.push(Instr::StoreLocal(slot), span, -1);
+                let mut tmps = vec![slot];
                 for (name, sub) in fields {
                     let Some(sub) = sub else { continue };
                     if !can_test(sub) {
@@ -84,17 +126,19 @@ impl Emit<'_> {
                     let c = self.g.cst_str(name);
                     self.f.push(Instr::Field(c), span, 0);
                     let _ = self.test(sub, span)?;
-                    dem += 1;
+                    let s2 = self.f.nlocals;
+                    self.f.nlocals += 1;
+                    self.f.push(Instr::StoreLocal(s2), span, -1);
+                    tmps.push(s2);
                 }
-                let t = self.g.cst_str("");
-                self.f.push(
-                    Instr::TestRecord(t, fields.len() as u16, u8::from(*open)),
-                    span,
-                    0,
-                );
-                for _ in 0..dem {
+                for t in &tmps {
+                    self.f.push(Instr::LoadLocal(*t), span, 1);
+                }
+                for _ in 0..tmps.len().saturating_sub(1) {
                     self.f.push(Instr::BoolAnd, span, -1);
                 }
+                self.f.push(Instr::Swap, span, 0);
+                self.f.push(Instr::Pop, span, -1);
                 Ok(None)
             }
             HPat::Range {

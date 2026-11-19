@@ -32,7 +32,8 @@ pub(crate) const MISMATCH: &Code = &TYPE_CODES[3];
 
 /// **ST-63 (VD-105 (6))**: phần **gọi hàm/closure** tách khỏi `interp.rs` để giữ **R1 ≤ 1.500 dòng**
 /// — chuyển **nguyên văn**, không đổi ngữ nghĩa.
-mod goi;
+pub(crate) mod goi;
+use goi::{opt_depth_ty, opt_lift_maybe};
 
 /// Lỗi runtime kèm `span`.
 #[derive(Debug, Clone)]
@@ -301,16 +302,11 @@ impl<'a> Interp<'a> {
                 // là `T?` — đồng nhất với codegen (codegen.rs) và spec §4.4 ("tự nâng ở ba vị trí:
                 // gán let x: int? = …, trả về → int? …, đối số"). `Some(_)`/`None` giữ nguyên,
                 // `Result` giữ nguyên; khác đi thì bọc `Value::some`.
+                // **VD-241 §3 (A0, 2026-11-19)** — tự nâng `T → T? → …` tới đủ lớp của annot
+                // (một lớp/biên chuyển đổi; không bọc thêm giá trị đã Option/Result).
                 let v = if ty_là_opt(ty.as_ref()) {
-                    match &v {
-                        Value::Enum(ea, va, _)
-                            if (ea == "Option" || ea == "Result")
-                                && ["Some", "None", "Ok", "Err"].contains(&va.as_str()) =>
-                        {
-                            v
-                        }
-                        _ => Value::some(v),
-                    }
+                    let target = ty.as_ref().map(opt_depth_ty).unwrap_or(0);
+                    opt_lift_maybe(v, target)
                 } else {
                     v
                 };
@@ -585,20 +581,11 @@ impl<'a> Interp<'a> {
             }
             HCond::Let { pat, value, .. } => {
                 let v = self.eval(value)?;
-                // `if let Some(x) = o:` — `None` ⇒ nhánh sai; giá trị khác được khớp **theo pattern**.
-                let target = match v {
-                    Value::Enum(ea, va, ag) if ea == "Option" => match va.as_str() {
-                        "None" => return Ok(false),
-                        "Some" if ag.len() == 1 => {
-                            let mut ag = ag;
-                            ag.pop().expect("Some luôn có một đối số")
-                        }
-                        _ => Value::Enum(ea, va, ag),
-                    },
-                    other => other,
-                };
+                // **VD-241 §3 (A0, 2026-11-19)** — `if let Some(x) = o:`/`if let Ok(x) = r:` khớp
+                // theo cấu trúc giá trị thật; KHÔNG bọc ngầm giá trị trần. Giá trị không khớp
+                // pattern ⇒ không vào nhánh (và không bọc/bóc phụ).
                 let snapshot = self.env.borrow().clone();
-                if !self.bind_pat_bool(pat, &target) {
+                if !self.bind_pat_bool(pat, &v) {
                     *self.env.borrow_mut() = snapshot;
                     return Ok(false);
                 }
@@ -629,6 +616,7 @@ impl<'a> Interp<'a> {
                             body: HBody::Stmts(f.body.clone()),
                             env: self.env.clone(),
                             ret_opt: matches!(f.ret, vis_types::Type::Opt(_)),
+                            ret_depth: opt_depth_ty(&f.ret),
                         })));
                     }
                     // `enum`/`type` khai trong tệp: thẻ kiểu để `E.A` / `User(...)` chạy được.
@@ -934,6 +922,7 @@ impl<'a> Interp<'a> {
                 params: params.iter().map(|p| p.sym).collect(),
                 body: body.clone(),
                 ret_opt: matches!(ret, vis_types::Type::Opt(_)),
+                ret_depth: opt_depth_ty(ret),
                 // ST-15b (mục 2): **chụp snapshot** môi trường tại điểm tạo closure — interp dùng
                 // một env phẳng và khôi phục tham số khi hàm trả về, nên nếu giữ `Rc` chung thì
                 // closure thoát khỏi hàm sẽ mất biến đã bắt. Chọn snapshot (ghi JOURNAL): biến

@@ -30,6 +30,9 @@ pub struct Closure {
     pub env: Env,
     /// **VD-228**: `-> T?` trên closure (`(x) -> int? …` / `fn(x) -> int?: …`) — biên nâng.
     pub ret_opt: bool,
+    /// **VD-241 §3 (A0, 2026-11-19)** — số lớp `Opt` của annot return (`T?` → 1, `T??` → 2).
+    /// Mặc định 1 (giữ hành vi cũ) cho các công trình không đọc trường này.
+    pub ret_depth: usize,
 }
 
 /// Giá trị lúc chạy của VS0.
@@ -677,9 +680,12 @@ pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<Vec<Val
 }
 
 /// Mã thoát: `main` trả `int` ⇒ dùng số đó (cắt 8 bit); còn lại `0`.
+/// **VD-241 §3/T5 (A0, 2026-11-19)** — mã thoát chương trình: `main` trả `Result::Err` ⇒ `1`;
+/// `Int` ⇒ chính nó (mod 256); còn lại `0`.
 pub fn exit_code(v: &Value) -> i32 {
     match v {
         Value::Int(i) => (*i & 0xff) as i32,
+        Value::Enum(ea, va, _) if ea == "Result" && va == "Err" => 1,
         _ => 0,
     }
 }

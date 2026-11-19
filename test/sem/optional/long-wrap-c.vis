@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — `Some(42)` cho `int??`: nâng **một lớp ngoài cùng** (không làm phẳng).
+fn main():
+    let c: int?? = Some(42)
+    match c:
+        Some(Some(v)): print("two {v}")
+        Some(v): print("one {v}")
+        None: print("none")

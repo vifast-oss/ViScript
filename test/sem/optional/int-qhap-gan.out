@@ -1,3 +1,4 @@
-5
-100
-Some(None)
+# SPDX-License-Identifier: MIT OR Apache-2.0
+Some(5)
+None
+Some(Some(7))

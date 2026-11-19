@@ -2,6 +2,7 @@
 # `vis-types` — phân giải tên + HIR (ST-11), kiểm kiểu VS0 (ST-12). Thiết kế §14.2:
 # phụ thuộc `vis-syntax` + `vis-diag`, không thêm crate ngoài.
 [package]
+rust-version.workspace = true
 name = "vis-types"
 version.workspace = true
 edition.workspace = true

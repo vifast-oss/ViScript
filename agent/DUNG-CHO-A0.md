@@ -1,6 +1,10 @@
-# DỪNG VÀ CHỜ A0 — T-DQ (2026-11-19 ~12:00)
+# DỪNG VÀ CHỜ A0 — T-DQ (2026-11-19 ~12:00) → **A0 ĐÃ QUYẾT 2026-11-19 (đợt ergonomics) — xem mục cuối**
 
 > Ghi theo VD-241 §6. Không làm tiếp nhánh liên quan tới mục này. Cổng các việc khác A0 đã giao (đợt ergonomics thu thập) vẫn tiếp tục vì chỉ đọc — không đổi mã.
+>
+> **⇒ CẬP NHẬT 2026-11-19 (sau khi A0 đọc bộ báo cáo): các nhánh dưới đây được MỞ LẠI đúng theo quyết định A0 (DECISIONS.md, bản ghi cùng ngày "Quyết định Agent 0 · 2026-11-19 — đợt đánh giá công thái học").**
+> Tóm: Option lồng **lồng thật** (Option[Option[T]], pattern strict, lift 1 lớp, không pattern-lift); pattern ctor lồng VM + JSON encode được phép sửa (kiểm riêng, không mặc định cùng gốc); escape `\u{…}` sửa riêng; checker mở rộng có chọn lọc; `main -> Err` ⇒ exit 1; toolchain tái lập (không hardcode `~/.cargo/bin`, báo rõ compiler + yêu cầu phiên bản); `<fn>` chốt cả hai engine; channel giữ một giá trị; `pha1-rc1` bảo toàn; process API + stdlib chờ báo cáo.
+> Các nội dung dưới đây giữ nguyên làm biên bản của giai đoạn dừng.
 
 ## Đã dừng: `T??` / optional lồng (`int??`) — hai engine lệch byte, bên đúng chưa xác định theo spec
 

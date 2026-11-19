@@ -808,6 +808,10 @@ pub fn call(
                 )),
             };
         }
+        // **VD-241 §3** — nội bộ: nâng giá trị tới đủ `depth` lớp `Opt` (đối số 2).
+        if kieu == "lift-opt" {
+            return Ok(crate::lift::lift_opt_args(args));
+        }
         if kieu == "await" {
             return match args.into_iter().next() {
                 Some(Value::Task(t)) => crate::rt::await_task(host, &t, span),

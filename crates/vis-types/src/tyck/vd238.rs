@@ -9,6 +9,16 @@ pub(super) fn la_none_bare(e: &HExpr) -> bool {
     matches!(e, HExpr::Var { name, .. } if name == "None")
 }
 
+/// **VD-241 §3 (A0, 2026-11-19)** — `None` trần chỉ hợp lệ ở `T?` **một lớp** (bóc ở mọi vị trí
+/// kiểm kiểu: `let`, gán, tham số, return, thân hàm).
+pub(super) fn la_none_chep_duoc_opt_1(to: &Type) -> bool {
+    match to {
+        Type::Opt(inner) => !matches!(**inner, Type::Opt(_)),
+        Type::Never | Type::Error => true,
+        _ => false,
+    }
+}
+
 /// `true` nếu biểu thức là **literal số nguyên** (§3.5: chỉ literal được nâng `int → float`).
 pub(crate) fn is_int_lit(e: &HExpr) -> bool {
     matches!(e, HExpr::Lit { lit, .. } if lit.kind == crate::hir::LitKind::Int)

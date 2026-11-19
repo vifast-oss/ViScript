@@ -1794,3 +1794,43 @@ Mỗi số chỉ ghi một lần, kèm HEAD; không lặp số ở nhiều chỗ
 ### VD-241 (đính chính Agent 1, 2026-11-19) · §5 dòng "sem 469/469 ×2"
 
 Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính chính **số** lỗi thời sinh bởi merge VD-240: **469/469 → 473/473** (473 ca, hai engine). Có hiệu lực từ `6295c8e` (VD-240 grid, +4 ca). Không đổi luật, không đổi phạm vi.
+
+### Quyết định Agent 0 · 2026-11-19 (đợt đánh giá công thái học) — ghi theo thứ tự nhận, **chưa gán số VD** (A0 không cấp số trong lượt trả lời này; KHÔNG tự chọn)
+
+**Người ra quyết định**: Agent 0, 2026-11-19 (trả lời đánh giá công thái học + chốt phạm vi) · **Hiệu lực**: thay cho phần "ĐỪNG làm các nhánh" ở `agent/DUNG-CHO-A0.md` — phạm vi mở lại **theo đúng** quyết định dưới đây. `pha1-rc1` (`05e42d0…`) **bảo toàn**; các lỗi mới chỉ được **ghi nhận**, không sửa lịch sử.
+
+1. **Nền giữ**: let/var, bool-only `if`, Option/Result tách, match exhaustive, named args + default, record-vs-map bằng khoá, `if let`/`while let`/`?`/`??`. **Không** được lùi vào bất kỳ phần nào trong số này.
+2. **Corpus gap là bằng chứng corpus chưa đủ**: mọi ca hồi quy mới phải có (i) kỳ vọng độc lập suy từ quy tắc đã chốt; (ii) differential hai engine (stdout + stderr phù hợp + exit code + dữ liệu đầu ra). **Không** lấy interp làm chuẩn tự động; **không** sinh lại golden chỉ để xanh.
+3. **Option lồng (chốt ngữ nghĩa, KHÔNG phải "chỉ sửa bug VM")**:
+   - `T?` = `Option[T]`. `T??` = `Option[Option[T]]`, **không làm phẳng**.
+   - `Some(x)` luôn thêm **đúng một** lớp.
+   - Pattern khớp **theo cấu trúc giá trị thật**, không tự bọc/bóc trong pattern; `Some(Some(v))` **không** khớp `Some(42)`.
+   - Auto-lift chỉ ở chuyển đổi **gán/annot/đối số/return** (biên VD-227/228/229), tối đa **một** lớp mỗi lần; **không** lặp nâng trong một chuyển đổi; **không** nâng ngầm trong pattern.
+   - Ví dụ định hướng (đúng theo nguyên văn A0):
+     `let a: int? = 42` ✔ (nâng 1 lớp) · `let b: int?? = Some(Some(42))` ✔ (đúng kiểu) · `let c: int?? = Some(42)` ✔ (thêm một lớp ngoài) · `let d: int?? = 42` ✘ (cần nâng hai lớp) · `let e: int?? = None` ✘ (thiếu lớp ngoài) · `let f: int?? = Some(None)` ✘ ("có lớp ngoài, thiếu lớp trong").
+   - `agent/QD-OPTION-LONG-2026-11-19.md` là **bảng quy tắc pin** (đọc trước khi triển khai T1).
+4. **Pattern ctor lồng (VM) + JSON encode**: được phép sửa. Pattern phải khớp đệ quy theo cấu trúc; giá trị JSON do code dựng và do decode **encode cùng ý nghĩa**; **không** mặc định hai lỗi cùng nguyên nhân — kiểm chứng riêng.
+5. **Escape `\u{…}` (SPEC §8 dòng ~57)**: sửa riêng; kiểm tra Unicode scalar hợp lệ + tương tác interpolation + escape không hợp lệ; **không chỉ thêm một ca "A"**.
+6. **`vis check`**: sửa tài liệu ngay (README ghi rõ "check xanh ≠ không lỗi runtime") **và mở rộng checker có chọn lọc**: cộng những lỗi **checker đã đủ thông tin để kết luận** phải thành lỗi tĩnh —
+   - tên không tồn tại trong phạm vi tĩnh;
+   - constructor record thiếu field bắt buộc, hoặc field trùng/không tồn tại;
+   - destructure một giá trị đã biết không phải tuple;
+   - phép toán sai kiểu trong closure khi kiểu đã xác định;
+   - `?` ngoài ngữ cảnh được phép.
+   Những cái phụ thuộc dữ liệu runtime (map key, index, deadlock kênh, capacity 0) **giữ runtime**, không ép qua checker.
+   **Giữ chính sách strict-caps hiện tại** trong vòng này.
+7. **`main -> Err` ⇒ exit 1**; Ok ⇒ exit 0. **Không** suy rộng sang `main -> int` khi chưa có quyết định riêng.
+8. **Toolchain**: được phép sửa khả năng tái lập; **không hardcode** ưu tiên `~/.cargo/bin` trong mọi trường hợp; tôn trọng cấu hình chủ động của người dùng; **báo rõ compiler được chọn và yêu cầu phiên bản**; xác định phiên bản tối thiểu **thật** và khai báo nhất quán — **không** dùng con số gần đúng (báo cáo ghi rõ `vis-host-linux` yêu cầu `1.99.1`, không được chốt `"1.99"` cho qua).
+9. **Đồng bộ tài liệu**: cho phép, nhưng tách "mô tả hiện trạng" khỏi "quy tắc đích"; **không** sửa spec thành hành vi sai chỉ để khớp code.
+10. **Show closure**: chốt `<fn>` cho **cả hai** engine (chuỗi giá trị ổn định).
+11. **Channel**: giữ API một giá trị `<kênh>` trong vòng này; tài liệu §742 tuple lỗi thời được sửa; **không** gọi tuple là alias khi chưa có implementation; rendezvous = **khả năng chưa triển khai**, không phải đã hỗ trợ.
+12. **Thứ tự pha 2**: tính đúng → kiểu & tính nhất quán → script/process → thư viện thiết yếu → công cụ. **Lambda annotation trước closure lift**. Không mở async runtime lớn lúc này.
+13. **Unit và never — sửa trước khi thêm cú pháp**: `()` phải có một ý nghĩa kiểu thống nhất; nhánh kết thúc bằng `return`/`break`/`continue` xử lý như luồng không tiếp tục (never), không ép thành giá trị bình thường; phân biệt biểu thức-cần-giá-trị vs câu-lệnh; **chưa** đổi kiểu trả về `push` trong cùng đợt.
+14. **Record — tên trường quan trọng hơn thứ tự**: khởi tạo record bằng tên trường, không phụ thuộc thứ tự; field trùng/lọt/thiếu bắt buộc ⇒ lỗi; default: quy tắc áp dụng rõ ràng (phải bao gồm cả thời điểm và thứ tự đánh giá); **không** parse default rồi bỏ qua như đã hỗ trợ.
+15. **Trait & generic ghép module**: ưu tiên sửa truyền thông tin impl/type qua module và biến vòng lặp; **bound chưa hỗ trợ phải enforce hoặc từ chối rõ ràng**, không im lặng chấp nhận.
+16. **Script/process API (bài 6 bị chặn)**: xây API process dùng được từ `.vis` — nhận chương trình và danh sách đối số riêng biệt, trả kết quả có stdout/stderr/exit code; lỗi khởi chạy **phân biệt** với tiến trình chạy xong nhưng mã ≠ 0; `.vish` dùng chung nền thực thi, không phát triển nhánh rời. **Báo cáo lại trước khi mở rộng process API hoặc đổi bề mặt thư viện chuẩn.**
+17. **Ngôn ngữ & workaround**: không phải "thêm cú pháp" — xử lý: parse số có báo lỗi/overflow; stderr và lỗi CLI bình thường; tìm chuỗi; thao tác chuỗi với quy ước Unicode rõ; JSON constructor/accessor đầy đủ. CSV quoting đúng chỉ sau khi §16 được duyệt.
+18. **Trình tự thực thi**: (A) nhóm sửa tính đúng — Option semantics (T1) → pattern VM (T2) → JSON VM (T3) → Unicode escape (T4) → main exit (T5) → toolchain (T6), tích hợp có điều phối nếu cùng chạm codegen; (B) sau nhóm tính đúng: unit/never → checker → record → module/type propagation; (C) **báo cáo lại trước khi** mở rộng process API / đổi bề mặt stdlib.
+19. **#152-vế-mac / #147-mac: giữ chờ bằng chứng mac**; không đóng bằng số đo Linux.
+
+**Rủi ro đã ghi nhận (không làm mờ)**: "corpus 473/473 xanh" **không** mâu thuẫn với "chương trình JSON thật chạy sai" — corpus chưa phủ ca lồng. Mọi golden đổi theo ca mới phải **liệt kê từng nhóm**; không regenerate hàng loạt.

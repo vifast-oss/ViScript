@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — `T??` Option lồng thật. Ca đúng kiểu: `Some(Some(42))`.
+fn main():
+    let b: int?? = Some(Some(42))
+    match b:
+        Some(Some(v)): print("two {v}")
+        Some(v): print("one {v}")
+        None: print("none")

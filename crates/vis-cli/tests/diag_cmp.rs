@@ -50,9 +50,10 @@ use std::process::Command;
 // **SỬA KÈM LÝ DO (R19b, VD-178)**: 464 → **465** (+`loi/doi-dau-tran` — lỗi **lúc chạy** VS0507).
 // **SỬA KÈM LÝ DO (R2, VD-178)**: 465 → **469** (+3 xanh `optional/` + `loi/none-bo` — lỗi **biên dịch** VS0203).
 // **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: 469 → **473** (+4 ca grid `async/grid-*`).
-const TONG: usize = 473;
-const XANH: usize = 387;
-const LOI_BIEN_DICH: usize = 51;
+// **SỬA KÈM LÝ DO (VD-241 §3, 2026-11-19)**: 473 → **483** (+10 ca Option lồng thật).
+const TONG: usize = 483;
+const XANH: usize = 394;
+const LOI_BIEN_DICH: usize = 54;
 const LOI_LUC_CHAY: usize = 35;
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.
 const XANH_CAN_HOST: usize = 0;

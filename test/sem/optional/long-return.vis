@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — hàm trả `int??` bằng `Some(42)`: lift một lớp ở biên return.
+fn g() -> int??:
+    Some(42)
+
+fn main():
+    match g():
+        Some(Some(v)): print("two {v}")
+        Some(v): print("one {v}")
+        None: print("none")

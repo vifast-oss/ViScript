@@ -5,12 +5,35 @@
 
 use super::*;
 
+/// Số lớp `Opt` của một **đích kiểu** — đếm từ ngoài vào (mirror vis-interp `opt_depth_ty`).
+pub(super) fn opt_depth(t: &vis_types::Type) -> usize {
+    let mut d = 0;
+    let mut cur = t;
+    while let vis_types::Type::Opt(inner) = cur {
+        d += 1;
+        cur = inner;
+    }
+    d
+}
+
 impl Emit<'_> {
-    /// **VD-228** — tự nâng `T → T?` ở biên hàm khi annot return là Optional.
-    pub(super) fn lift_ret_opt(&mut self, span: Span) {
-        if self.ret_opt {
-            self.f.push(Instr::MakeSome, span, 0); // không bọc 2 lớp (Option ⇒ giữ phẳng)
+    /// **VD-241 §3 (A0, 2026-11-19)** — nâng giá trị Opt tới **≥ `depth` lớp** (hàm. nội bộ
+    /// `$lift-opt`, interp/VM dùng chung; người dùng không viết được tên `$…`).
+    /// Stack trước: [v] → sau: [v'] với `v'` có tối thiểu `depth` lớp `Opt` từ ngoài vào.
+    pub(super) fn lift_opt(&mut self, depth: usize, span: Span) -> Result<(), CodegenError> {
+        let d = self.g.cst(vis_types::LitKind::Int, &depth.to_string());
+        self.f.push(Instr::Const(d), span, 1);
+        let n = self.g.cst_str("$lift-opt");
+        self.f.push(Instr::CallBuiltin(n, 2), span, -1);
+        Ok(())
+    }
+
+    /// **VD-228** (siết theo VD-241 §3) — tự nâng `T → …T?…` ở biên hàm khi annot return là Optional.
+    pub(super) fn lift_ret_opt(&mut self, span: Span) -> Result<(), CodegenError> {
+        if self.ret_depth > 0 {
+            self.lift_opt(self.ret_depth, span)?;
         }
+        Ok(())
     }
 
     /// **VD-228b** — tự nâng `T → T?` ở biên **tham số** annot Optional: giá trị plain vào
@@ -21,7 +44,8 @@ impl Emit<'_> {
         span: Span,
     ) -> Result<(), CodegenError> {
         for p in params {
-            if matches!(p.ty, vis_types::Type::Opt(_)) {
+            let depth = opt_depth(&p.ty);
+            if depth > 0 {
                 let slot = self
                     .f
                     .locals
@@ -32,7 +56,7 @@ impl Emit<'_> {
                         p.span,
                     ))?;
                 self.f.push(Instr::LoadLocal(slot), span, 1);
-                self.f.push(Instr::MakeSome, span, 0); // đã flat: Option ⇒ giữ nguyên
+                self.lift_opt(depth, span)?; // VD-241 §3: nâng tới đủ lớp tham số.
                 self.f.push(Instr::StoreLocal(slot), span, -1);
             }
         }
@@ -43,13 +67,13 @@ impl Emit<'_> {
         match b {
             HBody::Expr(e) => {
                 self.expr(e)?;
-                self.lift_ret_opt(span); // VD-228: biên hàm `-> T?`
+                self.lift_ret_opt(span)?; // VD-228 (siết VD-241 §3): biên hàm `-> T?`
                 Ok(())
             }
             HBody::Stmts(st) => {
                 // Câu lệnh cuối là biểu thức ⇒ **giữ** giá trị làm kết quả hàm (giống interp).
                 self.nhanh_gia_tri(st)?;
-                self.lift_ret_opt(span); // VD-228: biên hàm `-> T?`
+                self.lift_ret_opt(span)?; // VD-228 (siết VD-241 §3): biên hàm `-> T?`
                 self.f.push(Instr::Return, span, 0);
                 self.net_stack(span)
             }

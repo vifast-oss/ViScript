@@ -361,3 +361,125 @@ fn none_tran_cho_option_la_ok() {
     assert_eq!(a.1, "khong\n");
     assert_eq!(a.1, b.1);
 }
+
+/// **VD-241 §3/T3 (A0, 2026-11-19)** — giá trị `Json` dựng từ code phải encode **giống** decode-rồi-encode,
+/// **cả interp lẫn VM**. Trước fix (lowering ctor enum trần sai — `Arr.Arr` thay vì `Json.Arr`), VM
+/// in `{"variant":"Arr","value":[]}` — lệch byte với interp.
+#[test]
+fn json_encode_owned_value_engine_parity() {
+    let [a, b] = chay_ca_hai(
+        "json_owned",
+        "use std.json\nfn main() -> ():\n    print(json.encode(Arr([])))\n    print(json.encode(Str(\"x\")))\n    print(json.encode(Num(1)))\n    print(json.encode(Obj({\"k\": Num(1)})))\n",
+    );
+    let ky_vong = "[]\n\"x\"\n1\n{\"k\":1}\n";
+    assert_eq!(a.1, ky_vong, "interp phải in kỳ vọng; stderr={}", a.2);
+    assert_eq!(b.1, a.1, "vm lệch byte interp; vm={b:?}");
+}
+
+/// **VD-241 §3/T4 (A0, 2026-11-19)** — escape `\u{…}` trong literal chuỗi phải decode đúng Unicode scalar
+/// và **không** bị nội suy tách `{`. Trước fix, `giai_escape` bỏ qua `\u{…}` ⇒ `u41` (`\u{4e00}` ⇒ `u4`).
+#[test]
+fn escape_unicode_valid_and_validation() {
+    // hợp lệ
+    let [a, b] = chay_ca_hai(
+        "escape_ok",
+        "fn main() -> ():\n    print(\"\\u{41}\")\n    print(\"\\u{4e00}\")\n    print(\"e\\u{0301}\")\n    print(\"\\u{0000}\")\n",
+    );
+    assert_eq!(a.1, "A\n一\ne\u{0301}\n\0\n", "interp: {a:?}");
+    assert_eq!(b.1, a.1, "vm lệch byte; vm={b:?}");
+    let [a2, b2] = chay_ca_hai("escape_short", "fn main() -> ():\n    print(\"\\u{4}\")\n");
+    assert_eq!(
+        a2.1, "\u{4}\n",
+        "interp \u{4} gi (một chữ số hex hợp lệ); {a2:?}"
+    );
+    assert_eq!(b2.1, a2.1, "vm lệch byte; vm={b2:?}");
+
+    // không hợp lệ — cả hai engine đều VS0102, exit 2 (lỗi biên dịch)
+    for (tag, src) in [
+        ("esc_xy", "fn main() -> ():\n    print(\"\\u{XY}\")\n"),
+        ("esc_rng", "fn main() -> ():\n    print(\"\\u{110000}\")\n"),
+    ] {
+        let d = tam(tag);
+        let p = d.join(format!("{tag}.vis"));
+        std::fs::write(
+            &p,
+            format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+        )
+        .expect("ghi tệp tạm");
+        for (i, extra) in [&[][..], &["--vm"][..]].iter().enumerate() {
+            let o = std::process::Command::new(env!("CARGO_BIN_EXE_vis"))
+                .arg("run")
+                .arg("--no-cache")
+                .args(*extra)
+                .arg(&p)
+                .output()
+                .expect("vis run");
+            let err = String::from_utf8_lossy(&o.stderr);
+            assert_eq!(
+                o.status.code().unwrap_or(-1),
+                2,
+                "{tag} engine={i} rc={o:?}"
+            );
+            assert!(
+                err.contains("VS0102"),
+                "{tag} engine={i}: phải chứa VS0102; {err}"
+            );
+        }
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+/// **VD-241 §3/T5 (A0, 2026-11-19)** — `fn main() -> Result[..]: Err(…)` phải thoát **1**;
+/// `Ok(…)` thoát **0**; cả hai engine. (`main -> int` không đổi nghĩa — chưa A0 quyết.)
+#[test]
+fn main_result_err_exits_1_engine_parity() {
+    for (tag, src, mong) in [
+        (
+            "main_err",
+            "use std.json\nfn main() -> Result[int, str]:\n    Err(\"that bai\")\n",
+            1u32,
+        ),
+        (
+            "main_ok",
+            "use std.json\nfn main() -> Result[int, str]:\n    Ok(0)\n",
+            0u32,
+        ),
+        ("main_unit", "fn main() -> ():\n    print(\"h\")\n", 0u32),
+    ] {
+        let d = tam(tag);
+        let p = d.join(format!("{tag}.vis"));
+        std::fs::write(
+            &p,
+            format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+        )
+        .expect("ghi tệp tạm");
+        for (i, extra) in [&[][..], &["--vm"][..]].iter().enumerate() {
+            let o = std::process::Command::new(env!("CARGO_BIN_EXE_vis"))
+                .arg("run")
+                .arg("--no-cache")
+                .args(*extra)
+                .arg(&p)
+                .output()
+                .expect("vis run");
+            let code = o.status.code().unwrap_or(-1);
+            assert_eq!(
+                code as u32,
+                mong,
+                "{tag} engine={i}; stderr={}",
+                String::from_utf8_lossy(&o.stderr)
+            );
+        }
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+/// **VD-241 §3/T4 escape-case trong sem test** — escape trong span nhiều-dòng (`\u{4E00}`) không đổi.
+#[test]
+fn escape_multibyte_order_preserved() {
+    let [a, b] = chay_ca_hai(
+        "esc_mb",
+        "fn main() -> ():\n    print(\"\\u{4e2d}\\u{56fd}\")\n",
+    );
+    assert_eq!(a.1, "中国\n", "interp: {a:?}");
+    assert_eq!(b.1, a.1, "vm lệch byte; vm={b:?}");
+}

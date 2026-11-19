@@ -18,12 +18,56 @@ REPO_ROOT="$VIS_ROOT"
 MANIFEST="$VIS_ROOT/Cargo.toml"
 fails=0
 
+# **VD-241 §3/T6 (A0, 2026-11-19)** — chọn `cargo` đúng luật tái lập, **không** hardcode `~/.cargo/bin`:
+#   1) tôn trọng cargo đang hoạt động của người dùng trên `PATH` (RUSTUP_TOOLCHAIN / override…) cho mọi
+#      trường hợp, **chỉ cần** ≥ `rust-version` của workspace (lấy từ `[workspace.package]` root);
+#   2) không đủ ⇒ thử rustup default ở $HOME/.cargo/bin/cargo;
+#   3) không có ⇒ báo rõ hai ứng viên + yêu cầu, exit 78 (EX_CONFIG).
+# Luôn in ra ai được chọn + yêu cầu bao nhiêu (khái "vis-dev: chọn cargo … (yêu cầu ≥ …)").
+required_rust_version() {
+    grep -m1 -oP '^rust-version\s*=\s*"\K[^"]+' "$VIS_ROOT/Cargo.toml" 2>/dev/null || echo 1.99.1
+}
+semver_of() { "$1" --version 2>/dev/null | head -1 | sed -E 's/.* ([0-9]+\.[0-9]+\.[0-9]+).*/\1/'; }
+rust_ge() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" = "$2" ]; }
+
 find_cargo() {
-    if command -v cargo >/dev/null 2>&1; then command -v cargo; return 0; fi
-    if [ -x "$HOME/.cargo/bin/cargo" ]; then echo "$HOME/.cargo/bin/cargo"; return 0; fi
+    local req active_ver
+    req="$(required_rust_version)"
+    # 1) cargo đang hoạt động trên PATH — tôn trọng cấu hình chủ động.
+    if command -v cargo >/dev/null 2>&1; then
+        active_ver="$(semver_of "$(command -v cargo)")"
+        if [ -n "$active_ver" ] && rust_ge "$active_ver" "$req"; then
+            echo "$(command -v cargo)"
+            return 0
+        fi
+        echo "vis-dev: cargo trên PATH quá cũ ($active_ver; yêu cầu ≥ $req)" >&2
+    fi
+    # 2) rustup default ở $HOME/.cargo/bin/cargo — fallback, không ưu tiên mù.
+    if [ -x "$HOME/.cargo/bin/cargo" ]; then
+        local fbv
+        fbv="$(semver_of "$HOME/.cargo/bin/cargo")"
+        if [ -n "$fbv" ] && rust_ge "$fbv" "$req"; then
+            echo "$HOME/.cargo/bin/cargo"
+            return 0
+        fi
+        echo "vis-dev: $HOME/.cargo/bin/cargo cũng quá cũ ($fbv; yêu cầu ≥ $req)" >&2
+    fi
+    echo "vis-dev: không tìm thấy cargo ≥ $req (yêu cầu của workspace)." >&2
+    echo "         đã thử: (1) cargo trên PATH, (2) \$HOME/.cargo/bin/cargo" >&2
+    echo "         cài rustup và cập nhật: https://rustup.rs — hoặc đặt RUSTUP_TOOLCHAIN=stable" >&2
     return 1
 }
 CARGO="$(find_cargo || true)"
+if [ -n "$CARGO" ]; then
+    # Các bước python bên trong (doc-examples, check_report, fixture) gọi plain `cargo`;
+    # đặt thư mục của cargo được chọn ở **đầu** PATH (nếu chưa có) để cả cây con thấy bản đúng.
+    CARGO_DIR="$(dirname "$CARGO")"
+    case ":$PATH:" in
+        *":$CARGO_DIR:"*) ;;
+        *) export PATH="$CARGO_DIR:$PATH" ;;
+    esac
+    echo "vis-dev: chọn cargo $CARGO ($(semver_of "$CARGO" || true); yêu cầu ≥ $(required_rust_version))" >&2
+fi
 relpath() {
     case "$1" in
         "$VIS_ROOT"/*) printf '%s' "${1#"$VIS_ROOT"/}" ;;

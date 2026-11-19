@@ -49,6 +49,7 @@ pub mod builtin_list;
 mod gan;
 mod host;
 pub mod json;
+pub(crate) mod lift;
 pub mod net;
 pub mod render;
 pub mod rt;
@@ -172,9 +173,10 @@ pub fn run_with_hosts_caps<'a>(
     let steps = it.steps;
     match res {
         Ok(value) => {
+            // **VD-241 §3/T5 (A0, 2026-11-19)** — `Ok`/`Result::Ok` ⇒ `exit_code` (Err ⇒ 1).
             let exit = match &value {
-                Some(Value::Int(i)) => (*i & 0xff) as i32,
-                _ => 0,
+                Some(v) => crate::value::exit_code(v),
+                None => 0,
             };
             RunOutput {
                 stdout,
@@ -187,8 +189,8 @@ pub fn run_with_hosts_caps<'a>(
         Err(interp::Abort::Ret(value)) => RunOutput {
             stdout,
             diagnostics: Vec::new(),
-            value: Some(value),
-            exit: 0,
+            value: Some(value.clone()),
+            exit: crate::value::exit_code(&value),
             steps,
         },
         Err(interp::Abort::Trap(trap)) => RunOutput {

@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-241 §3 (A0, 2026-11-19) — `Some(42)` truyền vào tham số `int??`: lift một lớp ở biên đối số.
+fn g(x: int??) -> int:
+    match x:
+        Some(Some(v)): v
+        Some(v): 1000
+        None: 9999
+
+fn main():
+    print(g(Some(42)))

@@ -528,11 +528,26 @@ impl<'a> Lowerer<'a> {
                     }
                     i = end + 1;
                 }
-                '\\' if !no_escape => {
-                    let (c2, dung) = giai_escape(sau);
-                    chu.push(c2);
-                    i += n + dung;
-                }
+                '\\' if !no_escape => match giai_escape(sau) {
+                    Ok((c2, dung)) => {
+                        chu.push(c2);
+                        i += n + dung;
+                    }
+                    Err(_) => {
+                        let file = self.file;
+                        self.diag(
+                                &vis_diag::CODES[1],
+                                "escape chuỗi không hợp lệ (`\\u{XXXXXX}`?) (§3) — `vis explain VS0102`".to_string(),
+                                Span::new_file(
+                                    file,
+                                    span.start + ngoac + i,
+                                    span.start + ngoac + (i + n),
+                                ),
+                            );
+                        hong = true;
+                        i += n + 1;
+                    }
+                },
                 _ => {
                     chu.push(c);
                     i += n;
@@ -814,9 +829,18 @@ impl<'a> Lowerer<'a> {
                     .find(|(n, _, _)| n == name)
                     .cloned()
                 {
+                    // **VD-241 §3/T3 (A0, 2026-11-19)**: giữ **tên enum** cho `MakeEnum` — VM dựng
+                    // `Value::Enum` đúng tên (ví dụ `Arr`/`Str` ⇒ `Json`), không còn tạo biệt danh
+                    // `Arr.Arr` (trước đây json.encode của VM rơi vào fallback `{"variant":…}`).
+                    let e_path = self
+                        .enum_names
+                        .iter()
+                        .find(|(_, id)| id == &eid)
+                        .map(|(n, _)| n.clone())
+                        .unwrap_or_else(|| name.clone());
                     return HExpr::EnumLit {
                         enum_id: Some(eid),
-                        path: vec![name.clone()],
+                        path: vec![e_path],
                         variant: name.clone(),
                         args,
                         ty: Type::Enum(eid),
@@ -986,20 +1010,39 @@ fn first_known(it: impl Iterator<Item = Type>) -> Type {
 
 /// Giải một escape trong chuỗi (`\n`, `\t`, `\"`, `\\`, `\{`, …) — trả (ký tự, số byte đã dùng
 /// sau dấu `\`).
-fn giai_escape(sau: &str) -> (char, usize) {
+/// **VD-241 §3/T4 (A0, 2026-11-19)** — giải mã escape sa `\`; hợp lệ thì trả `(ký tự, số byte)`,
+/// sai hoặc không-known-escape thì `Err(VS0102)`. Hỗ trợ: `\n \t \r \0 \\ \" \' \{ \} \u{…}`.
+fn giai_escape(sau: &str) -> Result<(char, usize), u16> {
     let mut it = sau.chars();
     match it.next() {
-        Some('n') => ('\n', 1),
-        Some('t') => ('\t', 1),
-        Some('r') => ('\r', 1),
-        Some('0') => ('\0', 1),
-        Some('\\') => ('\\', 1),
-        Some('"') => ('"', 1),
-        Some('\'') => ('\'', 1),
-        Some('{') => ('{', 1),
-        Some('}') => ('}', 1),
-        Some(c) => (c, c.len_utf8()),
-        None => ('\\', 0),
+        Some('n') => Ok(('\n', 1)),
+        Some('t') => Ok(('\t', 1)),
+        Some('r') => Ok(('\r', 1)),
+        Some('0') => Ok(('\0', 1)),
+        Some('\\') => Ok(('\\', 1)),
+        Some('"') => Ok(('"', 1)),
+        Some('\'') => Ok(('\'', 1)),
+        Some('{') => Ok(('{', 1)),
+        Some('}') => Ok(('}', 1)),
+        Some('u') => {
+            // `\u{XXXXXX}` — 1..=6 chữ hex; giá trị phải là Unicode scalar hợp lệ.
+            let rest = &sau[1..];
+            if !rest.starts_with('{') {
+                return Err(102);
+            }
+            let Some(close) = rest.find('}') else {
+                return Err(102);
+            };
+            let hex = &rest[1..close];
+            if hex.is_empty() || hex.len() > 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err(102);
+            }
+            let v = u32::from_str_radix(hex, 16).map_err(|_| 102u16)?;
+            let ch = char::from_u32(v).ok_or(102u16)?;
+            Ok((ch, 1 + 1 + hex.len() + 1)) // 'u' + '{' + hex + '}'
+        }
+        Some(_) => Err(102), // escape không hợp lệ — trùng luật ở lexer (VS0102).
+        None => Err(102),
     }
 }
 

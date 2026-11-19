@@ -209,12 +209,14 @@ fn vd228_s1_exact_repro() {
 
 /// (15) `T??` — `Some(Some(5))` không bọc hai lớp; `None` (ngoài) vẫn phẳng (biên lift).
 #[test]
-fn vd228_double_opt_flat() {
+fn vd228_nested_opt_real() {
+    // **VD-241 §3 (A0, 2026-11-19)** — `T??` là `Option[Option[T]]` thật (không làm phẳng);
+    // `None` trần chỉ ở `T?` — thay cho quy tắc "nhiều lớp" của VD-178 R2 đã bị A0 huỷ.
     let [a, b] = chay_ca_hai(
-        "double_opt",
-        "fn on() -> (int?)?:\n    None\n\nfn two() -> (int?)?:\n    Some(Some(5))\n\nfn main():\n    print(on())\n    print(two())\n",
+        "nested_opt_real",
+        "fn on() -> int??:\n    Some(None)\n\nfn two() -> int??:\n    Some(Some(5))\n\nfn main():\n    print(on())\n    print(two())\n",
     );
-    assert_eq!(a.1, "None\nSome(Some(5))\n");
+    assert_eq!(a.1, "Some(None)\nSome(Some(5))\n");
     assert_eq!(a.1, b.1);
 }
 

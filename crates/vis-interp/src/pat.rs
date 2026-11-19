@@ -38,6 +38,8 @@ impl<'a> Interp<'a> {
                 match v {
                     // **VD-212 (A0)**: `Option`/`Result` là enum thật — cùng luật so khớp biến thể
                     // theo **đúng tên biến thể**, phân biệt hoa thường (VD-212).
+                    // **VD-241 §3 (A0, 2026-11-19)**: pattern khớp **theo cấu trúc giá trị thật** —
+                    // KHÔNG bọc ngầm giá trị trần vào `Option`/`Result` (bỏ luật "match-some trần").
                     Value::Enum(_, variant, vargs) => {
                         if variant != &name {
                             return false;
@@ -49,15 +51,6 @@ impl<'a> Interp<'a> {
                         "false" => !*b,
                         _ => false,
                     },
-                    // `T → T?` nâng **ngầm** ở mức kiểu (ST-12): giá trị chạy có thể là `T` trần,
-                    // nên `some(v)` phải khớp cả giá trị **chưa bọc** (ST-14, ca `optional/match-some`).
-                    other if low == "some" => {
-                        if matches!(other, Value::Unit) {
-                            false
-                        } else {
-                            self.bind_all(args, std::slice::from_ref(other))
-                        }
-                    }
                     _ => false,
                 }
             }
