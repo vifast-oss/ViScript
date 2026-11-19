@@ -193,3 +193,39 @@ fn vd228_closure_ret_lift() {
     assert_eq!(a.1, "some-41\n");
     assert_eq!(a.1, b.1);
 }
+
+/// (14) S1 (§7, VD-232) — repro chính xác `fn f(i: int) -> int?:` thân `if i < 1: 42 else: None`
+/// + `match f(): Some(v) ...` — hai engine in cùng byte.
+#[test]
+fn vd228_s1_exact_repro() {
+    let [a, b] = chay_ca_hai(
+        "s1",
+        "fn f(i: int) -> int?:\n    if i < 1:\n        42\n    else:\n        None\n\nfn main():\n    match f(0):\n        Some(v): print(\"lifted {v}\")\n        None: print(\"none\")\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "lifted 42\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (15) `T??` — `Some(Some(5))` không bọc hai lớp; `None` (ngoài) vẫn phẳng (biên lift).
+#[test]
+fn vd228_double_opt_flat() {
+    let [a, b] = chay_ca_hai(
+        "double_opt",
+        "fn on() -> (int?)?:\n    None\n\nfn two() -> (int?)?:\n    Some(Some(5))\n\nfn main():\n    print(on())\n    print(two())\n",
+    );
+    assert_eq!(a.1, "None\nSome(Some(5))\n");
+    assert_eq!(a.1, b.1);
+}
+
+/// (16) `T??` khớp cả `let`-lift (VD-227): `let v: (int?)? = Some(Some(2))` không bọc đôi.
+#[test]
+fn vd228_nested_let_flat() {
+    let [a, b] = chay_ca_hai(
+        "nested_let",
+        "fn main():\n    let v: (int?)? = Some(Some(2))\n    match v:\n        Some(inner):\n            match inner:\n                Some(n): print(\"nested-{n}\")\n                None: print(\"none-inner\")\n        None: print(\"none-outer\")\n",
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "nested-2\n");
+    assert_eq!(a.1, b.1);
+}
