@@ -25,19 +25,14 @@ fn ghi(d: &Path, ten: &str, src: &str) {
 }
 
 fn uri(d: &Path, ten: &str) -> String {
-    // **VD-241 § fix(Windows/CRLF #psvn-A5)**: form tới `file:///<forward-slashed-path>` (Windows driver).
+    // **VD-241 § fix(Windows/CRLF #psvn-A5)**: on Windows, LSP URIs use forward slashes:
+    //   `C:\Users\ps\foo.vis` → `file:///C:/Users/ps/foo.vis`
+    // Written WITHOUT `#[cfg]` so every platform type-checks the same code (tránh lỗi
+    // "biên dịch được trên Linux nhưng gãy trên Windows" — psvn bắt được ở ba11a90).
     let p = d.join(ten).to_string_lossy().to_string();
-    #[cfg(windows)]
-    {
-        // `C:\Users\...` → `file:///c:/users/...` (driver form `/c:/...` is accepted by uri_thanh_duong).
-        if let Some(rest) = p.strip_prefix(|_| true).ok().map(|_| ()) {
-            let _ = rest;
-        }
-        let s2 = p.replace('\\', "/");
-        format!("file:///{}", s2)
-    }
-    #[cfg(not(windows))]
-    {
+    if std::env::consts::OS == "windows" {
+        format!("file:///{}", p.replace('\\', "/"))
+    } else {
         format!("file://{}", p)
     }
 }

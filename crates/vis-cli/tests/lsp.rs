@@ -684,13 +684,11 @@ fn ds_lsp(out: &str) -> Vec<(String, u32, u32)> {
 fn uri_f(f: &Path) -> String {
     // **VD-241 § fix(Windows/CRLF #psvn-A5)** — form đúng cho Windows (driver letter):
     //   `C:\Users\ps\foo.vis` -> `file:///C:/Users/ps/foo.vis`
+    // Không dùng #[cfg] — mọi nền tảng type-check cùng một đoạn mã.
     let p = f.to_string_lossy().to_string();
-    #[cfg(windows)]
-    {
+    if std::env::consts::OS == "windows" {
         format!("file:///{}", p.replace('\\', "/"))
-    }
-    #[cfg(not(windows))]
-    {
+    } else {
         format!("file://{}", p)
     }
 }
