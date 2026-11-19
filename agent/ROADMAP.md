@@ -281,3 +281,18 @@ phase-1 đóng chính thức trên mac; ST-212 async song song thật (deferred,
 **VD-231 DONE** (`fa4c2d8`), **VD-232 DONE** (`2ee8c1e`), **VD-238 DONE** (`05e42d0`), **VD-235→VD-240** hướng (b) cho phase 2 (test grid, sau đóng pha 1), **VD-239 (a,c,d)** đạt (clone-clean ps tại tag; mac đo đủ; báo cáo sửa 6 mục).
 **VD-186 patch nộp**; pha 2 mở: **VD-240 (b)** `+ VD-156` (trait default cho Error), **#151/#152/#149** giữ.
 **Báo cáo đóng** = `agent/BAO-CAO-A0-2026-11-19-0900.md` §12 (VD-237) + addendum này.
+
+
+### Windows — Tier 2 (2026-11-19, A0, @ `349af67`) — khối thêm, không sửa lịch sử
+
+> Theo quyết định A0 "Windows tier 2 tại `349af67`" (`agent/DECISIONS.md`, block A0 2026-11-19 — Windows Tier 2).
+
+Windows = **Tier 2 — product verified** @ `349af67`: compiler, interpreter, VM, module loading,
+CRLF handling, doc-examples, LSP cơ bản đã kiểm chứng trên máy Windows thật (psvn). `cargo test --workspace`
+**chưa** là cổng bắt buộc trên Windows — **101 ca đỏ / 25 suite** đã phân loại sơ bộ (lớp portability/VS3),
+**chưa** được port và xác nhận độc lập từng ca. Sem 483/483 ×2 (interp, VM); fmt/clippy/R1..R6/
+report-check/build/doc-examples PASS.
+
+- VD "Windows test-suite portability" được mở **sau khi pha 1 đóng chính thức**, base `349af67`.
+- `pha1-rc1` (`05e42d0…`) không bị di chuyển; Tier 1 chỉ sau VD portability + required CI.
+- Windows gate tối thiểu sau VD: formatter/check cần thiết, build, test sản phẩm đa nền tảng, sem ×2, doc-examples, LSP/path fixtures; Unix-only tests không tính trong Windows count.
