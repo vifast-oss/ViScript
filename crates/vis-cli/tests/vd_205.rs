@@ -35,7 +35,7 @@ fn tam(tag: &str) -> PathBuf {
 
 fn chay_ca_hai(tag: &str, src: &str) -> [(u32, String, String); 2] {
     let d = tam(tag);
-    let p = d.join(format!("{tag}.vis"));
+    let p = d.join(format!("{}.vis", tag_sach(tag)));
     std::fs::write(
         &p,
         format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
