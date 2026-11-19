@@ -1136,16 +1136,20 @@ impl<'a> Interp<'a> {
                 let mut args = args;
                 self.field_of(args.pop().expect("Some luôn có một đối số"), name, span)
             }
+            // **Parity interp ↔ VM**: field access trên giá trị `Enum` không được định nghĩa ở
+            // ViScript ⇒ `VS0501`. Ngoại lệ hợp lệ duy nhất: **atom biến thể rỗng** `E.A` —
+            // `E` evaluate về `Enum(en, "", [])` (tag atom marker) và `x.Type` dựng biến thể rỗng.
             Value::Enum(en, variant, args) => {
-                if variant == name {
-                    Ok(Value::Enum(en, variant, args))
-                } else if args.is_empty() {
-                    // `Shape.Empty` — biến thể không đối số.
-                    Ok(Value::Enum(en, name.to_string(), Vec::new()))
+                if variant.is_empty() && args.is_empty() {
+                    Ok(Value::Enum(
+                        en,
+                        name.to_string(),
+                        Vec::new(), /* zero-width */
+                    ))
                 } else {
                     Err(Abort::Trap(Trap::new(
                         RT,
-                        format!("enum không có biến thể `{name}`"),
+                        format!("`{name}` không phải trường"),
                         span,
                     )))
                 }
