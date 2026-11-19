@@ -3,13 +3,13 @@
 > **Agent 2 → A0/Agent 1** · 2026-11-19 · nhánh `rev/vd-sqlite-mvp-2026-11-19` · worktree `sqlite-mvp-2026-11-19`.
 > **Chưa merge `main`, chưa phát hành, chưa tuyên bố Windows/macOS.** Prototype **hoạt động thật** với
 > rusqlite bundled; **API chưa đông băng** (freeze `API-STD.txt` **không** regen — xem §8).
-> Base: branch = `origin/main` `533faf3` + 2 commit (`f673fbf` feat + `e2a16eb` R1 split).
+> Base: branch = `origin/main` `533faf3` + 3 commit (`f673fbf` feat · `e2a16eb` R1 split · `cf763af` wall-clock test + báo cáo).
 
 ## 0. Kết luận nhanh
 
 - **Toàn bộ test workspace xanh, trừ đúng một ca:** `api_dong_bang::api_std_khop_code` — đỏ **theo
   thiết kế Gate 1** (API chưa qua cổng tích hợp; `api_dong_bang.rs` **không** được regen theo lệnh).
-  `api_codes_khop_code` và `api_vbc1_khop_code` (mã chẩn đoán + thẻ VBC1) **xoan/pass** — không đổi ABI.
+  `api_codes_khop_code` và `api_vbc1_khop_code` (mã chẩn đoán + thẻ VBC1) **xanh** — không đổi ABI.
 - `./vis-dev check` **PASS** (fmt/clippy/R1..R6/self-test/doc-examples). `vis test test/sem` và
   `vis test --vm test/sem` = **514/514** (corpus **+27 ca `sqlite/`**; hai engine byte-identical).
 - Fresh-clone gate (clone cục bộ từ nhánh, sạch): cùng trạng thái — `check` PASS; `cargo test --workspace`
@@ -27,7 +27,7 @@ prelude toàn cục ở nghĩa API): `Null` (không field) · `Integer(int)` · 
 `RowSet` = bản ghi dựng sẵn `RecId(1)` (`columns: list[str]`, `rows: list[list[SqlValue]]`).
 
 **Gate theo module (đích lệnh A0 "thuộc module, không prelude"):** tên kiểu `SqlValue`/`RowSet` chỉ thấy
-khỉ tệp đã `use std.sqlite` (`Lowerer::named_type` → `VS0301` nếu không); ctor `SqlValue.Integer(1)` và
+khi tệp đã `use std.sqlite` (`Lowerer::named_type` → `VS0301` nếu không); ctor `SqlValue.Integer(1)` và
 `SqlValue.Null`-dạng-có-đối-số ngoài phạm vi ⇒ lỗi biên dịch; **pattern trên scrutinee `SqlValue` KHÔNG
 gate** (đúng vai trò của pattern — người dùng nhận `RowSet.rows[i][j]` không cần nêu tên kiểu).
 `SqlValue`/`RowSet` nằm trong **danh sách tên dự trữ phạm vi tệp** (như `Json`/`Error`).
