@@ -12,6 +12,37 @@ use std::path::{Path, PathBuf};
 
 use vis_bytecode::{compile, decode, encode};
 
+/// **VD-241 Gate 1** — hạ một tệp với `std_mods` quét từ chính nguồn (`use std.<tên>`), đúng
+/// cách `vis-cli/src/modules.rs` làm: nhờ vậy test/sem chạy được ca `use std.*` (trước Gate 1
+/// không có ca nào). Chỉ nhận module std hợp lệ (`vis_types::stdlib::module_ho_tro`).
+fn pha_std(text: &str) -> Vec<String> {
+    let mut ds = Vec::new();
+    for line in text.lines() {
+        let t = line.trim();
+        let Some(rest) = t.strip_prefix("use ") else {
+            continue;
+        };
+        let mut seg = rest.split('.').map(str::trim);
+        if seg.next() != Some("std") {
+            continue;
+        }
+        let m = seg.next().unwrap_or_default();
+        if vis_types::stdlib::module_ho_tro(m) && !ds.contains(&m.to_string()) {
+            ds.push(m.to_string());
+        }
+    }
+    ds
+}
+
+/// Như [`vis_types::lower`] nhưng nạp `std_mods` quét được (mặc định Permissive giữ nguyên).
+fn ha_std(cst: &vis_syntax::Cst, lex: &vis_syntax::LexOutput, text: &str) -> vis_types::HirOutput {
+    let opts = vis_types::LowerOptions {
+        std_mods: pha_std(text),
+        ..vis_types::LowerOptions::default()
+    };
+    vis_types::lower_with(cst, lex, opts)
+}
+
 fn goc() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../")
 }
@@ -64,7 +95,7 @@ fn bien_dich(p: &Path) -> Result<vis_bytecode::Module, String> {
             .collect::<Vec<_>>()
     );
     let lexed = vis_syntax::lex(&src, mode);
-    let h = vis_types::lower(&parsed.cst, &lexed);
+    let h = ha_std(&parsed.cst, &lexed, &src);
     assert!(
         h.diagnostics.is_empty(),
         "{}: lower phải sạch: {:?}",
@@ -112,7 +143,8 @@ fn roundtrip_tren_toan_bo_323_ca() {
     //   ⇒ **486 ca** (436 `.vis` + 50 `.vish`, **88 `.err`**).
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 xanh `optional/long-option-matrix.vis`
     //   ⇒ **487 ca** (437 `.vis` + 50 `.vish`, **88 `.err`**).
-    assert_eq!(tat_ca.len(), 487, "phải đủ 487 ca (437 .vis + 50 .vish)");
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: 487 → **514** (+27 ca `sqlite/`: 464 `.vis` + 50 `.vish`, 96 `.err`).
+    assert_eq!(tat_ca.len(), 514, "phải đủ 514 ca (464 .vis + 50 .vish)");
     // Ca **cố ý lỗi tĩnh** (có `.err`) không sinh mã — `sem.rs` kiểm chúng bằng chẩn đoán.
     let so_loi = so_ca_loi(&tat_ca);
     let ds: Vec<PathBuf> = tat_ca
@@ -120,7 +152,7 @@ fn roundtrip_tren_toan_bo_323_ca() {
         .filter(|p| !p.with_extension("err").exists())
         .cloned()
         .collect();
-    assert_eq!(ds.len() + so_loi, 487);
+    assert_eq!(ds.len() + so_loi, 514);
     let mut loi = Vec::new();
     let mut tong_lenh = 0usize;
     for p in &ds {
@@ -183,7 +215,7 @@ fn roundtrip_30_golden_bieu_thuc() {
                 .collect::<Vec<_>>()
         );
         let lexed = vis_syntax::lex(&src, vis_syntax::Mode::Script);
-        let h = vis_types::lower(&parsed.cst, &lexed);
+        let h = ha_std(&parsed.cst, &lexed, &src);
         let m = compile(&h.hir, &h.symbols, &src)
             .unwrap_or_else(|e| panic!("golden #{i} `{expr}`: {e}"));
         assert!(m.total_code() > 0);

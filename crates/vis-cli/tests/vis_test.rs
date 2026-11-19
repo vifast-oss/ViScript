@@ -39,7 +39,8 @@ use std::process::Command;
 ///   `long-none-param`, `long-none-return`; đổi `long-reject-e` (`.err`) thành `long-none-e` hợp lệ); 436 `.vis` + 50 `.vish`, **88 `.err`**.
 /// **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: 486 → **487** (+1 ca `optional/long-option-matrix.vis` —
 ///   ma trận sugar/spelled-out/alias × biên let/gán-lại/đối số/thân hàm/return × bảng giá trị A0; sửa runtime coercion); 437 `.vis` + 50 `.vish`, **88 `.err`**.
-const SO_CA: usize = 487;
+/// **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: 487 → **514** (+27 ca `sqlite/`: 19 xanh + 8 lỗi lúc chạy VS0501); 464 `.vis` + 50 `.vish`, **96 `.err`**.
+const SO_CA: usize = 514;
 
 fn vis(args: &[&str]) -> (i32, String, String) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))

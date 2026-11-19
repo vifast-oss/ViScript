@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER, b TEXT)", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (1, 'a')", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (2, 'b')", [])
+            match sqlite.execute(h, "UPDATE t SET b = 'z' WHERE a = ?", [SqlValue.Integer(1)]):
+                Ok(n): print("update {n}")
+                Err(e): print("loi {e.message}")
+            match sqlite.execute(h, "DELETE FROM t WHERE a = ?", [SqlValue.Integer(2)]):
+                Ok(n): print("delete {n}")
+                Err(e): print("loi {e.message}")
+            let _ = sqlite.close(h)

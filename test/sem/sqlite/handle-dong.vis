@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.close(h)
+            match sqlite.execute(h, "SELECT 1", []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("chan {e.message}")

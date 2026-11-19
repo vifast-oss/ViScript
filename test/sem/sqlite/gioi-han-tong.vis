@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# Tổng kết quả > 16 MiB ⇒ `Err`, không trả dữ liệu cắt.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.query(h, "SELECT randomblob(100000) FROM (WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 200) SELECT x FROM c)", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("vuot gioi han tong")
+            let _ = sqlite.close(h)

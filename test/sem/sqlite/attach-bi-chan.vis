@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# Authorizer cài **trước** prepare người dùng — ATTACH/VACUUM/… đều bị từ chối.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.execute(h, "ATTACH '/tmp/xx-khong-duoc.db' AS x", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("attach bi chan")
+            match sqlite.execute(h, "VACUUM INTO '/tmp/xx-khong-duoc.db'", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("vacuum into bi chan")
+            match sqlite.execute(h, "VACUUM", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("vacuum bi chan")
+            match sqlite.execute(h, "PRAGMA user_version=1", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("ghi user_version bi chan")
+            match sqlite.execute(h, "SELECT load_extension('/tmp/khong-duoc.so')", []):
+                Ok(_): print("KHONG DUOC PHU")
+                Err(e): print("load_extension bi chan")
+            let _ = sqlite.close(h)

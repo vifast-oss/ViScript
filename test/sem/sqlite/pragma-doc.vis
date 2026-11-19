@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# PRAGMA chỉ `table_info` và **đọc** `user_version` được phép.
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER)", [])
+            match sqlite.query(h, "PRAGMA table_info(t)", []):
+                Err(e): print("table_info chan {e.message}")
+                Ok(rs): print("table_info ok cot={rs.columns}")
+            match sqlite.query(h, "PRAGMA user_version", []):
+                Err(e): print("user_version chan {e.message}")
+                Ok(rs): print("user_version ok")
+            let _ = sqlite.close(h)

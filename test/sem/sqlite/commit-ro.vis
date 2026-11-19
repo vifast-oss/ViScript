@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER)", [])
+            let _ = sqlite.begin(h)
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (?)", [SqlValue.Integer(7)])
+            let _ = sqlite.commit(h)
+            match sqlite.query(h, "SELECT count(*) FROM t", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            print(cell)
+            let _ = sqlite.close(h)

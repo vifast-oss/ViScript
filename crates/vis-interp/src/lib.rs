@@ -115,7 +115,7 @@ pub fn run(
 
 /// Như [`run`] nhưng gắn **host chương trình ngoài** (ST-27). `None` ⇒ lệnh ngoài ⇒ `VS0604`.
 pub fn run_with_ngoai<'a>(
-    text: &str,
+    text: &'a str,
     hir: &'a Hir,
     symbols: &'a Symbols,
     types: &'a TypeTable,
@@ -126,10 +126,10 @@ pub fn run_with_ngoai<'a>(
 }
 
 /// Như [`run`] nhưng gắn **cả ba** host: chương trình ngoài (ST-27), hệ thống tệp (ST-33) và mạng
-/// (ST-63, VD-105). `None` ở host nào ⇒ tính năng đó ⇒ `VS0604`.
+/// (ST-63, VD-105). `None` ở host nào ⇒ tính năng đó ⇒ `VS0604`. **VD-241**: DB host `None`.
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_hosts<'a>(
-    text: &str,
+    text: &'a str,
     hir: &'a Hir,
     symbols: &'a Symbols,
     types: &'a TypeTable,
@@ -138,14 +138,15 @@ pub fn run_with_hosts<'a>(
     fs: Option<&'a mut dyn crate::builtin::FsHost>,
     net: Option<&'a mut dyn crate::builtin::NetHost>,
 ) -> RunOutput {
-    run_with_hosts_caps(text, hir, symbols, types, args, ngoai, fs, net, &[])
+    run_with_hosts_caps(text, hir, symbols, types, args, ngoai, fs, net, None, &[])
 }
 
 /// **ST-72b (VD-103/VD-106)**: như [`run_with_hosts`] nhưng gắn **giá trị quyền** `cap` cho `main`
 /// (`(chỉ số tham số, giá trị)`); CLI tính từ CST. Đường cũ giữ nguyên chữ ký qua wrapper trên.
+/// **VD-241 (Gate 1)**: nhận thêm **host cơ sở dữ liệu** (`None` ⇒ `std.sqlite.*` ⇒ `VS0604`).
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_hosts_caps<'a>(
-    text: &str,
+    text: &'a str,
     hir: &'a Hir,
     symbols: &'a Symbols,
     types: &'a TypeTable,
@@ -153,6 +154,7 @@ pub fn run_with_hosts_caps<'a>(
     ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
     fs: Option<&'a mut dyn crate::builtin::FsHost>,
     net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     let mut it = interp::Interp::new(hir, symbols, types);
@@ -167,6 +169,9 @@ pub fn run_with_hosts_caps<'a>(
     }
     if let Some(g) = net {
         it.set_net(g);
+    }
+    if let Some(d) = db {
+        it.set_db(d);
     }
     let res = it.run_program(args);
     let stdout = it.take_stdout();

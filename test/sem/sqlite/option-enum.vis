@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+# Chứng minh: enum `SqlValue` dựng sẵn của module, `match` xét hết cả 5 biến thể;
+# hai engine chạy cùng đường (interp + VM).
+fn hien(v: SqlValue) -> str:
+    match v:
+        Null: "null"
+        Integer(n): "int({n})"
+        Real(f): "real"
+        Text(s): "text({s})"
+        Blob(b): "blob({len(b)})"
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER, b REAL, c TEXT, d BLOB, e INTEGER)", [])
+            let _ = sqlite.execute(h, "INSERT INTO t VALUES (?, ?, ?, ?, NULL)", [SqlValue.Integer(42), SqlValue.Real(1.5), SqlValue.Text("abc"), SqlValue.Blob(b"\x01\x02\x03")])
+            match sqlite.query(h, "SELECT a, b, c, d, e FROM t", []):
+                Err(e): print("loi query {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            print(hien(cell))
+            let _ = sqlite.close(h)

@@ -133,6 +133,14 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::Error => "Error".to_string(),
         Ty::Json => "Json".to_string(),
         Ty::ResultJsonErr => "Result[Json, Error]".to_string(),
+        // **VD-241 Gate 1 (2026-11-19)** — variant mới của `std.sqlite` MVP (prototype nội bộ).
+        // CHỈ thêm arm render kiểu này — **không** đổi logic so khớp, **không** regen tệp đóng băng;
+        // `agent/API-STD.txt` giữ nguyên cho tới cổng tích hợp phê duyệt chữ ký (VD-241 §11).
+        Ty::SqlValue => "SqlValue".to_string(),
+        Ty::RowSet => "RowSet".to_string(),
+        Ty::ResultIntErr => "Result[int, Error]".to_string(),
+        Ty::ResultBoolErr => "Result[bool, Error]".to_string(),
+        Ty::ResultRowSetErr => "Result[RowSet, Error]".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
         Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
         Ty::List(t) => format!("list[{}]", kieu_ty(t)),

@@ -7,6 +7,7 @@ use std::process::ExitCode;
 mod audit_span;
 mod cache;
 mod cli;
+mod db;
 mod fsmock;
 mod json_esc;
 mod lsp;
@@ -408,6 +409,31 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             // 256 MiB: đo được ~8 KiB/khung ⇒ 10^4 khung ≈ 80 MiB, còn dư.
             .stack_size(256 * 1024 * 1024)
             .spawn_scoped(scope, || {
+                // ST-33/ST-63/VD-241: `std.fs`/`std.net`/`std.sqlite` đi qua host (chỉ CLI biết OS).
+                // **ST-89 (VD-110)**: `.vish` (trừ `--no-extern`) truyền **cùng** runner Ngoai mà
+                // interp dùng — VM chỉ gọi qua trait, không chạm OS.
+                let mut runner = ngoai::Runner {
+                    giai_thich: explain_perms,
+                    cho_phep_proc: quyen.cho_phep_proc(),
+                    allow_proc: quyen.allow_proc(),
+                    ..ngoai::Runner::default()
+                };
+                let co_ngoai = che_do == vis_syntax::Mode::Command && !co_no_extern;
+                let mut fs_tho = HostFs::tao(explain_perms, fs_mock.as_ref());
+                let mut net_tho = HostNet::moi(explain_perms);
+                let mut db_tho = db::Db::moi(explain_perms);
+                let mut fs = quyen::FsGuard {
+                    trong: &mut fs_tho,
+                    quyen: &quyen,
+                };
+                let mut net = quyen::NetGuard {
+                    trong: &mut net_tho,
+                    quyen: &quyen,
+                };
+                let mut dbg = db::DbGuard {
+                    trong: &mut db_tho,
+                    quyen: &quyen,
+                };
                 let out = if dung_vm {
                     // ST-20: đường **VM** — cùng `Show`/builtin/bảng ngữ nghĩa với interp.
                     // ST-23: cache theo hash closure; **luôn** nạp qua `load_verified`.
@@ -436,26 +462,6 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     if dump {
                         eprintln!("{}", vis_vm::dump::dump(&m));
                     }
-                    // ST-33/ST-63: `std.fs`/`std.net` đi qua host (chỉ CLI biết OS).
-                    // **ST-89 (VD-110)**: `.vish` (trừ `--no-extern`) truyền **cùng** runner Ngoai mà
-                    // interp dùng — VM chỉ gọi qua trait, không chạm OS.
-                    let mut runner = ngoai::Runner {
-                        giai_thich: explain_perms,
-                        cho_phep_proc: quyen.cho_phep_proc(),
-                        allow_proc: quyen.allow_proc(),
-                        ..ngoai::Runner::default()
-                    };
-                    let co_ngoai = che_do == vis_syntax::Mode::Command && !co_no_extern;
-                    let mut fs_tho = HostFs::tao(explain_perms, fs_mock.as_ref());
-                    let mut net_tho = HostNet::moi(explain_perms);
-                    let mut fs = quyen::FsGuard {
-                        trong: &mut fs_tho,
-                        quyen: &quyen,
-                    };
-                    let mut net = quyen::NetGuard {
-                        trong: &mut net_tho,
-                        quyen: &quyen,
-                    };
                     let ngoai_host: Option<&mut dyn vis_interp::builtin::Ngoai> =
                         if co_ngoai { Some(&mut runner) } else { None };
                     vis_vm::run_with_full_hosts_caps(
@@ -465,26 +471,11 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         ngoai_host,
                         Some(&mut fs),
                         Some(&mut net),
+                        Some(&mut dbg),
                         &quyen.gia_tri(),
                     )
-                } else if che_do == vis_syntax::Mode::Command && !co_no_extern {
+                } else if co_ngoai {
                     // ST-27: `.vish` với runner chương trình ngoài (chỉ CLI biết OS).
-                    let mut runner = ngoai::Runner {
-                        giai_thich: explain_perms,
-                        cho_phep_proc: quyen.cho_phep_proc(),
-                        allow_proc: quyen.allow_proc(),
-                        ..ngoai::Runner::default()
-                    };
-                    let mut fs_tho = HostFs::tao(explain_perms, fs_mock.as_ref());
-                    let mut net_tho = HostNet::moi(explain_perms);
-                    let mut fs = quyen::FsGuard {
-                        trong: &mut fs_tho,
-                        quyen: &quyen,
-                    };
-                    let mut net = quyen::NetGuard {
-                        trong: &mut net_tho,
-                        quyen: &quyen,
-                    };
                     vis_interp::run_with_hosts_caps(
                         &text,
                         &h.hir,
@@ -494,20 +485,11 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         Some(&mut runner),
                         Some(&mut fs),
                         Some(&mut net),
+                        Some(&mut dbg),
                         &quyen.gia_tri(),
                     )
                 } else {
                     // ST-33: `.vis` cũng có `std.fs` (không có chương trình ngoài).
-                    let mut fs_tho = HostFs::tao(explain_perms, fs_mock.as_ref());
-                    let mut net_tho = HostNet::moi(explain_perms);
-                    let mut fs = quyen::FsGuard {
-                        trong: &mut fs_tho,
-                        quyen: &quyen,
-                    };
-                    let mut net = quyen::NetGuard {
-                        trong: &mut net_tho,
-                        quyen: &quyen,
-                    };
                     vis_interp::run_with_hosts_caps(
                         &text,
                         &h.hir,
@@ -517,9 +499,18 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         None,
                         Some(&mut fs),
                         Some(&mut net),
+                        Some(&mut dbg),
                         &quyen.gia_tri(),
                     )
                 };
+                // **VD-241 §9**: kết thúc **phiên** Host ⇒ đóng mọi connection còn mở
+                // (**không** auto-commit); rò chỉ cảnh báo ở chế độ diagnostics.
+                let con_mo = vis_interp::builtin::DbHost::db_cleanup(&mut dbg).unwrap_or(0);
+                if explain_perms && con_mo > 0 {
+                    eprintln!(
+                        "SQLITE leak: {con_mo} connection chưa đóng (đã đóng khi kết thúc phiên)"
+                    );
+                }
                 let d: Vec<(String, u32, u32, String)> = out
                     .diagnostics
                     .iter()

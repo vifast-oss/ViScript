@@ -54,6 +54,13 @@ impl crate::builtin::Host for Interp<'_> {
             .map(|n| &mut **n as &mut dyn crate::builtin::NetHost)
     }
 
+    /// **VD-241 (Gate 1)**: host cơ sở dữ liệu của CLI; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
+    fn db(&mut self) -> Option<&mut dyn crate::builtin::DbHost> {
+        self.db
+            .as_mut()
+            .map(|d| &mut **d as &mut dyn crate::builtin::DbHost)
+    }
+
     fn ngoai(
         &mut self,
         ten: &str,

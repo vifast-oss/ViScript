@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.sqlite
+
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.in_transaction(h):
+                Ok(v): print("t0={v}")
+                Err(e): print("loi {e.message}")
+            let _ = sqlite.begin(h)
+            match sqlite.in_transaction(h):
+                Ok(v): print("t1={v}")
+                Err(e): print("loi {e.message}")
+            let _ = sqlite.commit(h)
+            match sqlite.in_transaction(h):
+                Ok(v): print("t2={v}")
+                Err(e): print("loi {e.message}")
+            let _ = sqlite.close(h)

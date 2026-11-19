@@ -60,7 +60,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (ST-65)**: +5 hàm server `std.net.*` (listen, local_addr, accept,
     // accept_timeout, close_listen) ⇒ **50** hàm. Bỏ `net.is_listening` (không cần; 5 hàm vừa đủ).
     // **SỬA KÈM LÝ DO (ST-109)**: +2 hàm `std.http.*` (`http.head`, `http.head_timeout`) ⇒ **52** hàm.
-    assert_eq!(FUNCS.len(), 52, "bảng chữ ký phải đủ 52 hàm");
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: +**9** hàm `std.sqlite.*` (open, open_with, close,
+    //   execute, query, begin, commit, rollback, in_transaction) ⇒ **61** hàm; `MODULES` 9 → **10**
+    //   (thêm `sqlite`). Prototype nội bộ — **không** freeze API (`api_dong_bang` chỉ chỉnh sau
+    //   cổng tích hợp).
+    assert_eq!(FUNCS.len(), 61, "bảng chữ ký phải đủ 61 hàm");
 }
 
 #[test]

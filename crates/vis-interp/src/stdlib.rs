@@ -24,6 +24,13 @@ use crate::value::{eq, Value};
 /// trường**, không phải dữ liệu chương trình).
 pub const DAU_QUYEN: &str = "\u{1}VS0604:";
 
+/// **VD-241 (Gate 1)**: dấu hiệu "lỗi **người gọi**" trong `Err` của host — tầng `std` đổi thành
+/// **trap `VS0501`** (đối số sai: thiếu/thừa bind, multi-statement, SQL > 64 KiB, params > 1_000,
+/// handle lạ/đã đóng, connection > 16/phiên, URI/tên rỗng). Lỗi **dữ liệu** (SQLite từ chối,
+/// authorizer chặn, busy timeout, giới hạn kết quả §6) **không** mang dấu này và chuyển thành
+/// `Err(Error)` dữ liệu.
+pub const DAU_LOI_GOI: &str = "\u{2}VS0501:";
+
 fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
     match r {
         Ok(v) => Ok(Value::ok(v)),
@@ -33,7 +40,14 @@ fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
                 msg.to_string(),
                 span,
             ))),
-            None => Ok(Value::err(Value::ban_ghi_error(e, None))),
+            None => match e.strip_prefix(DAU_LOI_GOI) {
+                Some(msg) => Err(Abort::Trap(Trap::new(
+                    &RUNTIME_CODES[0],
+                    msg.to_string(),
+                    span,
+                ))),
+                None => Ok(Value::err(Value::ban_ghi_error(e, None))),
+            },
         },
     }
 }
@@ -69,7 +83,12 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
         let ok = match t {
             // **ST-58 (VD-94/VD-99)**: biến kiểu / `list[T]` / `map[K,V]` — thân hàm tự kiểm như
             // trước với `Any` (tyck đã chặn **tĩnh** phần lớn; dữ liệu không kiểu vẫn tới đây).
-            Ty::Var(_) | Ty::List(_) | Ty::Map(..) => true,
+            Ty::Var(_) | Ty::Map(..) => true,
+            // **VD-241**: `list[SqlValue]` (params của `std.sqlite`) — kiểm **phần tử** là `SqlValue`.
+            Ty::List(inner) if **inner == Ty::SqlValue => {
+                matches!(a, Value::List(xs) if xs.iter().all(|v| matches!(v, Value::Enum(e, _, _) if e == "SqlValue")))
+            }
+            Ty::List(_) => true,
             Ty::Int => matches!(a, Value::Int(_)),
             Ty::Str => matches!(a, Value::Str(_)),
             Ty::Bool => matches!(a, Value::Bool(_)),
@@ -77,7 +96,7 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
                 matches!(a, Value::List(xs) if xs.iter().all(|v| matches!(v, Value::Str(_))))
             }
             Ty::FnKhoa => matches!(a, Value::Fn(_) | Value::Vm(_) | Value::Builtin(_)),
-            // ST-33: `std.fs` trả `Result[..]` — kiểu **trả**, không dùng để kiểm đối số.
+            // **ST-33: `std.fs` trả `Result[..]` — kiểu **trả**, không dùng để kiểm đối số.
             // **VD-222**: `Error`/`Json`/`Result[Json, Error]` — kiểu **trả** của `std.*` (lỗi/JSON),
             // không dùng để kiểm đối số người dùng; runtime giữ nguyên **tín hiệu** như trước.
             Ty::ResultStrStr
@@ -86,7 +105,14 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             | Ty::ResultHead
             | Ty::ResultJsonErr
             | Ty::Error
-            | Ty::Json => true,
+            | Ty::Json
+            // **VD-241 (Gate 1)**: `Result[RowSet, Error]` cũng là kiểu **trả** của `std.sqlite.query`.
+            | Ty::ResultIntErr
+            | Ty::ResultBoolErr
+            | Ty::ResultRowSetErr => true,
+            // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
+            Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
+            Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),
         };
         if !ok {
             return Err(loi(
@@ -542,6 +568,80 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 ])
             });
             hop_nhat_fs(kq, span)
+        }
+        // ----- std.sqlite (VD-241, Gate 1) — **chỉ qua `Host::db`**, không backend trong crate này.
+        // Thiếu host ⇒ `VS0604`; lỗi **người gọi** (host đánh dấu [`DAU_LOI_GOI`]) ⇒ trap `VS0501`;
+        // còn lại (authorizer/lỗi SQLite/giới hạn) ⇒ `Err(Error)` dữ liệu. -----
+        "sqlite.open" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            // Mặc định `create = true` (A0 I); busy mặc định 5 s (hữu hạn ≤ 60 s host kẹp).
+            hop_nhat_fs(host.db_open(p, true, 5_000).map(Value::Str), span)
+        }
+        "sqlite.open_with" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let Value::Bool(create) = &args[1] else {
+                return Err(loi(
+                    format!("`{name}`: đối số 2 cần `bool`, được `{}`", args[1].show()),
+                    span,
+                ));
+            };
+            let busy = so(name, &args[2], 2, span)?;
+            let create = *create;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_open(p, create, busy).map(Value::Str), span)
+        }
+        "sqlite.close" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_close(h).map(|()| Value::Unit), span)
+        }
+        "sqlite.execute" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let sql = chuoi(name, &args[1], 1, span)?;
+            let params = danh_sach(name, &args[2], 2, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_execute(h, sql, params).map(Value::Int), span)
+        }
+        "sqlite.query" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let sql = chuoi(name, &args[1], 1, span)?;
+            let params = danh_sach(name, &args[2], 2, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            match host.db_query(h, sql, params) {
+                Ok((columns, rows)) => {
+                    let columns = Value::List(columns.into_iter().map(Value::Str).collect());
+                    let rows = Value::List(rows.into_iter().map(Value::List).collect());
+                    Ok(Value::ok(Value::Record(
+                        "RowSet".into(),
+                        vec![("columns".into(), columns), ("rows".into(), rows)],
+                    )))
+                }
+                Err(e) => hop_nhat_fs(Err(e), span),
+            }
+        }
+        "sqlite.begin" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_execute(h, "BEGIN", &[]).map(|_| Value::Unit), span)
+        }
+        "sqlite.commit" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_execute(h, "COMMIT", &[]).map(|_| Value::Unit), span)
+        }
+        "sqlite.rollback" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                host.db_execute(h, "ROLLBACK", &[]).map(|_| Value::Unit),
+                span,
+            )
+        }
+        "sqlite.in_transaction" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_in_transaction(h).map(Value::Bool), span)
         }
         other => Err(loi(
             format!("`std.{other}` chưa cài (bảng chữ ký có nhưng tầng chạy thiếu)"),

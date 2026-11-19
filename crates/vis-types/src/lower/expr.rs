@@ -808,6 +808,17 @@ impl<'a> Lowerer<'a> {
             HExpr::Var { name, .. } => {
                 // **R11 (VD-178)**: `U(n: 1)` — dựng bản ghi theo **tên kiểu**.
                 if !named.is_empty() {
+                    if name == "RowSet" && !self.sqlite_duoc_thay() {
+                        // **VD-241**: `RowSet` thuộc module `std.sqlite` — dựng ngoài phạm vi ⇒
+                        // lỗi biên dịch rõ ràng, không âm thầm thành tên lạ.
+                        self.diag(
+                            &NAME_CODES[0],
+                            "không thấy tên `RowSet`: module `std.sqlite` chưa được `use`"
+                                .to_string(),
+                            span,
+                        );
+                        return HExpr::Error { span };
+                    }
                     if let Some((_, rid)) = self.rec_names.iter().find(|(n, _)| n == name).cloned()
                     {
                         // **R5a (VD-178)**: trường **thiếu** lấy **giá trị mặc định** của khai báo.
@@ -863,23 +874,31 @@ impl<'a> Lowerer<'a> {
                     .find(|(n, _, _)| n == name)
                     .cloned()
                 {
-                    // **VD-241 §3/T3 (A0, 2026-11-19)**: giữ **tên enum** cho `MakeEnum` — VM dựng
-                    // `Value::Enum` đúng tên (ví dụ `Arr`/`Str` ⇒ `Json`), không còn tạo biệt danh
-                    // `Arr.Arr` (trước đây json.encode của VM rơi vào fallback `{"variant":…}`).
-                    let e_path = self
-                        .enum_names
-                        .iter()
-                        .find(|(_, id)| id == &eid)
-                        .map(|(n, _)| n.clone())
-                        .unwrap_or_else(|| name.clone());
-                    return HExpr::EnumLit {
-                        enum_id: Some(eid),
-                        path: vec![e_path],
-                        variant: name.clone(),
-                        args,
-                        ty: Type::Enum(eid),
-                        span,
-                    };
+                    // **VD-241**: ctor dựng sẵn của enum `SqlValue` (thuộc module `std.sqlite`)
+                    // ngoài phạm vi `use std.sqlite` ⇒ **không** phân giải thành biến thể — rơi
+                    // qua đường gọi hàm (báo lỗi tên), tránh âm thầm tạo `SqlValue` "miễn phí".
+                    let la_sqlvalue = self.sqlvalue_id() == Some(eid);
+                    if la_sqlvalue && !self.sqlite_duoc_thay() {
+                        // rơi xuống nhánh gọi hàm thường
+                    } else {
+                        // **VD-241 §3/T3 (A0, 2026-11-19)**: giữ **tên enum** cho `MakeEnum` — VM dựng
+                        // `Value::Enum` đúng tên (ví dụ `Arr`/`Str` ⇒ `Json`), không còn tạo biệt danh
+                        // `Arr.Arr` (trước đây json.encode của VM rơi vào fallback `{"variant":…}`).
+                        let e_path = self
+                            .enum_names
+                            .iter()
+                            .find(|(_, id)| id == &eid)
+                            .map(|(n, _)| n.clone())
+                            .unwrap_or_else(|| name.clone());
+                        return HExpr::EnumLit {
+                            enum_id: Some(eid),
+                            path: vec![e_path],
+                            variant: name.clone(),
+                            args,
+                            ty: Type::Enum(eid),
+                            span,
+                        };
+                    }
                 }
             }
             HExpr::Field {
@@ -898,6 +917,16 @@ impl<'a> Lowerer<'a> {
                         .find(|(n, _)| n == enum_name)
                         .cloned()
                     {
+                        // **VD-241**: ctor có tiền tố `SqlValue.` ngoài `use std.sqlite` ⇒ từ chối.
+                        if enum_name == "SqlValue" && !self.sqlite_duoc_thay() {
+                            self.diag(
+                                &NAME_CODES[0],
+                                "không thấy tên `SqlValue`: module `std.sqlite` chưa được `use`"
+                                    .to_string(),
+                                span,
+                            );
+                            return HExpr::Error { span };
+                        }
                         return HExpr::EnumLit {
                             enum_id: Some(eid),
                             path: vec![enum_name.clone()],

@@ -16,6 +16,37 @@ use std::path::PathBuf;
 
 use vis_bytecode::{decode, encode, need_stack, verify, Module};
 
+/// **VD-241 Gate 1** — hạ một tệp với `std_mods` quét từ chính nguồn (`use std.<tên>`), đúng
+/// cách `vis-cli/src/modules.rs` làm: nhờ vậy test/sem chạy được ca `use std.*` (trước Gate 1
+/// không có ca nào). Chỉ nhận module std hợp lệ (`vis_types::stdlib::module_ho_tro`).
+fn pha_std(text: &str) -> Vec<String> {
+    let mut ds = Vec::new();
+    for line in text.lines() {
+        let t = line.trim();
+        let Some(rest) = t.strip_prefix("use ") else {
+            continue;
+        };
+        let mut seg = rest.split('.').map(str::trim);
+        if seg.next() != Some("std") {
+            continue;
+        }
+        let m = seg.next().unwrap_or_default();
+        if vis_types::stdlib::module_ho_tro(m) && !ds.contains(&m.to_string()) {
+            ds.push(m.to_string());
+        }
+    }
+    ds
+}
+
+/// Như [`vis_types::lower`] nhưng nạp `std_mods` quét được (mặc định Permissive giữ nguyên).
+fn ha_std(cst: &vis_syntax::Cst, lex: &vis_syntax::LexOutput, text: &str) -> vis_types::HirOutput {
+    let opts = vis_types::LowerOptions {
+        std_mods: pha_std(text),
+        ..vis_types::LowerOptions::default()
+    };
+    vis_types::lower_with(cst, lex, opts)
+}
+
 /// Số phút fuzz (mặc định ngắn để cổng nhanh; 10 phút cho log ST-21).
 fn so_phut() -> f64 {
     std::env::var("VBC_FUZZ_PHUT")
@@ -77,7 +108,7 @@ fn module_goc() -> Vec<(String, Vec<u8>)> {
         };
         let parsed = vis_syntax::parse(&text, mode);
         let lexed = vis_syntax::lex(&text, mode);
-        let h = vis_types::lower(&parsed.cst, &lexed);
+        let h = ha_std(&parsed.cst, &lexed, &text);
         if let Ok(m) = vis_bytecode::compile(&h.hir, &h.symbols, &text) {
             ds.push((text, encode(&m)));
         }
@@ -164,10 +195,11 @@ fn than_fuzz() {
     //   lỗi biên dịch, +4 xanh: `long-none-e` + `none-three-states` + `long-none-param` + `long-none-return`).
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: **399** (487 ca − 88 `.err`,
     //   +1 xanh `optional/long-option-matrix.vis`).
+    // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: **418** (514 ca − 96 `.err`: +19 `sqlite/*` xanh).
     assert_eq!(
         goc.len(),
-        399,
-        "phải đủ 399 module nguồn (ST-41: 487 ca − 88 `.err`)"
+        418,
+        "phải đủ 418 module nguồn (ST-41: 514 ca − 96 `.err`)"
     );
     let phut = so_phut();
     let bat_dau = std::time::Instant::now();
