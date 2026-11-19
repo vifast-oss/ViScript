@@ -201,8 +201,8 @@ fn co_pkg_va_khai_du_cap_thi_chay() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\nuse pkg.http\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    print(fs.exists(\"{}/a.txt\"))\n    print(http_version())\n",
-            r.display().to_string().replace('\\', "/").to_string().replace('\\', "/"),
-            r.display().to_string().replace('\\', "/").to_string().replace('\\', "/")
+            r.display().to_string().replace('\\', "/"),
+            r.display().to_string().replace('\\', "/")
         ),
     );
     let (c, out, err) = ca(&d, &[], "f.vis");
