@@ -1,7 +1,10 @@
 # Thiết kế ST-212 (VS3-QĐ-1) — hai hướng, Agent 0 chọn (2026-11-19)
 
 **Người ghi**: Agent 1 · **Ngày**: 2026-11-19 (~10:30) · **Trạng thái**: **CHỈ TÀI LIỆU — KHÔNG merge mã**
-**Quyết định**: **VD-235** (Agent 0, 2026-11-19) — ST-212 chuyển sang **pha 2**. Đây là bản thiết kế **để A0 chốt hướng**.
+**Quyết định — VD-240 (Agent 0, 2026-11-19)**: **chọn hướng (b)** — giữ một luồng + test grid,
+~0,5–1 ngày, làm **sau** khi pha 1 đóng chính thức. Hướng (a) để sang pha sau; nếu mở lại sẽ ưu tiên
+deep-copy/byte-serialize qua kênh (đúng VD-178 QĐ-1), **không** chuyển `Value` sang `Arc+Mutex`
+(chưa phải quyết định cuối). **Quyết định trước đó**: VD-235 (chuyển pha 2) ⇒ ST-212 sang pha 2. Đây là bản thiết kế lưu lại cả hai hướng.
 **Ngân sách**: ~3 h, chỉ tài liệu; không refactor code ngoài `docs`.
 **Mục tiêu ST-212**: `async fn` + `spawn` chạy **song song thật** (nhiều luồng), thay vì scheduler một luồng run-to-completion hiện tại.
 
