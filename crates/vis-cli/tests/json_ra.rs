@@ -32,7 +32,7 @@ fn vis(args: &[&str]) -> (i32, String, String) {
         .expect("chạy vis");
     (
         o.status.code().unwrap_or(-1),
-        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n"),
         String::from_utf8_lossy(&o.stderr).to_string(),
     )
 }

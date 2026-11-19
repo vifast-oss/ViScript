@@ -29,7 +29,7 @@ fn vis(args: &[&str]) -> (i32, String, String) {
         .expect("vis");
     (
         o.status.code().unwrap_or(-1),
-        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n"),
         String::from_utf8_lossy(&o.stderr).to_string(),
     )
 }
@@ -44,7 +44,7 @@ fn parse_json(json: &str) -> String {
             r#"import json,sys
 d=json.load(sys.stdin)
 for f in d["files"]:
-    n=f["file"].rsplit("/",1)[-1]
+    n=f["file"].replace("\\", "/").rsplit("/",1)[-1]
     ds=f["diagnostics"]
     if ds:
         x=ds[0]
@@ -64,7 +64,7 @@ for f in d["files"]:
         "python3: {}",
         String::from_utf8_lossy(&o.stderr)
     );
-    String::from_utf8_lossy(&o.stdout).to_string()
+    String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n")
 }
 
 fn check_json(d: &Path) -> String {
@@ -135,7 +135,7 @@ fn tap_dung_tep() {
             .expect("vis");
         (
             o.status.code().unwrap_or(-1),
-            String::from_utf8_lossy(&o.stdout).to_string(),
+            String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n"),
             String::from_utf8_lossy(&o.stderr).to_string(),
         )
     };
@@ -156,7 +156,7 @@ fn tap_dung_tep() {
             .expect("vis");
         (
             o.status.code().unwrap_or(-1),
-            String::from_utf8_lossy(&o.stdout).to_string(),
+            String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n"),
             String::from_utf8_lossy(&o.stderr).to_string(),
         )
     };
