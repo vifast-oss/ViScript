@@ -125,8 +125,10 @@ pub fn tao_kenh(host: &mut dyn Host, cap: i64, span: Span) -> R<Value> {
             span,
         )));
     }
-    // **ST-94 (VD-112)**: capacity 0 (rendezvous) **không thể** trên scheduler một luồng; literal `0`
-    // đã bị tyck chặn `VS0505` (exit 2). Đường **động** (`let n = 0`) cũng phải **từ chối**, không treo.
+    // **ST-94 (VD-112)**: capacity 0 (rendezvous) **không thể** trên scheduler một luồng.
+    // tyck **không** kiểm `cap` (VD-154 (c)): `kiem_chan_new` chỉ đòi `n` là `int`; `VS0505` là
+    // **runtime** trap (exit 1) kể cả với literal `chan[T](0)` — đường **động** (`let n = 0`) cũng
+    // **từ chối** tại đây, không treo. Bảng mã: `VS0505` UNCLASSIFIED ở `interp.rs`/VM (vd. test/kenh_cap0.rs).
     if cap == 0 {
         return Err(Abort::Trap(Trap::new(
             crate::interp::DEADLOCK,

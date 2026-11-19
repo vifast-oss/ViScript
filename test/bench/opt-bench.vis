@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# #152 opt-bench (VD-204 (5)) — đo trước/sau enum-hoá Option/Result.
+# 100 000 vòng `map.get` + `??`; cùng một chương trình chạy trên hai binary:
+#   A = 7c256df (trước enum-hoá Option/Result)
+#   B = HEAD    (sau enum-hoá)
+# Kết quả tham chiếu cả hai: 38995450 (10 * sum((i%79)*10 for i in 0..99999)).
+var m: map[str, int] = {}
+for i in 0..79:
+    m["{i}"] = i * 10
+var tong = 0
+for i in 0..100000:
+    var k = i % 79
+    tong = tong + (m.get("{k}") ?? 0)
+print(tong)
