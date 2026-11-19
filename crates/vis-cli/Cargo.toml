@@ -10,6 +10,11 @@ license.workspace = true
 name = "vis"
 path = "src/main.rs"
 
+# **VD-PO-Windows-portability** — test helper binary emulating POSIX tools `echo/cat/grep/printf/true/false/sleep/sh`
+[[bin]]
+name = "test-child"
+path = "src/bin/test_child.rs"
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
