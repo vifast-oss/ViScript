@@ -1904,3 +1904,16 @@ Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính ch�
 ### 2026-11-19 (chiều muộn) — ghi nhận tổng kết (Agent 2; không phải ratify)
 
 - 2026-11-19 (chiều muộn) — SQLite blockers xong + pending freeze (8fd5134); psvn native build trong check; CSV join program đang được viết; macOS verify pending (máy bận); Windows re-verify done @ 2c006af; RFC typed serialization cần A0 ratify; B-3, Windows portability, Tier 1 — chưa mở.
+
+### Quyết định Agent 0 · 2026-11-20 (phiên 2026-11-20, uỷ quyền "tự làm agent0 quyết định") — ghi nhận, không mở phạm vi
+
+**Người quyết định**: Agent 0 (qua uỷ quyền trực tiếp trong phiên của người dùng).
+**Mốc dữ liệu mọi quyết định**: HEAD `c12979f` (docs SYNC, 2026-11-20); Windows verify exit 0 @ `c7cef71`/`2d93101`/`5f4edd7`; Linux gate PASS ×3; nightly PASS @ `4cae3e3` (fuzz 19,073,168 ca, vi phạm 0); fresh-clone gate PASS @ `701d86e` + `4e2bdde`; report-check PASS (30 báo cáo / 243 hàng); `pha1-rc1` `05e42d0…` nguyên vẹn; **freeze** (+9 `std.sqlite.*`) nguyên vẹn.
+
+1. **VD-winport (Windows test-suite portability) = DONE kỹ thu"** — Windows verify **exit 0** toàn workspace @ `c7cef71` / `2d93101` / `5f4edd7` (150 khối `test result: ok`, 0 failed). **Tier 2 giữ nguyên**; Tier 1 **không tuyên bố** (cần VD riêng + required CI Windows + runner).
+2. **macOS verify không thực hiện được ở phiên này** — `vis-remote mac --check` báo `nhan: Linux 7.0.0-43-generic x86_64 / Ubuntu 26.04.1` (mapping `mac ⇒ bash -s LOCAL`); **không có máy Darwin/arm64** ở phiên này; "gate macOS" ghi ở DEM/JOURNAL phiên trước là chạy trên **chính máy Linux này**. — **Không tuyên bố macOS**; giữ nguyên "chưa verify; không kết luận" ở tài liệu hiện trạng; lịch sử giữ nguyên.
+3. **#146 (TOCTOU)** — đã gỡ bởi ST-174/VD-176 (`symlink_metadata`, `quyen.rs:540–541`, không đổi kỳ vọng/ngưỡng/test); BLOCKED §6 cũ về mặt kỹ thuật đã lỗi thời nhưng **giữ nguyên lịch sử** theo VD-142.
+4. **Pha 2: KHÔNG mở trong phiên này** — cần A0/VD riêng + thiết kế; **RFC Typed Serialization: KHÔNG ratify** — tài liệu RFC hiện ghi "SUPERSEDED" (2026-11-19 ~20:30) và nằm ở `(PA-A/PA-B, §3-C, §3-D, §11-A..L)` muôn; **B-3 (module/impl propagation + bound generic): KHÔNG mở** — scope lớn, cần VD riêng; **#147-mac / #152-vế-mac**: máy không có — hoãn; **`#149`**: giữ nguyên (audit đã ghi, sửa khi đụng tệp); **`#151` / VS3**: không mở; **Windows Tier 1**: không tuyên bố.
+5. **Freeze (`api_dong_bang.rs`, `API-STD*.txt`, `API-CODES.txt`, `API-VBC1.txt`, `docs/SPEC-lex.md`) KHÔNG đổi** — narrow freeze `+9 std.sqlite.*` là giới hạn đã A0 phê duyệt; không mở rộng.
+6. **Fresh-clone gate**: ghi nhận PASS tại `401d86e` (clone `/home/ps/.tmp-clone-gate/verify`, gate toàn L0 xanh) và `4e2bdde` (clone `verify` sau HEAD bump — kết quả PASS).
+7. **Phạm vi quyết định**: các quyết định 1–6 chỉ ghi nhận hiện trạng đã đo trong phiên; không thay đổi sản phẩm/ngữ nghĩa/golden/ngưỡng/freeze/API. **Không mở pha 2; không mở B-3; không thay đổi API; không tuyên bố nền không đo được.**
