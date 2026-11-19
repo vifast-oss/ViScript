@@ -6,6 +6,20 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Đường dẫn **dùng `/`** — Windows chấp nhận cả hai. Trên Unix giữ nguyên `\`
+/// (ký tự hợp lệ hợp đồng của tên tệp, vd. `a"b\c.vis`).
+fn ps(p: &Path) -> String {
+    let s = p.display().to_string();
+    #[cfg(windows)]
+    {
+        s.replace('\\', "/")
+    }
+    #[cfg(not(windows))]
+    {
+        s
+    }
+}
+
 fn tam(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static DEM: AtomicUsize = AtomicUsize::new(0);
@@ -38,7 +52,8 @@ fn vis(args: &[&str]) -> (i32, String, String) {
 }
 
 fn ca_test(d: &Path, them: &[&str]) -> (i32, String, String) {
-    let mut args = vec!["test", "--json", d.to_str().unwrap()];
+    let dp = ps(d);
+    let mut args = vec!["test", "--json", dp.as_str()];
     args.extend_from_slice(them);
     vis(&args)
 }
@@ -48,8 +63,8 @@ fn ca_test(d: &Path, them: &[&str]) -> (i32, String, String) {
 fn check_json_tep_sach() {
     let d = tam("sach");
     let p = ghi(&d, "a.vis", "fn main():\n    print(1)\n");
-    let f = p.to_str().unwrap();
-    let (c, o, e) = vis(&["check", "--json", f]);
+    let f = ps(&p);
+    let (c, o, e) = vis(&["check", "--json", &f]);
     assert_eq!(c, 0, "{e}");
     assert_eq!(e, "");
     assert_eq!(
@@ -68,8 +83,8 @@ fn check_json_hai_loi() {
         "b.vis",
         "fn main():\n    let x: int = \"s\"\n    let y: str = 1\n",
     );
-    let f = p.to_str().unwrap();
-    let (c, o, e) = vis(&["check", "--json", f]);
+    let f = ps(&p);
+    let (c, o, e) = vis(&["check", "--json", &f]);
     assert_eq!(c, 1, "{e}");
     assert_eq!(e, "");
     assert_eq!(o.matches(r#""code":"VS0412""#).count(), 2, "{o}");
@@ -86,12 +101,8 @@ fn check_json_ba_tep_dung_thu_tu() {
     let a = ghi(&d, "a.vis", "fn main():\n    print(1)\n");
     let b = ghi(&d, "b.vis", "fn main():\n    let x: int = \"s\"\n");
     let c = ghi(&d, "c.vis", "fn main():\n    print(2)\n");
-    let (f1, f2, f3) = (
-        a.to_str().unwrap(),
-        b.to_str().unwrap(),
-        c.to_str().unwrap(),
-    );
-    let (ma, o, e) = vis(&["check", "--json", f1, f2, f3]);
+    let (f1, f2, f3) = (ps(&a), ps(&b), ps(&c));
+    let (ma, o, e) = vis(&["check", "--json", &f1, &f2, &f3]);
     assert_eq!(ma, 1, "{e}");
     assert_eq!(e, "");
     let i1 = o.find(&format!("\"file\":\"{f1}\"")).expect("thiếu f1");
@@ -145,7 +156,8 @@ fn khong_json_tap_nguyen_ven() {
     ghi(&d, "c.vis", "test fn c():\n    assert 1 == 1\n");
     let mong =
         "TAP version 13\n1..3\nok 1 - a\nnot ok 2 - b\n# b:5:1: VS0501 assert thất bại\nok 3 - c\n";
-    let (ma, o, e) = vis(&["test", d.to_str().unwrap()]);
+    let dp = ps(&d);
+    let (ma, o, e) = vis(&["test", &dp]);
     assert_eq!(ma, 1, "{e}");
     assert_eq!(e, "");
     assert_eq!(o, mong);
@@ -171,23 +183,25 @@ fn py_json(code: &str, input: &str) -> String {
         "python3 lỗi: {}",
         String::from_utf8_lossy(&o.stderr)
     );
-    String::from_utf8_lossy(&o.stdout).to_string()
+    String::from_utf8_lossy(&o.stdout).replace("\r\n", "\n")
 }
 
-/// (g) `check --json` với **tên tệp chứa `"` và `\`** ⇒ JSON parse được, `file` khôi phục đúng,
+/// (g) `check --json` với **tên tệp chứa ký tự lạ** ⇒ JSON parse được, `file` khôi phục đúng,
 /// đúng **2** tệp + **1** chẩn đoán; không phá `files` order.
+/// Windows không cho `"`/`\` trong tên tệp ⇒ dùng bộ ký tự lạ hợp lệ trên mọi HĐH.
 #[test]
 fn check_json_ten_tep_dac_biet_parse_duoc() {
     let d = tam("ten-db");
     let sach = ghi(&d, "sach.vis", "fn main():\n    print(1)\n");
+    // Unix: `"` + `\`. Windows: `&`, dấu cách, ngoặc — hợp lệ, vẫn cùng hợp đồng JSON escaping.
+    #[cfg(unix)]
     let ten = "a\"b\\c.vis";
+    #[cfg(windows)]
+    let ten = "a&b c(d) - e$f.vis";
     let db = ghi(&d, ten, "fn main():\n    let x: int = \"s\"\n");
-    let (ma, o, e) = vis(&[
-        "check",
-        "--json",
-        sach.to_str().unwrap(),
-        db.to_str().unwrap(),
-    ]);
+    let sp = ps(&sach);
+    let bp = ps(&db);
+    let (ma, o, e) = vis(&["check", "--json", &sp, &bp]);
     assert_eq!(ma, 1, "{e}");
     assert_eq!(e, "");
     let code = r#"import json,sys
@@ -198,7 +212,7 @@ print(len(d["files"][1]["diagnostics"]))
 print(d["files"][1]["diagnostics"][0]["code"])"#;
     let out = py_json(code, &o);
     let dong: Vec<&str> = out.lines().collect();
-    assert_eq!(dong[0], db.to_str().unwrap(), "file phải khôi phục đúng");
+    assert_eq!(dong[0], bp, "file phải khôi phục đúng");
     assert_eq!(dong[1], "2");
     assert_eq!(dong[2], "1");
     assert_eq!(dong[3], "VS0412");
@@ -210,7 +224,8 @@ print(d["files"][1]["diagnostics"][0]["code"])"#;
 fn test_json_ten_tieng_viet() {
     let d = tam("ten-viet");
     ghi(&d, "v.vis", "test fn kiểm_tra():\n    assert 1 == 1\n");
-    let (ma, o, e) = vis(&["test", "--json", d.to_str().unwrap()]);
+    let dp = ps(&d);
+    let (ma, o, e) = vis(&["test", "--json", &dp]);
     assert_eq!(ma, 0, "{e}");
     assert_eq!(e, "");
     let code = r#"import json,sys
@@ -232,15 +247,16 @@ fn check_json_loi_trong_tep_phu() {
     let d = tam("phu");
     let a = ghi(&d, "a.vis", "use ./b\nprint(1)\n");
     ghi(&d, "b.vis", "fn f() -> int:\n    return \"s\"\n");
-    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    let ap = ps(&a);
+    let (c, o, e) = vis(&["check", "--json", &ap]);
     assert_eq!(c, 1, "{e}");
     assert_eq!(e, "");
     let code = r#"import json,sys
 d=json.load(sys.stdin)
 print(len(d["files"]))
-print(d["files"][0]["file"].rsplit("/",1)[-1])
+print(d["files"][0]["file"].replace("\\","/").rsplit("/",1)[-1])
 print(len(d["files"][0]["diagnostics"]))
-print(d["files"][1]["file"].rsplit("/",1)[-1])
+print(d["files"][1]["file"].replace("\\","/").rsplit("/",1)[-1])
 print(d["files"][1]["diagnostics"][0]["code"])
 print(d["files"][1]["diagnostics"][0]["severity"])
 print(d["files"][1]["diagnostics"][0]["line"], d["files"][1]["diagnostics"][0]["col"])"#;
@@ -259,14 +275,15 @@ fn check_json_loi_hai_tep() {
     let d = tam("hai-phu");
     let a = ghi(&d, "a.vis", "use ./b\nfn main():\n    let x: int = \"s\"\n");
     ghi(&d, "b.vis", "fn f() -> int:\n    return \"t\"\n");
-    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    let ap = ps(&a);
+    let (c, o, e) = vis(&["check", "--json", &ap]);
     assert_eq!(c, 1, "{e}");
     let code = r#"import json,sys
 d=json.load(sys.stdin)
 fs=d["files"]
 print(len(fs))
-print(fs[0]["file"].rsplit("/",1)[-1], len(fs[0]["diagnostics"]))
-print(fs[1]["file"].rsplit("/",1)[-1], len(fs[1]["diagnostics"]))
+print(fs[0]["file"].replace("\\","/").rsplit("/",1)[-1], len(fs[0]["diagnostics"]))
+print(fs[1]["file"].replace("\\","/").rsplit("/",1)[-1], len(fs[1]["diagnostics"]))
 print(fs[0]["diagnostics"][0]["severity"], fs[1]["diagnostics"][0]["severity"])"#;
     let out = py_json(code, &o);
     assert_eq!(out, "2\na.vis 1\nb.vis 1\nerror error\n");
@@ -278,7 +295,8 @@ print(fs[0]["diagnostics"][0]["severity"], fs[1]["diagnostics"][0]["severity"])"
 fn check_json_severity_error() {
     let d = tam("severity");
     let a = ghi(&d, "a.vis", "fn main():\n    let x: int = \"s\"\n");
-    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    let ap = ps(&a);
+    let (c, o, e) = vis(&["check", "--json", &ap]);
     assert_eq!(c, 1, "{e}");
     assert!(o.contains(r#""severity":"error""#), "{o}");
     let _ = std::fs::remove_dir_all(&d);
@@ -289,7 +307,8 @@ fn check_json_severity_error() {
 fn check_json_severity_warning_tab() {
     let d = tam("canh-bao");
     let a = ghi(&d, "t.vish", "cmd x:\n\tprint(1)\n");
-    let (c, o, e) = vis(&["check", "--json", a.to_str().unwrap()]);
+    let ap = ps(&a);
+    let (c, o, e) = vis(&["check", "--json", &ap]);
     assert_eq!(c, 1, "{e}");
     let code = r#"import json,sys
 d=json.load(sys.stdin)
@@ -305,8 +324,8 @@ print(x["code"], x["severity"], x["line"], x["col"])"#;
 fn check_json_khong_co_tap_khong_doi() {
     let d = tam("tap-check");
     let a = ghi(&d, "a.vis", "fn main():\n    let x: int = \"s\"\n");
-    let f = a.to_str().unwrap();
-    let (c, o, e) = vis(&["check", f]);
+    let f = ps(&a);
+    let (c, o, e) = vis(&["check", &f]);
     assert_eq!(c, 1, "{e}");
     assert_eq!(e, "");
     let mong = format!(

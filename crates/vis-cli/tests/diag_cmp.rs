@@ -87,7 +87,7 @@ struct ChanDoan {
 /// thành ký tự thật để so **ngữ nghĩa**, không so cách hiển thị.
 ///
 /// `check` in TAP với `` `\n` `` (escape), `run` in **xuống dòng thật**; `\t`/`\\` tương tự.
-
+///
 /// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
 fn path_voi_tc() -> std::ffi::OsString {
     let tc = std::path::Path::new(env!("CARGO_BIN_EXE_test-child"));
