@@ -375,3 +375,30 @@ fn main():
     assert_eq!(out, "Integer(7)\n");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// Wall clock 5 s mỗi câu SQL (hợp đồng VD-241 §6) — `progress_handler` ngắt cứng. Chậm ~5 s.
+#[test]
+fn gioi_han_thoi_gian_5s_bi_ngat() {
+    let d = tam("wallclock");
+    let src = r#"use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.query(h, "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 1000000000) SELECT count(*) FROM c", []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("dung: {e.message}")
+            let _ = sqlite.close(h)
+"#;
+    let p = ghi(&d, "wallclock", src);
+    let t0 = std::time::Instant::now();
+    let (code, out, err) = chay(&p, false, false);
+    let dt = t0.elapsed();
+    assert_eq!(code, 0, "{err}");
+    assert!(
+        out.contains("interrupted"),
+        "query dài phải bị ngắt ở 5 s, được: {out}"
+    );
+    assert!(dt < std::time::Duration::from_secs(30), "quá lâu: {dt:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}
