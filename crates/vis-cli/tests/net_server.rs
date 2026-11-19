@@ -221,6 +221,7 @@ fn server_hai_ket_noi_lien_tiep() {
     let _k = kho();
     let d = tam("hai-ket-noi");
     let src = |duong: &str| {
+        let duong = &duong.replace('\\', "/");
         format!(
             "use std.net\n\
              use std.fs\n\
