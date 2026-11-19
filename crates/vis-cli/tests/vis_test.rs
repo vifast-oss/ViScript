@@ -33,7 +33,8 @@ use std::process::Command;
 /// **SỬA KÈM LÝ DO (R20b, VD-178)**: 463 → **464** (+`list/duyet-nang-cao`).
 /// **SỬA KÈM LÝ DO (R19b, VD-178)**: 464 → **465** (+`loi/doi-dau-tran` VS0507).
 /// **SỬA KÈM LÝ DO (R2, VD-178)**: 465 → **469** (+`optional/{int-qhap-gan, map-get-lot, t-qhap-generic}` + `loi/none-bo`).
-const SO_CA: usize = 469;
+/// **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: 469 → **473** (+4 ca grid `async/grid-*`, 423 `.vis` + 50 `.vish`).
+const SO_CA: usize = 473;
 
 fn vis(args: &[&str]) -> (i32, String, String) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))

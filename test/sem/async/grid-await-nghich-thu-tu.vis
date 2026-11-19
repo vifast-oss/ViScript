@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-240 (b) grid: await **ngược** thứ tự spawn — task được chạy khi **await** (run-to-completion
+# một luồng), thứ tự thực hiện quyết định bởi **thứ tự await**, không phải thứ tự spawn.
+async fn in_so(n: int) -> int:
+    print("task {n}")
+    n
+
+fn main() -> ():
+    let a = spawn in_so(1)
+    let b = spawn in_so(2)
+    print("main")
+    print(await b)
+    print(await a)

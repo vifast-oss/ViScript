@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-240 (b) grid: **list qua kênh** — Chan[list[int]] truyền len được gửi nguyên khối; nhận và
+# in từng phần tử; cả hai engine byte-identical.
+async fn gui(c: Chan[list[int]]) -> ():
+    let _ = c.send([3, 4, 5])
+
+fn main() -> ():
+    let c = chan[list[int]](1)
+    let t = spawn gui(c)
+    let _ = await t
+    match c.recv():
+        Some(xs):
+            print(len(xs))
+            print(xs[0])
+            print(xs[1])
+            print(xs[2])
+        None: print("het")

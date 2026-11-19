@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-240 (b) grid: `await` bên trong **nhánh if** — nhánh được chọn mới chạy task.
+async fn binh_phuong(n: int) -> int:
+    n * n
+
+fn main() -> ():
+    var goi = true
+    let t = binh_phuong(7)
+    if goi:
+        print(await t)
+    else:
+        print("skip")

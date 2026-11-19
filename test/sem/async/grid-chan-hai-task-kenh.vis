@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VD-240 (b) grid: **một kênh, hai task** — Chan truyền vào task (như tham số), cap đủ lớn cho
+# không chặn (không `VS0505`). Thứ tự `recv` đúng thứ tự spawn (FIFO), cả hai engine byte-identical.
+async fn gui(c: Chan[int], n: int) -> ():
+    let _ = c.send(n * 10)
+
+fn main() -> ():
+    let c = chan[int](2)
+    let a = spawn gui(c, 1)
+    let b = spawn gui(c, 2)
+    let _ = await a
+    let _ = await b
+    match c.recv():
+        Some(v): print(v)
+        None: print("het")
+    match c.recv():
+        Some(v): print(v)
+        None: print("het")
