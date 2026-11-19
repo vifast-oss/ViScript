@@ -63,8 +63,8 @@ fn exists_ngoai_quyen_trap() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    print(fs.exists(\"{}\"))\n",
-            r.display(),
-            ngoai.display()
+            r.display().to_string().replace('\\', "/"),
+            ngoai.display().to_string().replace('\\', "/")
         ),
     );
     let (c, out, err) = ca(&d, &[]);
@@ -89,9 +89,9 @@ fn exists_trong_quyen_tra_bool() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    print(fs.exists(\"{}/a.txt\"))\n    print(fs.exists(\"{}/khong.txt\"))\n",
-            r.display(),
-            r.display(),
-            r.display()
+            r.display().to_string().replace('\\', "/"),
+            r.display().to_string().replace('\\', "/"),
+            r.display().to_string().replace('\\', "/")
         ),
     );
     let (c, out, err) = ca(&d, &[]);

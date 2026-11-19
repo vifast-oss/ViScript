@@ -273,8 +273,8 @@ fn fs_write_read_round_trip() {
         "rw",
         &format!(
             "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"xin chào\"):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"err\")\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"err\")\n",
-            p.display(),
-            p.display()
+            p.display().to_string().replace('\\', "/"),
+            p.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "w\nxin chào\n");
@@ -292,9 +292,9 @@ fn fs_exists_va_read_thieu_la_err() {
         "ex",
         &format!(
             "use std.fs\nfn main() -> ():\n    print(fs.exists(\"{}\"))\n    print(fs.exists(\"{}\"))\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(\"ok\")\n        Err(e):\n            print(\"err\")\n",
-            p.display(),
-            thieu.display(),
-            thieu.display()
+            p.display().to_string().replace('\\', "/"),
+            thieu.display().to_string().replace('\\', "/"),
+            thieu.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "true\nfalse\nerr\n");
@@ -315,7 +315,7 @@ fn fs_list_sap_xep_khong_de_quy() {
         "ls",
         &format!(
             "use std.fs\nfn main() -> ():\n    match fs.list(\"{}\"):\n        Ok(xs):\n            for x in xs:\n                print(x)\n        Err(e):\n            print(\"err\")\n",
-            d.display()
+            d.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "a.txt\nb.txt\nc.txt\nsub\n");
@@ -332,7 +332,7 @@ fn fs_ghi_vao_duong_dan_sai_la_err() {
         "bad",
         &format!(
             "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        Ok(_):\n            print(\"ok\")\n        Err(e):\n            print(\"err\")\n",
-            p.display()
+            p.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "err\n");
@@ -348,8 +348,8 @@ fn fs_duong_dan_tuyet_doi_duoc_phep() {
         "abs",
         &format!(
             "use std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"y\"):\n        Ok(_):\n            print(fs.exists(\"{}\"))\n        Err(e):\n            print(\"err\")\n",
-            p.display(),
-            p.display()
+            p.display().to_string().replace('\\', "/"),
+            p.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "true\n");
@@ -365,7 +365,7 @@ fn explain_perms_in_fs_nhat_ky() {
         &tep,
         format!(
             "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.fs\nfn main() -> ():\n    match fs.write(\"{}\", \"x\"):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"err\")\n",
-            p.display()
+            p.display().to_string().replace('\\', "/")
         ),
     )
     .expect("ghi");
@@ -438,7 +438,7 @@ fn differential_fs_va_json_khop_hai_duong() {
         "diff",
         &format!(
             "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.write(\"{}\", \"[1, 2]\", ):\n        Ok(_):\n            print(\"w\")\n        Err(e):\n            print(\"e\")\n",
-            p.display()
+            p.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o, "w\n");
@@ -448,7 +448,7 @@ fn differential_fs_va_json_khop_hai_duong() {
         "diff2",
         &format!(
             "use std.fs\nuse std.json\nfn main() -> ():\n    match fs.read(\"{}\"):\n        Ok(s):\n            match json.decode(s):\n                Ok(v):\n                    print(json.encode(v))\n                Err(e):\n                    print(\"je\")\n        Err(e):\n            print(\"fe\")\n",
-            p.display()
+            p.display().to_string().replace('\\', "/")
         ),
     );
     assert_eq!(o2, "[1,2]\n");

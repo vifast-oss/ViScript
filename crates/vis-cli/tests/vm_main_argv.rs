@@ -102,7 +102,7 @@ fn argv_dau_cap_sau() {
         "h",
         &format!(
             "use std.fs\n\nfn main(args: list[str], d: cap[Dir] @ p\"{r}\"):\n    print(args)\n    match fs.read(\"{r}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            r = root.display()
+            r = root.display().to_string().replace('\\', "/").to_string().replace('\\', "/")
         ),
     );
     assert_eq!(

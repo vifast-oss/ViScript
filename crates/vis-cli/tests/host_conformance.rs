@@ -12,6 +12,18 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+/// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
+fn path_voi_tc() -> std::ffi::OsString {
+    let tc = std::path::Path::new(env!("CARGO_BIN_EXE_test-child"));
+    let mut muc: Vec<std::path::PathBuf> =
+        vec![tc.parent().expect("test-child parent").to_path_buf()];
+    let cur = std::env::var_os("PATH").unwrap_or_default();
+    for p in std::env::split_paths(&cur) {
+        muc.push(p);
+    }
+    std::env::join_paths(muc).expect("join PATH")
+}
+
 fn suite_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test/host")
 }
@@ -90,6 +102,7 @@ fn chay_mot(d: &Path, src: &str, duoi: &str, flags: &[String], vm: bool) -> (i32
     let ten = format!("c.{}", duoi);
     std::fs::write(d.join(&ten), src).expect("ghi chương trình");
     let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    c.env("PATH", path_voi_tc());
     c.current_dir(d).arg("run");
     if vm {
         c.arg("--vm").arg("--no-cache");

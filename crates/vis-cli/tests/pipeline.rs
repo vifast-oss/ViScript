@@ -11,6 +11,18 @@ use std::process::Command;
 
 const TC: &str = env!("CARGO_BIN_EXE_test-child");
 
+/// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
+fn path_voi_tc() -> std::ffi::OsString {
+    let tc = std::path::Path::new(env!("CARGO_BIN_EXE_test-child"));
+    let mut muc: Vec<std::path::PathBuf> =
+        vec![tc.parent().expect("test-child parent").to_path_buf()];
+    let cur = std::env::var_os("PATH").unwrap_or_default();
+    for p in std::env::split_paths(&cur) {
+        muc.push(p);
+    }
+    std::env::join_paths(muc).expect("join PATH")
+}
+
 fn goc() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../")
 }
@@ -38,6 +50,7 @@ fn chay(d: &std::path::Path, tag: &str, src: &str, env: &[(&str, &str)]) -> (i32
     )
     .expect("ghi");
     let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    c.env("PATH", path_voi_tc());
     c.arg("run").arg(&p);
     for (k, v) in env {
         c.env(k, v);
@@ -260,6 +273,7 @@ fn fixture_vish_trong_test_cmd_pipe() {
     ] {
         let p = goc().join("test/cmd/pipe").join(format!("{ten}.vish"));
         let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+            .env("PATH", path_voi_tc())
             .arg("run")
             .arg(&p)
             .output()
@@ -291,11 +305,13 @@ fn vm_co_host_chay_cung_interp() {
     )
     .expect("ghi");
     let interp = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .env("PATH", path_voi_tc())
         .arg("run")
         .arg(&p)
         .output()
         .expect("chạy interp");
     let vm = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .env("PATH", path_voi_tc())
         .args(["run", "--vm", "--no-cache"])
         .arg(&p)
         .output()

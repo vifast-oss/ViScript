@@ -62,8 +62,8 @@ fn doc_trong_quyen() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            root.display(),
-            root.display()
+            root.display().to_string().replace('\\', "/"),
+            root.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -83,8 +83,8 @@ fn doc_ngoai_quyen() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            root.display(),
-            root.display()
+            root.display().to_string().replace('\\', "/"),
+            root.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -105,8 +105,8 @@ fn ghi_thieu_co() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match fs.write(\"{}/b.txt\", \"x\"):\n        Ok(_):\n            print(\"GHI\")\n        Err(e):\n            print(\"ERR\")\n",
-            root.display(),
-            root.display()
+            root.display().to_string().replace('\\', "/"),
+            root.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -126,9 +126,9 @@ fn ghi_co_co() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(r: cap[Dir] @ p\"{}\" (write)):\n    match fs.write(\"{}/b.txt\", \"noi dung\"):\n        Ok(_):\n            match fs.read(\"{}/b.txt\"):\n                Ok(s):\n                    print(s)\n                Err(e):\n                    print(\"ERR-DOC\")\n        Err(e):\n            print(\"ERR-GHI\")\n",
-            root.display(),
-            root.display(),
-            root.display()
+            root.display().to_string().replace('\\', "/"),
+            root.display().to_string().replace('\\', "/"),
+            root.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -147,7 +147,7 @@ fn khong_khai_cap_thi_khong_han_che() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main():\n    match fs.read(\"{}\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            ngoai.display()
+            ngoai.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -169,12 +169,12 @@ fn grant_doi_duong_dan() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/b.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            a.display(),
-            b.display(),
-            a.display()
+            a.display().to_string().replace('\\', "/"),
+            b.display().to_string().replace('\\', "/"),
+            a.display().to_string().replace('\\', "/")
         ),
     );
-    let grant = format!("d={}", b.display());
+    let grant = format!("d={}", b.display().to_string().replace('\\', "/"));
     let (r1, _r2) = ca(&d, &["--grant", &grant]);
     assert_eq!(r1.0, 2, "stderr: {}", r1.2);
     assert!(r1.2.contains("VS0604"), "stderr: {}", r1.2);
@@ -192,7 +192,7 @@ fn net_thieu_cap() {
         &d.join("f.vis"),
         &format!(
             "use std.net\n\nfn main(r: cap[Dir] @ p\"{}\"):\n    match net.connect(\"127.0.0.1:1\"):\n        Ok(h):\n            print(\"NOI\")\n        Err(e):\n            print(\"ERR\")\n",
-            root.display()
+            root.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);
@@ -215,11 +215,11 @@ fn hai_cap_dir() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(a: cap[Dir] @ p\"{}\", b: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-A\")\n    match fs.read(\"{}/b.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-B\")\n    match fs.read(\"{}/ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR-NGOAI\")\n",
-            a.display(),
-            b.display(),
-            a.display(),
-            b.display(),
-            d.display()
+            a.display().to_string().replace('\\', "/"),
+            b.display().to_string().replace('\\', "/"),
+            a.display().to_string().replace('\\', "/"),
+            b.display().to_string().replace('\\', "/"),
+            d.display().to_string().replace('\\', "/")
         ),
     );
     let (r1, _r2) = ca(&d, &[]);

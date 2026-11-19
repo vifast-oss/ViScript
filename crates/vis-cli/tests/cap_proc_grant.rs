@@ -34,13 +34,15 @@ fn chay_env(d: &Path, ten: &str, args: &[&str], vm: bool, path_prepend: Option<&
     if vm {
         c.arg("--vm");
     }
-    let tc_host_path = std::path::Path::new(TC);
-    let prepend = match path_prepend {
-        Some(p) => format!("{}:{}", p, tc_host_path.parent().unwrap().to_str().unwrap()),
-        None => tc_host_path.parent().unwrap().to_str().unwrap().to_string(),
-    };
-    let full_path = format!("{}:{}", prepend, std::env::var("PATH").unwrap_or_default());
-    c.env("PATH", full_path);
+    let tc_parent = std::path::Path::new(TC).parent().unwrap().to_path_buf();
+    let mut muc: Vec<std::path::PathBuf> = vec![tc_parent];
+    if let Some(p) = path_prepend {
+        muc.push(std::path::PathBuf::from(p));
+    }
+    for p in std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()) {
+        muc.push(p);
+    }
+    c.env("PATH", std::env::join_paths(muc).expect("join PATH"));
     c.args(args).arg(ten);
     let o = c.output().expect("chạy vis");
     (
@@ -126,14 +128,17 @@ fn grant_basename_echo_chay() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (d) **không** grant ⇒ không giới hạn: `{TC} grep` chạy được (tương thích).
+/// (d) **không** grant ⇒ không giới hạn: `test-child grep` chạy được (tương thích).
 #[test]
 fn khong_grant_khong_gioi_han() {
     let d = tam("d");
+    let etc = d.join("hosts.txt");
+    std::fs::write(&etc, "127.0.0.1 localhost\n::1 localhost\n").expect("ghi");
+    let etc_s = etc.display().to_string().replace('\\', "/");
     let r = ca(
         &d,
         "d.vish",
-        &vish(&format!("{} grep -E \"^\" /etc/hosts", TC)),
+        &vish(&format!("test-child grep -E \"^\" {etc_s}")),
         &["--strict-caps"],
     );
     assert_eq!(r.0, 0, "{r:?}");

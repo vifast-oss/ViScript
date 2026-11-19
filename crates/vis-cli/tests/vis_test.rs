@@ -45,11 +45,22 @@ use std::process::Command;
 ///   475 `.vis` + 50 `.vish`, **88 `.err`**.
 const SO_CA: usize = 525;
 
+/// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
+fn path_voi_tc() -> std::ffi::OsString {
+    let tc = std::path::Path::new(env!("CARGO_BIN_EXE_test-child"));
+    let mut muc: Vec<std::path::PathBuf> =
+        vec![tc.parent().expect("test-child parent").to_path_buf()];
+    let cur = std::env::var_os("PATH").unwrap_or_default();
+    for p in std::env::split_paths(&cur) {
+        muc.push(p);
+    }
+    std::env::join_paths(muc).expect("join PATH")
+}
+
 fn vis(args: &[&str]) -> (i32, String, String) {
-    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
-        .args(args)
-        .output()
-        .expect("chạy `vis test`");
+    let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    c.env("PATH", path_voi_tc());
+    let o = c.args(args).output().expect("chạy `vis test`");
     (
         o.status.code().unwrap_or(-1),
         String::from_utf8_lossy(&o.stdout).to_string(),

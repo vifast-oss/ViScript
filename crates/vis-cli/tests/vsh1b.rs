@@ -154,7 +154,10 @@ fn long_tren_thu_muc_that() {
     let (c, o, e) = chay(
         &d,
         "l",
-        &format!("ls {} --long\n", sub.display()),
+        &format!(
+            "ls {} --long\n",
+            sub.display().to_string().replace('\\', "/")
+        ),
         None,
         false,
     );

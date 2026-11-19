@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-/bin/echo x | /usr/bin/grep z | complete
+test-child echo x | test-child grep z | complete

@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-/usr/bin/printf "x" | /bin/cat
+test-child printf "x" | test-child cat

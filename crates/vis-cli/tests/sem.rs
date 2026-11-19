@@ -14,6 +14,19 @@ use std::process::Command;
 
 /// Bỏ **dòng SPDX đầu** của tệp kỳ vọng (QD §9.3 yêu cầu SPDX cho mọi tệp văn bản); phần còn lại
 /// vẫn được so **từng byte** với stdout.
+
+/// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
+fn path_voi_tc() -> std::ffi::OsString {
+    let tc = std::path::Path::new(env!("CARGO_BIN_EXE_test-child"));
+    let mut muc: Vec<std::path::PathBuf> =
+        vec![tc.parent().expect("test-child parent").to_path_buf()];
+    let cur = std::env::var_os("PATH").unwrap_or_default();
+    for p in std::env::split_paths(&cur) {
+        muc.push(p);
+    }
+    std::env::join_paths(muc).expect("join PATH")
+}
+
 fn boc_spdx(t: &str) -> String {
     match t.strip_prefix("# SPDX-License-Identifier") {
         Some(rest) => match rest.find('\n') {
@@ -238,6 +251,7 @@ fn sem_323_ca_qua_binary() {
     let mut sai = Vec::new();
     for c in &ds {
         let res = Command::new(vis())
+            .env("PATH", path_voi_tc())
             .arg("run")
             .arg("--tap")
             .arg(&c.vis)

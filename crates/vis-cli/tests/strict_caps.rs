@@ -91,8 +91,8 @@ fn strict_cap_dir_trong_root() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/a.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            r.display(),
-            r.display()
+            r.display().to_string().replace('\\', "/"),
+            r.display().to_string().replace('\\', "/")
         ),
     );
     let (c, out, err) = ca(&d, &["--strict-caps"]);
@@ -113,8 +113,8 @@ fn strict_cap_dir_ngoai_root() {
         &d.join("f.vis"),
         &format!(
             "use std.fs\n\nfn main(d: cap[Dir] @ p\"{}\"):\n    match fs.read(\"{}/../ngoai.txt\"):\n        Ok(s):\n            print(s)\n        Err(e):\n            print(\"ERR\")\n",
-            r.display(),
-            r.display()
+            r.display().to_string().replace('\\', "/"),
+            r.display().to_string().replace('\\', "/")
         ),
     );
     let (c, out, err) = ca(&d, &["--strict-caps"]);
