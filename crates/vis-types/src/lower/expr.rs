@@ -818,7 +818,10 @@ impl<'a> Lowerer<'a> {
                             if !seen.insert(n.clone()) {
                                 self.diag(
                                     &vis_diag::TYPE_CODES[4],
-                                    format!("trường `{}` xuất hiện nhiều lần trên bản ghi `{}`", n, name),
+                                    format!(
+                                        "trường `{}` xuất hiện nhiều lần trên bản ghi `{}`",
+                                        n, name
+                                    ),
                                     span,
                                 );
                                 return HExpr::Error { span };
@@ -836,7 +839,10 @@ impl<'a> Lowerer<'a> {
                                         // **VD-241 §6/B-B (A0, 2026-11-19)**: trường bắt buộc thiếu ⇒ lỗi tĩnh.
                                         self.diag(
                                             &vis_diag::TYPE_CODES[4],
-                                            format!("thiếu trường bắt buộc `{}` của bản ghi `{}`", f.name, name),
+                                            format!(
+                                                "thiếu trường bắt buộc `{}` của bản ghi `{}`",
+                                                f.name, name
+                                            ),
                                             span,
                                         );
                                         return HExpr::Error { span };
