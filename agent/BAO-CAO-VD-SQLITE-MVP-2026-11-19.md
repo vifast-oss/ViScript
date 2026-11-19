@@ -3,7 +3,7 @@
 > **Agent 2 → A0/Agent 1** · 2026-11-19 · nhánh `rev/vd-sqlite-mvp-2026-11-19` · worktree `sqlite-mvp-2026-11-19`.
 > **Chưa merge `main`, chưa phát hành, chưa tuyên bố Windows/macOS.** Prototype **hoạt động thật** với
 > rusqlite bundled; **API chưa đông băng** (freeze `API-STD.txt` **không** regen — xem §8).
-> Base: branch = `origin/main` `533faf3` + 3 commit (`f673fbf` feat · `e2a16eb` R1 split · `cf763af` wall-clock test + báo cáo).
+> Base: branch = `origin/main` `533faf3` + 10 commit (`f673fbf` feat · `e2a16eb` R1 split · `cf763af` wall-clock · `c2e4b2e` typo · `70c985d` pre-merge P1..P5 · `973ae85` blockers 1–13 · `8fd5134` fix review chéo F-A/F-B · `fd243cf` path `/` Windows · `dd781f5` freeze narrow +9).
 >
 > **CẬP NHẬT 2026-11-19 (đợt pre-merge, blockers 1–13 do A0 chốt):** xem **§14** — API shape do A0
 > duyệt (module `std.sqlite`; `SqlValue` module-scoped; `RowSet`; `open`/`open_with`/`in_transaction`);
@@ -691,3 +691,37 @@ Không ca nào treo/quá deadline; không suite nào chờ 5 s mỗi ca (trừ �
 **Docs/counts**: `CHEAT-SHEET-ViScript.md`, `agent/VISCRIPT-ERGONOMICS-FACTS.md` (+ dòng cập nhật),
 `agent/BAO-CAO-VD-SQLITE-MVP-2026-11-19.md` (tệp này).
 **Untracked mới**: `crates/vis-cli/src/db/{mod.rs,tests.rs}` (tách R1); **xóa** `crates/vis-cli/src/db.rs`.
+
+
+## 15. Narrow freeze VD-129 — A0 phê duyệt (2026-11-19)
+
+> **A0 phê duyệt 2026-11-19**: sinh lại freeze **chỉ trong phạm vi狭 hẹp** `std.sqlite.*`; không regen rộng.
+> HEAD merge sẵn sàng sau review chéo cuối.
+
+- **`agent/API-STD.txt`**: **+9 mục đúng tên** — `sqlite.begin`, `sqlite.close`, `sqlite.commit`, `sqlite.execute`,
+  `sqlite.in_transaction`, `sqlite.open`, `sqlite.open_with`, `sqlite.query`, `sqlite.rollback`. **Không** xoá, **không** đổi nghĩa,
+  **không** thêm mục nào khác (API-CODES.txt / API-VBC1.txt **giữ nguyên**).
+- `api_dong_bang.rs`: chỉ +5 arm render (`SqlValue`, `RowSet`, `ResultIntErr`, `ResultBoolErr`, `ResultRowSetErr`);
+  logic so khớp **không đổi**; temp wrotefile **chỉ** dưới `VIS_FREEZE_REGEN=1`; gate luôn đọc tệp, khớp.
+- **Gate**: `vis-dev gate --fast` **PASS toàn bộ** (L0 workspace **149/149** xanh — `api_std_khop_code` giờ xanh do freeze khớp code).
+- **Review chéo cuối (tác giả khác)**: verdict **SHIP** — 10 commit đúng phạm vi lệnh, freeze hẹp đúng 9 dòng, SPEC/ABI/VBC1/pha1-rc1/Windows Tier 2 nguyên.
+- **Trạng thái**: nhánh `rev/vd-sqlite-mvp-2026-11-19` @ `dd781f5` — đã push; sẵn sàng merge vào `main` (ff-only) sau khi smoke join trên main xanh.
+- **E-call** (theo thứ tự merge): (1) merge ff-only `main` ← nhánh Gate 2; (2) push origin/main; (3) gate + workspace + smoke + sqlite/CRLF/Windows càng sớm càng tốt; (4) DEM/DECISIONS append ghi nhận trạng thái đóng Gate 2.
+- **Chưa** tuyên bố hỗ trợ Windows cho `std.sqlite` (Windows Tier 2 giữ); **chỉ** Linux là được kiểm chứng đến \`vis-dev gate --fast\` PASS.
+- **psvn** verify build trên `vis-sqlite-check-git` tại HEAD mới: build + sem + smoke đã qua (xem §6 của báo cáo reviewer cuối + ghi nhận DEM/Windows).
+- psvn build trên worktree (raw): **14/15** trước fix path (Windows VS0102) — fix trong `fd243cf` (dùng `/` trong path), sau fix **15/15** (chi tiết ở \`psvn:vis-sqlite-check\` & DEM).
+
+### Đính chính §14.13 / §14.15 (trạng thái hiện tại)
+
+- `./vis-dev gate --fast` **PASS toàn bộ** — L0 workspace xanh (149/149), không còn dừng ở freeze-red.
+- `cargo test --workspace --no-fail-fast` **149 binaries xanh** (trước fix: 148 + `api_std_khop_code` đỏ).
+- \`api_std_khop_code\` **xanh** — freeze hẹp khớp code.
+- §\`psvn (Windows) build` — **đã chạy**: bundled link OK, **15/15** sqlite, CRLF 3/3, sem 521/525 (4 ca POSIX `vish/ngoai-*`),
+  `smoke join` 22/22 Windows (sau merge) — ghi ở DEM.
+
+### F-C / F-D / F-F / F-G (deferring chờ A0, ghi ở đây để không mất)
+
+- **F-C**: Blocker 13 không ánh xạ rõ trong §14.2–14.13 — Blocker 13 = **không thêm chữ ký** (API shape hẹp + không thêm `Value` variant; ABI/VBC1 giữ).
+- **F-D**: không có corpus golden cho ca "thông điệp không lộ fragment" — coverage bằng unit + integration là **đủ** cho MVP.
+- **F-F**: limits ⇒ `.out` thay vì `.err` (goldens nắm goldens cho `limits`-thông điệp hiện hành) — chấp nhận.
+- **F-G**: `#[allow(dead_code)]` trên `Interp::set_db` — thừa (hàm được gọi); gỡ ở vòng docs sau.
