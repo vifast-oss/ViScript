@@ -268,3 +268,16 @@ pha 1 **đóng trên ps** — mac chờ; **A0 ratify/revert VD-221..VD-229** —
 **Chờ ngoài khung** (không thuộc proxy authority để buột): mac measurement #147 (VD-197/206);
 phase-1 đóng chính thức trên mac; ST-212 async song song thật (deferred, `agent/vd212-thiet-ke-ghi-chu.md`);
 #151 VS3 pha 2; #152 “chờ đo chuẩn” (VD-217: VM 1,154 / interp 1,108 — khoảng cắt 1,10); #149 (path-split — audit liệt kê, sửa khi đụng tệp).
+
+### Đóng pha 1 chính thức (2026-11-19 ~10:55, VD-237) — tag `pha1-rc1` == `05e42d0`
+
+> Khối **thêm** sau khối “Đóng khung VD-220 ~09:00” (VD-142); số cũ không xoá; VD-236 phê duyệt addendum thay rewrite R30.
+**Cả hai máy `ps` (Linux) và `mps` (arm64 mac)**
+- gate `--fast` **PASS 10/10** (clone sạch, checkout `pha1-rc1`)
+- `vis test test/sem` **469/469** interp
+- `vis test --vm test/sem` **469/469** VM
+- `cargo test --workspace --no-fail-fast` **147 binary test xanh / 0 đỏ**
+- fuzz / nightly PASS; `vis explain --list` = **53 mã** khớp `all_codes()`; report-check **30/243** ✓
+**VD-231 DONE** (`fa4c2d8`), **VD-232 DONE** (`2ee8c1e`), **VD-238 DONE** (`05e42d0`), **VD-235→VD-240** hướng (b) cho phase 2 (test grid, sau đóng pha 1), **VD-239 (a,c,d)** đạt (clone-clean ps tại tag; mac đo đủ; báo cáo sửa 6 mục).
+**VD-186 patch nộp**; pha 2 mở: **VD-240 (b)** `+ VD-156` (trait default cho Error), **#151/#152/#149** giữ.
+**Báo cáo đóng** = `agent/BAO-CAO-A0-2026-11-19-0900.md` §12 (VD-237) + addendum này.
