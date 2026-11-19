@@ -869,3 +869,17 @@ fn chinh_sach_ham_load_extension_bi_cam() {
         );
     }
 }
+
+/// **F-A (2026-11-19)** — đường dẫn cắt ngang codepoint đa byte ở byte 120 không được panic.
+#[test]
+fn mo_ta_path_utf8_split_tai_byte_120_khong_panic() {
+    // 118 'a' (byte 0..117) + 'é' (byte 118..119) + tiếp byte 120 là giữa dấu nhọn
+    let path = format!("{}étail.db", "a".repeat(118));
+    let d = super::mo_ta(&path);
+    assert!(d.ends_with('…'), "kỳ vọng giữ tới ranh giới byte + dấu …");
+    // đường open (tạo file trong /tmp) cũng không được panic
+    let d_tmp = std::env::temp_dir().join(format!("vis-f-a-{}.db", std::process::id()));
+    let mut db = super::Db::moi_voi_query_ms(false, 5_000);
+    let _ = db.db_open(&d_tmp.to_string_lossy(), true, 5_000);
+    let _ = std::fs::remove_file(&d_tmp);
+}

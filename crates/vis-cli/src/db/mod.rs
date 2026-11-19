@@ -298,7 +298,12 @@ fn mo_ta(path: &str) -> String {
     if path == ":memory:" {
         ":memory:".to_string()
     } else if path.len() > 120 {
-        format!("{}…", &path[..120])
+        // **F-A (2026-11-19)**: không cắt giữa codepoint UTF-8 — lùi về ranh giới ký tự gần nhất ≤120.
+        let end = (0..=120)
+            .rev()
+            .find(|&i| path.is_char_boundary(i))
+            .unwrap_or(0);
+        format!("{}…", &path[..end])
     } else {
         path.to_string()
     }
@@ -582,7 +587,10 @@ impl DbHost for Db {
             }
             Err((c, e)) => {
                 self.bang[i].conn = Some(c);
-                Err(format!("không đóng được `{h}`: {e}"))
+                // **F-B (2026-11-19)**: thông điệp lỗi không được echo full token 128-bit.
+                Err(format!(
+                    "không đóng được connection SQL (chi tiết đã định vị tại phiên chạy): {e}"
+                ))
             }
         }
     }
