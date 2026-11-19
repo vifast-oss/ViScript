@@ -122,7 +122,7 @@ Phụ lục B. Chương trình mẫu
 - Phần mở rộng `.vis` (script), `.vish` (tệp ở chế độ lệnh, xem 9.1). UTF-8 bắt buộc. Dòng đầu tuỳ chọn `#!/usr/bin/env vis`.
 - **Chuẩn hoá NFC trước khi lex** (QD §7.1): **toàn bộ** tệp nguồn được chuẩn hoá Unicode NFC **trước** khi lex. Hệ quả: định danh, literal `str`/`char` và **cột chẩn đoán** đều tính trên dạng NFC; `'ố'` gõ dạng tổ hợp hay dựng sẵn đều là **một** Unicode scalar và là một literal `char` hợp lệ; `số_lượng` viết dạng tổ hợp (NFD) và dạng dựng sẵn (NFC) là **cùng một** tên. `vis fmt` ghi ra NFC. Vị trí báo lỗi vẫn trỏ được về tệp gốc vì cả lexer và editor cùng chuẩn hoá một cách tất định.
 - **Từ khoá tiếng Anh** (giống Python, Rust, JS/TS). Danh sách:
-  `let var const fn cmd type enum trait impl alias newtype pub use if elif else match for in while loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
+  `let var const fn cmd type enum trait impl pub use if elif else match for in while loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
   - **Thêm `const`** (dùng cho `const_decl`, Phụ lục A).
   - **Bỏ `as`**: bản này không có cú pháp alias trong `use`; `as` là định danh bình thường.
   - **`test` là từ khoá theo ngữ cảnh**: chỉ là từ khoá khi đứng đầu item và ngay sau là `fn` (`test fn name():`). Ở vị trí khác `test` là định danh, nên `test.run()` hợp lệ.
@@ -245,7 +245,7 @@ type UserId = int
 type Email(str)                 # kiểu mới, không tự chuyển đổi với str
 ```
 
-- `derives` sinh cài đặt trait chuẩn: `Eq`, `Ord`, `Hash`, `Show`, `Json`, `Default`. Kiểu chứa `float` **không** derive được `Eq`/`Hash` (3.6).
+- `derives` sinh cài đặt trait chuẩn: `Eq`, `Show`, `Json` (chỉ 3 trait có sẵn trong implementation; `Ord`/`Hash`/`Default` chưa có). Kiểu chứa `float` **không** derive được `Eq`/`Hash` (3.6).
 - Tạo bản ghi: `User(name: "An", age: 20)`; tham số có tên bắt buộc khi bản ghi có hơn 2 trường.
 - Cập nhật: `u with age: 21` trả bản ghi mới. Trường **bất biến** ở bản này (không có `var` cho trường).
 - `type X = T` là tên khác của cùng kiểu; `type Email(str)` là kiểu mới, phải chuyển đổi tường minh
@@ -289,7 +289,7 @@ Bảng bắt buộc (QD §7.3, chấp nhận bảng D điểm 3):
 | `int % int` | `int` | dấu theo **số bị chia** (C/Rust: `-7 % 2 == -1`); `%0` **panic**; có `rem_euclid`, `mod_floor` |
 | `int ** int` | `int` | **kết hợp phải**, **cao hơn** `*`; mũ âm **panic**; tràn **panic**; có `checked_pow -> int?` |
 | `float` cơ bản | `float` | f64; `/0.0` theo IEEE 754 (±inf/NaN), **không panic** |
-| NaN | — | `==` trả `false` (kể cả `nan == nan`); float **không** có `Eq`/`Ord`/`Hash`; kiểu chứa `float` không `derives Eq`/`Hash`; sắp xếp dùng `total_cmp` |
+| NaN | — | `==` trả `false` (kể cả `nan == nan`); float **không** có `Eq`; kiểu chứa `float` không `derives Eq`; sắp xếp dùng `total_cmp` |
 | Bit | `int` | `bit_and bit_or bit_xor bit_not shl shr ushr` trên 64 bit có dấu (`bit_not(0) == -1`); `shr` **số học** (giữ dấu), `ushr` **logic**; số đếm ngoài `0..63` **panic**; có `checked_shl`, `checked_shr` |
 | `size ± size` | `size` | tràn panic; `size * int`, `size / int`; `size / size -> float` |
 | `duration ± duration` | `duration` | `duration * int`, `duration / int`, `duration / duration -> float` |

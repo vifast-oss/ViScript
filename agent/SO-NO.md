@@ -9,7 +9,7 @@
 4 tệp test dùng `include!`, không chép số) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **156 mục = 93 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `d6111c1`
+**Cập nhật**: 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **156 mục = 93 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích

@@ -625,12 +625,13 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 
 ```text
 crates/    8 crate Rust: từ vựng, kiểu, thông dịch, máy ảo, CLI…
-bin/       công cụ: vis, vis-dev, vis-fmt, vis-remote…
+bin/       công cụ shell: vis, vis-dev, vis-remote, vis-linux, vis-soak, vis-targets, vis-diff…
 test/      bộ kiểm: ví dụ chạy được, fixture, báo cáo
 docs/      đặc tả ngôn ngữ (SPEC-lex.md) và thiết kế
 vi-du/     ví dụ chạy được cho người mới
 agent/     sổ quyết định, QUEUE, nhật ký, báo cáo từng đợt
 resources/ tài nguyên thương hiệu: icon ViScript + ViShell (brand/)
+infra/     hạ tầng: host Linux/Windows, sync, setup, runbooks
 ```
 
 ## Góp ý / phát triển

@@ -269,7 +269,7 @@ ResultBoolErr,ResultRowSetErr}` — **không** đổi logic so khớp, **không*
    được (enum `Ty` mới không exhaustive). Freeze snapshot **không** đổi.
 2. `test/sem` count: 486/487 → **514** (487 upstream + 27 sqlite) ở mọi khoá cứng (sem/vis_test/diag_cmp/
    roundtrip/fuzz_mutate/CHEAT-SHEET/FACTS) — cập nhật bắt buộc để gate xanh.
-3. `CHEAT-SHEET`/`VISCRIPT-ERGONOMICS-FACTS.md` chỉ dòng đếm corpus; **không** đổi nội dung khác.
+3. `CHEAT-SHEET-ViScript.md`/`agent/VISCRIPT-ERGONOMICS-FACTS.md` chỉ dòng đếm corpus; **không** đổi nội dung khác.
 4. **Không** đụng `docs/ViScript-thiet-ke.md`, **không** đụng SPEC-lex/SPEC.md, **không** đụng
    `api_dong_bang.rs` ngoài arms; **không** merge/push; **không** claim Windows/macOS.
 5. **`RowSet` `record`** được đăng ký **dựng sẵn** `RecId(1)` (như `Error`) — không phải module-scoped code
@@ -695,7 +695,7 @@ Không ca nào treo/quá deadline; không suite nào chờ 5 s mỗi ca (trừ �
 
 ## 15. Narrow freeze VD-129 — A0 phê duyệt (2026-11-19)
 
-> **A0 phê duyệt 2026-11-19**: sinh lại freeze **chỉ trong phạm vi狭 hẹp** `std.sqlite.*`; không regen rộng.
+> **A0 phê duyệt 2026-11-19**: sinh lại freeze **chỉ trong phạm vihẹp hẹp** `std.sqlite.*`; không regen rộng.
 > HEAD merge sẵn sàng sau review chéo cuối.
 
 - **`agent/API-STD.txt`**: **+9 mục đúng tên** — `sqlite.begin`, `sqlite.close`, `sqlite.commit`, `sqlite.execute`,

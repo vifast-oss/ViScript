@@ -3,6 +3,7 @@
 > **Trình A0 · từ Agent 1 (ps) · 2026-11-19 · trạng thái: NHÁP — chưa duyệt.**
 > Không dòng mã compiler nào bị thay đổi bởi tài liệu này (chỉ ghi nhận hiện trạng + đề xuất).
 > Implementation **chưa được duyệt**; chờ A0 chốt các quyết định ở §11 trước khi mở VD triển khai.
+> **SUPERSEDED (2026-11-19 ~20:30)**: HEAD hiện tại là `adc6a18` (sau Gate-2 merge + narrow freeze +9); xem `agent/SNAPSHOT-2026-11-20.md` để biết trạng thái hiện tại. Hệ quả: mọi tham chiếu "phase order VD-241 §" và "phase order: sau `3b2c67e`" nên đọc làm "sau Gate-2 merge".
 
 ## 0. Câu hỏi A0 đã chốt trước (nguyên văn từ A0)
 
@@ -36,11 +37,11 @@ let out = json.encode(user)?
 | **Static impl position** | `kiem_impl_khop`: inherent `impl Type:` — kiểu phải khai cùng tệp; `impl Trait for Type:` — trait phải định nghĩa trong tệp đang xem, `impl` ngoài tệp định nghĩa kiểu ⇒ **mồ côi** `VS0403`; trait ngoài tệp cũng mồ côi (module propagation chưa có) | Cross-module impl **chưa có** — dependency **B-3** (xem §10) |
 | **Bound generic** | `fn showme[T: Show](x: T)` — **không enforcement** (`let a = (1,2); showme(a)` ⇒ chạy; không trait `Show` cho tuple) | Bounds là khoảng trống sẵn có — dependency **B-3** |
 | **`std.json.encode`** | `crates/vis-interp/src/stdlib.rs` `"json.encode"`/`"json.encode_pretty"` (~L393) — runtime **walk Value**, không per-type; record → object (tên trường, thứ tự khai báo); enum `Json` → JSON đúng; `Option`: `None` ⇒ `null`, `Some(x)` ⇒ encode `x`; `Result` ⇒ `{"ok": v}`/`{"err": e}`; `Unit`→`?`; `Size/Duration`→int; `Bytes`? → **chưa đo** (cần khoá) | Encode hiện coi như "serialize Value" — typed encode có thể giữ nguyên đường này cho MVP |
-| **`std.json.decode`** | ST-33 (`crates/interp/src/json.rs` parser); chữ ký tại `crates/vis-types/src/stdlib.rs` ⇒ **`Result[Json, Error]`** (VD-222 điểm 4, VD-187 dòng buộc); EnumId(0) built-in `Json` enum: `Null`/`Bool`/`Num`/`Str`/`Arr`/`Obj`; VD-66 "khớp exhaustive" — **bắt buộc `match`** để đọc ra field | Typed decode = thay `match` bằng đường tự động — điểm khác biệt chính |
+| `std.json.decode` | ST-33 (`crates/vis-interp/src/json.rs` parser); chữ ký tại `crates/vis-types/src/stdlib.rs` ⇒ **`Result[Json, Error]`** (VD-222 điểm 4, VD-187 dòng buộc); EnumId(0) built-in `Json` enum: `Null`/`Bool`/`Num`/`Str`/`Arr`/`Obj`; VD-66 "khớp exhaustive" — **bắt buộc `match`** để đọc ra field | Typed decode = thay `match` bằng đường tự động — điểm khác biệt chính |
 | **JSON parity hai engine** | `vd_205::json_encode_owned_value_engine_parity` (VM) khoá bởi VD-241 §3/T3 (lift `$lift-opt`, `MakeSome` frozen) | Golden mới không bị lệch VM/interp — tiền đề bắt buộc cho MVP |
-| **Lỗi** | Built-in record `Error` (RecId(0), `message/source/span`; in `print` chỉ `{message}`); `AnyError = alias Error` (VD-222); diagnostic path format **chưa** có (`users[3].age` chưa được khoá) | Decode error cần chốt format/path — §5-F |
-| **Missing vs null vs Option lồng** | `Option[Option[int]]` = `Some(None)`/`Some(Some(42))`/`None` — 3 trạng thái phân biệt được; encode(`Some(None)` → `null`; `Some(Some(42))` → `42`) | **Round-trip Option lồng qua JSON `null` hiện tại KHÔNG giữ đủ 3 trạng thái** — tuyên bố up-front §3, §5-C |
-| **SPEC/API freeze** | `api_dong_bang.rs` freeze; `docs/SPEC-lex.md` chỉ qua A0 | RFC không đụng từ vựng; mã lỗi mới (nếu có) là **thay đổi API** ⇒ cần ratify |
+| **Lỗi** | Built-in record `Error` (RecId(0), `message/source/span`; in `print` chỉ `{message}`); `AnyError = alias Error` (VD-222); diagnostic path format **chưa** có (`users[3].age` chưa được khoá) | Decode error cần chốt format/path — §3-H |
+| **Missing vs null vs Option lồng** | `Option[Option[int]]` = `Some(None)`/`Some(Some(42))`/`None` — 3 trạng thái phân biệt được; encode(`Some(None)` → `null`; `Some(Some(42))` → `42`) | **Round-trip Option lồng qua JSON `null` hiện tại KHÔNG giữ đủ 3 trạng thái** — tuyên bố up-front §3, §3-C |
+| **SPEC/API freeze** | `api_dong_bang.rs` freeze (narrow std.sqlite.* +9 mục, A0 2026-11-19); `docs/SPEC-lex.md` chỉ qua A0 | RFC không đụng từ vựng; mã lỗi mới (nếu có) là **thay đổi API** ⇒ cần ratify |
 | **Phase order** | VD-241 §: tính đúng → kiểu & nhất quán → script/process → stdlib → tools | Typed JSON thuộc **kiểu/nhất quán** — sau `3b2c67e` |
 
 > Ghi chú: mọi "probe" trong bảng đã chạy thật bởi Agent 1 (2026-11-19) với `./target/debug/vis` sau `3b2c67e`.
@@ -176,7 +177,7 @@ Hai viết đều tồn tại — nghề tay được hỗ trợ như đồng c�
 - `fs.lines`, `slice`, `int(s)?` parse-edge semantics (parse trả Result hay trả int? khi overflow? khoảng signed/unsigned?) — task stdlib riêng, không chờ serialization.
 - Generic bounds enforcement (`T: Show`) — **phụ thuộc B-3**, MVP không cần.
 - Cross-module derive/impls — **phụ thuộc B-3**.
-- Streaming/async decode, bytes base64 policy (§11-L), pretty gating (§11-4).
+- Streaming/async decode, bytes base64 policy (§11-L), pretty gating (§11-F).
 - Dynamic `map[str, T]` hetero decode (limit: JSON object với key không đồng nhất — MVP yêu cầu homogeneous shape).
 
 ## 9. Phụ thuộc & mở trùng task (không mở cấu trùng)
@@ -186,7 +187,7 @@ Hai viết đều tồn tại — nghề tay được hỗ trợ như đồng c�
 | **B-3** (impl xuyên module + bound generic) — **chưa bắt đầu**, chờ A0 ratify riêng | Blocker cho derive chạy cross-module / generic bounds | MVP không cần bound generic (chỉ concrete) — **không chặn MVP**; chặn "typed generic serde" |
 | **JSON/VM fixes** — T1–T5, **đã merge** (3b2c67e + 349af67 Windows) | Done | Option lồng lặp runtime now correct for Sugar (`Some(None)` lift edges theo VD-241 §7 đúng theo lệnh A0); JSON VM encode now byte-identical |
 | **Option lồng** (3b2c67e) | Done | `Option[Option[T]]` lồng thật; encoder giữ 3 trạng thái qua `null` **chưa giải quyết được** → §3-C up-front |
-| **`#147`/`#152`** (mac) | Chờ máy rảnh | Không chặn RFC; re-verify nếu mở triển khai |
+| **`#147`/`#152`** (mac, xem `agent/SO-NO.md`) | Chờ máy rảnh | Không chặn RFC; re-verify nếu mở triển khai |
 | **Windows Tier 2** | Đóng @ `349af67`; Windows chưa đo bản fix mới | §7 gate bắt buộc re-verify trước tuyên bố |
 | **Phase order VD-241** | Tính đúng → kiểu & nhất quán → script/process → stdlib → tools | Typed JSON thuộc **kiểu/nhất quán** — đúng thứ tự sau `3b2c67e` |
 | **`BAO-CAO A0 ~1521`/`OPTION-FIX`** | Lịch sử + báo cáo | Không mở lại |
@@ -222,6 +223,6 @@ Hai viết đều tồn tại — nghề tay được hỗ trợ như đồng c�
 
 ## 12. Trạng thái tài liệu & theo dõi
 
-- RFC này = bước trình chuẩn bị, không đổi mã; mọi sản phẩm code/gdir sẽ nằm trong VD riêng sau khi A0 duyệt §11.
-- **Trạng thái**: chờ A0; các liên quan còn treo: B-3, typed-serde approval, lambda annotation (chờ A0), #147/#152 (mac idle), Windows Tier 2 bounds, `BAO-CAO-A0` Option fix §6.
+- RFC này = bước trình chuẩn bị, không đổi mã; mọi sản phẩm code sẽ nằm trong VD riêng sau khi A0 duyệt §11.
+- **Trạng thái**: chờ A0; các liên quan còn treo: B-3, typed-serde approval, lambda annotation (chờ A0), `#147`/`#152` trong `agent/SO-NO.md` (mac idle), Windows Tier 2 bounds, `BAO-CAO-A0` Option fix §6. Gate 2 đã đóng (2026-11-19) theo narrow freeze.
 - Người thực hiện thay đổi sau ratify: Agent 1 điều phối → Agent 2 implementer worktree.
