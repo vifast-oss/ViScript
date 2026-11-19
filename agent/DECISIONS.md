@@ -1712,3 +1712,81 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
 4. **Byte-identical** interp ↔ VM; corpus **469/469 ×2**; `vd_228.rs` **13/13** (param plain/None/Some/default
    `(..., --q:"mặc định")` lift; closure-ret lift; cả hai engine byte-identical); workspace **147 binary xanh / 0 đỏ**.
 5. **Nếu A0 đảo**: revert từng commit `004b145` (VD-229), sau đó `1eea7ed` (VD-228) về Option A (giữ `let` lift VD-227).
+
+### VD-241 · Uỷ quyền chạy tự động (thay VD-221/VD-225) — Áp dụng từ 2026-11-19
+
+**Ngày**: 2026-11-19 · **Người ra quyết định**: Agent 0 (ratify pha 1 + bàn giao) · **Hiệu lực**: tới khi A0 ra tệp quyết định mới.
+
+#### 1. Ratify
+
+- **PHA 1 ĐÓNG CHÍNH THỨC** tại `pha1-rc1` (`05e42d01483d255987750656fa6cba6c434831c9`), ratify bởi A0.
+- Ratify **toàn bộ VD-215..VD-240**, theo đúng nội dung đã chốt trong các tệp quyết định A0 (VD-222 theo dạng sửa của VD-231; VD-229 bỏ phần closure-params; VD-225 chỉ trong phạm vi VD-228/229). Chỗ nào bản ghi STATE/JOURNAL khác các tệp quyết định thì theo tệp quyết định.
+- Bug-fix `field_of` @ `1c62858` và VD-238 được ratify.
+- **Đính chính**: VD-225 đã hết hiệu lực trước khi đóng pha 1. Sửa dòng "Theo uỷ quyền VD-225" trong STATE/BAO-CAO thành "đóng theo VD-237, A0 ratify ngày 2026-11-19". Mọi VD từ VD-241 trở đi ghi nhãn `[VD-241]`, không ghi "proxy A0".
+
+#### 2. Ba việc dọn trước (P0, tổng 1 h, làm đầu tiên)
+
+- **D1**: Viết rõ trong báo cáo ca `anyerror_none_field_engine_parity` hiện làm gì sau VD-238. Nếu nguồn `let x: AnyError = None` giờ đỏ lúc check thì tách làm hai ca: (a) ca check: `VS0412`; (b) ca runtime parity: tạo giá trị sai bằng con đường check không chặn được (nếu không còn con đường nào thì xoá ca (b) và ghi lý do).
+- **D2**: Thử đột biến VD-238: tắt rule ở từng chỗ trong ba chỗ (`coerce_e`, `kiem_than`, Return-arm), ghi ca nào chuyển đỏ. Chỗ nào tắt mà không ca nào đỏ thì thêm ca.
+- **D3**: Chép tóm tắt 4 dòng kết quả mac + thông tin máy vào `agent/SO-NO.md` (hoặc `agent/PHA1-DONG.md`). Không trỏ tới `/tmp`.
+
+#### 3. Uỷ quyền chạy tự động (thay VD-221/VD-225)
+
+**Được tự làm và merge main**:
+- Sửa lỗi có ca repro đỏ trước, xanh sau, không đổi ngữ nghĩa đã ghi trong spec.
+- Thêm test, fuzz, ca khoá; sửa tài liệu cho khớp với mã hiện có.
+- Công cụ dev (vis-dev, script, CI), refactor nội bộ không đổi output.
+- Regen golden **CHỈ** khi thay đổi nằm trong allowlist và mỗi ca đổi được liệt kê.
+- Đo hiệu năng, ghi số vào SO-NO.
+
+**KHÔNG được làm** (ghi `BLOCKED-CHO-A0`, làm trên nhánh `nhap/<task>`, không merge):
+- Đổi ngữ nghĩa ngôn ngữ, cú pháp, quy tắc kiểu, nghĩa của mã lỗi.
+- Đổi API-STD.txt / API-CODES.txt đã freeze, thêm/xoá mã VS.
+- Đổi `Value`, mô hình async/kênh, ABI/định dạng bytecode.
+- Tách repo, đổi tên gói/domain, phát hành bản ra ngoài.
+- Tự mở rộng quyền này, hoặc đọc "im lặng của A0" là đồng ý.
+
+**Khi gặp ca không rõ thuộc nhóm nào: coi như KHÔNG được làm.**
+
+#### 4. Hàng việc (theo thứ tự)
+
+| # | Việc | Loại | Ngân sách | Điều kiện ĐẠT |
+|---|------|------|-----------|---------------|
+| 1 | D1, D2, D3 (mục 2) | dọn | 1 h | như mục 2 |
+| 2 | **VD-240 (b)**: test grid một luồng cho async/kênh | test | 1 ngày | grid chạy cả interp + VM, byte-identical; 0 golden đổi ngoài allowlist; cheatsheet có ghi chú "async chạy một luồng" |
+| 3 | **#152**: đo chuẩn trên máy rảnh (load < 0,3), ps và mac cùng HEAD | đo | 2 h | ghi B/A + khoảng; chỉ đóng nếu khoảng nằm hẳn một phía 1,10; **KHÔNG** tối ưu ctor-enum |
+| 4 | **#147-mac**: đo cùng script trên mac | đo | 1 h | số + HEAD vào SO-NO; đóng #147 nếu không vượt 3× ps, nếu vượt thì ghi nợ, không tự tối ưu |
+| 5 | Fuzz/nightly hằng ngày | test | tự động | ca crash nào cũng thành ca repro + bug-fix theo mục 3 |
+| 6 | Nháp ROADMAP pha 2: liệt kê ứng viên (#151 VS3, #149, #155 lift params closure, lambda annotation, `T??`, async (a)) | tài liệu | 3 h | chỉ ở `agent/ROADMAP-PHA2-NHAP.md`; mỗi mục ghi lợi ích, rủi ro, số golden dự kiến đổi; A0 chọn |
+| 7 | Nợ kỹ thuật không đổi ngữ nghĩa có sẵn trong SO-NO | sửa lỗi | còn lại | theo mục 3 |
+
+Hết việc 1..7 thì **DỪNG**, không tự tạo hướng mới.
+
+#### 5. Luật vận hành
+
+- Agent 1: leader, tự soạn tài liệu, ghi sổ. Tối đa 4 sub-agent Agent 2, mỗi cái một worktree; chỉ leader merge.
+- Mọi bug-fix và thay đổi checker phải có review chéo bởi sub-agent khác tác giả, có thử đột biến.
+- Sau mỗi merge: `gate --fast` PASS 10/10 + sem 469/469 ×2 + workspace xanh. Đỏ thì revert ngay, không sửa chồng lên.
+- Mỗi ngày một lần: clone sạch gate trên ps, ghi HEAD.
+- `pha1-rc1` không bao giờ bị di chuyển hoặc xoá.
+
+#### 6. Dừng hẳn và chờ A0 khi
+
+- Gate đỏ trên main mà revert không cứu được.
+- Hai engine lệch byte mà không xác định được bên nào đúng theo spec.
+- Một bug-fix buộc phải đổi ngữ nghĩa hoặc API freeze.
+- Hết hàng việc mục 4.
+
+Khi dừng: ghi lý do, HEAD, bước tái hiện vào `agent/DUNG-CHO-A0.md`, không làm tiếp nhánh liên quan.
+
+#### 7. Báo cáo cho A0 khi quay lại
+
+Một tệp `agent/BAO-CAO-A0-<ngày>.md`, mỗi phần ngắn:
+1. Một dòng trạng thái: HEAD, gate, sem ×2, số binary, clone sạch tại HEAD nào.
+2. Bảng task: mã, trạng thái, commit, test trước → sau.
+3. Danh sách BLOCKED-CHO-A0 + nhánh nháp, mỗi mục một câu hỏi có đề xuất.
+4. Số đo (#147-mac, #152) kèm HEAD và load máy.
+5. Golden đổi (nếu có) + lý do.
+6. Nợ mới.
+
+Mỗi số chỉ ghi một lần, kèm HEAD; không lặp số ở nhiều chỗ.

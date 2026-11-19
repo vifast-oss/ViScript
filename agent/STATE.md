@@ -2219,3 +2219,5 @@ nên "fixture == khối" được kiểm **sau dòng SPDX** đúng byte (script 
 > **ĐÓNG KHUNG 19/11 ~09:00**: VD-220 khép lại trên tinh thần proxy (VD-225); HEAD cuối `c98adb4`; clone-clean ps gate **PASS**; workspace **147 binary xanh / 0 đỏ**; nightly **PASS**; lệch tồn đọng: VD-221..VD-229 ratify; mac #147; ST-212 (deferred); ST-213/ST-214 (#147 ps-done, mac chờ); ST-228 DONE; ST-229 DONE; tạm dừng 9:00.
 
 > **PHASE-1 ĐÓNG CHÍNH THỨC (19/11 ~10:55, VD-237)** — Tag `pha1-rc1` tại `05e42d0`; ps + mac đều PASS (HEAD đồng bộ); mọi điều kiện VD-237 (a)-(d) đạt; pha 1 đóng xong; VD-240 (b) xếp sau.
+
+> **Đính chính sau ratify (19/11, VD-241 §1)**: pha 1 đóng theo **VD-237, A0 ratify ngày 2026-11-19** — không còn "proxy VD-225". Từ VD-241 trở đi mọi ghi nhãn `[VD-241]`; VD-225 hết hiệu lực.

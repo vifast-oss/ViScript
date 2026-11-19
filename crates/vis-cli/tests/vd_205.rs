@@ -245,9 +245,40 @@ fn encode_decode_round_trip() {
     }
 }
 
-/// (10) **VD-231/VD-237 engine parity pin** — `let x: AnyError = None; print(x.message)`:
-/// hai engine đều `VS0501`, exit **101**, stdout rỗng. Trước fix (interp-bug #interp-enum-field),
-/// interp **bịa** `Value::Enum("Option", "message", [])`; VM đã VS0501.
+/// (10a) **VD-238 D1 — ca check**: nguồn cũ `let x: AnyError = None` giờ đỏ lúc **check**
+/// với `VS0412` (thông điệp VD-238); KHÔNG còn tới được runtime. (Trùng intent với
+/// `none_tran_chi_gan_duoc_cho_option::err_anyerror` — giữ làm ca (a) tường minh cho VD-238/VD-241 D1.)
+#[test]
+fn anyerror_none_annot_check_vs0412() {
+    use std::process::Command;
+    let d = tam("anyerror_check");
+    let p = d.join("err_anyerror.vis");
+    std::fs::write(
+        &p,
+        "# SPDX-License-Identifier: MIT OR Apache-2.0\nfn main() -> ():\n    let x: AnyError = None\n    print(x.message)\n",
+    )
+    .expect("ghi tệp tạm");
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .arg("check")
+        .arg(&p)
+        .output()
+        .expect("vis check");
+    let tho = String::from_utf8_lossy(&o.stdout).to_string();
+    assert_ne!(o.status.code().unwrap_or(-1), 0, "check phải đỏ\n{tho}");
+    assert!(tho.contains("VS0412"), "phải chứa VS0412; {tho}");
+    assert!(
+        tho.contains("None` chỉ gán được cho `T?`"),
+        "phải chứa thông điệp VD-238; {tho}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// (10b) **VD-238 D1 — ca (b) runtime parity**: pin lỗi `field_of` ngày xưa của interp
+/// (bịa `Value::Enum(en, name, [])` cho biến thể rỗng → exit 0) vs VM `VS0501`.
+/// Sau VD-238 không còn con đường annot `AnyError = None` nào tới runtime (đã đỏ check);
+/// con đường **không annot** `let x = None` vẫn qua được check (VD-238 không đổi suy luận
+/// cho `let` không annotation) — hai engine giữ **byte-identical**: cả hai exit **101** (`VS0501`),
+/// stdout rỗng, stderr đồng nhất.
 #[test]
 fn anyerror_none_field_engine_parity() {
     let [a, b] = chay_ca_hai(
@@ -278,6 +309,10 @@ fn none_tran_chi_gan_duoc_cho_option() {
             "fn f() -> int:\n    None\n\nfn main() -> ():\n    print(f())\n",
         ),
         (
+            "err_fn_ret_bang_return",
+            "fn f() -> int:\n    return None\n\nfn main() -> ():\n    print(f())\n",
+        ),
+        (
             "err_arg_call",
             "fn f(n: int) -> int:\n    n\n\nfn main() -> ():\n    print(f(None))\n",
         ),
@@ -301,6 +336,17 @@ fn none_tran_chi_gan_duoc_cho_option() {
             "check phải đỏ cho {tag}\n{tho}"
         );
         assert!(tho.contains("VS0412"), "{tag}: phải chứa VS0412; {tho}");
+        // **VD-241 D2**: thông điệp VD-238 phải xuất hiện — đột biến tắt rule tại chỗ tương ứng
+        // sẽ đẩy chẩn đoán về nhánh generic `coerce` (thông điệp khác) và làm ca này đỏ.
+        let marker = if tag == "err_fn_ret" || tag == "err_fn_ret_bang_return" {
+            "`return`: `None` chỉ hợp lệ ở `T?`"
+        } else {
+            "`None` chỉ gán được cho `T?`"
+        };
+        assert!(
+            tho.contains(marker),
+            "{tag}: phải chứa thông điệp VD-238 ({marker}); {tho}"
+        );
         let _ = std::fs::remove_dir_all(&d);
     }
 }
