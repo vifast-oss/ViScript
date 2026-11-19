@@ -1634,7 +1634,7 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
    - **(VD-66 giữ hiệu lực)**: dữ liệu không kiểu từ json vẫn phải `match`; `xs` trong `Ok(xs)` có kiểu `Json` — không còn là `{error}` ⇒ **không** gây lỗi tĩnh hàng loạt; các test Rust cũ được migrate thủ công kèm ghi chú.
 5. **ST-206 · R4b (thu gọn proxy)**: `AnyError` := **đồng nghĩa `{error}`** ở bảng kiểu (resolve `AnyError` → `Type::Error`); `?` giữ nguyên cơ chế hiện tại (không kiểm biến thể lỗi tại `?` — đã ghi nhận trade-off, A0 ratify sau); `main -> Result[_, AnyError]` compile sạch; `Err` ở `main` ⇒ **exit 1** (đã có, R8). **Không** dựng `dyn Error` machinery ở pha 1 này (không cần tồn kích).
 6. **ST-207 · R4c**: mọi std fns chuyển **`Result[T, str]` → `Result[T, Error]`** (builtin record); interp dựng `Value::Record("Error", …)` thay `Value::Str`; docs/bảng std cập nhật; các ca `Err(e): print(e)` byte-identical nhờ (4) ở trên ⇒ **0 golden đổi** cho đường print; `test/` cheatsheet/fixtures đổi được rõ ràng khi in `Json`-enums.
-7. **`while let`**: VD-178 hứa nhưng mã merge không có ⇒ **ST-213 mới** thêm `while let` (pha 1, sau R4) — cấu trúc giống `if let` nhưng vòng lặp; A0 ratify hình thức khi review (đánh dấu VD-222 (7)).
+7. **`while let`**: VD-178 hứa nhưng mã merge không có ⇒ **ST-226 mới** thêm `while let` (pha 1, sau R4) — cấu trúc giống `if let` nhưng vòng lặp; A0 ratify hình thức khi review (đánh dấu VD-222 (7)).
 8. **Ghi chú ratify**: mọi mục trên là **proxy** — trong 09:00 báo cáo (§6 VD-220) liệt kê lại để A0 ký off; nếu A0 bác bỏ (1)–(4) thì ST-205/206/207 phải revert theo đúng nhánh.
 9. **Thứ tự**: ST-205 → ST-206 → ST-207 → R5d (ST-209 dưới mục VD-222 (item R5d)) → ST-210 (R30 + đóng pha 1 nếu mọi cổng xanh và 4 dấu proxy ghi rõ).
 
@@ -1648,7 +1648,7 @@ Tệp `agent/BAO-CAO-A0-2026-11-19-0900.md`, tối đa khoảng 40 KB, gồm:
    - **Khai báo**: `let`/`var`/tham số/pattern-binding có tên **trùng tên module std đã `use`** ⇒ **cảnh báo `VS0211`** (Warning, không chặn): "tên `str` là module std đã import — `str.xxx(...)` được hiểu là thành viên của giá trị, không phải module".
    - `str(…)` (tên trần) vẫn dẫn tới **builtin** `str(x)` như trước; `let str = "z"; str("a")` ⇒ `VS0412` "str không phải hàm" (giữ nguyên).
 3. **(iii)** Mã mới: **`VS0209`** (Error) và **`VS0211`** (Warning) — nhóm 02xx; tổng `all_codes()` **52 → 54**; `API-CODES.txt` regen theo đúng giao thức ST-126 (VD-222/VD-223 đích danh). Không chạm SPEC-lex §7 (không phải từ vựng).
-4. **Ghi chú ratify**: proxy; nếu A0 bác bỏ thì revert theo nhánh; `while let` (ST-213) **vẫn** là việc sau pha 1.
+4. **Ghi chú ratify**: proxy; nếu A0 bác bỏ thì revert theo nhánh; `while let` (ST-226) **vẫn** là việc sau pha 1.
 
 ### VD-224 · Đảo ngược VD-223 (phần (i)) — uỷ quyền A0-proxy, sửa theo thiết kế đã chốt
 
