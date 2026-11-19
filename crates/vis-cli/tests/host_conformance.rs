@@ -155,12 +155,15 @@ fn host_conformance_suite() {
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).expect("tmp");
         tai_bien(&d);
-        let src = src0.replace("{tmp}", d.to_str().unwrap());
+        let src = src0.replace(
+            "{tmp}",
+            &d.display().to_string().replace('\\', "/"),
+        );
         let flags: Vec<String> = flags0
             .iter()
             .map(|f| {
-                f.replace("{tmp}", d.to_str().unwrap())
-                    .replace("{host}", host.to_str().unwrap())
+                f.replace("{tmp}", &d.display().to_string().replace('\\', "/"))
+                    .replace("{host}", &host.display().to_string().replace('\\', "/"))
             })
             .collect();
         tong += 1;
