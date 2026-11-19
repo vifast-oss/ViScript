@@ -106,3 +106,31 @@ Backup hạ tầng (không commit): `/c/Users/ps/vislogs/administrators_authoriz
 - Mọi ca đỏ là **chưa được port & xác nhận độc lập**, không khẳng định chúng sai mã sản phẩm.
 - VD portability (sau khi pha 1 đóng chính thức) phân loại từng ca theo hợp đồng thật; Unix-only mới
   được `#[cfg(unix)]`, process đa nền tảng phải có fixture executable native, coverage không được giảm.
+
+
+## Addendum — cập nhật 2026-11-19 ~21:30 (HEAD `c333e8f`/`8d68a0c`)
+
+### Sau Gate 2 merge (`8355022` → `c23c013` → `c333e8f` → `adc6a18` → `8d68a0c`)
+
+Windows re-verify (psvn clone `/c/Users/ps/vis-sqlite-check-git` @ `8355022`):
+
+| Hạng mục | Kết quả |
+|---|---|
+| build | OK — `dev profile finished in 7.66-18.59 s` |
+| sem (interp) | **525/525** |
+| sem (VM) | **525/525** (byte-identical) |
+| `cargo test -p vis-cli --test sqlite` | **15/15** PASS |
+| `cargo test -p vis-cli --test crlf` | **3/3** PASS |
+| `vis` chạy `csv-join.vis` (interp+VM) | **cùng byte**; UTF-8 đúng |
+| `test/csv-join-smoke.sh` | **22/22** PASS ×2 engine (same output as Linux) |
+| fresh-clone gate @ `adc6a18` | PASS (workspace 149/149; sem 525/525 ×2) |
+
+** baseline đỏ** (101 ca) **chưa port** — giữ nguyên như §2 (`349af67`). Các test file không đổi; mọi test đã pass được verify tại vòng này.
+
+### Trạng thái hiện tại (HEAD `8d68a0c`)
+
+- **Windows Tier 2** — giữ nguyên; không mở rộng tuyên bố.
+- **pha1-rc1** nguyên vẹn.
+- **PO-Windows portability VD** — chờ A0 mở (pha 1 chính thức đóng @ `05e42d0` 2026-11-19; queue BLOCKED line 1994).
+- **PO-Windows portability các ca trong CR/CW path/JSON/WinSock/mode classes** — vẫn chưa được port; vẫn ở baseline `349af67`.
+
