@@ -11,6 +11,10 @@
 use vis_syntax::Span;
 use vis_types::hir::BinOp;
 
+pub use crate::builtin_db::DbHost;
+
+pub(crate) use crate::builtin_ls::{chuoi_quyen, thoi_gian_utc};
+
 use crate::interp::{Abort, Trap, DIV0, OVERFLOW, RT};
 use crate::value::Value;
 
@@ -67,54 +71,6 @@ pub struct MucFs {
     pub is_file: bool,
     /// ST-46: bit quyền kiểu POSIX (0 = chưa biết ⇒ in `-` trong `ls --long`).
     pub mode: u32,
-}
-
-/// `ls --long` (ST-46): quyền `rw-r--r--` từ bit POSIX; `0` ⇒ `-`.
-pub fn chuoi_quyen(mode: u32) -> String {
-    if mode == 0 {
-        return "-".to_string();
-    }
-    let mut s = String::with_capacity(9);
-    for (bit, ch) in [
-        (0o400, 'r'),
-        (0o200, 'w'),
-        (0o100, 'x'),
-        (0o040, 'r'),
-        (0o020, 'w'),
-        (0o010, 'x'),
-        (0o004, 'r'),
-        (0o002, 'w'),
-        (0o001, 'x'),
-    ] {
-        s.push(if mode & bit != 0 { ch } else { '-' });
-    }
-    s
-}
-
-/// `ls --long` (ST-46): `YYYY-MM-DD HH:MM` theo **UTC** (civil-from-days, không thêm crate).
-pub fn thoi_gian_utc(ns: i64) -> String {
-    if ns == 0 {
-        return "-".to_string();
-    }
-    let mut giay = ns.div_euclid(1_000_000_000);
-    let ngay = giay.div_euclid(86_400);
-    giay = giay.rem_euclid(86_400);
-    // Howard Hinnant: days since 1970-01-01 → (y, m, d).
-    let z = ngay + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = if m <= 2 { y + 1 } else { y };
-    format!(
-        "{y:04}-{m:02}-{d:02} {:02}:{:02}",
-        giay / 3600,
-        (giay % 3600) / 60
-    )
 }
 
 /// **ST-137 (VD-141)**: đường dẫn **thật của chính handle** đã mở — để tầng quyền quyết định trên
@@ -181,38 +137,6 @@ pub trait FsHost {
     fn list_entries(&mut self, _p: &str) -> Result<Vec<MucFs>, String> {
         Err("môi trường này không cung cấp metadata thư mục".to_string())
     }
-}
-
-/// **Host cơ sở dữ liệu** (VD-241, Gate 1) — `vis-interp`/`vis-vm` **không** biết backend native;
-/// `vis-cli` cài (rusqlite bundled). **Không** kiểu native nào rò vào trait: path/handle là **chuỗi**,
-/// params/ô dữ liệu là [`Value`] (`Enum("SqlValue", …)`), kết quả `(columns, rows)` là `Value`.
-/// Thiếu host ⇒ `VS0604` (cùng mẫu [`FsHost`]/[`NetHost`]). Handle là **chuỗi mờ** `db:N` —
-/// chương trình không thấy địa chỉ/con trỏ; **N không tái sử dụng** trong phiên; chủ sở hữu phiên
-/// == host tạo handle.
-pub trait DbHost {
-    /// Mở db `path` (`":memory:"` hoặc đường dẫn tệp — **không** URI `file:…`; host từ chối rõ).
-    /// `create` = cho phép tạo mới (read-write); `busy_ms` = busy_timeout (đã kẹp hữu hạn ≤ 60_000).
-    /// Trả **handle mờ**.
-    fn db_open(&mut self, path: &str, create: bool, busy_ms: i64) -> Result<String, String>;
-    /// Đóng handle; handle lạ/đã đóng ⇒ `Err` (không panic); **không** auto-commit.
-    fn db_close(&mut self, h: &str) -> Result<(), String>;
-    /// Chạy **một** câu SQL (multi-statement ⇒ host từ chối), params **positional** đã bind đủ
-    /// số lượng. Trả số dòng bị ảnh hưởng.
-    fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String>;
-    /// Như [`Self::db_execute`] nhưng trả `(columns, rows)` — mỗi ô là `Value::Enum("SqlValue", …)`.
-    fn db_query(
-        &mut self,
-        h: &str,
-        sql: &str,
-        params: &[Value],
-    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String>;
-    /// `true` khi connection **đang** trong transaction (SQLite: `sqlite3_get_autocommit() == 0`).
-    fn db_in_transaction(&mut self, h: &str) -> Result<bool, String>;
-    /// Đóng **mọi** connection của phiên; trả số connection đã đóng (cho diagnostics). Gọi khi
-    /// phiên Host kết thúc — **không** auto-commit.
-    fn db_cleanup(&mut self) -> Result<u64, String>;
-    /// `":memory:"` hoặc đường dẫn đã mở của handle (cho diagnostics rò); handle lạ ⇒ `Err`.
-    fn db_path_of(&mut self, h: &str) -> Result<String, String>;
 }
 
 /// **Host mạng** (ST-63, VD-100/VD-105) — `vis-interp`/`vis-vm` **không** biết `std::net`; `vis-cli`
