@@ -1069,10 +1069,14 @@ impl<'a> Lowerer<'a> {
         let text = raw.trim();
         let (kind, ty_lit) = match ty {
             Type::Str => {
+                // **VD-241 § fix(Windows/CRLF #psvn-A3)**: thoát các meta-char (`\`, `\"`, `\\`)
+                // để **văn bản chưa escape** trở thành literal chuỗi hợp lệ — tránh `\t` trong path bị
+                // `.vish` unescape cắn (vd. `ls C:\temp`).
+                let esc = text.replace('\\', "\\\\").replace('"', "\\\"");
                 let s = if text.starts_with('"') && text.ends_with('"') && text.len() >= 2 {
                     text.to_string()
                 } else {
-                    format!("\"{text}\"")
+                    format!("\"{esc}\"")
                 };
                 return Some(HExpr::Lit {
                     lit: Lit {

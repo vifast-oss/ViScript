@@ -255,9 +255,48 @@ fn ket_qua_khoi_tao() -> Value {
 /// percent-decode cơ bản (`%20`, UTF-8), chấp nhận đường dẫn tuyệt đối (`file:///…`).
 pub(crate) fn uri_thanh_duong(uri: &str) -> Option<String> {
     let rest = uri.strip_prefix("file://")?;
-    if !rest.starts_with('/') {
-        return None; // `file://host/...` — LSP một máy, không hỗ trợ host
+    // **VD-241 § fix(Windows/CRLF #psvn-A5)**: LSP trên Windows gửi `file:///c:/path` (3 slash)
+    // hoặc `file:///c:\path`. Trên đường dẫn tồn tại `/c:/...` không phải path hợp lệ trên Windows
+    // (Rust Path coi `/c:/...` là tương đối); chuẩn hoá về `c:/...` khi phát hiện drive letter.
+    fn trim_win_drive(r: &str) -> Option<String> {
+        let b = r.as_bytes();
+        // `/c:/path` or `/C:\path` → `c:/path` (lowercase drive)
+        if b.len() >= 3
+            && b[0] == b'/'
+            && b[1].is_ascii_alphabetic()
+            && b[2] == b':'
+            && (b.len() == 3 || b[3] == b'/' || b[3] == b'\\')
+        {
+            return Some(r[1..].replace('\\', "/"));
+        }
+        // `c:/path` or `C:\path` (no leading slash) → `c:/path`
+        if b.len() >= 3
+            && b[0].is_ascii_alphabetic()
+            && b[1] == b':'
+            && (b[2] == b'/' || b[2] == b'\\')
+        {
+            return Some(r.replace('\\', "/"));
+        }
+        None
     }
+    let rest2 = if matches!(std::env::consts::OS, "windows") {
+        match trim_win_drive(rest) {
+            Some(r) => r,
+            None => {
+                if !rest.starts_with('/') {
+                    return None;
+                }
+                rest.to_string()
+            }
+        }
+    } else {
+        // Non-Windows: only accept absolute paths starting with `/`
+        if !rest.starts_with('/') {
+            return None;
+        }
+        rest.to_string()
+    };
+    let rest = rest2.as_str();
     let b = rest.as_bytes();
     let mut out: Vec<u8> = Vec::with_capacity(b.len());
     let mut i = 0;

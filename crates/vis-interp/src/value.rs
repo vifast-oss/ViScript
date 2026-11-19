@@ -28,10 +28,7 @@ pub struct Closure {
     pub params: Vec<u32>,
     pub body: HBody,
     pub env: Env,
-    /// **VD-228**: `-> T?` trên closure (`(x) -> int? …` / `fn(x) -> int?: …`) — biên nâng.
-    pub ret_opt: bool,
     /// **VD-241 §3 (A0, 2026-11-19)** — số lớp `Opt` của annot return (`T?` → 1, `T??` → 2).
-    /// Mặc định 1 (giữ hành vi cũ) cho các công trình không đọc trường này.
     pub ret_depth: usize,
 }
 

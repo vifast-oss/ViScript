@@ -108,10 +108,12 @@ fn ds_test(text: &str) -> Vec<(String, Span, Span)> {
 
 /// Đổi `test fn <tên>` thành `fn main` (chỉ tên đang chọn); giữ nguyên phần còn lại.
 fn thanh_main(text: &str, test_span: Span, name_span: Span) -> String {
-    let mut s = String::with_capacity(text.len());
-    s.push_str(&text[..test_span.start]);
+    // **VD-241 § fix(Windows/CRLF #psvn-A1)**: span trỏ vào văn bản chuẩn hoá CRLF→LF, slice theo đó.
+    let norm = vis_syntax::lex::normalize_source(text);
+    let mut s = String::with_capacity(norm.len());
+    s.push_str(&norm[..test_span.start]);
     s.push_str("fn main");
-    s.push_str(&text[name_span.end..]);
+    s.push_str(&norm[name_span.end..]);
     s
 }
 

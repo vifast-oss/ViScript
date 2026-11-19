@@ -131,7 +131,8 @@ pub fn ds_cap(text: &str, mode: Mode) -> Vec<CapKhai> {
             let Some(tyn) = p.child(NodeKind::Type) else {
                 continue;
             };
-            let ty = text
+            // **VD-241 § fix(Windows/CRLF #psvn-A1)**: span trỏ vào văn bản đã chuẩn hoá CRLF→LF.
+            let ty = vis_syntax::lex::normalize_source(text)
                 .get(tyn.span.start..tyn.span.end)
                 .unwrap_or("")
                 .trim()
@@ -165,7 +166,9 @@ pub fn ds_cap(text: &str, mode: Mode) -> Vec<CapKhai> {
                     g.children()
                         .filter(|x| x.kind == NodeKind::DottedPath)
                         .any(|x| {
-                            text.get(x.span.start..x.span.end)
+                            // **VD-241 § fix(Windows/CRLF #psvn-A1)**: span trỏ vào văn bản chuẩn hoá.
+                            vis_syntax::lex::normalize_source(text)
+                                .get(x.span.start..x.span.end)
                                 .map(|s| s.trim() == "write")
                                 .unwrap_or(false)
                         })
@@ -285,8 +288,10 @@ fn la_tep_thuc_thi(p: &Path) -> bool {
 }
 
 #[cfg(not(unix))]
-fn la_tep_thuc_thi(_p: &Path) -> bool {
-    false
+fn la_tep_thuc_thi(p: &Path) -> bool {
+    // **VD-241 § fix(Windows/CRLF #psvn-A4)**: trên non-unix, không có bit `x` — chấp nhận tệp thường
+    // làm "chạy được" (khớp `la_tep_lenh`); đối tượng `cap[Dir]` / `cap[File]` nhận tệp thật để check.
+    la_tep_lenh(p)
 }
 
 /// **ST-123 (VD-130c)**: tệp **chạy được** — Unix: tệp thường + bit `x`; nền khác: tệp thường.

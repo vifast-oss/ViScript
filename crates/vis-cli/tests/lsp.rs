@@ -681,6 +681,20 @@ fn ds_lsp(out: &str) -> Vec<(String, u32, u32)> {
 }
 
 /// `(mã, dòng-1, cột-1)` từ stderr `vis check` (`# VSxxxx d:c thông điệp`).
+fn uri_f(f: &Path) -> String {
+    // **VD-241 § fix(Windows/CRLF #psvn-A5)** — form đúng cho Windows (driver letter):
+    //   `C:\Users\ps\foo.vis` -> `file:///C:/Users/ps/foo.vis`
+    let p = f.to_string_lossy().to_string();
+    #[cfg(windows)]
+    {
+        format!("file:///{}", p.replace('\\', "/"))
+    }
+    #[cfg(not(windows))]
+    {
+        format!("file://{}", p)
+    }
+}
+
 fn ds_check(file: &Path) -> (i32, Vec<(String, u32, u32)>) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
         .arg("check")
@@ -713,7 +727,7 @@ fn ds_check(file: &Path) -> (i32, Vec<(String, u32, u32)>) {
 }
 
 fn mo_va_lay(d: &Path, f: &Path) -> Vec<(String, u32, u32)> {
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(f);
     let text = std::fs::read_to_string(f).unwrap_or_default();
     let vao = format!("{}{}", khung(&init()), khung(&did_open(&uri, &text)));
     let (code, out, err) = chay(&vao);
@@ -831,7 +845,7 @@ fn lsp_nam_tep_module_hoat_dong() {
     let mut vao = khung(&init());
     for i in 0..5 {
         let f = ghi(&d, &format!("t{i}.vis"), STD_OK);
-        let uri = format!("file://{}", f.display());
+        let uri = uri_f(&f);
         vao.push_str(&khung(&did_open(&uri, STD_OK)));
     }
     let (code, out, err) = chay(&vao);
@@ -853,7 +867,7 @@ const UTIL: &str = "pub fn tinh(x: int) -> int:\n    return x + 1\n";
 const MAIN_USE: &str = "use ./util\n\nfn main():\n    ti\n";
 
 fn mo_uri(f: &Path, text: &str) -> String {
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(f);
     format!("{}{}", khung(&init()), khung(&did_open(&uri, text)))
 }
 
@@ -863,7 +877,7 @@ fn lsp_completion_thay_ham_module() {
     let d = thu_muc("mod-completion");
     ghi(&d, "util.vis", UTIL);
     let f = ghi(&d, "main.vis", MAIN_USE);
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(&f);
     let vao = format!(
         "{}{}",
         mo_uri(&f, MAIN_USE),
@@ -887,7 +901,7 @@ fn lsp_hover_ham_module() {
     ghi(&d, "util.vis", UTIL);
     let src = "use ./util\n\nfn main():\n    print(tinh(1))\n";
     let f = ghi(&d, "main.vis", src);
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(&f);
     let vao = format!("{}{}", mo_uri(&f, src), khung(&hover(2, &uri, 3, 10)));
     let (code, out, err) = chay(&vao);
     assert_eq!(code, 0, "{err}");
@@ -903,7 +917,7 @@ fn lsp_completion_thay_std_da_use() {
     let d = thu_muc("mod-std");
     let src = "use std.str\n\nfn main():\n    sp\n";
     let f = ghi(&d, "main.vis", src);
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(&f);
     let vao = format!("{}{}", mo_uri(&f, src), khung(&completion(2, &uri, 3, 6)));
     let (code, out, err) = chay(&vao);
     assert_eq!(code, 0, "{err}");
@@ -932,7 +946,7 @@ fn lsp_completion_khu_trung_uu_tien_tep_chinh() {
     ghi(&d, "util.vis", UTIL);
     let src = "use ./util\n\nfn tinh(x: int) -> int:\n    return x + 2\n\nfn main():\n    ti\n";
     let f = ghi(&d, "main.vis", src);
-    let uri = format!("file://{}", f.display());
+    let uri = uri_f(&f);
     let vao = format!("{}{}", mo_uri(&f, src), khung(&completion(2, &uri, 6, 6)));
     let (code, out, err) = chay(&vao);
     assert_eq!(code, 0, "{err}");

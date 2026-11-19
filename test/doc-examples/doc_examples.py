@@ -219,7 +219,7 @@ def regen(blocks: list[Block], fix: Path) -> None:
     fix.mkdir(parents=True, exist_ok=True)
     want = {b.stem for b in blocks}
     for b in blocks:
-        (fix / b.stem).write_text(SPDX + "\n" + b.body, encoding="utf-8")
+        (fix / b.stem).write_text(SPDX + "\n" + b.body, encoding="utf-8", newline="\n")
     for p in fix.glob("doc-*"):
         if p.name not in want:
             p.unlink()
@@ -266,7 +266,7 @@ def gate(docs: Path, fix: Path, root: Path | None, temp_root: bool, vis_bin: str
         paths: dict[Path, Block] = {}
         for b in blocks:
             p = tmp / f"{b.md[:-3]}-{b.line}.{b.ext}"
-            p.write_text(b.body, encoding="utf-8")
+            p.write_text(b.body, encoding="utf-8", newline="\n")
             paths[p] = b
         status = vis_check(list(paths), vis_bin)
         for p, b in paths.items():

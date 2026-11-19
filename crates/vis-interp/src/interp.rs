@@ -615,7 +615,6 @@ impl<'a> Interp<'a> {
                             params: f.params.iter().map(|p| p.sym).collect(),
                             body: HBody::Stmts(f.body.clone()),
                             env: self.env.clone(),
-                            ret_opt: matches!(f.ret, vis_types::Type::Opt(_)),
                             ret_depth: opt_depth_ty(&f.ret),
                         })));
                     }
@@ -921,7 +920,6 @@ impl<'a> Interp<'a> {
                 name: String::new(),
                 params: params.iter().map(|p| p.sym).collect(),
                 body: body.clone(),
-                ret_opt: matches!(ret, vis_types::Type::Opt(_)),
                 ret_depth: opt_depth_ty(ret),
                 // ST-15b (mục 2): **chụp snapshot** môi trường tại điểm tạo closure — interp dùng
                 // một env phẳng và khôi phục tham số khi hàm trả về, nên nếu giữ `Rc` chung thì

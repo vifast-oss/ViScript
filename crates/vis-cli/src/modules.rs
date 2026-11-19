@@ -515,7 +515,10 @@ impl Nap {
             let Some(dp) = n.child(NodeKind::DottedPath) else {
                 continue;
             };
-            let raw = text
+            // **VD-241 § fix(Windows/CRLF #psvn-A1)**: span của CST/Lex trỏ vào văn bản đã chuẩn hoá
+            // CRLF→LF (normalize_source). Dùng bản chuẩn hoá (cùng text đã đi qua parser) để slice —
+            // không lệch byte khi tệp CRLF (trên Linux cũng bị nếu file có CRLF).
+            let raw = vis_syntax::lex::normalize_source(&text)
                 .get(dp.span.start..dp.span.end)
                 .unwrap_or("")
                 .trim()

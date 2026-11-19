@@ -179,8 +179,11 @@ fn sem_323_ca_qua_binary() {
         // (419 `.vis` + 50 `.vish`, **86** `.err`).
         // **SỬA KÈM LÝ DO (VD-240-b, 2026-11-19)**: +**4** ca nhóm `async/` (**grid VD-240**:
         // `grid-await-nghich-thu-tu`, `grid-chan-hai-task-kenh`, `grid-await-if`, `grid-kenh-list`)
-        // ⇒ **483 ca** (423 `.vis` + 50 `.vish`, **86** `.err`). Grid pin thứ tự thực thi
+        // ⇒ **473 ca** (423 `.vis` + 50 `.vish`, **86** `.err`). Grid pin thứ tự thực thi
         // run-to-completion một luồng: await quyết định thứ tự chạy; kênh FIFO; byte-identical hai engine.
+        // **SỬA KÈM LÝ DO (VD-241 §3, 2026-11-19)**: +**10** ca `optional/long-*` + `ban-ghi/field-optional`
+        //   (9 Option lồng xanh + 1 `long-no-pseudo` err) ⇒ **483 ca**
+        //   (**433 `.vis`** + 50 `.vish`, **89 `.err`**).
         483,
         "phải đúng 483 ca (435 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
         ds.len()

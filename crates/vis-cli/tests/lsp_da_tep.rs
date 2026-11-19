@@ -25,7 +25,21 @@ fn ghi(d: &Path, ten: &str, src: &str) {
 }
 
 fn uri(d: &Path, ten: &str) -> String {
-    format!("file://{}", d.join(ten).display())
+    // **VD-241 § fix(Windows/CRLF #psvn-A5)**: form tới `file:///<forward-slashed-path>` (Windows driver).
+    let p = d.join(ten).to_string_lossy().to_string();
+    #[cfg(windows)]
+    {
+        // `C:\Users\...` → `file:///c:/users/...` (driver form `/c:/...` is accepted by uri_thanh_duong).
+        if let Some(rest) = p.strip_prefix(|_| true).ok().map(|_| ()) {
+            let _ = rest;
+        }
+        let s2 = p.replace('\\', "/");
+        format!("file:///{}", s2)
+    }
+    #[cfg(not(windows))]
+    {
+        format!("file://{}", p)
+    }
 }
 
 fn khung(body: &str) -> String {
