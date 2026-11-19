@@ -51,6 +51,21 @@ fn chay(p: &Path, vm: bool, explain: bool) -> (i32, String, String) {
     )
 }
 
+/// **Review độc lập (2026-11-19)** — ép `SqlValue.Null()` (constructor zero-arg, mẫu `Json.Null()`)
+/// **phải chạy** ở cả hai đường (trước báo cáo ghi sai là "không tồn tại ở tầng giá trị" — P3).
+#[test]
+fn sqlvalue_null_ctor_chay() {
+    let d = tam("sqlvalue-null");
+    let (rc, out, err) = ca(
+        &d,
+        "sqlvalue_null_ctor",
+        "use std.sqlite\nfn main() -> ():\n    let v = SqlValue.Null()\n    match v:\n        Null: print(\"null-ctor\")\n        _: print(\"other\")\n",
+    );
+    assert_eq!(rc, 0, "interp rc khác 0; stderr: {err}");
+    assert_eq!(out, "null-ctor\n", "interp phải in null-ctor");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 /// Chạy **hai đường** + so byte; trả kết quả đường interp.
 fn ca(d: &Path, ten: &str, src: &str) -> (i32, String, String) {
     let _g = kho();

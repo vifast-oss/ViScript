@@ -19,7 +19,7 @@ vis-interp = { path = "../vis-interp" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-vm = { path = "../vis-vm" }
 # **VD-241 (Gate 1, 2026-11-19)** — `std.sqlite` MVP: **rusqlite bundled**, ghim version; không tự
-# viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.51.3, sqlite3.c public domain;
+# viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.50.2, sqlite3.c public domain;
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).
 # `hooks` (bắt buộc cho VD-241 §7): `Connection::authorizer` — ranh giới thực thi chính sách SQL
 # (cấm ATTACH/DETACH/VACUUM/load_extension/ghi PRAGMA user_version). Feature rỗng, không dep thêm.

@@ -57,10 +57,10 @@ phần tử được kiểm ở `kiem()`: `Value::Enum(e, …) ∧ e == "SqlValu
 in ra hàng/ô đúng shape; **không** Any/hack exhaustive; hai engine chung đường `builtin::call`).
 
 **Giới hạn đã biết (ghi nhận để A0 quyết, KHÔNG tự vá):**
-- **Không dựng được `Null` trần** từ source (đối số 0 giống `Json.Null` — tên trần `Null` resolve về
-  `Json.Null` theo thứ tự khai). Constructor `SqlValue.Null` (không-đối-số) không tồn tại ở tầng giá trị
-  (mẫu `Json.Null`). NULL đi vào db qua `INSERT … VALUES (NULL)` (không cần ctor) và ra match bằng `Null:`.
-  Đề nghị cổng tích hợp xem xét sugar/alias (ngoài phạm vi VD này).
+- **Bare `SqlValue.Null` trap `VS0501`** (đo: check xanh, runtime `VS0501 tên SqlValue chưa hỗ trợ ở VS0`);
+  còn **`SqlValue.Null()` constructor zero-arg chạy đúng** (interp và VM in `null-ctor`; corpus ca `sqlvalue_null_ctor_chay`
+  trong `crates/vis-cli/tests/sqlite.rs` đã ghim). NULL đi vào db qua `INSERT … VALUES (NULL)`; ra match bằng `Null:`.
+  Bare-name enum ctor sugar là một finding ngoài phạm vi VD này — trình A0 ở cổng tích hợp (đề nghị, không tự đổi).
 - `list[SqlValue]` **không** chấp nhận biến thể enum khác (`Json`) hay sai arity — kiểm ở runtime `kiem()`
   (trap `VS0501`).
 
@@ -298,3 +298,45 @@ ResultBoolErr,ResultRowSetErr}` — **không** đổi logic so khớp, **không*
 - `read.vis` scratch nằm ở `/tmp/opencode` (không commit); `/tmp/opencode` còn các scratch nhỏ (logs,
   enum*/lim*/han*/nan.vis…) — có thể xoá nếu cần; repo **không** có file rác (`git status` sạch).
 - `agent/QUEUE.md`/STATE/DEM **không** cập nhật — Gate 1 là lệnh mở, hàng đợi do A0 điều phối.
+
+
+---
+
+## Phụ lục R — Review độc lập 2026-11-19 (verdict SHIP; bổ sung dữ kiện cho A0)
+
+**Reviewer (Agent 2 khác tác giả)**: SHIP Gate 1; không cheat; không đụng SPEC-lex/freeze/VBC1/`pha1-rc1`; hai engine byte-identical mọi ca; corpus 27 ca chạy thật; unit 23/23; mutations OK; `.vish` chưa có; Windows/macOS không tuyên bố.
+
+### Pre-merge (Agent 1 xử lý — đã vá trong commit tiếp theo)
+
+| # | Vị trí | Vấn đề | Cách xử lý |
+|---|---|---|---|
+| P1 | `crates/vis-cli/src/db.rs:380` | `PRAGMA temp_store/trusted_schema` bị nuốt lỗi | propagate `map_err` |
+| P2 | `crates/vis-cli/Cargo.toml` comment: "SQLite 3.51.3" | sai — đo thật 3.50.2 | comment sửa |
+| P3 | §1 "Constructor SqlValue.Null không tồn tại ở tầng giá trị" | sai — `SqlValue.Null()` chạy đúng | §1 đính chính + corpus `sqlvalue_null_ctor_chay` |
+| P4 | §9 thiếu câu hỏi/ dữ kiện tích hợp | xem N1–N13 dưới | annex này |
+| P5 | `execute` cho câu trả hàng ⇒ thông điệp rusqlite raw (tiếng Anh) | classify/thông điệp | thông điệp cục bộ "lỗi khi thực thi: câu lệnh trả hàng — dùng `sqlite.query`" (data error → `Err`) |
+
+### Ratify-sau / A0 quyết (flag, không tự vá)
+
+- **N1**. Bare `SqlValue.Null` ⇒ trap `VS0501` (bare-name resolve); `Null()` OK. (Xem §1.)
+- **N2**. `execute(h, "SELECT 1"…)` ⇒ `Err(Error)` "lỗi khi thực thi: câu lệnh trả hàng…" (data error, không phải caller trap). Classification cần ratify (Err vs VS0501).
+- **N3**. Không có giới hạn **byte params** (một blob 1 GiB đi thẳng qua bind). §6 không yêu cầu; A0 chốt giữ hay thêm `MAX_PARAM_BYTES` (đề xuất 16 MiB).
+- **N4**. `db_open` không có progress_handler/wall-clock (chỉ `execute`/`query`). A0 chấp nhận hay đòi bound?
+- **N5**. (P1) PRAGMA host-set: sau vá sẽ propagate lỗi — A0 không cần quyết, chỉ ghi nhận §8 giờ có bằng chứng mạnh hơn.
+- **N6**. `TEMP_STORE=1` (pragma `MEMORY` runtime tính) — bundled giữ; không patch C. A0 chấp nhận hay đòi build-time `TEMP_STORE=3`?
+- **N7**. Temp B-tree lớn ⇒ chiếm RAM, không ghi đĩa (MEMORY) — chấp nhận MVP (output cap 16 MiB); A0 ghi nhận hay thêm `cache_size` bound?
+- **N8**. Handle `db:00`/`db:+0` alias ra cùng connection (parse `u64` không canonical). A0 chốt strict hay chấp nhận?
+- **N9**. `.vish` (chế độ lệnh) chưa có đường gọi `sqlite.*` (báo cáo ghi). A0 xếp việc ngoài phạm vi/sau.
+- **N10**. Dead code `db_path_of` + unused balance `kich_thuoc` — dọn vệ sinh tích hợp (Agent 1).
+- **N11**. `.vish` corpus sqlite — chỉ nếu N9 được mở.
+- **N12**. In-process multi-session (embedding) chưa có test đúng nghĩa; nếu cần byte-identical leak-proof ⇒ test riêng.
+- **N13**. `load_extension` deny informational fragment rusqlite lọt trong thông điệp — A0 có muốn che?
+
+### Đã xác nhận trong review (không phải câu hỏi)
+
+- Authorizer = ranh giới thực; ATTACH/DETACH/VACUUM(INTO)/ghi `user_version`/`load_extension` chặn mọi chế độ; PRAGMA chỉ `table_info` + đọc `user_version`; case-insensitive; `temp_store`/`trusted_schema` ON, user không đè được.
+- Strict-caps: từ chối file-backed rõ ràng (mọi cap/`--strict-caps`), chỉ `:memory:`; cap[Dir] phủ đúng thư mục vẫn exit 2; không tạo tệp.
+- Handle: không reuse ID; từ chối giả/đóng/sai loại; `"db:0"` không là bằng chứng; phiên sở hữu + authorizer + cap là quyền thật.
+- Limits: rows 10k/row 1 MiB/total 16 MiB/SQL 64 KiB/params 1000/connections 16/busy 5 s (cấu hình hữu hạn); vượt ⇒ `Err`; multi-statement trap.
+- Freeze (`API-STD.txt`) nguyên; `api_dong_bang.rs` chỉ +5 arm render; `api_codes`/`api_vbc1` xanh; `api_std_khop_code` đỏ **đúng thiết kế**.
+- Windows/macOS: không tuyên bố; không đụng SPEC-lex/VBC1/`pha1-rc1`/thiet-ke; determinism `:memory:`, không network.

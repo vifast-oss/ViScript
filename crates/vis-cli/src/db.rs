@@ -377,7 +377,9 @@ impl DbHost for Db {
         conn.busy_timeout(Duration::from_millis(busy_ms as u64))
             .map_err(|e| format!("không đặt busy_timeout: {e}"))?;
         // Tạm trong bộ nhớ (§8 VD-241) + trusted_schema=OFF — **trước** authorizer.
-        let _ = conn.execute_batch("PRAGMA temp_store=MEMORY; PRAGMA trusted_schema=OFF;");
+        // Không được nuốt lỗi: nếu PRAGMA này không áp dụng được, từ chối mở để §8 không bị im lặng.
+        conn.execute_batch("PRAGMA temp_store=MEMORY; PRAGMA trusted_schema=OFF;")
+            .map_err(|e| format!("không đặt PRAGMA temp_store/trusted_schema: {e}"))?;
         // Authorizer cài **trước khi** prepare SQL người dùng.
         conn.authorizer(Some(chinh_sach));
         let id = self.tiep;
@@ -536,7 +538,17 @@ fn thuc_thi(
     kiem_so_luong(&stmt, params.len())?;
     let r = stmt
         .execute(rusqlite::params_from_iter(params.iter()))
-        .map_err(|e| loi_sqlite("lỗi khi thực thi", e))?;
+        .map_err(|e| {
+            // P5 (review độc lập 2026-11-19) — không để nguyên thông điệp rusqlite tiếng Anh lọt ra;
+            // `execute` cho câu SELECT trả hàng ⇒ lỗi dữ liệu (không phải caller sai).
+            let msg = e.to_string();
+            if msg.contains("execute returned results") {
+                "lỗi khi thực thi: câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`"
+                    .to_string()
+            } else {
+                loi_sqlite("lỗi khi thực thi", e)
+            }
+        })?;
     Ok(r as i64)
 }
 
