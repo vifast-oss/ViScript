@@ -1,7 +1,7 @@
 # VD-PO-Windows-portability — proposal (sở tái lập) — 2026-11-19
 
 > Agent 1 → A0 · **chờ A0 dispatch lệnh mở VD** · dựa trên kế hoạch chi tiết `agent/PLAN-WINDOWS-L0-PORTABILITY-2026-11-19.md`.
-> **Chưa có lệnh thi công** ở thời điểm viết; mọi đề xuất dưới đây **không** được thực hiện nếu A0 không chấp thuận.
+> **Đã mở 2026-11-19** (lệnh A0-dispatch ủy thác); **đang triển khai** — nhóm A–E đã fix; Windows verify tiến độ xem `agent/SNAPSHOT-2026-11-20.md`.
 
 ## 0. Tóm tắt
 

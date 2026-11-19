@@ -1,7 +1,7 @@
 # PLAN — VD Windows L0 test-suite portability (nháp, 2026-11-19 ~21:30)
 
 > Agent 1 → A0 (plan) · **KHÔNG triển khai trong đợt này** · VD-winport-po
-> **Trạng thái 2026-11-20 ~00:55 @ HEAD `00df00f`**: **VD đã mở 2026-11-19** (lệnh A0-dispatch ủy thác); đang triển khai. Nhóm A xong (test-child + 7 suite migrate); Linux workspace xanh 150 khối; gate/nightly PASS. **Windows verify @ `00df00f`: ĐỎ — 53 ca** (`/c/Users/ps/vislogs/00df00f-ws.out`, `vislogs/00df00f-failed.txt`): PATH-sep trong test grant/echo (`:` thay vì `;` trên Windows), `/etc/hosts` không tồn tại, CRLF (`\r\n`) trong chan_doan_da_tep, WSL-stub (`sync_list`, `help_co_check_sync`), WinSock (`tcp_tu_choi`, `server_*`), UNIX mode (`long_tren_thu_muc_that`), span/json fixtures. **Không đổi ngữ nghĩa sản phẩm; Tier 2 giữ; pha1-rc1 nguyên vẹn; pha 2 chưa mở**.
+> **Trạng thái 2026-11-20 ~02:35 @ HEAD `c7cef71`**: **VD đã mở 2026-11-19** (lệnh A0-dispatch ủy thác); đang triển khai. Nhóm A xong (test-child + 7 suite migrate); nhóm B/C/D/E **đã fix** (`6ccf367`, `f9430b9`, `c7cef71`): CRLF `\r\n`→`\n`, forward-slash path, JSON escaped, PATHEXT cho `--grant`, Git Bash cho script, WinSock assert OS-aware, mode `-` trên NTFS. **Windows verify @ `6ccf367`: 7 suite đỏ → @ `f9430b9`: còn 1 ca (`server_hai_ket_noi_lien_tiep`) — fix @ `c7cef71`; **exit 0, toàn workspace XANH** (150 khối ok; log `/c/Users/ps/vislogs/c7cef71-ws.out`). Linux workspace xanh 150 khối; gate ×3 PASS; nightly PASS. **Không đổi ngữ nghĩa sản phẩm; Tier 2 giữ; pha1-rc1 nguyên vẹn; pha 2 chưa mở**.
 
 ## 1. Hiện trạng đo được (psvn HEAD `8355022`)
 

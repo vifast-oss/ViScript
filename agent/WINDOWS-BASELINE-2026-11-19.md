@@ -144,3 +144,16 @@ Windows re-verify (psvn clone `/c/Users/ps/vis-sqlite-check-git` @ `8355022`):
   (log `/c/Users/ps/vislogs/00df00f-ws.out`; danh sách `/c/Users/ps/vislogs/00df00f-failed.txt`).
 - So với baseline `13c31cf` (101 đỏ / 25 suite): **còn ≈21 đỏ** — nhóm A (POSIX binaries) đã xanh trên Linux vì test-child; Windows còn lại thuộc B/C/D/E + ca còn lại.
 - **Windows Tier 2 giữ nguyên; chưa tuyên bố hỗ trợ.**
+
+
+## Addendum 2026-11-20 ~02:30 — verify @ `c7cef71` (sau nhóm B/C/D/E fix)
+
+- psvn pull `c7cef71` (gồm `6ccf367` json_ra/fmt · `f9430b9` fix B/C/D/E · `c7cef71` net_server slash-fixture).
+- Verify @ `6ccf367` (trước các fix): exit 101 — **7 suite đỏ** (143 khối ok): `cap_proc_grant`
+  (PATHEXT giải quyết `test-child.exe`), `net` (`tcp_tu_choi` — Windows drop SYN ⇒ timeout thay vì REFUSED),
+  `net_server`, `soak_script` (script shell qua Git Bash), `span_tep` (path forward-slash trong JSON),
+  `sync_list` (WSL stub ⇒ Git Bash thật), `vsh1b` (NTFS mode = `-`).
+- Verify @ `f9430b9` (sau fix): **chỉ còn 1 ca đỏ** — `net_server::server_hai_ket_noi_lien_tiep`
+  (fixture nhúng backslash path ⇒ ViScript lexescape ⇒ không ghi addr ⇒ timeout 5 s — **đã fix @ `c7cef71`**).
+- Verify @ `c7cef71`: **exit 0 — toàn Windows workspace XANH** (`cargo test --workspace --no-fail-fast`; 150 khối "test result: ok"; 0 đỏ; log `/c/Users/ps/vislogs/c7cef71-ws.out`).
+- **Windows Tier 2 giữ nguyên; chưa tuyên bố hỗ trợ; Tier 1 chưa**.

@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-20**: HEAD `00df00f` (origin/main). VD-winport mở theo lệnh người dùng; Linux xanh toàn workspace, gate/nightly PASS; **Windows `00df00f` verify → 21 ca đỏ (Tier 2 giữ nguyên, chưa tuyên bố)**; job `vis-dev nightly` PASS fuzz 18,810,062 ca; `pha1-rc1` nguyên; narrow freeze chỉ `+9 std.sqlite.*`; macOS chưa có kết luận (mps bận). Đọc **`agent/SNAPSHOT-2026-11-20.md`** để biết đầy đủ trạng thái trước khi bắt đầu.
+> **Cập nhật 2026-11-20 ~02:30**: HEAD `c7cef71` (origin/main). VD-winport mở theo lệnh người dùng; Linux xanh toàn workspace, gate/nightly PASS (@ `f9430b9`: fuzz 18,769,716 ca); **Windows**: verify @ `6ccf367` → 7 suite đỏ → fix @ `f9430b9` → 1 ca → fix @ `c7cef71` → **exit 0 — toàn workspace xanh** (150 khối ok); Tier 2 giữ nguyên, chưa tuyên bố; `pha1-rc1` nguyên; narrow freeze chỉ `+9 std.sqlite.*`; macOS chưa có kết luận (mps bận). Đọc **`agent/SNAPSHOT-2026-11-20.md`** để biết đầy đủ trạng thái trước khi bắt đầu.
 > **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối sau R30”) trước; **pha 1 đóng trên ps** tại HEAD `49b33b8` (ST-205…ST-211, ST-226, ST-228 + VD-215..VD-228); mac chờ + ratify A0. Lưu ý nội dung thân tệp (các khối R22/R23/R25/R26/R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
 
 Tài liệu một trang cho người tiếp nhận: 8 hạng mục VS2, mức thật **đo được**, điều kiện đóng 100%,
