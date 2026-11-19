@@ -622,12 +622,12 @@ impl<'a> Checker<'a> {
             return self.resolve_cap(args, span);
         }
         let resolved: Vec<Type> = args.iter().map(|a| self.resolve_ann(a, span)).collect();
-        // **VD-222** — Json=EnumId(0)·Error=RecId(0)·AnyError=`{error}` (VS0302).
+        // **VD-222** — Json=EnumId(0)·Error=RecId(0)·AnyError=RecId(0) (VD-231).
         if args.is_empty() {
             match name {
                 "Json" => return Type::Enum(crate::ty::EnumId(0)),
                 "Error" => return Type::Record(crate::ty::RecId(0)),
-                "AnyError" => return Type::Error,
+                "AnyError" => return Type::Record(crate::ty::RecId(0)), // VD-231 alias Error
                 _ => {}
             }
         }

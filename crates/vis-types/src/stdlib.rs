@@ -10,7 +10,7 @@
 //! **VD-222** (18/11/2026, uỷ quyền A0-proxy): mọi lỗi chuẩn (`Result[_, str]`) đổi thành
 //! **bản ghi dựng sẵn `Error`** (`RecId(0)`; `message/source/span`; in `print` chỉ `{message}`);
 //! `std.json.decode` → `Result[Json, Error]` — cây JSON là enum dựng sẵn `Json` (`EnumId(0)`:
-//! `Null/Bool/Num/Str/Arr/Obj`), `json.decode` vẫn phải `match` (VD-66). `AnyError` := `{error}`.
+//! `Null/Bool/Num/Str/Arr/Obj`), `json.decode` vẫn phải `match` (VD-66). `AnyError` = alias ban ghi Error (RecId(0)).
 
 use crate::ty::Type;
 

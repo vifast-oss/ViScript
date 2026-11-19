@@ -164,7 +164,7 @@ fn ds_std() -> DanhSach {
 fn api_std_khop_code() {
     so_khop(
         "API-STD.txt",
-        "ĐÓNG BĂNG API std — sinh từ crates/vis-types/src/stdlib.rs::FUNCS (kèm chữ ký).\n# VD-222 (18/11/2026, uỷ quyền A0, Agent 1 thay mặt Agent 0): mọi `Result[_, str]` →\n# `Result[_, Error]` (lỗi std = bản ghi dựng sẵn `Error { message, source, span }`);\n# `json.decode` → `Result[Json, Error]`. Các mục đổi được nêu đích danh trong VD-222.",
+        "ĐÓNG BĂNG API std — sinh từ crates/vis-types/src/stdlib.rs::FUNCS (kèm chữ ký).\n# VD-222 (18/11/2026, uỷ quyền A0, Agent 1 thay mặt Agent 0): mọi `Result[_, str]` →\n# `Result[_, Error]` (lỗi std = bản ghi dựng sẵn `Error { message, source, span }`);\n# `json.decode` → `Result[Json, Error]`. Các mục đổi được nêu đích danh trong VD-222.\n# VD-231 (19/11/2026, A0 chốt — ratify): `span` là **[không ổn định]** — sau này đổi sang Span\n# có cấu trúc sẽ phá API; `AnyError` = alias của bản ghi `Error` (RecId(0)), không phải\n# `{error}` nữa (lỗi tĩnh được bắt thay vì bị nuốt).",
         ds_std(),
     );
 }

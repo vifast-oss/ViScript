@@ -25,7 +25,7 @@ pub struct EnumId(pub u32);
 
 /// Kiểu của VS0.
 ///
-/// `TypeRef` là **tên kiểu chưa phân giải** (VD-44 #2): `Config`, `AnyError`, `Ctx`, `cap[Dir]`,
+/// `TypeRef` là **tên kiểu chưa phân giải** (VD-44 #2): `Config`, `Ctx`, `cap[Dir]`,
 /// `ref[T]`… đều đi qua đây ở ST-11 mà **không** sinh chẩn đoán. ST-12 thay bằng kiểu thật.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Type {

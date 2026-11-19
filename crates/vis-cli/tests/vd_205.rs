@@ -131,9 +131,10 @@ fn ten_dun_san_du_bi_vs0302() {
     }
 }
 
-/// (6) `AnyError` đã là **đồng nghĩa `{error}`** — `fn f() -> Result[int, AnyError]` compile sạch.
+/// (6) `AnyError` đã là **alias của bản ghi `Error` (RecId(0))** (VD-231, A0 2026-11-19) —
+/// `fn f() -> Result[int, AnyError]` compile sạch. Chấm dứt `{error}` poison.
 #[test]
-fn anyerror_la_dong_nghia_poison() {
+fn anyerror_la_alias_error() {
     let [a, b] = chay_ca_hai(
         "anyerr",
         "fn f() -> Result[int, AnyError]:\n    Ok(7)\nfn main() -> ():\n    match f():\n        Ok(n): print(n)\n        Err(_): print(\"e\")\n",
@@ -141,6 +142,38 @@ fn anyerror_la_dong_nghia_poison() {
     assert_eq!(a.0, 0, "interp: {}\n{}", a.1, a.2);
     assert_eq!(b.0, 0, "vm: {}\n{}", b.1, b.2);
     assert_eq!(a.1, "7\n");
+}
+
+/// (9) **VD-231** — gán sai kiểu vào biến `AnyError` phải ra lỗi kiểu (`VS0412`); không bị
+/// poison nuốt nữa. Trước VD-231: `let x: AnyError = 42` → "kiểu không tồn tại"/nuốt tĩnh.
+#[test]
+fn anyerror_bao_sai_kieu() {
+    for src in [
+        "fn main() -> ():\n    let x: AnyError = 42\n    print(x)\n",
+        "fn main() -> ():\n    let x: AnyError = Some(1)\n    print(x)\n",
+        "fn main() -> ():\n    let x: AnyError = true\n    print(x)\n",
+    ] {
+        let d = tam("anyerrbad");
+        let p = d.join("anyerrbad.vis");
+        std::fs::write(
+            &p,
+            format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+        )
+        .expect("ghi");
+        let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+            .arg("check")
+            .arg(&p)
+            .output()
+            .expect("vis check");
+        let tho = String::from_utf8_lossy(&o.stdout).to_string();
+        assert_ne!(
+            o.status.code().unwrap_or(-1),
+            0,
+            "check phải đỏ cho: {src}\n{tho}"
+        );
+        assert!(tho.contains("VS0412"), "phải VS0412; {tho}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
 }
 
 /// (7) `impl Error` thiếu phương thức ⇒ `VS0403`; đủ ba + `impl Show` ⇒ chạy được.

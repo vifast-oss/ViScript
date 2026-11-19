@@ -3,6 +3,9 @@
 # VD-222 (18/11/2026, uỷ quyền A0, Agent 1 thay mặt Agent 0): mọi `Result[_, str]` →
 # `Result[_, Error]` (lỗi std = bản ghi dựng sẵn `Error { message, source, span }`);
 # `json.decode` → `Result[Json, Error]`. Các mục đổi được nêu đích danh trong VD-222.
+# VD-231 (19/11/2026, A0 chốt — ratify): `span` là **[không ổn định]** — sau này đổi sang Span
+# có cấu trúc sẽ phá API; `AnyError` = alias của bản ghi `Error` (RecId(0)), không phải
+# `{error}` nữa (lỗi tĩnh được bắt thay vì bị nuốt).
 #
 # CAM KẾT TƯƠNG THÍCH (VD-129): KHÔNG xoá, KHÔNG đổi tên, KHÔNG đổi nghĩa,
 # KHÔNG tái dùng số mã/số thẻ. Thêm mới CHỈ khi có VD nêu đích danh tên được thêm.
