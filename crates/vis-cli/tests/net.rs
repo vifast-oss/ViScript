@@ -150,7 +150,13 @@ fn tcp_tu_choi() {
         code, 0,
         "exit phải 0 (lỗi mạng là Err, không trap); stderr: {err}"
     );
+    #[cfg(unix)]
     assert!(out.contains("bị từ chối"), "stdout: {out:?}");
+    #[cfg(not(unix))]
+    assert!(
+        out.contains("quá thời gian chờ nối tới") || out.contains("bị từ chối"),
+        "stdout: {out:?}"
+    );
     let _ = std::fs::remove_dir_all(&d);
 }
 

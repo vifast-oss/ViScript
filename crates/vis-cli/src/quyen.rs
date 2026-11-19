@@ -316,14 +316,37 @@ fn la_tep_lenh(p: &Path) -> bool {
 ///   tiên — **cùng** luật `execvp` sẽ dùng khi chạy.
 /// - Giá trị **có `/`** ⇒ ghép `goc` nếu tương đối, rồi `canonicalize` (theo symlink).
 /// - Không phân giải được ⇒ `Err` có chẩn đoán rõ (CLI in ra rồi exit 2), **không** im lặng nhận.
+/// Các tên khả dĩ để dò trong `PATH`: nguyên tên + các đuôi thực thi Windows (PATHEXT).
+/// Unix: chỉ nguyên tên (đúng `execvp`).
+#[cfg(not(unix))]
+fn ung_vien_path(thu_muc: &Path, v: &str) -> Vec<PathBuf> {
+    let mut kq = vec![thu_muc.join(v)];
+    if Path::new(v).extension().is_none() {
+        let pat = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
+        for e in pat.split(';') {
+            let e = e.trim();
+            if !e.is_empty() {
+                kq.push(thu_muc.join(format!("{v}{e}")));
+            }
+        }
+    }
+    kq
+}
+
+#[cfg(unix)]
+fn ung_vien_path(thu_muc: &Path, v: &str) -> Vec<PathBuf> {
+    vec![thu_muc.join(v)]
+}
+
 pub fn phan_giai_lenh(v: &str, goc: &Path) -> Result<PathBuf, String> {
     if !v.contains('/') {
         let path = std::env::var_os("PATH").unwrap_or_default();
         for thu_muc in std::env::split_paths(&path) {
-            let ung = thu_muc.join(v);
-            if let Ok(c) = std::fs::canonicalize(&ung) {
-                if la_tep_lenh(&c) {
-                    return Ok(c);
+            for ung in ung_vien_path(&thu_muc, v) {
+                if let Ok(c) = std::fs::canonicalize(&ung) {
+                    if la_tep_lenh(&c) {
+                        return Ok(c);
+                    }
                 }
             }
         }

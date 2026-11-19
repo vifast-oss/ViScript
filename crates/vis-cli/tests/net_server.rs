@@ -88,6 +88,7 @@ fn dung(mut c: Child) -> i32 {
 
 /// Chương trình server: `listen(:0)` → ghi địa chỉ vào tệp → `accept` → ghi `pong` → đóng.
 fn chuong_trinh_server(duong: &str) -> String {
+    let duong = &duong.replace('\\', "/");
     format!(
         "use std.net\n\
          use std.fs\n\

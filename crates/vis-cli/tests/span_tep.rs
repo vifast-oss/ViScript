@@ -33,13 +33,14 @@ fn goc() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../")
 }
 
+/// Đường dẫn **dùng `/`** — Windows chấp nhận; JSON không cần escape.
 fn tep(ca: &str, ten: &str) -> String {
     goc()
         .join("test/modules/span")
         .join(ca)
         .join(ten)
         .to_string_lossy()
-        .to_string()
+        .replace('\\', "/")
 }
 
 struct Kq {

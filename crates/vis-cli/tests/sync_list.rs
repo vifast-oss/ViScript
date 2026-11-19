@@ -12,6 +12,23 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// `bash` thật cho script shell (`vis-linux`/`vis-soak`); trên Windows PATH trả WSL stub
+/// (`execvpe(/bin/bash) failed`) nên dùng Git Bash tuyệt đối thay thế.
+fn bash() -> PathBuf {
+    #[cfg(windows)]
+    {
+        for c in [
+            "C:/Program Files/Git/bin/bash.exe",
+            "C:/Program Files (x86)/Git/bin/bash.exe",
+        ] {
+            if Path::new(c).is_file() {
+                return PathBuf::from(c);
+            }
+        }
+    }
+    PathBuf::from("bash")
+}
+
 /// Tập mong đợi — đúng 14 mục: 9 thư mục + 5 tệp (ST-171: gốc repo mới **là** cây ViScript,
 /// nên danh sách đồng bộ là toàn bộ cây nguồn thay cho `viscript/` + `docs/` cũ).
 const DIRS: [&str; 9] = [
@@ -159,7 +176,7 @@ fn dung_cay(cay: &CayGia, bo: &[&str]) {
 
 /// Chạy `bash <script> --check-sync` với cwd = gốc repo.
 fn chay_check_sync(script: &Path, goc: &Path) -> (Option<i32>, String, String) {
-    let o = Command::new("bash")
+    let o = Command::new(bash())
         .arg(script)
         .arg("--check-sync")
         .current_dir(goc)
@@ -361,7 +378,7 @@ fn check_sync_du_het_thi_exit_0_trong_cay_gia() {
 
 #[test]
 fn help_co_check_sync() {
-    let o = Command::new("bash")
+    let o = Command::new(bash())
         .arg(script())
         .arg("--help")
         .current_dir(goc_repo())

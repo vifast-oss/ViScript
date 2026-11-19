@@ -10,6 +10,22 @@ fn script() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../bin/vis-soak")
 }
 
+/// `bash` thật cho script (`vis-soak`); trên Windows PATH trả WSL stub ⇒ Git Bash tuyệt đối.
+fn bash() -> PathBuf {
+    #[cfg(windows)]
+    {
+        for c in [
+            "C:/Program Files/Git/bin/bash.exe",
+            "C:/Program Files (x86)/Git/bin/bash.exe",
+        ] {
+            if PathBuf::from(c).is_file() {
+                return PathBuf::from(c);
+            }
+        }
+    }
+    PathBuf::from("bash")
+}
+
 const VONG: [&str; 10] = [
     "gate-1", "gate-2", "gate-3", "diff-1", "diff-2", "diff-3", "host-1", "host-2", "cache-1",
     "cache-2",
@@ -43,7 +59,8 @@ fn vis_soak_hop_le_va_in_du_10_vong() {
     );
 
     // `--dry-run` chỉ in danh sách, không chạy soak.
-    let o = Command::new(script())
+    let o = Command::new(bash())
+        .arg(script())
         .arg("--dry-run")
         .output()
         .expect("chạy --dry-run");

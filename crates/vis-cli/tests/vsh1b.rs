@@ -163,7 +163,11 @@ fn long_tren_thu_muc_that() {
     );
     assert_eq!(c, 0, "stderr: {e}");
     assert!(o.contains("mode"), "phải có cột mode: {o}");
+    // Unix đọc được quyền thật (khác `-`); trên Windows NTFS không có rwx ⇒ `-` là đúng sự thật nền.
+    #[cfg(unix)]
     assert!(!o.contains("  -  "), "mode phải đọc được quyền thật: {o}");
+    #[cfg(not(unix))]
+    assert!(o.contains("-"), "Windows: phải có cột mode `-`: {o}");
     let dong = o.lines().nth(1).unwrap_or("");
     assert!(dong.contains("x.txt"), "{o}");
     let cot: Vec<&str> = dong.split_whitespace().collect();
