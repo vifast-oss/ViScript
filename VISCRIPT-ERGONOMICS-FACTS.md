@@ -5,6 +5,8 @@
 > Bốn trạng thái **không dùng nhãn chung**: **(1)** đã triển khai & kiểm chứng · **(2)** đã triển khai nhưng giới hạn · **(3)** đã quyết định chưa triển khai · **(4)** đang đề xuất chưa duyệt.
 > Đo lại (repro) bởi Agent 1: `int??` tái lập độc lập (xem `agent/DUNG-CHO-A0.md` + `VISCRIPT-ERGONOMICS-DIAGNOSTICS.md`); các ca khác giữ nguyên bằng chứng của Agent 2.
 > Các ca lệch hai engine được đánh dấu **[LỆCH ENGINE — BLOCKED-CHO-A0]** — không sửa, xem `agent/DUNG-CHO-A0.md` + câu hỏi cuối file.
+>
+> **CẬP NHẬT 2026-11-19 (sau khi A0 chốt ngữ nghĩa):** A0 đã ratify Option lồng — `T??` là `Option[Option[T]]` thật; hệ thống corpus đã được cập nhật thành **483 ca** (kéo thêm `long-*`); các lệch-byte (§6.1/6.2) đã được sửa theo đúng quyết định A0 — chi tiết xem `agent/QD-OPTION-LONG-2026-11-19.md` + `agent/DEM-2026-11-18.md` (~13:15). Các câu hỏi §9 của bản báo cáo gốc đã được A0 trả lời theo đúng thứ tự; các số cũ ở §3/§4/§5 dưới đây giữ nguyên lịch sử lúc 6fb72a7.
 
 ## 1. Mục tiêu & phạm vi
 
