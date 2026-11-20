@@ -407,3 +407,291 @@ pub(crate) fn float_json(f: f64) -> String {
         format!("{s}.0")
     }
 }
+
+/// Mã hoá JSON **compact** (hoặc pretty 2 dấu cách) cho giá trị VS0.
+///
+/// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `None` ⇒ `null`; `Result` ⇒
+/// `{"ok":…}`/`{"err":…}`; enum ⇒ `{"variant":…, "value":…}`. Khoá chuỗi được escape.
+///
+/// **Lưu ý**: `Float` không hữu hạn vẫn in `null` ở hàm thấp-level này (dùng cho LSP/CLI); cửa
+/// `std.json.encode` chặn riêng ở trên theo VD-242 Q4b.
+pub fn json(v: &Value, pretty: bool, out: &mut String) {
+    json_tai(v, pretty, 0, out);
+}
+
+fn thut(depth: usize, out: &mut String) {
+    for _ in 0..depth {
+        out.push_str("  ");
+    }
+}
+
+fn mo(pretty: bool, depth: usize, out: &mut String) {
+    if pretty {
+        out.push('\n');
+        thut(depth + 1, out);
+    }
+}
+
+fn dong(pretty: bool, depth: usize, out: &mut String) {
+    if pretty {
+        out.push('\n');
+        thut(depth, out);
+    }
+}
+
+fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
+    fn esc(s: &str, out: &mut String) {
+        out.push('"');
+        for c in s.chars() {
+            match c {
+                '"' => out.push_str("\\\""),
+                '\\' => out.push_str("\\\\"),
+                '\n' => out.push_str("\\n"),
+                '\r' => out.push_str("\\r"),
+                '\t' => out.push_str("\\t"),
+                c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+                c => out.push(c),
+            }
+        }
+        out.push('"');
+    }
+    match v {
+        Value::Unit => out.push_str("null"),
+        Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+        Value::Int(n) => out.push_str(&n.to_string()),
+        Value::Float(f) => {
+            if f.is_finite() {
+                out.push_str(&crate::json::float_json(*f))
+            } else {
+                out.push_str("null")
+            }
+        }
+        Value::Size(n) | Value::Duration(n) => out.push_str(&n.to_string()),
+        // `percent` lưu dưới dạng `f64` ⇒ cùng quy ước giữ dấu float (#173).
+        Value::Percent(p) => {
+            if p.is_finite() {
+                out.push_str(&crate::json::float_json(*p))
+            } else {
+                out.push_str("null")
+            }
+        }
+        Value::Str(s) | Value::Path(s) => esc(s, out),
+        Value::Char(c) => esc(&c.to_string(), out),
+        Value::Bytes(b) => esc(&String::from_utf8_lossy(b), out),
+        Value::List(xs) => {
+            out.push('[');
+            for (i, x) in xs.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                mo(pretty, depth, out);
+                json_tai(x, pretty, depth + 1, out);
+            }
+            if !xs.is_empty() {
+                dong(pretty, depth, out);
+            }
+            out.push(']');
+        }
+        Value::Map(kv) => {
+            out.push('{');
+            for (i, (k, val)) in kv.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                mo(pretty, depth, out);
+                let kk = match k {
+                    Value::Str(s) | Value::Path(s) => s.clone(),
+                    other => other.show(),
+                };
+                esc(&kk, out);
+                out.push_str(if pretty { ": " } else { ":" });
+                json_tai(val, pretty, depth + 1, out);
+            }
+            if !kv.is_empty() {
+                dong(pretty, depth, out);
+            }
+            out.push('}');
+        }
+        // Bản ghi `Error` dựng sẵn (VD-222 điểm 4): in JSON `{"message": …, …}`.
+        Value::Record(name, fs) if name == "Error" => {
+            let trong: std::collections::BTreeMap<&str, &Value> =
+                fs.iter().map(|(n, v)| (n.as_str(), v)).collect();
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("message", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            match trong.get("message") {
+                Some(Value::Str(t)) => esc(t, out),
+                Some(other) => json_tai(other, pretty, depth + 1, out),
+                None => out.push_str("\"\""),
+            }
+            for extra in ["source", "span"] {
+                if let Some(v) = trong.get(extra) {
+                    out.push(',');
+                    mo(pretty, depth, out);
+                    esc(extra, out);
+                    out.push_str(if pretty { ": " } else { ":" });
+                    json_tai(v, pretty, depth + 1, out);
+                }
+            }
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        Value::Record(_, fs) => {
+            out.push('{');
+            for (i, (f, val)) in fs.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                mo(pretty, depth, out);
+                esc(f, out);
+                out.push_str(if pretty { ": " } else { ":" });
+                json_tai(val, pretty, depth + 1, out);
+            }
+            if !fs.is_empty() {
+                dong(pretty, depth, out);
+            }
+            out.push('}');
+        }
+        // **VD-204 (1)**: `Option`/`Result` thật — biến thể dựng sẵn của enum `Option`/`Result`.
+        // `None` ⇒ `null`; `Some(x)` ⇒ encode `x`; `Result` ⇒ `{"ok": v}` / `{"err": e}`.
+        Value::Enum(ea, va, ag) if ea == "Option" && va == "None" => out.push_str("null"),
+        Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+            json_tai(&ag[0], pretty, depth, out)
+        }
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("ok", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            json_tai(&ag[0], pretty, depth + 1, out);
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("err", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            json_tai(&ag[0], pretty, depth + 1, out);
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        // **VD-222 (điểm 4)** — `Json` enum thật: in đúng JSON cho cả 6 biến thể.
+        Value::Enum(ea, va, ag) if ea == "Json" => match va.as_str() {
+            "Null" => out.push_str("null"),
+            "Bool" => {
+                if matches!(ag.first(), Some(Value::Bool(true))) {
+                    out.push_str("true");
+                } else {
+                    out.push_str("false");
+                }
+            }
+            "Num" => match ag.first() {
+                Some(Value::Int(n)) => out.push_str(&n.to_string()),
+                Some(Value::Float(f)) => {
+                    if f.is_finite() {
+                        out.push_str(&crate::json::float_json(*f));
+                    } else {
+                        out.push_str("null");
+                    }
+                }
+                _ => out.push_str("null"),
+            },
+            "Str" => {
+                if let Some(Value::Str(t)) = ag.first() {
+                    esc(t, out);
+                } else {
+                    out.push_str("\"\"");
+                }
+            }
+            "Arr" => {
+                if let Some(Value::List(xs)) = ag.first() {
+                    out.push('[');
+                    for (i, x) in xs.iter().enumerate() {
+                        if i > 0 {
+                            out.push(',');
+                        }
+                        mo(pretty, depth, out);
+                        json_tai(x, pretty, depth + 1, out);
+                    }
+                    if !xs.is_empty() {
+                        dong(pretty, depth, out);
+                    }
+                    out.push(']');
+                } else {
+                    out.push_str("[]");
+                }
+            }
+            "Obj" => {
+                if let Some(Value::Map(kv)) = ag.first() {
+                    out.push('{');
+                    for (i, (k, val)) in kv.iter().enumerate() {
+                        if i > 0 {
+                            out.push(',');
+                        }
+                        mo(pretty, depth, out);
+                        let kk = match k {
+                            Value::Str(t) | Value::Path(t) => t.clone(),
+                            other => other.show(),
+                        };
+                        esc(&kk, out);
+                        out.push_str(if pretty { ": " } else { ":" });
+                        json_tai(val, pretty, depth + 1, out);
+                    }
+                    if !kv.is_empty() {
+                        dong(pretty, depth, out);
+                    }
+                    out.push('}');
+                } else {
+                    out.push_str("{}");
+                }
+            }
+            _ => out.push_str("null"),
+        },
+        Value::Enum(_, var, args) => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("variant", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            esc(var, out);
+            out.push(',');
+            mo(pretty, depth, out);
+            esc("value", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            match args.len() {
+                0 => out.push_str("null"),
+                1 => json_tai(&args[0], pretty, depth + 1, out),
+                _ => {
+                    out.push('[');
+                    for (i, a) in args.iter().enumerate() {
+                        if i > 0 {
+                            out.push(',');
+                        }
+                        mo(pretty, depth + 1, out);
+                        json_tai(a, pretty, depth + 2, out);
+                    }
+                    dong(pretty, depth + 1, out);
+                    out.push(']');
+                }
+            }
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        Value::Range(a, b, _) => {
+            out.push('{');
+            mo(pretty, depth, out);
+            esc("range", out);
+            out.push_str(if pretty { ": " } else { ":" });
+            out.push('[');
+            out.push_str(&a.to_string());
+            out.push(',');
+            out.push_str(&b.to_string());
+            out.push(']');
+            dong(pretty, depth, out);
+            out.push('}');
+        }
+        // Hàm/closure không mã hoá được ⇒ `null` (không panic).
+        _ => out.push_str("null"),
+    }
+}
