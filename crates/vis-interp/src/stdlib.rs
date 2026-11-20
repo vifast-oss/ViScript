@@ -783,6 +783,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
             }
         }
+        // **VD-270**: metadata **chỉ đọc** — `symlink_metadata` (không theo symlink); thiếu path ⇒
+        // `size` `Err(Error)`, predicate `Ok(false)`; ngoài cap ⇒ `VS0604` qua `FsGuard`.
+        "fs.size" | "fs.is_file" | "fs.is_dir" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(crate::builtin_fs::goi_metadata(host, name, p), span)
+        }
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         "net.connect" | "net.connect_timeout" => {

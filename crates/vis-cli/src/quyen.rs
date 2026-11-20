@@ -838,6 +838,23 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(to, true)?;
         self.trong.rename(from, to)
     }
+    /// **VD-270**: metadata **chỉ đọc** ⇒ kiểm `cap[Dir]`/`cap[File]` trên path như `exists`
+    /// (`can_write=false`), không đòi `(write)`. Host dùng `symlink_metadata` (không đi theo
+    /// symlink) cho **thao tác**; bước kiểm quyền vẫn canonicalize như mọi đường đọc khác.
+    fn size(&mut self, p: &str) -> Result<i64, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.size(p)
+    }
+    /// **VD-270**: predicate **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size).
+    fn is_file(&mut self, p: &str) -> Result<bool, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.is_file(p)
+    }
+    /// **VD-270**: predicate **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size).
+    fn is_dir(&mut self, p: &str) -> Result<bool, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.is_dir(p)
+    }
     /// **VD-268**: duyệt là thao tác **đọc** ⇒ kiểm `cap[Dir]` trên **root** trước khi chạm đĩa.
     /// Host chỉ đi xuống thư mục con thật và **bỏ mọi symlink**, nên mọi đường dẫn trả về nằm dưới
     /// root đã kiểm (không thể thoát qua symlink); kiểm root là đủ, giống `list`/`list_entries`.

@@ -518,6 +518,48 @@ impl vis_interp::builtin::FsHost for Runner {
         doi_ten_tep(from, to)
     }
 
+    /// **VD-270**: số **byte** của **tệp thường**. `symlink_metadata` ⇒ **không** đi theo symlink
+    /// (symlink ⇒ `Err`); thư mục/thiếu/loại khác ⇒ `Err` dữ liệu. `int` là 64-bit; tệp lớn hơn
+    /// `i64::MAX` bị từ chối thay vì tràn.
+    fn size(&mut self, p: &str) -> Result<i64, String> {
+        self.nhat_ky("size", p);
+        let loi = |e: std::io::Error| format!("không lấy được kích thước `{p}`: {e}");
+        let md = std::fs::symlink_metadata(p).map_err(loi)?;
+        if md.file_type().is_symlink() {
+            return Err(format!(
+                "không lấy được kích thước `{p}`: là symlink (không đi theo)"
+            ));
+        }
+        if !md.is_file() {
+            return Err(format!(
+                "không lấy được kích thước `{p}`: không phải tệp thường"
+            ));
+        }
+        i64::try_from(md.len()).map_err(|_| format!("không lấy được kích thước `{p}`: quá lớn"))
+    }
+
+    /// **VD-270**: `true` ⇔ **tệp thường**, theo `symlink_metadata` (**không** đi theo symlink nên
+    /// symlink ⇒ `false`). Thiếu `p` ⇒ `Ok(false)`; lỗi khác (vd không đủ quyền OS) ⇒ `Err`.
+    fn is_file(&mut self, p: &str) -> Result<bool, String> {
+        self.nhat_ky("is_file", p);
+        match std::fs::symlink_metadata(p) {
+            Ok(md) => Ok(md.is_file()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("không xem được loại `{p}`: {e}")),
+        }
+    }
+
+    /// **VD-270**: `true` ⇔ **thư mục**, theo `symlink_metadata` (symlink ⇒ `false`). Thiếu `p` ⇒
+    /// `Ok(false)`; lỗi khác (vd không đủ quyền OS) ⇒ `Err`.
+    fn is_dir(&mut self, p: &str) -> Result<bool, String> {
+        self.nhat_ky("is_dir", p);
+        match std::fs::symlink_metadata(p) {
+            Ok(md) => Ok(md.is_dir()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("không xem được loại `{p}`: {e}")),
+        }
+    }
+
     /// **VD-268**: duyệt **đệ quy** dưới `p` bằng `read_dir` + `DirEntry::file_type()` (không đi
     /// theo symlink). Trả đường dẫn **tương đối** so với `p`, phân cách `/`; thư mục kèm `/`; DFS,
     /// mỗi cấp sắp theo byte của tên; mục ẩn vẫn gồm. Symlink bị **bỏ hoàn toàn** ⇒ không có vòng.

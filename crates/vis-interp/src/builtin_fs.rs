@@ -141,6 +141,40 @@ pub trait FsHost {
     fn rename(&mut self, _from: &str, _to: &str) -> Result<(), String> {
         Err("chưa hỗ trợ".to_string())
     }
+
+    /// **VD-270**: số **byte** của **tệp thường**; dùng `symlink_metadata` nên **không** đi theo
+    /// symlink (symlink ⇒ `Err`), thư mục/thiếu/loại khác ⇒ `Err` dữ liệu. Default: **chưa hỗ trợ**.
+    fn size(&mut self, _p: &str) -> Result<i64, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
+    /// **VD-270**: `true` ⇔ `p` là **tệp thường**, theo `symlink_metadata` (**không** đi theo
+    /// symlink nên symlink ⇒ `false`); thiếu `p` ⇒ `Ok(false)`, lỗi khác ⇒ `Err`.
+    /// Default: **chưa hỗ trợ**.
+    fn is_file(&mut self, _p: &str) -> Result<bool, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
+    /// **VD-270**: `true` ⇔ `p` là **thư mục**, theo `symlink_metadata` (symlink ⇒ `false`);
+    /// thiếu `p` ⇒ `Ok(false)`, lỗi khác ⇒ `Err`. Default: **chưa hỗ trợ**.
+    fn is_dir(&mut self, _p: &str) -> Result<bool, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+}
+
+/// **VD-270** — gọi một trong ba helper metadata **chỉ đọc** của host. Giữ nhánh dispatch ở **một**
+/// chỗ cho interp ↔ VM (cùng `stdlib::call`) và để `stdlib.rs` không vượt luật R1.
+pub fn goi_metadata(
+    host: &mut dyn FsHost,
+    ten: &str,
+    p: &str,
+) -> Result<crate::value::Value, String> {
+    match ten {
+        "fs.size" => host.size(p).map(crate::value::Value::Int),
+        "fs.is_file" => host.is_file(p).map(crate::value::Value::Bool),
+        "fs.is_dir" => host.is_dir(p).map(crate::value::Value::Bool),
+        _ => Err(format!("metadata không xác định: `{ten}`")),
+    }
 }
 
 /// **VD-268** — trần độ dài **mẫu** glob (byte): mỗi mục tốn `O(|mẫu| · |đường|)`, nên mẫu sinh

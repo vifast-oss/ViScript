@@ -79,7 +79,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // hàm; không xoá/đổi hàm cũ nào.
     // **SỬA KÈM LÝ DO (VD-270, 2026-11-21)**: +**1** hàm `std.list.windows` (cửa sổ trượt,
     // `list[list[T]]`) ⇒ **83** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 83, "bảng chữ ký phải đủ 83 hàm");
+    // **SỬA KÈM LÝ DO (VD-270, 2026-11-21)**: +**3** hàm `std.fs.*` metadata chỉ đọc (`size`,
+    // `is_file`, `is_dir`) ⇒ **86** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 86, "bảng chữ ký phải đủ 86 hàm");
 }
 
 #[test]
