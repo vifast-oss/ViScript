@@ -141,7 +141,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 replace-last, 2026-11-21)**: +**1** hàm `std.str.replace_last`
     // (`(str, str, str) -> str`; chỉ thay lần khớp **cuối**, `from` rỗng ⇒ nối `to` ở cuối) ⇒
     // **119** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 119, "bảng chữ ký phải đủ 119 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-relative, 2026-11-21)**: +**1** hàm `std.path.relative`
+    // (`(str, str) -> str`; tương đối từ vựng POSIX, không sugar) ⇒ **120** hàm; không xoá/đổi
+    // hàm cũ nào.
+    assert_eq!(FUNCS.len(), 120, "bảng chữ ký phải đủ 120 hàm");
 }
 
 #[test]
@@ -205,6 +208,18 @@ fn path_normalize_kieu_str_sang_str_va_sugar() {
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
     assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
+}
+
+#[test]
+fn path_relative_hai_tham_so_va_khong_sugar() {
+    // **VD-270 (path.relative)**: chữ ký `(str, str) -> str`; **không** sugar — `relative` không
+    // nằm trong `module_sugar`, nên `s.relative(to)` bị từ chối thay vì đoán module nhận.
+    let f = sig_of("path.relative").expect("path.relative");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str], "`path.relative`: tham số");
+    assert_eq!(f.ret, Ty::Str, "`path.relative`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "`path.relative`: hạ kiểu");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "relative"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "relative"), None);
 }
 
 #[test]
