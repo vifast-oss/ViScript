@@ -42,6 +42,11 @@ pub enum TrangThai {
     /// **Chỉ đường test/frame**: đang treo trên một event giả (`ST-267/VD-251`).
     /// Runtime mặc định không bao giờ đặt trạng thái này.
     Pending,
+    /// **VD-257/C (chỉ đường test/frame)**: bị huỷ tại một safe point — đã dọn mọi
+    /// đăng ký/waiter/timer, không còn được đánh thức, thân **không** chạy tiếp.
+    /// Không phải `Xong`: `kq` có thể vẫn `None` (không bịa mã lỗi huỷ mới). Runtime
+    /// mặc định không bao giờ đặt trạng thái này.
+    Huy,
 }
 
 /// Một tác vụ `async fn`.
@@ -347,6 +352,13 @@ pub struct FrameTest {
     /// **ST-278 (VD-256)**: lỗi task phát hiện lúc **final join** (theo hợp đồng `VS0506`,
     /// đã bọc sẵn trong `Task.kq`). Không đổi chính sách hủy các task còn lại.
     pub final_join_error: Option<Trap>,
+    /// **VD-257/C**: cancellation request đã ghi nhận nhưng CHƯA xử lý (cần safe point).
+    pub cancel_req: Vec<u32>,
+    /// **VD-257/C**: task id đã bị huỷ — mọi tài nguyên chờ đã gỡ đúng một lần.
+    pub cancelled: std::collections::HashSet<u32>,
+    /// **VD-257/C**: `(seq sự kiện, task id)` — khi event có `seq` fire, ghi nhận huỷ `id`
+    /// TRƯỚC khi wake, để task đang treo không bao giờ chạy lại source.
+    pub cancel_on_seq: Vec<(u64, u32)>,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -365,6 +377,25 @@ pub struct Scheduler {
     /// **ST-267/VD-251 (chỉ test)**: trạng thái frame scheduler. Mặc định rỗng/`false`.
     #[doc(hidden)]
     pub frame: FrameTest,
+}
+
+// **VD-257/C (chỉ test)**: trigger huỷ theo `seq` event, do integration test ghi TRƯỚC
+// khi gọi `run_frame_for_test`. `frame_enable_for_test` drains vào `FrameTest.cancel_on_seq`
+// nên cả hai engine (interp + VM) cùng thấy một trigger — không CLI flag, không API ngôn ngữ.
+thread_local! {
+    static FRAME_CANCEL_TEST: RefCell<Vec<(u64, u32)>> = RefCell::new(Vec::new());
+}
+
+/// **VD-257/C (chỉ test)**: đăng ký "khi event `seq` fire thì ghi nhận huỷ task `id`".
+#[doc(hidden)]
+pub fn frame_cancel_on_seq_for_test(seq: u64, id: u32) {
+    FRAME_CANCEL_TEST.with(|x| x.borrow_mut().push((seq, id)));
+}
+
+/// **VD-257/C (chỉ test)**: xoá mọi trigger huỷ còn tồn trong thread-local (dọn giữa các ca).
+#[doc(hidden)]
+pub fn frame_cancel_clear_triggers_for_test() {
+    FRAME_CANCEL_TEST.with(|x| x.borrow_mut().clear());
 }
 
 impl Scheduler {
@@ -451,6 +482,15 @@ impl Scheduler {
         self.frame.events = events.into();
         self.frame.gen = 0;
         self.frame.log.push("enable".into());
+        // VD-257/C: nhận trigger huỷ do test ghi trước khi chạy engine. Sắp xếp để trace
+        // tất định và giống hệt giữa interp/VM. Thread-local drained ⇒ mỗi engine nhận 1 lần.
+        FRAME_CANCEL_TEST.with(|x| {
+            self.frame.cancel_on_seq = x.borrow_mut().drain(..).collect();
+        });
+        self.frame.cancel_on_seq.sort();
+        for (seq, id) in &self.frame.cancel_on_seq {
+            self.frame.log.push(format!("cancelon:{}:{}", seq, id));
+        }
     }
 
     /// Tăng thế hệ khi một nguồn giả được **đăng ký lại** (re-arm) — event cũ phải
@@ -508,6 +548,11 @@ impl Scheduler {
     /// đánh thức waiter — mỗi frame được nối **vào đuôi** đúng một lần.
     #[doc(hidden)]
     pub fn frame_next(&mut self) -> Option<u32> {
+        // VD-257/C: mỗi lần scheduler bước là một SAFE POINT — xử lý request đã ghi nhận,
+        // trước khi chọn frame tiếp theo. Không bao giờ cắt ngang `step_frame`.
+        if !self.frame.cancel_req.is_empty() {
+            self.frame_cancel_process_for_test();
+        }
         if let Some(f) = self.frame.ready.pop_front() {
             return Some(f);
         }
@@ -530,6 +575,21 @@ impl Scheduler {
         self.frame
             .log
             .push(format!("fire:{}:{}:{}", ev.seq, ev.key, ev.gen));
+        // VD-257/C: event có `seq` được đăng ký huỷ ⇒ ghi nhận + xử lý NGAY tại safe point
+        // này, TRƯỚC khi complete target/wake. Task bị huỷ mất waiter ⇒ không chạy lại source.
+        let cancels: Vec<u32> = self
+            .frame
+            .cancel_on_seq
+            .iter()
+            .filter(|(s, _)| *s == ev.seq)
+            .map(|(_, id)| *id)
+            .collect();
+        for id in cancels {
+            self.frame_cancel_request_for_test(id);
+        }
+        if !self.frame.cancel_req.is_empty() {
+            self.frame_cancel_process_for_test();
+        }
         // Tìm task nguồn giả có khóa này.
         let target: Option<u32> = self
             .frame
@@ -573,6 +633,11 @@ impl Scheduler {
     /// gỡ ngay (registry không giữ frame đã thức), nên fire trùng không thức lại lần 2.
     fn frame_wake_one(&mut self, w: Waiter) {
         self.frame.waiters.retain(|x| *x != w);
+        // VD-257/C: task đã huỷ KHÔNG được xếp lại vào ready — không late wake, không re-run.
+        if self.frame.cancelled.contains(&w.frame) {
+            self.frame.log.push(format!("cancelwake:{}", w.frame));
+            return;
+        }
         if self.frame.ready.contains(&w.frame) {
             self.frame.log.push(format!("dup-ready:{}", w.frame));
             return;
@@ -644,16 +709,18 @@ impl Scheduler {
         self.frame.final_join_error.take()
     }
 
-    /// **Chỉ test**: thu hồi task thỏa 3 điều kiện ownership: xong, có nghĩa vụ join,
-    /// và không còn handle/reference sống (`Rc::strong_count == 1` chỉ còn scheduler).
-    /// ready/waiter/registration cũng bị dọn theo — không giữ task chết quá ý đồ.
+    /// **Chỉ test**: thu hồi task thỏa 3 điều kiện ownership: terminal (`Xong` **hoặc**
+    /// `Huy` VD-257/C), có nghĩa vụ join, và không còn handle/reference sống
+    /// (`Rc::strong_count == 1` chỉ còn scheduler). ready/waiter/registration cũng bị dọn
+    /// theo — không giữ task chết quá ý đồ. Task `Huy` không có `kq` lỗi ⇒ final-join không
+    /// bịa mã huỷ mới (xem BLOCKER trong report VD-257/C).
     #[doc(hidden)]
     pub fn frame_reclaim(&mut self) {
         let dead: Vec<u32> = self
             .tasks
             .iter()
             .filter(|t| {
-                t.trang_thai.get() == TrangThai::Xong
+                (t.trang_thai.get() == TrangThai::Xong || t.trang_thai.get() == TrangThai::Huy)
                     && self.frame.joined.contains(&t.id)
                     && Rc::strong_count(t) == 1
             })
@@ -702,6 +769,127 @@ impl Scheduler {
                 .filter(|e| e.deadline_ms.is_some())
                 .count(),
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // VD-257 / ST-C — cancellation HỢP TÁC, NỘI BỘ (CHỈ TEST/DEBUG).
+    //
+    // Request chỉ được GHI NHẬN ở đây; task đang chạy KHÔNG BAO GIỜ bị cắt giữa chừng.
+    // Việc dọn tài nguyên chỉ xảy ra khi scheduler đi qua một SAFE POINT mà driver đã gọi
+    // sẵn (`frame_next`, `frame_fire`, `frame_reactor_fire`, `frame_wake_one`). Không API
+    // ngôn ngữ, không CLI flag, không đổi runtime mặc định (`frame.enabled == false`).
+    // -----------------------------------------------------------------------
+
+    /// Ghi nhận một cancellation request cho task `id`. Idempotent — request trùng bị bỏ.
+    /// Không dọn gì ngay: phải đợi safe point (`frame_cancel_process_for_test`).
+    #[doc(hidden)]
+    pub fn frame_cancel_request_for_test(&mut self, id: u32) {
+        if self.frame.cancelled.contains(&id) || self.frame.cancel_req.contains(&id) {
+            return;
+        }
+        self.frame.cancel_req.push(id);
+        self.frame.log.push(format!("cancelreq:{}", id));
+    }
+
+    /// Xử lý mọi request đã ghi nhận tại safe point hiện tại. Trả số task vừa bị huỷ.
+    #[doc(hidden)]
+    pub fn frame_cancel_process_for_test(&mut self) -> usize {
+        let reqs: Vec<u32> = std::mem::take(&mut self.frame.cancel_req);
+        let mut n = 0;
+        for id in reqs {
+            if self.frame_cancel_one(id) {
+                n += 1;
+            }
+        }
+        n
+    }
+
+    /// Công việc huỷ cho MỘT task: gỡ waiter/reg/timer/external **đúng một lần**, không
+    /// wake lại, không đóng language handle. `true` = task chuyển sang `Huy`.
+    fn frame_cancel_one(&mut self, id: u32) -> bool {
+        if self.frame.cancelled.contains(&id) {
+            self.frame.log.push(format!("cancelagain:{}", id));
+            return false;
+        }
+        let t = match self.tasks.iter().find(|t| t.id == id).cloned() {
+            Some(t) => t,
+            None => {
+                self.frame.cancelled.insert(id);
+                self.frame.log.push(format!("cancelgone:{}", id));
+                return false;
+            }
+        };
+        // Task đã xong trước khi request tới ⇒ huỷ vô hiệu: GIỮ NGUYÊN cache (`kq`).
+        if t.trang_thai.get() == TrangThai::Xong {
+            self.frame.cancelled.insert(id);
+            self.frame.log.push(format!("cancelskip:{}:done", id));
+            return false;
+        }
+
+        // Awaiter đang chờ chính task này (Wait::Task(id)) — sẽ được wake để đọc cache/error
+        // (không bịa mã mới; xem BLOCKER). Thu thập TRƯỚC khi sửa waiters.
+        let awaiters: Vec<Waiter> = self
+            .frame
+            .waiters
+            .iter()
+            .filter(|w| w.wait == Wait::Task(id))
+            .cloned()
+            .collect();
+
+        // 1) Waiter của frame bị huỷ: gỡ đúng một lần.
+        let wb = self.frame.waiters.len();
+        self.frame.waiters.retain(|w| w.frame != id);
+        if self.frame.waiters.len() < wb {
+            self.frame.log.push(format!("cancelwait:{}", id));
+        }
+
+        // 2) Đăng ký reactor/timer của frame bị huỷ: deregister adapter đúng một lần,
+        //    bỏ sổ token, results/fired (event cũ thành stale ⇒ không late wake).
+        let regs: Vec<ReactorReg> = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .filter(|r| r.frame == id)
+            .cloned()
+            .collect();
+        for r in &regs {
+            if let Some(b) = self.frame.backend.clone() {
+                let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
+                self.frame
+                    .log
+                    .push(format!("canceldereg:{}:{}", id, r.token));
+            }
+            self.frame.token_map.remove(&r.token);
+            self.frame.reactor.results.remove(&r.key);
+            self.frame.reactor.fired.remove(&r.key);
+        }
+        if !regs.is_empty() {
+            self.frame.reactor.regs.retain(|r| r.frame != id);
+            self.frame
+                .log
+                .push(format!("cancelregs:{}:{}", id, regs.len()));
+        }
+
+        // 3) Nguồn giả + ready: bỏ entry của task này ⇒ event nhắm vào nó thành stale.
+        self.frame.external.retain(|tid, _| *tid != id);
+        let rb = self.frame.ready.len();
+        self.frame.ready.retain(|f| *f != id);
+        if self.frame.ready.len() < rb {
+            self.frame.log.push(format!("cancelready:{}", id));
+        }
+
+        // 4) Terminal. KHÔNG đóng handle mạng (language handle có thể thoát task / shared),
+        //    KHÔNG ghi kq lỗi mới. Task chỉ ngừng chạy source và chờ thu hồi.
+        t.trang_thai.set(TrangThai::Huy);
+        self.frame.cancelled.insert(id);
+        self.frame.log.push(format!("cancel:{}", id));
+
+        // 5) Đánh thức awaiter để chúng đọc cache/error thay vì treo vô hạn.
+        for w in awaiters {
+            self.frame_wake_one(w);
+        }
+        true
     }
 
     // -----------------------------------------------------------------------
@@ -805,6 +993,20 @@ impl Scheduler {
             .reactor
             .log
             .push(format!("rfire:{}:{}:{}", ev.seq, ev.key, ev.gen));
+        // VD-257/C: trigger huỷ theo seq (đường reactor) — xử lý trước khi wake/grant result.
+        let cancels: Vec<u32> = self
+            .frame
+            .cancel_on_seq
+            .iter()
+            .filter(|(s, _)| *s == ev.seq)
+            .map(|(_, id)| *id)
+            .collect();
+        for id in cancels {
+            self.frame_cancel_request_for_test(id);
+        }
+        if !self.frame.cancel_req.is_empty() {
+            self.frame_cancel_process_for_test();
+        }
         // `key` là số thứ tự đăng ký thật (bắt đầu từ 0) — KHÔNG dùng sentinel 0 cho
         // timer, nếu không event stale của đăng ký đầu tiên sẽ đánh thức nhầm đăng ký mới.
         let key = ev.key;
@@ -1385,6 +1587,20 @@ pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
         TrangThai::Moi => {}
         // `Pending` chỉ phát sinh trong đường frame; ở đó `await_task` không tự chạy thân.
         TrangThai::Pending => {}
+        // VD-257/C: task bị huỷ. Nếu đã có cache (trước khi huỷ) thì trả cache đúng hợp đồng;
+        // ngược lại dùng MÃ CÓ SẴN `VS0506` — không tạo mã huỷ mới (xem BLOCKER report).
+        TrangThai::Huy => {
+            let kq = t.kq.borrow();
+            return match kq.as_ref() {
+                Some(Ok(v)) => Ok(v.clone()),
+                Some(Err(tr)) => Err(Abort::Trap(tr.clone())),
+                None => Err(Abort::Trap(wrap_task_error(
+                    &t.ten,
+                    Trap::new(RT, "tác vụ đã bị huỷ trước khi có kết quả", t.span),
+                    t.span,
+                ))),
+            };
+        }
     }
     // **ST-267/VD-251 (chỉ test)**: không chạy thân tới hoàn tất. Báo driver treo frame,
     // driver lưu frame thật (Th/IFrame) rồi đăng ký wait + chạy frame khác. Đường cache
