@@ -42,6 +42,22 @@ pub const MAGIC: [u8; 4] = *b"VBC1";
 /// opcode. `decode`/`verify` so sánh trường này **trước thực thi**; runtime v1 vì thế từ chối artifact
 /// v2 và ngược lại. Khoá cache cũng đưa `VERSION` vào (xem `vis-cli::cache::khoa_multi`).
 pub const VERSION: u16 = 2;
+/// **VD-257 (stream B)** — phiên bản **định dạng module có instrumentation ngân sách**: `3`.
+///
+/// `1`→`2` đã dùng (ST-246); `3` **chưa từng** là phiên bản phát hành (kiểm chứng `git log`:
+/// `SIZE` chỉ có 1 và 2; `3` từng là *sentinel "version lạ"* trong test, không phải bản thật).
+/// Artifact mang trailer bảng phí `VFEE` (**yêu cầu** ngữ nghĩa budget mới) được đóng dấu `3`.
+/// Runtime cũ (so `VERSION = 2`) vì thế **từ chối** artifact mới thay vì đọc lõi rồi **lờ trailer**
+/// (đây là lỗ hổng mà chỉ đổi khoá cache không vá được — đường *direct load* không đi qua cache).
+/// Ngược lại, cửa nạp có budget (`fee::load_verified_with_fee`) **chỉ** nhận `3` + trailer hợp lệ,
+/// nên artifact cũ (`VERSION = 2`, không trailer) bị từ chối rõ ràng — **không** bị coi là "đã charge".
+///
+/// Bốn trục phiên bản (VD-257) — **độc lập, không cần bằng nhau**:
+/// 1. **Module format** — [`VERSION`] (2, cơ sở) / [`INSTRUMENTED_VERSION`] (3, có trailer).
+/// 2. **Event-table** — `fee::EVENT_TABLE_VERSION` (4; cấu trúc `pc/kind/site` trong `VFEE`).
+/// 3. **Weight-table** — `fee::WEIGHT_TABLE_VERSION` (1; bảng trọng số v1, **thử nghiệm**).
+/// 4. **Cache key** — `vis-cli::cache::PHIEN_BAN` + cả ba số trên + bảng thẻ + mode + nguồn.
+pub const INSTRUMENTED_VERSION: u16 = 3;
 /// Số byte hash nguồn.
 pub const HASH_LEN: usize = 32;
 

@@ -3,11 +3,20 @@
 // và `vis-interp` (runtime). Tệp này được `include!` ở cả hai crate ⇒ không cần dependency mới,
 // không đổi Cargo.toml. Không được tham chiếu item riêng của crate nào (chỉ `std`).
 
-/// Phiên bản **định dạng bảng phí** — `4`. `1`/`2` đã là `VERSION` của VBC1 (ST-246); `3` đã làm
-/// sentinel "version lạ" trong `tests/decode_neg.rs` + `tests/verify.rs` ⇒ không ấn `3` (D7).
+/// **Trục 2/4 — event-table version**: cấu trúc bảng sự kiện trong trailer `VFEE` = `4`.
+/// `1`/`2` đã là `VERSION` của VBC1 (ST-246); `3` từng là *sentinel "version lạ"* trong test,
+/// nhưng VD-257 chứng minh bằng `git log` rằng `3` **chưa từng** phát hành ⇒ VD-257 dùng `3` làm
+/// `format::INSTRUMENTED_VERSION` (module format, trục 1). Trục 2 độc lập, giữ `4`.
 pub const VERSION: u16 = 4;
-/// Bảng trọng số chuẩn **có phiên bản** (D5). Các số là **ĐỀ XUẤT, CHƯA DUYỆT** (VD-256 D2);
-/// chỉ test-hook đo dùng, **không** phải chính sách mặc định.
+/// Tên rõ nghĩa của [`VERSION`] — để mã/docs phân biệt **bốn trục phiên bản** (VD-257):
+/// 1) `format::VERSION`/`format::INSTRUMENTED_VERSION` (module), 2) `EVENT_TABLE_VERSION` (this),
+/// 3) [`WEIGHT_TABLE_VERSION`] (trọng số), 4) `vis-cli::cache::PHIEN_BAN` + các số trên (cache key).
+pub const EVENT_TABLE_VERSION: u16 = VERSION;
+/// **Trục 3/4 — weight-table version**: bảng trọng số chuẩn (D5) = `1`. Các số là **ĐỀ XUẤT,
+/// CHƯA DUYỆT** (VD-256 D2); chỉ test-hook đo dùng, **không** phải chính sách mặc định.
+/// Không đọc trọng số từ artifact — trailer chỉ chứa `pc/kind/site`, runtime lấy trọng số theo
+/// phiên bản này. Khác với event-table version (4): có thể đổi trọng số **mà không** đổi cấu trúc
+/// trailer, và ngược lại.
 pub const WEIGHT_TABLE_VERSION: u16 = 1;
 
 /// Một loại sự kiện ngữ nghĩa — **một định nghĩa duy nhất** cho compiler và interpreter.

@@ -178,6 +178,11 @@ impl Emit<'_> {
     pub(super) fn than(&mut self, b: &HBody, _base: u16, span: Span) -> Result<(), CodegenError> {
         match b {
             HBody::Expr(e) => {
+                // **VD-257 (stream B)** — HIR coi thân `Expr` là MỘT câu nguồn; interp charge
+                // `E_STMT` ở đây (`interp.rs::exec_stmt`). VD-256 đã vá đường tệp/top-level nhưng
+                // sót đường thân hàm (`fn f(): expr`) ⇒ parity compiler↔interp lệch đúng 1 sự kiện.
+                //charge E_STMT để dãy sự kiện khớp; không đổi opcode/ngữ nghĩa thực thi.
+                self.f.charge(FeeKind::Stmt, e.span());
                 self.expr(e)?;
                 self.lift_ret_opt(span)?; // VD-228 (siết VD-241 §3): biên hàm `-> T?`
                 Ok(())

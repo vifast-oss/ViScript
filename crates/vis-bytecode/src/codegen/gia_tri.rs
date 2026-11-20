@@ -21,7 +21,13 @@ impl Emit<'_> {
     /// Như [`Emit::cau`] nhưng `HStmt::Expr` **không** bị `Pop` (để lại giá trị).
     pub(super) fn tra_gia_tri(&mut self, s: &HStmt) -> Result<(), CodegenError> {
         match s {
-            HStmt::Expr(e) => self.expr(e),
+            HStmt::Expr(e) => {
+                // **VD-257 (stream B)** — "câu cuối có giá trị" vẫn LÀ một câu nguồn; interp charge
+                // `E_STMT` ở `exec_stmt`. VD-256 vá top-level nhưng sót `tra_gia_tri` (thân hàm,
+                // nhánh `if` có giá trị) ⇒ parity lệch đúng 1 sự kiện mỗi lần. Không đổi opcode.
+                self.f.charge(FeeKind::Stmt, s.span());
+                self.expr(e)
+            }
             HStmt::If {
                 cond,
                 then,

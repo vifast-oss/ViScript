@@ -62,11 +62,11 @@ fn module_hop_le_qua() {
 
 #[test]
 fn version_sai() {
-    // **ST-246 (VD-244)**: `VERSION` đã tăng 1 → 2; 3 là phiên bản không hỗ trợ. Việc từ chối
-    // artifact v1 (`x.version = 1`) được phủ riêng bởi `st246_version_compat.rs`.
+    // **VD-257 (stream B)**: 3 là `INSTRUMENTED_VERSION` (module có trailer), không phải sentinel.
+    // `verify` mặc định (chỉ nhận 2) từ chối cả 3 lẫn 99; artifact v1 được phủ ở file riêng.
     let mut x = hop_le();
-    x.version = 3;
-    assert_eq!(verify(&x), Err(VerifyError::BadVersion(3)));
+    x.version = 99;
+    assert_eq!(verify(&x), Err(VerifyError::BadVersion(99)));
 }
 
 #[test]

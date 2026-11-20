@@ -314,9 +314,17 @@ pub fn captured_used(code: &[Instr]) -> u16 {
     m
 }
 
-/// Xác minh **toàn bộ** module.
+/// Xác minh **toàn bộ** module. Đường mặc định chỉ nhận [`VERSION`] (2); artifact instrumented
+/// (trailer `VFEE`) mang `INSTRUMENTED_VERSION` (3) bị từ chối ở đây — xứng đáng, vì đường thường
+/// **không** charge và không được phép chạy artifact đòi budget.
 pub fn verify(m: &Module) -> Result<(), VerifyError> {
-    if m.version != VERSION {
+    verify_for_version(m, VERSION)
+}
+
+/// **VD-257 (stream B)** — xác minh module theo **phiên bản định dạng tường minh**.
+/// `verify` gọi với 2; cửa nạp có budget gọi với 3. Phần kiểm còn lại **dùng chung** (không copy).
+pub(crate) fn verify_for_version(m: &Module, expected: u16) -> Result<(), VerifyError> {
+    if m.version != expected {
         return Err(VerifyError::BadVersion(m.version));
     }
     if m.funcs.is_empty() {
