@@ -12,7 +12,7 @@ use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD};
 mod kenh;
 /// **ST-61**: phụ trợ thuần (tách cùng lý do R1).
 mod phu;
-use phu::{builtin_is_value, builtin_value_ty, is_percent_float};
+use phu::{builtin_is_value, builtin_value_ty, is_percent_float, static_key};
 
 impl<'a> Checker<'a> {
     /// Kiểu một biểu thức (ghi vào `types_of_expr`).
@@ -128,9 +128,23 @@ impl<'a> Checker<'a> {
             } => {
                 let mut kt = Type::Error;
                 let mut vt = Type::Error;
+                // **ST-239 (VD-242 Q4a + §3.4, ca 170)**: literal có khoá trùng **xác định
+                // được tĩnh** ⇒ lỗi checker (không gọi mã người dùng để tìm khoá). Khoá do
+                // biểu thức/biến tính ⇒ hợp lệ, runtime giữ last-wins mỗi khoá một entry.
+                let mut khoa_da_thay: std::collections::HashSet<String> =
+                    std::collections::HashSet::new();
                 for (i, (k, v)) in entries.iter().enumerate() {
                     let kt2 = self.kiem_expr(k);
                     let vt2 = self.kiem_expr(v);
+                    if let Some(khoa) = static_key(k) {
+                        if !khoa_da_thay.insert(khoa) {
+                            self.diag(
+                                MISMATCH,
+                                "khoá map literal trùng xác định được tĩnh (VD-242 §3.4)",
+                                k.span(),
+                            );
+                        }
+                    }
                     if i == 0 {
                         kt = kt2;
                         vt = vt2;
@@ -227,6 +241,9 @@ impl<'a> Checker<'a> {
                 let subj = self.kiem_expr(subject);
                 let mut acc: Option<Type> = None;
                 for arm in arms {
+                    // **ST-239 (VD-242 §3.1)**: chặn or-pattern bind không đầy đủ trước khi
+                    // thân nhánh được kiểm — interp in `2`, VM in `()` đều là chương trình sai.
+                    self.kiem_or_bind(&arm.pat, arm.guard.as_ref(), &arm.body);
                     self.bind_pat(&arm.pat, &subj);
                     if let Some(g) = &arm.guard {
                         let gt = self.kiem_expr(g);

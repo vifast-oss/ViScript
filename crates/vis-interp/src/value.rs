@@ -51,6 +51,13 @@ pub enum Value {
     Path(String),
     List(Vec<Value>),
     /// Giữ **thứ tự chèn** để `keys()`/`Show` ổn định.
+    ///
+    /// **ST-239 (VD-242 §3.4, ca 170)**: map là ánh xạ **khoá → giá trị**, mỗi khoá **một**
+    /// entry. Runtime (literal có khoá do biến tính, `m[k] = v`, `json.decode`) dùng **last-wins**
+    /// (giữ giá trị cuối, vị trí chèn đầu); `eq_value` cũng so theo ánh xạ đã gộp. Riêng
+    /// `json.decode` chọn last-wins là **lựa chọn của ViScript, KHÔNG phải luật JSON bắt buộc**
+    /// (JSON chỉ khuyến nghị unique key; decoder của ngôn ngữ khác có thể lấy đầu hoặc báo lỗi).
+    /// Literal có khoá trùng **xác định được tĩnh** bị checker từ chối (không phải sửa ở runtime).
     Map(Vec<(Value, Value)>),
     /// Tên kiểu (rỗng nếu ẩn danh) + trường theo thứ tự khai.
     Record(String, Vec<(String, Value)>),
@@ -290,6 +297,20 @@ impl Value {
                 a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_value(y))
             }
             (Value::Map(a), Value::Map(b)) => {
+                // **ST-239 (VD-242 §3.4)**: so **ánh xạ khoá → giá trị**, không phụ thuộc entry
+                // trùng hay thứ tự chèn. Gộp last-wins hai vế rồi so từng khoá một.
+                fn gop(xs: &[(Value, Value)]) -> Vec<&(Value, Value)> {
+                    let mut out: Vec<&(Value, Value)> = Vec::with_capacity(xs.len());
+                    for e in xs {
+                        if let Some(prev) = out.iter_mut().find(|p| p.0.eq_value(&e.0)) {
+                            *prev = e;
+                        } else {
+                            out.push(e);
+                        }
+                    }
+                    out
+                }
+                let (a, b) = (gop(a), gop(b));
                 a.len() == b.len()
                     && a.iter()
                         .all(|(k, v)| b.iter().any(|(k2, v2)| k.eq_value(k2) && v.eq_value(v2)))

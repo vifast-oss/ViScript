@@ -752,24 +752,26 @@ impl<'a> Interp<'a> {
                 span,
             } => {
                 let b = self.eval(base)?;
-                let b = if *optional {
+                // **ST-239 (VD-242 §3.2, ca 5)**: VM đúng, interp thiếu nâng một lớp `Opt`.
+                // `None` ⇒ `None`; `Some(u)` ⇒ `Some(u.field)` — **không flatten**. Dùng chung
+                // `lift_opt(v, 1)` với `$lift-opt` của VM để field đã `Opt` không bị bọc chồng.
+                // Checker đã chặn base thường (`?.` chỉ trên `Option[U]`), nhưng giữ nhánh phòng vệ.
+                let (b, nang) = if *optional {
                     match b {
-                        // **VD-204 (1)**: enum `Option` thật — `None` ⇒ `None`; `Some(v)` ⇒ bóc `v`;
-                        // giá trị khác (không phải `Option`) đi thẳng như cũ.
-                        Value::Enum(ea, va, ag) if ea == "Option" => match va.as_str() {
+                        Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
                             "None" => return Ok(Value::none()),
                             "Some" if ag.len() == 1 => {
-                                let mut ag = ag;
-                                ag.pop().expect("Some luôn có một đối số")
+                                (ag.pop().expect("Some luôn có một đối số"), true)
                             }
-                            _ => Value::Enum(ea, va, ag),
+                            _ => (Value::Enum(ea, va, ag), false),
                         },
-                        other => other,
+                        other => (other, false),
                     }
                 } else {
-                    b
+                    (b, false)
                 };
-                self.field_of(b, name, *span)
+                let v = self.field_of(b, name, *span)?;
+                Ok(if nang { crate::lift::lift_opt(v, 1) } else { v })
             }
             HExpr::Index { base, index, span } => {
                 let b = self.eval(base)?;
@@ -794,11 +796,17 @@ impl<'a> Interp<'a> {
                 Ok(Value::List(vs))
             }
             HExpr::Map { entries, .. } => {
-                let mut kv = Vec::new();
+                // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins — mỗi khoá một entry,
+                // giữ giá trị cuối và vị trí chèn đầu. Khoá trùng **tĩnh** đã bị checker chặn.
+                let mut kv: Vec<(Value, Value)> = Vec::new();
                 for (k, v) in entries {
                     let kk = self.eval(k)?;
                     let vv = self.eval(v)?;
-                    kv.push((kk, vv));
+                    if let Some(e) = kv.iter_mut().find(|(kk2, _)| kk2.eq_value(&kk)) {
+                        e.1 = vv;
+                    } else {
+                        kv.push((kk, vv));
+                    }
                 }
                 Ok(Value::Map(kv))
             }

@@ -1153,8 +1153,7 @@ impl<'a> Checker<'a> {
                 Type::Never
             }
             HStmt::Break { .. } | HStmt::Continue { .. } => {
-                // **VD-241 §6/B-A (A0, 2026-11-19)** — `break`/`continue` là luồng **không tiếp tục**
-                // (như `return`): kiểu `Never`, tương thích mọi kiểu để `unify_branch`/`coerce` chấp nhận.
+                // **VD-241 §6/B-A**: `break`/`continue` phân kỳ như `return` ⇒ `Never`, nhận mọi kiểu.
                 Type::Never
             }
             HStmt::Match {
@@ -1165,6 +1164,7 @@ impl<'a> Checker<'a> {
                 let subj = self.kiem_expr(subject);
                 let mut acc: Option<Type> = None;
                 for arm in arms {
+                    self.kiem_or_bind(&arm.pat, arm.guard.as_ref(), &arm.body); // ST-239 §3.1
                     self.bind_pat(&arm.pat, &subj);
                     if let Some(g) = &arm.guard {
                         let gt = self.kiem_expr(g);

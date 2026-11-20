@@ -837,16 +837,34 @@ impl<'m> Th<'m> {
                         }
                     }
                 }
-                Instr::MakeList(n) | Instr::MakeTuple(n) | Instr::MakeSet(n) => {
+                Instr::MakeList(n) | Instr::MakeTuple(n) => {
                     let items = self.pop_n(vm, n as usize, span)?;
                     self.st.push(Value::List(items));
                 }
+                // **ST-239 (VD-242 §4, ca 10)**: `set{…}` là **tập** — giữ phần tử đầu mỗi
+                // giá trị, bỏ phần tử trùng (interp đã làm vậy; VM trước đây giữ cả).
+                Instr::MakeSet(n) => {
+                    let items = self.pop_n(vm, n as usize, span)?;
+                    let mut uniq: Vec<Value> = Vec::with_capacity(items.len());
+                    for v in items {
+                        if !uniq.iter().any(|x| value::eq(x, &v)) {
+                            uniq.push(v);
+                        }
+                    }
+                    self.st.push(Value::List(uniq));
+                }
                 Instr::MakeMap(n) => {
+                    // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins, khớp interp —
+                    // mỗi khoá một entry (giữ giá trị cuối, vị trí chèn đầu).
                     let flat = self.pop_n(vm, 2 * n as usize, span)?;
-                    let mut pairs = Vec::with_capacity(n as usize);
+                    let mut pairs: Vec<(Value, Value)> = Vec::with_capacity(n as usize);
                     let mut it = flat.into_iter();
                     while let (Some(k), Some(v)) = (it.next(), it.next()) {
-                        pairs.push((k, v));
+                        if let Some(e) = pairs.iter_mut().find(|(kk, _)| value::eq(kk, &k)) {
+                            e.1 = v;
+                        } else {
+                            pairs.push((k, v));
+                        }
                     }
                     self.st.push(Value::Map(pairs));
                 }

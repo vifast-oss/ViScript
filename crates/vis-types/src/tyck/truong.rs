@@ -16,6 +16,20 @@ impl<'a> Checker<'a> {
         span: vis_syntax::Span,
     ) -> Type {
         let bt = self.kiem_expr(base);
+        // **ST-239 (VD-242 Q2=A + §3.2, ca 6)**: `?.` chỉ có nghĩa trên base `Option[U]`.
+        // Base thường `U` phải dùng `.`; cả hai engine từng chấp nhận chương trình sai
+        // (interp trả trường thô, VM bọc `Some` rồi trap) ⇒ từ chối tĩnh `VS0412`.
+        if optional && !matches!(bt, Type::Opt(_) | Type::Error) {
+            self.diag(
+                MISMATCH,
+                format!(
+                    "`?.` cần base `Option[U]`, được `{}` — dùng `.` cho base thường (VD-242 §3.2)",
+                    self.show(&bt)
+                ),
+                span,
+            );
+            return Type::Error;
+        }
         match &bt {
             Type::Error => Type::Error,
             Type::Record(id) => match self.types.field(*id, name) {

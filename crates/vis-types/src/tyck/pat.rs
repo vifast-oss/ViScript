@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 
 use vis_syntax::Span;
 
-use crate::hir::{HArm, HPat, LitKind};
+use crate::hir::{HArm, HBody, HCond, HExpr, HPat, HStmt, InterpPart, LitKind};
 use crate::ty::Type;
 
 use super::{Checker, ARG_COUNT, MISMATCH, NON_EXHAUSTIVE, NO_FIELD};
@@ -538,5 +538,281 @@ fn bat_kha_bac(p: &HPat) -> bool {
         HPat::Tuple { items, .. } => items.iter().all(bat_kha_bac),
         HPat::Or { alts, .. } => alts.iter().any(bat_kha_bac),
         _ => false,
+    }
+}
+
+// ---- ST-239 (VD-242 §3.1): or-pattern — mọi tên dùng trong thân phải bind ở MỌI alternative ----
+
+/// Mọi `sym` mà pattern này bind (kể cả lồng).
+fn pat_binds(p: &HPat, out: &mut BTreeSet<u32>) {
+    match p {
+        HPat::Bind { sym, .. } => {
+            out.insert(*sym);
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
+        HPat::Or { alts, .. } => {
+            for a in alts {
+                pat_binds(a, out);
+            }
+        }
+        HPat::Ctor { args, .. } => {
+            for it in args {
+                pat_binds(it, out);
+            }
+        }
+        HPat::Tuple { items, .. } => {
+            for it in items {
+                pat_binds(it, out);
+            }
+        }
+        HPat::List { items, rest, .. } => {
+            for it in items {
+                pat_binds(it, out);
+            }
+            if let Some(r) = rest {
+                pat_binds(r, out);
+            }
+        }
+        HPat::Record { fields, .. } => {
+            for (_, sub) in fields {
+                if let Some(s) = sub {
+                    pat_binds(s, out);
+                }
+            }
+        }
+        HPat::Range { lo, hi, .. } => {
+            for p in [lo, hi].into_iter().flatten() {
+                pat_binds(p, out);
+            }
+        }
+    }
+}
+
+/// Mọi `sym` được **tham chiếu** (đọc/ghi) trong một biểu thức — để biết binding or-pattern
+/// nào thực sự được dùng ở thân nhánh. Không đếm binding của pattern lồng (khác `sym`).
+fn expr_syms(e: &HExpr, out: &mut BTreeSet<u32>) {
+    match e {
+        HExpr::Lit { .. } | HExpr::CmdBlock { .. } | HExpr::Error { .. } => {}
+        HExpr::Var { sym, .. } => {
+            if let Some(id) = sym {
+                out.insert(*id);
+            }
+        }
+        HExpr::Bin { lhs, rhs, .. } => {
+            expr_syms(lhs, out);
+            expr_syms(rhs, out);
+        }
+        HExpr::Index { base, index, .. } => {
+            expr_syms(base, out);
+            expr_syms(index, out);
+        }
+        HExpr::Un { expr, .. }
+        | HExpr::Try { expr, .. }
+        | HExpr::Ref { expr, .. }
+        | HExpr::Await { expr, .. } => expr_syms(expr, out),
+        HExpr::Call {
+            callee,
+            args,
+            named,
+            ..
+        }
+        | HExpr::Spawn {
+            callee,
+            args,
+            named,
+            ..
+        } => {
+            expr_syms(callee, out);
+            for a in args {
+                expr_syms(a, out);
+            }
+            for (_, a) in named {
+                expr_syms(a, out);
+            }
+        }
+        HExpr::Field { base, .. } => expr_syms(base, out),
+        HExpr::List { items, .. } | HExpr::Set { items, .. } | HExpr::Tuple { items, .. } => {
+            for it in items {
+                expr_syms(it, out);
+            }
+        }
+        HExpr::EnumLit { args, .. } => {
+            for it in args {
+                expr_syms(it, out);
+            }
+        }
+        HExpr::Map { entries, .. } => {
+            for (k, v) in entries {
+                expr_syms(k, out);
+                expr_syms(v, out);
+            }
+        }
+        HExpr::Record { fields, .. } | HExpr::With { fields, .. } => {
+            for (_, v) in fields {
+                expr_syms(v, out);
+            }
+            if let HExpr::With { base, .. } = e {
+                expr_syms(base, out);
+            }
+        }
+        HExpr::Opt { value, .. } => {
+            if let Some(v) = value {
+                expr_syms(v, out);
+            }
+        }
+        HExpr::If {
+            cond,
+            then,
+            elifs,
+            else_,
+            ..
+        } => {
+            cond_syms(cond, out);
+            stmts_syms(then, out);
+            for (c, b) in elifs {
+                cond_syms(c, out);
+                stmts_syms(b, out);
+            }
+            stmts_syms(else_, out);
+        }
+        HExpr::Match { subject, arms, .. } => {
+            expr_syms(subject, out);
+            for arm in arms {
+                if let Some(g) = &arm.guard {
+                    expr_syms(g, out);
+                }
+                stmts_syms(&arm.body, out);
+            }
+        }
+        HExpr::Lambda { body, .. } => body_syms(body, out),
+        HExpr::ChanNew { cap, .. } => expr_syms(cap, out),
+        HExpr::Interp { parts, .. } => {
+            for part in parts {
+                match part {
+                    InterpPart::Str(_) => {}
+                    InterpPart::Expr(e) => expr_syms(e, out),
+                    InterpPart::ExprSpec { expr, .. } => expr_syms(expr, out),
+                }
+            }
+        }
+    }
+}
+
+fn cond_syms(c: &HCond, out: &mut BTreeSet<u32>) {
+    match c {
+        HCond::Expr(e) => expr_syms(e, out),
+        HCond::Let { value, .. } => expr_syms(value, out),
+    }
+}
+
+fn body_syms(b: &HBody, out: &mut BTreeSet<u32>) {
+    match b {
+        HBody::Expr(e) => expr_syms(e, out),
+        HBody::Stmts(ss) => stmts_syms(ss, out),
+    }
+}
+
+fn stmts_syms(ss: &[HStmt], out: &mut BTreeSet<u32>) {
+    for s in ss {
+        match s {
+            HStmt::Let { init, else_, .. } => {
+                expr_syms(init, out);
+                if let Some(e) = else_ {
+                    stmts_syms(&e.body, out);
+                }
+            }
+            HStmt::Var { init, .. } => expr_syms(init, out),
+            HStmt::Assign { target, value, .. } => {
+                expr_syms(target, out);
+                expr_syms(value, out);
+            }
+            HStmt::Expr(e) => expr_syms(e, out),
+            HStmt::If {
+                cond,
+                then,
+                elifs,
+                else_,
+                ..
+            } => {
+                cond_syms(cond, out);
+                stmts_syms(then, out);
+                for (c, b) in elifs {
+                    cond_syms(c, out);
+                    stmts_syms(b, out);
+                }
+                if let Some(b) = else_ {
+                    stmts_syms(b, out);
+                }
+            }
+            HStmt::For { iter, body, .. } => {
+                expr_syms(iter, out);
+                stmts_syms(body, out);
+            }
+            HStmt::While { cond, body, .. } => {
+                cond_syms(cond, out);
+                stmts_syms(body, out);
+            }
+            HStmt::Loop { body, .. } | HStmt::Scope { body, .. } | HStmt::Block { body, .. } => {
+                stmts_syms(body, out)
+            }
+            HStmt::Return { value, .. } => {
+                if let Some(v) = value {
+                    expr_syms(v, out);
+                }
+            }
+            HStmt::Match { subject, arms, .. } => {
+                expr_syms(subject, out);
+                for arm in arms {
+                    if let Some(g) = &arm.guard {
+                        expr_syms(g, out);
+                    }
+                    stmts_syms(&arm.body, out);
+                }
+            }
+            HStmt::Break { .. } | HStmt::Continue { .. } => {}
+        }
+    }
+}
+
+impl<'a> Checker<'a> {
+    /// **ST-239 (VD-242 §3.1, ca 9)** — nếu một tên bind ở một số alternative của or-pattern
+    /// nhưng **không phải mọi** alternative, và tên đó được dùng trong guard/thân nhánh ⇒ từ
+    /// chối chương trình (`VS0412`). Không sửa VM để in `2` (bị VD-242 §3.1 bác trực tiếp).
+    pub(crate) fn kiem_or_bind(&mut self, pat: &HPat, guard: Option<&HExpr>, body: &[HStmt]) {
+        if let HPat::Or { alts, span } = pat {
+            let mut chung: Option<BTreeSet<u32>> = None;
+            let mut bat_ky: BTreeSet<u32> = BTreeSet::new();
+            for alt in alts {
+                let mut s = BTreeSet::new();
+                pat_binds(alt, &mut s);
+                bat_ky.extend(s.iter().copied());
+                chung = Some(match chung {
+                    None => s,
+                    Some(prev) => prev.intersection(&s).copied().collect(),
+                });
+            }
+            let mut dung: BTreeSet<u32> = BTreeSet::new();
+            if let Some(g) = guard {
+                expr_syms(g, &mut dung);
+            }
+            stmts_syms(body, &mut dung);
+            let chung = chung.unwrap_or_default();
+            for id in bat_ky.difference(&chung) {
+                if dung.contains(id) {
+                    let ten = self
+                        .symbols
+                        .name_of(*id)
+                        .map(str::to_string)
+                        .unwrap_or_else(|| "?".into());
+                    self.diag(
+                        MISMATCH,
+                        format!(
+                            "or-pattern: `{ten}` được dùng trong thân nhưng không bind ở mọi alternative (VD-242 §3.1)"
+                        ),
+                        *span,
+                    );
+                }
+            }
+        }
     }
 }

@@ -4,6 +4,37 @@
 
 use crate::ty::Type;
 
+/// **ST-239 (VD-242 Q4a + §3.4)**: dạng chuẩn của **khoá map literal xác định được tĩnh**.
+/// Chỉ nhận literal — mọi biểu thức khác trả `None` và để runtime last-wins xử lý. Tuyệt đối
+/// **không gọi mã người dùng** ở checker. Số `int`/`float` cùng giá trị (VD-17: `1 == 1.0`)
+/// dùng chung một dạng để bắt cả cặp trùng `1` / `1.0`.
+pub(super) fn static_key(e: &crate::hir::HExpr) -> Option<String> {
+    let crate::hir::HExpr::Lit { lit, .. } = e else {
+        return None;
+    };
+    use crate::hir::LitKind;
+    let key = match lit.kind {
+        LitKind::Int => match lit.text.parse::<i64>() {
+            Ok(n) => format!("n:{n}"),
+            Err(_) => format!("int:{}", lit.text),
+        },
+        LitKind::Float => match lit.text.parse::<f64>() {
+            Ok(f)
+                if f.is_finite()
+                    && f.fract() == 0.0
+                    && f >= i64::MIN as f64
+                    && f <= i64::MAX as f64 =>
+            {
+                format!("n:{}", f as i64)
+            }
+            Ok(f) => format!("n:{f:?}"),
+            Err(_) => format!("float:{}", lit.text),
+        },
+        kind => format!("{kind:?}:{}", lit.text),
+    };
+    Some(key)
+}
+
 /// `percent` và `float` so sánh được **theo tỉ lệ** (§3.1/§3.6) — đặc cách duy nhất.
 pub(super) fn is_percent_float(a: &Type, b: &Type) -> bool {
     matches!(
