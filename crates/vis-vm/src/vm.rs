@@ -10,7 +10,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use vis_bytecode::fee::{FeeEntry, FeeTable};
-use vis_bytecode::{Func, Instr, Module, BI_MATCH_NO_ARM, GLOBAL_SLOT_BASE};
+use vis_bytecode::{
+    Func, Instr, Module, BI_MATCH_NO_ARM, BI_MAU_LIST_GE, BI_MAU_LIST_TAIL, GLOBAL_SLOT_BASE,
+};
 use vis_interp::builtin::{self, Host};
 use vis_interp::interp::{Abort, Trap, IDX, R, RT};
 use vis_interp::value::{self, Value, VmFunc};
@@ -877,8 +879,29 @@ impl<'m> Th<'m> {
                         )));
                     }
                     // ST-267/VD-251: hook frame-only (default = `builtin::call` cũ).
-                    let v = crate::vm_frame::call_builtin_frame(self, vm, &ten, args, span)?;
-                    self.st.push(v);
+                    // **VD-260** — builtin **nội bộ** của pattern list `[a, ..]`/`[a, ..r]`:
+                    // `TestList(n)` chỉ đúng `n`; rest cần `len ≥ n` và bản sao `xs[n..]`.
+                    // Xử lý ngay tại đây (không thêm opcode/tag/VERSION); interp có bộ khớp
+                    // pattern riêng nên chỉ VM chạm hai tên này.
+                    if ten == BI_MAU_LIST_GE {
+                        let ok = match args.as_slice() {
+                            [Value::List(xs), Value::Int(n)] => *n >= 0 && xs.len() >= *n as usize,
+                            _ => false,
+                        };
+                        self.st.push(Value::Bool(ok));
+                    } else if ten == BI_MAU_LIST_TAIL {
+                        let v = match args.as_slice() {
+                            [Value::List(xs), Value::Int(n)] => {
+                                let n = (*n).max(0) as usize;
+                                Value::List(xs.iter().skip(n).cloned().collect())
+                            }
+                            _ => Value::Unit,
+                        };
+                        self.st.push(v);
+                    } else {
+                        let v = crate::vm_frame::call_builtin_frame(self, vm, &ten, args, span)?;
+                        self.st.push(v);
+                    }
                 }
                 Instr::CallMethod(i, n) => {
                     let ten = vm.ten(i, span)?;

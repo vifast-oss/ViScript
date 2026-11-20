@@ -93,6 +93,12 @@ pub const GLOBAL_SLOT_BASE: u16 = 0x8000;
 /// Không phải builtin thật; VM chặn trước khi gọi `vis_interp::builtin::call`.
 pub const BI_MATCH_NO_ARM: &str = "$vis_match_no_arm";
 
+/// **VD-260** — hai builtin **nội bộ** cho pattern list có `..` (tên `$` ⇒ người dùng không viết
+/// được). `TestList(n)` chỉ kiểm **đúng** `n` phần tử; rest cần `len ≥ n` và bản sao đuôi. Không
+/// thêm opcode/tag/MAGIC/VERSION: codegen phát `CallBuiltin` với hai tên này, VM xử lý trực tiếp.
+pub const BI_MAU_LIST_GE: &str = "$mau:list-ge";
+pub const BI_MAU_LIST_TAIL: &str = "$mau:list-duoi";
+
 /// Hằng trong **const pool** — giữ **nguyên văn** literal HIR (cùng `LitKind`) để không mất mát.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Const {
