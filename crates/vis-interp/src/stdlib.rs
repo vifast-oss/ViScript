@@ -1116,31 +1116,6 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
     }
 }
 
-/// **ST-240 / VD-242 §3.5 (nợ #173)**: giữ dấu float trong JSON. `format!("{}", 1.0_f64)` cho
-/// `"1"`, decoder sẽ đọc thành `Int`; thêm `.0` khi chuỗi in ra không có dấu thập phân/mũ.
-///
-/// **VD-258**: `Display` của Rust in số rất nhỏ/lớn thành hàng trăm chữ số (ví dụ `5e-324` →
-/// 326 chữ số thập phân); `str::parse::<f64>` (decoder JSON) từ chối một số dạng đó, nên encode
-/// xong decode lại **hỏng**. Khi chuỗi quá dài, dùng dạng khoa học `{:e}` (luôn có `e` ⇒ vẫn giữ
-/// dấu float và round-trip qua decoder).
-fn json_float(f: f64) -> String {
-    if !f.is_finite() {
-        return "null".to_string();
-    }
-    let s = format!("{f}");
-    if s.len() > 96 {
-        let e = format!("{f:e}");
-        if e.contains('e') || e.contains('E') {
-            return e;
-        }
-    }
-    if s.contains('.') || s.contains('e') || s.contains('E') {
-        s
-    } else {
-        format!("{s}.0")
-    }
-}
-
 /// Mã hoá JSON **compact** (hoặc pretty 2 dấu cách) cho giá trị VS0.
 ///
 /// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `None` ⇒ `null`; `Result` ⇒
@@ -1194,7 +1169,7 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
         Value::Int(n) => out.push_str(&n.to_string()),
         Value::Float(f) => {
             if f.is_finite() {
-                out.push_str(&json_float(*f))
+                out.push_str(&crate::json::float_json(*f))
             } else {
                 out.push_str("null")
             }
@@ -1203,7 +1178,7 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
         // `percent` lưu dưới dạng `f64` ⇒ cùng quy ước giữ dấu float (#173).
         Value::Percent(p) => {
             if p.is_finite() {
-                out.push_str(&json_float(*p))
+                out.push_str(&crate::json::float_json(*p))
             } else {
                 out.push_str("null")
             }
@@ -1324,7 +1299,7 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
                 Some(Value::Int(n)) => out.push_str(&n.to_string()),
                 Some(Value::Float(f)) => {
                     if f.is_finite() {
-                        out.push_str(&json_float(*f));
+                        out.push_str(&crate::json::float_json(*f));
                     } else {
                         out.push_str("null");
                     }

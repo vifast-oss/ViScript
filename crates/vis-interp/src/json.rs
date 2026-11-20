@@ -382,3 +382,28 @@ pub(crate) fn zero_dau(s: &str) -> Option<usize> {
     }
     None
 }
+
+/// **ST-240 / VD-242 §3.5 (nợ #173)**: giữ dấu float trong JSON. `format!("{}", 1.0_f64)` cho
+/// `"1"`, decoder sẽ đọc thành `Int`; thêm `.0` khi chuỗi in ra không có dấu thập phân/mũ.
+///
+/// **VD-258**: `Display` của Rust in số rất nhỏ/lớn thành hàng trăm chữ số (ví dụ `5e-324` →
+/// 326 chữ số thập phân); `str::parse::<f64>` (decoder JSON) từ chối một số dạng đó, nên encode
+/// xong decode lại **hỏng**. Khi chuỗi quá dài, dùng dạng khoa học `{:e}` (luôn có `e` ⇒ vẫn giữ
+/// dấu float và round-trip qua decoder).
+pub(crate) fn float_json(f: f64) -> String {
+    if !f.is_finite() {
+        return "null".to_string();
+    }
+    let s = format!("{f}");
+    if s.len() > 96 {
+        let e = format!("{f:e}");
+        if e.contains('e') || e.contains('E') {
+            return e;
+        }
+    }
+    if s.contains('.') || s.contains('e') || s.contains('E') {
+        s
+    } else {
+        format!("{s}.0")
+    }
+}
