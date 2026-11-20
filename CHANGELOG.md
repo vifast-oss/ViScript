@@ -35,6 +35,11 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 | R28 | `fdb21d15` | PASS | 177 |
 | R29 | `39041b3f` | PASS | 197 |
 | R30 | `0d5e0e57` | PASS | 223 (222 DONE) |
+| R31 | `31b51d2e` | PASS | 249 (baseline VD-242) |
+
+> Ghi chú (2026-11-21): số API trong từng mục dưới đây là số tại **nhánh lúc viết**; sau merge lấy
+> `agent/API-STD.txt` (hiện **136** mục). **R32 chưa có** — đợt tối ưu liên tục VD-258..VD-270 đang chạy;
+> nhật ký đầy đủ ở `agent/JOURNAL/vd260-report.md`.
 
 ## Mốc đáng chú ý
 

@@ -1606,16 +1606,18 @@ fn tính_tổng(danh_sách: list[int]) -> int:
 - Nợ liên quan: **#142** (`pkg update X` ghim mọi gói khác), **#143** (`NamePolicy::Strict`), **#125**
   (mạng/chữ ký).
 
-## Mức hiện thực VS2 (đồng bộ 2026-11-16)
+## Mức hiện thực VS2 (đồng bộ 2026-11-21)
 
-Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong viscript/agent/reports/. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
+Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong `agent/reports/` và `agent/JOURNAL/`. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
 
-- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với --strict-caps. Cưỡng chế ở biên host (tầng runtime), vi phạm báo VS0604 exit 2. Kernel sandbox (Landlock) chưa có; --sandbox-check chỉ thăm dò.
-- **Async**: task chạy tuần tự, một luồng, run-to-completion khi join. Không song song, không suspend giữa thân hàm, không GC. Đồng thời thật là đích VS3.
-- **Kênh**: chan(n) với n ≥ 1 có send/recv/close. chan(0) bị từ chối lúc tạo bằng VS0505. Rendezvous, select và timeout là đích VS3.
+- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với `--strict-caps`. Cưỡng chế ở biên host (tầng runtime), vi phạm báo `VS0604` exit 2. **Landlock đã có trên Linux** (ST-132/ST-150/ST-166/ST-173), bật bằng `--sandbox`; `--sandbox-check` báo trạng thái. Đường **đọc** đã đóng khe symlink trên Unix/Linux (ST-174); đường **ghi** vẫn kiểm-rồi-mở trên Unix (nợ `#140`/`#109b`, VS3-QĐ-4). **macOS chưa verify**; **Windows** chỉ kiểm theo đường dẫn, mức bảo đảm thấp hơn.
+- **Async**: runtime **mặc định** vẫn tuần tự, một luồng, run-to-completion khi join; không song song, không GC. Đường **test nội bộ** (VD-250..VD-257) đã có suspend/resume, reactor read/accept + timer, cancellation và fairness/Q thử nghiệm, nhưng **chưa bật mặc định** và không phải API người dùng. Worker/GC/song song thật là đích VS3.
+- **Kênh**: `chan(n)` với n ≥ 1 có send/recv/close. `chan(0)` bị từ chối lúc tạo bằng `VS0505`. Rendezvous, select và timeout là đích VS3. Đường test frame đã phủ đầy/rỗng/đóng nhưng không đổi ngữ nghĩa mặc định.
 - **assert <điều kiện>**: có từ ST-83.
 - **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
-- **HTTP**: HTTP/1.1 loopback, có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Chưa có TLS, HTTP/2, keep-alive.
+- **HTTP**: HTTP/1.1 loopback, có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Có **deadline tổng** cho toàn lời gọi (ST-265/VD-250): connect/redirect/đọc dùng chung một hạn monotonic, mỗi bước chờ dùng thời gian còn lại, không reset theo hop. **Chưa** có TLS, HTTP/2, keep-alive.
 - **Gói**: `vis pkg add|install|update|list|remove` trên **registry cục bộ** (thư mục, `--registry`), `vis.lock` có SHA-256, chọn phiên bản bằng **bộ giải ràng buộc** semver. **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy, chữ ký — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
-- **LSP**: chỉ publish chẩn đoán cho tài liệu đang mở (VD-126).
-- **Nền tảng**: chạy thật trên macOS; Linux, Windows, wasm32 ở mức biên dịch kiểm tra (VD-104, VD-121).
+- **LSP**: publish chẩn đoán cho **tài liệu đang mở** (VD-126; **chưa** publish chẩn đoán tệp phụ). Đã có definition, documentSymbol, references, rename + prepareRename, signatureHelp, foldingRange, workspace/symbol, documentHighlight, selectionRange, formatting, typeDefinition, implementation, hover (biến/trường/enum/method/builtin) và completion `std.*`; cache phân tích theo `(uri, text)`.
+- **Nền tảng**: **Linux chạy thật** (`ps`; host suite xanh, Landlock chạy thật). **Windows**: Tier 2 — workspace xanh @ `c7cef71` (20/11), **chưa verify lại ở HEAD**, **chưa tuyên bố hỗ trợ**. **macOS**: **chưa verify** — không có máy Darwin; `vis-remote mac` từ chối nếu `uname -s` ≠ Darwin (ST-242). **wasm32**: chỉ `cargo check` (chưa có runner).
+- **Ngôn ngữ đã hiện thực thêm**: `let … else` (buộc thoát mọi nhánh, `VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, khởi tạo top-level `let`/`var` trước `fn main`, gán lồng `x.f.g`/`x[i][j]`, literal `i64::MIN`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.
+- **Thư viện chuẩn**: `std.fs/path/str/list/map/sqlite/json/net/time/...`; SQLite là **feature tùy chọn** (`default = ["sqlite"]`; bản core từ chối `std.sqlite` rõ ràng). API std đóng băng có kiểm bằng `agent/API-STD.txt`.
