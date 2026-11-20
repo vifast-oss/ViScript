@@ -106,7 +106,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 strstrip, 2026-11-21)**: +**2** hàm `std.str.*` (`strip_prefix`,
     // `strip_suffix`; `(str, str) -> str?` = `Option[str]`) ⇒ **106** hàm; không xoá/đổi hàm
     // cũ nào.
-    assert_eq!(FUNCS.len(), 106, "bảng chữ ký phải đủ 106 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-normalize, 2026-11-21)**: +**1** hàm `std.path.normalize`
+    // (`(str) -> str`; chuẩn hoá từ vựng POSIX, thuần chuỗi) ⇒ **107** hàm.
+    assert_eq!(FUNCS.len(), 107, "bảng chữ ký phải đủ 107 hàm");
 }
 
 #[test]
@@ -134,6 +136,22 @@ fn flatten_kieu_long_mot_cap() {
         })),
         "`list.flatten`: hạ `list[T]`"
     );
+}
+
+#[test]
+fn path_normalize_kieu_str_sang_str_va_sugar() {
+    // **VD-270 (path.normalize)**: chữ ký `(str) -> str`; sugar R5c của `str` chỉ mở đúng
+    // `normalize` → `path`, không mở các hàm `path.*` khác (tránh đổi nghĩa `s.join(...)`).
+    let f = sig_of("path.normalize").expect("path.normalize");
+    assert_eq!(f.params, &[Ty::Str], "`path.normalize`: tham số");
+    assert_eq!(f.ret, Ty::Str, "`path.normalize`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "`path.normalize`: hạ kiểu");
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "normalize"),
+        Some("path")
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
 }
 
 #[test]

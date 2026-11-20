@@ -71,6 +71,7 @@ path.dirname	(str) -> str
 path.ext	(str) -> str
 path.is_abs	(str) -> bool
 path.join	(str, str) -> str
+path.normalize	(str) -> str
 path.stem	(str) -> str
 sqlite.begin	(str) -> Result[(), Error]
 sqlite.changes	(str) -> Result[int, Error]
