@@ -102,6 +102,7 @@ sqlite.query	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.query_one	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.rollback	(str) -> Result[(), Error]
 sqlite.schema_sql	(str, str) -> Result[str?, Error]
+sqlite.table_exists	(str, str) -> Result[bool, Error]
 sqlite.tables	(str) -> Result[list[str], Error]
 str.byte_len	(str) -> int
 str.center	(str, int, str) -> str
