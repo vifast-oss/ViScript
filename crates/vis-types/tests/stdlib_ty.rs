@@ -117,7 +117,30 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-tables, 2026-11-21)**: +**1** hàm `sqlite.tables`
     // (`(str) -> Result[list[str], Error]`; bảng/view người dùng của schema chính, sắp byte)
     // ⇒ **110** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 110, "bảng chữ ký phải đủ 110 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 splitn, 2026-11-21)**: +**1** hàm `std.str.splitn`
+    // (`(str, str, int) -> list[str]`; tối đa `n` phần, phần cuối giữ nguyên phần còn lại)
+    // ⇒ **111** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 111, "bảng chữ ký phải đủ 111 hàm");
+}
+
+#[test]
+fn splitn_kieu_str_str_int_va_sugar() {
+    // **VD-270 (splitn)**: chữ ký `(str, str, int) -> list[str]`; tham số đầu `str` để sugar
+    // R5c `s.splitn(sep, n)` nhận, `n` là `int` (không phải `str`).
+    let f = sig_of("str.splitn").expect("str.splitn");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str, Ty::Int],
+        "`str.splitn`: tham số"
+    );
+    assert_eq!(f.ret, Ty::ListStr, "`str.splitn`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`str.splitn`: hạ kiểu trả"
+    );
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(vis_types::stdlib::module_sugar("str", "splitn"), None);
 }
 
 #[test]

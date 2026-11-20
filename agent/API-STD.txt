@@ -108,6 +108,7 @@ str.replace_first	(str, str, str) -> str
 str.rfind	(str, str) -> int?
 str.split	(str, str) -> list[str]
 str.split_whitespace	(str) -> list[str]
+str.splitn	(str, str, int) -> list[str]
 str.starts_with	(str, str) -> bool
 str.strip_prefix	(str, str) -> str?
 str.strip_suffix	(str, str) -> str?

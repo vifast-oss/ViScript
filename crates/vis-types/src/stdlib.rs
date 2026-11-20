@@ -215,11 +215,19 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 110] = [
+pub const FUNCS: [StdFn; 111] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
         params: &[Ty::Str, Ty::Str],
+        ret: Ty::ListStr,
+    },
+    // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần còn
+    // lại (kể cả dấu phân cách); `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`; `sep` rỗng theo nghĩa Rust
+    // `str::splitn`; `n < 0` ⇒ trap `VS0501` ở tầng chạy. Sugar R5c `s.splitn(sep, n)`.
+    StdFn {
+        name: "str.splitn",
+        params: &[Ty::Str, Ty::Str, Ty::Int],
         ret: Ty::ListStr,
     },
     // **VD-265**: tách dòng kiểu Rust `lines()` — `\n`, bỏ `\r` cuối dòng; tách khoảng trắng
