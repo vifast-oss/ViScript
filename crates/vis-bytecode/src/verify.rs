@@ -292,6 +292,14 @@ fn dich(pc: usize, off: i32, n: usize, func: u32) -> Result<usize, VerifyError> 
 }
 
 /// Số biến bắt **được dùng** (max `LoadCaptured` + 1) trong code của một hàm.
+///
+/// **ST-252 (VD-246)**: đây là một nửa của quan hệ **hàm đích – số capture – thao tác tạo
+/// closure** mà verifier kiểm được mà không cần metadata mới: tại mỗi `MakeClosure(fi, nfree)`,
+/// [`verify`] bắt `nfree ≥ captured_used(code[fi])` ([`VerifyError::ClosureFree`]). Chỉ số
+/// `LoadCaptured(s)` tự thân **không** được so với một con số do artifact tự khai — đó không phải
+/// là ràng buộc xác định được từ bytecode. Với `s = u16::MAX`, `saturating_add` chặn ở `u16::MAX`;
+/// nếu crafted bytecode khai `nfree = u16::MAX` thì verifier lọt ở mép này, nhưng runtime vẫn trap
+/// (xem `Vm::doc_captured`) — xem thêm ghi chú trong nhánh `LoadCaptured` của [`verify`].
 pub fn captured_used(code: &[Instr]) -> u16 {
     let mut m = 0u16;
     for i in code {
@@ -446,10 +454,21 @@ pub fn verify(m: &Module) -> Result<(), VerifyError> {
                         });
                     }
                 }
-                Instr::LoadCaptured(s) => {
-                    if s >= f.nparams.max(f.nlocals) {
-                        // Biến bắt nằm ngoài khung: kiểm qua `MakeClosure` của nơi tạo.
-                    }
+                Instr::LoadCaptured(_) => {
+                    // **ST-252 (VD-246)** — verifier **không** so chỉ số `LoadCaptured` với một con
+                    // số tự khai trong artifact. Hàng rào tĩnh duy nhất là `ClosureFree` ở mỗi
+                    // `MakeClosure(fi, nfree)` ở trên: `nfree` phải ≥ `captured_used(code[fi])` =
+                    // `max(LoadCaptured) + 1` của hàm đích — kiểm đúng quan hệ **hàm đích – số
+                    // capture – thao tác tạo closure** từ bytecode + metadata closure hiện có.
+                    //
+                    // **Giới hạn verifier (ghi rõ cho A0, VD-246 §1)**:
+                    // (a) hàm `entry` hoặc hàm chỉ được gọi thẳng bằng `Call` (không qua
+                    //     `MakeClosure`) không có địa điểm tạo closure để so ⇒ verifier không từ
+                    //     chối; runtime là hàng rào cuối (`Vm::doc_captured` trap có chẩn đoán).
+                    // (b) `captured_used` trả `u16`, nên với `LoadCaptured(u16::MAX)` giá trị bị
+                    //     chặn ở `u16::MAX`; crafted bytecode khai `MakeClosure(fi, u16::MAX)` lọt
+                    //     verifier ở mép này, runtime vẫn trap.
+                    // Không mở phân tích liên hàm / đổi định dạng khi chưa báo A0.
                 }
                 Instr::Jump(off)
                 | Instr::JumpIfFalse(off)

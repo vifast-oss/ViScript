@@ -367,6 +367,51 @@ impl<'a> Vm<'a> {
         }
     }
 
+    /// **ST-252 (VD-246)**: mọi đường đọc ô cục bộ (non-global) đi qua đây — chỉ số phải nằm
+    /// trong **khung thực tế**, nếu không trap có chẩn đoán bằng mã runtime hiện hành (`RT`),
+    /// không trả `Value::Unit` mặc định. `Unit` là giá trị **hợp lệ** đã được khởi tạo sẵn ở dựng
+    /// khung, nên một ô trong khung chứa `Unit` vẫn trả `Unit` bình thường (không nhầm với lỗi).
+    fn doc_local(&self, locals: &[Value], i: u16, span: Span) -> R<Value> {
+        locals.get(i as usize).cloned().ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                RT,
+                format!("biến cục bộ {i} ngoài khung ({} ô)", locals.len()),
+                span,
+            ))
+        })
+    }
+
+    /// **ST-252 (VD-246)**: mọi đường đọc biến bắt đi qua đây — chỉ số phải nằm trong **môi
+    /// trường capture thực tế** của khung, nếu không trap có chẩn đoán (`RT`). Capture chứa `Unit`
+    /// là hợp lệ ⇒ trả `Unit` bình thường; chỉ có truy cập ngoài miền mới là lỗi.
+    fn doc_captured(&self, captured: &[Value], i: u16, span: Span) -> R<Value> {
+        captured.get(i as usize).cloned().ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                RT,
+                format!(
+                    "biến bắt {i} ngoài môi trường capture ({} ô)",
+                    captured.len()
+                ),
+                span,
+            ))
+        })
+    }
+
+    /// **ST-252 (VD-246)**: ghi ô cục bộ có kiểm tra — chỉ số ngoài khung ⇒ trap, **không**
+    /// `resize` khung (cùng bản chất với đọc fallback: ô ngoài miền không được âm thầm mở rộng).
+    fn ghi_local(&self, locals: &mut [Value], i: u16, v: Value, span: Span) -> R<()> {
+        let n = locals.len();
+        let slot = locals.get_mut(i as usize).ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                RT,
+                format!("ghi biến cục bộ {i} ngoài khung ({n} ô)"),
+                span,
+            ))
+        })?;
+        *slot = v;
+        Ok(())
+    }
+
     fn hong(&self, e: VmError, span: Span) -> Abort {
         Abort::Trap(Trap::new(RT, format!("bytecode hỏng: {e}"), span))
     }
@@ -703,14 +748,14 @@ impl<'m> Th<'m> {
                 }
                 Instr::LoadLocal(i) => {
                     // **ST-238 (VD-242, ca 3)**: ô `>= GLOBAL_SLOT_BASE` là biến cấp tệp dùng chung.
-                    // **ST-250 (VD-245)**: đọc global luôn qua `doc_global` — trap nếu chưa khởi tạo;
-                    // không `unwrap_or(Unit)` như cũ. Đường local giữ nguyên (ô đã được khởi tạo sẵn
-                    // ở dựng khung, `Unit` là giá trị mặc định hợp lệ của biến cục bộ).
+                    // **ST-250 (VD-245)**: đọc global luôn qua `doc_global` — trap nếu chưa khởi tạo.
+                    // **ST-252 (VD-246)**: đường local cũng qua `doc_local` — trap nếu ô ngoài khung;
+                    // `Unit` trong khung vẫn trả bình thường, không đổi sang sentinel.
                     let v = if i >= GLOBAL_SLOT_BASE {
                         vm.doc_global((i - GLOBAL_SLOT_BASE) as usize, span)?
                     } else {
                         let fr = self.frames.last().expect("khung");
-                        fr.locals.get(i as usize).cloned().unwrap_or(Value::Unit)
+                        vm.doc_local(&fr.locals, i, span)?
                     };
                     self.st.push(v);
                 }
@@ -726,18 +771,17 @@ impl<'m> Th<'m> {
                         // **ST-250 (VD-245)**: chỉ đánh dấu đã khởi tạo **sau khi ghi thành công**.
                         vm.globals[k] = Some(v);
                     } else {
+                        // **ST-252 (VD-246)**: ghi local có kiểm tra — ô ngoài khung trap, không
+                        // `resize` (verifier đã chặn `LocalOverflow`, đây là defence-in-depth).
                         let fr = self.frames.last_mut().expect("khung");
-                        if (i as usize) < fr.locals.len() {
-                            fr.locals[i as usize] = v;
-                        } else {
-                            fr.locals.resize(i as usize + 1, Value::Unit);
-                            fr.locals[i as usize] = v;
-                        }
+                        vm.ghi_local(&mut fr.locals, i, v, span)?;
                     }
                 }
                 Instr::LoadCaptured(i) => {
+                    // **ST-252 (VD-246)**: đọc capture có kiểm tra với môi trường thực tế của khung;
+                    // ngoài miền ⇒ trap (`VS0501`), không trả `Unit` mặc định như trước.
                     let fr = self.frames.last().expect("khung");
-                    let v = fr.captured.get(i as usize).cloned().unwrap_or(Value::Unit);
+                    let v = vm.doc_captured(&fr.captured, i, span)?;
                     self.st.push(v);
                 }
                 Instr::Pop => {
@@ -1366,5 +1410,82 @@ fn index_opt(base: &Value, idx: &Value) -> Value {
                 .map(|(_, v)| v.clone()),
         ),
         _ => Value::none(),
+    }
+}
+
+// ST-252 (VD-246): test nội bộ cho hàng rào runtime (helper private, không gọi được từ integration test).
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn vm() -> Vm<'static> {
+        static M: std::sync::OnceLock<Module> = std::sync::OnceLock::new();
+        let m = M.get_or_init(|| Module {
+            version: vis_bytecode::VERSION,
+            source_hash: [0u8; vis_bytecode::HASH_LEN],
+            consts: vec![],
+            funcs: vec![vis_bytecode::Func {
+                name: "main".into(),
+                arity: 0,
+                nparams: 0,
+                nlocals: 0,
+                max_stack: 1,
+                code: vec![Instr::PushUnit, Instr::Return],
+                spans: vec![vis_bytecode::Span { start: 0, end: 0 }; 2],
+            }],
+            entry: 0,
+        });
+        Vm::new(m, "")
+    }
+
+    fn trap(e: Abort) -> String {
+        match e {
+            Abort::Trap(t) => {
+                assert_eq!(t.code.short, "VS0501");
+                t.msg
+            }
+            _ => panic!("expected runtime trap"),
+        }
+    }
+
+    #[test]
+    fn capture_local_barrier() {
+        let vm = vm();
+        let one = vec![Value::Unit];
+        assert!(value::eq(
+            &vm.doc_local(&one, 0, Span::new(0, 0)).unwrap(),
+            &Value::Unit
+        ));
+        let msg = trap(vm.doc_local(&one, 1, Span::new(0, 0)).unwrap_err());
+        assert!(
+            msg.contains("biến cục bộ 1 ngoài khung") && msg.contains("1 ô"),
+            "{msg}"
+        );
+        assert!(value::eq(
+            &vm.doc_captured(&one, 0, Span::new(0, 0)).unwrap(),
+            &Value::Unit
+        ));
+        for (cap, i, want) in [
+            (
+                &[] as &[Value],
+                0,
+                "biến bắt 0 ngoài môi trường capture (0 ô)",
+            ),
+            (&one[..], 1, "biến bắt 1 ngoài môi trường capture (1 ô)"),
+            (&one[..], u16::MAX, "biến bắt 65535 ngoài"),
+        ] {
+            let msg = trap(vm.doc_captured(cap, i, Span::new(0, 0)).unwrap_err());
+            assert!(msg.contains(want), "{msg}");
+        }
+        let mut slot = vec![Value::Unit];
+        vm.ghi_local(&mut slot, 0, Value::Int(7), Span::new(0, 0))
+            .unwrap();
+        assert!(value::eq(&slot[0], &Value::Int(7)));
+        let msg = trap(
+            vm.ghi_local(&mut slot, 1, Value::Int(9), Span::new(0, 0))
+                .unwrap_err(),
+        );
+        assert!(msg.contains("ghi biến cục bộ 1 ngoài khung"), "{msg}");
+        assert_eq!(slot.len(), 1);
     }
 }
