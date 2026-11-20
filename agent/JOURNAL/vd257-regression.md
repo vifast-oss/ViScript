@@ -154,3 +154,8 @@ ca, **không seed lỗi nào cần lưu**. Không chạy vô hạn, có giới h
 10 passed + 1 ignored, lifecycle 11/11. Không ca nào flake. Log `/tmp/opencode/vd257-suite-*.log`.
 Không phải full gate lặp lại — chỉ kiểm flake có mục tiêu.
 
+## 15. Toàn bộ workspace ở release
+
+`cargo test --release --workspace`: exit 0, **1571 passed / 0 failed** (bao gồm mọi test binary,
+không chỉ các binary lẻ đã chạy ở các mục trước). Log `/tmp/opencode/vd257-release-workspace.log`.
+
