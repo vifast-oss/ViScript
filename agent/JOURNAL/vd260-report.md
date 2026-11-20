@@ -188,3 +188,4 @@ Kết quả wave 10 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `4babfb0`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - **db-batch** (`e81c298` → `1b51c62`): `sqlite.execute_batch` tách `;` ngoài string/comment, chạy từng câu qua `db_execute` (policy/cap/timeout per câu), không tự transaction; trigger body chưa hiểu.
 - `VIS_DIFF_N=100000` seed 20261127 @ `4babfb0`: **0 lệch** (93.769 chạy, 122,6 s).
+- Smoke mới @ `1b51c62`: `list.index_of/last_index_of`, `str.byte_len/char_count`, `is_empty` cho str/list/map — **interp=VM byte-identical**.
