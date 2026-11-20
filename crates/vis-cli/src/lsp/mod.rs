@@ -9,6 +9,7 @@
 //! stdout **tuyệt đối sạch**: chỉ frame; mọi lỗi giao thức ghi ra stderr.
 
 mod chan_doan;
+mod chon;
 mod chu_ky;
 mod dinh_dang;
 mod dinh_nghia;
@@ -332,6 +333,29 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **VD-270**: chuỗi vùng chọn tại từng vị trí (token → dòng → khai báo → tệp).
+            "textDocument/selectionRange" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, vi_tris)) = jsonrpc::vi_tri_nhieu(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                gui!(chon::tra_loi_selection(&kq, mode_cua(&uri), &vi_tris, &id));
+                            }
+                        }
+                    } else {
+                        gui!(jsonrpc::phan_hoi(&id, Value::none()));
+                    }
+                }
+            }
             // **ST-282**: highlight mọi lần xuất hiện định danh trong tệp.
             "textDocument/documentHighlight" => {
                 if let Some(id) = id {
@@ -532,6 +556,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("documentHighlightProvider", Value::Bool(true)),
+        jsonrpc::kv("selectionRangeProvider", Value::Bool(true)),
         jsonrpc::kv(
             "renameProvider",
             jsonrpc::m(vec![("prepareProvider", Value::Bool(true))]),
