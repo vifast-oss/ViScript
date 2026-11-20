@@ -77,6 +77,7 @@ path.stem	(str) -> str
 sqlite.begin	(str) -> Result[(), Error]
 sqlite.changes	(str) -> Result[int, Error]
 sqlite.close	(str) -> Result[(), Error]
+sqlite.columns	(str, str) -> Result[list[str], Error]
 sqlite.commit	(str) -> Result[(), Error]
 sqlite.execute	(str, str, list[SqlValue]) -> Result[int, Error]
 sqlite.execute_batch	(str, str) -> Result[int, Error]

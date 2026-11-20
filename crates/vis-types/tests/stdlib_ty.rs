@@ -120,7 +120,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 splitn, 2026-11-21)**: +**1** hàm `std.str.splitn`
     // (`(str, str, int) -> list[str]`; tối đa `n` phần, phần cuối giữ nguyên phần còn lại)
     // ⇒ **111** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 111, "bảng chữ ký phải đủ 111 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-columns, 2026-11-21)**: +**1** hàm `sqlite.columns`
+    // (`(str, str) -> Result[list[str], Error]`; tên cột bảng/view schema chính theo thứ tự
+    // khai báo, tên đối tượng bind làm tham số) ⇒ **112** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 112, "bảng chữ ký phải đủ 112 hàm");
 }
 
 #[test]
