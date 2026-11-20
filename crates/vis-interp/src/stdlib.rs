@@ -30,6 +30,7 @@ mod fsbytes;
 mod indexof;
 mod listcontains;
 mod listmath;
+mod listmean;
 mod pathnorm;
 mod pathrel;
 mod sqlite_explain;
@@ -527,6 +528,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.sum" | "list.product" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmath::goi(name, xs, span)
+        }
+        // **VD-270 (list-mean)**: trung bình `list[float]`; rỗng ⇒ `None`; gộp trái→phải
+        // `f64` (IEEE: NaN/inf lan truyền, không trap). Lõi `stdlib/listmean.rs`.
+        "list.mean" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listmean::goi(xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.

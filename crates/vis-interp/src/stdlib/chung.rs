@@ -80,6 +80,8 @@ pub(crate) fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> 
             Ty::Int => matches!(a, Value::Int(_)),
             Ty::Str => matches!(a, Value::Str(_)),
             Ty::Bool => matches!(a, Value::Bool(_)),
+            // **VD-270 (list-mean)**: phần tử `list[float]` — kiểm runtime khi dữ liệu không kiểu.
+            Ty::Float => matches!(a, Value::Float(_)),
             Ty::ListStr => {
                 matches!(a, Value::List(xs) if xs.iter().all(|v| matches!(v, Value::Str(_))))
             }

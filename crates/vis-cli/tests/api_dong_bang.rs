@@ -122,6 +122,8 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::Int => "int".to_string(),
         Ty::Str => "str".to_string(),
         Ty::Bool => "bool".to_string(),
+        // **VD-270 (list-mean)**: `float` vô hướng (phần tử `list[float]`).
+        Ty::Float => "float".to_string(),
         Ty::ListStr => "list[str]".to_string(),
         Ty::FnKhoa => "fn(T) -> int | str".to_string(),
         Ty::ResultStrStr => "Result[str, Error]".to_string(),

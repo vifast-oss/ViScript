@@ -21,6 +21,10 @@ pub enum Ty {
     Int,
     Str,
     Bool,
+    /// **VD-270 (list-mean)** — `float` vô hướng: phần tử của tham số `list[float]` cho
+    /// `std.list.mean`. Trước VD này `Ty` chưa có biến thể `float` vì chưa hàm `std.*` nào
+    /// **nhận** float (chỉ có `float?` ở vị trí **trả**).
+    Float,
     ListStr,
     /// Khoá của `list.sort_by`: `fn(T) -> int` **hoặc** `fn(T) -> str` (ST-56) — **ngoại lệ có ghi**
     /// duy nhất (VD-94 (3)/VD-99 (5)): lambda chưa chú thích là `{error}`, `Type` không có union.
@@ -93,6 +97,8 @@ impl Ty {
             Ty::Int => Type::Int,
             Ty::Str => Type::Str,
             Ty::Bool => Type::Bool,
+            // **VD-270 (list-mean)** — phần tử `list[float]` là `float` thật.
+            Ty::Float => Type::Float,
             Ty::ListStr => Type::List(Box::new(Type::Str)),
             // **VD-222 (điểm 2–3)**: mọi lỗi chuẩn **bản ghi dựng sẵn `Error`** (`RecId(0)` —
             // dựng sẵn chốn đẩy vào bảng trước item đầu tiên, id `0` ổn định).
@@ -166,6 +172,8 @@ impl Ty {
             Ty::Int => "int",
             Ty::Str => "str",
             Ty::Bool => "bool",
+            // **VD-270 (list-mean)**
+            Ty::Float => "float",
             Ty::ListStr => "list[str]",
             // ST-56: khoá nhận **cả** `str` ⇒ tên hiển thị nói đúng hợp đồng mới.
             Ty::FnKhoa => "fn(T) -> int | str",
@@ -237,7 +245,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 123] = [
+pub const FUNCS: [StdFn; 124] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -563,6 +571,14 @@ pub const FUNCS: [StdFn; 123] = [
         name: "list.product",
         params: &[Ty::List(&Ty::Int)],
         ret: Ty::Int,
+    },
+    // **VD-270 (list-mean)**: `mean` **chỉ** `list[float]`, trả `float?`; rỗng ⇒ `None`,
+    // ngược lại cộng trái→phải `f64` rồi chia `len` (IEEE: NaN/inf lan truyền, không trap).
+    // `mean` không phải phương thức lõi nên sugar `xs.mean()` đi R5c tới đây.
+    StdFn {
+        name: "list.mean",
+        params: &[Ty::List(&Ty::Float)],
+        ret: Ty::OptFloat,
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
     // **VD-270 (strlen)**: rỗng ⇔ 0 cặp; `bool`, không phụ thuộc `K`/`V`.

@@ -154,7 +154,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.index_columns` (`(str, str) -> Result[list[str], Error]`; tên cột của index schema
     // chính theo thứ tự index, tra theo tên, tên index bind làm tham số) ⇒ **123** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 123, "bảng chữ ký phải đủ 123 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-mean, 2026-11-21)**: +**1** hàm `std.list.mean`
+    // (`(list[float]) -> float?`; rỗng ⇒ `None`, ngược lại cộng trái→phải `f64` rồi chia `len`,
+    // IEEE: NaN/inf lan truyền) ⇒ **124** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 124, "bảng chữ ký phải đủ 124 hàm");
 }
 
 #[test]
@@ -415,6 +418,22 @@ fn list_sum_product_chi_list_int_tra_int() {
         assert_eq!(f.ret.ten(), "int", "`{ten}`: tên hiển thị");
         assert_eq!(f.so_doi(), 1, "`{ten}`: số đối số");
     }
+}
+
+#[test]
+fn list_mean_chi_list_float_tra_opt_float() {
+    // **VD-270 (list-mean)**: **chỉ** `list[float]` (không `list[T]`, không `list[int]`), trả
+    // `float?` = `Option[float]`; `mean` không phải phương thức lõi nên sugar `xs.mean()` R5c.
+    let f = sig_of("list.mean").expect("list.mean");
+    assert_eq!(f.params, &[Ty::List(&Ty::Float)], "`list.mean`: tham số");
+    assert_eq!(f.ret, Ty::OptFloat, "`list.mean`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Float)),
+        "`list.mean`: phải hạ thành `Option[float]`"
+    );
+    assert_eq!(f.ret.ten(), "float?", "`list.mean`: tên hiển thị");
+    assert_eq!(f.so_doi(), 1, "`list.mean`: số đối số");
 }
 
 #[test]

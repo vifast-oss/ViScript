@@ -34,6 +34,9 @@
 # kỳ vọng: 0
 # kỳ vọng: 1
 # kỳ vọng: 24
+# kỳ vọng: Some(1.75)
+# kỳ vọng: None
+# kỳ vọng: Some(3)
 use std.fs
 use std.list
 use std.map
@@ -83,3 +86,8 @@ let zs: list[int] = []
 print(list.sum(zs))
 print(list.product(zs))
 print([2, 3, 4].product())
+
+print(list.mean([1.0, 2.5]))
+let fs: list[float] = []
+print(list.mean(fs))
+print([2.0, 4.0].mean())
