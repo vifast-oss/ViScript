@@ -90,17 +90,26 @@ pub fn duration_rank(unit: &str) -> Option<u8> {
         .map(|(_, r)| *r)
 }
 
-/// Giải mã số nguyên: `42`, `1_000_000`, `0xff`, `0b101`. `_` chỉ được **giữa hai chữ số**
-/// (§2); tràn `i64` là `VS0104` (§1).
-pub fn decode_int(text: &str) -> Result<i64, LitError> {
+/// **VD-266**: độ lớn lớn nhất mà lexer chấp nhận cho một literal số nguyên — `i64::MAX + 1`
+/// (`2^63`). Đủ để gộp `-` một ngôi thành `i64::MIN`; lớn hơn vẫn là `VS0104` ngay lúc lex.
+pub const INT_MAGNITUDE_MAX: u64 = i64::MAX as u64 + 1;
+
+/// Giải mã **độ lớn** của literal số nguyên **không dấu**: `42`, `1_000_000`, `0xff`, `0b101`,
+/// `0o17`. `_` chỉ được **giữa hai chữ số** (§2); độ lớn > [`INT_MAGNITUDE_MAX`] là `VS0104` (§1).
+///
+/// **VD-266**: trả `u64` để tầng từ vựng biểu diễn được `2^63` — giá trị **dương** đó vẫn bị
+/// tầng kiểm kiểu từ chối, nhưng `-2^63` (`i64::MIN`) là literal hợp lệ sau khi gộp dấu.
+pub fn decode_int_magnitude(text: &str) -> Result<u64, LitError> {
     let (radix, digits, base_off) = if let Some(rest) = text.strip_prefix("0x") {
         (16u32, rest, 2usize)
     } else if let Some(rest) = text.strip_prefix("0b") {
         (2u32, rest, 2usize)
+    } else if let Some(rest) = text.strip_prefix("0o") {
+        (8u32, rest, 2usize)
     } else {
         (10u32, text, 0usize)
     };
-    let mut value: i64 = 0;
+    let mut value: u64 = 0;
     let mut any = false;
     let mut digit_before = false;
     for (idx, ch) in digits.char_indices() {
@@ -115,11 +124,15 @@ pub fn decode_int(text: &str) -> Result<i64, LitError> {
             .to_digit(radix)
             .ok_or_else(|| LitError::new(104, base_off + idx))?;
         let mul = value
-            .checked_mul(i64::from(radix))
+            .checked_mul(u64::from(radix))
             .ok_or_else(|| LitError::new(104, base_off + idx))?;
-        value = mul
-            .checked_add(i64::from(d))
+        let next = mul
+            .checked_add(u64::from(d))
             .ok_or_else(|| LitError::new(104, base_off + idx))?;
+        if next > INT_MAGNITUDE_MAX {
+            return Err(LitError::new(104, base_off + idx));
+        }
+        value = next;
         any = true;
         digit_before = true;
     }
@@ -127,6 +140,68 @@ pub fn decode_int(text: &str) -> Result<i64, LitError> {
         return Err(LitError::new(104, base_off + digits.len()));
     }
     Ok(value)
+}
+
+/// Giải mã số nguyên **không dấu** vào `i64`: `42`, `1_000_000`, `0xff`, `0b101`.
+/// `_` chỉ được **giữa hai chữ số** (§2); độ lớn > `i64::MAX` là `VS0104` (§1).
+///
+/// Giữ API cũ cho `size_parts` (kích thước phải nằm trong `i64`); literal `int` của ngôn ngữ
+/// đi qua [`decode_int_magnitude`] (lexer) hoặc [`decode_signed_int`] (HIR/pattern).
+pub fn decode_int(text: &str) -> Result<i64, LitError> {
+    let magnitude = decode_int_magnitude(text)?;
+    i64::try_from(magnitude).map_err(|_| LitError::new(104, text.len()))
+}
+
+/// Giải mã literal `int` **đã có dấu** (văn bản HIR/pattern, không phải token): `-42`,
+/// `+7`, `-0x8000000000000000`.
+///
+/// Chỉ ca âm được chạm độ lớn `2^63` — đó là `i64::MIN`; dương `2^63` và mọi độ lớn lớn hơn là
+/// `VS0104`. Đây là cửa duy nhất để kiểm literal sau khi gộp dấu, và là bộ giải mã dùng chung
+/// cho checker + interp + VM.
+pub fn decode_signed_int(text: &str) -> Result<i64, LitError> {
+    let (negative, body, sign_off) = match text.as_bytes().first() {
+        Some(b'-') => (true, &text[1..], 1usize),
+        Some(b'+') => (false, &text[1..], 1usize),
+        _ => (false, text, 0usize),
+    };
+    let magnitude =
+        decode_int_magnitude(body).map_err(|e| LitError::new(e.code, e.at + sign_off))?;
+    if negative {
+        // `magnitude <= 2^63`; chỉ `2^63` không ép được vào `i64` dương.
+        if magnitude == INT_MAGNITUDE_MAX {
+            Ok(i64::MIN)
+        } else {
+            Ok(-(magnitude as i64))
+        }
+    } else if magnitude <= i64::MAX as u64 {
+        Ok(magnitude as i64)
+    } else {
+        Err(LitError::new(104, sign_off + body.len()))
+    }
+}
+
+/// **VD-266**: gộp một dấu `-` một ngôi quanh literal `int` **ở biên** `2^63`.
+///
+/// `text` là văn bản literal trong HIR: không dấu (`9223372036854775808`, `0x8000000000000000`,
+/// `0b1000…`) hoặc đã gộp trước đó (`-9223372036854775808`). Trả văn bản **thập phân** của kết
+/// quả — có thể là `9223372036854775808` (dương tràn) để tầng kiểm kiểu báo `VS0104` — hoặc
+/// `None` khi độ lớn ≠ `2^63` (literal thường giữ `HExpr::Un` như trước, không đổi HIR).
+pub fn fold_neg_min_int(text: &str) -> Option<String> {
+    let (negative, body) = match text.as_bytes().first() {
+        Some(b'-') => (true, &text[1..]),
+        Some(b'+') => (false, &text[1..]),
+        _ => (false, text),
+    };
+    let magnitude = decode_int_magnitude(body).ok()?;
+    if magnitude != INT_MAGNITUDE_MAX {
+        return None;
+    }
+    let signed = if negative {
+        -(magnitude as i128)
+    } else {
+        magnitude as i128
+    };
+    Some((-signed).to_string())
 }
 
 /// Tách `5kib`/`0b` thành `(5, "kib")`/`(0, "b")`. Dùng chung cho lexer và golden.
@@ -371,6 +446,8 @@ mod tests {
         assert_eq!(decode_int("0xff"), Ok(255));
         assert_eq!(decode_int("0b101"), Ok(5));
         assert_eq!(decode_int("9223372036854775807"), Ok(i64::MAX));
+        // `0o` không do lexer sinh ra nhưng HIR/pattern có thể mang; dùng chung bộ giải mã.
+        assert_eq!(decode_int("0o17"), Ok(15));
     }
 
     #[test]
@@ -381,6 +458,76 @@ mod tests {
             decode_int("9223372036854775808").map_err(|e| e.code),
             Err(104)
         );
+        assert_eq!(
+            decode_int_magnitude("9223372036854775808"),
+            Ok(INT_MAGNITUDE_MAX)
+        );
+        assert_eq!(
+            decode_int_magnitude("0x8000000000000000"),
+            Ok(INT_MAGNITUDE_MAX)
+        );
+        // Lớn hơn `i64::MAX + 1` (mọi cơ số) vẫn là lỗi từ vựng.
+        assert_eq!(
+            decode_int_magnitude("9223372036854775809").map_err(|e| e.code),
+            Err(104)
+        );
+        assert_eq!(
+            decode_int_magnitude("0x8000000000000001").map_err(|e| e.code),
+            Err(104)
+        );
+        assert_eq!(
+            decode_int_magnitude("0xffffffffffffffff").map_err(|e| e.code),
+            Err(104)
+        );
+    }
+
+    #[test]
+    fn so_nguyen_co_dau_chi_am_cham_2_mu_63() {
+        assert_eq!(decode_signed_int("-42"), Ok(-42));
+        assert_eq!(decode_signed_int("+7"), Ok(7));
+        assert_eq!(decode_signed_int("-0x8000000000000000"), Ok(i64::MIN));
+        assert_eq!(decode_signed_int("-9223372036854775808"), Ok(i64::MIN));
+        assert_eq!(
+            decode_signed_int("-9_223_372_036_854_775_808"),
+            Ok(i64::MIN)
+        );
+        // Dương `2^63` không biểu diễn được; âm quá `2^63` cũng vậy.
+        assert_eq!(
+            decode_signed_int("9223372036854775808").map_err(|e| e.code),
+            Err(104)
+        );
+        assert_eq!(
+            decode_signed_int("+9223372036854775808").map_err(|e| e.code),
+            Err(104)
+        );
+        assert_eq!(
+            decode_signed_int("-9223372036854775809").map_err(|e| e.code),
+            Err(104)
+        );
+    }
+
+    #[test]
+    fn gop_dau_tru_chi_o_bien_2_mu_63() {
+        assert_eq!(
+            fold_neg_min_int("9223372036854775808").as_deref(),
+            Some("-9223372036854775808")
+        );
+        assert_eq!(
+            fold_neg_min_int("0x8000000000000000").as_deref(),
+            Some("-9223372036854775808")
+        );
+        assert_eq!(
+            fold_neg_min_int("-9223372036854775808").as_deref(),
+            Some("9223372036854775808")
+        );
+        assert_eq!(
+            fold_neg_min_int("-0x8000000000000000").as_deref(),
+            Some("9223372036854775808")
+        );
+        // Literal thường **không** gộp — HIR giữ `Un` như trước.
+        assert_eq!(fold_neg_min_int("5"), None);
+        assert_eq!(fold_neg_min_int("-5"), None);
+        assert_eq!(fold_neg_min_int("9223372036854775807"), None);
     }
 
     #[test]

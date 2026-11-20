@@ -682,13 +682,24 @@ impl<'a> Lexer<'a> {
             self.push_at(Kind::Float, start, line, col);
             return;
         }
-        if let Err(e) = lit::decode_int(text) {
-            self.error_at(e.code, start + e.at);
-            return;
-        }
+        // **VD-266**: tầng từ vựng nhận **độ lớn** tới `i64::MAX + 1` (2^63) để `-2^63` gộp
+        // thành `i64::MIN`; literal dương 2^63 bị tầng kiểm kiểu từ chối (VS0104).
+        let magnitude = match lit::decode_int_magnitude(text) {
+            Ok(v) => v,
+            Err(e) => {
+                self.error_at(e.code, start + e.at);
+                return;
+            }
+        };
 
         // Hậu tố đơn vị đo → SIZE; đơn vị thời gian → DURATION (§1, chỉ cho `INT`).
+        // **VD-266**: size/duration vẫn phải nằm trong `i64` — chỉ `INT` thuần mới được chạm
+        // độ lớn 2^63 (và chỉ khi có dấu `-`).
         if let Some(n) = scan_size_suffix(self.rest()) {
+            if magnitude > i64::MAX as u64 {
+                self.error_at(104, start + text.len());
+                return;
+            }
             for _ in 0..n {
                 self.bump_ascii();
             }
@@ -696,6 +707,10 @@ impl<'a> Lexer<'a> {
             return;
         }
         if let Some(n) = scan_duration_suffix(self.rest()) {
+            if magnitude > i64::MAX as u64 {
+                self.error_at(104, start + text.len());
+                return;
+            }
             for _ in 0..n {
                 self.bump_ascii();
             }

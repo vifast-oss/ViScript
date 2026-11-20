@@ -23,7 +23,10 @@ impl<'a> Checker<'a> {
 
     fn kiem_expr_trong(&mut self, e: &HExpr) -> Type {
         match e {
-            HExpr::Lit { ty, .. } => ty.clone(),
+            HExpr::Lit { lit, ty, span } => {
+                self.kiem_int_lit(lit, *span);
+                ty.clone()
+            }
             HExpr::Var { name, sym, span } => match sym {
                 Some(id) => {
                     // **ST-60 (VD-95 (4))**: `async fn` **không** dùng làm giá trị (chưa có
