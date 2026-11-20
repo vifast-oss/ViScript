@@ -225,7 +225,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str) -> Result[bool, Error]`; `symlink_metadata`, symlink tới tệp/thư mục/đích thiếu
     // ⇒ `true`, tệp/thư mục thường/thiếu ⇒ `false`, lỗi khác ⇒ `Err`; **không** sugar) ⇒ **141**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 144, "bảng chữ ký phải đủ 144 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 rsplit-once, 2026-11-21)**: +**1** hàm `std.str.rsplit_once`
+    // (`(str, str) -> list[str]?`; tách tại lần xuất hiện **cuối** của `sep`, `Some` đúng 2
+    // phần, không khớp ⇒ `None`, `sep` rỗng ⇒ `Some([s, ""])`; tái dùng `Ty::OptListStr`,
+    // không thêm biến thể `Ty`) ⇒ **145** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 145, "bảng chữ ký phải đủ 145 hàm");
 }
 
 #[test]
@@ -299,6 +303,26 @@ fn split_once_kieu_str_str_va_sugar() {
     assert_eq!(f.ret.ten(), "list[str]?", "`str.split_once`: tên hiển thị");
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(vis_types::stdlib::module_sugar("str", "split_once"), None);
+}
+
+#[test]
+fn rsplit_once_kieu_str_str_va_sugar() {
+    // **VD-270 (rsplit-once)**: chữ ký `(str, str) -> list[str]?`; tham số đầu `str` để sugar
+    // R5c `s.rsplit_once(sep)` nhận. Tái dùng **đúng** `Ty::OptListStr` của `split_once`
+    // (`list[str]?` = `Option[list[str]]`), không thêm biến thể `Ty` và không tái dùng
+    // `ListStr`/`OptStr`.
+    let f = sig_of("str.rsplit_once").expect("str.rsplit_once");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str], "`str.rsplit_once`: tham số");
+    assert_eq!(f.ret, Ty::OptListStr, "`str.rsplit_once`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::List(Box::new(Type::Str)))),
+        "`str.rsplit_once`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "list[str]?", "`str.rsplit_once`: tên hiển thị");
+    assert_eq!(f.ret, sig_of("str.split_once").unwrap().ret);
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit_once"), None);
 }
 
 #[test]

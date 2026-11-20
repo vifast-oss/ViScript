@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 144] = [
+pub const FUNCS: [StdFn; 145] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -269,6 +269,15 @@ pub const FUNCS: [StdFn; 144] = [
     // **đúng 2** phần, không trap. Sugar R5c `s.split_once(sep)`.
     StdFn {
         name: "str.split_once",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptListStr,
+    },
+    // **VD-270 (rsplit-once)**: tách tại **lần xuất hiện cuối** của `sep`, đúng nghĩa Rust
+    // `str::rsplit_once`: `rsplit_once("a,b,c", ",")` ⇒ `Some(["a,b", "c"])`; không khớp ⇒
+    // `None`; `sep` rỗng ⇒ `Some([s, ""])`; `s` rỗng + `sep` khác rỗng ⇒ `None`. Kết quả `Some`
+    // luôn có **đúng 2** phần, không trap. Sugar R5c `s.rsplit_once(sep)`.
+    StdFn {
+        name: "str.rsplit_once",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::OptListStr,
     },
