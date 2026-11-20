@@ -338,16 +338,18 @@ fn ket_qua_bool_khong_gan_sang_int() {
 /// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi thiếu đối số vẫn bị
 /// **tầng chạy** chặn: trap `VS0501` nêu `list.contains`, exit 101 ở **cả hai** engine.
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
+fn sugar_sai_arity_bi_checker_chan() {
+    // **VD-270 (r5c-arity)**: sugar thiếu đối số nay bị checker bắt `VS0401` (exit 2), không còn
+    // trap `VS0501`/exit 101.
     let (code, out, err) = hai_engine(
         "sugar-arity",
         "fn main():\n    let xs = [1, 2]\n    print(xs.contains())\n",
     );
     assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
+        code, 2,
+        "sugar-arity: checker phải chặn (exit 2)\nstdout: {out}\nstderr: {err}"
     );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
+    assert!(err.contains("VS0401"), "sugar-arity: thiếu VS0401: {err}");
     assert!(
         err.contains("list.contains"),
         "sugar-arity: stderr thiếu `list.contains`: {err}"
