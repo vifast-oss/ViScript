@@ -24,13 +24,13 @@ mod vistest;
 use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
 use vis_syntax::Mode;
 
-use cli::run::{doc_stdin, in_sandbox_check, ma_thoat_khi_loi, run_dry, usage_run};
+use cli::run::{doc_stdin, in_sandbox_check, in_thoi_gian, ma_thoat_khi_loi, run_dry, usage_run};
 /// **ST-63 (VD-105)**: host mạng của CLI (TCP thật, chỉ loopback) — tên cục bộ cho rõ điểm nối.
 use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     ExitCode::from(2)
 }
@@ -346,6 +346,20 @@ fn kiem_cu_phap_probe(tep: &str, text: &str, mode: Mode) -> Option<ExitCode> {
     Some(ExitCode::from(2))
 }
 
+/// **VD-270**: đo **đồng hồ tường** quanh **đúng một** lời gọi runtime (`f`).
+///
+/// Trả `(kết quả, Some(µs))` khi `bat` (`--time`); `(kết quả, None)` khi không xin (không đo).
+/// Ranh giới: từ ngay **trước** lời gọi interp/VM (sau nạp–parse–tyck–codegen–cache) tới ngay
+/// **sau** khi runtime trả về; **không** tính in stdout/TAP/chẩn đoán hay dọn phiên DB.
+fn do_luong_chay<T>(bat: bool, f: impl FnOnce() -> T) -> (T, Option<u128>) {
+    if !bat {
+        return (f(), None);
+    }
+    let t0 = std::time::Instant::now();
+    let kq = f();
+    (kq, Some(t0.elapsed().as_micros()))
+}
+
 /// `vis run [--tap] [--stdin] <tệp.vis> [-- args…]` — parse → lower → check → interp (ST-14).
 /// **VD-270**: `--stdin` thay tệp bằng bộ đệm UTF-8, tên ảo `-`, luôn **script mode**.
 pub(crate) fn run_run(rest: &[String]) -> ExitCode {
@@ -375,6 +389,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut co_no_extern = false;
     // **VD-270**: nguồn chương trình là **stdin** (tệp ảo `-`), không phải đường tệp.
     let mut stdin_ra = false;
+    // **VD-270**: `--time` — in một dòng đồng hồ tường quanh **đúng lời gọi runtime** ra stderr.
+    let mut do_thoi_gian = false;
     let mut tep: Option<String> = None;
     let mut prog_args: Vec<String> = Vec::new();
     let mut mock_tep: Option<String> = None;
@@ -414,6 +430,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--no-extern" => co_no_extern = true,
             // **VD-270**: đọc chương trình từ stdin (tệp ảo `-`).
             "--stdin" => stdin_ra = true,
+            // **VD-270**: đo đồng hồ tường quanh lời gọi runtime (xem `usage_run`/`in_thoi_gian`).
+            "--time" => do_thoi_gian = true,
             // ST-42: `FsHost` **mock tất định** từ kịch bản JSON (test hermetic).
             "--fs-mock" => {
                 if i + 1 >= rest.len() {
@@ -641,7 +659,9 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     //    không được làm tràn stack process; cap vượt ⇒ `VS0501` bình thường.
     // **ST-56b (VD-97 (5))**: phần tử thứ 4 = **lỗi codegen** (đường `--vm`) ⇒ exit ≠ 0.
     // **VD-241 §3/T5 (A0, 2026-11-19)**: phần tử thứ 5 = `exit_val` từ `RunOutput` (Err ⇒ 1).
-    let (stdout, diags, steps, loi_codegen, exit_val) = std::thread::scope(|scope| {
+    // **VD-270**: phần tử thứ 6 = số **micro-giây** quanh lời gọi runtime (`None` nếu không xin
+    // `--time`, hoặc runtime chưa từng chạy vì codegen lỗi).
+    let (stdout, diags, steps, loi_codegen, exit_val, thoi_gian_us) = std::thread::scope(|scope| {
         std::thread::Builder::new()
             .name("vis-run".into())
             // 256 MiB: đo được ~8 KiB/khung ⇒ 10^4 khung ≈ 80 MiB, còn dư.
@@ -699,7 +719,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     // **ST-56b (VD-97 (5))**: in chẩn đoán **và** báo hiệu
                                     // lỗi để CLI **exit ≠ 0** (trước: in rồi exit 0 — im lặng).
                                     eprintln!("vis run --vm: codegen lỗi: {e}");
-                                    return (String::new(), Vec::new(), 0, true, 1);
+                                    return (String::new(), Vec::new(), 0, true, 1, None);
                                 }
                             }
                         }
@@ -709,45 +729,53 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     }
                     let ngoai_host: Option<&mut dyn vis_interp::builtin::Ngoai> =
                         if co_ngoai { Some(&mut runner) } else { None };
-                    vis_vm::run_with_full_hosts_caps(
-                        &m,
-                        &text,
-                        &prog_args,
-                        ngoai_host,
-                        Some(&mut fs),
-                        Some(&mut net),
-                        Some(&mut dbg),
-                        &quyen.gia_tri(),
-                    )
+                    do_luong_chay(do_thoi_gian, || {
+                        vis_vm::run_with_full_hosts_caps(
+                            &m,
+                            &text,
+                            &prog_args,
+                            ngoai_host,
+                            Some(&mut fs),
+                            Some(&mut net),
+                            Some(&mut dbg),
+                            &quyen.gia_tri(),
+                        )
+                    })
                 } else if co_ngoai {
                     // ST-27: `.vish` với runner chương trình ngoài (chỉ CLI biết OS).
-                    vis_interp::run_with_hosts_caps(
-                        &text,
-                        &h.hir,
-                        &h.symbols,
-                        &h.types,
-                        &prog_args,
-                        Some(&mut runner),
-                        Some(&mut fs),
-                        Some(&mut net),
-                        Some(&mut dbg),
-                        &quyen.gia_tri(),
-                    )
+                    do_luong_chay(do_thoi_gian, || {
+                        vis_interp::run_with_hosts_caps(
+                            &text,
+                            &h.hir,
+                            &h.symbols,
+                            &h.types,
+                            &prog_args,
+                            Some(&mut runner),
+                            Some(&mut fs),
+                            Some(&mut net),
+                            Some(&mut dbg),
+                            &quyen.gia_tri(),
+                        )
+                    })
                 } else {
                     // ST-33: `.vis` cũng có `std.fs` (không có chương trình ngoài).
-                    vis_interp::run_with_hosts_caps(
-                        &text,
-                        &h.hir,
-                        &h.symbols,
-                        &h.types,
-                        &prog_args,
-                        None,
-                        Some(&mut fs),
-                        Some(&mut net),
-                        Some(&mut dbg),
-                        &quyen.gia_tri(),
-                    )
+                    do_luong_chay(do_thoi_gian, || {
+                        vis_interp::run_with_hosts_caps(
+                            &text,
+                            &h.hir,
+                            &h.symbols,
+                            &h.types,
+                            &prog_args,
+                            None,
+                            Some(&mut fs),
+                            Some(&mut net),
+                            Some(&mut dbg),
+                            &quyen.gia_tri(),
+                        )
+                    })
                 };
+                // **VD-270**: tách kết quả đo khỏi `RunOutput` để xử lý như cũ.
+                let (out, thoi_gian_us) = out;
                 // **VD-241 §9**: kết thúc **phiên** Host ⇒ đóng mọi connection còn mở
                 // (**không** auto-commit); rò chỉ cảnh báo ở chế độ diagnostics.
                 let con_mo = vis_interp::builtin::DbHost::db_cleanup(&mut dbg).unwrap_or(0);
@@ -771,7 +799,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         )
                     })
                     .collect();
-                (out.stdout, d, out.steps, false, out.exit)
+                (out.stdout, d, out.steps, false, out.exit, thoi_gian_us)
             })
             .expect("không tạo được luồng chạy")
             .join()
@@ -790,6 +818,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         if tap {
             eprintln!("ok 1 - {} (steps={})", tep, steps);
         }
+        // **VD-270**: dòng thời gian là **dòng cuối** trên stderr, sau cả dòng TAP `ok`.
+        in_thoi_gian(do_thoi_gian, thoi_gian_us);
         ExitCode::from(exit_val as u8)
     } else {
         for (ma, line, col, msg, tep_that) in &diags {
@@ -798,6 +828,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         if tap {
             eprintln!("not ok 1 - {} ({}, steps={})", tep, diags[0].0, steps);
         }
+        // **VD-270**: trap/lỗi **lúc chạy** ⇒ runtime đã chạy ⇒ vẫn in dòng thời gian, sau TAP.
+        in_thoi_gian(do_thoi_gian, thoi_gian_us);
         // `ma_thoat_khi_loi` có chữ ký cũ (4-tuple); bỏ trường tên tệp trước khi gọi.
         let ma_loi: Vec<(String, u32, u32, String)> = diags
             .iter()
