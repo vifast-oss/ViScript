@@ -183,11 +183,23 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 61] = [
+pub const FUNCS: [StdFn; 66] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
         params: &[Ty::Str, Ty::Str],
+        ret: Ty::ListStr,
+    },
+    // **VD-265**: tách dòng kiểu Rust `lines()` — `\n`, bỏ `\r` cuối dòng; tách khoảng trắng
+    // Unicode. Cả hai nhận `s.` (sugar R5c) vì tham số đầu là `str`.
+    StdFn {
+        name: "str.lines",
+        params: &[Ty::Str],
+        ret: Ty::ListStr,
+    },
+    StdFn {
+        name: "str.split_whitespace",
+        params: &[Ty::Str],
         ret: Ty::ListStr,
     },
     StdFn {
@@ -275,6 +287,23 @@ pub const FUNCS: [StdFn; 61] = [
         name: "list.drop",
         params: &[Ty::List(&Ty::Var(0)), Ty::Int],
         ret: Ty::List(&Ty::Var(0)),
+    },
+    // **VD-265** — ghép cặp (dừng ở danh sách ngắn hơn) và gộp nhỏ/lớn.
+    // `min`/`max` trên danh sách rỗng là **trap sạch** (`VS0501`), không panic.
+    StdFn {
+        name: "list.zip",
+        params: &[Ty::List(&Ty::Var(0)), Ty::List(&Ty::Var(0))],
+        ret: Ty::List(&Ty::List(&Ty::Var(0))),
+    },
+    StdFn {
+        name: "list.min",
+        params: &[Ty::List(&Ty::Var(0))],
+        ret: Ty::Var(0),
+    },
+    StdFn {
+        name: "list.max",
+        params: &[Ty::List(&Ty::Var(0))],
+        ret: Ty::Var(0),
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
     StdFn {

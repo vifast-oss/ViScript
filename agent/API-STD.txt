@@ -24,11 +24,14 @@ json.encode_pretty	(T) -> str
 list.chunk	(list[T], int) -> list[list[T]]
 list.concat	(list[T], list[T]) -> list[T]
 list.drop	(list[T], int) -> list[T]
+list.max	(list[T]) -> T
+list.min	(list[T]) -> T
 list.reverse	(list[T]) -> list[T]
 list.sort	(list[T]) -> list[T]
 list.sort_by	(list[T], fn(T) -> int | str) -> list[T]
 list.take	(list[T], int) -> list[T]
 list.unique	(list[T]) -> list[T]
+list.zip	(list[T], list[T]) -> list[list[T]]
 map.get_or	(map[K, V], str, V) -> V
 map.keys	(map[K, V]) -> list[K]
 map.merge	(map[K, V], map[K, V]) -> map[K, V]
@@ -62,10 +65,12 @@ sqlite.rollback	(str) -> Result[(), Error]
 str.contains	(str, str) -> bool
 str.ends_with	(str, str) -> bool
 str.join	(list[str], str) -> str
+str.lines	(str) -> list[str]
 str.lower	(str) -> str
 str.repeat	(str, int) -> str
 str.replace	(str, str, str) -> str
 str.split	(str, str) -> list[str]
+str.split_whitespace	(str) -> list[str]
 str.starts_with	(str, str) -> bool
 str.trim	(str) -> str
 str.upper	(str) -> str
