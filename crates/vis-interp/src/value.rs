@@ -12,7 +12,10 @@
 //!   `ratio*100` + `pct` (`0.5` ⇒ `50pct`).
 
 use std::cell::{Cell, OnceCell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
+use std::hash::{BuildHasherDefault, Hash, Hasher};
+use std::ops::Deref;
 use std::rc::Rc;
 
 use vis_types::hir::{HBody, HPat};
@@ -21,6 +24,235 @@ thread_local! {
     /// **VD-259 (chỉ frame test)**: số lần phải dựng bản `'static` của thân closure.
     /// Một closure được gọi N lần chỉ được dựng **một** lần (xem `Closure::frame_body_static`).
     static FRAME_BODY_BUILDS: Cell<usize> = const { Cell::new(0) };
+}
+
+/// **VD-267** — FNV-1a cho bảng tên. Tên enum/biến thể rất ngắn; SipHash mặc định đắt gấp
+/// nhiều lần trong vòng lặp nóng. Không cần kháng HashDoS: số tên bị chặn bởi kích thước mã
+/// nguồn, không phải dữ liệu người dùng.
+struct Fnv(u64);
+
+impl Default for Fnv {
+    fn default() -> Self {
+        Fnv(0xcbf2_9ce4_8422_2325)
+    }
+}
+
+impl Hasher for Fnv {
+    fn write(&mut self, bytes: &[u8]) {
+        let mut h = self.0;
+        for &b in bytes {
+            h ^= u64::from(b);
+            h = h.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        self.0 = h;
+    }
+
+    fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
+type NameSet = HashSet<Rc<str>, BuildHasherDefault<Fnv>>;
+
+thread_local! {
+    /// **VD-267** — bảng tên enum/biến thể **thread-local** (mỗi tên đúng **một** `Rc<str>`).
+    ///
+    /// Tên enum/biến thể đến từ mã nguồn nên số tên hữu hạn; bảng chỉ giữ một bản mỗi tên.
+    /// `Value` vốn đã chứa `Rc` (không `Send`) nên thread-local là đủ, không cần đồng bộ.
+    static ENUM_NAMES: RefCell<NameSet> = RefCell::new(HashSet::default());
+}
+
+/// **VD-267** — tên enum/biến thể **chia sẻ**.
+///
+/// Trước đây `Value::Enum(String, String, _)` cấp phát hai `String` cho **mỗi** giá trị enum:
+/// vòng lặp dựng `Some(i)`/`E.A(i)` trả hai `malloc` + hai `free` mỗi vòng (chưa kể `Vec` đối
+/// số). `Name` giữ `Rc<str>` lấy từ bảng tên thread-local: lần đầu cấp phát, các lần sau chỉ
+/// tăng refcount (không `malloc`). So sánh vẫn **theo nội dung** như `String` cũ, nên `==`,
+/// pattern và `show` không đổi ngữ nghĩa; tên nội bộ hoá còn cho phép `eq` đi tắt bằng
+/// `Rc::ptr_eq`.
+#[derive(Clone)]
+pub struct Name(Rc<str>);
+
+/// **VD-267** — cache trực tiếp (direct-mapped) cho [`Name::new`]: chỗ dựng tên từ **cùng một
+/// chuỗi** (literal, HIR, hằng) chỉ cần so con trỏ + độ dài + nội dung, không tra bảng băm.
+/// 64 ô; trượt chỉ tốn thêm một phép kiểm — nội dung **luôn** được xác minh nên địa chỉ bộ đệm
+/// bị tái dùng không thể trả sai tên.
+const NAME_CACHE_LEN: usize = 64;
+
+#[derive(Clone)]
+struct CachedName {
+    ptr: usize,
+    len: usize,
+    name: Name,
+}
+
+thread_local! {
+    static NAME_CACHE: RefCell<Vec<Option<CachedName>>> =
+        RefCell::new(vec![None; NAME_CACHE_LEN]);
+}
+
+impl Name {
+    /// Tên đã có trong bảng ⇒ chia sẻ bản cũ; chưa có ⇒ cấp phát **một lần**.
+    pub fn new(s: &str) -> Self {
+        let ptr = s.as_ptr() as usize;
+        let len = s.len();
+        let idx = (ptr.rotate_left(3) ^ len.wrapping_mul(0x9e37_79b9)) & (NAME_CACHE_LEN - 1);
+
+        // Đường nhanh: cùng con trỏ + độ dài + **nội dung** (bộ đệm có thể bị tái dùng địa chỉ).
+        let hit = NAME_CACHE.with(|c| {
+            let c = c.borrow();
+            c.get(idx).and_then(|slot| {
+                slot.as_ref()
+                    .filter(|e| e.ptr == ptr && e.len == len && e.name.as_str() == s)
+                    .map(|e| e.name.clone())
+            })
+        });
+        if let Some(n) = hit {
+            return n;
+        }
+
+        let name = ENUM_NAMES.with(|names| {
+            let mut names = names.borrow_mut();
+            if let Some(n) = names.get(s) {
+                return Name(Rc::clone(n));
+            }
+            let n: Rc<str> = Rc::from(s);
+            names.insert(Rc::clone(&n));
+            Name(n)
+        });
+        NAME_CACHE.with(|c| {
+            if let Some(slot) = c.borrow_mut().get_mut(idx) {
+                *slot = Some(CachedName {
+                    ptr,
+                    len,
+                    name: name.clone(),
+                });
+            }
+        });
+        name
+    }
+
+    /// Tên dạng `&str` (tương thích chỗ cũ gọi `String::as_str`).
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Deref for Name {
+    type Target = str;
+    fn deref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// `Debug` giữ **đúng** dạng cũ của `String` (`"Some"`) — không lộ wrapper `Name`.
+impl fmt::Debug for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&*self.0, f)
+    }
+}
+
+/// Mọi literal `.into()` cũ (`"Option".into()`) tự nội bộ hoá, không cần sửa từng chỗ lạnh.
+impl From<&str> for Name {
+    fn from(s: &str) -> Self {
+        Self::new(s)
+    }
+}
+
+impl From<String> for Name {
+    fn from(s: String) -> Self {
+        Self::new(&s)
+    }
+}
+
+impl From<&String> for Name {
+    fn from(s: &String) -> Self {
+        Self::new(s)
+    }
+}
+
+impl PartialEq for Name {
+    fn eq(&self, other: &Self) -> bool {
+        // Tên nội bộ hoá ⇒ cùng nội dung luôn cùng `Rc`; `ptr_eq` là đường nhanh.
+        Rc::ptr_eq(&self.0, &other.0) || self.0 == other.0
+    }
+}
+
+impl Eq for Name {}
+
+impl Hash for Name {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ref().hash(state);
+    }
+}
+
+impl PartialEq<str> for Name {
+    fn eq(&self, other: &str) -> bool {
+        &*self.0 == other
+    }
+}
+
+impl PartialEq<&str> for Name {
+    fn eq(&self, other: &&str) -> bool {
+        &*self.0 == *other
+    }
+}
+
+impl PartialEq<String> for Name {
+    fn eq(&self, other: &String) -> bool {
+        &*self.0 == other.as_str()
+    }
+}
+
+impl PartialEq<&String> for Name {
+    fn eq(&self, other: &&String) -> bool {
+        &*self.0 == other.as_str()
+    }
+}
+
+impl PartialEq<Name> for str {
+    fn eq(&self, other: &Name) -> bool {
+        self == &*other.0
+    }
+}
+
+impl PartialEq<Name> for String {
+    fn eq(&self, other: &Name) -> bool {
+        self.as_str() == &*other.0
+    }
+}
+
+thread_local! {
+    /// Tên `Option`/`Result` dựng sẵn, giữ sẵn để `some`/`none`/`ok`/`err` không phải tra bảng.
+    static TAGS: Tags = Tags {
+        option: Name::new("Option"),
+        some: Name::new("Some"),
+        none: Name::new("None"),
+        result: Name::new("Result"),
+        ok: Name::new("Ok"),
+        err: Name::new("Err"),
+    };
+}
+
+struct Tags {
+    option: Name,
+    some: Name,
+    none: Name,
+    result: Name,
+    ok: Name,
+    err: Name,
 }
 
 /// Số bản `'static` của thân closure đã dựng trong **thread** hiện tại (test/đo rò rỉ).
@@ -116,7 +348,10 @@ pub enum Value {
     /// **VD-204 (1)**: `Option`/`Result` **là enum std thật** — `Some(5)` của `Option[int]`
     /// và `Ok("x")` của `Result[int, str]` được **dựng và so khớp như mọi biến thể enum khác**
     /// (tên enum `Option`/`Result` được cất trong giá trị). Không còn biến thể riêng `Opt`/`Res`.
-    Enum(String, String, Vec<Value>),
+    ///
+    /// **VD-267**: hai tên là [`Name`] (`Rc<str>` nội bộ hoá) — dựng giá trị chỉ tăng refcount,
+    /// không cấp phát `String` mỗi lần.
+    Enum(Name, Name, Vec<Value>),
     /// Nội bộ: `a..b` / `a..=b` (chỉ dùng cho `for`).
     Range(i64, i64, bool),
     /// Nội bộ: hàm dựng sẵn chưa gọi.
@@ -153,12 +388,12 @@ impl Value {
 
     /// `Some(v)` — enum `Option` thật (VD-204 (1)).
     pub fn some(v: Value) -> Value {
-        Value::Enum("Option".into(), "Some".into(), vec![v])
+        TAGS.with(|t| Value::Enum(t.option.clone(), t.some.clone(), vec![v]))
     }
 
     /// `None` — enum `Option` thật (VD-204 (1)).
     pub fn none() -> Value {
-        Value::Enum("Option".into(), "None".into(), Vec::new())
+        TAGS.with(|t| Value::Enum(t.option.clone(), t.none.clone(), Vec::new()))
     }
 
     /// Dựng `Option` từ `Option<Value>` của Rust.
@@ -183,12 +418,12 @@ impl Value {
 
     /// `Ok(v)` — enum `Result` thật (VD-204 (1)).
     pub fn ok(v: Value) -> Value {
-        Value::Enum("Result".into(), "Ok".into(), vec![v])
+        TAGS.with(|t| Value::Enum(t.result.clone(), t.ok.clone(), vec![v]))
     }
 
     /// `Err(e)` — enum `Result` thật (VD-204 (1)).
     pub fn err(e: Value) -> Value {
-        Value::Enum("Result".into(), "Err".into(), vec![e])
+        TAGS.with(|t| Value::Enum(t.result.clone(), t.err.clone(), vec![e]))
     }
 
     /// Bóc `Some(v)` (theo **tên enum**, không nhầm với biến thể `Some` của enum khác).
@@ -292,7 +527,7 @@ impl Value {
             }
             Value::Enum(_, variant, args) => {
                 if args.is_empty() {
-                    variant.clone()
+                    variant.to_string()
                 } else {
                     let body: Vec<String> = args.iter().map(Value::show).collect();
                     format!("{variant}({})", body.join(", "))
@@ -893,5 +1128,40 @@ mod tests_show_char {
         assert_eq!(show_char('\t'), "'\\t'");
         assert_eq!(show_char('\''), "'\\''");
         assert_eq!(show_char('a'), "'a'");
+    }
+}
+
+#[cfg(test)]
+mod tests_name {
+    use super::{Name, Value};
+    use std::rc::Rc;
+
+    /// **VD-267**: cùng nội dung ⇒ **cùng** `Rc<str>` (chỉ tăng refcount), `Debug`/`Display`
+    /// vẫn như `String` cũ để đầu ra không đổi.
+    #[test]
+    fn name_chia_se_theo_noi_dung() {
+        let a = Name::new("Option");
+        let b = Name::from(String::from("Opt") + "ion");
+        let c = Name::new("Option");
+        assert!(Rc::ptr_eq(&a.0, &b.0), "phải dùng chung một Rc");
+        assert!(
+            Rc::ptr_eq(&a.0, &c.0),
+            "đường nhanh theo con trỏ cũng chia sẻ"
+        );
+        assert_eq!(a, b);
+        assert_eq!(a.as_str(), "Option");
+        assert_eq!(format!("{a}"), "Option");
+        assert_eq!(format!("{a:?}"), "\"Option\"");
+        assert_eq!(a, "Option");
+        assert_ne!(a, "Result");
+        // Hai giá trị enum dựng độc lập vẫn bằng nhau + show y hệt trước đây.
+        let v1 = Value::Enum(Name::new("E"), Name::new("A"), vec![Value::Int(1)]);
+        let v2 = Value::Enum(Name::new("E"), Name::new("A"), vec![Value::Int(1)]);
+        assert!(v1.eq_value(&v2));
+        assert_eq!(v1.show(), "A(1)");
+        assert_eq!(
+            format!("{:?}", Value::some(Value::Int(1))),
+            "Enum(\"Option\", \"Some\", [Int(1)])"
+        );
     }
 }

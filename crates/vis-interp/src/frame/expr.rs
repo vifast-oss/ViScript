@@ -35,7 +35,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
                     sym.and_then(|s| it.tags.get(&s).cloned())
                         .map(|(n, is_enum)| {
                             if is_enum {
-                                Value::Enum(n, String::new(), Vec::new())
+                                Value::Enum(n.into(), Name::new(""), Vec::new())
                             } else {
                                 Value::Record(n, Vec::new())
                             }

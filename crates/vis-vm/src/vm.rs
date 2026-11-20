@@ -22,6 +22,9 @@ use vis_types::hir::LitKind;
 
 use crate::vm_frame::{MethodKind, MethodLoop};
 
+/// **VD-267** — cặp `(tên enum, tên biến thể)` đã nội bộ hoá cho cache `MakeEnum`.
+type EnumTag = (value::Name, value::Name);
+
 /// Chạy một module VBC1 (đường tắt tiện dụng).
 pub fn run(m: &Module, text: &str, args: &[String]) -> RunOutput {
     Vm::new(m, text).run(args)
@@ -157,6 +160,10 @@ pub struct Vm<'a> {
     pub(crate) globals: Vec<Option<Value>>,
     /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của từng closure, khoá bằng địa chỉ `Rc<VmFunc>`.
     pub(crate) closure_cells: HashMap<usize, ClosureCells>,
+    /// **VD-267** — nhớ `(tên enum, tên biến thể)` theo **chỉ số hằng** của `MakeEnum`. Mỗi hằng
+    /// chỉ tách + nội bộ hoá tên một lần; các lần dựng sau chỉ clone `Name` (refcount), hết cảnh
+    /// `ten_str → String` + hai `String` mỗi giá trị enum.
+    pub(crate) enum_tags: Vec<std::cell::OnceCell<EnumTag>>,
     // ST-276/VD-256 — test-hook ngân sách; `None` ⇒ KHÔNG charge (mặc định).
     pub(crate) budget_fee: Option<FeeTable>,
     pub(crate) budget_remaining: i64,
@@ -189,6 +196,9 @@ impl<'a> Vm<'a> {
             caps: Vec::new(),
             globals: Vec::new(),
             closure_cells: HashMap::new(),
+            enum_tags: (0..m.consts.len())
+                .map(|_| std::cell::OnceCell::new())
+                .collect(),
             budget_fee: None,
             budget_remaining: 0,
             budget_trace: Vec::new(),
@@ -452,14 +462,20 @@ impl<'a> Vm<'a> {
     }
 
     fn ten(&self, i: u32, span: Span) -> R<String> {
+        Ok(self.ten_str(i, span)?.to_string())
+    }
+
+    /// **VD-267** — như [`Self::ten`] nhưng **mượn** chuỗi trong bảng hằng, không cấp phát
+    /// `String`. Dùng cho chỗ chỉ cần đọc tên (vd. `MakeEnum` nội bộ hoá [`Name`]).
+    fn ten_str(&self, i: u32, span: Span) -> R<&str> {
         let c = self
             .m
             .consts
             .get(i as usize)
             .ok_or_else(|| self.hong(VmError::BadIdx(i), span))?;
         Ok(match c.kind {
-            5 => c.text.trim_matches('"').to_string(),
-            _ => c.text.clone(),
+            5 => c.text.trim_matches('"'),
+            _ => c.text.as_str(),
         })
     }
 }
@@ -1059,13 +1075,25 @@ impl<'m> Th<'m> {
                     self.st.push(Value::Record(ten, fields));
                 }
                 Instr::MakeEnum(v, n) => {
-                    let duong = vm.ten(v, span)?;
-                    let args = self.pop_n(vm, n as usize, span)?;
-                    let (ten, bien_the) = match duong.rsplit_once('.') {
-                        Some((a, b)) => (a.to_string(), b.to_string()),
-                        None => (String::new(), duong),
+                    // **VD-267**: mỗi hằng chỉ tách + nội bộ hoá tên **một lần** (cache theo chỉ
+                    // số hằng); các lần dựng sau chỉ clone `Name` — không còn `ten.to_string()`
+                    // + hai `String` cho mỗi giá trị enum như trước.
+                    let tag = match vm.enum_tags.get(v as usize).and_then(|c| c.get()).cloned() {
+                        Some(t) => t,
+                        None => {
+                            let duong = vm.ten_str(v, span)?;
+                            let t = match duong.rsplit_once('.') {
+                                Some((a, b)) => (value::Name::new(a), value::Name::new(b)),
+                                None => (value::Name::new(""), value::Name::new(duong)),
+                            };
+                            if let Some(c) = vm.enum_tags.get(v as usize) {
+                                let _ = c.set(t.clone());
+                            }
+                            t
+                        }
                     };
-                    self.st.push(Value::Enum(ten, bien_the, args));
+                    let args = self.pop_n(vm, n as usize, span)?;
+                    self.st.push(Value::Enum(tag.0, tag.1, args));
                 }
                 Instr::MakeSome => {
                     let v = self.pop(vm, span)?;

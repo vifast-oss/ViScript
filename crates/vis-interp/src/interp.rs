@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! Bộ thông dịch cây trên HIR: môi trường `sym → Value`, câu lệnh, biểu thức, pattern, gọi hàm.
 
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -16,6 +17,11 @@ use crate::value::*;
 mod core_types;
 use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};
 pub use core_types::*;
+
+/// **VD-267** — khoá cache tên enum theo vị trí nguồn `(file, start, end)`.
+type EnumTagKey = (u16, usize, usize);
+/// **VD-267** — cặp `(tên enum, tên biến thể)` đã nội bộ hoá.
+type EnumTag = (Name, Name);
 
 pub(crate) struct Interp<'a> {
     pub(crate) fns: HashMap<u32, &'a HFn>,
@@ -42,6 +48,12 @@ pub(crate) struct Interp<'a> {
     /// Độ sâu **khung gọi** đang mở (ST-15): vượt [`MAX_CALL_DEPTH`] ⇒ `VS0501`, không tràn stack.
     depth: u32,
     pub(crate) types: &'a TypeTable,
+    /// **VD-267** — nhớ `(tên enum, tên biến thể)` theo **vị trí nguồn** của `EnumLit`
+    /// (`file,start,end`). Một literal trong vòng lặp chỉ nội bộ hoá tên **một lần**; các lần
+    /// sau chỉ clone `Name` (refcount). Khoá theo vị trí nguồn nên không phình khi HIR bị clone
+    /// (closure tạo trong vòng lặp vẫn dùng chung span); nội dung được **xác minh** trước khi
+    /// dùng để hai literal khác nhau lỡ trùng span không bao giờ nhận nhầm tên.
+    enum_tags: RefCell<HashMap<EnumTagKey, EnumTag>>,
     #[allow(dead_code)]
     symbols: &'a Symbols,
     /// Host chương trình ngoài (ST-27); `None` ⇒ `VS0604` — interp **không** biết OS.
@@ -111,6 +123,7 @@ impl<'a> Interp<'a> {
             fn_depth: 0,
             depth: 0,
             types,
+            enum_tags: RefCell::new(HashMap::new()),
             symbols,
             ngoai: None,
             fs: None,
@@ -668,7 +681,7 @@ impl<'a> Interp<'a> {
                     // `enum`/`type` khai trong tệp: thẻ kiểu để `E.A` / `User(...)` chạy được.
                     if let Some((n, is_enum)) = self.tags.get(id).cloned() {
                         return Ok(if is_enum {
-                            Value::Enum(n, String::new(), Vec::new())
+                            Value::Enum(n.into(), Name::new(""), Vec::new())
                         } else {
                             Value::Record(n, Vec::new())
                         });
@@ -844,14 +857,37 @@ impl<'a> Interp<'a> {
                     // **VD-258**: đối số biến thể `T?` nhận plain — nâng ở biên dựng enum.
                     vs.push(self.lift_doi_so_bien_the(*enum_id, variant, i, vv));
                 }
+                // **VD-267**: `EnumLit` nóng — nhớ tên theo **vị trí nguồn** (span), xác minh
+                // nội dung rồi chỉ clone `Name`; không tra bảng tên mỗi vòng. Giữ **đúng**
+                // fallback cũ: tên kiểu rỗng/không có ⇒ `type_name` rồi `path.first()`.
+                if let vis_types::Type::Enum(id) = ty {
+                    if let Some(e) = self.types.enum_def(*id) {
+                        if !e.name.is_empty() {
+                            let key = (span.file, span.start, span.end);
+                            let hit = self.enum_tags.borrow().get(&key).cloned();
+                            if let Some((n, v)) = hit {
+                                // Hai `EnumLit` khác nhau lỡ trùng span ⇒ xác minh nội dung.
+                                if n.as_str() == e.name && v.as_str() == variant.as_str() {
+                                    return Ok(Value::Enum(n, v, vs));
+                                }
+                            }
+                            let ten = Name::new(&e.name);
+                            let bien_the = Name::new(variant);
+                            self.enum_tags
+                                .borrow_mut()
+                                .insert(key, (ten.clone(), bien_the.clone()));
+                            return Ok(Value::Enum(ten, bien_the, vs));
+                        }
+                    }
+                }
                 let name = self.type_name(ty);
                 let name = if name.is_empty() {
-                    path.first().cloned().unwrap_or_default()
+                    Name::new(path.first().map(String::as_str).unwrap_or(""))
                 } else {
-                    name
+                    Name::new(&name)
                 };
                 let _ = span;
-                Ok(Value::Enum(name, variant.clone(), vs))
+                Ok(Value::Enum(name, Name::new(variant), vs))
             }
             HExpr::Opt { value, .. } => match value {
                 None => Ok(Value::none()),
@@ -1182,11 +1218,7 @@ impl<'a> Interp<'a> {
             // `E` evaluate về `Enum(en, "", [])` (tag atom marker) và `x.Type` dựng biến thể rỗng.
             Value::Enum(en, variant, args) => {
                 if variant.is_empty() && args.is_empty() {
-                    Ok(Value::Enum(
-                        en,
-                        name.to_string(),
-                        Vec::new(), /* zero-width */
-                    ))
+                    Ok(Value::Enum(en, Name::new(name), Vec::new()))
                 } else {
                     Err(Abort::Trap(Trap::new(
                         RT,

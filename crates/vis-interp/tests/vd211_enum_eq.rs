@@ -6,7 +6,7 @@
 use vis_interp::value::Value;
 
 fn e(en: &str, va: &str, args: Vec<Value>) -> Value {
-    Value::Enum(en.to_string(), va.to_string(), args)
+    Value::Enum(en.into(), va.into(), args)
 }
 
 #[test]

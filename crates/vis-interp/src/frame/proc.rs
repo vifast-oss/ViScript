@@ -504,7 +504,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             let mut vs = pop_n(frame, n)?;
             vs.reverse();
             let _ = span;
-            frame.push_val(Value::Enum(name, variant, vs));
+            frame.push_val(Value::Enum(name.into(), variant.into(), vs));
             Ok(())
         }
         Work::ApplySome => {

@@ -25,7 +25,7 @@ use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
 use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent, Waiter};
-use crate::value::{Env, ForIter, Value};
+use crate::value::{Env, ForIter, Name, Value};
 
 mod expr;
 mod params;
@@ -669,7 +669,7 @@ fn field_of(b: Value, name: &str, span: Span) -> R<Value> {
         }
         Value::Enum(en, variant, args) => {
             if variant.is_empty() && args.is_empty() {
-                Ok(Value::Enum(en, name.to_string(), Vec::new()))
+                Ok(Value::Enum(en, Name::new(name), Vec::new()))
             } else {
                 Err(Abort::Trap(Trap::new(
                     RT,
