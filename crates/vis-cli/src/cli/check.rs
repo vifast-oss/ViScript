@@ -433,6 +433,12 @@ pub(crate) fn run_check(args: &[String]) -> ExitCode {
         if args.is_empty() {
             return usage_check();
         }
+        // **VD-270 (check-json, 2026-11-21)**: cờ lạ phải là **lỗi dùng** (exit 2, stdout rỗng)
+        // như đường TAP/`--stdin`; trước đây `--json --la` coi `--la` là tệp ⇒ `VS0201` exit 1.
+        if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
+            eprintln!("vis check: không hỗ trợ cờ `{bad}`");
+            return usage_check();
+        }
         return run_check_json(&args, cho_ngoai, kiem_kieu);
     }
     if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
