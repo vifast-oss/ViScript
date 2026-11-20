@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `34f7eef` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `ab43766` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic),
-> gate **1968 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **1972 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -35,7 +35,7 @@
 | Cache | `f9748a7` | bump `PHIEN_BAN` + ghim khoá `1bafa949…` sau methodret/genericres/intlit |
 | Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
-| LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490`, `5fc00c5`, `f372446` | `definition` + `documentSymbol` + `references` + `rename` + `signatureHelp` + `foldingRange` + hover variant |
+| LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490`, `5fc00c5`, `f372446`, `c5705d1`, `ab43766` | `definition` + `documentSymbol` + `references` + `rename` + `signatureHelp` + `foldingRange` + hover variant + completion `std.*` + `workspace/symbol` |
 | Testfilter | `d06a807` → `5405489` | `vis test --filter <substr>` + `--fail-fast` (TAP plan theo số đã chạy) |
 | Panic | `5c8b550` → `0c22c76` | `panic(msg) -> never`, trap `VS0501` exit 101, cả 2 engine; tách `builtin_sig.rs` |
 | Fmt-size | `1ab5d8b` → `350d7c4` | size thập phân ≤2 lẻ, duration ghép `2h30m`; cập nhật show/tests/docs |
@@ -48,7 +48,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1959 passed / 3 skipped** tại `8820d4d`.
+- `./vis-dev gate --fast`: **PASS — 1972 passed / 3 skipped** tại `ab43766`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
