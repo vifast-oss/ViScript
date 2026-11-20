@@ -102,7 +102,10 @@ str.split_whitespace	(str) -> list[str]
 str.starts_with	(str, str) -> bool
 str.trim	(str) -> str
 str.trim_end	(str) -> str
+str.trim_end_matches	(str, str) -> str
+str.trim_matches	(str, str) -> str
 str.trim_start	(str) -> str
+str.trim_start_matches	(str, str) -> str
 str.upper	(str) -> str
 time.monotonic_ms	() -> int
 time.now_ms	() -> int

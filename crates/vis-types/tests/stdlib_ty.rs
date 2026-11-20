@@ -88,7 +88,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // xoá/đổi hàm cũ nào (`grapheme_count` cố ý **không** thêm: cần dependency Unicode mới).
     // **SỬA KÈM LÝ DO (VD-270 indexof, 2026-11-21)**: +**2** hàm `std.list.*` (`index_of`,
     // `last_index_of`; `(list[T], T) -> int?`) ⇒ **96** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 96, "bảng chữ ký phải đủ 96 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 strtrim, 2026-11-21)**: +**3** hàm `std.str.*` (`trim_matches`,
+    // `trim_start_matches`, `trim_end_matches`; `(str, str) -> str`) ⇒ **99** hàm; không
+    // xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 99, "bảng chữ ký phải đủ 99 hàm");
 }
 
 #[test]
