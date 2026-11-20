@@ -328,6 +328,24 @@ do_doc_examples() {
     fi
 }
 
+do_readme_examples() {
+    # Khối mã trong README/CHEAT-SHEET không nằm trong cổng QD §7.4 (doc_examples.py
+    # chỉ quét docs/*.md) ⇒ cần bước riêng, không đụng vào số liệu Agent 0 của cổng đó.
+    local py="${1:-}"
+    if [ -z "$py" ]; then
+        for c in python3.12 python3.11 python3; do
+            if command -v "$c" >/dev/null 2>&1; then py="$c"; break; fi
+        done
+    fi
+    if [ -z "$py" ]; then
+        echo "vis-dev: không thấy python3 cho bước readme-examples" >&2
+        return 1
+    fi
+    if ! "$py" "$VIS_ROOT/test/readme-examples.py"; then
+        return 1
+    fi
+}
+
 do_check() {
     echo "== vis-dev check =="
     PY=""
@@ -377,6 +395,11 @@ do_check() {
         echo "--- doc-examples: FAIL" >&2
         return 1
     fi
+    if ! do_readme_examples "$PY"; then
+        echo "--- readme-examples: FAIL" >&2
+        return 1
+    fi
+    echo "--- readme-examples: OK"
     echo "vis-dev check: PASS"
 }
 

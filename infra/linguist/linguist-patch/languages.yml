@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Snippet — dán vào lib/linguist/languages.yml (giữ thứ tự alphabet, sau "Vim script").
+# `language_id` do `script/update-ids` sinh, KHÔNG tự đặt.
+
+ViScript:
+  type: programming
+  color: "#B5179E"
+  aliases:
+  - vis
+  extensions:
+  - ".vis"
+  tm_scope: source.viscript
+  ace_mode: text
+  language_id: <do script/update-ids sinh>

@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Báo cáo lớp học — filter + map + ?? + match + ? trong một pipeline có nghĩa.
+# Chạy: ./vis run vi-du/bao-cao-lop.vis  (hoặc thêm --vm --no-cache để so hai engine).
+use std.list
+use std.str
+
+type SinhVien:
+    ten: str
+    diem: int?
+
+fn xep_loai(d: int) -> str:
+    if d >= 9:
+        "giỏi"
+    elif d >= 7:
+        "khá"
+    elif d >= 5:
+        "trung bình"
+    else:
+        "yếu"
+
+fn kiem_tra_diem(d: int, ten: str) -> Result[int, str]:
+    if d < 0 or d > 10:
+        Err("điểm ngoài 0..10 cho {ten}: {d}")
+    else:
+        Ok(d)
+
+fn dat(sv: SinhVien) -> bool:
+    match sv.diem:
+        Some(d):
+            d >= 5
+        None:
+            false
+
+fn mo_ta(sv: SinhVien) -> str:
+    match sv.diem:
+        Some(d):
+            let hien = sv.diem ?? -1
+            "{sv.ten}: {d} điểm ({xep_loai(d)}) [?? thay cho giá trị: {hien}]"
+        None:
+            "{sv.ten}: vắng mặt"
+
+fn bao_cao(ds: list[SinhVien]) -> Result[str, str]:
+    if ds.len() == 0:
+        return Err("danh sách trống")
+
+    # Kiểm tra mọi điểm trước, dùng `?` để thoát sớm khi có lỗi.
+    for sv in ds:
+        match sv.diem:
+            Some(d):
+                let ok_d = kiem_tra_diem(d, sv.ten)?
+                ()
+            None:
+                ()
+
+    var tong = 0
+    var co_diem = 0
+    var vang = 0
+    var dat_ds = ds.filter(dat)
+    let chi_tiet = ds.map(mo_ta)
+
+    var cac_diem: list[int] = []
+    for sv in ds:
+        match sv.diem:
+            Some(d):
+                cac_diem.push(d)
+                tong += d
+                co_diem += 1
+            None:
+                vang += 1
+
+    let tb = if co_diem == 0: 0 else: tong // co_diem
+    let thap_nhat = if cac_diem.len() == 0: 0 - 1 else: list.sort(cac_diem)[0]
+    let cao_nhat = if cac_diem.len() == 0: 0 - 1 else: list.sort(cac_diem)[cac_diem.len() - 1]
+
+    var lines: list[str] = chi_tiet
+    lines.push("----------------------------")
+    lines.push("sĩ số: {ds.len()}, có điểm: {co_diem}, vắng: {vang}")
+    lines.push("đạt (>=5): {dat_ds.len()}")
+    lines.push("điểm trung bình: {tb} | thấp nhất: {thap_nhat} | cao nhất: {cao_nhat}")
+    Ok(str.join(lines, "\n"))
+
+fn main():
+    let a: SinhVien = {ten: "An", diem: Some(9)}
+    let b: SinhVien = {ten: "Bình", diem: None}
+    let c: SinhVien = {ten: "Chi", diem: Some(6)}
+    let d: SinhVien = {ten: "Dũng", diem: Some(4)}
+    let e: SinhVien = {ten: "Em", diem: Some(8)}
+    let ds: list[SinhVien] = [a, b, c, d, e]
+
+    match bao_cao(ds):
+        Ok(r):
+            print(r)
+        Err(loi):
+            print("lỗi báo cáo: {loi}")

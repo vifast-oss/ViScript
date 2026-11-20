@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Snippet — dán vào grammars.yml của github-linguist.
+# Thay <org>/tree-sitter-viscript bằng repo grammar thật và <sha> bằng commit đã sinh parser.
+
+source.viscript:
+  scope: source.viscript
+  language: ViScript
+  repository: https://github.com/<org>/tree-sitter-viscript
+  revision: <sha>

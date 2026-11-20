@@ -25,7 +25,7 @@ Kết quả:
 Xin chào, ViScript!
 ```
 
-> Lần chạy đầu sẽ tự biên dịch (vài phút). Cần cài Rust **stable ≥ 1.99.1** — xem [rustup.rs](https://rustup.rs). `./vis-dev` sẽ tự chọn cargo phù hợp (PATH hoặc `~/.cargo/bin`) và báo rõ lựa chọn.
+> Lần chạy đầu sẽ tự biên dịch (vài phút). Cần cài Rust **≥ 1.100.0** (repo ghim 1.100.0 qua `rust-toolchain.toml`) — xem [rustup.rs](https://rustup.rs). `./vis-dev` sẽ tự chọn cargo phù hợp (PATH hoặc `~/.cargo/bin`) và báo rõ lựa chọn.
 
 ## Vì sao học ViScript?
 
@@ -43,7 +43,7 @@ Mỗi mục dưới đây là một chương trình hoàn chỉnh: copy vào t�
 
 ### 1. In ra màn hình
 
-```vis
+```python title="ViScript"
 print("Xin chào, ViScript!")
 ```
 
@@ -53,7 +53,7 @@ Xin chào, ViScript!
 
 ### 2. Biến: `let` và `var`
 
-```vis
+```python title="ViScript"
 let ten = "Minh"      # let: không đổi được
 var tuoi = 17         # var: đổi được
 tuoi += 1
@@ -68,7 +68,7 @@ Chào Minh, 18 tuổi
 
 ### 3. Hàm
 
-```vis
+```python title="ViScript"
 fn binh_phuong(x: int) -> int:
     x * x
 
@@ -83,7 +83,7 @@ print(binh_phuong(7))
 
 ### 4. Rẽ nhánh
 
-```vis
+```python title="ViScript"
 fn xep_loai(diem: float) -> str:
     if diem >= 8.0:
         "Giỏi"
@@ -105,7 +105,7 @@ Cần cố gắng
 
 ### 5. Vòng lặp
 
-```vis
+```python title="ViScript"
 for i in 0..3:
     print("lần {i}")
 
@@ -128,7 +128,7 @@ lần 2
 
 ### 6. Danh sách
 
-```vis
+```python title="ViScript"
 let ds = [1, 2, 3, 4]
 print(ds.map(x => x * 2))
 print(ds.filter(x => x > 2))
@@ -145,7 +145,7 @@ print(ds.sum())
 
 ### 7. Map (từ điển)
 
-```vis
+```python title="ViScript"
 let tuoi = {"An": 17, "Bình": 18}
 print(tuoi["An"])
 print(tuoi.keys())
@@ -158,7 +158,7 @@ print(tuoi.keys())
 
 ### 8. Bản ghi (record) — thay cho class
 
-```vis
+```python title="ViScript"
 type HocSinh:
     ten: str
     diem: float
@@ -179,7 +179,7 @@ Minh: 8.5
 
 ### 9. Enum + match
 
-```vis
+```python title="ViScript"
 enum Hinh:
     Tron(r: float)
     Vuong(canh: float)
@@ -202,7 +202,7 @@ print(dien_tich(Hinh.Vuong(3.0)))
 
 ### 10. Giá trị có thể thiếu (optional)
 
-```vis
+```python title="ViScript"
 let ds = [10, 20, 30]
 let o = ds.get(1)          # some(20)
 if let Some(v) = o:
@@ -221,11 +221,11 @@ có 20
 
 ### 11. Xử lý lỗi (Result)
 
-```vis
+```python title="ViScript"
 fn chia(a: int, b: int) -> Result[int, str]:
     if b == 0:
         return Err("chia cho 0")
-    Ok(a / b)
+    Ok(a // b)
 
 print(chia(10, 2))
 print(chia(10, 0))
@@ -236,11 +236,11 @@ Ok(5)
 Err(chia cho 0)
 ```
 
-> Không có `try/catch`. Hàm có thể lỗi thì trả `Result[T, E]`; chỗ gọi dùng `?` để chuyển lỗi lên trên.
+> Không có `try/catch`. Hàm có thể lỗi thì trả `Result[T, E]`; chỗ gọi dùng `?` để chuyển lỗi lên trên. Ở đây dùng `//` (chia nguyên) vì `/` luôn trả `float` — xem mục 14.
 
 ### 12. Đơn vị đo
 
-```vis
+```python title="ViScript"
 print(1kb + 1kib)     # 2024b
 print(2h + 30m)       # 150m
 print(5mb)            # 5mb
@@ -256,7 +256,7 @@ print(5mb)            # 5mb
 
 ### 13. Trait và impl (nâng cao)
 
-```vis
+```python title="ViScript"
 trait Hien:
     fn hien(self) -> str
 
@@ -280,7 +280,7 @@ print(p.hien())
 
 ### 14. Mẹo mới — viết nhanh hơn
 
-```vis
+```python title="ViScript"
 type User:
     name: str
     age: int = 0
@@ -380,7 +380,7 @@ fn main():
 
 **ViScript**
 
-```vis
+```python title="ViScript"
 for i in 1..=15:
     if i % 15 == 0:
         print("FizzBuzz")
@@ -430,7 +430,7 @@ fn main() {
 
 ### Ví dụ 1 — Xếp loại học lực
 
-```vis
+```python title="ViScript"
 type HocSinh:
     ten: str
     diem: float
@@ -465,7 +465,7 @@ Dũng: 4.5 — Cần cố gắng
 
 ### Ví dụ 2 — Quản lý chi tiêu
 
-```vis
+```python title="ViScript"
 use std.list
 
 type Khoan:
@@ -502,7 +502,7 @@ Từ nhỏ đến lớn: [Xe buýt, Trà sữa, Cơm trưa, Sách]
 
 ### Ví dụ 3 — Đơn vị đo: thời gian và dung lượng
 
-```vis
+```python title="ViScript"
 let hoc = 2h + 30m
 let choi = 45m
 print("Học: {hoc}")
@@ -523,7 +523,7 @@ Tổng dung lượng: 1005mb
 
 ### Ví dụ 4 — JSON: lưu và đọc dữ liệu
 
-```vis
+```python title="ViScript"
 use std.json
 
 type HocSinh:
@@ -540,12 +540,12 @@ print(lai)
 
 ```text
 {"ten":"Minh","diem":8.5}
-Ok({"ten": Minh, "diem": 8.5})
+Ok(Obj({"ten": Str(Minh), "diem": Num(8.5)}))
 ```
 
 ### Ví dụ 5 — Viết test ngay trong tệp
 
-```vis
+```python title="ViScript"
 fn cong(a: int, b: int) -> int:
     a + b
 
@@ -616,7 +616,10 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 ## Học tiếp
 
 - [`CHEAT-SHEET-ViScript.md`](CHEAT-SHEET-ViScript.md) — bảng tra cứu đầy đủ ViScript ↔ Python ↔ Rust ↔ TS/JS.
-- [`vi-du/`](vi-du/) — ví dụ chạy được cho người mới.
+- [`vi-du/`](vi-du/) — ví dụ chạy được cho người mới: `xin-chao.vis`, `ham.vis`, `danh-sach.vis`, `don-vi.vis`, `test.vis`.
+- [`vi-du/csv-join.vis`](vi-du/csv-join.vis) — ví dụ nghiệp vụ: ghép hai CSV theo `id`, xử lý dòng hỏng/trùng khóa; chạy được cả interp lẫn VM (`vi-du/csv-ok.out` là kết quả mẫu).
+- [`vi-du/bao-cao-lop.vis`](vi-du/bao-cao-lop.vis) — báo cáo lớp học: `filter`/`map`/`??`/`match`/`?` trong một pipeline, có cả điểm vắng (`None`).
+- [`vi-du/cli-chao.vis`](vi-du/cli-chao.vis) — chương trình nhận tham số sau `--`: bắt buộc, mặc định, cờ boolean và báo lỗi.
 - [`docs/SPEC-lex.md`](docs/SPEC-lex.md) — đặc tả từ vựng + EBNF.
 - [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md) — thiết kế ngôn ngữ.
 - [`test/sem/`](test/sem/) — bộ ca ngữ nghĩa chạy thật.
@@ -628,7 +631,7 @@ crates/    8 crate Rust: từ vựng, kiểu, thông dịch, máy ảo, CLI…
 bin/       công cụ shell: vis, vis-dev, vis-remote, vis-linux, vis-soak, vis-targets, vis-diff…
 test/      bộ kiểm: ví dụ chạy được, fixture, báo cáo
 docs/      đặc tả ngôn ngữ (SPEC-lex.md) và thiết kế
-vi-du/     ví dụ chạy được cho người mới
+vi-du/     ví dụ chạy được (xin chào, CSV, báo cáo lớp, CLI…)
 agent/     sổ quyết định, QUEUE, nhật ký, báo cáo từng đợt
 resources/ tài nguyên thương hiệu: icon ViScript + ViShell (brand/)
 infra/     hạ tầng: host Linux/Windows, sync, setup, runbooks
@@ -637,6 +640,7 @@ infra/     hạ tầng: host Linux/Windows, sync, setup, runbooks
 ## Góp ý / phát triển
 
 - Mọi thay đổi phải qua cổng: `./vis-dev gate --fast`.
+- Các khối mã ViScript trong README gắn `python title="ViScript"` để GitHub tô màu (ViScript chưa có grammar trong [Linguist](https://github.com/github-linguist/linguist); xem kế hoạch ở [`infra/linguist/`](infra/linguist/)). Nội dung vẫn là ViScript — copy vào tệp `.vis` rồi chạy `./vis run`. `test/readme-examples.py` kiểm tra từng khối bằng `vis check`.
 - Quy ước commit: `[ST-##] <tóm tắt>`; quyết định thiết kế ghi trong [`agent/DECISIONS.md`](agent/DECISIONS.md).
 - Đọc [`AGENTS.md`](AGENTS.md) và [`CONTRIBUTING.md`](CONTRIBUTING.md) trước khi sửa mã.
 

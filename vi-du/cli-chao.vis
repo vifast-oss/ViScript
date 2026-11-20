@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# CLI nhận tham số sau `--`: --ten (bắt buộc), --so-lan (mặc định 3), --nga, --giup.
+# Chạy: ./vis run vi-du/cli-chao.vis -- --ten An --so-lan 2 --nga
+# ViScript chưa có eprint/exit: lỗi hợp lệ = in thông điệp rồi `assert false` (exit 101).
+use std.str
+
+fn in_huong_dan():
+    print("dùng: vis run vi-du/cli-chao.vis -- --ten TEN [--so-lan N] [--nga] [--giup]")
+    print("  --ten TEN    tên cần chào (bắt buộc)")
+    print("  --so-lan N   số lần lặp lại (mặc định 3, phải >= 1)")
+    print("  --nga        in hoa toàn bộ kết quả")
+    print("  --giup       in hướng dẫn này rồi thoát")
+
+fn gia_tri_chu_so(c: str) -> int:
+    let digits = "0123456789".chars()
+    var i = 0
+    while i < digits.len():
+        if digits[i] == c:
+            return i
+        i += 1
+    0 - 1
+
+fn parse_so(s: str) -> int?:
+    let cs = s.trim().chars()
+    if cs.len() == 0:
+        return None
+    var i = 0
+    var dau = 1
+    if cs[0] == "-":
+        dau = 0 - 1
+        i = 1
+    var kq = 0
+    var co = false
+    while i < cs.len():
+        let d = gia_tri_chu_so(cs[i])
+        if d < 0:
+            return None
+        kq = kq * 10 + d
+        co = true
+        i += 1
+    if co:
+        Some(kq * dau)
+    else:
+        None
+
+fn chet(msg: str):
+    print("lỗi: {msg}")
+    print("dùng: vis run vi-du/cli-chao.vis -- --ten TEN [--so-lan N] [--nga] [--giup]")
+    assert false, msg
+
+fn main(args: list[str]):
+    var ten: str? = None
+    var so_lan = 3
+    var nga = false
+    var giup = false
+    var i = 0
+    var loi = ""
+    while i < args.len() and loi == "":
+        let a = args[i]
+        if a == "--giup":
+            in_huong_dan()
+            giup = true
+            i = args.len()
+        elif a == "--ten":
+            if i + 1 < args.len():
+                ten = Some(args[i + 1])
+                i += 2
+            else:
+                loi = "thiếu giá trị cho --ten"
+                i += 1
+        elif a == "--so-lan":
+            if i + 1 < args.len():
+                match parse_so(args[i + 1]):
+                    Some(n):
+                        if n >= 1:
+                            so_lan = n
+                        else:
+                            loi = "--so-lan phải >= 1, nhận được {n}"
+                        ()
+                    None:
+                        loi = "--so-lan không phải số nguyên: '{args[i + 1]}'"
+                        ()
+                i += 2
+            else:
+                loi = "thiếu giá trị cho --so-lan"
+                i += 1
+        elif a == "--nga":
+            nga = true
+            i += 1
+        else:
+            loi = "tham số lạ: '{a}'"
+            i += 1
+
+    if giup:
+        so_lan = 0
+    elif loi != "":
+        chet(loi)
+    else:
+        match ten:
+            Some(t):
+                var k = 0
+                while k < so_lan:
+                    let dong = "Xin chào {t}!"
+                    if nga:
+                        print(dong.upper())
+                    else:
+                        print(dong)
+                    k += 1
+            None:
+                chet("thiếu tham số bắt buộc --ten")

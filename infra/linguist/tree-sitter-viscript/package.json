@@ -1,0 +1,16 @@
+{
+  "name": "tree-sitter-viscript",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for ViScript (scaffold — chưa sinh parser)",
+  "license": "MIT OR Apache-2.0",
+  "main": "bindings/node",
+  "keywords": ["parser", "grammar", "viscript", "tree-sitter"],
+  "files": ["grammar.js", "queries/highlights.scm", "src", "bindings"],
+  "dependencies": {
+    "tree-sitter-cli": "^0.25.0"
+  },
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test"
+  }
+}
