@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `b6828b8` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
-> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob/strpad/dbcache),
-> gate **2042 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `0eabbd1` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob/strpad/dbcache/checkstdin),
+> gate **2049 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -44,6 +44,7 @@
 | Glob | `9a89e30` → `55756dd` | `fs.glob(root, pattern)` với `*`/`?`/`**`, basename nếu không `/`, walk-based |
 | Strpad | `3fbcc8e` → `1d20f5b` | `str.pad_left/right/center` + `trim_start/end`; scalar, fill lặp/cắt, trap rỗng |
 | Dbcache | `c9e719d` → `b6828b8` | `prepare_cached` LRU 16; flush theo schema/temp schema; release 1,5–1,74× |
+| Checkstdin | `0ed20cf` → `0eabbd1` | `vis check --stdin` (TAP/JSON, tệp ảo `-`, exit 0/1/2) |
 | FS | `c4774a8` → `34aa2f0` | `read_lines/append/mkdir/remove`; FsHost default + FsGuard; API +4 |
 | DB | `2f583ec` → `b619c08` | `query_one` (dừng sau hàng đầu), `last_insert_rowid`, `changes`; read-only/caps giữ nguyên |
 | Intlit | `fd702c7` → `38c8bff` | `i64::MIN` viết trực tiếp; bare `2^63` vẫn `VS0104` tĩnh |
@@ -52,7 +53,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1989 passed / 3 skipped** tại `8551245`.
+- `./vis-dev gate --fast`: **PASS — 2049 passed / 3 skipped** tại `0eabbd1`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
