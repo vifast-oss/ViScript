@@ -108,7 +108,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // cũ nào.
     // **SỬA KÈM LÝ DO (VD-270 path-normalize, 2026-11-21)**: +**1** hàm `std.path.normalize`
     // (`(str) -> str`; chuẩn hoá từ vựng POSIX, thuần chuỗi) ⇒ **107** hàm.
-    assert_eq!(FUNCS.len(), 107, "bảng chữ ký phải đủ 107 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-tables, 2026-11-21)**: +**1** hàm `sqlite.tables`
+    // (`(str) -> Result[list[str], Error]`; bảng/view người dùng của schema chính, sắp byte)
+    // ⇒ **108** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 108, "bảng chữ ký phải đủ 108 hàm");
 }
 
 #[test]

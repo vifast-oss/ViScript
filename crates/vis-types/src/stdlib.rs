@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 107] = [
+pub const FUNCS: [StdFn; 108] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -816,6 +816,14 @@ pub const FUNCS: [StdFn; 107] = [
         name: "sqlite.in_transaction",
         params: &[Ty::Str],
         ret: Ty::ResultBoolErr,
+    },
+    // **VD-270 (sqlite-tables)** — tên bảng/view người dùng của schema chính, sắp theo byte, bỏ
+    // đối tượng nội bộ `sqlite_%`; chạy qua `sqlite_master` bằng đúng đường `query` (authorizer/
+    // chỉ đọc/trần/timeout/cache). Bảng TEMP **không** thuộc schema chính nên không xuất hiện.
+    StdFn {
+        name: "sqlite.tables",
+        params: &[Ty::Str],
+        ret: Ty::ResultListStrStr,
     },
 ];
 
