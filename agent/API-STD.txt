@@ -118,6 +118,7 @@ str.count	(str, str) -> int
 str.ends_with	(str, str) -> bool
 str.find	(str, str) -> int?
 str.is_ascii	(str) -> bool
+str.is_blank	(str) -> bool
 str.is_empty	(str) -> bool
 str.join	(list[str], str) -> str
 str.lines	(str) -> list[str]

@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 138] = [
+pub const FUNCS: [StdFn; 139] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -476,6 +476,14 @@ pub const FUNCS: [StdFn; 138] = [
     // không cần `use std.str`.
     StdFn {
         name: "str.is_ascii",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    // **VD-270 (is-blank)**: `true` ⇔ rỗng hoặc **mọi scalar** Unicode là khoảng trắng
+    // (`char::is_whitespace`); tham số đầu `str` nên sugar R5c `s.is_blank()` chạy
+    // không cần `use std.str`.
+    StdFn {
+        name: "str.is_blank",
         params: &[Ty::Str],
         ret: Ty::Bool,
     },

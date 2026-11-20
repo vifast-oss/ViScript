@@ -53,6 +53,7 @@ mod sqlitetables;
 mod strascii;
 mod strcharat;
 mod strfind;
+mod strisblank;
 mod strlen;
 mod strpad;
 mod strparse;
@@ -294,6 +295,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (char-at)**: scalar Unicode thứ `i` (zero-based); âm/quá dài/rỗng ⇒ `None`.
         "str.char_at" => strcharat::goi(name, &args, span),
+        // **VD-270 (is-blank)**: rỗng hoặc **mọi scalar** `char::is_whitespace` ⇒ `true`.
+        "str.is_blank" => Ok(strisblank::goi(chuoi(name, &args[0], 0, span)?)),
         // ----- std.list -----
         // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.
         "list.is_empty" => {
