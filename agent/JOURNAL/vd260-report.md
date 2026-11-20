@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `6c2c9c2` (sau method/globals + perf),
-> gate **1746 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `4626406` (sau method/globals/withunit/ctrl/generic),
+> gate **1788 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -24,10 +24,13 @@
 | Method | `240c2a0` → `3b0757a` | type-check thân method `impl`: break/continue, tên lạ, return |
 | Globals | `d518975` → `6c2c9c2` | khởi tạo top-level `let`/`var` trước `fn main`, cả 2 engine |
 | Perf | `2395a8d`, `7a93bea`, `74f2a37` | cache quét schema SQLite theo schema/data version; strip release 6.23 MB |
+| VM/with | `7255065` → `23f2ee3` | `with` lấy kiểu tĩnh mọi gốc; `TestList` tách khỏi `TestTuple`/Unit |
+| Ctrl | `a4e00fb` → `409dc15` | interp lan `break`/`continue` ra khỏi expression if/match |
+| Generic | `f84c0d2` → `4626406` | field instantiation `G[int?]`/enum/with/gán trường; API `compile_voi_bang` |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1746 passed / 3 skipped** tại `6c2c9c2`.
+- `./vis-dev gate --fast`: **PASS — 1788 passed / 3 skipped** tại `4626406`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
@@ -71,9 +74,9 @@
 
 ## 6. Còn mở / chưa tuyên bố hoàn tất
 
-- Method `impl` body đã được type-check cơ bản (break/continue/tên lạ/return); `self`/kiểu phép gán sâu còn nợ.
-- Review độc lập phát hiện thêm `let … else`, `break/continue` trong expression if/match, `with` non-Var,
-  VM `[]` vs `()`, generic Option field — **đang sửa ở wave 6**. Không tuyên bố “sạch” cho tới khi xong.
+- Method `impl` body đã được type-check cơ bản; `self`/kiểu phép gán sâu còn nợ.
+- Review wave 6: `with`/`[]`/generic/ctrl đã sửa; **`let … else` và inference pattern/call vẫn đang sửa**
+  (`vd263-letelse`, `vd264-infer`), range lazy đang thử. Không tuyên bố “sạch” cho tới khi merge.
 - Cache label đã bump cho rest-pattern/parity (`d780637`); nếu sửa codegen tiếp phải bump lại.
 - Refutable `let`/`for` nay bị từ chối tĩnh (đúng VD-260); `let … else` chỉ cho Option/Result — fixture rest pattern đã đổi sang `if let`.
 - Frame vẫn cooperative; timer/interleave chỉ tại safe point; quota là test-hook.
