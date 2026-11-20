@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `4626406` (sau method/globals/withunit/ctrl/generic),
-> gate **1788 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `d485d1a` (sau method/globals/withunit/ctrl/generic/letelse/infer/range),
+> gate **1822 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -27,14 +27,18 @@
 | VM/with | `7255065` → `23f2ee3` | `with` lấy kiểu tĩnh mọi gốc; `TestList` tách khỏi `TestTuple`/Unit |
 | Ctrl | `a4e00fb` → `409dc15` | interp lan `break`/`continue` ra khỏi expression if/match |
 | Generic | `f84c0d2` → `4626406` | field instantiation `G[int?]`/enum/with/gán trường; API `compile_voi_bang` |
+| Let-else | `59fd3d4` → `1dae9be` | `else` phải thoát mọi nhánh (VS0206); scope theo snapshot; binder `Err`/`()`; interp=VM |
+| Infer | `f640514` → `131a899` | kiểu sau pattern lồng (tuple/list/record/ctor/or/for/if-let/while-let); `Call`/`Try`/`With`/`If`/`Match` |
+| Range | `cec83ac` → `70f4624` | `for` range duyệt lười (interp/VM/frame), RSS 146 MB → ~9,5 MB @2M |
+| Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1788 passed / 3 skipped** tại `4626406`.
+- `./vis-dev gate --fast`: **PASS — 1822 passed / 3 skipped** tại `d485d1a`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
-- `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
-- `test/toolchain/run.sh`: **12/12**.
+- `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
+- `test/toolchain/run.sh`: **PASS**.
 - `host_posix_real`: `/bin/echo`, `/usr/bin/grep`, `/bin/sh`, `/usr/bin/printf` thật, interp + VM.
 - QA độc lập @ `67f232a`: nextest **1727 passed / 3 skipped** (23.5 s); core-test **1151 passed**
   (118 binaries, 35.7 s); nightly `--fuzz-minutes 5` **44.103.531 cases / 1.001.085.722 tokens /
@@ -69,17 +73,22 @@
   chứng minh 20 lời gọi sau DDL không quét lại; DDL kế tiếp quét lại.
 - **Release strip** (`7a93bea`): `[profile.release] strip = "symbols"`; `target/release/vis`
   **7.264.080 → 6.229.464 B** (−14,3%), artifact release vẫn chỉ `vis`.
-- Perf audit (read-only) ghi nhận P2 range `Vec` 146 MB @2M và P3 enum alloc; **chưa sửa**
-  (rủi ro/ABI), ghi thành nợ tiếp theo.
+- **Range lười** (`cec83ac`): `for i in 0..2_000_000` không còn dựng `Vec<Value>`; RSS debug
+  **149.860 → 9.536 KB** (interp), **150.132 → 9.688 KB** (VM); trần `10^7` đếm bằng `i128`
+  trước khi vào thân vòng, `E_LOOP` và `break`/`continue` giữ nguyên. Không đổi `Value`/opcode/VERSION.
+- P3 enum alloc (#152) vẫn mở; perf audit ghi nhận là nợ tiếp theo.
 
 ## 6. Còn mở / chưa tuyên bố hoàn tất
 
 - Method `impl` body đã được type-check cơ bản; `self`/kiểu phép gán sâu còn nợ.
-- Review wave 6: `with`/`[]`/generic/ctrl đã sửa; **`let … else` và inference pattern/call vẫn đang sửa**
-  (`vd263-letelse`, `vd264-infer`), range lazy đang thử. Không tuyên bố “sạch” cho tới khi merge.
-- Cache label đã bump cho rest-pattern/parity (`d780637`); nếu sửa codegen tiếp phải bump lại.
+- Wave 6 đã đóng: let-else, break/continue expression, `with` non-Var, `[]` vs `()`, generic field,
+  pattern/call inference, range lười. **Wave 7 đang chạy**: method-return, frame parity,
+  generic residual, stdlib helpers.
+- Cache label đã bump cho let-else/generic/range (`d485d1a`); nếu sửa codegen tiếp phải bump lại.
 - Refutable `let`/`for` nay bị từ chối tĩnh (đúng VD-260); `let … else` chỉ cho Option/Result — fixture rest pattern đã đổi sang `if let`.
 - Frame vẫn cooperative; timer/interleave chỉ tại safe point; quota là test-hook.
 - `list` rest pattern chưa hỗ trợ hậu tố `[.., z]` (parser từ chối tĩnh).
 - `std.path` Windows chỉ test helper thuần; chưa chạy runtime Windows.
+- Parser chưa nhận `if`/`match` nhiều dòng làm biểu thức con trong đối số gọi (`VS0201`) — nợ parser.
+- P3 enum alloc (#152) chưa sửa.
 - Budget/fuel/Q vẫn chưa chốt; step-cap còn mở; runtime mặc định vẫn không đổi.
