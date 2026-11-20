@@ -108,6 +108,8 @@ pub(crate) fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> 
             | Ty::OptStr
             // **VD-270 (parse-float)**: `float?` là kiểu **trả** của `str.parse_float`.
             | Ty::OptFloat
+            // **VD-270 (split-once)**: `list[str]?` là kiểu **trả** của `str.split_once`.
+            | Ty::OptListStr
             // **VD-270 (sqlite-schema-sql)**: `Result[str?, Error]` là kiểu **trả** của
             // `sqlite.schema_sql`.
             | Ty::ResultOptStrErr => true,

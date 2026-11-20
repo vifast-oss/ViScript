@@ -210,7 +210,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.schema_version` (`(str) -> Result[int, Error]`; schema cookie của schema chính
     // đọc qua `PRAGMA schema_version`, tăng khi DDL đổi schema, chỉ đọc) ⇒ **136** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 140, "bảng chữ ký phải đủ 140 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 split-once, 2026-11-21)**: +**1** hàm `std.str.split_once`
+    // (`(str, str) -> list[str]?`; tách tại lần xuất hiện **đầu** của `sep`, `Some` đúng 2
+    // phần, không khớp ⇒ `None`, `sep` rỗng ⇒ `Some(["", s])`) ⇒ **141** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 141, "bảng chữ ký phải đủ 141 hàm");
 }
 
 #[test]
@@ -246,6 +250,24 @@ fn splitn_kieu_str_str_int_va_sugar() {
     );
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(vis_types::stdlib::module_sugar("str", "splitn"), None);
+}
+
+#[test]
+fn split_once_kieu_str_str_va_sugar() {
+    // **VD-270 (split-once)**: chữ ký `(str, str) -> list[str]?`; tham số đầu `str` để sugar
+    // R5c `s.split_once(sep)` nhận. `Ty` không có `Opt` tổng quát nên dùng `OptListStr`
+    // (`list[str]?` = `Option[list[str]]`), không tái dùng `ListStr`/`OptStr`.
+    let f = sig_of("str.split_once").expect("str.split_once");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str], "`str.split_once`: tham số");
+    assert_eq!(f.ret, Ty::OptListStr, "`str.split_once`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::List(Box::new(Type::Str)))),
+        "`str.split_once`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "list[str]?", "`str.split_once`: tên hiển thị");
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(vis_types::stdlib::module_sugar("str", "split_once"), None);
 }
 
 #[test]
