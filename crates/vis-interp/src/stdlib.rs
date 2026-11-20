@@ -52,6 +52,7 @@ mod strparse;
 mod strparsefloat;
 mod strreplace;
 mod strreplacelast;
+mod strreplacen;
 mod strsplitn;
 mod strstrip;
 mod strtitle;
@@ -247,6 +248,26 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(strreplacelast::replace_last(s, tu, den)))
+        }
+        // **VD-270 (replace-n)**: thay tối đa `n` lần khớp **không chồng** đầu tiên (trái →
+        // phải), đúng nghĩa Rust `replacen`; `n == 0` ⇒ `s` nguyên vẹn, `n` quá số lần ⇒ thay
+        // tất cả; `from` rỗng ⇒ chèn tại mọi biên scalar theo `n`; `n < 0` ⇒ trap `VS0501`
+        // (kiểm **trước** khi thay, cùng mẫu `str.splitn`/`str.repeat`). Lõi ở
+        // `stdlib/strreplacen.rs`.
+        "str.replace_n" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let tu = chuoi(name, &args[1], 1, span)?;
+            let den = chuoi(name, &args[2], 2, span)?;
+            let n = so(name, &args[3], 3, span)?;
+            if n < 0 {
+                return Err(loi(
+                    format!("`{name}`: số lần `n` phải ≥ 0, được {n}"),
+                    span,
+                ));
+            }
+            // Trên nền 32-bit, `i64` vượt `usize` ⇒ coi như vô hạn (mọi lần khớp).
+            let n = usize::try_from(n).unwrap_or(usize::MAX);
+            Ok(Value::Str(strreplacen::replace_n(s, tu, den, n)))
         }
         // **VD-270 (parse-int)**: chuỗi thập phân **chặt** → `int?`; sai cú pháp/tràn ⇒ `None`.
         "str.parse_int" => {
