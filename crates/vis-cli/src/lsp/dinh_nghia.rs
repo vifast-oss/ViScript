@@ -220,7 +220,52 @@ fn thu_hep(text: &str, d: &DinhNghia) -> Span {
     thu_hep_ten(text, &d.ten, d.span)
 }
 
-/// Phản hồi `textDocument/definition`: mảng `Location` hoặc `result:null`.
+/// Phản hồi `textDocument/references`: mọi lần xuất hiện **trọn từ** trong tệp (kể cả khai báo),
+/// sắp theo vị trí, cap 200; không thấy ⇒ mảng rỗng.
+pub fn tra_loi_references(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Vec<u8> {
+    let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
+    if start == end {
+        return phan_hoi(id, Value::List(Vec::new()));
+    }
+    let ten = &kq.text[start..end];
+    let mut spans: Vec<Span> = Vec::new();
+    let mut at = 0usize;
+    while let Some(i) = kq.text[at..].find(ten) {
+        let a = at + i;
+        let b = a + ten.len();
+        let truoc = kq.text[..a].chars().next_back();
+        let sau = kq.text[b..].chars().next();
+        let ria = |c: Option<char>| c.is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        if ria(truoc) && ria(sau) {
+            spans.push(Span::new(a, b));
+            if spans.len() >= 200 {
+                break;
+            }
+        }
+        at = b;
+    }
+    let pos = |line: u32, character: u32| {
+        m(vec![
+            ("line", Value::Int(line as i64)),
+            ("character", Value::Int(character as i64)),
+        ])
+    };
+    let locs: Vec<Value> = spans
+        .iter()
+        .map(|span| {
+            let ((l0, c0), (l1, c1)) = khoang(&kq.text, *span);
+            m(vec![
+                ("uri", s(uri)),
+                (
+                    "range",
+                    m(vec![("start", pos(l0, c0)), ("end", pos(l1, c1))]),
+                ),
+            ])
+        })
+        .collect();
+    phan_hoi(id, Value::List(locs))
+}
+
 pub fn tra_loi_definition(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Vec<u8> {
     let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
     if start == end {

@@ -207,6 +207,28 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-271**: tìm mọi tham chiếu của từ tại con trỏ trong tệp.
+            "textDocument/references" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(dinh_nghia::tra_loi_references(&kq, &uri, byte, &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-270**: cây ký hiệu của tệp đang mở.
             "textDocument/documentSymbol" => {
                 if let Some(id) = id {
@@ -289,6 +311,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("hoverProvider", Value::Bool(true)),
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
+        jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("completionProvider", completion),
     ]);
     let server_info = Value::Map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);

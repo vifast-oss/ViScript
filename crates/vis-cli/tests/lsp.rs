@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1339,5 +1339,35 @@ fn lsp_document_symbol_cay() {
     assert!(
         body.contains(r#""children":[{"name":"f""#),
         "type U phải có con f: {body}"
+    );
+}
+
+// ===== ST-271: references =====
+
+fn references(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/references", uri, line, ch)
+}
+
+/// Ca 29 — `add` xuất hiện 2 lần (khai báo + gọi) ⇒ 2 `Location`.
+#[test]
+fn lsp_references_dem_hai() {
+    let text = "fn add(a: int) -> int:\n    a\n\nfn main():\n    print(add(1))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&references(2, URI, 4, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.starts_with(r#"{"jsonrpc":"2.0","id":2,"result":["#),
+        "frame references: {body}"
+    );
+    assert_eq!(
+        body.matches(r#""uri":"file:///a.vis""#).count(),
+        2,
+        "phải có đúng 2 tham chiếu: {body}"
     );
 }
