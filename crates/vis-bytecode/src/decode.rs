@@ -245,6 +245,9 @@ pub fn decode(b: &[u8]) -> Result<Module, DecodeError> {
     }
     d.p = 4;
     let version = d.u16()?;
+    // **ST-246 (VD-244 §2)**: hàng rào tương thích — artifact v1 (`version = 1`) bị runtime v2 từ
+    // chối **ở đây**, trước khi verifier/VM chạy; chiều ngược lại cũng đúng vì runtime v1 so với
+    // `VERSION = 1` cũ của nó. Không đọc tiếp byte nào khi version lệch.
     if version != VERSION {
         return Err(DecodeError::BadVersion(version));
     }

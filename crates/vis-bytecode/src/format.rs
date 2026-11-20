@@ -5,7 +5,7 @@
 //!
 //! ```text
 //! magic      : 4 byte  = "VBC1"
-//! version    : u16     = 1
+//! version    : u16     = 2 (ST-246/VD-244; trước đó 1 — xem [`VERSION`])
 //! hash nguồn : 32 byte = **SHA-256** (ST-30; trước đó là FNV-1a × 4 seed —
 //!                        xem cảnh báo dưới)
 //! n_const    : u32, rồi từng hằng: tag u8 + độ dài u32 + bytes (xem [`Const`])
@@ -33,10 +33,15 @@
 
 use vis_types::{BinOp, UnOp};
 
-/// Bốn byte nhận dạng: `VBC1`.
+/// Bốn byte nhận dạng: `VBC1` — **không đổi** ở ST-246/VD-244 (trường `VERSION` đủ để phân biệt).
 pub const MAGIC: [u8; 4] = *b"VBC1";
 /// Phiên bản định dạng hiện tại.
-pub const VERSION: u16 = 1;
+///
+/// **ST-246 (VD-244 §2)**: tăng `1 → 2` để đánh dấu **ngữ nghĩa mới** của ô chỉ số
+/// `>= GLOBAL_SLOT_BASE` (xem mục “Ảnh hưởng tương thích” dưới). Không đổi `MAGIC`, bố cục hay
+/// opcode. `decode`/`verify` so sánh trường này **trước thực thi**; runtime v1 vì thế từ chối artifact
+/// v2 và ngược lại. Khoá cache cũng đưa `VERSION` vào (xem `vis-cli::cache::khoa_multi`).
+pub const VERSION: u16 = 2;
 /// Số byte hash nguồn.
 pub const HASH_LEN: usize = 32;
 
@@ -44,23 +49,26 @@ pub const HASH_LEN: usize = 32;
 /// ở thân tệp). Codegen dùng `LoadLocal`/`StoreLocal` với chỉ số `>= GLOBAL_SLOT_BASE`; VM ánh xạ
 /// các chỉ số này tới kho chung `Vm::globals`, verifier bỏ qua kiểm `nlocals` cho chúng.
 ///
-/// # Ảnh hưởng tương thích (ST-245) — KHÔNG kết luận "không đổi hợp đồng" chỉ vì không thêm opcode
+/// # Ảnh hưởng tương thích (ST-245 + ST-246/VD-244) — KHÔNG kết luận "không đổi hợp đồng"
 ///
-/// Dù **không** đổi `Instr`/`MAGIC`/`VERSION`/bố cục VBC1, cách mã hóa này **có ngữ nghĩa mới**
-/// nằm ngay trong toán hạng `LoadLocal`/`StoreLocal`/`Assign`/`BindLocal`: ô `>= GLOBAL_SLOT_BASE`
-/// không còn là chỉ số ô cục bộ mà là **chỉ số ô global** (`slot - GLOBAL_SLOT_BASE` trong
-/// `Vm::globals`). Vì vậy:
+/// Cách mã hóa này **có ngữ nghĩa mới** nằm ngay trong toán hạng `LoadLocal`/`StoreLocal`/`Assign`/
+/// `BindLocal`: ô `>= GLOBAL_SLOT_BASE` không còn là chỉ số ô cục bộ mà là **chỉ số ô global**
+/// (`slot - GLOBAL_SLOT_BASE` trong `Vm::globals`). Vì vậy:
 ///
-/// - Bytecode do codegen **trước ST-238** không chứa ô `>= 0x8000` ⇒ vẫn chạy đúng (tương thích ngược
-///   ở mức dữ liệu).
-/// - Bytecode **mang ô global** chỉ đúng trên VM từ ST-238 trở đi. VM cũ hơn hiểu nhầm ô `0x8000+k`
-///   thành ô cục bộ `32768+k`: đọc trả `()` (`Vec::get(...).unwrap_or(Unit)`), ghi `resize` khung
-///   cục bộ tới ~32768 ô ⇒ **kết quả sai, không crash** — là thay đổi hành vi có thật, không phải
-///   "không đổi hợp đồng".
-/// - Khoá cache (hash nguồn + hash bảng thẻ) **không đổi** khi chỉ sửa verifier; do đó verifier
-///   phải là hàng rào chặn ô global ngoài miền (xem [`crate::verify::verify`], ST-245) trước khi VM
-///   chạy. Số global thực tế không được serialize; verifier **suy ra** từ tập ô vùng global có lệnh
-///   ghi trong module.
+/// - Bytecode do codegen **trước ST-238** không chứa ô `>= 0x8000` ⇒ dữ liệu vẫn chạy đúng, **nhưng từ
+///   ST-246 nó mang `VERSION = 2`**: artifact cũ (`VERSION = 1`) bị `decode`/`verify` từ chối trước
+///   thực thi, phải biên dịch lại từ source. Không còn "dùng lại artifact cũ" như ghi nhận ST-245.
+/// - Bytecode **mang ô global** chỉ đúng trên VM từ ST-238 trở đi. VM cũ hơn (v1) hiểu nhầm ô
+///   `0x8000+k` thành ô cục bộ `32768+k`: đọc trả `()` (`Vec::get(...).unwrap_or(Unit)`), ghi
+///   `resize` khung cục bộ tới ~32768 ô ⇒ **kết quả sai, không crash**. Đây chính là lý do ST-246
+///   tăng [`VERSION`]: runtime v1 so `VERSION` ⇒ từ chối artifact v2 thay vì chạy sai; runtime v2 so
+///   `VERSION` ⇒ từ chối artifact v1. **Không** đổi `MAGIC`/bố cục/opcode để làm việc này.
+/// - Khoá cache nay đưa cả [`VERSION`] vào (xem `vis-cli::cache::khoa_multi`, ST-246/VD-244) ⇒ cache
+///   v1 tự vô hiệu, source được biên dịch lại. Bytecode v1 **không có source** bị từ chối rõ
+///   (`DecodeError::BadVersion(1)` / `VerifyError::BadVersion(1)`), không có đường tương thích đã được
+///   VD-244 duyệt.
+/// - Verifier vẫn là hàng rào chặn ô global ngoài miền (xem [`crate::verify::verify`], ST-245); số
+///   global thực tế không được serialize mà **suy ra** từ tập ô vùng global có lệnh ghi.
 /// - `VerifyError` có thêm biến thể `GlobalOverflow` (ST-245) ⇒ chuỗi chẩn đoán của bytecode hỏng
 ///   đổi; đây là thay đổi bề mặt lỗi, ghi nhận ở đây thay vì gọi là "không đổi".
 pub const GLOBAL_SLOT_BASE: u16 = 0x8000;

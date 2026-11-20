@@ -111,6 +111,8 @@ fn encode_func(out: &mut Vec<u8>, f: &Func) {
 pub fn encode(m: &Module) -> Vec<u8> {
     let mut out = Vec::with_capacity(64 + m.total_code() * 4);
     out.extend_from_slice(&MAGIC);
+    // **ST-246 (VD-244)**: source được biên dịch lại luôn đóng dấu `VERSION` hiện tại (2) —
+    // module mang `version` cũ hơn tự được nâng lên, nên artifact mới không bao giờ là v1.
     u16b(&mut out, m.version.max(VERSION));
     let h: [u8; HASH_LEN] = m.source_hash;
     out.extend_from_slice(&h);

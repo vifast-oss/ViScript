@@ -42,6 +42,18 @@ pub fn khoa_multi_voi(
     mode: vis_syntax::Mode,
     the: &[&str],
 ) -> [u8; 32] {
+    khoa_multi_voi_version(files, mode, the, vis_bytecode::VERSION)
+}
+
+/// Như [`khoa_multi`] nhưng nhận **phiên bản bytecode** tường minh — **chỉ** để test đo "đổi
+/// `VERSION` ⇒ đổi khoá" (ST-246/VD-244), tức chứng minh cache v1 không được tái dùng dưới ngữ
+/// nghĩa v2. Đường chạy thật luôn truyền [`vis_bytecode::VERSION`] (xem [`khoa_multi`]).
+pub fn khoa_multi_voi_version(
+    files: &[crate::modules::FileUnit],
+    mode: vis_syntax::Mode,
+    the: &[&str],
+    version: u16,
+) -> [u8; 32] {
     let che_do = if mode == vis_syntax::Mode::Command {
         "vish"
     } else {
@@ -56,7 +68,9 @@ pub fn khoa_multi_voi(
     s.push_str("vifast-vis-cache-v3\n");
     s.push_str(PHIEN_BAN);
     s.push('\n');
-    s.push_str(&vis_bytecode::VERSION.to_string());
+    // **ST-246 (VD-244 §2)**: `VERSION` là một phần của khoá — cache v1 tự vô hiệu, source được
+    // biên dịch lại thay vì tái dùng artifact mang ngữ nghĩa cũ.
+    s.push_str(&version.to_string());
     s.push('\n');
     // **VD-129**: bảng thẻ là một phần của **định dạng** ⇒ phải nằm trong khoá.
     for b in vis_bytecode::format::bang_the_hash_voi(the) {
@@ -170,11 +184,14 @@ mod tests {
     /// Ghim lại: **VD-241 §3/T6** + VD-241 Phase B (2026-11-19) — sửa compiler ⇒ PHIEN_BAN đổi (memory VD-129).
     /// Ghim lại lần nữa (2026-11-19, đợt coercion Option): compiler đổi `lift_opt`/`var`/gán lại/VM `Unwrap`
     /// ⇒ `PHIEN_BAN` đổi ⇒ khoá đổi (memory VD-129).
+    /// Ghim lại lần nữa (2026-11-20, **ST-246/VD-244**): `vis_bytecode::VERSION` tăng `1 → 2` để đánh
+    /// dấu ngữ nghĩa mới của ô `>= GLOBAL_SLOT_BASE` ⇒ khoá đổi là **có chủ ý**: cache v1 bị bỏ,
+    /// source được biên dịch lại.
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "61490404c641b377557720536e796538ae95e4974e1741246b36a4ac363aa7f5",
+            k, "66c332a94f29959cdba27435f63415fa90a1bcd0550370ceeb174777c89d85c5",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
     }
@@ -245,5 +262,46 @@ mod tests {
         khac[1].text.push('\n');
         assert_ne!(khoa_multi(&khac, vis_syntax::Mode::Script), goc);
         assert_ne!(khoa_multi(&files, vis_syntax::Mode::Command), goc);
+    }
+
+    /// **ST-246 (VD-244 §2)** — `VERSION` là đầu vào của khoá: artifact v1 **không** được tái dùng
+    /// dưới ngữ nghĩa v2. Mô phỏng "khoá cũ" bằng [`khoa_multi_voi_version`] với `version = 1`
+    /// (giá trị trước ST-246), không sửa code thật.
+    #[test]
+    fn khoa_cache_v1_khong_duoc_tai_dung_v2() {
+        let files = don_vi();
+        let the = &vis_bytecode::format::TEN_THE;
+
+        // (a) Khoá thật đúng bằng khoá tính với `VERSION` hiện tại (= 2) ⇒ không phải nhánh chết.
+        let that = khoa_multi(&files, vis_syntax::Mode::Script);
+        assert_eq!(
+            that,
+            khoa_multi_voi_version(&files, vis_syntax::Mode::Script, the, vis_bytecode::VERSION),
+            "khoa_multi phải dùng đúng VERSION hiện tại"
+        );
+        assert_eq!(vis_bytecode::VERSION, 2, "VERSION phải là 2 sau ST-246");
+
+        // (b) Khoá v1 khác khoá v2 ⇒ tệp cache v1 không bao giờ được `nap()` tìm thấy.
+        let cu = khoa_multi_voi_version(&files, vis_syntax::Mode::Script, the, 1);
+        assert_ne!(hex(&cu), hex(&that), "đổi VERSION phải đổi khoá cache");
+        assert_ne!(
+            duong_dan(&cu),
+            duong_dan(&that),
+            "cache v1 và v2 phải trỏ hai tệp khác nhau"
+        );
+
+        // (c) Mọi phiên bản khác (0, 3, …) cũng khác — khoá khoá theo VERSION, không phải hằng số.
+        for v in [0u16, 3, 99] {
+            assert_ne!(
+                hex(&khoa_multi_voi_version(
+                    &files,
+                    vis_syntax::Mode::Script,
+                    the,
+                    v
+                )),
+                hex(&that),
+                "VERSION {v} không được trùng khoá hiện tại"
+            );
+        }
     }
 }

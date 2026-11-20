@@ -47,8 +47,11 @@ fn magic_sai_bi_tu_choi() {
 #[test]
 fn version_sai_bi_tu_choi() {
     let mut b = encode(&module_mau());
-    b[4..6].copy_from_slice(&2u16.to_le_bytes());
-    assert_eq!(decode(&b), Err(DecodeError::BadVersion(2)));
+    // **ST-246 (VD-244)**: `VERSION` đã tăng 1 → 2, nên 2 không còn là "version lạ". Dùng 3 làm
+    // phiên bản không hỗ trợ; 1 (bản cũ) được phủ bởi `st246_version_compat.rs`.
+    assert_eq!(VERSION, 2, "cập nhật lại sentinel nếu VERSION đổi tiếp");
+    b[4..6].copy_from_slice(&3u16.to_le_bytes());
+    assert_eq!(decode(&b), Err(DecodeError::BadVersion(3)));
 }
 
 #[test]
