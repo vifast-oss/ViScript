@@ -86,7 +86,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 strlen, 2026-11-21)**: +**5** hàm — `str.byte_len`,
     // `str.char_count`, `str.is_empty`, `list.is_empty`, `map.is_empty` ⇒ **94** hàm; không
     // xoá/đổi hàm cũ nào (`grapheme_count` cố ý **không** thêm: cần dependency Unicode mới).
-    assert_eq!(FUNCS.len(), 94, "bảng chữ ký phải đủ 94 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 db-batch, 2026-11-21)**: +**1** hàm `sqlite.execute_batch`
+    // (`(str, str) -> Result[int, Error]`; nhiều câu, không params) ⇒ **95** hàm; không
+    // xoá/đổi hàm cũ nào (`execute` vẫn một câu).
+    assert_eq!(FUNCS.len(), 95, "bảng chữ ký phải đủ 95 hàm");
 }
 
 #[test]

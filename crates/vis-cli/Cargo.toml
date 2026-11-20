@@ -56,6 +56,13 @@ name = "vd268_dbcache"
 path = "tests/vd268_dbcache.rs"
 required-features = ["sqlite"]
 
+# **VD-270 (db-batch)** — `sqlite.execute_batch`: tách câu an toàn, migration nhiều DDL/DML,
+# lỗi dừng một phần, authorizer/cap/timeout từng câu; chỉ có nghĩa khi bật feature `sqlite`.
+[[test]]
+name = "vd270_db_batch"
+path = "tests/vd270_db_batch.rs"
+required-features = ["sqlite"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }

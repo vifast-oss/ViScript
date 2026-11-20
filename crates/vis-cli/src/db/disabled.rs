@@ -48,6 +48,9 @@ impl DbHost for Db {
     fn db_execute(&mut self, _h: &str, _sql: &str, _params: &[Value]) -> Result<i64, String> {
         tu_choi()
     }
+    fn db_execute_batch(&mut self, _h: &str, _sql: &str) -> Result<i64, String> {
+        tu_choi()
+    }
     fn db_query(
         &mut self,
         _h: &str,
@@ -96,6 +99,9 @@ impl DbHost for DbGuard<'_> {
         tu_choi()
     }
     fn db_execute(&mut self, _h: &str, _sql: &str, _params: &[Value]) -> Result<i64, String> {
+        tu_choi()
+    }
+    fn db_execute_batch(&mut self, _h: &str, _sql: &str) -> Result<i64, String> {
         tu_choi()
     }
     fn db_query(

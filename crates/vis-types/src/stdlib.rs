@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 94] = [
+pub const FUNCS: [StdFn; 95] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -650,7 +650,10 @@ pub const FUNCS: [StdFn; 94] = [
     // ----- std.sqlite (VD-241, Gate 1 — prototype nội bộ, **chưa** đông băng API) -----
     // Handle là token mờ `db:<32 hex>` (128 bit ngẫu nhiên, không đoán được từ output, không tái sử
     // dụng trong phiên). Params positional `list[SqlValue]`.
-    // Mỗi câu SQL **một** statement; thiếu/thừa params ⇒ lỗi; giới hạn tài nguyên theo hợp đồng VD-241 §6.
+    // `execute`/`query`/`query_one` **một** statement; thiếu/thừa params ⇒ lỗi; giới hạn tài
+    // nguyên theo hợp đồng VD-241 §6. **VD-270 (db-batch)**: `execute_batch` nhận **nhiều** câu,
+    // **không** params, tách an toàn trên `;` ngoài chuỗi/comment/định danh; lỗi đầu tiên ⇒ `Err`
+    // (các câu trước đã có tác dụng, không transaction ngầm).
     StdFn {
         name: "sqlite.open",
         params: &[Ty::Str],
@@ -669,6 +672,12 @@ pub const FUNCS: [StdFn; 94] = [
     StdFn {
         name: "sqlite.execute",
         params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
+        ret: Ty::ResultIntErr,
+    },
+    // **VD-270 (db-batch)** — nhiều câu DDL/DML, **không** params; trả số câu đã chạy.
+    StdFn {
+        name: "sqlite.execute_batch",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultIntErr,
     },
     StdFn {

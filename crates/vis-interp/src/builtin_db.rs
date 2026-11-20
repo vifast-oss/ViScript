@@ -27,6 +27,15 @@ pub trait DbHost {
     /// **positional** đã bind đủ số lượng. Trả số dòng bị ảnh hưởng. Câu trả hàng ⇒ `Err`
     /// (**trước** step, không side effect) — dùng [`Self::db_query`].
     fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String>;
+    /// **VD-270 (db-batch)** — chạy **nhiều** câu SQL (migration) **không** params. Host tách
+    /// trên `;` **ngoài** chuỗi/comment/định danh rồi chạy **từng câu** qua đúng đường
+    /// [`Self::db_execute`] (authorizer, `kiem_sql`, trần `SQLITE_LIMIT_LENGTH`, timeout/progress,
+    /// cap, map lỗi). Trả **số câu đã chạy thành công**; câu lỗi đầu tiên ⇒ `Err` và các câu
+    /// trước **đã có tác dụng** (không tự mở transaction, không rollback). Batch rỗng/chỉ
+    /// comment ⇒ `Ok(0)`. Host cũ ⇒ `Err` dữ liệu (mặc định), không panic.
+    fn db_execute_batch(&mut self, _h: &str, _sql: &str) -> Result<i64, String> {
+        Err("host chưa cài `sqlite.execute_batch` (cần host DB mới)".to_string())
+    }
     /// **Chỉ đọc** (VD-242 §3.6): câu ghi hoặc câu không trả hàng ⇒ `Err` (phân loại sau prepare,
     /// trước step). Trả `(columns, rows)` — mỗi ô là `Value::Enum("SqlValue", …)`.
     fn db_query(
