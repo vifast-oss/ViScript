@@ -43,6 +43,7 @@ mod sqliteidxcols;
 mod sqlitepk;
 mod sqliteschema;
 mod sqlitetables;
+mod strascii;
 mod strfind;
 mod strlen;
 mod strpad;
@@ -315,6 +316,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "str.byte_len" | "str.char_count" | "str.is_empty" => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strlen::goi(name, s))
+        }
+        // **VD-270 (str-is-ascii)**: `true` ⇔ **mọi byte** thuộc `0x00..=0x7F`; rỗng ⇒
+        // `true`, scalar non-ASCII ⇒ `false`; không trap, O(độ dài byte). Lõi ở
+        // `stdlib/strascii.rs`.
+        "str.is_ascii" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(strascii::goi(s))
         }
         // ----- std.list -----
         // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.

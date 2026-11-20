@@ -167,7 +167,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 mkdir-all, 2026-11-21)**: +**1** hàm `std.fs.mkdir_all`
     // (`(str) -> Result[(), Error]`; tạo đệ quy mọi thư mục thiếu, đã có ⇒ `Ok`,
     // tệp/symlink trên đường ⇒ `Err`) ⇒ **127** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 127, "bảng chữ ký phải đủ 127 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 str-is-ascii, 2026-11-21)**: +**1** hàm `std.str.is_ascii`
+    // (`(str) -> bool`; đúng ⇔ mọi byte thuộc `0x00..=0x7F`, rỗng ⇒ `true`) ⇒ **128** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 128, "bảng chữ ký phải đủ 128 hàm");
 }
 
 #[test]
@@ -325,6 +328,18 @@ fn strlen_kieu_int_va_bool() {
     let m = sig_of("map.is_empty").expect("map.is_empty");
     assert_eq!(m.params, &[Ty::Map(&Ty::Var(1), &Ty::Var(2))]);
     assert_eq!(m.ret, Ty::Bool);
+}
+
+#[test]
+fn str_is_ascii_kieu_str_bool() {
+    // **VD-270 (str-is-ascii)**: `(str) -> bool`; tham số đầu `str` để R5c nhận sugar
+    // `s.is_ascii()` (không nằm trong bảng `module_sugar`, chỉ dùng đúng module `str`).
+    let f = sig_of("str.is_ascii").expect("str.is_ascii");
+    assert_eq!(f.params, &[Ty::Str], "`str.is_ascii`: tham số");
+    assert_eq!(f.ret, Ty::Bool, "`str.is_ascii`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_ascii`: hạ kiểu");
+    assert_eq!(f.so_doi(), 1, "`str.is_ascii`: arity");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "is_ascii"), None);
 }
 
 #[test]
