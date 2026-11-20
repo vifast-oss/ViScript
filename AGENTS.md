@@ -41,4 +41,5 @@ QD thắng tài liệu thiết kế.
 ```
 
 `bin/vis-linux` (đồng bộ + chạy trên host Linux) và `bin/vis-remote` (chạy một lệnh trên
-`mac`/`ps`/`psvn`) vẫn dùng được; danh sách đồng bộ là `SYNC_DIRS`/`SYNC_FILES` ở đầu `bin/vis-linux`.
+`mps`/`psvn`; máy chủ đạo **`ps`** chạy tại chỗ — ST-259) vẫn dùng được; danh sách đồng bộ là
+`SYNC_DIRS`/`SYNC_FILES` ở đầu `bin/vis-linux`.

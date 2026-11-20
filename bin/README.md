@@ -8,7 +8,7 @@
 | `vis-diff` | so sánh kết quả hai lần chạy (differential) | kiểm thử |
 | `vis-soak` | chạy lặp nhiều vòng để tìm lỗi chập chờn | kiểm thử |
 | `vis-lock` | giữ khoá `~/.vifast-measure.lock` khi đo thời gian (macOS không có `flock`) | đo hiệu năng |
-| `vis-remote` | chạy lệnh trên máy `ps`/`psvn` qua ssh, log ngoài repo, đọc mã thoát từ tệp | đo đa nền |
+| `vis-remote` | chạy lệnh trên máy `mps`/`psvn` qua ssh (máy chủ đạo `ps` chạy tại chỗ), log ngoài repo, đọc mã thoát từ tệp | đo đa nền |
 | `vis-linux` | chạy cổng trong container Linux | đo đa nền |
 | `vis-targets` | kiểm crate `vis-host-*` theo nền | kiểm thử |
 | `vis-host-suite` | bộ kiểm host (Linux/Windows) | kiểm thử |
