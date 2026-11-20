@@ -3355,3 +3355,14 @@ Duyệt `str.parse_int(s) -> int?`: parse **thập phân chặt** như `i64::fro
 tuỳ chọn rồi một hoặc nhiều chữ số ASCII; **không** khoảng trắng/`_`/`0x`/dấu thập phân; sai
 cú pháp hoặc tràn `i64` ⇒ `None` (không trap); `i64::MIN`/`MAX` biên vẫn `Some`; sugar R5c
 `s.parse_int()`; lõi chung `stdlib/strparse.rs`.
+
+### VD-270 (bổ sung) · R5c arity, list.contains, sqlite.indexes — A0, 2026-11-21
+
+- **r5c-arity**: sugar R5c (`s.m(...)`) sai **số đối số** (không tính receiver) bị checker báo
+  `VS0401` như module call, `vis check` exit 1 / `vis run` exit 2; **không** còn trap `VS0501`
+  (exit 101). Ca receiver sai kiểu vẫn `VS0403`/`VS0412` như cũ.
+- **list-contains**: `list.contains(xs, value) -> bool` dùng **đúng** `eq_value` của `index_of`
+  (cấu trúc, list/map/record/enum lồng nhau); rỗng/không có ⇒ `false`; sugar R5c.
+- **sqlite-indexes**: `sqlite.indexes(handle, table) -> Result[list[str], Error]` trả index **người
+  dùng tạo** của bảng schema chính, sắp **byte**, bỏ `sqlite_autoindex_%`; tên bảng **bind** tham
+  số; bảng/view thiếu ⇒ `Ok([])`, handle lỗi ⇒ `Err`; chạy qua `db_query`.

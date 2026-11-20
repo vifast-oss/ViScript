@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `3fb7adb` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `6084191` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2464 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2496 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -91,11 +91,14 @@
 | SQLite columns | `5e6e672` → `c75c0da` | `sqlite.columns`: cột theo `cid`, bind tham số |
 | Parse int | trực tiếp | `str.parse_int`: thập phân chặt → `int?` |
 | Trim perf | `81bb7eb` | `trim_matches` binary-search cho tập >8 scalar (~70–84×) |
+| R5c arity | `f014695` → `a82ec35` | sugar sai số đối số ⇒ `VS0401` ở checker |
+| List contains | `0a1282e` → `85130e6` | `list.contains` theo `eq_value` |
+| SQLite indexes | `4ecc182` → `6084191` | `sqlite.indexes`: index người dùng, bind tham số |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2464 passed / 3 skipped** tại `3fb7adb` (sau `parse_int`).
+- `./vis-dev gate --fast`: **PASS — 2496 passed / 3 skipped** tại `6084191`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -243,3 +246,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **lsp-inlay** (`f0f8819` → `05d6caa`): hint `: <kiểu>` cho `let`/`var` không nhãn; 10 ca; hợp nhất capability với codeLens.
 - **sqlite-columns** (`5e6e672` → `c75c0da`): `sqlite.columns` theo `cid`, `pragma_table_info(?, 'main')`, bind an toàn; API +1.
 - `VIS_DIFF_N=100000` seed 20261201 @ `3fb7adb`: **0 lệch** (93.767 chạy, 96,9 s).
+- **r5c-arity** (`f014695` → `a82ec35`): sugar thiếu/thừa đối số bị checker bắt `VS0401` (exit 2), không còn trap `VS0501`/101; cập nhật 9 test cũ + `vd270_sugar_arity.rs`.
+- **list-contains** (`0a1282e` → `85130e6`): `list.contains` dùng chung `eq_value` với `index_of`; sugar R5c.
+- **sqlite-indexes** (`4ecc182` → `6084191`): `sqlite.indexes` chỉ index người dùng, sắp byte, bind tham số, bỏ autoindex.
