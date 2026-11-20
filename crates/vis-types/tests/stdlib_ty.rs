@@ -221,7 +221,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.user_version` (`(str) -> Result[int, Error]`; số ứng dụng tự định nghĩa trong
     // header tệp DB đọc qua `PRAGMA user_version`, DDL/ghi dữ liệu không đổi, lưu theo tệp
     // trong `0..=i32::MAX`, chỉ đọc) ⇒ **141** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 143, "bảng chữ ký phải đủ 143 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 fs-is-symlink, 2026-11-21)**: +**1** hàm `std.fs.is_symlink`
+    // (`(str) -> Result[bool, Error]`; `symlink_metadata`, symlink tới tệp/thư mục/đích thiếu
+    // ⇒ `true`, tệp/thư mục thường/thiếu ⇒ `false`, lỗi khác ⇒ `Err`; **không** sugar) ⇒ **141**
+    // hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 144, "bảng chữ ký phải đủ 144 hàm");
 }
 
 #[test]
@@ -237,6 +241,26 @@ fn fs_mkdir_all_kieu_str_result_va_khong_sugar() {
         "`fs.mkdir_all`: hạ kiểu trả"
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "mkdir_all"), None);
+}
+
+#[test]
+fn fs_is_symlink_kieu_str_result_va_khong_sugar() {
+    // **VD-270 (fs-is-symlink)**: `(str) -> Result[bool, Error]`, tái dùng `Ty::ResultBoolErr`
+    // (cùng biến thể của `fs.is_file`/`fs.is_dir`); fs là module-only nên **không** sugar —
+    // `p.is_symlink()` bị `VS0403`, không ánh xạ sang `fs`.
+    let f = sig_of("fs.is_symlink").expect("fs.is_symlink");
+    assert_eq!(f.params, &[Ty::Str], "`fs.is_symlink`: tham số");
+    assert_eq!(
+        f.ret,
+        Ty::ResultBoolErr,
+        "`fs.is_symlink`: kiểu trả phải tái dùng `ResultBoolErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Bool), Box::new(Ty::Error.sang_type())),
+        "`fs.is_symlink`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "is_symlink"), None);
 }
 
 #[test]

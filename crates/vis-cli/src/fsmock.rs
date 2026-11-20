@@ -362,6 +362,12 @@ impl FsHost for FsMock {
         Ok(self.dirs.iter().any(|(k, _)| k == p))
     }
 
+    /// **VD-270 (fs-is-symlink)**: kịch bản mock **không** biểu diễn được symlink ⇒ luôn `false`
+    /// (không có mục nào trong `files`/`dirs` là symlink); cùng chính sách "mục thiếu ⇒ `false`".
+    fn is_symlink(&mut self, _p: &str) -> Result<bool, String> {
+        Ok(false)
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.

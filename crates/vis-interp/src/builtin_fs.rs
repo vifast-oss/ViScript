@@ -169,6 +169,15 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 
+    /// **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là **symbolic link**, theo
+    /// `symlink_metadata` (**không** đi theo link). Symlink tới tệp/thư mục/đích **thiếu**
+    /// (dangling) đều ⇒ `Ok(true)` — đây là khác biệt then chốt với `exists`; tệp/thư mục
+    /// thường và `p` **thiếu** ⇒ `Ok(false)`; lỗi metadata khác (vd `ENOTDIR`, không đủ quyền)
+    /// ⇒ `Err` dữ liệu. Default: **chưa hỗ trợ**.
+    fn is_symlink(&mut self, _p: &str) -> Result<bool, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (mọi giá trị `0..=255`).
     /// Thiếu tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock
     /// vẫn biên dịch.

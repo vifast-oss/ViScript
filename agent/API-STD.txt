@@ -16,6 +16,7 @@ fs.exists	(str) -> bool
 fs.glob	(str, str) -> Result[list[str], Error]
 fs.is_dir	(str) -> Result[bool, Error]
 fs.is_file	(str) -> Result[bool, Error]
+fs.is_symlink	(str) -> Result[bool, Error]
 fs.list	(str) -> Result[list[str], Error]
 fs.mkdir	(str) -> Result[(), Error]
 fs.mkdir_all	(str) -> Result[(), Error]
