@@ -22,13 +22,40 @@ impl<'a> Lowerer<'a> {
         out
     }
 
+    /// **VD-263** — như [`Lowerer::lower_suite`] nhưng biểu thức **cuối** nhận kiểu trả về của
+    /// hàm làm kiểu mong đợi (constructor mang instantiation ở `fn f() -> Box[int?]`).
+    pub(super) fn lower_suite_ret(&mut self, node: &Node, ret: Option<Type>) -> Vec<HStmt> {
+        self.push_frame(FrameKind::Block, node.span);
+        let kids: Vec<&Node> = node.children().collect();
+        let cuoi = kids.len().saturating_sub(1);
+        let mut out = Vec::new();
+        for (i, child) in kids.into_iter().enumerate() {
+            if i == cuoi && child.kind == NodeKind::ExprStmt {
+                let e = child
+                    .children()
+                    .next()
+                    .map(|c| self.lower_expr_as(c, ret.clone()))
+                    .unwrap_or(HExpr::Error { span: child.span });
+                out.push(HStmt::Expr(e));
+            } else if let Some(s) = self.lower_stmt(child) {
+                out.push(s);
+            }
+        }
+        self.pop_frame();
+        out
+    }
+
     pub(super) fn lower_stmt(&mut self, node: &Node) -> Option<HStmt> {
         match node.kind {
             NodeKind::LetStmt => Some(self.lower_let(node)),
             NodeKind::VarStmt => Some(self.lower_var(node)),
             NodeKind::AssignStmt => Some(self.lower_assign(node)),
             NodeKind::ReturnStmt => {
-                let value = node.children().next().map(|c| self.lower_expr(c));
+                // **VD-263**: `return Ctor(…)` dưới `-> Box[int?]` dựng đúng instantiation.
+                let value = node
+                    .children()
+                    .next()
+                    .map(|c| self.lower_expr_as(c, self.cur_ret.clone()));
                 Some(HStmt::Return {
                     value,
                     span: node.span,
@@ -179,7 +206,9 @@ impl<'a> Lowerer<'a> {
             .children()
             .filter(|c| !matches!(c.kind, NodeKind::Pattern | NodeKind::Type | NodeKind::Suite))
             .last()
-            .map(|c| self.lower_expr(c))
+            // **VD-263**: annot `let` là **kiểu mong đợi** — constructor bên trong mang đúng
+            // instantiation (`Some(G(f: …))` dưới `G[int?]?`).
+            .map(|c| self.lower_expr_as(c, ty.clone()))
             .unwrap_or(HExpr::Error { span: node.span });
         let pat = node
             .child(NodeKind::Pattern)
@@ -256,7 +285,8 @@ impl<'a> Lowerer<'a> {
             .children()
             .filter(|c| c.kind != NodeKind::Type)
             .last()
-            .map(|c| self.lower_expr(c))
+            // **VD-263**: annot `var` là kiểu mong đợi của initializer.
+            .map(|c| self.lower_expr_as(c, ty.clone()))
             .unwrap_or(HExpr::Error { span: node.span });
         let sym = if name.is_empty() {
             0
@@ -328,8 +358,15 @@ impl<'a> Lowerer<'a> {
                 );
             }
         }
+        // **VD-263**: gán lại biến có annot generic ⇒ initializer mang instantiation như `let`.
+        let want = match target.as_ref() {
+            Some(HExpr::Var { sym: Some(id), .. }) => {
+                self.symbols.get(*id).and_then(|s| s.ty.clone())
+            }
+            _ => None,
+        };
         let value = value
-            .map(|v| self.lower_expr(v))
+            .map(|v| self.lower_expr_as(v, want))
             .unwrap_or(HExpr::Error { span: node.span });
         HStmt::Assign {
             target: target.unwrap_or(HExpr::Error { span: node.span }),

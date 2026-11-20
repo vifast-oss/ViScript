@@ -183,10 +183,21 @@ impl<'a> Lowerer<'a> {
             .unwrap_or(Type::Unit);
         self.sym_generic = luu_sym;
         self.generic_scope = luu_gen;
+        // **VD-263**: đối số call-site + `return`/biểu thức cuối mang `instantiation` theo
+        // chữ ký (không chỉ theo annot `let`/`var`).
+        self.fn_params.insert(
+            sym,
+            params
+                .iter()
+                .map(|p| (p.name.clone(), p.ty.clone()))
+                .collect(),
+        );
+        let luu_ret = self.cur_ret.replace(ret.clone());
         let body = node
             .child(NodeKind::Suite)
-            .map(|s| self.lower_suite(s))
+            .map(|s| self.lower_suite_ret(s, Some(ret.clone())))
             .unwrap_or_default();
+        self.cur_ret = luu_ret;
         self.pop_frame();
         HFn {
             name,

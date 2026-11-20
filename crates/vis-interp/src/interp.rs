@@ -928,11 +928,12 @@ impl<'a> Interp<'a> {
             },
             HExpr::With { base, fields, span } => {
                 let b = self.eval(base)?;
+                // **VD-263**: ưu tiên `RecId` instantiation từ kiểu tĩnh của gốc (annot).
+                let rec_id_tinh = self.rec_id_tinh(base, &b);
                 match b {
                     Value::Record(name, mut cur) => {
-                        // **VD-258**: `with` cập nhật trường `T?` bằng giá trị plain — nâng như
-                        // biên dựng bản ghi. Bản ghi ẩn danh (tên rỗng) không tra được kiểu.
-                        let rec_id = self.types.rec_by_name(&name);
+                        // **VD-258**: `with` nâng trường `T?` như biên dựng bản ghi.
+                        let rec_id = rec_id_tinh.or_else(|| self.types.rec_by_name(&name));
                         for (n, v) in fields {
                             let nv = self.eval(v)?;
                             let nv = self.lift_truong_ban_ghi(rec_id, n, nv);
@@ -1342,7 +1343,7 @@ impl<'a> Interp<'a> {
 /// Đọc literal thành `Value` (lỗi → thông điệp cho `VS0501`).
 pub fn lit_value(lit: &Lit) -> std::result::Result<Value, String> {
     match lit.kind {
-        LitKind::Int => parse_int_lit(&lit.text)
+        LitKind::Int => crate::value::parse_int_lit(&lit.text)
             .map(Value::Int)
             .ok_or_else(|| format!("literal int không đọc được: `{}`", lit.text)),
         LitKind::Float => lit
@@ -1375,20 +1376,6 @@ pub fn lit_value(lit: &Lit) -> std::result::Result<Value, String> {
             .map(Value::Percent)
             .ok_or_else(|| format!("literal percent không đọc được: `{}`", lit.text)),
     }
-}
-
-fn parse_int_lit(text: &str) -> Option<i64> {
-    let t = text.replace('_', "");
-    if let Some(h) = t.strip_prefix("0x") {
-        return i64::from_str_radix(h, 16).ok();
-    }
-    if let Some(b) = t.strip_prefix("0b") {
-        return i64::from_str_radix(b, 2).ok();
-    }
-    if let Some(o) = t.strip_prefix("0o") {
-        return i64::from_str_radix(o, 8).ok();
-    }
-    t.parse().ok()
 }
 
 /// Vị trí `dòng:cột` (cột đếm theo **Unicode scalar**, bắt đầu từ 1 — §2.4) từ `span` + văn bản.

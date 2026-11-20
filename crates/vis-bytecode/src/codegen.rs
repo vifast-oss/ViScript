@@ -76,48 +76,6 @@ struct Cho {
     ret_depth: usize,
 }
 
-/// **ST-238 (VD-242, ca 3)**: gom mọi `sym` được bind bởi một pattern (dùng để đăng ký biến
-/// cấp tệp). Không gọi mã người dùng (VD-242 §3.4) — chỉ đi cấu trúc HIR.
-fn pat_syms(p: &HPat, out: &mut Vec<u32>) {
-    match p {
-        HPat::Bind { sym, .. } => out.push(*sym),
-        HPat::Ctor { args, .. } => {
-            for a in args {
-                pat_syms(a, out);
-            }
-        }
-        HPat::Tuple { items, .. } | HPat::List { items, .. } => {
-            for it in items {
-                pat_syms(it, out);
-            }
-            if let HPat::List { rest: Some(r), .. } = p {
-                pat_syms(r, out);
-            }
-        }
-        HPat::Record { fields, .. } => {
-            for (_, sub) in fields {
-                if let Some(sub) = sub {
-                    pat_syms(sub, out);
-                }
-            }
-        }
-        HPat::Or { alts, .. } => {
-            for a in alts {
-                pat_syms(a, out);
-            }
-        }
-        HPat::Range { lo, hi, .. } => {
-            if let Some(lo) = lo {
-                pat_syms(lo, out);
-            }
-            if let Some(hi) = hi {
-                pat_syms(hi, out);
-            }
-        }
-        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
-    }
-}
-
 impl Gen {
     fn cst(&mut self, kind: LitKind, text: &str) -> u32 {
         let kind = match kind {
@@ -159,6 +117,18 @@ pub fn compile_kiem(
     text: &str,
     chan_doan: &[vis_syntax::Diagnostic],
 ) -> Result<Module, CodegenError> {
+    compile_kiem_voi_bang(hir, symbols, None, text, chan_doan)
+}
+
+/// **VD-263** — như [`compile_kiem`] nhưng nhận thêm [`vis_types::TypeTable`] để codegen thấy trường của
+/// **instantiation** generic (`Box[int?]`) khi nâng `Option` ở `?.`/`with`/gán trường.
+pub fn compile_kiem_voi_bang(
+    hir: &Hir,
+    symbols: &Symbols,
+    types: Option<&vis_types::TypeTable>,
+    text: &str,
+    chan_doan: &[vis_syntax::Diagnostic],
+) -> Result<Module, CodegenError> {
     if let Some(d) = chan_doan
         .iter()
         .find(|d| d.code.severity == vis_diag::Severity::Error)
@@ -170,7 +140,7 @@ pub fn compile_kiem(
             msg: d.message.clone(),
         });
     }
-    compile(hir, symbols, text)
+    compile_voi_bang(hir, symbols, types, text)
 }
 
 /// Hạ một chương trình HIR xuống module VBC1 (API cũ — **không** kèm chẩn đoán; xem
@@ -179,11 +149,31 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
     compile_with_fee(hir, symbols, text).map(|(m, _)| m)
 }
 
+/// **VD-263** — như [`compile`] nhưng có [`vis_types::TypeTable`] (instantiation generic).
+pub fn compile_voi_bang(
+    hir: &Hir,
+    symbols: &Symbols,
+    types: Option<&vis_types::TypeTable>,
+    text: &str,
+) -> Result<Module, CodegenError> {
+    compile_with_fee_voi_bang(hir, symbols, types, text).map(|(m, _)| m)
+}
+
 /// **ST-276 (VD-256)** — như [`compile`] nhưng trả kèm **bảng phụ S** (sự kiện ngữ nghĩa theo
 /// PC). Đường mặc định (`compile`) **không** dùng bảng này; chỉ test-hook ngân sách đóng trailer.
 pub fn compile_with_fee(
     hir: &Hir,
     symbols: &Symbols,
+    text: &str,
+) -> Result<(Module, FeeTable), CodegenError> {
+    compile_with_fee_voi_bang(hir, symbols, None, text)
+}
+
+/// **VD-263** — như [`compile_with_fee`] nhưng nhận [`vis_types::TypeTable`] (instantiation generic).
+pub fn compile_with_fee_voi_bang(
+    hir: &Hir,
+    symbols: &Symbols,
+    types: Option<&vis_types::TypeTable>,
     text: &str,
 ) -> Result<(Module, FeeTable), CodegenError> {
     let mut g = Gen {
@@ -200,12 +190,21 @@ pub fn compile_with_fee(
         globals: HashMap::new(),
         hconsts: HashMap::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
-        sym_ty: than::collect_sym_tys(hir, symbols), // ST-248: annot + kiểu suy từ initializer
-        fn_rets: than::collect_fn_rets(hir),         // VD-260: kiểu trả về của hàm
-        rec_fields: than::collect_rec_fields(hir),
-        enum_fields: than::collect_enum_fields(hir),
+        // **VD-263**: `types` bổ sung trường của mọi instantiation generic vào bảng kiểu tĩnh.
+        sym_ty: than::collect_sym_tys(hir, symbols, types),
+        fn_rets: than::collect_fn_rets(hir), // VD-260: kiểu trả về của hàm
+        rec_fields: than::collect_rec_fields(hir, types),
+        enum_fields: than::collect_enum_fields(hir, types),
         hash: crate::format::source_hash(text),
     };
+    // **VD-263**: `MakeRecord` in tên của cả bản ghi **instantiation** (`Box[int?]` → `Box`).
+    if let Some(types) = types {
+        for (i, r) in types.recs().iter().enumerate() {
+            if let Some(n) = &r.name {
+                g.recs.entry(i as u32).or_insert_with(|| n.clone());
+            }
+        }
+    }
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
     for it in &hir.items {
         // **ST-238 (VD-242, ca 4)**: gom `const` cấp tệp để inline tại chỗ dùng.
@@ -246,7 +245,7 @@ pub fn compile_with_fee(
         for s in &hir.stmts {
             match s {
                 HStmt::Let { pat, else_, .. } => {
-                    pat_syms(pat, &mut syms);
+                    crate::util::pat_syms(pat, &mut syms);
                     if let Some(e) = else_ {
                         if let Some(sym) = e.bind_sym {
                             syms.push(sym);

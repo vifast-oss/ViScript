@@ -10,12 +10,29 @@ use vis_syntax::{lex, parse, Cst, Elem, Kind, LexOutput, Mode, Node, NodeKind, S
 use super::{bin_op, lit_kind, un_op, Lowerer};
 use crate::hir::{BinOp, HBody, HCond, HExpr, HParam, InterpPart, Lit, LitKind};
 use crate::stdlib as vis_types_stdlib;
-use crate::ty::{FieldDef, RecDef, RecId, Type};
+use crate::ty::{EnumId, FieldDef, RecDef, RecId, Type};
 use vis_diag::{NAME_CODES, TYPE_CODES};
 
 impl<'a> Lowerer<'a> {
     /// Hạ một biểu thức; không bao giờ panic — node lạ ⇒ [`HExpr::Error`].
+    ///
+    /// **VD-263**: `expect` (do [`Lowerer::lower_expr_as`] đặt) chỉ tiêu thụ ở **node hiện tại**
+    /// — lấy ra ngay để các lời gọi đệ quy không thừa hưởng kiểu mong đợi của cha.
     pub(crate) fn lower_expr(&mut self, node: &Node) -> HExpr {
+        let expect = self.expect.take();
+        self.lower_expr_voi(node, expect)
+    }
+
+    /// **VD-263** — hạ biểu thức với kiểu **mong đợi** (annot `let`/`var`, `Some(…)`, biến thể
+    /// enum). Chỉ constructor/record literal dùng; dạng khác hạ y như không có gợi ý.
+    pub(crate) fn lower_expr_as(&mut self, node: &Node, expect: Option<Type>) -> HExpr {
+        let cu = std::mem::replace(&mut self.expect, expect);
+        let e = self.lower_expr(node);
+        self.expect = cu;
+        e
+    }
+
+    fn lower_expr_voi(&mut self, node: &Node, expect: Option<Type>) -> HExpr {
         let span = node.span;
         match node.kind {
             NodeKind::Literal => self.lower_literal(node),
@@ -163,18 +180,35 @@ impl<'a> Lowerer<'a> {
                     });
                     fields.push((name, value));
                 }
-                let id = RecId(self.tbl.recs().len() as u32);
-                self.tbl.push_rec(RecDef {
-                    name: None,
-                    fields: defs,
-                    span,
-                    anonymous: true,
-                });
-                HExpr::Record {
-                    fields,
-                    ty: Type::Record(id),
-                    span,
-                }
+                // **VD-263**: annot generic (`let a: Hop[int?] = {gia_tri: 5}`) ⇒ literal mang
+                // **id instantiation** để biên dựng nâng trường `T?` theo kiểu đã thay.
+                let inst = match expect.as_ref().map(bo_opt) {
+                    Some(Type::Record(exp))
+                        if self.tbl.rec_inst_of(*exp).is_some()
+                            && fields.iter().all(|(n, _)| {
+                                self.tbl
+                                    .rec(*exp)
+                                    .is_some_and(|d| d.fields.iter().any(|f| &f.name == n))
+                            }) =>
+                    {
+                        Some(*exp)
+                    }
+                    _ => None,
+                };
+                let ty = match inst {
+                    Some(id) => Type::Record(id),
+                    None => {
+                        let id = RecId(self.tbl.recs().len() as u32);
+                        self.tbl.push_rec(RecDef {
+                            name: None,
+                            fields: defs,
+                            span,
+                            anonymous: true,
+                        });
+                        Type::Record(id)
+                    }
+                };
+                HExpr::Record { fields, ty, span }
             }
             NodeKind::Field | NodeKind::OptField => {
                 let base = match node.children().next() {
@@ -258,7 +292,7 @@ impl<'a> Lowerer<'a> {
                     .unwrap_or(HExpr::Error { span });
                 let (args, named) = node
                     .child(NodeKind::Args)
-                    .map(|a| self.lower_args(a))
+                    .map(|a| self.lower_args_expect(a, &callee, expect.as_ref()))
                     .unwrap_or_default();
                 // ST-26: `str.split(…)`, `list.sort(…)` — **tên đầy đủ** `std.<module>.<fn>` khi tệp đã
                 // `use std.<module>`; gọi vào tên đã biết nhưng hoãn ⇒ `VS0301` "chưa hỗ trợ (VS1b)".
@@ -295,7 +329,7 @@ impl<'a> Lowerer<'a> {
                         return args.into_iter().next().unwrap();
                     }
                 }
-                self.maybe_enum_lit(callee, args, named, span)
+                self.maybe_enum_lit(callee, args, named, expect.as_ref(), span)
             }
             NodeKind::Index => {
                 let mut it = node.children();
@@ -701,6 +735,119 @@ impl<'a> Lowerer<'a> {
         (positional, named)
     }
 
+    /// **VD-263** — như [`Lowerer::lower_args`] nhưng truyền **kiểu mong đợi** của tham số
+    /// (`Some(x)` dưới annot `T?`, đối số biến thể/trường của instantiation) xuống từng biểu thức.
+    fn lower_args_expect(
+        &mut self,
+        args: &Node,
+        callee: &HExpr,
+        expect: Option<&Type>,
+    ) -> (Vec<HExpr>, Vec<(String, HExpr)>) {
+        let (pos_expect, named_expect) = self.expect_call_args(callee, expect);
+        let mut positional = Vec::new();
+        let mut named = Vec::new();
+        for e in args.children() {
+            match e.kind {
+                NodeKind::NamedArg => {
+                    let name = self.decl_name(e).unwrap_or_default();
+                    let want = named_expect
+                        .iter()
+                        .find(|(n, _)| n == &name)
+                        .map(|(_, t)| t.clone());
+                    let value = e
+                        .children()
+                        .next()
+                        .map(|c| self.lower_expr_as(c, want))
+                        .unwrap_or(HExpr::Error { span: e.span });
+                    named.push((name, value));
+                }
+                _ => {
+                    let want = pos_expect.get(positional.len()).cloned();
+                    positional.push(self.lower_expr_as(e, want));
+                }
+            }
+        }
+        (positional, named)
+    }
+
+    /// **VD-263** — kiểu mong đợi của từng đối số theo **hình dạng lời gọi**:
+    /// `Some(x)` dưới `T?`, `Ok(x)`/`Err(e)` dưới `Result`, đối số biến thể/trường của
+    /// `EnumId`/`RecId` **instantiation**. Không khớp ⇒ rỗng (hạ như cũ).
+    fn expect_call_args(
+        &self,
+        callee: &HExpr,
+        expect: Option<&Type>,
+    ) -> (Vec<Type>, Vec<(String, Type)>) {
+        // **VD-263**: chữ ký hàm đã hạ (`fn f(b: Box[int?])`) là kiểu mong đợi của đối số.
+        let (mut pos, named) = match callee {
+            HExpr::Var { sym: Some(id), .. } => self
+                .fn_params
+                .get(id)
+                .map(|ps| {
+                    (
+                        ps.iter().map(|(_, t)| t.clone()).collect::<Vec<_>>(),
+                        ps.clone(),
+                    )
+                })
+                .unwrap_or_default(),
+            _ => (Vec::new(), Vec::new()),
+        };
+        let Some(expect) = expect else {
+            return (pos, named);
+        };
+        if let HExpr::Var { name, .. } = callee {
+            match (name.as_str(), expect) {
+                ("Some", Type::Opt(inner)) => return (vec![(**inner).clone()], Vec::new()),
+                ("Ok", Type::Result(ok, _)) => return (vec![(**ok).clone()], Vec::new()),
+                ("Err", Type::Result(_, err)) => return (vec![(**err).clone()], Vec::new()),
+                _ => {}
+            }
+        }
+        // Ctor trực tiếp dưới `T?`/`T??` vẫn dựng kiểu **lõi** trước khi biên annot nâng.
+        match bo_opt(expect) {
+            Type::Enum(inst) => {
+                let Some((ten_inst, _)) = self.tbl.enum_inst_of(*inst) else {
+                    return (pos, named);
+                };
+                let variant = match callee {
+                    HExpr::Var { name, .. } => Some(name.as_str()),
+                    HExpr::Field { base, name, .. } => match &**base {
+                        HExpr::Var { name: en, .. } if en == ten_inst => Some(name.as_str()),
+                        _ => None,
+                    },
+                    _ => None,
+                };
+                let Some(v) = variant else {
+                    return (pos, named);
+                };
+                if let Some(vd) = self.tbl.variant(*inst, v) {
+                    pos = vd.fields.iter().map(|f| f.ty.clone()).collect();
+                }
+            }
+            Type::Record(inst) => {
+                let HExpr::Var { name, .. } = callee else {
+                    return (pos, named);
+                };
+                let Some((base, _)) = self.tbl.rec_inst_of(*inst) else {
+                    return (pos, named);
+                };
+                if base == name {
+                    if let Some(r) = self.tbl.rec(*inst) {
+                        return (
+                            Vec::new(),
+                            r.fields
+                                .iter()
+                                .map(|f| (f.name.clone(), f.ty.clone()))
+                                .collect(),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+        (pos, named)
+    }
+
     /// Gọi `std.<module>.<fn>(…)` khi `<module>` đã `use` (ST-26) — tên đầy đủ `std.m.f`.
     fn std_call_named(
         &mut self,
@@ -827,12 +974,50 @@ impl<'a> Lowerer<'a> {
         }
     }
 
+    /// **VD-263** — chọn `RecId` **instantiation** khi kiểu mong đợi là `Type::Record(id)` cùng
+    /// họ tên với bản khai báo `base`; ngược lại giữ `base`.
+    fn rec_inst_theo(&self, base: RecId, expect: Option<&Type>) -> RecId {
+        let Some(Type::Record(id)) = expect.map(bo_opt) else {
+            return base;
+        };
+        let Some((ten_inst, _)) = self.tbl.rec_inst_of(*id) else {
+            return base;
+        };
+        let Some((ten_base, _)) = self.rec_names.iter().find(|(_, b)| *b == base) else {
+            return base;
+        };
+        if ten_inst == ten_base {
+            *id
+        } else {
+            base
+        }
+    }
+
+    /// Như [`Lowerer::rec_inst_theo`] cho enum.
+    fn enum_inst_theo(&self, base: EnumId, expect: Option<&Type>) -> EnumId {
+        let Some(Type::Enum(id)) = expect.map(bo_opt) else {
+            return base;
+        };
+        let Some((ten_inst, _)) = self.tbl.enum_inst_of(*id) else {
+            return base;
+        };
+        let Some((ten_base, _)) = self.enum_names.iter().find(|(_, b)| *b == base) else {
+            return base;
+        };
+        if ten_inst == ten_base {
+            *id
+        } else {
+            base
+        }
+    }
+
     /// `Circle(1.0)` / `Shape.Circle(1.0)` ⇒ [`HExpr::EnumLit`] khi biến thể **đã khai**.
     fn maybe_enum_lit(
         &mut self,
         callee: HExpr,
         args: Vec<HExpr>,
         named: Vec<(String, HExpr)>,
+        expect: Option<&Type>,
         span: Span,
     ) -> HExpr {
         match &callee {
@@ -850,8 +1035,12 @@ impl<'a> Lowerer<'a> {
                         );
                         return HExpr::Error { span };
                     }
-                    if let Some((_, rid)) = self.rec_names.iter().find(|(n, _)| n == name).cloned()
+                    if let Some((_, base_rid)) =
+                        self.rec_names.iter().find(|(n, _)| n == name).cloned()
                     {
+                        // **VD-263**: annot `Box[int?]` ⇒ dựng bằng **id instantiation** (trường
+                        // `T?` đã thay) để biên dựng nâng đúng lớp.
+                        let rid = self.rec_inst_theo(base_rid, expect);
                         // **R5a (VD-178)**: trường **thiếu** lấy **giá trị mặc định** của khai báo.
                         let mut fields = named;
                         // **VD-241 §6/B-B (A0, 2026-11-19)**: trường trùng tên ⇒ lỗi biên dịch.
@@ -870,7 +1059,7 @@ impl<'a> Lowerer<'a> {
                             }
                         }
                         if let Some(rec) = self.items.iter().find_map(|it| match it {
-                            crate::hir::HItem::Rec(r) if r.id == rid => Some(r.clone()),
+                            crate::hir::HItem::Rec(r) if r.id == base_rid => Some(r.clone()),
                             _ => None,
                         }) {
                             for f in &rec.fields {
@@ -921,6 +1110,7 @@ impl<'a> Lowerer<'a> {
                             .find(|(_, id)| id == &eid)
                             .map(|(n, _)| n.clone())
                             .unwrap_or_else(|| name.clone());
+                        let eid = self.enum_inst_theo(eid, expect);
                         return HExpr::EnumLit {
                             enum_id: Some(eid),
                             path: vec![e_path],
@@ -958,6 +1148,7 @@ impl<'a> Lowerer<'a> {
                             );
                             return HExpr::Error { span };
                         }
+                        let eid = self.enum_inst_theo(eid, expect);
                         return HExpr::EnumLit {
                             enum_id: Some(eid),
                             path: vec![enum_name.clone()],
@@ -1070,18 +1261,21 @@ impl<'a> Lowerer<'a> {
             .child(NodeKind::Type)
             .map(|t| self.resolve_type(t))
             .unwrap_or(Type::Error);
+        // **VD-263**: `return`/biểu thức cuối của **lambda** dùng kiểu trả về của chính nó.
+        let luu_ret = self.cur_ret.replace(ret.clone());
         let body = match node.child(NodeKind::Suite) {
-            Some(s) => HBody::Stmts(self.lower_suite(s)),
+            Some(s) => HBody::Stmts(self.lower_suite_ret(s, Some(ret.clone()))),
             None => {
                 let e = node
                     .children()
                     .filter(|n| n.kind != NodeKind::LambdaParams && n.kind != NodeKind::Type)
                     .last()
-                    .map(|c| self.lower_expr(c))
+                    .map(|c| self.lower_expr_as(c, Some(ret.clone())))
                     .unwrap_or(HExpr::Error { span });
                 HBody::Expr(Box::new(e))
             }
         };
+        self.cur_ret = luu_ret;
         self.pop_frame();
         HExpr::Lambda {
             params,
@@ -1154,4 +1348,14 @@ fn tach_spec(inner: &str) -> (&str, Option<String>) {
         }
     }
     (inner, None)
+}
+
+/// **VD-263** — bỏ mọi lớp `Option` ngoài cùng của **kiểu mong đợi**: constructor dựng kiểu lõi
+/// (`G[int?]`) rồi biên annot mới nâng cả giá trị lên `G[int?]?`.
+fn bo_opt(t: &Type) -> &Type {
+    let mut cur = t;
+    while let Type::Opt(inner) = cur {
+        cur = inner;
+    }
+    cur
 }

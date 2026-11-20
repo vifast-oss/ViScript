@@ -37,7 +37,13 @@ pub(super) fn call_fee(g: &Gen, callee: &HExpr) -> (FeeKind, bool) {
 
 /// **ST-248 (VD-242 §3.3)** — gom kiểu trường bản ghi `RecId → (tên trường → kiểu)` từ HIR.
 /// Dùng để biết kiểu đích của `u.f = v` mà không cần `TypeTable` (API `compile` giữ nguyên).
-pub(super) fn collect_rec_fields(hir: &Hir) -> HashMap<(u32, String), Type> {
+///
+/// **VD-263**: khi có [`vis_types::TypeTable`] (`compile_voi_bang`), bảng này là **nguồn đầy đủ** — gồm cả
+/// các `RecId` **instantiation** (`Box[int?]`) với trường đã thay `T`; HIR chỉ có bản khai báo.
+pub(super) fn collect_rec_fields(
+    hir: &Hir,
+    types: Option<&vis_types::TypeTable>,
+) -> HashMap<(u32, String), Type> {
     let mut m = HashMap::new();
     for it in &hir.items {
         if let HItem::Rec(r) = it {
@@ -46,18 +52,39 @@ pub(super) fn collect_rec_fields(hir: &Hir) -> HashMap<(u32, String), Type> {
             }
         }
     }
+    if let Some(types) = types {
+        for (i, r) in types.recs().iter().enumerate() {
+            for f in &r.fields {
+                m.insert((i as u32, f.name.clone()), f.ty.clone());
+            }
+        }
+    }
     m
 }
 
 /// **VD-258** — gom kiểu trường biến thể enum `(EnumId, tên biến thể, vị trí) → kiểu`.
 /// Dùng để nâng `T → T?` ở đối số dựng enum (interp đọc `TypeTable` trực tiếp).
-pub(super) fn collect_enum_fields(hir: &Hir) -> HashMap<(u32, String, usize), Type> {
+///
+/// **VD-263**: như [`collect_rec_fields`], có `TypeTable` ⇒ gồm cả enum **instantiation**.
+pub(super) fn collect_enum_fields(
+    hir: &Hir,
+    types: Option<&vis_types::TypeTable>,
+) -> HashMap<(u32, String, usize), Type> {
     let mut m = HashMap::new();
     for it in &hir.items {
         if let HItem::Enum(e) = it {
             for v in &e.variants {
                 for (i, f) in v.fields.iter().enumerate() {
                     m.insert((e.id.0, v.name.clone(), i), f.ty.clone());
+                }
+            }
+        }
+    }
+    if let Some(types) = types {
+        for (i, e) in types.enums().iter().enumerate() {
+            for v in &e.variants {
+                for (j, f) in v.fields.iter().enumerate() {
+                    m.insert((i as u32, v.name.clone(), j), f.ty.clone());
                 }
             }
         }
@@ -354,13 +381,17 @@ fn walk_stmts(
 
 /// **ST-248 / VD-260** — `sym` → kiểu đầy đủ = annotation + kiểu suy từ initializer (mirror
 /// interp). `self` trong method `impl` lấy kiểu bản ghi của `impl` (kể cả khi không annot).
-pub(super) fn collect_sym_tys(hir: &Hir, symbols: &Symbols) -> HashMap<u32, Type> {
+pub(super) fn collect_sym_tys(
+    hir: &Hir,
+    symbols: &Symbols,
+    types: Option<&vis_types::TypeTable>,
+) -> HashMap<u32, Type> {
     let mut m: HashMap<u32, Type> = crate::util::sym_annot_map(symbols)
         .into_iter()
         .filter(|(_, t)| !la_error(t))
         .collect();
     let fn_rets = collect_fn_rets(hir);
-    let rec_fields = collect_rec_fields(hir);
+    let rec_fields = collect_rec_fields(hir, types);
     // `self` của `impl U` có kiểu `U` dù tham số không annot (lowering để `Error`).
     for it in &hir.items {
         if let HItem::Impl(i) = it {

@@ -87,3 +87,45 @@ pub(crate) struct Vong {
     /// Đích nhảy của `continue` (về đầu vòng).
     pub(crate) continue_t: usize,
 }
+
+/// **ST-238 (VD-242, ca 3)** — gom mọi `sym` được bind bởi một pattern (đăng ký biến cấp tệp).
+/// Không gọi mã người dùng (VD-242 §3.4) — chỉ đi cấu trúc HIR. Ở `util` để giữ R1 cho `codegen`.
+pub(crate) fn pat_syms(p: &HPat, out: &mut Vec<u32>) {
+    match p {
+        HPat::Bind { sym, .. } => out.push(*sym),
+        HPat::Ctor { args, .. } => {
+            for a in args {
+                pat_syms(a, out);
+            }
+        }
+        HPat::Tuple { items, .. } | HPat::List { items, .. } => {
+            for it in items {
+                pat_syms(it, out);
+            }
+            if let HPat::List { rest: Some(r), .. } = p {
+                pat_syms(r, out);
+            }
+        }
+        HPat::Record { fields, .. } => {
+            for (_, sub) in fields {
+                if let Some(sub) = sub {
+                    pat_syms(sub, out);
+                }
+            }
+        }
+        HPat::Or { alts, .. } => {
+            for a in alts {
+                pat_syms(a, out);
+            }
+        }
+        HPat::Range { lo, hi, .. } => {
+            if let Some(lo) = lo {
+                pat_syms(lo, out);
+            }
+            if let Some(hi) = hi {
+                pat_syms(hi, out);
+            }
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
+    }
+}
