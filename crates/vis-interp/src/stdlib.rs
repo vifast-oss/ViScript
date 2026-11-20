@@ -35,6 +35,7 @@ mod listmedian;
 mod listsumfloat;
 mod mapcontainskey;
 mod netconst;
+mod pathisabs;
 mod pathjoinall;
 mod pathnorm;
 mod pathrel;
@@ -586,6 +587,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Bool(la_tuyet_doi(p, cfg!(windows))))
         }
+        // **VD-270 (path.is_absolute)**: cùng quy tắc `path.is_abs` (không đĩa/`cwd`).
+        "path.is_absolute" => pathisabs::goi(&args, span),
         // **VD-270 (path.is_relative)**: phần bù **từ vựng** của `path.is_abs` (không đĩa/`cwd`).
         "path.is_relative" => pathrelbool::goi(&args, span),
         // **VD-270 (path.normalize)**: chuẩn hoá **từ vựng** POSIX (thuần chuỗi, không chạm đĩa).

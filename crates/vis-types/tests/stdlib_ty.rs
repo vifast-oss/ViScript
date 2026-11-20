@@ -200,8 +200,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 char-at, 2026-11-21)**: +**1** hàm `std.str.char_at`
     // (`(str, int) -> str?`; scalar Unicode thứ `i` zero-based, âm/quá dài/rỗng ⇒ `None`,
     // không trap) ⇒ **137** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 137, "bảng chữ ký phải đủ 137 hàm");
-    assert_eq!(FUNCS.len(), 136, "bảng chữ ký phải đủ 136 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-is-absolute, 2026-11-21)**: +**1** hàm
+    // `std.path.is_absolute` (`(str) -> bool`; cùng quy tắc từ vựng `path.is_abs`, rỗng ⇒
+    // `false`, **không** sugar) ⇒ **138** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 138, "bảng chữ ký phải đủ 138 hàm");
 }
 
 #[test]
@@ -280,6 +282,19 @@ fn path_normalize_kieu_str_sang_str_va_sugar() {
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
     assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
+}
+
+#[test]
+fn path_is_absolute_kieu_str_sang_bool_va_khong_sugar() {
+    // **VD-270 (path.is_absolute)**: chữ ký `(str) -> bool` — **cùng** quy tắc của
+    // `path.is_abs`; **không** sugar (`is_absolute` không nằm trong `module_sugar`, tránh
+    // đoán module nhận).
+    let f = sig_of("path.is_absolute").expect("path.is_absolute");
+    assert_eq!(f.params, &[Ty::Str], "`path.is_absolute`: tham số");
+    assert_eq!(f.ret, Ty::Bool, "`path.is_absolute`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "`path.is_absolute`: hạ kiểu");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "is_absolute"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "is_absolute"), None);
 }
 
 #[test]

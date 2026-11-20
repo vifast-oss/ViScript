@@ -79,6 +79,7 @@ path.basename	(str) -> str
 path.dirname	(str) -> str
 path.ext	(str) -> str
 path.is_abs	(str) -> bool
+path.is_absolute	(str) -> bool
 path.is_relative	(str) -> bool
 path.join	(str, str) -> str
 path.join_all	(list[str]) -> str
