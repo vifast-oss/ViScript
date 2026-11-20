@@ -27,9 +27,12 @@ use std::path::PathBuf;
 // khoá: module format (2) + instrumented module (3) + event-table (4) + weight-table (1). Cache
 // sinh bởi tooling cũ (chưa có trailer / bảng trọng số khác) phải tự vô hiệu — kể cả khi nội dung
 // source trùng. Đổi nhãn logic là có chủ ý (VD-129); không đụng opcode/ngữ nghĩa mặc định.
+// **SỬA KÈM LÝ DO (VD-258 / stream A, 2026-11-20)**: checker/codegen đổi ngữ nghĩa
+// `Result?`, `?.` lồng, record ctor/default, `None`; `VERSION` VBC1 không đổi ⇒ cache cũ
+// cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -220,12 +223,19 @@ mod tests {
     /// cache mang ngữ nghĩa VM cũ phải vô hiệu trước khi phát hành.
     /// Ghim lại lần nữa (2026-11-20, **VD-257 / stream B**): bốn trục phiên bản (module 2/3,
     /// event-table 4, weight 1) đều vào khoá; cache của tooling trước VD-257 tự vô hiệu.
+    /// Ghim lại lần nữa (2026-11-20, **VD-258 / stream A**): checker/codegen đổi `Result?`,
+    /// `?.` lồng, record ctor/default và `None`; `VERSION` VBC1 không đổi ⇒ nhãn logic phải đổi
+    /// để cache cũ cùng nguồn không chạy bytecode trước bản sửa.
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "98a0b98342213b9b2fe3f8a8050ae0e12ba3e09ab276493cc2c657558b4650e8",
+            k, "37da16859f16f004b16c4ce325686990f05ea60bc65d1432e59a195d702a7b27",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "98a0b98342213b9b2fe3f8a8050ae0e12ba3e09ab276493cc2c657558b4650e8",
+            "VD-258: cache sinh trước checker/record/None mới không được tái dùng"
         );
         assert_ne!(
             k, "cca587acccdba4f540520dc611ccb8b8128a972136e3821f01c38914607e0f20",
@@ -251,6 +261,12 @@ mod tests {
         assert_eq!(vis_bytecode::fee::VERSION, 4);
         // VD-257 (stream B): bốn trục độc lập, cache phải mang nhãn mới + weight-table version.
         assert!(PHIEN_BAN.contains("vd257-b-four-version-axes"));
+        // VD-258 (stream A): đổi ngữ nghĩa checker/codegen (Result?, ?. lồng, record, None)
+        // nhưng VERSION VBC1 không đổi ⇒ nhãn cache phải đổi.
+        assert!(
+            PHIEN_BAN.contains("vd258-checker-option-record-none"),
+            "VD-258: cache phải mang nhãn checker/record/None mới"
+        );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);
         assert_ne!(
