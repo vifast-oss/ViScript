@@ -11,6 +11,7 @@
 mod chan_doan;
 mod chon;
 mod chu_ky;
+mod codelens;
 mod dinh_dang;
 mod dinh_nghia;
 mod doi_ten;
@@ -450,6 +451,27 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **VD-270**: code lens chạy test cho từng `test fn` cấp tệp.
+            "textDocument/codeLens" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                gui!(codelens::tra_loi_code_lens(&kq, &uri, &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-275**: vùng gấp theo khai báo nhiều dòng.
             "textDocument/foldingRange" => {
                 if let Some(id) = id {
@@ -576,6 +598,10 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
         jsonrpc::kv("implementationProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
+        jsonrpc::kv(
+            "codeLensProvider",
+            jsonrpc::m(vec![("resolveProvider", Value::Bool(false))]),
+        ),
         jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
