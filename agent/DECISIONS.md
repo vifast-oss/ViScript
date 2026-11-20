@@ -2021,3 +2021,60 @@ A/B nếu cùng sửa codegen phải chia lượt hoặc có người tích hợ
 **VS3/B-3**: chưa mở triển khai; không chốt GC/heap worker/Send-Sync/ngoại lệ dependency chỉ bằng tên lựa chọn. Cho phép hồ sơ design-only hữu hạn: B-3 chỉ rõ đường truyền impl/type + bound bị bỏ qua; VS3 ma trận phương án/chi phí/tương thích/quyết định cần A0; `select` chưa cấp tên; nợ đường ghi kiểm nội dung #140/#142 trước khi sửa số. Nếu generic bound bị bỏ qua khiến chương trình sai được chấp nhận ⇒ đưa vào triage tính đúng đắn ngay, không giấu dưới “design-only”.
 
 **Tag `0.x`** chỉ đề nghị sau: gate Linux + hai engine trên commit cuối xanh; fresh-clone xanh; Windows Tier 2 đo lại, giới hạn ghi rõ; ma trận core/SQLite công bố đúng cấu hình; không blocker đã biết; release notes nêu **macOS chưa verify**. Giữ `pha1-rc1`, không di chuyển tag.
+
+
+### VD-243 · Số học `percent`: lỗi có kiểm soát, không bão hoà — A0, 2026-11-20 (bổ sung VD-242, nợ #172)
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Phạm vi**: chỉ `percent` và `show(percent)`; không đổi biểu diễn/thang đo/quy tắc làm tròn, không mở pha 2/VS3/API mới.
+> **Kết quả ST-237**: 28/28 hành vi tái hiện, **#176 không phải lỗi**; #172 reproduced (`200pct * i64::MAX` ⇒ bão hoà, `show(1e300pct)` ⇒ bão hoà, exit 0).
+
+#### 1. Quyết định
+
+Chọn **phương án 2 — báo lỗi**. Số học `percent` **không được bão hoà im lặng**. Khi kết quả vượt miền biểu diễn hợp lệ phải báo lỗi và tiến trình thất bại với mã thoát khác 0; **không** thay bằng `i64::MIN/MAX` rồi tiếp tục chạy.
+
+Hợp đồng được duyệt:
+
+| Trường hợp | Hành vi đúng |
+|---|---|
+| Phép tính `percent` vượt miền biểu diễn | Báo **`VS0507`**, tiến trình thất bại, exit ≠ 0 |
+| Chuyển đổi sang `percent` vượt miền | Báo lỗi; **không** clamp/wrap |
+| Literal `percent` không biểu diễn được | Từ chối **trước thực thi** nếu xác định được tĩnh |
+| Giá trị hợp lệ ở biên | Giữ chính xác theo biểu diễn và quy tắc làm tròn hiện hành |
+| `show` nhận giá trị hợp lệ | Chỉ định dạng; **không** tạo giá trị bão hoà thay thế |
+
+**Mở rộng hợp đồng `VS0507`** cho tràn số học `percent` tại runtime. Với literal bị từ chối ở lexer/checker, **giữ mã chẩn đoán đúng tầng hiện hành**; không ép mọi lỗi literal thành lỗi runtime.
+
+#### 2. Hai điểm không được hiểu sai
+
+1. **Không đổi biểu diễn, thang đo hoặc quy tắc làm tròn của `percent` trong task này.** Nếu chúng chưa có hợp đồng rõ, Agent 2 phải **ghi lại điểm thiếu** trước khi sửa phần liên quan; không tự chốt hợp đồng mới.
+2. **Trung gian tràn chưa chắc kết quả cuối vượt miền.** Với phép tính có bước nhân rồi chia theo thang đo, phải dùng cách tính có kiểm tra phù hợp để **không từ chối kết quả cuối vốn biểu diễn được**. **Không** thay `saturating_mul` bằng `checked_mul` một cách máy móc.
+
+Với `show(1e300pct)`, phải **chặn tại nơi tạo/chuyển đổi giá trị không hợp lệ**. Không chỉ sửa chuỗi `show` in ra — nếu không, giá trị sai vẫn đi vào tính toán.
+
+#### 3. Test bắt buộc cho #172
+
+- Hai repro đã báo cáo (ST-235/ST-237).
+- Biên trên/dưới hợp lệ và vượt biên.
+- Mọi toán tử/chuyển đổi đang dùng đường bão hoà, **không chỉ phép nhân**.
+- Trường hợp trung gian lớn nhưng kết quả cuối hợp lệ (nếu biểu diễn hiện tại có dạng này).
+- **Cả interp và VM**: cùng kết quả hợp lệ, hoặc cùng **loại** lỗi.
+- **Không** thay đổi ngoài ý muốn hành vi số nguyên thường.
+
+#### 4. Gỡ blocker và nghiệm thu
+
+- **Gỡ blocker quyết định** cho riêng #172 trong `BLOCKED.md` §12. Agent 1 **chỉ đóng blocker triển khai** sau khi có bản sửa + bằng chứng (repro trước/sau, test hồi quy, kết quả trên đúng commit).
+- #172 vẫn là nợ **mở** trong `SO-NO.md` tới khi sửa xong; ST-240 được phép chuẩn bị repro/test/inventory ngay và sửa song song **chỉ khi quyền sở hữu tệp không xung đột** với ST-238.
+- Không gián đoạn ST-238 để ghép #172 vào nhánh đang chạy. Giữ thứ tự tích hợp theo phụ thuộc codegen.
+
+#### 5. Cách ghi các phát hiện ST-237 (A0 chấp nhận cách phân loại)
+
+- **Không ghi “28 lỗi đã xác nhận”** — ghi **28/28 hành vi đã tái hiện trên baseline**; #176 **không phải lỗi** theo SPEC hiện hành.
+- #176: giữ `không làm có lý do`; không mở lại để nhận literal cực tiểu trong đợt này.
+- #161: sửa **interp** theo ngữ nghĩa đúng; không sửa VM cho giống interp.
+- #165: từ chối chương trình bind không hợp lệ; không sửa VM để trả `2`.
+- #159/#160: **không mở lại mô hình binding cấp tệp**; tiếp tục phạm vi đã duyệt. Nếu phát hiện mâu thuẫn SPEC cụ thể thì báo riêng.
+- #182/#183: tệp đầu vào không hợp lệ **không xoá nghĩa vụ của `fmt`** — tệp được chỉ đích danh phải được xử lý và báo lỗi rõ; khi chạy nhiều tệp, chẩn đoán phải xác định được tệp lỗi.
+
+#### 6. Phạm vi ST-242 đã A0 chấp nhận
+
+Chặn alias macOS trên host không phải Darwin; log nhận diện môi trường thực; giữ lịch sử và tag; nợ blocked phần cứng **vẫn mở và vẫn được đếm**. **Đây không phải bằng chứng macOS đã được kiểm chứng.** Phép kiểm `uname` phải diễn ra **trên máy thực thi phép đo**, không suy từ OS máy điều phối. Kết quả `./vis-dev check` PASS được giữ **đúng tên và phạm vi** — không gọi là full gate hay nghiệm thu toàn đợt.

@@ -206,3 +206,11 @@ crate host.
 **Bằng chứng**: `agent/JOURNAL/st237-ma-tran-28.md` dòng #172; `agent/JOURNAL/st235-audit-std-cli.md` #172; `builtin.rs:419-455`, `value.rs:421-428`.
 
 **Không chặn** các task khác: ST-238/239/240/241/242 vẫn chạy; riêng phần sửa #172 trong ST-240 phải đợi câu trả lời này.
+
+### Gỡ blocker quyết định — VD-243 (A0, 2026-11-20)
+
+A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `VS0507` + exit ≠ 0; **không** bão hoà. Chi tiết hợp đồng, test bắt buộc và hai điểm “không được hiểu sai” ở `DECISIONS.md` **VD-243**.
+
+- **Blocker QUYẾT ĐỊNH cho #172: ĐÃ GỠ.** ST-240 được phép chuẩn bị repro/test/inventory và sửa song song khi không xung đột quyền tệp với ST-238; không gián đoạn ST-238.
+- **Blocker TRIỂN KHAI vẫn mở**: chỉ đóng sau khi có bản sửa + bằng chứng (repro trước/sau, test hồi quy, kết quả trên đúng commit) theo lệnh A0. #172 giữ trạng thái **mở** trong `SO-NO.md`.
+- Không đổi biểu diễn/thang đo/quy tắc làm tròn `percent`; chặn tại nơi tạo/chuyển đổi giá trị (không chỉ sửa chuỗi `show`); trung gian lớn mà kết quả cuối hợp lệ thì không được từ chối máy móc.
