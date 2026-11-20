@@ -35,6 +35,7 @@ json.encode_pretty	(T) -> str
 list.chunk	(list[T], int) -> list[list[T]]
 list.concat	(list[T], list[T]) -> list[T]
 list.drop	(list[T], int) -> list[T]
+list.flatten	(list[list[T]]) -> list[T]
 list.index_of	(list[T], T) -> int?
 list.is_empty	(list[T]) -> bool
 list.last_index_of	(list[T], T) -> int?

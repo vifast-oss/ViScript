@@ -94,7 +94,37 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 strtrim, 2026-11-21)**: +**3** hàm `std.str.*` (`trim_matches`,
     // `trim_start_matches`, `trim_end_matches`; `(str, str) -> str`) ⇒ **100** hàm; không
     // xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 100, "bảng chữ ký phải đủ 100 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 flatten, 2026-11-21)**: +**1** hàm `std.list.flatten`
+    // (`(list[list[T]]) -> list[T]`; nối **một cấp**, list con rỗng không đóng góp) ⇒ **101**
+    // hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 101, "bảng chữ ký phải đủ 101 hàm");
+}
+
+#[test]
+fn flatten_kieu_long_mot_cap() {
+    // **VD-270 (flatten)**: tham số `list[list[T]]`, trả `list[T]`; chỉ **một** cấp nên
+    // `list[list[list[int]]]` ⇒ `list[list[int]]` (phần tử list không bị đệ quy làm phẳng).
+    let f = sig_of("list.flatten").expect("list.flatten");
+    assert_eq!(
+        f.params,
+        &[Ty::List(&Ty::List(&Ty::Var(0)))],
+        "`list.flatten`: tham số"
+    );
+    assert_eq!(f.ret, Ty::List(&Ty::Var(0)), "`list.flatten`: kiểu trả");
+    let long = Ty::List(&Ty::List(&Ty::Var(0))).sang_type();
+    assert_eq!(
+        f.params[0].sang_type(),
+        long,
+        "`list.flatten`: hạ `list[list[T]]`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::TypeRef {
+            name: "T".into(),
+            args: Vec::new()
+        })),
+        "`list.flatten`: hạ `list[T]`"
+    );
 }
 
 #[test]
