@@ -582,12 +582,17 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | Tính năng | Trạng thái |
 |---|---|
 | Cú pháp cơ bản, bản ghi, enum, match, trait | ✅ ĐÃ CÓ |
-| Optional, Result, `?`, `else` | ✅ ĐÃ CÓ |
-| Đơn vị đo | ✅ ĐÃ CÓ (cách in sẽ đổi theo R10) |
-| Thư viện chuẩn (fs, json, http, net…) | ✅ ĐÃ CÓ (API đóng băng) |
+| Optional, Result, `?`, `else`, `let … else` | ✅ ĐÃ CÓ (R3a/R3b) |
+| Đơn vị đo | ✅ ĐÃ CÓ (R10: `size` thập phân, `duration` ghép) |
+| Thư viện chuẩn (`fs`, `list`, `map`, `str`, `json`, `http`, `net`, `path`, `time`, `sqlite`) | ✅ ĐÃ CÓ (API đóng băng) |
 | `str + str`, `print(a, b)`, format `{x:.2}`, `p"…"` | ✅ ĐÃ CÓ (R6) |
 | `if let Some(v) = o:` (pattern) | ✅ ĐÃ CÓ (R3a) |
+| `while let Some(v) = x:` | ✅ ĐÃ CÓ (R18b) |
 | `let x = r else:` | ✅ ĐÃ CÓ (R3b) |
+| List rest `[a, ..rest]` / `[..]` | ✅ ĐÃ CÓ (VD-260) |
+| `panic("…")` trả `never` | ✅ ĐÃ CÓ (VD-267) |
+| Gán lồng `a.b.f = v` trên `var` | ✅ ĐÃ CÓ (VD-268) |
+| Literal `i64::MIN` (`-9223372036854775808`) | ✅ ĐÃ CÓ (VD-266) |
 | `/` ra float, `//` chia nguyên, `%` khớp `//` | ✅ ĐÃ CÓ (R7) |
 | `xs[i]?` chỉ số an toàn | ✅ ĐÃ CÓ (R8) |
 | `enum Shape: Circle(float), Empty` + `U(n: 1)` | ✅ ĐÃ CÓ (R11) |
@@ -596,7 +601,7 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | `if xs:` ⇒ gợi ý `xs.is_empty()` | ✅ ĐÃ CÓ (R17) |
 | `f(1, b: 5)` đối số có tên | ✅ ĐÃ CÓ (R5a) |
 | Method người dùng (`impl P:`) | ✅ ĐÃ CÓ (VD-265/VD-269; kể cả `recv?.m()`) |
-| `.lazy()` iterator | 🔜 DỰ KIẾN (R24) |
+| `.lazy()` iterator | 🔜 DỰ KIẾN (R24); `for` trên range đã lười (VD-264) |
 | Windows hỗ trợ đầy đủ | 🔜 VS3 |
 
 Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.md`](agent/JOURNAL/vs-ergo.md).
@@ -605,13 +610,15 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 
 | Lệnh | Việc |
 |---|---|
-| `./vis run [--stdin] [--tap] [--vm] <tệp.vis>` | chạy chương trình (hoặc script từ stdin) |
-| `./vis check [--stdin] [--json] <tệp…>` | kiểm tra lỗi mà không chạy (hoặc kiểm stdin) |
-| `./vis fmt --write <tệp…>` | tự căn lại thụt lề, khoảng trắng |
-| `./vis fmt --stdin [--check [--json]] [--mode script\|command]` | định dạng luồng, không đụng đĩa |
-| `./vis test [--filter <substr>] [--fail-fast] [--list [--json]] <tệp…>` | chạy/lọc/liệt kê `test fn` và fixture |
-| `./vis explain <mã>` | giải thích mã lỗi (vi/en/ja) |
-| `./vis lsp --stdio` | gợi ý cho trình soạn thảo (VS Code…) |
+| `./vis run [--stdin] [--tap] [--vm] [--time] [--strict-caps] <tệp.vis> [-- args…]` | chạy chương trình (hoặc script từ stdin); `--time` in một dòng thời gian chạy ra stderr |
+| `./vis check [--stdin] [--json] [--syntax] [--no-extern] <tệp…>` | kiểm tra lỗi mà không chạy (hoặc kiểm stdin) |
+| `./vis fmt <tệp>` / `./vis fmt --write <tệp…>` | in bản đã định dạng / ghi đè tệp |
+| `./vis fmt --check [--json\|--list\|--diff\|--stat] <tệp…>` | kiểm tra định dạng; đầu ra JSON, danh sách tệp, diff hoặc một dòng tổng hợp cho CI |
+| `./vis fmt --stdin [--check [--json\|--list\|--diff\|--stat]] [--mode script\|command]` | định dạng luồng, không đụng đĩa |
+| `./vis fmt --indent-report <tệp…>` | báo cáo số dòng lệch thụt lề (`.vish`) |
+| `./vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] <tệp\|thư-mục…>` | chạy/lọc/liệt kê/lặp/xáo `test fn` và fixture |
+| `./vis explain [--json] [--lang vi\|en\|ja] <mã>` | giải thích mã lỗi; `--list` in toàn bộ sổ mã |
+| `./vis lsp --stdio` | LSP: completion, hover, definition, references, rename/prepareRename, documentSymbol, workspace/symbol, signatureHelp, foldingRange, selectionRange, documentHighlight, formatting |
 | `./vis pkg add <gói>` | thêm gói (mô hình phi tập trung, `vis.lock`) |
 
 ## Học tiếp

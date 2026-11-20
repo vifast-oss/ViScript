@@ -2,9 +2,9 @@
 # Cheat sheet — ViScript ↔ Python ↔ Rust ↔ TS/JS
 
 > **Đây là tài liệu HỌC, không phải nguồn sự thật của dự án.**
-> Sinh ngày **2026-11-16** (repo ViFastOs), **chép sang repo ViScript ngày 2026-11-17** (ST-178) và cập nhật theo
-> **VD-178** (C1 mã thoát, R3 `if let` pattern, R10 đơn vị, R24 `.lazy()`). ✔/✖ giữ nguyên từ lần kiểm chứng
-> `target/debug/vis` @ `f4005aed` (111 lượt chạy snippet); các mục **mới theo quyết định** được đánh nhãn trạng thái.
+> Sinh ngày **2026-11-16** (repo ViFastOs), **chép sang repo ViScript ngày 2026-11-17** (ST-178); cập nhật
+> **2026-11-21** (VD-270: CLI/LSP/`std.*` mới, API-STD cập nhật). Các ô ✔ cũ giữ nguyên từ lần kiểm chứng
+> `target/debug/vis` @ `f4005aed` (111 lượt chạy snippet); mục thêm sau được khoá bởi test Rust tương ứng.
 > Nguồn sự thật của ngôn ngữ: code + `test/sem/**`,
 > [`docs/SPEC-lex.md`](docs/SPEC-lex.md), [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).
 >
@@ -23,11 +23,17 @@
 **Chạy thử**
 
 ```bash
-vis run x.vis          # chạy (không cần build)
-vis check x.vis        # kiểm kiểu + cú pháp, in mã lỗi VSxxxx
-vis fmt x.vis          # định dạng, luôn 4 dấu cách
-vis test x.vis         # chạy mọi `test fn`
-vis explain VS0412     # giải thích mã lỗi
+vis run x.vis                    # chạy (không cần build)
+vis run --stdin --time < x.vis   # script từ stdin + thời gian chạy (stderr)
+vis check x.vis                  # kiểm kiểu + cú pháp, in mã lỗi VSxxxx
+vis check --stdin --json < x.vis
+vis fmt x.vis                    # in bản đã định dạng, luôn 4 dấu cách
+vis fmt --check --stat x.vis     # CI: <N> tệp, <M> cần sửa, <K> lỗi
+vis fmt --stdin --mode command < x.vish
+vis test --filter cong --fail-fast x.vis
+vis test --repeat 3 --shuffle --seed 7 x.vis
+vis explain VS0412               # giải thích mã lỗi
+vis explain --list --json        # toàn bộ sổ mã, máy đọc
 vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tập trung, VD-180)
 ```
 
@@ -43,12 +49,14 @@ vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tậ
 > **`main -> int` không phải mã thoát**: `fn main() -> int` trả `3` vẫn exit **0** (VD-242 §7);
 > chỉ `Result::Err` từ `main` ⇒ **1**, `Ok`/giá trị thường ⇒ **0**.
 
-**Từ khoá** (đủ, không thêm bớt):
-`let var const fn cmd type enum trait impl pub use if elif else match for in while
-loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
+**Từ khoá** (lexer có 40 mục, xếp ABC; `alias`/`newtype` bị **từ chối** theo R12a và **một từ khoá cũ** bị từ chối theo R2 — xem `vis explain VS0203`):
+`alias and async await break cmd const continue derives dyn elif else enum extern false fn for
+has if impl in let loop match newtype not or pub ref return scope self trait true type use
+var while with`
 
-> **R12a**: `alias`, `newtype` **bị bỏ** khỏi danh sách từ khoá; thay bằng `type X = T`,
-> `type Email(str)` (dùng `alias`/`newtype` ⇒ **VS0203** + gợi ý). R2: từ khoá cũ đã bỏ — dùng `None` (viết hoa).
+> **R12a**: `alias`/`newtype` vẫn là từ khoá nhưng bị từ chối khi dùng — báo **VS0203** + gợi ý
+> `type X = T`, `type Email(str)`. R2: từ khoá cũ bị từ chối — dùng `None` (viết hoa). `test` và
+> `assert` là **soft keyword** theo ngữ cảnh, không nằm trong bảng từ khoá của lexer.
 
 ---
 
@@ -117,7 +125,9 @@ loop break continue return and or not true false self async await scope test ext
 | `(1, "a")` ✔ | `(1, "a")` | `(1, "a")` | `[1, "a"] as const` | `let (n, s) = t` ✔ |
 | `type U:`<br>`    name: str`<br>`    age: int` ✔ | `@dataclass`<br>`class U:` | `struct U { name: String, age: i64 }` | `type U = { name: string; age: number }` | tên `type`, không `struct` |
 | `let u: U = {name: "An", age: 20}` ✔ | `U(name="An", age=20)` | `U { name: "An".into(), age: 20 }` | `const u: U = {name: "An", age: 20}` | record literal + **phải ghi kiểu** |
+| `User(name: "An")` ✔ | `User(name="An")` | `U { name: "An".into(), .. }` | `new User({name: "An"})` | dựng bản ghi theo **tên kiểu** + trường có tên (R5a/R11); **không** nhận đối số vị trí |
 | `u with age: 21` ✔ | `dataclasses.replace(u, age=21)` | `U { age: 21, ..u }` | `{...u, age: 21}` | trả bản ghi **mới** |
+| `var a: U = …`<br>`a.age = 21` ✔<br>`a.bs[0].name = "B"` ✔ | `a.age = 21` | `a.age = 21` | `a.age = 21` | **VD-268**: gán lồng `a.b.f`/`xs[i].f`/`m["k"].f` trên gốc `var`; gốc `let`/tham số ⇒ `VS0412` |
 | `enum Shape:`<br>`    Circle(float), Empty` ✔ | `Enum` không mang dữ liệu | `enum Shape { Circle(f64), Empty }` | `type Shape = {kind:'circle', r:number} \| {kind:'empty'}` | **R11**: biến thể mang dữ liệu **vị trí** `Circle(float)` (hoặc có tên `Circle(r: float)`); nhiều biến thể **cùng dòng** ngăn `,` |
 | `Circle(2.0)` ✔ | `Circle(2.0)` | `Shape::Circle(2.0)` | `{kind:'circle', r:2.0}` | dựng variant bằng `Tên(...)`; **R11**: `U(n: 1)` dựng bản ghi theo **tên kiểu** |
 | `a == b` trên bản ghi ✔ | `a == b` | `a == b` | `a === b` | so theo giá trị |
@@ -147,7 +157,7 @@ loop break continue return and or not true false self async await scope test ext
 | `b"\x41"` ✔ | `b"\x41"` | `b"\x41"` | `Uint8Array` | chỉ ASCII + `\xNN` |
 | `p"./x"` ✔ | `Path("./x")` | `Path::new("./x")` | — | literal đường dẫn, kiểu `path` |
 | `"a,b".split(",")` ✔ | `"a,b".split(",")` | `"a,b".split(',')` | `"a,b".split(",")` | |
-| `"ab".upper()` / `.lower()` / `.chars()` / `.contains("b")` / `.len()` ✔ | `.upper()` / `list(s)` / `"b" in s` / `len(s)` | `.to_uppercase()` / `.chars()` / `.contains('b')` / `.len()` | `.toUpperCase()` / `[...s]` / `.includes("b")` | **đúng 6** method của `str` |
+| `"ab".upper()` / `.lower()` / `.chars()` / `.contains("b")` / `.len()` ✔ | `.upper()` / `list(s)` / `"b" in s` / `len(s)` | `.to_uppercase()` / `.chars()` / `.contains('b')` / `.len()` | `.toUpperCase()` / `[...s]` / `.includes("b")` | **R5c**: `s.f(args)` ≡ `str.f(s, args)` cho mọi hàm `std.str` nhận `str` đầu; xem bảng phương thức §9 |
 | `"a" + "b"` ✔ | `"a" + "b"` | `format!` / `String + &str` | `"a" + "b"` | **R6**: `str+str` **nối** ⇒ `ab` |
 | `"{n:.2}"` ✔ | `f"{n:.2f}"` | `format!("{n:.2}")` | `n.toFixed(2)` | **R6**: `{expr:spec}` chạy ở runtime (`.N` = N chữ số thập phân) |
 
@@ -156,10 +166,11 @@ loop break continue return and or not true false self async await scope test ext
 | Viết | Kiểu | Ghi chú |
 |---|---|---|
 | `1_000`, `0xff`, `0b1010` ✔ | `int` (i64) | tràn i64 là **lỗi biên dịch** |
+| `-9223372036854775808` / `-0x8000000000000000` ✔ | `int` (i64) | **VD-266**: `i64::MIN` viết trực tiếp hợp lệ (gộp dấu `-`); dương `9223372036854775808` ⇒ **VS0104**; `i64::MIN // -1` / `% -1` ⇒ trap **VS0507** (exit 101) |
 | `3.14`, `1e-9` ✔ | `float` (f64) | `1.` **sai** (bắt buộc có số sau dấu chấm) |
 | `5mb`, `5kib` ✔ | `size` | `kb`=1000, `kib`=1024 (chỉ thang **literal**); **R10**: in thập phân `b kb mb gb tb`, đơn vị lớn nhất có phần nguyên ≥ 1, tối đa **2** chữ số lẻ (**làm tròn nửa lên**, bỏ 0 thừa) — `1024` ⇒ `1.02kb`, `1500` ⇒ `1.5kb`; âm giữ dấu, `0` ⇒ `0b` |
 | `250ms`, `2h30m` ✔ | `duration` | **R10**: in **ghép** `w d h m s ms us ns` từ lớn đến nhỏ, bỏ thành phần 0, không cách — `150m` ⇒ `2h30m`, `90s` ⇒ `1m30s`, `150ms` ⇒ `150ms`; `0` ⇒ `0ns`; cộng **cùng loại** hợp lệ (`1h+30m`), **khác loại** lỗi |
-| `50pct` ✔ | `percent` | `%` **chỉ** là modulo; **R10 [DỰ KIẾN]**: cộng cùng loại hợp lệ, `pct + size` lỗi |
+| `50pct` ✔ | `percent` | `%` **chỉ** là modulo; cộng **cùng loại** hợp lệ (`50pct + 10pct` ⇒ `60pct`), `pct + size` ⇒ **VS0414**; in `150pct` |
 
 ## 7. Optional & xử lý lỗi
 
@@ -167,7 +178,7 @@ loop break continue return and or not true false self async await scope test ext
 |---|---|---|---|---|
 | `int?` / `None` ✔ | `int \| None` / `None` | `Option<i64>` / `None` | `number \| undefined` | không có `null` toàn nơi; **R2**: từ khoá cũ đã bỏ ⇒ **VS0203** — dùng `None` |
 | `x ?? 7` ✔ | `x if x is not None else 7` | `x.unwrap_or(7)` | `x ?? 7` | |
-| `u?.age` ✔ | — | `u.map(\|u\| u.age)` | `u?.age` | |
+| `u?.age` ✔<br>`o?.m()` ✔ | — | `u.map(\|u\| u.age)` | `u?.age` | **VD-269**: `recv?.m(args)` gọi method qua **một** lớp `Option`; `None` ⇒ `None` (không đánh giá đối số), kết quả lift **một** lớp |
 | `Some(5)` (dựng) ✔<br>`Some(v)` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | **R2/VD-212**: dựng **và** pattern đều viết hoa (`Some(v)`, `None`); dạng viết thường trong pattern ⇒ **lỗi VS0203** + gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch |
 | `Result[int, str]`, `Ok(7)`, `Err("hỏng")` ✔ | exception | `Result<i64, String>` | `throw` / union | |
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
@@ -182,6 +193,7 @@ loop break continue return and or not true false self async await scope test ext
 |---|---|---|---|
 | `trait Hien:`<br>`    fn hien(self) -> str` ✔ | `class P(Hien):` / `Protocol` | `trait Hien { fn hien(&self) -> String; }` | `interface Hien { hien(): string }` |
 | `impl Hien for P:`<br>`    fn hien(self) -> str: ...` ✔ | kế thừa | `impl Hien for P { ... }` | `class P implements Hien` |
+| `impl P:`<br>`    fn tuoi(self) -> int: ...` ✔ | method thường | `impl P { fn tuoi(&self) -> i64 }` | `class P { tuoi() }` |
 | `type P derives Show:` ✔ | — | `#[derive(Debug)]` | — |
 | `dyn Hien` ✖ | — | `dyn Trait` | — |
 
@@ -194,13 +206,13 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | Module | Hàm chính | Ví dụ đã chạy ✔ |
 |---|---|---|
 | `std.fs` | `exists` `size` `is_file` `is_dir` `list` `read` `read_lines` `walk` `glob` `write` `append` `mkdir` `remove` `copy` `rename` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `fs.walk(".")` → tương đối, thư mục kèm `/`, DFS, **bỏ symlink**; `fs.glob(".", "**/*.txt")` → lọc `walk`, sắp theo **byte**, mẫu không `/` khớp **basename** (`*` `?` `**`); `mkdir` **một cấp**, `remove` **chỉ tệp**; `copy`/`rename` **chỉ tệp** (từ chối thư mục + symlink) và **từ chối đích đã tồn tại** (không ghi đè), `copy` chép **từng byte**, `rename` cùng hệ tệp; `size` = số **byte** tệp thường, `is_file`/`is_dir` dùng `symlink_metadata` (**không** đi theo symlink: symlink ⇒ `false`/`false`, `size` ⇒ `Err`), thiếu path ⇒ predicate `Ok(false)` |
-| `std.list` | `sort` `take` `drop` `chunk` `windows` `concat` `flatten` `reverse` `unique` `zip` `min` `max` `is_empty` `index_of` `last_index_of` | `list.sort([3,1,2])` → `[1,2,3]`; `list.windows([1,2,3], 2)` → `[[1,2],[2,3]]` (cửa sổ **trượt**, `chunk` là nhóm rời; `n <= 0` ⇒ trap `VS0501`, `n > len` ⇒ `[]`); `list.flatten([[1,2],[],[3]])` → `[1,2,3]` (nối **một cấp**; list con rỗng không đóng góp; phần tử vốn là list **giữ nguyên**: `[[[1],[2]]]` → `[[1],[2]]`); `list.is_empty([])` → `true`; `list.index_of([10,20,30,20], 20)` → `Some(1)`, `last_index_of` → `Some(3)` (0-based, so cấu trúc như `==`; không có/rỗng ⇒ `None`) |
+| `std.list` | `sort` `sort_by` `take` `drop` `chunk` `windows` `concat` `flatten` `reverse` `unique` `zip` `min` `max` `is_empty` `index_of` `last_index_of` | `list.sort([3,1,2])` → `[1,2,3]`; `list.windows([1,2,3], 2)` → `[[1,2],[2,3]]` (cửa sổ **trượt**, `chunk` là nhóm rời; `n <= 0` ⇒ trap `VS0501`, `n > len` ⇒ `[]`); `list.is_empty([])` → `true`; `list.index_of([10,20,30,20], 20)` → `Some(1)`, `last_index_of` → `Some(3)` (0-based, so cấu trúc như `==`; không có/rỗng ⇒ `None`); `list.flatten([[1,2],[],[3]])` → `[1,2,3]` (nối **một cấp**; list con rỗng không đóng góp; phần tử vốn là list **giữ nguyên**: `[[[1],[2]]]` → `[[1],[2]]`); `list.zip([1,2],[3])` → `[[1,3]]` |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` `is_empty` | `map.keys(m)`; `map.is_empty({})` → `true` |
 | `std.str` | `split` `join` `upper` `lower` `trim` `trim_start` `trim_end` `trim_matches` `trim_start_matches` `trim_end_matches` `replace` `repeat` `starts_with` `ends_with` `contains` `find` `rfind` `count` `lines` `split_whitespace` `pad_left` `pad_right` `center` `byte_len` `char_count` `is_empty` | `str.join(["a","b"], "-")` → `a-b`; `str.center("ab", 5, "-")` → `-ab--`; `str.pad_left("đ", 3, "-")` → `--đ` (đệm theo **ký tự Unicode**, `fill` rỗng ⇒ trap `VS0501`, `center` dư bên phải); `str.trim_matches("--x--", "-")` → `x`, `str.trim_start_matches("--x--", "-")` → `x--`, `str.trim_end_matches("--x--", "-")` → `--x` (cắt **tập scalar** `chars`, lặp tới scalar không thuộc tập; `chars` rỗng ⇒ nguyên vẹn, hết ⇒ `""`); `str.find("đ😀x", "x")` → `Some(2)`; `str.rfind("banana", "na")` → `Some(4)`; `str.count("aaaa", "aa")` → `2` (offset **scalar Unicode**, `count` **không chồng**; needle rỗng: `Some(0)`/`Some(len)`/`len+1`); `str.byte_len("đ😀x")` → `7`, `str.char_count("đ😀x")` → `3` (`byte_len` = **byte UTF-8**, `char_count` = **scalar Unicode**, **không** phải grapheme; `is_empty` cho `str`/`list`/`map`) |
 | `std.path` | `join` `basename` `dirname` `ext` `stem` `is_abs` | `path.join("a","b")` → `a/b` |
 | `std.time` | `now_ms()` `monotonic_ms()` | |
 | `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
-| `std.net` | `listen` `connect` `read` `write` `accept` `close` | loopback, **không TLS** |
+| `std.net` | `listen` `connect` `read` `write` `accept` `close` + `*_timeout`, `local_addr`, `close_listen` | loopback, **không TLS** |
 | `std.http` | `get` `head` + `_timeout` | HTTP/1.1 loopback, chunked, redirect GET ≤5 |
 | `std.sqlite` | `open` `open_with` `close` `execute` `execute_batch` `query` `query_one` `explain` `last_insert_rowid` `changes` `begin` `commit` `rollback` `in_transaction` | `sqlite.query_one(h, "SELECT a FROM t WHERE a = ?", [SqlValue.Integer(1)])` → `Ok(RowSet)` tối đa 1 hàng; `sqlite.execute_batch(h, "CREATE TABLE t (a); INSERT INTO t VALUES ('x;y');")` → `Ok(2)` (tách `;` ngoài chuỗi/comment); `sqlite.explain(h, "SELECT a FROM t WHERE a = ?", [SqlValue.Integer(1)])` → `Ok(RowSet)` 4 cột `id,parent,notused,detail` |
 
@@ -210,10 +222,10 @@ Method trên giá trị (không cần `use`):
 
 | Kiểu | Method ✔ |
 |---|---|
-| `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` `is_empty` `index_of` `last_index_of` — `map`/`filter` **trả list ngay** (eager) **[ĐÃ CÓ]** |
-| `Iterator[T]` | `.lazy()` trả iterator; cùng bộ method + `.to_list()`/`.to_map()`/`.to_set()`; **duyệt lại được**; `range`/`fs.lines` mặc định lười — **[DỰ KIẾN]** (R24) |
-| `map` | `len` `get` `has` `keys` `values` `is_empty` |
-| `str` | `len` `upper` `lower` `split` `chars` `contains` `find` `rfind` `count` `lines` `split_whitespace` `trim_start` `trim_end` `trim_matches` `trim_start_matches` `trim_end_matches` `pad_left` `pad_right` `center` `byte_len` `char_count` `is_empty` |
+| `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` `enumerate` `any` `all` `find` `is_empty` + sugar `sort` `sort_by` `take` `drop` `chunk` `windows` `concat` `reverse` `unique` `zip` `min` `max` `index_of` `last_index_of` — `map`/`filter` **trả list ngay** (eager) **[ĐÃ CÓ]** |
+| `Iterator[T]` | `.lazy()` trả iterator; cùng bộ method + `.to_list()`/`.to_map()`/`.to_set()`; **duyệt lại được** — **[DỰ KIẾN]** (R24). `for` trên range **đã lười** (VD-264: không cấp phát N phần tử); list/str/map vẫn vật chất hoá |
+| `map` | `len` `get` `has` `keys` `values` `is_empty` + sugar `get_or` `merge` `remove` |
+| `str` | `len` `chars` `upper` `lower` `split` `contains` `is_empty` + sugar `trim` `trim_start` `trim_end` `trim_matches` `trim_start_matches` `trim_end_matches` `replace` `repeat` `starts_with` `ends_with` `find` `rfind` `count` `lines` `split_whitespace` `pad_left` `pad_right` `center` `byte_len` `char_count` |
 
 ## 10. Chế độ shell (chỉ ViScript có)
 
@@ -226,6 +238,15 @@ Method trên giá trị (không cần `use`):
 | `^ten` | ép gọi chương trình **ngoài** |
 | `\| complete` | chặn lỗi pipeline, trả `{stdout, stderr, code, how}` |
 
+## 10b. LSP (`vis lsp --stdio`)
+
+| Nhóm | Method / việc |
+|---|---|
+| Soạn thảo | `completion` (kể cả module `std.*`), `hover` (biến, trường, biến thể enum, phương thức người dùng, phương thức lõi + builtin), `signatureHelp`, `documentHighlight`, `selectionRange` |
+| Điều hướng | `definition` (trong tệp + qua `rootUri`), `references`, `documentSymbol`, `workspace/symbol`, `foldingRange` |
+| Sửa | `rename` + `prepareRename`, `formatting` (dùng `vis fmt`) |
+| Chẩn đoán | publish diagnostics khi mở/đổi/lưu; module-aware; UTF-16 |
+
 ## 11. Những thứ **không có** (và thay bằng gì)
 
 | Không có | Thay bằng | Python | Rust | TS/JS |
@@ -236,22 +257,21 @@ Method trên giá trị (không cần `use`):
 | `switch` | `match` | `match` | `match` | `switch` |
 | `any` | `Json` + chuyển đổi tường minh | — | — | `any` |
 | `1 < x < 10` | `1 < x and x < 10` | **hợp lệ** | lỗi | lỗi |
-| `s[i]`, `s[1:3]` | `.chars()`, `xs.get(i)` | **hợp lệ** | không có | **hợp lệ** |
+| `s[i]`, `s[1:3]` | `.chars()`, `.byte_len()`, `.char_count()`, `xs.get(i)` | **hợp lệ** | không có | **hợp lệ** |
 | `"a" + "b"` | **hợp lệ** (R6) | **hợp lệ** | **hợp lệ** | **hợp lệ** |
 | `1.` (float) | `1.0` | **hợp lệ** | **hợp lệ** | **hợp lệ** |
 | `++`, `--` | `x += 1` | — | — | **có** |
 | macro (`println!`) | `print(...)` | — | **có** | — |
 | `unsafe`, con trỏ, borrow | ngữ nghĩa giá trị + `ref[T]` | — | **có** | — |
 
-## 12. Mười cái bẫy cho người mới
+## 12. Mười một cái bẫy cho người mới
 
 1. **`let` là bất biến** — ngược với `let` của JS. Muốn gán lại: `var`.
 2. **`var` không phải `var` của JS** (không function-scope) — nó chỉ là "biến đổi được", giống `let mut`.
 3. **`"a" + "b"` nối được** (R6) — nhưng chỉ `str + str`; `"a" + 1` vẫn lỗi (`VS0414`).
 4. **`match` phải xét hết**; nhánh có `if` (guard) **không** được tính là đã xét.
 5. **`Some`/`None`/`Ok`/`Err` viết hoa** (cả dựng và pattern) — **R1a/R2/VD-212**: dạng viết thường trong pattern ⇒ **lỗi `VS0203`** (khác `VS0111` cảnh báo của R1a — nay là lỗi); `vis fmt` tự sửa; từ khoá cũ ⇒ **VS0203**.
-6. **Record literal phải liệt kê đủ trường** — giá trị mặc định của `type` **không** tự áp:
-   `type U: email: str? = None` thì vẫn phải viết `{name: …, email: None}`.
+6. **Record literal `{…}` phải liệt kê đủ trường** — giá trị mặc định của `type` chỉ tự áp khi dựng bằng **tên kiểu** (`User(name: "An")`), **không** áp cho `{name: …}`.
 7. **`const` phải ghi kiểu**: `const N: int = 10`.
 8. **`?` chỉ dùng cho `T?`/`Result`** — **R8**: `xs[i]?` là **ngoại lệ** (chỉ số có kiểm tra, trả `T?`); `xs[i]` ngoài phạm vi vẫn panic `VS0503`; chỉ số âm dùng `.last()` / `.get(i)`.
 9. **Biến thể enum viết hoa chữ đầu** — **R1a/VD-212**: `Some`/`None`/`Ok`/`Err`; viết hoa chữ thường trong **pattern** ⇒ **lỗi `VS0203`** kèm gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch.
@@ -265,17 +285,17 @@ Method trên giá trị (không cần `use`):
 - **Doc-test (P0-3)**: `cargo test -p vis-cli --test cheatsheet` chạy **11 ca** `test/cheatsheet/*.vis`
   (mỗi ca = một chương trình hoàn chỉnh ghép từ ô ✔; so **stdout** nếu tệp có dòng `# kỳ vọng:`).
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
-  `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
+  `User(name: "An")` **đã có** (R5a/R11: dựng bản ghi theo **tên kiểu** + trường có tên; **không** nhận đối số vị trí);
   `AnyError` **nay là alias bản ghi `Error` (VD-231)** — dùng được; sai kiểu báo `VS0412`; format spec `{x:.2}` **đã có** (R6);
   `dyn` **chưa dùng được**; `newtype` báo **VS0203** tại dòng khai (ST-179);
   `r"…"`/`b"…"`/`p"…"` **đã bóc tiền tố** (R6a: `print(p"C:\x")` in `C:\x`);
   `async` chạy **tuần tự một luồng** (VD-240, 2026-11-19: giữ một luồng, **không** đa luồng; test grid `test/sem/async/grid-*` pin): spawn **enqueue** task, task thực thi run-to-completion **khi await**; task được await chạy theo thứ tự **await**; task **không** await vẫn được chạy (khi kênh chặn hoặc ở join cuối) theo thứ tự tạo; **kênh FIFO**; không work-stealing — `recv` hàng trống, `send` đầy hàng, `chan(0)` đều bị chặn (`VS0505`); **hai engine byte-identical**; interp = VM.
   **Chan trả một giá trị `<kênh>` duy nhất** (không phải tuple `(tx, rx)` như thiết kế §742 tip cũ); dùng `c.send/c.recv`, không destructure; show `<fn>` đồng nhất cho cả hai engine.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
-  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` (R3a); `let x = r else:` (R3b); `while let PAT = EXPR:` (**R18b** — cấu trúc vòng lặp `if let`-style với pattern, thoát khi `None`); đơn vị `5mb`/`2h30m` chạy **và in chuẩn hoá** (`1.5mb`, `2h30m` — R10, VD-267); `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp); `panic(msg)` builtin trả `never`, trap `VS0501` exit **101** ở cả hai engine (VD-267). **VD-222/225/227**: `json.decode(s) → Result[Json, Error]` ở interp và VM (JSON enum thật: `Null/Bool/Num/Str/Arr/Obj`); `Error` bản ghi dựng sẵn `{message, source: Error?, span: str?}`; `print(e)` in chỉ `{message}`; `AnyError = alias bản ghi `Error` (RecId(0))** (VD-231; `print(e)` in chỉ `{message}`); interp **và** VM tự nâng `T → T?` ở `let x: int? = …` (VD-227) **và** ở biên `fn f() -> T?` (VD-228 — `None`/`Some` không bọc đôi; argument `g(42)` + closure-biên (`fn(x) -> T?`) đều auto-lift (VD-229)).
-  - **[ĐANG LÀM]** pattern viết thường đã **nâng** `VS0111` (R1a) ⇒ **lỗi `VS0203`** (VD-212); từ khoá cũ (R2) đã bỏ — **VS0203**.
+  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` (R3a); `let x = r else:` (R3b); `while let PAT = EXPR:` (**R18b** — cấu trúc vòng lặp `if let`-style với pattern, thoát khi `None`); đơn vị `5mb`/`2h30m` chạy **và in chuẩn hoá** (`1.5mb`, `2h30m` — R10, VD-267); `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` / `assert cond, "msg"` (R20a); `panic(msg)` builtin trả `never`, trap `VS0501` exit **101** ở cả hai engine (VD-267). **VD-222/225/227**: `json.decode(s) → Result[Json, Error]` ở interp và VM (JSON enum thật: `Null/Bool/Num/Str/Arr/Obj`); `Error` bản ghi dựng sẵn `{message, source: Error?, span: str?}`; `print(e)` in chỉ `{message}`; **`AnyError` = alias bản ghi `Error` (RecId(0))** (VD-231; `print(e)` in chỉ `{message}`); interp **và** VM tự nâng `T → T?` ở `let x: int? = …` (VD-227) **và** ở biên `fn f() -> T?` (VD-228 — `None`/`Some` không bọc đôi; argument `g(42)` + closure-biên (`fn(x) -> T?`) đều auto-lift (VD-229)).
+  - **[ĐÃ CÓ]** pattern viết thường đã **nâng** `VS0111` (R1a) ⇒ **lỗi `VS0203`** (VD-212); từ khoá cũ (R2) đã bỏ — **VS0203**.
   - **[ĐÃ CÓ]** `main` trả `Err` ⇒ exit **1**; `assert cond, "msg"` (R20a); `if let`/`while let`. **VD-241 đợt coercion Option (2026-11-19)**: `T?? = Option[Option[int]]` lồng thật ở **runtime**; `None` trần ở mọi biên (let/var/gán lại/đối số/thân hàm/return) giữ **`None` lớp ngoài**; `Some(x)` nâng đúng một lớp; spelled-out `Option[Option[int]]` ≡ sugar `int??` ≡ alias — cả ba cùng kiểu/runtime (`optional/long-option-matrix.vis`).
-  - **[DỰ KIẾN]** `.lazy()` + `Iterator[T]` duyệt lại (R24). **Lưu ý còn treo**: interp ↔ VM — interp auto-lift `let x: int? = expr` (VD-227) và `fn f() -> T?` (VD-228 Option B) đều auto-lift; closure-boundary (`fn(x) -> T?`) và argument `g(42)` auto-lift từ **VD-229**; lambda params không annot ⇒ không lift; `chan(0)` vẫn bị chặn `VS0505`.
+  - **[DỰ KIẾN]** `.lazy()` + `Iterator[T]` duyệt lại (R24); `for` trên range **đã lười** (VD-264). **Lưu ý còn treo**: interp ↔ VM — interp auto-lift `let x: int? = expr` (VD-227) và `fn f() -> T?` (VD-228 Option B) đều auto-lift; closure-boundary (`fn(x) -> T?`) và argument `g(42)` auto-lift từ **VD-229**; lambda params không annot ⇒ không lift; `chan(0)` vẫn bị chặn `VS0505`.
 - **Nguồn đọc thêm**: `test/sem/**` (525 ca ngữ nghĩa chạy thật: 487 + 27 ca `sqlite/` VD-241 Gate 1 + 11 ca `sqlite/` VD-241 pre-merge),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).
