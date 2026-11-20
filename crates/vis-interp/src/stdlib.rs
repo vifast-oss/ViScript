@@ -42,6 +42,7 @@ mod sqlitecols;
 mod sqliteexists;
 mod sqliteidx;
 mod sqliteidxcols;
+mod sqliteidxexists;
 mod sqlitepk;
 mod sqliteschema;
 mod sqlitetables;
@@ -1011,6 +1012,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let ten = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteexists::chay(host, h, ten).map(Value::Bool), span)
+        }
+        // **VD-270 (sqlite-index-exists)** — index tên đúng trong schema chính; tên bind;
+        // thiếu/rỗng ⇒ `Ok(false)`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu.
+        "sqlite.index_exists" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let ten = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqliteidxexists::chay(host, h, ten).map(Value::Bool), span)
         }
         // **VD-270 (sqlite-columns)** — tên cột bảng/view schema chính theo **thứ tự khai báo**
         // (`cid`); tên đối tượng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.
