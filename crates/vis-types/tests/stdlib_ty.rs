@@ -193,7 +193,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str, str, int) -> str`; thay tối đa `n` lần khớp **không chồng** đầu tiên theo
     // Rust `replacen`, `n == 0` ⇒ nguyên vẹn, `n` quá số lần ⇒ thay tất cả, `n < 0` ⇒ trap
     // `VS0501`) ⇒ **135** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 135, "bảng chữ ký phải đủ 135 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 is-blank, 2026-11-21)**: +**1** hàm `std.str.is_blank`
+    // (`(str) -> bool`; rỗng hoặc **mọi scalar** `char::is_whitespace` ⇒ `true`, một scalar
+    // khác ⇒ `false`) ⇒ **136** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 136, "bảng chữ ký phải đủ 136 hàm");
 }
 
 #[test]
@@ -401,6 +404,18 @@ fn str_is_ascii_kieu_str_bool() {
     assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_ascii`: hạ kiểu");
     assert_eq!(f.so_doi(), 1, "`str.is_ascii`: arity");
     assert_eq!(vis_types::stdlib::module_sugar("str", "is_ascii"), None);
+}
+
+#[test]
+fn str_is_blank_kieu_str_bool() {
+    // **VD-270 (is-blank)**: `(str) -> bool`; tham số đầu `str` để R5c nhận sugar
+    // `s.is_blank()` (không nằm trong bảng `module_sugar`, chỉ dùng đúng module `str`).
+    let f = sig_of("str.is_blank").expect("str.is_blank");
+    assert_eq!(f.params, &[Ty::Str], "`str.is_blank`: tham số");
+    assert_eq!(f.ret, Ty::Bool, "`str.is_blank`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_blank`: hạ kiểu");
+    assert_eq!(f.so_doi(), 1, "`str.is_blank`: arity");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "is_blank"), None);
 }
 
 #[test]
