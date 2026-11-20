@@ -2191,3 +2191,41 @@ Chương trình compiler sinh hợp lệ tiếp tục chạy đúng. Test crafte
 - Giữ chặn tag và nghiệm thu phát hành. Fresh-clone có thể chạy để chẩn đoán, **không tính nghiệm thu cuối** trước khi blocker đóng. Chưa mở pha 2, VS3, API mới.
 
 > **Ghi nhận thực thi VD-245 (Agent 1, 2026-11-20)**: ST-250 tích hợp @ `2551a6c`, review `JOURNAL/st250-review.md`. Dùng **mã hiện hành `VS0501`** (không thêm mã mới) với thông điệp xác định ô global chưa khởi tạo; exit 1. `vm.rs` dùng `Vec<Option<Value>>`, `doc_global` là kiểm tra duy nhất, `init_globals()` reset theo vòng đời. 8/8 test nghiệm thu, `cargo test -p vis-vm` xanh, `vis test` 525/525 ×2. **#188/`BLOCKED.md` §14 đóng**. Finding riêng đường capture/local (`unwrap_or(Unit)`) ghi **#189**/`BLOCKED.md` §17 — không tuyên bố đã an toàn. Theo VD-245 §5, `PHIEN_BAN`/cache phải được bump lần cuối để bản phát hành gồm ngữ nghĩa global mới.
+
+### VD-246 · #189 capture/local ngoài miền: verifier + runtime trap — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: finding ST-250 (`JOURNAL/st250-review.md` §4), nợ **#189** / `BLOCKED.md` §17. A0 **không chấp nhận** `LoadCaptured(i)` ngoài miền trả `Unit` thành công; duyệt sửa **cả verifier và runtime** trong task riêng.
+
+#### 1. Hợp đồng capture
+- Verifier kiểm những ràng buộc **có thể xác định từ bytecode và metadata closure hiện có**: quan hệ giữa **hàm đích, số capture và thao tác tạo closure**. **Không** chỉ kiểm chỉ số với một con số do artifact tự khai báo mà bỏ qua cách closure được tạo.
+- Runtime kiểm chỉ số với **môi trường capture thực tế**. Ngoài miền ⇒ **trap có chẩn đoán**, không trả mặc định.
+- Capture chứa `Unit` **hợp lệ** ⇒ trả `Unit` bình thường.
+- Dùng **cơ chế lỗi hiện hành** phù hợp; **không thêm mã chẩn đoán/opcode/metadata mới** chỉ để làm đẹp thiết kế.
+- Nếu định dạng hiện tại không đủ cho verifier kiểm đầy đủ ⇒ triển khai **runtime trap trước** và ghi **chính xác giới hạn verifier**. Không mở phân tích liên hàm hay đổi định dạng lớn khi chưa báo A0.
+
+#### 2. Hợp đồng local
+- Thay fallback `unwrap_or(Unit)` bằng **truy cập có kiểm tra**: ngoài khung thực tế ⇒ **trap**.
+- Local trong khung đang được khởi tạo bằng `Unit` theo hợp đồng hiện hành ⇒ **giữ nguyên**.
+- **Không** đổi toàn bộ local sang sentinel; **không** tự thêm luật “đọc local trước ghi” trong task này — đó là thay đổi khác với kiểm tra biên.
+
+#### 3. Phạm vi rà soát & test
+Rà **mọi đường đọc/ghi capture/local** có cùng kiểu fallback hoặc truy cập không kiểm tra; sửa các ca **cùng bản chất** trong task, phát hiện khác ngữ nghĩa ⇒ ghi riêng. **Không** biến task thành viết lại toàn bộ VM.
+
+Test bắt buộc: capture rỗng đọc chỉ số 0; chỉ số = độ dài và chỉ số lớn nhất mã hóa được; capture hợp lệ chứa `Unit`; closure tạo với môi trường không khớp nhu cầu hàm đích; closure lồng nhau + chương trình compiler sinh hợp lệ; local ngoài khung bị chặn; local hợp lệ chứa `Unit` không bị từ chối; crafted bytecode qua `encode→decode→load_verified→execute`. **Mỗi ca ghi rõ verifier từ chối hay runtime trap**; không ép mọi ca qua verifier; có thể thêm test nội bộ cho hàng rào runtime. Nghiệm thu phải chứng minh **không còn thành công giả**, không chỉ “không panic”.
+
+#### 4. Nghiệm thu cuối & danh sách chặn phát hành
+- ST-250/#188 **giữ CLOSED**; ST-251 **giữ DONE trong phạm vi phân biệt cache**. Khóa cache khác nhau **không thay thế** kiểm tra `VERSION` khi nạp artifact trực tiếp — giữ bằng chứng tương thích ST-248 trong hồ sơ cuối, không chạy lại chỉ để xác nhận.
+- Trạng thái hiện tại là **ứng viên tích hợp chưa nghiệm thu cuối**, **không gọi là bản phát hành**.
+- Sau bản sửa #189, Agent 1 phải **đánh giá lại cache**: không mặc định hậu tố ST-250 bao phủ bản sửa sau nó; ghi căn cứ chọn bump hay không. **Không bắt buộc tăng `VERSION`** nếu không đổi hợp đồng định dạng.
+
+| Mục | Quyết định A0 |
+|---|---|
+| **#189** | Chặn nghiệm thu cuối tới khi xử lý đường truy cập sai |
+| **ST-243 Windows** | Bắt buộc trước tuyên bố Windows Tier 2 trên ứng viên phát hành |
+| **ST-244 proxy** | Phải phân xử ngữ nghĩa chưa ratify thuộc phạm vi phát hành |
+| **#185 toolchain** | Phải có đường chạy chuẩn tái lập, không âm thầm chọn sai toolchain |
+| **#156 targets** | Ma trận đúng cấu hình + phạm vi hỗ trợ rõ; **không bắt buộc mọi target xanh** |
+| **#186 chẩn đoán** | Giữ mở; **không tự động chặn** nếu cả hai engine từ chối trước tác dụng phụ |
+| **macOS thiếu phần cứng** | Chặn **tuyên bố macOS**, **không chặn vô thời hạn** bản Linux/Windows có phạm vi rõ |
+
+Chưa tag/nghiệm thu phát hành cuối; chưa mở pha 2, VS3, API mới.

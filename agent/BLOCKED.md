@@ -270,9 +270,11 @@ ST-239 xác nhận checker chấp nhận nhưng runtime hai engine lưu giá tr�
 
 **Đóng (ST-249)**: `PHIEN_BAN` += `+st248-field-index-lift-2026-11-20`; khoá ghim re-pin `66c332a9… → ad63ae98…` kèm lý do; test khẳng định khoá cũ **không còn trùng** và nhãn logic hiện diện. `check`/`gate --fast`/`cargo test -p vis-cli cache::tests`/`vis test` 525/525 ×2 đều xanh. **Không** gộp với ST-246 (đã xong); §14 (miền global) vẫn mở.
 
-## 17. FINDING RIÊNG — Capture/local đọc ngoài miền vẫn trả `Unit` (ST-250), MỞ
+## 17. FINDING RIÊNG — Capture/local đọc ngoài miền vẫn trả `Unit` (ST-250), MỞ — đang xử lý ở ST-252
 
-**Người ghi**: Agent 1 (từ `JOURNAL/st250-review.md` §4) · **Trạng thái**: **mở** · **Nợ**: **#189**.
+**Người ghi**: Agent 1 (từ `JOURNAL/st250-review.md` §4) · **Trạng thái**: **mở** · **Nợ**: **#189** · **VD-246 / ST-252**.
+
+A0 đã duyệt sửa cả verifier và runtime (VD-246): verifier kiểm quan hệ capture trong khả năng metadata hiện có; runtime trap khi capture/local ngoài miền, không trả `Unit` mặc định; giữ `Unit` hợp lệ và khởi tạo local hiện hành. Chặn nghiệm thu cuối tới khi ST-252 tích hợp + review + kiểm chứng.
 
 ST-250 sửa đường **global**, nhưng Agent 2 báo riêng (A0 yêu cầu không tuyên bố an toàn):
 - **Trung bình**: `Instr::LoadCaptured(i)` trong `vm.rs` vẫn `get(i).unwrap_or(Unit)` và verifier `verify.rs:449` không kiểm biên capture ⇒ crafted bytecode có thể đọc capture ngoài phạm vi thành `Unit` **thành công** — cùng lớp lỗi với global nhưng là đường local/capture.
