@@ -21,8 +21,9 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [thư mục|tệp]");
-    eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp]");
+    eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
+  --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; chưa hỗ trợ cùng --json");
     eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     ExitCode::from(2)
 }
@@ -288,6 +289,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut loc: Option<String> = None;
     // **VD-267**: `--fail-fast` — dừng sau ca `not ok` đầu tiên.
     let mut fail_fast = false;
+    // **ST-281**: `--list` — chỉ in tên ca đã chọn, không chạy.
+    let mut list = false;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -296,6 +299,7 @@ pub fn run(args: &[String]) -> ExitCode {
             "--strict-caps" => strict = true,
             "--json" => json_ra = true,
             "--fail-fast" => fail_fast = true,
+            "--list" => list = true,
             "--filter" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis test: `--filter` cần chuỗi con");
@@ -396,6 +400,27 @@ pub fn run(args: &[String]) -> ExitCode {
                 ca.push((p.clone(), Some((ten, src))));
             }
         }
+    }
+    if list {
+        if json_ra {
+            eprintln!("vis test: `--list` chưa hỗ trợ `--json`");
+            return ExitCode::from(2);
+        }
+        for (p, bai) in &ca {
+            let ten = match bai {
+                Some((ten, _)) => ten.clone(),
+                None => {
+                    let rel = p.strip_prefix(&goc).unwrap_or(p);
+                    if rel.as_os_str().is_empty() {
+                        p.to_string_lossy().to_string()
+                    } else {
+                        rel.to_string_lossy().to_string()
+                    }
+                }
+            };
+            println!("{ten}");
+        }
+        return ExitCode::SUCCESS;
     }
     let mut than = String::new();
     let mut hong = 0usize;
