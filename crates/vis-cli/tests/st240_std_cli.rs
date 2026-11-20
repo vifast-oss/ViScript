@@ -205,13 +205,23 @@ fn trap_trong_module_bao_dung_tep_hai_engine() {
         "rt/b.vis",
         "pub fn boom():\n    let xs = [1, 2]\n    print(xs[9])\n",
     );
+    // VD-186/Windows path contract: tên tệp tương đối trong chẩn đoán dùng dấu phân cách của nền
+    // (`/` trên Unix, `\` trên Windows). Chỉ đổi dấu phân cách trong kỳ vọng; KHÔNG nới tiêu chí
+    // "phải trỏ đúng module + dòng" hay bỏ ca.
+    let module = if cfg!(windows) {
+        "rt\\b.vis:3:"
+    } else {
+        "rt/b.vis:3:"
+    };
+    let chinh = if cfg!(windows) {
+        "rt\\a.vis:"
+    } else {
+        "rt/a.vis:"
+    };
     for (ma, out, err) in chay_hai(&d, "rt/a.vis") {
         assert_ne!(ma, 0, "{out}");
-        assert!(err.contains("rt/b.vis:3:"), "phải trỏ vào module: {err}");
-        assert!(
-            !err.contains("rt/a.vis:"),
-            "không được gán sang tệp chính: {err}"
-        );
+        assert!(err.contains(module), "phải trỏ vào module: {err}");
+        assert!(!err.contains(chinh), "không được gán sang tệp chính: {err}");
     }
     let _ = std::fs::remove_dir_all(&d);
 }
