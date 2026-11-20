@@ -91,7 +91,8 @@ pub struct RunOutput {
     pub diagnostics: Vec<Diagnostic>,
     /// Giá trị `main` trả (hoặc biểu thức cấp tệp cuối).
     pub value: Option<Value>,
-    /// Mã thoát: `0` nếu sạch; nếu `main` trả `int` thì dùng số đó (cắt 8 bit); lỗi ⇒ `1`.
+    /// Mã thoát: `0` nếu sạch; `main` trả `Result::Err` ⇒ `1`; `int` của `main` **không**
+    /// phải mã thoát (VD-242 §7 / quyết định A0 2026-11-19).
     pub exit: i32,
     /// Số bước đã chạy — **chống xanh-giả** trong test (`out("")` vẫn phải chạy thật).
     pub steps: usize,
