@@ -72,8 +72,8 @@ fn than_vong_lap_bo_gia_tri() {
 #[test]
 fn so_hoc_doi_xung_voi_don_vi() {
     // mục 5: các phép mà **tyck** cho qua thì runtime phải chạy (đối xứng).
-    kiem("size*percent", "print(5mb * 50pct)\n", "2500kb\n", None);
-    kiem("percent*size", "print(50pct * 5mb)\n", "2500kb\n", None);
+    kiem("size*percent", "print(5mb * 50pct)\n", "2.5mb\n", None);
+    kiem("percent*size", "print(50pct * 5mb)\n", "2.5mb\n", None);
     // **R7 (VD-178)**: `percent/percent` ⇒ **float** (hiển thị `1`).
     kiem("percent/percent", "print(50pct / 50pct)\n", "1\n", None);
     kiem("size%size", "print(5mb % 3mb)\n", "2mb\n", None);
@@ -154,6 +154,6 @@ fn break_continue_va_try_ngoai_ngu_canh() {
 fn show_don_vi_va_char() {
     // mục 9: `w` phải có trong bảng đơn vị; `char` xuống dòng phải **escape**.
     kiem("tuan", "print(1w)\n", "1w\n", None);
-    kiem("kb-uu-tien-thap-phan", "print(1024kb)\n", "1024kb\n", None);
-    kiem("kib", "print(1kib + 1kb)\n", "2024b\n", None);
+    kiem("kb-uu-tien-thap-phan", "print(1024kb)\n", "1.02mb\n", None);
+    kiem("kib", "print(1kib + 1kb)\n", "2.02kb\n", None);
 }

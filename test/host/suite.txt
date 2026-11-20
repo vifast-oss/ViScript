@@ -50,7 +50,7 @@ ngoai_nhieu_stage	vish:test-child echo a | test-child cat | test-child cat		[a]\
 ngoai_printf	vish:test-child printf abc		[abc]\n	0
 ls_mock_bang	vish:ls ./photos	--fs-mock {host}/mock.json	name   size  modified  is_file\na.jpg   1mb        3h  true\nb.jpg   6mb        2h  true\n	0
 ls_mock_all	vish:ls ./photos --all	--fs-mock {host}/mock.json	name     size  modified  is_file\n.hidden   1kb        1h  true\na.jpg     1mb        3h  true\nb.jpg     6mb        2h  true\n	0
-ls_long	vish:ls ./photos --long	--fs-mock {host}/mock-long.json	name   size     modified  is_file  mode       modified_time\na.jpg   2mb  1700000000s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  1700086400s  true     rw-------  2023-11-15 22:13\n	0
+ls_long	vish:ls ./photos --long	--fs-mock {host}/mock-long.json	name   size          modified  is_file  mode       modified_time\na.jpg   2mb  2810w5d22h13m20s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  2810w6d22h13m20s  true     rw-------  2023-11-15 22:13\n	0
 ls_open_mock	vish:open ./notes.txt	--fs-mock {host}/mock.json	xin chào\n	0
 ls_where_size	vish:ls ./photos | where size > 5mb	--fs-mock {host}/mock.json	name   size  modified  is_file\nb.jpg   6mb        2h  true\n	0
 ls_sort_take	vish:ls ./photos | where size > 5mb | sort_by modified --desc | take 10	--fs-mock {host}/mock.json	name   size  modified  is_file\nb.jpg   6mb        2h  true\n	0

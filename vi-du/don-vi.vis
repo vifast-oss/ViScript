@@ -2,5 +2,5 @@
 # Đơn vị đo là một phần của kiểu: cộng được các đơn vị cùng loại.
 let a = 1kb
 let b = 1kib
-print(a + b)          # 2024b
-print(2h + 30m)       # 150m (R10 sẽ in "2h30m")
+print(a + b)          # 2.02kb
+print(2h + 30m)       # 2h30m

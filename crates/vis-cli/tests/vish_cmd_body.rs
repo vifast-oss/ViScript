@@ -57,7 +57,7 @@ fn mock(d: &Path) -> PathBuf {
     p
 }
 
-const BANG: &str = "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\nb.jpg   6mb  1700086400s  true\n";
+const BANG: &str = "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\nb.jpg   6mb  2810w6d22h13m20s  true\n";
 
 #[test]
 fn than_mot_stage_tra_bang() {
@@ -91,8 +91,8 @@ fn than_nhieu_stage_where_va_sort_by() {
     assert_eq!(
         dong,
         [
-            "b.jpg   6mb  1700086400s  true",
-            "a.jpg   2mb  1700000000s  true"
+            "b.jpg   6mb  2810w6d22h13m20s  true",
+            "a.jpg   2mb  2810w5d22h13m20s  true"
         ]
     );
     let _ = std::fs::remove_dir_all(&d);
@@ -112,7 +112,7 @@ fn than_dung_nhu_stage_khac() {
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(
         o,
-        "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\n"
+        "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\n"
     );
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -277,7 +277,7 @@ fn than_long_tra_file_entry_long() {
     );
     assert_eq!(c, 0, "stderr: {e}");
     assert!(
-        o.starts_with("name   size     modified  is_file  mode       modified_time"),
+        o.starts_with("name   size          modified  is_file  mode       modified_time"),
         "{o}"
     );
     assert!(o.contains("rw-r--r--  2023-11-14 22:13"), "{o}");
@@ -293,7 +293,7 @@ fn than_goi_cmd_khac_trong_pipeline() {
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(
         o,
-        "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\n"
+        "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\n"
     );
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -390,11 +390,11 @@ fn fixture_cmd_body() {
         ("body1", BANG),
         (
             "body-multi",
-            "name   size     modified  is_file\nb.jpg   6mb  1700086400s  true\na.jpg   2mb  1700000000s  true\n",
+            "name   size          modified  is_file\nb.jpg   6mb  2810w6d22h13m20s  true\na.jpg   2mb  2810w5d22h13m20s  true\n",
         ),
         (
             "body-long",
-            "name   size     modified  is_file  mode       modified_time\na.jpg   2mb  1700000000s  true     rw-r--r--  2023-11-14 22:13\n",
+            "name   size          modified  is_file  mode       modified_time\na.jpg   2mb  2810w5d22h13m20s  true     rw-r--r--  2023-11-14 22:13\n",
         ),
     ] {
         let p = goc().join("test/cmd/body").join(format!("{ten}.vish"));

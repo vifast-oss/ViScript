@@ -55,9 +55,9 @@ fn mock(d: &Path) -> PathBuf {
     p
 }
 
-const BANG_4: &str = "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\nb.jpg   6mb  1700086400s  true\n";
-const BANG_6: &str = "name   size     modified  is_file  mode       modified_time\na.jpg   2mb  1700000000s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  1700086400s  true     rw-------  2023-11-15 22:13\n";
-const CHI_B: &str = "name   size     modified  is_file\nb.jpg   6mb  1700086400s  true\n";
+const BANG_4: &str = "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\nb.jpg   6mb  2810w6d22h13m20s  true\n";
+const BANG_6: &str = "name   size          modified  is_file  mode       modified_time\na.jpg   2mb  2810w5d22h13m20s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  2810w6d22h13m20s  true     rw-------  2023-11-15 22:13\n";
+const CHI_B: &str = "name   size          modified  is_file\nb.jpg   6mb  2810w6d22h13m20s  true\n";
 
 #[test]
 fn nhom_lenh_co_co_long() {
@@ -133,7 +133,7 @@ fn nhom_long_nhau_lenh() {
     assert_eq!(c, 0, "stderr: {e}");
     assert_eq!(
         o,
-        "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\n"
+        "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\n"
     );
     let _ = std::fs::remove_dir_all(&d);
 }

@@ -443,30 +443,67 @@ fn show_float(f: f64) -> String {
     }
 }
 
-const SIZE_UNITS: [(&str, i64); 8] = [
+/// **R10 (VD-178/VD-267)** — `size` in theo **thang thập phân**, `b kb mb gb tb`.
+///
+/// Chọn **đơn vị lớn nhất có phần nguyên ≥ 1** (theo độ lớn), rồi in tối đa **2 chữ số lẻ**.
+/// Phần lẻ **làm tròn nửa lên** (half-up trên độ lớn) bằng số nguyên để kết quả tất định, không
+/// phụ thuộc biểu diễn `f64`; `999_995` ⇒ `1000kb` (làm tròn trước, không tự nhảy đơn vị).
+/// Bỏ số 0 thừa ở cuối; giá trị âm giữ dấu; `0` ⇒ `0b`.
+///
+/// `kib`/`mib`/… chỉ còn là **thang của literal** (`1kib` = 1024 byte); hiển thị luôn thập phân
+/// (`1024` ⇒ `1.02kb`).
+const SIZE_UNITS: [(&str, i64); 5] = [
     ("tb", 1_000_000_000_000),
-    ("tib", 1_099_511_627_776),
     ("gb", 1_000_000_000),
-    ("gib", 1_073_741_824),
     ("mb", 1_000_000),
-    ("mib", 1_048_576),
     ("kb", 1000),
-    ("kib", 1024),
+    ("b", 1),
 ];
 
 fn show_size(n: i64) -> String {
     if n == 0 {
         return "0b".into();
     }
+    let mut out = String::new();
+    if n < 0 {
+        out.push('-');
+    }
+    let am = n.unsigned_abs();
     for (unit, factor) in SIZE_UNITS {
-        if factor > 1 && n % factor == 0 {
-            return format!("{}{unit}", n / factor);
+        let factor = factor as u64;
+        if am >= factor {
+            let mut nguyen = am / factor;
+            let du = am % factor;
+            // Hai chữ số lẻ, làm tròn nửa lên: `(du * 100 + factor/2) / factor` nằm trong 0..=100.
+            // `du < 10^12` nên `du * 100 < 10^14`, cộng nửa đơn vị vẫn không tràn `u64`.
+            let mut le = (du * 100 + factor / 2) / factor;
+            if le == 100 {
+                // 999.995… ⇒ 1000.00: nhớ sang phần nguyên (giữ nguyên đơn vị đã chọn).
+                nguyen += 1;
+                le = 0;
+            }
+            out.push_str(&nguyen.to_string());
+            if le != 0 {
+                let mut s = format!("{le:02}");
+                while s.ends_with('0') {
+                    s.pop();
+                }
+                out.push('.');
+                out.push_str(&s);
+            }
+            out.push_str(unit);
+            return out;
         }
     }
-    format!("{n}b")
+    unreachable!("bảng SIZE_UNITS phải có đơn vị `b` = 1")
 }
 
-const DUR_UNITS: [(&str, i64); 7] = [
+/// **R10 (VD-178/VD-267)** — `duration` in **ghép** từ lớn đến nhỏ, bỏ thành phần 0, không cách:
+/// `90000000000` ⇒ `1m30s`, `5400000000000` ⇒ `1h30m`, `150000000` ⇒ `150ms`.
+///
+/// Phân rã **chính xác bằng số nguyên** (không `f64`); giá trị âm giữ dấu; `0` ⇒ `0ns` (giữ quy
+/// ước cũ, nhỏ nhất trong bảng đơn vị).
+const DUR_UNITS: [(&str, i64); 8] = [
     // ST-13b (mục 9): `w` phải có — `parse_duration` nhận `w` nên `Show` phải in ra `w`.
     ("w", 604_800_000_000_000),
     ("d", 86_400_000_000_000),
@@ -475,18 +512,29 @@ const DUR_UNITS: [(&str, i64); 7] = [
     ("s", 1_000_000_000),
     ("ms", 1_000_000),
     ("us", 1000),
+    ("ns", 1),
 ];
 
 fn show_duration(n: i64) -> String {
     if n == 0 {
         return "0ns".into();
     }
+    let mut out = String::new();
+    if n < 0 {
+        out.push('-');
+    }
+    let mut am = n.unsigned_abs();
     for (unit, factor) in DUR_UNITS {
-        if factor > 1 && n % factor == 0 {
-            return format!("{}{unit}", n / factor);
+        let factor = factor as u64;
+        let phan = am / factor;
+        if phan > 0 {
+            out.push_str(&phan.to_string());
+            out.push_str(unit);
+            am %= factor;
         }
     }
-    format!("{n}ns")
+    debug_assert_eq!(am, 0, "đơn vị `ns` phải hấp thụ phần dư");
+    out
 }
 
 /// **ST-240 / VD-243 (#172)**: `2^63` — `i64::MAX as f64` (Rust làm tròn lên). `show_percent`
