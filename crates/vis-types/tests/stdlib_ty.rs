@@ -129,7 +129,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 list-contains, 2026-11-21)**: +**1** hàm `std.list.contains`
     // (`(list[T], T) -> bool`; cùng `eq_value` như `index_of`, rỗng ⇒ `false`) ⇒ **114** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 114, "bảng chữ ký phải đủ 114 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 parse-float, 2026-11-21)**: +**1** hàm `std.str.parse_float`
+    // (`(str) -> float?`; cú pháp thập phân Rust, non-finite/tràn ⇒ `None`) ⇒ **115** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 115, "bảng chữ ký phải đủ 115 hàm");
 }
 
 #[test]
@@ -206,6 +209,20 @@ fn parse_int_tra_int_option_va_sugar() {
         Type::Opt(Box::new(Type::Int)),
         "`str.parse_int`: hạ `int?`"
     );
+}
+
+#[test]
+fn parse_float_tra_float_option_va_sugar() {
+    // **VD-270 (parse-float)**: `(str) -> float?`; tham số đầu `str` để sugar R5c nhận.
+    let f = sig_of("str.parse_float").expect("str.parse_float");
+    assert_eq!(f.params, &[Ty::Str], "`str.parse_float`: tham số");
+    assert_eq!(f.ret, Ty::OptFloat, "`str.parse_float`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Float)),
+        "`str.parse_float`: hạ `float?`"
+    );
+    assert_eq!(f.ret.ten(), "float?", "`str.parse_float`: tên hiển thị");
 }
 
 #[test]

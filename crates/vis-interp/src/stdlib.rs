@@ -37,6 +37,7 @@ mod strfind;
 mod strlen;
 mod strpad;
 mod strparse;
+mod strparsefloat;
 mod strreplace;
 mod strsplitn;
 mod strstrip;
@@ -276,6 +277,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "str.parse_int" => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strparse::goi(s))
+        }
+        // **VD-270 (parse-float)**: cú pháp thập phân Rust (`f64::from_str`: dấu, `.5`/`5.`,
+        // mũ) rồi **từ chối non-finite** (`inf`/`NaN`/tràn) ⇒ `None`; underflow `±0.0` vẫn
+        // `Some`; sai cú pháp ⇒ `None`, không trap.
+        "str.parse_float" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(strparsefloat::goi(s))
         }
         // **VD-270 (strfind)**: offset scalar Unicode; `find`/`rfind` ⇒ `int?`, `count` ⇒ `int`.
         "str.find" | "str.rfind" | "str.count" => {
