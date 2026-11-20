@@ -3092,3 +3092,12 @@ ngoài. Nợ tiếp: method-return, frame parity, generic residual (đang ở wa
 `for` trên range duyệt lười ở interp/VM/frame (không dựng `Vec<Value>`); trần `10^7` đếm `i128`
 trước thân vòng, giữ `E_LOOP`/`break`/`continue`; **không** đổi `Value`/opcode/VERSION. Suy kiểu đệ quy
 sau pattern lồng và `Call`/`Try`/`With`/`If`/`Match` cho Option lift; cache `PHIEN_BAN` ghim lại.
+
+### VD-265 · Duyệt 5 helper stdlib thực dụng — A0, 2026-11-21
+
+Duyệt `std.list.zip` (ghép cặp theo vị trí, dừng ở danh sách ngắn hơn), `std.list.min`/`max`
+(gộp theo đúng thứ tự `list.sort`; danh sách rỗng ⇒ **trap `VS0501`**, không panic),
+`std.str.lines` (`\n`, bỏ `\r`, dòng cuối không sinh dòng rỗng) và `std.str.split_whitespace`
+(khoảng trắng Unicode, gộp run). `agent/API-STD.txt` được sinh lại với đúng 5 mục; sugar phương
+thức chỉ áp cho helper `str` (R5c), `zip/min/max` giữ dạng module vì chữ ký generic không thoả
+R5c. Không đổi SPEC, không đổi runtime mặc định.
