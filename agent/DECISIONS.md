@@ -3101,3 +3101,19 @@ Duyệt `std.list.zip` (ghép cặp theo vị trí, dừng ở danh sách ngắn
 (khoảng trắng Unicode, gộp run). `agent/API-STD.txt` được sinh lại với đúng 5 mục; sugar phương
 thức chỉ áp cho helper `str` (R5c), `zip/min/max` giữ dạng module vì chữ ký generic không thoả
 R5c. Không đổi SPEC, không đổi runtime mặc định.
+
+### VD-266 · Duyệt pexpr/intlit/fs/db/method-ret — A0, 2026-11-21
+
+- **pexpr**: `if`/`match` biểu thức được dùng trong ngoặc/đối số/list/map (một dòng và nhiều
+  dòng); parser đếm delimiter để kết thúc suite ngầm, `match` chia nhánh theo dòng/cột; cấp câu
+  lệnh giữ nguyên. Không đổi SPEC.
+- **intlit**: literal `i64::MIN` viết trực tiếp (`-9223372036854775808`, hex/bin/binary) hợp lệ;
+  bare `2^63` vẫn `VS0104` **tĩnh** ở checker; size/duration vẫn chặn `> i64::MAX`.
+- **fs**: thêm `read_lines` (read-only), `append`, `mkdir` (**một cấp**), `remove` (**chỉ tệp**);
+  `FsHost` có default `Err` cho host cũ; mọi thao tác ghi qua `FsGuard` như `write` (không nới
+  sandbox/TOCTOU). API-STD +4.
+- **db**: thêm `sqlite.query_one` (dừng sau hàng đầu), `last_insert_rowid`, `changes`; dùng
+  chung đường `query` (authorizer, read-only, timeout, cap) — không mở `execute_batch`/trang thô.
+  API-STD +3.
+- **method-ret**: bảng kiểu trả phương thức từ `impl` + dispatch `self`; checker đăng ký chữ ký
+  method; sửa static_ty ưu tiên `self_ty`, bỏ qua `{error}`. `recv?.m()` vẫn ngoài phạm vi.
