@@ -1153,9 +1153,27 @@ impl Emit<'_> {
             Some(Type::Opt(t)) => Some(*t),
             _ => None,
         };
+        // **VD-270**: kiểu nhận **suy ra** có thể vẫn chưa chốt (lambda/generic/kênh) —
+        // `sym_voi_types` trả `None`. Khi đó fallback theo **tên phương thức duy nhất** trên
+        // mọi `impl` (interp vốn fallback theo tên `Value`; VM không có bảng tên lúc chạy nên
+        // phải chốt ở codegen). Chỉ fallback khi kiểu nhận **không phải** kiểu lõi đã biết
+        // (`list`/`str`/`map`/...), để không cướp `xs?.get/first/...` của phương thức lõi;
+        // `{error}` cũng **không** fallback (giữ hành vi cũ, tránh gọi nhầm phương thức của
+        // kiểu khác trong thân generic chưa chốt).
+        let co_the_theo_ten = matches!(
+            &inner,
+            None | Some(Type::Record(_)) | Some(Type::Enum(_)) | Some(Type::TypeRef { .. })
+        );
         let sym = inner
             .as_ref()
-            .and_then(|t| self.g.mret.sym_voi_types(t, name));
+            .and_then(|t| self.g.mret.sym_voi_types(t, name))
+            .or_else(|| {
+                if co_the_theo_ten {
+                    self.g.mret.sym_duy_nhat(name)
+                } else {
+                    None
+                }
+            });
         let fi = sym.and_then(|s| self.g.fmap.get(&s).copied());
         self.expr(base)?;
         self.f.push(Instr::Dup, span, 1);
