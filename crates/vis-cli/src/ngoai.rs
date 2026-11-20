@@ -332,6 +332,102 @@ fn duyet_de_quy(goc: &Path, tuong_doi: &str, ra: &mut Vec<String>) -> Result<(),
     Ok(())
 }
 
+/// **VD-269**: `symlink_metadata` của một đường dẫn phải là **tệp thường** và **không** phải
+/// symlink (không đi theo link). `vai` chỉ dùng để dựng thông điệp ("chép"/"đổi tên").
+fn metadata_tep_thuong(p: &str, vai: &str) -> Result<std::fs::Metadata, String> {
+    let md = std::fs::symlink_metadata(p).map_err(|e| format!("không {vai} được `{p}`: {e}"))?;
+    if md.file_type().is_symlink() {
+        return Err(format!(
+            "không {vai} được `{p}`: là symlink (không đi theo symlink)"
+        ));
+    }
+    if !md.is_file() {
+        return Err(format!("không {vai} được `{p}`: không phải tệp thường"));
+    }
+    Ok(md)
+}
+
+/// **VD-269**: đích phải **chưa tồn tại** — mọi thứ đã có (tệp/thư mục/symlink) đều bị từ chối.
+/// Chỉ `NotFound` mới là "chưa có"; lỗi khác (vd thiếu quyền đọc thư mục cha) là `Err`, **không**
+/// được coi là trống.
+fn kiem_dich_chua_co(to: &str, vai: &str) -> Result<(), String> {
+    match std::fs::symlink_metadata(to) {
+        Ok(_) => Err(format!("không {vai} được `{to}`: đích đã tồn tại")),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("không {vai} được `{to}`: {e}")),
+    }
+}
+
+/// **VD-269**: chép **từng byte** `from` → `to` (không UTF-8), **chỉ tệp thường**, không theo
+/// symlink ở **cả hai** đầu, **không** ghi đè đích.
+///
+/// Đích được tạo bằng `create_new` (**O_CREAT|O_EXCL**) ⇒ kể cả khi một symlink/tệp xuất hiện ở
+/// đích **sau** bước kiểm, lời gọi vẫn thất bại thay vì ghi đè. Nguồn được `lstat` rồi mở; trên
+/// Unix còn so `(dev, ino)` của **handle** với `lstat` để thu hẹp khe đổi tệp giữa hai syscall.
+/// Khe đua **còn lại** của rename-style (đổi tên tệp nguồn nhiều lần) là giới hạn chung của std an
+/// toàn, không có `unsafe`/`libc` — ghi ở báo cáo.
+///
+/// Nếu ghi dở rồi lỗi, tệp đích **vừa tạo** được xoá (best effort) để không để lại tệp cụt.
+fn chep_tep(from: &str, to: &str) -> Result<(), String> {
+    use std::io::Write as _;
+    let md = metadata_tep_thuong(from, "chép")?;
+    let mut nguon =
+        std::fs::File::open(from).map_err(|e| format!("không chép được `{from}`: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let md_handle = nguon
+            .metadata()
+            .map_err(|e| format!("không chép được `{from}`: {e}"))?;
+        if (md_handle.dev(), md_handle.ino()) != (md.dev(), md.ino()) || !md_handle.is_file() {
+            return Err(format!(
+                "không chép được `{from}`: tệp nguồn bị thay đổi trong khi mở"
+            ));
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = md;
+        if !nguon
+            .metadata()
+            .map_err(|e| format!("không chép được `{from}`: {e}"))?
+            .is_file()
+        {
+            return Err(format!("không chép được `{from}`: không phải tệp thường"));
+        }
+    }
+    kiem_dich_chua_co(to, "chép")?;
+    let mut dich = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(to)
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::AlreadyExists {
+                format!("không chép được `{to}`: đích đã tồn tại")
+            } else {
+                format!("không chép được `{to}`: {e}")
+            }
+        })?;
+    if let Err(e) = std::io::copy(&mut nguon, &mut dich).and_then(|_| dich.flush()) {
+        drop(dich);
+        let _ = std::fs::remove_file(to);
+        return Err(format!("không chép được `{from}` → `{to}`: {e}"));
+    }
+    Ok(())
+}
+
+/// **VD-269**: đổi tên **cùng hệ tệp** `from` → `to`, chỉ tệp thường, không theo symlink, **từ
+/// chối đích đã tồn tại** để không phụ thuộc ngữ nghĩa ghi đè của Unix.
+///
+/// Kiểm-rồi-`rename` có khe đua hẹp: đích xuất hiện **sau** bước kiểm thì `rename` của OS có thể
+/// ghi đè. `renameat2(RENAME_NOREPLACE)` cần `libc`/`unsafe` (ngoài VS2) nên chưa dùng — ghi nợ ở
+/// báo cáo; trên Linux, tệp nguồn vẫn được `lstat` trước khi đổi tên.
+fn doi_ten_tep(from: &str, to: &str) -> Result<(), String> {
+    metadata_tep_thuong(from, "đổi tên")?;
+    kiem_dich_chua_co(to, "đổi tên")?;
+    std::fs::rename(from, to).map_err(|e| format!("không đổi tên được `{from}` → `{to}`: {e}"))
+}
+
 /// **Host hệ thống tệp** (ST-33) — `std::fs` **chỉ** ở đây; `vis-interp`/`vis-vm` chỉ thấy trait.
 ///
 /// Chốt an toàn (Agent 0 duyệt): **cho phép** đường dẫn tuyệt đối và `..` (không sandbox — consent
@@ -406,6 +502,20 @@ impl vis_interp::builtin::FsHost for Runner {
             Ok(md) if md.is_dir() => Err(format!("không xoá được `{p}`: là thư mục (chỉ xoá tệp)")),
             _ => std::fs::remove_file(p).map_err(|e| format!("không xoá được `{p}`: {e}")),
         }
+    }
+
+    /// **VD-269**: chép tệp — xem [`chep_tep`] (chỉ tệp thường, không symlink, không ghi đè đích).
+    fn copy(&mut self, from: &str, to: &str) -> Result<(), String> {
+        self.nhat_ky("copy", from);
+        self.nhat_ky("copy →", to);
+        chep_tep(from, to)
+    }
+
+    /// **VD-269**: đổi tên tệp cùng hệ tệp — xem [`doi_ten_tep`] (từ chối đích đã tồn tại).
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        self.nhat_ky("rename", from);
+        self.nhat_ky("rename →", to);
+        doi_ten_tep(from, to)
     }
 
     /// **VD-268**: duyệt **đệ quy** dưới `p` bằng `read_dir` + `DirEntry::file_type()` (không đi

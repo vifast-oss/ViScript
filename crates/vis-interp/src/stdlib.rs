@@ -718,6 +718,20 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.remove(p).map(|()| Value::Unit), span)
         }
+        // **VD-269**: sao chép/đổi tên tệp — thiếu host ⇒ `VS0604`; lỗi dữ liệu (nguồn thiếu,
+        // đích đã tồn tại, thư mục/symlink) ⇒ `Err(Error)`, không trap.
+        "fs.copy" => {
+            let tu = chuoi(name, &args[0], 0, span)?;
+            let den = chuoi(name, &args[1], 1, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.copy(tu, den).map(|()| Value::Unit), span)
+        }
+        "fs.rename" => {
+            let tu = chuoi(name, &args[0], 0, span)?;
+            let den = chuoi(name, &args[1], 1, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.rename(tu, den).map(|()| Value::Unit), span)
+        }
         // **VD-268**: duyệt đệ quy — đường dẫn tương đối, thư mục kèm `/`; thiếu host ⇒ `VS0604`,
         // lỗi dữ liệu ⇒ `Err(Error)` (cùng `hop_nhat_fs`).
         "fs.walk" => {

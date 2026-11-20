@@ -11,6 +11,7 @@
 # KHÔNG tái dùng số mã/số thẻ. Thêm mới CHỈ khi có VD nêu đích danh tên được thêm.
 # Tệp thuộc Agent 0 sau lần tạo đầu (ST-126). Định dạng: <khoá><TAB><giá trị>.
 fs.append	(str, str) -> Result[(), Error]
+fs.copy	(str, str) -> Result[(), Error]
 fs.exists	(str) -> bool
 fs.glob	(str, str) -> Result[list[str], Error]
 fs.list	(str) -> Result[list[str], Error]
@@ -18,6 +19,7 @@ fs.mkdir	(str) -> Result[(), Error]
 fs.read	(str) -> Result[str, Error]
 fs.read_lines	(str) -> Result[list[str], Error]
 fs.remove	(str) -> Result[(), Error]
+fs.rename	(str, str) -> Result[(), Error]
 fs.walk	(str) -> Result[list[str], Error]
 fs.write	(str, str) -> Result[(), Error]
 http.get	(str) -> Result[str, Error]

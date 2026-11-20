@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 80] = [
+pub const FUNCS: [StdFn; 82] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -469,6 +469,17 @@ pub const FUNCS: [StdFn; 80] = [
     StdFn {
         name: "fs.remove",
         params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    // **VD-269**: chép/đổi tên **tệp** — từ chối đích đã tồn tại; lỗi dữ liệu ⇒ `Err(Error)`.
+    StdFn {
+        name: "fs.copy",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    StdFn {
+        name: "fs.rename",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultUnitStr,
     },
     // **VD-268**: duyệt đệ quy — tương đối so với root, thư mục kèm `/`, DFS, bỏ symlink.

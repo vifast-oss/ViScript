@@ -126,6 +126,21 @@ pub trait FsHost {
     fn walk(&mut self, _p: &str) -> Result<Vec<String>, String> {
         Err("chưa hỗ trợ".to_string())
     }
+
+    /// **VD-269**: chép **từng byte** `from` → `to`, **chỉ tệp thường**, **không** đi theo symlink
+    /// (nguồn **và** đích). **Từ chối đích đã tồn tại** (kể cả symlink/thư mục) — không ghi đè;
+    /// đích mới được tạo nguyên tử (`create_new`). Quyền của tệp mới do umask quyết định (không
+    /// chép metadata). Lỗi ⇒ `Err` dữ liệu. Default: **chưa hỗ trợ** ⇒ host cũ/mock vẫn biên dịch.
+    fn copy(&mut self, _from: &str, _to: &str) -> Result<(), String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
+    /// **VD-269**: đổi tên **cùng hệ tệp** `from` → `to`, **chỉ tệp thường**, **không** đi theo
+    /// symlink (nguồn **và** đích). **Từ chối đích đã tồn tại** (không dựa vào ngữ nghĩa ghi đè
+    /// của Unix). Khác hệ tệp ⇒ lỗi của OS (`Err` dữ liệu). Default: **chưa hỗ trợ**.
+    fn rename(&mut self, _from: &str, _to: &str) -> Result<(), String> {
+        Err("chưa hỗ trợ".to_string())
+    }
 }
 
 /// **VD-268** — trần độ dài **mẫu** glob (byte): mỗi mục tốn `O(|mẫu| · |đường|)`, nên mẫu sinh
