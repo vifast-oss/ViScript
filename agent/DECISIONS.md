@@ -3383,3 +3383,14 @@ cú pháp hoặc tràn `i64` ⇒ `None` (không trap); `i64::MIN`/`MAX` biên v�
 trên **instantiation** (`impl Hop[int]`) được đăng ký; VM fallback theo **tên method duy nhất** khi
 không xác định kiểu, nhưng **không** giành method lõi `list/str/map`. `recv.m()` không Option vẫn
 giữ `VS0403` (ngoài phạm vi); `impl Hop[T]` generic vẫn chưa hỗ trợ.
+
+### VD-270 (bổ sung) · frame nested, typeDefinition, replace_last — A0, 2026-11-21
+
+- **frame-nested**: frame engine hỗ trợ gán lồng mọi đường `Field`/`Index` gốc `var`/`var self`;
+  đọc gốc một lần, index theo thứ tự đường, RHS sau cùng, dựng lại bằng `gan_duong`; giữ
+  immutability/fee; `+=` trên đường vẫn chưa hỗ trợ ở frame interp (ghi nợ).
+- **lsp-typeDefinition**: `textDocument/typeDefinition` trả `Location[]` khai báo record/enum cho
+  biến/trường/tham số/biểu thức khởi tạo; không unwrap `Opt`/`List`/`Map`/`Result`; builtin/không
+  rõ ⇒ `null`; cap 50, UTF-16.
+- **replace-last**: `str.replace_last(s, from, to)` thay **một** lần khớp cuối theo scalar; không
+  khớp ⇒ nguyên; `from` rỗng ⇒ nối `to` cuối; `to` rỗng ⇒ xoá; sugar R5c.

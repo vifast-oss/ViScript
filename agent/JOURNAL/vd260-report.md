@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `e047dff` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `5dead58` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2524 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2580 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -96,11 +96,14 @@
 | SQLite indexes | `4ecc182` → `6084191` | `sqlite.indexes`: index người dùng, bind tham số |
 | Parse float | `0f880d9` → `a6ac405` | `str.parse_float`: thập phân Rust, bỏ non-finite |
 | List sum/product | `e43ff02` → `e047dff` | `list.sum`/`product` checked, tràn `VS0507` |
+| Frame nested | `8bcbf71` → `c6e058e` | frame engine gán lồng mọi đường |
+| LSP typeDefinition | `097c042` → `bfb41f4` | `textDocument/typeDefinition` record/enum |
+| Replace last | `d7c3d7f` → `5dead58` | `str.replace_last` lần khớp cuối |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2524 passed / 3 skipped** tại `e047dff`.
+- `./vis-dev gate --fast`: **PASS — 2580 passed / 3 skipped** tại `5dead58`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -261,3 +264,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `VIS_DIFF_N=100000` seed 20261204 @ `3c842e0`: **0 lệch** (93.767 chạy, 154,1 s).
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `3c842e0`: **PASS**.
 - `./vis-dev nightly` @ `c99339e`: **PASS** — parser fuzz **8.740.029 ca / 198.309.965 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- **frame-nested** (`8bcbf71` → `c6e058e`): frame engine gán lồng field/index/hỗn hợp, thứ tự index→index→RHS, dùng chung `gan`/`gan_long`; 18 ca frame interp↔VM.
+- **lsp-type-def** (`097c042` → `bfb41f4`): `textDocument/typeDefinition` trả khai báo record/enum cho biến/trường/tham số; capability thứ 3.
+- **replace-last** (`d7c3d7f` → `5dead58`): `str.replace_last` lần khớp cuối scalar; `from` rỗng ⇒ nối cuối; API 118→119.
