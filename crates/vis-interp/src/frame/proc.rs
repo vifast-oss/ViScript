@@ -101,30 +101,42 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             }
             let v = frame.pop_val()?;
             let v = crate::lift::lift_opt(v, opt_depth);
-            match v {
-                Value::Enum(ref ea, ref va, ref ag) if ea == "Option" && va == "None" => {
-                    frame.cur().work.push(Work::ExecBlock(else_body));
-                    Ok(())
-                }
-                Value::Enum(ea, va, mut ag)
-                    if (ea == "Result" && va == "Ok" || ea == "Option" && va == "Some")
-                        && ag.len() == 1 =>
-                {
-                    bind_pat_env(pat, &ag.pop().unwrap(), &frame.cur().env);
-                    Ok(())
-                }
-                Value::Enum(ea, va, mut ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
-                    if let Some(sym) = bind_sym {
-                        frame.cur().env.borrow_mut().insert(sym, ag.pop().unwrap());
+            // **VD-263 + VD-265** — cùng luật với `interp.rs` (interp mặc định) và codegen:
+            // - tên trần: chỉ `Ok`/`Some` khớp (bóc **một** lớp payload), còn lại là nhánh lỗi;
+            // - pattern bác được: khớp trên **toàn** giá trị; thất bại thì hoàn nguyên binding
+            //   một phần trước khi chạy `else`;
+            // - thất bại ⇒ chạy khối `else` (không rơi xuống nhánh khớp), binder `else e` theo
+            //   `HPat::else_binds_err` (tên trần/`Ok(...)` ⇒ payload `Err`; còn lại ⇒ `()`).
+            let env = frame.cur().env.clone();
+            let matched = if matches!(pat, HPat::Bind { .. }) {
+                match &v {
+                    Value::Enum(ea, va, ag)
+                        if ((ea == "Result" && va == "Ok")
+                            || (ea == "Option" && va == "Some"))
+                            && ag.len() == 1 =>
+                    {
+                        bind_pat_env(pat, &ag[0], &env);
+                        true
                     }
-                    frame.cur().work.push(Work::ExecBlock(else_body));
-                    Ok(())
+                    _ => false,
                 }
-                other => {
-                    bind_pat_env(pat, &other, &frame.cur().env);
-                    Ok(())
+            } else {
+                let snap = env.borrow().clone();
+                if bind_pat_env(pat, &v, &env) {
+                    true
+                } else {
+                    *env.borrow_mut() = snap;
+                    false
                 }
+            };
+            if !matched {
+                if let Some(sym) = bind_sym {
+                    let binder = crate::value::let_else_binder(pat, &v);
+                    env.borrow_mut().insert(sym, binder);
+                }
+                frame.cur().work.push(Work::ExecBlock(else_body));
             }
+            Ok(())
         }
         Work::SetVar {
             sym,

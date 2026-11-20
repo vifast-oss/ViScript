@@ -92,7 +92,8 @@ enum Work<'a> {
         /// VD-257/D: span của câu `let` — dùng làm `site` cho E_ASSIGN.
         span: Span,
     },
-    /// `let … else:` — bóc `Ok`/`Some`, ngược lại chạy khối `else`.
+    /// `let … else:` — tên trần bóc `Ok`/`Some`; pattern bác được khớp trên toàn giá trị;
+    /// không khớp ⇒ hoàn nguyên binding rồi chạy khối `else` (VD-263/VD-265).
     ApplyLetElse {
         pat: &'a HPat,
         else_body: &'a [HStmt],
