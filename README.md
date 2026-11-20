@@ -595,7 +595,7 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | `let` che tên cùng phạm vi | ✅ ĐÃ CÓ (R16) |
 | `if xs:` ⇒ gợi ý `xs.is_empty()` | ✅ ĐÃ CÓ (R17) |
 | `f(1, b: 5)` đối số có tên | ✅ ĐÃ CÓ (R5a) |
-| Method người dùng (`impl P:`) | 🔜 DỰ KIẾN (R14) |
+| Method người dùng (`impl P:`) | ✅ ĐÃ CÓ (VD-265/VD-269; kể cả `recv?.m()`) |
 | `.lazy()` iterator | 🔜 DỰ KIẾN (R24) |
 | Windows hỗ trợ đầy đủ | 🔜 VS3 |
 
@@ -605,10 +605,11 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 
 | Lệnh | Việc |
 |---|---|
-| `./vis run <tệp.vis>` | chạy chương trình |
-| `./vis check <tệp…>` | kiểm tra lỗi mà không chạy |
+| `./vis run [--stdin] [--tap] [--vm] <tệp.vis>` | chạy chương trình (hoặc script từ stdin) |
+| `./vis check [--stdin] [--json] <tệp…>` | kiểm tra lỗi mà không chạy (hoặc kiểm stdin) |
 | `./vis fmt --write <tệp…>` | tự căn lại thụt lề, khoảng trắng |
-| `./vis test <tệp.vis>` | chạy mọi `test fn` trong tệp |
+| `./vis fmt --stdin [--check [--json]] [--mode script\|command]` | định dạng luồng, không đụng đĩa |
+| `./vis test [--filter <substr>] [--fail-fast] [--list [--json]] <tệp…>` | chạy/lọc/liệt kê `test fn` và fixture |
 | `./vis explain <mã>` | giải thích mã lỗi (vi/en/ja) |
 | `./vis lsp --stdio` | gợi ý cho trình soạn thảo (VS Code…) |
 | `./vis pkg add <gói>` | thêm gói (mô hình phi tập trung, `vis.lock`) |
