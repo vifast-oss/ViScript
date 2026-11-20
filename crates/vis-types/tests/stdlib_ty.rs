@@ -114,7 +114,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 replace-first, 2026-11-21)**: +**1** hàm `std.str.replace_first`
     // (`(str, str, str) -> str`; chỉ thay lần khớp **đầu**, `from` rỗng ⇒ chèn `to` ở đầu) ⇒
     // **109** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 109, "bảng chữ ký phải đủ 109 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-tables, 2026-11-21)**: +**1** hàm `sqlite.tables`
+    // (`(str) -> Result[list[str], Error]`; bảng/view người dùng của schema chính, sắp byte)
+    // ⇒ **110** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 110, "bảng chữ ký phải đủ 110 hàm");
 }
 
 #[test]

@@ -30,6 +30,7 @@ mod fsbytes;
 mod indexof;
 mod pathnorm;
 mod sqlite_explain;
+mod sqlitetables;
 mod strfind;
 mod strlen;
 mod strpad;
@@ -954,6 +955,18 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 Ok((columns, rows)) => Ok(rowset(columns, rows)),
                 Err(e) => hop_nhat_fs(Err(e), span),
             }
+        }
+        // **VD-270 (sqlite-tables)** — tên bảng/view người dùng của **schema chính**, sắp byte,
+        // bỏ `sqlite_%`; chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache).
+        // Lỗi handle/host/kết quả ⇒ `Err(Error)` dữ liệu; DB rỗng ⇒ `Ok([])`.
+        "sqlite.tables" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqlitetables::chay(host, h)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {
