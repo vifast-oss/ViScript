@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `8820d4d` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
-> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP definition/symbol/references/rename/signature/folding),
-> gate **1959 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `34f7eef` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic),
+> gate **1968 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -37,6 +37,9 @@
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
 | LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490`, `5fc00c5`, `f372446` | `definition` + `documentSymbol` + `references` + `rename` + `signatureHelp` + `foldingRange` + hover variant |
 | Testfilter | `d06a807` → `5405489` | `vis test --filter <substr>` + `--fail-fast` (TAP plan theo số đã chạy) |
+| Panic | `5c8b550` → `0c22c76` | `panic(msg) -> never`, trap `VS0501` exit 101, cả 2 engine; tách `builtin_sig.rs` |
+| Fmt-size | `1ab5d8b` → `350d7c4` | size thập phân ≤2 lẻ, duration ghép `2h30m`; cập nhật show/tests/docs |
+| Fmtstdin | `8d2ae13` → `8820d4d` | `vis fmt --stdin [--check]`, exit 0/1/2, không đụng đĩa |
 | FS | `c4774a8` → `34aa2f0` | `read_lines/append/mkdir/remove`; FsHost default + FsGuard; API +4 |
 | DB | `2f583ec` → `b619c08` | `query_one` (dừng sau hàng đầu), `last_insert_rowid`, `changes`; read-only/caps giữ nguyên |
 | Intlit | `fd702c7` → `38c8bff` | `i64::MIN` viết trực tiếp; bare `2^63` vẫn `VS0104` tĩnh |

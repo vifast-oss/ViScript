@@ -3130,3 +3130,10 @@ R5c. Không đổi SPEC, không đổi runtime mặc định.
 - **fmtstdin**: `vis fmt --stdin` đọc UTF-8, in bản đã định dạng ra stdout; `--check` không in,
   exit 0/1/2 (đã đúng/cần sửa/lỗi); từ chối `--stdin` + `--write`/`--indent-report`/tệp;
   luôn chế độ script (không suy `.vish`).
+
+### VD-267 (bổ sung) · `panic` builtin — A0, 2026-11-21
+
+Duyệt `panic(msg)` là builtin trần `panic(str | Error) -> never`; trap `VS0501`, exit **101** ở cả
+hai engine; `Error` lấy trường `message`. `never` đã có sẵn trong `Type`; thêm `Ty::Never` cho bảng
+chữ ký builtin. `FUNCS`/`API-STD.txt` không đổi (không phải hàm `std.*`). Tách
+`builtin_sig.rs` khỏi `builtin.rs` để giữ R1; không đổi hành vi builtin khác.
