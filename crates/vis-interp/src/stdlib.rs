@@ -28,6 +28,7 @@ mod indexof;
 mod strfind;
 mod strlen;
 mod strpad;
+mod strtrim;
 
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
 /// **ST-72b (VD-103/VD-106)**: dấu **cưỡng chế quyền** trong `Err` của host — `hop_nhat_fs` đổi
@@ -367,6 +368,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 "str.upper" => s.to_uppercase(),
                 _ => s.to_lowercase(),
             }))
+        }
+        // **VD-270 (strtrim)**: cắt theo **tập** scalar `chars`; rỗng ⇒ giữ nguyên, hết ⇒ `""`.
+        "str.trim_matches" | "str.trim_start_matches" | "str.trim_end_matches" => {
+            strtrim::goi(name, &args, span)
         }
         "str.starts_with" | "str.ends_with" | "str.contains" => {
             let s = chuoi(name, &args[0], 0, span)?;

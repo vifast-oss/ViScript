@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 97] = [
+pub const FUNCS: [StdFn; 100] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -289,6 +289,23 @@ pub const FUNCS: [StdFn; 97] = [
     StdFn {
         name: "str.trim_end",
         params: &[Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (strtrim)**: cắt theo **tập scalar** `chars` (thứ tự/lặp không quan trọng);
+    // `chars` rỗng ⇒ `s` nguyên vẹn; mọi scalar thuộc tập ⇒ `""`.
+    StdFn {
+        name: "str.trim_matches",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.trim_start_matches",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.trim_end_matches",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::Str,
     },
     StdFn {
