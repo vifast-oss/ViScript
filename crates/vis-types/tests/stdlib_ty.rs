@@ -154,7 +154,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.index_columns` (`(str, str) -> Result[list[str], Error]`; tên cột của index schema
     // chính theo thứ tự index, tra theo tên, tên index bind làm tham số) ⇒ **123** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 123, "bảng chữ ký phải đủ 123 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-join-all, 2026-11-21)**: +**1** hàm `std.path.join_all`
+    // (`(list[str]) -> str`; nối trái→phải bằng đúng quy tắc `path.join`, rỗng ⇒ `""`,
+    // **không** sugar) ⇒ **124** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 124, "bảng chữ ký phải đủ 124 hàm");
 }
 
 #[test]
@@ -230,6 +233,24 @@ fn path_relative_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.relative`: hạ kiểu");
     assert_eq!(vis_types::stdlib::module_sugar("str", "relative"), None);
     assert_eq!(vis_types::stdlib::module_sugar("path", "relative"), None);
+}
+
+#[test]
+fn path_join_all_list_str_sang_str_va_khong_sugar() {
+    // **VD-270 (path.join_all)**: chữ ký `(list[str]) -> str`; **không** sugar — `join_all`
+    // không nằm trong `module_sugar`, nên `s.join_all(...)`/`xs.join_all()` bị từ chối thay vì
+    // đoán module nhận (receiver `str`/`list` đều nhập nhằng với `path`).
+    let f = sig_of("path.join_all").expect("path.join_all");
+    assert_eq!(f.params, &[Ty::ListStr], "`path.join_all`: tham số");
+    assert_eq!(f.ret, Ty::Str, "`path.join_all`: kiểu trả");
+    assert_eq!(
+        f.params[0].sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`path.join_all`: hạ kiểu tham số"
+    );
+    assert_eq!(f.ret.sang_type(), Type::Str, "`path.join_all`: hạ kiểu trả");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "join_all"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("list", "join_all"), None);
 }
 
 #[test]

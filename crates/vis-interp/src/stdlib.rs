@@ -30,6 +30,7 @@ mod fsbytes;
 mod indexof;
 mod listcontains;
 mod listmath;
+mod pathjoinall;
 mod pathnorm;
 mod pathrel;
 mod sqlite_explain;
@@ -581,6 +582,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let b = chuoi(name, &args[1], 1, span)?;
             Ok(Value::Str(noi_duong_voi(a, b, cfg!(windows))))
         }
+        // **VD-270 (path.join_all)**: nối `list[str]` trái→phải bằng **đúng** quy tắc
+        // `path.join` (gấp trái, `[]` ⇒ `""`).
+        "path.join_all" => pathjoinall::goi(&args, span),
         "path.basename" | "path.dirname" | "path.ext" | "path.stem" => {
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(match name {

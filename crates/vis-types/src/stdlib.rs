@@ -237,7 +237,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 123] = [
+pub const FUNCS: [StdFn; 124] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -603,6 +603,13 @@ pub const FUNCS: [StdFn; 123] = [
     StdFn {
         name: "path.join",
         params: &[Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (path.join_all)**: nối `list[str]` trái→phải bằng **đúng** quy tắc `path.join`
+    // (gấp trái, `[]` ⇒ `""`, một phần tử ⇒ chính nó); **không** sugar — module-only.
+    StdFn {
+        name: "path.join_all",
+        params: &[Ty::ListStr],
         ret: Ty::Str,
     },
     StdFn {
