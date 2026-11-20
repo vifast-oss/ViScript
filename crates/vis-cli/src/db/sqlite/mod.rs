@@ -16,7 +16,7 @@
 //!   **allow-list theo action code** (mặc định từ chối): DDL/CRUD thường, `BEGIN`/`COMMIT`/`ROLLBACK`,
 //!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read` (trừ trang thô), mọi `Function` trừ
 //!   `load_extension`/`sqlite_offset`;
-//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version` (không ghi); cấm
+//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version`/`data_version` (không ghi); cấm
 //!   `ATTACH`/`DETACH`/ghi `PRAGMA` khác/`load_extension`/**`CREATE VIRTUAL TABLE`** (`SQLITE_CREATE_VTABLE`)
 //!   ở **mọi** chế độ. `VACUUM` (cả `VACUUM INTO`) bị chặn gián tiếp — nó tự **ATTACH** ở đường
 //!   nội tại, authorizer từ chối ⇒ câu lệnh lỗi.
@@ -151,9 +151,10 @@ struct Muc {
     path: String,
     /// `None` khi đã đóng (tombstone — giữ để báo "handle đã đóng").
     conn: Option<Connection>,
-    /// **VD-261 (tối ưu)**: `PRAGMA schema_version` tại lần quét schema gần nhất. Chỉ quét
-    /// `sqlite_master` khi version đổi; schema không đổi ⇒ không quét lại mỗi prepare.
-    schema_ver: Option<i64>,
+    /// **VD-261 (tối ưu)**: `(schema_version, data_version)` tại lần quét schema gần nhất.
+    /// Chỉ quét `sqlite_master` khi một trong hai đổi; `data_version` bắt thay đổi từ
+    /// connection/tiến trình khác (schema_version đơn thuần có thể bị sửa ở header).
+    schema_ver: Option<(i64, i64)>,
 }
 
 /// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường). Hai nửa 64-bit lấy từ **nguồn OS**:
@@ -443,7 +444,7 @@ fn la_bang_trang_tho(ten: &str) -> bool {
 /// | `SQLITE_TRANSACTION` (BEGIN/COMMIT/ROLLBACK) · `SQLITE_SAVEPOINT` | giao dịch | **Allow** (đã duyệt — không tự mở thêm) |
 /// | `SQLITE_REINDEX` · `SQLITE_ANALYZE` | maintenance | **Allow** |
 /// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`/`sqlite_offset`) | hàm SQL | **Allow** |
-/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
+/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version`/`data_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
 /// | `SQLITE_PRAGMA` khác (kể cả ghi `user_version`, `temp_store`, `journal_mode`…) | đổi cấu hình | **Deny** |
 /// | `SQLITE_ATTACH` / `SQLITE_DETACH` | gắn db ngoài | **Deny** |
 /// | `SQLITE_CREATE_VTABLE` / `SQLITE_DROP_VTABLE` | virtual table (FTS5…) | **Deny** |
@@ -518,9 +519,11 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
             let n = pragma_name.to_ascii_lowercase();
             if n == "table_info" {
                 Authorization::Allow
-            } else if (n == "user_version" || n == "schema_version") && pragma_value.is_none() {
-                // **đọc** user_version/schema_version — ghi (có giá trị) ⇒ Deny.
-                // `schema_version` chỉ dùng để cache lần quét schema UTF-8 (VD-261).
+            } else if (n == "user_version" || n == "schema_version" || n == "data_version")
+                && pragma_value.is_none()
+            {
+                // **đọc** user_version/schema_version/data_version — ghi (có giá trị) ⇒ Deny.
+                // schema_version + data_version dùng cache lần quét schema UTF-8 (VD-261).
                 Authorization::Allow
             } else {
                 Authorization::Deny
@@ -626,13 +629,18 @@ fn kiem_schema_utf8(conn: &Connection, sqlite_debug: bool) -> Result<(), String>
 /// tăng khi DDL của **bất kỳ** connection nào; đọc nó là một pragma đọc rẻ, được allow-list
 /// cùng `user_version` (không ghi). Lần đầu `None` ⇒ quét; sau đó chỉ quét lại khi version đổi.
 fn kiem_schema_neu_doi(m: &mut Muc, sqlite_debug: bool) -> Result<(), String> {
-    let v: i64 = {
+    let v: (i64, i64) = {
         let conn = m
             .conn
             .as_ref()
             .ok_or_else(|| "handle đã đóng".to_string())?;
-        conn.query_row("PRAGMA schema_version", [], |r| r.get(0))
-            .map_err(|e| loi_sqlite("lỗi đọc schema_version", e, sqlite_debug))?
+        let schema: i64 = conn
+            .query_row("PRAGMA schema_version", [], |r| r.get(0))
+            .map_err(|e| loi_sqlite("lỗi đọc schema_version", e, sqlite_debug))?;
+        let data: i64 = conn
+            .query_row("PRAGMA data_version", [], |r| r.get(0))
+            .map_err(|e| loi_sqlite("lỗi đọc data_version", e, sqlite_debug))?;
+        (schema, data)
     };
     if m.schema_ver == Some(v) {
         return Ok(());
