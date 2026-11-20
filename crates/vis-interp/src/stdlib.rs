@@ -1041,6 +1041,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_execute(h, sql, params).map(Value::Int), span)
         }
+        // **VD-270 (db-batch)** — nhiều câu DDL/DML, **không** params; host tách an toàn rồi chạy
+        // từng câu qua đúng đường `db_execute` (authorizer/limit/timeout/cap/map lỗi).
+        "sqlite.execute_batch" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let sql = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_execute_batch(h, sql).map(Value::Int), span)
+        }
         "sqlite.query" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;

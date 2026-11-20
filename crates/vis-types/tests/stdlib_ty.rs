@@ -88,7 +88,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // xoá/đổi hàm cũ nào (`grapheme_count` cố ý **không** thêm: cần dependency Unicode mới).
     // **SỬA KÈM LÝ DO (VD-270 indexof, 2026-11-21)**: +**2** hàm `std.list.*` (`index_of`,
     // `last_index_of`; `(list[T], T) -> int?`) ⇒ **96** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 96, "bảng chữ ký phải đủ 96 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 db-batch, 2026-11-21)**: +**1** hàm `sqlite.execute_batch`
+    // (`(str, str) -> Result[int, Error]`; nhiều câu, không params) ⇒ **97** hàm; không
+    // xoá/đổi hàm cũ nào (`execute` vẫn một câu).
+    assert_eq!(FUNCS.len(), 97, "bảng chữ ký phải đủ 97 hàm");
 }
 
 #[test]

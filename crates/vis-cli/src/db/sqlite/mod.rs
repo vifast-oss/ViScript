@@ -42,6 +42,11 @@
 //! - **Trang thô/freelist bị cấm**: `dbstat` (và `sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr`
 //!   nếu có) bị authorizer từ chối ở `SQLITE_READ` — SQL người dùng chỉ thấy dữ liệu logic.
 //! - 1 câu SQL mỗi `execute`/`query` (multi-statement ⇒ `Err`).
+//! - **VD-270 (db-batch)**: `execute_batch` tách batch trên `;` **ngoài** chuỗi/comment/định
+//!   danh (xem [`tach_cau`]), chạy **từng câu** qua đúng đường `db_execute` (authorizer,
+//!   `kiem_sql`, trần `SQLITE_LIMIT_LENGTH`, timeout/progress, cap, map lỗi) — **không** params.
+//!   Trả số câu đã chạy; câu lỗi đầu tiên ⇒ `Err`, các câu trước **đã có tác dụng** (không tự
+//!   mở transaction/rollback). Batch rỗng/chỉ comment ⇒ `Ok(0)`; `execute` vẫn một câu.
 //! - **VD-268 (tối ưu)**: `execute`/`query`/`query_one` dùng **cache statement chuẩn bị sẵn** của
 //!   rusqlite (`Connection::prepare_cached`, LRU **16** mỗi connection, key = SQL sau khi trim).
 //!   Cache được **xả** khi `schema_version` (main) **hoặc** `temp.schema_version` đổi (xem
@@ -72,6 +77,9 @@ use rusqlite::{Connection, OpenFlags};
 use vis_interp::builtin::DbHost;
 use vis_interp::stdlib::DAU_QUYEN;
 use vis_interp::value::Value;
+
+mod tach_cau;
+use tach_cau::TachCau;
 
 /// max hàng mỗi query — vượt ⇒ `Err` (không trả dữ liệu cắt).
 pub const MAX_ROWS: usize = 10_000;
@@ -946,6 +954,20 @@ impl DbHost for Db {
         ket
     }
 
+    /// **VD-270 (db-batch)** — chạy batch nhiều câu, **không** params. Handle được kiểm **kể cả**
+    /// batch rỗng (không im lặng nuốt handle sai/đã đóng). Mỗi câu đi qua [`Self::db_execute`]
+    /// nguyên vẹn — `TachCau` chỉ tách từ vựng, không thay đổi văn bản. Dừng ở lỗi đầu tiên:
+    /// các câu trước đã thực thi (**không** transaction ngầm, **không** rollback hộ).
+    fn db_execute_batch(&mut self, h: &str, sql: &str) -> Result<i64, String> {
+        self.tim(h)?;
+        let mut n: i64 = 0;
+        for cau in TachCau::new(sql) {
+            self.db_execute(h, cau, &[])?;
+            n += 1;
+        }
+        Ok(n)
+    }
+
     fn db_query(
         &mut self,
         h: &str,
@@ -1395,6 +1417,9 @@ impl DbHost for DbGuard<'_> {
     fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String> {
         self.trong.db_execute(h, sql, params)
     }
+    fn db_execute_batch(&mut self, h: &str, sql: &str) -> Result<i64, String> {
+        self.trong.db_execute_batch(h, sql)
+    }
     fn db_query(
         &mut self,
         h: &str,
@@ -1430,5 +1455,7 @@ impl DbHost for DbGuard<'_> {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_batch;
 #[cfg(test)]
 mod tests_cache;
