@@ -1,0 +1,30 @@
+# VD-268 — ĐỎ-TRƯỚC (gán lồng), chạy trên HEAD 434ed64 + test mới
+# lệnh: cargo test -p vis-cli --test vd268_nestassign
+# kết quả: FAILED — 1 passed, 14 failed (exit 101)
+
+71:thread 'ghep_mot_tang_tren_truong_va_phan_tu' (461079) panicked at crates/vis-cli/tests/vd268_nestassign.rs:172:5:
+80:thread 'goc_self_var_gan_long_duoc' (461085) panicked at crates/vis-cli/tests/vd268_nestassign.rs:281:5:
+81:assertion `left == right` failed: stderr: var-self.vis:13:9: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+88:thread 'ghep_long_tren_so_nguyen' (461078) panicked at crates/vis-cli/tests/vd268_nestassign.rs:159:5:
+96:thread 'ban_ghi_trong_ban_ghi' (461074) panicked at crates/vis-cli/tests/vd268_nestassign.rs:111:5:
+97:assertion `left == right` failed: stderr: rec-rec.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+104:thread 'optional_trong_duong_bi_tu_choi' (461087) panicked at crates/vis-cli/tests/vd268_nestassign.rs:85:9:
+105:thông điệp phải nêu ``?.``: optional.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+110:thread 'goc_la_bieu_thuc_tam_bi_tu_choi' (461081) panicked at crates/vis-cli/tests/vd268_nestassign.rs:85:9:
+116:thread 'chi_so_ngoai_pham_vi_trap_hai_duong' (461075) panicked at crates/vis-cli/tests/vd268_nestassign.rs:200:5:
+117:assertion `left == right` failed: interp: (2, "", "oob.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)\n")
+118:vm: (2, "", "oob.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)\n")
+124:thread 'gia_tri_map_la_ban_ghi' (461080) panicked at crates/vis-cli/tests/vd268_nestassign.rs:148:5:
+125:assertion `left == right` failed: stderr: map-rec.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+132:thread 'doc_lap_voi_ban_sao' (461077) panicked at crates/vis-cli/tests/vd268_nestassign.rs:185:5:
+133:assertion `left == right` failed: stderr: copy.vis:11:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+140:thread 'chi_so_sai_kieu_bi_tu_choi' (461076) panicked at crates/vis-cli/tests/vd268_nestassign.rs:85:9:
+141:thông điệp phải nêu `chỉ số`: chi-so-sai-kieu.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+146:thread 'goc_self_khong_var_bi_tu_choi' (461083) panicked at crates/vis-cli/tests/vd268_nestassign.rs:83:5:
+152:thread 'phan_tu_list_la_ban_ghi' (461113) panicked at crates/vis-cli/tests/vd268_nestassign.rs:124:5:
+153:assertion `left == right` failed: stderr: list-rec.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+160:thread 'truong_ban_ghi_la_list_va_list_long' (461124) panicked at crates/vis-cli/tests/vd268_nestassign.rs:135:5:
+161:assertion `left == right` failed: stderr: rec-list.vis:16:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+168:thread 'sai_kieu_giua_duong_bi_tu_choi' (461122) panicked at crates/vis-cli/tests/vd268_nestassign.rs:85:9:
+169:thông điệp phải nêu `không chỉ số được`: sai-kieu.vis:10:5: error VS0412: gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)
+189:test result: FAILED. 1 passed; 14 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s

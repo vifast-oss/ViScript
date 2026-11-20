@@ -42,16 +42,17 @@ impl<'a> Checker<'a> {
                 HStmt::Var { sym, .. } => {
                     duoc_gan.insert(*sym);
                 }
-                HStmt::Assign {
-                    target, op, span, ..
-                } => {
+                HStmt::Assign { target, span, .. } => {
                     // **ST-60b**: gốc đi **xuống** qua `Field`/`Index` (không chỉ `Var` trực tiếp).
                     let goc_la_var = |t: &HExpr| {
                         vd238::goc_dich(t)
                             .map(|id| duoc_gan.contains(&id))
                             .unwrap_or(false)
                     };
-                    let gan_ghep = !matches!(op, crate::hir::AssignOp::Set);
+                    // **VD-268**: đích lồng (`a.b.f`, `xs[0].f`, …) và gán ghép trên lá **được**
+                    // hỗ trợ; ở lượt khai báo chỉ chặn **hình dạng gốc** (bất biến/tạm/`?.`).
+                    // Kiểu từng bước: lượt kiểm thân (`kiem_impl_than`, `kiem_expr` trên đích)
+                    // hoặc runtime — hai engine dùng **cùng** thông điệp nên không lệch.
                     match target {
                         HExpr::Var { sym: Some(id), .. } => {
                             if !duoc_gan.contains(id) {
@@ -62,33 +63,23 @@ impl<'a> Checker<'a> {
                                 );
                             }
                         }
-                        HExpr::Field { .. } => {
-                            if gan_ghep {
-                                self.diag(MISMATCH, GAN_GHEP, *span);
-                            } else if !vd238::dich_ha_duoc(target) {
-                                if goc_la_var(target) {
-                                    self.diag(MISMATCH, GAN_LONG, *span);
-                                } else {
-                                    self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
-                                }
+                        HExpr::Field { .. } | HExpr::Index { .. } => {
+                            if let Some(sp) = super::gan::diem_optional(target) {
+                                self.diag(MISMATCH, super::gan::GAN_OPTIONAL, sp);
                             } else if !goc_la_var(target) {
-                                self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
+                                if vd238::goc_dich(target).is_some() {
+                                    let msg = match target {
+                                        HExpr::Field { .. } => GAN_TRUONG_LET,
+                                        _ => GAN_PHAN_TU_LET,
+                                    };
+                                    self.diag(GAN_BAT_BIEN, msg, *span);
+                                } else {
+                                    self.diag(MISMATCH, super::gan::GAN_TAM, *span);
+                                }
                             }
                         }
-                        HExpr::Index { .. } => {
-                            if gan_ghep {
-                                self.diag(MISMATCH, GAN_GHEP, *span);
-                            } else if !vd238::dich_ha_duoc(target) {
-                                if goc_la_var(target) {
-                                    self.diag(MISMATCH, GAN_LONG, *span);
-                                } else {
-                                    self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
-                                }
-                            } else if !goc_la_var(target) {
-                                self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
-                            }
-                        }
-                        _ => {}
+                        HExpr::Error { .. } => {}
+                        _ => self.diag(MISMATCH, super::gan::GAN_TAM, *span),
                     }
                 }
                 HStmt::If {
@@ -158,16 +149,9 @@ impl<'a> Checker<'a> {
     }
 }
 
-/// **ST-56b (VD-97)**: thông điệp gán ghép trên trường/phần tử (dùng chung cho thân `impl`).
-pub(crate) const GAN_GHEP: &str =
-    "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)";
-/// Thông điệp gán **trường** của `let`/tham số.
+/// **ST-56b (VD-97)**: thông điệp gán **trường** của `let`/tham số.
 pub(crate) const GAN_TRUONG_LET: &str =
     "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)";
 /// Thông điệp gán **phần tử** của `let`/tham số.
 pub(crate) const GAN_PHAN_TU_LET: &str =
     "chỉ gán được phần tử của `var` — `let`/tham số là bất biến (§4.1)";
-/// **ST-60b**: đích **lồng** (sâu hơn một tầng trường/chỉ số) — gốc **đã** là `var` nên lỗi là do
-/// **hình dạng đích**, không phải do bất biến; nêu đúng vậy thay vì báo oan "let/tham số".
-pub(crate) const GAN_LONG: &str =
-    "gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)";

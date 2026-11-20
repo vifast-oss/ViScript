@@ -11,6 +11,7 @@
 //!   độc lập từ byte stream** — không tin giá trị này.
 
 mod builtin_value;
+mod gan_long;
 mod gia_tri;
 mod if_expr;
 mod pattern;
@@ -493,10 +494,10 @@ impl<'g> Emit<'g> {
                     self.f.push(Instr::Assign(slot), *span, -1);
                     return self.net_stack(*span);
                 }
-                // **ST-56b (VD-97)**: gán **trường/phần tử** chỉ hợp lệ khi đích gốc là biến
-                // `var` (tyck đã chặn trước); gán ghép trên trường/phần tử **chưa** hỗ trợ.
-                if !matches!(op, vis_types::AssignOp::Set) {
-                    return Err(CodegenError::Unsupported("assign-op", *span));
+                // **ST-56b (VD-97)** + **VD-268**: đích `trường/phần tử` — gốc `var` (tyck chặn
+                // trước). Đường sâu/gán ghép lá qua `gan_long::gan_duong`; dạng một tầng giữ nguyên.
+                if !matches!(op, vis_types::AssignOp::Set) || !gan_long::mot_tang(target) {
+                    return self.gan_duong(target, *op, value, *span);
                 }
                 // `a[i] = v` ⇒ `Set` (3→1) rồi **ghi lại ô** (`Assign`) — trước chỉ `Pop` nên VM
                 // **im lặng** bỏ kết quả (interp ↔ VM lệch); VD-97 (2) đòi sửa **tại chỗ**.

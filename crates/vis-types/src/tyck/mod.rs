@@ -17,6 +17,7 @@
 
 mod expr;
 mod flow;
+mod gan;
 mod num;
 mod pat;
 mod phuong_thuc;
@@ -26,14 +27,13 @@ mod vd238;
 
 use std::collections::BTreeSet;
 
-use phuong_thuc::{GAN_LONG, GAN_PHAN_TU_LET, GAN_TRUONG_LET};
 use sig::FnSig;
 
 use vis_diag::{NAME_CODES, TYPE_CODES};
 use vis_syntax::{Diagnostic, Span};
 
 use crate::hir::{HExpr, HFn, HItem, HStmt, Hir};
-use crate::lower::{SymKind, Symbols};
+use crate::lower::Symbols;
 use crate::ty::{EnumId, RecId, Type, TypeTable};
 
 /// Mã `VS0401` — sai số lượng/thứ tự đối số.
@@ -1316,162 +1316,8 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// Kiểu phần tử khi gán/chỉ số (gọi lại `kiem_index` của `expr.rs`).
-    pub(crate) fn kiem_index_expr(&mut self, base: &HExpr, index: &HExpr, span: Span) -> Type {
-        self.kiem_index(base, index, span)
-    }
-
     /// Kiểm thân khối **bỏ giá trị cuối** (vòng lặp — ST-13b mục 3).
     pub(crate) fn kiem_than_bo(&mut self, body: &[HStmt]) {
         let _ = self.kiem_than_ngu_canh(body, false);
-    }
-
-    /// Kiểu của một **đích gán** (chỉ đọc, không báo lỗi gán-cho-`let`).
-    fn kiem_dich(&mut self, target: &HExpr, op: crate::hir::AssignOp) -> Type {
-        match target {
-            HExpr::Var {
-                sym: Some(id),
-                span,
-                ..
-            } => {
-                let ty = self.ty_of(*id);
-                if !self.is_mutable(*id) && !ty.is_error() {
-                    let kind = self.symbols.get(*id).map(|s| s.kind);
-                    if !matches!(kind, Some(SymKind::Var)) {
-                        self.diag(
-                            GAN_BAT_BIEN,
-                            "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
-                            *span,
-                        );
-                    }
-                }
-                ty
-            }
-            HExpr::Var { sym: None, .. } => Type::Error,
-            HExpr::Field {
-                base, name, span, ..
-            } => {
-                // **ST-56b (VD-97)**: `x.f = v` chỉ hợp lệ khi `x` là biến **`var`** (kể cả
-                // `var self`) — hạ **rebind cục bộ** `x = x with f: v`; `let`/tham số (kể cả
-                // `self` **không** `var`) là **bất biến** ⇒ `VS0412` tại **phép gán**.
-                // Gán ghép `+=` trên trường **chưa** hỗ trợ ⇒ cũng `VS0412` (tyck chặn trước để
-                // hai đường không lệch — codegen/interp **không** phải đoán).
-                // **ST-60b**: gốc đi **xuống** qua `Field`/`Index` (`p.xs`/`self.xs`) — bất biến là
-                // thuộc tính của **gốc**; đích **lồng** (gốc `var`) báo đúng là **lồng**, không báo
-                // oan "let/tham số".
-                let goc = vd238::goc_dich(target);
-                let mutable = goc.map(|id| self.is_mutable(id)).unwrap_or(false);
-                if !vd238::dich_ha_duoc(target) && !matches!(&**base, HExpr::Var { .. }) {
-                    let msg = match goc {
-                        Some(id) if !self.is_mutable(id) => GAN_TRUONG_LET,
-                        Some(_) => GAN_LONG,
-                        None => {
-                            "bản ghi là **bất biến** — dùng `with` để tạo bản sao rồi gán lại `var` (§3.2/§4.1)"
-                        }
-                    };
-                    self.diag(MISMATCH, msg, *span);
-                    return Type::Error;
-                }
-                let bt = self.kiem_expr(base);
-                if !matches!(op, crate::hir::AssignOp::Set) {
-                    self.diag(
-                        MISMATCH,
-                        "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)",
-                        *span,
-                    );
-                    return Type::Error;
-                }
-                if mutable {
-                    // Đích **hợp lệ**: trường phải có (`VS0405`) và kiểu trường là kiểu đích.
-                    return match &bt {
-                        Type::Record(id) => match self.types.field(*id, name) {
-                            Some(f) => f.ty.clone(),
-                            None => {
-                                self.diag(
-                                    vis_diag::ma_truong(),
-                                    format!("bản ghi không có trường `{name}` (VD-43 #6)"),
-                                    *span,
-                                );
-                                Type::Error
-                            }
-                        },
-                        Type::Error => Type::Error,
-                        other => {
-                            self.diag(
-                                MISMATCH,
-                                format!(
-                                    "không gán được trường của `{}` (§4.1)",
-                                    self.types.show(other)
-                                ),
-                                *span,
-                            );
-                            Type::Error
-                        }
-                    };
-                }
-                match &bt {
-                    Type::Error => {
-                        // Kiểu chưa rõ (vd `self` — tham số **bất biến**) ⇒ vẫn `VS0412` (VD-97 (1)).
-                        self.diag(
-                            MISMATCH,
-                            "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)",
-                            *span,
-                        );
-                        Type::Error
-                    }
-                    Type::Record(_) => {
-                        self.diag(
-                            MISMATCH,
-                            "bản ghi là **bất biến** — dùng `with` để tạo bản sao rồi gán lại `var` (§3.2/§4.1)",
-                            *span,
-                        );
-                        Type::Error
-                    }
-                    other => {
-                        self.diag(
-                            MISMATCH,
-                            format!(
-                                "không gán được trường của `{}` (§4.1)",
-                                self.types.show(other)
-                            ),
-                            *span,
-                        );
-                        Type::Error
-                    }
-                }
-            }
-            HExpr::Index { base, index, span } => {
-                // **ST-56b (VD-97)**: chỉ gán được phần tử của biến **`var`** (list/map; rebind
-                // giá trị). Gán ghép `+=` trên phần tử **chưa** hỗ trợ ⇒ `VS0412` ở tyck.
-                if !matches!(op, crate::hir::AssignOp::Set) {
-                    self.diag(
-                        MISMATCH,
-                        "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên phần tử chưa hỗ trợ, §4.1)",
-                        *span,
-                    );
-                    return Type::Error;
-                }
-                // **ST-60b**: gốc đi xuống qua `Field` (`p.xs[0] = 9`, `self.xs[0] = 9`); đích **lồng**
-                // (`x[i][j]`, `x.f[0][1]`) báo **lồng** khi gốc **đã** là `var`.
-                let goc = vd238::goc_dich(target);
-                let mutable = goc.map(|id| self.is_mutable(id)).unwrap_or(false);
-                if !vd238::dich_ha_duoc(target) {
-                    let msg = match goc {
-                        Some(id) if !self.is_mutable(id) => GAN_PHAN_TU_LET,
-                        Some(_) => GAN_LONG,
-                        None => "chỉ gán được phần tử của `var` — `let`/tham số là bất biến (§4.1)",
-                    };
-                    self.diag(MISMATCH, msg, *span);
-                    return Type::Error;
-                }
-                if !mutable {
-                    self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
-                    return Type::Error;
-                }
-                let _ = self.kiem_expr(base); // vẫn kiểm chẩn đoán của biểu thức gốc
-                self.kiem_index_expr(base, index, *span)
-            }
-            _ => Type::Error,
-        }
     }
 }

@@ -36,7 +36,7 @@ pub(crate) fn la_kieu_ngoai_vs0(name: &str) -> bool {
     )
 }
 
-/// **ST-60b**: gốc của **đích gán** — đi xuống qua `Field`/`Index` tới `Var`.
+/// **VD-268**: gốc của **đích gán** — đi xuống qua `Field`/`Index` tới `Var`.
 pub(super) fn goc_dich(t: &HExpr) -> Option<u32> {
     match t {
         HExpr::Var { sym, .. } => *sym,
@@ -45,8 +45,10 @@ pub(super) fn goc_dich(t: &HExpr) -> Option<u32> {
     }
 }
 
-/// **ST-60b**: đích mà **codegen** hạ được: biến; **một** tầng trường (`x.f`); **một** chỉ số trên
-/// biến (`x[i]`); hoặc **một** chỉ số trên **một** tầng trường (`x.f[i]`). Sâu hơn ⇒ `GAN_LONG`.
+/// **ST-60b/VD-268**: đích **một tầng** mà codegen cũ hạ: biến; một tầng trường (`x.f`);
+/// một chỉ số trên biến (`x[i]`); hoặc một chỉ số trên một tầng trường (`x.f[i]`). Dùng để giữ
+/// **nguyên mã chẩn đoán** của các dạng cũ (`VS0413` cho `let xs[0] = …`, message "bản ghi bất
+/// biến" cho `let p.x = …`) trong khi đích sâu hơn dùng thông điệp "`let`/tham số".
 pub(super) fn dich_ha_duoc(t: &HExpr) -> bool {
     match t {
         HExpr::Var { sym: Some(_), .. } => true,
