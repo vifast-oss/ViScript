@@ -120,3 +120,10 @@ marker `Value::Enum(n,"",[])` / `Value::Record(n,[])`) **trước** fallback arg
 EXPECTED_RED=2 FAIL=0` (2 ô `vis-cli` × Windows-msvc/wasm32 — lỗi `libsqlite3-sys` có sẵn).
 Không có ô mới chuyển sang FAIL sau khi gộp A/B/C/D. Log `/tmp/opencode/vd257-targets-matrix.log`.
 
+## 10. Cross-review phạm vi diff
+
+`git diff --stat fc297ba..HEAD`: **43 tệp**, tất cả nằm trong `crates/`, `agent/`, hoặc các tệp cấu
+hình đã được ủy quyền — **không có tệp ngoài danh sách dự kiến**. `rt.rs` (−566) và `rt/sched.rs`
+(+694), `vm.rs` (−263) và `vm/vm_helpers.rs` (+174) là tách module để qua luật R1, không đổi API.
+Không thay đổi cú pháp/API công khai, không dependency/lock, không runtime mặc định.
+
