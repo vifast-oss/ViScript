@@ -75,12 +75,21 @@ fn dem_lech_thut_le(text: &str) -> Option<usize> {
 
 fn usage_fmt() -> ExitCode {
     eprintln!(
-        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     eprintln!(
-        "  vis fmt --stdin [--check]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
+        "  vis fmt --stdin [--check] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
     );
     ExitCode::from(2)
+}
+
+/// **VD-269**: giá trị hợp lệ của `--mode` — đúng hai chế độ parser; `None` nếu lạ.
+fn mode_tu_chuoi(s: &str) -> Option<Mode> {
+    match s {
+        "script" => Some(Mode::Script),
+        "command" => Some(Mode::Command),
+        _ => None,
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -117,13 +126,48 @@ fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
 /// **VD-267**: `vis fmt --stdin [--check]` — đọc mã UTF-8 từ stdin, **không** đụng đĩa.
 /// `--check` chỉ so sánh (không in), thoát 0 (đã đúng) / 1 (cần sửa) / 2 (dùng sai hoặc lỗi cú pháp).
 /// Đường tệp biến thể `.vis` mặc định script; stdin không có phần mở rộng nên cũng dùng script.
+/// **VD-269**: `--mode script|command` chọn chế độ cho buffer không đuôi (mặc định script).
 fn run_fmt_stdin(args: &[String]) -> ExitCode {
     use std::io::Read;
     let mut check = false;
-    for a in args {
-        match a.as_str() {
+    let mut che_do = Mode::Script;
+    let mut da_mode = false;
+    let mut i = 0;
+    while i < args.len() {
+        let a = args[i].as_str();
+        match a {
             "--stdin" => {}
             "--check" => check = true,
+            "--mode" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis fmt: --mode thiếu giá trị (script|command)");
+                    return usage_fmt();
+                };
+                if da_mode {
+                    eprintln!("vis fmt: --mode lặp lại");
+                    return usage_fmt();
+                }
+                let Some(m) = mode_tu_chuoi(v) else {
+                    eprintln!("vis fmt: --mode nhận `script` hoặc `command`, không nhận `{v}`");
+                    return usage_fmt();
+                };
+                che_do = m;
+                da_mode = true;
+                i += 1; // bỏ qua giá trị vừa đọc
+            }
+            f if f.starts_with("--mode=") => {
+                if da_mode {
+                    eprintln!("vis fmt: --mode lặp lại");
+                    return usage_fmt();
+                }
+                let v = &f["--mode=".len()..];
+                let Some(m) = mode_tu_chuoi(v) else {
+                    eprintln!("vis fmt: --mode nhận `script` hoặc `command`, không nhận `{v}`");
+                    return usage_fmt();
+                };
+                che_do = m;
+                da_mode = true;
+            }
             "--write" => {
                 eprintln!("vis fmt: --stdin không đi với --write (chế độ stdin không ghi đĩa)");
                 return usage_fmt();
@@ -141,6 +185,7 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
                 return usage_fmt();
             }
         }
+        i += 1;
     }
     let mut src = String::new();
     if let Err(e) = std::io::stdin().read_to_string(&mut src) {
@@ -151,7 +196,7 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     if src.is_empty() {
         return ExitCode::SUCCESS;
     }
-    match vis_fmt::format_mode(&src, Mode::Script) {
+    match vis_fmt::format_mode(&src, che_do) {
         Err(e) => {
             eprintln!("# {}", dong_chan_doan(e.code, e.line, e.col, &e.message));
             ExitCode::from(2)
@@ -177,6 +222,15 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // **VD-267**: `--stdin` là chế độ riêng — không lẫn với đường tệp/thư mục bên dưới.
     if args.iter().any(|a| a == "--stdin") {
         return run_fmt_stdin(args);
+    }
+    // **VD-269**: đường tệp tự suy chế độ từ đuôi (`.vish` = command, còn lại = script);
+    // `--mode` ở đây là nhầm lẫn ⇒ từ chối rõ thay vì coi là tên tệp.
+    if args
+        .iter()
+        .any(|a| a == "--mode" || a.starts_with("--mode="))
+    {
+        eprintln!("vis fmt: --mode chỉ dùng với --stdin (đường tệp tự suy chế độ từ .vish/.vis)");
+        return usage_fmt();
     }
     let (mode, files): (FmtMode, &[String]) = match args.first().map(String::as_str) {
         None => return usage_fmt(),
