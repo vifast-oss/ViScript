@@ -196,7 +196,7 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | `std.fs` | `exists` `list` `read` `read_lines` `walk` `glob` `write` `append` `mkdir` `remove` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `fs.walk(".")` → tương đối, thư mục kèm `/`, DFS, **bỏ symlink**; `fs.glob(".", "**/*.txt")` → lọc `walk`, sắp theo **byte**, mẫu không `/` khớp **basename** (`*` `?` `**`); `mkdir` **một cấp**, `remove` **chỉ tệp** |
 | `std.list` | `sort` `take` `drop` `chunk` `concat` `reverse` `unique` `zip` `min` `max` | `list.sort([3,1,2])` → `[1,2,3]` |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` | `map.keys(m)` |
-| `std.str` | `split` `join` `upper` `lower` `trim` `replace` `repeat` `starts_with` `ends_with` `contains` `lines` `split_whitespace` | `str.join(["a","b"], "-")` → `a-b` |
+| `std.str` | `split` `join` `upper` `lower` `trim` `trim_start` `trim_end` `replace` `repeat` `starts_with` `ends_with` `contains` `lines` `split_whitespace` `pad_left` `pad_right` `center` | `str.join(["a","b"], "-")` → `a-b`; `str.center("ab", 5, "-")` → `-ab--`; `str.pad_left("đ", 3, "-")` → `--đ` (đệm theo **ký tự Unicode**, `fill` rỗng ⇒ trap `VS0501`, `center` dư bên phải) |
 | `std.path` | `join` `basename` `dirname` `ext` `stem` `is_abs` | `path.join("a","b")` → `a/b` |
 | `std.time` | `now_ms()` `monotonic_ms()` | |
 | `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
@@ -213,7 +213,7 @@ Method trên giá trị (không cần `use`):
 | `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` — `map`/`filter` **trả list ngay** (eager) **[ĐÃ CÓ]** |
 | `Iterator[T]` | `.lazy()` trả iterator; cùng bộ method + `.to_list()`/`.to_map()`/`.to_set()`; **duyệt lại được**; `range`/`fs.lines` mặc định lười — **[DỰ KIẾN]** (R24) |
 | `map` | `len` `get` `has` `keys` `values` |
-| `str` | `len` `upper` `lower` `split` `chars` `contains` `lines` `split_whitespace` |
+| `str` | `len` `upper` `lower` `split` `chars` `contains` `lines` `split_whitespace` `trim_start` `trim_end` `pad_left` `pad_right` `center` |
 
 ## 10. Chế độ shell (chỉ ViScript có)
 

@@ -24,6 +24,8 @@ use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
+mod strpad;
+
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
 /// **ST-72b (VD-103/VD-106)**: dấu **cưỡng chế quyền** trong `Err` của host — `hop_nhat_fs` đổi
 /// thành **trap `VS0604`** (không bắt được), thay vì `Err(str)` dữ liệu (vượt quyền là lỗi **môi
@@ -351,10 +353,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
             Ok(Value::Str(phan.join(sep)))
         }
-        "str.trim" | "str.upper" | "str.lower" => {
+        "str.trim" | "str.trim_start" | "str.trim_end" | "str.upper" | "str.lower" => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(match name {
                 "str.trim" => s.trim().to_string(),
+                "str.trim_start" => s.trim_start().to_string(),
+                "str.trim_end" => s.trim_end().to_string(),
                 "str.upper" => s.to_uppercase(),
                 _ => s.to_lowercase(),
             }))
@@ -393,6 +397,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(s.replace(tu, den)))
+        }
+        // **VD-269**: đệm theo **scalar** Unicode; `fill` rỗng ⇒ trap; `center` dư bên phải.
+        "str.pad_left" | "str.pad_right" | "str.center" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let rong = so(name, &args[1], 1, span)?;
+            let fill = chuoi(name, &args[2], 2, span)?;
+            Ok(Value::Str(strpad::dem(name, s, rong, fill, span)?))
         }
         // ----- std.list -----
         "list.sort" => {
