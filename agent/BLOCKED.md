@@ -270,7 +270,11 @@ ST-239 xác nhận checker chấp nhận nhưng runtime hai engine lưu giá tr�
 
 **Đóng (ST-249)**: `PHIEN_BAN` += `+st248-field-index-lift-2026-11-20`; khoá ghim re-pin `66c332a9… → ad63ae98…` kèm lý do; test khẳng định khoá cũ **không còn trùng** và nhãn logic hiện diện. `check`/`gate --fast`/`cargo test -p vis-cli cache::tests`/`vis test` 525/525 ×2 đều xanh. **Không** gộp với ST-246 (đã xong); §14 (miền global) vẫn mở.
 
-## 17. FINDING RIÊNG — Capture/local đọc ngoài miền vẫn trả `Unit` (ST-250), MỞ — đang xử lý ở ST-252
+## 17. FINDING RIÊNG — Capture/local đọc ngoài miền vẫn trả `Unit` (ST-250) — ĐÓNG ở ST-252
+
+**Cập nhật 2026-11-20**: **ST-252 đóng finding này** (tích hợp `c4cee9f`, review `JOURNAL/st252-review.md`). Verifier giữ `ClosureFree` (quan hệ hàm đích/số capture/`MakeClosure`), runtime `doc_local`/`doc_captured`/`ghi_local` trap `VS0501` exit 1, bỏ resize âm thầm; 8/8 ca VD-246, hết thành công giả. **#189 đóng**. Giới hạn verifier (entry không có `MakeClosure`, `captured_used: u16`) đã ghi rõ trong code; runtime là hàng rào cuối. Finding `pop_frame` chuyển sang **§18**.
+
+> Phần dưới là nội dung ban đầu (giữ lịch sử).
 
 **Người ghi**: Agent 1 (từ `JOURNAL/st250-review.md` §4) · **Trạng thái**: **mở** · **Nợ**: **#189** · **VD-246 / ST-252**.
 
@@ -281,3 +285,9 @@ ST-250 sửa đường **global**, nhưng Agent 2 báo riêng (A0 yêu cầu kh�
 - **Thấp**: `LoadLocal` nhánh local cũng `unwrap_or(Unit)`; verifier chặn `s ≥ nlocals` và khung khởi tạo sẵn `Unit` ⇒ defense-in-depth.
 
 **Không tự mở rộng ST-250**, không đổi verifier/format trong đợt này. Chưa có hướng xử lý từ A0; ghi sổ để theo dõi, không tuyên bố đường capture/local đã an toàn chỉ vì global đã sửa.
+
+## 18. FINDING RIÊNG — `pop_frame` writeback silent skip (ST-252), MỞ
+
+**Người ghi**: Agent 1 (từ `JOURNAL/st252-review.md` §2) · **Trạng thái**: **mở** · **Nợ**: **#190**.
+
+`vm.rs:686` writeback capture mirror dùng `if let (Some(dst), Some(src)) = (c.get_mut(*i), fr.locals.get(*slot))` ⇒ bỏ qua khi ô mirror ngoài miền. **Khác ngữ nghĩa** (ghi ngược trạng thái closure, không phải đọc trả `Unit`) và **không thể xảy ra** với bytecode đã verify + thực thi: mọi `LoadCaptured(i)` trong prologue mirror đã trap trước khi tới writeback. Đổi `pop_frame` (`Option<Frame>` → `R<…>`) là refactor 3 call-site, vượt phạm vi “không viết lại VM” của VD-246. Ghi sổ để theo dõi; **không tự sửa**, không mở rộng ST-252.

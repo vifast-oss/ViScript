@@ -2229,3 +2229,5 @@ Test bắt buộc: capture rỗng đọc chỉ số 0; chỉ số = độ dài v
 | **macOS thiếu phần cứng** | Chặn **tuyên bố macOS**, **không chặn vô thời hạn** bản Linux/Windows có phạm vi rõ |
 
 Chưa tag/nghiệm thu phát hành cuối; chưa mở pha 2, VS3, API mới.
+
+> **Ghi nhận thực thi VD-246 (Agent 1, 2026-11-20)**: ST-252 tích hợp @ `c4cee9f`, review `JOURNAL/st252-review.md`. Verifier giữ `ClosureFree` (quan hệ hàm đích/số capture/`MakeClosure`), runtime `doc_local`/`doc_captured`/`ghi_local` trap `VS0501` exit 1. 8/8 ca VD-246, mỗi ca ghi rõ hàng rào; `cargo test -p vis-vm -p vis-bytecode` xanh, `vis test` 525/525 ×2. **#189/`BLOCKED.md` §17 đóng**. Finding `pop_frame` ghi **#190**/`BLOCKED.md` §18 (khác ngữ nghĩa, không tới được với bytecode đã verify, không tự sửa). **Quyết định cache**: không bump `PHIEN_BAN` — không đổi format/VERSION/codegen, không có chương trình hợp lệ nào đổi kết quả; artifact cache byte-identical. Đây là căn cứ đúng đắn, không phải mặc định hậu tố ST-250 bao phủ bản sửa sau. Giữ bằng chứng tương thích ST-248 trong hồ sơ cuối.
