@@ -13,7 +13,14 @@ use std::path::PathBuf;
 /// Phiên bản compiler dùng trong hash (đổi ⇒ cache cũ tự vô hiệu).
 // **SỬA KÈM LÝ DO (ST-41)**: `Render` đổi **cách hiển thị** giá trị cuối pipeline ⇒ module đã cache
 // bằng bản cũ phải **hết hiệu lực**; gắn nhãn logic vào khoá (không đổi `CARGO_PKG_VERSION`).
-pub const PHIEN_BAN: &str = concat!(env!("CARGO_PKG_VERSION"), "+vd241-coercion-2026-11-19");
+// **SỬA KÈM LÝ DO (ST-249/VD-129, 2026-11-20)**: ST-248 đổi logic codegen (nâng `Some` ở đích
+// field/index) ⇒ bytecode cache sinh trước bản sửa vẫn có `VERSION=2` nhưng trả `5`/`7` thay vì
+// `Some(5)`/`Some(7)`. `VERSION` không đổi (ST-246 đã đổi cho ngữ nghĩa bytecode) ⇒ phải đổi nhãn
+// logic compiler để cache cũ tự vô hiệu — nợ #187 / `BLOCKED.md` §16.
+pub const PHIEN_BAN: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20"
+);
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
 pub fn thu_muc() -> Option<PathBuf> {
@@ -187,12 +194,24 @@ mod tests {
     /// Ghim lại lần nữa (2026-11-20, **ST-246/VD-244**): `vis_bytecode::VERSION` tăng `1 → 2` để đánh
     /// dấu ngữ nghĩa mới của ô `>= GLOBAL_SLOT_BASE` ⇒ khoá đổi là **có chủ ý**: cache v1 bị bỏ,
     /// source được biên dịch lại.
+    /// Ghim lại lần nữa (2026-11-20, **ST-249/VD-129**, nợ #187): ST-248 đổi logic codegen (nâng
+    /// `Some` ở đích field/index) nhưng `VERSION` vẫn 2 ⇒ `PHIEN_BAN` đổi để cache cũ tự vô hiệu.
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "66c332a94f29959cdba27435f63415fa90a1bcd0550370ceeb174777c89d85c5",
+            k, "ad63ae9807aadc6c6208040197966169a0552ea07fe96d9340a5e84b7daf210e",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        // ST-249/#187: khoá của bản trước ST-248 (chỉ đổi PHIEN_BAN, VERSION vẫn 2) phải KHÔNG còn
+        // trùng — nếu trùng thì cache cũ vẫn được nạp và trả kết quả sai của field/index lift.
+        assert_ne!(
+            k, "66c332a94f29959cdba27435f63415fa90a1bcd0550370ceeb174777c89d85c5",
+            "ST-249: cache sinh trước field/index lift không được tái dùng"
+        );
+        assert!(
+            PHIEN_BAN.contains("st248-field-index-lift"),
+            "ST-249: PHIEN_BAN phải mang nhãn logic của ST-248"
         );
     }
 

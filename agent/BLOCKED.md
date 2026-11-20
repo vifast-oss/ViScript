@@ -212,7 +212,7 @@ crate host.
 A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `VS0507` + exit ≠ 0; **không** bão hoà. Chi tiết hợp đồng, test bắt buộc và hai điểm “không được hiểu sai” ở `DECISIONS.md` **VD-243**.
 
 - **Blocker QUYẾT ĐỊNH cho #172: ĐÃ GỠ.** ST-240 được phép chuẩn bị repro/test/inventory và sửa song song khi không xung đột quyền tệp với ST-238; không gián đoạn ST-238.
-- **Blocker TRIỂN KHAI vẫn mở**: chỉ đóng sau khi có bản sửa + bằng chứng (repro trước/sau, test hồi quy, kết quả trên đúng commit) theo lệnh A0. #172 giữ trạng thái **mở** trong `SO-NO.md`.
+- ~~**Blocker TRIỂN KHAI vẫn mở**~~ → **ĐÓNG ở ST-240** (tích hợp `7fa68ba`; review `JOURNAL/st240-review.md`): repro `200pct*i64::MAX` ⇒ `VS0507` exit 101, `1e300pct` chặn tại nơi tạo giá trị, biên hợp lệ giữ nguyên; `st240_std_cli.rs` 11/11, gate xanh. #172 đã **đóng ở ST-240** trong `SO-NO.md`.
 - Không đổi biểu diễn/thang đo/quy tắc làm tròn `percent`; chặn tại nơi tạo/chuyển đổi giá trị (không chỉ sửa chuỗi `show`); trung gian lớn mà kết quả cuối hợp lệ thì không được từ chối máy móc.
 
 ## 13. BLOCKER — Tương thích bytecode/cache sau ST-245 (VD-244) — ĐÓNG theo báo cáo, có caveat
@@ -248,3 +248,16 @@ Phân biệt **hợp lệ về chỉ số** và **hợp lệ về khởi tạo**
 **Trạng thái**: mở · **Luật**: đã có trong **VD-242 §3.3** (không cần A0 quyết thêm).
 
 ST-239 xác nhận checker chấp nhận nhưng runtime hai engine lưu giá trị thô: `u.f = 5` (`f: int?`) ⇒ `5` thay vì `Some(5)`; `m["a"] = 7` (`map[str,int?]`) ⇒ `7` thay vì `Some(7)`. Phải chèn `$lift-opt` tại đích field/index trong codegen + mirror interp (ST-248). **Chưa được coi là hợp đồng Option đã khớp** khi xét điều kiện mở pha 2. Không có ngữ nghĩa chưa có luật; không đổi `Unwrap`/bytecode.
+
+## 16. BLOCKER — Cache không vô hiệu khi đổi logic codegen (ST-248) — ĐÓNG ở ST-249
+
+**Người ghi**: Agent 1 (từ `JOURNAL/st248-review.md` §2) · **Trạng thái**: **đóng ở ST-249** · **Nợ**: **#187** (đã đóng) · **Task**: ST-249.
+
+`cache::PHIEN_BAN` là chuỗi cố định `concat!(CARGO_PKG_VERSION, "+vd241-coercion…")`, **không đổi theo logic codegen**. Sau ST-248, `vis run --vm` **không** dùng `--no-cache` có thể nạp module VBC1 cũ (VERSION=2 từ ST-246 nhưng sinh trước field/index lift) và in `5`/`7` thay vì `Some(5)`/`Some(7)`. Test Rust và `vis test --vm` biên dịch mới nên không dính; người dùng có cache thì dính.
+
+**Phải đạt trước fresh-clone/release verification và tag mới:**
+- Bump `PHIEN_BAN` trong `crates/vis-cli/src/cache.rs` kèm lý do ST-248/VD-129; re-pin khoá ghim `khoa_cache_ghim` (hash đổi là có chủ ý).
+- Test chứng minh cache cũ không tái dùng; source recompile chạy đúng interp + VM (kể cả đường có cache).
+- Không đổi `VERSION` lần này (ST-246 đã đổi cho ngữ nghĩa bytecode); chỉ đổi nhãn logic compiler.
+
+**Đóng (ST-249)**: `PHIEN_BAN` += `+st248-field-index-lift-2026-11-20`; khoá ghim re-pin `66c332a9… → ad63ae98…` kèm lý do; test khẳng định khoá cũ **không còn trùng** và nhãn logic hiện diện. `check`/`gate --fast`/`cargo test -p vis-cli cache::tests`/`vis test` 525/525 ×2 đều xanh. **Không** gộp với ST-246 (đã xong); §14 (miền global) vẫn mở.
