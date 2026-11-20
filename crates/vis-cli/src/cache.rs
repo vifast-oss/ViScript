@@ -32,7 +32,7 @@ use std::path::PathBuf;
 // cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -232,8 +232,12 @@ mod tests {
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "1bafa9499ed38019c6b2a87727eef2156d8e207e8f5ee52756e8c4882d256631",
+            k, "204af1c294a5744ddf069f14472ff3b4a9f42230605439bab785c83e203aa159",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "1bafa9499ed38019c6b2a87727eef2156d8e207e8f5ee52756e8c4882d256631",
+            "VD-268: cache sinh trước gán lồng không được tái dùng"
         );
         assert_ne!(
             k, "f20c2adeac140ca71aecdcb17d0e8997f61c5d9a1e666ef9b8ec6f9a5706c254",
@@ -292,6 +296,10 @@ mod tests {
         assert!(
             PHIEN_BAN.contains("vd265-266-methodret-genericres-intlit"),
             "VD-265/266: cache phải mang nhãn methodret/genericres/intlit"
+        );
+        assert!(
+            PHIEN_BAN.contains("vd268-nestassign"),
+            "VD-268: cache phải mang nhãn gán lồng"
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);
