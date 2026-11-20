@@ -1,0 +1,2308 @@
+{
+  "project": "viscript",
+  "round": 31,
+  "head": "31b51d2efa9a89a8feb6ec5034ea229dfd427f68",
+  "build_id": "vd242-baseline-20261120",
+  "tasks": [
+    {
+      "id": "ST-01",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-02a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-02b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-03",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-11",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-12",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-12b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-13",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-14",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-15b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-15",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-16",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-18",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-19",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-20b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-20",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-21",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-22",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-23",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-25",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-26",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-27",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-28",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-29",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-30",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-30b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-32",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-33",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-34",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-35",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-36",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-37",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-38",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-39",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-40a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-40b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-41",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-42",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-43",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-44",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-45",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-46",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-47",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-48",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-49",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-50",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-51",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-52",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-53",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-54",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-55",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-56",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-56b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-57",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-58",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-59",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-60",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-60b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-60c",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-61",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-62",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-63",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-64",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-65",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-66",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-67",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-68",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-69",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-70",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-71",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-72",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-72b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-73",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-74",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-75",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-76",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-77",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-78",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-79",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-80",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-81",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-82",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-83",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-84",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-85",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-85b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-86",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-87",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-87b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-88",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-89",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-90",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-91",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-92",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-93",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-93b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-94",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-95",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-96",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-97",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-98",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-99",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-100",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-101",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-101b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-102",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-103",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-104",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-105",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-106",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-107",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-108",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-109",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-110",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-111",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-112",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-113",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-114a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-114b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-115",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-116",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-116b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-117",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-118",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-119",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-120",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-121",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-122",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-123",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-124",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-125",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-126",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-127",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-128",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-129",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-130",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-131",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-132",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-132b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-133",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-134",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-135",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-136",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-137",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-138",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-139",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-138b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-140",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-141",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-142",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-143",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-144",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-145",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-146",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-147",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-148",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-149",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-150",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-151",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-152",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-153",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-154",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-155",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-156",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-157",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-158",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-159",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-160",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-161",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-162",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-163",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-164",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-165",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-166",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-167",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-173",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-174",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-175",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-176",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-168",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-169",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-170",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-171",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-178",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-179",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-180",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-181",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-182",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-183",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-184",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-185",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-186",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-187",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-188",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-189",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-190",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-191",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-192",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-193",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-194",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-195",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-196",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-197",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-198",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-199",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-200",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-215",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-217",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-202b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-218",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-216",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-205",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)"
+    },
+    {
+      "id": "ST-206",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)"
+    },
+    {
+      "id": "ST-207",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)"
+    },
+    {
+      "id": "ST-208",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-209",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)"
+    },
+    {
+      "id": "ST-214",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "PS-DONE; mac BLOCK"
+    },
+    {
+      "id": "ST-219",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-220",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-210",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225"
+    },
+    {
+      "id": "ST-211",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-225, proxy A0-uỷ quyền)"
+    },
+    {
+      "id": "ST-212",
+      "status": "READY",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-228",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE (proxy VD-225, chưa ratify)"
+    },
+    {
+      "id": "ST-229",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE (proxy VD-225, chưa ratify)"
+    },
+    {
+      "id": "ST-230",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-231",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-232",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-233",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-234",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-235",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-226",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md",
+      "queue": "DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)"
+    },
+    {
+      "id": "ST-213",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-201",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-202",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-203",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-204",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-172",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-172a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-172b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-31",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-24",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-17",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-04",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-05",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-06",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-07",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-08",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-09",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    },
+    {
+      "id": "ST-10",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "baseline tại 31b51d2 (VD-242); chi tiết trong QUEUE.md"
+    }
+  ],
+  "gates": {
+    "fast": "PASS",
+    "full": "—",
+    "nightly": "PASS"
+  },
+  "sim": {
+    "seeds": 20261115,
+    "failures": 0
+  },
+  "coverage": {
+    "tokens": 427785165,
+    "fixtures": 525
+  },
+  "mutants": {
+    "measured": false,
+    "killed": null,
+    "alive": null
+  },
+  "perf": {
+    "head_do": "31b51d2",
+    "baseline": "VD-242 — ổn định sau pha 1",
+    "host": "ps (Linux 7.0.0-43-generic, Ubuntu 26.04.1; rustc 1.99.1)",
+    "workspace": {
+      "suites": 150,
+      "passed": 1349,
+      "failed": 0
+    },
+    "sem": {
+      "cases": 525,
+      "interp": "525/525",
+      "vm": "525/525"
+    },
+    "nightly": {
+      "passes": 10,
+      "fuzz_cases": "~18,8 triệu",
+      "violations": 0,
+      "fmt_files": 475
+    },
+    "targets": {
+      "checks": "16/18 (cấu hình cũ, trước feature sqlite tùy chọn)"
+    },
+    "windows": "verify exit 0 @ c12979f/da24c7d (150 khối, 1334 test, 0 failed); HEAD 31b51d2 chưa re-verify",
+    "macos": "KHÔNG có máy thật; vis-remote mac trả Linux; không tuyên bố macOS",
+    "known_issues": "10 parity (#157..#166) + 18 std/CLI (#167..#184) chưa sửa ở baseline này"
+  },
+  "blocked": []
+}

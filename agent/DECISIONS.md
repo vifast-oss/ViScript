@@ -1917,3 +1917,107 @@ Nội dung VD-241 giữ **nguyên văn** (Agent 0, 2026-11-19). Chỉ đính ch�
 5. **Freeze (`api_dong_bang.rs`, `API-STD*.txt`, `API-CODES.txt`, `API-VBC1.txt`, `docs/SPEC-lex.md`) KHÔNG đổi** — narrow freeze `+9 std.sqlite.*` là giới hạn đã A0 phê duyệt; không mở rộng.
 6. **Fresh-clone gate**: ghi nhận PASS tại `401d86e` (clone `/home/ps/.tmp-clone-gate/verify`, gate toàn L0 xanh) và `4e2bdde` (clone `verify` sau HEAD bump — kết quả PASS).
 7. **Phạm vi quyết định**: các quyết định 1–6 chỉ ghi nhận hiện trạng đã đo trong phiên; không thay đổi sản phẩm/ngữ nghĩa/golden/ngưỡng/freeze/API. **Không mở pha 2; không mở B-3; không thay đổi API; không tuyên bố nền không đo được.**
+
+
+### VD-242 · Mở đợt “Ổn định sau pha 1” — A0, 2026-11-20 (dựa trên `agent/BAN-GIAO-A0-2026-11-20.md`)
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1 theo lệnh chốt. **Baseline**: `31b51d2` (= `origin/main` lúc bàn giao), tag `pha1-rc1` = `05e42d0` **giữ nguyên**.
+> **Bản chất**: quyết định phạm vi + ngữ nghĩa. **Không** phải xác nhận A0 đã chạy repo. Mọi số liệu dưới đây là baseline đã đo, không dùng để phủ nhận 10 phát hiện parity.
+
+#### 1. Phạm vi đợt
+
+**Tên đợt**: ổn định sau pha 1. **Chưa mở pha 2, chưa mở VS3.**
+
+**Được làm**: sửa cả 10 phát hiện parity (hai đợt tích hợp); tái hiện đủ 18 phát hiện std/CLI và sửa theo mức độ + ngữ nghĩa chốt; hoàn thiện hợp đồng Option; thu hẹp SQLite trên target matrix; đính chính nền tảng, sửa công cụ nhận diện host, đồng bộ tài liệu; kiểm chứng Windows trên commit tích hợp cuối.
+
+**Chưa được làm**: async song song, TLS, GC/worker mới; CSV; `str.find`/`str.slice`; typed serialization; mở rộng SQLite ngoài giới hạn/sửa đúng được duyệt; đổi API freeze, bytecode hoặc mã chẩn đoán ngoài phạm vi nêu rõ.
+
+**Không có hạn mức dòng sửa cố định.** Ước lượng 300–600 dòng trong bàn giao không phải tiêu chí nghiệm thu.
+
+#### 2. Q1–Q22 — quyết định A0
+
+| Mục | Quyết định |
+|---|---|
+| Q1 | **B về thứ tự, A về phạm vi** — xử lý cả 10 ca; sáu ca nặng trước, bốn ca còn lại vẫn thuộc đợt này. |
+| Q2 | **A** — cấm `?.` trên base không optional. |
+| Q3 | **B có mở rộng** — tám mục ưu tiên trước; tái hiện và phân loại đủ 18, không mặc định đẩy phần còn lại sang pha 2. |
+| Q4a | **A + quy tắc bổ sung** — literal có khoá trùng xác định tĩnh bị từ chối; map runtime chỉ giữ một giá trị mỗi khoá. |
+| Q4b | **A** — giữ biểu diễn float, non-finite trả lỗi. |
+| Q4c | **A về ý định** — `query` chỉ đọc, nhưng không dùng danh sách từ khoá `SELECT/PRAGMA/EXPLAIN` làm hàng rào duy nhất. |
+| Q5 | **A có chỉnh** — coercion theo **kiểu đích đã biết**, kể cả biến suy ra Option, field và index; không phân biệt chỉ vì có/không có annotation. |
+| Q6 | **A** — SQLite là feature tùy chọn; tách ma trận core và ma trận SQLite; không đổi đỏ thành xanh bằng cách thay cấu hình mà không đổi nhãn. |
+| Q7 | **A ngay** — macOS chưa verify; đính chính và sửa công cụ nhận diện host. |
+| Q8 | **A** — Windows giữ **Tier 2**; duyệt CI informational nếu có runner và quyền cấu hình. |
+| Q9 | **A** — giữ tag; đính chính phạm vi Linux, không xoá lịch sử. |
+| Q10 | **C** — pha 2 chưa mở; điều kiện mở lại ở §8 bàn giao. |
+| Q11 | **C về triển khai** — VS3 chưa mở; cho phép chuẩn bị hồ sơ thiết kế hữu hạn. |
+| Q12 | **A** — B-3 **design-only**, không triển khai rộng. |
+| Q13 | **B** — giữ RFC typed serialization ở trạng thái hiện tại. |
+| Q14 | **C** — hoãn CSV (bàn giao không đủ D1–D16 để phê duyệt toàn bộ). |
+| Q15 | **C** — hoãn `str.find`/`str.slice`; “astute” không được coi là yêu cầu. |
+| Q16 | **A có điều kiện** — giữ SQLite MVP, thêm giới hạn tham số, `query` chỉ đọc; chưa gọi là ổn định mọi nền tảng. |
+| Q17 | **A** — giữ narrow freeze. |
+| Q18 | **B** — ratify proxy **có chọn lọc**, không phê duyệt hàng loạt chỉ vì code đã merge/test xanh. |
+| Q19 | **A** — docs truth + R31 **ngay**, song song sửa lỗi. |
+| Q20 | **A** — sửa nợ chặn; không mở chiến dịch đóng hết 122 nợ. |
+| Q21 | **B có điều kiện** — tag `0.x` sau đợt ổn định và nghiệm thu, không tag ngay. |
+| Q22 | **A có guardrail** — giao quyền sửa đúng theo hợp đồng; không giao quyền tự quyết ngữ nghĩa mới. |
+
+#### 3. Ngữ nghĩa chốt
+
+**3.1 Chuẩn phân xử parity.** Thứ tự nguồn luật: (1) quyết định A0 còn hiệu lực; (2) SPEC đã duyệt và chưa bị thay thế; (3) hợp đồng kiểu/ngữ nghĩa được xác nhận; (4) test và hành vi engine là **bằng chứng triển khai**, không phải luật. **Tyck cũng có thể sai** — không hiểu “thiết kế/tyck là chuẩn” theo nghĩa mọi chương trình checker chấp nhận đều hợp lệ.
+
+- Or-pattern `1 | x`: nếu `x` được dùng trong thân nhánh nhưng không bind ở **mọi** alternative ⇒ từ chối chương trình. **Không** sửa VM để trả `2` chỉ vì interp đang trả `2`.
+- `match` không nhánh nào khớp: nếu checker chứng minh được không đầy đủ ⇒ báo lỗi tĩnh theo hợp đồng hiện hành; nếu vẫn có đường rơi tới runtime ⇒ báo lỗi nhất quán, **không im lặng thành công**.
+- Agent 2 phải ghi cho mỗi repro: chương trình hợp lệ hay không, kết quả đúng là gì, căn cứ nào — **trước khi sửa**.
+
+**3.2 Optional chaining.** Base phải có kiểu `Option[U]`; base thường `U` dùng `.`, không dùng `?.`; `None` ⇒ `None`; `Some(u)` ⇒ `Some(u.field)`; **không flatten ngầm**. Nếu field là `str?` thì `u?.field` có kiểu `str??`. Dùng `VS0412` nếu phù hợp hợp đồng hiện có; nếu phải đổi hợp đồng mã lỗi, ghi rõ thay đổi hẹp, **không tái sinh toàn bộ danh mục**.
+
+**3.3 Option coercion.** Ratify: `T?? = Option[Option[T]]`; `None` theo lớp Option ngoài cùng của kiểu đích; `Some(x)` là constructor một lớp; `Option[T]`, `option[T]`, alias và `T?` đi cùng đường kiểm kiểu. Quy tắc: khi kiểu nguồn khớp chính xác đích ⇒ giữ nguyên; nếu đích là `Option[T]` và nguồn khớp `T` ⇒ nâng đúng một lớp; **không tự nâng nhiều lớp**. Áp dụng ở initializer, assignment, tham số, return, field, index khi kiểu đích đã biết. Kiểu biến **không tự đổi theo từng lần gán**; `None` đứng riêng mà thiếu thông tin suy kiểu ⇒ báo thiếu thông tin.
+
+**Không ratify** phát biểu “VM `Unwrap` trả `Unit` thay vì trap”. Pattern không khớp phải rẽ sang nhánh khác; không được biến unwrap sai thành `Unit` rồi để lọt vào tính toán. Agent 2 phân biệt hai trường hợp và báo lại nếu cần đổi opcode/hợp đồng bytecode. Duyệt sửa bốn chỗ tài liệu nói `T??` là lỗi.
+
+**3.4 Map khoá trùng.** Literal: khoá trùng xác định được tĩnh ⇒ lỗi kiểm tra. Runtime/cập nhật: **last-wins**, mỗi khoá một entry. `json.decode`: last-wins cho ViScript và ghi tài liệu rõ — **đây là lựa chọn của ViScript, không phải luật JSON bắt buộc**. Equality so ánh xạ khoá → giá trị, không phụ thuộc entry trùng/thứ tự chèn; **không gọi mã người dùng trong checker** để tìm khoá trùng.
+
+**3.5 JSON và sort.** `1.0` phải encode thành biểu diễn mà decoder ViScript nhận lại là float. `NaN`/vô cực ⇒ lỗi, không xuất token sai và không tự đổi `null`. `01` bị từ chối. **Không hứa** round-trip giữ mọi kiểu ViScript; chỉ giữ phân biệt int/float trong miền đã hỗ trợ. Sort: không im lặng giữ nguyên khi không so được; NaN/kiểu chưa có thứ tự hợp lệ ⇒ lỗi theo cơ chế hiện hành; không sắp một phần rồi mới báo lỗi; không tự thêm thứ tự cho record trong đợt này.
+
+**3.6 `sqlite.query`.** Chỉ đọc, nhưng “bắt đầu bằng SELECT/PRAGMA/EXPLAIN” **không đủ**. Phân loại statement **sau bước chuẩn bị**, kết hợp hàng rào quyền hiện có; không thực thi rồi mới phát hiện ghi; không lách bằng comment/CTE/nhiều statement/biến thể PRAGMA; không mở quyền mới chỉ vì tên là read-only; **không thêm tham số `read_only` hoặc hàm std mới**. Giới hạn **16 MiB là tổng byte payload của tham số trong một lời gọi** (không phải mỗi tham số): định nghĩa cách tính text/blob và kiểm trước khi tạo bản sao lớn/bind. Giữ giới hạn thời gian, authorizer, MVP hiện hành; chưa mở file-backed nơi quyền đang từ chối.
+
+#### 4. Thứ tự sửa, nghiệm thu, nền tảng
+
+- **Đợt A**: parity 1,2,3,4,7,8; `net.read` #167; JSON non-finite #169; `run --dry`/`--sandbox-check` #181. Với #167 phải kiểm âm/chuyển kiểu/overflow/giới hạn cấp phát/lỗi cấp phát — **OOM do input người dùng không được chấp nhận**.
+- **Đợt B**: parity 5,6,9,10; map/JSON float/parser/sort; vị trí lỗi module/CRLF/LSP; `fmt` bỏ qua tệp & thiếu tên tệp; phân loại rồi sửa phần còn lại. Tệp người dùng nêu đích danh cho `fmt` **không được bỏ qua im lặng**; quy tắc loại trừ khi duyệt thư mục có hợp đồng riêng. LSP: EOF trước khi nhận byte frame mới **khác** EOF giữa header/body, không gộp thành EOF sạch. Mỗi repro kiểm stdout, stderr/chẩn đoán, mã thoát, tác dụng phụ; **hai engine cùng sai không tính là đạt parity**.
+- **Nghiệm thu mỗi lỗi**: repro đỏ baseline + kết quả mong đợi có căn cứ + bản sửa/test hồi quy + review chéo + gate tích hợp cuối. Không bắt mọi lỗi đổi golden; nếu đổi phải giải thích golden cũ sai, không cập nhật hàng loạt để xanh.
+
+**macOS**: đính chính ngay; `vis-remote` không được để alias `mac` âm thầm chạy Linux; lệnh macOS kiểm host thực và thất bại rõ nếu không phải Darwin; log mới ghi commit, OS/architecture, toolchain, cấu hình, lệnh đo. Nợ bị chặn phần cứng chuyển **blocked**, **không xoá khỏi thống kê** để giảm số mở.
+
+**Windows**: giữ Tier 2; đo baseline `31b51d2` nếu cần phân biệt hồi quy; **bắt buộc đo commit tích hợp cuối trước tag**; CI informational ≠ CI required; chỉ đổi expected khi khác biệt nền tảng có hợp đồng rõ.
+
+**SQLite/target**: feature `sqlite` tùy chọn; giữ bật mặc định cho bản host đang kiểm chứng nếu không gây đổi ngoài phạm vi; ma trận riêng core-không-SQLite và host-có-SQLite; không vô hiệu hoá rộng default feature không liên quan. Giữ kết quả lịch sử **16/18 ở cấu hình cũ**; cấu hình mới có tên mới, không thay ngầm tiêu chí VS2. Build không có SQLite ⇒ dùng `std.sqlite` bị từ chối rõ, không panic/hành vi giả.
+
+#### 5. Ratify proxy, docs, quyền tự chủ
+
+Giữ phê duyệt đã rõ cho **SQLite narrow freeze** và **Windows portability** trong đúng phạm vi. Với R4a/b/c, R5b′, R5d, `while let` và các mục proxy khác: **không revert hàng loạt**; giữ code trong thời gian review; Agent 1 lập bảng ngắn (hành vi đã chọn, căn cứ uỷ quyền, test, điểm chưa ratify); chỉ backfill số VD sau khi phân biệt quyết định lịch sử và ratification hôm nay. **“Đã merge và xanh” không tự biến thành phê duyệt ngữ nghĩa.**
+
+Docs truth làm ngay: R31 ghi baseline và lỗi đã biết; tài liệu hiện trạng trỏ snapshot có ngày+commit; báo cáo lịch sử giữ nguyên + đính chính liên kết; **không sửa mọi tài liệu cũ thành HEAD mới**. Không tự tham chiếu hash: ghi riêng “baseline sản phẩm được đo” (`31b51d2`) và “commit chứa báo cáo”.
+
+Quyền sửa lỗi: Agent 1 giao Agent 2 sửa **không cần VD mới** khi kết quả đúng đã có trong SPEC hoặc VD này; được cập nhật golden chẩn đoán có giải thích. **Phải dừng xin A0** nếu cần: chọn ngữ nghĩa chưa có luật; đổi API freeze/cú pháp/kiểu/bytecode; nới sandbox; hạ tiêu chí test/nền tảng; thêm dependency có ngoại lệ license/unsafe chưa duyệt.
+
+#### 6. Chia việc và điều kiện mở tiếp
+
+Tối đa **bốn sub-agent Agent 2**, worktree riêng, Agent 1 phân quyền sở hữu tệp trước khi chạy:
+
+| Luồng | Phạm vi |
+|---|---|
+| A | Control flow VM, biến cấp tệp, closure, `match`, or-pattern. |
+| B | Optional chaining, Option coercion, map/set, test ngữ nghĩa. |
+| C | std/CLI hardening, JSON, net, SQLite (có thể task nối tiếp). |
+| D | Docs truth, host identity, target matrix, tái hiện độc lập, chuẩn bị Windows verification. |
+
+A/B nếu cùng sửa codegen phải chia lượt hoặc có người tích hợp; không để bốn nhánh sửa tự do. Mốc bàn giao đầu (không chờ toàn đợt): ma trận 28 phát hiện (`reproduced`/`chưa`/`bác bỏ có bằng chứng`); repro đỏ + căn cứ kết quả đúng; bản sửa đầu cho treo/abort; đính chính macOS + host identity; danh sách xung đột ngữ nghĩa còn cần A0. **Không cam kết ngày từ ước lượng cũ trước khi tái hiện đủ.**
+
+**Pha 2** chỉ xem lại khi: 10 parity có kết luận & xử lý đúng; đủ 18 std/CLI tái hiện hoặc bác bỏ có bằng chứng; không còn lỗi treo/abort/nuốt lỗi/sai kết quả thuộc đợt này; hợp đồng Option, target matrix, tài liệu nền tảng khớp. Ba ứng viên đầu: định danh ổn định doc-examples → bỏ tách path thủ công → thiết kế lambda annotation (rồi mới quyết triển khai).
+
+**VS3/B-3**: chưa mở triển khai; không chốt GC/heap worker/Send-Sync/ngoại lệ dependency chỉ bằng tên lựa chọn. Cho phép hồ sơ design-only hữu hạn: B-3 chỉ rõ đường truyền impl/type + bound bị bỏ qua; VS3 ma trận phương án/chi phí/tương thích/quyết định cần A0; `select` chưa cấp tên; nợ đường ghi kiểm nội dung #140/#142 trước khi sửa số. Nếu generic bound bị bỏ qua khiến chương trình sai được chấp nhận ⇒ đưa vào triage tính đúng đắn ngay, không giấu dưới “design-only”.
+
+**Tag `0.x`** chỉ đề nghị sau: gate Linux + hai engine trên commit cuối xanh; fresh-clone xanh; Windows Tier 2 đo lại, giới hạn ghi rõ; ma trận core/SQLite công bố đúng cấu hình; không blocker đã biết; release notes nêu **macOS chưa verify**. Giữ `pha1-rc1`, không di chuyển tag.

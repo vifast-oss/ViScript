@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Cập nhật 2026-11-20 (VD-242)**: A0 mở đợt **“Ổn định sau pha 1”** — baseline `31b51d2`; chưa mở pha 2/VS3. Duyệt cả 10 parity + triage đủ 18 std/CLI; ngữ nghĩa chốt trong `DECISIONS.md` VD-242; bốn luồng Agent 2 tại `QUEUE.md` ST-237..ST-243. Tag `pha1-rc1` giữ nguyên; macOS chưa verify; Windows Tier 2 + verify commit cuối; RFC typed/CSV/str hoãn. Điều kiện mở pha 2 ở VD-242 §8. Các cập nhật dưới đây là lịch sử.
+
 > **Cập nhật 2026-11-20**: HEAD `7e23c59` (origin/main). VD-winport DONE kỹ thuật (A0 VD-241); Windows verify exit 0 @ c7cef71/2d93101/5f4edd7/c12979f/da24c7d; Tier 2 giữ, Tier 1 không tuyên bố; pha1-rc1 nguyên; narrow freeze +9 std.sqlite.*; macOS không có máy. Đọc `agent/SNAPSHOT-2026-11-20.md`. VD-winport mở theo lệnh người dùng; Linux xanh toàn workspace, gate/nightly PASS (@ `f9430b9`: fuzz 18,769,716 ca); **Windows**: verify @ `6ccf367` → 7 suite đỏ → fix @ `f9430b9` → 1 ca → fix @ `c7cef71` → **exit 0 — toàn workspace xanh** (150 khối ok); Tier 2 giữ nguyên, chưa tuyên bố; `pha1-rc1` nguyên; narrow freeze chỉ `+9 std.sqlite.*`; macOS chưa có kết luận (mps bận). Đọc **`agent/SNAPSHOT-2026-11-20.md`** để biết đầy đủ trạng thái trước khi bắt đầu.
 > **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối sau R30”) trước; **pha 1 đóng trên ps** tại HEAD `49b33b8` (ST-205…ST-211, ST-226, ST-228 + VD-215..VD-228); mac chờ + ratify A0. Lưu ý nội dung thân tệp (các khối R22/R23/R25/R26/R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
 
