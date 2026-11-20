@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `146cf32` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `0eb6b32` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2643 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2698 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -104,12 +104,16 @@
 | Schema SQL | `a6ebf63` → `8ce3246` | `sqlite.schema_sql` → `Result[str?, Error]` |
 | Str title | `ae86c9b` → `60d0961` | `str.title` hoa đầu từ theo khoảng trắng Unicode |
 | SQLite index columns | `409756b` → `146cf32` | `sqlite.index_columns` theo thứ tự index |
+| List mean | `60902ac` → `b55f233` | `list.mean` — trung bình `list[float]` |
+| Path join all | `a1c7378` → `96c8547` | `path.join_all` gấp trái bằng `path.join` |
+| SQLite primary keys | `9bc6f3a` → `1833df8` | `sqlite.primary_keys` theo thứ tự `pk` |
+| Mkdir all | `8f046b4` → `0eb6b32` | `fs.mkdir_all` đệ quy, chặn symlink |
 | Version | trực tiếp | `vis version [--json]` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2643 passed / 3 skipped** tại `146cf32`.
+- `./vis-dev gate --fast`: **PASS — 2698 passed / 3 skipped** tại `0eb6b32`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -288,3 +292,7 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `5e41548`: **PASS** — parser fuzz **15.289.413 ca / 346.969.831 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `vis test test/sem` @ `6dc6182`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `VIS_DIFF_N=100000` seed 20261208 @ `5865211`: **0 lệch** (93.767 chạy, 96,5 s).
+- **list-mean** (`60902ac` → `b55f233`): `list.mean(list[float]) -> float?`, rỗng `None`, IEEE NaN/inf; thêm `Ty::Float`.
+- **path-join-all** (`a1c7378` → `96c8547`): `path.join_all(list[str])`, gấp trái đúng `path.join`; không sugar.
+- **sqlite-pk** (`9bc6f3a` → `1833df8`): `sqlite.primary_keys` theo `pk`, bind tên; thiếu/view ⇒ `Ok([])`.
+- **mkdir-all** (`8f046b4` → `0eb6b32`): `fs.mkdir_all` đệ quy idempotent, chặn file/symlink, `Quyen::chuan_de_quy`; mock parity.

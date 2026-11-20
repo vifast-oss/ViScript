@@ -3414,3 +3414,15 @@ giữ `VS0403` (ngoài phạm vi); `impl Hop[T]` generic vẫn chưa hỗ trợ.
 Duyệt `vis version` in `vis <CARGO_PKG_VERSION>` (một dòng) và `--json` in
 `{"name":"vis","version":"…"}` (một dòng); đối số/cờ lạ ⇒ exit 2, stdout rỗng, usage trên stderr.
 Không đọc môi trường/tệp/mạng.
+
+### VD-270 (bổ sung) · list.mean, path.join_all, sqlite.primary_keys, fs.mkdir_all — A0, 2026-11-21
+
+- **list.mean**: `(list[float]) -> float?`; rỗng `None`; cộng trái→phải `f64` rồi chia `len`;
+  IEEE: NaN/inf lan truyền; thêm `Ty::Float` vô hướng; sugar R5c.
+- **path.join_all**: `(list[str]) -> str` gấp trái bằng đúng `path.join`; `[]` ⇒ `""`; tuyệt đối
+  giữa/cuối thay phần trước; không sugar.
+- **sqlite.primary_keys**: `(handle, table) -> Result[list[str], Error]` theo thứ tự `pk`, tên bảng
+  bind; không PK/view/thiếu ⇒ `Ok([])`; handle lỗi ⇒ `Err`.
+- **fs.mkdir_all**: `(path) -> Result[(), Error]` đệ quy, idempotent; file/symlink trên đường (kể cả
+  đích) ⇒ `Err`; `cap[Dir] (write)`; `Quyen::chuan_de_quy` canonicalize tổ tiên gần nhất; `--fs-mock`
+  đệ quy; không sugar.
