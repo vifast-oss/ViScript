@@ -113,6 +113,14 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 
+    /// **VD-270 (mkdir-all)**: tạo **đệ quy** mọi thư mục còn thiếu (như `create_dir_all`); đích
+    /// đã là thư mục ⇒ `Ok(())` (**idempotent**). Một thành phần đã tồn tại là **tệp** hoặc
+    /// **symlink** (kể cả đích cuối) ⇒ `Err` dữ liệu, **không** đi theo symlink. Default: **chưa
+    /// hỗ trợ** ⇒ host cũ/mock vẫn biên dịch.
+    fn mkdir_all(&mut self, _p: &str) -> Result<(), String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
     /// **VD-266**: xoá **một tệp** (không đệ quy); **từ chối** thư mục.
     /// Default: **chưa hỗ trợ** ⇒ host cũ/mock vẫn biên dịch.
     fn remove(&mut self, _p: &str) -> Result<(), String> {

@@ -5,7 +5,7 @@
 //! định 10 s), cap đồng thời = 1 (VS0/VS1 chưa có job). `exit != 0` ⇒ `VS0501` kèm **stderr** của
 //! tiến trình (không trộn stdout). Mỗi lần chạy in một dòng `EXEC …` khi `--explain-perms`.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
@@ -428,6 +428,62 @@ fn doi_ten_tep(from: &str, to: &str) -> Result<(), String> {
     std::fs::rename(from, to).map_err(|e| format!("không đổi tên được `{from}` → `{to}`: {e}"))
 }
 
+/// **VD-270 (mkdir-all)**: tạo **đệ quy** mọi thành phần còn thiếu của `p`, **không đi theo
+/// symlink** ở **bất kỳ** thành phần nào (kể cả đích cuối). Mỗi tiền tố được kiểm bằng
+/// `symlink_metadata`:
+///
+/// - chưa có ⇒ `create_dir` (một cấp; đua `AlreadyExists` được kiểm lại);
+/// - đã là thư mục thật ⇒ đi tiếp (đích cuối đã là thư mục ⇒ `Ok`, idempotent);
+/// - là symlink hoặc tệp/loại khác ⇒ `Err` **dữ liệu** (không tạo gì thêm).
+///
+/// Khác `std::fs::create_dir_all` ở đúng điểm **symlink**: bản std đi theo symlink tới thư mục;
+/// bản này **từ chối** để không ghi ra ngoài đường dẫn người dùng đã nêu. Đường dẫn rỗng ⇒ `Err`.
+/// Không tự kiểm `cap[Dir]` — việc đó do `FsGuard` làm **trước** khi gọi host này.
+fn tao_thu_muc_de_quy(p: &str) -> Result<(), String> {
+    if p.is_empty() {
+        return Err("đường dẫn rỗng".to_string());
+    }
+    let mut hien_tai = PathBuf::new();
+    for thanh in Path::new(p).components() {
+        hien_tai.push(thanh);
+        match std::fs::symlink_metadata(&hien_tai) {
+            Ok(md) => {
+                if md.file_type().is_symlink() {
+                    return Err(format!(
+                        "`{}` là symlink (không đi theo)",
+                        hien_tai.display()
+                    ));
+                }
+                if !md.is_dir() {
+                    return Err(format!(
+                        "`{}` đã tồn tại và không phải thư mục",
+                        hien_tai.display()
+                    ));
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                match std::fs::create_dir(&hien_tai) {
+                    Ok(()) => {}
+                    // Đua với tiến trình khác: mục vừa xuất hiện vẫn phải là thư mục thật.
+                    Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                        let md = std::fs::symlink_metadata(&hien_tai)
+                            .map_err(|e| format!("`{}`: {e}", hien_tai.display()))?;
+                        if md.file_type().is_symlink() || !md.is_dir() {
+                            return Err(format!(
+                                "`{}` đã tồn tại và không phải thư mục",
+                                hien_tai.display()
+                            ));
+                        }
+                    }
+                    Err(e) => return Err(format!("`{}`: {e}", hien_tai.display())),
+                }
+            }
+            Err(e) => return Err(format!("`{}`: {e}", hien_tai.display())),
+        }
+    }
+    Ok(())
+}
+
 /// **Host hệ thống tệp** (ST-33) — `std::fs` **chỉ** ở đây; `vis-interp`/`vis-vm` chỉ thấy trait.
 ///
 /// Chốt an toàn (Agent 0 duyệt): **cho phép** đường dẫn tuyệt đối và `..` (không sandbox — consent
@@ -492,6 +548,13 @@ impl vis_interp::builtin::FsHost for Runner {
     fn mkdir(&mut self, p: &str) -> Result<(), String> {
         self.nhat_ky("mkdir", p);
         std::fs::create_dir(p).map_err(|e| format!("không tạo được thư mục `{p}`: {e}"))
+    }
+
+    /// **VD-270 (mkdir-all)**: tạo **đệ quy** mọi thư mục thiếu — xem [`tao_thu_muc_de_quy`]
+    /// (không đi theo symlink; đích đã là thư mục ⇒ `Ok`; tệp/symlink ⇒ `Err` dữ liệu).
+    fn mkdir_all(&mut self, p: &str) -> Result<(), String> {
+        self.nhat_ky("mkdir_all", p);
+        tao_thu_muc_de_quy(p).map_err(|e| format!("không tạo được thư mục `{p}`: {e}"))
     }
 
     /// **VD-266**: xoá **một tệp**, **từ chối** thư mục (không đệ quy). `symlink_metadata` để không

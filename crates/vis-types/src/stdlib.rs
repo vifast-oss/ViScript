@@ -245,7 +245,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 126] = [
+pub const FUNCS: [StdFn; 127] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -730,6 +730,13 @@ pub const FUNCS: [StdFn; 126] = [
     },
     StdFn {
         name: "fs.mkdir",
+        params: &[Ty::Str],
+        ret: Ty::ResultUnitStr,
+    },
+    // **VD-270 (mkdir-all)**: tạo **đệ quy** mọi thư mục còn thiếu (như `mkdir -p`); thư mục đã
+    // tồn tại ⇒ `Ok(())`; thành phần là tệp/symlink ⇒ `Err(Error)` dữ liệu (không trap).
+    StdFn {
+        name: "fs.mkdir_all",
         params: &[Ty::Str],
         ret: Ty::ResultUnitStr,
     },
