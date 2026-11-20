@@ -79,7 +79,9 @@ sqlite.query_one	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.rollback	(str) -> Result[(), Error]
 str.center	(str, int, str) -> str
 str.contains	(str, str) -> bool
+str.count	(str, str) -> int
 str.ends_with	(str, str) -> bool
+str.find	(str, str) -> int?
 str.join	(list[str], str) -> str
 str.lines	(str) -> list[str]
 str.lower	(str) -> str
@@ -87,6 +89,7 @@ str.pad_left	(str, int, str) -> str
 str.pad_right	(str, int, str) -> str
 str.repeat	(str, int) -> str
 str.replace	(str, str, str) -> str
+str.rfind	(str, str) -> int?
 str.split	(str, str) -> list[str]
 str.split_whitespace	(str) -> list[str]
 str.starts_with	(str, str) -> bool

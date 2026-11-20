@@ -55,6 +55,9 @@ pub enum Ty {
     /// **VD-267** — `never`: kiểu của biểu thức **không bao giờ cho giá trị** (`panic(…)`).
     /// Chỉ dùng cho chữ ký builtin trần ([`BUILTIN_FUNCS`]); `std.*` chưa có hàm nào trả `never`.
     Never,
+    /// **VD-270 (strfind)** — `int?` = `Option[int]`: kiểu trả của `std.str.find`/`rfind`
+    /// (vị trí **scalar** Unicode, không khớp ⇒ `None`).
+    OptInt,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -93,6 +96,8 @@ impl Ty {
             ),
             // **VD-267** — `panic(…)` phân kỳ: kiểu `never` (khớp mọi kiểu đích ở `coerce`).
             Ty::Never => Type::Never,
+            // **VD-270 (strfind)** — `int?` là `Option[int]` thật (không phải `{error}`).
+            Ty::OptInt => Type::Opt(Box::new(Type::Int)),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -143,6 +148,8 @@ impl Ty {
             Ty::ResultRowSetErr => "Result[RowSet, Error]",
             // **VD-267**
             Ty::Never => "never",
+            // **VD-270 (strfind)**
+            Ty::OptInt => "int?",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -190,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 86] = [
+pub const FUNCS: [StdFn; 89] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -243,6 +250,24 @@ pub const FUNCS: [StdFn; 86] = [
         name: "str.contains",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::Bool,
+    },
+    // **VD-270 (strfind)**: vị trí tính theo **scalar** Unicode (cùng đơn vị `chars()`);
+    // `find` đầu tiên, `rfind` cuối cùng, không khớp ⇒ `None`; `count` **không chồng**
+    // (Rust `matches`). Needle rỗng: `find = Some(0)`, `rfind = Some(len)`, `count = len+1`.
+    StdFn {
+        name: "str.find",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptInt,
+    },
+    StdFn {
+        name: "str.rfind",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptInt,
+    },
+    StdFn {
+        name: "str.count",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::Int,
     },
     StdFn {
         name: "str.repeat",

@@ -81,7 +81,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `list[list[T]]`) ⇒ **83** hàm; không xoá/đổi hàm cũ nào.
     // **SỬA KÈM LÝ DO (VD-270, 2026-11-21)**: +**3** hàm `std.fs.*` metadata chỉ đọc (`size`,
     // `is_file`, `is_dir`) ⇒ **86** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 86, "bảng chữ ký phải đủ 86 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 strfind, 2026-11-21)**: +**3** hàm `std.str.*` (`find`, `rfind`,
+    // `count`; `find`/`rfind` trả `Ty::OptInt` = `int?`) ⇒ **89** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 89, "bảng chữ ký phải đủ 89 hàm");
 }
 
 #[test]
@@ -95,6 +97,27 @@ fn panic_la_builtin_tra_never() {
     assert_eq!(f.ret.sang_type(), Type::Never);
     assert_eq!(f.ret.ten(), "never");
     assert_eq!(f.so_doi(), 1);
+}
+
+#[test]
+fn strfind_tra_int_option_va_int() {
+    // **VD-270 (strfind)**: `find`/`rfind` trả `int?` = `Option[int]` **thật**, `count` trả `int`;
+    // cùng tham số `(str, str)` nên sugar `s.find(...)`/`s.count(...)` thoả R5c.
+    for ten in ["str.find", "str.rfind"] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
+        assert_eq!(f.params, &[Ty::Str, Ty::Str], "`{ten}`: tham số");
+        assert_eq!(f.ret, Ty::OptInt, "`{ten}`: kiểu trả");
+        assert_eq!(
+            f.ret.sang_type(),
+            Type::Opt(Box::new(Type::Int)),
+            "`{ten}`: phải hạ thành `Option[int]`"
+        );
+        assert_eq!(f.ret.ten(), "int?", "`{ten}`: tên hiển thị");
+    }
+    let c = sig_of("str.count").expect("str.count");
+    assert_eq!(c.params, &[Ty::Str, Ty::Str]);
+    assert_eq!(c.ret, Ty::Int);
+    assert_eq!(c.ret.sang_type(), Type::Int);
 }
 
 #[test]
