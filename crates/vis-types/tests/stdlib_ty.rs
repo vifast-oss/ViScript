@@ -126,7 +126,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 parse-int, 2026-11-21)**: +**1** hàm `std.str.parse_int`
     // (`(str) -> int?`; parse thập phân chặt, sai/tràn ⇒ `None`) ⇒ **113** hàm; không xoá/đổi
     // hàm cũ nào.
-    assert_eq!(FUNCS.len(), 113, "bảng chữ ký phải đủ 113 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-contains, 2026-11-21)**: +**1** hàm `std.list.contains`
+    // (`(list[T], T) -> bool`; cùng `eq_value` như `index_of`, rỗng ⇒ `false`) ⇒ **114** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 114, "bảng chữ ký phải đủ 114 hàm");
 }
 
 #[test]
@@ -310,6 +313,18 @@ fn indexof_tra_int_option() {
         );
         assert_eq!(f.ret.ten(), "int?", "`{ten}`: tên hiển thị");
     }
+}
+
+#[test]
+fn list_contains_tra_bool_va_sugar() {
+    // **VD-270 (list-contains)**: `(list[T], T) -> bool`; `T` buộc từ `xs` nên `value` cùng
+    // kiểu phần tử và sugar `xs.contains(v)` thoả R5c; khác `index_of` ở kiểu trả `bool`.
+    let f = sig_of("list.contains").expect("list.contains");
+    assert_eq!(f.params, &[Ty::List(&Ty::Var(0)), Ty::Var(0)], "tham số");
+    assert_eq!(f.ret, Ty::Bool, "kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "hạ kiểu trả");
+    assert_eq!(f.ret.ten(), "bool", "tên hiển thị");
+    assert_eq!(f.so_doi(), 2, "số đối số");
 }
 
 #[test]

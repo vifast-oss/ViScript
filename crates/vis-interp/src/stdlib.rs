@@ -28,6 +28,7 @@ mod chung;
 mod flatten;
 mod fsbytes;
 mod indexof;
+mod listcontains;
 mod pathnorm;
 mod sqlite_explain;
 mod sqlitecols;
@@ -412,6 +413,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.index_of" | "list.last_index_of" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(indexof::goi(name, xs, &args[1]))
+        }
+        // **VD-270 (list-contains)**: `true` iff có phần tử `==` `value` — **đúng** phép so
+        // cấu trúc của `index_of` (`Value::eq_value`); rỗng/không có ⇒ `false`, không trap.
+        // Lõi ở `stdlib/listcontains.rs`.
+        "list.contains" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            Ok(listcontains::goi(xs, &args[1]))
         }
         // **VD-270 (binary-search)**: `xs` **đã sắp tăng** theo `cmp_value` (cùng thứ tự
         // `list.sort`/`min`); trả **biên dưới** `Some(vị trí đầu của cụm bằng)` / `None`;
