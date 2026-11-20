@@ -1,0 +1,2413 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running unittests src\lib.rs (target\debug\build\vis-bytecode/a876ad8f6d12050b\out\vis_bytecode-a876ad8f6d12050b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\codegen.rs (target\debug\build\vis-bytecode/e272358ae1cf768c\out\codegen-e272358ae1cf768c.exe)
+
+running 5 tests
+test ham_co_arity_va_max_stack_ghi_trong_module ... ok
+test closure_co_make_closure_va_ham_con ... ok
+test match_ha_thanh_test_va_nhay_khong_co_lenh_match ... ok
+test vong_lap_co_nhay_lui ... ok
+test bien_di_khong_ho_tro_bao_loi_ro_rang ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\decode_neg.rs (target\debug\build\vis-bytecode/d13baa9ec81b259e\out\decode_neg-d13baa9ec81b259e.exe)
+
+running 11 tests
+test cat_cut_bi_tu_choi_khong_panic ... ok
+test dich_nhay_ngoai_code_bi_tu_choi ... ok
+test chi_so_ham_ngoai_pham_vi_bi_tu_choi ... ok
+test do_dai_khai_bao_qua_lon_bi_tu_choi ... ok
+test khong_co_entry_hop_le_bi_tu_choi ... ok
+test chi_so_const_ngoai_pham_vi_bi_tu_choi ... ok
+test magic_sai_bi_tu_choi ... ok
+test module_mau_roundtrip_va_hop_le ... ok
+test tag_la_bi_tu_choi ... ok
+test utf8_hong_bi_tu_choi ... ok
+test version_sai_bi_tu_choi ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\hash.rs (target\debug\build\vis-bytecode/b1fad1993c5294d2\out\hash-b1fad1993c5294d2.exe)
+
+running 5 tests
+test khong_con_fnv_va_khop_vector_sha256 ... ok
+test hai_nguon_khac_nhau_hash_khac ... ok
+test sha256_chuoi_rong ... ok
+test hash_nguon_trong_bytecode_khop_sha256 ... ok
+test encode_decode_giu_hash ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\roundtrip.rs (target\debug\build\vis-bytecode/31bda58f47d39c92\out\roundtrip-31bda58f47d39c92.exe)
+
+running 3 tests
+test roundtrip_30_golden_bieu_thuc ... ok
+test code_len_khong_rong_va_co_span ... ok
+test roundtrip_tren_toan_bo_323_ca ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests\st245_boundary.rs (target\debug\build\vis-bytecode/d5f8a7237403fe99\out\st245_boundary-d5f8a7237403fe99.exe)
+
+running 9 tests
+test doc_global_thu_the_duoc_chap_nhan_bien ... ok
+test load_verified_chan_global_ngoai_mien_tu_byte ... ok
+test hai_global_chi_doc_duoc_offset_0_va_1 ... ok
+test ghi_global_ngoai_mien_cung_bi_tu_choi ... ok
+test khong_co_global_ma_doc_global_bi_tu_choi ... ok
+test doc_global_vuot_so_thuc_te_bi_tu_choi ... ok
+test nlocals_bang_global_base_la_bien_bi ... ok
+test nlocals_vuot_global_base_bi_tu_choi ... ok
+test slot_global_cao_nhat_bi_tu_choi_khong_panic ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st246_version_compat.rs (target\debug\build\vis-bytecode/3608529f743bce31\out\st246_version_compat-3608529f743bce31.exe)
+
+running 4 tests
+test runtime_cu_tu_choi_artifact_v2 ... ok
+test runtime_moi_tu_choi_artifact_v1 ... ok
+test v1_khong_source_bi_tu_choi_ro ... ok
+test version_moi_2_magic_va_bang_the_giuyen ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st247_global_domain.rs (target\debug\build\vis-bytecode/2a67a113d4ac8d1e\out\st247_global_domain-2a67a113d4ac8d1e.exe)
+
+running 7 tests
+test q3_lo_hong_bi_tu_choi_khong_doc_thanh_unit ... ok
+test q1_ghi_global_rat_cao_khong_tu_nor_mien ... ok
+test q4_ghi_trong_ham_khong_goi_van_nor_mien_verify ... ok
+test q1_mien_bang_so_lenh_ghi_khong_phai_tri_chi_so ... ok
+test q4_ghi_trong_nhanh_khong_chay_van_nor_mien_verify ... ok
+test q5_mien_verify_khop_mien_cap_phat_voi_codegen ... ok
+test q2_u16_la_gioi_han_ma_hoa_va_verifier_chan_o_bien ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\tin_tyck.rs (target\debug\build\vis-bytecode/f5367e834f461975\out\tin_tyck-f5367e834f461975.exe)
+
+running 12 tests
+test canh_bao_truoc_loi_chon_loi ... ok
+test chan_rong_chuong_trinh_hop_le_compile_duoc ... ok
+test canh_bao_khong_chan ... ok
+test compile_cu_giu_nguyen_api ... ok
+test hexpr_error_bi_tu_choi_khong_panic ... ok
+test ma_dong_cot_thong_diep_duoc_giu_nguyen ... ok
+test hop_le_khong_bi_chan_boi_canh_bao ... ok
+test nhieu_loi_chon_loi_dau_tien ... ok
+test ca_that_sai_doi_so_bi_tu_choi ... ok
+test ca_that_sai_kieu_bi_tu_choi ... ok
+test ca_that_truong_khong_co_bi_tu_choi ... ok
+test moi_ca_loi_bien_dich_khong_panic_va_bi_tu_choi ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\verify.rs (target\debug\build\vis-bytecode/c1cf7653f1466b32\out\verify-c1cf7653f1466b32.exe)
+
+running 26 tests
+test chi_so_ham_ngoai_pham_vi ... ok
+test arity_lon_hon_nparams_bi_tu_choi ... ok
+test chi_so_const_ngoai_pham_vi ... ok
+test bang_span_lech_bi_tu_choi ... ok
+test closure_thieu_bien_bat_bi_tu_choi ... ok
+test call_method_can_dung_so_doi_so ... ok
+test code_rong_bi_tu_choi ... ok
+test dicht_nhay_ngoai_code ... ok
+test entry_khi_khong_co_ham ... ok
+test entry_ngoai_pham_vi ... ok
+test hai_duong_toi_cung_pc_voi_do_sau_khac_nhau ... ok
+test load_verified_nhan_module_hop_le ... ok
+test load_verified_tu_choi_byte_hong ... ok
+test load_verified_tu_choi_module_khong_hop_le ... ok
+test max_stack_du_thi_qua ... ok
+test max_stack_khai_nho_hon_bi_tu_choi ... ok
+test module_hop_le_qua ... ok
+test need_stack_dung_cho_moi_nhanh ... ok
+test ngang_xep_am_bi_tu_choi ... ok
+test nlocals_nho_hon_nparams_bi_tu_choi ... ok
+test o_cuc_bo_ngoai_pham_vi_bi_tu_choi ... ok
+test roi_khoi_cuoi_ham_bi_tu_choi ... ok
+test test_lit_voi_hang_hop_le_qua ... ok
+test un_hop_le_va_khong_hop_le ... ok
+test version_sai ... ok
+test vong_lap_hop_le_qua_kiem ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\test_child.rs (target\debug\build\vis-cli/a0b4e542b822c3c7\out\test_child-a0b4e542b822c3c7.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\build\vis-cli/761fc5a7250d54c2\out\vis-761fc5a7250d54c2.exe)
+
+running 102 tests
+test cli::check::tests::ten_goc_du ... ok
+test cli::check::tests::ten_goc_khong_co_dau ... ok
+test cache::tests::khoa_cache_ghim ... ok
+test cli::check::tests::ten_goc_unix ... ok
+test cli::check::tests::ten_goc_windows ... ok
+test cache::tests::khoa_cache_v1_khong_duoc_tai_dung_v2 ... ok
+test db::sqlite::tests::chinh_sach_action_code_ma_tran ... ok
+test db::sqlite::tests::chinh_sach_ham_load_extension_bi_cam ... ok
+test db::sqlite::tests::busy_ngoai_khoang_bi_tu_choi ... ok
+test cache::tests::khoa_cache_doi_khi_bang_the_doi ... ok
+test db::sqlite::tests::bind_thieu_thua_bi_tu_choi ... ok
+test db::sqlite::tests::cleanup_dong_moi_connection_trong_phien_va_dem ... ok
+test db::sqlite::tests::execute_tra_hang_phat_hien_truoc_step_khong_side_effect ... ok
+test db::sqlite::tests::create_false_thieu_tep_la_loi_du_lieu_khong_phai_du_lieu_cat ... ok
+test db::sqlite::tests::authorizer_chan_attach_pragma_ghi_load_extension ... ok
+test db::sqlite::tests::giao_dich_rollback_khong_auto_commit ... ok
+test db::sqlite::tests::in_transaction_theo_verb ... ok
+test db::sqlite::tests::connection_thu_17_bi_tu_choi ... ok
+test db::sqlite::tests::loi_offset_duoc_giu_tu_loi_prepare ... ok
+test db::sqlite::tests::moi_co_version_va_compile_options_that ... ok
+test db::sqlite::tests::multi_statement_bi_tu_choi ... ok
+test db::sqlite::tests::nan_bi_tu_choi_va_inf_roundtrip ... ok
+test db::sqlite::tests::mo_ta_path_utf8_split_tai_byte_120_khong_panic ... ok
+test db::sqlite::tests::params_qua_1000_bi_tu_choi ... ok
+test db::sqlite::tests::param_vuot_1mib_bi_tu_choi_va_dung_limit_thi_ok ... ok
+test db::sqlite::tests::query_vuot_10000_hang_err_khong_tra_du_lieu_cat ... ok
+test db::sqlite::tests::params_tong_vuot_16mib_bi_tu_choi_va_dung_limit_thi_ok ... ok
+test db::sqlite::tests::row_vuot_1mib_err ... ok
+test db::sqlite::tests::sql_qua_64kib_bi_tu_choi ... ok
+test db::sqlite::tests::sqlite_debug_in_thong_diep_tho_ro_fragment_chi_khi_bat ... ok
+test db::sqlite::tests::file_backed_mac_dinh_mo_duoc_va_ghi_doc_lai ... ok
+test db::sqlite::tests::temp_store_bi_ep_memory_va_cache_2mib ... ok
+test db::sqlite::tests::strict_caps_tu_choi_file_backed_nhung_cho_mem ... ok
+test db::sqlite::tests::token_gia_sai_dang_bi_tu_choi ... ok
+test db::sqlite::tests::token_128_bit_hex_khong_doan_duoc_khong_tai_su_dung ... ok
+test db::sqlite::tests::db_da_co_wal_van_mo_duoc ... ok
+test db::sqlite::tests::uri_ten_rong_memory_thua_bi_tu_choi ... ok
+test db::sqlite::tests::thoi_gian_chay_nho_bi_ngat_nhanh_khong_phai_doi_5s ... ok
+test json_esc::tests::newline_tab_control_roundtrip ... ok
+test json_esc::tests::quote_va_backslash_roundtrip ... ok
+test json_esc::tests::utf8_tho_giu_nguyen ... ok
+test lsp::khung::st240_tests::eof_giua_header_va_body ... ok
+test lsp::khung::st240_tests::eof_truoc_frame_la_sach ... ok
+test lsp::khung::st240_tests::frame_day_du_van_doc_duoc ... ok
+test lsp::khung::st240_tests::header_cut_thieu_content_length ... ok
+test lsp::module::tests::hieu_nang_cache_5_tep_duoi_2ms ... ok
+test audit_span::moi_node_hir_mang_dung_file_cua_tep_sinh_ra_no ... ok
+test lsp::vi_tri::tests::bien_khong_va_cuoi ... ok
+test lsp::vi_tri::tests::khop_cuoi_dong ... ok
+test lsp::vi_tri::tests::nhieu_dong ... ok
+test lsp::vi_tri::tests::vi_tri_crlf_da_chuan_hoa ... ok
+test lsp::vi_tri::tests::vi_tri_emoji_utf16 ... ok
+test lsp::vi_tri::tests::vi_tri_tab_mot_cot ... ok
+test pkg::resolver::tests::bo_qua_ban_khong_hop_le_vd125 ... ok
+test pkg::resolver::tests::cac_ban_tang_dan_va_loc_theo_req ... ok
+test pkg::resolver::tests::caret_0x_trong_deps ... ok
+test lsp::module::tests::hieu_nang_nap_module_5_tep ... ok
+test pkg::resolver::tests::goi_khong_co_trong_registry ... ok
+test pkg::resolver::tests::chon_cao_nhat_khi_moi_ban_deu_thoa ... ok
+test pkg::resolver::tests::hai_goc_dung_chung_mot_dep_chi_mot_ban ... ok
+test pkg::resolver::tests::khong_co_ban_nao_thoa_chi_ke_cac_ban_co ... ok
+test pkg::resolver::tests::khong_phu_thuoc_chi_tra_ve_goc ... ok
+test pkg::resolver::tests::phu_thuoc_bac_cau ... ok
+test pkg::resolver::tests::quay_lui_hai_tang ... ok
+test pkg::resolver::tests::quay_lui_khi_ban_cao_nhat_dan_toi_ngo_cut ... ok
+test pkg::resolver::tests::rang_buoc_and_tu_ba_goc ... ok
+test pkg::resolver::tests::rang_buoc_thu_hep_khoang ... ok
+test db::sqlite::tests::tong_vuot_16mib_err ... ok
+test pkg::resolver::tests::tat_dinh_hai_lan_cung_byte ... ok
+test pkg::resolver::tests::vong_phu_thuoc_xu_ly_duoc ... ok
+test pkg::semver::tests::bang_dung_chinh_xac ... ok
+test pkg::semver::tests::binh_dang_ngu_nghia ... ok
+test pkg::semver::tests::caret_0x_theo_cargo ... ok
+test pkg::semver::tests::caret_thuong ... ok
+test pkg::semver::tests::chuan_hoa_in_ra ... ok
+test pkg::semver::tests::dau_phay_la_and ... ok
+test pkg::semver::tests::khong_toan_tu_hieu_la_caret ... ok
+test pkg::semver::tests::lon_va_lon_bang ... ok
+test pkg::semver::tests::nho_va_nho_bang ... ok
+test pkg::semver::tests::req_loi_neu_dung_ly_do ... ok
+test pkg::resolver::tests::xung_dot_voi_goc ... ok
+test pkg::semver::tests::req_tu_choi_cu_phap_la ... ok
+test pkg::semver::tests::tilde_theo_cargo ... ok
+test pkg::semver::tests::toan_tu_in_dung_dau ... ok
+test pkg::semver::tests::tu_ds_va_mot_so_ca_bien ... ok
+test pkg::semver::tests::version_doc_binh_thuong ... ok
+test pkg::semver::tests::version_in_ra_va_thu_tu ... ok
+test pkg::semver::tests::version_tu_choi_khong_phai_so_va_so_0_dau ... ok
+test pkg::semver::tests::version_tu_choi_prerelease_va_build ... ok
+test pkg::semver::tests::version_tu_choi_thieu_thua_thanh_phan ... ok
+test pkg::tests::bam_chuan_hoa_crlf_bom ... ok
+test pkg::tests::so_phien_ban_long_cho_lock_cu ... ok
+test quyen::tests::doi_tuong_khong_phai_duong_dan_bao_ro_ly_do ... ok
+test quyen::tests::proc_khong_doc_duoc_thi_tu_choi ... ok
+test st238_tests::probe_khong_nuot_loi_cu_phap ... ok
+test pkg::resolver::tests::xung_dot_neu_chuoi_rang_buoc ... ok
+test vistest::tests::esc_json_newline_tab_control_parse_duoc ... ok
+test vistest::tests::path_voi_muc_dau_them_dau_va_giu_phan_con_lai ... ok
+test quyen::tests::thong_diep_khong_doc_duoc_proc_co_huong_dan_van_hanh ... ok
+test db::sqlite::tests::hai_ket_noi_tranh_khoa_busy_timeout ... ok
+test json_esc::fuzz_100k::doi_chung_escaper_hong_bi_phat_hien ... ok
+test json_esc::fuzz_100k::fuzz_100k_khop_ba_phia ... ok
+
+test result: ok. 102 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.72s
+
+     Running tests\api_dong_bang.rs (target\debug\build\vis-cli/5d28aab71007616a\out\api_dong_bang-5d28aab71007616a.exe)
+
+running 3 tests
+test api_vbc1_khop_code ... ok
+test api_codes_khop_code ... ok
+test api_std_khop_code ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\async_10k.rs (target\debug\build\vis-cli/300c2e2f892a3f86\out\async_10k-300c2e2f892a3f86.exe)
+
+running 1 test
+test muoi_nghin_task_khong_tran_stack ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests\async_vis.rs (target\debug\build\vis-cli/7b52efedb1f1b1ed\out\async_vis-7b52efedb1f1b1ed.exe)
+
+running 2 tests
+test async_tren_method_la_vs0201_va_ghi_no ... ok
+test async_tren_cmd_la_vs0201_va_ghi_no ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\ban_ghi_an_danh_ten.rs (target\debug\build\vis-cli/da150f02067d4b18\out\ban_ghi_an_danh_ten-da150f02067d4b18.exe)
+
+running 6 tests
+test an_danh_trong_list_vish_cung_chu ... ok
+test an_danh_trong_list_vis ... ok
+test ban_ghi_long_in_de_quy ... ok
+test let_chu_thich_kieu_an_danh ... ok
+test ban_ghi_co_ten_van_in_ten ... ok
+test truong_theo_thu_tu_khai_bao ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\cache_fastpath.rs (target\debug\build\vis-cli/9f9bee143c1556f6\out\cache_fastpath-9f9bee143c1556f6.exe)
+
+running 5 tests
+test khong_con_fast_path_khoa_v1 ... ok
+test sua_tep_chinh_cache_miss ... ok
+test mot_module_lan_hai_byte_y_het_va_nhanh ... ok
+test sua_tep_phu_cache_miss ... ok
+test module_cache_hit_khong_hoi_quy ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\cache_khong_che.rs (target\debug\build\vis-cli/acbaf49ec4d0c2e4\out\cache_khong_che-acbaf49ec4d0c2e4.exe)
+
+running 5 tests
+test hai_lan_vm_cache_byte_y_het ... ok
+test strict_caps_khong_bi_cache_che ... ok
+test module_doi_cache_khong_dung_lai ... ok
+test mode_vis_vish_khong_lan_cache ... ok
+test ba_che_do_520_tep_khong_lech ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.39s
+
+     Running tests\cap.rs (target\debug\build\vis-cli/4bef5201c0277505\out\cap-4bef5201c0277505.exe)
+
+running 4 tests
+test cap_khong_in_duoc ... ok
+test dry_in_danh_sach ... ok
+test dry_khong_quyen ... ok
+test dry_khong_chay ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\cap_khong_lo.rs (target\debug\build\vis-cli/d142edf938f04655\out\cap_khong_lo-d142edf938f04655.exe)
+
+running 7 tests
+test in_cap_la_loi_tyck ... ok
+test so_sanh_cap_la_loi_tyck ... ok
+test doi_so_dong_lenh_la_str ... ok
+test gan_json_vao_bien_cap_khong_sinh_quyen ... ok
+test json_decode_khong_tao_cap ... ok
+test to_json_cap_ra_null ... ok
+test doc_tep_khong_tao_cap ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\cap_proc.rs (target\debug\build\vis-cli/19a1c9bbe23d5a1e\out\cap_proc-19a1c9bbe23d5a1e.exe)
+
+running 6 tests
+test strict_cap_dir_khong_thay_the_proc ... ok
+test strict_khong_cap_thi_chan ... ok
+test khong_strict_khong_cap_van_chay ... ok
+test strict_cap_proc_sh_exit3 ... ok
+test strict_co_cap_proc_thi_chay_hai_duong ... ok
+test strict_cap_proc_pipeline_hai_stage ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests\cap_proc_grant.rs (target\debug\build\vis-cli/8f7eeba36b5e4325\out\cap_proc_grant-8f7eeba36b5e4325.exe)
+
+running 6 tests
+test grant_echo_chan_grep ... ok
+test grant_proc_cho_cap_dir_la_loi_kieu ... ok
+test grant_basename_echo_chay ... ok
+test grant_tuyet_doi_echo_chay ... ok
+test khong_grant_khong_gioi_han ... ok
+test hai_grant_pipeline_hai_stage ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\chan_doan_da_tep.rs (target\debug\build\vis-cli/3fe1fa18a533b104\out\chan_doan_da_tep-3fe1fa18a533b104.exe)
+
+running 6 tests
+test tap_dung_tep ... ok
+test loi_trong_b_dong_sau ... ok
+test loi_ca_hai_tep ... ok
+test b_dai_van_dung_a ... ok
+test loi_cap_tep_a ... ok
+test loi_trong_fn_a ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests\cheatsheet.rs (target\debug\build\vis-cli/5dc60649c9f3bae3\out\cheatsheet-5dc60649c9f3bae3.exe)
+
+running 1 test
+test cheatsheet_moi_vi_du_chay_duoc ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests\check.rs (target\debug\build\vis-cli/ea88932c55493b99\out\check-ea88932c55493b99.exe)
+
+running 13 tests
+test co_la_la_dung_sai_thoat_2 ... ok
+test khong_doc_duoc_tep_la_not_ok ... ok
+test duong_dan_tuong_doi_in_nguyen_van ... ok
+test hai_khoi_vish_session_qua_cli_deu_ok ... ok
+test mixed_lex_va_syntax_phai_bao_vs0101 ... ok
+test khoi_loai_tru_tai_lieu_bao_not_ok_dung_mot_chan_doan ... ok
+test not_ok_co_dung_mot_dong_chan_doan_moi_tep ... ok
+test thieu_tham_so_la_dung_sai_thoat_2 ... ok
+test tap_sach_cau_truc_va_exit_0 ... ok
+test fixture_tai_lieu_15_khoi_deu_ok ... ok
+test thu_tu_tep_dung_theo_tham_so_truyen_vao ... ok
+test thu_muc_tep_rong_va_non_utf8 ... ok
+test vish_duoc_kiem_bang_cmdcst ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\closure_cmd.rs (target\debug\build\vis-cli/5fe89a150031835e\out\closure_cmd-5fe89a150031835e.exe)
+
+running 17 tests
+test each_noi_tiep_la_vs0603 ... ok
+test count_dem_phan_tu ... ok
+test first_tren_list_rong_la_none ... ok
+test first_lay_dau ... ok
+test closure_hai_tham_so_la_vs0602 ... ok
+test each_in_tung_phan_tu ... ok
+test sugar_va_it_viet_tuong_minh_tuong_duong ... ok
+test sugar_vi_tu_ngam_it ... ok
+test than_sai_kieu_la_vs0412 ... ok
+test where_hang_so_la_loi_kiem_tinh ... ok
+test span_than_dung_khi_truoc_do_co_ky_tu_nhieu_byte ... ok
+test sugar_cac_dang_so_co_don_vi ... ok
+test where_khong_phai_closure_la_loi_kiem_tinh ... ok
+test where_list_rong_van_rong ... ok
+test where_loc_theo_closure ... ok
+test where_voi_list_str_va_len ... ok
+test where_ten_tran_khong_so_sanh_la_loi ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\cmd_run.rs (target\debug\build\vis-cli/6315e87887294ee4\out\cmd_run-6315e87887294ee4.exe)
+
+running 9 tests
+test check_khong_con_bail_out ... ok
+test chay_nen_la_vs0605 ... ok
+test flag_co_default ... ok
+test lenh_khong_ton_tai_la_vs0501 ... ok
+test hai_item_bang_cham_phay ... ok
+test noi_khong_duoc_la_vs0603 ... ok
+test pipeline_ba_stage_chay ... ok
+test check_no_extern_bao_vs0601 ... ok
+test sai_doi_so_la_vs0602 ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\crlf.rs (target\debug\build\vis-cli/fbde143d6abb92ed\out\crlf-fbde143d6abb92ed.exe)
+
+running 3 tests
+test crlf_record_thieu_truong_luon_bao_loi_vi_tri_dung ... ok
+test crlf_import_std_json_giai_duoc ... ok
+test crlf_test_fn_va_main_bien_doi_dung ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\diag_cmp.rs (target\debug\build\vis-cli/33e496baae272678\out\diag_cmp-33e496baae272678.exe)
+
+running 6 tests
+test chuan_hoa_escape ... ok
+test phan_loai_ba_tang_khoa_cung ... ok
+test ca_bien_dich_di_qua_bytecode_khong_panic ... ok
+test ca_bien_dich_hai_duong_cung_chan_doan ... ok
+test ca_luc_chay_check_rong_hai_duong_giong ... ok
+test ca_xanh_ba_duong_khop_stdout ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.55s
+
+     Running tests\diff_loi.rs (target\debug\build\vis-cli/45ab330822620cac\out\diff_loi-45ab330822620cac.exe)
+
+running 7 tests
+test assert_sai_hai_duong ... ok
+test deadlock_hai_duong ... ok
+test send_sai_kieu_hai_duong ... ok
+test send_sau_close_hai_duong ... ok
+test await_khong_phai_task_hai_duong ... ok
+test thieu_cap_hai_duong ... ok
+test thieu_pkg_hai_duong ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\explain.rs (target\debug\build\vis-cli/90a3b1b93458d1b1\out\explain-90a3b1b93458d1b1.exe)
+
+running 10 tests
+test explain_khong_tham_so_thi_doi_cach_dung ... ok
+test explain_ma_la_thi_do ... ok
+test explain_mot_ma_co_nghia ... ok
+test explain_lang_sai_hoac_thieu_gia_tri_la_loi_dung ... ok
+test explain_lang_en_va_ja ... ok
+test list_in_du_10_ma_cua_spec_lex ... ok
+test explain_so_runtime_05xx ... ok
+test explain_so_ten_03xx ... ok
+test list_lang_in_du_ba_ngon_ngu_tung_ma ... ok
+test explain_so_kieu_04xx ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\explain_moi.rs (target\debug\build\vis-cli/a54ac65b9cfb0be1\out\explain_moi-a54ac65b9cfb0be1.exe)
+
+running 6 tests
+test toan_bo_so_du_ba_ngon_ngu ... ok
+test ma_la_ro_rang_exit_2 ... ok
+test list_du_53_dong_dung_thu_tu ... ok
+test tro_giup_neu_du_so_ma ... ok
+test lang_sai_exit_2 ... ok
+test ba_ma_runtime_du_ba_ngon_ngu ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\extern.rs (target\debug\build\vis-cli/198e18a706978f62\out\extern-198e18a706978f62.exe)
+
+running 13 tests
+test duong_dan_hermetic_co_that ... ok
+test echo_trong_vish_van_chay ... ok
+test echo_ra_list_str ... ok
+test cat_doc_stdin_rong_la_rong ... ok
+test echo_raw_giu_newline ... ok
+test false_thoat_ma_1_la_vs0501 ... ok
+test printf_nhieu_dong_bo_newline_cuoi ... ok
+test stderr_khong_tron_stdout ... ok
+test no_extern_la_vs0601 ... ok
+test true_khong_in_gi ... ok
+test variadic_gom_da_so_con_lai ... ok
+test explain_perms_in_nhat_ky ... ok
+test timeout_la_vs0501 ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests\fmt.rs (target\debug\build\vis-cli/e9f70eb9d0812e89\out\fmt-e9f70eb9d0812e89.exe)
+
+running 9 tests
+test check_nhieu_tep_va_tep_loi ... ok
+test mot_tep_in_ra_stdout_giu_nguyen_tep ... ok
+test loi_cu_phap_ra_stderr_exit_2 ... ok
+test thieu_tham_so_va_co_la_la_usage ... ok
+test write_khong_ghi_tep_loi ... ok
+test vish_format_duoc_khi_chi_sai_lenh ... ok
+test write_sua_roi_giu_nguyen ... ok
+test check_ma_thoat_0_1_2 ... ok
+test khong_panic_khi_pipe_dong ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+
+     Running tests\fmt_indent.rs (target\debug\build\vis-cli/396d44cf05aec7ce\out\fmt_indent-396d44cf05aec7ce.exe)
+
+running 6 tests
+test report_hai_dau_cach ... ok
+test check_canh_bao_khong_do ... ok
+test fmt_mac_dinh_giu_nguyen ... ok
+test report_hon_hop ... ok
+test report_bon_dau_cach_sach ... ok
+test report_thu_muc ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\fmt_moi.rs (target\debug\build\vis-cli/3aaa6ac82cf40b9f\out\fmt_moi-3aaa6ac82cf40b9f.exe)
+
+running 3 tests
+test fmt_vish_than_cmd_giu_thu_le ... ok
+test fmt_check_thu_muc_co_vish ... ok
+test fmt_check_toan_bo_test ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+     Running tests\gan_hai_duong.rs (target\debug\build\vis-cli/a5882a712b58c1be\out\gan_hai_duong-a5882a712b58c1be.exe)
+
+running 17 tests
+test closure_gan_phan_tu_bien_bat_hai_duong ... ok
+test closure_gan_bien_bat_co_tham_so_hai_duong ... ok
+test closure_long_hai_tang_hai_duong ... ok
+test closure_gan_truong_bien_bat_hai_duong ... ok
+test dich_gan_khong_ho_tro_la_vs0412 ... ok
+test codegen_loi_vm_phai_exit_khac_0 ... ok
+test gan_long_goc_let_bao_bat_bien_hai_duong ... ok
+test gan_long_goc_var_bao_long_hai_duong ... ok
+test gan_truong_tren_kieu_khong_ro_cung_chan_doan_giong_nhau ... ok
+test gan_ghep_tren_truong_bi_chan_truoc_hai_duong ... ok
+test std_khong_nhan_tham_so_ten ... ok
+test var_list_chi_so_va_cow_hai_duong ... ok
+test var_map_khoa_hai_duong ... ok
+test var_self_gan_truong_hai_duong ... ok
+test self_bat_bien_la_vs0413_hai_duong ... ok
+test var_truong_gan_hai_duong ... ok
+test vish_shell_let_khong_thanh_khai_bao ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests\generic_cli.rs (target\debug\build\vis-cli/0b0ae332e5710825\out\generic_cli-0b0ae332e5710825.exe)
+
+running 4 tests
+test check_va_run_cung_ket_luan_hop_le ... ok
+test generic_hai_kieu_cung_chuong_trinh_hai_duong ... ok
+test check_va_run_cung_ket_luan_mau_thuan ... ok
+test vm_chay_ham_main_nhu_interp ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\get_select.rs (target\debug\build\vis-cli/d84dfcfce7af4aaa\out\get_select-d84dfcfce7af4aaa.exe)
+
+running 13 tests
+test get_gia_tri_co_don_vi ... ok
+test get_khong_doi_so_la_vs0602 ... ok
+test get_it_tuong_minh_tuong_duong ... ok
+test get_noi_tiep_duoc ... ok
+test get_ten_truong ... ok
+test get_tren_list_rong_la_rong ... ok
+test get_truong_la_la_vs0605 ... ok
+test kieu_khong_phai_ban_ghi_thi_kiem_dong ... ok
+test select_ba_truong ... ok
+test get_select_chay_ca_hai_duong ... ok
+test select_dao_thu_tu_doi_so ... ok
+test select_giu_thu_tu_doi_so ... ok
+test select_truong_la_la_vs0605 ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\grant_proc_canon.rs (target\debug\build\vis-cli/91ff6258bef924f7\out\grant_proc_canon-91ff6258bef924f7.exe)
+
+running 6 tests
+test sao_chep_trung_ten_bi_chan ... ok
+test tuyet_doi_khop_thi_chay ... ok
+test grant_binary_khong_ton_tai ... ok
+test khong_grant_khong_gioi_han ... ok
+test grant_duong_dan_tuong_doi ... ok
+test grant_ten_tran_phan_giai_path ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+     Running tests\host_conformance.rs (target\debug\build\vis-cli/668f80a6464c7c83\out\host_conformance-668f80a6464c7c83.exe)
+
+running 1 test
+test host_conformance_suite ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.26s
+
+     Running tests\http.rs (target\debug\build\vis-cli/64409ae7de6c639a\out\http-64409ae7de6c639a.exe)
+
+running 21 tests
+test http_200_byte ... ok
+test http_404 ... ok
+test http_body_rong ... ok
+test http_chunked_ba_chunk ... ok
+test http_chunked_co_mo_rong ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_duong_mac_dinh ... ok
+test http_gioi_han ... ok
+test http_head_khong_doc_than ... ok
+test http_head_khong_theo_redirect ... ok
+test http_het_gio ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.90s
+
+     Running tests\json_ra.rs (target\debug\build\vis-cli/cdbe8c50b2146055\out\json_ra-cdbe8c50b2146055.exe)
+
+running 13 tests
+test check_json_severity_error ... ok
+test check_json_hai_loi ... ok
+test check_json_ba_tep_dung_thu_tu ... ok
+test check_json_khong_co_tap_khong_doi ... ok
+test check_json_tep_sach ... ok
+test khong_json_tap_nguyen_ven ... ok
+test check_json_loi_trong_tep_phu ... ok
+test check_json_ten_tep_dac_biet_parse_duoc ... ok
+test check_json_severity_warning_tab ... ok
+test check_json_loi_hai_tep ... ok
+test test_json_tat_ca_ok ... ok
+test test_json_hai_tren_ba ... ok
+test test_json_ten_tieng_viet ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running tests\json_sort.rs (target\debug\build\vis-cli/cb578cae5ac9e8ca\out\json_sort-cb578cae5ac9e8ca.exe)
+
+running 14 tests
+test fixture_sort_shell_khoa_str_desc ... ok
+test fixture_to_json_pretty ... ok
+test json_encode_list_ban_ghi_co_ten_va_an_danh ... ok
+test literal_ban_ghi_an_danh_ra_object ... ok
+test fixture_pipeline_dai_to_json ... ok
+test select_ban_ghi_an_danh_ra_json_dung_khoa_thu_tu ... ok
+test sort_by_khoa_bool_la_vs0412 ... ok
+test std_list_sort_by_cu_van_chay ... ok
+test to_json_co_khong_hop_le_bao_vs0602 ... ok
+test to_json_khong_can_use_std_json ... ok
+test sort_by_khoa_size_va_duration_on_dinh ... ok
+test to_json_thieu_pipe_bao_vs0602_ro ... ok
+test interp_va_vm_cung_byte_cho_sort_va_json ... ok
+test round_trip_encode_decode_map_list_int_str ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\kenh.rs (target\debug\build\vis-cli/20e6f2cb481843e6\out\kenh-20e6f2cb481843e6.exe)
+
+running 5 tests
+test close_idempotent_va_nhan_not_hang ... ok
+test spawn_producer_voi_dem_du_hai_duong ... ok
+test send_sau_close_la_vs0504 ... ok
+test tao_send_recv_va_fifo_hai_duong ... ok
+test deadlock_khong_treo_va_bao_vs0505 ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\kenh_cap0.rs (target\debug\build\vis-cli/9a3899e789f3b814\out\kenh_cap0-9a3899e789f3b814.exe)
+
+running 10 tests
+test chan_0_dong_runtime_vs0505 ... ok
+test chan_0_do_thoi_gian_khong_treo ... ok
+test drain_task_in_khong_await ... ok
+test chan_0_literal_bi_tu_choi ... ok
+test drain_100_task_thu_tu_tat_dinh ... ok
+test chan_0_trong_ham_cung_chan ... ok
+test drain_task_loi_vs0506 ... ok
+test recv_rong_khong_task_vs0505 ... ok
+test recv_sau_close_none ... ok
+test send_sau_close_vs0504 ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\khe_ong.rs (target\debug\build\vis-cli/ad94ba1c08b01f75\out\khe_ong-ad94ba1c08b01f75.exe)
+
+running 14 tests
+test khe_giu_cho_truoc_khong_de_bind ... ok
+test nhom_ba_phan_tu_take_hai ... ok
+test bieu_thuc_dau_khong_ngoac_chay ... ok
+test lines_roi_take_giu_nguyen ... ok
+test co_khong_bi_chiem_lam_khe ... ok
+test nhom_khong_nhan_pipe ... ok
+test nhom_khong_phai_list_thi_bao_loi_luc_chay ... ok
+test nhom_lam_doi_so_chua_ho_tro ... ok
+test nhom_list_bool_vao_take ... ok
+test nhom_list_int_vao_take ... ok
+test nhom_list_str_vao_take ... ok
+test str_khong_vao_duoc_take ... ok
+test take_khong_lay_gi ... ok
+test take_khong_pipe_van_vs0602 ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\ls_open.rs (target\debug\build\vis-cli/4c0354028734ad88\out\ls_open-4c0354028734ad88.exe)
+
+running 14 tests
+test ls_all_gom_ten_cham ... ok
+test khoi_672_end_to_end ... ok
+test ls_khong_doi_so_dung_cham ... ok
+test khoi_672_interp_va_vm_cung_byte ... ok
+test ls_mock_ra_bang ... ok
+test ls_sap_theo_ten_byte ... ok
+test khong_mock_thi_dung_fs_that ... ok
+test ls_thu_muc_khong_ton_tai_la_vs0501 ... ok
+test ls_long_them_cot_mode_va_modified_time ... ok
+test modified_la_duration ... ok
+test open_mock_doc_noi_dung ... ok
+test open_thieu_tep_la_vs0501 ... ok
+test fixture_cmd_fs ... ok
+test size_la_byte_theo_bang_lexer ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests\lsp.rs (target\debug\build\vis-cli/ff1550b31aaa6803\out\lsp-ff1550b31aaa6803.exe)
+
+running 44 tests
+test lsp_body_hong_32700 ... ok
+test lsp_chan_doan_did_change ... ok
+test lsp_chan_doan_did_close ... ok
+test lsp_chan_doan_did_open ... ok
+test lsp_chan_doan_emoji_utf16 ... ok
+test lsp_chan_doan_sach ... ok
+test lsp_chan_doan_tab_mot_cot ... ok
+test lsp_chan_doan_vish ... ok
+test lsp_co_la_2 ... ok
+test lsp_close_roi_mo_lai_chan_doan ... ok
+test lsp_completion_chua_mo ... ok
+test lsp_completion_khong_co_dia_khong_bia_module ... ok
+test lsp_completion_sau_cham ... ok
+test lsp_completion_sau_cham_co_phuong_thuc ... ok
+test lsp_completion_sau_cham_dung_truong ... ok
+test lsp_completion_sau_cham_khong_ro_kieu_fallback ... ok
+test lsp_completion_khu_trung_uu_tien_tep_chinh ... ok
+test lsp_completion_sau_cham_kieu_khong_ho_tro ... ok
+test lsp_completion_thay_std_da_use ... ok
+test lsp_completion_tien_to_add ... ok
+test lsp_completion_thay_ham_module ... ok
+test lsp_completion_tien_to_le ... ok
+test lsp_5_did_change_ket_qua_nhu_lan_dau ... ok
+test lsp_exit_truoc_shutdown_1 ... ok
+test lsp_hover_add ... ok
+test lsp_ba_tep_bang_vis_check ... ok
+test lsp_hover_bien_kieu ... ok
+test lsp_hover_khong_ton_tai ... ok
+test lsp_hover_option_in_int ... ok
+test lsp_hover_truong_int ... ok
+test lsp_hover_ham_module ... ok
+test lsp_hover_truong_str ... ok
+test lsp_initialized_khong_frame ... ok
+test lsp_khoi_tao ... ok
+test lsp_khong_co_tren_dia_khong_bia_loi_module ... ok
+test lsp_completion_sau_cham_tat_dinh ... ok
+test lsp_method_la_32601 ... ok
+test lsp_shutdown_exit_0 ... ok
+test lsp_module_thieu_giong_vis_check ... ok
+test lsp_nam_tep_module_hoat_dong ... ok
+test lsp_module_std_hop_le_khong_bao_gia ... ok
+test lsp_truoc_initialize_32002 ... ok
+test lsp_module_util_hop_le_sach ... ok
+test lsp_module_std_sai_giong_vis_check ... ok
+
+test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests\lsp_da_tep.rs (target\debug\build\vis-cli/ef17afd0c8ef47ea\out\lsp_da_tep-ef17afd0c8ef47ea.exe)
+
+running 4 tests
+test did_change_van_dung_a ... ok
+test mo_b_chan_doan_b ... ok
+test mo_a_chi_chan_doan_a ... ok
+test a_sach_rong_b_co_loi ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\ma_truong.rs (target\debug\build\vis-cli/06635d0df194b292\out\ma_truong-06635d0df194b292.exe)
+
+running 12 tests
+test explain_vs0405_thuoc_so_kieu ... ok
+test phuong_thuc_tren_kieu_khong_phai_ban_ghi_giu_vs0403 ... ok
+test each_truong_khong_co_la_vs0405 ... ok
+test select_truong_khong_co_la_vs0405 ... ok
+test truong_khong_co_tren_ban_ghi_la_vs0405 ... ok
+test truong_co_thi_chay_binh_thuong ... ok
+test where_lambda_tra_int_la_vs0412 ... ok
+test where_lambda_trong_ngoac_dung_thi_chay ... ok
+test vs0605_da_cap_lai_cho_chay_nen ... ok
+test where_lambda_trong_ngoac_truong_khong_co_la_vs0405 ... ok
+test where_sugar_dung_thi_chay ... ok
+test where_sugar_truong_khong_co_la_vs0405 ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\modules.rs (target\debug\build\vis-cli/8eb19a91cd3a7cf1\out\modules-8eb19a91cd3a7cf1.exe)
+
+running 18 tests
+test check_bao_dung_tep_va_dong_cot ... ok
+test co_ban_pub_fn_va_pub_type ... ok
+test dump_deps_in_cay ... ok
+test hai_tang_noi_dung_dung ... ok
+test khong_pub_thi_khong_thay ... ok
+test loi_trong_tep_phu_bao_dung_ten_tep ... ok
+test mo_coi_that_bao_vs0403 ... ok
+test mo_coi_trait_module_va_kieu_noi_tep ... ok
+test cache_hong_thi_bien_dich_lai ... ok
+test pkg_chua_cai_bao_vs0706 ... ok
+test tep_chinh_khong_ton_tai ... ok
+test thieu_tep_la_vs0701 ... ok
+test cache_doi_khi_sua_phu_thuoc ... ok
+test use_trung_hai_duong_dan_la_vs0703 ... ok
+test std_fs_bao_st27 ... ok
+test vong_ba_tep_la_vs0702 ... ok
+test vong_hai_tep_la_vs0702 ... ok
+test vm_va_interp_cung_ket_qua ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\net.rs (target\debug\build\vis-cli/cb6f536d6605c5ab\out\net-cb6f536d6605c5ab.exe)
+
+running 9 tests
+test tcp_doc_ghi_sau_close ... ok
+test tcp_explain_tong ... ok
+test tcp_het_gio_doc ... ok
+test tcp_noi_va_doc ... ok
+test tcp_khong_host ... ok
+test tcp_explain_perms ... ok
+test tcp_read_cap_64 ... ok
+test tcp_tay_la ... ok
+test tcp_tu_choi ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.60s
+
+     Running tests\net_server.rs (target\debug\build\vis-cli/09037ef459f94349\out\net_server-09037ef459f94349.exe)
+
+running 6 tests
+test accept_het_gio ... ok
+xong
+xong
+xong
+test server_hai_tien_trinh ... ok
+xong
+xong
+test server_hai_ket_noi_lien_tiep ... ok
+test cong_ban ... ok
+test server_khong_host ... ok
+xong
+xong
+xong
+xong
+test server_mot_lan ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.55s
+
+     Running tests\ngoai_vm.rs (target\debug\build\vis-cli/c67b124faf8ab01c\out\ngoai_vm-c67b124faf8ab01c.exe)
+
+running 5 tests
+test echo_vm_cung_byte ... ok
+test lenh_khong_ton_tai_vm_cung_chan_doan ... ok
+test complete_ma_thoat_vm_cung_byte ... ok
+test sh_exit3_vm_cung_byte ... ok
+test cat_pipe_vm_cung_byte ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\nhom.rs (target\debug\build\vis-cli/1e0fb4d08fb590da\out\nhom-1e0fb4d08fb590da.exe)
+
+running 14 tests
+test chan_doan_tuyet_doi_trong_nhom_nhieu_dong ... ok
+test nhom_bieu_thuc_nhieu_dong ... ok
+test kieu_nhom_kiem_tinh_where ... ok
+test kieu_nhom_long_kiem_tinh_select ... ok
+test nhom_co_pipeline_hai_stage ... ok
+test nhom_lam_doi_so_st46_khong_doi ... ok
+test interp_va_vm_cung_byte ... ok
+test nhom_lenh_co_co_long ... ok
+test nhom_long_nhau_bieu_thuc ... ok
+test nhom_long_nhau_lenh ... ok
+test nhom_pipeline_nhieu_dong ... ok
+test nhom_rong_la_vs0201 ... ok
+test shell_let_st44_khong_doi ... ok
+test fixture_cmd_nhom ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\p0_newtype.rs (target\debug\build\vis-cli/839504a6fecc44be\out\p0_newtype-839504a6fecc44be.exe)
+
+running 3 tests
+test alias_tu_khoa_da_bo ... ok
+test newtype_tu_khoa_da_bo ... ok
+test type_newtype_cu_phap_moi_xanh ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\pipeline.rs (target\debug\build\vis-cli/9d2d7f431e94f671\out\pipeline-9d2d7f431e94f671.exe)
+
+running 16 tests
+test chuong_trinh_ngoai_co_that ... ok
+test complete_co_doi_so_la_vs0602 ... ok
+test complete_giu_stderr_va_code_khac_0 ... ok
+test complete_tren_stage_vis_la_vs0602 ... ok
+test complete_grep_khong_khop_het_la_loi ... ok
+test echo_qua_cat_nhan_stdin ... ok
+test complete_grep_khop_code_0 ... ok
+test echo_qua_grep_tim_thay ... ok
+test grep_khong_khop_van_la_loi_khi_khong_complete ... ok
+test printf_hai_dong_qua_cat_ra_hai_dong ... ok
+test list_nhieu_dong_qua_grep_loc_dung_dong ... ok
+test raw_str_di_nguyen_van_khong_them_newline ... ok
+test printf_khong_newline_qua_cat_khong_them_dong_rong ... ok
+test timeout_neu_ro_stage ... ok
+test vm_co_host_chay_cung_interp ... ok
+test fixture_vish_trong_test_cmd_pipe ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests\pkg.rs (target\debug\build\vis-cli/27c92c804b6afabc\out\pkg-27c92c804b6afabc.exe)
+
+running 24 tests
+test entry_tuy_chon_khi_manifest_thieu ... ok
+test entry_sai_bao_vs0701_neu_ten ... ok
+test add_roi_list ... ok
+test hai_goi_cung_ten_tep ... ok
+test add_keo_phu_thuoc ... ok
+test cai_hai_lan_cung_byte ... ok
+test lock_co_entry_sau_khi_cai ... ok
+test install_khong_can_registry ... ok
+test lock_cu_khong_entry_van_chay ... ok
+test manifest_thieu_truong ... ok
+test list_json_parse_duoc_dung_thu_tu ... ok
+test list_khong_co_json_khong_doi ... ok
+test lock_hong ... ok
+test pkg_bi_sua_bao_vs0707 ... ok
+test pkg_vong_lap ... ok
+test pkg_chua_cai ... ok
+test remove_ten_la_exit_2_lock_khong_doi ... ok
+test remove_khong_xoa_blob_con_dung ... ok
+test update_khong_doi_lock_byte_identical ... ok
+test remove_xoa_lock_store_va_bao_chua_cai ... ok
+test update_ten_khong_co_exit2 ... ok
+test update_doi_noi_dung_cung_version ... ok
+test update_mot_ten_khong_dung_goi_khac ... ok
+test use_pkg_chay_that ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests\pkg_lock.rs (target\debug\build\vis-cli/108bf68a2a932fa9\out\pkg_lock-108bf68a2a932fa9.exe)
+
+running 8 tests
+test install_lock_khong_con_thoa_chi_duong_update ... ok
+test install_giu_nguyen_lock_khi_con_thoa ... ok
+test list_json_co_version_req ... ok
+test remove_bo_ca_roots ... ok
+test lock_cu_migrate_va_ghi_hai_lan_cung_byte ... ok
+test add_ghi_roots_va_rang_buoc_dep ... ok
+test update_lock_cu_ghi_dinh_dang_moi_mot_lan ... ok
+test update_nang_trong_khoang ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\pkg_resolver.rs (target\debug\build\vis-cli/067a27b838e36463\out\pkg_resolver-067a27b838e36463.exe)
+
+running 7 tests
+test khong_thoa_bao_vs0704_exit_2 ... ok
+test chon_cao_nhat_theo_rang_buoc ... ok
+test khoang_chon_dung_tran ... ok
+test ba_thanh_phan_van_la_ghim_dung ... ok
+test xung_dot_qua_dep_neu_nguon ... ok
+test rang_buoc_sai_cu_phap_exit_2 ... ok
+test hai_lan_chay_cung_byte_lock ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\prelude.rs (target\debug\build\vis-cli/a7ee0090d93405b6\out\prelude-a7ee0090d93405b6.exe)
+
+running 13 tests
+test it_viet_tuong_minh_tuong_duong ... ok
+test khong_suy_duoc_kieu_thi_khong_bao_oan ... ok
+test proc_cpu_la_percent ... ok
+test proc_cpu_sai_don_vi_la_vs0412 ... ok
+test so_sanh_cung_don_vi_size_thi_ok ... ok
+test duration_so_sanh_duoc ... ok
+test so_sanh_sai_kieu_la_vs0412 ... ok
+test sort_by_khoa_co_kieu_that ... ok
+test sort_by_khoa_la_la_vs0605 ... ok
+test truong_la_la_vs0605 ... ok
+test vis_khong_thay_prelude ... ok
+test where_size_tren_file_entry_chay_that ... ok
+test where_size_chay_that_ca_hai_duong ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\quyen.rs (target\debug\build\vis-cli/9cc095941753aba6\out\quyen-9cc095941753aba6.exe)
+
+running 8 tests
+test doc_trong_quyen ... ok
+test ghi_co_co ... ok
+test doc_ngoai_quyen ... ok
+test grant_doi_duong_dan ... ok
+test ghi_thieu_co ... ok
+test hai_cap_dir ... ok
+test khong_khai_cap_thi_khong_han_che ... ok
+test net_thieu_cap ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\ref_identity.rs (target\debug\build\vis-cli/96c568ed7f10b6a5\out\ref_identity-96c568ed7f10b6a5.exe)
+
+running 4 tests
+test ref_hai_doi_so_van_la_vs0201 ... ok
+test ref_khong_muon_that_chi_la_identity ... ok
+test ref_giu_kieu_va_identity_hai_duong ... ok
+test ref_khong_con_chan_doan_khi_chay ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\render.rs (target\debug\build\vis-cli/72b8f9c7158d856a\out\render-72b8f9c7158d856a.exe)
+
+running 16 tests
+test ban_ghi_don_la_khoi_khoa_gia_tri ... ok
+test bang_co_tieu_de_va_can_phai_so ... ok
+test bang_giu_thu_tu_cot_cua_ban_ghi_dau ... ok
+test bang_mot_phan_tu_van_la_bang ... ok
+test cjk_mot_char ... ok
+test cot_str_can_trai ... ok
+test emoji_mot_char ... ok
+test bang_ca_hai_duong_giong_nhau_tung_byte ... ok
+test khoi_can_khoa_theo_ten_dai_nhat ... ok
+test list_int_cuoi_pipeline_khong_thanh_bang ... ok
+test list_str_cuoi_pipeline_khong_thanh_bang ... ok
+test print_khong_doi ... ok
+test size_duration_percent_can_phai ... ok
+test tien_viet_nfc_dung_do_rong ... ok
+test list_rong_la_rong ... ok
+test nfd_va_nfc_cung_do_rong ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\sandbox.rs (target\debug\build\vis-cli/1c0f322a7d899ba1\out\sandbox-1c0f322a7d899ba1.exe)
+
+running 5 tests
+test sandbox_check_co_la ... ok
+test sandbox_check_voi_cap ... ok
+test sandbox_check_khong_chay ... ok
+test sandbox_check_luon_in_cuong_che ... ok
+test sandbox_check_khong_cap ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\sap_xep.rs (target\debug\build\vis-cli/9636f7434940671c\out\sap_xep-9636f7434940671c.exe)
+
+running 12 tests
+test desc_khong_bi_nuot_vao_khoa ... ok
+test duration_la_khoa_ns ... ok
+test desc_bang_false_la_tang_dan ... ok
+test co_la_la_vs0602 ... ok
+test int_giam_dan_bang_co_desc ... ok
+test int_tang_dan ... ok
+test khoa_bool_la_vs0412 ... ok
+test on_dinh_khi_khoa_bang_nhau_desc_tren_size ... ok
+test on_dinh_khi_khoa_bang_nhau_tang ... ok
+test size_la_khoa_byte ... ok
+test str_la_khoa_byte_utf8 ... ok
+test thieu_doi_so_la_vs0602 ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\self_amp_hop_long.rs (target\debug\build\vis-cli/44f19a104611729c\out\self_amp_hop_long-44f19a104611729c.exe)
+
+running 7 tests
+test hop_long_sai_kieu_la_vs0412 ... ok
+test hop_long_bon_bien_the_chay_hai_duong ... ok
+test self_amp_gan_ket_thuc_vao_receiver_that ... ok
+test self_amp_khong_nhan_chu_thich_kieu ... ok
+test self_amp_trong_trait_va_impl ... ok
+test self_amp_va_self_khoang_trang_chay_hai_duong ... ok
+test self_thuong_van_nhu_cu ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\sem.rs (target\debug\build\vis-cli/a2d4abfbfd7dd759\out\sem-a2d4abfbfd7dd759.exe)
+
+running 1 test
+test sem_323_ca_qua_binary ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.84s
+
+     Running tests\siet_caps_pkg.rs (target\debug\build\vis-cli/fe480b99eb6bf568\out\siet_caps_pkg-fe480b99eb6bf568.exe)
+
+running 8 tests
+test hai_co_mau_thuan_exit_2 ... ok
+test co_pkg_thieu_cap_bao_vs0604 ... ok
+test strict_caps_tuong_minh_van_siet ... ok
+test co_pkg_va_khai_du_cap_thi_chay ... ok
+test khong_pkg_hanh_vi_cu ... ok
+test co_pkg_khong_cham_cap_ma_van_thoat_thi_canh_bao ... ok
+test thoat_bang_no_strict_caps_chay_va_canh_bao_mot_dong ... ok
+test use_module_noi_bo_va_std_nhung_khong_pkg_giu_hanh_vi_cu ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests\so_ma.rs (target\debug\build\vis-cli/f2697b6e7a860500\out\so_ma-f2697b6e7a860500.exe)
+
+running 4 tests
+test du_phong_rong_va_co_ly_do ... ok
+test moi_ma_du_ba_ngon_ngu ... ok
+test b_tru_a_dung_du_phong ... ok
+test a_la_tap_con_cua_b ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\soak_script.rs (target\debug\build\vis-cli/279aff2c91b308ab\out\soak_script-279aff2c91b308ab.exe)
+
+running 2 tests
+test vis_soak_hop_le_va_in_du_10_vong ... ok
+test vis_soak_goi_vis_dev_o_goc_repo ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.78s
+
+     Running tests\sort_by_str.rs (target\debug\build\vis-cli/ba38cbf9864f2ebe\out\sort_by_str-ba38cbf9864f2ebe.exe)
+
+running 6 tests
+test tron_int_va_str_la_vs0412_tinh ... ok
+test khoa_int_cu_khong_doi ... ok
+test khoa_str_chay_hai_duong_cung_byte ... ok
+test khoa_khong_goi_duoc_neu_ten_hien_thi_moi ... ok
+test khoa_bool_bao_vs0501_va_neu_kieu_that ... ok
+test khoa_str_nhat_quan_voi_shell_sort_by ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\span_tep.rs (target\debug\build\vis-cli/8e9d22cff683439e\out\span_tep-8e9d22cff683439e.exe)
+
+running 5 tests
+test fixture_audit_hop_le ... ok
+test json_bao_dung_tep_va_dong_cot_moi_ca ... ok
+test tap_bao_dung_tep_va_dong_cot_moi_ca ... ok
+test da_tep_khop_tep_don ... ok
+test run_interp_va_vm_bao_dung_tep_dong_cot ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests\sqlite.rs (target\debug\build\vis-cli/6cb2b22e1692c199\out\sqlite-6cb2b22e1692c199.exe)
+
+running 15 tests
+test attach_bi_chan_va_khong_tao_tep ... ok
+test bind_thieu_hai_duong_cung_stderr ... ok
+test nhieu_lan_chay_trong_cung_mot_process ... ok
+test phien_ban_sqlite_duoc_log_o_diagnostics ... ok
+test ro_canh_bao_chi_diagnostics ... ok
+test hai_ket_noi_tranh_khoa_busy_timeout ... ok
+test create_false_thieu_tep_la_err_du_lieu ... ok
+test db_da_co_wal_van_mo_duoc ... ok
+test strict_caps_tu_choi_file_backed ... ok
+test mo_va_dong_memory_hai_duong ... ok
+test thong_diep_mac_dinh_khong_lo_fragment ... ok
+test sqlvalue_null_ctor_chay ... ok
+test uri_va_ten_rong_bi_tu_choi ... ok
+test workload_50k_rows_sum_avg_ca_hai_duong ... ok
+test gioi_han_thoi_gian_5s_bi_ngat ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.02s
+
+     Running tests\st240_std_cli.rs (target\debug\build\vis-cli/bc19082c73c61e6c\out\st240_std_cli-bc19082c73c61e6c.exe)
+
+running 11 tests
+test json_float_giu_dau_va_zero_dau_bi_tu_choi ... ok
+test ls_long_mtime_tuong_lai_khong_in_nam_sai ... ok
+test check_json_warning_mem_tra_ok_va_exit_zero ... ok
+test crlf_cung_vi_tri_voi_lf ... ok
+test fmt_tep_neu_ten_khong_bi_bo_qua_va_co_ten_trong_chan_doan ... ok
+test lsp_header_cut_va_eof_sach_phan_biet_ro ... ok
+test sort_mot_phan_tu_nan_cung_bao_loi ... ok
+test sort_nan_bao_loi_khong_sap_mot_phan ... ok
+test trap_trong_module_bao_dung_tep_hai_engine ... ok
+test json_non_finite_va_path_goc ... ok
+test percent_vuot_mien_loi_khong_bao_hoa_hai_engine ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests\st246_cache_compat.rs (target\debug\build\vis-cli/93a95b120f4a66bc\out\st246_cache_compat-93a95b120f4a66bc.exe)
+
+running 2 tests
+test khoa_cache_co_version_trong_nguon ... ok
+test cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\st83_no_nho.rs (target\debug\build\vis-cli/2484220495530ed6\out\st83_no_nho-2484220495530ed6.exe)
+
+running 6 tests
+test exists_trong_quyen_tra_bool ... ok
+test exists_strict_khong_cap_trap ... ok
+test explain_help_theo_lang ... ok
+test exists_ngoai_quyen_trap ... ok
+test assert_cau_lenh_va_sai ... ok
+test assert_trong_test_fn_not_ok ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\stage_dau.rs (target\debug\build\vis-cli/df98284d8726891d\out\stage_dau-df98284d8726891d.exe)
+
+running 12 tests
+test list_literal_dau_pipeline ... ok
+test list_literal_khong_co_pipe_van_vs0201 ... ok
+test lenh_thuong_khong_doi ... ok
+test bien_va_so_khong_duoc_nhan ... ok
+test golden_ca24_va_ca_a_or_b_khong_doi ... ok
+test list_literal_nhieu_stage ... ok
+test nhom_ngoac_cu_khong_doi ... ok
+test record_literal_dau_where_chay_that ... ok
+test record_literal_where_loc_sach ... ok
+test string_literal_dau_lines ... ok
+test record_literal_select_va_take ... ok
+test interp_va_vm_cung_byte ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\std_fs_json.rs (target\debug\build\vis-cli/50d5d1077ff937ce\out\std_fs_json-50d5d1077ff937ce.exe)
+
+running 23 tests
+test explain_perms_in_fs_nhat_ky ... ok
+test decode_van_la_result_that ... ok
+test float_tran_la_loi ... ok
+test escape_co_ban ... ok
+test fs_duong_dan_tuyet_doi_duoc_phep ... ok
+test differential_fs_va_json_khop_hai_duong ... ok
+test fs_exists_va_read_thieu_la_err ... ok
+test fs_ghi_vao_duong_dan_sai_la_err ... ok
+test escape_surrogate_pair ... ok
+test khong_host_bao_vs0604_ca_interp_va_vm ... ok
+test fs_list_sap_xep_khong_de_quy ... ok
+test fs_write_read_round_trip ... ok
+test json_hong_co_byte_offset ... ok
+test json_hong_utf8_nhieu_byte_offset_van_dung ... ok
+test khong_host_json_van_chay_vi_thuan ... ok
+test round_trip_ban_ghi_thanh_map ... ok
+test round_trip_chuoi_va_unicode ... ok
+test so_tran_i64_la_loi ... ok
+test round_trip_long_nhau_va_trung_khoa ... ok
+test surrogate_don_la_loi ... ok
+test json_hong_thieu_ngoac_va_literal_sai ... ok
+test round_trip_list_va_map_giu_thu_tu ... ok
+test round_trip_so_va_bool_va_none ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+
+     Running tests\stdlib.rs (target\debug\build\vis-cli/81c4bf7bed6db185\out\stdlib-81c4bf7bed6db185.exe)
+
+running 10 tests
+test khong_use_thi_khong_goi_duoc_std ... ok
+test sai_so_doi_so_bi_tyck_bat ... ok
+test json_decode_da_co ... ok
+test std_la_bao_vs0705 ... ok
+test sai_kieu_bi_tyck_bat_tinh ... ok
+test std_fs_bao_st27 ... ok
+test str_repeat_am_la_vs0501 ... ok
+test ba_ca_am_tinh_cua_chu_ky_generic ... ok
+test std_70_ca_qua_binary ... ok
+test std_differential_interp_va_vm ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.68s
+
+     Running tests\strict_caps.rs (target\debug\build\vis-cli/cf529cf61a5327b1\out\strict_caps-cf529cf61a5327b1.exe)
+
+running 7 tests
+test strict_khong_cap_net_thi_vs0604 ... ok
+test strict_cap_dir_trong_root ... ok
+test mac_dinh_khong_siet ... ok
+test strict_khong_cap_doc_thi_vs0604 ... ok
+test strict_cap_dir_ngoai_root ... ok
+test strict_van_kiem_tren_fs_mock ... ok
+test vis_test_strict_caps_truyen_co ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\sync_list.rs (target\debug\build\vis-cli/91242016f84b91cd\out\sync_list-91242016f84b91cd.exe)
+
+running 9 tests
+test sync_dirs_dung_tap ... ok
+test check_sync_khong_ssh_khong_rsync ... ok
+test sync_files_dung_tap ... ok
+test sync_tree_chi_dung_hai_bien ... ok
+test vis_linux_hop_le_va_hai_bien_nam_o_dau_tep ... ok
+test check_sync_tai_repo_that_in_du_8_muc_va_exit_0 ... ok
+test check_sync_thieu_mot_muc_thi_exit_2 ... ok
+test check_sync_du_het_thi_exit_0_trong_cay_gia ... ok
+test help_co_check_sync ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests\targets.rs (target\debug\build\vis-cli/d11fd4f7c3cedbfe\out\targets-d11fd4f7c3cedbfe.exe)
+
+running 1 test
+test targets_wasm_vis_types ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+     Running tests\test_timeout.rs (target\debug\build\vis-cli/5357503f051278ea\out\test_timeout-5357503f051278ea.exe)
+
+running 7 tests
+test in_nhieu_khong_bi_qua_han_oan ... ok
+test in_nhieu_roi_fail_bao_dung_loi ... ok
+test nhanh_voi_han_lon_van_ok ... ok
+test tiep_tuc_sau_ca_treo ... ok
+test json_message_qua_han ... ok
+test timeout_sai_exit2 ... ok
+test treo_bi_giet_trong_3s ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.38s
+
+     Running tests\trait_cli.rs (target\debug\build\vis-cli/8c0c6b2ebaa6f8ed\out\trait_cli-8c0c6b2ebaa6f8ed.exe)
+
+running 7 tests
+test derives_la_bao_vs0403 ... ok
+test impl_thieu_phuong_thuc_trait_la_vs0403 ... ok
+test check_va_run_cung_ket_luan_phuong_thuc ... ok
+test dispatch_inherent_hai_duong ... ok
+test thieu_phuong_thuc_la_vs0403_va_noi_phuong_thuc ... ok
+test dispatch_impl_show_chay_ca_hai_duong ... ok
+test derives_eq_show_json_chay_that ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\vd_204.rs (target\debug\build\vis-cli/aa04361a70dd2443\out\vd_204-aa04361a70dd2443.exe)
+
+running 4 tests
+test match_option_thieu_nhanh_la_loi_hoi_quy ... ok
+test toan_tu_hoi_quy_van_dung ... ok
+test ten_du_tru_khong_chan_ben_trong_ham ... ok
+test ten_du_tru_toan_cuc_bi_tu_choi ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests\vd_205.rs (target\debug\build\vis-cli/e7a98630d23cfec8\out\vd_205-e7a98630d23cfec8.exe)
+
+running 22 tests
+test anyerror_none_annot_check_vs0412 ... ok
+test anyerror_la_alias_error ... ok
+test anyerror_none_field_engine_parity ... ok
+test decode_err_ban_ghi_error ... ok
+test decode_ok_match_json_arr ... ok
+test anyerror_bao_sai_kieu ... ok
+test encode_decode_round_trip ... ok
+test error_record_co_du_truong ... ok
+test escape_multibyte_order_preserved ... ok
+test impl_error_thieu_phuong_thuc_bao_vs0403 ... ok
+test impl_error_du_ba_phuong_thuc_chay ... ok
+test match_json_khong_du_nhanh_bao_vs0402 ... ok
+test json_encode_owned_value_engine_parity ... ok
+test decode_null_bool_num ... ok
+test none_tran_cho_option_la_ok ... ok
+test main_result_err_exits_1_engine_parity ... ok
+test escape_unicode_valid_and_validation ... ok
+test ten_dun_san_du_bi_vs0302 ... ok
+test vd241_forty_two_opt2_la_loi ... ok
+test none_tran_chi_gan_duoc_cho_option ... ok
+test none_dich_ngoai_cung_option_la_ok ... ok
+test option_coercion_matrix ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+     Running tests\vd_208.rs (target\debug\build\vis-cli/1756b6a13f40cc6e\out\vd_208-1756b6a13f40cc6e.exe)
+
+running 1 test
+test ctor_dung_nhu_ham_ca_hai_duong ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\vd_212.rs (target\debug\build\vis-cli/de2d5b08f49d8754\out\vd_212-de2d5b08f49d8754.exe)
+
+running 5 tests
+test let_ctor_khong_khop_kieu_has_goi_y ... ok
+test enum_bien_the_sai_hoa_thuong_la_loi ... ok
+test enum_hai_bien_the_a_va_hoa_a ... ok
+test pattern_dung_hoa_thuong_van_chay_hai_duong ... ok
+test pattern_sai_hoa_thuong_la_loi ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\vd_215.rs (target\debug\build\vis-cli/d44e8f2af837a2e0\out\vd_215-d44e8f2af837a2e0.exe)
+
+running 6 tests
+test chuoi_cong_ngoac_la_map ... ok
+test khoa_tinh_toan_ngoac_in_ra_map ... ok
+test bien_k_trong_ngoac_van_la_ban_ghi ... ok
+test list_key_chay_va_ra_map_khoa_danh_sach ... ok
+test list_key_canh_bao_vs0208 ... ok
+test tron_khoa_ca_hai_thu_tu_ra_vs0207 ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\vd_218.rs (target\debug\build\vis-cli/dd8c137b4cc93c33\out\vd_218-dd8c137b4cc93c33.exe)
+
+running 3 tests
+test disassemble_khong_lo_prefix ... ok
+test builtin_len_as_value_khong_lo_prefix ... ok
+test in_gia_tri_some_o_ca_hai_duong ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\vd_223.rs (target\debug\build\vis-cli/dd0f6ec9ddc43d9f\out\vd_223-dd0f6ec9ddc43d9f.exe)
+
+running 5 tests
+test goi_tran_str_sau_bien_tru_vs0412 ... ok
+test khong_use_thi_khong_canh_bao ... ok
+test std_call_van_giu_nguyen_sau_dang_ky_bien ... ok
+test ten_cu_phap_flag_hop_le_ca_hai_duong ... ok
+test trung_ten_module_std_ra_vs0211 ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\vd_226.rs (target\debug\build\vis-cli/efbc0815d901b907\out\vd_226-efbc0815d901b907.exe)
+
+running 8 tests
+test vd226_one_shot_some ... ok
+test vd226_none_entry_skip ... ok
+test vd226_exhaust_marker ... ok
+test vd226_pattern_mismatch_skips ... ok
+test vd226_plain_some_int_typed ... ok
+test vd226_terminates_and_continues_after ... ok
+test vd226_tuple_pattern_wrapped ... ok
+test vd226_xs_get_consume ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\vd_227.rs (target\debug\build\vis-cli/586c81e54ea4d87e\out\vd_227-586c81e54ea4d87e.exe)
+
+running 6 tests
+test vd227_already_some ... ok
+test vd227_let_opt_lift ... ok
+test vd227_fn_ret_raw ... ok
+test vd227_expr_into_ann ... ok
+test vd227_none_literal ... ok
+test vd227_mixed_lit_ann ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\vd_228.rs (target\debug\build\vis-cli/0cbf75af3498bcf0\out\vd_228-0cbf75af3498bcf0.exe)
+
+running 16 tests
+test vd228_impl_method_lift ... ok
+test vd228_branch_join ... ok
+test vd228_nested_opt_real ... ok
+test vd228_early_return_lift ... ok
+test vd228_closure_ret_lift ... ok
+test vd228_nested_let_flat ... ok
+test vd228_no_double_wrap ... ok
+test vd228_none_stays ... ok
+test vd228_param_named_default_lift ... ok
+test vd228_param_int_lift ... ok
+test vd228_param_named_str_default_lift ... ok
+test vd228_param_none_passthrough ... ok
+test vd228_param_some_passthrough ... ok
+test vd228_plain_int_lift ... ok
+test vd228_plain_str_lift ... ok
+test vd228_s1_exact_repro ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests\vis_test.rs (target\debug\build\vis-cli/89ae6946c02bd7fc\out\vis_test-89ae6946c02bd7fc.exe)
+
+running 10 tests
+test co_la_la_dung_sai_thoat_2 ... ok
+test duong_dan_khong_ton_tai_thoat_2 ... ok
+test ca_loi_dung_ma_thi_ok ... ok
+test ca_do_thoat_1_va_co_dong_chi_vi_tri ... ok
+test mot_tep_chay_duoc ... ok
+test err_bien_dich_ra_cung_ma_o_vm ... ok
+test tap_moi_not_ok_deu_co_dong_chan_doan ... ok
+test vm_khop_interp_va_khong_con_skip ... ok
+test tap_hop_le_va_du_so_ca ... ok
+test cac_dong_ok_dung_thu_tu_khong_lap ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.99s
+
+     Running tests\vish_cmd_body.rs (target\debug\build\vis-cli/b7be5951d04c7cb2\out\vish_cmd_body-b7be5951d04c7cb2.exe)
+
+running 20 tests
+test duong_thoat_ngoac_van_la_bieu_thuc ... ok
+test bien_bind_cap_tep_trung_ten_lenh_la_bieu_thuc ... ok
+test item_sau_than_lenh_van_dung_dong_cot ... ok
+test khong_bind_van_la_lenh ... ok
+test let_trong_than_van_la_bieu_thuc ... ok
+test than_dung_nhu_stage_khac ... ok
+test chou_ky_cmd_kiem_tinh_where ... ok
+test interp_va_vm_cung_byte ... ok
+test fixture_cmd_body ... ok
+test than_hai_pipeline_la_vs0201 ... ok
+test than_goi_cmd_khac_trong_pipeline ... ok
+test than_khai_bao_sau_lenh_van_la_vs0201 ... ok
+test than_lan_lenh_va_bieu_thuc_la_vs0201 ... ok
+test than_mot_stage_tra_bang ... ok
+test than_lenh_tren_thu_muc_that ... ok
+test than_long_tra_file_entry_long ... ok
+test than_khai_bao_roi_lenh_chay_duoc ... ok
+test than_rong_la_vs0201 ... ok
+test than_nhieu_stage_where_va_sort_by ... ok
+test than_script_st44_khong_doi ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests\vish_decl.rs (target\debug\build\vis-cli/0cc98b5b28455ef3\out\vish_decl-0cc98b5b28455ef3.exe)
+
+running 16 tests
+test cmd_co_tham_so_va_let_trong_than ... ok
+test cmd_rong_ra_rong_dung_render ... ok
+test cmd_tra_record_list_kiem_tinh_qua_khe_ong ... ok
+test enum_trong_vish ... ok
+test khai_bao_sau_stage_la_vs0201 ... ok
+test let_co_kieu_dung_script ... ok
+test let_shell_van_la_stage ... ok
+test in_va_vm_cung_byte ... ok
+test nhom_rong_dung_mot_minh_la_vs0201 ... ok
+test type_trung_ten_trong_tep_la_vs0302 ... ok
+test fixture_st42_van_xanh ... ok
+test fixture_cmd_decl ... ok
+test type_va_let_dung_duoc_truong ... ok
+test vis_khong_bi_anh_huong ... ok
+test type_trung_prelude_la_vs0302 ... ok
+test vish_khong_khai_bao_giu_nguyen_vung_6 ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\vish_indent.rs (target\debug\build\vis-cli/b98d781f21ba99e8\out\vish_indent-b98d781f21ba99e8.exe)
+
+running 7 tests
+test ca_tep_thut_bao_loi ... ok
+test dong_thut_dau_bao_loi ... ok
+test dong_thut_sau_bao_loi ... ok
+test khai_bao_fn_trong_vish_van_hop_le ... ok
+test nhom_nhieu_dong_van_hop_le ... ok
+test than_cmd_thut_van_chay ... ok
+test vis_script_van_hop_le ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\vish_main.rs (target\debug\build\vis-cli/48a69753b5afe456\out\vish_main-48a69753b5afe456.exe)
+
+running 5 tests
+test main_co_assert_bao_vs0201 ... ok
+test main_co_lenh_bao_vs0201 ... ok
+test main_co_let_bao_vs0201 ... ok
+test vis_main_binh_thuong_khong_doi ... ok
+test main_rong_va_pipeline_hop_le ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\vish_nhom_vi_tri.rs (target\debug\build\vis-cli/14e2d74a094aba41\out\vish_nhom_vi_tri-14e2d74a094aba41.exe)
+
+running 10 tests
+test cong_dau_tep_tro_toan_hang_trai ... ok
+test khong_xuong_dong_cuoi_tep ... ok
+test giu_dung_khi_bieu_thuc_xa_dau_tep ... ok
+test lambda_dau_tep_tro_toan_hang_trai ... ok
+test lambda_dau_tep_van_la_bieu_thuc ... ok
+test lambda_dong_hai_tro_toan_hang_trai ... ok
+test lambda_roi_take_tro_toan_hang_trai ... ok
+test list_dau_tep_tro_phan_tu_sai ... ok
+test nhom_dong_hai_tro_phan_tu_sai ... ok
+test nhom_roi_take_tro_phan_tu_sai ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\vistest_async.rs (target\debug\build\vis-cli/264c330058a5cc0b\out\vistest_async-264c330058a5cc0b.exe)
+
+running 8 tests
+test await_fn_cap_tep ... ok
+test kenh_send_recv ... ok
+test khong_await_van_join_va_loi ... ok
+test kenh_deadlock_not_ok_khong_treo ... ok
+test spawn_ba_task_dung_thu_tu ... ok
+test hon_test_thuong_va_async ... ok
+test task_loi_not_ok_vs0506 ... ok
+test task_roi_await ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests\vm_main_argv.rs (target\debug\build\vis-cli/39aeaf9d1a5e78a6\out\vm_main_argv-39aeaf9d1a5e78a6.exe)
+
+running 4 tests
+test cap_dau_argv_sau ... ok
+test main_khong_cap_nhan_argv ... ok
+test main_khong_tham_so_giu_nguyen ... ok
+test argv_dau_cap_sau ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\vsh1b.rs (target\debug\build\vis-cli/290d4c243b458147\out\vsh1b-290d4c243b458147.exe)
+
+running 15 tests
+test chan_doan_tuyet_doi_trong_nhom ... ok
+test long_mode_dung_quyen ... ok
+test khong_long_giu_bang_4_cot ... ok
+test long_modified_time_utc ... ok
+test long_co_du_sau_cot ... ok
+test long_tren_thu_muc_that ... ok
+test long_where_va_sort_by_van_chay ... ok
+test nhom_lam_doi_so_echo ... ok
+test nhom_lam_doi_so_sai_kieu_la_vs0412 ... ok
+test nhom_lam_doi_so_take ... ok
+test nhom_lam_stage_van_chay ... ok
+test long_va_khong_long_cung_byte_interp_vm ... ok
+test shell_let_st44_khong_doi ... ok
+test nhom_long_nhau ... ok
+test fixture_cmd_long ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\where_tinh.rs (target\debug\build\vis-cli/13520bd59a71d3cd\out\where_tinh-13520bd59a71d3cd.exe)
+
+running 14 tests
+test each_tra_ban_ghi_sach ... ok
+test each_van_bao_truong_khong_co ... ok
+test each_tra_int_sach ... ok
+test khai_bao_cmd_where_size_la_vs0412 ... ok
+test khai_bao_cmd_where_bool_thi_chay_duoc ... ok
+test where_1_la_vs0412 ... ok
+test where_closure_khong_it_la_vs0412 ... ok
+test where_size_la_vs0412 ... ok
+test where_it_size_la_vs0412 ... ok
+test fixture_cmd_where ... ok
+test where_so_sanh_bool_thi_sach ... ok
+test where_tren_kieu_khong_biet_khong_loi_tinh ... ok
+test where_interp_va_vm_cung_byte ... ok
+test where_viet_tat_truong_khong_co_la_vs0405 ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src\lib.rs (target\debug\build\vis-diag/8abfe45ecf2f9cec\out\vis_diag-8abfe45ecf2f9cec.exe)
+
+running 10 tests
+test tests::chan_doan_giu_vi_tri ... ok
+test tests::ma_co_bon_chu_so ... ok
+test tests::so_cu_phap_02xx_khoa_theo_vd35 ... ok
+test tests::so_kieu_04xx_khoa_theo_vd42 ... ok
+test tests::khoi_ke_tiep_khong_tai_dung ... ok
+test tests::so_khop_spec_lex_that ... ok
+test tests::so_runtime_05xx_khoa_theo_vd42 ... ok
+test tests::so_ma_lien_mach_va_dung_spec_lex ... ok
+test tests::tra_ma_va_ma_la ... ok
+test tests::so_ten_03xx_khoa_theo_vd42 ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\messages.rs (target\debug\build\vis-diag/cdbfaff252dab9e0\out\messages-cdbfaff252dab9e0.exe)
+
+running 12 tests
+test lang_parse_va_nhan_muc ... ok
+test khong_thong_diep_nao_con_nhan_vs0 ... ok
+test render_khong_nguon_chi_mot_dong ... ok
+test render_canh_theo_emoji_va_tab ... ok
+test render_dong_tieu_de_va_nguon ... ok
+test moi_ma_du_ba_ngon_ngu ... ok
+test snapshot_12_ca_so_kieu_04xx ... ok
+test snapshot_20_render ... ok
+test snapshot_20_ca_vi_en_ja ... ok
+test snapshot_6_ca_so_ten_03xx ... ok
+test snapshot_9_ca_so_module_07xx ... ok
+test snapshot_9_ca_so_runtime_05xx ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\build\vis-fmt/77610aa55f5ad15b\out\vis_fmt-77610aa55f5ad15b.exe)
+
+running 5 tests
+test tests::tep_rong_ra_mot_newline ... ok
+test tests::loi_tra_ve_ma ... ok
+test tests::trong_dong_giu_nguyen ... ok
+test tests::idempotent ... ok
+test tests::tab_mot_cap_thanh_bon ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\fmt.rs (target\debug\build\vis-fmt/8bea3d634d862d10\out\fmt-8bea3d634d862d10.exe)
+
+running 13 tests
+test diem_bat_dong_mau_chuan ... ok
+test dau_ra_nfc ... ok
+test dong_noi_giu_thut_le_goc_sau_chu_thich ... ok
+test crlf_chuan_hoa_va_giu_nguyen_trong_dong ... ok
+test dong_chi_chu_thich_va_dong_noi_giu_nguyen ... ok
+test loi_cu_phap_khong_duoc_sua ... ok
+test khoang_trang_cuoi_dong_va_mot_newline_cuoi ... ok
+test sai_thut_le_duoc_sua_ve_bon ... ok
+test tab_trong_dong_va_trong_chu_thich_duoc_giu ... ok
+test tab_duoc_sua_thanh_bon_dau_cach ... ok
+test diem_bat_dong_tai_lieu_15_khoi ... ok
+test idempotent_tren_moi_nguon ... ok
+test token_khong_doi ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\moi.rs (target\debug\build\vis-fmt/9733950d2e233184\out\moi-9733950d2e233184.exe)
+
+running 11 tests
+test cap_net_host ... ok
+test cap_co_write_va_comment ... ok
+test async_spawn_await ... ok
+test async_va_impl_cung_tep ... ok
+test cap_nhieu_tham_so ... ok
+test chan_co_comment ... ok
+test none_thanh_none_hoa ... ok
+test derives_trait_impl ... ok
+test use_pkg_canh_std ... ok
+test none_trong_pattern_thanh_none_hoa ... ok
+test lossless_token_fixture_moi ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src\lib.rs (target\debug\build\vis-interp/8a6e69b9f7890ebb\out\vis_interp-8a6e69b9f7890ebb.exe)
+
+running 6 tests
+test stdlib::st238_tests::json_non_finite_bi_phat_hien ... ok
+test net::tests::chuan_hoa_va_location_day_du ... ok
+test net::tests::tach_url_dung_va_chan_ngoai_loopback ... ok
+test net::tests::doc_header_doc_status_va_content_length ... ok
+test value::tests_show_char::show_char_escape_ky_tu_dieu_khien ... ok
+test stdlib::st238_tests::net_read_ky_so_vao_khong_duoc_cap_phat ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\interp_v2.rs (target\debug\build\vis-interp/b67aa4dbd026ddfd\out\interp_v2-b67aa4dbd026ddfd.exe)
+
+running 7 tests
+test than_vong_lap_bo_gia_tri ... ok
+test break_continue_va_try_ngoai_ngu_canh ... ok
+test show_don_vi_va_char ... ok
+test range_khong_tran_so ... ok
+test phuong_thuc_kiem_kieu_va_has ... ok
+test so_hoc_doi_xung_voi_don_vi ... ok
+test vi_tri_tab_va_utf8 ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\run.rs (target\debug\build\vis-interp/27ed33f528e130bb\out\run-27ed33f528e130bb.exe)
+
+running 9 tests
+test du_60_ca ... ok
+test chan_doan_runtime_co_dong_cot_that ... ok
+test phuong_thuc_ngoai_tap_bao_vs0501 ... ok
+test gia_tri_cua_khoi_theo_vd47 ... ok
+test dieu_khien_va_khai_bao ... ok
+test ham_closure_va_tham_so ... ok
+test kieu_du_lieu_va_match ... ok
+test so_hoc_va_don_vi ... ok
+test tap_hop_va_phuong_thuc ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\show.rs (target\debug\build\vis-interp/4e888bb06b659f03\out\show-4e888bb06b659f03.exe)
+
+running 5 tests
+test snapshot_show_duration ... ok
+test snapshot_show_hop_va_kieu_nguoi_dung ... ok
+test snapshot_show_percent ... ok
+test snapshot_show_scalar ... ok
+test snapshot_show_size ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\vd211_enum_eq.rs (target\debug\build\vis-interp/04f7fa67774d9f2d\out\vd211_enum_eq-04f7fa67774d9f2d.exe)
+
+running 1 test
+test enum_khac_ten_khong_bang ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\build\vis-syntax/42fdbbb8f9c870b5\out\vis_syntax-42fdbbb8f9c870b5.exe)
+
+running 27 tests
+test cst::tests::sexp_literal_va_nhi_phan ... ok
+test lex::lit::tests::bytes_chi_ascii_va_chi_escape_xnn ... ok
+test lex::lit::tests::char_dung_mot_scalar ... ok
+test cst::tests::comment_duoc_gan_vao_cay ... ok
+test cst::tests::render_tra_nguyen_van ... ok
+test lex::lit::tests::chuoi_escape_va_noi_suy ... ok
+test lex::lit::tests::chuoi_tho_giu_nguyen ... ok
+test lex::lit::tests::size_parts_tach_dung ... ok
+test lex::lit::tests::so_nguyen_moi_co_so ... ok
+test lex::lit::tests::so_nguyen_sai_va_tran ... ok
+test lex::tests::bytes_chi_nhan_escape_xnn ... ok
+test lex::tests::che_do_lenh_tach_tu_tran ... ok
+test lex::tests::cr_dung_truoc_crlf_van_la_ky_tu_la ... ok
+test lex::tests::cr_don_doc_la_ky_tu_la ... ok
+test lex::tests::crlf_duoc_chuan_hoa_thanh_lf_truoc_khi_lex ... ok
+test lex::tests::dedent_sinh_o_eof ... ok
+test lex::tests::dong_trong_va_chu_thich_khong_sinh_token_ket_thuc_dong ... ok
+test lex::tests::duration_va_size_khong_nham_nhau ... ok
+test lex::tests::gach_duoi_trong_phan_le_cua_float_phai_giua_hai_chu_so ... ok
+test lex::tests::nfc_duoc_ap_truoc_khi_lex ... ok
+test lex::tests::ngoac_nuot_newline_va_indent ... ok
+test lex::tests::span_tro_dung_van_ban_da_nfc ... ok
+test lex::tests::noi_dong_bang_pipe_arrow ... ok
+test lex::tests::tab_sinh_vs0107_va_van_lex_tiep ... ok
+test lex::tests::the_khong_dau_stage_la_vs0110 ... ok
+test lex::tests::thut_le_sai_don_vi_la_vs0109 ... ok
+test lex::token::tests::ten_kind_khong_trung_va_du_bang_spec ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\vis_lex_fuzz.rs (target\debug\build\vis-syntax/3f6dca960a066cd7\out\vis_lex_fuzz-3f6dca960a066cd7.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\vis_parse_fuzz.rs (target\debug\build\vis-syntax/45154670bc7c2a3c\out\vis_parse_fuzz-45154670bc7c2a3c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cmd.rs (target\debug\build\vis-syntax/77bf69e7fc0670d0\out\cmd-77bf69e7fc0670d0.exe)
+
+running 35 tests
+test ca02 ... ok
+test ca06 ... ok
+test ca01 ... ok
+test ca04 ... ok
+test ca03 ... ok
+test ca05 ... ok
+test ca07 ... ok
+test ca11 ... ok
+test ca09 ... ok
+test ca08 ... ok
+test ca10 ... ok
+test ca12 ... ok
+test ca13 ... ok
+test ca14 ... ok
+test ca15 ... ok
+test ca16 ... ok
+test ca17 ... ok
+test ca18 ... ok
+test ca19 ... ok
+test ca20 ... ok
+test ca21 ... ok
+test ca22 ... ok
+test ca23 ... ok
+test ca24 ... ok
+test ca25 ... ok
+test ca26 ... ok
+test ca28 ... ok
+test ca29 ... ok
+test ca30 ... ok
+test ca27 ... ok
+test ca31 ... ok
+test ca32 ... ok
+test ca33 ... ok
+test dung_22_ca_va_12_hang_bang_9_4 ... ok
+test lossless_moi_ca ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\col_scalar.rs (target\debug\build\vis-syntax/b5df21afc84fec57\out\col_scalar-b5df21afc84fec57.exe)
+
+running 5 tests
+test tab_bon_cot_va_vi_tri_sau_tab ... ok
+test emoji_gia_dinh_nhieu_scalar_va_zwj ... ok
+test dong_theo_scalar_khong_phai_byte ... ok
+test tieng_viet_dung_san_va_to_hop ... ok
+test emoji_astral_la_mot_scalar ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\doc_cmd.rs (target\debug\build\vis-syntax/2fa0aead6183cea4\out\doc_cmd-2fa0aead6183cea4.exe)
+
+running 1 test
+test hai_khoi_vish_session_parse_sach_va_lossless ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\doc_fixtures.rs (target\debug\build\vis-syntax/1e97889df4b03f5c\out\doc_fixtures-1e97889df4b03f5c.exe)
+
+running 3 tests
+test khoi_loai_tru_dung_mot_loi_dau ... ok
+test fixture_tai_lieu_dung_22_khoi_vis ... ok
+test fixture_tai_lieu_15_khoi_du_than_parse_sach ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\errors.rs (target\debug\build\vis-syntax/f1196ea53b70b2e8\out\errors-f1196ea53b70b2e8.exe)
+
+running 3 tests
+test ba_ca_err_cua_golden_dung_ma_va_vi_tri ... ok
+test moi_tep_loi_dung_mot_loi_dau ... ok
+test tep_sach_khong_co_chan_doan ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\expr.rs (target\debug\build\vis-syntax/bc1a5e4caffc4b99\out\expr-bc1a5e4caffc4b99.exe)
+
+running 1 test
+test golden_30_bieu_thuc_theo_vd34 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\golden.rs (target\debug\build\vis-syntax/63bfb3bd17f5d4d3\out\golden-63bfb3bd17f5d4d3.exe)
+
+running 1 test
+test golden_token_theo_spec_lex_8 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\invariants.rs (target\debug\build\vis-syntax/34d94f0bc5a2d618\out\invariants-34d94f0bc5a2d618.exe)
+
+running 4 tests
+test span_phu_kin_vung_khong_trong ... ok
+test moi_ma_loi_tu_vung_deu_phat_duoc ... ok
+test nfc_va_nfd_cho_cung_ket_qua_tren_corpus ... ok
+test corpus_giu_bat_bien_o_ca_hai_che_do ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\lex_float_dot.rs (target\debug\build\vis-syntax/e06eed8f814b9c3f\out\lex_float_dot-e06eed8f814b9c3f.exe)
+
+running 5 tests
+test cham_sau_so_khong_phai_thap_phan_khi_theo_sau_la_chu_cai ... ok
+test cham_theo_sau_chu_so_van_la_float ... ok
+test cham_khong_mo_method_van_la_vs0104 ... ok
+test khoang_trang_truoc_cham_khong_doi_chuoi_token ... ok
+test cham_mo_method_voi_dinh_danh_viet_va_sau_float ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\nfc.rs (target\debug\build\vis-syntax/7bb20c93d3ef1986\out\nfc-7bb20c93d3ef1986.exe)
+
+running 8 tests
+test char_literal_nfd_la_mot_scalar ... ok
+test bang_chu_viet_sinh_nfc_khi_in ... ok
+test chuoi_va_noi_suy_dong_nhat_nfc_nfd ... ok
+test dinh_danh_viet_nfc_va_nfd_la_mot_ten ... ok
+test hai_che_do_cung_nhan_nfc ... ok
+test hieu_ung_phu_tro_cua_nfd_len_vuot_dong_hoan_toan ... ok
+test ky_tu_to_hop_ngoai_chuoi_la_ky_tu_la ... ok
+test moi_chu_viet_deu_dong_nhat_nfc_nfd ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\regress.rs (target\debug\build\vis-syntax/abdccbaeb7a8b846\out\regress-abdccbaeb7a8b846.exe)
+
+running 2 tests
+test r01b_chuoi_tho_nhieu_dong ... ok
+test r01_dong_dem_sau_newline_trong_chuoi_va_noi_suy ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\vd37.rs (target\debug\build\vis-syntax/520e57c6730cb9a2\out\vd37-520e57c6730cb9a2.exe)
+
+running 5 tests
+test vd37_5_khong_them_cu_phap_ba_cham ... ok
+test vd37_3_with_khong_nuot_pipe ... ok
+test vd37_1_cau_lenh_o_cap_te ... ok
+test vd37_4_ghep_toan_tu_gan_hai_chieu ... ok
+test vd37_2_khoi_mot_dong_dung_o_else ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\build\vis-types/429f09b0769ff929\out\vis_types-429f09b0769ff929.exe)
+
+running 5 tests
+test hir::tests::literal_dien_kieu ... ok
+test hir::tests::sexp_theo_quy_uoc_vd34_khong_paren ... ok
+test hir::tests::toan_tu_va_pattern_co_chu_viet ... ok
+test ty::tests::kieu_dung_san_va_bang_kieu ... ok
+test ty::tests::ten_hien_thi_on_dinh ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cmd_lower.rs (target\debug\build\vis-types/08806e05ee66e47e\out\cmd_lower-08806e05ee66e47e.exe)
+
+running 9 tests
+test chay_nen_la_vs0605 ... ok
+test chuong_trinh_ngoai_la_vs0606 ... ok
+test chan_doan_co_dong_cot_that ... ok
+test lenh_la_thanh_chuong_trinh_ngoai ... ok
+test flag_bool_dung_default ... ok
+test cham_phay_thanh_hai_cau_lenh_tuan_tu ... ok
+test noi_khong_duoc_la_vs0603 ... ok
+test pipeline_ba_stage_ha_thanh_ba_call_long_nhau ... ok
+test sai_doi_so_la_vs0602 ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\exhaustive.rs (target\debug\build\vis-types/402e00ae4f2aa83a\out\exhaustive-402e00ae4f2aa83a.exe)
+
+running 2 tests
+test du_20_ca_match ... ok
+test match_phai_xet_het ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\generic.rs (target\debug\build\vis-types/c704d20be6bb5f1d\out\generic-c704d20be6bb5f1d.exe)
+
+running 31 tests
+test enum_generic_hai_bien_the ... ok
+test cong_mau_thuan_str_int_la_vs0412 ... ok
+test cong_mau_thuan_int_str_la_vs0412 ... ok
+test ba_generic_cung_luc ... ok
+test cong_int_va_str_cung_chuong_trinh ... ok
+test enum_generic_match_hai_nhanh ... ok
+test enum_generic_payload_khong_bi_khoa_kieu ... ok
+test fn_generic_khai_bao_sach ... ok
+test fn_hai_tham_so_kieu_sach ... ok
+test generic_khong_dung_trong_than_van_sach ... ok
+test generic_voi_mac_dinh_khong_dung ... ok
+test goi_long_generic ... ok
+test hai_generic_kieu_tra_rieng ... ok
+test kieu_generic_record_sach ... ok
+test kieu_generic_enum_sach ... ok
+test kieu_tham_so_la_van_la_vs0303 ... ok
+test list_t_voi_int_la_vs0412 ... ok
+test kiem_va_chay_cung_ket_luan_tren_cung_tep ... ok
+test list_t_long_nhau_hop_nhat_duoc ... ok
+test optional_t_voi_int_thuong_duoc_nang ... ok
+test optional_t_voi_int_optional_sach ... ok
+test record_generic_hai_kieu_cung_luc ... ok
+test record_generic_truong_doc_ra_dung_kieu_dong ... ok
+test sai_so_doi_so_generic_la_vs0401 ... ok
+test thong_diep_mau_thuan_neu_ten_t_va_hai_kieu ... ok
+test tham_so_map_str_t_sach ... ok
+test tham_so_long_list_t_sach ... ok
+test thua_doi_so_generic_la_vs0401 ... ok
+test tra_t_dung_duoc_o_ngu_canh ... ok
+test tra_t_optional_voi_match ... ok
+test tra_t_sai_ngu_canh_la_vs0412 ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\generic_that.rs (target\debug\build\vis-types/2f85a0215357b7ff\out\generic_that-2f85a0215357b7ff.exe)
+
+running 25 tests
+test gan_cung_instantiation_sach ... ok
+test generic_long_trong_generic ... ok
+test ham_hai_tham_so_cung_t_lech_la_vs0412 ... ok
+test generic_long_sai_phan_tu_la_vs0412 ... ok
+test gan_cheo_hai_instantiation_la_vs0412 ... ok
+test hai_instantiation_cung_ton_tai ... ok
+test ham_lien_ket_lech_la_vs0412 ... ok
+test ham_lien_ket_sach ... ok
+test ham_lien_ket_t_la_str_sach ... ok
+test hop_bool_khac_hop_int ... ok
+test ham_tra_ve_t_giu_kieu_sach ... ok
+test ham_tra_ve_t_sai_ngu_canh_la_vs0412 ... ok
+test hop_int_sach ... ok
+test hop_int_nhan_chuoi_la_vs0412 ... ok
+test hop_str_sach ... ok
+test or_cung_hai_dau_sach ... ok
+test or_int_str_literal_sach ... ok
+test or_gan_cheo_instantiation_la_vs0412 ... ok
+test or_list_sai_phan_tu_la_vs0412 ... ok
+test or_sai_dau_bien_the_la_vs0412 ... ok
+test or_match_thieu_nhanh_van_vs0402 ... ok
+test truong_hop_int_khong_phai_str ... ok
+test or_match_du_nhanh_sach ... ok
+test tham_so_hop_lech_instantiation_la_vs0412 ... ok
+test truong_hop_int_la_int ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\hir.rs (target\debug\build\vis-types/79dcb8e4024b4871\out\hir-79dcb8e4024b4871.exe)
+
+running 10 tests
+test doc_va_golden_ton_tai ... ok
+test ba_ca_err_dung_o_parse_khong_lower ... ok
+test khoi_tai_lieu_22_15_7 ... ok
+test cst_che_do_lenh_ha_that_qua_cmd_lower ... ok
+test kieu_hien_thi_on_dinh_va_type_ref ... ok
+test kieu_cau_truc_va_option ... ok
+test literal_duoc_dien_kieu ... ok
+test khong_panic_tren_7_khoi_loai_tru_va_rac ... ok
+test golden_27_bieu_thuc_ha_ra_sexp_hir ... ok
+test ha_15_khoi_tai_lieu_0_chan_doan_va_dung_so_khai_bao ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\names.rs (target\debug\build\vis-types/80dd3ab0760ffffb\out\names-80dd3ab0760ffffb.exe)
+
+running 17 tests
+test danh_sach_builtin_khoa_dung_11_ten ... ok
+test bong_ten_trong_khoi_hop_le_va_phan_giai_dung ... ok
+test builtin_phan_giai_duoc_o_moi_che_do ... ok
+test gan_cho_ten_chua_khai_bao_vs0301_mac_dinh ... ok
+test let_che_ten_cung_khung_khong_loi ... ok
+test for_bind_if_let_match_arm_va_lambda ... ok
+test ham_goi_truoc_va_sau_khai_bao ... ok
+test let_ha_gia_tri_truoc_khi_khai_ten ... ok
+test nhan_scope_la_khai_bao ... ok
+test let_trong_khoi_khong_ro_ra_ngoai ... ok
+test gan_ten_la_chi_mot_vs0301_moi_dang ... ok
+test tham_so_thay_trong_than_ham ... ok
+test ten_kieu_chua_khai_khong_bao_o_st11 ... ok
+test ten_la_bao_vs0301_o_che_do_chat ... ok
+test strict_bao_ca_ten_tu_do_khi_doc ... ok
+test permissive_van_bao_vs0301_khi_gan_ten_la ... ok
+test vs0302_tham_so_trung_va_item_trung ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\stdlib_ty.rs (target\debug\build\vis-types/1ecc35d102f8052c\out\stdlib_ty-1ecc35d102f8052c.exe)
+
+running 4 tests
+test moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3 ... ok
+test muoi_sau_chu_ky_generic_dung_hinh_dang ... ok
+test sang_type_dung_ten_bien_kieu ... ok
+test sort_by_giu_ngoai_le_fn_khoa ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\trait.rs (target\debug\build\vis-types/c4ac7cc35054a189\out\trait-c4ac7cc35054a189.exe)
+
+running 29 tests
+test derives_eq_truong_float_bao_vs0403 ... ok
+test derives_json_hop_le_voi_list_int ... ok
+test derives_eq_sinh_phuong_thuc_that ... ok
+test derives_enum_eq_sinh_phuong_thuc_that ... ok
+test derives_json_tren_truong_ham_bao_vs0403 ... ok
+test derives_eq_show_json_tren_record ... ok
+test derives_la_bao_vs0403 ... ok
+test derives_show_sinh_phuong_thuc_that ... ok
+test derives_show_tren_kieu_generic_bao_vs0403 ... ok
+test derives_tren_enum ... ok
+test enum_goi_phuong_thuc_duoc ... ok
+test goi_phuong_thuc_impl_thanh_call_truc_tiep ... ok
+test goi_phuong_thuc_inherent_thanh_call_truc_tiep ... ok
+test impl_dung_chu_ky_sach ... ok
+test impl_inherent_khong_trait_sach ... ok
+test impl_sai_kieu_tra_bao_vs0412 ... ok
+test impl_thieu_phuong_thuc_bao_vs0403 ... ok
+test impl_thua_phuong_thuc_bao_vs0403 ... ok
+test impl_trait_khong_ton_tai_bao_vs0403 ... ok
+test khong_co_phuong_thuc_giu_nguyen_loi_cu ... ok
+test kieu_khong_tinh_bao_vs0403 ... ok
+test no_i_tai_thang_impl_cung_ten ... ok
+test nhieu_dong_truoc_voi_let ... ok
+test phuong_thuc_khong_ton_tai_bao_vs0403 ... ok
+test mo_ho_giua_hai_impl_bao_vs0403 ... ok
+test sieu_trait_du_sach ... ok
+test trait_khai_bao_sach ... ok
+test sieu_trait_thieu_bao_vs0403 ... ok
+test tham_so_co_kieu_goi_duoc_phuong_thuc ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\tyck.rs (target\debug\build\vis-types/b9de0962b5a806be\out\tyck-b9de0962b5a806be.exe)
+
+running 6 tests
+test du_80_ca ... ok
+test literal_va_chu_thich_kieu ... ok
+test so_sanh_logic_va_coalesce ... ok
+test so_hoc_theo_don_vi ... ok
+test kien_truc_list_map_record_enum ... ok
+test ham_doi_so_va_optional ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\tyck_methods.rs (target\debug\build\vis-types/d7a3651cf3662692\out\tyck_methods-d7a3651cf3662692.exe)
+
+running 3 tests
+test du_5_ca_phuong_thuc ... ok
+test gia_tri_cau_lenh_cuoi_vd47 ... ok
+test bang_phuong_thuc_loi ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\tyck_v2.rs (target\debug\build\vis-types/3d65eed54693227c\out\tyck_v2-3d65eed54693227c.exe)
+
+running 12 tests
+test dieu_kien_list_goi_y_is_empty ... ok
+test gan_field_index_kiem_bat_bien ... ok
+test match_unit_tuple_la_huu_han ... ok
+test kieu_ngoai_vs0_bao_vs0303_ro_rang ... ok
+test nang_int_float_chi_cho_literal ... ok
+test builtin_co_kiem_chu_ky ... ok
+test percent_so_sanh_float_theo_ti_le ... ok
+test phep_cua_vs0_theo_vd48 ... ok
+test phu_them_bieu_thuc_va_kieu ... ok
+test ten_tham_so_va_doi_so_co_ten ... ok
+test try_chi_dung_khi_ham_tra_optional_hoac_result ... ok
+test never_vong_lap_va_for_theo_vs0 ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\build\vis-vm/c901565b818ced7b\out\vis_vm-c901565b818ced7b.exe)
+
+running 1 test
+test vm::tests::capture_local_barrier ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\diff_100k.rs (target\debug\build\vis-vm/75c6d17542d57ce2\out\diff_100k-75c6d17542d57ce2.exe)
+
+running 7 tests
+test goc_ton_tai ... ok
+test bo_sinh_sinh_du_nhom_cu_phap_moi ... ok
+test loi_tinh_cu_phap_moi_cung_ma ... ok
+test loi_chay_cu_phap_moi_hai_duong_cung_ma ... ok
+test bo_sinh_hon_hop_du_nhom ... ok
+test diff_chuong_trinh_sinh_tu_dong ... ok
+test hai_nghin_chuong_trinh_khong_phai_20k ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.42s
+
+     Running tests\fuzz_mutate.rs (target\debug\build\vis-vm/1770b9cfc4399882\out\fuzz_mutate-1770b9cfc4399882.exe)
+
+running 1 test
+test fuzz_dot_bien_bytecode ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.16s
+
+     Running tests\st238_parity.rs (target\debug\build\vis-vm/517045ebc7dc53c4\out\st238_parity-517045ebc7dc53c4.exe)
+
+running 6 tests
+test ca4_const_cap_tep ... ok
+test ca3_let_cap_tep_trong_ham ... ok
+test ca2_while_let_stack_can_bang ... ok
+test ca1_for_long_break_break_pop_iterator ... ok
+test ca7_match_roi_khong_im_lang ... ok
+test ca8_closure_ghi_bien_bat_giu_trang_thai ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st239_parity.rs (target\debug\build\vis-vm/9e016045815e8610\out\st239_parity-9e016045815e8610.exe)
+
+running 8 tests
+test ca165_or_pattern_bind_khong_day_du_bi_tu_choi ... ok
+test ca162_hoi_cham_base_thuong_bi_tu_choi ... ok
+test ca165_or_pattern_bind_day_du_van_hop_le ... ok
+test ca166_set_dedup ... ok
+test ca170_literal_khoa_trung_tinh_bi_tu_choi ... ok
+test ca161_hoi_cham_khong_flatten_field_optional ... ok
+test ca161_hoi_cham_base_optional_nang_mot_lop ... ok
+test ca170_runtime_last_wins_va_equality ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st245_async_regression.rs (target\debug\build\vis-vm/38383225a339400d\out\st245_async_regression-38383225a339400d.exe)
+
+running 4 tests
+test bytecode_global_ngoai_mien_khong_panic_va_bi_chan ... ok
+test var_cap_tep_readback ... ok
+test async_task_doc_var_cap_tep_khong_tra_unit ... ok
+test spawn_loop_ban_nho ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st247_global_domain.rs (target\debug\build\vis-vm/1497d75b2af4f81f\out\st247_global_domain-1497d75b2af4f81f.exe)
+
+running 3 tests
+test q4_ham_khong_goi_doc_global_chua_khoi_tao_tra_trap ... ok
+test q5_codegen_ghi_roi_doc_tra_gia_tri_dung ... ok
+test q4_nhanh_khong_chay_doc_global_chua_khoi_tao_tra_trap ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st248_field_lift.rs (target\debug\build\vis-vm/581748af37ae54fc\out\st248_field_lift-581748af37ae54fc.exe)
+
+running 7 tests
+test dich_khong_optional_khong_nang ... ok
+test repro_index_nang_mot_lop ... ok
+test index_int2_khong_nang_nhieu_lop ... ok
+test repro_field_nang_mot_lop ... ok
+test field_int2_khong_nang_nhieu_lop_va_none_giu_nguyen ... ok
+test alias_va_list_index ... ok
+test sai_kieu_bi_tu_choi ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st250_global_init.rs (target\debug\build\vis-vm/adb5e0f413b9342b\out\st250_global_init-adb5e0f413b9342b.exe)
+
+running 8 tests
+test t1_ghi_nhanh_khong_chay_doc_tra_trap ... ok
+test t2_ghi_ham_khong_goi_doc_tra_trap ... ok
+test t3_goi_ham_ghi_roi_doc_tra_gia_tri_dung ... ok
+test t4_ghi_unit_hop_le_khong_nham_chua_khoi_tao ... ok
+test t6_doc_ngoai_mien_bi_chan_khong_tra_mac_dinh ... ok
+test t5_nhieu_global_chi_mot_phan_khoi_tao ... ok
+test t7_qua_encode_decode_load_verified_execute ... ok
+test t8_hai_lan_chay_doc_lap_khong_ro_trang_thai ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\st252_capture_local.rs (target\debug\build\vis-vm/10368b3df0f25228\out\st252_capture_local-10368b3df0f25228.exe)
+
+running 8 tests
+test t2_chi_so_bang_do_dai_capture ... ok
+test t5_closure_moi_truong_khong_khop ... ok
+test t1_capture_rong_doc_chi_so_0 ... ok
+test t3_chi_so_u16_max ... ok
+test t4_capture_hop_le_chua_unit ... ok
+test t7_local_ngoai_khung_bi_chan_unit_hop_le ... ok
+test t8_crafted_encode_decode_load_verified_execute ... ok
+test t6_closure_long_nhau_compiler_sinh_hop_le ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\vm_neg.rs (target\debug\build\vis-vm/9fd1f62ec964e34d\out\vm_neg-9fd1f62ec964e34d.exe)
+
+running 4 tests
+test const_ngoai_pham_vi_bi_tu_choi ... ok
+test chuong_trinh_rong_tra_unit ... ok
+test pop_rong_bi_tu_choi_khong_panic ... ok
+test dich_nhay_ngoai_code_bi_tu_choi ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\vs_interp.rs (target\debug\build\vis-vm/fb9fe0e8f996b6ad\out\vs_interp-fb9fe0e8f996b6ad.exe)
+
+running 2 tests
+test hai_duong_cung_so_chan_doan ... ok
+test vm_khop_interp_tren_320_ca ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+   Doc-tests vis_bytecode
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests vis_diag
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests vis_fmt
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests vis_interp
+
+running 2 tests
+test crates\vis-interp\src\lib.rs - (line 35) ... ok
+test crates\vis-interp\src\lib.rs - (line 19) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+
+   Doc-tests vis_syntax
+
+running 1 test
+test crates\vis-syntax\src\lib.rs - (line 20) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+   Doc-tests vis_types
+
+running 2 tests
+test crates\vis-types\src\lib.rs - (line 19) ... ok
+test crates\vis-types\src\lib.rs - (line 46) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.67s
+
+   Doc-tests vis_vm
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+vis-remote-exit=0
+vis-remote: [exit=0] host=psvn log=/tmp/opencode/windows-final3-ws.log log_may_dich=/c/Users/ps/vislogs/final3-ws-20261120T043325Z.log
