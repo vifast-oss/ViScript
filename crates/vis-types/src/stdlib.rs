@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 135] = [
+pub const FUNCS: [StdFn; 136] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -1080,6 +1080,15 @@ pub const FUNCS: [StdFn; 135] = [
         name: "sqlite.primary_keys",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-schema-version)** — `schema_version` (schema cookie) của **schema chính**
+    // (`main`), **chỉ đọc** qua `PRAGMA schema_version` (authorizer allow-list đọc version pragma
+    // không kèm giá trị); mỗi lời gọi đọc lại nên DDL trên cùng connection làm **tăng** giá trị;
+    // lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
+    StdFn {
+        name: "sqlite.schema_version",
+        params: &[Ty::Str],
+        ret: Ty::ResultIntErr,
     },
 ];
 

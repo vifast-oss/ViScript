@@ -193,7 +193,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str, str, int) -> str`; thay tối đa `n` lần khớp **không chồng** đầu tiên theo
     // Rust `replacen`, `n == 0` ⇒ nguyên vẹn, `n` quá số lần ⇒ thay tất cả, `n < 0` ⇒ trap
     // `VS0501`) ⇒ **135** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 135, "bảng chữ ký phải đủ 135 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-schema-version, 2026-11-21)**: +**1** hàm
+    // `sqlite.schema_version` (`(str) -> Result[int, Error]`; schema cookie của schema chính
+    // đọc qua `PRAGMA schema_version`, tăng khi DDL đổi schema, chỉ đọc) ⇒ **136** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 136, "bảng chữ ký phải đủ 136 hàm");
 }
 
 #[test]
@@ -715,6 +719,29 @@ fn sqlite_indexes_kieu_str_str_va_result_list_str() {
         "`sqlite.indexes`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[list[str], Error]");
+}
+
+/// **VD-270 (sqlite-schema-version)**: chữ ký `(str) -> Result[int, Error]` — tái dùng **đúng**
+/// `Ty::ResultIntErr` (như `sqlite.changes`/`sqlite.last_insert_rowid`), không thêm biến thể.
+#[test]
+fn sqlite_schema_version_kieu_str_va_result_int() {
+    let f = sig_of("sqlite.schema_version").expect("sqlite.schema_version");
+    assert_eq!(
+        f.params,
+        &[Ty::Str],
+        "`sqlite.schema_version`: tham số (handle)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultIntErr,
+        "`sqlite.schema_version`: kiểu trả phải là `ResultIntErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Int), Box::new(Ty::Error.sang_type())),
+        "`sqlite.schema_version`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[int, Error]");
 }
 
 /// **VD-270 (sqlite-schema-sql)**: chữ ký `(str, str) -> Result[str?, Error]` — biến thể **riêng**

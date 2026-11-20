@@ -47,6 +47,7 @@ mod sqliteidxcols;
 mod sqliteidxexists;
 mod sqlitepk;
 mod sqliteschema;
+mod sqliteschemaver;
 mod sqlitetables;
 mod strascii;
 mod strfind;
@@ -1091,6 +1092,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
+        }
+        // **VD-270 (sqlite-schema-version)** — `schema_version` (schema cookie) của **schema
+        // chính** (`main`), chỉ đọc qua `PRAGMA schema_version`; mỗi lời gọi đọc lại nên DDL trên
+        // cùng connection làm **tăng** giá trị; lỗi handle/host/kết quả sai hình dạng ⇒
+        // `Err(Error)` dữ liệu, không trap.
+        "sqlite.schema_version" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqliteschemaver::chay(host, h).map(Value::Int), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {
