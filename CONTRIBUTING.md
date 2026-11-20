@@ -8,7 +8,7 @@ Cảm ơn bạn muốn đóng góp! Dưới đây là những việc tối thi�
 ```sh
 git clone https://github.com/vifast-oss/ViScript.git
 cd ViScript
-cargo build --release
+./bin/vis-release   # build + stage target/vis-release/vis (CHỈ vis, không test-child)
 ./vis run vi-du/xin-chao.vis
 ```
 
@@ -23,9 +23,13 @@ Chạy **cổng bắt buộc** (khoảng 4–5 phút trên máy thường):
 ```
 
 Cổng kiểm: định dạng (`cargo fmt`), clippy `-D warnings`, luật cấu trúc R1–R4, ca âm tự kiểm,
-`vis explain`, fixture báo cáo, `doc-examples`, build, và **toàn bộ test** (`cargo test --workspace`).
+`vis explain`, fixture báo cáo, `doc-examples`, build, đóng gói phát hành (`test/release/run.sh`),
+và **toàn bộ test** (`cargo test --workspace`).
 
 Chỉ gửi khi cổng **PASS**. Không sửa kỳ vọng/ngưỡng của test để lấy xanh.
+
+Thay đổi chạm feature/dependency/nền tảng: chạy thêm `./vis-dev core-test` (cấu hình
+`--no-default-features`, target riêng nên không đua với gate default).
 
 ## 3. Quy ước
 

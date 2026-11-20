@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# vis-release — đóng gói bản phát hành **chỉ** gồm các binary trong
+# `[package.metadata.vis] release-bins` của `crates/vis-cli/Cargo.toml`.
+#
+# Vì sao cần script này (VD-259):
+#   `crates/vis-cli` có binary test-support `test-child` (hợp đồng `CARGO_BIN_EXE_test-child`
+#   của nhiều integration test). Cargo **không** có cách khai báo "bin này chỉ dùng khi test"
+#   mà vẫn giữ `CARGO_BIN_EXE_*`; `cargo build --release` / `cargo install --path crates/vis-cli`
+#   sẽ build/cài **cả** test-child. Vì vậy đường phát hành phải chỉ định tường minh `--bin`.
+#   `test/release/run.sh` canh metadata + lệnh build + artifact staging.
+#
+# Dùng:
+#   ./bin/vis-release                      # build + stage vào target/vis-release
+#   ./bin/vis-release --out-dir DIR        # stage vào DIR (phải trống, hoặc --force)
+#   ./bin/vis-release --target TRIPLE      # cross-build (artifact target/TRIPLE/release)
+#   ./bin/vis-release --dry-run            # chỉ in lệnh, không build
+#
+# Tương đương thủ công (chỉ `vis`, không bao giờ `test-child`):
+#   cargo build --release -p vis-cli --bin vis
+#   cargo install --path crates/vis-cli --bin vis
+set -u
+
+case "$0" in
+    */*) _vis_dir="${0%/*}" ;;
+    *) _vis_dir="." ;;
+esac
+VIS_ROOT="$(cd "$_vis_dir/.." && pwd)"
+# shellcheck source=_vis-toolchain.sh
+source "$VIS_ROOT/bin/_vis-toolchain.sh"
+
+MANIFEST="$VIS_ROOT/Cargo.toml"
+# Chỉ dùng cho test âm của `test/release/run.sh`; không phải API công khai.
+CLI_MANIFEST="${VIS_RELEASE_CLI_MANIFEST:-$VIS_ROOT/crates/vis-cli/Cargo.toml}"
+OUT_DIR="$VIS_ROOT/target/vis-release"
+TARGET=""
+DRY_RUN=0
+FORCE=0
+
+usage() {
+    echo "dùng: vis-release [--out-dir DIR] [--target TRIPLE] [--dry-run] [--force]" >&2
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --out-dir)
+            [ "$#" -ge 2 ] || { echo "vis-release: --out-dir cần thư mục" >&2; usage; exit 2; }
+            OUT_DIR="$2"
+            shift 2
+            ;;
+        --target)
+            [ "$#" -ge 2 ] || { echo "vis-release: --target cần triple" >&2; usage; exit 2; }
+            TARGET="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        --force)
+            FORCE=1
+            shift
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "vis-release: không hiểu \`$1\`" >&2
+            usage
+            exit 2
+            ;;
+    esac
+done
+
+# Đọc mảng `release-bins = ["vis"]` trong `[package.metadata.vis]` (một nguồn sự thật).
+release_bins() {
+    awk '
+        /^[[:space:]]*\[/ {
+            in_meta = ($0 ~ /^[[:space:]]*\[package\.metadata\.vis\][[:space:]]*$/)
+            next
+        }
+        in_meta && /^[[:space:]]*release-bins[[:space:]]*=/ {
+            s = $0
+            sub(/^[^=]*=[[:space:]]*\[/, "", s)
+            sub(/\][[:space:]]*$/, "", s)
+            n = split(s, a, ",")
+            for (i = 1; i <= n; i++) {
+                gsub(/["[:space:]]/, "", a[i])
+                if (a[i] != "") print a[i]
+            }
+            found = 1
+            exit
+        }
+        END { if (!found) exit 3 }
+    ' "$CLI_MANIFEST"
+}
+
+if [ ! -f "$CLI_MANIFEST" ]; then
+    echo "vis-release: thiếu $CLI_MANIFEST" >&2
+    exit 1
+fi
+if ! bins_raw="$(release_bins)"; then
+    echo "vis-release: $CLI_MANIFEST thiếu [package.metadata.vis] release-bins" >&2
+    exit 1
+fi
+
+BINS=()
+while IFS= read -r b; do
+    [ -n "$b" ] || continue
+    case "$b" in
+        test-child)
+            echo "vis-release: release-bins chứa \`test-child\` — binary test-support KHÔNG được phát hành" >&2
+            exit 1
+            ;;
+        *[!A-Za-z0-9_-]* | -* | '')
+            echo "vis-release: tên binary không hợp lệ trong release-bins: \`$b\`" >&2
+            exit 1
+            ;;
+    esac
+    BINS+=("$b")
+done <<<"$bins_raw"
+
+if [ "${#BINS[@]}" -eq 0 ]; then
+    echo "vis-release: release-bins rỗng — không có gì để phát hành" >&2
+    exit 1
+fi
+
+CARGO="$(vis_find_cargo "vis-release")" || exit 78
+
+build_args=(build --release --manifest-path "$MANIFEST" -p vis-cli)
+for b in "${BINS[@]}"; do
+    build_args+=(--bin "$b")
+done
+if [ -n "$TARGET" ]; then
+    build_args+=(--target "$TARGET")
+fi
+
+echo -n "vis-release: lệnh: $CARGO"
+for a in "${build_args[@]}"; do echo -n " $a"; done
+echo
+
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo "vis-release: dry-run — release-bins: ${BINS[*]}; KHÔNG có test-child"
+    exit 0
+fi
+
+"$CARGO" "${build_args[@]}" || {
+    echo "vis-release: build release THẤT BẠI" >&2
+    exit 1
+}
+
+# `CARGO_TARGET_DIR` thay cho `target/`; `--target` chèn thêm một tầng.
+if [ -n "${CARGO_TARGET_DIR:-}" ]; then
+    TARGET_ROOT="$CARGO_TARGET_DIR"
+    case "$TARGET_ROOT" in
+        /*) ;;
+        *) TARGET_ROOT="$PWD/$TARGET_ROOT" ;;
+    esac
+else
+    TARGET_ROOT="$VIS_ROOT/target"
+fi
+BIN_DIR="$TARGET_ROOT"
+if [ -n "$TARGET" ]; then
+    BIN_DIR="$BIN_DIR/$TARGET"
+fi
+BIN_DIR="$BIN_DIR/release"
+
+case "$OUT_DIR" in
+    '' | '/' | '.' | '..')
+        echo "vis-release: --out-dir không hợp lệ: \`$OUT_DIR\`" >&2
+        exit 1
+        ;;
+esac
+if [ -e "$OUT_DIR" ]; then
+    if [ ! -d "$OUT_DIR" ]; then
+        echo "vis-release: $OUT_DIR tồn tại nhưng không phải thư mục" >&2
+        exit 1
+    fi
+    if [ "$FORCE" -eq 0 ] && [ -n "$(ls -A "$OUT_DIR" 2>/dev/null)" ]; then
+        echo "vis-release: $OUT_DIR không trống — dùng --force để tạo lại" >&2
+        exit 1
+    fi
+    rm -rf "$OUT_DIR"
+fi
+mkdir -p "$OUT_DIR" || exit 1
+
+for b in "${BINS[@]}"; do
+    src="$BIN_DIR/$b"
+    if [ ! -f "$src" ]; then
+        echo "vis-release: không thấy artifact $src (build xong nhưng thiếu?)" >&2
+        exit 1
+    fi
+    cp "$src" "$OUT_DIR/$b" || exit 1
+    chmod 755 "$OUT_DIR/$b" || exit 1
+done
+for f in LICENSE-APACHE LICENSE-MIT; do
+    [ -f "$VIS_ROOT/$f" ] && cp "$VIS_ROOT/$f" "$OUT_DIR/$f"
+done
+
+# Artifact cuối chỉ được chứa release-bins + giấy phép. Nếu `test-child` lọt vào ⇒ đỏ.
+for f in "$OUT_DIR"/*; do
+    [ -e "$f" ] || continue
+    name="${f##*/}"
+    case "$name" in
+        LICENSE-APACHE | LICENSE-MIT) continue ;;
+    esac
+    ok=0
+    for b in "${BINS[@]}"; do
+        if [ "$name" = "$b" ]; then ok=1; break; fi
+    done
+    if [ "$ok" -eq 0 ]; then
+        echo "vis-release: tệp lạ trong artifact: $name (chỉ cho phép: ${BINS[*]} + giấy phép)" >&2
+        exit 1
+    fi
+done
+if [ -e "$OUT_DIR/test-child" ]; then
+    echo "vis-release: test-child có trong artifact phát hành — sai đóng gói" >&2
+    exit 1
+fi
+
+echo "vis-release: artifact ${OUT_DIR}:"
+for b in "${BINS[@]}"; do
+    echo "  $b ($(wc -c <"$OUT_DIR/$b" | tr -d ' ') byte)"
+done
+echo "vis-release: PASS (không có test-child)"

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # ST-75 (VD-104(3)) — chạy bộ hợp chuẩn host (`test/host/suite.txt`) qua harness Rust và in bảng.
+# **VD-259** — trên Unix chạy thêm `host_posix_real` (lệnh POSIX thật: /bin/echo, /usr/bin/grep,
+# /bin/sh, /usr/bin/printf), để đường kiểm host có cả bằng chứng thật lẫn `test-child` đa nền.
 #
 # Mỗi ca chạy **cả** `vis run` và `vis run --vm --no-cache` (trừ khi ca khai `vm:vs0604` = kỳ vọng
 # VS0604 ở VM vì VM không có host Ngoai). Mức bằng chứng: CHẠY THẬT trên nền đang chạy — dòng cuối in
@@ -11,7 +13,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUITE="$ROOT/test/host/suite.txt"
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
 LOG="${TMPDIR:-/tmp}/vis-host-suite.$$.log"
-trap 'rm -f "$LOG"' EXIT
+LOG_POSIX="${TMPDIR:-/tmp}/vis-host-suite-posix.$$.log"
+trap 'rm -f "$LOG" "$LOG_POSIX"' EXIT
 if [ ! -f "$SUITE" ]; then
   echo "vis-host-suite: thiếu $SUITE" >&2
   exit 1
@@ -39,3 +42,19 @@ if [ "$so_ok" -ne "$so_ca" ]; then
   echo "vis-host-suite: số ca không khớp suite" >&2
   exit 1
 fi
+
+# **VD-259** — bằng chứng POSIX thật chỉ có nghĩa trên Unix; Windows dùng test-child.
+case "$(uname -s 2>/dev/null || echo unknown)" in
+  MINGW* | MSYS* | CYGWIN*)
+    echo "vis-host-suite: host_posix_real: BỎ QUA (Windows dùng test-child)"
+    ;;
+  *)
+    if ! "$CARGO" test --manifest-path "$ROOT/Cargo.toml" -p vis-cli --test host_posix_real \
+      -- --nocapture >"$LOG_POSIX" 2>&1; then
+      cat "$LOG_POSIX" >&2
+      echo "vis-host-suite: host_posix_real HỎNG (log trên stderr)" >&2
+      exit 1
+    fi
+    echo "vis-host-suite: host_posix_real PASS (lệnh POSIX thật; nền: $(uname -sm))"
+    ;;
+esac
