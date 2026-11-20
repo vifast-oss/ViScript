@@ -174,7 +174,6 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(list[float]) -> float?`; rỗng ⇒ `None`, có `NaN` ⇒ `None`, sao chép rồi sắp tăng,
     // lẻ ⇒ giữa, chẵn ⇒ `(a + b) / 2.0`) ⇒ **129** hàm; không xoá/đổi hàm cũ nào.
     assert_eq!(FUNCS.len(), 129, "bảng chữ ký phải đủ 129 hàm");
-    assert_eq!(FUNCS.len(), 128, "bảng chữ ký phải đủ 128 hàm");
 }
 
 #[test]
