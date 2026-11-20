@@ -357,7 +357,7 @@ fn d2b_compound_field_assign_rejected_by_parser() {
 // ===========================================================================
 
 #[test]
-fn e1_closure_body_await_interp_supported_vm_explicit_rejection() {
+fn e1_closure_body_await_supported_on_both_engines() {
     let src = r#"async fn ext_src() -> int:
     0
 fn main():
@@ -377,17 +377,12 @@ fn main():
     assert_eq!(i.exit, 0, "interp phải chạy được: {:?}", i.diagnostics);
     assert_eq!(i.stdout, "42\n");
 
-    // VM: codegen sinh bytecode sai ⇒ verify chặn, exit=1 + diagnostic rõ. Không có
-    // fallback âm thầm. Lỗi nằm ở vis-bytecode (codegen) — NGOÀI file stream A được cấp.
+    // VD-257/B đã sửa đường VM (goi_ham_bytecode đẩy frame vào Th hiện tại): giờ cả hai
+    // engine chạy được. Assertion "VM từ chối" của stream A lỗi thời sau khi B merge.
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile trả module");
     let v = run_v(&m, src, &[], cfg(&[("ext_src", 1)], vec![ev(0, 1, 0, 42)]));
-    assert_eq!(v.exit, 1, "VM phải từ chối rõ, không chạy sai");
-    assert!(v.stdout.is_empty());
-    assert!(
-        v.diagnostics[0].message.contains("bytecode hỏng"),
-        "{:?}",
-        v.diagnostics
-    );
+    assert_eq!(v.exit, 0, "VM phải chạy được: {:?}", v.diagnostics);
+    assert_eq!(v.stdout, "42\n");
 }
 
 // ===========================================================================
