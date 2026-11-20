@@ -1,5 +1,12 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
+> **ĐÍNH CHÍNH macOS — 2026-11-21 (ST-242 / VD-242 Q7).** Mọi câu “macOS…” và số “macOS 27.0.1 arm64”
+> trong tệp này là **số cũ**, **chưa đo lại** trên máy Darwin thật. Ngày 20/11 `bin/vis-remote mac --check`
+> trả Linux x86_64/Ubuntu (alias `mac` còn chạy tại chỗ) ⇒ **không dùng làm bằng chứng macOS**. Hiện
+> **không tuyên bố hỗ trợ macOS**; bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
+> `vis-host-linux` **15/15**. Windows: **Tier 2**, workspace xanh @ `c7cef71` (20/11), **chưa verify ở HEAD**.
+> Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
+
 Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 ~02:30 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify: @ `6ccf367` → 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`, verify nền); Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 (ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **VD-186**: mục FsGuard ghi rõ **đường đọc đã đóng**,
@@ -9,7 +16,7 @@ Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
-| macOS (máy phát triển) | **Có** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`, đã đo 8 ca interp+VM | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` được **cfg-out** (0 ca chạy, ST-173) | `vis run --sandbox-check` in `landlock: không hỗ trợ trên macos`, exit 3; `cargo test -p vis-host-linux` exit 0, **0 ca** |
+| macOS (mps) — **CHƯA verify** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Số cũ, không dùng làm bằng chứng**: `vis-remote mac --check` 20/11 trả Linux (ST-242); `mac|macos` nay **từ chối** nếu `uname -s` ≠ Darwin. Cần đo lại trên máy Darwin thật. |
 | Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **15/15 ca** trên `ps` (ST-150/ST-166/ST-173) | `cargo test -p vis-host-linux --test landlock` → `15 passed` (log `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`) |
 | Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
 
@@ -45,7 +52,7 @@ Mã thoát: `0` = Linux có `landlock`; `3` = không có / nền khác; `4` = Li
 Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “chạy trên Windows/wasm”;
 đúng là “**check** biên dịch chéo xanh, **chưa chạy**”.
 
-## Bộ hợp chuẩn host — chạy THẬT trên macOS và Linux (ST-75, ST-131/ST-142)
+## Bộ hợp chuẩn host — chạy THẬT trên Linux; macOS là số cũ (ST-75, ST-131/ST-142)
 
 **54 ca**, mỗi ca chạy **cả** `vis run` và `vis run --vm --no-cache` (**120 lần chạy**), so **byte**
 stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
@@ -59,9 +66,11 @@ stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
 | Determinism | 3 | mỗi ca chạy **3 lần** mỗi đường, cùng stdout |
 
 Lệnh: `viscript/bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu/đỏ). Log:
-Log: `agent/JOURNAL/st75-suite.log` (macOS, ST-75); `st137-host-suite-macos.log`, `st137-host-suite-ps.log`,
-`st142-*`, `st144-host-suite.log` (Windows). **Linux: đã đo** (54/54, ST-142). **Windows: đã đo, chỉ đo**
-(39/54, VD-146/VD-121 — chưa hỗ trợ). **wasm: chưa đo** (chỉ check, VD-121).
+Log: `agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
+`st137-host-suite-macos.log` (nhãn macOS **cũ**), `st137-host-suite-ps.log`, `st142-*`,
+`st144-host-suite.log` (Windows). **Linux: đã đo** (54/54, ST-142 — bằng chứng hiện hành).
+**Windows: đã đo, chỉ đo** (39/54, VD-146/VD-121 — chưa hỗ trợ; workspace xanh @ `c7cef71` là cổng
+`cargo test`, **không** phải tuyên bố hỗ trợ). **wasm: chưa đo** (chỉ check, VD-121).
 
 ## Cấm ngôn từ
 
@@ -73,9 +82,10 @@ Log: `agent/JOURNAL/st75-suite.log` (macOS, ST-75); `st137-host-suite-macos.log`
 - Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
 - **Sai (VD-186)**: “macOS không còn khe hở” / “macOS đã an toàn” khi **đường ghi** chưa vá; “Windows được
   hỗ trợ” / “Windows có sandbox kernel”; “hardlink là lỗi đua”.
-- **Đúng (VD-186)**: “**đường đọc** đã đóng khe symlink trên macOS và Linux (`#146`, ST-174)”; “**đường
-  ghi** còn kiểm-rồi-mở trên **mọi nền Unix** (`#140`/`#109b`) cho tới khi **VS3-QĐ-4** merge”;
-  “**hardlink** là **giới hạn chính sách**”; “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
+- **Đúng (VD-186, sửa 21/11)**: “**đường đọc** đã đóng khe symlink trên **Unix/Linux** (`#146`, ST-174;
+  macOS **chưa verify** lại — xem đính chính đầu tệp)”; “**đường ghi** còn kiểm-rồi-mở trên **mọi nền
+  Unix** (`#140`/`#109b`) cho tới khi **VS3-QĐ-4** merge”; “**hardlink** là **giới hạn chính sách**”;
+  “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
 
 ## Điều kiện để có Landlock thật (VD-107 (4))
 
@@ -118,18 +128,18 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 
 | Đường | Trạng thái trong **mã đang chạy** | Nguồn |
 |---|---|---|
-| **Đọc** | **Đã đóng** khe symlink trên **macOS và Linux** — nợ `#146` đóng ở ST-174 | VD-176 §1 · `JOURNAL/st174-*.log` |
+| **Đọc** | **Đã đóng** khe symlink trên **Unix/Linux** (macOS **chưa verify** lại) — nợ `#146` đóng ở ST-174 | VD-176 §1 · `JOURNAL/st174-*.log` |
 | **Ghi** | **Còn khe hở** kiểm-rồi-mở trên **mọi nền Unix** — nợ `#140`/`#109b` | VD-186 · VD-191 (VS3-QĐ-4) |
 | **Hardlink** | **Giới hạn chính sách**, **không** phải lỗi đua — mục riêng bên dưới | VD-176 §3 |
 | **Windows** | **Mức bảo đảm thấp hơn**: chỉ kiểm theo **đường dẫn**, không có danh tính tệp | VD-146 · VD-178 QĐ-4 |
 
-- **macOS còn khe hở — nhưng chỉ ở đường GHI**, cho tới khi **VS3-QĐ-4** merge (thiết kế `openat` +
+- **Unix (Linux đã đo; macOS chưa verify) còn khe hở — nhưng chỉ ở đường GHI**, cho tới khi **VS3-QĐ-4** merge (thiết kế `openat` +
   `O_NOFOLLOW`, đi từng thành phần từ fd gốc; VD-191). Câu này **chỉ được xoá trong cùng commit merge
   QĐ-4**, không xoá sớm hơn: đường đọc đã đóng, đường ghi **chưa**.
 
 - **Đường đọc — nợ `#146` ĐÃ ĐÓNG (ST-174, VD-176 §1): không còn đua symlink trên macOS và Linux.** Mở handle trước, quyết định quyền trên đường dẫn thật của chính handle, rồi đọc nội dung từ chính handle đó. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
   - **Linux**: đường dẫn thật lấy qua /proc/self/fd/<fd>. /proc không đọc được thì từ chối, không quay về kiểm theo tên. Bảo đảm theo cơ chế (ST-137: 0/50 000).
-  - **macOS: cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) là việc VS3, cùng #140/#109b.
+  - **macOS (số cũ, CHƯA verify lại): cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) là việc VS3, cùng #140/#109b.
 - **Đường ghi: KHE HỞ HIỆN CÓ trên mọi nền Unix (nợ `#140`/`#109b`), chưa vá.** FsGuard **kiểm đường dẫn rồi mới ghi** (kiểm-rồi-mở), vì mở trước để lấy handle là đã tạo hoặc cắt tệp. Trong khoảng giữa hai bước, nếu bên khác ghi được vào thư mục cha, đường dẫn có thể bị thay bằng symlink trỏ ra ngoài vùng được cấp. Đây là **cùng một khe hở trên macOS và Linux**: bản vá `#146` (ST-174) **chỉ** đóng đường đọc, **không** đổi đường ghi. Sửa triệt để = **VS3-QĐ-4** (VD-191): đọc và ghi **chung một hàm** đi từng thành phần từ fd gốc bằng `openat` + `O_NOFOLLOW`/`O_DIRECTORY` (Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`), ca khoá đổi symlink giữa hai bước. Trên Linux khi chạy với `--sandbox`, Landlock chặn ghi ra ngoài vùng được cấp ở mức kernel; **không** có `--sandbox` thì giới hạn này còn nguyên, và Landlock **không** áp dụng trên macOS.
 - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
 - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.
@@ -209,7 +219,7 @@ test bị bỏ.
 | Nền | Biên dịch `vis-host-linux` | Số ca Landlock chạy | Bằng chứng |
 |---|---|---|---|
 | Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **15/15** | `st173-ps-truoc.log`, `st173-ps-sau.log` |
-| macOS 27.0.1 arm64 | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log` |
+| macOS — **số cũ, chưa verify** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log` — **không** dùng làm bằng chứng macOS (ST-242) |
 | Windows | — | **0** (không áp dụng) | chưa có runner |
 
 **Không** dùng câu: “Landlock bảo vệ trên mac/Windows”; “không biên dịch được nên bỏ qua”; “mac thiếu

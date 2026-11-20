@@ -1,13 +1,16 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Cập nhật 2026-11-21 (VD-270)** — A0 tiếp tục đợt **tối ưu liên tục** VD-258..VD-270 (uỷ quyền đến 09:00 23/11); **chưa** mở pha 2/VS3, **chưa** tag mới (`pha1-rc1` = `05e42d0` giữ nguyên), runtime mặc định **không đổi**. HEAD lúc ghi `745851a` (08:04 21/11); số đo mới nhất trong `CHANGELOG.md`: `gate --fast` **2840 passed / 0 skipped**, `vis test test/sem` **525/525** cả interp và VM; core-test/release/toolchain/host 54/54 PASS. API-STD **136** mục. Số đo sẽ còn tăng trong đợt. Windows Tier 2 (xanh @ `c7cef71`, **chưa verify lại ở HEAD**); macOS **chưa verify**. **Đọc khối “Trạng thái sau VD-270” ở cuối tệp**; các khối R22/R23/R26/R27/R29 trong thân là lịch sử, số cũ không xoá (VD-142). Chi tiết từng mục: `JOURNAL/vd260-report.md`.
+>
 > **Cập nhật 2026-11-20 (VD-242)**: A0 mở đợt **“Ổn định sau pha 1”** — baseline `31b51d2`; chưa mở pha 2/VS3. Duyệt cả 10 parity + triage đủ 18 std/CLI; ngữ nghĩa chốt trong `DECISIONS.md` VD-242; bốn luồng Agent 2 tại `QUEUE.md` ST-237..ST-243. Tag `pha1-rc1` giữ nguyên; macOS chưa verify; Windows Tier 2 + verify commit cuối; RFC typed/CSV/str hoãn. Điều kiện mở pha 2 ở VD-242 §8. Các cập nhật dưới đây là lịch sử. **VD-243**: #172 `percent` báo `VS0507`, không bão hoà; gỡ blocker quyết định, ST-240 được chuẩn bị/sửa khi không xung đột tệp.
 
 > **Cập nhật 2026-11-20**: HEAD `7e23c59` (origin/main). VD-winport DONE kỹ thuật (A0 VD-241); Windows verify exit 0 @ c7cef71/2d93101/5f4edd7/c12979f/da24c7d; Tier 2 giữ, Tier 1 không tuyên bố; pha1-rc1 nguyên; narrow freeze +9 std.sqlite.*; macOS không có máy. Đọc `agent/SNAPSHOT-2026-11-20.md`. VD-winport mở theo lệnh người dùng; Linux xanh toàn workspace, gate/nightly PASS (@ `f9430b9`: fuzz 18,769,716 ca); **Windows**: verify @ `6ccf367` → 7 suite đỏ → fix @ `f9430b9` → 1 ca → fix @ `c7cef71` → **exit 0 — toàn workspace xanh** (150 khối ok); Tier 2 giữ nguyên, chưa tuyên bố; `pha1-rc1` nguyên; narrow freeze chỉ `+9 std.sqlite.*`; macOS chưa có kết luận (mps bận). Đọc **`agent/SNAPSHOT-2026-11-20.md`** để biết đầy đủ trạng thái trước khi bắt đầu.
 > **Cập nhật 2026-11-19**: đọc **khối cuối tệp** (“Trạng thái cuối sau R30”) trước; **pha 1 đóng trên ps** tại HEAD `49b33b8` (ST-205…ST-211, ST-226, ST-228 + VD-215..VD-228); mac chờ + ratify A0. Lưu ý nội dung thân tệp (các khối R22/R23/R25/R26/R29 trong thân) giữ nguyên lịch sử; mọi số R22 đã lỗi thời.
 
 Tài liệu một trang cho người tiếp nhận: 8 hạng mục VS2, mức thật **đo được**, điều kiện đóng 100%,
-nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt cột điều kiện. Số đo cuối: `reports/R22-viscript.md`.
+nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt cột điều kiện. Số đo cuối: xem khối
+**“Trạng thái sau VD-270”** ở cuối tệp (R31 là baseline 20/11); các số R22 trong thân tệp là **lịch sử**.
 
 ## A. Tám hạng mục VS2 — mức thật cuối (không vượt mức)
 
@@ -299,3 +302,58 @@ report-check/build/doc-examples PASS.
 - VD "Windows test-suite portability" được mở **sau khi pha 1 đóng chính thức**, base `349af67`.
 - `pha1-rc1` (`05e42d0…`) không bị di chuyển; Tier 1 chỉ sau VD portability + required CI.
 - Windows gate tối thiểu sau VD: formatter/check cần thiết, build, test sản phẩm đa nền tảng, sem ×2, doc-examples, LSP/path fixtures; Unix-only tests không tính trong Windows count.
+
+### Trạng thái sau VD-270 — đợt tối ưu liên tục (2026-11-21)
+
+> Khối **thêm** sau khối Windows Tier 2; số cũ **không xoá** (VD-142). Nguồn: `JOURNAL/vd260-report.md`,
+> `JOURNAL/vd258-plan.md`, `JOURNAL/vd258-progress.md`, `STATE.md`, `DECISIONS.md` VD-258..VD-270, `SO-NO.md`.
+> HEAD lúc ghi `745851a` (21/11 08:04). Số đo cổng dưới đây lấy từ mốc mới nhất (`745851a`) và
+> `JOURNAL/vd260-report.md`; đợt đang chạy nên số sẽ còn tăng.
+
+**Bối cảnh**: sau R31 (baseline `31b51d2`, VD-242), A0 mở đợt tối ưu liên tục 20–21/11. Đợt này **không**
+mở pha 2/VS3, **không** đổi runtime mặc định (frame/budget/quota chỉ trên đường test), **không** tag mới;
+`pha1-rc1` = `05e42d0` giữ nguyên. Từ baseline đến `330d86c` là **476 commit**.
+
+**Đã làm (tóm tắt; chi tiết từng mục ở `JOURNAL/vd260-report.md`)**:
+
+- **Checker/soundness**: `Result?` không bị coi là hai lớp Option; `None` có kiểu; record ctor/default;
+  `?.` lồng; lift Option ở ctor/`with`/`push` và biên nhánh; or-pattern; `let … else` buộc thoát mọi nhánh
+  (`VS0206`); refutable `let`/`for` bị từ chối tĩnh; generic field/instantiation; suy kiểu sau pattern lồng.
+- **Frame/async (chỉ đường test)**: lát 0–3 (suspend/resume, reactor read/accept + timer, `mio = 1.2.5`),
+  coverage `?`/`chan`/`cmd`/field-index assign/closure/`await` trong closure, cancellation/lifecycle,
+  fairness/Q thử nghiệm. **Chưa bật runtime mặc định**, chưa worker/GC, chưa TLS/HTTP2.
+- **Ngân sách**: instrumentation 8 sự kiện + bảng phụ theo PC, verifier cấu trúc/CFG, fuel VM riêng,
+  tương thích VERSION/cache; **chưa bật ngân sách mặc định**; step-cap parity còn mở.
+- **SQLite**: feature tùy chọn (`default = ["sqlite"]`), trần cell/overhead/byte, authorizer chặn
+  `dbstat`/trang thô, `query` chỉ đọc, cache schema + prepared statement; thêm `query_one`,
+  `execute_batch`, `tables`/`columns`/`indexes`/`index_columns`/`primary_keys`/`index_exists`/
+  `schema_sql`/`explain`.
+- **Stdlib**: mở rộng `std.fs` (read_lines/append/mkdir/remove/walk/glob/copy/rename/size/is_file/
+  is_dir/read_bytes/write_bytes), `std.path` (normalize/relative/is_absolute/is_relative/join_all/
+  with_extension), `std.str` (find/rfind/count/pad/trim/splitn/parse_int/parse_float/strip/replace_*),
+  `std.list` (zip/min/max/median/sum/product/sum_float/mean/contains/index_of/binary_search/flatten/
+  windows), `std.sqlite`; `panic`; `i64::MIN`; list rest pattern `[a, ..]`/`[a, ..r]`.
+  `agent/API-STD.txt` hiện **135** mục.
+- **CLI/LSP**: `run/check --stdin`, `fmt --stdin [--check] [--mode]`, `fmt --check --json|--list|--diff|--stat`,
+  `test --filter/--fail-fast/--list/--repeat/--shuffle/--timeout/--json-out`, `explain --json`,
+  `doctor`, `run --time`; LSP definition/documentSymbol/references/rename/prepareRename/signatureHelp/
+  foldingRange/workspace symbol/documentHighlight/selectionRange/formatting/typeDefinition/implementation/
+  hover/completion `std.*`.
+- **Hiệu năng**: range lười (RSS 146 MB → ~9,5 MB @2M), release strip 7,26 → 6,23 MB, cache SQLite
+  (6,8× với 300 bảng), enum `Rc<str>` (Value 72 → 64 B), cache LSP theo `(uri, text)`.
+
+**Số đo cuối khối này**:
+
+```
+gate --fast @ 745851a : PASS — 2840 passed / 0 skipped
+vis test test/sem     : 525/525 (interp) và 525/525 (--vm)
+core-test / release / toolchain / host 54/54 @ a71c85b : PASS
+nightly gần nhất      : PASS — fuzz 10.880.217 ca / 246.857.797 token / 0 vi phạm, fmt 475 tệp bất động @ da6b12c
+Windows               : Tier 2 — workspace xanh @ c7cef71 (20/11), CHƯA verify lại ở HEAD
+macOS                 : CHƯA verify (không có máy Darwin; `vis-remote mac` từ chối nếu không Darwin)
+tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
+```
+
+**Còn mở / chưa tuyên bố**: step-cap parity; P3 enum alloc (#152); #190 `pop_frame`; #191 Windows nextest;
+#147/#152 blocked phần cứng; TLS/HTTP2/keep-alive; runner wasm; runner macOS (Landlock **đã có** trên Linux,
+15/15); budget/fuel/Q chưa chốt default. **Đợt chưa đóng** — chờ mốc A0 09:00 23/11.
