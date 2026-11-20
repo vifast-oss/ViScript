@@ -37,6 +37,7 @@ mod pathjoinall;
 mod pathnorm;
 mod pathrel;
 mod pathrelbool;
+mod pathwithext;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
@@ -576,6 +577,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "path.normalize" => pathnorm::goi(&args, span),
         // **VD-270 (path.relative)**: đường dẫn tương đối **thuần từ vựng** (không `cwd`/đĩa).
         "path.relative" => pathrel::goi(&args, span),
+        // **VD-270 (path.with_extension)**: thay/đặt/bỏ phần mở rộng của thành phần cuối
+        // (thuần chuỗi; dùng **đúng** `ext_voi`/`stem_voi` của `path.ext`/`path.stem`).
+        "path.with_extension" => pathwithext::goi(&args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         "time.now_ms" => {
             let ms = SystemTime::now()

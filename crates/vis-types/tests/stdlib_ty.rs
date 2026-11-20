@@ -176,7 +176,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 str-is-ascii, 2026-11-21)**: +**1** hàm `std.str.is_ascii`
     // (`(str) -> bool`; đúng ⇔ mọi byte thuộc `0x00..=0x7F`, rỗng ⇒ `true`) ⇒ **130** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 130, "bảng chữ ký phải đủ 130 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-with-extension, 2026-11-21)**: +**1** hàm
+    // `std.path.with_extension` (`(str, str) -> str`; thay/đặt/bỏ phần mở rộng thành phần cuối,
+    // ext rỗng ⇒ xoá, tên bắt đầu `.` không có ext, **không** sugar) ⇒ **131** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 131, "bảng chữ ký phải đủ 131 hàm");
 }
 
 #[test]
@@ -279,6 +283,32 @@ fn path_relative_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.relative`: hạ kiểu");
     assert_eq!(vis_types::stdlib::module_sugar("str", "relative"), None);
     assert_eq!(vis_types::stdlib::module_sugar("path", "relative"), None);
+}
+
+#[test]
+fn path_with_extension_hai_tham_so_va_khong_sugar() {
+    // **VD-270 (path.with_extension)**: chữ ký `(str, str) -> str`; **không** sugar — receiver
+    // `str` không có trường `with_extension`, tránh đoán module nhận.
+    let f = sig_of("path.with_extension").expect("path.with_extension");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`path.with_extension`: tham số"
+    );
+    assert_eq!(f.ret, Ty::Str, "`path.with_extension`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Str,
+        "`path.with_extension`: hạ kiểu"
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "with_extension"),
+        None
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("path", "with_extension"),
+        None
+    );
 }
 
 #[test]
