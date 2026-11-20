@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `5405489` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
-> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP definition/symbol/references/rename),
+> **Trạng thái tại thời điểm ghi**: main `f9748a7` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP definition/symbol/references/rename/signature/folding),
 > gate **1950 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
@@ -32,6 +32,7 @@
 | Infer | `f640514` → `131a899` | kiểu sau pattern lồng (tuple/list/record/ctor/or/for/if-let/while-let); `Call`/`Try`/`With`/`If`/`Match` |
 | Range | `cec83ac` → `70f4624` | `for` range duyệt lười (interp/VM/frame), RSS 146 MB → ~9,5 MB @2M |
 | Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
+| Cache | `f9748a7` | bump `PHIEN_BAN` + ghim khoá `1bafa949…` sau methodret/genericres/intlit |
 | Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
 | LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490`, `5fc00c5`, `f372446` | `definition` + `documentSymbol` + `references` + `rename` + `signatureHelp` + `foldingRange` + hover variant |
