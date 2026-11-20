@@ -14,6 +14,10 @@ impl Scheduler {
     ) {
         self.frame.enabled = true;
         self.frame.fake_sources = fake_sources;
+        // **VD-259**: trace phải được sắp theo `seq` (tie-break `key`, `gen`) ngay tại nguồn —
+        // trước đây giữ thứ tự caller, nên trace đảo thứ tự làm event chạy sai/ bị stale.
+        let mut events = events;
+        events.sort_by_key(|e| (e.seq, e.key, e.gen));
         self.frame.events = events.into();
         self.frame.gen = 0;
         self.frame.log.push("enable".into());
@@ -247,13 +251,20 @@ impl Scheduler {
     #[doc(hidden)]
     pub fn frame_task_done(&mut self, id: u32, kq: Result<Value, Trap>) {
         self.frame.joined.insert(id);
+        // **VD-259**: ghi cache nếu engine chưa ghi (hợp đồng của doc). Khi engine đã ghi
+        // `t.kq` trước đó thì giữ nguyên giá trị thật (không bị `Unit` ghi đè).
+        if let Some(t) = self.tasks.iter().find(|t| t.id == id) {
+            let mut slot = t.kq.borrow_mut();
+            if slot.is_none() {
+                *slot = Some(kq);
+            }
+        }
         let waits: Vec<Waiter> = self.frame.waiters.clone();
         for w in waits {
             if w.wait == Wait::Task(id) {
                 self.frame_wake_one(w);
             }
         }
-        let _ = kq; // engine đã ghi vào `t.kq`; ở đây chỉ điều phối wake.
     }
 
     /// **Chỉ test**: fire nốt các event còn lại trong trace —duplicate/stale cũng được
@@ -333,7 +344,8 @@ impl Scheduler {
         self.frame.external.retain(|id, _| !dead.contains(id));
         self.frame.ready.retain(|f| !dead.contains(f));
         // Lát 2: đăng ký/kết quả của frame đã thu hồi cũng phải biến mất (lifecycle).
-        self.frame.reactor.regs.retain(|r| !dead.contains(&r.frame));
+        // **VD-259**: phải gom `key` TRƯỚC khi `retain` — bản cũ gom sau nên danh sách luôn
+        // rỗng và `results`/`fired` của frame chết bị giữ lại.
         let dead_keys: Vec<u64> = self
             .frame
             .reactor
@@ -342,6 +354,7 @@ impl Scheduler {
             .filter(|r| dead.contains(&r.frame))
             .map(|r| r.key)
             .collect();
+        self.frame.reactor.regs.retain(|r| !dead.contains(&r.frame));
         for k in dead_keys {
             self.frame.reactor.results.remove(&k);
             self.frame.reactor.fired.remove(&k);
@@ -680,9 +693,12 @@ impl Scheduler {
         }
     }
 
-    /// Scheduler rảnh: nếu còn event reactor, chọn deadline monotonic **gần nhất**
-    /// (ghi log để so sánh hai engine), ngủ **một lần** tới deadline đó khi
-    /// `timer_real_wait`, rồi fire event có `seq` nhỏ nhất. Không vòng lặp poll.
+    /// Scheduler rảnh: nếu còn event reactor, **ngủ tới deadline của chính event kế tiếp**
+    /// (theo `seq`) khi `timer_real_wait`, rồi fire event đó. Không vòng lặp poll.
+    ///
+    /// **VD-259**: bản cũ chọn deadline **nhỏ nhất trong toàn trace** rồi fire event đầu theo
+    /// `seq` ⇒ timer có thể fire sớm (deadline của nó chưa tới) và I/O bị chặn bởi timer không
+    /// liên quan. Nay mỗi event tự quyết định thời điểm; `Instant::checked_add` tránh tràn.
     #[doc(hidden)]
     pub fn frame_idle(&mut self) -> bool {
         if !self.frame.ready.is_empty() || !self.frame.events.is_empty() {
@@ -698,32 +714,26 @@ impl Scheduler {
         if self.frame.reactor.events.is_empty() {
             return false;
         }
-        // Deadline gần nhất được chọn MỘT lần cho cả đợt rảnh (ghi log tất định).
-        if let Some((deadline, key)) = self
-            .frame
-            .reactor
-            .events
-            .iter()
-            .filter_map(|e| e.deadline_ms.map(|d| (d, e.key)))
-            .min_by_key(|(d, k)| (*d, *k))
-        {
-            self.frame
-                .reactor
-                .log
-                .push(format!("timer:{}:{}", key, deadline));
-            if self.frame.timer_real_wait {
-                let epoch = self.frame.reactor.epoch.get_or_insert_with(Instant::now);
-                let target = *epoch + Duration::from_millis(deadline);
-                let now = Instant::now();
-                if target > now {
-                    std::thread::sleep(target - now);
+        // Fire theo `seq` cho tới khi có frame sẵn sàng hoặc hết trace. Event stale/
+        // duplicate không wake ⇒ phải tiếp tục fire event sau, không được dừng sớm.
+        while let Some(ev) = self.frame.reactor.events.first().cloned() {
+            if let Some(deadline) = ev.deadline_ms {
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("timer:{}:{}", ev.key, deadline));
+                if self.frame.timer_real_wait {
+                    let epoch = *self.frame.reactor.epoch.get_or_insert_with(Instant::now);
+                    // Deadline `u64` có thể vượt biểu diễn `Instant` — không panic, không ngủ.
+                    if let Some(target) = epoch.checked_add(Duration::from_millis(deadline)) {
+                        let now = Instant::now();
+                        if target > now {
+                            std::thread::sleep(target - now);
+                        }
+                    }
                 }
             }
-        }
-        // Fire theo `seq` cho tới khi có frame sẵn sàng hoặc hết trace. Event stale/
-        // duplicate không wake ⇒ phải tiếp tụcfire event sau, không được dừng sớm.
-        while !self.frame.reactor.events.is_empty() {
-            let ev = self.frame.reactor.events.remove(0);
+            self.frame.reactor.events.remove(0);
             self.frame_reactor_fire(ev);
             if !self.frame.ready.is_empty() {
                 break;

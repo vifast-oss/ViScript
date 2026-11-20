@@ -987,6 +987,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 body,
                 env,
                 ret_depth,
+                frame_body: std::cell::OnceCell::new(),
             })));
             Ok(())
         }

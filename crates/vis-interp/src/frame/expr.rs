@@ -25,10 +25,12 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
         }
         HExpr::Var { sym, name, .. } => {
             let cf = frame.cur();
+            // **VD-259**: chỉ tra theo `sym` thật. Bản cũ còn fallback `u32::MAX` (ô argv của
+            // chế độ không có `main`) cho **mọi** tên chưa phân giải ⇒ biến không tồn tại bị
+            // lặng lẽ nhận danh sách đối số. Không còn fallback đó: tên lạ phải trap.
             let v = sym
                 .and_then(|s| cf.env.borrow().get(&s).cloned())
-                // ST-283: thẻ `enum`/`type` phải được ưu tiên TRƯỚC argv fallback (`u32::MAX`),
-                // nếu không `E` bị lấy nhầm thành danh sách đối số `[]`.
+                // ST-283: thẻ `enum`/`type` phải được ưu tiên TRƯỚC tra env cấp tệp.
                 .or_else(|| {
                     sym.and_then(|s| it.tags.get(&s).cloned())
                         .map(|(n, is_enum)| {
@@ -39,14 +41,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
                             }
                         })
                 })
-                .or_else(|| {
-                    cf.env
-                        .borrow()
-                        .iter()
-                        .find(|(s, _)| **s == u32::MAX)
-                        .map(|(_, v)| v.clone())
-                })
-                .or_else(|| it.env.borrow().get(&sym.unwrap_or(u32::MAX)).cloned());
+                .or_else(|| sym.and_then(|s| it.env.borrow().get(&s).cloned()));
             if let Some(v) = v {
                 frame.push_val(v);
             } else if let Some(f) = sym.and_then(|s| it.fns.get(&s).copied()) {
@@ -57,6 +52,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
                     body: HBody::Stmts(f.body.clone()),
                     env: cenv,
                     ret_depth: opt_depth_ty(&f.ret),
+                    frame_body: std::cell::OnceCell::new(),
                 })));
             } else if name == "None" {
                 frame.push_val(Value::none());
@@ -654,9 +650,10 @@ pub(super) fn call_value<'a>(
                 restore.push((*p, env.borrow().get(p).cloned()));
                 env.borrow_mut().insert(*p, pos[i].clone());
             }
-            // `c.body` là HBody sở hữu trong Value::Fn — leak một bản sao nhỏ để có
-            // tham chiếu 'static ⊆ 'a (test-only), work stack giữ thân closure qua suspend.
-            let body: &'static HBody = Box::leak(Box::new(c.body.clone()));
+            // `c.body` là HBody sở hữu trong Value::Fn. Frame evaluator cần tham chiếu
+            // `'static` để `Work` sống qua suspend; closure cache bản dựng **một lần cho mỗi
+            // closure** (VD-259) — không còn `Box::leak` ở mỗi lần gọi.
+            let body: &'static HBody = c.frame_body_static();
             let work = match body {
                 HBody::Expr(e) => vec![Work::PushLast, Work::Eval(e.as_ref())],
                 HBody::Stmts(st) => initial_work(st.as_slice()),
@@ -789,36 +786,17 @@ pub(super) fn dispatch<'a>(
             }
             // **VD-258**: env của hàm tên phải thấy hằng cấp tệp (const/default) — trước
             // đây dựng `HashMap::new()` rỗng nên `const K` trong thân báo "chưa định nghĩa".
-            let env = Rc::new(RefCell::new(frame.globals.borrow().clone()));
-            for (i, p) in f.params.iter().enumerate() {
-                let v = args.get(i).cloned().or_else(|| {
-                    named
-                        .iter()
-                        .find(|(n, _)| *n == p.name)
-                        .map(|(_, v)| v.clone())
-                });
-                let v = match v {
-                    Some(v) => v,
-                    None => match &p.default {
-                        Some(d) => eval_expr_in(it, d, &env, &frame.mutable)?,
-                        None => {
-                            return Err(Abort::Trap(Trap::new(
-                                RT,
-                                format!("thiếu đối số `{}` của `{ten}`", p.name),
-                                span,
-                            )))
-                        }
-                    },
-                };
-                let v = match &p.ty {
-                    vis_types::Type::Opt(_) => crate::lift::lift_opt(v, opt_depth_ty(&p.ty)),
-                    _ => v,
-                };
-                if p.is_var_self {
-                    frame.mutable.borrow_mut().insert(p.sym);
-                }
-                env.borrow_mut().insert(p.sym, v);
-            }
+            // **VD-259**: binding + default đi qua helper dùng chung (`env_for_params`).
+            let env = super::env_for_params(
+                it,
+                &f.params,
+                &args,
+                &named,
+                &frame.globals,
+                &frame.mutable,
+                ten,
+                span,
+            )?;
             frame.calls.push(CallFrame {
                 env,
                 ret_depth: opt_depth_ty(&f.ret),

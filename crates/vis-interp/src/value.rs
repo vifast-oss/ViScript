@@ -11,11 +11,29 @@
 //!   `250000000` ns ⇒ `250ms`), không chia hết thì về đơn vị gốc (`b`, `ns`); `percent` in
 //!   `ratio*100` + `pct` (`0.5` ⇒ `50pct`).
 
-use std::cell::RefCell;
+use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use vis_types::hir::HBody;
+
+thread_local! {
+    /// **VD-259 (chỉ frame test)**: số lần phải dựng bản `'static` của thân closure.
+    /// Một closure được gọi N lần chỉ được dựng **một** lần (xem `Closure::frame_body_static`).
+    static FRAME_BODY_BUILDS: Cell<usize> = const { Cell::new(0) };
+}
+
+/// Số bản `'static` của thân closure đã dựng trong **thread** hiện tại (test/đo rò rỉ).
+#[doc(hidden)]
+pub fn frame_body_builds_for_test() -> usize {
+    FRAME_BODY_BUILDS.with(Cell::get)
+}
+
+/// Đặt lại bộ đếm [`frame_body_builds_for_test`].
+#[doc(hidden)]
+pub fn frame_body_builds_reset_for_test() {
+    FRAME_BODY_BUILDS.with(|n| n.set(0));
+}
 
 /// Môi trường: **một** bảng `sym → giá trị` (ST-11 cấp `sym` duy nhất cho mọi khai báo nên
 /// shadowing tự nhiên đúng); closure giữ `Rc` để bắt môi trường.
@@ -30,6 +48,22 @@ pub struct Closure {
     pub env: Env,
     /// **VD-241 §3 (A0, 2026-11-19)** — số lớp `Opt` của annot return (`T?` → 1, `T??` → 2).
     pub ret_depth: usize,
+    /// **VD-259 (chỉ frame test)**: bản `'static` của `body`, dựng tối đa **một lần cho mỗi
+    /// closure** thay vì `Box::leak` ở mỗi lần gọi. Runtime mặc định không đọc ô này.
+    #[doc(hidden)]
+    pub frame_body: OnceCell<&'static HBody>,
+}
+
+impl Closure {
+    /// **VD-259**: thân dùng cho frame evaluator. `Work` cần tham chiếu sống qua suspend nên
+    /// cần `'static`; cache theo closure ⇒ gọi N lần chỉ dựng một bản (không rò rỉ mỗi call).
+    #[doc(hidden)]
+    pub fn frame_body_static(&self) -> &'static HBody {
+        self.frame_body.get_or_init(|| {
+            FRAME_BODY_BUILDS.with(|n| n.set(n.get() + 1));
+            Box::leak(Box::new(self.body.clone()))
+        })
+    }
 }
 
 /// Giá trị lúc chạy của VS0.

@@ -638,6 +638,7 @@ impl<'a> Interp<'a> {
                             body: HBody::Stmts(f.body.clone()),
                             env: self.env.clone(),
                             ret_depth: opt_depth_ty(&f.ret),
+                            frame_body: std::cell::OnceCell::new(),
                         })));
                     }
                     // `enum`/`type` khai trong tệp: thẻ kiểu để `E.A` / `User(...)` chạy được.
@@ -941,6 +942,7 @@ impl<'a> Interp<'a> {
                 // closure thoát khỏi hàm sẽ mất biến đã bắt. Chọn snapshot (ghi JOURNAL): biến
                 // `var` cập nhật **sau** khi tạo closure thì closure vẫn thấy giá trị lúc tạo.
                 env: Rc::new(std::cell::RefCell::new(self.env.borrow().clone())),
+                frame_body: std::cell::OnceCell::new(),
             }))),
             HExpr::Tuple { items, .. } => {
                 // **VD-258**: `()` là `unit` duy nhất — empty tuple không được là `Value::List([])`
