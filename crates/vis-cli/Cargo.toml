@@ -49,6 +49,13 @@ name = "vd266_db"
 path = "tests/vd266_db.rs"
 required-features = ["sqlite"]
 
+# **VD-268** — cache statement chuẩn bị sẵn (`prepare_cached`): e2e hành vi không đổi (lặp lại,
+# schema đổi, giao dịch, ca âm chính sách); chỉ có nghĩa khi bật feature `sqlite`.
+[[test]]
+name = "vd268_dbcache"
+path = "tests/vd268_dbcache.rs"
+required-features = ["sqlite"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }

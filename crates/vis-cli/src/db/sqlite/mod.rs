@@ -42,6 +42,17 @@
 //! - **Trang thô/freelist bị cấm**: `dbstat` (và `sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr`
 //!   nếu có) bị authorizer từ chối ở `SQLITE_READ` — SQL người dùng chỉ thấy dữ liệu logic.
 //! - 1 câu SQL mỗi `execute`/`query` (multi-statement ⇒ `Err`).
+//! - **VD-268 (tối ưu)**: `execute`/`query`/`query_one` dùng **cache statement chuẩn bị sẵn** của
+//!   rusqlite (`Connection::prepare_cached`, LRU **16** mỗi connection, key = SQL sau khi trim).
+//!   Cache được **xả** khi `schema_version` (main) **hoặc** `temp.schema_version` đổi (xem
+//!   [`kiem_schema_neu_doi`]) trước lần prepare kế tiếp — metadata cột (`column_count`/
+//!   `column_name`) đọc **trước step** sẽ cũ nếu statement còn sống qua DDL (SQLite chỉ tự
+//!   recompile ở `sqlite3_step`). Ba pragma version hằng SQL cũng đi qua cache (SQL không đổi,
+//!   giá trị đọc tại step). Authorizer, chính sách `readonly`, `kiem_sql`/`kiem_params`, cap
+//!   hàng/ô/cột/byte, `SQLITE_LIMIT_LENGTH`, progress-handler và bind params **giữ nguyên**
+//!   từng lời gọi: limit của SQLite áp lúc chạy, không "nướng" vào statement lúc prepare. Không
+//!   thêm dependency/feature — bản rusqlite ghim `=0.37.0` có sẵn `prepare_cached` (không có
+//!   feature tên `cache`; `hashlink` vốn là dependency bắt buộc của nó).
 //! - **Mọi** lỗi host là **lỗi dữ liệu/runtime** ⇒ `Result.Err` (không trap `VS0501`).
 //!   Hai lớp ngoài `Result` duy nhất: (a) lỗi tĩnh/checker-time (sai kiểu/sai arity), (b) bất
 //!   biến nội bộ bị phá (bug nội bộ).
@@ -108,6 +119,10 @@ pub const MAX_HANDLES: usize = 1_024;
 pub const MAX_BUSY_MS: i64 = 60_000;
 /// Wall-clock mỗi câu (progress_handler).
 pub const MAX_QUERY_MS: u64 = 5_000;
+/// **VD-268** — số statement chuẩn bị sẵn được giữ mỗi connection (LRU của rusqlite). Nhỏ và
+/// **bounded**: đủ cho vòng lặp/ít câu SQL lặp lại; SQL tối đa 64 KiB nên bộ nhớ cache bị chặn
+/// trên mỗi connection (không phải cache toàn cục, không chia sẻ giữa handle).
+const STMT_CACHE_CAP: usize = 16;
 
 /// Trần tài nguyên của một `Db` — tách thành struct để test ép cap thấp mà không phải tạo
 /// dữ liệu khổng lồ (mặc định = các hằng `MAX_*` ở trên).
@@ -151,10 +166,11 @@ struct Muc {
     path: String,
     /// `None` khi đã đóng (tombstone — giữ để báo "handle đã đóng").
     conn: Option<Connection>,
-    /// **VD-261 (tối ưu)**: `(schema_version, data_version)` tại lần quét schema gần nhất.
-    /// Chỉ quét `sqlite_master` khi một trong hai đổi; `data_version` bắt thay đổi từ
-    /// connection/tiến trình khác (schema_version đơn thuần có thể bị sửa ở header).
-    schema_ver: Option<(i64, i64)>,
+    /// **VD-261 (tối ưu)** + **VD-268**: `(schema_version, data_version, temp.schema_version)`
+    /// tại lần kiểm gần nhất. Chỉ quét `sqlite_master` khi `schema_version` hoặc `data_version`
+    /// đổi (như VD-261); cache statement bị xả khi `schema_version` **hoặc temp schema** đổi —
+    /// DDL trên bảng TEMP không làm đổi schema cookie của main.
+    schema_ver: Option<(i64, i64, i64)>,
 }
 
 /// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường). Hai nửa 64-bit lấy từ **nguồn OS**:
@@ -523,7 +539,8 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
                 && pragma_value.is_none()
             {
                 // **đọc** user_version/schema_version/data_version — ghi (có giá trị) ⇒ Deny.
-                // schema_version + data_version dùng cache lần quét schema UTF-8 (VD-261).
+                // schema_version + data_version dùng cache lần quét schema UTF-8 (VD-261);
+                // temp.schema_version dùng phát hiện DDL bảng TEMP (VD-268).
                 Authorization::Allow
             } else {
                 Authorization::Deny
@@ -622,34 +639,67 @@ fn kiem_schema_utf8(conn: &Connection, sqlite_debug: bool) -> Result<(), String>
     Ok(())
 }
 
-/// **VD-261** — quét schema UTF-8 **chỉ khi `schema_version` đổi**.
+/// **VD-261** — quét schema UTF-8 **chỉ khi `schema_version`/`data_version` đổi**.
 ///
 /// Trước đây mỗi `execute`/`query` đều quét toàn bộ `sqlite_master`; với schema 300 bảng,
 /// chi phí ~25–45 µs/lời gọi (đo interleaved A/B: chậm 6,8× so với trước). `schema_version`
 /// tăng khi DDL của **bất kỳ** connection nào; đọc nó là một pragma đọc rẻ, được allow-list
 /// cùng `user_version` (không ghi). Lần đầu `None` ⇒ quét; sau đó chỉ quét lại khi version đổi.
+///
+/// **VD-268**: `schema_version` đổi cũng là lúc **xả cache statement** của connection. Cache
+/// statement của rusqlite giữ `sqlite3_stmt` đã prepare; SQLite chỉ tự recompile ở lần `step`
+/// kế tiếp, còn `column_count()`/`column_name()` đọc **trước** step sẽ trả metadata của schema
+/// cũ (đã kiểm bằng probe: `SELECT *` sau `ALTER TABLE … ADD COLUMN` vẫn báo 1 cột cho tới khi
+/// step). Vì vậy xả cache **trước** prepare của lời gọi kế tiếp.
+///
+/// - `data_version` đổi (dữ liệu từ connection khác) **không** cần xả — không đổi schema.
+/// - DDL trên bảng **TEMP** chỉ đổi schema cookie của database temp (`PRAGMA temp.schema_version`),
+///   main `schema_version` giữ nguyên — nên phải đọc thêm cookie temp và xả cache khi nó đổi,
+///   nếu không `SELECT *` trên bảng temp vẫn trả metadata cột cũ (probe đã xác nhận).
 fn kiem_schema_neu_doi(m: &mut Muc, sqlite_debug: bool) -> Result<(), String> {
-    let v: (i64, i64) = {
+    let v: (i64, i64, i64) = {
         let conn = m
             .conn
             .as_ref()
             .ok_or_else(|| "handle đã đóng".to_string())?;
+        // **VD-268**: ba pragma hằng SQL đi qua cache statement (3 slot LRU). Chúng không phụ
+        // thuộc schema và luôn đọc giá trị hiện tại ở step, nên tái dùng an toàn; nhờ vậy chi phí
+        // kiểm mỗi lời gọi không tăng dù thêm `temp.schema_version`.
         let schema: i64 = conn
-            .query_row("PRAGMA schema_version", [], |r| r.get(0))
+            .prepare_cached("PRAGMA schema_version")
+            .and_then(|mut st| st.query_row([], |r| r.get(0)))
             .map_err(|e| loi_sqlite("lỗi đọc schema_version", e, sqlite_debug))?;
         let data: i64 = conn
-            .query_row("PRAGMA data_version", [], |r| r.get(0))
+            .prepare_cached("PRAGMA data_version")
+            .and_then(|mut st| st.query_row([], |r| r.get(0)))
             .map_err(|e| loi_sqlite("lỗi đọc data_version", e, sqlite_debug))?;
-        (schema, data)
+        // DDL trên bảng TEMP chỉ đổi schema cookie của database temp (main giữ nguyên). Đọc
+        // `temp.schema_version` được allow-list cùng `schema_version` (chỉ đọc, không ghi).
+        let temp: i64 = conn
+            .prepare_cached("PRAGMA temp.schema_version")
+            .and_then(|mut st| st.query_row([], |r| r.get(0)))
+            .map_err(|e| loi_sqlite("lỗi đọc temp.schema_version", e, sqlite_debug))?;
+        (schema, data, temp)
     };
     if m.schema_ver == Some(v) {
         return Ok(());
     }
+    let cu = m.schema_ver;
     let conn = m
         .conn
         .as_ref()
         .ok_or_else(|| "handle đã đóng".to_string())?;
-    kiem_schema_utf8(conn, sqlite_debug)?;
+    // Quét UTF-8 đúng như VD-261: chỉ khi main `schema_version`/`data_version` đổi (temp schema
+    // không nằm trong `sqlite_master`).
+    if cu.map(|(s, d, _)| (s, d)) != Some((v.0, v.1)) {
+        kiem_schema_utf8(conn, sqlite_debug)?;
+    }
+    // **VD-268**: schema main **hoặc** temp đổi ⇒ statement đã prepare có thể giữ metadata cột cũ
+    // tới lần step kế tiếp. Xả trước khi prepare lời gọi này (an toàn: mọi statement của lời gọi
+    // trước đã trả về cache và không còn borrow). Lần đầu (`None`) cache còn rỗng, xả vô hại.
+    if cu.map(|(s, _, t)| (s, t)) != Some((v.0, v.2)) {
+        conn.flush_prepared_statement_cache();
+    }
     m.schema_ver = Some(v);
     Ok(())
 }
@@ -809,6 +859,9 @@ impl DbHost for Db {
                 format!("không mở được `{}`", mo_ta(path))
             }
         })?;
+        // **VD-268** — cache statement LRU bounded cho **connection này** (mặc định rusqlite
+        // cũng 16; đặt tường minh để hợp đồng không phụ thuộc default của crate).
+        conn.set_prepared_statement_cache_capacity(STMT_CACHE_CAP);
         conn.busy_timeout(Duration::from_millis(busy_ms as u64))
             .map_err(|e| format!("không đặt busy_timeout: {e}"))?;
         // Trần cứng một string/blob/row **trước** mọi câu SQL người dùng (chặn `zeroblob`/text
@@ -1042,6 +1095,65 @@ fn chuan_bi_tham_so(params: &[Value]) -> Result<Vec<rusqlite::types::Value>, Str
     Ok(out)
 }
 
+/// **VD-268** — "câu lệnh đã chuẩn bị": lấy từ cache LRU của connection hoặc prepare thường
+/// (nhánh thường chỉ dùng cho SQL đặc biệt — xem [`chuan_bi_lenh`]). Cả hai `Deref` về
+/// [`rusqlite::Statement`] nên phần còn lại của host không đổi.
+enum Lenh<'a> {
+    Thuong(rusqlite::Statement<'a>),
+    Cache(rusqlite::CachedStatement<'a>),
+}
+
+impl<'a> std::ops::Deref for Lenh<'a> {
+    type Target = rusqlite::Statement<'a>;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Lenh::Thuong(s) => s,
+            Lenh::Cache(s) => s,
+        }
+    }
+}
+
+impl std::ops::DerefMut for Lenh<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Lenh::Thuong(s) => s,
+            Lenh::Cache(s) => s,
+        }
+    }
+}
+
+/// **VD-268** — lấy statement cho `sql` từ **cache statement của connection** (cùng chuỗi SQL),
+/// trừ trường hợp `sql.trim()` rỗng nhưng `kiem_sql` vẫn thấy token: whitespace **không-ASCII**
+/// (ví dụ U+00A0) không bị `kiem_sql` coi là khoảng trắng, còn `prepare_cached` trim bằng
+/// `str::trim` của Rust ⇒ statement rỗng/NULL (khác hành vi prepare nguyên văn). Nhánh đó dùng
+/// `prepare` thường để **giữ nguyên** kết quả/lỗi như trước.
+///
+/// Cache key là `sql.trim()`; caller truyền [`lech_loi_prepare`] vào lỗi prepare để `offset`
+/// giữ đúng vị trí byte trong chuỗi người dùng (nhánh `prepare` thường không cộng).
+fn chuan_bi_lenh<'a>(conn: &'a Connection, sql: &str) -> Result<Lenh<'a>, rusqlite::Error> {
+    if sql.trim().is_empty() {
+        return Ok(Lenh::Thuong(conn.prepare(sql)?));
+    }
+    conn.prepare_cached(sql).map(Lenh::Cache)
+}
+
+/// Số **byte** whitespace Unicode bị `trim` ở đầu `sql` — bù `offset` lỗi prepare vì cache dùng
+/// `sql.trim()` (xem [`chuan_bi_lenh`]).
+fn lech_trim_dau(sql: &str) -> usize {
+    sql.len() - sql.trim_start().len()
+}
+
+/// Bù offset **thực tế** cho lỗi prepare: chỉ có tác dụng khi statement đi qua cache (nhánh
+/// `sql.trim()` rỗng dùng `prepare` nguyên văn, offset đã đúng — không cộng thêm).
+fn lech_loi_prepare(sql: &str) -> usize {
+    if sql.trim().is_empty() {
+        0
+    } else {
+        lech_trim_dau(sql)
+    }
+}
+
 /// `execute`: bind đủ số lượng → chạy → số dòng ảnh hưởng. Câu **trả hàng** (sau `prepare`,
 /// **trước** khi execute) ⇒ `Err` **không** bước nào bên trong — không side effect. Mọi lỗi
 /// SQLite ⇒ `Result.Err` (VD-241 pre-merge §1).
@@ -1051,10 +1163,11 @@ fn thuc_thi(
     params: &[rusqlite::types::Value],
     sqlite_debug: bool,
 ) -> Result<i64, String> {
-    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version).
-    let mut stmt = conn
-        .prepare(sql)
-        .map_err(|e| loi_prepare("execute", e, sqlite_debug))?;
+    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version; VD-268
+    // xả cache statement khi schema_version đổi).
+    let lech = lech_loi_prepare(sql);
+    let mut stmt =
+        chuan_bi_lenh(conn, sql).map_err(|e| loi_prepare("execute", e, sqlite_debug, lech))?;
     // **Trước** mọi side effect: câu có cột kết quả ⇒ không execute, không insert/update nào chạy.
     if stmt.column_count() > 0 {
         return Err("câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`".to_string());
@@ -1092,10 +1205,11 @@ fn truy_van(
     gh: &GioiHan,
     toi_da: ToiDaHang,
 ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version).
-    let mut stmt = conn
-        .prepare(sql)
-        .map_err(|e| loi_prepare("query", e, sqlite_debug))?;
+    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version; VD-268
+    // xả cache statement khi schema_version đổi — metadata cột bên dưới không được cũ).
+    let lech = lech_loi_prepare(sql);
+    let mut stmt =
+        chuan_bi_lenh(conn, sql).map_err(|e| loi_prepare("query", e, sqlite_debug, lech))?;
     // **VD-242 §3.6 / VD-259**: `query` chỉ đọc. `sqlite3_stmt_readonly` phân loại statement thật
     // sau prepare — không dựa vào tên/keyword, không chạy thử rồi mới phát hiện ghi. Câu ghi phải
     // đi qua `execute` (nơi có trần ghi 17 MiB); câu không trả hàng (`BEGIN`/`COMMIT`/SAVEPOINT)
@@ -1234,8 +1348,14 @@ fn loi_doc_ket_qua(e: rusqlite::Error, gh: &GioiHan, sqlite_debug: bool) -> Stri
 }
 
 /// Map lỗi prepare: multi-statement ⇒ `Err`; còn lại ⇒ `loi_sqlite` (mã SQLite + offset,
-/// không raw fragment).
-fn loi_prepare(ctx: &str, e: rusqlite::Error, sqlite_debug: bool) -> String {
+/// không raw fragment). `lech_dau` bù số byte whitespace bị cache trim ở đầu SQL để `offset`
+/// giữ đúng vị trí trong chuỗi người dùng (VD-268).
+fn loi_prepare(ctx: &str, mut e: rusqlite::Error, sqlite_debug: bool, lech_dau: usize) -> String {
+    if lech_dau > 0 {
+        if let rusqlite::Error::SqlInputError { offset, .. } = &mut e {
+            *offset = offset.saturating_add(i32::try_from(lech_dau).unwrap_or(i32::MAX));
+        }
+    }
     match e {
         rusqlite::Error::MultipleStatement => {
             format!("{ctx}: chỉ được **một** câu SQL mỗi lời gọi (multi-statement bị từ chối)")
@@ -1310,3 +1430,5 @@ impl DbHost for DbGuard<'_> {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_cache;
