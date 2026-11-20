@@ -1,0 +1,1461 @@
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.99.1; yêu cầu ≥ 1.99.1)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+vis: chọn cargo /home/ps/.cargo/bin/cargo (1.99.1; yêu cầu ≥ 1.99.1)
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+   Compiling vis-bytecode v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-bytecode)
+   Compiling vis-types v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-types)
+   Compiling vis-vm v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-vm)
+   Compiling vis-cli v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-cli)
+   Compiling vis-interp v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-interp)
+   Compiling vis-syntax v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-syntax)
+   Compiling vis-fmt v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-fmt)
+   Compiling vis-diag v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-diag)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.81s
+────────────
+ Nextest run ID 17eb6e5c-2e94-4d2b-b2e5-ef60eebb3b43 with nextest profile: default
+    Starting 1430 tests across 155 binaries
+        PASS [   0.006s] (   1/1430) vis-bytecode::decode_neg chi_so_const_ngoai_pham_vi_bi_tu_choi
+        PASS [   0.007s] (   2/1430) vis-bytecode::codegen vong_lap_co_nhay_lui
+        PASS [   0.007s] (   3/1430) vis-bytecode::codegen match_ha_thanh_test_va_nhay_khong_co_lenh_match
+        PASS [   0.007s] (   4/1430) vis-bytecode::codegen closure_co_make_closure_va_ham_con
+        PASS [   0.007s] (   5/1430) vis-bytecode::decode_neg magic_sai_bi_tu_choi
+        PASS [   0.007s] (   6/1430) vis-bytecode::decode_neg khong_co_entry_hop_le_bi_tu_choi
+        PASS [   0.008s] (   7/1430) vis-bytecode::decode_neg chi_so_ham_ngoai_pham_vi_bi_tu_choi
+        PASS [   0.008s] (   8/1430) vis-bytecode::decode_neg cat_cut_bi_tu_choi_khong_panic
+        PASS [   0.008s] (   9/1430) vis-bytecode::codegen ham_co_arity_va_max_stack_ghi_trong_module
+        PASS [   0.008s] (  10/1430) vis-bytecode::decode_neg do_dai_khai_bao_qua_lon_bi_tu_choi
+        PASS [   0.008s] (  11/1430) vis-bytecode::decode_neg dich_nhay_ngoai_code_bi_tu_choi
+        PASS [   0.009s] (  12/1430) vis-bytecode::codegen bien_di_khong_ho_tro_bao_loi_ro_rang
+        PASS [   0.006s] (  13/1430) vis-bytecode::decode_neg module_mau_roundtrip_va_hop_le
+        PASS [   0.005s] (  14/1430) vis-bytecode::decode_neg tag_la_bi_tu_choi
+        PASS [   0.005s] (  15/1430) vis-bytecode::hash hai_nguon_khac_nhau_hash_khac
+        PASS [   0.006s] (  16/1430) vis-bytecode::hash encode_decode_giu_hash
+        PASS [   0.005s] (  17/1430) vis-bytecode::hash khong_con_fnv_va_khop_vector_sha256
+        PASS [   0.005s] (  18/1430) vis-bytecode::hash sha256_chuoi_rong
+        PASS [   0.007s] (  19/1430) vis-bytecode::decode_neg utf8_hong_bi_tu_choi
+        PASS [   0.006s] (  20/1430) vis-bytecode::hash hash_nguon_trong_bytecode_khop_sha256
+        PASS [   0.005s] (  21/1430) vis-bytecode::st245_boundary doc_global_vuot_so_thuc_te_bi_tu_choi
+        PASS [   0.004s] (  22/1430) vis-bytecode::st245_boundary load_verified_chan_global_ngoai_mien_tu_byte
+        PASS [   0.004s] (  23/1430) vis-bytecode::st245_boundary hai_global_chi_doc_duoc_offset_0_va_1
+        PASS [   0.004s] (  24/1430) vis-bytecode::st245_boundary khong_co_global_ma_doc_global_bi_tu_choi
+        PASS [   0.005s] (  25/1430) vis-bytecode::st245_boundary ghi_global_ngoai_mien_cung_bi_tu_choi
+        PASS [   0.011s] (  26/1430) vis-bytecode::decode_neg version_sai_bi_tu_choi
+        PASS [   0.006s] (  27/1430) vis-bytecode::st245_boundary doc_global_thu_the_duoc_chap_nhan_bien
+        PASS [   0.006s] (  28/1430) vis-bytecode::st245_boundary nlocals_bang_global_base_la_bien_bi
+        PASS [   0.006s] (  29/1430) vis-bytecode::st245_boundary nlocals_vuot_global_base_bi_tu_choi
+        PASS [   0.005s] (  30/1430) vis-bytecode::st246_version_compat runtime_cu_tu_choi_artifact_v2
+        PASS [   0.005s] (  31/1430) vis-bytecode::st246_version_compat runtime_moi_tu_choi_artifact_v1
+        PASS [   0.005s] (  32/1430) vis-bytecode::st246_version_compat v1_khong_source_bi_tu_choi_ro
+        PASS [   0.015s] (  33/1430) vis-bytecode::roundtrip code_len_khong_rong_va_co_span
+        PASS [   0.015s] (  34/1430) vis-bytecode::roundtrip roundtrip_30_golden_bieu_thuc
+        PASS [   0.006s] (  35/1430) vis-bytecode::st246_version_compat version_moi_2_magic_va_bang_the_giuyen
+        PASS [   0.006s] (  36/1430) vis-bytecode::st245_boundary slot_global_cao_nhat_bi_tu_choi_khong_panic
+        PASS [   0.006s] (  37/1430) vis-bytecode::st247_global_domain q1_mien_bang_so_lenh_ghi_khong_phai_tri_chi_so
+        PASS [   0.005s] (  38/1430) vis-bytecode::st247_global_domain q3_lo_hong_bi_tu_choi_khong_doc_thanh_unit
+        PASS [   0.007s] (  39/1430) vis-bytecode::st247_global_domain q1_ghi_global_rat_cao_khong_tu_nor_mien
+        PASS [   0.007s] (  40/1430) vis-bytecode::st247_global_domain q2_u16_la_gioi_han_ma_hoa_va_verifier_chan_o_bien
+        PASS [   0.005s] (  41/1430) vis-bytecode::st247_global_domain q5_mien_verify_khop_mien_cap_phat_voi_codegen
+        PASS [   0.005s] (  42/1430) vis-bytecode::st247_global_domain q4_ghi_trong_ham_khong_goi_van_nor_mien_verify
+        PASS [   0.005s] (  43/1430) vis-bytecode::st247_global_domain q4_ghi_trong_nhanh_khong_chay_van_nor_mien_verify
+        PASS [   0.005s] (  44/1430) vis-bytecode::tin_tyck canh_bao_khong_chan
+        PASS [   0.005s] (  45/1430) vis-bytecode::tin_tyck compile_cu_giu_nguyen_api
+        PASS [   0.006s] (  46/1430) vis-bytecode::tin_tyck canh_bao_truoc_loi_chon_loi
+        PASS [   0.007s] (  47/1430) vis-bytecode::tin_tyck chan_rong_chuong_trinh_hop_le_compile_duoc
+        PASS [   0.005s] (  48/1430) vis-bytecode::tin_tyck hop_le_khong_bi_chan_boi_canh_bao
+        PASS [   0.008s] (  49/1430) vis-bytecode::tin_tyck ca_that_truong_khong_co_bi_tu_choi
+        PASS [   0.006s] (  50/1430) vis-bytecode::tin_tyck hexpr_error_bi_tu_choi_khong_panic
+        PASS [   0.005s] (  51/1430) vis-bytecode::tin_tyck ma_dong_cot_thong_diep_duoc_giu_nguyen
+        PASS [   0.006s] (  52/1430) vis-bytecode::tin_tyck nhieu_loi_chon_loi_dau_tien
+        PASS [   0.005s] (  53/1430) vis-bytecode::verify arity_lon_hon_nparams_bi_tu_choi
+        PASS [   0.005s] (  54/1430) vis-bytecode::verify bang_span_lech_bi_tu_choi
+        PASS [   0.012s] (  55/1430) vis-bytecode::tin_tyck ca_that_sai_kieu_bi_tu_choi
+        PASS [   0.006s] (  56/1430) vis-bytecode::verify chi_so_const_ngoai_pham_vi
+        PASS [   0.015s] (  57/1430) vis-bytecode::tin_tyck ca_that_sai_doi_so_bi_tu_choi
+        PASS [   0.005s] (  58/1430) vis-bytecode::verify closure_thieu_bien_bat_bi_tu_choi
+        PASS [   0.006s] (  59/1430) vis-bytecode::verify call_method_can_dung_so_doi_so
+        PASS [   0.006s] (  60/1430) vis-bytecode::verify chi_so_ham_ngoai_pham_vi
+        PASS [   0.005s] (  61/1430) vis-bytecode::verify code_rong_bi_tu_choi
+        PASS [   0.005s] (  62/1430) vis-bytecode::verify dicht_nhay_ngoai_code
+        PASS [   0.004s] (  63/1430) vis-bytecode::verify entry_khi_khong_co_ham
+        PASS [   0.008s] (  64/1430) vis-bytecode::verify hai_duong_toi_cung_pc_voi_do_sau_khac_nhau
+        PASS [   0.005s] (  65/1430) vis-bytecode::verify load_verified_tu_choi_module_khong_hop_le
+        PASS [   0.005s] (  66/1430) vis-bytecode::verify load_verified_nhan_module_hop_le
+        PASS [   0.005s] (  67/1430) vis-bytecode::verify load_verified_tu_choi_byte_hong
+        PASS [   0.004s] (  68/1430) vis-bytecode::verify need_stack_dung_cho_moi_nhanh
+        PASS [   0.008s] (  69/1430) vis-bytecode::verify entry_ngoai_pham_vi
+        PASS [   0.005s] (  70/1430) vis-bytecode::verify module_hop_le_qua
+        PASS [   0.005s] (  71/1430) vis-bytecode::verify ngang_xep_am_bi_tu_choi
+        PASS [   0.007s] (  72/1430) vis-bytecode::verify max_stack_du_thi_qua
+        PASS [   0.007s] (  73/1430) vis-bytecode::verify max_stack_khai_nho_hon_bi_tu_choi
+        PASS [   0.005s] (  74/1430) vis-bytecode::verify roi_khoi_cuoi_ham_bi_tu_choi
+        PASS [   0.005s] (  75/1430) vis-bytecode::verify test_lit_voi_hang_hop_le_qua
+        PASS [   0.005s] (  76/1430) vis-bytecode::verify o_cuc_bo_ngoai_pham_vi_bi_tu_choi
+        PASS [   0.005s] (  77/1430) vis-bytecode::verify un_hop_le_va_khong_hop_le
+        PASS [   0.005s] (  78/1430) vis-bytecode::verify nlocals_nho_hon_nparams_bi_tu_choi
+        PASS [   0.006s] (  79/1430) vis-bytecode::verify version_sai
+        PASS [   0.006s] (  80/1430) vis-cli::api_dong_bang api_codes_khop_code
+        PASS [   0.006s] (  81/1430) vis-cli::api_dong_bang api_std_khop_code
+        PASS [   0.008s] (  82/1430) vis-bytecode::verify vong_lap_hop_le_qua_kiem
+        PASS [   0.008s] (  83/1430) vis-cli::api_dong_bang api_vbc1_khop_code
+        PASS [   0.007s] (  84/1430) vis-cli::async_vis async_tren_method_la_vs0201_va_ghi_no
+        PASS [   0.007s] (  85/1430) vis-cli::ban_ghi_an_danh_ten an_danh_trong_list_vis
+        PASS [   0.008s] (  86/1430) vis-cli::ban_ghi_an_danh_ten an_danh_trong_list_vish_cung_chu
+        PASS [   0.009s] (  87/1430) vis-cli::async_vis async_tren_cmd_la_vs0201_va_ghi_no
+        PASS [   0.008s] (  88/1430) vis-cli::ban_ghi_an_danh_ten ban_ghi_co_ten_van_in_ten
+        PASS [   0.009s] (  89/1430) vis-cli::ban_ghi_an_danh_ten ban_ghi_long_in_de_quy
+        PASS [   0.009s] (  90/1430) vis-cli::ban_ghi_an_danh_ten let_chu_thich_kieu_an_danh
+        PASS [   0.008s] (  91/1430) vis-cli::ban_ghi_an_danh_ten truong_theo_thu_tu_khai_bao
+        PASS [   0.007s] (  92/1430) vis-cli::cache_fastpath khong_con_fast_path_khoa_v1
+        PASS [   0.036s] (  93/1430) vis-bytecode::tin_tyck moi_ca_loi_bien_dich_khong_panic_va_bi_tu_choi
+        PASS [   0.011s] (  94/1430) vis-cli::cache_fastpath mot_module_lan_hai_byte_y_het_va_nhanh
+        PASS [   0.010s] (  95/1430) vis-cli::cache_fastpath sua_tep_phu_cache_miss
+        PASS [   0.011s] (  96/1430) vis-cli::cache_fastpath sua_tep_chinh_cache_miss
+        PASS [   0.012s] (  97/1430) vis-cli::cache_fastpath module_cache_hit_khong_hoi_quy
+        PASS [   0.010s] (  98/1430) vis-cli::cache_khong_che hai_lan_vm_cache_byte_y_het
+        PASS [   0.008s] (  99/1430) vis-cli::cap cap_khong_in_duoc
+        PASS [   0.008s] ( 100/1430) vis-cli::cap dry_in_danh_sach
+        PASS [   0.015s] ( 101/1430) vis-cli::cache_khong_che module_doi_cache_khong_dung_lai
+        PASS [   0.008s] ( 102/1430) vis-cli::cap dry_khong_quyen
+        PASS [   0.010s] ( 103/1430) vis-cli::cap dry_khong_chay
+        PASS [   0.017s] ( 104/1430) vis-cli::cache_khong_che strict_caps_khong_bi_cache_che
+        PASS [   0.018s] ( 105/1430) vis-cli::cache_khong_che mode_vis_vish_khong_lan_cache
+        PASS [   0.011s] ( 106/1430) vis-cli::cap_khong_lo doi_so_dong_lenh_la_str
+        PASS [   0.011s] ( 107/1430) vis-cli::cap_khong_lo gan_json_vao_bien_cap_khong_sinh_quyen
+        PASS [   0.006s] ( 108/1430) vis-cli::cap_khong_lo so_sanh_cap_la_loi_tyck
+        PASS [   0.008s] ( 109/1430) vis-cli::cap_khong_lo in_cap_la_loi_tyck
+        PASS [   0.018s] ( 110/1430) vis-cli::cap_khong_lo doc_tep_khong_tao_cap
+        PASS [   0.013s] ( 111/1430) vis-cli::cap_khong_lo json_decode_khong_tao_cap
+        PASS [   0.011s] ( 112/1430) vis-cli::cap_khong_lo to_json_cap_ra_null
+        PASS [   0.011s] ( 113/1430) vis-cli::cap_proc strict_cap_dir_khong_thay_the_proc
+        PASS [   0.009s] ( 114/1430) vis-cli::cap_proc strict_khong_cap_thi_chan
+        PASS [   0.009s] ( 115/1430) vis-cli::cap_proc_grant grant_proc_cho_cap_dir_la_loi_kieu
+        PASS [   0.019s] ( 116/1430) vis-cli::cap_proc khong_strict_khong_cap_van_chay
+        PASS [   0.009s] ( 117/1430) vis-cli::cap_proc_grant grant_echo_chan_grep
+        PASS [   0.019s] ( 118/1430) vis-cli::cap_proc strict_co_cap_proc_thi_chay_hai_duong
+        PASS [   0.021s] ( 119/1430) vis-cli::cap_proc strict_cap_proc_sh_exit3
+        PASS [   0.021s] ( 120/1430) vis-cli::cap_proc_grant grant_basename_echo_chay
+        PASS [   0.021s] ( 121/1430) vis-cli::cap_proc_grant grant_tuyet_doi_echo_chay
+        PASS [   0.034s] ( 122/1430) vis-cli::cap_proc strict_cap_proc_pipeline_hai_stage
+        PASS [   0.021s] ( 123/1430) vis-cli::cap_proc_grant khong_grant_khong_gioi_han
+        PASS [   0.009s] ( 124/1430) vis-cli::chan_doan_da_tep tap_dung_tep
+        PASS [   0.026s] ( 125/1430) vis-cli::chan_doan_da_tep loi_ca_hai_tep
+        PASS [   0.007s] ( 126/1430) vis-cli::check co_la_la_dung_sai_thoat_2
+        PASS [   0.038s] ( 127/1430) vis-cli::cap_proc_grant hai_grant_pipeline_hai_stage
+        PASS [   0.010s] ( 128/1430) vis-cli::check duong_dan_tuong_doi_in_nguyen_van
+        PASS [   0.037s] ( 129/1430) vis-cli::chan_doan_da_tep b_dai_van_dung_a
+        PASS [   0.035s] ( 130/1430) vis-cli::chan_doan_da_tep loi_cap_tep_a
+        PASS [   0.007s] ( 131/1430) vis-cli::check khong_doc_duoc_tep_la_not_ok
+        PASS [   0.013s] ( 132/1430) vis-cli::check hai_khoi_vish_session_qua_cli_deu_ok
+        PASS [   0.036s] ( 133/1430) vis-cli::chan_doan_da_tep loi_trong_b_dong_sau
+        PASS [   0.016s] ( 134/1430) vis-cli::check fixture_tai_lieu_15_khoi_deu_ok
+        PASS [   0.012s] ( 135/1430) vis-cli::check khoi_loai_tru_tai_lieu_bao_not_ok_dung_mot_chan_doan
+        PASS [   0.006s] ( 136/1430) vis-cli::check thieu_tham_so_la_dung_sai_thoat_2
+        PASS [   0.007s] ( 137/1430) vis-cli::check not_ok_co_dung_mot_dong_chan_doan_moi_tep
+        PASS [   0.011s] ( 138/1430) vis-cli::check mixed_lex_va_syntax_phai_bao_vs0101
+        PASS [   0.039s] ( 139/1430) vis-cli::chan_doan_da_tep loi_trong_fn_a
+        PASS [   0.009s] ( 140/1430) vis-cli::check tap_sach_cau_truc_va_exit_0
+        PASS [   0.008s] ( 141/1430) vis-cli::check thu_tu_tep_dung_theo_tham_so_truyen_vao
+        PASS [   0.009s] ( 142/1430) vis-cli::check thu_muc_tep_rong_va_non_utf8
+        PASS [   0.008s] ( 143/1430) vis-cli::closure_cmd closure_hai_tham_so_la_vs0602
+        PASS [   0.007s] ( 144/1430) vis-cli::closure_cmd each_in_tung_phan_tu
+        PASS [   0.008s] ( 145/1430) vis-cli::closure_cmd count_dem_phan_tu
+        PASS [   0.008s] ( 146/1430) vis-cli::closure_cmd each_noi_tiep_la_vs0603
+        PASS [   0.012s] ( 147/1430) vis-cli::check vish_duoc_kiem_bang_cmdcst
+        PASS [   0.008s] ( 148/1430) vis-cli::closure_cmd first_lay_dau
+        PASS [   0.009s] ( 149/1430) vis-cli::closure_cmd first_tren_list_rong_la_none
+        PASS [   0.010s] ( 150/1430) vis-cli::closure_cmd span_than_dung_khi_truoc_do_co_ky_tu_nhieu_byte
+        PASS [   0.008s] ( 151/1430) vis-cli::closure_cmd sugar_vi_tu_ngam_it
+        PASS [   0.010s] ( 152/1430) vis-cli::closure_cmd sugar_va_it_viet_tuong_minh_tuong_duong
+        PASS [   0.008s] ( 153/1430) vis-cli::closure_cmd than_sai_kieu_la_vs0412
+        PASS [   0.008s] ( 154/1430) vis-cli::closure_cmd where_khong_phai_closure_la_loi_kiem_tinh
+        PASS [   0.008s] ( 155/1430) vis-cli::closure_cmd where_hang_so_la_loi_kiem_tinh
+        PASS [   0.006s] ( 156/1430) vis-cli::closure_cmd where_list_rong_van_rong
+        PASS [   0.008s] ( 157/1430) vis-cli::closure_cmd where_loc_theo_closure
+        PASS [   0.015s] ( 158/1430) vis-cli::closure_cmd sugar_cac_dang_so_co_don_vi
+        PASS [   0.007s] ( 159/1430) vis-cli::cmd_run check_khong_con_bail_out
+        PASS [   0.007s] ( 160/1430) vis-cli::cmd_run chay_nen_la_vs0605
+        PASS [   0.007s] ( 161/1430) vis-cli::cmd_run flag_co_default
+        PASS [   0.010s] ( 162/1430) vis-cli::closure_cmd where_ten_tran_khong_so_sanh_la_loi
+        PASS [   0.009s] ( 163/1430) vis-cli::closure_cmd where_voi_list_str_va_len
+        PASS [   0.010s] ( 164/1430) vis-cli::cmd_run check_no_extern_bao_vs0601
+        PASS [   0.008s] ( 165/1430) vis-cli::cmd_run lenh_khong_ton_tai_la_vs0501
+        PASS [   0.009s] ( 166/1430) vis-cli::cmd_run hai_item_bang_cham_phay
+        PASS [   0.007s] ( 167/1430) vis-cli::crlf crlf_record_thieu_truong_luon_bao_loi_vi_tri_dung
+        PASS [   0.008s] ( 168/1430) vis-cli::cmd_run noi_khong_duoc_la_vs0603
+        PASS [   0.008s] ( 169/1430) vis-cli::cmd_run pipeline_ba_stage_chay
+        PASS [   0.007s] ( 170/1430) vis-cli::crlf crlf_import_std_json_giai_duoc
+        PASS [   0.007s] ( 171/1430) vis-cli::cmd_run sai_doi_so_la_vs0602
+        PASS [   0.010s] ( 172/1430) vis-cli::crlf crlf_test_fn_va_main_bien_doi_dung
+        PASS [   0.005s] ( 173/1430) vis-cli::diag_cmp chuan_hoa_escape
+        PASS [   0.007s] ( 174/1430) vis-cli::diag_cmp phan_loai_ba_tang_khoa_cung
+        PASS [   0.010s] ( 175/1430) vis-cli::diff_loi assert_sai_hai_duong
+        PASS [   0.076s] ( 176/1430) vis-cli::cheatsheet cheatsheet_moi_vi_du_chay_duoc
+        PASS [   0.010s] ( 177/1430) vis-cli::diff_loi deadlock_hai_duong
+        PASS [   0.012s] ( 178/1430) vis-cli::diff_loi await_khong_phai_task_hai_duong
+        PASS [   0.010s] ( 179/1430) vis-cli::diff_loi send_sai_kieu_hai_duong
+        PASS [   0.010s] ( 180/1430) vis-cli::diff_loi send_sau_close_hai_duong
+        PASS [   0.026s] ( 181/1430) vis-cli::diag_cmp ca_bien_dich_di_qua_bytecode_khong_panic
+        PASS [   0.010s] ( 182/1430) vis-cli::diff_loi thieu_cap_hai_duong
+        PASS [   0.008s] ( 183/1430) vis-cli::explain explain_khong_tham_so_thi_doi_cach_dung
+        PASS [   0.011s] ( 184/1430) vis-cli::diff_loi thieu_pkg_hai_duong
+        PASS [   0.010s] ( 185/1430) vis-cli::explain explain_lang_en_va_ja
+        PASS [   0.008s] ( 186/1430) vis-cli::explain explain_lang_sai_hoac_thieu_gia_tri_la_loi_dung
+        PASS [   0.006s] ( 187/1430) vis-cli::explain explain_mot_ma_co_nghia
+        PASS [   0.007s] ( 188/1430) vis-cli::explain explain_ma_la_thi_do
+        PASS [   0.008s] ( 189/1430) vis-cli::explain list_in_du_10_ma_cua_spec_lex
+        PASS [   0.010s] ( 190/1430) vis-cli::explain explain_so_runtime_05xx
+        PASS [   0.011s] ( 191/1430) vis-cli::explain list_lang_in_du_ba_ngon_ngu_tung_ma
+        PASS [   0.014s] ( 192/1430) vis-cli::explain explain_so_ten_03xx
+        PASS [   0.019s] ( 193/1430) vis-cli::explain explain_so_kieu_04xx
+        PASS [   0.008s] ( 194/1430) vis-cli::explain_moi lang_sai_exit_2
+        PASS [   0.007s] ( 195/1430) vis-cli::explain_moi list_du_53_dong_dung_thu_tu
+        PASS [   0.006s] ( 196/1430) vis-cli::explain_moi ma_la_ro_rang_exit_2
+        PASS [   0.005s] ( 197/1430) vis-cli::explain_moi toan_bo_so_du_ba_ngon_ngu
+        PASS [   0.017s] ( 198/1430) vis-cli::explain_moi ba_ma_runtime_du_ba_ngon_ngu
+        PASS [   0.005s] ( 199/1430) vis-cli::extern duong_dan_hermetic_co_that
+        PASS [   0.007s] ( 200/1430) vis-cli::explain_moi tro_giup_neu_du_so_ma
+        PASS [   0.008s] ( 201/1430) vis-cli::extern echo_trong_vish_van_chay
+        PASS [   0.014s] ( 202/1430) vis-cli::extern cat_doc_stdin_rong_la_rong
+        PASS [   0.014s] ( 203/1430) vis-cli::extern echo_raw_giu_newline
+        PASS [   0.014s] ( 204/1430) vis-cli::extern echo_ra_list_str
+        PASS [   0.013s] ( 205/1430) vis-cli::extern false_thoat_ma_1_la_vs0501
+        PASS [   0.012s] ( 206/1430) vis-cli::extern no_extern_la_vs0601
+        PASS [   0.013s] ( 207/1430) vis-cli::extern printf_nhieu_dong_bo_newline_cuoi
+        PASS [   0.022s] ( 208/1430) vis-cli::extern explain_perms_in_nhat_ky
+        PASS [   0.013s] ( 209/1430) vis-cli::extern stderr_khong_tron_stdout
+        PASS [   0.009s] ( 210/1430) vis-cli::extern variadic_gom_da_so_con_lai
+        PASS [   0.013s] ( 211/1430) vis-cli::extern true_khong_in_gi
+        PASS [   0.006s] ( 212/1430) vis-cli::fmt check_nhieu_tep_va_tep_loi
+        PASS [   0.010s] ( 213/1430) vis-cli::fmt check_ma_thoat_0_1_2
+        PASS [   0.007s] ( 214/1430) vis-cli::fmt loi_cu_phap_ra_stderr_exit_2
+        PASS [   0.007s] ( 215/1430) vis-cli::fmt mot_tep_in_ra_stdout_giu_nguyen_tep
+        PASS [   0.007s] ( 216/1430) vis-cli::fmt thieu_tham_so_va_co_la_la_usage
+        PASS [   0.007s] ( 217/1430) vis-cli::fmt vish_format_duoc_khi_chi_sai_lenh
+        PASS [   0.008s] ( 218/1430) vis-cli::fmt write_khong_ghi_tep_loi
+        PASS [   0.007s] ( 219/1430) vis-cli::fmt_indent check_canh_bao_khong_do
+        PASS [   0.009s] ( 220/1430) vis-cli::fmt write_sua_roi_giu_nguyen
+        PASS [   0.008s] ( 221/1430) vis-cli::fmt_indent fmt_mac_dinh_giu_nguyen
+        PASS [   0.006s] ( 222/1430) vis-cli::fmt_indent report_hon_hop
+        PASS [   0.008s] ( 223/1430) vis-cli::fmt_indent report_hai_dau_cach
+        PASS [   0.008s] ( 224/1430) vis-cli::fmt_indent report_bon_dau_cach_sach
+        PASS [   0.006s] ( 225/1430) vis-cli::fmt_indent report_thu_muc
+        PASS [   0.007s] ( 226/1430) vis-cli::fmt_moi fmt_vish_than_cmd_giu_thu_le
+        PASS [   0.012s] ( 227/1430) vis-cli::fmt_moi fmt_check_thu_muc_co_vish
+        PASS [   0.010s] ( 228/1430) vis-cli::gan_hai_duong closure_gan_bien_bat_co_tham_so_hai_duong
+        PASS [   0.011s] ( 229/1430) vis-cli::gan_hai_duong closure_gan_phan_tu_bien_bat_hai_duong
+        PASS [   0.060s] ( 230/1430) vis-cli::extern timeout_la_vs0501
+        PASS [   0.011s] ( 231/1430) vis-cli::gan_hai_duong closure_gan_truong_bien_bat_hai_duong
+        PASS [   0.012s] ( 232/1430) vis-cli::gan_hai_duong closure_long_hai_tang_hai_duong
+        PASS [   0.013s] ( 233/1430) vis-cli::gan_hai_duong codegen_loi_vm_phai_exit_khac_0
+        PASS [   0.010s] ( 234/1430) vis-cli::gan_hai_duong gan_ghep_tren_truong_bi_chan_truoc_hai_duong
+        PASS [   0.010s] ( 235/1430) vis-cli::gan_hai_duong gan_long_goc_let_bao_bat_bien_hai_duong
+        PASS [   0.305s] ( 236/1430) vis-bytecode::roundtrip roundtrip_tren_toan_bo_323_ca
+        PASS [   0.015s] ( 237/1430) vis-cli::gan_hai_duong dich_gan_khong_ho_tro_la_vs0412
+        PASS [   0.011s] ( 238/1430) vis-cli::gan_hai_duong gan_long_goc_var_bao_long_hai_duong
+        PASS [   0.010s] ( 239/1430) vis-cli::gan_hai_duong gan_truong_tren_kieu_khong_ro_cung_chan_doan_giong_nhau
+        PASS [   0.009s] ( 240/1430) vis-cli::gan_hai_duong std_khong_nhan_tham_so_ten
+        PASS [   0.012s] ( 241/1430) vis-cli::gan_hai_duong var_list_chi_so_va_cow_hai_duong
+        PASS [   0.014s] ( 242/1430) vis-cli::gan_hai_duong self_bat_bien_la_vs0413_hai_duong
+        PASS [   0.011s] ( 243/1430) vis-cli::gan_hai_duong var_map_khoa_hai_duong
+        PASS [   0.011s] ( 244/1430) vis-cli::gan_hai_duong var_self_gan_truong_hai_duong
+        PASS [   0.011s] ( 245/1430) vis-cli::gan_hai_duong var_truong_gan_hai_duong
+        PASS [   0.010s] ( 246/1430) vis-cli::gan_hai_duong vish_shell_let_khong_thanh_khai_bao
+        PASS [   0.011s] ( 247/1430) vis-cli::generic_cli check_va_run_cung_ket_luan_mau_thuan
+        PASS [   0.014s] ( 248/1430) vis-cli::generic_cli check_va_run_cung_ket_luan_hop_le
+        PASS [   0.012s] ( 249/1430) vis-cli::generic_cli generic_hai_kieu_cung_chuong_trinh_hai_duong
+        PASS [   0.009s] ( 250/1430) vis-cli::get_select get_gia_tri_co_don_vi
+        PASS [   0.011s] ( 251/1430) vis-cli::generic_cli vm_chay_ham_main_nhu_interp
+        PASS [   0.008s] ( 252/1430) vis-cli::get_select get_it_tuong_minh_tuong_duong
+        PASS [   0.009s] ( 253/1430) vis-cli::get_select get_khong_doi_so_la_vs0602
+        PASS [   0.009s] ( 254/1430) vis-cli::get_select get_noi_tiep_duoc
+        PASS [   0.011s] ( 255/1430) vis-cli::get_select get_ten_truong
+        PASS [   0.007s] ( 256/1430) vis-cli::get_select get_tren_list_rong_la_rong
+        PASS [   0.013s] ( 257/1430) vis-cli::get_select get_select_chay_ca_hai_duong
+        PASS [   0.008s] ( 258/1430) vis-cli::get_select get_truong_la_la_vs0605
+        PASS [   0.311s] ( 259/1430) vis-cli::async_10k muoi_nghin_task_khong_tran_stack
+        PASS [   0.011s] ( 260/1430) vis-cli::get_select kieu_khong_phai_ban_ghi_thi_kiem_dong
+        PASS [   0.008s] ( 261/1430) vis-cli::get_select select_ba_truong
+        PASS [   0.008s] ( 262/1430) vis-cli::get_select select_truong_la_la_vs0605
+        PASS [   0.010s] ( 263/1430) vis-cli::get_select select_dao_thu_tu_doi_so
+        PASS [   0.008s] ( 264/1430) vis-cli::get_select select_giu_thu_tu_doi_so
+        PASS [   0.018s] ( 265/1430) vis-cli::grant_proc_canon grant_binary_khong_ton_tai
+        PASS [   0.014s] ( 266/1430) vis-cli::grant_proc_canon sao_chep_trung_ten_bi_chan
+        PASS [   0.026s] ( 267/1430) vis-cli::grant_proc_canon khong_grant_khong_gioi_han
+        PASS [   0.020s] ( 268/1430) vis-cli::grant_proc_canon tuyet_doi_khop_thi_chay
+        PASS [   0.038s] ( 269/1430) vis-cli::grant_proc_canon grant_duong_dan_tuong_doi
+        PASS [   0.038s] ( 270/1430) vis-cli::grant_proc_canon grant_ten_tran_phan_giai_path
+        PASS [   0.126s] ( 271/1430) vis-cli::fmt_moi fmt_check_toan_bo_test
+        PASS [   0.041s] ( 272/1430) vis-cli::grant_proc_canon symlink_canonicalize_hai_phia
+        PASS [   0.012s] ( 273/1430) vis-cli::http http_404
+        PASS [   0.021s] ( 274/1430) vis-cli::http http_200_byte
+        PASS [   0.011s] ( 275/1430) vis-cli::http http_chunked_ba_chunk
+        PASS [   0.012s] ( 276/1430) vis-cli::http http_chunked_co_mo_rong
+        PASS [   0.015s] ( 277/1430) vis-cli::http http_body_rong
+        PASS [   0.013s] ( 278/1430) vis-cli::http http_content_length_khong_dong_connection
+        PASS [   0.014s] ( 279/1430) vis-cli::http http_duong_mac_dinh
+        PASS [   0.012s] ( 280/1430) vis-cli::http http_head_khong_theo_redirect
+        PASS [   0.013s] ( 281/1430) vis-cli::http http_head_khong_doc_than
+        PASS [   0.011s] ( 282/1430) vis-cli::http http_location_chuan_hoa_dotdot
+        PASS [   0.020s] ( 283/1430) vis-cli::http http_gioi_han
+        PASS [   0.013s] ( 284/1430) vis-cli::http http_location_fragment_dung
+        PASS [   0.012s] ( 285/1430) vis-cli::http http_location_query_only
+        PASS [   0.011s] ( 286/1430) vis-cli::http http_path_query
+        PASS [   0.265s] ( 287/1430) vis-cli::diag_cmp ca_bien_dich_hai_duong_cung_chan_doan
+        PASS [   0.011s] ( 288/1430) vis-cli::http http_redirect_tuong_doi_hai_lan
+        PASS [   0.013s] ( 289/1430) vis-cli::http http_redirect_qua_5_loi
+        PASS [   0.011s] ( 290/1430) vis-cli::http http_redirect_tuyet_doi
+        PASS [   0.010s] ( 291/1430) vis-cli::http http_sai_kieu
+        PASS [   0.007s] ( 292/1430) vis-cli::json_ra check_json_hai_loi
+        PASS [   0.012s] ( 293/1430) vis-cli::http http_tu_choi
+        PASS [   0.009s] ( 294/1430) vis-cli::json_ra check_json_ba_tep_dung_thu_tu
+        PASS [   0.008s] ( 295/1430) vis-cli::json_ra check_json_khong_co_tap_khong_doi
+        PASS [   0.010s] ( 296/1430) vis-cli::json_ra check_json_severity_error
+        PASS [   0.008s] ( 297/1430) vis-cli::json_ra check_json_tep_sach
+        PASS [   0.033s] ( 298/1430) vis-cli::json_ra check_json_loi_hai_tep
+        PASS [   0.016s] ( 299/1430) vis-cli::json_ra khong_json_tap_nguyen_ven
+        PASS [   0.038s] ( 300/1430) vis-cli::json_ra check_json_ten_tep_dac_biet_parse_duoc
+        PASS [   0.040s] ( 301/1430) vis-cli::json_ra check_json_severity_warning_tab
+        PASS [   0.042s] ( 302/1430) vis-cli::json_ra check_json_loi_trong_tep_phu
+        PASS [   0.008s] ( 303/1430) vis-cli::json_sort fixture_sort_shell_khoa_str_desc
+        PASS [   0.017s] ( 304/1430) vis-cli::json_ra test_json_tat_ca_ok
+        PASS [   0.014s] ( 305/1430) vis-cli::json_sort fixture_pipeline_dai_to_json
+        PASS [   0.007s] ( 306/1430) vis-cli::json_sort fixture_to_json_pretty
+        PASS [   0.028s] ( 307/1430) vis-cli::json_ra test_json_hai_tren_ba
+        PASS [   0.008s] ( 308/1430) vis-cli::json_sort json_encode_list_ban_ghi_co_ten_va_an_danh
+        PASS [   0.008s] ( 309/1430) vis-cli::json_sort literal_ban_ghi_an_danh_ra_object
+        PASS [   0.270s] ( 310/1430) vis-cli::fmt khong_panic_khi_pipe_dong
+        PASS [   0.009s] ( 311/1430) vis-cli::json_sort select_ban_ghi_an_danh_ra_json_dung_khoa_thu_tu
+        PASS [   0.021s] ( 312/1430) vis-cli::json_sort interp_va_vm_cung_byte_cho_sort_va_json
+        PASS [   0.009s] ( 313/1430) vis-cli::json_sort sort_by_khoa_bool_la_vs0412
+        PASS [   0.021s] ( 314/1430) vis-cli::json_sort round_trip_encode_decode_map_list_int_str
+        PASS [   0.040s] ( 315/1430) vis-cli::json_ra test_json_ten_tieng_viet
+        PASS [   0.009s] ( 316/1430) vis-cli::json_sort std_list_sort_by_cu_van_chay
+        PASS [   0.008s] ( 317/1430) vis-cli::json_sort to_json_co_khong_hop_le_bao_vs0602
+        PASS [   0.009s] ( 318/1430) vis-cli::json_sort to_json_khong_can_use_std_json
+        PASS [   0.015s] ( 319/1430) vis-cli::json_sort sort_by_khoa_size_va_duration_on_dinh
+        PASS [   0.006s] ( 320/1430) vis-cli::json_sort to_json_thieu_pipe_bao_vs0602_ro
+        PASS [   0.010s] ( 321/1430) vis-cli::kenh send_sau_close_la_vs0504
+        PASS [   0.009s] ( 322/1430) vis-cli::kenh spawn_producer_voi_dem_du_hai_duong
+        PASS [   0.011s] ( 323/1430) vis-cli::kenh close_idempotent_va_nhan_not_hang
+        PASS [   0.011s] ( 324/1430) vis-cli::kenh tao_send_recv_va_fifo_hai_duong
+        PASS [   0.010s] ( 325/1430) vis-cli::kenh_cap0 chan_0_do_thoi_gian_khong_treo
+        PASS [   0.010s] ( 326/1430) vis-cli::kenh_cap0 chan_0_dong_runtime_vs0505
+        PASS [   0.010s] ( 327/1430) vis-cli::kenh_cap0 chan_0_literal_bi_tu_choi
+        PASS [   0.021s] ( 328/1430) vis-cli::kenh deadlock_khong_treo_va_bao_vs0505
+        PASS [   0.010s] ( 329/1430) vis-cli::kenh_cap0 chan_0_trong_ham_cung_chan
+        PASS [   0.010s] ( 330/1430) vis-cli::kenh_cap0 drain_task_in_khong_await
+        PASS [   0.012s] ( 331/1430) vis-cli::kenh_cap0 drain_100_task_thu_tu_tat_dinh
+        PASS [   0.010s] ( 332/1430) vis-cli::kenh_cap0 drain_task_loi_vs0506
+        PASS [   0.009s] ( 333/1430) vis-cli::kenh_cap0 send_sau_close_vs0504
+        PASS [   0.010s] ( 334/1430) vis-cli::kenh_cap0 recv_sau_close_none
+        PASS [   0.010s] ( 335/1430) vis-cli::kenh_cap0 recv_rong_khong_task_vs0505
+        PASS [   0.388s] ( 336/1430) vis-cli::diag_cmp ca_luc_chay_check_rong_hai_duong_giong
+        PASS [   0.008s] ( 337/1430) vis-cli::khe_ong bieu_thuc_dau_khong_ngoac_chay
+        PASS [   0.008s] ( 338/1430) vis-cli::khe_ong co_khong_bi_chiem_lam_khe
+        PASS [   0.007s] ( 339/1430) vis-cli::khe_ong khe_giu_cho_truoc_khong_de_bind
+        PASS [   0.008s] ( 340/1430) vis-cli::khe_ong lines_roi_take_giu_nguyen
+        PASS [   0.007s] ( 341/1430) vis-cli::khe_ong nhom_ba_phan_tu_take_hai
+        PASS [   0.007s] ( 342/1430) vis-cli::khe_ong nhom_khong_nhan_pipe
+        PASS [   0.008s] ( 343/1430) vis-cli::khe_ong nhom_lam_doi_so_chua_ho_tro
+        PASS [   0.008s] ( 344/1430) vis-cli::khe_ong nhom_khong_phai_list_thi_bao_loi_luc_chay
+        PASS [   0.006s] ( 345/1430) vis-cli::khe_ong nhom_list_bool_vao_take
+        PASS [   0.008s] ( 346/1430) vis-cli::khe_ong nhom_list_int_vao_take
+        PASS [   0.006s] ( 347/1430) vis-cli::khe_ong take_khong_lay_gi
+        PASS [   0.007s] ( 348/1430) vis-cli::khe_ong str_khong_vao_duoc_take
+        PASS [   0.008s] ( 349/1430) vis-cli::khe_ong nhom_list_str_vao_take
+        PASS [   0.006s] ( 350/1430) vis-cli::khe_ong take_khong_pipe_van_vs0602
+        PASS [   0.009s] ( 351/1430) vis-cli::ls_open khoi_672_end_to_end
+        PASS [   0.006s] ( 352/1430) vis-cli::ls_open ls_khong_doi_so_dung_cham
+        PASS [   0.009s] ( 353/1430) vis-cli::ls_open ls_all_gom_ten_cham
+        PASS [   0.009s] ( 354/1430) vis-cli::ls_open khong_mock_thi_dung_fs_that
+        PASS [   0.011s] ( 355/1430) vis-cli::ls_open khoi_672_interp_va_vm_cung_byte
+        PASS [   0.010s] ( 356/1430) vis-cli::ls_open ls_long_them_cot_mode_va_modified_time
+        PASS [   0.015s] ( 357/1430) vis-cli::ls_open fixture_cmd_fs
+        PASS [   0.008s] ( 358/1430) vis-cli::ls_open ls_mock_ra_bang
+        PASS [   0.008s] ( 359/1430) vis-cli::ls_open ls_sap_theo_ten_byte
+        PASS [   0.009s] ( 360/1430) vis-cli::ls_open ls_thu_muc_khong_ton_tai_la_vs0501
+        PASS [   0.181s] ( 361/1430) vis-cli::http http_het_gio
+        PASS [   0.009s] ( 362/1430) vis-cli::ls_open modified_la_duration
+        PASS [   0.008s] ( 363/1430) vis-cli::ls_open open_thieu_tep_la_vs0501
+        PASS [   0.008s] ( 364/1430) vis-cli::ls_open open_mock_doc_noi_dung
+        PASS [   0.010s] ( 365/1430) vis-cli::ls_open size_la_byte_theo_bang_lexer
+        PASS [   0.014s] ( 366/1430) vis-cli::lsp lsp_chan_doan_did_close
+        PASS [   0.015s] ( 367/1430) vis-cli::lsp lsp_body_hong_32700
+        PASS [   0.014s] ( 368/1430) vis-cli::lsp lsp_chan_doan_emoji_utf16
+        PASS [   0.015s] ( 369/1430) vis-cli::lsp lsp_chan_doan_did_open
+        PASS [   0.015s] ( 370/1430) vis-cli::lsp lsp_chan_doan_did_change
+        PASS [   0.015s] ( 371/1430) vis-cli::lsp lsp_chan_doan_sach
+        PASS [   0.005s] ( 372/1430) vis-cli::lsp lsp_co_la_2
+        PASS [   0.014s] ( 373/1430) vis-cli::lsp lsp_close_roi_mo_lai_chan_doan
+        PASS [   0.014s] ( 374/1430) vis-cli::lsp lsp_completion_chua_mo
+        PASS [   0.014s] ( 375/1430) vis-cli::lsp lsp_chan_doan_vish
+        PASS [   0.015s] ( 376/1430) vis-cli::lsp lsp_chan_doan_tab_mot_cot
+        PASS [   0.014s] ( 377/1430) vis-cli::lsp lsp_completion_khong_co_dia_khong_bia_module
+        PASS [   0.015s] ( 378/1430) vis-cli::lsp lsp_completion_khu_trung_uu_tien_tep_chinh
+        PASS [   0.042s] ( 379/1430) vis-cli::lsp lsp_ba_tep_bang_vis_check
+        PASS [   0.014s] ( 380/1430) vis-cli::lsp lsp_completion_sau_cham_dung_truong
+        PASS [   0.014s] ( 381/1430) vis-cli::lsp lsp_completion_sau_cham_khong_ro_kieu_fallback
+        PASS [   0.015s] ( 382/1430) vis-cli::lsp lsp_completion_sau_cham_co_phuong_thuc
+        PASS [   0.015s] ( 383/1430) vis-cli::lsp lsp_completion_sau_cham
+        PASS [   0.014s] ( 384/1430) vis-cli::lsp lsp_completion_sau_cham_kieu_khong_ho_tro
+        PASS [   0.015s] ( 385/1430) vis-cli::lsp lsp_completion_thay_ham_module
+        PASS [   0.013s] ( 386/1430) vis-cli::lsp lsp_completion_tien_to_le
+        PASS [   0.014s] ( 387/1430) vis-cli::lsp lsp_completion_thay_std_da_use
+        PASS [   0.014s] ( 388/1430) vis-cli::lsp lsp_completion_tien_to_add
+        PASS [   0.015s] ( 389/1430) vis-cli::lsp lsp_exit_truoc_shutdown_1
+        PASS [   0.013s] ( 390/1430) vis-cli::lsp lsp_hover_add
+        PASS [   0.068s] ( 391/1430) vis-cli::lsp lsp_5_did_change_ket_qua_nhu_lan_dau
+        PASS [   0.014s] ( 392/1430) vis-cli::lsp lsp_hover_bien_kieu
+        PASS [   0.013s] ( 393/1430) vis-cli::lsp lsp_hover_truong_int
+        PASS [   0.015s] ( 394/1430) vis-cli::lsp lsp_hover_option_in_int
+        PASS [   0.015s] ( 395/1430) vis-cli::lsp lsp_hover_khong_ton_tai
+        PASS [   0.015s] ( 396/1430) vis-cli::lsp lsp_hover_ham_module
+        PASS [   0.015s] ( 397/1430) vis-cli::lsp lsp_hover_truong_str
+        PASS [   0.015s] ( 398/1430) vis-cli::lsp lsp_initialized_khong_frame
+        PASS [   0.014s] ( 399/1430) vis-cli::lsp lsp_khoi_tao
+        PASS [   0.014s] ( 400/1430) vis-cli::lsp lsp_khong_co_tren_dia_khong_bia_loi_module
+        PASS [   0.014s] ( 401/1430) vis-cli::lsp lsp_method_la_32601
+        PASS [   0.016s] ( 402/1430) vis-cli::lsp lsp_module_std_sai_giong_vis_check
+        PASS [   0.017s] ( 403/1430) vis-cli::lsp lsp_module_std_hop_le_khong_bao_gia
+        PASS [   0.056s] ( 404/1430) vis-cli::lsp lsp_completion_sau_cham_tat_dinh
+        PASS [   0.016s] ( 405/1430) vis-cli::lsp lsp_module_thieu_giong_vis_check
+        PASS [   0.017s] ( 406/1430) vis-cli::lsp lsp_module_util_hop_le_sach
+        PASS [   0.015s] ( 407/1430) vis-cli::lsp lsp_nam_tep_module_hoat_dong
+        PASS [   0.013s] ( 408/1430) vis-cli::lsp lsp_shutdown_exit_0
+        PASS [   0.007s] ( 409/1430) vis-cli::ma_truong each_truong_khong_co_la_vs0405
+        PASS [   0.015s] ( 410/1430) vis-cli::lsp lsp_truoc_initialize_32002
+        PASS [   0.005s] ( 411/1430) vis-cli::ma_truong explain_vs0405_thuoc_so_kieu
+        PASS [   0.016s] ( 412/1430) vis-cli::lsp_da_tep did_change_van_dung_a
+        PASS [   0.014s] ( 413/1430) vis-cli::lsp_da_tep mo_a_chi_chan_doan_a
+        PASS [   0.014s] ( 414/1430) vis-cli::lsp_da_tep mo_b_chan_doan_b
+        PASS [   0.007s] ( 415/1430) vis-cli::ma_truong phuong_thuc_tren_kieu_khong_phai_ban_ghi_giu_vs0403
+        PASS [   0.006s] ( 416/1430) vis-cli::ma_truong select_truong_khong_co_la_vs0405
+        PASS [   0.007s] ( 417/1430) vis-cli::ma_truong truong_co_thi_chay_binh_thuong
+        PASS [   0.006s] ( 418/1430) vis-cli::ma_truong truong_khong_co_tren_ban_ghi_la_vs0405
+        PASS [   0.008s] ( 419/1430) vis-cli::ma_truong vs0605_da_cap_lai_cho_chay_nen
+        PASS [   0.008s] ( 420/1430) vis-cli::ma_truong where_lambda_tra_int_la_vs0412
+        PASS [   0.008s] ( 421/1430) vis-cli::ma_truong where_lambda_trong_ngoac_dung_thi_chay
+        PASS [   0.026s] ( 422/1430) vis-cli::lsp_da_tep a_sach_rong_b_co_loi
+        PASS [   0.006s] ( 423/1430) vis-cli::ma_truong where_sugar_truong_khong_co_la_vs0405
+        PASS [   0.008s] ( 424/1430) vis-cli::ma_truong where_lambda_trong_ngoac_truong_khong_co_la_vs0405
+        PASS [   0.007s] ( 425/1430) vis-cli::ma_truong where_sugar_dung_thi_chay
+        PASS [   0.007s] ( 426/1430) vis-cli::modules co_ban_pub_fn_va_pub_type
+        PASS [   0.009s] ( 427/1430) vis-cli::modules check_bao_dung_tep_va_dong_cot
+        PASS [   0.012s] ( 428/1430) vis-cli::modules cache_doi_khi_sua_phu_thuoc
+        PASS [   0.007s] ( 429/1430) vis-cli::modules khong_pub_thi_khong_thay
+        PASS [   0.007s] ( 430/1430) vis-cli::modules loi_trong_tep_phu_bao_dung_ten_tep
+        PASS [   0.008s] ( 431/1430) vis-cli::modules hai_tang_noi_dung_dung
+        PASS [   0.009s] ( 432/1430) vis-cli::modules dump_deps_in_cay
+        PASS [   0.013s] ( 433/1430) vis-cli::modules cache_hong_thi_bien_dich_lai
+        PASS [   0.009s] ( 434/1430) vis-cli::modules mo_coi_that_bao_vs0403
+        PASS [   0.007s] ( 435/1430) vis-cli::modules pkg_chua_cai_bao_vs0706
+        PASS [   0.006s] ( 436/1430) vis-cli::modules thieu_tep_la_vs0701
+        PASS [   0.008s] ( 437/1430) vis-cli::modules mo_coi_trait_module_va_kieu_noi_tep
+        PASS [   0.007s] ( 438/1430) vis-cli::modules tep_chinh_khong_ton_tai
+        PASS [   0.007s] ( 439/1430) vis-cli::modules use_trung_hai_duong_dan_la_vs0703
+        PASS [   0.009s] ( 440/1430) vis-cli::modules std_fs_bao_st27
+        PASS [   0.007s] ( 441/1430) vis-cli::modules vong_hai_tep_la_vs0702
+        PASS [   0.008s] ( 442/1430) vis-cli::modules vong_ba_tep_la_vs0702
+        PASS [   0.006s] ( 443/1430) vis-cli::net tcp_khong_host
+        PASS [   0.015s] ( 444/1430) vis-cli::modules vm_va_interp_cung_ket_qua
+        PASS [   0.013s] ( 445/1430) vis-cli::net tcp_explain_perms
+        PASS [   0.015s] ( 446/1430) vis-cli::net tcp_doc_ghi_sau_close
+        PASS [   0.013s] ( 447/1430) vis-cli::net tcp_read_cap_64
+        PASS [   0.012s] ( 448/1430) vis-cli::net tcp_tay_la
+        PASS [   0.016s] ( 449/1430) vis-cli::net tcp_noi_va_doc
+        PASS [   0.011s] ( 450/1430) vis-cli::net tcp_tu_choi
+        PASS [   0.011s] ( 451/1430) vis-cli::net_server cong_ban
+        PASS [   0.005s] ( 452/1430) vis-cli::net_server server_khong_host
+        PASS [   0.019s] ( 453/1430) vis-cli::ngoai_vm complete_ma_thoat_vm_cung_byte
+        PASS [   0.008s] ( 454/1430) vis-cli::ngoai_vm echo_vm_cung_byte
+        PASS [   0.030s] ( 455/1430) vis-cli::ngoai_vm cat_pipe_vm_cung_byte
+        PASS [   0.008s] ( 456/1430) vis-cli::ngoai_vm lenh_khong_ton_tai_vm_cung_chan_doan
+        PASS [   0.045s] ( 457/1430) vis-cli::net_server server_hai_ket_noi_lien_tiep
+        PASS [   0.007s] ( 458/1430) vis-cli::nhom chan_doan_tuyet_doi_trong_nhom_nhieu_dong
+        PASS [   0.018s] ( 459/1430) vis-cli::ngoai_vm sh_exit3_vm_cung_byte
+        PASS [   0.011s] ( 460/1430) vis-cli::nhom fixture_cmd_nhom
+        PASS [   0.010s] ( 461/1430) vis-cli::nhom interp_va_vm_cung_byte
+        PASS [   0.006s] ( 462/1430) vis-cli::nhom kieu_nhom_kiem_tinh_where
+        PASS [   0.007s] ( 463/1430) vis-cli::nhom kieu_nhom_long_kiem_tinh_select
+        PASS [   0.007s] ( 464/1430) vis-cli::nhom nhom_bieu_thuc_nhieu_dong
+        PASS [   0.006s] ( 465/1430) vis-cli::nhom nhom_co_pipeline_hai_stage
+        PASS [   0.007s] ( 466/1430) vis-cli::nhom nhom_lam_doi_so_st46_khong_doi
+        PASS [   0.006s] ( 467/1430) vis-cli::nhom nhom_lenh_co_co_long
+        PASS [   0.006s] ( 468/1430) vis-cli::nhom nhom_long_nhau_bieu_thuc
+        PASS [   0.075s] ( 469/1430) vis-cli::net_server server_hai_tien_trinh
+        PASS [   0.007s] ( 470/1430) vis-cli::nhom nhom_long_nhau_lenh
+        PASS [   0.006s] ( 471/1430) vis-cli::nhom nhom_rong_la_vs0201
+        PASS [   0.007s] ( 472/1430) vis-cli::nhom nhom_pipeline_nhieu_dong
+        PASS [   0.006s] ( 473/1430) vis-cli::nhom shell_let_st44_khong_doi
+        PASS [   0.006s] ( 474/1430) vis-cli::p0_newtype alias_tu_khoa_da_bo
+        PASS [   0.004s] ( 475/1430) vis-cli::p0_newtype type_newtype_cu_phap_moi_xanh
+        PASS [   0.006s] ( 476/1430) vis-cli::p0_newtype newtype_tu_khoa_da_bo
+        PASS [   0.005s] ( 477/1430) vis-cli::pipeline chuong_trinh_ngoai_co_that
+        PASS [   0.086s] ( 478/1430) vis-cli::net_server server_mot_lan
+        PASS [   0.007s] ( 479/1430) vis-cli::pipeline complete_co_doi_so_la_vs0602
+        PASS [   0.006s] ( 480/1430) vis-cli::pipeline complete_tren_stage_vis_la_vs0602
+        PASS [   0.012s] ( 481/1430) vis-cli::pipeline complete_giu_stderr_va_code_khac_0
+        PASS [   0.015s] ( 482/1430) vis-cli::pipeline complete_grep_khop_code_0
+        PASS [   0.018s] ( 483/1430) vis-cli::pipeline complete_grep_khong_khop_het_la_loi
+        PASS [   0.016s] ( 484/1430) vis-cli::pipeline echo_qua_cat_nhan_stdin
+        PASS [   0.017s] ( 485/1430) vis-cli::pipeline echo_qua_grep_tim_thay
+        PASS [   0.136s] ( 486/1430) vis-cli::net tcp_explain_tong
+        PASS [   0.017s] ( 487/1430) vis-cli::pipeline grep_khong_khop_van_la_loi_khi_khong_complete
+        PASS [   0.017s] ( 488/1430) vis-cli::pipeline list_nhieu_dong_qua_grep_loc_dung_dong
+        PASS [   0.016s] ( 489/1430) vis-cli::pipeline printf_hai_dong_qua_cat_ra_hai_dong
+        PASS [   0.017s] ( 490/1430) vis-cli::pipeline printf_khong_newline_qua_cat_khong_them_dong_rong
+        PASS [   0.008s] ( 491/1430) vis-cli::pkg add_keo_phu_thuoc
+        PASS [   0.017s] ( 492/1430) vis-cli::pipeline raw_str_di_nguyen_van_khong_them_newline
+        PASS [   0.008s] ( 493/1430) vis-cli::pkg cai_hai_lan_cung_byte
+        PASS [   0.013s] ( 494/1430) vis-cli::pkg add_roi_list
+        PASS [   0.010s] ( 495/1430) vis-cli::pkg entry_sai_bao_vs0701_neu_ten
+        PASS [   0.008s] ( 496/1430) vis-cli::pkg entry_tuy_chon_khi_manifest_thieu
+        PASS [   0.052s] ( 497/1430) vis-cli::pipeline fixture_vish_trong_test_cmd_pipe
+        PASS [   0.029s] ( 498/1430) vis-cli::pipeline vm_co_host_chay_cung_interp
+        PASS [   0.007s] ( 499/1430) vis-cli::pkg install_khong_can_registry
+        PASS [   0.012s] ( 500/1430) vis-cli::pkg hai_goi_cung_ten_tep
+        PASS [   0.009s] ( 501/1430) vis-cli::pkg list_json_parse_duoc_dung_thu_tu
+        PASS [   0.007s] ( 502/1430) vis-cli::pkg lock_co_entry_sau_khi_cai
+        PASS [   0.008s] ( 503/1430) vis-cli::pkg lock_cu_khong_entry_van_chay
+        PASS [   0.010s] ( 504/1430) vis-cli::pkg list_khong_co_json_khong_doi
+        PASS [   0.006s] ( 505/1430) vis-cli::pkg lock_hong
+        PASS [   0.006s] ( 506/1430) vis-cli::pkg manifest_thieu_truong
+        PASS [   0.182s] ( 507/1430) vis-cli::net tcp_het_gio_doc
+        PASS [   0.007s] ( 508/1430) vis-cli::pkg pkg_bi_sua_bao_vs0707
+        PASS [   0.175s] ( 509/1430) vis-cli::net_server accept_het_gio
+        PASS [   0.010s] ( 510/1430) vis-cli::pkg pkg_vong_lap
+        PASS [   0.007s] ( 511/1430) vis-cli::pkg remove_ten_la_exit_2_lock_khong_doi
+        PASS [   0.011s] ( 512/1430) vis-cli::pkg pkg_chua_cai
+        PASS [   0.011s] ( 513/1430) vis-cli::pkg remove_xoa_lock_store_va_bao_chua_cai
+        PASS [   0.014s] ( 514/1430) vis-cli::pkg remove_khong_xoa_blob_con_dung
+        PASS [   0.011s] ( 515/1430) vis-cli::pkg update_doi_noi_dung_cung_version
+        PASS [   0.007s] ( 516/1430) vis-cli::pkg update_khong_doi_lock_byte_identical
+        PASS [   0.009s] ( 517/1430) vis-cli::pkg update_ten_khong_co_exit2
+        PASS [   0.060s] ( 518/1430) vis-cli::pipeline timeout_neu_ro_stage
+        PASS [   0.013s] ( 519/1430) vis-cli::pkg update_mot_ten_khong_dung_goi_khac
+        PASS [   0.013s] ( 520/1430) vis-cli::pkg use_pkg_chay_that
+        PASS [   0.010s] ( 521/1430) vis-cli::pkg_lock install_giu_nguyen_lock_khi_con_thoa
+        PASS [   0.009s] ( 522/1430) vis-cli::pkg_lock list_json_co_version_req
+        PASS [   0.011s] ( 523/1430) vis-cli::pkg_lock add_ghi_roots_va_rang_buoc_dep
+        PASS [   0.551s] ( 524/1430) vis-cli::host_conformance host_conformance_suite
+        PASS [   0.012s] ( 525/1430) vis-cli::pkg_lock install_lock_khong_con_thoa_chi_duong_update
+        PASS [   0.011s] ( 526/1430) vis-cli::pkg_lock remove_bo_ca_roots
+        PASS [   0.012s] ( 527/1430) vis-cli::pkg_lock lock_cu_migrate_va_ghi_hai_lan_cung_byte
+        PASS [   0.008s] ( 528/1430) vis-cli::pkg_resolver chon_cao_nhat_theo_rang_buoc
+        PASS [   0.011s] ( 529/1430) vis-cli::pkg_lock update_lock_cu_ghi_dinh_dang_moi_mot_lan
+        PASS [   0.008s] ( 530/1430) vis-cli::pkg_resolver khoang_chon_dung_tran
+        PASS [   0.009s] ( 531/1430) vis-cli::pkg_resolver ba_thanh_phan_van_la_ghim_dung
+        PASS [   0.007s] ( 532/1430) vis-cli::pkg_resolver khong_thoa_bao_vs0704_exit_2
+        PASS [   0.012s] ( 533/1430) vis-cli::pkg_lock update_nang_trong_khoang
+        PASS [   0.012s] ( 534/1430) vis-cli::pkg_resolver hai_lan_chay_cung_byte_lock
+        PASS [   0.007s] ( 535/1430) vis-cli::prelude proc_cpu_la_percent
+        PASS [   0.010s] ( 536/1430) vis-cli::pkg_resolver xung_dot_qua_dep_neu_nguon
+        PASS [   0.010s] ( 537/1430) vis-cli::pkg_resolver rang_buoc_sai_cu_phap_exit_2
+        PASS [   0.009s] ( 538/1430) vis-cli::prelude duration_so_sanh_duoc
+        PASS [   0.008s] ( 539/1430) vis-cli::prelude it_viet_tuong_minh_tuong_duong
+        PASS [   0.008s] ( 540/1430) vis-cli::prelude khong_suy_duoc_kieu_thi_khong_bao_oan
+        PASS [   0.008s] ( 541/1430) vis-cli::prelude proc_cpu_sai_don_vi_la_vs0412
+        PASS [   0.009s] ( 542/1430) vis-cli::prelude so_sanh_cung_don_vi_size_thi_ok
+        PASS [   0.009s] ( 543/1430) vis-cli::prelude so_sanh_sai_kieu_la_vs0412
+        PASS [   0.008s] ( 544/1430) vis-cli::prelude truong_la_la_vs0605
+        PASS [   0.008s] ( 545/1430) vis-cli::prelude sort_by_khoa_co_kieu_that
+        PASS [   0.008s] ( 546/1430) vis-cli::prelude vis_khong_thay_prelude
+        PASS [   0.009s] ( 547/1430) vis-cli::prelude sort_by_khoa_la_la_vs0605
+        PASS [   0.010s] ( 548/1430) vis-cli::prelude where_size_tren_file_entry_chay_that
+        PASS [   0.011s] ( 549/1430) vis-cli::quyen doc_ngoai_quyen
+        PASS [   0.012s] ( 550/1430) vis-cli::prelude where_size_chay_that_ca_hai_duong
+        PASS [   0.012s] ( 551/1430) vis-cli::quyen doc_trong_quyen
+        PASS [   0.012s] ( 552/1430) vis-cli::quyen ghi_thieu_co
+        PASS [   0.011s] ( 553/1430) vis-cli::quyen khong_khai_cap_thi_khong_han_che
+        PASS [   0.014s] ( 554/1430) vis-cli::quyen ghi_co_co
+        PASS [   0.012s] ( 555/1430) vis-cli::quyen grant_doi_duong_dan
+        PASS [   0.013s] ( 556/1430) vis-cli::quyen hai_cap_dir
+        PASS [   0.009s] ( 557/1430) vis-cli::ref_identity ref_hai_doi_so_van_la_vs0201
+        PASS [   0.012s] ( 558/1430) vis-cli::quyen net_thieu_cap
+        PASS [   0.012s] ( 559/1430) vis-cli::ref_identity ref_giu_kieu_va_identity_hai_duong
+        PASS [   0.008s] ( 560/1430) vis-cli::render bang_co_tieu_de_va_can_phai_so
+        PASS [   0.013s] ( 561/1430) vis-cli::ref_identity ref_khong_con_chan_doan_khi_chay
+        PASS [   0.009s] ( 562/1430) vis-cli::render ban_ghi_don_la_khoi_khoa_gia_tri
+        PASS [   0.008s] ( 563/1430) vis-cli::render bang_giu_thu_tu_cot_cua_ban_ghi_dau
+        PASS [   0.010s] ( 564/1430) vis-cli::ref_identity ref_khong_muon_that_chi_la_identity
+        PASS [   0.009s] ( 565/1430) vis-cli::render bang_mot_phan_tu_van_la_bang
+        PASS [   0.012s] ( 566/1430) vis-cli::render bang_ca_hai_duong_giong_nhau_tung_byte
+        PASS [   0.009s] ( 567/1430) vis-cli::render cjk_mot_char
+        PASS [   0.009s] ( 568/1430) vis-cli::render cot_str_can_trai
+        PASS [   0.008s] ( 569/1430) vis-cli::render emoji_mot_char
+        PASS [   0.008s] ( 570/1430) vis-cli::render khoi_can_khoa_theo_ten_dai_nhat
+        PASS [   0.009s] ( 571/1430) vis-cli::render list_str_cuoi_pipeline_khong_thanh_bang
+        PASS [   0.011s] ( 572/1430) vis-cli::render list_int_cuoi_pipeline_khong_thanh_bang
+        PASS [   0.008s] ( 573/1430) vis-cli::render size_duration_percent_can_phai
+        PASS [   0.011s] ( 574/1430) vis-cli::render list_rong_la_rong
+        PASS [   0.009s] ( 575/1430) vis-cli::render print_khong_doi
+        PASS [   0.005s] ( 576/1430) vis-cli::sandbox sandbox_check_khong_cap
+        PASS [   0.006s] ( 577/1430) vis-cli::sandbox sandbox_check_co_la
+        PASS [   0.011s] ( 578/1430) vis-cli::render nfd_va_nfc_cung_do_rong
+        PASS [   0.011s] ( 579/1430) vis-cli::render tien_viet_nfc_dung_do_rong
+        PASS [   0.007s] ( 580/1430) vis-cli::sandbox sandbox_check_linux_doc_lsm
+        PASS [   0.006s] ( 581/1430) vis-cli::sandbox sandbox_check_voi_cap
+        PASS [   0.009s] ( 582/1430) vis-cli::sandbox sandbox_check_khong_chay
+        PASS [   0.007s] ( 583/1430) vis-cli::sap_xep co_la_la_vs0602
+        PASS [   0.008s] ( 584/1430) vis-cli::sandbox sandbox_check_luon_in_cuong_che
+        PASS [   0.008s] ( 585/1430) vis-cli::sap_xep duration_la_khoa_ns
+        PASS [   0.010s] ( 586/1430) vis-cli::sap_xep desc_bang_false_la_tang_dan
+        PASS [   0.010s] ( 587/1430) vis-cli::sap_xep desc_khong_bi_nuot_vao_khoa
+        PASS [   0.007s] ( 588/1430) vis-cli::sap_xep khoa_bool_la_vs0412
+        PASS [   0.009s] ( 589/1430) vis-cli::sap_xep int_giam_dan_bang_co_desc
+        PASS [   0.008s] ( 590/1430) vis-cli::sap_xep int_tang_dan
+        PASS [   0.008s] ( 591/1430) vis-cli::sap_xep on_dinh_khi_khoa_bang_nhau_tang
+        PASS [   0.008s] ( 592/1430) vis-cli::sap_xep size_la_khoa_byte
+        PASS [   0.011s] ( 593/1430) vis-cli::sap_xep on_dinh_khi_khoa_bang_nhau_desc_tren_size
+        PASS [   0.008s] ( 594/1430) vis-cli::sap_xep str_la_khoa_byte_utf8
+        PASS [   0.009s] ( 595/1430) vis-cli::sap_xep thieu_doi_so_la_vs0602
+        PASS [   0.009s] ( 596/1430) vis-cli::self_amp_hop_long self_amp_khong_nhan_chu_thich_kieu
+        PASS [   0.010s] ( 597/1430) vis-cli::self_amp_hop_long hop_long_sai_kieu_la_vs0412
+        PASS [   0.012s] ( 598/1430) vis-cli::self_amp_hop_long hop_long_bon_bien_the_chay_hai_duong
+        PASS [   0.011s] ( 599/1430) vis-cli::self_amp_hop_long self_amp_gan_ket_thuc_vao_receiver_that
+        PASS [   0.011s] ( 600/1430) vis-cli::self_amp_hop_long self_amp_trong_trait_va_impl
+        PASS [   0.012s] ( 601/1430) vis-cli::self_amp_hop_long self_amp_va_self_khoang_trang_chay_hai_duong
+        PASS [   0.012s] ( 602/1430) vis-cli::self_amp_hop_long self_thuong_van_nhu_cu
+        PASS [   0.008s] ( 603/1430) vis-cli::siet_caps_pkg hai_co_mau_thuan_exit_2
+        PASS [   0.014s] ( 604/1430) vis-cli::siet_caps_pkg co_pkg_va_khai_du_cap_thi_chay
+        PASS [   0.017s] ( 605/1430) vis-cli::siet_caps_pkg co_pkg_thieu_cap_bao_vs0604
+        PASS [   0.020s] ( 606/1430) vis-cli::siet_caps_pkg co_pkg_khong_cham_cap_ma_van_thoat_thi_canh_bao
+        PASS [   0.013s] ( 607/1430) vis-cli::siet_caps_pkg strict_caps_tuong_minh_van_siet
+        PASS [   0.017s] ( 608/1430) vis-cli::siet_caps_pkg khong_pkg_hanh_vi_cu
+        PASS [   0.015s] ( 609/1430) vis-cli::siet_caps_pkg thoat_bang_no_strict_caps_chay_va_canh_bao_mot_dong
+        PASS [   0.012s] ( 610/1430) vis-cli::so_ma a_la_tap_con_cua_b
+        PASS [   0.006s] ( 611/1430) vis-cli::so_ma moi_ma_du_ba_ngon_ngu
+        PASS [   0.006s] ( 612/1430) vis-cli::so_ma du_phong_rong_va_co_ly_do
+        PASS [   0.018s] ( 613/1430) vis-cli::siet_caps_pkg use_module_noi_bo_va_std_nhung_khong_pkg_giu_hanh_vi_cu
+        PASS [   0.016s] ( 614/1430) vis-cli::so_ma b_tru_a_dung_du_phong
+        PASS [   0.014s] ( 615/1430) vis-cli::soak_script vis_soak_hop_le_va_in_du_10_vong
+        PASS [   0.011s] ( 616/1430) vis-cli::sort_by_str khoa_khong_goi_duoc_neu_ten_hien_thi_moi
+        PASS [   0.014s] ( 617/1430) vis-cli::sort_by_str khoa_bool_bao_vs0501_va_neu_kieu_that
+        PASS [   0.013s] ( 618/1430) vis-cli::sort_by_str khoa_int_cu_khong_doi
+        PASS [   0.013s] ( 619/1430) vis-cli::sort_by_str khoa_str_chay_hai_duong_cung_byte
+        PASS [   0.008s] ( 620/1430) vis-cli::sort_by_str tron_int_va_str_la_vs0412_tinh
+        PASS [   0.019s] ( 621/1430) vis-cli::sort_by_str khoa_str_nhat_quan_voi_shell_sort_by
+        PASS [   0.020s] ( 622/1430) vis-cli::span_tep fixture_audit_hop_le
+        PASS [   0.016s] ( 623/1430) vis-cli::sqlite attach_bi_chan_va_khong_tao_tep
+        PASS [   0.014s] ( 624/1430) vis-cli::sqlite bind_thieu_hai_duong_cung_stderr
+        PASS [   0.026s] ( 625/1430) vis-cli::span_tep tap_bao_dung_tep_va_dong_cot_moi_ca
+        PASS [   0.029s] ( 626/1430) vis-cli::span_tep json_bao_dung_tep_va_dong_cot_moi_ca
+        PASS [   0.032s] ( 627/1430) vis-cli::span_tep da_tep_khop_tep_don
+        PASS [   0.012s] ( 628/1430) vis-cli::sqlite create_false_thieu_tep_la_err_du_lieu
+        PASS [   0.015s] ( 629/1430) vis-cli::sqlite db_da_co_wal_van_mo_duoc
+        PASS [   0.013s] ( 630/1430) vis-cli::sqlite mo_va_dong_memory_hai_duong
+        PASS [   0.041s] ( 631/1430) vis-cli::span_tep run_interp_va_vm_bao_dung_tep_dong_cot
+        PASS [   0.013s] ( 632/1430) vis-cli::sqlite phien_ban_sqlite_duoc_log_o_diagnostics
+        PASS [   0.011s] ( 633/1430) vis-cli::sqlite sqlvalue_null_ctor_chay
+        PASS [   0.020s] ( 634/1430) vis-cli::sqlite ro_canh_bao_chi_diagnostics
+        PASS [   0.017s] ( 635/1430) vis-cli::sqlite strict_caps_tu_choi_file_backed
+        PASS [   0.007s] ( 636/1430) vis-cli::st240_std_cli check_json_warning_mem_tra_ok_va_exit_zero
+        PASS [   0.024s] ( 637/1430) vis-cli::sqlite thong_diep_mac_dinh_khong_lo_fragment
+        PASS [   0.017s] ( 638/1430) vis-cli::sqlite uri_va_ten_rong_bi_tu_choi
+        PASS [   0.007s] ( 639/1430) vis-cli::st240_std_cli crlf_cung_vi_tri_voi_lf
+        PASS [   0.008s] ( 640/1430) vis-cli::st240_std_cli fmt_tep_neu_ten_khong_bi_bo_qua_va_co_ten_trong_chan_doan
+        PASS [   0.010s] ( 641/1430) vis-cli::st240_std_cli json_float_giu_dau_va_zero_dau_bi_tu_choi
+        PASS [   0.007s] ( 642/1430) vis-cli::st240_std_cli lsp_header_cut_va_eof_sach_phan_biet_ro
+        PASS [   0.011s] ( 643/1430) vis-cli::st240_std_cli ls_long_mtime_tuong_lai_khong_in_nam_sai
+        PASS [   0.019s] ( 644/1430) vis-cli::st240_std_cli json_non_finite_va_path_goc
+        PASS [   0.009s] ( 645/1430) vis-cli::st240_std_cli sort_mot_phan_tu_nan_cung_bao_loi
+        PASS [   0.011s] ( 646/1430) vis-cli::st240_std_cli sort_nan_bao_loi_khong_sap_mot_phan
+        PASS [   0.073s] ( 647/1430) vis-cli::sqlite nhieu_lan_chay_trong_cung_mot_process
+        PASS [   0.010s] ( 648/1430) vis-cli::st240_std_cli trap_trong_module_bao_dung_tep_hai_engine
+        PASS [   0.004s] ( 649/1430) vis-cli::st246_cache_compat khoa_cache_co_version_trong_nguon
+        PASS [   0.025s] ( 650/1430) vis-cli::st240_std_cli percent_vuot_mien_loi_khong_bao_hoa_hai_engine
+        PASS [   0.013s] ( 651/1430) vis-cli::st246_cache_compat cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine
+        PASS [   0.012s] ( 652/1430) vis-cli::st83_no_nho assert_trong_test_fn_not_ok
+        PASS [   0.008s] ( 653/1430) vis-cli::st83_no_nho exists_ngoai_quyen_trap
+        PASS [   0.017s] ( 654/1430) vis-cli::st83_no_nho assert_cau_lenh_va_sai
+        PASS [   0.009s] ( 655/1430) vis-cli::st83_no_nho exists_strict_khong_cap_trap
+        PASS [   0.008s] ( 656/1430) vis-cli::st83_no_nho explain_help_theo_lang
+        PASS [   0.011s] ( 657/1430) vis-cli::st83_no_nho exists_trong_quyen_tra_bool
+        PASS [   0.009s] ( 658/1430) vis-cli::stage_dau bien_va_so_khong_duoc_nhan
+        PASS [   0.009s] ( 659/1430) vis-cli::stage_dau golden_ca24_va_ca_a_or_b_khong_doi
+        PASS [   0.006s] ( 660/1430) vis-cli::stage_dau list_literal_dau_pipeline
+        PASS [   0.007s] ( 661/1430) vis-cli::stage_dau lenh_thuong_khong_doi
+        PASS [   0.006s] ( 662/1430) vis-cli::stage_dau list_literal_khong_co_pipe_van_vs0201
+        PASS [   0.015s] ( 663/1430) vis-cli::stage_dau interp_va_vm_cung_byte
+        PASS [   0.007s] ( 664/1430) vis-cli::stage_dau list_literal_nhieu_stage
+        PASS [   0.007s] ( 665/1430) vis-cli::stage_dau nhom_ngoac_cu_khong_doi
+        PASS [   0.008s] ( 666/1430) vis-cli::stage_dau record_literal_dau_where_chay_that
+        PASS [   0.007s] ( 667/1430) vis-cli::stage_dau record_literal_where_loc_sach
+        PASS [   0.007s] ( 668/1430) vis-cli::stage_dau string_literal_dau_lines
+        PASS [   0.010s] ( 669/1430) vis-cli::stage_dau record_literal_select_va_take
+        PASS [   0.012s] ( 670/1430) vis-cli::std_fs_json decode_van_la_result_that
+        PASS [   0.010s] ( 671/1430) vis-cli::std_fs_json escape_co_ban
+        PASS [   0.015s] ( 672/1430) vis-cli::std_fs_json escape_surrogate_pair
+        PASS [   0.009s] ( 673/1430) vis-cli::std_fs_json explain_perms_in_fs_nhat_ky
+        PASS [   0.016s] ( 674/1430) vis-cli::std_fs_json differential_fs_va_json_khop_hai_duong
+        PASS [   0.011s] ( 675/1430) vis-cli::std_fs_json float_tran_la_loi
+        PASS [   0.010s] ( 676/1430) vis-cli::std_fs_json fs_ghi_vao_duong_dan_sai_la_err
+        PASS [   0.012s] ( 677/1430) vis-cli::std_fs_json fs_exists_va_read_thieu_la_err
+        PASS [   0.012s] ( 678/1430) vis-cli::std_fs_json fs_duong_dan_tuyet_doi_duoc_phep
+        PASS [   0.012s] ( 679/1430) vis-cli::std_fs_json fs_list_sap_xep_khong_de_quy
+        PASS [   0.012s] ( 680/1430) vis-cli::std_fs_json fs_write_read_round_trip
+        PASS [   0.011s] ( 681/1430) vis-cli::std_fs_json json_hong_co_byte_offset
+        PASS [   0.007s] ( 682/1430) vis-cli::std_fs_json khong_host_bao_vs0604_ca_interp_va_vm
+        PASS [   0.012s] ( 683/1430) vis-cli::std_fs_json json_hong_utf8_nhieu_byte_offset_van_dung
+        PASS [   0.011s] ( 684/1430) vis-cli::std_fs_json khong_host_json_van_chay_vi_thuan
+        PASS [   0.011s] ( 685/1430) vis-cli::std_fs_json round_trip_ban_ghi_thanh_map
+        PASS [   0.011s] ( 686/1430) vis-cli::std_fs_json round_trip_chuoi_va_unicode
+        PASS [   0.028s] ( 687/1430) vis-cli::std_fs_json json_hong_thieu_ngoac_va_literal_sai
+        PASS [   0.010s] ( 688/1430) vis-cli::std_fs_json so_tran_i64_la_loi
+        PASS [   0.239s] ( 689/1430) vis-cli::soak_script vis_soak_goi_vis_dev_o_goc_repo
+        PASS [   0.018s] ( 690/1430) vis-cli::std_fs_json round_trip_long_nhau_va_trung_khoa
+        PASS [   0.026s] ( 691/1430) vis-cli::std_fs_json round_trip_list_va_map_giu_thu_tu
+        PASS [   0.174s] ( 692/1430) vis-cli::sqlite workload_50k_rows_sum_avg_ca_hai_duong
+        PASS [   0.007s] ( 693/1430) vis-cli::stdlib json_decode_da_co
+        PASS [   0.007s] ( 694/1430) vis-cli::stdlib khong_use_thi_khong_goi_duoc_std
+        PASS [   0.017s] ( 695/1430) vis-cli::std_fs_json surrogate_don_la_loi
+        PASS [   0.017s] ( 696/1430) vis-cli::stdlib ba_ca_am_tinh_cua_chu_ky_generic
+        PASS [   0.007s] ( 697/1430) vis-cli::stdlib sai_so_doi_so_bi_tyck_bat
+        PASS [   0.012s] ( 698/1430) vis-cli::stdlib sai_kieu_bi_tyck_bat_tinh
+        PASS [   0.007s] ( 699/1430) vis-cli::stdlib std_la_bao_vs0705
+        PASS [   0.007s] ( 700/1430) vis-cli::stdlib str_repeat_am_la_vs0501
+        PASS [   0.010s] ( 701/1430) vis-cli::stdlib std_fs_bao_st27
+        PASS [   0.010s] ( 702/1430) vis-cli::strict_caps mac_dinh_khong_siet
+        PASS [   0.010s] ( 703/1430) vis-cli::strict_caps strict_cap_dir_trong_root
+        PASS [   0.011s] ( 704/1430) vis-cli::strict_caps strict_cap_dir_ngoai_root
+        PASS [   0.056s] ( 705/1430) vis-cli::std_fs_json round_trip_so_va_bool_va_none
+        PASS [   0.010s] ( 706/1430) vis-cli::strict_caps strict_khong_cap_doc_thi_vs0604
+        PASS [   0.010s] ( 707/1430) vis-cli::strict_caps strict_khong_cap_net_thi_vs0604
+        PASS [   0.011s] ( 708/1430) vis-cli::strict_caps strict_van_kiem_tren_fs_mock
+        PASS [   0.005s] ( 709/1430) vis-cli::sync_list check_sync_khong_ssh_khong_rsync
+        PASS [   0.012s] ( 710/1430) vis-cli::sync_list check_sync_du_het_thi_exit_0_trong_cay_gia
+        PASS [   0.015s] ( 711/1430) vis-cli::strict_caps vis_test_strict_caps_truyen_co
+        PASS [   0.011s] ( 712/1430) vis-cli::sync_list check_sync_tai_repo_that_in_du_8_muc_va_exit_0
+        PASS [   0.005s] ( 713/1430) vis-cli::sync_list sync_dirs_dung_tap
+        PASS [   0.011s] ( 714/1430) vis-cli::sync_list check_sync_thieu_mot_muc_thi_exit_2
+        PASS [   0.005s] ( 715/1430) vis-cli::sync_list sync_files_dung_tap
+        PASS [   0.011s] ( 716/1430) vis-cli::sync_list help_co_check_sync
+        PASS [   0.005s] ( 717/1430) vis-cli::sync_list sync_tree_chi_dung_hai_bien
+        PASS [   0.005s] ( 718/1430) vis-cli::sync_list vis_linux_hop_le_va_hai_bien_nam_o_dau_tep
+        PASS [   0.321s] ( 719/1430) vis-cli::sqlite hai_ket_noi_tranh_khoa_busy_timeout
+        PASS [   0.023s] ( 720/1430) vis-cli::test_timeout nhanh_voi_han_lon_van_ok
+        PASS [   0.130s] ( 721/1430) vis-cli::test_timeout in_nhieu_khong_bi_qua_han_oan
+        PASS [   0.010s] ( 722/1430) vis-cli::test_timeout timeout_sai_exit2
+        PASS [   0.208s] ( 723/1430) vis-cli::stdlib std_70_ca_qua_binary
+        PASS [   0.010s] ( 724/1430) vis-cli::trait_cli check_va_run_cung_ket_luan_phuong_thuc
+        PASS [   0.013s] ( 725/1430) vis-cli::trait_cli derives_eq_show_json_chay_that
+        PASS [   0.007s] ( 726/1430) vis-cli::trait_cli derives_la_bao_vs0403
+        PASS [   0.011s] ( 727/1430) vis-cli::trait_cli dispatch_impl_show_chay_ca_hai_duong
+        PASS [   0.011s] ( 728/1430) vis-cli::trait_cli dispatch_inherent_hai_duong
+        PASS [   0.009s] ( 729/1430) vis-cli::trait_cli impl_thieu_phuong_thuc_trait_la_vs0403
+        PASS [   0.008s] ( 730/1430) vis-cli::trait_cli thieu_phuong_thuc_la_vs0403_va_noi_phuong_thuc
+        PASS [   0.007s] ( 731/1430) vis-cli::vd_204 match_option_thieu_nhanh_la_loi_hoi_quy
+        PASS [   0.232s] ( 732/1430) vis-cli::test_timeout in_nhieu_roi_fail_bao_dung_loi
+        PASS [   0.007s] ( 733/1430) vis-cli::vd_204 ten_du_tru_khong_chan_ben_trong_ham
+        PASS [   0.009s] ( 734/1430) vis-cli::vd_204 toan_tu_hoi_quy_van_dung
+        PASS [   0.013s] ( 735/1430) vis-cli::vd_205 anyerror_bao_sai_kieu
+        PASS [   0.011s] ( 736/1430) vis-cli::vd_205 anyerror_la_alias_error
+        PASS [   0.041s] ( 737/1430) vis-cli::vd_204 ten_du_tru_toan_cuc_bi_tu_choi
+        PASS [   0.008s] ( 738/1430) vis-cli::vd_205 anyerror_none_annot_check_vs0412
+        PASS [   0.011s] ( 739/1430) vis-cli::vd_205 anyerror_none_field_engine_parity
+        PASS [   0.012s] ( 740/1430) vis-cli::vd_205 decode_err_ban_ghi_error
+        PASS [   0.013s] ( 741/1430) vis-cli::vd_205 decode_ok_match_json_arr
+        PASS [   0.028s] ( 742/1430) vis-cli::vd_205 decode_null_bool_num
+        PASS [   0.011s] ( 743/1430) vis-cli::vd_205 encode_decode_round_trip
+        PASS [   0.314s] ( 744/1430) vis-cli::test_timeout json_message_qua_han
+        PASS [   0.010s] ( 745/1430) vis-cli::vd_205 escape_multibyte_order_preserved
+        PASS [   0.013s] ( 746/1430) vis-cli::vd_205 error_record_co_du_truong
+        PASS [   0.008s] ( 747/1430) vis-cli::vd_205 impl_error_thieu_phuong_thuc_bao_vs0403
+        PASS [   0.012s] ( 748/1430) vis-cli::vd_205 impl_error_du_ba_phuong_thuc_chay
+        PASS [   0.022s] ( 749/1430) vis-cli::vd_205 escape_unicode_valid_and_validation
+        PASS [   0.010s] ( 750/1430) vis-cli::vd_205 json_encode_owned_value_engine_parity
+        PASS [   0.008s] ( 751/1430) vis-cli::vd_205 match_json_khong_du_nhanh_bao_vs0402
+        PASS [   0.020s] ( 752/1430) vis-cli::vd_205 main_result_err_exits_1_engine_parity
+        PASS [   0.010s] ( 753/1430) vis-cli::vd_205 none_tran_cho_option_la_ok
+        PASS [   0.021s] ( 754/1430) vis-cli::vd_205 none_tran_chi_gan_duoc_cho_option
+        PASS [   0.012s] ( 755/1430) vis-cli::vd_205 ten_dun_san_du_bi_vs0302
+        PASS [   0.435s] ( 756/1430) vis-cli::stdlib std_differential_interp_va_vm
+        PASS [   0.039s] ( 757/1430) vis-cli::vd_205 none_dich_ngoai_cung_option_la_ok
+        PASS [   0.011s] ( 758/1430) vis-cli::vd_205 vd241_forty_two_opt2_la_loi
+        PASS [   0.007s] ( 759/1430) vis-cli::vd_212 enum_bien_the_sai_hoa_thuong_la_loi
+        PASS [   0.007s] ( 760/1430) vis-cli::vd_212 let_ctor_khong_khop_kieu_has_goi_y
+        PASS [   0.017s] ( 761/1430) vis-cli::vd_208 ctor_dung_nhu_ham_ca_hai_duong
+        PASS [   0.011s] ( 762/1430) vis-cli::vd_212 enum_hai_bien_the_a_va_hoa_a
+        PASS [   0.009s] ( 763/1430) vis-cli::vd_215 bien_k_trong_ngoac_van_la_ban_ghi
+        PASS [   0.011s] ( 764/1430) vis-cli::vd_212 pattern_dung_hoa_thuong_van_chay_hai_duong
+        PASS [   0.012s] ( 765/1430) vis-cli::vd_212 pattern_sai_hoa_thuong_la_loi
+        PASS [   0.328s] ( 766/1430) vis-cli::test_timeout tiep_tuc_sau_ca_treo
+        PASS [   0.010s] ( 767/1430) vis-cli::vd_215 khoa_tinh_toan_ngoac_in_ra_map
+        PASS [   0.011s] ( 768/1430) vis-cli::vd_215 chuoi_cong_ngoac_la_map
+        PASS [   0.010s] ( 769/1430) vis-cli::vd_215 list_key_chay_va_ra_map_khoa_danh_sach
+        PASS [   0.007s] ( 770/1430) vis-cli::vd_218 disassemble_khong_lo_prefix
+        PASS [   0.019s] ( 771/1430) vis-cli::vd_215 list_key_canh_bao_vs0208
+        PASS [   0.011s] ( 772/1430) vis-cli::vd_215 tron_khoa_ca_hai_thu_tu_ra_vs0207
+        PASS [   0.012s] ( 773/1430) vis-cli::vd_218 builtin_len_as_value_khong_lo_prefix
+        PASS [   0.007s] ( 774/1430) vis-cli::vd_223 goi_tran_str_sau_bien_tru_vs0412
+        PASS [   0.010s] ( 775/1430) vis-cli::vd_218 in_gia_tri_some_o_ca_hai_duong
+        PASS [   0.073s] ( 776/1430) vis-cli::vd_205 option_coercion_matrix
+        PASS [   0.010s] ( 777/1430) vis-cli::vd_223 khong_use_thi_khong_canh_bao
+        PASS [   0.013s] ( 778/1430) vis-cli::vd_223 std_call_van_giu_nguyen_sau_dang_ky_bien
+        PASS [   0.010s] ( 779/1430) vis-cli::vd_223 ten_cu_phap_flag_hop_le_ca_hai_duong
+        PASS [   0.010s] ( 780/1430) vis-cli::vd_223 trung_ten_module_std_ra_vs0211
+        PASS [   0.011s] ( 781/1430) vis-cli::vd_226 vd226_none_entry_skip
+        PASS [   0.013s] ( 782/1430) vis-cli::vd_226 vd226_exhaust_marker
+        PASS [   0.011s] ( 783/1430) vis-cli::vd_226 vd226_one_shot_some
+        PASS [   0.009s] ( 784/1430) vis-cli::vd_226 vd226_pattern_mismatch_skips
+        PASS [   0.011s] ( 785/1430) vis-cli::vd_226 vd226_plain_some_int_typed
+        PASS [   0.011s] ( 786/1430) vis-cli::vd_226 vd226_terminates_and_continues_after
+        PASS [   0.012s] ( 787/1430) vis-cli::vd_226 vd226_tuple_pattern_wrapped
+        PASS [   0.010s] ( 788/1430) vis-cli::vd_227 vd227_already_some
+        PASS [   0.011s] ( 789/1430) vis-cli::vd_226 vd226_xs_get_consume
+        PASS [   0.012s] ( 790/1430) vis-cli::vd_227 vd227_expr_into_ann
+        PASS [   0.011s] ( 791/1430) vis-cli::vd_227 vd227_fn_ret_raw
+        PASS [   0.011s] ( 792/1430) vis-cli::vd_227 vd227_let_opt_lift
+        PASS [   0.010s] ( 793/1430) vis-cli::vd_227 vd227_none_literal
+        PASS [   0.012s] ( 794/1430) vis-cli::vd_227 vd227_mixed_lit_ann
+        PASS [   0.339s] ( 795/1430) vis-cli::test_timeout treo_bi_giet_trong_3s
+        PASS [   0.013s] ( 796/1430) vis-cli::vd_228 vd228_branch_join
+        PASS [   0.012s] ( 797/1430) vis-cli::vd_228 vd228_closure_ret_lift
+        PASS [   0.011s] ( 798/1430) vis-cli::vd_228 vd228_early_return_lift
+        PASS [   0.012s] ( 799/1430) vis-cli::vd_228 vd228_impl_method_lift
+        PASS [   0.014s] ( 800/1430) vis-cli::vd_228 vd228_nested_let_flat
+        PASS [   0.012s] ( 801/1430) vis-cli::vd_228 vd228_nested_opt_real
+        PASS [   0.010s] ( 802/1430) vis-cli::vd_228 vd228_no_double_wrap
+        PASS [   0.011s] ( 803/1430) vis-cli::vd_228 vd228_none_stays
+        PASS [   0.011s] ( 804/1430) vis-cli::vd_228 vd228_param_int_lift
+        PASS [   0.013s] ( 805/1430) vis-cli::vd_228 vd228_param_named_default_lift
+        PASS [   0.012s] ( 806/1430) vis-cli::vd_228 vd228_param_named_str_default_lift
+        PASS [   0.010s] ( 807/1430) vis-cli::vd_228 vd228_param_some_passthrough
+        PASS [   0.011s] ( 808/1430) vis-cli::vd_228 vd228_param_none_passthrough
+        PASS [   0.009s] ( 809/1430) vis-cli::vd_228 vd228_plain_str_lift
+        PASS [   0.010s] ( 810/1430) vis-cli::vd_228 vd228_plain_int_lift
+        PASS [   0.006s] ( 811/1430) vis-cli::vis_test co_la_la_dung_sai_thoat_2
+        PASS [   0.006s] ( 812/1430) vis-cli::vis_test duong_dan_khong_ton_tai_thoat_2
+        PASS [   0.010s] ( 813/1430) vis-cli::vis_test ca_do_thoat_1_va_co_dong_chi_vi_tri
+        PASS [   0.008s] ( 814/1430) vis-cli::vis_test ca_loi_dung_ma_thi_ok
+        PASS [   0.012s] ( 815/1430) vis-cli::vd_228 vd228_s1_exact_repro
+        PASS [   0.011s] ( 816/1430) vis-cli::vis_test mot_tep_chay_duoc
+        PASS [   0.014s] ( 817/1430) vis-cli::vis_test err_bien_dich_ra_cung_ma_o_vm
+        PASS [   0.012s] ( 818/1430) vis-cli::vis_test tap_moi_not_ok_deu_co_dong_chan_doan
+        PASS [   0.007s] ( 819/1430) vis-cli::vish_cmd_body bien_bind_cap_tep_trung_ten_lenh_la_bieu_thuc
+        PASS [   0.007s] ( 820/1430) vis-cli::vish_cmd_body duong_thoat_ngoac_van_la_bieu_thuc
+        PASS [   0.012s] ( 821/1430) vis-cli::vish_cmd_body chou_ky_cmd_kiem_tinh_where
+        PASS [   0.015s] ( 822/1430) vis-cli::vish_cmd_body fixture_cmd_body
+        PASS [   0.008s] ( 823/1430) vis-cli::vish_cmd_body item_sau_than_lenh_van_dung_dong_cot
+        PASS [   0.015s] ( 824/1430) vis-cli::vish_cmd_body interp_va_vm_cung_byte
+        PASS [   0.008s] ( 825/1430) vis-cli::vish_cmd_body khong_bind_van_la_lenh
+        PASS [   0.008s] ( 826/1430) vis-cli::vish_cmd_body let_trong_than_van_la_bieu_thuc
+        PASS [   0.008s] ( 827/1430) vis-cli::vish_cmd_body than_dung_nhu_stage_khac
+        PASS [   0.008s] ( 828/1430) vis-cli::vish_cmd_body than_hai_pipeline_la_vs0201
+        PASS [   0.010s] ( 829/1430) vis-cli::vish_cmd_body than_goi_cmd_khac_trong_pipeline
+        PASS [   0.008s] ( 830/1430) vis-cli::vish_cmd_body than_khai_bao_sau_lenh_van_la_vs0201
+        PASS [   0.014s] ( 831/1430) vis-cli::vish_cmd_body than_khai_bao_roi_lenh_chay_duoc
+        PASS [   0.008s] ( 832/1430) vis-cli::vish_cmd_body than_lan_lenh_va_bieu_thuc_la_vs0201
+        PASS [   0.009s] ( 833/1430) vis-cli::vish_cmd_body than_lenh_tren_thu_muc_that
+        PASS [   0.008s] ( 834/1430) vis-cli::vish_cmd_body than_long_tra_file_entry_long
+        PASS [   0.008s] ( 835/1430) vis-cli::vish_cmd_body than_mot_stage_tra_bang
+        PASS [   0.007s] ( 836/1430) vis-cli::vish_cmd_body than_rong_la_vs0201
+        PASS [   0.009s] ( 837/1430) vis-cli::vish_cmd_body than_nhieu_stage_where_va_sort_by
+        PASS [   0.013s] ( 838/1430) vis-cli::vish_cmd_body than_script_st44_khong_doi
+        PASS [   0.009s] ( 839/1430) vis-cli::vish_decl cmd_co_tham_so_va_let_trong_than
+        PASS [   0.008s] ( 840/1430) vis-cli::vish_decl cmd_rong_ra_rong_dung_render
+        PASS [   0.010s] ( 841/1430) vis-cli::vish_decl cmd_tra_record_list_kiem_tinh_qua_khe_ong
+        PASS [   0.008s] ( 842/1430) vis-cli::vish_decl enum_trong_vish
+        PASS [   0.017s] ( 843/1430) vis-cli::vish_decl fixture_cmd_decl
+        PASS [   0.015s] ( 844/1430) vis-cli::vish_decl fixture_st42_van_xanh
+        PASS [   0.014s] ( 845/1430) vis-cli::vish_decl in_va_vm_cung_byte
+        PASS [   0.008s] ( 846/1430) vis-cli::vish_decl khai_bao_sau_stage_la_vs0201
+        PASS [   0.007s] ( 847/1430) vis-cli::vish_decl let_co_kieu_dung_script
+        PASS [   0.008s] ( 848/1430) vis-cli::vish_decl let_shell_van_la_stage
+        PASS [   0.009s] ( 849/1430) vis-cli::vish_decl nhom_rong_dung_mot_minh_la_vs0201
+        PASS [   0.007s] ( 850/1430) vis-cli::vish_decl type_trung_ten_trong_tep_la_vs0302
+        PASS [   0.013s] ( 851/1430) vis-cli::vish_decl type_trung_prelude_la_vs0302
+        PASS [   0.009s] ( 852/1430) vis-cli::vish_decl vis_khong_bi_anh_huong
+        PASS [   0.011s] ( 853/1430) vis-cli::vish_decl type_va_let_dung_duoc_truong
+        PASS [   0.009s] ( 854/1430) vis-cli::vish_decl vish_khong_khai_bao_giu_nguyen_vung_6
+        PASS [   0.012s] ( 855/1430) vis-cli::vish_indent dong_thut_dau_bao_loi
+        PASS [   0.014s] ( 856/1430) vis-cli::vish_indent ca_tep_thut_bao_loi
+        PASS [   0.011s] ( 857/1430) vis-cli::vish_indent dong_thut_sau_bao_loi
+        PASS [   0.011s] ( 858/1430) vis-cli::vish_indent khai_bao_fn_trong_vish_van_hop_le
+        PASS [   0.012s] ( 859/1430) vis-cli::vish_indent nhom_nhieu_dong_van_hop_le
+        PASS [   0.017s] ( 860/1430) vis-cli::vish_indent than_cmd_thut_van_chay
+        PASS [   0.010s] ( 861/1430) vis-cli::vish_indent vis_script_van_hop_le
+        PASS [   0.011s] ( 862/1430) vis-cli::vish_main main_co_assert_bao_vs0201
+        PASS [   0.010s] ( 863/1430) vis-cli::vish_main main_co_let_bao_vs0201
+        PASS [   0.011s] ( 864/1430) vis-cli::vish_main main_co_lenh_bao_vs0201
+        PASS [   0.011s] ( 865/1430) vis-cli::vish_main vis_main_binh_thuong_khong_doi
+        PASS [   0.012s] ( 866/1430) vis-cli::vish_nhom_vi_tri cong_dau_tep_tro_toan_hang_trai
+        PASS [   0.023s] ( 867/1430) vis-cli::vish_main main_rong_va_pipeline_hop_le
+        PASS [   0.011s] ( 868/1430) vis-cli::vish_nhom_vi_tri khong_xuong_dong_cuoi_tep
+        PASS [   0.013s] ( 869/1430) vis-cli::vish_nhom_vi_tri giu_dung_khi_bieu_thuc_xa_dau_tep
+        PASS [   0.011s] ( 870/1430) vis-cli::vish_nhom_vi_tri lambda_dau_tep_tro_toan_hang_trai
+        PASS [   0.012s] ( 871/1430) vis-cli::vish_nhom_vi_tri lambda_dong_hai_tro_toan_hang_trai
+        PASS [   0.013s] ( 872/1430) vis-cli::vish_nhom_vi_tri lambda_dau_tep_van_la_bieu_thuc
+        PASS [   0.012s] ( 873/1430) vis-cli::vish_nhom_vi_tri lambda_roi_take_tro_toan_hang_trai
+        PASS [   0.010s] ( 874/1430) vis-cli::vish_nhom_vi_tri list_dau_tep_tro_phan_tu_sai
+        PASS [   0.013s] ( 875/1430) vis-cli::vish_nhom_vi_tri nhom_dong_hai_tro_phan_tu_sai
+        PASS [   0.012s] ( 876/1430) vis-cli::vish_nhom_vi_tri nhom_roi_take_tro_phan_tu_sai
+        PASS [   0.014s] ( 877/1430) vis-cli::vistest_async await_fn_cap_tep
+        PASS [   0.014s] ( 878/1430) vis-cli::vistest_async kenh_deadlock_not_ok_khong_treo
+        PASS [   0.020s] ( 879/1430) vis-cli::vistest_async hon_test_thuong_va_async
+        PASS [   0.016s] ( 880/1430) vis-cli::vistest_async kenh_send_recv
+        PASS [   0.015s] ( 881/1430) vis-cli::vistest_async khong_await_van_join_va_loi
+        PASS [   0.014s] ( 882/1430) vis-cli::vistest_async spawn_ba_task_dung_thu_tu
+        PASS [   0.014s] ( 883/1430) vis-cli::vistest_async task_loi_not_ok_vs0506
+        PASS [   0.013s] ( 884/1430) vis-cli::vm_main_argv argv_dau_cap_sau
+        PASS [   0.016s] ( 885/1430) vis-cli::vistest_async task_roi_await
+        PASS [   0.013s] ( 886/1430) vis-cli::vm_main_argv cap_dau_argv_sau
+        PASS [   0.013s] ( 887/1430) vis-cli::vm_main_argv main_khong_tham_so_giu_nguyen
+        PASS [   0.014s] ( 888/1430) vis-cli::vm_main_argv main_khong_cap_nhan_argv
+        PASS [   0.010s] ( 889/1430) vis-cli::vsh1b chan_doan_tuyet_doi_trong_nhom
+        PASS [   0.009s] ( 890/1430) vis-cli::vsh1b khong_long_giu_bang_4_cot
+        PASS [   0.008s] ( 891/1430) vis-cli::vsh1b long_co_du_sau_cot
+        PASS [   0.009s] ( 892/1430) vis-cli::vsh1b long_mode_dung_quyen
+        PASS [   0.009s] ( 893/1430) vis-cli::vsh1b long_modified_time_utc
+        PASS [   0.022s] ( 894/1430) vis-cli::vsh1b fixture_cmd_long
+        PASS [   0.009s] ( 895/1430) vis-cli::vsh1b long_tren_thu_muc_that
+        PASS [   0.011s] ( 896/1430) vis-cli::vsh1b long_where_va_sort_by_van_chay
+        PASS [   0.014s] ( 897/1430) vis-cli::vsh1b long_va_khong_long_cung_byte_interp_vm
+        PASS [   0.009s] ( 898/1430) vis-cli::vsh1b nhom_lam_doi_so_echo
+        PASS [   0.007s] ( 899/1430) vis-cli::vsh1b nhom_lam_doi_so_sai_kieu_la_vs0412
+        PASS [   0.008s] ( 900/1430) vis-cli::vsh1b nhom_lam_doi_so_take
+        PASS [   0.009s] ( 901/1430) vis-cli::vsh1b nhom_lam_stage_van_chay
+        PASS [   0.008s] ( 902/1430) vis-cli::vsh1b nhom_long_nhau
+        PASS [   0.008s] ( 903/1430) vis-cli::vsh1b shell_let_st44_khong_doi
+        PASS [   0.009s] ( 904/1430) vis-cli::where_tinh each_tra_ban_ghi_sach
+        PASS [   0.008s] ( 905/1430) vis-cli::where_tinh each_tra_int_sach
+        PASS [   0.007s] ( 906/1430) vis-cli::where_tinh each_van_bao_truong_khong_co
+        PASS [   0.008s] ( 907/1430) vis-cli::where_tinh khai_bao_cmd_where_size_la_vs0412
+        PASS [   0.009s] ( 908/1430) vis-cli::where_tinh khai_bao_cmd_where_bool_thi_chay_duoc
+        PASS [   0.016s] ( 909/1430) vis-cli::where_tinh fixture_cmd_where
+        PASS [   0.007s] ( 910/1430) vis-cli::where_tinh where_1_la_vs0412
+        PASS [   0.006s] ( 911/1430) vis-cli::where_tinh where_closure_khong_it_la_vs0412
+        PASS [   0.008s] ( 912/1430) vis-cli::where_tinh where_it_size_la_vs0412
+        PASS [   0.008s] ( 913/1430) vis-cli::where_tinh where_size_la_vs0412
+        PASS [   0.011s] ( 914/1430) vis-cli::where_tinh where_interp_va_vm_cung_byte
+        PASS [   0.008s] ( 915/1430) vis-cli::where_tinh where_tren_kieu_khong_biet_khong_loi_tinh
+        PASS [   0.009s] ( 916/1430) vis-cli::where_tinh where_so_sanh_bool_thi_sach
+        PASS [   0.008s] ( 917/1430) vis-cli::where_tinh where_viet_tat_truong_khong_co_la_vs0405
+        PASS [   0.005s] ( 918/1430) vis-cli::bin/vis cache::tests::khoa_cache_doi_khi_bang_the_doi
+        PASS [   0.006s] ( 919/1430) vis-cli::bin/vis cache::tests::khoa_cache_ghim
+        PASS [   0.006s] ( 920/1430) vis-cli::bin/vis cache::tests::khoa_cache_v1_khong_duoc_tai_dung_v2
+        PASS [   0.006s] ( 921/1430) vis-cli::bin/vis cli::check::tests::ten_goc_du
+        PASS [   0.005s] ( 922/1430) vis-cli::bin/vis cli::check::tests::ten_goc_khong_co_dau
+        PASS [   0.006s] ( 923/1430) vis-cli::bin/vis cli::check::tests::ten_goc_unix
+        PASS [   0.006s] ( 924/1430) vis-cli::bin/vis cli::check::tests::ten_goc_windows
+        PASS [   0.007s] ( 925/1430) vis-cli::bin/vis db::sqlite::tests::authorizer_chan_attach_pragma_ghi_load_extension
+        PASS [   0.006s] ( 926/1430) vis-cli::bin/vis db::sqlite::tests::bind_thieu_thua_bi_tu_choi
+        PASS [   0.006s] ( 927/1430) vis-cli::bin/vis db::sqlite::tests::busy_ngoai_khoang_bi_tu_choi
+        PASS [   0.006s] ( 928/1430) vis-cli::bin/vis db::sqlite::tests::chinh_sach_action_code_ma_tran
+        PASS [   0.038s] ( 929/1430) vis-cli::bin/vis audit_span::moi_node_hir_mang_dung_file_cua_tep_sinh_ra_no
+        PASS [   0.006s] ( 930/1430) vis-cli::bin/vis db::sqlite::tests::chinh_sach_ham_load_extension_bi_cam
+        PASS [   0.007s] ( 931/1430) vis-cli::bin/vis db::sqlite::tests::cleanup_dong_moi_connection_trong_phien_va_dem
+        PASS [   0.006s] ( 932/1430) vis-cli::bin/vis db::sqlite::tests::create_false_thieu_tep_la_loi_du_lieu_khong_phai_du_lieu_cat
+        PASS [   0.007s] ( 933/1430) vis-cli::bin/vis db::sqlite::tests::connection_thu_17_bi_tu_choi
+        PASS [   0.007s] ( 934/1430) vis-cli::bin/vis db::sqlite::tests::db_da_co_wal_van_mo_duoc
+        PASS [   0.005s] ( 935/1430) vis-cli::bin/vis db::sqlite::tests::execute_tra_hang_phat_hien_truoc_step_khong_side_effect
+        PASS [   0.007s] ( 936/1430) vis-cli::bin/vis db::sqlite::tests::file_backed_mac_dinh_mo_duoc_va_ghi_doc_lai
+        PASS [   0.006s] ( 937/1430) vis-cli::bin/vis db::sqlite::tests::giao_dich_rollback_khong_auto_commit
+        PASS [   0.006s] ( 938/1430) vis-cli::bin/vis db::sqlite::tests::in_transaction_theo_verb
+        PASS [   0.006s] ( 939/1430) vis-cli::bin/vis db::sqlite::tests::loi_offset_duoc_giu_tu_loi_prepare
+        PASS [   0.004s] ( 940/1430) vis-cli::bin/vis db::sqlite::tests::moi_co_version_va_compile_options_that
+        PASS [   0.006s] ( 941/1430) vis-cli::bin/vis db::sqlite::tests::mo_ta_path_utf8_split_tai_byte_120_khong_panic
+        PASS [   0.005s] ( 942/1430) vis-cli::bin/vis db::sqlite::tests::multi_statement_bi_tu_choi
+        PASS [   0.005s] ( 943/1430) vis-cli::bin/vis db::sqlite::tests::nan_bi_tu_choi_va_inf_roundtrip
+        PASS [   0.006s] ( 944/1430) vis-cli::bin/vis db::sqlite::tests::params_qua_1000_bi_tu_choi
+        PASS [   0.015s] ( 945/1430) vis-cli::bin/vis db::sqlite::tests::param_vuot_1mib_bi_tu_choi_va_dung_limit_thi_ok
+        PASS [   0.030s] ( 946/1430) vis-cli::bin/vis db::sqlite::tests::query_vuot_10000_hang_err_khong_tra_du_lieu_cat
+        PASS [   0.012s] ( 947/1430) vis-cli::bin/vis db::sqlite::tests::row_vuot_1mib_err
+        PASS [   0.005s] ( 948/1430) vis-cli::bin/vis db::sqlite::tests::sql_qua_64kib_bi_tu_choi
+        PASS [   0.059s] ( 949/1430) vis-cli::bin/vis db::sqlite::tests::params_tong_vuot_16mib_bi_tu_choi_va_dung_limit_thi_ok
+        PASS [   0.006s] ( 950/1430) vis-cli::bin/vis db::sqlite::tests::sqlite_debug_in_thong_diep_tho_ro_fragment_chi_khi_bat
+        PASS [   0.006s] ( 951/1430) vis-cli::bin/vis db::sqlite::tests::strict_caps_tu_choi_file_backed_nhung_cho_mem
+        PASS [   0.006s] ( 952/1430) vis-cli::bin/vis db::sqlite::tests::temp_store_bi_ep_memory_va_cache_2mib
+        PASS [   0.005s] ( 953/1430) vis-cli::bin/vis db::sqlite::tests::token_128_bit_hex_khong_doan_duoc_khong_tai_su_dung
+        PASS [   0.006s] ( 954/1430) vis-cli::bin/vis db::sqlite::tests::token_gia_sai_dang_bi_tu_choi
+        PASS [   0.106s] ( 955/1430) vis-cli::bin/vis db::sqlite::tests::thoi_gian_chay_nho_bi_ngat_nhanh_khong_phai_doi_5s
+        PASS [   0.006s] ( 956/1430) vis-cli::bin/vis db::sqlite::tests::uri_ten_rong_memory_thua_bi_tu_choi
+        PASS [   0.103s] ( 957/1430) vis-cli::bin/vis db::sqlite::tests::tong_vuot_16mib_err
+        PASS [   0.310s] ( 958/1430) vis-cli::bin/vis db::sqlite::tests::hai_ket_noi_tranh_khoa_busy_timeout
+        PASS [   0.005s] ( 959/1430) vis-cli::bin/vis json_esc::tests::newline_tab_control_roundtrip
+        PASS [   0.005s] ( 960/1430) vis-cli::bin/vis json_esc::tests::quote_va_backslash_roundtrip
+        PASS [   0.005s] ( 961/1430) vis-cli::bin/vis json_esc::tests::utf8_tho_giu_nguyen
+        PASS [   0.007s] ( 962/1430) vis-cli::bin/vis lsp::khung::st240_tests::eof_giua_header_va_body
+        PASS [   0.005s] ( 963/1430) vis-cli::bin/vis lsp::khung::st240_tests::eof_truoc_frame_la_sach
+        PASS [   0.005s] ( 964/1430) vis-cli::bin/vis lsp::khung::st240_tests::frame_day_du_van_doc_duoc
+        PASS [   0.004s] ( 965/1430) vis-cli::bin/vis lsp::khung::st240_tests::header_cut_thieu_content_length
+        PASS [   0.010s] ( 966/1430) vis-cli::bin/vis lsp::module::tests::hieu_nang_cache_5_tep_duoi_2ms
+        PASS [   0.027s] ( 967/1430) vis-cli::bin/vis lsp::module::tests::hieu_nang_nap_module_5_tep
+        PASS [   0.005s] ( 968/1430) vis-cli::bin/vis lsp::vi_tri::tests::bien_khong_va_cuoi
+        PASS [   0.005s] ( 969/1430) vis-cli::bin/vis lsp::vi_tri::tests::khop_cuoi_dong
+        PASS [   0.004s] ( 970/1430) vis-cli::bin/vis lsp::vi_tri::tests::nhieu_dong
+        PASS [   0.005s] ( 971/1430) vis-cli::bin/vis lsp::vi_tri::tests::vi_tri_crlf_da_chuan_hoa
+        PASS [   0.005s] ( 972/1430) vis-cli::bin/vis lsp::vi_tri::tests::vi_tri_emoji_utf16
+        PASS [   0.005s] ( 973/1430) vis-cli::bin/vis lsp::vi_tri::tests::vi_tri_tab_mot_cot
+        PASS [   0.005s] ( 974/1430) vis-cli::bin/vis pkg::resolver::tests::bo_qua_ban_khong_hop_le_vd125
+        PASS [   0.006s] ( 975/1430) vis-cli::bin/vis pkg::resolver::tests::cac_ban_tang_dan_va_loc_theo_req
+        PASS [   0.007s] ( 976/1430) vis-cli::bin/vis pkg::resolver::tests::caret_0x_trong_deps
+        PASS [   0.005s] ( 977/1430) vis-cli::bin/vis pkg::resolver::tests::chon_cao_nhat_khi_moi_ban_deu_thoa
+        PASS [   0.006s] ( 978/1430) vis-cli::bin/vis pkg::resolver::tests::goi_khong_co_trong_registry
+        PASS [   0.007s] ( 979/1430) vis-cli::bin/vis pkg::resolver::tests::hai_goc_dung_chung_mot_dep_chi_mot_ban
+        PASS [   0.007s] ( 980/1430) vis-cli::bin/vis pkg::resolver::tests::khong_co_ban_nao_thoa_chi_ke_cac_ban_co
+        PASS [   0.006s] ( 981/1430) vis-cli::bin/vis pkg::resolver::tests::khong_phu_thuoc_chi_tra_ve_goc
+        PASS [   0.006s] ( 982/1430) vis-cli::bin/vis pkg::resolver::tests::phu_thuoc_bac_cau
+        PASS [   0.008s] ( 983/1430) vis-cli::bin/vis pkg::resolver::tests::quay_lui_hai_tang
+        PASS [   0.006s] ( 984/1430) vis-cli::bin/vis pkg::resolver::tests::quay_lui_khi_ban_cao_nhat_dan_toi_ngo_cut
+        PASS [   0.006s] ( 985/1430) vis-cli::bin/vis pkg::resolver::tests::rang_buoc_and_tu_ba_goc
+        PASS [   0.005s] ( 986/1430) vis-cli::bin/vis pkg::resolver::tests::rang_buoc_thu_hep_khoang
+        PASS [   0.007s] ( 987/1430) vis-cli::bin/vis pkg::resolver::tests::tat_dinh_hai_lan_cung_byte
+        PASS [   0.005s] ( 988/1430) vis-cli::bin/vis pkg::resolver::tests::vong_phu_thuoc_xu_ly_duoc
+        PASS [   0.005s] ( 989/1430) vis-cli::bin/vis pkg::resolver::tests::xung_dot_neu_chuoi_rang_buoc
+        PASS [   0.006s] ( 990/1430) vis-cli::bin/vis pkg::resolver::tests::xung_dot_voi_goc
+        PASS [   0.005s] ( 991/1430) vis-cli::bin/vis pkg::semver::tests::bang_dung_chinh_xac
+        PASS [   0.005s] ( 992/1430) vis-cli::bin/vis pkg::semver::tests::binh_dang_ngu_nghia
+        PASS [   0.004s] ( 993/1430) vis-cli::bin/vis pkg::semver::tests::caret_0x_theo_cargo
+        PASS [   0.004s] ( 994/1430) vis-cli::bin/vis pkg::semver::tests::caret_thuong
+        PASS [   0.005s] ( 995/1430) vis-cli::bin/vis pkg::semver::tests::chuan_hoa_in_ra
+        PASS [   0.005s] ( 996/1430) vis-cli::bin/vis pkg::semver::tests::dau_phay_la_and
+        PASS [   0.005s] ( 997/1430) vis-cli::bin/vis pkg::semver::tests::khong_toan_tu_hieu_la_caret
+        PASS [   0.005s] ( 998/1430) vis-cli::bin/vis pkg::semver::tests::lon_va_lon_bang
+        PASS [   0.004s] ( 999/1430) vis-cli::bin/vis pkg::semver::tests::nho_va_nho_bang
+        PASS [   0.005s] (1000/1430) vis-cli::bin/vis pkg::semver::tests::req_loi_neu_dung_ly_do
+        PASS [   0.005s] (1001/1430) vis-cli::bin/vis pkg::semver::tests::req_tu_choi_cu_phap_la
+        PASS [   0.004s] (1002/1430) vis-cli::bin/vis pkg::semver::tests::tilde_theo_cargo
+        PASS [   0.005s] (1003/1430) vis-cli::bin/vis pkg::semver::tests::toan_tu_in_dung_dau
+        PASS [   0.005s] (1004/1430) vis-cli::bin/vis pkg::semver::tests::tu_ds_va_mot_so_ca_bien
+        PASS [   0.005s] (1005/1430) vis-cli::bin/vis pkg::semver::tests::version_doc_binh_thuong
+        PASS [   0.005s] (1006/1430) vis-cli::bin/vis pkg::semver::tests::version_in_ra_va_thu_tu
+        PASS [   0.005s] (1007/1430) vis-cli::bin/vis pkg::semver::tests::version_tu_choi_khong_phai_so_va_so_0_dau
+        PASS [   0.004s] (1008/1430) vis-cli::bin/vis pkg::semver::tests::version_tu_choi_prerelease_va_build
+        PASS [   0.005s] (1009/1430) vis-cli::bin/vis pkg::semver::tests::version_tu_choi_thieu_thua_thanh_phan
+        PASS [   0.005s] (1010/1430) vis-cli::bin/vis pkg::tests::bam_chuan_hoa_crlf_bom
+        PASS [   0.005s] (1011/1430) vis-cli::bin/vis pkg::tests::so_phien_ban_long_cho_lock_cu
+        PASS [   0.005s] (1012/1430) vis-cli::bin/vis quyen::tests::doc_lay_tu_handle_khi_ten_da_bi_doi
+        PASS [   0.006s] (1013/1430) vis-cli::bin/vis quyen::tests::doc_proc_status_khi_proc_doc_duoc_khong_bi_vs0604
+        PASS [   0.006s] (1014/1430) vis-cli::bin/vis quyen::tests::doc_theo_handle_bao_dung_duong_dan_cua_proc
+        PASS [   0.007s] (1015/1430) vis-cli::bin/vis quyen::tests::doi_symlink_dung_luc_mo_bi_chan
+        PASS [   0.005s] (1016/1430) vis-cli::bin/vis quyen::tests::doi_tuong_khong_phai_duong_dan_bao_ro_ly_do
+        PASS [   2.119s] (1017/1430) vis-cli::sem sem_323_ca_qua_binary
+        PASS [   0.006s] (1018/1430) vis-cli::bin/vis quyen::tests::handle_ngoai_root_bi_chan_tat_dinh
+        PASS [   0.005s] (1019/1430) vis-cli::bin/vis quyen::tests::proc_khong_doc_duoc_thi_tu_choi
+        PASS [   0.005s] (1020/1430) vis-cli::bin/vis quyen::tests::thong_diep_khong_doc_duoc_proc_co_huong_dan_van_hanh
+        PASS [   0.005s] (1021/1430) vis-cli::bin/vis quyen::tests::thong_diep_tu_choi_neu_dich_that_khac_ten
+        PASS [   0.010s] (1022/1430) vis-cli::bin/vis quyen_st174::ca_a_diem_chen_doi_sang_symlink_ra_ngoai_bi_chan_tat_dinh
+        PASS [   0.008s] (1023/1430) vis-cli::bin/vis quyen_st174::ca_b_diem_chen_doi_symlink_ve_tep_that_doc_dung_trong_root
+        PASS [   0.005s] (1024/1430) vis-cli::bin/vis st238_tests::probe_khong_nuot_loi_cu_phap
+        PASS [   0.766s] (1025/1430) vis-cli::bin/vis json_esc::fuzz_100k::doi_chung_escaper_hong_bi_phat_hien
+        PASS [   0.005s] (1026/1430) vis-cli::bin/vis vistest::tests::esc_json_newline_tab_control_parse_duoc
+        PASS [   0.005s] (1027/1430) vis-cli::bin/vis vistest::tests::path_voi_muc_dau_them_dau_va_giu_phan_con_lai
+        PASS [   0.086s] (1028/1430) vis-cli::bin/vis vistest::tests::stderr_nhieu_khong_bi_qua_han_oan
+        PASS [   0.005s] (1029/1430) vis-diag tests::chan_doan_giu_vi_tri
+        PASS [   0.004s] (1030/1430) vis-diag tests::khoi_ke_tiep_khong_tai_dung
+        PASS [   0.004s] (1031/1430) vis-diag tests::ma_co_bon_chu_so
+        PASS [   0.004s] (1032/1430) vis-diag tests::so_cu_phap_02xx_khoa_theo_vd35
+        PASS [   0.005s] (1033/1430) vis-diag tests::so_khop_spec_lex_that
+        PASS [   0.004s] (1034/1430) vis-diag tests::so_kieu_04xx_khoa_theo_vd42
+        PASS [   0.004s] (1035/1430) vis-diag tests::so_ma_lien_mach_va_dung_spec_lex
+        PASS [   0.004s] (1036/1430) vis-diag tests::so_runtime_05xx_khoa_theo_vd42
+        PASS [   0.004s] (1037/1430) vis-diag tests::so_ten_03xx_khoa_theo_vd42
+        PASS [   0.005s] (1038/1430) vis-diag tests::tra_ma_va_ma_la
+        PASS [   0.004s] (1039/1430) vis-diag::messages khong_thong_diep_nao_con_nhan_vs0
+        PASS [   0.004s] (1040/1430) vis-diag::messages lang_parse_va_nhan_muc
+        PASS [   0.004s] (1041/1430) vis-diag::messages moi_ma_du_ba_ngon_ngu
+        PASS [   0.004s] (1042/1430) vis-diag::messages render_canh_theo_emoji_va_tab
+        PASS [   0.004s] (1043/1430) vis-diag::messages render_dong_tieu_de_va_nguon
+        PASS [   0.004s] (1044/1430) vis-diag::messages render_khong_nguon_chi_mot_dong
+        PASS [   0.004s] (1045/1430) vis-diag::messages snapshot_12_ca_so_kieu_04xx
+        PASS [   0.004s] (1046/1430) vis-diag::messages snapshot_20_ca_vi_en_ja
+        PASS [   0.005s] (1047/1430) vis-diag::messages snapshot_20_render
+        PASS [   0.004s] (1048/1430) vis-diag::messages snapshot_6_ca_so_ten_03xx
+        PASS [   0.005s] (1049/1430) vis-diag::messages snapshot_9_ca_so_module_07xx
+        PASS [   0.003s] (1050/1430) vis-diag::messages snapshot_9_ca_so_runtime_05xx
+        PASS [   0.003s] (1051/1430) vis-fmt tests::idempotent
+        PASS [   0.005s] (1052/1430) vis-fmt tests::loi_tra_ve_ma
+        PASS [   0.005s] (1053/1430) vis-fmt tests::tab_mot_cap_thanh_bon
+        PASS [   0.004s] (1054/1430) vis-fmt tests::tep_rong_ra_mot_newline
+        PASS [   0.005s] (1055/1430) vis-fmt tests::trong_dong_giu_nguyen
+        PASS [   0.005s] (1056/1430) vis-fmt::fmt crlf_chuan_hoa_va_giu_nguyen_trong_dong
+        PASS [   0.003s] (1057/1430) vis-fmt::fmt dau_ra_nfc
+        PASS [   0.004s] (1058/1430) vis-fmt::fmt diem_bat_dong_mau_chuan
+        PASS [   0.007s] (1059/1430) vis-fmt::fmt diem_bat_dong_tai_lieu_15_khoi
+        PASS [   0.004s] (1060/1430) vis-fmt::fmt dong_chi_chu_thich_va_dong_noi_giu_nguyen
+        PASS [   0.004s] (1061/1430) vis-fmt::fmt dong_noi_giu_thut_le_goc_sau_chu_thich
+        PASS [   0.013s] (1062/1430) vis-fmt::fmt idempotent_tren_moi_nguon
+        PASS [   0.004s] (1063/1430) vis-fmt::fmt khoang_trang_cuoi_dong_va_mot_newline_cuoi
+        PASS [   0.003s] (1064/1430) vis-fmt::fmt loi_cu_phap_khong_duoc_sua
+        PASS [   0.003s] (1065/1430) vis-fmt::fmt sai_thut_le_duoc_sua_ve_bon
+        PASS [   0.004s] (1066/1430) vis-fmt::fmt tab_duoc_sua_thanh_bon_dau_cach
+        PASS [   0.004s] (1067/1430) vis-fmt::fmt tab_trong_dong_va_trong_chu_thich_duoc_giu
+        PASS [   0.020s] (1068/1430) vis-fmt::fmt token_khong_doi
+        PASS [   0.004s] (1069/1430) vis-fmt::moi async_spawn_await
+        PASS [   0.004s] (1070/1430) vis-fmt::moi async_va_impl_cung_tep
+        PASS [   0.005s] (1071/1430) vis-fmt::moi cap_co_write_va_comment
+        PASS [   0.005s] (1072/1430) vis-fmt::moi cap_net_host
+        PASS [   0.005s] (1073/1430) vis-fmt::moi cap_nhieu_tham_so
+        PASS [   0.006s] (1074/1430) vis-fmt::moi chan_co_comment
+        PASS [   0.007s] (1075/1430) vis-fmt::moi derives_trait_impl
+        PASS [   0.027s] (1076/1430) vis-fmt::moi lossless_token_fixture_moi
+        PASS [   0.005s] (1077/1430) vis-fmt::moi none_thanh_none_hoa
+        PASS [   0.005s] (1078/1430) vis-fmt::moi none_trong_pattern_thanh_none_hoa
+        PASS [   0.007s] (1079/1430) vis-fmt::moi use_pkg_canh_std
+        PASS [   0.004s] (1080/1430) vis-interp net::tests::chuan_hoa_va_location_day_du
+        PASS [   0.004s] (1081/1430) vis-interp net::tests::doc_header_doc_status_va_content_length
+        PASS [   0.005s] (1082/1430) vis-interp net::tests::tach_url_dung_va_chan_ngoai_loopback
+        PASS [   0.004s] (1083/1430) vis-interp stdlib::st238_tests::json_non_finite_bi_phat_hien
+        PASS [   0.004s] (1084/1430) vis-interp stdlib::st238_tests::net_read_ky_so_vao_khong_duoc_cap_phat
+        PASS [   0.004s] (1085/1430) vis-interp value::tests_show_char::show_char_escape_ky_tu_dieu_khien
+        PASS [   0.004s] (1086/1430) vis-interp::interp_v2 break_continue_va_try_ngoai_ngu_canh
+        PASS [   0.006s] (1087/1430) vis-interp::interp_v2 phuong_thuc_kiem_kieu_va_has
+        PASS [   0.005s] (1088/1430) vis-interp::interp_v2 range_khong_tran_so
+        PASS [   0.005s] (1089/1430) vis-interp::interp_v2 show_don_vi_va_char
+        PASS [   0.005s] (1090/1430) vis-interp::interp_v2 so_hoc_doi_xung_voi_don_vi
+        PASS [   0.005s] (1091/1430) vis-interp::interp_v2 than_vong_lap_bo_gia_tri
+        PASS [   0.005s] (1092/1430) vis-interp::interp_v2 vi_tri_tab_va_utf8
+        PASS [   0.005s] (1093/1430) vis-interp::run chan_doan_runtime_co_dong_cot_that
+        PASS [   0.006s] (1094/1430) vis-interp::run dieu_khien_va_khai_bao
+        PASS [   0.003s] (1095/1430) vis-interp::run du_60_ca
+        PASS [   0.006s] (1096/1430) vis-interp::run gia_tri_cua_khoi_theo_vd47
+        PASS [   0.010s] (1097/1430) vis-interp::run ham_closure_va_tham_so
+        PASS [   0.011s] (1098/1430) vis-interp::run kieu_du_lieu_va_match
+        PASS [   0.005s] (1099/1430) vis-interp::run phuong_thuc_ngoai_tap_bao_vs0501
+        PASS [   0.008s] (1100/1430) vis-interp::run so_hoc_va_don_vi
+        PASS [   0.009s] (1101/1430) vis-interp::run tap_hop_va_phuong_thuc
+        PASS [   0.005s] (1102/1430) vis-interp::show snapshot_show_duration
+        PASS [   0.005s] (1103/1430) vis-interp::show snapshot_show_hop_va_kieu_nguoi_dung
+        PASS [   0.004s] (1104/1430) vis-interp::show snapshot_show_percent
+        PASS [   0.004s] (1105/1430) vis-interp::show snapshot_show_scalar
+        PASS [   0.004s] (1106/1430) vis-interp::show snapshot_show_size
+        PASS [   0.004s] (1107/1430) vis-interp::vd211_enum_eq enum_khac_ten_khong_bang
+        PASS [   0.005s] (1108/1430) vis-syntax cst::tests::comment_duoc_gan_vao_cay
+        PASS [   0.003s] (1109/1430) vis-syntax cst::tests::render_tra_nguyen_van
+        PASS [   0.005s] (1110/1430) vis-syntax cst::tests::sexp_literal_va_nhi_phan
+        PASS [   0.005s] (1111/1430) vis-syntax lex::lit::tests::bytes_chi_ascii_va_chi_escape_xnn
+        PASS [   0.868s] (1112/1430) vis-cli::bin/vis quyen::tests::dua_doi_symlink_lap_co_gioi_han
+        PASS [   0.005s] (1113/1430) vis-syntax lex::lit::tests::char_dung_mot_scalar
+        PASS [   0.005s] (1114/1430) vis-syntax lex::lit::tests::chuoi_escape_va_noi_suy
+        PASS [   0.003s] (1115/1430) vis-syntax lex::lit::tests::chuoi_tho_giu_nguyen
+        PASS [   0.005s] (1116/1430) vis-syntax lex::lit::tests::size_parts_tach_dung
+        PASS [   0.005s] (1117/1430) vis-syntax lex::lit::tests::so_nguyen_moi_co_so
+        PASS [   0.005s] (1118/1430) vis-syntax lex::lit::tests::so_nguyen_sai_va_tran
+        PASS [   0.005s] (1119/1430) vis-syntax lex::tests::bytes_chi_nhan_escape_xnn
+        PASS [   0.004s] (1120/1430) vis-syntax lex::tests::che_do_lenh_tach_tu_tran
+        PASS [   0.005s] (1121/1430) vis-syntax lex::tests::cr_don_doc_la_ky_tu_la
+        PASS [   0.005s] (1122/1430) vis-syntax lex::tests::cr_dung_truoc_crlf_van_la_ky_tu_la
+        PASS [   0.004s] (1123/1430) vis-syntax lex::tests::crlf_duoc_chuan_hoa_thanh_lf_truoc_khi_lex
+        PASS [   0.005s] (1124/1430) vis-syntax lex::tests::dedent_sinh_o_eof
+        PASS [   0.005s] (1125/1430) vis-syntax lex::tests::dong_trong_va_chu_thich_khong_sinh_token_ket_thuc_dong
+        PASS [   0.005s] (1126/1430) vis-syntax lex::tests::duration_va_size_khong_nham_nhau
+        PASS [   0.004s] (1127/1430) vis-syntax lex::tests::gach_duoi_trong_phan_le_cua_float_phai_giua_hai_chu_so
+        PASS [   0.005s] (1128/1430) vis-syntax lex::tests::nfc_duoc_ap_truoc_khi_lex
+        PASS [   0.004s] (1129/1430) vis-syntax lex::tests::ngoac_nuot_newline_va_indent
+        PASS [   0.005s] (1130/1430) vis-syntax lex::tests::noi_dong_bang_pipe_arrow
+        PASS [   0.006s] (1131/1430) vis-syntax lex::tests::span_tro_dung_van_ban_da_nfc
+        PASS [   0.005s] (1132/1430) vis-syntax lex::tests::tab_sinh_vs0107_va_van_lex_tiep
+        PASS [   0.005s] (1133/1430) vis-syntax lex::tests::the_khong_dau_stage_la_vs0110
+        PASS [   0.004s] (1134/1430) vis-syntax lex::tests::thut_le_sai_don_vi_la_vs0109
+        PASS [   0.005s] (1135/1430) vis-syntax lex::token::tests::ten_kind_khong_trung_va_du_bang_spec
+        PASS [   1.996s] (1136/1430) vis-cli::vis_test vm_khop_interp_va_khong_con_skip
+        PASS [   0.004s] (1137/1430) vis-syntax::cmd ca01
+        PASS [   0.005s] (1138/1430) vis-syntax::cmd ca02
+        PASS [   0.004s] (1139/1430) vis-syntax::cmd ca03
+        PASS [   0.006s] (1140/1430) vis-syntax::cmd ca04
+        PASS [   0.005s] (1141/1430) vis-syntax::cmd ca05
+        PASS [   0.004s] (1142/1430) vis-syntax::cmd ca07
+        PASS [   0.007s] (1143/1430) vis-syntax::cmd ca06
+        PASS [   0.005s] (1144/1430) vis-syntax::cmd ca08
+        PASS [   0.004s] (1145/1430) vis-syntax::cmd ca10
+        PASS [   0.004s] (1146/1430) vis-syntax::cmd ca09
+        PASS [   0.004s] (1147/1430) vis-syntax::cmd ca12
+        PASS [   0.005s] (1148/1430) vis-syntax::cmd ca11
+        PASS [   0.004s] (1149/1430) vis-syntax::cmd ca13
+        PASS [   0.004s] (1150/1430) vis-syntax::cmd ca14
+        PASS [   0.005s] (1151/1430) vis-syntax::cmd ca16
+        PASS [   0.005s] (1152/1430) vis-syntax::cmd ca15
+        PASS [   0.004s] (1153/1430) vis-syntax::cmd ca17
+        PASS [   0.006s] (1154/1430) vis-syntax::cmd ca18
+        PASS [   0.006s] (1155/1430) vis-syntax::cmd ca19
+        PASS [   0.004s] (1156/1430) vis-syntax::cmd ca20
+        PASS [   0.004s] (1157/1430) vis-syntax::cmd ca23
+        PASS [   0.005s] (1158/1430) vis-syntax::cmd ca21
+        PASS [   0.005s] (1159/1430) vis-syntax::cmd ca22
+        PASS [   0.005s] (1160/1430) vis-syntax::cmd ca26
+        PASS [   0.005s] (1161/1430) vis-syntax::cmd ca24
+        PASS [   0.007s] (1162/1430) vis-syntax::cmd ca25
+        PASS [   0.003s] (1163/1430) vis-syntax::cmd ca29
+        PASS [   0.005s] (1164/1430) vis-syntax::cmd ca28
+        PASS [   0.005s] (1165/1430) vis-syntax::cmd ca27
+        PASS [   0.004s] (1166/1430) vis-syntax::cmd ca30
+        PASS [   0.004s] (1167/1430) vis-syntax::cmd ca32
+        PASS [   0.005s] (1168/1430) vis-syntax::cmd ca31
+        PASS [   0.004s] (1169/1430) vis-syntax::cmd dung_22_ca_va_12_hang_bang_9_4
+        PASS [   0.005s] (1170/1430) vis-syntax::cmd ca33
+        PASS [   0.006s] (1171/1430) vis-syntax::cmd lossless_moi_ca
+        PASS [   0.005s] (1172/1430) vis-syntax::col_scalar dong_theo_scalar_khong_phai_byte
+        PASS [   0.005s] (1173/1430) vis-syntax::col_scalar emoji_astral_la_mot_scalar
+        PASS [   0.004s] (1174/1430) vis-syntax::col_scalar emoji_gia_dinh_nhieu_scalar_va_zwj
+        PASS [   0.004s] (1175/1430) vis-syntax::col_scalar tab_bon_cot_va_vi_tri_sau_tab
+        PASS [   0.004s] (1176/1430) vis-syntax::col_scalar tieng_viet_dung_san_va_to_hop
+        PASS [   0.005s] (1177/1430) vis-syntax::doc_cmd hai_khoi_vish_session_parse_sach_va_lossless
+        PASS [   0.006s] (1178/1430) vis-syntax::doc_fixtures fixture_tai_lieu_dung_22_khoi_vis
+        PASS [   0.009s] (1179/1430) vis-syntax::doc_fixtures fixture_tai_lieu_15_khoi_du_than_parse_sach
+        PASS [   0.006s] (1180/1430) vis-syntax::doc_fixtures khoi_loai_tru_dung_mot_loi_dau
+        PASS [   0.005s] (1181/1430) vis-syntax::errors ba_ca_err_cua_golden_dung_ma_va_vi_tri
+        PASS [   0.006s] (1182/1430) vis-syntax::errors moi_tep_loi_dung_mot_loi_dau
+        PASS [   0.006s] (1183/1430) vis-syntax::errors tep_sach_khong_co_chan_doan
+        PASS [   0.005s] (1184/1430) vis-syntax::expr golden_30_bieu_thuc_theo_vd34
+        PASS [   0.004s] (1185/1430) vis-syntax::invariants moi_ma_loi_tu_vung_deu_phat_duoc
+        PASS [   0.006s] (1186/1430) vis-syntax::golden golden_token_theo_spec_lex_8
+        PASS [   0.007s] (1187/1430) vis-syntax::invariants corpus_giu_bat_bien_o_ca_hai_che_do
+        PASS [   0.003s] (1188/1430) vis-syntax::invariants span_phu_kin_vung_khong_trong
+        PASS [   0.003s] (1189/1430) vis-syntax::lex_float_dot cham_mo_method_voi_dinh_danh_viet_va_sau_float
+        PASS [   0.005s] (1190/1430) vis-syntax::lex_float_dot cham_khong_mo_method_van_la_vs0104
+        PASS [   0.007s] (1191/1430) vis-syntax::invariants nfc_va_nfd_cho_cung_ket_qua_tren_corpus
+        PASS [   0.004s] (1192/1430) vis-syntax::lex_float_dot khoang_trang_truoc_cham_khong_doi_chuoi_token
+        PASS [   0.005s] (1193/1430) vis-syntax::lex_float_dot cham_sau_so_khong_phai_thap_phan_khi_theo_sau_la_chu_cai
+        PASS [   0.005s] (1194/1430) vis-syntax::lex_float_dot cham_theo_sau_chu_so_van_la_float
+        PASS [   0.003s] (1195/1430) vis-syntax::nfc char_literal_nfd_la_mot_scalar
+        PASS [   0.004s] (1196/1430) vis-syntax::nfc bang_chu_viet_sinh_nfc_khi_in
+        PASS [   0.004s] (1197/1430) vis-syntax::nfc chuoi_va_noi_suy_dong_nhat_nfc_nfd
+        PASS [   0.005s] (1198/1430) vis-syntax::nfc dinh_danh_viet_nfc_va_nfd_la_mot_ten
+        PASS [   0.004s] (1199/1430) vis-syntax::nfc hai_che_do_cung_nhan_nfc
+        PASS [   0.004s] (1200/1430) vis-syntax::nfc hieu_ung_phu_tro_cua_nfd_len_vuot_dong_hoan_toan
+        PASS [   0.004s] (1201/1430) vis-syntax::nfc ky_tu_to_hop_ngoai_chuoi_la_ky_tu_la
+        PASS [   0.005s] (1202/1430) vis-syntax::regress r01_dong_dem_sau_newline_trong_chuoi_va_noi_suy
+        PASS [   0.003s] (1203/1430) vis-syntax::regress r01b_chuoi_tho_nhieu_dong
+        PASS [   0.005s] (1204/1430) vis-syntax::vd37 vd37_1_cau_lenh_o_cap_te
+        PASS [   0.005s] (1205/1430) vis-syntax::vd37 vd37_2_khoi_mot_dong_dung_o_else
+        PASS [   0.004s] (1206/1430) vis-syntax::vd37 vd37_3_with_khong_nuot_pipe
+        PASS [   0.014s] (1207/1430) vis-syntax::nfc moi_chu_viet_deu_dong_nhat_nfc_nfd
+        PASS [   0.005s] (1208/1430) vis-syntax::vd37 vd37_4_ghep_toan_tu_gan_hai_chieu
+        PASS [   0.004s] (1209/1430) vis-types hir::tests::literal_dien_kieu
+        PASS [   0.004s] (1210/1430) vis-syntax::vd37 vd37_5_khong_them_cu_phap_ba_cham
+        PASS [   0.005s] (1211/1430) vis-types hir::tests::sexp_theo_quy_uoc_vd34_khong_paren
+        PASS [   0.003s] (1212/1430) vis-types hir::tests::toan_tu_va_pattern_co_chu_viet
+        PASS [   0.004s] (1213/1430) vis-types ty::tests::kieu_dung_san_va_bang_kieu
+        PASS [   0.005s] (1214/1430) vis-types ty::tests::ten_hien_thi_on_dinh
+        PASS [   0.005s] (1215/1430) vis-types::cmd_lower cham_phay_thanh_hai_cau_lenh_tuan_tu
+        PASS [   0.005s] (1216/1430) vis-types::cmd_lower chan_doan_co_dong_cot_that
+        PASS [   0.004s] (1217/1430) vis-types::cmd_lower chay_nen_la_vs0605
+        PASS [   0.005s] (1218/1430) vis-types::cmd_lower chuong_trinh_ngoai_la_vs0606
+        PASS [   0.005s] (1219/1430) vis-types::cmd_lower flag_bool_dung_default
+        PASS [   0.811s] (1220/1430) vis-cli::bin/vis vistest::tests::chau_giu_ong_khong_lam_treo
+        PASS [   0.005s] (1221/1430) vis-types::cmd_lower noi_khong_duoc_la_vs0603
+        PASS [   0.004s] (1222/1430) vis-types::cmd_lower sai_doi_so_la_vs0602
+        PASS [   0.007s] (1223/1430) vis-types::cmd_lower lenh_la_thanh_chuong_trinh_ngoai
+        PASS [   0.005s] (1224/1430) vis-types::cmd_lower pipeline_ba_stage_ha_thanh_ba_call_long_nhau
+        PASS [   0.005s] (1225/1430) vis-types::exhaustive du_20_ca_match
+        PASS [   0.005s] (1226/1430) vis-types::generic cong_int_va_str_cung_chuong_trinh
+        PASS [   0.005s] (1227/1430) vis-types::generic ba_generic_cung_luc
+        PASS [   0.005s] (1228/1430) vis-types::generic cong_mau_thuan_str_int_la_vs0412
+        PASS [   0.006s] (1229/1430) vis-types::generic cong_mau_thuan_int_str_la_vs0412
+        PASS [   0.005s] (1230/1430) vis-types::generic enum_generic_hai_bien_the
+        PASS [   0.015s] (1231/1430) vis-types::exhaustive match_phai_xet_het
+        PASS [   0.005s] (1232/1430) vis-types::generic enum_generic_match_hai_nhanh
+        PASS [   0.005s] (1233/1430) vis-types::generic fn_generic_khai_bao_sach
+        PASS [   0.006s] (1234/1430) vis-types::generic enum_generic_payload_khong_bi_khoa_kieu
+        PASS [   0.006s] (1235/1430) vis-types::generic fn_hai_tham_so_kieu_sach
+        PASS [   0.005s] (1236/1430) vis-types::generic generic_voi_mac_dinh_khong_dung
+        PASS [   0.005s] (1237/1430) vis-types::generic goi_long_generic
+        PASS [   0.005s] (1238/1430) vis-types::generic generic_khong_dung_trong_than_van_sach
+        PASS [   0.005s] (1239/1430) vis-types::generic hai_generic_kieu_tra_rieng
+        PASS [   0.005s] (1240/1430) vis-types::generic kiem_va_chay_cung_ket_luan_tren_cung_tep
+        PASS [   0.006s] (1241/1430) vis-types::generic kieu_generic_enum_sach
+        PASS [   0.007s] (1242/1430) vis-types::generic kieu_generic_record_sach
+        PASS [   0.006s] (1243/1430) vis-types::generic list_t_long_nhau_hop_nhat_duoc
+        PASS [   0.007s] (1244/1430) vis-types::generic kieu_tham_so_la_van_la_vs0303
+        PASS [   0.006s] (1245/1430) vis-types::generic list_t_voi_int_la_vs0412
+        PASS [   0.006s] (1246/1430) vis-types::generic optional_t_voi_int_optional_sach
+        PASS [   0.006s] (1247/1430) vis-types::generic optional_t_voi_int_thuong_duoc_nang
+        PASS [   0.005s] (1248/1430) vis-types::generic record_generic_truong_doc_ra_dung_kieu_dong
+        PASS [   0.007s] (1249/1430) vis-types::generic record_generic_hai_kieu_cung_luc
+        PASS [   0.006s] (1250/1430) vis-types::generic sai_so_doi_so_generic_la_vs0401
+        PASS [   0.006s] (1251/1430) vis-types::generic tham_so_long_list_t_sach
+        PASS [   0.006s] (1252/1430) vis-types::generic tham_so_map_str_t_sach
+        PASS [   2.190s] (1253/1430) vis-cli::vis_test cac_dong_ok_dung_thu_tu_khong_lap
+        PASS [   0.007s] (1254/1430) vis-types::generic thong_diep_mau_thuan_neu_ten_t_va_hai_kieu
+        PASS [   0.005s] (1255/1430) vis-types::generic tra_t_optional_voi_match
+        PASS [   0.005s] (1256/1430) vis-types::generic tra_t_dung_duoc_o_ngu_canh
+        PASS [   0.008s] (1257/1430) vis-types::generic thua_doi_so_generic_la_vs0401
+        PASS [   0.006s] (1258/1430) vis-types::generic tra_t_sai_ngu_canh_la_vs0412
+        PASS [   0.007s] (1259/1430) vis-types::generic_that gan_cheo_hai_instantiation_la_vs0412
+        PASS [   0.005s] (1260/1430) vis-types::generic_that generic_long_sai_phan_tu_la_vs0412
+        PASS [   0.005s] (1261/1430) vis-types::generic_that generic_long_trong_generic
+        PASS [   0.006s] (1262/1430) vis-types::generic_that gan_cung_instantiation_sach
+        PASS [   2.196s] (1263/1430) vis-cli::vis_test tap_hop_le_va_du_so_ca
+        PASS [   0.007s] (1264/1430) vis-types::generic_that hai_instantiation_cung_ton_tai
+        PASS [   0.005s] (1265/1430) vis-types::generic_that ham_hai_tham_so_cung_t_lech_la_vs0412
+        PASS [   0.005s] (1266/1430) vis-types::generic_that ham_lien_ket_t_la_str_sach
+        PASS [   0.005s] (1267/1430) vis-types::generic_that ham_lien_ket_lech_la_vs0412
+        PASS [   0.006s] (1268/1430) vis-types::generic_that ham_lien_ket_sach
+        PASS [   0.006s] (1269/1430) vis-types::generic_that ham_tra_ve_t_sai_ngu_canh_la_vs0412
+        PASS [   0.006s] (1270/1430) vis-types::generic_that ham_tra_ve_t_giu_kieu_sach
+        PASS [   0.006s] (1271/1430) vis-types::generic_that hop_bool_khac_hop_int
+        PASS [   0.005s] (1272/1430) vis-types::generic_that hop_int_nhan_chuoi_la_vs0412
+        PASS [   0.006s] (1273/1430) vis-types::generic_that hop_int_sach
+        PASS [   0.006s] (1274/1430) vis-types::generic_that hop_str_sach
+        PASS [   0.005s] (1275/1430) vis-types::generic_that or_list_sai_phan_tu_la_vs0412
+        PASS [   0.005s] (1276/1430) vis-types::generic_that or_cung_hai_dau_sach
+        PASS [   0.005s] (1277/1430) vis-types::generic_that or_int_str_literal_sach
+        PASS [   0.005s] (1278/1430) vis-types::generic_that or_gan_cheo_instantiation_la_vs0412
+        PASS [   0.005s] (1279/1430) vis-types::generic_that or_match_thieu_nhanh_van_vs0402
+        PASS [   0.008s] (1280/1430) vis-types::generic_that or_match_du_nhanh_sach
+        PASS [   0.006s] (1281/1430) vis-types::generic_that truong_hop_int_la_int
+        PASS [   0.006s] (1282/1430) vis-types::generic_that or_sai_dau_bien_the_la_vs0412
+        PASS [   0.006s] (1283/1430) vis-types::generic_that tham_so_hop_lech_instantiation_la_vs0412
+        PASS [   0.005s] (1284/1430) vis-types::hir ba_ca_err_dung_o_parse_khong_lower
+        PASS [   0.007s] (1285/1430) vis-types::generic_that truong_hop_int_khong_phai_str
+        PASS [   0.006s] (1286/1430) vis-types::hir cst_che_do_lenh_ha_that_qua_cmd_lower
+        PASS [   0.006s] (1287/1430) vis-types::hir khoi_tai_lieu_22_15_7
+        PASS [   0.008s] (1288/1430) vis-types::hir doc_va_golden_ton_tai
+        PASS [   0.008s] (1289/1430) vis-types::hir golden_27_bieu_thuc_ha_ra_sexp_hir
+        PASS [   0.006s] (1290/1430) vis-types::hir kieu_cau_truc_va_option
+        PASS [   0.006s] (1291/1430) vis-types::hir kieu_hien_thi_on_dinh_va_type_ref
+        PASS [   0.011s] (1292/1430) vis-types::hir khong_panic_tren_7_khoi_loai_tru_va_rac
+        PASS [   0.005s] (1293/1430) vis-types::names bong_ten_trong_khoi_hop_le_va_phan_giai_dung
+        PASS [   0.014s] (1294/1430) vis-types::hir ha_15_khoi_tai_lieu_0_chan_doan_va_dung_so_khai_bao
+        PASS [   0.006s] (1295/1430) vis-types::hir literal_duoc_dien_kieu
+        PASS [   0.005s] (1296/1430) vis-types::names builtin_phan_giai_duoc_o_moi_che_do
+        PASS [   0.005s] (1297/1430) vis-types::names danh_sach_builtin_khoa_dung_11_ten
+        PASS [   0.004s] (1298/1430) vis-types::names gan_cho_ten_chua_khai_bao_vs0301_mac_dinh
+        PASS [   0.005s] (1299/1430) vis-types::names for_bind_if_let_match_arm_va_lambda
+        PASS [   0.005s] (1300/1430) vis-types::names let_che_ten_cung_khung_khong_loi
+        PASS [   0.006s] (1301/1430) vis-types::names ham_goi_truoc_va_sau_khai_bao
+        PASS [   0.008s] (1302/1430) vis-types::names gan_ten_la_chi_mot_vs0301_moi_dang
+        PASS [   0.005s] (1303/1430) vis-types::names let_ha_gia_tri_truoc_khi_khai_ten
+        PASS [   0.005s] (1304/1430) vis-types::names nhan_scope_la_khai_bao
+        PASS [   0.005s] (1305/1430) vis-types::names let_trong_khoi_khong_ro_ra_ngoai
+        PASS [   0.006s] (1306/1430) vis-types::names permissive_van_bao_vs0301_khi_gan_ten_la
+        PASS [   0.006s] (1307/1430) vis-types::names strict_bao_ca_ten_tu_do_khi_doc
+        PASS [   0.005s] (1308/1430) vis-types::names ten_kieu_chua_khai_khong_bao_o_st11
+        PASS [   0.005s] (1309/1430) vis-types::names tham_so_thay_trong_than_ham
+        PASS [   0.005s] (1310/1430) vis-types::names ten_la_bao_vs0301_o_che_do_chat
+        PASS [   0.008s] (1311/1430) vis-types::names vs0302_tham_so_trung_va_item_trung
+        PASS [   0.004s] (1312/1430) vis-types::stdlib_ty sang_type_dung_ten_bien_kieu
+        PASS [   0.005s] (1313/1430) vis-types::stdlib_ty moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3
+        PASS [   0.005s] (1314/1430) vis-types::stdlib_ty muoi_sau_chu_ky_generic_dung_hinh_dang
+        PASS [   0.004s] (1315/1430) vis-types::stdlib_ty sort_by_giu_ngoai_le_fn_khoa
+        PASS [   0.008s] (1316/1430) vis-types::trait derives_enum_eq_sinh_phuong_thuc_that
+        PASS [   0.006s] (1317/1430) vis-types::trait derives_eq_show_json_tren_record
+        PASS [   0.005s] (1318/1430) vis-types::trait derives_eq_truong_float_bao_vs0403
+        PASS [   0.005s] (1319/1430) vis-types::trait derives_json_tren_truong_ham_bao_vs0403
+        PASS [   0.006s] (1320/1430) vis-types::trait derives_eq_sinh_phuong_thuc_that
+        PASS [   0.006s] (1321/1430) vis-types::trait derives_json_hop_le_voi_list_int
+        PASS [   0.005s] (1322/1430) vis-types::trait derives_la_bao_vs0403
+        PASS [   0.006s] (1323/1430) vis-types::trait derives_show_sinh_phuong_thuc_that
+        PASS [   0.005s] (1324/1430) vis-types::trait goi_phuong_thuc_impl_thanh_call_truc_tiep
+        PASS [   0.006s] (1325/1430) vis-types::trait derives_show_tren_kieu_generic_bao_vs0403
+        PASS [   0.006s] (1326/1430) vis-types::trait derives_tren_enum
+        PASS [   0.007s] (1327/1430) vis-types::trait enum_goi_phuong_thuc_duoc
+        PASS [   0.004s] (1328/1430) vis-types::trait impl_dung_chu_ky_sach
+        PASS [   0.005s] (1329/1430) vis-types::trait goi_phuong_thuc_inherent_thanh_call_truc_tiep
+        PASS [   0.006s] (1330/1430) vis-types::trait impl_inherent_khong_trait_sach
+        PASS [   0.006s] (1331/1430) vis-types::trait impl_sai_kieu_tra_bao_vs0412
+        PASS [   0.006s] (1332/1430) vis-types::trait impl_thieu_phuong_thuc_bao_vs0403
+        PASS [   0.005s] (1333/1430) vis-types::trait impl_trait_khong_ton_tai_bao_vs0403
+        PASS [   0.006s] (1334/1430) vis-types::trait impl_thua_phuong_thuc_bao_vs0403
+        PASS [   0.005s] (1335/1430) vis-types::trait khong_co_phuong_thuc_giu_nguyen_loi_cu
+        PASS [   0.006s] (1336/1430) vis-types::trait mo_ho_giua_hai_impl_bao_vs0403
+        PASS [   0.006s] (1337/1430) vis-types::trait kieu_khong_tinh_bao_vs0403
+        PASS [   0.005s] (1338/1430) vis-types::trait no_i_tai_thang_impl_cung_ten
+        PASS [   0.005s] (1339/1430) vis-types::trait phuong_thuc_khong_ton_tai_bao_vs0403
+        PASS [   0.006s] (1340/1430) vis-types::trait nhieu_dong_truoc_voi_let
+        PASS [   0.006s] (1341/1430) vis-types::trait sieu_trait_du_sach
+        PASS [   0.004s] (1342/1430) vis-types::tyck du_80_ca
+        PASS [   0.005s] (1343/1430) vis-types::trait sieu_trait_thieu_bao_vs0403
+        PASS [   0.005s] (1344/1430) vis-types::trait trait_khai_bao_sach
+        PASS [   0.006s] (1345/1430) vis-types::trait tham_so_co_kieu_goi_duoc_phuong_thuc
+        PASS [   0.010s] (1346/1430) vis-types::tyck ham_doi_so_va_optional
+        PASS [   0.005s] (1347/1430) vis-types::tyck_methods bang_phuong_thuc_loi
+        PASS [   0.006s] (1348/1430) vis-types::tyck literal_va_chu_thich_kieu
+        PASS [   0.010s] (1349/1430) vis-types::tyck kien_truc_list_map_record_enum
+        PASS [   0.006s] (1350/1430) vis-types::tyck so_hoc_theo_don_vi
+        PASS [   0.007s] (1351/1430) vis-types::tyck so_sanh_logic_va_coalesce
+        PASS [   0.005s] (1352/1430) vis-types::tyck_methods du_5_ca_phuong_thuc
+        PASS [   0.005s] (1353/1430) vis-types::tyck_v2 dieu_kien_list_goi_y_is_empty
+        PASS [   2.802s] (1354/1430) vis-cli::targets targets_wasm_vis_types
+        PASS [   0.006s] (1355/1430) vis-types::tyck_v2 builtin_co_kiem_chu_ky
+        PASS [   0.006s] (1356/1430) vis-types::tyck_methods gia_tri_cau_lenh_cuoi_vd47
+        PASS [   0.006s] (1357/1430) vis-types::tyck_v2 gan_field_index_kiem_bat_bien
+        PASS [   0.006s] (1358/1430) vis-types::tyck_v2 kieu_ngoai_vs0_bao_vs0303_ro_rang
+        PASS [   0.005s] (1359/1430) vis-types::tyck_v2 percent_so_sanh_float_theo_ti_le
+        PASS [   0.005s] (1360/1430) vis-types::tyck_v2 phep_cua_vs0_theo_vd48
+        PASS [   0.006s] (1361/1430) vis-types::tyck_v2 nang_int_float_chi_cho_literal
+        PASS [   0.007s] (1362/1430) vis-types::tyck_v2 match_unit_tuple_la_huu_han
+        PASS [   0.006s] (1363/1430) vis-types::tyck_v2 ten_tham_so_va_doi_so_co_ten
+        PASS [   0.007s] (1364/1430) vis-types::tyck_v2 never_vong_lap_va_for_theo_vs0
+        PASS [   0.008s] (1365/1430) vis-types::tyck_v2 phu_them_bieu_thuc_va_kieu
+        PASS [   0.004s] (1366/1430) vis-vm vm::tests::capture_local_barrier
+        PASS [   0.005s] (1367/1430) vis-vm::diff_100k bo_sinh_sinh_du_nhom_cu_phap_moi
+        PASS [   0.005s] (1368/1430) vis-vm::diff_100k goc_ton_tai
+        PASS [   0.007s] (1369/1430) vis-types::tyck_v2 try_chi_dung_khi_ham_tra_optional_hoac_result
+        PASS [   0.006s] (1370/1430) vis-vm::diff_100k loi_tinh_cu_phap_moi_cung_ma
+        PASS [   0.006s] (1371/1430) vis-vm::st238_parity ca1_for_long_break_break_pop_iterator
+        PASS [   0.006s] (1372/1430) vis-vm::st238_parity ca2_while_let_stack_can_bang
+        PASS [   0.005s] (1373/1430) vis-vm::st238_parity ca3_let_cap_tep_trong_ham
+        PASS [   0.018s] (1374/1430) vis-vm::diff_100k loi_chay_cu_phap_moi_hai_duong_cung_ma
+        PASS [   0.006s] (1375/1430) vis-vm::st238_parity ca4_const_cap_tep
+        PASS [   0.006s] (1376/1430) vis-vm::st238_parity ca7_match_roi_khong_im_lang
+        PASS [   0.006s] (1377/1430) vis-vm::st238_parity ca8_closure_ghi_bien_bat_giu_trang_thai
+        PASS [   0.007s] (1378/1430) vis-vm::st239_parity ca161_hoi_cham_base_optional_nang_mot_lop
+        PASS [   0.007s] (1379/1430) vis-vm::st239_parity ca161_hoi_cham_khong_flatten_field_optional
+        PASS [   0.005s] (1380/1430) vis-vm::st239_parity ca162_hoi_cham_base_thuong_bi_tu_choi
+        PASS [   0.005s] (1381/1430) vis-vm::st239_parity ca165_or_pattern_bind_khong_day_du_bi_tu_choi
+        PASS [   0.006s] (1382/1430) vis-vm::st239_parity ca165_or_pattern_bind_day_du_van_hop_le
+        PASS [   0.006s] (1383/1430) vis-vm::st239_parity ca166_set_dedup
+        PASS [   0.005s] (1384/1430) vis-vm::st239_parity ca170_literal_khoa_trung_tinh_bi_tu_choi
+        PASS [   0.005s] (1385/1430) vis-vm::st239_parity ca170_runtime_last_wins_va_equality
+        PASS [   0.007s] (1386/1430) vis-vm::st245_async_regression async_task_doc_var_cap_tep_khong_tra_unit
+        PASS [   0.005s] (1387/1430) vis-vm::st245_async_regression bytecode_global_ngoai_mien_khong_panic_va_bi_chan
+        PASS [   0.005s] (1388/1430) vis-vm::st245_async_regression spawn_loop_ban_nho
+        PASS [   0.005s] (1389/1430) vis-vm::st247_global_domain q4_ham_khong_goi_doc_global_chua_khoi_tao_tra_trap
+        PASS [   0.004s] (1390/1430) vis-vm::st247_global_domain q4_nhanh_khong_chay_doc_global_chua_khoi_tao_tra_trap
+        PASS [   0.006s] (1391/1430) vis-vm::st245_async_regression var_cap_tep_readback
+        PASS [   0.005s] (1392/1430) vis-vm::st247_global_domain q5_codegen_ghi_roi_doc_tra_gia_tri_dung
+        PASS [   0.006s] (1393/1430) vis-vm::st248_field_lift alias_va_list_index
+        PASS [   0.006s] (1394/1430) vis-vm::st248_field_lift dich_khong_optional_khong_nang
+        PASS [   0.005s] (1395/1430) vis-vm::st248_field_lift repro_field_nang_mot_lop
+        PASS [   0.008s] (1396/1430) vis-vm::st248_field_lift field_int2_khong_nang_nhieu_lop_va_none_giu_nguyen
+        PASS [   0.007s] (1397/1430) vis-vm::st248_field_lift index_int2_khong_nang_nhieu_lop
+        PASS [   0.005s] (1398/1430) vis-vm::st250_global_init t1_ghi_nhanh_khong_chay_doc_tra_trap
+        PASS [   0.005s] (1399/1430) vis-vm::st248_field_lift sai_kieu_bi_tu_choi
+        PASS [   0.007s] (1400/1430) vis-vm::st248_field_lift repro_index_nang_mot_lop
+        PASS [   0.004s] (1401/1430) vis-vm::st250_global_init t2_ghi_ham_khong_goi_doc_tra_trap
+        PASS [   0.004s] (1402/1430) vis-vm::st250_global_init t3_goi_ham_ghi_roi_doc_tra_gia_tri_dung
+        PASS [   0.004s] (1403/1430) vis-vm::st250_global_init t4_ghi_unit_hop_le_khong_nham_chua_khoi_tao
+        PASS [   0.004s] (1404/1430) vis-vm::st250_global_init t6_doc_ngoai_mien_bi_chan_khong_tra_mac_dinh
+        PASS [   0.005s] (1405/1430) vis-vm::st250_global_init t5_nhieu_global_chi_mot_phan_khoi_tao
+        PASS [   0.004s] (1406/1430) vis-vm::st250_global_init t7_qua_encode_decode_load_verified_execute
+        PASS [   0.004s] (1407/1430) vis-vm::st250_global_init t8_hai_lan_chay_doc_lap_khong_ro_trang_thai
+        PASS [   0.005s] (1408/1430) vis-vm::st252_capture_local t1_capture_rong_doc_chi_so_0
+        PASS [   0.004s] (1409/1430) vis-vm::st252_capture_local t2_chi_so_bang_do_dai_capture
+        PASS [   0.004s] (1410/1430) vis-vm::st252_capture_local t5_closure_moi_truong_khong_khop
+        PASS [   0.004s] (1411/1430) vis-vm::st252_capture_local t4_capture_hop_le_chua_unit
+        PASS [   0.005s] (1412/1430) vis-vm::st252_capture_local t3_chi_so_u16_max
+        PASS [   0.004s] (1413/1430) vis-vm::st252_capture_local t8_crafted_encode_decode_load_verified_execute
+        PASS [   0.006s] (1414/1430) vis-vm::st252_capture_local t6_closure_long_nhau_compiler_sinh_hop_le
+        PASS [   0.006s] (1415/1430) vis-vm::st252_capture_local t7_local_ngoai_khung_bi_chan_unit_hop_le
+        PASS [   0.004s] (1416/1430) vis-vm::vm_neg chuong_trinh_rong_tra_unit
+        PASS [   0.004s] (1417/1430) vis-vm::vm_neg const_ngoai_pham_vi_bi_tu_choi
+        PASS [   0.004s] (1418/1430) vis-vm::vm_neg dich_nhay_ngoai_code_bi_tu_choi
+        PASS [   0.005s] (1419/1430) vis-vm::vm_neg pop_rong_bi_tu_choi_khong_panic
+        PASS [   4.110s] (1420/1430) vis-cli::http http_server_im_lang_timeout_duoi_3s
+        PASS [   0.401s] (1421/1430) vis-vm::vs_interp hai_duong_cung_so_chan_doan
+        PASS [   0.511s] (1422/1430) vis-vm::diff_100k bo_sinh_hon_hop_du_nhom
+        PASS [   4.537s] (1423/1430) vis-cli::diag_cmp ca_xanh_ba_duong_khop_stdout
+        PASS [   0.481s] (1424/1430) vis-vm::vs_interp vm_khop_interp_tren_320_ca
+        PASS [   0.729s] (1425/1430) vis-vm::diff_100k diff_chuong_trinh_sinh_tu_dong
+        PASS [   1.404s] (1426/1430) vis-vm::diff_100k hai_nghin_chuong_trinh_khong_phai_20k
+        PASS [   3.382s] (1427/1430) vis-cli::bin/vis json_esc::fuzz_100k::fuzz_100k_khop_ba_phia
+        PASS [   5.008s] (1428/1430) vis-cli::sqlite gioi_han_thoi_gian_5s_bi_ngat
+        PASS [   2.439s] (1429/1430) vis-vm::fuzz_mutate fuzz_dot_bien_bytecode
+        PASS [   8.338s] (1430/1430) vis-cli::cache_khong_che ba_che_do_520_tep_khong_lech
+────────────
+     Summary [   8.397s] 1430 tests run: 1430 passed, 0 skipped
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+   Doc-tests vis_bytecode
+   Doc-tests vis_diag
+   Doc-tests vis_fmt
+   Doc-tests vis_interp
+   Doc-tests vis_syntax
+   Doc-tests vis_types
+   Doc-tests vis_vm

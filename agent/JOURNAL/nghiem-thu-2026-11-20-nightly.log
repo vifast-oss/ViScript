@@ -1,12 +1,11 @@
-vis-dev: cargo trên PATH quá cũ (1.93.1; yêu cầu ≥ 1.99.1)
 vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.99.1; yêu cầu ≥ 1.99.1)
 --- gate --fast: BỎ QUA (--skip-gate; fuzz + vòng tròn fmt vẫn chạy)
    Compiling tinyvec v1.13.3
+   Compiling vis-diag v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-diag)
    Compiling unicode-ident v1.0.27
-   Compiling vis-diag v0.1.0 (/tmp/opencode/final-candidate3/crates/vis-diag)
    Compiling unicode-normalization v0.1.26
-   Compiling vis-syntax v0.1.0 (/tmp/opencode/final-candidate3/crates/vis-syntax)
-    Finished `release` profile [optimized] target(s) in 2.86s
+   Compiling vis-syntax v0.1.0 (/tmp/opencode/final-candidate4/crates/vis-syntax)
+    Finished `release` profile [optimized] target(s) in 2.79s
 --- fuzz parser: 0 phút (0s)
 vis-parse-fuzz: 0 ca, 0 token, 0 ca/s, 0 token/s, 0.0 s, vi phạm 0
 vis-parse-fuzz: PASS (không vi phạm)

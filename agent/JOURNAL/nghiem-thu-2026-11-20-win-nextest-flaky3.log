@@ -1,0 +1,16 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+────────────
+ Nextest run ID 230978cc-8f17-4241-ac58-56de89b6c62f with nextest profile: default
+    Starting 1 test across 155 binaries (1416 tests skipped)
+        PASS [   0.228s] (1/1) vis-cli::net tcp_explain_tong
+────────────
+     Summary [   0.232s] 1 test run: 1 passed, 1416 skipped
+vis-remote-exit=0
+vis-remote: [exit=0] host=psvn log=/tmp/opencode/win-net-retry3.log log_may_dich=/c/Users/ps/vislogs/win-net-retry3-20261120T044832Z.log

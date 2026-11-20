@@ -1,12 +1,12 @@
 # vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
-# thoi_diem_bat_dau=2026-11-20T04:33:15Z
+# thoi_diem_bat_dau=2026-11-20T04:45:03Z
 # host=psvn
 # lenh: git -C /c/Users/ps/viscript-moi pull --ff-only 
 # lenh_do: git -C /c/Users/ps/viscript-moi pull --ff-only 
 # home_may_dich=/c/Users/ps
-# log_tren_may_dich=/c/Users/ps/vislogs/final3-pull-20261120T043314Z.log
-# exit_tren_may_dich=/c/Users/ps/vislogs/final3-pull-20261120T043314Z.log.exit
-# log_cuc_bo=/tmp/opencode/windows-final3-pull.log
+# log_tren_may_dich=/c/Users/ps/vislogs/final4-pull-20261120T044502Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/final4-pull-20261120T044502Z.log.exit
+# log_cuc_bo=/tmp/opencode/windows-final4-pull.log
 # ---------- HEADER VD-136: DO TREN psvn ----------
 # may: psvn
 # nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
@@ -18,13 +18,13 @@
 # rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
 # rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
 # repo: /c/Users/ps/viscript-moi
-# head_full: 75576e6968573bf5429b2ca1d1ad62b13a4ff1c5
-# head_ngan: 75576e6
+# head_full: 9acaa825c657436e278b23a7cf6de4bf6f0840b9
+# head_ngan: 9acaa82
 # git_nhanh: main
 # git_untracked: 0
 # git_status: 
 # vis-remote-home: /c/Users/ps
-# baseline_commit_do: 75576e6968573bf5429b2ca1d1ad62b13a4ff1c5
+# baseline_commit_do: 9acaa825c657436e278b23a7cf6de4bf6f0840b9
 # kernel: MINGW64_NT-10.0-26300
 # arch: x86_64
 # os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
@@ -33,12 +33,12 @@
 # cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
 # ---------- HET HEADER ----------
 # ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
-# baseline_commit_do: 75576e6968573bf5429b2ca1d1ad62b13a4ff1c5
+# baseline_commit_do: 9acaa825c657436e278b23a7cf6de4bf6f0840b9
 # kernel: MINGW64_NT-10.0-26300
 # arch: x86_64
 # os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
 # toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
-# cau_hinh: host=psvn dirty_policy=check stem=final3-pull-20261120T043314Z
+# cau_hinh: host=psvn dirty_policy=check stem=final4-pull-20261120T044502Z
 # host_check: khong yeu cau Darwin
 # ---------- HET ST-242 ----------
 ** WARNING: connection is not using a post-quantum key exchange algorithm.
@@ -46,15 +46,35 @@
 ** The server may need to be upgraded. See https://openssh.com/pq.html
 # ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
 From https://github.com/vifast-oss/ViScript
-   75576e6..9acaa82  main       -> origin/main
-Updating 75576e6..9acaa82
+   9acaa82..dbae70a  main       -> origin/main
+Updating 9acaa82..dbae70a
 Fast-forward
- agent/QUEUE.md |  2 ++
- bin/vis-dev    | 50 +++++++++++++++++++++++++++++++++-----------------
- 2 files changed, 35 insertions(+), 17 deletions(-)
+ agent/BAO-CAO-NGHIEM-THU-2026-11-20.md             |   34 +
+ agent/JOURNAL/nghiem-thu-2026-11-20-fresh-gate.log | 2520 ++++++++++++++++++++
+ agent/JOURNAL/nghiem-thu-2026-11-20-nightly.log    |   15 +
+ agent/JOURNAL/nghiem-thu-2026-11-20-sem-interp.tap |  528 ++++
+ agent/JOURNAL/nghiem-thu-2026-11-20-sem-vm.tap     |  528 ++++
+ agent/JOURNAL/nghiem-thu-2026-11-20-targets.txt    |   49 +
+ .../nghiem-thu-2026-11-20-targets.txt.license      |    1 +
+ agent/JOURNAL/nghiem-thu-2026-11-20-win-pull.log   |   60 +
+ .../nghiem-thu-2026-11-20-win-toolchain.log        |   54 +
+ .../JOURNAL/nghiem-thu-2026-11-20-win-ws-test.log  | 2413 +++++++++++++++++++
+ agent/QUEUE.md                                     |    2 +
+ bin/vis-dev                                        |   17 +-
+ 12 files changed, 6220 insertions(+), 1 deletion(-)
+ create mode 100644 agent/BAO-CAO-NGHIEM-THU-2026-11-20.md
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-fresh-gate.log
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-nightly.log
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-sem-interp.tap
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-sem-vm.tap
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-targets.txt
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-targets.txt.license
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-win-pull.log
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-win-toolchain.log
+ create mode 100644 agent/JOURNAL/nghiem-thu-2026-11-20-win-ws-test.log
 vis-remote-exit=0
 # ---------- KET ----------
-# thoi_diem_ket_thuc=2026-11-20T04:33:17Z
+# thoi_diem_ket_thuc=2026-11-20T04:45:06Z
 # ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
-# sha256(log_tren_may_dich)=a70024dd1078d0a1aabe06f6368fdcf600795990c29be616aa0047a91eb92253
+# sha256(log_tren_may_dich)=99372c0ad220d8851b7395159293f61f2face01cd1ab88cfa6adde0e42aaa62d
 [exit=0]
