@@ -159,3 +159,8 @@ Không phải full gate lặp lại — chỉ kiểm flake có mục tiêu.
 `cargo test --release --workspace`: exit 0, **1571 passed / 0 failed** (bao gồm mọi test binary,
 không chỉ các binary lẻ đã chạy ở các mục trước). Log `/tmp/opencode/vd257-release-workspace.log`.
 
+## 16. Fuzz 10 phút/seed
+
+3 seed mới (`20261202`/`20261203`/`20261204`) × 600 s: **~281,9 triệu ca, 0 vi phạm**, exit 0.
+Log `/tmp/opencode/vd257-fuzz-10m.log`. Tổng fuzz hữu hạn ~541 triệu ca, không seed lỗi.
+
