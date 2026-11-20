@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 135] = [
+pub const FUNCS: [StdFn; 136] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -456,6 +456,15 @@ pub const FUNCS: [StdFn; 135] = [
         name: "str.char_count",
         params: &[Ty::Str],
         ret: Ty::Int,
+    },
+    // **VD-270 (char-at)**: scalar Unicode thứ `i` (**zero-based**, cùng đơn vị
+    // `char_count`/`find`); âm/quá dài/rỗng ⇒ `None`, không trap; một `char` dưới dạng
+    // `str`, **không** phải grapheme. Tham số đầu `str` nên sugar R5c `s.char_at(i)` chạy
+    // không cần `use std.str`.
+    StdFn {
+        name: "str.char_at",
+        params: &[Ty::Str, Ty::Int],
+        ret: Ty::OptStr,
     },
     StdFn {
         name: "str.is_empty",
