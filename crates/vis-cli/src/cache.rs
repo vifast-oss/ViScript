@@ -17,9 +17,12 @@ use std::path::PathBuf;
 // field/index) ⇒ bytecode cache sinh trước bản sửa vẫn có `VERSION=2` nhưng trả `5`/`7` thay vì
 // `Some(5)`/`Some(7)`. `VERSION` không đổi (ST-246 đã đổi cho ngữ nghĩa bytecode) ⇒ phải đổi nhãn
 // logic compiler để cache cũ tự vô hiệu — nợ #187 / `BLOCKED.md` §16.
+// **SỬA KÈM LÝ DO (VD-245 §5, ST-250, 2026-11-20)**: runtime nay trap ô global chưa khởi tạo;
+// cache sinh trước bản sửa vẫn có `VERSION=2` nhưng mang ngữ nghĩa VM cũ ⇒ đổi nhãn lần nữa để
+// phiên bản phát hành gồm đầy đủ hàng rào global. Không đổi `VERSION`/opcode.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -196,11 +199,13 @@ mod tests {
     /// source được biên dịch lại.
     /// Ghim lại lần nữa (2026-11-20, **ST-249/VD-129**, nợ #187): ST-248 đổi logic codegen (nâng
     /// `Some` ở đích field/index) nhưng `VERSION` vẫn 2 ⇒ `PHIEN_BAN` đổi để cache cũ tự vô hiệu.
+    /// Ghim lại lần nữa (2026-11-20, **VD-245 §5 / ST-250**): runtime trap ô global chưa khởi tạo ⇒
+    /// cache mang ngữ nghĩa VM cũ phải vô hiệu trước khi phát hành.
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "ad63ae9807aadc6c6208040197966169a0552ea07fe96d9340a5e84b7daf210e",
+            k, "c4e9236cb32cb0f7359bf4630e70ca207e531cfb9a60a5f41c05341931051bb8",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
         // ST-249/#187: khoá của bản trước ST-248 (chỉ đổi PHIEN_BAN, VERSION vẫn 2) phải KHÔNG còn
@@ -208,6 +213,11 @@ mod tests {
         assert_ne!(
             k, "66c332a94f29959cdba27435f63415fa90a1bcd0550370ceeb174777c89d85c5",
             "ST-249: cache sinh trước field/index lift không được tái dùng"
+        );
+        // VD-245 §5: cache sinh trước global init trap (dù đã có field/index lift) cũng không được tái dùng.
+        assert_ne!(
+            k, "ad63ae9807aadc6c6208040197966169a0552ea07fe96d9340a5e84b7daf210e",
+            "VD-245: cache sinh trước global init trap không được tái dùng"
         );
         assert!(
             PHIEN_BAN.contains("st248-field-index-lift"),

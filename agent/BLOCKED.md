@@ -235,7 +235,11 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 
 **Đóng blocker (ST-246, `9824e66`)**: `VERSION 1 → 2`; runtime mới từ chối artifact v1 (`BadVersion(1)`, patch đúng 2 byte ⇒ decode OK); cache v1 ≠ v2, artifact v1 in sai `999` trên path cache vẫn bị bỏ ⇒ VM in `42`, source recompile đúng interp+VM; bytecode v1 không source ⇒ `LoadError::Decode(BadVersion(1))`; re-pin 2 test sentinel `2→3` bắt buộc. Kiểm trên commit tích hợp: `check` PASS · `gate --fast` PASS · `cargo test -p vis-bytecode -p vis-cli` xanh · `vis test` 525/525 · `--vm` 525/525. **Xem caveat ở đầu mục** — §14 vẫn mở, không tuyên bố global-slot khép.
 
-## 14. BLOCKER — Global chưa khởi tạo trả `Unit` (ST-247/VD-245), CHƯA đóng
+## 14. BLOCKER — Global chưa khởi tạo trả `Unit` (ST-247/VD-245) — ĐÓNG ở ST-250
+
+**Cập nhật 2026-11-20**: **ST-250 đóng blocker này** (tích hợp `2551a6c`, review `JOURNAL/st250-review.md`). `vm.rs`: `globals: Vec<Option<Value>>`, `doc_global` là kiểm tra duy nhất, chưa khởi tạo ⇒ trap `VS0501` (mã hiện hành) exit 1, `init_globals()` reset theo vòng đời. 8/8 test nghiệm thu, `cargo test -p vis-vm` xanh, `vis test` 525/525 ×2. Nợ **#188 đóng**. Không được mô tả `verify()` là bảo đảm không đọc global chưa khởi tạo. Finding local/capture chuyển sang **§17**.
+
+> Phần dưới là nội dung ban đầu (giữ lịch sử, VD-142).
 
 **Cập nhật 2026-11-20**: ST-247 đã trả lời 5 câu (`JOURNAL/st247-review.md`); 4 câu đầu ổn, **câu (4) là blocker**: verifier đếm tĩnh mọi lệnh ghi (nhánh không chạy/hàm chưa gọi) ⇒ chấp nhận đọc; runtime `unwrap_or(Unit)` trả `Unit` **thành công**, đã so `show == "()"`. A0 chốt **VD-245**: runtime kiểm tra khởi tạo và trap; cấm dùng `Unit` làm dấu chưa khởi tạo; chưa mở CFG definite-assignment; verifier vẫn giữ miền chỉ số. Task **ST-250**, nợ **#188**, giữ mở tới khi tích hợp + review + kiểm chứng. Không được mô tả `verify()` là bảo đảm “không thể đọc global chưa khởi tạo”.
 
@@ -265,3 +269,13 @@ ST-239 xác nhận checker chấp nhận nhưng runtime hai engine lưu giá tr�
 - Không đổi `VERSION` lần này (ST-246 đã đổi cho ngữ nghĩa bytecode); chỉ đổi nhãn logic compiler.
 
 **Đóng (ST-249)**: `PHIEN_BAN` += `+st248-field-index-lift-2026-11-20`; khoá ghim re-pin `66c332a9… → ad63ae98…` kèm lý do; test khẳng định khoá cũ **không còn trùng** và nhãn logic hiện diện. `check`/`gate --fast`/`cargo test -p vis-cli cache::tests`/`vis test` 525/525 ×2 đều xanh. **Không** gộp với ST-246 (đã xong); §14 (miền global) vẫn mở.
+
+## 17. FINDING RIÊNG — Capture/local đọc ngoài miền vẫn trả `Unit` (ST-250), MỞ
+
+**Người ghi**: Agent 1 (từ `JOURNAL/st250-review.md` §4) · **Trạng thái**: **mở** · **Nợ**: **#189**.
+
+ST-250 sửa đường **global**, nhưng Agent 2 báo riêng (A0 yêu cầu không tuyên bố an toàn):
+- **Trung bình**: `Instr::LoadCaptured(i)` trong `vm.rs` vẫn `get(i).unwrap_or(Unit)` và verifier `verify.rs:449` không kiểm biên capture ⇒ crafted bytecode có thể đọc capture ngoài phạm vi thành `Unit` **thành công** — cùng lớp lỗi với global nhưng là đường local/capture.
+- **Thấp**: `LoadLocal` nhánh local cũng `unwrap_or(Unit)`; verifier chặn `s ≥ nlocals` và khung khởi tạo sẵn `Unit` ⇒ defense-in-depth.
+
+**Không tự mở rộng ST-250**, không đổi verifier/format trong đợt này. Chưa có hướng xử lý từ A0; ghi sổ để theo dõi, không tuyên bố đường capture/local đã an toàn chỉ vì global đã sửa.
