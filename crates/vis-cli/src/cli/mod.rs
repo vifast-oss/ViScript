@@ -5,3 +5,4 @@ pub(crate) mod check;
 pub(crate) mod doctor;
 pub(crate) mod fmt;
 pub(crate) mod run;
+pub(crate) mod version;

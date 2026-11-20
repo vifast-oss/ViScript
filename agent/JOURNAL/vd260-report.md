@@ -104,6 +104,7 @@
 | Schema SQL | `a6ebf63` → `8ce3246` | `sqlite.schema_sql` → `Result[str?, Error]` |
 | Str title | `ae86c9b` → `60d0961` | `str.title` hoa đầu từ theo khoảng trắng Unicode |
 | SQLite index columns | `409756b` → `146cf32` | `sqlite.index_columns` theo thứ tự index |
+| Version | trực tiếp | `vis version [--json]` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
@@ -286,3 +287,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `54f5db4`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `./vis-dev nightly` @ `5e41548`: **PASS** — parser fuzz **15.289.413 ca / 346.969.831 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `vis test test/sem` @ `6dc6182`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
+- `VIS_DIFF_N=100000` seed 20261208 @ `5865211`: **0 lệch** (93.767 chạy, 96,5 s).

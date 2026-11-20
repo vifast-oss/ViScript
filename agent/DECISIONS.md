@@ -3408,3 +3408,9 @@ giữ `VS0403` (ngoài phạm vi); `impl Hop[T]` generic vẫn chưa hỗ trợ.
   tuyệt đối), trộn loại ⇒ `to` chuẩn hoá; rỗng ⇒ `.`; **không sugar**.
 - **vis doctor**: `vis doctor [--json]` in version/os/arch/sqlite/features tất định, exit 0; mọi
   cờ/đối số thừa ⇒ exit 2, stdout rỗng.
+
+### VD-270 (bổ sung) · `vis version [--json]` — A0, 2026-11-21
+
+Duyệt `vis version` in `vis <CARGO_PKG_VERSION>` (một dòng) và `--json` in
+`{"name":"vis","version":"…"}` (một dòng); đối số/cờ lạ ⇒ exit 2, stdout rỗng, usage trên stderr.
+Không đọc môi trường/tệp/mạng.
