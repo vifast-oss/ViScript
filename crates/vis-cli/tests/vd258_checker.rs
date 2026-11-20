@@ -604,3 +604,47 @@ fn da_tep_sqlvalue_ctor_duoi_strict() {
     assert_eq!(a.0, 0, "interp: {}", a.2);
     assert_eq!(a.1, "Integer(3)\n");
 }
+
+/// **VD-258** — `()` chỉ có một biểu diễn runtime: empty tuple = `Value::Unit`,
+/// không phải `Value::List([])`; `return` trần và `()` phải bằng nhau.
+#[test]
+fn unit_empty_tuple_va_return_tron_cung_bieu_dien() {
+    let [a, _b] = chay_ca_hai(
+        "unit_repr",
+        r#"fn f() -> ():
+    ()
+
+fn g():
+    return
+
+fn main():
+    let a = f()
+    let b = g()
+    print(a)
+    print(b)
+    print(a == b)
+"#,
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "()\n()\ntrue\n");
+}
+
+/// **VD-258** — VM phải bind or-pattern theo **alternative khớp**, không phải alternative đầu.
+#[test]
+fn or_pattern_bind_theo_alternative_khop() {
+    let [a, b] = chay_ca_hai(
+        "or_bind",
+        r#"enum E:
+    A(x: int, y: int)
+    B(y: int, x: int)
+
+fn main():
+    let e: E = B(10, 20)
+    match e:
+        A(x, _) | B(_, x): print(x)
+"#,
+    );
+    assert_eq!(a.0, 0, "interp: {}", a.2);
+    assert_eq!(a.1, "20\n");
+    assert_eq!(b.1, "20\n");
+}

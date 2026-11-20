@@ -230,10 +230,35 @@ impl Emit<'_> {
                 Ok(())
             }
             HPat::Or { alts, .. } => {
-                if let Some(first) = alts.first() {
-                    self.gan_tu_dinh(first, span)?;
-                } else {
+                // **VD-258**: bind theo **alternative khớp**, không phải alternative đầu.
+                // Giá trị gốc ở đỉnh; mỗi alternative không-cuối được test trên bản sao:
+                //   [value] → Dup → test(alt) → JumpIfFalse(next) → bind(alt) → Jump(end)
+                //   next: [value] (bool đã bị JumpIfFalse tiêu thụ) → thử alt kế.
+                // Alternative cuối là fallback: outer match chỉ vào arm này khi đã có alt khớp.
+                if alts.is_empty() {
                     self.f.push(Instr::Pop, span, -1);
+                    return Ok(());
+                }
+                let mut ends = Vec::new();
+                for (i, alt) in alts.iter().enumerate() {
+                    if i + 1 == alts.len() {
+                        self.gan_tu_dinh(alt, span)?;
+                        break;
+                    }
+                    self.f.push(Instr::Dup, span, 1);
+                    let _ = self.test(alt, span)?;
+                    let jf = self.f.here();
+                    self.f.push(Instr::JumpIfFalse(0), span, -1);
+                    self.gan_tu_dinh(alt, span)?;
+                    let jend = self.f.here();
+                    self.f.push(Instr::Jump(0), span, 0);
+                    ends.push(jend);
+                    let next = self.f.here();
+                    self.f.patch(jf, next);
+                }
+                let end = self.f.here();
+                for j in ends {
+                    self.f.patch(j, end);
                 }
                 Ok(())
             }

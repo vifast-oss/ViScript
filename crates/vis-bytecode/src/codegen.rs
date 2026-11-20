@@ -1190,6 +1190,12 @@ impl<'g> Emit<'g> {
                 self.net_stack(*span)
             }
             HExpr::Tuple { items, span, .. } => {
+                // **VD-258**: `()` là `unit` duy nhất; empty tuple phát `PushUnit`,
+                // không `MakeTuple(0)` (VM sẽ tạo `Value::List([])`).
+                if items.is_empty() {
+                    self.f.push(Instr::PushUnit, *span, 1);
+                    return self.net_stack(*span);
+                }
                 for it in items {
                     self.expr(it)?;
                 }

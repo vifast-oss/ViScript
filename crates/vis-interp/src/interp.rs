@@ -943,6 +943,11 @@ impl<'a> Interp<'a> {
                 env: Rc::new(std::cell::RefCell::new(self.env.borrow().clone())),
             }))),
             HExpr::Tuple { items, .. } => {
+                // **VD-258**: `()` là `unit` duy nhất — empty tuple không được là `Value::List([])`
+                // (trước đây `()` in `[]`, khác `return` trần in `()`).
+                if items.is_empty() {
+                    return Ok(Value::Unit);
+                }
                 let mut vs = Vec::with_capacity(items.len());
                 for it in items {
                     vs.push(self.eval(it)?);
