@@ -21,6 +21,7 @@ mod khung;
 mod ky_hieu;
 mod module;
 mod phan_tich;
+mod phuong_loi;
 mod thanh_vien;
 mod vi_tri;
 mod workspace;

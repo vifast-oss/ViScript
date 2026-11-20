@@ -6,8 +6,8 @@
 //! item cấp tệp (`fn` 3 / record 22 / enum 13 / alias 25 / const 21 / trait 11), biến-tham số (6),
 //! `vis_types::BUILTIN_VALUE_NAMES` (3), `vis_syntax::KEYWORDS` (14).
 //!
-//! Hover: tra item → biến → trường → ký hiệu → builtin → từ khoá → phương thức (`impl`/`trait`);
-//! không có ⇒ `result:null`. `range` là **đúng từ** tại
+//! Hover: tra item → biến → trường → ký hiệu → builtin → từ khoá → phương thức (`impl`/`trait`)
+//! → phương thức lõi (`list`/`map`/`str`); không có ⇒ `result:null`. `range` là **đúng từ** tại
 //! con trỏ (0-based **UTF-16**, tab = 1 — dùng lại `phan_tich::khoang`).
 
 use std::collections::HashSet;
@@ -294,6 +294,14 @@ fn hover_phuong(kq: &KetQua, start: usize, tu: &str) -> Option<String> {
     ))
 }
 
+/// **VD-270**: hover **phương thức lõi** dựng sẵn — `xs.get`, `s.upper`, `m.get`, và các sugar
+/// `std.list/map/str.*` (R5c). Chỉ tra khi từ nằm sau dấu chấm và người nhận có **kiểu tĩnh** trong
+/// `kq.bien`; không rõ kiểu/tên ⇒ `None` (không đoán). Bảng/format nằm ở [`super::phuong_loi`].
+fn hover_phuong_loi(kq: &KetQua, start: usize, tu: &str) -> Option<String> {
+    let kieu = kieu_truoc_cham(kq, &kq.text, start)?;
+    super::phuong_loi::hover(&kieu, tu)
+}
+
 /// **ST-274**: hover biến thể enum / trường từ cây ký hiệu (bổ sung cho `hover_truong`).
 fn hover_ky_hieu(ds: &[super::ky_hieu::KyHieu], tu: &str, parent: Option<&str>) -> Option<String> {
     for k in ds {
@@ -336,9 +344,12 @@ fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
         format!("```vis\n<builtin {tu}>\n```")
     } else if KEYWORDS.binary_search(&tu).is_ok() {
         format!("từ khoá: {tu}")
+    } else if let Some(v) = hover_phuong(kq, start, tu) {
+        // **VD-270** — phương thức người dùng thắng fallback lõi.
+        v
     } else {
-        // **VD-270** — cuối cùng: không được đè item/biến/trường/ký hiệu/builtin/từ khoá.
-        hover_phuong(kq, start, tu)?
+        // **VD-270** — cuối cùng: phương thức lõi (`list`/`map`/`str`); không có ⇒ `null`.
+        hover_phuong_loi(kq, start, tu)?
     };
     Some((Span::new(start, end), value))
 }
