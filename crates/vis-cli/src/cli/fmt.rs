@@ -75,13 +75,16 @@ fn dem_lech_thut_le(text: &str) -> Option<usize> {
 
 fn usage_fmt() -> ExitCode {
     eprintln!(
-        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check [--json] <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check [--json]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check [--json|--list] <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check [--json|--list]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     eprintln!(
-        "  vis fmt --stdin [--check [--json]] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
+        "  vis fmt --stdin [--check [--json|--list]] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
     );
     eprintln!(
         "  --json: chỉ đi với --check (tệp/thư mục hoặc --stdin); in một object JSON nén trên stdout: {{\"ok\":bool,\"files\":[{{\"path\":…,\"formatted\":bool,\"error\":null|{{\"code\":\"VSxxxx\",\"line\":n,\"col\":n,\"message\":…}}}}]}}; dòng/cột 1-based; thoát 0 (mọi tệp đã đúng) / 1 (cần sửa) / 2 (lỗi đọc/cú pháp hoặc dùng sai)"
+    );
+    eprintln!(
+        "  --list: chỉ đi với --check (tệp/thư mục hoặc --stdin --check); in đúng một đường dẫn mỗi dòng cho tệp cần sửa, không in gì khác (thứ tự đối số, trong thư mục duyệt đệ quy đã sắp); --stdin --check --list in `-` khi stdin cần sửa; không đi với --json/--write/--indent-report; thoát 0 (không tệp nào cần sửa) / 1 (có tệp cần sửa) / 2 (lỗi đọc/cú pháp hoặc dùng sai)"
     );
     ExitCode::from(2)
 }
@@ -135,6 +138,7 @@ enum FmtMode {
 
 /// `vis fmt` — chuẩn hoá **thụt lề** (ST-07, VD-39). Thoát 0 (xong / đã đúng), 1 (`--check` có tệp
 /// cần sửa), 2 (dùng sai, tệp lỗi cú pháp, `.vish`).
+/// **VD-270**: `--check --list` chỉ in đường dẫn tệp cần sửa — một dòng mỗi tệp, không gì khác.
 /// **ST-77**: gom `.vis`/`.vish` dưới `goc` theo thứ tự byte (sắp sau khi gom).
 fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
     let Ok(ds) = std::fs::read_dir(goc) else {
@@ -196,6 +200,8 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     use std::io::Read;
     let mut check = false;
     let mut json_ra = false;
+    // **VD-270**: `--list` — biến thể máy đọc của `--check`; chỉ in `-` khi stdin cần sửa.
+    let mut list_ra = false;
     let mut che_do = Mode::Script;
     let mut da_mode = false;
     let mut i = 0;
@@ -204,8 +210,9 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         match a {
             "--stdin" => {}
             "--check" => check = true,
-            // **VD-270**: `--json` chỉ có nghĩa khi `--check`; kiểm sau khi đọc hết cờ.
+            // **VD-270**: `--json`/`--list` chỉ có nghĩa khi `--check`; kiểm sau khi đọc hết cờ.
             "--json" => json_ra = true,
+            "--list" => list_ra = true,
             "--mode" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis fmt: --mode thiếu giá trị (script|command)");
@@ -255,12 +262,21 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         }
         i += 1;
     }
+    // **VD-270**: `--list` + `--json` là hai đầu ra máy khác nhau ⇒ từ chối rõ (JSON đã đủ).
+    if list_ra && json_ra {
+        eprintln!("vis fmt: --list không đi với --json (JSON đã là đầu ra máy)");
+        return usage_fmt();
+    }
     // **VD-270**: `--json` không đi với `--stdin` trần — phải có `--check`; câu chữ giữ cụm
     // "không hỗ trợ cờ" để ca cũ (VD-267) vẫn đúng lý do.
     if json_ra && !check {
         eprintln!(
             "vis fmt: --json chỉ dùng với --check (không hỗ trợ cờ `--json` khi thiếu --check)"
         );
+        return usage_fmt();
+    }
+    if list_ra && !check {
+        eprintln!("vis fmt: --list chỉ dùng với --check");
         return usage_fmt();
     }
     let mut src = String::new();
@@ -290,6 +306,17 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
             ExitCode::from(2)
         }
         Ok(moi) if check => {
+            // **VD-270**: `--list` chỉ in đường dẫn (`-`) khi cần sửa; đã đúng ⇒ im lặng.
+            if list_ra {
+                if moi == src {
+                    return ExitCode::SUCCESS;
+                }
+                return if xuat_stdout("-\n") {
+                    ExitCode::from(1)
+                } else {
+                    ExitCode::from(2)
+                };
+            }
             if json_ra {
                 let formatted = moi == src;
                 let entry = tep_json("-", formatted, None);
@@ -384,6 +411,49 @@ fn xuat_fmt_json_tep(ds: &[std::path::PathBuf]) -> ExitCode {
     xuat_fmt_json(&entries, ma == 0, ma)
 }
 
+/// **VD-270**: `vis fmt --check --list` trên danh sách đã gom/sắp — in **đúng một** đường dẫn
+/// mỗi dòng cho tệp cần sửa, không in gì khác; lỗi đọc/cú pháp ra stderr (luôn kèm tên tệp) và
+/// làm mã thoát thành 2. Thứ tự do nơi gom quyết định: đối số theo thứ tự người dùng, trong mỗi
+/// thư mục đã sắp đệ quy.
+fn xuat_fmt_list(ds: &[std::path::PathBuf]) -> ExitCode {
+    let mut ra = String::new();
+    let mut co_loi = false;
+    let mut can_sua = false;
+    for path in ds {
+        match doc_va_dinh_dang(path) {
+            KetQuaDoc::Xong { src, moi, .. } => {
+                if moi != src {
+                    can_sua = true;
+                    ra.push_str(&format!("{}\n", path.display()));
+                }
+            }
+            KetQuaDoc::ParseLoi(e) => {
+                co_loi = true;
+                eprintln!(
+                    "# {}: {}",
+                    path.display(),
+                    dong_chan_doan(e.code, e.line, e.col, &e.message)
+                );
+            }
+            KetQuaDoc::DocLoi(e) => {
+                co_loi = true;
+                eprintln!("# {}: không đọc được: {e}", path.display());
+            }
+        }
+    }
+    if !xuat_stdout(&ra) {
+        return ExitCode::from(2);
+    }
+    let ma = if co_loi {
+        2
+    } else if can_sua {
+        1
+    } else {
+        0
+    };
+    ExitCode::from(ma)
+}
+
 pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // **VD-267**: `--stdin` là chế độ riêng — không lẫn với đường tệp/thư mục bên dưới.
     if args.iter().any(|a| a == "--stdin") {
@@ -398,9 +468,31 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
         eprintln!("vis fmt: --mode chỉ dùng với --stdin (đường tệp tự suy chế độ từ .vish/.vis)");
         return usage_fmt();
     }
-    // **VD-270**: `--json` chỉ hợp lệ khi `--check`; lọc cờ trước khi chọn chế độ để nhận cả
-    // `--check --json …` lẫn `--json --check …`. Không đổi cách nhận diện các chế độ cũ.
+    // **VD-270**: `--json`/`--list` chỉ hợp lệ khi `--check`; lọc cờ trước khi chọn chế độ để
+    // nhận cả `--check --json …` lẫn `--json --check …`. Không đổi cách nhận diện các chế độ cũ.
     let json_ra = args.iter().any(|a| a == "--json");
+    let list_ra = args.iter().any(|a| a == "--list");
+    // **VD-270**: `--list` là đầu ra máy dạng danh sách — không đi với JSON (đã đủ cho máy),
+    // không đi với chế độ ghi/báo cáo, và chỉ có nghĩa khi `--check`.
+    if list_ra {
+        if json_ra {
+            eprintln!("vis fmt: --list không đi với --json (JSON đã là đầu ra máy)");
+            return usage_fmt();
+        }
+        if args
+            .iter()
+            .any(|a| a == "--write" || a == "--indent-report")
+        {
+            eprintln!(
+                "vis fmt: --list chỉ dùng với --check (không đi với --write/--indent-report)"
+            );
+            return usage_fmt();
+        }
+        if !args.iter().any(|a| a == "--check") {
+            eprintln!("vis fmt: --list chỉ dùng với --check");
+            return usage_fmt();
+        }
+    }
     if json_ra {
         if args
             .iter()
@@ -416,15 +508,15 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
             return usage_fmt();
         }
     }
-    let loc: Vec<String> = if json_ra {
+    let loc: Vec<String> = if json_ra || list_ra {
         args.iter()
-            .filter(|a| a.as_str() != "--json")
+            .filter(|a| a.as_str() != "--json" && a.as_str() != "--list")
             .cloned()
             .collect()
     } else {
         Vec::new()
     };
-    let args: &[String] = if json_ra { &loc } else { args };
+    let args: &[String] = if json_ra || list_ra { &loc } else { args };
     let (mode, files): (FmtMode, &[String]) = match args.first().map(String::as_str) {
         None => return usage_fmt(),
         Some("--write") => (FmtMode::Write, &args[1..]),
@@ -441,9 +533,14 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
             (FmtMode::Stdout, args)
         }
     };
-    // `--json` đứng sau tên tệp (không phải đầu) cũng là dùng sai — không rơi vào chế độ stdout.
+    // `--json`/`--list` đứng sau tên tệp (không phải đầu) cũng là dùng sai — không rơi vào chế
+    // độ stdout.
     if json_ra && mode != FmtMode::Check {
         eprintln!("vis fmt: --json chỉ dùng với --check");
+        return usage_fmt();
+    }
+    if list_ra && mode != FmtMode::Check {
+        eprintln!("vis fmt: --list chỉ dùng với --check");
         return usage_fmt();
     }
     if files.is_empty() {
@@ -451,8 +548,17 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     }
     // **ST-77 (VD-108)**: nhận **thư mục** (đệ quy `.vis`/`.vish`) để `vis fmt --check test/`
     // kiểm được toàn bộ fixture; tệp lẻ giữ nguyên hành vi cũ.
-    // **VD-270**: `--json` giữ **thứ tự đối số**, chỉ sắp trong từng thư mục; đường văn bản giữ
-    // nguyên sắp xếp toàn cục như trước (byte-identical).
+    // **VD-270**: `--json`/`--list` giữ **thứ tự đối số**, chỉ sắp trong từng thư mục; đường văn
+    // bản giữ nguyên sắp xếp toàn cục như trước (byte-identical).
+    if list_ra {
+        let mut ds: Vec<std::path::PathBuf> = Vec::new();
+        for mut nhom in gom_theo_doi_so(files) {
+            nhom.retain(|(p, tu_nguon)| *tu_nguon || la_input_co_y(p));
+            nhom.sort_by(|a, b| a.0.cmp(&b.0));
+            ds.extend(nhom.into_iter().map(|(p, _)| p));
+        }
+        return xuat_fmt_list(&ds);
+    }
     if json_ra {
         let mut ds: Vec<std::path::PathBuf> = Vec::new();
         for mut nhom in gom_theo_doi_so(files) {
