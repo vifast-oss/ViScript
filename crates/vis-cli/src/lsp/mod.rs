@@ -26,6 +26,7 @@ mod phan_tich;
 mod phuong_loi;
 mod thanh_vien;
 mod thuc_thi;
+mod type_definition;
 mod vi_tri;
 mod workspace;
 
@@ -254,6 +255,28 @@ pub fn run(args: &[String]) -> ExitCode {
                                     root.as_deref(),
                                     &id
                                 ));
+                            }
+                        }
+                    }
+                }
+            }
+            // **VD-270**: nhảy tới khai báo kiểu (bản ghi/enum) của từ tại con trỏ.
+            "textDocument/typeDefinition" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(type_definition::tra_loi(&kq, &uri, byte, &id));
                             }
                         }
                     }
@@ -632,6 +655,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("documentHighlightProvider", Value::Bool(true)),
         jsonrpc::kv("selectionRangeProvider", Value::Bool(true)),
         jsonrpc::kv("inlayHintProvider", Value::Bool(true)),
+        jsonrpc::kv("typeDefinitionProvider", Value::Bool(true)),
         jsonrpc::kv(
             "renameProvider",
             jsonrpc::m(vec![("prepareProvider", Value::Bool(true))]),
