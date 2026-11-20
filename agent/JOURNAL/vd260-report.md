@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `ab43766` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `a76c945` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic),
-> gate **1972 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **1981 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -48,7 +48,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1972 passed / 3 skipped** tại `ab43766`.
+- `./vis-dev gate --fast`: **PASS — 1981 passed / 3 skipped** tại `a76c945`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -115,3 +115,6 @@
 - **fmt-size** (`1ab5d8b` → `350d7c4`): size thập phân ≤2 lẻ, duration ghép; cập nhật show/test/docs.
 - **fmtstdin** (`8d2ae13` → `8820d4d`): `vis fmt --stdin [--check]`, exit 0/1/2, không đụng đĩa.
 - `VIS_DIFF_N=100000` @ `350d7c4`: **0 lệch** (93.770 chạy, 164,5 s, seed 20261122).
+- **fswalk** (`894e45c` → `a76c945`): `fs.walk` đệ quy, bỏ symlink, mock/VM khớp; API +1.
+- **LSP xuyên tệp** (`0365ecb`): `definition` fallback quét `rootUri` khi không thấy trong tệp.
+- `./vis-dev nightly` @ `ab43766`: **PASS** — parser fuzz **6.621.319 ca / 150.252.151 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
