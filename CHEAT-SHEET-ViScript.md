@@ -96,6 +96,7 @@ loop break continue return and or not true false self async await scope test ext
 | `match s:`<br>`    Circle(r): "tròn {r}"`<br>`    Empty: "rỗng"` ✔ | `match s:`<br>`    case Circle(r): ...` | `match s {`<br>`    Shape::Circle(r) => ...,`<br>`    Shape::Empty => ... }` | `switch (s.kind)` | **phải xét hết**; thiếu nhánh ⇒ `VS0402` ("`match` thiếu nhánh: B") |
 | `Circle(r) if r > 100.0: "lớn"` ✔ | `case Circle(r) if r > 100:` | `Shape::Circle(r) if r > 100.0 => ...` | — | guard **không** tính vào coverage |
 | `A(x) \| B(x): x` ✔ | `case A(x) \| B(x):` | `A(x) \| B(x) => x` | — | or-pattern; `\|` **không** phải bit-or |
+| `[first, ..rest]` ✔<br>`[first, ..]` ✔ | `case [first, *rest]:` | `[first, ..]` | — | **VD-260**: rest-pattern list; `..` ở cuối (không có hậu tố `[.., z]`); `rest` là bản sao; khớp list rỗng/sai hình ⇒ không khớp, không trap |
 | `_` | `case _:` | `_ =>` | `default:` | bắt buộc với kiểu vô hạn (`int`, `str`…) |
 | `if let Some(v) = x:`<br>`    print(v)` ✔ | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3a**: `if let`/`while let` nhận **pattern** (`Some(v)`/`Ok(v)`/`Err(e)`); dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`** |
 | `while let Some(v) = x:`<br>`    print(v)` ✔ | `while (v := next_it()) is not None:` | `while let Some(v) = iter.next() {` | `while (v = iter.next()) != null` | **R18b**: cấu trúc `while let` nhận **pattern** (`Some(v)`/`Ok(v)`/…); pattern không khớp ⇒ **thoát vòng**, không panic; codegen dùng `HCond::Let` chung với `if let` |
