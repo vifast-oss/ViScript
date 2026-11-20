@@ -5,6 +5,33 @@
 use crate::*;
 use std::process::ExitCode;
 
+/// **VD-270**: cách dùng `vis run` — stderr + exit **2**.
+///
+/// Đường tệp giữ **nguyên văn**; dòng `--stdin` nêu nguồn ảo `-`, việc **không** đọc/ghi cache,
+/// luật thoát như đường tệp và ba cờ **cần đường dẫn tệp** bị từ chối (`--dump-bytecode`,
+/// `--dump-deps`, `--dry`).
+pub(crate) fn usage_run() -> ExitCode {
+    eprintln!(
+        "dùng: vis run [--tap] [--vm] [--stdin] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --stdin: đọc UTF-8 từ stdin, chạy như một tệp script ảo tên `-`; không nhận tệp, không đọc/ghi cache; thoát như đường tệp (0 sạch / 1 `Result::Err` / 2 lỗi dùng–kiểu / 101 trap); `--tap` báo `ok|not ok 1 - -`; `--dump-bytecode`/`--dump-deps`/`--dry` không đi với `--stdin`\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
+    );
+    ExitCode::from(2)
+}
+
+/// **VD-270**: `vis run --stdin` — đọc **toàn bộ** stdin theo UTF-8. Lỗi đọc hoặc byte không hợp
+/// UTF-8 là lỗi **đầu vào/dùng** ⇒ stderr + exit **2** (không in TAP), như `vis check --stdin`.
+pub(crate) fn doc_stdin() -> Result<String, ExitCode> {
+    use std::io::Read;
+    let mut raw = Vec::new();
+    if let Err(e) = std::io::stdin().read_to_end(&mut raw) {
+        eprintln!("vis run: không đọc được stdin: {e}");
+        return Err(ExitCode::from(2));
+    }
+    String::from_utf8(raw).map_err(|_| {
+        eprintln!("vis run: stdin không phải UTF-8 hợp lệ");
+        ExitCode::from(2)
+    })
+}
+
 /// **ST-72b**: lỗi **vượt quyền** (`VS0604`, message đánh dấu `[quyền]`) là lỗi **môi trường/dùng**
 /// ⇒ exit **2** (yêu cầu ST-72b).
 ///
