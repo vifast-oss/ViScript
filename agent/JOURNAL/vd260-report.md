@@ -249,3 +249,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **r5c-arity** (`f014695` → `a82ec35`): sugar thiếu/thừa đối số bị checker bắt `VS0401` (exit 2), không còn trap `VS0501`/101; cập nhật 9 test cũ + `vd270_sugar_arity.rs`.
 - **list-contains** (`0a1282e` → `85130e6`): `list.contains` dùng chung `eq_value` với `index_of`; sugar R5c.
 - **sqlite-indexes** (`4ecc182` → `6084191`): `sqlite.indexes` chỉ index người dùng, sắp byte, bind tham số, bỏ autoindex.
+- `vis test test/sem` @ `65c3e1f`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
