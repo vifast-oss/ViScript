@@ -39,6 +39,7 @@ mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
 mod sqliteidxcols;
+mod sqlitepk;
 mod sqliteschema;
 mod sqlitetables;
 mod strfind;
@@ -1015,9 +1016,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 Err(e) => hop_nhat_fs(Err(e), span),
             }
         }
-        // **VD-270 (sqlite-tables)** — tên bảng/view người dùng của **schema chính**, sắp byte,
-        // bỏ `sqlite_%`; chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache).
-        // Lỗi handle/host/kết quả ⇒ `Err(Error)` dữ liệu; DB rỗng ⇒ `Ok([])`.
+        // **VD-270 (sqlite-tables)** — tên bảng/view schema chính, sắp byte, bỏ `sqlite_%`; qua
+        // `db_query`; lỗi handle/host/kết quả ⇒ `Err(Error)` dữ liệu, DB rỗng ⇒ `Ok([])`.
         "sqlite.tables" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -1027,10 +1027,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        // **VD-270 (sqlite-columns)** — tên cột của **bảng/view schema chính**, theo **thứ tự
-        // khai báo** (`cid`), giữ nguyên hoa/thường; tên đối tượng bind làm tham số (không nối
-        // chuỗi). Chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache). Bảng/
-        // view không tồn tại ⇒ `Ok([])`; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        // **VD-270 (sqlite-columns)** — tên cột bảng/view schema chính theo **thứ tự khai báo**
+        // (`cid`); tên đối tượng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.
         "sqlite.columns" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let table = chuoi(name, &args[1], 1, span)?;
@@ -1041,10 +1039,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        // **VD-270 (sqlite-indexes)** — tên index **người dùng tạo** của một bảng trong **schema
-        // chính**, sắp byte; bỏ autoindex `sqlite_autoindex_%`. Tên bảng bind làm tham số (không
-        // nối chuỗi). Chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache).
-        // Bảng/view không tồn tại ⇒ `Ok([])`; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        // **VD-270 (sqlite-indexes)** — tên index người dùng tạo của bảng schema chính, sắp byte,
+        // bỏ autoindex; tên bảng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.
         "sqlite.indexes" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let table = chuoi(name, &args[1], 1, span)?;
@@ -1055,10 +1051,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        // **VD-270 (sqlite-schema-sql)** — văn bản SQL khai báo của đối tượng schema **chính**
-        // (table/view/index/trigger) tra theo **tên**; tên bind làm tham số (không nối chuỗi),
-        // so khớp phân biệt hoa/thường. Không có đối tượng / `sql` NULL ⇒ `Ok(None)`; lỗi
-        // handle/host/kết quả ⇒ `Err(Error)` dữ liệu.
+        // **VD-270 (sqlite-schema-sql)** — văn bản SQL khai báo của đối tượng schema chính tra
+        // theo tên bind, phân biệt hoa/thường; thiếu/`sql` NULL ⇒ `Ok(None)`, lỗi ⇒ `Err`.
         "sqlite.schema_sql" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let ten = chuoi(name, &args[1], 1, span)?;
@@ -1068,17 +1062,27 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        // **VD-270 (sqlite-index-columns)** — tên cột của một index **schema chính** theo **thứ
-        // tự index** (`seqno`), tra theo **tên** (schema-global, không lọc bảng). Đường đọc được
-        // phép là `sqlite_master.sql` (authorizer chặn `pragma_index_info`/`_xinfo`); tên index
-        // bind làm tham số, phân tích thuần chuỗi. Index thiếu/autoindex ⇒ `Ok([])`, mục biểu
-        // thức bị bỏ qua; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        // **VD-270 (sqlite-index-columns)** — tên cột index schema chính theo thứ tự index
+        // (`seqno`), tra theo tên bind qua `sqlite_master.sql`; thiếu/autoindex ⇒ `Ok([])`,
+        // mục biểu thức bị bỏ qua; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
         "sqlite.index_columns" => {
             let h = chuoi(name, &args[0], 0, span)?;
             let index = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqliteidxcols::chay(host, h, index)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        // **VD-270 (sqlite-primary-keys)** — tên cột khoá chính của bảng schema chính theo **thứ
+        // tự khoá** (`pk` 1..N); tên bảng bind; không PK/view/thiếu ⇒ `Ok([])`, lỗi ⇒ `Err`.
+        "sqlite.primary_keys" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let table = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqlitepk::chay(host, h, table)
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )

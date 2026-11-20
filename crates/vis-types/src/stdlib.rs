@@ -245,7 +245,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 125] = [
+pub const FUNCS: [StdFn; 126] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -990,6 +990,15 @@ pub const FUNCS: [StdFn; 125] = [
     // handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
     StdFn {
         name: "sqlite.index_columns",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-primary-keys)** — tên cột **khoá chính** của một bảng trong **schema
+    // chính**, theo **thứ tự khoá** (`pk` 1..N), giữ nguyên hoa/thường; tên bảng là **tham số
+    // bind** (`pragma_table_info(?, 'main')`), không nối chuỗi. Bảng không PK/view/không tồn
+    // tại ⇒ `Ok([])`; lỗi handle/host ⇒ `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.primary_keys",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
     },
