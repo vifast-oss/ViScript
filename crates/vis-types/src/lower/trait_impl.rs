@@ -49,7 +49,11 @@ impl<'a> Lowerer<'a> {
     /// **Kiểu tĩnh** của một biểu thức đã hạ — chỉ dùng chú thích tường minh (không suy diễn).
     pub(crate) fn static_ty(&self, e: &HExpr) -> Option<Type> {
         match e {
-            HExpr::Var { sym: Some(id), .. } => self.type_env.get(id).cloned(),
+            HExpr::Var { sym: Some(id), .. } => self
+                .type_env
+                .get(id)
+                .cloned()
+                .or_else(|| self.symbols.get(*id).and_then(|s| s.ty.clone())),
             HExpr::Field {
                 base,
                 name,
@@ -59,12 +63,59 @@ impl<'a> Lowerer<'a> {
                 Type::Record(id) => self.tbl.field(id, name).map(|f| f.ty.clone()),
                 _ => None,
             },
+            // **VD-265**: đích `xs[i]` — phần tử `list`/`map` biết kiểu từ annot của `xs`.
+            HExpr::Index { base, .. } => match self.static_ty(base)? {
+                Type::List(e) => Some(*e),
+                Type::Map(_, v) => Some(*v),
+                _ => None,
+            },
+            // **VD-265**: kết quả gọi hàm/phương thức đã biết chữ ký (pre-pass) — nhờ vậy
+            // `tao().lay(Box(v: 5))` / `tao() with f: Box(v: 5)` vẫn mang instantiation.
+            HExpr::Call { callee, .. } => match &**callee {
+                HExpr::Var { sym: Some(id), .. } => {
+                    self.fn_ret
+                        .get(id)
+                        .cloned()
+                        .or_else(|| match self.type_env.get(id) {
+                            Some(Type::Fn(_, r)) => Some((**r).clone()),
+                            _ => None,
+                        })
+                }
+                HExpr::Field {
+                    base,
+                    name,
+                    optional: false,
+                    ..
+                } => {
+                    let ty = self.static_ty(base)?;
+                    let sym = self.method_sym(&ty, name)?;
+                    self.fn_ret.get(&sym).cloned()
+                }
+                _ => None,
+            },
             HExpr::Lit { ty, .. }
             | HExpr::Record { ty, .. }
             | HExpr::EnumLit { ty, .. }
             | HExpr::Opt { ty, .. }
             | HExpr::Tuple { ty, .. } => Some(ty.clone()),
             _ => None,
+        }
+    }
+
+    /// **VD-265** — sym phương thức `impl` khi kiểu bên nhận là `ty` và tên khớp **đúng một**
+    /// impl (giống bộ lọc của [`Lowerer::dispatch_tinh`]).
+    pub(crate) fn method_sym(&self, ty: &Type, name: &str) -> Option<u32> {
+        let ten = self.ten_kieu(ty)?;
+        let mut khop = self
+            .impls
+            .iter()
+            .filter(|(t, n, _)| n == name && self.ten_kieu(t).as_deref() == Some(ten.as_str()))
+            .map(|(_, _, sym)| *sym);
+        let first = khop.next()?;
+        if khop.next().is_some() {
+            None
+        } else {
+            Some(first)
         }
     }
 
