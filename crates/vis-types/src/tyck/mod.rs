@@ -56,6 +56,9 @@ pub(crate) const TOAN_TU: &vis_diag::Code = &TYPE_CODES[6];
 pub(crate) const ASYNC_SAI_CHO: &vis_diag::Code = &TYPE_CODES[7];
 /// Mã `VS0416` — range không `int` — R9 (VD-178).
 pub(crate) const RANGE_KHONG_INT: &vis_diag::Code = &TYPE_CODES[8];
+/// Mã `VS0206` — khối `else` của `let … else` phải thoát trên **mọi nhánh** (sổ cú pháp 02xx;
+/// mã đã có sẵn đúng nghĩa, VD-263 dùng lại thay vì thêm mã mới).
+pub(crate) const ELSE_KHONG_THOAT: &vis_diag::Code = &vis_diag::SYNTAX_CODES[5];
 
 /// Kết quả một lượt kiểm kiểu.
 #[derive(Debug, Clone, Default)]
@@ -962,11 +965,22 @@ impl<'a> Checker<'a> {
                 let got = self.kiem_expr(init);
                 // **R3b (VD-178)**: `let x = r else:` — bóc `Result[T, E]`/`T?` cho ràng buộc;
                 // khối `else` nhận lỗi (`E`) hoặc không có ràng buộc (`T?`).
+                // **VD-263**: binder của `else e` xác định theo *pattern*, không theo kiểu vế phải:
+                // `Ok(x)`/tên trần trên `Result` ⇒ payload `Err` (E); `Err(e)`/`Some(x)`/`None`/
+                // pattern khác ⇒ `()`; `let x = o` trên Option ⇒ `()`. Interp + VM dùng cùng luật
+                // (`HPat::else_binds_err`) nên không còn giá trị sai kiểu/không bind.
                 let (declared, loi) = match else_ {
                     Some(_) => match &got {
-                        Type::Result(t, e) => ((**t).clone(), Some((**e).clone())),
-                        Type::Opt(t) => ((**t).clone(), None),
-                        Type::Error => (Type::Error, None),
+                        Type::Result(t, e) => {
+                            let binder = if pat.else_binds_err() {
+                                (**e).clone()
+                            } else {
+                                Type::Unit
+                            };
+                            ((**t).clone(), binder)
+                        }
+                        Type::Opt(t) => ((**t).clone(), Type::Unit),
+                        Type::Error => (Type::Error, Type::Error),
                         other => {
                             let o = other.clone();
                             self.diag(
@@ -977,10 +991,10 @@ impl<'a> Checker<'a> {
                                 ),
                                 init.span(),
                             );
-                            (Type::Error, None)
+                            (Type::Error, Type::Error)
                         }
                     },
-                    None => (got.clone(), None),
+                    None => (got.clone(), Type::Unit),
                 };
                 let declared = match ty {
                     Some(ann) => {
@@ -1010,15 +1024,34 @@ impl<'a> Checker<'a> {
                 if else_.is_none() {
                     self.kiem_let_phu_het(pat, &pat_subj);
                 }
+                // **VD-263**: ảnh chụp **trước** khi bind pattern — khối `else` phải được kiểm
+                // bằng môi trường trước binding; tên pattern không sống trong `else`.
+                // Chỉ chụp khi thật có `else` (không làm chậm mọi `let` thường).
+                let truoc = else_.as_ref().map(|_| self.luu_env());
                 self.bind_pat(pat, &pat_subj);
                 if let Some(e) = else_ {
-                    // Tên lỗi của `else` chỉ sống trong khối `else`.
-                    let snap = self.luu_env();
-                    if let Some(sym) = e.bind_sym {
-                        self.set_ty(sym, loi.unwrap_or(Type::Unit));
+                    if let Some(truoc) = truoc {
+                        self.tra_env(truoc);
                     }
-                    self.kiem_than_bo(&e.body);
-                    self.tra_env(snap);
+                    // Tên lỗi của `else` chỉ sống trong khối `else`.
+                    if let Some(sym) = e.bind_sym {
+                        self.set_ty(sym, loi);
+                    }
+                    let _ = self.kiem_than_ngu_canh(&e.body, false);
+                    // **VD-263**: khối `else` phải phân kỳ trên **mọi** nhánh; nếu rơi xuống cuối
+                    // thì pattern không có giá trị và hai engine từng lệch nhau (`VS0501` ↔ `()`).
+                    if !flow::than_luon_thoat(&e.body) {
+                        self.diag(
+                            ELSE_KHONG_THOAT,
+                            "`let … else`: khối `else` phải thoát trên **mọi nhánh** \
+                             (`return`/`break`/`continue`, hoặc `if`/`match` mọi nhánh thoát); \
+                             nếu rơi xuống cuối, biến của pattern không có giá trị (VD-263)",
+                            e.span,
+                        );
+                    }
+                    // Trả binding của nhánh khớp để các câu sau không báo `VS0301` oan khi
+                    // chính khối `else` đã bị từ chối.
+                    self.bind_pat(pat, &pat_subj);
                 }
                 Type::Unit
             }

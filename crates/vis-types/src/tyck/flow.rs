@@ -5,7 +5,7 @@
 
 use vis_syntax::Span;
 
-use crate::hir::{HCond, HStmt};
+use crate::hir::{HCond, HExpr, HStmt};
 use crate::ty::Type;
 
 use super::{vd238, Checker, MISMATCH, RANGE_KHONG_INT};
@@ -170,4 +170,55 @@ impl<'a> Checker<'a> {
         self.tra_env(snap);
         out
     }
+}
+
+/// **VD-263** — khối `else` của `let … else` có **thoát trên mọi nhánh** không?
+///
+/// Chỉ nhận các dạng phân kỳ **chứng minh được bằng cấu trúc** (không tin một lời gọi khai kiểu
+/// `never`): câu cuối là `return`/`break`/`continue`; hoặc `if` có `else` mà **mọi** nhánh thoát;
+/// hoặc `match` mà **mọi** nhánh thoát và có ít nhất một nhánh **không guard** (nếu mọi nhánh đều
+/// có guard, một tổ hợp guard sai sẽ rơi xuống cuối); hoặc khối/`scope` lồng có câu cuối thoát.
+/// `while`/`for`/`loop` không được coi là thoát (vòng có thể không chạy / `break` ẩn).
+pub(crate) fn than_luon_thoat(body: &[HStmt]) -> bool {
+    body.last().map(stmt_luon_thoat).unwrap_or(false)
+}
+
+fn stmt_luon_thoat(s: &HStmt) -> bool {
+    match s {
+        HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => true,
+        HStmt::If {
+            then,
+            elifs,
+            else_: Some(e),
+            ..
+        } if !e.is_empty() => {
+            than_luon_thoat(then)
+                && elifs.iter().all(|(_, b)| than_luon_thoat(b))
+                && than_luon_thoat(e)
+        }
+        HStmt::Match { arms, .. } => match_luon_thoat(arms),
+        HStmt::Scope { body, .. } | HStmt::Block { body, .. } => than_luon_thoat(body),
+        HStmt::Expr(e) => expr_luon_thoat(e),
+        _ => false,
+    }
+}
+
+fn expr_luon_thoat(e: &HExpr) -> bool {
+    match e {
+        HExpr::If {
+            then, elifs, else_, ..
+        } if !else_.is_empty() => {
+            than_luon_thoat(then)
+                && elifs.iter().all(|(_, b)| than_luon_thoat(b))
+                && than_luon_thoat(else_)
+        }
+        HExpr::Match { arms, .. } => match_luon_thoat(arms),
+        _ => false,
+    }
+}
+
+fn match_luon_thoat(arms: &[crate::hir::HArm]) -> bool {
+    !arms.is_empty()
+        && arms.iter().all(|a| than_luon_thoat(&a.body))
+        && arms.iter().any(|a| a.guard.is_none())
 }

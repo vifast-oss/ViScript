@@ -495,6 +495,31 @@ pub enum HPat {
 }
 
 impl HPat {
+    /// **VD-263** — binder của `let … else` (`else e`) chỉ nhận payload lỗi khi nhánh **không
+    /// khớp** là `Err`:
+    /// - tên trần (`let x = r else e`) trên `Result` ⇒ `Err` (payload E);
+    /// - `Ok(x)`/`Ok(_)`/`Ok()` ⇒ nhánh không khớp chắc chắn là `Err` ⇒ payload E;
+    /// - `Err(e)`, `Some(x)`, `None`, `Ok(Some(x))` (có thể thất bại vì `Ok(None)`) và mọi pattern
+    ///   khác ⇒ `()`.
+    ///
+    /// Pattern tên trần trên `Option` cũng là `()` — checker quyết theo kiểu tĩnh; runtime dùng
+    /// hàm này rồi chỉ lấy payload khi giá trị thật là `Err` (nên `None` vẫn ra `()`).
+    pub fn else_binds_err(&self) -> bool {
+        match self {
+            HPat::Bind { .. } => true,
+            // Chỉ `Ok(x)`/`Ok(_)`/`Ok()` (pattern con **không bác được**) mới chắc chắn thất bại
+            // vì `Err`. `Ok(Some(x))` có thể thất bại vì `Ok(None)` ⇒ binder phải là `()` —
+            // nếu lấy payload E trong trường hợp đó sẽ gán sai kiểu.
+            HPat::Ctor { path, args, .. } => {
+                path.last().map(String::as_str) == Some("Ok")
+                    && (args.is_empty()
+                        || (args.len() == 1
+                            && matches!(args[0], HPat::Bind { .. } | HPat::Wild { .. })))
+            }
+            _ => false,
+        }
+    }
+
     pub fn span(&self) -> Span {
         match self {
             HPat::Wild { span }
