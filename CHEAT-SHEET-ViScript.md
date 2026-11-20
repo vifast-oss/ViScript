@@ -171,7 +171,7 @@ loop break continue return and or not true false self async await scope test ext
 | `Some(5)` (dựng) ✔<br>`Some(v)` (pattern) ✔ | — | `Some(5)` / `Some(v) =>` | — | **R2/VD-212**: dựng **và** pattern đều viết hoa (`Some(v)`, `None`); dạng viết thường trong pattern ⇒ **lỗi VS0203** + gợi ý dạng đúng; `vis fmt` tự sửa trước khi biên dịch |
 | `Result[int, str]`, `Ok(7)`, `Err("hỏng")` ✔ | exception | `Result<i64, String>` | `throw` / union | |
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
-| `let v = f() else e:`<br>`    print(e)`<br>`    0` ✔ | `try/except` | `match f() { ... }` | `catch` | **R3b**: `Ok`/`Some` bóc giá trị; `Err`/`None` chạy khối `else` (nhận lỗi nếu có `else e:`); khối `else` phải thoát |
+| `let v = f() else:`<br>`    print(e)`<br>`    return 0` ✔ | `try/except` | `match f() { ... }` | `catch` | **R3b/VD-263**: `Ok`/`Some` bóc giá trị; `Err`/`None` chạy khối `else` (nhận lỗi nếu có `else e:`); khối `else` phải **thoát mọi nhánh** (`return`/`break`/`continue` hoặc `if`/`match` mọi nhánh thoát) — rơi xuống cuối ⇒ `VS0206` |
 | `assert cond` ✔ | `assert` | `assert!(...)` | `console.assert` | |
 | `panic("hỏng")` ✖ | `raise` | `panic!` | `throw` | chưa có ở VS0 |
 | `AnyError` ✔ | — | `Box<dyn Error>` | `unknown` | alias `Error` (VD-231) — dùng được; sai kiểu báo `VS0412` |
