@@ -173,3 +173,47 @@ fn lsp_folding_range_hai_ham() {
     assert!(body.contains(r#""startLine":0"#), "thiếu fn add: {body}");
     assert!(body.contains(r#""startLine":3"#), "thiếu fn main: {body}");
 }
+// ===== ST-276: completion sau module std.* =====
+
+/// Ca 36 — `fs.` ⇒ gợi ý hàm của `std.fs` (kể cả helper mới).
+#[test]
+fn lsp_completion_sau_module_fs() {
+    let text = "use std.fs\n\nfs.";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&completion(2, URI, 2, 3))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains(r#""label":"read_lines""#),
+        "thiếu read_lines: {body}"
+    );
+    assert!(body.contains(r#""label":"append""#), "thiếu append: {body}");
+}
+
+/// Ca 37 — `sqlite.` ⇒ gợi ý `query_one`.
+#[test]
+fn lsp_completion_sau_module_sqlite() {
+    let text = "use std.sqlite\n\nsqlite.";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&completion(2, URI, 2, 7))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains(r#""label":"query_one""#),
+        "thiếu query_one: {body}"
+    );
+}
+
+fn completion(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/completion", uri, line, ch)
+}

@@ -124,10 +124,41 @@ fn goi_y_thanh_vien(kq: &KetQua, byte: usize, tien_to: &str) -> Option<Vec<GoiY>
     Some(ds)
 }
 
+/// **ST-276**: gợi ý hàm `std.<module>` khi con trỏ sau `module.` (vd `fs.`, `sqlite.`).
+/// Chỉ dùng tiền tố module từ bảng `FUNCS`; biến cùng tên có kiểu đã được `goi_y_thanh_vien`
+/// xử lý trước nên không bị ghi đè.
+fn goi_y_module(byte: usize, tien_to: &str, text: &str) -> Option<Vec<GoiY>> {
+    let ten = nhan_sau_cham(text, byte)?;
+    let mut ds: Vec<GoiY> = vis_types::stdlib::FUNCS
+        .iter()
+        .filter_map(|f| {
+            let (module, ham) = f.name.split_once('.')?;
+            if module != ten || !ham.starts_with(tien_to) {
+                return None;
+            }
+            let ps: Vec<&str> = f.params.iter().map(|t| t.ten()).collect();
+            Some(GoiY {
+                label: ham.to_string(),
+                kind: 3,
+                detail: Some(format!("{}({}) -> {}", f.name, ps.join(", "), f.ret.ten())),
+            })
+        })
+        .collect();
+    if ds.is_empty() {
+        return None;
+    }
+    ds.sort_by(|a, b| a.label.as_bytes().cmp(b.label.as_bytes()));
+    ds.truncate(200);
+    Some(ds)
+}
+
 /// Danh sách gợi ý tại `byte` — đã khử trùng, lọc tiền tố, sắp theo byte, cap 200.
 pub fn ds_goi_y(kq: &KetQua, byte: usize) -> Vec<GoiY> {
     let (_, tien_to) = tien_to(&kq.text, byte);
     if let Some(ds) = goi_y_thanh_vien(kq, byte, &tien_to) {
+        return ds;
+    }
+    if let Some(ds) = goi_y_module(byte, &tien_to, &kq.text) {
         return ds;
     }
     let mut ds: Vec<GoiY> = Vec::new();
