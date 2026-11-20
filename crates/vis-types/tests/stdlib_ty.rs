@@ -117,7 +117,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-tables, 2026-11-21)**: +**1** hàm `sqlite.tables`
     // (`(str) -> Result[list[str], Error]`; bảng/view người dùng của schema chính, sắp byte)
     // ⇒ **110** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 110, "bảng chữ ký phải đủ 110 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-columns, 2026-11-21)**: +**1** hàm `sqlite.columns`
+    // (`(str, str) -> Result[list[str], Error]`; tên cột bảng/view schema chính theo thứ tự
+    // khai báo, tên đối tượng bind làm tham số) ⇒ **111** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 111, "bảng chữ ký phải đủ 111 hàm");
 }
 
 #[test]

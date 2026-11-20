@@ -30,6 +30,7 @@ mod fsbytes;
 mod indexof;
 mod pathnorm;
 mod sqlite_explain;
+mod sqlitecols;
 mod sqlitetables;
 mod strfind;
 mod strlen;
@@ -964,6 +965,20 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqlitetables::chay(host, h)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        // **VD-270 (sqlite-columns)** — tên cột của **bảng/view schema chính**, theo **thứ tự
+        // khai báo** (`cid`), giữ nguyên hoa/thường; tên đối tượng bind làm tham số (không nối
+        // chuỗi). Chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache). Bảng/
+        // view không tồn tại ⇒ `Ok([])`; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        "sqlite.columns" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let table = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqlitecols::chay(host, h, table)
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )

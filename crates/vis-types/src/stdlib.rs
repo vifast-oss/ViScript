@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 110] = [
+pub const FUNCS: [StdFn; 111] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -840,6 +840,14 @@ pub const FUNCS: [StdFn; 110] = [
     StdFn {
         name: "sqlite.tables",
         params: &[Ty::Str],
+        ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-columns)** — tên cột của **bảng/view schema chính**, theo **thứ tự khai
+    // báo** (`cid`), giữ nguyên hoa/thường; tên đối tượng là **tham số bind** (`pragma_table_info(?)`),
+    // không nối chuỗi. Bảng/view không tồn tại ⇒ `Ok([])`; lỗi handle/host ⇒ `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.columns",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
     },
 ];
