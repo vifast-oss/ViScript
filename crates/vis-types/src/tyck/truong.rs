@@ -146,3 +146,42 @@ impl<'a> Checker<'a> {
         }
     }
 }
+
+/// **VD-258** — kiểm giá trị mặc định của trường bản ghi tại **khai báo** (`type U: age: int = "x"`).
+/// Tách khỏi `mod.rs` để giữ R1; vẫn kiểm lại ở call-site vì lower chép default vào
+/// `HExpr::Record`.
+pub(super) fn kiem_default_rec(c: &mut Checker<'_>, r: &crate::hir::HRec) {
+    let luu = std::mem::take(&mut c.generic_scope);
+    c.generic_scope = r.generics.clone();
+    for f in &r.fields {
+        if let Some(d) = &f.default {
+            let raw = c.resolve_ann(&f.ty, f.span);
+            let want = c.chuan(&super::erase_gen(&raw, &r.generics));
+            let got = c.kiem_expr(d);
+            c.coerce_e(d, &got, &want, "giá trị mặc định của trường");
+        }
+    }
+    c.generic_scope = luu;
+}
+
+/// **VD-258** — kiểm `const Name: T = value` (tách khỏi `mod.rs` để giữ R1).
+pub(super) fn kiem_const(c: &mut Checker<'_>, h: &crate::hir::HConst) {
+    let want = c.resolve_ann(&h.ty, h.span);
+    let got = c.kiem_expr(&h.value);
+    // **VD-258**: `const` chưa có biên nâng Option ở runtime (interp/codegen inline nguyên
+    // giá trị). Từ chối plain → `T?`/`T??` thay vì để `const X: int? = 42` lưu `42` trần;
+    // `Some(...)`/`None` khớp đúng lớp vẫn hợp lệ.
+    if want.is_opt() && !c.same(&got, &want) {
+        c.diag(
+            super::MISMATCH,
+            format!(
+                "`const`: cần `{}`, được `{}` — không tự nâng `Option` tại `const`; dùng `Some(…)`/`None`",
+                c.show(&want),
+                c.show(&got)
+            ),
+            h.value.span(),
+        );
+        return;
+    }
+    c.coerce_e(&h.value, &got, &want, "hằng");
+}

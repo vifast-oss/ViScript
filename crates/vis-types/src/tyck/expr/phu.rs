@@ -245,6 +245,153 @@ pub(super) fn kiem_std_method(
     Some(f.ret.sang_type())
 }
 
+/// **VD-258** — hợp nhất một phần tử literal vào `acc` (có xử lý `Option`).
+/// Literal `list`/`set`/`map` **không có biên nâng** plain → `T?`; trộn hai dạng ⇒ `VS0412`
+/// thay vì để runtime giữ giá trị plain trong ô `T?`. `None` (`Option[{error}]`) nhường cho
+/// vế có lõi cụ thể (cùng là `Option`).
+pub(super) fn hop_ve_literal(
+    c: &mut super::super::Checker,
+    acc: &mut Type,
+    e: &crate::hir::HExpr,
+    t: &Type,
+    what: &str,
+) {
+    if acc.is_error() {
+        *acc = t.clone();
+        return;
+    }
+    let a_opt = acc.is_opt();
+    let t_opt = t.is_opt();
+    if a_opt != t_opt {
+        c.diag(
+            super::super::MISMATCH,
+            format!(
+                "{what}: không trộn `Option` và giá trị thường (`{}` và `{}`) — bọc `Some(…)` cho đồng nhất",
+                c.show(acc),
+                c.show(t)
+            ),
+            e.span(),
+        );
+        return;
+    }
+    if let Type::Opt(inner) = acc {
+        if inner.is_error() {
+            *acc = t.clone();
+            return;
+        }
+    }
+    if let Type::Opt(inner) = t {
+        if inner.is_error() {
+            return;
+        }
+    }
+    c.coerce_e(e, t, acc, what);
+}
+
+/// **VD-258** — kiểu chung của dãy phần tử `list`/`set` (gọi từ `tyck/expr.rs`).
+pub(super) fn unify_all(
+    c: &mut super::super::Checker,
+    items: &[crate::hir::HExpr],
+    what: &str,
+    _span: vis_syntax::Span,
+) -> Type {
+    let mut acc = Type::Error;
+    for (i, it) in items.iter().enumerate() {
+        let t = c.kiem_expr(it);
+        if i == 0 {
+            acc = t;
+            continue;
+        }
+        hop_ve_literal(c, &mut acc, it, &t, what);
+    }
+    acc
+}
+
+/// **VD-258** — hợp nhất hai nhánh `if`/`match`; `None` trần (`Opt[{error}]`) với nhánh thường
+/// cho `T?` để `fn f() -> int: if c: 1 else: None` bị từ chối ở biên return.
+pub(super) fn unify_branch(
+    c: &mut super::super::Checker,
+    acc: &mut Type,
+    t: &Type,
+    span: vis_syntax::Span,
+) {
+    if matches!(acc, Type::Error) {
+        *acc = t.clone();
+        return;
+    }
+    // **VD-241 §6/B-A (A0, 2026-11-19)** — `Never` khớp mọi kiểu; một nhánh toàn `return`/di
+    // không bao giờ ép bên kia.
+    if matches!(t, Type::Error) || matches!(t, Type::Never) || c.same(acc, t) {
+        return;
+    }
+    if matches!(acc, Type::Never) {
+        *acc = t.clone();
+        return;
+    }
+    if let Type::Opt(inner) = t {
+        if !matches!(acc, Type::Opt(_)) {
+            // `None` (`Opt[{error}]`) hoặc nhánh `Some(…)` gặp nhánh thường: kiểu chung là `T?`;
+            // runtime nâng nhánh thường (`than::do_if`/`do_match` + `lift_opt`).
+            if inner.is_error() || c.same(acc, inner) {
+                *acc = Type::Opt(Box::new(acc.clone()));
+                return;
+            }
+        }
+    }
+    if let Type::Opt(inner) = acc {
+        if c.same(inner, t) {
+            return;
+        }
+    }
+    let msg = format!("hai nhánh khác kiểu: `{}` và `{}`", c.show(acc), c.show(t));
+    c.diag(super::super::MISMATCH, msg, span);
+}
+
+/// **VD-258** — kiểm trường của literal/dựng bản ghi theo `Type::Record(id)`:
+/// sai kiểu ⇒ `VS0412` (kèm VD-238 cho `None`), trường lạ ⇒ `VS0403`, thiếu trường bắt buộc
+/// (HIR dựng tay) ⇒ `VS0412`.
+pub(super) fn kiem_truong_ban_ghi(
+    c: &mut super::super::Checker,
+    fields: &[(String, crate::hir::HExpr)],
+    ty: &Type,
+) {
+    let Type::Record(id) = ty else {
+        for (_, v) in fields {
+            let _ = c.kiem_expr(v);
+        }
+        return;
+    };
+    for (n, v) in fields {
+        let vt = c.kiem_expr(v);
+        match c.types.field(*id, n) {
+            Some(f) => {
+                let want = f.ty.clone();
+                c.coerce_e(v, &vt, &want, "trường bản ghi");
+            }
+            None => c.diag(
+                super::super::NO_FIELD,
+                format!("bản ghi `{}` không có trường `{n}` (VD-43 #6)", c.show(ty)),
+                v.span(),
+            ),
+        }
+    }
+    if let Some(def) = c.types.rec(*id).cloned() {
+        for f in &def.fields {
+            if !f.has_default && !fields.iter().any(|(n, _)| n == &f.name) {
+                c.diag(
+                    super::super::MISMATCH,
+                    format!(
+                        "thiếu trường bắt buộc `{}` của bản ghi `{}`",
+                        f.name,
+                        c.show(ty)
+                    ),
+                    f.span,
+                );
+            }
+        }
+    }
+}
+
 /// Tách riêng để `phu.rs` không phải `use` cả crate `stdlib` ở đầu tệp.
 fn vis_types_stdlib_sig(name: &str) -> Option<&'static crate::stdlib::StdFn> {
     crate::stdlib::sig_of(name)

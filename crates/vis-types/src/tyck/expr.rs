@@ -35,6 +35,12 @@ impl<'a> Checker<'a> {
                             *span,
                         );
                         Type::Error
+                    } else if self.symbols.kind_of(*id) == Some(crate::lower::SymKind::Builtin) {
+                        // **VD-258**: `None` trần là **giá trị** `Option[?]` (không phải biến
+                        // chưa khai báo). Trước đây `ty_of` của ký hiệu dựng sẵn là `None` ⇒
+                        // `{error}` nên `if None`, `1 + None`, `xs.push(None)`, `E.A(None)` lọt
+                        // checker. Các builtin khác vẫn `{error}` như cũ.
+                        builtin_value_ty(name)
                     } else {
                         self.ty_of(*id)
                     }
@@ -149,17 +155,19 @@ impl<'a> Checker<'a> {
                         kt = kt2;
                         vt = vt2;
                     } else {
-                        self.coerce_e(k, &kt2, &kt, "khoá `map`");
-                        self.coerce_e(v, &vt2, &vt, "giá trị `map`");
+                        // **VD-258**: như literal `list` — không trộn `Option` với plain.
+                        phu::hop_ve_literal(self, &mut kt, k, &kt2, "khoá `map` literal");
+                        phu::hop_ve_literal(self, &mut vt, v, &vt2, "giá trị `map` literal");
                     }
                 }
                 let _ = span;
                 Type::Map(Box::new(kt), Box::new(vt))
             }
             HExpr::Record { fields, ty, .. } => {
-                for (_, v) in fields {
-                    let _ = self.kiem_expr(v);
-                }
+                // **VD-258**: `U(age: "hello")` / `U(age: None)` / `U(age: 1, bogus: 2)` từng
+                // lọt checker vì chỉ kiểm biểu thức mà không so với trường của `Type::Record(id)`.
+                // Helper kiểm **từng trường theo tên** + default (xem `expr/phu.rs`).
+                phu::kiem_truong_ban_ghi(self, fields, ty);
                 ty.clone()
             }
             HExpr::EnumLit {
@@ -414,45 +422,13 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// Kiểu chung của một dãy biểu thức (`list`/`set`).
-    fn unify_all(&mut self, items: &[HExpr], what: &str, _span: vis_syntax::Span) -> Type {
-        let mut acc = Type::Error;
-        for (i, it) in items.iter().enumerate() {
-            let t = self.kiem_expr(it);
-            if i == 0 {
-                acc = t;
-            } else {
-                self.coerce_e(it, &t, &acc, what);
-            }
-        }
-        acc
+    /// Kiểu chung của một dãy biểu thức (`list`/`set`) — VD-258 tách sang `expr/phu.rs`.
+    fn unify_all(&mut self, items: &[HExpr], what: &str, span: vis_syntax::Span) -> Type {
+        phu::unify_all(self, items, what, span)
     }
 
     pub(crate) fn unify_branch(&mut self, acc: &mut Type, t: &Type, span: vis_syntax::Span) {
-        if matches!(acc, Type::Error) {
-            *acc = t.clone();
-            return;
-        }
-        // **VD-241 §6/B-A (A0, 2026-11-19)** — `Never` khớp mọi kiểu; một nhánh toàn `return`/di
-        // không bao giờ ép bên kia.
-        if matches!(t, Type::Error) || matches!(t, Type::Never) || self.same(acc, t) {
-            return;
-        }
-        if matches!(acc, Type::Never) {
-            *acc = t.clone();
-            return;
-        }
-        if let Type::Opt(inner) = acc {
-            if self.same(inner, t) {
-                return;
-            }
-        }
-        let msg = format!(
-            "hai nhánh khác kiểu: `{}` và `{}`",
-            self.show(acc),
-            self.show(t)
-        );
-        self.diag(MISMATCH, msg, span);
+        phu::unify_branch(self, acc, t, span)
     }
 
     fn kiem_bin(

@@ -908,11 +908,8 @@ impl<'a> Checker<'a> {
                 self.kiem_than(&f.body, &ret, f.span);
                 self.cur_ret = saved;
             }
-            HItem::Const(c) => {
-                let want = self.resolve_ann(&c.ty, c.span);
-                let got = self.kiem_expr(&c.value);
-                self.coerce_e(&c.value, &got, &want, "hằng");
-            }
+            HItem::Rec(r) => truong::kiem_default_rec(self, r),
+            HItem::Const(c) => truong::kiem_const(self, c),
             _ => {}
         }
     }

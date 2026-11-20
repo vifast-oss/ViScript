@@ -593,11 +593,49 @@ impl<'a> Lowerer<'a> {
         }
     }
 
+    /// **VD-258** — trait `Show`/`Error` dựng sẵn, có ở **mọi** tệp (kể cả đơn vị đa tệp đã
+    /// dựng bảng kiểu ở tệp trước). Chỉ thêm một lần cho mỗi `Lowerer`.
+    fn declare_builtin_traits(&mut self) {
+        if self.traits.iter().any(|t| t.name == "Show") {
+            return;
+        }
+        // --- trait `Show`: `fn show(self) -> str` ---
+        self.traits.push(TraitSig {
+            name: "Show".into(),
+            supertraits: Vec::new(),
+            methods: vec![("show".into(), 1, Type::Str, vec![Type::Error])],
+        });
+        // --- trait `Error`: siêu trait `Show`, 3 phương thức mặc định-less (VD-222 điểm 1; (ii)) ---
+        self.traits.push(TraitSig {
+            name: "Error".into(),
+            supertraits: vec!["Show".into()],
+            methods: vec![
+                ("message".into(), 1, Type::Str, vec![Type::Error]),
+                (
+                    "source".into(),
+                    1,
+                    Type::Opt(Box::new(Type::Record(RecId(0)))),
+                    vec![Type::Error],
+                ),
+                (
+                    "span".into(),
+                    1,
+                    Type::Opt(Box::new(Type::Str)),
+                    vec![Type::Error],
+                ),
+            ],
+        });
+    }
+
     /// **VD-222 (điểm 1–4; uỷ quyền A0-proxy)** — dựng sẵn kiểu dựng trước item người dùng:
     /// trait `Show`/`Error`, enum `Json`, bản ghi `Error`. Id ổn định: `EnumId(0) = Json`,
     /// `RecId(0) = Error` (bảng được dựng mới ở mỗi đơn vị biên dịch & được chèn trong cùng lượt).
     /// Người dùng khai trùng tên ⇒ `VS0302` (khai báo trước — VD-204 mở rộng).
     fn declare_kieu_dung_san(&mut self) {
+        // **VD-258**: trait dựng sẵn phải có ở **mọi** tệp, kể cả tệp thứ 2+ (bảng kiểu dùng
+        // chung đã có `Json`). Trước đây nhánh early-return bỏ qua `Show`/`Error` ⇒ `impl Show`
+        // trong module thứ hai báo `VS0403` oan.
+        self.declare_builtin_traits();
         if self.tbl.enums().iter().any(|e| e.name == "Json") {
             // **Đơn vị đa tệp** (ST-25): bảng kiểu **dùng chung** — tệp đầu đã dựng Json/SqlValue/
             // Error/RowSet ⇒ id ổn định. Tệp này phải **dựng lại bảng tên** của chính nó (mỗi tệp
@@ -627,32 +665,6 @@ impl<'a> Lowerer<'a> {
             return;
         }
         let span0 = Span::new(0, 0);
-        // --- trait `Show`: `fn show(self) -> str` ---
-        self.traits.push(TraitSig {
-            name: "Show".into(),
-            supertraits: Vec::new(),
-            methods: vec![("show".into(), 1, Type::Str, vec![Type::Error])],
-        });
-        // --- trait `Error`: siêu trait `Show`, 3 phương thức mặc định-less (VD-222 điểm 1; (ii)) ---
-        self.traits.push(TraitSig {
-            name: "Error".into(),
-            supertraits: vec!["Show".into()],
-            methods: vec![
-                ("message".into(), 1, Type::Str, vec![Type::Error]),
-                (
-                    "source".into(),
-                    1,
-                    Type::Opt(Box::new(Type::Record(RecId(0)))),
-                    vec![Type::Error],
-                ),
-                (
-                    "span".into(),
-                    1,
-                    Type::Opt(Box::new(Type::Str)),
-                    vec![Type::Error],
-                ),
-            ],
-        });
         // --- enum `Json` (VD-222 điểm 4): Null/Bool/Num/Str/Arr/Obj ---
         let json_id = EnumId(self.tbl.enums().len() as u32);
         self.tbl.push_enum(EnumDef {
@@ -968,6 +980,18 @@ impl<'a> Lowerer<'a> {
     /// không thấy ở tệp ngoài (tên dựng sẵn khác luôn thấy).
     fn sqlite_duoc_thay(&self) -> bool {
         self.opts.std_mods.iter().any(|m| m == "sqlite")
+    }
+
+    /// **VD-258** — `true` nếu tên là kiểu dựng sẵn đã có trong bảng tên của lượt hạ này
+    /// (`Json`, `SqlValue`, `Error`, `RowSet`). Dùng để **không** báo `VS0301` khi tên xuất hiện
+    /// làm **tiền tố ctor** (`Json.Arr(…)`, `SqlValue.Integer(…)`) dưới `NamePolicy::Strict` —
+    /// `maybe_enum_lit` sẽ phân giải tiếp. Tên **trần** vẫn đi đường cũ.
+    fn la_ten_kieu_dung_san(&self, name: &str) -> bool {
+        if !matches!(name, "Json" | "SqlValue" | "Error" | "RowSet") {
+            return false;
+        }
+        self.enum_names.iter().any(|(n, _)| n == name)
+            || self.rec_names.iter().any(|(n, _)| n == name)
     }
 
     /// Id enum dựng sẵn `SqlValue` (nếu bảng đã dựng).

@@ -288,22 +288,21 @@ fn anyerror_none_annot_check_vs0412() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// (10b) **VD-238 D1 — ca (b) runtime parity**: pin lỗi `field_of` ngày xưa của interp
-/// (bịa `Value::Enum(en, name, [])` cho biến thể rỗng → exit 0) vs VM `VS0501`.
-/// Sau VD-238 không còn con đường annot `AnyError = None` nào tới runtime (đã đỏ check);
-/// con đường **không annot** `let x = None` vẫn qua được check (VD-238 không đổi suy luận
-/// cho `let` không annotation) — hai engine giữ **byte-identical**: cả hai exit **101** (`VS0501`),
-/// stdout rỗng, stderr đồng nhất.
+/// (10b) **VD-238 D1 — ca (b) runtime parity** (cập nhật **VD-258**): trước VD-258, `let x = None`
+/// không annot cho `x` kiểu `{error}` nên `print(x.message)` lọt checker rồi trap runtime; nay
+/// `None` có kiểu `Option[?]` ⇒ **từ chối tĩnh** (`VS0412`, đòi `?.`) ở **cả hai** engine.
+/// Test giữ mục tiêu parity: chạy `vis run` (interp) và `vis run --vm` phải cùng exit 2 + cùng stderr.
 #[test]
 fn anyerror_none_field_engine_parity() {
     let [a, b] = chay_ca_hai(
         "nonemsg",
         "fn main() -> ():\n    let x = None\n    print(x.message)\n",
     );
-    assert_eq!(a.0, 101, "interp phải exit 101; stderr={}", a.2);
+    assert_eq!(a.0, 2, "interp phải từ chối tĩnh; stderr={}", a.2);
     assert_eq!(a.1, "");
     assert_eq!(a.0, b.0);
     assert_eq!(a.2, b.2);
+    assert!(a.2.contains("VS0412"), "stderr: {}", a.2);
 }
 
 /// (11) **VD-238** ca khoá: `None` trần chỉ gán được cho lớp **ngoài cùng** là `Option`; mọi annot non-Option

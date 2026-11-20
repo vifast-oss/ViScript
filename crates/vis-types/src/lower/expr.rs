@@ -177,11 +177,24 @@ impl<'a> Lowerer<'a> {
                 }
             }
             NodeKind::Field | NodeKind::OptField => {
-                let base = node
-                    .children()
-                    .next()
-                    .map(|c| self.lower_expr(c))
-                    .unwrap_or(HExpr::Error { span });
+                let base = match node.children().next() {
+                    // **VD-258**: `Json.Arr(…)` / `SqlValue.Integer(…)` dưới `Strict` — tên kiểu
+                    // dựng sẵn không có ký hiệu giá trị; đừng báo `VS0301` trước `maybe_enum_lit`.
+                    Some(c) if c.kind == NodeKind::Ident => {
+                        let ten = self.text_of(c.span).to_string();
+                        if self.resolve(&ten).is_none() && self.la_ten_kieu_dung_san(&ten) {
+                            HExpr::Var {
+                                name: ten,
+                                sym: None,
+                                span: c.span,
+                            }
+                        } else {
+                            self.lower_expr(c)
+                        }
+                    }
+                    Some(c) => self.lower_expr(c),
+                    None => HExpr::Error { span },
+                };
                 let name = node
                     .elems
                     .iter()
@@ -241,7 +254,7 @@ impl<'a> Lowerer<'a> {
                 let callee = node
                     .children()
                     .next()
-                    .map(|c| self.lower_expr(c))
+                    .map(|c| self.lower_callee(c))
                     .unwrap_or(HExpr::Error { span });
                 let (args, named) = node
                     .child(NodeKind::Args)
@@ -398,6 +411,24 @@ impl<'a> Lowerer<'a> {
             },
             _ => HExpr::Error { span },
         }
+    }
+
+    /// **VD-258** — hạ **callee** của lời gọi: tên biến thể enum dựng sẵn (`Arr(…)`, `Integer(…)`)
+    /// không có ký hiệu giá trị, nên đừng báo `VS0301` trước `maybe_enum_lit`. Chỉ áp cho tên
+    /// **chưa phân giải** và **có** trong `variant_index` của lượt hạ.
+    fn lower_callee(&mut self, node: &Node) -> HExpr {
+        if node.kind == NodeKind::Ident {
+            let ten = self.text_of(node.span).to_string();
+            if self.resolve(&ten).is_none() && self.variant_index.iter().any(|(n, _, _)| n == &ten)
+            {
+                let cu = self.suppress_name_diag;
+                self.suppress_name_diag = true;
+                let e = self.lower_expr(node);
+                self.suppress_name_diag = cu;
+                return e;
+            }
+        }
+        self.lower_expr(node)
     }
 
     fn lower_literal(&mut self, node: &Node) -> HExpr {

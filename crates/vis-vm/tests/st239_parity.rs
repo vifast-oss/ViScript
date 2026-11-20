@@ -89,14 +89,14 @@ fn ca161_hoi_cham_base_optional_nang_mot_lop() {
     );
 }
 
-/// VD-242 §3.2: field `str?` ⇒ kiểu `str??`, không flatten; `lift_opt(1)` của VM không bọc chồng
-/// field đã `Opt`, nên `Some("x")` giữ `Some(x)` và `None` giữ `None`.
+/// VD-242 §3.2 — field `str?` ⇒ `str??`, **không flatten** (VD-258 sửa lại: `?.` luôn bọc đúng
+/// một lớp quanh **giá trị** field, nên `Some("x")` ⇒ `Some(Some(x))` và `None` ⇒ `Some(None)`).
 #[test]
 fn ca161_hoi_cham_khong_flatten_field_optional() {
     parity(
         "ca161-field-opt",
         "type U:\n    f: str?\nfn main():\n    let u: U? = Some({f: Some(\"x\")})\n    print(u?.f)\n    let v: U? = Some({f: None})\n    print(v?.f)\n",
-        "Some(x)\nNone\n",
+        "Some(Some(x))\nSome(None)\n",
     );
 }
 

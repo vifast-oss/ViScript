@@ -444,6 +444,8 @@ impl<'a> Interp<'a> {
             } => {
                 // VD-47: `if` **có** `else` cho giá trị của nhánh đã chạy; **không** `else` ⇒ `()`.
                 let has_else = matches!(else_, Some(b) if !b.is_empty());
+                let (min, max) =
+                    core_types::goi::do_if(then, elifs, else_.as_deref(), self.symbols, self.types);
                 let mut ctrl = Ctrl::Normal;
                 let mut ran = false;
                 if self.eval_cond(cond)? {
@@ -468,6 +470,8 @@ impl<'a> Interp<'a> {
                 }
                 if !has_else {
                     self.last = None;
+                } else if let Some(v) = self.last.take() {
+                    self.last = Some(core_types::goi::boc_nhanh(v, min, max));
                 }
                 Ok(ctrl)
             }
@@ -560,6 +564,7 @@ impl<'a> Interp<'a> {
                 Ok(Ctrl::Continue)
             }
             HStmt::Match { subject, arms, .. } => {
+                let (min, max) = core_types::goi::do_match(arms, self.symbols, self.types);
                 let subj = self.eval(subject)?;
                 let Some((arm, binds)) = self.pick_arm(arms, &subj)? else {
                     return Err(Abort::Trap(Trap::new(
@@ -571,7 +576,11 @@ impl<'a> Interp<'a> {
                 for (sym, v) in binds {
                     self.env.borrow_mut().insert(sym, v);
                 }
-                self.exec_block(&arm.body)
+                let r = self.exec_block(&arm.body)?;
+                if let Some(v) = self.last.take() {
+                    self.last = Some(core_types::goi::boc_nhanh(v, min, max));
+                }
+                Ok(r)
             }
             HStmt::Block { body, .. } => self.exec_block(body),
         }
@@ -742,29 +751,7 @@ impl<'a> Interp<'a> {
                 name,
                 optional,
                 span,
-            } => {
-                let b = self.eval(base)?;
-                // **ST-239 (VD-242 §3.2, ca 5)**: VM đúng, interp thiếu nâng một lớp `Opt`.
-                // `None` ⇒ `None`; `Some(u)` ⇒ `Some(u.field)` — **không flatten**. Dùng chung
-                // `lift_opt(v, 1)` với `$lift-opt` của VM để field đã `Opt` không bị bọc chồng.
-                // Checker đã chặn base thường (`?.` chỉ trên `Option[U]`), nhưng giữ nhánh phòng vệ.
-                let (b, nang) = if *optional {
-                    match b {
-                        Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
-                            "None" => return Ok(Value::none()),
-                            "Some" if ag.len() == 1 => {
-                                (ag.pop().expect("Some luôn có một đối số"), true)
-                            }
-                            _ => (Value::Enum(ea, va, ag), false),
-                        },
-                        other => (other, false),
-                    }
-                } else {
-                    (b, false)
-                };
-                let v = self.field_of(b, name, *span)?;
-                Ok(if nang { crate::lift::lift_opt(v, 1) } else { v })
-            }
+            } => self.eval_field(base, name, *optional, *span),
             HExpr::Index { base, index, span } => {
                 let b = self.eval(base)?;
                 let i = self.eval(index)?;
@@ -804,14 +791,21 @@ impl<'a> Interp<'a> {
             }
             HExpr::Record { fields, ty, span } => {
                 let name = self.type_name(ty);
+                let rec_id = match ty {
+                    vis_types::Type::Record(id) => Some(*id),
+                    _ => None,
+                };
                 let mut out = Vec::with_capacity(fields.len());
                 for (n, v) in fields {
-                    out.push((n.clone(), self.eval(v)?));
+                    let vv = self.eval(v)?;
+                    // **VD-258**: trường `T?` nhận plain — nâng ở biên dựng bản ghi.
+                    out.push((n.clone(), self.lift_truong_ban_ghi(rec_id, n, vv)));
                     let _ = span;
                 }
                 Ok(Value::Record(name, out))
             }
             HExpr::EnumLit {
+                enum_id,
                 path,
                 variant,
                 args,
@@ -820,8 +814,10 @@ impl<'a> Interp<'a> {
                 ..
             } => {
                 let mut vs = Vec::with_capacity(args.len());
-                for a in args {
-                    vs.push(self.eval(a)?);
+                for (i, a) in args.iter().enumerate() {
+                    let vv = self.eval(a)?;
+                    // **VD-258**: đối số biến thể `T?` nhận plain — nâng ở biên dựng enum.
+                    vs.push(self.lift_doi_so_bien_the(*enum_id, variant, i, vv));
                 }
                 let name = self.type_name(ty);
                 let name = if name.is_empty() {
@@ -894,8 +890,12 @@ impl<'a> Interp<'a> {
                 let b = self.eval(base)?;
                 match b {
                     Value::Record(name, mut cur) => {
+                        // **VD-258**: `with` cập nhật trường `T?` bằng giá trị plain — nâng như
+                        // biên dựng bản ghi. Bản ghi ẩn danh (tên rỗng) không tra được kiểu.
+                        let rec_id = self.types.rec_by_name(&name);
                         for (n, v) in fields {
                             let nv = self.eval(v)?;
+                            let nv = self.lift_truong_ban_ghi(rec_id, n, nv);
                             match cur.iter_mut().find(|(f, _)| f == n) {
                                 Some(slot) => slot.1 = nv,
                                 None => {
@@ -922,38 +922,13 @@ impl<'a> Interp<'a> {
                 elifs,
                 else_,
                 ..
-            } => {
-                if self.eval_cond(cond)? {
-                    return self.exec_body(then);
-                }
-                for (c, body) in elifs {
-                    if self.eval_cond(c)? {
-                        return self.exec_body(body);
-                    }
-                }
-                self.exec_body(else_)
-            }
+            } => self.eval_if(cond, then, elifs, else_),
             HExpr::Match {
                 subject,
                 arms,
                 span,
                 ..
-            } => {
-                let subj = self.eval(subject)?;
-                match self.pick_arm(arms, &subj)? {
-                    Some((arm, binds)) => {
-                        for (sym, v) in binds {
-                            self.env.borrow_mut().insert(sym, v);
-                        }
-                        self.exec_body(&arm.body)
-                    }
-                    None => Err(Abort::Trap(Trap::new(
-                        RT,
-                        "`match` không khớp nhánh nào (không xét hết bị lọt)",
-                        *span,
-                    ))),
-                }
-            }
+            } => self.eval_match(subject, arms, *span),
             HExpr::Lambda {
                 params, body, ret, ..
             } => Ok(Value::Fn(Rc::new(Closure {

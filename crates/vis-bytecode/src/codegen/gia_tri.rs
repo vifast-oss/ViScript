@@ -36,11 +36,19 @@ impl Emit<'_> {
                 span,
             } => {
                 let mut jend: Vec<usize> = Vec::new();
+                let (min, max) = than::do_if(
+                    then,
+                    elifs,
+                    else_.as_deref(),
+                    &self.g.sym_ty,
+                    &self.g.rec_fields,
+                );
                 let mut jf = self.cond(cond)?;
                 // **R3a (VD-178)**: `if let` để giá trị cho nhánh `then` bind; nhánh `else`/`elif`
                 // phải `Pop` nó trước.
                 let mut cond_let = matches!(cond, HCond::Let { .. });
                 self.nhanh_gia_tri(then)?;
+                self.lift_nhanh(min, max, *span)?;
                 jend.push(self.f.here());
                 self.f.push(Instr::Jump(0), *span, 0);
                 let mut prev = jf.take();
@@ -55,6 +63,7 @@ impl Emit<'_> {
                     let mut j = self.cond(c)?;
                     cond_let = matches!(c, HCond::Let { .. });
                     self.nhanh_gia_tri(body)?;
+                    self.lift_nhanh(min, max, *span)?;
                     jend.push(self.f.here());
                     self.f.push(Instr::Jump(0), *span, 0);
                     prev = j.take();
@@ -67,7 +76,10 @@ impl Emit<'_> {
                     self.f.push(Instr::Pop, *span, -1);
                 }
                 match else_ {
-                    Some(b) => self.nhanh_gia_tri(b)?,
+                    Some(b) => {
+                        self.nhanh_gia_tri(b)?;
+                        self.lift_nhanh(min, max, *span)?;
+                    }
                     // **ST-60b**: `if` **không** `else` ⇒ giá trị `()` thật (trước: `str("")`).
                     None => self.f.push(Instr::PushUnit, *span, 1),
                 }
@@ -83,6 +95,7 @@ impl Emit<'_> {
                 span,
             } => {
                 self.expr(subject)?;
+                let (min, max) = than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields);
                 let mut jend = Vec::new();
                 let mut guardas: Vec<usize> = Vec::new();
                 let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();
@@ -104,6 +117,7 @@ impl Emit<'_> {
                     }
                     self.f.push(Instr::Pop, *span, -1);
                     self.nhanh_gia_tri(&arm.body)?;
+                    self.lift_nhanh(min, max, *span)?;
                     jend.push(self.f.here());
                     self.f.push(Instr::Jump(0), *span, 0);
                     let next = self.f.here();

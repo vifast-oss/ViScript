@@ -53,6 +53,8 @@ struct Gen {
     builtins: HashMap<u32, String>,
     sym_ty: HashMap<u32, vis_types::Type>,
     rec_fields: HashMap<(u32, String), vis_types::Type>, // ST-248: kiểu trường bản ghi
+    /// **VD-258**: kiểu trường biến thể enum `(EnumId, biến thể, vị trí)`.
+    enum_fields: HashMap<(u32, String, usize), vis_types::Type>,
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     /// **ST-238 (VD-242, ca 3)**: `sym` của biến `let`/`var` cấp tệp → ô trong vùng
@@ -199,6 +201,7 @@ pub fn compile_with_fee(
         builtins: crate::util::tinh_cac_builtin(symbols),
         sym_ty: than::collect_sym_tys(hir, symbols), // ST-248: annot + kiểu suy từ initializer
         rec_fields: than::collect_rec_fields(hir),
+        enum_fields: than::collect_enum_fields(hir),
         hash: crate::format::source_hash(text),
     };
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
@@ -561,9 +564,14 @@ impl<'g> Emit<'g> {
                         if name == "push" {
                             if let HExpr::Var { sym: Some(id), .. } = &**base {
                                 let slot = self.slot_cua(*id)?;
+                                // **VD-258**: nâng đối số plain cho `list[T?]`.
+                                let push_depth = self.push_elem_depth(base);
                                 self.f.push(Instr::LoadLocal(slot), *span, 1);
                                 for a in args {
                                     self.expr(a)?;
+                                    if push_depth > 0 {
+                                        self.lift_opt(push_depth, *span)?;
+                                    }
                                 }
                                 let c = self.g.cst_str(name);
                                 self.f.push(
@@ -981,6 +989,11 @@ impl<'g> Emit<'g> {
                 span,
             } => {
                 let n = (args.len() + named.len()) as u16;
+                // **VD-258**: `xs.push(v)` với `xs: list[T?]` — nâng `v` plain ở biên phương thức.
+                let push_depth = match &**callee {
+                    HExpr::Field { base, name, .. } if name == "push" => self.push_elem_depth(base),
+                    _ => 0,
+                };
                 // **ST-276**: call site có sự kiện riêng, tính **trước** đối số (thứ tự ngôn ngữ).
                 // **VD-258**: `Field` (method trên giá trị) là **host** ⇒ `E_BUILTIN`, không
                 // `E_CALL` (khớp interp/frame). Chỉ `Var` builtin không phải hàm tệp mới là host.
@@ -1112,6 +1125,9 @@ impl<'g> Emit<'g> {
                         self.expr(base)?;
                         for a in args {
                             self.expr(a)?;
+                            if push_depth > 0 {
+                                self.lift_opt(push_depth, *span)?;
+                            }
                         }
                         let c = self.g.cst_str(name);
                         self.f.push(Instr::CallMethod(c, n), *span, -i32::from(n));
@@ -1142,7 +1158,7 @@ impl<'g> Emit<'g> {
                     }
                 }
                 if *optional {
-                    // `x?.y`: `None` ⇒ `None`; `Some(v)` ⇒ `Some(v.y)`.
+                    // **VD-258**: `None` ⇒ `None`; `Some(u)` ⇒ `Some(u.f)` (field optional thật giữ thêm một lớp).
                     self.expr(base)?;
                     self.f.push(Instr::Dup, *span, 1);
                     let jn = self.f.here();
@@ -1150,8 +1166,9 @@ impl<'g> Emit<'g> {
                     self.f.push(Instr::UnwrapOpt, *span, 0);
                     let c = self.g.cst_str(name);
                     self.f.push(Instr::Field(c), *span, 0);
-                    // **VD-241 §3/VD-227** — `?.f` tới đủ `Opt` không bọc chồng field `B?`.
-                    self.lift_opt(1, *span)?;
+                    // **VD-258**: field optional thật (`T?`) ⇒ luôn `MakeSome`; field thường
+                    // dùng `lift_opt` như cũ (giá trị hợp lệ không-Option ⇒ `Some(v)`).
+                    self.field_optional_boc(base, name, *span)?;
                     let jend = self.f.here();
                     self.f.push(Instr::Jump(0), *span, 0);
                     let lnone = self.f.here();
@@ -1220,14 +1237,17 @@ impl<'g> Emit<'g> {
             }
             HExpr::Record { fields, ty, span } => self.record_lit(fields, ty, *span),
             HExpr::EnumLit {
+                enum_id,
                 path,
                 variant,
                 args,
                 span,
                 ..
             } => {
-                for a in args {
+                for (i, a) in args.iter().enumerate() {
                     self.expr(a)?;
+                    // **VD-258**: đối số biến thể `T?` nhận plain — nâng ở biên dựng enum.
+                    self.lift_enum_arg(*enum_id, variant, i, *span)?;
                 }
                 // Giữ **cả** tên enum (nếu biết) để `MakeEnum` dựng đúng `Value::Enum`.
                 let mut ten = path.join(".");
@@ -1268,10 +1288,16 @@ impl<'g> Emit<'g> {
             }
             HExpr::With { base, fields, span } => {
                 self.expr(base)?;
+                let rec_id = match self.base_ty(base) {
+                    Some(vis_types::Type::Record(id)) => Some(id),
+                    _ => None,
+                };
                 for (n, v) in fields {
                     let c = self.g.cst_str(n);
                     self.f.push(Instr::Const(c), *span, 1);
                     self.expr(v)?;
+                    // **VD-258**: cập nhật trường `T?` bằng plain ⇒ nâng như biên dựng bản ghi.
+                    self.lift_with_field(rec_id, n, *span)?;
                 }
                 self.f.push(
                     Instr::With(fields.len() as u16),
@@ -1295,6 +1321,7 @@ impl<'g> Emit<'g> {
                 ..
             } => {
                 self.expr(subject)?;
+                let (min, max) = than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields);
                 let mut jend = Vec::new();
                 let mut guardas: Vec<usize> = Vec::new();
                 let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();
@@ -1316,6 +1343,7 @@ impl<'g> Emit<'g> {
                     }
                     self.f.push(Instr::Pop, *span, -1);
                     self.nhanh_gia_tri(&arm.body)?;
+                    self.lift_nhanh(min, max, *span)?;
                     jend.push(self.f.here());
                     self.f.push(Instr::Jump(0), *span, 0);
                     let next = self.f.here();
