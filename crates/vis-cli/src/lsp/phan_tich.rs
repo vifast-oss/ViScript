@@ -65,6 +65,9 @@ pub struct KetQua {
     pub ky_hieu: Vec<super::ky_hieu::KyHieu>,
     /// **VD-270**: `test fn` cấp tệp cho `textDocument/codeLens` (thứ tự khai).
     pub test_fn: Vec<super::codelens::TestFn>,
+    /// **VD-270**: gợi ý kiểu (`textDocument/inlayHint`) cho `let`/`var` không nhãn — đã sắp
+    /// theo nguồn, cap 200.
+    pub inlay: Vec<super::inlay_hint::Inlay>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -195,6 +198,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
     let dinh_nghia = super::dinh_nghia::gom(&out.hir);
     let ky_hieu = super::ky_hieu::gom(&out.hir);
     let test_fn = super::codelens::gom(&out.hir);
+    let inlay = super::inlay_hint::gom(&out.hir, &syms, &tbl);
     KetQua {
         text: lexed.text.clone(),
         ds,
@@ -205,6 +209,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         dinh_nghia,
         ky_hieu,
         test_fn,
+        inlay,
     }
 }
 
