@@ -23,7 +23,7 @@
 | Docs | `1421616` → `5931968` | CHANGELOG + cheat-sheet (main->int, sqlite read-only, rest pattern) |
 | Method | `240c2a0` → `3b0757a` | type-check thân method `impl`: break/continue, tên lạ, return |
 | Globals | `d518975` → `6c2c9c2` | khởi tạo top-level `let`/`var` trước `fn main`, cả 2 engine |
-| Perf | `2395a8d`, `7a93bea` | cache quét schema SQLite; strip release 6.23 MB |
+| Perf | `2395a8d`, `7a93bea`, `74f2a37` | cache quét schema SQLite theo schema/data version; strip release 6.23 MB |
 
 ## 2. Bằng chứng cổng
 
@@ -71,7 +71,9 @@
 
 ## 6. Còn mở / chưa tuyên bố hoàn tất
 
-- Method `impl` body chưa được type-check đầy đủ (break/continue trong method có thể lọt).
+- Method `impl` body đã được type-check cơ bản (break/continue/tên lạ/return); `self`/kiểu phép gán sâu còn nợ.
+- Review độc lập phát hiện thêm `let … else`, `break/continue` trong expression if/match, `with` non-Var,
+  VM `[]` vs `()`, generic Option field — **đang sửa ở wave 6**. Không tuyên bố “sạch” cho tới khi xong.
 - Cache label đã bump cho rest-pattern/parity (`d780637`); nếu sửa codegen tiếp phải bump lại.
 - Refutable `let`/`for` nay bị từ chối tĩnh (đúng VD-260); `let … else` chỉ cho Option/Result — fixture rest pattern đã đổi sang `if let`.
 - Frame vẫn cooperative; timer/interleave chỉ tại safe point; quota là test-hook.
