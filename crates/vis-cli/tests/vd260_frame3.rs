@@ -215,6 +215,11 @@ fn quota_moi_turn_van_khong_lam_doi_timer() {
 fn timer_that_khong_fire_som_truoc_deadline() {
     let mut s = Scheduler::default();
     s.frame_enable_for_test(vec![], vec![]);
+    // **VD-270 (flake timing, 2026-11-21)**: mốc đo phải lấy **trước** khi nạp timer, vì
+    // `epoch` của reactor có thể được ghim ngay khi nạp/8 lượt ready đầu; dưới tải, 8 lượt đó
+    // có thể tốn ~10 ms nên đo từ sau chúng sẽ thấy "chỉ 29,3 ms" dù timer không hề fire sớm.
+    // Tổng thời gian từ trước khi nạp tới lúc fire vẫn phải ≥ 40 ms − dung sai 10 ms.
+    let t_bat_dau = std::time::Instant::now();
     s.frame_reactor_load_for_test(vec![timer(0, 0, 40)], true);
     dang_ky_cho_reactor(&mut s, 5, 0);
     // 8 lượt ready đầu chưa chạm ngân sách: timer chưa được fire.
@@ -226,10 +231,9 @@ fn timer_that_khong_fire_som_truoc_deadline() {
         !s.frame.reactor.fired.contains_key(&0),
         "timer fire trước ngân sách"
     );
-    let t0 = std::time::Instant::now();
     s.frame.ready.push_back(99);
     assert_eq!(s.frame_next(), Some(99));
-    let elapsed = t0.elapsed();
+    let elapsed = t_bat_dau.elapsed();
     assert!(
         elapsed >= std::time::Duration::from_millis(30),
         "timer fire sớm: chỉ {:?}",
