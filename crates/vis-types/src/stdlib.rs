@@ -223,7 +223,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 118] = [
+pub const FUNCS: [StdFn; 119] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -332,6 +332,15 @@ pub const FUNCS: [StdFn; 118] = [
     // đầu `str` nên sugar R5c `s.replace_first(…)` chạy không cần `use`.
     StdFn {
         name: "str.replace_first",
+        params: &[Ty::Str, Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (replace-last)**: thay **đúng lần cuối** của `from` bằng `to`
+    // (Rust `rfind` + ghép), cùng đơn vị scalar Unicode với `str.replace`/`replace_first`/
+    // `rfind`; `from` rỗng ⇒ nối `to` một lần ở cuối; không khớp ⇒ `s` nguyên vẹn. Cùng tham
+    // số đầu `str` nên sugar R5c `s.replace_last(…)` chạy không cần `use`.
+    StdFn {
+        name: "str.replace_last",
         params: &[Ty::Str, Ty::Str, Ty::Str],
         ret: Ty::Str,
     },

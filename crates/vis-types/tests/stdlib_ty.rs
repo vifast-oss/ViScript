@@ -138,7 +138,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 list-sum-product, 2026-11-21)**: +**2** hàm `std.list.sum` /
     // `std.list.product` (`(list[int]) -> int`; gộp checked, rỗng ⇒ `0`/`1`, tràn ⇒ `VS0507`)
     // ⇒ **118** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 118, "bảng chữ ký phải đủ 118 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 replace-last, 2026-11-21)**: +**1** hàm `std.str.replace_last`
+    // (`(str, str, str) -> str`; chỉ thay lần khớp **cuối**, `from` rỗng ⇒ nối `to` ở cuối) ⇒
+    // **119** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 119, "bảng chữ ký phải đủ 119 hàm");
 }
 
 #[test]
@@ -310,6 +313,17 @@ fn replace_first_kieu_str_sang_str() {
     // **VD-270 (replace-first)**: `(str, str, str) -> str`; cùng tham số đầu `str` nên sugar
     // R5c `s.replace_first(…)` chạy không cần `use`, và kết quả là `str` (không phải `str?`).
     let f = sig_of("str.replace_first").expect("str.replace_first");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str, Ty::Str], "tham số");
+    assert_eq!(f.ret, Ty::Str, "kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
+    assert_eq!(f.so_doi(), 3, "số đối số");
+}
+
+#[test]
+fn replace_last_kieu_str_sang_str() {
+    // **VD-270 (replace-last)**: `(str, str, str) -> str`; cùng tham số đầu `str` nên sugar
+    // R5c `s.replace_last(…)` chạy không cần `use`, và kết quả là `str` (không phải `str?`).
+    let f = sig_of("str.replace_last").expect("str.replace_last");
     assert_eq!(f.params, &[Ty::Str, Ty::Str, Ty::Str], "tham số");
     assert_eq!(f.ret, Ty::Str, "kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
