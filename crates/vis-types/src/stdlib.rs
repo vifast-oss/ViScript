@@ -69,6 +69,13 @@ pub enum Ty {
     /// (chuỗi sai cú pháp/không hữu hạn/tràn ⇒ `None`). Cùng lý do `OptInt`/`OptStr`: `Ty`
     /// không có biến thể `Opt` tổng quát, nên giữ biến riêng theo đúng mẫu.
     OptFloat,
+    /// **VD-270 (sqlite-schema-sql)** — `Result[str?, Error]` = `Result[Option[str], Error]`:
+    /// kiểu trả của `std.sqlite.schema_sql` (đối tượng không tồn tại hoặc `sql` NULL ⇒ `Ok(None)`).
+    /// Không tái dùng `ResultStrStr` (đó là `Result[str, Error]`, không có lớp `Option`) và
+    /// `OptStr` (đó là `str?` trần, không có `Result`): `Ty` không có biến thể `Result`/`Opt`
+    /// tổng quát, nên giữ một biến **chính xác** theo mẫu `OptStr`/`ResultIntErr` thay vì ép
+    /// kiểu gần đúng làm mất lớp `Option` hoặc lớp lỗi.
+    ResultOptStrErr,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -118,6 +125,11 @@ impl Ty {
             Ty::OptStr => Type::Opt(Box::new(Type::Str)),
             // **VD-270 (parse-float)** — `float?` là `Option[float]` thật.
             Ty::OptFloat => Type::Opt(Box::new(Type::Float)),
+            // **VD-270 (sqlite-schema-sql)** — `Result[Option[str], Error]`: giữ đúng cả hai lớp.
+            Ty::ResultOptStrErr => Type::Result(
+                Box::new(Type::Opt(Box::new(Type::Str))),
+                Box::new(Self::Error.sang_type()),
+            ),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -176,6 +188,8 @@ impl Ty {
             Ty::OptStr => "str?",
             // **VD-270 (parse-float)**
             Ty::OptFloat => "float?",
+            // **VD-270 (sqlite-schema-sql)**
+            Ty::ResultOptStrErr => "Result[str?, Error]",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -223,7 +237,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 119] = [
+pub const FUNCS: [StdFn; 120] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -920,6 +934,17 @@ pub const FUNCS: [StdFn; 119] = [
         name: "sqlite.indexes",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-schema-sql)** — văn bản SQL khai báo của đối tượng schema **chính**
+    // (table/view/index/trigger) tra theo **tên** (`SELECT sql FROM sqlite_master WHERE name = ?
+    // LIMIT 1`); tên là **tham số bind** (`SqlValue.Text`), không nối chuỗi. So khớp **phân biệt
+    // hoa/thường** (BINARY); không có đối tượng hoặc `sql` NULL (autoindex/đối tượng SQLite tự
+    // sinh) ⇒ `Ok(None)`; đối tượng `sqlite_%` không đặc cách ngoài truy vấn. Lỗi handle/host ⇒
+    // `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.schema_sql",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultOptStrErr,
     },
 ];
 
