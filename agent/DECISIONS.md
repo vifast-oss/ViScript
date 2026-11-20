@@ -3452,3 +3452,18 @@ reuse `Ty::ResultBoolErr`.
   chính, BINARY; thiếu/rỗng ⇒ `Ok(false)`; bảng/view/trigger trùng tên không tính; reuse `ResultBoolErr`.
 - **str.replace_n**: `(str, str, str, int) -> str` thay tối đa `n` lần khớp không chồng theo Rust
   `replacen`; `n == 0` ⇒ nguyên, `n` quá ⇒ tất cả, `n < 0` ⇒ trap `VS0501`; sugar R5c.
+
+### VD-270 (bổ sung) · map.contains_key, char_at, is_absolute, is_blank, schema_version — A0, 2026-11-21
+
+- **map.contains_key**: `(map[K, V], K) -> bool` đúng ⇔ có khoá bằng theo `eq_value` như
+  `map.has`/`get` (cấu trúc, list/map/record/enum, int↔float); rỗng/không có ⇒ `false`, không trap;
+  sugar R5c; reuse `Ty::Map` + `Var`.
+- **str.char_at**: `(str, int) -> str?` scalar Unicode thứ `i` zero-based; âm/quá dài/rỗng ⇒ `None`,
+  không trap; `Ty::OptStr`; sugar R5c.
+- **path.is_absolute**: `(str) -> bool` đúng kết quả `path.is_abs` (cùng helper `la_tuyet_doi` + cờ
+  nền tảng); rỗng ⇒ `false`; thuần từ vựng; không sugar.
+- **str.is_blank**: `(str) -> bool` rỗng hoặc mọi scalar `char::is_whitespace`; ZWSP/BOM/MVS/dấu kết
+  hợp không phải khoảng trắng; sugar R5c.
+- **sqlite.schema_version**: `(handle) -> Result[int, Error]` đọc `PRAGMA schema_version` qua
+  `db_query`; chỉ schema chính; DDL trên cùng connection làm tăng, DML/TEMP/IF NOT EXISTS không đổi;
+  `:memory:` mới ⇒ `0`; handle/hình dạng sai ⇒ `Err` dữ liệu; reuse `Ty::ResultIntErr`.

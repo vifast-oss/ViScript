@@ -328,3 +328,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `902a11f`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `./vis-dev nightly` @ `ba249df`: **PASS** — parser fuzz **7.182.878 ca / 162.994.731 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `VIS_DIFF_N=100000` seed 20261214 @ `ba249df`: **0 lệch** (93.768 chạy, 172,6 s).
+- **Wave 23 merged**: `map.contains_key` (`745851a`), `str.char_at` (`3cf2b48`), `path.is_absolute` (`49eab95`), `str.is_blank` (`90bc8d0`), `sqlite.schema_version` (`c6e0a2a`). `FUNCS` 135 → **140**; gate `90bc8d0` **2878 passed / 3 skipped**, `c6e0a2a` **2884 passed / 3 skipped**.
+- **Wave 24 running**: `path.with_stem`, `fs.is_symlink`, `str.split_once`, `sqlite.user_version` (4 worktree tại `c6e0a2a`).
