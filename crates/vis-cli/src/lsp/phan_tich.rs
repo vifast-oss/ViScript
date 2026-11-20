@@ -63,6 +63,8 @@ pub struct KetQua {
     pub dinh_nghia: Vec<super::dinh_nghia::DinhNghia>,
     /// **ST-270**: cây ký hiệu cho `textDocument/documentSymbol`.
     pub ky_hieu: Vec<super::ky_hieu::KyHieu>,
+    /// **VD-270**: `test fn` cấp tệp cho `textDocument/codeLens` (thứ tự khai).
+    pub test_fn: Vec<super::codelens::TestFn>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -192,6 +194,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
     let phuong = gom_phuong(&out.hir, &tbl);
     let dinh_nghia = super::dinh_nghia::gom(&out.hir);
     let ky_hieu = super::ky_hieu::gom(&out.hir);
+    let test_fn = super::codelens::gom(&out.hir);
     KetQua {
         text: lexed.text.clone(),
         ds,
@@ -201,6 +204,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         phuong,
         dinh_nghia,
         ky_hieu,
+        test_fn,
     }
 }
 
