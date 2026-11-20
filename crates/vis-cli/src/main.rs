@@ -21,7 +21,7 @@ mod quyen;
 mod quyen_st174;
 mod vistest;
 
-use vis_diag::{all_codes, lookup_str, severity_label, Lang};
+use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
 use vis_syntax::Mode;
 
 use cli::run::{doc_stdin, in_sandbox_check, ma_thoat_khi_loi, run_dry, usage_run};
@@ -30,7 +30,7 @@ use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--lang vi|en|ja] <VSxxxx> | vis explain --list [--lang vi|en|ja] | vis run [--tap] [--stdin] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     ExitCode::from(2)
 }
@@ -43,30 +43,67 @@ fn usage_explain(lang: Lang) -> ExitCode {
     match lang {
         Lang::Vi => {
             eprintln!(
-                "dùng: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]"
+                "dùng: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
             );
             eprintln!(
-                "sổ mã: {khoi} khối, {ma} mã — `vis explain --list` in toàn bộ (mã + câu ngắn)"
+                "sổ mã: {khoi} khối, {ma} mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc"
             );
         }
         Lang::En => {
             eprintln!(
-                "usage: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]"
+                "usage: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
             );
             eprintln!(
-                "code book: {khoi} blocks, {ma} codes — `vis explain --list` prints all (code + short text)"
+                "code book: {khoi} blocks, {ma} codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line"
             );
         }
         Lang::Ja => {
             eprintln!(
-                "使い方: vis explain <VSxxxx> [--lang vi|en|ja] | vis explain --list [--lang vi|en|ja]"
+                "使い方: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
             );
             eprintln!(
-                "コード帳: {khoi} ブロック、{ma} コード — `vis explain --list` で全件表示（コード + 短い説明）"
+                "コード帳: {khoi} ブロック、{ma} コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行"
             );
         }
     }
     ExitCode::from(2)
+}
+
+/// **VD-270** — mức của mã ở dạng **ổn định cho máy đọc** (không phụ thuộc `--lang`).
+fn severity_json(sev: Severity) -> &'static str {
+    match sev {
+        Severity::Error => "error",
+        Severity::Warning => "warning",
+    }
+}
+
+/// **VD-270** — một mã trong `explain --list --json`: chỉ `code`/`severity`/`title`.
+fn explain_json_ngan(c: &Code, lang: Lang) -> String {
+    format!(
+        "{{\"code\":\"{}\",\"severity\":\"{}\",\"title\":\"{}\"}}",
+        c.short,
+        severity_json(c.severity),
+        json_esc::esc(c.message(lang))
+    )
+}
+
+/// **VD-270** — một mã cho `explain --json`: `title` là câu ngắn của sổ, `body` là **đúng dòng
+/// giải thích** của chế độ người đọc (không có `\n`). Sổ hiện chưa có mô tả dài riêng, nên
+/// `body` là dạng đầy đủ của cùng thông điệp; khi sổ có thêm phần thân, chỉ đổi hàm này.
+fn explain_json_mot(c: &Code, lang: Lang) -> String {
+    let than = format!(
+        "{} — {}: {}",
+        c.short,
+        severity_label(c.severity, lang),
+        c.message(lang)
+    );
+    format!(
+        "{{\"code\":\"{}\",\"severity\":\"{}\",\"title\":\"{}\",\"body\":\"{}\"}}",
+        c.short,
+        severity_json(c.severity),
+        json_esc::esc(c.message(lang)),
+        json_esc::esc(&than)
+    )
 }
 
 /// **FsHost** của CLI (ST-42): `--fs-mock` ⇒ mock tất định, ngược lại ⇒ hệ tệp thật.
@@ -795,11 +832,14 @@ fn main() -> ExitCode {
         Some("explain") => {
             let mut lang = Lang::Vi;
             let mut list = false;
+            // **VD-270**: đầu ra máy đọc — một dòng JSON nén; không trộn văn bản người đọc.
+            let mut json_ra = false;
             let mut ma: Option<String> = None;
             let mut i = 1;
             while i < args.len() {
                 match args[i].as_str() {
                     "--list" => list = true,
+                    "--json" => json_ra = true,
                     "--lang" => match args.get(i + 1) {
                         Some(v) => match Lang::parse(v) {
                             Some(l) => {
@@ -826,13 +866,25 @@ fn main() -> ExitCode {
             }
             if list {
                 // `explain --list` phủ **cả ba** sổ đã cấp (01xx + 02xx + 03xx, VD-44 #7).
-                for c in all_codes() {
-                    println!(
-                        "{}  {:<8} {}",
-                        c.short,
-                        severity_label(c.severity, lang),
-                        c.message(lang)
-                    );
+                if json_ra {
+                    let mut ra = String::from("{\"codes\":[");
+                    for (n, c) in all_codes().enumerate() {
+                        if n > 0 {
+                            ra.push(',');
+                        }
+                        ra.push_str(&explain_json_ngan(c, lang));
+                    }
+                    ra.push_str("]}");
+                    println!("{ra}");
+                } else {
+                    for c in all_codes() {
+                        println!(
+                            "{}  {:<8} {}",
+                            c.short,
+                            severity_label(c.severity, lang),
+                            c.message(lang)
+                        );
+                    }
                 }
                 return ExitCode::SUCCESS;
             }
@@ -840,12 +892,16 @@ fn main() -> ExitCode {
                 None => usage_explain(lang),
                 Some(code) => match lookup_str(&code) {
                     Some(c) => {
-                        println!(
-                            "{} — {}: {}",
-                            c.short,
-                            severity_label(c.severity, lang),
-                            c.message(lang)
-                        );
+                        if json_ra {
+                            println!("{}", explain_json_mot(c, lang));
+                        } else {
+                            println!(
+                                "{} — {}: {}",
+                                c.short,
+                                severity_label(c.severity, lang),
+                                c.message(lang)
+                            );
+                        }
                         ExitCode::SUCCESS
                     }
                     None => {
