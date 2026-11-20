@@ -319,3 +319,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **replace-n** (`ead0ebf` → `330d86c`): `str.replace_n` tối đa n lần không chồng; `n<0` trap; tách net helper giữ R1.
 - `./vis-dev core-test` @ `a5908c1`: **PASS**.
 - `vis test test/sem` @ `a5908c1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
+- **R1 json-extract** (`40db020`): chuyển `json`/`json_tai`/`thut`/`mo`/`dong` sang `crates/vis-interp/src/json.rs`; `stdlib.rs` 1495 → **1208** dòng, giữ API `stdlib::json`.
+- `VIS_DIFF_N=100000` seed 20261211 @ `40db020`: **0 lệch** (93.767 chạy, 125,8 s).
