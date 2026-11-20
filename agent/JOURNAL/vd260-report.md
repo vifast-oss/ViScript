@@ -337,3 +337,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Wave 25 running**: `path.with_file_name`, `fs.read_link`, `str.rsplit_once`, `list.min_float/max_float` (4 worktree tại `88da99c`).
 - `./vis-dev core-test` @ `99e29b7`: **PASS** (sau fix flake timer; chạy dưới tải 4 subagent).
 - `./vis-dev nightly` @ `f0c1e22`: **PASS** — parser fuzz **7.134.850 ca / 161.906.966 token / 0 vi phạm** (120 s), fmt 475 tệp bất động (dưới tải 4 subagent).
+- `VIS_DIFF_N=100000` seed 20261216 @ `db5cdfe`: **0 lệch** (xem log `/tmp/opencode/diff100k_w36.out`).
