@@ -75,7 +75,10 @@ fn dem_lech_thut_le(text: &str) -> Option<usize> {
 
 fn usage_fmt() -> ExitCode {
     eprintln!(
-        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check] | vis lsp --stdio | vis pkg add|install|list"
+    );
+    eprintln!(
+        "  vis fmt --stdin [--check]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
     );
     ExitCode::from(2)
 }
@@ -111,7 +114,70 @@ fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
     }
 }
 
+/// **VD-267**: `vis fmt --stdin [--check]` — đọc mã UTF-8 từ stdin, **không** đụng đĩa.
+/// `--check` chỉ so sánh (không in), thoát 0 (đã đúng) / 1 (cần sửa) / 2 (dùng sai hoặc lỗi cú pháp).
+/// Đường tệp biến thể `.vis` mặc định script; stdin không có phần mở rộng nên cũng dùng script.
+fn run_fmt_stdin(args: &[String]) -> ExitCode {
+    use std::io::Read;
+    let mut check = false;
+    for a in args {
+        match a.as_str() {
+            "--stdin" => {}
+            "--check" => check = true,
+            "--write" => {
+                eprintln!("vis fmt: --stdin không đi với --write (chế độ stdin không ghi đĩa)");
+                return usage_fmt();
+            }
+            "--indent-report" => {
+                eprintln!("vis fmt: --stdin không đi với --indent-report (chỉ nhận --check)");
+                return usage_fmt();
+            }
+            f if f.starts_with('-') => {
+                eprintln!("vis fmt: không hỗ trợ cờ `{f}` khi dùng --stdin");
+                return usage_fmt();
+            }
+            _ => {
+                eprintln!("vis fmt: --stdin không nhận đối số `{a}` (không nhận tệp/thư mục)");
+                return usage_fmt();
+            }
+        }
+    }
+    let mut src = String::new();
+    if let Err(e) = std::io::stdin().read_to_string(&mut src) {
+        eprintln!("vis fmt: không đọc được stdin (cần UTF-8): {e}");
+        return ExitCode::from(2);
+    }
+    // Đầu vào rỗng ⇒ đầu ra rỗng, kể cả `--check` (điểm bất động của chính nó).
+    if src.is_empty() {
+        return ExitCode::SUCCESS;
+    }
+    match vis_fmt::format_mode(&src, Mode::Script) {
+        Err(e) => {
+            eprintln!("# {}", dong_chan_doan(e.code, e.line, e.col, &e.message));
+            ExitCode::from(2)
+        }
+        Ok(moi) if check => {
+            if moi == src {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::from(1)
+            }
+        }
+        Ok(moi) => {
+            if xuat_stdout(&moi) {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::from(2)
+            }
+        }
+    }
+}
+
 pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
+    // **VD-267**: `--stdin` là chế độ riêng — không lẫn với đường tệp/thư mục bên dưới.
+    if args.iter().any(|a| a == "--stdin") {
+        return run_fmt_stdin(args);
+    }
     let (mode, files): (FmtMode, &[String]) = match args.first().map(String::as_str) {
         None => return usage_fmt(),
         Some("--write") => (FmtMode::Write, &args[1..]),
