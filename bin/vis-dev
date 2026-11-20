@@ -302,7 +302,7 @@ run_rules() {
 }
 
 usage() {
-    echo "dùng: vis-dev <check|gate --fast|nightly [--fuzz-minutes N] [--skip-gate]|doc-examples [--root DIR]|rules [--root DIR]>" >&2
+    echo "dùng: vis-dev <check|gate --fast|core-test|nightly [--fuzz-minutes N] [--skip-gate]|doc-examples [--root DIR]|rules [--root DIR]>" >&2
     exit 2
 }
 
@@ -373,6 +373,13 @@ do_check() {
         return 1
     fi
     echo "--- toolchain: OK"
+    # **VD-259** — artifact phát hành chỉ có `vis`; `test-child` (bin test-support) không được lọt.
+    # Phép kiểm nhanh (metadata + dry-run + staging với cargo giả), không build release trong gate.
+    if ! bash "$VIS_ROOT/test/release/run.sh"; then
+        echo "--- release: FAIL" >&2
+        return 1
+    fi
+    echo "--- release: OK"
     if ! bash "$VIS_ROOT/test/fixtures/run_fixtures.sh"; then
         echo "--- self-test case âm: FAIL" >&2; return 1
     fi
@@ -408,6 +415,43 @@ do_check() {
     fi
     echo "--- readme-examples: OK"
     echo "vis-dev check: PASS"
+}
+
+# **VD-259** — core test (`--no-default-features`) trong **target riêng**.
+#   Integration test dùng `CARGO_BIN_EXE_vis` = `<target>/debug/vis`. Nếu dùng chung target với
+#   gate default, một gate chạy song song/ngay trước có thể để lại (hoặc ghi đè giữa chừng) bản
+#   `vis` default có sqlite ⇒ core test thấy binary sai cấu hình dù source/feature đúng. Target
+#   riêng + build tường minh trước khi test loại hẳn cuộc đua đó; cargo test vẫn chạy lần lượt
+#   từng test binary (mặc định), không chạy hai binary cùng lúc.
+#   Không đặt `--test-threads=1`: song song trong một binary là chủ ý của bộ test và không liên
+#   quan tới cuộc đua giữa hai cấu hình feature.
+do_core_test() {
+    echo "== vis-dev core-test =="
+    if [ -z "$CARGO" ]; then
+        echo "vis-dev: không thấy cargo" >&2
+        return 1
+    fi
+    local core_target="${VIS_CORE_TARGET_DIR:-$VIS_ROOT/target/core-test}"
+    case "$core_target" in
+        /*) ;;
+        *) core_target="$PWD/$core_target" ;;
+    esac
+    echo "vis-dev: core target riêng: $core_target"
+    echo "--- core build (--no-default-features; --bin vis --bin test-child)"
+    if ! CARGO_TARGET_DIR="$core_target" "$CARGO" build --manifest-path "$MANIFEST" \
+        -p vis-cli --no-default-features --bin vis --bin test-child; then
+        echo "--- core build: FAIL" >&2
+        return 1
+    fi
+    echo "--- core build: OK"
+    echo "--- core test (--no-default-features; sau build, từng test binary tuần tự)"
+    if ! CARGO_TARGET_DIR="$core_target" "$CARGO" test --manifest-path "$MANIFEST" \
+        -p vis-cli --no-default-features; then
+        echo "--- core test: FAIL" >&2
+        return 1
+    fi
+    echo "--- core test: OK"
+    echo "vis-dev core-test: PASS (target: $core_target)"
 }
 
 # L0 test — **TỐI ƯU (ST-258)**: `cargo test` chạy các test binary tuần tự (đo 43,78 s với
@@ -542,6 +586,7 @@ do_nightly() {
 case "${1:-}" in
 
     check) do_check ;;
+    core-test) do_core_test ;;
     gate)
         [ "${2:-}" = "--fast" ] || { echo "vis-dev: chỉ 'gate --fast' ở vòng 1" >&2; exit 2; }
         do_gate_fast

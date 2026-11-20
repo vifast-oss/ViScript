@@ -13,7 +13,12 @@ path = "src/main.rs"
 # **VD-PO-Windows-portability** — test helper binary emulating POSIX tools `echo/cat/grep/printf/true/false/sleep/sh`
 # **VD-258 đã rà**: KHÔNG đặt `required-features` cho bin này — `env!("CARGO_BIN_EXE_test-child")`
 # là hợp đồng biên dịch của nhiều integration test (`extern`, `vis_test`, `sem`, `diag_cmp`, …);
-# bỏ bin khỏi build test sẽ làm gãy chúng. Đóng gói release **chỉ** lấy `vis` (metadata dưới).
+# bỏ bin khỏi build test sẽ làm gãy chúng.
+# **VD-259**: Cargo không có cách khai báo "bin chỉ dùng test" mà vẫn giữ `CARGO_BIN_EXE_*`;
+# `cargo build --release` / `cargo install --path crates/vis-cli` vẫn build/cài test-child.
+# Đường phát hành **bắt buộc** dùng `bin/vis-release` (chỉ `--bin` trong `release-bins`) hoặc
+# tường minh `cargo build --release -p vis-cli --bin vis` / `cargo install --path crates/vis-cli --bin vis`.
+# `test/release/run.sh` (chạy trong `vis-dev check`) canh metadata + staging: test-child không lọt.
 [[bin]]
 name = "test-child"
 path = "src/bin/test_child.rs"

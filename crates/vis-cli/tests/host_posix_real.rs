@@ -7,6 +7,11 @@
 //! Test này chạy một tập nhỏ **lệnh thật** trên Unix, cả interp lẫn VM, để không có
 //! "xanh nhờ mock" duy nhất.
 //!
+//! **VD-259** — bổ sung `/bin/sh -c "exit 3"` (thẳng + qua `complete`) và `/usr/bin/printf`
+//! (có/không newline cuối): đúng các dạng suite host đang phủ bằng `test-child`, nay có
+//! bằng chứng POSIX thật tương ứng. Test nằm trong `cargo test --workspace` (gate --fast) và
+//! `bin/vis-host-suite` gọi tường minh trên Unix.
+//!
 //! Chỉ Unix: Windows dùng `test-child` (xem `host_conformance` + `test/host/suite.txt`).
 
 #![cfg(unix)]
@@ -49,6 +54,14 @@ fn lenh_posix_that_tren_unix() {
     std::fs::write(&echo, "/bin/echo hi\n").expect("ghi echo");
     let grep = d.join("grep.vish");
     std::fs::write(&grep, "/bin/echo x | /usr/bin/grep z\n").expect("ghi grep");
+    let sh = d.join("sh.vish");
+    std::fs::write(&sh, "/bin/sh -c \"exit 3\"\n").expect("ghi sh");
+    let sh_complete = d.join("sh-complete.vish");
+    std::fs::write(&sh_complete, "/bin/sh -c \"exit 3\" | complete\n").expect("ghi sh complete");
+    let printf_abc = d.join("printf-abc.vish");
+    std::fs::write(&printf_abc, "/usr/bin/printf abc\n").expect("ghi printf abc");
+    let printf_lines = d.join("printf-lines.vish");
+    std::fs::write(&printf_lines, "/usr/bin/printf \"a\\nb\\n\"\n").expect("ghi printf lines");
 
     for vm in [false, true] {
         let (ma, out, err) = chay(&echo, vm);
@@ -65,6 +78,45 @@ fn lenh_posix_that_tren_unix() {
             err.contains("VS0501"),
             "grep ({vm:?}) phải có chẩn đoán VS0501; stderr={err:?}"
         );
+
+        // `/bin/sh -c "exit 3"` thẳng: lệnh ngoài thất bại ⇒ VS0501 + exit 101.
+        let (ma, out, err) = chay(&sh, vm);
+        assert_eq!(ma, 101, "sh ({vm:?}) exit; stdout={out:?}, stderr={err:?}");
+        assert!(out.is_empty(), "sh ({vm:?}) stdout: {out:?}");
+        assert!(
+            err.contains("VS0501") && err.contains("thoát mã 3"),
+            "sh ({vm:?}) phải nêu VS0501 + mã 3; stderr={err:?}"
+        );
+
+        // Qua `complete`: mã thoát thật (3) được giữ, không biến thành lỗi VS0501.
+        let (ma, out, err) = chay(&sh_complete, vm);
+        assert_eq!(
+            ma, 0,
+            "sh complete ({vm:?}) exit; stdout={out:?}, stderr={err:?}"
+        );
+        assert_eq!(
+            out, "stdout  []\nstderr  []\ncode    3\n",
+            "sh complete ({vm:?}) stdout"
+        );
+        assert!(err.is_empty(), "sh complete ({vm:?}) stderr: {err}");
+
+        // `/usr/bin/printf abc` (không newline cuối) ⇒ vẫn một dòng `[abc]`.
+        let (ma, out, err) = chay(&printf_abc, vm);
+        assert_eq!(
+            ma, 0,
+            "printf abc ({vm:?}) exit; stdout={out:?}, stderr={err:?}"
+        );
+        assert_eq!(out, "[abc]\n", "printf abc ({vm:?}) stdout");
+        assert!(err.is_empty(), "printf abc ({vm:?}) stderr: {err}");
+
+        // `printf "a\nb\n"` ⇒ hai dòng, in dạng danh sách như suite host.
+        let (ma, out, err) = chay(&printf_lines, vm);
+        assert_eq!(
+            ma, 0,
+            "printf lines ({vm:?}) exit; stdout={out:?}, stderr={err:?}"
+        );
+        assert_eq!(out, "[a, b]\n", "printf lines ({vm:?}) stdout");
+        assert!(err.is_empty(), "printf lines ({vm:?}) stderr: {err}");
     }
 
     let _ = std::fs::remove_dir_all(&d);
