@@ -3,7 +3,7 @@
 //!
 //! Red-before @ `580123b`: `--json-out` là cờ lạ ⇒ exit 2 (ghi trong doc test).
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -29,7 +29,7 @@ fn chay(args: &[&str]) -> (i32, String, String) {
     )
 }
 
-fn ghi_test(d: &PathBuf, ten: &str, than: &str) -> PathBuf {
+fn ghi_test(d: &Path, ten: &str, than: &str) -> PathBuf {
     let p = d.join(format!("{ten}.vis"));
     std::fs::write(&p, format!("test fn {ten}():\n    {than}\n")).expect("ghi");
     p
