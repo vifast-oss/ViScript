@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `3d30be1` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
-> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob/strpad/dbcache/checkstdin/fmt-mode/fscopy/runstdin/windows/enumalloc/optmethod/fsmeta/fmt-json),
-> gate **2124 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `e8e5332` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
+> gate **2157 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -57,11 +57,14 @@
 | Optmethod | `db9e5d4` → `38dec30` | `recv?.m()` lift Option một lớp, đoản mạch đối số; interp=VM |
 | Fsmeta | `60cac03` → `3d30be1` | `fs.size/is_file/is_dir` dùng `symlink_metadata`, không theo symlink |
 | Fmt-json | `c306b25` → `c121b6c` | `vis fmt --check --json` (tệp/dir/stdin), schema `ok/files` |
+| Strfind | `791f0c9` → `6f7a51f` | `str.find/rfind/count`: offset scalar, `int?`, không chồng lấn |
+| Fmt-list | `4cd3fde` → `5f52e9f` | `vis fmt --check --list`: mỗi tệp cần sửa một dòng |
+| Explain-json | `d5c9698` → `e8e5332` | `vis explain [--json]` / `--list --json` một dòng |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2124 passed / 3 skipped** tại `3d30be1`.
+- `./vis-dev gate --fast`: **PASS — 2157 passed / 3 skipped** tại `e8e5332`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -149,3 +152,6 @@
 - `./vis-dev nightly` @ `3d30be1`: **PASS** — parser fuzz **8.543.006 ca / 193.835.169 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `bin/vis-host-suite` @ `3d30be1`: **54/54 PASS** + POSIX real.
 - `vd270_r5c_sugar`: khoá sugar generic `sort/take/drop/chunk/unique/zip/min/max/windows/concat` cả hai engine.
+- **strfind** (`791f0c9` → `6f7a51f`): `str.find/rfind` trả `int?` offset scalar, `count` không chồng lấn; `Ty::OptInt`; API +3.
+- **fmt-list** (`4cd3fde` → `5f52e9f`): `vis fmt --check --list` in tệp cần sửa, exit 0/1/2; `--stdin --check --list` in `-`.
+- **explain-json** (`d5c9698` → `e8e5332`): `vis explain [--json]`/`--list --json` một dòng; người dùng thường giữ byte.
