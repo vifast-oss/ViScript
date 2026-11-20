@@ -297,3 +297,15 @@ ST-250 sửa đường **global**, nhưng Agent 2 báo riêng (A0 yêu cầu kh�
 - **Bất biến ngăn điều kiện đó**: (1) verifier `ClosureFree(nfree, used)` bắt `nfree ≥ max(LoadCaptured)+1` của hàm đích ⇒ mọi chỉ số capture trong bytecode được chấp nhận đều nằm trong `nfree` đã khai; (2) ST-252 thêm `doc_captured` kiểm với **môi trường capture thực tế** ⇒ mọi `LoadCaptured(i)` ngoài miền trap `VS0501` **trước khi** prologue mirror/writeback tới; (3) khung local do verifier `LocalOverflow` + khởi tạo sẵn `Unit` bảo đảm `fr.locals.get(*slot)` có ô hợp lệ trong suốt thân hàm.
 - **Truy nguyên test/lập luận**: `crates/vis-bytecode/tests/verify.rs` (nhóm `closure_thieu_bien_bat_bi_tu_choi`), `crates/vis-vm/tests/st252_capture_local.rs` ca 1/2/3/5 (capture rỗng, chỉ số = độ dài, `u16::MAX`, môi trường không khớp — đều bị chặn hoặc trap trước writeback), và unit `vis_vm::tests::capture_local_barrier`. Riêng ca crafted `encode→decode→load_verified→execute` (ca 8) runtime trap.
 - **Phán quyết ghi rõ**: *“Theo phân tích hiện tại, **chưa tìm thấy đường tới** từ bytecode đã verify.”* — **không** ghi thành bảo đảm tuyệt đối chỉ dựa trên kết luận báo cáo. Nếu phát hiện đường tới từ bytecode được chấp nhận, hoặc từ chương trình compiler sinh, **nâng thành blocker ngay** (VD-246 §4). Chưa cần sửa ngữ nghĩa `pop_frame` trong đợt này.
+
+
+## 19. FINDING RIÊNG — Windows nextest chưa đạt (VD-247/A0), MỞ
+
+**Người ghi**: Agent 1 theo A0 (VD-247, 2026-11-20) · **Trạng thái**: **mở** · **Nợ**: **#191**.
+
+`cargo nextest run --workspace --no-fail-fast` trên `dbae70a` (máy `psvn`, Windows): **1417 ca chạy / 1416 passed / 1 failed** (49,21 s). Ca fail duy nhất: `vis-cli::net tcp_explain_tong`, thông điệp `os error 10053` (`WSAECONNABORTED`). Chạy riêng ca này 3 lần: **1 pass / 2 fail**. Nguyên nhân **chưa được phân lập đầy đủ** — A0 **không chấp nhận** diễn giải “race của test socket, không phải sản phẩm” khi chưa có bằng chứng. Giữ nguyên kết quả đỏ; **không** chạy lại liên tục cho tới xanh rồi xóa.
+
+**Phán quyết A0 (VD-247)**:
+- Nextest **không** là đường nghiệm thu Windows tại mốc này. Đường chuẩn đã nghiệm thu là `cargo test --workspace --no-fail-fast` → **1422 passed / 0 failed** trên `dbae70a`.
+- Không để việc cài `cargo-nextest` tự động chuyển người dùng sang đường gate đang thất bại mà tài liệu vẫn gọi là đã đạt. Với mốc này, `vis-dev gate --fast` có nextest được xác nhận **chỉ trên Linux**; trên Windows dùng lệnh `cargo test` nêu trên.
+- Nâng thành blocker nếu phân lập được lỗi sản phẩm hoặc đường tới từ chương trình hợp lệ.

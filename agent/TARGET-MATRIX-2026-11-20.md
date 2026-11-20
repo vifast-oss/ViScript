@@ -76,3 +76,16 @@ Integration test `crates/vis-cli/tests/sqlite.rs` gọi trực tiếp `rusqlite:
 WAL thật — đã khai báo `[[test]] required-features = ["sqlite"]` trong `Cargo.toml` để
 `cargo test --no-default-features` không cố biên dịch nó (các integration test khác giữ nguyên
 chế độ tự phát hiện). Cấu hình mặc định vẫn chạy target này như cũ.
+
+
+## 6. Đường gate Windows được nghiệm thu (VD-247/A0, 2026-11-20)
+
+- Tại mốc `dbae70a`, **đường gate Windows chuẩn đã nghiệm thu** là:
+  `cargo test --workspace --no-fail-fast` → **1422 passed / 0 failed**.
+- `cargo nextest run --workspace --no-fail-fast` trên Windows cho **1416/1417**
+  (`tcp_explain_tong`, `WSAECONNABORTED`, chạy riêng 1/3) — **chưa đạt**, nguyên nhân chưa được
+  phân lập đầy đủ; **không** dùng làm đường nghiệm thu Windows. Việc cài `cargo-nextest` **không**
+  được hiểu là chuyển sang một đường gate đã đạt: `vis-dev gate --fast` có nextest chỉ được xác
+  nhận trên **Linux**. Xem `BLOCKED.md` §19 / nợ **#191**.
+- Hai ô `vis-cli` × (`x86_64-pc-windows-msvc`, `wasm32-unknown-unknown`) của cấu hình sqlite vẫn
+  là `EXPECTED_RED`; ma trận là **CHECK biên dịch chéo**, không chứng nhận runtime.

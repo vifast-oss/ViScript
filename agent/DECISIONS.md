@@ -2231,3 +2231,70 @@ Test bắt buộc: capture rỗng đọc chỉ số 0; chỉ số = độ dài v
 Chưa tag/nghiệm thu phát hành cuối; chưa mở pha 2, VS3, API mới.
 
 > **Ghi nhận thực thi VD-246 (Agent 1, 2026-11-20)**: ST-252 tích hợp @ `c4cee9f`, review `JOURNAL/st252-review.md`. Verifier giữ `ClosureFree` (quan hệ hàm đích/số capture/`MakeClosure`), runtime `doc_local`/`doc_captured`/`ghi_local` trap `VS0501` exit 1. 8/8 ca VD-246, mỗi ca ghi rõ hàng rào; `cargo test -p vis-vm -p vis-bytecode` xanh, `vis test` 525/525 ×2. **#189/`BLOCKED.md` §17 đóng**. Finding `pop_frame` ghi **#190**/`BLOCKED.md` §18 (khác ngữ nghĩa, không tới được với bytecode đã verify, không tự sửa). **Quyết định cache**: không bump `PHIEN_BAN` — không đổi format/VERSION/codegen, không có chương trình hợp lệ nào đổi kết quả; artifact cache byte-identical. Đây là căn cứ đúng đắn, không phải mặc định hậu tố ST-250 bao phủ bản sửa sau. Giữ bằng chứng tương thích ST-248 trong hồ sơ cuối.
+
+
+### VD-247 · Nghiệm thu kỹ thuật có phạm vi cho `dbae70a` — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: báo cáo
+> `BAO-CAO-NGHIEM-THU-2026-11-20.md` + bảng ratification `BAO-CAO-RATIFICATION-2026-11-20.md`.
+> **Bản chất**: A0 ratify **phạm vi đã mô tả**, **không** phê duyệt trắng; quyết định dựa trên báo
+> cáo, không phải xác nhận A0 đã tự chạy log/repo. Không revert, không mở lại toàn bộ vì một
+> đường kiểm bổ sung chưa đạt.
+
+#### 1. Phạm vi chốt (baseline `dbae70a050415fe1c88a1545c7b011abb05d9aa2`)
+
+| Hạng mục | Phán quyết A0 |
+|---|---|
+| Commit sản phẩm | Chốt `dbae70a` làm baseline nghiệm thu |
+| Linux | Chấp nhận gate, fallback, fresh-clone, semantics hai engine theo báo cáo |
+| Windows | Chấp nhận **Tier 2** dựa trên `cargo test --workspace --no-fail-fast`: **1422 passed / 0 failed** |
+| Windows nextest | **Chưa đạt** — giữ **1416 passed / 1 failed**; **không** dùng làm đường nghiệm thu Windows tại mốc này |
+| Target matrix | Chấp nhận tách core/SQLite; là **CHECK biên dịch chéo**, không phải chứng nhận runtime |
+| macOS | **Chưa verify**, không tuyên bố hỗ trợ đã kiểm chứng |
+| Pha 2 / VS3 | **Chưa mở** |
+| Tag / phát hành | **Chưa cho phép** trong quyết định này |
+
+#### 2. Ba chỉnh độ chính xác của hồ sơ (bắt buộc trước khi khóa báo cáo)
+
+- **A — Windows nextest**: ghi nhận lỗi, **chưa kết luận nguyên nhân sản phẩm**. Thay diễn giải
+  "race của test socket, không phải sản phẩm" bằng: *"Windows nextest chưa đạt do
+  `tcp_explain_tong` gặp `WSAECONNABORTED`; chạy riêng đạt 1/3 lần. Nguyên nhân chưa được
+  phân lập đầy đủ. Không dùng nextest làm đường nghiệm thu Windows tại mốc này."* Mở finding
+  riêng (**#191** / `BLOCKED.md` §19); giữ kết quả đỏ, **không** chạy lại tới khi xanh rồi xóa.
+  Đường gate chuẩn Windows dùng `cargo test` đã nghiệm thu; không để cài nextest tự động chuyển
+  người dùng sang đường gate đang thất bại mà tài liệu vẫn gọi là đạt.
+- **B — Nightly không fuzz**: `nightly --skip-gate --fuzz-minutes 0` chỉ chứng minh phần kiểm
+  được thực thi (đặc biệt vòng tròn formatter), **không** cung cấp bằng chứng fuzz mới trên ứng
+  viên này. Giữ phép đo, **chỉ sửa nhãn**; không yêu cầu chạy thêm fuzz để đóng nghiệm thu.
+- **C — Semantics vs crafted bytecode**: 525 ca TAP là source semantics. Các ca global/capture/
+  local **crafted-bytecode** (8 + 8) nằm ở `crates/vis-vm/tests/st250_global_init.rs` và
+  `st252_capture_local.rs`, được chạy bởi gate `cargo test`; **không** viết "525 ca bao gồm…"
+  nếu log TAP không thể hiện. Ghi đúng vị trí từng nhóm.
+
+#### 3. Ratification
+
+- Ratify **theo từng mục thuộc phạm vi phát hành**: Option/optional chaining, map/JSON, percent,
+  SQLite MVP, phiên bản/cache, hàng rào runtime — ánh xạ tới quyết định có hiệu lực trong bảng
+  truy nguyên. **Không** dùng riêng câu "VD-241 ratify toàn bộ VD-215..VD-240" thay cho bảng đó.
+- ST-244 giữ **DONE** nếu báo cáo ratification ánh xạ được từng mục tới quyết định có hiệu lực.
+- Mục chỉ mang tên/số VD mà **chưa mô tả hành vi** thì **không** coi quyết định này là phê duyệt
+  ngầm. Không yêu cầu revert/xin lại ngữ nghĩa đã chốt rõ.
+
+#### 4. Nợ & phạm vi hỗ trợ
+
+- **#190, #186**: giữ mở, không chặn theo điều kiện đã duyệt; nâng blocker khi có bằng chứng mới.
+- **#156**: chấp nhận đóng nghĩa vụ phân loại + công bố ma trận; 2 ô SQLite vẫn `EXPECTED_RED`,
+  không được biến thành tuyên bố đã hỗ trợ.
+- **macOS**: chỉ chặn tuyên bố macOS. **Không** yêu cầu đóng 95 nợ mở trước mốc tiếp theo.
+
+#### 5. Lệnh tiếp theo cho Agent 1
+
+Khóa baseline tại `dbae70a`; chỉnh 3 cách diễn đạt; ghi finding #191; bảo đảm đường gate Windows
+chuẩn dùng cấu hình đã nghiệm thu; giữ bảng ratification truy nguyên theo từng mục. **Nếu chỉ đổi
+tài liệu thì không chạy lại toàn bộ, không đổi commit đã đo.** Sau đó gửi **phiếu đề xuất tag
+0.x** gồm tên phiên bản chưa dùng, release notes, artifact dự kiến, giới hạn hỗ trợ. **Chưa**
+tạo/push tag, chưa công bố release, chưa mở pha 2 hoặc VS3.
+
+> **Ghi nhận thực thi (Agent 1, 2026-11-20)**: VD-247 được ghi vào hồ sơ bằng **thay đổi tài liệu
+> duy nhất**; baseline vẫn `dbae70a`, không chạy lại phép đo, không đổi commit sản phẩm. Phiếu đề
+> xuất tag tại `agent/DE-XUAT-TAG-0x-2026-11-20.md` — chỉ là đề xuất, chưa tạo tag.

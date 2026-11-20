@@ -4,6 +4,12 @@
 > **Mục đích**: phân xử các ngữ nghĩa từng mang nhãn “proxy/A0-uỷ-quyền” trước nghiệm thu cuối.
 > **Nguyên tắc A0**: không xin duyệt lại phần đã chốt; chỉ đưa các ngữ nghĩa **chưa có quyết định** thuộc phạm vi phát hành.
 > **Bằng chứng**: `agent/DECISIONS.md` VD-215..VD-246; không chạy lại test chỉ để tăng độ tin cậy.
+>
+> **VD-247/A0 (2026-11-20)**: A0 ratify **theo từng mục thuộc phạm vi phát hành**, không phê duyệt
+> trắng. Câu “VD-241 ratify toàn bộ VD-215..VD-240” **không** thay cho bảng truy nguyên dưới đây;
+> mỗi mục phải ánh xạ tới quyết định có hiệu lực kèm **hành vi đã mô tả**. Mục chỉ mang tên/số VD
+> mà chưa mô tả hành vi thì **không** được coi là phê duyệt ngầm. ST-244 giữ DONE vì bảng này ánh
+> xạ được từng mục; không revert, không xin lại ngữ nghĩa đã chốt rõ.
 
 ## 1. Kết luận ngắn
 
