@@ -13,6 +13,11 @@ set -u
 # không xoá ca, không nới ngưỡng; macOS/Linux vốn đã UTF-8 nên không đổi hành vi.
 export PYTHONIOENCODING=utf-8
 export PYTHONUTF8=1
+# **SỬA KÈM LÝ DO (verify psvn)**: gawk trên Git Bash (MINGW) không khớp regex UTF-8
+# (`/cú pháp sai/` trong rule R6) khi `LC_ALL` rỗng ⇒ R6 báo oan 8 dòng trong
+# `docs/R30-MAU-2026-11-18.md`. Ép `C.UTF-8` (có trên cả ps/mps/psvn) để phần miễn
+# trừ hoạt động; chỉ đặt khi `LC_ALL`chưa có giá trị — không đè lựa chọn người dùng.
+export LC_ALL="${LC_ALL:-C.UTF-8}"
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$VIS_ROOT"
 MANIFEST="$VIS_ROOT/Cargo.toml"
