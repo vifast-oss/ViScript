@@ -541,3 +541,8 @@ pub(super) fn kiem_with_trung(
 fn vis_types_stdlib_sig(name: &str) -> Option<&'static crate::stdlib::StdFn> {
     crate::stdlib::sig_of(name)
 }
+
+/// **ST-72 (VD-106)**: kiểu quyền `cap[...]` — chuyển từ `expr.rs` để giữ R1.
+pub(super) fn la_cap(t: &Type) -> bool {
+    matches!(t, Type::TypeRef { name, .. } if name == "cap")
+}

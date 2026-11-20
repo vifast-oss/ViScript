@@ -12,7 +12,7 @@ use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD, NO_TYPE};
 mod kenh;
 /// **ST-61**: phụ trợ thuần (tách cùng lý do R1).
 mod phu;
-use phu::{builtin_is_value, builtin_value_ty, is_percent_float, static_key};
+use phu::{builtin_is_value, builtin_value_ty, is_percent_float, la_cap, static_key};
 
 impl<'a> Checker<'a> {
     /// Kiểu một biểu thức (ghi vào `types_of_expr`).
@@ -1496,8 +1496,3 @@ impl<'a> Checker<'a> {
 /// Giữ chỗ: `HPat`/`HStmt` dùng ở module khác (tránh import thừa).
 #[allow(dead_code)]
 fn _giu(_: &HPat, _: &HStmt) {}
-
-/// **ST-72 (VD-106)**: kiểu quyền `cap[...]`.
-fn la_cap(t: &Type) -> bool {
-    matches!(t, Type::TypeRef { name, .. } if name == "cap")
-}
