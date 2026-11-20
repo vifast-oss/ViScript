@@ -75,12 +75,44 @@ fn dem_lech_thut_le(text: &str) -> Option<usize> {
 
 fn usage_fmt() -> ExitCode {
     eprintln!(
-        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check [--json] <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check [--json]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     eprintln!(
-        "  vis fmt --stdin [--check] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
+        "  vis fmt --stdin [--check [--json]] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
+    );
+    eprintln!(
+        "  --json: chỉ đi với --check (tệp/thư mục hoặc --stdin); in một object JSON nén trên stdout: {{\"ok\":bool,\"files\":[{{\"path\":…,\"formatted\":bool,\"error\":null|{{\"code\":\"VSxxxx\",\"line\":n,\"col\":n,\"message\":…}}}}]}}; dòng/cột 1-based; thoát 0 (mọi tệp đã đúng) / 1 (cần sửa) / 2 (lỗi đọc/cú pháp hoặc dùng sai)"
     );
     ExitCode::from(2)
+}
+
+/// **VD-270**: một tệp trong `vis fmt --check --json` — `path`, `formatted`, `error`.
+/// `None` ⇒ `"error":null`; `Some` ⇒ object lỗi với `code`/`line`/`col` **1-based**.
+fn tep_json(path: &str, formatted: bool, error: Option<(&str, u32, u32, &str)>) -> String {
+    let mut s = format!(
+        "{{\"path\":\"{}\",\"formatted\":{formatted},",
+        json_esc::esc(path)
+    );
+    match error {
+        None => s.push_str("\"error\":null}"),
+        Some((code, line, col, message)) => {
+            s.push_str("\"error\":{\"code\":\"");
+            s.push_str(&json_esc::esc(code));
+            s.push_str(&format!("\",\"line\":{line},\"col\":{col},\"message\":\""));
+            s.push_str(&json_esc::esc(message));
+            s.push_str("\"}}");
+        }
+    }
+    s
+}
+
+/// **VD-270**: in **một** object JSON nén trên stdout rồi trả mã thoát đã chọn (0/1/2).
+fn xuat_fmt_json(entries: &[String], ok: bool, ma_thoat: u8) -> ExitCode {
+    let body = format!("{{\"ok\":{ok},\"files\":[{}]}}\n", entries.join(","));
+    if !xuat_stdout(&body) {
+        return ExitCode::from(2);
+    }
+    ExitCode::from(ma_thoat)
 }
 
 /// **VD-269**: giá trị hợp lệ của `--mode` — đúng hai chế độ parser; `None` nếu lạ.
@@ -123,6 +155,39 @@ fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
     }
 }
 
+/// **ST-77 / VD-270**: gom nguồn **theo từng đối số** (giữ thứ tự người dùng nêu); thư mục được
+/// duyệt đệ quy như [`gom_nguon`], tệp lẻ là một nhóm. Người gọi tự sắp trong nhóm nếu cần.
+fn gom_theo_doi_so(files: &[String]) -> Vec<Vec<(std::path::PathBuf, bool)>> {
+    files
+        .iter()
+        .map(|f| {
+            let p = std::path::Path::new(f);
+            let mut ds = Vec::new();
+            if p.is_dir() {
+                gom_nguon(p, &mut ds);
+            } else {
+                ds.push((p.to_path_buf(), true));
+            }
+            ds
+        })
+        .collect()
+}
+
+/// **ST-77**: input **cố ý** không thuộc kiểm `fmt` (allowlist nhỏ nhất, có lý do):
+/// (1) `test/fmt/**` = fixture của chính formatter (sai thụt lề/tab/crlf — đầu vào để sửa);
+/// (2) `test/check/**` + `test/doc-examples/**` = fixture **cố ý sai** (ca âm của `check` và
+///     khối tài liệu sai theo thiết kế) — fmt từ chối đúng, không phải lỗi formatter;
+/// (3) tệp có sibling `.err` = ca **âm** cố ý sai cú pháp.
+/// **ST-240 / VD-242 §4 (nợ #182)**: quy tắc trên **chỉ** áp cho tệp phát hiện khi duyệt thư
+/// mục; tệp người dùng nêu tên phải được xử lý và báo lỗi rõ, không bị bỏ qua im lặng.
+fn la_input_co_y(p: &std::path::Path) -> bool {
+    let comps: Vec<_> = p.components().map(|c| c.as_os_str()).collect();
+    let la_fixture = comps
+        .windows(3)
+        .any(|w| w[0] == "test" && matches!(w[1].to_str(), Some("fmt" | "check" | "doc-examples")));
+    !la_fixture && !p.with_extension("err").exists()
+}
+
 /// **VD-267**: `vis fmt --stdin [--check]` — đọc mã UTF-8 từ stdin, **không** đụng đĩa.
 /// `--check` chỉ so sánh (không in), thoát 0 (đã đúng) / 1 (cần sửa) / 2 (dùng sai hoặc lỗi cú pháp).
 /// Đường tệp biến thể `.vis` mặc định script; stdin không có phần mở rộng nên cũng dùng script.
@@ -130,6 +195,7 @@ fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
 fn run_fmt_stdin(args: &[String]) -> ExitCode {
     use std::io::Read;
     let mut check = false;
+    let mut json_ra = false;
     let mut che_do = Mode::Script;
     let mut da_mode = false;
     let mut i = 0;
@@ -138,6 +204,8 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         match a {
             "--stdin" => {}
             "--check" => check = true,
+            // **VD-270**: `--json` chỉ có nghĩa khi `--check`; kiểm sau khi đọc hết cờ.
+            "--json" => json_ra = true,
             "--mode" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis fmt: --mode thiếu giá trị (script|command)");
@@ -187,21 +255,46 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         }
         i += 1;
     }
+    // **VD-270**: `--json` không đi với `--stdin` trần — phải có `--check`; câu chữ giữ cụm
+    // "không hỗ trợ cờ" để ca cũ (VD-267) vẫn đúng lý do.
+    if json_ra && !check {
+        eprintln!(
+            "vis fmt: --json chỉ dùng với --check (không hỗ trợ cờ `--json` khi thiếu --check)"
+        );
+        return usage_fmt();
+    }
     let mut src = String::new();
     if let Err(e) = std::io::stdin().read_to_string(&mut src) {
-        eprintln!("vis fmt: không đọc được stdin (cần UTF-8): {e}");
+        let msg = format!("không đọc được stdin (cần UTF-8): {e}");
+        if json_ra {
+            let entry = tep_json("-", false, Some(("VS0201", 1, 1, &msg)));
+            return xuat_fmt_json(&[entry], false, 2);
+        }
+        eprintln!("vis fmt: {msg}");
         return ExitCode::from(2);
     }
     // Đầu vào rỗng ⇒ đầu ra rỗng, kể cả `--check` (điểm bất động của chính nó).
     if src.is_empty() {
+        if json_ra {
+            return xuat_fmt_json(&[tep_json("-", true, None)], true, 0);
+        }
         return ExitCode::SUCCESS;
     }
     match vis_fmt::format_mode(&src, che_do) {
         Err(e) => {
+            if json_ra {
+                let entry = tep_json("-", false, Some((e.code, e.line, e.col, &e.message)));
+                return xuat_fmt_json(&[entry], false, 2);
+            }
             eprintln!("# {}", dong_chan_doan(e.code, e.line, e.col, &e.message));
             ExitCode::from(2)
         }
         Ok(moi) if check => {
+            if json_ra {
+                let formatted = moi == src;
+                let entry = tep_json("-", formatted, None);
+                return xuat_fmt_json(&[entry], formatted, if formatted { 0 } else { 1 });
+            }
             if moi == src {
                 ExitCode::SUCCESS
             } else {
@@ -218,6 +311,79 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     }
 }
 
+/// **VD-270**: kết quả đọc + định dạng **một** tệp, dùng chung cho đường văn bản và `--json`
+/// (không lặp lại logic chọn chế độ/so sánh).
+enum KetQuaDoc {
+    /// Không đọc được tệp (I/O) — exit 2, JSON dùng `VS0201` như `vis check`.
+    DocLoi(String),
+    /// Formatter từ chối vì cú pháp/từ vựng — exit 2.
+    ParseLoi(vis_fmt::FmtError),
+    /// Đọc + định dạng xong; `formatted` = `moi == src`.
+    Xong {
+        src: String,
+        moi: String,
+        che_do: Mode,
+    },
+}
+
+/// Đọc **một** tệp và gọi đúng formatter hiện có: `.vish` = chế độ lệnh, còn lại = script.
+fn doc_va_dinh_dang(path: &std::path::Path) -> KetQuaDoc {
+    let src = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => return KetQuaDoc::DocLoi(e.to_string()),
+    };
+    let che_do = if path.extension().map(|x| x == "vish").unwrap_or(false) {
+        Mode::Command
+    } else {
+        Mode::Script
+    };
+    match vis_fmt::format_mode(&src, che_do) {
+        Ok(moi) => KetQuaDoc::Xong { src, moi, che_do },
+        Err(e) => KetQuaDoc::ParseLoi(e),
+    }
+}
+
+/// **VD-270**: `vis fmt --check --json` trên danh sách đã gom/sắp — một entry mỗi tệp theo đúng
+/// thứ tự đó; thoát 2 nếu có lỗi đọc/cú pháp, ngược lại 1 nếu còn tệp cần sửa, 0 nếu sạch.
+fn xuat_fmt_json_tep(ds: &[std::path::PathBuf]) -> ExitCode {
+    let mut entries: Vec<String> = Vec::with_capacity(ds.len());
+    let mut co_loi = false;
+    let mut can_sua = false;
+    for path in ds {
+        let hien = path.display().to_string();
+        match doc_va_dinh_dang(path) {
+            KetQuaDoc::Xong { src, moi, .. } => {
+                let formatted = moi == src;
+                if !formatted {
+                    can_sua = true;
+                }
+                entries.push(tep_json(&hien, formatted, None));
+            }
+            KetQuaDoc::ParseLoi(e) => {
+                co_loi = true;
+                entries.push(tep_json(
+                    &hien,
+                    false,
+                    Some((e.code, e.line, e.col, &e.message)),
+                ));
+            }
+            KetQuaDoc::DocLoi(msg) => {
+                co_loi = true;
+                let msg = format!("không đọc được: {msg}");
+                entries.push(tep_json(&hien, false, Some(("VS0201", 1, 1, &msg))));
+            }
+        }
+    }
+    let ma = if co_loi {
+        2
+    } else if can_sua {
+        1
+    } else {
+        0
+    };
+    xuat_fmt_json(&entries, ma == 0, ma)
+}
+
 pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // **VD-267**: `--stdin` là chế độ riêng — không lẫn với đường tệp/thư mục bên dưới.
     if args.iter().any(|a| a == "--stdin") {
@@ -232,6 +398,33 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
         eprintln!("vis fmt: --mode chỉ dùng với --stdin (đường tệp tự suy chế độ từ .vish/.vis)");
         return usage_fmt();
     }
+    // **VD-270**: `--json` chỉ hợp lệ khi `--check`; lọc cờ trước khi chọn chế độ để nhận cả
+    // `--check --json …` lẫn `--json --check …`. Không đổi cách nhận diện các chế độ cũ.
+    let json_ra = args.iter().any(|a| a == "--json");
+    if json_ra {
+        if args
+            .iter()
+            .any(|a| a == "--write" || a == "--indent-report")
+        {
+            eprintln!(
+                "vis fmt: --json chỉ dùng với --check (không đi với --write/--indent-report)"
+            );
+            return usage_fmt();
+        }
+        if !args.iter().any(|a| a == "--check") {
+            eprintln!("vis fmt: --json chỉ dùng với --check");
+            return usage_fmt();
+        }
+    }
+    let loc: Vec<String> = if json_ra {
+        args.iter()
+            .filter(|a| a.as_str() != "--json")
+            .cloned()
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let args: &[String] = if json_ra { &loc } else { args };
     let (mode, files): (FmtMode, &[String]) = match args.first().map(String::as_str) {
         None => return usage_fmt(),
         Some("--write") => (FmtMode::Write, &args[1..]),
@@ -248,38 +441,30 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
             (FmtMode::Stdout, args)
         }
     };
+    // `--json` đứng sau tên tệp (không phải đầu) cũng là dùng sai — không rơi vào chế độ stdout.
+    if json_ra && mode != FmtMode::Check {
+        eprintln!("vis fmt: --json chỉ dùng với --check");
+        return usage_fmt();
+    }
     if files.is_empty() {
         return usage_fmt();
     }
     // **ST-77 (VD-108)**: nhận **thư mục** (đệ quy `.vis`/`.vish`) để `vis fmt --check test/`
     // kiểm được toàn bộ fixture; tệp lẻ giữ nguyên hành vi cũ.
-    // `bool` = người dùng **nêu đích danh** (`true`) hay phát hiện khi duyệt thư mục (`false`).
-    let mut ds: Vec<(std::path::PathBuf, bool)> = Vec::new();
-    for f in files {
-        let p = std::path::Path::new(f);
-        if p.is_dir() {
-            gom_nguon(p, &mut ds);
-        } else {
-            ds.push((p.to_path_buf(), true));
+    // **VD-270**: `--json` giữ **thứ tự đối số**, chỉ sắp trong từng thư mục; đường văn bản giữ
+    // nguyên sắp xếp toàn cục như trước (byte-identical).
+    if json_ra {
+        let mut ds: Vec<std::path::PathBuf> = Vec::new();
+        for mut nhom in gom_theo_doi_so(files) {
+            nhom.retain(|(p, tu_nguon)| *tu_nguon || la_input_co_y(p));
+            nhom.sort_by(|a, b| a.0.cmp(&b.0));
+            ds.extend(nhom.into_iter().map(|(p, _)| p));
         }
+        return xuat_fmt_json_tep(&ds);
     }
-    // **ST-77**: bỏ hai loại **input cố ý** khỏi kiểm `fmt` (allowlist nhỏ nhất, có lý do):
-    // (1) `test/fmt/**` = fixture của chính formatter (sai thụt lề/tab/crlf — đầu vào để sửa);
-    // (2) `test/check/**` + `test/doc-examples/**` = fixture **cố ý sai** (ca âm của `check` và
-    //     khối tài liệu sai theo thiết kế) — fmt từ chối đúng, không phải lỗi formatter;
-    // (3) tệp có sibling `.err` = ca **âm** cố ý sai cú pháp.
-    // **ST-240 / VD-242 §4 (nợ #182)**: quy tắc trên **chỉ** áp cho tệp phát hiện khi duyệt thư
-    // mục; tệp người dùng nêu tên phải được xử lý và báo lỗi rõ, không bị bỏ qua im lặng.
-    ds.retain(|(p, tu_nguon)| {
-        if *tu_nguon {
-            return true;
-        }
-        let comps: Vec<_> = p.components().map(|c| c.as_os_str()).collect();
-        let la_fixture = comps.windows(3).any(|w| {
-            w[0] == "test" && matches!(w[1].to_str(), Some("fmt" | "check" | "doc-examples"))
-        });
-        !la_fixture && !p.with_extension("err").exists()
-    });
+    let mut ds: Vec<(std::path::PathBuf, bool)> =
+        gom_theo_doi_so(files).into_iter().flatten().collect();
+    ds.retain(|(p, tu_nguon)| *tu_nguon || la_input_co_y(p));
     ds.sort_by(|a, b| a.0.cmp(&b.0));
     let ds: Vec<std::path::PathBuf> = ds.into_iter().map(|(p, _)| p).collect();
     // **#183**: chỉ cần nêu tên tệp khi chạy **nhiều** tệp — ca một tệp giữ định dạng cũ
@@ -310,9 +495,9 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     let mut can_sua = false;
     let mut co_loi = false;
     for path in &ds {
-        let src = match std::fs::read_to_string(path) {
-            Ok(s) => s,
-            Err(e) => {
+        // **VD-270**: đọc + chọn chế độ + định dạng nằm trong một helper dùng chung với `--json`.
+        let (src, moi, che_do) = match doc_va_dinh_dang(path) {
+            KetQuaDoc::DocLoi(e) => {
                 // **ST-240 / VD-242 §4 (nợ #183)**: chạy nhiều tệp phải nêu tên tệp.
                 let tien = if nhieu_tep {
                     format!("{}: ", path.display())
@@ -323,16 +508,7 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
                 co_loi = true;
                 continue;
             }
-        };
-        // `.vish` = chế độ lệnh (CmdCST); `.vis` = script. Tệp khác (nếu người dùng chỉ định
-        // thẳng) giữ đường script như trước.
-        let che_do = if path.extension().map(|x| x == "vish").unwrap_or(false) {
-            Mode::Command
-        } else {
-            Mode::Script
-        };
-        match vis_fmt::format_mode(&src, che_do) {
-            Err(e) => {
+            KetQuaDoc::ParseLoi(e) => {
                 // (d) tệp lỗi: báo lỗi đầu, **không** ghi. #183: kèm tên tệp khi đa tệp.
                 let tien = if nhieu_tep {
                     format!("{}: ", path.display())
@@ -345,44 +521,46 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
                     dong_chan_doan(e.code, e.line, e.col, &e.message)
                 );
                 co_loi = true;
+                continue;
             }
-            Ok(moi) => match mode {
-                // **ST-85**: thụt lề `.vish` **có** ngữ nghĩa ở cấp tệp (đo được) ⇒ **không** sửa;
-                // `--check` chỉ **cảnh báo** (không đỏ), `--indent-report` đếm.
-                FmtMode::IndentReport => {}
-                FmtMode::Check if che_do == Mode::Command => {
-                    if let Some(n) = dem_lech_thut_le(&src) {
-                        if n > 0 {
-                            eprintln!(
-                                "# cảnh báo: {}: {n} dòng thụt lề khác chuẩn 4×độ sâu — KHÔNG tự sửa (thụt lề .vish có ngữ nghĩa; xem agent/HOST-BAO-DAM.md)",
-                                path.display()
-                            );
-                        }
-                    }
-                    if moi != src {
-                        can_sua = true;
-                        ra.push_str(&format!("{}\n", path.display()));
+            KetQuaDoc::Xong { src, moi, che_do } => (src, moi, che_do),
+        };
+        match mode {
+            // **ST-85**: thụt lề `.vish` **có** ngữ nghĩa ở cấp tệp (đo được) ⇒ **không** sửa;
+            // `--check` chỉ **cảnh báo** (không đỏ), `--indent-report` đếm.
+            FmtMode::IndentReport => {}
+            FmtMode::Check if che_do == Mode::Command => {
+                if let Some(n) = dem_lech_thut_le(&src) {
+                    if n > 0 {
+                        eprintln!(
+                            "# cảnh báo: {}: {n} dòng thụt lề khác chuẩn 4×độ sâu — KHÔNG tự sửa (thụt lề .vish có ngữ nghĩa; xem agent/HOST-BAO-DAM.md)",
+                            path.display()
+                        );
                     }
                 }
-                FmtMode::Stdout => ra.push_str(&moi),
-                FmtMode::Write => {
-                    if moi == src {
-                        ra.push_str(&format!("giữ nguyên {}\n", path.display()));
-                    } else if let Err(e) = std::fs::write(path, &moi) {
-                        eprintln!("# không ghi được {}: {e}", path.display());
-                        co_loi = true;
-                    } else {
-                        can_sua = true;
-                        ra.push_str(&format!("đã sửa {}\n", path.display()));
-                    }
+                if moi != src {
+                    can_sua = true;
+                    ra.push_str(&format!("{}\n", path.display()));
                 }
-                FmtMode::Check => {
-                    if moi != src {
-                        can_sua = true;
-                        ra.push_str(&format!("{}\n", path.display()));
-                    }
+            }
+            FmtMode::Stdout => ra.push_str(&moi),
+            FmtMode::Write => {
+                if moi == src {
+                    ra.push_str(&format!("giữ nguyên {}\n", path.display()));
+                } else if let Err(e) = std::fs::write(path, &moi) {
+                    eprintln!("# không ghi được {}: {e}", path.display());
+                    co_loi = true;
+                } else {
+                    can_sua = true;
+                    ra.push_str(&format!("đã sửa {}\n", path.display()));
                 }
-            },
+            }
+            FmtMode::Check => {
+                if moi != src {
+                    can_sua = true;
+                    ra.push_str(&format!("{}\n", path.display()));
+                }
+            }
         }
     }
     if !xuat_stdout(&ra) {
