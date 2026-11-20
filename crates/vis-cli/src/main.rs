@@ -538,8 +538,14 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     let m = match tu_cache {
                         Some(m) => m,
                         None => {
-                            match vis_bytecode::compile_kiem(&h.hir, &h.symbols, &text, &chan_doan)
-                            {
+                            // **VD-263**: kèm `TypeTable` để codegen thấy trường instantiation.
+                            match vis_bytecode::compile_kiem_voi_bang(
+                                &h.hir,
+                                &h.symbols,
+                                Some(&h.types),
+                                &text,
+                                &chan_doan,
+                            ) {
                                 Ok(m) => {
                                     if dung_cache {
                                         let _ = cache::luu(&khoa, &m);

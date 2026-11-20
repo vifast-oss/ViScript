@@ -611,6 +611,15 @@ impl<'a> Interp<'a> {
             _ => v,
         }
     }
+
+    /// **VD-263** — `RecId` **tĩnh** của biểu thức gốc (`Box[int?]` từ annot), để `with` nâng
+    /// trường theo instantiation thay vì bản khai báo đã xoá `T`.
+    pub(crate) fn rec_id_tinh(&self, e: &HExpr, root: &Value) -> Option<vis_types::ty::RecId> {
+        match self.expr_ty(e, root) {
+            Some(vis_types::Type::Record(id)) => Some(id),
+            _ => None,
+        }
+    }
 }
 
 /// **VD-241 §3 (A0, 2026-11-19)** — tự nâng `T → T? → T??…` tại các biên hàm/annot (VD-227/228).

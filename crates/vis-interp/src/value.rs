@@ -516,6 +516,21 @@ fn show_bytes(b: &[u8]) -> String {
     s
 }
 
+/// Đọc literal `int` (thập phân, `0x`/`0b`/`0o`, cho phép `_`) — tách khỏi `interp.rs` cho R1.
+pub(crate) fn parse_int_lit(text: &str) -> Option<i64> {
+    let t = text.replace('_', "");
+    if let Some(h) = t.strip_prefix("0x") {
+        return i64::from_str_radix(h, 16).ok();
+    }
+    if let Some(b) = t.strip_prefix("0b") {
+        return i64::from_str_radix(b, 2).ok();
+    }
+    if let Some(o) = t.strip_prefix("0o") {
+        return i64::from_str_radix(o, 8).ok();
+    }
+    t.parse().ok()
+}
+
 /// Đọc literal `size` (`5mb`, `1kib`) — trả byte.
 pub fn parse_size(text: &str) -> Option<i64> {
     let t = text.trim();

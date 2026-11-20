@@ -319,6 +319,15 @@ struct Lowerer<'a> {
     /// Đang hạ **đích gán**: hoãn `VS0301` của [`Lowerer::lower_var_use`] để `lower_assign` báo
     /// **một** lần ở gốc lvalue (tránh 2 chẩn đoán cho cùng một `x = 1`).
     suppress_name_diag: bool,
+    /// **VD-263**: kiểu **mong đợi** của biểu thức đang hạ (từ annot `let`/`var`, `Some(...)`,
+    /// biến thể enum…). Chỉ dùng để chọn **instantiation** cho constructor/record literal —
+    /// `None` ⇒ hạ như cũ.
+    expect: Option<Type>,
+    /// **VD-263**: kiểu trả về của hàm đang hạ (để `return`/biểu thức cuối mang instantiation).
+    cur_ret: Option<Type>,
+    /// **VD-263**: `sym` hàm → danh sách `(tên, kiểu)` tham số (để đối số call-site mang
+    /// instantiation như tham số khai báo). Hàm khai **sau** call-site chưa có trong bản đồ.
+    fn_params: std::collections::HashMap<u32, Vec<(String, Type)>>,
 }
 
 impl<'a> Lowerer<'a> {
@@ -378,6 +387,9 @@ impl<'a> Lowerer<'a> {
             item_syms: Vec::new(),
             suppress_dup: false,
             suppress_name_diag: false,
+            expect: None,
+            cur_ret: None,
+            fn_params: std::collections::HashMap::new(),
         }
     }
 
