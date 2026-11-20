@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `e17998f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `254c03f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2374 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2417 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -81,11 +81,15 @@
 | Str strip | `94eed35` → `0c410b0` | `str.strip_prefix`/`strip_suffix` → `str?` |
 | Path normalize | `e468a29` → `c0cba70` | `path.normalize`: chuẩn hoá từ vựng POSIX |
 | Check JSON | `487dc94` → `e17998f` | khoá `check --json` + sửa cờ lạ exit 2 |
+| Binary search | `e1906a7` → `1a5cc32` | `list.binary_search`: biên dưới, `int?` |
+| Replace first | `df611e7` → `03950f4` | `str.replace_first`: chỉ lần khớp đầu |
+| LSP codeLens | `d88ccaa` → `cf94e77` | `textDocument/codeLens` cho `test fn` |
+| SQLite tables | `c0003bb` → `254c03f` | `sqlite.tables`: bảng/view schema chính |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2374 passed / 3 skipped** tại `e17998f`.
+- `./vis-dev gate --fast`: **PASS — 2417 passed / 3 skipped** tại `254c03f`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -221,3 +225,7 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - Bench tham chiếu @ `5e1488e`: `test/bench/opt-bench.vis` → interp **1247 ms**, VM **1115 ms** (cùng kết quả 38995450).
 - `VIS_DIFF_N=100000` seed 20261130 @ `0bcbed7`: **0 lệch** (93.769 chạy, 160,2 s).
 - `./vis-dev nightly` @ `0bcbed7`: **PASS** — parser fuzz 5.644.311 ca / 128.083.645 token / 0 vi phạm; fmt 475 tệp bất động.
+- **binary-search** (`e1906a7` → `1a5cc32`): `list.binary_search` biên dưới trên `cmp_value`; chưa sắp ⇒ không xác định nhưng không trap.
+- **replace-first** (`df611e7` → `03950f4`): `str.replace_first` chỉ thay lần đầu; `from` rỗng ⇒ prepend.
+- **lsp-codelens** (`d88ccaa` → `cf94e77`): lens `Chạy test <name>` cho `test fn`, UTF-16, cap 200.
+- **sqlite-tables** (`c0003bb` → `254c03f`): `sqlite.tables` sắp byte, bỏ `sqlite_%`, bảng TEMP không liệt kê.

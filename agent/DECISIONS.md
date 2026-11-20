@@ -3315,3 +3315,16 @@ body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Q
   `.`, toàn `/` ⇒ `/`; `\`/NUL là ký tự thường; chỉ sugar `normalize` mở từ `str`.
 - **check-json**: giữ nguyên hình dạng `{"ok":…,"files":[…]}` (không đổi); `vis check --json` với
   cờ lạ phải exit 2/stdout rỗng như TAP (sửa bug cũ).
+
+### VD-270 (bổ sung) · binary search, replace first, codeLens, sqlite.tables — A0, 2026-11-21
+
+- **binary-search**: `list.binary_search(xs, value) -> int?` tìm **biên dưới** theo `cmp_value`
+  (cùng thứ tự `sort`/`min`/`max`); `xs` phải đã sắp tăng (không kiểm lại); trùng ⇒ index đầu cụm;
+  không so được/không có ⇒ `None`, không trap.
+- **replace-first**: `str.replace_first(s, from, to) -> str` thay **một** lần khớp đầu theo scalar;
+  không khớp ⇒ nguyên; `from` rỗng ⇒ chèn `to` đầu (Rust `replacen(…,1)`); không thêm trần.
+- **lsp-codelens**: `textDocument/codeLens` trả lens cho **`test fn` cấp tệp**, range = token tên
+  (UTF-16), `command: "vis.test.run"`, args `[uri, name]`, title `Chạy test <name>`; cap 200;
+  `codeLensProvider.resolveProvider=false`.
+- **sqlite-tables**: `sqlite.tables(handle) -> Result[list[str], Error]` trả bảng+view schema chính,
+  sắp byte, bỏ tiền tố `sqlite_`; bảng TEMP không liệt kê; chạy qua `db_query` với `sqlite_master`.
