@@ -13,6 +13,11 @@ use vis_types::{hir::*, lower::Symbols, ty::Type, TypeTable};
 use crate::interp::{builtin_name, Abort, Args, Ctrl, Interp, Trap, MAX_CALL_DEPTH, R, RT};
 use crate::value::*;
 
+/// `true` khi `let x: T? = …` (chú thích `Optional` — mọi lớp). Chuyển từ `interp.rs` để R1.
+pub(crate) fn ty_là_opt(t: Option<&vis_types::ty::Type>) -> bool {
+    matches!(t, Some(vis_types::ty::Type::Opt(_)))
+}
+
 impl<'a> Interp<'a> {
     // ---------------------------------------------------------------------
     // Gọi hàm

@@ -14,7 +14,7 @@ use crate::value::*;
 
 #[path = "frame/core.rs"]
 mod core_types;
-use core_types::goi::{opt_depth_ty, opt_lift_maybe};
+use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};
 pub use core_types::*;
 
 pub(crate) struct Interp<'a> {
@@ -1496,9 +1496,4 @@ pub fn dinh_dang(v: &Value, spec: &str, span: Span) -> Result<String, Abort> {
         Value::Str(s) => s.clone(),
         other => other.show(),
     })
-}
-
-/// `true` khi `let x: T? = …` (chú thích `Optional` — mọi lớp).
-fn ty_là_opt(t: Option<&vis_types::ty::Type>) -> bool {
-    matches!(t, Some(vis_types::ty::Type::Opt(_)))
 }

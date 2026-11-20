@@ -144,14 +144,17 @@ fn vd260_while_let_rest_dung_o_list_rong() {
 /// (7) `for` pattern — mỗi phần tử là list, bind đầu/đuôi theo từng vòng.
 #[test]
 fn vd260_for_rest() {
-    let src = "fn main():\n    for [h, ..t] in [[5, 6], [7]]:\n        print(\"for {h} {t}\")\n";
+    // **VD-260 semantics**: pattern rest là refutable ⇒ `for`/`let` phải dùng `if let`/`else`.
+    let src = "fn main():\n    for xs in [[5, 6], [7]]:\n        if let [h, ..t] = xs:\n            print(\"for {h} {t}\")\n";
     chay_ca_hai("for_rest", src, "for 5 [6]\nfor 7 []\n");
 }
 
 /// (8) `let` destructuring + **bản sao**: `r.push(99)` không đổi `xs`/`r`.
 #[test]
 fn vd260_let_rest_va_copy_semantics() {
-    let src = "fn main():\n    let xs = [1, 2, 3]\n    let [a, ..r] = xs\n    let r2 = r.push(99)\n    print(a)\n    print(xs)\n    print(r)\n    print(r2)\n";
+    // **VD-260 semantics**: `let [a, ..r]` là refutable ⇒ dùng `if let` (pattern phủ hết
+    // mới được `let` trần; `let … else` chỉ cho Option/Result). Ca này khoá bản sao đuôi.
+    let src = "fn main():\n    let xs = [1, 2, 3]\n    if let [a, ..r] = xs:\n        let r2 = r.push(99)\n        print(a)\n        print(xs)\n        print(r)\n        print(r2)\n";
     chay_ca_hai("let_copy", src, "1\n[1, 2, 3]\n[2, 3]\n[2, 3, 99]\n");
 }
 
