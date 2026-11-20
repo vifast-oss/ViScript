@@ -8,35 +8,35 @@ từ cùng một toolchain, không cài tay.
 
 | Tệp | Vai trò |
 |---|---|
-| `setup.ps1` | Kiểm + bảo đảm **đúng toolchain 1.99.1** (bản `ps` đang đo) và **hai target std** của `bin/vis-targets` (VD-146(1)), in log môi trường; `-Check` thì chỉ kiểm, không cài |
+| `setup.ps1` | Kiểm + bảo đảm **đúng toolchain 1.100.0** (bản `ps` đang đo) và **hai target std** của `bin/vis-targets` (VD-146(1)), in log môi trường; `-Check` thì chỉ kiểm, không cài |
 | `setup.md` | Tệp này: cách gọi, cái gì được cài, cái gì **không**, và môi trường đã đo |
 
 ## 2. Vì sao phải ghim toolchain
 
-- `ps` (Linux) đo bằng **rustc 1.99.1** (`58cf8f9c3`, 2026-10-13); repo khai `rust-version = "1.99.1"`.
-- Trên `psvn`, "stable" **không** phải 1.99.1 (stable = 1.100.0 sau 2026-11-16) ⇒ nếu để rustup tự chọn
-  (`rust-toolchain.toml` khai `channel = "stable"`) thì số đo **không so sánh được** với `ps`/macOS.
+- `ps` (Linux) đo bằng **rustc 1.100.0** (`0ef1bc386`, 2026-11-09); repo khai `rust-version = "1.100.0"`.
+- Trên `psvn`, "stable" là kênh chuyển động; `rust-toolchain.toml` nay ghim `channel = "1.100.0"`,
+  nhưng mọi lệnh đo vẫn đặt `RUSTUP_TOOLCHAIN` tường minh để không phụ thuộc bước tự phát hiện.
 - Vì vậy **mọi** lệnh đo phải ghim:
 
 ```powershell
-$env:RUSTUP_TOOLCHAIN = "1.99.1-x86_64-pc-windows-msvc"
+$env:RUSTUP_TOOLCHAIN = "1.100.0-x86_64-pc-windows-msvc"
 $env:CARGO_TARGET_DIR = "C:\vis-target"    # target dir riêng (VD-136)
 $env:CARGO_TERM_COLOR = "never"
 ```
 
 > **Bẫy đã gặp (2026-11-16):** chạy `rustup -V` **trần** ở gốc repo ⇒ rustup tự cập nhật "stable" 1.96.0 → 1.100.0
 > và cài thêm `rust-src`, `rust-docs`, std của `x86_64-unknown-none`, `aarch64-unknown-none`,
-> `riscv64gc-unknown-none-elf`, `wasm32-unknown-unknown` **vào stable**. Không ảnh hưởng số đo (đã ghim 1.99.1),
+> `riscv64gc-unknown-none-elf`, `wasm32-unknown-unknown` **vào stable**. Không ảnh hưởng số đo (đã ghim 1.100.0),
 > nhưng đừng lặp lại; `setup.ps1` đặt `RUSTUP_TOOLCHAIN` trước mọi lệnh.
 
 ## 3. `setup.ps1` cài gì / không cài gì
 
-**Cài:** toolchain `1.99.1-x86_64-pc-windows-msvc` **nếu thiếu** (đúng phiên bản `ps`, VD-140) và **hai target std**
+**Cài:** toolchain `1.100.0-x86_64-pc-windows-msvc` **nếu thiếu** (đúng phiên bản `ps`, VD-140) và **hai target std**
 của `bin/vis-targets` **nếu thiếu** (VD-146(1), 2026-11-16) — mỗi lần cài ghi `rustup target list --installed` trước/sau.
 **Không:** `rustup update`, không đổi toolchain mặc định, không cài target nào khác, không `sudo`, không Build Tools,
 không gói OS, không reboot. `-Check` chỉ kiểm, **không cài** (thiếu ⇒ exit 1).
 
-**Target cho `bin/vis-targets`:** toolchain 1.99.1 trên `psvn` chỉ có `x86_64-pc-windows-msvc`; **VD-146(1) cho phép
+**Target cho `bin/vis-targets`:** toolchain 1.100.0 trên `psvn` chỉ có `x86_64-pc-windows-msvc`; **VD-146(1) cho phép
 cài** std `wasm32-unknown-unknown` + `x86_64-unknown-linux-gnu` để ma trận 18/18 đo được. Lệnh (script tự ghim
 `RUSTUP_TOOLCHAIN`; gọi từ gốc repo để log kèm hash):
 
@@ -62,7 +62,10 @@ powershell -NoProfile -File ...\setup.ps1 -Check
 | 1 | `-Check` và thiếu thành phần |
 | 3 | BLOCKED-ENV (không có `rustup` trong PATH) |
 
-## 5. Môi trường đã đo (ST-136, 2026-11-16)
+## 5. Môi trường đã đo (ST-136, 2026-11-16 — lịch sử; pin hiện hành 1.100.0)
+
+> Bảng dưới là lần đo **lịch sử** trên 1.99.1. Pin hiện hành là **1.100.0** (theo `Cargo.toml`
+> và `rust-toolchain.toml`); `setup.ps1` sẽ cài/kiểm đúng bản đó ở lần chạy kế tiếp.
 
 | Mục | Giá trị |
 |---|---|

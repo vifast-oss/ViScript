@@ -11,9 +11,15 @@ name = "vis"
 path = "src/main.rs"
 
 # **VD-PO-Windows-portability** — test helper binary emulating POSIX tools `echo/cat/grep/printf/true/false/sleep/sh`
+# **VD-258 đã rà**: KHÔNG đặt `required-features` cho bin này — `env!("CARGO_BIN_EXE_test-child")`
+# là hợp đồng biên dịch của nhiều integration test (`extern`, `vis_test`, `sem`, `diag_cmp`, …);
+# bỏ bin khỏi build test sẽ làm gãy chúng. Đóng gói release **chỉ** lấy `vis` (metadata dưới).
 [[bin]]
 name = "test-child"
 path = "src/bin/test_child.rs"
+
+[package.metadata.vis]
+release-bins = ["vis"]
 
 # **VD-242 Q6 / ST-156**: SQLite là **feature tùy chọn**. Cấu hình mặc định (bản host đang kiểm
 # chứng) vẫn bật `sqlite` để giữ nguyên hành vi lịch sử; cấu hình core dùng

@@ -6,9 +6,9 @@
 # hợp chuẩn host nền thứ hai). Image chỉ chứa toolchain; cây nguồn mount **chỉ đọc** ở
 # `/src`, thư mục build là volume riêng `/target` (không ghi vào repo của người dùng).
 #
-# Ghim phiên bản theo `rust-version` của workspace (`Cargo.toml` gốc: 1.99.1).
+# Ghim phiên bản theo `rust-version` của workspace (`Cargo.toml` gốc: 1.100.0).
 # Ghi digest thật đã kéo vào log của lần build đầu (ST-121 yêu cầu).
-FROM rust:1.99.1-bookworm
+FROM rust:1.100.0-bookworm
 
 ENV CARGO_TARGET_DIR=/target \
     CARGO_TERM_COLOR=never \

@@ -74,6 +74,12 @@ fn gom(dir: &Path, out: &mut Vec<PathBuf>) {
     ds.sort();
     for p in ds {
         if p.is_dir() {
+            // **VD-258** — cấu hình core không có host `std.sqlite`; bỏ nhóm này thay vì
+            // chạy 38 ca chắc chắn đỏ. Cấu hình mặc định (`sqlite`) không đổi.
+            #[cfg(not(feature = "sqlite"))]
+            if p.file_name().is_some_and(|n| n == "sqlite") {
+                continue;
+            }
             gom(&p, out);
         } else if matches!(
             p.extension().and_then(|x| x.to_str()),
