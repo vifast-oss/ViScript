@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `8b758fc` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `c75c0da` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2424 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2456 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -86,11 +86,14 @@
 | LSP codeLens | `d88ccaa` → `cf94e77` | `textDocument/codeLens` cho `test fn` |
 | SQLite tables | `c0003bb` → `254c03f` | `sqlite.tables`: bảng/view schema chính |
 | Batch trigger | trực tiếp → `8b758fc` | `execute_batch` hiểu `BEGIN…END` trigger |
+| Splitn | `90c51c6` → `71396aa` | `str.splitn`: tối đa `n` phần |
+| LSP inlayHint | `f0f8819` → `05d6caa` | `textDocument/inlayHint` cho let/var không nhãn |
+| SQLite columns | `5e6e672` → `c75c0da` | `sqlite.columns`: cột theo `cid`, bind tham số |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2424 passed / 3 skipped** tại `8b758fc`.
+- `./vis-dev gate --fast`: **PASS — 2456 passed / 3 skipped** tại `c75c0da`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -234,3 +237,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **batch-trigger** (`8b758fc`): `execute_batch` quét `CREATE [TEMP] TRIGGER … BEGIN … END` nguyên khối; `;`/`CASE`/chuỗi trong thân không tách; thiếu `END` ⇒ `Err`; 3 ca interp=VM.
 - `vis test test/sem` @ `8b758fc`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `3779394`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **splitn** (`90c51c6` → `71396aa`): `str.splitn` đúng Rust, `n=0` ⇒ `[]`, phần cuối giữ nguyên; API +1.
+- **lsp-inlay** (`f0f8819` → `05d6caa`): hint `: <kiểu>` cho `let`/`var` không nhãn; 10 ca; hợp nhất capability với codeLens.
+- **sqlite-columns** (`5e6e672` → `c75c0da`): `sqlite.columns` theo `cid`, `pragma_table_info(?, 'main')`, bind an toàn; API +1.

@@ -3336,3 +3336,15 @@ Duyệt mở rộng scanner của `sqlite.execute_batch`: câu bắt đầu `CRE
 kể cả `CASE … END` lồng và chuỗi/comment chứa `;`/`END`. Câu sau trigger vẫn tách; trigger tính
 **một** câu. Trigger thiếu `END` được giữ tới hết input để SQLite báo lỗi, **không** cắt im lặng.
 Đây thay câu "giới hạn có ghi" trong VD-270 db-batch; `sqlite.execute` vẫn một câu như cũ.
+
+### VD-270 (bổ sung) · splitn, inlayHint, sqlite.columns — A0, 2026-11-21
+
+- **splitn**: `str.splitn(s, sep, n) -> list[str]` theo đúng Rust `str::splitn`: tối đa `n` phần,
+  phần cuối giữ nguyên phần còn lại; `n == 0` ⇒ `[]`; `sep` rỗng theo Rust (không trap);
+  `n < 0` trap `VS0501`; sugar R5c.
+- **lsp-inlayHint**: hint `": <kiểu>"` tại cuối tên cho `let`/`var` **không** chú thích kiểu;
+  bỏ kiểu `{error}`/`never`/chưa biết; cap 200; `inlayHintProvider: true`; `[]` khi không có,
+  `null` khi URI chưa mở.
+- **sqlite.columns**: `sqlite.columns(handle, table) -> Result[list[str], Error]` trả tên cột
+  bảng/view **schema chính** theo `cid`, giữ hoa/thường; tên đối tượng **bind** tham số, schema
+  cố định `main`; thiếu bảng ⇒ `Ok([])`, handle lỗi ⇒ `Err`; chạy qua `db_query`.
