@@ -63,3 +63,38 @@ fn set_map_enum_interp_tuple_qua_bon_duong() {
     assert_eq!(fi.stdout, def.stdout, "frame interp lệch mặc định");
     assert_eq!(fv.stdout, def.stdout, "frame VM lệch mặc định");
 }
+
+const SRC_LET_ELSE: &str = r#"fn f(o: int?) -> int?:
+    let x = o else:
+        return None
+    x
+print(f(Some(5)))
+"#;
+
+#[test]
+fn let_else_qua_bon_duong() {
+    let (hir, syms, tys) = tien_trinh(SRC_LET_ELSE);
+    let m = vis_bytecode::compile(&hir, &syms, SRC_LET_ELSE).expect("compile");
+
+    let def = vis_interp::run(SRC_LET_ELSE, &hir, &syms, &tys, &[]);
+    assert!(
+        def.codes().is_empty(),
+        "default interp: {:?}",
+        def.diagnostics
+    );
+    let mut vm = vis_vm::vm::Vm::new(&m, SRC_LET_ELSE);
+    let dv = vm.run(&[]);
+    assert!(
+        dv.diagnostics.is_empty(),
+        "default VM: {:?}",
+        dv.diagnostics
+    );
+    assert_eq!(def.stdout, dv.stdout);
+
+    let fi = run_i(SRC_LET_ELSE, &hir, &syms, &tys, &[], FrameConfig::default());
+    assert_eq!(fi.exit, 0, "frame interp: {:?}", fi.diagnostics);
+    let fv = run_v(&m, SRC_LET_ELSE, &[], FrameConfig::default());
+    assert_eq!(fv.exit, 0, "frame VM: {:?}", fv.diagnostics);
+    assert_eq!(fi.stdout, def.stdout, "frame interp lệch mặc định");
+    assert_eq!(fv.stdout, def.stdout, "frame VM lệch mặc định");
+}
