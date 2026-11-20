@@ -6,14 +6,16 @@
 //!
 //! Hợp đồng (agent/VD-SQLITE-MVP-2026-11-19.md §5, §7–#9 + Addendum §13 + đợt pre-merge):
 //! - **Không** kiểu native nào rò vào `DbHost` trait/`StdFn`/`Value` — trait chỉ thấy `String`/`Value`.
-//! - Handle là **token mờ** `db:<32 hex>` — **128 bit ngẫu nhiên** sinh mỗi lần mở (entropy từ
-//!   thời gian + pid + bộ đếm + địa chỉ stack (ASLR), băm 2 vòng splitmix64); tra cứu khớp **toàn
-//!   bộ** token; `db:0`/`db:00`/`db:2`/…/token giả/sai loại/đã đóng đều `Err`. Token **không** đoán
-//!   được từ output; **không tái sử dụng** trong phiên; tombstone lưu tới khi phiên kết thúc;
-//!   handle đã đóng **không** trỏ sang connection mới. Chủ sở hữu phiên == host tạo handle.
+//! - Handle là **token mờ** `db:<32 hex>` — **128 bit từ OS RNG** (Unix: `/dev/urandom`;
+//!   fallback không-crate: `RandomState` của std cũng được seed từ OS) sinh mỗi lần mở; tra cứu
+//!   khớp **toàn bộ** token; `db:0`/`db:00`/`db:2`/…/token giả/sai loại/đã đóng đều `Err`. Token
+//!   **không** đoán được từ output; **không tái sử dụng** trong phiên; tombstone lưu tới khi phiên
+//!   kết thúc; handle đã đóng **không** trỏ sang connection mới. Chủ sở hữu phiên == host tạo handle.
+//!   Token là **định danh mờ trong phiên**, không phải bí mật xác thực (host vẫn khớp toàn bộ).
 //! - `sqlite3_set_authorizer` cài **trước khi** prepare SQL người dùng (mọi prepare đều đi qua);
 //!   **allow-list theo action code** (mặc định từ chối): DDL/CRUD thường, `BEGIN`/`COMMIT`/`ROLLBACK`,
-//!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read`, mọi `Function` trừ `load_extension`;
+//!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read` (trừ trang thô), mọi `Function` trừ
+//!   `load_extension`/`sqlite_offset`;
 //!   `PRAGMA` chỉ `table_info` và **đọc** `user_version` (không ghi); cấm
 //!   `ATTACH`/`DETACH`/ghi `PRAGMA` khác/`load_extension`/**`CREATE VIRTUAL TABLE`** (`SQLITE_CREATE_VTABLE`)
 //!   ở **mọi** chế độ. `VACUUM` (cả `VACUUM INTO`) bị chặn gián tiếp — nó tự **ATTACH** ở đường
@@ -29,9 +31,16 @@
 //!   **≤ 1 MiB mỗi param text/blob** · **≤ 16 MiB tổng payload params mỗi lời gọi** ·
 //!   **tổng handle 1_024/phiên (kể cả tombstone)** · connections ≤ 16/phiên ·
 //!   busy_timeout ≤ 60_000 (mặc định 5_000) · wall-clock 5 s mỗi câu (progress_handler).
-//! - **Pre-materialization**: `SQLITE_LIMIT_LENGTH` = 17 MiB (`MAX_CELL_HARD_BYTES`) đặt **trước**
-//!   SQL người dùng, nên `zeroblob(512 MiB)`/text khổng lồ lỗi `TOOBIG` (map thành lỗi cap hàng)
-//!   thay vì cấp phát hàng trăm MB trước khi host kịp đếm.
+//! - **`query` chỉ đọc** (VD-242 §3.6): phân loại **sau** `prepare`, **trước** mọi step bằng
+//!   `sqlite3_stmt_readonly`; câu ghi (INSERT/UPDATE/DELETE/DDL…) ⇒ `Err`; câu không trả hàng
+//!   (`BEGIN`, `COMMIT`, SAVEPOINT…) ⇒ `Err` — dùng `execute`. Không nhận diện bằng tên/keyword.
+//! - **Pre-materialization**: `SQLITE_LIMIT_LENGTH` = 17 MiB (`MAX_CELL_HARD_BYTES`) trên **đường
+//!   ghi** (`execute`), đặt **trước** SQL người dùng; **đường đọc** (`query`) hạ trần này xuống
+//!   `min(trần hàng, trần cứng)` (mặc định 1 MiB) **trước** step, nên cell 1–17 MiB không
+//!   materialize rồi mới bị cap hàng từ chối. `zeroblob(512 MiB)` lỗi `TOOBIG` (map thành lỗi cap
+//!   hàng) thay vì cấp phát hàng trăm MB.
+//! - **Trang thô/freelist bị cấm**: `dbstat` (và `sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr`
+//!   nếu có) bị authorizer từ chối ở `SQLITE_READ` — SQL người dùng chỉ thấy dữ liệu logic.
 //! - 1 câu SQL mỗi `execute`/`query` (multi-statement ⇒ `Err`).
 //! - **Mọi** lỗi host là **lỗi dữ liệu/runtime** ⇒ `Result.Err` (không trap `VS0501`).
 //!   Hai lớp ngoài `Result` duy nhất: (a) lỗi tĩnh/checker-time (sai kiểu/sai arity), (b) bất
@@ -69,9 +78,12 @@ pub const MAX_COLUMNS: usize = 2_000;
 pub const MAX_COLUMN_NAME_BYTES: usize = 256 << 10; // 256 KiB
 /// max (text+blob) của **một** row **kết quả** — vượt ⇒ `Err`.
 pub const MAX_ROW_BYTES: usize = 1 << 20; // 1 MiB
-/// Trần **cứng** cho một string/blob/row của SQLite (`SQLITE_LIMIT_LENGTH`), đặt trước SQL
-/// người dùng để `zeroblob(N)`/text lớn không materialize trước khi host kịp đếm. Phải đủ lớn
-/// cho đường ghi hợp lệ (params tối đa 16 MiB + một row 1 MiB) nhưng vẫn hữu hạn rõ ràng.
+/// Trần **cứng** cho một string/blob/row của SQLite (`SQLITE_LIMIT_LENGTH`) trên **đường ghi**
+/// (`execute`), đặt trước SQL người dùng để `zeroblob(N)`/text lớn không materialize trước khi
+/// host kịp đếm. Phải đủ lớn cho đường ghi hợp lệ (params tối đa 16 MiB + một row 1 MiB).
+/// **Đường đọc** (`query`) hạ trần này xuống `min(MAX_ROW_BYTES, trần cứng)` trước mỗi step —
+/// mọi ô kết quả > 1 MiB đều bị cap hàng từ chối, nên hạ sớm chỉ chặn materialize vô ích
+/// (test: `doc_ha_tran_cung_ve_tran_hang`).
 pub const MAX_CELL_HARD_BYTES: usize = MAX_PARAMS_TOTAL_BYTES + MAX_ROW_BYTES; // 17 MiB
 /// max tổng kích thước kết quả (text+blob + overhead ô mọi hàng; **không** tính tên cột) —
 /// vượt ⇒ `Err`.
@@ -141,34 +153,68 @@ struct Muc {
     conn: Option<Connection>,
 }
 
-/// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường) — entropy từ thời gian (ns) + pid + bộ đếm
-/// toàn cục + địa chỉ stack (ASLR), băm 2 vòng splitmix64 ⇒ 2×64 bit. Không đoán được từ output;
-/// không cần nguồn ngẫu nhiên hệ điều hành (đủ cho MVP; không dùng cho bảo mật liên phiên).
+/// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường). Hai nửa 64-bit lấy từ **nguồn OS**:
+/// Unix đọc 16 byte `/dev/urandom`; nền tảng khác/không đọc được ⇒ fallback **không-crate**
+/// dùng `RandomState` của std (cũng được seed từ OS) băm SipHash hai miền tách biệt, kèm bộ đếm.
+/// Token chỉ là **handle mờ trong phiên**, không phải bí mật xác thực: host luôn khớp toàn bộ
+/// token trong `bang` của chính phiên, tombstone chặn tái dùng; không dùng làm mật khẩu/capability
+/// liên phiên. Không đoán được từ output, không tái sử dụng trong phiên.
 fn token_ngau_nhien() -> String {
     static BO_DEM: AtomicU64 = AtomicU64::new(0);
-    fn splitmix64(x: u64) -> u64 {
-        let mut z = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    }
+    let dem = BO_DEM.fetch_add(1, Ordering::Relaxed);
+    let (a, b) = ngau_nhien_os().unwrap_or_else(|| ngau_nhien_du_phong(dem));
+    let token128 = ((a as u128) << 64) | (b as u128);
+    format!("db:{token128:032x}")
+}
+
+/// 16 byte entropy từ OS trên Unix (`/dev/urandom`). Không dùng `unsafe`/crate ngoài; lỗi mở/đọc
+/// ⇒ `None` để caller dùng fallback (không panic, không chặn mở db).
+#[cfg(unix)]
+fn ngau_nhien_os() -> Option<(u64, u64)> {
+    use std::io::Read;
+    let mut b = [0u8; 16];
+    std::fs::File::open("/dev/urandom")
+        .ok()?
+        .read_exact(&mut b)
+        .ok()?;
+    Some((
+        u64::from_le_bytes(b[0..8].try_into().ok()?),
+        u64::from_le_bytes(b[8..16].try_into().ok()?),
+    ))
+}
+
+/// Không có `/dev/urandom` (Windows/nền tảng khác) — fallback trong `token_ngau_nhien`.
+#[cfg(not(unix))]
+fn ngau_nhien_os() -> Option<(u64, u64)> {
+    None
+}
+
+/// Fallback **không thêm dependency**: `RandomState` của std được seed từ OS cho mỗi thread
+/// (Unix: getrandom; Windows: OS entropy), rồi SipHash hai miền tách biệt lấy 2×64 bit. Không
+/// phải CSPRNG và không hứa 128 bit entropy độc lập tuyệt đối — chấp nhận được vì token là
+/// handle mờ trong phiên (xem [`token_ngau_nhien`]); bộ đếm bảo đảm không lặp trong cùng tiến
+/// trình ngay cả khi nguồn OS lỗi.
+fn ngau_nhien_du_phong(dem: u64) -> (u64, u64) {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
     let t = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(0);
     let pid = std::process::id() as u64;
-    let dem = BO_DEM.fetch_add(1, Ordering::Relaxed);
     let chao: u64 = 0;
     let dia_chi = &chao as *const u64 as usize as u64;
-    let seed = t
-        ^ pid.rotate_left(13)
-        ^ dem.rotate_left(29)
-        ^ dia_chi.rotate_left(41)
-        ^ 0x5A17_59E3_D4B1_C882;
-    let a = splitmix64(seed);
-    let b = splitmix64(a ^ 0xA5A5_3C3C_F0F0_0F0F);
-    let token128 = ((a as u128) << 64) | (b as u128);
-    format!("db:{token128:032x}")
+    let rs = RandomState::new();
+    let bam = |mien: u8| {
+        let mut h = rs.build_hasher();
+        h.write_u8(mien);
+        h.write_u64(t);
+        h.write_u64(pid);
+        h.write_u64(dem);
+        h.write_u64(dia_chi);
+        h.finish()
+    };
+    (bam(0xA1), bam(0x5C))
 }
 
 /// Token đúng dạng? `db:` + đúng 32 ký tự hex thường — mọi dạng khác (`db:0`, `db:00`, `db:2`,
@@ -368,6 +414,17 @@ fn mo_ta(path: &str) -> String {
     }
 }
 
+/// Bảng ảo truy cập **trang/freelist thô** của tệp SQLite — chính sách host không cho SQL người
+/// dùng thấy layout/byte đã xoá. `dbstat` bật trong bundled build; các tên còn lại là module của
+/// SQLite (`sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr`) để chặn sẵn nếu build tương lai bật.
+/// So **không phân biệt hoa thường**; bảng thường trùng tên cũng bị từ chối (đổi tên bảng).
+fn la_bang_trang_tho(ten: &str) -> bool {
+    matches!(
+        ten.to_ascii_lowercase().as_str(),
+        "dbstat" | "sqlite_dbpage" | "sqlite_dbdata" | "sqlite_dbptr"
+    )
+}
+
 /// Chính sách authorizer — **allow-list theo action code** (mặc định từ chối), **mọi chế độ**,
 /// không phải chỉ strict; KHÔNG keyword scan. Cho phép (DDL/CRUD thường, giao dịch, savepoint,
 /// REINDEX/ANALYZE, recursive CTE, đọc cột):
@@ -377,15 +434,17 @@ fn mo_ta(path: &str) -> String {
 /// | `SQLITE_CREATE_TABLE`/`_TEMP_TABLE` · `SQLITE_CREATE_INDEX`/`_TEMP_INDEX` · `SQLITE_CREATE_TRIGGER`/`_TEMP_TRIGGER` · `SQLITE_CREATE_VIEW`/`_TEMP_VIEW` | `CreateTable`/`CreateTempTable`/`CreateIndex`/… | **Allow** |
 /// | `SQLITE_DROP_TABLE`/… · `SQLITE_ALTER_TABLE` | `Drop*`/… · `AlterTable` | **Allow** |
 /// | `SQLITE_INSERT` · `SQLITE_UPDATE` · `SQLITE_DELETE` | ghi DML | **Allow** |
-/// | `SQLITE_SELECT` · `SQLITE_READ` · `SQLITE_RECURSIVE` | đọc + `WITH RECURSIVE` | **Allow** |
+/// | `SQLITE_SELECT` · `SQLITE_RECURSIVE` | đọc + `WITH RECURSIVE` | **Allow** |
+/// | `SQLITE_READ` (bảng thường/view) | đọc cột | **Allow** |
+/// | `SQLITE_READ` `dbstat`/`sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr` | trang/freelist thô | **Deny** |
 /// | `SQLITE_TRANSACTION` (BEGIN/COMMIT/ROLLBACK) · `SQLITE_SAVEPOINT` | giao dịch | **Allow** (đã duyệt — không tự mở thêm) |
 /// | `SQLITE_REINDEX` · `SQLITE_ANALYZE` | maintenance | **Allow** |
-/// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`) | hàm SQL | **Allow** |
+/// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`/`sqlite_offset`) | hàm SQL | **Allow** |
 /// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
 /// | `SQLITE_PRAGMA` khác (kể cả ghi `user_version`, `temp_store`, `journal_mode`…) | đổi cấu hình | **Deny** |
 /// | `SQLITE_ATTACH` / `SQLITE_DETACH` | gắn db ngoài | **Deny** |
 /// | `SQLITE_CREATE_VTABLE` / `SQLITE_DROP_VTABLE` | virtual table (FTS5…) | **Deny** |
-/// | `SQLITE_FUNCTION` `load_extension` | nạp extension | **Deny** |
+/// | `SQLITE_FUNCTION` `load_extension`/`sqlite_offset` | nạp extension / offset byte trong tệp | **Deny** |
 /// | `VACUUM` (cả `VACUUM INTO`) | không có action code riêng — tự `ATTACH` nội tại | **Deny** (qua ATTACH nội tại) |
 /// | `Unknown` / mọi action không liệt kê | — | **Deny** |
 ///
@@ -394,6 +453,12 @@ fn mo_ta(path: &str) -> String {
 /// tên bảng/cột/hàm ⇒ panic. Vì vậy host **kiểm schema text trước mọi prepare** (xem
 /// [`kiem_schema_utf8`]): byte hỏng ⇒ `Err` dữ liệu, không để rusqlite/`column_name` panic; ma
 /// trận authorizer bên dưới giữ **nguyên** chính sách cũ.
+///
+/// **VD-259 (review độc lập)**: `dbstat` của bundled build (`SQLITE_ENABLE_DBSTAT_VTAB`) đọc
+/// **trang/freelist thô** qua `SQLITE_READ` như bảng thường. Chính sách host là không cho SQL
+/// người dùng chạm byte/layout tệp ⇒ từ chối `SQLITE_READ` khi tên bảng thuộc nhóm trang thô
+/// (xem [`la_bang_trang_tho`]); `sqlite_dbpage`/`sqlite_dbdata`/`sqlite_dbptr` chưa bật trong
+/// bundled hiện tại nhưng bị chặn sẵn nếu build tương lai bật.
 fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authorization {
     match ctx.action {
         AuthAction::CreateTable { .. }
@@ -417,15 +482,26 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
         | AuthAction::Update { .. }
         | AuthAction::Delete { .. }
         | AuthAction::Select
-        | AuthAction::Read { .. }
         | AuthAction::Recursive
         | AuthAction::Transaction { .. }
         | AuthAction::Savepoint { .. }
         | AuthAction::Reindex { .. }
         | AuthAction::Analyze { .. } => Authorization::Allow,
+        AuthAction::Read { table_name, .. } => {
+            // **VD-259**: không đọc trang/freelist thô qua SQL. So không phân biệt hoa thường;
+            // bảng người dùng trùng tên module bị từ chối (đổi tên bảng).
+            if la_bang_trang_tho(table_name) {
+                Authorization::Deny
+            } else {
+                Authorization::Allow
+            }
+        }
         AuthAction::Function { function_name } => {
+            // **VD-259**: `sqlite_offset` (nếu build tương lai bật `SQLITE_ENABLE_OFFSET_SQL_FUNC`)
+            // trả vị trí byte của cột trong tệp — cùng nhóm "layout trang thô" với `dbstat`.
             if function_name.eq_ignore_ascii_case("load_extension")
                 || function_name.eq_ignore_ascii_case("sqlite_load_extension")
+                || function_name.eq_ignore_ascii_case("sqlite_offset")
             {
                 Authorization::Deny
             } else {
@@ -456,6 +532,12 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
         // Enum `#[non_exhaustive]` — mọi action ngoài allow-list ⇒ từ chối.
         _ => Authorization::Deny,
     }
+}
+
+/// Trần `SQLITE_LIMIT_LENGTH` cho **đường đọc** (`query`): không cần lớn hơn trần một hàng kết
+/// quả vì ô đơn > trần hàng chắc chắn bị [`truy_van`] từ chối; cũng không vượt trần cứng.
+fn tran_o_doc(gh: &GioiHan) -> usize {
+    gh.row_bytes.min(gh.hard_cell_bytes)
 }
 
 /// Đặt `SQLITE_LIMIT_LENGTH` = trần cứng một string/blob/row **trước** SQL người dùng.
@@ -742,8 +824,12 @@ impl DbHost for Db {
         kiem_params(params)?;
         let debug = self.sqlite_debug;
         let ngan_sach = Duration::from_millis(self.query_ms);
+        let tran_cung = self.gioi_han.hard_cell_bytes;
         let m = self.tim(h)?;
         let conn = m.conn.as_mut().expect("tim() đã kiểm");
+        // **Đường ghi**: trần cứng 17 MiB (đủ params 16 MiB + row 1 MiB). Đặt lại mỗi lời gọi vì
+        // `query` trước đó có thể đã hạ xuống trần đọc.
+        dat_gioi_han_o(conn, tran_cung)?;
         let params = chuan_bi_tham_so(params)?;
         // Progress handler cài **trước** `prepare` — từ đó tới hết đọc hàng; reset trên cả
         // đường thành công lẫn lỗi.
@@ -767,6 +853,9 @@ impl DbHost for Db {
         let gh = self.gioi_han;
         let m = self.tim(h)?;
         let conn = m.conn.as_mut().expect("tim() đã kiểm");
+        // **Đường đọc**: hạ trần cứng về trần hàng (mặc định 1 MiB) **trước** prepare/step để
+        // cell 1–17 MiB không materialize rồi mới bị cap hàng từ chối. `execute` đặt lại 17 MiB.
+        dat_gioi_han_o(conn, tran_o_doc(&gh))?;
         let params = chuan_bi_tham_so(params)?;
         let vao = Instant::now();
         conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
@@ -882,7 +971,9 @@ fn thuc_thi(
     Ok(r as i64)
 }
 
-/// `query`: bind đủ số lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
+/// `query`: **chỉ đọc** — phân loại **sau** `prepare`, **trước** mọi step (VD-242 §3.6): câu ghi
+/// ⇒ `Err`, câu không trả hàng ⇒ `Err`; không thực thi rồi mới phát hiện ghi. Sau đó bind đủ số
+/// lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
 /// Giới hạn (mặc định, xem [`GioiHan`]): ≤ [`MAX_ROWS`] hàng, ≤ [`MAX_CELLS`] ô, ≤
 /// [`MAX_COLUMNS`] cột, ≤ [`MAX_COLUMN_NAME_BYTES`] tên cột, payload mỗi hàng ≤
 /// [`MAX_ROW_BYTES`], tổng payload + overhead ô ≤ [`MAX_TOTAL_BYTES`]. Kiểm **trước** khi
@@ -898,6 +989,21 @@ fn truy_van(
     let mut stmt = conn
         .prepare(sql)
         .map_err(|e| loi_prepare("query", e, sqlite_debug))?;
+    // **VD-242 §3.6 / VD-259**: `query` chỉ đọc. `sqlite3_stmt_readonly` phân loại statement thật
+    // sau prepare — không dựa vào tên/keyword, không chạy thử rồi mới phát hiện ghi. Câu ghi phải
+    // đi qua `execute` (nơi có trần ghi 17 MiB); câu không trả hàng (`BEGIN`/`COMMIT`/SAVEPOINT)
+    // cũng phải đi qua `execute`.
+    if !stmt.readonly() {
+        return Err(
+            "câu lệnh ghi — `sqlite.query` chỉ đọc, dùng `sqlite.execute` thay vì `sqlite.query`"
+                .to_string(),
+        );
+    }
+    if stmt.column_count() == 0 {
+        return Err(
+            "câu lệnh không trả hàng — dùng `sqlite.execute` thay vì `sqlite.query`".to_string(),
+        );
+    }
     kiem_so_luong(&stmt, params.len())?;
     let col_n = stmt.column_count();
     // Tên cột: schema đã được kiểm UTF-8 ở trên nên `column_name` không panic vì encoding;

@@ -10,8 +10,10 @@ use crate::value::Value;
 /// `vis-cli` cài (rusqlite bundled). **Không** kiểu native nào rò vào trait: path/handle là **chuỗi**,
 /// params/ô dữ liệu là [`Value`] (`Enum("SqlValue", …)`), kết quả `(columns, rows)` là `Value`.
 /// Thiếu host ⇒ `VS0604` (cùng mẫu [`FsHost`]/[`NetHost`]). Handle là **token mờ** `db:<32 hex>` —
-/// **128 bit ngẫu nhiên** sinh mỗi lần mở; tra cứu khớp **toàn bộ** chuỗi; token **không** đoán
-/// được từ output, **không tái sử dụng** trong phiên; chủ sở hữu phiên == host tạo handle.
+/// **128 bit từ OS RNG** (Unix: `/dev/urandom`; fallback std `RandomState` được seed từ OS) sinh
+/// mỗi lần mở; tra cứu khớp **toàn bộ** chuỗi; token **không** đoán được từ output, **không tái sử
+/// dụng** trong phiên; chủ sở hữu phiên == host tạo handle. Token là định danh mờ trong phiên,
+/// **không** phải bí mật xác thực liên phiên.
 /// Mọi lỗi host (sai dạng/không tồn tại/đã đóng/SQL/params/giới hạn/authorizer/timeout/lỗi
 /// SQLite) ⇒ `Err(String)` — tầng `std` chuyển thành `Result.Err` dữ liệu (không phải trap).
 pub trait DbHost {
@@ -21,10 +23,12 @@ pub trait DbHost {
     fn db_open(&mut self, path: &str, create: bool, busy_ms: i64) -> Result<String, String>;
     /// Đóng handle; handle lạ/đã đóng ⇒ `Err` (không panic); **không** auto-commit.
     fn db_close(&mut self, h: &str) -> Result<(), String>;
-    /// Chạy **một** câu SQL (multi-statement ⇒ host từ chối), params **positional** đã bind đủ
-    /// số lượng. Trả số dòng bị ảnh hưởng.
+    /// Chạy **một** câu SQL ghi/không-trả-hàng (multi-statement ⇒ host từ chối), params
+    /// **positional** đã bind đủ số lượng. Trả số dòng bị ảnh hưởng. Câu trả hàng ⇒ `Err`
+    /// (**trước** step, không side effect) — dùng [`Self::db_query`].
     fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String>;
-    /// Như [`Self::db_execute`] nhưng trả `(columns, rows)` — mỗi ô là `Value::Enum("SqlValue", …)`.
+    /// **Chỉ đọc** (VD-242 §3.6): câu ghi hoặc câu không trả hàng ⇒ `Err` (phân loại sau prepare,
+    /// trước step). Trả `(columns, rows)` — mỗi ô là `Value::Enum("SqlValue", …)`.
     fn db_query(
         &mut self,
         h: &str,

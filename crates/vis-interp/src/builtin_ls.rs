@@ -123,7 +123,16 @@ pub(crate) fn noi_duong_voi(a: &str, b: &str, windows: bool) -> String {
     } else {
         '\\'
     };
-    let sep = if a_trim.ends_with(':') { '\\' } else { sep };
+    // `C:` sau khi trim có thể đến từ `C:` trần / `C:\` / `C:/` — giữ separator gốc nếu có
+    // (`C:/` + `x` ⇒ `C:/x`), còn `C:` trần dùng mặc định `\`.
+    let sep = if a_trim.ends_with(':') {
+        match a.as_bytes().get(a_trim.len()) {
+            Some(b'/') => '/',
+            _ => '\\',
+        }
+    } else {
+        sep
+    };
     format!("{a_trim}{sep}{b}")
 }
 
@@ -291,6 +300,23 @@ mod vd258_tests {
         assert_eq!(noi_duong_voi("C:\\a", "D:foo", true), "D:foo");
         // Rooted không drive: giữ drive của `a`.
         assert_eq!(noi_duong_voi("C:\\a", "\\b", true), "C:\\b");
+        // **VD-259** — UNC/root edge: ghép giữ separator, basename root share, đuôi nhiều chấm.
+        assert_eq!(
+            noi_duong_voi("\\\\server\\share", "x", true),
+            "\\\\server\\share\\x"
+        );
+        assert_eq!(noi_duong_voi("C:\\", "x", true), "C:\\x");
+        assert_eq!(noi_duong_voi("C:/", "x", true), "C:/x");
+        assert_eq!(basename_voi("\\\\server\\share\\", true), "share");
+        assert_eq!(
+            dirname_voi("\\\\server\\share\\x", true),
+            "\\\\server\\share"
+        );
+        assert_eq!(ext_voi("C:\\a\\b.tar.gz", true), "gz");
+        assert_eq!(stem_voi("C:\\a\\b.tar.gz", true), "b.tar");
+        // `\\?\` (verbatim) và UNC đều tuyệt đối; `C:foo` vẫn là drive-relative.
+        assert!(la_tuyet_doi("\\\\?\\C:\\x", true));
+        assert!(!la_tuyet_doi("C:foo", true));
 
         assert_eq!(basename_voi("C:\\a\\b.txt", true), "b.txt");
         assert_eq!(basename_voi("C:/a/b.txt", true), "b.txt");
