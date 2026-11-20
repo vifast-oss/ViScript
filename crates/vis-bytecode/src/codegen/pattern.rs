@@ -72,6 +72,14 @@ impl Emit<'_> {
                 let n = items.len() as u16;
                 if matches!(p, HPat::Tuple { .. }) {
                     self.f.push(Instr::TestTuple(n), span, 0);
+                } else if matches!(p, HPat::List { rest: Some(_), .. }) {
+                    // **VD-260**: `[a, ..]`/`[a, ..r]` — dài **≥** số tiền tố, không phải đúng
+                    // bằng. Không có opcode `TestListMin` (không đổi VERSION 2) nên gọi builtin
+                    // nội bộ thuần, trả `false` cho giá trị không phải `list` (cùng interp).
+                    let c = self.g.cst(LitKind::Int, &items.len().to_string());
+                    self.f.push(Instr::Const(c), span, 1);
+                    let b = self.g.cst_str(crate::format::BI_MAU_LIST_GE);
+                    self.f.push(Instr::CallBuiltin(b, 2), span, -1);
                 } else {
                     self.f.push(Instr::TestList(n), span, 0);
                 }
@@ -84,9 +92,10 @@ impl Emit<'_> {
                         continue;
                     }
                     self.f.push(Instr::Dup, span, 1);
-                    let c = self.g.cst(LitKind::Int, &i.to_string());
-                    self.f.push(Instr::Const(c), span, 1);
-                    self.f.push(Instr::Index, span, -1);
+                    // **VD-260**: `Unwrap` (không `Index`) để hình dạng **sai/ngắn** trả `Unit`
+                    // cho test con ⇒ `false`, không trap `VS0503`. Interp khớp cấu trúc thật
+                    // cũng trả `false`; `Index` vẫn dùng lúc **bind** (sau khi test đã qua).
+                    self.f.push(Instr::Unwrap(i as u16), span, 0);
                     let _ = self.test(sub, span)?;
                     let s2 = self.f.nlocals;
                     self.f.nlocals += 1;
@@ -194,13 +203,36 @@ impl Emit<'_> {
                 self.f.push(Instr::StoreLocal(slot), span, -1);
                 Ok(())
             }
-            HPat::Tuple { items, .. } | HPat::List { items, .. } => {
+            HPat::Tuple { items, .. } => {
                 for (i, it) in items.iter().enumerate() {
                     self.f.push(Instr::Dup, span, 1);
                     let c = self.g.cst(LitKind::Int, &i.to_string());
                     self.f.push(Instr::Const(c), span, 1);
                     self.f.push(Instr::Index, span, -1);
                     self.gan_tu_dinh(it, span)?;
+                }
+                self.f.push(Instr::Pop, span, -1);
+                Ok(())
+            }
+            HPat::List { items, rest, .. } => {
+                for (i, it) in items.iter().enumerate() {
+                    self.f.push(Instr::Dup, span, 1);
+                    let c = self.g.cst(LitKind::Int, &i.to_string());
+                    self.f.push(Instr::Const(c), span, 1);
+                    self.f.push(Instr::Index, span, -1);
+                    self.gan_tu_dinh(it, span)?;
+                }
+                // **VD-260**: đuôi là **bản sao** `xs[n..]` (COW như interp: `Value::List` clone);
+                // `..` trần không tạo list — `HPat::Rest` chỉ bỏ giá trị.
+                if let Some(r) = rest {
+                    if !matches!(r.as_ref(), HPat::Rest { .. }) {
+                        self.f.push(Instr::Dup, span, 1);
+                        let c = self.g.cst(LitKind::Int, &items.len().to_string());
+                        self.f.push(Instr::Const(c), span, 1);
+                        let b = self.g.cst_str(crate::format::BI_MAU_LIST_TAIL);
+                        self.f.push(Instr::CallBuiltin(b, 2), span, -1);
+                        self.gan_tu_dinh(r, span)?;
+                    }
                 }
                 self.f.push(Instr::Pop, span, -1);
                 Ok(())

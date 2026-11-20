@@ -37,18 +37,23 @@ impl<'a> Lowerer<'a> {
             return HPat::Wild { span };
         };
         // range pattern `0..10` / `0..=10` / `18..` (không có nhánh phải).
-        if let Some(rt) = toks.iter().find(|t| t.is_punct("..") || t.is_punct("..=")) {
-            if !kids.is_empty() {
-                let inclusive = rt.text == "..=";
-                let mut it = kids.iter();
-                let lo = it.next().map(|p| Box::new(self.lower_pat(p)));
-                let hi = it.next().map(|p| Box::new(self.lower_pat(p)));
-                return HPat::Range {
-                    lo,
-                    hi,
-                    inclusive,
-                    span,
-                };
+        // **VD-260**: `[a, ..]`/`[a, ..r]` cũng chứa token `..` nhưng **không** phải range —
+        // nhánh list/record xử lý rest riêng (`lower_list_pat`). Chỉ nhận range khi pattern
+        // **không** bắt đầu bằng dấu mở của list/bản ghi (`(` vẫn có thể là range `(0)..(9)`).
+        if !matches!(first.text.as_str(), "[" | "{") {
+            if let Some(rt) = toks.iter().find(|t| t.is_punct("..") || t.is_punct("..=")) {
+                if !kids.is_empty() {
+                    let inclusive = rt.text == "..=";
+                    let mut it = kids.iter();
+                    let lo = it.next().map(|p| Box::new(self.lower_pat(p)));
+                    let hi = it.next().map(|p| Box::new(self.lower_pat(p)));
+                    return HPat::Range {
+                        lo,
+                        hi,
+                        inclusive,
+                        span,
+                    };
+                }
             }
         }
         match first.kind {
