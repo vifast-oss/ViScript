@@ -282,3 +282,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **schema-sql** (`a6ebf63`/`ca92c3c` → `8ce3246`): `sqlite.schema_sql` tra SQL khai báo theo tên bind; thiếu/NULL ⇒ `Ok(None)`; `Ty::ResultOptStrErr`.
 - **str-title** (`ae86c9b` → `60d0961`): `str.title` hoa scalar đầu mỗi từ theo whitespace Unicode, `ß` ⇒ `SS`; giữ nguyên khoảng trắng.
 - **sqlite-index-columns** (`409756b` → `146cf32`): `sqlite.index_columns` theo thứ tự index; fallback `sqlite_master.sql` + `pragma_table_info` do authorizer chặn `pragma_index_info`; bỏ mục biểu thức.
+- `VIS_DIFF_N=100000` seed 20261207 @ `54f5db4`: **0 lệch** (93.767 chạy, 82,4 s).
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `54f5db4`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
