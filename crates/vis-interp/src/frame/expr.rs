@@ -319,10 +319,35 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
         HExpr::Ref { expr, .. } => {
             frame.cur().work.push(Work::Eval(expr));
         }
-        HExpr::Try { .. }
-        | HExpr::ChanNew { .. }
-        | HExpr::CmdBlock { .. }
-        | HExpr::Error { .. } => {
+        // **VD-257 / stream A**: `?` — hai dạng. `xs[i]?` là chỉ số có kiểm tra (VD-178 R8);
+        // còn lại là `Option`/`Result` unwrap với trả sớm `None`/`Err` (§4.4).
+        HExpr::Try { expr, span } => {
+            if let HExpr::Index { base, index, .. } = &**expr {
+                frame.cur().work.push(Work::ApplyTryIndex { span: *span });
+                frame.cur().work.push(Work::Eval(index));
+                frame.cur().work.push(Work::Eval(base));
+            } else {
+                frame.cur().work.push(Work::ApplyTry { span: *span });
+                frame.cur().work.push(Work::Eval(expr));
+            }
+        }
+        // **VD-257 / stream A**: `chan[T](n)` — eval dung lượng rồi gọi `$kenh` thật
+        // (cùng builtin với runtime mặc định, không tự dựng `Value::Chan`).
+        HExpr::ChanNew { cap, span, .. } => {
+            frame.cur().work.push(Work::BuildChan { span: *span });
+            frame.cur().work.push(Work::Eval(cap));
+        }
+        // `cmd { … }` là VS1 — runtime mặc định và codegen VM đều từ chối. Frame path
+        // phải từ chối **cùng thông điệp** (không dùng cụm "chưa được đường frame test
+        // hỗ trợ" gây hiểu lầm), ngay tại điểm gặp, trước khi đẩy operand.
+        HExpr::CmdBlock { span, .. } => {
+            return Err(Abort::Trap(Trap::new(
+                RT,
+                "khối `cmd` là VS1 — chưa hỗ trợ ở VS0",
+                *span,
+            )))
+        }
+        HExpr::Error { .. } => {
             return Err(Abort::Trap(Trap::new(
                 RT,
                 format!(

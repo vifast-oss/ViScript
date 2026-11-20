@@ -815,17 +815,51 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
         } => {
             let mut got = pop_n(frame, nargs)?;
             got.reverse();
-            let kq = crate::builtin::method(it, recv, &name, got, span)?;
-            if name == "push" {
-                if let Some(id) = base_var {
-                    if frame.mutable.borrow().contains(&id) {
-                        frame.cur().env.borrow_mut().insert(id, kq.clone());
-                    }
+            match crate::builtin::method(it, recv.clone(), &name, got.clone(), span) {
+                Ok(kq) => {
+                    method_writeback(frame, &name, base_var, &kq);
+                    frame.push_val(kq);
+                    Ok(())
                 }
+                // Kênh đầy/rỗng ⇒ `chay_mot` báo Pending. Giữ **đối số đã eval** trong
+                // continuation ⇒ resume thử lại méthode, KHÔNG eval lại đối số/side-effect.
+                Err(Abort::Pending(p)) => {
+                    frame.cur().work.push(Work::RedispatchMethod {
+                        name,
+                        recv,
+                        args: got,
+                        base_var,
+                        span,
+                    });
+                    Err(Abort::Pending(p))
+                }
+                Err(e) => Err(e),
             }
-            frame.push_val(kq);
-            Ok(())
         }
+        Work::RedispatchMethod {
+            name,
+            recv,
+            args,
+            base_var,
+            span,
+        } => match crate::builtin::method(it, recv.clone(), &name, args.clone(), span) {
+            Ok(kq) => {
+                method_writeback(frame, &name, base_var, &kq);
+                frame.push_val(kq);
+                Ok(())
+            }
+            Err(Abort::Pending(p)) => {
+                frame.cur().work.push(Work::RedispatchMethod {
+                    name,
+                    recv,
+                    args,
+                    base_var,
+                    span,
+                });
+                Err(Abort::Pending(p))
+            }
+            Err(e) => Err(e),
+        },
         Work::MakeLambda {
             params,
             ret_depth,
@@ -931,6 +965,78 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             let moi = crate::gan::gan_chi_so(cur, idx, rhs, span)?;
             frame.cur().env.borrow_mut().insert(sym, moi);
             Ok(())
+        }
+
+        // ================= VD-257 / stream A =================
+        Work::ApplyTry { span } => {
+            let v = frame.pop_val()?;
+            match v {
+                Value::Enum(ref ea, ref va, ref ag) if ea == "Option" && va == "Some" => {
+                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
+                }
+                Value::Enum(ref ea, ref va, ref ag) if ea == "Result" && va == "Ok" => {
+                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
+                }
+                Value::Enum(ea, va, ag)
+                    if (ea == "Option" && va == "None") || (ea == "Result" && va == "Err") =>
+                {
+                    // Trả sớm từ khung hiện tại (khớp `Instr::Try` của VM): bỏ mọi
+                    // continuation còn lại của khung ⇒ side-effect sau `?` KHÔNG chạy.
+                    let cf = frame.cur();
+                    cf.last = Some(Value::Enum(ea, va, ag));
+                    cf.work.clear();
+                    cf.loops.clear();
+                }
+                other => {
+                    return Err(Abort::Trap(Trap::new(
+                        RT,
+                        format!("`?` cần `T?`/`Result`, được `{}`", other.show()),
+                        span,
+                    )))
+                }
+            }
+            Ok(())
+        }
+        Work::ApplyTryIndex { span } => {
+            let i = frame.pop_val()?;
+            let b = frame.pop_val()?;
+            let v = match (&b, &i) {
+                (Value::List(xs), Value::Int(n)) if *n >= 0 => {
+                    Value::opt(xs.get(*n as usize).cloned())
+                }
+                (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => {
+                    Value::opt(bs.get(*n as usize).map(|x| Value::Int(*x as i64)))
+                }
+                (Value::Map(kv), k) => Value::opt(
+                    kv.iter()
+                        .find(|(kk, _)| kk.eq_value(k))
+                        .map(|(_, v)| v.clone()),
+                ),
+                _ => Value::none(),
+            };
+            let _ = span;
+            frame.push_val(v);
+            Ok(())
+        }
+        Work::BuildChan { span } => {
+            let cap = frame.pop_val()?;
+            // Dùng đúng builtin nội bộ `$kenh` của runtime mặc định — tự created value
+            // ở đây sẽ lệch quản lý `sched.kenh` (ownership/snapshot).
+            let v = crate::builtin::call(it, "$kenh", vec![cap], span)?;
+            frame.push_val(v);
+            Ok(())
+        }
+    }
+}
+
+/// Ghi ngược kết quả methode `push` vào biến gốc (giữ nguyên hành vi cũ của
+/// `ApplyMethod`), dùng chung cho lần chạy đầu và lần retry sau `Pending`.
+fn method_writeback(frame: &mut IFrame<'_>, name: &str, base_var: Option<u32>, kq: &Value) {
+    if name == "push" {
+        if let Some(id) = base_var {
+            if frame.mutable.borrow().contains(&id) {
+                frame.cur().env.borrow_mut().insert(id, kq.clone());
+            }
         }
     }
 }
