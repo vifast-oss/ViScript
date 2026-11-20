@@ -3394,3 +3394,17 @@ giữ `VS0403` (ngoài phạm vi); `impl Hop[T]` generic vẫn chưa hỗ trợ.
   rõ ⇒ `null`; cap 50, UTF-16.
 - **replace-last**: `str.replace_last(s, from, to)` thay **một** lần khớp cuối theo scalar; không
   khớp ⇒ nguyên; `from` rỗng ⇒ nối `to` cuối; `to` rỗng ⇒ xoá; sugar R5c.
+
+### VD-270 (bổ sung) · schema_sql, str.title, index_columns, path.relative, doctor — A0, 2026-11-21
+
+- **sqlite.schema_sql**: `(handle, name) -> Result[str?, Error]` tra `sqlite_master.sql` theo **tên
+  bind** (BINARY, phân biệt hoa/thường); thiếu/`sql` NULL (autoindex) ⇒ `Ok(None)`; `Ty::ResultOptStrErr`.
+- **str.title**: `(s) -> str` hoa **scalar đầu** mỗi từ, thường phần còn lại; từ tách theo
+  **khoảng trắng Unicode**, giữ nguyên khoảng trắng; dấu câu không mở từ; `ß` ⇒ `SS`; sugar R5c.
+- **sqlite.index_columns**: `(handle, index) -> Result[list[str], Error]` trả cột theo **thứ tự
+  index**; tên index **bind**; authorizer chặn `pragma_index_info`, nên fallback đọc
+  `sqlite_master.sql` + `pragma_table_info(?, 'main')`; bỏ mục biểu thức; thiếu/autoindex/TEMP ⇒ `Ok([])`.
+- **path.relative**: `(from, to) -> str` thuần từ vựng POSIX; cùng loại ⇒ tương đối (kể cả hai
+  tuyệt đối), trộn loại ⇒ `to` chuẩn hoá; rỗng ⇒ `.`; **không sugar**.
+- **vis doctor**: `vis doctor [--json]` in version/os/arch/sqlite/features tất định, exit 0; mọi
+  cờ/đối số thừa ⇒ exit 2, stdout rỗng.

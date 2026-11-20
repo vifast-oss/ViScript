@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `318a5c4` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `146cf32` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2606 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2643 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -101,11 +101,14 @@
 | Replace last | `d7c3d7f` → `5dead58` | `str.replace_last` lần khớp cuối |
 | Doctor | `7182aa3` → `09823e1` | `vis doctor [--json]` tất định |
 | Path relative | `eff3ef3` → `318a5c4` | `path.relative` lexical POSIX |
+| Schema SQL | `a6ebf63` → `8ce3246` | `sqlite.schema_sql` → `Result[str?, Error]` |
+| Str title | `ae86c9b` → `60d0961` | `str.title` hoa đầu từ theo khoảng trắng Unicode |
+| SQLite index columns | `409756b` → `146cf32` | `sqlite.index_columns` theo thứ tự index |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2606 passed / 3 skipped** tại `318a5c4`.
+- `./vis-dev gate --fast`: **PASS — 2643 passed / 3 skipped** tại `146cf32`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -276,3 +279,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **doctor** (`7182aa3` → `09823e1`): `vis doctor [--json]` in version/os/arch/sqlite/features, không phụ thuộc môi trường.
 - **path-relative** (`eff3ef3` → `318a5c4`): `path.relative` thuần từ vựng; cùng loại ⇒ tương đối, trộn loại ⇒ `to` chuẩn hoá.
 - `VIS_DIFF_N=100000` seed 20261206 @ `318a5c4`: **0 lệch** (93.767 chạy).
+- **schema-sql** (`a6ebf63`/`ca92c3c` → `8ce3246`): `sqlite.schema_sql` tra SQL khai báo theo tên bind; thiếu/NULL ⇒ `Ok(None)`; `Ty::ResultOptStrErr`.
+- **str-title** (`ae86c9b` → `60d0961`): `str.title` hoa scalar đầu mỗi từ theo whitespace Unicode, `ß` ⇒ `SS`; giữ nguyên khoảng trắng.
+- **sqlite-index-columns** (`409756b` → `146cf32`): `sqlite.index_columns` theo thứ tự index; fallback `sqlite_master.sql` + `pragma_table_info` do authorizer chặn `pragma_index_info`; bỏ mục biểu thức.
