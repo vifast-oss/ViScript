@@ -41,6 +41,7 @@ mod khai;
 mod khai_bao;
 mod pat;
 mod quyen;
+mod sig;
 mod stmt;
 mod sugar;
 mod than;
@@ -326,8 +327,11 @@ struct Lowerer<'a> {
     /// **VD-263**: kiểu trả về của hàm đang hạ (để `return`/biểu thức cuối mang instantiation).
     cur_ret: Option<Type>,
     /// **VD-263**: `sym` hàm → danh sách `(tên, kiểu)` tham số (để đối số call-site mang
-    /// instantiation như tham số khai báo). Hàm khai **sau** call-site chưa có trong bản đồ.
+    /// instantiation như tham số khai báo). **VD-265**: pre-pass nạp **mọi** chữ ký trước khi hạ
+    /// thân ⇒ hàm khai **sau** call-site vẫn có.
     fn_params: std::collections::HashMap<u32, Vec<(String, Type)>>,
+    /// **VD-265**: `sym` hàm → kiểu trả về (dựng `fn(…) -> …` cho **giá trị hàm** ở call-site).
+    fn_ret: std::collections::HashMap<u32, Type>,
 }
 
 impl<'a> Lowerer<'a> {
@@ -390,6 +394,7 @@ impl<'a> Lowerer<'a> {
             expect: None,
             cur_ret: None,
             fn_params: std::collections::HashMap::new(),
+            fn_ret: std::collections::HashMap::new(),
         }
     }
 
@@ -470,6 +475,9 @@ impl<'a> Lowerer<'a> {
         self.sinh_derives();
         // **ST-57 (VD-98 (2))**: siêu trait kiểm **một tầng**, **sau** 1b+1c ⇒ thứ tự `impl` tự do.
         self.kiem_sieu_trait();
+        // **VD-265**: pre-pass template generic + chữ ký **mọi** hàm/phương thức — call-site
+        // trước khai báo vẫn biết `Box[int?]`/kiểu trả về (không phát chẩn đoán).
+        self.chuan_bi_chu_ky();
         // Lượt 2 — thân item + câu lệnh cấp tệp, **theo đúng thứ tự nguồn**.
         for child in self.cst.root.children() {
             if is_item(child.kind) {

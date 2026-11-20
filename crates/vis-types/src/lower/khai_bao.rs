@@ -192,6 +192,7 @@ impl<'a> Lowerer<'a> {
                 .map(|p| (p.name.clone(), p.ty.clone()))
                 .collect(),
         );
+        self.fn_ret.insert(sym, ret.clone());
         let luu_ret = self.cur_ret.replace(ret.clone());
         let body = node
             .child(NodeKind::Suite)
@@ -285,6 +286,14 @@ impl<'a> Lowerer<'a> {
         self.push_frame(FrameKind::Fn, node.span);
         let params = self.lower_params(node);
         self.pop_frame();
+        // **VD-265**: như hàm thường — call-site (kể cả trước khai báo) dùng kiểu tham số.
+        self.fn_params.insert(
+            sym,
+            params
+                .iter()
+                .map(|p| (p.name.clone(), p.ty.clone()))
+                .collect(),
+        );
         HSig {
             name,
             span: node.span,
@@ -328,7 +337,8 @@ impl<'a> Lowerer<'a> {
         let field_tys: Vec<Type> = fields.iter().map(|f| f.ty.clone()).collect();
         self.kiem_derives(node, &derives, &field_tys);
         // ST-35: dựng **template** (kiểu còn ký hiệu `T`) để instantiation `Hop[int]` thay được.
-        if !self.generic_scope.is_empty() {
+        // **VD-265**: pre-pass đã dựng template cùng tên — không giải lại kiểu ký hiệu.
+        if !self.generic_scope.is_empty() && !self.rec_tmpl.iter().any(|(n, _, _)| n == &name) {
             self.dung_template_rec(node, &name);
         }
         let id = self
@@ -387,7 +397,8 @@ impl<'a> Lowerer<'a> {
         }
         self.kiem_derives(node, &derives, &vt);
         // ST-35: template biến thể (kiểu còn ký hiệu `T`) cho instantiation `Or[int, str]`.
-        if !self.generic_scope.is_empty() {
+        // **VD-265**: pre-pass đã dựng template cùng tên — không giải lại kiểu ký hiệu.
+        if !self.generic_scope.is_empty() && !self.enum_tmpl.iter().any(|(n, _, _)| n == &name) {
             self.dung_template_enum(node, &name);
         }
         let id = self
@@ -447,10 +458,18 @@ impl<'a> Lowerer<'a> {
         };
         // `alias` = tên khác của cùng kiểu; `newtype` = kiểu mới (ST-12 phân giải tiếp).
         if !is_newtype {
-            self.aliases.push((name.clone(), ty.clone()));
+            // **VD-265**: pre-pass đã ghi alias (để template thấy) — **thay** bản cùng tên,
+            // không nhân đôi.
+            if let Some(e) = self.aliases.iter_mut().find(|(n, _)| n == &name) {
+                e.1 = ty.clone();
+            } else {
+                self.aliases.push((name.clone(), ty.clone()));
+            }
         } else {
             // **R12a (VD-178)**: `type Email(str)` — newtype **trong suốt**.
-            self.newtypes.push(name.clone());
+            if !self.newtypes.iter().any(|n| n == &name) {
+                self.newtypes.push(name.clone());
+            }
         }
         Some(HItem::Alias(HAlias {
             name,

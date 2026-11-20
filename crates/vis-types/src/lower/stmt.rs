@@ -24,6 +24,9 @@ impl<'a> Lowerer<'a> {
 
     /// **VD-263** — như [`Lowerer::lower_suite`] nhưng biểu thức **cuối** nhận kiểu trả về của
     /// hàm làm kiểu mong đợi (constructor mang instantiation ở `fn f() -> Box[int?]`).
+    ///
+    /// **VD-265**: câu cuối là `if`/`match`/khối **dạng câu lệnh** cũng là giá trị của thân ⇒
+    /// truyền kiểu mong đợi xuống nhánh cuối của nó (trước đây chỉ `ExprStmt`).
     pub(super) fn lower_suite_ret(&mut self, node: &Node, ret: Option<Type>) -> Vec<HStmt> {
         self.push_frame(FrameKind::Block, node.span);
         let kids: Vec<&Node> = node.children().collect();
@@ -37,6 +40,12 @@ impl<'a> Lowerer<'a> {
                     .map(|c| self.lower_expr_as(c, ret.clone()))
                     .unwrap_or(HExpr::Error { span: child.span });
                 out.push(HStmt::Expr(e));
+            } else if i == cuoi && child.kind == NodeKind::IfStmt {
+                out.push(self.lower_if(child, ret.clone()));
+            } else if i == cuoi && child.kind == NodeKind::MatchStmt {
+                out.push(self.lower_match(child, ret.clone()));
+            } else if i == cuoi && child.kind == NodeKind::Suite {
+                out.push(self.lower_block_ret(child, ret.clone()));
             } else if let Some(s) = self.lower_stmt(child) {
                 out.push(s);
             }
@@ -145,23 +154,8 @@ impl<'a> Lowerer<'a> {
                     span: node.span,
                 })
             }
-            NodeKind::IfStmt => Some(self.lower_if(node)),
-            NodeKind::MatchStmt => {
-                let subject = node
-                    .children()
-                    .find(|c| c.kind != NodeKind::Suite)
-                    .map(|c| self.lower_expr(c))
-                    .unwrap_or(HExpr::Error { span: node.span });
-                let arms = node
-                    .child(NodeKind::Suite)
-                    .map(|s| self.lower_arms(s))
-                    .unwrap_or_default();
-                Some(HStmt::Match {
-                    subject,
-                    arms,
-                    span: node.span,
-                })
-            }
+            NodeKind::IfStmt => Some(self.lower_if(node, None)),
+            NodeKind::MatchStmt => Some(self.lower_match(node, None)),
             NodeKind::ExprStmt => {
                 let e = node
                     .children()
@@ -229,6 +223,12 @@ impl<'a> Lowerer<'a> {
                         s.ty = Some(t.clone());
                     }
                 }
+            }
+        } else if let HPat::Bind { sym, .. } = &pat {
+            // **VD-265**: `let f = fn(b: Box[int?])` / `let f = nhan` — kiểu **giá trị hàm** là
+            // kiểu tĩnh của biến (dùng cho kiểu mong đợi của đối số khi gọi `f(...)`).
+            if let Some(t) = self.fn_value_ty(&init) {
+                self.type_env.insert(*sym, t);
             }
         }
         HStmt::Let {
@@ -361,11 +361,14 @@ impl<'a> Lowerer<'a> {
             }
         }
         // **VD-263**: gán lại biến có annot generic ⇒ initializer mang instantiation như `let`.
+        // **VD-265**: đích `Field`/`Index` ⇒ kiểu **trường/phần tử** là kiểu mong đợi (constructor
+        // generic lồng trong RHS nhận đúng instantiation).
         let want = match target.as_ref() {
             Some(HExpr::Var { sym: Some(id), .. }) => {
                 self.symbols.get(*id).and_then(|s| s.ty.clone())
             }
-            _ => None,
+            Some(t) => self.static_ty(t),
+            None => None,
         };
         let value = value
             .map(|v| self.lower_expr_as(v, want))
@@ -378,7 +381,7 @@ impl<'a> Lowerer<'a> {
         }
     }
 
-    fn lower_if(&mut self, node: &Node) -> HStmt {
+    fn lower_if(&mut self, node: &Node, ret: Option<Type>) -> HStmt {
         let cond_node = node.children().find(|n| {
             !matches!(
                 n.kind,
@@ -394,7 +397,7 @@ impl<'a> Lowerer<'a> {
                 let cond = self.lower_cond(c);
                 let then = node
                     .child(NodeKind::Suite)
-                    .map(|s| self.lower_suite(s))
+                    .map(|s| self.lower_suite_ret(s, ret.clone()))
                     .unwrap_or_default();
                 if is_let {
                     self.pop_frame();
@@ -404,7 +407,7 @@ impl<'a> Lowerer<'a> {
             None => (
                 HCond::Expr(HExpr::Error { span: node.span }),
                 node.child(NodeKind::Suite)
-                    .map(|s| self.lower_suite(s))
+                    .map(|s| self.lower_suite_ret(s, ret.clone()))
                     .unwrap_or_default(),
             ),
         };
@@ -420,7 +423,7 @@ impl<'a> Lowerer<'a> {
                     let c = self.lower_cond(c);
                     let body = arm
                         .child(NodeKind::Suite)
-                        .map(|s| self.lower_suite(s))
+                        .map(|s| self.lower_suite_ret(s, ret.clone()))
                         .unwrap_or_default();
                     if is_let {
                         self.pop_frame();
@@ -435,12 +438,40 @@ impl<'a> Lowerer<'a> {
             .children()
             .find(|n| n.kind == NodeKind::ElseArm)
             .and_then(|a| a.child(NodeKind::Suite))
-            .map(|s| self.lower_suite(s));
+            .map(|s| self.lower_suite_ret(s, ret));
         HStmt::If {
             cond,
             then,
             elifs,
             else_,
+            span: node.span,
+        }
+    }
+
+    /// **VD-265** — `match` **dạng câu lệnh**; nhánh cuối nhận kiểu mong đợi khi ở đuôi thân.
+    fn lower_match(&mut self, node: &Node, ret: Option<Type>) -> HStmt {
+        let subject = node
+            .children()
+            .find(|c| c.kind != NodeKind::Suite)
+            .map(|c| self.lower_expr(c))
+            .unwrap_or(HExpr::Error { span: node.span });
+        let arms = node
+            .child(NodeKind::Suite)
+            .map(|s| self.lower_arms_ret(s, ret))
+            .unwrap_or_default();
+        HStmt::Match {
+            subject,
+            arms,
+            span: node.span,
+        }
+    }
+
+    /// **VD-265** — khối lồng ở **đuôi** thân: câu cuối của khối nhận kiểu mong đợi.
+    /// `lower_suite_ret` tự mở **một** khung khối (như `lower_suite`), nên không mở thêm.
+    fn lower_block_ret(&mut self, node: &Node, ret: Option<Type>) -> HStmt {
+        let body = self.lower_suite_ret(node, ret);
+        HStmt::Block {
+            body,
             span: node.span,
         }
     }
@@ -476,7 +507,9 @@ impl<'a> Lowerer<'a> {
         HCond::Expr(self.lower_expr(node))
     }
 
-    pub(super) fn lower_arms(&mut self, suite: &Node) -> Vec<HArm> {
+    /// **VD-265** — như `lower_arms` cũ nhưng biểu thức cuối mỗi nhánh mang kiểu mong đợi
+    /// (nhánh `match` ở vị trí giá trị của hàm/`let` generic).
+    pub(super) fn lower_arms_ret(&mut self, suite: &Node, ret: Option<Type>) -> Vec<HArm> {
         let mut out = Vec::new();
         for arm in suite.children().filter(|n| n.kind == NodeKind::MatchArm) {
             self.push_frame(FrameKind::Block, arm.span);
@@ -491,7 +524,7 @@ impl<'a> Lowerer<'a> {
                 .map(|n| self.lower_expr(n));
             let body = arm
                 .child(NodeKind::Suite)
-                .map(|s| self.lower_suite(s))
+                .map(|s| self.lower_suite_ret(s, ret.clone()))
                 .unwrap_or_default();
             self.pop_frame();
             out.push(HArm {

@@ -46,24 +46,31 @@ impl<'a> Lowerer<'a> {
             .map(|t| self.resolve_type(t))
             .collect();
         self.sym_generic = luu;
-        if !tys.is_empty() {
-            let params = self.generic_scope.clone();
-            // Vị trí tham số kiểu của từng trường (ST-35) — tyck dùng để hợp nhất `Hop[T]` khi
-            // chưa có bản instantiation nào được dựng.
-            let pos: Vec<Option<usize>> = tys
-                .iter()
-                .map(|t| match t {
-                    Type::TypeRef { name: n, args: a } if a.is_empty() => {
-                        params.iter().position(|p| p == n)
-                    }
-                    _ => None,
-                })
-                .collect();
-            if let Some((_, id)) = self.rec_names.iter().find(|(n, _)| n == name) {
-                self.tbl.set_rec_pos(*id, pos);
-            }
-            self.rec_tmpl.push((name.to_string(), params, tys));
+        let params = self.generic_scope.clone();
+        self.dung_template_rec_tu(name, params, tys);
+    }
+
+    /// **VD-265** — ghi template record đã **giải sẵn** (pre-pass và [`Self::dung_template_rec`]
+    /// dùng chung). Bỏ qua nếu template cùng tên đã có (pre-pass chạy trước lượt hạ item).
+    pub(crate) fn dung_template_rec_tu(&mut self, name: &str, params: Vec<String>, tys: Vec<Type>) {
+        if tys.is_empty() || self.rec_tmpl.iter().any(|(n, _, _)| n == name) {
+            return;
         }
+        // Vị trí tham số kiểu của từng trường (ST-35) — tyck dùng để hợp nhất `Hop[T]` khi
+        // chưa có bản instantiation nào được dựng.
+        let pos: Vec<Option<usize>> = tys
+            .iter()
+            .map(|t| match t {
+                Type::TypeRef { name: n, args: a } if a.is_empty() => {
+                    params.iter().position(|p| p == n)
+                }
+                _ => None,
+            })
+            .collect();
+        if let Some((_, id)) = self.rec_names.iter().find(|(n, _)| n == name) {
+            self.tbl.set_rec_pos(*id, pos);
+        }
+        self.rec_tmpl.push((name.to_string(), params, tys));
     }
 
     /// Dựng **template** biến thể của `enum E[..]`.
@@ -84,26 +91,38 @@ impl<'a> Lowerer<'a> {
             vs.push((vn, tys));
         }
         self.sym_generic = luu;
-        if !vs.is_empty() {
-            let params = self.generic_scope.clone();
-            let pos: Vec<Vec<Option<usize>>> = vs
-                .iter()
-                .map(|(_, tys)| {
-                    tys.iter()
-                        .map(|t| match t {
-                            Type::TypeRef { name: n, args: a } if a.is_empty() => {
-                                params.iter().position(|p| p == n)
-                            }
-                            _ => None,
-                        })
-                        .collect()
-                })
-                .collect();
-            if let Some((_, id)) = self.enum_names.iter().find(|(n, _)| n == name) {
-                self.tbl.set_enum_pos(*id, pos);
-            }
-            self.enum_tmpl.push((name.to_string(), params, vs));
+        let params = self.generic_scope.clone();
+        self.dung_template_enum_tu(name, params, vs);
+    }
+
+    /// **VD-265** — ghi template enum đã **giải sẵn** (pre-pass và [`Self::dung_template_enum`]
+    /// dùng chung). Bỏ qua nếu template cùng tên đã có.
+    pub(crate) fn dung_template_enum_tu(
+        &mut self,
+        name: &str,
+        params: Vec<String>,
+        vs: Vec<(String, Vec<Type>)>,
+    ) {
+        if vs.is_empty() || self.enum_tmpl.iter().any(|(n, _, _)| n == name) {
+            return;
         }
+        let pos: Vec<Vec<Option<usize>>> = vs
+            .iter()
+            .map(|(_, tys)| {
+                tys.iter()
+                    .map(|t| match t {
+                        Type::TypeRef { name: n, args: a } if a.is_empty() => {
+                            params.iter().position(|p| p == n)
+                        }
+                        _ => None,
+                    })
+                    .collect()
+            })
+            .collect();
+        if let Some((_, id)) = self.enum_names.iter().find(|(n, _)| n == name) {
+            self.tbl.set_enum_pos(*id, pos);
+        }
+        self.enum_tmpl.push((name.to_string(), params, vs));
     }
 
     /// `Hop[int]` ⇒ `RecId` **riêng** (intern theo tổ hợp); `None` nếu chưa có template.

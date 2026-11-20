@@ -152,40 +152,18 @@ impl<'a> Lowerer<'a> {
                 }
             }
             NodeKind::RecordLit => {
-                let mut fields: Vec<(String, HExpr)> = Vec::new();
-                let mut defs: Vec<FieldDef> = Vec::new();
-                let mut seen = std::collections::HashSet::with_capacity(8);
+                // **VD-265**: gom tên/span trước (chưa hạ giá trị) để biết **instantiation** từ
+                // `expect`, rồi mới hạ từng trường với kiểu mong đợi của nó — constructor lồng
+                // trong literal ẩn danh nhận đúng lớp `T?`.
+                let mut tho: Vec<(String, Option<&Node>, Span)> = Vec::new();
                 for f in node.children().filter(|n| n.kind == NodeKind::RecordField) {
                     let name = self.decl_name(f).unwrap_or_default();
-                    let value = match f.children().next() {
-                        Some(v) => self.lower_expr(v),
-                        // `{ ten }` — viết tắt `ten: ten`.
-                        None => {
-                            let n2 = name.clone();
-                            self.lower_var_use(&n2, f.span)
-                        }
-                    };
-                    if !seen.insert(name.clone()) {
-                        self.diag(
-                            &vis_diag::TYPE_CODES[4],
-                            format!("trường `{name}` xuất hiện nhiều lần trên bản ghi ẩn danh"),
-                            f.span,
-                        );
-                    }
-                    defs.push(FieldDef {
-                        name: name.clone(),
-                        ty: self.type_of(&value),
-                        span: f.span,
-                        has_default: false,
-                    });
-                    fields.push((name, value));
+                    tho.push((name, f.children().next(), f.span));
                 }
-                // **VD-263**: annot generic (`let a: Hop[int?] = {gia_tri: 5}`) ⇒ literal mang
-                // **id instantiation** để biên dựng nâng trường `T?` theo kiểu đã thay.
                 let inst = match expect.as_ref().map(bo_opt) {
                     Some(Type::Record(exp))
                         if self.tbl.rec_inst_of(*exp).is_some()
-                            && fields.iter().all(|(n, _)| {
+                            && tho.iter().all(|(n, _, _)| {
                                 self.tbl
                                     .rec(*exp)
                                     .is_some_and(|d| d.fields.iter().any(|f| &f.name == n))
@@ -195,6 +173,39 @@ impl<'a> Lowerer<'a> {
                     }
                     _ => None,
                 };
+                let mut fields: Vec<(String, HExpr)> = Vec::new();
+                let mut defs: Vec<FieldDef> = Vec::new();
+                let mut seen = std::collections::HashSet::with_capacity(8);
+                for (name, value_node, fspan) in tho {
+                    let want = inst
+                        .and_then(|id| self.tbl.rec(id))
+                        .and_then(|d| d.fields.iter().find(|f| f.name == name))
+                        .map(|f| f.ty.clone());
+                    let value = match value_node {
+                        Some(v) => self.lower_expr_as(v, want),
+                        // `{ ten }` — viết tắt `ten: ten`.
+                        None => {
+                            let n2 = name.clone();
+                            self.lower_var_use(&n2, fspan)
+                        }
+                    };
+                    if !seen.insert(name.clone()) {
+                        self.diag(
+                            &vis_diag::TYPE_CODES[4],
+                            format!("trường `{name}` xuất hiện nhiều lần trên bản ghi ẩn danh"),
+                            fspan,
+                        );
+                    }
+                    defs.push(FieldDef {
+                        name: name.clone(),
+                        ty: self.type_of(&value),
+                        span: fspan,
+                        has_default: false,
+                    });
+                    fields.push((name, value));
+                }
+                // **VD-263**: annot generic (`let a: Hop[int?] = {gia_tri: 5}`) ⇒ literal mang
+                // **id instantiation** để biên dựng nâng trường `T?` theo kiểu đã thay.
                 let ty = match inst {
                     Some(id) => Type::Record(id),
                     None => {
@@ -364,13 +375,21 @@ impl<'a> Lowerer<'a> {
                     .next()
                     .map(|c| self.lower_expr(c))
                     .unwrap_or(HExpr::Error { span });
+                // **VD-265**: kiểu trường của **bản nhận** là kiểu mong đợi của giá trị `with`.
+                let base_ty = self.static_ty(&base);
                 let mut fields = Vec::new();
                 for f in node.children().filter(|n| n.kind == NodeKind::WithField) {
                     let name = self.decl_name(f).unwrap_or_default();
+                    let want = match &base_ty {
+                        Some(Type::Record(id)) => {
+                            self.tbl.field(*id, &name).map(|fd| fd.ty.clone())
+                        }
+                        _ => None,
+                    };
                     let value = f
                         .children()
                         .next()
-                        .map(|c| self.lower_expr(c))
+                        .map(|c| self.lower_expr_as(c, want))
                         .unwrap_or(HExpr::Error { span: f.span });
                     fields.push((name, value));
                 }
@@ -380,16 +399,17 @@ impl<'a> Lowerer<'a> {
                     span,
                 }
             }
-            NodeKind::IfExpr => self.lower_if_expr(node),
+            NodeKind::IfExpr => self.lower_if_expr(node, expect),
             NodeKind::MatchExpr => {
                 let subject = node
                     .children()
                     .find(|c| c.kind != NodeKind::Suite)
                     .map(|c| self.lower_expr(c))
                     .unwrap_or(HExpr::Error { span });
+                // **VD-265**: nhánh cuối của `match` ở vị trí giá trị mang kiểu mong đợi.
                 let arms = node
                     .child(NodeKind::Suite)
-                    .map(|s| self.lower_arms(s))
+                    .map(|s| self.lower_arms_ret(s, expect))
                     .unwrap_or_default();
                 HExpr::Match {
                     subject: Box::new(subject),
@@ -779,17 +799,43 @@ impl<'a> Lowerer<'a> {
         expect: Option<&Type>,
     ) -> (Vec<Type>, Vec<(String, Type)>) {
         // **VD-263**: chữ ký hàm đã hạ (`fn f(b: Box[int?])`) là kiểu mong đợi của đối số.
+        // **VD-265**: pre-pass nạp **mọi** chữ ký (hàm khai sau call-site), kiểu `fn(…)` của
+        // biến (giá trị hàm/closure), và chữ ký phương thức `impl` khi bên nhận có kiểu tĩnh.
         let (mut pos, named) = match callee {
-            HExpr::Var { sym: Some(id), .. } => self
-                .fn_params
-                .get(id)
-                .map(|ps| {
-                    (
-                        ps.iter().map(|(_, t)| t.clone()).collect::<Vec<_>>(),
-                        ps.clone(),
-                    )
-                })
-                .unwrap_or_default(),
+            HExpr::Var { sym: Some(id), .. } => match self.fn_params.get(id) {
+                Some(ps) => (
+                    ps.iter().map(|(_, t)| t.clone()).collect::<Vec<_>>(),
+                    ps.clone(),
+                ),
+                None => match self.type_env.get(id) {
+                    Some(Type::Fn(ps, _)) => (ps.to_vec(), Vec::new()),
+                    _ => (Vec::new(), Vec::new()),
+                },
+            },
+            HExpr::Lambda { params, .. } => (
+                params.iter().map(|p| p.ty.clone()).collect(),
+                params
+                    .iter()
+                    .map(|p| (p.name.clone(), p.ty.clone()))
+                    .collect(),
+            ),
+            HExpr::Field {
+                base,
+                name,
+                optional: false,
+                ..
+            } => match self.tham_so_phuong_thuc(base, name) {
+                Some(ps) => {
+                    // `fn_params` của phương thức có `self` đầu; đối số call-site **không** có.
+                    let ps: &[(String, Type)] = if ps.first().is_some_and(|(n, _)| n == "self") {
+                        &ps[1..]
+                    } else {
+                        &ps[..]
+                    };
+                    (ps.iter().map(|(_, t)| t.clone()).collect(), ps.to_vec())
+                }
+                None => (Vec::new(), Vec::new()),
+            },
             _ => (Vec::new(), Vec::new()),
         };
         let Some(expect) = expect else {
@@ -846,6 +892,37 @@ impl<'a> Lowerer<'a> {
             _ => {}
         }
         (pos, named)
+    }
+
+    /// **VD-265** — chữ ký phương thức `impl` cho `base.name` khi `base` có kiểu **tĩnh** và tên
+    /// phương thức khớp **đúng một** impl (giống [`Lowerer::dispatch_tinh`] nhưng không chẩn đoán).
+    fn tham_so_phuong_thuc(&self, base: &HExpr, name: &str) -> Option<Vec<(String, Type)>> {
+        let ty = self.static_ty(base)?;
+        let sym = self.method_sym(&ty, name)?;
+        self.fn_params.get(&sym).cloned()
+    }
+
+    /// **VD-265** — kiểu `fn(…) -> …` của một **giá trị hàm**: lambda, hoặc tên hàm đã có chữ ký
+    /// trong pre-pass. `None` nếu không chắc.
+    pub(crate) fn fn_value_ty(&self, e: &HExpr) -> Option<Type> {
+        match e {
+            HExpr::Lambda { .. } => match self.type_of(e) {
+                t @ Type::Fn(..) => Some(t),
+                _ => None,
+            },
+            HExpr::Var { sym: Some(id), .. } => {
+                let ps = self.fn_params.get(id)?;
+                let ret = self.fn_ret.get(id).cloned().unwrap_or(Type::Unit);
+                Some(Type::Fn(
+                    ps.iter()
+                        .map(|(_, t)| t.clone())
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
+                    Box::new(ret),
+                ))
+            }
+            _ => None,
+        }
     }
 
     /// Gọi `std.<module>.<fn>(…)` khi `<module>` đã `use` (ST-26) — tên đầy đủ `std.m.f`.
@@ -1170,8 +1247,11 @@ impl<'a> Lowerer<'a> {
         }
     }
 
-    fn lower_if_expr(&mut self, node: &Node) -> HExpr {
+    fn lower_if_expr(&mut self, node: &Node, expect: Option<Type>) -> HExpr {
         let span = node.span;
+        // **VD-265**: nhánh ở **vị trí giá trị** — biểu thức cuối mang kiểu mong đợi (như
+        // [`Lowerer::lower_suite_ret`]) để constructor generic lồng trong `if` giữ instantiation.
+        let then_ret = expect.clone();
         let cond_node = node.children().find(|n| {
             !matches!(
                 n.kind,
@@ -1187,7 +1267,7 @@ impl<'a> Lowerer<'a> {
                 let cond = self.lower_cond(c);
                 let then = node
                     .child(NodeKind::Suite)
-                    .map(|s| self.lower_suite(s))
+                    .map(|s| self.lower_suite_ret(s, then_ret))
                     .unwrap_or_default();
                 if is_let {
                     self.pop_frame();
@@ -1197,7 +1277,7 @@ impl<'a> Lowerer<'a> {
             None => (
                 HCond::Expr(HExpr::Error { span }),
                 node.child(NodeKind::Suite)
-                    .map(|s| self.lower_suite(s))
+                    .map(|s| self.lower_suite_ret(s, expect.clone()))
                     .unwrap_or_default(),
             ),
         };
@@ -1205,7 +1285,7 @@ impl<'a> Lowerer<'a> {
         for arm in node.children().filter(|n| n.kind == NodeKind::ElifArm) {
             let body = arm
                 .child(NodeKind::Suite)
-                .map(|s| self.lower_suite(s))
+                .map(|s| self.lower_suite_ret(s, expect.clone()))
                 .unwrap_or_default();
             let c = arm
                 .children()
@@ -1218,7 +1298,7 @@ impl<'a> Lowerer<'a> {
             .children()
             .find(|n| n.kind == NodeKind::ElseArm)
             .and_then(|a| a.child(NodeKind::Suite))
-            .map(|s| self.lower_suite(s))
+            .map(|s| self.lower_suite_ret(s, expect))
             .unwrap_or_default();
         HExpr::If {
             cond: Box::new(cond),
