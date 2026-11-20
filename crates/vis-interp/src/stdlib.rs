@@ -32,6 +32,7 @@ mod indexof;
 mod listcontains;
 mod listmath;
 mod listmean;
+mod listmedian;
 mod netconst;
 mod pathjoinall;
 mod pathnorm;
@@ -523,6 +524,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.mean" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmean::goi(xs, span)
+        }
+        // **VD-270 (list-median)**: trung vị `list[float]`; rỗng ⇒ `None`; sao chép rồi sắp
+        // tăng (`-inf` < hữu hạn < `+inf`), lẻ ⇒ giữa, chẵn ⇒ `(a + b) / 2.0`; có `NaN` ⇒
+        // `None` tất định, không trap. Lõi `stdlib/listmedian.rs`.
+        "list.median" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listmedian::goi(xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.

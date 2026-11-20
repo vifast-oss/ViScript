@@ -167,7 +167,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 mkdir-all, 2026-11-21)**: +**1** hàm `std.fs.mkdir_all`
     // (`(str) -> Result[(), Error]`; tạo đệ quy mọi thư mục thiếu, đã có ⇒ `Ok`,
     // tệp/symlink trên đường ⇒ `Err`) ⇒ **127** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 127, "bảng chữ ký phải đủ 127 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-median, 2026-11-21)**: +**1** hàm `std.list.median`
+    // (`(list[float]) -> float?`; rỗng ⇒ `None`, có `NaN` ⇒ `None`, sao chép rồi sắp tăng,
+    // lẻ ⇒ giữa, chẵn ⇒ `(a + b) / 2.0`) ⇒ **128** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 128, "bảng chữ ký phải đủ 128 hàm");
 }
 
 #[test]
@@ -477,6 +480,22 @@ fn list_mean_chi_list_float_tra_opt_float() {
     );
     assert_eq!(f.ret.ten(), "float?", "`list.mean`: tên hiển thị");
     assert_eq!(f.so_doi(), 1, "`list.mean`: số đối số");
+}
+
+#[test]
+fn list_median_chi_list_float_tra_opt_float() {
+    // **VD-270 (list-median)**: **chỉ** `list[float]` (không `list[T]`, không `list[int]`), trả
+    // `float?` = `Option[float]`; `median` không phải phương thức lõi nên sugar `xs.median()` R5c.
+    let f = sig_of("list.median").expect("list.median");
+    assert_eq!(f.params, &[Ty::List(&Ty::Float)], "`list.median`: tham số");
+    assert_eq!(f.ret, Ty::OptFloat, "`list.median`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Float)),
+        "`list.median`: phải hạ thành `Option[float]`"
+    );
+    assert_eq!(f.ret.ten(), "float?", "`list.median`: tên hiển thị");
+    assert_eq!(f.so_doi(), 1, "`list.median`: số đối số");
 }
 
 #[test]

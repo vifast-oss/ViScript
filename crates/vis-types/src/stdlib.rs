@@ -245,7 +245,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 127] = [
+pub const FUNCS: [StdFn; 128] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -577,6 +577,15 @@ pub const FUNCS: [StdFn; 127] = [
     // `mean` không phải phương thức lõi nên sugar `xs.mean()` đi R5c tới đây.
     StdFn {
         name: "list.mean",
+        params: &[Ty::List(&Ty::Float)],
+        ret: Ty::OptFloat,
+    },
+    // **VD-270 (list-median)**: `median` **chỉ** `list[float]`, trả `float?`; rỗng ⇒ `None`;
+    // sao chép rồi sắp tăng (`±inf` bình thường), **có `NaN` ⇒ `None`** tất định; lẻ ⇒ phần tử
+    // giữa, chẵn ⇒ trung bình cộng `f64` `(a + b) / 2.0`. Không phải phương thức lõi nên sugar
+    // `xs.median()` đi R5c tới đây.
+    StdFn {
+        name: "list.median",
         params: &[Ty::List(&Ty::Float)],
         ret: Ty::OptFloat,
     },
