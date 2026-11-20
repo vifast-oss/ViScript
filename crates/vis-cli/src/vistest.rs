@@ -36,7 +36,7 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --timeout <ms>: giới hạn mỗi ca (test fn **và** fixture .out/.err) ≤ ms (≥ 50); quá hạn ⇒ kill + `not ok` với `quá hạn <ms> ms`; mặc định **không** giới hạn");
@@ -460,11 +460,35 @@ fn xao_tron<T>(v: &mut [T], seed: u64) {
     }
 }
 
+/// **VD-270**: object JSON của `--json`/`--json-out` (một dòng + `\n`).
+fn json_body(cases: &[CaJson], hong: usize) -> String {
+    let mut ds = String::new();
+    for (i, c) in cases.iter().enumerate() {
+        if i > 0 {
+            ds.push(',');
+        }
+        ds.push_str(&format!(
+            "{{\"name\":\"{}\",\"ok\":{},\"message\":\"{}\"}}",
+            esc_json(&c.ten),
+            c.ok,
+            esc_json(&c.msg)
+        ));
+    }
+    format!(
+        "{{\"total\":{},\"ok\":{},\"failed\":{},\"cases\":[{ds}]}}\n",
+        cases.len(),
+        cases.len().saturating_sub(hong),
+        hong
+    )
+}
+
 pub fn run(args: &[String]) -> ExitCode {
     let mut vm = false;
     let mut strict = false;
     // **ST-101**: `--json` — đầu ra máy đọc; không cờ ⇒ TAP y hệt.
     let mut json_ra = false;
+    // **VD-270**: `--json-out <path>` — ghi cùng object JSON ra tệp, stdout vẫn TAP nếu không `--json`.
+    let mut json_out: Option<String> = None;
     // **ST-105**: `--timeout <ms>` (≥50) chỉ áp cho **`test fn`**; mặc định **không** giới hạn.
     let mut timeout_han: Option<u64> = None;
     // **VD-267**: `--filter <substr>` — lọc **trước khi chạy**; `None` = chạy tất cả.
@@ -485,6 +509,34 @@ pub fn run(args: &[String]) -> ExitCode {
             "--vm" => vm = true,
             "--strict-caps" => strict = true,
             "--json" => json_ra = true,
+            "--json-out" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--json-out` cần đường dẫn tệp");
+                    return ExitCode::from(2);
+                };
+                if v.is_empty() {
+                    eprintln!("vis test: `--json-out` cần đường dẫn tệp (rỗng)");
+                    return ExitCode::from(2);
+                }
+                if json_out.is_some() {
+                    eprintln!("vis test: `--json-out` lặp lại");
+                    return ExitCode::from(2);
+                }
+                json_out = Some(v.clone());
+                i += 1;
+            }
+            s if s.starts_with("--json-out=") => {
+                let v = &s["--json-out=".len()..];
+                if v.is_empty() {
+                    eprintln!("vis test: `--json-out` cần đường dẫn tệp (rỗng)");
+                    return ExitCode::from(2);
+                }
+                if json_out.is_some() {
+                    eprintln!("vis test: `--json-out` lặp lại");
+                    return ExitCode::from(2);
+                }
+                json_out = Some(v.to_string());
+            }
             "--fail-fast" => fail_fast = true,
             "--list" => list = true,
             // **VD-270**: `--shuffle` không tham số; `--seed` là u64 (thiếu/sai ⇒ exit 2).
@@ -567,6 +619,11 @@ pub fn run(args: &[String]) -> ExitCode {
             s => duong = Some(PathBuf::from(s)),
         }
         i += 1;
+    }
+    // **VD-270**: `--json-out` không đi với `--list` (hai đầu ra máy khác khuôn).
+    if json_out.is_some() && list {
+        eprintln!("vis test: `--json-out` không đi với `--list`");
+        return ExitCode::from(2);
     }
     // **VD-270**: `--seed` chỉ có nghĩa khi xáo; thiếu `--shuffle` ⇒ lỗi dùng (exit 2).
     if seed.is_some() && !shuffle {
@@ -713,26 +770,19 @@ pub fn run(args: &[String]) -> ExitCode {
     // TAP vẫn hợp lệ); không có `--fail-fast` thì số đã chạy = số ca đã chọn × N.
     tap.push_str(&format!("1..{}\n", cases.len()));
     tap.push_str(&than);
-    if json_ra {
-        let mut ds = String::new();
-        for (i, c) in cases.iter().enumerate() {
-            if i > 0 {
-                ds.push(',');
-            }
-            ds.push_str(&format!(
-                "{{\"name\":\"{}\",\"ok\":{},\"message\":\"{}\"}}",
-                esc_json(&c.ten),
-                c.ok,
-                esc_json(&c.msg)
-            ));
+    let body = if json_ra || json_out.is_some() {
+        Some(json_body(&cases, hong))
+    } else {
+        None
+    };
+    if let Some(path) = json_out.as_deref() {
+        if let Err(e) = std::fs::write(path, body.as_deref().unwrap_or_default()) {
+            eprintln!("vis test: không ghi được `{path}`: {e}");
+            return ExitCode::from(2);
         }
-        let body = format!(
-            "{{\"total\":{},\"ok\":{},\"failed\":{},\"cases\":[{ds}]}}\n",
-            cases.len(),
-            cases.len().saturating_sub(hong),
-            hong
-        );
-        print!("{body}");
+    }
+    if json_ra {
+        print!("{}", body.as_deref().unwrap_or_default());
     } else {
         print!("{tap}");
     }
