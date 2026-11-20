@@ -352,34 +352,22 @@ fn c2_multiple_frames_observe_shared_capture_cell() {
 // ===========================================================================
 
 #[test]
-fn z_unsupported_structures_still_rejected_clearly() {
-    // `?` postfix và `chan` không nằm trong scope VD-255: frame path phải Trap rõ,
-    // checker vẫn chấp nhận (không thu hẹp acceptance), runtime mặc định vẫn chạy đúng.
+fn z_try_and_chan_now_supported_on_frame_path() {
+    // VD-257/A: `?` và `chan` đã được phủ trên đường frame. Assertion cũ (expect rejection)
+    // lỗi thời; đảo sang assertion dương, vẫn so với runtime mặc định/golden.
     let src = "fn f(x: int?) -> int?:\n    x?\n\nfn main():\n    print(f(Some(1)))\n";
-    let (hir, syms, tys) = tien_trinh(src); // checker chấp nhận
+    let (hir, syms, tys) = tien_trinh(src);
     let i = run_i(src, &hir, &syms, &tys, &[], cfg(&[], vec![]));
-    assert_eq!(i.exit, 1);
-    assert!(
-        i.diagnostics[0]
-            .message
-            .contains("chưa được đường frame test hỗ trợ"),
-        "{:?}",
-        i.diagnostics
-    );
+    assert_eq!(i.exit, 0, "{:?}", i.diagnostics);
+    let def = vis_interp::run(src, &hir, &syms, &tys, &[]);
+    assert_eq!(i.stdout, def.stdout);
 
     let src2 = "fn main():\n    let c = chan[int](2)\n    print(1)\n";
     let (hir, syms, tys) = tien_trinh(src2);
     let i2 = run_i(src2, &hir, &syms, &tys, &[], cfg(&[], vec![]));
-    assert_eq!(i2.exit, 1);
-    assert!(
-        i2.diagnostics[0]
-            .message
-            .contains("chưa được đường frame test hỗ trợ"),
-        "{:?}",
-        i2.diagnostics
-    );
-    // Không có fallback âm thầm: stdout rỗng, không chạy tiếp câu sau cấu trúc bị từ chối.
-    assert!(i2.stdout.is_empty());
+    assert_eq!(i2.exit, 0, "{:?}", i2.diagnostics);
+    let def2 = vis_interp::run(src2, &hir, &syms, &tys, &[]);
+    assert_eq!(i2.stdout, def2.stdout);
 }
 
 // ===========================================================================
@@ -423,7 +411,7 @@ fn classify(name: &str) -> &'static str {
         | "spawn-co-ten"
         | "spawn-khong-async"
         | "task-khong-phai-int" => "negative",
-        "grid-chan-hai-task-kenh" | "grid-kenh-list" => "chan",
+        "grid-chan-hai-task-kenh" | "grid-kenh-list" => "frame",
         other => panic!("fixture chưa được phân loại: {other}"),
     }
 }
@@ -522,32 +510,6 @@ fn z_all_async_fixtures_classified_and_run_through_frame_path() {
                 let def = vis_interp::run(&src, &h.hir, &h.symbols, &h.types, &[]);
                 assert_eq!(def.codes(), ["VS0506"], "default path phải báo lỗi join");
                 let _ = i;
-            }
-            "chan" => {
-                assert!(
-                    t.is_clean(),
-                    "{name}: fixture channel vẫn được checker chấp nhận"
-                );
-                let i = run_i(
-                    &src,
-                    &h.hir,
-                    &h.symbols,
-                    &h.types,
-                    &[],
-                    FrameConfig::default(),
-                );
-                assert_eq!(i.exit, 1, "{name}: channel phải bị frame path từ chối");
-                assert!(
-                    i.diagnostics.iter().any(|d| d.message.contains("hỗ trợ")),
-                    "{name}: phải từ chối RÕ: {:?}",
-                    i.diagnostics
-                );
-                // Golden .out giữ nguyên — runtime mặc định vẫn đúng.
-                let want = golden_stdout(&root.join(format!("{name}.out")));
-                assert_eq!(
-                    vis_interp::run(&src, &h.hir, &h.symbols, &h.types, &[]).stdout,
-                    want
-                );
             }
             other => panic!("class unknown: {other}"),
         }
