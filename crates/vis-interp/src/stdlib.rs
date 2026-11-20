@@ -25,6 +25,7 @@ use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
 mod flatten;
+mod fsbytes;
 mod indexof;
 mod strfind;
 mod strlen;
@@ -226,6 +227,8 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             | Ty::ResultIntErr
             | Ty::ResultBoolErr
             | Ty::ResultRowSetErr
+            // **VD-270 (fsbytes)**: `Result[list[int], Error]` là kiểu **trả** của `fs.read_bytes`.
+            | Ty::ResultListIntErr
             // **VD-270 (strfind)**: `int?` là kiểu **trả** của `str.find`/`str.rfind`.
             | Ty::OptInt => true,
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
@@ -836,6 +839,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(crate::builtin_fs::goi_metadata(host, name, p), span)
         }
+        // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
+        // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
+        "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, &args, span),
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         "net.connect" | "net.connect_timeout" => {

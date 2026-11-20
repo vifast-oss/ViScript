@@ -58,6 +58,9 @@ pub enum Ty {
     /// **VD-270 (strfind)** — `int?` = `Option[int]`: kiểu trả của `std.str.find`/`rfind`
     /// (vị trí **scalar** Unicode, không khớp ⇒ `None`).
     OptInt,
+    /// **VD-270 (fsbytes)** — `Result[list[int], Error]`: kiểu trả của `std.fs.read_bytes`
+    /// (mỗi phần tử là một byte `0..=255`).
+    ResultListIntErr,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -98,6 +101,11 @@ impl Ty {
             Ty::Never => Type::Never,
             // **VD-270 (strfind)** — `int?` là `Option[int]` thật (không phải `{error}`).
             Ty::OptInt => Type::Opt(Box::new(Type::Int)),
+            // **VD-270 (fsbytes)** — `list[int]` (mỗi phần tử là byte `0..=255`).
+            Ty::ResultListIntErr => Type::Result(
+                Box::new(Type::List(Box::new(Type::Int))),
+                Box::new(Self::Error.sang_type()),
+            ),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -150,6 +158,8 @@ impl Ty {
             Ty::Never => "never",
             // **VD-270 (strfind)**
             Ty::OptInt => "int?",
+            // **VD-270 (fsbytes)**
+            Ty::ResultListIntErr => "Result[list[int], Error]",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -197,7 +207,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 101] = [
+pub const FUNCS: [StdFn; 103] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -610,6 +620,19 @@ pub const FUNCS: [StdFn; 101] = [
         name: "fs.is_dir",
         params: &[Ty::Str],
         ret: Ty::ResultBoolErr,
+    },
+    // **VD-270 (fsbytes)**: đọc/ghi **byte thô** — mỗi phần tử là một byte `0..=255`;
+    // `read_bytes` → `Result[list[int], Error]`; `write_bytes` nhận `list[int]`, tạo/cắt tệp và
+    // từ chối (không chạm đĩa) nếu có phần tử ngoài phạm vi.
+    StdFn {
+        name: "fs.read_bytes",
+        params: &[Ty::Str],
+        ret: Ty::ResultListIntErr,
+    },
+    StdFn {
+        name: "fs.write_bytes",
+        params: &[Ty::Str, Ty::List(&Ty::Int)],
+        ret: Ty::ResultUnitStr,
     },
     // ----- std.net (ST-63, VD-100/VD-105) — **đi qua `Host::net`**, không OS trong crate này -----
     StdFn {

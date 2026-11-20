@@ -97,7 +97,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 flatten, 2026-11-21)**: +**1** hàm `std.list.flatten`
     // (`(list[list[T]]) -> list[T]`; nối **một cấp**, list con rỗng không đóng góp) ⇒ **101**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 101, "bảng chữ ký phải đủ 101 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 fsbytes, 2026-11-21)**: +**2** hàm `std.fs.*` (`read_bytes`,
+    // `write_bytes`; byte thô `list[int]`, mỗi phần tử `0..=255`) ⇒ **103** hàm; không xoá/đổi
+    // hàm cũ nào.
+    assert_eq!(FUNCS.len(), 103, "bảng chữ ký phải đủ 103 hàm");
 }
 
 #[test]

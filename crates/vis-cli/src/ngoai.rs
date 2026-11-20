@@ -560,6 +560,20 @@ impl vis_interp::builtin::FsHost for Runner {
         }
     }
 
+    /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (`std::fs::read`); thiếu
+    /// tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**.
+    fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
+        self.nhat_ky("read_bytes", p);
+        std::fs::read(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
+    }
+
+    /// **VD-270 (fsbytes)**: ghi **toàn bộ** `data` (`std::fs::write`: tạo mới hoặc cắt rồi ghi);
+    /// lỗi OS ⇒ `Err` **dữ liệu**.
+    fn write_bytes(&mut self, p: &str, data: &[u8]) -> Result<(), String> {
+        self.nhat_ky("write_bytes", p);
+        std::fs::write(p, data).map_err(|e| format!("không ghi được `{p}`: {e}"))
+    }
+
     /// **VD-268**: duyệt **đệ quy** dưới `p` bằng `read_dir` + `DirEntry::file_type()` (không đi
     /// theo symlink). Trả đường dẫn **tương đối** so với `p`, phân cách `/`; thư mục kèm `/`; DFS,
     /// mỗi cấp sắp theo byte của tên; mục ẩn vẫn gồm. Symlink bị **bỏ hoàn toàn** ⇒ không có vòng.

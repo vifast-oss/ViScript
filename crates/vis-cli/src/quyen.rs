@@ -855,6 +855,18 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_dir(p)
     }
+    /// **VD-270 (fsbytes)**: đọc byte thô là thao tác **đọc** ⇒ kiểm `cap[Dir]`/`cap[File]`
+    /// (`can_write=false`) trước khi chạm đĩa; lỗi host giữ nguyên `Err` dữ liệu.
+    fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.read_bytes(p)
+    }
+    /// **VD-270 (fsbytes)**: ghi byte thô là thao tác **ghi** ⇒ cùng kiểm quyền như
+    /// [`write`](Self::write) (`(write)` trên root).
+    fn write_bytes(&mut self, p: &str, data: &[u8]) -> Result<(), String> {
+        self.quyen.kiem_fs(p, true)?;
+        self.trong.write_bytes(p, data)
+    }
     /// **VD-268**: duyệt là thao tác **đọc** ⇒ kiểm `cap[Dir]` trên **root** trước khi chạm đĩa.
     /// Host chỉ đi xuống thư mục con thật và **bỏ mọi symlink**, nên mọi đường dẫn trả về nằm dưới
     /// root đã kiểm (không thể thoát qua symlink); kiểm root là đủ, giống `list`/`list_entries`.
