@@ -170,12 +170,9 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             named,
             span,
         } => {
-            for a in &args {
-                frame.push_val(a.clone());
-            }
-            for (_, v) in &named {
-                frame.push_val(v.clone());
-            }
+            // **VD-258**: `ApplyNamedCall` ĐÃ pop đối số khỏi `vals` trước khi dispatch;
+            // đẩy lại ở đây sẽ chèn rác vào ngăn xếp toán hạng của biểu thức bao ngoài
+            // (vd `"x" == net.read(...)` ⇒ so sánh nhầm với đối số cuối).
             match dispatch(it, frame, callee, args.clone(), named.clone(), span) {
                 Ok(()) => {}
                 Err(Abort::Pending(p)) => {
@@ -846,6 +843,30 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             // `RedispatchMethod` không charge lại.
             let mut got = pop_n(frame, nargs)?;
             got.reverse();
+            // **VD-258**: `list.map/filter/each` chạy vòng callback trên work stack
+            // (resume được khi callback `await`), KHÔNG gọi `host.call` một lần trong Rust
+            // — nếu không, suspend giữa phương thức sẽ mất trạng thái và chạy lại cả vòng.
+            if let Value::List(items) = &recv {
+                let kind = match name.as_str() {
+                    "map" => Some(MethodKind::Map),
+                    "filter" => Some(MethodKind::Filter),
+                    "each" => Some(MethodKind::Each),
+                    _ => None,
+                };
+                if let Some(kind) = kind {
+                    let f = got.into_iter().next().unwrap_or(Value::Unit);
+                    frame.cur().work.push(Work::MethodLoop {
+                        kind,
+                        f,
+                        items: items.clone(),
+                        idx: 0,
+                        acc: Vec::new(),
+                        awaiting: false,
+                        span,
+                    });
+                    return Ok(());
+                }
+            }
             match crate::builtin::method(it, recv.clone(), &name, got.clone(), span) {
                 Ok(kq) => {
                     method_writeback(frame, &name, base_var, &kq);
@@ -879,18 +900,80 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 frame.push_val(kq);
                 Ok(())
             }
-            Err(Abort::Pending(p)) => {
-                frame.cur().work.push(Work::RedispatchMethod {
-                    name,
-                    recv,
-                    args,
-                    base_var,
-                    span,
-                });
-                Err(Abort::Pending(p))
-            }
+            // **VD-258**: `builtin::method` không có continuation nội bộ. Treo lần nữa ở
+            // đây nghĩa là chạy lại cả phương thức (lặp side-effect callback) — từ chối rõ.
+            Err(Abort::Pending(_)) => Err(Abort::Trap(Trap::new(
+                RT,
+                format!(
+                    "phương thức `{name}` không resume được trên đường frame test (host treo giữa phương thức)"
+                ),
+                span,
+            ))),
             Err(e) => Err(e),
         },
+        // **VD-258**: một bước của vòng callback `list.map/filter/each`. `awaiting` ⇒
+        // giá trị callback vừa xong nằm trên `vals`; `idx`/`acc` sống qua suspend.
+        Work::MethodLoop {
+            kind,
+            f,
+            items,
+            idx,
+            acc,
+            awaiting,
+            span,
+        } => {
+            let mut acc = acc;
+            if awaiting {
+                let v = frame.pop_val()?;
+                if idx == 0 || idx > items.len() {
+                    return Err(Abort::Trap(Trap::new(
+                        RT,
+                        "frame test: trạng thái vòng callback không hợp lệ",
+                        span,
+                    )));
+                }
+                match kind {
+                    MethodKind::Map => acc.push(v),
+                    MethodKind::Filter => {
+                        if v.truthy(span)? {
+                            acc.push(items[idx - 1].clone());
+                        }
+                    }
+                    MethodKind::Each => {
+                        let _ = v;
+                    }
+                }
+            }
+            if idx >= items.len() {
+                let out = match kind {
+                    MethodKind::Each => Value::Unit,
+                    MethodKind::Map | MethodKind::Filter => Value::List(acc),
+                };
+                frame.push_val(out);
+                return Ok(());
+            }
+            let item = items[idx].clone();
+            frame.cur().work.push(Work::MethodLoop {
+                kind,
+                f: f.clone(),
+                items,
+                idx: idx + 1,
+                acc,
+                awaiting: true,
+                span,
+            });
+            match call_value(it, frame, f, vec![item], Vec::new(), span) {
+                Ok(()) => Ok(()),
+                // Callback là builtin có thể treo (vd `std.net.read`): `call_value` không
+                // giữ continuation cho builtin ⇒ từ chối rõ thay vì treo rồi underflow.
+                Err(Abort::Pending(_)) => Err(Abort::Trap(Trap::new(
+                    RT,
+                    "frame test: callback dạng builtin không resume được trong `map`/`filter`/`each`",
+                    span,
+                ))),
+                Err(e) => Err(e),
+            }
+        }
         Work::MakeLambda {
             params,
             ret_depth,

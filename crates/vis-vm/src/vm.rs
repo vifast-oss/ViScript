@@ -18,6 +18,8 @@ use vis_interp::RunOutput;
 use vis_syntax::Span;
 use vis_types::hir::LitKind;
 
+use crate::vm_frame::{MethodKind, MethodLoop};
+
 /// Chạy một module VBC1 (đường tắt tiện dụng).
 pub fn run(m: &Module, text: &str, args: &[String]) -> RunOutput {
     Vm::new(m, text).run(args)
@@ -428,7 +430,7 @@ impl<'a> Vm<'a> {
         Ok(())
     }
 
-    fn hong(&self, e: VmError, span: Span) -> Abort {
+    pub(crate) fn hong(&self, e: VmError, span: Span) -> Abort {
         Abort::Trap(Trap::new(RT, format!("bytecode hỏng: {e}"), span))
     }
 
@@ -633,6 +635,8 @@ pub(crate) struct Th<'m> {
     /// **ST-238 (VD-242, ca 1)**: `(fi, pc_kết_thúc, độ_sâu_iters_trước_vòng)` cho mỗi `for`
     /// đang mở — để `break` nhảy tới cuối vòng thì cũng pop iterator như `IterNext` hết vòng.
     pub(crate) loop_ends: Vec<(u32, usize, usize)>,
+    /// **VD-258**: các vòng callback đang mở (chỉ khác rỗng trên đường frame test).
+    pub(crate) methods: Vec<MethodLoop>,
 }
 
 impl<'m> Th<'m> {
@@ -650,6 +654,7 @@ impl<'m> Th<'m> {
             st: Vec::new(),
             iters: Vec::new(),
             loop_ends: Vec::new(),
+            methods: Vec::new(),
         }
     }
 
@@ -721,6 +726,7 @@ impl<'m> Th<'m> {
 
     pub(crate) fn exec(&mut self, vm: &mut Vm<'_>) -> R<Value> {
         loop {
+            self.method_poll(vm)?;
             // Ghi nhận độ sâu ngăn xếp **lớn nhất** (bất biến fuzz ST-21: `dinh ≤ need`).
             if self.st.len() > vm.dinh {
                 vm.dinh = self.st.len();
@@ -878,6 +884,34 @@ impl<'m> Th<'m> {
                     let ten = vm.ten(i, span)?;
                     let args = self.pop_n(vm, n as usize, span)?;
                     let recv = self.pop(vm, span)?;
+                    // **VD-258**: `list.map/filter/each` chạy vòng callback trên chính `Th`
+                    // (khung callback suspend/resume được). Trước đây `builtin::method` gọi
+                    // `host.call` tạo `Th` lồng ⇒ callback `await` mất ngăn xếp/`pc` và lần
+                    // resume chạy tiếp instruction sau với ngăn xếp thiếu (`VS0501: ngăn xếp rỗng`).
+                    if vm.sched.borrow().frame.enabled {
+                        let kind = match (&recv, ten.as_str()) {
+                            (Value::List(_), "map") => Some(MethodKind::Map),
+                            (Value::List(_), "filter") => Some(MethodKind::Filter),
+                            (Value::List(_), "each") => Some(MethodKind::Each),
+                            _ => None,
+                        };
+                        if let (Value::List(items), Some(kind)) = (&recv, kind) {
+                            let f = args.into_iter().next().unwrap_or(Value::Unit);
+                            self.methods.push(MethodLoop {
+                                kind,
+                                f,
+                                items: items.clone(),
+                                idx: 0,
+                                acc: Vec::new(),
+                                item: None,
+                                awaiting: false,
+                                base_frames: self.frames.len(),
+                                span,
+                            });
+                            // Điểm nối: `method_poll` ở đầu vòng `exec` chạy callback kế tiếp.
+                            continue;
+                        }
+                    }
                     let v = builtin::method(vm, recv, &ten, args, span)?;
                     self.st.push(v);
                 }
@@ -1189,57 +1223,7 @@ impl<'m> Th<'m> {
                         // đã pop đối số ⇒ `StackUnderflow`. Đẩy khung vào `self.frames` giữ nguyên
                         // trạng thái suspend được. Không đổi opcode/ngôn ngữ/runtime mặc định.
                         Value::Vm(vf) => {
-                            let fi = vf.idx;
-                            let fc = vm.func(fi)?;
-                            let nlocals = fc.nlocals.max(1) as usize;
-                            if self.frames.len() + vm.depth + 1 >= MAX_FRAMES {
-                                return Err(Abort::Trap(Trap::new(
-                                    RT,
-                                    format!("gọi hàm quá sâu (>{MAX_FRAMES} khung) — đệ quy không có điểm dừng?"),
-                                    span,
-                                )));
-                            }
-                            // Mirror prologue `LoadCaptured(i); Assign(slot)` — giữ writeback closure.
-                            let mut mirror: Vec<(u16, usize)> = Vec::new();
-                            let mut k = 0;
-                            while k + 1 < fc.code.len() {
-                                if let (Instr::LoadCaptured(i), Instr::Assign(slot)) =
-                                    (fc.code[k], fc.code[k + 1])
-                                {
-                                    mirror.push((slot, i as usize));
-                                    k += 2;
-                                } else {
-                                    break;
-                                }
-                            }
-                            let ptr = Rc::as_ptr(&vf) as usize;
-                            let cells = match vm.closure_cells.get(&ptr) {
-                                Some(c) => c.clone(),
-                                None => {
-                                    let c = Rc::new(RefCell::new(vf.captured.clone()));
-                                    vm.closure_cells.insert(ptr, c.clone());
-                                    c
-                                }
-                            };
-                            let captured = cells.borrow().clone();
-                            let mut locals = vec![Value::Unit; nlocals];
-                            for (i, a) in args.into_iter().enumerate() {
-                                if i < locals.len() {
-                                    locals[i] = a;
-                                }
-                            }
-                            let cu = std::mem::take(&mut self.st);
-                            if let Some(fr) = self.frames.last_mut() {
-                                fr.st_cu = cu;
-                            }
-                            self.frames.push(Frame {
-                                fi,
-                                pc: 0,
-                                locals,
-                                captured,
-                                st_cu: Vec::new(),
-                                writeback: Some((cells, mirror)),
-                            });
+                            self.push_vm_frame(vm, &vf, args, span)?;
                         }
                         other => {
                             let v = builtin::Host::call(vm, &other, args, span)?;
