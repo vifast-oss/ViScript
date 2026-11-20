@@ -25,3 +25,8 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.100.0"
 repository = "https://github.com/vifast-oss/ViScript"
+
+# **VD-261 (tối ưu)**: bản phát hành không cần symbol; giảm ~1 MiB (~14%) binary.
+# Không bật LTO để giữ thời gian build release ổn định; chỉ strip.
+[profile.release]
+strip = "symbols"
