@@ -3200,3 +3200,26 @@ tại** (kể cả tệp/thư mục/symlink); **không đi theo symlink** ở c�
 `FsGuard`: copy cần đọc nguồn + ghi đích; rename cần ghi cả hai; thiếu quyền `VS0604`, lỗi dữ
 liệu `Err`. Ghi nợ: khe đua kiểm-rồi-rename (renameat2/RENAME_NOREPLACE cần libc/unsafe — ngoài
 VS2). API-STD +2.
+
+### VD-267 (bổ sung enumalloc) · Nội bộ hoá tên enum — A0, 2026-11-21
+
+`Value::Enum(String, String, Vec<Value>)` → `Value::Enum(Name, Name, Vec<Value>)` với `Name` là
+`Rc<str>` nội bộ hoá (bảng thread-local + cache 64 ô kiểm nội dung); `TAGS` pre-intern
+`Option`/`Result`. `Value` **72 → 64 byte**; show/eq/hash/JSON giữ nguyên; `From<&str>`/`From<String>`
+giữ mọi `.into()` cũ. `Value::Record` vẫn `String` (ngoài phạm vi). Engine cache theo span/constant
+để không clone tên mỗi lần dựng; không đổi VBC1/VERSION/opcode, không unsafe/dependency. Đo release
+(best-of-6 interleaved): `Some` 32,8→18,3 ns, `Ok` 28,3→15,2 ns; loop interp `Some` −12,5%,
+VM user-enum −22,9% (máy tải cao, số chỉ hướng). Chấp nhận đổi shape public `Value::Enum`
+(trong repo đã cập nhật hết; code ngoài destructure cần `.as_str()`/Deref).
+
+### VD-270 · `list.windows` + R5c buộc biến kiểu; `vis run --stdin` — A0, 2026-11-21
+
+- **windows**: `list.windows(xs, n) -> list[list[T]]` cửa sổ trượt bước 1; `n<=0` trap `VS0501`
+  (kiểm trước dữ liệu), `n>len` ⇒ `[]`, `n==len` ⇒ một cửa sổ; sugar `xs.windows(n)`.
+- **R5c**: checker **buộc biến kiểu** `T/K/V` từ tham số đầu generic rồi thay vào tham số còn lại
+  và kiểu trả, nên sugar phương thức generic chạy cho `sort/take/zip/min/max/windows/...`.
+  **Thay câu trong VD-265** (“zip/min/max giữ dạng module vì chữ ký generic không thoả R5c”);
+  runtime vốn đã dispatch theo tên nên checker ↔ runtime nay khớp.
+- **runstdin**: `vis run --stdin [cờ] [-- args…]` đọc UTF-8, chạy script mode qua pipeline tệp,
+  tệp ảo `-`, **không cache**; stdout/stderr/mã thoát như tệp (0/1/2/101); `--tap` ở stderr tên
+  `-`; `--stdin` + tệp hoặc `--dump-*`/`--dry` ⇒ exit 2; `use ./x` giải theo cwd.
