@@ -23,6 +23,10 @@
 2. **C** → rebase/merge lên base mới, gate. (`rt.rs` không va A.)
 3. **B** → rebase/merge, gate. (`interp.rs`/`vm.rs` đã được C/A giữ nguyên; đối chiếu diff.)
 4. **D phase 2** (nếu được duyệt trong phạm vi) → chỉ sau khi A+C vào, vì cần `rt.rs`/`frame/**` ổn định.
+   **Prerequisite (D phase 1 phát hiện)**: đường frame interp hiện **không phát sự kiện ngân sách**
+   (`frame/**` chưa gọi `charge`; chỉ `interp.rs` có). Muốn quota "cùng sự kiện" phải nối dãy
+   `FeeKind`/`standard_weight` vào driver frame — các file `frame/fee.rs`, `frame.rs`, `frame/expr.rs`
+   thuộc quyền A. Sau khi A merge, mở task nối charge trong frame trước khi đo Q. Chưa sửa ở phase 1.
 5. Nếu conflict: dừng luồng đó, review chéo từng hunk, không tự ý chọn bản "xanh hơn".
 
 ## 4. Gate & tài nguyên (VD-257 §5)
