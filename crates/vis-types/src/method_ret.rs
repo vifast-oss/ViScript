@@ -6,8 +6,8 @@
 //!
 //! * lời gọi còn dạng `HExpr::Field` (callee là `recv.m`) — HIR dựng từ API hoặc đường hạ
 //!   không dispatch được; nhờ bảng, `infer_ty` vẫn biết `T?`/`list[T?]`/bản ghi để nâng `Option`.
-//!   (Hiện chương trình hợp lệ đi qua dispatch tĩnh; `recv?.m()` vẫn bị checker từ chối —
-//!   ngoài phạm vi VD-265, xem báo cáo.)
+//!   **VD-269** mở rộng cho `recv?.m(…)`: lowering vẫn không dispatch callee `Field` optional,
+//!   nên checker/interp/VM tra bảng để lấy `sym` (thêm [`MethodRet::sym`]) và kiểu trả.
 //! * **thay tham số kiểu** khi `impl` là instantiation (`impl Hop[int]`) hoặc kiểu nhận là
 //!   instantiation (`Hop[int]`) — trả về `T` trong khai báo được thay bằng đối số thật (khi
 //!   `impl`/kiểu có tham số; xem [`MethodRet::ret`]).
@@ -35,6 +35,8 @@ enum Khoa {
 struct Muc {
     /// Tên kiểu gốc (`Hop`), dùng để khớp instantiation khi thay generic.
     ten: String,
+    /// **VD-269** — `sym` của phương thức (để `recv?.m(…)` gọi thẳng hàm `impl`).
+    sym: u32,
     /// Tham số kiểu của `type`/`enum` (rỗng nếu không generic).
     generics: Vec<String>,
     /// Đối số của `impl` (`impl Hop[int]` ⇒ `[int]`; `impl Hop[T]` ⇒ `[TypeRef T]`).
@@ -47,6 +49,9 @@ struct Muc {
 pub struct MethodRet {
     muc: Vec<Muc>,
     chi_muc: HashMap<(Khoa, String), usize>,
+    /// **VD-269** — `(khoá nhận, tên phương thức) → sym` cho **mọi** phương thức `impl` (kể cả
+    /// phương thức có kiểu trả `{error}` chưa chốt); runtime cần `sym` để gọi `recv?.m(…)`.
+    chi_muc_sym: HashMap<(Khoa, String), u32>,
     /// `RecId`/`EnumId` → tên gốc, gom từ HIR — để tra được cả khi **không** có `TypeTable`
     /// (`vis_bytecode::compile` cũ).
     rec_ten: HashMap<u32, String>,
@@ -110,6 +115,25 @@ impl MethodRet {
         b
     }
 
+    /// **VD-269** — `sym` của phương thức `recv.m` (đã bóc `Opt`) nếu tìm được; dùng cho
+    /// `recv?.m(…)` ở interp/VM (lowering không dispatch được callee `Field` optional).
+    pub fn sym(&self, recv: &Type, method: &str, types: &TypeTable) -> Option<u32> {
+        self.tim_sym(recv, method, Some(types))
+    }
+
+    /// Như [`MethodRet::sym`] nhưng **không** có [`TypeTable`] (đường `compile` cũ).
+    pub fn sym_voi_types(&self, recv: &Type, method: &str) -> Option<u32> {
+        self.tim_sym(recv, method, None)
+    }
+
+    /// **VD-269** — tra theo **tên kiểu runtime** (`Value::Record`/`Value::Enum`) khi interp
+    /// không suy được kiểu tĩnh của biểu thức nhận.
+    pub fn sym_theo_ten(&self, ten: &str, method: &str) -> Option<u32> {
+        self.chi_muc_sym
+            .get(&(Khoa::Ten(ten.to_string()), method.to_string()))
+            .copied()
+    }
+
     fn them_impl(&mut self, hir: &crate::hir::Hir, im: &HImpl) {
         // Tên + tham số kiểu của kiểu nhận (nếu tìm được trong HIR).
         let (ten, generics) = match &im.ty {
@@ -153,12 +177,16 @@ impl MethodRet {
             _ => {}
         }
         for m in &im.methods {
+            for k in &khoa {
+                self.chi_muc_sym.insert((k.clone(), m.name.clone()), m.sym);
+            }
             if matches!(m.ret, Type::Error) {
                 continue;
             }
             let i = self.muc.len();
             self.muc.push(Muc {
                 ten: ten.clone(),
+                sym: m.sym,
                 generics: generics.clone(),
                 impl_args: impl_args.clone(),
                 ret: m.ret.clone(),
@@ -188,7 +216,55 @@ impl MethodRet {
         self.tra(recv, method, None)
     }
 
+    /// **VD-269** — `sym` của phương thức `rev.m`, kể cả phương thức có kiểu trả chưa chốt
+    /// (`{error}`): chỉ tra **khoá** (kiểu nhận + tên), không cần kiểu trả.
+    fn tim_sym(&self, recv: &Type, method: &str, types: Option<&TypeTable>) -> Option<u32> {
+        let recv = bo_opt(recv);
+        let mut khoa = Vec::new();
+        match recv {
+            Type::Record(id) => {
+                khoa.push(Khoa::Rec(id.0));
+                let ten = self
+                    .rec_ten
+                    .get(&id.0)
+                    .cloned()
+                    .or_else(|| types.and_then(|t| t.rec(*id).and_then(|r| r.name.clone())))
+                    .or_else(|| types.and_then(|t| t.rec_inst_of(*id).map(|(n, _)| n.clone())))
+                    .or_else(|| self.rec_inst.get(&id.0).map(|(n, _)| n.clone()));
+                if let Some(t) = ten {
+                    khoa.push(Khoa::Ten(t));
+                }
+            }
+            Type::Enum(id) => {
+                khoa.push(Khoa::Enum(id.0));
+                let ten = self
+                    .enum_ten
+                    .get(&id.0)
+                    .cloned()
+                    .or_else(|| types.and_then(|t| t.enum_def(*id).map(|e| e.name.clone())))
+                    .or_else(|| types.and_then(|t| t.enum_inst_of(*id).map(|(n, _)| n.clone())))
+                    .or_else(|| self.enum_inst.get(&id.0).map(|(n, _)| n.clone()));
+                if let Some(t) = ten {
+                    khoa.push(Khoa::Ten(t));
+                }
+            }
+            Type::TypeRef { name, .. } => khoa.push(Khoa::Ten(name.clone())),
+            _ => return None,
+        }
+        for k in khoa {
+            if let Some(&sym) = self.chi_muc_sym.get(&(k, method.to_string())) {
+                return Some(sym);
+            }
+        }
+        None
+    }
+
     fn tra(&self, recv: &Type, method: &str, types: Option<&TypeTable>) -> Option<Type> {
+        self.tra_muc(recv, method, types).map(|(_, t)| t)
+    }
+
+    /// **VD-269** — như [`Self::tra`] nhưng trả cả `sym` (phương thức `impl`) để runtime gọi thẳng.
+    fn tra_muc(&self, recv: &Type, method: &str, types: Option<&TypeTable>) -> Option<(u32, Type)> {
         let recv = bo_opt(recv);
         // Khoá tra + (tên instantiation, đối số) để thay generic.
         let (khoa, inst) = match recv {
@@ -248,7 +324,7 @@ impl MethodRet {
                 _ => m.impl_args.clone(),
             };
             let bang: Vec<(String, Type)> = m.generics.iter().cloned().zip(args).collect();
-            return Some(self.chot_inst(thay(&m.ret, &bang), types));
+            return Some((m.sym, self.chot_inst(thay(&m.ret, &bang), types)));
         }
         None
     }
@@ -464,5 +540,30 @@ mod tests {
             b.ret(&opt, "io", &h.types),
             Some(Type::Opt(Box::new(Type::Int)))
         );
+    }
+
+    /// **VD-269** — `sym` của phương thức cho `recv?.m(…)`, kể cả kiểu trả `()` (không bị bỏ
+    /// như bảng `ret` cũ) và nhận `Type::Opt(Record)`.
+    #[test]
+    fn sym_phuong_thuc_cho_goi_tuy_chon() {
+        let h =
+            ha("type R:\n    f: int\n\nimpl R:\n    fn io(self) -> int:\n        1\n    fn ping(self) -> ():\n        ()\n");
+        let b = MethodRet::from_hir_voi_bang(&h.hir, &h.types);
+        let r = Type::Record(rec_id(&h, "R"));
+        let opt = Type::Opt(Box::new(r.clone()));
+        let io = h
+            .hir
+            .items
+            .iter()
+            .find_map(|it| match it {
+                HItem::Impl(i) => i.methods.iter().find(|m| m.name == "io").map(|m| m.sym),
+                _ => None,
+            })
+            .expect("có phương thức io");
+        assert_eq!(b.sym(&r, "io", &h.types), Some(io));
+        assert_eq!(b.sym(&opt, "io", &h.types), Some(io));
+        assert!(b.sym_theo_ten("R", "io").is_some());
+        assert!(b.sym(&r, "ping", &h.types).is_some(), "ret `()` vẫn có sym");
+        assert_eq!(b.sym(&r, "khong_co", &h.types), None);
     }
 }

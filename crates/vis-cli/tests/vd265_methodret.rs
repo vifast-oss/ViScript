@@ -14,8 +14,8 @@
 //!    `vis_types::MethodRet` (VD-265) bổ sung nhánh này + thay generic cho instantiation;
 //!    chứng minh đỏ-trước ở unit test `goi::tests` (interp) và `than::tests` (bytecode).
 //!    Lưu ý phạm vi: chương trình **hợp lệ** hiện luôn dispatch tĩnh (`Call(Var)`), còn dạng
-//!    `recv?.m()` bị checker từ chối (`VS0405`) — nhánh `Field` là bảo hiểm cho HIR/API và
-//!    cho lúc mở `?.method`, không phải đường chạy CLI hôm nay.
+//!    `recv?.m()` do **VD-269** mở (checker + interp + VM tra `MethodRet::sym`); nhánh `Field`
+//!    ở đây vẫn là bảo hiểm cho HIR/API.
 //!
 //! Mỗi ca chạy **cả hai engine** trên cùng tệp — `vis run --no-cache` và
 //! `vis run --no-cache --vm` — so **byte** exit/stdout/stderr.

@@ -23,6 +23,7 @@ mod pat;
 mod phuong_thuc;
 mod sig;
 mod truong;
+mod tuy_chon;
 mod vd238;
 
 use std::collections::BTreeSet;
@@ -152,7 +153,10 @@ pub(crate) fn thay_gen(ty: &Type, bang: &[(String, Type)]) -> Type {
 
 /// Kiểm kiểu một chương trình đã hạ.
 pub fn check(hir: &Hir, symbols: &Symbols, types: &TypeTable) -> CheckOutput {
-    let mut c = Checker::new(symbols, types);
+    // **VD-269**: bảng phương thức `impl` (kiểu nhận + tên → `sym`) để `recv?.m(…)` phân giải
+    // được phương thức — lowering **không** dispatch callee `Field` optional.
+    let mret = crate::MethodRet::from_hir_voi_bang(hir, types);
+    let mut c = Checker::new(symbols, types, mret);
     c.run(hir);
     c.finish()
 }
@@ -187,10 +191,12 @@ pub(crate) struct Checker<'a> {
     /// **VD-262** — đang kiểm thân phương thức: phép gán đã do `kiem_impl` (lượt khai báo) kiểm
     /// đích nên lượt này lược chẩn đoán gán để không báo trùng (vẫn kiểm biểu thức hai bên).
     bo_qua_gan_pt: bool,
+    /// **VD-269** — bảng phương thức người dùng (`impl`) theo kiểu nhận + tên.
+    mret: crate::MethodRet,
 }
 
 impl<'a> Checker<'a> {
-    fn new(symbols: &'a Symbols, types: &'a TypeTable) -> Self {
+    fn new(symbols: &'a Symbols, types: &'a TypeTable, mret: crate::MethodRet) -> Self {
         let n = symbols.syms.len();
         Self {
             generic_scope: Vec::new(),
@@ -209,6 +215,7 @@ impl<'a> Checker<'a> {
             in_value: false,
             fn_uses: BTreeSet::new(),
             bo_qua_gan_pt: false,
+            mret,
         }
     }
 

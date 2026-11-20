@@ -11,7 +11,7 @@ use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD, NO_TYPE};
 /// ST-60 tách `tyck/sig.rs`). Mô-đun con của `expr` nên dùng chung `diag`/`coerce`/`arity`.
 mod kenh;
 /// **ST-61**: phụ trợ thuần (tách cùng lý do R1).
-mod phu;
+pub(super) mod phu;
 use phu::{builtin_is_value, builtin_value_ty, is_percent_float, la_cap, static_key};
 
 impl<'a> Checker<'a> {
@@ -656,22 +656,9 @@ impl<'a> Checker<'a> {
                 }
             }
         }
-        // 0) Phương thức lõi của list/str/map (ST-13, VD-47).
-        if let HExpr::Field {
-            base,
-            name,
-            optional: false,
-            ..
-        } = callee
-        {
-            let recv = self.kiem_expr(base);
-            if let Some(t) = self.kiem_method(&recv, name, args, span) {
-                return t;
-            }
-            // **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` — tham số đầu có kiểu của `x`.
-            if let Some(t) = super::expr::phu::kiem_std_method(self, &recv, name, args, span) {
-                return t;
-            }
+        // 0) Phương thức lõi (ST-13, VD-47) + **VD-269** `recv?.m(…)`.
+        if let Some(t) = self.kiem_goi_field(callee, args, named, span) {
+            return t;
         }
         // Hàm **khai trong tệp**: dùng chữ ký đầy đủ (có tên + mặc định).
         let sig = match callee {
@@ -754,13 +741,13 @@ impl<'a> Checker<'a> {
         }
     }
 
-    fn kiem_args(
+    pub(super) fn kiem_args(
         &mut self,
         sig: &FnSig,
         args: &[HExpr],
         named: &[(String, HExpr)],
         span: vis_syntax::Span,
-    ) {
+    ) -> Vec<Type> {
         let total = args.len() + named.len();
         let required = sig.params.iter().filter(|p| !p.2 && !sig.variadic).count();
         let toi_da = if sig.variadic {
@@ -818,11 +805,12 @@ impl<'a> Checker<'a> {
                 ),
             }
         }
+        arg_tys
     }
 
     /// Phương thức lõi trên `list`/`str`/`map` (ST-13): trả `None` nếu `recv` không phải kiểu có
     /// phương thức (để nhánh bản ghi/enum xử lý). Phương thức lạ ⇒ `VS0403` (tyck chặn trước khi chạy).
-    fn kiem_method(
+    pub(super) fn kiem_method(
         &mut self,
         recv: &Type,
         name: &str,

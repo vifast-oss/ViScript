@@ -251,7 +251,7 @@ fn khop_nhan(
 /// **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` khi **tham số đầu** của `f` có kiểu của `x`.
 /// **VD-270**: tham số đầu generic (`list[T]`) được **hợp nhất** với kiểu nhận để buộc `T`,
 /// rồi thay vào kiểu trả — nhờ đó `xs.windows(2)` có kiểu `list[list[int]]`, không còn `T` trần.
-pub(super) fn kiem_std_method(
+pub(crate) fn kiem_std_method(
     c: &mut super::super::Checker,
     recv: &Type,
     name: &str,
