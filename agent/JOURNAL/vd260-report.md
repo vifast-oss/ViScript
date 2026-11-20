@@ -233,3 +233,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `885879d`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - **batch-trigger** (`8b758fc`): `execute_batch` quét `CREATE [TEMP] TRIGGER … BEGIN … END` nguyên khối; `;`/`CASE`/chuỗi trong thân không tách; thiếu `END` ⇒ `Err`; 3 ca interp=VM.
 - `vis test test/sem` @ `8b758fc`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `3779394`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
