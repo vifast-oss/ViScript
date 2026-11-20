@@ -13,6 +13,29 @@ use vis_types::{hir::*, lower::Symbols, ty::Type, TypeTable};
 use crate::interp::{builtin_name, Abort, Args, Ctrl, Interp, Trap, MAX_CALL_DEPTH, R, RT};
 use crate::value::*;
 
+/// **VD-263** — mã **nội bộ** đánh dấu `break`/`continue` phát ra từ biểu thức (`eval` trả
+/// `R<Value>`, không mang được `Ctrl`). Không nằm trong sổ `RUNTIME_CODES`; không bao giờ tới
+/// người dùng: `exec_block` mở lại thành `Ctrl`, biên hàm/tệp đổi thành trap `VS0501` thật.
+/// `Abort` nằm ở `frame/core.rs` (ngoài phạm vi sửa của VD-263) nên tín hiệu đi qua
+/// `Abort::Trap` với mã riêng, nhận lại bằng **danh tính con trỏ**.
+static CTRL_BREAK: vis_diag::Code = vis_diag::Code {
+    id: 9001,
+    short: "VS9001-CTRL",
+    message_vi: "tín hiệu nội bộ `break` (VD-263)",
+    message_en: "internal `break` signal (VD-263)",
+    message_ja: "内部 `break` シグナル（VD-263）",
+    severity: vis_diag::Severity::Error,
+};
+/// **VD-263** — như `CTRL_BREAK`, cho `continue`.
+static CTRL_CONTINUE: vis_diag::Code = vis_diag::Code {
+    id: 9002,
+    short: "VS9002-CTRL",
+    message_vi: "tín hiệu nội bộ `continue` (VD-263)",
+    message_en: "internal `continue` signal (VD-263)",
+    message_ja: "内部 `continue` シグナル（VD-263）",
+    severity: vis_diag::Severity::Error,
+};
+
 /// `true` khi `let x: T? = …` (chú thích `Optional` — mọi lớp). Chuyển từ `interp.rs` để R1.
 pub(crate) fn ty_là_opt(t: Option<&vis_types::ty::Type>) -> bool {
     matches!(t, Some(vis_types::ty::Type::Opt(_)))
@@ -244,7 +267,13 @@ impl<'a> Interp<'a> {
                     Ok(v)
                 }
             }
-            Err(t) => Err(t),
+            // **VD-263**: thân closure dạng **biểu thức** (không phải suite) cũng không cho
+            // `break`/`continue` xuyên biên hàm — trap thật thay vì để vòng lặp của người gọi
+            // bắt nhầm (VD-259).
+            Err(t) => match Self::tach_ctrl(t) {
+                Ok(_) => Err(Self::trap_nhay(span)),
+                Err(t) => Err(t),
+            },
         }
     }
 
@@ -359,6 +388,60 @@ impl<'a> Interp<'a> {
         }
     }
 
+    /// Chạy thân lấy **giá trị** + luồng điều khiển còn treo (`break`/`continue` từ biểu thức).
+    fn exec_body_ctrl(&mut self, body: &[HStmt]) -> R<(Value, Ctrl)> {
+        let c = self.exec_block(body)?;
+        match c {
+            Ctrl::Normal => Ok((self.last.take().unwrap_or(Value::Unit), Ctrl::Normal)),
+            // Không có giá trị: `break`/`continue` thoát khỏi thân trước khi biểu thức cuối chạy.
+            c => Ok((Value::Unit, c)),
+        }
+    }
+
+    /// Chạy thân **hàm/closure** lấy giá trị. `break`/`continue` không xuyên biên hàm
+    /// (VD-259): nếu còn treo khi thân kết thúc thì đó là chương trình sai — trap như cấp tệp,
+    /// không nuốt thành `()` (VD-263).
+    fn exec_body(&mut self, body: &[HStmt]) -> R<Value> {
+        let (v, c) = self.exec_body_ctrl(body)?;
+        match c {
+            Ctrl::Normal => Ok(v),
+            _ => Err(Self::trap_nhay(
+                body.last().map(HStmt::span).unwrap_or_default(),
+            )),
+        }
+    }
+
+    /// **VD-263** — trap thật cho `break`/`continue` không còn vòng lặp nào trong cùng hàm.
+    fn trap_nhay(span: Span) -> Abort {
+        Abort::Trap(Trap::new(RT, "`break`/`continue` ngoài vòng lặp", span))
+    }
+
+    /// **VD-263** — đóng gói `Ctrl` thành tín hiệu nội bộ để `eval` (vốn trả `R<Value>`) mang
+    /// được `break`/`continue` ra khỏi biểu thức. Mã `CTRL_BREAK`/`CTRL_CONTINUE` chỉ để
+    /// `tach_ctrl` nhận lại bằng **danh tính con trỏ** — không hiển thị cho người dùng.
+    fn ctrl_abort(c: Ctrl) -> Abort {
+        let code = match c {
+            Ctrl::Break => &CTRL_BREAK,
+            Ctrl::Continue => &CTRL_CONTINUE,
+            Ctrl::Normal => unreachable!("`Ctrl::Normal` không phải tín hiệu dừng"),
+        };
+        Abort::Trap(Trap::new(
+            code,
+            "tín hiệu điều khiển nội bộ (VD-263)",
+            Span::default(),
+        ))
+    }
+
+    /// **VD-263** — nhận diện tín hiệu nội bộ do [`Self::ctrl_abort`] phát; trả nguyên `Abort`
+    /// khác (trap thật, `return`, pending).
+    pub(crate) fn tach_ctrl(a: Abort) -> Result<Ctrl, Abort> {
+        match a {
+            Abort::Trap(t) if std::ptr::eq(t.code, &CTRL_BREAK) => Ok(Ctrl::Break),
+            Abort::Trap(t) if std::ptr::eq(t.code, &CTRL_CONTINUE) => Ok(Ctrl::Continue),
+            other => Err(other),
+        }
+    }
+
     /// **VD-258** — đánh giá `if` biểu thức, nâng nhánh đã chọn tới `Opt` chung nếu các nhánh
     /// lệch lớp (`if c: 1 else: None` ⇒ `Some(1)`/`None`, không để `1` plain trong biến `int?`).
     pub(crate) fn eval_if(
@@ -377,24 +460,42 @@ impl<'a> Interp<'a> {
             &self.fn_rets,
         );
         let v = if self.eval_cond(cond)? {
-            self.exec_body(then)?
+            let (v, ctrl) = self.exec_body_ctrl(then)?;
+            if ctrl != Ctrl::Normal {
+                return Err(Self::ctrl_abort(ctrl));
+            }
+            v
         } else {
             let mut chon: Option<Value> = None;
             for (c, body) in elifs {
                 if self.eval_cond(c)? {
-                    chon = Some(self.exec_body(body)?);
+                    let (v, ctrl) = self.exec_body_ctrl(body)?;
+                    if ctrl != Ctrl::Normal {
+                        return Err(Self::ctrl_abort(ctrl));
+                    }
+                    chon = Some(v);
                     break;
                 }
             }
             match chon {
                 Some(v) => v,
-                None => self.exec_body(else_)?,
+                None => {
+                    let (v, ctrl) = self.exec_body_ctrl(else_)?;
+                    if ctrl != Ctrl::Normal {
+                        return Err(Self::ctrl_abort(ctrl));
+                    }
+                    v
+                }
             }
         };
         Ok(boc_nhanh(v, min, max))
     }
 
     /// **VD-258** — đánh giá `match` biểu thức, nâng nhánh khớp tới `Opt` chung.
+    ///
+    /// **VD-263** — nhánh chạy có thể phát `break`/`continue` (nằm trong biểu thức con); chuyển
+    /// tiếp dưới dạng tín hiệu nội bộ do `Interp::ctrl_abort` phát để `exec_block` trả lại cho vòng lặp
+    /// gần nhất.
     pub(crate) fn eval_match(&mut self, subject: &HExpr, arms: &[HArm], span: Span) -> R<Value> {
         let (min, max) = do_match(arms, &self.sym_ty, self.types, &self.fn_rets);
         let subj = self.eval(subject)?;
@@ -403,7 +504,10 @@ impl<'a> Interp<'a> {
                 for (sym, v) in binds {
                     self.env.borrow_mut().insert(sym, v);
                 }
-                let v = self.exec_body(&arm.body)?;
+                let (v, ctrl) = self.exec_body_ctrl(&arm.body)?;
+                if ctrl != Ctrl::Normal {
+                    return Err(Self::ctrl_abort(ctrl));
+                }
                 Ok(boc_nhanh(v, min, max))
             }
             None => Err(Abort::Trap(Trap::new(

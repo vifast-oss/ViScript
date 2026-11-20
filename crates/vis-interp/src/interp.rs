@@ -221,20 +221,18 @@ impl<'a> Interp<'a> {
         for s in body {
             // VD-47: giá trị của khối = giá trị câu lệnh **cuối** (`Expr`/`if`/`match`/khối con).
             self.last = None;
-            match self.exec_stmt(s)? {
-                Ctrl::Normal => {}
-                c => return Ok(c),
+            match self.exec_stmt(s) {
+                Ok(Ctrl::Normal) => {}
+                Ok(c) => return Ok(c),
+                // **VD-263**: `break`/`continue` phát ra từ **biểu thức con** (`if`/`match` ở vị
+                // trí giá trị, đối số, toán hạng, …) — đổi lại thành `Ctrl` tại biên câu lệnh.
+                Err(e) => {
+                    let c = Self::tach_ctrl(e)?;
+                    return Ok(c);
+                }
             }
         }
         Ok(Ctrl::Normal)
-    }
-
-    /// Chạy thân lấy **giá trị**: biểu thức cuối cùng (nếu có), còn lại `()`.
-    fn exec_body(&mut self, body: &[HStmt]) -> R<Value> {
-        match self.exec_block(body)? {
-            Ctrl::Normal => Ok(self.last.take().unwrap_or(Value::Unit)),
-            _ => Ok(Value::Unit),
-        }
     }
 
     fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
