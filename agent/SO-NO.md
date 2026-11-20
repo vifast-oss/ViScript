@@ -10,9 +10,10 @@
 **ST-237** (ma trận 28 phát hiện: 28/28 reproduced; **#176 bác bỏ có bằng chứng** theo `SPEC-lex.md:44` ⇒ `không làm có lý do`; **#172** chờ A0 chọn bão hoà hay `VS0507` — `BLOCKED.md` §12) ·
 **ST-242** (host identity + addendum macOS: **#147/#152 → blocked do phần cứng** — không có máy Darwin thật, `vis-remote mac` trả Linux; **vẫn giữ "mở" và vẫn đếm**, không xoá số để giảm tổng; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
 **ST-238** (sửa xong Đợt A; **#157/#158/#159/#160/#163/#164/#167/#169/#181 → đóng ở ST-238**; review từng finding `JOURNAL/st238-review.md`; §8 **185 = 112 mở / 47 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
+**A0 bổ sung sau ST-238** ( thêm **#185** wrapper/toolchain, **#186** lệch chẩn đoán ST-28; §8 **187 = 114 mở / 47 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-20 (**ST-238** — đóng **#157/#158/#159/#160/#163/#164/#167/#169/#181**; §8 **185 = 112 mở / 47 đóng**); trước đó 2026-11-20 (**ST-242** — **#147/#152 blocked do phần cứng nhưng vẫn mở/vẫn đếm**; thêm note §8; tổng **185 = 121 mở**); trước đó 2026-11-20 (**ST-237** — ma trận 28 phát hiện: 28/28 reproduced; **#176 → không làm có lý do** (SPEC-lex §44); **#172 chờ A0** qua `BLOCKED.md` §12; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**); trước đó 2026-11-20 (**ST-231** — thêm **#156**: `vis-targets` còn **16/18** sau SQLite MVP, `libsqlite3-sys` cần C toolchain cho msvc/wasm32; chỉ đo + ghi nợ); trước đó 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **185 mục = 122 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
+**Cập nhật**: 2026-11-20 (**A0 bổ sung** — thêm **#185** wrapper/toolchain và **#186** lệch chẩn đoán ST-28; §8 **187 = 114 mở / 47 đóng**); trước đó 2026-11-20 (**ST-238** — đóng **#157/#158/#159/#160/#163/#164/#167/#169/#181**; §8 **185 = 112 mở / 47 đóng**); trước đó 2026-11-20 (**ST-242** — **#147/#152 blocked do phần cứng nhưng vẫn mở/vẫn đếm**; thêm note §8; tổng **185 = 121 mở**); trước đó 2026-11-20 (**ST-237** — ma trận 28 phát hiện: 28/28 reproduced; **#176 → không làm có lý do** (SPEC-lex §44); **#172 chờ A0** qua `BLOCKED.md` §12; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**); trước đó 2026-11-20 (**ST-231** — thêm **#156**: `vis-targets` còn **16/18** sau SQLite MVP, `libsqlite3-sys` cần C toolchain cho msvc/wasm32; chỉ đo + ghi nợ); trước đó 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **185 mục = 122 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -57,7 +58,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
    tiếp **142/143** cấp ngày 2026-11-17 theo **VD-149** từ hai nhãn tạm `#113b`/`#114b` (§7.3), tiếp **144** cấp theo
    **VD-153** (vế còn lại của `#133`: `read_dir` trên thư mục **có quyền ghi**) và **145** cấp theo **VD-154(c)**
    (chú thích `rt.rs` nói sai đường chặn `chan(0)`).
-2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **147** trở đi.
+2. **Không tái dùng số** đã có, **không đánh lại** số cũ; nợ mới nhận số **147** trở đi (đã cấp tới **#184**; A0 bổ sung 20/11 cấp **#185/#186**).
 3. Số trùng nghĩa cũ được **tách bằng hậu tố** `a/b`, **không** đổi số gốc: `#109a`/`#109b` (xem §7.1).
 4. Hậu tố `a/b` **không** tạo dãy mới: `#109a` và `#109b` là hai nợ khác nghĩa của cùng số cũ 109.
 5. Nguồn của mỗi mục ghi dạng `R## §5`/`R## §6`, kèm `ST-##`, `JOURNAL/<tệp>` hoặc `VD-###` khi cần chốt trạng thái.
@@ -266,6 +267,8 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 182 | **`vis fmt --check/--write` bỏ qua im lặng** tệp người dùng nêu tên nếu nằm trong `test/fmt` / `test/check` / `test/doc-examples` hoặc có sibling `.err` (`cli/fmt.rs:149-155`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
 | 183 | **`vis fmt` nhiều tệp: chẩn đoán không nêu tên tệp** (`cli/fmt.rs:185,200`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
 | 184 | **LSP framing: header cụt không có `Content-Length` bị coi là EOF sạch** (exit 0) (`lsp/khung.rs:31-36`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
+| 185 | **Wrapper/toolchain**: lệnh chuẩn `./vis` có thể âm thầm chọn rustc/cargo khác `vis-dev` (thực tế `vis test` cần `PATH="$HOME/.cargo/bin:$PATH"` để dùng 1.99.1, nếu không dừng với lỗi “rustc 1.93.1 is not supported”). Cần cách chọn đúng hoặc **báo lỗi rõ trước** fresh-clone/release verification; **không** sửa chen vào codegen | A0 bổ sung 2026-11-20 (sau ST-238) · `QUEUE` ST-238 ghi rõ commit từng phép đo | **mở** — nợ tái lập môi trường |
+| 186 | **Lệch chẩn đoán cho chương trình KHÔNG hợp lệ**: có cả `let` cấp tệp lẫn `fn main` thì interp/VM vẫn lệch thông điệp (gọi là ST-28 trong báo cáo ST-238). Phân loại: lệch chẩn đoán; **giữ mở**. Nâng mức ngay nếu một bên vẫn thực thi có tác dụng phụ thay vì cả hai cùng từ chối | A0 bổ sung 2026-11-20 · `JOURNAL/st238-review.md` §2 · ST-238 (không phải hồi quy) | **mở** — chờ xử lý riêng, không chặn đợt này |
 
 ## 5. Nợ chuyển VS3 (23 mục)
 
@@ -383,8 +386,8 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **185** (1..184; #109 tách `a`/`b`) |
-| `mở` | **112** |
+| Tổng dòng bảng chính | **187** (1..186; #109 tách `a`/`b`) |
+| `mở` | **114** |
 | `đóng` | **47** |
 | `chuyển VS3` | **23** |
 | `không làm có lý do` | **2** |
@@ -392,7 +395,7 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 112 mở + 47 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **185** dòng (ST-237: #176 `mở → không làm`; ST-238: 9 mục `mở → đóng`).
+Kiểm: 114 mở + 47 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **187** dòng (ST-237: #176 `mở → không làm`; ST-238: 9 mục `mở → đóng`; A0 bổ sung: thêm #185/#186).
 **Luật (VD-195)**: bảng này phải **bằng** số đếm thật của §4; `./vis-dev check` đỏ nếu lệch (luật **R5** trong `bin/vis-dev`).
 **#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192**; **#151** thêm bởi **VD-198(2)** (18/11); **#152** thêm bởi **VD-204 (5)**; **VD-217 re-đo A/B (24 cặp): VM 1,154 / interp 1,143 — chưa rõ ⇒ giữ chờ đo chuẩn** (18/11, ST-219); **VD-220 làn B re-đo (load 1,27): VM 1,129 / interp 1,109 — chưa rõ** (18/11, nhánh dem/B merge `a0f2100`); **#153** thêm bởi **VD-208 (2)** rồi đóng ở ST-217; **#154** thêm bởi **VD-208** (phương án B, không xếp lịch) (18/11). **+ VD-231/VD-232 (19/11)**: **#155** (lift params closure khi lambda annot có) chuyển VS3. **VD-211** không sinh nợ (tầng kiểu đã cấm `==` khác kiểu — VS0412 "so sánh khác kiểu").
 **#147 đóng ở ST-204 rồi MỞ LẠI bởi VD-197** ⇒ đóng −1, mở +1.

@@ -26,4 +26,9 @@
 
 ## 3. Kết luận review
 
-**SHIP từng finding (9/9).** Merge vào `main` theo đúng phụ thuộc codegen, sau đó chạy lại `./vis-dev check`, `./vis-dev gate --fast`, `vis test test/sem` và `--vm` **trên commit tích hợp**, không dùng kết quả worktree thay kết quả main.
+**SHIP từng finding (9/9).** Merge vào `main` theo đúng phụ thuộc codegen, sau đó chạy lại trên commit tích hợp, không dùng kết quả worktree thay kết quả main.
+
+**Ghi rõ commit của từng phép đo (theo A0 2026-11-20):**
+- Tại **`0d97758`** (code tích hợp): `./vis-dev check` PASS; `./vis-dev gate --fast` PASS; `PATH="$HOME/.cargo/bin:$PATH" ./vis test test/sem` 525/525; `PATH="$HOME/.cargo/bin:$PATH" ./vis test --vm test/sem` 525/525; `cargo test -p vis-{interp,cli,vm,bytecode}` xanh; `st238_parity.rs` 6/6 + unit stdlib 2/2.
+- Tại **`ef2c04c`** (chỉ sổ sách): `./vis-dev check` PASS.
+- Không gộp hai commit thành `0d97758/ef2c04c`; không chạy lại chỉ để sửa trình bày.
