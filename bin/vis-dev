@@ -297,7 +297,7 @@ run_rules() {
 }
 
 usage() {
-    echo "dùng: vis-dev <check|gate --fast|nightly [--fuzz-minutes N]|doc-examples [--root DIR]|rules [--root DIR]>" >&2
+    echo "dùng: vis-dev <check|gate --fast|nightly [--fuzz-minutes N] [--skip-gate]|doc-examples [--root DIR]|rules [--root DIR]>" >&2
     exit 2
 }
 
@@ -385,40 +385,45 @@ do_gate_fast() {
 }
 
 # Vòng tròn fmt: `vis fmt` phải **bất động** (fmt(fmt(x)) == fmt(x)) trên mọi ca ngữ nghĩa.
+# **TỐI ƯU (ST-257)**: bản cũ gọi `vis fmt` **2 lần cho mỗi tệp** — 475 tệp ⇒ ~950 lần spawn
+# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R6 ở đầu tệp). Nay copy ca vào một thư
+# mục tạm rồi dùng **đúng 2 lệnh**: `fmt --write <tmp>` cho `a := fmt(f)`, `fmt --check <tmp>`
+# so `fmt(a)` với `a`. Phép kiểm/ngưỡng/số tệp/câu chữ giữ nguyên; chỉ giảm số lần spawn.
 do_vong_tron_fmt() {
     local vis="$VIS_ROOT/target/debug/vis"
     if [ ! -x "$vis" ]; then
         echo "--- vòng tròn fmt: FAIL (chưa có $vis — chạy build trước)" >&2
         return 1
     fi
-    local n=0 bad=0 bo_qua=0
-    local tmp
-    tmp="$(mktemp "${TMPDIR:-/tmp}/visfmt.XXXXXX.vis")" || return 1
+    local n=0 bad=0 bo_qua=0 copied=0
+    local tmp f rel name
+    tmp="$(mktemp -d "${TMPDIR:-/tmp}/visfmt.XXXXXX")" || return 1
     while IFS= read -r -d '' f; do
         n=$((n + 1))
-        local a b
         # Ca **cố ý hỏng cú pháp** (có `.err`) thì `vis fmt` phải lỗi — bỏ qua, không tính là hỏng.
         if [ -f "${f%.vis}.err" ]; then
             bo_qua=$((bo_qua + 1))
             continue
         fi
-        if ! a="$("$vis" fmt "$f" 2>/dev/null)"; then
-            echo "--- fmt lỗi trên $f" >&2
+        rel="${f#"$VIS_ROOT"/test/sem/}"
+        name="${rel//\//__}"
+        if ! cp "$f" "$tmp/$name" 2>/dev/null; then
+            echo "--- vòng tròn fmt: không copy được $f" >&2
             bad=$((bad + 1))
             continue
         fi
-        printf '%s\n' "$a" >"$tmp"
-        if ! b="$("$vis" fmt "$tmp" 2>/dev/null)"; then
-            echo "--- fmt lỗi vòng 2 trên $f" >&2
-            bad=$((bad + 1))
-            continue
-        fi
-        if [ "$a" != "$b" ]; then
-            echo "--- vòng tròn fmt: KHÔNG bất động: $f" >&2
-            bad=$((bad + 1))
-        fi
+        copied=$((copied + 1))
     done < <(find "$VIS_ROOT/test/sem" -type f -name '*.vis' -print0 2>/dev/null)
-    rm -f "$tmp"
+    if [ "$copied" -gt 0 ]; then
+        if ! "$vis" fmt --write "$tmp" >/dev/null 2>&1; then
+            echo "--- vòng tròn fmt: FAIL (fmt --write trên bản sao)" >&2
+            bad=$((bad + 1))
+        elif ! "$vis" fmt --check "$tmp" >/dev/null 2>&1; then
+            echo "--- vòng tròn fmt: KHÔNG bất động (fmt --check trên bản sao)" >&2
+            bad=$((bad + 1))
+        fi
+    fi
+    rm -rf "$tmp"
     if [ "$bad" -ne 0 ]; then
         echo "--- vòng tròn fmt: FAIL ($bad/$n tệp, bỏ qua $bo_qua)" >&2
         return 1
@@ -447,12 +452,19 @@ do_fuzz_parser() {
 
 do_nightly() {
     local phut=2
+    local bo_qua_gate=0
     local i=2
     while [ "$i" -le "$#" ]; do
         case "${!i}" in
             --fuzz-minutes)
                 i=$((i + 1))
                 phut="${!i:-}"
+                ;;
+            # **ST-257**: khi đã chạy `gate --fast` ngay trước đó, bỏ qua lần chạy lại —
+            # `cargo test --workspace` chiếm ~44 s (đo hôm nay). Cờ này **chỉ** bỏ bước gate;
+            # fuzz và vòng tròn fmt vẫn chạy đủ. Không đổi hành vi mặc định.
+            --skip-gate)
+                bo_qua_gate=1
                 ;;
             *)
                 echo "vis-dev: nightly không hiểu \`${!i}\`" >&2
@@ -467,7 +479,11 @@ do_nightly() {
             return 2
             ;;
     esac
-    do_gate_fast || return 1
+    if [ "$bo_qua_gate" -eq 0 ]; then
+        do_gate_fast || return 1
+    else
+        echo "--- gate --fast: BỎ QUA (--skip-gate; fuzz + vòng tròn fmt vẫn chạy)"
+    fi
     do_fuzz_parser "$phut" || return 1
     do_vong_tron_fmt || return 1
     echo "vis-dev nightly: PASS"
