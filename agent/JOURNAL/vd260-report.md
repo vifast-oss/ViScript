@@ -32,7 +32,7 @@
 | Infer | `f640514` → `131a899` | kiểu sau pattern lồng (tuple/list/record/ctor/or/for/if-let/while-let); `Call`/`Try`/`With`/`If`/`Match` |
 | Range | `cec83ac` → `70f4624` | `for` range duyệt lười (interp/VM/frame), RSS 146 MB → ~9,5 MB @2M |
 | Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
-| Cache | `f9748a7` | bump `PHIEN_BAN` + ghim khoá `1bafa949…` sau methodret/genericres/intlit |
+| Cache | `f9748a7`, `20bfb16` | bump `PHIEN_BAN` + ghim khoá `1bafa949…` (methodret/genericres/intlit), `204af1c2…` (nestassign) |
 | Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
 | LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490`, `5fc00c5`, `f372446`, `c5705d1`, `ab43766`, `47defc8`, `e5fc5fc` | `definition` + `documentSymbol` + `references` + `rename` + `signatureHelp` + `foldingRange` + hover variant + completion `std.*` + `workspace/symbol` + formatting + prepareRename |
@@ -42,6 +42,8 @@
 | Fmtstdin | `8d2ae13` → `8820d4d` | `vis fmt --stdin [--check]`, exit 0/1/2, không đụng đĩa |
 | Nestassign | `88dac79` → `2b18749` | gán lồng `x.f.g`/`x[i].f`/`x[i][j]`, `+=` trên lá, COW; parser assign_op sau lvalue |
 | Glob | `9a89e30` → `55756dd` | `fs.glob(root, pattern)` với `*`/`?`/`**`, basename nếu không `/`, walk-based |
+| Strpad | `3fbcc8e` → `1d20f5b` | `str.pad_left/right/center` + `trim_start/end`; scalar, fill lặp/cắt, trap rỗng |
+| Dbcache | `c9e719d` → `b6828b8` | `prepare_cached` LRU 16; flush theo schema/temp schema; release 1,5–1,74× |
 | FS | `c4774a8` → `34aa2f0` | `read_lines/append/mkdir/remove`; FsHost default + FsGuard; API +4 |
 | DB | `2f583ec` → `b619c08` | `query_one` (dừng sau hàng đầu), `last_insert_rowid`, `changes`; read-only/caps giữ nguyên |
 | Intlit | `fd702c7` → `38c8bff` | `i64::MIN` viết trực tiếp; bare `2^63` vẫn `VS0104` tĩnh |
