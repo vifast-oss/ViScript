@@ -182,3 +182,5 @@ Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ ch�
 - **indexof** (`2e10889` → `f217ec9`): `index_of/last_index_of` 0-based, so cấu trúc `==`, `int?`; API +2.
 - **vistest-shuffle** (`ff8d712` → `f11a159`): `--shuffle`/`--seed u64` (mặc định 0), deterministic, trước repeat/list.
 - **lsp-hover-method** (`f2f103c` → `4babfb0`): hover method `impl`/`trait`, chữ ký + chủ; ưu tiên sau các hover cũ.
+- `./vis-dev nightly` @ `e8e5332`: **PASS** — parser fuzz **7.241.771 ca / 164.328.256 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `4babfb0`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
