@@ -3233,3 +3233,16 @@ VM user-enum −22,9% (máy tải cao, số chỉ hướng). Chấp nhận đổ
   --list` in `-`; `--list` chỉ với `--check`, không đi `--json`/`--write`/`--indent-report`.
 - **explain-json**: `vis explain [--json] <mã>` và `--list [--json]` in một dòng JSON
   (`code/severity/title/body` hoặc `codes[]`); người dùng không `--json` giữ nguyên byte.
+
+### VD-270 (bổ sung) · strlen, vistest `--repeat`, selectionRange, fmt `--diff` — A0, 2026-11-21
+
+- **strlen**: `str.byte_len` (UTF-8 byte), `str.char_count` (scalar), `str.is_empty`, `list.is_empty`,
+  `map.is_empty`; sugar R5c. `grapheme_count` **hoãn** vì cần dependency Unicode mới (ngoài phạm vi).
+- **vistest-repeat**: `vis test --repeat N` (N≥1) chạy mỗi ca N lần theo **case-major**; N=1 giữ
+  byte cũ; N>1 TAP/JSON mỗi lần một entry tên `<name> [k/N]`, plan/tổng = số lần đã chạy;
+  `--fail-fast` dừng sau lần đỏ đầu; `--list` liệt kê một lần.
+- **lsp-select2**: `textDocument/selectionRange` tối thiểu — token định danh → dòng vật lý →
+  khai báo `ky_hieu` nhỏ nhất chứa vị trí → toàn tệp; dedupe, parent lồng; không smart-select CST.
+- **fmt-diff**: `vis fmt --check --diff` in unified diff **một hunk** mỗi tệp cần sửa
+  (`---/+++/@@`, common prefix/suffix); chỉ với `--check`; không đi `--json/--list/--write/
+  --indent-report`; `--stdin --check --diff` dùng `-`; exit 0/1/2 như check.
