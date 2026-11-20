@@ -51,6 +51,7 @@ mod sqlitepk;
 mod sqliteschema;
 mod sqliteschemaver;
 mod sqlitetables;
+mod sqliteuserver;
 mod strascii;
 mod strcharat;
 mod strfind;
@@ -1113,6 +1114,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteschemaver::chay(host, h).map(Value::Int), span)
+        }
+        // **VD-270 (sqlite-user-version)** — `user_version` (số ứng dụng tự định nghĩa trong
+        // header tệp DB), chỉ đọc qua `PRAGMA user_version`; DDL/ghi dữ liệu **không** đổi, giá
+        // trị lưu theo tệp; ngoài `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒
+        // `Err(Error)` dữ liệu, không trap.
+        "sqlite.user_version" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqliteuserver::chay(host, h).map(Value::Int), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {
