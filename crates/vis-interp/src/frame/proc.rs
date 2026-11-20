@@ -272,7 +272,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 LoopKindInit::For { pat, iter } => {
                     let it_v = frame.pop_val()?;
                     let items = crate::value::iter_items(it_v, iter.span())?;
-                    LoopKindState::For { pat, items, idx: 0 }
+                    LoopKindState::For { pat, items }
                 }
                 LoopKindInit::Loop => LoopKindState::Loop,
             };
@@ -307,15 +307,10 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 let span = state.span;
                 match &mut state.kind {
                     LoopKindState::While { cond } => Step::While(cond, span),
-                    LoopKindState::For { pat, items, idx } => {
-                        if *idx >= items.len() {
-                            Step::For(pat, None)
-                        } else {
-                            let v = items[*idx].clone();
-                            *idx += 1;
-                            Step::For(pat, Some(v))
-                        }
-                    }
+                    LoopKindState::For { pat, items } => match items.next() {
+                        Some(v) => Step::For(pat, Some(v)),
+                        None => Step::For(pat, None),
+                    },
                     LoopKindState::Loop => Step::Loop,
                 }
             };

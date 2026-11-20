@@ -25,7 +25,7 @@ use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
 use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent, Waiter};
-use crate::value::{Env, Value};
+use crate::value::{Env, ForIter, Value};
 
 mod expr;
 mod params;
@@ -419,8 +419,8 @@ enum LoopKindState<'a> {
     },
     For {
         pat: &'a HPat,
-        items: Vec<Value>,
-        idx: usize,
+        /// **VD-264**: range duyệt lười (không còn `Vec<Value>` N phần tử).
+        items: ForIter,
     },
     Loop,
 }

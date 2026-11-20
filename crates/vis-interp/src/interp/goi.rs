@@ -131,14 +131,15 @@ impl<'a> Interp<'a> {
 
     /// **VD-258** — thân `for`: `E_LOOP` **mỗi lần thử tiến vòng, gồm lần cuối sai**
     /// (VD-252 quy tắc 4). Charge ở đầu vòng, trước khi lấy phần tử; `break` không chạy lượt kế.
+    ///
+    /// **VD-264**: nhận [`ForIter`] (range duyệt lười) thay cho `Vec<Value>`.
     pub(crate) fn exec_for(
         &mut self,
         pat: &HPat,
-        items: Vec<Value>,
+        mut items: ForIter,
         body: &[HStmt],
         span: Span,
     ) -> R<Ctrl> {
-        let mut items = items.into_iter();
         let mut ctrl = Ok(Ctrl::Normal);
         loop {
             if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, span) {

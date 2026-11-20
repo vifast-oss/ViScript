@@ -633,7 +633,8 @@ pub(crate) struct Th<'m> {
     pub(crate) m: &'m Module,
     pub(crate) frames: Vec<Frame>,
     pub(crate) st: Vec<Value>,
-    pub(crate) iters: Vec<(Vec<Value>, usize)>,
+    /// **VD-264**: bộ lặp dùng chung với interp — range duyệt lười (không còn `Vec<Value>`).
+    pub(crate) iters: Vec<value::ForIter>,
     /// **ST-238 (VD-242, ca 1)**: `(fi, pc_kết_thúc, độ_sâu_iters_trước_vòng)` cho mỗi `for`
     /// đang mở — để `break` nhảy tới cuối vòng thì cũng pop iterator như `IterNext` hết vòng.
     pub(crate) loop_ends: Vec<(u32, usize, usize)>,
@@ -1163,25 +1164,24 @@ impl<'m> Th<'m> {
                     }
                     let it = self.pop(vm, span)?;
                     let items = value::iter_items(it, span)?;
-                    self.iters.push((items, 0));
+                    self.iters.push(items);
                 }
                 Instr::IterNext(d) => {
-                    let Some((items, i)) = self.iters.last_mut() else {
+                    let Some(items) = self.iters.last_mut() else {
                         return Err(vm.hong(VmError::StackUnderflow, span));
                     };
-                    if *i >= items.len() {
-                        self.iters.pop();
-                        let pc = {
-                            let fr = self.frames.last().expect("khung");
-                            let pc = fr.pc as i64 - 1 + d as i64;
-                            self.day(fr, pc, vm, span, "IterNext")?;
-                            pc
-                        };
-                        self.dat_pc(pc as usize);
-                    } else {
-                        let v = items[*i].clone();
-                        *i += 1;
-                        self.st.push(v);
+                    match items.next() {
+                        Some(v) => self.st.push(v),
+                        None => {
+                            self.iters.pop();
+                            let pc = {
+                                let fr = self.frames.last().expect("khung");
+                                let pc = fr.pc as i64 - 1 + d as i64;
+                                self.day(fr, pc, vm, span, "IterNext")?;
+                                pc
+                            };
+                            self.dat_pc(pc as usize);
+                        }
                     }
                 }
                 Instr::TestLit(i) => {

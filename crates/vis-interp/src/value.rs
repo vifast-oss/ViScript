@@ -716,47 +716,113 @@ fn unescape(s: &str) -> String {
     out
 }
 
+/// Bộ lặp của `for` trên **mọi** kiểu lặp được (list/range/str/map) — dùng **chung** cho interp,
+/// VM (ST-20) và frame evaluator.
+///
+/// **VD-264**: `Range` duyệt **lười** bằng con trỏ `i64` (không dựng `Vec<Value>` N phần tử như
+/// trước — `for i in 0..2_000_000` từng tốn ~146 MB). Các kiểu khác vẫn vật chất hoá đúng như cũ.
+pub struct ForIter {
+    kind: ForIterKind,
+}
+
+enum ForIterKind {
+    /// `a..b` / `a..=b`: `cur` là phần tử kế, `done` chặn sau khi chạm cận/`i64::MAX`.
+    Range {
+        cur: i64,
+        end: i64,
+        incl: bool,
+        done: bool,
+    },
+    /// list/map/str — đã vật chất hoá (ngữ nghĩa các kiểu này không đổi).
+    Items(std::vec::IntoIter<Value>),
+}
+
+impl Iterator for ForIter {
+    type Item = Value;
+
+    fn next(&mut self) -> Option<Value> {
+        match &mut self.kind {
+            ForIterKind::Range {
+                cur,
+                end,
+                incl,
+                done,
+            } => {
+                if *done {
+                    return None;
+                }
+                let het = if *incl { *cur > *end } else { *cur >= *end };
+                if het {
+                    *done = true;
+                    return None;
+                }
+                let v = *cur;
+                // ST-13b (mục 2): **không** cộng tràn — `..=` với `i64::MAX` từng panic.
+                match cur.checked_add(1) {
+                    Some(n) => *cur = n,
+                    None => *done = true, // chạm `i64::MAX` ⇒ hết dải, **không** panic
+                }
+                Some(Value::Int(v))
+            }
+            ForIterKind::Items(xs) => xs.next(),
+        }
+    }
+}
+
 /// Vật phẩm của `for` trên **mọi** kiểu lặp được (list/range/str/map) — dùng **chung** cho interp
 /// và VM (ST-20). Khoảng quá dài ⇒ `VS0501` (ST-13b: không cộng tràn `i64`).
-pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<Vec<Value>> {
-    match it {
-        Value::List(xs) => Ok(xs),
+///
+/// **VD-264**: trả [`ForIter`]; range **không** cấp phát N phần tử. Trần `10^7` được kiểm **trước**
+/// khi vào vòng (đếm bằng `i128`, không tràn) để giữ đúng thời điểm trap của bản vật chất hoá cũ:
+/// trap trước mọi thân vòng và trước `E_LOOP` đầu tiên.
+pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<ForIter> {
+    let kind = match it {
+        Value::List(xs) => ForIterKind::Items(xs.into_iter()),
         Value::Range(a, b, incl) => {
-            // ST-13b (mục 2): **không** cộng tràn — `..=` với `i64::MAX` từng panic.
-            let mut out = Vec::new();
-            let mut i = a;
-            loop {
-                let dung = if incl { i > b } else { i >= b };
-                if dung {
-                    break;
+            let n: i128 = if incl {
+                if a > b {
+                    0
+                } else {
+                    i128::from(b) - i128::from(a) + 1
                 }
-                out.push(Value::Int(i));
-                if out.len() > 10_000_000 {
-                    return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
-                        crate::interp::RT,
-                        "khoảng quá dài (>10^7 phần tử)",
-                        span,
-                    )));
-                }
-                match i.checked_add(1) {
-                    Some(n) => i = n,
-                    None => break, // chạm `i64::MAX` ⇒ hết dải, **không** panic
-                }
+            } else if a >= b {
+                0
+            } else {
+                i128::from(b) - i128::from(a)
+            };
+            if n > 10_000_000 {
+                return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
+                    crate::interp::RT,
+                    "khoảng quá dài (>10^7 phần tử)",
+                    span,
+                )));
             }
-            Ok(out)
+            ForIterKind::Range {
+                cur: a,
+                end: b,
+                incl,
+                done: false,
+            }
         }
         // ST-13b (mục 4): duyệt chuỗi cho **`char`** (không phải `str`).
-        Value::Str(s) => Ok(s.chars().map(Value::Char).collect()),
-        Value::Map(kv) => Ok(kv
-            .into_iter()
-            .map(|(k, v)| Value::List(vec![k, v]))
-            .collect()),
-        other => Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
-            crate::interp::RT,
-            format!("`for` không duyệt được `{}`", other.show()),
-            span,
-        ))),
-    }
+        Value::Str(s) => {
+            ForIterKind::Items(s.chars().map(Value::Char).collect::<Vec<_>>().into_iter())
+        }
+        Value::Map(kv) => ForIterKind::Items(
+            kv.into_iter()
+                .map(|(k, v)| Value::List(vec![k, v]))
+                .collect::<Vec<_>>()
+                .into_iter(),
+        ),
+        other => {
+            return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
+                crate::interp::RT,
+                format!("`for` không duyệt được `{}`", other.show()),
+                span,
+            )))
+        }
+    };
+    Ok(ForIter { kind })
 }
 
 /// Mã thoát chương trình: **chỉ** `Result::Err` ⇒ `1`; còn lại `0`.
