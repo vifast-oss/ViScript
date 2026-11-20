@@ -83,3 +83,11 @@ Kiểm chứng thay thế: mọi sự kiện thực thi đều nằm trong bản
 (mặc định interp/VM, frame interp/VM) cùng stdout/exit. **Không hạ tiêu chí test cũ**, không đổi mã
 sản phẩm; giới hạn được ghi thành test `ghi_nhan_gioi_han_parity`.
 
+## 6. Soak hữu hạn bổ sung
+
+- **Fuzz parser 5 seed mới** (`20261123`..`20261127`, 60 s/seed): ~47,4 triệu ca, **0 vi phạm**,
+  exit 0 cả 5. Cộng 3 seed ở §2 ⇒ **~75,8 triệu ca, 0 vi phạm**. Log `/tmp/opencode/vd257-fuzz-more.log`.
+- **Lặp test vòng đời release 20 lần** (`cargo test --release -p vis-cli --test lat257_c_lifecycle`):
+  **20/20 OK**, mỗi lần 11 passed / 0 failed, không flake/drift. Log `/tmp/opencode/vd257-lifecycle-*.log`.
+- Seed và cấu hình được lưu; không có seed lỗi. Không chạy OOM/không `cargo clean` toàn bộ.
+
