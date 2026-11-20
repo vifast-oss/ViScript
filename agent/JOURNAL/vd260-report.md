@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `6084191` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `e047dff` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2496 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2524 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -94,11 +94,13 @@
 | R5c arity | `f014695` → `a82ec35` | sugar sai số đối số ⇒ `VS0401` ở checker |
 | List contains | `0a1282e` → `85130e6` | `list.contains` theo `eq_value` |
 | SQLite indexes | `4ecc182` → `6084191` | `sqlite.indexes`: index người dùng, bind tham số |
+| Parse float | `0f880d9` → `a6ac405` | `str.parse_float`: thập phân Rust, bỏ non-finite |
+| List sum/product | `e43ff02` → `e047dff` | `list.sum`/`product` checked, tràn `VS0507` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2496 passed / 3 skipped** tại `6084191`.
+- `./vis-dev gate --fast`: **PASS — 2524 passed / 3 skipped** tại `e047dff`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -253,3 +255,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `VIS_DIFF_N=100000` seed 20261202 @ `4dad2ab`: **0 lệch** (93.767 chạy, 113,1 s).
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `4dad2ab`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `./vis-dev nightly` @ `3976328`: **PASS** — parser fuzz **8.074.278 ca / 183.212.821 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- **parse-float** (`0f880d9` → `a6ac405`, fix `4c57285`): `str.parse_float` theo `f64::from_str`, từ chối non-finite/tràn; `Ty::OptFloat`; 7 ca interp=VM.
+- **list-math** (`e43ff02` → `e047dff`): `list.sum`/`product` checked, rỗng 0/1, tràn `VS0507`; `xs.sum()` lõi giữ nguyên.

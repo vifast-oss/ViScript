@@ -3366,3 +3366,12 @@ cú pháp hoặc tràn `i64` ⇒ `None` (không trap); `i64::MIN`/`MAX` biên v�
 - **sqlite-indexes**: `sqlite.indexes(handle, table) -> Result[list[str], Error]` trả index **người
   dùng tạo** của bảng schema chính, sắp **byte**, bỏ `sqlite_autoindex_%`; tên bảng **bind** tham
   số; bảng/view thiếu ⇒ `Ok([])`, handle lỗi ⇒ `Err`; chạy qua `db_query`.
+
+### VD-270 (bổ sung) · parse_float, list.sum/product — A0, 2026-11-21
+
+- **parse-float**: `str.parse_float(s) -> float?` parse `f64::from_str` (dấu, `.5`/`5.`, mũ `e/E`),
+  nhưng **từ chối** mọi non-finite/NaN/tràn (`inf`/`NaN`/`1e400` ⇒ `None`); underflow vẫn `Some`
+  (giữ `-0`). `Ty::OptFloat` = `Option[float]`; sugar R5c.
+- **list-sum-product**: `list.sum(list[int]) -> int` rỗng `0`, `list.product` rỗng `1`; gộp
+  trái→phải bằng checked `i64`, tràn ở **bất kỳ bước nào** ⇒ trap `VS0507`; sugar `product`;
+  `xs.sum()` vẫn là phương thức lõi (giữ `list[float]`), cùng ngữ nghĩa cho `list[int]`.
