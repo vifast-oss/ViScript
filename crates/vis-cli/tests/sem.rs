@@ -57,6 +57,13 @@ struct Ca {
     err: Option<String>,
 }
 
+/// **VD-258** — nhóm `sqlite/` cần feature `sqlite` của `vis-cli` (host `std.sqlite`).
+/// Cấu hình core (`cargo test -p vis-cli --no-default-features`) bỏ qua nhóm này; cấu hình
+/// mặc định vẫn chạy đủ 38 ca.
+fn bo_qua_nhom(nhom: &str) -> bool {
+    !cfg!(feature = "sqlite") && nhom == "sqlite"
+}
+
 fn gom_ca() -> Vec<Ca> {
     let goc = sem_dir();
     let mut ds = Vec::new();
@@ -68,6 +75,11 @@ fn gom_ca() -> Vec<Ca> {
     nhom_dir.sort();
     for d in nhom_dir {
         let nhom = d.file_name().unwrap().to_string_lossy().to_string();
+        // **VD-258** — cấu hình core (`--no-default-features`) không có host `std.sqlite`;
+        // fixture sqlite chỉ chạy khi feature bật, thay vì đỏ vì thiếu host.
+        if bo_qua_nhom(&nhom) {
+            continue;
+        }
         let mut ca: Vec<PathBuf> = std::fs::read_dir(&d)
             .unwrap_or_else(|e| panic!("không đọc được {}: {e}", d.display()))
             .filter_map(|e| e.ok().map(|e| e.path()))
@@ -116,6 +128,17 @@ fn steps_cua(stderr: &str) -> usize {
     }
     0
 }
+
+/// Tổng ca/nhóm theo cấu hình feature. Mặc định (`sqlite`) giữ nguyên 525/23; core bỏ nhóm
+/// `sqlite/` (38 ca) ⇒ 487/22. Không nới bất kỳ nhóm nào khác.
+#[cfg(feature = "sqlite")]
+const SO_CA: usize = 525;
+#[cfg(feature = "sqlite")]
+const SO_NHOM: usize = 23;
+#[cfg(not(feature = "sqlite"))]
+const SO_CA: usize = 487;
+#[cfg(not(feature = "sqlite"))]
+const SO_NHOM: usize = 22;
 
 #[test]
 fn sem_323_ca_qua_binary() {
@@ -208,8 +231,8 @@ fn sem_323_ca_qua_binary() {
         // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: +**11** ca `sqlite/` (`execute-tra-hang`,
         //   `bind-inf`, ma trận authorizer 9 ca); mọi lỗi dữ liệu nay là `Result.Err` ⇒ 8 `.err` cũ đổi thành `.out`;
         //   nhóm `sqlite/` không còn `.err` ⇒ **525 ca / 23 nhóm** (**475 `.vis`** + 50 `.vish`, **88 `.err`**).
-        525,
-        "phải đúng 525 ca (475 `.vis` + 50 `.vish`), thật {} — nhóm: {theo_nhom:?}",
+        SO_CA,
+        "phải đúng {SO_CA} ca, thật {} — nhóm: {theo_nhom:?}",
         ds.len()
     );
     // **SỬA KÈM LÝ DO (ST-57)**: nhóm mới **`trait/`** ⇒ **19 nhóm**.
@@ -218,8 +241,8 @@ fn sem_323_ca_qua_binary() {
     // **SỬA KÈM LÝ DO (ST-72)**: nhóm mới **`cap/`** ⇒ **22 nhóm**.
     assert_eq!(
         theo_nhom.len(),
-        23,
-        "phải đúng 23 nhóm (ST-28 `generic`; ST-57 `trait`; ST-60 `async`; ST-61 `kenh`; ST-72 `cap`; VD-241 Gate 1 `sqlite`), thật {theo_nhom:?}"
+        SO_NHOM,
+        "phải đúng {SO_NHOM} nhóm (ST-28 `generic`; ST-57 `trait`; ST-60 `async`; ST-61 `kenh`; ST-72 `cap`; VD-241 Gate 1 `sqlite`), thật {theo_nhom:?}"
     );
     // **Chống bỏ ca**: số tệp `.vis` trên đĩa phải **bằng** số ca đã gom (không ca nào bị lọc mất).
     let tren_dia: usize = std::fs::read_dir(sem_dir())
@@ -227,6 +250,12 @@ fn sem_323_ca_qua_binary() {
         .filter_map(|e| e.ok().map(|e| e.path()))
         .filter(|p| p.is_dir())
         .map(|d| {
+            // Nhóm bị bỏ theo feature không được tính vào "trên đĩa" (nếu không, test chống
+            // bỏ ca sẽ báo sai ở cấu hình core).
+            let ten = d.file_name().unwrap_or_default().to_string_lossy();
+            if bo_qua_nhom(&ten) {
+                return 0;
+            }
             std::fs::read_dir(d)
                 .expect("đọc nhóm")
                 .filter_map(|e| e.ok().map(|e| e.path()))

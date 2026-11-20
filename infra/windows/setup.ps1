@@ -2,12 +2,12 @@
 # ST-136 (VD-136, VD-140) — tái lập **thành phần toolchain** cho máy đo Windows (`psvn`).
 #
 # Vì sao: số đo Windows trong VS2 chỉ so sánh được với `ps`/macOS khi **cùng một toolchain**.
-# `ps` đo bằng rustc 1.99.1 (58cf8f9c3) và repo khai `rust-version = "1.99.1"`; trên `psvn`
-# "stable" KHÔNG phải 1.99.1 (stable = 1.100.0 sau lần đo 2026-11-16) ⇒ mọi lệnh đo phải ghim
-# `RUSTUP_TOOLCHAIN=1.99.1-x86_64-pc-windows-msvc`.
+# `ps` đo bằng rustc 1.100.0 (0ef1bc386) và repo khai `rust-version = "1.100.0"`; trên `psvn`
+# "stable" là kênh chuyển động ⇒ mọi lệnh đo phải ghim
+# `RUSTUP_TOOLCHAIN=1.100.0-x86_64-pc-windows-msvc`.
 #
 # Dùng:
-#   powershell -NoProfile -File setup.ps1                   # kiểm + cài toolchain 1.99.1 + 2 target std (idempotent)
+#   powershell -NoProfile -File setup.ps1                   # kiểm + cài toolchain 1.100.0 + 2 target std (idempotent)
 #   powershell -NoProfile -File setup.ps1 -Check            # CHỈ kiểm; thiếu ⇒ exit 1, không cài gì
 #   powershell -NoProfile -File setup.ps1 -Log C:\env.log   # ghi thêm log môi trường (mặc định $HOME\vis-setup.log)
 #
@@ -22,8 +22,8 @@
 # hai target trên, không cài Build Tools/gói OS, không reboot (VD-140: Build Tools chỉ cập nhật khi
 # build lỗi do bản cũ VÀ có log lỗi trước; trình cài đòi khởi động lại ⇒ dừng, BLOCKED-ENV).
 #
-# CẢNH BÁO: đừng chạy `rustup`/`cargo` "trần" trong cây repo — `rust-toolchain.toml` khai
-# channel = "stable" và rustup sẽ TỰ cài/cập nhật "stable" (đã xảy ra 2026-11-16T07:55:32Z).
+# CẢNH BÁO: đừng chạy `rustup`/`cargo` "trần" trong cây repo — rustup vẫn có thể tự cài/cập nhật
+# toolchain theo `rust-toolchain.toml` (đã xảy ra 2026-11-16T07:55:32Z với kênh "stable").
 # Script này đặt $env:RUSTUP_TOOLCHAIN trước mọi lệnh.
 
 param(
@@ -34,7 +34,7 @@ param(
 $ErrorActionPreference = "Stop"
 # Console Windows mặc định cp1252 ⇒ đặt UTF-8 để tiếng Việt trong log không bị hỏng.
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
-$Toolchain = "1.99.1-x86_64-pc-windows-msvc"
+$Toolchain = "1.100.0-x86_64-pc-windows-msvc"
 $WantedTargets = @("wasm32-unknown-unknown", "x86_64-unknown-linux-gnu")   # cần cho bin/vis-targets
 
 function Say([string]$m) { Write-Output $m }

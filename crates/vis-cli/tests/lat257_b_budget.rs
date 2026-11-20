@@ -17,7 +17,7 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
         &p.cst,
         &l,
         vis_types::LowerOptions {
-            std_mods: vec!["net".into()],
+            std_mods: vec!["net".into(), "str".into()],
             ..Default::default()
         },
     );
@@ -166,6 +166,132 @@ fn ordered_event_trace_spawn_await() {
     for k in ["E_SPAWN", "E_AWAIT", "E_STMT", "E_BUILTIN"] {
         assert!(labels!(&got).iter().any(|l| l.starts_with(k)), "thiếu {k}");
     }
+}
+
+/// **VD-258** — chạy interp + VM, đòi hai dãy sự kiện **có thứ tự** khớp nhau; trả trace interp.
+fn trace_interp_vm(src: &str) -> Vec<String> {
+    let (hir, syms, tys) = tien_trinh(src);
+    let (m, fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).expect("compile_with_fee");
+
+    ifee::enable_for_test(1_000_000);
+    let out = vis_interp::run(src, &hir, &syms, &tys, &[]);
+    let tr_i = ifee::take_trace_for_test();
+    ifee::disable_for_test();
+    assert!(out.codes().is_empty(), "interp: {:?}", out.diagnostics);
+
+    let mut vm = Vm::new(&m, src);
+    vm.budget_enable_for_test(fee, 1_000_000);
+    let vo = vm.run(&[]);
+    assert!(vo.codes().is_empty(), "VM: {:?}", vo.diagnostics);
+    assert_eq!(
+        labels!(&vm.budget_trace_for_test()),
+        labels!(&tr_i),
+        "VM ↔ interp lệch dãy sự kiện cho:\n{src}"
+    );
+    labels!(&tr_i)
+}
+
+/// **VD-258** — `for` phải charge **lần `IterNext` thất bại cuối** như codegen/VM:
+/// `for x in [1,2]` ⇒ **3** `E_LOOP`, không phải 2.
+#[test]
+fn for_loop_charge_gom_lan_cuoi_sai_khop_vm() {
+    let tr = trace_interp_vm("fn main():\n    for x in [1, 2]:\n        print(x)\n");
+    let so_loop = tr.iter().filter(|l| l.starts_with("E_LOOP@")).count();
+    assert_eq!(so_loop, 3, "phải có 3 E_LOOP (2 phần tử + lần hết): {tr:?}");
+    assert_eq!(
+        tr.last().map(String::as_str),
+        Some("E_LOOP@15"),
+        "sự kiện cuối phải là lần thử hết phần tử: {tr:?}"
+    );
+
+    // `break` rời vòng ngay sau phần tử thứ 2 ⇒ không có lượt thử thứ ba (không cộng đuôi).
+    let tr_break = trace_interp_vm(
+        "fn main():\n    for x in [1, 2, 3]:\n        if x == 2:\n            break\n        print(x)\n",
+    );
+    assert_eq!(
+        tr_break.iter().filter(|l| l.starts_with("E_LOOP@")).count(),
+        2,
+        "break không được cộng thêm E_LOOP: {tr_break:?}"
+    );
+}
+
+// **VD-258 — khoảng trống đã biết**: `crates/vis-interp/src/frame/` nằm ngoài phạm vi sửa của
+// việc này (brief cấm chạm `frame/`). Đường frame vẫn cộng thêm `E_EXPR` cho callee **trực tiếp**
+// (hàm tệp/method/`std.*`); parity dưới đây là interp ↔ compiler/VM. Cần chủ `frame/` sửa riêng.
+
+/// **VD-258** — gọi **hàm tệp**: `E_CALL` một lần, callee tên hàm không cộng `E_EXPR`.
+#[test]
+fn call_charge_parity_ham_tep() {
+    let src = "fn add(a: int, b: int) -> int:\n    a + b\nfn main():\n    print(add(1, 2))\n";
+    let tr = trace_interp_vm(src);
+    let add_site = src.find("add(1, 2)").expect("site add") as u32;
+    assert!(
+        tr.contains(&format!("E_CALL@{add_site}")),
+        "phải có E_CALL tại callee hàm tệp: {tr:?}"
+    );
+    assert!(
+        !tr.contains(&format!("E_EXPR@{add_site}")),
+        "callee hàm tệp không được cộng E_EXPR: {tr:?}"
+    );
+}
+
+/// **VD-258** — gọi **giá trị closure** (biến local): callee được đánh giá như giá trị ⇒
+/// `E_CALL` + `E_EXPR(callee)`; codegen trước đây thiếu `E_EXPR` nên VM lệch interp.
+#[test]
+fn call_charge_parity_closure_gia_tri() {
+    let src = "fn main():\n    let f = fn(x: int) -> int: x + 1\n    print(f(1))\n";
+    let tr = trace_interp_vm(src);
+    let f_site = src.find("f(1)").expect("site f") as u32;
+    assert!(
+        tr.contains(&format!("E_CALL@{f_site}")),
+        "phải có E_CALL cho closure: {tr:?}"
+    );
+    assert!(
+        tr.contains(&format!("E_EXPR@{f_site}")),
+        "callee closure phải có E_EXPR như interp: {tr:?}"
+    );
+}
+
+/// **VD-258** — **method host** (`Field` callee) là `E_BUILTIN`, không `E_CALL`; codegen trước
+/// đây phân loại `E_CALL` nên VM lệch interp.
+#[test]
+fn call_charge_parity_method_host() {
+    let src = "fn main():\n    let xs = [1, 2]\n    print(xs.len())\n";
+    let tr = trace_interp_vm(src);
+    let m_site = src.find("xs.len()").expect("site len") as u32;
+    assert!(
+        tr.contains(&format!("E_BUILTIN@{m_site}")),
+        "method host phải là E_BUILTIN tại call site: {tr:?}"
+    );
+    assert!(
+        !tr.contains(&format!("E_CALL@{m_site}")),
+        "method host không được là E_CALL: {tr:?}"
+    );
+    assert!(
+        tr.iter().filter(|l| l.starts_with("E_BUILTIN@")).count() >= 2,
+        "phải có E_BUILTIN cho print + len: {tr:?}"
+    );
+}
+
+/// **VD-258** — callee `std.*` (builtin host): `E_BUILTIN` một lần, **không** `E_CALL`, và
+/// **không** cộng `E_EXPR` cho chính tên callee (codegen trước đây cộng thừa).
+#[test]
+fn call_charge_parity_std_callee() {
+    let src = "use std.str\nfn main():\n    print(str.upper(\"a\"))\n";
+    let tr = trace_interp_vm(src);
+    let callee_site = src.find("str.upper").expect("site str.upper") as u32;
+    assert!(
+        tr.contains(&format!("E_BUILTIN@{callee_site}")),
+        "std.* phải là E_BUILTIN tại call site: {tr:?}"
+    );
+    assert!(
+        !tr.contains(&format!("E_CALL@{callee_site}")),
+        "std.* không được là E_CALL: {tr:?}"
+    );
+    assert!(
+        !tr.contains(&format!("E_EXPR@{callee_site}")),
+        "callee std.* không được cộng E_EXPR: {tr:?}"
+    );
 }
 
 /// Tính **chi phí đúng** của một chương trình bằng bảng trọng số v1 đề xuất. Dùng hook đo

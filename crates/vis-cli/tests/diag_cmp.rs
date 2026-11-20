@@ -60,10 +60,21 @@ use std::process::Command;
 //   19 xanh + 8 lỗi lúc chạy `VS0501`) ⇒ **418 xanh / 53 lỗi biên dịch / 43 lỗi lúc chạy**.
 // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: 514 → **525** (+11 ca `sqlite/`, mọi lỗi dữ liệu
 //   nay là `Result.Err` ⇒ 8 `.err` VS0501 đổi thành `.out` xanh) ⇒ **437 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy**.
+#[cfg(feature = "sqlite")]
 const TONG: usize = 525;
+#[cfg(feature = "sqlite")]
 const XANH: usize = 437;
+#[cfg(not(feature = "sqlite"))]
+const TONG: usize = 487;
+#[cfg(not(feature = "sqlite"))]
+const XANH: usize = 399;
 const LOI_BIEN_DICH: usize = 53;
 const LOI_LUC_CHAY: usize = 35;
+
+/// **VD-258** — nhóm `sqlite/` chỉ có nghĩa khi feature `sqlite` bật; cấu hình core bỏ qua.
+fn bo_qua_nhom(nhom: &str) -> bool {
+    !cfg!(feature = "sqlite") && nhom == "sqlite"
+}
 /// **SỬA KÈM LÝ DO (ST-89)**: VM **đã có host `Ngoai`** ⇒ **0** ca xanh cần host bị `VS0604`.
 const XANH_CAN_HOST: usize = 0;
 /// **SỬA KÈM LÝ DO (ST-89)**: 3 → **0** — VM có host `Ngoai`, cả 3 ca lỗi-chạy cần host nay so
@@ -141,6 +152,10 @@ fn tep_sem() -> Vec<PathBuf> {
     for nhom in std::fs::read_dir(&dir).expect("đọc test/sem") {
         let nhom = nhom.expect("entry").path();
         if !nhom.is_dir() {
+            continue;
+        }
+        let ten = nhom.file_name().unwrap_or_default().to_string_lossy();
+        if bo_qua_nhom(&ten) {
             continue;
         }
         for f in std::fs::read_dir(&nhom).expect("đọc nhóm") {

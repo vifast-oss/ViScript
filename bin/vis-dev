@@ -366,6 +366,13 @@ do_check() {
         echo "--- luật R1..R6: FAIL" >&2; return 1
     fi
     echo "--- luật R1..R6: OK"
+    # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
+    # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
+    if ! bash "$VIS_ROOT/test/toolchain/run.sh"; then
+        echo "--- toolchain: FAIL" >&2
+        return 1
+    fi
+    echo "--- toolchain: OK"
     if ! bash "$VIS_ROOT/test/fixtures/run_fixtures.sh"; then
         echo "--- self-test case âm: FAIL" >&2; return 1
     fi

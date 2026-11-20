@@ -43,7 +43,12 @@ use std::process::Command;
 /// **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: 514 → **525** (+11 ca `sqlite/`: `execute-tra-hang`,
 ///   `bind-inf`, ma trận authorizer 9 ca — mọi lỗi dữ liệu nay là `Result.Err` ⇒ 8 `.err` đổi thành `.out`);
 ///   475 `.vis` + 50 `.vish`, **88 `.err`**.
+#[cfg(feature = "sqlite")]
 const SO_CA: usize = 525;
+/// **VD-258** — `--no-default-features` không có host `std.sqlite`; `vis test` bỏ nhóm
+/// `sqlite/` (38 ca) nên kế hoạch TAP là 487, không phải 525.
+#[cfg(not(feature = "sqlite"))]
+const SO_CA: usize = 487;
 
 /// PATH có thêm thư mục chứa `test-child` — cho fixture `.vish` gọi `test-child` bare.
 fn path_voi_tc() -> std::ffi::OsString {

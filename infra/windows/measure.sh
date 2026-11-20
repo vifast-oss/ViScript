@@ -14,12 +14,12 @@
 # vẫn chạy tiếp các bước sau để có **đủ** 4 phép đo trên cùng một cây nguồn (Windows chỉ ĐO — VD-121).
 #
 # Không cài gì, không `rustup update`, không đổi toolchain mặc định, không reboot. Toolchain được
-# GHIM (VD-140): `rust-toolchain.toml` khai `stable`, mà trên `psvn` "stable" không phải 1.99.1.
+# GHIM (VD-140): trên `psvn` "stable" không phải bản workspace yêu cầu (1.100.0).
 set -u
 
 VIS="$(cd "$(dirname "$0")/../.." && pwd)"
 JOURNAL="$VIS/agent/JOURNAL"
-export RUSTUP_TOOLCHAIN="1.99.1-x86_64-pc-windows-msvc"
+export RUSTUP_TOOLCHAIN="1.100.0-x86_64-pc-windows-msvc"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-C:/vis-target}"   # target dir riêng (VD-136)
 export CARGO_TERM_COLOR=never
 export RUST_BACKTRACE=1

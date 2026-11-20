@@ -13,7 +13,12 @@
 
 vis_required_rust_version() {
     local root="${VIS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-    grep -m1 -oP '^rust-version\s*=\s*"\K[^"]+' "$root/Cargo.toml" 2>/dev/null || echo 1.99.1
+    # **VD-258**: `grep -P` không có trên macOS BSD grep ⇒ dùng `sed` POSIX. Chỉ lấy dòng
+    # `rust-version` ở cấp package (bỏ comment), fallback khớp `Cargo.toml` hiện hành.
+    local v
+    v="$(sed -n 's/^[[:space:]]*rust-version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$root/Cargo.toml" 2>/dev/null | head -n1)"
+    printf '%s\n' "${v:-1.100.0}"
 }
 
 vis_semver_of() {
