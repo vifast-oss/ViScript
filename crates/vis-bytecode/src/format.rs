@@ -42,8 +42,27 @@ pub const HASH_LEN: usize = 32;
 
 /// **ST-238 (VD-242, ca 3)** — vùng ô cục bộ dành riêng cho **biến cấp tệp** (`let`/`var`
 /// ở thân tệp). Codegen dùng `LoadLocal`/`StoreLocal` với chỉ số `>= GLOBAL_SLOT_BASE`; VM ánh xạ
-/// các chỉ số này tới kho chung `Vm::globals`, verifier bỏ qua kiểm `nlocals` cho chúng. Đây là
-/// **quy ước nội bộ** — không đổi `Instr`/`VERSION`/định dạng VBC1.
+/// các chỉ số này tới kho chung `Vm::globals`, verifier bỏ qua kiểm `nlocals` cho chúng.
+///
+/// # Ảnh hưởng tương thích (ST-245) — KHÔNG kết luận "không đổi hợp đồng" chỉ vì không thêm opcode
+///
+/// Dù **không** đổi `Instr`/`MAGIC`/`VERSION`/bố cục VBC1, cách mã hóa này **có ngữ nghĩa mới**
+/// nằm ngay trong toán hạng `LoadLocal`/`StoreLocal`/`Assign`/`BindLocal`: ô `>= GLOBAL_SLOT_BASE`
+/// không còn là chỉ số ô cục bộ mà là **chỉ số ô global** (`slot - GLOBAL_SLOT_BASE` trong
+/// `Vm::globals`). Vì vậy:
+///
+/// - Bytecode do codegen **trước ST-238** không chứa ô `>= 0x8000` ⇒ vẫn chạy đúng (tương thích ngược
+///   ở mức dữ liệu).
+/// - Bytecode **mang ô global** chỉ đúng trên VM từ ST-238 trở đi. VM cũ hơn hiểu nhầm ô `0x8000+k`
+///   thành ô cục bộ `32768+k`: đọc trả `()` (`Vec::get(...).unwrap_or(Unit)`), ghi `resize` khung
+///   cục bộ tới ~32768 ô ⇒ **kết quả sai, không crash** — là thay đổi hành vi có thật, không phải
+///   "không đổi hợp đồng".
+/// - Khoá cache (hash nguồn + hash bảng thẻ) **không đổi** khi chỉ sửa verifier; do đó verifier
+///   phải là hàng rào chặn ô global ngoài miền (xem [`crate::verify::verify`], ST-245) trước khi VM
+///   chạy. Số global thực tế không được serialize; verifier **suy ra** từ tập ô vùng global có lệnh
+///   ghi trong module.
+/// - `VerifyError` có thêm biến thể `GlobalOverflow` (ST-245) ⇒ chuỗi chẩn đoán của bytecode hỏng
+///   đổi; đây là thay đổi bề mặt lỗi, ghi nhận ở đây thay vì gọi là "không đổi".
 pub const GLOBAL_SLOT_BASE: u16 = 0x8000;
 
 /// **ST-238 (VD-242, ca 7)** — tên builtin giả để VM trap khi `match` rơi khỏi mọi nhánh.

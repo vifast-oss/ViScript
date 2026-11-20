@@ -70,6 +70,15 @@ pub enum VerifyError {
         slot: u16,
         nlocals: u16,
     },
+    /// **ST-245**: ô vùng `GLOBAL_SLOT_BASE` vượt quá số global **thực tế** do module định nghĩa
+    /// (số ô global được ghi bởi `StoreLocal`/`Assign`/`BindLocal` trong toàn module).
+    /// `slot` ở đây là chỉ số **đã trừ** `GLOBAL_SLOT_BASE`.
+    GlobalOverflow {
+        func: u32,
+        pc: usize,
+        slot: u16,
+        nglobals: u16,
+    },
 }
 
 impl core::fmt::Display for VerifyError {
@@ -128,6 +137,15 @@ impl core::fmt::Display for VerifyError {
                 slot,
                 nlocals,
             } => write!(f, "hàm {func} pc {pc}: ô {slot} ngoài nlocals {nlocals}"),
+            VerifyError::GlobalOverflow {
+                func,
+                pc,
+                slot,
+                nglobals,
+            } => write!(
+                f,
+                "hàm {func} pc {pc}: ô global {slot} ngoài số global thực tế {nglobals}"
+            ),
         }
     }
 }
@@ -299,6 +317,30 @@ pub fn verify(m: &Module) -> Result<(), VerifyError> {
     let nc = m.consts.len() as u32;
     // Bảng "biến bắt được dùng" của từng hàm (để kiểm `MakeClosure`).
     let used: Vec<u16> = m.funcs.iter().map(|f| captured_used(&f.code)).collect();
+    // **ST-245**: VBC1 không có trường `nglobals` (không đổi định dạng). Số global **thực tế**
+    // được **suy ra từ chính bytecode**: tập ô vùng `GLOBAL_SLOT_BASE` có lệnh ghi
+    // (`StoreLocal`/`Assign`/`BindLocal`) ở bất kỳ hàm nào. Codegen cấp ô liên tiếp từ
+    // `GLOBAL_SLOT_BASE` cho mỗi `let`/`var` cấp tệp và luôn phát một lệnh ghi khi định nghĩa
+    // (xem `codegen::slot_cua` + `gan_tu_dinh`), nên tập này khớp đúng số global của module.
+    // Miễn trừ `LocalOverflow` ở dưới **không** được phép biến đây thành "cứ ở trên 0x8000 là được".
+    let base = crate::format::GLOBAL_SLOT_BASE;
+    let mut stored_global: Vec<bool> = Vec::new();
+    for f in &m.funcs {
+        for ins in &f.code {
+            let s = match *ins {
+                Instr::StoreLocal(s) | Instr::Assign(s) | Instr::BindLocal(s) if s >= base => {
+                    s - base
+                }
+                _ => continue,
+            };
+            let k = s as usize;
+            if stored_global.len() <= k {
+                stored_global.resize(k + 1, false);
+            }
+            stored_global[k] = true;
+        }
+    }
+    let nglobals = stored_global.iter().filter(|&&b| b).count() as u16;
     for (fi, f) in m.funcs.iter().enumerate() {
         let func = fi as u32;
         if f.code.is_empty() {
@@ -311,7 +353,12 @@ pub fn verify(m: &Module) -> Result<(), VerifyError> {
                 spans: f.spans.len(),
             });
         }
-        if f.arity > f.nparams || f.nlocals < f.nparams {
+        // **ST-245**: `nlocals` không được vượt `GLOBAL_SLOT_BASE`, nếu không các ô cục bộ
+        // `[nparams, nlocals)` sẽ chìa sang vùng global ⇒ slot local "va vào" miền `0x8000`.
+        if f.arity > f.nparams
+            || f.nlocals < f.nparams
+            || f.nlocals > crate::format::GLOBAL_SLOT_BASE
+        {
             return Err(VerifyError::BadArity {
                 func,
                 arity: f.arity,
@@ -377,12 +424,25 @@ pub fn verify(m: &Module) -> Result<(), VerifyError> {
                 | Instr::BindLocal(s) => {
                     // **ST-238 (VD-242, ca 3)**: ô `>= GLOBAL_SLOT_BASE` là biến cấp tệp, do VM
                     // ánh xạ tới kho chung — không tính vào `nlocals` của khung.
-                    if s < crate::format::GLOBAL_SLOT_BASE && s >= f.nlocals {
-                        return Err(VerifyError::LocalOverflow {
+                    // **ST-245**: miễn trừ đó chỉ áp dụng cho ô **trong miền global thực tế**:
+                    // `s - GLOBAL_SLOT_BASE` phải nhỏ hơn số global module thực sự định nghĩa.
+                    // Bytecode sai (ô `0x8000..=0xFFFF` không có lệnh ghi tương ứng) bị từ chối
+                    // trước khi VM kịp đọc `Unit`/`resize` kho — không "vượt kiểm tra".
+                    if s < base {
+                        if s >= f.nlocals {
+                            return Err(VerifyError::LocalOverflow {
+                                func,
+                                pc,
+                                slot: s,
+                                nlocals: f.nlocals,
+                            });
+                        }
+                    } else if s - base >= nglobals {
+                        return Err(VerifyError::GlobalOverflow {
                             func,
                             pc,
-                            slot: s,
-                            nlocals: f.nlocals,
+                            slot: s - base,
+                            nglobals,
                         });
                     }
                 }
