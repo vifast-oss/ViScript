@@ -31,6 +31,7 @@ mod indexof;
 mod pathnorm;
 mod sqlite_explain;
 mod sqlitecols;
+mod sqliteidx;
 mod sqlitetables;
 mod strfind;
 mod strlen;
@@ -986,6 +987,20 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqlitecols::chay(host, h, table)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        // **VD-270 (sqlite-indexes)** — tên index **người dùng tạo** của một bảng trong **schema
+        // chính**, sắp byte; bỏ autoindex `sqlite_autoindex_%`. Tên bảng bind làm tham số (không
+        // nối chuỗi). Chạy qua đúng đường `db_query` (authorizer/chỉ đọc/trần/timeout/cache).
+        // Bảng/view không tồn tại ⇒ `Ok([])`; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        "sqlite.indexes" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let table = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqliteidx::chay(host, h, table)
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )

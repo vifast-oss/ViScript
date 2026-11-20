@@ -123,7 +123,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-columns, 2026-11-21)**: +**1** hàm `sqlite.columns`
     // (`(str, str) -> Result[list[str], Error]`; tên cột bảng/view schema chính theo thứ tự
     // khai báo, tên đối tượng bind làm tham số) ⇒ **112** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 112, "bảng chữ ký phải đủ 112 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-indexes, 2026-11-21)**: +**1** hàm `sqlite.indexes`
+    // (`(str, str) -> Result[list[str], Error]`; tên index người dùng tạo của bảng schema chính,
+    // sắp byte, bỏ autoindex, tên bảng bind làm tham số) ⇒ **113** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 113, "bảng chữ ký phải đủ 113 hàm");
 }
 
 #[test]
@@ -383,4 +386,30 @@ fn sort_by_giu_ngoai_le_fn_khoa() {
         matches!(f.params[0], Ty::List(_)),
         "tham số 1 phải là `list[T]`"
     );
+}
+
+/// **VD-270 (sqlite-indexes)**: chữ ký `(str, str) -> Result[list[str], Error]` — tái dùng
+/// `Ty::ResultListStrStr` (không thêm biến thể `Ty`), hạ ra `Result` với lỗi là bản ghi `Error`.
+#[test]
+fn sqlite_indexes_kieu_str_str_va_result_list_str() {
+    let f = sig_of("sqlite.indexes").expect("sqlite.indexes");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`sqlite.indexes`: tham số (handle, table)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultListStrStr,
+        "`sqlite.indexes`: kiểu trả phải tái dùng `ResultListStrStr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(
+            Box::new(Type::List(Box::new(Type::Str))),
+            Box::new(Ty::Error.sang_type())
+        ),
+        "`sqlite.indexes`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[list[str], Error]");
 }
