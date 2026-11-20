@@ -58,6 +58,7 @@ list.take	(list[T], int) -> list[T]
 list.unique	(list[T]) -> list[T]
 list.windows	(list[T], int) -> list[list[T]]
 list.zip	(list[T], list[T]) -> list[list[T]]
+map.contains_key	(map[K, V], K) -> bool
 map.get_or	(map[K, V], str, V) -> V
 map.is_empty	(map[K, V]) -> bool
 map.keys	(map[K, V]) -> list[K]

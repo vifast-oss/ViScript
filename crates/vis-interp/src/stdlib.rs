@@ -33,6 +33,7 @@ mod listmath;
 mod listmean;
 mod listmedian;
 mod listsumfloat;
+mod mapcontainskey;
 mod netconst;
 mod pathjoinall;
 mod pathnorm;
@@ -517,6 +518,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let kv = ban_do(name, &args[0], 0, span)?;
             Ok(Value::Bool(kv.is_empty()))
         }
+        // **VD-270 (map-contains-key)**: khoá có mặt theo `eq` cấu trúc như `map.has`.
+        "map.contains_key" => mapcontainskey::goi(name, &args, span),
         "map.keys" | "map.values" => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let out: Vec<Value> = if name == "map.keys" {
