@@ -10,6 +10,7 @@
 
 mod chan_doan;
 mod dinh_nghia;
+mod doi_ten;
 mod goi_y;
 mod jsonrpc;
 mod khung;
@@ -207,6 +208,40 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-272**: đổi tên định danh trong tệp (token Ident, không chạm chuỗi/chú thích).
+            "textDocument/rename" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        let ten_moi = jsonrpc::lay_params(kv).and_then(|p| match p {
+                            Value::Map(p) => jsonrpc::lay(p, "newName"),
+                            _ => None,
+                        });
+                        let ten_moi = ten_moi.and_then(jsonrpc::chuoi);
+                        match (ten_moi, van_ban.get(&uri)) {
+                            (Some(ten_moi), Some(text)) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(doi_ten::tra_loi_rename(
+                                    &kq,
+                                    &uri,
+                                    byte,
+                                    ten_moi,
+                                    mode_cua(&uri),
+                                    &id
+                                ));
+                            }
+                            _ => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                        }
+                    }
+                }
+            }
             // **ST-271**: tìm mọi tham chiếu của từ tại con trỏ trong tệp.
             "textDocument/references" => {
                 if let Some(id) = id {
@@ -312,6 +347,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
+        jsonrpc::kv("renameProvider", Value::Bool(true)),
         jsonrpc::kv("completionProvider", completion),
     ]);
     let server_info = Value::Map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);

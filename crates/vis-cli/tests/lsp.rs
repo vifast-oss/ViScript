@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"renameProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1369,5 +1369,66 @@ fn lsp_references_dem_hai() {
         body.matches(r#""uri":"file:///a.vis""#).count(),
         2,
         "phải có đúng 2 tham chiếu: {body}"
+    );
+}
+
+// ===== ST-272: rename =====
+
+fn rename(id: i64, uri: &str, line: i64, ch: i64, ten_moi: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s("textDocument/rename")),
+        (
+            "params",
+            m(vec![
+                ("textDocument", m(vec![("uri", s(uri))])),
+                ("position", pos(line, ch)),
+                ("newName", s(ten_moi)),
+            ]),
+        ),
+    ]))
+}
+
+/// Ca 30 — đổi `add` → `sum`: 2 TextEdit (khai báo + gọi), không chạm chuỗi/chú thích.
+#[test]
+fn lsp_rename_hai_vi_tri() {
+    let text = "fn add(a: int) -> int:\n    a\n\nfn main():\n    print(add(1))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&rename(2, URI, 4, 10, "sum"))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.starts_with(r#"{"jsonrpc":"2.0","id":2,"result":{"changes":{"file:///a.vis":["#),
+        "frame rename: {body}"
+    );
+    assert_eq!(
+        body.matches(r#""newText":"sum""#).count(),
+        2,
+        "phải có đúng 2 edit: {body}"
+    );
+}
+
+/// Ca 31 — tên mới không hợp lệ (`1x`) ⇒ `result:null`, không sửa gì.
+#[test]
+fn lsp_rename_ten_moi_sai_null() {
+    let text = "fn add(a: int) -> int:\n    a\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&rename(2, URI, 0, 3, "1x"))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":null}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
     );
 }
