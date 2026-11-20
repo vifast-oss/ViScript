@@ -122,3 +122,46 @@ pub fn tra_loi_symbol(root: Option<&Path>, query: &str, id: &Value) -> Vec<u8> {
     }
     phan_hoi(id, Value::List(out))
 }
+
+/// **ST-278**: fallback định nghĩa xuyên tệp — quét `*.vis`/`*.vish` dưới `root` tìm item cấp tệp
+/// trùng tên (tối đa 20 vị trí). Không có ⇒ `result:null`.
+pub fn tra_loi_definition(root: Option<&Path>, ten: &str, id: &Value) -> Vec<u8> {
+    let Some(root) = root else {
+        return phan_hoi(id, Value::none());
+    };
+    let mut files = Vec::new();
+    gom(root, &mut files, 0);
+    let mut locs: Vec<Value> = Vec::new();
+    for p in files {
+        let Ok(text) = std::fs::read_to_string(&p) else {
+            continue;
+        };
+        let mode = if p.extension().and_then(|e| e.to_str()) == Some("vish") {
+            Mode::Command
+        } else {
+            Mode::Script
+        };
+        let kq = phan_tich(&text, mode);
+        let uri = format!("file://{}", p.display());
+        for k in &kq.ky_hieu {
+            if k.ten != ten {
+                continue;
+            }
+            locs.push(m(vec![
+                ("uri", s(&uri)),
+                ("range", vi_tri(&kq.text, k.span.start, k.span.end)),
+            ]));
+            if locs.len() >= 20 {
+                break;
+            }
+        }
+        if locs.len() >= 20 {
+            break;
+        }
+    }
+    if locs.is_empty() {
+        phan_hoi(id, Value::none())
+    } else {
+        phan_hoi(id, Value::List(locs))
+    }
+}

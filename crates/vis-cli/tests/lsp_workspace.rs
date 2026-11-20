@@ -134,3 +134,74 @@ fn workspace_symbol_khong_root_rong() {
         "không root ⇒ rỗng"
     );
 }
+
+fn did_open(uri: &str, text: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("method", s("textDocument/didOpen")),
+        (
+            "params",
+            m(vec![(
+                "textDocument",
+                m(vec![
+                    ("uri", s(uri)),
+                    ("languageId", s("viscript")),
+                    ("version", Value::Int(1)),
+                    ("text", s(text)),
+                ]),
+            )]),
+        ),
+    ]))
+}
+
+fn definition(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s("textDocument/definition")),
+        (
+            "params",
+            m(vec![
+                ("textDocument", m(vec![("uri", s(uri))])),
+                (
+                    "position",
+                    m(vec![
+                        ("line", Value::Int(line)),
+                        ("character", Value::Int(ch)),
+                    ]),
+                ),
+            ]),
+        ),
+    ]))
+}
+
+/// Ca xuyên tệp: `main.vis` gọi `alpha` khai trong `lib.vis` ⇒ definition trả vị trí lib.vis.
+#[test]
+fn definition_xuyen_tep_qua_root() {
+    let n = DEM.fetch_add(1, Ordering::Relaxed);
+    let d = std::env::temp_dir().join(format!("vis-lsp-def-{}-{n}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    std::fs::create_dir_all(&d).expect("tmp");
+    let lib = d.join("lib.vis");
+    let main = d.join("main.vis");
+    std::fs::write(&lib, "pub fn alpha():\n    print(1)\n").expect("lib");
+    let text = "use ./lib\n\nfn main():\n    alpha()\n";
+    std::fs::write(&main, text).expect("main");
+    let root_uri = format!("file://{}", d.display());
+    let main_uri = format!("file://{}", main.display());
+    let vao = format!(
+        "{}{}{}",
+        khung(&init_root(&root_uri)),
+        khung(&did_open(&main_uri, text)),
+        khung(&definition(2, &main_uri, 3, 5))
+    );
+    let (code, out, err) = chay(&vao);
+    let _ = std::fs::remove_dir_all(&d);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains("lib.vis"), "phải trỏ lib.vis: {body}");
+    assert!(
+        body.contains(r#""line":0"#),
+        "phải trỏ dòng khai báo: {body}"
+    );
+}

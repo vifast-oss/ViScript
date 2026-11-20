@@ -215,7 +215,13 @@ pub fn run(args: &[String]) -> ExitCode {
                             Some(text) => {
                                 let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
-                                gui!(dinh_nghia::tra_loi_definition(&kq, &uri, byte, &id));
+                                gui!(dinh_nghia::tra_loi_definition(
+                                    &kq,
+                                    &uri,
+                                    byte,
+                                    root.as_deref(),
+                                    &id
+                                ));
                             }
                         }
                     }

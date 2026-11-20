@@ -266,7 +266,13 @@ pub fn tra_loi_references(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Ve
     phan_hoi(id, Value::List(locs))
 }
 
-pub fn tra_loi_definition(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Vec<u8> {
+pub fn tra_loi_definition(
+    kq: &KetQua,
+    uri: &str,
+    byte: usize,
+    root: Option<&std::path::Path>,
+    id: &Value,
+) -> Vec<u8> {
     let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
     if start == end {
         return phan_hoi(id, Value::none());
@@ -274,7 +280,7 @@ pub fn tra_loi_definition(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Ve
     let ten = &kq.text[start..end];
     let mut ds: Vec<&DinhNghia> = kq.dinh_nghia.iter().filter(|d| d.ten == ten).collect();
     if ds.is_empty() {
-        return phan_hoi(id, Value::none());
+        return super::workspace::tra_loi_definition(root, ten, id);
     }
     // Gần con trỏ trước; cùng khoảng cách thì theo vị trí khai báo.
     ds.sort_by_key(|d| (d.span.start.abs_diff(start), d.span.start));
