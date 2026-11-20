@@ -165,3 +165,4 @@
 - `vd270-run-time` — `vis run --time` (stderr, không đổi exit/output).
 - `vd270-lsp-select2` — `textDocument/selectionRange` tối thiểu (token→line→doc).
 Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lại sau khi merge.
+- `VIS_DIFF_N=100000` seed 20261126 @ `e8e5332`: **0 lệch** (93.770 chạy, 60,7 s).
