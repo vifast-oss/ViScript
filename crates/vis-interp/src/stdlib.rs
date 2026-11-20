@@ -24,6 +24,7 @@ use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
+mod indexof;
 mod strfind;
 mod strpad;
 
@@ -516,6 +517,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             Ok(Value::List(
                 xs.windows(n).map(|c| Value::List(c.to_vec())).collect(),
             ))
+        }
+        // **VD-270 (indexof)**: vị trí **0-based** đầu/cuối theo `eq` cấu trúc (như `==`);
+        // không có/`xs` rỗng ⇒ `None`.
+        "list.index_of" | "list.last_index_of" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            Ok(indexof::goi(name, xs, &args[1]))
         }
         "list.take" | "list.drop" => {
             let xs = danh_sach(name, &args[0], 0, span)?;

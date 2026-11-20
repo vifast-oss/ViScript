@@ -83,7 +83,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `is_file`, `is_dir`) ⇒ **86** hàm; không xoá/đổi hàm cũ nào.
     // **SỬA KÈM LÝ DO (VD-270 strfind, 2026-11-21)**: +**3** hàm `std.str.*` (`find`, `rfind`,
     // `count`; `find`/`rfind` trả `Ty::OptInt` = `int?`) ⇒ **89** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 89, "bảng chữ ký phải đủ 89 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 indexof, 2026-11-21)**: +**2** hàm `std.list.*` (`index_of`,
+    // `last_index_of`; `(list[T], T) -> int?`) ⇒ **91** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 91, "bảng chữ ký phải đủ 91 hàm");
 }
 
 #[test]
@@ -118,6 +120,27 @@ fn strfind_tra_int_option_va_int() {
     assert_eq!(c.params, &[Ty::Str, Ty::Str]);
     assert_eq!(c.ret, Ty::Int);
     assert_eq!(c.ret.sang_type(), Type::Int);
+}
+
+#[test]
+fn indexof_tra_int_option() {
+    // **VD-270 (indexof)**: `index_of`/`last_index_of` là `(list[T], T) -> int?`; `T` buộc từ
+    // `xs` nên sugar `xs.index_of(v)` thoả R5c và `value` cùng kiểu phần tử.
+    for ten in ["list.index_of", "list.last_index_of"] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
+        assert_eq!(
+            f.params,
+            &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
+            "`{ten}`: tham số"
+        );
+        assert_eq!(f.ret, Ty::OptInt, "`{ten}`: kiểu trả");
+        assert_eq!(
+            f.ret.sang_type(),
+            Type::Opt(Box::new(Type::Int)),
+            "`{ten}`: phải hạ thành `Option[int]`"
+        );
+        assert_eq!(f.ret.ten(), "int?", "`{ten}`: tên hiển thị");
+    }
 }
 
 #[test]

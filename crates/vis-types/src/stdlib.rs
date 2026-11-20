@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 89] = [
+pub const FUNCS: [StdFn; 91] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -343,6 +343,18 @@ pub const FUNCS: [StdFn; 89] = [
         name: "list.windows",
         params: &[Ty::List(&Ty::Var(0)), Ty::Int],
         ret: Ty::List(&Ty::List(&Ty::Var(0))),
+    },
+    // **VD-270 (indexof)**: vị trí **0-based** đầu/cuối có phần tử `==` `value` (so **cấu
+    // trúc** như `==`); không có/`xs` rỗng ⇒ `None`; chữ ký `(list[T], T) -> int?`.
+    StdFn {
+        name: "list.index_of",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
+        ret: Ty::OptInt,
+    },
+    StdFn {
+        name: "list.last_index_of",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
+        ret: Ty::OptInt,
     },
     StdFn {
         name: "list.take",

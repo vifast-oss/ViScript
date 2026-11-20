@@ -194,7 +194,7 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | Module | Hàm chính | Ví dụ đã chạy ✔ |
 |---|---|---|
 | `std.fs` | `exists` `size` `is_file` `is_dir` `list` `read` `read_lines` `walk` `glob` `write` `append` `mkdir` `remove` `copy` `rename` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `fs.walk(".")` → tương đối, thư mục kèm `/`, DFS, **bỏ symlink**; `fs.glob(".", "**/*.txt")` → lọc `walk`, sắp theo **byte**, mẫu không `/` khớp **basename** (`*` `?` `**`); `mkdir` **một cấp**, `remove` **chỉ tệp**; `copy`/`rename` **chỉ tệp** (từ chối thư mục + symlink) và **từ chối đích đã tồn tại** (không ghi đè), `copy` chép **từng byte**, `rename` cùng hệ tệp; `size` = số **byte** tệp thường, `is_file`/`is_dir` dùng `symlink_metadata` (**không** đi theo symlink: symlink ⇒ `false`/`false`, `size` ⇒ `Err`), thiếu path ⇒ predicate `Ok(false)` |
-| `std.list` | `sort` `take` `drop` `chunk` `windows` `concat` `reverse` `unique` `zip` `min` `max` | `list.sort([3,1,2])` → `[1,2,3]`; `list.windows([1,2,3], 2)` → `[[1,2],[2,3]]` (cửa sổ **trượt**, `chunk` là nhóm rời; `n <= 0` ⇒ trap `VS0501`, `n > len` ⇒ `[]`) |
+| `std.list` | `sort` `take` `drop` `chunk` `windows` `concat` `reverse` `unique` `zip` `min` `max` `index_of` `last_index_of` | `list.sort([3,1,2])` → `[1,2,3]`; `list.windows([1,2,3], 2)` → `[[1,2],[2,3]]` (cửa sổ **trượt**, `chunk` là nhóm rời; `n <= 0` ⇒ trap `VS0501`, `n > len` ⇒ `[]`); `list.index_of([10,20,30,20], 20)` → `Some(1)`, `list.last_index_of(…)` → `Some(3)` (vị trí **0-based**, so **cấu trúc** như `==`; không có/rỗng ⇒ `None`) |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` | `map.keys(m)` |
 | `std.str` | `split` `join` `upper` `lower` `trim` `trim_start` `trim_end` `replace` `repeat` `starts_with` `ends_with` `contains` `find` `rfind` `count` `lines` `split_whitespace` `pad_left` `pad_right` `center` | `str.join(["a","b"], "-")` → `a-b`; `str.center("ab", 5, "-")` → `-ab--`; `str.pad_left("đ", 3, "-")` → `--đ` (đệm theo **ký tự Unicode**, `fill` rỗng ⇒ trap `VS0501`, `center` dư bên phải); `str.find("đ😀x", "x")` → `Some(2)`; `str.rfind("banana", "na")` → `Some(4)`; `str.count("aaaa", "aa")` → `2` (offset **scalar Unicode**, `count` **không chồng**; needle rỗng: `Some(0)`/`Some(len)`/`len+1`) |
 | `std.path` | `join` `basename` `dirname` `ext` `stem` `is_abs` | `path.join("a","b")` → `a/b` |
@@ -210,7 +210,7 @@ Method trên giá trị (không cần `use`):
 
 | Kiểu | Method ✔ |
 |---|---|
-| `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` — `map`/`filter` **trả list ngay** (eager) **[ĐÃ CÓ]** |
+| `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` `index_of` `last_index_of` — `map`/`filter` **trả list ngay** (eager); `index_of`/`last_index_of` là sugar R5c của `std.list.*` (`int?`) **[ĐÃ CÓ]** |
 | `Iterator[T]` | `.lazy()` trả iterator; cùng bộ method + `.to_list()`/`.to_map()`/`.to_set()`; **duyệt lại được**; `range`/`fs.lines` mặc định lười — **[DỰ KIẾN]** (R24) |
 | `map` | `len` `get` `has` `keys` `values` |
 | `str` | `len` `upper` `lower` `split` `chars` `contains` `find` `rfind` `count` `lines` `split_whitespace` `trim_start` `trim_end` `pad_left` `pad_right` `center` |
