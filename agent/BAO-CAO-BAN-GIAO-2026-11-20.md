@@ -12,7 +12,7 @@
 
 | Mục | Giá trị |
 |---|---|
-| HEAD / remote | `7d4512d3cc03375af9097a624dfb383318a3264f` — `origin/main` cùng hash, đã push |
+| HEAD / remote | `01bd435fd50de440b0d160f822fa313f9688497a` — `origin/main` cùng hash, đã push |
 | Trạng thái cây | **Sạch** (`git status --porcelain` rỗng) |
 | Worktree còn mở | **Không** — 4 worktree A/B/C/D đã merge và remove; chỉ `/home/ps/ViScript` (`main`) |
 | Tag | Chỉ `pha1-rc1` (= `05e42d0…`, không di chuyển) |
@@ -127,6 +127,21 @@ Tại `7d4512d3cc03375af9097a624dfb383318a3264f`:
 5. **Windows**: mới chỉ `cargo check --target`; chưa bằng chứng runtime Windows mới.
 6. Sau khi các mục trên đạt + gate trên đúng ứng viên: **mới** trình đổi runtime mặc định — lần này
    Agent 1 **không tự kết luận** được đổi.
+
+## 8b. Regression/fuzz/đo dài bổ sung (ST-283, sau báo cáo gốc)
+
+- **Đa target**: `cargo check --workspace --no-default-features` PASS trên Linux, Windows-msvc,
+  wasm32 — **bằng chứng biên dịch**, không phải runtime Windows.
+- **Fuzz**: 8 seed × 60 s (3 ở §7 + 5 bổ sung), **~75,8 triệu ca, 0 vi phạm**; seed lưu trong
+  `agent/JOURNAL/vd257-regression.md`.
+- **Soak**: 20 lần `cargo test --release -p vis-cli --test lat257_c_lifecycle` → **20/20 OK**
+  (11 passed mỗi lần), không flake/drift.
+- **Release**: loop-2M 374,68 ms (debug 3,43 s); `BUDGET`/`FUEL` vẫn chưa chốt; Q sweep cost-unit
+  không đổi, snapshot 0; **B1-real-frame release 200,7–202,4 ms** cho N=1/5/20 (startup 0,4–2,5 ms).
+- **Ranh giới parity**: `fee.trace()` là bảng tĩnh gồm mọi hàm/nhánh; parity thứ tự chỉ chứng minh
+  cho chương trình một hàm, không nhánh. Test `lat257_trace_audit.rs` ghi nhận tập sự kiện thực thi
+  là tập con của bảng tĩnh — **không** tuyên bố parity đầy đủ cho `match`/`with`/`?`.
+- Gate cuối sau các thay đổi regression: **1564 passed / 3 skipped / 0 failed** trên HEAD nêu ở mục 1.
 
 ## 9. Không làm / không kết luận
 
