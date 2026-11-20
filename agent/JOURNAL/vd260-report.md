@@ -30,6 +30,12 @@
 - `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
 - `test/toolchain/run.sh`: **12/12**.
 - `host_posix_real`: `/bin/echo`, `/usr/bin/grep`, `/bin/sh`, `/usr/bin/printf` thật, interp + VM.
+- QA độc lập @ `67f232a`: nextest **1727 passed / 3 skipped** (23.5 s); core-test **1151 passed**
+  (118 binaries, 35.7 s); nightly `--fuzz-minutes 5` **44.103.531 cases / 1.001.085.722 tokens /
+  0 vi phạm** (300 s), fmt-circle **475 tệp bất động**, 78 ca cú pháp sai bỏ qua; release artifact
+  chỉ `vis` (7.264.080 B) + licenses, **0 test-child**; host suite **54/54 + POSIX real**.
+- Lưu ý lịch sử: `63aff1c` (merge semantics3 trước khi cập nhật fixture rest-pattern) **đỏ core-test**
+  tại 2 ca refutable; `1a0249d` sửa fixture + R1, `67f232a` xanh lại. Không còn đỏ ở HEAD.
 
 ## 3. Bug review đã đóng (tiêu biểu)
 
