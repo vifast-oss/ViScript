@@ -87,6 +87,8 @@ enum Work<'a> {
     Bind {
         pat: &'a HPat,
         opt_depth: usize,
+        /// VD-257/D: span của câu `let` — dùng làm `site` cho E_ASSIGN.
+        span: Span,
     },
     /// `let … else:` — bóc `Ok`/`Some`, ngược lại chạy khối `else`.
     ApplyLetElse {
@@ -94,11 +96,13 @@ enum Work<'a> {
         else_body: &'a [HStmt],
         bind_sym: Option<u32>,
         opt_depth: usize,
+        span: Span,
     },
     /// Gán giá trị trên `vals` vào ô `var` (sym), kèm độ sâu `Opt` của annot.
     SetVar {
         sym: u32,
         opt_depth: usize,
+        span: Span,
     },
     /// Đặt `last` = giá trị trên `vals`.
     SetLast,
@@ -826,6 +830,8 @@ pub fn run_frame_for_test<'a>(
             break;
         }
         it.sched.borrow_mut().frame.current = current;
+        // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng ngân sách tổng).
+        crate::rt::fee::quota_reset_for_test();
         let outcome = step_frame(&mut it, current, &mut frames);
         match outcome {
             Ok(v) => {
@@ -1060,8 +1066,24 @@ fn step_frame<'a>(
 
 fn step_frame_owned<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>) -> R<Option<Value>> {
     loop {
+        // VD-257/D — hết hạn ngạch: yield về ĐUÔI ready, KHÔNG trap. Điểm này là
+        // continuation point: `frame` đang chứa toàn bộ `calls/work/vals/loops/
+        // restore` và sẽ được `step_frame` cất lại nguyên vẹn (xem :1057). Work-item
+        // trước đó đã charge + thi hành xong ⇒ resume không charge lại / không lặp
+        // side-effect. Chỉ phát `Pending{task:None,wait:None}` — nhánh driver có sẵn
+        // (`frame.ready.push_back(current)`), không cơ chế hàng đợi mới.
         if frame.done() {
             return Ok(frame.vals.pop());
+        }
+        // Không yield một frame ĐÃ xong (tránh turn rỗng, khớp VM ở loop-bottom).
+        if crate::rt::fee::quota_take_hit() {
+            let cur = it.sched.borrow().frame.current;
+            it.sched.borrow_mut().frame.log.push(format!("quota:{cur}"));
+            return Err(Abort::Pending(crate::rt::Pending {
+                task: None,
+                wait: None,
+                span: Span::new(0, 0),
+            }));
         }
         let w = frame.cur().work.pop();
         match w {

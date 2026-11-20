@@ -9,6 +9,7 @@
 //! `Th`, đăng ký wait và chạy frame khác. Bytecode/VERSION/cache-key/opcode **không đổi**.
 //! Không reactor, không socket, không `unsafe`, không dependency mới.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use vis_bytecode::fee::{FeeEntry, FeeTable};
@@ -52,6 +53,49 @@ impl core::fmt::Display for VmError {
     }
 }
 
+// ---------------------------------------------------------------------------
+// VD-257 / D — cấu hình budget+quota cho `run_frame_for_test` (test-only). Dùng
+// thread-local để KHÔNG đổi chữ ký `run_frame_for_test` / `FrameConfig`, không API
+// công, không CLI. Mặc định rỗng ⇒ đường frame VM không charge (test f2 vẫn đúng).
+// ---------------------------------------------------------------------------
+#[derive(Default)]
+struct FrameBudgetCfg {
+    fee: Option<FeeTable>,
+    budget: u64,
+    quota: Option<u64>,
+}
+
+thread_local! {
+    static FRAME_BUDGET_CFG: RefCell<FrameBudgetCfg> = RefCell::new(FrameBudgetCfg::default());
+    /// Số lần quota yield của lần `run_frame_*` gần nhất (test/đo).
+    static LAST_QUOTA_YIELDS: RefCell<u64> = RefCell::new(0);
+}
+
+/// Số lần quota yield của lần chạy frame VM gần nhất.
+#[doc(hidden)]
+pub fn frame_quota_yields_for_test() -> u64 {
+    LAST_QUOTA_YIELDS.with(|n| *n.borrow())
+}
+
+/// Bật instrumentation + (tuỳ chọn) quota cho đường frame VM. `quota = None` ⇒
+/// chỉ charge event/budget, không yield.
+#[doc(hidden)]
+pub fn frame_budget_enable_for_test(fee: FeeTable, budget: u64, quota: Option<u64>) {
+    FRAME_BUDGET_CFG.with(|c| {
+        *c.borrow_mut() = FrameBudgetCfg {
+            fee: Some(fee),
+            budget,
+            quota,
+        }
+    });
+}
+
+/// Tắt cấu hình — trả về mặc định (không charge/không quota).
+#[doc(hidden)]
+pub fn frame_budget_disable_for_test() {
+    FRAME_BUDGET_CFG.with(|c| *c.borrow_mut() = FrameBudgetCfg::default());
+}
+
 // **ST-276 (VD-256)** — test-hook ngân sách của VM; tách sang tệp này để giữ R1 ≤ 1500 dòng
 // cho `vm.rs`. Mặc định `budget_fee == None` ⇒ `budget_charge` là no-op.
 impl<'a> Vm<'a> {
@@ -68,18 +112,67 @@ impl<'a> Vm<'a> {
         &self.budget_trace
     }
 
+    // ---- VD-257/D — quota lượt (RIÊNG khỏi budget tổng, test-only) ----
+
+    /// Bật quota với hạn `limit`. Không đụng `budget_*`.
+    pub(crate) fn quota_setup_for_test(&mut self, limit: u64) {
+        self.quota_active = true;
+        self.quota_limit = limit as i64;
+        self.quota_remaining = limit as i64;
+        self.quota_hit = false;
+        self.quota_yields = 0;
+    }
+
+    /// Reset quota **đầu mỗi turn** (không reset budget).
+    pub(crate) fn quota_reset_for_test(&mut self) {
+        if self.quota_active {
+            self.quota_remaining = self.quota_limit;
+            self.quota_hit = false;
+        }
+    }
+
+    /// Trừ quota bởi CÙNG `w` với budget (một sự kiện, hai bộ đếm). Không trap.
+    pub(crate) fn quota_charge(&mut self, w: i64) {
+        if self.quota_active {
+            self.quota_remaining -= w;
+            if self.quota_remaining <= 0 {
+                self.quota_hit = true;
+            }
+        }
+    }
+
+    /// Lấy (và xoá) cờ hết quota tại continuation point.
+    pub(crate) fn quota_take_hit(&mut self) -> bool {
+        if !self.quota_active || !self.quota_hit {
+            return false;
+        }
+        self.quota_hit = false;
+        self.quota_yields += 1;
+        true
+    }
+
+    /// Số lần yield do quota (test/đo).
+    #[doc(hidden)]
+    pub fn quota_yields_for_test(&self) -> u64 {
+        self.quota_yields
+    }
+
     /// Charge **mọi** sự kiện tại `(hàm, pc)` theo thứ tự bảng phụ. D6: pc lưu sau charge ⇒
     /// resume không charge lại nhóm cũ.
     pub(crate) fn budget_charge(&mut self, fi: u32, pc: usize, span: Span) -> R<()> {
-        let Some(fee) = self.budget_fee.as_ref() else {
-            return Ok(());
+        // Copy ra Vec để kết thúc mượn immutable của `self.budget_fee` trước khi
+        // gọi `self.quota_charge(w)` (cần mượn mutable). `FeeEntry` là Copy.
+        let events: Vec<FeeEntry> = match self
+            .budget_fee
+            .as_ref()
+            .and_then(|f| f.funcs.get(fi as usize))
+        {
+            Some(v) => v.iter().filter(|e| e.pc as usize == pc).copied().collect(),
+            None => return Ok(()),
         };
-        let Some(events) = fee.funcs.get(fi as usize) else {
-            return Ok(());
-        };
-        for e in events.iter().filter(|e| e.pc as usize == pc) {
+        for e in events {
             let w = vis_bytecode::fee::standard_weight(e.kind) as i64;
-            self.budget_trace.push(*e);
+            self.budget_trace.push(e);
             if w > self.budget_remaining {
                 self.budget_hit = true;
                 return Err(Abort::Trap(Trap::new(
@@ -94,6 +187,8 @@ impl<'a> Vm<'a> {
                 )));
             }
             self.budget_remaining -= w;
+            // VD-257/D — MỘT sự kiện trừ CẢ HAI bộ đếm; quota KHÔNG trap.
+            self.quota_charge(w);
         }
         Ok(())
     }
@@ -182,9 +277,19 @@ fn run_frame_with_budget<'m>(
             Vec::new(),
         );
     }
+    // VD-257/D — lấy cấu hình budget/quota từ thread-local hook nếu có.
+    let cfg = FRAME_BUDGET_CFG.with(|c| {
+        let c = c.borrow();
+        (c.fee.clone(), c.budget, c.quota)
+    });
+    let budget = budget.or_else(|| cfg.0.map(|f| (f, cfg.1)));
     if let Some((fee, limit)) = budget {
         vm.budget_enable_for_test(fee, limit);
     }
+    if let Some(q) = cfg.2 {
+        vm.quota_setup_for_test(q);
+    }
+    LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = 0);
     vm.init_globals();
     let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
     let main_th = match main_th(&vm, &argv) {
@@ -230,6 +335,8 @@ fn run_frame_with_budget<'m>(
             break;
         }
         vm.sched.borrow_mut().frame.current = current;
+        // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng budget tổng).
+        vm.quota_reset_for_test();
         let mut th = frames.remove(&current).expect("frame hiện tại");
         let outcome = th.exec(&mut vm);
         match outcome {
@@ -373,6 +480,7 @@ fn run_frame_with_budget<'m>(
     }
     // Lát 2: reactor về baseline sau khi handle test thả.
     vm.sched.borrow_mut().frame_reactor_shutdown();
+    LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = vm.quota_yields_for_test());
     (
         frame_output(&vm, final_value, trap),
         vm.budget_trace_for_test().to_vec(),
