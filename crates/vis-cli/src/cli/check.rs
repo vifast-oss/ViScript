@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-116b**: `vis check` (TAP + `--json`) — tách nguyên khối từ `main.rs`, không đổi hành vi.
+//! **VD-269**: thêm `--stdin` — kiểm bộ đệm UTF-8 từ stdin như một tệp script tên `-`.
 
 use crate::*;
 use std::process::ExitCode;
 
 fn usage_check() -> ExitCode {
-    eprintln!("dùng: vis check [--syntax] [--no-extern] [--json] <tệp…>");
+    eprintln!(
+        "dùng: vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json]"
+    );
+    eprintln!(
+        "  --stdin: đọc UTF-8 từ stdin, kiểm như một tệp script tên `-`; không nhận tệp; thoát 0 (sạch) / 1 (có chẩn đoán) / 2 (dùng sai, không đọc được hoặc không phải UTF-8)"
+    );
     ExitCode::from(2)
 }
 
@@ -77,14 +83,32 @@ fn check_mode(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDo
             severity: "error",
         });
     }
-    let loaded = modules::load_full(path, cho_ngoai, kiem_kieu).map_err(|e| ChanDoanCheck {
+    let loaded = modules::load_full(path, cho_ngoai, kiem_kieu).map_err(loi_nap)?;
+    check_loaded(path, loaded, kiem_kieu)
+}
+
+/// **VD-269**: như [`check_mode`] nhưng tệp chính là **bộ đệm stdin** ảo `-` (cùng đường
+/// [`modules::load_full_stdin`], không đọc/ghi đĩa).
+fn check_stdin(text: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<(), ChanDoanCheck> {
+    let loaded = modules::load_full_stdin(text, cho_ngoai, kiem_kieu).map_err(loi_nap)?;
+    check_loaded("-", loaded, kiem_kieu)
+}
+
+/// Lỗi **cấp API** khi nạp (không phải chẩn đoán ngôn ngữ) ⇒ một dòng `VS0201`.
+fn loi_nap(e: modules::LoadError) -> ChanDoanCheck {
+    ChanDoanCheck {
         ma: "VS0201",
         line: 1,
         col: 1,
         msg: e.to_string(),
         phu: String::new(),
         severity: "error",
-    })?;
+    }
+}
+
+/// Phần **sau nạp** dùng chung cho tệp và stdin: in warning mềm, lọc tầng (QD §7.4), trả
+/// **một** chẩn đoán đầu tiên. `path` chỉ dùng để tách tệp chính/phụ (`-` cho stdin).
+fn check_loaded(path: &str, loaded: modules::Loaded, kiem_kieu: bool) -> Result<(), ChanDoanCheck> {
     let la_vish = path.ends_with(".vish");
     // **VD-216 (VD-212, 2026-11-18)**: `VS0111` chết — bỏ bộ lọc chết. Mọi `Severity::Warning`
     // khác (`VS0208` danh sách làm khoá, …) **in** ra stderr nhưng **không** làm đỏ;
@@ -148,40 +172,43 @@ fn severity_cua(s: vis_diag::Severity) -> &'static str {
 /// `vis check` TAP vẫn chỉ báo chẩn đoán **đầu** như trước; JSON cần đủ.
 fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> KetQuaCheck {
     if let Err(e) = std::fs::read_to_string(path) {
-        return KetQuaCheck {
-            files: vec![TepJson {
-                rel: path.to_string(),
-                hien: path.to_string(),
-            }],
-            diags: vec![ChanDoanCheck {
-                ma: "VS0201",
-                line: 1,
-                col: 1,
-                msg: format!("không đọc được: {e}"),
-                phu: String::new(),
-                severity: "error",
-            }],
-        };
+        return ket_qua_loi(path, format!("không đọc được: {e}"));
     }
-    let loaded = match modules::load_full(path, cho_ngoai, kiem_kieu) {
-        Ok(l) => l,
-        Err(e) => {
-            return KetQuaCheck {
-                files: vec![TepJson {
-                    rel: path.to_string(),
-                    hien: path.to_string(),
-                }],
-                diags: vec![ChanDoanCheck {
-                    ma: "VS0201",
-                    line: 1,
-                    col: 1,
-                    msg: e.to_string(),
-                    phu: String::new(),
-                    severity: "error",
-                }],
-            }
-        }
-    };
+    match modules::load_full(path, cho_ngoai, kiem_kieu) {
+        Ok(l) => check_all_loaded(path, l, kiem_kieu),
+        Err(e) => ket_qua_loi(path, e.to_string()),
+    }
+}
+
+/// **VD-269**: như [`check_all`] nhưng tệp chính là **bộ đệm stdin** ảo `-`.
+fn check_all_stdin(text: &str, cho_ngoai: bool, kiem_kieu: bool) -> KetQuaCheck {
+    match modules::load_full_stdin(text, cho_ngoai, kiem_kieu) {
+        Ok(l) => check_all_loaded("-", l, kiem_kieu),
+        Err(e) => ket_qua_loi("-", e.to_string()),
+    }
+}
+
+/// Kết quả lỗi **cấp API** (không đọc được/nạp được) ⇒ đúng một `VS0201`, khớp đường TAP.
+fn ket_qua_loi(path: &str, msg: String) -> KetQuaCheck {
+    KetQuaCheck {
+        files: vec![TepJson {
+            rel: path.to_string(),
+            hien: path.to_string(),
+        }],
+        diags: vec![ChanDoanCheck {
+            ma: "VS0201",
+            line: 1,
+            col: 1,
+            msg,
+            phu: String::new(),
+            severity: "error",
+        }],
+    }
+}
+
+/// Phần **sau nạp** dùng chung cho tệp và stdin: dựng danh sách tệp theo thứ tự nạp + lọc
+/// chẩn đoán như [`check_loaded`]. `path` chỉ dùng để hiện tên tệp chính (`-` cho stdin).
+fn check_all_loaded(path: &str, loaded: modules::Loaded, kiem_kieu: bool) -> KetQuaCheck {
     // `.vish` có thể có `FileUnit.rel` rỗng ⇒ fallback đúng đường dẫn đối số (không mất chẩn đoán).
     let root = loaded
         .files
@@ -244,10 +271,18 @@ fn check_all(path: &str, cho_ngoai: bool, kiem_kieu: bool) -> KetQuaCheck {
 /// **ST-101**: `vis check --json` — **một** object nén trên stdout; `line`/`col` **1-based**; thứ tự
 /// `files` = thứ tự đối số, `diagnostics` = thứ tự phát hiện; exit y hệt không cờ.
 pub(crate) fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool) -> ExitCode {
+    let kqs: Vec<KetQuaCheck> = args
+        .iter()
+        .map(|path| check_all(path.as_str(), cho_ngoai, kiem_kieu))
+        .collect();
+    xuat_check_json(&kqs)
+}
+
+/// **VD-269**: phần in JSON dùng chung cho đường tệp và `--stdin` (một kết quả ⇒ một tệp `-`).
+fn xuat_check_json(kqs: &[KetQuaCheck]) -> ExitCode {
     let mut files = String::new();
     let mut ok = true;
-    for (i, path) in args.iter().enumerate() {
-        let kq = check_all(path, cho_ngoai, kiem_kieu);
+    for (i, kq) in kqs.iter().enumerate() {
         // **ST-240 / VD-242 §4 (nợ #180)**: khớp TAP — warning mềm vẫn được phát ra nhưng **không**
         // làm đỏ. Ngoại lệ `VS0107` (tab) vẫn là lỗi như TAP/`run --tap`.
         let co_loi = kq
@@ -299,6 +334,75 @@ pub(crate) fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool)
     }
 }
 
+/// Dòng TAP `not ok` + **đúng một** dòng chẩn đoán — dùng chung cho đường tệp và `--stdin`
+/// (nhờ vậy `-` in y hệt một tệp, chỉ khác tên).
+fn dong_not_ok(n: usize, path: &str, d: &ChanDoanCheck) -> String {
+    // ST-25: chẩn đoán ở tệp phụ ⇒ dòng `not ok` nêu `tệp:dòng:cột` (TAP đúng tệp).
+    let them = if d.phu.is_empty() {
+        String::new()
+    } else {
+        format!(" ({}:{}:{})", d.phu, d.line, d.col)
+    };
+    // Lỗi **đọc tệp** giữ nguyên định dạng cũ: `# không đọc được: …` (không mã).
+    let dong = if d.msg.starts_with("không đọc được") {
+        d.msg.clone()
+    } else {
+        dong_chan_doan(d.ma, d.line, d.col, &d.msg)
+    };
+    format!("not ok {n} - {path}{them}\n# {dong}\n")
+}
+
+/// **VD-269**: `vis check --stdin` — đọc **toàn bộ** UTF-8 từ stdin, kiểm như một tệp script
+/// tên hiển thị `-` qua cùng đường [`check_stdin`]/[`check_all_stdin`]. Không nhận tệp/đối số;
+/// `--syntax`, `--no-extern`, `--json` vẫn được tôn trọng. Thoát 0 sạch / 1 có chẩn đoán /
+/// 2 dùng sai, lỗi đọc hoặc stdin **không phải UTF-8**.
+fn run_check_stdin(
+    con_lai: &[&String],
+    cho_ngoai: bool,
+    kiem_kieu: bool,
+    json_ra: bool,
+) -> ExitCode {
+    if let Some(bad) = con_lai.iter().find(|a| a.starts_with('-')) {
+        eprintln!("vis check: không hỗ trợ cờ `{bad}` khi dùng --stdin");
+        return usage_check();
+    }
+    if let Some(a) = con_lai.first() {
+        eprintln!("vis check: --stdin không nhận đối số `{a}` (không nhận tệp)");
+        return usage_check();
+    }
+    use std::io::Read;
+    let mut raw = Vec::new();
+    if let Err(e) = std::io::stdin().read_to_end(&mut raw) {
+        eprintln!("vis check: không đọc được stdin: {e}");
+        return ExitCode::from(2);
+    }
+    let src = match String::from_utf8(raw) {
+        Ok(s) => s,
+        Err(_) => {
+            eprintln!("vis check: stdin không phải UTF-8 hợp lệ");
+            return ExitCode::from(2);
+        }
+    };
+    if json_ra {
+        let kq = check_all_stdin(&src, cho_ngoai, kiem_kieu);
+        return xuat_check_json(&[kq]);
+    }
+    let mut tap = String::from("TAP version 13\n1..1\n");
+    let (dong, failed) = match check_stdin(&src, cho_ngoai, kiem_kieu) {
+        Ok(()) => ("ok 1 - -\n".to_string(), false),
+        Err(d) => (dong_not_ok(1, "-", &d), true),
+    };
+    tap.push_str(&dong);
+    if !xuat_stdout(&tap) {
+        return ExitCode::from(2);
+    }
+    if failed {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
 /// `vis check <tệp…>` — in TAP 13. Thoát 0 (sạch) / 1 (có tệp hỏng) / 2 (dùng sai, `.vish`).
 pub(crate) fn run_check(args: &[String]) -> ExitCode {
     if args.is_empty() {
@@ -311,12 +415,20 @@ pub(crate) fn run_check(args: &[String]) -> ExitCode {
     let kiem_kieu = !args.iter().any(|a| a == "--syntax");
     // **ST-101**: `--json` — đầu ra máy đọc, một dòng, stderr rỗng.
     let json_ra = args.iter().any(|a| a == "--json");
+    // **VD-269**: `--stdin` là chế độ riêng — không lẫn với đường tệp.
+    let stdin_ra = args.iter().any(|a| a == "--stdin");
     let args: Vec<&String> = args
         .iter()
         .filter(|a| {
-            a.as_str() != "--no-extern" && a.as_str() != "--syntax" && a.as_str() != "--json"
+            !matches!(
+                a.as_str(),
+                "--no-extern" | "--syntax" | "--json" | "--stdin"
+            )
         })
         .collect();
+    if stdin_ra {
+        return run_check_stdin(&args, cho_ngoai, kiem_kieu, json_ra);
+    }
     if json_ra {
         if args.is_empty() {
             return usage_check();
@@ -337,19 +449,7 @@ pub(crate) fn run_check(args: &[String]) -> ExitCode {
             Ok(()) => tap.push_str(&format!("ok {n} - {path}\n")),
             Err(d) => {
                 failed = true;
-                // ST-25: chẩn đoán ở tệp phụ ⇒ dòng `not ok` nêu `tệp:dòng:cột` (TAP đúng tệp).
-                let them = if d.phu.is_empty() {
-                    String::new()
-                } else {
-                    format!(" ({}:{}:{})", d.phu, d.line, d.col)
-                };
-                // Lỗi **đọc tệp** giữ nguyên định dạng cũ: `# không đọc được: …` (không mã).
-                let dong = if d.msg.starts_with("không đọc được") {
-                    d.msg.clone()
-                } else {
-                    dong_chan_doan(d.ma, d.line, d.col, &d.msg)
-                };
-                tap.push_str(&format!("not ok {n} - {path}{them}\n# {dong}\n"));
+                tap.push_str(&dong_not_ok(n, path.as_str(), &d));
             }
         }
     }

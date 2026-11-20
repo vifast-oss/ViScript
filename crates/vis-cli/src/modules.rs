@@ -759,7 +759,7 @@ pub fn load_with(main: &str, cho_ngoai: bool) -> Result<Loaded, LoadError> {
 /// Như [`load_with`] nhưng `kiem_kieu = false` ⇒ **chỉ cú pháp/hạ**, bỏ chẩn đoán `tyck`
 /// (`vis check --syntax`, dùng cho cổng "khối mã trong tài liệu **parse** được" — QD §7.4).
 pub fn load_full(main: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<Loaded, LoadError> {
-    load_full_voi(main, None, cho_ngoai, kiem_kieu)
+    load_full_voi(main, None, cho_ngoai, kiem_kieu, false)
 }
 
 /// **ST-80 (VD-108)**: như [`load_full`] nhưng **văn bản tệp chính** lấy từ `text` (buffer LSP)
@@ -770,7 +770,15 @@ pub fn load_full_voi_text(
     cho_ngoai: bool,
     kiem_kieu: bool,
 ) -> Result<Loaded, LoadError> {
-    load_full_voi(main, Some(text), cho_ngoai, kiem_kieu)
+    load_full_voi(main, Some(text), cho_ngoai, kiem_kieu, false)
+}
+
+/// **VD-269**: `vis check --stdin` — nạp **script mode** từ bộ đệm stdin dưới tên ảo `-`
+/// (không đọc/ghi đĩa). Cùng đường [`load_full`] (lex → parse → hạ → tyck) nên luật chẩn
+/// đoán/mức không đổi; tên `-` không có đuôi ⇒ `Mode::Script`. `use ./x` tương đối giải
+/// theo **thư mục hiện hành** (như tệp chính nằm ở đó).
+pub fn load_full_stdin(text: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<Loaded, LoadError> {
+    load_full_voi("-", Some(text), cho_ngoai, kiem_kieu, true)
 }
 
 fn load_full_voi(
@@ -778,9 +786,10 @@ fn load_full_voi(
     text_chinh: Option<&str>,
     cho_ngoai: bool,
     kiem_kieu: bool,
+    main_ao: bool,
 ) -> Result<Loaded, LoadError> {
     let main_path = PathBuf::from(main);
-    if !main_path.is_file() {
+    if !main_ao && !main_path.is_file() {
         return Err(LoadError::NotFile(main.to_string()));
     }
     let mode = if main.ends_with(".vish") {
