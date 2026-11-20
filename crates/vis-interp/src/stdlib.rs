@@ -16,6 +16,7 @@ use vis_types::stdlib::{sig_of, Ty};
 
 use crate::builtin::Host;
 use crate::interp::{Abort, Trap, R};
+use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
@@ -531,6 +532,21 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tay = chuoi(name, &args[0], 0, span)?;
             let toi_da = so(name, &args[1], 1, span)?;
             let timeout = so(name, &args[2], 2, span)?;
+            // ST-268/VD-252 (Lát 2): đường frame test dùng reactor giả — KHÔNG đọc socket
+            // thật, KHÔNG busy-poll. Runtime mặc định (frame.enabled == false) đi nguyên văn.
+            if host.sched().borrow().frame.enabled {
+                let n = match gioi_han_net_read(toi_da) {
+                    Ok(n) => n,
+                    Err(e) => return Ok(Value::err(Value::ban_ghi_error(e, None))),
+                };
+                let _ = n; // trần `NET_READ_CAP` đã kiểm; reactor giả không cấp phát byte.
+                return host.sched().borrow_mut().frame_reactor_poll(
+                    ReactorOp::Read,
+                    tay,
+                    timeout,
+                    span,
+                );
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             // **ST-238 / VD-242 (nợ #167)**: `so()` đã chặn sai kiểu; ở đây chặn âm/overflow/cap
             // trước khi host cấp phát. Mọi trường hợp invalid ⇒ `Result.Err`, không abort.
@@ -576,6 +592,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             } else {
                 0
             };
+            // ST-268/VD-252 (Lát 2): accept trên đường frame test = reactor giả.
+            if host.sched().borrow().frame.enabled {
+                return host.sched().borrow_mut().frame_reactor_poll(
+                    ReactorOp::Accept,
+                    tay,
+                    timeout,
+                    span,
+                );
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 host.accept(tay, timeout.max(0) as u64).map(Value::Str),

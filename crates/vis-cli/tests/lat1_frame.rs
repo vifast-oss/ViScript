@@ -25,6 +25,7 @@ fn cfg(sources: &[(&str, u64)], events: Vec<FakeEvent>) -> FrameConfig {
     FrameConfig {
         fake_sources: sources.iter().map(|(a, b)| (a.to_string(), *b)).collect(),
         events,
+        ..Default::default()
     }
 }
 
@@ -220,6 +221,7 @@ fn c7_reclaim_verified_by_diag_snapshot() {
         frames: 0,
         waiters: 0,
         ready: 0,
+        ..Default::default()
     };
     assert_eq!(
         i.snapshot, z,

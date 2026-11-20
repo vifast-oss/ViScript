@@ -13,6 +13,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use vis_syntax::Span;
 
@@ -89,8 +90,12 @@ impl Chan {
 #[derive(Debug, Clone)]
 pub struct Pending {
     /// Tác vụ đang được `await` (kết quả/event của nó sẽ đánh thức frame hiện tại).
-    pub task: Rc<Task>,
+    /// `None` cho wait reactor (`read`/`accept`) — khi đó dùng [`Pending::wait`].
+    pub task: Option<Rc<Task>>,
     pub span: Span,
+    /// **ST-268/VD-252 (Lát 2)**: wait trực tiếp do reactor đăng ký (`read`/`accept`/
+    /// timer), không cần một `Task` trung gian. `None` cho `await` thường (Lát 1).
+    pub wait: Option<Wait>,
 }
 
 /// **Chỉ test**: cái một frame đang chờ.
@@ -101,6 +106,20 @@ pub enum Wait {
     Task(u32),
     /// Chờ event giả có khóa `key`, thế hệ `gen`.
     Event { key: u64, gen: u64 },
+    /// **ST-268/VD-252 (Lát 2)**: chờ reactor giả — `read`/`accept` có `key` đăng ký
+    /// duy nhất và thế hệ `gen`. `key` là số thứ tự đăng ký tăng dần (không phải fd/tay),
+    /// nên tay được mở lại không bao giờ bị event cũ đánh thức nhầm.
+    Reactor { key: u64, gen: u64 },
+}
+
+impl Wait {
+    /// Thế hệ của wait (dùng để dựng `Waiter` từ `Pending::wait` ở driver).
+    pub fn gen_of(&self, fallback: u64) -> u64 {
+        match self {
+            Wait::Event { gen, .. } | Wait::Reactor { gen, .. } => *gen,
+            Wait::Task(_) => fallback,
+        }
+    }
 }
 
 /// **Chỉ test**: một sự kiện giả trong trace. `seq` là khóa thứ tự **được ghi trong
@@ -133,6 +152,87 @@ pub struct DiagSnapshot {
     pub frames: usize,
     pub waiters: usize,
     pub ready: usize,
+    /// **Lát 2**: số đăng ký reactor còn sống (`read`/`accept` đang treo).
+    pub regs: usize,
+    /// **Lát 2**: số timer monotonic còn sống (sự kiện có deadline).
+    pub timers: usize,
+}
+
+// ===========================================================================
+// ST-268 / VD-252 — LÁT 2: reactor giả **tất định** + timer monotonic (chỉ test).
+//
+// Reactor này KHÔNG phải sleep-poll và KHÔNG đọc socket thật: nó là nguồn sự kiện
+// do trace cung cấp (`seq`, `key`, `gen`), được driver fire theo thứ tự `seq` ghi
+// trong trace. `read`/`accept` khi chưa sẵn sàng ⇒ đăng ký wait + `Abort::Pending`;
+// scheduler chạy frame khác; hết frame sẵn sàng ⇒ fire event tiếp theo (hoặc chờ
+// tới deadline monotonic gần nhất). Mọi thao tác ghi log tất định để hai engine
+// so sánh byte-with-byte. Không `unsafe`, không dependency, không CLI/API mới.
+// ===========================================================================
+
+/// **Chỉ test (Lát 2)**: phép toán mạng được reactor giả phủ (mở rộng dần).
+/// `connect`/`write` vẫn đồng bộ ở đường test — xem report (có thể chặn scheduler).
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReactorOp {
+    Read,
+    Accept,
+}
+
+/// **Chỉ test (Lát 2)**: kết quả một sự kiện reactor giả.
+#[doc(hidden)]
+#[derive(Debug, Clone)]
+pub enum ReactorOutcome {
+    /// Dữ liệu sẵn sàng — `Value::ok(...)` cho `read`, handle cho `accept`.
+    Ready(Value),
+    /// Thức giả (spurious): retry gặp `WouldBlock` ⇒ re-arm với `gen` mới (không spin).
+    Spurious,
+    /// EOF — `read` trả `""`, bỏ đăng ký đúng một lần.
+    Eof,
+    /// Lỗi dữ liệu — `read`/`accept` trả `Result.Err`.
+    Error(String),
+    /// Tay bị đóng khi đang chờ — hủy đăng ký + vô hiệu event cũ.
+    Close,
+}
+
+/// **Chỉ test (Lát 2)**: một sự kiện trong trace reactor. `seq` khóa thứ tự fire;
+/// `key` là khóa đăng ký (0 = khớp mọi đăng ký, dùng cho timer gần nhất); `gen` là
+/// thế hệ đăng ký; `deadline_ms` (nếu có) là deadline monotonic tương đối kể từ
+/// lúc bật frame — dùng để chọn timer gần nhất khi scheduler rảnh.
+#[doc(hidden)]
+#[derive(Debug, Clone)]
+pub struct ReactorEvent {
+    pub seq: u64,
+    pub key: u64,
+    pub gen: u64,
+    pub outcome: ReactorOutcome,
+    pub deadline_ms: Option<u64>,
+}
+
+/// **Chỉ test (Lát 2)**: một đăng ký chờ đang sống trong reactor giả.
+#[doc(hidden)]
+#[derive(Debug, Clone)]
+pub struct ReactorReg {
+    pub key: u64,
+    pub handle: String,
+    pub op: ReactorOp,
+    pub frame: u32,
+    pub gen: u64,
+}
+
+/// **Chỉ test (Lát 2)**: toàn bộ trạng thái reactor giả.
+#[doc(hidden)]
+#[derive(Debug, Default)]
+pub struct ReactorState {
+    pub regs: Vec<ReactorReg>,
+    pub next_key: u64,
+    pub events: Vec<ReactorEvent>,
+    /// `key → gen` đã fire — chặn duplicate wake ở thế hệ hiện hành.
+    pub fired: HashMap<u64, u64>,
+    /// Kết quả đã fire, chờ frame retry tiêu thụ (mỗi key đúng một lần).
+    pub results: HashMap<u64, ReactorOutcome>,
+    pub log: Vec<String>,
+    /// Mốc monotonic dùng để tính deadline của timer trong test B1.
+    pub epoch: Option<Instant>,
 }
 
 /// **Chỉ test**: toàn bộ trạng thái frame scheduler. Nằm trong `Scheduler.frame`;
@@ -162,6 +262,13 @@ pub struct FrameTest {
     pub live_frames: usize,
     /// Sự kiện đã fire (khóa → thế hệ cuối) — chặn fire trùng.
     pub fired: HashMap<u64, u64>,
+    /// **Lát 2**: reactor giả + timer monotonic (trace-driven).
+    pub reactor: ReactorState,
+    /// **Lát 2**: frame hiện hành — `stdlib` đọc để gán đăng ký cho đúng frame.
+    pub current: u32,
+    /// **Lát 2**: nếu `true`, khi rảnh scheduler ngủ **một lần** tới deadline monotonic
+    /// gần nhất (dùng cho đo B1); `false` (mặc định) ⇒ fire ngay, hoàn toàn tất định.
+    pub timer_real_wait: bool,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -331,6 +438,11 @@ impl Scheduler {
             self.frame_fire(ev);
             return self.frame.ready.pop_front();
         }
+        // Lát 2: hết frame + hết event Lát 1 ⇒ chờ reactor / timer monotonic rồi fire
+        // **một** event reactor theo `seq` (xem `frame_idle`). Không sleep-poll.
+        if self.frame_idle() {
+            return self.frame.ready.pop_front();
+        }
         None
     }
 
@@ -412,6 +524,12 @@ impl Scheduler {
         while let Some(ev) = self.frame.events.pop_front() {
             self.frame_fire(ev);
         }
+        // Lát 2: fire nốt event reactor còn lại (duplicate/stale vẫn được log) để trace
+        // đầy đủ giữa hai engine — không cắt ngắn.
+        let evs = std::mem::take(&mut self.frame.reactor.events);
+        for ev in evs {
+            self.frame_reactor_fire(ev);
+        }
     }
 
     /// **Chỉ test**: main kết thúc — join mọi task chưa xong (không auto-cancel), rồi
@@ -450,9 +568,23 @@ impl Scheduler {
         self.frame.waiters.retain(|w| !dead.contains(&w.frame));
         self.frame.external.retain(|id, _| !dead.contains(id));
         self.frame.ready.retain(|f| !dead.contains(f));
+        // Lát 2: đăng ký/kết quả của frame đã thu hồi cũng phải biến mất (lifecycle).
+        self.frame.reactor.regs.retain(|r| !dead.contains(&r.frame));
+        let dead_keys: Vec<u64> = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .filter(|r| dead.contains(&r.frame))
+            .map(|r| r.key)
+            .collect();
+        for k in dead_keys {
+            self.frame.reactor.results.remove(&k);
+            self.frame.reactor.fired.remove(&k);
+        }
     }
 
-    /// **Chỉ test hook chẩn đoán** — đếm task/frame/waiter/ready đang sống.
+    /// **Chỉ test hook chẩn đoán** — đếm task/frame/waiter/ready + reactor đang sống.
     #[doc(hidden)]
     pub fn diag_snapshot(&self) -> DiagSnapshot {
         DiagSnapshot {
@@ -460,8 +592,259 @@ impl Scheduler {
             frames: self.frame.live_frames,
             waiters: self.frame.waiters.len(),
             ready: self.frame.ready.len(),
+            regs: self.frame.reactor.regs.len(),
+            timers: self
+                .frame
+                .reactor
+                .events
+                .iter()
+                .filter(|e| e.deadline_ms.is_some())
+                .count(),
         }
     }
+
+    // -----------------------------------------------------------------------
+    // ST-268 / VD-252 — API reactor giả (CHỈ TEST). Mọi hàm ở đây là tất định,
+    // không đọc socket, không đệ quy scheduler, không sleep-poll readiness.
+    // -----------------------------------------------------------------------
+
+    /// Nạp trace reactor giả từ config. `events` được sắp theo `seq` (tie-break bằng
+    /// `key`) để thứ tự fire hoàn toàn do trace quyết định — không hash/địa chỉ.
+    #[doc(hidden)]
+    pub fn frame_reactor_load_for_test(&mut self, mut events: Vec<ReactorEvent>, real_wait: bool) {
+        events.sort_by_key(|e| (e.seq, e.key, e.gen));
+        self.frame.reactor.events = events;
+        self.frame.reactor.epoch = Some(Instant::now());
+        self.frame.timer_real_wait = real_wait;
+        self.frame
+            .reactor
+            .log
+            .push(format!("renable:{}", self.frame.reactor.events.len()));
+    }
+
+    /// `read`/`accept` trên đường frame test: nếu đã có kết quả từ event đã fire ⇒
+    /// tiêu thụ (đúng một lần) rồi trả; nếu bị thức giả ⇒ re-arm với `gen` mới rồi
+    /// `Pending`; nếu chưa sẵn sàng ⇒ đăng ký wait + `Pending`. KHÔNG gọi `NetHost`
+    /// thật, KHÔNG block, KHÔNG spin.
+    #[doc(hidden)]
+    pub fn frame_reactor_poll(
+        &mut self,
+        op: ReactorOp,
+        handle: &str,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Value> {
+        let existing = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .find(|r| r.handle == handle && r.op == op)
+            .cloned();
+        let (key, gen) = match existing {
+            Some(r) => (r.key, r.gen),
+            None => {
+                let key = self.frame.reactor.next_key;
+                self.frame.reactor.next_key += 1;
+                let frame = self.frame.current;
+                self.frame.reactor.regs.push(ReactorReg {
+                    key,
+                    handle: handle.to_string(),
+                    op,
+                    frame,
+                    gen: 0,
+                });
+                self.frame.reactor.log.push(format!(
+                    "reg:{}:{}:{:?}:{}:{}",
+                    key, handle, op, frame, timeout_ms
+                ));
+                (key, 0)
+            }
+        };
+        if let Some(out) = self.frame.reactor.results.remove(&key) {
+            match out {
+                ReactorOutcome::Ready(v) => {
+                    self.frame.reactor.regs.retain(|r| r.key != key);
+                    self.frame.reactor.log.push(format!("done:{}", key));
+                    return Ok(v);
+                }
+                ReactorOutcome::Eof => {
+                    self.frame.reactor.regs.retain(|r| r.key != key);
+                    self.frame.reactor.log.push(format!("eof:{}", key));
+                    return Ok(ok_str(""));
+                }
+                ReactorOutcome::Error(msg) => {
+                    self.frame.reactor.regs.retain(|r| r.key != key);
+                    self.frame.reactor.log.push(format!("err:{}", key));
+                    return Ok(err_str(msg));
+                }
+                ReactorOutcome::Close => {
+                    self.frame.reactor.regs.retain(|r| r.key != key);
+                    self.frame.reactor.log.push(format!("closed:{}", key));
+                    return Ok(err_str(format!("tay `{handle}` đã đóng khi đang chờ")));
+                }
+                // Phòng thủ: thức giả được xử lý khi fire (xem `frame_reactor_fire`).
+                ReactorOutcome::Spurious => {}
+            }
+        }
+        Err(Abort::Pending(Pending {
+            task: None,
+            span,
+            wait: Some(Wait::Reactor { key, gen }),
+        }))
+    }
+
+    /// Fire **một** event reactor theo thứ tự `seq`. Stale (gen lệch / không còn đăng
+    /// ký) và duplicate (key đã fire ở gen này) chỉ ghi log — KHÔNG wake, KHÔNG rerun.
+    #[doc(hidden)]
+    pub fn frame_reactor_fire(&mut self, ev: ReactorEvent) {
+        self.frame
+            .reactor
+            .log
+            .push(format!("rfire:{}:{}:{}", ev.seq, ev.key, ev.gen));
+        // `key` là số thứ tự đăng ký thật (bắt đầu từ 0) — KHÔNG dùng sentinel 0 cho
+        // timer, nếu không event stale của đăng ký đầu tiên sẽ đánh thức nhầm đăng ký mới.
+        let key = ev.key;
+        let reg = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .find(|r| r.key == key)
+            .cloned();
+        let Some(reg) = reg else {
+            self.frame.reactor.log.push(format!("rstale:{}", key));
+            return;
+        };
+        if reg.gen != ev.gen {
+            self.frame
+                .reactor
+                .log
+                .push(format!("rstale:{}:{}", key, ev.gen));
+            return;
+        }
+        if self.frame.reactor.fired.get(&key).copied() == Some(ev.gen) {
+            self.frame.reactor.log.push(format!("rdup:{}", key));
+            return;
+        }
+        self.frame.reactor.fired.insert(key, ev.gen);
+
+        match ev.outcome {
+            ReactorOutcome::Spurious => {
+                // Thức giả: re-arm với gen mới; wake frame để nó retry (sẽ gặp WouldBlock
+                // và đăng ký lại với gen mới). Không stash kết quả ⇒ không hot spin.
+                if let Some(r) = self.frame.reactor.regs.iter_mut().find(|r| r.key == key) {
+                    r.gen += 1;
+                }
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rspurious:{}:{}", key, reg.gen + 1));
+                self.wake_reactor(key, ev.gen);
+            }
+            ReactorOutcome::Close => {
+                // Đóng tay: **vô hiệu event cũ bằng cách tăng gen**, giữ đăng ký lại đúng
+                // một chu kỳ để lần retry tiêu thụ kết quả `Close` rồi mới gỡ (nếu gỡ ngay,
+                // retry sẽ đăng ký lại ⇒ treo vô hạn / đánh thức nhầm tay mở lại).
+                if let Some(r) = self.frame.reactor.regs.iter_mut().find(|r| r.key == key) {
+                    r.gen += 1;
+                }
+                self.frame
+                    .reactor
+                    .results
+                    .insert(key, ReactorOutcome::Close);
+                self.frame.reactor.log.push(format!("rclose:{}", key));
+                self.wake_reactor(key, ev.gen);
+            }
+            ReactorOutcome::Eof | ReactorOutcome::Error(_) | ReactorOutcome::Ready(_) => {
+                // Lưu kết quả cho lần retry; wake waiter (mỗi frame một lần).
+                self.frame.reactor.results.insert(key, ev.outcome);
+                self.wake_reactor(key, ev.gen);
+            }
+        }
+    }
+
+    /// Đánh thức **mỗi** frame đang chờ `(key, gen)` đúng một lần (FIFO), dùng chung
+    /// `frame_wake_one` ⇒ duplicate wake không tạo bản sao, không re-run.
+    fn wake_reactor(&mut self, key: u64, gen: u64) {
+        let ws: Vec<Waiter> = self
+            .frame
+            .waiters
+            .iter()
+            .filter(|w| w.wait == Wait::Reactor { key, gen })
+            .cloned()
+            .collect();
+        for w in ws {
+            self.frame_wake_one(w);
+        }
+    }
+
+    /// Scheduler rảnh: nếu còn event reactor, chọn deadline monotonic **gần nhất**
+    /// (ghi log để so sánh hai engine), ngủ **một lần** tới deadline đó khi
+    /// `timer_real_wait`, rồi fire event có `seq` nhỏ nhất. Không vòng lặp poll.
+    #[doc(hidden)]
+    pub fn frame_idle(&mut self) -> bool {
+        if !self.frame.ready.is_empty()
+            || !self.frame.events.is_empty()
+            || self.frame.reactor.events.is_empty()
+        {
+            return false;
+        }
+        // Deadline gần nhất được chọn MỘT lần cho cả đợt rảnh (ghi log tất định).
+        if let Some((deadline, key)) = self
+            .frame
+            .reactor
+            .events
+            .iter()
+            .filter_map(|e| e.deadline_ms.map(|d| (d, e.key)))
+            .min_by_key(|(d, k)| (*d, *k))
+        {
+            self.frame
+                .reactor
+                .log
+                .push(format!("timer:{}:{}", key, deadline));
+            if self.frame.timer_real_wait {
+                let epoch = self.frame.reactor.epoch.get_or_insert_with(Instant::now);
+                let target = *epoch + Duration::from_millis(deadline);
+                let now = Instant::now();
+                if target > now {
+                    std::thread::sleep(target - now);
+                }
+            }
+        }
+        // Fire theo `seq` cho tới khi có frame sẵn sàng hoặc hết trace. Event stale/
+        // duplicate không wake ⇒ phải tiếp tụcfire event sau, không được dừng sớm.
+        while !self.frame.reactor.events.is_empty() {
+            let ev = self.frame.reactor.events.remove(0);
+            self.frame_reactor_fire(ev);
+            if !self.frame.ready.is_empty() {
+                break;
+            }
+        }
+        !self.frame.ready.is_empty()
+    }
+
+    /// Dọn toàn bộ trạng thái reactor sau khi task + handle test đã thả — đưa
+    /// `diag_snapshot` về baseline mà KHÔNG cần đóng tay còn handle hợp lệ.
+    #[doc(hidden)]
+    pub fn frame_reactor_shutdown(&mut self) {
+        self.frame.reactor.regs.clear();
+        self.frame.reactor.results.clear();
+        self.frame.reactor.fired.clear();
+        self.frame.reactor.events.clear();
+        self.frame.timer_real_wait = false;
+        self.frame.current = 0;
+        self.frame.reactor.log.push("rshutdown".into());
+    }
+}
+
+/// **Chỉ test (Lát 2)**: dựng `Result[str,str]` khớp đường `std.net` mặc định
+/// (`hop_nhat_fs`: `Ok` → `Value::ok`, `Err` → `Value::err(Error)` dữ liệu).
+fn ok_str(s: impl Into<String>) -> Value {
+    Value::ok(Value::Str(s.into()))
+}
+fn err_str(s: impl Into<String>) -> Value {
+    Value::err(Value::ban_ghi_error(s.into(), None))
 }
 
 /// **Chỉ test**: bọc lỗi thân tác vụ thành `VS0506` (dùng chung cho cache và driver).
@@ -563,8 +946,9 @@ pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
     // (`Xong`) ở trên vẫn đi nguyên văn ⇒ `await` lần hai trả cùng result/error.
     if host.sched().borrow().frame.enabled {
         return Err(Abort::Pending(Pending {
-            task: Rc::clone(t),
+            task: Some(Rc::clone(t)),
             span,
+            wait: None,
         }));
     }
     // Chặn lồng: mỗi tầng `await` là một khung gọi thật.

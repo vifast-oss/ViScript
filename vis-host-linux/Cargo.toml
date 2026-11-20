@@ -4,7 +4,7 @@ name = "vis-host-linux"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-rust-version = "1.99.1"
+rust-version = "1.100.0"
 description = "Host Linux cho ViScript: probe Landlock + cưỡng chế hệ tệp bằng kernel (ST-132)"
 
 # Workspace riêng: **không** thuộc workspace OS gốc và **không** thuộc `viscript/` (R4).

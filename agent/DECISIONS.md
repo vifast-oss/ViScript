@@ -2614,3 +2614,103 @@ local/capture đúng, không lặp side-effect; có **gọi hàm lồng và awai
 kết thúc; wake trùng/wake cũ không làm task chạy sai; task hết nghĩa vụ được thu hồi; fixture hiện hữu
 **phân loại, không đổi golden hàng loạt**. Chạy lại B1/B2 giữ baseline, **không yêu cầu cải thiện**;
 I/O vẫn chặn, fairness CPU chưa giải. **Dừng trình A0 trước khi mở reactor Lát 2.**
+
+
+### VD-252 · Nhận Lát 1 có giới hạn; duyệt Lát 2 reactor; chốt 5 quy tắc tính phí; ghim toolchain — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: checkpoint
+> `agent/BAO-CAO-CHECKPOINT-LAT1-2026-11-20.md`. Ghi **VD mới**, không sửa VD-251. Quyết định dựa
+> trên báo cáo, không phải xác nhận A0 tự kiểm tra code.
+
+#### 1. Nghiệm thu Lát 1 (giới hạn)
+
+ST-267 **DONE trong phạm vi đường thử nghiệm**. Giữ rõ: 8 tiêu chí đạt **trên các ca đã kiểm**, không
+đại diện toàn ngôn ngữ; snapshot về 0 chỉ chứng minh thu hồi **trong workload đó**; 3 fixture cũ
+**không** thay thế 35 fixture async; gate xanh trên runtime mặc định **không tự chứng minh** đường
+frame mới phủ đầy đủ; **step-cap parity vẫn mở**. Không yêu cầu hoàn thiện evaluator trước khi thử
+reactor, nhưng phải có **ma trận coverage** và cấu trúc chưa hỗ tr phải **từ chối rõ** — **không**
+fallback bằng chạy lại từ đầu hay âm thầm dùng đường đồng bộ.
+
+#### 2. Chốt 5 quy tắc tính phí (có chỉnh lý)
+
+| Câu | Quyết định |
+|---|---|
+| 1 — Call/expression | Nút gọi chỉ tính **`E_CALL`**, **không** cộng `E_EXPR` cho chính nút đó. Callee và đối số đánh giá theo **thứ tự ngôn ngữ**, tính phí riêng khi thực sự chạy. |
+| 2 — Builtin | Chỉ **`E_BUILTIN`**, **không** cộng `E_CALL`. Tính **một lần trước khi thực hiện** builtin; `Pending`/resume **không tính lại**. |
+| 3 — Short-circuit | Chỉ tính toán hạng **thực sự chạy**. Nếu nút `&&`/`||` có phí riêng thì quy định **nhất quán**, không được mất phí chỉ vì VM hạ thành lệnh nhảy. |
+| 4 — Loop | **`E_LOOP` một lần cho mỗi lần thử điều kiện/tiến vòng, gồm lần kết thúc.** Điều kiện và thân vẫn tính sự kiện riêng thực thi. Với `for`/`while let` phải **ánh xạ cụ thể** vào "thử tiến vòng", không ép mọi loop thành một dạng. |
+| 5 — Await | **Một `E_AWAIT` cho mỗi lần bắt đầu await trong source.** Resume **không tính lại**; await lần hai là sự kiện mới, **kể cả dùng cache**. |
+
+**Thứ tự**: `f(g(1))` **không** tính phí gọi `f` trước khi đánh giá `g(1)` — giữ thứ tự đánh giá và
+đặt kiểm ngân sách **trước tác dụng phụ tương ứng**.
+
+**Chưa duyệt**: trọng số (chưa có danmục `E_STMT`, assignment, expression tổng hợp đầy đủ); bảng phụ
+hay `Instr::Charge`; **không đổi `VERSION`/cache trong Lát 2**. Ngân sách mới **không phải prerequisite**
+của reactor. Giữ finding step-cap mở, **không sửa tạm bằng tăng ngưỡng**.
+
+#### 3. Lát 2 — reactor `read`/`accept` + timer tối thiểu (trên đường frame thử nghiệm)
+
+Nối reactor vào đường frame của **cả hai engine**; `read`/`accept` chưa sẵn sàng ⇒ **đăng ký chờ, trả
+`Pending`**; scheduler chạy task `ready` khác, hết ready thì chờ reactor/timer gần nhất; **bỏ vòng
+`sleep(5 ms)`** khỏi đường thử; timer dùng **đồng hồ monotonic**; giữ public API. **Không thay runtime
+mặc định**, không dùng B1 của đường thử để tuyên bố CLI mặc định có async I/O.
+
+**Bất biến reactor**: readiness chỉ là **tín hiệu thử lại**, không bảo đảm thành công; retry gặp
+`WouldBlock` phải đăng ký/chờ đúng, **không quay vòng nóng**; wake trùng không tạo lượt chạy trùng;
+đóng socket/timeout/đăng ký lại phải **vô hiệu hóa sự kiện cũ**; FD/handle tái sử dụng không đánh thức
+nhầm task; EOF/lỗi/timeout **gỡ waiter/timer đúng một lần**; **không đệ quy scheduler hay blocking read**
+để giả lập `Pending`. `connect`/`write` giữ đồng bộ tạm nhưng **ghi rõ có thể chặn scheduler**; chưa gọi
+là hoàn thành async mạng thực dụng.
+
+#### 4. Dependency & Windows
+
+Chưa phê duyệt crate nào (phiếu không nêu tên/phiên bản/feature/transitive). Agent 1 **có thể** làm
+adapter + test reactor giả **không dependency mới**; phải trình **một phương án selector ưu tiên + thay
+thế ngắn**, kèm **giấy phép, nền tảng, feature, dependency transitive, phần unsafe liên quan**.
+Trước khi merge dependency mới cần **A0 duyệt phương án cụ thể**. Không áp allowlist ViFastOs; không
+thêm `unsafe` trong mã dự án để né. **Windows giữ runtime mặc định**; đường thử Linux-only phải giới
+hạn rõ, **không làm Windows build/test hỏng**.
+
+#### 5. Nghiệm thu Lát 2
+
+- **Reactor giả**: cùng trace ⇒ hai engine cùng stdout/lỗi/trạng thái kết thúc. **Reactor thật**: đủ
+  dữ liệu, tiến triển, EOF, lỗi, timeout, cleanup. Test wake cũ, readiness giả, đóng khi đang chờ,
+  nhiều task cùng chờ theo hợp đồng được hỗ trợ. **Không thêm tính năng ngôn ngữ** để né evaluator.
+- **B1**: 20 kết nối trễ 200 ms phải **chồng lấp**, không tăng gần N×200 ms; ~0,3 s là **mục tiêu đo**,
+  không ngưỡng CI cứng; báo nhiều lần chạy, phân biệt startup/workload; **không yêu cầu** output giữa
+  kết nối độc lập giống nhau trên mạng thật.
+- **B2** vẫn có thể đói CPU — ghi rõ chưa sửa, **không đổi tiêu chí** để gọi là đạt fairness.
+- **Vòng đời**: sau task + handle test được thả, đăng ký reactor/waiter/timer về baseline; **không bắt**
+  đóng socket còn handle hợp lệ chỉ để snapshot 0.
+
+#### 6. Toolchain
+
+Chấp nhận gate dưới Rust **1.100.0**. `channel = "stable"` là kênh chuyển động, **không phải ghim**;
+`cargo clean` rồi xanh chỉ chứng minh clean build khắc phục hiện tượng, **chưa tự chứng minh** toàn bộ
+chuỗi "Rust update ⇒ stale artifact ⇒ NotFound"; **không truy cứu ai nâng cấp**. **Duyệt ghim toolchain
+dev/CI thành `1.100.0`**, **không tự nâng MSRV** (`rust-version = 1.99.1` giữ nguyên). Giữ hồ sơ lịch sử
+dùng `1.99.1`; **không biến `cargo clean` toàn bộ thành bước bắt buộc** mỗi lần kiểm.
+
+#### 7. Lệnh tiếp theo
+
+ST-267 giữ DONE; mở Lát 2; chốt 5 quy tắc (trọng số/biểu diễn chưa duyệt, **không chặn reactor**);
+trình dependency cụ thể trước merge; Windows không hồi quy; ghim `1.100.0`; nghiệm thu bằng trace giả,
+mạng thật, cleanup, B1 chồng lấp; B2/step-cap vẫn mở. **Dừng trình A0 sau Lát 2.** Tag/release PAUSED;
+chưa mở worker/GC/TLS/API.
+
+> **Mục tiêu Lát 2**: chứng minh task đang chờ mạng **thực sự trả quyền cho task khác**, không phải
+> chỉ thay `sleep` bằng một vòng poll khác.
+
+### VD-253 · Override VD-252 §6 — nâng MSRV lên 1.100.0 — Chủ trì/A0, 2026-11-20
+
+> **Người quyết định**: Agent chủ trì (trả lời trực tiếp, override VD-252 §6). **Người ghi**: Agent 1.
+> Câu hỏi làm rõ: "nâng hết lên 1.100.0" có gồm MSRV không? ⇒ **Có, nâng luôn MSRV lên 1.100.0.**
+>
+> - Đổi `rust-version` từ `1.99.1` → **`1.100.0`** ở `Cargo.toml`, `vis-host-wasm/Cargo.toml`,
+>   `vis-host-linux/Cargo.toml`; các crate còn lại dùng `rust-version.workspace = true` ⇒ tự theo.
+> - `rust-toolchain.toml` giữ ghim `channel = "1.100.0"` (VD-252 đã duyệt).
+> - **Không** sửa báo cáo nghiệm thu lịch sử ghi `1.99.1` — đó là số liệu đo của mốc cũ.
+> - Hệ quả hợp đồng: người dùng/toolchain dưới `1.100.0` không còn đáp ứng MSRV của workspace;
+>   `bin/_vis-toolchain.sh` sẽ từ chối rõ (exit 78) thay vì âm thầm chọn cargo cũ.
+>
+> Đây là **quyết định mới**, không sửa ngược VD-252; VD-252 §6 được hiểu là bị override ở điểm MSRV.

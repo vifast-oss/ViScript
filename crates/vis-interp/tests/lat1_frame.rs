@@ -47,6 +47,7 @@ fn main():
             gen: 0,
             value: vis_interp::Value::Int(40),
         }],
+        ..Default::default()
     };
     let out = frame_run(src, cfg);
     eprintln!("stdout={:?}", out.stdout);

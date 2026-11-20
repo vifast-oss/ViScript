@@ -4,7 +4,7 @@ name = "vis-host-wasm"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-rust-version = "1.99.1"
+rust-version = "1.100.0"
 description = "Khung host wasm cho ViScript (chưa có runner; chỉ check biên dịch chéo)"
 
 # Workspace riêng: **không** thuộc workspace OS gốc và **không** thuộc `viscript/`.

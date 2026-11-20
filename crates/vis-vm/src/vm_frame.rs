@@ -89,6 +89,9 @@ pub fn run_frame_for_test<'m>(
     vm.sched
         .borrow_mut()
         .frame_enable_for_test(config.fake_sources, config.events);
+    vm.sched
+        .borrow_mut()
+        .frame_reactor_load_for_test(config.reactors, config.timer_real_wait);
 
     let mut current: u32 = 0;
     let mut final_value: Option<Value> = None;
@@ -104,6 +107,7 @@ pub fn run_frame_for_test<'m>(
             ));
             break;
         }
+        vm.sched.borrow_mut().frame.current = current;
         let mut th = frames.remove(&current).expect("frame hiện tại");
         let outcome = th.exec(&mut vm);
         match outcome {
@@ -154,7 +158,19 @@ pub fn run_frame_for_test<'m>(
                 vm.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
             }
             Err(Abort::Pending(p)) => {
-                let w: Option<Waiter> = vm.sched.borrow().frame_await(current, &p.task);
+                // Lát 2: reactor mang wait trực tiếp (`p.wait`); Lát 1: task.
+                let w: Option<Waiter> = if let Some(w) = p.wait {
+                    let gen = w.gen_of(vm.sched.borrow().frame.gen);
+                    Some(Waiter {
+                        frame: current,
+                        wait: w,
+                        gen,
+                    })
+                } else {
+                    p.task
+                        .as_ref()
+                        .and_then(|t| vm.sched.borrow().frame_await(current, t))
+                };
                 if let Some(w) = w {
                     vm.sched.borrow_mut().frame_register(w);
                 } else {
@@ -196,8 +212,18 @@ pub fn run_frame_for_test<'m>(
                         s.tasks.iter().find(|t| t.id == n).cloned()
                     };
                     if let Some(t) = t {
-                        let th = task_th(&vm, t.than, t.args.clone());
-                        e.insert(th);
+                        // VD-252/ST-268: task cần capture bị từ chối RÕ (không âm thầm dựng
+                        // `captured = Vec::new()`/`writeback = None` — kết quả sai mà vẫn pass).
+                        match task_th(&vm, t.than, t.args.clone()) {
+                            Ok(th) => {
+                                e.insert(th);
+                            }
+                            Err(Abort::Trap(t)) => {
+                                trap = Some(t);
+                                break;
+                            }
+                            Err(_) => break,
+                        }
                     }
                 }
             }
@@ -208,10 +234,14 @@ pub fn run_frame_for_test<'m>(
     frames.clear();
     vm.sched.borrow_mut().frame_drain_events();
     vm.sched.borrow_mut().frame_final_join();
+    // Lát 2: reactor về baseline sau khi handle test thả.
+    vm.sched.borrow_mut().frame_reactor_shutdown();
     frame_output(&vm, final_value, trap)
 }
 
 fn frame_output(vm: &Vm<'_>, value: Option<Value>, trap: Option<Trap>) -> FrameOutput {
+    let mut log = vm.sched.borrow().frame.log.clone();
+    log.extend(vm.sched.borrow().frame.reactor.log.clone());
     let stdout = vm.out.clone();
     let diagnostics = match &trap {
         Some(t) => vec![t.to_diag(vm.text)],
@@ -223,21 +253,43 @@ fn frame_output(vm: &Vm<'_>, value: Option<Value>, trap: Option<Trap>) -> FrameO
         diagnostics,
         value,
         exit,
-        log: vm.sched.borrow().frame.log.clone(),
+        log,
         snapshot: vm.sched.borrow().diag_snapshot(),
     }
 }
 
+/// **VD-252/ST-268**: `true` khi hàm bytecode `fi` dùng biến bắt (`Instr::LoadCaptured`) —
+/// tức là cần `captured`/`writeback` mà đường frame test không mô phỏng được. `#[doc(hidden)]`
+/// để integration test có ca âm tường minh (xem report, mục coverage/explicit-rejection).
+#[doc(hidden)]
+pub fn task_requires_capture(m: &vis_bytecode::Module, fi: u32) -> bool {
+    m.funcs
+        .get(fi as usize)
+        .map(|f| vis_bytecode::verify::captured_used(&f.code) > 0)
+        .unwrap_or(false)
+}
+
 /// Dựng `Th` cho thân task async từ **chỉ số hàm bytecode thật**.
-fn task_th<'m>(vm: &Vm<'m>, fi: u32, args: Vec<Value>) -> Th<'m> {
-    let f = vm.func(fi).expect("hàm task");
+/// Từ chối rõ (Trap có span) nếu thân cần capture — không dựng rỗng rồi chạy sai.
+fn task_th<'m>(vm: &Vm<'m>, fi: u32, args: Vec<Value>) -> vis_interp::R<Th<'m>> {
+    let f = vm.func(fi)?;
+    if task_requires_capture(vm.m, fi) {
+        return Err(Abort::Trap(Trap::new(
+            vis_interp::interp::RT,
+            format!(
+                "frame test: task `{}` cần capture biến tự do chưa được đường frame test hỗ trợ",
+                f.name
+            ),
+            Span::new(0, 0),
+        )));
+    }
     let mut locals = vec![Value::Unit; f.nlocals.max(1) as usize];
     for (i, a) in args.into_iter().enumerate() {
         if i < locals.len() {
             locals[i] = a;
         }
     }
-    Th::new(vm.m, fi, locals, Vec::new())
+    Ok(Th::new(vm.m, fi, locals, Vec::new()))
 }
 
 /// Dựng `Th` cho `main` — cùng logic chọn entry với `Vm::chay_chuong_trinh` (VD-156).

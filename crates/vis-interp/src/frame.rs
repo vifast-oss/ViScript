@@ -21,7 +21,7 @@ use vis_syntax::{Diagnostic, Span};
 use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
-use crate::rt::{self, DiagSnapshot, FakeEvent, Waiter};
+use crate::rt::{self, DiagSnapshot, FakeEvent, ReactorEvent, Waiter};
 use crate::value::Value;
 
 /// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
@@ -30,6 +30,12 @@ use crate::value::Value;
 pub struct FrameConfig {
     pub fake_sources: Vec<(String, u64)>,
     pub events: Vec<FakeEvent>,
+    /// **Lát 2**: trace reactor giả (read/accept/timer). `seq` quyết định thứ tự fire.
+    #[doc(hidden)]
+    pub reactors: Vec<ReactorEvent>,
+    /// **Lát 2**: `true` ⇒ khi rảnh, ngủ một lần tới deadline monotonic gần nhất (đo B1).
+    #[doc(hidden)]
+    pub timer_real_wait: bool,
 }
 
 /// Kết quả frame test — kèm log scheduler (tất định) + snapshot ownership.
@@ -71,6 +77,13 @@ enum Work<'a> {
     SetLast,
     /// `return <value>`: đặt `last` rồi kết thúc thân khung hiện tại.
     DoReturn,
+    /// **Lát 2**: retry một builtin đã eval đối số mà reactor báo `Pending` — không eval
+    /// lại đối số (tránh lặp side-effect), resume đúng vị trí work stack.
+    Redispatch {
+        callee: Callee<'a>,
+        args: Vec<Value>,
+        span: Span,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -138,6 +151,17 @@ pub fn run_frame_for_test<'a>(
     let _ = symbols; // chỉ cần để giữ lifetime khớp `Interp::new`
                      // Hằng cấp tệp không nằm trong tập phủ của frame test (fixture Lát 1 không dùng).
     let globals = HashMap::new();
+    // **VD-252 / ST-268 — từ chối rõ hằng cấp tệp**: đường frame không chạy vòng eval const
+    // của `run_program` (`interp.rs:229`), nên `it.env` rỗng. Nhận diện const từ HIR để báo
+    // đúng lý do thay vì "biến chưa định nghĩa" gây hiểu lầm. Không đổi checker.
+    let mut const_syms: HashSet<u32> = HashSet::new();
+    let mut const_names: HashSet<String> = HashSet::new();
+    for item in &hir.items {
+        if let HItem::Const(c) = item {
+            const_syms.insert(c.sym);
+            const_names.insert(c.name.clone());
+        }
+    }
     let mut frames: HashMap<u32, IFrame<'a>> = HashMap::new();
     let main_fn = hir.items.iter().find_map(|i| match i {
         HItem::Fn(f) if f.name == "main" => Some(f),
@@ -170,6 +194,9 @@ pub fn run_frame_for_test<'a>(
     it.sched
         .borrow_mut()
         .frame_enable_for_test(config.fake_sources, config.events);
+    it.sched
+        .borrow_mut()
+        .frame_reactor_load_for_test(config.reactors, config.timer_real_wait);
 
     let mut current: u32 = 0;
     let mut final_value: Option<Value> = None;
@@ -185,7 +212,15 @@ pub fn run_frame_for_test<'a>(
             ));
             break;
         }
-        let outcome = step_frame(&mut it, current, &mut frames, body);
+        it.sched.borrow_mut().frame.current = current;
+        let outcome = step_frame(
+            &mut it,
+            current,
+            &mut frames,
+            body,
+            &const_syms,
+            &const_names,
+        );
         match outcome {
             Ok(v) => {
                 if current == 0 {
@@ -243,7 +278,19 @@ pub fn run_frame_for_test<'a>(
                 it.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
             }
             Err(Abort::Pending(p)) => {
-                let w: Option<Waiter> = it.sched.borrow().frame_await(current, &p.task);
+                // Lát 2: reactor mang wait trực tiếp (`p.wait`); Lát 1: `await` mang task.
+                let w: Option<Waiter> = if let Some(w) = p.wait {
+                    let gen = w.gen_of(it.sched.borrow().frame.gen);
+                    Some(Waiter {
+                        frame: current,
+                        wait: w,
+                        gen,
+                    })
+                } else {
+                    p.task
+                        .as_ref()
+                        .and_then(|t| it.sched.borrow().frame_await(current, t))
+                };
                 if let Some(w) = w {
                     it.sched.borrow_mut().frame_register(w);
                 } else {
@@ -306,8 +353,12 @@ pub fn run_frame_for_test<'a>(
     // Fire nốt trace (duplicate/stale vẫn được log) rồi final join + thu hồi ownership.
     it.sched.borrow_mut().frame_drain_events();
     it.sched.borrow_mut().frame_final_join();
+    // Lát 2: sau khi task + handle test thả, reactor về baseline (không cần đóng tay).
+    it.sched.borrow_mut().frame_reactor_shutdown();
     let snapshot = it.sched.borrow().diag_snapshot();
-    let log = it.sched.borrow().frame.log.clone();
+    // Gộp log reactor vào log scheduler để hai engine so sánh được TOÀN BỘ trace.
+    let mut log = it.sched.borrow().frame.log.clone();
+    log.extend(it.sched.borrow().frame.reactor.log.clone());
     let stdout = it.take_stdout();
     let diagnostics = match &trap {
         Some(t) => vec![t.to_diag(text)],
@@ -347,10 +398,12 @@ fn step_frame<'a>(
     frame_id: u32,
     frames: &mut HashMap<u32, IFrame<'a>>,
     _main_body: &'a [HStmt],
+    const_syms: &HashSet<u32>,
+    const_names: &HashSet<String>,
 ) -> R<Option<Value>> {
     // Mượn frame ra khỏi map để không giữ RefCell/map borrow qua các lệnh gọi host.
     let mut frame = frames.remove(&frame_id).expect("frame hiện tại");
-    let res = step_frame_owned(it, frame_id, &mut frame);
+    let res = step_frame_owned(it, frame_id, &mut frame, const_syms, const_names);
     frames.insert(frame_id, frame);
     res
 }
@@ -359,6 +412,8 @@ fn step_frame_owned<'a>(
     it: &mut Interp<'a>,
     _frame_id: u32,
     frame: &mut IFrame<'a>,
+    const_syms: &HashSet<u32>,
+    const_names: &HashSet<String>,
 ) -> R<Option<Value>> {
     loop {
         if frame.done() {
@@ -480,15 +535,35 @@ fn step_frame_owned<'a>(
                             })
                             .or_else(|| it.env.borrow().get(&sym.unwrap_or(u32::MAX)).cloned())
                             .ok_or_else(|| {
-                                Abort::Trap(Trap::new(
-                                    RT,
-                                    format!("biến `{name}` chưa định nghĩa trong frame test"),
-                                    e.span(),
-                                ))
+                                // VD-252/ST-268: hằng cấp tệp là cấu trúc KHÔNG được đường frame
+                                // test phủ — báo đúng lý do, không đổ lỗi "biến chưa định nghĩa".
+                                let is_const = sym.map(|s| const_syms.contains(&s)).unwrap_or(false)
+                                    || const_names.contains(name);
+                                let msg = if is_const {
+                                    format!(
+                                        "frame test: hằng cấp tệp `{name}` chưa được đường frame test hỗ trợ"
+                                    )
+                                } else {
+                                    format!("biến `{name}` chưa định nghĩa trong frame test")
+                                };
+                                Abort::Trap(Trap::new(RT, msg, e.span()))
                             })?;
                         frame.vals.push(v);
                     }
                     HExpr::Bin { op, lhs, rhs, .. } => {
+                        // VD-252/ST-268: `&&`/`||`/`??`/`|>` là short-circuit — `ops::bin` từ chối
+                        // chúng, nhưng nếu đẩy operand trước thì vế phải (có side-effect) chạy mất
+                        // rồi mới lỗi. Từ chối TẠI ĐÂY, trước khi đẩy operand nào.
+                        if matches!(op, BinOp::And | BinOp::Or | BinOp::Coalesce | BinOp::Pipe) {
+                            return Err(Abort::Trap(Trap::new(
+                                RT,
+                                format!(
+                                    "frame test: toán tử `{}` (short-circuit) chưa được đường frame test hỗ trợ",
+                                    op.text()
+                                ),
+                                e.span(),
+                            )));
+                        }
                         cf.work.push(Work::ApplyBin {
                             op: *op,
                             span: e.span(),
@@ -648,10 +723,56 @@ fn step_frame_owned<'a>(
                     got.push(frame.vals.pop().ok_or_else(underflow)?);
                 }
                 got.reverse();
-                dispatch(it, frame, callee, got, span)?;
+                match dispatch(it, frame, callee, got.clone(), span) {
+                    Ok(()) => {}
+                    Err(Abort::Pending(p)) => {
+                        // Reactor chưa sẵn: lưu continuation với đối số ĐÃ eval (không eval lại).
+                        frame
+                            .calls
+                            .last_mut()
+                            .expect("khung")
+                            .work
+                            .push(Work::Redispatch {
+                                callee,
+                                args: got,
+                                span,
+                            });
+                        return Err(Abort::Pending(p));
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+            Work::Redispatch { callee, args, span } => {
+                for a in &args {
+                    frame.vals.push(a.clone());
+                }
+                match dispatch(it, frame, callee, args.clone(), span) {
+                    Ok(()) => {}
+                    Err(Abort::Pending(p)) => {
+                        frame
+                            .calls
+                            .last_mut()
+                            .expect("khung")
+                            .work
+                            .push(Work::Redispatch { callee, args, span });
+                        return Err(Abort::Pending(p));
+                    }
+                    Err(e) => return Err(e),
+                }
             }
         }
     }
+}
+
+/// Tên builtin được frame evaluator chấp nhận: 8 tên ngắn (`SIGS`) **và** mọi hàm
+/// `std.*` đã đăng ký (`vis_types::stdlib`) — trong đó có `std.net.read`/`accept`.
+/// Chỉ mở rộng nhận diện ở đường test; checker/runtime mặc định không đổi.
+fn is_builtin_name(name: &str) -> bool {
+    crate::builtin::SIGS.iter().any(|s| s.name == name)
+        || name
+            .strip_prefix("std.")
+            .and_then(vis_types::stdlib::sig_of)
+            .is_some()
 }
 
 fn classify_callee<'a>(it: &Interp<'a>, callee: &'a HExpr) -> Option<Callee<'a>> {
@@ -672,7 +793,7 @@ fn classify_callee<'a>(it: &Interp<'a>, callee: &'a HExpr) -> Option<Callee<'a>>
                 }
             })
             .or_else(|| {
-                if crate::builtin::SIGS.iter().any(|s| s.name == name) {
+                if is_builtin_name(name) {
                     Some(Callee::Builtin(name))
                 } else {
                     None
@@ -681,7 +802,7 @@ fn classify_callee<'a>(it: &Interp<'a>, callee: &'a HExpr) -> Option<Callee<'a>>
         HExpr::Var {
             sym: None, name, ..
         } => {
-            if crate::builtin::SIGS.iter().any(|s| s.name == name) {
+            if is_builtin_name(name) {
                 Some(Callee::Builtin(name))
             } else {
                 None
