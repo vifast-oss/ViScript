@@ -146,6 +146,12 @@ pub struct FakeEvent {
     pub value: Value,
 }
 
+/// **VD-260 (chỉ test)**: số frame sẵn sàng liên tiếp tối đa trước khi scheduler buộc giao
+/// **một** event kế tiếp (fake/reactor, đúng `seq`). Bộ đếm tất định (không phải thời gian)
+/// nên trace hai engine vẫn so sánh được; timer vẫn không fire sớm hơn deadline của nó.
+#[doc(hidden)]
+pub const FRAME_READY_BUDGET: u32 = 8;
+
 /// **Chỉ test**: một đăng ký chờ (waiter). Thứ tự trong `Vec` là thứ tự đăng ký ⇒
 /// đánh thức theo FIFO, không hash-map.
 #[doc(hidden)]
@@ -328,6 +334,10 @@ pub struct FrameTest {
     pub waiters: Vec<Waiter>,
     /// Hàng đợi sẵn sàng **của đường frame** (FIFO): frame được đánh thức nối vào đuôi.
     pub ready: VecDeque<u32>,
+    /// **VD-260**: số frame sẵn sàng liên tiếp đã chạy mà **chưa** giao event nào. Chạm
+    /// [`FRAME_READY_BUDGET`] ⇒ `frame_next` giao event kế tiếp (fake/reactor) trước frame
+    /// ready — chặn đói I/O/timer sau một hàng ready dài. Reset khi một event thật sự fire.
+    pub ready_streak: u32,
     /// Frame đã được join/await xong nghĩa vụ (để thu hồi).
     pub joined: std::collections::HashSet<u32>,
     /// Số frame đang giữ trạng thái treo (do engine cập nhật).

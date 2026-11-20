@@ -1012,6 +1012,17 @@ pub fn run_frame_for_test<'a>(
             }
             None => None,
         };
+        // **VD-260**: bỏ frame của task đã `Xong`/`Huy` ngay tại safe point kế tiếp —
+        // không giữ `IFrame` + env tới cuối chương trình. `next` (nếu có) luôn còn sống
+        // nên được giữ lại; frame mồ côi (task đã bị thu hồi) cũng bị bỏ.
+        let purged = purge_terminal_frames(&mut frames, &it.sched.borrow(), next);
+        if !purged.is_empty() {
+            let mut s = it.sched.borrow_mut();
+            for id in &purged {
+                s.frame.log.push(format!("purge:{}", id));
+            }
+            s.frame.live_frames = frames.len();
+        }
         match next {
             Some(n) => {
                 match frames.entry(n) {
@@ -1059,25 +1070,17 @@ pub fn run_frame_for_test<'a>(
             trap = Some(Trap::new(RT, e, Span::new(0, 0)));
         }
     }
-    // **VD-259**: frame của task đã `Xong`/`Huy` không còn là trạng thái treo — bỏ trước khi
-    // đo `live_frames`. Chỉ frame thật sự Pending mới còn trong `frames`.
-    let dead_frames: Vec<u32> = {
-        let s = it.sched.borrow();
-        frames
-            .keys()
-            .copied()
-            .filter(|id| *id != 0)
-            .filter(|id| {
-                s.tasks
-                    .iter()
-                    .find(|t| t.id == *id)
-                    .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
-                    .unwrap_or(false)
-            })
-            .collect()
-    };
-    for id in dead_frames {
-        frames.remove(&id);
+    // **VD-259/VD-260**: frame của task đã `Xong`/`Huy` không còn là trạng thái treo — bỏ
+    // trước khi đo `live_frames` (và đã bỏ ngay tại safe point trong vòng lặp). Chỉ frame
+    // thật sự Pending mới còn trong `frames`.
+    let purged = purge_terminal_frames(&mut frames, &it.sched.borrow(), None);
+    if !purged.is_empty() {
+        let mut s = it.sched.borrow_mut();
+        for id in &purged {
+            // Hậu tố `-end`: frame chỉ được dọn ở cuối (không kịp safe point) — khác với
+            // `purge:<id>` giữa vòng lặp, để test phân biệt được retention.
+            s.frame.log.push(format!("purge-end:{}", id));
+        }
     }
     it.sched.borrow_mut().frame.live_frames = frames.len();
     frames.clear();
@@ -1117,6 +1120,32 @@ pub fn run_frame_for_test<'a>(
         log,
         snapshot,
     }
+}
+
+/// **VD-260**: bỏ frame của task đã terminal (`Xong`/`Huy`) hoặc không còn task tương ứng
+/// (frame mồ côi). `keep` là frame vừa được chọn chạy — không bao giờ bỏ. Main (id 0) luôn
+/// giữ. Trả danh sách id đã bỏ để driver ghi log tất định.
+fn purge_terminal_frames<V>(
+    frames: &mut HashMap<u32, V>,
+    s: &rt::Scheduler,
+    keep: Option<u32>,
+) -> Vec<u32> {
+    let dead: Vec<u32> = frames
+        .keys()
+        .copied()
+        .filter(|id| *id != 0 && Some(*id) != keep)
+        .filter(|id| {
+            s.tasks
+                .iter()
+                .find(|t| t.id == *id)
+                .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
+                .unwrap_or(true)
+        })
+        .collect();
+    for id in &dead {
+        frames.remove(id);
+    }
+    dead
 }
 
 /// Trả `FrameOutput` sớm khi đánh giá hằng cấp tệp lỗi (trước khi scheduler chạy).
