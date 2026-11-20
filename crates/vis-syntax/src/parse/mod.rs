@@ -171,6 +171,11 @@ pub struct Parser<'a> {
     /// **ST-60b**: tên **đã bind** ở vùng khai báo (dựng sẵn + dòng khai báo trước đó) — dùng để
     /// phân loại `let` khai báo ↔ shell-let (`let out = ls -l` là shell-let vì `l` chưa bind).
     da_bind: std::collections::HashSet<String>,
+    /// **VD-266**: độ sâu ngoặc `() [] {}` của các token **đã ăn**. Lexer không sinh
+    /// NEWLINE/INDENT/DEDENT khi `depth > 0` (SPEC-lex §4.3), nên `suite()` dùng bộ đếm này để
+    /// nhận **kết thúc khối ngầm** cho `if`/`match` dạng biểu thức nằm trong đối số/danh sách/
+    /// ngoặc — chỉ khi thật sự trong ngoặc, không nới lỏng cấp câu lệnh.
+    delim: usize,
 }
 
 /// Lỗi cú pháp đầu tiên — chuyển thành [`Diagnostic`] ở [`parse`].
@@ -192,6 +197,7 @@ impl<'a> Parser<'a> {
             sig,
             pos: 0,
             da_bind: crate::parse::cmd::ten_mac_dinh(),
+            delim: 0,
         }
     }
 
@@ -236,6 +242,22 @@ impl<'a> Parser<'a> {
         self.tok().kind == k
     }
 
+    /// **VD-266**: token hiện tại đóng/dừng một biểu thức trong ngoặc: `)`, `]`, `}`, `,`.
+    /// Chỉ có nghĩa khi [`Parser::delim`] `> 0` — người gọi phải kiểm điều đó.
+    fn at_delim_end(&self) -> bool {
+        self.at_punct(")") || self.at_punct("]") || self.at_punct("}") || self.at_punct(",")
+    }
+
+    /// **VD-266**: token hiện tại bắt đầu một **dòng vật lý mới** so với token đã ăn trước đó.
+    /// Trong ngoặc, lexer nuốt NEWLINE (§4.3) nên đây là tín hiệu duy nhất để `suite()`/`match`
+    /// biết một khối một-dòng đã hết.
+    fn at_new_line(&self) -> bool {
+        let Some(prev) = self.pos.checked_sub(1) else {
+            return false;
+        };
+        self.tok().line > self.toks[self.sig[prev] as usize].line
+    }
+
     /// Chỉ số token gốc của vị trí hiện tại (để dựng lá CST).
     fn leaf(&self) -> u32 {
         let idx = self.pos.min(self.sig.len() - 1);
@@ -243,8 +265,19 @@ impl<'a> Parser<'a> {
     }
 
     /// Ăn token hiện tại và trả lá CST tương ứng.
+    ///
+    /// **VD-266**: đồng thời cập nhật [`Parser::delim`] theo ngoặc đã ăn — phản chiếu đúng bộ đếm
+    /// `depth` của lexer (§4.3) để `suite()` biết mình đang trong biểu thức có ngoặc hay không.
     fn bump(&mut self) -> Elem {
         let i = self.leaf();
+        let t = &self.toks[i as usize];
+        if t.kind == Kind::Punct || t.kind == Kind::SetLbrace {
+            match t.text.as_str() {
+                "(" | "[" | "{" | "set{" => self.delim += 1,
+                ")" | "]" | "}" => self.delim = self.delim.saturating_sub(1),
+                _ => {}
+            }
+        }
         if self.pos + 1 < self.sig.len() {
             self.pos += 1;
         }
@@ -772,6 +805,9 @@ impl<'a> Parser<'a> {
     ///
     /// Khối một dòng nội tuyến (`if x: a else: b`) dừng ở `else`/`elif` cùng dòng — Phụ lục B
     /// dùng dạng này; A.2 viết `simple_stmt NEWLINE` nên đây là chỗ nới tối thiểu, ghi ở JOURNAL.
+    ///
+    /// **VD-266**: trong ngoặc (`delim > 0`) lexer **không** sinh NEWLINE/INDENT/DEDENT, nên khối
+    /// một-dòng kết thúc ngầm ở dấu đóng `)`/`]`/`}`/`,` hoặc ở token đầu một dòng vật lý mới.
     fn suite(&mut self) -> PResult<Node> {
         let mut elems = Vec::new();
         if self.at_kind(Kind::Newline) {
@@ -794,8 +830,9 @@ impl<'a> Parser<'a> {
                 || self.at_kind(Kind::Dedent)
                 || self.at_kw("else")
                 || self.at_kw("elif")
+                || (self.delim > 0 && (self.at_delim_end() || self.at_new_line()))
             {
-                // nhánh một dòng nội tuyến / khối đóng ở EOF (DEDENT ngầm)
+                // nhánh một dòng nội tuyến / khối đóng ở EOF (DEDENT ngầm) / khối trong ngoặc
             } else {
                 return Err(self.err_here(format!(
                     "mong xuống dòng cuối khối, thật `{}`",
@@ -1061,7 +1098,13 @@ impl<'a> Parser<'a> {
     }
 
     /// `NEWLINE INDENT match_arm+ DEDENT`; arm := pattern ['if' expr] ':' suite.
+    ///
+    /// **VD-266**: trong ngoặc lexer không sinh NEWLINE/INDENT/DEDENT, nên dùng
+    /// [`Parser::match_body_trong_ngoac`] — nhánh `match` biểu thức lồng trong đối số/ngoặc.
     fn match_body(&mut self) -> PResult<Node> {
+        if self.delim > 0 {
+            return self.match_body_trong_ngoac();
+        }
         let mut elems = vec![self.expect_newline()?, self.expect_indent()?];
         while !self.at_kind(Kind::Dedent) && !self.at_eof() {
             let mut arm = Vec::new();
@@ -1080,6 +1123,46 @@ impl<'a> Parser<'a> {
         }
         if let Some(d) = self.take_dedent() {
             elems.push(d);
+        }
+        Ok(self.node(NodeKind::Suite, elems))
+    }
+
+    /// **VD-266**: thân `match` khi đang trong ngoặc (`delim > 0`) — không có token xuống dòng,
+    /// nên ranh giới nhánh lấy từ **dòng vật lý** + **cột** của nhánh đầu:
+    ///
+    /// - nhánh kế tiếp phải bắt đầu một dòng mới **cùng cột** với nhánh đầu;
+    /// - cột nhỏ hơn ⇒ nhánh của `match` cha; dấu đóng `)`/`]`/`}`/`,` ⇒ hết `match`.
+    ///
+    /// Thân mỗi nhánh vẫn là **một** `simple_stmt` (một biểu thức) như dạng một-dòng ở cấp câu
+    /// lệnh; nhiều câu lệnh trong một nhánh cần cấp câu lệnh (có NEWLINE/INDENT).
+    fn match_body_trong_ngoac(&mut self) -> PResult<Node> {
+        let mut elems = Vec::new();
+        let mut cot = None;
+        while !self.at_eof() && !self.at_delim_end() {
+            let t = self.tok();
+            match cot {
+                None => cot = Some(t.col),
+                Some(c) => {
+                    if !self.at_new_line() || t.col != c {
+                        break;
+                    }
+                }
+            }
+            let mut arm = Vec::new();
+            let p = self.parse_pattern()?;
+            Self::push_node(&mut arm, p);
+            if self.at_kw("if") {
+                arm.push(self.bump());
+                let g = self.expr()?;
+                Self::push_node(&mut arm, g);
+            }
+            arm.push(self.expect_punct(":")?);
+            let s = self.suite()?;
+            Self::push_node(&mut arm, s);
+            Self::push_node(&mut elems, self.node(NodeKind::MatchArm, arm));
+        }
+        if elems.is_empty() {
+            return Err(self.err_here("`match` phải có ít nhất một nhánh"));
         }
         Ok(self.node(NodeKind::Suite, elems))
     }
