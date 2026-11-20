@@ -33,11 +33,12 @@
 | Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
 | Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
-| LSP | `bdedaaa` | `textDocument/definition` (fn/biến/trường/enum), thu hẹp span về tên |
+| LSP | `bdedaaa`, `98d269d` | `textDocument/definition` + `documentSymbol` (fn/biến/trường/enum; cây ký hiệu) |
+| Genericres | `633a1a2` → `d7d875d` | pre-pass chữ ký trước thân; tail if/match, literal ẩn danh, RHS Field/Index, method/closure instantiation |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1822 passed / 3 skipped** tại `d485d1a`.
+- `./vis-dev gate --fast`: **PASS — 1880 passed / 3 skipped** tại `d7d875d`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -45,6 +46,7 @@
 - `./vis-dev nightly` @ `5099dee`: **PASS** — parser fuzz **18.574.043 ca / 421.534.861 token / 0 vi phạm**
   (120 s), vòng tròn fmt **475 tệp bất động**, gate L0 **1822/0**.
 - `./bin/vis-diff` @ `5099dee`: **0 lệch** (2.000 + 100.000 ca, 7 test PASS).
+- `VIS_DIFF_N=200000` @ `d7d875d`: **0 lệch** (200.000 ca, 187.537 chạy, 175,7 s, seed 20261121).
 - `host_posix_real`: `/bin/echo`, `/usr/bin/grep`, `/bin/sh`, `/usr/bin/printf` thật, interp + VM.
 - QA độc lập @ `67f232a`: nextest **1727 passed / 3 skipped** (23.5 s); core-test **1151 passed**
   (118 binaries, 35.7 s); nightly `--fuzz-minutes 5` **44.103.531 cases / 1.001.085.722 tokens /
