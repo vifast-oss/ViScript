@@ -1004,6 +1004,8 @@ pub fn method(
         _ => ("", ""),
     };
     if !m.is_empty() && !loi.split(' ').any(|x| x == name) {
+        // **VD-270 (path.normalize)**: `s.normalize()` là sugar của `path.normalize`.
+        let m = vis_types::stdlib::module_sugar(m, name).unwrap_or(m);
         let ngan = format!("{m}.{name}");
         if vis_types::stdlib::sig_of(&ngan).is_some() {
             let mut all = vec![recv.clone()];

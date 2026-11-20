@@ -264,6 +264,8 @@ pub(crate) fn kiem_std_method(
         Type::Map(..) => "map",
         _ => return None,
     };
+    // **VD-270 (path.normalize)**: `s.normalize()` là sugar của `path.normalize`, không phải `str`.
+    let m = crate::stdlib::module_sugar(m, name).unwrap_or(m);
     let full = format!("{m}.{name}");
     let f = vis_types_stdlib_sig(&full)?;
     let gens: Vec<String> = (0..3)

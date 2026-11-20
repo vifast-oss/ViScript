@@ -26,6 +26,7 @@ use crate::value::{eq, Value};
 
 mod flatten;
 mod indexof;
+mod pathnorm;
 mod sqlite_explain;
 mod strfind;
 mod strlen;
@@ -410,8 +411,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(s.replace(tu, den)))
         }
-        // **VD-270 (strfind)**: offset **scalar** Unicode; `find`/`rfind` ⇒ `int?` (không khớp
-        // ⇒ `None`), `count` ⇒ `int` **không chồng** (Rust `matches`). Needle rỗng theo Rust.
+        // **VD-270 (strfind)**: offset scalar Unicode; `find`/`rfind` ⇒ `int?`, `count` ⇒ `int`.
         "str.find" | "str.rfind" | "str.count" => {
             let s = chuoi(name, &args[0], 0, span)?;
             let needle = chuoi(name, &args[1], 1, span)?;
@@ -502,8 +502,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             out.extend_from_slice(b);
             Ok(Value::List(out))
         }
-        // **VD-270 (flatten)**: nối **một cấp** các list con theo thứ tự; list con rỗng không
-        // đóng góp gì, phần tử vốn là list được giữ nguyên (không đệ quy). Lõi ở `stdlib/flatten.rs`.
+        // **VD-270 (flatten)**: nối một cấp, giữ thứ tự; phần tử vốn là list giữ nguyên. Lõi ở `stdlib/flatten.rs`.
         "list.flatten" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             flatten::goi(name, xs).map_err(|m| loi(m, span))
@@ -658,9 +657,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             ))
         }
         // ----- std.path (thuần chuỗi, không chạm đĩa) -----
-        // **VD-258 (tính năng mới)**: trên Windows nhận ổ đĩa (`C:\`, `C:/`, UNC) + **cả** `\`
-        // và `/`; trên POSIX giữ nguyên hành vi cũ. Helper thuần nằm ở `builtin_ls` (R1) và có
-        // test với cờ `windows=true/false` ngay trên Linux.
+        // **VD-258**: Windows nhận ổ đĩa (`C:\`, `C:/`, UNC) và cả `\`/`/`; POSIX giữ nguyên (`builtin_ls`).
         "path.join" => {
             let a = chuoi(name, &args[0], 0, span)?;
             let b = chuoi(name, &args[1], 1, span)?;
@@ -679,6 +676,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Bool(la_tuyet_doi(p, cfg!(windows))))
         }
+        // **VD-270 (path.normalize)**: chuẩn hoá **từ vựng** POSIX (thuần chuỗi, không chạm đĩa).
+        "path.normalize" => pathnorm::goi(&args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         "time.now_ms" => {
             let ms = SystemTime::now()

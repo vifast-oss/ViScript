@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 102] = [
+pub const FUNCS: [StdFn; 103] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -497,6 +497,12 @@ pub const FUNCS: [StdFn; 102] = [
         name: "path.is_abs",
         params: &[Ty::Str],
         ret: Ty::Bool,
+    },
+    // **VD-270 (path.normalize)**: chuẩn hoá **từ vựng** POSIX, thuần chuỗi — không chạm đĩa.
+    StdFn {
+        name: "path.normalize",
+        params: &[Ty::Str],
+        ret: Ty::Str,
     },
     // ----- std.time (đọc đồng hồ trong Rust, không qua Host) -----
     StdFn {
@@ -808,6 +814,16 @@ pub fn hoan(name: &str) -> bool {
 /// `true` nếu `m` là module std được hỗ trợ.
 pub fn module_ho_tro(m: &str) -> bool {
     MODULES.contains(&m)
+}
+
+/// **VD-270 (path.normalize)** — module đích của sugar R5c khi tên **không** thuộc module lõi
+/// của kiểu nhận: `s.normalize()` ≡ `path.normalize(s)` (đường dẫn POSIX là chuỗi). Chỉ trả
+/// `Some` cho cặp đã được duyệt; caller giữ module mặc định khi `None`.
+pub fn module_sugar(module: &str, ten: &str) -> Option<&'static str> {
+    match (module, ten) {
+        ("str", "normalize") => Some("path"),
+        _ => None,
+    }
 }
 
 /// Mọi hàm thuộc module `m` (tên đầy đủ), theo thứ tự khai.
