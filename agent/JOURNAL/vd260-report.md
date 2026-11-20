@@ -331,3 +331,7 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Wave 23 merged**: `map.contains_key` (`745851a`), `str.char_at` (`3cf2b48`), `path.is_absolute` (`49eab95`), `str.is_blank` (`90bc8d0`), `sqlite.schema_version` (`c6e0a2a`). `FUNCS` 135 → **140**; gate `90bc8d0` **2878 passed / 3 skipped**, `c6e0a2a` **2884 passed / 3 skipped**.
 - **Wave 24 running**: `path.with_stem`, `fs.is_symlink`, `str.split_once`, `sqlite.user_version` (4 worktree tại `c6e0a2a`).
 - `VIS_DIFF_N=100000` seed 20261215 @ `dd8fb0e`: **0 lệch** (93.768 chạy, 58,8 s).
+- **Wave 24 merged** (FUNCS 140 → 144): `path.with_stem` (`e0937c9`), `str.split_once` (`2d87cfe`), `sqlite.user_version` (`918d332`), `fs.is_symlink` (`88da99c`); gate cuối **2944 passed / 3 skipped**.
+- **CLI**: `vis test --shard <I>/<N>` (`de8819f`) — chia ca sau filter/shuffle, trước list/repeat; 6 test riêng; gate 2890.
+- **Flake**: `vd260_frame3::timer_that_khong_fire_som_truoc_deadline` đo từ **trước** khi nạp timer (`fa9ec3a`); 20/20 lần chạy riêng dưới tải.
+- **Wave 25 running**: `path.with_file_name`, `fs.read_link`, `str.rsplit_once`, `list.min_float/max_float` (4 worktree tại `88da99c`).
