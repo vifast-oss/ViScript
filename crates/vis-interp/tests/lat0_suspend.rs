@@ -1004,10 +1004,20 @@ fn baseline_matches_current_vis() {
         home,
         std::env::var("PATH").unwrap_or_default()
     );
-    let vis = "/home/ps/ViScript/vis";
+    // **SỬA KÈM LÝ DO (verify mps/psvn)**: đường dẫn tuyệt đối `/home/ps/...` chỉ có trên
+    // máy ps ⇒ ca này đỏ oan trên mps/psvn. Dò gốc repo từ CARGO_MANIFEST_DIR (có trên
+    // mọi nền); trên Windows gọi shim `vis` (bash script) qua `bash`.
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let vis = repo.join("vis");
 
     for extra in [vec![], vec!["--vm", "--no-cache"]] {
-        let mut cmd = Command::new(vis);
+        let mut cmd = if cfg!(windows) {
+            let mut c = Command::new("bash");
+            c.arg(&vis);
+            c
+        } else {
+            Command::new(&vis)
+        };
         cmd.arg("run");
         for e in &extra {
             cmd.arg(e);

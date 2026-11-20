@@ -4,7 +4,14 @@
 # **Nợ #185 (VD-241/VD-246)**: lệnh chuẩn phải tự chọn đúng toolchain hoặc thất bại rõ —
 # không dựa vào người dùng sửa PATH ngầm (trước đây `vis test` rơi vào rustc 1.93.1).
 set -u
-VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# **SỬA KÈM LÝ DO (verify psvn)**: dùng bash thuần thay `dirname` ngoài — ca fixture #5
+# chạy `bin/vis` với `env -i PATH=<sạch>`; trên Git Bash `dirname` trả rỗng ⇒ VIS_ROOT="/"
+# ⇒ source sai `//bin/_vis-toolchain.sh`. `${0%/*}` là builtin, chạy được mọi nền.
+case "$0" in
+    */*) _vis_dir="${0%/*}" ;;
+    *)   _vis_dir="." ;;
+esac
+VIS_ROOT="$(cd "$_vis_dir/.." && pwd)"
 # shellcheck source=_vis-toolchain.sh
 source "$VIS_ROOT/bin/_vis-toolchain.sh"
 
