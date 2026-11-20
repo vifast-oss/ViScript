@@ -147,7 +147,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-schema-sql, 2026-11-21)**: +**1** hàm `sqlite.schema_sql`
     // (`(str, str) -> Result[str?, Error]`; tra văn bản SQL khai báo của đối tượng schema chính
     // theo tên bind, thiếu/`sql` NULL ⇒ `Ok(None)`) ⇒ **121** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 121, "bảng chữ ký phải đủ 121 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 str-title, 2026-11-21)**: +**1** hàm `std.str.title`
+    // (`(str) -> str`; hoa scalar đầu mỗi từ theo khoảng trắng Unicode, `ß` ⇒ `SS`) ⇒ **122** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 122, "bảng chữ ký phải đủ 122 hàm");
 }
 
 #[test]
@@ -346,6 +349,19 @@ fn replace_last_kieu_str_sang_str() {
     assert_eq!(f.ret, Ty::Str, "kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
     assert_eq!(f.so_doi(), 3, "số đối số");
+}
+
+#[test]
+fn title_kieu_str_sang_str() {
+    // **VD-270 (str-title)**: `(str) -> str`; cùng tham số đầu `str` nên sugar R5c `s.title()`
+    // chạy không cần `use`, và kết quả là `str` (không phải `str?`).
+    let f = sig_of("str.title").expect("str.title");
+    assert_eq!(f.params, &[Ty::Str], "tham số");
+    assert_eq!(f.ret, Ty::Str, "kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
+    assert_eq!(f.so_doi(), 1, "số đối số");
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(vis_types::stdlib::module_sugar("str", "title"), None);
 }
 
 #[test]

@@ -46,6 +46,7 @@ mod strreplace;
 mod strreplacelast;
 mod strsplitn;
 mod strstrip;
+mod strtitle;
 mod strtrim;
 pub use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
@@ -220,6 +221,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 "str.upper" => s.to_uppercase(),
                 _ => s.to_lowercase(),
             }))
+        }
+        // **VD-270 (str-title)**: hoa **scalar đầu** mỗi từ, thường phần còn lại; biên từ là
+        // **khoảng trắng Unicode** (giữ nguyên từng scalar), dấu câu không mở từ mới; `ß` ⇒ `SS`.
+        "str.title" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(Value::Str(strtitle::title(s)))
         }
         // **VD-270 (strtrim)**: cắt theo **tập** scalar `chars`; rỗng ⇒ giữ nguyên, hết ⇒ `""`.
         "str.trim_matches" | "str.trim_start_matches" | "str.trim_end_matches" => {
