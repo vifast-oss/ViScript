@@ -1,7 +1,12 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # Phiếu đề xuất tag 0.x — ViScript, 2026-11-20
 
-> **TRẠNG THÁI: ĐỀ XUẤT — CHƯA THỰC HIỆN.** Phát hành theo VD-247/A0 (chấp nhận nghiệm thu có
+> **TRẠNG THÁI: TẠM DỪNG (PAUSED) theo VD-247 bị A0 thu hồi bởi VD-248 — 2026-11-20.**
+> Quyền tạo/push tag và công bố release đã bị **tạm dừng** cho tới khi có đánh giá mức sẵn sàng
+> sử dụng thực tế (`agent/BAO-CAO-SAN-SANG-THUC-TE-2026-11-20.md`). Phiếu này chỉ là đề xuất lưu
+> hồ sơ; **không** được thực hiện. Tag duy nhất vẫn là `pha1-rc1` (= `05e42d0…`).
+>
+> *(Lời gốc trước khi tạm dừng, giữ lại để truy nguyên:)* **ĐỀ XUẤT — CHƯA THỰC HIỆN.** Phát hành theo VD-247/A0 (chấp nhận nghiệm thu có
 > phạm vi, nhưng **chưa cho phép tag/phát hành**). Phiếu này **không** tạo tag, **không** push tag,
 > **không** công bố release, **không** mở pha 2/VS3. Chờ A0 phê duyệt tên và phạm vi.
 >
