@@ -223,7 +223,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 119] = [
+pub const FUNCS: [StdFn; 120] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -267,6 +267,14 @@ pub const FUNCS: [StdFn; 119] = [
     },
     StdFn {
         name: "str.lower",
+        params: &[Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (str-title)**: chữ hoa **scalar đầu** mỗi từ, chữ thường phần còn lại; từ tách
+    // theo **khoảng trắng Unicode** (`char::is_whitespace`, giữ nguyên từng scalar), dấu câu
+    // **không** mở từ mới (`"hello-world"` ⇒ `"Hello-world"`); `ß` ⇒ `SS` (Rust `to_uppercase`).
+    StdFn {
+        name: "str.title",
         params: &[Ty::Str],
         ret: Ty::Str,
     },
