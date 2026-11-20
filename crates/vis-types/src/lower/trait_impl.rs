@@ -52,9 +52,15 @@ impl<'a> Lowerer<'a> {
             HExpr::Var { sym: Some(id), .. } => self
                 .type_env
                 .get(id)
+                .filter(|t| !t.is_error())
                 .cloned()
-                .or_else(|| self.symbols.get(*id).and_then(|s| s.ty.clone()))
-                .or_else(|| self.self_ty.get(id).cloned()),
+                .or_else(|| self.self_ty.get(id).cloned())
+                .or_else(|| {
+                    self.symbols
+                        .get(*id)
+                        .and_then(|s| s.ty.clone())
+                        .filter(|t| !t.is_error())
+                }),
             HExpr::Field {
                 base,
                 name,
