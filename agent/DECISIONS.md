@@ -2948,3 +2948,103 @@ Tag/release **PAUSED**; worker/GC/TLS **chưa mở**.
 
 > **Điểm quan trọng A0**: ngân sách phải là **luật ổn định của chương trình**, không phải hóa đơn cho các
 > thao tác nội bộ khác nhau giữa interp và VM.
+
+### VD-257 · Ủy quyền tự chủ cuối tuần trên máy `ps` — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Hiệu lực**: từ khi nhận lệnh đến
+> **09:00 JST thứ Hai 23/11/2026**. Đây là **ủy quyền**, không phải xác nhận A0 đã khởi chạy tác vụ
+> từ cuộc trò chuyện. Ghi **VD mới**, không sửa quyết định lịch sử.
+
+#### 1. Quyền & ranh giới
+
+- Agent 1 làm **leader**: quản lý `QUEUE`, sổ quyết định, tích hợp, báo cáo.
+- Tối đa **4 sub-agent Agent 2 trong worktree riêng**; tự mở task tiếp theo trong phạm vi VD này,
+  **không chờ A0 sau mỗi task**.
+- Được **commit/push nhánh công việc** lên remote hiện có; **chỉ tích hợp vào `main` sau review chéo
+  và gate**; tuân thủ branch protection, **không force-push/bỏ guard**.
+- **Không**: đổi runtime mặc định, tag/release, mở worker pool/GC/TLS/API công khai mới.
+
+#### 2. Nhận `fc297ba`, ba số chưa duyệt
+
+Chấp nhận: instrumentation subset, connect/write Pending + partial-write offset + deadline, lỗi
+final-join surfaced, gate `fc297ba` **1512 passed / 1 skipped / 0 failed**. **Không** suy ra coverage,
+ngân sách hay async đã hoàn thiện.
+
+| Vấn đề | Quyết định |
+|---|---|
+| Trọng số `1/1/1/1/4/2/4/2` | **Duyệt làm cấu hình thử nghiệm v1**, chưa hợp đồng mặc định |
+| `BUDGET = 20.000.000` | **Chưa duyệt mặc định** — chỉ cao hơn loop 2M ~11% là chưa đủ căn cứ |
+| Fuel VM `10^7` | **Không chấp nhận làm cấu hình cuối** nếu còn chặn chương trình compiler sinh trước khi hết ngân sách ngữ nghĩa |
+
+**Không tăng fuel tùy ý để xanh.** Phải đo số lệnh VM trên workload đại diện, xác định **miền hỗ trợ**,
+kiểm chứng quan hệ fuel ↔ ngân sách. Finding step-cap **chỉ đóng khi xử lý nguyên nhân**, không phải
+vì đổi tên `MAX_STEPS` thành `SAFETY_FUEL`.
+
+#### 3. Bytecode/cache — khép tương thích trước khi tiến xa
+
+Không chấp nhận "core `VERSION=2` + trailer `VFEE VERSION=4`" là an toàn chỉ nhờ cache key mới. Phân biệt
+rõ: **phiên bản định dạng module · phiên bản bảng sự kiện · phiên bản bảng trọng số · khóa cache**.
+Runtime cũ phải **từ chối** artifact mới cần ngữ nghĩa ngân sách mới; runtime mới xử lý artifact cũ theo
+chính sách rõ, **không âm thầm coi là đã có ngân sách**; cache **không tái dùng** kết quả verify của công
+cụ cũ; **đường nạp artifact trực tiếp cũng được bảo vệ**.
+
+Được sửa nhận diện định dạng, **được tăng core `VERSION`** sang giá trị chưa dùng + cập nhật cache/fixture
+cùng task; core và fee **không bắt buộc cùng số**. Số 3 đang là sentinel trong test **không chứng minh** nó
+từng là phiên bản đã phát hành — kiểm tra registry/lịch sử thực tế, nếu cần đổi sentinel sang giá trị
+không được hỗ trợ; **không chọn số chỉ để tránh sửa test**. Không cần hỏi lại A0 nếu thay đổi chỉ phục vụ
+điều kiện tương thích và không đổi opcode/ngôn ngữ ngoài phạm vi.
+
+#### 4. Bốn luồng cuối tuần
+
+- **A — Coverage & đúng đắn frame**: `?`, channel (đầy/rỗng/đóng), `CmdBlock`, `await` trong thân closure
+  trên VM, field/index assignment + phân biệt method user/host, resume không double-charge. Source thật
+  qua hai engine; giữ thứ tự đánh giá/tác dụng phụ; **không fallback đồng bộ**; **không đổi checker** để
+  từ chối chương trình hợp lệ. Nhóm lớn thì chia task, ghi đúng phần thiếu — **không gọi "hoàn tất"** khi
+  còn ô chưa kiểm.
+- **B — Ngân sách/fuel/tương thích**: khép §3; hoàn thiện trace trong ngôn ngữ hiện có; đo debug + release;
+  ngân sách nhỏ sát tác dụng phụ; crafted-bytecode/bảng phí sai/loop né phí; đề xuất bộ số cuối kèm căn cứ.
+  **Không bật ngân sách mặc định**; có thể chạy chương trình thử bằng cấu hình mới để đối chiếu.
+- **C — Vòng đời/cancellation/cleanup**: cancellation nội bộ hợp tác (chưa API công khai): ghi nhận yêu
+  cầu; dừng tại điểm an toàn; gỡ I/O/timer/waiter đúng 1 lần; **không đóng handle đã thoát/chia sẻ**; handle
+  còn sống giữ kết quả/lỗi; hết handle + xong join ⇒ thu hồi. Giữ final join, **không tự hủy lúc main exit**.
+  Nếu cần mã lỗi cancellation mới hoặc đổi chính sách "lỗi task đầu ảnh hưởng task khác" ⇒ **blocker riêng**,
+  vẫn tiếp tục cleanup phần độc lập.
+- **D — Fairness/đo dài/kiểm chứng độc lập**: hạn ngạch CPU thử nghiệm trên đường frame: điểm sự kiện chuẩn;
+  **bộ đếm riêng** với ngân sách; hết hạn ngạch ⇒ đưa task về cuối `ready`, **không trap**; chỉ yield tại
+  continuation đã lưu; không charge lại/lặp side-effect. Quét dải `Q`, **không chốt mặc định**. Nghiệm thu:
+  `IO_START` trước `CPU_DONE`, task CPU vẫn xong, task ngắn không đói, cùng trace+cấu hình ⇒ 2 engine cùng
+  hành vi, ngân sách không reset/né qua yield. Đồng thời đo task/tài nguyên sống qua nhiều sóng.
+
+#### 5. Điều phối & tài nguyên máy `ps`
+
+Phân quyền sở hữu tệp **trước khi dispatch**; các luồng cùng sửa `rt.rs`/`frame/*`/`vm_frame.rs`/`stdlib.rs`
+phải có **thứ tự bàn giao**, không cherry-pick mù. Build nặng/gate đầy đủ/benchmark **chạy một làn độc quyền**;
+không benchmark khi luồng khác đang build/test nặng; thư mục tạm riêng; **không** ghi đè fixture/log luồng khác;
+**không** tự nâng toolchain, cập nhật dependency rộng, `cargo clean` toàn bộ theo thói quen; không xóa artifact/log
+công việc khác; không reboot/đổi cấu hình hệ thống/quyền/credentials. Theo dõi đĩa + RAM; thiếu tài nguyên ⇒
+giảm song song, không chạy tới OOM. "Chạy liên tục" = luôn chuyển sang việc hữu ích tiếp, **không** giữ CPU 100%.
+
+#### 6. Vòng làm việc & dừng
+
+Mỗi task: repro/tiêu chí rõ → test → hiện thực → **review chéo** → kiểm liên quan → tích hợp → cập nhật sổ.
+Kiểm liên quan sau mỗi thay đổi; gate đầy đủ sau mỗi nhóm tích hợp đáng kể; **không chạy lại full gate trên cùng
+commit chỉ để tăng số PASS**. Fuzz/soak seed + thời lượng hữu hạn, lưu seed lỗi; lỗi tái hiện phải phân loại
+trước khi lặp đo. Bị chặn ⇒ **đóng băng task đó**, chuyển task độc lập, không dừng cả cuối tuần.
+
+**Dừng riêng phần liên quan** nếu cần: đổi cú pháp/API công khai; chọn GC/worker/shared heap; nới sandbox;
+thêm dependency chưa duyệt; hạ tiêu chí/bỏ test đỏ vô căn cứ; đổi runtime mặc định; đổi chính sách lỗi/cancellation
+chưa quyết; nguy cơ mất dữ liệu/cạn đĩa/ảnh hưởng việc khác trên `ps`.
+
+**08:00 JST thứ Hai**: không mở task lớn mới, bắt đầu khép tích hợp. **09:00 JST**: dừng mở rộng, báo cáo, cây ở
+trạng thái xác định. Không kill ngang tiến trình đang ghi; phép đo an toàn chưa xong ⇒ ghi rõ + chỉ tiếp tục nếu
+có giới hạn kết thúc.
+
+#### 7. Báo cáo bàn giao duy nhất
+
+HEAD, remote, cây sạch/bẩn + worktree còn mở; task xong/mở/bị chặn; coverage frame còn thiếu **chính xác**;
+VERSION/cache + bằng chứng tương thích; ngân sách/fuel/`Q`: số nào thử nghiệm, số nào chưa chốt; B1/B2,
+latency, task/tài nguyên sống + môi trường đo; gate trên đúng commit; đề xuất bước tiếp theo — **không tự kết
+luận được đổi runtime mặc định**.
+
+> **Mục tiêu cuối tuần**: thu hẹp khoảng trống để runtime mới tiến gần dùng thật, **không** đạt một con số
+> test hay chạy đủ số giờ.
