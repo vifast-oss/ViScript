@@ -37,6 +37,9 @@
 # kỳ vọng: Some(1.75)
 # kỳ vọng: None
 # kỳ vọng: Some(3)
+# kỳ vọng: Some(2)
+# kỳ vọng: Some(2.5)
+# kỳ vọng: Some(3)
 use std.fs
 use std.list
 use std.map
@@ -91,3 +94,6 @@ print(list.mean([1.0, 2.5]))
 let fs: list[float] = []
 print(list.mean(fs))
 print([2.0, 4.0].mean())
+print(list.median([3.0, 1.0, 2.0]))
+print(list.median([1.0, 2.0, 3.0, 4.0]))
+print([2.0, 4.0].median())
