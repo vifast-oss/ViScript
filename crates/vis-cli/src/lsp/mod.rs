@@ -356,6 +356,24 @@ mod vd258_tests {
             uri_thanh_duong_voi("file:///c:\\a\\b.vis", true).as_deref(),
             Some("c:/a/b.vis")
         );
+        // **VD-259** — drive mã hoá cả chữ cái, backslash `%5C`, UTF-8 percent-encoded, `%`
+        // hỏng: decode **trước** khi nhận diện drive; `%` hỏng giữ nguyên (không panic).
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C%3A%5Ca%5Cb.vis", true).as_deref(),
+            Some("C:/a/b.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///%43%3a/a.vis", true).as_deref(),
+            Some("C:/a.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C%3A/a%20b/%C3%A9.vis", true).as_deref(),
+            Some("C:/a b/é.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C%3A/a%zz.vis", true).as_deref(),
+            Some("C:/a%zz.vis")
+        );
         // Tương đối/không drive ⇒ None (trừ đường dẫn bắt đầu `/`).
         assert_eq!(uri_thanh_duong_voi("file://relative/x", true), None);
         assert_eq!(

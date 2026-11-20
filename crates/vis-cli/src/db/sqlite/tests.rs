@@ -112,6 +112,40 @@ fn token_128_bit_hex_khong_doan_duoc_khong_tai_su_dung() {
     assert!(e.contains("đã đóng"), "{e}");
 }
 
+/// **VD-259** — OS RNG hai nửa 64 bit: 512 lần mở (đóng ngay) không trùng token, vẫn dưới cap
+/// handle 1_024. Bắt hồi quy về seed một nguồn 64 bit/thời gian đơn thuần.
+#[test]
+fn token_moi_lan_mo_khong_trung_512_lan() {
+    let mut d = Db::moi(false);
+    let mut da_co = std::collections::HashSet::new();
+    for i in 0..512 {
+        let h = mo_db(&mut d);
+        assert!(da_co.insert(h.clone()), "lần {i}: token trùng {h}");
+        d.db_close(&h).unwrap();
+    }
+    assert_eq!(da_co.len(), 512);
+}
+
+/// Nguồn OS thật đọc được 2 lần khác nhau (Unix: `/dev/urandom`). Nếu môi trường không có
+/// `/dev/urandom` thì fallback vẫn chạy — test này chỉ áp dụng Unix và bỏ qua khi `None`.
+#[cfg(unix)]
+#[test]
+fn nguon_ngau_nhien_os_hai_lan_khac_nhau() {
+    if let (Some(a), Some(b)) = (ngau_nhien_os(), ngau_nhien_os()) {
+        assert_ne!(a, b, "hai lần đọc OS RNG không được trùng");
+    }
+}
+
+/// Fallback std `RandomState` (được seed từ OS) tách miền + bộ đếm ⇒ hai nửa khác nhau giữa các
+/// lần gọi; dùng khi `/dev/urandom` không có (Windows/nền tảng khác).
+#[test]
+fn entropy_du_phong_tach_mien_va_bo_dem() {
+    let (a1, b1) = ngau_nhien_du_phong(1);
+    let (a2, b2) = ngau_nhien_du_phong(2);
+    assert_ne!((a1, b1), (a2, b2), "bộ đếm phải đổi token");
+    assert_ne!(a1, b1, "hai miền SipHash không được trùng");
+}
+
 #[test]
 fn token_gia_sai_dang_bi_tu_choi() {
     let mut d = Db::moi(false);
@@ -643,6 +677,64 @@ fn execute_tra_hang_phat_hien_truoc_step_khong_side_effect() {
     );
 }
 
+/// **VD-242 §3.6 / VD-259** — `query` **chỉ đọc**: phân loại sau prepare, trước step; câu ghi
+/// hoặc câu không trả hàng bị từ chối, không side effect. `PRAGMA table_info` (trả hàng) đọc
+/// được qua `query`, bị `execute` từ chối; PRAGMA ngoài allow-list bị authorizer chặn.
+#[test]
+fn query_chi_doc_tu_choi_lenh_ghi_va_lenh_khong_tra_hang() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER)", &[]).unwrap();
+    for sql in [
+        "INSERT INTO t VALUES (1)",
+        "INSERT INTO t VALUES (2) RETURNING a",
+        "CREATE TABLE t2 (x INTEGER)",
+        "UPDATE t SET a = 1",
+        "DELETE FROM t",
+        "WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x",
+        "DROP TABLE t",
+    ] {
+        let e = d.db_query(&h, sql, &[]).unwrap_err();
+        assert!(
+            e.contains("chỉ đọc") && e.contains("sqlite.execute"),
+            "{sql}: {e}"
+        );
+    }
+    // Không side effect nào chạy: bảng rỗng, t2/t không bị đổi.
+    let (_, rows) = d.db_query(&h, "SELECT count(*) FROM t", &[]).unwrap();
+    assert_eq!(o_int(&rows), 0);
+    assert!(
+        d.db_query(&h, "SELECT * FROM t2", &[]).is_err(),
+        "CREATE TABLE không được chạy qua query"
+    );
+    assert!(
+        d.db_query(&h, "SELECT * FROM t", &[]).is_ok(),
+        "bảng t vẫn còn"
+    );
+    // Câu không trả hàng (kể cả transaction) phải dùng `execute`.
+    for sql in ["BEGIN", "COMMIT", "SAVEPOINT sp", "RELEASE sp"] {
+        let e = d.db_query(&h, sql, &[]).unwrap_err();
+        assert!(e.contains("không trả hàng"), "{sql}: {e}");
+    }
+    // `PRAGMA table_info` trả hàng ⇒ query được; execute từ chối trước step.
+    assert!(d.db_query(&h, "PRAGMA table_info(t)", &[]).is_ok());
+    let e = d.db_execute(&h, "PRAGMA table_info(t)", &[]).unwrap_err();
+    assert_eq!(
+        e, "câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`",
+        "{e}"
+    );
+    // Chỉ `table_info` + **đọc** `user_version` được phép; biến thể khác bị authorizer chặn.
+    assert!(d.db_query(&h, "PRAGMA user_version", &[]).is_ok());
+    for sql in [
+        "PRAGMA index_list(t)",
+        "PRAGMA table_xinfo(t)",
+        "PRAGMA user_version = 1",
+    ] {
+        let e = d.db_query(&h, sql, &[]).unwrap_err();
+        assert!(e.contains("quyền (authorizer)"), "{sql}: {e}");
+    }
+}
+
 #[test]
 fn thoi_gian_chay_nho_bi_ngat_nhanh_khong_phai_doi_5s() {
     let mut d = Db::moi_voi_query_ms(false, 100);
@@ -817,6 +909,14 @@ fn chinh_sach_action_code_ma_tran() {
         Function {
             function_name: "LOAD_EXTENSION",
         },
+        // **VD-259** — nếu build tương lai bật `SQLITE_ENABLE_OFFSET_SQL_FUNC`, offset byte
+        // trong tệp cũng là layout trang thô ⇒ deny (không phụ thuộc hoa/thường).
+        Function {
+            function_name: "sqlite_offset",
+        },
+        Function {
+            function_name: "SQLITE_OFFSET",
+        },
         Pragma {
             pragma_name: "user_version",
             pragma_value: Some("42"),
@@ -845,6 +945,27 @@ fn chinh_sach_action_code_ma_tran() {
             pragma_name: "temp_store",
             pragma_value: None,
         },
+        // **VD-259** — trang/freelist thô: mọi biến thể tên (hoa/thường, có/không schema) bị chặn.
+        Read {
+            table_name: "dbstat",
+            column_name: "name",
+        },
+        Read {
+            table_name: "DBSTAT",
+            column_name: "pageno",
+        },
+        Read {
+            table_name: "sqlite_dbpage",
+            column_name: "data",
+        },
+        Read {
+            table_name: "sqlite_dbdata",
+            column_name: "data",
+        },
+        Read {
+            table_name: "sqlite_dbptr",
+            column_name: "pgno",
+        },
         AuthAction::Unknown {
             code: 999,
             arg1: None,
@@ -858,6 +979,48 @@ fn chinh_sach_action_code_ma_tran() {
             "phải từ chối: {a:?}"
         );
     }
+}
+
+/// **VD-259** — `dbstat` (bundled `SQLITE_ENABLE_DBSTAT_VTAB`) đọc trang/freelist thô; SQL người
+/// dùng phải bị authorizer từ chối, không lộ layout/byte. Chứng minh module **có** trong build
+/// bằng connection raw trước, rồi mới kiểm host chặn.
+#[test]
+fn dbstat_bi_authorizer_tu_choi_khong_doc_trang_tho() {
+    // Raw connection (không authorizer): dbstat phải tồn tại trong bundled build.
+    let raw = Connection::open_in_memory().unwrap();
+    let n: i64 = raw
+        .query_row("SELECT count(*) FROM dbstat", [], |r| r.get(0))
+        .expect("bundled phải có dbstat (SQLITE_ENABLE_DBSTAT_VTAB)");
+    assert!(n >= 0);
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER)", &[]).unwrap();
+    d.db_execute(&h, "INSERT INTO t VALUES (1)", &[]).unwrap();
+    for sql in [
+        "SELECT * FROM dbstat",
+        "SELECT * FROM main.dbstat",
+        "SELECT * FROM DBSTAT",
+        "SELECT name FROM dbstat WHERE name = 't'",
+        "WITH x AS (SELECT * FROM dbstat) SELECT * FROM x",
+    ] {
+        let e = d.db_query(&h, sql, &[]).unwrap_err();
+        assert!(
+            e.contains("quyền (authorizer)"),
+            "{sql}: phải bị authorizer chặn, được: {e}"
+        );
+    }
+    // Bảng/view thường + schema vẫn đọc được (chặn đúng phạm vi).
+    assert!(d.db_query(&h, "SELECT a FROM t", &[]).is_ok());
+    assert!(d
+        .db_query(&h, "SELECT name FROM sqlite_master", &[])
+        .is_ok());
+    // `execute` cũng không được dùng để sao chép trang thô sang bảng thường.
+    let e = d
+        .db_execute(&h, "CREATE TABLE copy AS SELECT * FROM dbstat", &[])
+        .unwrap_err();
+    assert!(e.contains("quyền (authorizer)"), "{e}");
+    // `table_info(dbstat)` chỉ là metadata, không đọc trang — vẫn chạy (không lộ byte).
+    assert!(d.db_query(&h, "PRAGMA table_info(dbstat)", &[]).is_ok());
 }
 
 #[test]
@@ -951,6 +1114,50 @@ fn tran_cung_chan_zeroblob_truoc_khi_cap_phat() {
     // Trong trần cứng và trần hàng ⇒ đọc được.
     let (_, rows) = d.db_query(&h, "SELECT zeroblob(4096)", &[]).unwrap();
     assert_eq!(rows.len(), 1);
+}
+
+/// **VD-259** — đường **đọc** hạ `SQLITE_LIMIT_LENGTH` về trần hàng (`min(row_bytes,
+/// hard_cell_bytes)`) trước step, nên cell 1–17 MiB không materialize rồi mới bị cap hàng từ
+/// chối. Đường **ghi** vẫn dùng trần cứng (row 8 KiB ghi được dù trần đọc 4 KiB).
+#[test]
+fn doc_ha_tran_cung_ve_tran_hang_ghi_van_dung_tran_cung() {
+    let mut d = db_gioi_han(|g| {
+        g.row_bytes = 4 << 10;
+        g.hard_cell_bytes = 64 << 10;
+    });
+    let h = mo_db(&mut d);
+    // `length(zeroblob(8192))` cho kết quả 8 byte: nếu chỉ cap sau khi đọc, nó **thành công**
+    // (cell 8 KiB < trần cứng 64 KiB). Với trần đọc 4 KiB, zeroblob bị TOOBIG ngay tại step ⇒
+    // host map thành lỗi cap hàng ⇒ chứng minh trần đọc đã hạ thật.
+    let e = d
+        .db_query(&h, "SELECT length(zeroblob(8192))", &[])
+        .unwrap_err();
+    assert!(e.contains("4096") && e.contains("một hàng"), "{e}");
+    // Đúng trần đọc vẫn đọc được (limit là max, không phải exclusive).
+    let (_, rows) = d
+        .db_query(&h, "SELECT length(zeroblob(4096))", &[])
+        .unwrap();
+    assert_eq!(o_int(&rows), 4096);
+    // Đường ghi dùng trần cứng 64 KiB: row 8 KiB ghi được (không bị trần đọc 4 KiB).
+    d.db_execute(&h, "CREATE TABLE b (x BLOB)", &[]).unwrap();
+    d.db_execute(&h, "INSERT INTO b VALUES (zeroblob(8192))", &[])
+        .unwrap();
+    let (_, rows) = d.db_query(&h, "SELECT count(*) FROM b", &[]).unwrap();
+    assert_eq!(o_int(&rows), 1);
+    // Trần cứng vẫn chặn ghi > 64 KiB.
+    let e = d
+        .db_execute(&h, "INSERT INTO b VALUES (zeroblob(65537))", &[])
+        .unwrap_err();
+    assert!(e.contains("TooBig") || e.contains("mã SQLite"), "{e}");
+
+    // Mặc định (đọc 1 MiB): cell 2 MiB bị chặn **trước** khi materialize, kể cả khi kết quả chỉ
+    // là `length(...)` 8 byte — nếu chỉ cap sau khi đọc, câu này sẽ trả 2097152.
+    let mut mac_dinh = Db::moi(false);
+    let h2 = mo_db(&mut mac_dinh);
+    let e = mac_dinh
+        .db_query(&h2, "SELECT length(zeroblob(2097152))", &[])
+        .unwrap_err();
+    assert!(e.contains("1048576"), "{e}");
 }
 
 #[test]
@@ -1054,6 +1261,21 @@ fn schema_khong_utf8_tra_loi_du_lieu_khong_panic() {
     );
     d.db_cleanup().unwrap();
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// **VD-259** — precheck UTF-8 không được chặn oan schema **hợp lệ** có định danh Unicode: bảng/
+/// cột tiếng Việt vẫn tạo/đọc qua host bình thường, tên cột trả đúng.
+#[test]
+fn schema_utf8_hop_le_voi_dinh_danh_unicode_van_doc_duoc() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE \"bảng\" (\"cột\" TEXT)", &[])
+        .unwrap();
+    d.db_execute(&h, "INSERT INTO \"bảng\" VALUES ('x')", &[])
+        .unwrap();
+    let (cols, rows) = d.db_query(&h, "SELECT \"cột\" FROM \"bảng\"", &[]).unwrap();
+    assert_eq!(cols, vec!["cột".to_string()]);
+    assert_eq!(rows.len(), 1);
 }
 
 #[test]

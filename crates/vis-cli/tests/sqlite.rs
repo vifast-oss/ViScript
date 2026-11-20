@@ -469,6 +469,43 @@ fn main():
     let _ = std::fs::remove_dir_all(&d);
 }
 
+/// **VD-259** — `sqlite.query` chỉ đọc (VD-242 §3.6), `dbstat` (trang thô) bị authorizer chặn,
+/// `PRAGMA table_info` vẫn đọc được — chạy cả hai engine, so từng byte.
+#[test]
+fn query_chi_doc_va_dbstat_bi_chan() {
+    let d = tam("readonly-dbstat");
+    let src = r#"use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            let _ = sqlite.execute(h, "CREATE TABLE t (a INTEGER)", [])
+            match sqlite.query(h, "INSERT INTO t VALUES (1)", []):
+                Ok(_): print("query ghi: KHONG DUOC PHU")
+                Err(_): print("query ghi bi chan")
+            match sqlite.query(h, "SELECT count(*) FROM t", []):
+                Err(e): print("loi count {e.message}")
+                Ok(rs):
+                    for row in rs.rows:
+                        for cell in row:
+                            print(cell)
+            match sqlite.query(h, "SELECT * FROM dbstat", []):
+                Ok(_): print("dbstat: KHONG DUOC PHU")
+                Err(_): print("dbstat bi chan")
+            match sqlite.query(h, "PRAGMA table_info(t)", []):
+                Ok(_): print("table_info ok")
+                Err(e): print("table_info loi {e.message}")
+            let _ = sqlite.close(h)
+"#;
+    let (code, out, err) = ca(&d, "query-readonly-dbstat", src);
+    assert_eq!(code, 0, "{err}");
+    assert_eq!(
+        out, "query ghi bi chan\nInteger(0)\ndbstat bi chan\ntable_info ok\n",
+        "hành vi query/dbstat/table_info khác kỳ vọng"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 /// **VD-258** — `zeroblob(512 MiB)` phải trả **lỗi dữ liệu** (cap hàng) thay vì materialize
 /// 512 MB trước khi host kịp kiểm. Test chạy qua binary thật ở cả hai engine.
 #[test]
