@@ -30,6 +30,8 @@ mod fsbytes;
 mod indexof;
 mod listcontains;
 mod listmath;
+mod listmean;
+mod netconst;
 mod pathjoinall;
 mod pathnorm;
 mod pathrel;
@@ -52,11 +54,7 @@ mod strtitle;
 mod strtrim;
 pub use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
-
-/// **ST-238 / VD-242 (nợ #167)**: trần `max_bytes` cho `net.read`. Input người dùng (kể cả
-/// `i64::MAX`, âm, hay giá trị chuyển kiểu overflow) **không** được phép ép host cấp phát bộ nhớ
-/// tùy ý (OOM ⇒ abort). Vượt trần ⇒ `Result.Err` dữ liệu, không trap, không panic.
-pub const NET_READ_CAP: i64 = 8 * 1024 * 1024;
+pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP};
 
 // ===========================================================================
 // ST-277 / VD-256 — connect/write nonblocking trên ĐƯỜNG FRAME TEST (chỉ test).
@@ -70,17 +68,6 @@ pub const NET_READ_CAP: i64 = 8 * 1024 * 1024;
 // văn — không helper mới trong `rt.rs`. Runtime mặc định (`frame.enabled == false`)
 // và API ngôn ngữ (`net.connect`/`net.write`, chữ ký, giá trị trả) không đổi.
 // ===========================================================================
-
-/// Tiền tố handle cho một lần `net.connect` trên đường frame test (`N:<dia_chi>`).
-#[doc(hidden)]
-pub const FRAME_NET_CONNECT: &str = "N:";
-/// Tiền tố handle cho một lần `net.write` trên đường frame test (`W:<tay>`).
-#[doc(hidden)]
-pub const FRAME_NET_WRITE: &str = "W:";
-/// Hạn mặc định của `net.write` trên đường frame test (ngôn ngữ không có đối số timeout).
-/// Chọn rộng cho loopback; vẫn là hạn monotonic DUY NHẤT, không reset theo readiness.
-#[doc(hidden)]
-pub const FRAME_WRITE_TIMEOUT_MS: i64 = 5_000;
 
 #[derive(Default)]
 struct FrameNetIo {
@@ -528,6 +515,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.sum" | "list.product" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmath::goi(name, xs, span)
+        }
+        // **VD-270 (list-mean)**: trung bình `list[float]`; rỗng ⇒ `None`; gộp trái→phải
+        // `f64` (IEEE: NaN/inf lan truyền, không trap). Lõi `stdlib/listmean.rs`.
+        "list.mean" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listmean::goi(xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.
