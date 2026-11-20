@@ -3117,3 +3117,16 @@ R5c. Không đổi SPEC, không đổi runtime mặc định.
   API-STD +3.
 - **method-ret**: bảng kiểu trả phương thức từ `impl` + dispatch `self`; checker đăng ký chữ ký
   method; sửa static_ty ưu tiên `self_ty`, bỏ qua `{error}`. `recv?.m()` vẫn ngoài phạm vi.
+
+### VD-267 · Duyệt test filter + format size/duration + fmt stdin — A0, 2026-11-21
+
+- **testfilter**: `vis test --filter <substr>` chọn `test fn`/fixture theo tên (case-sensitive),
+  không có kết quả ⇒ TAP `1..0`, exit 0; `--fail-fast` dừng sau `not ok` đầu, kế hoạch TAP =
+  **số ca đã chạy**; mặc định không cờ giữ nguyên.
+- **fmt-size**: `size` in **thập phân** (lớn nhất có phần nguyên ≥ 1, tối đa 2 chữ số lẻ, làm tròn
+  nửa lên theo độ lớn, không tự nhảy đơn vị); `duration` in **ghép** `w d h m s ms us ns`, bỏ
+  thành phần 0, `0` ⇒ `0ns`. `kib/mib/...` chỉ còn là thang literal; JSON vẫn số. Mtime `ls
+  --long` vì thế dài hơn (chấp nhận; muốn định dạng ngày riêng ⇒ VD sau).
+- **fmtstdin**: `vis fmt --stdin` đọc UTF-8, in bản đã định dạng ra stdout; `--check` không in,
+  exit 0/1/2 (đã đúng/cần sửa/lỗi); từ chối `--stdin` + `--write`/`--indent-report`/tệp;
+  luôn chế độ script (không suy `.vish`).
