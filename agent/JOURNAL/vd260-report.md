@@ -317,3 +317,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **with-extension** (`7baab6c` → `7e14a47`): `path.with_extension` thay/đặt/bỏ ext cuối; không sugar.
 - **index-exists** (`c11e5a5` → `82a4712`): `sqlite.index_exists` BINARY, thiếu ⇒ `Ok(false)`.
 - **replace-n** (`ead0ebf` → `330d86c`): `str.replace_n` tối đa n lần không chồng; `n<0` trap; tách net helper giữ R1.
+- `./vis-dev core-test` @ `a5908c1`: **PASS**.
+- `vis test test/sem` @ `a5908c1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
