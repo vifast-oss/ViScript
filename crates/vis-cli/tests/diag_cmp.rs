@@ -60,6 +60,8 @@ use std::process::Command;
 //   19 xanh + 8 lỗi lúc chạy `VS0501`) ⇒ **418 xanh / 53 lỗi biên dịch / 43 lỗi lúc chạy**.
 // **SỬA KÈM LÝ DO (VD-241 pre-merge, 2026-11-19)**: 514 → **525** (+11 ca `sqlite/`, mọi lỗi dữ liệu
 //   nay là `Result.Err` ⇒ 8 `.err` VS0501 đổi thành `.out` xanh) ⇒ **437 xanh / 53 lỗi biên dịch / 35 lỗi lúc chạy**.
+// **SỬA KÈM LÝ DO (VD-260)**: `loi/ten-la` + `pham-vi/ten-la` chuyển từ lỗi lúc chạy `VS0501`
+//   sang lỗi tĩnh `VS0301` ⇒ **437 xanh / 55 lỗi biên dịch / 33 lỗi lúc chạy**. Tổng 525 không đổi.
 #[cfg(feature = "sqlite")]
 const TONG: usize = 525;
 #[cfg(feature = "sqlite")]
@@ -68,8 +70,8 @@ const XANH: usize = 437;
 const TONG: usize = 487;
 #[cfg(not(feature = "sqlite"))]
 const XANH: usize = 399;
-const LOI_BIEN_DICH: usize = 53;
-const LOI_LUC_CHAY: usize = 35;
+const LOI_BIEN_DICH: usize = 55;
+const LOI_LUC_CHAY: usize = 33;
 
 /// **VD-258** — nhóm `sqlite/` chỉ có nghĩa khi feature `sqlite` bật; cấu hình core bỏ qua.
 fn bo_qua_nhom(nhom: &str) -> bool {

@@ -929,7 +929,8 @@ impl<'a> Checker<'a> {
                 self.loop_depth = saved_loop;
                 self.cur_ret = saved;
             }
-            HItem::Rec(r) => truong::kiem_default_rec(self, r),
+            HItem::Rec(r) => truong::kiem_khai_rec(self, r),
+            HItem::Enum(e) => truong::kiem_khai_enum(self, e),
             HItem::Const(c) => truong::kiem_const(self, c),
             _ => {}
         }
@@ -971,7 +972,7 @@ impl<'a> Checker<'a> {
                             (Type::Error, None)
                         }
                     },
-                    None => (got, None),
+                    None => (got.clone(), None),
                 };
                 let declared = match ty {
                     Some(ann) => {
@@ -981,15 +982,35 @@ impl<'a> Checker<'a> {
                     }
                     None => declared,
                 };
+                // **VD-260**: pattern bác được (`Some`, `Ok`, literal, …) phải khớp theo **kiểu đầy
+                // đủ** của giá trị (`T?`/`Result`), không phải kiểu đã bóc của `let … else`.
+                // `let x = r else:` (tên trần) vẫn nhận kiểu đã bóc theo R3b.
+                let pat_subj = if matches!(
+                    pat,
+                    crate::hir::HPat::Bind { .. } | crate::hir::HPat::Wild { .. }
+                ) {
+                    declared.clone()
+                } else if else_.is_some() {
+                    got.clone()
+                } else {
+                    declared.clone()
+                };
                 // **VD-259**: or-pattern trong `let` — kiểm theo use-set của thân hàm.
                 let uses = self.fn_uses.clone();
-                self.kiem_or_bind(pat, &declared, &uses);
-                self.bind_pat(pat, &declared);
+                self.kiem_or_bind(pat, &pat_subj, &uses);
+                // **VD-260**: `let` không có `else` chỉ nhận pattern **phủ hết**.
+                if else_.is_none() {
+                    self.kiem_let_phu_het(pat, &pat_subj);
+                }
+                self.bind_pat(pat, &pat_subj);
                 if let Some(e) = else_ {
+                    // Tên lỗi của `else` chỉ sống trong khối `else`.
+                    let snap = self.luu_env();
                     if let Some(sym) = e.bind_sym {
                         self.set_ty(sym, loi.unwrap_or(Type::Unit));
                     }
                     self.kiem_than_bo(&e.body);
+                    self.tra_env(snap);
                 }
                 Type::Unit
             }
@@ -1078,22 +1099,28 @@ impl<'a> Checker<'a> {
             } => {
                 let it = self.kiem_expr(iter);
                 let elem = self.elem_of_iter(&it, iter.span());
+                // **VD-260**: binding của `for` chỉ sống trong vòng; pattern bác được ⇒ từ chối.
+                let snap = self.luu_env();
                 // **VD-259**: or-pattern trong `for` — use-set là thân vòng lặp.
                 let uses = pat::than_uses(body);
                 self.kiem_or_bind(pat, &elem, &uses);
+                self.kiem_for_phu_het(pat, &elem);
                 self.bind_pat(pat, &elem);
                 // ST-13b (mục 3): thân vòng lặp **bỏ** giá trị cuối, không ép `unit`.
                 self.loop_depth += 1;
                 self.kiem_than_bo(body);
                 self.loop_depth -= 1;
+                self.tra_env(snap);
                 Type::Unit
             }
             HStmt::While { cond, body, .. } => {
                 // **ST-226 (R18b)**: `while let` dùng chung `kiem_cond` với `if let`.
+                let snap = self.luu_env();
                 self.loop_depth += 1;
                 self.kiem_cond(cond, body);
                 self.kiem_than_bo(body);
                 self.loop_depth -= 1;
+                self.tra_env(snap);
                 Type::Unit
             }
             HStmt::Loop { body, .. } => {
@@ -1149,6 +1176,8 @@ impl<'a> Checker<'a> {
                 let value = self.in_value;
                 let mut acc: Option<Type> = None;
                 for arm in arms {
+                    // **VD-260**: binding của mỗi nhánh `match` chỉ sống trong nhánh đó.
+                    let snap = self.luu_env();
                     let uses = pat::arm_uses(arm.guard.as_ref(), &arm.body);
                     self.kiem_or_bind(&arm.pat, &subj, &uses); // ST-239 / VD-259
                     self.bind_pat(&arm.pat, &subj);
@@ -1158,6 +1187,7 @@ impl<'a> Checker<'a> {
                     }
                     // **VD-259**: thân nhánh chỉ ở vị trí cần giá trị khi `match` đang ở đó.
                     let t = self.kiem_than_ngu_canh(&arm.body, value);
+                    self.tra_env(snap);
                     match &mut acc {
                         None => acc = Some(t),
                         Some(a) => self.unify_branch(a, &t, arm.span),
@@ -1179,40 +1209,6 @@ impl<'a> Checker<'a> {
     /// Kiểu phần tử khi gán/chỉ số (gọi lại `kiem_index` của `expr.rs`).
     pub(crate) fn kiem_index_expr(&mut self, base: &HExpr, index: &HExpr, span: Span) -> Type {
         self.kiem_index(base, index, span)
-    }
-
-    /// Kiểu phần tử khi `for` duyệt `iter`.
-    fn elem_of_iter(&mut self, it: &Type, span: Span) -> Type {
-        match it {
-            Type::List(t) => (**t).clone(),
-            Type::Map(k, v) => Type::TypeRef {
-                name: "tuple".into(),
-                args: vec![(**k).clone(), (**v).clone()],
-            },
-            Type::Str => Type::Char,
-            Type::TypeRef { name, args } if name == "range" => {
-                // ST-13b (mục 4): VS0 chỉ duyệt range **`int`**; `size`/`duration`/`char` ⇒ VS0412
-                // (tyck và runtime phải khớp — runtime chưa hỗ trợ range đơn vị).
-                match args.first() {
-                    Some(Type::Int) | None => Type::Int,
-                    Some(Type::Error) => Type::Error,
-                    Some(other) => {
-                        let o = other.clone();
-                        self.diag(
-                            RANGE_KHONG_INT,
-                            format!(
-                                "`for` chỉ duyệt được range `int`, được `{}` (§A.7)",
-                                self.show(&o)
-                            ),
-                            span,
-                        );
-                        Type::Error
-                    }
-                }
-            }
-            Type::Error => Type::Error,
-            _ => Type::Error,
-        }
     }
 
     /// Kiểm thân khối **bỏ giá trị cuối** (vòng lặp — ST-13b mục 3).

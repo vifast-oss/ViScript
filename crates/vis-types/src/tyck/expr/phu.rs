@@ -392,6 +392,111 @@ pub(super) fn kiem_truong_ban_ghi(
     }
 }
 
+/// **VD-260** — tên `HExpr::Var{sym:None}` được miễn `VS0301`: tên dựng sẵn, module `std`,
+/// tiền tố module của đơn vị biên dịch, hoặc tên kiểu dùng làm tiền tố ctor (`Json.Arr(…)`).
+pub(super) fn ten_duoc_mien(c: &super::super::Checker<'_>, name: &str) -> bool {
+    if name == "std" || name.starts_with("std.") || name.starts_with("exec.") {
+        return true;
+    }
+    if crate::lower::BUILTIN_VALUE_NAMES.contains(&name) {
+        return true;
+    }
+    if crate::stdlib::MODULES.contains(&name) {
+        return true;
+    }
+    if matches!(
+        name,
+        "assert"
+            | "sort_by"
+            | "get"
+            | "select"
+            | "where"
+            | "each"
+            | "chan"
+            | "render"
+            | "ls"
+            | "open"
+            | "count"
+            | "first"
+            | "pass"
+            | "collect"
+            | "Option"
+            | "Result"
+    ) {
+        return true;
+    }
+    if Type::builtin(name).is_some()
+        || c.types.find_rec_base(name).is_some()
+        || c.types.find_enum_base(name).is_some()
+    {
+        return true;
+    }
+    c.symbols.mods.iter().any(|m| m.name == name)
+}
+
+/// **VD-260** — gọi/dựng bản ghi: chỉ nhận **trường có tên**; `U(1)`/`U()` bị từ chối tĩnh.
+pub(super) fn kiem_goi_ban_ghi(
+    c: &mut super::super::Checker<'_>,
+    id: crate::ty::RecId,
+    args: &[crate::hir::HExpr],
+    named: &[(String, crate::hir::HExpr)],
+    span: vis_syntax::Span,
+) {
+    if !args.is_empty() {
+        c.diag(
+            super::super::MISMATCH,
+            format!(
+                "dựng bản ghi `{}` cần trường có tên — không nhận đối số vị trí (VD-260)",
+                c.show(&Type::Record(id))
+            ),
+            span,
+        );
+        for a in args {
+            let _ = c.kiem_expr(a);
+        }
+        for (n, a) in named {
+            let at = c.kiem_expr(a);
+            if let Some(f) = c.types.field(id, n) {
+                let want = f.ty.clone();
+                c.coerce(&at, &want, a.span(), "trường bản ghi");
+            } else {
+                c.diag(
+                    super::super::NO_FIELD,
+                    format!("bản ghi không có trường `{n}`"),
+                    a.span(),
+                );
+            }
+        }
+    } else if named.is_empty() {
+        let ten = c.show(&Type::Record(id));
+        c.diag(
+            super::super::MISMATCH,
+            format!("dựng bản ghi `{ten}` thiếu trường — cần `{ten}(trường: giá trị, …)` (VD-260)"),
+            span,
+        );
+    } else {
+        kiem_truong_ban_ghi(c, named, &Type::Record(id));
+    }
+}
+
+/// **VD-260** — `with` trùng trường không được lặng lẽ last-wins.
+pub(super) fn kiem_with_trung(
+    c: &mut super::super::Checker<'_>,
+    fields: &[(String, crate::hir::HExpr)],
+    span: vis_syntax::Span,
+) {
+    let mut da_thay: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for (n, _) in fields {
+        if !da_thay.insert(n.as_str()) {
+            c.diag(
+                super::super::MISMATCH,
+                format!("`with`: trường `{n}` xuất hiện nhiều lần (VD-260)"),
+                span,
+            );
+        }
+    }
+}
+
 /// Tách riêng để `phu.rs` không phải `use` cả crate `stdlib` ở đầu tệp.
 fn vis_types_stdlib_sig(name: &str) -> Option<&'static crate::stdlib::StdFn> {
     crate::stdlib::sig_of(name)

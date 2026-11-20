@@ -1,5 +1,17 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
-let xs = [3, 1, 2] |> sort_by(x => x) |> collect()
+# **VD-260**: mọi tên giá trị phải phân giải được — khai hàm thay vì dựa vào `{error}` im lặng.
+fn collect(xs: list[int]) -> list[int]:
+    xs
+
+fn load(s: str) -> Result[str, str]:
+    Ok(s)
+
+fn default() -> str:
+    "x"
+
+let xs = [3, 1, 2] |> sort_by(x => x) |> collect
 let cfg = load("a.json") else err:
     default()
+print(xs)
+print(cfg)

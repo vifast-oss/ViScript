@@ -257,35 +257,55 @@ impl<'a> Interp<'a> {
                     v
                 };
                 // **R3b (VD-178)**: `let x = r else:` — bóc `Ok`/`Some`; ngược lại chạy khối `else`.
+                // **VD-260**: pattern **không phải** tên trần (`Some(a)`, `Ok(v)`, …) khớp trên
+                // **kiểu đầy đủ** của giá trị; chỉ tên trần mới bóc một lớp như R3b.
                 if let Some(e) = else_ {
-                    match v {
-                        Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
-                            return self.exec_block(&e.body);
-                        }
-                        Value::Enum(ea, va, ag)
-                            if ea == "Result" && va == "Ok" && ag.len() == 1 =>
-                        {
-                            let mut ag = ag;
-                            self.bind_pat(pat, &ag.pop().expect("Ok luôn có một đối số"))
-                        }
-                        Value::Enum(ea, va, ag)
-                            if ea == "Option" && va == "Some" && ag.len() == 1 =>
-                        {
-                            let mut ag = ag;
-                            self.bind_pat(pat, &ag.pop().expect("Some luôn có một đối số"))
-                        }
-                        Value::Enum(ea, va, ag)
-                            if ea == "Result" && va == "Err" && ag.len() == 1 =>
-                        {
-                            let mut ag = ag;
-                            if let Some(sym) = e.bind_sym {
-                                self.env
-                                    .borrow_mut()
-                                    .insert(sym, ag.pop().expect("Err luôn có một đối số"));
+                    if matches!(pat, HPat::Bind { .. }) {
+                        match v {
+                            Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
+                                return self.exec_block(&e.body);
                             }
-                            return self.exec_block(&e.body);
+                            Value::Enum(ea, va, ag)
+                                if ea == "Result" && va == "Ok" && ag.len() == 1 =>
+                            {
+                                let mut ag = ag;
+                                self.bind_pat(pat, &ag.pop().expect("Ok luôn có một đối số"))
+                            }
+                            Value::Enum(ea, va, ag)
+                                if ea == "Option" && va == "Some" && ag.len() == 1 =>
+                            {
+                                let mut ag = ag;
+                                self.bind_pat(pat, &ag.pop().expect("Some luôn có một đối số"))
+                            }
+                            Value::Enum(ea, va, ag)
+                                if ea == "Result" && va == "Err" && ag.len() == 1 =>
+                            {
+                                let mut ag = ag;
+                                if let Some(sym) = e.bind_sym {
+                                    self.env
+                                        .borrow_mut()
+                                        .insert(sym, ag.pop().expect("Err luôn có một đối số"));
+                                }
+                                return self.exec_block(&e.body);
+                            }
+                            other => self.bind_pat(pat, &other),
                         }
-                        other => self.bind_pat(pat, &other),
+                    } else {
+                        let snap = self.env.borrow().clone();
+                        if self.bind_pat_bool(pat, &v) {
+                            return Ok(Ctrl::Normal);
+                        }
+                        *self.env.borrow_mut() = snap;
+                        if let Some(sym) = e.bind_sym {
+                            let loi = match &v {
+                                Value::Enum(_, va, ag) if va == "Err" && ag.len() == 1 => {
+                                    ag[0].clone()
+                                }
+                                _ => Value::Unit,
+                            };
+                            self.env.borrow_mut().insert(sym, loi);
+                        }
+                        return self.exec_block(&e.body);
                     }
                 } else {
                     self.bind_pat(pat, &v);

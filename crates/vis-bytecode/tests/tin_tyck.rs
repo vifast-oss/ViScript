@@ -305,7 +305,9 @@ fn moi_ca_loi_bien_dich_khong_panic_va_bi_tu_choi() {
     //   `optional/long-no-pseudo`) — kiểm tra mới của Option lồng ⇒ **54**.
     // **SỬA KÈM LÝ DO (VD-241 §7, 2026-11-19)**: −1 ca — `optional/long-reject-e` (`None` cho `int??`)
     //   **hợp lệ** sau fix VD-241 §7 (None hợp lệ khi lớp **ngoài cùng** là `Option`) ⇒ **53**.
-    assert_eq!(ds.len(), 53, "phải đúng 53 ca lỗi biên dịch");
+    // **SỬA KÈM LÝ DO (VD-260)**: +2 ca — `loi/ten-la` + `pham-vi/ten-la` chuyển từ lỗi lúc chạy
+    //   `VS0501` sang lỗi tĩnh `VS0301` ⇒ **55**.
+    assert_eq!(ds.len(), 55, "phải đúng 55 ca lỗi biên dịch");
     for (src, ma) in ds {
         let (hir, syms, text, chan_doan) = phan_tich(&src);
         let kq = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

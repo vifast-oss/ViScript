@@ -5,7 +5,7 @@ use crate::hir::{BinOp, HCond, HExpr, HPat, HStmt, UnOp};
 use crate::ty::{EnumId, Type};
 
 use super::sig::FnSig;
-use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD};
+use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD, NO_TYPE};
 
 /// **ST-61**: phần kiểu của **kênh** — tách ra để `tyck/expr.rs` giữ **R1 ≤ 1.500 dòng** (tiền lệ
 /// ST-60 tách `tyck/sig.rs`). Mô-đun con của `expr` nên dùng chung `diag`/`coerce`/`arity`.
@@ -45,7 +45,18 @@ impl<'a> Checker<'a> {
                         self.ty_of(*id)
                     }
                 }
-                None => builtin_value_ty(name),
+                None => {
+                    // **VD-260**: tên giá trị chưa phân giải không còn im lặng thành `{error}`.
+                    // Tên dựng sẵn/module/tiền tố kiểu (`Json`, `std.str.split`, …) được miễn.
+                    if !phu::ten_duoc_mien(self, name) {
+                        self.diag(
+                            NO_TYPE,
+                            format!("tên không tồn tại: `{name}` chưa được khai báo (VD-260)"),
+                            *span,
+                        );
+                    }
+                    builtin_value_ty(name)
+                }
             },
             HExpr::Bin { op, lhs, rhs, span } => {
                 let l = self.kiem_expr(lhs);
@@ -187,6 +198,7 @@ impl<'a> Checker<'a> {
             },
             HExpr::Try { expr, span } => super::expr::phu::kiem_try(self, expr, *span),
             HExpr::With { base, fields, span } => {
+                phu::kiem_with_trung(self, fields, *span);
                 let bt = self.kiem_expr(base);
                 match bt {
                     Type::Record(id) => {
@@ -225,6 +237,8 @@ impl<'a> Checker<'a> {
                 span,
                 ..
             } => {
+                // **VD-260**: binding `if let` chỉ sống trong biểu thức `if`.
+                let snap = self.luu_env();
                 self.kiem_cond(cond, then);
                 let mut acc = self.than_value(then);
                 for (c, body) in elifs {
@@ -238,6 +252,7 @@ impl<'a> Checker<'a> {
                 } else {
                     acc = Type::Unit;
                 }
+                self.tra_env(snap);
                 acc
             }
             HExpr::Match {
@@ -249,6 +264,8 @@ impl<'a> Checker<'a> {
                 let subj = self.kiem_expr(subject);
                 let mut acc: Option<Type> = None;
                 for arm in arms {
+                    // **VD-260**: binding của nhánh chỉ sống trong nhánh.
+                    let snap = self.luu_env();
                     // **ST-239 / VD-259 (VD-242 §3.1)**: chặn or-pattern bind không đầy đủ
                     // (kể cả lồng) và or-pattern bind khác kiểu trước khi kiểm thân nhánh —
                     // interp in `2`, VM in `()` đều là chương trình sai.
@@ -260,6 +277,7 @@ impl<'a> Checker<'a> {
                         self.coerce(&gt, &Type::Bool, g.span(), "guard `if`");
                     }
                     let t = self.than_value(&arm.body);
+                    self.tra_env(snap);
                     match &mut acc {
                         None => acc = Some(t),
                         Some(a) => self.unify_branch(a, &t, arm.span),
@@ -274,6 +292,8 @@ impl<'a> Checker<'a> {
                 body,
                 span,
             } => {
+                // **VD-260**: tham số lambda chỉ sống trong thân lambda.
+                let snap = self.luu_env();
                 let mut pts: Vec<Type> = Vec::new();
                 for p in params {
                     let t = self.resolve_ann(&p.ty, p.span);
@@ -306,6 +326,7 @@ impl<'a> Checker<'a> {
                     self.coerce(&body_ty, &declared, *span, "thân lambda");
                     declared
                 };
+                self.tra_env(snap);
                 Type::Fn(pts.into_boxed_slice(), Box::new(out))
             }
             HExpr::Tuple { items, .. } => {
@@ -709,18 +730,8 @@ impl<'a> Checker<'a> {
                 (*ret).clone()
             }
             Type::Record(id) => {
-                for (n, a) in named {
-                    let at = self.kiem_expr(a);
-                    match self.types.field(id, n) {
-                        Some(f) => {
-                            let want = f.ty.clone();
-                            self.coerce(&at, &want, a.span(), "trường bản ghi");
-                        }
-                        None => {
-                            self.diag(NO_FIELD, format!("bản ghi không có trường `{n}`"), a.span())
-                        }
-                    }
-                }
+                // **VD-260**: bản ghi chỉ dựng được bằng **trường có tên** (`U(a: 1)`).
+                phu::kiem_goi_ban_ghi(self, id, args, named, span);
                 Type::Record(id)
             }
             Type::Error => Type::Error,

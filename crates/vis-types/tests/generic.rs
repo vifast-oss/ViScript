@@ -66,7 +66,7 @@ fn fn_hai_tham_so_kieu_sach() {
 
 #[test]
 fn kieu_generic_record_sach() {
-    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let h = Hop(1)\n    print(h.gia_tri)\n");
+    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let h = Hop(gia_tri: 1)\n    print(h.gia_tri)\n");
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn list_t_long_nhau_hop_nhat_duoc() {
 
 #[test]
 fn optional_t_voi_int_optional_sach() {
-    sach("fn giu[T](x: T?) -> T?:\n    x\n\nfn main() -> ():\n    let a: int? = some(1)\n    print(giu(a))\n");
+    sach("fn giu[T](x: T?) -> T?:\n    x\n\nfn main() -> ():\n    let a: int? = Some(1)\n    print(giu(a))\n");
 }
 
 #[test]
@@ -196,12 +196,12 @@ fn goi_long_generic() {
 
 #[test]
 fn record_generic_hai_kieu_cung_luc() {
-    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let a = Hop(1)\n    let b = Hop(\"x\")\n    print(a.gia_tri)\n    print(b.gia_tri)\n");
+    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let a = Hop(gia_tri: 1)\n    let b = Hop(gia_tri: \"x\")\n    print(a.gia_tri)\n    print(b.gia_tri)\n");
 }
 
 #[test]
 fn record_generic_truong_doc_ra_dung_kieu_dong() {
-    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let h = Hop([1, 2])\n    print(h.gia_tri.len())\n");
+    sach("type Hop[T]:\n    gia_tri: T\n\nfn main() -> ():\n    let h = Hop(gia_tri: [1, 2])\n    print(h.gia_tri.len())\n");
 }
 
 #[test]
