@@ -3441,3 +3441,14 @@ Không đọc môi trường/tệp/mạng.
 tên đúng (`type IN ('table','view')`, `name` bind BINARY/phân biệt hoa-thường); thiếu/empty ⇒
 `Ok(false)`; index/trigger trùng tên không tính; TEMP không thuộc main; handle lỗi ⇒ `Err` dữ liệu;
 reuse `Ty::ResultBoolErr`.
+
+### VD-270 (bổ sung) · sum_float, with_extension, index_exists, replace_n — A0, 2026-11-21
+
+- **list.sum_float**: `(list[float]) -> float`; seed `+0.0`, cộng trái→phải, rỗng `0`; IEEE
+  NaN/±inf lan truyền; mọi tổng 0 đều `+0.0`; sugar R5c.
+- **path.with_extension**: `(str, str) -> str` thay/đặt/bỏ ext của thành phần cuối; ext rỗng ⇒ xoá;
+  tên bắt đầu `.` không có ext; không sugar.
+- **sqlite.index_exists**: `(handle, name) -> Result[bool, Error]` đúng ⇔ index tên đúng schema
+  chính, BINARY; thiếu/rỗng ⇒ `Ok(false)`; bảng/view/trigger trùng tên không tính; reuse `ResultBoolErr`.
+- **str.replace_n**: `(str, str, str, int) -> str` thay tối đa `n` lần khớp không chồng theo Rust
+  `replacen`; `n == 0` ⇒ nguyên, `n` quá ⇒ tất cả, `n < 0` ⇒ trap `VS0501`; sugar R5c.

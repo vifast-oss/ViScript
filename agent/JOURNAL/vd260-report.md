@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `7bef0b3` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `330d86c` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2755 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2821 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -112,12 +112,16 @@
 | Path is relative | `dd0df10` → `55b0374` | `path.is_relative` = `!is_abs` |
 | Str is ascii | `8ac13ae` → `ff780d4` | `str.is_ascii` mọi byte ASCII |
 | SQLite table exists | `1458d45` → `7bef0b3` | `sqlite.table_exists` BINARY, bảng/view |
+| List sum float | `a95f8b3` → `b935734` | `list.sum_float` seed `+0.0` |
+| Path with extension | `7baab6c` → `7e14a47` | `path.with_extension` |
+| SQLite index exists | `c11e5a5` → `82a4712` | `sqlite.index_exists` |
+| Replace n | `ead0ebf` → `330d86c` | `str.replace_n` tối đa n lần |
 | Version | trực tiếp | `vis version [--json]` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2755 passed / 3 skipped** tại `7bef0b3`.
+- `./vis-dev gate --fast`: **PASS — 2821 passed / 3 skipped** tại `330d86c`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -309,3 +313,7 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **str-is-ascii** (`8ac13ae` → `ff780d4`): `str.is_ascii` mọi byte `0x00..=0x7F`, sugar; tách `frame_net` giữ R1.
 - **sqlite-table-exists** (`1458d45` → `7bef0b3`): `sqlite.table_exists` bảng/view schema chính, tên bind BINARY; thiếu ⇒ `Ok(false)`; TEMP/index/trigger không tính.
 - `./vis-dev core-test` @ `f6325b6`: **PASS**.
+- **sum-float** (`a95f8b3` → `b935734`): `list.sum_float(list[float]) -> float`, seed `+0.0`, IEEE; sugar.
+- **with-extension** (`7baab6c` → `7e14a47`): `path.with_extension` thay/đặt/bỏ ext cuối; không sugar.
+- **index-exists** (`c11e5a5` → `82a4712`): `sqlite.index_exists` BINARY, thiếu ⇒ `Ok(false)`.
+- **replace-n** (`ead0ebf` → `330d86c`): `str.replace_n` tối đa n lần không chồng; `n<0` trap; tách net helper giữ R1.
