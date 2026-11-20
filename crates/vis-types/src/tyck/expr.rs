@@ -225,10 +225,10 @@ impl<'a> Checker<'a> {
                 span,
                 ..
             } => {
-                self.kiem_cond(cond);
+                self.kiem_cond(cond, then);
                 let mut acc = self.than_value(then);
                 for (c, body) in elifs {
-                    self.kiem_cond(c);
+                    self.kiem_cond(c, body);
                     let t = self.than_value(body);
                     self.unify_branch(&mut acc, &t, *span);
                 }
@@ -249,9 +249,11 @@ impl<'a> Checker<'a> {
                 let subj = self.kiem_expr(subject);
                 let mut acc: Option<Type> = None;
                 for arm in arms {
-                    // **ST-239 (VD-242 §3.1)**: chặn or-pattern bind không đầy đủ trước khi
-                    // thân nhánh được kiểm — interp in `2`, VM in `()` đều là chương trình sai.
-                    self.kiem_or_bind(&arm.pat, arm.guard.as_ref(), &arm.body);
+                    // **ST-239 / VD-259 (VD-242 §3.1)**: chặn or-pattern bind không đầy đủ
+                    // (kể cả lồng) và or-pattern bind khác kiểu trước khi kiểm thân nhánh —
+                    // interp in `2`, VM in `()` đều là chương trình sai.
+                    let uses = super::pat::arm_uses(arm.guard.as_ref(), &arm.body);
+                    self.kiem_or_bind(&arm.pat, &subj, &uses);
                     self.bind_pat(&arm.pat, &subj);
                     if let Some(g) = &arm.guard {
                         let gt = self.kiem_expr(g);
@@ -280,10 +282,22 @@ impl<'a> Checker<'a> {
                 }
                 let saved = self.cur_ret.clone();
                 self.cur_ret = None;
+                // **VD-259**: `break`/`continue` không xuyên biên lambda; use-set riêng.
+                let saved_loop = std::mem::replace(&mut self.loop_depth, 0);
+                let saved_value = std::mem::replace(&mut self.in_value, false);
+                let saved_uses = match body {
+                    crate::hir::HBody::Stmts(st) => {
+                        std::mem::replace(&mut self.fn_uses, super::pat::than_uses(st))
+                    }
+                    crate::hir::HBody::Expr(_) => std::mem::take(&mut self.fn_uses),
+                };
                 let body_ty = match body {
                     crate::hir::HBody::Expr(e) => self.kiem_expr(e),
                     crate::hir::HBody::Stmts(st) => self.than_value(st),
                 };
+                self.fn_uses = saved_uses;
+                self.in_value = saved_value;
+                self.loop_depth = saved_loop;
                 self.cur_ret = saved;
                 let declared = self.resolve_ann(ret, *span);
                 let out = if declared.is_error() {
@@ -398,7 +412,8 @@ impl<'a> Checker<'a> {
     }
 
     /// Duyệt `node` của `if let`: binding thuộc **nhánh** `then` (đã đủ vì binding nằm trong HIR).
-    pub(crate) fn kiem_cond(&mut self, cond: &HCond) {
+    /// **VD-259**: `then_body` là use-set của or-pattern trong `if let`/`while let`.
+    pub(crate) fn kiem_cond(&mut self, cond: &HCond, then_body: &[HStmt]) {
         match cond {
             HCond::Expr(e) => {
                 let t = self.kiem_expr(e);
@@ -417,6 +432,8 @@ impl<'a> Checker<'a> {
                         pat.span(),
                     );
                 }
+                let uses = super::pat::than_uses(then_body);
+                self.kiem_or_bind(pat, &vt, &uses);
                 self.bind_pat(pat, &vt);
             }
         }

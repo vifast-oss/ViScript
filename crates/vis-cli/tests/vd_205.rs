@@ -665,7 +665,8 @@ fn escape_unicode_valid_and_validation() {
 }
 
 /// **VD-241 §3/T5 (A0, 2026-11-19)** — `fn main() -> Result[..]: Err(…)` phải thoát **1**;
-/// `Ok(…)` thoát **0**; cả hai engine. (`main -> int` không đổi nghĩa — chưa A0 quyết.)
+/// `Ok(…)` thoát **0**; cả hai engine. **VD-259**: `main -> int` **không** dùng giá trị `int`
+/// làm mã thoát (quyết định A0 2026-11-19, mục 7: không suy rộng) ⇒ thoát **0**.
 #[test]
 fn main_result_err_exits_1_engine_parity() {
     for (tag, src, mong) in [
@@ -680,6 +681,7 @@ fn main_result_err_exits_1_engine_parity() {
             0u32,
         ),
         ("main_unit", "fn main() -> ():\n    print(\"h\")\n", 0u32),
+        ("main_int", "fn main() -> int:\n    5\n", 0u32),
     ] {
         let d = tam(tag);
         let p = d.join(format!("{tag}.vis"));

@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 use vis_syntax::Span;
 
 use crate::hir::{HArm, HBody, HCond, HExpr, HPat, HStmt, InterpPart, LitKind};
-use crate::ty::Type;
+use crate::ty::{Type, TypeTable};
 
 use super::{Checker, ARG_COUNT, MISMATCH, NON_EXHAUSTIVE, NO_FIELD};
 
@@ -541,48 +541,113 @@ fn bat_kha_bac(p: &HPat) -> bool {
     }
 }
 
-// ---- ST-239 (VD-242 §3.1): or-pattern — mọi tên dùng trong thân phải bind ở MỌI alternative ----
+// ---- ST-239 / VD-259 (VD-242 §3.1): or-pattern ----
+//
+// Hai luật, áp cho **mọi** `HPat::Or` kể cả lồng trong ctor/tuple/list/record:
+//   1. Tên bind ở một số alternative nhưng không phải **mọi** alternative, mà được dùng ở
+//      guard/thân (hoặc thân `if let`/`while let`/`for`/các câu sau `let`) ⇒ `VS0412`.
+//   2. Tên bind ở **mọi** alternative nhưng kiểu khác nhau ⇒ `VS0412` (binding không có một
+//      kiểu duy nhất; checker không được lấy kiểu của alternative cuối).
 
-/// Mọi `sym` mà pattern này bind (kể cả lồng).
-fn pat_binds(p: &HPat, out: &mut BTreeSet<u32>) {
+/// `sym → kiểu` mà pattern bind, tính **thuần** từ kiểu chủ thể (không ghi `env`, không chẩn đoán).
+/// Dùng để so kiểu giữa các alternative mà không phụ thuộc thứ tự `bind_pat`.
+type BindTypes = std::collections::BTreeMap<u32, Type>;
+
+/// Các pattern con của `p` kèm kiểu chủ thể tương ứng (cùng luật với [`Checker::bind_pat`]).
+fn pat_children<'p>(p: &'p HPat, subj: &Type, types: &TypeTable) -> Vec<(&'p HPat, Type)> {
     match p {
-        HPat::Bind { sym, .. } => {
-            out.insert(*sym);
-        }
-        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
-        HPat::Or { alts, .. } => {
-            for a in alts {
-                pat_binds(a, out);
-            }
-        }
-        HPat::Ctor { args, .. } => {
-            for it in args {
-                pat_binds(it, out);
-            }
+        HPat::Ctor { path, args, .. } => {
+            let name = path.last().cloned().unwrap_or_default();
+            let field_tys = ctor_field_types(subj, &name, types);
+            args.iter()
+                .enumerate()
+                .map(|(i, a)| (a, field_tys.get(i).cloned().unwrap_or(Type::Error)))
+                .collect()
         }
         HPat::Tuple { items, .. } => {
-            for it in items {
-                pat_binds(it, out);
-            }
+            let elem = match subj {
+                Type::TypeRef { name, args } if name == "tuple" => args.clone(),
+                _ => Vec::new(),
+            };
+            items
+                .iter()
+                .enumerate()
+                .map(|(i, it)| (it, elem.get(i).cloned().unwrap_or(Type::Error)))
+                .collect()
         }
         HPat::List { items, rest, .. } => {
-            for it in items {
-                pat_binds(it, out);
-            }
+            let elem = match subj {
+                Type::List(t) => (**t).clone(),
+                _ => Type::Error,
+            };
+            let mut out: Vec<(&HPat, Type)> = items.iter().map(|it| (it, elem.clone())).collect();
             if let Some(r) = rest {
-                pat_binds(r, out);
+                out.push((r, Type::List(Box::new(elem))));
             }
+            out
         }
         HPat::Record { fields, .. } => {
-            for (_, sub) in fields {
-                if let Some(s) = sub {
-                    pat_binds(s, out);
-                }
-            }
+            let id = match subj {
+                Type::Record(id) => Some(*id),
+                _ => None,
+            };
+            fields
+                .iter()
+                .filter_map(|(name, sub)| {
+                    sub.as_ref().map(|s| {
+                        let fty = id
+                            .and_then(|id| types.field(id, name).map(|f| f.ty.clone()))
+                            .unwrap_or(Type::Error);
+                        (s, fty)
+                    })
+                })
+                .collect()
         }
-        HPat::Range { lo, hi, .. } => {
-            for p in [lo, hi].into_iter().flatten() {
-                pat_binds(p, out);
+        HPat::Range { lo, hi, .. } => [lo, hi]
+            .into_iter()
+            .flatten()
+            .map(|p| (p.as_ref(), subj.clone()))
+            .collect(),
+        HPat::Or { alts, .. } => alts.iter().map(|a| (a, subj.clone())).collect(),
+        HPat::Wild { .. } | HPat::Bind { .. } | HPat::Lit { .. } | HPat::Rest { .. } => Vec::new(),
+    }
+}
+
+/// Kiểu các trường của ctor `name` khi chủ thể là `subj` (`{error}` nếu không suy được).
+fn ctor_field_types(subj: &Type, name: &str, types: &TypeTable) -> Vec<Type> {
+    match subj {
+        Type::Enum(id) => types
+            .enum_def(*id)
+            .and_then(|d| d.variants.iter().find(|v| v.name == name))
+            .map(|v| v.fields.iter().map(|f| f.ty.clone()).collect())
+            .unwrap_or_default(),
+        Type::Opt(inner) => match name {
+            "Some" => vec![(**inner).clone()],
+            "None" => Vec::new(),
+            _ if cap_dau(name) == "Some" => vec![(**inner).clone()],
+            _ => Vec::new(),
+        },
+        Type::Result(a, b) => match name {
+            "Ok" => vec![(**a).clone()],
+            "Err" => vec![(**b).clone()],
+            _ if cap_dau(name) == "Ok" => vec![(**a).clone()],
+            _ if cap_dau(name) == "Err" => vec![(**b).clone()],
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    }
+}
+
+/// Mọi binding (kể cả lồng) của một pattern kèm kiểu suy từ `subj`.
+fn pat_binds_typed(p: &HPat, subj: &Type, types: &TypeTable, out: &mut BindTypes) {
+    match p {
+        HPat::Bind { sym, .. } => {
+            out.insert(*sym, subj.clone());
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
+        _ => {
+            for (child, ty) in pat_children(p, subj, types) {
+                pat_binds_typed(child, &ty, types, out);
             }
         }
     }
@@ -774,45 +839,108 @@ fn stmts_syms(ss: &[HStmt], out: &mut BTreeSet<u32>) {
     }
 }
 
+/// Mọi `sym` được dùng trong một **thân** (đọc/ghi) — use-set cho luật or-pattern.
+pub(crate) fn than_uses(body: &[HStmt]) -> BTreeSet<u32> {
+    let mut out = BTreeSet::new();
+    stmts_syms(body, &mut out);
+    out
+}
+
+/// Mọi `sym` được dùng trong guard + thân một nhánh `match`.
+pub(crate) fn arm_uses(guard: Option<&HExpr>, body: &[HStmt]) -> BTreeSet<u32> {
+    let mut out = BTreeSet::new();
+    if let Some(g) = guard {
+        expr_syms(g, &mut out);
+    }
+    stmts_syms(body, &mut out);
+    out
+}
+
 impl<'a> Checker<'a> {
-    /// **ST-239 (VD-242 §3.1, ca 9)** — nếu một tên bind ở một số alternative của or-pattern
-    /// nhưng **không phải mọi** alternative, và tên đó được dùng trong guard/thân nhánh ⇒ từ
-    /// chối chương trình (`VS0412`). Không sửa VM để in `2` (bị VD-242 §3.1 bác trực tiếp).
-    pub(crate) fn kiem_or_bind(&mut self, pat: &HPat, guard: Option<&HExpr>, body: &[HStmt]) {
+    /// **ST-239 / VD-259 (VD-242 §3.1, ca 9)** — kiểm **mọi** `HPat::Or`, kể cả lồng:
+    ///
+    /// * một tên bind ở một số alternative nhưng không phải **mọi** alternative mà được dùng
+    ///   trong `uses` ⇒ từ chối (`VS0412`);
+    /// * một tên bind ở **mọi** alternative nhưng kiểu khác nhau ⇒ từ chối (`VS0412`).
+    ///
+    /// `subj` là kiểu chủ thể (đầy đủ, chưa bóc) để suy kiểu binding. Không sửa VM để in `2`
+    /// (bị VD-242 §3.1 bác trực tiếp).
+    pub(crate) fn kiem_or_bind(&mut self, pat: &HPat, subj: &Type, uses: &BTreeSet<u32>) {
+        let mut da_bao: BTreeSet<u32> = BTreeSet::new();
+        self.kiem_or_bind_sau(pat, subj, uses, &mut da_bao);
+    }
+
+    fn kiem_or_bind_sau(
+        &mut self,
+        pat: &HPat,
+        subj: &Type,
+        uses: &BTreeSet<u32>,
+        da_bao: &mut BTreeSet<u32>,
+    ) {
         if let HPat::Or { alts, span } = pat {
-            let mut chung: Option<BTreeSet<u32>> = None;
-            let mut bat_ky: BTreeSet<u32> = BTreeSet::new();
+            let mut maps: Vec<BindTypes> = Vec::with_capacity(alts.len());
             for alt in alts {
-                let mut s = BTreeSet::new();
-                pat_binds(alt, &mut s);
-                bat_ky.extend(s.iter().copied());
-                chung = Some(match chung {
-                    None => s,
-                    Some(prev) => prev.intersection(&s).copied().collect(),
-                });
+                let mut m = BindTypes::new();
+                pat_binds_typed(alt, subj, self.types, &mut m);
+                maps.push(m);
             }
-            let mut dung: BTreeSet<u32> = BTreeSet::new();
-            if let Some(g) = guard {
-                expr_syms(g, &mut dung);
+            let mut tat_ca: BTreeSet<u32> = BTreeSet::new();
+            for m in &maps {
+                tat_ca.extend(m.keys().copied());
             }
-            stmts_syms(body, &mut dung);
-            let chung = chung.unwrap_or_default();
-            for id in bat_ky.difference(&chung) {
-                if dung.contains(id) {
-                    let ten = self
-                        .symbols
-                        .name_of(*id)
-                        .map(str::to_string)
-                        .unwrap_or_else(|| "?".into());
+            // Tên bind ở **mọi** alternative: kiểu phải thống nhất.
+            for id in &tat_ca {
+                if !maps.iter().all(|m| m.contains_key(id)) {
+                    continue;
+                }
+                let Some(t0) = maps[0].get(id) else {
+                    continue;
+                };
+                let lech = maps[1..]
+                    .iter()
+                    .filter_map(|m| m.get(id))
+                    .find(|t| !self.same(t0, t))
+                    .cloned();
+                if let Some(t1) = lech {
+                    let ten = self.ten_cua(*id);
                     self.diag(
                         MISMATCH,
                         format!(
-                            "or-pattern: `{ten}` được dùng trong thân nhưng không bind ở mọi alternative (VD-242 §3.1)"
+                            "or-pattern: `{ten}` có kiểu khác nhau giữa các alternative (`{}` ↔ `{}`) — binding phải cùng kiểu (VD-259)",
+                            self.types.show(t0),
+                            self.types.show(&t1)
                         ),
                         *span,
                     );
                 }
             }
+            // Tên chỉ bind ở một số alternative: nếu được dùng ⇒ không có giá trị ở nhánh khác.
+            for id in &tat_ca {
+                if maps.iter().all(|m| m.contains_key(id)) {
+                    continue;
+                }
+                if !uses.contains(id) || !da_bao.insert(*id) {
+                    continue;
+                }
+                let ten = self.ten_cua(*id);
+                self.diag(
+                    MISMATCH,
+                    format!(
+                        "or-pattern: `{ten}` được dùng trong thân nhưng không bind ở mọi alternative (VD-242 §3.1)"
+                    ),
+                    *span,
+                );
+            }
         }
+        for (child, ty) in pat_children(pat, subj, self.types) {
+            self.kiem_or_bind_sau(child, &ty, uses, da_bao);
+        }
+    }
+
+    fn ten_cua(&self, sym: u32) -> String {
+        self.symbols
+            .name_of(sym)
+            .map(str::to_string)
+            .unwrap_or_else(|| "?".into())
     }
 }

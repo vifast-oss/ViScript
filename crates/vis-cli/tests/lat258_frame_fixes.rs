@@ -13,7 +13,7 @@
 //! | `self_await_*` | `TrangThai::DangChay` không bao giờ đặt ⇒ await chính mình treo im lặng |
 //! | `vm_fake_source_*` | final join chạy thân **thật** của nguồn giả |
 //! | `const_default_*` | hàm tên có env rỗng ⇒ không thấy `const` cấp tệp |
-//! | `exit_*` | exit luôn 0 dù `main` trả `int`/`Result.Err` |
+//! | `exit_*` | `Result.Err` từ `main` bị bỏ qua (exit 0); `main -> int` **không** phải mã thoát (VD-259) |
 //! | `closure_*` | mỗi lần gọi closure dùng chung env ⇒ tham số bị lần gọi khác xoá |
 
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
@@ -305,10 +305,12 @@ fn main():
 // 6) Exit code theo giá trị `main` (không luôn 0)
 // ===========================================================================
 
+/// **VD-259**: chỉ `Result::Err` ⇒ 1, `Ok` ⇒ 0; **không** suy rộng sang `main -> int`
+/// (quyết định A0 2026-11-19, mục 7) — `main -> int` trả 3 vẫn thoát **0**.
 #[test]
 fn exit_theo_gia_tri_main() {
     for (tag, src, want) in [
-        ("int-3", "fn main() -> int:\n    3\n", 3),
+        ("int-3", "fn main() -> int:\n    3\n", 0),
         ("err", "fn main() -> Result[int, str]:\n    Err(\"x\")\n", 1),
         ("ok", "fn main() -> Result[int, str]:\n    Ok(3)\n", 0),
         ("unit", "fn main():\n    ()\n", 0),

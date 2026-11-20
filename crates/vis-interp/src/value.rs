@@ -725,12 +725,12 @@ pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<Vec<Val
     }
 }
 
-/// Mã thoát: `main` trả `int` ⇒ dùng số đó (cắt 8 bit); còn lại `0`.
-/// **VD-241 §3/T5 (A0, 2026-11-19)** — mã thoát chương trình: `main` trả `Result::Err` ⇒ `1`;
-/// `Int` ⇒ chính nó (mod 256); còn lại `0`.
+/// Mã thoát chương trình: **chỉ** `Result::Err` ⇒ `1`; còn lại `0`.
+/// **VD-241 §3/T5 (A0, 2026-11-19)**: `main` trả `Result::Err` ⇒ 1, `Ok` ⇒ 0.
+/// **Quyết định 2026-11-19 (đợt công thái học), mục 7**: **không** suy rộng sang `main -> int` —
+/// giá trị `int` của `main` **không** phải mã thoát (VD-259).
 pub fn exit_code(v: &Value) -> i32 {
     match v {
-        Value::Int(i) => (*i & 0xff) as i32,
         Value::Enum(ea, va, _) if ea == "Result" && va == "Err" => 1,
         _ => 0,
     }

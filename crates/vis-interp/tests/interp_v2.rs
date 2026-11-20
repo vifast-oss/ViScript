@@ -134,10 +134,19 @@ fn vi_tri_tab_va_utf8() {
 // ---------------------------------------------------------------- mục 8
 #[test]
 fn break_continue_va_try_ngoai_ngu_canh() {
-    // mục 8: ngoài vòng lặp/hàm ⇒ **VS0501**, không được nuốt.
-    kiem("break", "break\n", "", Some("VS0501"));
-    kiem("continue", "continue\n", "", Some("VS0501"));
+    // **VD-259**: `break`/`continue` ngoài vòng lặp bị **tyck** từ chối (`VS0412`);
+    // `?` ngoài hàm vẫn là lỗi runtime **VS0501**.
+    kiem("break", "break\n", "", Some("VS0412"));
+    kiem("continue", "continue\n", "", Some("VS0412"));
     kiem("try", "let x: int? = 5\nprint(x?)\n", "", Some("VS0501"));
+
+    // Phòng thủ **runtime** vẫn giữ: bỏ tyck (như `phuong_thuc_ngoai_tap_bao_vs0501`)
+    // ⇒ interp vẫn trap VS0501 thay vì nuốt.
+    let src = "break\n";
+    let p = parse(src, Mode::Script);
+    let h = lower(&p.cst, &lex(src, Mode::Script));
+    let out = vis_interp::run(src, &h.hir, &h.symbols, &h.types, &[]);
+    assert_eq!(out.codes(), ["VS0501"], "{:?}", out.diagnostics);
 }
 
 // ---------------------------------------------------------------- mục 9
