@@ -187,3 +187,22 @@ crate host.
 
 **Cập nhật tiếp (VD-229 @ `004b145`, ~03:55 JST)**: phần **argument** (`fn g(x: int?)` nhận `42` ⇒ `Some(42)`) và **closure-biên** (`fn(x) -> T?` suite) đều **đã áp**, byte-identical interp ↔ VM; corpus **469/469 ×2**; `vd_228.rs` **13/13**. **Closure params** không nâng (lambda params **không** parse annotation — `VS0201 mong `)`, thật `:`). BLOCKED không còn nội dung trên máy — chỉ chờ A0 ratify/revert.
 **Đề nghị cho A0** (tương ứng §9-Q10 BAO-CAO-A0): giữ Option B như hiện tại (đề xuất), hoặc revert toàn bộ `1eea7ed` về Option A, hoặc chuyển sang Option C (explicit `Some(…)`).
+
+## 12. CHỜ A0 — ST-237 / nợ #172: số học `percent` bão hoà hay lỗi?
+
+**Người ghi**: Agent 1 (từ kết quả ST-237, luồng D) · **Ngày**: 2026-11-20 · **VD liên quan**: VD-242 (chưa chốt riêng `percent`).
+
+**Đã đo**: 28/28 phát hiện reproduced, trong đó #172 tái hiện với `vis run` trên baseline `31b51d2`:
+- `200pct * i64::MAX` ⇒ `9223372036854775807` (bão hoà im lặng);
+- `1e300pct` khi `show` ⇒ `9223372036854775807pct`;
+- cả hai exit 0, không lỗi.
+
+**Vì sao chặn**: VD-242 §3.5 chốt JSON/sort, nhưng **không chốt riêng** hành vi số học `percent` khi vượt miền. `VS0507` hiện có hợp đồng cho tràn `i64` thường; chưa rõ có áp cho `percent` hay không. Đây là lựa chọn ngữ nghĩa ⇒ Agent 2 phải dừng, không tự sửa (VD-242 §6 guardrail).
+
+**Câu hỏi cho A0** (trả lời một trong hai):
+1. **Bão hoà có kiểm soát**: giữ `i64::MAX`/`i64::MIN`, nhưng phải ghi rõ hợp đồng bão hoà + sửa `show` để không in số giả; hoặc
+2. **Lỗi**: `VS0507` cho mọi phép tính `percent` vượt miền (nhân/chia/show), exit ≠ 0, không trả giá trị bão hoà.
+
+**Bằng chứng**: `agent/JOURNAL/st237-ma-tran-28.md` dòng #172; `agent/JOURNAL/st235-audit-std-cli.md` #172; `builtin.rs:419-455`, `value.rs:421-428`.
+
+**Không chặn** các task khác: ST-238/239/240/241/242 vẫn chạy; riêng phần sửa #172 trong ST-240 phải đợi câu trả lời này.
