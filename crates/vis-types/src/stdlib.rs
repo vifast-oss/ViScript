@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 112] = [
+pub const FUNCS: [StdFn; 113] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -452,6 +452,13 @@ pub const FUNCS: [StdFn; 112] = [
         name: "list.last_index_of",
         params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
         ret: Ty::OptInt,
+    },
+    // **VD-270 (list-contains)**: `true` iff có phần tử `==` `value` (cùng `eq_value` như
+    // `index_of`; `T` buộc từ `xs` nên `value` cùng kiểu phần tử); sugar `xs.contains(v)` R5c.
+    StdFn {
+        name: "list.contains",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
+        ret: Ty::Bool,
     },
     // **VD-270 (binary-search)**: `xs` phải **đã sắp tăng** theo `cmp_value` (cùng thứ tự
     // `list.sort`/`min`); trả **biên dưới** `Some(vị trí đầu của cụm bằng)` hoặc `None`.
