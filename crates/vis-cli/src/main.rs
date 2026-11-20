@@ -104,6 +104,31 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.write(p, s),
         }
     }
+    /// **VD-266**: bốn helper mới — host thật (OS) hoặc mock, cùng chữ ký.
+    fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
+        match self {
+            HostFs::That(r) => r.read_lines(p),
+            HostFs::Mock(m) => m.read_lines(p),
+        }
+    }
+    fn append(&mut self, p: &str, s: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.append(p, s),
+            HostFs::Mock(m) => m.append(p, s),
+        }
+    }
+    fn mkdir(&mut self, p: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.mkdir(p),
+            HostFs::Mock(m) => m.mkdir(p),
+        }
+    }
+    fn remove(&mut self, p: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.remove(p),
+            HostFs::Mock(m) => m.remove(p),
+        }
+    }
     fn exists(&mut self, p: &str) -> bool {
         match self {
             HostFs::That(r) => r.exists(p),

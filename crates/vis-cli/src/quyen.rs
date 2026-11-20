@@ -805,6 +805,26 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, true)?;
         self.trong.write(p, s)
     }
+    /// **VD-266**: đọc dòng **qua** [`read`](Self::read) ⇒ giữ nguyên **mở-rồi-kiểm** (chống TOCTOU)
+    /// của đường đọc; tách dòng bằng cùng helper với host thật/mock.
+    fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
+        self.read(p).map(|s| vis_interp::builtin::chia_dong(&s))
+    }
+    /// **VD-266**: thao tác **ghi** ⇒ cùng kiểm quyền như [`write`](Self::write) (`(write)` trên root).
+    fn append(&mut self, p: &str, s: &str) -> Result<(), String> {
+        self.quyen.kiem_fs(p, true)?;
+        self.trong.append(p, s)
+    }
+    /// **VD-266**: tạo thư mục là thao tác **ghi** ⇒ cùng kiểm quyền như `write`.
+    fn mkdir(&mut self, p: &str) -> Result<(), String> {
+        self.quyen.kiem_fs(p, true)?;
+        self.trong.mkdir(p)
+    }
+    /// **VD-266**: xoá tệp là thao tác **ghi** ⇒ cùng kiểm quyền như `write`.
+    fn remove(&mut self, p: &str) -> Result<(), String> {
+        self.quyen.kiem_fs(p, true)?;
+        self.trong.remove(p)
+    }
     /// **ST-83**: ngoài quyền ⇒ **trap `VS0604`** (không còn `false` im lặng).
     fn exists(&mut self, p: &str) -> bool {
         self.exists_quyen(p).unwrap_or(false)

@@ -47,6 +47,7 @@
 pub mod builtin_assert;
 /// **VD-241 (Gate 1)** — trait `DbHost` (host cơ sở dữ liệu).
 pub mod builtin_db;
+pub mod builtin_fs;
 pub mod builtin_list;
 /// **ST-46** — `ls --long` helpers.
 mod builtin_ls;

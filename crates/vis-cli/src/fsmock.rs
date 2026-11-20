@@ -162,6 +162,43 @@ impl FsHost for FsMock {
         Ok(())
     }
 
+    /// **VD-266**: cùng ngữ nghĩa dòng với host thật (dùng chung `chia_dong`).
+    fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
+        self.read(p).map(|s| vis_interp::builtin::chia_dong(&s))
+    }
+
+    /// **VD-266**: thêm cuối "tệp" trong kịch bản (tạo mục mới nếu thiếu).
+    fn append(&mut self, p: &str, s: &str) -> Result<(), String> {
+        match self.files.iter_mut().find(|(k, _)| k == p) {
+            Some((_, v)) => v.push_str(s),
+            None => self.files.push((p.to_string(), s.to_string())),
+        }
+        Ok(())
+    }
+
+    /// **VD-266**: tạo thư mục **một cấp**; đã tồn tại ⇒ `Err` (khớp `create_dir`).
+    fn mkdir(&mut self, p: &str) -> Result<(), String> {
+        if self.exists(p) {
+            return Err(format!("không tạo được thư mục `{p}`: đã tồn tại"));
+        }
+        self.dirs.push((p.to_string(), Vec::new()));
+        Ok(())
+    }
+
+    /// **VD-266**: xoá tệp trong kịch bản; **từ chối** thư mục.
+    fn remove(&mut self, p: &str) -> Result<(), String> {
+        if let Some(i) = self.files.iter().position(|(k, _)| k == p) {
+            self.files.remove(i);
+            return Ok(());
+        }
+        if self.dirs.iter().any(|(k, _)| k == p) {
+            return Err(format!("không xoá được `{p}`: là thư mục (chỉ xoá tệp)"));
+        }
+        Err(format!(
+            "không xoá được tệp `{p}`: không có trong kịch bản `--fs-mock`"
+        ))
+    }
+
     fn exists(&mut self, p: &str) -> bool {
         self.files.iter().any(|(k, _)| k == p) || self.dirs.iter().any(|(k, _)| k == p)
     }

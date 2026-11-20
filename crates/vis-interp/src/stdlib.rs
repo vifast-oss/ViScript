@@ -599,6 +599,33 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
+        // **VD-266**: bốn helper thực dụng — cùng mẫu `std.fs` (host ⇒ `VS0604`; lỗi dữ liệu ⇒
+        // `Err(Error)`), không OS trong crate này.
+        "fs.read_lines" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                host.read_lines(p)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        "fs.append" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let v = chuoi(name, &args[1], 1, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.append(p, v).map(|()| Value::Unit), span)
+        }
+        "fs.mkdir" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.mkdir(p).map(|()| Value::Unit), span)
+        }
+        "fs.remove" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.remove(p).map(|()| Value::Unit), span)
+        }
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         "net.connect" | "net.connect_timeout" => {
