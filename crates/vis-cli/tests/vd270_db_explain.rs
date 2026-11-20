@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
+// Cấu hình core (`--no-default-features`) không có host `std.sqlite` ⇒ bỏ cả tệp test.
+#![cfg(feature = "sqlite")]
 //! **VD-270 (db-explain)** — `sqlite.explain(handle, sql, params) -> Result[RowSet, Error]`.
 //!
 //! Hợp đồng khoá ở đây:
