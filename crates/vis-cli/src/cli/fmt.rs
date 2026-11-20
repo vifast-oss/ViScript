@@ -75,16 +75,19 @@ fn dem_lech_thut_le(text: &str) -> Option<usize> {
 
 fn usage_fmt() -> ExitCode {
     eprintln!(
-        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check [--json|--list|--diff] <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check [--json|--list|--diff]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis fmt <tệp|thư-mục> | vis fmt --write <tệp|thư-mục…> | vis fmt --check [--json|--list|--diff|--stat] <tệp|thư-mục…> | vis fmt --indent-report <tệp|thư-mục…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     eprintln!(
-        "  vis fmt --stdin [--check [--json|--list]] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
+        "  vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command]: đọc UTF-8 từ stdin, in bản đã định dạng ra stdout; --mode chọn script (mặc định) hoặc command (buffer .vish); --check không in gì, thoát 0 (đã đúng) / 1 (cần sửa) / 2 (lỗi cú pháp); không nhận tệp"
     );
     eprintln!(
         "  --json: chỉ đi với --check (tệp/thư mục hoặc --stdin); in một object JSON nén trên stdout: {{\"ok\":bool,\"files\":[{{\"path\":…,\"formatted\":bool,\"error\":null|{{\"code\":\"VSxxxx\",\"line\":n,\"col\":n,\"message\":…}}}}]}}; dòng/cột 1-based; thoát 0 (mọi tệp đã đúng) / 1 (cần sửa) / 2 (lỗi đọc/cú pháp hoặc dùng sai)"
     );
     eprintln!(
         "  --list: chỉ đi với --check (tệp/thư mục hoặc --stdin --check); in đúng một đường dẫn mỗi dòng cho tệp cần sửa, không in gì khác (thứ tự đối số, trong thư mục duyệt đệ quy đã sắp); --stdin --check --list in `-` khi stdin cần sửa; không đi với --json/--write/--indent-report; thoát 0 (không tệp nào cần sửa) / 1 (có tệp cần sửa) / 2 (lỗi đọc/cú pháp hoặc dùng sai)\n  --diff: chỉ đi với --check (tệp/thư mục hoặc --stdin --check); in unified diff một hunk mỗi tệp cần sửa (---/+++/@@); không đi với --json/--list/--write/--indent-report; thoát 0/1/2 như --check"
+    );
+    eprintln!(
+        "  --stat: chỉ đi với --check (tệp/thư mục hoặc --stdin --check); in đúng một dòng stdout `fmt-check: <N> tệp, <M> cần sửa, <K> lỗi` (N tệp đã kiểm, M tệp cần sửa, K lỗi đọc/cú pháp), không in gì khác; lỗi chi tiết ra stderr; không đi với --json/--list/--diff/--write/--indent-report; thoát 0 (M=K=0) / 1 (M>0, K=0) / 2 (K>0 hoặc dùng sai)"
     );
     ExitCode::from(2)
 }
@@ -297,6 +300,8 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     let mut list_ra = false;
     // **VD-270**: `--diff` — unified diff của stdin khi `--check`.
     let mut diff_ra = false;
+    // **VD-270**: `--stat` — một dòng tổng hợp của stdin khi `--check`.
+    let mut stat_ra = false;
     let mut che_do = Mode::Script;
     let mut da_mode = false;
     let mut i = 0;
@@ -309,6 +314,7 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
             "--json" => json_ra = true,
             "--list" => list_ra = true,
             "--diff" => diff_ra = true,
+            "--stat" => stat_ra = true,
             "--mode" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis fmt: --mode thiếu giá trị (script|command)");
@@ -358,6 +364,18 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         }
         i += 1;
     }
+    // **VD-270**: `--stat` là đầu ra tổng hợp riêng — không đi với các đầu ra máy/ghi khác và
+    // chỉ có nghĩa khi `--check`; kiểm trước khi chạm stdin.
+    if stat_ra {
+        if json_ra || list_ra || diff_ra {
+            eprintln!("vis fmt: --stat không đi với --json/--list/--diff (chọn một đầu ra)");
+            return usage_fmt();
+        }
+        if !check {
+            eprintln!("vis fmt: --stat chỉ dùng với --check");
+            return usage_fmt();
+        }
+    }
     // **VD-270**: `--list` + `--json` là hai đầu ra máy khác nhau ⇒ từ chối rõ (JSON đã đủ).
     if list_ra && json_ra {
         eprintln!("vis fmt: --list không đi với --json (JSON đã là đầu ra máy)");
@@ -386,6 +404,10 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     let mut src = String::new();
     if let Err(e) = std::io::stdin().read_to_string(&mut src) {
         let msg = format!("không đọc được stdin (cần UTF-8): {e}");
+        if stat_ra {
+            eprintln!("vis fmt: {msg}");
+            return xuat_fmt_stat_stdin(false, true);
+        }
         if json_ra {
             let entry = tep_json("-", false, Some(("VS0201", 1, 1, &msg)));
             return xuat_fmt_json(&[entry], false, 2);
@@ -394,7 +416,11 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
         return ExitCode::from(2);
     }
     // Đầu vào rỗng ⇒ đầu ra rỗng, kể cả `--check` (điểm bất động của chính nó).
+    // **VD-270**: `--stat` vẫn tính stdin rỗng là **1 tệp**, 0 cần sửa.
     if src.is_empty() {
+        if stat_ra {
+            return xuat_fmt_stat_stdin(false, false);
+        }
         if json_ra {
             return xuat_fmt_json(&[tep_json("-", true, None)], true, 0);
         }
@@ -402,6 +428,10 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
     }
     match vis_fmt::format_mode(&src, che_do) {
         Err(e) => {
+            if stat_ra {
+                eprintln!("# {}", dong_chan_doan(e.code, e.line, e.col, &e.message));
+                return xuat_fmt_stat_stdin(false, true);
+            }
             if json_ra {
                 let entry = tep_json("-", false, Some((e.code, e.line, e.col, &e.message)));
                 return xuat_fmt_json(&[entry], false, 2);
@@ -410,6 +440,10 @@ fn run_fmt_stdin(args: &[String]) -> ExitCode {
             ExitCode::from(2)
         }
         Ok(moi) if check => {
+            // **VD-270**: `--stat` — một dòng tổng hợp, không in đường dẫn/nội dung.
+            if stat_ra {
+                return xuat_fmt_stat_stdin(moi != src, false);
+            }
             // **VD-270**: `--diff` — in unified diff của `-` khi cần sửa.
             if diff_ra {
                 if let Some(h) = diff_dong(&src, &moi) {
@@ -570,6 +604,68 @@ fn xuat_fmt_list(ds: &[std::path::PathBuf]) -> ExitCode {
     ExitCode::from(ma)
 }
 
+/// **VD-270**: dòng tổng hợp cố định của `--check --stat` — một dòng stdout, không gì khác.
+fn dong_fmt_stat(so_tep: usize, can_sua: usize, loi: usize) -> String {
+    format!("fmt-check: {so_tep} tệp, {can_sua} cần sửa, {loi} lỗi\n")
+}
+
+/// **VD-270**: `vis fmt --check --stat` trên danh sách đã gom/sắp — đếm **N** tệp đã kiểm,
+/// **M** tệp cần sửa, **K** lỗi đọc/cú pháp. Chỉ in đúng một dòng tổng hợp ra stdout; chi tiết
+/// lỗi ra stderr (luôn kèm tên tệp). Exit 0 (M=K=0) / 1 (M>0, K=0) / 2 (K>0).
+fn xuat_fmt_stat(ds: &[std::path::PathBuf]) -> ExitCode {
+    let mut can_sua = 0usize;
+    let mut loi = 0usize;
+    for path in ds {
+        match doc_va_dinh_dang(path) {
+            KetQuaDoc::Xong { src, moi, .. } => {
+                if moi != src {
+                    can_sua += 1;
+                }
+            }
+            KetQuaDoc::ParseLoi(e) => {
+                loi += 1;
+                eprintln!(
+                    "# {}: {}",
+                    path.display(),
+                    dong_chan_doan(e.code, e.line, e.col, &e.message)
+                );
+            }
+            KetQuaDoc::DocLoi(e) => {
+                loi += 1;
+                eprintln!("# {}: không đọc được: {e}", path.display());
+            }
+        }
+    }
+    let ma = if loi > 0 {
+        2
+    } else if can_sua > 0 {
+        1
+    } else {
+        0
+    };
+    if !xuat_stdout(&dong_fmt_stat(ds.len(), can_sua, loi)) {
+        return ExitCode::from(2);
+    }
+    ExitCode::from(ma)
+}
+
+/// **VD-270**: biến thể `--stdin --check --stat` — N luôn = 1 (kể cả stdin rỗng); M/K là 0|1.
+fn xuat_fmt_stat_stdin(can_sua: bool, loi: bool) -> ExitCode {
+    let m = if can_sua { 1 } else { 0 };
+    let k = if loi { 1 } else { 0 };
+    let ma = if loi {
+        2
+    } else if can_sua {
+        1
+    } else {
+        0
+    };
+    if !xuat_stdout(&dong_fmt_stat(1, m, k)) {
+        return ExitCode::from(2);
+    }
+    ExitCode::from(ma)
+}
+
 pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // **VD-267**: `--stdin` là chế độ riêng — không lẫn với đường tệp/thư mục bên dưới.
     if args.iter().any(|a| a == "--stdin") {
@@ -590,6 +686,28 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     let list_ra = args.iter().any(|a| a == "--list");
     // **VD-270**: `--diff` — unified diff của tệp cần sửa; chỉ đi với `--check`.
     let diff_ra = args.iter().any(|a| a == "--diff");
+    // **VD-270**: `--stat` — một dòng tổng hợp cho CI; chỉ đi với `--check`.
+    let stat_ra = args.iter().any(|a| a == "--stat");
+    // **VD-270**: `--stat` là đầu ra tổng hợp riêng — không đi với các đầu ra máy/ghi khác.
+    if stat_ra {
+        if json_ra || list_ra || diff_ra {
+            eprintln!("vis fmt: --stat không đi với --json/--list/--diff (chọn một đầu ra)");
+            return usage_fmt();
+        }
+        if args
+            .iter()
+            .any(|a| a == "--write" || a == "--indent-report")
+        {
+            eprintln!(
+                "vis fmt: --stat chỉ dùng với --check (không đi với --write/--indent-report)"
+            );
+            return usage_fmt();
+        }
+        if !args.iter().any(|a| a == "--check") {
+            eprintln!("vis fmt: --stat chỉ dùng với --check");
+            return usage_fmt();
+        }
+    }
     // **VD-270**: `--list` là đầu ra máy dạng danh sách — không đi với JSON (đã đủ cho máy),
     // không đi với chế độ ghi/báo cáo, và chỉ có nghĩa khi `--check`.
     if list_ra {
@@ -645,15 +763,20 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
             return usage_fmt();
         }
     }
-    let loc: Vec<String> = if json_ra || list_ra || diff_ra {
+    let loc: Vec<String> = if json_ra || list_ra || diff_ra || stat_ra {
         args.iter()
-            .filter(|a| a.as_str() != "--json" && a.as_str() != "--list" && a.as_str() != "--diff")
+            .filter(|a| {
+                a.as_str() != "--json"
+                    && a.as_str() != "--list"
+                    && a.as_str() != "--diff"
+                    && a.as_str() != "--stat"
+            })
             .cloned()
             .collect()
     } else {
         Vec::new()
     };
-    let args: &[String] = if json_ra || list_ra || diff_ra {
+    let args: &[String] = if json_ra || list_ra || diff_ra || stat_ra {
         &loc
     } else {
         args
@@ -688,6 +811,10 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
         eprintln!("vis fmt: --diff chỉ dùng với --check");
         return usage_fmt();
     }
+    if stat_ra && mode != FmtMode::Check {
+        eprintln!("vis fmt: --stat chỉ dùng với --check");
+        return usage_fmt();
+    }
     if files.is_empty() {
         return usage_fmt();
     }
@@ -695,6 +822,17 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // kiểm được toàn bộ fixture; tệp lẻ giữ nguyên hành vi cũ.
     // **VD-270**: `--json`/`--list` giữ **thứ tự đối số**, chỉ sắp trong từng thư mục; đường văn
     // bản giữ nguyên sắp xếp toàn cục như trước (byte-identical).
+    // **VD-270**: `--stat` — gom như các đầu ra máy (thứ tự đối số, sắp trong từng thư mục;
+    // cùng quy tắc loại trừ) rồi in đúng một dòng tổng hợp.
+    if stat_ra {
+        let mut ds: Vec<std::path::PathBuf> = Vec::new();
+        for mut nhom in gom_theo_doi_so(files) {
+            nhom.retain(|(p, tu_nguon)| *tu_nguon || la_input_co_y(p));
+            nhom.sort_by(|a, b| a.0.cmp(&b.0));
+            ds.extend(nhom.into_iter().map(|(p, _)| p));
+        }
+        return xuat_fmt_stat(&ds);
+    }
     if diff_ra {
         let mut ds: Vec<std::path::PathBuf> = Vec::new();
         for mut nhom in gom_theo_doi_so(files) {
