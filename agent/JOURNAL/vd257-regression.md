@@ -91,3 +91,17 @@ sản phẩm; giới hạn được ghi thành test `ghi_nhan_gioi_han_parity`.
   **20/20 OK**, mỗi lần 11 passed / 0 failed, không flake/drift. Log `/tmp/opencode/vd257-lifecycle-*.log`.
 - Seed và cấu hình được lưu; không có seed lỗi. Không chạy OOM/không `cargo clean` toàn bộ.
 
+## 7. B1-real-frame ở release
+
+Lệnh `cargo test --release -p vis-cli --test lat3_real t10_b1_real_frame_overlap_measure -- --nocapture`
+(server loopback trễ 200 ms, N=1/5/20 × 3 lần × 2 engine):
+
+| N | workload interp (ms) | workload VM (ms) | startup (ms) | ok |
+|---|---|---|---|---|
+| 1 | 200,83 / 200,99 / 201,11 | 201,15 / 200,75 / 201,08 | 0,42–0,93 | 3/3 |
+| 5 | 201,52 / 201,15 / 201,01 | 201,41 / 201,87 / 200,76 | 1,31–2,15 | 5/5 |
+| 20 | 201,43 / 201,76 / 202,41 | 201,32 / 201,13 / 201,58 | 1,71–2,50 | 20/20 |
+
+**Chồng lấp** rõ: 20 kết nối × 200 ms vẫn ~201 ms, không phải ~4 s. Startup đo riêng, không trộn
+vào workload. Log `/tmp/opencode/vd257-b1-release.log`. Không đổi baseline mặc định (4,03–4,04 s).
+
