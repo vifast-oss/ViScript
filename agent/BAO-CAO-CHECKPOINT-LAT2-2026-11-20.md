@@ -20,9 +20,14 @@ Bất biến reactor đã có test: wake trùng, wake cũ/gen cũ, readiness gi�
 đóng/timeout/đăng ký lại vô hiệu event cũ, EOF/lỗi/timeout gỡ waiter **đúng một lần**, nhiều task
 cùng chờ; timer monotonic chọn deadline gần nhất; **không** `sleep(5 ms)` busy-poll trên đường thử.
 
-**B1 (mục tiêu chồng lấp)** — 20 kết nối trễ 200 ms, 3 lần chạy:
-- startup ~0,585 ms; **workload 201,2–201,5 ms** trên đường frame thử;
-- đường mặc định vẫn **4,03–4,04 s** — không tuyên bố CLI mặc định có async I/O.
+**Ba nhãn B1 (VD-254 §1) — không trộn lẫn:**
+- **B1-sim**: 201,2–201,5 ms — **reactor giả**, đường frame thử (startup ~0,585 ms), 3 lần chạy.
+- **B1-real-default**: 4,03–4,04 s — **runtime mặc định**, socket thật (chưa tối ưu).
+- **B1-real-frame**: **chưa đo**, chờ Lát 3 (readiness thật với `mio`).
+
+Kết luận đã chỉnh: *đường frame chứng minh `Pending` trả quyền cho scheduler và khoảng chờ mô phỏng
+có thể chồng lấp; **chưa** chứng minh readiness mạng thật hay hiệu năng I/O thật.* **Không** dùng tỷ
+lệ giữa B1-sim và B1-real-default làm tuyên bố tăng tốc mạng sản phẩm.
 
 **B2** vẫn đói CPU: `CPU_DONE == IO_START`, `IO_DONE−IO_START` 201/202 ms — ghi rõ **chưa sửa**,
 không đổi tiêu chí để gọi là đạt fairness. **Step-cap parity vẫn mở**, không tăng ngưỡng tạm.
@@ -79,7 +84,7 @@ Không đổi VERSION/cache/API; Windows tiếp tục giữ runtime mặc địn
 
 ## 6. Quyết định A0 cần
 
-1. Chấp nhận checkpoint Lát 2 (reactor giả, B1 chồng lấp, explicit rejection, B2/step-cap vẫn mở).
+1. Chấp nhận checkpoint Lát 2 (reactor giả, **B1-sim** chồng lấp, explicit rejection, B2/step-cap vẫn mở).
 2. **Duyệt hoặc từ chối `mio = "=1.2.5"`** (hoặc `polling`) — điều kiện để mở real reactor Lát 3.
 3. Duyệt/không Lát 3. Nhắc lại: tag PAUSED; VS3/worker/GC/TLS/API chưa mở.
 

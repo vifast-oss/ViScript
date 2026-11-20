@@ -92,6 +92,9 @@ pub fn run_frame_for_test<'m>(
     vm.sched
         .borrow_mut()
         .frame_reactor_load_for_test(config.reactors, config.timer_real_wait);
+    if let Some(b) = config.backend {
+        vm.sched.borrow_mut().frame_install_backend_for_test(b);
+    }
 
     let mut current: u32 = 0;
     let mut final_value: Option<Value> = None;
@@ -183,6 +186,10 @@ pub fn run_frame_for_test<'m>(
 
         let need_join = true; // final join luôn được phép sau khi main xong
         let next = vm.sched.borrow_mut().frame_next();
+        // Lát 3: lỗi selector là điểm dừng — KHÔNG final-join rồi chạy lại vô hạn.
+        if vm.sched.borrow().frame.selector_error.is_some() {
+            break;
+        }
         let next = match next {
             Some(n) => Some(n),
             None if need_join => {
@@ -231,6 +238,12 @@ pub fn run_frame_for_test<'m>(
         }
     }
 
+    // Lát 3: lỗi selector là trap RÕ — không được hiểu nhầm là "không có event".
+    if trap.is_none() {
+        if let Some(e) = vm.sched.borrow_mut().frame_take_selector_error() {
+            trap = Some(Trap::new(vis_interp::interp::RT, e, Span::new(0, 0)));
+        }
+    }
     frames.clear();
     vm.sched.borrow_mut().frame_drain_events();
     vm.sched.borrow_mut().frame_final_join();

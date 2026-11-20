@@ -217,6 +217,12 @@ pub struct ReactorReg {
     pub op: ReactorOp,
     pub frame: u32,
     pub gen: u64,
+    /// **Lát 3**: token mờ do core cấp cho adapter — MỖI lần đăng ký là một token mới
+    /// (kể cả re-arm) ⇒ phân biệt được generation, fd/tay dùng lại không wake nhầm.
+    pub token: u64,
+    /// **Lát 3**: deadline monotonic của riêng lần chờ này (`None` = không có timeout
+    /// riêng; vẫn có trần chờ selector để không block vô hạn / không hot-spin).
+    pub deadline: Option<Instant>,
 }
 
 /// **Chỉ test (Lát 2)**: toàn bộ trạng thái reactor giả.
@@ -233,6 +239,60 @@ pub struct ReactorState {
     pub log: Vec<String>,
     /// Mốc monotonic dùng để tính deadline của timer trong test B1.
     pub epoch: Option<Instant>,
+}
+
+// ===========================================================================
+// ST-271 / VD-254 — LÁT 3: adapter selector THẬT (chỉ đường frame test).
+//
+/// Trait adapter nằm ở crate lõi (zero-dep, cross-platform) để core/wasm32 không
+/// bao giờ phụ thuộc crate selector. Crate host (Linux) cài đặt bằng `mio` — mọi
+/// API ta gọi đều safe; `unsafe` FFI epoll nằm hoàn toàn trong dependency.
+/// Không có implementation mặc định ⇒ không có fallback im lặng sang đồng bộ.
+#[doc(hidden)]
+pub trait FrameReactorBackend {
+    /// Thử `read` không chặn. `max` đã bị chặn bởi `NET_READ_CAP` ở `stdlib`.
+    fn try_read(&mut self, handle: &str, max: usize) -> ReactorIoOutcome;
+    /// Thử `accept` không chặn — khi có kết nối, adapter cấp handle mới.
+    fn try_accept(&mut self, handle: &str) -> ReactorIoOutcome;
+    /// Đăng ký/kích hoạt lại interest READABLE cho `handle` với `token` MỚI.
+    fn register(&mut self, token: u64, handle: &str, op: ReactorOp) -> Result<(), String>;
+    /// Hủy đăng ký `token` (idempotent).
+    fn deregister(&mut self, token: u64, handle: &str, op: ReactorOp) -> Result<(), String>;
+    /// Chờ readiness tối đa `timeout`; trả sự kiện thật đã dịch sang token/core.
+    fn wait(&mut self, timeout: Duration) -> Result<Vec<ReactorRawEvent>, String>;
+    /// Đóng tay (`net.close`) — adapter đóng cả socket thật; stale event vô hiệu ở core.
+    fn close(&mut self, handle: &str) -> Result<(), String>;
+}
+
+impl std::fmt::Debug for dyn FrameReactorBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("FrameReactorBackend")
+    }
+}
+
+/// Kết quả một lần thử I/O thật. `WouldBlock` ⇒ đăng ký readiness + `Pending`;
+/// không phải "không có sự kiện" (select error là `Err`, lan rõ).
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum ReactorIoOutcome {
+    /// `read`: byte nhận được (rỗng = EOF). Caller giải mã lossy/đóng gói `Result`.
+    Data(Vec<u8>),
+    /// `accept`: handle kết nối mới do adapter cấp.
+    Accepted(String),
+    /// Kernel chưa sẵn sàng — re-arm, không hot-spin, không mất wake.
+    WouldBlock,
+    /// Lỗi I/O/selector — lan thành `Result.Err` rõ, không nuốt.
+    Err(String),
+}
+
+/// Một sự kiện readiness thật đã dịch sang token/core (không lộ fd hay `mio`).
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReactorRawEvent {
+    pub token: u64,
+    pub readable: bool,
+    pub hup: bool,
+    pub error: bool,
 }
 
 /// **Chỉ test**: toàn bộ trạng thái frame scheduler. Nằm trong `Scheduler.frame`;
@@ -269,6 +329,15 @@ pub struct FrameTest {
     /// **Lát 2**: nếu `true`, khi rảnh scheduler ngủ **một lần** tới deadline monotonic
     /// gần nhất (dùng cho đo B1); `false` (mặc định) ⇒ fire ngay, hoàn toàn tất định.
     pub timer_real_wait: bool,
+    /// **Lát 3 (chỉ test)**: adapter selector thật. `None` (mặc định) ⇒ đường reactor giả
+    /// Lát 2 chạy nguyên văn; `Some` ⇒ `read`/`accept` lấy readiness từ kernel.
+    pub backend: Option<Rc<RefCell<dyn FrameReactorBackend>>>,
+    /// **Lát 3**: token → `(key, gen)` hiện hành; token cũ (fd/tay reuse, re-arm) bị bỏ ⇒ stale.
+    pub token_map: HashMap<u64, (u64, u64)>,
+    /// **Lát 3**: bộ đếm token tăng dần — không bao giờ tái sử dụng.
+    pub next_token: u64,
+    /// **Lát 3**: lỗi selector được lưu lại rồi driver biến thành trap rõ (không nuốt).
+    pub selector_error: Option<String>,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -653,6 +722,8 @@ impl Scheduler {
                     op,
                     frame,
                     gen: 0,
+                    token: 0, // Lát 3: chỉ dùng khi có adapter thật
+                    deadline: None,
                 });
                 self.frame.reactor.log.push(format!(
                     "reg:{}:{}:{:?}:{}:{}",
@@ -784,10 +855,17 @@ impl Scheduler {
     /// `timer_real_wait`, rồi fire event có `seq` nhỏ nhất. Không vòng lặp poll.
     #[doc(hidden)]
     pub fn frame_idle(&mut self) -> bool {
-        if !self.frame.ready.is_empty()
-            || !self.frame.events.is_empty()
-            || self.frame.reactor.events.is_empty()
-        {
+        if !self.frame.ready.is_empty() || !self.frame.events.is_empty() {
+            return false;
+        }
+        if self.frame.selector_error.is_some() {
+            return false; // lỗi selector đã được ghi — không chờ lại, driver sẽ trap
+        }
+        // Lát 3: có adapter thật ⇒ chờ selector (không cần trace reactor giả).
+        if self.frame.backend.is_some() {
+            return self.frame_idle_real();
+        }
+        if self.frame.reactor.events.is_empty() {
             return false;
         }
         // Deadline gần nhất được chọn MỘT lần cho cả đợt rảnh (ghi log tất định).
@@ -828,6 +906,14 @@ impl Scheduler {
     /// `diag_snapshot` về baseline mà KHÔNG cần đóng tay còn handle hợp lệ.
     #[doc(hidden)]
     pub fn frame_reactor_shutdown(&mut self) {
+        // Lát 3: hủy mọi đăng ký còn sống ở selector thật trước khi xoá sổ sách core.
+        let regs: Vec<ReactorReg> = self.frame.reactor.regs.to_vec();
+        if let Some(b) = self.frame.backend.clone() {
+            for r in &regs {
+                let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
+            }
+        }
+        self.frame.token_map.clear();
         self.frame.reactor.regs.clear();
         self.frame.reactor.results.clear();
         self.frame.reactor.fired.clear();
@@ -835,6 +921,333 @@ impl Scheduler {
         self.frame.timer_real_wait = false;
         self.frame.current = 0;
         self.frame.reactor.log.push("rshutdown".into());
+    }
+}
+
+// ===========================================================================
+// ST-271 / VD-254 — LÁT 3: readiness THẬT qua adapter selector (CHỈ test).
+//
+// Mọi hàm ở đây chỉ chạy khi `frame.backend.is_some()`. Không backend ⇒ Lát 2
+// nguyên văn. Không `unsafe`, không fd/thư viện selector trong crate lõi.
+// ===========================================================================
+impl Scheduler {
+    /// Cài adapter selector thật (test-only). Không API/CLI/ngôn ngữ nào gọi.
+    #[doc(hidden)]
+    pub fn frame_install_backend_for_test(&mut self, b: Rc<RefCell<dyn FrameReactorBackend>>) {
+        self.frame.backend = Some(b);
+    }
+
+    /// Điểm vào dùng bởi `stdlib` cho `net.read`/`net.accept` trên đường frame.
+    /// Có adapter ⇒ readiness thật; không ⇒ reactor giả Lát 2 (byte-identical).
+    #[doc(hidden)]
+    pub fn frame_reactor_poll_io(
+        &mut self,
+        op: ReactorOp,
+        handle: &str,
+        max: usize,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Value> {
+        if let Some(b) = self.frame.backend.clone() {
+            self.frame_real_poll(&b, op, handle, max, timeout_ms, span)
+        } else {
+            let _ = max;
+            self.frame_reactor_poll(op, handle, timeout_ms, span)
+        }
+    }
+
+    /// Lấy (và xoá) lỗi selector để driver đổi thành trap rõ — không bao giờ coi
+    /// lỗi selector là "không có sự kiện".
+    #[doc(hidden)]
+    pub fn frame_take_selector_error(&mut self) -> Option<String> {
+        self.frame.selector_error.take()
+    }
+
+    /// Huỷ mọi đăng ký liên quan đến `handle` (dùng khi `net.close` trên đường frame).
+    /// Đánh thức waiter để lần retry thấy handle đã mất ⇒ `Result.Err` đúng một lần.
+    #[doc(hidden)]
+    pub fn frame_reactor_cancel_handle(&mut self, handle: &str) {
+        let regs: Vec<ReactorReg> = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .filter(|r| r.handle == handle)
+            .cloned()
+            .collect();
+        for r in &regs {
+            if let Some(b) = self.frame.backend.clone() {
+                let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
+            }
+            self.frame.token_map.remove(&r.token);
+            self.frame.reactor.regs.retain(|x| x.key != r.key);
+            self.frame
+                .reactor
+                .log
+                .push(format!("rcancel:{}:{}", handle, r.key));
+            self.wake_reactor(r.key, r.gen);
+        }
+    }
+
+    fn mint_token(&mut self) -> u64 {
+        let t = self.frame.next_token;
+        self.frame.next_token += 1;
+        t
+    }
+
+    /// Gỡ đăng ký selector + sổ token cho mọi reg của `(handle, op)` — idempotent.
+    fn frame_real_done(&mut self, handle: &str, op: ReactorOp) {
+        let regs: Vec<ReactorReg> = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .filter(|r| r.handle == handle && r.op == op)
+            .cloned()
+            .collect();
+        for r in &regs {
+            if let Some(b) = self.frame.backend.clone() {
+                let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
+            }
+            self.frame.token_map.remove(&r.token);
+        }
+        self.frame
+            .reactor
+            .regs
+            .retain(|r| !(r.handle == handle && r.op == op));
+    }
+
+    /// `read`/`accept` thật: thử I/O trước; `WouldBlock` ⇒ đăng ký/re-arm + `Pending`.
+    /// Kết quả EOF/lỗi/hết giờ gỡ đăng ký đúng một lần rồi trả `Result` (không trap).
+    fn frame_real_poll(
+        &mut self,
+        b: &Rc<RefCell<dyn FrameReactorBackend>>,
+        op: ReactorOp,
+        handle: &str,
+        max: usize,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Value> {
+        let outcome = match op {
+            ReactorOp::Read => b.borrow_mut().try_read(handle, max),
+            ReactorOp::Accept => b.borrow_mut().try_accept(handle),
+        };
+        match outcome {
+            ReactorIoOutcome::Data(bytes) => {
+                self.frame_real_done(handle, op);
+                self.frame.reactor.log.push(format!("rdone:{}", handle));
+                return Ok(ok_str(String::from_utf8_lossy(&bytes)));
+            }
+            ReactorIoOutcome::Accepted(new_handle) => {
+                self.frame_real_done(handle, op);
+                self.frame.reactor.log.push(format!("raccepted:{}", handle));
+                return Ok(ok_str(new_handle));
+            }
+            ReactorIoOutcome::Err(msg) => {
+                self.frame_real_done(handle, op);
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rerr:{}:{}", handle, msg));
+                return Ok(err_str(msg));
+            }
+            ReactorIoOutcome::WouldBlock => {}
+        }
+
+        let deadline = if timeout_ms > 0 {
+            Some(Instant::now() + Duration::from_millis(timeout_ms as u64))
+        } else {
+            None // timeout không dương: không có hạn riêng, vẫn có trần chờ selector
+        };
+        let existing = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .find(|r| r.handle == handle && r.op == op)
+            .cloned();
+
+        let (key, gen) = match existing {
+            Some(r) => {
+                // Waiter MỚI join cùng `(handle, op)` khi reg đã có: dùng chung key/gen,
+                // KHÔNG re-arm (re-arm ở đây sẽ làm mất wake của waiter trước đó).
+                let notified = self.frame.reactor.fired.get(&r.key).copied() == Some(r.gen);
+                if !notified {
+                    self.frame
+                        .reactor
+                        .log
+                        .push(format!("rjoin:{}:{}:{}", r.key, r.gen, self.frame.current));
+                    return Err(Abort::Pending(Pending {
+                        task: None,
+                        span,
+                        wait: Some(Wait::Reactor {
+                            key: r.key,
+                            gen: r.gen,
+                        }),
+                    }));
+                }
+                // Hết hạn riêng ⇒ timeout, gỡ đúng một lần (wake đã đưa frame tới đây).
+                if r.deadline.map(|d| Instant::now() >= d).unwrap_or(false) {
+                    self.frame_real_done(handle, op);
+                    self.frame
+                        .reactor
+                        .log
+                        .push(format!("rtimeout:{}:{}", handle, r.key));
+                    return Ok(err_str(format!(
+                        "quá thời gian chờ dữ liệu từ `{handle}` sau {timeout_ms} ms"
+                    )));
+                }
+                // Thức giả (wake nhưng vẫn WouldBlock): token MỚI + gen MỚI ⇒ wake cũ stale.
+                let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
+                self.frame.token_map.remove(&r.token);
+                let gen = r.gen + 1;
+                let token = self.mint_token();
+                if let Err(e) = b.borrow_mut().register(token, handle, op) {
+                    self.frame_real_done(handle, op);
+                    return Ok(err_str(format!(
+                        "lỗi đăng ký readiness cho `{handle}`: {e}"
+                    )));
+                }
+                self.frame.token_map.insert(token, (r.key, gen));
+                if let Some(reg) = self.frame.reactor.regs.iter_mut().find(|x| x.key == r.key) {
+                    reg.gen = gen;
+                    reg.token = token;
+                    // Giữ deadline ban đầu ⇒ tổng thời gian chờ không bị reset bởi wake giả.
+                }
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rrearm:{}:{}:{}", r.key, gen, token));
+                (r.key, gen)
+            }
+            None => {
+                let key = self.frame.reactor.next_key;
+                self.frame.reactor.next_key += 1;
+                let token = self.mint_token();
+                if let Err(e) = b.borrow_mut().register(token, handle, op) {
+                    return Ok(err_str(format!(
+                        "lỗi đăng ký readiness cho `{handle}`: {e}"
+                    )));
+                }
+                self.frame.token_map.insert(token, (key, 0));
+                self.frame.reactor.regs.push(ReactorReg {
+                    key,
+                    handle: handle.to_string(),
+                    op,
+                    frame: self.frame.current,
+                    gen: 0,
+                    token,
+                    deadline,
+                });
+                self.frame.reactor.log.push(format!(
+                    "rreg:{}:{}:{:?}:{}:{}",
+                    key, handle, op, self.frame.current, timeout_ms
+                ));
+                (key, 0)
+            }
+        };
+        Err(Abort::Pending(Pending {
+            task: None,
+            span,
+            wait: Some(Wait::Reactor { key, gen }),
+        }))
+    }
+
+    /// Scheduler rảnh + có adapter: chờ selector tới deadline gần nhất (có trần),
+    /// rồi đưa event thật vào `wake_reactor`. Hết hạn ⇒ wake để retry trả timeout.
+    fn frame_idle_real(&mut self) -> bool {
+        // Không có đăng ký nào ⇒ không có gì đánh thức: KHÔNG ngủ (tránh chờ vô ích).
+        if self.frame.reactor.regs.is_empty() {
+            return false;
+        }
+        const CAP: Duration = Duration::from_secs(5);
+        let now = Instant::now();
+        let nearest = self
+            .frame
+            .reactor
+            .regs
+            .iter()
+            .filter_map(|r| r.deadline)
+            .min();
+        let timeout = match nearest {
+            Some(d) if d > now => (d - now).min(CAP),
+            Some(_) => Duration::from_millis(1), // đã quá hạn: không chờ 0, đợi 1 ms rồi xử lý
+            None => CAP,
+        };
+        let b = match self.frame.backend.clone() {
+            Some(b) => b,
+            None => return false,
+        };
+        let events = match b.borrow_mut().wait(timeout) {
+            Ok(e) => e,
+            Err(e) => {
+                self.frame.selector_error = Some(format!("lỗi selector khi chờ readiness: {e}"));
+                self.frame.reactor.log.push(format!("rselerr:{}", e));
+                return false;
+            }
+        };
+        let mut woke = false;
+        for ev in events {
+            let flags = format!(
+                "{}{}{}",
+                if ev.readable { "r" } else { "-" },
+                if ev.hup { "h" } else { "-" },
+                if ev.error { "e" } else { "-" }
+            );
+            let Some((key, gen)) = self.frame.token_map.remove(&ev.token) else {
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rstale:token:{}", ev.token));
+                continue;
+            };
+            let live = self
+                .frame
+                .reactor
+                .regs
+                .iter()
+                .find(|r| r.key == key)
+                .map(|r| r.gen);
+            if live != Some(gen) {
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rstale:{}:{}", key, gen));
+                continue;
+            }
+            self.frame
+                .reactor
+                .log
+                .push(format!("rev:{}:{}:{}", key, gen, flags));
+            // Đánh dấu đã giao event cho thế hệ này — lần retry tiếp theo mới được
+            // coi là "wake thật" và re-arm; waiter MỚI.join cùng reg thì không.
+            self.frame.reactor.fired.insert(key, gen);
+            self.wake_reactor(key, gen);
+            woke = true;
+        }
+        if !woke {
+            // `now` được lấy TRƯỚC khi chờ — phải tính lại sau `poll`, nếu không
+            // deadline vừa hết sẽ không được coi là hạn (timeout bị nuốt).
+            let now = Instant::now();
+            let expired: Vec<(u64, u64)> = self
+                .frame
+                .reactor
+                .regs
+                .iter()
+                .filter(|r| r.deadline.map(|d| d <= now).unwrap_or(false))
+                .map(|r| (r.key, r.gen))
+                .collect();
+            for (key, gen) in expired {
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("rdeadline:{}:{}", key, gen));
+                self.frame.reactor.fired.insert(key, gen);
+                self.wake_reactor(key, gen);
+                woke = true;
+            }
+        }
+        woke
     }
 }
 

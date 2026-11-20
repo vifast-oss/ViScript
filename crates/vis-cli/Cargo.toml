@@ -50,3 +50,11 @@ rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled
 # crate này vào (nó `#![cfg(target_os = "linux")]`), nên ma trận `cargo check --target` vẫn 18/18.
 [target.'cfg(target_os = "linux")'.dependencies]
 vis-host-linux = { path = "../../vis-host-linux" }
+
+# **ST-271 / VD-254 (Lát 3)** — readiness selector thật cho đường frame test (`net.read`/
+# `net.accept`); cfg Linux-only, KHÔNG vào core crate (wasm32), KHÔNG có `log` (tắt qua
+# `default-features = false`). Adapter nằm hoàn toàn ở test integration của đường frame
+# test-only ⇒ khai dev-dependency để không lọt vào artifact `vis` phát hành.
+# A0 duyệt ghim tuyệt đối `=1.2.5` (MIT); transitive trên Linux chỉ `libc` (đã có).
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+mio = { version = "=1.2.5", default-features = false, features = ["os-poll", "net"] }

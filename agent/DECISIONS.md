@@ -2714,3 +2714,72 @@ chưa mở worker/GC/TLS/API.
 >   `bin/_vis-toolchain.sh` sẽ từ chối rõ (exit 78) thay vì âm thầm chọn cargo cũ.
 >
 > Đây là **quyết định mới**, không sửa ngược VD-252; VD-252 §6 được hiểu là bị override ở điểm MSRV.
+
+
+### VD-254 · Duyệt `mio` và Lát 3 — readiness thật trên Linux (VD-252 tiếp) — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: checkpoint
+> `agent/BAO-CAO-CHECKPOINT-LAT2-2026-11-20.md` + đề xuất dependency đã kiểm chứng. Ghi **VD mới**;
+> không sửa VD-252/253. Dựa trên hồ sơ, không phải xác nhận A0 tự kiểm registry/lockfile/repo.
+
+#### 1. Nghiệm thu Lát 2 & chỉnh kết luận
+
+ST-268 **DONE cho phạm vi reactor giả** (test wake/generation/đăng ký lại/timeout/cleanup). Kết luận
+đổi thành: *"Đường frame đã chứng minh `Pending` trả quyền cho scheduler và các khoảng chờ mô phỏng
+có thể chồng lấp. **Chưa** chứng minh readiness mạng thật hoặc hiệu năng I/O thật."*
+
+Ghi riêng ba nhãn: **B1-sim** 201,2–201,5 ms (reactor giả) · **B1-real-default** 4,03–4,04 s (runtime
+mặc định) · **B1-real-frame** **chưa đo, chờ Lát 3**. **Không** dùng tỷ lệ giữa hai cơ chế làm tuyên
+bố tăng tốc mạng sản phẩm. Đây là chỉnh phạm vi bằng chứng, không phủ nhận kết quả scheduler.
+
+#### 2. Duyệt dependency cụ thể
+
+Duyệt **`mio = "=1.2.5"`**, `default-features = false`, `features = ["os-poll","net"]`. Điều kiện:
+- Chỉ đặt trong **crate thực sự sở hữu adapter**, không thêm rộng vào mọi crate.
+- Giới hạn Linux bằng cfg như đề xuất; adapter thật **chỉ kích hoạt qua đường thử nghiệm nội bộ**.
+- **Không thêm `unsafe` trong mã dự án**.
+- Review diff `Cargo.lock`: đúng phiên bản/nguồn registry/dependency phát sinh; **không cập nhật**
+  dependency không liên quan.
+- Ghi **giấy phép + thông báo bên thứ ba** theo chính sách ViScript.
+- Kiểm lại **Windows và ma trận core/wasm** sau tích hợp — cfg là thiết kế phòng ngừa, **không phải
+  bằng chứng "không hồi quy"**.
+- **Không chọn `polling`** đợt này; số chỗ `unsafe` không phải thước đo độc lập để kết luận an toàn
+  hơn. Nếu package/metadata thực tế khác hồ sơ ⇒ **dừng phần dependency, báo lại**, không tự đổi version.
+
+#### 3. Lát 3 — readiness thật Linux (trên đường frame thử, cả hai engine)
+
+Được: adapter selector cho `read`/`accept`; đăng ký/đăng ký lại/hủy đăng ký; chờ selector với thời
+gian tới deadline monotonic gần nhất; nối sự kiện thật vào scheduler/frame hiện có; test loopback
+thật trên **interp và VM**. **Chưa** thay runtime mặc định; **không** đổi API công khai/`VERSION`/cache,
+không thêm CLI flag phát hành. `connect`/`write` vẫn có thể chặn ⇒ kết quả chỉ gọi là **read/accept
+không chặn trên đường thử nghiệm**, chưa phải async mạng hoàn thiện.
+
+**Quy tắc adapter**: readiness là tín hiệu **thử thao tác**, không cam kết có dữ liệu; `WouldBlock`
+không tạo vòng quay nóng/mất wake; **token phân biệt thế hệ đăng ký**, không chỉ dùng số FD; đóng
+socket/timeout/hủy đăng ký vô hiệu event cũ; FD tái sử dụng không đánh thức nhầm; quy định rõ phục vụ
+**nhiều waiter** cùng socket/listener; lỗi selector phải truyền thành **lỗi rõ**, không diễn thành
+"không có sự kiện"; không có ready task thì chờ selector/timer, **không lặp poll timeout 0**.
+
+#### 4. Nghiệm thu Lát 3
+
+- **Mạng thật**: `read` dữ liệu/EOF/lỗi/timeout; `accept` chưa có client rồi có client; nhiều kết nối
+  chờ đồng thời; đóng khi đang chờ, event cũ, FD/token tái sử dụng; **không đánh giá lại đối số/không
+  lặp side-effect** khi builtin resume; cleanup về baseline sau khi thả handle. Reactor giả vẫn dùng
+  kiểm parity theo trace; mạng thật kiểm dữ liệu + quan hệ thứ tự **bắt buộc**, không ép thứ tự output
+  giữa kết nối độc lập.
+- **B1-real-frame**: server thật trễ 200 ms, đo 1/5/20 kết nối, lặp nhiều lần; ghi riêng **startup,
+  workload, số kết nối thành công**; phải **chồng lấp**, không gần N×200 ms; ~0,3 s là mục tiêu quan
+  sát, **không ngưỡng CI cứng**.
+- **B2 & step-cap vẫn mở**, không cần giải fairness CPU ở Lát 3.
+- **Evaluator**: giữ explicit rejection; **không fallback đồng bộ để làm B1 xanh**. Trước khi đổi
+  runtime mặc định ở bước sau vẫn phải khép coverage HIR + closure/writeback — thành công reactor
+  **không thay thế** nghĩa vụ đó.
+
+#### 5. MSRV & bàn giao
+
+VD-253 là quyết định override của chủ trì; giữ toolchain/MSRV **1.100.0**, **không sửa hồ sơ lịch sử**,
+không mở lại tranh luận ở Lát 3. Phiếu bàn giao tiếp theo cần: commit tích hợp + diff dependency; test
+mạng thật/reactor giả/cleanup; **B1-real-frame so với baseline mặc định**; Windows/core/wasm có hồi
+quy hay không; coverage + blocker còn lại.
+
+**Dừng trình A0 sau Lát 3**; tag/release **PAUSED**; chưa mở worker/GC/TLS.

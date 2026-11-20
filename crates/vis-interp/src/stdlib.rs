@@ -540,9 +540,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                     Err(e) => return Ok(Value::err(Value::ban_ghi_error(e, None))),
                 };
                 let _ = n; // trần `NET_READ_CAP` đã kiểm; reactor giả không cấp phát byte.
-                return host.sched().borrow_mut().frame_reactor_poll(
+                return host.sched().borrow_mut().frame_reactor_poll_io(
                     ReactorOp::Read,
                     tay,
+                    n,
                     timeout,
                     span,
                 );
@@ -570,6 +571,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         "net.close" => {
             let tay = chuoi(name, &args[0], 0, span)?;
+            // Lát 3: trên đường frame có adapter thật ⇒ đóng socket + vô hiệu mọi
+            // đăng ký/stale event của tay này, không cần host mạng mặc định.
+            let backend = host.sched().borrow().frame.backend.clone();
+            if let Some(b) = backend {
+                host.sched().borrow_mut().frame_reactor_cancel_handle(tay);
+                return hop_nhat_fs(b.borrow_mut().close(tay).map(|()| Value::Unit), span);
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.close(tay).map(|()| Value::Unit), span)
         }
@@ -594,9 +602,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             };
             // ST-268/VD-252 (Lát 2): accept trên đường frame test = reactor giả.
             if host.sched().borrow().frame.enabled {
-                return host.sched().borrow_mut().frame_reactor_poll(
+                return host.sched().borrow_mut().frame_reactor_poll_io(
                     ReactorOp::Accept,
                     tay,
+                    0,
                     timeout,
                     span,
                 );

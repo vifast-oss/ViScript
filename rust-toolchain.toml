@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # Ghim phiên bản toolchain phát triển/CI (VD-252): bản cố định 1.100.0, không phải kênh
-# `stable` chuyển động. MSRV của package (`rust-version`) giữ nguyên 1.99.1 — không tự nâng.
+# `stable` chuyển động. MSRV của package (`rust-version`) cũng là 1.100.0 (Cargo.toml) — không tự nâng.
 [toolchain]
 channel = "1.100.0"
 components = ["rustfmt", "clippy"]

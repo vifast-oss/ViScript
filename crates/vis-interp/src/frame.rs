@@ -21,7 +21,7 @@ use vis_syntax::{Diagnostic, Span};
 use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
-use crate::rt::{self, DiagSnapshot, FakeEvent, ReactorEvent, Waiter};
+use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent, Waiter};
 use crate::value::Value;
 
 /// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
@@ -36,6 +36,9 @@ pub struct FrameConfig {
     /// **Lát 2**: `true` ⇒ khi rảnh, ngủ một lần tới deadline monotonic gần nhất (đo B1).
     #[doc(hidden)]
     pub timer_real_wait: bool,
+    /// **Lát 3 (chỉ test)**: adapter selector thật. `None` ⇒ đường reactor giả Lát 2.
+    #[doc(hidden)]
+    pub backend: Option<std::rc::Rc<std::cell::RefCell<dyn FrameReactorBackend>>>,
 }
 
 /// Kết quả frame test — kèm log scheduler (tất định) + snapshot ownership.
@@ -197,6 +200,9 @@ pub fn run_frame_for_test<'a>(
     it.sched
         .borrow_mut()
         .frame_reactor_load_for_test(config.reactors, config.timer_real_wait);
+    if let Some(b) = config.backend {
+        it.sched.borrow_mut().frame_install_backend_for_test(b);
+    }
 
     let mut current: u32 = 0;
     let mut final_value: Option<Value> = None;
@@ -304,6 +310,10 @@ pub fn run_frame_for_test<'a>(
         // sống vào đuôi ready theo thứ tự tạo (không auto-cancel — VD-250 §2.3).
         let need_join = frames.get(&0).map(|f| f.done()).unwrap_or(true);
         let next = it.sched.borrow_mut().frame_next();
+        // Lát 3: lỗi selector là điểm dừng — KHÔNG final-join rồi chạy lại vô hạn.
+        if it.sched.borrow().frame.selector_error.is_some() {
+            break;
+        }
         let next = match next {
             Some(n) => Some(n),
             None if need_join => {
@@ -349,6 +359,12 @@ pub fn run_frame_for_test<'a>(
 
     // Main kết thúc ⇒ mọi env/handle của chương trình biến mất. Bỏ frame trước khi
     // thu hồi để `Rc::strong_count` phản ánh đúng "không còn handle sống".
+    // Lát 3: lỗi selector là trap RÕ — không được hiểu nhầm là "không có event".
+    if trap.is_none() {
+        if let Some(e) = it.sched.borrow_mut().frame_take_selector_error() {
+            trap = Some(Trap::new(RT, e, Span::new(0, 0)));
+        }
+    }
     frames.clear();
     // Fire nốt trace (duplicate/stale vẫn được log) rồi final join + thu hồi ownership.
     it.sched.borrow_mut().frame_drain_events();

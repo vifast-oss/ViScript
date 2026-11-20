@@ -110,7 +110,9 @@ handle hợp lệ** (r1, r4, r5, r6, r7, r8, b1 đều assert baseline).
 
 ## 5. B1 / B2 — số đo
 
-### B1 — 20 task × 200 ms, QUA ĐƯỜNG TEST
+### B1-sim — 20 task × 200 ms, QUA ĐƯỜNG TEST (REACTOR GIẢ)
+
+Theo VD-254: đây là **B1-sim**, **không** phải B1-real-frame. B1-real-frame chưa đo, chờ Lát 3.
 Chương trình 20 `async fn` mỗi cái `net.read("Ci", 64, 1000)`; 20 event reactor có
 `deadline_ms=200` (mô phỏng server delay 200 ms), `timer_real_wait=true`. Delay là timer
 monotonic đồng thời — **KHÔNG phải mạng thật**.
