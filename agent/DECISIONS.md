@@ -3434,3 +3434,10 @@ Không đọc môi trường/tệp/mạng.
 - **path.is_relative**: `(str) -> bool` = `!path.is_abs` cùng quy tắc POSIX; rỗng ⇒ `true`;
   không sugar.
 - **str.is_ascii**: `(str) -> bool` đúng ⇔ mọi byte `0x00..=0x7F`; rỗng ⇒ `true`; sugar R5c.
+
+### VD-270 (bổ sung) · sqlite.table_exists — A0, 2026-11-21
+
+`sqlite.table_exists(handle, name) -> Result[bool, Error]` đúng ⇔ schema chính có **bảng hoặc view**
+tên đúng (`type IN ('table','view')`, `name` bind BINARY/phân biệt hoa-thường); thiếu/empty ⇒
+`Ok(false)`; index/trigger trùng tên không tính; TEMP không thuộc main; handle lỗi ⇒ `Err` dữ liệu;
+reuse `Ty::ResultBoolErr`.

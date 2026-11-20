@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `ff780d4` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `7bef0b3` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2745 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2755 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -111,12 +111,13 @@
 | List median | `b7b2e2e` → `a742e2b` | `list.median` — NaN ⇒ `None` |
 | Path is relative | `dd0df10` → `55b0374` | `path.is_relative` = `!is_abs` |
 | Str is ascii | `8ac13ae` → `ff780d4` | `str.is_ascii` mọi byte ASCII |
+| SQLite table exists | `1458d45` → `7bef0b3` | `sqlite.table_exists` BINARY, bảng/view |
 | Version | trực tiếp | `vis version [--json]` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2745 passed / 3 skipped** tại `ff780d4`.
+- `./vis-dev gate --fast`: **PASS — 2755 passed / 3 skipped** tại `7bef0b3`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -306,3 +307,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **list-median** (`b7b2e2e` → `a742e2b`): `list.median(list[float]) -> float?`; NaN đầu vào ⇒ `None`, copy+sắp, chẵn trung bình; sugar.
 - **path-is-relative** (`dd0df10` → `55b0374`): `path.is_relative` = `!is_abs`, không sugar.
 - **str-is-ascii** (`8ac13ae` → `ff780d4`): `str.is_ascii` mọi byte `0x00..=0x7F`, sugar; tách `frame_net` giữ R1.
+- **sqlite-table-exists** (`1458d45` → `7bef0b3`): `sqlite.table_exists` bảng/view schema chính, tên bind BINARY; thiếu ⇒ `Ok(false)`; TEMP/index/trigger không tính.
