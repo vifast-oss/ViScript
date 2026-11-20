@@ -32,6 +32,7 @@ mod sqlite_explain;
 mod strfind;
 mod strlen;
 mod strpad;
+mod strreplace;
 mod strstrip;
 mod strtrim;
 pub use chung::DAU_QUYEN;
@@ -249,6 +250,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(s.replace(tu, den)))
+        }
+        // **VD-270 (replace-first)**: chỉ thay **lần đầu** (Rust `replacen(…, 1)`), cùng đơn vị
+        // scalar Unicode với `str.replace`/`find`; `from` rỗng ⇒ chèn `to` một lần ở đầu;
+        // không khớp ⇒ `s` nguyên vẹn. Lõi ở `stdlib/strreplace.rs`.
+        "str.replace_first" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let tu = chuoi(name, &args[1], 1, span)?;
+            let den = chuoi(name, &args[2], 2, span)?;
+            Ok(Value::Str(strreplace::replace_first(s, tu, den)))
         }
         // **VD-270 (strfind)**: offset scalar Unicode; `find`/`rfind` ⇒ `int?`, `count` ⇒ `int`.
         "str.find" | "str.rfind" | "str.count" => {
