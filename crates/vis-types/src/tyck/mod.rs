@@ -19,18 +19,20 @@ mod expr;
 mod flow;
 mod num;
 mod pat;
+mod phuong_thuc;
 mod sig;
 mod truong;
 mod vd238;
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 
+use phuong_thuc::{GAN_LONG, GAN_PHAN_TU_LET, GAN_TRUONG_LET};
 use sig::FnSig;
 
 use vis_diag::{NAME_CODES, TYPE_CODES};
 use vis_syntax::{Diagnostic, Span};
 
-use crate::hir::{HExpr, HImpl, HItem, HStmt, Hir};
+use crate::hir::{HExpr, HItem, HStmt, Hir};
 use crate::lower::{SymKind, Symbols};
 use crate::ty::{EnumId, RecId, Type, TypeTable};
 
@@ -176,6 +178,9 @@ pub(crate) struct Checker<'a> {
     in_value: bool,
     /// **VD-259** — use-set của thân hàm hiện tại (cho or-pattern trong `let`).
     fn_uses: BTreeSet<u32>,
+    /// **VD-262** — đang kiểm thân phương thức: phép gán đã do `kiem_impl` (lượt khai báo) kiểm
+    /// đích nên lượt này lược chẩn đoán gán để không báo trùng (vẫn kiểm biểu thức hai bên).
+    bo_qua_gan_pt: bool,
 }
 
 impl<'a> Checker<'a> {
@@ -197,6 +202,7 @@ impl<'a> Checker<'a> {
             loop_depth: 0,
             in_value: false,
             fn_uses: BTreeSet::new(),
+            bo_qua_gan_pt: false,
         }
     }
 
@@ -932,6 +938,8 @@ impl<'a> Checker<'a> {
             HItem::Rec(r) => truong::kiem_khai_rec(self, r),
             HItem::Enum(e) => truong::kiem_khai_enum(self, e),
             HItem::Const(c) => truong::kiem_const(self, c),
+            // **VD-262**: thân phương thức `impl` được kiểm như hàm (ngữ cảnh + luồng + tên).
+            HItem::Impl(im) => self.kiem_impl_than(im),
             _ => {}
         }
     }
@@ -1043,6 +1051,13 @@ impl<'a> Checker<'a> {
                 value,
                 span,
             } => {
+                // **VD-262**: thân phương thức — đích gán đã do `kiem_impl` (lượt khai báo) kiểm;
+                // ở đây chỉ kiểm biểu thức (bắt tên lạ) để không báo trùng.
+                if self.bo_qua_gan_pt {
+                    self.kiem_expr(target);
+                    self.kiem_expr(value);
+                    return Type::Unit;
+                }
                 let wanted = self.kiem_dich(target, *op);
                 let got = self.kiem_expr(value);
                 let _ = span;
@@ -1364,120 +1379,4 @@ impl<'a> Checker<'a> {
             _ => Type::Error,
         }
     }
-
-    /// **ST-56b (VD-97)**: thân **phương thức `impl`** (khung VS1) **chưa** được tyck đầy đủ — nhưng
-    /// **phép gán** phải chặn **trước** để interp ↔ `--vm` không lệch:
-    ///   * `self` **không** `var` là **tham số bất biến** ⇒ `self.x = v` / `self[i] = v` ⇒ **`VS0412`**
-    ///     tại **phép gán**; `var self` **được** (rebind cục bộ, VD-97 (2)).
-    ///   * `let`/tham số thường bất biến; `var` (kể cả biến cục bộ trong thân) **được**.
-    ///   * gán ghép `+=` trên trường/phần tử **chưa** hỗ trợ ⇒ `VS0412`.
-    ///
-    /// Chỉ kiểm **đích gán**; kiểm kiểu **đầy đủ** thân `impl` (cần dispatch phương thức trong tyck)
-    /// vẫn là **nợ riêng**, ghi JOURNAL.
-    fn kiem_impl(&mut self, im: &HImpl) {
-        for m in &im.methods {
-            let mut duoc_gan: HashSet<u32> = HashSet::new();
-            for p in &m.params {
-                if p.is_var_self {
-                    duoc_gan.insert(p.sym);
-                }
-            }
-            self.kiem_gan_than(&m.body, &mut duoc_gan);
-        }
-    }
-
-    /// Duyệt thân phương thức, chỉ kiểm **đích gán**; theo dõi biến `var` để **không** báo oan.
-    fn kiem_gan_than(&mut self, body: &[HStmt], duoc_gan: &mut HashSet<u32>) {
-        for s in body {
-            match s {
-                HStmt::Var { sym, .. } => {
-                    duoc_gan.insert(*sym);
-                }
-                HStmt::Assign {
-                    target, op, span, ..
-                } => {
-                    // **ST-60b**: gốc đi **xuống** qua `Field`/`Index` (không chỉ `Var` trực tiếp).
-                    let goc_la_var = |t: &HExpr| {
-                        vd238::goc_dich(t)
-                            .map(|id| duoc_gan.contains(&id))
-                            .unwrap_or(false)
-                    };
-                    let gan_ghep = !matches!(op, crate::hir::AssignOp::Set);
-                    match target {
-                        HExpr::Var { sym: Some(id), .. } => {
-                            if !duoc_gan.contains(id) {
-                                self.diag(
-                                    GAN_BAT_BIEN,
-                                    "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
-                                    *span,
-                                );
-                            }
-                        }
-                        HExpr::Field { .. } => {
-                            if gan_ghep {
-                                self.diag(MISMATCH, GAN_GHEP, *span);
-                            } else if !vd238::dich_ha_duoc(target) {
-                                if goc_la_var(target) {
-                                    self.diag(MISMATCH, GAN_LONG, *span);
-                                } else {
-                                    self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
-                                }
-                            } else if !goc_la_var(target) {
-                                self.diag(GAN_BAT_BIEN, GAN_TRUONG_LET, *span);
-                            }
-                        }
-                        HExpr::Index { .. } => {
-                            if gan_ghep {
-                                self.diag(MISMATCH, GAN_GHEP, *span);
-                            } else if !vd238::dich_ha_duoc(target) {
-                                if goc_la_var(target) {
-                                    self.diag(MISMATCH, GAN_LONG, *span);
-                                } else {
-                                    self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
-                                }
-                            } else if !goc_la_var(target) {
-                                self.diag(GAN_BAT_BIEN, GAN_PHAN_TU_LET, *span);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                HStmt::If {
-                    then, elifs, else_, ..
-                } => {
-                    self.kiem_gan_than(then, duoc_gan);
-                    for (_, b) in elifs {
-                        self.kiem_gan_than(b, duoc_gan);
-                    }
-                    if let Some(b) = else_ {
-                        self.kiem_gan_than(b, duoc_gan);
-                    }
-                }
-                HStmt::For { body, .. }
-                | HStmt::While { body, .. }
-                | HStmt::Loop { body, .. }
-                | HStmt::Scope { body, .. }
-                | HStmt::Block { body, .. } => self.kiem_gan_than(body, duoc_gan),
-                HStmt::Match { arms, .. } => {
-                    for a in arms {
-                        self.kiem_gan_than(&a.body, duoc_gan);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
 }
-
-/// **ST-56b (VD-97)**: thông điệp gán ghép trên trường/phần tử (dùng chung cho thân `impl`).
-const GAN_GHEP: &str =
-    "chỉ gán được `=` cho trường/phần tử (gán ghép `+=` … trên trường chưa hỗ trợ, §4.1)";
-/// Thông điệp gán **trường** của `let`/tham số.
-const GAN_TRUONG_LET: &str =
-    "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)";
-/// Thông điệp gán **phần tử** của `let`/tham số.
-const GAN_PHAN_TU_LET: &str = "chỉ gán được phần tử của `var` — `let`/tham số là bất biến (§4.1)";
-/// **ST-60b**: đích **lồng** (sâu hơn một tầng trường/chỉ số) — gốc **đã** là `var` nên lỗi là do
-/// **hình dạng đích**, không phải do bất biến; nêu đúng vậy thay vì báo oan "let/tham số".
-const GAN_LONG: &str =
-    "gán **lồng** (`x.f[i]`/`x[i][j]`/`x.f.g`) chưa hỗ trợ — gán lại cả biến `var` bằng `with`/giá trị mới (§4.1)";
