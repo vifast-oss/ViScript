@@ -61,11 +61,16 @@ fn vis_stdin(args: &[&str], stdin: &[u8]) -> (i32, String, String) {
         .stderr(Stdio::piped())
         .spawn()
         .expect("chạy `vis`");
-    con.stdin
-        .take()
-        .expect("stdin pipe")
-        .write_all(stdin)
-        .expect("ghi stdin");
+    // CLI có thể từ chối tham số **trước khi** đọc stdin (vd `--stdin --json` thiếu `--check`)
+    // ⇒ ống đóng sớm; BrokenPipe là hợp lệ, không phải lỗi test.
+    {
+        let mut vao = con.stdin.take().expect("stdin pipe");
+        if let Err(e) = vao.write_all(stdin) {
+            if e.kind() != std::io::ErrorKind::BrokenPipe {
+                panic!("ghi stdin: {e}");
+            }
+        }
+    }
     let o = con.wait_with_output().expect("chờ `vis`");
     (
         o.status.code().unwrap_or(-1),
