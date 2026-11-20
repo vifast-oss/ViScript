@@ -101,7 +101,9 @@ pub(crate) fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> 
             // **VD-270 (fsbytes)**: `Result[list[int], Error]` là kiểu **trả** của `fs.read_bytes`.
             | Ty::ResultListIntErr
             // **VD-270 (strfind)**: `int?` là kiểu **trả** của `str.find`/`str.rfind`.
-            | Ty::OptInt => true,
+            | Ty::OptInt
+            // **VD-270 (strstrip)**: `str?` là kiểu **trả** của `str.strip_prefix`/`strip_suffix`.
+            | Ty::OptStr => true,
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
             Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
             Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),

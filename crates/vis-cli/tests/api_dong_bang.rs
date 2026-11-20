@@ -147,6 +147,8 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::OptInt => "int?".to_string(),
         // **VD-270 (fsbytes)**: `Result[list[int], Error]` (`std.fs.read_bytes`).
         Ty::ResultListIntErr => "Result[list[int], Error]".to_string(),
+        // **VD-270 (strstrip)**: `str?` = `Option[str]` (kiểu trả `str.strip_prefix`/`strip_suffix`).
+        Ty::OptStr => "str?".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
         Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
         Ty::List(t) => format!("list[{}]", kieu_ty(t)),

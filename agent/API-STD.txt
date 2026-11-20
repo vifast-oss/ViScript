@@ -105,6 +105,8 @@ str.rfind	(str, str) -> int?
 str.split	(str, str) -> list[str]
 str.split_whitespace	(str) -> list[str]
 str.starts_with	(str, str) -> bool
+str.strip_prefix	(str, str) -> str?
+str.strip_suffix	(str, str) -> str?
 str.trim	(str) -> str
 str.trim_end	(str) -> str
 str.trim_end_matches	(str, str) -> str

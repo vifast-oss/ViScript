@@ -31,8 +31,8 @@ mod sqlite_explain;
 mod strfind;
 mod strlen;
 mod strpad;
+mod strstrip;
 mod strtrim;
-
 pub use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
 
@@ -214,6 +214,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 _ => s.contains(p),
             };
             Ok(Value::Bool(ok))
+        }
+        // **VD-270 (strstrip)**: bỏ **đúng một lần** tiền tố/hậu tố ở **đầu/cuối**; khớp ⇒
+        // `Some(phần còn lại)`, không khớp ⇒ `None`; affix rỗng ⇒ `Some(s)` (nghĩa Rust
+        // `strip_prefix`/`strip_suffix`). Đơn vị khớp theo byte nhưng biên luôn là ranh giới
+        // scalar Unicode; lõi ở `stdlib/strstrip.rs`.
+        "str.strip_prefix" | "str.strip_suffix" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let moc = chuoi(name, &args[1], 1, span)?;
+            Ok(strstrip::goi(name, s, moc))
         }
         "str.repeat" => {
             let s = chuoi(name, &args[0], 0, span)?;

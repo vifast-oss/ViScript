@@ -61,6 +61,10 @@ pub enum Ty {
     /// **VD-270 (fsbytes)** — `Result[list[int], Error]`: kiểu trả của `std.fs.read_bytes`
     /// (mỗi phần tử là một byte `0..=255`).
     ResultListIntErr,
+    /// **VD-270 (strstrip)** — `str?` = `Option[str]`: kiểu trả của `std.str.strip_prefix`/
+    /// `strip_suffix` (phần còn lại khi khớp; không khớp ⇒ `None`). `Ty` không có biến thể
+    /// `Opt` tổng quát, nên giữ biến riêng theo đúng mẫu `OptInt`.
+    OptStr,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -106,6 +110,8 @@ impl Ty {
                 Box::new(Type::List(Box::new(Type::Int))),
                 Box::new(Self::Error.sang_type()),
             ),
+            // **VD-270 (strstrip)** — `str?` là `Option[str]` thật.
+            Ty::OptStr => Type::Opt(Box::new(Type::Str)),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -160,6 +166,8 @@ impl Ty {
             Ty::OptInt => "int?",
             // **VD-270 (fsbytes)**
             Ty::ResultListIntErr => "Result[list[int], Error]",
+            // **VD-270 (strstrip)**
+            Ty::OptStr => "str?",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -207,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 104] = [
+pub const FUNCS: [StdFn; 106] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -278,6 +286,19 @@ pub const FUNCS: [StdFn; 104] = [
         name: "str.count",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::Int,
+    },
+    // **VD-270 (strstrip)**: bỏ **một lần** tiền tố/hậu tố đúng nguyên văn; khớp ⇒
+    // `Some(phần còn lại)`, không khớp ⇒ `None`; affix rỗng ⇒ `Some(s)`. Cùng tham số đầu
+    // `str` nên sugar R5c `s.strip_prefix(…)`/`s.strip_suffix(…)` chạy không cần `use`.
+    StdFn {
+        name: "str.strip_prefix",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptStr,
+    },
+    StdFn {
+        name: "str.strip_suffix",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptStr,
     },
     StdFn {
         name: "str.repeat",
