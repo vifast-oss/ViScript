@@ -253,7 +253,7 @@ fn load_cases() -> Vec<(Mode, Case)> {
 /// `f64` không in lại được `1e-9` theo `Display`; giá trị số của chúng do `lit`/ST-05 kiểm.
 fn payload_of(tok: &Token) -> Option<String> {
     Some(match tok.kind {
-        Kind::Int => lit::decode_int(&tok.text).ok()?.to_string(),
+        Kind::Int => lit::decode_int_magnitude(&tok.text).ok()?.to_string(),
         Kind::Float => tok.text.clone(),
         Kind::Percent => tok.text.strip_suffix("pct")?.to_string(),
         Kind::Size => {

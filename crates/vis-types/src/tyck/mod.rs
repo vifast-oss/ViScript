@@ -56,6 +56,9 @@ pub(crate) const TOAN_TU: &vis_diag::Code = &TYPE_CODES[6];
 pub(crate) const ASYNC_SAI_CHO: &vis_diag::Code = &TYPE_CODES[7];
 /// Mã `VS0416` — range không `int` — R9 (VD-178).
 pub(crate) const RANGE_KHONG_INT: &vis_diag::Code = &TYPE_CODES[8];
+/// **VD-266**: literal `int` không biểu diễn được — dùng lại `VS0104` của tầng từ vựng cho
+/// literal **dương** `i64::MAX + 1` (lexer cho qua độ lớn 2^63 để gộp `-` thành `i64::MIN`).
+pub(crate) const INT_LIT: &vis_diag::Code = &vis_diag::CODES[3];
 /// Mã `VS0206` — khối `else` của `let … else` phải thoát trên **mọi nhánh** (sổ cú pháp 02xx;
 /// mã đã có sẵn đúng nghĩa, VD-263 dùng lại thay vì thêm mã mới).
 pub(crate) const ELSE_KHONG_THOAT: &vis_diag::Code = &vis_diag::SYNTAX_CODES[5];
@@ -235,6 +238,17 @@ impl<'a> Checker<'a> {
             line: 0,
             col: 0,
         });
+    }
+
+    /// **VD-266**: literal `int` phải biểu diễn được trong `i64` **sau khi gộp dấu**. Lexer cho
+    /// qua độ lớn `2^63` để `-2^63` thành `i64::MIN`; literal **dương** `2^63` (không dấu, hoặc
+    /// bị `--` đảo lại) vẫn là `VS0104` **tĩnh** — cả `vis check` lẫn hai engine dừng trước runtime.
+    pub(crate) fn kiem_int_lit(&mut self, lit: &crate::hir::Lit, span: Span) {
+        if lit.kind == crate::hir::LitKind::Int
+            && vis_syntax::lit::decode_signed_int(&lit.text).is_err()
+        {
+            self.diag(INT_LIT, vis_diag::CODES[3].message_vi, span);
+        }
     }
 
     /// Chữ ký của hàm theo `sym` (nếu là hàm khai trong tệp).

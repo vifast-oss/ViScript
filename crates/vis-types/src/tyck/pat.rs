@@ -23,6 +23,10 @@ impl<'a> Checker<'a> {
             HPat::Rest { .. } => {}
             HPat::Bind { sym, .. } => self.set_ty(*sym, subj.clone()),
             HPat::Lit { lit, span } => {
+                // **VD-266**: pattern `int` cũng phải biểu diễn được trong `i64`; lexer chỉ
+                // kiểm **độ lớn** nên literal dương 2^63 bị chặn ở đây (pattern không đi qua
+                // phép gộp `-` của tầng hạ biểu thức).
+                self.kiem_int_lit(lit, *span);
                 let t = lit.ty();
                 if !self.same(&t, subj) {
                     let msg = format!(

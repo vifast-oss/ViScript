@@ -83,6 +83,26 @@ impl<'a> Lowerer<'a> {
                     .next()
                     .map(|c| self.lower_expr(c))
                     .unwrap_or(HExpr::Error { span });
+                // **VD-266**: gộp `-` quanh literal `int` ở **biên** 2^63. Lexer cho qua độ lớn
+                // `i64::MAX + 1` (để `-9223372036854775808` thành `i64::MIN`), nên nếu không gộp
+                // thì literal dương 2^63 sẽ bị checker từ chối oan. Chỉ chạm đúng biên: literal
+                // thường vẫn giữ `HExpr::Un` như trước.
+                if op == crate::hir::UnOp::Neg {
+                    if let HExpr::Lit { lit, .. } = &expr {
+                        if lit.kind == LitKind::Int {
+                            if let Some(text) = vis_syntax::lit::fold_neg_min_int(&lit.text) {
+                                return HExpr::Lit {
+                                    lit: Lit {
+                                        kind: LitKind::Int,
+                                        text,
+                                    },
+                                    ty: Type::Int,
+                                    span,
+                                };
+                            }
+                        }
+                    }
+                }
                 HExpr::Un {
                     op,
                     expr: Box::new(expr),

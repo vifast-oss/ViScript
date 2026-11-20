@@ -424,7 +424,12 @@ impl<'a> Parser<'a> {
         let mut elems = vec![self.expect_punct("(")?];
         let mut seen_named = false;
         while !self.at_punct(")") {
-            if self.at_punct("-") && self.peek_punct(1, "-") {
+            // **VD-266**: `--` chỉ là tham số có tên khi ngay sau là **định danh** (`--ten`).
+            // `--9223372036854775808` là **hai** dấu `-` một ngôi (và là tràn dương tĩnh),
+            // không phải named arg — trước đây rơi vào `expect_ident` ⇒ VS0201 oan.
+            let named_arg =
+                self.at_punct("-") && self.peek_punct(1, "-") && self.tok_at(2).kind == Kind::Ident;
+            if named_arg {
                 seen_named = true;
                 let mut na = vec![self.bump(), self.bump()];
                 na.push(self.expect_ident()?);
