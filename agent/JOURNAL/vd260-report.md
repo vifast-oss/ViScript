@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `1eeeaab` (sau wave 3 feature/frame/parity),
-> gate **1704 passed / 3 skipped**. Semantics3 (refutable/scope/record) còn chạy.
+> **Trạng thái tại thời điểm ghi**: main `5931968` (sau wave 3 semantics + docs),
+> gate **1727 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -18,10 +18,13 @@
 | Feature | `2b568e2` → `9735b76` | **list rest patterns** `[a, ..]`/`[a, ..r]`, no opcode/VERSION change |
 | Parity | `c73f047` → `921b092` | type-directed Option lift, ST-248 field/index/self; branch plain→Option lift |
 | Tooling | `5aa1431` → `e1a2f2f` | release only `vis`; `vis-dev core-test`; real POSIX host suite |
+| Semantics 3 | `f5311ee` → `63aff1c` | refutable `let`/`for` rejected; checker scopes + unresolved `VS0301`; record unknown/positional/duplicate rules |
+| Cache | `d780637` | `PHIEN_BAN` + pin hash `dd5794e2…` sau rest-pattern/parity |
+| Docs | `1421616` → `5931968` | CHANGELOG + cheat-sheet (main->int, sqlite read-only, rest pattern) |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1704 passed / 3 skipped** tại `1eeeaab`.
+- `./vis-dev gate --fast`: **PASS — 1727 passed / 3 skipped** tại `5931968`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
@@ -48,9 +51,9 @@
 
 ## 5. Còn mở / chưa tuyên bố hoàn tất
 
-- Semantics3 đang chạy: refutable `let`/`for`; checker scope leak/unresolved name; record unknown/positional/duplicate.
 - Method `impl` body chưa được type-check đầy đủ (break/continue trong method có thể lọt).
-- Cache label chưa bump cho feature/parity (sẽ làm cuối).
+- Cache label đã bump cho rest-pattern/parity (`d780637`); nếu sửa codegen tiếp phải bump lại.
+- Refutable `let`/`for` nay bị từ chối tĩnh (đúng VD-260); `let … else` chỉ cho Option/Result — fixture rest pattern đã đổi sang `if let`.
 - Frame vẫn cooperative; timer/interleave chỉ tại safe point; quota là test-hook.
 - `list` rest pattern chưa hỗ trợ hậu tố `[.., z]` (parser từ chối tĩnh).
 - `std.path` Windows chỉ test helper thuần; chưa chạy runtime Windows.
