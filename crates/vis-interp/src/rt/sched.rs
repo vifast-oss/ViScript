@@ -88,6 +88,47 @@ impl Scheduler {
         if !self.frame.cancel_req.is_empty() {
             self.frame_cancel_process_for_test();
         }
+        // **VD-258**: không để event chết đói sau hàng ready dài. Nếu event kế tiếp có
+        // waiter thật thì giao **ngay** (event là bất đồng bộ), rồi vẫn trả frame đầu
+        // ready — thứ tự chạy CPU không đổi, chỉ timeline event tiến sớm hơn.
+        if let Some(ev) = self.frame.events.front().cloned() {
+            let co_nguoi_cho = self.frame.waiters.iter().any(|w| {
+                w.gen == ev.gen
+                    && w.wait
+                        == (Wait::Event {
+                            key: ev.key,
+                            gen: ev.gen,
+                        })
+            });
+            if co_nguoi_cho {
+                self.frame.events.pop_front();
+                self.frame_fire(ev);
+            }
+        }
+        // **VD-258**: cùng quy tắc cho reactor giả — event kế tiếp (theo `seq`) đã có
+        // đăng ký + waiter thì giao ngay, không chờ hàng ready cạn (tránh đói I/O khi
+        // một frame CPU luôn sẵn sàng). Timer (`deadline_ms`) vẫn chỉ fire ở `frame_idle`.
+        if let Some(ev) = self.frame.reactor.events.first().cloned() {
+            if ev.deadline_ms.is_none() {
+                let co_nguoi_cho = self
+                    .frame
+                    .reactor
+                    .regs
+                    .iter()
+                    .any(|r| r.key == ev.key && r.gen == ev.gen)
+                    && self.frame.waiters.iter().any(|w| {
+                        w.wait
+                            == (Wait::Reactor {
+                                key: ev.key,
+                                gen: ev.gen,
+                            })
+                    });
+                if co_nguoi_cho {
+                    self.frame.reactor.events.remove(0);
+                    self.frame_reactor_fire(ev);
+                }
+            }
+        }
         if let Some(f) = self.frame.ready.pop_front() {
             return Some(f);
         }
@@ -179,6 +220,26 @@ impl Scheduler {
         }
         self.frame.ready.push_back(w.frame);
         self.frame.log.push(format!("wake:{}", w.frame));
+    }
+
+    /// **VD-258**: sau khi scheduler hết frame sẵn sàng, còn waiter/task chưa terminal hoặc
+    /// đăng ký reactor sống ⇒ chương trình **treo thật** (event không bao giờ tới). Trả trap
+    /// `VS0505` thay vì để driver coi là "xong" rồi exit 0. Hai engine dùng chung hàm này để
+    /// chẩn đoán giống hệt nhau.
+    #[doc(hidden)]
+    pub fn frame_stuck_trap(&self) -> Option<Trap> {
+        let live = self
+            .tasks
+            .iter()
+            .any(|t| !matches!(t.trang_thai.get(), TrangThai::Xong | TrangThai::Huy));
+        if self.frame.waiters.is_empty() && !live && self.frame.reactor.regs.is_empty() {
+            return None;
+        }
+        Some(Trap::new(
+            crate::interp::DEADLOCK,
+            "deadlock: scheduler hết frame sẵn sàng nhưng còn tác vụ/frame chờ sự kiện không bao giờ tới",
+            Span::new(0, 0),
+        ))
     }
 
     /// **Chỉ test**: một task vừa xong — cache kết quả, ghi nghĩa vụ join, đánh thức

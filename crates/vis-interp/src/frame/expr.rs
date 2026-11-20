@@ -645,7 +645,10 @@ pub(super) fn call_value<'a>(
                     span,
                 )));
             }
-            let env = c.env.clone();
+            // **VD-258**: mỗi lần gọi closure có **env riêng** (snapshot của env bắt).
+            // Trước đây dùng chung `c.env` ⇒ lần gọi B đang treo/đã xong xoá tham số của
+            // lần gọi A đang treo. Gộp biến bắt về `c.env` khi khung xong (xem frame.rs).
+            let env = Rc::new(RefCell::new(c.env.borrow().clone()));
             let mut restore = Vec::new();
             for (i, p) in c.params.iter().enumerate() {
                 restore.push((*p, env.borrow().get(p).cloned()));
@@ -665,6 +668,7 @@ pub(super) fn call_value<'a>(
                 last: None,
                 loops: Vec::new(),
                 restore,
+                merge: Some(c.env.clone()),
             });
             Ok(())
         }
@@ -783,7 +787,9 @@ pub(super) fn dispatch<'a>(
                     span,
                 )));
             }
-            let env = Rc::new(RefCell::new(HashMap::new()));
+            // **VD-258**: env của hàm tên phải thấy hằng cấp tệp (const/default) — trước
+            // đây dựng `HashMap::new()` rỗng nên `const K` trong thân báo "chưa định nghĩa".
+            let env = Rc::new(RefCell::new(frame.globals.borrow().clone()));
             for (i, p) in f.params.iter().enumerate() {
                 let v = args.get(i).cloned().or_else(|| {
                     named
@@ -820,6 +826,7 @@ pub(super) fn dispatch<'a>(
                 last: None,
                 loops: Vec::new(),
                 restore: Vec::new(),
+                merge: None,
             });
             Ok(())
         }

@@ -356,6 +356,8 @@ enum Work<'a> {
     },
     /// Retry phương thức host (`send`/`recv`/…) sau `Abort::Pending`: đối số đã eval
     /// được giữ lại trong work ⇒ resume **không eval lại** (không lặp side-effect).
+    /// **VD-258**: phương thức không resume được (Pending lần nữa) ⇒ trap rõ, không
+    /// chạy lại toàn bộ phương thức (tránh lặp side-effect của callback).
     RedispatchMethod {
         name: String,
         recv: Value,
@@ -363,6 +365,26 @@ enum Work<'a> {
         base_var: Option<u32>,
         span: Span,
     },
+    /// **VD-258**: vòng `list.map/filter/each` **resume được** — giữ `idx` + `acc`
+    /// qua suspend, gọi callback tuần tự; `awaiting` ⇒ giá trị callback nằm trên `vals`.
+    MethodLoop {
+        kind: MethodKind,
+        f: Value,
+        items: Vec<Value>,
+        idx: usize,
+        acc: Vec<Value>,
+        awaiting: bool,
+        span: Span,
+    },
+}
+
+/// **VD-258**: ba phương thức list nhận callback (trước đây chạy qua `host.call`
+/// trong một lần gọi Rust ⇒ không suspend/resume được).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MethodKind {
+    Map,
+    Filter,
+    Each,
 }
 
 #[derive(Clone, Copy)]
@@ -414,6 +436,9 @@ struct CallFrame<'a> {
     loops: Vec<LoopState<'a>>,
     /// Binding tham số cần hoàn nguyên khi khung kết thúc (closure gọi lại nhiều lần).
     restore: Vec<(u32, Option<Value>)>,
+    /// **VD-258**: env đích để gộp thay đổi của closure sau khi khung xong (mỗi lần gọi
+    /// có env riêng ⇒ tham số không đè lên lần gọi đang treo khác).
+    merge: Option<Env>,
 }
 
 /// **Frame thật của interp trên heap** (đối trọng với `Th` của VM).
@@ -422,6 +447,8 @@ pub struct IFrame<'a> {
     vals: Vec<Value>,
     /// Tập `var` dùng chung toàn chương trình (khớp `Interp.mutable` — closure thấy `var` của ngoài).
     mutable: Rc<RefCell<HashSet<u32>>>,
+    /// **VD-258**: env cấp tệp (const/hằng) — hàm tên phải thấy như interp thật.
+    globals: Env,
 }
 
 impl<'a> IFrame<'a> {
@@ -443,9 +470,11 @@ impl<'a> IFrame<'a> {
                 last: None,
                 loops: Vec::new(),
                 restore: Vec::new(),
+                merge: None,
             }],
             vals: Vec::new(),
             mutable,
+            globals: globals.clone(),
         }
     }
 
@@ -459,9 +488,11 @@ impl<'a> IFrame<'a> {
                 last: None,
                 loops: Vec::new(),
                 restore: Vec::new(),
+                merge: None,
             }],
             vals: Vec::new(),
             mutable,
+            globals: env.clone(),
         }
     }
 
@@ -830,6 +861,20 @@ pub fn run_frame_for_test<'a>(
             break;
         }
         it.sched.borrow_mut().frame.current = current;
+        // **VD-258**: task đang chạy phải mang `DangChay` (trước đây không bao giờ đặt)
+        // ⇒ `await` chính nó bị phát hiện thay vì treo im lặng.
+        if current != 0 {
+            if let Some(t) = it
+                .sched
+                .borrow()
+                .tasks
+                .iter()
+                .find(|t| t.id == current)
+                .cloned()
+            {
+                t.trang_thai.set(rt::TrangThai::DangChay);
+            }
+        }
         // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng ngân sách tổng).
         crate::rt::fee::quota_reset_for_test();
         let outcome = step_frame(&mut it, current, &mut frames);
@@ -879,17 +924,44 @@ pub fn run_frame_for_test<'a>(
             }
             Err(Abort::Ret(v)) => {
                 if current == 0 {
+                    // `return`/`?` ở `main` vẫn phải final-join các task còn lại (không bỏ).
                     final_value = Some(v);
-                    break;
+                } else {
+                    let id = current;
+                    if let Some(t) = it.sched.borrow().tasks.iter().find(|t| t.id == id).cloned() {
+                        *t.kq.borrow_mut() = Some(Ok(v));
+                        t.trang_thai.set(rt::TrangThai::Xong);
+                    }
+                    it.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
                 }
-                let id = current;
-                if let Some(t) = it.sched.borrow().tasks.iter().find(|t| t.id == id).cloned() {
-                    *t.kq.borrow_mut() = Some(Ok(v));
-                    t.trang_thai.set(rt::TrangThai::Xong);
-                }
-                it.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
             }
             Err(Abort::Pending(p)) => {
+                // **VD-258**: wait không có task/wait = yield quota; frame vẫn sẵn sàng.
+                let quota_yield = p.task.is_none() && p.wait.is_none();
+                // **VD-258**: `await` chính tác vụ đang chạy (hoặc một task `DangChay`)
+                // không bao giờ có event đánh thức ⇒ trap rõ thay vì treo/exit 0.
+                if let Some(t) = &p.task {
+                    if t.id == current || t.trang_thai.get() == rt::TrangThai::DangChay {
+                        trap = Some(Trap::new(
+                            crate::interp::DEADLOCK,
+                            "deadlock: tác vụ đang chờ chính nó (await chính tác vụ đang chạy)",
+                            p.span,
+                        ));
+                        break;
+                    }
+                }
+                if current != 0 {
+                    if let Some(t) = it
+                        .sched
+                        .borrow()
+                        .tasks
+                        .iter()
+                        .find(|t| t.id == current)
+                        .cloned()
+                    {
+                        t.trang_thai.set(rt::TrangThai::Pending);
+                    }
+                }
                 let w: Option<Waiter> = if let Some(w) = p.wait {
                     let gen = w.gen_of(it.sched.borrow().frame.gen);
                     Some(Waiter {
@@ -907,12 +979,17 @@ pub fn run_frame_for_test<'a>(
                 } else {
                     it.sched.borrow_mut().frame.ready.push_back(current);
                 }
+                if quota_yield {
+                    // Yield quota là tiến độ hợp lệ, không phải scheduler quay vô ích.
+                    guard = guard.saturating_sub(1);
+                }
             }
         }
 
-        // Lên lịch cả task `Moi` khi không còn frame sẵn sàng — kể cả task tạo bằng
-        // `tao` (gọi `async fn` trực tiếp, không `spawn`) đang được `await`. Khớp VM
-        // (`vm_frame.rs:187`); nếu không, main treo vĩnh viễn khi await một task thường.
+        // Lên lịch task `Moi` khi không còn frame sẵn sàng — kể cả task tạo bằng `tao`
+        // (gọi `async fn` trực tiếp, không `spawn`) đang được `await`. Khớp VM; nếu không,
+        // main treo khi await một task thường. **VD-258**: CHỈ `Moi` (chưa chạy) — task
+        // `Pending` đang chờ event không được đẩy lại ready (quay vô ích tới guard).
         let need_join = true;
         let next = it.sched.borrow_mut().frame_next();
         if it.sched.borrow().frame.selector_error.is_some() {
@@ -975,6 +1052,11 @@ pub fn run_frame_for_test<'a>(
     if trap.is_none() {
         trap = final_join_err;
     }
+    // **VD-258**: không còn frame sẵn sàng mà vẫn có waiter/task chưa terminal ⇒ deadlock
+    // thật (event không bao giờ tới), KHÔNG được trả exit 0 như thành công.
+    if trap.is_none() {
+        trap = it.sched.borrow().frame_stuck_trap();
+    }
     it.sched.borrow_mut().frame_reactor_shutdown();
     let snapshot = it.sched.borrow().diag_snapshot();
     let mut log = it.sched.borrow().frame.log.clone();
@@ -984,7 +1066,12 @@ pub fn run_frame_for_test<'a>(
         Some(t) => vec![t.to_diag(text)],
         None => Vec::new(),
     };
-    let exit = if trap.is_some() { 1 } else { 0 };
+    // **VD-258**: exit theo giá trị cuối của `main` (`int`/`Result.Err`), không luôn 0.
+    let exit = match (&trap, &final_value) {
+        (Some(_), _) => 1,
+        (None, Some(v)) => crate::value::exit_code(v),
+        (None, None) => 0,
+    };
     FrameOutput {
         stdout,
         diagnostics,
@@ -1094,6 +1181,18 @@ fn step_frame_owned<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>) -> R<Option
                 let mut v = cf.last.unwrap_or(Value::Unit);
                 if cf.ret_depth > 0 {
                     v = crate::lift::lift_opt(v, cf.ret_depth);
+                }
+                // **VD-258**: closure có env riêng cho lần gọi này — gộp các biến bắt
+                // về env gốc của closure (tham số bị loại ⇒ lần gọi khác không bị đè).
+                if let Some(dich) = &cf.merge {
+                    let params: Vec<u32> = cf.restore.iter().map(|(s, _)| *s).collect();
+                    let snapshot = cf.env.borrow().clone();
+                    let mut den = dich.borrow_mut();
+                    for (sym, val) in snapshot {
+                        if !params.contains(&sym) {
+                            den.insert(sym, val);
+                        }
+                    }
                 }
                 for (sym, old) in cf.restore {
                     match old {
@@ -1213,4 +1312,73 @@ fn underflow() -> Abort {
         "frame test: ngăn xếp giá trị rỗng",
         Span::new(0, 0),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **VD-258**: mỗi lần gọi closure phải có env **riêng** — tham số của lần gọi đang
+    /// treo không bị lần gọi khác ghi đè/xoá. Trước đây mọi lần gọi dùng chung `Closure.env`.
+    #[test]
+    fn closure_moi_lan_goi_env_rieng() {
+        let hir = vis_types::Hir {
+            items: Vec::new(),
+            stmts: Vec::new(),
+            span: Span::new(0, 0),
+        };
+        let symbols = vis_types::Symbols::default();
+        let types = vis_types::TypeTable::default();
+        let mut it = Interp::new(&hir, &symbols, &types);
+
+        let env: Env = Rc::new(RefCell::new(HashMap::new()));
+        env.borrow_mut().insert(99, Value::Int(0)); // biến bắt tượng trưng
+        let mk = || {
+            Value::Fn(Rc::new(crate::value::Closure {
+                name: "f".into(),
+                params: vec![7],
+                body: HBody::Stmts(Vec::new()),
+                env: env.clone(),
+                ret_depth: 0,
+            }))
+        };
+        let mut frame = IFrame::expr_frame(&env, Rc::new(RefCell::new(HashSet::new())));
+        call_value(
+            &mut it,
+            &mut frame,
+            mk(),
+            vec![Value::Int(1)],
+            Vec::new(),
+            Span::new(0, 0),
+        )
+        .expect("call A");
+        call_value(
+            &mut it,
+            &mut frame,
+            mk(),
+            vec![Value::Int(2)],
+            Vec::new(),
+            Span::new(0, 0),
+        )
+        .expect("call B");
+
+        assert_eq!(frame.calls.len(), 3, "khung gốc + 2 lần gọi");
+        let a = &frame.calls[1];
+        let b = &frame.calls[2];
+        assert!(!Rc::ptr_eq(&a.env, &b.env), "hai lần gọi phải khác env");
+        assert!(!Rc::ptr_eq(&a.env, &env), "không dùng chung env closure");
+        assert!(
+            matches!(a.env.borrow().get(&7), Some(Value::Int(1))),
+            "lần gọi A giữ tham số riêng"
+        );
+        assert!(
+            matches!(b.env.borrow().get(&7), Some(Value::Int(2))),
+            "lần gọi B giữ tham số riêng"
+        );
+        assert!(
+            env.borrow().get(&7).is_none(),
+            "tham số không được rò vào env gốc của closure"
+        );
+        assert!(matches!(env.borrow().get(&99), Some(Value::Int(0))));
+    }
 }
