@@ -12,9 +12,33 @@ use std::process::ExitCode;
 /// `--dump-deps`, `--dry`).
 pub(crate) fn usage_run() -> ExitCode {
     eprintln!(
-        "dùng: vis run [--tap] [--vm] [--stdin] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --stdin: đọc UTF-8 từ stdin, chạy như một tệp script ảo tên `-`; không nhận tệp, không đọc/ghi cache; thoát như đường tệp (0 sạch / 1 `Result::Err` / 2 lỗi dùng–kiểu / 101 trap); `--tap` báo `ok|not ok 1 - -`; `--dump-bytecode`/`--dump-deps`/`--dry` không đi với `--stdin`\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
+        "dùng: vis run [--tap] [--vm] [--stdin] [--time] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --stdin: đọc UTF-8 từ stdin, chạy như một tệp script ảo tên `-`; không nhận tệp, không đọc/ghi cache; thoát như đường tệp (0 sạch / 1 `Result::Err` / 2 lỗi dùng–kiểu / 101 trap); `--tap` báo `ok|not ok 1 - -`; `--dump-bytecode`/`--dump-deps`/`--dry` không đi với `--stdin`\n  --time: in **một** dòng `# time: <ms> ms` (hoặc `# time: <us> us` khi < 1 ms) ra stderr; đo **đồng hồ tường** quanh **đúng lời gọi runtime** (không tính nạp/parse/tyck/codegen/cache/sandbox, không tính lúc in kết quả); chỉ in khi runtime **đã chạy** (lỗi trước khi chạy ⇒ không có dòng); với `--tap`, dòng này là chú thích TAP, in **sau** dòng `ok|not ok`\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
     );
     ExitCode::from(2)
+}
+
+/// **VD-270**: định dạng **một** dòng `vis run --time`.
+///
+/// `us` là số **micro-giây** đồng hồ tường đã đo. `>= 1000` ⇒ in mili-giây (**chia nguyên**,
+/// làm tròn xuống); ngược lại in micro-giây. Đơn vị ASCII `ms`/`us` để máy đọc; luôn đúng một
+/// dòng, không phụ thuộc ngôn ngữ/`--tap`.
+pub(crate) fn dong_thoi_gian(us: u128) -> String {
+    if us >= 1000 {
+        format!("# time: {} ms", us / 1000)
+    } else {
+        format!("# time: {us} us")
+    }
+}
+
+/// **VD-270**: in dòng thời gian ra **stderr** khi `--time` **và** runtime đã thực sự chạy
+/// (`us = Some`). Lỗi trước khi chạy (đọc/parse/tyck/codegen) ⇒ `None` ⇒ **không** in, để dòng
+/// này không bị hiểu nhầm là thời gian của một chương trình chưa chạy.
+pub(crate) fn in_thoi_gian(bat: bool, us: Option<u128>) {
+    if bat {
+        if let Some(us) = us {
+            eprintln!("{}", dong_thoi_gian(us));
+        }
+    }
 }
 
 /// **VD-270**: `vis run --stdin` — đọc **toàn bộ** stdin theo UTF-8. Lỗi đọc hoặc byte không hợp
@@ -173,4 +197,20 @@ pub(crate) fn ap_sandbox(_q: &quyen::Quyen) -> Result<(), ExitCode> {
         std::env::consts::OS
     );
     Err(ExitCode::from(3))
+}
+
+#[cfg(test)]
+mod vd270_tests {
+    use super::dong_thoi_gian;
+
+    /// **VD-270**: biên đơn vị — dưới 1 ms là `us` (chia nguyên), từ 1 ms là `ms` (làm tròn xuống).
+    #[test]
+    fn dinh_dang_thoi_gian_theo_don_vi() {
+        assert_eq!(dong_thoi_gian(0), "# time: 0 us");
+        assert_eq!(dong_thoi_gian(1), "# time: 1 us");
+        assert_eq!(dong_thoi_gian(999), "# time: 999 us");
+        assert_eq!(dong_thoi_gian(1_000), "# time: 1 ms");
+        assert_eq!(dong_thoi_gian(1_999), "# time: 1 ms");
+        assert_eq!(dong_thoi_gian(1_234_567), "# time: 1234 ms");
+    }
 }
