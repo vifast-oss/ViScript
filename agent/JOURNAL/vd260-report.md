@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `1b51c62` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `580123b` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2251 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2290 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -69,11 +69,15 @@
 | Vistest-shuffle | `ff8d712` → `f11a159` | `vis test --shuffle [--seed u64]`: SplitMix64 + Fisher-Yates |
 | LSP hover method | `f2f103c` → `4babfb0` | hover phương thức `impl`/`trait`, fallback cuối |
 | Db-batch | `e81c298` → `1b51c62` | `sqlite.execute_batch`: tách câu an toàn, per-statement policy |
+| Str-trim | `31c43a0` → `51744bc` | `str.trim_matches/trim_start_matches/trim_end_matches` theo tập scalar |
+| Vistest-timeout | `8730a8d` → `b785a6a` | `--timeout` áp cả fixture `.out/.err`, kill + `quá hạn` |
+| LSP hover builtin | `be9ad23` → `53f87b7` | hover phương thức lõi `list/map/str` (bảng 28 chữ ký) |
+| Fmt-stat | `e73f00e` → `580123b` | `vis fmt --check --stat`: một dòng đếm tệp/cần sửa/lỗi |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2251 passed / 3 skipped** tại `1b51c62`.
+- `./vis-dev gate --fast`: **PASS — 2290 passed / 3 skipped** tại `580123b`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -189,3 +193,8 @@ Kết quả wave 10 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **db-batch** (`e81c298` → `1b51c62`): `sqlite.execute_batch` tách `;` ngoài string/comment, chạy từng câu qua `db_execute` (policy/cap/timeout per câu), không tự transaction; trigger body chưa hiểu.
 - `VIS_DIFF_N=100000` seed 20261127 @ `4babfb0`: **0 lệch** (93.769 chạy, 122,6 s).
 - Smoke mới @ `1b51c62`: `list.index_of/last_index_of`, `str.byte_len/char_count`, `is_empty` cho str/list/map — **interp=VM byte-identical**.
+- **str-trim** (`31c43a0` → `51744bc`): `trim*_matches` theo tập scalar Unicode; rỗng/all-stripped đúng; API +3.
+- **vistest-timeout** (`8730a8d` → `b785a6a`): `--timeout` áp fixture, kill + `not ok/# quá hạn`, JSON/fail-fast/repeat giữ.
+- **lsp-hover-builtin** (`be9ad23` → `53f87b7`): hover `list/map/str` method lõi + sugar R5c; bảng lõi cục bộ 28 chữ ký.
+- **fmt-stat** (`e73f00e` → `580123b`): `--check --stat` một dòng `fmt-check: N tệp, M cần sửa, K lỗi`; stdin hỗ trợ.
+- `VIS_DIFF_N=200000` seed 20261128 @ `580123b`: **0 lệch** (187.536 chạy, 270,1 s).

@@ -3275,3 +3275,17 @@ nên không mở đường ghi qua `query`. `Ok(n)` = số câu chạy xong; **k
 (caller tự `BEGIN/COMMIT`); dừng ở lỗi đầu, câu trước đã có hiệu lực. Giới hạn đã biết: trigger
 body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Quyết định này **thay** câu
 “không mở `execute_batch`” trong ghi chú VD-266.
+
+### VD-270 (bổ sung) · trim_matches, timeout fixture, hover builtin, fmt stat — A0, 2026-11-21
+
+- **str-trim**: `str.trim_matches/trim_start_matches/trim_end_matches(s, chars)` bỏ lặp scalar
+  Unicode thuộc **tập** `chars` ở hai/một phía; `chars` rỗng ⇒ nguyên, mọi scalar bị bỏ ⇒ `""`;
+  sugar R5c; API +3.
+- **vistest-timeout**: `--timeout` áp **cả fixture** `.out/.err` (không chỉ `test fn`); quá hạn
+  kill, `not ok` + `# <tên>: quá hạn <ms> ms`, JSON message, exit 1; `--fail-fast`/`--repeat`/
+  `--shuffle`/`--list` giữ semantics; không timeout ⇒ không giới hạn như cũ.
+- **lsp-hover-builtin**: hover phương thức lõi `list`/`map`/`str` khi receiver có kiểu tĩnh; bảng
+  cục bộ 28 chữ ký khớp `tyck::kiem_method`, sugar R5c lấy `FUNCS`; ưu tiên sau user method;
+  không thêm completion.
+- **fmt-stat**: `vis fmt --check --stat` in `fmt-check: <N> tệp, <M> cần sửa, <K> lỗi`; stdin
+  tính 1 tệp; chỉ với `--check`, không đi JSON/list/diff/write/indent; exit 0/1/2.
