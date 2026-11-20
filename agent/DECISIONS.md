@@ -2339,3 +2339,93 @@ Không audit lại toàn repository. Báo cáo phải có 5 phần:
 > **Ghi nhận thực thi (Agent 1, 2026-11-20)**: đang lập báo cáo
 > `agent/BAO-CAO-SAN-SANG-THUC-TE-2026-11-20.md` theo đúng 5 phần; không tạo tag, không công bố
 > release, không mở VS3.
+
+### VD-249 · Đầu tư cơ chế async thực dụng; hợp đồng ngân sách; #148; đo vòng đời — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: báo cáo
+> `agent/BAO-CAO-SAN-SANG-THUC-TE-2026-11-20.md` (VD-248). Quyết định dựa trên báo cáo, không phải
+> xác nhận A0 tự chạy repo. **Tag/release vẫn PAUSED**, `dbae70a` là checkpoint lịch sử.
+
+#### 1. Ba luồng sử dụng ưu tiên (chốt mục tiêu sản phẩm)
+
+| Ưu tiên | Luồng | Mục tiêu |
+|---|---|---|
+| 1 | Script tự động hóa: file, dữ liệu, SQLite, gọi tiến trình | Dễ viết, lỗi rõ, tài nguyên có vòng đời kiểm soát |
+| 2 | Nhiều tác vụ chờ mạng: client, dịch vụ loopback nhỏ | Một kết nối đang chờ không làm mọi task khác đứng theo |
+| 3 | Pipeline kết hợp tính toán và I/O | Task có cơ hội tiến triển, có giới hạn tài nguyên và cơ chế dừng |
+
+**Không** lấy CPU song song nhiều lõi làm mục tiêu đầu tiên; **không** mở đồng thời worker pool,
+chia sẻ heap, GC và TLS chỉ vì muốn async hữu ích.
+
+#### 2. Trả lời câu hỏi phạm vi
+
+- **Không chấp nhận** async một luồng + mọi I/O chặn làm **kiến trúc đích**.
+- **Chấp nhận** runtime một luồng làm **nền tảng đầu tiên**, nếu có: suspend/resume thực sự;
+  scheduler chạy task khác khi một task chờ; timer và deadline; cancellation cùng quy tắc kết thúc
+  task; I/O mạng không chặn scheduler; giới hạn và vòng đời tài nguyên rõ ràng.
+- Đây là **nâng cấp cơ chế**, không phải tối ưu vi mô.
+
+#### 3. Lỗi giới hạn thực thi — duyệt sửa, nhưng chốt hợp đồng trước
+
+- **Không chọn** "đếm lệnh VM" hay "đếm vòng lặp" — cả hai gắn với triển khai của một engine. Cũng
+  không chỉ nâng ngưỡng cho ca 2 triệu vòng chạy được.
+- **Hợp đồng A0**: giới hạn dùng chung dựa trên **điểm tính phí ngữ nghĩa** định nghĩa cho cả hai
+  engine, không dựa trực tiếp vào số opcode VM. Yêu cầu: (a) **một ngân sách dùng chung** cho một
+  lần chạy, gồm các task, **không reset** khi spawn/await; (b) hai engine tính phí tại **cùng sự
+  kiện ngữ nghĩa**; (c) thứ tự kiểm tra hết ngân sách rõ, **đặc biệt trước tác dụng phụ**; (d) giới
+  hạn bộ nhớ, độ sâu gọi, thời gian chờ I/O là **giới hạn riêng**, không gộp thành một số "steps";
+  (e) **không âm thầm bỏ** hàng rào chống chạy vô hạn.
+- **Checkpoint đầu tiên** là hợp đồng tính phí ngắn: sự kiện bị tính phí + trọng số; ánh xạ vào
+  interp và bytecode; quy tắc ngân sách cha/con; hành vi tại đúng biên; chi phí triển khai + ảnh
+  hưởng cache/bytecode. **A0 chốt hợp đồng đó rồi mới hiện thực.** Không tự thêm opcode/đổi
+  VERSION trong bước khảo sát.
+- Test phải có vòng lặp, gọi hàm/đệ quy, nhiều task, **tác dụng phụ sát biên** — không chỉ một ca
+  vòng lặp dài.
+- **Phân lập exit 101**: báo cáo ghi VM exit 101 dù đã in `VS0501`/`VS0506`. Agent 2 phải xác định
+  đây là mã thoát CLI chủ ý hay panic/đường lỗi khác; **không mặc định đúng** chỉ vì có chẩn đoán.
+
+#### 4. Thiết kế async thực dụng một luồng — **design-only**
+
+Duyệt ngoại lệ có phạm vi đối với lệnh "chưa mở VS3": **chỉ thiết kế**, không phải giấy phép triển
+khai sáu hạng mục. Hồ sơ phải trả lời 8 câu: suspend/resume (trạng thái hàm/local/capture/vị trí
+trên interp & VM); scheduler (nhường ở đâu, task CPU dài chiếm runtime đến mức nào); I/O
+(connect/accept/read/write đăng ký chờ & đánh thức); timer (monotonic, deadline, nhiều timer);
+cancellation (gỡ đăng ký, cleanup khi nào); vòng đời (task lỗi, không await, kết thúc chương trình,
+tài nguyên còn mở); giới hạn (số task, hàng đợi, buffer, tài nguyên đang chờ); host (phần chung vs
+adapter Linux/Windows).
+
+- **Không mặc định** Future/Poll/Waker, **không mặc định** tự viết toàn bộ; phải **so sánh phương
+  án và dependency** trước khi chọn.
+- Giữ ràng buộc: chưa chọn worker model/GC; chưa thêm API công khai; chưa đổi ngữ nghĩa task không
+  await hoặc lỗi task; không giữ stack 256 MB như lời giải dài hạn khi chưa đánh giá; không bắt
+  mọi file/SQLite operation nonblocking ngay — phải công bố rõ phần còn chặn và phương án xử lý.
+
+#### 5. #148 — HTTP timeout tổng, làm song song
+
+Một **deadline monotonic cho toàn lời gọi**; mỗi bước chờ chỉ dùng **thời gian còn lại**; server
+nhỏ giọt **không gia hạn vô hạn**; hết hạn phải **đóng/thu hồi tài nguyên** theo hợp đồng hiện có.
+Không mở TLS/HTTP2/API timeout mới. Nếu tham số timeout hiện có mang nghĩa khác đã được SPEC chốt,
+**trình phần thay đổi hợp đồng trước khi sửa**.
+
+#### 6. Đo bổ sung có mục tiêu
+
+Không thêm hàng chục phép đo để chứng minh điều đã biết. Bổ sung: tải dài phân biệt task giữ đến
+hết chương trình với rò rỉ ngoài dự kiến; **đo số task/tài nguyên còn sống** bên cạnh RSS; dùng
+**thời gian monotonic** cho latency; **lặp phép đo, báo phân bố**. Giữ workload làm baseline so
+sánh kiến trúc mới. Chỉnh hai điểm: nhóm "tạo/hủy" mới chứng minh spawn/await, **chưa** chứng minh
+task được giải phóng; **không có GC không tự động là blocker** — blocker là vòng đời không kiểm
+soát hoặc bộ nhớ tăng không giới hạn trong workload mục tiêu.
+
+#### 7. Điều phối — tối đa ba luồng cho Agent 1
+
+1. Hợp đồng ngân sách thực thi + phân lập exit 101.
+2. Thiết kế async thực dụng một luồng, có phương án chuyển tiếp từ runtime hiện tại.
+3. #148 + phép đo vòng đời dài, **tránh xung đột tệp**.
+
+Phiếu tiếp theo phải đưa **quyết định kiến trúc cần chọn**, không chỉ danh sách "còn thiếu":
+phương án đề xuất + thay thế; bất biến cần giữ; ảnh hưởng ngôn ngữ/API/bytecode; thứ tự triển khai
+theo **lát cắt chạy được**; tiêu chí nghiệm thu từng lát cắt; rủi ro và phần chưa biết.
+**Không dùng lại ước lượng dòng/tuần-người cũ làm cam kết.**
+
+> **Ghi nhận thực thi (Agent 1, 2026-11-20)**: mở đúng 3 luồng ST-261/ST-262/ST-263 theo VD-249;
+> không tạo tag, không mở VS3 toàn phần, không chọn worker model/GC/API mới.

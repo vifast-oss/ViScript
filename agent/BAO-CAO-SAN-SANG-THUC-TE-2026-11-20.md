@@ -64,7 +64,7 @@ Kết luận: checkpoint `dbae70a` vững trong phạm vi tính đúng đắn đ
 | TCP `connect` | `crates/vis-cli/src/net.rs:120-135` `connect_timeout` | **Chặn toàn runtime** (có hạn) |
 | TCP `accept` | `net.rs:85-117`: timeout 0 ⇒ blocking; timeout > 0 ⇒ `set_nonblocking(true)` **+ vòng lặp `thread::sleep(5ms)`** | **Chặn toàn runtime**; nonblocking ở đây chỉ là cơ chế hạn giờ + busy-poll, **không** yield cho scheduler |
 | TCP `read` / `write` / `close` | `net.rs:185-213`, `:215-229` | Chặn (có read timeout); close là instant |
-| HTTP GET/HEAD | `crates/vis-interp/src/net.rs:217-269, 354-398`, gọi `net.read` blocking | Chặn; timeout là **per-read**, không phải tổng request — nợ #148 (`agent/SO-NO.md:236`) |
+| HTTP GET/HEAD | `crates/vis-interp/src/net.rs:217-269, 354-398`, gọi `net.read` blocking | Chặn. **Đính chính (ST-263)**: deadline được tính **một lần cho mỗi response** (`net.rs:225,357`), mỗi lần đọc chỉ dùng thời gian còn lại ⇒ slow-drip **trong một response đã bị chặn**; khoảng trống là **chuỗi redirect**, mỗi hop dùng deadline mới (`http_get:313-344`) ⇒ ≤ ~6× `timeout`. Nghĩa `timeout` giữa hai lần đọc đã được **VD-183 Q2(1)** chốt — xem `JOURNAL/vd249-lifecycle-measure.md` §1 |
 | File `fs.*` | `crates/vis-interp/src/stdlib.rs:479-516` qua `FsHost`/`std::fs` | Chặn |
 | SQLite | `crates/vis-cli/src/db/sqlite/mod.rs` (rusqlite bundled, `Cargo.toml:42-47`) | Chặn |
 | Timer / sleep | **Không có** — chỉ `time.now_ms`/`monotonic_ms` (`stdlib.rs:437-448`) | N/A |
@@ -200,7 +200,7 @@ chứng" và không phải hiệu năng. Không tự sửa trong báo cáo này 
 | Không fairness/preemption | **Thiếu cơ chế** (có thể chấp nhận nếu I/O không chặn) | `rt.rs:4-5,79,159`; §3.3 | Task CPU dài đói task khác — đo được trực tiếp |
 | Không GC, chu trình `Rc` qua kênh | **Thiếu cơ chế** (VS3) | `rt.rs:10,84-86`; `JOURNAL/st155-vs3-dieu-tra.md` | Nguy cơ giữ tài nguyên lâu; chưa có bằng chứng leak ở 50k |
 | Không dọn tài nguyên theo task | **Thiếu cơ chế** | `net.rs:215-229`; §2 | Socket/file có thể mở tới hết chương trình nếu quên `close` |
-| HTTP timeout là per-read, không tổng request | **Lỗi đúng đắn (đã biết)** | nợ #148, `SO-NO.md:236` | Slow-drip giữ request mở vô hạn |
+| HTTP deadline tổng cho toàn lời gọi (gồm redirect) | **Thiếu cơ chế / cần chốt hợp đồng** | nợ #148; `VD-183 Q2(1)` chốt `timeout` = giữa hai lần đọc; `JOURNAL/vd249-lifecycle-measure.md` §1 | Slow-drip **một response** đã bị chặn; chuỗi redirect có thể ~6× `timeout`. Cần A0 chọn A/B/C, **không tự đổi mã** |
 | Chưa có test I/O đồng thời / fairness / memory dài | **Chỉ thiếu bằng chứng** | §5.3 của khảo sát; các test net dùng thread ở **harness**, không phải 2 task ViScript | Chưa biết hành vi thật dưới tải hỗn hợp ngoài các ca đã đo ở §3 |
 | Test 10k chỉ đo scale + parity | **Chỉ thiếu bằng chứng** | `async_10k.rs:57-88` (comment `:9` ghi ~0,2 s) | Không đo latency/fairness/I/O — dễ bị hiểu nhầm là "async tốt" |
 | Loopback only; không TLS/HTTP2/keep-alive; method `async` ⇒ `VS0201` | **Giới hạn thiết kế đã biết** | #22/#83/#84/#13; `docs/...:1618` | Giới hạn use-case, không phải lỗi |
