@@ -27,9 +27,11 @@
   read cell cap 1 MiB (write 17 MiB), thêm 47 unit + 17 e2e SQLite. Gate main **1641**.
 - **Semantics `a4cf655` → merge `fb12645`**: or-pattern checker đệ quy/type, `break`/`continue` static context,
   `main -> int` exit **0** theo VD-242; gate main **1656**; core-test PASS.
-- Còn chờ: frame leftovers (`vd259-frame2`). Sau đó mở wave 3: refutable `let`/`for`, scope/unresolved,
-  ST-248 branch/coercion parity, list rest-pattern (feature), frame gaps còn lại.
-- Sau wave 2: merge, chạy gate/core-test/release test, cập nhật QUEUE/report cuối.
+- **Frame `7a2ecbc` → merge `6e26836`**: HBody cache, trace sort, lifecycle snapshot, frame purge,
+  timer next-event, defaults, argv fallback. Gate main **1668**; core-test PASS.
+- **Wave 3** đang chạy: refutable `let`/`for` + scope/record; ST-248/branch coercion;
+  list rest-pattern feature; frame timer starvation.
+- Sau wave 3: merge, gate/core-test/release, cập nhật QUEUE/report cuối.
 
 ## Quy tắc tích hợp đã áp dụng
 
