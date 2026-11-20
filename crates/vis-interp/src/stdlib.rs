@@ -7,8 +7,6 @@
 //! Mọi hàm **thuần** trừ `std.time.*` (đọc đồng hồ trong Rust, **không** thêm method vào [`Host`]);
 //! `std.fs` **không** ở đây (ST-27), `std.json.decode` **chưa** có (VS1b — `VS0301` ở tầng hạ).
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -26,6 +24,7 @@ use crate::value::{eq, Value};
 mod bisect;
 mod chung;
 mod flatten;
+mod frame_net;
 mod fsbytes;
 mod fsmkdirall;
 mod indexof;
@@ -45,6 +44,7 @@ mod sqliteidxcols;
 mod sqlitepk;
 mod sqliteschema;
 mod sqlitetables;
+mod strascii;
 mod strfind;
 mod strlen;
 mod strpad;
@@ -58,6 +58,9 @@ mod strtitle;
 mod strtrim;
 pub use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
+pub use frame_net::{
+    frame_net_set_write, frame_net_set_write_timeout, frame_net_take_write, frame_net_write_timeout,
+};
 pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP};
 
 // ===========================================================================
@@ -72,48 +75,6 @@ pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, N
 // văn — không helper mới trong `rt.rs`. Runtime mặc định (`frame.enabled == false`)
 // và API ngôn ngữ (`net.connect`/`net.write`, chữ ký, giá trị trả) không đổi.
 // ===========================================================================
-
-#[derive(Default)]
-struct FrameNetIo {
-    /// `W:<tay>` → bytes cần gửi (adapter `take` sang trạng thái riêng ở lần poll đầu).
-    writes: HashMap<String, Vec<u8>>,
-    /// Test có thể thu hẹp hạn write để kiểm chứng timeout mà không đổi API ngôn ngữ.
-    write_timeout_ms: Option<i64>,
-}
-thread_local! {
-    static FRAME_NET_IO: RefCell<FrameNetIo> = RefCell::new(FrameNetIo::default());
-}
-
-/// **Chỉ test**: ghi bytes cần gửi cho khoá `W:<tay>` trước khi gọi `frame_reactor_poll_io`.
-#[doc(hidden)]
-pub fn frame_net_set_write(key: &str, data: &[u8]) {
-    FRAME_NET_IO.with(|x| {
-        x.borrow_mut().writes.insert(key.to_string(), data.to_vec());
-    });
-}
-
-/// **Chỉ test**: lấy (và xoá) bytes cần gửi của khoá `W:<tay>`.
-#[doc(hidden)]
-pub fn frame_net_take_write(key: &str) -> Option<Vec<u8>> {
-    FRAME_NET_IO.with(|x| x.borrow_mut().writes.remove(key))
-}
-
-/// **Chỉ test**: đặt lại hạn write (ms); `None` ⇒ dùng [`FRAME_WRITE_TIMEOUT_MS`].
-#[doc(hidden)]
-pub fn frame_net_set_write_timeout(ms: Option<i64>) {
-    FRAME_NET_IO.with(|x| x.borrow_mut().write_timeout_ms = ms);
-}
-
-/// **Chỉ test**: hạn write hiệu lực, luôn dương (tránh trần chờ selector vô hạn).
-#[doc(hidden)]
-pub fn frame_net_write_timeout() -> i64 {
-    FRAME_NET_IO.with(|x| {
-        x.borrow()
-            .write_timeout_ms
-            .unwrap_or(FRAME_WRITE_TIMEOUT_MS)
-            .max(1)
-    })
-}
 
 /// **Chỉ test**: `net.write` trả `Result<(), str>` — đổi payload `Ok(str)` của reactor
 /// thành `Ok(())`, giữ nguyên `Err` (hợp đồng số byte/lỗi KHÔNG đổi).
@@ -317,6 +278,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "str.byte_len" | "str.char_count" | "str.is_empty" => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strlen::goi(name, s))
+        }
+        // **VD-270 (str-is-ascii)**: `true` ⇔ **mọi byte** thuộc `0x00..=0x7F`; rỗng ⇒
+        // `true`, scalar non-ASCII ⇒ `false`; không trap, O(độ dài byte). Lõi ở
+        // `stdlib/strascii.rs`.
+        "str.is_ascii" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(strascii::goi(s))
         }
         // ----- std.list -----
         // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.
