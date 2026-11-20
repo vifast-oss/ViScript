@@ -3493,3 +3493,10 @@ reuse `Ty::ResultBoolErr`.
 `str::rsplit_once`; `Some` đúng 2 phần; không khớp ⇒ `None`; `sep` rỗng ⇒ `Some([s, ""])`;
 `""`+`""` ⇒ `Some(["", ""])`; Unicode/emoji/ZWJ khớp chuỗi con trên biên scalar; sugar R5c;
 reuse `Ty::OptListStr`.
+
+### VD-270 (bổ sung) · list.min_float / max_float — A0, 2026-11-21
+
+`list.min_float`/`list.max_float`: `(list[float]) -> float?`; rỗng ⇒ `None`; **có `NaN` ở bất kỳ
+vị trí ⇒ `None`** (tất định, cùng `median`); `±inf` so bình thường; trả đúng phần tử đã lưu; khi
+nhiều phần tử bằng nhau (kể cả `-0.0`/`+0.0`) giữ **phần tử đầu tiên** theo danh sách; chỉ
+`list[float]`; sugar R5c; reuse `Ty::OptFloat`.
