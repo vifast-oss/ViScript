@@ -176,7 +176,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 str-is-ascii, 2026-11-21)**: +**1** hàm `std.str.is_ascii`
     // (`(str) -> bool`; đúng ⇔ mọi byte thuộc `0x00..=0x7F`, rỗng ⇒ `true`) ⇒ **130** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 130, "bảng chữ ký phải đủ 130 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-sum-float, 2026-11-21)**: +**1** hàm `std.list.sum_float`
+    // (`(list[float]) -> float`; hạt giống `+0.0`, rỗng ⇒ `0`, cộng trái→phải `f64`, IEEE:
+    // NaN/±inf lan truyền, mọi tổng 0 đều `+0.0`) ⇒ **131** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 131, "bảng chữ ký phải đủ 131 hàm");
 }
 
 #[test]
@@ -526,6 +529,26 @@ fn list_median_chi_list_float_tra_opt_float() {
     );
     assert_eq!(f.ret.ten(), "float?", "`list.median`: tên hiển thị");
     assert_eq!(f.so_doi(), 1, "`list.median`: số đối số");
+}
+
+#[test]
+fn list_sum_float_chi_list_float_tra_float() {
+    // **VD-270 (list-sum-float)**: **chỉ** `list[float]`, trả `float` trần (không `Option`);
+    // `sum_float` không phải phương thức lõi nên sugar `xs.sum_float()` R5c.
+    let f = sig_of("list.sum_float").expect("list.sum_float");
+    assert_eq!(
+        f.params,
+        &[Ty::List(&Ty::Float)],
+        "`list.sum_float`: tham số"
+    );
+    assert_eq!(f.ret, Ty::Float, "`list.sum_float`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Float,
+        "`list.sum_float`: phải hạ thành `float`"
+    );
+    assert_eq!(f.ret.ten(), "float", "`list.sum_float`: tên hiển thị");
+    assert_eq!(f.so_doi(), 1, "`list.sum_float`: số đối số");
 }
 
 #[test]

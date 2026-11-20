@@ -32,6 +32,7 @@ mod listcontains;
 mod listmath;
 mod listmean;
 mod listmedian;
+mod listsumfloat;
 mod netconst;
 mod pathjoinall;
 mod pathnorm;
@@ -500,6 +501,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.median" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmedian::goi(xs, span)
+        }
+        // **VD-270 (list-sum-float)**: tổng `list[float]`, hạt giống `+0.0` (rỗng ⇒ `0`); cộng
+        // trái→phải `f64` (IEEE: NaN/±inf lan truyền, tràn ⇒ ±inf, không trap — kể cả mọi tổng
+        // bằng 0 đều `+0.0`). Lõi `stdlib/listsumfloat.rs`; sugar R5c `xs.sum_float()`.
+        "list.sum_float" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listsumfloat::goi(xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.

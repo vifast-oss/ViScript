@@ -245,7 +245,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 130] = [
+pub const FUNCS: [StdFn; 131] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -596,6 +596,15 @@ pub const FUNCS: [StdFn; 130] = [
         name: "list.median",
         params: &[Ty::List(&Ty::Float)],
         ret: Ty::OptFloat,
+    },
+    // **VD-270 (list-sum-float)**: tổng **chỉ** `list[float]`, trả `float` (không `Option`);
+    // hạt giống `+0.0` nên rỗng ⇒ `0`, cộng trái→phải `f64` (IEEE: NaN/±inf lan truyền, tràn
+    // ⇒ ±inf, không trap; mọi tổng bằng 0 đều `+0.0`). Không phải phương thức lõi nên sugar
+    // `xs.sum_float()` đi R5c tới đây; phương thức lõi `xs.sum()` không đổi.
+    StdFn {
+        name: "list.sum_float",
+        params: &[Ty::List(&Ty::Float)],
+        ret: Ty::Float,
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
     // **VD-270 (strlen)**: rỗng ⇔ 0 cặp; `bool`, không phụ thuộc `K`/`V`.
