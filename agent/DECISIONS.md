@@ -3467,3 +3467,22 @@ reuse `Ty::ResultBoolErr`.
 - **sqlite.schema_version**: `(handle) -> Result[int, Error]` đọc `PRAGMA schema_version` qua
   `db_query`; chỉ schema chính; DDL trên cùng connection làm tăng, DML/TEMP/IF NOT EXISTS không đổi;
   `:memory:` mới ⇒ `0`; handle/hình dạng sai ⇒ `Err` dữ liệu; reuse `Ty::ResultIntErr`.
+
+### VD-270 (bổ sung) · with_stem, split_once, user_version, fs.is_symlink, test --shard — A0, 2026-11-21
+
+- **path.with_stem**: `(str, str) -> str` thay stem thành phần cuối, **giữ ext hiện có**; dùng đúng
+  `stem_voi`/`ext_voi` của `path.stem`/`path.ext`; tên bắt đầu `.` không có ext; không có tên tệp
+  ⇒ nguyên văn; không sugar. Toolchain ghim không có `Path::with_stem`; hợp đồng suy từ
+  `file_stem`/`extension`/`with_file_name` + tài liệu, đã ghi rõ ca lệch Rust có chủ ý.
+- **str.split_once**: `(str, str) -> list[str]?` tách tại lần xuất hiện **đầu**, đúng Rust
+  `str::split_once`; `Some` đúng 2 phần; `sep` rỗng ⇒ `Some(["", s])`; thêm `Ty::OptListStr`;
+  sugar R5c.
+- **sqlite.user_version**: `(handle) -> Result[int, Error]` đọc `PRAGMA user_version` qua `db_query`,
+  chỉ đọc; `:memory:` mới ⇒ 0; DDL/ghi dữ liệu không đổi; lưu theo tệp; ngoài `0..=i32::MAX` ⇒
+  `Err` dữ liệu; reuse `Ty::ResultIntErr`.
+- **fs.is_symlink**: `(str) -> Result[bool, Error]` dùng `symlink_metadata` (không đi theo link);
+  symlink tới tệp/thư mục/đích thiếu ⇒ `true`; tệp/thư mục thường/thiếu ⇒ `false`; lỗi khác ⇒
+  `Err`; cap đọc như `fs.is_file`; không sugar; reuse `Ty::ResultBoolErr`.
+- **vis test --shard `<I>/<N>`**: chia ca **sau** `--filter`/`--shuffle`, **trước**
+  `--list`/`--repeat`; phần I giữ chỉ số `idx % N == I-1`; `1 ≤ I ≤ N`; N phần rời nhau, hợp =
+  đúng tập đã chọn; sai cú pháp/lặp cờ ⇒ exit 2; `--shard 1/1` giữ hành vi cũ.
