@@ -99,6 +99,32 @@ pub(crate) enum Ctrl {
 
 // **ST-276**: charge của Interp nằm cùng prelude này để giữ R1 ≤ 1500 dòng của `interp.rs`.
 impl<'a> Interp<'a> {
+    /// **VD-262**: thi hành **mọi** `let`/`var` cấp tệp theo **thứ tự nguồn** — dùng chung cho
+    /// đường interp thường và frame test, để biến cấp tệp có giá trị trước khi gọi `fn main`.
+    ///
+    /// Chỉ câu **khai báo** đi qua đây; câu lệnh cấp tệp khác (`print`, gán, `if`, …) **không**
+    /// chạy khi tệp có `fn main` (giữ nguyên hành vi cũ: chúng chỉ chạy ở chế độ không `main`).
+    /// Gọi hàm từ initializer vẫn thấy `self.env` (nơi `const` đã được đặt trước).
+    pub(crate) fn khoi_tao_bien_cap_tep(&mut self) -> R<()> {
+        for s in self.stmts {
+            if !matches!(s, HStmt::Let { .. } | HStmt::Var { .. }) {
+                continue;
+            }
+            self.last = None;
+            match self.exec_stmt(s)? {
+                Ctrl::Normal => {}
+                Ctrl::Break | Ctrl::Continue => {
+                    return Err(Abort::Trap(Trap::new(
+                        RT,
+                        "`break`/`continue` ngoài vòng lặp",
+                        s.span(),
+                    )))
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Ghi một sự kiện ngữ nghĩa. `None` khi hook tắt (mặc định) — không đổi hành vi.
     pub(crate) fn charge(&mut self, kind: crate::rt::fee::FeeKind, span: Span) -> Option<Abort> {
         let (w, remaining) = crate::rt::fee::charge(kind, span.start as u32)?;
