@@ -64,7 +64,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     //   execute, query, begin, commit, rollback, in_transaction) ⇒ **61** hàm; `MODULES` 9 → **10**
     //   (thêm `sqlite`). Prototype nội bộ — **không** freeze API (`api_dong_bang` chỉ chỉnh sau
     //   cổng tích hợp).
-    assert_eq!(FUNCS.len(), 61, "bảng chữ ký phải đủ 61 hàm");
+    // **SỬA KÈM LÝ DO (VD-265, 2026-11-21)**: +**5** hàm thực dụng — `list.zip`, `list.min`,
+    //   `list.max`, `str.lines`, `str.split_whitespace` ⇒ **66** hàm. Không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 66, "bảng chữ ký phải đủ 66 hàm");
 }
 
 #[test]

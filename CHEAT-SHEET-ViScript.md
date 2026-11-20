@@ -194,9 +194,9 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | Module | Hàm chính | Ví dụ đã chạy ✔ |
 |---|---|---|
 | `std.fs` | `exists` `list` `read` `write` | `fs.exists(".")` → `true` |
-| `std.list` | `sort` `take` `drop` `chunk` `concat` `reverse` `unique` | `list.sort([3,1,2])` → `[1,2,3]` |
+| `std.list` | `sort` `take` `drop` `chunk` `concat` `reverse` `unique` `zip` `min` `max` | `list.sort([3,1,2])` → `[1,2,3]` |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` | `map.keys(m)` |
-| `std.str` | `split` `join` `upper` `lower` `trim` `replace` `repeat` `starts_with` `ends_with` `contains` | `str.join(["a","b"], "-")` → `a-b` |
+| `std.str` | `split` `join` `upper` `lower` `trim` `replace` `repeat` `starts_with` `ends_with` `contains` `lines` `split_whitespace` | `str.join(["a","b"], "-")` → `a-b` |
 | `std.path` | `join` `basename` `dirname` `ext` `stem` `is_abs` | `path.join("a","b")` → `a/b` |
 | `std.time` | `now_ms()` `monotonic_ms()` | |
 | `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
@@ -212,7 +212,7 @@ Method trên giá trị (không cần `use`):
 | `list` | `len` `get` `first` `last` `push` `map` `filter` `each` `sum` `join` — `map`/`filter` **trả list ngay** (eager) **[ĐÃ CÓ]** |
 | `Iterator[T]` | `.lazy()` trả iterator; cùng bộ method + `.to_list()`/`.to_map()`/`.to_set()`; **duyệt lại được**; `range`/`fs.lines` mặc định lười — **[DỰ KIẾN]** (R24) |
 | `map` | `len` `get` `has` `keys` `values` |
-| `str` | `len` `upper` `lower` `split` `chars` `contains` |
+| `str` | `len` `upper` `lower` `split` `chars` `contains` `lines` `split_whitespace` |
 
 ## 10. Chế độ shell (chỉ ViScript có)
 

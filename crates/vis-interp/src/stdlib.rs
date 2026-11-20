@@ -304,6 +304,23 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             };
             Ok(Value::List(ds))
         }
+        // **VD-265**: `lines` theo nghĩa Rust — tách ở `\n`, bỏ `\r` ngay trước `\n`; dấu
+        // xuống dòng cuối **không** sinh dòng rỗng. `split_whitespace` tách theo
+        // `char::is_whitespace` (Unicode), bỏ khoảng trắng đầu/cuối và gộp nhiều khoảng liền.
+        "str.lines" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(Value::List(
+                s.lines().map(|x| Value::Str(x.to_string())).collect(),
+            ))
+        }
+        "str.split_whitespace" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(Value::List(
+                s.split_whitespace()
+                    .map(|x| Value::Str(x.to_string()))
+                    .collect(),
+            ))
+        }
         "str.join" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let sep = chuoi(name, &args[1], 1, span)?;
@@ -455,6 +472,57 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 xs.iter().skip(n).cloned().collect()
             };
             Ok(Value::List(out))
+        }
+        // **VD-265**: ghép cặp theo vị trí, **dừng ở danh sách ngắn hơn** (zip của Python/
+        // Rust); danh sách rỗng ở một bên ⇒ `[]`. Cặp là **list 2 phần tử** (cùng biểu diễn
+        // với `enumerate`) để không cần kiểu tuple mới.
+        "list.zip" => {
+            let a = danh_sach(name, &args[0], 0, span)?;
+            let b = danh_sach(name, &args[1], 1, span)?;
+            Ok(Value::List(
+                a.iter()
+                    .zip(b.iter())
+                    .map(|(x, y)| Value::List(vec![x.clone(), y.clone()]))
+                    .collect(),
+            ))
+        }
+        // **VD-265**: `min`/`max` gộp theo `cmp_value` (cùng thứ tự với `list.sort`); danh sách
+        // **rỗng** là trap `VS0501` (dữ liệu không có phần tử), không panic; phần tử không so
+        // được (NaN/kiểu lạ) cũng là trap như `sort` — không trả kết quả nửa vời.
+        "list.min" | "list.max" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            let Some(dau) = xs.first() else {
+                return Err(loi(
+                    format!("`{name}`: danh sách rỗng không có phần tử để gộp"),
+                    span,
+                ));
+            };
+            if xs.iter().any(|x| x.cmp_value(x).is_none()) {
+                return Err(loi(
+                    format!("`{name}`: không so được các phần tử (NaN hoặc kiểu chưa có thứ tự)"),
+                    span,
+                ));
+            }
+            let mut acc = dau.clone();
+            for x in &xs[1..] {
+                let Some(ord) = x.cmp_value(&acc) else {
+                    return Err(loi(
+                        format!(
+                            "`{name}`: không so được các phần tử (NaN hoặc kiểu chưa có thứ tự)"
+                        ),
+                        span,
+                    ));
+                };
+                let chon = if name == "list.min" {
+                    ord == std::cmp::Ordering::Less
+                } else {
+                    ord == std::cmp::Ordering::Greater
+                };
+                if chon {
+                    acc = x.clone();
+                }
+            }
+            Ok(acc)
         }
         // ----- std.map -----
         "map.keys" | "map.values" => {
