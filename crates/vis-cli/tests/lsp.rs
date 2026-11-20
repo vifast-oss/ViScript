@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1208,5 +1208,87 @@ fn lsp_hover_option_in_int() {
     assert!(
         !out.contains("Option[int]"),
         "hover không được in `Option[int]`: {out}"
+    );
+}
+
+// ===== ST-269: go-to-definition =====
+
+fn definition(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/definition", uri, line, ch)
+}
+
+/// Ca 24 — gọi hàm ⇒ nhảy tới **tên** trong khai báo `fn` (không phải cả khối).
+#[test]
+fn lsp_definition_ham() {
+    let text = "fn add(a: int, b: int) -> int:\n    a + b\n\nfn main():\n    print(add(1, 2))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&definition(2, URI, 4, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":[{"uri":"file:///a.vis","range":{"start":{"line":0,"character":3},"end":{"line":0,"character":6}}}]}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+/// Ca 25 — biến cục bộ ⇒ đúng span binder `let`.
+#[test]
+fn lsp_definition_bien_cuc_bo() {
+    let text = "fn main():\n    let total = 1\n    print(total)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&definition(2, URI, 2, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":[{"uri":"file:///a.vis","range":{"start":{"line":1,"character":8},"end":{"line":1,"character":13}}}]}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+/// Ca 26 — trường bản ghi `u.f` ⇒ khai báo `f: int` trong `type`.
+#[test]
+fn lsp_definition_truong() {
+    let text = "type U:\n    f: int\n\nfn main():\n    let u = U(f: 1)\n    print(u.f)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&definition(2, URI, 5, 12))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":[{"uri":"file:///a.vis","range":{"start":{"line":1,"character":4},"end":{"line":1,"character":5}}}]}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+/// Ca 27 — builtin `print` không có khai báo trong tệp ⇒ `result:null`.
+#[test]
+fn lsp_definition_khong_co_tra_null() {
+    let text = "fn main():\n    print(1)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&definition(2, URI, 1, 5))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":null}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
     );
 }

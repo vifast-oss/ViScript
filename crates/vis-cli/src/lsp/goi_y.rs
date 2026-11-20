@@ -38,7 +38,7 @@ pub fn tien_to(text: &str, byte: usize) -> (usize, String) {
 }
 
 /// Biên **byte** của từ tại `byte` (rỗng nếu con trỏ không nằm trong/trên từ).
-fn tu_tai(text: &str, byte: usize) -> (usize, usize) {
+pub(crate) fn tu_tai(text: &str, byte: usize) -> (usize, usize) {
     let b = byte.min(text.len());
     let mut start = b;
     for (i, c) in text[..b].char_indices().rev() {

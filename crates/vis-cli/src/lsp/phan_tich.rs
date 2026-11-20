@@ -42,6 +42,8 @@ pub struct KetQua {
     pub bien: Vec<(String, String)>,
     /// **ST-100**: trường của `type` — `(tên kiểu, gợi ý)` để hover `p.x` / khai báo `x: int`.
     pub truong: Vec<(String, GoiY)>,
+    /// **ST-269**: khai báo để `textDocument/definition` nhảy tới.
+    pub dinh_nghia: Vec<super::dinh_nghia::DinhNghia>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -168,12 +170,14 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         gom_bien(st, &tbl, &mut bien);
     }
     let truong = super::thanh_vien::gom(&out.hir, &syms, &tbl).truong;
+    let dinh_nghia = super::dinh_nghia::gom(&out.hir);
     KetQua {
         text: lexed.text.clone(),
         ds,
         items,
         bien,
         truong,
+        dinh_nghia,
     }
 }
 
