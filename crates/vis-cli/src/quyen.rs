@@ -316,6 +316,7 @@ fn la_tep_lenh(p: &Path) -> bool {
 ///   tiên — **cùng** luật `execvp` sẽ dùng khi chạy.
 /// - Giá trị **có `/`** ⇒ ghép `goc` nếu tương đối, rồi `canonicalize` (theo symlink).
 /// - Không phân giải được ⇒ `Err` có chẩn đoán rõ (CLI in ra rồi exit 2), **không** im lặng nhận.
+///
 /// Các tên khả dĩ để dò trong `PATH`: nguyên tên + các đuôi thực thi Windows (PATHEXT).
 /// Unix: chỉ nguyên tên (đúng `execvp`).
 #[cfg(not(unix))]
