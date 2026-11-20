@@ -39,6 +39,9 @@
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
 - `test/toolchain/run.sh`: **PASS**.
+- `./vis-dev nightly` @ `5099dee`: **PASS** — parser fuzz **18.574.043 ca / 421.534.861 token / 0 vi phạm**
+  (120 s), vòng tròn fmt **475 tệp bất động**, gate L0 **1822/0**.
+- `./bin/vis-diff` @ `5099dee`: **0 lệch** (2.000 + 100.000 ca, 7 test PASS).
 - `host_posix_real`: `/bin/echo`, `/usr/bin/grep`, `/bin/sh`, `/usr/bin/printf` thật, interp + VM.
 - QA độc lập @ `67f232a`: nextest **1727 passed / 3 skipped** (23.5 s); core-test **1151 passed**
   (118 binaries, 35.7 s); nightly `--fuzz-minutes 5` **44.103.531 cases / 1.001.085.722 tokens /
