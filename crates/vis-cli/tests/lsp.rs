@@ -477,14 +477,21 @@ fn lsp_completion_tien_to_add() {
     assert_eq!(code, 0, "stderr: {err}");
     let a = r#"{"label":"add","kind":3,"detail":"fn add(a: int, b: int) -> int"}"#.to_string();
     let tra = format!(r#"{{"jsonrpc":"2.0","id":2,"result":[{a}]}}"#);
+    let body = publish(
+        URI,
+        &chan(
+            3,
+            0,
+            3,
+            2,
+            1,
+            "VS0301",
+            "tên không tồn tại: `ad` chưa được khai báo (VD-260)",
+        ),
+    );
     assert_eq!(
         out,
-        format!(
-            "{}{}{}",
-            khung(INIT),
-            khung(&publish_rong(URI)),
-            khung(&tra)
-        )
+        format!("{}{}{}", khung(INIT), khung(&body), khung(&tra))
     );
 }
 
@@ -501,9 +508,21 @@ fn lsp_completion_tien_to_le() {
     assert_eq!(code, 0, "stderr: {err}");
     let tra =
         r#"{"jsonrpc":"2.0","id":2,"result":[{"label":"len","kind":3},{"label":"let","kind":14}]}"#;
+    let body = publish(
+        URI,
+        &chan(
+            0,
+            0,
+            0,
+            2,
+            1,
+            "VS0301",
+            "tên không tồn tại: `le` chưa được khai báo (VD-260)",
+        ),
+    );
     assert_eq!(
         out,
-        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+        format!("{}{}{}", khung(INIT), khung(&body), khung(tra))
     );
 }
 
@@ -586,9 +605,21 @@ fn lsp_hover_khong_ton_tai() {
     let (code, out, err) = chay(&vao);
     assert_eq!(code, 0, "stderr: {err}");
     let tra = r#"{"jsonrpc":"2.0","id":2,"result":null}"#;
+    let body = publish(
+        URI,
+        &chan(
+            2,
+            0,
+            2,
+            3,
+            1,
+            "VS0301",
+            "tên không tồn tại: `zzz` chưa được khai báo (VD-260)",
+        ),
+    );
     assert_eq!(
         out,
-        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+        format!("{}{}{}", khung(INIT), khung(&body), khung(tra))
     );
 }
 
@@ -820,11 +851,7 @@ fn lsp_ba_tep_bang_vis_check() {
     let d = thu_muc("so");
     ghi(&d, "util.vis", "pub fn f() -> int:\n    return 1\n");
     let a = ghi(&d, "a.vis", STD_SAI);
-    let b = ghi(
-        &d,
-        "b.vis",
-        "use ./util\n\nfn main():\n    print(util.f())\n",
-    );
+    let b = ghi(&d, "b.vis", "use ./util\n\nfn main():\n    print(f())\n");
     let c = ghi(&d, "c.vis", UTIL_THIEU);
     for f in [&a, &b, &c] {
         let ds = mo_va_lay(&d, f);

@@ -188,7 +188,7 @@ impl Gen {
                 let p1 = self.so();
                 let p2 = self.so();
                 self.dong.push(format!("let {t} = match {o}:"));
-                self.dong.push(format!("    some(v): v + {p1}"));
+                self.dong.push(format!("    Some(v): v + {p1}"));
                 self.dong.push(format!("    None: {p2}"));
                 self.bien.push((t, 0));
             }
@@ -224,7 +224,7 @@ impl Gen {
             s.push_str("print(inc(1) + fact(3) + cong(1, 2))\n");
         }
         if self.rng.duoi(3) == 0 {
-            s.push_str("let d: D? = some({n: 1})\nprint(d?.n ?? 0)\n");
+            s.push_str("let d: D? = Some({n: 1})\nprint(d?.n ?? 0)\n");
         }
         s
     }

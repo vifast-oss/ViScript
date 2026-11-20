@@ -273,10 +273,13 @@ fn than_chay() {
     //   − 1 lỗi biên dịch ⇒ **(433, 53) = 486**.
     // **SỬA KÈM LÝ DO (VD-241 đợt coercion, 2026-11-19)**: +1 ca xanh ⇒ **(434, 53) = 487**.
     // **SỬA KÈM LÝ DO (VD-241 Gate 1, 2026-11-19)**: sqlite/ **bỏ qua** ⇒ vẫn **(434, 53) = 487** chạy được.
+    // **SỬA KÈM LÝ DO (VD-260)**: `loi/ten-la` + `pham-vi/ten-la` chuyển từ lỗi **lúc chạy**
+    // `VS0501` sang lỗi **tĩnh** `VS0301` (tên giá trị chưa phân giải bị checker bắt) ⇒
+    // **(432, 55) = 487**; tổng số ca không đổi.
     assert_eq!(
         (khop, bien_dich),
-        (434, 53),
-        "434 ca chạy được khớp + 53 ca lỗi biên dịch chạm bytecode (sqlite/ bỏ qua 27), thật {khop}/{bien_dich}"
+        (432, 55),
+        "432 ca chạy được khớp + 55 ca lỗi biên dịch chạm bytecode (sqlite/ bỏ qua 27), thật {khop}/{bien_dich}"
     );
 }
 
@@ -342,13 +345,15 @@ fn hai_duong_cung_so_chan_doan() {
             // **VD-241 §7 (2026-11-19)**: +4 ca xanh ⇒ **433**.
             // **VD-241 đợt coercion (2026-11-19)**: +1 ca xanh (ma trận) ⇒ **434**.
             // **VD-241 Gate 1 (2026-11-19)**: sqlite/ **bỏ qua** (27 ca cần host) ⇒ vẫn **434**.
-            assert_eq!(so_ca, 434, "phải so đủ 434 ca chạy được");
+            // **VD-260**: hai ca tên chưa khai chuyển sang lỗi tĩnh ⇒ **432**.
+            assert_eq!(so_ca, 432, "phải so đủ 432 ca chạy được");
             // **SỬA KÈM LÝ DO (ST-60)**: 32 → **34** (+2 ca `VS0506` lúc chạy).
             // **SỬA KÈM LÝ DO (ST-61)**: 34 → **38** (+4 ca kênh: 3 `VS0505` + 1 `VS0504`).
             // **SỬA KÈM LÝ DO (R19b, VD-178)**: **38 → 39** (+`loi/doi-dau-tran` VS0507).
+            // **VD-260**: hai ca `ten-la` chuyển sang lỗi tĩnh ⇒ **37** ca chẩn đoán lúc chạy.
             assert_eq!(
-                so_ca_co_chan_doan, 39,
-                "39 ca có chẩn đoán lúc chạy (hai đường cùng số)"
+                so_ca_co_chan_doan, 37,
+                "37 ca có chẩn đoán lúc chạy (hai đường cùng số)"
             );
         })
         .expect("tạo luồng")

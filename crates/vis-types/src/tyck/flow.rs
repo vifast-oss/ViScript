@@ -8,7 +8,65 @@ use vis_syntax::Span;
 use crate::hir::{HCond, HStmt};
 use crate::ty::Type;
 
-use super::{vd238, Checker, MISMATCH};
+use super::{vd238, Checker, MISMATCH, RANGE_KHONG_INT};
+
+/// **VD-260** — ảnh chụp phạm vi `env`/`mutable` của checker. Binding của `let`/`if let`/
+/// `while let`/`for`/nhánh `match` chỉ sống trong khối của nó; ra khỏi khối phải trả lại môi
+/// trường trước đó (nếu không, một ký hiệu đã hết phạm vi vẫn còn kiểu trong `env`).
+pub(crate) struct EnvSnap {
+    env: Vec<Option<Type>>,
+    mutable: Vec<bool>,
+}
+
+impl<'a> Checker<'a> {
+    /// Lưu môi trường hiện tại để khôi phục khi ra khỏi khối.
+    pub(crate) fn luu_env(&self) -> EnvSnap {
+        EnvSnap {
+            env: self.env.clone(),
+            mutable: self.mutable.clone(),
+        }
+    }
+
+    /// Khôi phục môi trường đã lưu — binding trong khối vừa kiểm không còn hiệu lực.
+    pub(crate) fn tra_env(&mut self, snap: EnvSnap) {
+        self.env = snap.env;
+        self.mutable = snap.mutable;
+    }
+
+    /// Kiểu phần tử khi `for` duyệt `iter` (tách khỏi `mod.rs` để giữ R1).
+    pub(crate) fn elem_of_iter(&mut self, it: &Type, span: Span) -> Type {
+        match it {
+            Type::List(t) => (**t).clone(),
+            Type::Map(k, v) => Type::TypeRef {
+                name: "tuple".into(),
+                args: vec![(**k).clone(), (**v).clone()],
+            },
+            Type::Str => Type::Char,
+            Type::TypeRef { name, args } if name == "range" => {
+                // ST-13b (mục 4): VS0 chỉ duyệt range **`int`**; `size`/`duration`/`char` ⇒ VS0412
+                // (tyck và runtime phải khớp — runtime chưa hỗ trợ range đơn vị).
+                match args.first() {
+                    Some(Type::Int) | None => Type::Int,
+                    Some(Type::Error) => Type::Error,
+                    Some(other) => {
+                        let o = other.clone();
+                        self.diag(
+                            RANGE_KHONG_INT,
+                            format!(
+                                "`for` chỉ duyệt được range `int`, được `{}` (§A.7)",
+                                self.show(&o)
+                            ),
+                            span,
+                        );
+                        Type::Error
+                    }
+                }
+            }
+            Type::Error => Type::Error,
+            _ => Type::Error,
+        }
+    }
+}
 
 impl<'a> Checker<'a> {
     /// Kiểm một **thân** (suite) và ép kiểu giá trị về `want`.
@@ -38,6 +96,8 @@ impl<'a> Checker<'a> {
     /// Kiểm thân, ghi rõ **câu cuối có cho giá trị không** (`value`). `in_value` chỉ ảnh hưởng
     /// luật `break`/`continue` ở vị trí cần giá trị (VD-259); kiểu trả vẫn như cũ.
     pub(crate) fn kiem_than_ngu_canh(&mut self, body: &[HStmt], value: bool) -> Type {
+        // **VD-260**: binding trong thân khối (`let`/`for`/nhánh) chỉ sống trong khối này.
+        let snap = self.luu_env();
         let n = body.len();
         let mut kq = Type::Unit;
         let saved = std::mem::replace(&mut self.in_value, false);
@@ -51,6 +111,7 @@ impl<'a> Checker<'a> {
             }
         }
         self.in_value = saved;
+        self.tra_env(snap);
         kq
     }
 
@@ -88,6 +149,8 @@ impl<'a> Checker<'a> {
         else_: Option<&[HStmt]>,
         span: Span,
     ) -> Type {
+        // **VD-260**: binding của `if let` chỉ sống trong nhánh `then`/`elif` của nó.
+        let snap = self.luu_env();
         let value = self.in_value;
         self.kiem_cond(cond, then);
         let mut acc = self.kiem_than_ngu_canh(then, value);
@@ -96,13 +159,15 @@ impl<'a> Checker<'a> {
             let t = self.kiem_than_ngu_canh(body, value);
             self.unify_branch(&mut acc, &t, span);
         }
-        match else_ {
+        let out = match else_ {
             Some(e) if !e.is_empty() => {
                 let t = self.kiem_than_ngu_canh(e, value);
                 self.unify_branch(&mut acc, &t, span);
                 acc
             }
             _ => Type::Unit,
-        }
+        };
+        self.tra_env(snap);
+        out
     }
 }

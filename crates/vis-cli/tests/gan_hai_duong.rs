@@ -342,7 +342,8 @@ fn std_khong_nhan_tham_so_ten() {
 }
 
 /// **ST-60b** — `.vish`: `let out = ls -l` là **shell-let** (định danh `l` **chưa** bind), **không**
-/// phải khai báo `ls - l` (trước ST-60b: `check` xanh nhưng `run` báo `tên l chưa hỗ trợ`).
+/// phải khai báo `ls - l`. **VD-260**: shell-let chưa hạ ⇒ `out` chưa bind, nay checker báo
+/// `VS0301` **tĩnh** (trước chỉ đỏ lúc chạy); `l` vẫn **không** bị báo oan.
 #[test]
 fn vish_shell_let_khong_thanh_khai_bao() {
     let d = tam("shell-let");
@@ -352,14 +353,18 @@ fn vish_shell_let_khong_thanh_khai_bao() {
         "# SPDX-License-Identifier: MIT OR Apache-2.0\nlet out = ls -l\nprint(out)\n",
     )
     .expect("ghi");
-    let (cc, co, _ce) = check(&p);
-    assert_eq!(cc, 0, "`check` phải xanh (shell-let là stage): {co}");
-    let (c, _, e) = chay(&p, false);
-    // **R9 (VD-178, C1)**: lỗi chạy có mã ⇒ exit **101** (trước: 1).
-    assert_eq!(c, 101, "stderr: {e}");
+    let (cc, co, ce) = check(&p);
+    assert_ne!(cc, 0, "`check` phải đỏ vì `out` chưa bind: {co}{ce}");
     assert!(
-        e.contains("`out`") && !e.contains("`l`"),
-        "phải báo `out` chưa bind (shell-let chưa hạ — nợ cũ), không phải `l`: {e}"
+        co.contains("VS0301") || ce.contains("VS0301"),
+        "phải báo VS0301: {co}{ce}"
     );
+    assert!(
+        co.contains("`out`") && !co.contains("`l`"),
+        "phải báo `out` chưa bind (shell-let chưa hạ — nợ cũ), không phải `l`: {co}{ce}"
+    );
+    let (c, _, e) = chay(&p, false);
+    assert_eq!(c, 2, "phải từ chối tĩnh: {e}");
+    assert!(e.contains("VS0301"), "stderr: {e}");
     let _ = std::fs::remove_dir_all(&d);
 }

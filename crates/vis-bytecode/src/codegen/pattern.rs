@@ -308,6 +308,30 @@ impl Emit<'_> {
         e: &vis_types::hir::HElse,
         span: Span,
     ) -> Result<(), CodegenError> {
+        // **VD-260**: pattern không phải tên trần khớp trên **kiểu đầy đủ**; chỉ `let x = … else`
+        // mới bóc một lớp `Ok`/`Some` (R3b).
+        if !matches!(pat, HPat::Bind { .. }) {
+            self.f.push(Instr::Dup, span, 1);
+            let _ = self.test(pat, span)?;
+            let j_else = self.f.here();
+            self.f.push(Instr::JumpIfFalse(0), span, -1);
+            self.bind(pat, span, true)?;
+            let j_end = self.f.here();
+            self.f.push(Instr::Jump(0), span, 0);
+            let le = self.f.here();
+            self.f.patch(j_else, le);
+            if let Some(sym) = e.bind_sym {
+                self.f.push(Instr::Unwrap(0), span, 0);
+                let slot = self.slot_cua(sym)?;
+                self.f.push(Instr::BindLocal(slot), span, -1);
+            } else {
+                self.f.push(Instr::Pop, span, -1);
+            }
+            self.khoi(&e.body)?;
+            let lend = self.f.here();
+            self.f.patch(j_end, lend);
+            return Ok(());
+        }
         let c_ok = self.g.cst_str("Ok");
         let c_some = self.g.cst_str("Some");
         self.f.push(Instr::Dup, span, 1);
