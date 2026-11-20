@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `8916490` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `000011f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2193 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2206 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -64,11 +64,12 @@
 | Strlen | `3157b45` → `edc4d2e` | `str.byte_len/char_count/is_empty` + `list/map.is_empty` |
 | Vistest-repeat | `ec0b5cc` → `207e111` | `vis test --repeat N`: hậu tố `[k/N]`, TAP/JSON |
 | LSP selection | `304a857` → `8916490` | `textDocument/selectionRange`: token→line→decl→doc |
+| Run-time | `245ab23` → `000011f` | `vis run --time` in `# time: N ms/us` ra stderr, không đổi exit/output |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2193 passed / 3 skipped** tại `8916490`.
+- `./vis-dev gate --fast`: **PASS — 2206 passed / 3 skipped** tại `000011f`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -174,3 +175,4 @@ Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ ch�
 - **vistest-repeat** (`ec0b5cc` → `207e111`): `vis test --repeat N` (case-major, `[k/N]`, TAP/JSON, fail-fast).
 - **lsp-select2** (`304a857` → `8916490`): `selectionRange` token→line→decl→doc, test riêng.
 - **fmt-diff** (`daddba5`): `vis fmt --check --diff` in unified diff một hunk/tệp, exit 0/1/2.
+- **run-time** (`245ab23` → `000011f`): `vis run --time` đo quanh lời gọi runtime, in `# time: N ms|us` ra stderr; lỗi tĩnh/`--dry` không in; `--tap` giữ TAP hợp lệ.

@@ -3246,3 +3246,11 @@ VM user-enum −22,9% (máy tải cao, số chỉ hướng). Chấp nhận đổ
 - **fmt-diff**: `vis fmt --check --diff` in unified diff **một hunk** mỗi tệp cần sửa
   (`---/+++/@@`, common prefix/suffix); chỉ với `--check`; không đi `--json/--list/--write/
   --indent-report`; `--stdin --check --diff` dùng `-`; exit 0/1/2 như check.
+
+### VD-270 (bổ sung) · `vis run --time` — A0, 2026-11-21
+
+Đo `Instant` **ngay trước → ngay sau** lời gọi runtime (interp hoặc VM); không tính parse/check/
+codegen/cache/sandbox/TAP. In **một** dòng stderr `# time: <N> ms` (≥1000 µs) hoặc
+`# time: <N> us` (<1000 µs, gồm 0). Chỉ in khi runtime thực sự chạy: lỗi tĩnh/`--dry`/
+`--sandbox-check` không in; trap/`Result::Err`/exit thường có in. Với `--tap`, dòng là comment
+sau kết quả TAP. Không đổi stdout/exit/args sau `--`.
