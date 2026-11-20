@@ -24,13 +24,13 @@ mod vistest;
 use vis_diag::{all_codes, lookup_str, severity_label, Lang};
 use vis_syntax::Mode;
 
-use cli::run::{in_sandbox_check, ma_thoat_khi_loi, run_dry};
+use cli::run::{doc_stdin, in_sandbox_check, ma_thoat_khi_loi, run_dry, usage_run};
 /// **ST-63 (VD-105)**: host mạng của CLI (TCP thật, chỉ loopback) — tên cục bộ cho rõ điểm nối.
 use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--lang vi|en|ja] <VSxxxx> | vis explain --list [--lang vi|en|ja] | vis run [--tap] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--lang vi|en|ja] <VSxxxx> | vis explain --list [--lang vi|en|ja] | vis run [--tap] [--stdin] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     ExitCode::from(2)
 }
@@ -290,7 +290,8 @@ fn kiem_cu_phap_probe(tep: &str, text: &str, mode: Mode) -> Option<ExitCode> {
     Some(ExitCode::from(2))
 }
 
-/// `vis run [--tap] <tệp.vis> [-- args…]` — parse → lower → check → interp (ST-14).
+/// `vis run [--tap] [--stdin] <tệp.vis> [-- args…]` — parse → lower → check → interp (ST-14).
+/// **VD-270**: `--stdin` thay tệp bằng bộ đệm UTF-8, tên ảo `-`, luôn **script mode**.
 pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut tap = false;
     let mut dung_vm = false;
@@ -316,6 +317,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut no_strict_caps = false;
     // `vis run --no-extern`: tắt chương trình ngoài (lệnh lạ ⇒ `VS0601`).
     let mut co_no_extern = false;
+    // **VD-270**: nguồn chương trình là **stdin** (tệp ảo `-`), không phải đường tệp.
+    let mut stdin_ra = false;
     let mut tep: Option<String> = None;
     let mut prog_args: Vec<String> = Vec::new();
     let mut mock_tep: Option<String> = None;
@@ -353,6 +356,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--sqlite-debug" => sqlite_debug = true,
             // ST-27: tắt chương trình ngoài ⇒ lệnh lạ `VS0601`.
             "--no-extern" => co_no_extern = true,
+            // **VD-270**: đọc chương trình từ stdin (tệp ảo `-`).
+            "--stdin" => stdin_ra = true,
             // ST-42: `FsHost` **mock tất định** từ kịch bản JSON (test hermetic).
             "--fs-mock" => {
                 if i + 1 >= rest.len() {
@@ -380,11 +385,28 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         }
         i += 1;
     }
-    let Some(tep) = tep else {
-        eprintln!(
-            "dùng: vis run [--tap] [--vm] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
-        );
-        return ExitCode::from(2);
+    // **VD-270**: `--stdin` là nguồn chương trình **riêng** — không lẫn với đường tệp.
+    if stdin_ra {
+        if let Some(t) = &tep {
+            eprintln!("vis run: `--stdin` không đi với tệp `{t}` (chỉ một nguồn chương trình)");
+            return usage_run();
+        }
+        // Ba cờ chỉ có nghĩa với **đường dẫn tệp**; stdin không có tên ổn định để in/nạp lại.
+        for (bat, ten) in [
+            (dump, "--dump-bytecode"),
+            (dump_deps, "--dump-deps"),
+            (dry, "--dry"),
+        ] {
+            if bat {
+                eprintln!("vis run: không hỗ trợ `{ten}` khi dùng --stdin");
+                return usage_run();
+            }
+        }
+    }
+    let tep = match tep {
+        Some(t) => t,
+        None if stdin_ra => "-".to_string(),
+        None => return usage_run(),
     };
     // **ST-130 (VD-124)**: hai cờ mâu thuẫn nhau ⇒ lỗi rõ, không đoán ý người dùng.
     if strict_caps && no_strict_caps {
@@ -408,16 +430,25 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             }
         },
     };
-    let che_do = if tep.ends_with(".vish") {
+    // **VD-270**: stdin luôn **script mode** (tên ảo `-` không có đuôi `.vish`); đường tệp giữ
+    // nguyên luật chọn chế độ theo đuôi.
+    let che_do = if !stdin_ra && tep.ends_with(".vish") {
         vis_syntax::Mode::Command
     } else {
         vis_syntax::Mode::Script
     };
-    let text = match std::fs::read_to_string(&tep) {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("vis run: không đọc được `{tep}`: {e}");
-            return ExitCode::from(2);
+    let text = if stdin_ra {
+        match doc_stdin() {
+            Ok(t) => t,
+            Err(ma) => return ma,
+        }
+    } else {
+        match std::fs::read_to_string(&tep) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("vis run: không đọc được `{tep}`: {e}");
+                return ExitCode::from(2);
+            }
         }
     };
     // **ST-73 (VD-107)**: `--sandbox-check` — probe Landlock **chỉ đọc** + mức cưỡng chế runtime;
@@ -450,13 +481,24 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // nhánh chết. Đường duy nhất: nạp module → frontend → `khoa_multi` (cache hit bỏ codegen). Đo:
     // tệp nhỏ lần 2 **~12 ms** (frontend ~1 ms), không hồi quy.
     // 1–3) nạp **module** (ST-25): đa tệp, `use`, cấm vòng, chẩn đoán đúng tên tệp.
-    let loaded = match modules::load_with(&tep, !co_no_extern) {
+    let nap = if stdin_ra {
+        // **VD-270**: cùng pipeline tệp (lex → parse → hạ → tyck) với tệp chính ảo `-`.
+        modules::load_full_stdin(&text, !co_no_extern, true)
+    } else {
+        modules::load_with(&tep, !co_no_extern)
+    };
+    let loaded = match nap {
         Ok(l) => l,
         Err(e) => {
             eprintln!("vis run: {e}");
             return ExitCode::from(2);
         }
     };
+    // **VD-270**: stdin không có khoá nguồn ổn định và **không** được ghi/đọc cache ⇒ hành vi
+    // như `--no-cache` (áp trước cả nhánh `--vm`).
+    if stdin_ra {
+        dung_cache = false;
+    }
     if dump_deps {
         eprint!("{}", modules::dump_deps(&loaded));
     }
