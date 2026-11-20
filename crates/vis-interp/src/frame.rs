@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-267 / VD-251 — LÁT 1 (chỉ test/debug)**: frame-aware scheduler nối vào
-//! **đường interp thật**.
+//! **ST-267 / VD-251 — LÁT 1 (chỉ test/debug)**, mở rộng **ST-274 / VD-255**:
+//! frame-aware scheduler nối vào **đường interp thật**.
 //!
 //! Đây **không** phải model/harness độc lập: `run_frame_for_test` dựng đúng [`Interp`]
 //! thật (HIR thật sau parse/lower/check), dùng [`crate::builtin::call`], [`crate::ops::bin`],
@@ -9,20 +9,29 @@
 //! frame chạy trên một **work stack nằm heap** (`IFrame`) ⇒ lưu được vị trí giữa biểu thức
 //! khi `await` treo. Runtime mặc định (`Interp::run_program`) **không** gọi module này.
 //!
-//! Giới hạn (ghi rõ, xem báo cáo): evaluator chỉ phủ tập HExpr/HStmt cần cho fixture
-//! Lát 1 — literal, `Var`, `Bin`, `Call`/`Await`/`Spawn` với callee là tên hàm/builtin,
-//! `Let`/`Var`/`Expr`/`Return`. Các vị trí await checker vẫn chấp nhận (xem SPEC/VD-250
-//! §3) như `&&`/`||`, vòng lặp, field/index, callee là closure… **không** được phủ ở
-//! đường test này — checker vẫn chấp nhận đầy đủ như trước.
+//! **VD-255** mở rộng work stack để phủ: `if`/`match`, vòng lặp (`while`/`loop`/`for`/
+//! `while let`), `break`/`continue`, short-circuit (`&&`/`||`/`??`/`|>`), field/index,
+//! record/tuple/list/set/map/enum, toán tử một ngôi, đối số tên, hằng cấp tệp, và
+//! closure với **ô bắt chia sẻ** + ghi ngược (writeback) qua suspend/resume.
+//! Mọi cấu trúc KHÔNG phủ vẫn bị **từ chối rõ** (Trap có `Span`) ngay tại điểm gặp,
+//! trước khi đẩy operand — không fallback âm thầm sang đường đồng bộ.
 
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 use vis_syntax::{Diagnostic, Span};
 use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
 use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent, Waiter};
-use crate::value::Value;
+use crate::value::{Env, Value};
+
+mod expr;
+mod proc;
+
+use expr::{call_value, dispatch, eval_work, exec_work};
+use proc::process_work;
 
 /// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
 #[doc(hidden)]
@@ -53,9 +62,10 @@ pub struct FrameOutput {
     pub snapshot: DiagSnapshot,
 }
 
-/// Cái một work-item của IFrame phải làm tiếp. `Eval`/`Exec` đẩy tiếp continuation,
+/// Một work-item của IFrame phải làm tiếp. `Eval`/`Exec` đẩy continuation,
 /// các biến thể `Apply*` là continuation tiêu thụ giá trị trên `vals`.
 enum Work<'a> {
+    // ---- nền tảng (Lát 1) ----
     Eval(&'a HExpr),
     Exec(&'a HStmt),
     /// Sau khi operand của `await` thành `Value::Task`, gọi `await_task` thật.
@@ -65,26 +75,264 @@ enum Work<'a> {
         op: BinOp,
         span: Span,
     },
-    /// Đánh giá tuần tự đối số của call/spawn, rồi dispatch.
-    EvalArgs {
-        callee: Callee<'a>,
+    /// Đánh giá tuần tự đối số (vị trí + tên) rồi chạy `cont`.
+    EvalArgsCont {
         args: &'a [HExpr],
+        named: &'a [(String, HExpr)],
         idx: usize,
         span: Span,
+        cont: Vec<Work<'a>>,
     },
-    /// Gán giá trị trên `vals` vào pattern của `let`.
-    Bind(&'a HPat),
-    /// Gán giá trị trên `vals` vào ô `var` (sym).
-    SetVar(u32),
+    /// Gán giá trị trên `vals` vào pattern của `let` (kèm độ sâu `Opt` của annot).
+    Bind {
+        pat: &'a HPat,
+        opt_depth: usize,
+    },
+    /// `let … else:` — bóc `Ok`/`Some`, ngược lại chạy khối `else`.
+    ApplyLetElse {
+        pat: &'a HPat,
+        else_body: &'a [HStmt],
+        bind_sym: Option<u32>,
+        opt_depth: usize,
+    },
+    /// Gán giá trị trên `vals` vào ô `var` (sym), kèm độ sâu `Opt` của annot.
+    SetVar {
+        sym: u32,
+        opt_depth: usize,
+    },
     /// Đặt `last` = giá trị trên `vals`.
     SetLast,
+    /// Đặt `last = None` (đầu mỗi câu lệnh / kết thúc khối không có giá trị).
+    ResetLast,
+    /// Đẩy `last` (hoặc `Unit`) lên `vals` — cuối khối biểu thức.
+    PushLast,
     /// `return <value>`: đặt `last` rồi kết thúc thân khung hiện tại.
     DoReturn,
-    /// **Lát 2**: retry một builtin đã eval đối số mà reactor báo `Pending` — không eval
-    /// lại đối số (tránh lặp side-effect), resume đúng vị trí work stack.
+
+    // ---- Lát 2: retry builtin mà reactor báo Pending ----
     Redispatch {
         callee: Callee<'a>,
         args: Vec<Value>,
+        named: Vec<(String, Value)>,
+        span: Span,
+    },
+
+    // ---- VD-255 / Group A: điều khiển ----
+    /// Vào khối câu lệnh lồng (nhánh if/arm match/thân hàm/scope).
+    ExecBlock(&'a [HStmt]),
+    /// Đánh giá khối biểu thức rồi đẩy giá trị (`last`) lên `vals`.
+    EvalBlock(&'a [HStmt]),
+    /// Đánh giá `HCond`, chạy `on_true` nếu đúng, `on_false` nếu sai.
+    EvalCond {
+        cond: &'a HCond,
+        on_true: Vec<Work<'a>>,
+        on_false: Vec<Work<'a>>,
+        span: Span,
+    },
+    /// Áp dụng kết quả bool của `HCond::Expr` (đã nằm trên `vals`).
+    ApplyCond {
+        on_true: Vec<Work<'a>>,
+        on_false: Vec<Work<'a>>,
+        span: Span,
+    },
+    /// Áp dụng `HCond::Let`: khớp pattern, giữ binding nếu khớp, hoàn nguyên nếu không.
+    ApplyCondLet {
+        pat: &'a HPat,
+        on_true: Vec<Work<'a>>,
+        on_false: Vec<Work<'a>>,
+    },
+    /// Khởi tạo vòng lặp: tạo `LoopState`, đẩy `LoopMark` + bước đầu.
+    LoopInit {
+        kind: LoopKindInit<'a>,
+        body: &'a [HStmt],
+        span: Span,
+    },
+    /// Đáywork của một lần lặp: thân chạy xong ⇒ bước tiếp theo.
+    LoopMark {
+        id: usize,
+    },
+    /// Vào thân một lần lặp (đẩy LoopMark + các câu lệnh thân).
+    LoopEnter {
+        id: usize,
+    },
+    /// Một bước tiến vòng (thử điều kiện / lấy phần tử / vào thân).
+    LoopStep {
+        id: usize,
+    },
+    /// Kết thúc vòng lặp (last = Unit, pop LoopState).
+    LoopExit {
+        id: usize,
+    },
+    /// `break` — thoát vòng trong cùng.
+    DoBreak {
+        span: Span,
+    },
+    /// `continue` — sang lần lặp tiếp của vòng trong cùng.
+    DoContinue {
+        span: Span,
+    },
+
+    // ---- VD-255 / Group B: biểu thức & gọi ----
+    ApplyUn {
+        op: UnOp,
+        span: Span,
+    },
+    ApplyField {
+        name: String,
+        optional: bool,
+        span: Span,
+    },
+    ApplyIndex {
+        span: Span,
+    },
+    BuildList {
+        n: usize,
+    },
+    BuildSet {
+        n: usize,
+    },
+    BuildTuple {
+        n: usize,
+    },
+    BuildMap {
+        n: usize,
+    },
+    /// Đánh giá từng giá trị trường của record literal theo thứ tự nguồn.
+    EvalRecordFields {
+        fields: &'a [(String, HExpr)],
+        idx: usize,
+        span: Span,
+    },
+    BuildRecord {
+        name: String,
+        fields: &'a [(String, HExpr)],
+        span: Span,
+    },
+    BuildEnum {
+        name: String,
+        variant: String,
+        n: usize,
+        span: Span,
+    },
+    ApplySome,
+    InterpParts {
+        parts: &'a [InterpPart],
+        idx: usize,
+        out: String,
+        span: Span,
+    },
+    InterpPartVal {
+        parts: &'a [InterpPart],
+        idx: usize,
+        out: String,
+        spec: Option<String>,
+        span: Span,
+    },
+    ApplyShortCircuit {
+        op: BinOp,
+        rhs: &'a HExpr,
+        span: Span,
+    },
+    ApplyBoolRhs {
+        span: Span,
+    },
+    ApplyCoalesce {
+        rhs: &'a HExpr,
+    },
+    ApplyPipe {
+        rhs: &'a HExpr,
+        span: Span,
+    },
+    ApplyPipeCall {
+        lhs: Value,
+        span: Span,
+    },
+    /// Chọn nhánh `match`: thử từng arm (pattern + guard).
+    MatchArm {
+        arms: &'a [HArm],
+        idx: usize,
+        subj: Value,
+        stmt_mode: bool,
+        span: Span,
+    },
+    MatchGuard {
+        arms: &'a [HArm],
+        idx: usize,
+        subj: Value,
+        stmt_mode: bool,
+        snapshot: HashMap<u32, Value>,
+        span: Span,
+    },
+    /// Gọi hàm/builtin tên sau khi đối số đã eval (`names` = tên đối số theo thứ tự).
+    ApplyNamedCall {
+        callee: Callee<'a>,
+        npos: usize,
+        names: Vec<String>,
+        span: Span,
+    },
+    /// Gọi một **giá trị hàm** (closure/builtin value) sau khi callee + đối số đã eval.
+    ApplyValueCall {
+        npos: usize,
+        names: Vec<String>,
+        span: Span,
+    },
+    /// Retry một giá trị hàm đã eval đối số mà builtin báo `Pending`.
+    RedispatchValue {
+        f: Value,
+        args: Vec<Value>,
+        named: Vec<(String, Value)>,
+        span: Span,
+    },
+    /// Gán `subject` đã eval vào work `MatchArm` tương ứng.
+    MatchSubj {
+        arms: &'a [HArm],
+        stmt_mode: bool,
+        span: Span,
+    },
+    /// Thu base + các giá trị trường của `with` rồi dựng bản ghi mới.
+    WithCollect {
+        names: Vec<String>,
+        n: usize,
+        span: Span,
+    },
+    /// Base của `callee.field(...)`: nhận diện method vs field-holding-closure lúc chạy.
+    ApplyMethodOrField {
+        name: String,
+        args: &'a [HExpr],
+        named: &'a [(String, HExpr)],
+        base: &'a HExpr,
+        span: Span,
+    },
+    /// Gọi phương thức lõi trên list/str/map/chan (recv đã nằm trong work).
+    ApplyMethod {
+        name: String,
+        recv: Value,
+        nargs: usize,
+        base_var: Option<u32>,
+        span: Span,
+    },
+    /// Tạo closure: chụp **env chia sẻ** hiện tại.
+    MakeLambda {
+        params: Vec<u32>,
+        ret_depth: usize,
+        body: HBody,
+    },
+    /// Gán biến `var` (đã eval rhs) — dùng cho closure mutation/writeback.
+    ApplyAssignVar {
+        sym: u32,
+        op: AssignOp,
+        span: Span,
+    },
+    /// Gán trường/phần tử của biến `var`.
+    ApplyAssignField {
+        sym: u32,
+        name: String,
+        op: AssignOp,
+        span: Span,
+    },
+    ApplyAssignIndex {
+        sym: u32,
+        op: AssignOp,
         span: Span,
     },
 }
@@ -99,43 +347,368 @@ enum Callee<'a> {
     Builtin(&'a str),
 }
 
-struct CallFrame<'a> {
-    body: &'a [HStmt],
-    pc: usize,
-    env: HashMap<u32, Value>,
-    mutable: HashSet<u32>,
-    work: Vec<Work<'a>>,
-    last: Option<Value>,
+/// Dữ liệu khởi tạo của một vòng lặp.
+enum LoopKindInit<'a> {
+    While { cond: &'a HCond },
+    For { pat: &'a HPat, iter: &'a HExpr },
+    Loop,
 }
 
-/// **Frame thật của interp trên heap** (đối trọng với `Th` của VM). Mọi field sống
-/// qua suspend: `calls` (ngăn xếp khung gọi + vị trí `pc` + work stack), `vals`.
+/// Trạng thái vòng lặp sống trên heap (resume không mất).
+struct LoopState<'a> {
+    kind: LoopKindState<'a>,
+    body: &'a [HStmt],
+    span: Span,
+}
+
+enum LoopKindState<'a> {
+    While {
+        cond: &'a HCond,
+    },
+    For {
+        pat: &'a HPat,
+        items: Vec<Value>,
+        idx: usize,
+    },
+    Loop,
+}
+
+struct CallFrame<'a> {
+    /// Môi trường **chia sẻ** (ô bắt của closure trỏ vào chính `Rc` này).
+    env: Env,
+    /// Số lớp `Opt` của kiểu trả về (nâng ở biên hàm như interp).
+    ret_depth: usize,
+    /// Continuation stack — mọi trạng thái sống qua suspend.
+    work: Vec<Work<'a>>,
+    /// Giá trị câu lệnh gần nhất (giá trị khối / giá trị trả hàm).
+    last: Option<Value>,
+    /// Các vòng đang mở (trong cùng nằm cuối).
+    loops: Vec<LoopState<'a>>,
+    /// Binding tham số cần hoàn nguyên khi khung kết thúc (closure gọi lại nhiều lần).
+    restore: Vec<(u32, Option<Value>)>,
+}
+
+/// **Frame thật của interp trên heap** (đối trọng với `Th` của VM).
 pub struct IFrame<'a> {
     calls: Vec<CallFrame<'a>>,
     vals: Vec<Value>,
+    /// Tập `var` dùng chung toàn chương trình (khớp `Interp.mutable` — closure thấy `var` của ngoài).
+    mutable: Rc<RefCell<HashSet<u32>>>,
 }
 
 impl<'a> IFrame<'a> {
-    fn new(body: &'a [HStmt], params: &[(u32, Value)], globals: &HashMap<u32, Value>) -> Self {
-        let mut env = globals.clone();
+    fn new(
+        body: &'a [HStmt],
+        params: &[(u32, Value)],
+        globals: &Env,
+        mutable: Rc<RefCell<HashSet<u32>>>,
+    ) -> Self {
+        let env = Rc::new(RefCell::new(globals.borrow().clone()));
         for (sym, v) in params {
-            env.insert(*sym, v.clone());
+            env.borrow_mut().insert(*sym, v.clone());
         }
         Self {
             calls: vec![CallFrame {
-                body,
-                pc: 0,
                 env,
-                mutable: HashSet::new(),
-                work: Vec::new(),
+                ret_depth: 0,
+                work: initial_work(body),
                 last: None,
+                loops: Vec::new(),
+                restore: Vec::new(),
             }],
             vals: Vec::new(),
+            mutable,
+        }
+    }
+
+    /// Khung phụ dùng để đánh giá một biểu thức đơn (default của tham số / hằng).
+    fn expr_frame(env: &Env, mutable: Rc<RefCell<HashSet<u32>>>) -> Self {
+        Self {
+            calls: vec![CallFrame {
+                env: env.clone(),
+                ret_depth: 0,
+                work: Vec::new(),
+                last: None,
+                loops: Vec::new(),
+                restore: Vec::new(),
+            }],
+            vals: Vec::new(),
+            mutable,
         }
     }
 
     fn done(&self) -> bool {
         self.calls.is_empty()
+    }
+
+    fn cur(&mut self) -> &mut CallFrame<'a> {
+        self.calls.last_mut().expect("khung hiện tại")
+    }
+
+    fn push_val(&mut self, v: Value) {
+        self.vals.push(v);
+    }
+
+    fn pop_val(&mut self) -> R<Value> {
+        self.vals.pop().ok_or_else(underflow)
+    }
+}
+
+/// Trả work của một khối theo **thứ tự thực thi**: ResetLast rồi Exec cho mỗi câu.
+/// `append_work` chạy theo đúng thứ tự phần tử trong vec (phần tử đầu chạy trước).
+fn block_works<'a>(body: &'a [HStmt]) -> Vec<Work<'a>> {
+    let mut w = Vec::with_capacity(body.len() * 2);
+    for s in body.iter() {
+        w.push(Work::ResetLast);
+        w.push(Work::Exec(s));
+    }
+    w
+}
+
+/// Vec work **sẵn sàng gán trực tiếp** vào `cf.work` (LIFO — đảo thứ tự thực thi).
+fn initial_work<'a>(body: &'a [HStmt]) -> Vec<Work<'a>> {
+    let mut w = block_works(body);
+    w.reverse();
+    w
+}
+
+/// Nối `works` vào đỉnh `cf.work` sao cho chạy theo thứ tự trong `works`.
+fn append_work<'a>(cf: &mut CallFrame<'a>, mut works: Vec<Work<'a>>) {
+    while let Some(w) = works.pop() {
+        cf.work.push(w);
+    }
+}
+
+/// Số lớp `Opt` của một kiểu (dùng ở biên `let`/`var`/tham số/trả về).
+fn opt_depth_ty(t: &vis_types::Type) -> usize {
+    let mut d = 0;
+    let mut cur = t;
+    while let vis_types::Type::Opt(inner) = cur {
+        d += 1;
+        cur = inner;
+    }
+    d
+}
+
+/// Khớp pattern và ghi binding vào `env` (mirror `pat.rs` nhưng dùng env của khung).
+fn bind_pat_env(pat: &HPat, v: &Value, env: &Env) -> bool {
+    match pat {
+        HPat::Wild { .. } | HPat::Rest { .. } => true,
+        HPat::Bind { sym, .. } => {
+            env.borrow_mut().insert(*sym, v.clone());
+            true
+        }
+        HPat::Lit { lit, .. } => lit_value(lit).map(|l| l.eq_value(v)).unwrap_or(false),
+        HPat::Or { alts, .. } => {
+            for a in alts {
+                let snap = env.borrow().clone();
+                if bind_pat_env(a, v, env) {
+                    return true;
+                }
+                *env.borrow_mut() = snap;
+            }
+            false
+        }
+        HPat::Ctor { path, args, .. } => {
+            let name = path.last().cloned().unwrap_or_default();
+            let low = name.to_ascii_lowercase();
+            match v {
+                Value::Enum(_, variant, vargs) => {
+                    if variant != &name {
+                        return false;
+                    }
+                    bind_all_env(args, vargs, env)
+                }
+                Value::Bool(b) => match low.as_str() {
+                    "true" => *b,
+                    "false" => !*b,
+                    _ => false,
+                },
+                _ => false,
+            }
+        }
+        HPat::Tuple { items, .. } => match v {
+            Value::Unit if items.is_empty() => true,
+            Value::List(xs) if xs.len() == items.len() => items
+                .iter()
+                .zip(xs.iter())
+                .all(|(p, x)| bind_pat_env(p, x, env)),
+            _ => false,
+        },
+        HPat::List { items, rest, .. } => match v {
+            Value::List(xs) if xs.len() >= items.len() => {
+                for (p, x) in items.iter().zip(xs.iter()) {
+                    if !bind_pat_env(p, x, env) {
+                        return false;
+                    }
+                }
+                if let Some(r) = rest {
+                    let tail = Value::List(xs[items.len()..].to_vec());
+                    bind_pat_env(r, &tail, env)
+                } else {
+                    xs.len() == items.len()
+                }
+            }
+            _ => false,
+        },
+        HPat::Record { fields, .. } => match v {
+            Value::Record(_, vfields) => {
+                for (n, sub) in fields {
+                    if n.is_empty() {
+                        continue;
+                    }
+                    let Some((_, val)) = vfields.iter().find(|(f, _)| f == n) else {
+                        return false;
+                    };
+                    if let Some(p) = sub {
+                        if !bind_pat_env(p, val, env) {
+                            return false;
+                        }
+                    }
+                }
+                true
+            }
+            _ => false,
+        },
+        HPat::Range {
+            lo, hi, inclusive, ..
+        } => {
+            let lit_of = |p: &HPat| -> Option<Value> {
+                if let HPat::Lit { lit, .. } = p {
+                    lit_value(lit).ok()
+                } else {
+                    None
+                }
+            };
+            let (Some(a0), Some(b0)) = (
+                lo.as_ref().and_then(|p| lit_of(p)),
+                hi.as_ref().and_then(|p| lit_of(p)),
+            ) else {
+                return false;
+            };
+            let (Some(a), Some(b)) = (v.cmp_value(&a0), v.cmp_value(&b0)) else {
+                return false;
+            };
+            let ok_lo = a != std::cmp::Ordering::Less;
+            let ok_hi = if *inclusive {
+                b != std::cmp::Ordering::Greater
+            } else {
+                b == std::cmp::Ordering::Less
+            };
+            ok_lo && ok_hi
+        }
+    }
+}
+
+fn bind_all_env(pats: &[HPat], vals: &[Value], env: &Env) -> bool {
+    if pats.len() != vals.len() {
+        return false;
+    }
+    pats.iter()
+        .zip(vals.iter())
+        .all(|(p, v)| bind_pat_env(p, v, env))
+}
+
+/// Truy cập trường (mirror `Interp::field_of`).
+fn field_of(b: Value, name: &str, span: Span) -> R<Value> {
+    match b {
+        Value::Record(_, fields) => fields
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, v)| v)
+            .ok_or_else(|| {
+                Abort::Trap(Trap::new(
+                    RT,
+                    format!("bản ghi không có trường `{name}`"),
+                    span,
+                ))
+            }),
+        Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
+            field_of(args.into_iter().next().unwrap(), name, span)
+        }
+        Value::Enum(en, variant, args) => {
+            if variant.is_empty() && args.is_empty() {
+                Ok(Value::Enum(en, name.to_string(), Vec::new()))
+            } else {
+                Err(Abort::Trap(Trap::new(
+                    RT,
+                    format!("`{name}` không phải trường"),
+                    span,
+                )))
+            }
+        }
+        other => Err(Abort::Trap(Trap::new(
+            RT,
+            format!("`{}` không có trường `{name}`", other.show()),
+            span,
+        ))),
+    }
+}
+
+/// Chỉ số (mirror `Interp::index_of`).
+fn index_of(b: Value, i: Value, span: Span) -> R<Value> {
+    match (b, i) {
+        (Value::List(xs), Value::Int(n)) => {
+            let len = xs.len() as i64;
+            if n < 0 {
+                return Err(Abort::Trap(Trap::new(
+                    crate::interp::IDX,
+                    format!("chỉ số âm `{n}` (dùng `.last()` hoặc `xs[i]?`)"),
+                    span,
+                )));
+            }
+            xs.get(n as usize).cloned().ok_or_else(|| {
+                Abort::Trap(Trap::new(
+                    crate::interp::IDX,
+                    format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
+                    span,
+                ))
+            })
+        }
+        (Value::Map(kv), k) => kv
+            .iter()
+            .find(|(kk, _)| kk.eq_value(&k))
+            .map(|(_, v)| v.clone())
+            .ok_or_else(|| {
+                Abort::Trap(Trap::new(
+                    crate::interp::IDX,
+                    format!("khoá `{}` không có trong map", k.show()),
+                    span,
+                ))
+            }),
+        (Value::Bytes(bs), Value::Int(n)) => {
+            let len = bs.len() as i64;
+            if n < 0 || n >= len {
+                return Err(Abort::Trap(Trap::new(
+                    crate::interp::IDX,
+                    format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
+                    span,
+                )));
+            }
+            Ok(Value::Int(bs[n as usize] as i64))
+        }
+        (other, idx) => Err(Abort::Trap(Trap::new(
+            RT,
+            format!("không chỉ số được `{}` bằng `{}`", other.show(), idx.show()),
+            span,
+        ))),
+    }
+}
+
+/// Tên kiểu record/enum từ `TypeTable` (mirror `Interp::type_name`).
+fn type_name(it: &Interp<'_>, ty: &vis_types::Type) -> String {
+    match ty {
+        vis_types::Type::Record(id) => it
+            .types
+            .rec(*id)
+            .and_then(|r| r.name.clone())
+            .unwrap_or_default(),
+        vis_types::Type::Enum(id) => it
+            .types
+            .enum_def(*id)
+            .map(|e| e.name.clone())
+            .unwrap_or_default(),
+        _ => String::new(),
     }
 }
 
@@ -151,20 +724,30 @@ pub fn run_frame_for_test<'a>(
     config: FrameConfig,
 ) -> FrameOutput {
     let mut it = Interp::new(hir, symbols, types);
-    let _ = symbols; // chỉ cần để giữ lifetime khớp `Interp::new`
-                     // Hằng cấp tệp không nằm trong tập phủ của frame test (fixture Lát 1 không dùng).
-    let globals = HashMap::new();
-    // **VD-252 / ST-268 — từ chối rõ hằng cấp tệp**: đường frame không chạy vòng eval const
-    // của `run_program` (`interp.rs:229`), nên `it.env` rỗng. Nhận diện const từ HIR để báo
-    // đúng lý do thay vì "biến chưa định nghĩa" gây hiểu lầm. Không đổi checker.
-    let mut const_syms: HashSet<u32> = HashSet::new();
-    let mut const_names: HashSet<String> = HashSet::new();
-    for item in &hir.items {
-        if let HItem::Const(c) = item {
-            const_syms.insert(c.sym);
-            const_names.insert(c.name.clone());
+    let _ = symbols;
+
+    // **VD-255 / Group B**: hằng cấp tệp được đánh giá trước main (khớp `interp.rs:229`).
+    // Dùng chung một `Env` để const sau thấy const trước; mỗi frame con clone env làm gốc.
+    let globals: Env = Rc::new(RefCell::new(HashMap::new()));
+    let mutable: Rc<RefCell<HashSet<u32>>> = Rc::new(RefCell::new(HashSet::new()));
+    let consts: Vec<(u32, &'a HExpr)> = hir
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            HItem::Const(c) => Some((c.sym, &c.value)),
+            _ => None,
+        })
+        .collect();
+    for (sym, e) in consts {
+        match eval_expr_in(&mut it, e, &globals, &mutable) {
+            Ok(v) => {
+                globals.borrow_mut().insert(sym, v);
+            }
+            Err(Abort::Trap(t)) => return frame_output_early(&mut it, text, None, Some(t)),
+            Err(_) => return frame_output_early(&mut it, text, None, None),
         }
     }
+
     let mut frames: HashMap<u32, IFrame<'a>> = HashMap::new();
     let main_fn = hir.items.iter().find_map(|i| match i {
         HItem::Fn(f) if f.name == "main" => Some(f),
@@ -192,7 +775,7 @@ pub fn run_frame_for_test<'a>(
             Value::List(args.iter().map(|s| Value::Str(s.clone())).collect()),
         )],
     };
-    frames.insert(0, IFrame::new(body, &argv, &globals));
+    frames.insert(0, IFrame::new(body, &argv, &globals, mutable.clone()));
 
     it.sched
         .borrow_mut()
@@ -219,14 +802,7 @@ pub fn run_frame_for_test<'a>(
             break;
         }
         it.sched.borrow_mut().frame.current = current;
-        let outcome = step_frame(
-            &mut it,
-            current,
-            &mut frames,
-            body,
-            &const_syms,
-            &const_names,
-        );
+        let outcome = step_frame(&mut it, current, &mut frames);
         match outcome {
             Ok(v) => {
                 if current == 0 {
@@ -284,7 +860,6 @@ pub fn run_frame_for_test<'a>(
                 it.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
             }
             Err(Abort::Pending(p)) => {
-                // Lát 2: reactor mang wait trực tiếp (`p.wait`); Lát 1: `await` mang task.
                 let w: Option<Waiter> = if let Some(w) = p.wait {
                     let gen = w.gen_of(it.sched.borrow().frame.gen);
                     Some(Waiter {
@@ -300,37 +875,33 @@ pub fn run_frame_for_test<'a>(
                 if let Some(w) = w {
                     it.sched.borrow_mut().frame_register(w);
                 } else {
-                    // Task đã xong giữa lúc chạy: nối frame lại vào đuôi ready.
                     it.sched.borrow_mut().frame.ready.push_back(current);
                 }
             }
         }
 
-        // Chọn frame tiếp theo. Nếu main vừa xong ⇒ **final join**: xếp mọi task còn
-        // sống vào đuôi ready theo thứ tự tạo (không auto-cancel — VD-250 §2.3).
-        let need_join = frames.get(&0).map(|f| f.done()).unwrap_or(true);
+        // Lên lịch cả task `Moi` khi không còn frame sẵn sàng — kể cả task tạo bằng
+        // `tao` (gọi `async fn` trực tiếp, không `spawn`) đang được `await`. Khớp VM
+        // (`vm_frame.rs:187`); nếu không, main treo vĩnh viễn khi await một task thường.
+        let need_join = true;
         let next = it.sched.borrow_mut().frame_next();
-        // Lát 3: lỗi selector là điểm dừng — KHÔNG final-join rồi chạy lại vô hạn.
         if it.sched.borrow().frame.selector_error.is_some() {
             break;
         }
         let next = match next {
             Some(n) => Some(n),
             None if need_join => {
-                let pending: Vec<(u32, u32)> = {
+                let pending: Vec<u32> = {
                     let s = it.sched.borrow();
-                    s.tasks.iter().map(|t| (t.id, t.id)).collect()
-                };
-                for (_, id) in pending {
-                    let s = it.sched.borrow();
-                    let is_moi = s
-                        .tasks
+                    s.tasks
                         .iter()
-                        .find(|t| t.id == id)
-                        .map(|t| t.trang_thai.get() == rt::TrangThai::Moi)
-                        .unwrap_or(false);
-                    drop(s);
-                    if is_moi && !it.sched.borrow().frame.ready.contains(&id) {
+                        .filter(|t| t.trang_thai.get() == rt::TrangThai::Moi)
+                        .filter(|t| !s.frame.external.contains_key(&t.id))
+                        .map(|t| t.id)
+                        .collect()
+                };
+                for id in pending {
+                    if !it.sched.borrow().frame.ready.contains(&id) {
                         it.sched.borrow_mut().frame.ready.push_back(id);
                     }
                 }
@@ -340,39 +911,38 @@ pub fn run_frame_for_test<'a>(
         };
         match next {
             Some(n) => {
-                current = n;
-                if let std::collections::hash_map::Entry::Vacant(e) = frames.entry(n) {
-                    // Task chưa có frame (lần đầu được chạy): dựng frame thật từ HIR.
-                    let setup = build_task_frame(&it, n);
-                    if let Some((body, params)) = setup {
-                        let f = IFrame::new(body, &params, &globals);
-                        e.insert(f);
-                    } else {
-                        // Nguồn giả: không có thân — bỏ qua (sẽ xong qua event).
-                        continue;
+                match frames.entry(n) {
+                    std::collections::hash_map::Entry::Occupied(_) => {}
+                    std::collections::hash_map::Entry::Vacant(e) => {
+                        match build_task_frame(&it, n, &globals) {
+                            Some((body, params, globals)) => {
+                                e.insert(IFrame::new(body, &params, &globals, mutable.clone()));
+                            }
+                            None => {
+                                // Nguồn giả / task ngoài — không có thân để dựng frame. Bỏ qua,
+                                // GIỮ NGUYÊN `current` (không gán rồi `continue` như cũ, vốn
+                                // gây panic `step_frame` ở vòng sau vì frame không tồn tại).
+                                continue;
+                            }
+                        }
                     }
                 }
+                current = n;
             }
             None => break,
         }
     }
 
-    // Main kết thúc ⇒ mọi env/handle của chương trình biến mất. Bỏ frame trước khi
-    // thu hồi để `Rc::strong_count` phản ánh đúng "không còn handle sống".
-    // Lát 3: lỗi selector là trap RÕ — không được hiểu nhầm là "không có event".
     if trap.is_none() {
         if let Some(e) = it.sched.borrow_mut().frame_take_selector_error() {
             trap = Some(Trap::new(RT, e, Span::new(0, 0)));
         }
     }
     frames.clear();
-    // Fire nốt trace (duplicate/stale vẫn được log) rồi final join + thu hồi ownership.
     it.sched.borrow_mut().frame_drain_events();
     it.sched.borrow_mut().frame_final_join();
-    // Lát 2: sau khi task + handle test thả, reactor về baseline (không cần đóng tay).
     it.sched.borrow_mut().frame_reactor_shutdown();
     let snapshot = it.sched.borrow().diag_snapshot();
-    // Gộp log reactor vào log scheduler để hai engine so sánh được TOÀN BỘ trace.
     let mut log = it.sched.borrow().frame.log.clone();
     log.extend(it.sched.borrow().frame.reactor.log.clone());
     let stdout = it.take_stdout();
@@ -391,9 +961,50 @@ pub fn run_frame_for_test<'a>(
     }
 }
 
+/// Trả `FrameOutput` sớm khi đánh giá hằng cấp tệp lỗi (trước khi scheduler chạy).
+fn frame_output_early(
+    it: &mut Interp<'_>,
+    text: &str,
+    value: Option<Value>,
+    trap: Option<Trap>,
+) -> FrameOutput {
+    let stdout = it.take_stdout();
+    let diagnostics = match &trap {
+        Some(t) => vec![t.to_diag(text)],
+        None => Vec::new(),
+    };
+    FrameOutput {
+        stdout,
+        diagnostics,
+        value,
+        exit: if trap.is_some() { 1 } else { 0 },
+        log: Vec::new(),
+        snapshot: Default::default(),
+    }
+}
+
+/// Đánh giá một biểu thức trong `env` cho trước (dùng cho hằng/default tham số).
+fn eval_expr_in<'a>(
+    it: &mut Interp<'a>,
+    e: &'a HExpr,
+    env: &Env,
+    mutable: &Rc<RefCell<HashSet<u32>>>,
+) -> R<Value> {
+    let mut f = IFrame::expr_frame(env, mutable.clone());
+    // `Eval` đẩy giá trị vào `vals`; `SetLast` chuyển nó vào `last` để khi khung kết
+    // thúc, giá trị trả về chính là giá trị biểu thức (không phải Unit).
+    f.cur().work.push(Work::SetLast);
+    f.cur().work.push(Work::Eval(e));
+    step_frame_owned(it, &mut f).map(|v| v.unwrap_or(Value::Unit))
+}
+
 /// Dựng frame cho task `id` từ HIR thật (thân `async fn`).
 #[allow(clippy::type_complexity)]
-fn build_task_frame<'a>(it: &Interp<'a>, id: u32) -> Option<(&'a [HStmt], Vec<(u32, Value)>)> {
+fn build_task_frame<'a>(
+    it: &Interp<'a>,
+    id: u32,
+    globals: &Env,
+) -> Option<(&'a [HStmt], Vec<(u32, Value)>, Env)> {
     let s = it.sched.borrow();
     let t = s.tasks.iter().find(|t| t.id == id)?;
     if s.frame.external.contains_key(&id) {
@@ -404,487 +1015,146 @@ fn build_task_frame<'a>(it: &Interp<'a>, id: u32) -> Option<(&'a [HStmt], Vec<(u
     for (i, p) in f.params.iter().enumerate() {
         params.push((p.sym, t.args.get(i).cloned().unwrap_or(Value::Unit)));
     }
-    Some((&f.body, params))
+    Some((&f.body, params, globals.clone()))
 }
 
-/// Một bước chạy frame: tiêu thụ work/statement cho tới khi frame xong, treo (`Pending`),
-/// hoặc lỗi. Trạng thái nằm hoàn toàn trong `IFrame` trên heap ⇒ resume không lặp side effect.
+/// Một bước chạy frame: tiêu thụ work cho tới khi frame xong, treo (`Pending`), hoặc lỗi.
 fn step_frame<'a>(
     it: &mut Interp<'a>,
     frame_id: u32,
     frames: &mut HashMap<u32, IFrame<'a>>,
-    _main_body: &'a [HStmt],
-    const_syms: &HashSet<u32>,
-    const_names: &HashSet<String>,
 ) -> R<Option<Value>> {
-    // Mượn frame ra khỏi map để không giữ RefCell/map borrow qua các lệnh gọi host.
     let mut frame = frames.remove(&frame_id).expect("frame hiện tại");
-    let res = step_frame_owned(it, frame_id, &mut frame, const_syms, const_names);
+    let res = step_frame_owned(it, &mut frame);
     frames.insert(frame_id, frame);
     res
 }
 
-fn step_frame_owned<'a>(
-    it: &mut Interp<'a>,
-    _frame_id: u32,
-    frame: &mut IFrame<'a>,
-    const_syms: &HashSet<u32>,
-    const_names: &HashSet<String>,
-) -> R<Option<Value>> {
+fn step_frame_owned<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>) -> R<Option<Value>> {
     loop {
         if frame.done() {
-            // Giá trị frame = giá trị đã eval cuối cùng nằm trên `vals`.
             return Ok(frame.vals.pop());
         }
-
-        let work = {
-            let cf = frame.calls.last_mut().expect("khung");
-            cf.work.pop()
-        };
-        let Some(w) = work else {
-            let cf = frame.calls.last_mut().expect("khung");
-            if cf.pc >= cf.body.len() {
-                // Hết work **và** hết câu lệnh ⇒ kết thúc khung con: đẩy giá trị trả
-                // vào `vals` rồi pop. (Không được pop sớm: work cuối có thể còn nằm lại.)
-                let cf = frame.calls.pop().expect("khung");
-                let ret = cf.last.unwrap_or(Value::Unit);
-                frame.vals.push(ret);
-                continue;
-            }
-            // Không còn work ⇒ chạy câu lệnh tiếp theo.
-            let s = &cf.body[cf.pc];
-            cf.pc += 1;
-            cf.work.push(Work::Exec(s));
-            continue;
-        };
-
+        let w = frame.cur().work.pop();
         match w {
-            Work::Exec(s) => {
-                let cf = frame.calls.last_mut().expect("khung");
-                match s {
-                    HStmt::Let { pat, init, .. } => {
-                        cf.work.push(Work::Bind(pat));
-                        cf.work.push(Work::Eval(init));
-                    }
-                    HStmt::Var { sym, init, .. } => {
-                        cf.work.push(Work::SetVar(*sym));
-                        cf.work.push(Work::Eval(init));
-                    }
-                    HStmt::Expr(e) => {
-                        cf.work.push(Work::SetLast);
-                        cf.work.push(Work::Eval(e));
-                    }
-                    HStmt::Return { value, .. } => {
-                        cf.work.push(Work::DoReturn);
-                        if let Some(e) = value {
-                            cf.work.push(Work::Eval(e));
-                        } else {
-                            frame.vals.push(Value::Unit);
+            Some(w) => process_work(it, frame, w)?,
+            None => {
+                // Hết work ⇒ kết thúc khung con: hoàn nguyên tham số, nâng ret, đẩy giá trị.
+                let cf = frame.calls.pop().expect("khung");
+                let mut v = cf.last.unwrap_or(Value::Unit);
+                if cf.ret_depth > 0 {
+                    v = crate::lift::lift_opt(v, cf.ret_depth);
+                }
+                for (sym, old) in cf.restore {
+                    match old {
+                        Some(old) => {
+                            cf.env.borrow_mut().insert(sym, old);
                         }
-                    }
-                    other => {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            format!(
-                                "frame test: HStmt {:?} chưa được phủ ở đường test Lát 1",
-                                std::mem::discriminant(other)
-                            ),
-                            s.span(),
-                        )))
+                        None => {
+                            cf.env.borrow_mut().remove(&sym);
+                        }
                     }
                 }
-            }
-            Work::Bind(pat) => {
-                let v = frame.vals.pop().ok_or_else(underflow)?;
-                let cf = frame.calls.last_mut().expect("khung");
-                match pat {
-                    HPat::Bind { sym, .. } => {
-                        cf.env.insert(*sym, v);
-                    }
-                    HPat::Wild { .. } => {}
-                    other => {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            format!(
-                                "frame test: pattern {:?} chưa được phủ",
-                                std::mem::discriminant(other)
-                            ),
-                            pat.span(),
-                        )))
-                    }
-                }
-            }
-            Work::SetVar(sym) => {
-                let v = frame.vals.pop().ok_or_else(underflow)?;
-                let cf = frame.calls.last_mut().expect("khung");
-                cf.env.insert(sym, v);
-                cf.mutable.insert(sym);
-            }
-            Work::SetLast => {
-                let v = frame.vals.pop().ok_or_else(underflow)?;
-                frame.calls.last_mut().expect("khung").last = Some(v);
-            }
-            Work::DoReturn => {
-                let v = frame.vals.pop().ok_or_else(underflow)?;
-                {
-                    let cf = frame.calls.last_mut().expect("khung");
-                    cf.last = Some(v);
-                    cf.pc = cf.body.len();
-                }
-            }
-            Work::Eval(e) => {
-                let cf = frame.calls.last_mut().expect("khung");
-                match e {
-                    HExpr::Lit { lit, .. } => {
-                        let v =
-                            lit_value(lit).map_err(|m| Abort::Trap(Trap::new(RT, m, e.span())))?;
-                        frame.vals.push(v);
-                    }
-                    HExpr::Var { sym, name, .. } => {
-                        let v = sym
-                            .and_then(|s| cf.env.get(&s).cloned())
-                            .or_else(|| {
-                                cf.env
-                                    .iter()
-                                    .find(|(s, _)| **s == u32::MAX)
-                                    .map(|(_, v)| v.clone())
-                            })
-                            .or_else(|| it.env.borrow().get(&sym.unwrap_or(u32::MAX)).cloned())
-                            .ok_or_else(|| {
-                                // VD-252/ST-268: hằng cấp tệp là cấu trúc KHÔNG được đường frame
-                                // test phủ — báo đúng lý do, không đổ lỗi "biến chưa định nghĩa".
-                                let is_const = sym.map(|s| const_syms.contains(&s)).unwrap_or(false)
-                                    || const_names.contains(name);
-                                let msg = if is_const {
-                                    format!(
-                                        "frame test: hằng cấp tệp `{name}` chưa được đường frame test hỗ trợ"
-                                    )
-                                } else {
-                                    format!("biến `{name}` chưa định nghĩa trong frame test")
-                                };
-                                Abort::Trap(Trap::new(RT, msg, e.span()))
-                            })?;
-                        frame.vals.push(v);
-                    }
-                    HExpr::Bin { op, lhs, rhs, .. } => {
-                        // VD-252/ST-268: `&&`/`||`/`??`/`|>` là short-circuit — `ops::bin` từ chối
-                        // chúng, nhưng nếu đẩy operand trước thì vế phải (có side-effect) chạy mất
-                        // rồi mới lỗi. Từ chối TẠI ĐÂY, trước khi đẩy operand nào.
-                        if matches!(op, BinOp::And | BinOp::Or | BinOp::Coalesce | BinOp::Pipe) {
-                            return Err(Abort::Trap(Trap::new(
-                                RT,
-                                format!(
-                                    "frame test: toán tử `{}` (short-circuit) chưa được đường frame test hỗ trợ",
-                                    op.text()
-                                ),
-                                e.span(),
-                            )));
-                        }
-                        cf.work.push(Work::ApplyBin {
-                            op: *op,
-                            span: e.span(),
-                        });
-                        cf.work.push(Work::Eval(rhs));
-                        cf.work.push(Work::Eval(lhs));
-                    }
-                    HExpr::Un { .. } => {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            "frame test: Un chưa được phủ",
-                            e.span(),
-                        )))
-                    }
-                    HExpr::Call {
-                        callee,
-                        args,
-                        named,
-                        ..
-                    } => {
-                        if !named.is_empty() {
-                            return Err(Abort::Trap(Trap::new(
-                                RT,
-                                "frame test: đối số tên chưa được phủ",
-                                e.span(),
-                            )));
-                        }
-                        if let Some(c) = classify_callee(it, callee) {
-                            cf.work.push(Work::EvalArgs {
-                                callee: c,
-                                args,
-                                idx: 0,
-                                span: e.span(),
-                            });
-                        } else {
-                            return Err(Abort::Trap(Trap::new(
-                                RT,
-                                "frame test: callee không phải tên hàm/builtin",
-                                e.span(),
-                            )));
-                        }
-                    }
-                    HExpr::Spawn {
-                        callee,
-                        args,
-                        named,
-                        ..
-                    } => {
-                        if !named.is_empty() {
-                            return Err(Abort::Trap(Trap::new(
-                                RT,
-                                "frame test: spawn đối số tên chưa được phủ",
-                                e.span(),
-                            )));
-                        }
-                        match &**callee {
-                            HExpr::Var {
-                                sym: Some(id),
-                                name,
-                                ..
-                            } => {
-                                let f = it.fns.get(id).copied().ok_or_else(|| {
-                                    Abort::Trap(Trap::new(
-                                        RT,
-                                        "frame test: spawn hàm không tồn tại",
-                                        e.span(),
-                                    ))
-                                })?;
-                                let _ = name;
-                                let c = Callee::Spawn(*id, &f.name);
-                                cf.work.push(Work::EvalArgs {
-                                    callee: c,
-                                    args,
-                                    idx: 0,
-                                    span: e.span(),
-                                });
-                            }
-                            _ => {
-                                return Err(Abort::Trap(Trap::new(
-                                    RT,
-                                    "frame test: spawn cần tên hàm async cấp tệp",
-                                    e.span(),
-                                )))
-                            }
-                        }
-                    }
-                    HExpr::Await { expr, .. } => {
-                        cf.work.push(Work::ApplyAwait(e.span()));
-                        cf.work.push(Work::Eval(expr));
-                    }
-                    other => {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            format!(
-                                "frame test: HExpr {:?} chưa được phủ ở đường test Lát 1",
-                                std::mem::discriminant(other)
-                            ),
-                            other.span(),
-                        )))
-                    }
-                }
-            }
-            Work::ApplyBin { op, span } => {
-                let r = frame.vals.pop().ok_or_else(underflow)?;
-                let l = frame.vals.pop().ok_or_else(underflow)?;
-                let v = crate::ops::bin(op, l, r, span)?;
                 frame.vals.push(v);
             }
-            Work::ApplyAwait(span) => {
-                let v = frame.vals.pop().ok_or_else(underflow)?;
-                let t = match v {
-                    Value::Task(t) => t,
-                    _ => {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            "`await` cần một `Task[T]`",
-                            span,
-                        )))
-                    }
-                };
-                match crate::rt::await_task(it, &t, span) {
-                    Ok(r) => frame.vals.push(r),
-                    Err(Abort::Pending(p)) => {
-                        // Khôi phục **nguyên vẹn** vị trí + operand: resume không eval lại
-                        // operand của `await`, không lặp side effect.
-                        frame
-                            .calls
-                            .last_mut()
-                            .expect("khung")
-                            .work
-                            .push(Work::ApplyAwait(span));
-                        frame.vals.push(Value::Task(t));
-                        return Err(Abort::Pending(p));
-                    }
-                    Err(e) => return Err(e),
-                }
-            }
-            Work::EvalArgs {
-                callee,
-                args,
-                idx,
-                span,
-            } => {
-                if idx < args.len() {
-                    let cf = frame.calls.last_mut().expect("khung");
-                    cf.work.push(Work::EvalArgs {
-                        callee,
-                        args,
-                        idx: idx + 1,
-                        span,
-                    });
-                    cf.work.push(Work::Eval(&args[idx]));
-                    continue;
-                }
-                let mut got = Vec::with_capacity(args.len());
-                for _ in 0..args.len() {
-                    got.push(frame.vals.pop().ok_or_else(underflow)?);
-                }
-                got.reverse();
-                match dispatch(it, frame, callee, got.clone(), span) {
-                    Ok(()) => {}
-                    Err(Abort::Pending(p)) => {
-                        // Reactor chưa sẵn: lưu continuation với đối số ĐÃ eval (không eval lại).
-                        frame
-                            .calls
-                            .last_mut()
-                            .expect("khung")
-                            .work
-                            .push(Work::Redispatch {
-                                callee,
-                                args: got,
-                                span,
-                            });
-                        return Err(Abort::Pending(p));
-                    }
-                    Err(e) => return Err(e),
-                }
-            }
-            Work::Redispatch { callee, args, span } => {
-                for a in &args {
-                    frame.vals.push(a.clone());
-                }
-                match dispatch(it, frame, callee, args.clone(), span) {
-                    Ok(()) => {}
-                    Err(Abort::Pending(p)) => {
-                        frame
-                            .calls
-                            .last_mut()
-                            .expect("khung")
-                            .work
-                            .push(Work::Redispatch { callee, args, span });
-                        return Err(Abort::Pending(p));
-                    }
-                    Err(e) => return Err(e),
-                }
-            }
         }
     }
 }
 
-/// Tên builtin được frame evaluator chấp nhận: 8 tên ngắn (`SIGS`) **và** mọi hàm
-/// `std.*` đã đăng ký (`vis_types::stdlib`) — trong đó có `std.net.read`/`accept`.
-/// Chỉ mở rộng nhận diện ở đường test; checker/runtime mặc định không đổi.
-fn is_builtin_name(name: &str) -> bool {
-    crate::builtin::SIGS.iter().any(|s| s.name == name)
-        || name
-            .strip_prefix("std.")
-            .and_then(vis_types::stdlib::sig_of)
-            .is_some()
-}
-
-fn classify_callee<'a>(it: &Interp<'a>, callee: &'a HExpr) -> Option<Callee<'a>> {
-    match callee {
-        HExpr::Var {
-            sym: Some(id),
-            name,
-            ..
-        } => it
-            .fns
-            .get(id)
-            .copied()
-            .map(|f| {
-                if f.is_async {
-                    Callee::Named(*id, true, &f.name)
-                } else {
-                    Callee::Named(*id, false, &f.name)
-                }
-            })
-            .or_else(|| {
-                if is_builtin_name(name) {
-                    Some(Callee::Builtin(name))
-                } else {
-                    None
-                }
-            }),
-        HExpr::Var {
-            sym: None, name, ..
-        } => {
-            if is_builtin_name(name) {
-                Some(Callee::Builtin(name))
-            } else {
-                None
-            }
-        }
-        _ => None,
-    }
-}
-
-fn dispatch<'a>(
-    it: &mut Interp<'a>,
-    frame: &mut IFrame<'a>,
-    callee: Callee<'a>,
-    args: Vec<Value>,
+/// Dựng danh sách work cho if/elif/else (dùng cho cả stmt lẫn expr).
+fn if_work<'a>(
+    cond: &'a HCond,
+    then: &'a [HStmt],
+    elifs: &'a [(HCond, Vec<HStmt>)],
+    else_: Option<&'a [HStmt]>,
     span: Span,
-) -> R<()> {
-    match callee {
-        Callee::Builtin(name) => {
-            let v = crate::builtin::call(it, name, args, span)?;
-            frame.vals.push(v);
-            Ok(())
+    stmt_mode: bool,
+) -> Vec<Work<'a>> {
+    let branch = |body: &'a [HStmt]| -> Vec<Work<'a>> {
+        if stmt_mode {
+            block_works(body)
+        } else {
+            vec![Work::EvalBlock(body)]
         }
-        Callee::Spawn(sym, ten) => {
-            let t = it
-                .sched
-                .borrow_mut()
-                .spawn(sym, args, ten.to_string(), span);
-            frame.vals.push(Value::Task(t));
-            Ok(())
+    };
+    let mut on_false: Vec<Work<'a>> = match else_ {
+        Some(b) => branch(b),
+        None => {
+            if stmt_mode {
+                vec![Work::ResetLast]
+            } else {
+                vec![Work::PushLast] // else rỗng ⇒ Unit
+            }
         }
-        Callee::Named(sym, is_async, ten) => {
-            if is_async {
-                let t = it.sched.borrow_mut().tao(sym, args, ten.to_string(), span);
-                frame.vals.push(Value::Task(t));
-                return Ok(());
-            }
-            let f =
-                it.fns.get(&sym).copied().ok_or_else(|| {
-                    Abort::Trap(Trap::new(RT, "frame test: hàm không tồn tại", span))
-                })?;
-            if args.len() != f.params.len() {
-                return Err(Abort::Trap(Trap::new(
-                    RT,
-                    format!(
-                        "hàm `{ten}` cần {} đối số, được {}",
-                        f.params.len(),
-                        args.len()
-                    ),
-                    span,
-                )));
-            }
-            let mut env = HashMap::new();
-            for (p, v) in f.params.iter().zip(args) {
-                env.insert(p.sym, v);
-            }
-            frame.calls.push(CallFrame {
-                body: &f.body,
-                pc: 0,
-                env,
-                mutable: HashSet::new(),
-                work: Vec::new(),
-                last: None,
-            });
-            Ok(())
-        }
+    };
+    for (c, body) in elifs.iter().rev() {
+        let on_true = branch(body);
+        on_false = vec![Work::EvalCond {
+            cond: c,
+            on_true,
+            on_false,
+            span,
+        }];
     }
+    let on_true = branch(then);
+    vec![Work::EvalCond {
+        cond,
+        on_true,
+        on_false,
+        span,
+    }]
+}
+
+fn args_works<'a>(
+    args: &'a [HExpr],
+    named: &'a [(String, HExpr)],
+    span: Span,
+    cont: Vec<Work<'a>>,
+) -> Work<'a> {
+    Work::EvalArgsCont {
+        args,
+        named,
+        idx: 0,
+        span,
+        cont,
+    }
+}
+fn run_arm_body<'a>(frame: &mut IFrame<'a>, arm: &'a HArm, stmt_mode: bool) {
+    if stmt_mode {
+        append_work(frame.cur(), block_works(&arm.body));
+    } else {
+        frame.cur().work.push(Work::EvalBlock(&arm.body));
+    }
+}
+
+fn pop_n(frame: &mut IFrame<'_>, n: usize) -> R<Vec<Value>> {
+    let mut vs = Vec::with_capacity(n);
+    for _ in 0..n {
+        vs.push(frame.pop_val()?);
+    }
+    Ok(vs)
+}
+
+/// Lấy `(pos, named)` đã eval từ `vals` theo thứ tự nguồn; `names` là tên đối số theo thứ tự.
+#[allow(clippy::type_complexity)]
+fn take_call_args_names(
+    frame: &mut IFrame<'_>,
+    npos: usize,
+    names: &[String],
+) -> R<(Vec<Value>, Vec<(String, Value)>)> {
+    let mut all = Vec::with_capacity(npos + names.len());
+    for _ in 0..(npos + names.len()) {
+        all.push(frame.pop_val()?);
+    }
+    all.reverse();
+    let pos = all[..npos].to_vec();
+    let named = all[npos..]
+        .iter()
+        .cloned()
+        .zip(names.iter().cloned())
+        .map(|(v, n)| (n, v))
+        .collect();
+    Ok((pos, named))
 }
 
 fn underflow() -> Abort {

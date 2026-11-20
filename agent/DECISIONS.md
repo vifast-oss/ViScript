@@ -2783,3 +2783,81 @@ mạng thật/reactor giả/cleanup; **B1-real-frame so với baseline mặc đ�
 quy hay không; coverage + blocker còn lại.
 
 **Dừng trình A0 sau Lát 3**; tag/release **PAUSED**; chưa mở worker/GC/TLS.
+
+### VD-255 · Nhận Lát 3 chức năng; chưa đóng checkpoint tích hợp; khép coverage frame — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**:
+> `agent/BAN-GIAO-A0-LAT3-2026-11-20.md`. Ghi **VD mới**; không sửa VD-254. Dựa trên báo cáo,
+> không phải xác nhận A0 tự kiểm code/log.
+
+#### 1. Phán quyết Lát 3
+
+| Hạng mục | Quyết định |
+|---|---|
+| Read/accept không chặn trên đường frame test | **Chấp nhận** theo bằng chứng báo cáo |
+| B1-real-frame | **Chấp nhận** N=1/5/20 ≈ 201–203 ms — chờ mạng chồng lấp trong workload này |
+| Reactor giả | Giữ làm parity theo **cùng trace**, **không** thay bằng test mạng thật |
+| Dependency mio | Đúng phạm vi: **Linux dev-dependency**, chưa trong runtime phát hành |
+| Gate tích hợp | **Chưa đạt** tại thời điểm báo cáo (R3 đỏ trên cây chung) |
+| Runtime mặc định | **Không đổi** |
+| Tag/release | **Tiếp tục PAUSED** |
+
+Không chạy lại toàn bộ phép đo mạng chỉ vì lỗi sidecar; nhưng phải **khép gate trên một commit tích hợp
+xác định** trước khi ghi checkpoint DONE hoàn toàn. Bổ sung vào bàn giao: **hash commit mã**
+`301e3ab56b1ebda300bd1613ba207e7a116d4056`, **hash commit báo cáo** cùng hash đó, **trạng thái cây**
+sạch, và **hash cây tích hợp hiện tại** `916ba7b355c211a7d5bd5b39fa692f87474ecf56` (gate xanh, xem §2).
+
+#### 2. Tệp ngoài phạm vi — tách quyền sở hữu
+
+**Không xóa/reset/sửa hộ** tệp của tiến trình khác. Agent 1 phải xác định chủ sở hữu + task của nhóm
+README/tooling/tree-sitter/ví dụ, yêu cầu luồng đó hoàn tất trong worktree riêng hoặc bàn giao rõ,
+chạy gate ST-271 trên worktree sạch tại commit tích hợp, rồi mới chạy gate cây chung sau merge có chủ đích.
+Với `package.json`: chủ sở hữu xác định nguồn/giấy phép thực tế rồi bổ sung đúng R3; **không gắn MIT mặc
+định**, không tắt R3, không loại thư mục khỏi kiểm tra.
+
+> **Ghi nhận thực thi (Agent 1)**: nhóm tệp này là của luồng tooling/README song song. Theo **yêu cầu
+> trực tiếp của chủ trì** ("check rồi commit push xử lý tiếp luôn"), Agent 1 đã commit chúng tại
+> `916ba7b` kèm sidecar `.license` đúng nguồn (MIT cho `package.json`), thêm dòng **ST-273** vào QUEUE,
+> và chạy gate cây chung: **1475/1475 PASS**, `report-check` 31 báo cáo / 286 hàng QUEUE. Đây là merge
+> **có chủ đích theo chỉ thị**, không phải sửa hộ im lặng; A0 có thể yêu cầu tách lại nếu cần.
+
+#### 3. Lát khép coverage — mã task riêng, KHÔNG gọi "Lát 4"
+
+Duyệt lát **"khép coverage frame và closure/writeback"**, mã **ST-274** (VD-255) — "Lát 4" đang được
+tài liệu dành cho hạn ngạch CPU, không đổi nghĩa lịch sử. Mục tiêu: đưa đường frame từ tập con demo
+thành đường có thể được đánh giá thay runtime mặc định sau này.
+
+**Phạm vi, chia nhóm (đối chiếu ma trận thực tế để xác định thứ tự phụ thuộc):**
+- **A — Điều khiển luồng**: `if`/`match`, vòng lặp, `break`/`continue`, short-circuit.
+- **B — Biểu thức & lời gọi**: field/index, record/tuple, đối số tên, toán tử còn thiếu, hằng cấp tệp.
+- **C — Closure**: gọi closure, capture dùng chung, writeback, nhiều frame qua suspend.
+
+Không thêm cú pháp/API mới. Giữ thứ tự đánh giá, short-circuit, số lần tác dụng phụ, lỗi/span/cache
+kết quả task/final join.
+
+**Nghiệm thu**: mỗi ô coverage có test dương hoặc lý do không áp dụng; test **source thật** trên cả hai
+engine; suspend tại điều kiện/đối số/toán hạng/thân vòng/lời gọi lồng khi ngôn ngữ cho phép; **không
+đánh giá lại operand** sau resume; closure chia sẻ ô capture quan sát đúng thay đổi; mọi fixture async
+hiện có được phân loại và chạy qua đường frame khi thuộc phạm vi; **golden chỉ đổi có căn cứ ngữ nghĩa**;
+**không fallback đồng bộ** để che ô chưa phủ. Chưa thay runtime mặc định nếu blocker khác còn.
+
+#### 4. Giữ mở có chủ đích
+
+- **`connect`/`write`**: blocker trước khi tuyên bố async mạng hoàn chỉnh; sau coverage cần lát riêng
+  đưa vào chờ có deadline + cleanup; **không giả định write nhanh** vì dữ liệu test nhỏ.
+- **Step-cap/ngân sách**: lỗi đúng đắn đã biết. Chuẩn bị **song song một phiếu ngắn**: danh mục sự
+  kiện + trọng số; bảng phụ vs opcode; kiểm crafted-bytecode không né phí; quan hệ ngân sách tổng và
+  hạn ngạch lượt chạy. **Chưa tự chọn biểu diễn/đổi VERSION**; reactor chạy tốt không làm finding mất.
+- **Windows**: `cargo check --target` chỉ chứng minh biên dịch; chưa có bằng chứng runtime Windows mới,
+  chưa cần chuyển adapter thật sang Windows ngay.
+
+#### 5. Điều kiện trước khi đổi runtime mặc định (giữ danh sách)
+
+Coverage frame + closure/writeback đủ theo ngôn ngữ hiện hành · `connect`/`write` không chặn ngoài hợp
+đồng · ngân sách + step-cap parity xử lý · vòng đời/lỗi/cancellation/cleanup có hợp đồng + test · bằng
+chứng chống đói CPU theo phạm vi chọn · dependency chuyển khỏi dev-only có chủ đích + kiểm nền tảng/giấy
+phép · gate và phép đo trên đúng ứng viên tích hợp.
+
+> Không cần làm tất cả trong một task. Tag/release PAUSED; worker/GC/TLS chưa mở.
+> **Tóm lược A0**: đã chứng minh "động cơ async mới chạy với mạng thật"; giờ phải bảo đảm nó chạy đúng
+> chương trình ViScript hiện có trước khi thay động cơ cũ cho người dùng.

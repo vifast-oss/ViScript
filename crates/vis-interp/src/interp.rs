@@ -110,7 +110,7 @@ pub(crate) struct Interp<'a> {
     fn_depth: u32,
     /// Độ sâu **khung gọi** đang mở (ST-15): vượt [`MAX_CALL_DEPTH`] ⇒ `VS0501`, không tràn stack.
     depth: u32,
-    types: &'a TypeTable,
+    pub(crate) types: &'a TypeTable,
     #[allow(dead_code)]
     symbols: &'a Symbols,
     /// Host chương trình ngoài (ST-27); `None` ⇒ `VS0604` — interp **không** biết OS.

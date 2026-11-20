@@ -369,47 +369,33 @@ fn r8_multiple_waiters_fifo_trace_order() {
 // từ chối rõ, không fallback sang đường đồng bộ, không re-run, checker không thu hẹp.
 // ---------------------------------------------------------------------------
 
+// **VD-255 / ST-274**: `&&`/`||` và hằng cấp tệp giờ ĐÃ được phủ ở đường frame interp
+// (xem `lat255_coverage.rs`). Hai ca dưới đây chuyển từ "từ chối rõ" sang "chạy thật",
+// vẫn so sánh byte giữa hai engine và với runtime mặc định.
+
 #[test]
-fn r9_and_or_short_circuit_rejected_clearly() {
-    let src = "fn f(a: bool) -> bool:\n    a and false\n\nfn main():\n    print(f(true))\n";
-    let (hir, syms, tys) = tien_trinh(src); // checker vẫn chấp nhận
-    let out = run_i(src, &hir, &syms, &tys, &[], cfg(vec![], false));
-    assert_eq!(out.exit, 1);
-    assert!(
-        out.diagnostics[0].message.contains("short-circuit"),
-        "{:?}",
-        out.diagnostics
+fn r9_and_or_short_circuit_supported() {
+    // Toán hạng bị bỏ qua (`side()`) KHÔNG được chạy — side-effect xảy ra đúng một lần.
+    let src = "fn side() -> bool:\n    print(\"SIDE\")\n    true\n\nfn f(a: bool) -> bool:\n    a and side()\n\nfn main():\n    print(f(false))\n";
+    let (i, _) = chay(src, cfg(vec![], false));
+    assert_eq!(i.exit, 0, "{:?}", i.diagnostics);
+    assert_eq!(
+        i.stdout, "false\n",
+        "vế phải không được eval: {:?}",
+        i.stdout
     );
-    // Vế phải KHÔNG được eval (không có side-effect nào được chạy trước khi báo lỗi).
-    assert!(out.stdout.is_empty());
-    // VM chạy bytecode thật (`and` ⇒ `JumpIfNotTrue`) nên thực thi được — đây là hỗ trợ
-    // bytecode thật, KHÔNG phải fallback im lặng; nhưng KHÔNG dùng để tuyên bố parity
-    // của evaluator interp (ma trận coverage).
-    let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
-    let vo = run_v(&m, src, &[], cfg(vec![], false));
-    assert_eq!(vo.exit, 0, "{:?}", vo.diagnostics);
-    assert_eq!(vo.stdout, "false\n");
-    // Runtime mặc định vẫn đúng golden — không thu hẹp checker/không đổi runtime.
+    let (hir, syms, tys) = tien_trinh(src);
     let def = vis_interp::run(src, &hir, &syms, &tys, &[]);
     assert_eq!(def.stdout, "false\n");
 }
 
 #[test]
-fn r10_file_const_rejected_clearly() {
+fn r10_file_const_supported() {
     let src = "const K: int = 7\nfn main():\n    print(K)\n";
+    let (i, _) = chay(src, cfg(vec![], false));
+    assert_eq!(i.exit, 0, "{:?}", i.diagnostics);
+    assert_eq!(i.stdout, "7\n");
     let (hir, syms, tys) = tien_trinh(src);
-    let out = run_i(src, &hir, &syms, &tys, &[], cfg(vec![], false));
-    assert_eq!(out.exit, 1);
-    assert!(
-        out.diagnostics[0].message.contains("hằng cấp tệp"),
-        "phải báo đúng lý do: {:?}",
-        out.diagnostics
-    );
-    let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
-    let vo = run_v(&m, src, &[], cfg(vec![], false));
-    // VM chạy bytecode thật: hằng đã được hạ thành lệnh `Const` ⇒ vẫn đúng (KHÔNG fallback).
-    assert_eq!(vo.exit, 0);
-    assert_eq!(vo.stdout, "7\n");
     let def = vis_interp::run(src, &hir, &syms, &tys, &[]);
     assert_eq!(def.stdout, "7\n");
 }

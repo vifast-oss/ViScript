@@ -10,7 +10,11 @@
 
 ## 1. Commit tích hợp & diff dependency
 
-- **Commit tích hợp**: `ST-271` — adapter `mio` trên đường frame, test `crates/vis-cli/tests/lat3_real.rs`.
+- **Commit mã (ST-271)**: `301e3ab56b1ebda300bd1613ba207e7a116d4056` — adapter `mio` trên đường frame,
+  test `crates/vis-cli/tests/lat3_real.rs`. **Commit báo cáo này**: cùng hash `301e3ab…` (báo cáo được
+  commit chung với mã). **Trạng thái cây**: sạch. **Commit cây tích hợp hiện tại**:
+  `916ba7b355c211a7d5bd5b39fa692f87474ecf56` — bổ sung nhóm README/tooling/tree-sitter/ví dụ theo
+  chỉ thị trực tiếp của chủ trì; gate cây chung **1475/1475 PASS** (R3 đã khép với sidecar `.license`).
 - **Manifest**: `crates/vis-cli/Cargo.toml:60` — `[target.'cfg(target_os = "linux")'.dev-dependencies]`
   `mio = { version = "=1.2.5", default-features = false, features = ["os-poll", "net"] }`.
   **dev-dependency** ⇒ không lọt vào artifact `vis` phát hành; chỉ Linux, không vào core/wasm.
