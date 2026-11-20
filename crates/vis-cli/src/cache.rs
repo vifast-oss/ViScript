@@ -32,7 +32,7 @@ use std::path::PathBuf;
 // cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -226,12 +226,18 @@ mod tests {
     /// Ghim lại lần nữa (2026-11-20, **VD-258 / stream A**): checker/codegen đổi `Result?`,
     /// `?.` lồng, record ctor/default và `None`; `VERSION` VBC1 không đổi ⇒ nhãn logic phải đổi
     /// để cache cũ cùng nguồn không chạy bytecode trước bản sửa.
+    /// Ghim lại lần nữa (2026-11-21, **VD-260**): rest-pattern, type-directed Option lift và
+    /// branch join đổi codegen ⇒ cache cũ không được tái dùng.
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "37da16859f16f004b16c4ce325686990f05ea60bc65d1432e59a195d702a7b27",
+            k, "dd5794e2e7aafb68df8a4e9780d29c40041a722209e989b1f8b2ddd612408d02",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "37da16859f16f004b16c4ce325686990f05ea60bc65d1432e59a195d702a7b27",
+            "VD-260: cache sinh trước rest-pattern/parity không được tái dùng"
         );
         assert_ne!(
             k, "98a0b98342213b9b2fe3f8a8050ae0e12ba3e09ab276493cc2c657558b4650e8",
@@ -266,6 +272,10 @@ mod tests {
         assert!(
             PHIEN_BAN.contains("vd258-checker-option-record-none"),
             "VD-258: cache phải mang nhãn checker/record/None mới"
+        );
+        assert!(
+            PHIEN_BAN.contains("vd260-rest-parity-option"),
+            "VD-260: cache phải mang nhãn rest-pattern/parity mới"
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);
