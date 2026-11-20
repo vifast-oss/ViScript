@@ -7,6 +7,8 @@
 //! Mọi hàm **thuần** trừ `std.time.*` (đọc đồng hồ trong Rust, **không** thêm method vào [`Host`]);
 //! `std.fs` **không** ở đây (ST-27), `std.json.decode` **chưa** có (VS1b — `VS0301` ở tầng hạ).
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -29,6 +31,83 @@ pub const DAU_QUYEN: &str = "\u{1}VS0604:";
 /// `i64::MAX`, âm, hay giá trị chuyển kiểu overflow) **không** được phép ép host cấp phát bộ nhớ
 /// tùy ý (OOM ⇒ abort). Vượt trần ⇒ `Result.Err` dữ liệu, không trap, không panic.
 pub const NET_READ_CAP: i64 = 8 * 1024 * 1024;
+
+// ===========================================================================
+// ST-277 / VD-256 — connect/write nonblocking trên ĐƯỜNG FRAME TEST (chỉ test).
+//
+// `rt.rs`/trait `FrameReactorBackend` KHÔNG đổi (zero-dep, cross-platform). Adapter
+// thật nằm trong integration test Linux; core chỉ cần (a) ghi dữ liệu `net.write` vào
+// một kênh chung và (b) đi qua `frame_reactor_poll_io(ReactorOp::Read, ...)` với handle
+// được mã hoá `N:<addr>` / `W:<tay>`. Adapter đọc kênh này, tự làm nonblocking
+// connect (kiểm tra SO_ERROR khi readiness) và partial write (lưu offset). Mọi cơ chế
+// deadline/token/generation/cleanup đã có trong `frame_real_poll` được TÁI DÙNG nguyên
+// văn — không helper mới trong `rt.rs`. Runtime mặc định (`frame.enabled == false`)
+// và API ngôn ngữ (`net.connect`/`net.write`, chữ ký, giá trị trả) không đổi.
+// ===========================================================================
+
+/// Tiền tố handle cho một lần `net.connect` trên đường frame test (`N:<dia_chi>`).
+#[doc(hidden)]
+pub const FRAME_NET_CONNECT: &str = "N:";
+/// Tiền tố handle cho một lần `net.write` trên đường frame test (`W:<tay>`).
+#[doc(hidden)]
+pub const FRAME_NET_WRITE: &str = "W:";
+/// Hạn mặc định của `net.write` trên đường frame test (ngôn ngữ không có đối số timeout).
+/// Chọn rộng cho loopback; vẫn là hạn monotonic DUY NHẤT, không reset theo readiness.
+#[doc(hidden)]
+pub const FRAME_WRITE_TIMEOUT_MS: i64 = 5_000;
+
+#[derive(Default)]
+struct FrameNetIo {
+    /// `W:<tay>` → bytes cần gửi (adapter `take` sang trạng thái riêng ở lần poll đầu).
+    writes: HashMap<String, Vec<u8>>,
+    /// Test có thể thu hẹp hạn write để kiểm chứng timeout mà không đổi API ngôn ngữ.
+    write_timeout_ms: Option<i64>,
+}
+thread_local! {
+    static FRAME_NET_IO: RefCell<FrameNetIo> = RefCell::new(FrameNetIo::default());
+}
+
+/// **Chỉ test**: ghi bytes cần gửi cho khoá `W:<tay>` trước khi gọi `frame_reactor_poll_io`.
+#[doc(hidden)]
+pub fn frame_net_set_write(key: &str, data: &[u8]) {
+    FRAME_NET_IO.with(|x| {
+        x.borrow_mut().writes.insert(key.to_string(), data.to_vec());
+    });
+}
+
+/// **Chỉ test**: lấy (và xoá) bytes cần gửi của khoá `W:<tay>`.
+#[doc(hidden)]
+pub fn frame_net_take_write(key: &str) -> Option<Vec<u8>> {
+    FRAME_NET_IO.with(|x| x.borrow_mut().writes.remove(key))
+}
+
+/// **Chỉ test**: đặt lại hạn write (ms); `None` ⇒ dùng [`FRAME_WRITE_TIMEOUT_MS`].
+#[doc(hidden)]
+pub fn frame_net_set_write_timeout(ms: Option<i64>) {
+    FRAME_NET_IO.with(|x| x.borrow_mut().write_timeout_ms = ms);
+}
+
+/// **Chỉ test**: hạn write hiệu lực, luôn dương (tránh trần chờ selector vô hạn).
+#[doc(hidden)]
+pub fn frame_net_write_timeout() -> i64 {
+    FRAME_NET_IO.with(|x| {
+        x.borrow()
+            .write_timeout_ms
+            .unwrap_or(FRAME_WRITE_TIMEOUT_MS)
+            .max(1)
+    })
+}
+
+/// **Chỉ test**: `net.write` trả `Result<(), str>` — đổi payload `Ok(str)` của reactor
+/// thành `Ok(())`, giữ nguyên `Err` (hợp đồng số byte/lỗi KHÔNG đổi).
+fn frame_unit_result(v: Value) -> Value {
+    match &v {
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+            Value::ok(Value::Unit)
+        }
+        _ => v,
+    }
+}
 
 /// **ST-238 / VD-242 (nợ #167)**: validate `max_bytes` từ người dùng. `i64::MAX` (overflow khi
 /// chuyển `usize`), âm, và giá trị vượt trần đều bị từ chối **trước** khi host cấp phát.
@@ -524,6 +603,21 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 // Mặc định 1 s — đủ rộng cho loopback, không treo chương trình.
                 1_000
             };
+            // ST-277/VD-256: đường frame có adapter thật ⇒ connect nonblocking. Handle
+            // `N:<addr>` chỉ là khoá core; adapter khởi tạo connect, đăng ký WRITABLE,
+            // và CHỈ trả tay khi readiness kèm kiểm tra kết quả nối thực tế (SO_ERROR).
+            // Deadline/token/gen/cleanup là của `frame_reactor_poll_io` (không đổi rt.rs).
+            if host.sched().borrow().frame.enabled && host.sched().borrow().frame.backend.is_some()
+            {
+                let khoa = format!("{FRAME_NET_CONNECT}{dia_chi}");
+                return host.sched().borrow_mut().frame_reactor_poll_io(
+                    ReactorOp::Read,
+                    &khoa,
+                    0,
+                    timeout,
+                    span,
+                );
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             let r = host.connect(dia_chi, timeout.max(0) as u64);
             hop_nhat_fs(r.map(Value::Str), span)
@@ -566,6 +660,25 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "net.write" => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let du = chuoi(name, &args[1], 1, span)?;
+            // ST-277/VD-256: đường frame có adapter thật ⇒ partial-write có offset.
+            // Resume gọi lại builtin với ĐỐI SỐ ĐÃ CACHE (xem `Redispatch`/`frame.rs`),
+            // nên bytes được ghi lại đúng từ registry/offset của adapter — KHÔNG gửi lại
+            // phần đã gửi. Hạn write là một deadline monotonic duy nhất, không reset.
+            if host.sched().borrow().frame.enabled && host.sched().borrow().frame.backend.is_some()
+            {
+                let khoa = format!("{FRAME_NET_WRITE}{tay}");
+                frame_net_set_write(&khoa, du.as_bytes());
+                let han = frame_net_write_timeout();
+                let r = host.sched().borrow_mut().frame_reactor_poll_io(
+                    ReactorOp::Read,
+                    &khoa,
+                    du.len(),
+                    han,
+                    span,
+                );
+                frame_net_take_write(&khoa); // dọn phần adapter chưa kịp take
+                return r.map(frame_unit_result);
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.write(tay, du.as_bytes()).map(|()| Value::Unit), span)
         }
@@ -576,6 +689,11 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let backend = host.sched().borrow().frame.backend.clone();
             if let Some(b) = backend {
                 host.sched().borrow_mut().frame_reactor_cancel_handle(tay);
+                // ST-277: một `net.write` đang treo đăng ký dưới khoá `W:<tay>` — phải
+                // huỷ cả khoá đó thì lần retry mới thấy tay đã đóng (Err đúng một lần),
+                // không đợi tới deadline rồi trả timeout muộn.
+                let wk = format!("{FRAME_NET_WRITE}{tay}");
+                host.sched().borrow_mut().frame_reactor_cancel_handle(&wk);
                 return hop_nhat_fs(b.borrow_mut().close(tay).map(|()| Value::Unit), span);
             }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;

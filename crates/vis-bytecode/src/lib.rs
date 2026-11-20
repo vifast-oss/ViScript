@@ -15,13 +15,16 @@ mod cerr;
 pub mod codegen;
 pub mod decode;
 pub mod encode;
+/// **ST-276 (VD-256)**: định nghĩa sự kiện ngân sách dùng chung + bảng phụ S theo PC.
+pub mod fee;
 pub mod format;
 pub mod util;
 pub mod verify;
 
-pub use codegen::{compile, compile_kiem, CodegenError};
+pub use codegen::{compile, compile_kiem, compile_with_fee, CodegenError};
 pub use decode::{decode, DecodeError};
 pub use encode::encode;
+pub use fee::{encode_with_fee, load_verified_with_fee};
 pub use format::{
     source_hash, Const, Func, Instr, Module, Span, BI_MATCH_NO_ARM, GLOBAL_SLOT_BASE, HASH_LEN,
     MAGIC, VERSION,

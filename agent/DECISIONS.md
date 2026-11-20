@@ -2861,3 +2861,90 @@ phép · gate và phép đo trên đúng ứng viên tích hợp.
 > Không cần làm tất cả trong một task. Tag/release PAUSED; worker/GC/TLS chưa mở.
 > **Tóm lược A0**: đã chứng minh "động cơ async mới chạy với mạng thật"; giờ phải bảo đảm nó chạy đúng
 > chương trình ViScript hiện có trước khi thay động cơ cũ cho người dùng.
+
+### VD-256 · Khép checkpoint Lát 3; chốt D1–D9; mở ngân sách, connect/write, sửa final-join — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: checkpoint
+> `agent/BAO-CAO-CHECKPOINT-COVERAGE-2026-11-20.md` + phiếu ngân sách. Ghi **VD mới**; không sửa
+> VD-255. Dựa trên nội dung đã gửi, không phải xác nhận A0 tự kiểm repository.
+
+#### 1. Khép & phân loại
+
+**Chấp nhận khép checkpoint tích hợp Lát 3** theo gate tại `4150396`. **ST-274 được ghi là "mở rộng
+coverage", KHÔNG phải hoàn tất** — vẫn còn `?`, `chan`, `CmdBlock`, `await` trong thân closure trên VM,
+và lỗi final-join chưa surfaced. Các gap đó tiếp tục mở.
+
+#### 2. D1–D9 chốt
+
+| Mục | Quyết định |
+|---|---|
+| D1 Catalog | Duyệt hướng; **loại phí writeback nội bộ**, **tách await khỏi final join** |
+| D2 Trọng số/BUDGET | **Chưa chốt số**; duyệt instrumentation + đo trước; **không kế thừa 10⁷** |
+| D3 Biểu diễn | **Chọn S: bảng phụ sự kiện theo PC**; hỗ trợ nhiều sự kiện có thứ tự tại một PC |
+| D4 Verifier | Duyệt kiểm cấu trúc phí + CFG; **không chấp nhận** tuyên bố suy lại đầy đủ sự kiện source từ opcode |
+| D5 Weight | **Chỉ serialize `kind`/`site`**, không serialize trọng số tùy ý; runtime dùng bảng chuẩn có phiên bản |
+| D6 Resume | Continuation lưu trạng thái **đã tính phí**; ưu tiên PC **sau** điểm phí khi đúng; **không ép PC vượt thao tác chưa xong** |
+| D7 VERSION | Duyệt cấp **phiên bản định dạng chưa dùng** khi tích hợp S + cập nhật cache cùng đợt; **không tự ấn số 3** |
+| D8 Watchdog | Hàng rào an toàn **độc lập**, không dùng làm giới hạn ngữ nghĩa thường, không che lỗi verifier |
+| D9 Step-cap | **Giữ OPEN** đến khi ngân sách mới thay thế đúng giới hạn lệch giữa hai engine và được kiểm chứng |
+
+#### 3. Catalog — tính theo chương trình, không theo triển khai
+
+- **E_EXPR**: mỗi nút expression ngữ nghĩa **thực sự đánh giá** tính 1 sự kiện, trừ nút đã có sự kiện
+  chuyên biệt (call/spawn/await). **Nút tổng hợp có phí riêng; các con thực sự chạy cũng có phí riêng**
+  (`1 + 2` ⇒ cộng + 2 literal). **Không tính** nút do lowering/codegen tự sinh.
+- **E_ASSIGN**: ghi do **source** quy định — khởi tạo binding sau RHS xong; gán lại/compound sau khi tính
+  xong giá trị và đích; ghi field/index cùng nguyên tắc. **Không tính**: writeback capture do VM, copy
+  tham số vào frame, spill/restore khi suspend, temporary compiler. Gán vào biến capture ⇒ tính **ở phép
+  gán source**, không tính lại lúc writeback. Destructuring ⇒ **1 sự kiện/câu** source, không theo số ô.
+- **E_AWAIT/final join**: `await` trong source tính `E_AWAIT`; **final join do runtime không giả thành await
+  source mới**; thân task khi join vẫn tiêu ngân sách; Pending/resume không tính lại sự kiện đã xong.
+- **E_STMT/loop/builtin**: `E_STMT` 1 lần khi bắt đầu câu source, **không tính lại khi resume**; giữ quy tắc
+  loop đã chốt, với loop vô điều kiện cần điểm phí **trước lần vào thân đầu** và mỗi lần lặp; `$spawn`/
+  `$await` nội bộ chỉ mang sự kiện chuyên biệt, **không cộng `E_BUILTIN`**; phân biệt method người dùng
+  và method host.
+- Catalog là **đơn vị công việc trừu tượng, không phải đồng hồ CPU** — giới hạn byte/kích thước/deadline
+  vẫn là giới hạn riêng.
+
+#### 4. Verifier — tách hai nghĩa vụ
+
+Phiếu cũ giả định verifier suy đầy đủ `E_STMT`/`E_EXPR`/`E_ASSIGN` từ bytecode — **chưa được chứng minh**
+(nhiều nút source hạ cùng opcode; một gán source tạo nhiều lệnh ghi; `JumpIfFalse` thuộc if/loop/lowering
+khác; metadata site trong artifact cũng không đáng tin). Tách:
+- **A — Parity ngân sách source**: compiler + interp dùng **định nghĩa sự kiện chung**; test so **dãy sự kiện
+  có thứ tự**, không chỉ tổng phí. Bảng phụ S giữ sự kiện theo PC nhưng **không tự nhận là bằng chứng**
+  instrumentation source đầy đủ.
+- **B — An toàn bytecode không đáng tin**: verifier kiểm kind hợp lệ, site/PC hợp lệ, giới hạn kích thước
+  bảng, ràng buộc cấu trúc suy độc lập, CFG/đường chuyển điều khiển. **Không chấp nhận bảng phí rỗng** làm
+  bằng chứng chương trình không tốn công.
+
+Duyệt **fuel VM an toàn riêng** cho bytecode không đáng tin, **không phải ngân sách source**: không dùng để
+tuyên bố parity; không âm thầm thành giới hạn thường tái tạo lỗi interp chạy/VM trap; nếu kích hoạt trên
+chương trình compiler sinh trong miền ngân sách được hỗ trợ ⇒ **lỗi thiết kế/hiệu chỉnh**; chẩn đoán **phân
+biệt** với hết ngân sách ngữ nghĩa. Agent 1 trình **ngắn cách giới hạn/reset fuel** trước khi hiện thực;
+**không** yêu cầu tái dựng HIR từ bytecode. Resume tính trùng bắt bằng **test runtime**, không ghi verifier
+chắc chắn bắt hết.
+
+#### 5. Phạm vi mở & connect/write
+
+Task ngân sách: instrumentation chuẩn 2 engine · test-hook budget nhỏ + trace nội bộ · bảng phụ S + verifier
+cấu trúc + VERSION/cache · đo workload đại diện · trình trọng số/BUDGET/fuel để A0 chốt. **Chưa bật ngân
+sách mới làm mặc định** khi chưa chốt số/thay thế guard cũ. Nếu một PC có nhiều sự kiện ⇒ giữ **thứ tự và
+trạng thái tiến triển khi yield**, **không charge lại cả nhóm sau resume**.
+
+**Lát connect/write** (mở song song nếu tách quyền tệp): `connect` Pending → readiness rồi **kiểm tra kết
+quả nối thực tế**; `write` xử lý **partial write + lưu offset**, resume **không gửi lại phần đã gửi**;
+**deadline không reset** theo readiness; peer không đọc **không giữ scheduler vô hạn**; đóng/timeout/lỗi gỡ
+đăng ký đúng, không đánh thức nhầm. Test: nối thất bại, peer đọc chậm, **write lớn có backpressure**, đóng
+giữa chừng, task khác vẫn tiến triển. Giữ API/runtime mặc định; nếu đổi hợp đồng số byte trả về/lỗi của
+`net.write` ⇒ **trình riêng trước khi sửa**.
+
+#### 6. Vẫn mở & lệnh
+
+Sửa **lỗi final-join bị nuốt** theo hợp đồng lỗi task hiện hành — **không tự đổi chính sách hủy** các task
+còn lại trong cùng bản sửa. Coverage (`?`/`chan`/`CmdBlock`, await trong closure trên VM), cancellation/
+cleanup, fairness CPU, Windows runtime — tiếp tục mở. **Điều kiện đổi runtime mặc định giữ nguyên** VD-255 §5.
+Tag/release **PAUSED**; worker/GC/TLS **chưa mở**.
+
+> **Điểm quan trọng A0**: ngân sách phải là **luật ổn định của chương trình**, không phải hóa đơn cho các
+> thao tác nội bộ khác nhau giữa interp và VM.

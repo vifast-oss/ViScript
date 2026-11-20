@@ -11,15 +11,93 @@
 
 use std::collections::HashMap;
 
+use vis_bytecode::fee::{FeeEntry, FeeTable};
 use vis_bytecode::Instr;
 use vis_interp::builtin;
 use vis_interp::frame::{FrameConfig, FrameOutput};
-use vis_interp::interp::{Abort, Trap};
+use vis_interp::interp::{Abort, Trap, BUDGET, R};
 use vis_interp::rt::{self, Waiter};
 use vis_interp::value::Value;
 use vis_syntax::{Diagnostic, Span};
 
 use crate::vm::{Frame, Th, Vm};
+
+pub const SAFETY_FUEL_CODE: &vis_diag::Code = &vis_diag::Code {
+    id: 501,
+    short: "VS0501-FUEL",
+    message_vi: "VM safety fuel cạn (hàng rào an toàn bytecode, không phải ngân sách ngữ nghĩa)",
+    message_en: "VM safety fuel exhausted (bytecode safety barrier, not a semantic budget)",
+    message_ja: "VM 安全フェイル枯渇（バイトコード安全装置、意味予算ではない）",
+    severity: vis_diag::Severity::Error,
+};
+
+/// Lỗi của VM khi bytecode hỏng — **không** panic.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VmError {
+    /// `pop` trên ngăn xếp rỗng.
+    StackUnderflow,
+    /// Đích nhảy ngoài `code`.
+    BadJump(i32),
+    /// Chỉ số const/hàm ngoài phạm vi.
+    BadIdx(u32),
+}
+
+impl core::fmt::Display for VmError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            VmError::StackUnderflow => write!(f, "ngăn xếp rỗng"),
+            VmError::BadJump(d) => write!(f, "đích nhảy ngoài code: {d}"),
+            VmError::BadIdx(i) => write!(f, "chỉ số ngoài phạm vi: {i}"),
+        }
+    }
+}
+
+// **ST-276 (VD-256)** — test-hook ngân sách của VM; tách sang tệp này để giữ R1 ≤ 1500 dòng
+// cho `vm.rs`. Mặc định `budget_fee == None` ⇒ `budget_charge` là no-op.
+impl<'a> Vm<'a> {
+    /// Bật ngân sách ngữ nghĩa bằng bảng phụ S (internal test hook).
+    pub fn budget_enable_for_test(&mut self, fee: FeeTable, limit: u64) {
+        self.budget_fee = Some(fee);
+        self.budget_remaining = limit as i64;
+        self.budget_trace.clear();
+        self.budget_hit = false;
+    }
+
+    /// Dãy sự kiện **có thứ tự** đã charge (so với trace của compiler/interp).
+    pub fn budget_trace_for_test(&self) -> &[FeeEntry] {
+        &self.budget_trace
+    }
+
+    /// Charge **mọi** sự kiện tại `(hàm, pc)` theo thứ tự bảng phụ. D6: pc lưu sau charge ⇒
+    /// resume không charge lại nhóm cũ.
+    pub(crate) fn budget_charge(&mut self, fi: u32, pc: usize, span: Span) -> R<()> {
+        let Some(fee) = self.budget_fee.as_ref() else {
+            return Ok(());
+        };
+        let Some(events) = fee.funcs.get(fi as usize) else {
+            return Ok(());
+        };
+        for e in events.iter().filter(|e| e.pc as usize == pc) {
+            let w = vis_bytecode::fee::standard_weight(e.kind) as i64;
+            self.budget_trace.push(*e);
+            if w > self.budget_remaining {
+                self.budget_hit = true;
+                return Err(Abort::Trap(Trap::new(
+                    BUDGET,
+                    format!(
+                        "vượt ngân sách ngữ nghĩa VD-256 ({}): cần {}, còn {}",
+                        e.kind.name(),
+                        w,
+                        self.budget_remaining
+                    ),
+                    span,
+                )));
+            }
+            self.budget_remaining -= w;
+        }
+        Ok(())
+    }
+}
 
 /// Hook nằm ngay tại nhánh `CallBuiltin` thật của VM (vm.rs). Khi `frame.enabled`,
 /// `Abort::Pending` được **khôi phục nguyên vẹn** để instruction `$await` chạy lại
@@ -246,7 +324,12 @@ pub fn run_frame_for_test<'m>(
     }
     frames.clear();
     vm.sched.borrow_mut().frame_drain_events();
-    vm.sched.borrow_mut().frame_final_join();
+    let final_join_err = vm.sched.borrow_mut().frame_final_join();
+    // **ST-278 (VD-256)**: lỗi task ở final join phải **surfaced** — không exit 0. Ưu tiên trap
+    // đã có (main lỗi); nếu chưa có thì dùng lỗi `VS0506` đã bọc sẵn trong `Task.kq`.
+    if trap.is_none() {
+        trap = final_join_err;
+    }
     // Lát 2: reactor về baseline sau khi handle test thả.
     vm.sched.borrow_mut().frame_reactor_shutdown();
     frame_output(&vm, final_value, trap)

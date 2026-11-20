@@ -79,6 +79,9 @@ pub enum VerifyError {
         slot: u16,
         nglobals: u16,
     },
+    /// **ST-276 (VD-256)**: trailer bảng phí (`VFEE`) giải mã được nhưng sai định dạng.
+    /// Chỉ phát sinh ở cửa nạp có ngân sách (`load_verified_with_fee`); `verify` thường không đụng tới.
+    FeeDecode(String),
 }
 
 impl core::fmt::Display for VerifyError {
@@ -146,6 +149,7 @@ impl core::fmt::Display for VerifyError {
                 f,
                 "hàm {func} pc {pc}: ô global {slot} ngoài số global thực tế {nglobals}"
             ),
+            VerifyError::FeeDecode(m) => write!(f, "bảng phí: {m}"),
         }
     }
 }

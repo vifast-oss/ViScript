@@ -21,6 +21,12 @@ use crate::builtin::Host;
 use crate::interp::{Abort, Trap, R, RT};
 use crate::value::Value;
 
+/// **ST-276 (VD-256)**: định nghĩa sự kiện ngân sách **dùng chung** với `vis-bytecode`.
+/// Khai báo ở đây (thay vì `frame.rs`) để giữ nguyên phạm vi sửa của ST-278 — file nguồn nằm
+/// trong `frame/**`, nội dung là `include!` của `vis-bytecode/src/fee_shared.rs`.
+#[path = "frame/fee.rs"]
+pub mod fee;
+
 /// Chặn **lồng** `await` (mỗi tầng là một khung gọi thật) — 256 như chốt VD-95 (7).
 pub const MAX_TASK_NEST: usize = 256;
 
@@ -338,6 +344,9 @@ pub struct FrameTest {
     pub next_token: u64,
     /// **Lát 3**: lỗi selector được lưu lại rồi driver biến thành trap rõ (không nuốt).
     pub selector_error: Option<String>,
+    /// **ST-278 (VD-256)**: lỗi task phát hiện lúc **final join** (theo hợp đồng `VS0506`,
+    /// đã bọc sẵn trong `Task.kq`). Không đổi chính sách hủy các task còn lại.
+    pub final_join_error: Option<Trap>,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -603,13 +612,36 @@ impl Scheduler {
 
     /// **Chỉ test**: main kết thúc — join mọi task chưa xong (không auto-cancel), rồi
     /// thu hồi các task đã xong + không còn handle sống + đã có nghĩa vụ join.
+    ///
+    /// **ST-278 (VD-256)**: trước đây hàm này **nuốt** lỗi task đã cache (`kq = Some(Err(..))`)
+    /// — task lỗi mà main không `await` vẫn làm chương trình exit 0. Nay lỗi đó được **đẩy ra**
+    /// theo đúng hợp đồng `VS0506` (mã gốc + span lúc tạo, do driver bọc sẵn) và trả về cho driver
+    /// quyết định trap. **Không** đổi chính sách hủy/đánh thức các task còn lại.
     #[doc(hidden)]
-    pub fn frame_final_join(&mut self) {
+    pub fn frame_final_join(&mut self) -> Option<Trap> {
+        // Quét theo **thứ tự tạo** (cũng là thứ tự join) để kết quả tất định.
+        let err = self
+            .tasks
+            .iter()
+            .find_map(|t| match t.kq.borrow().as_ref() {
+                Some(Err(tr)) => Some(tr.clone()),
+                _ => None,
+            });
         let ids: Vec<u32> = self.tasks.iter().map(|t| t.id).collect();
         for id in ids {
             self.frame.joined.insert(id);
         }
         self.frame_reclaim();
+        if err.is_some() {
+            self.frame.final_join_error = err.clone();
+        }
+        err
+    }
+
+    /// Lấy (và xoá) lỗi task bị nuốt ở final join — driver gán vào trap chung.
+    #[doc(hidden)]
+    pub fn frame_take_final_join_error_for_test(&mut self) -> Option<Trap> {
+        self.frame.final_join_error.take()
     }
 
     /// **Chỉ test**: thu hồi task thỏa 3 điều kiện ownership: xong, có nghĩa vụ join,

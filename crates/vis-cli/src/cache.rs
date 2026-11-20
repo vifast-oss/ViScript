@@ -20,9 +20,12 @@ use std::path::PathBuf;
 // **SỬA KÈM LÝ DO (VD-245 §5, ST-250, 2026-11-20)**: runtime nay trap ô global chưa khởi tạo;
 // cache sinh trước bản sửa vẫn có `VERSION=2` nhưng mang ngữ nghĩa VM cũ ⇒ đổi nhãn lần nữa để
 // phiên bản phát hành gồm đầy đủ hàng rào global. Không đổi `VERSION`/opcode.
+// **SỬA KÈM LÝ DO (VD-256 / ST-276, 2026-11-20)**: artifact nay có thêm **trailer bảng phí S**
+// (`vis_bytecode::fee`, định dạng `VERSION=4`); cache sinh trước bản sửa không mang bảng phụ ⇒
+// nhãn đổi để artifact cũ tự vô hiệu. `VERSION` VBC1 lõi vẫn 2 (hàng rào ST-246 giữ nguyên).
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -81,6 +84,10 @@ pub fn khoa_multi_voi_version(
     // **ST-246 (VD-244 §2)**: `VERSION` là một phần của khoá — cache v1 tự vô hiệu, source được
     // biên dịch lại thay vì tái dùng artifact mang ngữ nghĩa cũ.
     s.push_str(&version.to_string());
+    s.push('\n');
+    // **VD-256 / ST-276 (D7)**: phiên bản **định dạng bảng phí** là một phần của khoá — artifact
+    // mang trailer phí v4 không được trả lại cho runtime không hiểu bảng phụ (và ngược lại).
+    s.push_str(&vis_bytecode::fee::VERSION.to_string());
     s.push('\n');
     // **VD-129**: bảng thẻ là một phần của **định dạng** ⇒ phải nằm trong khoá.
     for b in vis_bytecode::format::bang_the_hash_voi(the) {
@@ -205,7 +212,7 @@ mod tests {
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "c4e9236cb32cb0f7359bf4630e70ca207e531cfb9a60a5f41c05341931051bb8",
+            k, "cca587acccdba4f540520dc611ccb8b8128a972136e3821f01c38914607e0f20",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
         // ST-249/#187: khoá của bản trước ST-248 (chỉ đổi PHIEN_BAN, VERSION vẫn 2) phải KHÔNG còn
@@ -222,6 +229,13 @@ mod tests {
         assert!(
             PHIEN_BAN.contains("st248-field-index-lift"),
             "ST-249: PHIEN_BAN phải mang nhãn logic của ST-248"
+        );
+        // VD-256/ST-276 (D7): cache phải mang cả nhãn bảng phí + số phiên bản định dạng phí.
+        assert!(PHIEN_BAN.contains("vd256-fee-side-table-v4"));
+        assert_eq!(vis_bytecode::fee::VERSION, 4);
+        assert_ne!(
+            k, "ad63ae9807aadc6c6208040197966169a0552ea07fe96d9340a5e84b7daf210e",
+            "VD-256: cache sinh trước bảng phí không được tái dùng"
         );
     }
 

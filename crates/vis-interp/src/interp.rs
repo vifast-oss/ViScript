@@ -4,8 +4,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use vis_diag::{Code, RUNTIME_CODES, TYPE_CODES};
-use vis_syntax::{Diagnostic, Span};
+use vis_syntax::Span;
 use vis_types::hir::*;
 use vis_types::lower::Symbols;
 use vis_types::TypeTable;
@@ -13,83 +12,10 @@ use vis_types::TypeTable;
 use crate::gan::{gan_chi_so, gan_truong};
 use crate::value::*;
 
-/// `VS0501` — lỗi runtime chung.
-pub const RT: &Code = &RUNTIME_CODES[0];
-/// `VS0502` — chia/lấy dư cho 0.
-pub const DIV0: &Code = &RUNTIME_CODES[1];
-/// `VS0503` — chỉ số ngoài phạm vi.
-pub const IDX: &Code = &RUNTIME_CODES[2];
-/// **ST-60** — `VS0506`: lỗi trong **thân tác vụ** `async` (message kèm mã gốc).
-pub const TASK_ERR: &Code = &RUNTIME_CODES[5];
-/// **ST-61 (VD-96)** — `VS0504`: gửi vào kênh đã `close`.
-pub const SEND_CLOSED: &Code = &RUNTIME_CODES[3];
-/// **ST-61 (VD-96)** — `VS0505`: deadlock (kênh chặn, không còn tác vụ chạy được).
-pub const DEADLOCK: &Code = &RUNTIME_CODES[4];
-/// **R9 (VD-178)** — `VS0507`: tràn `i64` lúc chạy (tách khỏi `VS0501`).
-pub const OVERFLOW: &Code = &RUNTIME_CODES[6];
-/// `VS0412` — gán cho `let`/tham số (phòng thủ: tyck đã chặn trước).
-pub(crate) const MISMATCH: &Code = &TYPE_CODES[3];
-
-/// **ST-63 (VD-105 (6))**: phần **gọi hàm/closure** tách khỏi `interp.rs` để giữ **R1 ≤ 1.500 dòng**
-/// — chuyển **nguyên văn**, không đổi ngữ nghĩa.
-pub(crate) mod goi;
-use goi::{opt_depth_ty, opt_lift_maybe};
-
-/// Lỗi runtime kèm `span`.
-#[derive(Debug, Clone)]
-pub struct Trap {
-    pub code: &'static Code,
-    pub msg: String,
-    pub span: Span,
-}
-
-impl Trap {
-    pub fn new(code: &'static Code, msg: impl Into<String>, span: Span) -> Self {
-        Self {
-            code,
-            msg: msg.into(),
-            span,
-        }
-    }
-
-    /// Chẩn đoán có **`line`/`col` thật** từ `span` + văn bản (VD-46).
-    pub fn to_diag(&self, text: &str) -> Diagnostic {
-        let (line, col) = pos(text, self.span);
-        Diagnostic {
-            code: self.code,
-            message: self.msg.clone(),
-            span: self.span,
-            line,
-            col,
-        }
-    }
-}
-
-/// Dừng chương trình: lỗi runtime, hoặc `return`/`?` trả sớm.
-#[derive(Debug)]
-pub enum Abort {
-    Trap(Trap),
-    Ret(Value),
-    /// **ST-267/VD-251 (chỉ đường test/frame)**: frame hiện tại phải treo tại `await`.
-    /// Runtime mặc định (`frame.enabled == false`) không bao giờ phát ra biến thể này.
-    Pending(crate::rt::Pending),
-}
-
-pub type R<T> = Result<T, Abort>;
-
-/// Đối số đã eval: (vị trí, có tên).
-pub(crate) type Args = (Vec<Value>, Vec<(String, Value)>);
-
-/// Nhánh `match` khớp + binding của nó.
-pub(crate) type Picked<'s> = (&'s HArm, Vec<(u32, Value)>);
-
-/// Luồng điều khiển trong thân: bình thường / `break` / `continue`.
-#[derive(Debug, PartialEq)]
-pub(crate) enum Ctrl {
-    Normal,
-    Break,
-    Continue,
-}
+#[path = "frame/core.rs"]
+mod core_types;
+use core_types::goi::{opt_depth_ty, opt_lift_maybe};
+pub use core_types::*;
 
 pub(crate) struct Interp<'a> {
     pub(crate) fns: HashMap<u32, &'a HFn>,
@@ -125,6 +51,8 @@ pub(crate) struct Interp<'a> {
     pub(crate) sched: std::cell::RefCell<crate::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)` theo thứ tự khai.
     caps: Vec<(u32, Value)>,
+    // **ST-276 / VD-256**: instrumentation ngân sách nằm ở `crate::rt::fee`
+    // (thread-local, mặc định tắt) — Interp không giữ trạng thái; hành vi mặc định y hệt cũ.
 }
 
 impl<'a> Interp<'a> {
@@ -301,15 +229,21 @@ impl<'a> Interp<'a> {
 
     fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
         self.steps += 1;
+        if let Some(a) = self.charge(crate::rt::fee::FeeKind::Stmt, s.span()) {
+            return Err(a);
+        }
         match s {
             HStmt::Let {
                 pat,
                 ty,
                 init,
                 else_,
-                ..
+                span,
             } => {
                 let v = self.eval(init)?;
+                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span) {
+                    return Err(a);
+                }
                 // **VD-226 §TEST (A0-proxy)**: tự nâng `T → T?` ở vế phải `let` khi chú thích
                 // là `T?` — đồng nhất với codegen (codegen.rs) và spec §4.4 ("tự nâng ở ba vị trí:
                 // gán let x: int? = …, trả về → int? …, đối số"). `Some(_)`/`None` giữ nguyên,
@@ -358,8 +292,17 @@ impl<'a> Interp<'a> {
                 }
                 Ok(Ctrl::Normal)
             }
-            HStmt::Var { sym, init, ty, .. } => {
+            HStmt::Var {
+                sym,
+                init,
+                ty,
+                span,
+                ..
+            } => {
                 let v = self.eval(init)?;
+                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span) {
+                    return Err(a);
+                }
                 // **VD-241 §3+ (A0, 2026-11-19)** — biên **khai `var`** có annot Optional nâng
                 // giá trị như `let` (mirror codegen `HStmt::Var`): `var x: int?? = Some(7)` ⇒ `x`
                 // bằng `Some(Some(7))`. `None` trần giữ nguyên (bước 1 — `lift_opt`).
@@ -391,6 +334,10 @@ impl<'a> Interp<'a> {
                                 let dep = self.assign_depth(target, &cu); // ST-248: đích trường Opt
                                 let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
                                 let moi = gan_truong(cu, name, rhs, *span)?;
+                                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span)
+                                {
+                                    return Err(a);
+                                }
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
                             }
@@ -402,6 +349,10 @@ impl<'a> Interp<'a> {
                                 let i = self.eval(index)?;
                                 let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
                                 let moi = gan_chi_so(cu, i, rhs, *span)?;
+                                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span)
+                                {
+                                    return Err(a);
+                                }
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
                             }
@@ -421,6 +372,11 @@ impl<'a> Interp<'a> {
                                     let moi_truong = gan_chi_so(truong, i, rhs, *span)?;
                                     let cu2 = self.doc_o(*id, target.span())?;
                                     let moi = gan_truong(cu2, name, moi_truong, *span)?;
+                                    if let Some(a) =
+                                        self.charge(crate::rt::fee::FeeKind::Assign, *span)
+                                    {
+                                        return Err(a);
+                                    }
                                     self.ghi_o(*id, moi, *span)?;
                                     return Ok(Ctrl::Normal);
                                 }
@@ -468,6 +424,9 @@ impl<'a> Interp<'a> {
                         crate::builtin::bin(bop, cur, rhs, *span)?
                     }
                 };
+                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span) {
+                    return Err(a);
+                }
                 self.lvalue_set(target, new, *span)?;
                 Ok(Ctrl::Normal)
             }
@@ -520,6 +479,10 @@ impl<'a> Interp<'a> {
                 self.loop_depth += 1;
                 let mut ctrl = Ok(Ctrl::Normal);
                 for v in items {
+                    if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, s.span()) {
+                        ctrl = Err(a);
+                        break;
+                    }
                     self.bind_pat(pat, &v);
                     match self.exec_block(body) {
                         Ok(Ctrl::Break) => break,
@@ -539,7 +502,14 @@ impl<'a> Interp<'a> {
                 let mut guard = 0usize;
                 self.loop_depth += 1;
                 // **ST-226 (R18b)**: `while let` dùng chung bộ máy `eval_cond` với `if let`.
-                while self.eval_cond(cond)? {
+                loop {
+                    if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, s.span()) {
+                        self.loop_depth -= 1;
+                        return Err(a);
+                    }
+                    if !self.eval_cond(cond)? {
+                        break;
+                    }
                     guard += 1;
                     if guard > 10_000_000 {
                         return Err(Abort::Trap(Trap::new(
@@ -560,6 +530,10 @@ impl<'a> Interp<'a> {
             HStmt::Loop { body, .. } => {
                 self.loop_depth += 1;
                 for _ in 0..10_000_000usize {
+                    if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, s.span()) {
+                        self.loop_depth -= 1;
+                        return Err(a);
+                    }
                     if self.exec_block(body)? == Ctrl::Break {
                         self.loop_depth -= 1;
                         self.last = None;
@@ -646,6 +620,15 @@ impl<'a> Interp<'a> {
 
     fn eval(&mut self, e: &HExpr) -> R<Value> {
         self.steps += 1;
+        // ST-276: E_EXPR cho nút nguồn; call/spawn/await có sự kiện riêng.
+        if !matches!(
+            e,
+            HExpr::Call { .. } | HExpr::Spawn { .. } | HExpr::Await { .. }
+        ) {
+            if let Some(a) = self.charge(crate::rt::fee::FeeKind::Expr, e.span()) {
+                return Err(a);
+            }
+        }
         match e {
             HExpr::Lit { lit, span, .. } => {
                 lit_value(lit).map_err(|m| Abort::Trap(Trap::new(RT, m, *span)))
@@ -750,7 +733,26 @@ impl<'a> Interp<'a> {
                 args,
                 named,
                 span,
-            } => self.eval_call(callee, args, named, *span),
+            } => {
+                // ST-276: call charge trước đối số (f(g(1)) ⇒ E_CALL(f), E_CALL(g), E_EXPR(1)).
+                let host = match &**callee {
+                    HExpr::Field { .. } => true, // method trên giá trị = host
+                    HExpr::Var { name, sym, .. } => {
+                        sym.and_then(|id| self.fns.get(&id)).is_none()
+                            && builtin_name(name).is_some()
+                    }
+                    _ => false,
+                };
+                let kind = if host {
+                    crate::rt::fee::FeeKind::Builtin
+                } else {
+                    crate::rt::fee::FeeKind::Call
+                };
+                if let Some(a) = self.charge(kind, *span) {
+                    return Err(a);
+                }
+                self.eval_call(callee, args, named, *span)
+            }
             HExpr::Field {
                 base,
                 name,
@@ -999,6 +1001,9 @@ impl<'a> Interp<'a> {
             HExpr::Ref { expr, .. } => self.eval(expr),
             // **ST-60 (VD-90)**: `await t` chạy tác vụ **tới hoàn tất** (hoặc trả cache).
             HExpr::Await { expr, span } => {
+                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Await, *span) {
+                    return Err(a);
+                }
                 let v = self.eval(expr)?;
                 match v {
                     Value::Task(t) => crate::rt::await_task(self, &t, *span),
@@ -1016,6 +1021,10 @@ impl<'a> Interp<'a> {
                 named,
                 span,
             } => {
+                // **ST-276**: $spawn nội bộ chỉ mang E_SPAWN, không cộng E_BUILTIN.
+                if let Some(a) = self.charge(crate::rt::fee::FeeKind::Spawn, *span) {
+                    return Err(a);
+                }
                 let _ = named;
                 let id = match &**callee {
                     HExpr::Var { sym: Some(id), .. } => Some(*id),

@@ -940,7 +940,11 @@ pub fn run_frame_for_test<'a>(
     }
     frames.clear();
     it.sched.borrow_mut().frame_drain_events();
-    it.sched.borrow_mut().frame_final_join();
+    // **ST-278 (VD-256)**: lỗi task cache ở final join phải surfaced (cùng hợp đồng VS0506).
+    let final_join_err = it.sched.borrow_mut().frame_final_join();
+    if trap.is_none() {
+        trap = final_join_err;
+    }
     it.sched.borrow_mut().frame_reactor_shutdown();
     let snapshot = it.sched.borrow().diag_snapshot();
     let mut log = it.sched.borrow().frame.log.clone();

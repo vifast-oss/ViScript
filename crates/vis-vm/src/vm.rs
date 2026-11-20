@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use vis_bytecode::fee::{FeeEntry, FeeTable};
 use vis_bytecode::{Func, Instr, Module, BI_MATCH_NO_ARM, GLOBAL_SLOT_BASE};
 use vis_interp::builtin::{self, Host};
 use vis_interp::interp::{Abort, Trap, IDX, R, RT};
@@ -93,29 +94,12 @@ pub fn run_with_full_hosts_caps<'a>(
 
 /// Cap số khung gọi lồng nhau (VD-49).
 pub const MAX_FRAMES: usize = 2_000;
-/// Cap số **lệnh** đã thực thi — cùng ngưỡng 10^7 với interp (khác đơn vị đếm).
-pub const MAX_STEPS: usize = 10_000_000;
+/// **VD-256 D8/D9** — fuel an toàn **chỉ của VM**: không phải ngân sách ngữ nghĩa, không che
+/// verifier (chạy trước ở [`Vm::run`]); ngưỡng giữ 10^7, chẩn đoán riêng [`SAFETY_FUEL_CODE`].
+pub const SAFETY_FUEL: usize = 10_000_000;
+pub const MAX_STEPS: usize = SAFETY_FUEL;
 
-/// Lỗi của VM khi bytecode hỏng — **không** panic.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum VmError {
-    /// `pop` trên ngăn xếp rỗng.
-    StackUnderflow,
-    /// Đích nhảy ngoài `code`.
-    BadJump(i32),
-    /// Chỉ số const/hàm ngoài phạm vi.
-    BadIdx(u32),
-}
-
-impl core::fmt::Display for VmError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            VmError::StackUnderflow => write!(f, "ngăn xếp rỗng"),
-            VmError::BadJump(d) => write!(f, "đích nhảy ngoài code: {d}"),
-            VmError::BadIdx(i) => write!(f, "chỉ số ngoài phạm vi: {i}"),
-        }
-    }
-}
+pub use crate::vm_frame::{VmError, SAFETY_FUEL_CODE};
 
 /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của closure và cặp `(ô cục bộ mirror, chỉ số ô bắt)`.
 type ClosureCells = Rc<RefCell<Vec<Value>>>;
@@ -167,6 +151,11 @@ pub struct Vm<'a> {
     pub(crate) globals: Vec<Option<Value>>,
     /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của từng closure, khoá bằng địa chỉ `Rc<VmFunc>`.
     pub(crate) closure_cells: HashMap<usize, ClosureCells>,
+    // ST-276/VD-256 — test-hook ngân sách; `None` ⇒ KHÔNG charge (mặc định).
+    pub(crate) budget_fee: Option<FeeTable>,
+    pub(crate) budget_remaining: i64,
+    pub(crate) budget_trace: Vec<FeeEntry>,
+    pub(crate) budget_hit: bool,
 }
 
 impl<'a> Vm<'a> {
@@ -187,6 +176,10 @@ impl<'a> Vm<'a> {
             caps: Vec::new(),
             globals: Vec::new(),
             closure_cells: HashMap::new(),
+            budget_fee: None,
+            budget_remaining: 0,
+            budget_trace: Vec::new(),
+            budget_hit: false,
         }
     }
 
@@ -218,9 +211,10 @@ impl<'a> Vm<'a> {
                 steps: 0,
             };
         }
-        // **ST-250 (VD-245)**: reset + cấp phát kho global **theo module** ở đầu mỗi lần chạy.
-        // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
-        // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
+        self.steps = 0; // VD-256 D8: fuel reset mỗi lần chạy, không cộng dồn.
+                        // **ST-250 (VD-245)**: reset + cấp phát kho global **theo module** ở đầu mỗi lần chạy.
+                        // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
+                        // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
         self.init_globals();
         let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
         // **ST-60 (VD-90/VD-95)**: join mọi tác vụ **theo thứ tự tạo**, **chỉ khi main thành công**
@@ -735,17 +729,23 @@ impl<'m> Th<'m> {
                 continue;
             }
             let ins = f.code[fr.pc];
+            let pc = fr.pc;
+            let fi = fr.fi;
             let span = f
                 .spans
                 .get(fr.pc)
                 .map(|s| Span::new(s.start as usize, s.end as usize))
                 .unwrap_or_else(|| Span::new(0, 0));
+            // **ST-276 (VD-256)**: charge bảng phụ TRƯỚC tác dụng phụ; pc đã được tính là điểm
+            // sẽ chạy, continuation lưu pc SAU charge ⇒ resume không tính lại cả nhóm.
+            vm.budget_charge(fi, pc, span)?;
             self.frames.last_mut().expect("khung").pc += 1;
             vm.steps += 1;
-            if vm.steps > MAX_STEPS {
+            if vm.steps > SAFETY_FUEL {
+                // VD-256 D8: fuel AN TOÀN VM, chẩn đoán RIÊNG; parity step-cap vẫn MỞ (D9).
                 return Err(Abort::Trap(Trap::new(
-                    RT,
-                    "chạy quá lâu (>10^7 lệnh)",
+                    SAFETY_FUEL_CODE,
+                    "VM safety fuel cạn (>10^7 lệnh) — hàng rào an toàn bytecode, không phải ngân sách ngữ nghĩa",
                     span,
                 )));
             }
