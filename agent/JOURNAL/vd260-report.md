@@ -31,6 +31,9 @@
 | Infer | `f640514` → `131a899` | kiểu sau pattern lồng (tuple/list/record/ctor/or/for/if-let/while-let); `Call`/`Try`/`With`/`If`/`Match` |
 | Range | `cec83ac` → `70f4624` | `for` range duyệt lười (interp/VM/frame), RSS 146 MB → ~9,5 MB @2M |
 | Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
+| Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
+| Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
+| LSP | `bdedaaa` | `textDocument/definition` (fn/biến/trường/enum), thu hẹp span về tên |
 
 ## 2. Bằng chứng cổng
 
