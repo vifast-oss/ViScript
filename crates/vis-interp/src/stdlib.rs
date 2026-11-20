@@ -38,6 +38,7 @@ mod pathnorm;
 mod pathrel;
 mod sqlite_explain;
 mod sqlitecols;
+mod sqliteexists;
 mod sqliteidx;
 mod sqliteidxcols;
 mod sqlitepk;
@@ -1023,6 +1024,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
+        }
+        // **VD-270 (sqlite-table-exists)** — bảng/view tên đúng trong schema chính; tên bind;
+        // thiếu ⇒ `Ok(false)`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu.
+        "sqlite.table_exists" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let ten = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqliteexists::chay(host, h, ten).map(Value::Bool), span)
         }
         // **VD-270 (sqlite-columns)** — tên cột bảng/view schema chính theo **thứ tự khai báo**
         // (`cid`); tên đối tượng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.

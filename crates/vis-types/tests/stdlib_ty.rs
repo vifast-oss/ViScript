@@ -167,7 +167,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 mkdir-all, 2026-11-21)**: +**1** hàm `std.fs.mkdir_all`
     // (`(str) -> Result[(), Error]`; tạo đệ quy mọi thư mục thiếu, đã có ⇒ `Ok`,
     // tệp/symlink trên đường ⇒ `Err`) ⇒ **127** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 127, "bảng chữ ký phải đủ 127 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-table-exists, 2026-11-21)**: +**1** hàm
+    // `sqlite.table_exists` (`(str, str) -> Result[bool, Error]`; bảng/view tên đúng trong schema
+    // chính, tên bind, so khớp BINARY, thiếu ⇒ `Ok(false)`) ⇒ **128** hàm; không xoá/đổi hàm cũ.
+    assert_eq!(FUNCS.len(), 128, "bảng chữ ký phải đủ 128 hàm");
 }
 
 #[test]
@@ -672,4 +675,28 @@ fn sqlite_primary_keys_kieu_str_str_va_result_list_str() {
         "`sqlite.primary_keys`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[list[str], Error]");
+}
+
+/// **VD-270 (sqlite-table-exists)**: chữ ký `(str, str) -> Result[bool, Error]` — tái dùng
+/// `Ty::ResultBoolErr` (cùng biến thể của `sqlite.in_transaction`, không thêm biến thể `Ty`),
+/// hạ ra `Result` với lỗi là bản ghi `Error`.
+#[test]
+fn sqlite_table_exists_kieu_str_str_va_result_bool() {
+    let f = sig_of("sqlite.table_exists").expect("sqlite.table_exists");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`sqlite.table_exists`: tham số (handle, name)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultBoolErr,
+        "`sqlite.table_exists`: kiểu trả phải tái dùng `ResultBoolErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Bool), Box::new(Ty::Error.sang_type())),
+        "`sqlite.table_exists`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[bool, Error]");
 }

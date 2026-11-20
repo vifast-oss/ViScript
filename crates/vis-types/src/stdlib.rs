@@ -52,7 +52,8 @@ pub enum Ty {
     RowSet,
     /// **VD-241 (Gate 1)** — `Result[int, Error]` (`std.sqlite.execute`).
     ResultIntErr,
-    /// **VD-241 (Gate 1)** — `Result[bool, Error]` (`std.sqlite.in_transaction`).
+    /// **VD-241 (Gate 1)** — `Result[bool, Error]` (`std.sqlite.in_transaction`,
+    /// `std.sqlite.table_exists` — VD-270).
     ResultBoolErr,
     /// **VD-241 (Gate 1)** — `Result[RowSet, Error]` (`std.sqlite.query`).
     ResultRowSetErr,
@@ -245,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 127] = [
+pub const FUNCS: [StdFn; 128] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -962,6 +963,16 @@ pub const FUNCS: [StdFn; 127] = [
         name: "sqlite.tables",
         params: &[Ty::Str],
         ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-table-exists)** — `true` ⇔ schema chính có **bảng hoặc view** tên đúng:
+    // `SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name = ? LIMIT 1`; tên là
+    // **tham số bind** (`SqlValue.Text`), so khớp **BINARY** (phân biệt hoa/thường); thiếu ⇒
+    // `Ok(false)`; `sqlite_%` không đặc cách ngoài truy vấn; TEMP không thuộc schema chính. Lỗi
+    // handle/host/kết quả ⇒ `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.table_exists",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultBoolErr,
     },
     // **VD-270 (sqlite-columns)** — tên cột của **bảng/view schema chính**, theo **thứ tự khai
     // báo** (`cid`), giữ nguyên hoa/thường; tên đối tượng là **tham số bind** (`pragma_table_info(?)`),
