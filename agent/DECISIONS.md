@@ -3163,3 +3163,19 @@ Pattern **không có `/`** khớp **basename** ở mọi độ sâu; có `/` kh�
 cùng dạng `walk` (thư mục `/` cuối), sắp theo byte, không trùng; symlink vẫn bị `walk` bỏ; quyền
 kiểm trên gốc; pattern rỗng/tuyệt đối/quá 4096 byte/`**` sai vị trí ⇒ `Err`; không khớp ⇒ `Ok([])`.
 `[`/`{`/`\` là ký tự thường. API-STD +1.
+
+### VD-269 (phần strpad) · `std.str.pad_*` + trim một phía — A0, 2026-11-21
+
+`str.pad_left/right/center(s, width, fill)` và `str.trim_start/trim_end`; `width` tính theo
+**scalar Unicode**; `width <= 0` hoặc `<= len(s)` ⇒ trả nguyên; `fill` rỗng ⇒ trap `VS0501`;
+đệm = lặp `fill` rồi cắt scalar, `center` dư bên phải; trần 10^7 scalar như `str.repeat`; sugar
+`s.pad_left(...)` theo R5c. API-STD +5.
+
+### VD-268 (phần dbcache) · Cache prepared statement SQLite — A0, 2026-11-21
+
+Duyệt dùng `Connection::prepare_cached` (LRU **16** lệnh/connection) cho `execute`/`query`/
+`query_one`; giữ nguyên authorizer, `stmt.readonly()`, cap hàng/cell/byte, `SQLITE_LIMIT_LENGTH`,
+progress-handler timeout và bind tham số. **Xoá cache** khi `schema_version` hoặc
+`temp.schema_version` đổi (bắt cả TEMP); `data_version` không xoá. Release nhanh hơn 1,5–1,74×
+(3 workload 10k lệnh); debug chậm hơn ~1,25–1,37× do bookkeeping — chấp nhận, không đổi Cargo
+feature (rusqlite 0.37 không có feature `cache`; `hashlink` đã bắt buộc).
