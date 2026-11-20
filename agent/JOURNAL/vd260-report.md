@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `5931968` (sau wave 3 semantics + docs),
-> gate **1727 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `7a93bea` (sau perf SQLite + release strip),
+> gate **1728 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -24,7 +24,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1727 passed / 3 skipped** tại `5931968`.
+- `./vis-dev gate --fast`: **PASS — 1728 passed / 3 skipped** tại `7a93bea`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
@@ -55,7 +55,18 @@
 3. `bin/vis-release` + `test/release/run.sh`: release chỉ `vis`, chứng minh `test-child` không lọt artifact.
 4. `vis-dev core-test`: core test target/schedule độc lập.
 
-## 5. Còn mở / chưa tuyên bố hoàn tất
+## 5. Tối ưu (wave perf)
+
+- **SQLite schema scan cache** (`2395a8d`): trước VD-261 quét `sqlite_master` mỗi `execute`/`query`
+  (đo 6,8× với 300 bảng, +25–45 µs/lời gọi); nay cache theo `PRAGMA schema_version`, cho phép
+  **đọc** pragma này (không ghi), chỉ quét lại khi DDL đổi. Test `schema_utf8_cache_theo_schema_version`
+  chứng minh 20 lời gọi sau DDL không quét lại; DDL kế tiếp quét lại.
+- **Release strip** (`7a93bea`): `[profile.release] strip = "symbols"`; `target/release/vis`
+  **7.264.080 → 6.229.464 B** (−14,3%), artifact release vẫn chỉ `vis`.
+- Perf audit (read-only) ghi nhận P2 range `Vec` 146 MB @2M và P3 enum alloc; **chưa sửa**
+  (rủi ro/ABI), ghi thành nợ tiếp theo.
+
+## 6. Còn mở / chưa tuyên bố hoàn tất
 
 - Method `impl` body chưa được type-check đầy đủ (break/continue trong method có thể lọt).
 - Cache label đã bump cho rest-pattern/parity (`d780637`); nếu sửa codegen tiếp phải bump lại.
