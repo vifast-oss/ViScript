@@ -2,9 +2,22 @@
 //! **ST-274 / VD-255** — đánh giá HExpr/HStmt + gọi hàm của frame evaluator.
 //! Tách từ `frame.rs` cho luật R1 (≤1500 dòng/file). Mọi item dùng chung lấy qua `super`.
 use super::*;
+use crate::rt::fee::FeeKind;
 
 /// Đánh giá một `HExpr` (đẩy kết quả vào `vals` hoặc continuation).
 pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a HExpr) -> R<()> {
+    // **VD-257/D** — mirror `interp.rs:628`: E_EXPR cho mọi nút thực sự chạy, TRỪ
+    // Call/Spawn/Await (ba nhánh đó mang sự kiện riêng — VD-252 quy tắc 1/2).
+    // Charge nằm ở đầu execution ⇒ budget check đúng trước side-effect; hook tắt
+    // (mặc định) ⇒ no-op, frame path không đổi (test f2 của stream A vẫn pass).
+    if !matches!(
+        e,
+        HExpr::Call { .. } | HExpr::Spawn { .. } | HExpr::Await { .. }
+    ) {
+        if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Expr, e.span()) {
+            return Err(a);
+        }
+    }
     match e {
         HExpr::Lit { lit, .. } => {
             let v = lit_value(lit).map_err(|m| Abort::Trap(Trap::new(RT, m, e.span())))?;
@@ -87,6 +100,32 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             named,
             span,
         } => {
+            // **VD-257/D** — mirror `interp.rs:735-751` + codegen: charge sự kiện
+            // gọi **tại nút Call, TRƯỚC đối số** (giữ thứ tự f(g(1))). `host` =
+            // method trên giá trị (Field) hoặc builtin theo tên không phải hàm tệp.
+            let host = match &**callee {
+                HExpr::Field { .. } => true,
+                HExpr::Var { name, sym, .. } => {
+                    sym.and_then(|id| it.fns.get(&id)).is_none() && is_builtin_name(name)
+                }
+                _ => false,
+            };
+            let call_kind = if host {
+                FeeKind::Builtin
+            } else {
+                FeeKind::Call
+            };
+            if let Some(a) = crate::rt::fee::frame_charge(it, call_kind, *span) {
+                return Err(a);
+            }
+            // Interp đánh giá callee dạng Var/Field như một GIÁ TRỊ ⇒ có E_EXPR
+            // riêng (codegen cũng charge thêm để parity). Các dạng callee khác đã
+            // được `Work::Eval(callee)` ở dưới charge — không cộng đôi.
+            if matches!(&**callee, HExpr::Var { .. } | HExpr::Field { .. }) {
+                if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Expr, callee.span()) {
+                    return Err(a);
+                }
+            }
             if let Some(c) = classify_callee(it, callee) {
                 frame.cur().work.push(args_works(
                     args,
@@ -133,37 +172,48 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             args,
             named: _,
             span,
-        } => match &**callee {
-            HExpr::Var { sym: Some(id), .. } => {
-                let f = it.fns.get(id).copied().ok_or_else(|| {
-                    Abort::Trap(Trap::new(
+        } => {
+            // VD-252/VD-256: `$spawn` nội bộ chỉ mang E_SPAWN, KHÔNG cộng E_BUILTIN.
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Spawn, *span) {
+                return Err(a);
+            }
+            match &**callee {
+                HExpr::Var { sym: Some(id), .. } => {
+                    let f = it.fns.get(id).copied().ok_or_else(|| {
+                        Abort::Trap(Trap::new(
+                            RT,
+                            "frame test: spawn hàm không tồn tại",
+                            e.span(),
+                        ))
+                    })?;
+                    let c = Callee::Spawn(*id, &f.name);
+                    frame.cur().work.push(args_works(
+                        args,
+                        &[],
+                        *span,
+                        vec![Work::ApplyNamedCall {
+                            callee: c,
+                            npos: args.len(),
+                            names: Vec::new(),
+                            span: *span,
+                        }],
+                    ));
+                }
+                _ => {
+                    return Err(Abort::Trap(Trap::new(
                         RT,
-                        "frame test: spawn hàm không tồn tại",
+                        "frame test: spawn cần tên hàm async cấp tệp",
                         e.span(),
-                    ))
-                })?;
-                let c = Callee::Spawn(*id, &f.name);
-                frame.cur().work.push(args_works(
-                    args,
-                    &[],
-                    *span,
-                    vec![Work::ApplyNamedCall {
-                        callee: c,
-                        npos: args.len(),
-                        names: Vec::new(),
-                        span: *span,
-                    }],
-                ));
+                    )))
+                }
             }
-            _ => {
-                return Err(Abort::Trap(Trap::new(
-                    RT,
-                    "frame test: spawn cần tên hàm async cấp tệp",
-                    e.span(),
-                )))
-            }
-        },
+        }
         HExpr::Await { expr, .. } => {
+            // VD-252 quy tắc 5: charge TRƯỚC suspend; pc/continuation lưu SAU điểm
+            // charge ⇒ resume (ApplyAwait) không charge lại.
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Await, e.span()) {
+                return Err(a);
+            }
             frame.cur().work.push(Work::ApplyAwait(e.span()));
             frame.cur().work.push(Work::Eval(expr));
         }
@@ -363,13 +413,18 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
 
 /// Đánh giá một `HStmt` (đẩy continuation tương ứng).
 pub(super) fn exec_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, s: &'a HStmt) -> R<()> {
+    // **VD-257/D** — mirror `interp.rs:232`: E_STMT một lần mỗi câu, trước khi
+    // đẩy continuation. Resume không chạy lại `exec_work` của câu đã xong.
+    if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Stmt, s.span()) {
+        return Err(a);
+    }
     match s {
         HStmt::Let {
             pat,
             ty,
             init,
             else_,
-            ..
+            span,
         } => {
             let depth = ty.as_ref().map(opt_depth_ty).unwrap_or(0);
             if let Some(e) = else_ {
@@ -378,21 +433,30 @@ pub(super) fn exec_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, s: &'a 
                     else_body: &e.body,
                     bind_sym: e.bind_sym,
                     opt_depth: depth,
+                    span: *span,
                 });
             } else {
                 frame.cur().work.push(Work::Bind {
                     pat,
                     opt_depth: depth,
+                    span: *span,
                 });
             }
             frame.cur().work.push(Work::Eval(init));
             Ok(())
         }
-        HStmt::Var { sym, ty, init, .. } => {
+        HStmt::Var {
+            sym,
+            ty,
+            init,
+            span,
+            ..
+        } => {
             let depth = ty.as_ref().map(opt_depth_ty).unwrap_or(0);
             frame.cur().work.push(Work::SetVar {
                 sym: *sym,
                 opt_depth: depth,
+                span: *span,
             });
             frame.cur().work.push(Work::Eval(init));
             Ok(())

@@ -2,6 +2,7 @@
 //! **ST-274 / VD-255** — continuation stack (`process_work`) của frame evaluator.
 //! Tách từ `frame.rs` cho luật R1 (≤1500 dòng/file). Mọi item dùng chung lấy qua `super`.
 use super::*;
+use crate::rt::fee::FeeKind;
 
 /// Xử lý một work-item: tiêu thụ giá trị trên `vals`, đẩy continuation mới.
 pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'a>) -> R<()> {
@@ -74,7 +75,15 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             append_work(frame.cur(), cont);
             Ok(())
         }
-        Work::Bind { pat, opt_depth } => {
+        Work::Bind {
+            pat,
+            opt_depth,
+            span,
+        } => {
+            // VD-257/D — E_ASSIGN ở điểm RHS đã xong, TRƯỚC khi ghi (VD-252 §3).
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             let v = frame.pop_val()?;
             let v = crate::lift::lift_opt(v, opt_depth);
             bind_pat_env(pat, &v, &frame.cur().env);
@@ -85,7 +94,11 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             else_body,
             bind_sym,
             opt_depth,
+            span,
         } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             let v = frame.pop_val()?;
             let v = crate::lift::lift_opt(v, opt_depth);
             match v {
@@ -113,7 +126,14 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 }
             }
         }
-        Work::SetVar { sym, opt_depth } => {
+        Work::SetVar {
+            sym,
+            opt_depth,
+            span,
+        } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             let v = frame.pop_val()?;
             let v = crate::lift::lift_opt(v, opt_depth);
             frame.cur().env.borrow_mut().insert(sym, v);
@@ -273,6 +293,12 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             Ok(())
         }
         Work::LoopStep { id } => {
+            // VD-252 quy tắc 4: E_LOOP MỘT lần cho mỗi lần thử tiến vòng, GỒM
+            // lần cuối sai. `LoopStep` chạy đúng một lần mỗi lần thử guard.
+            let lspan = frame.cur().loops.last().expect("loop state").span;
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Loop, lspan) {
+                return Err(a);
+            }
             enum Step<'x> {
                 While(&'x HCond, Span),
                 For(&'x HPat, Option<Value>),
@@ -711,6 +737,8 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             names,
             span,
         } => {
+            // E_CALL/E_BUILTIN đã charge tại nút Call trong `eval_work` (trước
+            // đối số) ⇒ KHÔNG charge lại ở đây, kể cả resume qua `Redispatch`.
             let (pos, named_vals) = take_call_args_names(frame, npos, &names)?;
             match dispatch(it, frame, callee, pos.clone(), named_vals.clone(), span) {
                 Ok(()) => Ok(()),
@@ -727,6 +755,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             }
         }
         Work::ApplyValueCall { npos, names, span } => {
+            // E_CALL đã charge tại nút Call — resume qua `RedispatchValue` không charge lại.
             let (pos, named) = take_call_args_names(frame, npos, &names)?;
             let f = frame.pop_val()?;
             match call_value(it, frame, f.clone(), pos.clone(), named.clone(), span) {
@@ -813,6 +842,8 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             base_var,
             span,
         } => {
+            // E_BUILTIN đã charge tại nút Call (dạng Field) — resume qua
+            // `RedispatchMethod` không charge lại.
             let mut got = pop_n(frame, nargs)?;
             got.reverse();
             match crate::builtin::method(it, recv.clone(), &name, got.clone(), span) {
@@ -877,6 +908,9 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             Ok(())
         }
         Work::ApplyAssignVar { sym, op, span } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             let rhs = frame.pop_val()?;
             if !frame.mutable.borrow().contains(&sym) {
                 return Err(Abort::Trap(Trap::new(
@@ -912,6 +946,9 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             op,
             span,
         } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             let rhs = frame.pop_val()?;
             if !matches!(op, AssignOp::Set) {
                 return Err(Abort::Trap(Trap::new(
@@ -939,6 +976,9 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             Ok(())
         }
         Work::ApplyAssignIndex { sym, op, span } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
             if !matches!(op, AssignOp::Set) {
                 return Err(Abort::Trap(Trap::new(
                     RT,

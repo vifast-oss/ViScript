@@ -158,6 +158,13 @@ pub struct Vm<'a> {
     pub(crate) budget_remaining: i64,
     pub(crate) budget_trace: Vec<FeeEntry>,
     pub(crate) budget_hit: bool,
+    // VD-257/D — hạn ngạch lượt THỬ NGHIỆM (test-hook), RIÊNG khỏi budget tổng.
+    // `quota_active = false` (mặc định) ⇒ mọi thao tác quota là no-op.
+    pub(crate) quota_active: bool,
+    pub(crate) quota_limit: i64,
+    pub(crate) quota_remaining: i64,
+    pub(crate) quota_hit: bool,
+    pub(crate) quota_yields: u64,
 }
 
 impl<'a> Vm<'a> {
@@ -182,6 +189,11 @@ impl<'a> Vm<'a> {
             budget_remaining: 0,
             budget_trace: Vec::new(),
             budget_hit: false,
+            quota_active: false,
+            quota_limit: 0,
+            quota_remaining: 0,
+            quota_hit: false,
+            quota_yields: 0,
         }
     }
 
@@ -1312,6 +1324,20 @@ impl<'m> Th<'m> {
                         other => self.st.push(other.clone()),
                     }
                 }
+            }
+            // VD-257/D — hết hạn ngạch: yield về ĐUÔI ready, KHÔNG trap. Đặt CUỐI
+            // thân loop: lệnh vừa charge đã thi hành xong và `pc` đã tăng (D6) ⇒
+            // resume ở lệnh kế, KHÔNG chạy lại / charge lại lệnh cũ. `Th` đã có
+            // đủ trạng thái (frames/st/locals/captured/writeback) để driver cất.
+            // `quota_active = false` (mặc định) ⇒ no-op, runtime thường không đổi.
+            if vm.quota_take_hit() {
+                let cur = vm.sched.borrow().frame.current;
+                vm.sched.borrow_mut().frame.log.push(format!("quota:{cur}"));
+                return Err(Abort::Pending(vis_interp::rt::Pending {
+                    task: None,
+                    wait: None,
+                    span,
+                }));
             }
         }
     }
