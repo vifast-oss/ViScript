@@ -1,8 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `d485d1a` (sau method/globals/withunit/ctrl/generic/letelse/infer/range),
-> gate **1822 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `b619c08` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP definition/symbol/references/rename),
+> gate **1938 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -33,12 +34,16 @@
 | Cache | `d485d1a` | bump `PHIEN_BAN` + ghim khoá `f20c2ade…` sau let-else/generic/range |
 | Stdlib | `bc94f61` → `40063f8` | `list.zip/min/max`, `str.lines/split_whitespace`; API-STD +5, interp=VM |
 | Frame | `79d00cb` → `9f306f2` | frame let-else theo pattern, binder chung, hoàn nguyên env |
-| LSP | `bdedaaa`, `98d269d` | `textDocument/definition` + `documentSymbol` (fn/biến/trường/enum; cây ký hiệu) |
+| LSP | `bdedaaa`, `98d269d`, `044aa92`, `9026490` | `definition` + `documentSymbol` + `references` + `rename` (token Ident) |
+| FS | `c4774a8` → `34aa2f0` | `read_lines/append/mkdir/remove`; FsHost default + FsGuard; API +4 |
+| DB | `2f583ec` → `b619c08` | `query_one` (dừng sau hàng đầu), `last_insert_rowid`, `changes`; read-only/caps giữ nguyên |
+| Intlit | `fd702c7` → `38c8bff` | `i64::MIN` viết trực tiếp; bare `2^63` vẫn `VS0104` tĩnh |
+| Methodret | `768522e` → `4791032`/`b6a8274` | bảng kiểu trả method + `self` dispatch + checker sig; ưu tiên `self_ty`, bỏ `{error}` |
 | Genericres | `633a1a2` → `d7d875d` | pre-pass chữ ký trước thân; tail if/match, literal ẩn danh, RHS Field/Index, method/closure instantiation |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1894 passed / 3 skipped** tại `9d9a7f1`.
+- `./vis-dev gate --fast`: **PASS — 1938 passed / 3 skipped** tại `b619c08`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
