@@ -285,6 +285,13 @@ struct Lowerer<'a> {
     type_env: std::collections::HashMap<u32, Type>,
     /// ST-29: tên kiểu của `impl` đang hạ (để tái dùng sym đã khai ở lượt thu thập).
     cur_impl: Option<String>,
+    /// **VD-265**: kiểu của `impl` đang hạ — chỉ dùng cho [`Lowerer::static_ty`] của `self`
+    /// (dispatch `self.m()` và `self.f` **field** vẫn giữ `{error}` như VD-262 để không đổi
+    /// chẩn đoán runtime hiện có).
+    cur_impl_ty: Option<Type>,
+    /// **VD-265**: `sym` tham số `self` của các phương thức `impl` → kiểu nhận. `static_ty`
+    /// tra bảng này để `self.m()` hạ thành `Call(Var(sym))` như `p.m()` với `p` có annot.
+    self_ty: std::collections::HashMap<u32, Type>,
     /// ST-35: **template** trường của `type T[..]` — kiểu còn **ký hiệu** `TypeRef{"T"}` để thay khi
     /// instantiation (`Hop[int]`), thay vì xoá kiểu như ST-28.
     rec_tmpl: Vec<(String, Vec<String>, Vec<Type>)>,
@@ -373,6 +380,8 @@ impl<'a> Lowerer<'a> {
             last_stage_ty: Type::Error,
             type_env: std::collections::HashMap::new(),
             cur_impl: None,
+            cur_impl_ty: None,
+            self_ty: std::collections::HashMap::new(),
             cst,
             text: &lex.text,
             opts,

@@ -116,6 +116,19 @@ pub(super) fn collect_fn_rets(hir: &Hir) -> HashMap<u32, Type> {
     m
 }
 
+/// **VD-265** — bảng kiểu trả phương thức người dùng; kèm `TypeTable` (nếu có) để thay generic
+/// cho instantiation. Tách hàm để `Gen` khởi tạo một dòng và giữ `codegen.rs` ≤ R1.
+pub(super) fn collect_mret(hir: &Hir, types: Option<&vis_types::TypeTable>) -> MethodRet {
+    types
+        .map(|t| MethodRet::from_hir_voi_bang(hir, t))
+        .unwrap_or_else(|| MethodRet::from_hir(hir))
+}
+
+/// **VD-265** — gọi [`do_match`] với các bảng của `Gen` (một dòng ở `codegen.rs`, giữ R1).
+pub(super) fn do_match_emit(g: &Gen, arms: &[vis_types::hir::HArm]) -> (usize, usize) {
+    do_match(arms, &g.sym_ty, &g.rec_fields, &g.fn_rets, &g.mret)
+}
+
 /// **VD-264** — số nút `Error` trong một kiểu (đệ quy). Dùng để chọn giữa kiểu lower và kiểu
 /// suy từ phần tử: kiểu suy chỉ thắng khi **ít lỗi hơn** (không đổi kiểu đã biết đầy đủ).
 fn so_loi(t: &Type) -> usize {
@@ -144,6 +157,7 @@ fn tuple_ty_suy(
     ty: &Type,
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
 ) -> Type {
     let Type::TypeRef { name, args } = ty else {
@@ -159,7 +173,7 @@ fn tuple_ty_suy(
             let mut a = t.clone();
             if let Some(s) = items
                 .get(i)
-                .and_then(|it| infer_ty(it, sym, fn_rets, rec_fields))
+                .and_then(|it| infer_ty(it, sym, fn_rets, mret, rec_fields))
             {
                 chon_kieu(&mut a, s);
             }
@@ -178,6 +192,7 @@ fn infer_ty(
     e: &HExpr,
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
 ) -> Option<Type> {
     match e {
@@ -188,7 +203,9 @@ fn infer_ty(
         // **VD-264**: `HExpr::Tuple.ty` do lower dựng từ `type_of` từng phần tử, mà
         // `type_of(Call)` là `Error` ⇒ `(Some(1), 2)` có kiểu `tuple[Error, int]`, pattern
         // `(a, _)` mất kiểu của `a`. Suy lại phần tử `Error` từ chính biểu thức (như list/map).
-        HExpr::Tuple { items, ty, .. } => Some(tuple_ty_suy(items, ty, sym, fn_rets, rec_fields)),
+        HExpr::Tuple { items, ty, .. } => {
+            Some(tuple_ty_suy(items, ty, sym, fn_rets, mret, rec_fields))
+        }
         // **VD-260**: list/map literal chưa có kiểu phần tử (lowering để `Error` khi phần tử
         // là `Some(…)`/`None`/lời gọi) — suy từ **phần tử đầu tiên biết kiểu**. Nhờ vậy
         // `var xs = [Some(1)]` có `xs: list[int?]` và `xs[0] = 5` nâng đúng một lớp.
@@ -198,7 +215,7 @@ fn infer_ty(
             let mut el = elem.clone();
             if let Some(t) = items
                 .iter()
-                .find_map(|i| infer_ty(i, sym, fn_rets, rec_fields))
+                .find_map(|i| infer_ty(i, sym, fn_rets, mret, rec_fields))
             {
                 chon_kieu(&mut el, t);
             }
@@ -213,14 +230,14 @@ fn infer_ty(
             let mut k = key.clone();
             if let Some(t) = entries
                 .iter()
-                .find_map(|(k, _)| infer_ty(k, sym, fn_rets, rec_fields))
+                .find_map(|(k, _)| infer_ty(k, sym, fn_rets, mret, rec_fields))
             {
                 chon_kieu(&mut k, t);
             }
             let mut v = value.clone();
             if let Some(t) = entries
                 .iter()
-                .find_map(|(_, v)| infer_ty(v, sym, fn_rets, rec_fields))
+                .find_map(|(_, v)| infer_ty(v, sym, fn_rets, mret, rec_fields))
             {
                 chon_kieu(&mut v, t);
             }
@@ -241,7 +258,7 @@ fn infer_ty(
             optional,
             ..
         } => {
-            let bt = infer_ty(base, sym, fn_rets, rec_fields)?;
+            let bt = infer_ty(base, sym, fn_rets, mret, rec_fields)?;
             let inner = match bt {
                 Type::Opt(t) => *t,
                 other => other,
@@ -256,14 +273,14 @@ fn infer_ty(
                 ft
             })
         }
-        HExpr::Index { base, .. } => match infer_ty(base, sym, fn_rets, rec_fields)? {
+        HExpr::Index { base, .. } => match infer_ty(base, sym, fn_rets, mret, rec_fields)? {
             Type::Map(_, v) => Some(*v),
             Type::List(el) => Some(*el),
             _ => None,
         },
         HExpr::Call { callee, args, .. } => match (&**callee, args.first()) {
             (HExpr::Var { name, .. }, Some(a)) if name == "Some" => {
-                infer_ty(a, sym, fn_rets, rec_fields).map(|t| Type::Opt(Box::new(t)))
+                infer_ty(a, sym, fn_rets, mret, rec_fields).map(|t| Type::Opt(Box::new(t)))
             }
             (HExpr::Var { name, .. }, _) if name == "None" => {
                 Some(Type::Opt(Box::new(Type::Error)))
@@ -274,23 +291,32 @@ fn infer_ty(
             }
             // **VD-260**: free builtin `first(xs) -> T?` (mirror `cmdsig`/tyck).
             (HExpr::Var { name, .. }, Some(a)) if name == "first" => {
-                infer_ty(a, sym, fn_rets, rec_fields).map(|t| match t {
+                infer_ty(a, sym, fn_rets, mret, rec_fields).map(|t| match t {
                     Type::List(e) => Type::Opt(e),
                     _ => Type::Opt(Box::new(Type::Error)),
                 })
             }
             // **VD-260**: method dựng sẵn trả `Option` — `list.get/first/last/find`,
             // `map.get` (mirror tyck `method_ret`). Nhánh `if` gọi các method này cũng nâng.
+            //
+            // **VD-265**: phương thức **người dùng** còn dạng `Field` (không dispatch tĩnh) —
+            // tra [`MethodRet`] theo kiểu nhận (`Record`/`Enum`/`TypeRef`, bóc `Opt`) để biết
+            // `T?`/`list[T?]`/bản ghi, khớp interp ở `goi::infer_ty`.
             (HExpr::Field { base, name, .. }, _) => {
-                match (infer_ty(base, sym, fn_rets, rec_fields)?, name.as_str()) {
-                    (Type::List(e), "get" | "first" | "last" | "find") => Some(Type::Opt(e)),
-                    (Type::Map(_, v), "get") => Some(Type::Opt(v)),
-                    _ => None,
+                let bt = infer_ty(base, sym, fn_rets, mret, rec_fields)?;
+                match &bt {
+                    Type::List(e) if matches!(name.as_str(), "get" | "first" | "last" | "find") => {
+                        Some(Type::Opt(e.clone()))
+                    }
+                    Type::Map(_, v) if name == "get" => Some(Type::Opt(v.clone())),
+                    // **VD-265**: bảng cần `TypeTable`; `compile` không kèm bảng vẫn chạy như cũ
+                    // (`None` ⇒ không nâng), còn `compile_*_voi_bang` (đường `vis run`) tra được.
+                    _ => mret.ret_voi_types(&bt, name),
                 }
             }
             _ => None,
         },
-        HExpr::With { base, .. } => infer_ty(base, sym, fn_rets, rec_fields),
+        HExpr::With { base, .. } => infer_ty(base, sym, fn_rets, mret, rec_fields),
         // **VD-263**: `expr?` — `T?` ⇒ `T`, `Result[T, E]` ⇒ `T`. Gốc `with`/field có thể là
         // giá trị đã bóc `?` (vd `maybe()? with f: 5`); thiếu nhánh này thì `base_ty` mù.
         //
@@ -298,14 +324,14 @@ fn infer_ty(
         // không phải `T`; trước đây `infer_ty` bóc lớp `Opt` nên đoán sai độ sâu Option.
         HExpr::Try { expr, .. } => {
             if let HExpr::Index { base, .. } = &**expr {
-                return match infer_ty(base, sym, fn_rets, rec_fields)? {
+                return match infer_ty(base, sym, fn_rets, mret, rec_fields)? {
                     Type::List(el) => Some(Type::Opt(el)),
                     Type::Map(_, v) => Some(Type::Opt(v)),
                     Type::Bytes => Some(Type::Opt(Box::new(Type::Int))),
                     _ => None,
                 };
             }
-            match infer_ty(expr, sym, fn_rets, rec_fields)? {
+            match infer_ty(expr, sym, fn_rets, mret, rec_fields)? {
                 Type::Opt(t) | Type::Result(t, _) => Some(*t),
                 _ => None,
             }
@@ -313,8 +339,8 @@ fn infer_ty(
         // Nhánh `if`/`match`: chọn kiểu có **nhiều lớp Option nhất** (join theo kiểu đích).
         HExpr::If {
             then, elifs, else_, ..
-        } => infer_if(then, elifs, Some(else_), sym, fn_rets, rec_fields),
-        HExpr::Match { arms, .. } => infer_match(arms, sym, fn_rets, rec_fields),
+        } => infer_if(then, elifs, Some(else_), sym, fn_rets, mret, rec_fields),
+        HExpr::Match { arms, .. } => infer_match(arms, sym, fn_rets, mret, rec_fields),
         _ => None,
     }
 }
@@ -414,16 +440,25 @@ fn infer_than(
     sts: &[HStmt],
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
 ) -> Option<Type> {
     match sts.last()? {
-        HStmt::Expr(e) => infer_ty(e, sym, fn_rets, rec_fields),
+        HStmt::Expr(e) => infer_ty(e, sym, fn_rets, mret, rec_fields),
         HStmt::If {
             then, elifs, else_, ..
-        } => infer_if(then, elifs, else_.as_deref(), sym, fn_rets, rec_fields),
-        HStmt::Match { arms, .. } => infer_match(arms, sym, fn_rets, rec_fields),
+        } => infer_if(
+            then,
+            elifs,
+            else_.as_deref(),
+            sym,
+            fn_rets,
+            mret,
+            rec_fields,
+        ),
+        HStmt::Match { arms, .. } => infer_match(arms, sym, fn_rets, mret, rec_fields),
         HStmt::Block { body, .. } | HStmt::Scope { body, .. } => {
-            infer_than(body, sym, fn_rets, rec_fields)
+            infer_than(body, sym, fn_rets, mret, rec_fields)
         }
         HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => None,
         _ => None,
@@ -442,6 +477,7 @@ fn infer_if(
     else_: Option<&[HStmt]>,
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
 ) -> Option<Type> {
     let else_ = else_?;
@@ -450,7 +486,7 @@ fn infer_if(
         .chain(elifs.iter().map(|(_, b)| b.as_slice()))
         .chain(std::iter::once(else_))
     {
-        if let Some(t) = infer_than(body, sym, fn_rets, rec_fields) {
+        if let Some(t) = infer_than(body, sym, fn_rets, mret, rec_fields) {
             ds.push(t);
         }
     }
@@ -461,11 +497,12 @@ fn infer_match(
     arms: &[vis_types::hir::HArm],
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
 ) -> Option<Type> {
     let ds: Vec<Type> = arms
         .iter()
-        .filter_map(|a| infer_than(&a.body, sym, fn_rets, rec_fields))
+        .filter_map(|a| infer_than(&a.body, sym, fn_rets, mret, rec_fields))
         .collect();
     hop_nhanh(ds)
 }
@@ -491,11 +528,12 @@ fn bind_cond_let(
     c: &HCond,
     sym: &mut HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
     enum_fields: &HashMap<(u32, String, usize), Type>,
 ) {
     if let HCond::Let { pat, value, .. } = c {
-        if let Some(t) = infer_ty(value, sym, fn_rets, rec_fields) {
+        if let Some(t) = infer_ty(value, sym, fn_rets, mret, rec_fields) {
             bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
         }
     }
@@ -508,6 +546,7 @@ fn walk_stmts(
     sts: &[HStmt],
     sym: &mut HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
     rec_fields: &HashMap<(u32, String), Type>,
     enum_fields: &HashMap<(u32, String, usize), Type>,
 ) {
@@ -521,7 +560,7 @@ fn walk_stmts(
                 let t = ty
                     .clone()
                     .filter(|t| !la_error(t))
-                    .or_else(|| infer_ty(init, sym, fn_rets, rec_fields));
+                    .or_else(|| infer_ty(init, sym, fn_rets, mret, rec_fields));
                 if let Some(t) = t {
                     sym.insert(*id, t);
                 }
@@ -532,7 +571,7 @@ fn walk_stmts(
                 let t = ty
                     .clone()
                     .filter(|t| !la_error(t))
-                    .or_else(|| infer_ty(init, sym, fn_rets, rec_fields));
+                    .or_else(|| infer_ty(init, sym, fn_rets, mret, rec_fields));
                 if let Some(t) = t {
                     bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
                 }
@@ -544,14 +583,14 @@ fn walk_stmts(
                 else_,
                 ..
             } => {
-                bind_cond_let(cond, sym, fn_rets, rec_fields, enum_fields);
-                walk_stmts(then, sym, fn_rets, rec_fields, enum_fields);
+                bind_cond_let(cond, sym, fn_rets, mret, rec_fields, enum_fields);
+                walk_stmts(then, sym, fn_rets, mret, rec_fields, enum_fields);
                 for (c, b) in elifs {
-                    bind_cond_let(c, sym, fn_rets, rec_fields, enum_fields);
-                    walk_stmts(b, sym, fn_rets, rec_fields, enum_fields);
+                    bind_cond_let(c, sym, fn_rets, mret, rec_fields, enum_fields);
+                    walk_stmts(b, sym, fn_rets, mret, rec_fields, enum_fields);
                 }
                 if let Some(b) = else_ {
-                    walk_stmts(b, sym, fn_rets, rec_fields, enum_fields);
+                    walk_stmts(b, sym, fn_rets, mret, rec_fields, enum_fields);
                 }
             }
             HStmt::For {
@@ -561,30 +600,30 @@ fn walk_stmts(
                 // **VD-264**: dùng `elem_of_iter` như checker (list/map/str/range) — trước đây
                 // truyền **cả** kiểu iter nên pattern tuple/ctor trong `for` mất kiểu.
                 if let Some(t) =
-                    infer_ty(iter, sym, fn_rets, rec_fields).and_then(|t| elem_of_iter_ty(&t))
+                    infer_ty(iter, sym, fn_rets, mret, rec_fields).and_then(|t| elem_of_iter_ty(&t))
                 {
                     bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
                 }
-                walk_stmts(body, sym, fn_rets, rec_fields, enum_fields);
+                walk_stmts(body, sym, fn_rets, mret, rec_fields, enum_fields);
             }
             HStmt::While { cond, body, .. } => {
                 // **VD-264**: `while let Some(x) = …` — biến của pattern phải có kiểu tĩnh
                 // trong thân như `if let` (interp/codegen cùng luật).
-                bind_cond_let(cond, sym, fn_rets, rec_fields, enum_fields);
-                walk_stmts(body, sym, fn_rets, rec_fields, enum_fields);
+                bind_cond_let(cond, sym, fn_rets, mret, rec_fields, enum_fields);
+                walk_stmts(body, sym, fn_rets, mret, rec_fields, enum_fields);
             }
             HStmt::Loop { body, .. } | HStmt::Scope { body, .. } | HStmt::Block { body, .. } => {
-                walk_stmts(body, sym, fn_rets, rec_fields, enum_fields)
+                walk_stmts(body, sym, fn_rets, mret, rec_fields, enum_fields)
             }
             HStmt::Match { subject, arms, .. } => {
                 // **VD-263**: biến bind trong arm (`Some(u)`, `[u]`, `{f}`, ctor enum) lấy
                 // kiểu từ chủ thể — trước đây arm chỉ được đi thân, không bind kiểu.
-                let subj = infer_ty(subject, sym, fn_rets, rec_fields);
+                let subj = infer_ty(subject, sym, fn_rets, mret, rec_fields);
                 for a in arms {
                     if let Some(t) = &subj {
                         bind_pat_ty(&a.pat, t, sym, rec_fields, enum_fields);
                     }
-                    walk_stmts(&a.body, sym, fn_rets, rec_fields, enum_fields);
+                    walk_stmts(&a.body, sym, fn_rets, mret, rec_fields, enum_fields);
                 }
             }
             _ => {}
@@ -604,6 +643,9 @@ pub(super) fn collect_sym_tys(
         .filter(|(_, t)| !la_error(t))
         .collect();
     let fn_rets = collect_fn_rets(hir);
+    let mret = types
+        .map(|t| MethodRet::from_hir_voi_bang(hir, t))
+        .unwrap_or_else(|| MethodRet::from_hir(hir));
     let rec_fields = collect_rec_fields(hir, types);
     let enum_fields = collect_enum_fields(hir, types);
     // `self` của `impl U` có kiểu `U` dù tham số không annot (lowering để `Error`).
@@ -621,13 +663,27 @@ pub(super) fn collect_sym_tys(
             }
         }
     }
-    walk_stmts(&hir.stmts, &mut m, &fn_rets, &rec_fields, &enum_fields);
+    walk_stmts(
+        &hir.stmts,
+        &mut m,
+        &fn_rets,
+        &mret,
+        &rec_fields,
+        &enum_fields,
+    );
     for it in &hir.items {
         match it {
-            HItem::Fn(f) => walk_stmts(&f.body, &mut m, &fn_rets, &rec_fields, &enum_fields),
+            HItem::Fn(f) => walk_stmts(&f.body, &mut m, &fn_rets, &mret, &rec_fields, &enum_fields),
             HItem::Impl(i) => {
                 for meth in &i.methods {
-                    walk_stmts(&meth.body, &mut m, &fn_rets, &rec_fields, &enum_fields);
+                    walk_stmts(
+                        &meth.body,
+                        &mut m,
+                        &fn_rets,
+                        &mret,
+                        &rec_fields,
+                        &enum_fields,
+                    );
                 }
             }
             _ => {}
@@ -747,7 +803,13 @@ impl Emit<'_> {
     pub(super) fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
         match e {
             vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
-            other => infer_ty(other, &self.g.sym_ty, &self.g.fn_rets, &self.g.rec_fields),
+            other => infer_ty(
+                other,
+                &self.g.sym_ty,
+                &self.g.fn_rets,
+                &self.g.mret,
+                &self.g.rec_fields,
+            ),
         }
     }
 }
@@ -759,6 +821,7 @@ fn do_bieu_thuc(
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
 ) -> usize {
     match e {
         HExpr::Opt { ty, .. } => opt_depth(ty),
@@ -772,7 +835,7 @@ fn do_bieu_thuc(
         } => {
             // **VD-264**: dùng suy kiểu đầy đủ trước (base có thể là lời gọi/`?`/biến thể);
             // fallback cũ chỉ nhìn `Var` nên `a?.f` với `a` bind từ pattern/call bị đoán 1 lớp.
-            if let Some(t) = infer_ty(e, sym_ty, fn_rets, rec_fields) {
+            if let Some(t) = infer_ty(e, sym_ty, fn_rets, mret, rec_fields) {
                 return opt_depth(&t);
             }
             if let HExpr::Var { sym: Some(id), .. } = &**base {
@@ -788,7 +851,7 @@ fn do_bieu_thuc(
         }
         // **VD-264**: `xs[i]?` ⇒ `list[T]` cho `T?`; giữ đúng lớp khi `T` đã là Option.
         HExpr::Try { expr, .. } if matches!(&**expr, HExpr::Index { .. }) => {
-            infer_ty(e, sym_ty, fn_rets, rec_fields)
+            infer_ty(e, sym_ty, fn_rets, mret, rec_fields)
                 .map(|t| opt_depth(&t))
                 .unwrap_or(1)
         }
@@ -796,24 +859,24 @@ fn do_bieu_thuc(
             HExpr::Var { name, .. } if name == "Some" => {
                 1 + args
                     .first()
-                    .map(|a| do_bieu_thuc(a, sym_ty, rec_fields, fn_rets))
+                    .map(|a| do_bieu_thuc(a, sym_ty, rec_fields, fn_rets, mret))
                     .unwrap_or(0)
             }
             HExpr::Var { name, .. } if name == "None" => 1,
             // **VD-260**: lời gọi hàm tệp/phương thức — kiểu trả về quyết định lớp Option.
             HExpr::Var { sym: Some(id), .. } => fn_rets.get(id).map(opt_depth).unwrap_or(0),
             // Method dựng sẵn (`list.get/first/…`, `map.get`) — dùng chung `infer_ty`.
-            _ => infer_ty(e, sym_ty, fn_rets, rec_fields)
+            _ => infer_ty(e, sym_ty, fn_rets, mret, rec_fields)
                 .map(|t| opt_depth(&t))
                 .unwrap_or(0),
         },
         HExpr::If {
             then, elifs, else_, ..
-        } => do_if(then, elifs, Some(else_), sym_ty, rec_fields, fn_rets).1,
-        HExpr::Match { arms, .. } => do_match(arms, sym_ty, rec_fields, fn_rets).1,
+        } => do_if(then, elifs, Some(else_), sym_ty, rec_fields, fn_rets, mret).1,
+        HExpr::Match { arms, .. } => do_match(arms, sym_ty, rec_fields, fn_rets, mret).1,
         // **VD-260**: các dạng còn lại (method `get`/`first`/…, index, `with`, tuple) — dùng
         // chung suy kiểu đích để nhánh plain được nâng đúng lớp.
-        _ => infer_ty(e, sym_ty, fn_rets, rec_fields)
+        _ => infer_ty(e, sym_ty, fn_rets, mret, rec_fields)
             .map(|t| opt_depth(&t))
             .unwrap_or(0),
     }
@@ -825,15 +888,27 @@ fn do_than(
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
 ) -> Option<usize> {
     match stmts.last()? {
-        HStmt::Expr(e) => Some(do_bieu_thuc(e, sym_ty, rec_fields, fn_rets)),
+        HStmt::Expr(e) => Some(do_bieu_thuc(e, sym_ty, rec_fields, fn_rets, mret)),
         HStmt::If {
             then, elifs, else_, ..
-        } => Some(do_if(then, elifs, else_.as_deref(), sym_ty, rec_fields, fn_rets).1),
-        HStmt::Match { arms, .. } => Some(do_match(arms, sym_ty, rec_fields, fn_rets).1),
+        } => Some(
+            do_if(
+                then,
+                elifs,
+                else_.as_deref(),
+                sym_ty,
+                rec_fields,
+                fn_rets,
+                mret,
+            )
+            .1,
+        ),
+        HStmt::Match { arms, .. } => Some(do_match(arms, sym_ty, rec_fields, fn_rets, mret).1),
         HStmt::Block { body, .. } | HStmt::Scope { body, .. } => {
-            do_than(body, sym_ty, rec_fields, fn_rets)
+            do_than(body, sym_ty, rec_fields, fn_rets, mret)
         }
         HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => None,
         _ => Some(0),
@@ -848,6 +923,7 @@ pub(super) fn do_if(
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
 ) -> (usize, usize) {
     let Some(else_) = else_ else {
         return (0, 0);
@@ -857,7 +933,7 @@ pub(super) fn do_if(
         .chain(elifs.iter().map(|(_, b)| b.as_slice()))
         .chain(std::iter::once(else_))
     {
-        if let Some(d) = do_than(body, sym_ty, rec_fields, fn_rets) {
+        if let Some(d) = do_than(body, sym_ty, rec_fields, fn_rets, mret) {
             ds.push(d);
         }
     }
@@ -875,10 +951,11 @@ pub(super) fn do_match(
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
     fn_rets: &HashMap<u32, Type>,
+    mret: &MethodRet,
 ) -> (usize, usize) {
     let ds: Vec<usize> = arms
         .iter()
-        .filter_map(|a| do_than(&a.body, sym_ty, rec_fields, fn_rets))
+        .filter_map(|a| do_than(&a.body, sym_ty, rec_fields, fn_rets, mret))
         .collect();
     if ds.is_empty() {
         return (0, 0);
@@ -1012,5 +1089,96 @@ impl Emit<'_> {
             self.lift_opt(depth, span)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ha(src: &str) -> vis_types::HirOutput {
+        let src = format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}");
+        let lex = vis_syntax::lex(&src, vis_syntax::Mode::Script);
+        let out = vis_syntax::parse(&src, vis_syntax::Mode::Script);
+        vis_types::lower(&out.cst, &lex)
+    }
+
+    /// Đổi `Call(Var("R.io"), [r])` (dispatch tĩnh) thành `Call(Field(r, "io"), [])` — dạng HIR mà
+    /// **VD-265** phải suy được khi không có dispatch (callee `Field`).
+    fn doi_thanh_field(e: &mut HExpr) -> bool {
+        if let HExpr::Call {
+            callee,
+            args,
+            named,
+            span,
+        } = e
+        {
+            if let HExpr::Var { name, .. } = &**callee {
+                if name == "R.io" && !args.is_empty() {
+                    let base = args.remove(0);
+                    **callee = HExpr::Field {
+                        base: Box::new(base),
+                        name: "io".into(),
+                        optional: false,
+                        span: *span,
+                    };
+                    named.clear();
+                    return true;
+                }
+            }
+            for a in args.iter_mut() {
+                if doi_thanh_field(a) {
+                    return true;
+                }
+            }
+            return doi_thanh_field(callee);
+        }
+        false
+    }
+
+    fn doi(sts: &mut [HStmt]) -> bool {
+        for s in sts {
+            if let HStmt::Let { init, .. } | HStmt::Var { init, .. } = s {
+                if doi_thanh_field(init) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// **VD-265 (đỏ-trước ở tầng này)** — trước bản sửa, `infer_ty(Call(Field(Record, m)))` trả
+    /// `None` (chỉ có `list`/`map` dựng sẵn); nay tra [`MethodRet`] và biết `int?` như interp.
+    #[test]
+    fn infer_ty_phuong_thuc_nguoi_dung_callee_field() {
+        let mut h = ha("type R:\n    f: int?\n\nimpl R:\n    fn io(self) -> int?:\n        None\n\nfn main():\n    let r: R = R(f: None)\n    let x = r.io()\n");
+        let mut found = false;
+        for it in h.hir.items.iter_mut() {
+            if let HItem::Fn(f) = it {
+                if f.name == "main" {
+                    found = doi(&mut f.body);
+                }
+            }
+        }
+        assert!(found, "phải đổi được lời gọi `r.io()` thành callee Field");
+        let mret = MethodRet::from_hir_voi_bang(&h.hir, &h.types);
+        let fn_rets = HashMap::new(); // cố ý rỗng: chỉ bảng phương thức quyết định
+        let sym = collect_sym_tys(&h.hir, &h.symbols, Some(&h.types));
+        let rec_fields = collect_rec_fields(&h.hir, Some(&h.types));
+        let got = h
+            .hir
+            .items
+            .iter()
+            .find_map(|it| match it {
+                HItem::Fn(f) if f.name == "main" => f.body.iter().find_map(|s| match s {
+                    HStmt::Let { init, .. } if matches!(init, HExpr::Call { .. }) => {
+                        infer_ty(init, &sym, &fn_rets, &mret, &rec_fields)
+                    }
+                    _ => None,
+                }),
+                _ => None,
+            })
+            .expect("phải suy được kiểu lời gọi phương thức");
+        assert_eq!(got, Type::Opt(Box::new(Type::Int)));
     }
 }

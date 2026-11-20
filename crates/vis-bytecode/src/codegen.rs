@@ -19,6 +19,7 @@ mod than;
 use std::collections::HashMap;
 
 use vis_syntax::Span;
+use vis_types::MethodRet;
 use vis_types::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir, InterpPart, LitKind, Symbols};
 
 pub use crate::cerr::CodegenError;
@@ -56,6 +57,7 @@ struct Gen {
     rec_fields: HashMap<(u32, String), vis_types::Type>, // ST-248: kiểu trường bản ghi
     /// **VD-258**: kiểu trường biến thể enum `(EnumId, biến thể, vị trí)`.
     enum_fields: HashMap<(u32, String, usize), vis_types::Type>,
+    mret: vis_types::MethodRet, // VD-265: kiểu trả phương thức người dùng (theo kiểu nhận + tên)
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     /// **ST-238 (VD-242, ca 3)**: `sym` của biến `let`/`var` cấp tệp → ô trong vùng
@@ -195,6 +197,7 @@ pub fn compile_with_fee_voi_bang(
         fn_rets: than::collect_fn_rets(hir), // VD-260: kiểu trả về của hàm
         rec_fields: than::collect_rec_fields(hir, types),
         enum_fields: than::collect_enum_fields(hir, types),
+        mret: than::collect_mret(hir, types),
         hash: crate::format::source_hash(text),
     };
     // **VD-263**: `MakeRecord` in tên của cả bản ghi **instantiation** (`Box[int?]` → `Box`).
@@ -1307,8 +1310,7 @@ impl<'g> Emit<'g> {
                 ..
             } => {
                 self.expr(subject)?;
-                let (min, max) =
-                    than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields, &self.g.fn_rets);
+                let (min, max) = than::do_match_emit(self.g, arms);
                 let mut jend = Vec::new();
                 let mut guardas: Vec<usize> = Vec::new();
                 let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();

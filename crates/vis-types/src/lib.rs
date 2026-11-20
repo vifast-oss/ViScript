@@ -55,6 +55,7 @@
 pub mod cmdsig;
 pub mod hir;
 pub mod lower;
+pub mod method_ret;
 pub mod prelude;
 pub mod stdlib;
 pub mod ty;
@@ -69,5 +70,6 @@ pub use lower::{
     is_builtin_value, lower, lower_into, lower_with, FrameKind, HFrame, HSym, HirOutput,
     LowerError, LowerOptions, ModInfo, NamePolicy, SymKind, Symbols, TraitSig, BUILTIN_VALUE_NAMES,
 };
+pub use method_ret::MethodRet;
 pub use ty::{EnumDef, EnumId, FieldDef, RecDef, RecId, Type, TypeTable, VariantDef};
 pub use tyck::{check, CheckOutput};

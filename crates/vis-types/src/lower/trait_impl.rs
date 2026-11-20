@@ -53,7 +53,8 @@ impl<'a> Lowerer<'a> {
                 .type_env
                 .get(id)
                 .cloned()
-                .or_else(|| self.symbols.get(*id).and_then(|s| s.ty.clone())),
+                .or_else(|| self.symbols.get(*id).and_then(|s| s.ty.clone()))
+                .or_else(|| self.self_ty.get(id).cloned()),
             HExpr::Field {
                 base,
                 name,
