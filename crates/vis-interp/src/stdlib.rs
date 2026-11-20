@@ -41,6 +41,7 @@ mod pathnorm;
 mod pathrel;
 mod pathrelbool;
 mod pathwithext;
+mod pathwithstem;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteexists;
@@ -602,6 +603,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (path.with_extension)**: thay/đặt/bỏ phần mở rộng của thành phần cuối
         // (thuần chuỗi; dùng **đúng** `ext_voi`/`stem_voi` của `path.ext`/`path.stem`).
         "path.with_extension" => pathwithext::goi(&args, span),
+        // **VD-270 (path.with_stem)**: thay **phần thân** (file stem) của thành phần cuối, giữ
+        // nguyên phần mở rộng hiện có (thuần chuỗi; dùng **đúng** `stem_voi`/`ext_voi`).
+        "path.with_stem" => pathwithstem::goi(&args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         "time.now_ms" => {
             let ms = SystemTime::now()
