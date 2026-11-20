@@ -4,6 +4,9 @@
 use super::*;
 use crate::rt::fee::FeeKind;
 
+/// **VD-270** — bước đích gán đường (định nghĩa cạnh helper `thu_duong` ở `frame/expr.rs`).
+use super::expr::NutGan;
+
 /// Xử lý một work-item: tiêu thụ giá trị trên `vals`, đẩy continuation mới.
 pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'a>) -> R<()> {
     match w {
@@ -1031,69 +1034,124 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             frame.cur().env.borrow_mut().insert(sym, new);
             Ok(())
         }
-        Work::ApplyAssignField {
-            sym,
-            name,
-            op,
-            span,
-        } => {
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
-                return Err(a);
+        // ================= VD-270: gán *đường* (`a.b.f`, `xs[0].f`, …) =================
+        Work::AssignPathStep(step) => {
+            let super::expr::AssignPathStep {
+                sym,
+                nuts,
+                k,
+                op,
+                span,
+                root,
+                mut duong,
+                opt_depth,
+                sau_chi_so,
+                value,
+            } = step;
+            if sau_chi_so {
+                // Chỉ số bước `k` vừa được đánh giá (work `Eval` ở dưới đã trả).
+                let iv = frame.pop_val()?;
+                duong.push(crate::gan::Buoc::ChiSo(iv));
+            } else {
+                match &nuts[k] {
+                    NutGan::Truong(ten) => duong.push(crate::gan::Buoc::Truong(ten.clone())),
+                    NutGan::ChiSo(idx) => {
+                        let idx = *idx;
+                        frame.cur().work.push(Work::AssignPathStep(
+                            super::expr::AssignPathStep {
+                                sym,
+                                nuts,
+                                k,
+                                op,
+                                span,
+                                root,
+                                duong,
+                                opt_depth,
+                                sau_chi_so: true,
+                                value,
+                            },
+                        ));
+                        frame.cur().work.push(Work::Eval(idx));
+                        return Ok(());
+                    }
+                }
             }
-            let rhs = frame.pop_val()?;
-            if !matches!(op, AssignOp::Set) {
-                return Err(Abort::Trap(Trap::new(
-                    RT,
-                    "gán ghép trên trường chưa được đường frame test hỗ trợ",
-                    span,
-                )));
+            if k + 1 < nuts.len() {
+                // Đọc tầng giữa **ngay** sau bước để trap ngoài phạm vi/sai hình dạng trước
+                // khi đánh giá chỉ số kế/vế phải (mirror `interp/gan_long.rs`).
+                let _ = crate::gan::doc_duong(&root, &duong, span)?;
+                frame
+                    .cur()
+                    .work
+                    .push(Work::AssignPathStep(super::expr::AssignPathStep {
+                        sym,
+                        nuts,
+                        k: k + 1,
+                        op,
+                        span,
+                        root,
+                        duong,
+                        opt_depth,
+                        sau_chi_so: false,
+                        value,
+                    }));
+            } else {
+                // Đường xong: ghi (đợi vế phải ở trên) — `Eval(value)` chạy trước `Apply`.
+                frame
+                    .cur()
+                    .work
+                    .push(Work::ApplyAssignPath(super::expr::ApplyAssignPath {
+                        sym,
+                        op,
+                        span,
+                        root,
+                        duong,
+                        opt_depth,
+                    }));
+                frame.cur().work.push(Work::Eval(value));
             }
-            let cur = frame
-                .cur()
-                .env
-                .borrow()
-                .get(&sym)
-                .cloned()
-                .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))?;
-            if !frame.mutable.borrow().contains(&sym) {
-                return Err(Abort::Trap(Trap::new(
-                    crate::interp::MISMATCH,
-                    "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)",
-                    span,
-                )));
-            }
-            let moi = crate::gan::gan_truong(cur, &name, rhs, span)?;
-            frame.cur().env.borrow_mut().insert(sym, moi);
             Ok(())
         }
-        Work::ApplyAssignIndex { sym, op, span } => {
+        Work::ApplyAssignPath(apply) => {
+            let super::expr::ApplyAssignPath {
+                sym,
+                op,
+                span,
+                root,
+                duong,
+                opt_depth,
+            } = apply;
+            // Một E_ASSIGN cho cả đường (mirror codegen: sau vế phải, trước ghi ô).
             if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
-            if !matches!(op, AssignOp::Set) {
-                return Err(Abort::Trap(Trap::new(
-                    RT,
-                    "gán ghép trên phần tử chưa được đường frame test hỗ trợ",
-                    span,
-                )));
-            }
             let rhs = frame.pop_val()?;
-            let idx = frame.pop_val()?;
-            let cur = frame
-                .cur()
-                .env
-                .borrow()
-                .get(&sym)
-                .cloned()
-                .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))?;
+            if !matches!(op, AssignOp::Set) {
+                // VD-270 giữ đúng phạm vi: chỉ `=`. `+=` trên lá đường vẫn bị từ chối như
+                // dạng một tầng cũ — không fallback âm thầm sang interp/VM.
+                let manh = match duong.last() {
+                    Some(crate::gan::Buoc::Truong(_)) => {
+                        "gán ghép trên trường chưa được đường frame test hỗ trợ"
+                    }
+                    _ => "gán ghép trên phần tử chưa được đường frame test hỗ trợ",
+                };
+                return Err(Abort::Trap(Trap::new(RT, manh, span)));
+            }
             if !frame.mutable.borrow().contains(&sym) {
+                let manh = match duong.last() {
+                    Some(crate::gan::Buoc::Truong(_)) => {
+                        "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)"
+                    }
+                    _ => "không gán được phần tử của `let`/tham số — chỉ `var` mới gán được (§4.1)",
+                };
                 return Err(Abort::Trap(Trap::new(
                     crate::interp::MISMATCH,
-                    "không gán được phần tử của `let`/tham số — chỉ `var` mới gán được (§4.1)",
+                    manh,
                     span,
                 )));
             }
-            let moi = crate::gan::gan_chi_so(cur, idx, rhs, span)?;
+            let rhs = crate::lift::lift_opt(rhs, opt_depth);
+            let moi = crate::gan::gan_duong(root, &duong, rhs, span)?;
             frame.cur().env.borrow_mut().insert(sym, moi);
             Ok(())
         }

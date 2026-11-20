@@ -330,18 +330,9 @@ enum Work<'a> {
         op: AssignOp,
         span: Span,
     },
-    /// Gán trường/phần tử của biến `var`.
-    ApplyAssignField {
-        sym: u32,
-        name: String,
-        op: AssignOp,
-        span: Span,
-    },
-    ApplyAssignIndex {
-        sym: u32,
-        op: AssignOp,
-        span: Span,
-    },
+    /// **VD-270** — đích gán **đường** (`a.b.f`): đi xuống từng bước / ghi sau vế phải.
+    AssignPathStep(expr::AssignPathStep<'a>),
+    ApplyAssignPath(expr::ApplyAssignPath),
 
     // ---- VD-257 / stream A: `?`, kênh, cmd-block ----
     /// `?` trên `Option`/`Result`: bóc `Some`/`Ok`, hoặc **trả sớm** `None`/`Err`

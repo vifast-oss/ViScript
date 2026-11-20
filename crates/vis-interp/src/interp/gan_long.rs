@@ -22,7 +22,9 @@ pub(crate) fn goc_var(t: &HExpr) -> Option<u32> {
 }
 
 /// Thu các **nút** bước của đường, từ gốc ra lá.
-fn thu_duong<'a>(t: &'a HExpr, ra: &mut Vec<&'a HExpr>, span: Span) -> R<()> {
+///
+/// **VD-270**: `pub(crate)` để frame evaluator dùng **cùng** luật/ thông điệp `?.`/gốc.
+pub(crate) fn thu_duong<'a>(t: &'a HExpr, ra: &mut Vec<&'a HExpr>, span: Span) -> R<()> {
     match t {
         HExpr::Field { base, optional, .. } => {
             if *optional {
