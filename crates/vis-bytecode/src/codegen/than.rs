@@ -206,6 +206,12 @@ fn infer_ty(
             _ => None,
         },
         HExpr::With { base, .. } => infer_ty(base, sym, fn_rets, rec_fields),
+        // **VD-263**: `expr?` — `T?` ⇒ `T`, `Result[T, E]` ⇒ `T`. Gốc `with`/field có thể là
+        // giá trị đã bóc `?` (vd `maybe()? with f: 5`); thiếu nhánh này thì `base_ty` mù.
+        HExpr::Try { expr, .. } => match infer_ty(expr, sym, fn_rets, rec_fields)? {
+            Type::Opt(t) | Type::Result(t, _) => Some(*t),
+            _ => None,
+        },
         // Nhánh `if`/`match`: chọn kiểu có **nhiều lớp Option nhất** (join theo kiểu đích).
         HExpr::If {
             then, elifs, else_, ..
@@ -215,10 +221,93 @@ fn infer_ty(
     }
 }
 
-/// **ST-248** — gán kiểu suy được từ pattern `let` đơn (`HPat::Bind`); dạng khác bỏ qua.
-fn bind_pat(p: &HPat, ty: &Type, sym: &mut HashMap<u32, Type>) {
-    if let HPat::Bind { sym: id, .. } = p {
-        sym.insert(*id, ty.clone());
+/// **ST-248** — gán kiểu suy được từ pattern (`let`, `for`, arm `match`, `if let`); đệ quy theo
+/// hình dạng pattern để biến bind trong arm cũng có kiểu tĩnh.
+///
+/// **VD-263**: trước đây chỉ `HPat::Bind` trần của `let`/`for` được gán; biến bind trong arm
+/// `match` (`Some(u)`, `[u]`, `{f}`, ctor enum) không có kiểu ⇒ `base_ty` mù và `u with f: 5`
+/// không nâng trên VM (interp vẫn đúng nhờ tra tên bản ghi lúc chạy).
+fn bind_pat_ty(
+    p: &HPat,
+    ty: &Type,
+    sym: &mut HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+    enum_fields: &HashMap<(u32, String, usize), Type>,
+) {
+    match p {
+        HPat::Bind { sym: id, .. } => {
+            sym.insert(*id, ty.clone());
+        }
+        HPat::Or { alts, .. } => {
+            for a in alts {
+                bind_pat_ty(a, ty, sym, rec_fields, enum_fields);
+            }
+        }
+        HPat::List { items, rest, .. } => {
+            let elem = match ty {
+                Type::List(el) => (**el).clone(),
+                _ => Type::Error,
+            };
+            for it in items {
+                bind_pat_ty(it, &elem, sym, rec_fields, enum_fields);
+            }
+            if let Some(r) = rest {
+                bind_pat_ty(r, &Type::List(Box::new(elem)), sym, rec_fields, enum_fields);
+            }
+        }
+        HPat::Tuple { items, .. } => {
+            let args: &[Type] = match ty {
+                Type::TypeRef { name, args } if name == "tuple" => args,
+                _ => &[],
+            };
+            for (i, it) in items.iter().enumerate() {
+                let t = args.get(i).unwrap_or(&Type::Error);
+                bind_pat_ty(it, t, sym, rec_fields, enum_fields);
+            }
+        }
+        HPat::Record { fields, .. } => {
+            let inner = match ty {
+                Type::Opt(t) => &**t,
+                other => other,
+            };
+            let id = match inner {
+                Type::Record(id) => Some(*id),
+                _ => None,
+            };
+            for (name, sub) in fields {
+                let Some(sub) = sub else { continue };
+                let ft = id
+                    .and_then(|id| rec_fields.get(&(id.0, name.clone())))
+                    .cloned()
+                    .unwrap_or(Type::Error);
+                bind_pat_ty(sub, &ft, sym, rec_fields, enum_fields);
+            }
+        }
+        HPat::Ctor { path, args, .. } => {
+            let ten = path.last().map(String::as_str).unwrap_or("");
+            for (i, a) in args.iter().enumerate() {
+                let ft = ctor_arg_ty(ten, i, ty, enum_fields).unwrap_or(Type::Error);
+                bind_pat_ty(a, &ft, sym, rec_fields, enum_fields);
+            }
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Range { .. } | HPat::Rest { .. } => {}
+    }
+}
+
+/// **VD-263** — kiểu đối số thứ `i` của ctor `ten` khi chủ thể có kiểu `subj` (Option/Result
+/// dựng sẵn + enum đã khai). `None` ⇒ không suy được.
+fn ctor_arg_ty(
+    ten: &str,
+    i: usize,
+    subj: &Type,
+    enum_fields: &HashMap<(u32, String, usize), Type>,
+) -> Option<Type> {
+    match (ten, subj) {
+        ("Some", Type::Opt(t)) if i == 0 => Some((**t).clone()),
+        ("Ok", Type::Result(t, _)) if i == 0 => Some((**t).clone()),
+        ("Err", Type::Result(_, e)) if i == 0 => Some((**e).clone()),
+        (_, Type::Enum(id)) => enum_fields.get(&(id.0, ten.to_string(), i)).cloned(),
+        _ => None,
     }
 }
 
@@ -283,14 +372,30 @@ fn infer_match(
     hop_nhanh(ds)
 }
 
+/// **VD-263** — bind biến của `if let` / `elif let` theo kiểu giá trị vế phải (nếu biết).
+fn bind_cond_let(
+    c: &HCond,
+    sym: &mut HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+    enum_fields: &HashMap<(u32, String, usize), Type>,
+) {
+    if let HCond::Let { pat, value, .. } = c {
+        if let Some(t) = infer_ty(value, sym, fn_rets, rec_fields) {
+            bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
+        }
+    }
+}
+
 /// **ST-248 / VD-260** — đi khối câu lệnh để gom kiểu biến không có annotation (vd
-/// `var u = U(…)`/`var u = pick(true)` ⇒ `u: Record(U)`). Chỉ đọc cấu trúc HIR, không gọi mã
-/// người dùng (VD-242 §3.4).
+/// `var u = U(…)`/`var u = pick(true)` ⇒ `u: Record(U)`) và biến bind trong pattern
+/// (`match`/`if let`/`for`). Chỉ đọc cấu trúc HIR, không gọi mã người dùng (VD-242 §3.4).
 fn walk_stmts(
     sts: &[HStmt],
     sym: &mut HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
+    enum_fields: &HashMap<(u32, String, usize), Type>,
 ) {
     for s in sts {
         match s {
@@ -315,36 +420,48 @@ fn walk_stmts(
                     .filter(|t| !la_error(t))
                     .or_else(|| infer_ty(init, sym, fn_rets, rec_fields));
                 if let Some(t) = t {
-                    bind_pat(pat, &t, sym);
+                    bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
                 }
             }
             HStmt::If {
-                then, elifs, else_, ..
+                cond,
+                then,
+                elifs,
+                else_,
+                ..
             } => {
-                walk_stmts(then, sym, fn_rets, rec_fields);
-                for (_, b) in elifs {
-                    walk_stmts(b, sym, fn_rets, rec_fields);
+                bind_cond_let(cond, sym, fn_rets, rec_fields, enum_fields);
+                walk_stmts(then, sym, fn_rets, rec_fields, enum_fields);
+                for (c, b) in elifs {
+                    bind_cond_let(c, sym, fn_rets, rec_fields, enum_fields);
+                    walk_stmts(b, sym, fn_rets, rec_fields, enum_fields);
                 }
                 if let Some(b) = else_ {
-                    walk_stmts(b, sym, fn_rets, rec_fields);
+                    walk_stmts(b, sym, fn_rets, rec_fields, enum_fields);
                 }
             }
             HStmt::For {
                 pat, iter, body, ..
             } => {
                 // **VD-260**: biến vòng lặp lấy kiểu phần tử của list (nếu biết).
-                if let Some(Type::List(el)) = infer_ty(iter, sym, fn_rets, rec_fields) {
-                    bind_pat(pat, &el, sym);
+                if let Some(t) = infer_ty(iter, sym, fn_rets, rec_fields) {
+                    bind_pat_ty(pat, &t, sym, rec_fields, enum_fields);
                 }
-                walk_stmts(body, sym, fn_rets, rec_fields);
+                walk_stmts(body, sym, fn_rets, rec_fields, enum_fields);
             }
             HStmt::While { body, .. }
             | HStmt::Loop { body, .. }
             | HStmt::Scope { body, .. }
-            | HStmt::Block { body, .. } => walk_stmts(body, sym, fn_rets, rec_fields),
-            HStmt::Match { arms, .. } => {
+            | HStmt::Block { body, .. } => walk_stmts(body, sym, fn_rets, rec_fields, enum_fields),
+            HStmt::Match { subject, arms, .. } => {
+                // **VD-263**: biến bind trong arm (`Some(u)`, `[u]`, `{f}`, ctor enum) lấy
+                // kiểu từ chủ thể — trước đây arm chỉ được đi thân, không bind kiểu.
+                let subj = infer_ty(subject, sym, fn_rets, rec_fields);
                 for a in arms {
-                    walk_stmts(&a.body, sym, fn_rets, rec_fields);
+                    if let Some(t) = &subj {
+                        bind_pat_ty(&a.pat, t, sym, rec_fields, enum_fields);
+                    }
+                    walk_stmts(&a.body, sym, fn_rets, rec_fields, enum_fields);
                 }
             }
             _ => {}
@@ -361,6 +478,7 @@ pub(super) fn collect_sym_tys(hir: &Hir, symbols: &Symbols) -> HashMap<u32, Type
         .collect();
     let fn_rets = collect_fn_rets(hir);
     let rec_fields = collect_rec_fields(hir);
+    let enum_fields = collect_enum_fields(hir);
     // `self` của `impl U` có kiểu `U` dù tham số không annot (lowering để `Error`).
     for it in &hir.items {
         if let HItem::Impl(i) = it {
@@ -376,13 +494,13 @@ pub(super) fn collect_sym_tys(hir: &Hir, symbols: &Symbols) -> HashMap<u32, Type
             }
         }
     }
-    walk_stmts(&hir.stmts, &mut m, &fn_rets, &rec_fields);
+    walk_stmts(&hir.stmts, &mut m, &fn_rets, &rec_fields, &enum_fields);
     for it in &hir.items {
         match it {
-            HItem::Fn(f) => walk_stmts(&f.body, &mut m, &fn_rets, &rec_fields),
+            HItem::Fn(f) => walk_stmts(&f.body, &mut m, &fn_rets, &rec_fields, &enum_fields),
             HItem::Impl(i) => {
                 for meth in &i.methods {
-                    walk_stmts(&meth.body, &mut m, &fn_rets, &rec_fields);
+                    walk_stmts(&meth.body, &mut m, &fn_rets, &rec_fields, &enum_fields);
                 }
             }
             _ => {}
@@ -490,6 +608,11 @@ impl Emit<'_> {
 
     /// **ST-248 (VD-242 §3.3)** — kiểu tĩnh của biểu thức **gốc** (`Var`/`Field`/`Index`), dùng để
     /// suy kiểu đích của phép gán trường/chỉ số. `None` ⇒ không biết ⇒ không nâng.
+    ///
+    /// **VD-263**: gốc không phải `Var`/`Field`/`Index` (literal bản ghi, lời gọi hàm/phương thức,
+    /// `if`/`match`, `with` lồng, `expr?`) vẫn suy được bằng [`infer_ty`] — nhờ đó `with` lấy đúng
+    /// `RecId` và nâng trường `T?` như interp (interp tra tên bản ghi lúc chạy; VM **không** dựa
+    /// vào tên lúc chạy).
     pub(super) fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
         match e {
             vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
@@ -502,7 +625,7 @@ impl Emit<'_> {
                 Some(Type::List(el)) => Some(*el),
                 _ => None,
             },
-            _ => None,
+            other => infer_ty(other, &self.g.sym_ty, &self.g.fn_rets, &self.g.rec_fields),
         }
     }
 }
