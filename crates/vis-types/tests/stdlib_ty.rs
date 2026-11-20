@@ -148,7 +148,6 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str) -> Result[str?, Error]`; tra văn bản SQL khai báo của đối tượng schema chính
     // theo tên bind, thiếu/`sql` NULL ⇒ `Ok(None)`) ⇒ **121** hàm; không xoá/đổi hàm cũ nào.
     assert_eq!(FUNCS.len(), 121, "bảng chữ ký phải đủ 121 hàm");
-    assert_eq!(FUNCS.len(), 120, "bảng chữ ký phải đủ 120 hàm");
 }
 
 #[test]

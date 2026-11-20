@@ -12,6 +12,11 @@
 //! dù SQLite vẫn cho tham chiếu bảng tên `bang` trong câu SQL khác. Đây là hợp đồng **có chủ ý**
 //! của truy vấn, không phải sót.
 //!
+//! Không có tham số **loại** đối tượng: SQLite cho phép **trigger** trùng tên với bảng (hai
+//! không gian tên khác nhau), nên nếu một tên có hai hàng trong `sqlite_master`, `LIMIT 1` trả
+//! hàng mà truy vấn duyệt trước — hợp đồng **không hứa** loại nào; đây là hệ quả trực tiếp của
+//! "tra theo tên", không phải lỗi. Bảng/view/index chia sẻ không gian tên nên không trùng nhau.
+//!
 //! Đi qua **đúng** đường `DbHost::db_query` hiện có (không thêm method host): cùng authorizer,
 //! chính sách chỉ đọc (`sqlite3_stmt_readonly`), trần SQL/hàng/ô/cột/byte, progress-handler
 //! timeout, cache schema/statement. `sqlite_master` của schema chính là bảng hệ thống bình thường
