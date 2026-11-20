@@ -16,13 +16,14 @@
 //! [`mod`]: khung/môi trường/câu lệnh · [`num`]: bảng toán tử số học/so sánh · [`expr`]: biểu thức · [`pat`]: pattern + **xét hết**.
 
 mod expr;
+mod flow;
 mod num;
 mod pat;
 mod sig;
 mod truong;
 mod vd238;
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 use sig::FnSig;
 
@@ -167,6 +168,14 @@ pub(crate) struct Checker<'a> {
     sigs: Vec<Option<FnSig>>,
     /// Tham số kiểu đang có hiệu lực (ST-28) — `resolve_ann` giữ `TypeRef{"T"}` thay vì `VS0301`.
     generic_scope: Vec<String>,
+    /// **VD-259** — độ sâu vòng lặp **tĩnh** trong hàm hiện tại (`break`/`continue` ngoài vòng ⇒
+    /// `VS0412`). Đặt lại **0** khi vào hàm/lambda: `break` không xuyên qua biên hàm.
+    loop_depth: u32,
+    /// **VD-259** — đang kiểm câu lệnh ở **vị trí cần giá trị** (câu cuối của khối cho giá trị,
+    /// thân nhánh `match`, nhánh `if` biểu thức). `break`/`continue` ở đây ⇒ `VS0412`.
+    in_value: bool,
+    /// **VD-259** — use-set của thân hàm hiện tại (cho or-pattern trong `let`).
+    fn_uses: BTreeSet<u32>,
 }
 
 impl<'a> Checker<'a> {
@@ -185,6 +194,9 @@ impl<'a> Checker<'a> {
             cur_ret: None,
             quiet: 0,
             sigs: vec![None; n],
+            loop_depth: 0,
+            in_value: false,
+            fn_uses: BTreeSet::new(),
         }
     }
 
@@ -778,6 +790,8 @@ impl<'a> Checker<'a> {
         for item in &hir.items {
             self.kiem_item(item);
         }
+        // **VD-259**: or-pattern trong `let` cấp tệp dùng use-set của toàn bộ câu lệnh cấp tệp.
+        self.fn_uses = pat::than_uses(&hir.stmts);
         for stmt in &hir.stmts {
             let t = self.kiem_stmt(stmt);
             if let HStmt::Expr(_) = stmt {
@@ -905,7 +919,14 @@ impl<'a> Checker<'a> {
                 let ret = self.chuan(&erase_gen(&raw_ret, &f.generics));
                 self.generic_scope = luu;
                 let saved = self.cur_ret.replace(ret.clone());
+                // **VD-259**: `break`/`continue` không xuyên biên hàm — đặt lại ngữ cảnh.
+                let saved_loop = std::mem::replace(&mut self.loop_depth, 0);
+                let saved_value = std::mem::replace(&mut self.in_value, false);
+                let saved_uses = std::mem::replace(&mut self.fn_uses, pat::than_uses(&f.body));
                 self.kiem_than(&f.body, &ret, f.span);
+                self.fn_uses = saved_uses;
+                self.in_value = saved_value;
+                self.loop_depth = saved_loop;
                 self.cur_ret = saved;
             }
             HItem::Rec(r) => truong::kiem_default_rec(self, r),
@@ -916,41 +937,7 @@ impl<'a> Checker<'a> {
 
     /// Kiểu **giá trị** của một thân: kiểu biểu thức **cuối**, không có thì `()` (§5.1).
     pub(crate) fn than_value(&mut self, body: &[HStmt]) -> Type {
-        let n = body.len();
-        let mut value = Type::Unit;
-        for (i, s) in body.iter().enumerate() {
-            let t = self.kiem_stmt(s);
-            if i + 1 == n {
-                // §4/§6: câu lệnh cuối của khối **cho giá trị** (`Expr`, `if`/`match` có `else`,
-                // khối con); các dạng khác là `()` — VD-47 (sửa lỗ hổng ST-13).
-                value = t;
-            }
-        }
-        value
-    }
-
-    /// Kiểm một **thân** (suite) và ép kiểu giá trị về `want`.
-    pub(crate) fn kiem_than(&mut self, body: &[HStmt], want: &Type, span: Span) {
-        let at = body.last().map(HStmt::span).unwrap_or(span);
-        // **VD-238**: `fn f() -> int: None` — thân cuối là `None` trần ⇒ lỗi tĩnh khi lớp **ngoài cùng** của `want` không phải `Option`.
-        let last_is_none =
-            matches!(body.last(), Some(crate::hir::HStmt::Expr(e)) if vd238::la_none_bare(e));
-        let t = self.than_value(body);
-        // **VD-241 §7 (A0, 2026-11-19)**: `None` trả về hợp lệ khi `want` **ngoài cùng** là `Option`.
-        if last_is_none && !vd238::la_none_dich_opt(want) {
-            self.diag(
-                MISMATCH,
-                format!(
-                    "`return`: `None` chỉ hợp lệ ở `T?`, được `{}` (VD-238)",
-                    self.types.show(want)
-                ),
-                at,
-            );
-            return;
-        }
-        if !want.is_error() {
-            self.coerce(&t, want, at, "giá trị trả về");
-        }
+        self.kiem_than_ngu_canh(body, true)
     }
 
     /// Kiểm một câu lệnh; trả "kiểu giá trị" (chỉ `HStmt::Expr` có giá trị).
@@ -994,6 +981,9 @@ impl<'a> Checker<'a> {
                     }
                     None => declared,
                 };
+                // **VD-259**: or-pattern trong `let` — kiểm theo use-set của thân hàm.
+                let uses = self.fn_uses.clone();
+                self.kiem_or_bind(pat, &declared, &uses);
                 self.bind_pat(pat, &declared);
                 if let Some(e) = else_ {
                     if let Some(sym) = e.bind_sym {
@@ -1080,46 +1070,43 @@ impl<'a> Checker<'a> {
                 span,
             } => {
                 // VD-47: `if` ở vị trí câu lệnh **vẫn cho giá trị** (`if x: 1 else: 2` là `int`);
-                // không có `else` ⇒ `()`.
-                self.kiem_cond(cond);
-                let mut acc = self.than_value(then);
-                for (c, body) in elifs {
-                    self.kiem_cond(c);
-                    let t = self.than_value(body);
-                    self.unify_branch(&mut acc, &t, *span);
-                }
-                match else_ {
-                    Some(e) if !e.is_empty() => {
-                        let t = self.than_value(e);
-                        self.unify_branch(&mut acc, &t, *span);
-                        acc
-                    }
-                    _ => Type::Unit,
-                }
+                // không có `else` ⇒ `()`. **VD-259**: ngữ cảnh giá trị do `flow.rs` quyết định.
+                self.kiem_if_stmt(cond, then, elifs, else_.as_deref(), *span)
             }
             HStmt::For {
                 pat, iter, body, ..
             } => {
                 let it = self.kiem_expr(iter);
                 let elem = self.elem_of_iter(&it, iter.span());
+                // **VD-259**: or-pattern trong `for` — use-set là thân vòng lặp.
+                let uses = pat::than_uses(body);
+                self.kiem_or_bind(pat, &elem, &uses);
                 self.bind_pat(pat, &elem);
                 // ST-13b (mục 3): thân vòng lặp **bỏ** giá trị cuối, không ép `unit`.
+                self.loop_depth += 1;
                 self.kiem_than_bo(body);
+                self.loop_depth -= 1;
                 Type::Unit
             }
             HStmt::While { cond, body, .. } => {
                 // **ST-226 (R18b)**: `while let` dùng chung `kiem_cond` với `if let`.
-                self.kiem_cond(cond);
+                self.loop_depth += 1;
+                self.kiem_cond(cond, body);
                 self.kiem_than_bo(body);
+                self.loop_depth -= 1;
                 Type::Unit
             }
             HStmt::Loop { body, .. } => {
+                self.loop_depth += 1;
                 self.kiem_than_bo(body);
+                self.loop_depth -= 1;
                 Type::Unit
             }
             HStmt::Scope { body, .. } => {
                 // ST-13b (mục 3): `scope` **cho giá trị khối** — thống nhất với interp.
-                self.than_value(body)
+                // **VD-259**: câu cuối chỉ ở vị trí cần giá trị khi chính `scope` đang ở đó.
+                let value = self.in_value;
+                self.kiem_than_ngu_canh(body, value)
             }
             HStmt::Return { value, span } => {
                 let want = self.cur_ret.clone().unwrap_or(Type::Error);
@@ -1149,9 +1136,9 @@ impl<'a> Checker<'a> {
                 // ST-13b (mục 1): `return` **phân kỳ** — kiểu `never`, nhận mọi kiểu trả về.
                 Type::Never
             }
-            HStmt::Break { .. } | HStmt::Continue { .. } => {
-                // **VD-241 §6/B-A**: `break`/`continue` phân kỳ như `return` ⇒ `Never`, nhận mọi kiểu.
-                Type::Never
+            HStmt::Break { span } | HStmt::Continue { span } => {
+                // **VD-259**: chỉ trong vòng lặp cùng hàm + ở vị trí câu lệnh (`flow.rs`).
+                self.kiem_nhay(matches!(s, HStmt::Break { .. }), *span)
             }
             HStmt::Match {
                 subject,
@@ -1159,15 +1146,18 @@ impl<'a> Checker<'a> {
                 span,
             } => {
                 let subj = self.kiem_expr(subject);
+                let value = self.in_value;
                 let mut acc: Option<Type> = None;
                 for arm in arms {
-                    self.kiem_or_bind(&arm.pat, arm.guard.as_ref(), &arm.body); // ST-239 §3.1
+                    let uses = pat::arm_uses(arm.guard.as_ref(), &arm.body);
+                    self.kiem_or_bind(&arm.pat, &subj, &uses); // ST-239 / VD-259
                     self.bind_pat(&arm.pat, &subj);
                     if let Some(g) = &arm.guard {
                         let gt = self.kiem_expr(g);
                         self.coerce(&gt, &Type::Bool, g.span(), "guard `if`");
                     }
-                    let t = self.than_value(&arm.body);
+                    // **VD-259**: thân nhánh chỉ ở vị trí cần giá trị khi `match` đang ở đó.
+                    let t = self.kiem_than_ngu_canh(&arm.body, value);
                     match &mut acc {
                         None => acc = Some(t),
                         Some(a) => self.unify_branch(a, &t, arm.span),
@@ -1179,7 +1169,9 @@ impl<'a> Checker<'a> {
             }
             HStmt::Block { body, .. } => {
                 // VD-47: khối con ở đuôi **cho giá trị** của nó.
-                self.than_value(body)
+                // **VD-259**: chỉ khi chính khối đang ở vị trí cần giá trị.
+                let value = self.in_value;
+                self.kiem_than_ngu_canh(body, value)
             }
         }
     }
@@ -1225,9 +1217,7 @@ impl<'a> Checker<'a> {
 
     /// Kiểm thân khối **bỏ giá trị cuối** (vòng lặp — ST-13b mục 3).
     pub(crate) fn kiem_than_bo(&mut self, body: &[HStmt]) {
-        for s in body {
-            self.kiem_stmt(s);
-        }
+        let _ = self.kiem_than_ngu_canh(body, false);
     }
 
     /// Kiểu của một **đích gán** (chỉ đọc, không báo lỗi gán-cho-`let`).
