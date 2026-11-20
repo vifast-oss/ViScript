@@ -94,7 +94,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 strtrim, 2026-11-21)**: +**3** hàm `std.str.*` (`trim_matches`,
     // `trim_start_matches`, `trim_end_matches`; `(str, str) -> str`) ⇒ **100** hàm; không
     // xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 100, "bảng chữ ký phải đủ 100 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 db-explain, 2026-11-21)**: +**1** hàm `sqlite.explain`
+    // (`(str, str, list[SqlValue]) -> Result[RowSet, Error]`; chỉ SELECT/WITH, chạy
+    // `EXPLAIN QUERY PLAN` qua đúng đường `query`) ⇒ **101** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 101, "bảng chữ ký phải đủ 101 hàm");
 }
 
 #[test]

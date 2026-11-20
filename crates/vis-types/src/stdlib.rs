@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 100] = [
+pub const FUNCS: [StdFn; 101] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -717,6 +717,13 @@ pub const FUNCS: [StdFn; 100] = [
     // **VD-266** — như `query` nhưng chỉ lấy **0 hoặc 1** hàng (dừng sau hàng đầu).
     StdFn {
         name: "sqlite.query_one",
+        params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
+        ret: Ty::ResultRowSetErr,
+    },
+    // **VD-270 (db-explain)** — `EXPLAIN QUERY PLAN` của câu **chỉ đọc** (`SELECT`/`WITH` sau
+    // khoảng trắng/comment đầu); cùng params/authorizer/trần/timeout/cache như `query`.
+    StdFn {
+        name: "sqlite.explain",
         params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
         ret: Ty::ResultRowSetErr,
     },

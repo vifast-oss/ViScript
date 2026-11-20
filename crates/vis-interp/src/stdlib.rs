@@ -25,6 +25,7 @@ use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
 mod indexof;
+mod sqlite_explain;
 mod strfind;
 mod strlen;
 mod strpad;
@@ -1071,6 +1072,19 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let params = danh_sach(name, &args[2], 2, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             match host.db_query_one(h, sql, params) {
+                Ok((columns, rows)) => Ok(rowset(columns, rows)),
+                Err(e) => hop_nhat_fs(Err(e), span),
+            }
+        }
+        // **VD-270 (db-explain)** — chỉ nhận `SELECT`/`WITH` sau khoảng trắng/comment đầu; chạy
+        // `EXPLAIN QUERY PLAN <sql>` qua **đúng** đường `db_query` (cùng authorizer/chỉ đọc/
+        // trần/timeout/cache/bind params) rồi trả `RowSet` kế hoạch.
+        "sqlite.explain" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let sql = chuoi(name, &args[1], 1, span)?;
+            let params = danh_sach(name, &args[2], 2, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            match sqlite_explain::chay(host, h, sql, params) {
                 Ok((columns, rows)) => Ok(rowset(columns, rows)),
                 Err(e) => hop_nhat_fs(Err(e), span),
             }
