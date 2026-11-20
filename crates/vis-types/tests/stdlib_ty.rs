@@ -154,7 +154,25 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.index_columns` (`(str, str) -> Result[list[str], Error]`; tên cột của index schema
     // chính theo thứ tự index, tra theo tên, tên index bind làm tham số) ⇒ **123** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 123, "bảng chữ ký phải đủ 123 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 mkdir-all, 2026-11-21)**: +**1** hàm `std.fs.mkdir_all`
+    // (`(str) -> Result[(), Error]`; tạo đệ quy mọi thư mục thiếu, đã có ⇒ `Ok`,
+    // tệp/symlink trên đường ⇒ `Err`) ⇒ **124** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 124, "bảng chữ ký phải đủ 124 hàm");
+}
+
+#[test]
+fn fs_mkdir_all_kieu_str_result_va_khong_sugar() {
+    // **VD-270 (mkdir-all)**: `(str) -> Result[(), Error]`; fs là module-only nên **không** sugar
+    // (`p.mkdir_all()` không được ánh xạ sang `fs`).
+    let f = sig_of("fs.mkdir_all").expect("fs.mkdir_all");
+    assert_eq!(f.params, &[Ty::Str], "`fs.mkdir_all`: tham số");
+    assert_eq!(f.ret, Ty::ResultUnitStr, "`fs.mkdir_all`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Unit), Box::new(Ty::Error.sang_type())),
+        "`fs.mkdir_all`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "mkdir_all"), None);
 }
 
 #[test]

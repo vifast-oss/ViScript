@@ -163,6 +163,13 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.mkdir(p),
         }
     }
+    /// **VD-270 (mkdir-all)**: host thật (OS) hoặc mock, cùng chữ ký.
+    fn mkdir_all(&mut self, p: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.mkdir_all(p),
+            HostFs::Mock(m) => m.mkdir_all(p),
+        }
+    }
     fn remove(&mut self, p: &str) -> Result<(), String> {
         match self {
             HostFs::That(r) => r.remove(p),

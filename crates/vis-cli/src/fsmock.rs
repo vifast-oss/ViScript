@@ -231,6 +231,53 @@ impl FsHost for FsMock {
         Ok(())
     }
 
+    /// **VD-270 (mkdir-all)**: tạo **đệ quy** trong bộ nhớ — mỗi tiền tố thiếu được thêm vào
+    /// `dirs`; đích đã là thư mục ⇒ `Ok` (idempotent); tiền tố là **tệp** trong kịch bản ⇒ `Err`.
+    /// Tách thành phần theo `/`, bỏ `.`/`/` lặp, `..` lùi **từ vựng** (kịch bản mock không có
+    /// `cwd`/symlink để phân giải; symlink không biểu diễn được trong `--fs-mock`).
+    fn mkdir_all(&mut self, p: &str) -> Result<(), String> {
+        if p.is_empty() {
+            return Err("không tạo được thư mục ``: đường dẫn rỗng".to_string());
+        }
+        let tuyet_doi = p.starts_with('/');
+        let mut thanh: Vec<&str> = Vec::new();
+        for x in p.split('/') {
+            match x {
+                "" | "." => {}
+                ".." => {
+                    thanh.pop();
+                }
+                _ => thanh.push(x),
+            }
+        }
+        if thanh.is_empty() {
+            // `/`, `.`, hoặc đường quy về chính gốc — coi như đã tồn tại.
+            return Ok(());
+        }
+        let mut hien = if tuyet_doi {
+            "/".to_string()
+        } else {
+            String::new()
+        };
+        for x in thanh {
+            if hien.is_empty() || hien.ends_with('/') {
+                hien.push_str(x);
+            } else {
+                hien.push('/');
+                hien.push_str(x);
+            }
+            if self.files.iter().any(|(k, _)| k == &hien) {
+                return Err(format!(
+                    "không tạo được thư mục `{p}`: `{hien}` đã tồn tại và không phải thư mục"
+                ));
+            }
+            if !self.dirs.iter().any(|(k, _)| k == &hien) {
+                self.dirs.push((hien.clone(), Vec::new()));
+            }
+        }
+        Ok(())
+    }
+
     /// **VD-266**: xoá tệp trong kịch bản; **từ chối** thư mục.
     fn remove(&mut self, p: &str) -> Result<(), String> {
         if let Some(i) = self.files.iter().position(|(k, _)| k == p) {

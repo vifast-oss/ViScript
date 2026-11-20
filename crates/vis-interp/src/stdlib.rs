@@ -27,6 +27,7 @@ mod bisect;
 mod chung;
 mod flatten;
 mod fsbytes;
+mod fsmkdirall;
 mod indexof;
 mod listcontains;
 mod listmath;
@@ -695,11 +696,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.append(p, v).map(|()| Value::Unit), span)
         }
-        "fs.mkdir" => {
-            let p = chuoi(name, &args[0], 0, span)?;
-            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
-            hop_nhat_fs(host.mkdir(p).map(|()| Value::Unit), span)
-        }
+        "fs.mkdir" | "fs.mkdir_all" => fsmkdirall::goi(host, name, &args, span),
         "fs.remove" => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;

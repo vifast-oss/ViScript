@@ -424,6 +424,35 @@ impl Quyen {
         p.to_path_buf()
     }
 
+    /// **VD-270 (mkdir-all)**: canonicalize **tổ tiên gần nhất đã tồn tại** rồi ghép phần đuôi
+    /// **từ vựng** (`.` bỏ, `..` lùi). Cần cho thao tác **đệ quy** có thể thiếu **nhiều** cấp:
+    /// `chuan` chỉ canonicalize được cha **trực tiếp**, nên `root/../ngoai/moi/con` (đuôi chưa
+    /// tồn tại) sẽ giữ nguyên `..` và lọt qua `Path::starts_with(root)` — một lỗ hổng quyền.
+    fn chuan_de_quy(p: &Path) -> PathBuf {
+        let mut hien = p;
+        loop {
+            if let Ok(c) = std::fs::canonicalize(hien) {
+                let mut ra = c;
+                if let Ok(du) = p.strip_prefix(hien) {
+                    for x in du.components() {
+                        match x {
+                            std::path::Component::CurDir => {}
+                            std::path::Component::ParentDir => {
+                                ra.pop();
+                            }
+                            khac => ra.push(khac.as_os_str()),
+                        }
+                    }
+                }
+                return ra;
+            }
+            match hien.parent() {
+                Some(cha) => hien = cha,
+                None => return p.to_path_buf(),
+            }
+        }
+    }
+
     /// Kiểm thao tác hệ tệp; `can_write=false` ⇒ chỉ cần root, `true` ⇒ root phải có `(write)`.
     pub fn kiem_fs(&self, p: &str, can_write: bool) -> Result<(), String> {
         self.kiem_fs_canon(p, can_write).map(|_| ())
@@ -438,6 +467,17 @@ impl Quyen {
         let c = Self::chuan(&self.tuyet_doi(p));
         self.kiem_canon(&c, p, can_write)?;
         Ok(Some(c))
+    }
+
+    /// **VD-270 (mkdir-all)**: như [`kiem_fs`](Self::kiem_fs) nhưng dùng
+    /// [`chuan_de_quy`](Self::chuan_de_quy) — canonicalize **tổ tiên gần nhất đã tồn tại** rồi ghép
+    /// đuôi **từ vựng**; `root/../ngoai/...` không lọt chỉ vì đuôi chưa tồn tại. `(write)` như `mkdir`.
+    fn kiem_fs_de_quy(&self, p: &str, can_write: bool) -> Result<(), String> {
+        if !self.bat {
+            return Ok(());
+        }
+        let c = Self::chuan_de_quy(&self.tuyet_doi(p));
+        self.kiem_canon(&c, p, can_write)
     }
 
     /// Quyết định quyền trên **đường dẫn đã canonicalize** `c` (dùng chung cho kiểm trước và sau
@@ -819,6 +859,12 @@ impl FsHost for FsGuard<'_> {
     fn mkdir(&mut self, p: &str) -> Result<(), String> {
         self.quyen.kiem_fs(p, true)?;
         self.trong.mkdir(p)
+    }
+    /// **VD-270 (mkdir-all)**: tạo **đệ quy** là thao tác **ghi** ⇒ `(write)` trên root; kiểm trên
+    /// **tổ tiên gần nhất đã tồn tại** (đuôi có thể thiếu nhiều cấp) trước khi chạm đĩa.
+    fn mkdir_all(&mut self, p: &str) -> Result<(), String> {
+        self.quyen.kiem_fs_de_quy(p, true)?;
+        self.trong.mkdir_all(p)
     }
     /// **VD-266**: xoá tệp là thao tác **ghi** ⇒ cùng kiểm quyền như `write`.
     fn remove(&mut self, p: &str) -> Result<(), String> {
