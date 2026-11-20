@@ -27,6 +27,6 @@ pub use encode::encode;
 pub use fee::{encode_with_fee, load_verified_with_fee};
 pub use format::{
     source_hash, Const, Func, Instr, Module, Span, BI_MATCH_NO_ARM, GLOBAL_SLOT_BASE, HASH_LEN,
-    MAGIC, VERSION,
+    INSTRUMENTED_VERSION, MAGIC, VERSION,
 };
 pub use verify::{load_verified, need_stack, verify, LoadError, VerifyError};

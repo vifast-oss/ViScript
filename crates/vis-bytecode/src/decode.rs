@@ -234,7 +234,19 @@ fn decode_func(d: &mut Doc<'_>) -> Result<Func, DecodeError> {
 }
 
 /// Đọc module; mọi vi phạm ⇒ [`DecodeError`], **không** panic.
+///
+/// Đường mặc định chỉ nhận [`VERSION`] (2). Artifact có trailer `VFEE` (**yêu cầu** budget mới)
+/// mang [`INSTRUMENTED_VERSION`] (3) ⇒ bị từ chối **tại đây**, kể cả khi nạp trực tiếp không qua cache.
 pub fn decode(b: &[u8]) -> Result<Module, DecodeError> {
+    decode_for_version(b, VERSION)
+}
+
+/// **VD-257 (stream B)** — đọc module với **phiên bản định dạng tường minh**.
+///
+/// `decode` gọi với `VERSION` (2); cửa nạp có budget gọi với `INSTRUMENTED_VERSION` (3). Việc
+/// so sánh số phiên bản vẫn là **hàng rào duy nhất mà runtime cũ cũng có** ⇒ runtime cũ (so 2) từ
+/// chối artifact 3, không cần hiểu trailer. `pub(crate)` — không mở API công.
+pub(crate) fn decode_for_version(b: &[u8], expected: u16) -> Result<Module, DecodeError> {
     let mut d = Doc::new(b);
     let mut magic = [0u8; 4];
     for (i, slot) in magic.iter_mut().enumerate() {
@@ -248,7 +260,7 @@ pub fn decode(b: &[u8]) -> Result<Module, DecodeError> {
     // **ST-246 (VD-244 §2)**: hàng rào tương thích — artifact v1 (`version = 1`) bị runtime v2 từ
     // chối **ở đây**, trước khi verifier/VM chạy; chiều ngược lại cũng đúng vì runtime v1 so với
     // `VERSION = 1` cũ của nó. Không đọc tiếp byte nào khi version lệch.
-    if version != VERSION {
+    if version != expected {
         return Err(DecodeError::BadVersion(version));
     }
     d.con(HASH_LEN)?;

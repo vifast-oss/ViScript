@@ -413,6 +413,14 @@ impl<'g> Emit<'g> {
     fn cau(&mut self, s: &HStmt) -> Result<(), CodegenError> {
         // **ST-276 (VD-256)**: E_STMT một lần khi bắt đầu câu nguồn.
         self.f.charge(FeeKind::Stmt, s.span());
+        // **VD-257 (stream B)**: với `while`/`loop`, `start` của vòng trùng PC của E_STMT ⇒ VM
+        // charge lại E_STMT mỗi lần nhảy lùi (interp chỉ charge 1 lần). Đẩy header vòng qua một
+        // cặp lệnh net-zero (`PushUnit; Pop`, không đổi ngữ nghĩa/opcode) để E_STMT nằm **trước**
+        // vòng; back-edge nhảy vào header (sau cặp) ⇒ chỉ E_LOOP lặp lại, đúng interp.
+        if matches!(s, HStmt::While { .. } | HStmt::Loop { .. }) {
+            self.f.push(Instr::PushUnit, s.span(), 1);
+            self.f.push(Instr::Pop, s.span(), -1);
+        }
         match s {
             HStmt::Let {
                 pat,

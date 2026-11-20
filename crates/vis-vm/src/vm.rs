@@ -1166,8 +1166,72 @@ impl<'m> Th<'m> {
                 Instr::CallValue(n) => {
                     let args = self.pop_n(vm, n as usize, span)?;
                     let f = self.pop(vm, span)?;
-                    let v = builtin::Host::call(vm, &f, args, span)?;
-                    self.st.push(v);
+                    match f {
+                        // **VD-257 (stream B)** — gọi hàm bytecode (closure/fn-value) phải mở khung
+                        // **trong chính `Th` này** (như `Instr::Call`), KHÔNG dùng `goi_ham_bytecode`
+                        // tạo `Th` lồng nhau: `Th` lồng không suspend/resume được. Khi thân closure
+                        // `await` trả `Abort::Pending`, driver frame lưu `Th` ngoài; `Th` lồng (cùng
+                        // pc/stack của `$await`) bị mất ⇒ resume chạy lại `CallValue` với ngăn xếp
+                        // đã pop đối số ⇒ `StackUnderflow`. Đẩy khung vào `self.frames` giữ nguyên
+                        // trạng thái suspend được. Không đổi opcode/ngôn ngữ/runtime mặc định.
+                        Value::Vm(vf) => {
+                            let fi = vf.idx;
+                            let fc = vm.func(fi)?;
+                            let nlocals = fc.nlocals.max(1) as usize;
+                            if self.frames.len() + vm.depth + 1 >= MAX_FRAMES {
+                                return Err(Abort::Trap(Trap::new(
+                                    RT,
+                                    format!("gọi hàm quá sâu (>{MAX_FRAMES} khung) — đệ quy không có điểm dừng?"),
+                                    span,
+                                )));
+                            }
+                            // Mirror prologue `LoadCaptured(i); Assign(slot)` — giữ writeback closure.
+                            let mut mirror: Vec<(u16, usize)> = Vec::new();
+                            let mut k = 0;
+                            while k + 1 < fc.code.len() {
+                                if let (Instr::LoadCaptured(i), Instr::Assign(slot)) =
+                                    (fc.code[k], fc.code[k + 1])
+                                {
+                                    mirror.push((slot, i as usize));
+                                    k += 2;
+                                } else {
+                                    break;
+                                }
+                            }
+                            let ptr = Rc::as_ptr(&vf) as usize;
+                            let cells = match vm.closure_cells.get(&ptr) {
+                                Some(c) => c.clone(),
+                                None => {
+                                    let c = Rc::new(RefCell::new(vf.captured.clone()));
+                                    vm.closure_cells.insert(ptr, c.clone());
+                                    c
+                                }
+                            };
+                            let captured = cells.borrow().clone();
+                            let mut locals = vec![Value::Unit; nlocals];
+                            for (i, a) in args.into_iter().enumerate() {
+                                if i < locals.len() {
+                                    locals[i] = a;
+                                }
+                            }
+                            let cu = std::mem::take(&mut self.st);
+                            if let Some(fr) = self.frames.last_mut() {
+                                fr.st_cu = cu;
+                            }
+                            self.frames.push(Frame {
+                                fi,
+                                pc: 0,
+                                locals,
+                                captured,
+                                st_cu: Vec::new(),
+                                writeback: Some((cells, mirror)),
+                            });
+                        }
+                        other => {
+                            let v = builtin::Host::call(vm, &other, args, span)?;
+                            self.st.push(v);
+                        }
+                    }
                 }
                 Instr::IsUnit => {
                     let v = self.pop(vm, span)?;

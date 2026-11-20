@@ -68,8 +68,24 @@ fn feehop() -> FeeTable {
 fn trailer_chi_chua_kind_site_khong_chua_trong_so() {
     let (m, fee) = (hop_le(), feehop());
     let bytes = encode_with_fee(&m, &fee);
-    // Phần VBC1 trước trailer **đúng bằng** encode thường (không đổi định dạng lõi).
-    assert!(bytes.starts_with(&encode(&m)));
+    // VD-257: phần VBC1 trước trailer **giống encode thường** trừ đúng 2 byte version (2 → 3).
+    // MAGIC/opcode/bố cục không đổi; chỉ giá trị version lõi mang hàng rào tương thích.
+    let plain = encode(&m);
+    assert_eq!(
+        bytes.len(),
+        plain.len() + 4 + 2 + 2 + 4 + 4 * fee.funcs.len() + fee.total() * 9
+    );
+    assert_eq!(&bytes[..4], &plain[..4], "MAGIC không đổi");
+    assert_eq!(
+        u16::from_le_bytes([bytes[4], bytes[5]]),
+        vis_bytecode::INSTRUMENTED_VERSION,
+        "artifact có trailer phải đóng dấu module version 3"
+    );
+    assert_eq!(
+        &bytes[6..plain.len()],
+        &plain[6..],
+        "phần lõi sau version giữ nguyên"
+    );
     let got = decode_fee(&bytes).expect("decode fee");
     assert_eq!(got, fee);
     assert_eq!(got.trace()[0].label(), "E_EXPR@12");

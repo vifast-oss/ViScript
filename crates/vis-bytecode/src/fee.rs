@@ -12,11 +12,20 @@
 //!
 //! Đây là đường **MUST-NOT-BE-DEFAULT** (VD-256 §5): bảng phụ là phần **bổ sung** (trailer) của
 //! artifact, `decode` bỏ qua trailer, VM dùng hệ ngân sách cũ trừ khi test-hook bật. Không đổi
-//! `MAGIC`, bảng opcode hay `VERSION` của VBC1 — xem [`VERSION`] (phiên bản **của định dạng phí**).
+//! `MAGIC`, bảng opcode hay ngữ nghĩa thực thi mặc định.
 //!
-//! [`VERSION`]: phiên bản định dạng bảng phí. `1`/`2` đã là `VERSION` của VBC1 (ST-246); `3` đã được
-//! dùng làm **sentinel "version lạ"** trong `tests/decode_neg.rs` + `tests/verify.rs` ⇒ **không** ấn
-//! `3` (D7). Giá trị chưa dùng là `4`.
+//! **VD-257 (stream B) — bốn trục phiên bản, độc lập:**
+//! 1. **Module format**: `format::VERSION = 2` (cơ sở) / `format::INSTRUMENTED_VERSION = 3`
+//!    (artifact có trailer `VFEE`, **bắt buộc** ngữ nghĩa budget mới).
+//! 2. **Event-table** ([`EVENT_TABLE_VERSION`] = [`VERSION`] = 4): cấu trúc `pc/kind/site` trong `VFEE`.
+//! 3. **Weight-table** ([`WEIGHT_TABLE_VERSION`] = 1): bảng trọng số v1 (thử nghiệm, chưa duyệt).
+//! 4. **Cache key**: `vis-cli::cache::PHIEN_BAN` + cả ba số trên + bảng thẻ + mode + nguồn.
+//!
+//! Hàng rào tương thích nằm ở **trục 1**: artifact instrumented mang module version `3` ⇒ runtime
+//! cũ (so `2`) **từ chối** ngay ở `decode`, không lờ trailer. Cửa nạp có budget
+//! ([`load_verified_with_fee`]) **chỉ** nhận `3` + trailer hợp lệ ⇒ artifact cũ (`2`, không trailer)
+//! bị từ chối rõ ràng, không bị coi là "đã instrumented/charged". Đổi cache key **không đủ** để bảo
+//! vệ đường *direct load* — chính là lý do phải có bước này.
 
 use crate::format::{Instr, Module};
 
@@ -78,8 +87,14 @@ pub const MAX_FEE_ENTRIES: usize = 1_000_000;
 pub const MAX_PER_PC: usize = 16;
 
 /// Nối trailer bảng phí vào byte module (kết quả tất định).
+///
+/// **VD-257**: artifact được đóng dấu [`INSTRUMENTED_VERSION`] (3) ngay trong **trường version của
+/// lõi VBC1** — đây là hàng rào mà runtime cũ (so `VERSION = 2`) cũng thực hiện, nên nó từ chối
+/// artifact mới **mà không cần đọc trailer**. `MAGIC`/opcode/bố cục không đổi; chỉ giá trị version.
 pub fn encode_with_fee(m: &Module, fee: &FeeTable) -> Vec<u8> {
-    let mut out = crate::encode::encode(m);
+    let mut stamped = m.clone();
+    stamped.version = crate::format::INSTRUMENTED_VERSION;
+    let mut out = crate::encode::encode(&stamped);
     out.extend_from_slice(&FEE_MAGIC);
     out.extend_from_slice(&VERSION.to_le_bytes());
     out.extend_from_slice(&WEIGHT_TABLE_VERSION.to_le_bytes());
@@ -196,11 +211,19 @@ pub fn decode_fee(bytes: &[u8]) -> Result<FeeTable, FeeDecodeError> {
 }
 
 /// Giải mã **cả module lẫn bảng phí** rồi xác minh cả hai — cửa nạp cho test-hook ngân sách.
+///
+/// **VD-257 — chính sách rõ ràng cho artifact cũ:** cửa này **chỉ** nhận module version 3 (có
+/// trailer). Artifact cũ (version 2, không trailer) bị từ chối với mã `Decode::BadVersion(2)` —
+/// **không** được coi là "đã instrumented/charged" và cũng không rơi vào đường mặc định im lặng.
+/// Trailer thiếu (`FeeDecodeError::Absent`) cũng bị từ chối: module version 3 mà không có bảng phí
+/// là artifact hỏng, không phải "chương trình zero-work".
 pub fn load_verified_with_fee(
     bytes: &[u8],
 ) -> Result<(Module, FeeTable), crate::verify::LoadError> {
-    let m = crate::decode::decode(bytes).map_err(crate::verify::LoadError::Decode)?;
-    crate::verify::verify(&m).map_err(crate::verify::LoadError::Verify)?;
+    let m = crate::decode::decode_for_version(bytes, crate::format::INSTRUMENTED_VERSION)
+        .map_err(crate::verify::LoadError::Decode)?;
+    crate::verify::verify_for_version(&m, crate::format::INSTRUMENTED_VERSION)
+        .map_err(crate::verify::LoadError::Verify)?;
     let fee = decode_fee(bytes)
         .map_err(|e| crate::verify::LoadError::Verify(VerifyError::FeeDecode(e.to_string())))?;
     verify_fee(&m, &fee)
@@ -474,9 +497,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn version_khong_phan_voi_1_2_va_sentinel_3() {
+    fn version_khong_phan_voi_1_2_va_module_version() {
         const {
             assert!(VERSION != 1 && VERSION != 2 && VERSION != 3);
+            // Bốn trục độc lập: module 2/3, event-table 4, weight 1.
+            assert!(crate::format::VERSION == 2);
+            assert!(crate::format::INSTRUMENTED_VERSION == 3);
+            assert!(EVENT_TABLE_VERSION == 4);
+            assert!(WEIGHT_TABLE_VERSION == 1);
         }
         for k in FeeKind::ALL {
             assert_eq!(FeeKind::from_tag(k.tag()), Some(k));
