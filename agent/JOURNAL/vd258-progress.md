@@ -29,9 +29,10 @@
   `main -> int` exit **0** theo VD-242; gate main **1656**; core-test PASS.
 - **Frame `7a2ecbc` → merge `6e26836`**: HBody cache, trace sort, lifecycle snapshot, frame purge,
   timer next-event, defaults, argv fallback. Gate main **1668**; core-test PASS.
-- **Wave 3** đang chạy: refutable `let`/`for` + scope/record; ST-248/branch coercion;
-  list rest-pattern feature; frame timer starvation.
-- Sau wave 3: merge, gate/core-test/release, cập nhật QUEUE/report cuối.
+- **Wave 3**: feature `2b568e2` → `9735b76` (list rest-pattern); frame `2d2cefd` → `fcb3921`
+  (ready-budget/timer/purge); parity `c73f047` → `921b092` (type-directed Option lift, branch join).
+  Gate main **1704**; core test tuần tự 0. Còn semantics3 (refutable/scope/record).
+- Sau semantics3: merge, gate/core-test/release, bump cache label cuối, cập nhật QUEUE/report.
 
 ## Quy tắc tích hợp đã áp dụng
 
