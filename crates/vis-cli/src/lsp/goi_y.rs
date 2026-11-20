@@ -6,7 +6,8 @@
 //! item cấp tệp (`fn` 3 / record 22 / enum 13 / alias 25 / const 21 / trait 11), biến-tham số (6),
 //! `vis_types::BUILTIN_VALUE_NAMES` (3), `vis_syntax::KEYWORDS` (14).
 //!
-//! Hover: tra item → biến → builtin → từ khoá; không có ⇒ `result:null`. `range` là **đúng từ** tại
+//! Hover: tra item → biến → trường → ký hiệu → builtin → từ khoá → phương thức (`impl`/`trait`);
+//! không có ⇒ `result:null`. `range` là **đúng từ** tại
 //! con trỏ (0-based **UTF-16**, tab = 1 — dùng lại `phan_tich::khoang`).
 
 use std::collections::HashSet;
@@ -16,7 +17,7 @@ use vis_syntax::{Span, KEYWORDS};
 use vis_types::BUILTIN_VALUE_NAMES;
 
 use super::jsonrpc::{m, phan_hoi, s};
-use super::phan_tich::{GoiY, KetQua};
+use super::phan_tich::{GoiY, KetQua, Phuong};
 use super::vi_tri::khoang;
 
 fn la_ident(c: char) -> bool {
@@ -205,25 +206,34 @@ pub fn ds_goi_y(kq: &KetQua, byte: usize) -> Vec<GoiY> {
     ds
 }
 
+/// Tên **ngay trước dấu chấm** cuối cùng trước `start` (chỉ `a.` / `a.xy`, không biểu thức).
+fn ten_truoc_cham(text: &str, start: usize) -> Option<&str> {
+    let goc = text[..start].trim_end().strip_suffix('.')?.trim_end();
+    let i = goc
+        .rfind(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .map(|i| i + 1)
+        .unwrap_or(0);
+    let recv = &goc[i..];
+    if recv.is_empty() {
+        None
+    } else {
+        Some(recv)
+    }
+}
+
+/// Kiểu tĩnh của tên **ngay trước dấu chấm** cuối cùng trước `start`. `None` ⇒ không xác định được
+/// kiểu (không phải truy cập thành viên, hoặc tên không có trong `bien`).
+fn kieu_truoc_cham(kq: &KetQua, text: &str, start: usize) -> Option<String> {
+    let recv = ten_truoc_cham(text, start)?;
+    kq.bien
+        .iter()
+        .find(|(n, _)| n == recv)
+        .map(|(_, k)| k.clone())
+}
+
 /// **ST-100**: hover **trường** — `p.x` (theo kiểu `p`) hoặc khai báo duy nhất `x: int` trong `type`.
 fn hover_truong(kq: &KetQua, text: &str, start: usize, tu: &str) -> Option<String> {
-    let mut chu_p = None;
-    let truoc = text[..start].trim_end();
-    if let Some(goc) = truoc.strip_suffix('.') {
-        let goc = goc.trim_end();
-        let i = goc
-            .rfind(|c: char| !(c.is_alphanumeric() || c == '_'))
-            .map(|i| i + 1)
-            .unwrap_or(0);
-        let recv = &goc[i..];
-        if !recv.is_empty() {
-            chu_p = kq
-                .bien
-                .iter()
-                .find(|(n, _)| n == recv)
-                .map(|(_, k)| k.clone());
-        }
-    }
+    let chu_p = kieu_truoc_cham(kq, text, start);
     let mut ung: Vec<(&str, &GoiY)> = kq
         .truong
         .iter()
@@ -240,6 +250,48 @@ fn hover_truong(kq: &KetQua, text: &str, start: usize, tu: &str) -> Option<Strin
     let than = g.detail.as_deref()?;
     let kieu = than.strip_prefix(&format!("{tu}: "))?;
     Some(format!("**{tu}**: {kieu}\n\ntrường của `{chu}`"))
+}
+
+/// **VD-270**: hover **phương thức** — `u.lay`, `self.lay`, hoặc đúng tên khai báo trong
+/// `impl`/`trait`. Thứ tự chọn: (1) từ nằm trong **span khai báo** của chính phương thức; (2) lọc
+/// theo kiểu tĩnh của tên trước dấu chấm; (3) không rõ chủ ⇒ chỉ trả khi tên **duy nhất** trên mọi
+/// kiểu/trait (trùng tên ⇒ `None`, không đoán).
+fn hover_phuong(kq: &KetQua, start: usize, tu: &str) -> Option<String> {
+    let ung: Vec<&Phuong> = kq.phuong.iter().filter(|p| p.ten == tu).collect();
+    let tai_khai_bao: Vec<&Phuong> = ung
+        .iter()
+        .copied()
+        .filter(|p| start >= p.span.start && start < p.span.end)
+        .collect();
+    let chon = match tai_khai_bao.as_slice() {
+        [p] => *p,
+        _ => {
+            let chu_p = match ten_truoc_cham(&kq.text, start) {
+                // `self.m` trong `impl` ⇒ chủ là kiểu của khối `impl` chứa con trỏ.
+                Some("self") => kq
+                    .phuong
+                    .iter()
+                    .find(|p| {
+                        p.impl_span
+                            .is_some_and(|s| start >= s.start && start < s.end)
+                    })
+                    .map(|p| p.chu.clone()),
+                _ => kieu_truoc_cham(kq, &kq.text, start),
+            };
+            let mut loc = ung;
+            if let Some(chu) = &chu_p {
+                loc.retain(|p| &p.chu == chu);
+            }
+            match loc.as_slice() {
+                [p] => *p,
+                _ => return None,
+            }
+        }
+    };
+    Some(format!(
+        "```vis\n{}\n```\n\nphương thức của `{}`",
+        chon.chu_ky, chon.chu
+    ))
 }
 
 /// **ST-274**: hover biến thể enum / trường từ cây ký hiệu (bổ sung cho `hover_truong`).
@@ -285,7 +337,8 @@ fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
     } else if KEYWORDS.binary_search(&tu).is_ok() {
         format!("từ khoá: {tu}")
     } else {
-        return None;
+        // **VD-270** — cuối cùng: không được đè item/biến/trường/ký hiệu/builtin/từ khoá.
+        hover_phuong(kq, start, tu)?
     };
     Some((Span::new(start, end), value))
 }

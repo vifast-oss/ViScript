@@ -32,6 +32,20 @@ pub struct GoiY {
     pub detail: Option<String>,
 }
 
+/// **VD-270**: một phương thức `impl`/`trait` cho hover.
+#[derive(Clone)]
+pub struct Phuong {
+    /// Chủ sở hữu: kiểu đã `show` của `impl`, hoặc tên `trait`.
+    pub chu: String,
+    pub ten: String,
+    /// Chữ ký đầy đủ: `fn lay(self) -> int?`.
+    pub chu_ky: String,
+    /// Span khai báo `fn` — nhận ra hover đúng tên khai báo (không đoán theo tên khi trùng).
+    pub span: Span,
+    /// Span khối `impl` chứa phương thức (`None` với phương thức `trait`) — suy chủ cho `self.m`.
+    pub impl_span: Option<Span>,
+}
+
 /// Kết quả: văn bản **đã chuẩn hoá** (mốc của span) + chẩn đoán **đã sắp** + dữ liệu hover/completion.
 pub struct KetQua {
     pub text: String,
@@ -42,6 +56,9 @@ pub struct KetQua {
     pub bien: Vec<(String, String)>,
     /// **ST-100**: trường của `type` — `(tên kiểu, gợi ý)` để hover `p.x` / khai báo `x: int`.
     pub truong: Vec<(String, GoiY)>,
+    /// **VD-270**: phương thức từ `impl`/`trait` để hover `p.m` / `self.m` / tên khai báo;
+    /// khử trùng theo `(chủ sở hữu, tên, chữ ký)`, giữ thứ tự khai.
+    pub phuong: Vec<Phuong>,
     /// **ST-269**: khai báo để `textDocument/definition` nhảy tới.
     pub dinh_nghia: Vec<super::dinh_nghia::DinhNghia>,
     /// **ST-270**: cây ký hiệu cho `textDocument/documentSymbol`.
@@ -172,6 +189,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         gom_bien(st, &tbl, &mut bien);
     }
     let truong = super::thanh_vien::gom(&out.hir, &syms, &tbl).truong;
+    let phuong = gom_phuong(&out.hir, &tbl);
     let dinh_nghia = super::dinh_nghia::gom(&out.hir);
     let ky_hieu = super::ky_hieu::gom(&out.hir);
     KetQua {
@@ -180,9 +198,35 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         items,
         bien,
         truong,
+        phuong,
         dinh_nghia,
         ky_hieu,
     }
+}
+
+/// **VD-270**: gom phương thức của `impl` + `trait` (chữ ký đầy đủ + span khai báo) cho hover;
+/// khử trùng theo `(chủ sở hữu, tên, chữ ký)` — hai `impl` trùng không nhân đôi, khác chủ vẫn giữ.
+fn gom_phuong(hir: &vis_types::Hir, tbl: &TypeTable) -> Vec<Phuong> {
+    let mut out: Vec<Phuong> = Vec::new();
+    for it in &hir.items {
+        let (chu, ds, impl_span) = match it {
+            HItem::Impl(imp) => (tbl.show(&imp.ty), &imp.methods, Some(imp.span)),
+            HItem::Trait(t) => (t.name.clone(), &t.methods, None),
+            _ => continue,
+        };
+        for f in ds {
+            out.push(Phuong {
+                chu: chu.clone(),
+                ten: f.name.clone(),
+                chu_ky: chu_ky_fn(f, tbl),
+                span: f.span,
+                impl_span,
+            });
+        }
+    }
+    let mut da = std::collections::HashSet::new();
+    out.retain(|p| da.insert((p.chu.clone(), p.ten.clone(), p.chu_ky.clone())));
+    out
 }
 
 fn ten_pat(pat: &HPat, ten: &mut Vec<String>) {
