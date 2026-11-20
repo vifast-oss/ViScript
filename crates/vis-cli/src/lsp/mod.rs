@@ -10,6 +10,7 @@
 
 mod chan_doan;
 mod chu_ky;
+mod dinh_dang;
 mod dinh_nghia;
 mod doi_ten;
 mod gap;
@@ -369,6 +370,27 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-279**: format toàn tệp bằng formatter CLI.
+            "textDocument/formatting" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                gui!(dinh_dang::tra_loi_format(&kq, mode_cua(&uri), &id));
+                            }
+                        }
+                    }
+                }
+            }
             "shutdown" => {
                 if !da_khoi_tao {
                     if let Some(id) = id {
@@ -432,6 +454,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
+        jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("renameProvider", Value::Bool(true)),
         jsonrpc::kv(
