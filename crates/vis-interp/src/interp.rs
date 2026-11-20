@@ -1289,7 +1289,7 @@ impl<'a> Interp<'a> {
         }
     }
 
-    fn iter_items(&mut self, it: Value, span: Span) -> R<Vec<Value>> {
+    fn iter_items(&mut self, it: Value, span: Span) -> R<ForIter> {
         crate::value::iter_items(it, span)
     }
 
