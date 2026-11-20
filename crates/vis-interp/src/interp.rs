@@ -477,23 +477,7 @@ impl<'a> Interp<'a> {
                 let it = self.eval(iter)?;
                 let items = self.iter_items(it, iter.span())?;
                 self.loop_depth += 1;
-                let mut ctrl = Ok(Ctrl::Normal);
-                for v in items {
-                    if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, s.span()) {
-                        ctrl = Err(a);
-                        break;
-                    }
-                    self.bind_pat(pat, &v);
-                    match self.exec_block(body) {
-                        Ok(Ctrl::Break) => break,
-                        Ok(Ctrl::Normal) => {}
-                        Ok(Ctrl::Continue) => {}
-                        Err(e) => {
-                            ctrl = Err(e);
-                            break;
-                        }
-                    }
-                }
+                let ctrl = self.exec_for(pat, items, body, s.span());
                 self.loop_depth -= 1;
                 self.last = None;
                 ctrl

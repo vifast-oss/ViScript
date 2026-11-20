@@ -244,6 +244,9 @@ pub enum FeeVerifyError {
     TooMany(usize),
     /// Entry có `pc` ngoài code của hàm.
     BadPc { func: usize, pc: u32, len: usize },
+    /// `pc` hợp lệ nhưng hàm không có span tương ứng (module hỏng; `verify` thường đã chặn
+    /// `SpanMismatch`, nhưng `verify_fee` phải chịu được lời gọi trực tiếp).
+    SpanMissing { func: usize, pc: u32 },
     /// `site` không nằm trong span của lệnh tại `pc` (ràng buộc suy từ cấu trúc, không tin artifact).
     BadSite {
         func: usize,
@@ -293,7 +296,12 @@ pub fn verify_fee(m: &Module, fee: &FeeTable) -> Result<(), FeeVerifyError> {
                 return Err(FeeVerifyError::TooMany(total));
             }
             // `site` do artifact tự khai ⇒ chỉ tin khi nó nằm trong span của chính lệnh đó.
-            let sp = &f.spans[e.pc as usize];
+            // Không tin bất biến `code.len() == spans.len()` của `verify`: `verify_fee` là API
+            // công khai, có thể nhận `Module` dựng tay (test/verifier khác) ⇒ không được panic.
+            let sp = f
+                .spans
+                .get(e.pc as usize)
+                .ok_or(FeeVerifyError::SpanMissing { func: fi, pc: e.pc })?;
             if e.site != 0 && (e.site < sp.start || e.site > sp.end) {
                 return Err(FeeVerifyError::BadSite {
                     func: fi,
@@ -314,23 +322,44 @@ pub fn verify_fee(m: &Module, fee: &FeeTable) -> Result<(), FeeVerifyError> {
     Ok(())
 }
 
-/// Các successor của lệnh tại `pc` (cùng quy ước với `verify::need_stack`).
+/// Các successor **hợp lệ** của lệnh tại `pc` (cùng quy ước với `verify::need_stack`).
+///
+/// `verify` cho phép đích nhảy bằng `code.len()` (cuối code) vì nó có thể **không bao giờ chạy**
+/// (lệnh không tới được). Với verifier phí, `code.len()` là **terminal**, không phải một PC để
+/// tra `charged[n]`/`idx[n]` — làm vậy là panic trên module crafted.
 fn succs(code: &[Instr], pc: usize) -> Vec<usize> {
     let n = code.len();
-    let off = |o: i32| -> usize { (pc as i64 + o as i64).clamp(0, n as i64) as usize };
+    let off = |o: i32| -> Option<usize> {
+        let t = pc as i64 + o as i64;
+        if t < 0 {
+            // Giữ quy ước cũ (kẹp về 0) cho module dựng tay sai; đây chỉ là đồ thị **suy**,
+            // không phải đường thi hành. Không bao giờ để chỉ số âm lọt vào mảng.
+            Some(0)
+        } else if t >= n as i64 {
+            // `code.len()` là terminal: `verify` cho phép đích này cho nhánh không tới được.
+            None
+        } else {
+            Some(t as usize)
+        }
+    };
+    let sau = if pc + 1 < n { Some(pc + 1) } else { None };
     match code[pc] {
         Instr::Return | Instr::Halt => Vec::new(),
-        Instr::Jump(o) => vec![off(o)],
+        Instr::Jump(o) => off(o).into_iter().collect(),
         Instr::JumpIfFalse(o)
         | Instr::JumpIfNotTrue(o)
         | Instr::JumpIfNone(o)
         | Instr::JumpIfSome(o)
-        | Instr::IterNext(o) => vec![off(o), (pc + 1).min(n)],
-        _ => vec![(pc + 1).min(n)],
+        | Instr::IterNext(o) => off(o).into_iter().chain(sau).collect(),
+        _ => sau.into_iter().collect(),
     }
 }
 
 /// (1) Mọi chu trình trong CFG hàm phải có điểm phí; (2) cạnh lùi vào đầu vòng phải có guard.
+///
+/// Dùng **Kahn** (lặp, không đệ quy) trên đồ thị con các PC **không có phí**: bỏ các đỉnh có phí
+/// thì chu trình còn lại chính là chu trình không được tính. Cách này tránh cả `idx[n]` lẫn tràn
+/// stack khi code rất dài (module không đáng tin).
 fn check_cfg(func: usize, f: &crate::format::Func, fee: &[FeeEntry]) -> Result<(), FeeVerifyError> {
     let n = f.code.len();
     if n == 0 {
@@ -347,67 +376,42 @@ fn check_cfg(func: usize, f: &crate::format::Func, fee: &[FeeEntry]) -> Result<(
             }
         }
     }
-    // SCC (Tarjan) trên CFG: mỗi SCC có chu trình phải chứa ít nhất một điểm phí.
-    let mut idx = vec![usize::MAX; n];
-    let mut low = vec![0usize; n];
-    let mut on = vec![false; n];
-    let mut stack: Vec<usize> = Vec::new();
-    let mut counter = 0usize;
-    #[allow(clippy::too_many_arguments)]
-    fn dfs(
-        u: usize,
-        func: usize,
-        code: &[Instr],
-        charged: &[bool],
-        idx: &mut [usize],
-        low: &mut [usize],
-        on: &mut [bool],
-        stack: &mut Vec<usize>,
-        counter: &mut usize,
-    ) -> Result<(), FeeVerifyError> {
-        idx[u] = *counter;
-        low[u] = *counter;
-        *counter += 1;
-        stack.push(u);
-        on[u] = true;
-        for v in succs(code, u) {
-            if idx[v] == usize::MAX {
-                dfs(v, func, code, charged, idx, low, on, stack, counter)?;
-                low[u] = low[u].min(low[v]);
-            } else if on[v] {
-                low[u] = low[u].min(idx[v]);
-            }
-        }
-        if low[u] == idx[u] {
-            let mut comp = Vec::new();
-            while let Some(v) = stack.pop() {
-                on[v] = false;
-                comp.push(v);
-                if v == u {
-                    break;
-                }
-            }
-            let cyclic = comp.len() > 1 || succs(code, u).contains(&u);
-            if cyclic && !comp.iter().any(|&v| charged[v]) {
-                return Err(FeeVerifyError::CycleUncharged { func, pc: comp[0] });
-            }
-        }
-        Ok(())
+    let so_khong_phi = charged.iter().filter(|b| !**b).count();
+    if so_khong_phi == 0 {
+        return Ok(());
     }
+    // Đồ thị con chỉ gồm PC không có phí (đỉnh có phí bị bỏ ⇒ cạnh đi qua nó cũng bỏ).
+    let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];
+    let mut indeg = vec![0usize; n];
     for pc in 0..n {
-        if idx[pc] == usize::MAX {
-            dfs(
-                pc,
-                func,
-                &f.code,
-                &charged,
-                &mut idx,
-                &mut low,
-                &mut on,
-                &mut stack,
-                &mut counter,
-            )?;
+        if charged[pc] {
+            continue;
         }
+        for s in succs(&f.code, pc) {
+            if !charged[s] {
+                adj[pc].push(s);
+                indeg[s] += 1;
+            }
+        }
+    }
+    let mut hang: std::collections::VecDeque<usize> = (0..n)
+        .filter(|&pc| !charged[pc] && indeg[pc] == 0)
+        .collect();
+    let mut da_xet = 0usize;
+    while let Some(u) = hang.pop_front() {
+        da_xet += 1;
+        for &v in &adj[u] {
+            indeg[v] -= 1;
+            if indeg[v] == 0 {
+                hang.push_back(v);
+            }
+        }
+    }
+    if da_xet != so_khong_phi {
+        let pc = (0..n)
+            .find(|&pc| !charged[pc] && indeg[pc] > 0)
+            .unwrap_or(0);
+        return Err(FeeVerifyError::CycleUncharged { func, pc });
     }
     Ok(())
 }
@@ -429,65 +433,43 @@ fn check_call_cycles(m: &Module, fee: &FeeTable) -> Result<(), FeeVerifyError> {
             }
         }
     }
-    let mut idx = vec![usize::MAX; nf];
-    let mut low = vec![0usize; nf];
-    let mut on = vec![false; nf];
-    let mut stack: Vec<usize> = Vec::new();
-    let mut counter = 0usize;
-    #[allow(clippy::too_many_arguments)]
-    fn dfs(
-        u: usize,
-        edge: &[Vec<usize>],
-        has_fee: &[bool],
-        idx: &mut [usize],
-        low: &mut [usize],
-        on: &mut [bool],
-        stack: &mut Vec<usize>,
-        counter: &mut usize,
-    ) -> Result<(), FeeVerifyError> {
-        idx[u] = *counter;
-        low[u] = *counter;
-        *counter += 1;
-        stack.push(u);
-        on[u] = true;
-        for &v in &edge[u] {
-            if idx[v] == usize::MAX {
-                dfs(v, edge, has_fee, idx, low, on, stack, counter)?;
-                low[u] = low[u].min(low[v]);
-            } else if on[v] {
-                low[u] = low[u].min(idx[v]);
-            }
-        }
-        if low[u] == idx[u] {
-            let mut comp = Vec::new();
-            while let Some(v) = stack.pop() {
-                on[v] = false;
-                comp.push(v);
-                if v == u {
-                    break;
-                }
-            }
-            let cyclic = comp.len() > 1 || edge[u].contains(&u);
-            if cyclic && !comp.iter().any(|&v| has_fee[v]) {
-                return Err(FeeVerifyError::CallCycleUncharged { func: u });
-            }
-        }
-        Ok(())
-    }
     let has_fee: Vec<bool> = fee.funcs.iter().map(|v| !v.is_empty()).collect();
+    let so_khong_phi = has_fee.iter().filter(|b| !**b).count();
+    if so_khong_phi == 0 {
+        return Ok(());
+    }
+    // Đồ thị con các hàm **không có** điểm phí; Kahn lặp (không đệ quy) như `check_cfg`.
+    let mut adj: Vec<Vec<usize>> = vec![Vec::new(); nf];
+    let mut indeg = vec![0usize; nf];
     for fi in 0..nf {
-        if idx[fi] == usize::MAX {
-            dfs(
-                fi,
-                &edge,
-                &has_fee,
-                &mut idx,
-                &mut low,
-                &mut on,
-                &mut stack,
-                &mut counter,
-            )?;
+        if has_fee[fi] {
+            continue;
         }
+        for &v in &edge[fi] {
+            if !has_fee[v] {
+                adj[fi].push(v);
+                indeg[v] += 1;
+            }
+        }
+    }
+    let mut hang: std::collections::VecDeque<usize> = (0..nf)
+        .filter(|&fi| !has_fee[fi] && indeg[fi] == 0)
+        .collect();
+    let mut da_xet = 0usize;
+    while let Some(u) = hang.pop_front() {
+        da_xet += 1;
+        for &v in &adj[u] {
+            indeg[v] -= 1;
+            if indeg[v] == 0 {
+                hang.push_back(v);
+            }
+        }
+    }
+    if da_xet != so_khong_phi {
+        let func = (0..nf)
+            .find(|&fi| !has_fee[fi] && indeg[fi] > 0)
+            .unwrap_or(0);
+        return Err(FeeVerifyError::CallCycleUncharged { func });
     }
     Ok(())
 }

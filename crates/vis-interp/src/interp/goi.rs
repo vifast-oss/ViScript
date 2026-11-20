@@ -8,7 +8,7 @@
 use vis_syntax::Span;
 use vis_types::{hir::*, ty::Type};
 
-use crate::interp::{builtin_name, Abort, Args, Interp, Trap, MAX_CALL_DEPTH, R, RT};
+use crate::interp::{builtin_name, Abort, Args, Ctrl, Interp, Trap, MAX_CALL_DEPTH, R, RT};
 use crate::value::*;
 
 impl<'a> Interp<'a> {
@@ -83,6 +83,36 @@ impl<'a> Interp<'a> {
         let f = self.eval(callee)?;
         let (pos, nm) = self.eval_args(args, named)?;
         self.call_value(f, pos, nm, span)
+    }
+
+    /// **VD-258** — thân `for`: `E_LOOP` **mỗi lần thử tiến vòng, gồm lần cuối sai**
+    /// (VD-252 quy tắc 4). Charge ở đầu vòng, trước khi lấy phần tử; `break` không chạy lượt kế.
+    pub(crate) fn exec_for(
+        &mut self,
+        pat: &HPat,
+        items: Vec<Value>,
+        body: &[HStmt],
+        span: Span,
+    ) -> R<Ctrl> {
+        let mut items = items.into_iter();
+        let mut ctrl = Ok(Ctrl::Normal);
+        loop {
+            if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, span) {
+                ctrl = Err(a);
+                break;
+            }
+            let Some(v) = items.next() else { break };
+            self.bind_pat(pat, &v);
+            match self.exec_block(body) {
+                Ok(Ctrl::Break) => break,
+                Ok(Ctrl::Normal) | Ok(Ctrl::Continue) => {}
+                Err(e) => {
+                    ctrl = Err(e);
+                    break;
+                }
+            }
+        }
+        ctrl
     }
 
     fn eval_args(&mut self, args: &[HExpr], named: &[(String, HExpr)]) -> R<Args> {

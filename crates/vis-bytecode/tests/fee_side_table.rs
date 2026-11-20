@@ -213,6 +213,64 @@ fn de_quy_qua_call_khong_co_phi_bi_tu_choi() {
     assert_eq!(verify_fee(&m, &fee), Ok(()));
 }
 
+/// **VD-258** — hồi quy panic: `Jump` **không tới được** trỏ đúng `code.len()` (đích hợp lệ theo
+/// `verify`, vì `verify` chỉ mô phỏng các nhánh tới được). `verify_fee` cũ lấy `idx[n]` ⇒ panic.
+#[test]
+fn nhay_toi_cuoi_code_khong_lam_panic_verifier_phi() {
+    // pc1 `Jump(+2)` đích = 3 = len; pc1 không tới được từ entry (pc0 `Halt`).
+    let m = m(
+        vec![f(
+            vec![Instr::Halt, Instr::Jump(2), Instr::Halt],
+            vec![Span { start: 0, end: 1 }; 3],
+            1,
+        )],
+        vec![],
+    );
+    // Đây là module **hợp lệ** theo verifier VBC1 thường — đúng ca biên cần chịu được.
+    assert!(
+        vis_bytecode::verify(&m).is_ok(),
+        "module crafted phải qua verify thường: {:?}",
+        vis_bytecode::verify(&m)
+    );
+    let mut fee = FeeTable::new(1);
+    fee.push(0, FeeEntry::new(0, FeeKind::Stmt, 0));
+    assert_eq!(verify_fee(&m, &fee), Ok(()));
+    assert!(load_verified_with_fee(&encode_with_fee(&m, &fee)).is_ok());
+
+    // Bảng rỗng vẫn phải trả `Err(EmptyTable)` — không được panic trước khi tới kiểm đó.
+    let bytes = encode_with_fee(&m, &FeeTable::new(1));
+    let kq = std::panic::catch_unwind(|| load_verified_with_fee(&bytes));
+    assert!(kq.is_ok(), "load_verified_with_fee không được panic");
+    assert!(
+        kq.expect("không panic").is_err(),
+        "bảng rỗng phải bị từ chối"
+    );
+}
+
+/// **VD-258** — `verify_fee` là API công khai: `Module` dựng tay có `spans` ngắn hơn `code` phải
+/// trả lỗi, không panic khi tra `f.spans[pc]`.
+#[test]
+fn span_thieu_khong_lam_panic_verifier_phi() {
+    let m = m(
+        vec![Func {
+            name: "f".into(),
+            arity: 0,
+            nparams: 0,
+            nlocals: 1,
+            max_stack: 1,
+            code: vec![Instr::Halt],
+            spans: Vec::new(),
+        }],
+        vec![],
+    );
+    let mut fee = FeeTable::new(1);
+    fee.push(0, FeeEntry::new(0, FeeKind::Stmt, 0));
+    assert!(matches!(
+        verify_fee(&m, &fee),
+        Err(FeeVerifyError::SpanMissing { func: 0, pc: 0 })
+    ));
+}
+
 #[test]
 fn tag_su_kien_la_bi_tu_choi() {
     let mut bytes = encode_with_fee(&hop_le(), &feehop());
