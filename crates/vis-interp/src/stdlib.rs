@@ -50,6 +50,7 @@ mod sqlitepk;
 mod sqliteschema;
 mod sqlitetables;
 mod strascii;
+mod strcharat;
 mod strfind;
 mod strlen;
 mod strpad;
@@ -290,6 +291,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strascii::goi(s))
         }
+        // **VD-270 (char-at)**: scalar Unicode thứ `i` (zero-based); âm/quá dài/rỗng ⇒ `None`.
+        "str.char_at" => strcharat::goi(name, &args, span),
         // ----- std.list -----
         // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.
         "list.is_empty" => {

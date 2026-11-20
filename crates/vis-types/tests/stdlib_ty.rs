@@ -197,6 +197,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.map.contains_key` (`(map[K, V], K) -> bool`; đúng ⇔ có khoá bằng theo `eq_value`
     // như `map.has`/`get`, rỗng/không có ⇒ `false`, không trap; sugar R5c) ⇒ **136** hàm;
     // không xoá/đổi hàm cũ nào.
+    // **SỬA KÈM LÝ DO (VD-270 char-at, 2026-11-21)**: +**1** hàm `std.str.char_at`
+    // (`(str, int) -> str?`; scalar Unicode thứ `i` zero-based, âm/quá dài/rỗng ⇒ `None`,
+    // không trap) ⇒ **137** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 137, "bảng chữ ký phải đủ 137 hàm");
     assert_eq!(FUNCS.len(), 136, "bảng chữ ký phải đủ 136 hàm");
 }
 
@@ -506,6 +510,21 @@ fn replace_n_kieu_str_sang_str() {
     assert_eq!(f.ret, Ty::Str, "kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
     assert_eq!(f.so_doi(), 4, "số đối số");
+}
+
+#[test]
+fn char_at_kieu_str_int_sang_str_option() {
+    // **VD-270 (char-at)**: `(str, int) -> str?`; cùng tham số đầu `str` nên sugar
+    // R5c `s.char_at(i)` chạy không cần `use`, và kết quả là `Option[str]` thật.
+    let f = sig_of("str.char_at").expect("str.char_at");
+    assert_eq!(f.params, &[Ty::Str, Ty::Int], "tham số");
+    assert_eq!(f.ret, Ty::OptStr, "kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Str)),
+        "hạ kiểu trả"
+    );
+    assert_eq!(f.so_doi(), 2, "số đối số");
 }
 
 #[test]
