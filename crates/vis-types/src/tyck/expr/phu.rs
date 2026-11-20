@@ -276,6 +276,17 @@ pub(crate) fn kiem_std_method(
     if !khop_nhan(c, &want, recv, &gens, &mut bang) {
         return None;
     }
+    // **VD-270 (R5c arity)**: sugar **không** truyền `x` (đã là receiver) ⇒ số đối số phải bằng
+    // `params.len() - 1`. Sai số ⇒ cùng `VS0401` như gọi module (`str.trim_matches`…), tại span
+    // lời gọi — không để rơi xuống tầng chạy thành trap `VS0501`.
+    let can = f.params.len().saturating_sub(1);
+    if args.len() != can {
+        c.diag(
+            super::super::ARG_COUNT,
+            format!("`{full}` cần {can} đối số, được {}", args.len()),
+            span,
+        );
+    }
     for (i, a) in args.iter().enumerate() {
         let at = c.kiem_expr(a);
         if let Some(p) = f.params.get(i + 1) {
@@ -283,7 +294,6 @@ pub(crate) fn kiem_std_method(
             c.coerce_e(a, &at, &pt, "đối số");
         }
     }
-    let _ = span;
     Some(crate::tyck::thay_gen(&f.ret.sang_type(), &bang))
 }
 

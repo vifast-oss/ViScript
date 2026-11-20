@@ -375,21 +375,21 @@ fn sai_kieu_ket_qua_bi_chan() {
     );
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi thiếu đối số vẫn bị
-/// **tầng chạy** chặn: trap `VS0501` nêu `list.binary_search`, exit 101 ở **cả hai** engine.
+/// **VD-270 (R5c arity)**: sugar `xs.binary_search(…)` thiếu/thừa đối số bị checker chặn trước
+/// khi chạy — `VS0401` `list.binary_search cần 1 đối số`, cùng thông điệp như module call; không
+/// còn trap `VS0501` (exit 101).
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
-    let (code, out, err) = hai_engine(
-        "sugar-arity",
-        "fn main():\n    let xs = [1, 2]\n    print(xs.binary_search())\n",
-    );
-    assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
-    assert!(
-        err.contains("list.binary_search"),
-        "sugar-arity: stderr thiếu `list.binary_search`: {err}"
-    );
+fn sugar_sai_arity_bi_chan() {
+    for (tag, src) in [
+        (
+            "sugar-arity-thieu",
+            "fn main():\n    let xs = [1, 2]\n    print(xs.binary_search())\n",
+        ),
+        (
+            "sugar-arity-thua",
+            "fn main():\n    let xs = [1, 2]\n    print(xs.binary_search(1, 2))\n",
+        ),
+    ] {
+        tu_choi(tag, src, "VS0401");
+    }
 }

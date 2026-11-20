@@ -135,20 +135,6 @@ fn tu_choi(tag: &str, src: &str, ma: &str) {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Lỗi **chạy**: hai engine cùng exit **101** (R9/C1), cùng `VS0501`, stderr nêu hàm.
-fn trap_ca_hai(tag: &str, src: &str, needle: &str) {
-    let (code, out, err) = hai_engine(tag, src);
-    assert_eq!(
-        code, 101,
-        "{tag}: lỗi chạy phải exit 101\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "{tag}: thiếu VS0501: {err}");
-    assert!(
-        err.contains(needle),
-        "{tag}: stderr thiếu `{needle}`: {err}"
-    );
-}
-
 // ===========================================================================
 // 1 — tuyệt đối/tương đối, gộp `/`, bỏ `/` cuối
 // ===========================================================================
@@ -310,7 +296,7 @@ fn sugar_phuong_thuc_khong_can_use() {
 }
 
 // ===========================================================================
-// 8 — ca âm tĩnh: sai kiểu/arity; sugar thừa đối số ⇒ trap tầng chạy
+// 8 — ca âm tĩnh: sai kiểu/arity (module + sugar), sugar thừa đối số = `VS0401`
 // ===========================================================================
 
 /// `int`/`bool` thay `str` ⇒ `VS0412`; arity 0/2 ⇒ `VS0401`.
@@ -327,15 +313,17 @@ fn sai_kieu_sai_arity_bi_chan() {
     }
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi **thừa** đối số vẫn bị
-/// **tầng chạy** chặn: trap `VS0501` nêu `path.normalize`, exit 101 ở **cả hai** engine.
+/// **VD-270 (R5c arity)**: sugar `s.normalize(…)` thừa đối số bị checker chặn trước khi chạy —
+/// `VS0401` `path.normalize cần 0 đối số` (đúng đường module call); không còn trap `VS0501`.
 #[test]
-fn sugar_thua_doi_la_trap_ca_hai_engine() {
-    trap_ca_hai(
-        "pn-sugar-thua",
-        "fn main():\n    print(\"a/./b\".normalize(1))\n",
-        "path.normalize",
-    );
+fn sugar_thua_doi_bi_chan() {
+    for (tag, call) in [
+        ("pn-sugar-thua-1", "\"a/./b\".normalize(1)"),
+        ("pn-sugar-thua-2", "\"a/./b\".normalize(\"a\")"),
+    ] {
+        let src = format!("fn main():\n    print({call})\n");
+        tu_choi(tag, &src, "VS0401");
+    }
 }
 
 // ===========================================================================

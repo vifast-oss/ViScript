@@ -362,20 +362,13 @@ fn sai_kieu_ket_qua_bi_chan() {
     );
 }
 
-/// Sugar R5c **chưa** kiểm arity ở checker (nợ chung của R5c — chỉ kiểm kiểu đối số có mặt);
-/// lời gọi thừa đối số vẫn bị **tầng chạy** chặn: trap `VS0501` nêu `str.byte_len`, exit 101 ở
-/// **cả hai** engine, không panic. (Module `str.byte_len(...)` thừa đối số thì checker bắt
-/// `VS0401` — ca trên.)
+/// **VD-270 (R5c arity)**: sugar `s.byte_len(1)` thừa đối số bị checker chặn trước khi chạy —
+/// `VS0401` `str.byte_len cần 0 đối số`, đúng như module call; không còn trap `VS0501`.
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
-    let (code, out, err) = hai_engine("sugar-arity", "fn main():\n    print(\"a\".byte_len(1))\n");
-    assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
-    assert!(
-        err.contains("str.byte_len"),
-        "sugar-arity: stderr thiếu `str.byte_len`: {err}"
+fn sugar_sai_arity_bi_chan() {
+    tu_choi(
+        "sugar-arity",
+        "fn main():\n    print(\"a\".byte_len(1))\n",
+        "VS0401",
     );
 }
