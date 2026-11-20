@@ -2135,3 +2135,57 @@ Phân biệt rõ: **hợp lệ về chỉ số** (slot thuộc miền được c
 - Không tuyên bố toàn bộ vấn đề global-slot đã đóng trước khi các điều kiện trên đạt.
 
 > **Ghi nhận thực thi VD-244 (Agent 1, 2026-11-20)**: ST-246 tích hợp @ `9824e66`, review `JOURNAL/st246-review.md`. Blocker tương thích (`BLOCKED.md` §13) **đóng theo báo cáo, có caveat**: chiều “runtime cũ từ chối artifact mới” được chứng minh bằng mô phỏng gate có trích commit `6eda337`, **không phải build crate v1 thật**; nếu A0 yêu cầu mạnh hơn thì mở task bổ sung. `VERSION = 2`, cache v1 tự vô hiệu, §14 (miền global) vẫn mở — không tuyên bố global-slot khép.
+
+### VD-245 · Global chưa khởi tạo: runtime trap, không trả Unit — A0, 2026-11-20 (ST-250)
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: ST-247 chứng minh ca (4) — ghi trong nhánh không chạy/hàm chưa gọi ⇒ verifier chấp nhận, runtime `Vm::globals.get(k).unwrap_or(Unit)` trả `Unit` **thành công** (đã so `show == "()"`). A0 **không chấp nhận** ghi tài liệu rồi giữ hành vi này; **chưa mở** definite-assignment liên hàm trong verifier.
+
+#### 1. Hợp đồng bắt buộc
+
+| Trạng thái global khi đọc | Hành vi |
+|---|---|
+| Ngoài miền hợp lệ | Verifier từ chối; runtime **cũng không được trả giá trị mặc định** nếu đường này vẫn tới được |
+| Trong miền nhưng **chưa khởi tạo** | **Runtime trap có chẩn đoán**, mã thoát khác 0 |
+| Đã khởi tạo bằng `Unit` hợp lệ | Trả `Unit` bình thường |
+| Đã khởi tạo bằng giá trị khác | Trả đúng giá trị đã ghi |
+
+**Cấm dùng `Unit` làm dấu “chưa khởi tạo”** — phải phân biệt trạng thái khởi tạo với giá trị ngôn ngữ. Dùng cơ chế trap runtime hiện có và thông điệp xác định được global chưa khởi tạo; **không tự thêm mã chẩn đoán mới** nếu chưa cần. Nếu dùng mã hiện hành thì cập nhật hợp đồng + test đúng phạm vi.
+
+#### 2. Hướng hiện thực được duyệt
+
+Agent 2 chọn cấu trúc nội bộ phù hợp (ô có trạng thái riêng, bảng theo dõi khởi tạo, …) sau khi đọc code; A0 **không ép** cấu trúc dữ liệu. Bắt buộc:
+- Chỉ đánh dấu **đã khởi tạo sau khi ghi giá trị thành công**.
+- **Mọi đường đọc global** phải qua cùng kiểm tra, kể cả đường tối ưu.
+- Không để sentinel nội bộ lọt vào `Value`, `show`, phép toán hay serialization.
+- Reset trạng thái khởi tạo đúng vòng đời module/lần chạy; không để giá trị lần trước che lỗi.
+- Không dùng chỉ số bytecode để tự mở rộng bộ nhớ không giới hạn.
+- **Không sửa codegen** để ghi sẵn `Unit` vào mọi global nhằm làm test xanh.
+- Không mở rộng thành viết lại toàn bộ cơ chế slot. Nếu đường local/capture có cùng lỗi trả mặc định ⇒ ghi finding riêng, báo mức độ; **không tuyên bố an toàn** chỉ vì global đã sửa.
+
+#### 3. Trách nhiệm verifier / runtime
+
+- **Verifier**: kiểm cấu trúc và **miền chỉ số** theo hợp đồng hiện hành.
+- **Runtime**: kiểm ô global **đã khởi tạo** tại thời điểm đọc.
+- Đây là hàng rào hợp lệ; **không cần** verifier chứng minh mọi đường khởi tạo trước khi cho chạy. **Không được** tiếp tục mô tả `verify()` là bảo đảm “không thể đọc global chưa khởi tạo”. Chưa duyệt CFG definite-assignment liên hàm; có thể xem xét sau, **không phải điều kiện đóng #188**.
+
+#### 4. Test nghiệm thu ST-250
+
+Bắt buộc:
+1. Ghi trong nhánh không chạy, sau đó đọc ⇒ trap.
+2. Ghi trong hàm chưa gọi, sau đó đọc ⇒ trap.
+3. Gọi hàm thực hiện ghi rồi đọc ⇒ đúng giá trị.
+4. Global ghi `Unit` hợp lệ ⇒ thành công, không nhầm với chưa khởi tạo.
+5. Nhiều global, chỉ một phần khởi tạo ⇒ phân biệt đúng từng ô.
+6. Đọc ngoài miền ⇒ bị chặn, không trả mặc định.
+7. Qua `encode → decode → load_verified → execute`, không chỉ dựng trực tiếp đối tượng VM.
+8. Hai lần chạy độc lập không rò trạng thái khởi tạo.
+
+Chương trình compiler sinh hợp lệ tiếp tục chạy đúng. Test crafted-bytecode **không cần** chương trình interp tương ứng; tiêu chí là trap đúng hợp đồng, **không ép parity** với source không tồn tại.
+
+#### 5. Tương thích & điều phối
+
+- Quyết định tăng `VERSION` (VD-244) và phân biệt cache **vẫn có hiệu lực**; runtime trap **không thay thế** blocker tương thích đó.
+- ST-250 **không bắt buộc** thêm opcode hay đổi bố cục bytecode.
+- Phiên bản/cache phải được nghiệm thu **cuối cùng bao gồm đầy đủ ngữ nghĩa global mới** — không phát hành phiên bản trung gian còn thiếu hàng rào. (Sau ST-250 phải bump lại `PHIEN_BAN`/re-pin khoá.)
+- **ST-247 DONE** với tư cách điều tra; **ST-250/#188 giữ mở** tới khi sửa + review + kiểm chứng trên commit xác định.
+- Giữ chặn tag và nghiệm thu phát hành. Fresh-clone có thể chạy để chẩn đoán, **không tính nghiệm thu cuối** trước khi blocker đóng. Chưa mở pha 2, VS3, API mới.

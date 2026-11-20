@@ -235,7 +235,11 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 
 **Đóng blocker (ST-246, `9824e66`)**: `VERSION 1 → 2`; runtime mới từ chối artifact v1 (`BadVersion(1)`, patch đúng 2 byte ⇒ decode OK); cache v1 ≠ v2, artifact v1 in sai `999` trên path cache vẫn bị bỏ ⇒ VM in `42`, source recompile đúng interp+VM; bytecode v1 không source ⇒ `LoadError::Decode(BadVersion(1))`; re-pin 2 test sentinel `2→3` bắt buộc. Kiểm trên commit tích hợp: `check` PASS · `gate --fast` PASS · `cargo test -p vis-bytecode -p vis-cli` xanh · `vis test` 525/525 · `--vm` 525/525. **Xem caveat ở đầu mục** — §14 vẫn mở, không tuyên bố global-slot khép.
 
-## 14. CẦN LÀM RÕ — Miền global suy từ lệnh ghi (VD-244 §3), CHƯA đóng
+## 14. BLOCKER — Global chưa khởi tạo trả `Unit` (ST-247/VD-245), CHƯA đóng
+
+**Cập nhật 2026-11-20**: ST-247 đã trả lời 5 câu (`JOURNAL/st247-review.md`); 4 câu đầu ổn, **câu (4) là blocker**: verifier đếm tĩnh mọi lệnh ghi (nhánh không chạy/hàm chưa gọi) ⇒ chấp nhận đọc; runtime `unwrap_or(Unit)` trả `Unit` **thành công**, đã so `show == "()"`. A0 chốt **VD-245**: runtime kiểm tra khởi tạo và trap; cấm dùng `Unit` làm dấu chưa khởi tạo; chưa mở CFG definite-assignment; verifier vẫn giữ miền chỉ số. Task **ST-250**, nợ **#188**, giữ mở tới khi tích hợp + review + kiểm chứng. Không được mô tả `verify()` là bảo đảm “không thể đọc global chưa khởi tạo”.
+
+> Phần dưới là nội dung điều tra ban đầu (giữ lịch sử, VD-142).
 
 **Task**: ST-247 · **VD**: VD-244. Không phải blocker phát hành nếu không phát hiện sai, nhưng **phải có câu trả lời bằng test + mô tả ngắn** trước khi kết luận global-slot ổn.
 
