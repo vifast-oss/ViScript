@@ -147,3 +147,10 @@ không vi phạm nào được lưu.
 exit 0 cả 4. Log `/tmp/opencode/vd257-fuzz-long.log`. Tổng fuzz hữu hạn trong cuối tuần: ~259 triệu
 ca, **không seed lỗi nào cần lưu**. Không chạy vô hạn, có giới hạn thời lượng rõ.
 
+## 14. Lặp suite VD-257 ở release
+
+5 lượt chạy cùng lúc 7 test binary trọng yếu (`lat257_a/b/c/fairness/trace_audit/coverage_extra`,
+`lat3_real`): **5/5 lượt OK**, mọi binary `0 failed`; network 12/12 mỗi lượt (~3,64 s), fairness
+10 passed + 1 ignored, lifecycle 11/11. Không ca nào flake. Log `/tmp/opencode/vd257-suite-*.log`.
+Không phải full gate lặp lại — chỉ kiểm flake có mục tiêu.
+
