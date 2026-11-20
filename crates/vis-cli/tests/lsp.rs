@@ -1476,3 +1476,25 @@ fn lsp_signature_help_builtin_null() {
         format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
     );
 }
+
+// ===== ST-274: hover biến thể enum =====
+
+/// Ca 34 — hover `A` trong nhánh `match` ⇒ nêu biến thể của enum `E`.
+#[test]
+fn lsp_hover_bien_the_enum() {
+    let text = "enum E:\n    A\n\nfn f(e: E) -> int:\n    match e:\n        A: 1\n\nfn main():\n    print(f(A))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 5, 9))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains("biến thể của"),
+        "hover phải nêu biến thể enum: {body}"
+    );
+    assert!(body.contains("E"), "hover phải nêu enum E: {body}");
+}

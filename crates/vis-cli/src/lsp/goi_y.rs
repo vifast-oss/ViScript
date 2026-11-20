@@ -211,6 +211,28 @@ fn hover_truong(kq: &KetQua, text: &str, start: usize, tu: &str) -> Option<Strin
     Some(format!("**{tu}**: {kieu}\n\ntrường của `{chu}`"))
 }
 
+/// **ST-274**: hover biến thể enum / trường từ cây ký hiệu (bổ sung cho `hover_truong`).
+fn hover_ky_hieu(ds: &[super::ky_hieu::KyHieu], tu: &str, parent: Option<&str>) -> Option<String> {
+    for k in ds {
+        if k.ten == tu {
+            match k.kind {
+                22 => {
+                    return Some(format!(
+                        "**{tu}**: biến thể của `{}`",
+                        parent.unwrap_or("?")
+                    ))
+                }
+                8 => return Some(format!("**{tu}**: trường của `{}`", parent.unwrap_or("?"))),
+                _ => {}
+            }
+        }
+        if let Some(v) = hover_ky_hieu(&k.con, tu, Some(&k.ten)) {
+            return Some(v);
+        }
+    }
+    None
+}
+
 /// Giá trị hover (markdown) cho từ tại `byte` + **span** của từ; `None` ⇒ `result:null`.
 fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
     let (start, end) = tu_tai(&kq.text, byte);
@@ -224,6 +246,8 @@ fn gia_tri_hover(kq: &KetQua, byte: usize) -> Option<(Span, String)> {
     } else if let Some((_ten, kieu)) = kq.bien.iter().find(|(ten, _)| ten == tu) {
         format!("```vis\n{tu}: {kieu}\n```")
     } else if let Some(v) = hover_truong(kq, &kq.text, start, tu) {
+        v
+    } else if let Some(v) = hover_ky_hieu(&kq.ky_hieu, tu, None) {
         v
     } else if BUILTIN_VALUE_NAMES.contains(&tu) {
         format!("```vis\n<builtin {tu}>\n```")
