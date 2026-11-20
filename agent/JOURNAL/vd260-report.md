@@ -252,3 +252,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `vis test test/sem` @ `65c3e1f`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `VIS_DIFF_N=100000` seed 20261202 @ `4dad2ab`: **0 lệch** (93.767 chạy, 113,1 s).
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `4dad2ab`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- `./vis-dev nightly` @ `3976328`: **PASS** — parser fuzz **8.074.278 ca / 183.212.821 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
