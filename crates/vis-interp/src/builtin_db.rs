@@ -35,6 +35,25 @@ pub trait DbHost {
         sql: &str,
         params: &[Value],
     ) -> Result<(Vec<String>, Vec<Vec<Value>>), String>;
+    /// **VD-266** — như [`Self::db_query`] (cùng chính sách chỉ đọc/params/schema/timeout/cap
+    /// hàng) nhưng chỉ trả **0 hoặc 1** hàng: dừng ngay sau hàng đầu, **không** materialize/scan
+    /// phần còn lại. Host cũ không cài ⇒ `Err` dữ liệu (mặc định), không panic.
+    fn db_query_one(
+        &mut self,
+        _h: &str,
+        _sql: &str,
+        _params: &[Value],
+    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        Err("host chưa cài `sqlite.query_one` (cần host DB mới)".to_string())
+    }
+    /// **VD-266** — `rowid` của lần INSERT gần nhất (metadata chỉ đọc). Host cũ ⇒ `Err` dữ liệu.
+    fn db_last_insert_rowid(&mut self, _h: &str) -> Result<i64, String> {
+        Err("host chưa cài `sqlite.last_insert_rowid` (cần host DB mới)".to_string())
+    }
+    /// **VD-266** — số hàng bị INSERT/UPDATE/DELETE gần nhất (metadata chỉ đọc). Host cũ ⇒ `Err`.
+    fn db_changes(&mut self, _h: &str) -> Result<i64, String> {
+        Err("host chưa cài `sqlite.changes` (cần host DB mới)".to_string())
+    }
     /// `true` khi connection **đang** trong transaction (SQLite: `sqlite3_get_autocommit() == 0`).
     fn db_in_transaction(&mut self, h: &str) -> Result<bool, String>;
     /// Đóng **mọi** connection của phiên; trả số connection đã đóng (cho diagnostics). Gọi khi

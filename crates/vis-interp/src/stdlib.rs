@@ -150,6 +150,17 @@ fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
     }
 }
 
+/// **VD-266** — `(columns, rows)` từ host → `Ok(RowSet { columns, rows })` (dùng chung
+/// `sqlite.query`/`query_one`).
+fn rowset(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
+    let columns = Value::List(columns.into_iter().map(Value::Str).collect());
+    let rows = Value::List(rows.into_iter().map(Value::List).collect());
+    Value::ok(Value::Record(
+        "RowSet".into(),
+        vec![("columns".into(), columns), ("rows".into(), rows)],
+    ))
+}
+
 /// Không có host ⇒ `VS0604` (cùng câu với chương trình ngoài, VD-60 (2)).
 fn khong_host(name: &str, span: Span) -> Abort {
     Abort::Trap(Trap::new(
@@ -890,16 +901,31 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let params = danh_sach(name, &args[2], 2, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             match host.db_query(h, sql, params) {
-                Ok((columns, rows)) => {
-                    let columns = Value::List(columns.into_iter().map(Value::Str).collect());
-                    let rows = Value::List(rows.into_iter().map(Value::List).collect());
-                    Ok(Value::ok(Value::Record(
-                        "RowSet".into(),
-                        vec![("columns".into(), columns), ("rows".into(), rows)],
-                    )))
-                }
+                Ok((columns, rows)) => Ok(rowset(columns, rows)),
                 Err(e) => hop_nhat_fs(Err(e), span),
             }
+        }
+        // **VD-266** — cùng chính sách `query` nhưng tối đa **một** hàng (host dừng sau hàng đầu).
+        "sqlite.query_one" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let sql = chuoi(name, &args[1], 1, span)?;
+            let params = danh_sach(name, &args[2], 2, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            match host.db_query_one(h, sql, params) {
+                Ok((columns, rows)) => Ok(rowset(columns, rows)),
+                Err(e) => hop_nhat_fs(Err(e), span),
+            }
+        }
+        // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
+        "sqlite.last_insert_rowid" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_last_insert_rowid(h).map(Value::Int), span)
+        }
+        "sqlite.changes" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(host.db_changes(h).map(Value::Int), span)
         }
         "sqlite.begin" => {
             let h = chuoi(name, &args[0], 0, span)?;

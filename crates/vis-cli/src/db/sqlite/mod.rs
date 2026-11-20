@@ -541,8 +541,8 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
     }
 }
 
-/// Trần `SQLITE_LIMIT_LENGTH` cho **đường đọc** (`query`): không cần lớn hơn trần một hàng kết
-/// quả vì ô đơn > trần hàng chắc chắn bị [`truy_van`] từ chối; cũng không vượt trần cứng.
+/// Trần `SQLITE_LIMIT_LENGTH` cho **đường đọc** (`query`/`query_one`): không cần lớn hơn trần một
+/// hàng kết quả vì ô đơn > trần hàng chắc chắn bị [`truy_van`] từ chối; cũng không vượt trần cứng.
 fn tran_o_doc(gh: &GioiHan) -> usize {
     gh.row_bytes.min(gh.hard_cell_bytes)
 }
@@ -913,9 +913,50 @@ impl DbHost for Db {
         let params = chuan_bi_tham_so(params)?;
         let vao = Instant::now();
         conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
-        let ket = truy_van(conn, sql, &params, debug, &gh);
+        let ket = truy_van(conn, sql, &params, debug, &gh, ToiDaHang::TatCa);
         conn.progress_handler(1_000, None::<fn() -> bool>);
         ket
+    }
+
+    /// **VD-266** — y hệt [`Self::db_query`] (cùng `kiem_sql`/`kiem_params`/schema/authorizer/
+    /// read-only/timeout/cap hàng) nhưng dừng sau **hàng đầu**; không materialize/scan phần còn
+    /// lại. 0 hàng ⇒ `RowSet` rỗng; nhiều hàng ⇒ đúng 1 hàng.
+    fn db_query_one(
+        &mut self,
+        h: &str,
+        sql: &str,
+        params: &[Value],
+    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        kiem_sql(sql)?;
+        kiem_params(params)?;
+        let debug = self.sqlite_debug;
+        let ngan_sach = Duration::from_millis(self.query_ms);
+        let gh = self.gioi_han;
+        let m = self.tim(h)?;
+        kiem_schema_neu_doi(m, debug)?;
+        let conn = m.conn.as_mut().expect("tim() đã kiểm");
+        // Cùng trần đọc như `query` — ô > trần hàng bị từ chối **trước** khi materialize.
+        dat_gioi_han_o(conn, tran_o_doc(&gh))?;
+        let params = chuan_bi_tham_so(params)?;
+        let vao = Instant::now();
+        conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
+        let ket = truy_van(conn, sql, &params, debug, &gh, ToiDaHang::Mot);
+        conn.progress_handler(1_000, None::<fn() -> bool>);
+        ket
+    }
+
+    /// **VD-266** — `rowid` của lần INSERT gần nhất; metadata chỉ đọc, không prepare SQL.
+    fn db_last_insert_rowid(&mut self, h: &str) -> Result<i64, String> {
+        let m = self.tim(h)?;
+        let conn = m.conn.as_ref().expect("tim() đã kiểm");
+        Ok(conn.last_insert_rowid())
+    }
+
+    /// **VD-266** — số hàng bị INSERT/UPDATE/DELETE gần nhất; metadata chỉ đọc.
+    fn db_changes(&mut self, h: &str) -> Result<i64, String> {
+        let m = self.tim(h)?;
+        let conn = m.conn.as_ref().expect("tim() đã kiểm");
+        i64::try_from(conn.changes()).map_err(|_| "số hàng thay đổi vượt i64 — từ chối".to_string())
     }
 
     fn db_in_transaction(&mut self, h: &str) -> Result<bool, String> {
@@ -1025,6 +1066,14 @@ fn thuc_thi(
     Ok(r as i64)
 }
 
+/// **VD-266** — chế độ đọc của [`truy_van`]: tất cả hàng (`query`) hoặc dừng sau hàng đầu
+/// (`query_one`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ToiDaHang {
+    TatCa,
+    Mot,
+}
+
 /// `query`: **chỉ đọc** — phân loại **sau** `prepare`, **trước** mọi step (VD-242 §3.6): câu ghi
 /// ⇒ `Err`, câu không trả hàng ⇒ `Err`; không thực thi rồi mới phát hiện ghi. Sau đó bind đủ số
 /// lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
@@ -1032,12 +1081,16 @@ fn thuc_thi(
 /// [`MAX_COLUMNS`] cột, ≤ [`MAX_COLUMN_NAME_BYTES`] tên cột, payload mỗi hàng ≤
 /// [`MAX_ROW_BYTES`], tổng payload + overhead ô ≤ [`MAX_TOTAL_BYTES`]. Kiểm **trước** khi
 /// clone/allocate ô (cộng dồn `checked_add`). Mọi lỗi SQLite ⇒ `Result.Err`.
+///
+/// **VD-266**: `toi_da = Mot` dừng ngay sau hàng đầu — **không** gọi `next()` thêm, nên không
+/// materialize/scan phần còn lại (cap hàng [`MAX_ROWS`] không áp cho `query_one`).
 fn truy_van(
     conn: &Connection,
     sql: &str,
     params: &[rusqlite::types::Value],
     sqlite_debug: bool,
     gh: &GioiHan,
+    toi_da: ToiDaHang,
 ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
     // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version).
     let mut stmt = conn
@@ -1101,7 +1154,7 @@ fn truy_van(
             .next()
             .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
         let Some(row) = next else { break };
-        if out_rows.len() >= gh.rows {
+        if toi_da == ToiDaHang::TatCa && out_rows.len() >= gh.rows {
             return Err(format!(
                 "kết quả vượt giới hạn {} hàng — cắt nhỏ kết quả (LIMIT), không trả dữ liệu cắt",
                 gh.rows
@@ -1147,6 +1200,10 @@ fn truy_van(
             r.push(o_sqlite(v)?);
         }
         out_rows.push(r);
+        // **VD-266**: `query_one` dừng ngay — không step thêm hàng nào.
+        if toi_da == ToiDaHang::Mot {
+            break;
+        }
     }
     Ok((columns, out_rows))
 }
@@ -1225,6 +1282,20 @@ impl DbHost for DbGuard<'_> {
         params: &[Value],
     ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
         self.trong.db_query(h, sql, params)
+    }
+    fn db_query_one(
+        &mut self,
+        h: &str,
+        sql: &str,
+        params: &[Value],
+    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        self.trong.db_query_one(h, sql, params)
+    }
+    fn db_last_insert_rowid(&mut self, h: &str) -> Result<i64, String> {
+        self.trong.db_last_insert_rowid(h)
+    }
+    fn db_changes(&mut self, h: &str) -> Result<i64, String> {
+        self.trong.db_changes(h)
     }
     fn db_in_transaction(&mut self, h: &str) -> Result<bool, String> {
         self.trong.db_in_transaction(h)

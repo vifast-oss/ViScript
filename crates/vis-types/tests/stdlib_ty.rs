@@ -66,7 +66,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     //   cổng tích hợp).
     // **SỬA KÈM LÝ DO (VD-265, 2026-11-21)**: +**5** hàm thực dụng — `list.zip`, `list.min`,
     //   `list.max`, `str.lines`, `str.split_whitespace` ⇒ **66** hàm. Không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 66, "bảng chữ ký phải đủ 66 hàm");
+    // **SỬA KÈM LÝ DO (VD-266, 2026-11-21)**: +**3** hàm SQLite — `sqlite.query_one`,
+    //   `sqlite.last_insert_rowid`, `sqlite.changes` ⇒ **69** hàm. Không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 69, "bảng chữ ký phải đủ 69 hàm");
 }
 
 #[test]

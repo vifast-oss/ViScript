@@ -183,7 +183,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 66] = [
+pub const FUNCS: [StdFn; 69] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -516,6 +516,24 @@ pub const FUNCS: [StdFn; 66] = [
         name: "sqlite.query",
         params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
         ret: Ty::ResultRowSetErr,
+    },
+    // **VD-266** — như `query` nhưng chỉ lấy **0 hoặc 1** hàng (dừng sau hàng đầu).
+    StdFn {
+        name: "sqlite.query_one",
+        params: &[Ty::Str, Ty::Str, Ty::List(&Ty::SqlValue)],
+        ret: Ty::ResultRowSetErr,
+    },
+    // **VD-266** — `rowid` của lần INSERT gần nhất trên connection (metadata chỉ đọc).
+    StdFn {
+        name: "sqlite.last_insert_rowid",
+        params: &[Ty::Str],
+        ret: Ty::ResultIntErr,
+    },
+    // **VD-266** — số hàng bị INSERT/UPDATE/DELETE gần nhất (metadata chỉ đọc).
+    StdFn {
+        name: "sqlite.changes",
+        params: &[Ty::Str],
+        ret: Ty::ResultIntErr,
     },
     StdFn {
         name: "sqlite.begin",
