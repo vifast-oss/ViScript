@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 135] = [
+pub const FUNCS: [StdFn; 136] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -687,6 +687,13 @@ pub const FUNCS: [StdFn; 135] = [
     },
     StdFn {
         name: "path.is_abs",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    // **VD-270 (path.is_absolute)**: cùng quy tắc **từ vựng** của `path.is_abs` (rỗng ⇒ `false`,
+    // không chạm đĩa/`cwd`); **không** sugar — module-only.
+    StdFn {
+        name: "path.is_absolute",
         params: &[Ty::Str],
         ret: Ty::Bool,
     },
