@@ -43,6 +43,11 @@
 # kỳ vọng: 4
 # kỳ vọng: 0
 # kỳ vọng: 6
+# kỳ vọng: Some(1)
+# kỳ vọng: Some(3)
+# kỳ vọng: None
+# kỳ vọng: Some(2)
+# kỳ vọng: Some(4)
 use std.fs
 use std.list
 use std.map
@@ -103,3 +108,8 @@ print([2.0, 4.0].median())
 print(list.sum_float([1.5, 2.5]))
 print(list.sum_float(fs))
 print([2.0, 4.0].sum_float())
+print(list.min_float([3.0, 1.0, 2.0]))
+print(list.max_float([3.0, 1.0, 2.0]))
+print(list.max_float(fs))
+print([2.0, 4.0].min_float())
+print([2.0, 4.0].max_float())

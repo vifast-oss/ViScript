@@ -33,6 +33,7 @@ mod listcontains;
 mod listmath;
 mod listmean;
 mod listmedian;
+mod listminmaxfloat;
 mod listsumfloat;
 mod mapcontainskey;
 mod netconst;
@@ -521,6 +522,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.median" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmedian::goi(xs, span)
+        }
+        // **VD-270 (list-minmax-float)**: nhỏ nhất/lớn nhất `list[float]`; rỗng ⇒ `None`; `NaN`
+        // ở bất kỳ vị trí ⇒ `None` tất định (cùng chính sách `median`); `±inf` so bình thường;
+        // phần tử bằng nhau (kể cả `±0.0`) giữ **đầu tiên** theo thứ tự danh sách. Lõi
+        // `stdlib/listminmaxfloat.rs`; sugar R5c `xs.min_float()`/`xs.max_float()`.
+        "list.min_float" | "list.max_float" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listminmaxfloat::goi(name, xs, span)
         }
         // **VD-270 (list-sum-float)**: tổng `list[float]`, hạt giống `+0.0` (rỗng ⇒ `0`); cộng
         // trái→phải `f64` (IEEE: NaN/±inf lan truyền, tràn ⇒ ±inf, không trap — kể cả mọi tổng

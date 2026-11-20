@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 144] = [
+pub const FUNCS: [StdFn; 146] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -652,6 +652,21 @@ pub const FUNCS: [StdFn; 144] = [
         name: "list.sum_float",
         params: &[Ty::List(&Ty::Float)],
         ret: Ty::Float,
+    },
+    // **VD-270 (list-minmax-float)**: `min_float`/`max_float` **chỉ** `list[float]`, trả
+    // `float?`; rỗng ⇒ `None`; **có `NaN` ở bất kỳ vị trí ⇒ `None`** tất định (cùng chính sách
+    // `median`); `±inf` so bình thường; phần tử bằng nhau — kể cả `-0.0`/`+0.0` — giữ **đầu
+    // tiên** theo thứ tự danh sách, nên dấu zero của cực trị **duy nhất** được giữ nguyên.
+    // Không phải phương thức lõi nên sugar `xs.min_float()`/`xs.max_float()` đi R5c tới đây.
+    StdFn {
+        name: "list.min_float",
+        params: &[Ty::List(&Ty::Float)],
+        ret: Ty::OptFloat,
+    },
+    StdFn {
+        name: "list.max_float",
+        params: &[Ty::List(&Ty::Float)],
+        ret: Ty::OptFloat,
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
     // **VD-270 (strlen)**: rỗng ⇔ 0 cặp; `bool`, không phụ thuộc `K`/`V`.

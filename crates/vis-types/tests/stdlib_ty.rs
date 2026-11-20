@@ -225,7 +225,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str) -> Result[bool, Error]`; `symlink_metadata`, symlink tới tệp/thư mục/đích thiếu
     // ⇒ `true`, tệp/thư mục thường/thiếu ⇒ `false`, lỗi khác ⇒ `Err`; **không** sugar) ⇒ **141**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 144, "bảng chữ ký phải đủ 144 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-minmax-float, 2026-11-21)**: +**2** hàm
+    // `std.list.min_float`/`std.list.max_float` (`(list[float]) -> float?`; rỗng ⇒ `None`, có
+    // `NaN` ⇒ `None`, `±inf` so bình thường, phần tử bằng nhau kể cả `±0.0` giữ đầu tiên) ⇒ **146**
+    // hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 146, "bảng chữ ký phải đủ 146 hàm");
 }
 
 #[test]
@@ -738,6 +742,25 @@ fn list_sum_float_chi_list_float_tra_float() {
     );
     assert_eq!(f.ret.ten(), "float", "`list.sum_float`: tên hiển thị");
     assert_eq!(f.so_doi(), 1, "`list.sum_float`: số đối số");
+}
+
+#[test]
+fn list_minmax_float_chi_list_float_tra_opt_float() {
+    // **VD-270 (list-minmax-float)**: **chỉ** `list[float]` (không `list[T]`, không
+    // `list[int]`), trả `float?` = `Option[float]`; `min_float`/`max_float` không phải phương
+    // thức lõi nên sugar `xs.min_float()`/`xs.max_float()` R5c.
+    for name in ["list.min_float", "list.max_float"] {
+        let f = sig_of(name).unwrap_or_else(|| panic!("{name}"));
+        assert_eq!(f.params, &[Ty::List(&Ty::Float)], "`{name}`: tham số");
+        assert_eq!(f.ret, Ty::OptFloat, "`{name}`: kiểu trả");
+        assert_eq!(
+            f.ret.sang_type(),
+            Type::Opt(Box::new(Type::Float)),
+            "`{name}`: phải hạ thành `Option[float]`"
+        );
+        assert_eq!(f.ret.ten(), "float?", "`{name}`: tên hiển thị");
+        assert_eq!(f.so_doi(), 1, "`{name}`: số đối số");
+    }
 }
 
 #[test]
