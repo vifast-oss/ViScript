@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 74] = [
+pub const FUNCS: [StdFn; 75] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -448,6 +448,12 @@ pub const FUNCS: [StdFn; 74] = [
     StdFn {
         name: "fs.walk",
         params: &[Ty::Str],
+        ret: Ty::ResultListStrStr,
+    },
+    // **VD-268**: lọc kết quả `walk` bằng mẫu glob (`*`, `?`, `**`) — tương đối, sắp theo byte.
+    StdFn {
+        name: "fs.glob",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
     },
     // ----- std.net (ST-63, VD-100/VD-105) — **đi qua `Host::net`**, không OS trong crate này -----

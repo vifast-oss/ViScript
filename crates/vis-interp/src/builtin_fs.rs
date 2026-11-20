@@ -127,3 +127,207 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 }
+
+/// **VD-268** — trần độ dài **mẫu** glob (byte): mỗi mục tốn `O(|mẫu| · |đường|)`, nên mẫu sinh
+/// tự động khổng lồ bị từ chối **trước** khi nhân chi phí với số mục của `walk`.
+pub const GLOB_MAU_TOI_DA: usize = 4096;
+
+/// **VD-268** — một mảnh của mẫu glob sau khi phân tích.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ManhGlob {
+    /// Ký tự thường — gồm cả `[`, `]`, `{`, `}`, `\` (**không** có lớp ký tự/escape).
+    Chu(char),
+    /// `?` — đúng **một** ký tự, trừ `/`.
+    Mot,
+    /// `*` — không hoặc nhiều ký tự, trừ `/`.
+    Sao,
+    /// `**` ở **cuối** mẫu — không hoặc nhiều ký tự, **gồm** `/`.
+    Sau,
+    /// `**/` — không hoặc nhiều **thành phần** đầy đủ (mỗi thành phần kết thúc bằng `/`).
+    SauThuMuc,
+}
+
+/// **VD-268** — phân tích mẫu glob. Chỉ ba ký tự đặc biệt `*`, `?`, `**`:
+///
+/// - `*` = không hoặc nhiều ký tự, **trừ** `/`;
+/// - `?` = đúng **một ký tự** (Unicode), **trừ** `/`;
+/// - `**` = không hoặc nhiều ký tự, **gồm** `/`, nhưng **chỉ** hợp lệ khi là **một thành phần
+///   đầy đủ** của mẫu (đầu/cuối mẫu hoặc giữa hai `/`). `**/` khớp **không hoặc nhiều** thư mục
+///   (nên `**/*.txt` khớp cả `a.txt` ở gốc); `**` ở cuối khớp **mọi thứ còn lại** (kể cả rỗng).
+///
+/// `[`, `]`, `{`, `}`, `\` là **ký tự thường**. Mẫu rỗng, mẫu tuyệt đối (bắt đầu `/`), mẫu quá dài
+/// ([`GLOB_MAU_TOI_DA`]), và `**` không phải thành phần đầy đủ (`a**b`, `***`) ⇒ `Err`.
+fn phan_tich_glob(mau: &str) -> Result<Vec<ManhGlob>, String> {
+    if mau.is_empty() {
+        return Err("mẫu glob rỗng".to_string());
+    }
+    if mau.len() > GLOB_MAU_TOI_DA {
+        return Err(format!(
+            "mẫu glob quá dài ({} byte > {GLOB_MAU_TOI_DA})",
+            mau.len()
+        ));
+    }
+    if mau.starts_with('/') {
+        return Err("mẫu glob phải là đường dẫn tương đối (không bắt đầu bằng `/`)".to_string());
+    }
+    let cs: Vec<char> = mau.chars().collect();
+    let mut ra = Vec::with_capacity(cs.len());
+    let mut i = 0;
+    while i < cs.len() {
+        match cs[i] {
+            '*' if cs.get(i + 1) == Some(&'*') => {
+                let dau = i == 0 || cs[i - 1] == '/';
+                let cuoi = i + 2 == cs.len() || cs[i + 2] == '/';
+                if !dau || !cuoi {
+                    return Err(format!(
+                        "mẫu glob không hợp lệ: `**` phải là một thành phần đầy đủ (đầu/cuối \
+                         mẫu hoặc giữa hai `/`), tại ký tự {i}"
+                    ));
+                }
+                if i + 2 < cs.len() {
+                    ra.push(ManhGlob::SauThuMuc);
+                    i += 3; // `**` + `/`
+                } else {
+                    ra.push(ManhGlob::Sau);
+                    i += 2;
+                }
+            }
+            '*' => {
+                ra.push(ManhGlob::Sao);
+                i += 1;
+            }
+            '?' => {
+                ra.push(ManhGlob::Mot);
+                i += 1;
+            }
+            c => {
+                ra.push(ManhGlob::Chu(c));
+                i += 1;
+            }
+        }
+    }
+    Ok(ra)
+}
+
+/// **VD-268** — khớp **một** chuỗi với các mảnh đã phân tích bằng DP theo vị trí (không đệ quy,
+/// `O(|mảnh| · |s|)`); `true` ⇔ khớp **toàn bộ** `s`.
+fn khop_manh(manh: &[ManhGlob], s: &[char]) -> bool {
+    let n = s.len();
+    let mut hien = vec![false; n + 1];
+    hien[0] = true;
+    for m in manh {
+        let mut sau = vec![false; n + 1];
+        match *m {
+            ManhGlob::Chu(c) => {
+                for (j, x) in s.iter().enumerate() {
+                    if hien[j] && *x == c {
+                        sau[j + 1] = true;
+                    }
+                }
+            }
+            ManhGlob::Mot => {
+                for (j, x) in s.iter().enumerate() {
+                    if hien[j] && *x != '/' {
+                        sau[j + 1] = true;
+                    }
+                }
+            }
+            ManhGlob::Sao => {
+                // `*`: cửa sổ khớp chỉ được nới qua ký tự khác `/`.
+                let mut mo = false;
+                for j in 0..=n {
+                    if hien[j] {
+                        mo = true;
+                    }
+                    sau[j] = mo;
+                    if j < n && s[j] == '/' {
+                        mo = false;
+                    }
+                }
+            }
+            ManhGlob::Sau => {
+                // `**` (cuối): tiền tố bất kỳ, gồm `/`.
+                let mut mo = false;
+                for j in 0..=n {
+                    if hien[j] {
+                        mo = true;
+                    }
+                    sau[j] = mo;
+                }
+            }
+            ManhGlob::SauThuMuc => {
+                // `**/`: khớp rỗng, hoặc dừng ngay **sau** một `/` (một thành phần đầy đủ).
+                let mut truoc = false;
+                for j in 0..=n {
+                    sau[j] = hien[j] || (j > 0 && s[j - 1] == '/' && truoc);
+                    if hien[j] {
+                        truoc = true;
+                    }
+                }
+            }
+        }
+        if !sau.iter().any(|x| *x) {
+            return false;
+        }
+        hien = sau;
+    }
+    hien[n]
+}
+
+/// **VD-268** — tên **cuối** của một mục `walk` (bỏ `/` cuối của thư mục): dùng khi mẫu **không**
+/// có `/` ⇒ khớp theo **basename** (mọi tầng), không theo cả đường dẫn.
+fn ten_cuoi(muc: &str) -> &str {
+    let m = muc.strip_suffix('/').unwrap_or(muc);
+    m.rsplit('/').next().unwrap_or(m)
+}
+
+/// **VD-268** — lọc kết quả [`FsHost::walk`] bằng **mẫu glob thuần** (không thêm method host ⇒
+/// host thật, `--fs-mock`, interp và VM dùng **cùng** một ngữ nghĩa):
+///
+/// - mục trả về giữ **nguyên dạng** của `walk` (tương đối so với root, thư mục kèm `/`);
+/// - mẫu **không có** `/` ⇒ khớp **basename** (nên `*.txt` khớp cả `b/c.txt`); mục ẩn vẫn khớp
+///   (`*` khớp cả tên bắt đầu bằng `.`);
+/// - mẫu **có** `/` ⇒ khớp **toàn bộ** đường dẫn tương đối. Mỗi mục được thử ở dạng **không** có
+///   `/` cuối; **thư mục** còn được thử thêm dạng **có** `/` cuối **chỉ khi** mẫu kết thúc bằng `/`
+///   (chọn thư mục, vd `*/`) hoặc bằng `/**` (để `**` cuối khớp **rỗng** và gồm chính thư mục đó,
+///   vd `b/**` ⇒ có `b/`). Nhờ vậy `b/*` chọn **con** của `b` chứ không chọn chính `b/`; kết quả
+///   vẫn in thư mục kèm `/`;
+/// - kết quả **sắp theo byte** (không theo thứ tự DFS của `walk`), **không** trùng;
+/// - mẫu không hợp lệ ⇒ `Err` (lỗi **dữ liệu**, không trap) — xem [`phan_tich_glob`].
+///
+/// Hàm **thuần**: không chạm hệ thống tệp, không theo symlink (việc đó đã do `walk` quyết định).
+pub fn loc_glob(muc: &[String], mau: &str) -> Result<Vec<String>, String> {
+    let manh = phan_tich_glob(mau)?;
+    let theo_ten = !mau.contains('/');
+    // `/` cuối mẫu = chỉ chọn thư mục; `/**` cuối = `**` được khớp **rỗng** (gồm chính thư mục).
+    let giu_slash = mau.ends_with('/');
+    let sau_cuoi = mau == "**" || mau.ends_with("/**");
+    let mut ra: Vec<String> = Vec::new();
+    for m in muc {
+        let khop = if theo_ten {
+            let ten: Vec<char> = ten_cuoi(m).chars().collect();
+            khop_manh(&manh, &ten)
+        } else {
+            let la_thu_muc = m.ends_with('/');
+            // Dạng có `/` cuối chỉ dùng khi mẫu cần nó (tránh `b/*` khớp chính `b/`).
+            let mut khop = if !la_thu_muc || giu_slash || sau_cuoi {
+                let duong: Vec<char> = m.chars().collect();
+                khop_manh(&manh, &duong)
+            } else {
+                false
+            };
+            if !khop {
+                if let Some(khong_slash) = m.strip_suffix('/') {
+                    let duong: Vec<char> = khong_slash.chars().collect();
+                    khop = khop_manh(&manh, &duong);
+                }
+            }
+            khop
+        };
+        if khop {
+            ra.push(m.clone());
+        }
+    }
+    ra.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
+    Ok(ra)
+}
