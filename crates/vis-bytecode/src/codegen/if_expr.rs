@@ -15,7 +15,14 @@ impl Emit<'_> {
     ) -> Result<(), CodegenError> {
         let mut jend: Vec<usize> = Vec::new();
         // **VD-258**: nhánh lệch lớp Option (`1` vs `None`) ⇒ nâng nhánh đã chọn.
-        let (min, max) = than::do_if(then, elifs, Some(else_), &self.g.sym_ty, &self.g.rec_fields);
+        let (min, max) = than::do_if(
+            then,
+            elifs,
+            Some(else_),
+            &self.g.sym_ty,
+            &self.g.rec_fields,
+            &self.g.fn_rets,
+        );
         let mut jf = self.cond(cond)?;
         let mut cond_let = matches!(cond, HCond::Let { .. });
         self.nhanh_gia_tri(then)?;

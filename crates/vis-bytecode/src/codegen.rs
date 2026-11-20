@@ -52,6 +52,7 @@ struct Gen {
     /// `sym` dựng sẵn → tên dựng sẵn (`print`, `Ok`, …).
     builtins: HashMap<u32, String>,
     sym_ty: HashMap<u32, vis_types::Type>,
+    fn_rets: HashMap<u32, vis_types::Type>, // VD-260: sym hàm → kiểu trả về (lớp Option)
     rec_fields: HashMap<(u32, String), vis_types::Type>, // ST-248: kiểu trường bản ghi
     /// **VD-258**: kiểu trường biến thể enum `(EnumId, biến thể, vị trí)`.
     enum_fields: HashMap<(u32, String, usize), vis_types::Type>,
@@ -200,6 +201,7 @@ pub fn compile_with_fee(
         hconsts: HashMap::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
         sym_ty: than::collect_sym_tys(hir, symbols), // ST-248: annot + kiểu suy từ initializer
+        fn_rets: than::collect_fn_rets(hir),         // VD-260: kiểu trả về của hàm
         rec_fields: than::collect_rec_fields(hir),
         enum_fields: than::collect_enum_fields(hir),
         hash: crate::format::source_hash(text),
@@ -1304,7 +1306,8 @@ impl<'g> Emit<'g> {
                 ..
             } => {
                 self.expr(subject)?;
-                let (min, max) = than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields);
+                let (min, max) =
+                    than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields, &self.g.fn_rets);
                 let mut jend = Vec::new();
                 let mut guardas: Vec<usize> = Vec::new();
                 let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();

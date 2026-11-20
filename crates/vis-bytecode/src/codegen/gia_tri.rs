@@ -42,6 +42,7 @@ impl Emit<'_> {
                     else_.as_deref(),
                     &self.g.sym_ty,
                     &self.g.rec_fields,
+                    &self.g.fn_rets,
                 );
                 let mut jf = self.cond(cond)?;
                 // **R3a (VD-178)**: `if let` để giá trị cho nhánh `then` bind; nhánh `else`/`elif`
@@ -95,7 +96,8 @@ impl Emit<'_> {
                 span,
             } => {
                 self.expr(subject)?;
-                let (min, max) = than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields);
+                let (min, max) =
+                    than::do_match(arms, &self.g.sym_ty, &self.g.rec_fields, &self.g.fn_rets);
                 let mut jend = Vec::new();
                 let mut guardas: Vec<usize> = Vec::new();
                 let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();
