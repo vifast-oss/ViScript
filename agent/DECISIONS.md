@@ -3486,3 +3486,10 @@ reuse `Ty::ResultBoolErr`.
 - **vis test --shard `<I>/<N>`**: chia ca **sau** `--filter`/`--shuffle`, **trước**
   `--list`/`--repeat`; phần I giữ chỉ số `idx % N == I-1`; `1 ≤ I ≤ N`; N phần rời nhau, hợp =
   đúng tập đã chọn; sai cú pháp/lặp cờ ⇒ exit 2; `--shard 1/1` giữ hành vi cũ.
+
+### VD-270 (bổ sung) · str.rsplit_once — A0, 2026-11-21
+
+`str.rsplit_once(s, sep) -> list[str]?` tách tại lần xuất hiện **cuối** của `sep`, đúng Rust
+`str::rsplit_once`; `Some` đúng 2 phần; không khớp ⇒ `None`; `sep` rỗng ⇒ `Some([s, ""])`;
+`""`+`""` ⇒ `Some(["", ""])`; Unicode/emoji/ZWJ khớp chuỗi con trên biên scalar; sugar R5c;
+reuse `Ty::OptListStr`.
