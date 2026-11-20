@@ -16,6 +16,7 @@ mod dinh_nghia;
 mod doi_ten;
 mod gap;
 mod goi_y;
+mod inlay_hint;
 mod jsonrpc;
 mod khung;
 mod ky_hieu;
@@ -450,6 +451,28 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **VD-270**: gợi ý kiểu (inlay hint) cho `let`/`var` không có nhãn kiểu.
+            "textDocument/inlayHint" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            // Tệp chưa mở ⇒ `null` (khác các method theo vị trí trả `[]`).
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                gui!(inlay_hint::tra_loi(&kq, &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-275**: vùng gấp theo khai báo nhiều dòng.
             "textDocument/foldingRange" => {
                 if let Some(id) = id {
@@ -582,6 +605,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("documentHighlightProvider", Value::Bool(true)),
         jsonrpc::kv("selectionRangeProvider", Value::Bool(true)),
+        jsonrpc::kv("inlayHintProvider", Value::Bool(true)),
         jsonrpc::kv(
             "renameProvider",
             jsonrpc::m(vec![("prepareProvider", Value::Bool(true))]),
