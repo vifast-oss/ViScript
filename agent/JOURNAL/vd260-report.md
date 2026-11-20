@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `55756dd` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `b1d962f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob),
-> gate **2020 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2023 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -121,3 +121,4 @@
 - **LSP xuyên tệp** (`0365ecb`): `definition` fallback quét `rootUri` khi không thấy trong tệp.
 - `./vis-dev nightly` @ `ab43766`: **PASS** — parser fuzz **6.621.319 ca / 150.252.151 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - **test --list** (`18c8587`): `vis test --list [--filter]` in tên ca, không chạy; `--list --json` bị từ chối.
+- **enumalloc** (`9580e23` → `b1d962f`): nội bộ hoá tên enum bằng `Name(Rc<str>)` + cache thread-local; `Value::Enum(Name, Name, …)`, không đổi show/eq/JSON.
