@@ -308,3 +308,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **path-is-relative** (`dd0df10` → `55b0374`): `path.is_relative` = `!is_abs`, không sugar.
 - **str-is-ascii** (`8ac13ae` → `ff780d4`): `str.is_ascii` mọi byte `0x00..=0x7F`, sugar; tách `frame_net` giữ R1.
 - **sqlite-table-exists** (`1458d45` → `7bef0b3`): `sqlite.table_exists` bảng/view schema chính, tên bind BINARY; thiếu ⇒ `Ok(false)`; TEMP/index/trigger không tính.
+- `./vis-dev core-test` @ `f6325b6`: **PASS**.
