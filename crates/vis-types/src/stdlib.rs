@@ -74,6 +74,12 @@ pub enum Ty {
     /// (chuỗi sai cú pháp/không hữu hạn/tràn ⇒ `None`). Cùng lý do `OptInt`/`OptStr`: `Ty`
     /// không có biến thể `Opt` tổng quát, nên giữ biến riêng theo đúng mẫu.
     OptFloat,
+    /// **VD-270 (split-once)** — `list[str]?` = `Option[list[str]]`: kiểu trả của
+    /// `std.str.split_once` (tách tại **lần xuất hiện đầu** của `sep` ⇒ `Some` đúng **2** phần;
+    /// không khớp ⇒ `None`). Cùng lý do `OptStr`/`OptFloat`: `Ty` không có biến thể `Opt` tổng
+    /// quát, nên giữ biến riêng; **không** tái dùng `ListStr` (mất lớp `Option`) hay `OptStr`
+    /// (Option của `str`, không phải danh sách).
+    OptListStr,
     /// **VD-270 (sqlite-schema-sql)** — `Result[str?, Error]` = `Result[Option[str], Error]`:
     /// kiểu trả của `std.sqlite.schema_sql` (đối tượng không tồn tại hoặc `sql` NULL ⇒ `Ok(None)`).
     /// Không tái dùng `ResultStrStr` (đó là `Result[str, Error]`, không có lớp `Option`) và
@@ -132,6 +138,8 @@ impl Ty {
             Ty::OptStr => Type::Opt(Box::new(Type::Str)),
             // **VD-270 (parse-float)** — `float?` là `Option[float]` thật.
             Ty::OptFloat => Type::Opt(Box::new(Type::Float)),
+            // **VD-270 (split-once)** — `list[str]?` là `Option[list[str]]` thật.
+            Ty::OptListStr => Type::Opt(Box::new(Type::List(Box::new(Type::Str)))),
             // **VD-270 (sqlite-schema-sql)** — `Result[Option[str], Error]`: giữ đúng cả hai lớp.
             Ty::ResultOptStrErr => Type::Result(
                 Box::new(Type::Opt(Box::new(Type::Str))),
@@ -197,6 +205,8 @@ impl Ty {
             Ty::OptStr => "str?",
             // **VD-270 (parse-float)**
             Ty::OptFloat => "float?",
+            // **VD-270 (split-once)**
+            Ty::OptListStr => "list[str]?",
             // **VD-270 (sqlite-schema-sql)**
             Ty::ResultOptStrErr => "Result[str?, Error]",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
@@ -246,12 +256,21 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 141] = [
+pub const FUNCS: [StdFn; 142] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ListStr,
+    },
+    // **VD-270 (split-once)**: tách tại **lần xuất hiện đầu** của `sep`, đúng nghĩa Rust
+    // `str::split_once`: `split_once("a,b,c", ",")` ⇒ `Some(["a", "b,c"])`; không khớp ⇒ `None`;
+    // `sep` rỗng ⇒ `Some(["", s])`; `s` rỗng + `sep` khác rỗng ⇒ `None`. Kết quả `Some` luôn có
+    // **đúng 2** phần, không trap. Sugar R5c `s.split_once(sep)`.
+    StdFn {
+        name: "str.split_once",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptListStr,
     },
     // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần còn
     // lại (kể cả dấu phân cách); `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`; `sep` rỗng theo nghĩa Rust

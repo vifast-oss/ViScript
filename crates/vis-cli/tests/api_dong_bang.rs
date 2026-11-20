@@ -153,6 +153,8 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::OptStr => "str?".to_string(),
         // **VD-270 (parse-float)**: `float?` = `Option[float]` (kiểu trả `str.parse_float`).
         Ty::OptFloat => "float?".to_string(),
+        // **VD-270 (split-once)**: `list[str]?` = `Option[list[str]]` (`str.split_once`).
+        Ty::OptListStr => "list[str]?".to_string(),
         // **VD-270 (sqlite-schema-sql)**: `Result[str?, Error]` (`sqlite.schema_sql`).
         Ty::ResultOptStrErr => "Result[str?, Error]".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
