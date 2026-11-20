@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `5dead58` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `318a5c4` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2580 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2606 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -99,11 +99,13 @@
 | Frame nested | `8bcbf71` → `c6e058e` | frame engine gán lồng mọi đường |
 | LSP typeDefinition | `097c042` → `bfb41f4` | `textDocument/typeDefinition` record/enum |
 | Replace last | `d7c3d7f` → `5dead58` | `str.replace_last` lần khớp cuối |
+| Doctor | `7182aa3` → `09823e1` | `vis doctor [--json]` tất định |
+| Path relative | `eff3ef3` → `318a5c4` | `path.relative` lexical POSIX |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2580 passed / 3 skipped** tại `5dead58`.
+- `./vis-dev gate --fast`: **PASS — 2606 passed / 3 skipped** tại `318a5c4`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -271,3 +273,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `fd2a19a`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `./vis-dev nightly` @ `e9c2d38`: **PASS** — parser fuzz **8.857.961 ca / 200.975.208 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `vis test test/sem` @ `09823e1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
+- **doctor** (`7182aa3` → `09823e1`): `vis doctor [--json]` in version/os/arch/sqlite/features, không phụ thuộc môi trường.
+- **path-relative** (`eff3ef3` → `318a5c4`): `path.relative` thuần từ vựng; cùng loại ⇒ tương đối, trộn loại ⇒ `to` chuẩn hoá.
+- `VIS_DIFF_N=100000` seed 20261206 @ `318a5c4`: **0 lệch** (93.767 chạy).
