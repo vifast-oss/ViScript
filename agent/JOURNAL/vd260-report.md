@@ -52,10 +52,16 @@
 | Intlit | `fd702c7` → `38c8bff` | `i64::MIN` viết trực tiếp; bare `2^63` vẫn `VS0104` tĩnh |
 | Methodret | `768522e` → `4791032`/`b6a8274` | bảng kiểu trả method + `self` dispatch + checker sig; ưu tiên `self_ty`, bỏ `{error}` |
 | Genericres | `633a1a2` → `d7d875d` | pre-pass chữ ký trước thân; tail if/match, literal ẩn danh, RHS Field/Index, method/closure instantiation |
+| Enumalloc | `9580e23` → `b1d962f` | `Value::Enum` dùng `Name(Rc<str>)` nội bộ hoá; Value 72→64 B; microbench Some 1,8×, Ok 1,9× |
+| Windows | `026d679` → `8b1609e` | `list.windows` trượt; R5c buộc biến kiểu ⇒ sugar generic `sort/take/zip/...` |
+| Optmethod | `db9e5d4` → `38dec30` | `recv?.m()` lift Option một lớp, đoản mạch đối số; interp=VM |
+| Fsmeta | `60cac03` → `3d30be1` | `fs.size/is_file/is_dir` dùng `symlink_metadata`, không theo symlink |
+| Fmt-json | `c306b25` → `c121b6c` | `vis fmt --check --json` (tệp/dir/stdin), schema `ok/files` |
+| Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2090 passed / 3 skipped** tại `6f0b71a`.
+- `./vis-dev gate --fast`: **PASS — 2124 passed / 3 skipped** tại `3d30be1`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
