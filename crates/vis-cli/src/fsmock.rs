@@ -266,6 +266,33 @@ impl FsHost for FsMock {
         Ok(())
     }
 
+    /// **VD-270**: số **byte** của "tệp" trong kịch bản (UTF-8, không phải số ký tự); thư mục và
+    /// mục thiếu ⇒ `Err` (cùng chính sách với host thật).
+    fn size(&mut self, p: &str) -> Result<i64, String> {
+        if let Some((_, v)) = self.files.iter().find(|(k, _)| k == p) {
+            return Ok(v.len() as i64);
+        }
+        if self.dirs.iter().any(|(k, _)| k == p) {
+            return Err(format!(
+                "không lấy được kích thước `{p}`: không phải tệp thường"
+            ));
+        }
+        Err(format!(
+            "không lấy được kích thước `{p}`: không có trong kịch bản `--fs-mock`"
+        ))
+    }
+
+    /// **VD-270**: `true` ⇔ khoá có trong `files`; mục thiếu ⇒ `false` (khớp host thật). Kịch bản
+    /// mock **không** biểu diễn được symlink.
+    fn is_file(&mut self, p: &str) -> Result<bool, String> {
+        Ok(self.files.iter().any(|(k, _)| k == p))
+    }
+
+    /// **VD-270**: `true` ⇔ khoá có trong `dirs`; mục thiếu ⇒ `false` (khớp host thật).
+    fn is_dir(&mut self, p: &str) -> Result<bool, String> {
+        Ok(self.dirs.iter().any(|(k, _)| k == p))
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.

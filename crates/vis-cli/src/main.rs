@@ -142,6 +142,25 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.rename(from, to),
         }
     }
+    /// **VD-270**: metadata chỉ đọc — host thật (OS) hoặc mock, cùng chữ ký.
+    fn size(&mut self, p: &str) -> Result<i64, String> {
+        match self {
+            HostFs::That(r) => r.size(p),
+            HostFs::Mock(m) => m.size(p),
+        }
+    }
+    fn is_file(&mut self, p: &str) -> Result<bool, String> {
+        match self {
+            HostFs::That(r) => r.is_file(p),
+            HostFs::Mock(m) => m.is_file(p),
+        }
+    }
+    fn is_dir(&mut self, p: &str) -> Result<bool, String> {
+        match self {
+            HostFs::That(r) => r.is_dir(p),
+            HostFs::Mock(m) => m.is_dir(p),
+        }
+    }
     /// **VD-268**: host thật (OS) hoặc mock, cùng chữ ký.
     fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
         match self {

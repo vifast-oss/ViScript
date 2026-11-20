@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 82] = [
+pub const FUNCS: [StdFn; 85] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -493,6 +493,24 @@ pub const FUNCS: [StdFn; 82] = [
         name: "fs.glob",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
+    },
+    // **VD-270**: metadata **chỉ đọc** — `size` = số byte **tệp thường**; predicate theo
+    // `symlink_metadata` (symlink ⇒ `false`/`false`, `size` ⇒ `Err`), thiếu path ⇒ predicate
+    // `Ok(false)`.
+    StdFn {
+        name: "fs.size",
+        params: &[Ty::Str],
+        ret: Ty::ResultIntErr,
+    },
+    StdFn {
+        name: "fs.is_file",
+        params: &[Ty::Str],
+        ret: Ty::ResultBoolErr,
+    },
+    StdFn {
+        name: "fs.is_dir",
+        params: &[Ty::Str],
+        ret: Ty::ResultBoolErr,
     },
     // ----- std.net (ST-63, VD-100/VD-105) — **đi qua `Host::net`**, không OS trong crate này -----
     StdFn {
