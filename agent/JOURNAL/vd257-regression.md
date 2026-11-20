@@ -134,3 +134,10 @@ Chương trình `fn() -> await src()` với `src` lại `await ext()`: `vis run`
 ghi nhận **chỉ thuộc đường frame test** (fake event), không phải lỗi runtime mặc định; giữ nguyên
 ghi nhận của A, không tự mở sửa trong phạm vi regression.
 
+## 12. Nightly fuzz 10 phút
+
+`./vis-dev nightly --fuzz-minutes 10` (seed ngày, 600 s, có giới hạn kết thúc): **PASS** —
+fuzz parser OK, vòng tròn fmt 475 tệp bất động (bỏ qua 78 ca lỗi cú pháp). Log
+`/tmp/opencode/vd257-nightly10.log`. Cộng các seed thủ công, tổng thời gian fuzz hữu hạn ~16 phút,
+không vi phạm nào được lưu.
+
