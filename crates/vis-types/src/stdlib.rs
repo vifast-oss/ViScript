@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 148] = [
+pub const FUNCS: [StdFn; 149] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -936,6 +936,14 @@ pub const FUNCS: [StdFn; 148] = [
         name: "fs.is_symlink",
         params: &[Ty::Str],
         ret: Ty::ResultBoolErr,
+    },
+    // **VD-270 (fs-read-link)**: đích **nguyên văn** của symlink tại `p` (`std::fs::read_link`,
+    // **không** đi theo link); dangling vẫn `Ok`; tệp/thư mục/thiếu/lỗi khác ⇒ `Err(Error)`.
+    // Chữ ký tái dùng `Ty::ResultStrStr` (cùng `fs.read`). **Không** sugar.
+    StdFn {
+        name: "fs.read_link",
+        params: &[Ty::Str],
+        ret: Ty::ResultStrStr,
     },
     // **VD-270 (fsbytes)**: đọc/ghi **byte thô** — mỗi phần tử là một byte `0..=255`;
     // `read_bytes` → `Result[list[int], Error]`; `write_bytes` nhận `list[int]`, tạo/cắt tệp và

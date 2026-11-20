@@ -215,6 +215,13 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.is_symlink(p),
         }
     }
+    /// **VD-270 (fs-read-link)**: đọc đích symlink — host thật (OS) hoặc mock, cùng chữ ký.
+    fn read_link(&mut self, p: &str) -> Result<String, String> {
+        match self {
+            HostFs::That(r) => r.read_link(p),
+            HostFs::Mock(m) => m.read_link(p),
+        }
+    }
     /// **VD-270 (fsbytes)**: byte thô — host thật (OS) hoặc mock, cùng chữ ký.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
         match self {

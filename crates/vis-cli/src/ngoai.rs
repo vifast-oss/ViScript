@@ -635,6 +635,19 @@ impl vis_interp::builtin::FsHost for Runner {
         }
     }
 
+    /// **VD-270 (fs-read-link)**: đọc **đích** của symlink tại `p` bằng `std::fs::read_link` —
+    /// **không** đi theo link, nên **dangling** vẫn trả đích. Đích trả **nguyên văn** (tương đối
+    /// hay tuyệt đối đúng như lúc tạo). Tệp/thư mục thường, `p` thiếu, `ENOTDIR`, không đủ quyền
+    /// OS ⇒ `Err` dữ liệu; đích không phải UTF-8 cũng ⇒ `Err` (không cắt cụt thay bằng lossy).
+    fn read_link(&mut self, p: &str) -> Result<String, String> {
+        self.nhat_ky("read_link", p);
+        let dich =
+            std::fs::read_link(p).map_err(|e| format!("không đọc được liên kết `{p}`: {e}"))?;
+        dich.into_os_string()
+            .into_string()
+            .map_err(|_| format!("không đọc được liên kết `{p}`: đích không phải UTF-8 hợp lệ"))
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (`std::fs::read`); thiếu
     /// tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {

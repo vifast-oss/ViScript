@@ -368,6 +368,15 @@ impl FsHost for FsMock {
         Ok(false)
     }
 
+    /// **VD-270 (fs-read-link)**: kịch bản mock **không** biểu diễn được symlink ⇒ mọi đường dẫn
+    /// (kể cả `files`/`dirs` có trong kịch bản) đều `Err` dữ liệu, **tất định** — đúng hệ quả của
+    /// `is_symlink` luôn `false`: không có link nào để đọc đích.
+    fn read_link(&mut self, p: &str) -> Result<String, String> {
+        Err(format!(
+            "không đọc được liên kết `{p}`: kịch bản `--fs-mock` không biểu diễn symlink"
+        ))
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.
