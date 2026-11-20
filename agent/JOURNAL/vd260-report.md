@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `7a93bea` (sau perf SQLite + release strip),
-> gate **1728 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `6c2c9c2` (sau method/globals + perf),
+> gate **1746 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -21,10 +21,13 @@
 | Semantics 3 | `f5311ee` → `63aff1c` | refutable `let`/`for` rejected; checker scopes + unresolved `VS0301`; record unknown/positional/duplicate rules |
 | Cache | `d780637` | `PHIEN_BAN` + pin hash `dd5794e2…` sau rest-pattern/parity |
 | Docs | `1421616` → `5931968` | CHANGELOG + cheat-sheet (main->int, sqlite read-only, rest pattern) |
+| Method | `240c2a0` → `3b0757a` | type-check thân method `impl`: break/continue, tên lạ, return |
+| Globals | `d518975` → `6c2c9c2` | khởi tạo top-level `let`/`var` trước `fn main`, cả 2 engine |
+| Perf | `2395a8d`, `7a93bea` | cache quét schema SQLite; strip release 6.23 MB |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1728 passed / 3 skipped** tại `7a93bea`.
+- `./vis-dev gate --fast`: **PASS — 1746 passed / 3 skipped** tại `6c2c9c2`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS 15/15**; artifact chỉ `vis` (không `test-child`).
