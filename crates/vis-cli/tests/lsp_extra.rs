@@ -217,3 +217,47 @@ fn lsp_completion_sau_module_sqlite() {
 fn completion(id: i64, uri: &str, line: i64, ch: i64) -> String {
     req_vi_tri(id, "textDocument/completion", uri, line, ch)
 }
+
+// ===== ST-280: prepareRename =====
+
+fn prepare(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/prepareRename", uri, line, ch)
+}
+
+/// Ca — `add` là định danh hợp lệ ⇒ `{range, placeholder}`.
+#[test]
+fn lsp_prepare_rename_hop_le() {
+    let text = "fn add(a: int) -> int:\n    a\n\nfn main():\n    add(1)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&prepare(2, URI, 0, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains(r#""placeholder":"add""#),
+        "thiếu placeholder: {body}"
+    );
+    assert!(body.contains(r#""range""#), "thiếu range: {body}");
+}
+
+/// Ca — từ khoá `fn` ⇒ `result:null`.
+#[test]
+fn lsp_prepare_rename_tu_khoa_null() {
+    let text = "fn main():\n    print(1)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&prepare(2, URI, 0, 0))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}

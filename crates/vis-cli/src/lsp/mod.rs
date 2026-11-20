@@ -250,6 +250,28 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-280**: chuẩn bị đổi tên (range + placeholder) trước khi client hỏi tên mới.
+            "textDocument/prepareRename" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(doi_ten::tra_loi_prepare(&kq, byte, &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-272**: đổi tên định danh trong tệp (token Ident, không chạm chuỗi/chú thích).
             "textDocument/rename" => {
                 if let Some(id) = id {
@@ -456,7 +478,10 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
-        jsonrpc::kv("renameProvider", Value::Bool(true)),
+        jsonrpc::kv(
+            "renameProvider",
+            jsonrpc::m(vec![("prepareProvider", Value::Bool(true))]),
+        ),
         jsonrpc::kv(
             "signatureHelpProvider",
             jsonrpc::m(vec![(

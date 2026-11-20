@@ -6,7 +6,7 @@
 //! Trả `WorkspaceEdit` dạng `changes: { uri: TextEdit[] }`, cap 200.
 
 use vis_interp::value::Value;
-use vis_syntax::{is_keyword, lex, Kind, Mode};
+use vis_syntax::{is_keyword, lex, Kind, Mode, Span};
 
 use super::goi_y::tu_tai;
 use super::jsonrpc::{m, phan_hoi, s};
@@ -74,4 +74,43 @@ pub fn tra_loi_rename(
         return phan_hoi(id, Value::none());
     }
     phan_hoi(id, m(vec![("changes", m(vec![(uri, Value::List(edits))]))]))
+}
+
+/// **ST-280**: `textDocument/prepareRename` — trả `{range, placeholder}` nếu từ tại con trỏ là
+/// định danh hợp lệ (không phải từ khoá), ngược lại `null`.
+pub fn tra_loi_prepare(kq: &KetQua, byte: usize, id: &Value) -> Vec<u8> {
+    let (start, end) = tu_tai(&kq.text, byte);
+    if start == end {
+        return phan_hoi(id, Value::none());
+    }
+    let ten = &kq.text[start..end];
+    if !ten_hop_le(ten) {
+        return phan_hoi(id, Value::none());
+    }
+    let ((l0, c0), (l1, c1)) = khoang(&kq.text, Span::new(start, end));
+    phan_hoi(
+        id,
+        m(vec![
+            (
+                "range",
+                m(vec![
+                    (
+                        "start",
+                        m(vec![
+                            ("line", Value::Int(l0 as i64)),
+                            ("character", Value::Int(c0 as i64)),
+                        ]),
+                    ),
+                    (
+                        "end",
+                        m(vec![
+                            ("line", Value::Int(l1 as i64)),
+                            ("character", Value::Int(c1 as i64)),
+                        ]),
+                    ),
+                ]),
+            ),
+            ("placeholder", s(ten)),
+        ]),
+    )
 }
