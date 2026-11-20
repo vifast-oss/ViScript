@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `254c03f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `8b758fc` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2417 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2424 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -85,11 +85,12 @@
 | Replace first | `df611e7` → `03950f4` | `str.replace_first`: chỉ lần khớp đầu |
 | LSP codeLens | `d88ccaa` → `cf94e77` | `textDocument/codeLens` cho `test fn` |
 | SQLite tables | `c0003bb` → `254c03f` | `sqlite.tables`: bảng/view schema chính |
+| Batch trigger | trực tiếp → `8b758fc` | `execute_batch` hiểu `BEGIN…END` trigger |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2417 passed / 3 skipped** tại `254c03f`.
+- `./vis-dev gate --fast`: **PASS — 2424 passed / 3 skipped** tại `8b758fc`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -230,3 +231,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **lsp-codelens** (`d88ccaa` → `cf94e77`): lens `Chạy test <name>` cho `test fn`, UTF-16, cap 200.
 - **sqlite-tables** (`c0003bb` → `254c03f`): `sqlite.tables` sắp byte, bỏ `sqlite_%`, bảng TEMP không liệt kê.
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `885879d`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **batch-trigger** (`8b758fc`): `execute_batch` quét `CREATE [TEMP] TRIGGER … BEGIN … END` nguyên khối; `;`/`CASE`/chuỗi trong thân không tách; thiếu `END` ⇒ `Err`; 3 ca interp=VM.
