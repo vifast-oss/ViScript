@@ -375,9 +375,24 @@ do_check() {
     echo "vis-dev check: PASS"
 }
 
+# L0 test — **TỐI ƯU (ST-258)**: `cargo test` chạy các test binary tuần tự (đo 43,78 s với
+# 1435 test/12 core). `cargo nextest run` chạy song song, mỗi ca một process ⇒ ~8,4 s, nhưng
+# **không chạy doc-test** ⇒ phải thêm `cargo test --doc` (5 ca). Tổng 1430+5 = 1435 như cũ.
+# nextest là tuỳ chọn: máy chưa cài thì fallback y hệt lệnh cũ; `VIS_NO_NEXTEST=1` để tắt khi
+# cần đối chiếu. Không đổi kỳ vọng, không bỏ ca, không đổi mã thoát.
+run_l0_tests() {
+    if [ "${VIS_NO_NEXTEST:-0}" != "1" ] && command -v cargo-nextest >/dev/null 2>&1; then
+        echo "--- L0 test: cargo-nextest (song song) + doc-test"
+        "$CARGO" nextest run --manifest-path "$MANIFEST" --workspace &&
+            "$CARGO" test --manifest-path "$MANIFEST" --workspace --doc
+        return $?
+    fi
+    "$CARGO" test --manifest-path "$MANIFEST" --workspace
+}
+
 do_gate_fast() {
     do_check || return 1
-    if ! "$CARGO" test --manifest-path "$MANIFEST" --workspace; then
+    if ! run_l0_tests; then
         echo "--- L0 test: FAIL" >&2; return 1
     fi
     echo "--- L0 test: OK"
