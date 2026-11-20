@@ -4,6 +4,118 @@
 //! ở biên hàm (mirror interp ở `call_hfn_trong`).
 
 use super::*;
+use vis_types::Type;
+
+/// **ST-248 (VD-242 §3.3)** — gom kiểu trường bản ghi `RecId → (tên trường → kiểu)` từ HIR.
+/// Dùng để biết kiểu đích của `u.f = v` mà không cần `TypeTable` (API `compile` giữ nguyên).
+pub(super) fn collect_rec_fields(hir: &Hir) -> HashMap<(u32, String), Type> {
+    let mut m = HashMap::new();
+    for it in &hir.items {
+        if let HItem::Rec(r) = it {
+            for f in &r.fields {
+                m.insert((r.id.0, f.name.clone()), f.ty.clone());
+            }
+        }
+    }
+    m
+}
+
+/// **ST-248** — suy kiểu tĩnh của một biểu thức HIR (chỉ các dạng mang kiểu hiển thị); `None`
+/// khi không biết ⇒ không nâng (an toàn, không đoán ngữ nghĩa mới).
+fn infer_ty(e: &HExpr, sym: &HashMap<u32, Type>) -> Option<Type> {
+    match e {
+        HExpr::Lit { ty, .. } | HExpr::Record { ty, .. } => Some(ty.clone()),
+        HExpr::Map { key, value, .. } => {
+            Some(Type::Map(Box::new(key.clone()), Box::new(value.clone())))
+        }
+        HExpr::List { elem, .. } | HExpr::Set { elem, .. } => {
+            Some(Type::List(Box::new(elem.clone())))
+        }
+        HExpr::Var { sym: Some(id), .. } => sym.get(id).cloned(),
+        HExpr::Call { callee, args, .. } => match (&**callee, args.first()) {
+            (HExpr::Var { name, .. }, Some(a)) if name == "Some" => {
+                infer_ty(a, sym).map(|t| Type::Opt(Box::new(t)))
+            }
+            (HExpr::Var { name, .. }, _) if name == "None" => {
+                Some(Type::Opt(Box::new(Type::Error)))
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// **ST-248** — gán kiểu suy được từ pattern `let` đơn (`HPat::Bind`); dạng khác bỏ qua.
+fn bind_pat(p: &HPat, ty: &Type, sym: &mut HashMap<u32, Type>) {
+    if let HPat::Bind { sym: id, .. } = p {
+        sym.insert(*id, ty.clone());
+    }
+}
+
+/// **ST-248** — đi khối câu lệnh để gom kiểu biến không có annotation (vd `var u = U(…)` ⇒
+/// `u: Record(U)`). Chỉ đọc cấu trúc HIR, không gọi mã người dùng (VD-242 §3.4).
+fn walk_stmts(sts: &[HStmt], sym: &mut HashMap<u32, Type>) {
+    for s in sts {
+        match s {
+            HStmt::Var {
+                sym: id, ty, init, ..
+            } => {
+                if ty.is_none() {
+                    if let Some(t) = infer_ty(init, sym) {
+                        sym.insert(*id, t);
+                    }
+                }
+            }
+            HStmt::Let { pat, ty, init, .. } => {
+                if ty.is_none() {
+                    if let Some(t) = infer_ty(init, sym) {
+                        bind_pat(pat, &t, sym);
+                    }
+                }
+            }
+            HStmt::If {
+                then, elifs, else_, ..
+            } => {
+                walk_stmts(then, sym);
+                for (_, b) in elifs {
+                    walk_stmts(b, sym);
+                }
+                if let Some(b) = else_ {
+                    walk_stmts(b, sym);
+                }
+            }
+            HStmt::For { body, .. }
+            | HStmt::While { body, .. }
+            | HStmt::Loop { body, .. }
+            | HStmt::Scope { body, .. }
+            | HStmt::Block { body, .. } => walk_stmts(body, sym),
+            HStmt::Match { arms, .. } => {
+                for a in arms {
+                    walk_stmts(&a.body, sym);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// **ST-248** — `sym` → kiểu đầy đủ = annotation + kiểu suy từ initializer (mirror interp).
+pub(super) fn collect_sym_tys(hir: &Hir, symbols: &Symbols) -> HashMap<u32, Type> {
+    let mut m = crate::util::sym_annot_map(symbols);
+    walk_stmts(&hir.stmts, &mut m);
+    for it in &hir.items {
+        match it {
+            HItem::Fn(f) => walk_stmts(&f.body, &mut m),
+            HItem::Impl(i) => {
+                for meth in &i.methods {
+                    walk_stmts(&meth.body, &mut m);
+                }
+            }
+            _ => {}
+        }
+    }
+    m
+}
 
 /// Số lớp `Opt` của một **đích kiểu** — đếm từ ngoài vào (mirror vis-interp `opt_depth_ty`).
 pub(super) fn opt_depth(t: &vis_types::Type) -> usize {
@@ -97,24 +209,45 @@ impl Emit<'_> {
         Ok(())
     }
 
-    /// **VD-241 §3+ (A0, 2026-11-19)** — số lớp `Opt` của annot của `sym` (0 nếu không có).
-    /// Dùng ở biên **gán lại** (`x = Some(7)` với `x: int??`).
-    pub(super) fn sym_opt_depth(&self, sym: u32) -> usize {
-        self.g.sym_ty.get(&sym).map(opt_depth).unwrap_or(0)
+    /// **ST-248 (VD-242 §3.3)** — kiểu tĩnh của biểu thức **gốc** (`Var`/`Field`/`Index`), dùng để
+    /// suy kiểu đích của phép gán trường/chỉ số. `None` ⇒ không biết ⇒ không nâng.
+    fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
+        match e {
+            vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
+            vis_types::HExpr::Field { base, name, .. } => match self.base_ty(base) {
+                Some(Type::Record(id)) => self.g.rec_fields.get(&(id.0, name.clone())).cloned(),
+                _ => None,
+            },
+            vis_types::HExpr::Index { base, .. } => match self.base_ty(base) {
+                Some(Type::Map(_, v)) => Some(*v),
+                Some(Type::List(el)) => Some(*el),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
-    /// **VD-241 §3+ (A0, 2026-11-19)** — nâng một lớp ở biên gán lại khi đích là `var` có annot
-    /// `Option`; đích trường/chỉ số **chưa** nâng (xem báo cáo).
+    /// **ST-248 (VD-242 §3.3)** — số lớp `Opt` của **đích gán** (0 ⇒ giữ nguyên).
+    /// `Var` dùng kiểu biến (không đổi theo từng lần gán); `Field`/`Index` dùng kiểu khai báo
+    /// của trường/phần tử. `lift_opt` tự dừng ở đủ lớp ⇒ không nâng nhiều lớp, `None` giữ nguyên.
+    pub(super) fn assign_target_depth(&self, t: &vis_types::HExpr) -> usize {
+        let ty = match t {
+            vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
+            other => self.base_ty(other),
+        };
+        ty.as_ref().map(opt_depth).unwrap_or(0)
+    }
+
+    /// **VD-241 §3+ / ST-248** — nâng giá trị ở biên gán (đích `var`, `field`, `index`) tới đủ lớp
+    /// `Opt` của kiểu đích; đích không-Opt giữ nguyên.
     pub(super) fn lift_assign_set(
         &mut self,
         target: &vis_types::HExpr,
         span: Span,
     ) -> Result<(), CodegenError> {
-        if let vis_types::HExpr::Var { sym: Some(id), .. } = target {
-            let depth = self.sym_opt_depth(*id);
-            if depth > 0 {
-                self.lift_opt(depth, span)?;
-            }
+        let depth = self.assign_target_depth(target);
+        if depth > 0 {
+            self.lift_opt(depth, span)?;
         }
         Ok(())
     }

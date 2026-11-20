@@ -385,7 +385,8 @@ impl<'a> Interp<'a> {
                         HExpr::Field { base, name, .. } => {
                             if let HExpr::Var { sym: Some(id), .. } = &**base {
                                 let cu = self.doc_o(*id, target.span())?;
-                                let rhs = self.eval(value)?;
+                                let dep = self.assign_depth(target, &cu); // ST-248: đích trường Opt
+                                let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
                                 let moi = gan_truong(cu, name, rhs, *span)?;
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
@@ -394,8 +395,9 @@ impl<'a> Interp<'a> {
                         HExpr::Index { base, index, .. } => {
                             if let HExpr::Var { sym: Some(id), .. } = &**base {
                                 let cu = self.doc_o(*id, target.span())?;
+                                let dep = self.assign_depth(target, &cu); // ST-248: đích phần tử Opt
                                 let i = self.eval(index)?;
-                                let rhs = self.eval(value)?;
+                                let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
                                 let moi = gan_chi_so(cu, i, rhs, *span)?;
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
@@ -409,9 +411,10 @@ impl<'a> Interp<'a> {
                             {
                                 if let HExpr::Var { sym: Some(id), .. } = &**goc {
                                     let cu = self.doc_o(*id, target.span())?;
+                                    let dep = self.assign_depth(target, &cu); // ST-248: `x.f[i]`
                                     let truong = self.field_of(cu, name, *span)?;
                                     let i = self.eval(index)?;
-                                    let rhs = self.eval(value)?;
+                                    let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
                                     let moi_truong = gan_chi_so(truong, i, rhs, *span)?;
                                     let cu2 = self.doc_o(*id, target.span())?;
                                     let moi = gan_truong(cu2, name, moi_truong, *span)?;
@@ -1243,6 +1246,43 @@ impl<'a> Interp<'a> {
                 format!("không chỉ số được `{}` bằng `{}`", other.show(), idx.show()),
                 span,
             ))),
+        }
+    }
+
+    /// **ST-248 (VD-242 §3.3)** — số lớp `Opt` của đích gán trường/chỉ số. Kiểu đích lấy từ
+    /// annotation của biến gốc, hoặc (bản ghi không annot) từ tên bản ghi runtime qua `TypeTable`.
+    fn assign_depth(&self, t: &HExpr, root: &Value) -> usize {
+        self.expr_ty(t, root)
+            .map(|ty| opt_depth_ty(&ty))
+            .unwrap_or(0)
+    }
+
+    /// **ST-248** — kiểu tĩnh của gốc/target (`Var`/`Field`/`Index`); `None` ⇒ không nâng.
+    fn expr_ty(&self, e: &HExpr, root: &Value) -> Option<vis_types::Type> {
+        match e {
+            HExpr::Var { sym: Some(id), .. } => {
+                if let Some(t) = self.symbols.get(*id).and_then(|s| s.ty.clone()) {
+                    return Some(t);
+                }
+                match root {
+                    Value::Record(ten, _) => {
+                        self.types.rec_by_name(ten).map(vis_types::Type::Record)
+                    }
+                    _ => None,
+                }
+            }
+            HExpr::Field { base, name, .. } => match self.expr_ty(base, root) {
+                Some(vis_types::Type::Record(id)) => {
+                    self.types.field(id, name).map(|f| f.ty.clone())
+                }
+                _ => None,
+            },
+            HExpr::Index { base, .. } => match self.expr_ty(base, root) {
+                Some(vis_types::Type::Map(_, v)) => Some(*v),
+                Some(vis_types::Type::List(el)) => Some(*el),
+                _ => None,
+            },
+            _ => None,
         }
     }
 

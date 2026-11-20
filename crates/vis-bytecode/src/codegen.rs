@@ -144,6 +144,7 @@ struct Gen {
     /// `sym` dựng sẵn → tên dựng sẵn (`print`, `Ok`, …).
     builtins: HashMap<u32, String>,
     sym_ty: HashMap<u32, vis_types::Type>,
+    rec_fields: HashMap<(u32, String), vis_types::Type>, // ST-248: kiểu trường bản ghi
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     /// **ST-238 (VD-242, ca 3)**: `sym` của biến `let`/`var` cấp tệp → ô trong vùng
@@ -277,7 +278,8 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
         globals: HashMap::new(),
         hconsts: HashMap::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
-        sym_ty: crate::util::sym_annot_map(symbols),
+        sym_ty: than::collect_sym_tys(hir, symbols), // ST-248: annot + kiểu suy từ initializer
+        rec_fields: than::collect_rec_fields(hir),
         hash: crate::format::source_hash(text),
     };
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
@@ -555,6 +557,7 @@ impl<'g> Emit<'g> {
                             self.f.push(Instr::LoadLocal(slot), *span, 1);
                             self.expr(index)?;
                             self.expr(value)?;
+                            self.lift_assign_set(target, *span)?; // ST-248: đích `map`/`list` Opt
                             self.f.push(Instr::Set, *span, -2);
                             self.f.push(Instr::Assign(slot), *span, -1);
                             return self.net_stack(*span);
@@ -579,6 +582,7 @@ impl<'g> Emit<'g> {
                             self.f.push(Instr::Field(fc), *span, 0);
                             self.expr(index)?;
                             self.expr(value)?;
+                            self.lift_assign_set(target, *span)?; // ST-248: đích `x.f[i]` Opt
                             self.f.push(Instr::Set, *span, -2);
                             self.f.push(Instr::With(1), *span, -2);
                             self.f.push(Instr::Assign(slot), *span, -1);
@@ -593,6 +597,7 @@ impl<'g> Emit<'g> {
                             let n = self.g.cst_str(name);
                             self.f.push(Instr::Const(n), *span, 1);
                             self.expr(value)?;
+                            self.lift_assign_set(target, *span)?; // ST-248: đích trường Opt
                             self.f.push(Instr::With(1), *span, -2);
                             self.f.push(Instr::Assign(slot), *span, -1);
                             return self.net_stack(*span);
