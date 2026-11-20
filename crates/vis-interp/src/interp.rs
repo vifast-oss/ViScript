@@ -16,7 +16,7 @@ use crate::value::*;
 #[path = "frame/core.rs"]
 mod core_types;
 #[path = "interp/gan_long.rs"]
-mod gan_long;
+pub(crate) mod gan_long;
 #[path = "interp/opt_method.rs"]
 mod opt_method;
 use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};

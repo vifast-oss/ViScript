@@ -483,55 +483,13 @@ pub(super) fn exec_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, s: &'a 
                         span: *span,
                     });
                     frame.cur().work.push(Work::Eval(value));
+                    Ok(())
                 }
-                HExpr::Field {
-                    base: goc, name, ..
-                } => {
-                    if let HExpr::Var { sym: Some(id), .. } = &**goc {
-                        frame.cur().work.push(Work::ApplyAssignField {
-                            sym: *id,
-                            name: name.clone(),
-                            op: *op,
-                            span: *span,
-                        });
-                        frame.cur().work.push(Work::Eval(value));
-                    } else {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            "frame test: gán trường chỉ hỗ trợ gốc là `var`",
-                            *span,
-                        )));
-                    }
-                }
-                HExpr::Index { base, .. } => {
-                    if let HExpr::Var { sym: Some(id), .. } = &**base {
-                        frame.cur().work.push(Work::ApplyAssignIndex {
-                            sym: *id,
-                            op: *op,
-                            span: *span,
-                        });
-                        frame.cur().work.push(Work::Eval(value));
-                        if let HExpr::Index { index, .. } = target {
-                            frame.cur().work.push(Work::Eval(index.as_ref()));
-                        }
-                    } else {
-                        return Err(Abort::Trap(Trap::new(
-                            RT,
-                            "frame test: gán phần tử chỉ hỗ trợ gốc là `var`",
-                            *span,
-                        )));
-                    }
-                }
-                _ => {
-                    return Err(Abort::Trap(Trap::new(
-                        RT,
-                        "frame test: đích gán chưa được hỗ trợ",
-                        *span,
-                    )))
-                }
+                // **VD-270**: mọi đích `Field`/`Index` — kể cả một tầng — đi **cùng** một
+                // đường: đọc gốc trước chỉ số/vế phải, đọc tầng giữa đúng thứ tự, nâng `Opt`
+                // như interp/codegen (`assign_depth`).
+                _ => schedule_assign_path(it, frame, target, *op, value, *span),
             }
-            let _ = it;
-            Ok(())
         }
         HStmt::Expr(e) => {
             frame.cur().work.push(Work::SetLast);
@@ -616,6 +574,109 @@ pub(super) fn exec_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, s: &'a 
             Ok(())
         }
     }
+}
+
+/// **VD-270** — một bước của đích gán **đường** (gốc → lá); chỉ số **chưa** đánh giá.
+///
+/// Khác `crate::gan::Buoc` (bước đã có `Value` chỉ số): đây là hình dạng HIR để frame
+/// evaluator đánh giá từng chỉ số **đúng thứ tự** trên work stack.
+pub(super) enum NutGan<'a> {
+    Truong(String),
+    ChiSo(&'a HExpr),
+}
+
+/// **VD-270** — trạng thái đi xuống đích **đường** (`Work::AssignPathStep`): `k` bước đầu
+/// đã gom vào `duong`; nếu `sau_chi_so` thì chỉ số của bước `k` đang trên `vals`.
+pub(super) struct AssignPathStep<'a> {
+    pub(super) sym: u32,
+    pub(super) nuts: Rc<Vec<NutGan<'a>>>,
+    pub(super) k: usize,
+    pub(super) op: AssignOp,
+    pub(super) span: Span,
+    /// Gốc đọc **một lần** trước mọi chỉ số/vế phải (mirror codegen `LoadLocal`).
+    pub(super) root: Value,
+    pub(super) duong: Vec<crate::gan::Buoc>,
+    /// Số lớp `Opt` của đích (nâng vế phải khi `=`).
+    pub(super) opt_depth: usize,
+    pub(super) sau_chi_so: bool,
+    /// Vế phải — bước cuối đẩy `Eval` **sau** `ApplyAssignPath` (đúng thứ tự LIFO).
+    pub(super) value: &'a HExpr,
+}
+
+/// **VD-270** — trạng thái ghi đích **đường** (`Work::ApplyAssignPath`), sau vế phải.
+pub(super) struct ApplyAssignPath {
+    pub(super) sym: u32,
+    pub(super) op: AssignOp,
+    pub(super) span: Span,
+    pub(super) root: Value,
+    pub(super) duong: Vec<crate::gan::Buoc>,
+    pub(super) opt_depth: usize,
+}
+
+/// **VD-270** — dựng các bước gán từ **cùng** `interp::gan_long::thu_duong` (không lặp luật
+/// `?.`/gốc); chỉ đổi nút HIR thành bước `NutGan` (chỉ số chưa đánh giá).
+fn thu_duong<'a>(t: &'a HExpr, span: Span) -> R<(u32, Vec<NutGan<'a>>)> {
+    let mut nut = Vec::new();
+    crate::interp::gan_long::thu_duong(t, &mut nut, span)?;
+    let Some(sym) = crate::interp::gan_long::goc_var(t) else {
+        return Err(Abort::Trap(Trap::new(
+            RT,
+            "gán cho tên chưa phân giải được",
+            span,
+        )));
+    };
+    let nuts = nut
+        .into_iter()
+        .map(|n| match n {
+            HExpr::Field { name, .. } => NutGan::Truong(name.clone()),
+            HExpr::Index { index, .. } => NutGan::ChiSo(index.as_ref()),
+            _ => unreachable!("`thu_duong` chỉ trả `Field`/`Index`"),
+        })
+        .collect();
+    Ok((sym, nuts))
+}
+
+/// **VD-270** — lập work cho đích gán **đường** (`Field`/`Index`, gốc `var`).
+///
+/// Thứ tự thi hành (work stack LIFO): đọc gốc **một lần** → từng bước gốc→lá (mỗi chỉ số
+/// đánh giá đúng thứ tự, **đọc tầng giữa ngay sau bước** để trap sớm như interp/codegen) →
+/// vế phải → ghi lá rồi dựng lại từng tầng bằng [`crate::gan::gan_duong`].
+fn schedule_assign_path<'a>(
+    it: &mut Interp<'a>,
+    frame: &mut IFrame<'a>,
+    target: &'a HExpr,
+    op: AssignOp,
+    value: &'a HExpr,
+    span: Span,
+) -> R<()> {
+    let (sym, nuts) = thu_duong(target, span)?;
+    let root = frame
+        .cur()
+        .env
+        .borrow()
+        .get(&sym)
+        .cloned()
+        .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))?;
+    // Đích `Opt` được nâng vế phải như interp/codegen (`assign_depth`/`lift_assign_set`).
+    let opt_depth = it
+        .expr_ty(target, &root)
+        .as_ref()
+        .map(opt_depth_ty)
+        .unwrap_or(0);
+    // Bước cuối mới đẩy `ApplyAssignPath` + `Eval(value)` (LIFO: đường chạy trước vế phải).
+    frame.cur().work.push(Work::AssignPathStep(AssignPathStep {
+        sym,
+        nuts: Rc::new(nuts),
+        k: 0,
+        op,
+        span,
+        root,
+        duong: Vec::new(),
+        opt_depth,
+        sau_chi_so: false,
+        value,
+    }));
+    Ok(())
 }
 
 /// Gọi một giá trị hàm (closure/builtin value/record ctor) — mirror `call_value`.
