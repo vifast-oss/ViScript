@@ -296,3 +296,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **path-join-all** (`a1c7378` → `96c8547`): `path.join_all(list[str])`, gấp trái đúng `path.join`; không sugar.
 - **sqlite-pk** (`9bc6f3a` → `1833df8`): `sqlite.primary_keys` theo `pk`, bind tên; thiếu/view ⇒ `Ok([])`.
 - **mkdir-all** (`8f046b4` → `0eb6b32`): `fs.mkdir_all` đệ quy idempotent, chặn file/symlink, `Quyen::chuan_de_quy`; mock parity.
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `73f5db6`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
