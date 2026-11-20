@@ -224,6 +224,11 @@ impl<'a> Parser<'a> {
     fn add_expr(&mut self) -> PResult<Node> {
         let mut lhs = self.mul_expr()?;
         loop {
+            // **VD-268**: `a.b.f += 1` — cặp `+` `=` dính nhau là **gán ghép**, không phải
+            // toán tử cộng; dừng để `expr_stmt` nhận vế trái làm đích gán.
+            if self.aug_assign_ahead() {
+                return Ok(lhs);
+            }
             let op = self.eat_any_punct(&["+", "-"]);
             match op {
                 Some(op) => {
@@ -238,6 +243,10 @@ impl<'a> Parser<'a> {
     fn mul_expr(&mut self) -> PResult<Node> {
         let mut lhs = self.unary_expr()?;
         loop {
+            // **VD-268**: `xs[0].n *= 2` / `x //= 2` — dừng trước cặp gán ghép.
+            if self.aug_assign_ahead() {
+                return Ok(lhs);
+            }
             // Ca L3 `50%`: `%` không có vế phải ⇒ VS0202 kèm gợi ý `50pct`.
             if self.at_punct("%") && matches!(self.tok_at(1).kind, Kind::Newline | Kind::Eof) {
                 return Err(self.err_code(

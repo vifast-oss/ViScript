@@ -14,6 +14,8 @@ use crate::value::*;
 
 #[path = "frame/core.rs"]
 mod core_types;
+#[path = "interp/gan_long.rs"]
+mod gan_long;
 use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};
 pub use core_types::*;
 
@@ -403,6 +405,14 @@ impl<'a> Interp<'a> {
                             }
                         }
                         _ => {}
+                    }
+                }
+                // **VD-268**: đích **đường** (`a.b.f`, `xs[0].f`, `a.bs[i].f`, …) hoặc gán ghép
+                // trên **lá** trường/phần tử. Ba hình dạng một tầng ở trên giữ nguyên đường cũ.
+                if !matches!(target, HExpr::Var { .. }) {
+                    if let Some(id) = gan_long::goc_var(target) {
+                        self.gan_long(id, target, *op, value, *span)?;
+                        return Ok(Ctrl::Normal);
                     }
                 }
                 let cur = self.lvalue_get(target)?;
@@ -1170,97 +1180,11 @@ impl<'a> Interp<'a> {
     }
 
     fn field_of(&mut self, b: Value, name: &str, span: Span) -> R<Value> {
-        match b {
-            Value::Record(_, fields) => fields
-                .into_iter()
-                .find(|(n, _)| n == name)
-                .map(|(_, v)| v)
-                .ok_or_else(|| {
-                    Abort::Trap(Trap::new(
-                        RT,
-                        format!("bản ghi không có trường `{name}`"),
-                        span,
-                    ))
-                }),
-            // **VD-204 (1)**: `Some(v)` không có trường; truy cập trường lên `Option`
-            // bóc `Some(v)` rồi lấy trường của `v` (tương thích hành vi cũ với `Value::Opt`).
-            Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
-                let mut args = args;
-                self.field_of(args.pop().expect("Some luôn có một đối số"), name, span)
-            }
-            // **Parity interp ↔ VM**: field access trên giá trị `Enum` không được định nghĩa ở
-            // ViScript ⇒ `VS0501`. Ngoại lệ hợp lệ duy nhất: **atom biến thể rỗng** `E.A` —
-            // `E` evaluate về `Enum(en, "", [])` (tag atom marker) và `x.Type` dựng biến thể rỗng.
-            Value::Enum(en, variant, args) => {
-                if variant.is_empty() && args.is_empty() {
-                    Ok(Value::Enum(
-                        en,
-                        name.to_string(),
-                        Vec::new(), /* zero-width */
-                    ))
-                } else {
-                    Err(Abort::Trap(Trap::new(
-                        RT,
-                        format!("`{name}` không phải trường"),
-                        span,
-                    )))
-                }
-            }
-            other => Err(Abort::Trap(Trap::new(
-                RT,
-                format!("`{}` không có trường `{name}`", other.show()),
-                span,
-            ))),
-        }
+        crate::gan::doc_truong(b, name, span)
     }
 
     fn index_of(&mut self, b: Value, i: Value, span: Span) -> R<Value> {
-        match (b, i) {
-            (Value::List(xs), Value::Int(n)) => {
-                let len = xs.len() as i64;
-                if n < 0 {
-                    return Err(Abort::Trap(Trap::new(
-                        IDX,
-                        format!("chỉ số âm `{n}` (dùng `.last()` hoặc `xs[i]?`)"),
-                        span,
-                    )));
-                }
-                xs.get(n as usize).cloned().ok_or_else(|| {
-                    Abort::Trap(Trap::new(
-                        IDX,
-                        format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
-                        span,
-                    ))
-                })
-            }
-            (Value::Map(kv), k) => kv
-                .iter()
-                .find(|(kk, _)| kk.eq_value(&k))
-                .map(|(_, v)| v.clone())
-                .ok_or_else(|| {
-                    Abort::Trap(Trap::new(
-                        IDX,
-                        format!("khoá `{}` không có trong map", k.show()),
-                        span,
-                    ))
-                }),
-            (Value::Bytes(bs), Value::Int(n)) => {
-                let len = bs.len() as i64;
-                if n < 0 || n >= len {
-                    return Err(Abort::Trap(Trap::new(
-                        IDX,
-                        format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
-                        span,
-                    )));
-                }
-                Ok(Value::Int(bs[n as usize] as i64))
-            }
-            (other, idx) => Err(Abort::Trap(Trap::new(
-                RT,
-                format!("không chỉ số được `{}` bằng `{}`", other.show(), idx.show()),
-                span,
-            ))),
-        }
+        crate::gan::doc_chi_so(b, i, span)
     }
 
     /// **ST-248 (VD-242 §3.3)** — số lớp `Opt` của đích gán trường/chỉ số. Kiểu đích lấy từ

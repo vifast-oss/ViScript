@@ -55,6 +55,17 @@ impl F {
         Ok(s)
     }
 
+    /// **VD-268**: ô **tạm** cho codegen (không gắn `sym`, **không** vào `locals`) — dùng giữ chỉ
+    /// số của lá `+=` để không đánh giá biểu thức chỉ số hai lần. Ô tạm không bị closure chụp.
+    pub(crate) fn tam(&mut self) -> Result<u16, CodegenError> {
+        let s = self.nlocals;
+        if s == u16::MAX {
+            return Err(CodegenError::TooMany(s));
+        }
+        self.nlocals += 1;
+        Ok(s)
+    }
+
     pub(crate) fn push(&mut self, ins: Instr, span: Span, dang: i32) {
         self.code.push(ins);
         self.spans.push(crate::format::Span {

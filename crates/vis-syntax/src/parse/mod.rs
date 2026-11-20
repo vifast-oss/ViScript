@@ -973,13 +973,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Gán ghép `x += 1`: lexer tách `+` `=` (SPEC-lex §1 không có token `+=`) nên parser nhận
-    /// cặp **dính nhau** ngay sau một định danh (A.2 ghi `+=`; ghi ở JOURNAL là chỗ lệch SPEC).
-    fn compound_assign_ahead(&self) -> bool {
-        if self.tok().kind != Kind::Ident {
-            return false;
-        }
-        let op = self.tok_at(1);
-        let eq = self.tok_at(2);
+    /// cặp **dính nhau** tại vị trí hiện tại (A.2 ghi `+=`; ghi ở JOURNAL là chỗ lệch SPEC).
+    ///
+    /// **VD-268**: không chỉ sau `IDENT` — đích gán là **đường** (`a.b.f += 1`, `xs[0].n += 1`)
+    /// theo A.2 `lvalue := IDENT postfix_op*`. `expr.rs` dừng trước cặp `+` `=` dính nhau nhờ
+    /// [`Self::aug_assign_ahead`], nên `expr_stmt` nhận ra sau khi đã parse vế trái.
+    fn aug_assign_ahead(&self) -> bool {
+        let op = self.tok();
+        let eq = self.tok_at(1);
         // **R7 (VD-178)**: `//=` — lexer tách `//` `=`.
         matches!(op.text.as_str(), "+" | "-" | "*" | "/" | "//" | "%")
             && op.kind == Kind::Punct
@@ -988,18 +989,20 @@ impl<'a> Parser<'a> {
     }
 
     fn expr_stmt(&mut self) -> PResult<Node> {
-        if self.compound_assign_ahead() {
-            let mut elems = vec![self.bump()]; // lvalue đơn giản (A.2 `lvalue := IDENT postfix_op*`)
-            elems.push(self.bump()); // `+`
-            elems.push(self.bump()); // `=`
-            let v = self.expr()?;
-            Self::push_node(&mut elems, v);
-            return Ok(self.node(NodeKind::AssignStmt, elems));
-        }
+        // **VD-268**: parse **đủ** vế trái (đường `a.b[i].f`, không chỉ `IDENT`), rồi nhận
+        // `=` hoặc cặp gán ghép. `expr.rs` đã dừng trước `+=`/`-=`/… dính nhau.
         let e = self.expr()?;
         if self.at_punct("=") {
             let mut elems = vec![Elem::Node(Box::new(e))];
             elems.push(self.bump());
+            let v = self.expr()?;
+            Self::push_node(&mut elems, v);
+            return Ok(self.node(NodeKind::AssignStmt, elems));
+        }
+        if self.aug_assign_ahead() {
+            let mut elems = vec![Elem::Node(Box::new(e))];
+            elems.push(self.bump()); // `+`
+            elems.push(self.bump()); // `=`
             let v = self.expr()?;
             Self::push_node(&mut elems, v);
             return Ok(self.node(NodeKind::AssignStmt, elems));

@@ -339,15 +339,16 @@ fn d2_host_method_vs_closure_value_dispatch() {
     assert_eq!(i.snapshot, baseline());
 }
 
-/// Gán ghép trên trường/phần tử (`p.x += 1`) bị **parser** từ chối (VS0201) — không
-/// bao giờ tới frame path; ghi rõ để không tưởng là ô bị bỏ sót ở evaluator.
+/// **VD-268**: gán ghép trên trường (`p.x += 1`) nay **parse được** (A.2: `assign_op` sau
+/// `lvalue` đầy đủ). Đường frame test vẫn chưa phủ dạng này — ghi rõ để không tưởng đây là
+/// coverage của evaluator; runtime mặc định (`Interp`/`Vm`) đã có test riêng VD-268.
 #[test]
-fn d2b_compound_field_assign_rejected_by_parser() {
+fn d2b_compound_field_assign_parses() {
     let src = "type P:\n    x: int\nfn main():\n    var p: P = {x: 1}\n    p.x += 2\n";
     let p = parse(src, Mode::Script);
     assert!(
-        p.diagnostics.iter().any(|d| d.code.short == "VS0201"),
-        "parser phải từ chối `p.x +=`: {:?}",
+        p.diagnostics.is_empty(),
+        "`p.x +=` phải parse sạch (VD-268): {:?}",
         p.diagnostics
     );
 }

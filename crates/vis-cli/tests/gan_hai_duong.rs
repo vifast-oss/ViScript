@@ -150,22 +150,14 @@ fn var_map_khoa_hai_duong() {
 }
 
 #[test]
-fn gan_ghep_tren_truong_bi_chan_truoc_hai_duong() {
-    // VD-97 (2)/(3): gán ghép `+=` trên **trường** chưa hỗ trợ ⇒ **front end** chặn **trước**
-    // (hiện là lỗi cú pháp `VS0201` — còn sớm hơn tyck); hai đường phải **cùng** chẩn đoán.
+fn gan_ghep_tren_truong_hai_duong() {
+    // **VD-268**: `p.x += 1` nay parse + chạy được (A.2 `assign_op +=` trên `lvalue` đầy đủ);
+    // đây là **lá trường một tầng** — vẫn dùng nhánh codegen cũ, hai đường byte-khớp.
     let d = tam("gan-ghep");
     let src = format!("{P}fn main():\n    var p: P = {{x: 1}}\n    p.x += 1\n    print(p.x)\n");
-    let p = ghi(&d, "gan-ghep", &src);
-    let (cc, co, ce) = check(&p);
-    assert_eq!(cc, 1, "`check` phải đỏ: {co}{ce}");
-    assert!(
-        co.contains("VS0201") || co.contains("VS0412"),
-        "check stdout: {co}"
-    );
-    let a = chay(&p, false);
-    let b = chay(&p, true);
-    assert_eq!((a.0, b.0), (2, 2), "interp: {a:?}\nvm: {b:?}");
-    assert_eq!(a.2, b.2, "chẩn đoán hai đường phải **y hệt**");
+    let (c, o, e) = hai_duong(&d, "gan-ghep", &src);
+    assert_eq!(c, 0, "stderr: {e}");
+    assert_eq!(o, "2\n");
     let _ = std::fs::remove_dir_all(&d);
 }
 
@@ -287,22 +279,24 @@ fn closure_long_hai_tang_hai_duong() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// **ST-60b** — đích **lồng** khi gốc **đã** là `var`: chẩn đoán phải nói **lồng** (không báo oan
-/// "let/tham số bất biến"); hai đường **cùng** chẩn đoán.
+/// **VD-268** — đích lồng **được** hỗ trợ; ca này giữ lại phần **kiểu giữa đường**:
+/// `xs[0]` là `int` nên `xs[0][1] = 9` vẫn `VS0412` ("không chỉ số được"), hai đường **cùng**
+/// chẩn đoán — không còn thông điệp "gán lồng chưa hỗ trợ".
 #[test]
-fn gan_long_goc_var_bao_long_hai_duong() {
+fn gan_long_goc_var_sai_kieu_giua_duong_hai_duong() {
     let d = tam("long-var");
     let src = "fn main():\n    var xs = [1, 2]\n    xs[0][1] = 9\n    print(xs)\n";
     let (c, _, e) = hai_duong(&d, "longvar", src);
     assert_eq!(c, 2, "stderr: {e}");
     assert!(e.contains("VS0412"), "stderr: {e}");
     assert!(
-        e.contains("lồng"),
-        "gốc `var` ⇒ phải nói **gán lồng**, không phải bất biến: {e}"
+        e.contains("không chỉ số được"),
+        "phải báo sai kiểu giữa đường: {e}"
     );
+    assert!(!e.contains("lồng"), "không còn thông điệp 'lồng': {e}");
     assert!(
-        !e.contains("chỉ gán được phần tử của `var` — `let`/tham số"),
-        "không được báo oan let/tham số: {e}"
+        !e.contains("chưa hỗ trợ"),
+        "không còn thông điệp 'chưa hỗ trợ': {e}"
     );
     let _ = std::fs::remove_dir_all(&d);
 }
