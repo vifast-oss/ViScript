@@ -3302,3 +3302,16 @@ body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Q
   `db_query` (authorizer, read-only, trần, timeout, bind); write qua `WITH` vẫn bị chặn.
 - **vistest-jsonout**: `vis test --json-out <path>` ghi cùng object JSON ra tệp; stdout vẫn TAP
   trừ khi có `--json` (khi đó stdout = nội dung tệp); `--list` xung khắc; lỗi ghi ⇒ exit 2.
+
+### VD-270 (bổ sung) · fs bytes, strip, normalize, check JSON — A0, 2026-11-21
+
+- **fsbytes**: `fs.read_bytes(path) -> Result[list[int], Error]` đọc **toàn bộ** tệp, mỗi byte
+  `0..=255`; `fs.write_bytes(path, data) -> Result[(), Error]` kiểm **toàn bộ** phần tử trước khi
+  chạm đĩa (sai ⇒ `Err`, không tạo/cắt), rồi tạo/cắt và ghi; `FsGuard` + `--fs-mock` giữ nguyên.
+- **strstrip**: `str.strip_prefix/strip_suffix(s, affix) -> str?` bỏ **một lần** affix đúng
+  đầu/cuối; affix rỗng ⇒ `Some(s)`; không khớp ⇒ `None`; `Ty::OptStr` = `Option[str]`.
+- **path-normalize**: `path.normalize(p) -> str` thuần từ vựng POSIX: gộp `/`, bỏ `.`, phân giải
+  `..` với thành phần thường; `..` đầu chuỗi tương đối giữ lại; gốc tuyệt đối không vượt; rỗng ⇒
+  `.`, toàn `/` ⇒ `/`; `\`/NUL là ký tự thường; chỉ sugar `normalize` mở từ `str`.
+- **check-json**: giữ nguyên hình dạng `{"ok":…,"files":[…]}` (không đổi); `vis check --json` với
+  cờ lạ phải exit 2/stdout rỗng như TAP (sửa bug cũ).

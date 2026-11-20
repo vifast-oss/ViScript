@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `78b9626` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `e17998f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2322 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2374 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -77,11 +77,15 @@
 | LSP implementation | `24e1127` → `9cae14a` | `textDocument/implementation` cho method impl/trait |
 | Db-explain | `f2eb442` → `78b9626` | `sqlite.explain`: EXPLAIN QUERY PLAN qua đường query chỉ đọc |
 | Vistest JSON-out | trực tiếp → `ae53ee6`/`759e45d` | `vis test --json-out <path>`: TAP stdout + báo cáo JSON |
+| Fs bytes | `d5a5208` → `dfd5ee4` | `fs.read_bytes`/`write_bytes`: byte thô `list[int]` |
+| Str strip | `94eed35` → `0c410b0` | `str.strip_prefix`/`strip_suffix` → `str?` |
+| Path normalize | `e468a29` → `c0cba70` | `path.normalize`: chuẩn hoá từ vựng POSIX |
+| Check JSON | `487dc94` → `e17998f` | khoá `check --json` + sửa cờ lạ exit 2 |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2322 passed / 3 skipped** tại `78b9626`.
+- `./vis-dev gate --fast`: **PASS — 2374 passed / 3 skipped** tại `e17998f`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -206,3 +210,8 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `580123b`: **PASS** — parser fuzz **8.396.336 ca / 190.517.523 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `580123b`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - **flatten** (`2d1ea0f` → `122e7e6`): `list.flatten` một cấp, list rỗng/lồng giữ nguyên; API +1.\n- **lsp-impl** (`24e1127` → `9cae14a`): `textDocument/implementation` lọc theo owner tĩnh, trait name-only, cap 50.\n- **db-explain** (`f2eb442` → `78b9626`): `sqlite.explain` chỉ SELECT/WITH, chạy qua `db_query`, comment đầu, với-write bị chặn.\n- **vistest-jsonout** (`759e45d`): `--json-out` ghi JSON report, stdout vẫn TAP; `--json` kèm thì stdout = tệp.\n- Smoke mới @ `78b9626`: flatten + `sqlite.explain` trên `:memory:` — **interp=VM byte-identical**.\n- `vis test test/sem` @ `8ab2213`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`), sau wave 11.
+- **fsbytes** (`d5a5208` → `dfd5ee4`): byte thô roundtrip; validate hết trước khi ghi; `FsGuard`/`--fs-mock`; R1 tách `stdlib/chung.rs` (`75e4536`).
+- **str-strip** (`94eed35` → `0c410b0`): `strip_prefix`/`strip_suffix`, `Ty::OptStr`, affix rỗng ⇒ `Some(s)`, sugar R5c.
+- **path-normalize** (`e468a29` → `c0cba70`): lexical POSIX; `..` giữ khi không phân giải; rỗng ⇒ `.`; sugar `p.normalize()`.
+- **check-json** (`487dc94` → `e17998f`): 16 ca khoá JSON hiện có; sửa `check --json --co-lạ` từ exit 1 thành exit 2.
+- `./vis-dev core-test` PASS sau khi thêm `#![cfg(feature = "sqlite")]` cho `vd270_db_explain`.
