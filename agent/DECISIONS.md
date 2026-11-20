@@ -3426,3 +3426,11 @@ Không đọc môi trường/tệp/mạng.
 - **fs.mkdir_all**: `(path) -> Result[(), Error]` đệ quy, idempotent; file/symlink trên đường (kể cả
   đích) ⇒ `Err`; `cap[Dir] (write)`; `Quyen::chuan_de_quy` canonicalize tổ tiên gần nhất; `--fs-mock`
   đệ quy; không sugar.
+
+### VD-270 (bổ sung) · median, is_relative, is_ascii — A0, 2026-11-21
+
+- **list.median**: `(list[float]) -> float?`; rỗng `None`; có `NaN` đầu vào ⇒ `None` (tất định);
+  copy rồi sắp tăng; lẻ ⇒ giữa, chẵn ⇒ `(a+b)/2.0`; `±inf` sắp bình thường; sugar R5c.
+- **path.is_relative**: `(str) -> bool` = `!path.is_abs` cùng quy tắc POSIX; rỗng ⇒ `true`;
+  không sugar.
+- **str.is_ascii**: `(str) -> bool` đúng ⇔ mọi byte `0x00..=0x7F`; rỗng ⇒ `true`; sugar R5c.

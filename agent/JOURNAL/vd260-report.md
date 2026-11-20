@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `0eb6b32` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `ff780d4` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2698 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2745 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -108,12 +108,15 @@
 | Path join all | `a1c7378` → `96c8547` | `path.join_all` gấp trái bằng `path.join` |
 | SQLite primary keys | `9bc6f3a` → `1833df8` | `sqlite.primary_keys` theo thứ tự `pk` |
 | Mkdir all | `8f046b4` → `0eb6b32` | `fs.mkdir_all` đệ quy, chặn symlink |
+| List median | `b7b2e2e` → `a742e2b` | `list.median` — NaN ⇒ `None` |
+| Path is relative | `dd0df10` → `55b0374` | `path.is_relative` = `!is_abs` |
+| Str is ascii | `8ac13ae` → `ff780d4` | `str.is_ascii` mọi byte ASCII |
 | Version | trực tiếp | `vis version [--json]` |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2698 passed / 3 skipped** tại `0eb6b32`.
+- `./vis-dev gate --fast`: **PASS — 2745 passed / 3 skipped** tại `ff780d4`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -300,3 +303,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `504795b`: **PASS** — parser fuzz **8.089.984 ca / 183.570.150 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `vis test test/sem` @ `e561dc1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `VIS_DIFF_N=100000` seed 20261209 @ `35b5621`: **0 lệch** (93.767 chạy, 157,8 s).
+- **list-median** (`b7b2e2e` → `a742e2b`): `list.median(list[float]) -> float?`; NaN đầu vào ⇒ `None`, copy+sắp, chẵn trung bình; sugar.
+- **path-is-relative** (`dd0df10` → `55b0374`): `path.is_relative` = `!is_abs`, không sugar.
+- **str-is-ascii** (`8ac13ae` → `ff780d4`): `str.is_ascii` mọi byte `0x00..=0x7F`, sugar; tách `frame_net` giữ R1.
