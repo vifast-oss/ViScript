@@ -233,7 +233,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.list.min_float`/`std.list.max_float` (`(list[float]) -> float?`; rỗng ⇒ `None`, có
     // `NaN` ⇒ `None`, `±inf` so bình thường, phần tử bằng nhau kể cả `±0.0` giữ đầu tiên) ⇒ **146**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 147, "bảng chữ ký phải đủ 147 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-with-file-name, 2026-11-21)**: +**1** hàm
+    // `std.path.with_file_name` (`(str, str) -> str`; thay toàn bộ thành phần cuối bằng tên
+    // nguyên văn, giữ tiền tố nguyên văn, tên rỗng ⇒ bỏ thành phần cuối, **không** sugar) ⇒
+    // **145** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 148, "bảng chữ ký phải đủ 148 hàm");
 }
 
 #[test]
@@ -445,6 +449,32 @@ fn path_with_stem_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.with_stem`: hạ kiểu");
     assert_eq!(vis_types::stdlib::module_sugar("str", "with_stem"), None);
     assert_eq!(vis_types::stdlib::module_sugar("path", "with_stem"), None);
+}
+
+#[test]
+fn path_with_file_name_hai_tham_so_va_khong_sugar() {
+    // **VD-270 (path.with_file_name)**: chữ ký `(str, str) -> str`; **không** sugar — receiver
+    // `str` không có trường `with_file_name`, tránh đoán module nhận.
+    let f = sig_of("path.with_file_name").expect("path.with_file_name");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`path.with_file_name`: tham số"
+    );
+    assert_eq!(f.ret, Ty::Str, "`path.with_file_name`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Str,
+        "`path.with_file_name`: hạ kiểu"
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "with_file_name"),
+        None
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("path", "with_file_name"),
+        None
+    );
 }
 
 #[test]

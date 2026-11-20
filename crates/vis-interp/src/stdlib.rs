@@ -43,6 +43,7 @@ mod pathnorm;
 mod pathrel;
 mod pathrelbool;
 mod pathwithext;
+mod pathwithfilename;
 mod pathwithstem;
 mod sqlite_explain;
 mod sqlitecols;
@@ -626,6 +627,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (path.with_extension)**: thay/đặt/bỏ phần mở rộng của thành phần cuối
         // (thuần chuỗi; dùng **đúng** `ext_voi`/`stem_voi` của `path.ext`/`path.stem`).
         "path.with_extension" => pathwithext::goi(&args, span),
+        // **VD-270 (path.with_file_name)**: thay **toàn bộ** thành phần cuối (tên tệp kể cả phần
+        // mở rộng) bằng `name` **nguyên văn**, giữ tiền tố nguyên văn (thuần chuỗi).
+        "path.with_file_name" => pathwithfilename::goi(&args, span),
         // **VD-270 (path.with_stem)**: thay **phần thân** (file stem) của thành phần cuối, giữ
         // nguyên phần mở rộng hiện có (thuần chuỗi; dùng **đúng** `stem_voi`/`ext_voi`).
         "path.with_stem" => pathwithstem::goi(&args, span),
