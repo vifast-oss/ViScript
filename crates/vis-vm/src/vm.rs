@@ -1202,7 +1202,7 @@ impl<'m> Th<'m> {
                     };
                     self.st.push(Value::Bool(ok));
                 }
-                Instr::TestTuple(n) | Instr::TestList(n) => {
+                Instr::TestTuple(n) => {
                     let v = self.pop(vm, span)?;
                     let ok = match &v {
                         Value::List(xs) => xs.len() == n as usize,
@@ -1210,6 +1210,13 @@ impl<'m> Th<'m> {
                         Value::Unit => n == 0,
                         _ => false,
                     };
+                    self.st.push(Value::Bool(ok));
+                }
+                // **VD-263**: `[]` là pattern **list** — chỉ khớp `Value::List`, KHÔNG khớp
+                // `Value::Unit` (interp `HPat::List` cũng vậy). `TestTuple(0)` giữ nhánh `Unit`.
+                Instr::TestList(n) => {
+                    let v = self.pop(vm, span)?;
+                    let ok = matches!(&v, Value::List(xs) if xs.len() == n as usize);
                     self.st.push(Value::Bool(ok));
                 }
                 Instr::TestRecord(_, n, open) => {
