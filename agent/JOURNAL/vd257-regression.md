@@ -1,0 +1,74 @@
+<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
+# VD-257 / ST-283 — Regression, fuzz có seed, đo release (tự chủ cuối tuần)
+
+> **Phạm vi**: VD-257 §6 — mọi task được duyệt đã xong ⇒ chuyển regression/fuzz/đo dài **có mục
+> tiêu**, không mở tính năng mới, không chạy lại full gate trên cùng commit chỉ để tăng số PASS.
+> **Commit đo**: `a6ad45277beec59f203457bf7007c6f44f1bd5fd` (cây sạch, tag `pha1-rc1`).
+> **Thời điểm**: 2026-11-20, 19:12–19:xx JST. Toolchain `1.100.0`, Linux x86_64, 12 lõi / 14 GiB.
+
+## 1. Kiểm hồi quy đa target (một làn, tuần tự)
+
+| Cấu hình | Lệnh | Kết quả |
+|---|---|---|
+| core Linux | `cargo check --workspace --no-default-features` | PASS (0,83 s) |
+| core Windows-msvc | `cargo check --workspace --no-default-features --target x86_64-pc-windows-msvc` | PASS (1,18 s) |
+| core wasm32 | `cargo check --workspace --no-default-features --target wasm32-unknown-unknown` | PASS (1,13 s) |
+
+Đây là **bằng chứng biên dịch** của cấu hình core; **không** phải bằng chứng runtime Windows. Log:
+`/tmp/opencode/vd257-targets.log`.
+
+## 2. Fuzz parser có seed hữu hạn
+
+`target/release/vis-parse-fuzz --seconds 60 --seed <s>` — 3 seed, mỗi 60 s, tổng 180 s:
+
+| Seed | Số ca | Token | Vi phạm | Exit |
+|---|---|---|---|---|
+| 20261120 | 9.482.304 | 215.172.705 | **0** | 0 |
+| 20261121 | 9.493.474 | 215.377.958 | **0** | 0 |
+| 20261122 | 9.420.105 | 213.858.975 | **0** | 0 |
+
+Log: `/tmp/opencode/vd257-fuzz-seeds.log`. Không có seed lỗi để lưu. Ngoài ra
+`./vis-dev nightly --fuzz-minutes 1` (seed ngày) PASS, vòng tròn fmt 475 tệp bất động.
+
+## 3. Đo **release** (phần B trước đó chỉ đo debug)
+
+Lệnh: `cargo test --release -p vis-cli --test <t> -- --ignored --nocapture`.
+
+### Ngân sách (`lat256_budget::measure_workloads`)
+
+| Workload | Debug (trước) | **Release** | events | cost đề xuất |
+|---|---|---|---|---|
+| loop-2M | 3,43 s | **374,68 ms** | 18.000.008 | 18.000.008 |
+| recursion-200 | 7,1 ms | **0,635 ms** | 2.211 | 2.815 |
+| tasks-1000 | 5,5 ms | **0,859 ms** | 14.008 | 17.008 |
+| expr-chain | 387 ms | **48,34 ms** | 2.000.008 | 2.000.008 |
+
+Release nhanh hơn debug ~9×; **số sự kiện/chi phí không đổi** (đúng kỳ vọng — catalog là luật ngữ
+nghĩa, không phải đồng hồ CPU). Log: `/tmp/opencode/vd257-release-budget.log`.
+
+### Quét Q (`lat257_fairness::quet_q_phan_bo_khong_chon_default`)
+
+| Q | yields | startup (ms) | io_lat_cost | short_lat_cost | thứ tự | snapshot |
+|---|---|---|---|---|---|---|
+| control | 0 | 0,277 | 450.033 | 450.045 | IO sau CPU (B2) | 0 |
+| 1.000.000 | 0 | 0,162 | 450.033 | 450.045 | IO trước CPU (thực tế không yield) | 0 |
+| 200.000 | 2 | 0,168 | 200.020 | 200.032 | IO trước CPU | 0 |
+| 50.000 | 10 | 0,163 | 50.020 | 50.032 | IO trước CPU | 0 |
+| 10.000 | 52 | 0,153 | 10.020 | 10.032 | IO trước CPU | 0 |
+| 2.000 | 262 | 0,161 | 2.020 | 2.032 | IO trước CPU | 0 |
+| 500 | 1.050 | 0,143 | 520 | 532 | IO trước CPU | 0 |
+
+`DiagSnapshot` = `{live_tasks:0, frames:0, waiters:0, ready:0, regs:0, timers:0}` ở **mọi** Q.
+Latency tính bằng **cost units** (đơn điệu, tất định), startup đo riêng không trộn vào workload.
+Log: `/tmp/opencode/vd257-release-fairness.log`.
+
+**Không chọn default Q** — A0 phải quyết từ đường cong. Q=1M vô hiệu (tổng cost ~450k); Q=500 latency
+thấp nhất nhưng 1.050 yield ⇒ overhead chuyển turn.
+
+## 4. Kết luận regression
+
+- Không có hồi quy biên dịch trên core/Windows-msvc/wasm32 sau khi gộp A/B/C/D.
+- Fuzz 28,4 triệu ca qua 3 seed ⇒ 0 vi phạm.
+- Số đo release bổ sung cho B; **không đổi** đề xuất `BUDGET`/`FUEL`/`Q` — vẫn chờ A0 chốt.
+- Không chạy lại full gate; gate tại `a6ad452` đã **1562 passed / 3 skipped / 0 failed** (báo cáo
+  `agent/BAO-CAO-BAN-GIAO-2026-11-20.md`).
