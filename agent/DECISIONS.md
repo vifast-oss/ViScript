@@ -3179,3 +3179,10 @@ progress-handler timeout và bind tham số. **Xoá cache** khi `schema_version`
 `temp.schema_version` đổi (bắt cả TEMP); `data_version` không xoá. Release nhanh hơn 1,5–1,74×
 (3 workload 10k lệnh); debug chậm hơn ~1,25–1,37× do bookkeeping — chấp nhận, không đổi Cargo
 feature (rusqlite 0.37 không có feature `cache`; `hashlink` đã bắt buộc).
+
+### VD-269 (phần checkstdin) · `vis check --stdin` — A0, 2026-11-21
+
+Duyệt kiểm **script từ stdin** với tệp chính ảo `-`: cùng pipeline lex→parse→lower→tyck; TAP
+(`ok/not ok 1 - -`) và `--json` cùng hình dạng đường tệp (`file`/`rel` = `-`); exit 0 sạch,
+1 có chẩn đoán, 2 usage/UTF-8 hỏng. `--syntax`/`--no-extern` giữ; `--stdin` không nhận tệp;
+`use ./x` vẫn đọc đĩa theo thiết kế (chỉ tệp chính ảo). Không cache/không ghi đĩa.
