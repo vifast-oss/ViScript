@@ -335,3 +335,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **CLI**: `vis test --shard <I>/<N>` (`de8819f`) — chia ca sau filter/shuffle, trước list/repeat; 6 test riêng; gate 2890.
 - **Flake**: `vd260_frame3::timer_that_khong_fire_som_truoc_deadline` đo từ **trước** khi nạp timer (`fa9ec3a`); 20/20 lần chạy riêng dưới tải.
 - **Wave 25 running**: `path.with_file_name`, `fs.read_link`, `str.rsplit_once`, `list.min_float/max_float` (4 worktree tại `88da99c`).
+- `./vis-dev core-test` @ `99e29b7`: **PASS** (sau fix flake timer; chạy dưới tải 4 subagent).
