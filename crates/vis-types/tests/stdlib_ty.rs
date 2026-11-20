@@ -97,7 +97,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 flatten, 2026-11-21)**: +**1** hàm `std.list.flatten`
     // (`(list[list[T]]) -> list[T]`; nối **một cấp**, list con rỗng không đóng góp) ⇒ **101**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 102, "bảng chữ ký phải đủ 102 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 strstrip, 2026-11-21)**: +**2** hàm `std.str.*` (`strip_prefix`,
+    // `strip_suffix`; `(str, str) -> str?` = `Option[str]`) ⇒ **104** hàm; không xoá/đổi hàm
+    // cũ nào.
+    assert_eq!(FUNCS.len(), 104, "bảng chữ ký phải đủ 104 hàm");
 }
 
 #[test]
@@ -128,7 +131,9 @@ fn flatten_kieu_long_mot_cap() {
     // **SỬA KÈM LÝ DO (VD-270 db-explain, 2026-11-21)**: +**1** hàm `sqlite.explain`
     // (`(str, str, list[SqlValue]) -> Result[RowSet, Error]`; chỉ SELECT/WITH, chạy
     // `EXPLAIN QUERY PLAN` qua đúng đường `query`) ⇒ **101** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 102, "bảng chữ ký phải đủ 102 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 strstrip, 2026-11-21)**: +**2** hàm `std.str.*` (`strip_prefix`,
+    // `strip_suffix`; `(str, str) -> str?`) ⇒ **104** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 104, "bảng chữ ký phải đủ 104 hàm");
 }
 
 #[test]
@@ -185,6 +190,24 @@ fn strfind_tra_int_option_va_int() {
     assert_eq!(c.params, &[Ty::Str, Ty::Str]);
     assert_eq!(c.ret, Ty::Int);
     assert_eq!(c.ret.sang_type(), Type::Int);
+}
+
+#[test]
+fn strstrip_tra_str_option() {
+    // **VD-270 (strstrip)**: `strip_prefix`/`strip_suffix` trả `str?` = `Option[str]` **thật**
+    // (`Ty::OptStr`), tham số `(str, str)` nên sugar `s.strip_prefix(…)` thoả R5c.
+    for ten in ["str.strip_prefix", "str.strip_suffix"] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
+        assert_eq!(f.params, &[Ty::Str, Ty::Str], "`{ten}`: tham số");
+        assert_eq!(f.ret, Ty::OptStr, "`{ten}`: kiểu trả");
+        assert_eq!(
+            f.ret.sang_type(),
+            Type::Opt(Box::new(Type::Str)),
+            "`{ten}`: phải hạ thành `Option[str]`"
+        );
+        assert_eq!(f.ret.ten(), "str?", "`{ten}`: tên hiển thị");
+        assert_eq!(f.so_doi(), 2, "`{ten}`: số đối số");
+    }
 }
 
 #[test]

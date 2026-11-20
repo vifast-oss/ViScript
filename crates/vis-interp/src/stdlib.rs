@@ -30,7 +30,12 @@ mod sqlite_explain;
 mod strfind;
 mod strlen;
 mod strpad;
+mod strstrip;
 mod strtrim;
+mod tham_so;
+
+// **VD-270 (strstrip)**: helper ép kiểu đối số tách sang `tham_so.rs` (R1).
+use tham_so::{ban_do, chuoi, danh_sach, so};
 
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
 /// **ST-72b (VD-103/VD-106)**: dấu **cưỡng chế quyền** trong `Err` của host — `hop_nhat_fs` đổi
@@ -227,8 +232,9 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             | Ty::ResultIntErr
             | Ty::ResultBoolErr
             | Ty::ResultRowSetErr
-            // **VD-270 (strfind)**: `int?` là kiểu **trả** của `str.find`/`str.rfind`.
-            | Ty::OptInt => true,
+            // **VD-270 (strfind/strstrip)**: `int?`/`str?` là kiểu **trả** của
+            // `str.find`/`str.rfind` và `str.strip_prefix`/`str.strip_suffix`.
+            | Ty::OptInt | Ty::OptStr => true,
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
             Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
             Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),
@@ -248,67 +254,6 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
         }
     }
     Ok(())
-}
-
-fn chuoi<'a>(name: &str, v: &'a Value, i: usize, span: Span) -> Result<&'a str, Abort> {
-    match v {
-        Value::Str(s) => Ok(s),
-        other => Err(loi(
-            format!(
-                "`{name}`: đối số {} cần `str`, được `{}`",
-                i + 1,
-                other.show()
-            ),
-            span,
-        )),
-    }
-}
-
-fn so(name: &str, v: &Value, i: usize, span: Span) -> Result<i64, Abort> {
-    match v {
-        Value::Int(n) => Ok(*n),
-        other => Err(loi(
-            format!(
-                "`{name}`: đối số {} cần `int`, được `{}`",
-                i + 1,
-                other.show()
-            ),
-            span,
-        )),
-    }
-}
-
-fn danh_sach<'a>(name: &str, v: &'a Value, i: usize, span: Span) -> Result<&'a [Value], Abort> {
-    match v {
-        Value::List(xs) => Ok(xs),
-        other => Err(loi(
-            format!(
-                "`{name}`: đối số {} cần `list`, được `{}`",
-                i + 1,
-                other.show()
-            ),
-            span,
-        )),
-    }
-}
-
-fn ban_do<'a>(
-    name: &str,
-    v: &'a Value,
-    i: usize,
-    span: Span,
-) -> Result<&'a [(Value, Value)], Abort> {
-    match v {
-        Value::Map(kv) => Ok(kv),
-        other => Err(loi(
-            format!(
-                "`{name}`: đối số {} cần `map`, được `{}`",
-                i + 1,
-                other.show()
-            ),
-            span,
-        )),
-    }
 }
 
 /// Gọi một hàm `std.*` theo tên đầy đủ.
@@ -384,6 +329,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 _ => s.contains(p),
             };
             Ok(Value::Bool(ok))
+        }
+        // **VD-270 (strstrip)**: bỏ **đúng một lần** tiền tố/hậu tố ở **đầu/cuối**; khớp ⇒
+        // `Some(phần còn lại)`, không khớp ⇒ `None`; affix rỗng ⇒ `Some(s)` (nghĩa Rust
+        // `strip_prefix`/`strip_suffix`). Đơn vị khớp theo byte nhưng biên luôn là ranh giới
+        // scalar Unicode; lõi ở `stdlib/strstrip.rs`.
+        "str.strip_prefix" | "str.strip_suffix" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let moc = chuoi(name, &args[1], 1, span)?;
+            Ok(strstrip::goi(name, s, moc))
         }
         "str.repeat" => {
             let s = chuoi(name, &args[0], 0, span)?;
