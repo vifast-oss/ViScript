@@ -199,3 +199,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **fmt-stat** (`e73f00e` → `580123b`): `--check --stat` một dòng `fmt-check: N tệp, M cần sửa, K lỗi`; stdin hỗ trợ.
 - `VIS_DIFF_N=200000` seed 20261128 @ `580123b`: **0 lệch** (187.536 chạy, 270,1 s).
 - `vis test test/sem` @ `580123b`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
+- `./vis-dev nightly` @ `580123b`: **PASS** — parser fuzz **8.396.336 ca / 190.517.523 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `580123b`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
