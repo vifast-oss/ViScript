@@ -42,6 +42,13 @@ name = "sqlite"
 path = "tests/sqlite.rs"
 required-features = ["sqlite"]
 
+# **VD-266** — helper `sqlite.query_one`/`last_insert_rowid`/`changes`; chỉ có nghĩa khi bật
+# feature `sqlite` (cấu hình core không có host backend).
+[[test]]
+name = "vd266_db"
+path = "tests/vd266_db.rs"
+required-features = ["sqlite"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }

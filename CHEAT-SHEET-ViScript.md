@@ -202,8 +202,9 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
 | `std.net` | `listen` `connect` `read` `write` `accept` `close` | loopback, **không TLS** |
 | `std.http` | `get` `head` + `_timeout` | HTTP/1.1 loopback, chunked, redirect GET ≤5 |
+| `std.sqlite` | `open` `open_with` `close` `execute` `query` `query_one` `last_insert_rowid` `changes` `begin` `commit` `rollback` `in_transaction` | `sqlite.query_one(h, "SELECT a FROM t WHERE a = ?", [SqlValue.Integer(1)])` → `Ok(RowSet)` tối đa 1 hàng |
 
-> **SQLite**: `sqlite.query` **chỉ đọc** (VD-242 §3.6) — câu ghi/DDL trả `Err`, dùng `sqlite.execute`; `dbstat`/trang thô bị chặn.
+> **SQLite**: `sqlite.query`/`query_one` **chỉ đọc** (VD-242 §3.6) — câu ghi/DDL trả `Err`, dùng `sqlite.execute`; `query_one` dừng sau hàng đầu (không quét hết kết quả); `last_insert_rowid`/`changes` là metadata chỉ đọc; `dbstat`/trang thô bị chặn.
 
 Method trên giá trị (không cần `use`):
 

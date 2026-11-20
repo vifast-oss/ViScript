@@ -56,6 +56,20 @@ impl DbHost for Db {
     ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
         tu_choi()
     }
+    fn db_query_one(
+        &mut self,
+        _h: &str,
+        _sql: &str,
+        _params: &[Value],
+    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        tu_choi()
+    }
+    fn db_last_insert_rowid(&mut self, _h: &str) -> Result<i64, String> {
+        tu_choi()
+    }
+    fn db_changes(&mut self, _h: &str) -> Result<i64, String> {
+        tu_choi()
+    }
     fn db_in_transaction(&mut self, _h: &str) -> Result<bool, String> {
         tu_choi()
     }
@@ -90,6 +104,20 @@ impl DbHost for DbGuard<'_> {
         _sql: &str,
         _params: &[Value],
     ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        tu_choi()
+    }
+    fn db_query_one(
+        &mut self,
+        _h: &str,
+        _sql: &str,
+        _params: &[Value],
+    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+        tu_choi()
+    }
+    fn db_last_insert_rowid(&mut self, _h: &str) -> Result<i64, String> {
+        tu_choi()
+    }
+    fn db_changes(&mut self, _h: &str) -> Result<i64, String> {
         tu_choi()
     }
     fn db_in_transaction(&mut self, _h: &str) -> Result<bool, String> {

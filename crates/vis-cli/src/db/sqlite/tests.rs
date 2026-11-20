@@ -302,6 +302,112 @@ fn query_vuot_10000_hang_err_khong_tra_du_lieu_cat() {
     assert!(e.contains("10000"), "{e}");
 }
 
+/// **VD-266** — `query_one` dừng sau hàng đầu: CTE 10_001 hàng (vượt cap [`MAX_ROWS`] của
+/// `query`) vẫn `Ok` đúng 1 hàng. Nếu host materialize cả kết quả rồi cắt, ca này sẽ `Err`.
+#[test]
+fn query_one_dung_sau_hang_dau_khong_vuot_cap_hang() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    let (cols, rows) = d
+        .db_query_one(
+            &h,
+            "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 10001) SELECT x FROM c",
+            &[],
+        )
+        .expect("query_one phải dừng sau hàng đầu");
+    assert_eq!(cols, vec!["x".to_string()]);
+    assert_eq!(rows.len(), 1, "chỉ được trả 1 hàng: {rows:?}");
+    assert_eq!(o_int(&rows), 1);
+}
+
+#[test]
+fn query_one_khong_va_mot_hang() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER)", &[]).unwrap();
+    let (cols, rows) = d
+        .db_query_one(&h, "SELECT a FROM t WHERE a = ?", &[sv_int(1)])
+        .expect("0 hàng vẫn Ok");
+    assert_eq!(cols, vec!["a".to_string()]);
+    assert!(rows.is_empty(), "0 hàng ⇒ rows rỗng: {rows:?}");
+
+    d.db_execute(&h, "INSERT INTO t (a) VALUES (7)", &[])
+        .unwrap();
+    let (_, rows) = d.db_query_one(&h, "SELECT a FROM t", &[]).expect("1 hàng");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(o_int(&rows), 7);
+}
+
+/// **VD-266** — `query_one` chỉ đọc **y như `query`**, không side effect.
+#[test]
+fn query_one_tu_choi_ghi_khong_side_effect() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER)", &[]).unwrap();
+    let e = d
+        .db_query_one(&h, "INSERT INTO t (a) VALUES (1)", &[])
+        .unwrap_err();
+    assert!(e.contains("chỉ đọc"), "{e}");
+    let e = d.db_query_one(&h, "BEGIN", &[]).unwrap_err();
+    assert!(e.contains("không trả hàng") || e.contains("chỉ đọc"), "{e}");
+    let (_, rows) = d.db_query(&h, "SELECT count(*) FROM t", &[]).unwrap();
+    assert_eq!(o_int(&rows), 0, "ghi qua query_one không được chạy");
+}
+
+#[test]
+fn query_one_kiem_params_va_handle_dong() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    let e = d.db_query_one(&h, "SELECT ?", &[]).unwrap_err();
+    assert!(e.contains("1 tham số"), "{e}");
+    let e = d.db_query_one(&h, "SELECT 1", &[sv_int(1)]).unwrap_err();
+    assert!(e.contains("0 tham số"), "{e}");
+    d.db_close(&h).unwrap();
+    let e = d.db_query_one(&h, "SELECT 1", &[]).unwrap_err();
+    assert!(e.contains("đã đóng"), "{e}");
+}
+
+/// **VD-266** — `last_insert_rowid`/`changes` là metadata của connection, không đổi dữ liệu.
+/// **VD-266** — `query_one` dùng **cùng** cap hàng/cap ô với `query`, không nới chính sách.
+#[test]
+fn query_one_cung_cap_hang_va_cap_o() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    let e = d
+        .db_query_one(&h, "SELECT randomblob(1048577)", &[])
+        .unwrap_err();
+    assert!(e.contains("1048576"), "{e}");
+
+    let mut d2 = db_gioi_han(|g| g.cells = 1);
+    let h2 = mo_db(&mut d2);
+    let e = d2.db_query_one(&h2, "SELECT 1, 2", &[]).unwrap_err();
+    assert!(e.contains("ô"), "{e}");
+}
+
+#[test]
+fn last_insert_rowid_va_changes_metadata() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER, b TEXT)", &[])
+        .unwrap();
+    assert_eq!(d.db_last_insert_rowid(&h).unwrap(), 0);
+    d.db_execute(&h, "INSERT INTO t (a, b) VALUES (1, 'x')", &[])
+        .unwrap();
+    assert_eq!(d.db_last_insert_rowid(&h).unwrap(), 1);
+    d.db_execute(&h, "INSERT INTO t (a, b) VALUES (2, 'y')", &[])
+        .unwrap();
+    assert_eq!(d.db_last_insert_rowid(&h).unwrap(), 2);
+    d.db_execute(&h, "UPDATE t SET b = 'z' WHERE a = ?", &[sv_int(1)])
+        .unwrap();
+    assert_eq!(d.db_changes(&h).unwrap(), 1);
+    d.db_execute(&h, "UPDATE t SET b = 'z' WHERE a = ?", &[sv_int(99)])
+        .unwrap();
+    assert_eq!(d.db_changes(&h).unwrap(), 0);
+    d.db_close(&h).unwrap();
+    assert!(d.db_last_insert_rowid(&h).is_err());
+    assert!(d.db_changes(&h).is_err());
+}
+
 #[test]
 fn row_vuot_1mib_err() {
     let mut d = Db::moi(false);
