@@ -40,6 +40,9 @@ vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tậ
 | `2` | lỗi biên dịch/kiểm tra | **[ĐÃ CÓ]** |
 | `101` | panic: lỗi lập trình (chia 0, index OOB, tràn i64, assert, kênh chết) | **[ĐÃ CÓ]** — `VS0502`/`VS0503`/`VS0505`/`VS0507` được trả **101** qua `vis` (R9); `[quyền]` ⇒ `2` |
 
+> **`main -> int` không phải mã thoát**: `fn main() -> int` trả `3` vẫn exit **0** (VD-242 §7);
+> chỉ `Result::Err` từ `main` ⇒ **1**, `Ok`/giá trị thường ⇒ **0**.
+
 **Từ khoá** (đủ, không thêm bớt):
 `let var const fn cmd type enum trait impl pub use if elif else match for in while
 loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
@@ -96,7 +99,7 @@ loop break continue return and or not true false self async await scope test ext
 | `match s:`<br>`    Circle(r): "tròn {r}"`<br>`    Empty: "rỗng"` ✔ | `match s:`<br>`    case Circle(r): ...` | `match s {`<br>`    Shape::Circle(r) => ...,`<br>`    Shape::Empty => ... }` | `switch (s.kind)` | **phải xét hết**; thiếu nhánh ⇒ `VS0402` ("`match` thiếu nhánh: B") |
 | `Circle(r) if r > 100.0: "lớn"` ✔ | `case Circle(r) if r > 100:` | `Shape::Circle(r) if r > 100.0 => ...` | — | guard **không** tính vào coverage |
 | `A(x) \| B(x): x` ✔ | `case A(x) \| B(x):` | `A(x) \| B(x) => x` | — | or-pattern; `\|` **không** phải bit-or |
-| `[first, ..rest]` ✔<br>`[first, ..]` ✔ | `case [first, *rest]:` | `[first, ..]` | — | **VD-260**: rest-pattern list; `..` ở cuối (không có hậu tố `[.., z]`); `rest` là bản sao; khớp list rỗng/sai hình ⇒ không khớp, không trap |
+| `[first, ..rest]` ✔<br>`[first, ..]` ✔<br>`[..]` / `[..rest]` ✔ | `case [first, *rest]:` | `[first, ..]` | — | **VD-260**: rest-pattern list; `[first, ..]`/`[first, ..rest]` cần **≥ 1** phần tử, `[..]`/`[..rest]` khớp **mọi** list kể cả rỗng; `..` phải ở cuối (hậu tố `[.., z]` ⇒ `VS0201`); `rest` là bản sao; không phải list/thiếu phần tử ⇒ không khớp, không trap |
 | `_` | `case _:` | `_ =>` | `default:` | bắt buộc với kiểu vô hạn (`int`, `str`…) |
 | `if let Some(v) = x:`<br>`    print(v)` ✔ | `if (v := x) is not None:` | `if let Some(v) = x {` | `if (x != null)` | có `else:` ✔; **R3a**: `if let`/`while let` nhận **pattern** (`Some(v)`/`Ok(v)`/`Err(e)`); dạng `if let v = x:` (luôn khớp) ⇒ **lỗi + gợi ý `Some(v)`** |
 | `while let Some(v) = x:`<br>`    print(v)` ✔ | `while (v := next_it()) is not None:` | `while let Some(v) = iter.next() {` | `while (v = iter.next()) != null` | **R18b**: cấu trúc `while let` nhận **pattern** (`Some(v)`/`Ok(v)`/…); pattern không khớp ⇒ **thoát vòng**, không panic; codegen dùng `HCond::Let` chung với `if let` |
@@ -199,6 +202,8 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 | `std.json` | `encode` `decode` `encode_pretty` | `json.decode("[1,2]")` → `Ok(Arr([Num(1), Num(2)]))` (enum dựng sẵn `Json`: `Null Bool Num Str Arr Obj`; lỗi std → bản ghi `Error { message, source: Error?, span: str? }`) |
 | `std.net` | `listen` `connect` `read` `write` `accept` `close` | loopback, **không TLS** |
 | `std.http` | `get` `head` + `_timeout` | HTTP/1.1 loopback, chunked, redirect GET ≤5 |
+
+> **SQLite**: `sqlite.query` **chỉ đọc** (VD-242 §3.6) — câu ghi/DDL trả `Err`, dùng `sqlite.execute`; `dbstat`/trang thô bị chặn.
 
 Method trên giá trị (không cần `use`):
 
