@@ -20,6 +20,7 @@ impl Scheduler {
         events.sort_by_key(|e| (e.seq, e.key, e.gen));
         self.frame.events = events.into();
         self.frame.gen = 0;
+        self.frame.ready_streak = 0;
         self.frame.log.push("enable".into());
         // VD-257/C: nhận trigger huỷ do test ghi trước khi chạy engine. Sắp xếp để trace
         // tất định và giống hệt giữa interp/VM. Thread-local drained ⇒ mỗi engine nhận 1 lần.
@@ -82,9 +83,12 @@ impl Scheduler {
         self.frame.ready.retain(|f| *f != w.frame);
     }
 
-    /// **Chỉ test**: lấy frame tiếp theo cần chạy. Ưu tiên FIFO `ready`; nếu rỗng và
-    /// còn event giả, fire event có `seq` nhỏ nhất (thứ tự recorded trong trace) và
-    /// đánh thức waiter — mỗi frame được nối **vào đuôi** đúng một lần.
+    /// **Chỉ test**: lấy frame tiếp theo cần chạy. Ưu tiên FIFO `ready`; nhưng cứ
+    /// [`FRAME_READY_BUDGET`] frame sẵn sàng liên tiếp thì giao **một** event kế tiếp
+    /// (fake/reactor) trước (xem [`Self::frame_after_ready_budget`]) để I/O/timer không bị
+    /// đói sau hàng ready dài. Nếu rỗng và còn event giả, fire event có `seq` nhỏ nhất
+    /// (thứ tự recorded trong trace) và đánh thức waiter — mỗi frame được nối **vào đuôi**
+    /// đúng một lần.
     #[doc(hidden)]
     pub fn frame_next(&mut self) -> Option<u32> {
         // VD-257/C: mỗi lần scheduler bước là một SAFE POINT — xử lý request đã ghi nhận,
@@ -111,7 +115,7 @@ impl Scheduler {
         }
         // **VD-258**: cùng quy tắc cho reactor giả — event kế tiếp (theo `seq`) đã có
         // đăng ký + waiter thì giao ngay, không chờ hàng ready cạn (tránh đói I/O khi
-        // một frame CPU luôn sẵn sàng). Timer (`deadline_ms`) vẫn chỉ fire ở `frame_idle`.
+        // một frame CPU luôn sẵn sàng).
         if let Some(ev) = self.frame.reactor.events.first().cloned() {
             if ev.deadline_ms.is_none() {
                 let co_nguoi_cho = self
@@ -133,25 +137,167 @@ impl Scheduler {
                 }
             }
         }
+        // **VD-260**: hàng ready dài không được bỏ đói timer/reactor/fake-source. Cứ
+        // `FRAME_READY_BUDGET` frame sẵn sàng liên tiếp thì giao event kế tiếp (đúng
+        // `seq`) **trước** frame ready. Bộ đếm tất định — không dùng thời gian treo.
+        if !self.frame.ready.is_empty() && self.frame.ready_streak >= FRAME_READY_BUDGET {
+            self.frame_after_ready_budget();
+        }
         if let Some(f) = self.frame.ready.pop_front() {
+            self.frame.ready_streak = self.frame.ready_streak.saturating_add(1);
             return Some(f);
         }
+        self.frame.ready_streak = 0;
         // Không còn frame sẵn sàng ⇒ fire sự kiện giả tiếp theo (theo `seq`).
         if let Some(ev) = self.frame.events.pop_front() {
             self.frame_fire(ev);
-            return self.frame.ready.pop_front();
+            if let Some(f) = self.frame.ready.pop_front() {
+                self.frame.ready_streak = self.frame.ready_streak.saturating_add(1);
+                return Some(f);
+            }
+            return None;
         }
         // Lát 2: hết frame + hết event Lát 1 ⇒ chờ reactor / timer monotonic rồi fire
         // **một** event reactor theo `seq` (xem `frame_idle`). Không sleep-poll.
         if self.frame_idle() {
-            return self.frame.ready.pop_front();
+            if let Some(f) = self.frame.ready.pop_front() {
+                self.frame.ready_streak = self.frame.ready_streak.saturating_add(1);
+                return Some(f);
+            }
         }
         None
+    }
+
+    /// **VD-260**: giao **một** event kế tiếp sau khi hàng ready đã chiếm trọn
+    /// [`FRAME_READY_BUDGET`] lượt liên tiếp. Hai trace (fake + reactor) giữ nguyên thứ tự
+    /// `seq` của từng trace; giữa hai trace chọn head có `seq` nhỏ hơn (hòa ⇒ fake trước)
+    /// — khóa tie-break tất định, không phụ thuộc hash/thời gian. Chỉ event **giao được**
+    /// mới bị lấy khỏi trace: event của một khóa chưa từng đăng ký (có thể là consumer
+    /// tương lai) phải nằm lại — nếu fire sớm nó thành stale và consumer sau đó treo.
+    /// Event stale thật (khóa đã cấp rồi bị gỡ, hoặc `gen` cũ hơn) vẫn được fire để event
+    /// hợp lệ phía sau không bị kẹt.
+    fn frame_after_ready_budget(&mut self) -> bool {
+        let fake = self.frame.events.front().cloned();
+        let reactor = self.frame.reactor.events.first().cloned();
+        let fake_ok = fake
+            .as_ref()
+            .map(|e| self.fake_event_deliverable(e))
+            .unwrap_or(false);
+        let reactor_ok = reactor
+            .as_ref()
+            .map(|e| self.reactor_event_deliverable(e))
+            .unwrap_or(false);
+        match (fake, reactor) {
+            (Some(f), Some(r)) if fake_ok && reactor_ok => {
+                if f.seq <= r.seq {
+                    self.frame_after_budget_fire_fake()
+                } else {
+                    self.frame_after_budget_fire_reactor()
+                }
+            }
+            (Some(_), _) if fake_ok => self.frame_after_budget_fire_fake(),
+            (_, Some(_)) if reactor_ok => self.frame_after_budget_fire_reactor(),
+            _ => false,
+        }
+    }
+
+    /// Event fake có giao được **bây giờ** không: có waiter đúng `(key, gen)`, hoặc
+    /// `external` đã có khóa với `gen` hiện hành ≥ `gen` event (khớp/stale), hoặc khóa
+    /// không hề được cấu hình làm nguồn giả (stale chắc chắn). Khóa đã cấu hình nhưng
+    /// chưa có task / `gen` còn nhỏ hơn ⇒ để dành cho tương lai, không fire sớm.
+    fn fake_event_deliverable(&self, ev: &FakeEvent) -> bool {
+        if self.frame.waiters.iter().any(|w| {
+            w.wait
+                == (Wait::Event {
+                    key: ev.key,
+                    gen: ev.gen,
+                })
+                && w.gen == ev.gen
+        }) {
+            return true;
+        }
+        let mut co_nguon = false;
+        for (k, g) in self.frame.external.values() {
+            if *k == ev.key {
+                co_nguon = true;
+                if *g >= ev.gen {
+                    return true;
+                }
+            }
+        }
+        if co_nguon {
+            return false;
+        }
+        !self.frame.fake_sources.iter().any(|(_, k)| *k == ev.key)
+    }
+
+    /// Event reactor có giao được **bây giờ** không: có waiter đúng `(key, gen)`, hoặc
+    /// đăng ký hiện hành của `key` có `gen` ≥ `gen` event (khớp/stale). Không còn đăng ký:
+    /// `key < next_key` ⇒ khóa đã từng được cấp rồi bị gỡ (stale chắc chắn), ngược lại là
+    /// khóa chưa cấp — để dành cho consumer tương lai.
+    fn reactor_event_deliverable(&self, ev: &ReactorEvent) -> bool {
+        if self.frame.waiters.iter().any(|w| {
+            w.wait
+                == (Wait::Reactor {
+                    key: ev.key,
+                    gen: ev.gen,
+                })
+        }) {
+            return true;
+        }
+        match self.frame.reactor.regs.iter().find(|r| r.key == ev.key) {
+            Some(r) => r.gen >= ev.gen,
+            None => ev.key < self.frame.reactor.next_key,
+        }
+    }
+
+    /// Fire head của trace fake sau ngân sách ready (stale cũng fire để mở đường).
+    fn frame_after_budget_fire_fake(&mut self) -> bool {
+        let Some(ev) = self.frame.events.pop_front() else {
+            return false;
+        };
+        self.frame_fire(ev);
+        true
+    }
+
+    /// Fire head của trace reactor sau ngân sách ready. Timer có đăng ký sống +
+    /// `timer_real_wait` thì ngủ tới **đúng deadline của chính nó** (không fire sớm);
+    /// timer đã thành stale (không còn đăng ký) fire ngay — không chặn CPU vì một mốc
+    /// thời gian vô chủ.
+    fn frame_after_budget_fire_reactor(&mut self) -> bool {
+        let Some(ev) = self.frame.reactor.events.first().cloned() else {
+            return false;
+        };
+        if let Some(deadline) = ev.deadline_ms {
+            self.frame
+                .reactor
+                .log
+                .push(format!("timer:{}:{}", ev.key, deadline));
+            let con_dang_ky = self
+                .frame
+                .reactor
+                .regs
+                .iter()
+                .any(|r| r.key == ev.key && r.gen == ev.gen);
+            if self.frame.timer_real_wait && con_dang_ky {
+                let epoch = *self.frame.reactor.epoch.get_or_insert_with(Instant::now);
+                if let Some(target) = epoch.checked_add(Duration::from_millis(deadline)) {
+                    let now = Instant::now();
+                    if target > now {
+                        std::thread::sleep(target - now);
+                    }
+                }
+            }
+        }
+        self.frame.reactor.events.remove(0);
+        self.frame_reactor_fire(ev);
+        true
     }
 
     /// **Chỉ test**: fire một sự kiện giả. Bỏ event **stale** (gen lệch) và **trùng**
     /// (khóa đã fire ở thế hệ hiện hành) — không đánh thức ai, ghi log tất định.
     fn frame_fire(&mut self, ev: FakeEvent) {
+        self.frame.ready_streak = 0;
         self.frame
             .log
             .push(format!("fire:{}:{}:{}", ev.seq, ev.key, ev.gen));
@@ -598,6 +744,7 @@ impl Scheduler {
     /// ký) và duplicate (key đã fire ở gen này) chỉ ghi log — KHÔNG wake, KHÔNG rerun.
     #[doc(hidden)]
     pub fn frame_reactor_fire(&mut self, ev: ReactorEvent) {
+        self.frame.ready_streak = 0;
         self.frame
             .reactor
             .log
