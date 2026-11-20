@@ -215,9 +215,11 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 - **Blocker TRIỂN KHAI vẫn mở**: chỉ đóng sau khi có bản sửa + bằng chứng (repro trước/sau, test hồi quy, kết quả trên đúng commit) theo lệnh A0. #172 giữ trạng thái **mở** trong `SO-NO.md`.
 - Không đổi biểu diễn/thang đo/quy tắc làm tròn `percent`; chặn tại nơi tạo/chuyển đổi giá trị (không chỉ sửa chuỗi `show`); trung gian lớn mà kết quả cuối hợp lệ thì không được từ chối máy móc.
 
-## 13. BLOCKER — Tương thích bytecode/cache sau ST-245 (VD-244), CHƯA đóng
+## 13. BLOCKER — Tương thích bytecode/cache sau ST-245 (VD-244) — ĐÓNG theo báo cáo, có caveat
 
-**Người ghi**: Agent 1 theo A0 2026-11-20 · **Trạng thái**: **mở** · **VD**: VD-244 · **Task**: ST-246.
+**Người ghi**: Agent 1 theo A0 2026-11-20 · **Trạng thái**: **đóng ở ST-246** (tích hợp `9824e66`; review `JOURNAL/st246-review.md`) · **VD**: VD-244 · **Task**: ST-246.
+
+**Caveat cho A0**: chiều “runtime cũ từ chối artifact mới” được chứng minh bằng **mô phỏng cùng gate** trong repo (trích `decode.rs:248`/`verify.rs:307` tại `6eda337`, `VERSION=1`), **không phải build crate v1 thật**. Nếu A0 yêu cầu build cũ thật, mở task bổ sung — không coi điều đó là đã làm. Điều kiện chặn “runtime cũ không kiểm VERSION” **không xảy ra**.
 
 **Bối cảnh**: ST-245 chặn được repro `LoadLocal(0xFFFF)`, nhưng xác nhận toán hạng `>= GLOBAL_SLOT_BASE` có **ngữ nghĩa mới** mà `VERSION` và khoá cache vẫn giữ cũ. VM cũ chạy verifier cũ ⇒ có thể chấp nhận bytecode mới rồi diễn giải sai; verifier mới không bảo vệ được đường chạy đó.
 
@@ -230,6 +232,8 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 **Điều kiện chặn khác**: nếu runtime cũ hoàn toàn không kiểm `VERSION`, **dừng và báo A0** trước khi coi việc tăng `VERSION` là đủ.
 
 **Không được** gộp với ST-245 (đã DONE trong phạm vi hẹp) hay tuyên bố “global-slot đã khép” — xem §14.
+
+**Đóng blocker (ST-246, `9824e66`)**: `VERSION 1 → 2`; runtime mới từ chối artifact v1 (`BadVersion(1)`, patch đúng 2 byte ⇒ decode OK); cache v1 ≠ v2, artifact v1 in sai `999` trên path cache vẫn bị bỏ ⇒ VM in `42`, source recompile đúng interp+VM; bytecode v1 không source ⇒ `LoadError::Decode(BadVersion(1))`; re-pin 2 test sentinel `2→3` bắt buộc. Kiểm trên commit tích hợp: `check` PASS · `gate --fast` PASS · `cargo test -p vis-bytecode -p vis-cli` xanh · `vis test` 525/525 · `--vm` 525/525. **Xem caveat ở đầu mục** — §14 vẫn mở, không tuyên bố global-slot khép.
 
 ## 14. CẦN LÀM RÕ — Miền global suy từ lệnh ghi (VD-244 §3), CHƯA đóng
 

@@ -2133,3 +2133,5 @@ Phân biệt rõ: **hợp lệ về chỉ số** (slot thuộc miền được c
 - **Hoàn tất blocker tương thích trước fresh-clone/release verification và trước tag mới.**
 - Giữ **#185/#186** trong sổ. Chưa mở pha 2, VS3, API std mới.
 - Không tuyên bố toàn bộ vấn đề global-slot đã đóng trước khi các điều kiện trên đạt.
+
+> **Ghi nhận thực thi VD-244 (Agent 1, 2026-11-20)**: ST-246 tích hợp @ `9824e66`, review `JOURNAL/st246-review.md`. Blocker tương thích (`BLOCKED.md` §13) **đóng theo báo cáo, có caveat**: chiều “runtime cũ từ chối artifact mới” được chứng minh bằng mô phỏng gate có trích commit `6eda337`, **không phải build crate v1 thật**; nếu A0 yêu cầu mạnh hơn thì mở task bổ sung. `VERSION = 2`, cache v1 tự vô hiệu, §14 (miền global) vẫn mở — không tuyên bố global-slot khép.
