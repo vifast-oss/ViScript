@@ -22,11 +22,16 @@
 //!   cache) — đặt **trước** authorizer; dữ liệu tạm không rơi vào đĩa.
 //! - Mở file: flags `READ_WRITE` (+`CREATE` khi `create`) — **không** `URI` bao giờ; `:memory:`
 //!   là giá trị duy nhất cho in-memory. Tên rỗng / `file:…` / `:memory:…` thừa ký tự ⇒ từ chối.
-//! - Giới hạn (vượt ⇒ `Err(Error)`, **không** trả dữ liệu cắt; metadata/tên cột **không** tính
-//!   vào các cap byte; cộng dồn dùng `checked_add`): hàng 10_000 · một row ≤ 1 MiB ·
-//!   tổng kết quả ≤ 16 MiB · SQL ≤ 64 KiB · params ≤ 1_000 · **≤ 1 MiB mỗi param text/blob** ·
-//!   **≤ 16 MiB tổng payload params mỗi lời gọi** · connections ≤ 16/phiên ·
+//! - Giới hạn (vượt ⇒ `Err(Error)`, **không** trả dữ liệu cắt; tên cột **không** tính vào cap
+//!   payload nhưng có trần riêng; cộng dồn dùng `checked_add`): hàng 10_000 · **ô (hàng×cột)
+//!   100_000** · **cột 2_000** · **tổng byte tên cột 256 KiB** · một row ≤ 1 MiB ·
+//!   tổng payload kết quả **+ 64 byte overhead mỗi ô** ≤ 16 MiB · SQL ≤ 64 KiB · params ≤ 1_000 ·
+//!   **≤ 1 MiB mỗi param text/blob** · **≤ 16 MiB tổng payload params mỗi lời gọi** ·
+//!   **tổng handle 1_024/phiên (kể cả tombstone)** · connections ≤ 16/phiên ·
 //!   busy_timeout ≤ 60_000 (mặc định 5_000) · wall-clock 5 s mỗi câu (progress_handler).
+//! - **Pre-materialization**: `SQLITE_LIMIT_LENGTH` = 17 MiB (`MAX_CELL_HARD_BYTES`) đặt **trước**
+//!   SQL người dùng, nên `zeroblob(512 MiB)`/text khổng lồ lỗi `TOOBIG` (map thành lỗi cap hàng)
+//!   thay vì cấp phát hàng trăm MB trước khi host kịp đếm.
 //! - 1 câu SQL mỗi `execute`/`query` (multi-statement ⇒ `Err`).
 //! - **Mọi** lỗi host là **lỗi dữ liệu/runtime** ⇒ `Result.Err` (không trap `VS0501`).
 //!   Hai lớp ngoài `Result` duy nhất: (a) lỗi tĩnh/checker-time (sai kiểu/sai arity), (b) bất
@@ -35,10 +40,12 @@
 //!   chỉ **mã SQLite (integer `extended_code`)** + tên lớp lỗi + `offset` (byte, nếu có từ
 //!   `Error::SqlInputError`). `--sqlite-debug` (CLI, opt-in) in thông điệp thô.
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
+use rusqlite::hooks::{AuthAction, Authorization};
+use rusqlite::limits::Limit;
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OpenFlags};
 
@@ -48,9 +55,26 @@ use vis_interp::value::Value;
 
 /// max hàng mỗi query — vượt ⇒ `Err` (không trả dữ liệu cắt).
 pub const MAX_ROWS: usize = 10_000;
-/// max (text+blob) của **một** row — vượt ⇒ `Err`.
+/// max **ô** (hàng × cột) mỗi query — vượt ⇒ `Err`. Chặn trường hợp 10k hàng × 2k cột
+/// (20 triệu `Value::Enum`, mỗi ô vài chục byte overhead) làm RSS tăng hàng trăm MB dù payload
+/// text/blob bằng 0 (toàn `NULL`). 100k ô đủ cho bảng rộng thông thường.
+pub const MAX_CELLS: usize = 100_000;
+/// Overhead ước lượng **mỗi ô** đã materialize (`Value::Enum` + 2 `String` + `Vec` + allocator).
+/// Cộng vào cap tổng để 100k ô `NULL` không lọt qua cap 16 MiB payload.
+pub const CELL_OVERHEAD: usize = 64;
+/// max cột mỗi kết quả — vượt ⇒ `Err` (SQLite mặc định cũng chặn 2000 cột).
+pub const MAX_COLUMNS: usize = 2_000;
+/// max tổng byte **tên cột** mỗi kết quả — vượt ⇒ `Err` (metadata không tính vào cap payload,
+/// nhưng vẫn phải có trần riêng để schema ngoài không bắt host cấp phát tên cột khổng lồ).
+pub const MAX_COLUMN_NAME_BYTES: usize = 256 << 10; // 256 KiB
+/// max (text+blob) của **một** row **kết quả** — vượt ⇒ `Err`.
 pub const MAX_ROW_BYTES: usize = 1 << 20; // 1 MiB
-/// max tổng kích thước kết quả (text+blob mọi hàng; **không** tính metadata/tên cột) — vượt ⇒ `Err`.
+/// Trần **cứng** cho một string/blob/row của SQLite (`SQLITE_LIMIT_LENGTH`), đặt trước SQL
+/// người dùng để `zeroblob(N)`/text lớn không materialize trước khi host kịp đếm. Phải đủ lớn
+/// cho đường ghi hợp lệ (params tối đa 16 MiB + một row 1 MiB) nhưng vẫn hữu hạn rõ ràng.
+pub const MAX_CELL_HARD_BYTES: usize = MAX_PARAMS_TOTAL_BYTES + MAX_ROW_BYTES; // 17 MiB
+/// max tổng kích thước kết quả (text+blob + overhead ô mọi hàng; **không** tính tên cột) —
+/// vượt ⇒ `Err`.
 pub const MAX_TOTAL_BYTES: usize = 16 << 20; // 16 MiB
 /// max SQL text — vượt ⇒ `Err`.
 pub const MAX_SQL_BYTES: usize = 64 << 10; // 64 KiB
@@ -60,12 +84,48 @@ pub const MAX_PARAMS: usize = 1_000;
 pub const MAX_PARAM_BYTES: usize = 1 << 20; // 1 MiB
 /// max tổng payload params (text/blob) mỗi lời gọi — vượt ⇒ `Err` (cộng dồn `checked_add`).
 pub const MAX_PARAMS_TOTAL_BYTES: usize = 16 << 20; // 16 MiB
-/// max connection mỗi phiên host — vượt ⇒ `Err`.
+/// max connection **đang mở** mỗi phiên host — vượt ⇒ `Err`.
 pub const MAX_CONNECTIONS: usize = 16;
+/// max **tổng handle** (kể cả tombstone đã đóng) mỗi phiên — vượt ⇒ `Err`.
+///
+/// Trước đây `bang` chỉ có cap connection đang mở; mở/đóng lặp lại append tombstone vô hạn
+/// (O(n²) tra cứu + RAM tăng mãi). Cap này chặn cả hai; tombstone vẫn được giữ tới hết phiên
+/// trong giới hạn đó.
+pub const MAX_HANDLES: usize = 1_024;
 /// busy_timeout tối đa (hữu hạn).
 pub const MAX_BUSY_MS: i64 = 60_000;
 /// Wall-clock mỗi câu (progress_handler).
 pub const MAX_QUERY_MS: u64 = 5_000;
+
+/// Trần tài nguyên của một `Db` — tách thành struct để test ép cap thấp mà không phải tạo
+/// dữ liệu khổng lồ (mặc định = các hằng `MAX_*` ở trên).
+#[derive(Clone, Copy, Debug)]
+struct GioiHan {
+    rows: usize,
+    cells: usize,
+    columns: usize,
+    ten_cot_bytes: usize,
+    row_bytes: usize,
+    /// Trần cứng `SQLITE_LIMIT_LENGTH` (mặc định [`MAX_CELL_HARD_BYTES`]).
+    hard_cell_bytes: usize,
+    total_bytes: usize,
+    handles: usize,
+}
+
+impl Default for GioiHan {
+    fn default() -> Self {
+        Self {
+            rows: MAX_ROWS,
+            cells: MAX_CELLS,
+            columns: MAX_COLUMNS,
+            ten_cot_bytes: MAX_COLUMN_NAME_BYTES,
+            row_bytes: MAX_ROW_BYTES,
+            hard_cell_bytes: MAX_CELL_HARD_BYTES,
+            total_bytes: MAX_TOTAL_BYTES,
+            handles: MAX_HANDLES,
+        }
+    }
+}
 
 /// PRAGMA host đặt **trước authorizer** (mọi chế độ): tạm trong RAM + `trusted_schema=OFF`
 /// và page cache **2 MiB** (N7) — dùng đúng một chuỗi cho cả `db_open` lẫn probe test,
@@ -75,9 +135,6 @@ const HOST_PRAGMAS: &str =
 
 /// Handle cơ sở dữ liệu trong phiên.
 struct Muc {
-    /// Token **128 bit ngẫu nhiên**, định dạng `db:<32 hex thường>` — không đoán được từ output;
-    /// tra cứu khớp **toàn bộ** chuỗi; không tái sử dụng trong phiên.
-    token: String,
     /// `":memory:"` hoặc đường dẫn đã mở (cho diagnostics leak).
     path: String,
     /// `None` khi đã đóng (tombstone — giữ để báo "handle đã đóng").
@@ -133,8 +190,10 @@ pub struct Db {
     query_ms: u64,
     /// `--sqlite-debug`: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values).
     sqlite_debug: bool,
-    /// Bảng mọi handle của phiên (kể cả tombstone đã đóng).
-    bang: Vec<Muc>,
+    /// Trần hàng/ô/byte/tên cột/handle của phiên (mặc định là các hằng `MAX_*`).
+    gioi_han: GioiHan,
+    /// Bảng mọi handle của phiên (kể cả tombstone đã đóng) — tra cứu O(1) theo token.
+    bang: HashMap<String, Muc>,
 }
 
 impl Db {
@@ -159,7 +218,8 @@ impl Db {
             giai_thich,
             query_ms,
             sqlite_debug: false,
-            bang: Vec::new(),
+            gioi_han: GioiHan::default(),
+            bang: HashMap::new(),
         }
     }
 
@@ -169,7 +229,7 @@ impl Db {
     }
 
     fn dang_mo(&self) -> usize {
-        self.bang.iter().filter(|m| m.conn.is_some()).count()
+        self.bang.values().filter(|m| m.conn.is_some()).count()
     }
 
     /// Tra handle trong **phiên này**; handle lạ/sai loại/sai dạng/đã đóng ⇒ `Err`.
@@ -181,8 +241,7 @@ impl Db {
         }
         let m = self
             .bang
-            .iter_mut()
-            .find(|m| m.token == h)
+            .get_mut(h)
             .ok_or_else(|| "handle không tồn tại (chưa mở trong phiên này)".to_string())?;
         if m.conn.is_none() {
             return Err("handle đã đóng".to_string());
@@ -329,7 +388,13 @@ fn mo_ta(path: &str) -> String {
 /// | `SQLITE_FUNCTION` `load_extension` | nạp extension | **Deny** |
 /// | `VACUUM` (cả `VACUUM INTO`) | không có action code riêng — tự `ATTACH` nội tại | **Deny** (qua ATTACH nội tại) |
 /// | `Unknown` / mọi action không liệt kê | — | **Deny** |
-fn chinh_sach(ctx: AuthContext<'_>) -> Authorization {
+///
+/// **VD-258 (bảo mật)**: schema SQLite (tệp ngoài, `PRAGMA writable_schema`) có thể chứa định
+/// danh **không phải UTF-8**. Hook authorizer của rusqlite gọi `CStr::to_str().expect(...)` cho
+/// tên bảng/cột/hàm ⇒ panic. Vì vậy host **kiểm schema text trước mọi prepare** (xem
+/// [`kiem_schema_utf8`]): byte hỏng ⇒ `Err` dữ liệu, không để rusqlite/`column_name` panic; ma
+/// trận authorizer bên dưới giữ **nguyên** chính sách cũ.
+fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authorization {
     match ctx.action {
         AuthAction::CreateTable { .. }
         | AuthAction::CreateTempTable { .. }
@@ -381,16 +446,79 @@ fn chinh_sach(ctx: AuthContext<'_>) -> Authorization {
                 Authorization::Deny
             }
         }
-        // `VACUUM` không có action code riêng: mọi đường `VACUUM` tự `ATTACH` nội tại ⇒ bị từ
-        // chối tại bước prepare nội tại ⇒ câu lệnh lỗi (không tạo file).
         AuthAction::Attach { .. }
         | AuthAction::Detach { .. }
         | AuthAction::CreateVtable { .. }
         | AuthAction::DropVtable { .. }
         | AuthAction::Unknown { .. } => Authorization::Deny,
+        // `VACUUM` không có action code riêng: mọi đường `VACUUM` tự `ATTACH` nội tại ⇒ bị từ
+        // chối tại bước prepare nội tại ⇒ câu lệnh lỗi (không tạo file).
         // Enum `#[non_exhaustive]` — mọi action ngoài allow-list ⇒ từ chối.
         _ => Authorization::Deny,
     }
+}
+
+/// Đặt `SQLITE_LIMIT_LENGTH` = trần cứng một string/blob/row **trước** SQL người dùng.
+///
+/// `zeroblob(N)`/text lớn được SQLite cấp phát **trước** khi host kịp thấy `ValueRef` để đếm
+/// `raw_bytes`; không có limit này, `zeroblob(536870912)` làm RSS tăng ~500 MB rồi mới bị cap
+/// hàng từ chối. Limit cũng chặn text/blob > trần ngay tại bước step (lỗi dữ liệu `TOOBIG`,
+/// không cắt im lặng). `Connection::set_limit` chỉ hạ được trần (không nâng quá compile default).
+fn dat_gioi_han_o(conn: &Connection, max_cell_bytes: usize) -> Result<(), String> {
+    let m = i32::try_from(max_cell_bytes)
+        .map_err(|_| "giới hạn ô vượt i32 — từ chối cấu hình".to_string())?;
+    conn.set_limit(Limit::SQLITE_LIMIT_LENGTH, m)
+        .map_err(|e| format!("không đặt được SQLITE_LIMIT_LENGTH: {e}"))?;
+    let hien = conn
+        .limit(Limit::SQLITE_LIMIT_LENGTH)
+        .map_err(|e| format!("không đọc lại được SQLITE_LIMIT_LENGTH: {e}"))?;
+    if hien != m {
+        return Err(format!(
+            "SQLITE_LIMIT_LENGTH không áp dụng được (muốn {m}, hiện {hien}) — từ chối mở"
+        ));
+    }
+    Ok(())
+}
+
+/// Kiểm **toàn bộ** text schema (`sqlite_master.sql`) là UTF-8 hợp lệ **trước** khi prepare SQL
+/// người dùng. Cần vì:
+/// - hook authorizer của rusqlite panic khi tên bảng/cột không-UTF-8;
+/// - `Statement::column_name` cũng panic khi tên cột không-UTF-8.
+///
+/// Chạy lại **mỗi** prepare (schema có thể đổi từ tiến trình khác); chỉ đọc metadata, không
+/// step dữ liệu người dùng. Lỗi ⇒ `Err` dữ liệu, không panic, không echo SQL.
+fn kiem_schema_utf8(conn: &Connection, sqlite_debug: bool) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL")
+        .map_err(|e| {
+            format!(
+                "không đọc được schema SQLite: {}",
+                loi_sqlite("lỗi đọc schema", e, sqlite_debug)
+            )
+        })?;
+    let mut rows = stmt
+        .query([])
+        .map_err(|e| loi_sqlite("lỗi đọc schema", e, sqlite_debug))?;
+    while let Some(row) = rows
+        .next()
+        .map_err(|e| loi_sqlite("lỗi đọc schema", e, sqlite_debug))?
+    {
+        let bytes = match row
+            .get_ref(0)
+            .map_err(|e| loi_sqlite("lỗi đọc schema", e, sqlite_debug))?
+        {
+            ValueRef::Text(t) => t,
+            ValueRef::Blob(b) => b,
+            _ => continue,
+        };
+        if std::str::from_utf8(bytes).is_err() {
+            return Err(
+                "schema SQLite chứa định danh không phải UTF-8 — từ chối (không đọc được tên bảng/cột an toàn)"
+                    .to_string(),
+            );
+        }
+    }
+    Ok(())
 }
 
 /// Ô SQLite → `Value::Enum("SqlValue", …)`. UTF-8 hỏng ⇒ lỗi (dữ liệu, không phải dữ liệu cắt).
@@ -523,6 +651,12 @@ impl DbHost for Db {
                 "quá {MAX_CONNECTIONS} connection trong một phiên — đóng bớt (close) trước"
             ));
         }
+        if self.bang.len() >= self.gioi_han.handles {
+            return Err(format!(
+                "quá {} handle trong một phiên (kể cả handle đã đóng) — mở phiên mới nếu cần thêm",
+                self.gioi_han.handles
+            ));
+        }
         let la_memory = path == ":memory:";
         let flags = if create {
             OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE
@@ -544,22 +678,28 @@ impl DbHost for Db {
         })?;
         conn.busy_timeout(Duration::from_millis(busy_ms as u64))
             .map_err(|e| format!("không đặt busy_timeout: {e}"))?;
+        // Trần cứng một string/blob/row **trước** mọi câu SQL người dùng (chặn `zeroblob`/text
+        // lớn materialize trước khi host kịp đếm).
+        dat_gioi_han_o(&conn, self.gioi_han.hard_cell_bytes)?;
         // Tạm trong bộ nhớ (§8 VD-241) + trusted_schema=OFF + cache trang **2 MiB** (N7 —
         // `PRAGMA cache_size = -2048` nghĩa là 2048 KiB) — **trước** authorizer. Không được nuốt
         // lỗi: nếu PRAGMA này không áp dụng được, từ chối mở để §8 không bị im lặng.
         conn.execute_batch(HOST_PRAGMAS)
             .map_err(|e| format!("không đặt PRAGMA temp_store/trusted_schema/cache_size: {e}"))?;
-        // Authorizer cài **trước khi** prepare SQL người dùng.
+        // Authorizer cài **trước khi** prepare SQL người dùng. Schema không-UTF-8 đã bị
+        // `kiem_schema_utf8` chặn trước mỗi prepare (hook rusqlite panic nếu gặp chuỗi hỏng).
         conn.authorizer(Some(chinh_sach));
         let mut token = token_ngau_nhien();
-        while self.bang.iter().any(|m| m.token == token) {
+        while self.bang.contains_key(&token) {
             token = token_ngau_nhien();
         }
-        self.bang.push(Muc {
-            token: token.clone(),
-            path: mo_ta(path),
-            conn: Some(conn),
-        });
+        self.bang.insert(
+            token.clone(),
+            Muc {
+                path: mo_ta(path),
+                conn: Some(conn),
+            },
+        );
         if self.giai_thich {
             eprintln!("DB open {token} {}", mo_ta(path));
         }
@@ -570,14 +710,14 @@ impl DbHost for Db {
         if !token_dung_dang(h) {
             return Err("handle sai dạng — cần `db:<32 hex thường>`".to_string());
         }
-        let Some(i) = self.bang.iter().position(|m| m.token == h) else {
+        let Some(m) = self.bang.get_mut(h) else {
             return Err("handle không tồn tại (chưa mở trong phiên này)".to_string());
         };
-        if self.bang[i].conn.is_none() {
+        if m.conn.is_none() {
             return Err("handle đã đóng".to_string());
         }
         // **Không** auto-commit — `Connection::close` drop; transaction dở bị SQLite huỷ, không commit.
-        let c = self.bang[i].conn.take().expect("vừa kiểm is_some");
+        let c = m.conn.take().expect("vừa kiểm is_some");
         match c.close() {
             Ok(()) => {
                 if self.giai_thich {
@@ -586,7 +726,9 @@ impl DbHost for Db {
                 Ok(())
             }
             Err((c, e)) => {
-                self.bang[i].conn = Some(c);
+                if let Some(m) = self.bang.get_mut(h) {
+                    m.conn = Some(c);
+                }
                 // **F-B (2026-11-19)**: thông điệp lỗi không được echo full token 128-bit.
                 Err(format!(
                     "không đóng được connection SQL (chi tiết đã định vị tại phiên chạy): {e}"
@@ -622,12 +764,13 @@ impl DbHost for Db {
         kiem_params(params)?;
         let debug = self.sqlite_debug;
         let ngan_sach = Duration::from_millis(self.query_ms);
+        let gh = self.gioi_han;
         let m = self.tim(h)?;
         let conn = m.conn.as_mut().expect("tim() đã kiểm");
         let params = chuan_bi_tham_so(params)?;
         let vao = Instant::now();
         conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
-        let ket = truy_van(conn, sql, &params, debug);
+        let ket = truy_van(conn, sql, &params, debug, &gh);
         conn.progress_handler(1_000, None::<fn() -> bool>);
         ket
     }
@@ -640,7 +783,7 @@ impl DbHost for Db {
 
     fn db_cleanup(&mut self) -> Result<u64, String> {
         let mut n = 0u64;
-        for m in &mut self.bang {
+        for m in self.bang.values_mut() {
             if let Some(c) = m.conn.take() {
                 // Đóng best-effort; **không** auto-commit (SQLite huỷ transaction dở khi đóng).
                 let _ = c.close();
@@ -724,6 +867,7 @@ fn thuc_thi(
     params: &[rusqlite::types::Value],
     sqlite_debug: bool,
 ) -> Result<i64, String> {
+    kiem_schema_utf8(conn, sqlite_debug)?;
     let mut stmt = conn
         .prepare(sql)
         .map_err(|e| loi_prepare("execute", e, sqlite_debug))?;
@@ -739,81 +883,137 @@ fn thuc_thi(
 }
 
 /// `query`: bind đủ số lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
-/// Giới hạn byte (**text/blob**, metadata/tên cột **không** tính): ≤ [`MAX_ROW_BYTES`] mỗi hàng,
-/// ≤ [`MAX_TOTAL_BYTES`] cộng dồn mỗi lời gọi; kiểm **trước** khi clone/allocate ô (cộng dồn
-/// `checked_add`). Mọi lỗi SQLite ⇒ `Result.Err`.
+/// Giới hạn (mặc định, xem [`GioiHan`]): ≤ [`MAX_ROWS`] hàng, ≤ [`MAX_CELLS`] ô, ≤
+/// [`MAX_COLUMNS`] cột, ≤ [`MAX_COLUMN_NAME_BYTES`] tên cột, payload mỗi hàng ≤
+/// [`MAX_ROW_BYTES`], tổng payload + overhead ô ≤ [`MAX_TOTAL_BYTES`]. Kiểm **trước** khi
+/// clone/allocate ô (cộng dồn `checked_add`). Mọi lỗi SQLite ⇒ `Result.Err`.
 fn truy_van(
     conn: &Connection,
     sql: &str,
     params: &[rusqlite::types::Value],
     sqlite_debug: bool,
+    gh: &GioiHan,
 ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
+    kiem_schema_utf8(conn, sqlite_debug)?;
     let mut stmt = conn
         .prepare(sql)
         .map_err(|e| loi_prepare("query", e, sqlite_debug))?;
     kiem_so_luong(&stmt, params.len())?;
     let col_n = stmt.column_count();
+    // Tên cột: schema đã được kiểm UTF-8 ở trên nên `column_name` không panic vì encoding;
+    // vẫn map `Err` (index ngoài miền) thành lỗi dữ liệu. Cap số cột + tổng byte tên cột.
+    if col_n > gh.columns {
+        return Err(format!(
+            "kết quả có {col_n} cột > giới hạn {} cột — chọn ít cột hơn",
+            gh.columns
+        ));
+    }
     let mut columns: Vec<String> = Vec::with_capacity(col_n);
+    let mut tong_ten: usize = 0;
     for i in 0..col_n {
         let ten = stmt
             .column_name(i)
-            .map_err(|_| "không đọc được tên cột".to_string())?
-            .to_string();
-        columns.push(ten);
+            .map_err(|_| "không đọc được tên cột".to_string())?;
+        tong_ten = tong_ten
+            .checked_add(ten.len())
+            .ok_or_else(|| "tổng tên cột tràn — từ chối".to_string())?;
+        if tong_ten > gh.ten_cot_bytes {
+            return Err(format!(
+                "tổng tên cột vượt giới hạn {} byte — chọn ít cột hơn",
+                gh.ten_cot_bytes
+            ));
+        }
+        columns.push(ten.to_string());
     }
-    // **Metadata** (tên cột) **không** tính vào cap byte của payload.
+    // **Metadata** (tên cột) **không** tính vào cap byte payload (có trần riêng ở trên).
     let mut tong: usize = 0;
     let mut rows = stmt
         .query(rusqlite::params_from_iter(params.iter()))
-        .map_err(|e| loi_sqlite("lỗi khi thực thi", e, sqlite_debug))?;
+        .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
     let mut out_rows: Vec<Vec<Value>> = Vec::new();
+    // Overhead **mỗi ô** (Enum + 2 String + Vec + allocator) — cố định theo số cột, cộng vào
+    // cap tổng mỗi hàng. Nếu chỉ đếm payload, 100k ô `NULL` lọt cap 16 MiB nhưng vẫn tốn RAM.
+    let overhead_moi_hang = col_n
+        .checked_mul(CELL_OVERHEAD)
+        .ok_or_else(|| "overhead ô tràn — từ chối".to_string())?;
     loop {
         let next = rows
             .next()
-            .map_err(|e| loi_sqlite("lỗi khi đọc kết quả", e, sqlite_debug))?;
+            .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
         let Some(row) = next else { break };
-        if out_rows.len() >= MAX_ROWS {
+        if out_rows.len() >= gh.rows {
             return Err(format!(
-                "kết quả vượt giới hạn {MAX_ROWS} hàng — cắt nhỏ kết quả (LIMIT), không trả dữ liệu cắt"
+                "kết quả vượt giới hạn {} hàng — cắt nhỏ kết quả (LIMIT), không trả dữ liệu cắt",
+                gh.rows
             ));
         }
-        // Lượt 1 (thô, không clone): kích thước hàng + tổng cộng dồn, `checked_add`; vượt ⇒ `Err`
-        // **trước** khi allocate clone ô.
+        // Cap **ô** (hàng × cột): chặn 10k × 2k ô NULL (mỗi ô vẫn có overhead `Value::Enum`).
+        let da_co = out_rows.len().saturating_mul(col_n);
+        if da_co.saturating_add(col_n) > gh.cells {
+            return Err(format!(
+                "kết quả vượt giới hạn {} ô (hàng × cột) — chọn ít cột hơn hoặc cắt nhỏ kết quả (LIMIT)",
+                gh.cells
+            ));
+        }
+        // Lượt 1 (thô, không clone): giữ `ValueRef` của cả hàng (Copy, trỏ vào bộ nhớ SQLite)
+        // để đếm kích thước **và** chuyển đổi mà không gọi `get_ref` hai lần.
+        let mut o: Vec<ValueRef<'_>> = Vec::with_capacity(col_n);
         let mut row_bytes: usize = 0;
         for i in 0..col_n {
-            let rb = raw_bytes(
-                row.get_ref(i)
-                    .map_err(|e| loi_sqlite("lỗi khi đọc ô dữ liệu", e, sqlite_debug))?,
-            );
+            let v = row
+                .get_ref(i)
+                .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
             row_bytes = row_bytes
-                .checked_add(rb)
+                .checked_add(raw_bytes(v))
                 .ok_or_else(|| "một hàng tràn kích thước — từ chối".to_string())?;
+            o.push(v);
         }
-        if row_bytes > MAX_ROW_BYTES {
-            return Err(format!(
-                "một hàng vượt giới hạn {MAX_ROW_BYTES} byte (text+blob; metadata không tính vào giới hạn) — chọn ít cột hơn hoặc cắt nhỏ dữ liệu"
-            ));
+        if row_bytes > gh.row_bytes {
+            return Err(loi_hang_qua_lon(gh.row_bytes));
         }
         tong = tong
             .checked_add(row_bytes)
+            .and_then(|x| x.checked_add(overhead_moi_hang))
             .ok_or_else(|| "tổng kích thước kết quả tràn — từ chối".to_string())?;
-        if tong > MAX_TOTAL_BYTES {
+        if tong > gh.total_bytes {
             return Err(format!(
-                "tổng kích thước kết quả vượt giới hạn {MAX_TOTAL_BYTES} byte (text+blob; metadata không tính vào giới hạn) — cắt nhỏ kết quả (LIMIT)"
+                "tổng kích thước kết quả vượt giới hạn {} byte (text+blob + overhead ô; tên cột không tính) — cắt nhỏ kết quả (LIMIT)",
+                gh.total_bytes
             ));
         }
         // Lượt 2 (allocate): kích thước đã kiểm ⇒ clone an toàn.
         let mut r = Vec::with_capacity(col_n);
-        for i in 0..col_n {
-            let v = o_sqlite(
-                row.get_ref(i)
-                    .map_err(|e| loi_sqlite("lỗi khi đọc ô dữ liệu", e, sqlite_debug))?,
-            )?;
-            r.push(v);
+        for v in o {
+            r.push(o_sqlite(v)?);
         }
         out_rows.push(r);
     }
     Ok((columns, out_rows))
+}
+
+/// `true` nếu lỗi SQLite là `SQLITE_TOOBIG` — cell vượt `SQLITE_LIMIT_LENGTH` (đã đặt bằng
+/// [`dat_gioi_han_o`]). Trả thông điệp **cùng dạng** với cap hàng để caller thấy giới hạn ổn định.
+fn la_toobig(e: &rusqlite::Error) -> bool {
+    matches!(
+        e,
+        rusqlite::Error::SqliteFailure(err, _)
+            if err.code == rusqlite::ffi::ErrorCode::TooBig
+    )
+}
+
+fn loi_hang_qua_lon(max: usize) -> String {
+    format!(
+        "một hàng vượt giới hạn {max} byte (text+blob; metadata không tính vào giới hạn) — chọn ít cột hơn hoặc cắt nhỏ dữ liệu"
+    )
+}
+
+/// Lỗi khi step/đọc ô: `TOOBIG` (cell > limit) ⇒ thông điệp cap hàng, còn lại ⇒ `loi_sqlite`.
+fn loi_doc_ket_qua(e: rusqlite::Error, gh: &GioiHan, sqlite_debug: bool) -> String {
+    if la_toobig(&e) {
+        loi_hang_qua_lon(gh.row_bytes)
+    } else {
+        loi_sqlite("lỗi khi đọc kết quả", e, sqlite_debug)
+    }
 }
 
 /// Map lỗi prepare: multi-statement ⇒ `Err`; còn lại ⇒ `loi_sqlite` (mã SQLite + offset,
