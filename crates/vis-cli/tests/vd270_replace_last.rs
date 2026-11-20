@@ -1,0 +1,346 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! **VD-270 (replace-last)** — `std.str.replace_last(s, from, to) -> str`.
+//!
+//! Hợp đồng được khoá ở đây:
+//! - Thay **đúng lần xuất hiện cuối cùng** của `from` trong `s` bằng `to`, giữ nguyên mọi lần
+//!   xuất hiện trước: `replace_last("aaa", "a", "b")` ⇒ `"aab"`,
+//!   `replace_last("banana", "na", "X")` ⇒ `"banaX"`.
+//! - Không khớp ⇒ `s` **nguyên vẹn** (không cấp phát kết quả khác).
+//! - `from` rỗng ⇒ **nối** `to` một lần ở **cuối** (lần khớp rỗng cuối ở vị trí `len`):
+//!   `replace_last("abc", "", "-")` ⇒ `"abc-"`, `replace_last("", "", "-")` ⇒ `"-"`.
+//! - `s` rỗng hoặc `to` rỗng vẫn theo cùng quy tắc: `replace_last("", "a", "b")` ⇒ `""`,
+//!   `replace_last("abc", "b", "")` ⇒ `"ac"`.
+//! - Đơn vị khớp là **scalar Unicode** (cùng `str.replace`/`replace_first`/`rfind`, không phải
+//!   byte): `replace_last("đ😀x😀", "😀", "Z")` ⇒ `"đ😀xZ"`; mẫu nhiều scalar
+//!   `replace_last("đ😀xđ😀y", "đ😀", "Q")` ⇒ `"đ😀xQy"`; không bao giờ cắt giữa scalar.
+//! - Chồng lấn: chỉ thay **một** lần, chọn lần khớp **cuối**: `replace_last("aaa", "aa", "b")`
+//!   ⇒ `"ab"` (khớp ở offset 1), `replace_last("aaaa", "aa", "b")` ⇒ `"aab"`.
+//! - Kết quả là **`str`** (không phải `str?`); sugar R5c `s.replace_last(from, to)` ≡
+//!   `str.replace_last(s, from, to)`, không cần `use std.str`.
+//!
+//! Mọi ca dương chạy **cả hai** engine (interp + `--vm`), so byte stdout/stderr/exit.
+//!
+//! **RED-BEFORE** (trước khi thêm hàm, binary `vis` của cây này @ `e047dff`):
+//!
+//! ```text
+//! $ vis check probe.vis                    # có use std.str
+//! TAP version 13
+//! 1..1
+//! not ok 1 - probe.vis
+//! # VS0301 5:11 module `std.str` không có hàm `replace_last`
+//! $ vis run --no-cache probe.vis           ⇒ exit 2
+//! probe.vis:5:11: error VS0301: module `std.str` không có hàm `replace_last`
+//! probe.vis:6:11: error VS0301: module `std.str` không có hàm `replace_last`
+//! $ vis check sugar.vis                    # "banana".replace_last("na", "X"), không use
+//! not ok 1 - sugar.vis
+//! # VS0403 3:11 `str` không có trường `replace_last`
+//! ```
+//!
+//! Sau khi thêm: mọi ca dưới xanh, interp ↔ VM byte-identical.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static DEM: AtomicU32 = AtomicU32::new(0);
+
+fn tam(tag: &str) -> PathBuf {
+    let n = DEM.fetch_add(1, Ordering::Relaxed);
+    let d = std::env::temp_dir().join(format!("vis-vd270-rl-{tag}-{}-{n}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    std::fs::create_dir_all(&d).expect("tạo thư mục tạm");
+    d
+}
+
+fn ghi_tep(tag: &str, src: &str) -> (PathBuf, PathBuf) {
+    let d = tam(tag);
+    let p = d.join(format!("{tag}.vis"));
+    std::fs::write(
+        &p,
+        format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}"),
+    )
+    .expect("ghi tệp tạm");
+    (d, p)
+}
+
+fn chay_tep(p: &Path, extra: &[&str]) -> (i32, String, String) {
+    let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    c.arg("run").arg("--no-cache").args(extra).arg(p);
+    let o = c.output().expect("chạy vis run");
+    (
+        o.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stderr).to_string(),
+    )
+}
+
+/// Chạy interp + VM; assert hai engine giống **byte** stdout/stderr/exit.
+fn hai_engine(tag: &str, src: &str) -> (i32, String, String) {
+    let (d, p) = ghi_tep(tag, src);
+    let a = chay_tep(&p, &[]);
+    let b = chay_tep(&p, &["--vm"]);
+    let _ = std::fs::remove_dir_all(&d);
+    assert_eq!(
+        a.0, b.0,
+        "{tag}: exit interp↔VM lệch\ninterp: {a:?}\nvm: {b:?}"
+    );
+    assert_eq!(
+        a.1, b.1,
+        "{tag}: stdout interp↔VM lệch\ninterp: {a:?}\nvm: {b:?}"
+    );
+    assert_eq!(
+        a.2, b.2,
+        "{tag}: stderr interp↔VM lệch\ninterp: {a:?}\nvm: {b:?}"
+    );
+    a
+}
+
+/// Chương trình hợp lệ: hai engine cùng chạy sạch, stdout đúng kỳ vọng.
+fn dung(tag: &str, src: &str, stdout: &str) {
+    let (code, out, err) = hai_engine(tag, src);
+    assert_eq!(
+        code, 0,
+        "{tag}: phải chạy sạch\nstdout: {out}\nstderr: {err}"
+    );
+    assert!(err.is_empty(), "{tag}: stderr phải rỗng: {err}");
+    assert_eq!(out, stdout, "{tag}: stdout sai");
+}
+
+/// Lỗi **tĩnh**: `vis check` đỏ (exit 1, mã trong TAP) và **cả hai** engine từ chối (exit 2).
+fn tu_choi(tag: &str, src: &str, ma: &str) {
+    let (d, p) = ghi_tep(tag, src);
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .arg("check")
+        .arg(&p)
+        .output()
+        .expect("chạy vis check");
+    let co = String::from_utf8_lossy(&o.stdout).to_string();
+    let ce = String::from_utf8_lossy(&o.stderr).to_string();
+    assert_eq!(
+        o.status.code().unwrap_or(-1),
+        1,
+        "{tag}: `check` phải đỏ (exit 1)\nstdout: {co}\nstderr: {ce}"
+    );
+    assert!(
+        co.contains(ma) || ce.contains(ma),
+        "{tag}: `check` thiếu `{ma}`\nstdout: {co}\nstderr: {ce}"
+    );
+    for (i, extra) in [&[][..], &["--vm"][..]].iter().enumerate() {
+        let (code, so, se) = chay_tep(&p, extra);
+        assert_eq!(
+            code, 2,
+            "{tag} engine={i}: phải từ chối tĩnh (exit 2), được {code}\nstdout: {so}\nstderr: {se}"
+        );
+        assert!(
+            so.contains(ma) || se.contains(ma),
+            "{tag} engine={i}: thiếu `{ma}`\nstdout: {so}\nstderr: {se}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+// ===========================================================================
+// 1 — chỉ thay lần cuối, giữ mọi lần trước
+// ===========================================================================
+
+/// Nhiều lần xuất hiện ⇒ chỉ lần **cuối** đổi; phần còn lại nguyên văn.
+#[test]
+fn chi_thay_lan_cuoi() {
+    dung(
+        "last-only",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("aaa", "a", "b"))
+    print(str.replace_last("banana", "na", "X"))
+    print(str.replace_last("ababab", "ab", "X"))
+    print(str.replace_last("hello world hello", "hello", "hi"))
+    print(str.replace_last("x.y.z", ".", "/"))
+    print(str.replace_last("aaaa", "a", "bb"))
+"#,
+        "aab\nbanaX\nababX\nhello world hi\nx.y/z\naaabb\n",
+    );
+}
+
+// ===========================================================================
+// 2 — không khớp ⇒ nguyên vẹn
+// ===========================================================================
+
+/// `from` không có trong `s` (kể cả dài hơn `s`) ⇒ trả đúng `s`.
+#[test]
+fn khong_khop_tra_nguyen_ven() {
+    dung(
+        "no-match",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("abc", "z", "X"))
+    print(str.replace_last("abc", "abcd", "X"))
+    print(str.replace_last("", "a", "b"))
+    print(str.replace_last("đ😀x", "d", "D"))
+    print(str.replace_last("abc", "ABC", "X"))
+"#,
+        "abc\nabc\n\nđ😀x\nabc\n",
+    );
+}
+
+// ===========================================================================
+// 3 — `from` rỗng: nối `to` một lần ở cuối
+// ===========================================================================
+
+/// Lần khớp rỗng **cuối** ở vị trí `len(s)` ⇒ `s + to`, kể cả `s` rỗng.
+#[test]
+fn from_rong_noi_cuoi_mot_lan() {
+    dung(
+        "empty-from",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("abc", "", "-"))
+    print(str.replace_last("", "", "-"))
+    print(str.replace_last("abc", "", ""))
+    print(str.replace_last("", "", ""))
+    print(str.replace_last("đ", "", "😀"))
+    print(str.replace_last("😀", "", "đ"))
+"#,
+        "abc-\n-\nabc\n\nđ😀\n😀đ\n",
+    );
+}
+
+// ===========================================================================
+// 4 — `s` rỗng / `to` rỗng
+// ===========================================================================
+
+/// `s` rỗng với `from` khác rỗng ⇒ `""`; `to` rỗng ⇒ **xoá** đúng lần khớp cuối.
+#[test]
+fn s_rong_va_to_rong() {
+    dung(
+        "empty-s-to",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("", "a", "b"))
+    print(str.replace_last("abc", "b", ""))
+    print(str.replace_last("abc", "abc", ""))
+    print(str.replace_last("banana", "na", ""))
+    print(str.replace_last("a", "a", ""))
+    print(str.replace_last("đ😀", "😀", ""))
+"#,
+        "\nac\n\nbana\n\nđ\n",
+    );
+}
+
+// ===========================================================================
+// 5 — Unicode: scalar, không phải byte
+// ===========================================================================
+
+/// Tiếng Việt/emoji: khớp theo **scalar**; kết quả không bao giờ là UTF-8 hỏng.
+#[test]
+fn unicode_theo_scalar_khong_phai_byte() {
+    dung(
+        "unicode",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("đ😀x😀", "😀", "Z"))
+    print(str.replace_last("đađ", "đ", "Đ"))
+    print(str.replace_last("😀😀😀", "😀", "🙂"))
+    print(str.replace_last("đ😀x", "đ😀", "Q"))
+    print(str.replace_last("đ😀x", "x", "đ"))
+    print(str.replace_last("👨‍👩‍👧x", "👩", "M"))
+    print(str.replace_last("đ😀xđ😀y", "đ😀", "Q"))
+"#,
+        "đ😀xZ\nđaĐ\n😀😀🙂\nQx\nđ😀đ\n👨‍M‍👧x\nđ😀xQy\n",
+    );
+}
+
+// ===========================================================================
+// 6 — chồng lấn: chọn lần khớp cuối
+// ===========================================================================
+
+/// `"aaa"` thay `"aa"` ⇒ `"ab"` (khớp cuối ở offset 1); `"aaaa"` ⇒ `"aab"`;
+/// `to` dài hơn cũng chỉ một lần.
+#[test]
+fn chong_lan_chon_lan_cuoi() {
+    dung(
+        "overlap",
+        r#"use std.str
+
+fn main():
+    print(str.replace_last("aaa", "aa", "b"))
+    print(str.replace_last("aaaa", "aa", "b"))
+    print(str.replace_last("aaa", "a", "aa"))
+    print(str.replace_last("aaaa", "aaa", "b"))
+    print(str.replace_last("ababa", "aba", "X"))
+    print(str.replace_last("aaa", "aa", ""))
+"#,
+        "ab\naab\naaaa\nab\nabX\na\n",
+    );
+}
+
+// ===========================================================================
+// 7 — sugar phương thức R5c (không cần `use std.str`)
+// ===========================================================================
+
+/// `s.replace_last(…)` ≡ `str.replace_last(s, …)`; kết quả vẫn là `str`.
+#[test]
+fn sugar_phuong_thuc_khong_can_use() {
+    dung(
+        "sugar",
+        r#"fn main():
+    let s: str = "banana"
+    print(s.replace_last("na", "X"))
+    print("aaa".replace_last("aa", "b"))
+    print("abc".replace_last("", "-"))
+    print(s.replace_last("z", "X"))
+    let t: str = s.replace_last("ban", "BAN")
+    print(t)
+    print("đ😀x😀".replace_last("😀", "Z"))
+    print("aaaa".replace_last("aa", "b"))
+"#,
+        "banaX\nab\nabc-\nbanana\nBANana\nđ😀xZ\naab\n",
+    );
+}
+
+// ===========================================================================
+// 8 — ca âm tĩnh: kiểu / arity (module + sugar)
+// ===========================================================================
+
+/// Sai kiểu/sai số đối số bị checker chặn **trước khi chạy** (`VS0412`/`VS0401`, exit 2 ở cả
+/// hai engine); sugar phương thức cũng kiểm kiểu đối số.
+#[test]
+fn sai_kieu_sai_arity_bi_chan() {
+    for (tag, call, ma) in [
+        ("kieu-1", "str.replace_last(1, \"a\", \"b\")", "VS0412"),
+        ("kieu-2", "str.replace_last(\"a\", 1, \"b\")", "VS0412"),
+        ("kieu-3", "str.replace_last(\"a\", \"b\", 1)", "VS0412"),
+        ("arity-1", "str.replace_last(\"a\", \"b\")", "VS0401"),
+        ("arity-2", "str.replace_last(\"a\")", "VS0401"),
+        ("arity-3", "str.replace_last()", "VS0401"),
+        (
+            "arity-4",
+            "str.replace_last(\"a\", \"b\", \"c\", \"d\")",
+            "VS0401",
+        ),
+        ("sugar-kieu", "\"a\".replace_last(1, \"b\")", "VS0412"),
+        ("sugar-kieu-2", "\"a\".replace_last(\"b\", 1)", "VS0412"),
+    ] {
+        let src = format!("use std.str\n\nfn main():\n    let x = {call}\n    print(x)\n");
+        tu_choi(tag, &src, ma);
+    }
+}
+
+/// Kết quả là `str` thật: gán vào `str` hợp lệ (ca dương ở test 7); gán vào `int` bị chặn.
+#[test]
+fn ket_qua_la_str_that() {
+    tu_choi(
+        "ket-qua-sang-int",
+        "use std.str\n\nfn main():\n    let x: int = str.replace_last(\"abc\", \"b\", \"X\")\n    print(x)\n",
+        "VS0412",
+    );
+    tu_choi(
+        "sugar-ket-qua-sang-int",
+        "fn main():\n    let x: int = \"abc\".replace_last(\"b\", \"X\")\n    print(x)\n",
+        "VS0412",
+    );
+}

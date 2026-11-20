@@ -41,6 +41,7 @@ mod strpad;
 mod strparse;
 mod strparsefloat;
 mod strreplace;
+mod strreplacelast;
 mod strsplitn;
 mod strstrip;
 mod strtrim;
@@ -274,6 +275,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(strreplace::replace_first(s, tu, den)))
+        }
+        // **VD-270 (replace-last)**: chỉ thay **lần cuối** (Rust `rfind` + ghép), cùng đơn vị
+        // scalar Unicode với `str.replace`/`replace_first`/`rfind`; `from` rỗng ⇒ nối `to`
+        // một lần ở cuối; không khớp ⇒ `s` nguyên vẹn. Lõi ở `stdlib/strreplacelast.rs`.
+        "str.replace_last" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let tu = chuoi(name, &args[1], 1, span)?;
+            let den = chuoi(name, &args[2], 2, span)?;
+            Ok(Value::Str(strreplacelast::replace_last(s, tu, den)))
         }
         // **VD-270 (parse-int)**: chuỗi thập phân **chặt** → `int?`; sai cú pháp/tràn ⇒ `None`.
         "str.parse_int" => {
