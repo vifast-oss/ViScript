@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `6f0b71a` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
-> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob/strpad/dbcache/checkstdin/fmt-mode/fscopy/runstdin/windows/enumalloc),
-> gate **2090 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> **Trạng thái tại thời điểm ghi**: main `3d30be1` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + testfilter/fmt-size/fmtstdin/panic/nestassign/glob/strpad/dbcache/checkstdin/fmt-mode/fscopy/runstdin/windows/enumalloc/optmethod/fsmeta/fmt-json),
+> gate **2124 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -135,3 +135,6 @@
 - **windows** (`026d679` → `8b1609e`): `list.windows` cửa sổ trượt; R5c buộc `T/K/V` từ receiver ⇒ sugar generic (`xs.sort()`, `.take()`, `.zip()`, `.min/max()`, `.windows()`) hoạt động; API +1.
 - **enumalloc** (`9580e23` → `b1d962f`): tên enum nội bộ hoá `Name(Rc<str>)`, `Value` 72→64 B; microbench `Some` 1,8×, `Ok` 1,9×; loop interp `Some` −12,5%, VM user-enum −22,9% (máy tải, số chỉ hướng); không đổi VBC1/opcode.
 - `test/release/run.sh` / `test/toolchain/run.sh` / `bin/vis-host-suite` @ `6f0b71a`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **optmethod** (`db9e5d4` → `38dec30`): `recv?.m()` — base đánh giá một lần, `None` không đánh giá đối số; `U→U?`, `U?→U?` không bọc hai lớp; `()` giữ `()`; chain `a?.m()?.f`.
+- **fsmeta** (`60cac03` → `3d30be1`): `fs.size/is_file/is_dir` (`symlink_metadata`, symlink ⇒ false/false + size Err; missing predicate Ok(false)); API +3.
+- **fmt-json** (`c306b25` → `c121b6c`): `vis fmt --check --json` tệp/dir/stdin; `ok/files/path/formatted/error`; exit 0/1/2.
