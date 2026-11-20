@@ -70,6 +70,9 @@ impl Trap {
 pub enum Abort {
     Trap(Trap),
     Ret(Value),
+    /// **ST-267/VD-251 (chỉ đường test/frame)**: frame hiện tại phải treo tại `await`.
+    /// Runtime mặc định (`frame.enabled == false`) không bao giờ phát ra biến thể này.
+    Pending(crate::rt::Pending),
 }
 
 pub type R<T> = Result<T, Abort>;

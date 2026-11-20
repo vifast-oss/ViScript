@@ -32,6 +32,9 @@
 
 pub mod dump;
 pub mod vm;
+/// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường VM thật.
+#[doc(hidden)]
+pub mod vm_frame;
 
 pub use vm::{
     run, run_with_fs, run_with_full_hosts_caps, run_with_hosts, run_with_hosts_caps, Vm, VmError,

@@ -121,42 +121,42 @@ impl core::fmt::Display for VmError {
 type ClosureCells = Rc<RefCell<Vec<Value>>>;
 type CapturedMirror = Vec<(u16, usize)>;
 
-struct Frame {
-    fi: u32,
-    pc: usize,
-    locals: Vec<Value>,
-    captured: Vec<Value>,
+pub(crate) struct Frame {
+    pub(crate) fi: u32,
+    pub(crate) pc: usize,
+    pub(crate) locals: Vec<Value>,
+    pub(crate) captured: Vec<Value>,
     /// Ngăn xếp **của khung gọi** được cất khi gọi hàm (mỗi khung một ngăn xếp riêng).
-    st_cu: Vec<Value>,
+    pub(crate) st_cu: Vec<Value>,
     /// **ST-238 (VD-242, ca 8)**: nếu khung là một lần gọi closure, chứa ô chia sẻ của closure
     /// và cặp `(ô cục bộ, chỉ số biến bắt)` để ghi ngược giá trị khi khung kết thúc — giúp closure
     /// ghi biến bắt `var` giữ trạng thái **giữa các lần gọi** mà vẫn không đụng biến ngoài.
-    writeback: Option<(ClosureCells, CapturedMirror)>,
+    pub(crate) writeback: Option<(ClosureCells, CapturedMirror)>,
 }
 
 /// Máy ảo: giữ module + văn bản nguồn + `stdout` + số bước.
 pub struct Vm<'a> {
-    m: &'a Module,
-    text: &'a str,
-    out: String,
-    steps: usize,
-    depth: usize,
+    pub(crate) m: &'a Module,
+    pub(crate) text: &'a str,
+    pub(crate) out: String,
+    pub(crate) steps: usize,
+    pub(crate) depth: usize,
     /// Độ sâu ngăn xếp giá trị **lớn nhất đã dùng** (bất biến của fuzz ST-21).
-    dinh: usize,
+    pub(crate) dinh: usize,
     /// Host hệ thống tệp (ST-33); `None` ⇒ `VS0604` — VM **không** biết `std::fs`.
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
+    pub(crate) fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
     /// **ST-63 (VD-105)**: host mạng; `None` ⇒ `VS0604` — VM **không** biết `std::net`.
-    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    pub(crate) net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
     /// **ST-89 (VD-110)**: host **chương trình ngoài** — VM **không** gọi `std::process`, chỉ qua
     /// trait của `vis-interp`; `None` ⇒ `exec.*` ⇒ `VS0604`.
-    ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
+    pub(crate) ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
     /// **VD-241 (Gate 1)**: host **cơ sở dữ liệu** — VM **không** biết backend native; `None` ⇒
     /// `std.sqlite.*` ⇒ `VS0604`.
-    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
+    pub(crate) db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_interp::rt`).
-    sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
+    pub(crate) sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
-    caps: Vec<(u32, Value)>,
+    pub(crate) caps: Vec<(u32, Value)>,
     /// **ST-238 (VD-242, ca 3)**: kho biến cấp tệp, ánh xạ từ ô `>= GLOBAL_SLOT_BASE`.
     ///
     /// **ST-250 (VD-245)**: mỗi ô là `Option<Value>` — `None` = **chưa khởi tạo**, `Some(v)` = đã
@@ -164,9 +164,9 @@ pub struct Vm<'a> {
     /// hợp lệ không bao giờ bị nhầm với ô chưa có giá trị, và sentinel `None` không lọt vào
     /// `Value`/`show`/phép toán/serialization. Độ dài được cấp **theo module đã verify** ở đầu mỗi
     /// lần chạy, không tự resize theo chỉ số bytecode trong lúc chạy.
-    globals: Vec<Option<Value>>,
+    pub(crate) globals: Vec<Option<Value>>,
     /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của từng closure, khoá bằng địa chỉ `Rc<VmFunc>`.
-    closure_cells: HashMap<usize, ClosureCells>,
+    pub(crate) closure_cells: HashMap<usize, ClosureCells>,
 }
 
 impl<'a> Vm<'a> {
@@ -261,6 +261,14 @@ impl<'a> Vm<'a> {
                     steps: self.steps,
                 }
             }
+            // Chỉ đường test/frame — `run()` mặc định không bật frame; driver có entry riêng.
+            Err(Abort::Pending(_)) => RunOutput {
+                stdout: self.take_stdout(),
+                diagnostics: Vec::new(),
+                value: None,
+                exit: 1,
+                steps: self.steps,
+            },
         }
     }
 
@@ -318,7 +326,7 @@ impl<'a> Vm<'a> {
         Ok(v)
     }
 
-    fn func(&self, i: u32) -> R<&Func> {
+    pub(crate) fn func(&self, i: u32) -> R<&Func> {
         self.m
             .funcs
             .get(i as usize)
@@ -330,7 +338,7 @@ impl<'a> Vm<'a> {
     /// Kích thước lấy từ chính module đã verify: `1 + max(s - GLOBAL_SLOT_BASE)` trên mọi lệnh ghi
     /// vùng global. Vì `verify()` đã chặn `s - BASE >= nglobals`, số ô này bị giới hạn bởi số global
     /// thật của module; VM **không** resize bộ nhớ theo một chỉ số bytecode tùy ý lúc chạy.
-    fn init_globals(&mut self) {
+    pub(crate) fn init_globals(&mut self) {
         let mut n = 0usize;
         for f in &self.m.funcs {
             for ins in &f.code {
@@ -609,18 +617,18 @@ impl Vm<'_> {
 }
 
 /// Trạng thái thực thi của **một** lần gọi (khung + ngăn xếp giá trị + iterator).
-struct Th<'m> {
-    m: &'m Module,
-    frames: Vec<Frame>,
-    st: Vec<Value>,
-    iters: Vec<(Vec<Value>, usize)>,
+pub(crate) struct Th<'m> {
+    pub(crate) m: &'m Module,
+    pub(crate) frames: Vec<Frame>,
+    pub(crate) st: Vec<Value>,
+    pub(crate) iters: Vec<(Vec<Value>, usize)>,
     /// **ST-238 (VD-242, ca 1)**: `(fi, pc_kết_thúc, độ_sâu_iters_trước_vòng)` cho mỗi `for`
     /// đang mở — để `break` nhảy tới cuối vòng thì cũng pop iterator như `IterNext` hết vòng.
-    loop_ends: Vec<(u32, usize, usize)>,
+    pub(crate) loop_ends: Vec<(u32, usize, usize)>,
 }
 
 impl<'m> Th<'m> {
-    fn new(m: &'m Module, fi: u32, locals: Vec<Value>, captured: Vec<Value>) -> Self {
+    pub(crate) fn new(m: &'m Module, fi: u32, locals: Vec<Value>, captured: Vec<Value>) -> Self {
         Self {
             m,
             frames: vec![Frame {
@@ -703,7 +711,7 @@ impl<'m> Th<'m> {
         Ok(())
     }
 
-    fn exec(&mut self, vm: &mut Vm<'_>) -> R<Value> {
+    pub(crate) fn exec(&mut self, vm: &mut Vm<'_>) -> R<Value> {
         loop {
             // Ghi nhận độ sâu ngăn xếp **lớn nhất** (bất biến fuzz ST-21: `dinh ≤ need`).
             if self.st.len() > vm.dinh {
@@ -848,7 +856,8 @@ impl<'m> Th<'m> {
                             span,
                         )));
                     }
-                    let v = builtin::call(vm, &ten, args, span)?;
+                    // ST-267/VD-251: hook frame-only (default = `builtin::call` cũ).
+                    let v = crate::vm_frame::call_builtin_frame(self, vm, &ten, args, span)?;
                     self.st.push(v);
                 }
                 Instr::CallMethod(i, n) => {

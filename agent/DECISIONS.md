@@ -2532,3 +2532,85 @@ Sau Lát 0 trình: kết quả suspend/resume (6 tiêu chí), các hợp đồng
 **Mục tiêu không phải "có event loop"** mà là chứng minh hai engine dừng/tiếp tục đúng, **không lặp tác
 dụng phụ, không mất trạng thái** — nền móng phải khoá trước khi đưa mạng thật vào scheduler.
 Tag/release PAUSED; chưa mở VS3 toàn phần/worker/GC/TLS/API mới.
+
+### VD-251 · Nghiệm thu checkpoint; duyệt Lát 1 nối runtime thật có kiểm soát — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: checkpoint
+> `agent/BAO-CAO-CHECKPOINT-LAT0-2026-11-20.md`. Ghi **VD mới**, không sửa VD-250. Quyết định dựa
+> trên báo cáo, không phải xác nhận A0 đã đọc 5 draft hay tự chạy repo.
+
+#### 1. Nghiệm thu checkpoint hiện tại
+
+| Phần | Quyết định |
+|---|---|
+| ST-264 | **Chấp nhận DONE cho model spike**, **không phải runtime sản phẩm**; rủiro suspend/resume hai engine **chưa** coi là giải quyết xong |
+| ST-265/#148 | Chấp nhận bản sửa deadline chung qua redirect **trong phạm vi đã chứng minh**; **giữ công bố rõ** `write` chưa có timeout |
+| ST-266 | Chấp nhận hoàn thành hồ sơ đề xuất, **không mặc nhiên ratify** toàn bộ draft chưa được trích dẫn đầy đủ |
+| Baseline `dbae70a` | Giữ checkpoint lịch sử; mã sản phẩm hiện đã khác baseline vì sửa HTTP |
+| Tag/release | **Tiếp tục PAUSED** |
+
+**Đính chính số đo HTTP**: `~300 ms` là **thời gian một lời gọi trả về trên một engine**;
+`0,61–0,62 s` là **thời gian harness chạy cả hai đường** (interp + VM) — log ghi rõ "2 đường × ~300 ms"
+(`JOURNAL/vd250-http148.md:87`). Không cần chạy lại. **Không gọi** timeout hiện tại là ngắt cứng toàn
+lời gọi: `write` vẫn có thể chặn vượt deadline.
+
+#### 2. Lát 1 — duyệt, nhưng chưa thay runtime mặc định
+
+**Mục tiêu**: chạy **chương trình ViScript thật** qua scheduler có frame và `Pending` giả. **Không**
+làm thêm một mô hình độc lập rồi gọi là đã nối runtime.
+
+**Được phép**: đưa continuation/frame vào **đường thực thi thật** của interp và VM; tách bắt đầu/chờ/
+tiếp tục task; dùng nguồn sự kiện giả qua **hook nội bộ test**; chỉnh interface nội bộ để truyền
+`Pending`; thêm **đường thực thi thử nghiệm chỉ nội bộ/test**.
+
+**Chưa được phép**: thay runtime mặc định; thêm reactor/socket nonblocking; đổi bytecode trên đĩa,
+`VERSION` hoặc cache; thêm API ngôn ngữ/cờ CLI công khai; **giảm tập vị trí `await` mà checker chấp
+nhận**. Nếu phải đổi định dạng bytecode ⇒ **dừng phần đó, trình phương án**, không lách bằng metadata
+không kiểm tra.
+
+#### 3. Tất định & tie-break (chốt)
+
+- Ready queue **FIFO**; task đang chờ **không** nằm trong `ready`.
+- Task được đánh thức **thêm vào cuối queue**.
+- Cùng batch sự kiện giả ⇒ thứ tự ổn định theo **khóa ghi trong trace**; **không** phụ thuộc thứ tự
+  duyệt hash map hay địa chỉ bộ nhớ.
+- Mỗi task **tối đa một mục ready**; wake trùng **không** tạo lượt chạy trùng.
+- Sự kiện thuộc **lần đăng ký cũ** bị bỏ qua sau task đổi trạng thái/đăng ký lại.
+- Trace phải xác định thứ tự timer/I/O/khác khi cùng xuất hiện; **chưa cần** chọn timer trước I/O ở Lát 1
+  (chưa có reactor), nhưng **không được ngẫu nhiên**.
+- Cùng trace ⇒ hai engine cùng kết quả **và chẩn đoán**; **không** áp cho thứ tự hoàn thành mạng thật.
+
+#### 4. Ownership (duyệt nguyên tắc)
+
+Thu hồi khi: task hoàn tất, **nghĩa vụ join đã ghi nhận**, và **không còn handle hay tham chiếu nội bộ
+hợp lệ** cần giữ. Handle còn sống await lại được kết quả/lỗi cache; task chưa await giữ cho final join;
+final join **có thể đánh dấu xong nghĩa vụ mà không giữ mãi mọi frame/kết quả**; `ready`/waiter/đăng ký
+sự kiện không giữ task đã chết ngoài ý muốn; **không tái dùng ID** làm wake cũ đánh thức task mới.
+Duyệt `diag_snapshot()` **test/debug-only** đếm task/frame/waiter/ready (chưa cần timer/fd thật).
+**Không tự đóng handle ngôn ngữ** đã trả về/chia sẻ chỉ vì task kết thúc.
+
+#### 5. Ngân sách — không chặn Lát 1, không tuyên bố đã sửa parity
+
+Năm câu tính phí và bảng phụ/opcode **không phải điều kiện** để bắt đầu nối frame; là điều kiện trước
+khi hiện thực **ngân sách mới/hạn ngạch CPU**. Chốt nguyên tắc: chỉ tính sự kiện **thực sự thực thi**;
+short-circuit **không tính nhánh bị bỏ**; resume **không tính lại phần đã chạy**; **một pool** cho toàn
+lần chạy; hạn ngạch lượt chạy là **bộ đếm riêng**; kiểm **trước tác dụng phụ** của sự kiện tương ứng.
+**Chưa duyệt** trọng số, quy tắc cộng chồng call/builtin/expression, biểu diễn bytecode. Agent 1 gửi
+**bảng ngắn** 5 câu + đề xuất + ví dụ — không gửi lại toàn bộ journal. Lát 1 **giữ hàng rào hiện hành**,
+ghi step-cap vẫn mở, **không cam kết parity** cho workload chạm giới hạn đang khác nhau.
+
+#### 6. Dependency & unsafe
+
+Lát 1 chưa có reactor ⇒ **không cần chọn dependency selector**. Không áp allowlist ViFastOs; **không
+thêm unsafe trong mã dự án**; dependency có unsafe **không tự động được phép/cấm** chỉ bằng suy diễn
+từ quy tắc mã dự án. Trước khi thêm crate: trình chính sách có hiệu lực, dependency trực tiếp/transitive
+và ngoại lệ. Mâu thuẫn chính sách nêu rõ nhưng **không chặn** việc nối frame không dùng dependency mới.
+
+#### 7. Tiêu chí nghiệm thu Lát 1
+
+Qua **source → kiểm kiểu → đường thực thi thật**, cả hai engine: A `Pending` → B chạy → A resume;
+local/capture đúng, không lặp side-effect; có **gọi hàm lồng và await biểu thức lồng**; lỗi thật qua
+`Trap`/`VS0506`, await lần 2 trả lỗi cache; task không await vẫn final join, **không tự hủy** khi main
+kết thúc; wake trùng/wake cũ không làm task chạy sai; task hết nghĩa vụ được thu hồi; fixture hiện hữu
+**phân loại, không đổi golden hàng loạt**. Chạy lại B1/B2 giữ baseline, **không yêu cầu cải thiện**;
+I/O vẫn chặn, fairness CPU chưa giải. **Dừng trình A0 trước khi mở reactor Lát 2.**

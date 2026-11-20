@@ -67,6 +67,9 @@ pub mod ops {
 
 pub mod builtin;
 mod builtin_value;
+/// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường interp thật.
+#[doc(hidden)]
+pub mod frame;
 pub mod interp;
 mod pat;
 
@@ -205,6 +208,15 @@ pub fn run_with_hosts_caps<'a>(
         Err(interp::Abort::Trap(trap)) => RunOutput {
             stdout,
             diagnostics: vec![trap.to_diag(text)],
+            value: None,
+            exit: 1,
+            steps,
+        },
+        // Chỉ test/frame: `run_program` mặc định không bật frame ⇒ không xảy ra;
+        // driver frame dùng entry point riêng và tự xử lý `Pending`.
+        Err(interp::Abort::Pending(_)) => RunOutput {
+            stdout,
+            diagnostics: Vec::new(),
             value: None,
             exit: 1,
             steps,
