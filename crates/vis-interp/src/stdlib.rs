@@ -31,6 +31,7 @@ mod indexof;
 mod listcontains;
 mod listmath;
 mod pathnorm;
+mod pathrel;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
@@ -586,6 +587,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (path.normalize)**: chuẩn hoá **từ vựng** POSIX (thuần chuỗi, không chạm đĩa).
         "path.normalize" => pathnorm::goi(&args, span),
+        // **VD-270 (path.relative)**: đường dẫn tương đối **thuần từ vựng** (không `cwd`/đĩa).
+        "path.relative" => pathrel::goi(&args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         "time.now_ms" => {
             let ms = SystemTime::now()

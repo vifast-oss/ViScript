@@ -223,7 +223,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 119] = [
+pub const FUNCS: [StdFn; 120] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -612,6 +612,13 @@ pub const FUNCS: [StdFn; 119] = [
     StdFn {
         name: "path.normalize",
         params: &[Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (path.relative)**: tương đối **từ vựng** POSIX (không `cwd`/đĩa/symlink); không
+    // sugar — luôn gọi `path.relative(from, to)` để tránh nhập nhằng receiver.
+    StdFn {
+        name: "path.relative",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::Str,
     },
     // ----- std.time (đọc đồng hồ trong Rust, không qua Host) -----

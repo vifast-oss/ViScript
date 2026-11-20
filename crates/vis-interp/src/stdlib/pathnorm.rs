@@ -28,9 +28,12 @@ use vis_syntax::Span;
 use crate::interp::R;
 use crate::value::Value;
 
-/// Chuẩn hoá **từ vựng** `p` theo bảng ở đầu tệp; không cấp phát gì ngoài `Vec` thành phần và
-/// chuỗi kết quả.
-pub(super) fn chuan_hoa(p: &str) -> String {
+/// Tách **từ vựng** `p` thành `(tuyệt_đối, thành_phần)` — cùng một hiện thực cho
+/// [`chuan_hoa`] và `path.relative` (`super::pathrel`), nên hai hàm không bao giờ lệch quy tắc.
+///
+/// Thành phần đã bỏ `/` lặp và `.`; `..` đã phân giải với thành phần **thường** đứng trước (hoặc
+/// bị bỏ ở gốc tuyệt đối, hoặc được giữ ở đầu chuỗi tương đối). Đầu vào rỗng ⇒ `(false, [])`.
+pub(super) fn tach(p: &str) -> (bool, Vec<&str>) {
     let tuyet_doi = p.starts_with('/');
     let mut phan: Vec<&str> = Vec::new();
     for x in p.split('/') {
@@ -50,6 +53,13 @@ pub(super) fn chuan_hoa(p: &str) -> String {
             thuong => phan.push(thuong),
         }
     }
+    (tuyet_doi, phan)
+}
+
+/// Chuẩn hoá **từ vựng** `p` theo bảng ở đầu tệp; không cấp phát gì ngoài `Vec` thành phần và
+/// chuỗi kết quả.
+pub(super) fn chuan_hoa(p: &str) -> String {
+    let (tuyet_doi, phan) = tach(p);
     let noi = phan.join("/");
     if tuyet_doi {
         // `noi` rỗng ⇒ `"/"` (gốc); ngược lại `"/a/b"`.
