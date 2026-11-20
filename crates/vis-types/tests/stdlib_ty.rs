@@ -210,7 +210,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.schema_version` (`(str) -> Result[int, Error]`; schema cookie của schema chính
     // đọc qua `PRAGMA schema_version`, tăng khi DDL đổi schema, chỉ đọc) ⇒ **136** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 140, "bảng chữ ký phải đủ 140 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-with-stem, 2026-11-21)**: +**1** hàm
+    // `std.path.with_stem` (`(str, str) -> str`; thay stem thành phần cuối, giữ ext hiện có,
+    // **không** sugar) ⇒ **141** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 141, "bảng chữ ký phải đủ 141 hàm");
 }
 
 #[test]
@@ -352,6 +355,18 @@ fn path_with_extension_hai_tham_so_va_khong_sugar() {
         vis_types::stdlib::module_sugar("path", "with_extension"),
         None
     );
+}
+
+#[test]
+fn path_with_stem_hai_tham_so_va_khong_sugar() {
+    // **VD-270 (path.with_stem)**: chữ ký `(str, str) -> str`; **không** sugar — receiver `str`
+    // không có trường `with_stem`, tránh đoán module nhận.
+    let f = sig_of("path.with_stem").expect("path.with_stem");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str], "`path.with_stem`: tham số");
+    assert_eq!(f.ret, Ty::Str, "`path.with_stem`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "`path.with_stem`: hạ kiểu");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "with_stem"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "with_stem"), None);
 }
 
 #[test]
