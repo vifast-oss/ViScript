@@ -71,7 +71,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.changes`) ⇒ **73** hàm; không xoá/đổi hàm cũ nào.
     // **SỬA KÈM LÝ DO (VD-268, 2026-11-21)**: +**1** hàm `std.fs.walk` ⇒ **74** hàm; không
     // xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 74, "bảng chữ ký phải đủ 74 hàm");
+    // **SỬA KÈM LÝ DO (VD-268, 2026-11-21)**: +**1** hàm `std.fs.glob` ⇒ **75** hàm; không
+    // xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 75, "bảng chữ ký phải đủ 75 hàm");
 }
 
 #[test]

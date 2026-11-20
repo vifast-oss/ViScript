@@ -12,6 +12,7 @@
 # Tệp thuộc Agent 0 sau lần tạo đầu (ST-126). Định dạng: <khoá><TAB><giá trị>.
 fs.append	(str, str) -> Result[(), Error]
 fs.exists	(str) -> bool
+fs.glob	(str, str) -> Result[list[str], Error]
 fs.list	(str) -> Result[list[str], Error]
 fs.mkdir	(str) -> Result[(), Error]
 fs.read	(str) -> Result[str, Error]

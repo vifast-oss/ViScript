@@ -718,6 +718,25 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
+        // **VD-268**: `glob` = **lọc** kết quả `walk` bằng bộ khớp **thuần** (không thêm method
+        // host ⇒ host thật, `--fs-mock`, interp và VM khớp byte). `walk` vẫn đi qua `FsGuard`
+        // trước, nên root ngoài `cap[Dir]` ⇒ `VS0604` và symlink vẫn bị bỏ. Mẫu sai ⇒
+        // `Err(Error)` dữ liệu, không trap.
+        "fs.glob" => {
+            let goc = chuoi(name, &args[0], 0, span)?;
+            let mau = chuoi(name, &args[1], 1, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            let muc = match host.walk(goc) {
+                Ok(xs) => xs,
+                Err(e) => return hop_nhat_fs(Err(e), span),
+            };
+            match crate::builtin_fs::loc_glob(&muc, mau) {
+                Ok(xs) => Ok(Value::ok(Value::List(
+                    xs.into_iter().map(Value::Str).collect(),
+                ))),
+                Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
+            }
+        }
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         "net.connect" | "net.connect_timeout" => {
