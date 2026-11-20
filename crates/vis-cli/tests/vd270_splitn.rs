@@ -377,18 +377,21 @@ fn ket_qua_la_list_str_that() {
 }
 
 // ===========================================================================
-// 9 — ca âm chạy: sugar sai arity ⇒ trap, không panic
+// 9 — ca âm tĩnh: sugar sai số đối số ⇒ `VS0401`; sai ngữ nghĩa `n` vẫn trap
 // ===========================================================================
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi **thừa** đối số vẫn bị
-/// **tầng chạy** chặn: trap `VS0501` nêu `str.splitn`, exit 101 ở **cả hai** engine.
+/// **VD-270 (R5c arity)**: sugar `s.splitn(…)` thiếu/thừa đối số bị checker chặn trước khi chạy
+/// — `VS0401` `str.splitn cần 2 đối số`; không còn trap `VS0501` cho ca **số lượng** đối số.
+/// (`n < 0` vẫn là trap `VS0501` đúng ngữ nghĩa — ca trên.)
 #[test]
-fn sugar_thua_doi_la_trap_ca_hai_engine() {
-    trap_ca_hai(
-        "spn-sugar-thua",
-        "fn main():\n    print(\"a,b\".splitn(\",\", 2, 3))\n",
-        "str.splitn",
-    );
+fn sugar_sai_arity_bi_chan() {
+    for (tag, call) in [
+        ("spn-sugar-thieu", "\"a,b\".splitn(\",\")"),
+        ("spn-sugar-thua", "\"a,b\".splitn(\",\", 2, 3)"),
+    ] {
+        let src = format!("fn main():\n    print({call})\n");
+        tu_choi(tag, &src, "VS0401");
+    }
 }
 
 // ===========================================================================

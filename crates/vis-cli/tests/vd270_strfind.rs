@@ -290,21 +290,17 @@ fn sai_kieu_sai_arity_bi_chan() {
     }
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c — chỉ kiểm kiểu đối số có mặt);
-/// lời gọi thiếu đối số vẫn bị **tầng chạy** chặn: trap `VS0501` nêu `str.rfind`, exit 101 ở
-/// **cả hai** engine, không panic. (Module `str.rfind()` thì checker bắt `VS0401` — ca trên.)
+/// **VD-270 (R5c arity)**: sugar `s.rfind(…)` thiếu/thừa đối số bị checker chặn trước khi chạy —
+/// `VS0401` `str.rfind cần 1 đối số`, đúng như module call; không còn trap `VS0501`.
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
-    let (code, out, err) = hai_engine("sugar-arity", "fn main():\n    print(\"a\".rfind())\n");
-    assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
-    assert!(
-        err.contains("str.rfind"),
-        "sugar-arity: stderr thiếu `str.rfind`: {err}"
-    );
+fn sugar_sai_arity_bi_chan() {
+    for (tag, call) in [
+        ("sugar-arity-thieu", "\"a\".rfind()"),
+        ("sugar-arity-thua", "\"a\".rfind(\"a\", \"b\")"),
+    ] {
+        let src = format!("fn main():\n    print({call})\n");
+        tu_choi(tag, &src, "VS0401");
+    }
 }
 
 /// Gán sai kiểu kết quả: `find` là `int?` (không phải `int`), `count` là `int`

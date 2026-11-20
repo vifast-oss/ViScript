@@ -308,23 +308,21 @@ fn sai_kieu_sai_arity_bi_chan() {
     );
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c — chỉ kiểm kiểu đối số có mặt);
-/// lời gọi thiếu đối số vẫn bị **tầng chạy** chặn: trap `VS0501` nêu `str.trim_matches`, exit
-/// 101 ở **cả hai** engine, không panic. (Module `str.trim_matches()` thì checker bắt `VS0401`
-/// — ca trên.)
+/// **VD-270 (R5c arity)**: sugar `s.trim_matches(…)` thiếu/thừa đối số bị checker chặn **trước
+/// khi chạy** — đúng `VS0401` như gọi module `str.trim_matches` (`cần 1 đối số`), tại span lời
+/// gọi. Không còn rơi xuống tầng chạy thành trap `VS0501` (exit 101).
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
-    let (code, out, err) = hai_engine(
-        "sugar-arity",
-        "fn main():\n    print(\"a\".trim_matches())\n",
-    );
-    assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
-    assert!(
-        err.contains("str.trim_matches"),
-        "sugar-arity: stderr thiếu `str.trim_matches`: {err}"
-    );
+fn sugar_sai_arity_bi_chan() {
+    for (tag, call) in [
+        ("sugar-arity-thieu", "\"a\".trim_matches()"),
+        ("sugar-arity-thua", "\"a\".trim_matches(\"a\", \"b\")"),
+        ("sugar-arity-start-thieu", "\"a\".trim_start_matches()"),
+        (
+            "sugar-arity-end-thua",
+            "\"a\".trim_end_matches(\"a\", \"b\")",
+        ),
+    ] {
+        let src = format!("fn main():\n    print({call})\n");
+        tu_choi(tag, &src, "VS0401");
+    }
 }

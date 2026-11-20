@@ -315,21 +315,20 @@ fn sai_kieu_ket_qua_bi_chan() {
     );
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi thiếu đối số vẫn bị
-/// **tầng chạy** chặn: trap `VS0501` nêu `list.index_of`, exit 101 ở **cả hai** engine.
+/// **VD-270 (R5c arity)**: sugar `xs.index_of(…)` thiếu/thừa đối số bị checker chặn trước khi
+/// chạy — `VS0401` `list.index_of cần 1 đối số`, cùng đường module call; không còn trap `VS0501`.
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
-    let (code, out, err) = hai_engine(
-        "sugar-arity",
-        "fn main():\n    let xs = [1, 2]\n    print(xs.index_of())\n",
-    );
-    assert_eq!(
-        code, 101,
-        "sugar-arity: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "sugar-arity: thiếu VS0501: {err}");
-    assert!(
-        err.contains("list.index_of"),
-        "sugar-arity: stderr thiếu `list.index_of`: {err}"
-    );
+fn sugar_sai_arity_bi_chan() {
+    for (tag, src) in [
+        (
+            "sugar-arity-thieu",
+            "fn main():\n    let xs = [1, 2]\n    print(xs.index_of())\n",
+        ),
+        (
+            "sugar-arity-thua",
+            "fn main():\n    let xs = [1, 2]\n    print(xs.index_of(1, 2))\n",
+        ),
+    ] {
+        tu_choi(tag, src, "VS0401");
+    }
 }

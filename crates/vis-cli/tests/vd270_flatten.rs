@@ -131,20 +131,6 @@ fn tu_choi(tag: &str, src: &str, ma: &str) {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Lỗi **chạy**: hai engine cùng exit **101** (R9/C1), cùng `VS0501`, stderr nêu hàm.
-fn trap_ca_hai(tag: &str, src: &str, needle: &str) {
-    let (code, out, err) = hai_engine(tag, src);
-    assert_eq!(
-        code, 101,
-        "{tag}: lỗi chạy phải exit 101\nstdout: {out}\nstderr: {err}"
-    );
-    assert!(err.contains("VS0501"), "{tag}: thiếu VS0501: {err}");
-    assert!(
-        err.contains(needle),
-        "{tag}: stderr thiếu `{needle}`: {err}"
-    );
-}
-
 // ===========================================================================
 // 1 — nhiều độ dài list con, thứ tự; `str` cũng chạy
 // ===========================================================================
@@ -296,17 +282,17 @@ fn sai_kieu_sai_arity_bi_chan() {
 }
 
 // ===========================================================================
-// 7 — ca âm chạy: sugar sai arity ⇒ trap, không panic
+// 7 — ca âm tĩnh: sugar sai arity ⇒ checker chặn (`VS0401`), không trap
 // ===========================================================================
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c); lời gọi **thừa** đối số vẫn bị
-/// **tầng chạy** chặn: trap `VS0501` nêu `list.flatten`, exit 101 ở **cả hai** engine.
+/// **VD-270 (R5c arity)**: sugar `xs.flatten(1)` **thừa** đối số bị checker chặn trước khi chạy
+/// — `VS0401` `list.flatten cần 0 đối số`, cùng đường module call; không còn trap `VS0501`.
 #[test]
-fn sugar_thua_doi_la_trap_ca_hai_engine() {
-    trap_ca_hai(
+fn sugar_thua_doi_bi_chan() {
+    tu_choi(
         "fl-sugar-thua",
         "fn main():\n    let xs: list[list[int]] = [[1], [2]]\n    print(xs.flatten(1))\n",
-        "list.flatten",
+        "VS0401",
     );
 }
 

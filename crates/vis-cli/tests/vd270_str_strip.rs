@@ -357,24 +357,23 @@ fn sai_kieu_ket_qua_bi_chan() {
     );
 }
 
-/// Sugar R5c chưa kiểm **arity** ở checker (nợ chung của R5c — chỉ kiểm kiểu đối số có mặt);
-/// lời gọi thiếu đối số vẫn bị **tầng chạy** chặn: trap `VS0501` nêu `str.strip_prefix`, exit
-/// 101 ở **cả hai** engine, không panic. (Module `str.strip_prefix()` thì checker bắt `VS0401`.)
+/// **VD-270 (R5c arity)**: sugar `s.strip_prefix(…)`/`strip_suffix(…)` thiếu/thừa đối số bị
+/// checker chặn trước khi chạy — `VS0401` `str.strip_* cần 1 đối số`; không còn trap `VS0501`.
 #[test]
-fn sugar_sai_arity_la_trap_ca_hai_engine() {
+fn sugar_sai_arity_bi_chan() {
     for (tag, call) in [
-        ("sugar-arity-prefix", "\"a\".strip_prefix()"),
-        ("sugar-arity-suffix", "\"a\".strip_suffix()"),
+        ("sugar-arity-prefix-thieu", "\"a\".strip_prefix()"),
+        ("sugar-arity-suffix-thieu", "\"a\".strip_suffix()"),
+        (
+            "sugar-arity-prefix-thua",
+            "\"a\".strip_prefix(\"a\", \"b\")",
+        ),
+        (
+            "sugar-arity-suffix-thua",
+            "\"a\".strip_suffix(\"a\", \"b\")",
+        ),
     ] {
-        let (code, out, err) = hai_engine(tag, &format!("fn main():\n    print({call})\n"));
-        assert_eq!(
-            code, 101,
-            "{tag}: phải trap (exit 101)\nstdout: {out}\nstderr: {err}"
-        );
-        assert!(err.contains("VS0501"), "{tag}: thiếu VS0501: {err}");
-        assert!(
-            err.contains("str.strip_"),
-            "{tag}: stderr thiếu tên hàm `str.strip_*`: {err}"
-        );
+        let src = format!("fn main():\n    print({call})\n");
+        tu_choi(tag, &src, "VS0401");
     }
 }
