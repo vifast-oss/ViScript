@@ -43,7 +43,8 @@
 //!   nếu có) bị authorizer từ chối ở `SQLITE_READ` — SQL người dùng chỉ thấy dữ liệu logic.
 //! - 1 câu SQL mỗi `execute`/`query` (multi-statement ⇒ `Err`).
 //! - **VD-270 (db-batch)**: `execute_batch` tách batch trên `;` **ngoài** chuỗi/comment/định
-//!   danh (xem [`tach_cau`]), chạy **từng câu** qua đúng đường `db_execute` (authorizer,
+//!   danh (xem [`tach_cau`]); câu `CREATE [TEMP] TRIGGER … BEGIN … END` được quét **nguyên khối**
+//!   (không tách `;` trong thân), chạy **từng câu** qua đúng đường `db_execute` (authorizer,
 //!   `kiem_sql`, trần `SQLITE_LIMIT_LENGTH`, timeout/progress, cap, map lỗi) — **không** params.
 //!   Trả số câu đã chạy; câu lỗi đầu tiên ⇒ `Err`, các câu trước **đã có tác dụng** (không tự
 //!   mở transaction/rollback). Batch rỗng/chỉ comment ⇒ `Ok(0)`; `execute` vẫn một câu.

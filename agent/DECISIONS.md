@@ -3328,3 +3328,11 @@ body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Q
   `codeLensProvider.resolveProvider=false`.
 - **sqlite-tables**: `sqlite.tables(handle) -> Result[list[str], Error]` trả bảng+view schema chính,
   sắp byte, bỏ tiền tố `sqlite_`; bảng TEMP không liệt kê; chạy qua `db_query` với `sqlite_master`.
+
+### VD-270 (bổ sung) · `execute_batch` hiểu thân trigger — A0, 2026-11-21
+
+Duyệt mở rộng scanner của `sqlite.execute_batch`: câu bắt đầu `CREATE [TEMP|TEMPORARY] TRIGGER`
+được quét **nguyên khối** tới `;` sau `END` của thân `BEGIN … END`; `;` trong thân không tách,
+kể cả `CASE … END` lồng và chuỗi/comment chứa `;`/`END`. Câu sau trigger vẫn tách; trigger tính
+**một** câu. Trigger thiếu `END` được giữ tới hết input để SQLite báo lỗi, **không** cắt im lặng.
+Đây thay câu "giới hạn có ghi" trong VD-270 db-batch; `sqlite.execute` vẫn một câu như cũ.
