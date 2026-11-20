@@ -32,7 +32,7 @@ use std::path::PathBuf;
 // cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -232,8 +232,12 @@ mod tests {
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
         assert_eq!(
-            k, "204af1c294a5744ddf069f14472ff3b4a9f42230605439bab785c83e203aa159",
+            k, "c7e09d0f0b535a3f8edb9d794c9d852f4e15c5fe07586b5d37fcdbe55f3fd393",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "204af1c294a5744ddf069f14472ff3b4a9f42230605439bab785c83e203aa159",
+            "VD-269: cache sinh trước ?.method không được tái dùng"
         );
         assert_ne!(
             k, "1bafa9499ed38019c6b2a87727eef2156d8e207e8f5ee52756e8c4882d256631",
@@ -300,6 +304,10 @@ mod tests {
         assert!(
             PHIEN_BAN.contains("vd268-nestassign"),
             "VD-268: cache phải mang nhãn gán lồng"
+        );
+        assert!(
+            PHIEN_BAN.contains("vd269-optmethod"),
+            "VD-269: cache phải mang nhãn gọi phương thức qua ?."
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);
