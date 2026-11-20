@@ -46,9 +46,11 @@ list.index_of	(list[T], T) -> int?
 list.is_empty	(list[T]) -> bool
 list.last_index_of	(list[T], T) -> int?
 list.max	(list[T]) -> T
+list.max_float	(list[float]) -> float?
 list.mean	(list[float]) -> float?
 list.median	(list[float]) -> float?
 list.min	(list[T]) -> T
+list.min_float	(list[float]) -> float?
 list.product	(list[int]) -> int
 list.reverse	(list[T]) -> list[T]
 list.sort	(list[T]) -> list[T]
