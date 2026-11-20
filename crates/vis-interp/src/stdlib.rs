@@ -24,6 +24,7 @@ use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
+mod flatten;
 mod indexof;
 mod strfind;
 mod strlen;
@@ -499,6 +500,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let mut out = a;
             out.extend_from_slice(b);
             Ok(Value::List(out))
+        }
+        // **VD-270 (flatten)**: nối **một cấp** các list con theo thứ tự; list con rỗng không
+        // đóng góp gì, phần tử vốn là list được giữ nguyên (không đệ quy). Lõi ở `stdlib/flatten.rs`.
+        "list.flatten" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            flatten::goi(name, xs).map_err(|m| loi(m, span))
         }
         "list.chunk" => {
             let xs = danh_sach(name, &args[0], 0, span)?;

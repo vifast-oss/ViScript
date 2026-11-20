@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 100] = [
+pub const FUNCS: [StdFn; 101] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -371,6 +371,14 @@ pub const FUNCS: [StdFn; 100] = [
     StdFn {
         name: "list.concat",
         params: &[Ty::List(&Ty::Var(0)), Ty::List(&Ty::Var(0))],
+        ret: Ty::List(&Ty::Var(0)),
+    },
+    // **VD-270 (flatten)**: nối **một cấp** các list con theo thứ tự; `xs: list[list[T]]`
+    // ⇒ `list[T]`. List con rỗng không đóng góp gì; phần tử vốn là list vẫn giữ nguyên
+    // (không làm phẳng đệ quy). `T` buộc từ `xs` nên sugar `xs.flatten()` theo R5c.
+    StdFn {
+        name: "list.flatten",
+        params: &[Ty::List(&Ty::List(&Ty::Var(0)))],
         ret: Ty::List(&Ty::Var(0)),
     },
     StdFn {
