@@ -111,7 +111,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 binary-search, 2026-11-21)**: +**1** hàm `std.list.binary_search`
     // (`(list[T], T) -> int?`; biên dưới, `xs` phải đã sắp tăng) ⇒ **108** hàm; không xoá/đổi
     // hàm cũ nào.
-    assert_eq!(FUNCS.len(), 108, "bảng chữ ký phải đủ 108 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 replace-first, 2026-11-21)**: +**1** hàm `std.str.replace_first`
+    // (`(str, str, str) -> str`; chỉ thay lần khớp **đầu**, `from` rỗng ⇒ chèn `to` ở đầu) ⇒
+    // **109** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 109, "bảng chữ ký phải đủ 109 hàm");
 }
 
 #[test]
@@ -229,6 +232,17 @@ fn strstrip_tra_str_option() {
         assert_eq!(f.ret.ten(), "str?", "`{ten}`: tên hiển thị");
         assert_eq!(f.so_doi(), 2, "`{ten}`: số đối số");
     }
+}
+
+#[test]
+fn replace_first_kieu_str_sang_str() {
+    // **VD-270 (replace-first)**: `(str, str, str) -> str`; cùng tham số đầu `str` nên sugar
+    // R5c `s.replace_first(…)` chạy không cần `use`, và kết quả là `str` (không phải `str?`).
+    let f = sig_of("str.replace_first").expect("str.replace_first");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str, Ty::Str], "tham số");
+    assert_eq!(f.ret, Ty::Str, "kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
+    assert_eq!(f.so_doi(), 3, "số đối số");
 }
 
 #[test]
