@@ -14,8 +14,9 @@ use vis_interp::value::Value;
 
 const URI: &str = "file:///a.vis";
 
-/// Snapshot body phản hồi `initialize` — **VD-270 không đổi capability** (không mục nào mới).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"foldingRangeProvider":true,"workspaceSymbolProvider":true,"documentFormattingProvider":true,"referencesProvider":true,"documentHighlightProvider":true,"selectionRangeProvider":true,"renameProvider":{"prepareProvider":true},"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+/// Snapshot body phản hồi `initialize` — **VD-270** thêm `implementationProvider` (sau
+/// `definitionProvider`).
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"implementationProvider":true,"documentSymbolProvider":true,"foldingRangeProvider":true,"workspaceSymbolProvider":true,"documentFormattingProvider":true,"referencesProvider":true,"documentHighlightProvider":true,"selectionRangeProvider":true,"renameProvider":{"prepareProvider":true},"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 
 /// Đóng một frame LSP: header + body (byte).
 fn khung(body: &str) -> String {

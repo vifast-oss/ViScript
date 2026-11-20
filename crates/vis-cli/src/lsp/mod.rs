@@ -23,6 +23,7 @@ mod module;
 mod phan_tich;
 mod phuong_loi;
 mod thanh_vien;
+mod thuc_thi;
 mod vi_tri;
 mod workspace;
 
@@ -251,6 +252,28 @@ pub fn run(args: &[String]) -> ExitCode {
                                     root.as_deref(),
                                     &id
                                 ));
+                            }
+                        }
+                    }
+                }
+            }
+            // **VD-270**: vị trí các `impl` của phương thức tại con trỏ (ghép tên trait/impl).
+            "textDocument/implementation" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(thuc_thi::tra_loi_implementation(&kq, &uri, byte, &id));
                             }
                         }
                     }
@@ -551,6 +574,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("positionEncoding", Value::Str("utf-16".to_string())),
         jsonrpc::kv("hoverProvider", Value::Bool(true)),
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
+        jsonrpc::kv("implementationProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
