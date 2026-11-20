@@ -94,7 +94,7 @@ pub(crate) fn doc_truong(b: Value, name: &str, span: Span) -> R<Value> {
         // **Parity interp ↔ VM**: field trên `Enum` ⇒ `VS0501`; ngoại lệ atom biến thể rỗng.
         Value::Enum(en, variant, args) => {
             if variant.is_empty() && args.is_empty() {
-                Ok(Value::Enum(en, name.to_string(), Vec::new()))
+                Ok(Value::Enum(en, crate::value::Name::new(name), Vec::new()))
             } else {
                 Err(Abort::Trap(Trap::new(
                     RT,
