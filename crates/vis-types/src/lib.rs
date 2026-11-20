@@ -71,5 +71,7 @@ pub use lower::{
     LowerError, LowerOptions, ModInfo, NamePolicy, SymKind, Symbols, TraitSig, BUILTIN_VALUE_NAMES,
 };
 pub use method_ret::MethodRet;
-pub use ty::{EnumDef, EnumId, FieldDef, RecDef, RecId, Type, TypeTable, VariantDef};
+pub use ty::{
+    nang_optional, EnumDef, EnumId, FieldDef, RecDef, RecId, Type, TypeTable, VariantDef,
+};
 pub use tyck::{check, CheckOutput};

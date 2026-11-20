@@ -1010,6 +1010,9 @@ impl<'g> Emit<'g> {
                     self.f.charge(FeeKind::Expr, callee.span());
                 }
                 match &**callee {
+                    HExpr::Field { optional: true, .. } => {
+                        return self.goi_phuong_thuc_tuy_chon(callee, args, named, *span);
+                    }
                     HExpr::Var { name, sym, .. } => {
                         // Xác định **cách gọi trước** khi đẩy đối số (thứ tự ngăn xếp: hàm ⇒ đối số).
                         let fi = match sym {
@@ -1356,7 +1359,7 @@ impl<'g> Emit<'g> {
                     }
                 }
                 {
-                    let c = self.unit_cst_x();
+                    let c = self.g.cst(LitKind::Bool, "false");
                     self.f.push(Instr::Const(c), *span, 1);
                 }
                 let end = self.f.here();
@@ -1482,10 +1485,6 @@ impl<'g> Emit<'g> {
             }
             HExpr::CmdBlock { span, .. } => Err(CodegenError::Unsupported("cmd-block", *span)),
         }
-    }
-
-    fn unit_cst_x(&mut self) -> u32 {
-        self.g.cst(LitKind::Bool, "false")
     }
 }
 

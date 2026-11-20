@@ -302,17 +302,35 @@ fn infer_ty(
             // **VD-265**: phương thức **người dùng** còn dạng `Field` (không dispatch tĩnh) —
             // tra [`MethodRet`] theo kiểu nhận (`Record`/`Enum`/`TypeRef`, bóc `Opt`) để biết
             // `T?`/`list[T?]`/bản ghi, khớp interp ở `goi::infer_ty`.
-            (HExpr::Field { base, name, .. }, _) => {
+            // **VD-269**: callee `optional` (gọi `recv?.m()`) ⇒ kết quả lift một lớp.
+            (
+                HExpr::Field {
+                    base,
+                    name,
+                    optional,
+                    ..
+                },
+                _,
+            ) => {
                 let bt = infer_ty(base, sym, fn_rets, mret, rec_fields)?;
-                match &bt {
+                let inner = match &bt {
+                    Type::Opt(t) => &**t,
+                    other => other,
+                };
+                let ret = match inner {
                     Type::List(e) if matches!(name.as_str(), "get" | "first" | "last" | "find") => {
-                        Some(Type::Opt(e.clone()))
+                        Type::Opt(e.clone())
                     }
-                    Type::Map(_, v) if name == "get" => Some(Type::Opt(v.clone())),
+                    Type::Map(_, v) if name == "get" => Type::Opt(v.clone()),
                     // **VD-265**: bảng cần `TypeTable`; `compile` không kèm bảng vẫn chạy như cũ
                     // (`None` ⇒ không nâng), còn `compile_*_voi_bang` (đường `vis run`) tra được.
-                    _ => mret.ret_voi_types(&bt, name),
-                }
+                    _ => mret.ret_voi_types(&bt, name)?,
+                };
+                Some(if *optional {
+                    vis_types::nang_optional(ret)
+                } else {
+                    ret
+                })
             }
             _ => None,
         },
@@ -467,8 +485,26 @@ fn infer_than(
 
 /// **VD-260** — chọn kiểu nhánh có **nhiều lớp Option nhất** (hoà ⇒ nhánh sau; chỉ độ sâu
 /// được dùng). Checker đã chấp nhận chương trình nên không cần hợp nhất đầy đủ ở đây.
+///
+/// **VD-269**: ưu tiên nhánh **ít `{error}` hơn** (vd `Some(U(…))`/`U(…)` vs `None` ⇒ lấy
+/// `U`, không lấy `Option[{error}]`) rồi **nâng** lên đủ độ sâu `Option` của nhánh sâu nhất —
+/// đúng biên nâng nhánh VD-258. Nhờ vậy codegen phân giải được phương thức của `recv?.m(…)`.
 fn hop_nhanh(ds: Vec<Type>) -> Option<Type> {
-    ds.into_iter().max_by_key(opt_depth)
+    let max = ds.iter().map(opt_depth).max()?;
+    let mut best: Option<Type> = None;
+    let mut it_loi = usize::MAX;
+    for t in ds {
+        let loi = so_loi(&t);
+        if loi <= it_loi {
+            it_loi = loi;
+            best = Some(t);
+        }
+    }
+    let mut t = best?;
+    while opt_depth(&t) < max {
+        t = Type::Opt(Box::new(t));
+    }
+    Some(t)
 }
 
 fn infer_if(
@@ -1089,6 +1125,104 @@ impl Emit<'_> {
             self.lift_opt(depth, span)?;
         }
         Ok(())
+    }
+
+    /// **VD-269** — `recv?.m(args)`: base `Option` → `Dup`/`JumpIfNone` (đoản mạch **trước**
+    /// đối số) → gọi phương thức `impl` (nếu có `sym`) hoặc phương thức lõi → lift một lớp.
+    ///
+    /// Ngăn xếp: `[opt]` → `Dup` `[opt,opt]` → `JumpIfNone` pop bản sao (`None` để nguyên
+    /// `[opt]` làm kết quả) → `UnwrapOpt` `[v]` → đối số → gọi `[kq]` → lift `[kq']`. Đường
+    /// `None` nhảy thẳng tới cuối, không đánh giá đối số; hai đường đều còn **một** giá trị.
+    pub(super) fn goi_phuong_thuc_tuy_chon(
+        &mut self,
+        callee: &vis_types::HExpr,
+        args: &[vis_types::HExpr],
+        named: &[(String, vis_types::HExpr)],
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        let vis_types::HExpr::Field {
+            base,
+            name,
+            optional: true,
+            ..
+        } = callee
+        else {
+            return Err(CodegenError::Unsupported("opt-method-callee", span));
+        };
+        let inner = match self.base_ty(base) {
+            Some(Type::Opt(t)) => Some(*t),
+            _ => None,
+        };
+        let sym = inner
+            .as_ref()
+            .and_then(|t| self.g.mret.sym_voi_types(t, name));
+        let fi = sym.and_then(|s| self.g.fmap.get(&s).copied());
+        self.expr(base)?;
+        self.f.push(Instr::Dup, span, 1);
+        let jn = self.f.here();
+        self.f.push(Instr::JumpIfNone(0), span, -1);
+        self.f.push(Instr::UnwrapOpt, span, 0);
+        // **VD-269**: đối số có tên của phương thức `impl` phải xếp lại theo **thứ tự tham số**
+        // (mirror `HExpr::Var`); không có tên thì đẩy nguyên thứ tự viết.
+        let ps = if named.is_empty() {
+            None
+        } else if fi.is_some() {
+            self.g.fparams.get(name).cloned()
+        } else {
+            None
+        };
+        match (fi, ps) {
+            (Some(fi), Some(ps)) => {
+                let mut vt = 0usize;
+                for (pname, _) in ps.iter().skip(1) {
+                    if let Some(a) = args.get(vt) {
+                        self.expr(a)?;
+                        vt += 1;
+                    } else if let Some((_, a)) = named.iter().find(|(n, _)| n == pname) {
+                        self.expr(a)?;
+                    } else {
+                        self.f.push(Instr::PushUnit, span, 1);
+                    }
+                }
+                let tong = ps.len() as u16;
+                self.f
+                    .push(Instr::Call(fi, tong), span, 1 - i32::from(tong));
+            }
+            (Some(fi), None) => {
+                for a in args {
+                    self.expr(a)?;
+                }
+                for (_, a) in named {
+                    self.expr(a)?;
+                }
+                let n = (args.len() + named.len()) as u16;
+                self.f
+                    .push(Instr::Call(fi, n + 1), span, 1 - i32::from(n + 1));
+            }
+            (None, _) => {
+                for a in args {
+                    self.expr(a)?;
+                }
+                for (_, a) in named {
+                    self.expr(a)?;
+                }
+                let n = (args.len() + named.len()) as u16;
+                let c = self.g.cst_str(name);
+                self.f.push(Instr::CallMethod(c, n), span, -i32::from(n));
+            }
+        }
+        // **VD-269**: lift một lớp, **trừ** `()` (giữ `()` như checker) — quyết định theo *giá
+        // trị* để hai engine khớp kể cả khi kiểu trả của phương thức chưa chốt (`{error}`).
+        self.f.push(Instr::Dup, span, 1);
+        self.f.push(Instr::IsUnit, span, 0);
+        self.f.push(Instr::Un(vis_types::UnOp::Not), span, 0);
+        let jskip = self.f.here();
+        self.f.push(Instr::JumpIfFalse(0), span, -1);
+        self.lift_opt(1, span)?;
+        let end = self.f.here();
+        self.f.patch(jskip, end);
+        self.f.patch(jn, end);
+        self.net_stack(span)
     }
 }
 

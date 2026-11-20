@@ -216,7 +216,7 @@ pub(super) fn kiem_try(
 }
 
 /// **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` khi **tham số đầu** của `f` có kiểu của `x`.
-pub(super) fn kiem_std_method(
+pub(crate) fn kiem_std_method(
     c: &mut super::super::Checker,
     recv: &Type,
     name: &str,

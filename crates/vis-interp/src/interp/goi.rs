@@ -53,6 +53,16 @@ impl<'a> Interp<'a> {
         named: &[(String, HExpr)],
         span: Span,
     ) -> R<Value> {
+        // **VD-269**: `recv?.m(…)` — base `Option`, đoản mạch `None` (không đánh giá đối số).
+        if let HExpr::Field {
+            base,
+            name,
+            optional: true,
+            ..
+        } = callee
+        {
+            return self.goi_tuy_chon(base, name, args, named, span);
+        }
         // 1) Phương thức trên list/str/map: `xs.push(1)`, `s.upper()`.
         if let HExpr::Field {
             base,
@@ -160,7 +170,7 @@ impl<'a> Interp<'a> {
         ctrl
     }
 
-    fn eval_args(&mut self, args: &[HExpr], named: &[(String, HExpr)]) -> R<Args> {
+    pub(crate) fn eval_args(&mut self, args: &[HExpr], named: &[(String, HExpr)]) -> R<Args> {
         let mut pos = Vec::with_capacity(args.len());
         for a in args {
             pos.push(self.eval(a)?);
@@ -854,15 +864,33 @@ pub(crate) fn infer_ty(
             // **VD-265**: phương thức **người dùng** còn dạng `Field` (không dispatch tĩnh được)
             // — tra bảng [`MethodRet`] theo kiểu nhận (`Record`/`Enum`/`TypeRef`, bóc `Opt`) để
             // biết `T?`/`list[T?]`/bản ghi; nhờ vậy `?.`/`with`/gán vẫn nâng đúng lớp Option.
-            (HExpr::Field { base, name, .. }, _) => {
+            // **VD-269**: callee `optional` (gọi `recv?.m()`) ⇒ kết quả lift một lớp.
+            (
+                HExpr::Field {
+                    base,
+                    name,
+                    optional,
+                    ..
+                },
+                _,
+            ) => {
                 let bt = infer_ty(base, sym, types, fn_rets, mret)?;
-                match &bt {
+                let inner = match &bt {
+                    Type::Opt(t) => &**t,
+                    other => other,
+                };
+                let ret = match inner {
                     Type::List(e) if matches!(name.as_str(), "get" | "first" | "last" | "find") => {
-                        Some(Type::Opt(e.clone()))
+                        Type::Opt(e.clone())
                     }
-                    Type::Map(_, v) if name == "get" => Some(Type::Opt(v.clone())),
-                    _ => mret.ret(&bt, name, types),
-                }
+                    Type::Map(_, v) if name == "get" => Type::Opt(v.clone()),
+                    _ => mret.ret(&bt, name, types)?,
+                };
+                Some(if *optional {
+                    vis_types::nang_optional(ret)
+                } else {
+                    ret
+                })
             }
             _ => None,
         },
@@ -995,7 +1023,23 @@ fn infer_than(
 
 /// **VD-260** — chọn kiểu nhánh có **nhiều lớp Option nhất** (join theo kiểu đích).
 fn hop_nhanh(ds: Vec<Type>) -> Option<Type> {
-    ds.into_iter().max_by_key(opt_depth_ty)
+    // **VD-269**: ưu tiên nhánh ít `{error}` hơn (`Some(U(…))`/`U(…)` vs `None`), rồi nâng
+    // lên đủ độ sâu `Option` của nhánh sâu nhất (biên nâng nhánh VD-258).
+    let max = ds.iter().map(opt_depth_ty).max()?;
+    let mut best: Option<Type> = None;
+    let mut it_loi = usize::MAX;
+    for t in ds {
+        let loi = so_loi(&t);
+        if loi <= it_loi {
+            it_loi = loi;
+            best = Some(t);
+        }
+    }
+    let mut t = best?;
+    while opt_depth_ty(&t) < max {
+        t = Type::Opt(Box::new(t));
+    }
+    Some(t)
 }
 
 fn infer_if(

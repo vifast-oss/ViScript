@@ -409,9 +409,35 @@ impl TypeTable {
     }
 }
 
+/// **VD-269** — kiểu kết quả của `recv?.m(…)` (lift `Option` **một lớp**):
+/// `U` ⇒ `U?`; `U?` ⇒ `U?` (không bọc hai lớp); `Error` giữ `Error`; `()` giữ `()`.
+///
+/// `()` **không** thành `()?`: ngôn ngữ biểu diễn được `()?` (`Some(())`), nhưng giữ `()` cho
+/// lời gọi phương thức **chỉ vì tác dụng phụ** (`u?.ping()` ở câu lệnh) không bị coi là giá trị
+/// `Option` — hai engine bỏ qua lift khi kết quả là `Value::Unit`; `impl` khai `-> ()?` vẫn
+/// trả `Opt(Unit)` vì đó là kiểu khai **tường minh**.
+pub fn nang_optional(t: Type) -> Type {
+    match t {
+        Type::Error | Type::Opt(_) | Type::Unit | Type::Never => t,
+        other => Type::Opt(Box::new(other)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **VD-269** — lift `Option` một lớp, không bọc `Some` hai lần, giữ `()`.
+    #[test]
+    fn nang_optional_mot_lop() {
+        assert_eq!(nang_optional(Type::Int), Type::Opt(Box::new(Type::Int)));
+        assert_eq!(
+            nang_optional(Type::Opt(Box::new(Type::Int))),
+            Type::Opt(Box::new(Type::Int))
+        );
+        assert_eq!(nang_optional(Type::Unit), Type::Unit);
+        assert_eq!(nang_optional(Type::Error), Type::Error);
+    }
 
     #[test]
     fn ten_hien_thi_on_dinh() {
