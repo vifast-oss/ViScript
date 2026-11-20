@@ -229,3 +229,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **replace-first** (`df611e7` → `03950f4`): `str.replace_first` chỉ thay lần đầu; `from` rỗng ⇒ prepend.
 - **lsp-codelens** (`d88ccaa` → `cf94e77`): lens `Chạy test <name>` cho `test fn`, UTF-16, cap 200.
 - **sqlite-tables** (`c0003bb` → `254c03f`): `sqlite.tables` sắp byte, bỏ `sqlite_%`, bảng TEMP không liệt kê.
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `885879d`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
