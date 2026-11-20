@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use super::netconst::FRAME_WRITE_TIMEOUT_MS;
+use crate::value::Value;
 
 #[derive(Default)]
 struct FrameNetIo {
@@ -46,4 +47,15 @@ pub fn frame_net_write_timeout() -> i64 {
             .unwrap_or(FRAME_WRITE_TIMEOUT_MS)
             .max(1)
     })
+}
+
+/// **Chỉ test**: `net.write` trả `Result<(), str>` — đổi payload `Ok(str)` của reactor
+/// thành `Ok(())`, giữ nguyên `Err` (hợp đồng số byte/lỗi KHÔNG đổi).
+pub(super) fn frame_unit_result(v: Value) -> Value {
+    match &v {
+        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+            Value::ok(Value::Unit)
+        }
+        _ => v,
+    }
 }

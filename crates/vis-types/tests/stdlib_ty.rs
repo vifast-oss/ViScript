@@ -189,7 +189,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-index-exists, 2026-11-21)**: +**1** hàm
     // `sqlite.index_exists` (`(str, str) -> Result[bool, Error]`; index tên đúng trong schema
     // chính, tên bind, so khớp BINARY, thiếu/rỗng ⇒ `Ok(false)`) ⇒ **134** hàm; không xoá/đổi hàm cũ.
-    assert_eq!(FUNCS.len(), 134, "bảng chữ ký phải đủ 134 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 replace-n, 2026-11-21)**: +**1** hàm `std.str.replace_n`
+    // (`(str, str, str, int) -> str`; thay tối đa `n` lần khớp **không chồng** đầu tiên theo
+    // Rust `replacen`, `n == 0` ⇒ nguyên vẹn, `n` quá số lần ⇒ thay tất cả, `n < 0` ⇒ trap
+    // `VS0501`) ⇒ **135** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 135, "bảng chữ ký phải đủ 135 hàm");
 }
 
 #[test]
@@ -471,6 +475,17 @@ fn replace_last_kieu_str_sang_str() {
     assert_eq!(f.ret, Ty::Str, "kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
     assert_eq!(f.so_doi(), 3, "số đối số");
+}
+
+#[test]
+fn replace_n_kieu_str_sang_str() {
+    // **VD-270 (replace-n)**: `(str, str, str, int) -> str`; cùng tham số đầu `str` nên sugar
+    // R5c `s.replace_n(…)` chạy không cần `use`, và kết quả là `str` (không phải `str?`).
+    let f = sig_of("str.replace_n").expect("str.replace_n");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str, Ty::Str, Ty::Int], "tham số");
+    assert_eq!(f.ret, Ty::Str, "kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
+    assert_eq!(f.so_doi(), 4, "số đối số");
 }
 
 #[test]

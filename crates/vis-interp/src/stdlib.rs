@@ -56,15 +56,18 @@ mod strparse;
 mod strparsefloat;
 mod strreplace;
 mod strreplacelast;
+mod strreplacen;
 mod strsplitn;
 mod strstrip;
 mod strtitle;
 mod strtrim;
 pub use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
+use frame_net::frame_unit_result;
 pub use frame_net::{
     frame_net_set_write, frame_net_set_write_timeout, frame_net_take_write, frame_net_write_timeout,
 };
+use netconst::gioi_han_net_read;
 pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP};
 
 // ===========================================================================
@@ -79,31 +82,6 @@ pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, N
 // văn — không helper mới trong `rt.rs`. Runtime mặc định (`frame.enabled == false`)
 // và API ngôn ngữ (`net.connect`/`net.write`, chữ ký, giá trị trả) không đổi.
 // ===========================================================================
-
-/// **Chỉ test**: `net.write` trả `Result<(), str>` — đổi payload `Ok(str)` của reactor
-/// thành `Ok(())`, giữ nguyên `Err` (hợp đồng số byte/lỗi KHÔNG đổi).
-fn frame_unit_result(v: Value) -> Value {
-    match &v {
-        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
-            Value::ok(Value::Unit)
-        }
-        _ => v,
-    }
-}
-
-/// **ST-238 / VD-242 (nợ #167)**: validate `max_bytes` từ người dùng. `i64::MAX` (overflow khi
-/// chuyển `usize`), âm, và giá trị vượt trần đều bị từ chối **trước** khi host cấp phát.
-fn gioi_han_net_read(toi_da: i64) -> Result<usize, String> {
-    if toi_da < 0 {
-        return Err("net.read: `max_bytes` không được âm".to_string());
-    }
-    if toi_da > NET_READ_CAP {
-        return Err(format!(
-            "net.read: `max_bytes` {toi_da} vượt giới hạn {NET_READ_CAP} byte"
-        ));
-    }
-    Ok(toi_da as usize)
-}
 
 // **VD-241 pre-merge §1 (2026-11-19)**: `DAU_LOI_GOI` (VS0501) **đã bị bỏ** — mọi lỗi host
 // (handle giả/đã đóng/sai loại, SQL quá dài, params thiếu/thừa/quá, vượt rows/bytes/connections,
@@ -251,6 +229,26 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(strreplacelast::replace_last(s, tu, den)))
+        }
+        // **VD-270 (replace-n)**: thay tối đa `n` lần khớp **không chồng** đầu tiên (trái →
+        // phải), đúng nghĩa Rust `replacen`; `n == 0` ⇒ `s` nguyên vẹn, `n` quá số lần ⇒ thay
+        // tất cả; `from` rỗng ⇒ chèn tại mọi biên scalar theo `n`; `n < 0` ⇒ trap `VS0501`
+        // (kiểm **trước** khi thay, cùng mẫu `str.splitn`/`str.repeat`). Lõi ở
+        // `stdlib/strreplacen.rs`.
+        "str.replace_n" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let tu = chuoi(name, &args[1], 1, span)?;
+            let den = chuoi(name, &args[2], 2, span)?;
+            let n = so(name, &args[3], 3, span)?;
+            if n < 0 {
+                return Err(loi(
+                    format!("`{name}`: số lần `n` phải ≥ 0, được {n}"),
+                    span,
+                ));
+            }
+            // Trên nền 32-bit, `i64` vượt `usize` ⇒ coi như vô hạn (mọi lần khớp).
+            let n = usize::try_from(n).unwrap_or(usize::MAX);
+            Ok(Value::Str(strreplacen::replace_n(s, tu, den, n)))
         }
         // **VD-270 (parse-int)**: chuỗi thập phân **chặt** → `int?`; sai cú pháp/tràn ⇒ `None`.
         "str.parse_int" => {
