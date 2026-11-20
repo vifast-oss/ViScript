@@ -35,6 +35,7 @@ mod strfind;
 mod strlen;
 mod strpad;
 mod strreplace;
+mod strsplitn;
 mod strstrip;
 mod strtrim;
 pub use chung::DAU_QUYEN;
@@ -161,6 +162,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             };
             Ok(Value::List(ds))
         }
+        // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần
+        // còn lại (kể cả dấu phân cách): `splitn("a,b,c", ",", 2)` ⇒ `["a", "b,c"]`.
+        // `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`, `n > số phần` ⇒ như `str.split`; `sep` rỗng theo
+        // **đúng** nghĩa Rust `str::splitn` (khác `str.split` của VS: rỗng ⇒ tách theo scalar,
+        // không sinh phần rỗng đầu/cuối). `n < 0` ⇒ trap `VS0501`; lõi ở `stdlib/strsplitn.rs`.
+        "str.splitn" => strsplitn::goi(name, &args, span),
         // **VD-265**: `lines` theo nghĩa Rust — tách ở `\n`, bỏ `\r` ngay trước `\n`; dấu
         // xuống dòng cuối **không** sinh dòng rỗng. `split_whitespace` tách theo
         // `char::is_whitespace` (Unicode), bỏ khoảng trắng đầu/cuối và gộp nhiều khoảng liền.
