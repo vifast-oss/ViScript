@@ -144,6 +144,29 @@ fn so_nguyen(v: &Value) -> Option<u32> {
     }
 }
 
+/// `params.textDocument.uri` + `params.positions[].{line,character}` (0-based, giữ thứ tự).
+pub fn vi_tri_nhieu(kv: &[(Value, Value)]) -> Option<(String, Vec<(u32, u32)>)> {
+    let uri = uri_cua(kv)?;
+    let p = lay_params(kv)?;
+    let Value::Map(p) = p else {
+        return None;
+    };
+    let Value::List(xs) = lay(p, "positions")? else {
+        return None;
+    };
+    let mut out = Vec::with_capacity(xs.len());
+    for x in xs {
+        let Value::Map(pos) = x else {
+            return None;
+        };
+        out.push((
+            so_nguyen(lay(pos, "line")?)?,
+            so_nguyen(lay(pos, "character")?)?,
+        ));
+    }
+    Some((uri, out))
+}
+
 /// `params.textDocument.uri` + `params.position.{line,character}` (0-based).
 pub fn vi_tri_van_ban(kv: &[(Value, Value)]) -> Option<(String, u32, u32)> {
     let uri = uri_cua(kv)?;
