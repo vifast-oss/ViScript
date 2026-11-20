@@ -1376,6 +1376,7 @@ fn builtin_name(name: &str) -> Option<&'static str> {
     match name {
         "print" => Some("print"),
         "assert" => Some("assert"),
+        "panic" => Some("panic"),
         "len" => Some("len"),
         "str" => Some("str"),
         "Ok" => Some("Ok"),

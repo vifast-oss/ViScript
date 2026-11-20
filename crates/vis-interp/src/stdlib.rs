@@ -211,6 +211,8 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
             Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
             Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),
+            // **VD-267**: `never` chỉ là kiểu **trả** của builtin trần — không kiểm đối số.
+            Ty::Never => true,
         };
         if !ok {
             return Err(loi(

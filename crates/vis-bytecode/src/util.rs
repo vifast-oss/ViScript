@@ -54,6 +54,8 @@ pub fn la_builtin(name: &str) -> bool {
             | "Some"
             | "None"
             | "ref"
+            // **VD-267**: `panic` là builtin phân kỳ (`never`).
+            | "panic"
     )
 }
 

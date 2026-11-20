@@ -19,6 +19,8 @@ pub(crate) fn value_builtin(ten: &str) -> Option<Value> {
         "Err" => Some(Value::Builtin("Err")),
         "Some" => Some(Value::Builtin("Some")),
         "ref" => Some(Value::Builtin("ref")),
+        // **VD-267**: `panic` là giá trị gọi được (`let f = panic; f("x")`).
+        "panic" => Some(Value::Builtin("panic")),
         _ => None,
     }
 }

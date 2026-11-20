@@ -645,6 +645,9 @@ impl<'a> Checker<'a> {
                 "where" | "each" | "select" | "get" | "sort_by"
             );
             if la_builtin || la_lenh {
+                if let Some(t) = phu::kiem_builtin_sig(self, name, args, span) {
+                    return t;
+                }
                 if let Some(t) = self.kiem_builtin(name, args, span) {
                     return t;
                 }

@@ -466,17 +466,21 @@ fn gan_ten_la_chi_mot_vs0301_moi_dang() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn danh_sach_builtin_khoa_dung_11_ten() {
+fn danh_sach_builtin_khoa_dung_12_ten() {
     // **SỬA KÈM LÝ DO (ST-18)**: thêm 3 lệnh builtin của chế độ lệnh (`echo`/`lines`/`take`) —
     // Agent 0 đã duyệt (báo cáo trước code, (c) 3 lệnh builtin).
+    // **SỬA KÈM LÝ DO (VD-267)**: thêm `panic` (`panic(str) -> never`) — Agent 0 duyệt VD-267.
     assert_eq!(
         BUILTIN_VALUE_NAMES,
-        ["print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref"],
+        [
+            "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
+            "panic",
+        ],
         // **SỬA KÈM LÝ DO (ST-38)**: `where`/`each`/`first`/`count` **KHÔNG** vào bảng này — chúng là
         // lệnh **chế độ shell** (bảng `cmdsig` + `builtin::SIGS`), không phải tên giá trị dựng sẵn; nếu
         // thêm vào đây thì `fn first(…)` của người dùng trong `.vis` bị `VS0302` (trùng khai báo).
-        // Giữ **11** tên (8 cũ + 3 ST-18) — thêm/bớt phải qua Agent 0.
-        "11 tên giá trị dựng sẵn (8 cũ + 3 ST-18) — thêm/bớt phải qua Agent 0"
+        // Giữ **12** tên (11 cũ + `panic` VD-267) — thêm/bớt phải qua Agent 0.
+        "12 tên giá trị dựng sẵn (11 cũ + `panic` VD-267) — thêm/bớt phải qua Agent 0"
     );
     for n in BUILTIN_VALUE_NAMES {
         assert!(vis_types::is_builtin_value(n), "{n} phải là builtin");

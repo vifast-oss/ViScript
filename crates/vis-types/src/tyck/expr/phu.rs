@@ -43,7 +43,7 @@ pub(super) fn is_percent_float(a: &Type, b: &Type) -> bool {
     )
 }
 
-/// 8 tên dựng sẵn (VD-44 #3) — dùng khi `sym = None`.
+/// 8 tên dựng sẵn (VD-44 #3) + lệnh chế độ shell — dùng khi `sym = None`.
 pub(super) fn builtin_is_value(name: &str) -> bool {
     matches!(
         name,
@@ -55,6 +55,7 @@ pub(super) fn builtin_is_value(name: &str) -> bool {
             | "Some"
             | "None"
             | "ref"
+            | "panic"
             | "sort_by"
             | "get"
             | "select"
@@ -345,6 +346,45 @@ pub(super) fn unify_branch(
     }
     let msg = format!("hai nhánh khác kiểu: `{}` và `{}`", c.show(acc), c.show(t));
     c.diag(super::super::MISMATCH, msg, span);
+}
+
+/// **VD-267** — chữ ký **builtin trần** (`stdlib::BUILTIN_FUNCS`): `panic(str|Error) -> never`.
+/// Trả `None` nếu `name` không có trong bảng (để `kiem_builtin` xử lý các builtin cũ).
+pub(super) fn kiem_builtin_sig(
+    c: &mut super::super::Checker<'_>,
+    name: &str,
+    args: &[crate::hir::HExpr],
+    span: vis_syntax::Span,
+) -> Option<Type> {
+    let sig = crate::stdlib::sig_builtin(name)?;
+    let mut tys = Vec::with_capacity(args.len());
+    for a in args {
+        tys.push(c.kiem_expr(a));
+    }
+    if tys.len() != sig.so_doi() {
+        c.diag(
+            super::super::ARG_COUNT,
+            format!("`{name}` cần {} đối số, được {}", sig.so_doi(), tys.len()),
+            span,
+        );
+        return Some(sig.ret.sang_type());
+    }
+    if let Some(t) = tys.first() {
+        // Thiết kế §6.4: `panic(err)` nhận `E: Error`; `Ty` không có union nên nhận diện
+        // bản ghi dựng sẵn `Error` ở đây (cùng `RecId(0)` ở mọi bảng).
+        let la_error = match t {
+            Type::Record(id) => c.types.rec(*id).and_then(|r| r.name.as_deref()) == Some("Error"),
+            _ => false,
+        };
+        if !matches!(t, Type::Str | Type::Error) && !la_error {
+            c.diag(
+                super::super::MISMATCH,
+                format!("`{name}` cần `str` hoặc `Error`, được `{}`", c.show(t)),
+                args[0].span(),
+            );
+        }
+    }
+    Some(sig.ret.sang_type())
 }
 
 /// **VD-258** — kiểm trường của literal/dựng bản ghi theo `Type::Record(id)`:
