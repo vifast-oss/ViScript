@@ -656,3 +656,53 @@ fn http_head_khong_theo_redirect() {
     assert_eq!(out, "302\n/b\n");
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== VD-250 / ST-265 (#148): deadline DUY NHẤT cho toàn bộ http.get (connect + mọi hop + đọc) =====
+
+/// **ST-265 (VD-250, OPTION A)**: `get_timeout` phải dùng **một** deadline monotonic cho toàn bộ
+/// lời gọi — connect + **mọi** hop redirect + mọi lần đọc. Trước fix, `http_get` cấp cho mỗi hop
+/// một deadline/connect **mới** (`net.rs:319,321`) nên chain 4 hop có thể tốn ~4× timeout.
+///
+/// Server ngủ **250 ms ở mỗi hop** (kể cả 3 hop redirect lẫn hop cuối), timeout 300 ms: mỗi hop
+/// riêng lẻ vẫn kịp (250 < 300) nên code cũ trả `Ok("done")` sau ~1000 ms; code đúng phải cắt ở
+/// ~1× timeout (300 ms) và báo "quá thời gian". Ngưỡng 700 ms **rất rộng** (chống flake) nhưng vẫn
+/// thấp hơn 1000 ms ⇒ phân biệt được hai hành vi. Loopback + sleep cố định, không TLS/không HTTP2.
+#[test]
+fn http148_timeout_mot_deadline_qua_moi_hop_redirect() {
+    let _k = kho();
+    let d = tam("timeout-redir");
+    let addr = server_theo_duong(8, |req, _| {
+        std::thread::sleep(Duration::from_millis(250));
+        if req.starts_with("GET /a ") {
+            dap_302("/b")
+        } else if req.starts_with("GET /b ") {
+            dap_302("/c")
+        } else if req.starts_with("GET /c ") {
+            dap_302("/d")
+        } else {
+            dap_ung("200 OK", b"done", 4)
+        }
+    });
+    let src = format!(
+        "use std.http\n\
+         match http.get_timeout(\"http://{addr}/a\", 300):\n\
+         \x20   Ok(s): print(s)\n\
+         \x20   Err(e): print(e)\n"
+    );
+    let p = ghi(&d, "timeout-redir", &src);
+    for vm in [false, true] {
+        let t0 = Instant::now();
+        let (code, out, err) = chay(&p, vm, true, false);
+        let dt = t0.elapsed();
+        assert_eq!(code, 0, "vm={vm}: stderr: {err}");
+        assert!(
+            out.contains("quá thời gian"),
+            "vm={vm}: chain redirect phải hết giờ trong ~1× timeout, stdout: {out:?}"
+        );
+        assert!(
+            dt.as_millis() < 700,
+            "vm={vm}: **treo** {dt:?} — deadline phải dùng chung cho mọi hop (≤ ~700 ms; code cũ ~1000 ms)"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}

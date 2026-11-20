@@ -2429,3 +2429,106 @@ theo **lát cắt chạy được**; tiêu chí nghiệm thu từng lát cắt; 
 
 > **Ghi nhận thực thi (Agent 1, 2026-11-20)**: mở đúng 3 luồng ST-261/ST-262/ST-263 theo VD-249;
 > không tạo tag, không mở VS3 toàn phần, không chọn worker model/GC/API mới.
+
+### VD-250 · Duyệt frame heap + Lát 0 có kiểm soát; sửa 3 bất biến; #148 chọn A — A0, 2026-11-20
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: phiếu
+> `agent/DE-XUAT-KIEN-TRUC-ASYNC-2026-11-20.md`. Ghi thành **VD mới**, **không sửa ngược VD-249**.
+> Quyết định dựa trên nội dung đã gửi, không phải xác nhận A0 tự chạy repo.
+
+#### 1. Chốt
+
+| Hạng mục | Quyết định |
+|---|---|
+| Kiến trúc | **Frame/continuation trên heap + scheduler do ViScript quản lý + adapter I/O mỏng** (hướng A) |
+| Dependency | **Được đề xuất** thư viện selector phù hợp; **chưa duyệt dependency cụ thể**; không bắt buộc tự viết reactor |
+| Phạm vi ngay | **Chỉ Lát 0**, prototype nội bộ, **không thay runtime mặc định** |
+| Ngân sách | Một pool cho toàn lần chạy; duyệt **hướng sự kiện ngữ nghĩa**, **chưa duyệt bảng trọng số/định dạng** |
+| Hạn ngạch scheduler | Bộ đếm **riêng** khỏi ngân sách; có thể dùng chung điểm sự kiện đã chuẩn hoá |
+| #148 | **Chọn A** — deadline tổng cho toàn lời gọi, **supersede phần hợp đồng timeout liên quan của VD-183** |
+| Bộ nhớ task | **Không chấp nhận** tăng vô hạn trong workload spawn/await dài; **cap là hàng rào, không phải lời giải duy nhất** |
+| Windows | Giữ hợp đồng adapter; **không âm thầm làm hỏng runtime hiện tại** |
+| Tag/release | **Tiếp tục PAUSED** |
+| Worker/GC/TLS/API mới | **Chưa mở** |
+
+#### 2. Sửa ba bất biến trước khi hiện thực scheduler
+
+- **2.1 Tất định theo event trace, không theo mạng thật.** Tự sắp wake không bảo đảm interp và VM
+  nhận sự kiện mạng ngoài đời cùng thứ tự. Hợp đồng: cùng chương trình/cấu hình/**cùng chuỗi sự
+  kiện đầu vào** ⇒ scheduling tái lập được; test bằng **reactor giả / event trace** ⇒ byte-identical
+  giữa hai engine; test mạng thật kiểm đúng đắn/tiến triển/giới hạn/quan hệ thứ tự bắt buộc. **Không**
+  bắt output giữa kết nối độc lập giống từng byte nếu ngôn ngữ không quy định thứ tự. Tie-break chỉ
+  có nghĩa trong tập sự kiện đã quan sát. **Không** dùng "tất định tuyệt đối" để bắt runtime chờ
+  task chậm mà mất concurrency.
+- **2.2 Lazy spawn; tách bắt đầu join và hoàn thành task.** `spawn` tạo task, **không chạy thân ngay**;
+  `await`/final join mới đưa scheduler vào hoạt động; task suspend ⇒ scheduler chạy task `ready` khác.
+  Final join **vẫn xét theo thứ tự tạo**, nhưng **không bảo đảm thứ tự hoàn thành/output** của task có
+  suspend. "Join theo thứ tự tạo" **không** có nghĩa "task đầu chạy xong rồi task sau mới chạy".
+  Fixture thuần tính toán không suspend **giữ hành vi hiện tại**; fixture có I/O/interleaving phải
+  **phân loại theo hợp đồng**, **không cập nhật golden hàng loạt**.
+- **2.3 Không tự huỳnh task lúc main exit.** **Bác** đề xuất "pending ⇒ ép huỷ" (mâu thuẫn với task
+  không await vẫn join cuối). Giữ final join; task pending tiếp tục được chờ/điều phối theo deadline
+  hiện có. Nếu chỉ còn chờ nội bộ không tiến triển ⇒ xử lý theo hợp đồng deadlock đã duyệt; **không**
+  coi socket chờ bên ngoài là deadlock vì `ready` rỗng. Cancellation/lỗi task đầu/dọn task còn lại
+  cần **bảng trạng thái riêng trước Lát 3**; chưa đổi hành vi.
+
+#### 3. Lát 0 — duyệt prototype, không duyệt giới hạn ngôn ngữ mới
+
+- Dùng `await` ở câu lệnh trực tiếp để bắt đầu spike; **đó là giới hạn prototype**, không phải giới
+  hạn mới áp lên chương trình đang hợp lệ. Trước khi thay runtime mặc định: phải hỗ trợ **mọi vị trí
+  await mà checker hiện chấp nhận**, hoặc trình A0 quyết định thay đổi ngôn ngữ riêng.
+- **Tiêu chí Lát 0** (cả hai engine): A chạy→suspend→B chạy→A resume đúng vị trí; local/capture giữ
+  giá trị; resume **không lặp lại tác dụng phụ** trước suspend; kết quả **và lỗi** đi qua continuation
+  đúng; có ít nhất **một ca await trong biểu thức lồng** chỉ ra cách bảo toàn thứ tự đánh giá (dù chưa
+  hiện thực đầy đủ); prototype **không đổi runtime mặc định/bytecode phát hành**; **không** dùng stack
+  lớn hay gọi đệ quy scheduler để giả lập suspend.
+- **Sau Lát 0 phải trình checkpoint A0 trước khi mở Lát 1.** Không cấp quyền triển khai liền 0→5.
+
+#### 4. Ngân sách & hạn ngạch
+
+- **Đã duyệt**: một pool cho toàn lần chạy gồm task; không reset spawn/await/join, không refund khi
+  huỷ; `chi phí == remaining` ⇒ sự kiện được phép, sự kiện kế tiếp bị từ chối; không rollback tác dụng
+  phụ đã xong; depth/bộ nhớ/I/O giữ riêng; dùng `VS0501`, giữ wrapper `VS0506` + exit 101; duyệt
+  **test-hook nội bộ** đặt budget nhỏ.
+- **Chưa duyệt**: bảy trọng số `1/1/1/4/2/4/2`. Phải định nghĩa: `E_CALL` có tính thêm `E_EXPR` không;
+  builtin có chịu cả call lẫn builtin không; short-circuit chỉ tính nhánh chạy thế nào; loop tính ở
+  kiểm điều kiện/vào thân/cả hai; await resume có tính lại phí bắt đầu không. **Không để hai engine cùng
+  tên sự kiện mà tính khác số lần.**
+- **Không duyệt** giữ `MAX_STEPS` đếm opcode làm giới hạn chương trình thường song song ngân sách mới
+  (tái tạo lỗi parity). Nếu cần watchdog nội bộ, phải phân biệt với hết ngân sách ngữ nghĩa và báo rõ.
+- **Bảng phụ vs opcode `Charge`**: **chưa chốt** — cả hai biểu diễn được hợp đồng. Phiếu sau phải giải
+  thích: bảng phí thiếu/sai vị trí/sửa thành 0; nhánh nhảy có bỏ điểm tính phí không; crafted bytecode
+  có loop không bị tính không; resume có tính trùng không. **Không tin** dữ liệu tính phí trong artifact
+  chỉ vì decode thành công. Sau khi chọn biểu diễn mới cấp **phiên bản định dạng chưa dùng** + cập
+  nhật cache; **chưa ấn định VERSION 3 lúc này**.
+- **Hạn ngạch CPU**: bộ đếm riêng, **reset theo lượt chạy**; có thể tích lũy từ cùng sự kiện ngữ nghĩa.
+
+#### 5. I/O, HTTP, bộ nhớ, dependency
+
+- **Mạng**: duyệt `read`/`accept` làm lát đầu; `connect`/`write` giữ đồng bộ tạm nhưng **không gọi là
+  "chặn ngắn"** khi chưa có giới hạn được chứng minh (`write` có thể chờ lâu nếu peer không đọc).
+  **Không công bố async mạng thực dụng** khi các đường này còn chặn không giới hạn. Giữ bề mặt
+  `net.*`; **cho phép sửa interface nội bộ** để biểu diễn `Pending`/resume; không ép "Host không đổi"
+  đến mức giấu trạng thái trong global hay gọi lồng scheduler.
+- **#148 (chọn A)**: một deadline monotonic từ đầu lời gọi, gồm connect/redirect/đọc; mỗi chờ dùng
+  thời gian còn lại; **không reset theo hop**; giữ giới hạn riêng chặt hơn đã có; **không tự thêm clamp
+  2 s** nếu đó chưa phải hợp đồng hiện hành; đóng tài nguyên đúng trên success/error/timeout. Test
+  đỏ-trước cần **chuỗi redirect + response chận**. **Đính chính**: không tiếp tục mô tả slow-drip trong
+  một response là lỗ hổng đã xác nhận nếu mã hiện tại đã chặn.
+- **Bộ nhớ/ownership**: không cần GC để bắt đầu, nhưng Scheduler **không giữ mạnh vô thời hạn** task đã
+  xong; handle còn sống giữ kết quả để await lại; hết handle **và** xong nghĩa vụ join ⇒ trạng thái có
+  thể thu hồi; task chưa await giữ đủ lâu cho final join. Cap là hàng rào bổ sung, **chưa chọn số trước
+  khi đo**. **Không mặc định** "task kết thúc thì đóng mọi handle nó mở" — phân biệt tài nguyên đang
+  chờ do task sở hữu với handle có thể thoát khỏi task.
+- **Hook chẩn đoán**: duyệt **chỉ test/debug**, không giao diện môi trường hỗ trợ phát hành; đếm task,
+  frame, đăng ký I/O, timer, handle còn sống.
+- **Dependency**: **không áp tự động** allowlist ViFastOs; Agent 1 xác định chính sách ViScript thực sự
+  có hiệu lực, trình dependency trực tiếp/transitive + ngoại lệ. **Chưa duyệt unsafe mới** trong mã dự
+  án; unsafe trong dependency phải phân biệt, đánh giá theo chính sách riêng.
+
+#### 6. Lệnh tiếp theo
+
+Sau Lát 0 trình: kết quả suspend/resume (6 tiêu chí), các hợp đồng còn thiếu, đề xuất Lát 1 để A0 duyệt.
+**Mục tiêu không phải "có event loop"** mà là chứng minh hai engine dừng/tiếp tục đúng, **không lặp tác
+dụng phụ, không mất trạng thái** — nền móng phải khoá trước khi đưa mạng thật vào scheduler.
+Tag/release PAUSED; chưa mở VS3 toàn phần/worker/GC/TLS/API mới.

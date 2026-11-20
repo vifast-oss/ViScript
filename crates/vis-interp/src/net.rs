@@ -61,6 +61,19 @@ fn tim_header(du: &[u8]) -> Option<usize> {
     du.windows(4).position(|w| w == b"\r\n\r\n")
 }
 
+/// **ST-265 (VD-250, #148)**: số ms **còn lại** tới deadline monotonic `han`; `None` khi đã hết
+/// hạn. Mọi chờ chặn (connect, mỗi lần read) chỉ được dùng phần thời gian **còn lại** này — deadline
+/// được tính **một lần** ở đầu `http_get`/`http_head` và **không** đặt lại cho mỗi hop redirect.
+/// Luôn trả ≥ 1 khi còn hạn (tránh truyền 0 cho `set_read_timeout`/`connect_timeout`).
+fn con_lai_ms(han: Instant) -> Option<u64> {
+    let con = han.saturating_duration_since(Instant::now());
+    if con.is_zero() {
+        None
+    } else {
+        Some(con.as_millis().clamp(1, u64::MAX as u128) as u64)
+    }
+}
+
 /// Thông tin header cần cho giao thức.
 #[derive(Default)]
 struct DauHttp {
@@ -214,15 +227,18 @@ fn noi_location(authority: &str, target: &str, location: &str) -> Result<Option<
 }
 
 /// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body)`.
+///
+/// `han` là deadline **chung của cả lời gọi** (do `http_get` tạo một lần); `timeout` chỉ dùng để
+/// giữ nguyên thông điệp lỗi lịch sử. Mỗi lần đọc chỉ dùng phần thời gian **còn lại** tới `han`.
 fn doc_http_mot(
     net: &mut dyn NetHost,
     tay: &str,
     authority: &str,
     target: &str,
+    han: Instant,
     timeout: u64,
 ) -> Result<(u16, Option<String>, String), String> {
     let req = format!("GET {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
-    let han = Instant::now() + Duration::from_millis(timeout.max(1));
     net.write(tay, req.as_bytes())?;
     let mut du: Vec<u8> = Vec::new();
     let mut info: Option<DauHttp> = None;
@@ -248,14 +264,14 @@ fn doc_http_mot(
                 }
             }
         }
-        let con = han.saturating_duration_since(Instant::now());
-        if con.is_zero() {
-            return Err(format!(
+        let con = con_lai_ms(han).ok_or_else(|| {
+            format!(
                 "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
                 timeout.max(1)
-            ));
-        }
-        let doc = net.read(tay, 16 * 1024, con.as_millis().clamp(1, 2_000) as u64)?;
+            )
+        })?;
+        // Giữ nguyên clamp 2 000 ms **mỗi lần đọc** (VD-183) — không nới, không bỏ.
+        let doc = net.read(tay, 16 * 1024, con.clamp(1, 2_000))?;
         if doc.is_empty() {
             let d =
                 info.ok_or_else(|| "phản hồi HTTP không đủ header (kết nối đóng sớm)".to_string())?;
@@ -310,15 +326,26 @@ fn doc_http_mot(
 }
 
 /// `http.get`/`get_timeout` — nối qua `NetHost`, chạy giao thức, **đóng tay** (best-effort).
+///
+/// **ST-265 (VD-250, #148)**: một deadline monotonic duy nhất cho **toàn bộ** lời gọi — tính ở đây
+/// một lần, truyền xuống connect và từng hop `doc_http_mot`; **không** đặt lại khi chuyển hướng.
 pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<String, String> {
     let timeout = timeout_ms.max(1);
+    let han = Instant::now() + Duration::from_millis(timeout);
     let mut hien_tai = url.to_string();
     let mut so = 0u8;
     loop {
         let (authority, target) = tach_url(&hien_tai)?;
-        let tay = net.connect(&authority, timeout)?;
+        // Connect chỉ được dùng phần thời gian còn lại; hết hạn ⇒ lỗi, không mở kết nối mới.
+        let con = con_lai_ms(han).ok_or_else(|| {
+            format!(
+                "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
+                timeout.max(1)
+            )
+        })?;
+        let tay = net.connect(&authority, con)?;
         net.ghi_nhat_ky(&format!("NET http GET {authority}{target}"));
-        let kq = doc_http_mot(net, &tay, &authority, &target, timeout);
+        let kq = doc_http_mot(net, &tay, &authority, &target, han, timeout);
         let _ = net.close(&tay);
         let (status, location, body) = kq?;
         if (300..400).contains(&status) {
@@ -351,21 +378,21 @@ fn head_mot(
     tay: &str,
     authority: &str,
     target: &str,
+    han: Instant,
     timeout: u64,
 ) -> Result<(u16, Vec<(String, String)>), String> {
     let req = format!("HEAD {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
-    let han = Instant::now() + Duration::from_millis(timeout.max(1));
     net.write(tay, req.as_bytes())?;
     let mut du: Vec<u8> = Vec::new();
     loop {
-        let con = han.saturating_duration_since(Instant::now());
-        if con.is_zero() {
-            return Err(format!(
+        let con = con_lai_ms(han).ok_or_else(|| {
+            format!(
                 "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
                 timeout.max(1)
-            ));
-        }
-        let doc = net.read(tay, 16 * 1024, con.as_millis().clamp(1, 2_000) as u64)?;
+            )
+        })?;
+        // Giữ nguyên clamp 2 000 ms **mỗi lần đọc** (VD-183) — không nới, không bỏ.
+        let doc = net.read(tay, 16 * 1024, con.clamp(1, 2_000))?;
         if doc.is_empty() {
             let i = tim_header(&du)
                 .ok_or_else(|| "phản hồi HTTP không đủ header (kết nối đóng sớm)".to_string())?;
@@ -386,16 +413,26 @@ fn head_mot(
 }
 
 /// `http.head` — một request, không đọc thân, không theo redirect.
+///
+/// **ST-265 (VD-250, #148)**: deadline monotonic tính một lần ở đầu lời gọi, dùng chung cho
+/// connect + đọc header (dù HEAD không có redirect, vẫn nhất quán với `http_get`).
 pub fn http_head(
     net: &mut dyn NetHost,
     url: &str,
     timeout_ms: u64,
 ) -> Result<(u16, Vec<(String, String)>), String> {
     let timeout = timeout_ms.max(1);
+    let han = Instant::now() + Duration::from_millis(timeout);
     let (authority, target) = tach_url(url)?;
-    let tay = net.connect(&authority, timeout)?;
+    let con = con_lai_ms(han).ok_or_else(|| {
+        format!(
+            "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
+            timeout.max(1)
+        )
+    })?;
+    let tay = net.connect(&authority, con)?;
     net.ghi_nhat_ky(&format!("NET http HEAD {authority}{target}"));
-    let kq = head_mot(net, &tay, &authority, &target, timeout);
+    let kq = head_mot(net, &tay, &authority, &target, han, timeout);
     let _ = net.close(&tay);
     kq
 }
