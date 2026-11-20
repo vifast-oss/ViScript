@@ -223,7 +223,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 118] = [
+pub const FUNCS: [StdFn; 119] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -909,6 +909,15 @@ pub const FUNCS: [StdFn; 118] = [
     // handle/host ⇒ `Err(Error)` dữ liệu.
     StdFn {
         name: "sqlite.indexes",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultListStrStr,
+    },
+    // **VD-270 (sqlite-index-columns)** — tên cột của một index trong **schema chính**, theo
+    // **thứ tự index** (`seqno`), tra theo **tên** (schema-global, không lọc bảng); tên index là
+    // **tham số bind**. Index không tồn tại/autoindex ⇒ `Ok([])`; mục là biểu thức bị bỏ qua;
+    // handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.index_columns",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultListStrStr,
     },

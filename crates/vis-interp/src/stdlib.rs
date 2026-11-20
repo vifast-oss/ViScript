@@ -34,6 +34,7 @@ mod pathnorm;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
+mod sqliteidxcols;
 mod sqlitetables;
 mod strfind;
 mod strlen;
@@ -1032,6 +1033,21 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqliteidx::chay(host, h, table)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        // **VD-270 (sqlite-index-columns)** — tên cột của một index **schema chính** theo **thứ
+        // tự index** (`seqno`), tra theo **tên** (schema-global, không lọc bảng). Đường đọc được
+        // phép là `sqlite_master.sql` (authorizer chặn `pragma_index_info`/`_xinfo`); tên index
+        // bind làm tham số, phân tích thuần chuỗi. Index thiếu/autoindex ⇒ `Ok([])`, mục biểu
+        // thức bị bỏ qua; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
+        "sqlite.index_columns" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let index = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqliteidxcols::chay(host, h, index)
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
