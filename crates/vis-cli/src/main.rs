@@ -201,6 +201,19 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.is_dir(p),
         }
     }
+    /// **VD-270 (fsbytes)**: byte thô — host thật (OS) hoặc mock, cùng chữ ký.
+    fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
+        match self {
+            HostFs::That(r) => r.read_bytes(p),
+            HostFs::Mock(m) => m.read_bytes(p),
+        }
+    }
+    fn write_bytes(&mut self, p: &str, data: &[u8]) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.write_bytes(p, data),
+            HostFs::Mock(m) => m.write_bytes(p, data),
+        }
+    }
     /// **VD-268**: host thật (OS) hoặc mock, cùng chữ ký.
     fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
         match self {

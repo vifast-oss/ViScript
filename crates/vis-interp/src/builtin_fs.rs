@@ -160,6 +160,20 @@ pub trait FsHost {
     fn is_dir(&mut self, _p: &str) -> Result<bool, String> {
         Err("chưa hỗ trợ".to_string())
     }
+
+    /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (mọi giá trị `0..=255`).
+    /// Thiếu tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock
+    /// vẫn biên dịch.
+    fn read_bytes(&mut self, _p: &str) -> Result<Vec<u8>, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
+    /// **VD-270 (fsbytes)**: ghi **toàn bộ** `data` thành byte thô; tạo mới hoặc **cắt** tệp.
+    /// Tầng `stdlib` kiểm `0..=255` **trước** khi gọi host (không ghi một phần vì dữ liệu sai);
+    /// lỗi ghi ⇒ `Err` dữ liệu. Default: **chưa hỗ trợ**.
+    fn write_bytes(&mut self, _p: &str, _data: &[u8]) -> Result<(), String> {
+        Err("chưa hỗ trợ".to_string())
+    }
 }
 
 /// **VD-270** — gọi một trong ba helper metadata **chỉ đọc** của host. Giữ nhánh dispatch ở **một**

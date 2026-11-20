@@ -18,7 +18,9 @@ use vis_interp::value::Value;
 #[derive(Debug, Clone, Default)]
 pub struct FsMock {
     dirs: Vec<(String, Vec<MucFs>)>,
-    files: Vec<(String, String)>,
+    /// **VD-270 (fsbytes)**: nội dung tệp lưu **byte thô** (kịch bản JSON nạp chuỗi thành UTF-8
+    /// byte) để `read_bytes`/`write_bytes` roundtrip được cả byte không phải UTF-8.
+    files: Vec<(String, Vec<u8>)>,
 }
 
 fn lay(m: &Value, ten: &str) -> Option<Value> {
@@ -138,7 +140,7 @@ impl FsMock {
                 let Some(nd) = chuoi(&v) else {
                     return Err(format!("`--fs-mock`: `files[{p}]` phải là chuỗi"));
                 };
-                mock.files.push((p, nd));
+                mock.files.push((p, nd.into_bytes()));
             }
         }
         Ok(mock)
@@ -171,6 +173,24 @@ impl FsMock {
 
 impl FsHost for FsMock {
     fn read(&mut self, p: &str) -> Result<String, String> {
+        let bytes = self
+            .files
+            .iter()
+            .find(|(k, _)| k == p)
+            .map(|(_, v)| v.clone())
+            .ok_or_else(|| {
+                format!("không đọc được tệp `{p}`: không có trong kịch bản `--fs-mock`")
+            })?;
+        String::from_utf8(bytes)
+            .map_err(|e| format!("không đọc được `{p}`: nội dung không phải UTF-8 ({e})"))
+    }
+
+    fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
+        self.write_bytes(p, s.as_bytes())
+    }
+
+    /// **VD-270 (fsbytes)**: đọc **byte thô** trong bộ nhớ (mọi giá trị `0..=255`).
+    fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
         self.files
             .iter()
             .find(|(k, _)| k == p)
@@ -178,10 +198,12 @@ impl FsHost for FsMock {
             .ok_or_else(|| format!("không đọc được tệp `{p}`: không có trong kịch bản `--fs-mock`"))
     }
 
-    fn write(&mut self, p: &str, s: &str) -> Result<(), String> {
+    /// **VD-270 (fsbytes)**: ghi **byte thô** trong bộ nhớ; tạo mục mới nếu thiếu (cùng hợp đồng
+    /// tạo/cắt tệp với host thật).
+    fn write_bytes(&mut self, p: &str, data: &[u8]) -> Result<(), String> {
         match self.files.iter_mut().find(|(k, _)| k == p) {
-            Some((_, v)) => *v = s.to_string(),
-            None => self.files.push((p.to_string(), s.to_string())),
+            Some((_, v)) => *v = data.to_vec(),
+            None => self.files.push((p.to_string(), data.to_vec())),
         }
         Ok(())
     }
@@ -194,8 +216,8 @@ impl FsHost for FsMock {
     /// **VD-266**: thêm cuối "tệp" trong kịch bản (tạo mục mới nếu thiếu).
     fn append(&mut self, p: &str, s: &str) -> Result<(), String> {
         match self.files.iter_mut().find(|(k, _)| k == p) {
-            Some((_, v)) => v.push_str(s),
-            None => self.files.push((p.to_string(), s.to_string())),
+            Some((_, v)) => v.extend_from_slice(s.as_bytes()),
+            None => self.files.push((p.to_string(), s.as_bytes().to_vec())),
         }
         Ok(())
     }

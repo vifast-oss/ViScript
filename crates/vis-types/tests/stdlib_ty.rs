@@ -97,7 +97,13 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 flatten, 2026-11-21)**: +**1** hàm `std.list.flatten`
     // (`(list[list[T]]) -> list[T]`; nối **một cấp**, list con rỗng không đóng góp) ⇒ **101**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 102, "bảng chữ ký phải đủ 102 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 db-explain, 2026-11-21)**: +**1** hàm `sqlite.explain`
+    // (`(str, str, list[SqlValue]) -> Result[RowSet, Error]`; chỉ SELECT/WITH, chạy
+    // `EXPLAIN QUERY PLAN` qua đúng đường `query`) ⇒ **102** hàm; không xoá/đổi hàm cũ nào.
+    // **SỬA KÈM LÝ DO (VD-270 fsbytes, 2026-11-21)**: +**2** hàm `std.fs.*` (`read_bytes`,
+    // `write_bytes`; byte thô `list[int]`, mỗi phần tử `0..=255`) ⇒ **104** hàm; không xoá/đổi
+    // hàm cũ nào.
+    assert_eq!(FUNCS.len(), 104, "bảng chữ ký phải đủ 104 hàm");
 }
 
 #[test]
@@ -125,10 +131,6 @@ fn flatten_kieu_long_mot_cap() {
         })),
         "`list.flatten`: hạ `list[T]`"
     );
-    // **SỬA KÈM LÝ DO (VD-270 db-explain, 2026-11-21)**: +**1** hàm `sqlite.explain`
-    // (`(str, str, list[SqlValue]) -> Result[RowSet, Error]`; chỉ SELECT/WITH, chạy
-    // `EXPLAIN QUERY PLAN` qua đúng đường `query`) ⇒ **101** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 102, "bảng chữ ký phải đủ 102 hàm");
 }
 
 #[test]
