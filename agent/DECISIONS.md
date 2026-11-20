@@ -3186,3 +3186,17 @@ Duyệt kiểm **script từ stdin** với tệp chính ảo `-`: cùng pipeline
 (`ok/not ok 1 - -`) và `--json` cùng hình dạng đường tệp (`file`/`rel` = `-`); exit 0 sạch,
 1 có chẩn đoán, 2 usage/UTF-8 hỏng. `--syntax`/`--no-extern` giữ; `--stdin` không nhận tệp;
 `use ./x` vẫn đọc đĩa theo thiết kế (chỉ tệp chính ảo). Không cache/không ghi đĩa.
+
+### VD-269 (phần fmt-mode) · `vis fmt --stdin --mode` — A0, 2026-11-21
+
+Duyệt `--mode script|command` **chỉ** cho `--stdin` (mặc định `script`); dùng đúng formatter
+`.vish` hiện có; `--mode` ở đường tệp/thư mục ⇒ exit 2; `--check` giữ 0/1/2; không đổi mặc định.
+
+### VD-269 (phần fscopy) · `std.fs.copy`/`rename` — A0, 2026-11-21
+
+`copy(from,to)`/`rename(from,to) -> Result[(), Error]`: chỉ tệp thường; **từ chối nếu đích tồn
+tại** (kể cả tệp/thư mục/symlink); **không đi theo symlink** ở cả hai đầu; `copy` chép byte qua
+`create_new` (O_EXCL), không chép metadata; `rename` OS cùng hệ tệp, không fallback copy+xoá.
+`FsGuard`: copy cần đọc nguồn + ghi đích; rename cần ghi cả hai; thiếu quyền `VS0604`, lỗi dữ
+liệu `Err`. Ghi nợ: khe đua kiểm-rồi-rename (renameat2/RENAME_NOREPLACE cần libc/unsafe — ngoài
+VS2). API-STD +2.
