@@ -37,6 +37,7 @@ list.sort	(list[T]) -> list[T]
 list.sort_by	(list[T], fn(T) -> int | str) -> list[T]
 list.take	(list[T], int) -> list[T]
 list.unique	(list[T]) -> list[T]
+list.windows	(list[T], int) -> list[list[T]]
 list.zip	(list[T], list[T]) -> list[list[T]]
 map.get_or	(map[K, V], str, V) -> V
 map.keys	(map[K, V]) -> list[K]
