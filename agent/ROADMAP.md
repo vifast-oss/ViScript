@@ -314,6 +314,17 @@ report-check/build/doc-examples PASS.
 mở pha 2/VS3, **không** đổi runtime mặc định (frame/budget/quota chỉ trên đường test), **không** tag mới;
 `pha1-rc1` = `05e42d0` giữ nguyên. Từ baseline đến `330d86c` là **476 commit**.
 
+| # | Hạng mục | Mức thật (21/11) | Còn thiếu để đóng 100% |
+|---|---|---|---|
+| 1 | **Async** | runtime mặc định tuần tự/run-to-completion; **đường test** có suspend/resume + reactor + timer + cancellation | worker/GC/song song thật; chưa bật default; step-cap parity |
+| 2 | **Kênh** | `chan(n≥1)` send/recv/close; `chan(0)` `VS0505`; frame test phủ đầy/rỗng/đóng | rendezvous/select/timeout (VS3) |
+| 3 | **Net/HTTP** | loopback, chunked, redirect, HEAD, **deadline tổng** (ST-265) | TLS/HTTP2/keep-alive; test Internet thật |
+| 4 | **Quyền** | runtime mọi nền; **Landlock Linux**; đường đọc đã đóng khe symlink (Linux) | macOS chưa verify; đường ghi TOCTOU (#140/#109b); Windows mức thấp hơn |
+| 5 | **LSP** | definition/symbol/references/rename/signatureHelp/folding/formatting/typeDefinition/implementation/hover/completion | publish chẩn đoán tệp phụ; incremental sync |
+| 6 | **Gói** | registry cục bộ, semver + resolver, lock SHA-256, `pkg update/list/remove` | registry HTTP, chữ ký số, GC store |
+| 7 | **Đa nền tảng** | Linux chạy thật; Windows **Tier 2**; wasm **check** | runner macOS/Windows/wasm; macOS chưa verify |
+| 8 | **Hợp chuẩn host** | Linux 54/54 + POSIX real | macOS chưa verify; Windows 39/54 (chỉ đo) |
+
 **Đã làm (tóm tắt; chi tiết từng mục ở `JOURNAL/vd260-report.md`)**:
 
 - **Checker/soundness**: `Result?` không bị coi là hai lớp Option; `None` có kiểu; record ctor/default;
