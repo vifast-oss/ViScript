@@ -157,3 +157,11 @@
 - **explain-json** (`d5c9698` → `e8e5332`): `vis explain [--json]`/`--list --json` một dòng; người dùng thường giữ byte.
 - `./vis-dev core-test` @ `e8e5332`: **PASS** (target `target/core-test`).
 - `test/release/run.sh` / `test/toolchain/run.sh` / `bin/vis-host-suite` @ `e8e5332`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+
+## 7. Wave 9 đang chạy (tại thời điểm ghi)
+
+- `vd270-strlen` — `str.byte_len/char_count`, `list/map/str.is_empty`.
+- `vd270-vistest-repeat` — `vis test --repeat N` (TAP/JSON, fail-fast).
+- `vd270-run-time` — `vis run --time` (stderr, không đổi exit/output).
+- `vd270-lsp-select2` — `textDocument/selectionRange` tối thiểu (token→line→doc).
+Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lại sau khi merge.
