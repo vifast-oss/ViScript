@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
-# vis-remote — chạy **một lệnh bash** trên mac / ps / psvn với năm bảo đảm (ST-162, +ST-175).
+# vis-remote — chạy **một lệnh bash** trên mac / ps / psvn với sáu bảo đảm (ST-162, +ST-175, +ST-242).
 #
 # Vì sao cần: sự cố R28 §5 #4/#5/#6 (đêm 16→17/11) làm mất bằng chứng cổng:
 #   #4 `ssh psvn '& "…bash.exe" -lc "…; echo EXIT=$?"'` ⇒ **PowerShell nội suy `$?`**
@@ -10,7 +10,7 @@
 #      ⇒ lần chạy đầu fail vì môi trường, không phải vì mã.
 #   (#7 kèm theo) log đo trên `psvn` ghi **trong repo** ⇒ tệp untracked **chặn `git pull --ff-only`**.
 #
-# Ba bảo đảm của công cụ này:
+# Các bảo đảm của công cụ này:
 #   1. **ĐƯỜNG TUYỆT ĐỐI** — `cargo` dò và ghim tuyệt đối (`$HOME/.cargo/bin/cargo`, …), mọi
 #      đường log là tuyệt đối; không còn `cd <tương đối> && …`.
 #   2. **MÃ THOÁT RA TỆP `.exit`** — thân chạy kết thúc bằng `echo $? > "<log>.exit"` **bên trong
@@ -29,14 +29,22 @@
 #      thay đổi chưa commit (bằng chứng ST-175: `/root/vifast-linux` bẩn 2338 mục, `viscript/` khác HEAD).
 #      `mac` **không** kiểm theo mặc định (chính công cụ này ghi log vào repo; cây làm việc của agent
 #      bẩn là bình thường) — muốn kiểm trên mac thì `--require-clean`. `--check` không kiểm (chẩn đoán).
+#   6. **NHẬN DANH HOST THẬT (VD-242 Q7, ST-242)** — `mac|macos` là lệnh **macOS**: kiểm `uname -s`
+#      = `Darwin` trước khi chạy; nếu không phải Darwin thì **thất bại rõ** (exit 3), KHÔNG âm thầm
+#      chạy Linux dưới nhãn macOS (sự cố 2026-11-20 ~05:30: `vis-remote mac --check` trả Linux x86_64).
+#      `local` vẫn chạy tại chỗ bằng `bash -s`, không kiểm OS; `ps`/`psvn` giữ nguyên hành vi.
 #
 # Dùng:
 #   bin/vis-remote <host> [--log <tệp>] [--tag <nhãn>] [--allow-dirty|--require-clean] -- <lệnh> [đối số…]
 #   bin/vis-remote <host> --check [--log <tệp>]   # in môi trường + `.exit` của `true`/`false`
 #   bin/vis-remote --hosts                        # in cấu hình từng máy (kèm chế độ kiểm cây bẩn)
+#   bin/vis-remote --self-test                    # kiểm nhận diện host: stub uname Linux ⇒ `mac` phải exit ≠ 0
 #   bin/vis-remote -h | --help
 #
-#   <host>: mac | ps | psvn   (đồng nghĩa: local|macos ⇒ mac · linux ⇒ ps · windows ⇒ psvn)
+#   <host>: mac | local | ps | psvn
+#     mac|macos — đích macOS: BẮT BUỘC host thật `uname -s` = Darwin, nếu không ⇒ TỪ CHỐI (VD-242 Q7).
+#     local     — chạy tại chỗ bằng `bash -s`, không kiểm OS (hành vi cũ của alias `local` giữ nguyên).
+#     ps|linux  — ssh `root@ps` (Linux) · psvn|windows — ssh `psvn` (Git Bash trên Windows).
 #
 #   --allow-dirty    BỎ kiểm cây bẩn — **CHỈ để chẩn đoán** (đo trên cây bẩn không chứng minh được mã
 #                    khớp commit); không dùng cho phép đo.
@@ -62,7 +70,7 @@
 #   VIS_REMOTE_TAG        nhãn mặc định của log (mặc định `vis-remote`)
 #
 # Mã thoát: 0..255 = **mã thật của lệnh, đọc từ tệp `.exit`** · 2 dùng sai · 3 BLOCKED-ENV
-#           (không ssh được / thiếu cây nguồn / không tạo được thư mục log) · 4 không đọc được `.exit`
+#           (không ssh được / thiếu cây nguồn / không tạo được thư mục log / `mac` trên host không-Darwin) · 4 không đọc được `.exit`
 #           (`--check`: 0 khớp `true`=0 và `false`=1 · 5 lệch) · 6 cây nguồn BẨN ⇒ từ chối chạy
 #           (`--allow-dirty` để bỏ kiểm; chỉ dùng để chẩn đoán).
 #
@@ -79,6 +87,7 @@ PSVN_BASH="${VIS_REMOTE_PSVN_BASH:-C:\\Program Files\\Git\\bin\\bash.exe}"
 repo_of() {
     case "$1" in
         mac) echo "${VIS_REMOTE_MAC_REPO:-$REPO_ROOT}" ;;
+        local) echo "${VIS_REMOTE_LOCAL_REPO:-$REPO_ROOT}" ;;
         ps) echo "${VIS_REMOTE_PS_REPO:-/root/viscript-moi}" ;;
         psvn) echo "${VIS_REMOTE_PSVN_REPO:-/c/Users/ps/viscript-moi}" ;;
     esac
@@ -87,6 +96,7 @@ repo_of() {
 home_hint_of() {
     case "$1" in
         mac) echo "${VIS_REMOTE_MAC_HOME:-}" ;;
+        local) echo "${VIS_REMOTE_LOCAL_HOME:-}" ;;
         ps) echo "${VIS_REMOTE_PS_HOME:-/root}" ;;
         psvn) echo "${VIS_REMOTE_PSVN_HOME:-/c/Users/ps}" ;;
     esac
@@ -95,6 +105,7 @@ home_hint_of() {
 cargo_hint_of() {
     case "$1" in
         mac) echo "${VIS_REMOTE_MAC_CARGO:-$HOME/.cargo/bin/cargo}" ;;
+        local) echo "${VIS_REMOTE_LOCAL_CARGO:-$HOME/.cargo/bin/cargo}" ;;
         ps) echo "${VIS_REMOTE_PS_CARGO:-/root/.cargo/bin/cargo}" ;;
         psvn) echo "${VIS_REMOTE_PSVN_CARGO:-/c/Users/ps/.cargo/bin/cargo}" ;;
     esac
@@ -114,18 +125,31 @@ sha256_file() {
 
 normalize_host() {
     case "$1" in
-        mac|local|macos) echo mac ;;
+        mac|macos) echo mac ;;
+        local) echo local ;;
         ps|linux) echo ps ;;
         psvn|windows) echo psvn ;;
         *) return 1 ;;
     esac
 }
 
+# VD-242 Q7 / ST-242: `mac|macos` là lệnh đích macOS. Kiểm **host thật** trước khi chạy —
+# `uname -s` phải là `Darwin`. Trên Linux (sự cố 05:30) phải thất bại rõ, không âm thầm chạy Linux.
+# Gọi ở `main()` cho cả `--check` lẫn chạy lệnh. `local`/`ps`/`psvn` KHÔNG qua kiểm này.
+require_darwin() {
+    local sys
+    sys="$(uname -s 2>/dev/null || echo '?')"
+    if [ "$sys" != Darwin ]; then
+        die 3 "host 'mac' đích là macOS nhưng uname -s = '$sys' (KHÔNG phải Darwin) — TỪ CHỐI chạy Linux dưới nhãn macOS (vd242 Q7 / ST-242). Muốn chạy trên máy này dùng 'local' hoặc 'ps'; muốn macOS thì chạy trên máy macOS thật."
+    fi
+}
+
 # Chuyển một script (tệp) sang máy đích và chạy; stdout của nó là stdout của hàm.
 # **stdin = script** cho cả ba nền ⇒ nội dung không đi qua dòng lệnh của PowerShell (#4).
+# `mac` và `local` đều chạy tại chỗ bằng `bash -s` (khác nhau ở chỗ `mac` đã qua require_darwin).
 transport_run() { # $1 = host, $2 = tệp script
     case "$1" in
-        mac) bash -s <"$2" ;;
+        mac|local) bash -s <"$2" ;;
         ps) ssh -o BatchMode=yes -o ConnectTimeout=10 "$PS_SSH" 'exec bash -s' <"$2" ;;
         psvn) ssh -o BatchMode=yes -o ConnectTimeout=10 "$PSVN_SSH" "& '$PSVN_BASH' -s" <"$2" ;;
         *) die 2 "transport_run: host '$1' lạ" ;;
@@ -154,13 +178,14 @@ else VIS_RUSTC="$(command -v rustc 2>/dev/null || echo none)"; fi
 export RUSTC="$VIS_RUSTC"'
 
 # Ghi một tệp script từ các mảnh: `printf` cho phần có biến, heredoc cho phần tĩnh.
-emit_probe_script() { # $1 = tệp, $2 = host, $3 = cargo hint, $4 = repo
-    local out="$1" host="$2" chint="$3" repo="$4"
+emit_probe_script() { # $1 = tệp, $2 = host, $3 = cargo hint, $4 = repo, $5 = dirty policy
+    local out="$1" host="$2" chint="$3" repo="$4" dirty="$5"
     {
         printf '#!/usr/bin/env bash\n# vis-remote: DÒ MÔI TRƯỜNG trên %s — sinh tự động, không sửa tay\n' "$host"
         printf 'VIS_CARGO_HINT=%s\n' "$(printf '%q' "$chint")"
         printf 'VIS_REPO=%s\n' "$(printf '%q' "$repo")"
         printf 'VIS_HOST=%s\n' "$(printf '%q' "$host")"
+        printf 'VIS_DIRTY_POLICY=%s\n' "$(printf '%q' "$dirty")"
         printf '%s\n' "$COMMON_HEAD"
         cat <<'EOS'
 cd "$VIS_REPO" 2>/dev/null || true
@@ -187,6 +212,14 @@ printf 'git_nhanh: %s\n'  "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo
 printf 'git_untracked: %s\n' "$(git status --porcelain 2>/dev/null | grep -c '^??' || true)"
 printf 'git_status: %s\n' "$(git status --porcelain 2>/dev/null | head -6 | tr '\n' '|')"
 printf 'vis-remote-home: %s\n' "$(cd "$HOME" 2>/dev/null && pwd -P)"
+# ---- ST-242 (VD-242 Q7): nhận danh rõ baseline/OS-arch/toolchain/cấu hình trong mọi log ----
+printf 'baseline_commit_do: %s\n'  "$(git rev-parse HEAD 2>/dev/null || echo '?')"
+printf 'kernel: %s\n'              "$(uname -s 2>/dev/null || echo '?')"
+printf 'arch: %s\n'               "$(uname -m 2>/dev/null || echo '?')"
+printf 'os_arch_thuc: %s\n'       "$(uname -srm 2>/dev/null || echo '?')"
+printf 'toolchain_cargo: %s\n'    "$VIS_CARGO"
+printf 'toolchain_rustc: %s\n'    "$VIS_RUSTC"
+printf 'cau_hinh: host=%s dirty_policy=%s repo=%s\n' "$VIS_HOST" "${VIS_DIRTY_POLICY:-skip}" "$VIS_REPO"
 EOS
     } >"$out"
 }
@@ -256,7 +289,7 @@ trap cleanup EXIT INT TERM
 # Dò môi trường trên máy đích; in ra các dòng `khoá: giá trị` (không ghi log).
 probe_host() { # $1 = host
     local host="$1" f="$TMPDIR_VR/probe-$1.sh" out
-    emit_probe_script "$f" "$host" "$(cargo_hint_of "$host")" "$(repo_of "$host")" ||
+    emit_probe_script "$f" "$host" "$(cargo_hint_of "$host")" "$(repo_of "$host")" "${DIRTY_POLICY:-skip}" ||
         die 3 "không ghi được script dò môi trường"
     out="$(transport_run "$host" "$f")" || true
     printf '%s\n' "$out"
@@ -293,6 +326,7 @@ run_once() {
         printf '# thoi_diem_bat_dau=%s\n' "$(utc_iso)"
         printf '# host=%s\n' "$host"
         printf '# lenh: %s\n' "$(printf '%q ' "$@")"
+        printf '# lenh_do: %s\n' "$(printf '%q ' "$@")"   # ST-242: tên lệnh đo, ghi rõ trong log
         printf '# home_may_dich=%s\n' "$rhome"
         printf '# log_tren_may_dich=%s\n' "$rlog"
         printf '# exit_tren_may_dich=%s.exit\n' "$rlog"
@@ -300,6 +334,17 @@ run_once() {
         printf '# ---------- HEADER VD-136: DO TREN %s ----------\n' "$host"
         printf '%s\n' "$probe" | sed 's/^/# /'
         printf '# ---------- HET HEADER ----------\n'
+        printf '# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------\n'
+        printf '# baseline_commit_do: %s\n' "$(printf '%s\n' "$probe" | sed -n 's/^baseline_commit_do: //p' | head -1)"
+        printf '# kernel: %s\n'             "$(printf '%s\n' "$probe" | sed -n 's/^kernel: //p' | head -1)"
+        printf '# arch: %s\n'              "$(printf '%s\n' "$probe" | sed -n 's/^arch: //p' | head -1)"
+        printf '# os_arch_thuc: %s\n'      "$(printf '%s\n' "$probe" | sed -n 's/^os_arch_thuc: //p' | head -1)"
+        printf '# toolchain: cargo=%s rustc=%s\n' \
+            "$(printf '%s\n' "$probe" | sed -n 's/^toolchain_cargo: //p' | head -1)" \
+            "$(printf '%s\n' "$probe" | sed -n 's/^toolchain_rustc: //p' | head -1)"
+        printf '# cau_hinh: host=%s dirty_policy=%s stem=%s\n' "$host" "${DIRTY_POLICY:-skip}" "$stem"
+        printf '# host_check: %s\n' "$([ "$host" = mac ] && echo 'Darwin da xac minh (require_darwin)' || echo 'khong yeu cau Darwin')"
+        printf '# ---------- HET ST-242 ----------\n'
     } >>"$log" || die 3 "không ghi được log '$log'"
 
     transport_run "$host" "$script" 2>&1 | tee -a "$log"
@@ -359,21 +404,79 @@ in_repo() { # $1 = đường tuyệt đối
 
 cmd_hosts() {
     local h
-    for h in mac ps psvn; do
+    for h in mac local ps psvn; do
         printf '%-5s repo=%-36s cargo=%-32s log_dir=%s/vislogs   kiem_cay_ban=%s\n' \
             "$h" "$(repo_of "$h")" "$(cargo_hint_of "$h")" "$(home_hint_of "$h")" \
             "$(default_dirty_policy "$h")"
     done
 }
 
-# Chính sách kiểm cây bẩn mặc định: `ps`/`psvn` = check (cây để đo); `mac` = skip.
-# `mac` là cây làm việc của agent, chính `vis-remote` ghi log vào repo ⇒ kiểm ở đây sẽ chặn mọi việc.
+# Chính sách kiểm cây bẩn mặc định: `ps`/`psvn` = check (cây để đo); `mac`/`local` = skip.
+# `mac`/`local` là cây làm việc của agent, chính `vis-remote` ghi log vào repo ⇒ kiểm ở đây sẽ chặn mọi việc.
 # Muốn bật: `--require-clean`. Muốn tắt: `--allow-dirty` (chỉ để chẩn đoán).
 default_dirty_policy() {
     case "$1" in
         ps|psvn) echo check ;;
         *) echo skip ;;
     esac
+}
+
+# ST-242: kiểm tự động nhận diện host bằng stub `uname` (không cần máy macOS thật).
+#   - stub trả Linux ⇒ `mac`/`macos` phải exit ≠ 0 với thông báo rõ (không âm thầm chạy Linux).
+#   - stub trả Darwin ⇒ `mac` chạy bình thường (hành vi cũ trên máy macOS giữ nguyên).
+#   - `local`/`ps`/`psvn` không bị ảnh hưởng bởi kiểm Darwin.
+self_test() {
+    local stub out rc ok=0 fail=0
+    stub="$TMPDIR_VR/stub"
+    mkdir -p "$stub" || die 3 "self-test: không tạo được thư mục stub"
+    cat >"$stub/uname" <<'STUB'
+#!/bin/sh
+case "${1:-}" in
+    -s) printf '%s\n' "${STUB_UNAME_SYS:-Linux}" ;;
+    *)  printf '%s\n' "${STUB_UNAME_SYS:-Linux} 7.0.0 x86_64" ;;
+esac
+STUB
+    chmod +x "$stub/uname" || die 3 "self-test: không chmod được stub uname"
+
+    out="$(PATH="$stub:$PATH" STUB_UNAME_SYS=Linux "$0" mac -- true 2>&1)"; rc=$?
+    if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'KHÔNG phải Darwin'; then
+        ok=$((ok + 1)); echo "ok 1 - stub uname=Linux => 'mac' tu choi ro (exit=$rc)"
+    else
+        fail=$((fail + 1)); printf 'not ok 1 - mac/Linux: rc=%s out=%s\n' "$rc" "$out"
+    fi
+
+    out="$(PATH="$stub:$PATH" STUB_UNAME_SYS=Linux "$0" macos -- true 2>&1)"; rc=$?
+    if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'KHÔNG phải Darwin'; then
+        ok=$((ok + 1)); echo "ok 2 - alias 'macos' cung tu choi (exit=$rc)"
+    else
+        fail=$((fail + 1)); printf 'not ok 2 - macos/Linux: rc=%s out=%s\n' "$rc" "$out"
+    fi
+
+    out="$(PATH="$stub:$PATH" STUB_UNAME_SYS=Darwin VIS_REMOTE_MAC_HOME="$TMPDIR_VR" \
+        "$0" mac --log "$TMPDIR_VR/selftest-darwin.log" -- true 2>&1)"; rc=$?
+    if [ "$rc" -eq 0 ]; then
+        ok=$((ok + 1)); echo "ok 3 - stub uname=Darwin => 'mac' chay binh thuong (exit=0)"
+    else
+        fail=$((fail + 1)); printf 'not ok 3 - mac/Darwin: rc=%s out=%s\n' "$rc" "$out"
+    fi
+
+    out="$(PATH="$stub:$PATH" STUB_UNAME_SYS=Linux VIS_REMOTE_LOCAL_HOME="$TMPDIR_VR" \
+        "$0" local --log "$TMPDIR_VR/selftest-local.log" -- true 2>&1)"; rc=$?
+    if [ "$rc" -eq 0 ]; then
+        ok=$((ok + 1)); echo "ok 4 - 'local' khong kiem Darwin, chay duoc (exit=0)"
+    else
+        fail=$((fail + 1)); printf 'not ok 4 - local/Linux: rc=%s out=%s\n' "$rc" "$out"
+    fi
+
+    if "$0" --hosts | grep -q '^local '; then
+        ok=$((ok + 1)); echo "ok 5 -- '--hosts' liet ke ca local/ps/psvn"
+    else
+        fail=$((fail + 1)); echo "not ok 5 - --hosts thieu 'local'"
+    fi
+
+    printf '# self-test ST-242: %s ok, %s fail\n' "$ok" "$fail"
+    [ "$fail" -eq 0 ] || exit 1
+    exit 0
 }
 
 usage() { awk 'NR > 1 { if ($0 ~ /^set -u$/) exit; sub(/^# ?/, ""); print }' "$0"; }
@@ -383,10 +486,15 @@ main() {
     case "$1" in
         -h|--help|help) usage; exit 0 ;;
         --hosts) cmd_hosts; exit 0 ;;
+        --self-test) self_test ;;
     esac
 
     local host_raw="$1"; shift
-    local host; host="$(normalize_host "$host_raw")" || die 2 "host '$host_raw' lạ (mac|ps|psvn)"
+    local host; host="$(normalize_host "$host_raw")" || die 2 "host '$host_raw' lạ (mac|local|ps|psvn)"
+
+    # VD-242 Q7 / ST-242: `mac|macos` là lệnh macOS — kiểm host thật TRƯỚC mọi dò/chạy,
+    # kể cả `--check`. Trên Linux phải thất bại rõ, không in log Linux dưới nhãn mac.
+    [ "$host" = mac ] && require_darwin
 
     local log="" tag="${VIS_REMOTE_TAG:-vis-remote}" check=0 allow_dirty=0 require_clean=0
     while [ $# -gt 0 ]; do
