@@ -2078,3 +2078,58 @@ Với `show(1e300pct)`, phải **chặn tại nơi tạo/chuyển đổi giá tr
 #### 6. Phạm vi ST-242 đã A0 chấp nhận
 
 Chặn alias macOS trên host không phải Darwin; log nhận diện môi trường thực; giữ lịch sử và tag; nợ blocked phần cứng **vẫn mở và vẫn được đếm**. **Đây không phải bằng chứng macOS đã được kiểm chứng.** Phép kiểm `uname` phải diễn ra **trên máy thực thi phép đo**, không suy từ OS máy điều phối. Kết quả `./vis-dev check` PASS được giữ **đúng tên và phạm vi** — không gọi là full gate hay nghiệm thu toàn đợt.
+
+
+### VD-244 · Bytecode/cache tương thích: tăng VERSION, phân biệt cache — A0, 2026-11-20 (thay giới hạn giữ nguyên VERSION)
+
+> **Người quyết định**: Agent 0. **Người ghi**: Agent 1. **Kích hoạt**: báo cáo ST-245 xác nhận toán hạng `>= GLOBAL_SLOT_BASE` có **ngữ nghĩa mới**, VM cũ hiểu sai, trong khi `VERSION` và khoá cache **không đổi**.
+> **A0 đánh giá theo báo cáo**, chưa trực tiếp kiểm code. **Quyết định này thay giới hạn “giữ nguyên `VERSION`/VBC1” trước đây trong phạm vi hẹp này.**
+
+#### 1. Phán quyết ST-245 (tách hai kết luận)
+
+| Nội dung | Phán quyết A0 |
+|---|---|
+| Đường lọt cụ thể `LoadLocal(0xFFFF)` trước ST-245 | **Chấp nhận đã chặn** theo báo cáo trên `fcc7f29` |
+| Tính đầy đủ của miền global suy từ lệnh ghi | **Cần làm rõ** (cách suy ra + kiểm tra) — ST-247 |
+| Tương thích bytecode/cache | **BLOCKER CÒN MỞ** — ST-246 |
+
+ST-245 **giữ DONE** nhưng **chỉ trong phạm vi bản vá verifier đã chứng minh**. **Không** ghi “toàn bộ vấn đề global-slot đã khép”. Không yêu cầu revert bản vá.
+
+#### 2. Blocker tương thích — quyết định bổ sung
+
+Câu “khoá cache không đổi nên verifier là hàng rào” **không đủ**: VM cũ chạy verifier cũ, có thể chấp nhận bytecode mới rồi diễn giải sai; verifier mới không có cơ hội bảo vệ đường chạy đó.
+
+A0 **duyệt**:
+1. **Tăng phiên bản định dạng bytecode** theo cơ chế `VERSION` hiện có (`vis-bytecode/src/format.rs`), chọn giá trị **chưa dùng** từ repository. **Không** đổi `MAGIC` hay bố cục chỉ để đánh dấu phiên bản nếu trường `VERSION` hiện có làm được việc đó.
+2. Loader phải **từ chối phiên bản không hỗ trợ trước thực thi**.
+3. **Khoá cache phải phân biệt phiên bản/ngữ nghĩa bytecode mới**; cache cũ bị bỏ và biên dịch lại từ source khi có thể.
+4. Bytecode cũ **không có source** phải bị **từ chối rõ** nếu không có đường tương thích đã được kiểm chứng.
+5. Cập nhật đúng phần **hợp đồng VBC1 liên quan**; **không** tái sinh rộng danh mục API, **không** đổi opcode ngoài nhu cầu.
+
+**Bằng chứng bắt buộc:**
+- Runtime mới từ chối artifact phiên bản cũ theo chính sách đã chọn.
+- Runtime cũ từ chối artifact phiên bản mới (không chạy sai).
+- Cache cũ không được tái sử dụng dưới ngữ nghĩa mới.
+- Source được biên dịch lại và chạy đúng trên **hai engine**.
+
+**Nếu runtime cũ không kiểm `VERSION`**: dừng và báo A0 ngay — chỉ tăng `VERSION` khi đó chưa giải quyết được vấn đề. (Hiện trạng đã đọc: `decode.rs::decode` và `verify::verify` đều so `VERSION`, và `cache.rs::khoa_multi` đã đưa `vis_bytecode::VERSION` vào khoá — phải kiểm chứng lại bằng test, không chỉ bằng đọc mã.)
+
+#### 3. Làm rõ “số global thực tế suy từ lệnh ghi”
+
+Giá trị suy từ lệnh ghi **chưa tự động là số global thực tế**. Phải trả lời bằng **test + mô tả ngắn**:
+- `StoreLocal` vào chỉ số global rất cao có tự làm **tăng miền được chấp nhận** không?
+- Có chặn chỉ số global **vượt miền mã hóa** (`u16`) không?
+- Slot có lỗ hổng: đọc slot **chưa khởi tạo** có được chấp nhận không?
+- Lệnh ghi nằm trong nhánh không chạy / hàm chưa được gọi ⇒ đọc-trước-ghi xử lý thế nào?
+- Miền verifier chấp nhận có **khớp miền runtime cấp phát và truy cập** không?
+
+Phân biệt rõ: **hợp lệ về chỉ số** (slot thuộc miền được cấp) vs **hợp lệ về khởi tạo** (slot có giá trị đúng khi đọc). Không bắt buộc đưa số global vào header ngay; nếu tiếp tục suy từ instruction, phải chứng minh cơ chế có **giới hạn**, nhất quán runtime, và **không biến đọc sai thành `Unit` thành công**. `catch_unwind` không panic là bằng chứng hữu ích nhưng **chưa đủ** để kết luận kết quả đúng hoặc cấp phát bị giới hạn.
+
+#### 4. Điều phối
+
+- **ST-239 tiếp tục**, không hủy; **ST-240 vẫn sau ST-239**, #172 không chen trước.
+- **ST-246** (blocker tương thích) có thể chuẩn bị song song; **chỉ tích hợp khi thống nhất quyền sở hữu** `format.rs`/verifier/loader/cache.
+- **ST-247** (miền global) làm rõ 5 câu trên; tách khỏi ST-246 để tránh cùng sửa `verify.rs`.
+- **Hoàn tất blocker tương thích trước fresh-clone/release verification và trước tag mới.**
+- Giữ **#185/#186** trong sổ. Chưa mở pha 2, VS3, API std mới.
+- Không tuyên bố toàn bộ vấn đề global-slot đã đóng trước khi các điều kiện trên đạt.

@@ -214,3 +214,27 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 - **Blocker QUYẾT ĐỊNH cho #172: ĐÃ GỠ.** ST-240 được phép chuẩn bị repro/test/inventory và sửa song song khi không xung đột quyền tệp với ST-238; không gián đoạn ST-238.
 - **Blocker TRIỂN KHAI vẫn mở**: chỉ đóng sau khi có bản sửa + bằng chứng (repro trước/sau, test hồi quy, kết quả trên đúng commit) theo lệnh A0. #172 giữ trạng thái **mở** trong `SO-NO.md`.
 - Không đổi biểu diễn/thang đo/quy tắc làm tròn `percent`; chặn tại nơi tạo/chuyển đổi giá trị (không chỉ sửa chuỗi `show`); trung gian lớn mà kết quả cuối hợp lệ thì không được từ chối máy móc.
+
+## 13. BLOCKER — Tương thích bytecode/cache sau ST-245 (VD-244), CHƯA đóng
+
+**Người ghi**: Agent 1 theo A0 2026-11-20 · **Trạng thái**: **mở** · **VD**: VD-244 · **Task**: ST-246.
+
+**Bối cảnh**: ST-245 chặn được repro `LoadLocal(0xFFFF)`, nhưng xác nhận toán hạng `>= GLOBAL_SLOT_BASE` có **ngữ nghĩa mới** mà `VERSION` và khoá cache vẫn giữ cũ. VM cũ chạy verifier cũ ⇒ có thể chấp nhận bytecode mới rồi diễn giải sai; verifier mới không bảo vệ được đường chạy đó.
+
+**Phải đạt trước khi đóng** (bằng chứng VD-244 §2):
+- Runtime mới từ chối artifact phiên bản cũ; runtime cũ từ chối artifact phiên bản mới.
+- Cache cũ không tái sử dụng dưới ngữ nghĩa mới; source được biên dịch lại, chạy đúng interp + VM.
+- Bytecode cũ không có source bị từ chối rõ (trừ khi có đường tương thích đã kiểm chứng).
+- Cập nhật đúng phần hợp đồng VBC1 liên quan; không tái sinh API, không đổi opcode ngoài nhu cầu.
+
+**Điều kiện chặn khác**: nếu runtime cũ hoàn toàn không kiểm `VERSION`, **dừng và báo A0** trước khi coi việc tăng `VERSION` là đủ.
+
+**Không được** gộp với ST-245 (đã DONE trong phạm vi hẹp) hay tuyên bố “global-slot đã khép” — xem §14.
+
+## 14. CẦN LÀM RÕ — Miền global suy từ lệnh ghi (VD-244 §3), CHƯA đóng
+
+**Task**: ST-247 · **VD**: VD-244. Không phải blocker phát hành nếu không phát hiện sai, nhưng **phải có câu trả lời bằng test + mô tả ngắn** trước khi kết luận global-slot ổn.
+
+Năm câu: (1) `StoreLocal` chỉ số rất cao có tự tăng miền chấp nhận không; (2) chặn chỉ số vượt miền mã hóa `u16` không; (3) slot thưa / chưa khởi tạo có bị đọc thành `Unit` thành công không; (4) ghi trong nhánh không chạy / hàm chưa gọi ⇒ đọc-trước-ghi xử lý sao; (5) miền verifier có khớp miền runtime cấp phát/truy cập không.
+
+Phân biệt **hợp lệ về chỉ số** và **hợp lệ về khởi tạo**. `catch_unwind` không panic **chưa đủ**. Nếu phát hiện verifier chấp nhận truy cập ngoài miền hoặc đọc sai thành công ⇒ nâng blocker ngay.
