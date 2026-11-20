@@ -335,6 +335,30 @@ enum Work<'a> {
         op: AssignOp,
         span: Span,
     },
+
+    // ---- VD-257 / stream A: `?`, kênh, cmd-block ----
+    /// `?` trên `Option`/`Result`: bóc `Some`/`Ok`, hoặc **trả sớm** `None`/`Err`
+    /// từ khung hiện tại (short-circuit — mọi work còn lại của khung bị bỏ).
+    ApplyTry {
+        span: Span,
+    },
+    /// `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?` (không trap, VD-178 R8).
+    ApplyTryIndex {
+        span: Span,
+    },
+    /// `chan[T](n)` — tạo kênh sau khi dung lượng đã eval (`$kenh` thật).
+    BuildChan {
+        span: Span,
+    },
+    /// Retry phương thức host (`send`/`recv`/…) sau `Abort::Pending`: đối số đã eval
+    /// được giữ lại trong work ⇒ resume **không eval lại** (không lặp side-effect).
+    RedispatchMethod {
+        name: String,
+        recv: Value,
+        args: Vec<Value>,
+        base_var: Option<u32>,
+        span: Span,
+    },
 }
 
 #[derive(Clone, Copy)]

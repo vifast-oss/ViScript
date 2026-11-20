@@ -137,29 +137,70 @@ pub fn run_frame_for_test<'m>(
     args: &[String],
     config: FrameConfig,
 ) -> FrameOutput {
+    run_frame_with_budget(m, text, args, config, None).0
+}
+
+/// **VD-257 / stream A** — cùng đường frame, nhưng bật hook ngân sách VD-256 có sẵn và
+/// trả kèm dãy sự kiện để integration test kiểm chứng **resume không charge lại** nhóm cũ.
+/// `None` ⇒ hook tắt (mặc định), hành vi y hệt [`run_frame_for_test`].
+#[doc(hidden)]
+pub fn run_frame_for_test_with_budget<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    config: FrameConfig,
+    fee: FeeTable,
+    limit: u64,
+) -> (FrameOutput, Vec<FeeEntry>) {
+    run_frame_with_budget(m, text, args, config, Some((fee, limit)))
+}
+
+fn run_frame_with_budget<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    config: FrameConfig,
+    budget: Option<(FeeTable, u64)>,
+) -> (FrameOutput, Vec<FeeEntry>) {
     let mut vm: Vm<'m> = Vm::new(m, text);
     if let Err(e) = vis_bytecode::verify(m) {
-        return FrameOutput {
-            stdout: String::new(),
-            diagnostics: vec![Diagnostic {
-                code: &vis_diag::RUNTIME_CODES[0],
-                message: format!("bytecode hỏng: {e}"),
-                span: Span::new(0, 0),
-                line: 1,
-                col: 1,
-            }],
-            value: None,
-            exit: 1,
-            log: Vec::new(),
-            snapshot: Default::default(),
-        };
+        return (
+            FrameOutput {
+                stdout: String::new(),
+                diagnostics: vec![Diagnostic {
+                    code: &vis_diag::RUNTIME_CODES[0],
+                    message: format!("bytecode hỏng: {e}"),
+                    span: Span::new(0, 0),
+                    line: 1,
+                    col: 1,
+                }],
+                value: None,
+                exit: 1,
+                log: Vec::new(),
+                snapshot: Default::default(),
+            },
+            Vec::new(),
+        );
+    }
+    if let Some((fee, limit)) = budget {
+        vm.budget_enable_for_test(fee, limit);
     }
     vm.init_globals();
     let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
     let main_th = match main_th(&vm, &argv) {
         Ok(t) => t,
-        Err(Abort::Trap(t)) => return frame_output(&vm, None, Some(t)),
-        Err(_) => return frame_output(&vm, None, None),
+        Err(Abort::Trap(t)) => {
+            return (
+                frame_output(&vm, None, Some(t)),
+                vm.budget_trace_for_test().to_vec(),
+            )
+        }
+        Err(_) => {
+            return (
+                frame_output(&vm, None, None),
+                vm.budget_trace_for_test().to_vec(),
+            )
+        }
     };
 
     let mut frames: HashMap<u32, Th<'m>> = HashMap::new();
@@ -332,7 +373,10 @@ pub fn run_frame_for_test<'m>(
     }
     // Lát 2: reactor về baseline sau khi handle test thả.
     vm.sched.borrow_mut().frame_reactor_shutdown();
-    frame_output(&vm, final_value, trap)
+    (
+        frame_output(&vm, final_value, trap),
+        vm.budget_trace_for_test().to_vec(),
+    )
 }
 
 fn frame_output(vm: &Vm<'_>, value: Option<Value>, trap: Option<Trap>) -> FrameOutput {
