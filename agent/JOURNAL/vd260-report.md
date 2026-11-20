@@ -260,3 +260,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **recv-opt-infer** (`9589f59` → `5b8e0b1`): `recv?.m()` dùng kiểu **suy ra** của `let`; `impl` trên instantiation (`impl Hop[int]`) được đăng ký; fallback tên method duy nhất; 11 ca interp=VM.
 - `VIS_DIFF_N=100000` seed 20261204 @ `3c842e0`: **0 lệch** (93.767 chạy, 154,1 s).
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `3c842e0`: **PASS**.
+- `./vis-dev nightly` @ `c99339e`: **PASS** — parser fuzz **8.740.029 ca / 198.309.965 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
