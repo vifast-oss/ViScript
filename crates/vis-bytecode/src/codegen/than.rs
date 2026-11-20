@@ -65,27 +65,152 @@ pub(super) fn collect_enum_fields(hir: &Hir) -> HashMap<(u32, String, usize), Ty
     m
 }
 
-/// **ST-248** — suy kiểu tĩnh của một biểu thức HIR (chỉ các dạng mang kiểu hiển thị); `None`
-/// khi không biết ⇒ không nâng (an toàn, không đoán ngữ nghĩa mới).
-fn infer_ty(e: &HExpr, sym: &HashMap<u32, Type>) -> Option<Type> {
+fn la_error(t: &Type) -> bool {
+    matches!(t, Type::Error)
+}
+
+/// **VD-260** — `sym` hàm thường/phương thức `impl` → kiểu trả về. `HExpr::Call` chỉ có `sym`
+/// của callee nên codegen cần bảng này để suy lớp Option của lời gọi (`f() -> int?`).
+pub(super) fn collect_fn_rets(hir: &Hir) -> HashMap<u32, Type> {
+    let mut m = HashMap::new();
+    for it in &hir.items {
+        match it {
+            HItem::Fn(f) => {
+                m.insert(f.sym, f.ret.clone());
+            }
+            HItem::Impl(i) => {
+                for meth in &i.methods {
+                    m.insert(meth.sym, meth.ret.clone());
+                }
+            }
+            _ => {}
+        }
+    }
+    m
+}
+
+/// **ST-248 / VD-260** — suy kiểu tĩnh của một biểu thức HIR; `None` khi không biết ⇒ không
+/// nâng (an toàn, không đoán ngữ nghĩa mới). `fn_rets` cho lời gọi hàm, `rec_fields` cho field.
+fn infer_ty(
+    e: &HExpr,
+    sym: &HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> Option<Type> {
     match e {
-        HExpr::Lit { ty, .. } | HExpr::Record { ty, .. } => Some(ty.clone()),
-        HExpr::Map { key, value, .. } => {
-            Some(Type::Map(Box::new(key.clone()), Box::new(value.clone())))
+        HExpr::Lit { ty, .. }
+        | HExpr::Record { ty, .. }
+        | HExpr::Opt { ty, .. }
+        | HExpr::Tuple { ty, .. }
+        | HExpr::EnumLit { ty, .. } => Some(ty.clone()),
+        // **VD-260**: list/map literal chưa có kiểu phần tử (lowering để `Error` khi phần tử
+        // là `Some(…)`/`None`/lời gọi) — suy từ **phần tử đầu tiên biết kiểu**. Nhờ vậy
+        // `var xs = [Some(1)]` có `xs: list[int?]` và `xs[0] = 5` nâng đúng một lớp.
+        HExpr::List { items, elem, .. } | HExpr::Set { items, elem, .. } => {
+            let el = if la_error(elem) {
+                items
+                    .iter()
+                    .find_map(|i| infer_ty(i, sym, fn_rets, rec_fields))
+                    .unwrap_or(Type::Error)
+            } else {
+                elem.clone()
+            };
+            Some(Type::List(Box::new(el)))
         }
-        HExpr::List { elem, .. } | HExpr::Set { elem, .. } => {
-            Some(Type::List(Box::new(elem.clone())))
+        HExpr::Map {
+            entries,
+            key,
+            value,
+            ..
+        } => {
+            let k = if la_error(key) {
+                entries
+                    .iter()
+                    .find_map(|(k, _)| infer_ty(k, sym, fn_rets, rec_fields))
+                    .unwrap_or(Type::Error)
+            } else {
+                key.clone()
+            };
+            let v = if la_error(value) {
+                entries
+                    .iter()
+                    .find_map(|(_, v)| infer_ty(v, sym, fn_rets, rec_fields))
+                    .unwrap_or(Type::Error)
+            } else {
+                value.clone()
+            };
+            Some(Type::Map(Box::new(k), Box::new(v)))
         }
-        HExpr::Var { sym: Some(id), .. } => sym.get(id).cloned(),
+        HExpr::Var {
+            name, sym: hsym, ..
+        } => {
+            if name == "None" {
+                Some(Type::Opt(Box::new(Type::Error)))
+            } else {
+                hsym.as_ref().and_then(|id| sym.get(id)).cloned()
+            }
+        }
+        HExpr::Field {
+            base,
+            name,
+            optional,
+            ..
+        } => {
+            let bt = infer_ty(base, sym, fn_rets, rec_fields)?;
+            let inner = match bt {
+                Type::Opt(t) => *t,
+                other => other,
+            };
+            let Type::Record(id) = inner else {
+                return None;
+            };
+            let ft = rec_fields.get(&(id.0, name.clone()))?.clone();
+            Some(if *optional {
+                Type::Opt(Box::new(ft))
+            } else {
+                ft
+            })
+        }
+        HExpr::Index { base, .. } => match infer_ty(base, sym, fn_rets, rec_fields)? {
+            Type::Map(_, v) => Some(*v),
+            Type::List(el) => Some(*el),
+            _ => None,
+        },
         HExpr::Call { callee, args, .. } => match (&**callee, args.first()) {
             (HExpr::Var { name, .. }, Some(a)) if name == "Some" => {
-                infer_ty(a, sym).map(|t| Type::Opt(Box::new(t)))
+                infer_ty(a, sym, fn_rets, rec_fields).map(|t| Type::Opt(Box::new(t)))
             }
             (HExpr::Var { name, .. }, _) if name == "None" => {
                 Some(Type::Opt(Box::new(Type::Error)))
             }
+            // Hàm **tệp** (kể cả trùng tên builtin) — ưu tiên chữ ký khai báo.
+            (HExpr::Var { sym: Some(id), .. }, _) if fn_rets.contains_key(id) => {
+                fn_rets.get(id).cloned()
+            }
+            // **VD-260**: free builtin `first(xs) -> T?` (mirror `cmdsig`/tyck).
+            (HExpr::Var { name, .. }, Some(a)) if name == "first" => {
+                infer_ty(a, sym, fn_rets, rec_fields).map(|t| match t {
+                    Type::List(e) => Type::Opt(e),
+                    _ => Type::Opt(Box::new(Type::Error)),
+                })
+            }
+            // **VD-260**: method dựng sẵn trả `Option` — `list.get/first/last/find`,
+            // `map.get` (mirror tyck `method_ret`). Nhánh `if` gọi các method này cũng nâng.
+            (HExpr::Field { base, name, .. }, _) => {
+                match (infer_ty(base, sym, fn_rets, rec_fields)?, name.as_str()) {
+                    (Type::List(e), "get" | "first" | "last" | "find") => Some(Type::Opt(e)),
+                    (Type::Map(_, v), "get") => Some(Type::Opt(v)),
+                    _ => None,
+                }
+            }
             _ => None,
         },
+        HExpr::With { base, .. } => infer_ty(base, sym, fn_rets, rec_fields),
+        // Nhánh `if`/`match`: chọn kiểu có **nhiều lớp Option nhất** (join theo kiểu đích).
+        HExpr::If {
+            then, elifs, else_, ..
+        } => infer_if(then, elifs, Some(else_), sym, fn_rets, rec_fields),
+        HExpr::Match { arms, .. } => infer_match(arms, sym, fn_rets, rec_fields),
         _ => None,
     }
 }
@@ -97,51 +222,129 @@ fn bind_pat(p: &HPat, ty: &Type, sym: &mut HashMap<u32, Type>) {
     }
 }
 
-/// **ST-248** — đi khối câu lệnh để gom kiểu biến không có annotation (vd `var u = U(…)` ⇒
-/// `u: Record(U)`). Chỉ đọc cấu trúc HIR, không gọi mã người dùng (VD-242 §3.4).
-fn walk_stmts(sts: &[HStmt], sym: &mut HashMap<u32, Type>) {
+/// **VD-260** — kiểu của giá trị cuối một khối (`None` = khối không cho giá trị).
+fn infer_than(
+    sts: &[HStmt],
+    sym: &HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> Option<Type> {
+    match sts.last()? {
+        HStmt::Expr(e) => infer_ty(e, sym, fn_rets, rec_fields),
+        HStmt::If {
+            then, elifs, else_, ..
+        } => infer_if(then, elifs, else_.as_deref(), sym, fn_rets, rec_fields),
+        HStmt::Match { arms, .. } => infer_match(arms, sym, fn_rets, rec_fields),
+        HStmt::Block { body, .. } | HStmt::Scope { body, .. } => {
+            infer_than(body, sym, fn_rets, rec_fields)
+        }
+        HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => None,
+        _ => None,
+    }
+}
+
+/// **VD-260** — chọn kiểu nhánh có **nhiều lớp Option nhất** (hoà ⇒ nhánh sau; chỉ độ sâu
+/// được dùng). Checker đã chấp nhận chương trình nên không cần hợp nhất đầy đủ ở đây.
+fn hop_nhanh(ds: Vec<Type>) -> Option<Type> {
+    ds.into_iter().max_by_key(opt_depth)
+}
+
+fn infer_if(
+    then: &[HStmt],
+    elifs: &[(HCond, Vec<HStmt>)],
+    else_: Option<&[HStmt]>,
+    sym: &HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> Option<Type> {
+    let else_ = else_?;
+    let mut ds = Vec::new();
+    for body in std::iter::once(then)
+        .chain(elifs.iter().map(|(_, b)| b.as_slice()))
+        .chain(std::iter::once(else_))
+    {
+        if let Some(t) = infer_than(body, sym, fn_rets, rec_fields) {
+            ds.push(t);
+        }
+    }
+    hop_nhanh(ds)
+}
+
+fn infer_match(
+    arms: &[vis_types::hir::HArm],
+    sym: &HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> Option<Type> {
+    let ds: Vec<Type> = arms
+        .iter()
+        .filter_map(|a| infer_than(&a.body, sym, fn_rets, rec_fields))
+        .collect();
+    hop_nhanh(ds)
+}
+
+/// **ST-248 / VD-260** — đi khối câu lệnh để gom kiểu biến không có annotation (vd
+/// `var u = U(…)`/`var u = pick(true)` ⇒ `u: Record(U)`). Chỉ đọc cấu trúc HIR, không gọi mã
+/// người dùng (VD-242 §3.4).
+fn walk_stmts(
+    sts: &[HStmt],
+    sym: &mut HashMap<u32, Type>,
+    fn_rets: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) {
     for s in sts {
         match s {
             HStmt::Var {
                 sym: id, ty, init, ..
             } => {
-                if ty.is_none() {
-                    if let Some(t) = infer_ty(init, sym) {
-                        sym.insert(*id, t);
-                    }
+                // **VD-260**: annotation `Error` (không có/không phân giải) vẫn cho phép suy
+                // từ initializer — trước đây chỉ `ty.is_none()` nên `var` thiếu kiểu bị bỏ.
+                let t = ty
+                    .clone()
+                    .filter(|t| !la_error(t))
+                    .or_else(|| infer_ty(init, sym, fn_rets, rec_fields));
+                if let Some(t) = t {
+                    sym.insert(*id, t);
                 }
             }
             HStmt::Let { pat, ty, init, .. } => {
                 // **VD-258**: annotation của `let` (`let u: U? = …`) trước đây không vào
                 // `sym_ty` (chỉ `var`/tham số có), nên `u?.f` không biết kiểu field để lift.
-                match ty {
-                    Some(t) => bind_pat(pat, t, sym),
-                    None => {
-                        if let Some(t) = infer_ty(init, sym) {
-                            bind_pat(pat, &t, sym);
-                        }
-                    }
+                let t = ty
+                    .clone()
+                    .filter(|t| !la_error(t))
+                    .or_else(|| infer_ty(init, sym, fn_rets, rec_fields));
+                if let Some(t) = t {
+                    bind_pat(pat, &t, sym);
                 }
             }
             HStmt::If {
                 then, elifs, else_, ..
             } => {
-                walk_stmts(then, sym);
+                walk_stmts(then, sym, fn_rets, rec_fields);
                 for (_, b) in elifs {
-                    walk_stmts(b, sym);
+                    walk_stmts(b, sym, fn_rets, rec_fields);
                 }
                 if let Some(b) = else_ {
-                    walk_stmts(b, sym);
+                    walk_stmts(b, sym, fn_rets, rec_fields);
                 }
             }
-            HStmt::For { body, .. }
-            | HStmt::While { body, .. }
+            HStmt::For {
+                pat, iter, body, ..
+            } => {
+                // **VD-260**: biến vòng lặp lấy kiểu phần tử của list (nếu biết).
+                if let Some(Type::List(el)) = infer_ty(iter, sym, fn_rets, rec_fields) {
+                    bind_pat(pat, &el, sym);
+                }
+                walk_stmts(body, sym, fn_rets, rec_fields);
+            }
+            HStmt::While { body, .. }
             | HStmt::Loop { body, .. }
             | HStmt::Scope { body, .. }
-            | HStmt::Block { body, .. } => walk_stmts(body, sym),
+            | HStmt::Block { body, .. } => walk_stmts(body, sym, fn_rets, rec_fields),
             HStmt::Match { arms, .. } => {
                 for a in arms {
-                    walk_stmts(&a.body, sym);
+                    walk_stmts(&a.body, sym, fn_rets, rec_fields);
                 }
             }
             _ => {}
@@ -149,16 +352,37 @@ fn walk_stmts(sts: &[HStmt], sym: &mut HashMap<u32, Type>) {
     }
 }
 
-/// **ST-248** — `sym` → kiểu đầy đủ = annotation + kiểu suy từ initializer (mirror interp).
+/// **ST-248 / VD-260** — `sym` → kiểu đầy đủ = annotation + kiểu suy từ initializer (mirror
+/// interp). `self` trong method `impl` lấy kiểu bản ghi của `impl` (kể cả khi không annot).
 pub(super) fn collect_sym_tys(hir: &Hir, symbols: &Symbols) -> HashMap<u32, Type> {
-    let mut m = crate::util::sym_annot_map(symbols);
-    walk_stmts(&hir.stmts, &mut m);
+    let mut m: HashMap<u32, Type> = crate::util::sym_annot_map(symbols)
+        .into_iter()
+        .filter(|(_, t)| !la_error(t))
+        .collect();
+    let fn_rets = collect_fn_rets(hir);
+    let rec_fields = collect_rec_fields(hir);
+    // `self` của `impl U` có kiểu `U` dù tham số không annot (lowering để `Error`).
+    for it in &hir.items {
+        if let HItem::Impl(i) = it {
+            if la_error(&i.ty) {
+                continue;
+            }
+            for meth in &i.methods {
+                for p in &meth.params {
+                    if p.is_self {
+                        m.insert(p.sym, i.ty.clone());
+                    }
+                }
+            }
+        }
+    }
+    walk_stmts(&hir.stmts, &mut m, &fn_rets, &rec_fields);
     for it in &hir.items {
         match it {
-            HItem::Fn(f) => walk_stmts(&f.body, &mut m),
+            HItem::Fn(f) => walk_stmts(&f.body, &mut m, &fn_rets, &rec_fields),
             HItem::Impl(i) => {
                 for meth in &i.methods {
-                    walk_stmts(&meth.body, &mut m);
+                    walk_stmts(&meth.body, &mut m, &fn_rets, &rec_fields);
                 }
             }
             _ => {}
@@ -289,6 +513,7 @@ fn do_bieu_thuc(
     e: &HExpr,
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
+    fn_rets: &HashMap<u32, Type>,
 ) -> usize {
     match e {
         HExpr::Opt { ty, .. } => opt_depth(ty),
@@ -316,17 +541,26 @@ fn do_bieu_thuc(
             HExpr::Var { name, .. } if name == "Some" => {
                 1 + args
                     .first()
-                    .map(|a| do_bieu_thuc(a, sym_ty, rec_fields))
+                    .map(|a| do_bieu_thuc(a, sym_ty, rec_fields, fn_rets))
                     .unwrap_or(0)
             }
             HExpr::Var { name, .. } if name == "None" => 1,
-            _ => 0,
+            // **VD-260**: lời gọi hàm tệp/phương thức — kiểu trả về quyết định lớp Option.
+            HExpr::Var { sym: Some(id), .. } => fn_rets.get(id).map(opt_depth).unwrap_or(0),
+            // Method dựng sẵn (`list.get/first/…`, `map.get`) — dùng chung `infer_ty`.
+            _ => infer_ty(e, sym_ty, fn_rets, rec_fields)
+                .map(|t| opt_depth(&t))
+                .unwrap_or(0),
         },
         HExpr::If {
             then, elifs, else_, ..
-        } => do_if(then, elifs, Some(else_), sym_ty, rec_fields).1,
-        HExpr::Match { arms, .. } => do_match(arms, sym_ty, rec_fields).1,
-        _ => 0,
+        } => do_if(then, elifs, Some(else_), sym_ty, rec_fields, fn_rets).1,
+        HExpr::Match { arms, .. } => do_match(arms, sym_ty, rec_fields, fn_rets).1,
+        // **VD-260**: các dạng còn lại (method `get`/`first`/…, index, `with`, tuple) — dùng
+        // chung suy kiểu đích để nhánh plain được nâng đúng lớp.
+        _ => infer_ty(e, sym_ty, fn_rets, rec_fields)
+            .map(|t| opt_depth(&t))
+            .unwrap_or(0),
     }
 }
 
@@ -335,14 +569,17 @@ fn do_than(
     stmts: &[HStmt],
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
+    fn_rets: &HashMap<u32, Type>,
 ) -> Option<usize> {
     match stmts.last()? {
-        HStmt::Expr(e) => Some(do_bieu_thuc(e, sym_ty, rec_fields)),
+        HStmt::Expr(e) => Some(do_bieu_thuc(e, sym_ty, rec_fields, fn_rets)),
         HStmt::If {
             then, elifs, else_, ..
-        } => Some(do_if(then, elifs, else_.as_deref(), sym_ty, rec_fields).1),
-        HStmt::Match { arms, .. } => Some(do_match(arms, sym_ty, rec_fields).1),
-        HStmt::Block { body, .. } | HStmt::Scope { body, .. } => do_than(body, sym_ty, rec_fields),
+        } => Some(do_if(then, elifs, else_.as_deref(), sym_ty, rec_fields, fn_rets).1),
+        HStmt::Match { arms, .. } => Some(do_match(arms, sym_ty, rec_fields, fn_rets).1),
+        HStmt::Block { body, .. } | HStmt::Scope { body, .. } => {
+            do_than(body, sym_ty, rec_fields, fn_rets)
+        }
         HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => None,
         _ => Some(0),
     }
@@ -355,6 +592,7 @@ pub(super) fn do_if(
     else_: Option<&[HStmt]>,
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
+    fn_rets: &HashMap<u32, Type>,
 ) -> (usize, usize) {
     let Some(else_) = else_ else {
         return (0, 0);
@@ -364,7 +602,7 @@ pub(super) fn do_if(
         .chain(elifs.iter().map(|(_, b)| b.as_slice()))
         .chain(std::iter::once(else_))
     {
-        if let Some(d) = do_than(body, sym_ty, rec_fields) {
+        if let Some(d) = do_than(body, sym_ty, rec_fields, fn_rets) {
             ds.push(d);
         }
     }
@@ -381,10 +619,11 @@ pub(super) fn do_match(
     arms: &[vis_types::hir::HArm],
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
+    fn_rets: &HashMap<u32, Type>,
 ) -> (usize, usize) {
     let ds: Vec<usize> = arms
         .iter()
-        .filter_map(|a| do_than(&a.body, sym_ty, rec_fields))
+        .filter_map(|a| do_than(&a.body, sym_ty, rec_fields, fn_rets))
         .collect();
     if ds.is_empty() {
         return (0, 0);

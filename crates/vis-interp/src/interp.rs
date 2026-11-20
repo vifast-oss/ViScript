@@ -25,6 +25,11 @@ pub(crate) struct Interp<'a> {
     main: Option<&'a HFn>,
     stmts: &'a [HStmt],
     pub(crate) env: Env,
+    /// **VD-260** — kiểu tĩnh suy từ annot + initializer (mirror codegen `collect_sym_tys`);
+    /// dùng cho đích gán `var`/field/index và nâng nhánh `if`/`match`.
+    pub(crate) sym_ty: HashMap<u32, vis_types::Type>,
+    /// **VD-260** — `sym` hàm/phương thức → kiểu trả về (suy lớp Option của lời gọi).
+    pub(crate) fn_rets: HashMap<u32, vis_types::Type>,
     pub(crate) mutable: HashSet<u32>,
     pub(crate) out: String,
     pub steps: usize,
@@ -87,6 +92,8 @@ impl<'a> Interp<'a> {
                 _ => {}
             }
         }
+        let fn_rets = core_types::goi::collect_fn_rets(&fns);
+        let sym_ty = core_types::goi::collect_sym_tys(hir, symbols, types, &fn_rets);
         Self {
             fns,
             consts,
@@ -94,6 +101,8 @@ impl<'a> Interp<'a> {
             main,
             stmts: &hir.stmts,
             env: Rc::new(std::cell::RefCell::new(HashMap::new())),
+            sym_ty,
+            fn_rets,
             mutable: HashSet::new(),
             out: String::new(),
             steps: 0,
@@ -395,11 +404,13 @@ impl<'a> Interp<'a> {
                 let rhs = match op {
                     AssignOp::Set => match target {
                         HExpr::Var { sym: Some(id), .. } => {
+                            // **VD-260**: kiểu đích là kiểu **suy ra** của biến (annot hoặc từ
+                            // initializer) — `var x = Some(5); x = 7` ⇒ `Some(7)` như VM.
                             let want = self
-                                .symbols
-                                .get(*id)
-                                .and_then(|s| s.ty.clone())
-                                .filter(|t| matches!(t, vis_types::Type::Opt(_)));
+                                .sym_ty
+                                .get(id)
+                                .filter(|t| matches!(t, vis_types::Type::Opt(_)))
+                                .cloned();
                             match want {
                                 Some(t) => opt_lift_maybe(rhs, opt_depth_ty(&t)),
                                 None => rhs,
@@ -444,8 +455,14 @@ impl<'a> Interp<'a> {
             } => {
                 // VD-47: `if` **có** `else` cho giá trị của nhánh đã chạy; **không** `else` ⇒ `()`.
                 let has_else = matches!(else_, Some(b) if !b.is_empty());
-                let (min, max) =
-                    core_types::goi::do_if(then, elifs, else_.as_deref(), self.symbols, self.types);
+                let (min, max) = core_types::goi::do_if(
+                    then,
+                    elifs,
+                    else_.as_deref(),
+                    &self.sym_ty,
+                    self.types,
+                    &self.fn_rets,
+                );
                 let mut ctrl = Ctrl::Normal;
                 let mut ran = false;
                 if self.eval_cond(cond)? {
@@ -564,7 +581,8 @@ impl<'a> Interp<'a> {
                 Ok(Ctrl::Continue)
             }
             HStmt::Match { subject, arms, .. } => {
-                let (min, max) = core_types::goi::do_match(arms, self.symbols, self.types);
+                let (min, max) =
+                    core_types::goi::do_match(arms, &self.sym_ty, self.types, &self.fn_rets);
                 let subj = self.eval(subject)?;
                 let Some((arm, binds)) = self.pick_arm(arms, &subj)? else {
                     return Err(Abort::Trap(Trap::new(
@@ -1239,8 +1257,8 @@ impl<'a> Interp<'a> {
     fn expr_ty(&self, e: &HExpr, root: &Value) -> Option<vis_types::Type> {
         match e {
             HExpr::Var { sym: Some(id), .. } => {
-                if let Some(t) = self.symbols.get(*id).and_then(|s| s.ty.clone()) {
-                    return Some(t);
+                if let Some(t) = self.sym_ty.get(id) {
+                    return Some(t.clone());
                 }
                 match root {
                     Value::Record(ten, _) => {
