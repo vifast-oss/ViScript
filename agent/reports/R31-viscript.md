@@ -1,5 +1,9 @@
 # R31 — ViScript, vòng 31 (baseline bàn giao VD-242, 2026-11-20)
 
+> **Lưu ý (2026-11-21)**: đây là báo cáo **baseline** tại `31b51d2`; đợt tối ưu liên tục VD-258..VD-270
+> đang chạy, nhật ký live ở `agent/JOURNAL/vd260-report.md`; **R32 chưa có**. Trạng thái mới nhất:
+> `agent/ROADMAP.md` khối “Trạng thái sau VD-270” và `agent/STATE.md`.
+
 ## 1. Phạm vi
 
 R31 là báo cáo **baseline** cho đợt “ổn định sau pha 1” theo VD-242. Không mở pha 2 hay VS3. Không tuyên bố macOS; Windows giữ Tier 2.
