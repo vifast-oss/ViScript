@@ -144,3 +144,4 @@
 - **optmethod** (`db9e5d4` → `38dec30`): `recv?.m()` — base đánh giá một lần, `None` không đánh giá đối số; `U→U?`, `U?→U?` không bọc hai lớp; `()` giữ `()`; chain `a?.m()?.f`.
 - **fsmeta** (`60cac03` → `3d30be1`): `fs.size/is_file/is_dir` (`symlink_metadata`, symlink ⇒ false/false + size Err; missing predicate Ok(false)); API +3.
 - **fmt-json** (`c306b25` → `c121b6c`): `vis fmt --check --json` tệp/dir/stdin; `ok/files/path/formatted/error`; exit 0/1/2.
+- `VIS_DIFF_N=100000` (seed 20261124, @ `484d570`): **0 lệch** (93.770 chạy, 162,7 s).
