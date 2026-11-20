@@ -65,6 +65,10 @@ pub enum Ty {
     /// `strip_suffix` (phần còn lại khi khớp; không khớp ⇒ `None`). `Ty` không có biến thể
     /// `Opt` tổng quát, nên giữ biến riêng theo đúng mẫu `OptInt`.
     OptStr,
+    /// **VD-270 (parse-float)** — `float?` = `Option[float]`: kiểu trả của `std.str.parse_float`
+    /// (chuỗi sai cú pháp/không hữu hạn/tràn ⇒ `None`). Cùng lý do `OptInt`/`OptStr`: `Ty`
+    /// không có biến thể `Opt` tổng quát, nên giữ biến riêng theo đúng mẫu.
+    OptFloat,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -112,6 +116,8 @@ impl Ty {
             ),
             // **VD-270 (strstrip)** — `str?` là `Option[str]` thật.
             Ty::OptStr => Type::Opt(Box::new(Type::Str)),
+            // **VD-270 (parse-float)** — `float?` là `Option[float]` thật.
+            Ty::OptFloat => Type::Opt(Box::new(Type::Float)),
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -168,6 +174,8 @@ impl Ty {
             Ty::ResultListIntErr => "Result[list[int], Error]",
             // **VD-270 (strstrip)**
             Ty::OptStr => "str?",
+            // **VD-270 (parse-float)**
+            Ty::OptFloat => "float?",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -215,7 +223,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 115] = [
+pub const FUNCS: [StdFn; 116] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -380,6 +388,14 @@ pub const FUNCS: [StdFn; 115] = [
         name: "str.parse_int",
         params: &[Ty::Str],
         ret: Ty::OptInt,
+    },
+    // **VD-270 (parse-float)**: parse theo cú pháp thập phân Rust (`f64::from_str`: dấu,
+    // `.5`/`5.`, mũ `e`/`E`) rồi **từ chối non-finite** (`inf`/`NaN`/tràn) ⇒ `None`;
+    // trả `float?` để sugar `s.parse_float()` dùng `Ty::OptFloat`.
+    StdFn {
+        name: "str.parse_float",
+        params: &[Ty::Str],
+        ret: Ty::OptFloat,
     },
     StdFn {
         name: "str.byte_len",

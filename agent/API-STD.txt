@@ -105,6 +105,7 @@ str.lines	(str) -> list[str]
 str.lower	(str) -> str
 str.pad_left	(str, int, str) -> str
 str.pad_right	(str, int, str) -> str
+str.parse_float	(str) -> float?
 str.parse_int	(str) -> int?
 str.repeat	(str, int) -> str
 str.replace	(str, str, str) -> str
