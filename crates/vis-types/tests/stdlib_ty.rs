@@ -135,7 +135,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 parse-float, 2026-11-21)**: +**1** hàm `std.str.parse_float`
     // (`(str) -> float?`; cú pháp thập phân Rust, non-finite/tràn ⇒ `None`) ⇒ **116** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 116, "bảng chữ ký phải đủ 116 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 list-sum-product, 2026-11-21)**: +**2** hàm `std.list.sum` /
+    // `std.list.product` (`(list[int]) -> int`; gộp checked, rỗng ⇒ `0`/`1`, tràn ⇒ `VS0507`)
+    // ⇒ **118** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 118, "bảng chữ ký phải đủ 118 hàm");
 }
 
 #[test]
@@ -345,6 +348,21 @@ fn list_contains_tra_bool_va_sugar() {
     assert_eq!(f.ret.sang_type(), Type::Bool, "hạ kiểu trả");
     assert_eq!(f.ret.ten(), "bool", "tên hiển thị");
     assert_eq!(f.so_doi(), 2, "số đối số");
+}
+
+#[test]
+fn list_sum_product_chi_list_int_tra_int() {
+    // **VD-270 (list-sum-product)**: cả hai **chỉ** `list[int]` (không `list[T]`), trả `int`;
+    // sugar `xs.product()` đi R5c; `xs.sum()` vẫn là phương thức lõi (cùng ngữ nghĩa cho
+    // `list[int]`, còn `list[float]` do lõi xử lý).
+    for ten in ["list.sum", "list.product"] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
+        assert_eq!(f.params, &[Ty::List(&Ty::Int)], "`{ten}`: tham số");
+        assert_eq!(f.ret, Ty::Int, "`{ten}`: kiểu trả");
+        assert_eq!(f.ret.sang_type(), Type::Int, "`{ten}`: phải hạ thành `int`");
+        assert_eq!(f.ret.ten(), "int", "`{ten}`: tên hiển thị");
+        assert_eq!(f.so_doi(), 1, "`{ten}`: số đối số");
+    }
 }
 
 #[test]
