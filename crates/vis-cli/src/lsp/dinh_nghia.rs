@@ -306,3 +306,38 @@ pub fn tra_loi_definition(
         .collect();
     phan_hoi(id, Value::List(locs))
 }
+
+/// **ST-282**: `textDocument/documentHighlight` — mọi token định danh trùng từ tại con trỏ trong
+/// tệp (cùng lexer với rename nên bỏ chuỗi/chú thích), tối đa 200, `kind: 1` (Text).
+pub fn tra_loi_highlights(kq: &KetQua, byte: usize, mode: vis_syntax::Mode, id: &Value) -> Vec<u8> {
+    let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
+    if start == end {
+        return phan_hoi(id, Value::List(Vec::new()));
+    }
+    let ten = &kq.text[start..end];
+    let lexed = vis_syntax::lex(&kq.text, mode);
+    let pos = |line: u32, character: u32| {
+        m(vec![
+            ("line", Value::Int(line as i64)),
+            ("character", Value::Int(character as i64)),
+        ])
+    };
+    let mut locs: Vec<Value> = Vec::new();
+    for t in &lexed.tokens {
+        if t.kind != vis_syntax::Kind::Ident || t.text != ten {
+            continue;
+        }
+        let ((l0, c0), (l1, c1)) = khoang(&kq.text, t.span);
+        locs.push(m(vec![
+            (
+                "range",
+                m(vec![("start", pos(l0, c0)), ("end", pos(l1, c1))]),
+            ),
+            ("kind", Value::Int(1)),
+        ]));
+        if locs.len() >= 200 {
+            break;
+        }
+    }
+    phan_hoi(id, Value::List(locs))
+}

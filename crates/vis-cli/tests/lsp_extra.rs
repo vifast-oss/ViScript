@@ -261,3 +261,33 @@ fn lsp_prepare_rename_tu_khoa_null() {
         r#"{"jsonrpc":"2.0","id":2,"result":null}"#
     );
 }
+
+// ===== ST-282: documentHighlight =====
+
+fn highlight(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/documentHighlight", uri, line, ch)
+}
+
+/// Ca — `add` xuất hiện 2 lần ⇒ 2 highlight kind 1.
+#[test]
+fn lsp_document_highlight_dem_hai() {
+    let text = "fn add(a: int) -> int:\n    a\n\nfn main():\n    print(add(1))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&highlight(2, URI, 4, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.starts_with(r#"{"jsonrpc":"2.0","id":2,"result":["#),
+        "frame: {body}"
+    );
+    assert_eq!(
+        body.matches(r#""kind":1"#).count(),
+        2,
+        "phải có 2 highlight: {body}"
+    );
+}

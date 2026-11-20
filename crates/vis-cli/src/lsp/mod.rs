@@ -306,6 +306,33 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-282**: highlight mọi lần xuất hiện định danh trong tệp.
+            "textDocument/documentHighlight" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(dinh_nghia::tra_loi_highlights(
+                                    &kq,
+                                    byte,
+                                    mode_cua(&uri),
+                                    &id
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-271**: tìm mọi tham chiếu của từ tại con trỏ trong tệp.
             "textDocument/references" => {
                 if let Some(id) = id {
@@ -478,6 +505,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
+        jsonrpc::kv("documentHighlightProvider", Value::Bool(true)),
         jsonrpc::kv(
             "renameProvider",
             jsonrpc::m(vec![("prepareProvider", Value::Bool(true))]),
