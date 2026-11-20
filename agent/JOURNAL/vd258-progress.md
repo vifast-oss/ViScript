@@ -23,7 +23,9 @@
 
 - **Tooling `5aa1431` → merge `e1a2f2f`**: `bin/vis-release` chỉ đóng gói `vis` (kiểm 15 ca), `vis-dev core-test`
   target riêng, POSIX thật cho `/bin/sh`/`printf`, release script. Gate vẫn **1633**; core-test PASS.
-- Còn chờ: semantics (or-pattern checker/break/main-int), frame leftovers, SQLite hardening.
+- **SQLite hardening `3f7833f` → merge `e4990ab`**: deny `dbstat`/raw-page, `query` read-only, token OS RNG,
+  read cell cap 1 MiB (write 17 MiB), thêm 47 unit + 17 e2e SQLite. Gate main **1641**.
+- Còn chờ: semantics (or-pattern checker/break/main-int), frame leftovers.
 - Sau wave 2: merge, chạy gate/core-test/release test, cập nhật QUEUE/report cuối.
 
 ## Quy tắc tích hợp đã áp dụng
