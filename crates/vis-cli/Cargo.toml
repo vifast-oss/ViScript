@@ -15,6 +15,22 @@ path = "src/main.rs"
 name = "test-child"
 path = "src/bin/test_child.rs"
 
+# **VD-242 Q6 / ST-156**: SQLite là **feature tùy chọn**. Cấu hình mặc định (bản host đang kiểm
+# chứng) vẫn bật `sqlite` để giữ nguyên hành vi lịch sử; cấu hình core dùng
+# `--no-default-features` (xem `agent/TARGET-MATRIX-2026-11-20.md`). Không đụng default feature
+# không liên quan (crate này trước đây không có `[features]` nào khác).
+[features]
+default = ["sqlite"]
+sqlite = ["dep:rusqlite"]
+
+# E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
+# feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
+# nguyên chế độ tự phát hiện).
+[[test]]
+name = "sqlite"
+path = "tests/sqlite.rs"
+required-features = ["sqlite"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
@@ -28,7 +44,7 @@ vis-vm = { path = "../vis-vm" }
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).
 # `hooks` (bắt buộc cho VD-241 §7): `Connection::authorizer` — ranh giới thực thi chính sách SQL
 # (cấm ATTACH/DETACH/VACUUM/load_extension/ghi PRAGMA user_version). Feature rỗng, không dep thêm.
-rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks"] }
+rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks"], optional = true }
 
 # **ST-132 (VD-120)**: chỉ trên Linux, chỉ để cưỡng chế kernel (Landlock). Nền khác không kéo
 # crate này vào (nó `#![cfg(target_os = "linux")]`), nên ma trận `cargo check --target` vẫn 18/18.

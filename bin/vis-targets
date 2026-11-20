@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # ST-74 (VD-104) — ma trận `cargo check --target` thật cho các crate ViScript.
+# VD-242 Q6 / ST-156 — in **hai bảng có tên**, mỗi bảng một cấu hình, không trộn nhãn:
+#   * `core (vis-cli --no-default-features)` — kỳ vọng 18/18 xanh (không kéo rusqlite).
+#   * `sqlite (vis-cli default, cấu hình cũ)` — giữ kết quả lịch sử **16/18**; hai ô
+#     `vis-cli` × msvc/wasm32 đỏ vì C toolchain ⇒ in `EXPECTED_RED` + lý do (nợ #156).
 #
 # Mức bằng chứng: **chỉ CHECK biên dịch chéo**; KHÔNG chạy trên Windows/wasm.
-# Kỳ vọng xanh (theo đo ST-74): 8 crate × 2 target đều xanh ở mức CHECK — kể cả `vis-cli`
-# (`std::process`/`std::net`/`std::fs` vẫn **biên dịch** cho wasm32 nhưng KHÔNG chạy được:
-# wasm32-unknown-unknown không có tiến trình/socket/FS; đây không phải bằng chứng hỗ trợ runtime).
-# Nếu một ô kỳ vọng xanh mà đỏ ⇒ exit 1 (ô đỏ có chủ đích phải được ghi trong EXPECTED_RED).
+# 8 crate × 2 target + 2 crate phụ = 18 ô mỗi cấu hình. `std::process`/`std::net`/`std::fs`
+# vẫn **biên dịch** cho wasm32 nhưng KHÔNG chạy được (wasm32-unknown-unknown không có
+# tiến trình/socket/FS); CHECK xanh không phải bằng chứng hỗ trợ runtime.
+# Exit 0 chỉ khi **mỗi** cấu hình đạt kỳ vọng riêng; ô đỏ đúng nợ cũ phải là EXPECTED_RED
+# có lý do, không được im lặng coi là xanh hay đổi cấu hình rồi đổi nhãn.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MANIFEST="$ROOT/Cargo.toml"
@@ -16,34 +21,74 @@ CRATES=(vis-diag vis-syntax vis-types vis-bytecode vis-fmt vis-interp vis-vm vis
 EXTRA=("vis-host-wasm wasm32-unknown-unknown" "vis-host-linux x86_64-unknown-linux-gnu")
 LOG="${TMPDIR:-/tmp}/vis-targets.$$.log"
 trap 'rm -f "$LOG"' EXIT
-hong=0
-printf '%-16s %-28s %s\n' crate target result
-# vis-cli × wasm32: CHECK xanh nhưng KHÔNG chạy được (không có runner/std OS) — giữ kỳ vọng xanh
-# cho đúng mức CHECK, ghi rõ trong tài liệu HOST-BAO-DAM.md.
-for t in "${TARGETS[@]}"; do
-  for c in "${CRATES[@]}"; do
-    if "$CARGO" check --manifest-path "$MANIFEST" -p "$c" --target "$t" >"$LOG" 2>&1; then
+
+CORE_LABEL="core (vis-cli --no-default-features)"
+SQLITE_LABEL="sqlite (vis-cli default, cấu hình cũ)"
+LY_DO="#156: libsqlite3-sys (rusqlite bundled) cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md"
+
+# Ô đỏ đã biết ở cấu hình sqlite (không phải ở core).
+expected_red() {
+  local c="$1" t="$2"
+  [ "$c" = "vis-cli" ] || return 1
+  [ "$t" = "x86_64-pc-windows-msvc" ] || [ "$t" = "wasm32-unknown-unknown" ]
+}
+
+# check_one <manifest> [cargo flags...] — ghi log vào $LOG, trả mã thoát của cargo.
+check_one() {
+  local manifest="$1"; shift
+  "$CARGO" check --manifest-path "$manifest" "$@" >"$LOG" 2>&1
+}
+
+# run_matrix <tên bảng> [cargo flags...] — trả số ô kỳ vọng xanh mà bị đỏ.
+run_matrix() {
+  local label="$1"; shift
+  local -a flags=("$@")
+  local pass=0 expected=0 bad=0 c t e
+  printf '\n=== %s ===\n' "$label"
+  printf '%-16s %-28s %s\n' crate target result
+  for t in "${TARGETS[@]}"; do
+    for c in "${CRATES[@]}"; do
+      if check_one "$MANIFEST" "${flags[@]}" -p "$c" --target "$t"; then
+        printf '%-16s %-28s %s\n' "$c" "$t" PASS
+        if [ "$label" = "$SQLITE_LABEL" ] && expected_red "$c" "$t"; then
+          printf '  lưu ý: ô từng EXPECTED_RED (#156) nay xanh — cần rà soát lại nợ #156\n'
+        fi
+        pass=$((pass + 1))
+      elif [ "$label" = "$SQLITE_LABEL" ] && expected_red "$c" "$t"; then
+        printf '%-16s %-28s %s\n' "$c" "$t" EXPECTED_RED
+        grep -m1 -E '^error' "$LOG" | sed 's/^/  /'
+        printf '  ly do: %s\n' "$LY_DO"
+        expected=$((expected + 1))
+      else
+        printf '%-16s %-28s %s\n' "$c" "$t" FAIL
+        grep -m2 -E '^error' "$LOG" | sed 's/^/  /'
+        bad=$((bad + 1))
+      fi
+    done
+  done
+  for e in "${EXTRA[@]}"; do
+    set -- $e
+    c=$1; t=$2
+    if check_one "$ROOT/$c/Cargo.toml" "${flags[@]}" --target "$t"; then
       printf '%-16s %-28s %s\n' "$c" "$t" PASS
+      pass=$((pass + 1))
     else
       printf '%-16s %-28s %s\n' "$c" "$t" FAIL
       grep -m2 -E '^error' "$LOG" | sed 's/^/  /'
-      hong=$((hong + 1))
+      bad=$((bad + 1))
     fi
   done
-done
-for e in "${EXTRA[@]}"; do
-  set -- $e
-  c=$1; t=$2
-  if "$CARGO" check --manifest-path "$ROOT/$c/Cargo.toml" --target "$t" >"$LOG" 2>&1; then
-    printf '%-16s %-28s %s\n' "$c" "$t" PASS
-  else
-    printf '%-16s %-28s %s\n' "$c" "$t" FAIL
-    grep -m2 -E '^error' "$LOG" | sed 's/^/  /'
-    hong=$((hong + 1))
-  fi
-done
-if [ "$hong" -ne 0 ]; then
-  echo "vis-targets: $hong ô kỳ vọng xanh bị đỏ" >&2
+  printf '%s: PASS=%d EXPECTED_RED=%d FAIL=%d\n' "$label" "$pass" "$expected" "$bad"
+  return "$bad"
+}
+
+run_matrix "$CORE_LABEL" --no-default-features
+core_bad=$?
+run_matrix "$SQLITE_LABEL"
+sqlite_bad=$?
+
+if [ "$core_bad" -ne 0 ] || [ "$sqlite_bad" -ne 0 ]; then
+  echo "vis-targets: core FAIL=$core_bad, sqlite FAIL=$sqlite_bad (ô kỳ vọng xanh bị đỏ)" >&2
   exit 1
 fi
-echo "vis-targets: tất cả ô kỳ vọng xanh (chỉ CHECK, chưa chạy trên Windows/wasm)"
+echo "vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)"
