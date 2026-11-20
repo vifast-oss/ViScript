@@ -30,7 +30,7 @@ use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list | vis doctor [--json]"
     );
     eprintln!(
         "  vis test --timeout <ms>: áp mọi ca — `test fn` và fixture `.out/.err`; quá hạn ⇒ kill + `not ok` (`quá hạn <ms> ms`), mặc định không giới hạn"
@@ -962,6 +962,8 @@ fn main() -> ExitCode {
         }
         Some("run") => run_run(&args[1..]),
         Some("check") => cli::check::run_check(&args[1..]),
+        // VD-270: thông tin chẩn đoán tất định (không đọc môi trường/tệp/mạng).
+        Some("doctor") => cli::doctor::run_doctor(&args[1..]),
         // ST-30: chạy bộ ca `test/sem/**` in TAP.
         Some("test") => vistest::run(&args[1..]),
         // ST-67 (VD-102): server LSP tối thiểu trên stdio (khung + JSON-RPC).
