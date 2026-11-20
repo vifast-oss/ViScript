@@ -28,9 +28,11 @@ use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent
 use crate::value::{Env, Value};
 
 mod expr;
+mod params;
 mod proc;
 
 use expr::{call_value, dispatch, eval_work, exec_work};
+use params::{env_for_params, opt_depth_ty};
 use proc::process_work;
 
 /// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
@@ -452,16 +454,7 @@ pub struct IFrame<'a> {
 }
 
 impl<'a> IFrame<'a> {
-    fn new(
-        body: &'a [HStmt],
-        params: &[(u32, Value)],
-        globals: &Env,
-        mutable: Rc<RefCell<HashSet<u32>>>,
-    ) -> Self {
-        let env = Rc::new(RefCell::new(globals.borrow().clone()));
-        for (sym, v) in params {
-            env.borrow_mut().insert(*sym, v.clone());
-        }
+    fn new(body: &'a [HStmt], env: Env, globals: &Env, mutable: Rc<RefCell<HashSet<u32>>>) -> Self {
         Self {
             calls: vec![CallFrame {
                 env,
@@ -536,17 +529,6 @@ fn append_work<'a>(cf: &mut CallFrame<'a>, mut works: Vec<Work<'a>>) {
     while let Some(w) = works.pop() {
         cf.work.push(w);
     }
-}
-
-/// Số lớp `Opt` của một kiểu (dùng ở biên `let`/`var`/tham số/trả về).
-fn opt_depth_ty(t: &vis_types::Type) -> usize {
-    let mut d = 0;
-    let mut cur = t;
-    while let vis_types::Type::Opt(inner) = cur {
-        d += 1;
-        cur = inner;
-    }
-    d
 }
 
 /// Khớp pattern và ghi binding vào `env` (mirror `pat.rs` nhưng dùng env của khung).
@@ -813,28 +795,36 @@ pub fn run_frame_for_test<'a>(
         _ => None,
     });
     let body: &'a [HStmt] = main_fn.map(|f| f.body.as_slice()).unwrap_or(&hir.stmts);
-    let argv: Vec<(u32, Value)> = match main_fn {
-        Some(f) => f
-            .params
-            .iter()
-            .enumerate()
-            .map(|(i, p)| {
-                (
-                    p.sym,
-                    if i == 0 {
-                        Value::List(args.iter().map(|s| Value::Str(s.clone())).collect())
-                    } else {
-                        Value::Unit
-                    },
-                )
-            })
-            .collect(),
-        None => vec![(
-            u32::MAX,
-            Value::List(args.iter().map(|s| Value::Str(s.clone())).collect()),
-        )],
+    let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
+    // **VD-259**: `main` dùng **cùng** helper tham số/default với `dispatch`. Bản cũ chỉ đưa
+    // argv cho tham số 1 và `Unit` cho mọi tham số còn lại ⇒ `b: int = 7` bị `Unit`.
+    let main_env = match main_fn {
+        Some(f) => {
+            let pos = if f.params.is_empty() {
+                Vec::new()
+            } else {
+                vec![argv]
+            };
+            match env_for_params(
+                &mut it,
+                &f.params,
+                &pos,
+                &[],
+                &globals,
+                &mutable,
+                &f.name,
+                f.span,
+            ) {
+                Ok(env) => env,
+                Err(Abort::Trap(t)) => return frame_output_early(&mut it, text, None, Some(t)),
+                Err(_) => return frame_output_early(&mut it, text, None, None),
+            }
+        }
+        // **VD-259**: không có `main` ⇒ chạy câu lệnh cấp tệp như runtime mặc định, KHÔNG
+        // gắn argv vào một ô `u32::MAX` (fallback cũ khiến mọi tên lạ nhận danh sách args).
+        None => Rc::new(RefCell::new(globals.borrow().clone())),
     };
-    frames.insert(0, IFrame::new(body, &argv, &globals, mutable.clone()));
+    frames.insert(0, IFrame::new(body, main_env, &globals, mutable.clone()));
 
     it.sched
         .borrow_mut()
@@ -880,6 +870,9 @@ pub fn run_frame_for_test<'a>(
         let outcome = step_frame(&mut it, current, &mut frames);
         match outcome {
             Ok(v) => {
+                // **VD-259**: frame đã terminal ⇒ bỏ khỏi map ngay (không giữ `IFrame`/env
+                // của nó tới cuối chương trình).
+                frames.remove(&current);
                 if current == 0 {
                     final_value = v;
                     // Không `break`: main xong ⇒ final join các task không ai await.
@@ -895,10 +888,12 @@ pub fn run_frame_for_test<'a>(
             }
             Err(Abort::Trap(t)) => {
                 if current == 0 {
+                    frames.remove(&current);
                     trap = Some(t);
                     break;
                 }
                 let id = current;
+                frames.remove(&id);
                 let wrapped = rt::wrap_task_error_for_test(
                     &it.sched
                         .borrow()
@@ -923,6 +918,7 @@ pub fn run_frame_for_test<'a>(
                 it.sched.borrow_mut().frame_task_done(id, Err(wrapped));
             }
             Err(Abort::Ret(v)) => {
+                frames.remove(&current);
                 if current == 0 {
                     // `return`/`?` ở `main` vẫn phải final-join các task còn lại (không bỏ).
                     final_value = Some(v);
@@ -1021,15 +1017,33 @@ pub fn run_frame_for_test<'a>(
                 match frames.entry(n) {
                     std::collections::hash_map::Entry::Occupied(_) => {}
                     std::collections::hash_map::Entry::Vacant(e) => {
-                        match build_task_frame(&it, n, &globals) {
-                            Some((body, params, globals)) => {
-                                e.insert(IFrame::new(body, &params, &globals, mutable.clone()));
+                        match build_task_frame(&mut it, n, &globals, &mutable) {
+                            Ok(Some((body, env))) => {
+                                e.insert(IFrame::new(body, env, &globals, mutable.clone()));
                             }
-                            None => {
+                            Ok(None) => {
                                 // Nguồn giả / task ngoài — không có thân để dựng frame. Bỏ qua,
                                 // GIỮ NGUYÊN `current` (không gán rồi `continue` như cũ, vốn
                                 // gây panic `step_frame` ở vòng sau vì frame không tồn tại).
                                 continue;
+                            }
+                            Err(Abort::Trap(t)) => {
+                                trap = Some(t);
+                                break;
+                            }
+                            Err(e) => {
+                                // Default tham số cần suspend (hoặc `return`) — chưa có
+                                // continuation cho bước dựng frame; báo rõ thay vì chạy sai.
+                                let span = match &e {
+                                    Abort::Pending(p) => p.span,
+                                    _ => Span::new(0, 0),
+                                };
+                                trap = Some(Trap::new(
+                                    RT,
+                                    "frame test: không dựng được tham số/default của task",
+                                    span,
+                                ));
+                                break;
                             }
                         }
                     }
@@ -1045,6 +1059,27 @@ pub fn run_frame_for_test<'a>(
             trap = Some(Trap::new(RT, e, Span::new(0, 0)));
         }
     }
+    // **VD-259**: frame của task đã `Xong`/`Huy` không còn là trạng thái treo — bỏ trước khi
+    // đo `live_frames`. Chỉ frame thật sự Pending mới còn trong `frames`.
+    let dead_frames: Vec<u32> = {
+        let s = it.sched.borrow();
+        frames
+            .keys()
+            .copied()
+            .filter(|id| *id != 0)
+            .filter(|id| {
+                s.tasks
+                    .iter()
+                    .find(|t| t.id == *id)
+                    .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
+                    .unwrap_or(false)
+            })
+            .collect()
+    };
+    for id in dead_frames {
+        frames.remove(&id);
+    }
+    it.sched.borrow_mut().frame.live_frames = frames.len();
     frames.clear();
     it.sched.borrow_mut().frame_drain_events();
     // **ST-278 (VD-256)**: lỗi task cache ở final join phải surfaced (cùng hợp đồng VS0506).
@@ -1057,8 +1092,10 @@ pub fn run_frame_for_test<'a>(
     if trap.is_none() {
         trap = it.sched.borrow().frame_stuck_trap();
     }
-    it.sched.borrow_mut().frame_reactor_shutdown();
+    // **VD-259**: đo **trước** `frame_reactor_shutdown` — nếu đo sau, regs/timers luôn 0 và
+    // snapshot không còn là bằng chứng vòng đời.
     let snapshot = it.sched.borrow().diag_snapshot();
+    it.sched.borrow_mut().frame_reactor_shutdown();
     let mut log = it.sched.borrow().frame.log.clone();
     log.extend(it.sched.borrow().frame.reactor.log.clone());
     let stdout = it.take_stdout();
@@ -1122,21 +1159,28 @@ fn eval_expr_in<'a>(
 /// Dựng frame cho task `id` từ HIR thật (thân `async fn`).
 #[allow(clippy::type_complexity)]
 fn build_task_frame<'a>(
-    it: &Interp<'a>,
+    it: &mut Interp<'a>,
     id: u32,
     globals: &Env,
-) -> Option<(&'a [HStmt], Vec<(u32, Value)>, Env)> {
-    let s = it.sched.borrow();
-    let t = s.tasks.iter().find(|t| t.id == id)?;
-    if s.frame.external.contains_key(&id) {
-        return None;
-    }
-    let f = it.fns.get(&t.than).copied()?;
-    let mut params = Vec::new();
-    for (i, p) in f.params.iter().enumerate() {
-        params.push((p.sym, t.args.get(i).cloned().unwrap_or(Value::Unit)));
-    }
-    Some((&f.body, params, globals.clone()))
+    mutable: &Rc<RefCell<HashSet<u32>>>,
+) -> R<Option<(&'a [HStmt], Env)>> {
+    let (f, args, span, ten) = {
+        let s = it.sched.borrow();
+        let Some(t) = s.tasks.iter().find(|t| t.id == id) else {
+            return Ok(None);
+        };
+        if s.frame.external.contains_key(&id) {
+            return Ok(None);
+        }
+        let Some(f) = it.fns.get(&t.than).copied() else {
+            return Ok(None);
+        };
+        (f, t.args.clone(), t.span, t.ten.clone())
+    };
+    // **VD-259**: cùng helper tham số/default với `dispatch` — task `async` có default không
+    // còn nhận `Unit` khi gọi thiếu đối số.
+    let env = env_for_params(it, &f.params, &args, &[], globals, mutable, &ten, span)?;
+    Ok(Some((&f.body, env)))
 }
 
 /// Một bước chạy frame: tiêu thụ work cho tới khi frame xong, treo (`Pending`), hoặc lỗi.
@@ -1340,6 +1384,7 @@ mod tests {
                 body: HBody::Stmts(Vec::new()),
                 env: env.clone(),
                 ret_depth: 0,
+                frame_body: std::cell::OnceCell::new(),
             }))
         };
         let mut frame = IFrame::expr_frame(&env, Rc::new(RefCell::new(HashSet::new())));
@@ -1380,5 +1425,35 @@ mod tests {
             "tham số không được rò vào env gốc của closure"
         );
         assert!(matches!(env.borrow().get(&99), Some(Value::Int(0))));
+    }
+
+    /// **VD-259**: tên chưa phân giải **không** được rơi vào ô argv (`u32::MAX`) của chế độ
+    /// không có `main` — phải trap "chưa định nghĩa" như runtime mặc định.
+    #[test]
+    fn ten_khong_ton_tai_khong_nhan_argv() {
+        let hir = vis_types::Hir {
+            items: Vec::new(),
+            stmts: Vec::new(),
+            span: Span::new(0, 0),
+        };
+        let symbols = vis_types::Symbols::default();
+        let types = vis_types::TypeTable::default();
+        let mut it = Interp::new(&hir, &symbols, &types);
+        let env: Env = Rc::new(RefCell::new(HashMap::new()));
+        env.borrow_mut()
+            .insert(u32::MAX, Value::List(vec![Value::Str("argv".into())]));
+        let mut frame = IFrame::expr_frame(&env, Rc::new(RefCell::new(HashSet::new())));
+        let e = HExpr::Var {
+            name: "khong_ton_tai".into(),
+            sym: None,
+            span: Span::new(0, 0),
+        };
+        frame.cur().work.push(Work::SetLast);
+        frame.cur().work.push(Work::Eval(&e));
+        let err = step_frame_owned(&mut it, &mut frame).expect_err("phải trap");
+        match err {
+            Abort::Trap(t) => assert!(t.msg.contains("chưa định nghĩa"), "message: {}", t.msg),
+            other => panic!("không phải trap: {other:?}"),
+        }
     }
 }

@@ -48,12 +48,17 @@ thread_local! {
     static BUDGET: RefCell<Budget> = RefCell::new(Budget::default());
 }
 
+/// Trần `u64 → i64` an toàn: giá trị lớn hơn `i64::MAX` được **bão hoà**, không quay âm.
+fn i64_sat(limit: u64) -> i64 {
+    limit.min(i64::MAX as u64) as i64
+}
+
 /// Bật instrumentation + ngưỡng (internal test hook). Mặc định `false` ⇒ mọi `charge` là no-op.
 pub fn enable_for_test(limit: u64) {
     BUDGET.with(|b| {
         let mut b = b.borrow_mut();
         b.enabled = true;
-        b.remaining = limit as i64;
+        b.remaining = i64_sat(limit);
         b.trace.clear();
         b.hit = false;
     });
@@ -99,8 +104,8 @@ pub fn quota_enable_for_test(limit: u64) {
     BUDGET.with(|b| {
         let mut b = b.borrow_mut();
         b.quota_enabled = true;
-        b.quota_limit = limit as i64;
-        b.quota_remaining = limit as i64;
+        b.quota_limit = i64_sat(limit);
+        b.quota_remaining = i64_sat(limit);
         b.quota_hit = false;
         b.quota_yields = 0;
     });
@@ -143,7 +148,7 @@ pub fn enable_measure_for_test(limit: u64) {
     BUDGET.with(|b| {
         let mut b = b.borrow_mut();
         b.enabled = true;
-        b.remaining = limit as i64;
+        b.remaining = i64_sat(limit);
         b.trace.clear();
         b.hit = false;
         b.measure = true;

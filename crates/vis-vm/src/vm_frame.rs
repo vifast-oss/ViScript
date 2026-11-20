@@ -272,7 +272,7 @@ impl<'a> Vm<'a> {
     /// Bật ngân sách ngữ nghĩa bằng bảng phụ S (internal test hook).
     pub fn budget_enable_for_test(&mut self, fee: FeeTable, limit: u64) {
         self.budget_fee = Some(fee);
-        self.budget_remaining = limit as i64;
+        self.budget_remaining = limit.min(i64::MAX as u64) as i64;
         self.budget_trace.clear();
         self.budget_hit = false;
     }
@@ -286,9 +286,12 @@ impl<'a> Vm<'a> {
 
     /// Bật quota với hạn `limit`. Không đụng `budget_*`.
     pub(crate) fn quota_setup_for_test(&mut self, limit: u64) {
+        // **VD-259**: `u64 → i64` phải bão hoà; cast thẳng làm hạn lớn quay âm ⇒ mọi turn
+        // "hết quota" ngay.
+        let limit = limit.min(i64::MAX as u64) as i64;
         self.quota_active = true;
-        self.quota_limit = limit as i64;
-        self.quota_remaining = limit as i64;
+        self.quota_limit = limit;
+        self.quota_remaining = limit;
         self.quota_hit = false;
         self.quota_yields = 0;
     }
@@ -466,13 +469,13 @@ fn run_frame_with_budget<'m>(
         Ok(t) => t,
         Err(Abort::Trap(t)) => {
             return (
-                frame_output(&vm, None, Some(t)),
+                frame_output(&vm, None, Some(t), Default::default()),
                 vm.budget_trace_for_test().to_vec(),
             )
         }
         Err(_) => {
             return (
-                frame_output(&vm, None, None),
+                frame_output(&vm, None, None, Default::default()),
                 vm.budget_trace_for_test().to_vec(),
             )
         }
@@ -686,6 +689,27 @@ fn run_frame_with_budget<'m>(
             trap = Some(Trap::new(vis_interp::interp::RT, e, Span::new(0, 0)));
         }
     }
+    // **VD-259**: bỏ `Th` của task đã `Xong`/`Huy` khỏi map trước khi đo `live_frames` —
+    // frame terminal/huỷ không phải trạng thái treo cần giữ.
+    let dead_frames: Vec<u32> = {
+        let s = vm.sched.borrow();
+        frames
+            .keys()
+            .copied()
+            .filter(|id| *id != 0)
+            .filter(|id| {
+                s.tasks
+                    .iter()
+                    .find(|t| t.id == *id)
+                    .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
+                    .unwrap_or(false)
+            })
+            .collect()
+    };
+    for id in dead_frames {
+        frames.remove(&id);
+    }
+    vm.sched.borrow_mut().frame.live_frames = frames.len();
     frames.clear();
     vm.sched.borrow_mut().frame_drain_events();
     let final_join_err = vm.sched.borrow_mut().frame_final_join();
@@ -699,16 +723,23 @@ fn run_frame_with_budget<'m>(
     if trap.is_none() {
         trap = vm.sched.borrow().frame_stuck_trap();
     }
+    // **VD-259**: snapshot **trước** shutdown — nếu không, regs/timers luôn 0.
+    let snapshot = vm.sched.borrow().diag_snapshot();
     // Lát 2: reactor về baseline sau khi handle test thả.
     vm.sched.borrow_mut().frame_reactor_shutdown();
     LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = vm.quota_yields_for_test());
     (
-        frame_output(&vm, final_value, trap),
+        frame_output(&vm, final_value, trap, snapshot),
         vm.budget_trace_for_test().to_vec(),
     )
 }
 
-fn frame_output(vm: &Vm<'_>, value: Option<Value>, trap: Option<Trap>) -> FrameOutput {
+fn frame_output(
+    vm: &Vm<'_>,
+    value: Option<Value>,
+    trap: Option<Trap>,
+    snapshot: vis_interp::rt::DiagSnapshot,
+) -> FrameOutput {
     let mut log = vm.sched.borrow().frame.log.clone();
     log.extend(vm.sched.borrow().frame.reactor.log.clone());
     let stdout = vm.out.clone();
@@ -728,7 +759,7 @@ fn frame_output(vm: &Vm<'_>, value: Option<Value>, trap: Option<Trap>) -> FrameO
         value,
         exit,
         log,
-        snapshot: vm.sched.borrow().diag_snapshot(),
+        snapshot,
     }
 }
 
