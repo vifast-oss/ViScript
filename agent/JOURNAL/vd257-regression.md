@@ -105,3 +105,12 @@ Lệnh `cargo test --release -p vis-cli --test lat3_real t10_b1_real_frame_overl
 **Chồng lấp** rõ: 20 kết nối × 200 ms vẫn ~201 ms, không phải ~4 s. Startup đo riêng, không trộn
 vào workload. Log `/tmp/opencode/vd257-b1-release.log`. Không đổi baseline mặc định (4,03–4,04 s).
 
+## 8. Khép thêm một ô coverage thật (`E.A` trên đường frame)
+
+Test `lat257_coverage_extra.rs` (source có `set{...}`, `map`, tuple, enum `E.A`, interpolation)
+ban đầu **đỏ** trên frame interp: `E` bị lấy nhầm thành argv fallback `u32::MAX` ⇒ `Value::List([])`
+rồi `field_of` báo "`[]` không có trường `A`". Đã sửa `frame/expr.rs`: ưu tiên tra `it.tags` (atom
+marker `Value::Enum(n,"",[])` / `Value::Record(n,[])`) **trước** fallback argv, mirror `interp.rs:651`;
+`interp.rs::tags` chuyển `pub(crate)`. Giờ 4 đường chạy cùng stdout. Gate sau sửa: **1565/1565**.
+Đây là sửa lỗi coverage, **không** đổi checker hay runtime mặc định.
+

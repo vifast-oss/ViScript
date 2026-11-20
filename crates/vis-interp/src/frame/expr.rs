@@ -27,6 +27,18 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             let cf = frame.cur();
             let v = sym
                 .and_then(|s| cf.env.borrow().get(&s).cloned())
+                // ST-283: thẻ `enum`/`type` phải được ưu tiên TRƯỚC argv fallback (`u32::MAX`),
+                // nếu không `E` bị lấy nhầm thành danh sách đối số `[]`.
+                .or_else(|| {
+                    sym.and_then(|s| it.tags.get(&s).cloned())
+                        .map(|(n, is_enum)| {
+                            if is_enum {
+                                Value::Enum(n, String::new(), Vec::new())
+                            } else {
+                                Value::Record(n, Vec::new())
+                            }
+                        })
+                })
                 .or_else(|| {
                     cf.env
                         .borrow()

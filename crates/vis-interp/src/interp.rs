@@ -21,7 +21,7 @@ pub(crate) struct Interp<'a> {
     pub(crate) fns: HashMap<u32, &'a HFn>,
     consts: HashMap<u32, &'a HExpr>,
     /// `enum`/`type` khai trong tệp: `sym → (tên, là_enum)` để `E.A`/`User(...)` có "thẻ kiểu".
-    tags: HashMap<u32, (String, bool)>,
+    pub(crate) tags: HashMap<u32, (String, bool)>,
     main: Option<&'a HFn>,
     stmts: &'a [HStmt],
     pub(crate) env: Env,
