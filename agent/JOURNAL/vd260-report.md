@@ -257,3 +257,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `3976328`: **PASS** — parser fuzz **8.074.278 ca / 183.212.821 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - **parse-float** (`0f880d9` → `a6ac405`, fix `4c57285`): `str.parse_float` theo `f64::from_str`, từ chối non-finite/tràn; `Ty::OptFloat`; 7 ca interp=VM.
 - **list-math** (`e43ff02` → `e047dff`): `list.sum`/`product` checked, rỗng 0/1, tràn `VS0507`; `xs.sum()` lõi giữ nguyên.
+- **recv-opt-infer** (`9589f59` → `5b8e0b1`): `recv?.m()` dùng kiểu **suy ra** của `let`; `impl` trên instantiation (`impl Hop[int]`) được đăng ký; fallback tên method duy nhất; 11 ca interp=VM.
+- `VIS_DIFF_N=100000` seed 20261204 @ `3c842e0`: **0 lệch** (93.767 chạy, 154,1 s).
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `3c842e0`: **PASS**.

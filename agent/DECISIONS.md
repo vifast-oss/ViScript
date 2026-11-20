@@ -3375,3 +3375,11 @@ cú pháp hoặc tràn `i64` ⇒ `None` (không trap); `i64::MIN`/`MAX` biên v�
 - **list-sum-product**: `list.sum(list[int]) -> int` rỗng `0`, `list.product` rỗng `1`; gộp
   trái→phải bằng checked `i64`, tràn ở **bất kỳ bước nào** ⇒ trap `VS0507`; sugar `product`;
   `xs.sum()` vẫn là phương thức lõi (giữ `list[float]`), cùng ngữ nghĩa cho `list[int]`.
+
+### VD-270 (bổ sung) · `recv?.m()` suy kiểu — A0, 2026-11-21
+
+`recv?.m()` (một lớp Option) nay dùng **kiểu suy ra** của receiver từ `let` (không chỉ nhãn tĩnh):
+`let r = tim()` với `T?`, generic `may[T]`, lambda/channel, `may()?` đều phân giải method; `impl`
+trên **instantiation** (`impl Hop[int]`) được đăng ký; VM fallback theo **tên method duy nhất** khi
+không xác định kiểu, nhưng **không** giành method lõi `list/str/map`. `recv.m()` không Option vẫn
+giữ `VS0403` (ngoài phạm vi); `impl Hop[T]` generic vẫn chưa hỗ trợ.
