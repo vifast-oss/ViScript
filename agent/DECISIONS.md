@@ -3254,3 +3254,14 @@ codegen/cache/sandbox/TAP. In **một** dòng stderr `# time: <N> ms` (≥1000 �
 `# time: <N> us` (<1000 µs, gồm 0). Chỉ in khi runtime thực sự chạy: lỗi tĩnh/`--dry`/
 `--sandbox-check` không in; trap/`Result::Err`/exit thường có in. Với `--tap`, dòng là comment
 sau kết quả TAP. Không đổi stdout/exit/args sau `--`.
+
+### VD-270 (bổ sung) · indexof, vistest shuffle, hover method — A0, 2026-11-21
+
+- **indexof**: `list.index_of(xs, v)`/`last_index_of` trả vị trí **0-based** đầu/cuối theo
+  `eq_value` (cùng ngữ nghĩa `==`), không có/rỗng ⇒ `None`, `int?`; sugar R5c; API +2.
+- **vistest-shuffle**: `vis test --shuffle [--seed <u64>]` — SplitMix64 + Fisher-Yates, seed mặc
+  định **0**; `--seed` chỉ với `--shuffle`; shuffle sau `--filter`, trước `--repeat`/`--list`;
+  không cờ ⇒ byte-identical; seed sai/thiếu/thừa ⇒ exit 2.
+- **lsp-hover-method**: hover `fn` trong `impl`/`trait` và lời gọi `u.m`/`self.m`; ưu tiên
+  items→biến→trường→ký hiệu→builtin→từ khoá→phương thức→null; chủ lấy từ span khai báo hoặc
+  `KetQua.bien`, không rõ chủ thì chỉ trả khi tên duy nhất; không đổi completion.

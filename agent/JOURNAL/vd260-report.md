@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `000011f` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `4babfb0` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2206 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2234 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -65,11 +65,14 @@
 | Vistest-repeat | `ec0b5cc` → `207e111` | `vis test --repeat N`: hậu tố `[k/N]`, TAP/JSON |
 | LSP selection | `304a857` → `8916490` | `textDocument/selectionRange`: token→line→decl→doc |
 | Run-time | `245ab23` → `000011f` | `vis run --time` in `# time: N ms/us` ra stderr, không đổi exit/output |
+| Indexof | `2e10889` → `f217ec9` | `list.index_of/last_index_of`: vị trí 0-based, `int?` |
+| Vistest-shuffle | `ff8d712` → `f11a159` | `vis test --shuffle [--seed u64]`: SplitMix64 + Fisher-Yates |
+| LSP hover method | `f2f103c` → `4babfb0` | hover phương thức `impl`/`trait`, fallback cuối |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2206 passed / 3 skipped** tại `000011f`.
+- `./vis-dev gate --fast`: **PASS — 2234 passed / 3 skipped** tại `4babfb0`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -176,3 +179,6 @@ Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ ch�
 - **lsp-select2** (`304a857` → `8916490`): `selectionRange` token→line→decl→doc, test riêng.
 - **fmt-diff** (`daddba5`): `vis fmt --check --diff` in unified diff một hunk/tệp, exit 0/1/2.
 - **run-time** (`245ab23` → `000011f`): `vis run --time` đo quanh lời gọi runtime, in `# time: N ms|us` ra stderr; lỗi tĩnh/`--dry` không in; `--tap` giữ TAP hợp lệ.
+- **indexof** (`2e10889` → `f217ec9`): `index_of/last_index_of` 0-based, so cấu trúc `==`, `int?`; API +2.
+- **vistest-shuffle** (`ff8d712` → `f11a159`): `--shuffle`/`--seed u64` (mặc định 0), deterministic, trước repeat/list.
+- **lsp-hover-method** (`f2f103c` → `4babfb0`): hover method `impl`/`trait`, chữ ký + chủ; ưu tiên sau các hover cũ.
