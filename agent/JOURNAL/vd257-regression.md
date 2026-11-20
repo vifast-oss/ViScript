@@ -141,3 +141,9 @@ fuzz parser OK, vòng tròn fmt 475 tệp bất động (bỏ qua 78 ca lỗi c�
 `/tmp/opencode/vd257-nightly10.log`. Cộng các seed thủ công, tổng thời gian fuzz hữu hạn ~16 phút,
 không vi phạm nào được lưu.
 
+## 13. Soak fuzz dài hơn
+
+4 seed mới (`20261128`/`20261129`/`20261130`/`20261201`) × 300 s: **~183,2 triệu ca, 0 vi phạm**,
+exit 0 cả 4. Log `/tmp/opencode/vd257-fuzz-long.log`. Tổng fuzz hữu hạn trong cuối tuần: ~259 triệu
+ca, **không seed lỗi nào cần lưu**. Không chạy vô hạn, có giới hạn thời lượng rõ.
+
