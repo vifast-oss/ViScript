@@ -134,41 +134,71 @@ impl MethodRet {
             .copied()
     }
 
+    /// **VD-270** — `sym` theo **tên phương thức duy nhất** trên mọi `impl` (kể cả phương thức
+    /// trả `{error}`). Dùng làm fallback khi biến nhận **suy ra** không cho ra kiểu tĩnh
+    /// (lambda/generic/kênh): tên phương thức trùng giữa hai `impl` đã bị `VS0302` chặn, nên
+    /// chỉ có một `sym` là an toàn; nhiều hơn ⇒ `None` (không đoán).
+    pub fn sym_duy_nhat(&self, method: &str) -> Option<u32> {
+        let mut sym = None;
+        for ((_, ten), s) in &self.chi_muc_sym {
+            if ten != method {
+                continue;
+            }
+            match sym {
+                None => sym = Some(*s),
+                Some(a) if a == *s => {}
+                Some(_) => return None,
+            }
+        }
+        sym
+    }
+
     fn them_impl(&mut self, hir: &crate::hir::Hir, im: &HImpl) {
-        // Tên + tham số kiểu của kiểu nhận (nếu tìm được trong HIR).
-        let (ten, generics) = match &im.ty {
-            Type::Record(id) => tim_rec(hir, *id)
-                .map(|r| (r.name.clone(), r.generics.clone()))
-                .unwrap_or_else(|| {
-                    (
-                        self.rec_ten.get(&id.0).cloned().unwrap_or_default(),
-                        Vec::new(),
-                    )
-                }),
-            Type::Enum(id) => tim_enum(hir, *id)
-                .map(|e| (e.name.clone(), e.generics.clone()))
-                .unwrap_or_else(|| {
-                    (
-                        self.enum_ten.get(&id.0).cloned().unwrap_or_default(),
-                        Vec::new(),
-                    )
-                }),
-            Type::TypeRef { name, .. } => {
+        // Tên + tham số kiểu của kiểu nhận (nếu tìm được trong HIR/instantiation).
+        //
+        // **VD-270**: `impl Hop[int]` hạ thành `Type::Record(RecId của instantiation)`, không
+        // phải `RecId` khai báo ⇒ `tim_rec` không thấy. Trước đây tên rỗng nên `impl` bị **bỏ
+        // im lặng** khỏi bảng (`recv?.m` ⇒ `VS0405` oan). Nay lấy tên/đối số từ `rec_inst`/
+        // `enum_inst` đã chụp từ `TypeTable`.
+        let (ten, generics, impl_args) = match &im.ty {
+            Type::Record(id) => {
+                let inst = self.rec_inst.get(&id.0).cloned();
+                let ten = tim_rec(hir, *id)
+                    .map(|r| r.name.clone())
+                    .or_else(|| inst.as_ref().map(|(n, _)| n.clone()))
+                    .or_else(|| self.rec_ten.get(&id.0).cloned())
+                    .unwrap_or_default();
+                let g = tim_rec_ten(hir, &ten)
+                    .map(|r| r.generics.clone())
+                    .unwrap_or_default();
+                let a = inst.map(|(_, a)| a).unwrap_or_default();
+                (ten, g, a)
+            }
+            Type::Enum(id) => {
+                let inst = self.enum_inst.get(&id.0).cloned();
+                let ten = tim_enum(hir, *id)
+                    .map(|e| e.name.clone())
+                    .or_else(|| inst.as_ref().map(|(n, _)| n.clone()))
+                    .or_else(|| self.enum_ten.get(&id.0).cloned())
+                    .unwrap_or_default();
+                let g = tim_enum_ten(hir, &ten)
+                    .map(|e| e.generics.clone())
+                    .unwrap_or_default();
+                let a = inst.map(|(_, a)| a).unwrap_or_default();
+                (ten, g, a)
+            }
+            Type::TypeRef { name, args } => {
                 let g = tim_rec_ten(hir, name)
                     .map(|r| r.generics.clone())
                     .or_else(|| tim_enum_ten(hir, name).map(|e| e.generics.clone()))
                     .unwrap_or_default();
-                (name.clone(), g)
+                (name.clone(), g, args.clone())
             }
-            _ => (String::new(), Vec::new()),
+            _ => (String::new(), Vec::new(), Vec::new()),
         };
         if ten.is_empty() {
             return;
         }
-        let impl_args = match &im.ty {
-            Type::TypeRef { args, .. } => args.clone(),
-            _ => Vec::new(),
-        };
         // Khoá cụ thể (khi `impl` trỏ thẳng Rec/Enum) **và** khoá theo tên (cho instantiation).
         let mut khoa = vec![Khoa::Ten(ten.clone())];
         match &im.ty {
@@ -540,6 +570,71 @@ mod tests {
             b.ret(&opt, "io", &h.types),
             Some(Type::Opt(Box::new(Type::Int)))
         );
+    }
+
+    /// **VD-270** — `impl` trên **instantiation** (`impl Hop[int]`) phải vào bảng, kể cả `sym`
+    /// (đường không `TypeTable`) và kiểu trả đã thay `T`; nhận `Type::Opt(Record)`.
+    #[test]
+    fn impl_tren_instantiation_vao_bang() {
+        let h = ha(
+            "type Hop[T]:\n    v: T\n\nimpl Hop[int]:\n    fn lay(self) -> int:\n        self.v\n    fn tang(self) -> int?:\n        Some(self.v + 1)\n",
+        );
+        let b = MethodRet::from_hir_voi_bang(&h.hir, &h.types);
+        let inst = h
+            .types
+            .recs()
+            .iter()
+            .enumerate()
+            .find_map(|(i, _r)| {
+                h.types
+                    .rec_inst_of(RecId(i as u32))
+                    .filter(|(n, a)| n == "Hop" && a == &vec![Type::Int])
+                    .map(|_| RecId(i as u32))
+            })
+            .expect("phải có instantiation Hop[int]");
+        let recv = Type::Record(inst);
+        let lay = h
+            .hir
+            .items
+            .iter()
+            .find_map(|it| match it {
+                HItem::Impl(i) => i.methods.iter().find(|m| m.name == "lay").map(|m| m.sym),
+                _ => None,
+            })
+            .expect("có phương thức lay");
+        assert_eq!(b.sym(&recv, "lay", &h.types), Some(lay));
+        assert_eq!(b.sym_voi_types(&recv, "lay"), Some(lay));
+        assert_eq!(
+            b.ret(&recv, "tang", &h.types),
+            Some(Type::Opt(Box::new(Type::Int)))
+        );
+        let opt = Type::Opt(Box::new(recv));
+        assert_eq!(b.sym(&opt, "lay", &h.types), Some(lay));
+        assert_eq!(
+            b.ret_voi_types(&opt, "tang"),
+            Some(Type::Opt(Box::new(Type::Int)))
+        );
+    }
+
+    /// **VD-270** — fallback theo **tên phương thức duy nhất**: có `lay` ⇒ `sym`; tên lạ ⇒
+    /// `None`.
+    #[test]
+    fn sym_duy_nhat_theo_ten_phuong_thuc() {
+        let h = ha(
+            "type A:\n    n: int\n\nimpl A:\n    fn lay(self) -> int:\n        self.n\n\ntype B:\n    m: int\n\nimpl B:\n    fn khac(self) -> int:\n        self.m\n",
+        );
+        let b = MethodRet::from_hir_voi_bang(&h.hir, &h.types);
+        let lay = h
+            .hir
+            .items
+            .iter()
+            .find_map(|it| match it {
+                HItem::Impl(i) => i.methods.iter().find(|m| m.name == "lay").map(|m| m.sym),
+                _ => None,
+            })
+            .expect("có phương thức lay");
+        assert_eq!(b.sym_duy_nhat("lay"), Some(lay));
+        assert_eq!(b.sym_duy_nhat("khong_co"), None);
     }
 
     /// **VD-269** — `sym` của phương thức cho `recv?.m(…)`, kể cả kiểu trả `()` (không bị bỏ

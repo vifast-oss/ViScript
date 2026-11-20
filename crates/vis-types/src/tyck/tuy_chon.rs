@@ -77,9 +77,12 @@ impl<'a> Checker<'a> {
                 return Type::Error;
             }
         };
+        // **VD-270**: tra **kèm `TypeTable`** — biến nhận có thể là **instantiation**
+        // (`Hop[int]`), chỉ bảng mới ánh xạ `RecId` instantiation về tên `impl`. Trước đây
+        // `sym_voi_types` (không bảng) bỏ sót ⇒ `VS0405` oan dù `impl` có thật.
         let ret = if let Some(mut sig) = self
             .mret
-            .sym_voi_types(&inner, name)
+            .sym(&inner, name, self.types)
             .and_then(|sym| self.sigs.get(sym as usize).and_then(|s| s.clone()))
         {
             // Chữ ký phương thức có `self` đầu; call-site **không** truyền `self`.
