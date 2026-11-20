@@ -2,6 +2,7 @@
 //! Unit tests cho [`super`] (tách theo luật R1 ≤ 1.500 dòng/tệp).
 
 use super::*;
+use rusqlite::hooks::AuthContext;
 
 fn sv_int(n: i64) -> Value {
     Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
@@ -882,4 +883,201 @@ fn mo_ta_path_utf8_split_tai_byte_120_khong_panic() {
     let mut db = super::Db::moi_voi_query_ms(false, 5_000);
     let _ = db.db_open(&d_tmp.to_string_lossy(), true, 5_000);
     let _ = std::fs::remove_file(&d_tmp);
+}
+
+// ===========================================================================
+// VD-258 — cap bộ nhớ SQLite (ô/overhead/tên cột), pre-materialization,
+// schema không-UTF-8 và cap tổng handle.
+// ===========================================================================
+
+/// `Db` với trần tuỳ ý — test ép cap thấp, không cần dữ liệu khổng lồ.
+fn db_gioi_han(f: impl FnOnce(&mut GioiHan)) -> Db {
+    let mut d = Db::moi(false);
+    f(&mut d.gioi_han);
+    d
+}
+
+#[test]
+fn cap_o_chan_bang_rong_nhieu_cot() {
+    let mut d = db_gioi_han(|g| g.cells = 10);
+    let h = mo_db(&mut d);
+    // 3 hàng × 4 cột = 12 ô > 10 ⇒ Err (không trả dữ liệu cắt).
+    let e = d
+        .db_query(
+            &h,
+            "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 3) \
+             SELECT x, x, x, x FROM c",
+            &[],
+        )
+        .unwrap_err();
+    assert!(e.contains("10") && e.contains("ô"), "{e}");
+    // 2 hàng × 4 cột = 8 ô ⇒ vẫn qua.
+    let (_, rows) = d
+        .db_query(
+            &h,
+            "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 2) \
+             SELECT x, x, x, x FROM c",
+            &[],
+        )
+        .unwrap();
+    assert_eq!(rows.len(), 2);
+}
+
+#[test]
+fn overhead_o_null_tinh_vao_tong_byte() {
+    // Một hàng 2 ô NULL: payload 0 nhưng overhead 2×64 = 128 > 100 ⇒ phải bị chặn.
+    let mut d = db_gioi_han(|g| g.total_bytes = 100);
+    let h = mo_db(&mut d);
+    let e = d.db_query(&h, "SELECT NULL, NULL", &[]).unwrap_err();
+    assert!(e.contains("100") && e.contains("overhead"), "{e}");
+    // 1 ô NULL: 64 ≤ 100 ⇒ qua (và chứng minh cap không chặn oan payload nhỏ).
+    let (_, rows) = d.db_query(&h, "SELECT NULL", &[]).unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn tran_cung_chan_zeroblob_truoc_khi_cap_phat() {
+    let mut d = db_gioi_han(|g| {
+        g.row_bytes = 4 << 10;
+        g.hard_cell_bytes = 8 << 10;
+    });
+    let h = mo_db(&mut d);
+    // 1 MiB > trần cứng 8 KiB ⇒ SQLite báo TOOBIG, không materialize 1 MiB; host map thành
+    // lỗi cap hàng (không trả blob cắt).
+    let t0 = Instant::now();
+    let e = d.db_query(&h, "SELECT zeroblob(1048576)", &[]).unwrap_err();
+    assert!(e.contains("4096"), "{e}");
+    assert!(t0.elapsed() < Duration::from_secs(2), "{:?}", t0.elapsed());
+    // Trong trần cứng và trần hàng ⇒ đọc được.
+    let (_, rows) = d.db_query(&h, "SELECT zeroblob(4096)", &[]).unwrap();
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn zeroblob_512m_bi_chan_voi_rss_huu_han() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    #[cfg(target_os = "linux")]
+    let truoc = vm_hwm_kb();
+    let t0 = Instant::now();
+    let e = d
+        .db_query(&h, "SELECT zeroblob(536870912)", &[])
+        .unwrap_err();
+    assert!(e.contains("1048576"), "{e}");
+    assert!(t0.elapsed() < Duration::from_secs(2), "{:?}", t0.elapsed());
+    // Trước đây `zeroblob(512 MiB)` materialize ~519 MB. Với trần cứng, mức tăng HWM phải nhỏ.
+    #[cfg(target_os = "linux")]
+    if let (Some(a), Some(b)) = (truoc, vm_hwm_kb()) {
+        let tang_kb = b.saturating_sub(a);
+        assert!(
+            tang_kb < 256 * 1024,
+            "RSS tăng {tang_kb} KiB — trần cứng không chặn materialize?"
+        );
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn vm_hwm_kb() -> Option<u64> {
+    let s = std::fs::read_to_string("/proc/self/status").ok()?;
+    for d in s.lines() {
+        if let Some(rest) = d.strip_prefix("VmHWM:") {
+            return rest.split_whitespace().next()?.parse().ok();
+        }
+    }
+    None
+}
+
+#[test]
+fn tong_handle_cap_ke_ca_tombstone() {
+    let mut d = db_gioi_han(|g| g.handles = 4);
+    for _ in 0..4 {
+        let h = mo_db(&mut d);
+        d.db_close(&h).unwrap();
+    }
+    let e = d.db_open(":memory:", true, 5_000).unwrap_err();
+    assert!(e.contains('4') && e.contains("handle"), "{e}");
+}
+
+/// Ghi tệp SQLite, thay **nguyên văn** chuỗi `tim` trong byte schema bằng `thay` (cùng độ dài,
+/// byte không-UTF-8). Dùng để tái hiện schema ngoài bị hỏng encoding — không qua host.
+fn tao_db_schema_hong(
+    dir: &std::path::Path,
+    ten: &str,
+    sql: &str,
+    tim: &str,
+    thay: &[u8],
+) -> String {
+    assert_eq!(tim.len(), thay.len(), "thay phải cùng độ dài byte");
+    let p = dir.join(ten);
+    {
+        let c = Connection::open(&p).unwrap();
+        c.execute_batch(sql).unwrap();
+        c.close().unwrap();
+    }
+    let mut b = std::fs::read(&p).unwrap();
+    let cu = tim.as_bytes();
+    let mut n = 0usize;
+    let mut i = 0usize;
+    while i + cu.len() <= b.len() {
+        if &b[i..i + cu.len()] == cu {
+            b[i..i + cu.len()].copy_from_slice(thay);
+            n += 1;
+            i += cu.len();
+        } else {
+            i += 1;
+        }
+    }
+    assert!(n > 0, "không tìm thấy {tim:?} trong schema để thay");
+    std::fs::write(&p, &b).unwrap();
+    p.to_str().unwrap().to_string()
+}
+
+#[test]
+fn schema_khong_utf8_tra_loi_du_lieu_khong_panic() {
+    let dir = std::env::temp_dir().join(format!("vis-sqlite-schema-bad-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    // "cột" = 5 byte UTF-8; thay bằng 5 byte 0xFF (không-UTF-8, không NUL).
+    let path = tao_db_schema_hong(
+        &dir,
+        "bad.db",
+        "CREATE TABLE t (\"cột\" TEXT); INSERT INTO t VALUES ('x');",
+        "cột",
+        &[0xff; 5],
+    );
+    let mut d = Db::moi(false);
+    let h = d.db_open(&path, false, 5_000).expect("mở được tệp");
+    let e = d.db_query(&h, "SELECT * FROM t", &[]).unwrap_err();
+    assert!(
+        e.contains("UTF-8"),
+        "phải là lỗi schema không-UTF-8 (không panic), được: {e}"
+    );
+    d.db_cleanup().unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn ten_cot_khong_utf8_tra_loi_du_lieu_khong_panic() {
+    let dir = std::env::temp_dir().join(format!("vis-sqlite-cot-bad-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    // View alias không-UTF-8: authorizer có thể chỉ thấy cột gốc `a` (hợp lệ); đường
+    // `Statement::column_name` của rusqlite sẽ panic nếu host dùng nó. Host phải trả Err.
+    let path = tao_db_schema_hong(
+        &dir,
+        "bad-view.db",
+        "CREATE TABLE t (a TEXT); CREATE VIEW v AS SELECT a AS \"cột\" FROM t;",
+        "cột",
+        &[0xff; 5],
+    );
+    let mut d = Db::moi(false);
+    let h = d.db_open(&path, false, 5_000).expect("mở được tệp");
+    let r = d.db_query(&h, "SELECT * FROM v", &[]);
+    let e = r.expect_err("tên cột không-UTF-8 phải là lỗi dữ liệu");
+    assert!(
+        e.contains("UTF-8") || e.contains("quyền (authorizer)") || e.contains("mã SQLite"),
+        "phải là lỗi dữ liệu rõ, được: {e}"
+    );
+    d.db_cleanup().unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
 }

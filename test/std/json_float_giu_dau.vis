@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+print(json.encode(1.0))
+match json.decode("1e20"):
+    Ok(v): print(json.encode(v))
+    Err(e): print("loi")

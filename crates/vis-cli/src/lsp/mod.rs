@@ -254,7 +254,17 @@ fn ket_qua_khoi_tao() -> Value {
 /// **ST-80**: `textDocument.uri` (`file://…`) → đường dẫn tệp; `None` cho URI không phải `file:`,
 /// percent-decode cơ bản (`%20`, UTF-8), chấp nhận đường dẫn tuyệt đối (`file:///…`).
 pub(crate) fn uri_thanh_duong(uri: &str) -> Option<String> {
+    uri_thanh_duong_voi(uri, cfg!(windows))
+}
+
+/// Như [`uri_thanh_duong`] nhưng nhận cờ nền tảng (test thuần trên Linux vẫn kiểm được nhánh
+/// Windows). **VD-258**: percent-decode **trước** khi nhận diện drive, nên `file:///C%3A/path`
+/// (VS Code gửi drive đã mã hoá) hoạt động; trước đây `%3A` chưa được giải mã nên path còn
+/// `/C%3A/path` và bị coi là tương đối/hỏng trên Windows.
+fn uri_thanh_duong_voi(uri: &str, windows: bool) -> Option<String> {
     let rest = uri.strip_prefix("file://")?;
+    // Percent-decode trước (UTF-8), rồi mới chuẩn hoá đường dẫn theo nền tảng.
+    let rest = percent_giai_ma(rest)?;
     // **VD-241 § fix(Windows/CRLF #psvn-A5)**: LSP trên Windows gửi `file:///c:/path` (3 slash)
     // hoặc `file:///c:\path`. Trên đường dẫn tồn tại `/c:/...` không phải path hợp lệ trên Windows
     // (Rust Path coi `/c:/...` là tương đối); chuẩn hoá về `c:/...` khi phát hiện drive letter.
@@ -279,25 +289,21 @@ pub(crate) fn uri_thanh_duong(uri: &str) -> Option<String> {
         }
         None
     }
-    let rest2 = if matches!(std::env::consts::OS, "windows") {
-        match trim_win_drive(rest) {
-            Some(r) => r,
-            None => {
-                if !rest.starts_with('/') {
-                    return None;
-                }
-                rest.to_string()
-            }
+    if windows {
+        match trim_win_drive(&rest) {
+            Some(r) => Some(r),
+            None if rest.starts_with('/') => Some(rest),
+            None => None,
         }
     } else {
         // Non-Windows: only accept absolute paths starting with `/`
-        if !rest.starts_with('/') {
-            return None;
-        }
-        rest.to_string()
-    };
-    let rest = rest2.as_str();
-    let b = rest.as_bytes();
+        rest.starts_with('/').then_some(rest)
+    }
+}
+
+/// Percent-decode cơ bản (UTF-8); `%` không theo sau 2 hex hợp lệ được giữ nguyên (hành vi cũ).
+fn percent_giai_ma(s: &str) -> Option<String> {
+    let b = s.as_bytes();
     let mut out: Vec<u8> = Vec::with_capacity(b.len());
     let mut i = 0;
     while i < b.len() {
@@ -323,5 +329,55 @@ fn mode_cua(uri: &str) -> Mode {
         Mode::Command
     } else {
         Mode::Script
+    }
+}
+
+#[cfg(test)]
+mod vd258_tests {
+    use super::{percent_giai_ma, uri_thanh_duong_voi};
+
+    #[test]
+    fn uri_percent_drive_windows() {
+        // VS Code trên Windows có thể gửi `C%3A` (drive đã percent-encode).
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C%3A/a/b.vis", true).as_deref(),
+            Some("C:/a/b.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///c%3a/a%20b.vis", true).as_deref(),
+            Some("c:/a b.vis")
+        );
+        // Dạng cũ (không mã hoá) vẫn chạy; `%20` vẫn decode.
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C:/a%20b.vis", true).as_deref(),
+            Some("C:/a b.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///c:\\a\\b.vis", true).as_deref(),
+            Some("c:/a/b.vis")
+        );
+        // Tương đối/không drive ⇒ None (trừ đường dẫn bắt đầu `/`).
+        assert_eq!(uri_thanh_duong_voi("file://relative/x", true), None);
+        assert_eq!(
+            uri_thanh_duong_voi("file:///etc/x", true).as_deref(),
+            Some("/etc/x")
+        );
+    }
+
+    #[test]
+    fn uri_posix_giu_nguyen() {
+        assert_eq!(
+            uri_thanh_duong_voi("file:///a%20b/c.vis", false).as_deref(),
+            Some("/a b/c.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C:/a", false).as_deref(),
+            Some("/C:/a")
+        );
+        assert_eq!(uri_thanh_duong_voi("file://relative/x", false), None);
+        assert_eq!(uri_thanh_duong_voi("http://x/y", false), None);
+        // `%` không hợp lệ được giữ nguyên (hành vi cũ), không panic.
+        assert_eq!(percent_giai_ma("a%zzb").as_deref(), Some("a%zzb"));
+        assert_eq!(percent_giai_ma("%").as_deref(), Some("%"));
     }
 }

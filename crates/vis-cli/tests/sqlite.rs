@@ -469,6 +469,30 @@ fn main():
     let _ = std::fs::remove_dir_all(&d);
 }
 
+/// **VD-258** — `zeroblob(512 MiB)` phải trả **lỗi dữ liệu** (cap hàng) thay vì materialize
+/// 512 MB trước khi host kịp kiểm. Test chạy qua binary thật ở cả hai engine.
+#[test]
+fn zeroblob_512m_tra_loi_du_lieu_khong_oom() {
+    let d = tam("zeroblob-oom");
+    let src = r#"use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Err(e): print("loi {e.message}")
+        Ok(h):
+            match sqlite.query(h, "SELECT zeroblob(536870912)", []):
+                Ok(_): print("khong duoc phu")
+                Err(e): print("chan {e.message}")
+            let _ = sqlite.close(h)
+"#;
+    let (code, out, err) = ca(&d, "zeroblob-oom", src);
+    assert_eq!(code, 0, "{err}");
+    assert!(
+        out.starts_with("chan ") && out.contains("1048576"),
+        "phải là lỗi cap hàng: {out}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 /// **VD-241 pre-merge §10 (2026-11-19)** — `:memory:` dưới workload lớn: 50_000 hàng,
 /// `SELECT sum(x), avg(x)` — tổng output < 16 MiB; chạy **cả hai engine**, so byte.
 #[test]

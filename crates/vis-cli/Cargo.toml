@@ -49,8 +49,10 @@ vis-vm = { path = "../vis-vm" }
 # viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.50.2, sqlite3.c public domain;
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).
 # `hooks` (bắt buộc cho VD-241 §7): `Connection::authorizer` — ranh giới thực thi chính sách SQL
-# (cấm ATTACH/DETACH/VACUUM/load_extension/ghi PRAGMA user_version). Feature rỗng, không dep thêm.
-rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks"], optional = true }
+# (cấm ATTACH/DETACH/VACUUM/load_extension/ghi PRAGMA user_version). `limits` (VD-258):
+# `Connection::set_limit(SQLITE_LIMIT_LENGTH, …)` chặn `zeroblob`/text lớn materialize trước cap.
+# Feature rỗng, không dep thêm.
+rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks", "limits"], optional = true }
 
 # **ST-132 (VD-120)**: chỉ trên Linux, chỉ để cưỡng chế kernel (Landlock). Nền khác không kéo
 # crate này vào (nó `#![cfg(target_os = "linux")]`), nên ma trận `cargo check --target` vẫn 18/18.

@@ -17,6 +17,9 @@ use vis_syntax::Span;
 use vis_types::stdlib::{sig_of, Ty};
 
 use crate::builtin::Host;
+use crate::builtin_ls::{
+    basename_voi, dirname_voi, ext_voi, la_tuyet_doi, noi_duong_voi, stem_voi,
+};
 use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
@@ -495,23 +498,26 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             ))
         }
         // ----- std.path (thuần chuỗi, không chạm đĩa) -----
+        // **VD-258 (tính năng mới)**: trên Windows nhận ổ đĩa (`C:\`, `C:/`, UNC) + **cả** `\`
+        // và `/`; trên POSIX giữ nguyên hành vi cũ. Helper thuần nằm ở `builtin_ls` (R1) và có
+        // test với cờ `windows=true/false` ngay trên Linux.
         "path.join" => {
             let a = chuoi(name, &args[0], 0, span)?;
             let b = chuoi(name, &args[1], 1, span)?;
-            Ok(Value::Str(noi_duong(a, b)))
+            Ok(Value::Str(noi_duong_voi(a, b, cfg!(windows))))
         }
         "path.basename" | "path.dirname" | "path.ext" | "path.stem" => {
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(match name {
-                "path.basename" => basename(p),
-                "path.dirname" => dirname(p),
-                "path.ext" => ext(p),
-                _ => stem(p),
+                "path.basename" => basename_voi(p, cfg!(windows)),
+                "path.dirname" => dirname_voi(p, cfg!(windows)),
+                "path.ext" => ext_voi(p, cfg!(windows)),
+                _ => stem_voi(p, cfg!(windows)),
             }))
         }
         "path.is_abs" => {
             let p = chuoi(name, &args[0], 0, span)?;
-            Ok(Value::Bool(p.starts_with('/')))
+            Ok(Value::Bool(la_tuyet_doi(p, cfg!(windows))))
         }
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         "time.now_ms" => {
@@ -921,8 +927,22 @@ fn json_zero_dau(s: &str) -> Option<usize> {
 
 /// **ST-240 / VD-242 §3.5 (nợ #173)**: giữ dấu float trong JSON. `format!("{}", 1.0_f64)` cho
 /// `"1"`, decoder sẽ đọc thành `Int`; thêm `.0` khi chuỗi in ra không có dấu thập phân/mũ.
+///
+/// **VD-258**: `Display` của Rust in số rất nhỏ/lớn thành hàng trăm chữ số (ví dụ `5e-324` →
+/// 326 chữ số thập phân); `str::parse::<f64>` (decoder JSON) từ chối một số dạng đó, nên encode
+/// xong decode lại **hỏng**. Khi chuỗi quá dài, dùng dạng khoa học `{:e}` (luôn có `e` ⇒ vẫn giữ
+/// dấu float và round-trip qua decoder).
 fn json_float(f: f64) -> String {
+    if !f.is_finite() {
+        return "null".to_string();
+    }
     let s = format!("{f}");
+    if s.len() > 96 {
+        let e = format!("{f:e}");
+        if e.contains('e') || e.contains('E') {
+            return e;
+        }
+    }
     if s.contains('.') || s.contains('e') || s.contains('E') {
         s
     } else {
@@ -1113,7 +1133,7 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
                 Some(Value::Int(n)) => out.push_str(&n.to_string()),
                 Some(Value::Float(f)) => {
                     if f.is_finite() {
-                        out.push_str(&format!("{f}"));
+                        out.push_str(&json_float(*f));
                     } else {
                         out.push_str("null");
                     }
@@ -1218,70 +1238,6 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
     }
 }
 
-fn noi_duong(a: &str, b: &str) -> String {
-    if b.starts_with('/') || a.is_empty() {
-        return b.to_string();
-    }
-    let a = a.trim_end_matches('/');
-    format!("{a}/{b}")
-}
-
-fn basename(p: &str) -> String {
-    let trimmed = p.trim_end_matches('/');
-    // **ST-240 / VD-242 §4 (nợ #174)**: POSIX — gốc `/` (và `//`, `///`, …) có basename `/`.
-    // Trước đây `trim_end_matches('/')` biến nó thành `""`. Chuỗi rỗng vẫn trả rỗng.
-    if trimmed.is_empty() {
-        return if p.is_empty() {
-            String::new()
-        } else {
-            "/".to_string()
-        };
-    }
-    match trimmed.rsplit_once('/') {
-        Some((_, ten)) if !ten.is_empty() => ten.to_string(),
-        _ => trimmed.to_string(),
-    }
-}
-
-fn dirname(p: &str) -> String {
-    let p2 = p.trim_end_matches('/');
-    // **ST-240 / VD-242 §4 (nợ #174)**: `dirname("/") == "/"` (không phải `.`). Chuỗi rỗng
-    // giữ hành vi cũ (`.`).
-    if p2.is_empty() {
-        return if p.is_empty() {
-            ".".to_string()
-        } else {
-            "/".to_string()
-        };
-    }
-    match p2.rsplit_once('/') {
-        Some((d, _)) => {
-            if d.is_empty() {
-                "/".to_string()
-            } else {
-                d.to_string()
-            }
-        }
-        None => ".".to_string(),
-    }
-}
-
-fn ext(p: &str) -> String {
-    let ten = basename(p);
-    match ten.rsplit_once('.') {
-        Some((_, e)) if !e.is_empty() && !ten.starts_with('.') => e.to_string(),
-        _ => String::new(),
-    }
-}
-
-fn stem(p: &str) -> String {
-    let ten = basename(p);
-    match ten.rsplit_once('.') {
-        Some((s, e)) if !e.is_empty() && !ten.starts_with('.') => s.to_string(),
-        _ => ten,
-    }
-}
-
 #[cfg(test)]
 mod st238_tests {
     use super::*;
@@ -1313,5 +1269,43 @@ mod st238_tests {
         ])));
         assert!(!co_so_phi_huu_han(&Value::Float(1.5)));
         assert!(!co_so_phi_huu_han(&Value::Int(1)));
+    }
+
+    // ------------------------------------------------------------------
+    // VD-258 — `json.encode` giữ dấu float cho **cả** `Json.Num(Float)`.
+    // ------------------------------------------------------------------
+
+    fn json_num(f: f64) -> Value {
+        Value::Enum("Json".into(), "Num".into(), vec![Value::Float(f)])
+    }
+
+    fn ma_hoa(v: &Value) -> String {
+        let mut s = String::new();
+        json(v, false, &mut s);
+        s
+    }
+
+    #[test]
+    fn json_num_float_giu_dau_va_roundtrip() {
+        // 1.0 không được in "1" (decoder sẽ thành Int) — cả cây thường lẫn `Json.Num`.
+        assert_eq!(ma_hoa(&json_num(1.0)), "1.0");
+        assert_eq!(ma_hoa(&json_num(1.5)), "1.5");
+        for f in [1.0_f64, 1.5, 1e20, 1e300, f64::MAX, 5e-324, 1e-320] {
+            let s = ma_hoa(&json_num(f));
+            let v = crate::json::decode(&s)
+                .unwrap_or_else(|e| panic!("encode({f}) = {s:?} không decode lại được: {e}"));
+            match v {
+                Value::Float(g) => {
+                    assert_eq!(g.to_bits(), f.to_bits(), "roundtrip {f} qua {s:?} cho {g}")
+                }
+                other => panic!("encode({f}) = {s:?} decode thành {other:?}, không phải Float"),
+            }
+        }
+        // 1e20 trước đây in `100000000000000000000` (không dấu) ⇒ decode thành int tràn i64.
+        let s = ma_hoa(&json_num(1e20));
+        assert!(
+            s.contains('.') || s.contains('e') || s.contains('E'),
+            "phải giữ dấu float: {s}"
+        );
     }
 }
