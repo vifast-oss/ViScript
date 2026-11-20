@@ -155,3 +155,4 @@
 - **strfind** (`791f0c9` → `6f7a51f`): `str.find/rfind` trả `int?` offset scalar, `count` không chồng lấn; `Ty::OptInt`; API +3.
 - **fmt-list** (`4cd3fde` → `5f52e9f`): `vis fmt --check --list` in tệp cần sửa, exit 0/1/2; `--stdin --check --list` in `-`.
 - **explain-json** (`d5c9698` → `e8e5332`): `vis explain [--json]`/`--list --json` một dòng; người dùng thường giữ byte.
+- `./vis-dev core-test` @ `e8e5332`: **PASS** (target `target/core-test`).
