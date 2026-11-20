@@ -215,3 +215,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **path-normalize** (`e468a29` → `c0cba70`): lexical POSIX; `..` giữ khi không phân giải; rỗng ⇒ `.`; sugar `p.normalize()`.
 - **check-json** (`487dc94` → `e17998f`): 16 ca khoá JSON hiện có; sửa `check --json --co-lạ` từ exit 1 thành exit 2.
 - `./vis-dev core-test` PASS sau khi thêm `#![cfg(feature = "sqlite")]` cho `vd270_db_explain`.
+- Smoke mới @ `e17998f`: `str.strip_prefix/strip_suffix`, `path.normalize` — **interp=VM byte-identical**.
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `e17998f`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
