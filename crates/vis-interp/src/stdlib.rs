@@ -35,6 +35,7 @@ mod pathrel;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
+mod sqliteschema;
 mod sqlitetables;
 mod strfind;
 mod strlen;
@@ -1046,6 +1047,19 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             hop_nhat_fs(
                 sqliteidx::chay(host, h, table)
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
+        // **VD-270 (sqlite-schema-sql)** — văn bản SQL khai báo của đối tượng schema **chính**
+        // (table/view/index/trigger) tra theo **tên**; tên bind làm tham số (không nối chuỗi),
+        // so khớp phân biệt hoa/thường. Không có đối tượng / `sql` NULL ⇒ `Ok(None)`; lỗi
+        // handle/host/kết quả ⇒ `Err(Error)` dữ liệu.
+        "sqlite.schema_sql" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let ten = chuoi(name, &args[1], 1, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                sqliteschema::chay(host, h, ten).map(|x| Value::opt(x.map(Value::Str))),
                 span,
             )
         }

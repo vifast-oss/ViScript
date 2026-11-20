@@ -144,6 +144,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 path-relative, 2026-11-21)**: +**1** hàm `std.path.relative`
     // (`(str, str) -> str`; tương đối từ vựng POSIX, không sugar) ⇒ **120** hàm; không xoá/đổi
     // hàm cũ nào.
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-schema-sql, 2026-11-21)**: +**1** hàm `sqlite.schema_sql`
+    // (`(str, str) -> Result[str?, Error]`; tra văn bản SQL khai báo của đối tượng schema chính
+    // theo tên bind, thiếu/`sql` NULL ⇒ `Ok(None)`) ⇒ **121** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 121, "bảng chữ ký phải đủ 121 hàm");
     assert_eq!(FUNCS.len(), 120, "bảng chữ ký phải đủ 120 hàm");
 }
 
@@ -507,4 +511,31 @@ fn sqlite_indexes_kieu_str_str_va_result_list_str() {
         "`sqlite.indexes`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[list[str], Error]");
+}
+
+/// **VD-270 (sqlite-schema-sql)**: chữ ký `(str, str) -> Result[str?, Error]` — biến thể **riêng**
+/// `Ty::ResultOptStrErr` (không tái dùng `ResultStrStr`/`OptStr`, vì phải giữ **cả** lớp
+/// `Result` **và** lớp `Option`), hạ ra `Result[Option[str], Error]`.
+#[test]
+fn sqlite_schema_sql_kieu_str_str_va_result_opt_str() {
+    let f = sig_of("sqlite.schema_sql").expect("sqlite.schema_sql");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`sqlite.schema_sql`: tham số (handle, name)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultOptStrErr,
+        "`sqlite.schema_sql`: kiểu trả phải là biến thể riêng `ResultOptStrErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(
+            Box::new(Type::Opt(Box::new(Type::Str))),
+            Box::new(Ty::Error.sang_type())
+        ),
+        "`sqlite.schema_sql`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[str?, Error]");
 }
