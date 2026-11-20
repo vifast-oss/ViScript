@@ -305,6 +305,7 @@ impl<'a> Checker<'a> {
                 // **VD-259**: `break`/`continue` không xuyên biên lambda; use-set riêng.
                 let saved_loop = std::mem::replace(&mut self.loop_depth, 0);
                 let saved_value = std::mem::replace(&mut self.in_value, false);
+                let saved_gan = std::mem::replace(&mut self.bo_qua_gan_pt, false);
                 let saved_uses = match body {
                     crate::hir::HBody::Stmts(st) => {
                         std::mem::replace(&mut self.fn_uses, super::pat::than_uses(st))
@@ -318,6 +319,7 @@ impl<'a> Checker<'a> {
                 self.fn_uses = saved_uses;
                 self.in_value = saved_value;
                 self.loop_depth = saved_loop;
+                self.bo_qua_gan_pt = saved_gan;
                 self.cur_ret = saved;
                 let declared = self.resolve_ann(ret, *span);
                 let out = if declared.is_error() {
