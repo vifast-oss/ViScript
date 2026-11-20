@@ -309,3 +309,14 @@ ST-250 sửa đường **global**, nhưng Agent 2 báo riêng (A0 yêu cầu kh�
 - Nextest **không** là đường nghiệm thu Windows tại mốc này. Đường chuẩn đã nghiệm thu là `cargo test --workspace --no-fail-fast` → **1422 passed / 0 failed** trên `dbae70a`.
 - Không để việc cài `cargo-nextest` tự động chuyển người dùng sang đường gate đang thất bại mà tài liệu vẫn gọi là đã đạt. Với mốc này, `vis-dev gate --fast` có nextest được xác nhận **chỉ trên Linux**; trên Windows dùng lệnh `cargo test` nêu trên.
 - Nâng thành blocker nếu phân lập được lỗi sản phẩm hoặc đường tới từ chương trình hợp lệ.
+
+## 20. Đợt VD-258..VD-270 — câu hỏi còn chờ A0 (2026-11-21)
+
+**Người ghi**: Agent 2 (đồng bộ tài liệu) · **Trạng thái**: **mở** · **Không** cấp YC/nợ mới; theo dõi tại JOURNAL.
+
+| Chủ đề | Hiện trạng | Cần A0 chốt | Nguồn |
+|---|---|---|---|
+| **Step-cap parity** | interp đếm **vòng lặp**, VM đếm **lệnh**, cùng ngưỡng 10^7 ⇒ 2M vòng interp exit 0 / VM trap `VS0506`→`VS0501` | hợp đồng tính phí thống nhất (điểm tính, đơn vị, ngân sách chung) **trước** khi bật default | ST-260 · VD-249 · `JOURNAL/vd249-budget-draft.md`, `vd256-budget-report.md` |
+| **Budget/fuel/Q** | instrumentation + bảng phụ theo PC + fuel VM đã có; **chưa bật default**; đề xuất BUDGET 40M / FUEL 50M, Q mới thử nghiệm | chốt trọng số / BUDGET / FUEL / Q + VERSION | VD-256/VD-257 · `JOURNAL/vd257-b-budget-report.md`, `vd257-d-fairness-result.md` |
+| **Cancellation** | hủy nội bộ tại safe point, gỡ I/O/timer/waiter đúng 1 lần; **chưa có mã lỗi cancellation riêng** và chính sách lỗi task đầu | mã lỗi cancellation + chính sách lỗi task | ST-281 · `JOURNAL/vd257-c-lifecycle-report.md` |
+| **Async default** | lát 0–3 + coverage trên **đường test**; runtime mặc định **không đổi** | duyệt lát kế tiếp (đưa vào default hay tiếp tục test-only) | VD-250..VD-257 · `JOURNAL/vd257-integration-plan.md`, `BAO-CAO-CHECKPOINT-LAT3-2026-11-20.md` |
