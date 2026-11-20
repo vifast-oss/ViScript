@@ -1,0 +1,317 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! **VD-270** — `textDocument/typeDefinition` cho LSP.
+//!
+//! Từ tại con trỏ là biến/tham số/trường ⇒ suy kiểu tĩnh (nhãn hoặc suy rẻ từ HIR). Chỉ kiểu
+//! **bản ghi/enum người dùng** khai trong tệp mới trả `Location[]` tại **đúng token tên khai báo**
+//! (0-based UTF-16); kiểu dựng sẵn/không biết/không suy được ⇒ `result:null` (không phải `[]`).
+//!
+//! Snapshot **nguyên văn** từng frame để chốt hình dạng JSON + thứ tự khoá. **Đỏ trước VD-270**:
+//! request `textDocument/typeDefinition` rơi vào nhánh method lạ ⇒ `-32601`; các ca dưới đây đỏ
+//! trước khi thêm handler.
+
+use std::io::Write;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+use vis_interp::value::Value;
+
+const URI: &str = "file:///a.vis";
+
+/// Snapshot body phản hồi `initialize` — **VD-270** thêm `typeDefinitionProvider` sau
+/// `inlayHintProvider` (giữ nguyên thứ tự capability cũ, gồm `codeLensProvider`).
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"implementationProvider":true,"documentSymbolProvider":true,"codeLensProvider":{"resolveProvider":false},"foldingRangeProvider":true,"workspaceSymbolProvider":true,"documentFormattingProvider":true,"referencesProvider":true,"documentHighlightProvider":true,"selectionRangeProvider":true,"inlayHintProvider":true,"typeDefinitionProvider":true,"renameProvider":{"prepareProvider":true},"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+
+/// Đóng một frame LSP: header + body (byte).
+fn khung(body: &str) -> String {
+    format!("Content-Length: {}\r\n\r\n{body}", body.len())
+}
+
+/// Chạy `vis lsp --stdio`, bơm toàn bộ `dau_vao` rồi đóng stdin; **deadline 5 s** rồi kill.
+fn chay(dau_vao: &str) -> (i32, String, String) {
+    let mut con = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .args(["lsp", "--stdio"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn `vis lsp`");
+    con.stdin
+        .take()
+        .expect("stdin")
+        .write_all(dau_vao.as_bytes())
+        .expect("bơm stdin");
+    let han = Instant::now() + Duration::from_secs(5);
+    loop {
+        if con.try_wait().expect("try_wait").is_some() {
+            break;
+        }
+        if Instant::now() > han {
+            let _ = con.kill();
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let o = con.wait_with_output().expect("đọc output");
+    (
+        o.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stderr).to_string(),
+    )
+}
+
+fn s(x: &str) -> Value {
+    Value::Str(x.to_string())
+}
+
+fn m(kv: Vec<(&str, Value)>) -> Value {
+    Value::Map(
+        kv.into_iter()
+            .map(|(k, v)| (Value::Str(k.to_string()), v))
+            .collect(),
+    )
+}
+
+fn so(v: &Value) -> String {
+    let mut o = String::new();
+    vis_interp::stdlib::json(v, false, &mut o);
+    o
+}
+
+fn init() -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(1)),
+        ("method", s("initialize")),
+        ("params", m(vec![])),
+    ]))
+}
+
+fn did_open(uri: &str, text: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("method", s("textDocument/didOpen")),
+        (
+            "params",
+            m(vec![(
+                "textDocument",
+                m(vec![
+                    ("uri", s(uri)),
+                    ("languageId", s("viscript")),
+                    ("version", Value::Int(1)),
+                    ("text", s(text)),
+                ]),
+            )]),
+        ),
+    ]))
+}
+
+fn req_vi_tri(id: i64, method: &str, uri: &str, line: i64, ch: i64) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s(method)),
+        (
+            "params",
+            m(vec![
+                ("textDocument", m(vec![("uri", s(uri))])),
+                (
+                    "position",
+                    m(vec![
+                        ("line", Value::Int(line)),
+                        ("character", Value::Int(ch)),
+                    ]),
+                ),
+            ]),
+        ),
+    ]))
+}
+
+fn type_definition(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/typeDefinition", uri, line, ch)
+}
+
+/// Frame **cuối** trong stdout (bỏ header).
+fn frame_cuoi(out: &str) -> &str {
+    let i = out.rfind("Content-Length: ").expect("có frame");
+    let j = out[i..].find("\r\n\r\n").expect("header") + i + 4;
+    &out[j..]
+}
+
+/// Một `Location` nguyên văn (thứ tự khoá `uri`, `range.start`, `range.end`).
+fn loc(uri: &str, l0: i64, c0: i64, l1: i64, c1: i64) -> String {
+    format!(
+        r#"{{"uri":"{uri}","range":{{"start":{{"line":{l0},"character":{c0}}},"end":{{"line":{l1},"character":{c1}}}}}}}"#
+    )
+}
+
+fn ket_qua(id: i64, body: &str) -> String {
+    format!(r#"{{"jsonrpc":"2.0","id":{id},"result":{body}}}"#)
+}
+
+/// Nguồn: `let u = User(name: "An")` — kiểu bản ghi suy từ constructor.
+const NGUON_RECORD: &str =
+    "type User:\n    name: str\n\nfn main():\n    let u = User(name: \"An\")\n    print(u)\n";
+
+/// Nguồn: `let s = Shape.Circle(2.0)` — kiểu enum suy từ biến thể.
+const NGUON_ENUM: &str = "enum Shape:\n    Circle(r: float)\n    Empty\n\nfn main():\n    let s = Shape.Circle(2.0)\n    print(s)\n";
+
+/// Nguồn: trường `dia_chi: DiaChi` của bản ghi `Nguoi`.
+const NGUON_TRUONG: &str = "type DiaChi:\n    duong: str\n\ntype Nguoi:\n    ten: str\n    dia_chi: DiaChi\n\nfn main():\n    let n = Nguoi(ten: \"An\", dia_chi: DiaChi(duong: \"X\"))\n    print(n.dia_chi)\n";
+
+/// Nguồn: tham số `u: User`.
+const NGUON_THAM_SO: &str = "type User:\n    name: str\n\nfn show(u: User):\n    print(u.name)\n";
+
+/// Ca 1 — biến bản ghi ⇒ `Location` tại token tên `User`; snapshot nguyên văn cả phiên.
+#[test]
+fn type_definition_bien_record() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_RECORD)),
+        khung(&type_definition(2, URI, 5, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr phải rỗng");
+    let publish = "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/publishDiagnostics\",\"params\":{\"uri\":\"file:///a.vis\",\"diagnostics\":[]}}";
+    let tra = ket_qua(2, &format!("[{}]", loc(URI, 0, 5, 0, 9)));
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(publish), khung(&tra))
+    );
+}
+
+/// Ca 2 — biến enum ⇒ `Location` tại token tên `Shape`.
+#[test]
+fn type_definition_bien_enum() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_ENUM)),
+        khung(&type_definition(2, URI, 6, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr phải rỗng");
+    let tra = ket_qua(2, &format!("[{}]", loc(URI, 0, 5, 0, 10)));
+    assert_eq!(frame_cuoi(&out), tra);
+}
+
+/// Ca 3 — trường `n.dia_chi` kiểu `DiaChi` ⇒ `Location` tại khai báo `DiaChi`.
+#[test]
+fn type_definition_truong_record() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_TRUONG)),
+        khung(&type_definition(2, URI, 9, 14))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr phải rỗng");
+    let tra = ket_qua(2, &format!("[{}]", loc(URI, 0, 5, 0, 11)));
+    assert_eq!(frame_cuoi(&out), tra);
+}
+
+/// Ca 4 — tham số hàm `u: User` ⇒ `Location` tại token tên `User`.
+#[test]
+fn type_definition_tham_so() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_THAM_SO)),
+        khung(&type_definition(2, URI, 4, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr phải rỗng");
+    let tra = ket_qua(2, &format!("[{}]", loc(URI, 0, 5, 0, 9)));
+    assert_eq!(frame_cuoi(&out), tra);
+}
+
+/// Ca 5 — `let u: User = {name: "An"}` ⇒ kiểu từ **nhãn** (không cần constructor).
+#[test]
+fn type_definition_bien_co_nhan() {
+    let text =
+        "type User:\n    name: str\n\nfn main():\n    let u: User = {name: \"An\"}\n    print(u)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&type_definition(2, URI, 5, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = ket_qua(2, &format!("[{}]", loc(URI, 0, 5, 0, 9)));
+    assert_eq!(frame_cuoi(&out), tra);
+}
+
+/// Ca 6 — kiểu dựng sẵn `int` ⇒ `result:null` (không phải `[]`).
+#[test]
+fn type_definition_kieu_dung_san_tra_null() {
+    let text = "fn main():\n    let n = 5\n    print(n)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&type_definition(2, URI, 2, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}
+
+/// Ca 7 — kiểu không biết (`khong_biet()`) ⇒ `result:null`.
+#[test]
+fn type_definition_khong_biet_tra_null() {
+    let text = "fn main():\n    let z = khong_biet()\n    print(z)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&type_definition(2, URI, 2, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}
+
+/// Ca 8 — URI **chưa mở** ⇒ `result:null`.
+#[test]
+fn type_definition_uri_chua_mo_tra_null() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_RECORD)),
+        khung(&type_definition(2, "file:///b.vis", 5, 10))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}
+
+/// Ca 9 — con trỏ **không trên từ** (khoảng trắng) ⇒ `result:null`.
+#[test]
+fn type_definition_khong_co_tu_tra_null() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_RECORD)),
+        khung(&type_definition(2, URI, 5, 0))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}

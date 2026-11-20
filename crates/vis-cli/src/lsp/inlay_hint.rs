@@ -62,7 +62,10 @@ fn phan_tu(t: &Type) -> Option<Type> {
 }
 
 /// Trạng thái suy kiểu: bảng ký hiệu/kiểu + hàm cấp tệp + env `sym → kiểu` + hints đã gom.
-struct Suy<'a> {
+///
+/// **VD-270**: `pub(crate)` để `typeDefinition` dùng lại **cùng** phép suy kiểu rẻ (chỉ nạp
+/// `env`/`fns` bằng [`Suy::nap`], không phát hint).
+pub(crate) struct Suy<'a> {
     syms: &'a Symbols,
     tbl: &'a TypeTable,
     /// Hàm cấp tệp/`impl`/`trait` theo `sym` — kiểu trả của lời gọi.
@@ -70,21 +73,27 @@ struct Suy<'a> {
     /// Kiểu đã biết của ký hiệu (tham số, `let`/`var` có nhãn **hoặc** suy được).
     env: HashMap<u32, Type>,
     out: Vec<Inlay>,
+    /// `false` (mặc định) = chỉ nạp `env`/`fns`, **không** ghi hint (dùng cho typeDefinition).
+    ghi_hint: bool,
 }
 
 impl<'a> Suy<'a> {
-    fn moi(syms: &'a Symbols, tbl: &'a TypeTable) -> Self {
+    pub(crate) fn moi(syms: &'a Symbols, tbl: &'a TypeTable) -> Self {
         Self {
             syms,
             tbl,
             fns: HashMap::new(),
             env: HashMap::new(),
             out: Vec::new(),
+            ghi_hint: false,
         }
     }
 
     /// Ghi hint nếu kiểu **hiển thị được** (không `{error}`/`never`/lồng `{error}`).
     fn them(&mut self, byte: usize, kieu: &Type) {
+        if !self.ghi_hint {
+            return;
+        }
         if kieu.is_error() || matches!(kieu, Type::Never) || chua_loi(kieu) {
             return;
         }
@@ -94,8 +103,21 @@ impl<'a> Suy<'a> {
         });
     }
 
+    /// **VD-270**: kiểu đã biết của ký hiệu (`env` rồi `HSym.ty`).
+    pub(crate) fn kieu_sym(&self, sym: u32) -> Option<Type> {
+        self.env
+            .get(&sym)
+            .cloned()
+            .or_else(|| self.syms.get(sym).and_then(|s| s.ty.clone()))
+    }
+
+    /// **VD-270**: ghi đè kiểu của ký hiệu (vd `self` trong `impl` — lowering để `{error}`).
+    pub(crate) fn dat_kieu(&mut self, sym: u32, kieu: Type) {
+        self.env.insert(sym, kieu);
+    }
+
     /// Kiểu **rẻ** của biểu thức; `None` = không chắc (không đoán).
-    fn kieu(&self, e: &HExpr) -> Option<Type> {
+    pub(crate) fn kieu(&self, e: &HExpr) -> Option<Type> {
         match e {
             HExpr::Lit { ty, .. } => Some(ty.clone()),
             HExpr::Var { name, sym, .. } => {
@@ -561,63 +583,71 @@ impl<'a> Suy<'a> {
     }
 }
 
+impl<'a> Suy<'a> {
+    /// **VD-270**: nạp `fns` + `env` cho **toàn bộ** HIR; chỉ ghi hint khi `ghi_hint = true`.
+    pub(crate) fn nap(&mut self, hir: &'a Hir) {
+        for it in &hir.items {
+            match it {
+                HItem::Fn(f) => {
+                    self.fns.insert(f.sym, f);
+                }
+                HItem::Impl(imp) => {
+                    for f in &imp.methods {
+                        self.fns.insert(f.sym, f);
+                    }
+                }
+                HItem::Trait(t) => {
+                    for f in &t.methods {
+                        self.fns.insert(f.sym, f);
+                    }
+                }
+                _ => {}
+            }
+        }
+        // Cấp tệp trước (để hàm/khối sau dùng được `let` cấp tệp), rồi thân item.
+        self.stmts(&hir.stmts);
+        for it in &hir.items {
+            match it {
+                HItem::Fn(f) => {
+                    for p in &f.params {
+                        if !p.ty.is_error() {
+                            self.env.insert(p.sym, p.ty.clone());
+                        }
+                    }
+                    self.stmts(&f.body);
+                }
+                HItem::Impl(imp) => {
+                    for f in &imp.methods {
+                        for p in &f.params {
+                            if !p.ty.is_error() {
+                                self.env.insert(p.sym, p.ty.clone());
+                            }
+                        }
+                        self.stmts(&f.body);
+                    }
+                }
+                HItem::Trait(t) => {
+                    for f in &t.methods {
+                        for p in &f.params {
+                            if !p.ty.is_error() {
+                                self.env.insert(p.sym, p.ty.clone());
+                            }
+                        }
+                        self.stmts(&f.body);
+                    }
+                }
+                HItem::Const(c) => self.duyet_expr(&c.value),
+                _ => {}
+            }
+        }
+    }
+}
+
 /// Gom inlay hint từ HIR: `let`/`var` không nhãn, theo thứ tự nguồn, cap [`CAP`].
 pub fn gom(hir: &Hir, syms: &Symbols, tbl: &TypeTable) -> Vec<Inlay> {
     let mut s = Suy::moi(syms, tbl);
-    for it in &hir.items {
-        match it {
-            HItem::Fn(f) => {
-                s.fns.insert(f.sym, f);
-            }
-            HItem::Impl(imp) => {
-                for f in &imp.methods {
-                    s.fns.insert(f.sym, f);
-                }
-            }
-            HItem::Trait(t) => {
-                for f in &t.methods {
-                    s.fns.insert(f.sym, f);
-                }
-            }
-            _ => {}
-        }
-    }
-    // Cấp tệp trước (để hàm/khối sau dùng được `let` cấp tệp), rồi thân item.
-    s.stmts(&hir.stmts);
-    for it in &hir.items {
-        match it {
-            HItem::Fn(f) => {
-                for p in &f.params {
-                    if !p.ty.is_error() {
-                        s.env.insert(p.sym, p.ty.clone());
-                    }
-                }
-                s.stmts(&f.body);
-            }
-            HItem::Impl(imp) => {
-                for f in &imp.methods {
-                    for p in &f.params {
-                        if !p.ty.is_error() {
-                            s.env.insert(p.sym, p.ty.clone());
-                        }
-                    }
-                    s.stmts(&f.body);
-                }
-            }
-            HItem::Trait(t) => {
-                for f in &t.methods {
-                    for p in &f.params {
-                        if !p.ty.is_error() {
-                            s.env.insert(p.sym, p.ty.clone());
-                        }
-                    }
-                    s.stmts(&f.body);
-                }
-            }
-            HItem::Const(c) => s.duyet_expr(&c.value),
-            _ => {}
-        }
-    }
+    s.ghi_hint = true;
+    s.nap(hir);
     let mut out = s.out;
     out.sort_by_key(|h| h.byte);
     out.truncate(CAP);

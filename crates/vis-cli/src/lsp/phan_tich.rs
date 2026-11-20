@@ -68,6 +68,8 @@ pub struct KetQua {
     /// **VD-270**: gợi ý kiểu (`textDocument/inlayHint`) cho `let`/`var` không nhãn — đã sắp
     /// theo nguồn, cap 200.
     pub inlay: Vec<super::inlay_hint::Inlay>,
+    /// **VD-270**: từ tại điểm dùng → khai báo bản ghi/enum (`textDocument/typeDefinition`).
+    pub kieu: Vec<super::type_definition::NutKieu>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -199,6 +201,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
     let ky_hieu = super::ky_hieu::gom(&out.hir);
     let test_fn = super::codelens::gom(&out.hir);
     let inlay = super::inlay_hint::gom(&out.hir, &syms, &tbl);
+    let kieu = super::type_definition::gom(&out.hir, &syms, &tbl, &lexed.text);
     KetQua {
         text: lexed.text.clone(),
         ds,
@@ -210,6 +213,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         ky_hieu,
         test_fn,
         inlay,
+        kieu,
     }
 }
 
