@@ -25,7 +25,10 @@
   target riêng, POSIX thật cho `/bin/sh`/`printf`, release script. Gate vẫn **1633**; core-test PASS.
 - **SQLite hardening `3f7833f` → merge `e4990ab`**: deny `dbstat`/raw-page, `query` read-only, token OS RNG,
   read cell cap 1 MiB (write 17 MiB), thêm 47 unit + 17 e2e SQLite. Gate main **1641**.
-- Còn chờ: semantics (or-pattern checker/break/main-int), frame leftovers.
+- **Semantics `a4cf655` → merge `fb12645`**: or-pattern checker đệ quy/type, `break`/`continue` static context,
+  `main -> int` exit **0** theo VD-242; gate main **1656**; core-test PASS.
+- Còn chờ: frame leftovers (`vd259-frame2`). Sau đó mở wave 3: refutable `let`/`for`, scope/unresolved,
+  ST-248 branch/coercion parity, list rest-pattern (feature), frame gaps còn lại.
 - Sau wave 2: merge, chạy gate/core-test/release test, cập nhật QUEUE/report cuối.
 
 ## Quy tắc tích hợp đã áp dụng
