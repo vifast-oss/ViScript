@@ -150,7 +150,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 str-title, 2026-11-21)**: +**1** hàm `std.str.title`
     // (`(str) -> str`; hoa scalar đầu mỗi từ theo khoảng trắng Unicode, `ß` ⇒ `SS`) ⇒ **122** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 122, "bảng chữ ký phải đủ 122 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-index-columns, 2026-11-21)**: +**1** hàm
+    // `sqlite.index_columns` (`(str, str) -> Result[list[str], Error]`; tên cột của index schema
+    // chính theo thứ tự index, tra theo tên, tên index bind làm tham số) ⇒ **123** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 123, "bảng chữ ký phải đủ 123 hàm");
 }
 
 #[test]
@@ -553,4 +557,31 @@ fn sqlite_schema_sql_kieu_str_str_va_result_opt_str() {
         "`sqlite.schema_sql`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[str?, Error]");
+}
+
+/// **VD-270 (sqlite-index-columns)**: chữ ký `(str, str) -> Result[list[str], Error]` — tái
+/// dùng `Ty::ResultListStrStr` (không thêm biến thể `Ty`), hạ ra `Result` với lỗi là bản ghi
+/// `Error`.
+#[test]
+fn sqlite_index_columns_kieu_str_str_va_result_list_str() {
+    let f = sig_of("sqlite.index_columns").expect("sqlite.index_columns");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`sqlite.index_columns`: tham số (handle, index)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultListStrStr,
+        "`sqlite.index_columns`: kiểu trả phải tái dùng `ResultListStrStr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(
+            Box::new(Type::List(Box::new(Type::Str))),
+            Box::new(Ty::Error.sang_type())
+        ),
+        "`sqlite.index_columns`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[list[str], Error]");
 }
