@@ -19,10 +19,12 @@
 - `test/toolchain/run.sh`: 12/12 (do C).
 - `host_posix_real.rs`: `/bin/echo`, `/usr/bin/grep` thật, interp + VM, 1/1.
 
-## Còn chờ
+## Wave 2
 
-- **Wave 2** (4 worktree `vd259-*`): semantics leftovers (or-pattern checker/break-continue/main-int), frame leftovers (HBody/lifecycle/timer/defaults), tooling/release (test-child/core-test/host), SQLite hardening (dbstat/token/hard cap).
-- Sau wave 2: merge, chạy gate/core test, cập nhật QUEUE/report cuối.
+- **Tooling `5aa1431` → merge `e1a2f2f`**: `bin/vis-release` chỉ đóng gói `vis` (kiểm 15 ca), `vis-dev core-test`
+  target riêng, POSIX thật cho `/bin/sh`/`printf`, release script. Gate vẫn **1633**; core-test PASS.
+- Còn chờ: semantics (or-pattern checker/break/main-int), frame leftovers, SQLite hardening.
+- Sau wave 2: merge, chạy gate/core-test/release test, cập nhật QUEUE/report cuối.
 
 ## Quy tắc tích hợp đã áp dụng
 
