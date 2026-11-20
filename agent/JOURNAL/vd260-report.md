@@ -198,3 +198,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **lsp-hover-builtin** (`be9ad23` → `53f87b7`): hover `list/map/str` method lõi + sugar R5c; bảng lõi cục bộ 28 chữ ký.
 - **fmt-stat** (`e73f00e` → `580123b`): `--check --stat` một dòng `fmt-check: N tệp, M cần sửa, K lỗi`; stdin hỗ trợ.
 - `VIS_DIFF_N=200000` seed 20261128 @ `580123b`: **0 lệch** (187.536 chạy, 270,1 s).
+- `vis test test/sem` @ `580123b`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
