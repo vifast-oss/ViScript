@@ -3145,3 +3145,21 @@ chữ ký builtin. `FUNCS`/`API-STD.txt` không đổi (không phải hàm `std.
 sắp theo byte; **bỏ hoàn toàn symlink** (không trả, không đi vào) nên không có vòng/chạy ra ngoài;
 ẩn vẫn gồm. Quyền kiểm trên gốc qua `FsGuard`; thiếu quyền ⇒ `VS0604`; lỗi dữ liệu ⇒ `Err`.
 `FsHost::walk` có default `Err` cho host cũ; mock/VM cùng hợp đồng. API-STD +1.
+
+### VD-268 (phần nestassign) · Gán lồng — A0, 2026-11-21
+
+Duyệt **gán lồng** `x.f.g`, `x[i].f`, `x.f[i]`, `x[i][j]` (A.2/§4.1 trước đây từ chối): gốc phải
+là `var`/`var self`; mỗi bước `Field` là bản ghi, `Index` là `list`/`map` (kiểm kiểu); cấm `?.`
+trong đường. `= += -= *= /= //= %=` dùng được trên **lá**. Runtime đọc gốc một lần, đánh giá
+index/key **một lần** theo thứ tự, đọc tầng giữa trước RHS, gộp `With`/`Set` từ lá lên; ngoài
+phạm vi `VS0503` như đọc. Giá trị/COW: `let b = a.b` không bị ảnh hưởng bởi `a.b.f = …`.
+Parser nhận `assign_op` sau **lvalue đầy đủ**. Frame test path chưa cập nhật (ngoài phạm vi).
+
+### VD-268 (phần glob) · `std.fs.glob` — A0, 2026-11-21
+
+`fs.glob(root, pattern) -> Result[list[str], Error]` lọc kết quả `walk(root)`: `*` (không `/`),
+`?` (một scalar, không `/`), `**` (mọi ký tự kể cả `/`, chỉ đứng trọn thành phần đường dẫn).
+Pattern **không có `/`** khớp **basename** ở mọi độ sâu; có `/` khớp đường dẫn tương đối. Kết quả
+cùng dạng `walk` (thư mục `/` cuối), sắp theo byte, không trùng; symlink vẫn bị `walk` bỏ; quyền
+kiểm trên gốc; pattern rỗng/tuyệt đối/quá 4096 byte/`**` sai vị trí ⇒ `Err`; không khớp ⇒ `Ok([])`.
+`[`/`{`/`\` là ký tự thường. API-STD +1.
