@@ -24,6 +24,7 @@ use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
+mod strfind;
 mod strpad;
 
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
@@ -220,7 +221,9 @@ fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> {
             // **VD-241 (Gate 1)**: `Result[RowSet, Error]` cũng là kiểu **trả** của `std.sqlite.query`.
             | Ty::ResultIntErr
             | Ty::ResultBoolErr
-            | Ty::ResultRowSetErr => true,
+            | Ty::ResultRowSetErr
+            // **VD-270 (strfind)**: `int?` là kiểu **trả** của `str.find`/`str.rfind`.
+            | Ty::OptInt => true,
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
             Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
             Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),
@@ -397,6 +400,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(s.replace(tu, den)))
+        }
+        // **VD-270 (strfind)**: offset **scalar** Unicode; `find`/`rfind` ⇒ `int?` (không khớp
+        // ⇒ `None`), `count` ⇒ `int` **không chồng** (Rust `matches`). Needle rỗng theo Rust.
+        "str.find" | "str.rfind" | "str.count" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            let needle = chuoi(name, &args[1], 1, span)?;
+            Ok(strfind::goi(name, s, needle))
         }
         // **VD-269**: đệm theo **scalar** Unicode; `fill` rỗng ⇒ trap; `center` dư bên phải.
         "str.pad_left" | "str.pad_right" | "str.center" => {
