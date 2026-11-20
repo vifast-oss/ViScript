@@ -30,7 +30,7 @@ use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--lang vi|en|ja] <VSxxxx> | vis explain --list [--lang vi|en|ja] | vis run [--tap] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--lang vi|en|ja] <VSxxxx> | vis explain --list [--lang vi|en|ja] | vis run [--tap] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     ExitCode::from(2)
 }
