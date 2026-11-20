@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 75] = [
+pub const FUNCS: [StdFn; 80] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -252,6 +252,33 @@ pub const FUNCS: [StdFn; 75] = [
     StdFn {
         name: "str.replace",
         params: &[Ty::Str, Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-269**: cắt khoảng trắng Unicode **một phía**; đệm theo **scalar** Unicode (`chars()`).
+    // `fill` phải khác rỗng (rỗng ⇒ trap `VS0501`); `center` đặt scalar dư bên **phải**.
+    StdFn {
+        name: "str.trim_start",
+        params: &[Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.trim_end",
+        params: &[Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.pad_left",
+        params: &[Ty::Str, Ty::Int, Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.pad_right",
+        params: &[Ty::Str, Ty::Int, Ty::Str],
+        ret: Ty::Str,
+    },
+    StdFn {
+        name: "str.center",
+        params: &[Ty::Str, Ty::Int, Ty::Str],
         ret: Ty::Str,
     },
     // ----- std.list — **ST-58 (VD-99 (4))**: `list[T]` thật (8 chữ ký đổi) -----

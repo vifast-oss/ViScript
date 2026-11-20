@@ -71,17 +71,22 @@ sqlite.open_with	(str, bool, int) -> Result[str, Error]
 sqlite.query	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.query_one	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.rollback	(str) -> Result[(), Error]
+str.center	(str, int, str) -> str
 str.contains	(str, str) -> bool
 str.ends_with	(str, str) -> bool
 str.join	(list[str], str) -> str
 str.lines	(str) -> list[str]
 str.lower	(str) -> str
+str.pad_left	(str, int, str) -> str
+str.pad_right	(str, int, str) -> str
 str.repeat	(str, int) -> str
 str.replace	(str, str, str) -> str
 str.split	(str, str) -> list[str]
 str.split_whitespace	(str) -> list[str]
 str.starts_with	(str, str) -> bool
 str.trim	(str) -> str
+str.trim_end	(str) -> str
+str.trim_start	(str) -> str
 str.upper	(str) -> str
 time.monotonic_ms	() -> int
 time.now_ms	() -> int
