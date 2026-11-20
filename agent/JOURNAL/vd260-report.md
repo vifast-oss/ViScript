@@ -147,3 +147,5 @@
 - `VIS_DIFF_N=100000` (seed 20261124, @ `484d570`): **0 lệch** (93.770 chạy, 162,7 s).
 - `vis test test/sem` @ `3d30be1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `./vis-dev nightly` @ `3d30be1`: **PASS** — parser fuzz **8.543.006 ca / 193.835.169 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- `bin/vis-host-suite` @ `3d30be1`: **54/54 PASS** + POSIX real.
+- `vd270_r5c_sugar`: khoá sugar generic `sort/take/drop/chunk/unique/zip/min/max/windows/concat` cả hai engine.
