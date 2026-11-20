@@ -53,6 +53,7 @@ list.reverse	(list[T]) -> list[T]
 list.sort	(list[T]) -> list[T]
 list.sort_by	(list[T], fn(T) -> int | str) -> list[T]
 list.sum	(list[int]) -> int
+list.sum_float	(list[float]) -> float
 list.take	(list[T], int) -> list[T]
 list.unique	(list[T]) -> list[T]
 list.windows	(list[T], int) -> list[list[T]]
