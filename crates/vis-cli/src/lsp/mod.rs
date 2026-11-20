@@ -27,10 +27,31 @@ mod workspace;
 use std::collections::HashMap;
 use std::io::{self, BufReader};
 use std::process::ExitCode;
+use std::rc::Rc;
 
 use vis_interp::json;
 use vis_interp::value::Value;
 use vis_syntax::Mode;
+
+use phan_tich::KetQua;
+
+/// **ST-283**: cache kết quả phân tích theo `(uri, text)` trong một phiên LSP. Mọi thay đổi
+/// văn bản (didOpen/didChange/didClose) **xoá cả cache** để không phục vụ module/dependency cũ.
+fn phan_tich_cache(
+    cache: &mut HashMap<String, (String, Rc<KetQua>)>,
+    uri: &str,
+    text: &str,
+    mode: Mode,
+) -> Rc<KetQua> {
+    if let Some((cu, kq)) = cache.get(uri) {
+        if cu == text {
+            return kq.clone();
+        }
+    }
+    let kq = Rc::new(module::phan_tich_uri(uri, text, mode));
+    cache.insert(uri.to_string(), (text.to_string(), kq.clone()));
+    kq
+}
 
 /// Chạy server LSP tới khi `exit` hoặc **EOF stdin**. Chỉ nhận `--stdio` (mặc định cũng là stdio).
 pub fn run(args: &[String]) -> ExitCode {
@@ -53,6 +74,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut van_ban: HashMap<String, String> = HashMap::new();
     // **ST-277**: thư mục gốc từ `initialize.params.rootUri` (workspace/symbol).
     let mut root: Option<std::path::PathBuf> = None;
+    // **ST-283**: cache phân tích của tệp đang mở (xoá khi văn bản đổi).
+    let mut kq_cache: HashMap<String, (String, Rc<KetQua>)> = HashMap::new();
 
     // Ghi frame; lỗi ghi (stdout đóng) ⇒ dừng với mã 1 (không panic).
     macro_rules! gui {
@@ -138,18 +161,21 @@ pub fn run(args: &[String]) -> ExitCode {
             "textDocument/didOpen" => {
                 if let Some((uri, text)) = jsonrpc::van_ban_mo(kv) {
                     van_ban.insert(uri.clone(), text.clone());
+                    kq_cache.clear();
                     gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
                 }
             }
             "textDocument/didChange" => {
                 if let Some((uri, text)) = jsonrpc::van_ban_doi(kv) {
                     van_ban.insert(uri.clone(), text.clone());
+                    kq_cache.clear();
                     gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
                 }
             }
             "textDocument/didClose" => {
                 if let Some(uri) = jsonrpc::uri_cua(kv) {
                     van_ban.remove(&uri);
+                    kq_cache.clear();
                     // **ST-100**: dọn cache nạp module; URI khác vẫn dùng lại bình thường.
                     crate::modules::xoa_cache_phu();
                     module::xoa_cache_module();
@@ -171,7 +197,7 @@ pub fn run(args: &[String]) -> ExitCode {
                             // Chưa mở ⇒ nội dung rỗng ⇒ `[]` (không lỗi).
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(goi_y::tra_loi_completion(&kq, byte, &id));
                             }
@@ -192,7 +218,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(goi_y::tra_loi_hover(&kq, byte, &id));
                             }
@@ -214,7 +240,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_definition(
                                     &kq,
@@ -242,7 +268,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(chu_ky::tra_loi_signature(&kq, byte, mode_cua(&uri), &id));
                             }
@@ -264,7 +290,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(doi_ten::tra_loi_prepare(&kq, byte, &id));
                             }
@@ -290,7 +316,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         let ten_moi = ten_moi.and_then(jsonrpc::chuoi);
                         match (ten_moi, van_ban.get(&uri)) {
                             (Some(ten_moi), Some(text)) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(doi_ten::tra_loi_rename(
                                     &kq,
@@ -320,7 +346,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_highlights(
                                     &kq,
@@ -347,7 +373,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_references(&kq, &uri, byte, &id));
                             }
@@ -369,7 +395,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(ky_hieu::tra_loi_document_symbol(&kq, &id));
                             }
                         }
@@ -390,7 +416,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(gap::tra_loi_folding(&kq, &id));
                             }
                         }
@@ -433,7 +459,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         match van_ban.get(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
                             Some(text) => {
-                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(dinh_dang::tra_loi_format(&kq, mode_cua(&uri), &id));
                             }
                         }
@@ -609,7 +635,35 @@ fn mode_cua(uri: &str) -> Mode {
 
 #[cfg(test)]
 mod vd258_tests {
-    use super::{percent_giai_ma, uri_thanh_duong_voi};
+    use super::{percent_giai_ma, phan_tich_cache, uri_thanh_duong_voi};
+    use std::collections::HashMap;
+    use std::rc::Rc;
+    use vis_syntax::Mode;
+
+    #[test]
+    fn cache_phan_tich_theo_text() {
+        let mut c: HashMap<String, (String, Rc<crate::lsp::phan_tich::KetQua>)> = HashMap::new();
+        let a = phan_tich_cache(
+            &mut c,
+            "file:///x.vis",
+            "fn main():\n    print(1)\n",
+            Mode::Script,
+        );
+        let b = phan_tich_cache(
+            &mut c,
+            "file:///x.vis",
+            "fn main():\n    print(1)\n",
+            Mode::Script,
+        );
+        assert!(Rc::ptr_eq(&a, &b), "cùng text phải dùng lại cache");
+        let c2 = phan_tich_cache(
+            &mut c,
+            "file:///x.vis",
+            "fn main():\n    print(2)\n",
+            Mode::Script,
+        );
+        assert!(!Rc::ptr_eq(&a, &c2), "text đổi phải phân tích lại");
+    }
 
     #[test]
     fn uri_percent_drive_windows() {
