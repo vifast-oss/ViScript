@@ -39,11 +39,11 @@ pub fn frame_body_builds_reset_for_test() {
 /// shadowing tự nhiên đúng); closure giữ `Rc` để bắt môi trường.
 pub type Env = Rc<RefCell<HashMap<u32, Value>>>;
 
-/// **VD-263** — giá trị binder `else e` của `let … else` khi pattern không khớp.
+/// **VD-263 + VD-265** — giá trị binder `else e` của `let … else` khi pattern không khớp.
 ///
 /// Cùng luật với checker/codegen (`HPat::else_binds_err`): tên trần/`Ok(...)` lấy payload `Err`
-/// khi giá trị **thật** là `Err`; `Err(e)`/`Some(x)`/`None`/pattern khác bind `()`. Dùng cho
-/// default interp — frame test (ngoài phạm vi VD-263) giữ nguyên đường cũ.
+/// khi giá trị **thật** là `Err`; `Err(e)`/`Some(x)`/`None`/pattern khác bind `()`. Dùng chung
+/// cho interp mặc định và frame test (VD-265) để hai đường không lệch giá trị binder.
 pub(crate) fn let_else_binder(pat: &HPat, v: &Value) -> Value {
     if pat.else_binds_err() {
         if let Value::Enum(ea, va, args) = v {
