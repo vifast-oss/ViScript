@@ -3048,3 +3048,47 @@ luận được đổi runtime mặc định**.
 
 > **Mục tiêu cuối tuần**: thu hẹp khoảng trống để runtime mới tiến gần dùng thật, **không** đạt một con số
 > test hay chạy đủ số giờ.
+---
+
+### VD-258 · Nhận stream A (checker/record/None) — A0, 2026-11-20
+
+Nhận các sửa đã merge: `Result?` giữ đúng một lớp Option; `None` có kiểu; record ctor/default;
+`?.` lồng; lift Option ở biên dựng/`with`/`push`; builtin trait/ctor đa tệp. Không đổi SPEC, không
+đổi runtime mặc định. Cache `PHIEN_BAN` bump để bytecode cũ không tái dùng (VD-129).
+
+### VD-259 · Nhận stream A (frame/async) — A0, 2026-11-20
+
+Nhận redispatch stack, `CallMethod` Pending/RedispatchMethod, deadlock exit 0, closure/const env,
+fake-source body, exit code; HBody cache/sorted trace/lifecycle/purge; ready-budget timer. Frame vẫn
+là engine thử nghiệm, không phải runtime mặc định.
+
+### VD-260 · Nhận stream A (rest pattern + refutable) — A0, 2026-11-20
+
+Nhận list rest `[a, ..]`/`[a, ..r]` (không đổi opcode/VERSION); refutable `let`/`for` bị từ chối tĩnh
+`VS0412` (dùng `if let`/`match`); branch join nâng plain→Option; scope/record rules của checker.
+Fixture rest pattern đổi sang `if let` cho đúng luật.
+
+### VD-261 · SQLite: cache schema + chính sách đọc — A0, 2026-11-21
+
+Cache quét schema UTF-8 theo **`(schema_version, data_version)`**; cho phép **đọc** ba pragma
+`user_version`/`schema_version`/`data_version`, cấm ghi; `sqlite.query` chỉ đọc, `execute` cho ghi;
+`dbstat`/trang thô bị authorizer chặn. Mục tiêu: bỏ chi phí quét mỗi lời gọi mà không nới quyền.
+
+### VD-262 · Method body + globals + exit code — A0, 2026-11-21
+
+Type-check thân `impl` (break/continue/tên lạ/return); khởi tạo top-level `let`/`var` trước `fn main`
+ở cả hai engine; xác nhận lại **`main -> int` không phải mã thoát** — chỉ `Result::Err` ⇒ 1 (VD-242 §7).
+
+### VD-263 · Let-else/with/`[]`/generic + method-return — A0, 2026-11-21
+
+`let … else` buộc khối `else` **thoát mọi nhánh** (`VS0206`); scope `else` là env trước binding;
+binder: `let x`/`Ok(x)`/`Ok(_)`/`Ok()` nhận `Err` payload, còn lại `()`; interp = VM. `with` lấy kiểu
+tĩnh từ mọi gốc; `[]` pattern chỉ khớp list, `()` chỉ khớp Unit; generic `G[int?]`/`Hop[T]` mang
+instantiation vào field/ctor/`with`/gán; `break`/`continue` trong `if`/`match` biểu thức lan ra vòng
+ngoài. Nợ tiếp: method-return, frame parity, generic residual (đang ở wave 7).
+
+### VD-264 · Range lười + suy kiểu pattern/call — A0, 2026-11-21
+
+`for` trên range duyệt lười ở interp/VM/frame (không dựng `Vec<Value>`); trần `10^7` đếm `i128`
+trước thân vòng, giữ `E_LOOP`/`break`/`continue`; **không** đổi `Value`/opcode/VERSION. Suy kiểu đệ quy
+sau pattern lồng và `Call`/`Try`/`With`/`If`/`Match` cho Option lift; cache `PHIEN_BAN` ghim lại.
