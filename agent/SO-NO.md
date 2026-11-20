@@ -10,10 +10,11 @@
 **ST-237** (ma trận 28 phát hiện: 28/28 reproduced; **#176 bác bỏ có bằng chứng** theo `SPEC-lex.md:44` ⇒ `không làm có lý do`; **#172** chờ A0 chọn bão hoà hay `VS0507` — `BLOCKED.md` §12) ·
 **ST-242** (host identity + addendum macOS: **#147/#152 → blocked do phần cứng** — không có máy Darwin thật, `vis-remote mac` trả Linux; **vẫn giữ "mở" và vẫn đếm**, không xoá số để giảm tổng; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
 **ST-238** (sửa xong Đợt A; **#157/#158/#159/#160/#163/#164/#167/#169/#181 → đóng ở ST-238**; review từng finding `JOURNAL/st238-review.md`; §8 **185 = 112 mở / 47 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
+**ST-239** (Đợt B; **#161/#162/#165/#166/#170 → đóng ở ST-239**; review `JOURNAL/st239-review.md`; §8 **187 = 109 mở / 52 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
 **A0 bổ sung sau ST-238** ( thêm **#185** wrapper/toolchain, **#186** lệch chẩn đoán ST-28; §8 **187 = 114 mở / 47 đóng / 23 VS3 / 2 không làm / 1 điều hướng**) ·
 **Luật gốc**: `DECISIONS.md` **VD-147(3)** (kèm VD-142, VD-143, VD-145, VD-148, VD-149, VD-153, VD-154, VD-156)
 **Ngày lập**: 2026-11-16 · **Người ghi**: Agent 2 dòng ViScript · **HEAD khi lập**: `b1ee0b33`
-**Cập nhật**: 2026-11-20 (**A0 bổ sung** — thêm **#185** wrapper/toolchain và **#186** lệch chẩn đoán ST-28; §8 **187 = 114 mở / 47 đóng**); trước đó 2026-11-20 (**ST-238** — đóng **#157/#158/#159/#160/#163/#164/#167/#169/#181**; §8 **185 = 112 mở / 47 đóng**); trước đó 2026-11-20 (**ST-242** — **#147/#152 blocked do phần cứng nhưng vẫn mở/vẫn đếm**; thêm note §8; tổng **185 = 121 mở**); trước đó 2026-11-20 (**ST-237** — ma trận 28 phát hiện: 28/28 reproduced; **#176 → không làm có lý do** (SPEC-lex §44); **#172 chờ A0** qua `BLOCKED.md` §12; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**); trước đó 2026-11-20 (**ST-231** — thêm **#156**: `vis-targets` còn **16/18** sau SQLite MVP, `libsqlite3-sys` cần C toolchain cho msvc/wasm32; chỉ đo + ghi nợ); trước đó 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **185 mục = 122 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
+**Cập nhật**: 2026-11-20 (**ST-239** — đóng **#161/#162/#165/#166/#170**; §8 **187 = 109 mở / 52 đóng**); trước đó 2026-11-20 (**A0 bổ sung** — thêm **#185** wrapper/toolchain và **#186** lệch chẩn đoán ST-28; §8 **187 = 114 mở / 47 đóng**); trước đó 2026-11-20 (**ST-238** — đóng **#157/#158/#159/#160/#163/#164/#167/#169/#181**; §8 **185 = 112 mở / 47 đóng**); trước đó 2026-11-20 (**ST-242** — **#147/#152 blocked do phần cứng nhưng vẫn mở/vẫn đếm**; thêm note §8; tổng **185 = 121 mở**); trước đó 2026-11-20 (**ST-237** — ma trận 28 phát hiện: 28/28 reproduced; **#176 → không làm có lý do** (SPEC-lex §44); **#172 chờ A0** qua `BLOCKED.md` §12; §8 **185 = 121 mở / 38 đóng / 23 VS3 / 2 không làm / 1 điều hướng**); trước đó 2026-11-20 (**ST-231** — thêm **#156**: `vis-targets` còn **16/18** sau SQLite MVP, `libsqlite3-sys` cần C toolchain cho msvc/wasm32; chỉ đo + ghi nợ); trước đó 2026-11-19 (**VD-231/VD-232** — **#155** thêm: nợ "lift params closure khi có annotation lambda", chuyển VS3); trước đó 2026-11-18 (**VD-182…VD-196** … VD-222; #152 đo chuẩn máy rảnh 19/11 VM 1,154 / interp 1,108 — khoảng cắt 1,10 giữ "chờ đo chuẩn"; **185 mục = 122 mở / 38 đóng / 23 VS3 / 1 không làm / 1 điều hướng**; **#147 mở lại** (VD-197), **#151** chuyển VS3, **#152** thêm) · **HEAD khi cập nhật**: `c333e8f` (cập nhật lần cuối dưới repo HEAD này; lịch sử tương ứng)
 **Tệp duy nhất**: `viscript/agent/SO-NO.md` — từ R25, mọi báo cáo trích nợ **bằng số trong sổ này**.
 
 ## 0. Mục đích
@@ -243,16 +244,16 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 158 | **VM: `while let` nhánh sai để giá trị trên stack** ⇒ verify từ chối `hai đường tới với độ sâu 1 và 0`; interp `after` exit 0 (`codegen.rs:633-659`, `verify.rs:93`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-238** |
 | 159 | **VM: biến `let` cấp tệp không thấy trong hàm** ⇒ `()`; interp `101` exit 0 (`codegen.rs:805-850`, `interp.rs:637-660`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-238** |
 | 160 | **VM: bỏ qua `const` cấp tệp** ⇒ `()` rồi `VS0501`; interp `10 11` exit 0 (`codegen.rs:233-250`, `interp.rs:224-228`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-238** |
-| 161 | **`?.` base optional: interp thiếu `Some`** ⇒ interp `An`, VM `Some(An)` (kiểu `str?` ⇒ VM đúng) (`interp.rs:748-772`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **mở** |
-| 162 | **`?.` base KHÔNG optional: VM bọc sai** ⇒ VM `Some(An)`/`không có phương thức len`; interp `An 2` exit 0; **cần A0 chốt** cấm hay no-op (`codegen.rs:1018-1046`, `tyck/truong.rs`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **mở** |
+| 161 | **`?.` base optional: interp thiếu `Some`** ⇒ interp `An`, VM `Some(An)` (kiểu `str?` ⇒ VM đúng) (`interp.rs:748-772`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-239** |
+| 162 | **`?.` base KHÔNG optional: VM bọc sai** ⇒ VM `Some(An)`/`không có phương thức len`; interp `An 2` exit 0; **cần A0 chốt** cấm hay no-op (`codegen.rs:1018-1046`, `tyck/truong.rs`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-239** |
 | 163 | **VM: `match` rơi khỏi mọi nhánh im lặng** ⇒ `after` exit 0; interp trap `VS0501 match không khớp nhánh nào` exit 101 (`codegen.rs:710-753`, `:1448-1472`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-238** |
 | 164 | **VM: closure ghi biến bắt `var` reset giữa các lần gọi** ⇒ `11 11 1`; interp `11 21 1` (`codegen.rs:355-370`, `vm.rs:441-461`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-238** |
-| 165 | **VM: or-pattern bind theo vế đầu** ⇒ `()`; interp `2` (`codegen/pattern.rs:232-239`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **mở** |
-| 166 | **VM: `set{...}` không dedup** ⇒ `[1, 2, 2, 3, 1]`; interp `[1, 2, 3]` | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **mở** |
+| 165 | **VM: or-pattern bind theo vế đầu** ⇒ `()`; interp `2` (`codegen/pattern.rs:232-239`) | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-239** |
+| 166 | **VM: `set{...}` không dedup** ⇒ `[1, 2, 2, 3, 1]`; interp `[1, 2, 3]` | ST-234 · `JOURNAL/st234-lech-vm-interp.md` (repro `JOURNAL/st234-repro/`) | **đóng ở ST-239** |
 | 167 | **`net.read` cấp phát theo `max_bytes` người dùng** ⇒ **abort** (exit 134); mong đợi `Err`/cap 8 MiB (`stdlib.rs:477-489`, `net.rs:185-192`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **đóng ở ST-238** |
 | 168 | **`std.list.sort` im lặng không sắp** khi không so được (NaN/bản ghi) ⇒ `[3, NaN, 1, 2]`; `sort_by` cùng lõi lại báo `VS0501` (`stdlib.rs:266-271`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
 | 169 | **`json.encode` xuất `inf`/`NaN`** cho `percent` vô cực ⇒ JSON không hợp lệ (`stdlib.rs:704-705`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **đóng ở ST-238** |
-| 170 | **`eq_value` map sai khi khoá trùng** (`{"x":1,"x":1} == {"x":1,"x":2}` ⇒ `true`); literal giữ khoá trùng, `map.get` đầu / `json.decode` cuối (`value.rs:292-296`, `interp.rs:796-803`, `vm.rs:736`) — dedupe literal **cần A0** | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
+| 170 | **`eq_value` map sai khi khoá trùng** (`{"x":1,"x":1} == {"x":1,"x":2}` ⇒ `true`); literal giữ khoá trùng, `map.get` đầu / `json.decode` cuối (`value.rs:292-296`, `interp.rs:796-803`, `vm.rs:736`) — dedupe literal **cần A0** | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **đóng ở ST-239** |
 | 171 | **`ls --long`: mtime > 2262 tràn `u128→i64`** ⇒ in năm 1861 (`ngoai.rs:347-352`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
 | 172 | **Số học `percent` bão hoà im lặng** (và `show` bão hoà) thay vì `VS0507`/đúng giá trị (`builtin.rs:419-455`, `value.rs:421-428`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` · ST-237 (`JOURNAL/st237-ma-tran-28.md`) · **VD-243** (A0: báo lỗi, mở rộng `VS0507`; không đổi biểu diễn/thang đo/làm tròn; chặn tại nơi tạo giá trị, không chỉ `show`) | **mở** — chưa có bản sửa; blocker **quyết định đã gỡ** (`BLOCKED.md` §12), blocker triển khai đóng sau bằng chứng |
 | 173 | **`json.encode` mất dấu float** (`1.0`→`1`) ⇒ round-trip đổi kiểu; có thể là chủ ý — **cần A0** (`stdlib.rs:697-700,818-826`) | ST-235 · `JOURNAL/st235-audit-std-cli.md` | **mở** |
@@ -387,15 +388,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **187** (1..186; #109 tách `a`/`b`) |
-| `mở` | **114** |
-| `đóng` | **47** |
+| `mở` | **109** |
+| `đóng` | **52** |
 | `chuyển VS3` | **23** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 114 mở + 47 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **187** dòng (ST-237: #176 `mở → không làm`; ST-238: 9 mục `mở → đóng`; A0 bổ sung: thêm #185/#186).
+Kiểm: 109 mở + 52 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **187** dòng (ST-237: #176 `mở → không làm`; ST-238: 9 mục `mở → đóng`; ST-239: 5 mục `mở → đóng`; A0 bổ sung: thêm #185/#186).
 **Luật (VD-195)**: bảng này phải **bằng** số đếm thật của §4; `./vis-dev check` đỏ nếu lệch (luật **R5** trong `bin/vis-dev`).
 **#148/#149/#150** thêm bởi **VD-183(6)/VD-184(3)/VD-192**; **#151** thêm bởi **VD-198(2)** (18/11); **#152** thêm bởi **VD-204 (5)**; **VD-217 re-đo A/B (24 cặp): VM 1,154 / interp 1,143 — chưa rõ ⇒ giữ chờ đo chuẩn** (18/11, ST-219); **VD-220 làn B re-đo (load 1,27): VM 1,129 / interp 1,109 — chưa rõ** (18/11, nhánh dem/B merge `a0f2100`); **#153** thêm bởi **VD-208 (2)** rồi đóng ở ST-217; **#154** thêm bởi **VD-208** (phương án B, không xếp lịch) (18/11). **+ VD-231/VD-232 (19/11)**: **#155** (lift params closure khi lambda annot có) chuyển VS3. **VD-211** không sinh nợ (tầng kiểu đã cấm `==` khác kiểu — VS0412 "so sánh khác kiểu").
 **#147 đóng ở ST-204 rồi MỞ LẠI bởi VD-197** ⇒ đóng −1, mở +1.

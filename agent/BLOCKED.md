@@ -238,3 +238,9 @@ A0 đã chốt **phương án 2 — báo lỗi**: `percent` vượt miền ⇒ `
 Năm câu: (1) `StoreLocal` chỉ số rất cao có tự tăng miền chấp nhận không; (2) chặn chỉ số vượt miền mã hóa `u16` không; (3) slot thưa / chưa khởi tạo có bị đọc thành `Unit` thành công không; (4) ghi trong nhánh không chạy / hàm chưa gọi ⇒ đọc-trước-ghi xử lý sao; (5) miền verifier có khớp miền runtime cấp phát/truy cập không.
 
 Phân biệt **hợp lệ về chỉ số** và **hợp lệ về khởi tạo**. `catch_unwind` không panic **chưa đủ**. Nếu phát hiện verifier chấp nhận truy cập ngoài miền hoặc đọc sai thành công ⇒ nâng blocker ngay.
+
+## 15. CẦN XỬ LÝ — Option field/index assignment chưa nâng (ST-248), KHÔNG phải VD mới
+
+**Trạng thái**: mở · **Luật**: đã có trong **VD-242 §3.3** (không cần A0 quyết thêm).
+
+ST-239 xác nhận checker chấp nhận nhưng runtime hai engine lưu giá trị thô: `u.f = 5` (`f: int?`) ⇒ `5` thay vì `Some(5)`; `m["a"] = 7` (`map[str,int?]`) ⇒ `7` thay vì `Some(7)`. Phải chèn `$lift-opt` tại đích field/index trong codegen + mirror interp (ST-248). **Chưa được coi là hợp đồng Option đã khớp** khi xét điều kiện mở pha 2. Không có ngữ nghĩa chưa có luật; không đổi `Unwrap`/bytecode.
