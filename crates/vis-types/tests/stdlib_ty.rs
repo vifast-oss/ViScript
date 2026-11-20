@@ -136,7 +136,6 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str) -> float?`; cú pháp thập phân Rust, non-finite/tràn ⇒ `None`) ⇒ **116** hàm;
     // không xoá/đổi hàm cũ nào.
     assert_eq!(FUNCS.len(), 116, "bảng chữ ký phải đủ 116 hàm");
-    assert_eq!(FUNCS.len(), 115, "bảng chữ ký phải đủ 115 hàm");
 }
 
 #[test]
