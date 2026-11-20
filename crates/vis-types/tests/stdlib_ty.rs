@@ -167,7 +167,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 mkdir-all, 2026-11-21)**: +**1** hàm `std.fs.mkdir_all`
     // (`(str) -> Result[(), Error]`; tạo đệ quy mọi thư mục thiếu, đã có ⇒ `Ok`,
     // tệp/symlink trên đường ⇒ `Err`) ⇒ **127** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 127, "bảng chữ ký phải đủ 127 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-is-relative, 2026-11-21)**: +**1** hàm
+    // `std.path.is_relative` (`(str) -> bool`; phần bù từ vựng của `path.is_abs`, rỗng ⇒
+    // `true`, **không** sugar) ⇒ **128** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 128, "bảng chữ ký phải đủ 128 hàm");
 }
 
 #[test]
@@ -246,6 +249,18 @@ fn path_normalize_kieu_str_sang_str_va_sugar() {
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
     assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
+}
+
+#[test]
+fn path_is_relative_kieu_str_sang_bool_va_khong_sugar() {
+    // **VD-270 (path.is_relative)**: chữ ký `(str) -> bool` — phần bù của `path.is_abs`;
+    // **không** sugar (`is_relative` không nằm trong `module_sugar`, tránh đoán module nhận).
+    let f = sig_of("path.is_relative").expect("path.is_relative");
+    assert_eq!(f.params, &[Ty::Str], "`path.is_relative`: tham số");
+    assert_eq!(f.ret, Ty::Bool, "`path.is_relative`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "`path.is_relative`: hạ kiểu");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "is_relative"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "is_relative"), None);
 }
 
 #[test]

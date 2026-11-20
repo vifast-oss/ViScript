@@ -36,6 +36,7 @@ mod netconst;
 mod pathjoinall;
 mod pathnorm;
 mod pathrel;
+mod pathrelbool;
 mod sqlite_explain;
 mod sqlitecols;
 mod sqliteidx;
@@ -593,6 +594,8 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Bool(la_tuyet_doi(p, cfg!(windows))))
         }
+        // **VD-270 (path.is_relative)**: phần bù **từ vựng** của `path.is_abs` (không đĩa/`cwd`).
+        "path.is_relative" => pathrelbool::goi(&args, span),
         // **VD-270 (path.normalize)**: chuẩn hoá **từ vựng** POSIX (thuần chuỗi, không chạm đĩa).
         "path.normalize" => pathnorm::goi(&args, span),
         // **VD-270 (path.relative)**: đường dẫn tương đối **thuần từ vựng** (không `cwd`/đĩa).
