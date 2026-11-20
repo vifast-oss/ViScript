@@ -651,7 +651,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             // **ST-240 / VD-242 §3.5 (nợ #175)**: `01` phải bị từ chối. Lỗi là **dữ liệu**
             // (`Result.Err` của chương trình), không phải trap — cùng mẫu với lỗi cú pháp JSON
             // của `crate::json::decode`.
-            if let Some(off) = json_zero_dau(s) {
+            if let Some(off) = crate::json::zero_dau(s) {
                 let e = format!("JSON không hợp lệ ở byte {off}: số có số 0 đầu");
                 return Ok(Value::err(Value::ban_ghi_error(e, None)));
             }
@@ -664,7 +664,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "json.encode" | "json.encode_pretty" => {
             // **ST-238 / VD-242 (nợ #169, Q4b, §3.5)**: NaN/vô cực (kể cả `Percent`) ⇒ **lỗi**,
             // không xuất token `inf`/`NaN` và không tự đổi `null`. Kiểm đệ thuỳ trước khi mã hoá.
-            if co_so_phi_huu_han(&args[0]) {
+            if crate::json::co_so_phi_huu_han(&args[0]) {
                 return Err(loi(
                     "json.encode: giá trị số không hữu hạn (NaN/inf) không được mã hoá",
                     span,
@@ -1062,68 +1062,6 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
     }
 }
 
-/// **ST-238 / VD-242 (nợ #169)**: `true` nếu cây giá trị chứa số `Float`/`Percent` không hữu hạn.
-/// Đi cấu trúc `Value` thuần, không gọi mã người dùng.
-fn co_so_phi_huu_han(v: &Value) -> bool {
-    match v {
-        Value::Float(f) | Value::Percent(f) => !f.is_finite(),
-        Value::List(xs) => xs.iter().any(co_so_phi_huu_han),
-        Value::Map(kv) => kv
-            .iter()
-            .any(|(k, val)| co_so_phi_huu_han(k) || co_so_phi_huu_han(val)),
-        Value::Record(_, fs) => fs.iter().any(|(_, x)| co_so_phi_huu_han(x)),
-        Value::Enum(_, _, args) => args.iter().any(co_so_phi_huu_han),
-        _ => false,
-    }
-}
-
-/// **ST-240 / VD-242 §3.5 (nợ #175)**: JSON cấm số có số `0` đầu (`01`, `-01`, `00`). Tầng
-/// `crate::json::decode` dùng `str::parse::<i64>()` nên vẫn nhận các token đó; chặn ở **cửa
-/// `std.json.decode`** (không đụng tầng parse dùng chung với LSP/CLI). Quét theo token số, bỏ qua
-/// nội dung chuỗi (kể cả escape) để không đụng `"01"` hợp lệ. Trả byte offset của token sai.
-fn json_zero_dau(s: &str) -> Option<usize> {
-    let b = s.as_bytes();
-    let mut i = 0usize;
-    let mut trong_chuoi = false;
-    let mut escape = false;
-    while i < b.len() {
-        if trong_chuoi {
-            if escape {
-                escape = false;
-            } else if b[i] == b'\\' {
-                escape = true;
-            } else if b[i] == b'"' {
-                trong_chuoi = false;
-            }
-            i += 1;
-            continue;
-        }
-        match b[i] {
-            b'"' => {
-                trong_chuoi = true;
-                i += 1;
-            }
-            c if c == b'-' || c.is_ascii_digit() => {
-                let bat_dau = i;
-                if c == b'-' {
-                    i += 1;
-                }
-                // `0` theo sau bởi chữ số ⇒ phần nguyên có số 0 đầu (JSON không hợp lệ).
-                if b.get(i) == Some(&b'0') && i + 1 < b.len() && b[i + 1].is_ascii_digit() {
-                    return Some(bat_dau);
-                }
-                // Tiêu thụ **toàn bộ** token số — `100` (hai số 0 cuối) phải hợp lệ.
-                while i < b.len() && matches!(b[i], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
-                {
-                    i += 1;
-                }
-            }
-            _ => i += 1,
-        }
-    }
-    None
-}
-
 /// **ST-240 / VD-242 §3.5 (nợ #173)**: giữ dấu float trong JSON. `format!("{}", 1.0_f64)` cho
 /// `"1"`, decoder sẽ đọc thành `Int`; thêm `.0` khi chuỗi in ra không có dấu thập phân/mũ.
 ///
@@ -1459,15 +1397,17 @@ mod st238_tests {
 
     #[test]
     fn json_non_finite_bi_phat_hien() {
-        assert!(co_so_phi_huu_han(&Value::Float(f64::NAN)));
-        assert!(co_so_phi_huu_han(&Value::Float(f64::INFINITY)));
-        assert!(co_so_phi_huu_han(&Value::Percent(f64::NEG_INFINITY)));
-        assert!(co_so_phi_huu_han(&Value::List(vec![
+        assert!(crate::json::co_so_phi_huu_han(&Value::Float(f64::NAN)));
+        assert!(crate::json::co_so_phi_huu_han(&Value::Float(f64::INFINITY)));
+        assert!(crate::json::co_so_phi_huu_han(&Value::Percent(
+            f64::NEG_INFINITY
+        )));
+        assert!(crate::json::co_so_phi_huu_han(&Value::List(vec![
             Value::Int(1),
             Value::Float(f64::NAN)
         ])));
-        assert!(!co_so_phi_huu_han(&Value::Float(1.5)));
-        assert!(!co_so_phi_huu_han(&Value::Int(1)));
+        assert!(!crate::json::co_so_phi_huu_han(&Value::Float(1.5)));
+        assert!(!crate::json::co_so_phi_huu_han(&Value::Int(1)));
     }
 
     // ------------------------------------------------------------------

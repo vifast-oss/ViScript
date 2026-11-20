@@ -320,3 +320,65 @@ pub fn boc(v: Value) -> Value {
         other => other,
     }
 }
+
+/// **ST-238 / VD-242 (nợ #169)**: `true` nếu cây giá trị chứa số `Float`/`Percent` không hữu hạn.
+/// Đi cấu trúc `Value` thuần, không gọi mã người dùng.
+pub(crate) fn co_so_phi_huu_han(v: &Value) -> bool {
+    match v {
+        Value::Float(f) | Value::Percent(f) => !f.is_finite(),
+        Value::List(xs) => xs.iter().any(co_so_phi_huu_han),
+        Value::Map(kv) => kv
+            .iter()
+            .any(|(k, val)| co_so_phi_huu_han(k) || co_so_phi_huu_han(val)),
+        Value::Record(_, fs) => fs.iter().any(|(_, x)| co_so_phi_huu_han(x)),
+        Value::Enum(_, _, args) => args.iter().any(co_so_phi_huu_han),
+        _ => false,
+    }
+}
+
+/// **ST-240 / VD-242 §3.5 (nợ #175)**: JSON cấm số có số `0` đầu (`01`, `-01`, `00`). Tầng
+/// `crate::json::decode` dùng `str::parse::<i64>()` nên vẫn nhận các token đó; chặn ở **cửa
+/// `std.json.decode`** (không đụng tầng parse dùng chung với LSP/CLI). Quét theo token số, bỏ qua
+/// nội dung chuỗi (kể cả escape) để không đụng `"01"` hợp lệ. Trả byte offset của token sai.
+pub(crate) fn zero_dau(s: &str) -> Option<usize> {
+    let b = s.as_bytes();
+    let mut i = 0usize;
+    let mut trong_chuoi = false;
+    let mut escape = false;
+    while i < b.len() {
+        if trong_chuoi {
+            if escape {
+                escape = false;
+            } else if b[i] == b'\\' {
+                escape = true;
+            } else if b[i] == b'"' {
+                trong_chuoi = false;
+            }
+            i += 1;
+            continue;
+        }
+        match b[i] {
+            b'"' => {
+                trong_chuoi = true;
+                i += 1;
+            }
+            c if c == b'-' || c.is_ascii_digit() => {
+                let bat_dau = i;
+                if c == b'-' {
+                    i += 1;
+                }
+                // `0` theo sau bởi chữ số ⇒ phần nguyên có số 0 đầu (JSON không hợp lệ).
+                if b.get(i) == Some(&b'0') && i + 1 < b.len() && b[i + 1].is_ascii_digit() {
+                    return Some(bat_dau);
+                }
+                // Tiêu thụ **toàn bộ** token số — `100` (hai số 0 cuối) phải hợp lệ.
+                while i < b.len() && matches!(b[i], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
+                {
+                    i += 1;
+                }
+            }
+            _ => i += 1,
+        }
+    }
+    None
+}
