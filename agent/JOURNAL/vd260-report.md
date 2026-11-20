@@ -218,3 +218,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - Smoke mới @ `e17998f`: `str.strip_prefix/strip_suffix`, `path.normalize` — **interp=VM byte-identical**.
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `e17998f`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `vis test test/sem` @ `e17998f`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`), sau wave 12.
+- Bench tham chiếu @ `5e1488e`: `test/bench/opt-bench.vis` → interp **1247 ms**, VM **1115 ms** (cùng kết quả 38995450).
