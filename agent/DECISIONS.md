@@ -3265,3 +3265,13 @@ sau kết quả TAP. Không đổi stdout/exit/args sau `--`.
 - **lsp-hover-method**: hover `fn` trong `impl`/`trait` và lời gọi `u.m`/`self.m`; ưu tiên
   items→biến→trường→ký hiệu→builtin→từ khoá→phương thức→null; chủ lấy từ span khai báo hoặc
   `KetQua.bien`, không rõ chủ thì chỉ trả khi tên duy nhất; không đổi completion.
+
+### VD-270 (bổ sung) · `sqlite.execute_batch` — A0, 2026-11-21
+
+Duyệt `sqlite.execute_batch(handle, sql) -> Result[int, Error]` cho migration: tách `;` ở mức
+ngoài string (`''`/`""`/backtick/`[…]`) và comment (`--`, `/* */`), bỏ chunk rỗng/comment; chạy
+**từng câu** qua đúng `db_execute` (authorizer, read/write policy, 64 KiB/câu, timeout/cap, cache)
+nên không mở đường ghi qua `query`. `Ok(n)` = số câu chạy xong; **không** tự transaction/rollback
+(caller tự `BEGIN/COMMIT`); dừng ở lỗi đầu, câu trước đã có hiệu lực. Giới hạn đã biết: trigger
+body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Quyết định này **thay** câu
+“không mở `execute_batch`” trong ghi chú VD-266.
