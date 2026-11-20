@@ -330,6 +330,44 @@ impl vis_interp::builtin::FsHost for Runner {
         std::fs::write(p, s).map_err(|e| format!("không ghi được `{p}`: {e}"))
     }
 
+    /// **VD-266**: thêm **cuối** tệp (tạo nếu thiếu), **không** cắt — `append(true)` + `create(true)`.
+    fn append(&mut self, p: &str, s: &str) -> Result<(), String> {
+        use std::io::Write as _;
+        self.nhat_ky("append", p);
+        let loi = |e: std::io::Error| format!("không ghi được `{p}`: {e}");
+        let mut f = std::fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(p)
+            .map_err(loi)?;
+        f.write_all(s.as_bytes()).map_err(loi)
+    }
+
+    /// **VD-266**: đọc tệp rồi tách dòng bằng [`chia_dong`](vis_interp::builtin::chia_dong) —
+    /// **cùng** ngữ nghĩa với mock.
+    fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
+        self.nhat_ky("read_lines", p);
+        std::fs::read_to_string(p)
+            .map(|s| vis_interp::builtin::chia_dong(&s))
+            .map_err(|e| format!("không đọc được `{p}`: {e}"))
+    }
+
+    /// **VD-266**: tạo **một** thư mục (`create_dir`, không phải `mkdir -p`).
+    fn mkdir(&mut self, p: &str) -> Result<(), String> {
+        self.nhat_ky("mkdir", p);
+        std::fs::create_dir(p).map_err(|e| format!("không tạo được thư mục `{p}`: {e}"))
+    }
+
+    /// **VD-266**: xoá **một tệp**, **từ chối** thư mục (không đệ quy). `symlink_metadata` để không
+    /// đi theo symlink cuối: symlink trỏ tới thư mục vẫn bị xoá **chính link**, không đụng đích.
+    fn remove(&mut self, p: &str) -> Result<(), String> {
+        self.nhat_ky("remove", p);
+        match std::fs::symlink_metadata(p) {
+            Ok(md) if md.is_dir() => Err(format!("không xoá được `{p}`: là thư mục (chỉ xoá tệp)")),
+            _ => std::fs::remove_file(p).map_err(|e| format!("không xoá được `{p}`: {e}")),
+        }
+    }
+
     fn exists(&mut self, p: &str) -> bool {
         self.nhat_ky("exists", p);
         std::path::Path::new(p).exists()

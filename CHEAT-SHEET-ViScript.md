@@ -193,7 +193,7 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 
 | Module | Hàm chính | Ví dụ đã chạy ✔ |
 |---|---|---|
-| `std.fs` | `exists` `list` `read` `write` | `fs.exists(".")` → `true` |
+| `std.fs` | `exists` `list` `read` `read_lines` `write` `append` `mkdir` `remove` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `mkdir` **một cấp**, `remove` **chỉ tệp** |
 | `std.list` | `sort` `take` `drop` `chunk` `concat` `reverse` `unique` `zip` `min` `max` | `list.sort([3,1,2])` → `[1,2,3]` |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` | `map.keys(m)` |
 | `std.str` | `split` `join` `upper` `lower` `trim` `replace` `repeat` `starts_with` `ends_with` `contains` `lines` `split_whitespace` | `str.join(["a","b"], "-")` → `a-b` |

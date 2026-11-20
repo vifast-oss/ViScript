@@ -38,6 +38,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — VD-266 (thư viện `std.fs`): thêm `read_lines` (tách dòng CRLF, bỏ newline cuối tệp), `append` (tạo tệp nếu thiếu, không cắt), `mkdir` (**một cấp**, lỗi nếu đã tồn tại), `remove` (**chỉ tệp**, từ chối thư mục); mọi thao tác ghi vẫn qua `FsGuard`/`cap[Dir] (write)`; `--fs-mock` và hai đường interp/VM khớp byte; API-STD 61 → 65 hàm.
 - **R29** — số 3 nền cùng HEAD: mac **1184/0**, ps **1188/0**, psvn **152/4** (4 ca `cap_proc` do thiếu `/bin/echo`, `/bin/sh` trên Windows).
 - **R30** — pha 1 công thái học (C3 VD-178), tách repo; trạng thái theo `agent/reports/R30-viscript.{md,json}`.
 - **2026-11-21** — VD-261/263/264 (an toàn ngữ nghĩa + hiệu năng): `let … else` buộc khối `else` **thoát mọi nhánh** (`VS0206`), binder theo pattern (`Err` payload hoặc `()`), scope snapshot đúng; interpreter lan `break`/`continue` ra khỏi `if`/`match` biểu thức (khớp VM); `with` lấy kiểu tĩnh từ mọi gốc; `[]` pattern **chỉ** khớp list (không khớp `()`); generic `G[int?]`/`enum Hop[T]` mang instantiation vào trường/ctor/`with`/gán; suy kiểu sau pattern lồng + `Call`/`Try`/`With`/`If`/`Match`; cache SQLite theo `(schema_version, data_version)`; **range duyệt lười** trong `for` (RSS 146 MB → ~9,5 MB @2M); cache `PHIEN_BAN` ghim lại (`f20c2ade…`); gate **1822 passed / 3 skipped**, core-test/release/toolchain PASS.
