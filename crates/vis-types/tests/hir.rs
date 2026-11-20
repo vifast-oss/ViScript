@@ -98,7 +98,7 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (444, 1, 0, 5),  // greet + name + times + loud + s
     (460, 0, 1, 3),  // f + x (lambda) + y
     (511, 1, 0, 4),  // read_config + dir + text + cfg
-    (535, 0, 1, 2),  // cfg + err (else) — +9 dòng ghi chú VD-222 ở §6.1
+    (535, 0, 1, 1),  // cfg (else `return` — VD-263 bỏ binder `err`) — +9 dòng ghi chú VD-222 ở §6.1
     (586, 0, 3, 2),  // a, b
     (600, 0, 2, 2),  // counter, inc
     (622, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)

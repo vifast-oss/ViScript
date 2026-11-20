@@ -1260,35 +1260,7 @@ impl<'a> Interp<'a> {
             .unwrap_or(0)
     }
 
-    /// **ST-248** — kiểu tĩnh của gốc/target (`Var`/`Field`/`Index`); `None` ⇒ không nâng.
-    fn expr_ty(&self, e: &HExpr, root: &Value) -> Option<vis_types::Type> {
-        match e {
-            HExpr::Var { sym: Some(id), .. } => {
-                if let Some(t) = self.sym_ty.get(id) {
-                    return Some(t.clone());
-                }
-                match root {
-                    Value::Record(ten, _) => {
-                        self.types.rec_by_name(ten).map(vis_types::Type::Record)
-                    }
-                    _ => None,
-                }
-            }
-            HExpr::Field { base, name, .. } => match self.expr_ty(base, root) {
-                Some(vis_types::Type::Record(id)) => {
-                    self.types.field(id, name).map(|f| f.ty.clone())
-                }
-                _ => None,
-            },
-            HExpr::Index { base, .. } => match self.expr_ty(base, root) {
-                Some(vis_types::Type::Map(_, v)) => Some(*v),
-                Some(vis_types::Type::List(el)) => Some(*el),
-                _ => None,
-            },
-            _ => None,
-        }
-    }
-
+    // `expr_ty` đã chuyển sang `interp/goi.rs` (VD-264) để dùng `infer_ty` đầy đủ.
     fn iter_items(&mut self, it: Value, span: Span) -> R<ForIter> {
         crate::value::iter_items(it, span)
     }
