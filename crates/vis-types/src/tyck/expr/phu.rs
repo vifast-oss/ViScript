@@ -215,7 +215,42 @@ pub(super) fn kiem_try(
     }
 }
 
+/// **R5c (VD-178) + VD-270** — khớp **mẫu tham số đầu** của hàm `std.*` với kiểu nhận, có
+/// **buộc biến kiểu** (`T`/`K`/`V`): `list[T]`/`map[K,V]` nhận mọi kiểu phần tử và ghi kiểu
+/// thật vào `bang` (lần gặp sau phải nhất quán). Không chẩn đoán — trả `false` im lặng để
+/// caller rơi về đường báo lỗi thường (`VS0403`), đúng hợp đồng cũ với tham số **không** generic.
+fn khop_nhan(
+    c: &super::super::Checker<'_>,
+    mau: &Type,
+    that: &Type,
+    gens: &[String],
+    bang: &mut Vec<(String, Type)>,
+) -> bool {
+    match mau {
+        Type::TypeRef { name, args } if args.is_empty() && gens.iter().any(|g| g == name) => {
+            match bang.iter().find(|(n, _)| n == name) {
+                Some((_, da)) => c.same(da, that),
+                None => {
+                    bang.push((name.clone(), that.clone()));
+                    true
+                }
+            }
+        }
+        Type::List(a) => match that {
+            Type::List(b) => khop_nhan(c, a, b, gens, bang),
+            _ => false,
+        },
+        Type::Map(k, v) => match that {
+            Type::Map(tk, tv) => khop_nhan(c, k, tk, gens, bang) && khop_nhan(c, v, tv, gens, bang),
+            _ => false,
+        },
+        _ => c.same(mau, that),
+    }
+}
+
 /// **R5c (VD-178)**: `x.f(a) ≡ std.<mod>.f(x, a)` khi **tham số đầu** của `f` có kiểu của `x`.
+/// **VD-270**: tham số đầu generic (`list[T]`) được **hợp nhất** với kiểu nhận để buộc `T`,
+/// rồi thay vào kiểu trả — nhờ đó `xs.windows(2)` có kiểu `list[list[int]]`, không còn `T` trần.
 pub(super) fn kiem_std_method(
     c: &mut super::super::Checker,
     recv: &Type,
@@ -231,19 +266,23 @@ pub(super) fn kiem_std_method(
     };
     let full = format!("{m}.{name}");
     let f = vis_types_stdlib_sig(&full)?;
+    let gens: Vec<String> = (0..3)
+        .map(|i| crate::stdlib::ten_bien(i as u8).to_string())
+        .collect();
+    let mut bang: Vec<(String, Type)> = Vec::new();
     let want = f.params.first()?.sang_type();
-    if !c.same(&want, recv) {
+    if !khop_nhan(c, &want, recv, &gens, &mut bang) {
         return None;
     }
     for (i, a) in args.iter().enumerate() {
         let at = c.kiem_expr(a);
         if let Some(p) = f.params.get(i + 1) {
-            let pt = p.sang_type();
+            let pt = crate::tyck::thay_gen(&p.sang_type(), &bang);
             c.coerce_e(a, &at, &pt, "đối số");
         }
     }
     let _ = span;
-    Some(f.ret.sang_type())
+    Some(crate::tyck::thay_gen(&f.ret.sang_type(), &bang))
 }
 
 /// **VD-258** — hợp nhất một phần tử literal vào `acc` (có xử lý `Option`).

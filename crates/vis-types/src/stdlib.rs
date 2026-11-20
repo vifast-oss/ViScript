@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 82] = [
+pub const FUNCS: [StdFn; 83] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -309,6 +309,13 @@ pub const FUNCS: [StdFn; 82] = [
     },
     StdFn {
         name: "list.chunk",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Int],
+        ret: Ty::List(&Ty::List(&Ty::Var(0))),
+    },
+    // **VD-270**: cửa sổ **trượt** (chồng nhau `n-1`), khác `chunk` (không chồng). `n <= 0`
+    // là trap `VS0501` ở tầng chạy (không phải lỗi kiểu); kiểu trả `list[list[T]]`.
+    StdFn {
+        name: "list.windows",
         params: &[Ty::List(&Ty::Var(0)), Ty::Int],
         ret: Ty::List(&Ty::List(&Ty::Var(0))),
     },

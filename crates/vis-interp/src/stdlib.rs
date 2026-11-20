@@ -486,6 +486,27 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 xs.chunks(n).map(|c| Value::List(c.to_vec())).collect(),
             ))
         }
+        // **VD-270**: cửa sổ **trượt** độ dài `n`, bước 1 (chồng nhau `n-1` phần tử), theo thứ
+        // tự. Khác `list.chunk` (nhóm rời). `n <= 0` ⇒ trap `VS0501` — kiểm **trước** dữ liệu
+        // nên `list.windows([], 0)` cũng trap; `n > len(xs)` ⇒ `[]`; `n == len(xs)` ⇒ một cửa
+        // sổ; `xs` rỗng (với `n > 0`) ⇒ `[]`.
+        "list.windows" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            let n = so(name, &args[1], 1, span)?;
+            if n <= 0 {
+                return Err(loi(
+                    format!("`{name}`: kích thước cửa sổ phải ≥ 1, được {n}"),
+                    span,
+                ));
+            }
+            let n = n as usize;
+            if n > xs.len() {
+                return Ok(Value::List(Vec::new()));
+            }
+            Ok(Value::List(
+                xs.windows(n).map(|c| Value::List(c.to_vec())).collect(),
+            ))
+        }
         "list.take" | "list.drop" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let n = so(name, &args[1], 1, span)?;

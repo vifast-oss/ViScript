@@ -88,8 +88,11 @@ const PHUONG_THUC: &[(&str, &str)] = &[
         "fn inc(x: int) -> int:\n    x + 1\nlet xs = [1, 2]\nxs.map(inc)",
         "ok(list[int])",
     ),
-    // kỳ vọng: !VS0403 — phương thức **không có** trong bảng
-    ("let xs = [1]\nxs.sort()", "!VS0403"),
+    // kỳ vọng: !VS0403 — phương thức **không có** trong bảng (tên lạ, không phải hàm `std.list`)
+    // **SỬA KÈM LÝ DO (VD-270, 2026-11-21)**: ca cũ dùng `xs.sort()`; R5c nay **buộc biến kiểu**
+    // từ tham số đầu generic nên `xs.sort()` ≡ `list.sort(xs)` **hợp lệ** (đúng hợp đồng R5c và
+    // đúng đường chạy `builtin::method`). Giữ mục đích ca (tên lạ ⇒ `VS0403`) bằng tên không có.
+    ("let xs = [1]\nxs.khong_ton_tai()", "!VS0403"),
 ];
 
 /// VD-47: `if`/`match` ở **câu lệnh cuối** cho giá trị; không `else` ⇒ `()`.
