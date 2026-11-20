@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `580123b` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `78b9626` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP + CLI + fs/db/stdlib mới),
-> gate **2290 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **2322 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -73,11 +73,15 @@
 | Vistest-timeout | `8730a8d` → `b785a6a` | `--timeout` áp cả fixture `.out/.err`, kill + `quá hạn` |
 | LSP hover builtin | `be9ad23` → `53f87b7` | hover phương thức lõi `list/map/str` (bảng 28 chữ ký) |
 | Fmt-stat | `e73f00e` → `580123b` | `vis fmt --check --stat`: một dòng đếm tệp/cần sửa/lỗi |
+| Flatten | `2d1ea0f` → `122e7e6` | `list.flatten`: nối một cấp |
+| LSP implementation | `24e1127` → `9cae14a` | `textDocument/implementation` cho method impl/trait |
+| Db-explain | `f2eb442` → `78b9626` | `sqlite.explain`: EXPLAIN QUERY PLAN qua đường query chỉ đọc |
+| Vistest JSON-out | trực tiếp → `ae53ee6`/`759e45d` | `vis test --json-out <path>`: TAP stdout + báo cáo JSON |
 | Runstdin | `806e9ae` → `2128d88` | `vis run --stdin`: script ảo `-`, TAP stderr, exit 0/1/2/101, không cache |
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 2290 passed / 3 skipped** tại `580123b`.
+- `./vis-dev gate --fast`: **PASS — 2322 passed / 3 skipped** tại `78b9626`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -201,3 +205,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `vis test test/sem` @ `580123b`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
 - `./vis-dev nightly` @ `580123b`: **PASS** — parser fuzz **8.396.336 ca / 190.517.523 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `580123b`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **flatten** (`2d1ea0f` → `122e7e6`): `list.flatten` một cấp, list rỗng/lồng giữ nguyên; API +1.\n- **lsp-impl** (`24e1127` → `9cae14a`): `textDocument/implementation` lọc theo owner tĩnh, trait name-only, cap 50.\n- **db-explain** (`f2eb442` → `78b9626`): `sqlite.explain` chỉ SELECT/WITH, chạy qua `db_query`, comment đầu, với-write bị chặn.\n- **vistest-jsonout** (`759e45d`): `--json-out` ghi JSON report, stdout vẫn TAP; `--json` kèm thì stdout = tệp.\n- Smoke mới @ `78b9626`: flatten + `sqlite.explain` trên `:memory:` — **interp=VM byte-identical**.\n

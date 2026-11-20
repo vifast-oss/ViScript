@@ -3289,3 +3289,16 @@ body `BEGIN…END` chưa được hiểu (dùng `sqlite.execute` cho trigger). Q
   không thêm completion.
 - **fmt-stat**: `vis fmt --check --stat` in `fmt-check: <N> tệp, <M> cần sửa, <K> lỗi`; stdin
   tính 1 tệp; chỉ với `--check`, không đi JSON/list/diff/write/indent; exit 0/1/2.
+
+### VD-270 (bổ sung) · flatten, LSP implementation, sqlite.explain, json-out — A0, 2026-11-21
+
+- **flatten**: `list.flatten(xs: list[list[T]]) -> list[T]` nối **một cấp** theo thứ tự; outer/inner
+  rỗng bỏ qua; phần tử vốn là list giữ nguyên; sugar R5c; API +1.
+- **lsp-implementation**: `textDocument/implementation` trả `Location[]` của method `impl` cùng tên;
+  lọc theo owner tĩnh khi biết (`self`/kiểu khai báo), không biết thì trả mọi impl cùng tên (trừ
+  trait call chưa rõ receiver ⇒ null); cap 50, dedupe theo span; trait liên kết **theo tên**.
+- **sqlite.explain**: `sqlite.explain(handle, sql, params) -> Result[RowSet, Error]`; bỏ khoảng
+  trắng/comment đầu, từ khoá đầu phải `SELECT`/`WITH`; chạy `EXPLAIN QUERY PLAN <sql>` qua đúng
+  `db_query` (authorizer, read-only, trần, timeout, bind); write qua `WITH` vẫn bị chặn.
+- **vistest-jsonout**: `vis test --json-out <path>` ghi cùng object JSON ra tệp; stdout vẫn TAP
+  trừ khi có `--json` (khi đó stdout = nội dung tệp); `--list` xung khắc; lỗi ghi ⇒ exit 2.
