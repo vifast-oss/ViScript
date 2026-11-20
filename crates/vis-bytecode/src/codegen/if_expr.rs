@@ -14,9 +14,12 @@ impl Emit<'_> {
         span: Span,
     ) -> Result<(), CodegenError> {
         let mut jend: Vec<usize> = Vec::new();
+        // **VD-258**: nhánh lệch lớp Option (`1` vs `None`) ⇒ nâng nhánh đã chọn.
+        let (min, max) = than::do_if(then, elifs, Some(else_), &self.g.sym_ty, &self.g.rec_fields);
         let mut jf = self.cond(cond)?;
         let mut cond_let = matches!(cond, HCond::Let { .. });
         self.nhanh_gia_tri(then)?;
+        self.lift_nhanh(min, max, span)?;
         jend.push(self.f.here());
         self.f.push(Instr::Jump(0), span, 0);
         let mut prev = jf.take();
@@ -31,6 +34,7 @@ impl Emit<'_> {
             let mut j = self.cond(c)?;
             cond_let = matches!(c, HCond::Let { .. });
             self.nhanh_gia_tri(body)?;
+            self.lift_nhanh(min, max, span)?;
             jend.push(self.f.here());
             self.f.push(Instr::Jump(0), span, 0);
             prev = j.take();
@@ -43,6 +47,7 @@ impl Emit<'_> {
             self.f.push(Instr::Pop, span, -1);
         }
         self.nhanh_gia_tri(else_)?;
+        self.lift_nhanh(min, max, span)?;
         let end = self.f.here();
         for j in jend {
             self.f.patch(j, end);

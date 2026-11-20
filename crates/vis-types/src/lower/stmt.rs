@@ -190,6 +190,12 @@ impl<'a> Lowerer<'a> {
             if let HPat::Bind { sym, .. } = &pat {
                 if !matches!(t, Type::Error) {
                     self.type_env.insert(*sym, t.clone());
+                    // **VD-258**: `Symbols` cũng phải mang annot của `let` (trước đây chỉ `var`
+                    // và tham số có) — interp/codegen dựa vào `sym.ty` để biết kiểu field/biến
+                    // khi nâng `Option` (`xs.push(1)` với `let xs: list[int?]`).
+                    if let Some(s) = self.symbols.syms.get_mut(*sym as usize) {
+                        s.ty = Some(t.clone());
+                    }
                 }
             }
         }

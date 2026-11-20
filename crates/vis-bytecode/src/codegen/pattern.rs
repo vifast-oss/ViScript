@@ -299,6 +299,15 @@ impl Emit<'_> {
             let c = self.g.cst_str(n);
             self.f.push(Instr::Const(c), span, 1);
             self.expr(v)?;
+            // **VD-258**: trường `T?` nhận giá trị plain ⇒ nâng ở biên dựng bản ghi.
+            if let vis_types::Type::Record(id) = ty {
+                if let Some(ft) = self.g.rec_fields.get(&(id.0, n.clone())).cloned() {
+                    let depth = super::than::opt_depth(&ft);
+                    if depth > 0 {
+                        self.lift_opt(depth, span)?;
+                    }
+                }
+            }
         }
         let ten = match ty {
             vis_types::Type::Record(id) => self.g.recs.get(&id.0).cloned().unwrap_or_default(),

@@ -1,23 +1,30 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VD-241 §3 (A0, 2026-11-19)** — helper nâng `Opt` tới đủ lớp ở biên annot/return.
 //! Một chỗ duy nhất cho interp + builtin `$lift-opt` (VM). Đích `Opt` là khoảng lớp; giá trị
-//! đã `Opt`/`Result` đủ lớp giữ nguyên (không bọc chồng).
+//! đã `Opt` đủ lớp giữ nguyên (không bọc chồng).
+//!
+//! **VD-258**: chỉ `Option.Some`/`Option.None` là **lớp `Option`**. `Result` là giá trị lõi —
+//! `Ok(…)`/`Err(…)` **không** phải lớp `Option`; trước đây đếm `Result` như `Opt` khiến
+//! `let x: Result[int, str]? = Ok(7)` giữ `Ok(7)` trần và `match Some/None` trap.
 
 use crate::value::Value;
 
-/// Số lớp `Opt` của một **giá trị** (đếm từ ngoài vào); `None`/`Ok`/`Err` kết thúc chuỗi.
+/// Số lớp `Opt` của một **giá trị** (đếm từ ngoài vào); `None`/`Some` là lớp, còn
+/// `Ok`/`Err` (và mọi giá trị khác) kết thúc chuỗi.
 pub(crate) fn opt_depth_val(v: &Value) -> usize {
     let mut d = 0;
     let mut cur = v;
     while let Value::Enum(ea, va, args) = cur {
-        let is_opt_like = (ea == "Option" || ea == "Result")
-            && matches!(va.as_str(), "Some" | "None" | "Ok" | "Err");
-        if !is_opt_like {
+        if ea != "Option" {
             break;
         }
-        d += 1;
         match va.as_str() {
+            "None" => {
+                d += 1;
+                break;
+            }
             "Some" if args.len() == 1 => {
+                d += 1;
                 cur = &args[0];
             }
             _ => break,

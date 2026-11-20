@@ -20,6 +20,22 @@ pub(super) fn collect_rec_fields(hir: &Hir) -> HashMap<(u32, String), Type> {
     m
 }
 
+/// **VD-258** — gom kiểu trường biến thể enum `(EnumId, tên biến thể, vị trí) → kiểu`.
+/// Dùng để nâng `T → T?` ở đối số dựng enum (interp đọc `TypeTable` trực tiếp).
+pub(super) fn collect_enum_fields(hir: &Hir) -> HashMap<(u32, String, usize), Type> {
+    let mut m = HashMap::new();
+    for it in &hir.items {
+        if let HItem::Enum(e) = it {
+            for v in &e.variants {
+                for (i, f) in v.fields.iter().enumerate() {
+                    m.insert((e.id.0, v.name.clone(), i), f.ty.clone());
+                }
+            }
+        }
+    }
+    m
+}
+
 /// **ST-248** — suy kiểu tĩnh của một biểu thức HIR (chỉ các dạng mang kiểu hiển thị); `None`
 /// khi không biết ⇒ không nâng (an toàn, không đoán ngữ nghĩa mới).
 fn infer_ty(e: &HExpr, sym: &HashMap<u32, Type>) -> Option<Type> {
@@ -67,9 +83,14 @@ fn walk_stmts(sts: &[HStmt], sym: &mut HashMap<u32, Type>) {
                 }
             }
             HStmt::Let { pat, ty, init, .. } => {
-                if ty.is_none() {
-                    if let Some(t) = infer_ty(init, sym) {
-                        bind_pat(pat, &t, sym);
+                // **VD-258**: annotation của `let` (`let u: U? = …`) trước đây không vào
+                // `sym_ty` (chỉ `var`/tham số có), nên `u?.f` không biết kiểu field để lift.
+                match ty {
+                    Some(t) => bind_pat(pat, t, sym),
+                    None => {
+                        if let Some(t) = infer_ty(init, sym) {
+                            bind_pat(pat, &t, sym);
+                        }
                     }
                 }
             }
@@ -216,7 +237,7 @@ impl Emit<'_> {
 
     /// **ST-248 (VD-242 §3.3)** — kiểu tĩnh của biểu thức **gốc** (`Var`/`Field`/`Index`), dùng để
     /// suy kiểu đích của phép gán trường/chỉ số. `None` ⇒ không biết ⇒ không nâng.
-    fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
+    pub(super) fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
         match e {
             vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
             vis_types::HExpr::Field { base, name, .. } => match self.base_ty(base) {
@@ -230,6 +251,219 @@ impl Emit<'_> {
             },
             _ => None,
         }
+    }
+}
+
+/// **VD-258** — số lớp `Option` của biểu thức nếu biết **theo cú pháp** (`None`, `Some(…)`,
+/// `if`/`match` lồng); dùng để nâng nhánh `if`/`match` lệch lớp.
+fn do_bieu_thuc(
+    e: &HExpr,
+    sym_ty: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> usize {
+    match e {
+        HExpr::Opt { ty, .. } => opt_depth(ty),
+        HExpr::Var { name, .. } if name == "None" => 1,
+        HExpr::Var { sym: Some(id), .. } => sym_ty.get(id).map(opt_depth).unwrap_or(0),
+        HExpr::Field {
+            base,
+            name,
+            optional: true,
+            ..
+        } => {
+            if let HExpr::Var { sym: Some(id), .. } = &**base {
+                if let Some(Type::Opt(inner)) = sym_ty.get(id) {
+                    if let Type::Record(rid) = &**inner {
+                        if let Some(ft) = rec_fields.get(&(rid.0, name.clone())) {
+                            return 1 + opt_depth(ft);
+                        }
+                    }
+                }
+            }
+            1
+        }
+        HExpr::Try { expr, .. } if matches!(&**expr, HExpr::Index { .. }) => 1,
+        HExpr::Call { callee, args, .. } => match &**callee {
+            HExpr::Var { name, .. } if name == "Some" => {
+                1 + args
+                    .first()
+                    .map(|a| do_bieu_thuc(a, sym_ty, rec_fields))
+                    .unwrap_or(0)
+            }
+            HExpr::Var { name, .. } if name == "None" => 1,
+            _ => 0,
+        },
+        HExpr::If {
+            then, elifs, else_, ..
+        } => do_if(then, elifs, Some(else_), sym_ty, rec_fields).1,
+        HExpr::Match { arms, .. } => do_match(arms, sym_ty, rec_fields).1,
+        _ => 0,
+    }
+}
+
+/// **VD-258** — số lớp `Option` của giá trị cuối một khối (`None` = khối không cho giá trị).
+fn do_than(
+    stmts: &[HStmt],
+    sym_ty: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> Option<usize> {
+    match stmts.last()? {
+        HStmt::Expr(e) => Some(do_bieu_thuc(e, sym_ty, rec_fields)),
+        HStmt::If {
+            then, elifs, else_, ..
+        } => Some(do_if(then, elifs, else_.as_deref(), sym_ty, rec_fields).1),
+        HStmt::Match { arms, .. } => Some(do_match(arms, sym_ty, rec_fields).1),
+        HStmt::Block { body, .. } | HStmt::Scope { body, .. } => do_than(body, sym_ty, rec_fields),
+        HStmt::Return { .. } | HStmt::Break { .. } | HStmt::Continue { .. } => None,
+        _ => Some(0),
+    }
+}
+
+/// **VD-258** — `(min, max)` lớp `Option` của các nhánh `if`; không `else` ⇒ `(0, 0)`.
+pub(super) fn do_if(
+    then: &[HStmt],
+    elifs: &[(HCond, Vec<HStmt>)],
+    else_: Option<&[HStmt]>,
+    sym_ty: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> (usize, usize) {
+    let Some(else_) = else_ else {
+        return (0, 0);
+    };
+    let mut ds: Vec<usize> = Vec::new();
+    for body in std::iter::once(then)
+        .chain(elifs.iter().map(|(_, b)| b.as_slice()))
+        .chain(std::iter::once(else_))
+    {
+        if let Some(d) = do_than(body, sym_ty, rec_fields) {
+            ds.push(d);
+        }
+    }
+    if ds.is_empty() {
+        return (0, 0);
+    }
+    let min = *ds.iter().min().unwrap_or(&0);
+    let max = *ds.iter().max().unwrap_or(&0);
+    (min, max)
+}
+
+/// **VD-258** — `(min, max)` lớp `Option` của các nhánh `match`.
+pub(super) fn do_match(
+    arms: &[vis_types::hir::HArm],
+    sym_ty: &HashMap<u32, Type>,
+    rec_fields: &HashMap<(u32, String), Type>,
+) -> (usize, usize) {
+    let ds: Vec<usize> = arms
+        .iter()
+        .filter_map(|a| do_than(&a.body, sym_ty, rec_fields))
+        .collect();
+    if ds.is_empty() {
+        return (0, 0);
+    }
+    let min = *ds.iter().min().unwrap_or(&0);
+    let max = *ds.iter().max().unwrap_or(&0);
+    (min, max)
+}
+
+impl Emit<'_> {
+    /// **VD-258** — nâng giá trị nhánh đã chọn tới `max` khi các nhánh lệch lớp.
+    pub(super) fn lift_nhanh(
+        &mut self,
+        min: usize,
+        max: usize,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        if max > min {
+            self.lift_opt(max, span)?;
+        }
+        Ok(())
+    }
+
+    /// **VD-258** — field của `?.` có kiểu `T?` không. Chỉ dựa vào kiểu tĩnh đã biết
+    /// (`base_ty`); field optional thật ⇒ `MakeSome` vô điều kiện, field thường ⇒ `lift_opt` cũ.
+    pub(super) fn field_la_opt(&self, base: &vis_types::HExpr, name: &str) -> bool {
+        let Some(bt) = self.base_ty(base) else {
+            return false;
+        };
+        let inner = match bt {
+            Type::Opt(t) => *t,
+            other => other,
+        };
+        let Type::Record(id) = inner else {
+            return false;
+        };
+        self.g
+            .rec_fields
+            .get(&(id.0, name.to_string()))
+            .map(|t| t.is_opt())
+            .unwrap_or(false)
+    }
+
+    /// **VD-258** — sau `Field` của `?.`: field `T?` ⇒ `MakeSome` vô điều kiện; field thường
+    /// ⇒ `lift_opt(1)` như cũ (giá trị hợp lệ không-Option).
+    pub(super) fn field_optional_boc(
+        &mut self,
+        base: &vis_types::HExpr,
+        name: &str,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        if self.field_la_opt(base, name) {
+            self.f.push(Instr::MakeSome, span, 0);
+        } else {
+            self.lift_opt(1, span)?;
+        }
+        Ok(())
+    }
+
+    /// **VD-258** — số lớp `Opt` của phần tử `list` khi gọi `push` (`0` nếu không phải list/Opt).
+    pub(super) fn push_elem_depth(&self, base: &vis_types::HExpr) -> usize {
+        match self.base_ty(base) {
+            Some(Type::List(el)) if el.is_opt() => opt_depth(&el),
+            _ => 0,
+        }
+    }
+
+    /// **VD-258** — nâng đối số `i` của biến thể enum tới đủ lớp `Opt` của trường khai báo.
+    pub(super) fn lift_enum_arg(
+        &mut self,
+        enum_id: Option<vis_types::EnumId>,
+        variant: &str,
+        i: usize,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        let Some(id) = enum_id else {
+            return Ok(());
+        };
+        if let Some(ft) = self
+            .g
+            .enum_fields
+            .get(&(id.0, variant.to_string(), i))
+            .cloned()
+        {
+            let depth = opt_depth(&ft);
+            if depth > 0 {
+                self.lift_opt(depth, span)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// **VD-258** — nâng giá trị cập nhật `with` vào trường `T?` của bản ghi đã biết.
+    pub(super) fn lift_with_field(
+        &mut self,
+        rec_id: Option<vis_types::RecId>,
+        name: &str,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        if let Some(id) = rec_id {
+            if let Some(ft) = self.g.rec_fields.get(&(id.0, name.to_string())).cloned() {
+                let depth = opt_depth(&ft);
+                if depth > 0 {
+                    self.lift_opt(depth, span)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     /// **ST-248 (VD-242 §3.3)** — số lớp `Opt` của **đích gán** (0 ⇒ giữ nguyên).
