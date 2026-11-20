@@ -21,6 +21,7 @@ mod module;
 mod phan_tich;
 mod thanh_vien;
 mod vi_tri;
+mod workspace;
 
 use std::collections::HashMap;
 use std::io::{self, BufReader};
@@ -49,6 +50,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut da_shutdown = false;
     // **ST-69**: văn bản gần nhất theo URI (didOpen/didChange) — request completion/hover đọc lại.
     let mut van_ban: HashMap<String, String> = HashMap::new();
+    // **ST-277**: thư mục gốc từ `initialize.params.rootUri` (workspace/symbol).
+    let mut root: Option<std::path::PathBuf> = None;
 
     // Ghi frame; lỗi ghi (stdout đóng) ⇒ dừng với mã 1 (không panic).
     macro_rules! gui {
@@ -116,6 +119,14 @@ pub fn run(args: &[String]) -> ExitCode {
         match method.as_str() {
             "initialize" => {
                 da_khoi_tao = true;
+                root = jsonrpc::lay_params(kv)
+                    .and_then(|p| match p {
+                        Value::Map(p) => jsonrpc::lay(p, "rootUri"),
+                        _ => None,
+                    })
+                    .and_then(jsonrpc::chuoi)
+                    .and_then(uri_thanh_duong)
+                    .map(std::path::PathBuf::from);
                 if let Some(id) = id {
                     gui!(jsonrpc::phan_hoi(&id, ket_qua_khoi_tao()));
                 }
@@ -330,6 +341,28 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-277**: tìm ký hiệu trong thư mục gốc (workspace/symbol).
+            "workspace/symbol" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else {
+                        let query = jsonrpc::lay_params(kv)
+                            .and_then(|p| match p {
+                                Value::Map(p) => jsonrpc::lay(p, "query"),
+                                _ => None,
+                            })
+                            .and_then(jsonrpc::chuoi)
+                            .unwrap_or("");
+                        gui!(workspace::tra_loi_symbol(root.as_deref(), query, &id));
+                    }
+                }
+            }
             "shutdown" => {
                 if !da_khoi_tao {
                     if let Some(id) = id {
@@ -392,6 +425,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
+        jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("renameProvider", Value::Bool(true)),
         jsonrpc::kv(
