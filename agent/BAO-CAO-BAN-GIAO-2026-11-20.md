@@ -12,7 +12,7 @@
 
 | Mục | Giá trị |
 |---|---|
-| HEAD / remote | `d470873ffbeb6b04f5a6f2b021f5264ada2795aa` — `origin/main` cùng hash, đã push |
+| HEAD / remote | `9f3b67899ab72bb51c98a2b1fcb5da936f0ac1ae` — `origin/main` cùng hash, đã push |
 | Trạng thái cây | **Sạch** (`git status --porcelain` rỗng) |
 | Worktree còn mở | **Không** — 4 worktree A/B/C/D đã merge và remove; chỉ `/home/ps/ViScript` (`main`) |
 | Tag | Chỉ `pha1-rc1` (= `05e42d0…`, không di chuyển) |
