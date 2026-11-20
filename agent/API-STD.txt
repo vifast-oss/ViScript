@@ -34,6 +34,7 @@ http.head_timeout	(str, int) -> Result[map[str, {error}], Error]
 json.decode	(str) -> Result[Json, Error]
 json.encode	(T) -> str
 json.encode_pretty	(T) -> str
+list.binary_search	(list[T], T) -> int?
 list.chunk	(list[T], int) -> list[list[T]]
 list.concat	(list[T], list[T]) -> list[T]
 list.drop	(list[T], int) -> list[T]

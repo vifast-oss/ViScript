@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 107] = [
+pub const FUNCS: [StdFn; 108] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -433,6 +433,14 @@ pub const FUNCS: [StdFn; 107] = [
     },
     StdFn {
         name: "list.last_index_of",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
+        ret: Ty::OptInt,
+    },
+    // **VD-270 (binary-search)**: `xs` phải **đã sắp tăng** theo `cmp_value` (cùng thứ tự
+    // `list.sort`/`min`); trả **biên dưới** `Some(vị trí đầu của cụm bằng)` hoặc `None`.
+    // `T` buộc từ `xs` nên `value` cùng kiểu phần tử; sugar `xs.binary_search(v)` theo R5c.
+    StdFn {
+        name: "list.binary_search",
         params: &[Ty::List(&Ty::Var(0)), Ty::Var(0)],
         ret: Ty::OptInt,
     },

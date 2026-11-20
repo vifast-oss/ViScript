@@ -23,6 +23,7 @@ use crate::interp::{Abort, Trap, R};
 use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
+mod bisect;
 mod chung;
 mod flatten;
 mod fsbytes;
@@ -386,6 +387,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.index_of" | "list.last_index_of" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(indexof::goi(name, xs, &args[1]))
+        }
+        // **VD-270 (binary-search)**: `xs` **đã sắp tăng** theo `cmp_value` (cùng thứ tự
+        // `list.sort`/`min`); trả **biên dưới** `Some(vị trí đầu của cụm bằng)` / `None`;
+        // không kiểm lại thứ tự, không trap. Lõi ở `stdlib/bisect.rs`.
+        "list.binary_search" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            Ok(bisect::goi(xs, &args[1]))
         }
         "list.take" | "list.drop" => {
             let xs = danh_sach(name, &args[0], 0, span)?;
