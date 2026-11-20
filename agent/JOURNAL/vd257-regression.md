@@ -127,3 +127,10 @@ hình đã được ủy quyền — **không có tệp ngoài danh sách dự k
 (+694), `vm.rs` (−263) và `vm/vm_helpers.rs` (+174) là tách module để qua luật R1, không đổi API.
 Không thay đổi cú pháp/API công khai, không dependency/lock, không runtime mặc định.
 
+## 11. Async lồng nhau — đối chiếu thêm
+
+Chương trình `fn() -> await src()` với `src` lại `await ext()`: `vis run` và
+`vis run --vm --no-cache` (đường mặc định) đều in `0`, exit 0. Gap `guard > 200_000` mà stream A
+ghi nhận **chỉ thuộc đường frame test** (fake event), không phải lỗi runtime mặc định; giữ nguyên
+ghi nhận của A, không tự mở sửa trong phạm vi regression.
+
