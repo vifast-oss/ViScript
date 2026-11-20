@@ -225,7 +225,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str) -> Result[bool, Error]`; `symlink_metadata`, symlink tới tệp/thư mục/đích thiếu
     // ⇒ `true`, tệp/thư mục thường/thiếu ⇒ `false`, lỗi khác ⇒ `Err`; **không** sugar) ⇒ **141**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 144, "bảng chữ ký phải đủ 144 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 fs-read-link, 2026-11-21)**: +**1** hàm `std.fs.read_link`
+    // (`(str) -> Result[str, Error]`; đích symlink **nguyên văn**, **không** đi theo link, dangling
+    // vẫn `Ok`, tệp/thư mục/thiếu/lỗi khác ⇒ `Err`; **không** sugar) ⇒ **145** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 145, "bảng chữ ký phải đủ 145 hàm");
 }
 
 #[test]
@@ -261,6 +265,26 @@ fn fs_is_symlink_kieu_str_result_va_khong_sugar() {
         "`fs.is_symlink`: hạ kiểu trả"
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "is_symlink"), None);
+}
+
+#[test]
+fn fs_read_link_kieu_str_result_va_khong_sugar() {
+    // **VD-270 (fs-read-link)**: `(str) -> Result[str, Error]`, tái dùng `Ty::ResultStrStr`
+    // (cùng biến thể của `fs.read`); fs là module-only nên **không** sugar — `p.read_link()` bị
+    // `VS0403`, không ánh xạ sang `fs`.
+    let f = sig_of("fs.read_link").expect("fs.read_link");
+    assert_eq!(f.params, &[Ty::Str], "`fs.read_link`: tham số");
+    assert_eq!(
+        f.ret,
+        Ty::ResultStrStr,
+        "`fs.read_link`: kiểu trả phải tái dùng `ResultStrStr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
+        "`fs.read_link`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "read_link"), None);
 }
 
 #[test]

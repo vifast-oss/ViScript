@@ -28,6 +28,7 @@ mod frame_net;
 mod fsbytes;
 mod fsissymlink;
 mod fsmkdirall;
+mod fsreadlink;
 mod indexof;
 mod listcontains;
 mod listmath;
@@ -772,6 +773,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **không** đi theo): symlink tới tệp/thư mục/**đích thiếu** ⇒ `true` (khác `exists`);
         // tệp/thư mục thường, path thiếu ⇒ `false`; lỗi metadata khác ⇒ `Err(Error)`.
         "fs.is_symlink" => fsissymlink::goi(host, name, &args, span),
+
+        // **VD-270 (fs-read-link)**: đọc **đích** symlink, **không** đi theo link (dangling vẫn
+        // `Ok`); tệp/thư mục/thiếu/lỗi khác ⇒ `Err(Error)` dữ liệu, không trap.
+        "fs.read_link" => fsreadlink::goi(host, name, &args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
         "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, &args, span),

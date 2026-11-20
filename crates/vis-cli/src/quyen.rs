@@ -868,6 +868,13 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_symlink(p)
     }
+    /// **VD-270 (fs-read-link)**: thao tác **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size);
+    /// bước kiểm canonicalize như mọi đường đọc (symlink tồn tại trỏ ngoài root ⇒ `VS0604`), còn
+    /// **thao tác** dùng `read_link` (không đi theo link) nên đọc được cả symlink dangling.
+    fn read_link(&mut self, p: &str) -> Result<String, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.read_link(p)
+    }
     /// **VD-270 (fsbytes)**: đọc byte thô là thao tác **đọc** ⇒ kiểm `cap[Dir]`/`cap[File]`
     /// (`can_write=false`) trước khi chạm đĩa; lỗi host giữ nguyên `Err` dữ liệu.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {

@@ -178,6 +178,14 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 
+    /// **VD-270 (fs-read-link)**: đọc **đích** của symbolic link tại `p` — **không** đi theo
+    /// link, nên symlink **dangling** vẫn trả đích; đích trả **nguyên văn** (tương đối/tuyệt đối
+    /// đúng như lúc tạo). Tệp/thư mục thường, `p` **thiếu**, `ENOTDIR`, không đủ quyền OS, hoặc
+    /// đích không phải UTF-8 ⇒ `Err` dữ liệu. Default: **chưa hỗ trợ**.
+    fn read_link(&mut self, _p: &str) -> Result<String, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (mọi giá trị `0..=255`).
     /// Thiếu tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock
     /// vẫn biên dịch.
