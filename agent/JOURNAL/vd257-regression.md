@@ -114,3 +114,9 @@ marker `Value::Enum(n,"",[])` / `Value::Record(n,[])`) **trước** fallback arg
 `interp.rs::tags` chuyển `pub(crate)`. Giờ 4 đường chạy cùng stdout. Gate sau sửa: **1565/1565**.
 Đây là sửa lỗi coverage, **không** đổi checker hay runtime mặc định.
 
+## 9. Ma trận target sau tích hợp
+
+`./bin/vis-targets`: exit 0; **core** `PASS=18 EXPECTED_RED=0 FAIL=0`; **sqlite** `PASS=16
+EXPECTED_RED=2 FAIL=0` (2 ô `vis-cli` × Windows-msvc/wasm32 — lỗi `libsqlite3-sys` có sẵn).
+Không có ô mới chuyển sang FAIL sau khi gộp A/B/C/D. Log `/tmp/opencode/vd257-targets-matrix.log`.
+
