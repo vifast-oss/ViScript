@@ -53,7 +53,7 @@ pub enum Ty {
     /// **VD-241 (Gate 1)** — `Result[int, Error]` (`std.sqlite.execute`).
     ResultIntErr,
     /// **VD-241 (Gate 1)** — `Result[bool, Error]` (`std.sqlite.in_transaction`,
-    /// `std.sqlite.table_exists` — VD-270).
+    /// `std.sqlite.table_exists`, `std.sqlite.index_exists` — VD-270).
     ResultBoolErr,
     /// **VD-241 (Gate 1)** — `Result[RowSet, Error]` (`std.sqlite.query`).
     ResultRowSetErr,
@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 133] = [
+pub const FUNCS: [StdFn; 134] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -1012,6 +1012,16 @@ pub const FUNCS: [StdFn; 133] = [
     // handle/host/kết quả ⇒ `Err(Error)` dữ liệu.
     StdFn {
         name: "sqlite.table_exists",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ResultBoolErr,
+    },
+    // **VD-270 (sqlite-index-exists)** — `true` ⇔ schema chính có **index** tên đúng:
+    // `SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ? LIMIT 1`; tên là **tham số
+    // bind** (`SqlValue.Text`), so khớp **BINARY** (phân biệt hoa/thường); thiếu/rỗng ⇒
+    // `Ok(false)`; bảng/view/trigger không tính; autoindex `sqlite_autoindex_%` theo truy vấn;
+    // TEMP không thuộc schema chính. Lỗi handle/host/kết quả ⇒ `Err(Error)` dữ liệu.
+    StdFn {
+        name: "sqlite.index_exists",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultBoolErr,
     },

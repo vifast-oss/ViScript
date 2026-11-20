@@ -186,7 +186,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.path.with_extension` (`(str, str) -> str`; thay/đặt/bỏ phần mở rộng thành phần cuối,
     // ext rỗng ⇒ xoá, tên bắt đầu `.` không có ext, **không** sugar) ⇒ **133** hàm;
     // không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 133, "bảng chữ ký phải đủ 133 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-index-exists, 2026-11-21)**: +**1** hàm
+    // `sqlite.index_exists` (`(str, str) -> Result[bool, Error]`; index tên đúng trong schema
+    // chính, tên bind, so khớp BINARY, thiếu/rỗng ⇒ `Ok(false)`) ⇒ **134** hàm; không xoá/đổi hàm cũ.
+    assert_eq!(FUNCS.len(), 134, "bảng chữ ký phải đủ 134 hàm");
 }
 
 #[test]
@@ -799,6 +802,30 @@ fn sqlite_table_exists_kieu_str_str_va_result_bool() {
         f.ret.sang_type(),
         Type::Result(Box::new(Type::Bool), Box::new(Ty::Error.sang_type())),
         "`sqlite.table_exists`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[bool, Error]");
+}
+
+/// **VD-270 (sqlite-index-exists)**: chữ ký `(str, str) -> Result[bool, Error]` — tái dùng
+/// `Ty::ResultBoolErr` (cùng biến thể của `sqlite.in_transaction`/`sqlite.table_exists`, không
+/// thêm biến thể `Ty`), hạ ra `Result` với lỗi là bản ghi `Error`.
+#[test]
+fn sqlite_index_exists_kieu_str_str_va_result_bool() {
+    let f = sig_of("sqlite.index_exists").expect("sqlite.index_exists");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`sqlite.index_exists`: tham số (handle, name)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultBoolErr,
+        "`sqlite.index_exists`: kiểu trả phải tái dùng `ResultBoolErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Bool), Box::new(Ty::Error.sang_type())),
+        "`sqlite.index_exists`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[bool, Error]");
 }
