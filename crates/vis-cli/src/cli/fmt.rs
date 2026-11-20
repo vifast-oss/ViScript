@@ -92,7 +92,7 @@ enum FmtMode {
 /// `vis fmt` — chuẩn hoá **thụt lề** (ST-07, VD-39). Thoát 0 (xong / đã đúng), 1 (`--check` có tệp
 /// cần sửa), 2 (dùng sai, tệp lỗi cú pháp, `.vish`).
 /// **ST-77**: gom `.vis`/`.vish` dưới `goc` theo thứ tự byte (sắp sau khi gom).
-fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<std::path::PathBuf>) {
+fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<(std::path::PathBuf, bool)>) {
     let Ok(ds) = std::fs::read_dir(goc) else {
         return;
     };
@@ -105,7 +105,8 @@ fn gom_nguon(goc: &std::path::Path, ra: &mut Vec<std::path::PathBuf>) {
             .map(|x| x == "vis" || x == "vish")
             .unwrap_or(false)
         {
-            ra.push(p);
+            // `false` = phát hiện khi duyệt thư mục (chịu quy tắc loại trừ).
+            ra.push((p, false));
         }
     }
 }
@@ -132,13 +133,14 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     }
     // **ST-77 (VD-108)**: nhận **thư mục** (đệ quy `.vis`/`.vish`) để `vis fmt --check test/`
     // kiểm được toàn bộ fixture; tệp lẻ giữ nguyên hành vi cũ.
-    let mut ds: Vec<std::path::PathBuf> = Vec::new();
+    // `bool` = người dùng **nêu đích danh** (`true`) hay phát hiện khi duyệt thư mục (`false`).
+    let mut ds: Vec<(std::path::PathBuf, bool)> = Vec::new();
     for f in files {
         let p = std::path::Path::new(f);
         if p.is_dir() {
             gom_nguon(p, &mut ds);
         } else {
-            ds.push(p.to_path_buf());
+            ds.push((p.to_path_buf(), true));
         }
     }
     // **ST-77**: bỏ hai loại **input cố ý** khỏi kiểm `fmt` (allowlist nhỏ nhất, có lý do):
@@ -146,14 +148,23 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
     // (2) `test/check/**` + `test/doc-examples/**` = fixture **cố ý sai** (ca âm của `check` và
     //     khối tài liệu sai theo thiết kế) — fmt từ chối đúng, không phải lỗi formatter;
     // (3) tệp có sibling `.err` = ca **âm** cố ý sai cú pháp.
-    ds.retain(|p| {
+    // **ST-240 / VD-242 §4 (nợ #182)**: quy tắc trên **chỉ** áp cho tệp phát hiện khi duyệt thư
+    // mục; tệp người dùng nêu tên phải được xử lý và báo lỗi rõ, không bị bỏ qua im lặng.
+    ds.retain(|(p, tu_nguon)| {
+        if *tu_nguon {
+            return true;
+        }
         let comps: Vec<_> = p.components().map(|c| c.as_os_str()).collect();
         let la_fixture = comps.windows(3).any(|w| {
             w[0] == "test" && matches!(w[1].to_str(), Some("fmt" | "check" | "doc-examples"))
         });
         !la_fixture && !p.with_extension("err").exists()
     });
-    ds.sort();
+    ds.sort_by(|a, b| a.0.cmp(&b.0));
+    let ds: Vec<std::path::PathBuf> = ds.into_iter().map(|(p, _)| p).collect();
+    // **#183**: chỉ cần nêu tên tệp khi chạy **nhiều** tệp — ca một tệp giữ định dạng cũ
+    // (`# VS0201 …`) để không đổi chẩn đoán/golden hiện hành.
+    let nhieu_tep = ds.len() > 1;
     if mode == FmtMode::IndentReport {
         let mut tong_dong = 0usize;
         let mut so_tep = 0usize;
@@ -182,7 +193,13 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
         let src = match std::fs::read_to_string(path) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("# không đọc được: {e}");
+                // **ST-240 / VD-242 §4 (nợ #183)**: chạy nhiều tệp phải nêu tên tệp.
+                let tien = if nhieu_tep {
+                    format!("{}: ", path.display())
+                } else {
+                    String::new()
+                };
+                eprintln!("# {tien}không đọc được: {e}");
                 co_loi = true;
                 continue;
             }
@@ -196,8 +213,17 @@ pub(crate) fn run_fmt(args: &[String]) -> ExitCode {
         };
         match vis_fmt::format_mode(&src, che_do) {
             Err(e) => {
-                // (d) tệp lỗi: báo lỗi đầu, **không** ghi.
-                eprintln!("# {}", dong_chan_doan(e.code, e.line, e.col, &e.message));
+                // (d) tệp lỗi: báo lỗi đầu, **không** ghi. #183: kèm tên tệp khi đa tệp.
+                let tien = if nhieu_tep {
+                    format!("{}: ", path.display())
+                } else {
+                    String::new()
+                };
+                eprintln!(
+                    "# {}{}",
+                    tien,
+                    dong_chan_doan(e.code, e.line, e.col, &e.message)
+                );
                 co_loi = true;
             }
             Ok(moi) => match mode {

@@ -48,7 +48,13 @@ pub fn than(uri: &str, text: Option<&str>, mode: Mode) -> Vec<u8> {
             .filter(|p| Path::new(p).is_file())
             .and_then(|p| chan_doan_module(Path::new(&p), t))
         {
-            Some(ds) => ds.iter().map(|d| gia_tri(t, d)).collect(),
+            // **ST-240 / VD-242 §4 (nợ #179)**: `span` của chẩn đoán trỏ vào văn bản đã chuẩn hoá
+            // CRLF→LF. Dùng đúng bản đó để tính range — nếu dùng `t` thô, mỗi CRLF trước span làm
+            // `line` bị lùi một dòng so với tệp LF cùng nội dung.
+            Some(ds) => {
+                let norm = vis_syntax::lex::normalize_source(t);
+                ds.iter().map(|d| gia_tri(&norm, d)).collect()
+            }
             None => {
                 let kq = phan_tich::phan_tich(t, mode);
                 kq.ds.iter().map(|d| gia_tri(&kq.text, d)).collect()

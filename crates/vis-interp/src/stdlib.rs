@@ -285,7 +285,31 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         "list.sort" => {
             let xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             let mut ds = xs.clone();
-            ds.sort_by(|a, b| a.cmp_value(b).unwrap_or(std::cmp::Ordering::Equal));
+            // Phần tử đơn cũng phải kiểm: `sort_by` không gọi comparator cho danh sách 1 phần tử.
+            if xs.iter().any(|x| x.cmp_value(x).is_none()) {
+                return Err(loi(
+                    "`list.sort`: không so được các phần tử (NaN hoặc kiểu chưa có thứ tự)",
+                    span,
+                ));
+            }
+            // **ST-240 / VD-242 §3.5 (nợ #168)**: không được `unwrap_or(Equal)` — đó là im lặng
+            // giữ nguyên thứ tự khi gặp `NaN` (hoặc kiểu chưa có thứ tự). Báo lỗi theo cơ chế
+            // hiện hành (`VS0501`, cùng `sort_by`). Kết quả sắp một phần bị **huỷ hoàn toàn**
+            // (trả `Err`, không trả danh sách), nên không có "sắp nửa rồi mới báo lỗi".
+            let mut khong_so_duoc = false;
+            ds.sort_by(|a, b| match a.cmp_value(b) {
+                Some(o) => o,
+                None => {
+                    khong_so_duoc = true;
+                    std::cmp::Ordering::Equal
+                }
+            });
+            if khong_so_duoc {
+                return Err(loi(
+                    "`list.sort`: không so được các phần tử (NaN hoặc kiểu chưa có thứ tự)",
+                    span,
+                ));
+            }
             Ok(Value::List(ds))
         }
         // ST-53: **cùng lõi** `sap_xep_theo_khoa` với shell `sort_by`; ST-56: khoá nhận **`int`
@@ -425,6 +449,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // ----- std.json (encode + decode — ST-33) -----
         "json.decode" => {
             let s = chuoi(name, &args[0], 0, span)?;
+            // **ST-240 / VD-242 §3.5 (nợ #175)**: `01` phải bị từ chối. Lỗi là **dữ liệu**
+            // (`Result.Err` của chương trình), không phải trap — cùng mẫu với lỗi cú pháp JSON
+            // của `crate::json::decode`.
+            if let Some(off) = json_zero_dau(s) {
+                let e = format!("JSON không hợp lệ ở byte {off}: số có số 0 đầu");
+                return Ok(Value::err(Value::ban_ghi_error(e, None)));
+            }
             match crate::json::decode(s) {
                 // **VD-222 (điểm 4)**: trả `Result[Json, Error]` — bọc cây JSON vào enum `Json`.
                 Ok(v) => Ok(Value::ok(crate::json::boc(v))),
@@ -689,6 +720,64 @@ fn co_so_phi_huu_han(v: &Value) -> bool {
     }
 }
 
+/// **ST-240 / VD-242 §3.5 (nợ #175)**: JSON cấm số có số `0` đầu (`01`, `-01`, `00`). Tầng
+/// `crate::json::decode` dùng `str::parse::<i64>()` nên vẫn nhận các token đó; chặn ở **cửa
+/// `std.json.decode`** (không đụng tầng parse dùng chung với LSP/CLI). Quét theo token số, bỏ qua
+/// nội dung chuỗi (kể cả escape) để không đụng `"01"` hợp lệ. Trả byte offset của token sai.
+fn json_zero_dau(s: &str) -> Option<usize> {
+    let b = s.as_bytes();
+    let mut i = 0usize;
+    let mut trong_chuoi = false;
+    let mut escape = false;
+    while i < b.len() {
+        if trong_chuoi {
+            if escape {
+                escape = false;
+            } else if b[i] == b'\\' {
+                escape = true;
+            } else if b[i] == b'"' {
+                trong_chuoi = false;
+            }
+            i += 1;
+            continue;
+        }
+        match b[i] {
+            b'"' => {
+                trong_chuoi = true;
+                i += 1;
+            }
+            c if c == b'-' || c.is_ascii_digit() => {
+                let bat_dau = i;
+                if c == b'-' {
+                    i += 1;
+                }
+                // `0` theo sau bởi chữ số ⇒ phần nguyên có số 0 đầu (JSON không hợp lệ).
+                if b.get(i) == Some(&b'0') && i + 1 < b.len() && b[i + 1].is_ascii_digit() {
+                    return Some(bat_dau);
+                }
+                // Tiêu thụ **toàn bộ** token số — `100` (hai số 0 cuối) phải hợp lệ.
+                while i < b.len() && matches!(b[i], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
+                {
+                    i += 1;
+                }
+            }
+            _ => i += 1,
+        }
+    }
+    None
+}
+
+/// **ST-240 / VD-242 §3.5 (nợ #173)**: giữ dấu float trong JSON. `format!("{}", 1.0_f64)` cho
+/// `"1"`, decoder sẽ đọc thành `Int`; thêm `.0` khi chuỗi in ra không có dấu thập phân/mũ.
+fn json_float(f: f64) -> String {
+    let s = format!("{f}");
+    if s.contains('.') || s.contains('e') || s.contains('E') {
+        s
+    } else {
+        format!("{s}.0")
+    }
+}
+
 /// Mã hoá JSON **compact** (hoặc pretty 2 dấu cách) cho giá trị VS0.
 ///
 /// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `None` ⇒ `null`; `Result` ⇒
@@ -742,13 +831,20 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
         Value::Int(n) => out.push_str(&n.to_string()),
         Value::Float(f) => {
             if f.is_finite() {
-                out.push_str(&format!("{f}"))
+                out.push_str(&json_float(*f))
             } else {
                 out.push_str("null")
             }
         }
         Value::Size(n) | Value::Duration(n) => out.push_str(&n.to_string()),
-        Value::Percent(p) => out.push_str(&format!("{p}")),
+        // `percent` lưu dưới dạng `f64` ⇒ cùng quy ước giữ dấu float (#173).
+        Value::Percent(p) => {
+            if p.is_finite() {
+                out.push_str(&json_float(*p))
+            } else {
+                out.push_str("null")
+            }
+        }
         Value::Str(s) | Value::Path(s) => esc(s, out),
         Value::Char(c) => esc(&c.to_string(), out),
         Value::Bytes(b) => esc(&String::from_utf8_lossy(b), out),
@@ -979,15 +1075,33 @@ fn noi_duong(a: &str, b: &str) -> String {
 }
 
 fn basename(p: &str) -> String {
-    let p = p.trim_end_matches('/');
-    match p.rsplit_once('/') {
-        Some((_, ten)) => ten.to_string(),
-        None => p.to_string(),
+    let trimmed = p.trim_end_matches('/');
+    // **ST-240 / VD-242 §4 (nợ #174)**: POSIX — gốc `/` (và `//`, `///`, …) có basename `/`.
+    // Trước đây `trim_end_matches('/')` biến nó thành `""`. Chuỗi rỗng vẫn trả rỗng.
+    if trimmed.is_empty() {
+        return if p.is_empty() {
+            String::new()
+        } else {
+            "/".to_string()
+        };
+    }
+    match trimmed.rsplit_once('/') {
+        Some((_, ten)) if !ten.is_empty() => ten.to_string(),
+        _ => trimmed.to_string(),
     }
 }
 
 fn dirname(p: &str) -> String {
     let p2 = p.trim_end_matches('/');
+    // **ST-240 / VD-242 §4 (nợ #174)**: `dirname("/") == "/"` (không phải `.`). Chuỗi rỗng
+    // giữ hành vi cũ (`.`).
+    if p2.is_empty() {
+        return if p.is_empty() {
+            ".".to_string()
+        } else {
+            "/".to_string()
+        };
+    }
     match p2.rsplit_once('/') {
         Some((d, _)) => {
             if d.is_empty() {

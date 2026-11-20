@@ -90,6 +90,9 @@ pub struct Loaded {
     pub types: TypeTable,
     /// Chẩn đoán **tĩnh** kèm tên tệp: `(rel, diag)`.
     pub diags: Vec<(String, Diagnostic)>,
+    /// **ST-240 (#177)**: `file_id → rel` theo thứ tự cấp (`Nap::file_rel`, chính = 0) — để CLI
+    /// ánh xạ `span.file` của trap runtime về đúng tệp/module.
+    pub file_rel: Vec<String>,
     /// Cây phụ thuộc cho `--dump-deps`: `rel → [rel phụ thuộc trực tiếp]`.
     pub deps: Vec<(String, Vec<String>)>,
     /// **ST-84**: `rel` của từng item trong `hir.items` (cùng thứ tự) — để LSP biết item thuộc tệp nào.
@@ -373,7 +376,9 @@ impl Nap {
                 }
             })
             .unwrap_or_default();
-        let (line, col) = vi_tri(&text, span);
+        // ST-240 (#178): span trỏ vào văn bản đã chuẩn hoá CRLF→LF.
+        let norm = vis_syntax::lex::normalize_source(&text);
+        let (line, col) = vi_tri(&norm, span);
         self.diags.push((
             rel.to_string(),
             Diagnostic {
@@ -667,7 +672,9 @@ impl Nap {
                 );
                 if let Some(st) = co_that {
                     let span = st.span();
-                    let (line, col) = vi_tri(&text, span);
+                    // ST-240 (#178): cùng bản chuẩn hoá với span của CST/HIR.
+                    let norm = vis_syntax::lex::normalize_source(&text);
+                    let (line, col) = vi_tri(&norm, span);
                     self.diags.push((
                         rel.clone(),
                         Diagnostic {
@@ -858,7 +865,11 @@ fn load_full_voi(
         // Tyck không có văn bản ⇒ tự tính `dòng:cột` theo **tệp được gán** (ST-25 mục 3).
         let mut d2 = d.clone();
         if let Some(f) = n.files.iter().find(|f| f.rel == rel) {
-            let (line, col) = vi_tri(&f.text, d2.span);
+            // **ST-240 / VD-242 §4 (nợ #178)**: `span` trỏ vào văn bản đã chuẩn hoá CRLF→LF
+            // (`parse_file`/`lex_file`), nhưng `f.text` là nội dung thô trên đĩa ⇒ lệch dòng/cột
+            // với tệp CRLF. Dùng cùng bản chuẩn hoá để tính vị trí (`check`, `--json`, `run`).
+            let norm = vis_syntax::lex::normalize_source(&f.text);
+            let (line, col) = vi_tri(&norm, d2.span);
             d2.line = line;
             d2.col = col;
         }
@@ -866,6 +877,7 @@ fn load_full_voi(
     }
     Ok(Loaded {
         main: n.main,
+        file_rel: n.file_rel,
         files: n.files,
         hir,
         symbols: n.symbols,

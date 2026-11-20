@@ -248,7 +248,13 @@ pub(crate) fn run_check_json(args: &[&String], cho_ngoai: bool, kiem_kieu: bool)
     let mut ok = true;
     for (i, path) in args.iter().enumerate() {
         let kq = check_all(path, cho_ngoai, kiem_kieu);
-        if !kq.diags.is_empty() {
+        // **ST-240 / VD-242 §4 (nợ #180)**: khớp TAP — warning mềm vẫn được phát ra nhưng **không**
+        // làm đỏ. Ngoại lệ `VS0107` (tab) vẫn là lỗi như TAP/`run --tap`.
+        let co_loi = kq
+            .diags
+            .iter()
+            .any(|d| !(d.severity == "warning" && d.ma != "VS0107"));
+        if co_loi {
             ok = false;
         }
         if i > 0 {

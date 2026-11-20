@@ -439,11 +439,29 @@ fn show_duration(n: i64) -> String {
     format!("{n}ns")
 }
 
+/// **ST-240 / VD-243 (#172)**: `2^63` — `i64::MAX as f64` (Rust làm tròn lên). `show_percent`
+/// ép `p.round() as i64`; Rust **bão hoà** ở `|p| ≥ 2^63`, nên đây là ranh giới biểu diễn hiện hành.
+/// Không đổi thang đo/quy tắc làm tròn — chỉ chặn giá trị vượt miền trước khi đi vào máy.
+pub const PCT_GIOI_I64: f64 = 9_223_372_036_854_775_808.0;
+
+/// **ST-240 / VD-243 (#172)**: `percent` hợp lệ = hữu finite và phần trăm (`ratio * 100`) vẫn nằm
+/// trong miền `i64` hiện hành. Dùng ở mọi nơi **tạo/chuyển đổi** `Percent` (literal, toán tử) để
+/// giá trị sai không bao giờ lọt vào tính toán hay `show`.
+pub fn pct_hop_le(ratio: f64) -> bool {
+    if !ratio.is_finite() {
+        return false;
+    }
+    let pct = ratio * 100.0;
+    (-PCT_GIOI_I64..=PCT_GIOI_I64).contains(&pct)
+}
+
 fn show_percent(r: f64) -> String {
     let p = r * 100.0;
-    if (p - p.round()).abs() < 1e-9 {
+    if (p - p.round()).abs() < 1e-9 && (-PCT_GIOI_I64..=PCT_GIOI_I64).contains(&p) {
         format!("{}pct", p.round() as i64)
     } else {
+        // Phòng thủ: giá trị lọt qua (bytecode tay, test nội bộ) thì in dạng float thật,
+        // **không** bão hoà thành `9223372036854775807pct`.
         format!("{p}pct")
     }
 }
@@ -539,10 +557,18 @@ fn scale_duration(num: &str, unit: &str) -> Option<i64> {
 }
 
 /// Đọc literal `percent` (`50pct`, `12.5pct`) — trả **tỉ lệ 0..1**.
+///
+/// **ST-240 / VD-243 (#172)**: literal không biểu diễn được (vô cực, hoặc phần trăm vượt miền
+/// `i64` như `1e300pct`) bị từ chối **tại nơi tạo giá trị** — cả interp lẫn VM đều đi qua hàm này
+/// (`interp::lit_value`), nên lỗi xuất hiện trước khi giá trị sai đi vào tính toán/`show`.
 pub fn parse_percent(text: &str) -> Option<f64> {
     let t = text.trim().trim_end_matches("pct");
     let v: f64 = t.parse().ok()?;
-    Some(v / 100.0)
+    let ratio = v / 100.0;
+    if !pct_hop_le(ratio) {
+        return None;
+    }
+    Some(ratio)
 }
 
 /// Bỏ quote + xử lý escape cho `"..."`, `"""..."""`, `r"..."`, `r"""..."""`.

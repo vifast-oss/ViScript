@@ -136,6 +136,66 @@ impl HostFs {
     }
 }
 
+/// **ST-240 / VD-242 §4 (nợ #177)**: trap runtime mang `Span.file` của module, nhưng
+/// `Trap::to_diag` tính `line/col` trên văn bản **tệp chính**. Ánh xạ lại về đúng tệp + văn bản đã
+/// chuẩn hoá CRLF→LF (cùng thứ tự byte với `span`) trước khi in. Với tệp chính, giữ nguyên đường
+/// dẫn người dùng nhập (`tep`) để không đổi định dạng chẩn đoán cũ.
+fn vi_tri_runtime(
+    file_rel: &[String],
+    files: &[modules::FileUnit],
+    tep: &str,
+    d: &vis_syntax::Diagnostic,
+) -> (String, u32, u32) {
+    let rel_chinh = file_rel.first().cloned().unwrap_or_default();
+    let rel = file_rel
+        .get(d.span.file as usize)
+        .cloned()
+        .unwrap_or_else(|| rel_chinh.clone());
+    // **VM (#177)**: bytecode `Span` chỉ lưu `start/end` (không có `file`), nên trap trong module
+    // mang `file = 0`. Nếu tệp chính **không chứa** được khoảng byte này nhưng đúng **một** module
+    // chứa ⇒ gán về module đó. Điều kiện "duy nhất" tránh đoán sai khi nhiều tệp cùng đủ dài.
+    let mut rel = rel;
+    if d.span.file == 0 {
+        let cover = |t: &str| {
+            let n = vis_syntax::lex::normalize_source(t);
+            d.span.end <= n.len()
+                && n.is_char_boundary(d.span.start)
+                && n.is_char_boundary(d.span.end)
+        };
+        let chinh_cover = files
+            .iter()
+            .find(|f| f.rel == rel_chinh)
+            .map(|f| cover(&f.text))
+            .unwrap_or(false);
+        if !chinh_cover {
+            let mut ung_vien: Vec<&modules::FileUnit> = files
+                .iter()
+                .filter(|f| f.rel != rel_chinh && cover(&f.text))
+                .collect();
+            if ung_vien.len() == 1 {
+                rel = ung_vien.remove(0).rel.clone();
+            }
+        }
+    }
+    // Đường dẫn hiển thị: tệp chính giữ nguyên đối số người dùng; module ⇒ `thư_mục_chính/rel`.
+    let hien = if rel == rel_chinh {
+        tep.to_string()
+    } else {
+        std::path::Path::new(tep)
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new(""))
+            .join(&rel)
+            .to_string_lossy()
+            .to_string()
+    };
+    let (mut line, mut col) = (d.line, d.col);
+    if let Some(f) = files.iter().find(|f| f.rel == rel) {
+        let norm = vis_syntax::lex::normalize_source(&f.text);
+        (line, col) = modules::vi_tri(&norm, d.span);
+    }
+    (hien, line, col)
+}
+
 /// Ghi ra stdout **một lần**; `BrokenPipe` (vd `vis fmt … | head`) ⇒ im lặng thoát 0, không panic.
 /// Lỗi I/O khác ⇒ báo stderr và trả `false` (caller thoát 2).
 fn xuat_stdout(s: &str) -> bool {
@@ -399,6 +459,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    // ST-240 (#177): giữ bảng `file_id → rel` trước khi partial-move `loaded` vào `h`.
+    let file_rel = loaded.file_rel.clone();
     let mut h = vis_types::HirOutput {
         hir: loaded.hir,
         diagnostics: Vec::new(),
@@ -545,10 +607,20 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         "SQLITE leak: {con_mo} connection chưa đóng (đã đóng khi kết thúc phiên)"
                     );
                 }
-                let d: Vec<(String, u32, u32, String)> = out
+                let d: Vec<(String, u32, u32, String, String)> = out
                     .diagnostics
                     .iter()
-                    .map(|x| (x.code.short.to_string(), x.line, x.col, x.message.clone()))
+                    .map(|x| {
+                        let (tep_that, line, col) =
+                            vi_tri_runtime(&file_rel, &loaded.files, &tep, x);
+                        (
+                            x.code.short.to_string(),
+                            line,
+                            col,
+                            x.message.clone(),
+                            tep_that,
+                        )
+                    })
                     .collect();
                 (out.stdout, d, out.steps, false, out.exit)
             })
@@ -571,13 +643,18 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         }
         ExitCode::from(exit_val as u8)
     } else {
-        for (ma, line, col, msg) in &diags {
-            eprintln!("{tep}:{line}:{col}: error {ma}: {msg}");
+        for (ma, line, col, msg, tep_that) in &diags {
+            eprintln!("{tep_that}:{line}:{col}: error {ma}: {msg}");
         }
         if tap {
             eprintln!("not ok 1 - {} ({}, steps={})", tep, diags[0].0, steps);
         }
-        ExitCode::from(ma_thoat_khi_loi(&diags))
+        // `ma_thoat_khi_loi` có chữ ký cũ (4-tuple); bỏ trường tên tệp trước khi gọi.
+        let ma_loi: Vec<(String, u32, u32, String)> = diags
+            .iter()
+            .map(|(ma, line, col, msg, _)| (ma.clone(), *line, *col, msg.clone()))
+            .collect();
+        ExitCode::from(ma_thoat_khi_loi(&ma_loi))
     }
 }
 
