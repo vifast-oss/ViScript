@@ -72,3 +72,14 @@ thấp nhất nhưng 1.050 yield ⇒ overhead chuyển turn.
 - Số đo release bổ sung cho B; **không đổi** đề xuất `BUDGET`/`FUEL`/`Q` — vẫn chờ A0 chốt.
 - Không chạy lại full gate; gate tại `a6ad452` đã **1562 passed / 3 skipped / 0 failed** (báo cáo
   `agent/BAO-CAO-BAN-GIAO-2026-11-20.md`).
+
+## 5. Ranh giới parity sự kiện (phát hiện khi audit trace)
+
+Test mới `crates/vis-cli/tests/lat257_trace_audit.rs` (2/2) dùng chương trình có `match`/`with`/`?`
+và ghi nhận: `fee.trace()` của compiler là **bảng tĩnh gồm mọi hàm/nhánh**, không phải trace thực
+thi. Bằng chứng "dãy sự kiện byte-identical" của `lat256_budget.rs` chỉ đúng cho chương trình
+**một hàm, không nhánh**; với chương trình nhiều hàm/nhánh không được suy ra parity thứ tự đầy đủ.
+Kiểm chứng thay thế: mọi sự kiện thực thi đều nằm trong bảng tĩnh (tập con), và 4 đường chạy
+(mặc định interp/VM, frame interp/VM) cùng stdout/exit. **Không hạ tiêu chí test cũ**, không đổi mã
+sản phẩm; giới hạn được ghi thành test `ghi_nhan_gioi_han_parity`.
+
