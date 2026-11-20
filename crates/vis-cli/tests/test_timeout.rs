@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-105 (VD-114)** — `vis test --timeout <ms>`: chỉ áp cho **`test fn`** (không áp fixture
-//! `.out/.err`); quá hạn ⇒ kill tiến trình con, `not ok` + “quá hạn <ms> ms”, **tiếp tục** ca sau.
+//! **ST-105 (VD-114)** — `vis test --timeout <ms>` cho **`test fn`**; **VD-270** mở rộng cho
+//! **fixture** `.out/.err` (xem `vd270_vistest_timeout.rs`). Quá hạn ⇒ kill tiến trình con,
+//! `not ok` + “quá hạn <ms> ms”, **tiếp tục** ca sau.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
