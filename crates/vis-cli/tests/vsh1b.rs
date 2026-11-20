@@ -57,10 +57,10 @@ fn mock(d: &Path) -> PathBuf {
 }
 
 fn bang_mac_dinh() -> &'static str {
-    "name   size     modified  is_file\na.jpg   2mb  1700000000s  true\nb.jpg   6mb  1700086400s  true\n"
+    "name   size          modified  is_file\na.jpg   2mb  2810w5d22h13m20s  true\nb.jpg   6mb  2810w6d22h13m20s  true\n"
 }
 
-const BANG_LONG: &str = "name   size     modified  is_file  mode       modified_time\na.jpg   2mb  1700000000s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  1700086400s  true     rw-------  2023-11-15 22:13\n";
+const BANG_LONG: &str = "name   size          modified  is_file  mode       modified_time\na.jpg   2mb  2810w5d22h13m20s  true     rw-r--r--  2023-11-14 22:13\nb.jpg   6mb  2810w6d22h13m20s  true     rw-------  2023-11-15 22:13\n";
 
 #[test]
 fn long_co_du_sau_cot() {
@@ -295,7 +295,7 @@ fn fixture_cmd_long() {
         ("long", BANG_LONG),
         (
             "long-where",
-            "name   size     modified  is_file  mode       modified_time\nb.jpg   6mb  1700086400s  true     rw-------  2023-11-15 22:13\na.jpg   2mb  1700000000s  true     rw-r--r--  2023-11-14 22:13\n",
+            "name   size          modified  is_file  mode       modified_time\nb.jpg   6mb  2810w6d22h13m20s  true     rw-------  2023-11-15 22:13\na.jpg   2mb  2810w5d22h13m20s  true     rw-r--r--  2023-11-14 22:13\n",
         ),
         ("group-arg", "[1, 2]\na\n"),
         ("group-stage", bang_mac_dinh()),

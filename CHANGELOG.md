@@ -38,6 +38,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — VD-267 (R10 — hiển thị đơn vị): `size` in **thập phân** `b kb mb gb tb`, chọn đơn vị lớn nhất có phần nguyên ≥ 1, tối đa **2** chữ số lẻ (làm tròn nửa lên, bỏ 0 thừa), âm giữ dấu, `0` ⇒ `0b` (`1024` ⇒ `1.02kb`, `1500` ⇒ `1.5kb`; `kib`/`mib` chỉ còn là thang literal); `duration` in **ghép** `w d h m s ms us ns`, bỏ thành phần 0, không cách, phân rã nguyên chính xác, âm giữ dấu, `0` ⇒ `0ns` (`90s` ⇒ `1m30s`, `2h+30m` ⇒ `2h30m`). `print`, `str(x)`, nội suy `{x}` và cả hai engine dùng chung `Value::show`; không đổi số học/literal. `crates/vis-cli/tests/vd267_fmt_size.rs`; `gate --fast` PASS.
 - **2026-11-21** — VD-266 (thư viện `std.fs`): thêm `read_lines` (tách dòng CRLF, bỏ newline cuối tệp), `append` (tạo tệp nếu thiếu, không cắt), `mkdir` (**một cấp**, lỗi nếu đã tồn tại), `remove` (**chỉ tệp**, từ chối thư mục); mọi thao tác ghi vẫn qua `FsGuard`/`cap[Dir] (write)`; `--fs-mock` và hai đường interp/VM khớp byte; API-STD 61 → 65 hàm.
 - **R29** — số 3 nền cùng HEAD: mac **1184/0**, ps **1188/0**, psvn **152/4** (4 ca `cap_proc` do thiếu `/bin/echo`, `/bin/sh` trên Windows).
 - **R30** — pha 1 công thái học (C3 VD-178), tách repo; trạng thái theo `agent/reports/R30-viscript.{md,json}`.

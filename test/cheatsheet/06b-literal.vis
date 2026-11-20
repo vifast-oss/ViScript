@@ -6,9 +6,9 @@
 # kỳ vọng: 3.14
 # kỳ vọng: 0.000000001
 # kỳ vọng: 5mb
-# kỳ vọng: 5kib
+# kỳ vọng: 5.12kb
 # kỳ vọng: 250ms
-# kỳ vọng: 150m
+# kỳ vọng: 2h30m
 # kỳ vọng: 50pct
 print(1_000)
 print(0xff)

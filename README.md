@@ -241,14 +241,14 @@ Err(chia cho 0)
 ### 12. Đơn vị đo
 
 ```python title="ViScript"
-print(1kb + 1kib)     # 2024b
-print(2h + 30m)       # 150m
+print(1kb + 1kib)     # 2.02kb
+print(2h + 30m)       # 2h30m
 print(5mb)            # 5mb
 ```
 
 ```text
-2024b
-150m
+2.02kb
+2h30m
 5mb
 ```
 
@@ -515,10 +515,10 @@ print("Tổng dung lượng: {anh + video}")
 ```
 
 ```text
-Học: 150m
+Học: 2h30m
 Chơi: 45m
-Tổng: 195m
-Tổng dung lượng: 1005mb
+Tổng: 3h15m
+Tổng dung lượng: 1.01gb
 ```
 
 ### Ví dụ 4 — JSON: lưu và đọc dữ liệu
