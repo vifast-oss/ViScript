@@ -48,10 +48,11 @@ mod than;
 pub use than::is_builtin_value;
 pub(crate) use than::{lower_nhom, lower_than, ThanCtx};
 
-/// **8 tên giá trị dựng sẵn** của VS0 — danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải
-/// qua Agent 0). `true`/`false` là **literal**; `none` đã **bỏ** (R2, `VS0203`).
-pub const BUILTIN_VALUE_NAMES: [&str; 11] = [
-    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
+/// **VD-267**: thêm `panic` (builtin phân kỳ, `panic(str) -> never`) ⇒ **12** tên.
+/// Danh sách **khoá bằng test** (VD-44 #3: thêm/bớt phải qua Agent 0). `true`/`false` là
+/// **literal**; `none` đã **bỏ** (R2, `VS0203`).
+pub const BUILTIN_VALUE_NAMES: [&str; 12] = [
+    "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref", "panic",
 ];
 
 mod options;

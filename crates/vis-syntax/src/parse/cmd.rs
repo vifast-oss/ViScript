@@ -56,7 +56,7 @@ pub fn let_la_khai(d: &str) -> bool {
 /// `vis-types` (`ten_dung_san_khop_voi_vis_types`), vì `vis-syntax` **không** được phụ thuộc ngược.
 pub fn ten_mac_dinh() -> std::collections::HashSet<String> {
     [
-        "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref",
+        "print", "len", "str", "echo", "lines", "take", "Ok", "Err", "Some", "None", "ref", "panic",
     ]
     .iter()
     .chain(["std", "pkg", "self", "true", "false", "none"].iter())

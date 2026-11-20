@@ -141,6 +141,8 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::ResultIntErr => "Result[int, Error]".to_string(),
         Ty::ResultBoolErr => "Result[bool, Error]".to_string(),
         Ty::ResultRowSetErr => "Result[RowSet, Error]".to_string(),
+        // **VD-267**: `never` chỉ dùng cho chữ ký builtin trần, không có mục `FUNCS` nào.
+        Ty::Never => "never".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
         Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
         Ty::List(t) => format!("list[{}]", kieu_ty(t)),

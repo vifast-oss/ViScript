@@ -526,9 +526,9 @@ fn lsp_completion_tien_to_le() {
     );
 }
 
-/// Ca 18 — sau `.` (tiền tố rỗng) ⇒ **toàn bộ** danh sách (chọn "tất cả", không `[]`): 50 mục
-/// = 11 builtin + 40 keyword − 1 trùng (`ref`), cap 200. Lý do: LSP client tự lọc tiếp; rỗng thì
-/// không có gì để gợi ý sau `.`.
+/// Ca 18 — sau `.` (tiền tố rỗng) ⇒ **toàn bộ** danh sách (chọn "tất cả", không `[]`): 51 mục
+/// = 12 builtin + 40 keyword − 1 trùng (`ref`), cap 200. Lý do: LSP client tự lọc tiếp; rỗng thì
+/// không có gì để gợi ý sau `.`. **VD-267**: +`panic` ⇒ 51 (trước: 50).
 #[test]
 fn lsp_completion_sau_cham() {
     let vao = format!(
@@ -561,8 +561,8 @@ fn lsp_completion_sau_cham() {
         .collect();
     assert_eq!(
         labels.len(),
-        50,
-        "11 builtin + 40 keyword − ref: {labels:?}"
+        51,
+        "12 builtin + 40 keyword − ref: {labels:?}"
     );
     assert!(labels.contains(&"print".to_string()));
     assert!(labels.contains(&"let".to_string()));
@@ -1071,12 +1071,12 @@ fn lsp_completion_sau_cham_kieu_khong_ho_tro() {
     assert!(ds.is_empty(), "str không có thành viên ⇒ rỗng: {ds:?}");
 }
 
-/// (d) biến **không rõ kiểu** (`foo()` chưa biết) ⇒ fallback **toàn bộ** như cũ (50 mục).
+/// (d) biến **không rõ kiểu** (`foo()` chưa biết) ⇒ fallback **toàn bộ** như cũ (51 mục — VD-267).
 #[test]
 fn lsp_completion_sau_cham_khong_ro_kieu_fallback() {
     let text = "fn f():\n    let q = foo()\n    q.\n";
     let ds = goi_y(text, 2, 6);
-    assert_eq!(ds.len(), 50, "fallback 50 mục: {:?}", ds.len());
+    assert_eq!(ds.len(), 51, "fallback 51 mục: {:?}", ds.len());
     assert!(ds.iter().any(|(l, _, _)| l == "print"));
     assert!(ds.iter().any(|(l, _, _)| l == "let"));
 }

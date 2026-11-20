@@ -38,7 +38,7 @@ vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tậ
 | `0` | thành công | **[ĐÃ CÓ]** |
 | `1` | `main` trả `Err` (lỗi dự kiến) | **[ĐÃ CÓ]** — từ **VD-241 §3/T5** (2026-11-19): `Result::Err` từ `main` ⇒ exit **1**; `Ok(..)` ⇒ exit **0**; hai engine đồng nhất |
 | `2` | lỗi biên dịch/kiểm tra | **[ĐÃ CÓ]** |
-| `101` | panic: lỗi lập trình (chia 0, index OOB, tràn i64, assert, kênh chết) | **[ĐÃ CÓ]** — `VS0502`/`VS0503`/`VS0505`/`VS0507` được trả **101** qua `vis` (R9); `[quyền]` ⇒ `2` |
+| `101` | panic: lỗi lập trình (chia 0, index OOB, tràn i64, `assert`, `panic(...)`, kênh chết) | **[ĐÃ CÓ]** — `VS0502`/`VS0503`/`VS0505`/`VS0507` được trả **101** qua `vis` (R9); `[quyền]` ⇒ `2` |
 
 > **`main -> int` không phải mã thoát**: `fn main() -> int` trả `3` vẫn exit **0** (VD-242 §7);
 > chỉ `Result::Err` từ `main` ⇒ **1**, `Ok`/giá trị thường ⇒ **0**.
@@ -173,7 +173,7 @@ loop break continue return and or not true false self async await scope test ext
 | `let v = f()?` ✔ | `v = f()` (try/except) | `let v = f()?;` | `try { f() }` | |
 | `let v = f() else:`<br>`    print(e)`<br>`    return 0` ✔ | `try/except` | `match f() { ... }` | `catch` | **R3b/VD-263**: `Ok`/`Some` bóc giá trị; `Err`/`None` chạy khối `else` (nhận lỗi nếu có `else e:`); khối `else` phải **thoát mọi nhánh** (`return`/`break`/`continue` hoặc `if`/`match` mọi nhánh thoát) — rơi xuống cuối ⇒ `VS0206` |
 | `assert cond` ✔ | `assert` | `assert!(...)` | `console.assert` | |
-| `panic("hỏng")` ✖ | `raise` | `panic!` | `throw` | chưa có ở VS0 |
+| `panic("hỏng")` ✔ | `raise` | `panic!` | `throw` | **VD-267**: builtin trả `never`; dừng chương trình bằng trap `VS0501` (exit **101**) ở **cả hai** engine; dùng được ở mọi vị trí biểu thức (nhánh `else`, `return panic(...)`); `panic(Error)` lấy `message` |
 | `AnyError` ✔ | — | `Box<dyn Error>` | `unknown` | alias `Error` (VD-231) — dùng được; sai kiểu báo `VS0412` |
 
 ## 8. Trait, `impl`, `derives`
@@ -267,12 +267,12 @@ Method trên giá trị (không cần `use`):
 - **Chênh lệch thiết kế ↔ code đã gặp** (theo thứ tự nguồn sự thật, **code thắng**):
   `User(name: "An")` (thiết kế §3.2) **chưa có** → dùng `{...}` + `let u: U = …`;
   `AnyError` **nay là alias bản ghi `Error` (VD-231)** — dùng được; sai kiểu báo `VS0412`; format spec `{x:.2}` **đã có** (R6);
-  `dyn` **chưa dùng được**; `panic(...)` **chưa có**; `newtype` báo **VS0203** tại dòng khai (ST-179);
+  `dyn` **chưa dùng được**; `newtype` báo **VS0203** tại dòng khai (ST-179);
   `r"…"`/`b"…"`/`p"…"` **đã bóc tiền tố** (R6a: `print(p"C:\x")` in `C:\x`);
   `async` chạy **tuần tự một luồng** (VD-240, 2026-11-19: giữ một luồng, **không** đa luồng; test grid `test/sem/async/grid-*` pin): spawn **enqueue** task, task thực thi run-to-completion **khi await**; task được await chạy theo thứ tự **await**; task **không** await vẫn được chạy (khi kênh chặn hoặc ở join cuối) theo thứ tự tạo; **kênh FIFO**; không work-stealing — `recv` hàng trống, `send` đầy hàng, `chan(0)` đều bị chặn (`VS0505`); **hai engine byte-identical**; interp = VM.
   **Chan trả một giá trị `<kênh>` duy nhất** (không phải tuple `(tx, rx)` như thiết kế §742 tip cũ); dùng `c.send/c.recv`, không destructure; show `<fn>` đồng nhất cho cả hai engine.
 - **Theo VD-178 (ST-178) — nhãn trạng thái**:
-  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` (R3a); `let x = r else:` (R3b); `while let PAT = EXPR:` (**R18b** — cấu trúc vòng lặp `if let`-style với pattern, thoát khi `None`); đơn vị `5mb`/`2h30m` chạy **và in chuẩn hoá** (`1.5mb`, `2h30m` — R10, VD-267); `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp). **VD-222/225/227**: `json.decode(s) → Result[Json, Error]` ở interp và VM (JSON enum thật: `Null/Bool/Num/Str/Arr/Obj`); `Error` bản ghi dựng sẵn `{message, source: Error?, span: str?}`; `print(e)` in chỉ `{message}`; `AnyError = alias bản ghi `Error` (RecId(0))** (VD-231; `print(e)` in chỉ `{message}`); interp **và** VM tự nâng `T → T?` ở `let x: int? = …` (VD-227) **và** ở biên `fn f() -> T?` (VD-228 — `None`/`Some` không bọc đôi; argument `g(42)` + closure-biên (`fn(x) -> T?`) đều auto-lift (VD-229)).
+  - **[ĐÃ CÓ]** `filter`/`map` trả collection ngay; `if let Some(v) = o:` (R3a); `let x = r else:` (R3b); `while let PAT = EXPR:` (**R18b** — cấu trúc vòng lặp `if let`-style với pattern, thoát khi `None`); đơn vị `5mb`/`2h30m` chạy **và in chuẩn hoá** (`1.5mb`, `2h30m` — R10, VD-267); `p"…"` **thô hoàn toàn** + nội suy (R6a); `str+str` nối (R6b); `print(a, b)` + `print()` (R6d); `{expr:.N}` (R6c); mã thoát **101** cho panic (C1/R9); `assert cond` (không có thông điệp); `panic(msg)` builtin trả `never`, trap `VS0501` exit **101** ở cả hai engine (VD-267). **VD-222/225/227**: `json.decode(s) → Result[Json, Error]` ở interp và VM (JSON enum thật: `Null/Bool/Num/Str/Arr/Obj`); `Error` bản ghi dựng sẵn `{message, source: Error?, span: str?}`; `print(e)` in chỉ `{message}`; `AnyError = alias bản ghi `Error` (RecId(0))** (VD-231; `print(e)` in chỉ `{message}`); interp **và** VM tự nâng `T → T?` ở `let x: int? = …` (VD-227) **và** ở biên `fn f() -> T?` (VD-228 — `None`/`Some` không bọc đôi; argument `g(42)` + closure-biên (`fn(x) -> T?`) đều auto-lift (VD-229)).
   - **[ĐANG LÀM]** pattern viết thường đã **nâng** `VS0111` (R1a) ⇒ **lỗi `VS0203`** (VD-212); từ khoá cũ (R2) đã bỏ — **VS0203**.
   - **[ĐÃ CÓ]** `main` trả `Err` ⇒ exit **1**; `assert cond, "msg"` (R20a); `if let`/`while let`. **VD-241 đợt coercion Option (2026-11-19)**: `T?? = Option[Option[int]]` lồng thật ở **runtime**; `None` trần ở mọi biên (let/var/gán lại/đối số/thân hàm/return) giữ **`None` lớp ngoài**; `Some(x)` nâng đúng một lớp; spelled-out `Option[Option[int]]` ≡ sugar `int??` ≡ alias — cả ba cùng kiểu/runtime (`optional/long-option-matrix.vis`).
   - **[DỰ KIẾN]** `.lazy()` + `Iterator[T]` duyệt lại (R24). **Lưu ý còn treo**: interp ↔ VM — interp auto-lift `let x: int? = expr` (VD-227) và `fn f() -> T?` (VD-228 Option B) đều auto-lift; closure-boundary (`fn(x) -> T?`) và argument `g(42)` auto-lift từ **VD-229**; lambda params không annot ⇒ không lift; `chan(0)` vẫn bị chặn `VS0505`.

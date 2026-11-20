@@ -52,6 +52,9 @@ pub enum Ty {
     ResultBoolErr,
     /// **VD-241 (Gate 1)** — `Result[RowSet, Error]` (`std.sqlite.query`).
     ResultRowSetErr,
+    /// **VD-267** — `never`: kiểu của biểu thức **không bao giờ cho giá trị** (`panic(…)`).
+    /// Chỉ dùng cho chữ ký builtin trần ([`BUILTIN_FUNCS`]); `std.*` chưa có hàm nào trả `never`.
+    Never,
     /// **Biến kiểu** (VD-99 (1)): `0=T`, `1=K`, `2=V` — **thay** `Ty::Any` (đã xoá).
     Var(u8),
     /// `list[T]` — phần tử là biến kiểu (hoặc kiểu lồng, vd `list[list[T]]`).
@@ -88,6 +91,8 @@ impl Ty {
                 Box::new(Ty::RowSet.sang_type()),
                 Box::new(Self::Error.sang_type()),
             ),
+            // **VD-267** — `panic(…)` phân kỳ: kiểu `never` (khớp mọi kiểu đích ở `coerce`).
+            Ty::Never => Type::Never,
             Ty::ResultJsonErr => Type::Result(
                 Box::new(Type::Enum(crate::ty::EnumId(0))),
                 Box::new(Type::Record(crate::ty::RecId(0))),
@@ -136,6 +141,8 @@ impl Ty {
             Ty::ResultIntErr => "Result[int, Error]",
             Ty::ResultBoolErr => "Result[bool, Error]",
             Ty::ResultRowSetErr => "Result[RowSet, Error]",
+            // **VD-267**
+            Ty::Never => "never",
             // **VD-222**: lỗi → bản ghi dựng sẵn `Error` (trước 18/11: `str`).
             Ty::ResultStrStr => "Result[str, Error]",
             Ty::ResultUnitStr => "Result[(), Error]",
@@ -578,6 +585,23 @@ pub const FUNCS: [StdFn; 73] = [
         ret: Ty::ResultBoolErr,
     },
 ];
+
+/// **VD-267** — chữ ký **builtin trần** (không có tiền tố module, không thuộc [`FUNCS`] `std.*`).
+///
+/// `panic(msg) -> never`: dừng chương trình bằng trap `VS0501` (exit **101**) ở **cả hai** engine;
+/// kiểu `never` cho phép dùng ở mọi vị trí biểu thức (nhánh `else`, `return panic(…)`).
+pub const BUILTIN_FUNCS: [StdFn; 1] = [StdFn {
+    name: "panic",
+    // Nhận `str`; bản ghi dựng sẵn `Error` cũng được nhận ở checker/runtime (VD-267 —
+    // payload `AnyError` của thiết kế §6.4), nhưng `Ty` không có union nên chữ ký ghi `str`.
+    params: &[Ty::Str],
+    ret: Ty::Never,
+}];
+
+/// Tra chữ ký **builtin trần** theo tên (`panic`).
+pub fn sig_builtin(name: &str) -> Option<&'static StdFn> {
+    BUILTIN_FUNCS.iter().find(|f| f.name == name)
+}
 
 /// Tên **đã biết nhưng chưa hỗ trợ** ở VS1c — dùng để báo `VS0301` với thông điệp riêng.
 /// (ST-33: `json.decode` **đã có** ⇒ bảng **rỗng**; giữ API cho các tên hoãn sau này.)

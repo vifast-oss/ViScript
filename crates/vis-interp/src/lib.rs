@@ -51,6 +51,8 @@ pub mod builtin_fs;
 pub mod builtin_list;
 /// **ST-46** — `ls --long` helpers.
 mod builtin_ls;
+/// **VD-267** — `panic(msg)`: trap `VS0501` (exit 101), kiểu tĩnh `never`.
+pub mod builtin_panic;
 mod gan;
 mod host;
 pub mod json;
@@ -67,6 +69,8 @@ pub mod ops {
 }
 
 pub mod builtin;
+/// **VD-267** — bảng chữ ký builtin trần (tách khỏi `builtin.rs` để giữ R1).
+mod builtin_sig;
 mod builtin_value;
 /// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường interp thật.
 #[doc(hidden)]

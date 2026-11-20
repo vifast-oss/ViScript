@@ -7,7 +7,7 @@
 //! 2. 16 chữ ký đã đổi có **đúng hình dạng** (`list[T]`, `map[K,V]`, trả `T`/`list[K]`/…).
 //! 3. `sang_type()` **tổng** (không `Option`): `Var(i)` → `TypeRef` tên `T`/`K`/`V`.
 
-use vis_types::stdlib::{sig_of, Ty, FUNCS};
+use vis_types::stdlib::{sig_builtin, sig_of, Ty, FUNCS};
 use vis_types::Type;
 
 /// Tên biến kiểu theo chỉ số (VD-99 (1): `0=T, 1=K, 2=V`).
@@ -70,6 +70,19 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `mkdir`, `remove`) và +**3** hàm SQLite (`sqlite.query_one`, `sqlite.last_insert_rowid`,
     // `sqlite.changes`) ⇒ **73** hàm; không xoá/đổi hàm cũ nào.
     assert_eq!(FUNCS.len(), 73, "bảng chữ ký phải đủ 73 hàm");
+}
+
+#[test]
+fn panic_la_builtin_tra_never() {
+    // **VD-267**: `panic` là builtin **trần** (không `std.`) với kiểu trả `never`; chữ ký nằm ở
+    // `BUILTIN_FUNCS`, không trộn vào `FUNCS` (freeze API `std.*`).
+    assert!(sig_of("panic").is_none(), "`panic` không phải hàm `std.*`");
+    let f = sig_builtin("panic").expect("phải có chữ ký builtin `panic`");
+    assert_eq!(f.params, &[Ty::Str]);
+    assert_eq!(f.ret, Ty::Never);
+    assert_eq!(f.ret.sang_type(), Type::Never);
+    assert_eq!(f.ret.ten(), "never");
+    assert_eq!(f.so_doi(), 1);
 }
 
 #[test]
