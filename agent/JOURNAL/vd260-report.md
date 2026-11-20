@@ -166,13 +166,14 @@
 - `./vis-dev core-test` @ `e8e5332`: **PASS** (target `target/core-test`).
 - `test/release/run.sh` / `test/toolchain/run.sh` / `bin/vis-host-suite` @ `e8e5332`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 
-## 7. Wave 9 đang chạy (tại thời điểm ghi)
+## 7. Wave 10 đang chạy (tại thời điểm ghi)
 
-- `vd270-strlen` — `str.byte_len/char_count`, `list/map/str.is_empty`.
-- `vd270-vistest-repeat` — `vis test --repeat N` (TAP/JSON, fail-fast).
-- `vd270-run-time` — `vis run --time` (stderr, không đổi exit/output).
-- `vd270-lsp-select2` — `textDocument/selectionRange` tối thiểu (token→line→doc).
-Kết quả các task này chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lại sau khi merge.
+- `vd270-db-batch` — `sqlite.execute_batch` (migrations, splitter an toàn, per-statement policy).
+- `vd270-str-trim` — `str.trim_matches/trim_start_matches/trim_end_matches`.
+- `vd270-vistest-timeout` — áp `--timeout` cho cả fixture, không chỉ `test fn`.
+- `vd270-lsp-hover-builtin` — hover phương thức lõi `list/map/str`.
+Wave 9 đã merge: strlen, vistest-repeat, run-time, lsp-select2, indexof, vistest-shuffle, hover-method.
+Kết quả wave 10 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lại sau khi merge.
 - `VIS_DIFF_N=100000` seed 20261126 @ `e8e5332`: **0 lệch** (93.770 chạy, 60,7 s).
 - **strlen** (`3157b45` → `edc4d2e`): `str.byte_len/char_count/is_empty`, `list/map.is_empty`; API +5; grapheme_count hoãn vì dependency.
 - **vistest-repeat** (`ec0b5cc` → `207e111`): `vis test --repeat N` (case-major, `[k/N]`, TAP/JSON, fail-fast).
