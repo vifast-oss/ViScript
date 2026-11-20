@@ -1,0 +1,175 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! **ST-274/ST-275** — hover biến thể enum + `textDocument/foldingRange`.
+//!
+//! Tách khỏi `lsp.rs` để giữ R1 (≤1500 dòng/tệp); harness tối thiểu giống `lsp.rs`.
+
+use std::io::Write;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+use vis_interp::value::Value;
+
+fn khung(body: &str) -> String {
+    format!("Content-Length: {}\r\n\r\n{body}", body.len())
+}
+
+fn chay(dau_vao: &str) -> (i32, String, String) {
+    let mut con = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .args(["lsp", "--stdio"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn `vis lsp`");
+    con.stdin
+        .take()
+        .expect("stdin")
+        .write_all(dau_vao.as_bytes())
+        .expect("bơm stdin");
+    let han = Instant::now() + Duration::from_secs(5);
+    loop {
+        if con.try_wait().expect("try_wait").is_some() {
+            break;
+        }
+        if Instant::now() > han {
+            let _ = con.kill();
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let o = con.wait_with_output().expect("đọc output");
+    (
+        o.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stderr).to_string(),
+    )
+}
+
+fn s(x: &str) -> Value {
+    Value::Str(x.to_string())
+}
+fn m(kv: Vec<(&str, Value)>) -> Value {
+    Value::Map(
+        kv.into_iter()
+            .map(|(k, v)| (Value::Str(k.to_string()), v))
+            .collect(),
+    )
+}
+fn so(v: &Value) -> String {
+    let mut o = String::new();
+    vis_interp::stdlib::json(v, false, &mut o);
+    o
+}
+fn init() -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(1)),
+        ("method", s("initialize")),
+        ("params", m(vec![])),
+    ]))
+}
+fn did_open(uri: &str, text: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("method", s("textDocument/didOpen")),
+        (
+            "params",
+            m(vec![(
+                "textDocument",
+                m(vec![
+                    ("uri", s(uri)),
+                    ("languageId", s("viscript")),
+                    ("version", Value::Int(1)),
+                    ("text", s(text)),
+                ]),
+            )]),
+        ),
+    ]))
+}
+fn pos(line: i64, ch: i64) -> Value {
+    m(vec![
+        ("line", Value::Int(line)),
+        ("character", Value::Int(ch)),
+    ])
+}
+fn req_vi_tri(id: i64, method: &str, uri: &str, line: i64, ch: i64) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s(method)),
+        (
+            "params",
+            m(vec![
+                ("textDocument", m(vec![("uri", s(uri))])),
+                ("position", pos(line, ch)),
+            ]),
+        ),
+    ]))
+}
+fn hover(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/hover", uri, line, ch)
+}
+fn frame_cuoi(out: &str) -> String {
+    let i = out.rfind("Content-Length: ").expect("có frame");
+    let j = out[i..].find("\r\n\r\n").expect("header") + i + 4;
+    out[j..].to_string()
+}
+
+const URI: &str = "file:///a.vis";
+
+// ===== ST-274: hover biến thể enum =====
+
+/// Ca 34 — hover `A` trong nhánh `match` ⇒ nêu biến thể của enum `E`.
+#[test]
+fn lsp_hover_bien_the_enum() {
+    let text = "enum E:\n    A\n\nfn f(e: E) -> int:\n    match e:\n        A: 1\n\nfn main():\n    print(f(A))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 5, 9))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains("biến thể của"),
+        "hover phải nêu biến thể enum: {body}"
+    );
+    assert!(body.contains("E"), "hover phải nêu enum E: {body}");
+}
+
+// ===== ST-275: foldingRange =====
+
+fn folding(id: i64, uri: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s("textDocument/foldingRange")),
+        (
+            "params",
+            m(vec![("textDocument", m(vec![("uri", s(uri))]))]),
+        ),
+    ]))
+}
+
+/// Ca 35 — hai hàm nhiều dòng ⇒ ít nhất 2 vùng gấp bắt đầu dòng 0 và 3.
+#[test]
+fn lsp_folding_range_hai_ham() {
+    let text = "fn add(a: int) -> int:\n    a\n\nfn main():\n    print(add(1))\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&folding(2, URI))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.starts_with(r#"{"jsonrpc":"2.0","id":2,"result":["#),
+        "frame folding: {body}"
+    );
+    assert!(body.contains(r#""startLine":0"#), "thiếu fn add: {body}");
+    assert!(body.contains(r#""startLine":3"#), "thiếu fn main: {body}");
+}

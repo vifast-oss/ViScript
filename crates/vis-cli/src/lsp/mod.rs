@@ -12,6 +12,7 @@ mod chan_doan;
 mod chu_ky;
 mod dinh_nghia;
 mod doi_ten;
+mod gap;
 mod goi_y;
 mod jsonrpc;
 mod khung;
@@ -308,6 +309,27 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-275**: vùng gấp theo khai báo nhiều dòng.
+            "textDocument/foldingRange" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                gui!(gap::tra_loi_folding(&kq, &id));
+                            }
+                        }
+                    }
+                }
+            }
             "shutdown" => {
                 if !da_khoi_tao {
                     if let Some(id) = id {
@@ -369,6 +391,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("hoverProvider", Value::Bool(true)),
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
+        jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("renameProvider", Value::Bool(true)),
         jsonrpc::kv(

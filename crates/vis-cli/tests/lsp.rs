@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"renameProvider":true,"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"foldingRangeProvider":true,"referencesProvider":true,"renameProvider":true,"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1475,26 +1475,4 @@ fn lsp_signature_help_builtin_null() {
         out,
         format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
     );
-}
-
-// ===== ST-274: hover biến thể enum =====
-
-/// Ca 34 — hover `A` trong nhánh `match` ⇒ nêu biến thể của enum `E`.
-#[test]
-fn lsp_hover_bien_the_enum() {
-    let text = "enum E:\n    A\n\nfn f(e: E) -> int:\n    match e:\n        A: 1\n\nfn main():\n    print(f(A))\n";
-    let vao = format!(
-        "{}{}{}",
-        khung(&init()),
-        khung(&did_open(URI, text)),
-        khung(&hover(2, URI, 5, 9))
-    );
-    let (code, out, err) = chay(&vao);
-    assert_eq!(code, 0, "stderr: {err}");
-    let body = frame_cuoi(&out);
-    assert!(
-        body.contains("biến thể của"),
-        "hover phải nêu biến thể enum: {body}"
-    );
-    assert!(body.contains("E"), "hover phải nêu enum E: {body}");
 }
