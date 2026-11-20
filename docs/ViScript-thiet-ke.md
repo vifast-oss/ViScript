@@ -533,12 +533,12 @@ fn read_config(dir: cap[Dir]) -> Result[Config, AnyError]:
 ### 6.2 `else` xử lý tại chỗ
 
 ```vis
-let cfg = read_config(dir) else err:
-    print("Dùng cấu hình mặc định: {err}")
-    Config.default()
+let cfg = read_config(dir) else:
+    # else phải thoát, không trả giá trị trực tiếp
+    return Config.default()
 ```
 
-Khối `else` phải trả giá trị cùng kiểu hoặc thoát (`return`, `break`, `panic`).
+Khối `else` phải **thoát trên mọi nhánh** (`return`/`break`/`continue`, hoặc `if`/`match` mọi nhánh thoát); không trả giá trị trực tiếp.
 
 ### 6.3 Optional sang Result
 
