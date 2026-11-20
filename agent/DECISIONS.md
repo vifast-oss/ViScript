@@ -3223,3 +3223,13 @@ VM user-enum −22,9% (máy tải cao, số chỉ hướng). Chấp nhận đổ
 - **runstdin**: `vis run --stdin [cờ] [-- args…]` đọc UTF-8, chạy script mode qua pipeline tệp,
   tệp ảo `-`, **không cache**; stdout/stderr/mã thoát như tệp (0/1/2/101); `--tap` ở stderr tên
   `-`; `--stdin` + tệp hoặc `--dump-*`/`--dry` ⇒ exit 2; `use ./x` giải theo cwd.
+
+### VD-270 (bổ sung) · `str.find/rfind/count`, `fmt --check --list`, `explain --json` — A0, 2026-11-21
+
+- **strfind**: `find/rfind` trả `int?` (offset **scalar Unicode**), `count` trả `int` (không chồng lấn);
+  needle rỗng theo kiểu Rust (`find=Some(0)`, `rfind=Some(len)`, `count=len+1`); thêm `Ty::OptInt`
+  (`Opt(int)`) vào bảng chữ ký; sugar R5c.
+- **fmt-list**: `vis fmt --check --list` in mỗi tệp cần sửa một dòng; exit 0/1/2; `--stdin --check
+  --list` in `-`; `--list` chỉ với `--check`, không đi `--json`/`--write`/`--indent-report`.
+- **explain-json**: `vis explain [--json] <mã>` và `--list [--json]` in một dòng JSON
+  (`code/severity/title/body` hoặc `codes[]`); người dùng không `--json` giữ nguyên byte.
