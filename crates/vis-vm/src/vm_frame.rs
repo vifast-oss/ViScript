@@ -68,7 +68,7 @@ struct FrameBudgetCfg {
 thread_local! {
     static FRAME_BUDGET_CFG: RefCell<FrameBudgetCfg> = RefCell::new(FrameBudgetCfg::default());
     /// Số lần quota yield của lần `run_frame_*` gần nhất (test/đo).
-    static LAST_QUOTA_YIELDS: RefCell<u64> = RefCell::new(0);
+    static LAST_QUOTA_YIELDS: RefCell<u64> = const { RefCell::new(0) };
 }
 
 /// Số lần quota yield của lần chạy frame VM gần nhất.

@@ -522,7 +522,7 @@ fn quet_q_phan_bo_khong_chon_default() {
         let mut ysum = 0u64;
         for r in 0..reps {
             // seed tầm thường, finite — không RNG ngoài.
-            let _seed = 0x5644_3235_37u64 ^ (q.unwrap_or(0).wrapping_mul(131)) ^ (r as u64);
+            let _seed = 0x0056_4432_3537_u64 ^ (q.unwrap_or(0).wrapping_mul(131)) ^ (r as u64);
             let c = FrameConfig {
                 reactors: vec![ok_ev(0, 0, "AAA")],
                 ..Default::default()
