@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1290,5 +1290,54 @@ fn lsp_definition_khong_co_tra_null() {
     assert_eq!(
         out,
         format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+// ===== ST-270: documentSymbol =====
+
+fn document_symbol(id: i64, uri: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s("textDocument/documentSymbol")),
+        (
+            "params",
+            m(vec![("textDocument", m(vec![("uri", s(uri))]))]),
+        ),
+    ]))
+}
+
+/// Ca 28 — cây ký hiệu: type + trường, enum + variant + trường, const, fn.
+#[test]
+fn lsp_document_symbol_cay() {
+    let text = "type U:\n    f: int\n\nenum E:\n    A\n    B(x: int)\n\nconst C: int = 1\n\nfn add(a: int) -> int:\n    a\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&document_symbol(2, URI))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.starts_with(r#"{"jsonrpc":"2.0","id":2,"result":["#),
+        "frame documentSymbol: {body}"
+    );
+    for needle in [
+        r#""name":"U","kind":23"#,
+        r#""name":"f","kind":8"#,
+        r#""name":"E","kind":10"#,
+        r#""name":"A","kind":22"#,
+        r#""name":"B","kind":22"#,
+        r#""name":"x","kind":8"#,
+        r#""name":"C","kind":14"#,
+        r#""name":"add","kind":12"#,
+    ] {
+        assert!(body.contains(needle), "thiếu {needle} trong {body}");
+    }
+    assert!(
+        body.contains(r#""children":[{"name":"f""#),
+        "type U phải có con f: {body}"
     );
 }

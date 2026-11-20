@@ -196,21 +196,28 @@ pub fn gom(hir: &Hir) -> Vec<DinhNghia> {
 /// Thu hẹp span khai báo về **đúng tên** (span HIR của `fn`/`type`/câu lệnh thường phủ cả khai
 /// báo; LSP client sẽ chọn cả khối nếu trả span rộng). Tìm lần xuất hiện đầu tiên của tên như một
 /// từ trọn vẹn trong span; không thấy ⇒ giữ span gốc.
-fn thu_hep(text: &str, d: &DinhNghia) -> Span {
-    let seg = &text[d.span.start..d.span.end];
+pub(crate) fn thu_hep_ten(text: &str, ten: &str, span: Span) -> Span {
+    let seg = &text[span.start..span.end];
     let mut start = 0;
-    while let Some(i) = seg[start..].find(&d.ten) {
+    while let Some(i) = seg[start..].find(ten) {
         let a = start + i;
-        let b = a + d.ten.len();
+        let b = a + ten.len();
         let truoc = seg[..a].chars().next_back();
         let sau = seg[b..].chars().next();
         let ria = |c: Option<char>| c.is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
         if ria(truoc) && ria(sau) {
-            return Span::new(d.span.start + a, d.span.start + b);
+            return Span::new(span.start + a, span.start + b);
         }
         start = b;
     }
-    d.span
+    span
+}
+
+/// Thu hẹp span khai báo về **đúng tên** (span HIR của `fn`/`type`/câu lệnh thường phủ cả khai
+/// báo; LSP client sẽ chọn cả khối nếu trả span rộng). Tìm lần xuất hiện đầu tiên của tên như một
+/// từ trọn vẹn trong span; không thấy ⇒ giữ span gốc.
+fn thu_hep(text: &str, d: &DinhNghia) -> Span {
+    thu_hep_ten(text, &d.ten, d.span)
 }
 
 /// Phản hồi `textDocument/definition`: mảng `Location` hoặc `result:null`.
