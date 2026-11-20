@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 135] = [
+pub const FUNCS: [StdFn; 136] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -622,6 +622,14 @@ pub const FUNCS: [StdFn; 135] = [
     StdFn {
         name: "map.is_empty",
         params: &[Ty::Map(&Ty::Var(1), &Ty::Var(2))],
+        ret: Ty::Bool,
+    },
+    // **VD-270 (map-contains-key)**: khoá có mặt theo **đúng** phép so `map.has`/`map.get`
+    // (`Value::eq_value`); rỗng/không có ⇒ `false`, không trap. `K` buộc từ `m` nên sai kiểu
+    // khoá ⇒ `VS0412`; sugar `m.contains_key(k)` theo R5c (không phải phương thức lõi).
+    StdFn {
+        name: "map.contains_key",
+        params: &[Ty::Map(&Ty::Var(1), &Ty::Var(2)), Ty::Var(1)],
         ret: Ty::Bool,
     },
     StdFn {

@@ -193,7 +193,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str, str, int) -> str`; thay tối đa `n` lần khớp **không chồng** đầu tiên theo
     // Rust `replacen`, `n == 0` ⇒ nguyên vẹn, `n` quá số lần ⇒ thay tất cả, `n < 0` ⇒ trap
     // `VS0501`) ⇒ **135** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 135, "bảng chữ ký phải đủ 135 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 map-contains-key, 2026-11-21)**: +**1** hàm
+    // `std.map.contains_key` (`(map[K, V], K) -> bool`; đúng ⇔ có khoá bằng theo `eq_value`
+    // như `map.has`/`get`, rỗng/không có ⇒ `false`, không trap; sugar R5c) ⇒ **136** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 136, "bảng chữ ký phải đủ 136 hàm");
 }
 
 #[test]
@@ -389,6 +393,22 @@ fn strlen_kieu_int_va_bool() {
     let m = sig_of("map.is_empty").expect("map.is_empty");
     assert_eq!(m.params, &[Ty::Map(&Ty::Var(1), &Ty::Var(2))]);
     assert_eq!(m.ret, Ty::Bool);
+}
+
+#[test]
+fn map_contains_key_kieu_map_k_bool() {
+    // **VD-270 (map-contains-key)**: `(map[K, V], K) -> bool`; `K` buộc từ map nên sai kiểu
+    // khoá ⇒ `VS0412`; tham số đầu `map` để sugar R5c `m.contains_key(k)` nhận.
+    let f = sig_of("map.contains_key").expect("map.contains_key");
+    assert_eq!(
+        f.params,
+        &[Ty::Map(&Ty::Var(1), &Ty::Var(2)), Ty::Var(1)],
+        "`map.contains_key`: tham số"
+    );
+    assert_eq!(f.ret, Ty::Bool, "`map.contains_key`: kiểu trả");
+    assert_eq!(f.ret.sang_type(), Type::Bool, "`map.contains_key`: hạ kiểu");
+    assert_eq!(f.so_doi(), 2, "`map.contains_key`: arity");
+    assert_eq!(vis_types::stdlib::module_sugar("map", "contains_key"), None);
 }
 
 #[test]
