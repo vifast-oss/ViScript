@@ -29,6 +29,11 @@
 # kỳ vọng: [a, ]
 # kỳ vọng: [a, b]
 # kỳ vọng: true
+# kỳ vọng: 6
+# kỳ vọng: 6
+# kỳ vọng: 0
+# kỳ vọng: 1
+# kỳ vọng: 24
 use std.fs
 use std.list
 use std.map
@@ -71,3 +76,10 @@ print(s.lower())
 print(s.split("b"))
 print(s.chars())
 print(s.contains("b"))
+
+print(list.sum(xs))
+print(list.product(xs))
+let zs: list[int] = []
+print(list.sum(zs))
+print(list.product(zs))
+print([2, 3, 4].product())

@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 114] = [
+pub const FUNCS: [StdFn; 116] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -501,6 +501,21 @@ pub const FUNCS: [StdFn; 114] = [
         name: "list.max",
         params: &[Ty::List(&Ty::Var(0))],
         ret: Ty::Var(0),
+    },
+    // **VD-270 (list-sum-product)**: `sum`/`product` **chỉ** `list[int]`; gộp trái→phải bằng
+    // `+`/`*` checked (`i64`), rỗng ⇒ `0`/`1`; tràn ở bất kỳ bước nào ⇒ trap `VS0507`.
+    // `product` chưa có phương thức lõi nên `xs.product()` đi R5c tới đây; `sum` **đã** là
+    // phương thức lõi (đứng trước R5c) — với `list[int]` cùng ngữ nghĩa checked-add, và
+    // `sum()` lõi vẫn nhận `list[float]` như trước (không hồi quy `sum-float.vis`).
+    StdFn {
+        name: "list.sum",
+        params: &[Ty::List(&Ty::Int)],
+        ret: Ty::Int,
+    },
+    StdFn {
+        name: "list.product",
+        params: &[Ty::List(&Ty::Int)],
+        ret: Ty::Int,
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
     // **VD-270 (strlen)**: rỗng ⇔ 0 cặp; `bool`, không phụ thuộc `K`/`V`.

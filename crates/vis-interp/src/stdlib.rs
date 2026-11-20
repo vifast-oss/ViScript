@@ -29,6 +29,7 @@ mod flatten;
 mod fsbytes;
 mod indexof;
 mod listcontains;
+mod listmath;
 mod pathnorm;
 mod sqlite_explain;
 mod sqlitecols;
@@ -489,6 +490,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 }
             }
             Ok(acc)
+        }
+        // **VD-270 (list-sum-product)**: gộp `list[int]` **trái → phải** bằng `+`/`*` checked;
+        // rỗng ⇒ `0`/`1`; tràn ở bất kỳ bước nào ⇒ `VS0507` (không wrap). Lõi ở
+        // `stdlib/listmath.rs` — **một** hiện thực cho interp + VM. `xs.sum()` vẫn đi phương
+        // thức lõi (đứng trước R5c); với `list[int]` ngữ nghĩa trùng, `list[float]` giữ nguyên.
+        "list.sum" | "list.product" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            listmath::goi(name, xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.

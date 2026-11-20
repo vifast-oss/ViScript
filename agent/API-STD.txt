@@ -45,9 +45,11 @@ list.is_empty	(list[T]) -> bool
 list.last_index_of	(list[T], T) -> int?
 list.max	(list[T]) -> T
 list.min	(list[T]) -> T
+list.product	(list[int]) -> int
 list.reverse	(list[T]) -> list[T]
 list.sort	(list[T]) -> list[T]
 list.sort_by	(list[T], fn(T) -> int | str) -> list[T]
+list.sum	(list[int]) -> int
 list.take	(list[T], int) -> list[T]
 list.unique	(list[T]) -> list[T]
 list.windows	(list[T], int) -> list[list[T]]
