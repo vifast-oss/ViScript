@@ -158,7 +158,13 @@ pub struct Vm<'a> {
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
     caps: Vec<(u32, Value)>,
     /// **ST-238 (VD-242, ca 3)**: kho biến cấp tệp, ánh xạ từ ô `>= GLOBAL_SLOT_BASE`.
-    globals: Vec<Value>,
+    ///
+    /// **ST-250 (VD-245)**: mỗi ô là `Option<Value>` — `None` = **chưa khởi tạo**, `Some(v)` = đã
+    /// ghi (kể cả `v == Value::Unit`). Trạng thái khởi tạo được tách khỏi giá trị ngôn ngữ: `Unit`
+    /// hợp lệ không bao giờ bị nhầm với ô chưa có giá trị, và sentinel `None` không lọt vào
+    /// `Value`/`show`/phép toán/serialization. Độ dài được cấp **theo module đã verify** ở đầu mỗi
+    /// lần chạy, không tự resize theo chỉ số bytecode trong lúc chạy.
+    globals: Vec<Option<Value>>,
     /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của từng closure, khoá bằng địa chỉ `Rc<VmFunc>`.
     closure_cells: HashMap<usize, ClosureCells>,
 }
@@ -212,6 +218,10 @@ impl<'a> Vm<'a> {
                 steps: 0,
             };
         }
+        // **ST-250 (VD-245)**: reset + cấp phát kho global **theo module** ở đầu mỗi lần chạy.
+        // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
+        // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
+        self.init_globals();
         let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
         // **ST-60 (VD-90/VD-95)**: join mọi tác vụ **theo thứ tự tạo**, **chỉ khi main thành công**
         // (và **trước** `take_stdout` ⇒ thân tác vụ in vẫn vào stdout, đúng thứ tự).
@@ -313,6 +323,48 @@ impl<'a> Vm<'a> {
             .funcs
             .get(i as usize)
             .ok_or_else(|| self.hong(VmError::BadIdx(i), Span::new(0, 0)))
+    }
+
+    /// **ST-250 (VD-245)**: đặt lại kho global cho **một lần chạy** — mọi ô `None` (chưa khởi tạo).
+    ///
+    /// Kích thước lấy từ chính module đã verify: `1 + max(s - GLOBAL_SLOT_BASE)` trên mọi lệnh ghi
+    /// vùng global. Vì `verify()` đã chặn `s - BASE >= nglobals`, số ô này bị giới hạn bởi số global
+    /// thật của module; VM **không** resize bộ nhớ theo một chỉ số bytecode tùy ý lúc chạy.
+    fn init_globals(&mut self) {
+        let mut n = 0usize;
+        for f in &self.m.funcs {
+            for ins in &f.code {
+                let off = match *ins {
+                    Instr::StoreLocal(s) | Instr::Assign(s) | Instr::BindLocal(s)
+                        if s >= GLOBAL_SLOT_BASE =>
+                    {
+                        s - GLOBAL_SLOT_BASE
+                    }
+                    _ => continue,
+                };
+                n = n.max(off as usize + 1);
+            }
+        }
+        self.globals = vec![None; n];
+    }
+
+    /// **ST-250 (VD-245)**: **mọi đường đọc global** đi qua đây — ô được ghi (`Some(v)`, kể cả
+    /// `v == Unit`) mới trả giá trị; còn lại (chưa khởi tạo, kể cả ô ngoài kho hiện tại) ⇒ trap
+    /// có chẩn đoán, không trả giá trị mặc định. Dùng mã runtime hiện hành `RT` (`VS0501`), không
+    /// thêm mã chẩn đoán mới.
+    fn doc_global(&self, k: usize, span: Span) -> R<Value> {
+        match self.globals.get(k) {
+            Some(Some(v)) => Ok(v.clone()),
+            _ => Err(Abort::Trap(Trap::new(
+                RT,
+                format!(
+                    "global chưa được khởi tạo tại ô {} (chỉ số bytecode {})",
+                    k,
+                    k + GLOBAL_SLOT_BASE as usize
+                ),
+                span,
+            ))),
+        }
     }
 
     fn hong(&self, e: VmError, span: Span) -> Abort {
@@ -651,11 +703,11 @@ impl<'m> Th<'m> {
                 }
                 Instr::LoadLocal(i) => {
                     // **ST-238 (VD-242, ca 3)**: ô `>= GLOBAL_SLOT_BASE` là biến cấp tệp dùng chung.
+                    // **ST-250 (VD-245)**: đọc global luôn qua `doc_global` — trap nếu chưa khởi tạo;
+                    // không `unwrap_or(Unit)` như cũ. Đường local giữ nguyên (ô đã được khởi tạo sẵn
+                    // ở dựng khung, `Unit` là giá trị mặc định hợp lệ của biến cục bộ).
                     let v = if i >= GLOBAL_SLOT_BASE {
-                        vm.globals
-                            .get((i - GLOBAL_SLOT_BASE) as usize)
-                            .cloned()
-                            .unwrap_or(Value::Unit)
+                        vm.doc_global((i - GLOBAL_SLOT_BASE) as usize, span)?
                     } else {
                         let fr = self.frames.last().expect("khung");
                         fr.locals.get(i as usize).cloned().unwrap_or(Value::Unit)
@@ -666,10 +718,13 @@ impl<'m> Th<'m> {
                     let v = self.pop(vm, span)?;
                     if i >= GLOBAL_SLOT_BASE {
                         let k = (i - GLOBAL_SLOT_BASE) as usize;
-                        if vm.globals.len() <= k {
-                            vm.globals.resize(k + 1, Value::Unit);
+                        // Kho đã được cấp theo module ở `run()`; chỉ số vượt kho là bytecode hỏng
+                        // (đã bị verifier chặn) — trap, tuyệt đối không resize theo chỉ số.
+                        if k >= vm.globals.len() {
+                            return Err(vm.hong(VmError::BadIdx(i as u32), span));
                         }
-                        vm.globals[k] = v;
+                        // **ST-250 (VD-245)**: chỉ đánh dấu đã khởi tạo **sau khi ghi thành công**.
+                        vm.globals[k] = Some(v);
                     } else {
                         let fr = self.frames.last_mut().expect("khung");
                         if (i as usize) < fr.locals.len() {

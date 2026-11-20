@@ -6,9 +6,10 @@
 //! làm bằng chứng. Mục đích: phân biệt **hợp lệ chỉ số** ( qua verify ) với **hợp lệ khởi tạo**
 //! ( ô có giá trị đúng lúc đọc ).
 //!
-//! Hai ca dưới chứng minh: nếu lệnh ghi nằm ở hàm không gọi / nhánh không chạy, verifier vẫn đếm nó
-//! và mở miền, nhưng runtime không bao giờ ghi ⇒ `Vm::globals.get(k).unwrap_or(Unit)` trả `Unit`
-//! "thành công" (không chẩn đoán). Nghiêm cấm coi đó là đọc đúng rồi tính tiếp.
+//! Hai ca (4) dưới từng chứng minh lỗi: nếu lệnh ghi nằm ở hàm không gọi / nhánh không chạy,
+//! verifier vẫn đếm nó và mở miền, nhưng runtime không bao giờ ghi ⇒ `unwrap_or(Unit)` trả `Unit`
+//! "thành công". **ST-250 (VD-245) đã sửa**: giờ các ca này trap có chẩn đoán; assertion được cập
+//! nhật theo hợp đồng mới (chi tiết 8 ca ở `tests/st250_global_init.rs`).
 
 use vis_bytecode::verify::verify;
 use vis_bytecode::{Const, Func, Instr, Module, Span, GLOBAL_SLOT_BASE, HASH_LEN, VERSION};
@@ -37,8 +38,10 @@ fn m(funcs: Vec<Func>, consts: Vec<Const>) -> Module {
     }
 }
 
+// **ST-250 (VD-245)**: ca (4) giờ là trap có chẩn đoán, không còn trả `Unit` "thành công".
+// Bằng chứng đầy đủ 8 ca nằm ở `tests/st250_global_init.rs`.
 #[test]
-fn q4_ham_khong_goi_doc_global_chua_khoi_tao_tra_unit() {
+fn q4_ham_khong_goi_doc_global_chua_khoi_tao_tra_trap() {
     // f0 (entry): ghi global 0 rồi trả global 1. f1 (không gọi): ghi global 1. Verifier đếm tĩnh
     // hai lệnh ghi ⇒ nglobals = 2 ⇒ đọc global 1 ở f0 qua kiểm chỉ số.
     let f0 = f(
@@ -66,19 +69,22 @@ fn q4_ham_khong_goi_doc_global_chua_khoi_tao_tra_unit() {
 
     let out = vis_vm::run(&modu, "", &[]);
     assert!(
-        out.is_clean(),
-        "không được có chẩn đoán runtime: {:?}",
-        out.diagnostics
+        !out.is_clean(),
+        "ST-250: phải trap có chẩn đoán, không được trả Unit thành công: {out:?}"
     );
-    assert_eq!(
-        out.value.as_ref().map(vis_interp::show).as_deref(),
-        Some("()"),
-        "đọc ô global chưa khởi tạo trả Unit 'thành công' — KHÔNG phải kết quả đúng"
+    assert_ne!(out.exit, 0, "ST-250: exit phải khác 0");
+    assert!(out.value.is_none(), "ST-250: trap không trả giá trị");
+    assert!(
+        out.diagnostics[0]
+            .message
+            .contains("global chưa được khởi tạo"),
+        "ST-250: thông điệp phải xác định global chưa khởi tạo: {:?}",
+        out.diagnostics[0].message
     );
 }
 
 #[test]
-fn q4_nhanh_khong_chay_doc_global_chua_khoi_tao_tra_unit() {
+fn q4_nhanh_khong_chay_doc_global_chua_khoi_tao_tra_trap() {
     // consts[0] = false. main: ghi global 0; nhánh false bỏ qua ghi global 1; rồi trả global 1.
     let code = vec![
         Instr::PushUnit,             // 0
@@ -101,14 +107,17 @@ fn q4_nhanh_khong_chay_doc_global_chua_khoi_tao_tra_unit() {
 
     let out = vis_vm::run(&modu, "", &[]);
     assert!(
-        out.is_clean(),
-        "không được có chẩn đoán runtime: {:?}",
-        out.diagnostics
+        !out.is_clean(),
+        "ST-250: phải trap có chẩn đoán, không được trả Unit thành công: {out:?}"
     );
-    assert_eq!(
-        out.value.as_ref().map(vis_interp::show).as_deref(),
-        Some("()"),
-        "đọc ô global trong nhánh không chạy trả Unit 'thành công'"
+    assert_ne!(out.exit, 0, "ST-250: exit phải khác 0");
+    assert!(out.value.is_none(), "ST-250: trap không trả giá trị");
+    assert!(
+        out.diagnostics[0]
+            .message
+            .contains("global chưa được khởi tạo"),
+        "ST-250: thông điệp phải xác định global chưa khởi tạo: {:?}",
+        out.diagnostics[0].message
     );
 }
 
