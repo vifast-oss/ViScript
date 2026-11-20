@@ -118,4 +118,12 @@ pub trait FsHost {
     fn remove(&mut self, _p: &str) -> Result<(), String> {
         Err("chưa hỗ trợ".to_string())
     }
+
+    /// **VD-268**: liệt kê **đệ quy** dưới `p` — mỗi mục là đường dẫn **tương đối** so với `p`,
+    /// phân cách `/`; **thư mục** kèm `/` ở cuối; **DFS**, tại mỗi cấp sắp theo **byte của tên**;
+    /// mục ẩn vẫn gồm; **symlink bị bỏ hoàn toàn** (không in, không đệ quy — tránh vòng).
+    /// Default: **chưa hỗ trợ** ⇒ host cũ/mock vẫn biên dịch.
+    fn walk(&mut self, _p: &str) -> Result<Vec<String>, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
 }
