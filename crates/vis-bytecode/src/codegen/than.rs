@@ -4,7 +4,36 @@
 //! ở biên hàm (mirror interp ở `call_hfn_trong`).
 
 use super::*;
+use crate::fee::FeeKind;
 use vis_types::Type;
+
+/// **VD-258** — phân loại sự kiện phí của một call-site (một nguồn cho codegen):
+/// `Field` (host method) là `E_BUILTIN`; `Var` builtin không phải hàm tệp cũng vậy.
+/// Trả thêm `callee_la_gia_tri` để codegen charge `E_EXPR` đúng một lần khi callee
+/// thực sự được đánh giá như giá trị (biến/closure/builtin có `sym`), không charge
+/// cho hàm tệp/method/`std.*` gọi thẳng.
+pub(super) fn call_fee(g: &Gen, callee: &HExpr) -> (FeeKind, bool) {
+    let la_host = match callee {
+        HExpr::Field { .. } => true,
+        HExpr::Var { name, .. } => !g.fmap_ten.contains_key(name.as_str()) && la_builtin(name),
+        _ => false,
+    };
+    let callee_la_gia_tri = match callee {
+        HExpr::Var { sym, .. } => match sym {
+            Some(id) => !g.fmap.contains_key(id),
+            None => !la_host,
+        },
+        _ => false,
+    };
+    (
+        if la_host {
+            FeeKind::Builtin
+        } else {
+            FeeKind::Call
+        },
+        callee_la_gia_tri,
+    )
+}
 
 /// **ST-248 (VD-242 §3.3)** — gom kiểu trường bản ghi `RecId → (tên trường → kiểu)` từ HIR.
 /// Dùng để biết kiểu đích của `u.f = v` mà không cần `TypeTable` (API `compile` giữ nguyên).

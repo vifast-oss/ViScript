@@ -995,33 +995,10 @@ impl<'g> Emit<'g> {
                     _ => 0,
                 };
                 // **ST-276**: call site có sự kiện riêng, tính **trước** đối số (thứ tự ngôn ngữ).
-                // **VD-258**: `Field` (method trên giá trị) là **host** ⇒ `E_BUILTIN`, không
-                // `E_CALL` (khớp interp/frame). Chỉ `Var` builtin không phải hàm tệp mới là host.
-                let la_host = match &**callee {
-                    HExpr::Field { .. } => true,
-                    HExpr::Var { name, .. } => {
-                        !self.g.fmap_ten.contains_key(name.as_str()) && la_builtin(name)
-                    }
-                    _ => false,
-                };
-                // Interp đánh giá callee như **giá trị** khi nó không phân giải thẳng (hàm tệp/
-                // builtin): `sym` trỏ biến local/closure, hoặc không có `sym` mà không phải
-                // builtin. Khi đó mới có `E_EXPR` cho callee — cùng dãy với `interp.rs`/frame.
-                let callee_la_gia_tri = match &**callee {
-                    HExpr::Var { sym, .. } => match sym {
-                        Some(id) => !self.g.fmap.contains_key(id),
-                        None => !la_host,
-                    },
-                    _ => false,
-                };
-                self.f.charge(
-                    if la_host {
-                        FeeKind::Builtin
-                    } else {
-                        FeeKind::Call
-                    },
-                    *span,
-                );
+                // **VD-258**: phân loại `E_BUILTIN`/`E_CALL` + `E_EXPR` của callee nằm ở
+                // `than::call_fee` để `codegen.rs` giữ R1 ≤ 1500 dòng.
+                let (fee_kind, callee_la_gia_tri) = than::call_fee(self.g, callee);
+                self.f.charge(fee_kind, *span);
                 if callee_la_gia_tri {
                     self.f.charge(FeeKind::Expr, callee.span());
                 }
