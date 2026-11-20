@@ -29,6 +29,11 @@
 //!   cùng tập chọn ⇒ cùng thứ tự; thiếu `--seed` ⇒ seed **0**; `--seed` không kèm `--shuffle`
 //!   ⇒ exit **2**. PRNG **SplitMix64** + Fisher–Yates, không thêm phụ thuộc; không cờ ⇒
 //!   nguyên byte thứ tự/TAP/JSON cũ.
+//! - `--shard <I>/<N>` — chia ca **đã chọn** (sau `--filter`, sau `--shuffle`) thành `N` phần
+//!   rời nhau theo chỉ số 0-based: phần `I` giữ các ca có `chỉ_số % N == I-1` (1 ≤ I ≤ N).
+//!   Hợp `N` phần = đúng tập đã chọn, không trùng; `--list`/`--repeat`/`--json` áp **sau** shard.
+//!   Cú pháp sai (`0/2`, `3/2`, `1/0`, thiếu `/`, thừa `/`, không nguyên, thiếu giá trị, lặp cờ)
+//!   ⇒ exit **2** + usage nêu `--shard`.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -36,13 +41,14 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --timeout <ms>: giới hạn mỗi ca (test fn **và** fixture .out/.err) ≤ ms (≥ 50); quá hạn ⇒ kill + `not ok` với `quá hạn <ms> ms`; mặc định **không** giới hạn");
     eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     eprintln!("  --repeat <N>: chạy mỗi ca đã chọn N lần (số nguyên ≥ 1, mặc định 1); N > 1 ⇒ mỗi lần lặp là một ca TAP/JSON tên `<tên> [k/N]`; --list bỏ qua --repeat (liệt kê một lần)");
     eprintln!("  --shuffle [--seed <u64>]: xáo thứ tự ca đã chọn trước khi chạy/liệt kê; cùng seed ⇒ cùng thứ tự, mặc định seed 0; --seed chỉ dùng cùng --shuffle (thiếu/sai ⇒ exit 2)");
+    eprintln!("  --shard <I>/<N>: chỉ chạy phần I/N của ca đã chọn (1 ≤ I ≤ N); chia theo chỉ số sau --filter/--shuffle, trước --list/--repeat; N phần rời nhau, hợp = đủ tập");
     ExitCode::from(2)
 }
 
@@ -460,6 +466,20 @@ fn xao_tron<T>(v: &mut [T], seed: u64) {
     }
 }
 
+/// **VD-270**: đọc `--shard <I>/<N>` — đúng một `/`, hai số nguyên dương, `1 ≤ I ≤ N`.
+fn parse_shard(s: &str) -> Option<(usize, usize)> {
+    let (a, b) = s.split_once('/')?;
+    if b.contains('/') {
+        return None;
+    }
+    let i = a.parse::<usize>().ok()?;
+    let n = b.parse::<usize>().ok()?;
+    if n == 0 || i == 0 || i > n {
+        return None;
+    }
+    Some((i, n))
+}
+
 /// **VD-270**: object JSON của `--json`/`--json-out` (một dòng + `\n`).
 fn json_body(cases: &[CaJson], hong: usize) -> String {
     let mut ds = String::new();
@@ -502,6 +522,8 @@ pub fn run(args: &[String]) -> ExitCode {
     // **VD-270**: `--shuffle [--seed <u64>]` — xáo thứ tự ca đã chọn; seed mặc định 0.
     let mut shuffle = false;
     let mut seed: Option<u64> = None;
+    // **VD-270**: `--shard <I>/<N>` — chỉ chạy phần `I` của `N` phần rời nhau (1-based).
+    let mut shard: Option<(usize, usize)> = None;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -577,6 +599,35 @@ pub fn run(args: &[String]) -> ExitCode {
                 }
                 repeat = n;
                 i += 1;
+            }
+            // **VD-270**: `--shard <I>/<N>`; sai cú pháp/miền/lặp ⇒ exit 2, usage nêu `--shard`.
+            "--shard" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--shard` cần `<I>/<N>` (1 ≤ I ≤ N)");
+                    return ExitCode::from(2);
+                };
+                let Some((i_shard, n_shard)) = parse_shard(v) else {
+                    eprintln!("vis test: `--shard` cần `<I>/<N>` (1 ≤ I ≤ N), được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if shard.is_some() {
+                    eprintln!("vis test: `--shard` lặp lại");
+                    return ExitCode::from(2);
+                }
+                shard = Some((i_shard, n_shard));
+                i += 1;
+            }
+            s if s.starts_with("--shard=") => {
+                let v = &s["--shard=".len()..];
+                let Some((i_shard, n_shard)) = parse_shard(v) else {
+                    eprintln!("vis test: `--shard` cần `<I>/<N>` (1 ≤ I ≤ N), được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if shard.is_some() {
+                    eprintln!("vis test: `--shard` lặp lại");
+                    return ExitCode::from(2);
+                }
+                shard = Some((i_shard, n_shard));
             }
             "--filter" => {
                 let Some(v) = args.get(i + 1) else {
@@ -693,6 +744,16 @@ pub fn run(args: &[String]) -> ExitCode {
     // ca-trước-lặp-sau; không cờ ⇒ thứ tự cũ nguyên byte.
     if shuffle {
         xao_tron(&mut ca, seed.unwrap_or(0));
+    }
+    // **VD-270**: `--shard I/N` — sau `--filter`/`--shuffle`, trước `--list`/`--repeat`; các
+    // phần rời nhau và hợp đúng tập đã chọn.
+    if let Some((i_shard, n_shard)) = shard {
+        ca = ca
+            .into_iter()
+            .enumerate()
+            .filter(|(idx, _)| idx % n_shard == i_shard - 1)
+            .map(|(_, c)| c)
+            .collect();
     }
     if list {
         let mut tens: Vec<String> = Vec::new();

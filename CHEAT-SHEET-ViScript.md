@@ -32,6 +32,7 @@ vis fmt --check --stat x.vis     # CI: <N> tệp, <M> cần sửa, <K> lỗi
 vis fmt --stdin --mode command < x.vish
 vis test --filter cong --fail-fast x.vis
 vis test --repeat 3 --shuffle --seed 7 x.vis
+vis test --shard 1/4 x.vis      # CI: chạy phần 1 của 4 (rời nhau, hợp = đủ)
 vis explain VS0412               # giải thích mã lỗi
 vis explain --list --json        # toàn bộ sổ mã, máy đọc
 vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tập trung, VD-180)
