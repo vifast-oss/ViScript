@@ -30,7 +30,7 @@ use net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
+        "dùng: vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list"
     );
     ExitCode::from(2)
 }

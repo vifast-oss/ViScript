@@ -23,6 +23,11 @@
 //!   `--fail-fast` dừng ngay sau lần lặp đỏ đầu tiên (`--json` đếm cùng tập đã chạy).
 //! - `--list` bỏ qua `--repeat` (liệt kê ca đã chọn **một lần**) nhưng vẫn kiểm N; `--timeout`
 //!   áp **mỗi lần lặp** của `test fn`.
+//! - `--shuffle [--seed <u64>]` — xáo thứ tự ca **đã chọn**, **sau `--filter`** và **trước**
+//!   `--repeat` (vẫn ca-trước-lặp-sau) lẫn `--list` (liệt kê theo thứ tự đã xáo). Cùng seed +
+//!   cùng tập chọn ⇒ cùng thứ tự; thiếu `--seed` ⇒ seed **0**; `--seed` không kèm `--shuffle`
+//!   ⇒ exit **2**. PRNG **SplitMix64** + Fisher–Yates, không thêm phụ thuộc; không cờ ⇒
+//!   nguyên byte thứ tự/TAP/JSON cũ.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -30,11 +35,12 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     eprintln!("  --repeat <N>: chạy mỗi ca đã chọn N lần (số nguyên ≥ 1, mặc định 1); N > 1 ⇒ mỗi lần lặp là một ca TAP/JSON tên `<tên> [k/N]`; --list bỏ qua --repeat (liệt kê một lần)");
+    eprintln!("  --shuffle [--seed <u64>]: xáo thứ tự ca đã chọn trước khi chạy/liệt kê; cùng seed ⇒ cùng thứ tự, mặc định seed 0; --seed chỉ dùng cùng --shuffle (thiếu/sai ⇒ exit 2)");
     ExitCode::from(2)
 }
 
@@ -419,6 +425,25 @@ fn chay_mot_lan(
     )
 }
 
+/// **VD-270**: SplitMix64 — PRNG nhỏ, tất định, không phụ thuộc (trạng thái chỉ là `u64`).
+fn splitmix64(s: &mut u64) -> u64 {
+    *s = s.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    let mut z = *s;
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}
+
+/// **VD-270**: Fisher–Yates từ cuối, nguồn ngẫu nhiên là `splitmix64(seed)` ⇒ cùng seed cho
+/// **cùng hoán vị** trên mọi máy; không dùng crate `rand` nên không thêm phụ thuộc.
+fn xao_tron<T>(v: &mut [T], seed: u64) {
+    let mut s = seed;
+    for i in (1..v.len()).rev() {
+        let j = (splitmix64(&mut s) % (i as u64 + 1)) as usize;
+        v.swap(i, j);
+    }
+}
+
 pub fn run(args: &[String]) -> ExitCode {
     let mut vm = false;
     let mut strict = false;
@@ -434,6 +459,9 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut list = false;
     // **VD-270**: `--repeat <N>` — chạy mỗi ca đã chọn N lần (mặc định 1).
     let mut repeat: usize = 1;
+    // **VD-270**: `--shuffle [--seed <u64>]` — xáo thứ tự ca đã chọn; seed mặc định 0.
+    let mut shuffle = false;
+    let mut seed: Option<u64> = None;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -443,6 +471,28 @@ pub fn run(args: &[String]) -> ExitCode {
             "--json" => json_ra = true,
             "--fail-fast" => fail_fast = true,
             "--list" => list = true,
+            // **VD-270**: `--shuffle` không tham số; `--seed` là u64 (thiếu/sai ⇒ exit 2).
+            "--shuffle" => shuffle = true,
+            "--seed" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--seed` cần số nguyên u64 (0..=2^64-1)");
+                    return ExitCode::from(2);
+                };
+                let Ok(n) = v.parse::<u64>() else {
+                    eprintln!("vis test: `--seed` cần số nguyên u64 (0..=2^64-1), được `{v}`");
+                    return ExitCode::from(2);
+                };
+                seed = Some(n);
+                i += 1;
+            }
+            s if s.starts_with("--seed=") => {
+                let v = &s["--seed=".len()..];
+                let Ok(n) = v.parse::<u64>() else {
+                    eprintln!("vis test: `--seed` cần số nguyên u64 (0..=2^64-1), được `{v}`");
+                    return ExitCode::from(2);
+                };
+                seed = Some(n);
+            }
             // **VD-270**: N sai (0, âm, không nguyên, thiếu) ⇒ exit 2; usage nêu `--repeat`.
             "--repeat" => {
                 let Some(v) = args.get(i + 1) else {
@@ -502,6 +552,11 @@ pub fn run(args: &[String]) -> ExitCode {
         }
         i += 1;
     }
+    // **VD-270**: `--seed` chỉ có nghĩa khi xáo; thiếu `--shuffle` ⇒ lỗi dùng (exit 2).
+    if seed.is_some() && !shuffle {
+        eprintln!("vis test: `--seed` chỉ dùng cùng `--shuffle`");
+        return ExitCode::from(2);
+    }
     let goc = match duong {
         Some(p) => {
             if !p.exists() {
@@ -560,6 +615,11 @@ pub fn run(args: &[String]) -> ExitCode {
                 ca.push((p.clone(), Some((ten, src))));
             }
         }
+    }
+    // **VD-270**: xáo **ca đã chọn** (sau `--filter`), trước `--list` và trước vòng lặp
+    // ca-trước-lặp-sau; không cờ ⇒ thứ tự cũ nguyên byte.
+    if shuffle {
+        xao_tron(&mut ca, seed.unwrap_or(0));
     }
     if list {
         let mut tens: Vec<String> = Vec::new();
