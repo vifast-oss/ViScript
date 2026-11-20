@@ -298,3 +298,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **mkdir-all** (`8f046b4` → `0eb6b32`): `fs.mkdir_all` đệ quy idempotent, chặn file/symlink, `Quyen::chuan_de_quy`; mock parity.
 - `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `73f5db6`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
 - `./vis-dev nightly` @ `504795b`: **PASS** — parser fuzz **8.089.984 ca / 183.570.150 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- `vis test test/sem` @ `e561dc1`: **525/525 PASS** (interp) và **525/525 PASS** (`--vm`).
