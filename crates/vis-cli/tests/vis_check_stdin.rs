@@ -27,11 +27,16 @@ fn chay(args: &[&str], stdin: &[u8]) -> (i32, String, String) {
         .stderr(Stdio::piped())
         .spawn()
         .expect("phải chạy được binary `vis`");
-    con.stdin
-        .take()
-        .expect("stdin đã pipe")
-        .write_all(stdin)
-        .expect("ghi stdin");
+    // CLI có thể từ chối tham số **trước khi đọc stdin** (vd `--stdin` + tệp) ⇒ ống đóng sớm;
+    // BrokenPipe ở đây là hợp lệ, không phải lỗi test.
+    {
+        let mut vao = con.stdin.take().expect("stdin đã pipe");
+        if let Err(e) = vao.write_all(stdin) {
+            if e.kind() != std::io::ErrorKind::BrokenPipe {
+                panic!("ghi stdin: {e}");
+            }
+        }
+    }
     let o = con.wait_with_output().expect("chờ `vis`");
     (
         o.status.code().unwrap_or(-1),
@@ -54,11 +59,16 @@ fn chay_tai(dir: &Path, args: &[&str], stdin: &[u8]) -> (i32, String, String) {
         .stderr(Stdio::piped())
         .spawn()
         .expect("phải chạy được binary `vis`");
-    con.stdin
-        .take()
-        .expect("stdin đã pipe")
-        .write_all(stdin)
-        .expect("ghi stdin");
+    // CLI có thể từ chối tham số **trước khi đọc stdin** (vd `--stdin` + tệp) ⇒ ống đóng sớm;
+    // BrokenPipe ở đây là hợp lệ, không phải lỗi test.
+    {
+        let mut vao = con.stdin.take().expect("stdin đã pipe");
+        if let Err(e) = vao.write_all(stdin) {
+            if e.kind() != std::io::ErrorKind::BrokenPipe {
+                panic!("ghi stdin: {e}");
+            }
+        }
+    }
     let o = con.wait_with_output().expect("chờ `vis`");
     (
         o.status.code().unwrap_or(-1),
