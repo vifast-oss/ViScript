@@ -13,6 +13,8 @@ use vis_interp::stdlib::DAU_QUYEN;
 use vis_interp::value::Value;
 use vis_syntax::{Kind, Mode, NodeKind};
 
+use crate::quyen_chuan::{chuan, chuan_de_quy};
+
 /// Một `cap` khai trên `main` (đọc từ **CST**).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapKhai {
@@ -411,48 +413,6 @@ impl Quyen {
         }
     }
 
-    fn chuan(p: &Path) -> PathBuf {
-        if let Ok(c) = std::fs::canonicalize(p) {
-            return c;
-        }
-        // Tệp **chưa tồn tại** (ghi): canonicalize thư mục cha rồi ghép tên.
-        if let (Some(cha), Some(ten)) = (p.parent(), p.file_name()) {
-            if let Ok(c) = std::fs::canonicalize(cha) {
-                return c.join(ten);
-            }
-        }
-        p.to_path_buf()
-    }
-
-    /// **VD-270 (mkdir-all)**: canonicalize **tổ tiên gần nhất đã tồn tại** rồi ghép phần đuôi
-    /// **từ vựng** (`.` bỏ, `..` lùi). Cần cho thao tác **đệ quy** có thể thiếu **nhiều** cấp:
-    /// `chuan` chỉ canonicalize được cha **trực tiếp**, nên `root/../ngoai/moi/con` (đuôi chưa
-    /// tồn tại) sẽ giữ nguyên `..` và lọt qua `Path::starts_with(root)` — một lỗ hổng quyền.
-    fn chuan_de_quy(p: &Path) -> PathBuf {
-        let mut hien = p;
-        loop {
-            if let Ok(c) = std::fs::canonicalize(hien) {
-                let mut ra = c;
-                if let Ok(du) = p.strip_prefix(hien) {
-                    for x in du.components() {
-                        match x {
-                            std::path::Component::CurDir => {}
-                            std::path::Component::ParentDir => {
-                                ra.pop();
-                            }
-                            khac => ra.push(khac.as_os_str()),
-                        }
-                    }
-                }
-                return ra;
-            }
-            match hien.parent() {
-                Some(cha) => hien = cha,
-                None => return p.to_path_buf(),
-            }
-        }
-    }
-
     /// Kiểm thao tác hệ tệp; `can_write=false` ⇒ chỉ cần root, `true` ⇒ root phải có `(write)`.
     pub fn kiem_fs(&self, p: &str, can_write: bool) -> Result<(), String> {
         self.kiem_fs_canon(p, can_write).map(|_| ())
@@ -464,19 +424,19 @@ impl Quyen {
         if !self.bat {
             return Ok(None);
         }
-        let c = Self::chuan(&self.tuyet_doi(p));
+        let c = chuan(&self.tuyet_doi(p));
         self.kiem_canon(&c, p, can_write)?;
         Ok(Some(c))
     }
 
     /// **VD-270 (mkdir-all)**: như [`kiem_fs`](Self::kiem_fs) nhưng dùng
-    /// [`chuan_de_quy`](Self::chuan_de_quy) — canonicalize **tổ tiên gần nhất đã tồn tại** rồi ghép
+    /// [`chuan_de_quy`](crate::quyen_chuan::chuan_de_quy) — canonicalize **tổ tiên gần nhất đã tồn tại** rồi ghép
     /// đuôi **từ vựng**; `root/../ngoai/...` không lọt chỉ vì đuôi chưa tồn tại. `(write)` như `mkdir`.
     fn kiem_fs_de_quy(&self, p: &str, can_write: bool) -> Result<(), String> {
         if !self.bat {
             return Ok(());
         }
-        let c = Self::chuan_de_quy(&self.tuyet_doi(p));
+        let c = chuan_de_quy(&self.tuyet_doi(p));
         self.kiem_canon(&c, p, can_write)
     }
 
@@ -502,7 +462,7 @@ impl Quyen {
             if q.kind != "Dir" && q.kind != "File" {
                 continue;
             }
-            let r = Self::chuan(Path::new(&q.root));
+            let r = chuan(Path::new(&q.root));
             if c.starts_with(&r) {
                 trong_root = true;
                 if !can_write || q.write {
@@ -566,7 +526,7 @@ impl Quyen {
         truoc: &Path,
         danh_tinh: (u64, u64),
     ) -> Result<(), String> {
-        let sau = Self::chuan(&self.tuyet_doi(p));
+        let sau = chuan(&self.tuyet_doi(p));
         // **ST-174 (VD-176 §2)** — điểm chèn **CHỈ TEST** giữa `canonicalize` (dòng trên) và bước kiểm
         // (dòng dưới): ca tất định hoán đổi `root/tep` **đúng khe giữa hai syscall**. `cfg(test)` ⇒
         // **không** có trong build thường (`cargo build`); chưa đăng ký hook ⇒ no-op.
@@ -808,7 +768,7 @@ fn mo_ta_lan_doc(p: &str, d: &DocQuaHandle) -> String {
         d.noi_dung.len(),
         d.danh_tinh.0,
         d.danh_tinh.1,
-        Quyen::chuan(std::path::Path::new(p)).display()
+        chuan(std::path::Path::new(p)).display()
     )
 }
 
@@ -900,6 +860,13 @@ impl FsHost for FsGuard<'_> {
     fn is_dir(&mut self, p: &str) -> Result<bool, String> {
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_dir(p)
+    }
+    /// **VD-270 (fs-is-symlink)**: predicate **chỉ đọc** ⇒ cùng kiểm quyền như
+    /// [`size`](Self::size); bước kiểm quyền vẫn canonicalize như mọi đường đọc (symlink trỏ
+    /// ngoài root ⇒ `VS0604`), còn **thao tác** dùng `symlink_metadata` (không đi theo link).
+    fn is_symlink(&mut self, p: &str) -> Result<bool, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.is_symlink(p)
     }
     /// **VD-270 (fsbytes)**: đọc byte thô là thao tác **đọc** ⇒ kiểm `cap[Dir]`/`cap[File]`
     /// (`can_write=false`) trước khi chạm đĩa; lỗi host giữ nguyên `Err` dữ liệu.

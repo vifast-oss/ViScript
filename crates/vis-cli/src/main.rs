@@ -16,6 +16,7 @@ mod net;
 mod ngoai;
 mod pkg;
 mod quyen;
+mod quyen_chuan;
 /// **ST-174 (VD-176 §2)** — ca **tất định** cho nợ `#146` (điểm chèn `quyen::chen`); **chỉ** test.
 #[cfg(test)]
 mod quyen_st174;
@@ -206,6 +207,12 @@ impl vis_interp::builtin::FsHost for HostFs {
         match self {
             HostFs::That(r) => r.is_dir(p),
             HostFs::Mock(m) => m.is_dir(p),
+        }
+    }
+    fn is_symlink(&mut self, p: &str) -> Result<bool, String> {
+        match self {
+            HostFs::That(r) => r.is_symlink(p),
+            HostFs::Mock(m) => m.is_symlink(p),
         }
     }
     /// **VD-270 (fsbytes)**: byte thô — host thật (OS) hoặc mock, cùng chữ ký.

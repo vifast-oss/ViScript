@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 140] = [
+pub const FUNCS: [StdFn; 141] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -867,6 +867,14 @@ pub const FUNCS: [StdFn; 140] = [
     },
     StdFn {
         name: "fs.is_dir",
+        params: &[Ty::Str],
+        ret: Ty::ResultBoolErr,
+    },
+    // **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là symlink (`symlink_metadata`, **không**
+    // đi theo): symlink tới tệp/thư mục/**đích thiếu** ⇒ `true` (khác `exists`); tệp/thư mục
+    // thường và path **thiếu** ⇒ `false`; lỗi metadata khác ⇒ `Err(Error)`. **Không** sugar.
+    StdFn {
+        name: "fs.is_symlink",
         params: &[Ty::Str],
         ret: Ty::ResultBoolErr,
     },

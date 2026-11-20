@@ -26,6 +26,7 @@ mod chung;
 mod flatten;
 mod frame_net;
 mod fsbytes;
+mod fsissymlink;
 mod fsmkdirall;
 mod indexof;
 mod listcontains;
@@ -756,6 +757,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(crate::builtin_fs::goi_metadata(host, name, p), span)
         }
+        // **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là symlink (theo `symlink_metadata`,
+        // **không** đi theo): symlink tới tệp/thư mục/**đích thiếu** ⇒ `true` (khác `exists`);
+        // tệp/thư mục thường, path thiếu ⇒ `false`; lỗi metadata khác ⇒ `Err(Error)`.
+        "fs.is_symlink" => fsissymlink::goi(host, name, &args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
         "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, &args, span),

@@ -623,6 +623,18 @@ impl vis_interp::builtin::FsHost for Runner {
         }
     }
 
+    /// **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là symlink, theo `symlink_metadata`
+    /// (**không** đi theo link) — nên **dangling symlink** vẫn `true` (khác `exists`). Tệp/thư mục
+    /// thường và `p` thiếu ⇒ `Ok(false)`; lỗi khác (vd `ENOTDIR`, không đủ quyền OS) ⇒ `Err`.
+    fn is_symlink(&mut self, p: &str) -> Result<bool, String> {
+        self.nhat_ky("is_symlink", p);
+        match std::fs::symlink_metadata(p) {
+            Ok(md) => Ok(md.file_type().is_symlink()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("không xem được loại `{p}`: {e}")),
+        }
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (`std::fs::read`); thiếu
     /// tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
