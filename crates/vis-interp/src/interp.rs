@@ -267,51 +267,38 @@ impl<'a> Interp<'a> {
                 // **R3b (VD-178)**: `let x = r else:` — bóc `Ok`/`Some`; ngược lại chạy khối `else`.
                 // **VD-260**: pattern **không phải** tên trần (`Some(a)`, `Ok(v)`, …) khớp trên
                 // **kiểu đầy đủ** của giá trị; chỉ tên trần mới bóc một lớp như R3b.
+                // **VD-263** — cùng luật với frame VM/codegen:
+                // - tên trần: `Ok`/`Some` khớp (bind payload), còn lại là nhánh lỗi;
+                // - pattern bác được: khớp toàn bộ giá trị; thất bại thì hoàn nguyên binding
+                //   một phần trước khi chạy `else`;
+                // - binder `else e`: tên trần/`Ok(...)` ⇒ payload `Err`; pattern khác ⇒ `()`.
                 if let Some(e) = else_ {
-                    if matches!(pat, HPat::Bind { .. }) {
-                        match v {
-                            Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
-                                return self.exec_block(&e.body);
-                            }
+                    let matched = if matches!(pat, HPat::Bind { .. }) {
+                        match &v {
                             Value::Enum(ea, va, ag)
-                                if ea == "Result" && va == "Ok" && ag.len() == 1 =>
+                                if ((ea == "Result" && va == "Ok")
+                                    || (ea == "Option" && va == "Some"))
+                                    && ag.len() == 1 =>
                             {
-                                let mut ag = ag;
-                                self.bind_pat(pat, &ag.pop().expect("Ok luôn có một đối số"))
+                                let payload = ag[0].clone();
+                                self.bind_pat(pat, &payload);
+                                true
                             }
-                            Value::Enum(ea, va, ag)
-                                if ea == "Option" && va == "Some" && ag.len() == 1 =>
-                            {
-                                let mut ag = ag;
-                                self.bind_pat(pat, &ag.pop().expect("Some luôn có một đối số"))
-                            }
-                            Value::Enum(ea, va, ag)
-                                if ea == "Result" && va == "Err" && ag.len() == 1 =>
-                            {
-                                let mut ag = ag;
-                                if let Some(sym) = e.bind_sym {
-                                    self.env
-                                        .borrow_mut()
-                                        .insert(sym, ag.pop().expect("Err luôn có một đối số"));
-                                }
-                                return self.exec_block(&e.body);
-                            }
-                            other => self.bind_pat(pat, &other),
+                            _ => false,
                         }
                     } else {
                         let snap = self.env.borrow().clone();
                         if self.bind_pat_bool(pat, &v) {
-                            return Ok(Ctrl::Normal);
+                            true
+                        } else {
+                            *self.env.borrow_mut() = snap;
+                            false
                         }
-                        *self.env.borrow_mut() = snap;
+                    };
+                    if !matched {
                         if let Some(sym) = e.bind_sym {
-                            let loi = match &v {
-                                Value::Enum(_, va, ag) if va == "Err" && ag.len() == 1 => {
-                                    ag[0].clone()
-                                }
-                                _ => Value::Unit,
-                            };
-                            self.env.borrow_mut().insert(sym, loi);
+                            let binder = crate::value::let_else_binder(pat, &v);
+                            self.env.borrow_mut().insert(sym, binder);
                         }
                         return self.exec_block(&e.body);
                     }

@@ -10,8 +10,9 @@
 //!    trước khi gọi `main`; `const` cấp tệp vẫn đi trước như cũ.
 //! 2. Câu lệnh cấp tệp **không phải** khai báo (`print(...)`, gán, `if`, …) **không** chạy khi
 //!    tệp có `fn main`.
-//! 3. Đọc một ô cấp tệp chưa kịp khởi tạo (nhánh `let … else` không gán, hoặc đọc chéo trong
-//!    lúc khởi tạo) vẫn là trap `VS0501` — không có giá trị mặc định.
+//! 3. Đọc một ô cấp tệp chưa kịp khởi tạo (đọc chéo trong lúc khởi tạo) vẫn là trap `VS0501`
+//!    — không có giá trị mặc định. Nhánh `let … else` không gán được **từ chối tĩnh** `VS0206`
+//!    (khối `else` phải thoát — VD-263), nên không còn đường “else rơi xuống cuối rồi đọc biến”.
 //!
 //! Mỗi ca chạy **cả hai engine** trên **cùng một tệp**: `vis run --no-cache` (interp) và
 //! `vis run --no-cache --vm`. Ca thành công so **byte** exit/stdout/stderr; ca trap chỉ so
@@ -87,6 +88,24 @@ fn trap_hai_duong(tag: &str, src: &str, stdout: &str) {
     assert_eq!(b.1, stdout, "{tag}: stdout VM");
     assert!(a.2.contains("VS0501"), "{tag}: stderr interp: {}", a.2);
     assert!(b.2.contains("VS0501"), "{tag}: stderr VM: {}", b.2);
+}
+
+/// Ca **từ chối tĩnh** ở cả hai engine (exit 2, cùng mã) — dùng cho luật VD-263 áp ở cấp tệp.
+fn tu_choi_hai_duong(tag: &str, src: &str, ma: &str) {
+    let [a, b] = hai_duong(tag, src);
+    for (name, o) in [("interp", &a), ("vm", &b)] {
+        assert_eq!(
+            o.0, 2,
+            "{tag}: {name} phải từ chối tĩnh (exit 2), được {}\nstdout: {}\nstderr: {}",
+            o.0, o.1, o.2
+        );
+        assert!(
+            o.1.contains(ma) || o.2.contains(ma),
+            "{tag}: {name} thiếu mã `{ma}`\nstdout: {}\nstderr: {}",
+            o.1,
+            o.2
+        );
+    }
 }
 
 // ===========================================================================
@@ -208,18 +227,19 @@ fn let_pattern_cap_tep_gan_du_cac_ten() {
 }
 
 // ===========================================================================
-// 9 — nhánh `let … else` không gán ⇒ đọc sau đó vẫn trap `VS0501`
+// 9 — `let … else` cấp tệp: `else` không thoát bị từ chối tĩnh (VD-263)
 // ===========================================================================
 
 #[test]
-fn doc_bien_chua_khoi_tao_sau_let_else_trap() {
-    // `None` đi vào nhánh `else` (in "khong-co") và **không** gán `x`; main đọc `x` ⇒ trap.
-    // Ca này chứng minh else của khai báo cấp tệp đã chạy (stdout) và không có giá trị mặc định.
-    trap_hai_duong(
-        "let-else-khong-gan",
+fn let_else_cap_tep_khong_thoat_bi_tu_choi() {
+    // Trước VD-263, `None` đi vào `else`, in "khong-co" rồi main đọc `x` ⇒ trap `VS0501` với
+    // hai engine lệch nhau (interp trap, VM `()`). Nay luật “`else` phải thoát trên mọi nhánh”
+    // áp cả cấp tệp ⇒ `VS0206` ở check/run/run --vm, không engine nào chạy tiếp.
+    tu_choi_hai_duong(
+        "let-else-khong-thoat",
         "let r: int? = None\nlet x = r else:\n    print(\"khong-co\")\n\
          fn main():\n    print(x)\n",
-        "khong-co\n",
+        "VS0206",
     );
 }
 

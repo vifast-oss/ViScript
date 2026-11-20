@@ -312,8 +312,13 @@ impl Emit<'_> {
 }
 
 impl Emit<'_> {
-    /// **R3b (VD-178)**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại chạy khối
-    /// `else` (nhận lỗi nếu có `else err:`).
+    /// **R3b (VD-178) + VD-263**: `let x = r else:` — nhánh `Ok`/`Some` bóc giá trị; ngược lại
+    /// chạy khối `else` (nhận lỗi nếu có `else err:`).
+    ///
+    /// **VD-263** — binder `else err` theo pattern, trùng checker/interp:
+    /// tên trần/`Ok(...)` ⇒ payload `Err` (E); `Err(e)`/`Some(x)`/`None`/pattern khác ⇒ `()`.
+    /// Với tên trần trên `Option`, giá trị lỗi là `None` ⇒ nhánh runtime kiểm `Err` thất bại và
+    /// bind `()` (không bóc payload `Some`/`None` sai kiểu).
     pub(super) fn let_else(
         &mut self,
         pat: &HPat,
@@ -332,13 +337,7 @@ impl Emit<'_> {
             self.f.push(Instr::Jump(0), span, 0);
             let le = self.f.here();
             self.f.patch(j_else, le);
-            if let Some(sym) = e.bind_sym {
-                self.f.push(Instr::Unwrap(0), span, 0);
-                let slot = self.slot_cua(sym)?;
-                self.f.push(Instr::BindLocal(slot), span, -1);
-            } else {
-                self.f.push(Instr::Pop, span, -1);
-            }
+            self.else_binder(pat, e, span)?;
             self.khoi(&e.body)?;
             let lend = self.f.here();
             self.f.patch(j_end, lend);
@@ -365,17 +364,51 @@ impl Emit<'_> {
         // nhánh `else`
         let le = self.f.here();
         self.f.patch(j_else, le);
-        if let Some(sym) = e.bind_sym {
-            self.f.push(Instr::Unwrap(0), span, 0);
-            // **ST-238 (VD-242, ca 3)**: `slot_cua` để `let … else err:` cấp tệp ghi đúng ô chung.
-            let slot = self.slot_cua(sym)?;
-            self.f.push(Instr::BindLocal(slot), span, -1);
-        } else {
-            self.f.push(Instr::Pop, span, -1);
-        }
+        self.else_binder(pat, e, span)?;
         self.khoi(&e.body)?;
         let lend = self.f.here();
         self.f.patch(j_end, lend);
+        Ok(())
+    }
+
+    /// **VD-263** — phát binder `else err` từ giá trị lỗi đang ở đỉnh ngăn xếp (1→0).
+    fn else_binder(
+        &mut self,
+        pat: &HPat,
+        e: &vis_types::hir::HElse,
+        span: Span,
+    ) -> Result<(), CodegenError> {
+        let Some(sym) = e.bind_sym else {
+            self.f.push(Instr::Pop, span, -1);
+            return Ok(());
+        };
+        // **ST-238 (VD-242, ca 3)**: `slot_cua` để `let … else err:` cấp tệp ghi đúng ô chung.
+        let slot = self.slot_cua(sym)?;
+        if !pat.else_binds_err() {
+            // `Err(e)`/`Some(x)`/`None`/pattern khác: binder là `()`, không bóc payload.
+            self.f.push(Instr::Pop, span, -1);
+            self.f.push(Instr::PushUnit, span, 1);
+            self.f.push(Instr::BindLocal(slot), span, -1);
+            return Ok(());
+        }
+        // Tên trần/`Ok(...)`: chỉ lấy payload khi giá trị thật là `Err`; còn lại (Option `None`)
+        // bind `()` — đúng kiểu tĩnh checker đã chốt.
+        let c_err = self.g.cst_str("Err");
+        self.f.push(Instr::Dup, span, 1);
+        self.f.push(Instr::TestCtor(c_err, 1), span, 0);
+        let j_unit = self.f.here();
+        self.f.push(Instr::JumpIfFalse(0), span, -1);
+        self.f.push(Instr::Unwrap(0), span, 0);
+        self.f.push(Instr::BindLocal(slot), span, -1);
+        let j_done = self.f.here();
+        self.f.push(Instr::Jump(0), span, 0);
+        let unit = self.f.here();
+        self.f.patch(j_unit, unit);
+        self.f.push(Instr::Pop, span, -1);
+        self.f.push(Instr::PushUnit, span, 1);
+        self.f.push(Instr::BindLocal(slot), span, -1);
+        let done = self.f.here();
+        self.f.patch(j_done, done);
         Ok(())
     }
 }

@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 # **VD-260**: mọi tên giá trị phải phân giải được — khai hàm thay vì dựa vào `{error}` im lặng.
+# **VD-263**: khối `else` của `let … else` phải thoát trên mọi nhánh — đặt trong hàm để `return`
+# hợp lệ (trước đây fixture để cấp tệp với `else` rơi xuống cuối, nay bị từ chối tĩnh).
 fn collect(xs: list[int]) -> list[int]:
     xs
 
@@ -10,8 +12,12 @@ fn load(s: str) -> Result[str, str]:
 fn default() -> str:
     "x"
 
+fn load_cfg() -> str:
+    let cfg = load("a.json") else err:
+        return default()
+    cfg
+
 let xs = [3, 1, 2] |> sort_by(x => x) |> collect
-let cfg = load("a.json") else err:
-    default()
+let cfg = load_cfg()
 print(xs)
 print(cfg)

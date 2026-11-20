@@ -210,6 +210,9 @@ impl<'a> Lowerer<'a> {
             // instantiation (`Some(G(f: …))` dưới `G[int?]?`).
             .map(|c| self.lower_expr_as(c, ty.clone()))
             .unwrap_or(HExpr::Error { span: node.span });
+        // **VD-263**: hạ khối `else` **trước** khi khai tên của pattern — tên trong pattern
+        // không được rò vào `else`; ở đó cùng tên chỉ có thể trỏ biến **ngoài** (nếu có).
+        let else_ = self.lower_let_else(node);
         let pat = node
             .child(NodeKind::Pattern)
             .map(|p| self.lower_pat(p))
@@ -228,7 +231,6 @@ impl<'a> Lowerer<'a> {
                 }
             }
         }
-        let else_ = self.lower_let_else(node);
         HStmt::Let {
             pat,
             ty,

@@ -15,7 +15,7 @@ use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use vis_types::hir::HBody;
+use vis_types::hir::{HBody, HPat};
 
 thread_local! {
     /// **VD-259 (chỉ frame test)**: số lần phải dựng bản `'static` của thân closure.
@@ -38,6 +38,22 @@ pub fn frame_body_builds_reset_for_test() {
 /// Môi trường: **một** bảng `sym → giá trị` (ST-11 cấp `sym` duy nhất cho mọi khai báo nên
 /// shadowing tự nhiên đúng); closure giữ `Rc` để bắt môi trường.
 pub type Env = Rc<RefCell<HashMap<u32, Value>>>;
+
+/// **VD-263** — giá trị binder `else e` của `let … else` khi pattern không khớp.
+///
+/// Cùng luật với checker/codegen (`HPat::else_binds_err`): tên trần/`Ok(...)` lấy payload `Err`
+/// khi giá trị **thật** là `Err`; `Err(e)`/`Some(x)`/`None`/pattern khác bind `()`. Dùng cho
+/// default interp — frame test (ngoài phạm vi VD-263) giữ nguyên đường cũ.
+pub(crate) fn let_else_binder(pat: &HPat, v: &Value) -> Value {
+    if pat.else_binds_err() {
+        if let Value::Enum(ea, va, args) = v {
+            if ea == "Result" && va == "Err" && args.len() == 1 {
+                return args[0].clone();
+            }
+        }
+    }
+    Value::Unit
+}
 
 /// Hàm/closure: thân HIR + môi trường bắt được.
 #[derive(Debug, Clone)]
