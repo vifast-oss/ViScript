@@ -177,6 +177,17 @@ impl<'a> Lowerer<'a> {
         // call-site hợp nhất được; thân hàm vẫn dùng bản đã xoá (tyck `erase_gen`).
         let luu_sym = std::mem::replace(&mut self.sym_generic, !generics.is_empty());
         let params = self.lower_params(node);
+        // **VD-265**: `self` trong phương thức `impl` mang kiểu nhận cho **dispatch tĩnh**
+        // (`self.m()` → `Call(Var(sym))`, như `p.m()` với `p` có annot). Không ghi vào
+        // `type_env`: checker vẫn thấy `self` là `{error}` như VD-262, nên `self.khong_co`
+        // giữ nguyên lỗi **lúc chạy** (VS0501) thay vì đổi thành VS0405.
+        if kind == FnKind::ImplMethod {
+            if let Some(t) = &self.cur_impl_ty {
+                for p in params.iter().filter(|p| p.is_self) {
+                    self.self_ty.insert(p.sym, t.clone());
+                }
+            }
+        }
         let ret = node
             .child(NodeKind::Type)
             .map(|t| self.resolve_type(t))
@@ -515,10 +526,12 @@ impl<'a> Lowerer<'a> {
         let mut methods = Vec::new();
         let truct = self.ten_kieu(&ty);
         self.cur_impl = truct.clone();
+        self.cur_impl_ty = Some(ty.clone());
         for m in node.children().filter(|n| n.kind == NodeKind::FnDecl) {
             methods.push(self.lower_fn(m, FnKind::ImplMethod));
         }
         self.cur_impl = None;
+        self.cur_impl_ty = None;
         self.kiem_impl_khop(node, &trait_name, &ty, &methods);
         Some(HItem::Impl(HImpl {
             trait_name,

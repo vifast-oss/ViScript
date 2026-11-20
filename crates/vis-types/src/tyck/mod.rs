@@ -32,7 +32,7 @@ use sig::FnSig;
 use vis_diag::{NAME_CODES, TYPE_CODES};
 use vis_syntax::{Diagnostic, Span};
 
-use crate::hir::{HExpr, HItem, HStmt, Hir};
+use crate::hir::{HExpr, HFn, HItem, HStmt, Hir};
 use crate::lower::{SymKind, Symbols};
 use crate::ty::{EnumId, RecId, Type, TypeTable};
 
@@ -792,6 +792,45 @@ impl<'a> Checker<'a> {
 
     // ----- duyệt chương trình -----
 
+    /// **VD-265** — chữ ký phương thức `impl` vào `sigs`/`env` (cùng quy tắc hàm cấp tệp:
+    /// giữ `TypeRef{"T"}` khi hợp nhất call-site, thân dùng bản đã xoá generic).
+    /// Không đẩy vào `item_types` (tên phương thức không phải item cấp tệp).
+    fn dang_ky_sig_phuong_thuc(&mut self, f: &HFn) {
+        let luu = std::mem::take(&mut self.generic_scope);
+        self.generic_scope = f.generics.clone();
+        let raw_params: Vec<Type> = f
+            .params
+            .iter()
+            .map(|p| self.resolve_ann(&p.ty, p.span))
+            .collect();
+        let raw_ret = self.resolve_ann(&f.ret, f.span);
+        self.generic_scope = luu;
+        let params: Vec<Type> = raw_params
+            .iter()
+            .map(|t| self.chuan(&erase_gen(t, &f.generics)))
+            .collect();
+        let ret = self.chuan(&erase_gen(&raw_ret, &f.generics));
+        let ty = Type::Fn(params.clone().into_boxed_slice(), Box::new(ret.clone()));
+        self.set_ty(f.sym, ty);
+        if let Some(slot) = self.sigs.get_mut(f.sym as usize) {
+            *slot = Some(FnSig {
+                name: f.name.clone(),
+                is_async: f.is_async,
+                params: f
+                    .params
+                    .iter()
+                    .zip(params.iter())
+                    .map(|(p, t)| (p.name.clone(), t.clone(), p.default.is_some(), p.named))
+                    .collect(),
+                ret,
+                variadic: f.params.last().map(|p| p.variadic).unwrap_or(false),
+                generics: f.generics.clone(),
+                raw_params,
+                raw_ret,
+            });
+        }
+    }
+
     fn run(&mut self, hir: &Hir) {
         self.quiet += 1;
         self.khai_bao_item(hir);
@@ -891,7 +930,16 @@ impl<'a> Checker<'a> {
                     self.set_ty(x.sym, ty);
                 }
                 // **ST-56b (VD-97)**: thân phương thức `impl` kiểm **đích gán** (xem `kiem_impl`).
-                HItem::Impl(im) => self.kiem_impl(im),
+                //
+                // **VD-265**: phương thức cũng có **chữ ký** như hàm cấp tệp — trước đây `sigs`
+                // để trống nên `recv.m(…)` (kể cả `self.m()`) trả `{error}` trong checker; nhờ
+                // vậy `let x = if …: self.m() else: 5` biết `x: T?` và `match` trên nó hợp lệ.
+                HItem::Impl(im) => {
+                    for m in &im.methods {
+                        self.dang_ky_sig_phuong_thuc(m);
+                    }
+                    self.kiem_impl(im);
+                }
                 HItem::Trait(_) | HItem::Use(_) => {}
             }
         }

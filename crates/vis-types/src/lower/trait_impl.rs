@@ -49,7 +49,11 @@ impl<'a> Lowerer<'a> {
     /// **Kiểu tĩnh** của một biểu thức đã hạ — chỉ dùng chú thích tường minh (không suy diễn).
     pub(crate) fn static_ty(&self, e: &HExpr) -> Option<Type> {
         match e {
-            HExpr::Var { sym: Some(id), .. } => self.type_env.get(id).cloned(),
+            HExpr::Var { sym: Some(id), .. } => self
+                .type_env
+                .get(id)
+                .or_else(|| self.self_ty.get(id))
+                .cloned(),
             HExpr::Field {
                 base,
                 name,

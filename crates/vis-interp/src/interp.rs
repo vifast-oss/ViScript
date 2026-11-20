@@ -30,6 +30,9 @@ pub(crate) struct Interp<'a> {
     pub(crate) sym_ty: HashMap<u32, vis_types::Type>,
     /// **VD-260** — `sym` hàm/phương thức → kiểu trả về (suy lớp Option của lời gọi).
     pub(crate) fn_rets: HashMap<u32, vis_types::Type>,
+    /// **VD-265** — bảng kiểu trả của phương thức người dùng theo kiểu nhận + tên (cho lời gọi
+    /// còn dạng `HExpr::Field` và cho thay generic ở instantiation).
+    pub(crate) mret: vis_types::MethodRet,
     pub(crate) mutable: HashSet<u32>,
     pub(crate) out: String,
     pub steps: usize,
@@ -93,7 +96,8 @@ impl<'a> Interp<'a> {
             }
         }
         let fn_rets = core_types::goi::collect_fn_rets(&fns);
-        let sym_ty = core_types::goi::collect_sym_tys(hir, symbols, types, &fn_rets);
+        let mret = vis_types::MethodRet::from_hir_voi_bang(hir, types);
+        let sym_ty = core_types::goi::collect_sym_tys(hir, symbols, types, &fn_rets, &mret);
         Self {
             fns,
             consts,
@@ -103,6 +107,7 @@ impl<'a> Interp<'a> {
             env: Rc::new(std::cell::RefCell::new(HashMap::new())),
             sym_ty,
             fn_rets,
+            mret,
             mutable: HashSet::new(),
             out: String::new(),
             steps: 0,
@@ -468,6 +473,7 @@ impl<'a> Interp<'a> {
                     &self.sym_ty,
                     self.types,
                     &self.fn_rets,
+                    &self.mret,
                 );
                 let mut ctrl = Ctrl::Normal;
                 let mut ran = false;
@@ -587,8 +593,13 @@ impl<'a> Interp<'a> {
                 Ok(Ctrl::Continue)
             }
             HStmt::Match { subject, arms, .. } => {
-                let (min, max) =
-                    core_types::goi::do_match(arms, &self.sym_ty, self.types, &self.fn_rets);
+                let (min, max) = core_types::goi::do_match(
+                    arms,
+                    &self.sym_ty,
+                    self.types,
+                    &self.fn_rets,
+                    &self.mret,
+                );
                 let subj = self.eval(subject)?;
                 let Some((arm, binds)) = self.pick_arm(arms, &subj)? else {
                     return Err(Abort::Trap(Trap::new(

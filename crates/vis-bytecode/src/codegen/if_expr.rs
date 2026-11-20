@@ -22,6 +22,7 @@ impl Emit<'_> {
             &self.g.sym_ty,
             &self.g.rec_fields,
             &self.g.fn_rets,
+            &self.g.mret,
         );
         let mut jf = self.cond(cond)?;
         let mut cond_let = matches!(cond, HCond::Let { .. });
