@@ -38,7 +38,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1880 passed / 3 skipped** tại `d7d875d`.
+- `./vis-dev gate --fast`: **PASS — 1894 passed / 3 skipped** tại `9d9a7f1`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -100,3 +100,5 @@
 - Parser chưa nhận `if`/`match` nhiều dòng làm biểu thức con trong đối số gọi (`VS0201`) — nợ parser.
 - P3 enum alloc (#152) chưa sửa.
 - Budget/fuel/Q vẫn chưa chốt; step-cap còn mở; runtime mặc định vẫn không đổi.
+- **pexpr** (`88c1331` → `9d9a7f1`): `if`/`match` biểu thức trong ngoặc/đối số/list (một dòng và nhiều dòng); parser đếm delimiter, suite ngầm kết thúc, `match` theo dòng/cột; 14 ca hai engine.
+- **LSP** (`bdedaaa`, `98d269d`): `textDocument/definition` + `documentSymbol`; capability mới + snapshot `initialize` cập nhật.
