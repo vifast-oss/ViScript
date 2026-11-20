@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VD-258/259/260 — báo cáo tích hợp (A0, 2026-11-20/21)
 
-> **Trạng thái tại thời điểm ghi**: main `f9748a7` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
+> **Trạng thái tại thời điểm ghi**: main `8820d4d` (sau method/globals/withunit/ctrl/generic/letelse/infer/range,
 > wave 7/8: stdlib/frame/genericres/pexpr/fs/db/intlit/methodret + LSP definition/symbol/references/rename/signature/folding),
-> gate **1950 passed / 3 skipped**. Core-test/release/toolchain PASS.
+> gate **1959 passed / 3 skipped**. Core-test/release/toolchain PASS.
 
 ## 1. Dòng thay đổi đã merge
 
@@ -45,7 +45,7 @@
 
 ## 2. Bằng chứng cổng
 
-- `./vis-dev gate --fast`: **PASS — 1950 passed / 3 skipped** tại `5405489`.
+- `./vis-dev gate --fast`: **PASS — 1959 passed / 3 skipped** tại `8820d4d`.
 - `cargo test -p vis-cli --no-default-features` (tuần tự sau gate): **exit 0**.
 - `./vis-dev core-test`: **PASS** (target riêng `target/core-test`).
 - `bash test/release/run.sh`: **PASS**; artifact chỉ `vis` (không `test-child`).
@@ -109,3 +109,6 @@
 - Budget/fuel/Q vẫn chưa chốt; step-cap còn mở; runtime mặc định vẫn không đổi.
 - **pexpr** (`88c1331` → `9d9a7f1`): `if`/`match` biểu thức trong ngoặc/đối số/list (một dòng và nhiều dòng); parser đếm delimiter, suite ngầm kết thúc, `match` theo dòng/cột; 14 ca hai engine.
 - **LSP** (`bdedaaa`, `98d269d`): `textDocument/definition` + `documentSymbol`; capability mới + snapshot `initialize` cập nhật.
+- **fmt-size** (`1ab5d8b` → `350d7c4`): size thập phân ≤2 lẻ, duration ghép; cập nhật show/test/docs.
+- **fmtstdin** (`8d2ae13` → `8820d4d`): `vis fmt --stdin [--check]`, exit 0/1/2, không đụng đĩa.
+- `VIS_DIFF_N=100000` @ `350d7c4`: **0 lệch** (93.770 chạy, 164,5 s, seed 20261122).
