@@ -100,7 +100,9 @@ fn round_trip_so_va_bool_va_none() {
         ("false", "false"),
         ("null", "null"),
         ("0", "0"),
-        ("1e3", "1000"),
+        // **VD-258**: `1e3` decode thành `Float` ⇒ encode giữ dấu float (`1000.0`), không
+        // còn `1000` (decoder sẽ đọc lại thành `Int`). `-2.5e-2` vốn đã có dấu.
+        ("1e3", "1000.0"),
         ("-2.5e-2", "-0.025"),
     ] {
         let o = hai_duong(&d, "rt", &chuong_trinh_json(json));

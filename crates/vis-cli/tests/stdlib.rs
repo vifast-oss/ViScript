@@ -61,7 +61,9 @@ fn std_70_ca_qua_binary() {
     // **SỬA KÈM LÝ DO (ST-56)**: 70 → **71** (+`list_sort_by_str.vis` — khoá `str`).
     // **SỬA KÈM LÝ DO (ST-58)**: 71 → **73** (+`list_generic_ret.vis`, `map_generic_ret.vis` — khoá
     // **kiểu trả generic** của `std.list.*`/`std.map.*`).
-    assert_eq!(ds.len(), 73, "phải đủ 73 ca `test/std`");
+    // **SỬA KÈM LÝ DO (VD-258)**: 73 → **74** (+`json_float_giu_dau.vis` — `Json.Num(Float)` giữ
+    // dấu float + roundtrip `1e20`).
+    assert_eq!(ds.len(), 74, "phải đủ 74 ca `test/std`");
     let mut sai = Vec::new();
     for p in &ds {
         let k = chay(&["run", p.to_str().unwrap()]);
