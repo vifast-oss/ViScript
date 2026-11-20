@@ -129,6 +129,13 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.remove(p),
         }
     }
+    /// **VD-268**: host thật (OS) hoặc mock, cùng chữ ký.
+    fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
+        match self {
+            HostFs::That(r) => r.walk(p),
+            HostFs::Mock(m) => m.walk(p),
+        }
+    }
     fn exists(&mut self, p: &str) -> bool {
         match self {
             HostFs::That(r) => r.exists(p),

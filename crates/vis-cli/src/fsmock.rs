@@ -143,6 +143,30 @@ impl FsMock {
         }
         Ok(mock)
     }
+
+    /// **VD-268**: đệ quy con của [`walk`](Self::walk) trên cây kịch bản. `goc` là khoá tuyệt đối
+    /// trong `dirs`; `tuong_doi` là tiền tố trả về (rỗng ở root).
+    fn duyet_walk(&self, goc: &str, tuong_doi: &str, ra: &mut Vec<String>) {
+        let Some((_, muc)) = self.dirs.iter().find(|(k, _)| k == goc) else {
+            return;
+        };
+        let mut muc = muc.clone();
+        muc.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
+        for m in muc {
+            let rel = if tuong_doi.is_empty() {
+                m.name.clone()
+            } else {
+                format!("{tuong_doi}/{}", m.name)
+            };
+            if m.is_file {
+                ra.push(rel);
+            } else {
+                ra.push(format!("{rel}/"));
+                let con = format!("{}/{}", goc.trim_end_matches('/'), m.name);
+                self.duyet_walk(&con, &rel, ra);
+            }
+        }
+    }
 }
 
 impl FsHost for FsMock {
@@ -197,6 +221,20 @@ impl FsHost for FsMock {
         Err(format!(
             "không xoá được tệp `{p}`: không có trong kịch bản `--fs-mock`"
         ))
+    }
+
+    /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
+    /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
+    /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.
+    fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
+        if !self.dirs.iter().any(|(k, _)| k == p) {
+            return Err(format!(
+                "không duyệt được thư mục `{p}`: không có trong kịch bản `--fs-mock`"
+            ));
+        }
+        let mut ra = Vec::new();
+        self.duyet_walk(p, "", &mut ra);
+        Ok(ra)
     }
 
     fn exists(&mut self, p: &str) -> bool {

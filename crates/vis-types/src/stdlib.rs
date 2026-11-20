@@ -190,7 +190,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 73] = [
+pub const FUNCS: [StdFn; 74] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -443,6 +443,12 @@ pub const FUNCS: [StdFn; 73] = [
         name: "fs.remove",
         params: &[Ty::Str],
         ret: Ty::ResultUnitStr,
+    },
+    // **VD-268**: duyệt đệ quy — tương đối so với root, thư mục kèm `/`, DFS, bỏ symlink.
+    StdFn {
+        name: "fs.walk",
+        params: &[Ty::Str],
+        ret: Ty::ResultListStrStr,
     },
     // ----- std.net (ST-63, VD-100/VD-105) — **đi qua `Host::net`**, không OS trong crate này -----
     StdFn {

@@ -292,6 +292,46 @@ fn duong_dan_cua_handle(_f: &std::fs::File, _goc_proc: &Path) -> DuongDanHandle 
     DuongDanHandle::KhongCo
 }
 
+/// **VD-268**: một cấp của `walk` — đọc tên + loại mục (**không** theo symlink), sắp theo byte,
+/// rồi in mục và đệ quy vào thư mục. `tuong_doi` là tiền tố tương đối (rỗng ở root).
+fn duyet_de_quy(goc: &Path, tuong_doi: &str, ra: &mut Vec<String>) -> Result<(), String> {
+    let hien = goc.display();
+    let rd = std::fs::read_dir(goc).map_err(|e| format!("không đọc được thư mục `{hien}`: {e}"))?;
+    let mut muc: Vec<(String, bool, bool)> = Vec::new();
+    for e in rd {
+        let e = e.map_err(|x| format!("lỗi đọc mục trong `{hien}`: {x}"))?;
+        let ft = e
+            .file_type()
+            .map_err(|x| format!("lỗi đọc loại mục trong `{hien}`: {x}"))?;
+        muc.push((
+            e.file_name().to_string_lossy().to_string(),
+            ft.is_dir(),
+            ft.is_symlink(),
+        ));
+    }
+    muc.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+    for (ten, la_thu_muc, la_symlink) in muc {
+        // **VD-268**: symlink không được in và không được đệ quy ⇒ không thể đi ra ngoài root
+        // hoặc lặp vô hạn.
+        if la_symlink {
+            continue;
+        }
+        let rel = if tuong_doi.is_empty() {
+            ten.clone()
+        } else {
+            format!("{tuong_doi}/{ten}")
+        };
+        if la_thu_muc {
+            ra.push(format!("{rel}/"));
+            duyet_de_quy(&goc.join(&ten), &rel, ra)?;
+        } else {
+            // Tệp thường **và** mục đặc biệt (fifo/socket/…) — chỉ in tên, không đi xuống.
+            ra.push(rel);
+        }
+    }
+    Ok(())
+}
+
 /// **Host hệ thống tệp** (ST-33) — `std::fs` **chỉ** ở đây; `vis-interp`/`vis-vm` chỉ thấy trait.
 ///
 /// Chốt an toàn (Agent 0 duyệt): **cho phép** đường dẫn tuyệt đối và `..` (không sandbox — consent
@@ -366,6 +406,25 @@ impl vis_interp::builtin::FsHost for Runner {
             Ok(md) if md.is_dir() => Err(format!("không xoá được `{p}`: là thư mục (chỉ xoá tệp)")),
             _ => std::fs::remove_file(p).map_err(|e| format!("không xoá được `{p}`: {e}")),
         }
+    }
+
+    /// **VD-268**: duyệt **đệ quy** dưới `p` bằng `read_dir` + `DirEntry::file_type()` (không đi
+    /// theo symlink). Trả đường dẫn **tương đối** so với `p`, phân cách `/`; thư mục kèm `/`; DFS,
+    /// mỗi cấp sắp theo byte của tên; mục ẩn vẫn gồm. Symlink bị **bỏ hoàn toàn** ⇒ không có vòng.
+    ///
+    /// `p` được theo nếu chính nó là symlink (quyền đã kiểm trên đích canonicalize); chỉ các mục
+    /// **bên trong** mới bị bỏ. Lỗi đọc bất kỳ (thiếu/không phải thư mục/không đọc được thư mục
+    /// con) ⇒ `Err` dữ liệu.
+    fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
+        self.nhat_ky("walk", p);
+        let md =
+            std::fs::metadata(p).map_err(|e| format!("không duyệt được thư mục `{p}`: {e}"))?;
+        if !md.is_dir() {
+            return Err(format!("không duyệt được `{p}`: không phải thư mục"));
+        }
+        let mut ra = Vec::new();
+        duyet_de_quy(Path::new(p), "", &mut ra)?;
+        Ok(ra)
     }
 
     fn exists(&mut self, p: &str) -> bool {

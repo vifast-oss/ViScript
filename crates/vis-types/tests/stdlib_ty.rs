@@ -69,7 +69,9 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-266, 2026-11-21)**: +**4** hàm `std.fs.*` (`read_lines`, `append`,
     // `mkdir`, `remove`) và +**3** hàm SQLite (`sqlite.query_one`, `sqlite.last_insert_rowid`,
     // `sqlite.changes`) ⇒ **73** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 73, "bảng chữ ký phải đủ 73 hàm");
+    // **SỬA KÈM LÝ DO (VD-268, 2026-11-21)**: +**1** hàm `std.fs.walk` ⇒ **74** hàm; không
+    // xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 74, "bảng chữ ký phải đủ 74 hàm");
 }
 
 #[test]

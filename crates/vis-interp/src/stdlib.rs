@@ -707,6 +707,17 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.remove(p).map(|()| Value::Unit), span)
         }
+        // **VD-268**: duyệt đệ quy — đường dẫn tương đối, thư mục kèm `/`; thiếu host ⇒ `VS0604`,
+        // lỗi dữ liệu ⇒ `Err(Error)` (cùng `hop_nhat_fs`).
+        "fs.walk" => {
+            let p = chuoi(name, &args[0], 0, span)?;
+            let host = host.fs().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(
+                host.walk(p)
+                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                span,
+            )
+        }
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         "net.connect" | "net.connect_timeout" => {

@@ -825,6 +825,13 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, true)?;
         self.trong.remove(p)
     }
+    /// **VD-268**: duyệt là thao tác **đọc** ⇒ kiểm `cap[Dir]` trên **root** trước khi chạm đĩa.
+    /// Host chỉ đi xuống thư mục con thật và **bỏ mọi symlink**, nên mọi đường dẫn trả về nằm dưới
+    /// root đã kiểm (không thể thoát qua symlink); kiểm root là đủ, giống `list`/`list_entries`.
+    fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.walk(p)
+    }
     /// **ST-83**: ngoài quyền ⇒ **trap `VS0604`** (không còn `false` im lặng).
     fn exists(&mut self, p: &str) -> bool {
         self.exists_quyen(p).unwrap_or(false)
