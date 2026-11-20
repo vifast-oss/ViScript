@@ -47,7 +47,7 @@ fn chay(dau_vao: &str) -> (i32, String, String) {
 }
 
 /// Snapshot body phản hồi `initialize` (id 1) — thứ tự khoá **cố định** (không version/rootUri).
-const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"renameProvider":true,"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"renameProvider":true,"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]}},"serverInfo":{"name":"vis"}}}"#;
 const SHUTDOWN3: &str = r#"{"jsonrpc":"2.0","id":3,"result":null}"#;
 const LOI_32601: &str = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32601,"message":"method không tồn tại","data":"foo/bar"}}"#;
 const LOI_32002: &str =
@@ -1423,6 +1423,50 @@ fn lsp_rename_ten_moi_sai_null() {
         khung(&init()),
         khung(&did_open(URI, text)),
         khung(&rename(2, URI, 0, 3, "1x"))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":null}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+// ===== ST-273: signatureHelp =====
+
+fn signature(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/signatureHelp", uri, line, ch)
+}
+
+/// Ca 32 — trong lời gọi `add(1, ` ⇒ chữ ký `fn add(...)`, tham số hoạt động 1.
+#[test]
+fn lsp_signature_help_tham_so_thu_hai() {
+    let text = "fn add(a: int, b: int) -> int:\n    a + b\n\nfn main():\n    let x = add(1, 2)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&signature(2, URI, 4, 18))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let tra = r#"{"jsonrpc":"2.0","id":2,"result":{"signatures":[{"label":"fn add(a: int, b: int) -> int","parameters":[{"label":"a: int"},{"label":"b: int"}]}],"activeSignature":0,"activeParameter":1}}"#;
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
+    );
+}
+
+/// Ca 33 — builtin `print(` không có chữ ký trong tệp ⇒ `result:null`.
+#[test]
+fn lsp_signature_help_builtin_null() {
+    let text = "fn main():\n    print(1)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&signature(2, URI, 1, 10))
     );
     let (code, out, err) = chay(&vao);
     assert_eq!(code, 0, "stderr: {err}");

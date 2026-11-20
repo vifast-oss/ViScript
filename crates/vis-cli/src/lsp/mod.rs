@@ -9,6 +9,7 @@
 //! stdout **tuyệt đối sạch**: chỉ frame; mọi lỗi giao thức ghi ra stderr.
 
 mod chan_doan;
+mod chu_ky;
 mod dinh_nghia;
 mod doi_ten;
 mod goi_y;
@@ -208,6 +209,28 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **ST-273**: gợi ý chữ ký hàm cấp tệp tại lời gọi.
+            "textDocument/signatureHelp" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
+                            Some(text) => {
+                                let kq = module::phan_tich_uri(&uri, text, mode_cua(&uri));
+                                let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
+                                gui!(chu_ky::tra_loi_signature(&kq, byte, mode_cua(&uri), &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-272**: đổi tên định danh trong tệp (token Ident, không chạm chuỗi/chú thích).
             "textDocument/rename" => {
                 if let Some(id) = id {
@@ -348,6 +371,13 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("documentSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("renameProvider", Value::Bool(true)),
+        jsonrpc::kv(
+            "signatureHelpProvider",
+            jsonrpc::m(vec![(
+                "triggerCharacters",
+                Value::List(vec![Value::Str("(".into()), Value::Str(",".into())]),
+            )]),
+        ),
         jsonrpc::kv("completionProvider", completion),
     ]);
     let server_info = Value::Map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);
