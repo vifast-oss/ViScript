@@ -23,7 +23,7 @@ use vis_syntax::{Kind, Mode, NodeKind, Span};
 fn usage() -> ExitCode {
     eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
-  --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; chưa hỗ trợ cùng --json");
+  --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     ExitCode::from(2)
 }
@@ -402,10 +402,7 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     }
     if list {
-        if json_ra {
-            eprintln!("vis test: `--list` chưa hỗ trợ `--json`");
-            return ExitCode::from(2);
-        }
+        let mut tens: Vec<String> = Vec::new();
         for (p, bai) in &ca {
             let ten = match bai {
                 Some((ten, _)) => ten.clone(),
@@ -418,7 +415,18 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             };
-            println!("{ten}");
+            tens.push(ten);
+        }
+        if json_ra {
+            let ds: Vec<String> = tens
+                .iter()
+                .map(|t| format!("\"{}\"", esc_json(t)))
+                .collect();
+            println!("{{\"tests\":[{}]}}", ds.join(","));
+        } else {
+            for ten in &tens {
+                println!("{ten}");
+            }
         }
         return ExitCode::SUCCESS;
     }

@@ -63,13 +63,17 @@ fn list_loc_theo_filter() {
 }
 
 #[test]
-fn list_json_bi_tu_choi() {
+fn list_json_ra_mang_ten() {
     let d = tam();
     std::fs::write(d.join("a.vis"), "test fn mot():\n    assert true\n").expect("a");
+    std::fs::write(d.join("b.vis"), "test fn hai():\n    assert true\n").expect("b");
     let ds = d.to_string_lossy().to_string();
     let (code, out, err) = chay(&["test", "--list", "--json", &ds]);
     let _ = std::fs::remove_dir_all(&d);
-    assert_eq!(code, 2, "phải từ chối: out={out} err={err}");
-    assert_eq!(out, "", "stdout rỗng");
-    assert!(err.contains("--json"), "stderr nêu lý do: {err}");
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr rỗng");
+    let body = out.trim();
+    assert!(body.starts_with("{\"tests\":["), "JSON: {body}");
+    assert!(body.contains("\"mot\""), "thiếu mot: {body}");
+    assert!(body.contains("\"hai\""), "thiếu hai: {body}");
 }
