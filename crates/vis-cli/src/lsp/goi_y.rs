@@ -231,6 +231,22 @@ fn kieu_truoc_cham(kq: &KetQua, text: &str, start: usize) -> Option<String> {
         .map(|(_, k)| k.clone())
 }
 
+/// **VD-270**: chủ sở hữu (kiểu tĩnh) của từ tại `start` khi từ nằm sau dấu chấm — `u.lay` ⇒ kiểu
+/// của `u`, `self.lay` trong `impl` ⇒ kiểu của khối `impl` chứa con trỏ. `None` ⇒ không xác định.
+pub(crate) fn chu_tinh(kq: &KetQua, start: usize) -> Option<String> {
+    match ten_truoc_cham(&kq.text, start) {
+        Some("self") => kq
+            .phuong
+            .iter()
+            .find(|p| {
+                p.impl_span
+                    .is_some_and(|s| start >= s.start && start < s.end)
+            })
+            .map(|p| p.chu.clone()),
+        _ => kieu_truoc_cham(kq, &kq.text, start),
+    }
+}
+
 /// **ST-100**: hover **trường** — `p.x` (theo kiểu `p`) hoặc khai báo duy nhất `x: int` trong `type`.
 fn hover_truong(kq: &KetQua, text: &str, start: usize, tu: &str) -> Option<String> {
     let chu_p = kieu_truoc_cham(kq, text, start);
@@ -266,18 +282,8 @@ fn hover_phuong(kq: &KetQua, start: usize, tu: &str) -> Option<String> {
     let chon = match tai_khai_bao.as_slice() {
         [p] => *p,
         _ => {
-            let chu_p = match ten_truoc_cham(&kq.text, start) {
-                // `self.m` trong `impl` ⇒ chủ là kiểu của khối `impl` chứa con trỏ.
-                Some("self") => kq
-                    .phuong
-                    .iter()
-                    .find(|p| {
-                        p.impl_span
-                            .is_some_and(|s| start >= s.start && start < s.end)
-                    })
-                    .map(|p| p.chu.clone()),
-                _ => kieu_truoc_cham(kq, &kq.text, start),
-            };
+            // `self.m` trong `impl` ⇒ chủ là kiểu của khối `impl` chứa con trỏ.
+            let chu_p = chu_tinh(kq, start);
             let mut loc = ung;
             if let Some(chu) = &chu_p {
                 loc.retain(|p| &p.chu == chu);
