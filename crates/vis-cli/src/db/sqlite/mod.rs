@@ -16,7 +16,7 @@
 //!   **allow-list theo action code** (mặc định từ chối): DDL/CRUD thường, `BEGIN`/`COMMIT`/`ROLLBACK`,
 //!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read` (trừ trang thô), mọi `Function` trừ
 //!   `load_extension`/`sqlite_offset`;
-//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version` (không ghi); cấm
+//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version` (không ghi); cấm
 //!   `ATTACH`/`DETACH`/ghi `PRAGMA` khác/`load_extension`/**`CREATE VIRTUAL TABLE`** (`SQLITE_CREATE_VTABLE`)
 //!   ở **mọi** chế độ. `VACUUM` (cả `VACUUM INTO`) bị chặn gián tiếp — nó tự **ATTACH** ở đường
 //!   nội tại, authorizer từ chối ⇒ câu lệnh lỗi.
@@ -151,6 +151,9 @@ struct Muc {
     path: String,
     /// `None` khi đã đóng (tombstone — giữ để báo "handle đã đóng").
     conn: Option<Connection>,
+    /// **VD-261 (tối ưu)**: `PRAGMA schema_version` tại lần quét schema gần nhất. Chỉ quét
+    /// `sqlite_master` khi version đổi; schema không đổi ⇒ không quét lại mỗi prepare.
+    schema_ver: Option<i64>,
 }
 
 /// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường). Hai nửa 64-bit lấy từ **nguồn OS**:
@@ -440,7 +443,7 @@ fn la_bang_trang_tho(ten: &str) -> bool {
 /// | `SQLITE_TRANSACTION` (BEGIN/COMMIT/ROLLBACK) · `SQLITE_SAVEPOINT` | giao dịch | **Allow** (đã duyệt — không tự mở thêm) |
 /// | `SQLITE_REINDEX` · `SQLITE_ANALYZE` | maintenance | **Allow** |
 /// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`/`sqlite_offset`) | hàm SQL | **Allow** |
-/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
+/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
 /// | `SQLITE_PRAGMA` khác (kể cả ghi `user_version`, `temp_store`, `journal_mode`…) | đổi cấu hình | **Deny** |
 /// | `SQLITE_ATTACH` / `SQLITE_DETACH` | gắn db ngoài | **Deny** |
 /// | `SQLITE_CREATE_VTABLE` / `SQLITE_DROP_VTABLE` | virtual table (FTS5…) | **Deny** |
@@ -515,8 +518,9 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
             let n = pragma_name.to_ascii_lowercase();
             if n == "table_info" {
                 Authorization::Allow
-            } else if n == "user_version" && pragma_value.is_none() {
-                // **đọc** user_version — ghi (có giá trị) ⇒ Deny.
+            } else if (n == "user_version" || n == "schema_version") && pragma_value.is_none() {
+                // **đọc** user_version/schema_version — ghi (có giá trị) ⇒ Deny.
+                // `schema_version` chỉ dùng để cache lần quét schema UTF-8 (VD-261).
                 Authorization::Allow
             } else {
                 Authorization::Deny
@@ -562,6 +566,16 @@ fn dat_gioi_han_o(conn: &Connection, max_cell_bytes: usize) -> Result<(), String
     Ok(())
 }
 
+#[cfg(test)]
+thread_local! {
+    static SCHEMA_SCANS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn schema_scans_for_test() -> u64 {
+    SCHEMA_SCANS.with(std::cell::Cell::get)
+}
+
 /// Kiểm **toàn bộ** text schema (`sqlite_master.sql`) là UTF-8 hợp lệ **trước** khi prepare SQL
 /// người dùng. Cần vì:
 /// - hook authorizer của rusqlite panic khi tên bảng/cột không-UTF-8;
@@ -570,6 +584,8 @@ fn dat_gioi_han_o(conn: &Connection, max_cell_bytes: usize) -> Result<(), String
 /// Chạy lại **mỗi** prepare (schema có thể đổi từ tiến trình khác); chỉ đọc metadata, không
 /// step dữ liệu người dùng. Lỗi ⇒ `Err` dữ liệu, không panic, không echo SQL.
 fn kiem_schema_utf8(conn: &Connection, sqlite_debug: bool) -> Result<(), String> {
+    #[cfg(test)]
+    SCHEMA_SCANS.with(|c| c.set(c.get() + 1));
     let mut stmt = conn
         .prepare("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL")
         .map_err(|e| {
@@ -600,6 +616,33 @@ fn kiem_schema_utf8(conn: &Connection, sqlite_debug: bool) -> Result<(), String>
             );
         }
     }
+    Ok(())
+}
+
+/// **VD-261** — quét schema UTF-8 **chỉ khi `schema_version` đổi**.
+///
+/// Trước đây mỗi `execute`/`query` đều quét toàn bộ `sqlite_master`; với schema 300 bảng,
+/// chi phí ~25–45 µs/lời gọi (đo interleaved A/B: chậm 6,8× so với trước). `schema_version`
+/// tăng khi DDL của **bất kỳ** connection nào; đọc nó là một pragma đọc rẻ, được allow-list
+/// cùng `user_version` (không ghi). Lần đầu `None` ⇒ quét; sau đó chỉ quét lại khi version đổi.
+fn kiem_schema_neu_doi(m: &mut Muc, sqlite_debug: bool) -> Result<(), String> {
+    let v: i64 = {
+        let conn = m
+            .conn
+            .as_ref()
+            .ok_or_else(|| "handle đã đóng".to_string())?;
+        conn.query_row("PRAGMA schema_version", [], |r| r.get(0))
+            .map_err(|e| loi_sqlite("lỗi đọc schema_version", e, sqlite_debug))?
+    };
+    if m.schema_ver == Some(v) {
+        return Ok(());
+    }
+    let conn = m
+        .conn
+        .as_ref()
+        .ok_or_else(|| "handle đã đóng".to_string())?;
+    kiem_schema_utf8(conn, sqlite_debug)?;
+    m.schema_ver = Some(v);
     Ok(())
 }
 
@@ -780,6 +823,7 @@ impl DbHost for Db {
             Muc {
                 path: mo_ta(path),
                 conn: Some(conn),
+                schema_ver: None,
             },
         );
         if self.giai_thich {
@@ -826,6 +870,7 @@ impl DbHost for Db {
         let ngan_sach = Duration::from_millis(self.query_ms);
         let tran_cung = self.gioi_han.hard_cell_bytes;
         let m = self.tim(h)?;
+        kiem_schema_neu_doi(m, debug)?;
         let conn = m.conn.as_mut().expect("tim() đã kiểm");
         // **Đường ghi**: trần cứng 17 MiB (đủ params 16 MiB + row 1 MiB). Đặt lại mỗi lời gọi vì
         // `query` trước đó có thể đã hạ xuống trần đọc.
@@ -852,6 +897,7 @@ impl DbHost for Db {
         let ngan_sach = Duration::from_millis(self.query_ms);
         let gh = self.gioi_han;
         let m = self.tim(h)?;
+        kiem_schema_neu_doi(m, debug)?;
         let conn = m.conn.as_mut().expect("tim() đã kiểm");
         // **Đường đọc**: hạ trần cứng về trần hàng (mặc định 1 MiB) **trước** prepare/step để
         // cell 1–17 MiB không materialize rồi mới bị cap hàng từ chối. `execute` đặt lại 17 MiB.
@@ -956,7 +1002,7 @@ fn thuc_thi(
     params: &[rusqlite::types::Value],
     sqlite_debug: bool,
 ) -> Result<i64, String> {
-    kiem_schema_utf8(conn, sqlite_debug)?;
+    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version).
     let mut stmt = conn
         .prepare(sql)
         .map_err(|e| loi_prepare("execute", e, sqlite_debug))?;
@@ -985,7 +1031,7 @@ fn truy_van(
     sqlite_debug: bool,
     gh: &GioiHan,
 ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-    kiem_schema_utf8(conn, sqlite_debug)?;
+    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version).
     let mut stmt = conn
         .prepare(sql)
         .map_err(|e| loi_prepare("query", e, sqlite_debug))?;

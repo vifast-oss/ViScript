@@ -387,9 +387,10 @@ fn authorizer_chan_attach_pragma_ghi_load_extension() {
         .db_execute(&h, "CREATE VIRTUAL TABLE tv2 USING fts5(x)", &[])
         .unwrap_err();
     assert!(e.contains("quyền (authorizer)"), "{e}");
-    // table_info và đọc user_version thì được phép.
+    // table_info và đọc user_version/schema_version thì được phép (schema_version dùng cache VD-261).
     assert!(d.db_query(&h, "PRAGMA table_info(t)", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA user_version", &[]).is_ok());
+    assert!(d.db_query(&h, "PRAGMA schema_version", &[]).is_ok());
     // DDL/CRUD/maintenance thường thì được phép.
     assert!(d.db_execute(&h, "CREATE INDEX idx_t ON t (a)", &[]).is_ok());
     assert!(d.db_execute(&h, "DROP INDEX idx_t", &[]).is_ok());
@@ -723,12 +724,14 @@ fn query_chi_doc_tu_choi_lenh_ghi_va_lenh_khong_tra_hang() {
         e, "câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`",
         "{e}"
     );
-    // Chỉ `table_info` + **đọc** `user_version` được phép; biến thể khác bị authorizer chặn.
+    // Chỉ `table_info` + **đọc** `user_version`/`schema_version` được phép; biến thể khác bị authorizer chặn.
     assert!(d.db_query(&h, "PRAGMA user_version", &[]).is_ok());
+    assert!(d.db_query(&h, "PRAGMA schema_version", &[]).is_ok());
     for sql in [
         "PRAGMA index_list(t)",
         "PRAGMA table_xinfo(t)",
         "PRAGMA user_version = 1",
+        "PRAGMA schema_version = 1",
     ] {
         let e = d.db_query(&h, sql, &[]).unwrap_err();
         assert!(e.contains("quyền (authorizer)"), "{sql}: {e}");
@@ -1276,6 +1279,38 @@ fn schema_utf8_hop_le_voi_dinh_danh_unicode_van_doc_duoc() {
     let (cols, rows) = d.db_query(&h, "SELECT \"cột\" FROM \"bảng\"", &[]).unwrap();
     assert_eq!(cols, vec!["cột".to_string()]);
     assert_eq!(rows.len(), 1);
+}
+
+/// **VD-261 (tối ưu)** — schema UTF-8 chỉ được quét lại khi `schema_version` đổi.
+/// Không quét lại mỗi `execute`/`query` (regression đo 6,8× với schema 300 bảng).
+#[test]
+fn schema_utf8_cache_theo_schema_version() {
+    let mut d = Db::moi(false);
+    let h = mo_db(&mut d);
+    d.db_execute(&h, "CREATE TABLE t (a INTEGER)", &[])
+        .expect("create");
+    // DDL vừa đổi schema_version; một lời gọi kế tiếp làm ấm cache rồi mới đo.
+    d.db_execute(&h, "INSERT INTO t VALUES (?)", &[sv_int(0)])
+        .expect("insert warm");
+    let sau_create = schema_scans_for_test();
+    for i in 1..21 {
+        d.db_execute(&h, "INSERT INTO t VALUES (?)", &[sv_int(i)])
+            .expect("insert");
+    }
+    assert_eq!(
+        schema_scans_for_test(),
+        sau_create,
+        "schema không đổi ⇒ không được quét lại mỗi lời gọi"
+    );
+    d.db_execute(&h, "ALTER TABLE t ADD COLUMN b TEXT", &[])
+        .expect("alter");
+    // DDL đổi version **sau** lần kiểm đầu của chính câu DDL; lời gọi kế tiếp phải quét lại.
+    d.db_execute(&h, "INSERT INTO t (a) VALUES (?)", &[sv_int(99)])
+        .expect("insert after ddl");
+    assert!(
+        schema_scans_for_test() > sau_create,
+        "DDL đổi schema_version ⇒ lời gọi kế tiếp phải quét lại"
+    );
 }
 
 #[test]
