@@ -25,6 +25,7 @@ use crate::rt::ReactorOp;
 use crate::value::{eq, Value};
 
 mod strfind;
+mod strlen;
 mod strpad;
 
 /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
@@ -415,7 +416,18 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let fill = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(strpad::dem(name, s, rong, fill, span)?))
         }
+        // **VD-270 (strlen)**: độ dài **byte UTF-8** (`str::len`), số **scalar Unicode**
+        // (`chars().count()` — không phải grapheme), và rỗng. Không cấp phát.
+        "str.byte_len" | "str.char_count" | "str.is_empty" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(strlen::goi(name, s))
+        }
         // ----- std.list -----
+        // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.
+        "list.is_empty" => {
+            let xs = danh_sach(name, &args[0], 0, span)?;
+            Ok(Value::Bool(xs.is_empty()))
+        }
         "list.sort" => {
             let xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             let mut ds = xs.clone();
@@ -580,6 +592,11 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             Ok(acc)
         }
         // ----- std.map -----
+        // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.
+        "map.is_empty" => {
+            let kv = ban_do(name, &args[0], 0, span)?;
+            Ok(Value::Bool(kv.is_empty()))
+        }
         "map.keys" | "map.values" => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let out: Vec<Value> = if name == "map.keys" {

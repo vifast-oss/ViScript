@@ -35,6 +35,7 @@ json.encode_pretty	(T) -> str
 list.chunk	(list[T], int) -> list[list[T]]
 list.concat	(list[T], list[T]) -> list[T]
 list.drop	(list[T], int) -> list[T]
+list.is_empty	(list[T]) -> bool
 list.max	(list[T]) -> T
 list.min	(list[T]) -> T
 list.reverse	(list[T]) -> list[T]
@@ -45,6 +46,7 @@ list.unique	(list[T]) -> list[T]
 list.windows	(list[T], int) -> list[list[T]]
 list.zip	(list[T], list[T]) -> list[list[T]]
 map.get_or	(map[K, V], str, V) -> V
+map.is_empty	(map[K, V]) -> bool
 map.keys	(map[K, V]) -> list[K]
 map.merge	(map[K, V], map[K, V]) -> map[K, V]
 map.remove	(map[K, V], str) -> map[K, V]
@@ -77,11 +79,14 @@ sqlite.open_with	(str, bool, int) -> Result[str, Error]
 sqlite.query	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.query_one	(str, str, list[SqlValue]) -> Result[RowSet, Error]
 sqlite.rollback	(str) -> Result[(), Error]
+str.byte_len	(str) -> int
 str.center	(str, int, str) -> str
+str.char_count	(str) -> int
 str.contains	(str, str) -> bool
 str.count	(str, str) -> int
 str.ends_with	(str, str) -> bool
 str.find	(str, str) -> int?
+str.is_empty	(str) -> bool
 str.join	(list[str], str) -> str
 str.lines	(str) -> list[str]
 str.lower	(str) -> str

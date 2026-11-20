@@ -197,7 +197,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 89] = [
+pub const FUNCS: [StdFn; 94] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -306,7 +306,31 @@ pub const FUNCS: [StdFn; 89] = [
         params: &[Ty::Str, Ty::Int, Ty::Str],
         ret: Ty::Str,
     },
+    // **VD-270 (strlen)**: `byte_len` = **byte UTF-8**; `char_count` = số **scalar Unicode**
+    // (`chars()`, không phải grapheme); `str.is_empty` = chuỗi rỗng. Cùng tham số đầu `str`
+    // nên sugar R5c `s.byte_len()`/`s.char_count()`/`s.is_empty()` chạy không cần `use`.
+    StdFn {
+        name: "str.byte_len",
+        params: &[Ty::Str],
+        ret: Ty::Int,
+    },
+    StdFn {
+        name: "str.char_count",
+        params: &[Ty::Str],
+        ret: Ty::Int,
+    },
+    StdFn {
+        name: "str.is_empty",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
     // ----- std.list — **ST-58 (VD-99 (4))**: `list[T]` thật (8 chữ ký đổi) -----
+    // **VD-270 (strlen)**: rỗng ⇔ 0 phần tử; `bool`, không phụ thuộc `T`.
+    StdFn {
+        name: "list.is_empty",
+        params: &[Ty::List(&Ty::Var(0))],
+        ret: Ty::Bool,
+    },
     StdFn {
         name: "list.sort",
         params: &[Ty::List(&Ty::Var(0))],
@@ -372,6 +396,12 @@ pub const FUNCS: [StdFn; 89] = [
         ret: Ty::Var(0),
     },
     // ----- std.map — **ST-58**: `map[K, V]` thật (5 chữ ký đổi) -----
+    // **VD-270 (strlen)**: rỗng ⇔ 0 cặp; `bool`, không phụ thuộc `K`/`V`.
+    StdFn {
+        name: "map.is_empty",
+        params: &[Ty::Map(&Ty::Var(1), &Ty::Var(2))],
+        ret: Ty::Bool,
+    },
     StdFn {
         name: "map.keys",
         params: &[Ty::Map(&Ty::Var(1), &Ty::Var(2))],

@@ -83,7 +83,32 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `is_file`, `is_dir`) ⇒ **86** hàm; không xoá/đổi hàm cũ nào.
     // **SỬA KÈM LÝ DO (VD-270 strfind, 2026-11-21)**: +**3** hàm `std.str.*` (`find`, `rfind`,
     // `count`; `find`/`rfind` trả `Ty::OptInt` = `int?`) ⇒ **89** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 89, "bảng chữ ký phải đủ 89 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 strlen, 2026-11-21)**: +**5** hàm — `str.byte_len`,
+    // `str.char_count`, `str.is_empty`, `list.is_empty`, `map.is_empty` ⇒ **94** hàm; không
+    // xoá/đổi hàm cũ nào (`grapheme_count` cố ý **không** thêm: cần dependency Unicode mới).
+    assert_eq!(FUNCS.len(), 94, "bảng chữ ký phải đủ 94 hàm");
+}
+
+#[test]
+fn strlen_kieu_int_va_bool() {
+    // **VD-270 (strlen)**: `byte_len`/`char_count` trả `int`; `str.is_empty`/`list.is_empty`/
+    // `map.is_empty` trả `bool`; tham số đầu đúng kiểu để R5c nhận sugar `s.byte_len()`, v.v.
+    for ten in ["str.byte_len", "str.char_count"] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
+        assert_eq!(f.params, &[Ty::Str], "`{ten}`: tham số");
+        assert_eq!(f.ret, Ty::Int, "`{ten}`: kiểu trả");
+        assert_eq!(f.ret.sang_type(), Type::Int, "`{ten}`: hạ kiểu");
+    }
+    let s = sig_of("str.is_empty").expect("str.is_empty");
+    assert_eq!(s.params, &[Ty::Str]);
+    assert_eq!(s.ret, Ty::Bool);
+    assert_eq!(s.ret.sang_type(), Type::Bool);
+    let l = sig_of("list.is_empty").expect("list.is_empty");
+    assert_eq!(l.params, &[Ty::List(&Ty::Var(0))]);
+    assert_eq!(l.ret, Ty::Bool);
+    let m = sig_of("map.is_empty").expect("map.is_empty");
+    assert_eq!(m.params, &[Ty::Map(&Ty::Var(1), &Ty::Var(2))]);
+    assert_eq!(m.ret, Ty::Bool);
 }
 
 #[test]
