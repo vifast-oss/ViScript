@@ -375,7 +375,9 @@ pub fn verify(m: &Module) -> Result<(), VerifyError> {
                 | Instr::StoreLocal(s)
                 | Instr::Assign(s)
                 | Instr::BindLocal(s) => {
-                    if s >= f.nlocals {
+                    // **ST-238 (VD-242, ca 3)**: ô `>= GLOBAL_SLOT_BASE` là biến cấp tệp, do VM
+                    // ánh xạ tới kho chung — không tính vào `nlocals` của khung.
+                    if s < crate::format::GLOBAL_SLOT_BASE && s >= f.nlocals {
                         return Err(VerifyError::LocalOverflow {
                             func,
                             pc,

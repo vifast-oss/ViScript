@@ -40,6 +40,16 @@ pub const VERSION: u16 = 1;
 /// Số byte hash nguồn.
 pub const HASH_LEN: usize = 32;
 
+/// **ST-238 (VD-242, ca 3)** — vùng ô cục bộ dành riêng cho **biến cấp tệp** (`let`/`var`
+/// ở thân tệp). Codegen dùng `LoadLocal`/`StoreLocal` với chỉ số `>= GLOBAL_SLOT_BASE`; VM ánh xạ
+/// các chỉ số này tới kho chung `Vm::globals`, verifier bỏ qua kiểm `nlocals` cho chúng. Đây là
+/// **quy ước nội bộ** — không đổi `Instr`/`VERSION`/định dạng VBC1.
+pub const GLOBAL_SLOT_BASE: u16 = 0x8000;
+
+/// **ST-238 (VD-242, ca 7)** — tên builtin giả để VM trap khi `match` rơi khỏi mọi nhánh.
+/// Không phải builtin thật; VM chặn trước khi gọi `vis_interp::builtin::call`.
+pub const BI_MATCH_NO_ARM: &str = "$vis_match_no_arm";
+
 /// Hằng trong **const pool** — giữ **nguyên văn** literal HIR (cùng `LitKind`) để không mất mát.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Const {

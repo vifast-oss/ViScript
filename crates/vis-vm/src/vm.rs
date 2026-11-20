@@ -5,7 +5,11 @@
 //! khung tách riêng để `return` lồng nhau sạch; iterator của `for` nằm ở `iters` (không lẫn với
 //! ngăn xếp giá trị).
 
-use vis_bytecode::{Func, Instr, Module};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use vis_bytecode::{Func, Instr, Module, BI_MATCH_NO_ARM, GLOBAL_SLOT_BASE};
 use vis_interp::builtin::{self, Host};
 use vis_interp::interp::{Abort, Trap, IDX, R, RT};
 use vis_interp::value::{self, Value, VmFunc};
@@ -113,6 +117,10 @@ impl core::fmt::Display for VmError {
     }
 }
 
+/// **ST-238 (VD-242, ca 8)**: ô chia sẻ của closure và cặp `(ô cục bộ mirror, chỉ số ô bắt)`.
+type ClosureCells = Rc<RefCell<Vec<Value>>>;
+type CapturedMirror = Vec<(u16, usize)>;
+
 struct Frame {
     fi: u32,
     pc: usize,
@@ -120,6 +128,10 @@ struct Frame {
     captured: Vec<Value>,
     /// Ngăn xếp **của khung gọi** được cất khi gọi hàm (mỗi khung một ngăn xếp riêng).
     st_cu: Vec<Value>,
+    /// **ST-238 (VD-242, ca 8)**: nếu khung là một lần gọi closure, chứa ô chia sẻ của closure
+    /// và cặp `(ô cục bộ, chỉ số biến bắt)` để ghi ngược giá trị khi khung kết thúc — giúp closure
+    /// ghi biến bắt `var` giữ trạng thái **giữa các lần gọi** mà vẫn không đụng biến ngoài.
+    writeback: Option<(ClosureCells, CapturedMirror)>,
 }
 
 /// Máy ảo: giữ module + văn bản nguồn + `stdout` + số bước.
@@ -145,6 +157,10 @@ pub struct Vm<'a> {
     sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
     caps: Vec<(u32, Value)>,
+    /// **ST-238 (VD-242, ca 3)**: kho biến cấp tệp, ánh xạ từ ô `>= GLOBAL_SLOT_BASE`.
+    globals: Vec<Value>,
+    /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của từng closure, khoá bằng địa chỉ `Rc<VmFunc>`.
+    closure_cells: HashMap<usize, ClosureCells>,
 }
 
 impl<'a> Vm<'a> {
@@ -163,6 +179,8 @@ impl<'a> Vm<'a> {
             ngoai: None,
             sched: std::cell::RefCell::new(vis_interp::rt::Scheduler::new()),
             caps: Vec::new(),
+            globals: Vec::new(),
+            closure_cells: HashMap::new(),
         }
     }
 
@@ -409,10 +427,10 @@ impl Host for Vm<'_> {
 
     /// **ST-60**: handle của VM là **chỉ số hàm bytecode** — chạy bằng `goi_ham_bytecode`.
     fn goi_than(&mut self, fi: u32, args: Vec<Value>, span: Span) -> R<Value> {
-        let f = VmFunc {
+        let f = Rc::new(VmFunc {
             idx: fi,
             captured: Vec::new(),
-        };
+        });
         self.goi_ham_bytecode(&f, args, span)
     }
 
@@ -438,7 +456,7 @@ impl Host for Vm<'_> {
 }
 
 impl Vm<'_> {
-    fn goi_ham_bytecode(&mut self, f: &VmFunc, args: Vec<Value>, span: Span) -> R<Value> {
+    fn goi_ham_bytecode(&mut self, f: &Rc<VmFunc>, args: Vec<Value>, span: Span) -> R<Value> {
         if self.depth + 1 >= MAX_FRAMES {
             return Err(Abort::Trap(Trap::new(
                 RT,
@@ -446,14 +464,46 @@ impl Vm<'_> {
                 span,
             )));
         }
-        let fc = self.func(f.idx)?;
-        let mut locals = vec![Value::Unit; fc.nlocals.max(1) as usize];
+        let m = self.m;
+        let fc = m
+            .funcs
+            .get(f.idx as usize)
+            .ok_or_else(|| self.hong(VmError::BadIdx(f.idx), span))?;
+        let nlocals = fc.nlocals.max(1) as usize;
+        // **ST-238 (VD-242, ca 8)**: nhận diện prologue `LoadCaptured(i); Assign(slot)` — các ô
+        // cục bộ này là **mirror** của ô chia sẻ; khi khung kết thúc phải ghi ngược vào ô đó.
+        let mut mirror: Vec<(u16, usize)> = Vec::new();
+        let mut k = 0;
+        while k + 1 < fc.code.len() {
+            if let (Instr::LoadCaptured(i), Instr::Assign(slot)) = (fc.code[k], fc.code[k + 1]) {
+                mirror.push((slot, i as usize));
+                k += 2;
+            } else {
+                break;
+            }
+        }
+        let mut locals = vec![Value::Unit; nlocals];
         for (i, a) in args.into_iter().enumerate() {
             if i < locals.len() {
                 locals[i] = a;
             }
         }
-        let mut th = Th::new(self.m, f.idx, locals, f.captured.clone());
+        // **ST-238 (VD-242, ca 8)**: ô chia sẻ theo địa chỉ closure — giá trị khởi tạo lấy từ
+        // `MakeClosure` (hoặc từ `f.captured` nếu closure dựng sẵn không qua `MakeClosure`).
+        let ptr = Rc::as_ptr(f) as usize;
+        let cells = match self.closure_cells.get(&ptr) {
+            Some(c) => c.clone(),
+            None => {
+                let c = Rc::new(RefCell::new(f.captured.clone()));
+                self.closure_cells.insert(ptr, c.clone());
+                c
+            }
+        };
+        let captured = cells.borrow().clone();
+        let mut th = Th::new(m, f.idx, locals, captured);
+        if let Some(fr) = th.frames.first_mut() {
+            fr.writeback = Some((cells, mirror));
+        }
         self.depth += 1;
         let v = th.exec(self);
         self.depth -= 1;
@@ -467,6 +517,9 @@ struct Th<'m> {
     frames: Vec<Frame>,
     st: Vec<Value>,
     iters: Vec<(Vec<Value>, usize)>,
+    /// **ST-238 (VD-242, ca 1)**: `(fi, pc_kết_thúc, độ_sâu_iters_trước_vòng)` cho mỗi `for`
+    /// đang mở — để `break` nhảy tới cuối vòng thì cũng pop iterator như `IterNext` hết vòng.
+    loop_ends: Vec<(u32, usize, usize)>,
 }
 
 impl<'m> Th<'m> {
@@ -479,9 +532,11 @@ impl<'m> Th<'m> {
                 locals,
                 captured,
                 st_cu: Vec::new(),
+                writeback: None,
             }],
             st: Vec::new(),
             iters: Vec::new(),
+            loop_ends: Vec::new(),
         }
     }
 
@@ -503,6 +558,40 @@ impl<'m> Th<'m> {
         }
         v.reverse();
         Ok(v)
+    }
+
+    /// **ST-238 (VD-242, ca 1)**: đặt `pc` cho khung hiện tại, đồng thời nếu đích là `pc` kết
+    /// thúc của một vòng `for` đang mở thì pop iterator của vòng đó — `break` nhảy tới cuối vòng
+    /// phải có cùng hiệu ứng với `IterNext` khi hết phần tử, nếu không iterator vòng trong còn
+    /// nằm trên chồng và vòng ngoài sẽ đọc nhầm ⇒ lặp vô hạn.
+    fn dat_pc(&mut self, pc: usize) {
+        let fi = self.frames.last().expect("khung").fi;
+        if let Some(idx) = self
+            .loop_ends
+            .iter()
+            .rposition(|(f, end, _)| *f == fi && *end == pc)
+        {
+            let base = self.loop_ends[idx].2;
+            if self.iters.len() > base {
+                self.iters.truncate(base);
+            }
+            self.loop_ends.remove(idx);
+        }
+        self.frames.last_mut().expect("khung").pc = pc;
+    }
+
+    /// **ST-238 (VD-242, ca 8)**: pop khung + ghi ngược ô mirror của closure vào ô chia sẻ.
+    fn pop_frame(&mut self) -> Option<Frame> {
+        let fr = self.frames.pop()?;
+        if let Some((cells, mirror)) = &fr.writeback {
+            let mut c = cells.borrow_mut();
+            for (slot, i) in mirror {
+                if let (Some(dst), Some(src)) = (c.get_mut(*i), fr.locals.get(*slot as usize)) {
+                    *dst = src.clone();
+                }
+            }
+        }
+        Some(fr)
     }
 
     fn day(&self, fr: &Frame, pc: i64, vm: &Vm<'_>, span: Span, what: &str) -> R<()> {
@@ -530,7 +619,7 @@ impl<'m> Th<'m> {
             if fr.pc >= f.code.len() {
                 // Hết mã mà không `Return`/`Halt` — trả `()`.
                 let v = Value::Unit;
-                self.frames.pop();
+                self.pop_frame();
                 match self.frames.last_mut() {
                     None => return Ok(v),
                     Some(f) => {
@@ -561,18 +650,34 @@ impl<'m> Th<'m> {
                     self.st.push(v);
                 }
                 Instr::LoadLocal(i) => {
-                    let fr = self.frames.last().expect("khung");
-                    let v = fr.locals.get(i as usize).cloned().unwrap_or(Value::Unit);
+                    // **ST-238 (VD-242, ca 3)**: ô `>= GLOBAL_SLOT_BASE` là biến cấp tệp dùng chung.
+                    let v = if i >= GLOBAL_SLOT_BASE {
+                        vm.globals
+                            .get((i - GLOBAL_SLOT_BASE) as usize)
+                            .cloned()
+                            .unwrap_or(Value::Unit)
+                    } else {
+                        let fr = self.frames.last().expect("khung");
+                        fr.locals.get(i as usize).cloned().unwrap_or(Value::Unit)
+                    };
                     self.st.push(v);
                 }
                 Instr::StoreLocal(i) | Instr::Assign(i) | Instr::BindLocal(i) => {
                     let v = self.pop(vm, span)?;
-                    let fr = self.frames.last_mut().expect("khung");
-                    if (i as usize) < fr.locals.len() {
-                        fr.locals[i as usize] = v;
+                    if i >= GLOBAL_SLOT_BASE {
+                        let k = (i - GLOBAL_SLOT_BASE) as usize;
+                        if vm.globals.len() <= k {
+                            vm.globals.resize(k + 1, Value::Unit);
+                        }
+                        vm.globals[k] = v;
                     } else {
-                        fr.locals.resize(i as usize + 1, Value::Unit);
-                        fr.locals[i as usize] = v;
+                        let fr = self.frames.last_mut().expect("khung");
+                        if (i as usize) < fr.locals.len() {
+                            fr.locals[i as usize] = v;
+                        } else {
+                            fr.locals.resize(i as usize + 1, Value::Unit);
+                            fr.locals[i as usize] = v;
+                        }
                     }
                 }
                 Instr::LoadCaptured(i) => {
@@ -629,11 +734,21 @@ impl<'m> Th<'m> {
                         locals,
                         captured: Vec::new(),
                         st_cu: Vec::new(),
+                        writeback: None,
                     });
                 }
                 Instr::CallBuiltin(i, n) => {
                     let ten = vm.ten(i, span)?;
                     let args = self.pop_n(vm, n as usize, span)?;
+                    // **ST-238 (VD-242, ca 7)**: builtin giả do codegen phát ở nhánh `match` rơi —
+                    // trap `VS0501` với cùng thông điệp/span của interp, không im lặng đi tiếp.
+                    if ten == BI_MATCH_NO_ARM {
+                        return Err(Abort::Trap(Trap::new(
+                            RT,
+                            "`match` không khớp nhánh nào (không xét hết bị lọt)",
+                            span,
+                        )));
+                    }
                     let v = builtin::call(vm, &ten, args, span)?;
                     self.st.push(v);
                 }
@@ -651,7 +766,7 @@ impl<'m> Th<'m> {
                         self.day(fr, pc, vm, span, "Jump")?;
                         pc
                     };
-                    self.frames.last_mut().expect("khung").pc = pc as usize;
+                    self.dat_pc(pc as usize);
                 }
                 Instr::JumpIfFalse(d) => {
                     let v = self.pop(vm, span)?;
@@ -663,7 +778,7 @@ impl<'m> Th<'m> {
                             self.day(fr, pc, vm, span, "JumpIfFalse")?;
                             pc
                         };
-                        self.frames.last_mut().expect("khung").pc = pc as usize;
+                        self.dat_pc(pc as usize);
                     }
                 }
                 Instr::JumpIfNotTrue(d) => {
@@ -679,7 +794,7 @@ impl<'m> Th<'m> {
                             self.day(fr, pc, vm, span, "JumpIfNotTrue")?;
                             pc
                         };
-                        self.frames.last_mut().expect("khung").pc = pc as usize;
+                        self.dat_pc(pc as usize);
                     }
                 }
                 Instr::JumpIfNone(d) => {
@@ -692,7 +807,7 @@ impl<'m> Th<'m> {
                             self.day(fr, pc, vm, span, "JumpIfNone")?;
                             pc
                         };
-                        self.frames.last_mut().expect("khung").pc = pc as usize;
+                        self.dat_pc(pc as usize);
                     }
                 }
                 Instr::JumpIfSome(d) => {
@@ -705,14 +820,14 @@ impl<'m> Th<'m> {
                             self.day(fr, pc, vm, span, "JumpIfSome")?;
                             pc
                         };
-                        self.frames.last_mut().expect("khung").pc = pc as usize;
+                        self.dat_pc(pc as usize);
                     }
                 }
                 Instr::Return | Instr::Halt => {
                     // **VD-241 §3/T5 (A0, 2026-11-19)** — `Halt` giữ nguyên giá trị trên ngăn xếp
                     // (không ép về `()`); `Result::Err` của `main` đi thẳng ra `RunOutput.exit` ⇒ CLI exit 1.
                     let v = self.st.pop().unwrap_or(Value::Unit);
-                    self.frames.pop();
+                    self.pop_frame();
                     match self.frames.last_mut() {
                         None => return Ok(v),
                         Some(f) => {
@@ -772,10 +887,15 @@ impl<'m> Th<'m> {
                 }
                 Instr::MakeClosure(fi, n) => {
                     let cap = self.pop_n(vm, n as usize, span)?;
-                    self.st.push(Value::Vm(std::rc::Rc::new(VmFunc {
+                    let func = Rc::new(VmFunc {
                         idx: fi,
-                        captured: cap,
-                    })));
+                        captured: cap.clone(),
+                    });
+                    // **ST-238 (VD-242, ca 8)**: tạo ô chia sẻ ngay lúc tạo closure. Mọi lần gọi
+                    // cùng closure dùng chung ô này ⇒ ghi biến bắt `var` không bị reset.
+                    let ptr = Rc::as_ptr(&func) as usize;
+                    vm.closure_cells.insert(ptr, Rc::new(RefCell::new(cap)));
+                    self.st.push(Value::Vm(func));
                 }
                 Instr::Field(i) => {
                     let ten = vm.ten(i, span)?;
@@ -833,6 +953,17 @@ impl<'m> Th<'m> {
                     self.st.push(Value::Str(s));
                 }
                 Instr::IterInit => {
+                    // **ST-238 (VD-242, ca 1)**: `IterInit` ngay trước `IterNext`; tính `pc` kết
+                    // thúc vòng từ offset của `IterNext` để nhận diện `break` nhảy tới đó.
+                    let fi = self.frames.last().expect("khung").fi;
+                    let base = self.iters.len();
+                    let next_pc = self.frames.last().expect("khung").pc;
+                    if let Some(Instr::IterNext(d)) = self.m.funcs[fi as usize].code.get(next_pc) {
+                        let end_pc = next_pc as i64 + i64::from(*d);
+                        if end_pc >= 0 {
+                            self.loop_ends.push((fi, end_pc as usize, base));
+                        }
+                    }
                     let it = self.pop(vm, span)?;
                     let items = value::iter_items(it, span)?;
                     self.iters.push((items, 0));
@@ -849,7 +980,7 @@ impl<'m> Th<'m> {
                             self.day(fr, pc, vm, span, "IterNext")?;
                             pc
                         };
-                        self.frames.last_mut().expect("khung").pc = pc as usize;
+                        self.dat_pc(pc as usize);
                     } else {
                         let v = items[*i].clone();
                         *i += 1;
@@ -971,7 +1102,7 @@ impl<'m> Th<'m> {
                             if (ea == "Option" && va == "None")
                                 || (ea == "Result" && va == "Err") =>
                         {
-                            self.frames.pop();
+                            self.pop_frame();
                             match self.frames.last_mut() {
                                 None => return Ok(v),
                                 Some(f) => {

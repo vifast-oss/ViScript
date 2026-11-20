@@ -189,7 +189,9 @@ impl NetHost for Net {
         let s = self.tim(tay)?;
         s.set_read_timeout(Some(Duration::from_millis(timeout_ms.max(1))))
             .map_err(|e| format!("không đặt được timeout đọc cho `{tay}`: {e}"))?;
-        let mut buf = vec![0u8; toi_da];
+        // **ST-238 / VD-242 (nợ #167)**: hàng rào thứ hai — dù caller có truyền `usize` lớn (lỗi
+        // chuyển kiểu/overflow), không bao giờ cấp phát quá trần ⇒ không OOM/abort do input.
+        let mut buf = vec![0u8; toi_da.min(vis_interp::stdlib::NET_READ_CAP as usize)];
         match s.read(&mut buf) {
             Ok(0) => Ok(Vec::new()),
             Ok(n) => {

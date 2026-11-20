@@ -163,6 +163,28 @@ fn dong_chan_doan(code: &str, line: u32, col: u32, message: &str) -> String {
     )
 }
 
+/// **ST-238 / VD-242 (nợ #181)**: `--dry`/`--sandbox-check` không được nuốt lỗi cú pháp rồi in
+/// “không khai báo quyền” với exit 0. Probes chỉ đọc CST nên trước đây bỏ qua chẩn đoán parse.
+/// Ta kiểm parse ngay sau khi đọc tệp, in cùng định dạng `vis run` và trả exit 2 như đường thường.
+fn kiem_cu_phap_probe(tep: &str, text: &str, mode: Mode) -> Option<ExitCode> {
+    let parsed = vis_syntax::parse(text, mode);
+    let loi: Vec<_> = parsed
+        .diagnostics
+        .iter()
+        .filter(|d| d.code.severity == vis_diag::Severity::Error)
+        .collect();
+    if loi.is_empty() {
+        return None;
+    }
+    for d in loi {
+        eprintln!(
+            "{tep}:{}:{}: error {}: {}",
+            d.line, d.col, d.code.short, d.message
+        );
+    }
+    Some(ExitCode::from(2))
+}
+
 /// `vis run [--tap] <tệp.vis> [-- args…]` — parse → lower → check → interp (ST-14).
 pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut tap = false;
@@ -296,11 +318,17 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // **ST-73 (VD-107)**: `--sandbox-check` — probe Landlock **chỉ đọc** + mức cưỡng chế runtime;
     // in **stdout**, exit 0/3/4, **không** chạy chương trình.
     if sandbox_check {
+        if let Some(ma) = kiem_cu_phap_probe(&tep, &text, che_do) {
+            return ma;
+        }
         let caps = quyen::ds_cap(&text, che_do);
         return in_sandbox_check(&caps);
     }
     // **ST-72 (VD-106 (2))**: `--dry` — chỉ in quyền từ CST của `main`, exit 0, **không** chạy.
     if dry {
+        if let Some(ma) = kiem_cu_phap_probe(&tep, &text, che_do) {
+            return ma;
+        }
         return run_dry(&tep, &text, che_do);
     }
     // **ST-72b (VD-103/VD-106)**: quyền theo `cap` của `main` + `--grant`.
@@ -649,5 +677,26 @@ fn main() -> ExitCode {
         Some("pkg") => pkg::run(&args[1..]),
         Some("fmt") => cli::fmt::run_fmt(&args[1..]),
         _ => usage(),
+    }
+}
+
+#[cfg(test)]
+mod st238_tests {
+    use super::*;
+
+    #[test]
+    fn probe_khong_nuot_loi_cu_phap() {
+        let bad = "fn main(:\n    print(\"x\")\n";
+        assert_eq!(
+            kiem_cu_phap_probe("bad.vis", bad, Mode::Script),
+            Some(ExitCode::from(2)),
+            "tệp sai cú pháp ⇒ exit 2"
+        );
+        let ok = "fn main():\n    print(\"x\")\n";
+        assert_eq!(
+            kiem_cu_phap_probe("ok.vis", ok, Mode::Script),
+            None,
+            "tệp hợp lệ ⇒ tiếp tục probe"
+        );
     }
 }

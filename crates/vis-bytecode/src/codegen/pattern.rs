@@ -274,7 +274,8 @@ impl Emit<'_> {
         self.f.patch(j_else, le);
         if let Some(sym) = e.bind_sym {
             self.f.push(Instr::Unwrap(0), span, 0);
-            let slot = self.f.slot(sym, span)?;
+            // **ST-238 (VD-242, ca 3)**: `slot_cua` để `let … else err:` cấp tệp ghi đúng ô chung.
+            let slot = self.slot_cua(sym)?;
             self.f.push(Instr::BindLocal(slot), span, -1);
         } else {
             self.f.push(Instr::Pop, span, -1);

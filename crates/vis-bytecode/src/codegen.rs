@@ -11,6 +11,7 @@
 //!   độc lập từ byte stream** — không tin giá trị này.
 
 mod builtin_value;
+mod gia_tri;
 mod if_expr;
 mod pattern;
 mod than;
@@ -145,6 +146,12 @@ struct Gen {
     sym_ty: HashMap<u32, vis_types::Type>,
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
+    /// **ST-238 (VD-242, ca 3)**: `sym` của biến `let`/`var` cấp tệp → ô trong vùng
+    /// [`crate::format::GLOBAL_SLOT_BASE`]. Mọi hàm đọc/ghi qua vùng này dùng chung một kho ở VM.
+    globals: HashMap<u32, u16>,
+    /// **ST-238 (VD-242, ca 4)**: `sym` của `const` cấp tệp → biểu thức giá trị (inline tại
+    /// mỗi chỗ dùng, như interp nạp hằng lúc load).
+    hconsts: HashMap<u32, HExpr>,
     hash: [u8; HASH_LEN],
 }
 
@@ -155,6 +162,48 @@ struct Cho {
     captured: Vec<(u32, u16)>,
     name: String,
     ret_depth: usize,
+}
+
+/// **ST-238 (VD-242, ca 3)**: gom mọi `sym` được bind bởi một pattern (dùng để đăng ký biến
+/// cấp tệp). Không gọi mã người dùng (VD-242 §3.4) — chỉ đi cấu trúc HIR.
+fn pat_syms(p: &HPat, out: &mut Vec<u32>) {
+    match p {
+        HPat::Bind { sym, .. } => out.push(*sym),
+        HPat::Ctor { args, .. } => {
+            for a in args {
+                pat_syms(a, out);
+            }
+        }
+        HPat::Tuple { items, .. } | HPat::List { items, .. } => {
+            for it in items {
+                pat_syms(it, out);
+            }
+            if let HPat::List { rest: Some(r), .. } = p {
+                pat_syms(r, out);
+            }
+        }
+        HPat::Record { fields, .. } => {
+            for (_, sub) in fields {
+                if let Some(sub) = sub {
+                    pat_syms(sub, out);
+                }
+            }
+        }
+        HPat::Or { alts, .. } => {
+            for a in alts {
+                pat_syms(a, out);
+            }
+        }
+        HPat::Range { lo, hi, .. } => {
+            if let Some(lo) = lo {
+                pat_syms(lo, out);
+            }
+            if let Some(hi) = hi {
+                pat_syms(hi, out);
+            }
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
+    }
 }
 
 impl Gen {
@@ -225,12 +274,18 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
         fparams: HashMap::new(),
         cho: Vec::new(),
         async_fns: std::collections::HashSet::new(),
+        globals: HashMap::new(),
+        hconsts: HashMap::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
         sym_ty: crate::util::sym_annot_map(symbols),
         hash: crate::format::source_hash(text),
     };
     // Lượt 1: cấp chỉ số cho mọi hàm cấp tệp + ghi tên enum.
     for it in &hir.items {
+        // **ST-238 (VD-242, ca 4)**: gom `const` cấp tệp để inline tại chỗ dùng.
+        if let HItem::Const(c) = it {
+            g.hconsts.insert(c.sym, c.value.clone());
+        }
         if let HItem::Enum(e) = it {
             g.enums.insert(e.sym, e.name.clone());
         }
@@ -255,6 +310,31 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
                 f.params.iter().map(|p| (p.name.clone(), p.named)).collect(),
             );
             g.funcs.push(Func::default());
+        }
+    }
+    // **ST-238 (VD-242, ca 3)**: đăng ký biến cấp tệp (`let`/`var` ở thân tệp) vào vùng ô chung.
+    // Cấp phát **trước** khi phát thân hàm để mọi hàm thấy cùng một `sym` → cùng một ô.
+    {
+        let mut syms: Vec<u32> = Vec::new();
+        for s in &hir.stmts {
+            match s {
+                HStmt::Let { pat, else_, .. } => {
+                    pat_syms(pat, &mut syms);
+                    if let Some(e) = else_ {
+                        if let Some(sym) = e.bind_sym {
+                            syms.push(sym);
+                        }
+                    }
+                }
+                HStmt::Var { sym, .. } => syms.push(*sym),
+                _ => {}
+            }
+        }
+        for sym in syms {
+            if !g.globals.contains_key(&sym) {
+                let slot = crate::format::GLOBAL_SLOT_BASE + g.globals.len() as u16;
+                g.globals.insert(sym, slot);
+            }
         }
     }
     // `main` — câu lệnh cấp tệp.
@@ -430,7 +510,10 @@ impl<'g> Emit<'g> {
             } => {
                 self.expr(init)?;
                 self.lift_to_annot(ty.as_ref(), *span)?; // biên khai `var` như `let` (mirror interp)
-                let slot = self.f.slot(*sym, *span)?;
+                                                         // **ST-238 (VD-242, ca 3)**: dùng `slot_cua` (không phải `f.slot` trực tiếp) để
+                                                         // `var` cấp tệp ghi vào ô chung — nếu không, khai báo ghi ô 0 nhưng mọi lần đọc
+                                                         // lại lấy ô global ⇒ `()` (hồi quy 10k async task).
+                let slot = self.slot_cua(*sym)?;
                 self.f.push(Instr::StoreLocal(slot), *span, -1);
                 self.net_stack(*span)
             }
@@ -644,10 +727,25 @@ impl<'g> Emit<'g> {
                 let back = self.f.code.len() - 1;
                 self.f.patch(back, start);
                 let end = self.f.here();
-                self.f.patch(jf, end);
-                if let Some(v) = self.loops.pop() {
-                    for b in v.breaks {
-                        self.f.patch(b, end);
+                // **ST-238 (VD-242, ca 2)**: `while let` — `cond()` để giá trị pattern trên ngăn
+                // xếp ở nhánh sai (`if let` có `Pop` ở caller, `while` thì thiếu ⇒ verify lệch độ
+                // sâu 1/0). Nhánh sai phải `Pop` trước khi rời vòng; `break` ( stack đã sạch ) nhảy
+                // **qua** `Pop` đó.
+                if matches!(cond, HCond::Let { .. }) {
+                    self.f.push(Instr::Pop, *span, -1);
+                    let sau_pop = self.f.here();
+                    self.f.patch(jf, end);
+                    if let Some(v) = self.loops.pop() {
+                        for b in v.breaks {
+                            self.f.patch(b, sau_pop);
+                        }
+                    }
+                } else {
+                    self.f.patch(jf, end);
+                    if let Some(v) = self.loops.pop() {
+                        for b in v.breaks {
+                            self.f.patch(b, end);
+                        }
                     }
                 }
                 Ok(())
@@ -742,6 +840,8 @@ impl<'g> Emit<'g> {
                     }
                 }
                 self.f.push(Instr::Pop, *span, -1);
+                // **ST-238 (VD-242, ca 7)** — rơi khỏi mọi nhánh ⇒ trap, không im lặng đi tiếp.
+                self.trap_no_arm(*span, false)?;
                 let end = self.f.here();
                 for j in jend {
                     self.f.patch(j, end);
@@ -752,6 +852,10 @@ impl<'g> Emit<'g> {
     }
 
     fn slot_cua(&mut self, sym: u32) -> Result<u16, CodegenError> {
+        // **ST-238 (VD-242, ca 3)**: biến cấp tệp dùng ô chung (VM ánh xạ tới `Vm::globals`).
+        if let Some(s) = self.g.globals.get(&sym).copied() {
+            return Ok(s);
+        }
         if let Some(s) = self.captured.get(&sym) {
             return Ok(*s);
         }
@@ -759,6 +863,18 @@ impl<'g> Emit<'g> {
     }
 
     fn net_stack(&mut self, _span: Span) -> Result<(), CodegenError> {
+        Ok(())
+    }
+
+    /// **ST-238 (VD-242, ca 7)**: phát một lời gọi builtin giả mà VM chặn lại và trap `VS0501`
+    /// với đúng thông điệp của interp. `keep_value = true` (ngữ cảnh giá trị) thì để lại một giá trị
+    /// trên ngăn xếp cho verifier — các nhánh khác cũng để lại một giá trị.
+    fn trap_no_arm(&mut self, span: Span, keep_value: bool) -> Result<(), CodegenError> {
+        let n = self.g.cst_str(crate::format::BI_MATCH_NO_ARM);
+        self.f.push(Instr::CallBuiltin(n, 0), span, 1);
+        if !keep_value {
+            self.f.push(Instr::Pop, span, -1);
+        }
         Ok(())
     }
 
@@ -814,6 +930,12 @@ impl<'g> Emit<'g> {
                     self.f.push(Instr::MakeNone, *span, 1);
                     return Ok(());
                 }
+                // **ST-238 (VD-242, ca 4)**: `const` cấp tệp — inline giá trị như interp nạp lúc load.
+                if let Some(id) = sym {
+                    if let Some(v) = self.g.hconsts.get(id).cloned() {
+                        return self.expr(&v);
+                    }
+                }
                 match sym {
                     Some(id) if self.g.fmap.contains_key(id) => {
                         // Tên hàm dùng như **giá trị** ⇒ closure 0 biến bắt.
@@ -821,7 +943,9 @@ impl<'g> Emit<'g> {
                         self.f.push(Instr::MakeClosure(fi, 0), *span, 1);
                     }
                     Some(id) => {
-                        if let Some(s) = self.captured.get(id) {
+                        if let Some(s) = self.g.globals.get(id).copied() {
+                            self.f.push(Instr::LoadLocal(s), *span, 1);
+                        } else if let Some(s) = self.captured.get(id) {
                             let s = *s;
                             self.f.push(Instr::LoadCaptured(s), *span, 1);
                         } else {
@@ -1351,139 +1475,6 @@ impl<'g> Emit<'g> {
 
     fn unit_cst_x(&mut self) -> u32 {
         self.g.cst(LitKind::Bool, "false")
-    }
-
-    /// Nhánh "có giá trị": câu lệnh cuối là `Expr` ⇒ **giữ** giá trị trên ngăn xếp.
-    fn nhanh_gia_tri(&mut self, body: &[HStmt]) -> Result<(), CodegenError> {
-        if let Some((last, rest)) = body.split_last() {
-            for s in rest {
-                self.cau(s)?;
-            }
-            self.tra_gia_tri(last)
-        } else {
-            self.f.push(Instr::PushUnit, Span::new(0, 0), 1);
-            Ok(())
-        }
-    }
-
-    /// Như [`Self::cau`] nhưng `HStmt::Expr` **không** bị `Pop` (để lại giá trị).
-    fn tra_gia_tri(&mut self, s: &HStmt) -> Result<(), CodegenError> {
-        match s {
-            HStmt::Expr(e) => self.expr(e),
-            HStmt::If {
-                cond,
-                then,
-                elifs,
-                else_,
-                span,
-            } => {
-                let mut jend: Vec<usize> = Vec::new();
-                let mut jf = self.cond(cond)?;
-                // **R3a (VD-178)**: `if let` để giá trị cho nhánh `then` bind; nhánh `else`/`elif`
-                // phải `Pop` nó trước.
-                let mut cond_let = matches!(cond, HCond::Let { .. });
-                self.nhanh_gia_tri(then)?;
-                jend.push(self.f.here());
-                self.f.push(Instr::Jump(0), *span, 0);
-                let mut prev = jf.take();
-                for (c, body) in elifs {
-                    let at = self.f.here();
-                    if let Some(p) = prev {
-                        self.f.patch(p, at);
-                    }
-                    if cond_let {
-                        self.f.push(Instr::Pop, *span, -1);
-                    }
-                    let mut j = self.cond(c)?;
-                    cond_let = matches!(c, HCond::Let { .. });
-                    self.nhanh_gia_tri(body)?;
-                    jend.push(self.f.here());
-                    self.f.push(Instr::Jump(0), *span, 0);
-                    prev = j.take();
-                }
-                let at = self.f.here();
-                if let Some(p) = prev {
-                    self.f.patch(p, at);
-                }
-                if cond_let {
-                    self.f.push(Instr::Pop, *span, -1);
-                }
-                match else_ {
-                    Some(b) => self.nhanh_gia_tri(b)?,
-                    // **ST-60b**: `if` **không** `else` ⇒ giá trị `()` thật (trước: `str("")`).
-                    None => self.f.push(Instr::PushUnit, *span, 1),
-                }
-                let end = self.f.here();
-                for j in jend {
-                    self.f.patch(j, end);
-                }
-                Ok(())
-            }
-            HStmt::Match {
-                subject,
-                arms,
-                span,
-            } => {
-                self.expr(subject)?;
-                let mut jend = Vec::new();
-                let mut guardas: Vec<usize> = Vec::new();
-                let mut cuoi: Vec<(usize, Vec<usize>)> = Vec::new();
-                for (i, arm) in arms.iter().enumerate() {
-                    self.f.push(Instr::Dup, *span, 1);
-                    let jf = self.test(&arm.pat, *span)?;
-                    let br = self.f.here();
-                    self.f.push(Instr::JumpIfFalse(0), *span, -1);
-                    if let Some(j) = jf {
-                        self.f.patch(j, br + 1);
-                    }
-                    // Bind **trước** guard (interp bind rồi mới xét guard); giữ subject để `Pop`.
-                    self.bind(&arm.pat, *span, false)?;
-                    if let Some(gd) = &arm.guard {
-                        self.expr(gd)?;
-                        let g = self.f.here();
-                        self.f.push(Instr::JumpIfFalse(0), *span, -1);
-                        guardas.push(g);
-                    }
-                    self.f.push(Instr::Pop, *span, -1);
-                    self.nhanh_gia_tri(&arm.body)?;
-                    jend.push(self.f.here());
-                    self.f.push(Instr::Jump(0), *span, 0);
-                    let next = self.f.here();
-                    if i + 1 == arms.len() {
-                        // Nhánh **cuối** trượt ⇒ `Pop` subject trước khi đẩy giá trị dự phòng.
-                        cuoi.push((br, guardas.clone()));
-                    } else {
-                        self.f.patch(br, next);
-                        for g in guardas.drain(..) {
-                            self.f.patch(g, next);
-                        }
-                    }
-                }
-                let lpop = self.f.here();
-                self.f.push(Instr::Pop, *span, -1);
-                for (br, gs) in cuoi {
-                    self.f.patch(br, lpop);
-                    for g in gs {
-                        self.f.patch(g, lpop);
-                    }
-                }
-                let c = self.unit_cst_x();
-                self.f.push(Instr::Const(c), *span, 1);
-                let end = self.f.here();
-                for j in jend {
-                    self.f.patch(j, end);
-                }
-                Ok(())
-            }
-            HStmt::Scope { body, .. } | HStmt::Block { body, .. } => self.nhanh_gia_tri(body),
-            other => {
-                // **ST-60b**: câu lệnh cuối **không** cho giá trị (vd `x = 5`) ⇒ `()` **thật** —
-                // trước đây mã hoá `()` thành `Const(str "")` nên VM in chuỗi rỗng còn interp in `()`.
-                self.cau(other)?;
-                self.f.push(Instr::PushUnit, other.span(), 1);
-                Ok(())
-            }
-        }
     }
 }
 

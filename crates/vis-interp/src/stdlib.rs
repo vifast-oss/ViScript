@@ -24,6 +24,25 @@ use crate::value::{eq, Value};
 /// trường**, không phải dữ liệu chương trình).
 pub const DAU_QUYEN: &str = "\u{1}VS0604:";
 
+/// **ST-238 / VD-242 (nợ #167)**: trần `max_bytes` cho `net.read`. Input người dùng (kể cả
+/// `i64::MAX`, âm, hay giá trị chuyển kiểu overflow) **không** được phép ép host cấp phát bộ nhớ
+/// tùy ý (OOM ⇒ abort). Vượt trần ⇒ `Result.Err` dữ liệu, không trap, không panic.
+pub const NET_READ_CAP: i64 = 8 * 1024 * 1024;
+
+/// **ST-238 / VD-242 (nợ #167)**: validate `max_bytes` từ người dùng. `i64::MAX` (overflow khi
+/// chuyển `usize`), âm, và giá trị vượt trần đều bị từ chối **trước** khi host cấp phát.
+fn gioi_han_net_read(toi_da: i64) -> Result<usize, String> {
+    if toi_da < 0 {
+        return Err("net.read: `max_bytes` không được âm".to_string());
+    }
+    if toi_da > NET_READ_CAP {
+        return Err(format!(
+            "net.read: `max_bytes` {toi_da} vượt giới hạn {NET_READ_CAP} byte"
+        ));
+    }
+    Ok(toi_da as usize)
+}
+
 // **VD-241 pre-merge §1 (2026-11-19)**: `DAU_LOI_GOI` (VS0501) **đã bị bỏ** — mọi lỗi host
 // (handle giả/đã đóng/sai loại, SQL quá dài, params thiếu/thừa/quá, vượt rows/bytes/connections,
 // timeout, authorizer/policy từ chối, lỗi SQLite…) đều là **lỗi dữ liệu/runtime** ⇒ `Result.Err`
@@ -412,14 +431,17 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
             }
         }
-        "json.encode" => {
+        "json.encode" | "json.encode_pretty" => {
+            // **ST-238 / VD-242 (nợ #169, Q4b, §3.5)**: NaN/vô cực (kể cả `Percent`) ⇒ **lỗi**,
+            // không xuất token `inf`/`NaN` và không tự đổi `null`. Kiểm đệ thuỳ trước khi mã hoá.
+            if co_so_phi_huu_han(&args[0]) {
+                return Err(loi(
+                    "json.encode: giá trị số không hữu hạn (NaN/inf) không được mã hoá",
+                    span,
+                ));
+            }
             let mut s = String::new();
-            json(&args[0], false, &mut s);
-            Ok(Value::Str(s))
-        }
-        "json.encode_pretty" => {
-            let mut s = String::new();
-            json(&args[0], true, &mut s);
+            json(&args[0], name.ends_with("_pretty"), &mut s);
             Ok(Value::Str(s))
         }
         // ----- std.fs (ST-33) — **chỉ qua `Host`**, không OS trong crate này -----
@@ -479,7 +501,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let toi_da = so(name, &args[1], 1, span)?;
             let timeout = so(name, &args[2], 2, span)?;
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
-            let r = host.read(tay, toi_da.max(0) as usize, timeout.max(0) as u64);
+            // **ST-238 / VD-242 (nợ #167)**: `so()` đã chặn sai kiểu; ở đây chặn âm/overflow/cap
+            // trước khi host cấp phát. Mọi trường hợp invalid ⇒ `Result.Err`, không abort.
+            let n = match gioi_han_net_read(toi_da) {
+                Ok(n) => n,
+                Err(e) => return Ok(Value::err(Value::ban_ghi_error(e, None))),
+            };
+            let r = host.read(tay, n, timeout.max(0) as u64);
             // Body là **byte**; ngôn ngữ chỉ có `str` ⇒ giải mã **lossy** (không cắt giữa ký tự).
             // `Ok(vec![])` = EOF ⇒ `""` (không phải lỗi). Nợ: API byte thật cho tới khi có `buf`.
             hop_nhat_fs(
@@ -646,10 +674,28 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
     }
 }
 
+/// **ST-238 / VD-242 (nợ #169)**: `true` nếu cây giá trị chứa số `Float`/`Percent` không hữu hạn.
+/// Đi cấu trúc `Value` thuần, không gọi mã người dùng.
+fn co_so_phi_huu_han(v: &Value) -> bool {
+    match v {
+        Value::Float(f) | Value::Percent(f) => !f.is_finite(),
+        Value::List(xs) => xs.iter().any(co_so_phi_huu_han),
+        Value::Map(kv) => kv
+            .iter()
+            .any(|(k, val)| co_so_phi_huu_han(k) || co_so_phi_huu_han(val)),
+        Value::Record(_, fs) => fs.iter().any(|(_, x)| co_so_phi_huu_han(x)),
+        Value::Enum(_, _, args) => args.iter().any(co_so_phi_huu_han),
+        _ => false,
+    }
+}
+
 /// Mã hoá JSON **compact** (hoặc pretty 2 dấu cách) cho giá trị VS0.
 ///
 /// Quy ước: `map` theo **thứ tự chèn**; bản ghi theo thứ tự trường; `None` ⇒ `null`; `Result` ⇒
 /// `{"ok":…}`/`{"err":…}`; enum ⇒ `{"variant":…, "value":…}`. Khoá chuỗi được escape.
+///
+/// **Lưu ý**: `Float` không hữu hạn vẫn in `null` ở hàm thấp-level này (dùng cho LSP/CLI); cửa
+/// `std.json.encode` chặn riêng ở trên theo VD-242 Q4b.
 pub fn json(v: &Value, pretty: bool, out: &mut String) {
     json_tai(v, pretty, 0, out);
 }
@@ -967,5 +1013,39 @@ fn stem(p: &str) -> String {
     match ten.rsplit_once('.') {
         Some((s, e)) if !e.is_empty() && !ten.starts_with('.') => s.to_string(),
         _ => ten,
+    }
+}
+
+#[cfg(test)]
+mod st238_tests {
+    use super::*;
+
+    #[test]
+    fn net_read_ky_so_vao_khong_duoc_cap_phat() {
+        assert!(gioi_han_net_read(-1).is_err(), "âm bị từ chối");
+        assert!(gioi_han_net_read(i64::MAX).is_err(), "i64::MAX bị từ chối");
+        assert!(
+            gioi_han_net_read(NET_READ_CAP + 1).is_err(),
+            "vượt trần bị từ chối"
+        );
+        assert_eq!(
+            gioi_han_net_read(NET_READ_CAP).unwrap(),
+            NET_READ_CAP as usize
+        );
+        assert_eq!(gioi_han_net_read(0).unwrap(), 0);
+        assert_eq!(gioi_han_net_read(1024).unwrap(), 1024);
+    }
+
+    #[test]
+    fn json_non_finite_bi_phat_hien() {
+        assert!(co_so_phi_huu_han(&Value::Float(f64::NAN)));
+        assert!(co_so_phi_huu_han(&Value::Float(f64::INFINITY)));
+        assert!(co_so_phi_huu_han(&Value::Percent(f64::NEG_INFINITY)));
+        assert!(co_so_phi_huu_han(&Value::List(vec![
+            Value::Int(1),
+            Value::Float(f64::NAN)
+        ])));
+        assert!(!co_so_phi_huu_han(&Value::Float(1.5)));
+        assert!(!co_so_phi_huu_han(&Value::Int(1)));
     }
 }
