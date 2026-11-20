@@ -108,7 +108,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // cũ nào.
     // **SỬA KÈM LÝ DO (VD-270 path-normalize, 2026-11-21)**: +**1** hàm `std.path.normalize`
     // (`(str) -> str`; chuẩn hoá từ vựng POSIX, thuần chuỗi) ⇒ **107** hàm.
-    assert_eq!(FUNCS.len(), 107, "bảng chữ ký phải đủ 107 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 binary-search, 2026-11-21)**: +**1** hàm `std.list.binary_search`
+    // (`(list[T], T) -> int?`; biên dưới, `xs` phải đã sắp tăng) ⇒ **108** hàm; không xoá/đổi
+    // hàm cũ nào.
+    assert_eq!(FUNCS.len(), 108, "bảng chữ ký phải đủ 108 hàm");
 }
 
 #[test]
@@ -232,7 +235,8 @@ fn strstrip_tra_str_option() {
 fn indexof_tra_int_option() {
     // **VD-270 (indexof)**: `index_of`/`last_index_of` là `(list[T], T) -> int?`; `T` buộc từ
     // `xs` nên sugar `xs.index_of(v)` thoả R5c và `value` cùng kiểu phần tử.
-    for ten in ["list.index_of", "list.last_index_of"] {
+    // **VD-270 (binary-search)**: `binary_search` dùng **đúng** hình dạng đó (biên dưới).
+    for ten in ["list.index_of", "list.last_index_of", "list.binary_search"] {
         let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu chữ ký `{ten}`"));
         assert_eq!(
             f.params,
