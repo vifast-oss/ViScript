@@ -7,6 +7,13 @@
 //! - có `<tên>.err` ⇒ phải **đỏ** đúng mã trong `.err` (`VS05xx` ⇒ exit **101**, còn lại ⇒ exit 2).
 //!
 //! `--vm` chạy **đường VM** (`--no-cache`); không có `--vm` thì chạy interp (mặc định `vis run`, VD-56).
+//!
+//! **VD-267**:
+//! - `--filter <substr>` — chỉ chọn ca có **tên `test fn`** hoặc **đường dẫn hiển thị** của fixture
+//!   chứa `<substr>` (phân biệt hoa/thường). Lọc **trước khi chạy** nên ca bị loại không có tác dụng
+//!   phụ. Chuỗi rỗng hoặc không ca nào khớp ⇒ TAP hợp lệ `1..0`, exit **0**.
+//! - `--fail-fast` — dừng ngay sau ca `not ok` **đầu tiên**. Kế hoạch TAP đếm **ca đã chạy**
+//!   (`1..<đã chạy>`), không phải số ca đã chọn; `--json` cũng đếm ca đã chạy. Exit vẫn **1**.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -14,7 +21,9 @@ use std::process::{Command, ExitCode};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [thư mục|tệp]");
+    eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0");
+    eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     ExitCode::from(2)
 }
 
@@ -275,6 +284,10 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut json_ra = false;
     // **ST-105**: `--timeout <ms>` (≥50) chỉ áp cho **`test fn`**; mặc định **không** giới hạn.
     let mut timeout_han: Option<u64> = None;
+    // **VD-267**: `--filter <substr>` — lọc **trước khi chạy**; `None` = chạy tất cả.
+    let mut loc: Option<String> = None;
+    // **VD-267**: `--fail-fast` — dừng sau ca `not ok` đầu tiên.
+    let mut fail_fast = false;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -282,6 +295,24 @@ pub fn run(args: &[String]) -> ExitCode {
             "--vm" => vm = true,
             "--strict-caps" => strict = true,
             "--json" => json_ra = true,
+            "--fail-fast" => fail_fast = true,
+            "--filter" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--filter` cần chuỗi con");
+                    return ExitCode::from(2);
+                };
+                if v.starts_with('-') {
+                    eprintln!(
+                        "vis test: `--filter` cần chuỗi con (gặp `{v}`; dùng --filter=<substr> nếu chuỗi bắt đầu bằng `-`)"
+                    );
+                    return ExitCode::from(2);
+                }
+                loc = Some(v.clone());
+                i += 1;
+            }
+            s if s.starts_with("--filter=") => {
+                loc = Some(s["--filter=".len()..].to_string());
+            }
             "--timeout" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis test: `--timeout` cần số nguyên ≥ 50 (ms)");
@@ -333,25 +364,47 @@ pub fn run(args: &[String]) -> ExitCode {
     }
     // **ST-79 (VD-108)**: tệp có `test fn` ⇒ **mỗi test một ca TAP** (chạy bằng bản sao đổi
     // `test fn <tên>` → `fn main`); tệp thường giữ nguyên hành vi fixture `.out`/`.err`.
+    // **VD-267**: áp `--filter` **tại đây**, trước mọi lần chạy ⇒ ca bị loại không có tác dụng phụ.
+    let loc = loc.as_deref();
+    let chon = |ten: &str| match loc {
+        None => true,
+        // Quy ước VD-267: chuỗi rỗng ⇒ chọn 0 ca (tài liệu ở `usage`).
+        Some(f) => !f.is_empty() && ten.contains(f),
+    };
     let mut ca: Vec<(PathBuf, Option<(String, String)>)> = Vec::new();
     for p in files {
         let text = std::fs::read_to_string(&p).unwrap_or_default();
         let tests = ds_test(&text);
         if tests.is_empty() {
-            ca.push((p, None));
+            let rel = p.strip_prefix(&goc).unwrap_or(&p);
+            // Tên hiển thị của **một tệp** (gốc = chính tệp) là rỗng; khi lọc dùng đường dẫn đã
+            // truyền để `--filter <tên-tệp>` vẫn khớp. Tên in ra TAP giữ nguyên hành vi cũ.
+            let ten_loc = if rel.as_os_str().is_empty() {
+                p.to_string_lossy().to_string()
+            } else {
+                rel.to_string_lossy().to_string()
+            };
+            if chon(&ten_loc) {
+                ca.push((p, None));
+            }
         } else {
             for (ten, test_span, name_span) in tests {
+                if !chon(&ten) {
+                    continue;
+                }
                 let src = thanh_main(&text, test_span, name_span);
                 ca.push((p.clone(), Some((ten, src))));
             }
         }
     }
-    let mut tap = String::new();
-    tap.push_str("TAP version 13\n");
-    tap.push_str(&format!("1..{}\n", ca.len()));
+    let mut than = String::new();
     let mut hong = 0usize;
     let mut cases: Vec<CaJson> = Vec::new();
     for (i, (p, bai_test)) in ca.iter().enumerate() {
+        // **VD-267**: `--fail-fast` — dừng **trước** ca kế tiếp ngay sau ca đỏ đầu tiên.
+        if fail_fast && hong > 0 {
+            break;
+        }
         let n = i + 1;
         let ten = p
             .strip_prefix(&goc)
@@ -367,7 +420,7 @@ pub fn run(args: &[String]) -> ExitCode {
             if let Err(e) = std::fs::write(&tep, src) {
                 hong += 1;
                 let m = format!("không ghi được bản sao: {e}");
-                tap.push_str(&format!("not ok {n} - {ten_test}\n# {m}\n"));
+                than.push_str(&format!("not ok {n} - {ten_test}\n# {m}\n"));
                 cases.push(CaJson {
                     ten: ten_test.clone(),
                     ok: false,
@@ -404,7 +457,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 hong += 1;
                 let ms = timeout_han.unwrap_or(0);
                 let m = format!("quá hạn {ms} ms");
-                tap.push_str(&format!("not ok {n} - {ten_test}\n# {ten_test}: {m}\n"));
+                than.push_str(&format!("not ok {n} - {ten_test}\n# {ten_test}: {m}\n"));
                 cases.push(CaJson {
                     ten: ten_test.clone(),
                     ok: false,
@@ -413,7 +466,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 continue;
             }
             if code == 0 {
-                tap.push_str(&format!("ok {n} - {ten_test}\n"));
+                than.push_str(&format!("ok {n} - {ten_test}\n"));
                 cases.push(CaJson {
                     ten: ten_test.clone(),
                     ok: true,
@@ -421,10 +474,10 @@ pub fn run(args: &[String]) -> ExitCode {
                 });
             } else {
                 hong += 1;
-                tap.push_str(&format!("not ok {n} - {ten_test}\n"));
+                than.push_str(&format!("not ok {n} - {ten_test}\n"));
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or(("VS?".into(), 1, 1, String::new()));
-                tap.push_str(&format!("# {ten_test}:{dong}:{cot}: {ma} {msg}\n"));
+                than.push_str(&format!("# {ten_test}:{dong}:{cot}: {ma} {msg}\n"));
                 cases.push(CaJson {
                     ten: ten_test.clone(),
                     ok: false,
@@ -447,7 +500,7 @@ pub fn run(args: &[String]) -> ExitCode {
             // ST-30b: hai đường **đã đồng bộ** chẩn đoán ⇒ `--vm` khoá **đúng mã** như interp.
             let ok = code == muon && stderr.contains(mong);
             if ok {
-                tap.push_str(&format!("ok {n} - {ten}\n"));
+                than.push_str(&format!("ok {n} - {ten}\n"));
                 cases.push(CaJson {
                     ten: ten.clone(),
                     ok: true,
@@ -455,10 +508,10 @@ pub fn run(args: &[String]) -> ExitCode {
                 });
             } else {
                 hong += 1;
-                tap.push_str(&format!("not ok {n} - {ten}\n"));
+                than.push_str(&format!("not ok {n} - {ten}\n"));
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or((mong.to_string(), 1, 1, String::new()));
-                tap.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
+                than.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
                 cases.push(CaJson {
                     ten: ten.clone(),
                     ok: false,
@@ -471,7 +524,7 @@ pub fn run(args: &[String]) -> ExitCode {
         let want = std::fs::read_to_string(&want_path).unwrap_or_default();
         let want = bo_spdx(&want);
         if code == 0 && out == want {
-            tap.push_str(&format!("ok {n} - {ten}\n"));
+            than.push_str(&format!("ok {n} - {ten}\n"));
             cases.push(CaJson {
                 ten: ten.clone(),
                 ok: true,
@@ -479,18 +532,18 @@ pub fn run(args: &[String]) -> ExitCode {
             });
         } else {
             hong += 1;
-            tap.push_str(&format!("not ok {n} - {ten}\n"));
+            than.push_str(&format!("not ok {n} - {ten}\n"));
             if code != 0 {
                 let (ma, dong, cot, msg) =
                     chan_doan(&stderr).unwrap_or(("VS?".into(), 1, 1, String::new()));
-                tap.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
+                than.push_str(&format!("# {ten}:{dong}:{cot}: {ma} {msg}\n"));
                 cases.push(CaJson {
                     ten: ten.clone(),
                     ok: false,
                     msg: mot_dong(&format!("{ma} {msg}")),
                 });
             } else {
-                tap.push_str(&format!("# {ten}:1:1: VS0000 stdout khác kỳ vọng\n"));
+                than.push_str(&format!("# {ten}:1:1: VS0000 stdout khác kỳ vọng\n"));
                 cases.push(CaJson {
                     ten: ten.clone(),
                     ok: false,
@@ -499,6 +552,12 @@ pub fn run(args: &[String]) -> ExitCode {
             }
         }
     }
+    let mut tap = String::new();
+    tap.push_str("TAP version 13\n");
+    // **VD-267**: kế hoạch đếm **ca đã chạy** (với `--fail-fast` dừng giữa chừng, TAP vẫn hợp lệ);
+    // khi không có `--fail-fast` thì số đã chạy = số đã chọn như trước.
+    tap.push_str(&format!("1..{}\n", cases.len()));
+    tap.push_str(&than);
     if json_ra {
         let mut ds = String::new();
         for (i, c) in cases.iter().enumerate() {
@@ -514,8 +573,8 @@ pub fn run(args: &[String]) -> ExitCode {
         }
         let body = format!(
             "{{\"total\":{},\"ok\":{},\"failed\":{},\"cases\":[{ds}]}}\n",
-            ca.len(),
-            ca.len().saturating_sub(hong),
+            cases.len(),
+            cases.len().saturating_sub(hong),
             hong
         );
         print!("{body}");
