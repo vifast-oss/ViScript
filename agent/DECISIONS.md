@@ -3137,3 +3137,11 @@ Duyệt `panic(msg)` là builtin trần `panic(str | Error) -> never`; trap `VS0
 hai engine; `Error` lấy trường `message`. `never` đã có sẵn trong `Type`; thêm `Ty::Never` cho bảng
 chữ ký builtin. `FUNCS`/`API-STD.txt` không đổi (không phải hàm `std.*`). Tách
 `builtin_sig.rs` khỏi `builtin.rs` để giữ R1; không đổi hành vi builtin khác.
+
+### VD-268 (phần fswalk) · `std.fs.walk` — A0, 2026-11-21
+
+`fs.walk(path) -> Result[list[str], Error]`: duyệt **đệ quy**, trả đường dẫn **tương đối** so với
+`path` (thư mục có `/` cuối, gồm cả thư mục rỗng), thứ tự DFS pre-order, tên trong mỗi thư mục
+sắp theo byte; **bỏ hoàn toàn symlink** (không trả, không đi vào) nên không có vòng/chạy ra ngoài;
+ẩn vẫn gồm. Quyền kiểm trên gốc qua `FsGuard`; thiếu quyền ⇒ `VS0604`; lỗi dữ liệu ⇒ `Err`.
+`FsHost::walk` có default `Err` cho host cũ; mock/VM cùng hợp đồng. API-STD +1.
