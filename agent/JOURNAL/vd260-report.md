@@ -267,3 +267,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **frame-nested** (`8bcbf71` → `c6e058e`): frame engine gán lồng field/index/hỗn hợp, thứ tự index→index→RHS, dùng chung `gan`/`gan_long`; 18 ca frame interp↔VM.
 - **lsp-type-def** (`097c042` → `bfb41f4`): `textDocument/typeDefinition` trả khai báo record/enum cho biến/trường/tham số; capability thứ 3.
 - **replace-last** (`d7c3d7f` → `5dead58`): `str.replace_last` lần khớp cuối scalar; `from` rỗng ⇒ nối cuối; API 118→119.
+- `VIS_DIFF_N=100000` seed 20261205 @ `fd2a19a`: **0 lệch** (93.767 chạy, 124,7 s).
+- `./vis-dev core-test` + `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `fd2a19a`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
