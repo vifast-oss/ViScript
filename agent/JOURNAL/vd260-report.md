@@ -134,3 +134,4 @@
 - **runstdin** (`806e9ae` → `2128d88`): `vis run --stdin`, tệp ảo `-`, TAP stderr, mã thoát như tệp, không cache.
 - **windows** (`026d679` → `8b1609e`): `list.windows` cửa sổ trượt; R5c buộc `T/K/V` từ receiver ⇒ sugar generic (`xs.sort()`, `.take()`, `.zip()`, `.min/max()`, `.windows()`) hoạt động; API +1.
 - **enumalloc** (`9580e23` → `b1d962f`): tên enum nội bộ hoá `Name(Rc<str>)`, `Value` 72→64 B; microbench `Some` 1,8×, `Ok` 1,9×; loop interp `Some` −12,5%, VM user-enum −22,9% (máy tải, số chỉ hướng); không đổi VBC1/opcode.
+- `test/release/run.sh` / `test/toolchain/run.sh` / `bin/vis-host-suite` @ `6f0b71a`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
