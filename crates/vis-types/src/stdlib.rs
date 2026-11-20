@@ -246,7 +246,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 132] = [
+pub const FUNCS: [StdFn; 133] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -697,6 +697,14 @@ pub const FUNCS: [StdFn; 132] = [
     // sugar — luôn gọi `path.relative(from, to)` để tránh nhập nhằng receiver.
     StdFn {
         name: "path.relative",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::Str,
+    },
+    // **VD-270 (path.with_extension)**: thay/đặt/bỏ phần mở rộng của **thành phần cuối**, thuần
+    // chuỗi; `ext` rỗng ⇒ xoá (kể cả dấu chấm), chưa có ext ⇒ nối `.` + ext; tên bắt đầu `.`
+    // không có ext (đúng `path.ext`); **không** sugar — module-only.
+    StdFn {
+        name: "path.with_extension",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::Str,
     },
