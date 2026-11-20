@@ -215,7 +215,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 112] = [
+pub const FUNCS: [StdFn; 113] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -374,6 +374,13 @@ pub const FUNCS: [StdFn; 112] = [
     // **VD-270 (strlen)**: `byte_len` = **byte UTF-8**; `char_count` = số **scalar Unicode**
     // (`chars()`, không phải grapheme); `str.is_empty` = chuỗi rỗng. Cùng tham số đầu `str`
     // nên sugar R5c `s.byte_len()`/`s.char_count()`/`s.is_empty()` chạy không cần `use`.
+    // **VD-270 (parse-int)**: parse thập phân **chặt** (`i64::from_str`), sai/tràn ⇒ `None`;
+    // trả `int?` để sugar `s.parse_int()` dùng chung `Ty::OptInt` với `find`/`index_of`.
+    StdFn {
+        name: "str.parse_int",
+        params: &[Ty::Str],
+        ret: Ty::OptInt,
+    },
     StdFn {
         name: "str.byte_len",
         params: &[Ty::Str],

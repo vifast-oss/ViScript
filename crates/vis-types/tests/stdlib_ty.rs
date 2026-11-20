@@ -123,7 +123,10 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 sqlite-columns, 2026-11-21)**: +**1** hàm `sqlite.columns`
     // (`(str, str) -> Result[list[str], Error]`; tên cột bảng/view schema chính theo thứ tự
     // khai báo, tên đối tượng bind làm tham số) ⇒ **112** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 112, "bảng chữ ký phải đủ 112 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 parse-int, 2026-11-21)**: +**1** hàm `std.str.parse_int`
+    // (`(str) -> int?`; parse thập phân chặt, sai/tràn ⇒ `None`) ⇒ **113** hàm; không xoá/đổi
+    // hàm cũ nào.
+    assert_eq!(FUNCS.len(), 113, "bảng chữ ký phải đủ 113 hàm");
 }
 
 #[test]
@@ -187,6 +190,19 @@ fn path_normalize_kieu_str_sang_str_va_sugar() {
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
     assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
+}
+
+#[test]
+fn parse_int_tra_int_option_va_sugar() {
+    // **VD-270 (parse-int)**: `(str) -> int?`; tham số đầu `str` để sugar R5c nhận.
+    let f = sig_of("str.parse_int").expect("str.parse_int");
+    assert_eq!(f.params, &[Ty::Str], "`str.parse_int`: tham số");
+    assert_eq!(f.ret, Ty::OptInt, "`str.parse_int`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Int)),
+        "`str.parse_int`: hạ `int?`"
+    );
 }
 
 #[test]

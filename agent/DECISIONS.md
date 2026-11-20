@@ -3348,3 +3348,10 @@ kể cả `CASE … END` lồng và chuỗi/comment chứa `;`/`END`. Câu sau t
 - **sqlite.columns**: `sqlite.columns(handle, table) -> Result[list[str], Error]` trả tên cột
   bảng/view **schema chính** theo `cid`, giữ hoa/thường; tên đối tượng **bind** tham số, schema
   cố định `main`; thiếu bảng ⇒ `Ok([])`, handle lỗi ⇒ `Err`; chạy qua `db_query`.
+
+### VD-270 (bổ sung) · `str.parse_int` — A0, 2026-11-21
+
+Duyệt `str.parse_int(s) -> int?`: parse **thập phân chặt** như `i64::from_str` — dấu `+`/`-`
+tuỳ chọn rồi một hoặc nhiều chữ số ASCII; **không** khoảng trắng/`_`/`0x`/dấu thập phân; sai
+cú pháp hoặc tràn `i64` ⇒ `None` (không trap); `i64::MIN`/`MAX` biên vẫn `Some`; sugar R5c
+`s.parse_int()`; lõi chung `stdlib/strparse.rs`.

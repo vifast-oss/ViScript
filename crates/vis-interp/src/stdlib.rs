@@ -35,6 +35,7 @@ mod sqlitetables;
 mod strfind;
 mod strlen;
 mod strpad;
+mod strparse;
 mod strreplace;
 mod strsplitn;
 mod strstrip;
@@ -269,6 +270,11 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
             Ok(Value::Str(strreplace::replace_first(s, tu, den)))
+        }
+        // **VD-270 (parse-int)**: chuỗi thập phân **chặt** → `int?`; sai cú pháp/tràn ⇒ `None`.
+        "str.parse_int" => {
+            let s = chuoi(name, &args[0], 0, span)?;
+            Ok(strparse::goi(s))
         }
         // **VD-270 (strfind)**: offset scalar Unicode; `find`/`rfind` ⇒ `int?`, `count` ⇒ `int`.
         "str.find" | "str.rfind" | "str.count" => {
