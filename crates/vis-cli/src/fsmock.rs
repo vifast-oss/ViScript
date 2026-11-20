@@ -223,6 +223,49 @@ impl FsHost for FsMock {
         ))
     }
 
+    /// **VD-269**: chép nội dung **trong bộ nhớ**; nguồn phải là tệp, đích phải **chưa có** (cùng
+    /// chính sách với host thật). Kịch bản mock không biểu diễn được symlink.
+    fn copy(&mut self, from: &str, to: &str) -> Result<(), String> {
+        if self.dirs.iter().any(|(k, _)| k == from) {
+            return Err(format!(
+                "không chép được `{from}`: là thư mục (chỉ chép tệp)"
+            ));
+        }
+        let noi_dung = match self.files.iter().find(|(k, _)| k == from) {
+            Some((_, v)) => v.clone(),
+            None => {
+                return Err(format!(
+                    "không chép được tệp `{from}`: không có trong kịch bản `--fs-mock`"
+                ));
+            }
+        };
+        if self.exists(to) {
+            return Err(format!("không chép được `{to}`: đích đã tồn tại"));
+        }
+        self.files.push((to.to_string(), noi_dung));
+        Ok(())
+    }
+
+    /// **VD-269**: đổi tên **trong bộ nhớ**; nguồn phải là tệp, đích phải **chưa có**.
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        if self.dirs.iter().any(|(k, _)| k == from) {
+            return Err(format!(
+                "không đổi tên được `{from}`: là thư mục (chỉ đổi tên tệp)"
+            ));
+        }
+        let Some(i) = self.files.iter().position(|(k, _)| k == from) else {
+            return Err(format!(
+                "không đổi tên được tệp `{from}`: không có trong kịch bản `--fs-mock`"
+            ));
+        };
+        if self.exists(to) {
+            return Err(format!("không đổi tên được `{to}`: đích đã tồn tại"));
+        }
+        let (_, noi_dung) = self.files.remove(i);
+        self.files.push((to.to_string(), noi_dung));
+        Ok(())
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.

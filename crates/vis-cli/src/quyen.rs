@@ -825,6 +825,19 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, true)?;
         self.trong.remove(p)
     }
+    /// **VD-269**: `copy` cần **đọc** nguồn + **ghi** đích — kiểm **cả hai** trước khi chạm đĩa.
+    /// Nguồn kiểm `can_write=false`, đích kiểm `true` (đích chưa tồn tại ⇒ canonicalize thư mục cha).
+    fn copy(&mut self, from: &str, to: &str) -> Result<(), String> {
+        self.quyen.kiem_fs(from, false)?;
+        self.quyen.kiem_fs(to, true)?;
+        self.trong.copy(from, to)
+    }
+    /// **VD-269**: `rename` cần **ghi** ở **cả hai** đầu (nguồn bị xoá khỏi tên cũ, đích được tạo).
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        self.quyen.kiem_fs(from, true)?;
+        self.quyen.kiem_fs(to, true)?;
+        self.trong.rename(from, to)
+    }
     /// **VD-268**: duyệt là thao tác **đọc** ⇒ kiểm `cap[Dir]` trên **root** trước khi chạm đĩa.
     /// Host chỉ đi xuống thư mục con thật và **bỏ mọi symlink**, nên mọi đường dẫn trả về nằm dưới
     /// root đã kiểm (không thể thoát qua symlink); kiểm root là đủ, giống `list`/`list_entries`.

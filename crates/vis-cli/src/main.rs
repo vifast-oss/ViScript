@@ -129,6 +129,19 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.remove(p),
         }
     }
+    /// **VD-269**: chép/đổi tên tệp — host thật (OS) hoặc mock, cùng chữ ký.
+    fn copy(&mut self, from: &str, to: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.copy(from, to),
+            HostFs::Mock(m) => m.copy(from, to),
+        }
+    }
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        match self {
+            HostFs::That(r) => r.rename(from, to),
+            HostFs::Mock(m) => m.rename(from, to),
+        }
+    }
     /// **VD-268**: host thật (OS) hoặc mock, cùng chữ ký.
     fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
         match self {

@@ -193,7 +193,7 @@ Gọi dạng **module.chấm_hàm**, sau khi `use std.<module>`:
 
 | Module | Hàm chính | Ví dụ đã chạy ✔ |
 |---|---|---|
-| `std.fs` | `exists` `list` `read` `read_lines` `walk` `glob` `write` `append` `mkdir` `remove` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `fs.walk(".")` → tương đối, thư mục kèm `/`, DFS, **bỏ symlink**; `fs.glob(".", "**/*.txt")` → lọc `walk`, sắp theo **byte**, mẫu không `/` khớp **basename** (`*` `?` `**`); `mkdir` **một cấp**, `remove` **chỉ tệp** |
+| `std.fs` | `exists` `list` `read` `read_lines` `walk` `glob` `write` `append` `mkdir` `remove` `copy` `rename` | `fs.read_lines("a.txt")` → `Ok(["a", "b"])`; `fs.walk(".")` → tương đối, thư mục kèm `/`, DFS, **bỏ symlink**; `fs.glob(".", "**/*.txt")` → lọc `walk`, sắp theo **byte**, mẫu không `/` khớp **basename** (`*` `?` `**`); `mkdir` **một cấp**, `remove` **chỉ tệp**; `copy`/`rename` **chỉ tệp** (từ chối thư mục + symlink) và **từ chối đích đã tồn tại** (không ghi đè), `copy` chép **từng byte**, `rename` cùng hệ tệp |
 | `std.list` | `sort` `take` `drop` `chunk` `concat` `reverse` `unique` `zip` `min` `max` | `list.sort([3,1,2])` → `[1,2,3]` |
 | `std.map` | `keys` `values` `merge` `remove` `get_or` | `map.keys(m)` |
 | `std.str` | `split` `join` `upper` `lower` `trim` `trim_start` `trim_end` `replace` `repeat` `starts_with` `ends_with` `contains` `lines` `split_whitespace` `pad_left` `pad_right` `center` | `str.join(["a","b"], "-")` → `a-b`; `str.center("ab", 5, "-")` → `-ab--`; `str.pad_left("đ", 3, "-")` → `--đ` (đệm theo **ký tự Unicode**, `fill` rỗng ⇒ trap `VS0501`, `center` dư bên phải) |
