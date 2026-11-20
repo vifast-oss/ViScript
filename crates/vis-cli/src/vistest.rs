@@ -22,7 +22,8 @@
 //! - Đỏ ở **bất kỳ** lần lặp nào ⇒ exit **1**; không `--fail-fast` thì giữ **mọi** kết quả lặp.
 //!   `--fail-fast` dừng ngay sau lần lặp đỏ đầu tiên (`--json` đếm cùng tập đã chạy).
 //! - `--list` bỏ qua `--repeat` (liệt kê ca đã chọn **một lần**) nhưng vẫn kiểm N; `--timeout`
-//!   áp **mỗi lần lặp** của `test fn`.
+//!   áp **mỗi lần lặp** của **mọi ca** — `test fn` **và** fixture `.out/.err` (mở rộng ST-105:
+//!   fixture quá hạn ⇒ kill, `not ok` + `# <tên>: quá hạn <ms> ms`, đếm là đỏ).
 //! - `--shuffle [--seed <u64>]` — xáo thứ tự ca **đã chọn**, **sau `--filter`** và **trước**
 //!   `--repeat` (vẫn ca-trước-lặp-sau) lẫn `--list` (liệt kê theo thứ tự đã xáo). Cùng seed +
 //!   cùng tập chọn ⇒ cùng thứ tự; thiếu `--seed` ⇒ seed **0**; `--seed` không kèm `--shuffle`
@@ -38,6 +39,7 @@ fn usage() -> ExitCode {
     eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
+    eprintln!("  --timeout <ms>: giới hạn mỗi ca (test fn **và** fixture .out/.err) ≤ ms (≥ 50); quá hạn ⇒ kill + `not ok` với `quá hạn <ms> ms`; mặc định **không** giới hạn");
     eprintln!("  --fail-fast: dừng sau ca `not ok` đầu tiên; kế hoạch TAP = số ca **đã chạy**");
     eprintln!("  --repeat <N>: chạy mỗi ca đã chọn N lần (số nguyên ≥ 1, mặc định 1); N > 1 ⇒ mỗi lần lặp là một ca TAP/JSON tên `<tên> [k/N]`; --list bỏ qua --repeat (liệt kê một lần)");
     eprintln!("  --shuffle [--seed <u64>]: xáo thứ tự ca đã chọn trước khi chạy/liệt kê; cùng seed ⇒ cùng thứ tự, mặc định seed 0; --seed chỉ dùng cùng --shuffle (thiếu/sai ⇒ exit 2)");
@@ -175,7 +177,31 @@ fn dat_path_tro_giup(c: &mut Command) {
     }
 }
 
-fn chay(ca: &Path, vm: bool, strict: bool) -> (i32, String, String) {
+/// **VD-270**: chạy tiến trình con với hạn tuỳ chọn — `Some(ms)` ⇒ [`chay_co_han`] (kill khi
+/// quá hạn); `None` ⇒ [`Command::output`] **không** giới hạn, giữ nguyên hành vi cũ.
+fn chay_theo_han(c: &mut Command, timeout_han: Option<u64>) -> (i32, String, String, bool) {
+    match timeout_han {
+        Some(ms) => chay_co_han(c, ms),
+        None => match c.output() {
+            Ok(o) => (
+                o.status.code().unwrap_or(-1),
+                String::from_utf8_lossy(&o.stdout).to_string(),
+                String::from_utf8_lossy(&o.stderr).to_string(),
+                false,
+            ),
+            Err(e) => (-1, String::new(), format!("không chạy được: {e}"), false),
+        },
+    }
+}
+
+/// **VD-270**: chạy **fixture** `.out/.err` với hạn tuỳ chọn; trả thêm cờ `quá_hạn` để ca gọi
+/// báo `not ok` + `quá hạn <ms> ms` **trước** khi so `.err`/`.out`.
+fn chay(
+    ca: &Path,
+    vm: bool,
+    strict: bool,
+    timeout_han: Option<u64>,
+) -> (i32, String, String, bool) {
     let mut c = Command::new(std::env::current_exe().unwrap_or_else(|_| PathBuf::from("vis")));
     dat_path_tro_giup(&mut c);
     c.arg("run").arg("--tap");
@@ -186,14 +212,7 @@ fn chay(ca: &Path, vm: bool, strict: bool) -> (i32, String, String) {
         c.arg("--vm").arg("--no-cache");
     }
     c.arg(ca);
-    match c.output() {
-        Ok(o) => (
-            o.status.code().unwrap_or(-1),
-            String::from_utf8_lossy(&o.stdout).to_string(),
-            String::from_utf8_lossy(&o.stderr).to_string(),
-        ),
-        Err(e) => (-1, String::new(), format!("không chạy được: {e}")),
-    }
+    chay_theo_han(&mut c, timeout_han)
 }
 
 /// Mã chẩn đoán đầu trong stderr: `(mã, dòng, cột, thông điệp)` — dòng stderr có dạng
@@ -253,7 +272,10 @@ fn doc_nen(
 /// stdout **và** stderr được đọc bởi hai luồng nền **trong lúc** poll (chỉ một ống đầy là đủ
 /// deadlock); gom kết quả bằng `recv_timeout` có hạn [`HAN_GOM_OUTPUT`] ⇒ không bao giờ treo.
 fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, bool) {
-    c.stdout(std::process::Stdio::piped())
+    // Cùng hợp đồng stdin với `Command::output` (đóng ngay) — thêm `--timeout` không đổi
+    // cách fixture nhìn stdin.
+    c.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
     let mut child = match c.spawn() {
         Ok(x) => x,
@@ -324,7 +346,7 @@ impl Kq {
 /// **VD-270**: chạy **một lần** ca `p` — `test fn` (bản sao `thanh_main`) hoặc fixture `.out/.err`.
 ///
 /// Tách khỏi vòng chọn ca để `--repeat` gọi lại nguyên xi từng lần; `--timeout` áp **mỗi lần**
-/// chạy `test fn` (fixture `.out/.err` vẫn không áp như ST-105 — chỉ nhánh `test fn` dùng hạn).
+/// chạy của **cả hai** nhánh — `test fn` **và** fixture `.out/.err` (VD-270 mở rộng ST-105).
 fn chay_mot_lan(
     chi_so: usize,
     p: &Path,
@@ -354,19 +376,7 @@ fn chay_mot_lan(
             c.arg("--vm").arg("--no-cache");
         }
         c.arg(&tep);
-        // **ST-105**: chỉ nhánh `test fn` mới áp `--timeout`; fixture `.out/.err` giữ nguyên.
-        let (code, _out, stderr, qua_han) = match timeout_han {
-            Some(ms) => chay_co_han(&mut c, ms),
-            None => match c.output() {
-                Ok(o) => (
-                    o.status.code().unwrap_or(-1),
-                    String::from_utf8_lossy(&o.stdout).to_string(),
-                    String::from_utf8_lossy(&o.stderr).to_string(),
-                    false,
-                ),
-                Err(e) => (-1, String::new(), format!("không chạy được: {e}"), false),
-            },
-        };
+        let (code, _out, stderr, qua_han) = chay_theo_han(&mut c, timeout_han);
         let _ = std::fs::remove_dir_all(&d);
         if qua_han {
             let ms = timeout_han.unwrap_or(0);
@@ -384,7 +394,13 @@ fn chay_mot_lan(
         );
     }
     let err = p.with_extension("err");
-    let (code, out, stderr) = chay(p, vm, strict);
+    let (code, out, stderr, qua_han) = chay(p, vm, strict, timeout_han);
+    // **VD-270**: hạn thắng mọi kỳ vọng `.err`/`.out`; cùng câu với nhánh `test fn`.
+    if qua_han {
+        let ms = timeout_han.unwrap_or(0);
+        let m = format!("quá hạn {ms} ms");
+        return Kq::hong(format!("{ten}: {m}"), m);
+    }
     if err.exists() {
         let mong = std::fs::read_to_string(&err).unwrap_or_default();
         // `.err` có thể có header SPDX: lấy **dòng đầu không phải chú thích**.
