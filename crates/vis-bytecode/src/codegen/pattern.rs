@@ -6,6 +6,18 @@
 use super::*;
 
 impl Emit<'_> {
+    /// **VD-262**: phát **mọi** `let`/`var` cấp tệp theo thứ tự nguồn (trước `Call(main)`).
+    /// Nhờ đó ô global có lệnh ghi — verifier suy đúng `nglobals` — và giá trị tồn tại trước khi
+    /// `main` đọc. Câu lệnh cấp tệp không phải khai báo **không** chạy khi có `main`.
+    pub(super) fn khai_bao_cap_tep(&mut self, hir: &Hir) -> Result<(), CodegenError> {
+        for s in &hir.stmts {
+            if matches!(s, HStmt::Let { .. } | HStmt::Var { .. }) {
+                self.cau(s)?;
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn cst_pat(&mut self, p: Option<&HPat>) -> u32 {
         match p {
             Some(HPat::Lit { lit, .. }) => self.g.cst(lit.kind, &lit.text),

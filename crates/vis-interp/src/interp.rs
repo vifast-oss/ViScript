@@ -170,6 +170,7 @@ impl<'a> Interp<'a> {
             self.env.borrow_mut().insert(sym, v);
         }
         if let Some(f) = self.main {
+            self.khoi_tao_bien_cap_tep()?; // VD-262: biến cấp tệp trước `main`.
             let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
             let v = if f.params.is_empty() {
                 self.call_hfn(f, Vec::new(), Vec::new(), f.span)?

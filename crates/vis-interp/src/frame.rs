@@ -32,7 +32,7 @@ mod params;
 mod proc;
 
 use expr::{call_value, dispatch, eval_work, exec_work};
-use params::{env_for_params, opt_depth_ty};
+use params::{env_for_params, khoi_tao_bien_cap_tep_frame, opt_depth_ty};
 use proc::process_work;
 
 /// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
@@ -794,6 +794,13 @@ pub fn run_frame_for_test<'a>(
         HItem::Fn(f) if f.name == "main" => Some(f),
         _ => None,
     });
+    // **VD-262**: biến cấp tệp là global — khai báo `let`/`var` chạy trước `main`; không có
+    // `main` thì để thân cấp tệp tự chạy như cũ (tránh thi hành hai lần).
+    if main_fn.is_some() {
+        if let Some(t) = khoi_tao_bien_cap_tep_frame(&mut it, hir, &globals, &mutable) {
+            return frame_output_early(&mut it, text, None, Some(t));
+        }
+    }
     let body: &'a [HStmt] = main_fn.map(|f| f.body.as_slice()).unwrap_or(&hir.stmts);
     let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
     // **VD-259**: `main` dùng **cùng** helper tham số/default với `dispatch`. Bản cũ chỉ đưa

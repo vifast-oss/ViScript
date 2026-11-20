@@ -324,6 +324,8 @@ pub fn compile_with_fee(
         // ST-28: **cùng** ngữ nghĩa với interp — nếu tệp khai `fn main` thì chạy **hàm đó**
         // (trước đây VM bỏ qua `main` ⇒ lệch interp; phát hiện khi làm generic).
         if let Some(fi) = st.g.fmap_ten.get("main").copied() {
+            // **VD-262**: khai báo cấp tệp thành global, phát trước `Call(main)`.
+            st.khai_bao_cap_tep(hir)?;
             st.f.push(Instr::Call(fi, 0), hir.span, 1);
             st.f.push(Instr::Halt, hir.span, 0);
         } else {
