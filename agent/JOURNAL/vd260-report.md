@@ -371,3 +371,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Đang chạy**: `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`, tối ưu `eq_map`.
 - `./vis-dev core-test` @ `f091136`: **PASS**.
 - **LSP codeAction** merged (`ae1ec2d`): `source.fixAll` định dạng toàn tài liệu; gate xem log.
+- **sqlite.database_list** merged (`a3b9f3d` + R1 `c26b906`); gate **3245 passed / 3 skipped**; FUNCS **166**.
+- **impl Hop[T] generic** merged (`e229c63`); gate **3251 passed / 3 skipped**; `Ty::ListRowSet`, `ResultListRowSetErr` thêm cho db-list.
+- **Đang chạy**: `perf-map-eq`, `str.matches`, `vis test --slowest`, `impl xuyên module`.

@@ -3617,3 +3617,20 @@ tái dùng `Ty::List(&Ty::List(&Ty::Var(0)))`, không thêm biến thể.
 `std::env::current_dir`; không có path người dùng nên **không** kiểm `cap`/root, không side effect;
 cwd bị xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, không trap; mock `--fs-mock` luôn
 `Err` tất định; không sugar (module-only); reuse `Ty::ResultStrErr`.
+
+### VD-270 (bổ sung) · sqlite.database_list, impl Hop[T], LSP codeAction — A0, 2026-11-21
+
+- **sqlite.database_list**: `(handle) -> Result[list[RowSet], Error]`, đọc `PRAGMA database_list` qua
+  `db_query`; mỗi hàng thành một `RowSet` 3 cột `seq,name,file` đúng một hàng, sắp theo `seq`;
+  `:memory:` mới có `main` + `temp` (file rỗng), DB tệp `main.file` = đường dẫn; authorizer mở
+  **chỉ đọc** `database_list`; ATTACH/DETACH vẫn bị chặn; thêm `Ty::ListRowSet` và
+  `Ty::ResultListRowSetErr`; không sugar.
+- **impl Hop[T] generic (phạm vi hẹp)**: nhận `impl Hop[T]`/`impl E[T]`/`impl Pair[A,B]` cho
+  record/enum generic; `T` trong params/return/kiểu lồng được thay theo instantiation khi gọi trên
+  `Hop[int]`/`Hop[str]`; `self.m()` trong phương thức generic dispatch đúng. Giới hạn còn lại:
+  receiver phải có kiểu tĩnh phân giải được; dispatch khớp theo tên gốc (chưa siết instantiation);
+  `impl Trait for Hop[T]` chưa kiểm; thân phương thức vẫn coi `self` là `{error}`/xoá `T`.
+- **LSP codeAction**: `textDocument/codeAction` quảng cáo `{ codeActionKinds: ["source.fixAll"] }`;
+  một action toàn tài liệu "Định dạng tài liệu" (`source.fixAll`) chứa TextEdit thay toàn tệp bằng
+  bản `vis fmt` **chỉ khi** khác nội dung; đã đúng format/cú pháp hỏng ⇒ `[]`; range/context bỏ qua
+  có tài liệu hoá; URI chưa mở ⇒ `-32602`.
