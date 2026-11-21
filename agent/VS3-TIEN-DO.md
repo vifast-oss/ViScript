@@ -14,7 +14,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.1.0`**; `v0.1.0-rc1` @ `0985030` lịch sử; `pha1-rc1` giữ nguyên; mục tiêu **v0.2.0**, **v0.3.0** trước 09:00 T2 23/11 |
+| Tag | **`v0.2.0`** @ `42b700c`; `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; mục tiêu **v0.3.0** trước 09:00 T2 23/11 |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -99,10 +99,11 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 **v0.3.0 default-on**: W2 thử `959d1aa` (+7,8% release, wasm không kéo h2) — **chỉ merge sau khi tag
 v0.2.0 và W4 verify h2 trên Windows**. Trước đó main giữ `http2` default-off.
 
-**v0.2.0 candidate**: `42b700c` / `ec29204` — W3 local **PASS** (3480/3, nightly 14,7M fuzz,
-diff 100k 0 lệch, host 54/54, targets 18/18); W4 psvn **PASS 3436/0**; chờ fresh-clone rồi A0 tag.
-W1f (`098b649`, async cap≥1) và W5 bench example (`1844370`) là **sau candidate**, vào v0.3.0.
-Tàn dư v0.2.0: async net production; worker chưa nối evaluator; HTTP/2 default-off.
+**v0.2.0 đã tag** @ `42b700c`: Linux 3480/3; Windows 3436/0; fresh-clone PASS; host 54/54;
+targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, HTTP/2 default-off.
+
+**v0.3.0**: merge W1f (`098b649`, async cap≥1), W2 h2 reuse `28f9ea2` + default-on `959d1aa`,
+W5 bench example `1844370`; W3/W4 verify; tag khi xanh. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 

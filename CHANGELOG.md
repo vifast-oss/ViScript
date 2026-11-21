@@ -3,6 +3,17 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.2.0 — 2026-11-21
+
+- **Async default** cho chương trình có `async fn` (interp + VM); sync giữ nguyên; Pipe parity; guard 200k.
+- **Timeout kênh**: `recv_timeout(ms)->T?`, `send_timeout(ms,v)->bool`; 17 ca.
+- **Worker opt-in**: TaskId/proxy, snapshot W>1, print merge, budget atomic; B7 CPU-only 2,59–2,69×.
+- HTTP/2 có feature `http2` **default-off**; TLS/keep-alive/cookie/auth, registry HTTP(S)/Ed25519/GC, LSP tệp phụ/incremental.
+- Linux gate **3480/3**; nightly 14.728.191 fuzz 0 vi phạm; diff 100k 0 lệch; host 54/54; targets 18/18.
+- Windows psvn **3436 passed / 0 failed / 3 ignored**; `vis-dev check` PASS; host 54/54; targets 18/18 + 17/1.
+- Fresh-clone `42b700c` PASS; **macOS ngoài phạm vi**; **không GitHub Actions**.
+- Còn mở: async net production, worker evaluator, HTTP/2 default-on.
+
 ## v0.1.0 — 2026-11-21
 
 - Baseline sau pha 1 + VS3 wave 1: async frame test path (budget/cancel/chan0), TLS/keep-alive/cookie/auth,
