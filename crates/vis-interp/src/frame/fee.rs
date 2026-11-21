@@ -9,6 +9,8 @@ include!("../../../vis-bytecode/src/fee_shared.rs");
 // Thread-local để vis-cli có thể bật/lấy trace mà không đổi `lib.rs`/API công khai khác.
 // ---------------------------------------------------------------------------
 use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::Arc;
 
 use vis_syntax::Span;
 
@@ -206,4 +208,158 @@ pub fn charge(kind: FeeKind, site: u32) -> Option<(u64, i64)> {
             None
         }
     })
+}
+
+// ===========================================================================
+// **VS3-3b (VD-271)** — ngân sách **atomic dùng chung** cho worker pool opt-in.
+//
+// Khác với `BUDGET` thread-local ở trên (test-hook của runtime một luồng), kiểu dưới đây
+// là **một pool logic** cho nhiều worker. Mỗi worker/task giữ một `BudgetLease`: xin một
+// **chunk** bằng `fetch_sub`/CAS từ pool chung rồi trừ cục bộ, trả phần dư khi xong —
+// giảm tranh chấp CAS so với charge từng đơn vị. Không có setter/reset sau khi tạo.
+// ===========================================================================
+
+/// Snapshot cuối của [`SharedBudget`] (đọc sau khi mọi lease đã drop).
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BudgetSnapshot {
+    pub limit: i64,
+    pub used: i64,
+    pub remaining: i64,
+    pub exhausted: bool,
+}
+
+/// Lỗi charge: pool đã cạn (kể cả chunk cục bộ).
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BudgetError {
+    Exhausted { remaining: i64 },
+}
+
+/// **VS3-3b**: pool ngân sách atomic dùng chung; default **không** bật (không ai tạo nó
+/// ngoài worker pool opt-in/test).
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct SharedBudget {
+    limit: i64,
+    chunk: i64,
+    remaining: AtomicI64,
+    used: AtomicI64,
+    exhausted: AtomicBool,
+}
+
+impl SharedBudget {
+    /// `limit` là tổng đơn vị; `chunk` là kích thước mỗi lần reserve (0 ⇒ 1).
+    pub fn new(limit: u64, chunk: u64) -> Self {
+        let limit = i64_sat(limit);
+        let chunk = i64_sat(chunk).max(1).min(limit.max(1));
+        Self {
+            limit,
+            chunk,
+            remaining: AtomicI64::new(limit),
+            used: AtomicI64::new(0),
+            exhausted: AtomicBool::new(false),
+        }
+    }
+
+    pub fn limit(&self) -> i64 {
+        self.limit
+    }
+
+    pub fn chunk(&self) -> i64 {
+        self.chunk
+    }
+
+    /// Xin một block từ pool; `None` ⇒ cạn (không reset). CAS để không âm.
+    fn reserve(&self) -> Option<i64> {
+        let mut cur = self.remaining.load(Ordering::Relaxed);
+        loop {
+            if cur <= 0 {
+                self.exhausted.store(true, Ordering::Relaxed);
+                return None;
+            }
+            let take = cur.min(self.chunk);
+            match self.remaining.compare_exchange_weak(
+                cur,
+                cur - take,
+                Ordering::AcqRel,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Some(take),
+                Err(actual) => cur = actual,
+            }
+        }
+    }
+
+    fn refund(&self, n: i64) {
+        if n > 0 {
+            self.remaining.fetch_add(n, Ordering::AcqRel);
+        }
+    }
+
+    fn record_used(&self, n: i64) {
+        if n > 0 {
+            self.used.fetch_add(n, Ordering::Relaxed);
+        }
+    }
+
+    pub fn snapshot(&self) -> BudgetSnapshot {
+        BudgetSnapshot {
+            limit: self.limit,
+            used: self.used.load(Ordering::Acquire),
+            remaining: self.remaining.load(Ordering::Acquire),
+            exhausted: self.exhausted.load(Ordering::Acquire),
+        }
+    }
+}
+
+/// Lease của một worker/task: reserve chunk từ [`SharedBudget`], charge cục bộ, trả dư khi drop.
+#[doc(hidden)]
+pub struct BudgetLease {
+    global: Arc<SharedBudget>,
+    local: i64,
+    used: i64,
+}
+
+impl BudgetLease {
+    pub fn new(global: Arc<SharedBudget>) -> Self {
+        let local = global.reserve().unwrap_or(0);
+        Self {
+            global,
+            local,
+            used: 0,
+        }
+    }
+
+    /// Trừ `weight`; tự reserve thêm chunk khi cục bộ không đủ. `Err` ⇒ pool cạn.
+    pub fn charge(&mut self, weight: i64) -> Result<(), BudgetError> {
+        if weight <= 0 {
+            return Ok(());
+        }
+        while self.local < weight {
+            match self.global.reserve() {
+                Some(n) => self.local += n,
+                None => {
+                    return Err(BudgetError::Exhausted {
+                        remaining: self.local,
+                    })
+                }
+            }
+        }
+        self.local -= weight;
+        self.used += weight;
+        self.global.record_used(weight);
+        Ok(())
+    }
+
+    pub fn used(&self) -> i64 {
+        self.used
+    }
+}
+
+impl Drop for BudgetLease {
+    fn drop(&mut self) {
+        self.global.refund(self.local);
+        self.local = 0;
+    }
 }
