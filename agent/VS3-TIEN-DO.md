@@ -89,11 +89,14 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | Việc | Chủ | Trạng thái | Điều kiện xong |
 |---|---|---|---|
 | **VS3-1d** async default + Pipe parity | W1 | **DONE (một phần)** — async chạy frame, sync byte-identical, guard rõ; cap>0/net async W3 |
-| **VS3-3b** worker opt-in | W5 | **WIP** | TaskId/proxy, print merge, budget atomic, W=1/2/4 |
-| **VS3-4b2** HTTP/2 | W2 | **DONE** — feature `http2` default-off; 5 ca h2; HTTP/1.1 không hồi quy; Windows h2 chờ |
+| **VS3-3b** worker opt-in | W5 | **DONE (một phần)** — pool opt-in + TaskId/proxy + print merge + budget atomic; chưa nối evaluator |
+| **VS3-4b2** HTTP/2 | W2 | **DONE (một phần)** — feature `http2` default-off; 5 ca h2; **default-on thử `959d1aa` chưa merge** |
 | **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
-| **VS3-2b** timeout kênh | — | **NEXT** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
+| **VS3-2b** timeout kênh | W5 | **WIP** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
+
+**v0.3.0 default-on**: W2 thử `959d1aa` (+7,8% release, wasm không kéo h2) — **chỉ merge sau khi tag
+v0.2.0 và W4 verify h2 trên Windows**. Trước đó main giữ `http2` default-off.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
