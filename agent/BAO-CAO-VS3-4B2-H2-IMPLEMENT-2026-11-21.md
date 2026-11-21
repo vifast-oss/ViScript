@@ -53,12 +53,13 @@ Không GPL/AGPL; toàn bộ permissive. `h2` có **1 unsafe thật** (`from_utf8
 
 ## 4. Test
 
-`crates/vis-cli/tests/vs3_http2.rs` (feature `http2`): h2 server local TLS + ALPN h2:
+`crates/vis-cli/tests/vs3_http2.rs` (feature `http2`): h2 server local TLS + ALPN h2 (6 ca):
 - `h2_get_va_head`: GET body/header, HEAD status/header;
 - `h2_redirect_va_cookie`: 302 + Set-Cookie → hop sau gửi Cookie;
 - `h2_basic_auth`: `user:pass@` → Authorization Basic;
 - `fallback_http1_khi_khong_alpn`: TLS server không ALPN → dùng lại kết nối, h1 chạy;
-- `h2_timeout_ro_rang`: timeout rõ.
+- `h2_timeout_ro_rang`: timeout rõ;
+- `registry_https_thuong_luong_h2`: `vis pkg add` qua registry TLS h2 (index+tarball, SHA-256).
 Kèm default `vs3_tls`/`vs3_registry_https` dưới feature h2 (fallback) và toàn bộ test h1.
 
 ## 5. Kết luận

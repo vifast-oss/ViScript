@@ -124,6 +124,9 @@ pub struct Net {
     /// **VS3-4b2**: đã biết authority có h2? `false` = server không chọn ALPN h2, khỏi thử lại.
     #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
     h2_biet: std::collections::HashMap<String, bool>,
+    /// **VS3-4b3**: phiên h2 dùng lại theo authority (tuần tự, tối đa vài authority).
+    #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+    h2_phien: std::collections::HashMap<String, h2::PhienH2>,
     /// Kết nối TLS đã handshake khi thử h2 nhưng server chọn HTTP/1.1; tầng HTTP/1.1 dùng lại.
     #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
     h2_http1: Option<(String, tls::KenhTls)>,
@@ -143,6 +146,8 @@ impl Net {
             cau_hinh_tls: None,
             #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
             h2_biet: std::collections::HashMap::new(),
+            #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+            h2_phien: std::collections::HashMap::new(),
             #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
             h2_http1: None,
         }
@@ -408,7 +413,9 @@ impl NetHost for Net {
         Some(&mut self.cookie)
     }
 
-    /// **VS3-4b2**: thử ALPN h2; nếu server chọn h1, giữ kết nối TLS cho `connect_http` dùng lại.
+    /// **VS3-4b2/4b3**: thử/tái dùng phiên ALPN h2; server chọn h1 ⇒ giữ kết nối TLS cho
+    /// `connect_http` dùng lại. Request lỗi ⇒ bỏ phiên rồi thử mở phiên mới một lần (GET/HEAD
+    /// idempotent).
     #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
     fn http2_get(
         &mut self,
@@ -418,22 +425,39 @@ impl NetHost for Net {
         headers: &[(String, String)],
         timeout_ms: u64,
     ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+        const PHEN_TOI_DA: usize = 4;
         let khoa = khoa_http(true, dia_chi);
         if self.h2_biet.get(&khoa) == Some(&false) {
             return Ok(None);
+        }
+        if let Some(phien) = self.h2_phien.get_mut(&khoa) {
+            match phien.request(target, method, headers, timeout_ms) {
+                Ok(kq) => return Ok(Some(kq)),
+                Err(_) => {
+                    // Connection cũ đã chết/GOAWAY: bỏ rồi mở phiên mới bên dưới.
+                    self.h2_phien.remove(&khoa);
+                }
+            }
         }
         let cau_hinh = match self.cau_hinh_tls.get_or_insert_with(tls::mac_dinh) {
             Ok(c) => c.clone(),
             Err(e) => return Err(e.clone()),
         };
         let cau_hinh = tls::cau_hinh_h2(&cau_hinh);
-        match h2::request(&cau_hinh, dia_chi, target, method, headers, timeout_ms)? {
-            h2::KqH2::Xong(kq) => {
-                self.h2_biet.insert(khoa, true);
-                self.h2_http1 = None;
+        match h2::PhienH2::moi(&cau_hinh, dia_chi, timeout_ms)? {
+            h2::MoH2::Phien(mut phien) => {
+                let kq = phien.request(target, method, headers, timeout_ms)?;
+                self.h2_biet.insert(khoa.clone(), true);
+                self.h2_phien.insert(khoa, phien);
+                while self.h2_phien.len() > PHEN_TOI_DA {
+                    let Some(k) = self.h2_phien.keys().next().cloned() else {
+                        break;
+                    };
+                    self.h2_phien.remove(&k);
+                }
                 Ok(Some(kq))
             }
-            h2::KqH2::Http1(k) => {
+            h2::MoH2::Http1(k) => {
                 self.h2_biet.insert(khoa.clone(), false);
                 self.h2_http1 = Some((khoa, *k));
                 Ok(None)

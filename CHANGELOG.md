@@ -3,6 +3,24 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.0 — 2026-11-21 (candidate)
+
+- **HTTP/2 default-on** (h2 + ALPN, fallback HTTP/1.1, reuse theo authority); `http2` vào default non-wasm.
+- Async `chan(n≥1)` wait-set trên frame (W1f); worker benchmark chuyển example.
+- Linux gate **3494/3**; HTTP/2 7 ca + TLS 12 + HTTP 22; Windows/fresh-clone đang verify.
+- Không GitHub Actions; macOS ngoài phạm vi.
+
+## v0.2.0 — 2026-11-21
+
+- **Async default** cho chương trình có `async fn` (interp + VM); sync giữ nguyên; Pipe parity; guard 200k.
+- **Timeout kênh**: `recv_timeout(ms)->T?`, `send_timeout(ms,v)->bool`; 17 ca.
+- **Worker opt-in**: TaskId/proxy, snapshot W>1, print merge, budget atomic; B7 CPU-only 2,59–2,69×.
+- HTTP/2 có feature `http2` **default-off**; TLS/keep-alive/cookie/auth, registry HTTP(S)/Ed25519/GC, LSP tệp phụ/incremental.
+- Linux gate **3480/3**; nightly 14.728.191 fuzz 0 vi phạm; diff 100k 0 lệch; host 54/54; targets 18/18.
+- Windows psvn **3436 passed / 0 failed / 3 ignored**; `vis-dev check` PASS; host 54/54; targets 18/18 + 17/1.
+- Fresh-clone `42b700c` PASS; **macOS ngoài phạm vi**; **không GitHub Actions**.
+- Còn mở: async net production, worker evaluator, HTTP/2 default-on.
+
 ## v0.1.0 — 2026-11-21
 
 - Baseline sau pha 1 + VS3 wave 1: async frame test path (budget/cancel/chan0), TLS/keep-alive/cookie/auth,
@@ -52,6 +70,9 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-1d+ (async cap≥1)**: bỏ fallback `chan(n>0)`, wait-set blocking send/recv trên frame, close/cancel/timeout tương tác; 6 ca `vs3_chan_cap` + 17 timeout; merge `0857de8` (sau candidate v0.2.0).
+- **2026-11-21** — **W4 verify v0.2.0**: psvn `ec29204` **3436/0**, gate PASS, host 54/54, targets 18/18+17/1; không GitHub Actions.
+- **2026-11-21** — **VS3-4b3 (h2 reuse)**: tái dùng connection h2 theo authority (tuần tự, tối đa 4), retry một lần khi GOAWAY/lỗi; 7 ca h2; feature default-off; nhánh `28f9ea2`, chưa merge trước tag v0.2.0.
 - **2026-11-21** — **VS3-2b (timeout kênh)**: `recv_timeout(ms)->T?`, `send_timeout(ms,v)->bool`; frame path timer/reactor, `ms=0` một lần, `ms<0` trap; 17 ca; `select` hoãn VS3-2c; merge `42b700c`.
 - **2026-11-21** — **VS3-1d (async default)**: chương trình có `async fn` chạy frame runtime (interp/VM), sync giữ nguyên; Pipe parity; guard 200k trap rõ; cache warm/cold; 7 ca `vs3_default` + sem 525 ×2; merge `78527a4`.
 - **2026-11-21** — **VS3-4b2 (HTTP/2)**: feature `http2` default-off; `h2`+tokio io-util, ALPN h2, fallback HTTP/1.1 cùng kết nối; 5 ca h2 + 12 TLS; không default/wasm; merge `55d3489`.

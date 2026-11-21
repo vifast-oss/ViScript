@@ -271,6 +271,34 @@ fn cli_async_chan0_va_sync_byte_identical() {
     }
 }
 
+const ASYNC_FS: &str = r#"use std.fs
+
+async fn read() -> str:
+    match fs.read("x.txt"):
+        Ok(s): s
+        Err(e): "err"
+
+fn main():
+    print(await spawn read())
+"#;
+
+#[test]
+fn cli_async_noi_host_fs() {
+    let d = tam("fs");
+    std::fs::write(d.join("x.txt"), "hello").expect("ghi x.txt");
+    let p = viet(&d, "fs.vis", ASYNC_FS);
+    for vm in [false, true] {
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "fs vm={vm}: {err}");
+        assert_eq!(out, "hello\n", "fs vm={vm}");
+    }
+}
+
 #[test]
 fn cli_cache_warm_cold_async_vm() {
     let d = tam("cache");

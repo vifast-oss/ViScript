@@ -1,0 +1,469 @@
+# VS3-W2 thử default-on http2 (2026-11-21, main 78527a4)
+CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --test vs3_http2
+   Compiling vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+   Compiling vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.07s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/5aaaac259b3d512f/out/vs3_http2-5aaaac259b3d512f)
+
+running 5 tests
+test fallback_http1_khi_khong_alpn ... ok
+test h2_get_va_head ... ok
+test h2_basic_auth ... ok
+test h2_redirect_va_cookie ... ok
+test h2_timeout_ro_rang ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s
+
+## cargo test -p vis-cli --test vs3_tls
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.83s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/2ebb8d47d042558b/out/vs3_tls-2ebb8d47d042558b)
+
+running 12 tests
+test https_chan_ha_cap_ve_http ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_head_khong_theo_redirect ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_ipv6_loopback ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.50s
+
+## cargo test -p vis-cli --test http
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.11s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/f0c4b49a87b18612/out/http-f0c4b49a87b18612)
+
+running 22 tests
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_200_byte ... ok
+test http_body_rong ... ok
+test http_chunked_co_mo_rong ... ok
+test http_head_khong_doc_than ... ok
+test http_gioi_han ... ok
+test http_head_khong_theo_redirect ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_duong_mac_dinh ... ok
+test http_404 ... ok
+test http_chunked_ba_chunk ... ok
+test http_het_gio ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.09s
+
+## cargo test -p vis-cli --test net
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s
+     Running tests/net.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/3c3169a0241929a8/out/net-3c3169a0241929a8)
+
+running 9 tests
+test tcp_doc_ghi_sau_close ... ok
+test tcp_explain_perms ... ok
+test tcp_explain_tong ... ok
+test tcp_khong_host ... ok
+test tcp_noi_va_doc ... ok
+test tcp_het_gio_doc ... ok
+test tcp_tay_la ... ok
+test tcp_read_cap_64 ... ok
+test tcp_tu_choi ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+## cargo test -p vis-cli --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.58s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/ce281bdc15625032/out/vs3_keepalive-ce281bdc15625032)
+
+running 8 tests
+test hai_request_cung_mot_ket_noi ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test head_hai_lan_cung_mot_ket_noi ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo test -p vis-cli --test vs3_registry_https
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.67s
+     Running tests/vs3_registry_https.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/425ca9f35b83fae6/out/vs3_registry_https-425ca9f35b83fae6)
+
+running 6 tests
+test https_duoc_nhan_loi_noi_ro ... ok
+test https_sai_cert_loi_ro ... ok
+test https_khong_root_test_loi_ro ... ok
+test https_sai_san_van_tu_choi ... ok
+test add_https_co_chu_ky ... ok
+test add_qua_https_roi_cai_dung ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+## cargo test -p vis-interp --lib net::tests
+   Compiling vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.99s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-interp/09ecea3a87e30842/out/vis_interp-09ecea3a87e30842)
+
+running 8 tests
+test net::tests::chunked_doc_trailer_va_byte_da_dung ... ok
+test net::tests::doc_header_doc_status_va_content_length ... ok
+test net::tests::chuan_hoa_va_location_day_du ... ok
+test net::tests::header_giu_ket_noi_theo_phien_ban_va_connection ... ok
+test net::tests::location_giu_scheme_va_chan_ha_cap ... ok
+test net::tests::tach_url_dung_va_chan_ngoai_loopback ... ok
+test net::tests::tach_url_https_va_cong_mac_dinh ... ok
+test net::tests::tach_url_userinfo_basic_auth ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 295 filtered out; finished in 0.00s
+
+
+## cargo tree default linux (h2/tokio)
+├── bytes v1.12.2
+├── h2 v0.4.20
+│   ├── bytes v1.12.2
+│   ├── http v1.5.0
+│   │   ├── bytes v1.12.2
+│   ├── tokio v1.54.1
+│   │   ├── bytes v1.12.2
+│   │   ├── bytes v1.12.2
+│   │   └── tokio v1.54.1 (*)
+├── http v1.5.0 (*)
+├── tokio v1.54.1 (*)
+## cargo tree default wasm (h2/tokio phải trống)
+wasm default: không có h2/tokio
+## cargo tree wasm --features http2 (phải trống)
+wasm http2: không có h2/tokio
+## cargo check -p vis-cli
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.84s
+## cargo check -p vis-cli --no-default-features
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.89s
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc (default)
+    Checking pin-project-lite v0.2.18
+    Checking bytes v1.12.2
+    Checking once_cell v1.21.4
+   Compiling ring v0.17.14
+   Compiling libsqlite3-sys v0.35.0
+    Checking itoa v1.0.19
+    Checking hashbrown v0.17.1
+    Checking futures-sink v0.3.34
+    Checking equivalent v1.0.3
+    Checking futures-core v0.3.34
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking slab v0.4.12
+    Checking fnv v1.0.7
+    Checking atomic-waker v1.1.2
+    Checking tracing-core v0.1.36
+    Checking tokio v1.54.1
+    Checking http v1.5.0
+    Checking tracing v0.1.44
+    Checking indexmap v2.14.2
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+error: failed to run custom build command for `ring v0.17.14`
+
+Caused by:
+  process didn't exit successfully: `/home/ps/ViScript/target/vs3-w2-tls/debug/build/ring/245b1ecf99033f49/out/build_script_build` (exit status: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=CARGO_MANIFEST_DIR
+  cargo:rerun-if-env-changed=CARGO_PKG_NAME
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_MAJOR
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_MINOR
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_PATCH
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_PRE
+  cargo:rerun-if-env-changed=CARGO_MANIFEST_LINKS
+  cargo:rerun-if-env-changed=RING_PREGENERATE_ASM
+  cargo:rerun-if-env-changed=OUT_DIR
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ARCH
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_OS
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ENV
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ENDIAN
+  cargo:rerun-if-env-changed=CC_PREFER_CLANG_CL_OVER_MSVC
+  CC_PREFER_CLANG_CL_OVER_MSVC = None
+  cargo:rerun-if-env-changed=VCINSTALLDIR
+  VCINSTALLDIR = None
+  cargo:rerun-if-env-changed=CC_x86_64-pc-windows-msvc
+  CC_x86_64-pc-windows-msvc = None
+  cargo:rerun-if-env-changed=CC_x86_64_pc_windows_msvc
+  CC_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=TARGET_CC
+  TARGET_CC = None
+  cargo:rerun-if-env-changed=CC
+  CC = None
+  cargo:rerun-if-env-changed=CROSS_COMPILE
+  CROSS_COMPILE = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:rerun-if-env-changed=CPATH
+  cargo:rerun-if-env-changed=C_INCLUDE_PATH
+  cargo:rerun-if-env-changed=CPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJC_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJCPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=COMPILER_PATH
+  cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
+  cargo:rerun-if-env-changed=GCC_EXEC_PREFIX
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64_pc_windows_msvc
+  CFLAGS_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64-pc-windows-msvc
+  CFLAGS_x86_64-pc-windows-msvc = None
+  CFLAGS = None
+  TARGET_CFLAGS = None
+  CFLAGS_x86_64_pc_windows_msvc = None
+  CFLAGS_x86_64-pc-windows-msvc = None
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:warning=GNU compiler is not supported for this target
+
+  --- stderr
+
+
+  error occurred in cc-rs: failed to find tool "lib.exe": No such file or directory (os error 2)
+
+
+warning: build failed, waiting for other jobs to finish...
+warning: libsqlite3-sys@0.35.0: GNU compiler is not supported for this target
+warning: libsqlite3-sys@0.35.0: GNU compiler is not supported for this target
+warning: libsqlite3-sys@0.35.0: GNU compiler is not supported for this target
+error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+
+Caused by:
+  process didn't exit successfully: `/home/ps/ViScript/target/vs3-w2-tls/debug/build/libsqlite3-sys/c5579d939b3d2a90/out/build_script_build` (exit status: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=LIBSQLITE3_SYS_USE_PKG_CONFIG
+  cargo:include=/home/ps/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libsqlite3-sys-0.35.0/sqlite3
+  cargo:rerun-if-changed=sqlite3/sqlite3.c
+  cargo:rerun-if-changed=sqlite3/wasm32-wasi-vfs.c
+  cargo:rerun-if-env-changed=SQLITE_MAX_VARIABLE_NUMBER
+  cargo:rerun-if-env-changed=SQLITE_MAX_EXPR_DEPTH
+  cargo:rerun-if-env-changed=SQLITE_MAX_COLUMN
+  cargo:rerun-if-env-changed=LIBSQLITE3_FLAGS
+  cargo:rerun-if-env-changed=CC_FORCE_DISABLE
+  CC_FORCE_DISABLE = None
+  cargo:rerun-if-env-changed=CC_PREFER_CLANG_CL_OVER_MSVC
+  CC_PREFER_CLANG_CL_OVER_MSVC = None
+  cargo:rerun-if-env-changed=VCINSTALLDIR
+  VCINSTALLDIR = None
+  cargo:rerun-if-env-changed=CC_x86_64-pc-windows-msvc
+  CC_x86_64-pc-windows-msvc = None
+  cargo:rerun-if-env-changed=CC_x86_64_pc_windows_msvc
+  CC_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=TARGET_CC
+  TARGET_CC = None
+  cargo:rerun-if-env-changed=CC
+  CC = None
+  cargo:rerun-if-env-changed=CROSS_COMPILE
+  CROSS_COMPILE = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:rerun-if-env-changed=CPATH
+  cargo:rerun-if-env-changed=C_INCLUDE_PATH
+  cargo:rerun-if-env-changed=CPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJC_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJCPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=COMPILER_PATH
+  cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
+  cargo:rerun-if-env-changed=GCC_EXEC_PREFIX
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64_pc_windows_msvc
+  CFLAGS_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64-pc-windows-msvc
+  CFLAGS_x86_64-pc-windows-msvc = None
+  CFLAGS = None
+  TARGET_CFLAGS = None
+  CFLAGS_x86_64_pc_windows_msvc = None
+  CFLAGS_x86_64-pc-windows-msvc = None
+  CC_FORCE_DISABLE = None
+  cargo:rerun-if-env-changed=AR_x86_64-pc-windows-msvc
+  AR_x86_64-pc-windows-msvc = None
+  cargo:rerun-if-env-changed=AR_x86_64_pc_windows_msvc
+  AR_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=TARGET_AR
+  TARGET_AR = None
+  cargo:rerun-if-env-changed=AR
+  AR = None
+  CC_PREFER_CLANG_CL_OVER_MSVC = None
+  VCINSTALLDIR = None
+  CC_x86_64-pc-windows-msvc = None
+  CC_x86_64_pc_windows_msvc = None
+  TARGET_CC = None
+  CC = None
+  CROSS_COMPILE = None
+  cargo:warning=GNU compiler is not supported for this target
+  VCINSTALLDIR = None
+  cargo:rerun-if-env-changed=ARFLAGS
+  ARFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_ARFLAGS
+  TARGET_ARFLAGS = None
+  cargo:rerun-if-env-changed=ARFLAGS_x86_64_pc_windows_msvc
+  ARFLAGS_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=ARFLAGS_x86_64-pc-windows-msvc
+  ARFLAGS_x86_64-pc-windows-msvc = None
+  AR_x86_64-pc-windows-msvc = None
+  AR_x86_64_pc_windows_msvc = None
+  TARGET_AR = None
+  AR = None
+  CC_PREFER_CLANG_CL_OVER_MSVC = None
+  VCINSTALLDIR = None
+  CC_x86_64-pc-windows-msvc = None
+  CC_x86_64_pc_windows_msvc = None
+  TARGET_CC = None
+  CC = None
+  CROSS_COMPILE = None
+  cargo:warning=GNU compiler is not supported for this target
+  VCINSTALLDIR = None
+  ARFLAGS = None
+  TARGET_ARFLAGS = None
+  ARFLAGS_x86_64_pc_windows_msvc = None
+  ARFLAGS_x86_64-pc-windows-msvc = None
+
+  --- stderr
+
+
+  error occurred in cc-rs: failed to find tool "lib.exe": No such file or directory (os error 2)
+
+
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc --no-default-features
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.16s
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc --no-default-features --features http2
+   Compiling ring v0.17.14
+    Checking tokio-util v0.7.20
+    Checking h2 v0.4.20
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+warning: ring@0.17.14: GNU compiler is not supported for this target
+error: failed to run custom build command for `ring v0.17.14`
+
+Caused by:
+  process didn't exit successfully: `/home/ps/ViScript/target/vs3-w2-tls/debug/build/ring/f2bd82705923ddcc/out/build_script_build` (exit status: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=CARGO_MANIFEST_DIR
+  cargo:rerun-if-env-changed=CARGO_PKG_NAME
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_MAJOR
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_MINOR
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_PATCH
+  cargo:rerun-if-env-changed=CARGO_PKG_VERSION_PRE
+  cargo:rerun-if-env-changed=CARGO_MANIFEST_LINKS
+  cargo:rerun-if-env-changed=RING_PREGENERATE_ASM
+  cargo:rerun-if-env-changed=OUT_DIR
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ARCH
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_OS
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ENV
+  cargo:rerun-if-env-changed=CARGO_CFG_TARGET_ENDIAN
+  cargo:rerun-if-env-changed=CC_PREFER_CLANG_CL_OVER_MSVC
+  CC_PREFER_CLANG_CL_OVER_MSVC = None
+  cargo:rerun-if-env-changed=VCINSTALLDIR
+  VCINSTALLDIR = None
+  cargo:rerun-if-env-changed=CC_x86_64-pc-windows-msvc
+  CC_x86_64-pc-windows-msvc = None
+  cargo:rerun-if-env-changed=CC_x86_64_pc_windows_msvc
+  CC_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=TARGET_CC
+  TARGET_CC = None
+  cargo:rerun-if-env-changed=CC
+  CC = None
+  cargo:rerun-if-env-changed=CROSS_COMPILE
+  CROSS_COMPILE = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:rerun-if-env-changed=CPATH
+  cargo:rerun-if-env-changed=C_INCLUDE_PATH
+  cargo:rerun-if-env-changed=CPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJC_INCLUDE_PATH
+  cargo:rerun-if-env-changed=OBJCPLUS_INCLUDE_PATH
+  cargo:rerun-if-env-changed=COMPILER_PATH
+  cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
+  cargo:rerun-if-env-changed=GCC_EXEC_PREFIX
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64_pc_windows_msvc
+  CFLAGS_x86_64_pc_windows_msvc = None
+  cargo:rerun-if-env-changed=CFLAGS_x86_64-pc-windows-msvc
+  CFLAGS_x86_64-pc-windows-msvc = None
+  CFLAGS = None
+  TARGET_CFLAGS = None
+  CFLAGS_x86_64_pc_windows_msvc = None
+  CFLAGS_x86_64-pc-windows-msvc = None
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:warning=GNU compiler is not supported for this target
+  cargo:warning=GNU compiler is not supported for this target
+
+  --- stderr
+
+
+  error occurred in cc-rs: failed to find tool "lib.exe": No such file or directory (os error 2)
+
+
+warning: build failed, waiting for other jobs to finish...
+## cargo check -p vis-cli --release
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 5.03s
+## clippy
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.21s
+## rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+
+## cargo tree default linux — h2/tokio
+├── bytes v1.12.2
+├── h2 v0.4.20
+│   ├── bytes v1.12.2
+│   ├── http v1.5.0
+│   │   ├── bytes v1.12.2
+│   ├── tokio v1.54.1
+│   │   ├── bytes v1.12.2
+│   │   ├── bytes v1.12.2
+│   │   └── tokio v1.54.1 (*)
+├── http v1.5.0 (*)
+## cargo tree default wasm — h2/tokio
+KHÔNG có h2/tokio trên wasm default
