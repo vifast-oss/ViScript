@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-68 (VD-102 (3))** — dựng notification `textDocument/publishDiagnostics`.
 
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use vis_diag::Severity;
 use vis_interp::value::Value;
@@ -38,6 +39,51 @@ fn chan_doan_module(path: &Path, text: &str) -> Option<Vec<ChanDoan>> {
         .collect();
     ds.sort_by(|a, b| a.span.start.cmp(&b.span.start).then(a.ma.cmp(b.ma)));
     Some(ds)
+}
+
+fn chuan(p: &Path) -> PathBuf {
+    std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf())
+}
+
+/// Tài liệu `main_uri` có phụ thuộc (trực tiếp hoặc gián tiếp) vào `target` không.
+///
+/// Ưu tiên cây module thật (`Loaded.files`, đã canonical hoá, gồm cả phụ thuộc bắc cầu và buffer
+/// đang mở ở overlay VS3-7). Nếu nạp lỗi (syntax/cycle/mất tệp) ⇒ quét `use ./…` **trực tiếp** để
+/// vẫn phát hiện quan hệ tối thiểu — không publish nhầm tài liệu không liên quan.
+fn phu_thuoc(main_uri: &str, text: &str, target: &Path) -> bool {
+    let Some(main) = super::uri_thanh_duong(main_uri) else {
+        return false;
+    };
+    if let Ok(l) = crate::modules::load_full_voi_text(&main, text, true, true) {
+        if l.files.iter().any(|f| chuan(&f.path) == *target) {
+            return true;
+        }
+    }
+    let dir = Path::new(&main).parent().unwrap_or_else(|| Path::new("."));
+    super::module::use_dia_phuong(text, dir)
+        .iter()
+        .any(|p| chuan(p) == *target)
+}
+
+/// **VS3-7 (VD-271)**: URI các tài liệu **đang mở** phụ thuộc vào tài liệu `thay_doi_uri` (bị đổi/
+/// mở/đóng) — cần publish lại chẩn đoán module-aware. Trả danh sách **sắp theo URI**, không gồm
+/// chính `thay_doi_uri`, không trùng.
+pub fn uri_lien_quan(thay_doi_uri: &str, van_ban: &HashMap<String, String>) -> Vec<String> {
+    let Some(p) = super::uri_thanh_duong(thay_doi_uri) else {
+        return Vec::new();
+    };
+    let target = chuan(Path::new(&p));
+    let mut out: Vec<String> = Vec::new();
+    for (uri, text) in van_ban {
+        if uri == thay_doi_uri {
+            continue;
+        }
+        if phu_thuoc(uri, text, &target) {
+            out.push(uri.clone());
+        }
+    }
+    out.sort();
+    out
 }
 
 /// Notification chẩn đoán; `text = None` ⇒ `diagnostics:[]` (đóng tệp).
