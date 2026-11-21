@@ -60,6 +60,9 @@
 # kỳ vọng: false
 # kỳ vọng: Some(1)
 # kỳ vọng: Some(3)
+# kỳ vọng: [[1, 2], [3, 4]]
+# kỳ vọng: []
+# kỳ vọng: [[1, 2, 3]]
 use std.fs
 use std.list
 use std.map
@@ -138,3 +141,7 @@ print(str.is_ascii_digit("123"))
 print(str.is_ascii_digit(""))
 print([3.0, 1.0, 2.0].min_float())
 print([3.0, 1.0, 2.0].max_float())
+
+print([1, 2, 3, 4, 5].chunks_exact(2))
+print([1, 2, 3].chunks_exact(5))
+print([1, 2, 3].chunks_exact(3))
