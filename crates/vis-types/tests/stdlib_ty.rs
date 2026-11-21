@@ -263,7 +263,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.sqlite.database_list` (`(str) -> Result[list[RowSet], Error]`; mỗi hàng
     // `PRAGMA database_list` thành một `RowSet` 3 cột `seq,name,file` đúng một hàng, sắp theo
     // `seq`, module-only không sugar) ⇒ **163** hàm (trước 162); không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 166, "bảng chữ ký phải đủ 166 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 matches, 2026-11-21)**: +**1** hàm `std.str.matches`
+    // (`(str, str) -> list[str]`; trả **các chuỗi con** khớp đúng Rust `str::matches`, khớp
+    // **không chồng** trái → phải, `pat` rỗng khớp tại mọi biên scalar; tái dùng `Ty::ListStr`,
+    // sugar R5c `s.matches(pat)`) ⇒ **167** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 167, "bảng chữ ký phải đủ 167 hàm");
 }
 
 #[test]

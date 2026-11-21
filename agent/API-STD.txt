@@ -145,6 +145,7 @@ str.is_empty	(str) -> bool
 str.join	(list[str], str) -> str
 str.lines	(str) -> list[str]
 str.lower	(str) -> str
+str.matches	(str, str) -> list[str]
 str.pad_left	(str, int, str) -> str
 str.pad_right	(str, int, str) -> str
 str.parse_float	(str) -> float?
