@@ -367,3 +367,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **list.chunks_exact** merged (`f890f0d`); gate **3216 passed / 3 skipped**; FUNCS **164**.
 - `VIS_DIFF_N=100000` seed 20261220 @ `1838bcd`: **0 lệch** (93.767 chạy, 218,9 s).
 - **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`.
+- **fs.current_dir** merged (`74f6e02`, R1 fix `3ead421`); gate **3224 passed / 3 skipped**; FUNCS **165**.
+- **Đang chạy**: `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`, tối ưu `eq_map`.

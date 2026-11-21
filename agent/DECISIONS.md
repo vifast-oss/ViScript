@@ -3610,3 +3610,10 @@ Không sugar; reuse `Ty::OptStr`. Lưu ý: `str.strip_prefix` đã có nên suga
 **bỏ phần dư cuối** (khác `list.chunk`); `n <= 0` ⇒ trap `VS0501` kiểm trước khi chia (kể cả list
 rỗng); `n > len`/rỗng ⇒ `[]`; nhóm là list mới, không alias; sugar R5c `xs.chunks_exact(n)`;
 tái dùng `Ty::List(&Ty::List(&Ty::Var(0)))`, không thêm biến thể.
+
+### VD-270 (bổ sung) · fs.current_dir — A0, 2026-11-21
+
+`fs.current_dir() -> Result[str, Error]`: **params rỗng**, trả cwd **tuyệt đối** UTF-8 từ
+`std::env::current_dir`; không có path người dùng nên **không** kiểm `cap`/root, không side effect;
+cwd bị xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, không trap; mock `--fs-mock` luôn
+`Err` tất định; không sugar (module-only); reuse `Ty::ResultStrErr`.
