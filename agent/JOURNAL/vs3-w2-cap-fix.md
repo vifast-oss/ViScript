@@ -1,82 +1,72 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# VS3-W2 — sửa hot-spin cap 8 MiB async-h2 (sau Windows/Nguon)
+# VS3-W2 — cap hot-spin + cold-wake h2 (interest theo token, force-wake peer)
 
-**Trạng thái**: sửa production tối thiểu; feature `async-h2` vẫn **default-off**, không đổi API
-sync/default/dependency, không GitHub Actions.
-**Nhánh**: `vs3/w2-tls`; merge main **`a8100ab`** (W4 Windows async net + `Nguon`).
+**Trạng thái**: sửa production tối thiểu, **đủ điều kiện merge** (chưa push/merge/tag theo lệnh).
+Feature `async-h2` vẫn **default-off**; không đổi API sync/default/dependency; không GitHub Actions.
+**Nhánh**: `vs3/w2-tls`; merge main **`fdd9e88`** (`Nguon`/Windows async net).
+**Target dir (bắt buộc từ nay)**: `$PWD/target/w2` — **không** dùng target chung
+`/home/ps/ViScript/target` (đã từng làm lẫn rmeta với main).
 **Log**: [`vs3-w2-cap-fix.log`](vs3-w2-cap-fix.log).
 
-## 1. Root cause
+## 1. Root cause (hai lỗi độc lập)
 
-Có **hai** lỗi ghép lại trong đăng ký readiness của backend async:
+### 1.1 Cap 8 MiB — hot-spin interest
 
-1. **Interest tích luỹ theo nguồn/fd**: `AsyncNet::register` (bản cũ `fd_wants`, bản W4
-   `nguon_wants`) chỉ **OR** hướng chờ và **không bao giờ thu hẹp**. Sau lần đầu cần WRITABLE
-   (TCP connect/TLS), nguồn kẹt `READABLE|WRITABLE` mãi.
-2. **`ReactorOp::ReadWrite` luôn đăng ký cả hai chiều**, dù `H2Async` chỉ tắc ở READ sau khi đã
-   gửi request. Với epoll **level-trigger**, socket gần như luôn WRITABLE ⇒ mỗi vòng scheduler
-   được đánh thức, `h2_poll` không có dữ liệu mới, re-arm, lặp tới **200.000 turn** (VS0501) hoặc
-   tranh chấp state làm rơi về đường h1 (`phản hồi HTTP không đủ header`).
+- `AsyncNet::register` (cũ `fd_wants`, W4 `nguon_wants`) **OR tích luỹ** hướng chờ theo nguồn và
+  không thu hẹp. Sau lần đầu cần WRITABLE (TCP/TLS), nguồn kẹt `READABLE|WRITABLE`.
+- `ReactorOp::ReadWrite` luôn đăng ký `(true,true)`, dù h2 sau khi gửi request chỉ tắc READ.
+  epoll level-trigger + socket luôn WRITABLE ⇒ scheduler quay tới **200.000 turn** (VS0501),
+  hoặc state rối rơi về h1 (`phản hồi HTTP không đủ header`).
+
+### 1.2 Cold-start — mất wake sau `doi_khoa_nguon` (W4)
+
+- `doi_khoa_nguon` `T:… → H<n>` **không làm mất token**, nhưng lộ một lỗi protocol:
+  một frame gọi `h2_poll` có thể **drain response của mọi stream** trên session chung. Khi frame
+  đó nhận response của chính nó (`ReactorH2Outcome::Response`), các frame khác đã được phục vụ hộ
+  nhưng **không còn readiness socket** để đánh thức ⇒ 1/4 task ngủ tới timeout.
+- Đây là lý do cold-start chỉ fail khi chạy **song song** (timing khác), còn serial xanh.
 
 ## 2. Sửa tối thiểu
 
-- `AsyncNet` (và `Nguon` sau W4):
-  - thay union theo nguồn bằng **`token_wants: HashMap<token,(read,write)>`**;
-  - `interest_cua_nguon(key)` = hợp **hiện tại** của các token còn sống;
-  - `register`: chèn token + wants rồi mới tính interest; lỗi thì `bo_token`;
-  - `deregister`: xoá token, nếu còn token khác thì `reregister` với interest **thu hẹp**;
-  - `doi_khoa_nguon`/`bo_sach_nguon` cập nhật sổ token, không giữ union theo khoá.
-- `ReactorOp::ReadWrite`: lấy hướng từ **`H2Async::interest()`** (`muon_doc`/`muon_ghi`), không
-  mặc định `(true,true)`.
-- Port lên W4 `Nguon` (`async_net_nguon.rs`): **không** đưa `SourceFd`/`RawFd` trở lại
-  `async_net.rs`; h2 vẫn dùng đường Unix riêng có sẵn (`h2_async.rs`, default-off).
-- Test-only: snapshot binary `vis` cho cap/soak (tránh cargo build đồng thời ghi đè
-  `target/debug/vis` — nguồn của lỗi h1 giả trong log 2.000 vòng debug).
+1. **Per-token interest**: `token_wants: HashMap<token,(read,write)>`; interest nguồn = hợp
+   **hiện tại** của các token còn sống; `deregister` thu hẹp bằng `reregister`; port lên
+   W4 `Nguon` (`async_net_nguon.rs`), **không** đưa `SourceFd`/`RawFd` trở lại `async_net.rs`.
+2. **`ReactorOp::ReadWrite`** lấy hướng từ `H2Async::interest()` (`muon_doc`/`muon_ghi`).
+3. **Force-wake peer**: `waker` + `wake_nguon`; `h2_poll` sau **mọi tiến triển** (`tien`, kể cả
+   khi frame hiện tại đã có `Response`) gọi `danh_thuc_nguon(H<n>)` nếu nguồn còn >1 token;
+   `wait` phát event tổng hợp cho mọi token cùng nguồn. Không spin vì chỉ phát khi có tiến triển.
+4. Test-only: snapshot binary cho cap/soak (tránh cargo build khác feature ghi đè binary).
+5. Đóng/mở h2/TLS chuyển vào `async_net_h2.rs` (`dong_h2`) để giữ `async_net.rs` ≤1500 dòng.
 
-## 3. Kiểm chứng
+## 3. Kiểm chứng (target riêng `$PWD/target/w2`)
 
-- **10.000 vòng cap release** (trước port W4, cùng logic interest): **10.000/10.000 PASS**,
-  2151 s; log `vs3-w2-cap-fix.log`.
-- **2.000 × 3 lần release sau port W4/Nguon**: **2.000/2.000 mỗi lần**, 0 fail
-  (260,77 s / 112,48 s / 347,78 s) — tổng **6.000/6.000**.
-- Smoke debug sau port: 200/200 PASS (74,7 s).
-- Log 2.000 debug trước port có 1 fail ở vòng 1843 (`phản hồi HTTP không đủ header`). Nguyên nhân
-  đã khoanh vùng là **test harness**: cap loop spawn `target/debug/vis` dùng chung, cargo build
-  đồng thời (feature khác) ghi đè binary ⇒ một số vòng chạy binary không có `async-h2` (ALPN h2
-  server, client h1 ⇒ EOF header). Đã sửa test-only bằng **snapshot binary** trước loop; release
-  10k/6k không còn lỗi này. Đây **không** phải fallback production.
-- Tuy nhiên full `vs3_http2` **song song** sau merge W4 vẫn fail **cold-start** (1/4 task timeout
-  10 s), trong khi chạy `--test-threads=1` **34 pass + 1 ignored**. Đây là **residual của W4/Nguon
-  + chia sẻ handshake canonical**, chưa phải cap; xem §5.
-
-## 4. Regression / R1 / df
-
-| Cấu hình | Kết quả |
+| Hạng mục | Kết quả |
 |---|---|
-| feature `vs3_http2` `--test-threads=1` | **34 pass, 0 fail, 1 ignored** |
-| feature `vs3_http2` song song (mặc định) | **33 pass, 1 fail**: cold 20 vòng, 1 task timeout |
-| default `vs3_http2` | **19/19** |
-| feature `vs3_default` | **22/22** |
-| feature `vs3_tls` | **21/21** |
-| fmt / clippy default+feature / `./vis-dev check` | **OK / PASS** |
+| Cap 2.000 × 2 (release, debug-assertions cho TLS root test) | **2.000/2.000** mỗi lần — **4.000/4.000**, 305 s / 376 s |
+| Cold-start **1.000 vòng song song** (`VS3_W2_COLD_ROUNDS=1000`, full suite parallel) | **PASS**, 44,6 s; mỗi vòng **1 connection / 4 stream** |
+| Feature `vs3_http2` song song | **34 pass + 1 ignored** × **3 lần** (16,0–16,1 s) |
+| Feature `vs3_http2` serial | **34 pass + 1 ignored**, 51 s |
+| Default `vs3_http2` | **19/19** |
+| Feature `vs3_default` | **22/22** |
+| Feature `vs3_tls` | **21/21** |
+| fmt / clippy default + feature / `./vis-dev check` | **OK / PASS** |
+| R1 | `async_net.rs` **1490**, `async_net_h2.rs` 176, `async_net_nguon.rs` 312, host 111, support 987 — tất cả ≤1500 |
+| df | **12 G trống** (>5 G) |
 
-R1: `async_net.rs` **1500**, `async_net_nguon.rs` 312, `async_net_host.rs` 111,
-`h2_async_spike.rs` 987 — tất cả ≤ 1500. `df`: **22 G trống**.
+Lưu ý: các số 10k/6k của đợt trước dùng target chung đã **không được tính**; kết quả trên là
+chạy lại sạch trên target riêng. Debug 2.000 từng fail vòng 1843 do binary debug bị build khác
+feature ghi đè — đã khoá bằng snapshot; không tái hiện trên target riêng.
 
-## 5. Quyết định merge / default-on
+## 4. Quyết định
 
-- **Cap 8 MiB: đã sửa và kiểm chứng** (10k trước port + 6k sau port, 0 fail; hot-spin VS0501
-  không còn; interest thu hẹp đúng chiều).
-- **Quyết định: CHƯA merge** vì required `vs3_http2` chạy song song còn **1 cold-start timeout
-  / 20 vòng** sau khi merge W4/Nguon. Đây là regression chia sẻ handshake canonical nhiều frame
-  (không phải cap), cần khoanh vùng `doi_khoa_nguon`/`Wait::Reactor` trước khi merge.
-- Feature vẫn **default-off**; **không** bật default-on.
-- Hướng tiếp: log token/`doi_khoa_nguon` cho frame bị mất wake; có thể phải đăng ký lại reactor
-  key khi nguồn đổi khoá `T:…` → `H<n>` (W4 mới thêm `doi_khoa_nguon`) hoặc giữ handle nguồn ổn
-  định cho h2. Sau đó chạy lại 2.000×3 + full song song.
+- **Đủ điều kiện merge** theo tiêu chí: cap 4.000 vòng sạch, cold 1.000 vòng song song, feature
+  suite 3× + serial xanh, default/TLS/default async xanh, fmt/clippy/check PASS.
+- Feature vẫn **default-off**; **không** bật default-on trong đợt này (còn cancel task + h2
+  Windows + soak release dài).
+- Không push/merge/tag; commit trên nhánh `vs3/w2-tls`.
 
-## 6. Còn mở
+## 5. Còn mở
 
 - Cancel task giữa request (nợ chung h1+h2).
-- `async-h2` trên Windows chưa port (W4 mới port TCP/TLS; h2 vẫn Unix-only).
-- 10k sau rebase nếu chưa chạy đủ; soak release dài.
+- `async-h2` Windows chưa port (W4 mới port TCP/TLS).
+- Soak release 30 phút sau thay đổi cold-wake (nên chạy trước khi merge).

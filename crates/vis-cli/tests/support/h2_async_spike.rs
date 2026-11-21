@@ -610,7 +610,7 @@ fn async_h2_cold_multiplex_20_vong() {
         let mut dong: Vec<String> = out.lines().map(str::to_string).collect();
         dong.sort_unstable();
         let mong: Vec<String> = (0..4).map(|j| format!("/r{i}-{j}")).collect();
-        assert_eq!(dong, mong, "vòng {i} vm={vm}");
+        assert_eq!(dong, mong, "vòng {i} vm={vm} err={err:?}");
     }
     assert_eq!(s.conns(), rounds, "mỗi vòng đúng một connection");
     assert_eq!(s.streams(), rounds * 4, "mỗi connection đủ 4 stream");

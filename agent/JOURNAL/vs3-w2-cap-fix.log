@@ -1,41 +1,27 @@
-# VS3-W2 cap fix — log (main a8100ab, feature async-h2 default-off)
-# date 2026-11-22T01:59:38+09:00
+# VS3-W2 cap fix + cold-wake — log
+# target dir: $PWD/target/w2 (isolated; không dùng target chung)
+# branch vs3/w2-tls, main fdd9e88
 
-## 10k release trước khi port W4 (code cũ, fix per-token)
+=== Cap 2000 x2 (release, debug-assertions=true) ===
+cap loop: 2000/2000 PASS              (lần 1, 305 s)
+cap loop: 2000/2000 PASS              (lần 2, 376 s)
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 2151.21s
+=== Cold 1000 vòng song song (full feature suite parallel) ===
+VS3_W2_COLD_ROUNDS=1000 cargo test -p vis-cli --features async-h2 --test vs3_http2
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 44.61s
+(cold test assert conns=1000, streams=4000)
 
-EXIT=0
+=== Feature suite song song x3 + serial ===
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 15.94s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 15.99s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 16.10s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 51.07s   (--test-threads=1)
 
-## 2000 debug trước port — FAIL 1843 (h1 header) do binary debug bị cargo build khác ghi đè
-cap vòng 1843: "loi: phản hồi HTTP không đủ header (kết nối đóng sớm)\n"
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 34 filtered out; finished in 982.91s
-
-## 2000 x3 release sau port W4/Nguon
-# cap 2000x3 release (post-W4 merge) 2026-11-22T01:40:22+09:00
-=== lần 1 ===
-test h2_async_spike::async_h2_cap_loop_env_gated ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 260.77s
-
-=== lần 2 ===
-test h2_async_spike::async_h2_cap_loop_env_gated ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 112.48s
-
-=== lần 3 ===
-test h2_async_spike::async_h2_cap_loop_env_gated ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 347.78s
-
-EXIT=0
-
-## Regression
-feature vs3_http2 --test-threads=1: 34 passed, 1 ignored
-feature vs3_http2 song song: 33 passed, 1 failed (cold 1 task timeout 10s) — residual
+=== Khác ===
 default vs3_http2: 19 passed
 feature vs3_default: 22 passed
 feature vs3_tls: 21 passed
-fmt/clippy default+feature: OK
-vis-dev check: PASS
-df: 22 G trống
+fmt: OK; clippy workspace/all-targets: OK; clippy feature async-h2: OK
+./vis-dev check: PASS
+R1: async_net.rs 1490, h2 176, nguon 312, host 111, support 987
+df: 12 G trống

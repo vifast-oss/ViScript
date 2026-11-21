@@ -46,7 +46,7 @@ use rustls::pki_types::ServerName;
 #[cfg(feature = "tls")]
 use rustls::{ClientConfig, ClientConnection};
 
-use mio::{Events, Interest, Poll, Token};
+use mio::{Events, Interest, Poll, Token, Waker};
 
 use vis_interp::builtin::NetHost;
 #[cfg(feature = "async-h2")]
@@ -109,6 +109,12 @@ pub struct AsyncNet {
     next_h2: u32,
     poll: Poll,
     events: Events,
+    /// Waker để đánh thức `wait` khi một frame h2 vừa lái session và làm xong stream
+    /// của frame khác (không còn readiness socket nào để wake tự nhiên).
+    #[allow(dead_code)] // chỉ dùng khi feature async-h2 bật
+    waker: Waker,
+    /// Khoá nguồn cần phát event tổng hợp ngay ở `wait` kế tiếp.
+    wake_nguon: HashSet<String>,
     /// Poll riêng cho các lời gọi host đồng bộ (`http.get/head`) trên kênh TLS; không dùng chung
     /// token với reactor để không đụng đăng ký của scheduler.
     #[cfg(feature = "tls")]
@@ -134,6 +140,8 @@ pub struct AsyncNet {
 
 impl AsyncNet {
     pub fn new(giai_thich: bool) -> Self {
+        let poll = Poll::new().expect("mio::Poll::new");
+        let waker = Waker::new(poll.registry(), Token(usize::MAX)).expect("mio::Waker");
         Self {
             streams: HashMap::new(),
             listeners: HashMap::new(),
@@ -157,8 +165,10 @@ impl AsyncNet {
             h2_idle: HashMap::new(),
             #[cfg(feature = "async-h2")]
             next_h2: 0,
-            poll: Poll::new().expect("mio::Poll::new"),
+            poll,
             events: Events::with_capacity(128),
+            waker,
+            wake_nguon: HashSet::new(),
             #[cfg(feature = "tls")]
             host_poll: Poll::new().expect("mio::Poll::new (host TLS)"),
             #[cfg(feature = "tls")]
@@ -1398,49 +1408,29 @@ impl FrameReactorBackend for AsyncNet {
                 }
             }
         }
+        // Frame vừa poll h2 có thể đã hoàn tất stream của frame khác; phát event tổng hợp
+        // cho mọi token cùng nguồn để không mất wake.
+        for key in std::mem::take(&mut self.wake_nguon) {
+            if let Some(ds) = self.nguon_tokens.get(&key) {
+                for t in ds {
+                    if da_co.insert(*t) {
+                        out.push(ReactorRawEvent {
+                            token: *t,
+                            readable: true,
+                            hup: false,
+                            error: false,
+                        });
+                    }
+                }
+            }
+        }
         Ok(out)
     }
 
     fn close(&mut self, handle: &str) -> Result<(), String> {
         #[cfg(feature = "async-h2")]
-        if handle.starts_with(FRAME_TLS_CONNECT) {
-            if let Some(ck) = self.tls_alias.remove(handle) {
-                if !self.tls_alias.values().any(|v| *v == ck) {
-                    self.tls_connects.remove(&ck);
-                }
-            } else {
-                self.tls_connects.remove(handle);
-            }
-            self.streams.remove(handle);
-            self.listeners.remove(handle);
-            self.connects.remove(handle);
-            let keys: Vec<u64> = self
-                .tokens
-                .iter()
-                .filter(|(_, k)| k.as_str() == handle)
-                .map(|(t, _)| *t)
-                .collect();
-            for t in keys {
-                let _ = <Self as FrameReactorBackend>::deregister(self, t, handle, ReactorOp::Read);
-            }
-            self.writes.retain(|_, w| w.tay != handle);
-            self.bo_sach_nguon(handle);
+        if self.dong_h2(handle) {
             return Ok(());
-        }
-        #[cfg(feature = "async-h2")]
-        if self.h2.contains_key(Self::h2_base(handle)) {
-            let base = Self::h2_base(handle).to_string();
-            let con_lai = match self.h2_users.get_mut(&base) {
-                Some(n) => {
-                    *n = n.saturating_sub(1);
-                    *n
-                }
-                None => 0,
-            };
-            if con_lai == 0 {
-                // Giữ phiên idle cho request sau (pool async); dọn khi quá H2_IDLE lúc connect.
-                self.h2_idle.insert(base.clone(), Instant::now());
-            }
         }
         self.streams.remove(handle);
         self.listeners.remove(handle);
