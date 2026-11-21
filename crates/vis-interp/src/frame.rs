@@ -185,6 +185,7 @@ enum Work<'a> {
         span: Span,
     },
     ApplyField {
+        base: &'a HExpr,
         name: String,
         optional: bool,
         span: Span,
