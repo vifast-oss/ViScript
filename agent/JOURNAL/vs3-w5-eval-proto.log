@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 — log prototype evaluator độc lập (branch vs3/w5-spike, baseline bc7a543)
+# Máy: i5-1235U, nproc=12, Linux. Toolchain: ~/.cargo/bin/cargo 1.100.0 (PATH mặc định 1.93.1
+# không đạt rust-version=1.100.0). df /home trước/sau: 11G trống.
+# Lệnh:
+#   ~/.cargo/bin/cargo check -p vis-cli --example vs3_worker_eval_proto
+#   ~/.cargo/bin/cargo run -q -p vis-cli --example vs3_worker_eval_proto   (3 lần)
+#   ~/.cargo/bin/cargo check --all-targets
+#   ~/.cargo/bin/cargo fmt --all -- --check
+#   ~/.cargo/bin/cargo clippy -p vis-cli --all-targets -- -D warnings
+#   ~/.cargo/bin/cargo test -q -p vis-cli --test vs3_worker -- --test-threads=1
+
+## RUN 1
+VS3_W5_PROTO	bat_dau	load=9.10 12.36 13.25 4/2099 1128593
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=66
+ORACLE	stdout="tong\n53993\n107979\n"	exit=0	steps_hir=270218	steps_vm=306251
+THREAD_DOC_LAP	n=4	byte_identical=OK	threads_sau=Some(1)
+POOL_EVAL	W=1	wall_median_ms=1315.4	output_bytes=72	results=4
+POOL_EVAL	W=4	wall_median_ms=337.4	output_bytes=72	results=4	speedup=3.90x
+CHECK	byte_identical	OK	len=72	jobs=4
+THREAD_SAU_POOL	W=1	sau=1	truoc=1
+THREAD_SAU_POOL	W=4	sau=1	truoc=1
+BUDGET	W=1	used=4000	remaining=96000	limit=100000	exhausted=false
+BUDGET	W=4	used=4000	remaining=96000	limit=100000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4332	sau=9668	hwm=10616
+WALL_TONG	ms=5653.4	load_cuoi=8.69 12.22 13.20 4/2062 1128648
+KET_LUAN	PASS	W=1/W=4 evaluator độc lập, byte-identical, không rò thread
+
+## RUN 2
+VS3_W5_PROTO	bat_dau	load=8.69 12.22 13.20 4/2061 1128659
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=66
+ORACLE	stdout="tong\n53993\n107979\n"	exit=0	steps_hir=270218	steps_vm=306251
+THREAD_DOC_LAP	n=4	byte_identical=OK	threads_sau=Some(1)
+POOL_EVAL	W=1	wall_median_ms=933.9	output_bytes=72	results=4
+POOL_EVAL	W=4	wall_median_ms=340.2	output_bytes=72	results=4	speedup=2.74x
+CHECK	byte_identical	OK	len=72	jobs=4
+THREAD_SAU_POOL	W=1	sau=1	truoc=1
+THREAD_SAU_POOL	W=4	sau=1	truoc=1
+BUDGET	W=1	used=4000	remaining=96000	limit=100000	exhausted=false
+BUDGET	W=4	used=4000	remaining=96000	limit=100000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4288	sau=9660	hwm=10660
+WALL_TONG	ms=4659.3	load_cuoi=8.31 12.08 13.15 4/2069 1128842
+KET_LUAN	PASS	W=1/W=4 evaluator độc lập, byte-identical, không rò thread
+
+## RUN 3
+VS3_W5_PROTO	bat_dau	load=7.97 11.95 13.10 4/2101 1128941
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=66
+ORACLE	stdout="tong\n53993\n107979\n"	exit=0	steps_hir=270218	steps_vm=306251
+THREAD_DOC_LAP	n=4	byte_identical=OK	threads_sau=Some(1)
+POOL_EVAL	W=1	wall_median_ms=1278.7	output_bytes=72	results=4
+POOL_EVAL	W=4	wall_median_ms=288.6	output_bytes=72	results=4	speedup=4.43x
+CHECK	byte_identical	OK	len=72	jobs=4
+THREAD_SAU_POOL	W=1	sau=1	truoc=1
+THREAD_SAU_POOL	W=4	sau=1	truoc=1
+BUDGET	W=1	used=4000	remaining=96000	limit=100000	exhausted=false
+BUDGET	W=4	used=4000	remaining=96000	limit=100000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4272	sau=9580	hwm=10460
+WALL_TONG	ms=5059.3	load_cuoi=7.97 11.95 13.10 4/2101 1128941
+KET_LUAN	PASS	W=1/W=4 evaluator độc lập, byte-identical, không rò thread
+
+## GATE PHỤ
+cargo check --all-targets: Finished dev profile [unoptimized + debuginfo] target(s)
+  in 11.19s — PASS (0 warning)
+cargo fmt --all -- --check: FMT_OK
+cargo clippy -p vis-cli --all-targets -- -D warnings: Finished dev profile
+  [unoptimized + debuginfo] target(s) in 0.16s — PASS
+cargo test -q -p vis-cli --test vs3_worker -- --test-threads=1:
+  running 14 tests
+  ..............
+  test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+  finished in 16.59s
+df /home sau: 11G trống (>5G)

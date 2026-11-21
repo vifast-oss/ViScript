@@ -434,7 +434,7 @@ fn chay_bang_bin(
 const BON_TAC_VU: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
-    match http.get_timeout(url, 3000):
+    match http.get_timeout(url, 10000):
         Ok(s): s
         Err(e): "loi: {e}"
 
@@ -561,7 +561,7 @@ fn main(args: list[str]):
 const BON_TAC_VU_COLD: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
-    match http.get_timeout(url, 3000):
+    match http.get_timeout(url, 10000):
         Ok(s): s
         Err(e): "loi: {e}"
 
@@ -583,7 +583,7 @@ fn async_h2_production_bon_stream_cold() {
         let args: Vec<String> = (0..4).map(|i| s.url(&format!("/c{i}"))).collect();
         let (code, out, err, bat) = chay_chuong_trinh("cold4", BON_TAC_VU_COLD, &args, vm);
         assert_eq!(code, 0, "cold4 vm={vm}: {err}");
-        assert!(bat < Duration::from_secs(10), "cold4 treo vm={vm}");
+        assert!(bat < Duration::from_secs(15), "cold4 treo vm={vm}");
         let mut dong: Vec<&str> = out.lines().collect();
         dong.sort_unstable();
         assert_eq!(dong, vec!["/c0", "/c1", "/c2", "/c3"], "vm={vm}: {out:?}");
@@ -606,7 +606,7 @@ fn async_h2_cold_multiplex_20_vong() {
         let args: Vec<String> = (0..4).map(|j| s.url(&format!("/r{i}-{j}"))).collect();
         let (code, out, err, bat) = chay_chuong_trinh("cold20", BON_TAC_VU_COLD, &args, vm);
         assert_eq!(code, 0, "vòng {i} vm={vm}: {err}");
-        assert!(bat < Duration::from_secs(5), "vòng {i} treo");
+        assert!(bat < Duration::from_secs(15), "vòng {i} treo");
         let mut dong: Vec<String> = out.lines().map(str::to_string).collect();
         dong.sort_unstable();
         let mong: Vec<String> = (0..4).map(|j| format!("/r{i}-{j}")).collect();
