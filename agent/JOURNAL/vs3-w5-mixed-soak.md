@@ -6,7 +6,7 @@ không bật default, **không** GitHub Actions.
 **Mốc**: main `cadc4c8` (đã merge shared stress 100 vòng); tag `v0.3.3` = `bbf3484`.
 **Nhánh**: `vs3/w5-spike` trong worktree `.../worktree/cd45e5/vs3-w5-spike`;
 `git merge main` fast-forward `1fe6366 → cadc4c8`; **không** push/merge/tag.
-**Commit**: xem `git log -1` — chỉ `crates/vis-cli/tests/vs3_worker.rs` + journal + 2 log,
+**Commit**: xem `git log -1` — `crates/vis-cli/tests/vs3_worker_soak.rs` (tách khỏi `vs3_worker.rs` để giữ R1 ≤1500 dòng) + journal + 2 log,
 `crates/**` production không đổi.
 **Log đầy đủ**: [`vs3-w5-mixed-soak.log`](vs3-w5-mixed-soak.log) — soak pass + full suite;
 [`vs3-w5-mixed-soak-abort.log`](vs3-w5-mixed-soak-abort.log) — lần đầu dừng ở 23,9 phút vì
@@ -14,7 +14,7 @@ assertion test quá chặt (xem §4).
 
 ## 1. Test và cách chạy
 
-Test mới `mixed_soak_shared_copy_move_w1_w4` trong `crates/vis-cli/tests/vs3_worker.rs`
+Test mới `mixed_soak_shared_copy_move_w1_w4` trong `crates/vis-cli/tests/vs3_worker_soak.rs`
 (không `#[ignore]`), **env-gated**:
 
 - `VS3_W5_MIXED_ROUNDS` — số vòng; **mặc định 1** (~3 s release) để gate không chậm.
@@ -25,7 +25,7 @@ Test mới `mixed_soak_shared_copy_move_w1_w4` trong `crates/vis-cli/tests/vs3_w
 ```bash
 export PATH="$HOME/.rustup/toolchains/1.100.0-x86_64-unknown-linux-gnu/bin:$PATH"
 VS3_W5_MIXED_SECS=1800 VS3_W5_MIXED_ROUNDS=1000000 \
-  cargo test --release -p vis-cli --test vs3_worker mixed_soak \
+  cargo test --release -p vis-cli --test vs3_worker_soak mixed_soak \
     -- --nocapture --test-threads=1
 ```
 
@@ -131,14 +131,14 @@ vòng 373: task huỷ W=4 phải trả Err
 
 ```bash
 # full suite cuối cùng (log trong vs3-w5-mixed-soak.log)
-cargo test --release -p vis-cli --test vs3_worker
+cargo test --release -p vis-cli --test vs3_worker --test vs3_worker_soak
 # => 15 passed; 0 failed; 0 ignored — 10,33 s (gồm test mặc định 1 vòng)
 
 cargo fmt --all -- --check                 # PASS
 cargo clippy -p vis-cli --all-targets -- -D warnings   # PASS
 ```
 
-- `git diff --stat`: **chỉ** `crates/vis-cli/tests/vs3_worker.rs` (+698 dòng) và journal/log;
+- `git diff --stat`: **chỉ** `crates/vis-cli/tests/vs3_worker_soak.rs` (+794 dòng, tách khỏi `vs3_worker.rs`) và journal/log;
   `crates/vis-interp/src/rt/worker.rs` không đổi.
 - Đĩa lúc chạy: trống **16 GB → 9,1 GB** (tải ngoài dùng thêm; worktree `target` chỉ **1,3 GB**,
   log 88 KB); vẫn còn **> 5 GB** trống, không có artifact >5 GB từ soak.
