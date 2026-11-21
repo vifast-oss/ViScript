@@ -263,7 +263,12 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.fs.canonicalize` (`(str) -> Result[str, Error]`; `std::fs::canonicalize` — **chạm
     // đĩa** + đọc `cwd`, phân giải symlink/`..`, `p` phải tồn tại, thiếu/rỗng/dangling ⇒ `Err`,
     // **không** sugar) ⇒ **152** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 154, "bảng chữ ký phải đủ 154 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 ascii-preds, 2026-11-21)**: +**4** hàm
+    // `std.str.is_ascii_digit`/`is_ascii_alphabetic`/`is_ascii_alphanumeric`/
+    // `is_ascii_whitespace` (`(str) -> bool`; `true` ⇔ **không rỗng** và **mọi scalar** ASCII
+    // thuộc nhóm `char::is_ascii_*`, rỗng ⇒ `false`, VT `U+000B` **không** phải whitespace,
+    // sugar R5c) ⇒ **157** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 158, "bảng chữ ký phải đủ 158 hàm");
 }
 
 #[test]
@@ -690,6 +695,30 @@ fn str_is_blank_kieu_str_bool() {
     assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_blank`: hạ kiểu");
     assert_eq!(f.so_doi(), 1, "`str.is_blank`: arity");
     assert_eq!(vis_types::stdlib::module_sugar("str", "is_blank"), None);
+}
+
+#[test]
+fn str_is_ascii_preds_kieu_str_bool() {
+    // **VD-270 (ascii-preds)**: bốn hàm `(str) -> bool`; tham số đầu `str` để R5c nhận sugar
+    // `s.is_ascii_*()` (không nằm trong bảng `module_sugar`, chỉ dùng đúng module `str`).
+    for ten in [
+        "str.is_ascii_digit",
+        "str.is_ascii_alphabetic",
+        "str.is_ascii_alphanumeric",
+        "str.is_ascii_whitespace",
+    ] {
+        let f = sig_of(ten).unwrap_or_else(|| panic!("thiếu `{ten}`"));
+        assert_eq!(f.params, &[Ty::Str], "`{ten}`: tham số");
+        assert_eq!(f.ret, Ty::Bool, "`{ten}`: kiểu trả");
+        assert_eq!(f.ret.sang_type(), Type::Bool, "`{ten}`: hạ kiểu");
+        assert_eq!(f.so_doi(), 1, "`{ten}`: arity");
+        let (m, n) = ten.split_once('.').expect("tên có dấu chấm");
+        assert_eq!(
+            vis_types::stdlib::module_sugar(m, n),
+            None,
+            "`{ten}`: sugar"
+        );
+    }
 }
 
 #[test]

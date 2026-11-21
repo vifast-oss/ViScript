@@ -130,6 +130,10 @@ str.count	(str, str) -> int
 str.ends_with	(str, str) -> bool
 str.find	(str, str) -> int?
 str.is_ascii	(str) -> bool
+str.is_ascii_alphabetic	(str) -> bool
+str.is_ascii_alphanumeric	(str) -> bool
+str.is_ascii_digit	(str) -> bool
+str.is_ascii_whitespace	(str) -> bool
 str.is_blank	(str) -> bool
 str.is_empty	(str) -> bool
 str.join	(list[str], str) -> str

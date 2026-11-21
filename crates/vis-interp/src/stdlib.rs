@@ -62,6 +62,7 @@ mod sqliteschemaver;
 mod sqlitetables;
 mod sqliteuserver;
 mod strascii;
+mod strasciipreds;
 mod strcharat;
 mod strfind;
 mod strisblank;
@@ -324,6 +325,26 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strascii::goi(s))
         }
+        // **VD-270 (ascii-preds)**: bốn vị từ ASCII — `true` ⇔ `s` **không rỗng** và **mọi
+        // scalar** là ASCII thuộc nhóm (`char::is_ascii_*`); rỗng ⇒ `false` (khác
+        // `str.is_ascii("")` ⇒ `true`); không trap, O(số scalar). Lõi ở
+        // `stdlib/strasciipreds.rs`.
+        "str.is_ascii_digit" => Ok(strasciipreds::goi(
+            strasciipreds::Nhom::Digit,
+            chuoi(name, &args[0], 0, span)?,
+        )),
+        "str.is_ascii_alphabetic" => Ok(strasciipreds::goi(
+            strasciipreds::Nhom::Alphabetic,
+            chuoi(name, &args[0], 0, span)?,
+        )),
+        "str.is_ascii_alphanumeric" => Ok(strasciipreds::goi(
+            strasciipreds::Nhom::Alphanumeric,
+            chuoi(name, &args[0], 0, span)?,
+        )),
+        "str.is_ascii_whitespace" => Ok(strasciipreds::goi(
+            strasciipreds::Nhom::Whitespace,
+            chuoi(name, &args[0], 0, span)?,
+        )),
         // **VD-270 (char-at)**: scalar Unicode thứ `i` (zero-based); âm/quá dài/rỗng ⇒ `None`.
         "str.char_at" => strcharat::goi(name, &args, span),
         // **VD-270 (is-blank)**: rỗng hoặc **mọi scalar** `char::is_whitespace` ⇒ `true`.
