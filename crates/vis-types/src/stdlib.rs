@@ -267,7 +267,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 162] = [
+pub const FUNCS: [StdFn; 163] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -627,6 +627,16 @@ pub const FUNCS: [StdFn; 162] = [
     },
     StdFn {
         name: "list.chunk",
+        params: &[Ty::List(&Ty::Var(0)), Ty::Int],
+        ret: Ty::List(&Ty::List(&Ty::Var(0))),
+    },
+    // **VD-270 (chunks-exact)**: nhóm **đúng `n`**, **bỏ phần dư** cuối (khác `list.chunk` giữ
+    // nhóm cuối ngắn). `n <= 0` là trap `VS0501` ở tầng chạy (không phải lỗi kiểu); `n > len`
+    // và `xs` rỗng (với `n > 0`) ⇒ `[]`. Cùng kiểu trả `Ty::List(&Ty::List(&Ty::Var(0)))` với
+    // `chunk`/`windows` nên **không** thêm biến thể `Ty`; `T` buộc từ `xs` nên sugar R5c
+    // `xs.chunks_exact(n)` chạy không cần `use std.list`.
+    StdFn {
+        name: "list.chunks_exact",
         params: &[Ty::List(&Ty::Var(0)), Ty::Int],
         ret: Ty::List(&Ty::List(&Ty::Var(0))),
     },
