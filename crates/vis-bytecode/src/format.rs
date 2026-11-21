@@ -581,9 +581,17 @@ impl Module {
 /// Trước ST-30 là FNV-1a × 4 seed ("chỉ là khoá cache"); nay là hàm băm mật mã: đổi một byte nguồn
 /// ⇒ hash đổi, và có **kháng đụng độ** ở mức dùng cho consent/quyền (§11.3).
 pub fn source_hash(src: &str) -> [u8; HASH_LEN] {
+    bytes_hash(src.as_bytes())
+}
+
+/// **VS3-5a (VD-271)** — SHA-256 trên **byte thô**; dùng cho dữ liệu nhị phân (tarball gói HTTP).
+///
+/// Cùng một hàm băm với [`source_hash`] (`source_hash(s) == bytes_hash(s.as_bytes())`), chỉ khác
+/// kiểu đầu vào. Không thêm crate: `sha2` đã là dependency được duyệt (VD-54 (1)).
+pub fn bytes_hash(bytes: &[u8]) -> [u8; HASH_LEN] {
     use sha2::{Digest, Sha256};
     let mut h = Sha256::new();
-    h.update(src.as_bytes());
+    h.update(bytes);
     let out = h.finalize();
     let mut buf = [0u8; HASH_LEN];
     buf.copy_from_slice(&out);

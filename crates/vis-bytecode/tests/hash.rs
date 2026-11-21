@@ -4,7 +4,7 @@
 //! Khoá: (i) khớp **vector chuẩn** `sha256("abc")`; (ii) hai nguồn khác nhau ⇒ hash khác; (iii) vẫn
 //! đúng **32 byte**; (iv) `VBC1` mã hoá/giải mã giữ nguyên hash.
 
-use vis_bytecode::format::{source_hash, MAGIC, VERSION};
+use vis_bytecode::format::{bytes_hash, source_hash, MAGIC, VERSION};
 use vis_syntax::{lex, parse, Mode};
 use vis_types::lower;
 
@@ -20,6 +20,28 @@ fn khong_con_fnv_va_khop_vector_sha256() {
         sha_hex(&h),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
         "phải là SHA-256 thật, không phải FNV"
+    );
+}
+
+/// **VS3-5a**: `bytes_hash` = SHA-256 của **byte thô** (dùng cho tarball gói); khớp vector chuẩn
+/// với dữ liệu không phải UTF-8, và bằng `source_hash` khi đầu vào là UTF-8.
+#[test]
+fn bytes_hash_khop_vector_va_source_hash() {
+    assert_eq!(
+        sha_hex(&bytes_hash(b"abc")),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+    // Byte không phải UTF-8: `source_hash` không nhận, `bytes_hash` vẫn băm đúng.
+    let nhi_phan = [0u8, 159, 146, 150, 255, 13, 10];
+    assert_eq!(bytes_hash(&nhi_phan).len(), 32);
+    assert_ne!(
+        bytes_hash(&nhi_phan),
+        bytes_hash(&[0u8, 159, 146, 150, 255, 13])
+    );
+    // Cùng hàm băm cho chuỗi UTF-8.
+    assert_eq!(
+        source_hash("print(1)\n"),
+        bytes_hash("print(1)\n".as_bytes())
     );
 }
 
