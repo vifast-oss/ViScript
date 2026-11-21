@@ -392,6 +392,25 @@ impl Scheduler {
         ))
     }
 
+    /// **VS3-2a**: đánh thức một frame đang chờ kênh `id` theo chiều `send`. Tìm waiter theo
+    /// `(frame, Wait::Chan)` (không phụ thuộc `gen`), rồi dùng chung `frame_wake_one` ⇒ không
+    /// wake trùng, không đưa frame đã huỷ vào ready.
+    pub(crate) fn frame_wake_chan(&mut self, id: u32, send: bool, frame: u32) {
+        let w = self
+            .frame
+            .waiters
+            .iter()
+            .find(|w| w.frame == frame && w.wait == Wait::Chan { id, send })
+            .copied();
+        match w {
+            Some(w) => self.frame_wake_one(w),
+            None => self
+                .frame
+                .log
+                .push(format!("chanmiss:{}:{}:{}", id, send, frame)),
+        }
+    }
+
     /// **Chỉ test**: một task vừa xong — cache kết quả, ghi nghĩa vụ join, đánh thức
     /// mọi frame đang chờ task đó (FIFO, nối đuôi).
     #[doc(hidden)]
@@ -596,6 +615,20 @@ impl Scheduler {
         self.frame.waiters.retain(|w| w.frame != id);
         if self.frame.waiters.len() < wb {
             self.frame.log.push(format!("cancelwait:{}", id));
+        }
+
+        // 1b) **VS3-2a**: gỡ trạng thái chờ rendezvous của frame khỏi mọi kênh. Không đóng
+        //     kênh, không đụng handle; sender `Taken` coi như đã gửi, receiver đã ghép giá trị
+        //     thì giá trị bị bỏ (không refund — cùng tinh thần không-refund của ngân sách).
+        let kenh: Vec<Rc<RefCell<Chan>>> = self.kenh.clone();
+        let mut chan_clean = false;
+        for c in kenh {
+            if c.borrow_mut().huy_frame(id) {
+                chan_clean = true;
+            }
+        }
+        if chan_clean {
+            self.frame.log.push(format!("cancelchan:{}", id));
         }
 
         // 2) Đăng ký reactor/timer của frame bị huỷ: nếu **không còn waiter nào khác** dùng

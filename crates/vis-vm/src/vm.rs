@@ -962,7 +962,11 @@ impl<'m> Th<'m> {
                             continue;
                         }
                     }
-                    let v = builtin::method(vm, recv, &ten, args, span)?;
+                    let v = if vm.sched.borrow().frame.enabled {
+                        crate::vm_frame::call_method_frame(self, vm, recv, args, &ten, span)?
+                    } else {
+                        builtin::method(vm, recv, &ten, args, span)?
+                    };
                     self.st.push(v);
                 }
                 Instr::Jump(d) => {

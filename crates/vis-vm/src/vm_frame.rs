@@ -411,6 +411,35 @@ pub(crate) fn call_builtin_frame(
     }
 }
 
+/// **VS3-2a** — hook `CallMethod` của VM khi frame bật: nếu method trả `Abort::Pending`, khôi
+/// phục **cả receiver + đối số** và `pc` để instruction `CallMethod` chạy lại sau resume. Trước
+/// đây `CallMethod` pop operands rồi để `Pending` lan ra ⇒ resume chạy instruction kế với ngăn
+/// xếp thiếu; wait-set `chan(0)` là đường đầu tiên cần resume method thật.
+pub(crate) fn call_method_frame(
+    th: &mut Th<'_>,
+    vm: &mut Vm<'_>,
+    recv: Value,
+    args: Vec<Value>,
+    ten: &str,
+    span: Span,
+) -> vis_interp::R<Value> {
+    match builtin::method(vm, recv.clone(), ten, args.clone(), span) {
+        Ok(v) => Ok(v),
+        Err(Abort::Pending(p)) => {
+            // Khôi phục đúng thứ tự ngăn xếp trước `CallMethod`: receiver rồi đối số.
+            th.st.push(recv);
+            for a in args {
+                th.st.push(a);
+            }
+            if let Some(fr) = th.frames.last_mut() {
+                fr.pc -= 1;
+            }
+            Err(Abort::Pending(p))
+        }
+        Err(e) => Err(e),
+    }
+}
+
 /// Chạy bytecode thật qua frame scheduler — gọi từ integration test sau compile.
 #[doc(hidden)]
 pub fn run_frame_for_test<'m>(
