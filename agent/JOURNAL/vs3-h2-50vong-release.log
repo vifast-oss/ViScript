@@ -1,0 +1,528 @@
+# VS3-W2 50 vòng release — log (main 71d52b4)
+
+## 50 vòng stress
+=== vòng 1 ===
+
+running 1 test
+100 request: 282 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 102 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.60s
+
+stress wall=24.18 s
+stress_exit=0
+=== vòng 2 ===
+
+running 1 test
+100 request: 380 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.77s
+
+stress wall=16.15 s
+stress_exit=0
+=== vòng 3 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 4 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 161 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.55s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 5 ===
+
+running 1 test
+100 request: 308 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 99 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.62s
+
+stress wall=15.76 s
+stress_exit=0
+=== vòng 6 ===
+
+running 1 test
+100 request: 166 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 58 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.43s
+
+stress wall=15.59 s
+stress_exit=0
+=== vòng 7 ===
+
+running 1 test
+100 request: 150 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 84 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.62 s
+stress_exit=0
+=== vòng 8 ===
+
+running 1 test
+100 request: 63 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 95 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.37s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 9 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.60 s
+stress_exit=0
+=== vòng 10 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 11 ===
+
+running 1 test
+100 request: 139 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 29 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.38s
+
+stress wall=15.47 s
+stress_exit=0
+=== vòng 12 ===
+
+running 1 test
+100 request: 137 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.77 s
+stress_exit=0
+=== vòng 13 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 109 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.49s
+
+stress wall=15.60 s
+stress_exit=0
+=== vòng 14 ===
+
+running 1 test
+100 request: 148 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 60 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.42s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 15 ===
+
+running 1 test
+100 request: 184 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 57 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.45s
+
+stress wall=15.62 s
+stress_exit=0
+=== vòng 16 ===
+
+running 1 test
+100 request: 232 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 140 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.58s
+
+stress wall=15.72 s
+stress_exit=0
+=== vòng 17 ===
+
+running 1 test
+100 request: 139 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 92 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.58 s
+stress_exit=0
+=== vòng 18 ===
+
+running 1 test
+100 request: 178 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.56 s
+stress_exit=0
+=== vòng 19 ===
+
+running 1 test
+100 request: 141 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.60 s
+stress_exit=0
+=== vòng 20 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.57s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 21 ===
+
+running 1 test
+100 request: 183 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.51 s
+stress_exit=0
+=== vòng 22 ===
+
+running 1 test
+100 request: 182 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.59 s
+stress_exit=0
+=== vòng 23 ===
+
+running 1 test
+100 request: 183 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.52 s
+stress_exit=0
+=== vòng 24 ===
+
+running 1 test
+100 request: 184 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.59 s
+stress_exit=0
+=== vòng 25 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 132 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.60 s
+stress_exit=0
+=== vòng 26 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.65 s
+stress_exit=0
+=== vòng 27 ===
+
+running 1 test
+100 request: 177 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.63 s
+stress_exit=0
+=== vòng 28 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 91 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.59 s
+stress_exit=0
+=== vòng 29 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 92 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.58 s
+stress_exit=0
+=== vòng 30 ===
+
+running 1 test
+100 request: 183 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 90 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.58 s
+stress_exit=0
+=== vòng 31 ===
+
+running 1 test
+100 request: 175 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 51 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.43s
+
+stress wall=15.50 s
+stress_exit=0
+=== vòng 32 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.53 s
+stress_exit=0
+=== vòng 33 ===
+
+running 1 test
+100 request: 140 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 26 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.38s
+
+stress wall=15.49 s
+stress_exit=0
+=== vòng 34 ===
+
+running 1 test
+100 request: 205 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 136 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.55s
+
+stress wall=15.77 s
+stress_exit=0
+=== vòng 35 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 66 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.46s
+
+stress wall=15.55 s
+stress_exit=0
+=== vòng 36 ===
+
+running 1 test
+100 request: 278 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 57 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.55s
+
+stress wall=15.79 s
+stress_exit=0
+=== vòng 37 ===
+
+running 1 test
+100 request: 128 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 94 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.43s
+
+stress wall=15.62 s
+stress_exit=0
+=== vòng 38 ===
+
+running 1 test
+100 request: 213 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.59s
+
+stress wall=15.74 s
+stress_exit=0
+=== vòng 39 ===
+
+running 1 test
+100 request: 182 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 51 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.54 s
+stress_exit=0
+=== vòng 40 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 91 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.56 s
+stress_exit=0
+=== vòng 41 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.55 s
+stress_exit=0
+=== vòng 42 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 136 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.61 s
+stress_exit=0
+=== vòng 43 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 92 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.57 s
+stress_exit=0
+=== vòng 44 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 134 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.60 s
+stress_exit=0
+=== vòng 45 ===
+
+running 1 test
+100 request: 140 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.40s
+
+stress wall=15.47 s
+stress_exit=0
+=== vòng 46 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 51 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.51 s
+stress_exit=0
+=== vòng 47 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.58 s
+stress_exit=0
+=== vòng 48 ===
+
+running 1 test
+100 request: 175 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 172 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.55s
+
+stress wall=15.63 s
+stress_exit=0
+=== vòng 49 ===
+
+running 1 test
+100 request: 178 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.61 s
+stress_exit=0
+=== vòng 50 ===
+
+running 1 test
+100 request: 135 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.58 s
+stress_exit=0
+TOTAL_WALL=789 s
+
+## full release vs3_http2
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/99faceaef5e29a1d/out/vs3_http2-99faceaef5e29a1d)
+
+running 14 tests
+test fallback_http1_khi_khong_alpn ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_basic_auth ... ok
+test h2_get_va_head ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_redirect_va_cookie ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_timeout_ro_rang ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+FULL_RELEASE_WALL=15.57 s
