@@ -3603,3 +3603,10 @@ bỏ đúng một `/` phân cách, giữ nguyên văn phần còn lại; `base` 
 loại tuyệt đối/tương đối ⇒ `None`; không chuẩn hoá `.`/`..`; `\`/NUL thường; so **BINARY**.
 Không sugar; reuse `Ty::OptStr`. Lưu ý: `str.strip_prefix` đã có nên sugar trên `str` vẫn đi
 `str.strip_prefix` (không đổi), chỉ `path.strip_prefix` là hàm module.
+
+### VD-270 (bổ sung) · list.chunks_exact — A0, 2026-11-21
+
+`list.chunks_exact(xs: list[T], n: int) -> list[list[T]]`: nhóm **đúng `n`** phần tử theo thứ tự,
+**bỏ phần dư cuối** (khác `list.chunk`); `n <= 0` ⇒ trap `VS0501` kiểm trước khi chia (kể cả list
+rỗng); `n > len`/rỗng ⇒ `[]`; nhóm là list mới, không alias; sugar R5c `xs.chunks_exact(n)`;
+tái dùng `Ty::List(&Ty::List(&Ty::Var(0)))`, không thêm biến thể.

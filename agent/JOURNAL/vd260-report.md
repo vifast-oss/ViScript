@@ -364,3 +364,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `list.chunks_exact`, `impl Hop[T]`.
 - `./vis-dev core-test` @ `2aa1edd`: **PASS**.
 - `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `7fa5ffa`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **list.chunks_exact** merged (`f890f0d`); gate **3216 passed / 3 skipped**; FUNCS **164**.
+- `VIS_DIFF_N=100000` seed 20261220 @ `1838bcd`: **0 lệch** (93.767 chạy, 218,9 s).
+- **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`.
