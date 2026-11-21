@@ -3,6 +3,8 @@
 
 > **Baseline**: `main` `f710e5b` (fast-forward, chứa `77b71fb`); **commit thử** trên `vs3/w2-tls`
 > bật `http2` trong `default` của `vis-cli`. **Đây là đề xuất thử, chưa được A0 duyệt flip.**
+> **Cập nhật 4b3**: bản thử default-on được giữ ở nhánh riêng `vs3/w2-http2-default-on`
+> (`959d1aa` + merge main); `vs3/w2-tls` đã trở lại **default-off** trước tag v0.2.0.**
 
 ## 1. Diff
 

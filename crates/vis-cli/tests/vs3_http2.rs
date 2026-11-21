@@ -11,7 +11,7 @@ use std::net::{Shutdown, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::Command;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
@@ -50,6 +50,7 @@ struct MayChu {
     addr: String,
     stop: Arc<AtomicBool>,
     handle: Option<std::thread::JoinHandle<()>>,
+    so_ket_noi: Arc<AtomicUsize>,
 }
 
 impl MayChu {
@@ -62,12 +63,15 @@ impl MayChu {
         let addr = l.local_addr().expect("addr").to_string();
         let stop = Arc::new(AtomicBool::new(false));
         let stop2 = Arc::clone(&stop);
+        let so_ket_noi = Arc::new(AtomicUsize::new(0));
+        let so_ket_noi2 = Arc::clone(&so_ket_noi);
         let cfg = cau_hinh_tls(alpn);
         let route = Arc::new(route);
         let tay = std::thread::spawn(move || {
             while !stop2.load(Ordering::Relaxed) {
                 match l.accept() {
                     Ok((tcp, _)) => {
+                        so_ket_noi2.fetch_add(1, Ordering::SeqCst);
                         let _ = tcp.set_nonblocking(false);
                         let _ = tcp.set_read_timeout(Some(Duration::from_secs(2)));
                         let _ = tcp.set_write_timeout(Some(Duration::from_secs(2)));
@@ -92,7 +96,12 @@ impl MayChu {
             addr,
             stop,
             handle: Some(tay),
+            so_ket_noi,
         }
+    }
+
+    fn so_ket_noi(&self) -> usize {
+        self.so_ket_noi.load(Ordering::SeqCst)
     }
 
     fn url(&self, path: &str) -> String {
@@ -153,37 +162,32 @@ fn serve_h2(s: StreamOwned<ServerConnection, TcpStream>, route: &Route) -> io::R
         .map_err(|e| io::Error::other(format!("h2 server handshake: {e}")))?;
     let w = Waker::noop();
     let mut cx = Context::from_waker(w);
-    let (req, mut respond) = loop {
-        match conn.poll_accept(&mut cx) {
-            Poll::Ready(Some(Ok(x))) => break x,
+    loop {
+        let (req, mut respond) = match conn.poll_accept(&mut cx) {
+            Poll::Ready(Some(Ok(x))) => x,
             Poll::Ready(Some(Err(e))) => return Err(io::Error::other(format!("h2 accept: {e}"))),
             Poll::Ready(None) => return Ok(()),
-            Poll::Pending => std::thread::yield_now(),
+            Poll::Pending => {
+                std::thread::yield_now();
+                continue;
+            }
+        };
+        let method = req.method().as_str().to_string();
+        let path = req.uri().path().to_string();
+        let (status, headers, body) = route(&method, &path, req.headers());
+        let mut rb = Response::builder().status(status);
+        for (k, v) in headers {
+            rb = rb.header(k, v);
         }
-    };
-    let method = req.method().as_str().to_string();
-    let path = req.uri().path().to_string();
-    let (status, headers, body) = route(&method, &path, req.headers());
-    let mut rb = Response::builder().status(status);
-    for (k, v) in headers {
-        rb = rb.header(k, v);
-    }
-    let end = body.is_empty();
-    let mut send = respond
-        .send_response(rb.body(()).map_err(io::Error::other)?, end)
-        .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
-    if !body.is_empty() {
-        send.send_data(Bytes::from(body), true)
-            .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
-    }
-    // Đẩy frame ra socket; client đọc xong rồi đóng.
-    loop {
-        match conn.poll_closed(&mut cx) {
-            Poll::Ready(_) => break,
-            Poll::Pending => std::thread::yield_now(),
+        let end = body.is_empty();
+        let mut send = respond
+            .send_response(rb.body(()).map_err(io::Error::other)?, end)
+            .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
+        if !body.is_empty() {
+            send.send_data(Bytes::from(body), true)
+                .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
         }
     }
-    Ok(())
 }
 
 struct Adapter {
@@ -271,6 +275,23 @@ fn cho<F: Future>(f: F) -> F::Output {
 
 fn tra_loi(body: &str) -> PhanHoi {
     (200, vec![], body.as_bytes().to_vec())
+}
+
+#[test]
+fn h2_tai_su_dung_ket_noi() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/a") => (200, vec![], b"a".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    assert_eq!(http_get(&mut net, &s.url("/a"), 3_000).expect("a"), "a");
+    assert_eq!(http_get(&mut net, &s.url("/b"), 3_000).expect("b"), "b");
+    assert_eq!(
+        s.so_ket_noi(),
+        1,
+        "hai GET h2 cùng authority phải dùng lại một connection"
+    );
 }
 
 #[test]
