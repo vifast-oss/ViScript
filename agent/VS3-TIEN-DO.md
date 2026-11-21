@@ -48,7 +48,7 @@
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b5 | **DONE** — h2 queue/idle/hardening; default-on; Windows chờ W4 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (soak v0.3.1)** — `d6fcf95`; soak 10/10 502 s, gate 3512/3, nightly 15,69M fuzz 0, diff 0, fresh-clone PASS |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (stress)** — `0e5ebe0`; 3 vòng 3463/0, host 54/54, no flake; **không GitHub Actions** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 10k; timeout + worker-copy; chưa nối evaluator |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 50k (10,3 s, RSS 37 MB, 2 thread); timeout + worker-copy; chưa nối evaluator |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -81,7 +81,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3515 passed / 3 skipped**; diff 100k W3 PASS |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3516 passed / 3 skipped**; diff 100k W3 PASS |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | `v0.3.0` đã tag; hardening tới 09:00 |
 
