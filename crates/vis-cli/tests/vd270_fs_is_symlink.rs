@@ -318,7 +318,14 @@ fn main():
             print("err")
     print("xong")
 "#;
-    dung(&d, "metadata-err", src, "err\nxong\n");
+    // Linux: `tep.txt/con` ⇒ `ENOTDIR` ⇒ `Err` ⇒ `err`. Windows: API trả `ERROR_PATH_NOT_FOUND`
+    // (Rust map thành `NotFound`) ⇒ hợp đồng `is_symlink` coi "không tồn tại" là `Ok(false)`.
+    let ky_vong = if cfg!(windows) {
+        "ok\nxong\n"
+    } else {
+        "err\nxong\n"
+    };
+    dung(&d, "metadata-err", src, ky_vong);
     let _ = std::fs::remove_dir_all(&d);
 }
 

@@ -76,7 +76,10 @@ where
 }
 
 fn thay_db(src: &str, db: &Path) -> String {
-    src.replace("__DB__", db.to_str().expect("đường dẫn UTF-8"))
+    // Windows: `\` trong đường dẫn phải escape khi nhúng vào chuỗi ViScript (`\\`), nếu không
+    // bị `VS0102: escape không hợp lệ`.
+    let duong = db.to_str().expect("đường dẫn UTF-8").replace('\\', "\\\\");
+    src.replace("__DB__", &duong)
 }
 
 /// Migration nhiều DDL/DML trong **một** lời gọi; dấu `;` trong chuỗi/comment/định danh không

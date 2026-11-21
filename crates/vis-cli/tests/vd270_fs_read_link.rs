@@ -214,7 +214,13 @@ fn dich_tuong_doi_tuyet_doi_va_dangling() {
     if !fixture_symlink(&d) {
         return;
     }
-    let tep = duong(&d.join("tep.txt"));
+    // `read_link` trả đích **nguyên văn** như lúc tạo: link tuyệt đối được tạo bằng đường dẫn
+    // native, nên trên Windows kỳ vọng giữ `\`; Unix dùng `/` như `duong()`.
+    let tep = if cfg!(windows) {
+        d.join("tep.txt").display().to_string()
+    } else {
+        duong(&d.join("tep.txt"))
+    };
     if let Err(e) = tao_link_tep(&d.join("tep.txt"), &d.join("link-tuyet-doi")) {
         eprintln!("bỏ qua: nền không tạo được symlink tuyệt đối ({e})");
         return;

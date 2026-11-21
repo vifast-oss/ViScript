@@ -169,7 +169,13 @@ fn tu_choi(d: &Path, tag: &str, src: &str, ma: &str) {
 #[test]
 fn goi_that_tra_tuyet_doi_va_ton_tai() {
     let d = tam("that");
-    let mong = canon(&d);
+    // Windows: `fs.current_dir` chuyển tiếp `std::env::current_dir` — dạng `C:\…` (không verbatim
+    // `\\?\`). Unix: canonicalize để so khớp đường dẫn thật (temp có thể qua symlink).
+    let mong = if cfg!(windows) {
+        d.display().to_string()
+    } else {
+        canon(&d)
+    };
     let src = r#"use std.fs
 use std.path
 

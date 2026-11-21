@@ -79,6 +79,9 @@ fn don_con(_pid: u32, marker: &str) {
     }
     #[cfg(windows)]
     {
+        // `marker` chỉ dùng ở nhánh Unix (`pkill -f`); trên Windows dọn theo PID.
+        // Giữ tham số cho cùng chữ ký gọi hai nền mà không để clippy `-D warnings` báo unused.
+        let _ = marker;
         let _ = Command::new("taskkill")
             .args(["/F", "/T", "/PID", &_pid.to_string()])
             .output();

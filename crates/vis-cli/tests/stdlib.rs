@@ -43,6 +43,15 @@ fn bo_spdx(s: &str) -> String {
     }
 }
 
+/// Thay token theo nền trong `.out`: `{SEP}` = phân cách đường dẫn của host,
+/// `{IS_ABS_ROOT}` = `path.is_abs("/")` (Unix `true`, Windows `false` — Windows cần ổ đĩa/UNC).
+fn thay_nen(s: &str) -> String {
+    s.replace("{SEP}", std::path::MAIN_SEPARATOR_STR).replace(
+        "{IS_ABS_ROOT}",
+        if cfg!(windows) { "false" } else { "true" },
+    )
+}
+
 fn ds_ca() -> Vec<PathBuf> {
     let dir = goc().join("test/std");
     let mut ds: Vec<PathBuf> = std::fs::read_dir(&dir)
@@ -69,7 +78,7 @@ fn std_70_ca_qua_binary() {
         let k = chay(&["run", p.to_str().unwrap()]);
         let want = std::fs::read_to_string(p.with_extension("out"))
             .unwrap_or_else(|e| panic!("thiếu .out cho {}: {e}", p.display()));
-        let want = bo_spdx(&want);
+        let want = thay_nen(&bo_spdx(&want));
         if k.code != 0 || k.out != want {
             sai.push(format!(
                 "{}: muốn exit 0 + {:?}, được exit {} + {:?}\n  stderr: {}",

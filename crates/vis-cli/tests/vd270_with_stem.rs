@@ -195,7 +195,13 @@ fn main():
     print(path.with_stem("a/./b", "c"))
     print(path.with_stem("a\\b", "c"))
 "#,
-        "a/c\nc\na/c\n/a/c\na//c\na/./c\nc\n",
+        // Windows coi `\` là phân cách: `a\b` = thư mục `a` + tệp `b` (không ext) ⇒ `a\c`.
+        // POSIX coi `a\b` là **một** tên tệp ⇒ thay stem ⇒ `c`.
+        if cfg!(windows) {
+            "a/c\nc\na/c\n/a/c\na//c\na/./c\na\\c\n"
+        } else {
+            "a/c\nc\na/c\n/a/c\na//c\na/./c\nc\n"
+        },
     );
 }
 

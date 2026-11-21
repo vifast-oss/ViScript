@@ -126,7 +126,8 @@ fn json_non_finite_va_path_goc() {
     );
     for (ma, out, err) in chay_hai(&d, "p.vis") {
         assert_eq!(ma, 0, "{err}");
-        assert_eq!(out, "/\n/\n", "{out}");
+        let goc = if cfg!(windows) { "\\" } else { "/" };
+        assert_eq!(out, format!("{goc}\n{goc}\n"), "{out}");
     }
     // Chuỗi rỗng giữ hành vi cũ (không đổi ngoài ý muốn).
     viet(

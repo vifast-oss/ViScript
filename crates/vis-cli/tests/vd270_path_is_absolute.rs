@@ -30,6 +30,10 @@
 //! ```
 //!
 //! Sau khi thêm: mọi ca dưới xanh, interp ↔ VM byte-identical.
+//!
+//! **Windows** (`cfg!(windows)`): theo đúng `Path::is_absolute` của nền — `/` và `/a` **không**
+//! tuyệt đối; `//`, `///a`, `//server/share`, hoặc `<ổ>:` + `/`/`\` mới tuyệt đối. Bảng POSIX phía
+//! trên giữ cho Unix; mỗi ca có kỳ vọng Windows riêng qua [`ky_vong`].
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -99,6 +103,15 @@ fn dung(tag: &str, src: &str, stdout: &str) {
     assert_eq!(out, stdout, "{tag}: stdout sai");
 }
 
+/// Kỳ vọng theo **nền**: `posix` cho Unix, `windows` cho Windows (`Path::is_absolute` của host).
+fn ky_vong(posix: &'static str, windows: &'static str) -> &'static str {
+    if cfg!(windows) {
+        windows
+    } else {
+        posix
+    }
+}
+
 /// Lỗi **tĩnh**: `vis check` đỏ (exit 1, mã trong TAP) và **cả hai** engine từ chối (exit 2).
 fn tu_choi(tag: &str, src: &str, ma: &str) {
     let (d, p) = ghi_tep(tag, src);
@@ -151,7 +164,10 @@ fn main():
     print(path.is_absolute("///a"))
     print(path.is_absolute("//server/share"))
 "#,
-        "true\ntrue\ntrue\ntrue\ntrue\ntrue\n",
+        ky_vong(
+            "true\ntrue\ntrue\ntrue\ntrue\ntrue\n",
+            "false\nfalse\nfalse\ntrue\ntrue\ntrue\n",
+        ),
     );
 }
 
@@ -239,7 +255,10 @@ fn main():
     print(path.is_absolute("/\\a"))
     print(path.is_absolute("/a\0b"))
 "#,
-        "false\nfalse\nfalse\nfalse\ntrue\ntrue\n",
+        ky_vong(
+            "false\nfalse\nfalse\nfalse\ntrue\ntrue\n",
+            "false\nfalse\nfalse\nfalse\nfalse\nfalse\n",
+        ),
     );
 }
 
@@ -261,7 +280,10 @@ fn main():
     print(path.is_absolute("e\u{0302}\u{0301}/x"))
     print(path.is_absolute("/đ😀"))
 "#,
-        "false\nfalse\ntrue\nfalse\ntrue\n",
+        ky_vong(
+            "false\nfalse\ntrue\nfalse\ntrue\n",
+            "false\nfalse\nfalse\nfalse\nfalse\n",
+        ),
     );
 }
 
@@ -334,6 +356,9 @@ fn main():
     let r: bool = path.is_absolute("/x")
     print(r)
 "#,
-        "false\nfalse\ntrue\ntrue\nfalse\nfalse\nfalse\ntrue\nfalse\nfalse\ntrue\n",
+        ky_vong(
+            "false\nfalse\ntrue\ntrue\nfalse\nfalse\nfalse\ntrue\nfalse\nfalse\ntrue\n",
+            "false\nfalse\nfalse\ntrue\nfalse\nfalse\nfalse\nfalse\nfalse\nfalse\nfalse\n",
+        ),
     );
 }

@@ -110,6 +110,15 @@ fn dung(tag: &str, src: &str, stdout: &str) {
     assert_eq!(out, stdout, "{tag}: stdout sai");
 }
 
+/// Kỳ vọng theo **nền**: `posix` cho Unix, `windows` cho Windows (`path.join` theo `cfg!(windows)`).
+fn ky_vong(posix: &'static str, windows: &'static str) -> &'static str {
+    if cfg!(windows) {
+        windows
+    } else {
+        posix
+    }
+}
+
 /// Lỗi **tĩnh**: `vis check` đỏ (exit 1, mã trong TAP) và **cả hai** engine từ chối (exit 2).
 fn tu_choi(tag: &str, src: &str, ma: &str) {
     let (d, p) = ghi_tep(tag, src);
@@ -199,7 +208,10 @@ fn main():
     print("[" + path.join_all(["a", "b", "c", "d"]) + "]")
     print("[" + path.join_all(["/a", "b", "c"]) + "]")
 "#,
-        "[a/b]\n[a/b/c]\n[a/b/c/d]\n[/a/b/c]\n",
+        ky_vong(
+            "[a/b]\n[a/b/c]\n[a/b/c/d]\n[/a/b/c]\n",
+            "[a\\b]\n[a\\b\\c]\n[a\\b\\c\\d]\n[/a/b/c]\n",
+        ),
     );
 }
 
@@ -221,7 +233,10 @@ fn main():
     print("[" + path.join_all(["", "a", ""]) + "]")
     print("[" + path.join_all(["a", "b", ""]) + "]")
 "#,
-        "[]\n[a]\n[a/]\n[a/b]\n[a/]\n[a/b/]\n",
+        ky_vong(
+            "[]\n[a]\n[a/]\n[a/b]\n[a/]\n[a/b/]\n",
+            "[]\n[a]\n[a\\]\n[a\\b]\n[a\\]\n[a\\b\\]\n",
+        ),
     );
 }
 
@@ -246,7 +261,10 @@ fn main():
     print("[" + path.join_all(["a", "//b"]) + "]")
     print("[" + path.join_all(["a", "//b", "c"]) + "]")
 "#,
-        "[a/b]\n[a/b]\n[/a]\n[/a]\n[a/b/c]\n[a/b//]\n[/a/b/]\n[//b]\n[//b/c]\n",
+        ky_vong(
+            "[a/b]\n[a/b]\n[/a]\n[/a]\n[a/b/c]\n[a/b//]\n[/a/b/]\n[//b]\n[//b/c]\n",
+            "[a\\b]\n[a\\b]\n[//a]\n[///a]\n[a\\b\\c]\n[a\\b//]\n[/a/b/]\n[//b]\n[//b/c]\n",
+        ),
     );
 }
 
@@ -266,7 +284,10 @@ fn main():
     print("[" + path.join_all(["//a", "b"]) + "]")
     print("[" + path.join_all(["/a/", "b", "c"]) + "]")
 "#,
-        "[/a/b]\n[/a/b]\n[//a/b]\n[/a/b/c]\n",
+        ky_vong(
+            "[/a/b]\n[/a/b]\n[//a/b]\n[/a/b/c]\n",
+            "[/a/b]\n[//a/b]\n[//a/b]\n[/a/b/c]\n",
+        ),
     );
 }
 
@@ -288,7 +309,10 @@ fn main():
     print("[" + path.join_all(["a", "b", "/c"]) + "]")
     print("[" + path.join_all(["a", "/b/"]) + "]")
 "#,
-        "[/b/c]\n[/c/d/e]\n[/c/d]\n[/b]\n[/c]\n[/b/]\n",
+        ky_vong(
+            "[/b/c]\n[/c/d/e]\n[/c/d]\n[/b]\n[/c]\n[/b/]\n",
+            "[/b/c]\n[/c/d/e]\n[/c/d]\n[//b]\n[/c]\n[/b/]\n",
+        ),
     );
 }
 
@@ -309,7 +333,10 @@ fn main():
     print("[" + path.join_all(["thư mục", "x"]) + "]")
     print("[" + path.join_all(["e\u{0302}\u{0301}", "x"]) + "]")
 "#,
-        "[thư/mục/tệp.txt]\n[/thư/mục]\n[đ😀/x]\n[thư mục/x]\n[e\u{0302}\u{0301}/x]\n",
+        ky_vong(
+            "[thư/mục/tệp.txt]\n[/thư/mục]\n[đ😀/x]\n[thư mục/x]\n[e\u{0302}\u{0301}/x]\n",
+            "[thư\\mục\\tệp.txt]\n[/thư/mục]\n[đ😀\\x]\n[thư mục\\x]\n[e\u{0302}\u{0301}\\x]\n",
+        ),
     );
 }
 
@@ -384,6 +411,9 @@ fn main():
     let r: str = path.join_all(["đ😀", "x"])
     print(r)
 "#,
-        "\n\na\na/b\na/b/c\na/b\na/\na/b\n//b\n/a/b/c\n/b/c\n/c/d\nthư/mục/tệp.txt\nđ😀/x\n",
+        ky_vong(
+            "\n\na\na/b\na/b/c\na/b\na/\na/b\n//b\n/a/b/c\n/b/c\n/c/d\nthư/mục/tệp.txt\nđ😀/x\n",
+            "\n\na\na\\b\na\\b\\c\na\\b\na\\\na\\b\n//b\n/a/b/c\n/b/c\n/c/d\nthư\\mục\\tệp.txt\nđ😀\\x\n",
+        ),
     );
 }

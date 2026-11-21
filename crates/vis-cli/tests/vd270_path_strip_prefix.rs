@@ -152,6 +152,12 @@ fn tu_choi(tag: &str, src: &str, ma: &str) {
 /// - `base` rỗng: Rust trả `p` đã đi qua `Components` (`a/` ⇒ `a`); ViScript trả `p` **nguyên văn**.
 /// - `/` đầu dư: Rust bỏ **mọi** `/` đầu của phần còn lại (`//a` bỏ `/` ⇒ `a`); ViScript bỏ đúng
 ///   **một** (`/a`).
+///
+/// **Windows**: `Path::strip_prefix` theo quy tắc UNC/ổ đĩa (vd `//srv/share` bỏ `//` ⇒ `Err`),
+/// khác bảng POSIX dưới đây. Probe này khoá **hành vi Rust POSIX** làm chuẩn tài liệu, nên chỉ
+/// chạy trên Unix; hợp đồng sản phẩm (thuần từ vựng POSIX) vẫn được phủ bởi các test `dung`
+/// phía trên, chạy mọi nền.
+#[cfg(not(windows))]
 fn khop_rust(p: &str, base: &str, mong: Result<&str, ()>) {
     let thuc = Path::new(p)
         .strip_prefix(base)
@@ -160,6 +166,7 @@ fn khop_rust(p: &str, base: &str, mong: Result<&str, ()>) {
     assert_eq!(thuc, mong, "Rust Path::strip_prefix({p:?}, {base:?})");
 }
 
+#[cfg(not(windows))]
 #[test]
 fn probe_rust_path_strip_prefix() {
     // `p`, `base`, kết quả Rust.
