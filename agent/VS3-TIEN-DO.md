@@ -45,7 +45,7 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a/1c | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a` + `7e1deed`; còn cap≥1/select, 1d |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c`; cookie/auth xong; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + verify release | **DONE (verify cũ)** — merge `848b8e9`; đang verify `f71fba0` để tag `v0.1.0` |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + verify release | **REVIEW** — `041ee50` đỏ 5 ca (2 product); cherry-pick `3d6bfe4` + `5dec89b`; chờ fix `net.rs` của W2 rồi verify lại |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
@@ -61,6 +61,17 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Quyết định**: giữ `v0.1.0-rc1` làm mốc lịch sử, **không promote `v0.1.0`**; W4 đang sửa; tag
   `v0.1.0-rc2` sau khi `vis-dev check` xanh + workspace 0 product/test failure.
 - Báo cáo: `agent/JOURNAL/vs3-w4-windows-verify.md`.
+
+### Sự kiện 21/11 — release `041ee50` đỏ 5 ca trên Windows
+
+- `cargo test --workspace`: **3396 passed / 5 failed / 3 ignored** (344 block); `vis-dev check` PASS;
+  host 54/54. `vis-dev check` không chạy full `cargo test` nên không đủ kết luận.
+- 5 ca: 2 **product** (overlay LSP tra canonical; `localhost` phân giải `::1` trước khi server bind
+  `127.0.0.1`) + 3 **test-only** (registry HTTPS socket non-blocking).
+- Đã cherry-pick `3d6bfe4` (overlay) + `5dec89b` (registry test); **`net.rs`** đang được W2 sửa
+  (thử lần lượt địa chỉ loopback).
+- **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
+- Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
 ## 3. Mốc tích hợp cuối tuần
 
