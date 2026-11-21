@@ -26,6 +26,7 @@ mod chung;
 mod flatten;
 mod frame_net;
 mod fsbytes;
+mod fscanonicalize;
 mod fsissymlink;
 mod fsmkdirall;
 mod fsreadlink;
@@ -805,6 +806,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (fs-read-link)**: đọc **đích** symlink, **không** đi theo link (dangling vẫn
         // `Ok`); tệp/thư mục/thiếu/lỗi khác ⇒ `Err(Error)` dữ liệu, không trap.
         "fs.read_link" => fsreadlink::goi(host, name, &args, span),
+        // **VD-270 (fs-canonicalize)**: đường dẫn tuyệt đối đã phân giải symlink/`..` bằng
+        // `std::fs::canonicalize` (**chạm đĩa** + đọc `cwd`, khác `path.normalize`); `p` phải tồn
+        // tại, thiếu/rỗng/lỗi ⇒ `Err(Error)` dữ liệu, không trap; ngoài cap ⇒ `VS0604`.
+        "fs.canonicalize" => fscanonicalize::goi(host, name, &args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
         "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, &args, span),

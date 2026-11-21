@@ -186,6 +186,15 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 
+    /// **VD-270 (fs-canonicalize)**: đường dẫn **tuyệt đối đã phân giải** của `p` bằng
+    /// `std::fs::canonicalize` — **chạm đĩa** và đọc `cwd` (khác `path.normalize` thuần từ vựng);
+    /// symlink và `..` được phân giải theo trạng thái **hiện tại** của hệ tệp. `p` phải **tồn
+    /// tại**: thiếu/rỗng/`ENOENT`, đích không phải UTF-8, hoặc lỗi quyền OS ⇒ `Err` dữ liệu.
+    /// Default: **chưa hỗ trợ**.
+    fn canonicalize(&mut self, _p: &str) -> Result<String, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (mọi giá trị `0..=255`).
     /// Thiếu tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock
     /// vẫn biên dịch.

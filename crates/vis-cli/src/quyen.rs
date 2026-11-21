@@ -875,6 +875,16 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, false)?;
         self.trong.read_link(p)
     }
+    /// **VD-270 (fs-canonicalize)**: thao tác **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size)
+    /// (`cap[Dir]`/`cap[File]`, **không** cần `(write)`). Kiểm quyền canonicalize **trước** khi
+    /// chạm đĩa nên symlink trỏ **ra ngoài** root ⇒ `VS0604`; bước kiểm dùng helper `chuan` của
+    /// `quyen_chuan` (**không** gọi lại `canonicalize` của host) nên **không** đệ quy. Host thật
+    /// canonicalize lần nữa để trả kết quả; đua giữa hai bước là cùng cửa sổ kiểm-rồi-dùng như mọi
+    /// đường đọc khác.
+    fn canonicalize(&mut self, p: &str) -> Result<String, String> {
+        self.quyen.kiem_fs(p, false)?;
+        self.trong.canonicalize(p)
+    }
     /// **VD-270 (fsbytes)**: đọc byte thô là thao tác **đọc** ⇒ kiểm `cap[Dir]`/`cap[File]`
     /// (`can_write=false`) trước khi chạm đĩa; lỗi host giữ nguyên `Err` dữ liệu.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {

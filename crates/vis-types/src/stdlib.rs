@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 151] = [
+pub const FUNCS: [StdFn; 152] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -954,6 +954,15 @@ pub const FUNCS: [StdFn; 151] = [
     // Chữ ký tái dùng `Ty::ResultStrStr` (cùng `fs.read`). **Không** sugar.
     StdFn {
         name: "fs.read_link",
+        params: &[Ty::Str],
+        ret: Ty::ResultStrStr,
+    },
+    // **VD-270 (fs-canonicalize)**: đường dẫn **tuyệt đối đã phân giải** symlink/`..` bằng
+    // `std::fs::canonicalize` — **chạm đĩa** và đọc `cwd` (khác `path.normalize` thuần từ vựng).
+    // `p` phải tồn tại; rỗng/thiếu/dangling/đích không UTF-8/lỗi quyền ⇒ `Err(Error)`.
+    // Chữ ký tái dùng `Ty::ResultStrStr` (cùng `fs.read`). **Không** sugar.
+    StdFn {
+        name: "fs.canonicalize",
         params: &[Ty::Str],
         ret: Ty::ResultStrStr,
     },
