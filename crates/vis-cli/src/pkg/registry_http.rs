@@ -34,7 +34,7 @@ use super::{
     bam, chuan_hoa, chuoi, doc_tat_ca, giai_roots, kiem_path, la_hex64, lay, lay_chuoi,
     manifest_tu_gia_tri, GoiCai,
 };
-use crate::net::Net;
+use vis_cli::net::Net;
 
 /// Hạn mỗi lời gọi HTTP của registry (connect + đọc) — đủ cho mạng cục bộ, không treo CLI.
 const TIMEOUT_MS: u64 = 30_000;
