@@ -153,6 +153,22 @@ pub struct ModInfo {
     pub path: String,
 }
 
+/// **VD-270** — một `impl` đã đăng ký ở phạm vi **toàn chương trình** (xuyên module).
+///
+/// Mỗi tệp vẫn có bảng `impls` **cục bộ** của riêng nó (dùng khi hạ chính tệp đó); bản ghi ở đây
+/// chỉ để module **khác** thấy phương thức của `impl` đã hạ ở tệp phụ thuộc.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImplDangKy {
+    /// Kiểu nhận của `impl` (`Type::Record`/`Enum`/`TypeRef` generic).
+    pub ty: Type,
+    /// Tên phương thức (`fn` trong thân `impl`).
+    pub method: String,
+    /// Chỉ số `sym` của phương thức trong HIR toàn chương trình.
+    pub sym: u32,
+    /// Module khai `impl` (chỉ số trong `Symbols::mods`).
+    pub mod_id: u16,
+}
+
 /// Bảng ký hiệu của một lượt hạ: các khung + ký hiệu theo thứ tự khai báo.
 ///
 /// ST-25 thêm ba mảng **song song** với `syms` để kiểm tầm nhìn `pub`/`use` **ở tầng giải tên**
@@ -167,6 +183,12 @@ pub struct Symbols {
     pub pub_of: Vec<bool>,
     /// Các module của đơn vị biên dịch (chỉ số = `mod_of`).
     pub mods: Vec<ModInfo>,
+    /// **VD-270** — `impl` của mọi module đã hạ trong đơn vị (dùng cho dispatch xuyên module).
+    pub impls: Vec<ImplDangKy>,
+    /// **VD-270** — template trường của `type T[..]` đã hạ (để module khác instantiation được).
+    pub rec_tmpl: Vec<(String, Vec<String>, Vec<Type>)>,
+    /// **VD-270** — template biến thể của `enum E[..]` đã hạ (để module khác instantiation được).
+    pub enum_tmpl: Vec<EnumTmpl>,
 }
 
 impl Symbols {
@@ -251,8 +273,9 @@ pub fn lower_into(
     l.finish()
 }
 
-/// Template biến thể enum generic (ST-35): `(tên, tham số kiểu, [(biến thể, kiểu trường)])`.
-type EnumTmpl = (String, Vec<String>, Vec<(String, Vec<Type>)>);
+/// Template biến thể enum generic (ST-35; **VD-270**: dùng chung toàn chương trình):
+/// `(tên, tham số kiểu, [(biến thể, kiểu trường)])`.
+pub type EnumTmpl = (String, Vec<String>, Vec<(String, Vec<Type>)>);
 
 struct Lowerer<'a> {
     /// **ST-114a**: chỉ số tệp đang hạ (0 = một tệp).

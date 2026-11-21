@@ -68,7 +68,8 @@ pub use hir::{
 };
 pub use lower::{
     is_builtin_value, lower, lower_into, lower_with, FrameKind, HFrame, HSym, HirOutput,
-    LowerError, LowerOptions, ModInfo, NamePolicy, SymKind, Symbols, TraitSig, BUILTIN_VALUE_NAMES,
+    ImplDangKy, LowerError, LowerOptions, ModInfo, NamePolicy, SymKind, Symbols, TraitSig,
+    BUILTIN_VALUE_NAMES,
 };
 pub use method_ret::MethodRet;
 pub use ty::{

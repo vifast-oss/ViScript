@@ -1021,12 +1021,7 @@ impl<'a> Lowerer<'a> {
             return None;
         };
         let ten = self.ten_kieu(&ty)?;
-        let khop: Vec<u32> = self
-            .impls
-            .iter()
-            .filter(|(t, n, _)| self.ten_kieu(t).as_deref() == Some(ten.as_str()) && n == name)
-            .map(|(_, _, sym)| *sym)
-            .collect();
+        let khop = self.khop_impl(&ten, name);
         match khop.len() {
             1 => {
                 // Đối số đầu = chính biểu thức nhận (`self`/`dt` theo giá trị).

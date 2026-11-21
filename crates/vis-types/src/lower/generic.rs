@@ -70,6 +70,14 @@ impl<'a> Lowerer<'a> {
         if let Some((_, id)) = self.rec_names.iter().find(|(n, _)| n == name) {
             self.tbl.set_rec_pos(*id, pos);
         }
+        // **VD-270**: giữ template trong bảng chung để module khác (`main.vis`) instantiation
+        // `Hop[int]` được — nếu chỉ giữ cục bộ, `Hop[int]` ở tệp khác rơi về `Record` gốc và
+        // `T` không buộc được (chỉ dispatch chạy, kiểu tĩnh mất).
+        if !self.symbols.rec_tmpl.iter().any(|(n, _, _)| n == name) {
+            self.symbols
+                .rec_tmpl
+                .push((name.to_string(), params.clone(), tys.clone()));
+        }
         self.rec_tmpl.push((name.to_string(), params, tys));
     }
 
@@ -122,6 +130,12 @@ impl<'a> Lowerer<'a> {
         if let Some((_, id)) = self.enum_names.iter().find(|(n, _)| n == name) {
             self.tbl.set_enum_pos(*id, pos);
         }
+        // **VD-270**: template enum dùng chung như template record (xem `dung_template_rec_tu`).
+        if !self.symbols.enum_tmpl.iter().any(|(n, _, _)| n == name) {
+            self.symbols
+                .enum_tmpl
+                .push((name.to_string(), params.clone(), vs.clone()));
+        }
         self.enum_tmpl.push((name.to_string(), params, vs));
     }
 
@@ -138,7 +152,20 @@ impl<'a> Lowerer<'a> {
             .rec_tmpl
             .iter()
             .find(|(n, _, _)| n == name)
-            .map(|(_, p, v)| (p.clone(), v.clone()))?;
+            .cloned()
+            .or_else(|| {
+                self.symbols
+                    .rec_tmpl
+                    .iter()
+                    .find(|(n, _, _)| n == name)
+                    .cloned()
+            })
+            .map(|(_, p, v)| (p, v))?;
+        // **VD-270**: tái dùng instantiation đã dựng ở module khác (id ổn định toàn chương trình).
+        if let Some(id) = self.tbl.find_rec_inst(name, &args) {
+            self.inst_cache.push(((name.to_string(), args), id.0));
+            return Some(id);
+        }
         let bang: Vec<(String, Type)> = params.into_iter().zip(args.clone()).collect();
         let base_def = self.tbl.rec(base)?.clone();
         if base_def.fields.len() != tmpl.len() {
@@ -173,7 +200,20 @@ impl<'a> Lowerer<'a> {
             .enum_tmpl
             .iter()
             .find(|(n, _, _)| n == name)
-            .map(|(_, p, v)| (p.clone(), v.clone()))?;
+            .cloned()
+            .or_else(|| {
+                self.symbols
+                    .enum_tmpl
+                    .iter()
+                    .find(|(n, _, _)| n == name)
+                    .cloned()
+            })
+            .map(|(_, p, v)| (p, v))?;
+        // **VD-270**: tái dùng instantiation đã dựng ở module khác (id ổn định toàn chương trình).
+        if let Some(id) = self.tbl.find_enum_inst(name, &args) {
+            self.inst_cache.push(((name.to_string(), args), id.0));
+            return Some(id);
+        }
         let bang: Vec<(String, Type)> = params.into_iter().zip(args.clone()).collect();
         let mut base_def = self.tbl.enum_def(base)?.clone();
         for (v, tys) in vs.iter() {
