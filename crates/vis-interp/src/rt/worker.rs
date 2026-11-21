@@ -859,6 +859,23 @@ pub mod worker {
             })
         }
 
+        /// **Shared read-only**: task giữ `Arc<SendValue>` và chỉ nhận `&SendValue`; **không**
+        /// deep clone payload. Producer clone `Arc` O(1), worker đọc trực tiếp.
+        ///
+        /// Chỉ dùng khi task **không sửa** payload (kiểu `&` chặn mutation). Cần sở hữu/sửa
+        /// payload thì dùng [`Self::spawn_worker_copy`] hoặc [`Self::spawn_with_payload`].
+        /// Opt-in/test-only; W=1/W>1, print merge, cross-write, budget giữ nguyên như `spawn`.
+        pub fn spawn_shared<F>(
+            &mut self,
+            payload: Arc<SendValue>,
+            f: F,
+        ) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn(move |ctx| f(ctx, &payload))
+        }
+
         /// Join tất cả task; merge output theo **spawn order**. W>1 có ghi chéo ⇒ `CrossWrite`.
         pub fn join(mut self) -> Result<PoolResult, WorkerError> {
             let mode = self.mode.take().ok_or(WorkerError::ChannelClosed)?;

@@ -608,3 +608,123 @@ fn taskid_proxy_await_w1_w4() {
         Err(WaitError::Timeout)
     );
 }
+
+/// `spawn_shared`: map1k/list10k read-only, W=1/W=4, shared vs worker-copy/producer;
+/// print merge, budget atomic, cross-write vẫn bị từ chối; payload không đổi/không rò Arc.
+#[test]
+fn spawn_shared_map_list_w1_w4_parity() {
+    let map = Arc::new(SendValue::Map(
+        (0..1_000)
+            .map(|i| (SendValue::Str(format!("k{i}")), SendValue::Int(i as i64)))
+            .collect(),
+    ));
+    let list = Arc::new(SendValue::List(
+        (0..10_000).map(|i| SendValue::Int(i as i64)).collect(),
+    ));
+
+    for (name, payload) in [("map", &map), ("list", &list)] {
+        let mut outs = Vec::new();
+        for w in [1usize, 4] {
+            for mode in ["shared", "worker", "producer"] {
+                let b = Arc::new(SharedBudget::new(10_000, 256));
+                let mut pool = WorkerPool::with_budget(w, env(), Arc::clone(&b)).expect("pool");
+                for i in 0..16usize {
+                    let i = i as i64;
+                    match mode {
+                        "shared" => {
+                            let p = Arc::clone(payload);
+                            pool.spawn_shared(p, move |ctx, p| {
+                                let len = match p {
+                                    SendValue::Map(kv) => kv.len(),
+                                    SendValue::List(xs) => xs.len(),
+                                    _ => 0,
+                                };
+                                ctx.print_line(&format!("{name}:{i}:{len}"));
+                                ctx.charge(2)?;
+                                Ok(SendValue::Int(i))
+                            })
+                            .unwrap();
+                        }
+                        "worker" => {
+                            let p = Arc::clone(payload);
+                            pool.spawn_worker_copy(p, move |ctx, p| {
+                                let len = match &p {
+                                    SendValue::Map(kv) => kv.len(),
+                                    SendValue::List(xs) => xs.len(),
+                                    _ => 0,
+                                };
+                                ctx.print_line(&format!("{name}:{i}:{len}"));
+                                ctx.charge(2)?;
+                                Ok(SendValue::Int(i))
+                            })
+                            .unwrap();
+                        }
+                        "producer" => {
+                            let p = (**payload).clone();
+                            pool.spawn(move |ctx| {
+                                let len = match &p {
+                                    SendValue::Map(kv) => kv.len(),
+                                    SendValue::List(xs) => xs.len(),
+                                    _ => 0,
+                                };
+                                ctx.print_line(&format!("{name}:{i}:{len}"));
+                                ctx.charge(2)?;
+                                Ok(SendValue::Int(i))
+                            })
+                            .unwrap();
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let r = pool.join().expect("join shared parity");
+                let snap = r.budget.expect("budget");
+                assert_eq!(r.outcomes.len(), 16, "{name} {mode} W={w}");
+                assert_eq!(snap.used, 32, "{name} {mode} W={w}: used");
+                assert_eq!(snap.used + snap.remaining, snap.limit);
+                assert!(!snap.exhausted);
+                assert_eq!(Arc::strong_count(payload), 1, "{name} {mode} W={w}: Arc rò");
+                outs.push((mode, w, r.output));
+            }
+        }
+        let first = &outs[0].2;
+        for (mode, w, out) in &outs {
+            assert_eq!(out, first, "{name} {mode} W={w}: print merge");
+        }
+        assert_eq!(first.lines().count(), 16);
+        match &**payload {
+            SendValue::Map(kv) => assert_eq!(kv.len(), 1_000),
+            SendValue::List(xs) => assert_eq!(xs.len(), 10_000),
+            _ => unreachable!(),
+        }
+    }
+
+    // Cross-write vẫn bị từ chối ở W=4; W=1 ghi env chung như cũ.
+    let p = Arc::new(SendValue::List(vec![SendValue::Int(1)]));
+    let mut pool = WorkerPool::new(1, env()).expect("pool shared cross w1");
+    let p1 = Arc::clone(&p);
+    pool.spawn_shared(p1, |ctx, _| {
+        ctx.set("counter", SendValue::Int(1));
+        Ok(SendValue::Unit)
+    })
+    .unwrap();
+    let r = pool.join().expect("join shared cross w1");
+    assert_eq!(r.env.get("counter"), Some(&SendValue::Int(1)));
+
+    let mut pool = WorkerPool::new(4, env()).expect("pool shared cross w4");
+    for _ in 0..8 {
+        let p = Arc::clone(&p);
+        pool.spawn_shared(p, |ctx, _| {
+            ctx.set("counter", SendValue::Int(1));
+            Ok(SendValue::Unit)
+        })
+        .unwrap();
+    }
+    match pool.join() {
+        Err(WorkerError::CrossWrite { vars, tasks }) => {
+            assert_eq!(vars, vec!["counter".to_string()]);
+            assert_eq!(tasks.len(), 8);
+        }
+        other => panic!("spawn_shared W=4 phải CrossWrite: {other:?}"),
+    }
+    assert_eq!(Arc::strong_count(&p), 1, "Arc shared rò sau cross-write");
+}
