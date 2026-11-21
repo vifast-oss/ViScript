@@ -34,7 +34,7 @@
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
-| VS3-6 — Windows Tier 1 + wasm | W3 | `test/host`, CI | TODO | sau P0/P1 |
+| VS3-6 — Windows Tier 1 + wasm | W3 | `test/host`, local/psvn | TODO | sau P0/P1; **không GitHub Actions** |
 | VS3-7 — LSP tệp phụ/incremental | W3 | `lsp_da_tep`, `lsp_incremental` | **DONE** — `1aefb88` + `3510232`; overlay + `change:2` UTF-16/CRLF |
 | VS3-8 — Plugin/ViTerm | W3 | `vs3_plugin.rs` | TODO | P3 |
 
@@ -45,7 +45,7 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a/1c | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a` + `7e1deed`; còn cap≥1/select, 1d |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9`; loopback fix; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CI + verify | **DONE** — tag `v0.1.0` xác nhận 3404/0; workflow `windows.yml`; đang mở target cross-check |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
@@ -90,7 +90,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **VS3-1d** async default + Pipe parity | W1 | **WIP** | async chạy frame, sync byte-identical, guard rõ, cache |
 | **VS3-3b** worker opt-in | W5 | **WIP** | TaskId/proxy, print merge, budget atomic, W=1/2/4 |
 | **VS3-4b2** HTTP/2 | W2 | **WIP** | feature `http2` default-off, local h2 test, HTTP/1.1 không hồi quy |
-| **VS3-6** Windows CI | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; `windows.yml`; cross-target xem sau |
+| **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
 | **VS3-2b** timeout kênh | — | **NEXT** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
 

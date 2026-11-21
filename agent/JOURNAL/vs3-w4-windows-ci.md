@@ -1,10 +1,14 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# VS3-W4 — xác nhận tag `v0.1.0` + Windows CI
+# VS3-W4 — xác nhận tag `v0.1.0` + Windows local verification
+
+> **ĐÍNH CHÍNH 21/11 (A0)**: **KHÔNG dùng GitHub Actions**. Workflow `.github/workflows/windows.yml`
+> đã được **gỡ** theo yêu cầu người điều hành (tránh rủi ro khoá tài khoản); repo chỉ chạy
+> **local/psvn**. Các lệnh trong tài liệu này vẫn đúng khi chạy tay trên Windows.
 
 > **Người thực hiện**: subagent VS3-W4 (`psvn`), 2026-11-21.
 > **Tag xác nhận**: `v0.1.0` = `50675ddbc861df40b6f4fade3518fc040a9a55c5`
 > (`[VS3] release: v0.1.0 — Linux 3448/3, Windows 3404/0, mac ngoai pham vi`).
-> **CI**: thêm `.github/workflows/windows.yml` (repo trước đó **chưa có** workflow nào).
+> **CI**: GitHub Actions **đã gỡ**; chỉ chạy local/psvn.
 > Không push/merge/tag; không đụng `net.rs`/`pkg.rs`/`frame/**`/`value.rs`; không cài dependency.
 
 ## 0. TL;DR
@@ -16,7 +20,7 @@
 | `bin/vis-dev check` | **PASS** (toàn bộ bước, gồm clippy `-D warnings`, build, doc/readme examples) |
 | `bin/vis-host-suite` | **54/54 PASS** (`host_posix_real` bỏ qua — Windows dùng `test-child`) |
 | Code so với `777af63` | **không đổi** — chỉ docs/journal (0 tệp trong `crates/`, `Cargo.toml`, `Cargo.lock`) |
-| Windows CI | `.github/workflows/windows.yml`; YAML parse OK; **chưa chạy trên GitHub Actions** (chưa có runner ở đây) |
+| Windows local | GitHub Actions **đã gỡ**; các lệnh dưới chạy tay trên `psvn` |
 | Cross-target trên psvn | **BLOCKED-ENV đã gỡ**: core **18/18**, sqlite **17 PASS + 1 EXPECTED_RED**, exit **0** |
 | Đĩa trước khi làm | `/` còn **21G** (> ngưỡng 5G) |
 
@@ -35,12 +39,17 @@
   ```
   Vì vậy tag `v0.1.0` mang đúng cây code đã verify 3404/0.
 
-## 2. Windows CI
+## 2. Windows local verification (GitHub Actions đã gỡ)
+
+> Phần workflow dưới đây là **lịch sử**; file `.github/workflows/windows.yml` đã bị xoá. Repo chỉ
+> chạy local/psvn theo yêu cầu A0.
 
 ### 2.1. Hiện trạng
 
-- Repo **chưa có** `.github/workflows/` (không có CI Linux/Windows trước đợt này).
-- Đã thêm `.github/workflows/windows.yml`; **không** sửa/tạo workflow Linux (không có để đổi).
+- Repo **từng chưa có** workflow; W4 đã thêm `.github/workflows/windows.yml` trong `67e23f2`.
+- **A0 đã gỡ toàn bộ GitHub Actions tại `a44ad52`** (tránh rủi ro khoá tài khoản); nhánh W4 đã
+  xoá `.github` — `git ls-tree -r HEAD --name-only | grep .github` phải **rỗng**.
+- Hiện **không có CI** Linux/Windows; chỉ verify **local/psvn**.
 
 ### 2.2. Nội dung workflow
 
@@ -63,16 +72,12 @@
 
 ### 2.3. Giới hạn / trạng thái kiểm chứng
 
-- **Chưa chạy trên GitHub Actions** trong đợt này (không có runner GitHub ở môi trường W4).
-  Đã kiểm:
-  - YAML parse hợp lệ (PyYAML; 9 step);
-  - các lệnh `cargo test` / `vis-dev check` / `vis-host-suite` chạy đúng trên `psvn` (cùng Git Bash,
-    cùng toolchain 1.100.0) — xem log;
-  - bước normalize LF/exec chạy thử cục bộ, không đổi nội dung mã.
-- **Cross-target không có trong CI**: runner chỉ có `x86_64-pc-windows-msvc`; `targets_wasm_vis_types`
-  sẽ tự báo **BLOCKED-ENV** và skip (không phải bằng chứng xanh cho wasm/Linux).
-- Lần chạy đầu trên GitHub vẫn cần theo dõi: action versions (`checkout@v4`, `cache@v4`,
-  `setup-python@v5`, `dtolnay/rust-toolchain@stable`), quyền cache, và `python3` shim.
+- **Không còn GitHub Actions** (A0 `a44ad52`); workflow cũ **không được kích hoạt**. Nội dung
+  workflow phía trên chỉ là **lịch sử/tham khảo**, không phải đường verify hiện hành.
+- Đã kiểm các lệnh tương đương **chạy tay trên `psvn`** (Git Bash, toolchain 1.100.0):
+  `cargo test` / `vis-dev check` / `vis-host-suite` — xem log.
+- Cross-target đo **thủ công** trên `psvn` (mục 2.4), không phải CI; không cần theo dõi action
+  versions/cache/`python3` shim trên GitHub.
 
 ### 2.4. Cross-target trên `psvn` — BLOCKED-ENV đã gỡ
 
@@ -90,9 +95,9 @@
 - Ghi nhận: `vis-cli × x86_64-pc-windows-msvc` (sqlite) nay **PASS** — từng `EXPECTED_RED` nợ #156;
   script nhắc rà soát nợ. Các ô còn lại (8 crate × MSVC, wasm, `vis-host-wasm`, `vis-host-linux`
   × Linux) đều PASS.
-- Vậy **`psvn` không còn BLOCKED-ENV cross-target**. CI workflow vẫn không cài target (giữ nhẹ),
-  nên trên GitHub `targets_wasm_vis_types` vẫn skip; nếu muốn CI đo cross-target, thêm
-  `rustup target add …` + `bin/vis-targets` (chưa làm trong đợt này).
+- Vậy **`psvn` không còn BLOCKED-ENV cross-target**. **GitHub Actions đã gỡ** (A0 `a44ad52`),
+  không có CI; muốn đo lại thì chạy tay trên `psvn`:
+  `rustup target add wasm32-unknown-unknown x86_64-unknown-linux-gnu && bin/vis-targets`.
 
 ## 3. Merge main trên branch
 
@@ -100,6 +105,8 @@
   thay đổi chỉ ở `CHANGELOG.md`, `agent/DECISIONS.md`, `agent/ROADMAP.md`, `agent/STATE.md`,
   `agent/VS3-TIEN-DO.md` (docs), **không** đụng mã.
 - Commit workflow: **`67e23f2`** `[VS3][W4] ci: workflow windows-latest ...`.
+- **A0 gỡ toàn bộ GitHub Actions tại `a44ad52`**; W4 merge main và **xoá `.github`** khỏi branch
+  (không còn workflow). Từ đây chỉ verify **local/psvn**.
 - Sau đó branch **fast-forward** lên main `9c789b7` (chỉ `agent/VS3-TIEN-DO.md`, docs);
   không merge conflict, không đổi mã.
 
@@ -122,14 +129,14 @@ Log máy đích: `vis-remote-20261121T064026Z.log` (cargo tag),
 - Tag `v0.1.0` (`50675dd`) **đã xác nhận xanh trên Windows**: 3404/0, gate PASS, host 54/54;
   code trùng khít candidate `777af63` (chỉ khác docs).
 - **BLOCKED-ENV cross-target trên `psvn` đã gỡ**: `vis-targets` exit 0 (core 18/18;
-  sqlite 17 PASS + 1 EXPECTED_RED do C toolchain wasm). CI workflow vẫn không cài target,
-  nên trên GitHub `targets_wasm_vis_types` vẫn skip — đã ghi rõ.
-- Windows CI đã có workflow tối thiểu, bám đúng đường chuẩn Windows; **chưa chạy trên GitHub**
-  nên cần theo dõi lần đầu. Không có blocker sản phẩm.
+  sqlite 17 PASS + 1 EXPECTED_RED do C toolchain wasm).
+- **GitHub Actions đã gỡ** (A0 `a44ad52`); branch không còn `.github`. Verify chỉ **local/psvn**.
+  Không có blocker sản phẩm.
 - Không tag, không push, không merge ngược.
 
 ## 6. Checklist verify Windows cho `v0.2.0` (khi W1/W2/W5 merge)
 
+- [ ] **Không dùng GitHub Actions** (A0 `a44ad52`); chỉ verify **local/psvn**; branch không có `.github`.
 - [ ] `git merge main` vào `vs3/w4-windows`; xử lý conflict; **không** sửa `net.rs`/`pkg.rs`/
       `frame/**`/`value.rs` trừ khi được phân công.
 - [ ] `df` còn > 5G trên `ps` và `psvn`; dừng nếu dưới ngưỡng.
