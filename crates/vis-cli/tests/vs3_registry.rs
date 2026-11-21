@@ -101,7 +101,11 @@ impl Server {
             while !stop2.load(Ordering::Relaxed) {
                 match l.accept() {
                     Ok((mut s, _)) => {
-                        let _ = s.set_read_timeout(Some(Duration::from_millis(2_000)));
+                        // Windows: socket do `accept` trả về có thể thừa hưởng non-blocking của
+                        // listener ⇒ `read` trả `WouldBlock` ngay khi request chưa tới, server
+                        // trả 404 oan (hoặc đóng sớm ⇒ client thấy 10053). Đặt lại blocking.
+                        let _ = s.set_nonblocking(false);
+                        let _ = s.set_read_timeout(Some(Duration::from_secs(5)));
                         let mut req = Vec::new();
                         let mut buf = [0u8; 4096];
                         while req.len() < 65_536 && !req.windows(4).any(|w| w == b"\r\n\r\n") {
@@ -129,7 +133,13 @@ impl Server {
                                 .to_vec(),
                         };
                         let _ = s.write_all(&resp);
-                        let _ = s.shutdown(Shutdown::Both);
+                        // Windows: `shutdown(Both)` ngay sau write có thể làm peer thấy
+                        // WSAECONNABORTED (10053) khi còn byte trên đường. Đóng chiều ghi, rồi
+                        // đọc nốt tới EOF/timeout ngắn trước khi drop để close êm.
+                        let _ = s.shutdown(Shutdown::Write);
+                        let _ = s.set_read_timeout(Some(Duration::from_millis(200)));
+                        let mut rac = [0u8; 256];
+                        while matches!(s.read(&mut rac), Ok(n) if n > 0) {}
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         std::thread::sleep(Duration::from_millis(2));
