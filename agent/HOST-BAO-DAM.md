@@ -127,6 +127,13 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
   `scheme|host:port`; tối đa **8** idle, hết hạn sau **15 s**; server `close`/EOF ⇒ đóng. Host không
   có pool (mặc định trait) vẫn one-shot. Kết nối idle chết được **thử lại một lần** (GET/HEAD).
 - **Không keep-alive qua process**: pool sống trong một lần chạy `vis`; không ghi ra đĩa.
+- **Cookie (VS3-4b)**: jar **nội bộ** theo `Net`, không ra đĩa/không API ngôn ngữ; parse
+  `Set-Cookie` (`name=value`, `Path`, `Domain`, `Secure`, `HttpOnly`, `Max-Age`, `Expires` IMF-fixdate);
+  gửi `Cookie` theo domain/path, **Secure chỉ qua https**, không gửi cross-host; cookie set ở hop
+  redirect dùng được ở hop sau cùng host. Không SameSite/public-suffix/prefix/persistent store.
+- **Basic auth (VS3-4b)**: URL `user:pass@host` ⇒ `Authorization: Basic …`; credential **không** vào
+  log/`Host`/thông điệp lỗi; **không** tự chuyển Authorization sang redirect khác host (redirect
+  tương đối cùng host giữ userinfo). Không có API header/challenge 401 tự động.
 - **`Content-Length`** đọc đúng N byte; **timeout đọc 2 s/lần** (server im lặng ⇒ `Err` rõ).
 - **`http.head`**: gửi `HEAD`, **không đọc thân** dù server gửi `Content-Length`/chunked; trả
   `{status, headers}` (headers khoá chữ thường).

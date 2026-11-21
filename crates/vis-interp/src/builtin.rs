@@ -103,6 +103,12 @@ pub trait NetHost {
         let _ = giu_lai;
         self.close(tay)
     }
+
+    /// **VS3-4b (VD-271)**: cookie jar của host (nếu có). Mặc định `None` ⇒ `http.get/head` không
+    /// gửi/lưu cookie; host hỗ trợ trả jar để tầng HTTP đọc/ghi. Không phải API ngôn ngữ.
+    fn cookie_jar(&mut self) -> Option<&mut crate::cookie::CookieJar> {
+        None
+    }
     /// **ST-65**: lắng nghe trên `dia_chi`. Trả **handle mờ**.
     fn listen(&mut self, dia_chi: &str) -> Result<String, String>;
     /// **ST-65**: địa chỉ local của tay.

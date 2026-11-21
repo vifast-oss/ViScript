@@ -51,9 +51,12 @@ impl GiaoThuc {
     }
 }
 
-/// URL đã tách: `scheme://host[:port][/path][?query]`.
+/// URL đã tách: `scheme://[user:pass@]host[:port][/path][?query]`.
+#[derive(Debug)]
 struct UrlHttp {
     giao_thuc: GiaoThuc,
+    /// `user:pass` (chưa base64) nếu URL có userinfo; không bao giờ đưa vào log/`Host`.
+    userinfo: Option<(String, String)>,
     /// Host **không** kèm `[]` của IPv6 (dùng làm `ServerName` cho TLS).
     host: String,
     cong: u16,
@@ -85,14 +88,62 @@ impl UrlHttp {
         format!("{host}:{}", self.cong)
     }
 
+    /// Ghép URL với target cho trước, giữ userinfo nếu có (redirect tương đối cùng origin).
+    fn url_voi_target(&self, target: &str) -> String {
+        let auth = self
+            .userinfo
+            .as_ref()
+            .map(|(u, p)| format!("{u}:{p}@"))
+            .unwrap_or_default();
+        format!(
+            "{}://{auth}{}{target}",
+            self.giao_thuc.ten(),
+            self.authority()
+        )
+    }
+
+    /// Header `Authorization: Basic …` nếu URL có `user:pass@`.
+    fn authorization(&self) -> Option<String> {
+        let (u, p) = self.userinfo.as_ref()?;
+        Some(format!("Basic {}", ma_b64(format!("{u}:{p}").as_bytes())))
+    }
+
     #[cfg(test)]
     fn url(&self) -> String {
-        format!(
-            "{}://{}{}",
-            self.giao_thuc.ten(),
-            self.authority(),
-            self.target
-        )
+        self.url_voi_target(&self.target)
+    }
+}
+
+/// Base64 chuẩn (RFC 4648) cho Basic auth — cố định, không cần crate.
+fn ma_b64(bytes: &[u8]) -> String {
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for c in bytes.chunks(3) {
+        let b = [c[0], *c.get(1).unwrap_or(&0), *c.get(2).unwrap_or(&0)];
+        out.push(A[(b[0] >> 2) as usize] as char);
+        out.push(A[(((b[0] & 0b11) << 4) | (b[1] >> 4)) as usize] as char);
+        out.push(if c.len() > 1 {
+            A[(((b[1] & 0b1111) << 2) | (b[2] >> 6)) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if c.len() > 2 {
+            A[(b[2] & 0b111111) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+/// URL an toàn để đưa vào thông điệp lỗi: thay userinfo bằng `***`.
+fn an_toan(url: &str) -> String {
+    let Some((truoc, sau)) = url.rsplit_once('@') else {
+        return url.to_string();
+    };
+    match truoc.split_once("://") {
+        Some((scheme, _)) => format!("{scheme}://***@{sau}"),
+        None => "***".to_string(),
     }
 }
 
@@ -140,17 +191,33 @@ fn tach_url(url: &str) -> Result<UrlHttp, String> {
         (GiaoThuc::Https, r)
     } else {
         return Err(format!(
-            "chỉ hỗ trợ `http://` hoặc `https://`, được `{url}`"
+            "chỉ hỗ trợ `http://` hoặc `https://`, được `{}`",
+            an_toan(url)
         ));
     };
-    if rest.contains('@') {
-        return Err(format!("URL có userinfo không hỗ trợ: `{url}`"));
-    }
     let i = rest.find(['/', '?']).unwrap_or(rest.len());
     let (authority, duong) = (&rest[..i], &rest[i..]);
+    let (userinfo, authority) = match authority.rsplit_once('@') {
+        Some((u, host)) => (Some(u), host),
+        None => (None, authority),
+    };
     if authority.is_empty() {
-        return Err(format!("URL thiếu host: `{url}`"));
+        return Err(format!("URL thiếu host: `{}`", an_toan(url)));
     }
+    let userinfo = match userinfo {
+        Some(u) => {
+            let Some((ten, mat_khau)) = u.split_once(':') else {
+                return Err("URL userinfo phải dạng `user:pass@host` (Basic auth)".to_string());
+            };
+            if ten.bytes().any(|b| b < 0x20 || b == 0x7f)
+                || mat_khau.bytes().any(|b| b < 0x20 || b == 0x7f)
+            {
+                return Err("URL userinfo chứa ký tự điều khiển".to_string());
+            }
+            Some((ten.to_string(), mat_khau.to_string()))
+        }
+        None => None,
+    };
     let (host, cong) = tach_authority(authority, giao_thuc.cong_mac_dinh())?;
     if giao_thuc == GiaoThuc::Http && host != "127.0.0.1" && host != "localhost" {
         return Err(format!(
@@ -166,6 +233,7 @@ fn tach_url(url: &str) -> Result<UrlHttp, String> {
     };
     Ok(UrlHttp {
         giao_thuc,
+        userinfo,
         host,
         cong,
         target,
@@ -356,12 +424,7 @@ fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
             return Err("không cho phép chuyển hướng HTTPS → HTTP".to_string());
         }
         let moi = tach_url(location)?;
-        return Ok(Some(format!(
-            "{}://{}{}",
-            moi.giao_thuc.ten(),
-            moi.authority(),
-            chuan_hoa_target(&moi.target)
-        )));
+        return Ok(Some(moi.url_voi_target(&chuan_hoa_target(&moi.target))));
     }
     // Fragment không gửi lên server; `#f` một mình ⇒ cùng URL ⇒ không theo.
     let loc = location.split('#').next().unwrap_or("");
@@ -380,11 +443,7 @@ fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
         let thu_muc = path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
         chuan_hoa_target(&format!("{thu_muc}/{loc}"))
     };
-    Ok(Some(format!(
-        "{}://{}{moi}",
-        u.giao_thuc.ten(),
-        u.authority()
-    )))
+    Ok(Some(u.url_voi_target(&moi)))
 }
 
 /// Lỗi tầng HTTP kèm cờ **có nên thử lại một lần** trên kết nối mới (chỉ khi lỗi đến từ kết nối
@@ -425,12 +484,45 @@ fn loi_doc(e: String) -> LoiHttp {
     }
 }
 
-/// Kết quả một response GET: `(status, Location, body, giữ_kết_nối)`.
-type KetQuaGet = (u16, Option<String>, String, bool);
+/// Kết quả một response GET: `(status, Location, body, giữ_kết_nối, set-cookie)`.
+type KetQuaGet = (u16, Option<String>, String, bool, Vec<String>);
 /// Kết quả một response HEAD: `(status, headers, giữ_kết_nối)`.
 type KetQuaHead = (u16, Vec<(String, String)>, bool);
 
-/// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body, giữ_kết_nối)`.
+/// Header phụ của request (không log): Basic auth + Cookie.
+#[derive(Clone, Copy, Default)]
+struct HeaderThem<'a> {
+    auth: Option<&'a str>,
+    cookie: Option<&'a str>,
+}
+
+/// Ghép request HTTP/1.1; `auth`/`cookie` chỉ là giá trị header (không log).
+fn yeu_cau_http(method: &str, target: &str, authority: &str, them: HeaderThem<'_>) -> String {
+    let mut req =
+        format!("{method} {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: keep-alive\r\n");
+    if let Some(a) = them.auth {
+        req.push_str("Authorization: ");
+        req.push_str(a);
+        req.push_str("\r\n");
+    }
+    if let Some(c) = them.cookie {
+        req.push_str("Cookie: ");
+        req.push_str(c);
+        req.push_str("\r\n");
+    }
+    req.push_str("\r\n");
+    req
+}
+
+fn set_cookie_cua(d: &DauHttp) -> Vec<String> {
+    d.headers
+        .iter()
+        .filter(|(k, _)| k == "set-cookie")
+        .map(|(_, v)| v.clone())
+        .collect()
+}
+
+/// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body, giữ_kết_nối, set-cookie)`.
 ///
 /// `han` là deadline **chung của cả lời gọi** (do `http_get` tạo một lần); `timeout` chỉ dùng để
 /// giữ nguyên thông điệp lỗi lịch sử. Mỗi lần đọc chỉ dùng phần thời gian **còn lại** tới `han`.
@@ -441,9 +533,9 @@ fn doc_http_mot(
     target: &str,
     han: Instant,
     timeout: u64,
+    them: HeaderThem<'_>,
 ) -> Result<KetQuaGet, LoiHttp> {
-    let req =
-        format!("GET {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: keep-alive\r\n\r\n");
+    let req = yeu_cau_http("GET", target, authority, them);
     net.write(tay, req.as_bytes()).map_err(LoiHttp::ket_noi)?;
     let mut du: Vec<u8> = Vec::new();
     let mut info: Option<DauHttp> = None;
@@ -459,6 +551,7 @@ fn doc_http_mot(
                         d.location.clone(),
                         String::from_utf8_lossy(&body).into_owned(),
                         giu,
+                        set_cookie_cua(d),
                     ));
                 }
             } else if let Some(n) = d.cl {
@@ -470,6 +563,7 @@ fn doc_http_mot(
                         d.location.clone(),
                         String::from_utf8_lossy(&du[h..cuoi]).into_owned(),
                         giu,
+                        set_cookie_cua(d),
                     ));
                 }
             }
@@ -488,6 +582,7 @@ fn doc_http_mot(
             let d = info.ok_or_else(|| {
                 LoiHttp::ket_noi("phản hồi HTTP không đủ header (kết nối đóng sớm)")
             })?;
+            let set = set_cookie_cua(&d);
             if d.chunked {
                 return match ghep_chunked(&du[h..])? {
                     Some((body, _)) => Ok((
@@ -495,6 +590,7 @@ fn doc_http_mot(
                         d.location,
                         String::from_utf8_lossy(&body).into_owned(),
                         false,
+                        set,
                     )),
                     None => Err(LoiHttp::ket_noi("chunked: kết nối đóng khi chưa đủ chunk")),
                 };
@@ -509,12 +605,14 @@ fn doc_http_mot(
                     d.location,
                     String::from_utf8_lossy(&du[h..h + n]).into_owned(),
                     false,
+                    set.clone(),
                 )),
                 None => Ok((
                     d.status,
                     d.location,
                     String::from_utf8_lossy(&du[h..]).into_owned(),
                     false,
+                    set.clone(),
                 )),
             };
         }
@@ -561,6 +659,12 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
     loop {
         let u = tach_url(&hien_tai)?;
         let authority = u.authority();
+        let la_https = u.giao_thuc == GiaoThuc::Https;
+        let path = u.target.split('?').next().unwrap_or("/");
+        let auth = u.authorization();
+        let cookie = net
+            .cookie_jar()
+            .and_then(|j| j.header(&u.host, path, la_https));
         // Connect chỉ được dùng phần thời gian còn lại; hết hạn ⇒ lỗi, không mở kết nối mới.
         let con = con_lai_ms(han).ok_or_else(|| {
             format!(
@@ -569,20 +673,29 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
             )
         })?;
         // **VS3-4a**: `https://` đi qua TLS của host; **VS3-4b**: dùng lại kết nối idle nếu có.
-        let (tay, tai_su_dung) = net.connect_http(
-            &u.dia_chi(),
-            u.giao_thuc == GiaoThuc::Https,
-            !da_thu_lai,
-            con,
-        )?;
+        let (tay, tai_su_dung) = net.connect_http(&u.dia_chi(), la_https, !da_thu_lai, con)?;
         net.ghi_nhat_ky(&format!(
             "NET {} GET {authority}{}",
             u.giao_thuc.ten(),
             u.target
         ));
-        let kq = doc_http_mot(net, &tay, &authority, &u.target, han, timeout);
+        let kq = doc_http_mot(
+            net,
+            &tay,
+            &authority,
+            &u.target,
+            han,
+            timeout,
+            HeaderThem {
+                auth: auth.as_deref(),
+                cookie: cookie.as_deref(),
+            },
+        );
         match kq {
-            Ok((status, location, body, giu_lai)) => {
+            Ok((status, location, body, giu_lai, set_cookie)) => {
+                if let Some(j) = net.cookie_jar() {
+                    j.nhan_set_cookie(&u.host, path, &set_cookie);
+                }
                 let _ = net.tra_http(&tay, giu_lai);
                 if (300..400).contains(&status) {
                     let Some(loc) = location else {
@@ -627,9 +740,9 @@ fn head_mot(
     target: &str,
     han: Instant,
     timeout: u64,
+    them: HeaderThem<'_>,
 ) -> Result<KetQuaHead, LoiHttp> {
-    let req =
-        format!("HEAD {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: keep-alive\r\n\r\n");
+    let req = yeu_cau_http("HEAD", target, authority, them);
     net.write(tay, req.as_bytes()).map_err(LoiHttp::ket_noi)?;
     let mut du: Vec<u8> = Vec::new();
     loop {
@@ -679,27 +792,47 @@ pub fn http_head(
     let han = Instant::now() + Duration::from_millis(timeout);
     let u = tach_url(url)?;
     let authority = u.authority();
+    let la_https = u.giao_thuc == GiaoThuc::Https;
+    let path = u.target.split('?').next().unwrap_or("/");
+    let auth = u.authorization();
     let mut da_thu_lai = false;
     loop {
+        let cookie = net
+            .cookie_jar()
+            .and_then(|j| j.header(&u.host, path, la_https));
         let con = con_lai_ms(han).ok_or_else(|| {
             format!(
                 "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
                 timeout.max(1)
             )
         })?;
-        let (tay, tai_su_dung) = net.connect_http(
-            &u.dia_chi(),
-            u.giao_thuc == GiaoThuc::Https,
-            !da_thu_lai,
-            con,
-        )?;
+        let (tay, tai_su_dung) = net.connect_http(&u.dia_chi(), la_https, !da_thu_lai, con)?;
         net.ghi_nhat_ky(&format!(
             "NET {} HEAD {authority}{}",
             u.giao_thuc.ten(),
             u.target
         ));
-        match head_mot(net, &tay, &authority, &u.target, han, timeout) {
+        match head_mot(
+            net,
+            &tay,
+            &authority,
+            &u.target,
+            han,
+            timeout,
+            HeaderThem {
+                auth: auth.as_deref(),
+                cookie: cookie.as_deref(),
+            },
+        ) {
             Ok((status, headers, giu_lai)) => {
+                let set_cookie: Vec<String> = headers
+                    .iter()
+                    .filter(|(k, _)| k == "set-cookie")
+                    .map(|(_, v)| v.clone())
+                    .collect();
+                if let Some(j) = net.cookie_jar() {
+                    j.nhan_set_cookie(&u.host, path, &set_cookie);
+                }
                 let _ = net.tra_http(&tay, giu_lai);
                 return Ok((status, headers));
             }
@@ -815,6 +948,19 @@ mod tests {
             noi_location(&http, "https://example.com/x").unwrap(),
             Some("https://example.com/x".to_string())
         );
+    }
+
+    /// **VS3-4b**: userinfo `user:pass@` → Basic auth; không lộ credential trong lỗi/authority.
+    #[test]
+    fn tach_url_userinfo_basic_auth() {
+        let u = tach_url("http://user:pass@127.0.0.1:8080/a").unwrap();
+        assert_eq!(u.authority(), "127.0.0.1:8080");
+        assert_eq!(u.authorization().as_deref(), Some("Basic dXNlcjpwYXNz"));
+        assert_eq!(u.host, "127.0.0.1");
+        let e = tach_url("http://user@127.0.0.1/").unwrap_err();
+        assert!(!e.contains("user@"), "lỗi không được lộ userinfo: {e}");
+        let e = tach_url("http://user:pa\r\nss@127.0.0.1/").unwrap_err();
+        assert!(!e.contains("pa"), "lỗi không được lộ credential: {e}");
     }
 
     #[test]
