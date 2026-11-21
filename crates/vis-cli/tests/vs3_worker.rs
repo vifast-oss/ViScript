@@ -357,19 +357,21 @@ fn status_kb(key: &str) -> u64 {
     0
 }
 
-/// Stress 10k task: print merge W=1/W=4, cancel giữa chừng, budget cạn,
-/// cross-write; đo RSS/thời gian, bảo đảm join trả về (không deadlock).
+/// Stress **50k task**: print merge W=1/W=4, cancel giữa chừng, budget cạn, cross-write;
+/// đo thời gian/RSS/thread; join trả về (không deadlock), không rò worker thread.
 #[test]
-fn stress_10k_cancel_budget_print_cross() {
+fn stress_50k_cancel_budget_print_cross() {
+    const N: usize = 50_000;
     let t0 = Instant::now();
     let rss0 = status_kb("VmRSS:");
     let threads0 = status_kb("Threads:");
+    let t_print = Instant::now();
 
-    // 10k task in một dòng; W=1 == W=4 byte-identical, outcomes đủ.
+    // Print merge 50k: W=1 == W=4 byte-identical, outcomes đủ.
     let mut outs = Vec::new();
     for w in [1usize, 4] {
         let mut pool = WorkerPool::new(w, env()).expect("pool print");
-        for i in 0..10_000usize {
+        for i in 0..N {
             pool.spawn(move |ctx| {
                 ctx.print_line(&format!("t{i}"));
                 Ok(SendValue::Unit)
@@ -377,17 +379,20 @@ fn stress_10k_cancel_budget_print_cross() {
             .unwrap();
         }
         let r = pool.join().expect("join print");
-        assert_eq!(r.outcomes.len(), 10_000);
+        assert_eq!(r.outcomes.len(), N);
         outs.push(r.output);
     }
     assert_eq!(outs[0], outs[1], "stress print W=1/W=4");
-    assert_eq!(outs[0].lines().count(), 10_000);
+    assert_eq!(outs[0].lines().count(), N);
 
-    // Cancel 10k task (một nửa) ở W=1/W=4; task tự kiểm cancel.
+    let print_s = t_print.elapsed().as_secs_f64();
+    let t_cancel = Instant::now();
+
+    // Cancel nửa 50k ở W=1/W=4; task tự kiểm cancel trước/sau sleep.
     for w in [1usize, 4] {
         let mut pool = WorkerPool::new(w, env()).expect("pool cancel");
-        let mut handles = Vec::with_capacity(10_000);
-        for i in 0..10_000usize {
+        let mut handles = Vec::with_capacity(N);
+        for i in 0..N {
             let h = pool
                 .spawn(move |ctx| {
                     ctx.check_cancel()?;
@@ -405,19 +410,22 @@ fn stress_10k_cancel_budget_print_cross() {
             h.cancel();
         }
         let r = pool.join().expect("join cancel");
-        assert_eq!(r.outcomes.len(), 10_000);
+        assert_eq!(r.outcomes.len(), N);
         // Stress chỉ cần join đủ + không deadlock; ca cancel ngữ nghĩa nằm ở `vs3_cancel`.
         // Không bắt buộc có task bị huỷ: dưới tải, task ngắn có thể xong trước khi cancel.
         assert!(
-            r.outcomes.iter().filter(|o| o.cancelled).count() <= 5_000,
+            r.outcomes.iter().filter(|o| o.cancelled).count() <= N / 2,
             "không thể huỷ quá nửa ở W={w}"
         );
     }
 
-    // Budget cạn: 10k task cùng pool 5k đơn vị; không deadlock, accounting đúng.
-    let b = Arc::new(SharedBudget::new(5_000, 256));
+    let cancel_s = t_cancel.elapsed().as_secs_f64();
+    let t_budget = Instant::now();
+
+    // Budget cạn: 50k task cùng pool 25k đơn vị; không deadlock, accounting đúng.
+    let b = Arc::new(SharedBudget::new((N / 2) as u64, 256));
     let mut pool = WorkerPool::with_budget(4, env(), Arc::clone(&b)).expect("pool budget");
-    for _ in 0..10_000 {
+    for _ in 0..N {
         pool.spawn(|ctx| {
             ctx.charge(1)?;
             Ok(SendValue::Unit)
@@ -426,15 +434,18 @@ fn stress_10k_cancel_budget_print_cross() {
     }
     let r = pool.join().expect("join budget");
     let snap = r.budget.expect("budget");
-    assert_eq!(r.outcomes.len(), 10_000);
-    assert_eq!(snap.used, 5_000, "dùng đúng pool");
+    assert_eq!(r.outcomes.len(), N);
+    assert_eq!(snap.used, (N / 2) as i64, "dùng đúng pool");
     assert_eq!(snap.remaining, 0, "cạn đúng 0");
     assert_eq!(snap.used + snap.remaining, snap.limit);
     assert!(snap.exhausted);
 
-    // Cross-write 100 task: W=4 refused, không deadlock.
+    let budget_s = t_budget.elapsed().as_secs_f64();
+    let t_cross = Instant::now();
+
+    // Cross-write 50k task W=4: refused, không deadlock, đủ danh sách task.
     let mut pool = WorkerPool::new(4, env()).expect("pool cross");
-    for i in 0..100usize {
+    for i in 0..N {
         pool.spawn(move |ctx| {
             ctx.set("counter", SendValue::Int(i as i64));
             Ok(SendValue::Unit)
@@ -444,23 +455,24 @@ fn stress_10k_cancel_budget_print_cross() {
     match pool.join() {
         Err(WorkerError::CrossWrite { vars, tasks }) => {
             assert_eq!(vars, vec!["counter".to_string()]);
-            assert_eq!(tasks.len(), 100);
+            assert_eq!(tasks.len(), N);
         }
         other => panic!("stress cross-write phải refused: {other:?}"),
     }
 
+    let cross_s = t_cross.elapsed().as_secs_f64();
     let rss1 = status_kb("VmRSS:");
     let hwm = status_kb("VmHWM:");
     let threads1 = status_kb("Threads:");
     let secs = t0.elapsed().as_secs_f64();
     println!(
-        "STRESS\ttasks=10000\tprint+cancel+budget+cross\tsecs={secs:.2}\trss0_kb={rss0}\trss1_kb={rss1}\thwm_kb={hwm}\tthreads0={threads0}\tthreads1={threads1}"
+        "STRESS_50K\ttasks={N}\tsecs={secs:.2}\tprint_s={print_s:.2}\tcancel_s={cancel_s:.2}\tbudget_s={budget_s:.2}\tcross_s={cross_s:.2}\trss0_kb={rss0}\trss1_kb={rss1}\thwm_kb={hwm}\tthreads0={threads0}\tthreads1={threads1}"
     );
     assert!(
         threads1 <= threads0 + 1,
         "worker thread rò: {threads0} -> {threads1}"
     );
-    assert!(secs < 30.0, "stress quá chậm: {secs:.2}s");
+    assert!(secs < 120.0, "stress quá chậm: {secs:.2}s");
 }
 
 /// **VS3-3b/W5 prototype**: `Value` ↔ `ProtoValue` (Task = `TaskId`), `Show`/eq giữ nguyên.
