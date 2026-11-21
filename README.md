@@ -616,9 +616,9 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 | `./vis fmt --check [--json\|--list\|--diff\|--stat] <tệp…>` | kiểm tra định dạng; đầu ra JSON, danh sách tệp, diff hoặc một dòng tổng hợp cho CI |
 | `./vis fmt --stdin [--check [--json\|--list\|--diff\|--stat]] [--mode script\|command]` | định dạng luồng, không đụng đĩa |
 | `./vis fmt --indent-report <tệp…>` | báo cáo số dòng lệch thụt lề (`.vish`) |
-| `./vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] <tệp\|thư-mục…>` | chạy/lọc/liệt kê/lặp/xáo `test fn` và fixture |
+| `./vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] <tệp\|thư-mục…>` | chạy/lọc/liệt kê/lặp/xáo/chia phần/chạy song song `test fn` và fixture |
 | `./vis explain [--json] [--lang vi\|en\|ja] <mã>` | giải thích mã lỗi; `--list` in toàn bộ sổ mã |
-| `./vis lsp --stdio` | LSP: completion, hover, definition, references, rename/prepareRename, documentSymbol, workspace/symbol, signatureHelp, foldingRange, selectionRange, documentHighlight, formatting |
+| `./vis lsp --stdio` | LSP: completion, hover, definition, references, rename/prepareRename, documentSymbol, workspace/symbol, signatureHelp, foldingRange, selectionRange, documentHighlight, formatting, codeLens, inlayHint, typeDefinition, semanticTokens/full |
 | `./vis pkg add <gói>` | thêm gói (mô hình phi tập trung, `vis.lock`) |
 
 ## Học tiếp
