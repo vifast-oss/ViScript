@@ -598,8 +598,10 @@ impl Scheduler {
             self.frame.log.push(format!("cancelwait:{}", id));
         }
 
-        // 2) Đăng ký reactor/timer của frame bị huỷ: deregister adapter đúng một lần,
-        //    bỏ sổ token, results/fired (event cũ thành stale ⇒ không late wake).
+        // 2) Đăng ký reactor/timer của frame bị huỷ: nếu **không còn waiter nào khác** dùng
+        //    cùng `(key, gen)` thì deregister adapter đúng một lần, bỏ sổ token/results/fired
+        //    và event timer đang chờ. Nếu còn waiter khác (handle chia sẻ) thì **giữ** đăng ký,
+        //    chuyển quyền sở hữu cho waiter còn lại — huỷ một task không được làm hỏng task kia.
         let regs: Vec<ReactorReg> = self
             .frame
             .reactor
@@ -608,7 +610,31 @@ impl Scheduler {
             .filter(|r| r.frame == id)
             .cloned()
             .collect();
+        let mut removed = 0usize;
         for r in &regs {
+            let other = self
+                .frame
+                .waiters
+                .iter()
+                .find(|w| {
+                    w.wait
+                        == Wait::Reactor {
+                            key: r.key,
+                            gen: r.gen,
+                        }
+                        && !self.frame.cancelled.contains(&w.frame)
+                })
+                .map(|w| w.frame);
+            if let Some(f) = other {
+                if let Some(reg) = self.frame.reactor.regs.iter_mut().find(|x| x.key == r.key) {
+                    reg.frame = f;
+                }
+                self.frame
+                    .reactor
+                    .log
+                    .push(format!("cancelshare:{}:{}:{}", id, r.key, f));
+                continue;
+            }
             if let Some(b) = self.frame.backend.clone() {
                 let _ = b.borrow_mut().deregister(r.token, &r.handle, r.op);
                 self.frame
@@ -618,12 +644,18 @@ impl Scheduler {
             self.frame.token_map.remove(&r.token);
             self.frame.reactor.results.remove(&r.key);
             self.frame.reactor.fired.remove(&r.key);
+            // Timer/reactor event đang chờ của chính đăng ký này cũng phải biến mất.
+            self.frame.reactor.events.retain(|e| e.key != r.key);
+            // **VS3-1b**: buffer `net.write` (test-only) không được mồ côi khi task bị huỷ.
+            // Chỉ dọn khi đăng ký bị gỡ hẳn — handle chia sẻ còn waiter thì giữ nguyên.
+            let _ = crate::stdlib::frame_net_take_write(&r.handle);
+            removed += 1;
         }
-        if !regs.is_empty() {
+        if removed > 0 {
             self.frame.reactor.regs.retain(|r| r.frame != id);
             self.frame
                 .log
-                .push(format!("cancelregs:{}:{}", id, regs.len()));
+                .push(format!("cancelregs:{}:{}", id, removed));
         }
 
         // 3) Nguồn giả + ready: bỏ entry của task này ⇒ event nhắm vào nó thành stale.
