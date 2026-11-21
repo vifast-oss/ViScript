@@ -623,3 +623,41 @@ fn registry_https_thuong_luong_h2() {
     );
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// **VS3-4b7 stress**: 100 request tuần tự qua 4 authority h2; mỗi authority **1 connection**;
+/// idle 15,2 s đóng cả 4 phiên; request sau mở connection mới; không treo/rò.
+#[test]
+fn stress_100_request_4_authority() {
+    let mut ds = Vec::new();
+    for i in 0..4 {
+        ds.push(MayChu::moi(true, move |_, path, _| {
+            (200, vec![], format!("{i}:{path}").into_bytes())
+        }));
+    }
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    for i in 0..100 {
+        let a = i % 4;
+        let path = format!("/r{i}");
+        let body = http_get(&mut net, &ds[a].url(&path), 3_000)
+            .unwrap_or_else(|e| panic!("request {i} authority {a}: {e}"));
+        assert_eq!(body, format!("{a}:{path}"));
+    }
+    for (i, s) in ds.iter().enumerate() {
+        assert_eq!(
+            s.so_ket_noi(),
+            1,
+            "authority {i} phải chỉ 1 connection cho 25 request"
+        );
+    }
+
+    // Idle 15 s: lần request kế tiếp của mỗi authority phải mở connection mới.
+    std::thread::sleep(Duration::from_millis(15_200));
+    for (i, s) in ds.iter().enumerate() {
+        let path = format!("/idle{i}");
+        let body = http_get(&mut net, &s.url(&path), 3_000).expect("sau idle");
+        assert_eq!(body, format!("{i}:{path}"));
+    }
+    for (i, s) in ds.iter().enumerate() {
+        assert_eq!(s.so_ket_noi(), 2, "authority {i} phải mở lại sau idle");
+    }
+}
