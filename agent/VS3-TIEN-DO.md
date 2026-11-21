@@ -44,11 +44,22 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a budget/step-cap | **WIP** |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS client | **WIP** |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a registry HTTP | **WIP** |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn | **WIP** |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **WIP** |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
+
+### Sự kiện 21/11 — Windows @ `v0.1.0-rc1` KHÔNG xanh
+
+- `cargo test --workspace --no-fail-fast`: **3218 passed / 38 failed / 3 ignored**, 20/329 target đỏ.
+- `vis-dev check`: clippy đỏ (`unused variable: marker`).
+- 2 finding **sản phẩm**: `fs.read_link` symlink ra ngoài root không chặn; `fs.canonicalize` trả `Err`
+  dữ liệu thay vì `VS0604`.
+- 35 ca còn lại: 25 portability + 10 test-only; 1 BLOCKED-ENV (`wasm32` std target).
+- **Quyết định**: giữ `v0.1.0-rc1` làm mốc lịch sử, **không promote `v0.1.0`**; W4 đang sửa; tag
+  `v0.1.0-rc2` sau khi `vis-dev check` xanh + workspace 0 product/test failure.
+- Báo cáo: `agent/JOURNAL/vs3-w4-windows-verify.md`.
 
 ## 3. Mốc tích hợp cuối tuần
 
