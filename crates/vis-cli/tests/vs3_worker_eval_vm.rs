@@ -332,9 +332,19 @@ fn vm_khong_tao_them_thread_sau_khi_join() {
         .map(|it| it.filter_map(Result::ok).count())
         .unwrap_or(0);
     let _ = vm_w(CPU, &a, 4);
-    let after = std::fs::read_dir("/proc/self/task")
-        .map(|it| it.filter_map(Result::ok).count())
-        .unwrap_or(before);
+    // Thread của pool có thể chưa được OS thu hồi ngay sau join (nhất là khi gate chạy tải
+    // cao). Chờ tối đa 500 ms cho về mức nền trước khi kết luận rò; nếu vẫn cao hơn mới fail.
+    let dem = || {
+        std::fs::read_dir("/proc/self/task")
+            .map(|it| it.filter_map(Result::ok).count())
+            .unwrap_or(before)
+    };
+    let mut after = dem();
+    let han = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    while after > before + 1 && std::time::Instant::now() < han {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        after = dem();
+    }
     assert!(after <= before + 1, "rò thread: {before}->{after}");
 }
 
