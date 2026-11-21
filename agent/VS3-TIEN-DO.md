@@ -43,7 +43,7 @@
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a budget/step-cap | **WIP** |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS client | **WIP** |
-| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a registry HTTP | **WIP** |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a registry HTTP + SHA-256 | **DONE** — merge `756bb1d`; 11 ca mới + pkg/hash xanh |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **WIP** |
 
