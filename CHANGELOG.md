@@ -3,16 +3,16 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
-## Unreleased (sau v0.3.3)
+## v0.3.4 — 2026-11-22
 
-- **Windows async net/TLS/HTTP-1.1**: backend `mio::Source` trực tiếp (IOCP/AFD), `la_would_block` 10035/10036, invariant `host_poll`; psvn **22/22 + 22/22 ×10**, workspace **3496/0 ×2**, host 54/54; flake test-only `tcp_explain_tong` (10053) fixed; async-h2 vẫn Unix-only.
-- **Evaluator VM P3 (opt-in hidden)**: `run_workers_*_vm`; VM spawn/await/join, snapshot globals, budget/cancel/cross-write; **10 test**, VM nhanh hơn interp **~2,3×** (CPU 4 task), 10k task nhỏ còn overhead; gate **3571/3**. Frame P4 còn mở.
-- **Evaluator W>1 CPU-only (opt-in hidden)**: `WorkerMode::Parallel(n)`, pool HIR runner, env snapshot, budget lease, cancel, cross-write `VS0501`; 14 test, **10k task byte-identical W=1/2/4**, CPU 4 task **3,75×**; 10k task cực nhỏ còn **<1×** (overhead). Gate **3561/3**.
-- **Evaluator W=1 (opt-in hidden)**: `WorkerMode::Local`/`run_workers_local`; chạy trên caller, shared env, `chan(0)` giữ `VS0505`; 8 test, gate **3547/3**.
-- **Evaluator ↔ worker prototype**: `Hir`/`Module`/`SendValue` Send+Sync; 10k job W=1/W=4 byte-identical, **13.070.000 job** soak 600 s, RSS 14,5 MB phẳng, threads 1, fd 4; chưa nối production.
-- **Async HTTP/2 (feature `async-h2`, default-off)**: cap 8 MiB + cold-wake đã sửa (interest theo token, force-wake peer); **1.000 cold song song**, **4.000 cap**, feature **34+1**; vẫn default-off, cancel/Windows mở. `H2Core` dùng chung sync+async; `H<n>` nhiều frame/1 session; **cold-start 4 stream/1 connection** (300/300 vòng), cap 8 MiB, timeout/GOAWAY/redirect, fallback h1; **Set-Cookie response** lưu cho cả h1/h2; sync **19/19**, feature **32/32 + 1 ignored (fd 5→5)**.
-- **Worker `spawn_shared` (opt-in/test-only)**: task giữ `Arc<SendValue>` read-only, không deep clone; map1k 5,62 ms vs producer 24,63 ms, list10k 5,25 vs 16,19 ms; API cũ/default không đổi.
-- **Windows test flake** `net::tcp_explain_tong` (RST 10054) fixed test-only ở bản trước; psvn 3/3 3469/0 trên v0.3.3.
+- **Windows async net/TLS/HTTP-1.1**: backend `mio::Source` trực tiếp (IOCP/AFD), `Nguon`, invariant `host_poll`, mã lỗi 10035/10036; psvn **22/22 + 22/22 ×10**, soak **420 vòng / 18.024 test**, workspace **3528/0/3** debug+release, host 54/54, targets 18/18 + 17/1; flake test-only `tcp_explain_tong` (10053) fixed. Async-h2 vẫn **Unix-only**.
+- **Async HTTP/2 (feature `async-h2`, default-off)**: `H2Core` dùng chung sync+async; `H<n>` nhiều frame/1 session; cold-start **1.000 vòng** 4 stream/1 connection, cap **10.000 vòng**, soak **2 giờ / 11.052 vòng** (fd 9, RSS 5,9 MB, threads 6), Set-Cookie h1+h2; sync **19/19**, feature **34+1**; cancel task giữa request còn mở.
+- **Evaluator worker P1/P2/P3 (opt-in hidden)**: `WorkerMode::{Local,Parallel}`, `run_workers_*` interp+VM; W=1/2/4, snapshot, budget, cancel, cross-write; 10k task **byte-identical**; P2 soak **69.362.370 task**, P3 soak **38.342.130 task**; VM nhanh **~2,3×**; CPU non-frame, frame/P4 chưa, 10k task nhỏ còn <1×.
+- **Worker `spawn_shared` (opt-in/test-only)**: `Arc<SendValue>` read-only; map1k **5,62 ms** vs producer 24,63 ms; 100 vòng/6M spawn, Arc về 1.
+- **Linux**: gate **3571/3**; fuzz **1.385.002.208 ca** (seed 20261121) + **987.234.956 ca** (seed 20261122), **0 vi phạm**; diff 100k **0 lệch** (nhiều seed); soak **20/20** (fresh-clone b37aa41) + **30/30**.
+- **Windows**: workspace **3528/0/3** debug+release; release `vis.exe` **11.205.120 B**; `vis --version`/doctor/smoke OK.
+- **Fresh-clone `b37aa41`**: gate **3571/3**, host 54/54, diff 0.
+- Không GitHub Actions; macOS ngoài phạm vi.
 
 ## v0.3.3 — 2026-11-21
 
