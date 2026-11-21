@@ -156,7 +156,7 @@ fn serve_h2(s: StreamOwned<ServerConnection, TcpStream>, route: &Route) -> io::R
     s.sock.set_nonblocking(true)?;
     let io = Adapter {
         s,
-        han: Instant::now() + Duration::from_secs(3),
+        han: Instant::now() + Duration::from_secs(30),
     };
     let mut conn = cho(::h2::server::handshake(io))
         .map_err(|e| io::Error::other(format!("h2 server handshake: {e}")))?;
@@ -282,15 +282,19 @@ fn h2_tai_su_dung_ket_noi() {
     let s = MayChu::moi(true, |method, path, _| match (method, path) {
         ("GET", "/a") => (200, vec![], b"a".to_vec()),
         ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        ("GET", "/c") => (200, vec![], b"c".to_vec()),
+        ("GET", "/d") => (200, vec![], b"d".to_vec()),
         _ => (404, vec![], vec![]),
     });
     let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
     assert_eq!(http_get(&mut net, &s.url("/a"), 3_000).expect("a"), "a");
     assert_eq!(http_get(&mut net, &s.url("/b"), 3_000).expect("b"), "b");
+    assert_eq!(http_get(&mut net, &s.url("/c"), 3_000).expect("c"), "c");
+    assert_eq!(http_get(&mut net, &s.url("/d"), 3_000).expect("d"), "d");
     assert_eq!(
         s.so_ket_noi(),
         1,
-        "hai GET h2 cùng authority phải dùng lại một connection"
+        "bốn GET h2 cùng authority phải dùng lại một connection (hàng đợi tuần tự)"
     );
 }
 
@@ -440,6 +444,21 @@ fn tar(entries: &[(&str, &str)]) -> Vec<u8> {
     }
     out.extend(std::iter::repeat_n(0u8, 1_024));
     out
+}
+
+/// **VS3-4b4**: phiên h2 idle quá 15 s bị đóng; request sau mở connection mới.
+#[test]
+fn h2_idle_timeout_dong_phien() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/a") => (200, vec![], b"a".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    assert_eq!(http_get(&mut net, &s.url("/a"), 3_000).expect("a"), "a");
+    std::thread::sleep(Duration::from_millis(15_200));
+    assert_eq!(http_get(&mut net, &s.url("/b"), 3_000).expect("b"), "b");
+    assert_eq!(s.so_ket_noi(), 2, "sau idle 15 s phải mở connection mới");
 }
 
 /// **VS3-W2**: registry `vis pkg` thật sự thương lượng h2 (không fallback h1).

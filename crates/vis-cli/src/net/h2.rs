@@ -32,6 +32,9 @@ pub(super) enum MoH2 {
     Http1(Box<KenhTls>),
 }
 
+/// Idle tối đa của một phiên h2 trước khi Net đóng (VS3-4b4).
+pub(super) const H2_IDLE: Duration = Duration::from_secs(15);
+
 /// Một connection h2 đã handshake, dùng cho nhiều request **tuần tự** cùng authority.
 pub(super) struct PhienH2 {
     send: ::h2::client::SendRequest<Bytes>,
@@ -39,6 +42,8 @@ pub(super) struct PhienH2 {
     han: Arc<Mutex<Instant>>,
     /// Authority TLS (`host:port`) để dựng URI tuyệt đối/`:authority` cho mọi request.
     authority: String,
+    /// Lần dùng thành công gần nhất; `Net` dọn khi quá [`H2_IDLE`].
+    luc_dung: Instant,
 }
 
 impl PhienH2 {
@@ -66,6 +71,7 @@ impl PhienH2 {
             conn: Box::pin(conn),
             han,
             authority: dia_chi.to_string(),
+            luc_dung: Instant::now(),
         }))
     }
 
@@ -93,7 +99,14 @@ impl PhienH2 {
             .send
             .send_request(req, true)
             .map_err(|e| format!("lỗi gửi HTTP/2: {e}"))?;
-        self.doc_phan_hoi(resp, method)
+        let kq = self.doc_phan_hoi(resp, method)?;
+        self.luc_dung = Instant::now();
+        Ok(kq)
+    }
+
+    /// Phiên đã idle quá [`H2_IDLE`] tại `now`? Net gọi trước khi tái dùng.
+    pub(super) fn qua_idle(&self, now: Instant) -> bool {
+        now.saturating_duration_since(self.luc_dung) >= H2_IDLE
     }
 
     fn doc_phan_hoi(
