@@ -24,7 +24,7 @@ use vis_interp::cookie::CookieJar;
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
 mod h2;
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
-mod tls;
+pub(crate) mod tls;
 
 /// Kênh đã nối: TCP trần, hoặc TLS (chỉ khi bật feature `tls` trên nền không phải wasm32).
 enum Kenh {
@@ -48,6 +48,19 @@ const POOL_IDLE: Duration = Duration::from_secs(15);
 /// Khoá tái dùng: **tách TLS/trần** để không bao giờ trả nhầm kênh.
 fn khoa_http(tls: bool, dia_chi: &str) -> String {
     format!("{}|{dia_chi}", if tls { "tls" } else { "tcp" })
+}
+
+/// Lỗi h2 đáng thử lại một lần (connection/GOAWAY/RST/EOF sau request GET/HEAD idempotent).
+/// Không thử lại lỗi cú pháp/header/body vượt cap/timeout (timeout không có tiền tố này).
+#[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+fn h2_nen_thu_lai(e: &str) -> bool {
+    e.contains("GOAWAY HTTP/2")
+        || e.contains("RST_STREAM HTTP/2")
+        || e.contains("lỗi HTTP/2 khi kết nối")
+        || e.contains("lỗi HTTP/2 khi response")
+        || e.contains("lỗi HTTP/2 khi đọc body")
+        || e.contains("lỗi HTTP/2 khi trailer")
+        || e.contains("lỗi HTTP/2 khi gửi request")
 }
 
 impl Read for Kenh {
@@ -433,37 +446,54 @@ impl NetHost for Net {
         // **VS3-4b4**: đóng mọi phiên h2 đã idle quá 15 s trước khi tái dùng.
         let now = Instant::now();
         self.h2_phien.retain(|_, p| !p.qua_idle(now));
-        if let Some(phien) = self.h2_phien.get_mut(&khoa) {
-            match phien.request(target, method, headers, timeout_ms) {
-                Ok(kq) => return Ok(Some(kq)),
-                Err(_) => {
-                    // Connection cũ đã chết/GOAWAY: bỏ rồi mở phiên mới bên dưới.
-                    self.h2_phien.remove(&khoa);
+        let mut da_thu = false;
+        loop {
+            if let Some(phien) = self.h2_phien.get_mut(&khoa) {
+                match phien.request(target, method, headers, timeout_ms) {
+                    Ok(kq) => return Ok(Some(kq)),
+                    Err(e) => {
+                        // Connection cũ đã chết/GOAWAY: bỏ rồi mở phiên mới bên dưới.
+                        self.h2_phien.remove(&khoa);
+                        if da_thu || !h2_nen_thu_lai(&e) {
+                            return Err(e);
+                        }
+                        da_thu = true;
+                    }
                 }
             }
-        }
-        let cau_hinh = match self.cau_hinh_tls.get_or_insert_with(tls::mac_dinh) {
-            Ok(c) => c.clone(),
-            Err(e) => return Err(e.clone()),
-        };
-        let cau_hinh = tls::cau_hinh_h2(&cau_hinh);
-        match h2::PhienH2::moi(&cau_hinh, dia_chi, timeout_ms)? {
-            h2::MoH2::Phien(mut phien) => {
-                let kq = phien.request(target, method, headers, timeout_ms)?;
-                self.h2_biet.insert(khoa.clone(), true);
-                self.h2_phien.insert(khoa, phien);
-                while self.h2_phien.len() > PHEN_TOI_DA {
-                    let Some(k) = self.h2_phien.keys().next().cloned() else {
-                        break;
-                    };
-                    self.h2_phien.remove(&k);
+            let cau_hinh = match self.cau_hinh_tls.get_or_insert_with(tls::mac_dinh) {
+                Ok(c) => c.clone(),
+                Err(e) => return Err(e.clone()),
+            };
+            let cau_hinh = tls::cau_hinh_h2(&cau_hinh);
+            match h2::PhienH2::moi(&cau_hinh, dia_chi, timeout_ms)? {
+                h2::MoH2::Phien(mut phien) => {
+                    match phien.request(target, method, headers, timeout_ms) {
+                        Ok(kq) => {
+                            self.h2_biet.insert(khoa.clone(), true);
+                            self.h2_phien.insert(khoa, phien);
+                            while self.h2_phien.len() > PHEN_TOI_DA {
+                                let Some(k) = self.h2_phien.keys().next().cloned() else {
+                                    break;
+                                };
+                                self.h2_phien.remove(&k);
+                            }
+                            return Ok(Some(kq));
+                        }
+                        Err(e) => {
+                            if !da_thu && h2_nen_thu_lai(&e) {
+                                da_thu = true;
+                                continue;
+                            }
+                            return Err(e);
+                        }
+                    }
                 }
-                Ok(Some(kq))
-            }
-            h2::MoH2::Http1(k) => {
-                self.h2_biet.insert(khoa.clone(), false);
-                self.h2_http1 = Some((khoa, *k));
-                Ok(None)
+                h2::MoH2::Http1(k) => {
+                    self.h2_biet.insert(khoa.clone(), false);
+                    self.h2_http1 = Some((khoa, *k));
+                    return Ok(None);
+                }
             }
         }
     }
