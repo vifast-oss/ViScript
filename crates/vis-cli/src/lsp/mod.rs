@@ -24,6 +24,7 @@ mod ky_hieu;
 mod module;
 mod phan_tich;
 mod phuong_loi;
+mod semantic_tokens;
 mod thanh_vien;
 mod thuc_thi;
 mod type_definition;
@@ -496,6 +497,33 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **VD-270**: token ngữ nghĩa toàn tệp (legend tối thiểu, UTF-16).
+            "textDocument/semanticTokens/full" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            // Không mở/URI lạ ⇒ lỗi chuẩn (InvalidParams), không đoán nội dung.
+                            None => gui!(jsonrpc::loi(
+                                &id,
+                                -32602,
+                                "tài liệu chưa mở",
+                                Value::Str(uri),
+                            )),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                gui!(semantic_tokens::tra_loi(&kq, &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **VD-270**: gợi ý kiểu (inlay hint) cho `let`/`var` không có nhãn kiểu.
             "textDocument/inlayHint" => {
                 if let Some(id) = id {
@@ -668,6 +696,7 @@ fn ket_qua_khoi_tao() -> Value {
             )]),
         ),
         jsonrpc::kv("completionProvider", completion),
+        jsonrpc::kv("semanticTokensProvider", semantic_tokens::provider()),
     ]);
     let server_info = Value::Map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);
     Value::Map(vec![

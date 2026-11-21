@@ -70,6 +70,9 @@ pub struct KetQua {
     pub inlay: Vec<super::inlay_hint::Inlay>,
     /// **VD-270**: từ tại điểm dùng → khai báo bản ghi/enum (`textDocument/typeDefinition`).
     pub kieu: Vec<super::type_definition::NutKieu>,
+    /// **VD-270**: token ngữ nghĩa toàn tệp (`textDocument/semanticTokens/full`) — 0-based
+    /// UTF-16, đã sắp theo nguồn, không chồng lấn.
+    pub sem: Vec<super::semantic_tokens::SemTok>,
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
@@ -202,6 +205,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
     let test_fn = super::codelens::gom(&out.hir);
     let inlay = super::inlay_hint::gom(&out.hir, &syms, &tbl);
     let kieu = super::type_definition::gom(&out.hir, &syms, &tbl, &lexed.text);
+    let sem = super::semantic_tokens::gom(&parsed.cst, &lexed.text);
     KetQua {
         text: lexed.text.clone(),
         ds,
@@ -214,6 +218,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
         test_fn,
         inlay,
         kieu,
+        sem,
     }
 }
 
