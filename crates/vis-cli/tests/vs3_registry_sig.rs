@@ -40,11 +40,16 @@ fn tmp_dir(tag: &str) -> PathBuf {
 }
 
 fn vis(cwd: &Path, args: &[&str]) -> (i32, String, String) {
-    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
-        .current_dir(cwd)
-        .args(args)
-        .output()
-        .expect("chạy `vis pkg`");
+    vis_env(cwd, args, &[])
+}
+
+fn vis_env(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> (i32, String, String) {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_vis"));
+    cmd.current_dir(cwd).args(args);
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    let o = cmd.output().expect("chạy `vis pkg`");
     (
         o.status.code().unwrap_or(-1),
         String::from_utf8_lossy(&o.stdout).to_string(),
@@ -270,6 +275,40 @@ fn fixture(kp: &Ed25519KeyPair, tc: &TuyChon) -> BTreeMap<String, Vec<u8>> {
         format!("/{TEN}/{VER}.tar.b64"),
         b64(&tar_bytes).into_bytes(),
     );
+    routes
+}
+
+/// **VS3-5c**: index có hai phiên bản, mỗi bản ký bằng một khoá khác (key rotation).
+fn fixture_hai_ban(kp_cu: &Ed25519KeyPair, kp_moi: &Ed25519KeyPair) -> BTreeMap<String, Vec<u8>> {
+    let ban = [
+        ("0.1.0", kp_cu, "fn util() -> i64:\n    1\n"),
+        ("0.2.0", kp_moi, "fn util() -> i64:\n    2\n"),
+    ];
+    let mut muc = Vec::new();
+    let mut routes = BTreeMap::new();
+    for (ver, kp, noi_dung) in ban {
+        let sha = file_sha(noi_dung);
+        let files = vec![(ENTRY.to_string(), sha.clone())];
+        let tar_bytes = tar(&[(ENTRY, noi_dung)]);
+        let tar_sha = hex_ma(&vis_bytecode::bytes_hash(&tar_bytes));
+        let msg = thong_diep_ky(TEN, ver, &tar_sha, ENTRY, &[], &files);
+        let sig = hex_ma(kp.sign(&msg).as_ref());
+        let manifest = format!(
+            "{{\"name\":\"{TEN}\",\"version\":\"{ver}\",\"entry\":\"{ENTRY}\",\"files\":[{{\"path\":\"{ENTRY}\",\"sha256\":\"{sha}\"}}]}}"
+        );
+        muc.push(format!(
+            "\"{ver}\":{{\"tarball\":\"{TEN}/{ver}.tar.b64\",\"tarball_sha256\":\"{tar_sha}\",\"signature_ed25519\":\"{sig}\",\"manifest\":{manifest}}}"
+        ));
+        routes.insert(
+            format!("/{TEN}/{ver}.tar.b64"),
+            b64(&tar_bytes).into_bytes(),
+        );
+    }
+    let idx = format!(
+        "{{\"format\":\"vispkg-http1\",\"packages\":{{\"{TEN}\":{{{}}}}}}}\n",
+        muc.join(",")
+    );
+    routes.insert("/index.json".to_string(), idx.into_bytes());
     routes
 }
 
@@ -532,5 +571,83 @@ fn khoa_voi_registry_cuc_bo_bi_tu_choi() {
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("chỉ áp dụng cho registry"), "{err}");
     assert!(!d.join(".vis").exists());
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **VS3-5c** — key rotation: hai khoá, mỗi bản ký một khoá; chỉ cần **một** khoá khớp.
+/// Khoá cũ verify bản cũ, khoá mới verify bản mới; sai cả hai ⇒ lỗi rõ, không tạo `.vis/`.
+#[test]
+fn key_rotation_hai_khoa_va_tu_choi_sai() {
+    let cu = khoa_moi();
+    let moi = khoa_moi();
+    let srv = Server::moi(fixture_hai_ban(&cu.kp, &moi.kp));
+    let url = srv.url();
+
+    fn them(d: &Path, ver: &str, url: &str, keys: &[&str]) -> (i32, String, String) {
+        let spec = format!("{TEN}@{ver}");
+        let mut args = vec!["pkg", "add", spec.as_str(), "--registry", url];
+        for k in keys {
+            args.push("--registry-key");
+            args.push(k);
+        }
+        vis(d, &args)
+    }
+
+    // Hai khoá: bản cũ (ký khoá cũ) và bản mới (ký khoá mới) đều cài được.
+    for (tag, ver) in [("rot-cu", "0.1.0"), ("rot-moi", "0.2.0")] {
+        let d = tmp_dir(tag);
+        let (c, _o, e) = them(&d, ver, &url, &[&cu.pub_hex, &moi.pub_hex]);
+        assert_eq!(c, 0, "{tag}: {e}");
+        assert!(d.join("vis.lock").is_file(), "{tag}: thiếu lock");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    // Chỉ khoá cũ: bản cũ OK; bản mới bị từ chối (không có khoá mới).
+    let d = tmp_dir("rot-cu-only-cu");
+    let (c, _o, e) = them(&d, "0.1.0", &url, &[&cu.pub_hex]);
+    assert_eq!(c, 0, "bản cũ với khoá cũ: {e}");
+    let _ = std::fs::remove_dir_all(&d);
+    let d = tmp_dir("rot-cu-only-moi");
+    let (c, _o, e) = them(&d, "0.2.0", &url, &[&cu.pub_hex]);
+    assert_eq!(c, 2, "bản mới với khoá cũ phải bị từ chối");
+    assert!(e.contains("không khớp bất kỳ khoá"), "{e}");
+    assert!(
+        !d.join(".vis").exists(),
+        "không được tạo .vis khi chữ ký sai"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+
+    // Chỉ khoá mới: bản mới OK; bản cũ bị từ chối (không có khoá cũ).
+    let d = tmp_dir("rot-moi-only-moi");
+    let (c, _o, e) = them(&d, "0.2.0", &url, &[&moi.pub_hex]);
+    assert_eq!(c, 0, "bản mới với khoá mới: {e}");
+    let _ = std::fs::remove_dir_all(&d);
+    let d = tmp_dir("rot-moi-only-cu");
+    let (c, _o, e) = them(&d, "0.1.0", &url, &[&moi.pub_hex]);
+    assert_eq!(c, 2, "bản cũ với khoá mới phải bị từ chối");
+    assert!(e.contains("không khớp bất kỳ khoá"), "{e}");
+    assert!(!d.join(".vis").exists());
+    let _ = std::fs::remove_dir_all(&d);
+
+    // Sai cả hai khoá: từ chối rõ, không cài.
+    let sai1 = khoa_moi();
+    let sai2 = khoa_moi();
+    let d = tmp_dir("rot-sai-hai");
+    let (c, _o, e) = them(&d, "0.1.0", &url, &[&sai1.pub_hex, &sai2.pub_hex]);
+    assert_eq!(c, 2, "sai cả hai khoá phải bị từ chối");
+    assert!(e.contains("không khớp bất kỳ khoá"), "{e}");
+    assert!(!d.join(".vis").exists());
+    let _ = std::fs::remove_dir_all(&d);
+
+    // Danh sách qua biến môi trường (phân tách phẩy) tương đương lặp cờ.
+    let d = tmp_dir("rot-env");
+    let env_keys = format!("{},{}", cu.pub_hex, moi.pub_hex);
+    let spec = format!("{TEN}@0.1.0");
+    let (c, _o, e) = vis_env(
+        &d,
+        &["pkg", "add", spec.as_str(), "--registry", &url],
+        &[("VIS_REGISTRY_KEY", env_keys.as_str())],
+    );
+    assert_eq!(c, 0, "VIS_REGISTRY_KEY danh sách: {e}");
     let _ = std::fs::remove_dir_all(&d);
 }

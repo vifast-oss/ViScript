@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VS3-5b (VD-271)** — chữ ký **Ed25519** cho registry HTTP của `vis pkg`.
 //!
-//! Registry cục bộ **không** bắt buộc chữ ký. Với registry HTTP, người dùng cấu hình **khoá công
-//! khai tin cậy** (`--registry-key <hex>` / `VIS_REGISTRY_KEY`); khi có khoá, mọi phiên bản được
-//! chọn **phải** có `signature_ed25519` hợp lệ, nếu không ⇒ từ chối cài (trước khi tải tarball).
+//! Registry cục bộ **không** bắt buộc chữ ký. Với registry HTTP, người dùng cấu hình **một hoặc
+//! nhiều khoá công khai tin cậy** (`--registry-key <hex>` lặp lại / `VIS_REGISTRY_KEY` danh sách
+//! phân tách phẩy hoặc khoảng trắng); khi có khoá, mọi phiên bản được chọn **phải** có
+//! `signature_ed25519` khớp **một trong** các khoá, nếu không ⇒ từ chối cài (trước khi tải tarball).
+//! Nhiều khoá hỗ trợ **key rotation**: khoá cũ vẫn verify bản cũ, khoá mới verify bản mới.
 //!
 //! # Thông điệp được ký (hợp đồng `vispkg-sig1`)
 //!
@@ -118,6 +120,42 @@ pub fn xac_minh(khoa: &[u8; 32], thong_diep: &[u8], chu_ky: &[u8]) -> Result<(),
         .map_err(|_| "chữ ký Ed25519 không hợp lệ".to_string())
 }
 
+/// **VS3-5c**: xác minh chữ ký khớp **một trong** nhiều khoá công khai (key rotation).
+///
+/// Khoá cũ vẫn verify được bản cũ; khoá mới verify bản mới; chỉ cần **một** khoá khớp. Danh sách
+/// rỗng hoặc chữ ký sai độ dài ⇒ lỗi rõ; không im lặng bỏ qua.
+#[cfg(all(feature = "pkg-sig", not(target_arch = "wasm32")))]
+pub fn xac_minh_nhieu(khoas: &[[u8; 32]], thong_diep: &[u8], chu_ky: &[u8]) -> Result<(), String> {
+    if khoas.is_empty() {
+        return Err("không có khoá công khai nào để xác minh chữ ký".to_string());
+    }
+    if chu_ky.len() != 64 {
+        return Err(format!(
+            "chữ ký Ed25519 phải 64 byte, nhận {}",
+            chu_ky.len()
+        ));
+    }
+    for khoa in khoas {
+        if xac_minh(khoa, thong_diep, chu_ky).is_ok() {
+            return Ok(());
+        }
+    }
+    Err(format!(
+        "chữ ký Ed25519 không khớp bất kỳ khoá công khai nào trong {} khoá",
+        khoas.len()
+    ))
+}
+
+/// Bản build không có `pkg-sig` (hoặc wasm32): **không** bỏ qua kiểm tra — báo lỗi rõ.
+#[cfg(not(all(feature = "pkg-sig", not(target_arch = "wasm32"))))]
+pub fn xac_minh_nhieu(
+    _khoas: &[[u8; 32]],
+    _thong_diep: &[u8],
+    _chu_ky: &[u8],
+) -> Result<(), String> {
+    Err("xác minh chữ ký Ed25519 cần feature `pkg-sig` và nền không phải wasm32".to_string())
+}
+
 /// Bản build không có `pkg-sig` (hoặc wasm32): **không** bỏ qua kiểm tra — báo lỗi rõ.
 #[cfg(not(all(feature = "pkg-sig", not(target_arch = "wasm32"))))]
 pub fn xac_minh(_khoa: &[u8; 32], _thong_diep: &[u8], _chu_ky: &[u8]) -> Result<(), String> {
@@ -182,5 +220,38 @@ mod tests {
         hong[0] ^= 1;
         assert!(super::xac_minh(&khoa, msg, &hong).is_err());
         assert!(super::xac_minh(&khoa, msg, &sig.as_ref()[..63]).is_err());
+    }
+
+    #[cfg(all(feature = "pkg-sig", not(target_arch = "wasm32")))]
+    #[test]
+    fn nhieu_khoa_chi_can_mot_khoa_khop() {
+        use ring::rand::SystemRandom;
+        use ring::signature::{Ed25519KeyPair, KeyPair};
+
+        let rng = SystemRandom::new();
+        let kp_cu = Ed25519KeyPair::from_pkcs8(
+            Ed25519KeyPair::generate_pkcs8(&rng)
+                .expect("sinh khoá cũ")
+                .as_ref(),
+        )
+        .expect("đọc khoá cũ");
+        let kp_moi = Ed25519KeyPair::from_pkcs8(
+            Ed25519KeyPair::generate_pkcs8(&rng)
+                .expect("sinh khoá mới")
+                .as_ref(),
+        )
+        .expect("đọc khoá mới");
+        let cu: [u8; 32] = kp_cu.public_key().as_ref().try_into().expect("32 byte");
+        let moi: [u8; 32] = kp_moi.public_key().as_ref().try_into().expect("32 byte");
+        let msg = b"vispkg-sig1\nquay vong khoa";
+        let sig_cu = kp_cu.sign(msg);
+        let sig_moi = kp_moi.sign(msg);
+        let ds = [cu, moi];
+        assert_eq!(super::xac_minh_nhieu(&ds, msg, sig_cu.as_ref()), Ok(()));
+        assert_eq!(super::xac_minh_nhieu(&ds, msg, sig_moi.as_ref()), Ok(()));
+        assert!(super::xac_minh_nhieu(&[moi], msg, sig_cu.as_ref()).is_err());
+        assert!(super::xac_minh_nhieu(&ds, b"khac", sig_cu.as_ref()).is_err());
+        assert!(super::xac_minh_nhieu(&[], msg, sig_cu.as_ref()).is_err());
+        assert!(super::xac_minh_nhieu(&ds, msg, &sig_cu.as_ref()[..63]).is_err());
     }
 }
