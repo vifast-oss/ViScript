@@ -1,0 +1,337 @@
+# VS3-4b — test targeted (2026-11-21, worktree vs3/w2-tls @ main 8bdebc8)
+rustc 1.100.0; CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/aec39c4b3ae080c5/out/vs3_keepalive-aec39c4b3ae080c5)
+
+running 8 tests
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test hai_request_cung_mot_ket_noi ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test head_hai_lan_cung_mot_ket_noi ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo test -p vis-cli --test vs3_tls
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/6f3e8e97e22ec1ca/out/vs3_tls-6f3e8e97e22ec1ca)
+
+running 12 tests
+test https_chan_ha_cap_ve_http ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_head_khong_theo_redirect ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test https_ipv6_loopback ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s
+
+## cargo test -p vis-cli --test http
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/5c9121ad6e6b5b19/out/http-5c9121ad6e6b5b19)
+
+running 22 tests
+test http_200_byte ... ok
+test http_404 ... ok
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_body_rong ... ok
+test http_chunked_ba_chunk ... ok
+test http_chunked_co_mo_rong ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_duong_mac_dinh ... ok
+test http_head_khong_doc_than ... ok
+test http_head_khong_theo_redirect ... ok
+test http_gioi_han ... ok
+test http_het_gio ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.05s
+
+## cargo test -p vis-cli --test net
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/net.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/2e6546e2cd5523a3/out/net-2e6546e2cd5523a3)
+
+running 9 tests
+test tcp_khong_host ... ok
+test tcp_tu_choi ... ok
+test tcp_tay_la ... ok
+test tcp_explain_tong ... ok
+test tcp_noi_va_doc ... ok
+test tcp_doc_ghi_sau_close ... ok
+test tcp_read_cap_64 ... ok
+test tcp_het_gio_doc ... ok
+test tcp_explain_perms ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+
+## cargo test -p vis-cli --test net_server
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/net_server.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/881c0749665af480/out/net_server-881c0749665af480)
+
+running 6 tests
+test accept_het_gio ... ok
+test cong_ban ... ok
+xong
+xong
+test server_hai_ket_noi_lien_tiep ... ok
+test server_khong_host ... ok
+xong
+xong
+xong
+test server_hai_tien_trinh ... ok
+xong
+xong
+xong
+xong
+test server_mot_lan ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+## cargo test -p vis-cli --test vs3_registry
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests/vs3_registry.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/1f55045745a6ef9d/out/vs3_registry-1f55045745a6ef9d)
+
+running 11 tests
+test index_hong_loi_ro ... ok
+test index_thieu_tarball_sha_bi_tu_choi ... ok
+test index_404_loi_ro ... ok
+test tu_choi_hash_tep_sai ... ok
+test https_bi_tu_choi_ro ... ok
+test tu_choi_tep_la_trong_tarball ... ok
+test manifest_hong_khong_chan_goi_khac ... ok
+test index_thieu_goi_bao_vs0704 ... ok
+test tu_choi_hash_tarball_sai ... ok
+test add_qua_http_roi_install_khong_can_registry ... ok
+test update_qua_http_chon_ban_moi ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+## cargo test -p vis-interp --lib net::tests
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-interp/09ecea3a87e30842/out/vis_interp-09ecea3a87e30842)
+
+running 7 tests
+test net::tests::tach_url_dung_va_chan_ngoai_loopback ... ok
+test net::tests::header_giu_ket_noi_theo_phien_ban_va_connection ... ok
+test net::tests::location_giu_scheme_va_chan_ha_cap ... ok
+test net::tests::tach_url_https_va_cong_mac_dinh ... ok
+test net::tests::doc_header_doc_status_va_content_length ... ok
+test net::tests::chunked_doc_trailer_va_byte_da_dung ... ok
+test net::tests::chuan_hoa_va_location_day_du ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 290 filtered out; finished in 0.00s
+
+## cargo test -p vis-cli --bin vis net_quyen::tests
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/main.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/c385798c1bb2b6b2/out/vis-c385798c1bb2b6b2)
+
+running 3 tests
+test net_quyen::tests::host_cua_tach_dung_ipv4_ipv6_va_cong ... ok
+test net_quyen::tests::kiem_net_khop_cap_ipv6_va_khong_noi_quyen ... ok
+test net_quyen::tests::net_guard_kiem_cap_truoc_khi_connect ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 183 filtered out; finished in 0.00s
+
+## cargo test -p vis-cli --lib
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/d86f08a184011f30/out/vis_cli-d86f08a184011f30)
+
+running 1 test
+test net::tests::pool_het_han_va_gioi_han ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+## cargo test -p vis-cli --test cap --test strict_caps --test quyen
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/cap.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/cf7607b2db476673/out/cap-cf7607b2db476673)
+
+running 4 tests
+test cap_khong_in_duoc ... ok
+test dry_khong_chay ... ok
+test dry_khong_quyen ... ok
+test dry_in_danh_sach ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/quyen.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/5015b0b56ce4959f/out/quyen-5015b0b56ce4959f)
+
+running 8 tests
+test ghi_thieu_co ... ok
+test doc_ngoai_quyen ... ok
+test khong_khai_cap_thi_khong_han_che ... ok
+test ghi_co_co ... ok
+test doc_trong_quyen ... ok
+test grant_doi_duong_dan ... ok
+test hai_cap_dir ... ok
+test net_thieu_cap ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/strict_caps.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/048a5857a7d4379f/out/strict_caps-048a5857a7d4379f)
+
+running 7 tests
+test strict_cap_dir_ngoai_root ... ok
+test strict_khong_cap_net_thi_vs0604 ... ok
+test strict_van_kiem_tren_fs_mock ... ok
+test mac_dinh_khong_siet ... ok
+test vis_test_strict_caps_truyen_co ... ok
+test strict_khong_cap_doc_thi_vs0604 ... ok
+test strict_cap_dir_trong_root ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+## cargo test -p vis-cli --test json_ra --test json_sort
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/json_ra.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/4ab44da1161d708a/out/json_ra-4ab44da1161d708a)
+
+running 13 tests
+test check_json_khong_co_tap_khong_doi ... ok
+test check_json_tep_sach ... ok
+test check_json_hai_loi ... ok
+test check_json_ba_tep_dung_thu_tu ... ok
+test test_json_tat_ca_ok ... ok
+test check_json_severity_error ... ok
+test khong_json_tap_nguyen_ven ... ok
+test check_json_severity_warning_tab ... ok
+test check_json_loi_hai_tep ... ok
+test test_json_hai_tren_ba ... ok
+test check_json_ten_tep_dac_biet_parse_duoc ... ok
+test check_json_loi_trong_tep_phu ... ok
+test test_json_ten_tieng_viet ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/json_sort.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/949018b5dbf2918f/out/json_sort-949018b5dbf2918f)
+
+running 14 tests
+test to_json_co_khong_hop_le_bao_vs0602 ... ok
+test fixture_sort_shell_khoa_str_desc ... ok
+test fixture_to_json_pretty ... ok
+test literal_ban_ghi_an_danh_ra_object ... ok
+test to_json_thieu_pipe_bao_vs0602_ro ... ok
+test sort_by_khoa_bool_la_vs0412 ... ok
+test to_json_khong_can_use_std_json ... ok
+test json_encode_list_ban_ghi_co_ten_va_an_danh ... ok
+test select_ban_ghi_an_danh_ra_json_dung_khoa_thu_tu ... ok
+test fixture_pipeline_dai_to_json ... ok
+test std_list_sort_by_cu_van_chay ... ok
+test sort_by_khoa_size_va_duration_on_dinh ... ok
+test round_trip_encode_decode_map_list_int_str ... ok
+test interp_va_vm_cung_byte_cho_sort_va_json ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+
+
+## cargo check -p vis-cli
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo check -p vis-cli --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo check -p vis-cli --target wasm32-unknown-unknown --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo test -p vis-cli --no-default-features --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.74s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/c3bbba6e77dd274b/out/vs3_keepalive-c3bbba6e77dd274b)
+
+running 8 tests
+test head_hai_lan_cung_mot_ket_noi ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test hai_request_cung_mot_ket_noi ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo clippy -p vis-interp --lib -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+## cargo clippy -p vis-cli --bin vis --lib --test vs3_tls --test vs3_keepalive --test http -- -D warnings
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
+## ./vis-dev rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+## ./bin/vis-targets
+
+=== core (vis-cli --no-default-features) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       PASS
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       PASS
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+core (vis-cli --no-default-features): PASS=18 EXPECTED_RED=0 FAIL=0
+
+=== sqlite (vis-cli default, cấu hình cũ) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       EXPECTED_RED
+  error: failed to run custom build command for `ring v0.17.14`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       EXPECTED_RED
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+sqlite (vis-cli default, cấu hình cũ): PASS=16 EXPECTED_RED=2 FAIL=0
+vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)
+
+## thủ công có Internet: 2 GET https://example.com/ (--explain-perms, bản default features)
+NET connect_tls example.com:443
+NET https GET example.com/
+NET connect_http_reuse example.com:443
+NET https GET example.com/
+OK1 577
+OK2 577

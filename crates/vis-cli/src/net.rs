@@ -9,6 +9,10 @@
 //! **VS3-4a (VD-271)**: kênh `C<n>` có thể là TCP trần hoặc **TLS** (rustls + webpki-roots); TLS chỉ
 //! bật khi feature `tls` (mặc định trên nền không phải wasm32). `connect_tls` làm luôn TCP +
 //! handshake trong **một** hạn; lỗi chứng chỉ/alert trả `Err` có tiền tố `TLS`, không panic.
+//!
+//! **VS3-4b (VD-271)**: pool **HTTP keep-alive** theo `scheme|host:port` (tối đa 8 kết nối idle,
+//! hết hạn sau 15 s). Chỉ tầng HTTP dùng pool (`connect_http`/`tra_http`); `net.connect` thô vẫn
+//! mở kết nối mới. Server đóng kết nối idle ⇒ tầng HTTP thử lại một lần (GET/HEAD) trên kết nối mới.
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
@@ -24,6 +28,23 @@ enum Kenh {
     Tho(TcpStream),
     #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
     Tls(Box<tls::KenhTls>),
+}
+
+/// **VS3-4b**: một handle đang mở + khoá pool (`tcp|host:port` / `tls|host:port`) để trả về đúng chỗ.
+struct Tay {
+    ten: String,
+    kenh: Kenh,
+    khoa: String,
+}
+
+/// **VS3-4b**: trần kết nối idle giữ lại cho HTTP keep-alive (tổng, không theo host).
+const POOL_TOI_DA: usize = 8;
+/// **VS3-4b**: kết nối idle quá hạn bị đóng khi lần kế tiếp chạm pool.
+const POOL_IDLE: Duration = Duration::from_secs(15);
+
+/// Khoá tái dùng: **tách TLS/trần** để không bao giờ trả nhầm kênh.
+fn khoa_http(tls: bool, dia_chi: &str) -> String {
+    format!("{}|{dia_chi}", if tls { "tls" } else { "tcp" })
 }
 
 impl Read for Kenh {
@@ -83,11 +104,14 @@ impl Kenh {
 /// Host mạng của CLI. `--explain-perms` ⇒ in `NET …` ra **stderr** (không trộn stdout).
 pub struct Net {
     giai_thich: bool,
-    tay: Vec<(String, Kenh)>,
+    tay: Vec<Tay>,
     tiep: u32,
     /// **ST-65**: listener đang mở — handle `"L<n>"` (tách khỏi `"C<n>"` của kết nối).
     nghe: Vec<(String, TcpListener)>,
     tiep_nghe: u32,
+    /// **VS3-4b**: kết nối HTTP idle (khoá, lúc trả về, kênh) — giới hạn [`POOL_TOI_DA`] +
+    /// [`POOL_IDLE`]. Không chứa handle đang dùng; mọi thứ đóng khi `Net` drop.
+    ho: Vec<(String, Instant, Kenh)>,
     /// **VS3-4a**: cấu hình TLS dựng **một lần** cho cả tiến trình; `Err` được giữ lại để mọi lần
     /// gọi HTTPS sau đó báo cùng lý do (không panic, không thử lại vô ích).
     #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
@@ -102,6 +126,7 @@ impl Net {
             tiep: 0,
             nghe: Vec::new(),
             tiep_nghe: 0,
+            ho: Vec::new(),
             #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
             cau_hinh_tls: None,
         }
@@ -127,20 +152,33 @@ impl Net {
     fn tim(&mut self, tay: &str) -> Result<&mut Kenh, String> {
         self.tay
             .iter_mut()
-            .find(|(t, _)| t == tay)
-            .map(|(_, s)| s)
+            .find(|t| t.ten == tay)
+            .map(|t| &mut t.kenh)
             .ok_or_else(|| format!("tay mạng `{tay}` không tồn tại (chưa nối hoặc đã `close`)"))
     }
 
-    fn giu_k(&mut self, s: Kenh) -> String {
+    fn giu_k(&mut self, s: Kenh, khoa: String) -> String {
         self.tiep += 1;
         let tay = format!("C{}", self.tiep);
-        self.tay.push((tay.clone(), s));
+        self.tay.push(Tay {
+            ten: tay.clone(),
+            kenh: s,
+            khoa,
+        });
         tay
     }
 
-    fn giu(&mut self, s: TcpStream) -> String {
-        self.giu_k(Kenh::Tho(s))
+    fn giu(&mut self, s: TcpStream, khoa: String) -> String {
+        self.giu_k(Kenh::Tho(s), khoa)
+    }
+
+    /// **VS3-4b**: bỏ kết nối idle quá [`POOL_IDLE`] và cắt về [`POOL_TOI_DA`]. Gọi ở **mọi** lần
+    /// chạm pool (lấy/trả) nên không cần thread dọn riêng; kênh bị bỏ tự đóng khi drop.
+    fn don_ho(&mut self) {
+        self.ho.retain(|(_, luc, _)| luc.elapsed() <= POOL_IDLE);
+        while self.ho.len() > POOL_TOI_DA {
+            self.ho.remove(0);
+        }
     }
 }
 
@@ -221,7 +259,7 @@ impl NetHost for Net {
                 }
             })?;
         let _ = s.set_nodelay(true);
-        Ok(self.giu(s))
+        Ok(self.giu(s, khoa_http(false, dia_chi)))
     }
 
     /// **VS3-4a (VD-271)**: TLS chỉ tồn tại khi bật feature `tls` và không phải wasm32; nếu không,
@@ -235,7 +273,7 @@ impl NetHost for Net {
             Err(e) => return Err(e.clone()),
         };
         let k = tls::noi(&cau_hinh, dia_chi, con)?;
-        Ok(self.giu_k(Kenh::Tls(Box::new(k))))
+        Ok(self.giu_k(Kenh::Tls(Box::new(k)), khoa_http(true, dia_chi)))
     }
 
     #[cfg(not(all(feature = "tls", not(target_arch = "wasm32"))))]
@@ -243,6 +281,45 @@ impl NetHost for Net {
         Err(format!(
             "`https://` cần TLS: feature `tls` của `vis-cli` phải bật và nền không phải wasm32 (đang gọi `{dia_chi}`)"
         ))
+    }
+
+    /// **VS3-4b**: lấy kết nối idle đúng `scheme|host:port` nếu có; nếu không thì mở mới. Trả cờ
+    /// `tái_sử_dụng` để tầng HTTP biết có được thử lại một lần khi kết nối cũ đã bị server đóng.
+    fn connect_http(
+        &mut self,
+        dia_chi: &str,
+        tls: bool,
+        cho_phep_pool: bool,
+        timeout_ms: u64,
+    ) -> Result<(String, bool), String> {
+        let khoa = khoa_http(tls, dia_chi);
+        if cho_phep_pool {
+            self.don_ho();
+            if let Some(i) = self.ho.iter().rposition(|(k, _, _)| k == &khoa) {
+                let (_, _, kenh) = self.ho.remove(i);
+                self.nhat_ky("connect_http_reuse", dia_chi);
+                return Ok((self.giu_k(kenh, khoa), true));
+            }
+        }
+        let tay = if tls {
+            self.connect_tls(dia_chi, timeout_ms)?
+        } else {
+            self.connect(dia_chi, timeout_ms)?
+        };
+        Ok((tay, false))
+    }
+
+    fn tra_http(&mut self, tay: &str, giu_lai: bool) -> Result<(), String> {
+        let i =
+            self.tay.iter().position(|t| t.ten == tay).ok_or_else(|| {
+                format!("tay mạng `{tay}` không tồn tại (chưa nối hoặc đã `close`)")
+            })?;
+        let t = self.tay.remove(i);
+        if giu_lai {
+            self.ho.push((t.khoa, Instant::now(), t.kenh));
+            self.don_ho();
+        }
+        Ok(())
     }
 
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
@@ -290,7 +367,7 @@ impl NetHost for Net {
         let kq = accept_tren(&l, timeout_ms);
         self.nghe.push((ten, l));
         let s = kq?;
-        Ok(self.giu(s))
+        Ok(self.giu(s, format!("accept|{tay}")))
     }
 
     fn read(&mut self, tay: &str, toi_da: usize, timeout_ms: u64) -> Result<Vec<u8>, String> {
@@ -332,7 +409,7 @@ impl NetHost for Net {
     fn close(&mut self, tay: &str) -> Result<(), String> {
         // **ST-65**: `close` đóng được **cả** kết nối (`C…`) lẫn listener (`L…`); `close_listen`
         // của ngôn ngữ cũng đi qua đây.
-        if let Some(i) = self.tay.iter().position(|(t, _)| t == tay) {
+        if let Some(i) = self.tay.iter().position(|t| t.ten == tay) {
             self.tay.remove(i);
             return Ok(());
         }
@@ -350,5 +427,36 @@ impl NetHost for Net {
         if self.giai_thich {
             eprintln!("{dong}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Kenh, Net, POOL_IDLE, POOL_TOI_DA};
+    use std::net::{TcpListener, TcpStream};
+    use std::time::{Duration, Instant};
+
+    fn kenh_moi() -> Kenh {
+        let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let s = TcpStream::connect(l.local_addr().expect("addr")).expect("connect");
+        let _ = l.accept();
+        Kenh::Tho(s)
+    }
+
+    /// **VS3-4b**: kết nối idle quá hạn bị bỏ; pool bị cắt về trần.
+    #[test]
+    fn pool_het_han_va_gioi_han() {
+        let mut net = Net::moi(false);
+        if let Some(cu) = Instant::now().checked_sub(POOL_IDLE + Duration::from_secs(1)) {
+            net.ho.push(("tcp|cu".to_string(), cu, kenh_moi()));
+            net.don_ho();
+            assert!(net.ho.is_empty(), "kết nối quá hạn phải bị bỏ");
+        }
+        for i in 0..POOL_TOI_DA + 2 {
+            net.ho
+                .push((format!("tcp|h{i}"), Instant::now(), kenh_moi()));
+        }
+        net.don_ho();
+        assert_eq!(net.ho.len(), POOL_TOI_DA, "pool phải bị cắt về trần");
     }
 }

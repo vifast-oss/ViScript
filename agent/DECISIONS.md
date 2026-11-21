@@ -3694,3 +3694,24 @@ vẫn lỗi; registry không lọc theo `imports` nhưng tên trait/kiểu vẫn
 3. VS3-4a — TLS client + HTTPS.
 4. VS3-5a — registry HTTP + chữ ký.
 5. VS3-3a — spike worker/heap (chỉ đo, chưa production).
+
+### VD-271 (bổ sung) · VS3-3b worker pool — chốt mô hình affine — A0, 2026-11-21
+
+> **Căn cứ**: spike W5 `agent/JOURNAL/vs3-w5-spike.md` (commit `4bb20df`), median 14 lần trên i5-1235U
+> (2P+8E). **Chưa** code production; đây là quyết định mô hình cho VS3-3b.
+
+1. **Mô hình (a)**: task **affine + heap theo luồng + copy/move tại biên**; **không** `Arc`/COW toàn cục,
+   không shared mutable heap, chưa GC.
+2. **Task handle opaque** `TaskId`/proxy completion; không `Arc<Mutex<Task>>` toàn cục.
+3. **Channel** `Arc<Mutex<ChanBuf<Wire>>>` + `Condvar`; chấp nhận 2 lần chuyển đổi; chỉ cân nhắc
+   leaf-`Arc` cho `str`/`bytes` nếu workload đo được.
+4. **Top-level `var`**: không cho ghi chéo worker; spawn nhận snapshot; chế độ parallel **từ chối rõ**
+   chương trình có ghi chéo.
+5. **`print`**: buffer theo task + merge tất định để W=1/W=4 byte-identical.
+6. **Ngân sách**: một pool **atomic** dùng chung, không thread-local.
+7. **Benchmark gate**: CPU-only + payload matrix; ghi topology/load; ngưỡng **2,4×** có caveat
+   (hybrid 2P+8E đo 2,45×, sát ngưỡng).
+8. **Worker pool opt-in/test-only**; runtime mặc định vẫn single-thread tới khi nghiệm thu + VERSION/cache.
+
+**Không tuyên bố VS3-3b xong**; mở lát VS3-3b1 (TaskId/proxy + budget atomic + print merge) sau khi
+VS3-2a ổn định.

@@ -27,10 +27,10 @@
 | VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | TODO | chỉ sau 1a–1c |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | TODO | song song 1b |
 | VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
-| VS3-3a — spike worker/heap | W1 | `vs3_spike.md` + bench | TODO | chỉ đo, không production |
+| VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
 | VS3-3b — worker pool | W1 | `vs3_worker.rs` | TODO | sau spike + quyết định |
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
-| VS3-4b — HTTP/2/keep-alive | W2 | `vs3_http2.rs` | TODO | sau 4a |
+| VS3-4b — keep-alive + IPv6 (HTTP/2 tách 4b2) | W2 | `vs3_keepalive.rs` | **DONE (một phần)** — `b7385e9`; 8 ca keep-alive, 12 TLS; HTTP/2 chỉ review |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-6 — Windows Tier 1 + wasm | W3 | `test/host`, CI | TODO | sau P0/P1 |
@@ -42,10 +42,10 @@
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a + 1b | **DONE (một phần)** — merge `71dc8a4` + `97676c6`; còn BUDGET/Q/default, channel wait-set |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS | **DONE** — merge `9ceec53`; HTTP/2/keep-alive/IPv6 đang làm |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — merge `9ceec53` + `b730661`; keep-alive/IPv6 xong; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a + 5b | **DONE** — merge `756bb1d` + `cea1643`; chữ ký/GC xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **WIP** |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **DONE** — merge sau `4bb20df`; đề xuất affine + per-worker heap |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -67,9 +67,20 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | 0 lệch |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3380 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag `v0.1.0-rc2` nếu xanh (rc1 có Windows đỏ) |
+
+## 3b. A0 chốt VS3-3b (từ spike W5)
+
+- Mô hình **affine + heap theo luồng + copy/move tại biên**; **không** `Arc`/COW toàn cục, không shared mutable heap.
+- Task handle **opaque `TaskId`/proxy**, không `Arc<Mutex<Task>>` toàn cục.
+- Channel `Arc<Mutex<ChanBuf<Wire>>>` + `Condvar`; chấp nhận 2 lần chuyển đổi; chỉ cân nhắc leaf-`Arc` nếu đo được.
+- **Top-level `var`**: worker pool chỉ chạy chương trình không có ghi chéo worker; spawn nhận snapshot; ghi chéo ⇒ từ chối rõ ở chế độ parallel.
+- `print`: buffer theo task + merge tất định để W=1/W=4 byte-identical.
+- Ngân sách: một pool **atomic** dùng chung, không thread-local.
+- Benchmark gate: CPU-only + payload matrix; ghi topology/load; ngưỡng 2,4× có caveat (hybrid 2P+8E đo 2,45×).
+- Worker pool **opt-in/test-only**; default vẫn single-thread tới khi nghiệm thu + VERSION/cache.
 
 ## 4. Quy tắc cập nhật
 
