@@ -13,7 +13,9 @@ use std::time::{Duration, Instant};
 
 use vis_interp::rt::fee::SharedBudget;
 use vis_interp::rt::{Task, TrangThai};
-use vis_interp::value::worker::{EnvMap, SendValue, WorkerError, WorkerPool};
+use vis_interp::value::worker::{
+    EnvMap, SendValue, TaskWaitBoard, WaitError, WorkerError, WorkerPool,
+};
 use vis_interp::value::{TaskId, Value};
 use vis_syntax::Span;
 
@@ -459,4 +461,118 @@ fn stress_10k_cancel_budget_print_cross() {
         "worker thread rò: {threads0} -> {threads1}"
     );
     assert!(secs < 30.0, "stress quá chậm: {secs:.2}s");
+}
+
+/// **VS3-3b/W5 prototype**: `Value` ↔ `ProtoValue` (Task = `TaskId`), `Show`/eq giữ nguyên.
+#[test]
+fn taskid_proto_value_show_eq_roundtrip() {
+    use vis_interp::value::worker::ProtoValue;
+    use vis_interp::value::Name;
+
+    let vals = vec![
+        Value::Int(7),
+        Value::Str("x".into()),
+        Value::List(vec![Value::Int(1), Value::Bool(true)]),
+        Value::Map(vec![
+            (Value::Str("k".into()), Value::Int(1)),
+            (Value::Str("k2".into()), Value::List(vec![])),
+        ]),
+        Value::Record("R".to_string(), vec![("a".to_string(), Value::Int(1))]),
+        Value::Enum(Name::new("E"), Name::new("A"), vec![Value::Int(1)]),
+        Value::Range(1, 5, false),
+    ];
+    for v in &vals {
+        let p = ProtoValue::from_value(v).expect("from_value");
+        assert_eq!(p.show(), v.show(), "Show phải khớp: {v:?}");
+        let back = p.to_value().expect("to_value");
+        // `Range` là giá trị nội bộ: `Value::eq_value` luôn false, chỉ cần round-trip.
+        if !matches!(v, Value::Range(..)) {
+            assert!(back.eq_value(v), "eq_value phải khớp: {v:?}");
+        }
+    }
+
+    let task = Task {
+        id: 1,
+        than: 0,
+        args: vec![],
+        ten: "f".into(),
+        span: Span::default(),
+        trang_thai: Cell::new(TrangThai::Moi),
+        kq: RefCell::new(None),
+    };
+    let task_v = Value::Task(Rc::new(task));
+    assert!(
+        ProtoValue::from_value(&task_v).is_err(),
+        "Rc<Task> phải qua registry, không tự bịa TaskId"
+    );
+    let id = ProtoValue::Task(TaskId::from_raw(42));
+    assert_eq!(id.show(), "<tác vụ>");
+    assert_eq!(id.task_id(), Some(TaskId::from_raw(42)));
+    assert!(!id.eq_value(&id), "task không bao giờ bằng nhau");
+    assert!(id.to_value().is_err(), "TaskId phải qua proxy/registry");
+    assert_eq!(ProtoValue::List(vec![id]).show(), "[<tác vụ>]");
+}
+
+/// Proxy `TaskWaitBoard`: await theo `TaskId` ở W=1/W=4, cancel/join, timeout không treo.
+#[test]
+fn taskid_proxy_await_w1_w4() {
+    let mut outs = Vec::new();
+    for w in [1usize, 4] {
+        let board = Arc::new(TaskWaitBoard::new());
+        let mut pool = WorkerPool::new(w, env()).expect("pool");
+        pool.attach_wait_board(Arc::clone(&board));
+        let mut ids = Vec::new();
+        for i in 0..64i64 {
+            let h = pool
+                .spawn(move |_ctx| {
+                    std::thread::sleep(Duration::from_micros(100));
+                    Ok(SendValue::Int(i))
+                })
+                .unwrap();
+            ids.push(h.id());
+        }
+        if w > 1 {
+            // W>1: await được khi pool còn chạy (worker publish ngay khi task xong).
+            let r = board
+                .wait_timeout(ids[0], Duration::from_secs(5))
+                .expect("await id 0");
+            assert_eq!(r.expect("task 0"), SendValue::Int(0));
+        }
+        let r = pool.join().expect("join");
+        assert_eq!(r.outcomes.len(), 64);
+        for (i, id) in ids.iter().enumerate() {
+            let v = board.try_take(*id).expect("board có kết quả");
+            assert_eq!(v.expect("ok"), SendValue::Int(i as i64));
+        }
+        assert!(board.try_take(ids[0]).is_none(), "take xong phải bỏ");
+        outs.push(r.output);
+    }
+    assert_eq!(outs[0], outs[1], "W=1/W=4 output");
+
+    // Cancel: W=4 publish từ worker; W=1 publish lúc join.
+    for w in [1usize, 4] {
+        let board = Arc::new(TaskWaitBoard::new());
+        let mut pool = WorkerPool::new(w, env()).expect("pool");
+        pool.attach_wait_board(Arc::clone(&board));
+        let h = pool
+            .spawn(|ctx| {
+                std::thread::sleep(Duration::from_millis(2));
+                ctx.check_cancel()?;
+                Ok(SendValue::Unit)
+            })
+            .unwrap();
+        let id = h.id();
+        h.cancel();
+        let r = pool.join().expect("join");
+        assert!(r.outcomes[0].cancelled, "W={w}: phải cancelled");
+        let got = board.try_take(id).expect("board có kết quả huỷ");
+        assert!(got.is_err(), "W={w}: await task huỷ phải Err");
+    }
+
+    // Timeout: không chờ vô hạn trên id không tồn tại.
+    let board = TaskWaitBoard::new();
+    assert_eq!(
+        board.wait_timeout(TaskId::from_raw(999), Duration::from_millis(10)),
+        Err(WaitError::Timeout)
+    );
 }
