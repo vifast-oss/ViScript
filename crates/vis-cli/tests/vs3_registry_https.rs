@@ -91,7 +91,11 @@ impl Server {
             while !stop2.load(Ordering::Relaxed) {
                 match l.accept() {
                     Ok((tcp, _)) => {
-                        let _ = tcp.set_read_timeout(Some(Duration::from_secs(3)));
+                        // Windows: socket do `accept` trả về có thể thừa hưởng non-blocking của
+                        // listener ⇒ TLS handshake `read` trả `WouldBlock` ngay ⇒ 10053. Đặt lại
+                        // blocking trước khi bọc `StreamOwned`.
+                        let _ = tcp.set_nonblocking(false);
+                        let _ = tcp.set_read_timeout(Some(Duration::from_secs(5)));
                         let Ok(conn) = ServerConnection::new(Arc::clone(&cfg)) else {
                             continue;
                         };
