@@ -267,7 +267,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 162] = [
+pub const FUNCS: [StdFn; 163] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -978,6 +978,15 @@ pub const FUNCS: [StdFn; 162] = [
         name: "fs.copy",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ResultUnitStr,
+    },
+    // **VD-270 (fs-current-dir)**: `() -> Result[str, Error]` — thư mục làm việc hiện tại,
+    // **tuyệt đối** + UTF-8; **không** có đường dẫn người dùng nên **không** đi qua cap;
+    // cwd bị xoá/không truy cập/không phải UTF-8 ⇒ `Err(Error)` dữ liệu, không trap.
+    // Params **rỗng** (không receiver); kiểu trả `ResultStrErr` — **không** phải `ResultStrStr`.
+    StdFn {
+        name: "fs.current_dir",
+        params: &[],
+        ret: Ty::ResultStrErr,
     },
     StdFn {
         name: "fs.rename",

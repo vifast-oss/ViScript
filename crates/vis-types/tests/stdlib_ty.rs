@@ -285,7 +285,12 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // sinh phần rỗng cuối khi `s` kết thúc bằng `sep`, chỉ bỏ **một** phần rỗng; `s` rỗng +
     // `sep` khác rỗng ⇒ `[]`, `sep` rỗng theo đúng nghĩa Rust, sugar R5c) ⇒ **159** hàm
     // (trước 158); không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 162, "bảng chữ ký phải đủ 162 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 fs-current-dir, 2026-11-21)**: +**1** hàm
+    // `std.fs.current_dir` (`() -> Result[str, Error]`; **params rỗng**, trả cwd **tuyệt đối**
+    // UTF-8 từ `std::env::current_dir`, không path người dùng nên không cap; cwd xoá/không
+    // truy cập/không UTF-8 ⇒ `Err`; tái dùng `Ty::ResultStrErr`, **không** sugar) ⇒ **163** hàm;
+    // không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 163, "bảng chữ ký phải đủ 163 hàm");
 }
 
 #[test]
@@ -341,6 +346,28 @@ fn fs_read_link_kieu_str_result_va_khong_sugar() {
         "`fs.read_link`: hạ kiểu trả"
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "read_link"), None);
+}
+
+#[test]
+fn fs_current_dir_params_rong_result_va_khong_sugar() {
+    // **VD-270 (fs-current-dir)**: **không tham số** (`params` rỗng) và trả
+    // `Result[str, Error]` qua **đúng** `Ty::ResultStrErr` (không phải `ResultStrStr` dù hạ
+    // cùng kiểu); fs là module-only nên **không** sugar — `p.current_dir()` bị `VS0403`,
+    // không ánh xạ sang `fs`.
+    let f = sig_of("fs.current_dir").expect("fs.current_dir");
+    assert!(f.params.is_empty(), "`fs.current_dir`: params phải rỗng");
+    assert_eq!(
+        f.ret,
+        Ty::ResultStrErr,
+        "`fs.current_dir`: kiểu trả phải là biến thể `ResultStrErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
+        "`fs.current_dir`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[str, Error]");
+    assert_eq!(vis_types::stdlib::module_sugar("str", "current_dir"), None);
 }
 
 #[test]

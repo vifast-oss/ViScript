@@ -885,6 +885,12 @@ impl FsHost for FsGuard<'_> {
         self.quyen.kiem_fs(p, false)?;
         self.trong.canonicalize(p)
     }
+    /// **VD-270 (fs-current-dir)**: **không** có đường dẫn người dùng ⇒ **không** kiểm `cap`;
+    /// chỉ chuyển tiếp host (đọc môi trường). Hàm không-path duy nhất phải chuyển tiếp ở đây vì
+    /// `FsGuard` luôn bọc host thật trong `vis run`; **không** gọi `kiem_fs`/`kiem_fs_canon`.
+    fn current_dir(&mut self) -> Result<String, String> {
+        self.trong.current_dir()
+    }
     /// **VD-270 (fsbytes)**: đọc byte thô là thao tác **đọc** ⇒ kiểm `cap[Dir]`/`cap[File]`
     /// (`can_write=false`) trước khi chạm đĩa; lỗi host giữ nguyên `Err` dữ liệu.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
