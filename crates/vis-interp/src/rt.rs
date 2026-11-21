@@ -22,6 +22,8 @@ use crate::interp::{Abort, Trap, R, RT};
 use crate::value::Value;
 
 pub(crate) mod chan;
+/// **VS3-3b/W5 (P1)** — chế độ evaluator W=1 (`Off`/`Local`); P2 thêm pool.
+pub(crate) mod exec;
 /// **ST-276 (VD-256)**: định nghĩa sự kiện ngân sách **dùng chung** với `vis-bytecode`.
 /// Khai báo ở đây (thay vì `frame.rs`) để giữ nguyên phạm vi sửa của ST-278 — file nguồn nằm
 /// trong `frame/**`, nội dung là `include!` của `vis-bytecode/src/fee_shared.rs`.
@@ -475,6 +477,8 @@ pub struct Scheduler {
     /// **ST-267/VD-251 (chỉ test)**: trạng thái frame scheduler. Mặc định rỗng/`false`.
     #[doc(hidden)]
     pub frame: FrameTest,
+    /// **VS3-3b/W5 (P1)**: chế độ evaluator (`Off` mặc định, `Local` = W=1 caller).
+    pub(crate) exec: exec::ExecState,
 }
 
 // **VD-257/C (chỉ test)**: trigger huỷ theo `seq` event, do integration test ghi TRƯỚC
@@ -1140,7 +1144,16 @@ pub fn chay_mot(host: &mut dyn Host) -> R<bool> {
 }
 
 /// Chạy một tác vụ **tới hoàn tất** (hoặc trả cache) — dùng chung cho `await` và join.
+/// `Local` (W=1) chỉ dispatch sang runner caller; mặc định `Off` giữ nguyên đường cũ.
 pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
+    if host.sched().borrow().exec.mode == exec::WorkerMode::Local {
+        return exec::await_local(host, t, span);
+    }
+    await_task_off(host, t, span)
+}
+
+/// Thân `await` của đường một luồng (Off) — P1 tách tên, **không đổi ngữ nghĩa**.
+pub(crate) fn await_task_off(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
     match t.trang_thai.get() {
         TrangThai::Xong => {
             let kq = t.kq.borrow();
@@ -1207,14 +1220,15 @@ pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
         }
     }
     t.trang_thai.set(TrangThai::DangChay);
-    let kq = host.goi_than(t.than, t.args.clone(), t.span);
+    // Runner W=1 (P1): chạy thân trên caller, shared env; đã bọc `VS0506` đúng một lần.
+    let kq = crate::interp::worker::chay_than_local(host, t.than, t.args.clone(), &t.ten, t.span);
     t.trang_thai.set(TrangThai::Xong);
     let kq: Result<Value, Trap> = match kq {
         Ok(v) => Ok(v),
-        // `return` trong thân tác vụ: `Abort::Ret` đã được host bắt; phòng thủ thì coi là kết quả.
+        // Runner đã bọc `Trap`; không bọc lần hai.
+        Err(Abort::Trap(trap)) => Err(trap),
+        // Hai nhánh dưới không xảy ra với runner P1; giữ phòng thủ như code cũ.
         Err(Abort::Ret(v)) => Ok(v),
-        Err(Abort::Trap(goc)) => Err(wrap_task_error(&t.ten, goc, t.span)),
-        // Đường frame không đi qua đây (đã trả Pending ở trên); phòng thủ.
         Err(Abort::Pending(_)) => Err(wrap_task_error(
             &t.ten,
             Trap::new(RT, "pending trong thân tác vụ", t.span),
@@ -1227,7 +1241,7 @@ pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
 }
 
 /// Bọc lỗi thân tác vụ thành **`VS0506`** — giữ **mã gốc** + message gốc, `span` = **lúc tạo**.
-fn wrap_task_error(ten: &str, goc: Trap, span: Span) -> Trap {
+pub(crate) fn wrap_task_error(ten: &str, goc: Trap, span: Span) -> Trap {
     Trap::new(
         crate::interp::TASK_ERR,
         format!("tác vụ `{ten}` lỗi: {}: {}", goc.code.short, goc.msg),
@@ -1236,7 +1250,16 @@ fn wrap_task_error(ten: &str, goc: Trap, span: Span) -> Trap {
 }
 
 /// **Join** mọi tác vụ theo **thứ tự tạo** (chỉ gọi khi main thành công — VD-95 (6)).
+/// `Local` (W=1) dispatch sang `join_local`; mặc định `Off` giữ nguyên đường cũ.
 pub fn join_all(host: &mut dyn Host) -> R<()> {
+    if host.sched().borrow().exec.mode == exec::WorkerMode::Local {
+        return exec::join_local(host);
+    }
+    join_all_off(host)
+}
+
+/// Thân join của đường một luồng (Off) — P1 tách tên, **không đổi ngữ nghĩa**.
+pub(crate) fn join_all_off(host: &mut dyn Host) -> R<()> {
     let ds: Vec<Rc<Task>> = host.sched().borrow().tasks.clone();
     for t in ds {
         let span = t.span;

@@ -19,6 +19,9 @@ mod core_types;
 pub(crate) mod gan_long;
 #[path = "interp/opt_method.rs"]
 mod opt_method;
+/// **VS3-3b/W5 (P1)**: runner W=1 non-frame (chạy thân trên caller).
+#[path = "interp/worker.rs"]
+pub(crate) mod worker;
 use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};
 pub use core_types::*;
 
@@ -1103,11 +1106,16 @@ impl<'a> Interp<'a> {
                 for a in args {
                     pos.push(self.eval(a)?);
                 }
-                let t = self
-                    .sched
-                    .get_mut()
-                    .spawn(f.sym, pos, f.name.clone(), *span);
-                Ok(Value::Task(t))
+                // P1: `Off` giữ nguyên `get_mut` cũ; `Local` mới ghi order qua exec.
+                if self.sched.borrow().exec.mode == crate::rt::exec::WorkerMode::Local {
+                    crate::rt::exec::spawn_local(self, f.sym, pos, f.name.clone(), *span)
+                } else {
+                    let t = self
+                        .sched
+                        .get_mut()
+                        .spawn(f.sym, pos, f.name.clone(), *span);
+                    Ok(Value::Task(t))
+                }
             }
             // ST-14: chuỗi nội suy — đánh giá từng mảnh rồi ghép (không parse lại lúc chạy).
             HExpr::Interp { parts, .. } => {
