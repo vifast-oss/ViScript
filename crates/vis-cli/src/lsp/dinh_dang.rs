@@ -11,13 +11,15 @@ use super::jsonrpc::{m, phan_hoi, s};
 use super::phan_tich::KetQua;
 use super::vi_tri::vi_tri_utf16;
 
-/// Phản hồi `textDocument/formatting` (`TextEdit[]`).
-pub fn tra_loi_format(kq: &KetQua, mode: Mode, id: &Value) -> Vec<u8> {
-    let Ok(out) = vis_fmt::format_mode(&kq.text, mode) else {
-        return phan_hoi(id, Value::List(Vec::new()));
-    };
+/// `TextEdit` phủ **toàn tệp** bằng bản đã format; `None` khi formatter từ chối (cú pháp/từ vựng)
+/// hoặc văn bản **đã đúng** format (điểm bất động).
+///
+/// Dùng chung cho `textDocument/formatting` và `textDocument/codeAction` (`source.fixAll`) để hai
+/// đường luôn trả **cùng** một bản sửa.
+pub fn edit_toan_tep(kq: &KetQua, mode: Mode) -> Option<Value> {
+    let out = vis_fmt::format_mode(&kq.text, mode).ok()?;
     if out == kq.text {
-        return phan_hoi(id, Value::List(Vec::new()));
+        return None;
     }
     let pos = |line: u32, character: u32| {
         m(vec![
@@ -27,14 +29,17 @@ pub fn tra_loi_format(kq: &KetQua, mode: Mode, id: &Value) -> Vec<u8> {
     };
     let (l0, c0) = vi_tri_utf16(&kq.text, 0);
     let (l1, c1) = vi_tri_utf16(&kq.text, kq.text.len());
-    phan_hoi(
-        id,
-        Value::List(vec![m(vec![
-            (
-                "range",
-                m(vec![("start", pos(l0, c0)), ("end", pos(l1, c1))]),
-            ),
-            ("newText", s(&out)),
-        ])]),
-    )
+    Some(m(vec![
+        (
+            "range",
+            m(vec![("start", pos(l0, c0)), ("end", pos(l1, c1))]),
+        ),
+        ("newText", s(&out)),
+    ]))
+}
+
+/// Phản hồi `textDocument/formatting` (`TextEdit[]`).
+pub fn tra_loi_format(kq: &KetQua, mode: Mode, id: &Value) -> Vec<u8> {
+    let edits = edit_toan_tep(kq, mode).into_iter().collect();
+    phan_hoi(id, Value::List(edits))
 }
