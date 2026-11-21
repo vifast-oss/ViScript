@@ -3,6 +3,14 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.1 — 2026-11-21 (candidate)
+
+- **Async net production** (mio) + **async TLS** (rustls nonblocking) trên Unix; loopback read/accept/connect/write/HTTPS.
+- **HTTP/2 hardening**: GOAWAY/RST/trailer/204/header cap 64 KiB, retry một lần.
+- **Worker stress** 10k task, cancel/budget/print/cross-write; 10 ca.
+- Windows async net chưa có backend (test gated); Linux gate **3512/3**; W3/W4 đang verify.
+- Không GitHub Actions; macOS ngoài phạm vi.
+
 ## v0.3.0 — 2026-11-21
 
 - **HTTP/2 default-on** (h2 + ALPN, fallback HTTP/1.1, queue reuse 4 authority, idle 15 s); `http2` vào default non-wasm.
