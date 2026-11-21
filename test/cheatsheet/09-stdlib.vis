@@ -48,6 +48,18 @@
 # kỳ vọng: None
 # kỳ vọng: Some(2)
 # kỳ vọng: Some(4)
+# kỳ vọng: a/b.md
+# kỳ vọng: a/c.txt
+# kỳ vọng: a/c
+# kỳ vọng: [a, b, c]
+# kỳ vọng: [a/b/c, a/b, a, ]
+# kỳ vọng: Some(c)
+# kỳ vọng: [c, b, a]
+# kỳ vọng: [a, b]
+# kỳ vọng: true
+# kỳ vọng: false
+# kỳ vọng: Some(1)
+# kỳ vọng: Some(3)
 use std.fs
 use std.list
 use std.map
@@ -113,3 +125,16 @@ print(list.max_float([3.0, 1.0, 2.0]))
 print(list.max_float(fs))
 print([2.0, 4.0].min_float())
 print([2.0, 4.0].max_float())
+
+print(path.with_extension("a/b.txt", "md"))
+print(path.with_stem("a/b.txt", "c"))
+print(path.with_file_name("a/b.txt", "c"))
+print(path.components("a//b/c"))
+print(path.ancestors("a/b/c"))
+print(path.strip_prefix("a/b/c", "a/b"))
+print(str.rsplit("a,b,c", ","))
+print(str.split_terminator("a,b,", ","))
+print(str.is_ascii_digit("123"))
+print(str.is_ascii_digit(""))
+print([3.0, 1.0, 2.0].min_float())
+print([3.0, 1.0, 2.0].max_float())
