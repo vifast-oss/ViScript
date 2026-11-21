@@ -349,6 +349,9 @@ fn drive_h2(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
             return Ok(H2Buoc::Xong(loi_http(e)));
         }
     };
+    if let Ok(u) = tach_url(&st.url) {
+        luu_set_cookie(host, &u, &resp.headers);
+    }
     if st.phuong_thuc == PhuongThuc::Head {
         return Ok(H2Buoc::Xong(ket_qua_head_meta(resp.status, &resp.headers)));
     }
@@ -415,6 +418,9 @@ fn kiem_tra(st: &mut HttpAsync, host: &mut dyn Host) -> Result<Buoc, String> {
         let d = doc_header_day_du(&st.du[..i])?;
         if d.cl.map(|n| n > MAX_HTTP).unwrap_or(false) {
             return Err(format!("phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"));
+        }
+        if let Ok(u) = tach_url(&st.url) {
+            luu_set_cookie(host, &u, &d.headers);
         }
         st.than_bat_dau = i + 4;
         st.dau = Some(d);
@@ -587,6 +593,24 @@ fn thong_tin(host: &mut dyn Host, u: &UrlHttp) -> (Option<String>, Option<String
         .net()
         .and_then(|n| n.cookie_jar().and_then(|j| j.header(&u.host, path, secure)));
     (auth, cookie)
+}
+
+/// **VS3-W2** — lưu `Set-Cookie` của response vào jar async (giống `xu_ly_h2` sync).
+fn luu_set_cookie(host: &mut dyn Host, u: &UrlHttp, headers: &[(String, String)]) {
+    let set_cookie: Vec<String> = headers
+        .iter()
+        .filter(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
+        .map(|(_, v)| v.clone())
+        .collect();
+    if set_cookie.is_empty() {
+        return;
+    }
+    let path = u.target.split('?').next().unwrap_or("/");
+    if let Some(n) = host.net() {
+        if let Some(j) = n.cookie_jar() {
+            j.nhan_set_cookie(&u.host, path, &set_cookie);
+        }
+    }
 }
 
 fn ghi_log(host: &mut dyn Host, phuong_thuc: PhuongThuc, u: &UrlHttp) {
