@@ -110,7 +110,7 @@ vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-fmt = { path = "../vis-fmt" }
 vis-types = { path = "../vis-types" }
-vis-interp = { path = "../vis-interp" }
+vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-vm = { path = "../vis-vm" }
 # **VD-241 (Gate 1, 2026-11-19)** — `std.sqlite` MVP: **rusqlite bundled**, ghim version; không tự

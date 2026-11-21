@@ -7,6 +7,11 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Thông dịch cây trên HIR cho ViScript VS0 (ST-13)"
 
+[features]
+# **VS3-3b/W5 prototype** (default off): mirror `Value` với `Task(TaskId)` + chuyển đổi.
+# Không đổi enum `Value`/ABI; bật ở test/CLI khi thử hook evaluator.
+taskid-proto = []
+
 [dependencies]
 # ST-41: NFC để đếm **số char** khi render bảng (license MIT OR Apache-2.0 + Unicode-3.0, đã allowlist ở ST-01).
 unicode-normalization = "0.1"

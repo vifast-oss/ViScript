@@ -16,10 +16,15 @@
 
 #[doc(hidden)]
 pub mod worker {
+    #[cfg(feature = "taskid-proto")]
+    use std::cell::RefCell;
     use std::collections::{BTreeSet, HashMap};
     use std::fmt;
+    #[cfg(feature = "taskid-proto")]
+    use std::rc::Rc;
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::{mpsc, Arc};
+    use std::sync::{mpsc, Arc, Condvar, Mutex};
+    use std::time::{Duration, Instant};
 
     use crate::host::TaskOutput;
     use crate::rt::fee::{BudgetError, BudgetLease, BudgetSnapshot, SharedBudget};
@@ -68,6 +73,230 @@ pub mod worker {
         Map(Vec<(SendValue, SendValue)>),
         Record(String, Vec<(String, SendValue)>),
         Enum(String, String, Vec<SendValue>),
+    }
+
+    /// **Prototype VS3-3b TaskId trong `Value`** — hình dạng đề xuất: mọi biến thể của
+    /// `Value` giữ nguyên, riêng `Task` là `TaskId` (u64) thay `Rc<Task>`; completion/proxy
+    /// nằm ở `WorkerPool` (không `Arc<Mutex<Task>>`).
+    ///
+    /// **Chưa phải `Value` production**: `interp.rs`/`vm.rs`/`frame/**` vẫn khớp
+    /// `Value::Task(Rc<Task>)`; đổi enum cần W1/A0 duyệt. Default `Value`/ABI **không đổi**.
+    /// Type này để test chuyển đổi/`Show`/eq và làm hợp đồng patch W1.
+    #[cfg(feature = "taskid-proto")]
+    #[doc(hidden)]
+    #[derive(Clone, Debug)]
+    pub enum ProtoValue {
+        Unit,
+        Int(i64),
+        Float(f64),
+        Size(i64),
+        Duration(i64),
+        Percent(f64),
+        Str(String),
+        Bool(bool),
+        Bytes(Vec<u8>),
+        Char(char),
+        Path(String),
+        List(Vec<ProtoValue>),
+        Map(Vec<(ProtoValue, ProtoValue)>),
+        Record(String, Vec<(String, ProtoValue)>),
+        Enum(String, String, Vec<ProtoValue>),
+        Range(i64, i64, bool),
+        Builtin(&'static str),
+        Fn(Rc<crate::value::Closure>),
+        Vm(Rc<crate::value::VmFunc>),
+        Task(TaskId),
+        Chan(Rc<RefCell<crate::rt::Chan>>),
+        Cap {
+            kind: String,
+            root: String,
+            write: bool,
+        },
+    }
+
+    #[cfg(feature = "taskid-proto")]
+    impl ProtoValue {
+        /// Chuyển `Value` → prototype. `Value::Task(Rc<Task>)` **không** tự map được: W1 phải
+        /// có registry `Rc<Task> ↔ TaskId`; trả lỗi rõ thay vì bịa id.
+        pub fn from_value(v: &crate::value::Value) -> Result<Self, String> {
+            use crate::value::Value as V;
+            Ok(match v {
+                V::Unit => Self::Unit,
+                V::Int(i) => Self::Int(*i),
+                V::Float(f) => Self::Float(*f),
+                V::Size(i) => Self::Size(*i),
+                V::Duration(i) => Self::Duration(*i),
+                V::Percent(f) => Self::Percent(*f),
+                V::Str(s) => Self::Str(s.clone()),
+                V::Bool(b) => Self::Bool(*b),
+                V::Bytes(b) => Self::Bytes(b.clone()),
+                V::Char(c) => Self::Char(*c),
+                V::Path(s) => Self::Path(s.clone()),
+                V::List(xs) => Self::List(
+                    xs.iter()
+                        .map(Self::from_value)
+                        .collect::<Result<Vec<_>, _>>()?,
+                ),
+                V::Map(kv) => Self::Map(
+                    kv.iter()
+                        .map(|(k, v)| Ok((Self::from_value(k)?, Self::from_value(v)?)))
+                        .collect::<Result<Vec<_>, String>>()?,
+                ),
+                V::Record(n, fs) => Self::Record(
+                    n.clone(),
+                    fs.iter()
+                        .map(|(k, v)| Ok((k.clone(), Self::from_value(v)?)))
+                        .collect::<Result<Vec<_>, String>>()?,
+                ),
+                V::Enum(a, b, args) => Self::Enum(
+                    a.as_ref().to_string(),
+                    b.as_ref().to_string(),
+                    args.iter()
+                        .map(Self::from_value)
+                        .collect::<Result<Vec<_>, _>>()?,
+                ),
+                V::Range(a, b, c) => Self::Range(*a, *b, *c),
+                V::Builtin(n) => Self::Builtin(n),
+                V::Fn(c) => Self::Fn(Rc::clone(c)),
+                V::Vm(f) => Self::Vm(Rc::clone(f)),
+                V::Task(_) => {
+                    return Err(
+                        "prototype: `Value::Task(Rc<Task>)` cần registry map sang TaskId".to_string(),
+                    )
+                }
+                V::Chan(c) => Self::Chan(Rc::clone(c)),
+                V::Cap { kind, root, write } => Self::Cap {
+                    kind: kind.clone(),
+                    root: root.clone(),
+                    write: *write,
+                },
+            })
+        }
+
+        /// Chuyển prototype → `Value`; `Task(TaskId)` cần registry proxy của W1, nên trả lỗi.
+        pub fn to_value(&self) -> Result<crate::value::Value, String> {
+            use crate::value::Value as V;
+            Ok(match self {
+                Self::Unit => V::Unit,
+                Self::Int(i) => V::Int(*i),
+                Self::Float(f) => V::Float(*f),
+                Self::Size(i) => V::Size(*i),
+                Self::Duration(i) => V::Duration(*i),
+                Self::Percent(f) => V::Percent(*f),
+                Self::Str(s) => V::Str(s.clone()),
+                Self::Bool(b) => V::Bool(*b),
+                Self::Bytes(b) => V::Bytes(b.clone()),
+                Self::Char(c) => V::Char(*c),
+                Self::Path(s) => V::Path(s.clone()),
+                Self::List(xs) => V::List(
+                    xs.iter()
+                        .map(Self::to_value)
+                        .collect::<Result<Vec<_>, _>>()?,
+                ),
+                Self::Map(kv) => V::Map(
+                    kv.iter()
+                        .map(|(k, v)| Ok((Self::to_value(k)?, Self::to_value(v)?)))
+                        .collect::<Result<Vec<_>, String>>()?,
+                ),
+                Self::Record(n, fs) => V::Record(
+                    n.clone(),
+                    fs.iter()
+                        .map(|(k, v)| Ok((k.clone(), Self::to_value(v)?)))
+                        .collect::<Result<Vec<_>, String>>()?,
+                ),
+                Self::Enum(a, b, args) => V::Enum(
+                    crate::value::Name::new(a),
+                    crate::value::Name::new(b),
+                    args.iter()
+                        .map(Self::to_value)
+                        .collect::<Result<Vec<_>, _>>()?,
+                ),
+                Self::Range(a, b, c) => V::Range(*a, *b, *c),
+                Self::Builtin(n) => V::Builtin(n),
+                Self::Fn(c) => V::Fn(Rc::clone(c)),
+                Self::Vm(f) => V::Vm(Rc::clone(f)),
+                Self::Task(_) => {
+                    return Err(
+                        "prototype: `TaskId` cần registry/proxy để dựng `Value::Task`".to_string(),
+                    )
+                }
+                Self::Chan(c) => V::Chan(Rc::clone(c)),
+                Self::Cap { kind, root, write } => V::Cap {
+                    kind: kind.clone(),
+                    root: root.clone(),
+                    write: *write,
+                },
+            })
+        }
+
+        pub fn task_id(&self) -> Option<TaskId> {
+            match self {
+                Self::Task(id) => Some(*id),
+                _ => None,
+            }
+        }
+
+        /// `Show`: cây **không có** `Task` dùng đúng `Value::show` (một nguồn sự thật);
+        /// cây có `Task` render tại chỗ với `<tác vụ>` (không dựng được `Value`).
+        pub fn show(&self) -> String {
+            if let Ok(v) = self.to_value() {
+                return v.show();
+            }
+            match self {
+                Self::Task(_) => "<tác vụ>".to_string(),
+                Self::List(xs) => {
+                    let ds: Vec<String> = xs.iter().map(Self::show).collect();
+                    format!("[{}]", ds.join(", "))
+                }
+                Self::Map(kv) => {
+                    let ds: Vec<String> = kv
+                        .iter()
+                        .map(|(k, v)| {
+                            let key = match k {
+                                Self::Str(s) => format!("\"{s}\""),
+                                other => other.show(),
+                            };
+                            format!("{key}: {}", v.show())
+                        })
+                        .collect();
+                    format!("{{{}}}", ds.join(", "))
+                }
+                Self::Record(n, fs) => {
+                    let ds: Vec<String> = fs
+                        .iter()
+                        .map(|(k, v)| format!("{k}: {}", v.show()))
+                        .collect();
+                    if n.is_empty() {
+                        format!("{{{}}}", ds.join(", "))
+                    } else {
+                        format!("{n}({})", ds.join(", "))
+                    }
+                }
+                Self::Enum(_, b, args) => {
+                    if args.is_empty() {
+                        b.clone()
+                    } else {
+                        let ds: Vec<String> = args.iter().map(Self::show).collect();
+                        format!("{b}({})", ds.join(", "))
+                    }
+                }
+                other => other
+                    .to_value()
+                    .map(|v| v.show())
+                    .unwrap_or_else(|_| "<giá trị>".to_string()),
+            }
+        }
+
+        /// Task không bằng bất kỳ giá trị nào (kể cả Task/TaskId khác); còn lại dùng `Value::eq_value`.
+        pub fn eq_value(&self, other: &Self) -> bool {
+            if matches!(self, Self::Task(_)) || matches!(other, Self::Task(_)) {
+                return false;
+            }
+            match (self.to_value(), other.to_value()) {
+                (Ok(a), Ok(b)) => a.eq_value(&b),
+                _ => false,
+            }
+        }
     }
 
     impl SendValue {
@@ -218,6 +447,99 @@ pub mod worker {
         }
     }
 
+    /// **Prototype proxy completion (VS3-3b/W5)** — bảng kết quả theo `TaskId`, để evaluator
+    /// `await` mà không cần `Rc<Task>`. Worker công bố kết quả ngay khi task xong (W>1);
+    /// `join` công bố nốt phần còn lại (W=1, task bị huỷ trước khi chạy). Bảng chỉ chứa
+    /// `SendValue`/`String` — `Send + Sync`, không shared mutable heap của ngôn ngữ.
+    ///
+    /// **Chưa nối evaluator.** Một board dùng cho một pool; `wait_timeout` chỉ dành cho
+    /// **main thread** (worker không được block chờ worker khác — evaluator phải `yield`).
+    #[doc(hidden)]
+    #[derive(Debug, Default)]
+    pub struct TaskWaitBoard {
+        state: Mutex<WaitState>,
+        cv: Condvar,
+    }
+
+    #[derive(Debug, Default)]
+    struct WaitState {
+        done: HashMap<TaskId, Result<SendValue, String>>,
+        closed: bool,
+    }
+
+    /// Lỗi chờ completion; tách khỏi `WorkerError` để không đổi API cũ.
+    #[doc(hidden)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum WaitError {
+        /// Hết thời gian chờ.
+        Timeout,
+        /// Bảng đã đóng trước khi có kết quả.
+        Closed,
+    }
+
+    impl TaskWaitBoard {
+        pub fn new() -> Self {
+            Self::default()
+        }
+
+        /// Công bố kết quả **một lần**; gọi lại cùng `id` là no-op (first wins).
+        pub fn publish(&self, id: TaskId, result: Result<SendValue, String>) {
+            let mut st = self.lock();
+            st.done.entry(id).or_insert(result);
+            self.cv.notify_all();
+        }
+
+        /// Lấy kết quả nếu đã xong (không chờ); lấy xong thì bỏ khỏi bảng.
+        pub fn try_take(&self, id: TaskId) -> Option<Result<SendValue, String>> {
+            self.lock().done.remove(&id)
+        }
+
+        /// Chờ completion của `id`; **không** chờ vô hạn nên không thể treo cứng.
+        pub fn wait_timeout(
+            &self,
+            id: TaskId,
+            timeout: Duration,
+        ) -> Result<Result<SendValue, String>, WaitError> {
+            let mut st = self.lock();
+            let deadline = Instant::now() + timeout;
+            loop {
+                if let Some(r) = st.done.remove(&id) {
+                    return Ok(r);
+                }
+                if st.closed {
+                    return Err(WaitError::Closed);
+                }
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    return Err(WaitError::Timeout);
+                }
+                let (guard, _) = self
+                    .cv
+                    .wait_timeout(st, left)
+                    .unwrap_or_else(|e| e.into_inner());
+                st = guard;
+            }
+        }
+
+        /// Đóng bảng: đánh thức waiter còn lại bằng `WaitError::Closed`.
+        pub fn close(&self) {
+            self.lock().closed = true;
+            self.cv.notify_all();
+        }
+
+        pub fn len(&self) -> usize {
+            self.lock().done.len()
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+
+        fn lock(&self) -> std::sync::MutexGuard<'_, WaitState> {
+            self.state.lock().unwrap_or_else(|e| e.into_inner())
+        }
+    }
+
     /// Env + output cục bộ của **một task**. Không chia sẻ với task/worker khác.
     pub struct WorkerCtx {
         globals: EnvMap,
@@ -343,6 +665,7 @@ pub mod worker {
         cancel: Arc<AtomicBool>,
         snapshot: EnvMap,
         task: TaskFn,
+        wait_board: Option<Arc<TaskWaitBoard>>,
     }
 
     struct CompletionBoard {
@@ -384,6 +707,7 @@ pub mod worker {
         workers: usize,
         root: EnvMap,
         budget: Option<Arc<SharedBudget>>,
+        wait_board: Option<Arc<TaskWaitBoard>>,
         mode: Option<PoolMode>,
         next: u64,
         order: Vec<TaskId>,
@@ -437,6 +761,7 @@ pub mod worker {
                 workers,
                 root,
                 budget,
+                wait_board: None,
                 mode: Some(mode),
                 next: 0,
                 order: Vec::new(),
@@ -456,6 +781,12 @@ pub mod worker {
             self.root.get(name)
         }
 
+        /// Gắn **bảng completion proxy** (opt-in) để `await` theo `TaskId`; gọi trước `spawn`.
+        /// Một board dùng cho một pool; kết quả đã publish vẫn đọc được sau `join`.
+        pub fn attach_wait_board(&mut self, board: Arc<TaskWaitBoard>) {
+            self.wait_board = Some(board);
+        }
+
         /// Spawn một task; closure phải `Send` và không được giữ `Value`/`Rc`.
         pub fn spawn<F>(&mut self, f: F) -> Result<TaskHandle, WorkerError>
         where
@@ -464,7 +795,14 @@ pub mod worker {
             let id = TaskId(self.next);
             self.next += 1;
             let cancel = Arc::new(AtomicBool::new(false));
-            let task: TaskFn = Box::new(f);
+            let wait_board = self.wait_board.clone();
+            let task: TaskFn = Box::new(move |ctx| {
+                let result = f(ctx);
+                if let Some(board) = &wait_board {
+                    board.publish(id, result.clone());
+                }
+                result
+            });
             let snapshot = self.root.clone();
             let mode = self.mode.as_mut().ok_or(WorkerError::ChannelClosed)?;
             match mode {
@@ -481,6 +819,7 @@ pub mod worker {
                             cancel: Arc::clone(&cancel),
                             snapshot,
                             task,
+                            wait_board: self.wait_board.clone(),
                         })
                         .map_err(|_| WorkerError::ChannelClosed)?;
                 }
@@ -558,6 +897,14 @@ pub mod worker {
                 }
             }
 
+            // Công bố nốt kết quả cho proxy (W=1, task huỷ trước khi chạy, hoặc task đã xong
+            // trước khi caller kịp chờ); `publish` là first-wins nên không ghi đè.
+            if let Some(board) = &self.wait_board {
+                for o in &outcomes {
+                    board.publish(o.id, o.result.clone());
+                }
+            }
+
             // Parallel: bất kỳ dirty nào ⇒ từ chối, main env không đổi.
             if self.workers > 1 {
                 let mut vars = BTreeSet::new();
@@ -600,6 +947,10 @@ pub mod worker {
                     let _ = h.join();
                 }
             }
+            // Không để waiter treo nếu pool bị drop mà chưa join.
+            if let Some(board) = &self.wait_board {
+                board.close();
+            }
         }
     }
 
@@ -625,9 +976,14 @@ pub mod worker {
                 cancel,
                 snapshot,
                 task,
+                wait_board,
             } = job;
             if cancel.load(Ordering::Acquire) {
-                if out_tx.send(cancelled_outcome(id)).is_err() {
+                let outcome = cancelled_outcome(id);
+                if let Some(board) = &wait_board {
+                    board.publish(id, outcome.result.clone());
+                }
+                if out_tx.send(outcome).is_err() {
                     break;
                 }
                 continue;
