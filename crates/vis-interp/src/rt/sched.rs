@@ -385,11 +385,38 @@ impl Scheduler {
         if self.frame.waiters.is_empty() && !live && self.frame.reactor.regs.is_empty() {
             return None;
         }
-        Some(Trap::new(
-            crate::interp::DEADLOCK,
-            "deadlock: scheduler hết frame sẵn sàng nhưng còn tác vụ/frame chờ sự kiện không bao giờ tới",
-            Span::new(0, 0),
-        ))
+        // **VS3-1d**: giữ thông điệp cụ thể cho kênh đầy/rỗng (test/golden cũ dùng), nhưng
+        // vẫn là cùng mã `VS0505` — không thêm mã mới.
+        let msg = self
+            .frame
+            .waiters
+            .iter()
+            .find_map(|w| match w.wait {
+                Wait::Chan { id, send } => Some((id, send)),
+                _ => None,
+            })
+            .and_then(|(id, send)| {
+                let ch = self.kenh.iter().find(|c| c.borrow().id == id)?;
+                let ch = ch.borrow();
+                if send && ch.cap > 0 && ch.day() {
+                    Some(
+                        "deadlock: `send` vào kênh **đầy** và không còn tác vụ nào chạy được"
+                            .to_string(),
+                    )
+                } else if !send && ch.rong() && !ch.closed {
+                    Some(
+                        "deadlock: `recv` trên kênh **rỗng** và không còn tác vụ nào chạy được"
+                            .to_string(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| {
+                "deadlock: scheduler hết frame sẵn sàng nhưng còn tác vụ/frame chờ sự kiện không bao giờ tới"
+                    .to_string()
+            });
+        Some(Trap::new(crate::interp::DEADLOCK, msg, Span::new(0, 0)))
     }
 
     /// **VS3-2a**: đánh thức một frame đang chờ kênh `id` theo chiều `send`. Tìm waiter theo
