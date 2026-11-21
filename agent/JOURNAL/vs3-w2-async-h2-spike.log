@@ -1,0 +1,142 @@
+# VS3-W2 spike HTTP/2 reactor-native — log
+# date: 2026-11-21T23:03:11+09:00
+# host: Linux 7.0.0-43-generic x86_64, nproc=12
+# git: 5e61898 (main e833af0, tag v0.3.3 bbf3484)
+# toolchain: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# feature: h2-async-spike (default-off), CARGO_TARGET_DIR=/home/ps/ViScript/target
+
+$ cargo test -p vis-cli --features h2-async-spike --test vs3_http2
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/debug/build/vis-cli/729d7529756be9a7/out/vs3_http2-729d7529756be9a7)
+
+running 25 tests
+test fallback_http1_khi_khong_alpn ... ok
+test h2_async_spike::async_h2_bon_stream_mot_connection ... ok
+test h2_async_spike::async_h2_get_va_head ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_redirect_va_cookie ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_basic_auth ... ok
+test h2_get_va_head ... ok
+test h2_goaway_giua_body ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_trailer_body_lon_va_tai_su_dung ... ok
+test h2_async_spike::async_h2_goaway_loi_ro ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_header_sat_cap_va_vuot ... ok
+test h2_async_spike::async_h2_timeout_khong_treo ... ok
+test h2_timeout_ro_rang ... ok
+test h2_timeout_giua_body_va_cleanup ... ok
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd ... ok
+test h2_async_spike::async_h2_cap_body ... ok
+test h2_body_8mib_va_vuot_cap ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.67s
+
+
+$ cargo test -p vis-cli --features h2-async-spike --test vs3_http2 async_h2 -- --nocapture --test-threads=1
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/debug/build/vis-cli/729d7529756be9a7/out/vs3_http2-729d7529756be9a7)
+
+running 6 tests
+test h2_async_spike::async_h2_bon_stream_mot_connection ... 4 stream/1 connection: 40.96 ms, connection=1, stream=4
+ok
+test h2_async_spike::async_h2_cap_body ... cap body sau 278.1 ms: phản hồi HTTP/2 vượt giới hạn 8388608 byte (8 MiB)
+ok
+test h2_async_spike::async_h2_get_va_head ... ok
+test h2_async_spike::async_h2_goaway_loi_ro ... GOAWAY: GOAWAY HTTP/2 khi kết nối: connection error received: unexpected internal error encountered
+ok
+test h2_async_spike::async_h2_timeout_khong_treo ... timeout sau 400.9 ms: quá thời gian chờ phản hồi HTTP/2
+ok
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 3.91s
+
+
+$ cargo test -p vis-cli --test vs3_http2   # default, không spike
+test stress_100_request_4_authority ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.14s
+
+
+$ cargo fmt --all -- --check
+fmt: OK
+$ cargo clippy --workspace --all-targets --features h2-async-spike -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.39s
+
+$ ./vis-dev check
+ok 11 - doc-examples: qd-* = 13 bị bắt (phải đúng 12 fixture qd)
+ok 12 - doc-examples: binary cũ bị từ chối bị bắt (cũ hơn mã nguồn)
+ok 13 - danh sách cấm (R6): từ khoá cũ bị bắt bị bắt (R6)
+# fixtures: PASS (cây sạch phải xanh)
+--- self-test case âm: OK
+--- vis explain: OK
+--- báo cáo R*-viscript (Khối E)
+--- báo cáo: OK
+--- fixture âm của máy kiểm báo cáo
+ok 1 - fixture bad-head bị bắt
+ok 2 - fixture bad-commit bị bắt
+ok 3 - fixture bad-status bị bắt
+ok 4 - fixture missing-task bị bắt
+ok 5 - fixture bad-project bị bắt
+# fixtures: PASS
+--- báo cáo fixtures: OK
+--- build: OK
+--- doc-examples: OK (24 khối tài liệu: 19 xanh + 5 ngoại lệ đỏ đúng; 12 fixture QD §7.1..7.3)
+ok 1 - README.md:46
+ok 2 - README.md:56
+ok 3 - README.md:71
+ok 4 - README.md:86
+ok 5 - README.md:108
+ok 6 - README.md:131
+ok 7 - README.md:148
+ok 8 - README.md:161
+ok 9 - README.md:182
+ok 10 - README.md:205
+ok 11 - README.md:224
+ok 12 - README.md:243
+ok 13 - README.md:259
+ok 14 - README.md:283
+ok 15 - README.md:383
+ok 16 - README.md:433
+ok 17 - README.md:468
+ok 18 - README.md:505
+ok 19 - README.md:526
+ok 20 - README.md:548
+--- readme-examples: OK
+vis-dev check: PASS
+vis-dev check EXIT=0
+
+$ df -h .
+/dev/nvme0n1p2  233G  210G   17G  93% /
+
+# --- re-run sau khi test GOAWAY chấp nhận cả hai thứ tự (gui Err hoặc tai Err):2026-11-21T23:05:02+09:00
+test result: FAILED. 24 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.83s
+
+error: test failed, to rerun pass `-p vis-cli --test vs3_http2`
+
+# --- sau khi tách test fd sang tiến trình con (fd đếm là process-wide) ---
+$ cargo test -p vis-cli --features h2-async-spike --test vs3_http2 (x2, song song)
+test result: ok. 25 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.86s
+test result: ok. 25 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.79s
+
+$ cargo test -p vis-cli --features h2-async-spike --test vs3_http2 async_h2_timeout_lap_khong_ro_fd_con -- --ignored --nocapture
+fd sau 20 timeout: 5 -> 5
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 3.04s
+
+# --- vis-dev check trên code cuối (sau tách test fd): 2026-11-21T23:08:32+09:00
+--- fmt: OK
+--- clippy: OK
+--- toolchain: OK
+--- release: OK
+--- self-test case âm: OK
+--- build: OK
+--- doc-examples: OK (24 khối tài liệu: 19 xanh + 5 ngoại lệ đỏ đúng; 12 fixture QD §7.1..7.3)
+--- readme-examples: OK
+--- readme-examples: OK
+vis-dev check: PASS

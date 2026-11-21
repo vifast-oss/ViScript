@@ -17,12 +17,24 @@
 // `SourceFd`/fd thô: trên Windows trạng thái đăng ký nằm trong chính đối tượng.
 #![cfg(any(unix, windows))]
 
+#[cfg(feature = "async-h2")]
+#[path = "async_net_h2.rs"]
+mod h2_impl;
+#[path = "async_net_host.rs"]
+mod host_impl;
+#[path = "async_net_nguon.rs"]
+mod nguon_impl;
+
+use host_impl::loopback_addr;
+pub use host_impl::AsyncNetHost;
+use nguon_impl::la_would_block;
+#[cfg(feature = "tls")]
+use nguon_impl::{cho_san_sang, LoiChoSanSang};
+
 use mio::net::{TcpListener as MioListener, TcpStream as MioStream};
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::io::{ErrorKind, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
-use std::rc::Rc;
 #[cfg(feature = "tls")]
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -35,17 +47,10 @@ use rustls::{ClientConfig, ClientConnection};
 use mio::{Events, Interest, Poll, Token};
 
 use vis_interp::builtin::NetHost;
+#[cfg(feature = "async-h2")]
+use vis_interp::rt::ReactorH2Outcome;
 use vis_interp::rt::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
 use vis_interp::stdlib::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT, NET_READ_CAP};
-
-/// `WouldBlock` thật trên nền đang chạy.
-///
-/// `ErrorKind` đã ánh xạ phần lớn, nhưng một số đường (mio/rustls/connect) trả mã thô:
-/// Unix `EINPROGRESS` = **115**, Windows `WSAEWOULDBLOCK` = **10035**,
-/// `WSAEINPROGRESS` = **10036**. Không dựa vào một mã duy nhất của Linux.
-fn la_would_block(e: &std::io::Error) -> bool {
-    e.kind() == ErrorKind::WouldBlock || matches!(e.raw_os_error(), Some(115 | 10035 | 10036))
-}
 
 struct WriteState {
     tay: String,
@@ -70,73 +75,6 @@ struct DangTls {
     dia_chi: String,
 }
 
-/// Nguồn readiness của backend: stream hoặc listener.
-///
-/// Trên cả Unix lẫn Windows, `mio::net::{TcpStream,TcpListener}` implement `mio::event::Source`;
-/// đăng ký trực tiếp trên đối tượng là cách duy nhất đúng trên Windows (trạng thái đăng ký nằm
-/// trong đối tượng, không có `SourceFd`/fd thô).
-enum Nguon<'a> {
-    Stream(&'a mut MioStream),
-    Listen(&'a mut MioListener),
-}
-
-impl Nguon<'_> {
-    fn dang_ky(&mut self, poll: &Poll, token: u64, interest: Interest) -> std::io::Result<()> {
-        let token = Token(token as usize);
-        match self {
-            Nguon::Stream(s) => poll.registry().register(&mut **s, token, interest),
-            Nguon::Listen(l) => poll.registry().register(&mut **l, token, interest),
-        }
-    }
-
-    fn dang_ky_lai(&mut self, poll: &Poll, token: u64, interest: Interest) -> std::io::Result<()> {
-        let token = Token(token as usize);
-        match self {
-            Nguon::Stream(s) => poll.registry().reregister(&mut **s, token, interest),
-            Nguon::Listen(l) => poll.registry().reregister(&mut **l, token, interest),
-        }
-    }
-
-    fn huy(&mut self, poll: &Poll) -> std::io::Result<()> {
-        match self {
-            Nguon::Stream(s) => poll.registry().deregister(&mut **s),
-            Nguon::Listen(l) => poll.registry().deregister(&mut **l),
-        }
-    }
-}
-
-#[cfg(feature = "tls")]
-fn nguon_mut<'a>(
-    streams: &'a mut HashMap<String, MioStream>,
-    listeners: &'a mut HashMap<String, MioListener>,
-    tls: &'a mut HashMap<String, TlsChan>,
-    tls_connects: &'a mut HashMap<String, DangTls>,
-    key: &str,
-) -> Option<Nguon<'a>> {
-    if let Some(t) = tls.get_mut(key) {
-        return Some(Nguon::Stream(&mut t.sock));
-    }
-    if let Some(s) = tls_connects.get_mut(key) {
-        return Some(Nguon::Stream(&mut s.sock));
-    }
-    if let Some(s) = streams.get_mut(key) {
-        return Some(Nguon::Stream(s));
-    }
-    listeners.get_mut(key).map(Nguon::Listen)
-}
-
-#[cfg(not(feature = "tls"))]
-fn nguon_mut<'a>(
-    streams: &'a mut HashMap<String, MioStream>,
-    listeners: &'a mut HashMap<String, MioListener>,
-    key: &str,
-) -> Option<Nguon<'a>> {
-    if let Some(s) = streams.get_mut(key) {
-        return Some(Nguon::Stream(s));
-    }
-    listeners.get_mut(key).map(Nguon::Listen)
-}
-
 /// Host mạng production cho đường async + backend reactor của nó (cùng một đối tượng).
 pub struct AsyncNet {
     streams: HashMap<String, MioStream>,
@@ -147,6 +85,26 @@ pub struct AsyncNet {
     tls_connects: HashMap<String, DangTls>,
     #[cfg(feature = "tls")]
     cau_hinh_tls: Option<Result<Arc<ClientConfig>, String>>,
+    /// **VS3-W2** — connection HTTP/2 dùng chung, handle `H<n>`.
+    #[cfg(feature = "async-h2")]
+    h2: HashMap<String, crate::net::h2_async::H2Async>,
+    /// Số frame đang giữ `H<n>` (mỗi lần `try_connect_tls` trả handle là +1, `close` là -1).
+    #[cfg(feature = "async-h2")]
+    h2_users: HashMap<String, usize>,
+    /// Authority → `H<n>` còn sống (tái dùng cho request concurrent/sequential).
+    #[cfg(feature = "async-h2")]
+    h2_theo_authority: HashMap<String, String>,
+    /// Khoá `T:…|frame` → khoá canonical `T:…` trong lúc handshake dùng chung.
+    #[cfg(feature = "async-h2")]
+    tls_alias: HashMap<String, String>,
+    /// Authority đã handshake ra HTTP/1.1: các connect sau dùng khoá riêng từng frame.
+    #[cfg(feature = "async-h2")]
+    h1_authority: HashSet<String>,
+    /// Thời điểm phiên h2 rảnh (0 user); tái dùng nếu < 15 s như sync pool.
+    #[cfg(feature = "async-h2")]
+    h2_idle: HashMap<String, Instant>,
+    #[cfg(feature = "async-h2")]
+    next_h2: u32,
     poll: Poll,
     events: Events,
     /// Poll riêng cho các lời gọi host đồng bộ (`http.get/head`) trên kênh TLS; không dùng chung
@@ -156,6 +114,16 @@ pub struct AsyncNet {
     #[cfg(feature = "tls")]
     host_events: Events,
     tokens: HashMap<u64, String>,
+    /// **VS3-W2 / Windows** — token scheduler → **khoá nguồn canonical** (`khoa_thuc`), và
+    /// khoá nguồn → mọi token cùng chờ. Nhờ vậy nhiều frame cùng chờ một connection h2 không
+    /// ghi đè registration của nhau, không cần fd thô (Windows không có `SourceFd`).
+    token_nguon: HashMap<u64, String>,
+    nguon_tokens: HashMap<String, HashSet<u64>>,
+    /// Khoá nguồn → token nội bộ của `Poll` (một registration cho mỗi socket).
+    poll_token: HashMap<String, usize>,
+    poll_nguon: HashMap<usize, String>,
+    nguon_wants: HashMap<String, (bool, bool)>,
+    next_poll: usize,
     /// `N:<addr>` đã khởi tạo connect, chờ WRITABLE/kiểm SO_ERROR.
     connects: HashSet<String>,
     writes: HashMap<String, WriteState>,
@@ -175,6 +143,20 @@ impl AsyncNet {
             tls_connects: HashMap::new(),
             #[cfg(feature = "tls")]
             cau_hinh_tls: None,
+            #[cfg(feature = "async-h2")]
+            h2: HashMap::new(),
+            #[cfg(feature = "async-h2")]
+            h2_users: HashMap::new(),
+            #[cfg(feature = "async-h2")]
+            h2_theo_authority: HashMap::new(),
+            #[cfg(feature = "async-h2")]
+            tls_alias: HashMap::new(),
+            #[cfg(feature = "async-h2")]
+            h1_authority: HashSet::new(),
+            #[cfg(feature = "async-h2")]
+            h2_idle: HashMap::new(),
+            #[cfg(feature = "async-h2")]
+            next_h2: 0,
             poll: Poll::new().expect("mio::Poll::new"),
             events: Events::with_capacity(128),
             #[cfg(feature = "tls")]
@@ -182,6 +164,12 @@ impl AsyncNet {
             #[cfg(feature = "tls")]
             host_events: Events::with_capacity(16),
             tokens: HashMap::new(),
+            token_nguon: HashMap::new(),
+            nguon_tokens: HashMap::new(),
+            poll_token: HashMap::new(),
+            poll_nguon: HashMap::new(),
+            nguon_wants: HashMap::new(),
+            next_poll: 0,
             connects: HashSet::new(),
             writes: HashMap::new(),
             next_conn: 0,
@@ -194,36 +182,6 @@ impl AsyncNet {
         if self.giai_thich {
             eprintln!("NET {thao_tac} {p}");
         }
-    }
-
-    /// Socket `tay` có đang được **reactor** đăng ký không?
-    ///
-    /// **Windows**: một `mio::net::TcpStream`/`TcpListener` chỉ thuộc **một** `Poll`; host call
-    /// (dùng `host_poll` riêng) gặp socket reactor-owned phải trả lỗi rõ thay vì deregister mù
-    /// (sẽ cướp selector, event stale). Unix nhiều epoll cùng theo dõi một fd được, nên giữ
-    /// hành vi cũ (không chặn).
-    fn dang_reactor_win(&self, tay: &str) -> bool {
-        #[cfg(windows)]
-        {
-            self.tokens.values().any(|k| k == tay)
-        }
-        #[cfg(not(windows))]
-        {
-            let _ = tay;
-            false
-        }
-    }
-
-    /// **CHỈ TEST** — số tay/handle nội bộ còn giữ (đo rò rỉ sau nhiều vòng mở/đóng).
-    #[doc(hidden)]
-    pub fn dem_tay_dang_mo(&self) -> usize {
-        let mut n =
-            self.streams.len() + self.listeners.len() + self.writes.len() + self.connects.len();
-        #[cfg(feature = "tls")]
-        {
-            n += self.tls.len() + self.tls_connects.len();
-        }
-        n
     }
 
     fn target_of(h: &str) -> &str {
@@ -260,6 +218,22 @@ impl AsyncNet {
         let h = format!("C{}", self.next_conn);
         self.tls.insert(h.clone(), t);
         h
+    }
+
+    /// **VS3-W2** — khoá thực để tra fd/state: alias `T:…|frame` → canonical trong lúc handshake.
+    fn khoa_thuc(&self, key: &str) -> String {
+        #[cfg(feature = "async-h2")]
+        if key.starts_with('H') {
+            return Self::h2_base(key).to_string();
+        }
+        #[cfg(feature = "async-h2")]
+        if key.starts_with(FRAME_TLS_CONNECT) {
+            if let Some(c) = self.tls_alias.get(key) {
+                return c.clone();
+            }
+            return self.khoa_tls_canonical(key);
+        }
+        key.to_string()
     }
 
     fn try_connect(&mut self, key: &str) -> ReactorIoOutcome {
@@ -304,6 +278,7 @@ impl AsyncNet {
                 };
                 self.connects.remove(key);
                 let h = self.dat_c(s);
+                self.doi_khoa_nguon(key, &h);
                 ReactorIoOutcome::Accepted(h)
             }
             Err(e) if la_would_block(&e) || e.kind() == ErrorKind::NotConnected => {
@@ -380,62 +355,6 @@ impl AsyncNet {
 ///
 /// **Windows**: đăng ký trực tiếp `MioStream` (mio lưu trạng thái đăng ký trong đối tượng, một
 /// đối tượng chỉ thuộc **một** `Poll`); không có `SourceFd`.
-/// Vì sao một lần chờ host TLS thất bại.
-#[cfg(feature = "tls")]
-enum LoiChoSanSang {
-    /// Hết hạn monotonic.
-    HetHan,
-    /// Socket đang thuộc reactor scheduler (Windows: mỗi socket chỉ thuộc một `Poll`).
-    DangReactor,
-}
-
-/// Chờ **một** socket sẵn sàng trong hạn `han`.
-///
-/// Dùng `mio::Poll` riêng của host TLS, không đụng token của reactor scheduler. Mỗi lần đăng ký
-/// xong đều gỡ ngay để lần sau đăng ký lại được (kể cả cùng socket).
-///
-/// **Windows**: đăng ký trực tiếp `MioStream` (mio lưu trạng thái đăng ký trong đối tượng, một
-/// đối tượng chỉ thuộc **một** `Poll`); không có `SourceFd`. `dang_reactor` do caller kiểm từ
-/// `AsyncNet::dang_reactor_win`; `AlreadyExists` cũng bị coi là socket đang thuộc `Poll` khác
-/// (không deregister mù).
-#[cfg(feature = "tls")]
-fn cho_san_sang(
-    poll: &mut Poll,
-    events: &mut Events,
-    sock: &mut MioStream,
-    interest: Interest,
-    han: Instant,
-    dang_reactor: bool,
-) -> Result<(), LoiChoSanSang> {
-    if dang_reactor {
-        return Err(LoiChoSanSang::DangReactor);
-    }
-    let Some(con) = han.checked_duration_since(Instant::now()) else {
-        return Err(LoiChoSanSang::HetHan);
-    };
-    match poll.registry().register(sock, Token(usize::MAX), interest) {
-        Ok(()) => {}
-        Err(e) if e.kind() == ErrorKind::AlreadyExists => {
-            return Err(LoiChoSanSang::DangReactor);
-        }
-        Err(_) => return Err(LoiChoSanSang::HetHan),
-    }
-    let r = poll.poll(events, Some(con));
-    let _ = poll.registry().deregister(sock);
-    match r {
-        // `mio 1.2` trả `Ok(())`; timeout = không có event nào và đã chạm hạn.
-        Ok(()) => {
-            if events.is_empty() && Instant::now() >= han {
-                Err(LoiChoSanSang::HetHan)
-            } else {
-                Ok(())
-            }
-        }
-        Err(e) if e.kind() == ErrorKind::Interrupted => Ok(()),
-        Err(_) => Err(LoiChoSanSang::HetHan),
-    }
-}
-
 #[cfg(feature = "tls")]
 impl AsyncNet {
     /// **CHỈ TEST/EMBEDDING** — như [`crate::net::Net::moi_voi_goc_tls`], tin đúng các DER cho trước.
@@ -628,8 +547,44 @@ impl AsyncNet {
     /// **HTTP async**: connect TLS trên reactor, key `T:<dia_chi>`. TCP connect + handshake
     /// nhiều bước; trả `Accepted("C<n>")` chỉ khi handshake xong. Deadline/token do core giữ.
     fn try_connect_tls(&mut self, key: &str) -> ReactorIoOutcome {
-        if !self.tls_connects.contains_key(key) {
+        #[cfg(feature = "async-h2")]
+        {
+            // Đã có phiên h2 sẵn sàng cho authority này ⇒ dùng chung connection.
+            let now = Instant::now();
             let dia_chi = Self::dia_chi_cua_khoa_noi(key, FRAME_TLS_CONNECT).to_string();
+            if !self.h1_authority.contains(&dia_chi) {
+                if let Some(h) = self.h2_theo_authority.get(&dia_chi).cloned() {
+                    let con_idle = self
+                        .h2_idle
+                        .get(&h)
+                        .map(|t| now.saturating_duration_since(*t) < crate::net::h2::H2_IDLE)
+                        .unwrap_or(true);
+                    if con_idle && self.h2.contains_key(&h) {
+                        self.h2_idle.remove(&h);
+                        *self.h2_users.entry(h.clone()).or_insert(0) += 1;
+                        let duoi = key.rsplit_once('|').map(|(_, d)| d).unwrap_or("0");
+                        return ReactorIoOutcome::Accepted(format!("{h}#{duoi}"));
+                    }
+                    self.h2.remove(&h);
+                    self.h2_users.remove(&h);
+                    self.h2_idle.remove(&h);
+                    self.h2_theo_authority.remove(&dia_chi);
+                }
+            }
+            let ck = self.khoa_thuc(key);
+            if ck != key {
+                self.tls_alias.insert(key.to_string(), ck.clone());
+            }
+            self.try_connect_tls_khoa(key, &ck)
+        }
+        #[cfg(not(feature = "async-h2"))]
+        self.try_connect_tls_khoa(key, key)
+    }
+
+    /// Thân handshake trên khoá canonical `ck`; `key` là handle core đang giữ.
+    fn try_connect_tls_khoa(&mut self, key: &str, ck: &str) -> ReactorIoOutcome {
+        if !self.tls_connects.contains_key(ck) {
+            let dia_chi = Self::dia_chi_cua_khoa_noi(ck, FRAME_TLS_CONNECT).to_string();
             let mut ds: Vec<SocketAddr> = match dia_chi.to_socket_addrs() {
                 Ok(x) => x.collect(),
                 Err(e) => {
@@ -651,7 +606,7 @@ impl AsyncNet {
                 }
             };
             self.tls_connects.insert(
-                key.to_string(),
+                ck.to_string(),
                 DangTls {
                     sock,
                     conn: None,
@@ -663,40 +618,70 @@ impl AsyncNet {
         }
         let can_cfg = self
             .tls_connects
-            .get(key)
+            .get(ck)
             .map(|s| s.conn.is_none())
             .unwrap_or(false);
         let cfg = if can_cfg {
             match self.cau_hinh() {
-                Ok(c) => Some(c),
+                Ok(c) => Some({
+                    #[cfg(feature = "async-h2")]
+                    {
+                        crate::net::tls::cau_hinh_h2(&c)
+                    }
+                    #[cfg(not(feature = "async-h2"))]
+                    {
+                        c
+                    }
+                }),
                 Err(e) => {
-                    self.tls_connects.remove(key);
+                    self.tls_connects.remove(ck);
                     return ReactorIoOutcome::Err(e);
                 }
             }
         } else {
             None
         };
-        let Some(st) = self.tls_connects.get_mut(key) else {
+        let Some(st) = self.tls_connects.get_mut(ck) else {
             return ReactorIoOutcome::Err(format!("TLS connect `{key}` biến mất"));
         };
-        match Self::bap_tay_reactor(st, cfg) {
+        let kq_bap = Self::bap_tay_reactor(st, cfg);
+        match kq_bap {
             Ok(true) => {
-                let Some(st) = self.tls_connects.remove(key) else {
+                let Some(st) = self.tls_connects.remove(ck) else {
                     return ReactorIoOutcome::Err(format!("TLS connect `{key}` biến mất"));
                 };
                 let Some(conn) = st.conn else {
                     return ReactorIoOutcome::Err(format!("TLS connect `{key}` thiếu phiên"));
                 };
+                #[cfg(feature = "async-h2")]
+                if conn.alpn_protocol() == Some(&b"h2"[..]) {
+                    let sock: std::net::TcpStream = st.sock.into();
+                    let kenh = rustls::StreamOwned::new(conn, sock);
+                    let phien = crate::net::h2_async::H2Async::moi_cho_bap(kenh, &st.dia_chi);
+                    let h = self.dat_h2(phien);
+                    self.doi_khoa_nguon(ck, &h);
+                    self.h2_theo_authority.insert(st.dia_chi.clone(), h.clone());
+                    *self.h2_users.entry(h.clone()).or_insert(0) += 1;
+                    self.tls_alias.retain(|_, v| v != ck);
+                    let duoi = key.rsplit_once('|').map(|(_, d)| d).unwrap_or("0");
+                    return ReactorIoOutcome::Accepted(format!("{h}#{duoi}"));
+                }
+                #[cfg(feature = "async-h2")]
+                {
+                    // Server không chọn h2: các connect sau của authority này đi khoá riêng.
+                    self.h1_authority.insert(st.dia_chi.clone());
+                    self.tls_alias.retain(|_, v| v != ck);
+                }
                 let h = self.dat_tls(TlsChan {
                     conn,
                     sock: st.sock,
                 });
+                self.doi_khoa_nguon(ck, &h);
                 ReactorIoOutcome::Accepted(h)
             }
             Ok(false) => ReactorIoOutcome::WouldBlock,
             Err(e) => {
-                self.tls_connects.remove(key);
+                self.tls_connects.remove(ck);
                 ReactorIoOutcome::Err(e)
             }
         }
@@ -1197,6 +1182,7 @@ impl NetHost for AsyncNet {
             existed = true;
         }
         if existed {
+            self.bo_sach_nguon(tay);
             Ok(())
         } else {
             Err(format!("tay mạng `{tay}` không tồn tại"))
@@ -1269,114 +1255,183 @@ impl FrameReactorBackend for AsyncNet {
         }
     }
 
-    fn register(&mut self, token: u64, handle: &str, _op: ReactorOp) -> Result<(), String> {
+    fn register(&mut self, token: u64, handle: &str, op: ReactorOp) -> Result<(), String> {
         let key = if handle.starts_with(FRAME_NET_WRITE) {
             Self::target_of(handle).to_string()
         } else {
             handle.to_string()
         };
+        let tra = self.khoa_thuc(&key);
         #[cfg(feature = "tls")]
-        let la_tls_noi = key.starts_with(FRAME_TLS_CONNECT);
+        let la_tls_noi = tra.starts_with(FRAME_TLS_CONNECT);
         #[cfg(not(feature = "tls"))]
         let la_tls_noi = false;
-        let doc_hoac_ghi = handle.starts_with(FRAME_NET_CONNECT)
-            || handle.starts_with(FRAME_NET_WRITE)
-            || la_tls_noi;
-        // Chỉ đăng ký đúng chiều cần: TLS read mà đăng ký luôn WRITABLE sẽ bị đánh thức liên tục
-        // (socket gần như luôn ghi được), làm scheduler quay vòng. Alert/Finished còn treo được
-        // đẩy tiếp ở lần I/O kế cận hoặc khi đóng.
-        #[cfg(feature = "tls")]
-        let interest = if la_tls_noi {
-            self.tls_connects
-                .get(&key)
-                .map(|s| s.interest)
-                .unwrap_or(Interest::WRITABLE)
-        } else if doc_hoac_ghi {
-            Interest::WRITABLE
+        let doc_hoac_ghi =
+            key.starts_with(FRAME_NET_CONNECT) || key.starts_with(FRAME_NET_WRITE) || la_tls_noi;
+        let (want_doc, want_ghi) = match op {
+            ReactorOp::ReadWrite => (true, true),
+            _ => {
+                #[cfg(feature = "tls")]
+                if la_tls_noi {
+                    let i = self
+                        .tls_connects
+                        .get(&tra)
+                        .map(|s| s.interest)
+                        .unwrap_or(Interest::WRITABLE);
+                    (i.is_readable(), i.is_writable())
+                } else if doc_hoac_ghi {
+                    (false, true)
+                } else {
+                    (true, false)
+                }
+                #[cfg(not(feature = "tls"))]
+                if doc_hoac_ghi {
+                    (false, true)
+                } else {
+                    (true, false)
+                }
+            }
+        };
+        // Gộp interest theo **khoá nguồn canonical**: nhiều frame cùng chờ một connection h2
+        // dùng chung một registration (một đối tượng mio, một `Poll`).
+        let (er, ew) = self
+            .nguon_wants
+            .entry(tra.clone())
+            .or_insert((false, false));
+        *er |= want_doc;
+        *ew |= want_ghi;
+        let interest = match (*er, *ew) {
+            (true, true) => Interest::READABLE | Interest::WRITABLE,
+            (false, true) => Interest::WRITABLE,
+            _ => Interest::READABLE,
+        };
+        if let Some(&ep) = self.poll_token.get(&tra) {
+            if let Err(e) = self.dang_ky_lai_nguon(&tra, Token(ep), interest) {
+                return Err(format!("register `{tra}` thất bại: {e}"));
+            }
         } else {
-            Interest::READABLE
-        };
-        #[cfg(not(feature = "tls"))]
-        let interest = if doc_hoac_ghi {
-            Interest::WRITABLE
-        } else {
-            Interest::READABLE
-        };
-        #[cfg(feature = "tls")]
-        let nguon = nguon_mut(
-            &mut self.streams,
-            &mut self.listeners,
-            &mut self.tls,
-            &mut self.tls_connects,
-            &key,
-        );
-        #[cfg(not(feature = "tls"))]
-        let nguon = nguon_mut(&mut self.streams, &mut self.listeners, &key);
-        let Some(mut nguon) = nguon else {
-            return Err(format!("không tìm thấy `{key}` để đăng ký readiness"));
-        };
-        let mut r = nguon.dang_ky(&self.poll, token, interest);
-        if matches!(&r, Err(e) if e.kind() == ErrorKind::AlreadyExists) {
-            // Cùng nguồn vừa được adapter chuyển từ handle tạm (`N:`/`T:`) sang `C<n>`:
-            // registration cũ còn trong selector. Trên Windows `reregister` cập nhật token/
-            // interest của **chính** selector đã đăng ký; trên Unix cũng là epoll MOD.
-            r = nguon.dang_ky_lai(&self.poll, token, interest);
+            let ep = self.next_poll;
+            self.next_poll += 1;
+            if let Err(e) = self.dang_ky_nguon(&tra, Token(ep), interest) {
+                self.nguon_wants.remove(&tra);
+                return Err(format!("register `{tra}` thất bại: {e}"));
+            }
+            self.poll_token.insert(tra.clone(), ep);
+            self.poll_nguon.insert(ep, tra.clone());
         }
-        match r {
-            Ok(()) => {}
-            Err(e) => return Err(format!("register `{key}` thất bại: {e}")),
-        }
-        self.tokens.insert(token, key);
+        self.token_nguon.insert(token, tra.clone());
+        self.nguon_tokens.entry(tra).or_default().insert(token);
+        self.tokens.insert(token, handle.to_string());
         Ok(())
     }
 
     fn deregister(&mut self, token: u64, _handle: &str, _op: ReactorOp) -> Result<(), String> {
-        let Some(key) = self.tokens.remove(&token) else {
+        self.tokens.remove(&token);
+        let Some(tra) = self.token_nguon.remove(&token) else {
             return Ok(());
         };
-        #[cfg(feature = "tls")]
-        let nguon = nguon_mut(
-            &mut self.streams,
-            &mut self.listeners,
-            &mut self.tls,
-            &mut self.tls_connects,
-            &key,
-        );
-        #[cfg(not(feature = "tls"))]
-        let nguon = nguon_mut(&mut self.streams, &mut self.listeners, &key);
-        let Some(mut nguon) = nguon else {
-            return Ok(());
+        let con_lai = match self.nguon_tokens.get_mut(&tra) {
+            Some(ds) => {
+                ds.remove(&token);
+                !ds.is_empty()
+            }
+            None => false,
         };
-        match nguon.huy(&self.poll) {
-            Ok(()) => Ok(()),
-            Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
-            Err(e) => Err(format!("deregister `{key}` thất bại: {e}")),
+        if !con_lai {
+            self.nguon_tokens.remove(&tra);
+            self.nguon_wants.remove(&tra);
+            if let Some(ep) = self.poll_token.remove(&tra) {
+                self.poll_nguon.remove(&ep);
+                match self.huy_nguon(&tra) {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == ErrorKind::NotFound => {}
+                    Err(e) => return Err(format!("deregister `{tra}` thất bại: {e}")),
+                }
+            }
         }
+        Ok(())
     }
 
     fn wait(&mut self, timeout: Duration) -> Result<Vec<ReactorRawEvent>, String> {
         self.poll
             .poll(&mut self.events, Some(timeout))
             .map_err(|e| format!("poll readiness thất bại: {e}"))?;
-        Ok(self
-            .events
-            .iter()
-            .map(|ev| ReactorRawEvent {
-                token: ev.token().0 as u64,
-                readable: ev.is_readable() || ev.is_writable(),
-                hup: ev.is_read_closed() || ev.is_write_closed(),
-                error: ev.is_error(),
-            })
-            .collect())
+        let mut out = Vec::new();
+        let mut da_co: HashSet<u64> = HashSet::new();
+        for ev in self.events.iter() {
+            let ep = ev.token().0;
+            let Some(tra) = self.poll_nguon.get(&ep) else {
+                continue;
+            };
+            let readable = ev.is_readable() || ev.is_writable();
+            let hup = ev.is_read_closed() || ev.is_write_closed();
+            let error = ev.is_error();
+            // Phát cho **mọi** token scheduler đang chờ cùng một khoá nguồn: nhiều frame cùng
+            // một connection h2 phải được đánh thức cùng lúc, không token nào bị ghi đè.
+            if let Some(ds) = self.nguon_tokens.get(tra) {
+                for t in ds {
+                    if da_co.insert(*t) {
+                        out.push(ReactorRawEvent {
+                            token: *t,
+                            readable,
+                            hup,
+                            error,
+                        });
+                    }
+                }
+            }
+        }
+        Ok(out)
     }
 
     fn close(&mut self, handle: &str) -> Result<(), String> {
+        #[cfg(feature = "async-h2")]
+        if handle.starts_with(FRAME_TLS_CONNECT) {
+            if let Some(ck) = self.tls_alias.remove(handle) {
+                if !self.tls_alias.values().any(|v| *v == ck) {
+                    self.tls_connects.remove(&ck);
+                }
+            } else {
+                self.tls_connects.remove(handle);
+            }
+            self.streams.remove(handle);
+            self.listeners.remove(handle);
+            self.connects.remove(handle);
+            let keys: Vec<u64> = self
+                .tokens
+                .iter()
+                .filter(|(_, k)| k.as_str() == handle)
+                .map(|(t, _)| *t)
+                .collect();
+            for t in keys {
+                let _ = <Self as FrameReactorBackend>::deregister(self, t, handle, ReactorOp::Read);
+            }
+            self.writes.retain(|_, w| w.tay != handle);
+            self.bo_sach_nguon(handle);
+            return Ok(());
+        }
+        #[cfg(feature = "async-h2")]
+        if self.h2.contains_key(Self::h2_base(handle)) {
+            let base = Self::h2_base(handle).to_string();
+            let con_lai = match self.h2_users.get_mut(&base) {
+                Some(n) => {
+                    *n = n.saturating_sub(1);
+                    *n
+                }
+                None => 0,
+            };
+            if con_lai == 0 {
+                // Giữ phiên idle cho request sau (pool async); dọn khi quá H2_IDLE lúc connect.
+                self.h2_idle.insert(base.clone(), Instant::now());
+            }
+        }
         self.streams.remove(handle);
         self.listeners.remove(handle);
         self.connects.remove(handle);
         #[cfg(feature = "tls")]
         {
             self.tls.remove(handle);
+            #[cfg(not(feature = "async-h2"))]
             self.tls_connects.remove(handle);
         }
         let keys: Vec<u64> = self
@@ -1390,100 +1445,39 @@ impl FrameReactorBackend for AsyncNet {
         }
         // write treo theo tay bị đóng.
         self.writes.retain(|_, w| w.tay != handle);
+        #[cfg(feature = "async-h2")]
+        let la_h2 = handle.starts_with('H');
+        #[cfg(not(feature = "async-h2"))]
+        let la_h2 = false;
+        if !la_h2 {
+            self.bo_sach_nguon(handle);
+        }
         Ok(())
     }
-}
 
-/// Proxy `NetHost` chia sẻ cùng `AsyncNet` với backend đã gắn vào scheduler.
-pub struct AsyncNetHost {
-    pub inner: Rc<RefCell<AsyncNet>>,
-}
+    #[cfg(feature = "async-h2")]
+    fn h2_ready(&mut self, handle: &str) -> Result<bool, String> {
+        self.h2_ready_impl(handle)
+    }
 
-impl NetHost for AsyncNetHost {
-    fn connect(&mut self, d: &str, t: u64) -> Result<String, String> {
-        self.inner.borrow_mut().connect(d, t)
+    #[cfg(feature = "async-h2")]
+    fn h2_send(
+        &mut self,
+        handle: &str,
+        method: &str,
+        target: &str,
+        headers: &[(String, String)],
+    ) -> Result<u64, String> {
+        self.h2_send_impl(handle, method, target, headers)
     }
-    fn connect_tls(&mut self, d: &str, t: u64) -> Result<String, String> {
-        let mut n = self.inner.borrow_mut();
-        NetHost::connect_tls(&mut *n, d, t)
-    }
-    fn listen(&mut self, d: &str) -> Result<String, String> {
-        self.inner.borrow_mut().listen(d)
-    }
-    fn local_addr(&mut self, t: &str) -> Result<String, String> {
-        self.inner.borrow_mut().local_addr(t)
-    }
-    fn accept(&mut self, t: &str, timeout: u64) -> Result<String, String> {
-        self.inner.borrow_mut().accept(t, timeout)
-    }
-    fn read(&mut self, t: &str, n: usize, timeout: u64) -> Result<Vec<u8>, String> {
-        self.inner.borrow_mut().read(t, n, timeout)
-    }
-    fn write(&mut self, t: &str, d: &[u8]) -> Result<(), String> {
-        self.inner.borrow_mut().write(t, d)
-    }
-    fn close(&mut self, t: &str) -> Result<(), String> {
-        let mut n = self.inner.borrow_mut();
-        NetHost::close(&mut *n, t)
-    }
-    fn ghi_nhat_ky(&mut self, d: &str) {
-        self.inner.borrow_mut().ghi_nhat_ky(d)
-    }
-}
 
-/// Resolve **loopback only** (giữ chính sách VD-100/105; async net không mở Internet).
-fn loopback_addr(dia_chi: &str) -> Result<SocketAddr, String> {
-    let (host, cong) = tach(dia_chi)?;
-    if !(host == "localhost"
-        || host
-            .parse::<std::net::IpAddr>()
-            .map(|ip| ip.is_loopback())
-            .unwrap_or(false))
-    {
-        return Err(format!(
-            "chỉ cho phép địa chỉ loopback (`127.0.0.0/8`, `::1`, `localhost`), được `{host}`"
-        ));
+    #[cfg(feature = "async-h2")]
+    fn h2_poll(&mut self, handle: &str, id: u64) -> ReactorH2Outcome {
+        self.h2_poll_impl(handle, id)
     }
-    let mut ds: Vec<SocketAddr> = dia_chi
-        .to_socket_addrs()
-        .map_err(|e| format!("địa chỉ `{dia_chi}` không phân giải được: {e}"))?
-        .filter(|a| a.ip().is_loopback())
-        .collect();
-    if host == "localhost" {
-        let v4 = SocketAddr::from(([127, 0, 0, 1], cong));
-        if !ds.contains(&v4) {
-            ds.push(v4);
-        }
-    }
-    ds.sort_by_key(|a| !a.is_ipv4());
-    ds.into_iter()
-        .next()
-        .ok_or_else(|| format!("địa chỉ `{dia_chi}` không có kết quả loopback"))
-}
 
-fn tach(dia_chi: &str) -> Result<(&str, u16), String> {
-    let (host, cong) = if let Some(rest) = dia_chi.strip_prefix('[') {
-        let (h, sau) = rest
-            .split_once(']')
-            .ok_or_else(|| format!("địa chỉ IPv6 `{dia_chi}` thiếu `]`"))?;
-        let c = sau
-            .strip_prefix(':')
-            .ok_or_else(|| format!("địa chỉ `{dia_chi}` phải có dạng `host:port`"))?;
-        (h, c)
-    } else {
-        let (h, c) = dia_chi
-            .rsplit_once(':')
-            .ok_or_else(|| format!("địa chỉ `{dia_chi}` phải có dạng `host:port`"))?;
-        if h.contains(':') {
-            return Err(format!("địa chỉ IPv6 `{dia_chi}` phải bọc `[IPv6]:port`"));
-        }
-        (h, c)
-    };
-    if host.is_empty() {
-        return Err(format!("địa chỉ `{dia_chi}` thiếu host"));
+    #[cfg(feature = "async-h2")]
+    fn h2_cancel(&mut self, handle: &str, id: u64) {
+        self.h2_cancel_impl(handle, id);
     }
-    let cong = cong
-        .parse::<u16>()
-        .map_err(|_| format!("cổng `{cong}` không hợp lệ (0..65535)"))?;
-    Ok((host, cong))
 }
