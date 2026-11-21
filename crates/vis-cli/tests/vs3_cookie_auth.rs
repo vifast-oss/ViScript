@@ -32,7 +32,11 @@ struct Server {
 
 impl Server {
     fn moi(route: impl Fn(usize, &str) -> Vec<u8> + Send + 'static) -> Self {
-        let l = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        Self::moi_tren("127.0.0.1:0", route)
+    }
+
+    fn moi_tren(bind: &str, route: impl Fn(usize, &str) -> Vec<u8> + Send + 'static) -> Self {
+        let l = TcpListener::bind(bind).expect("bind loopback");
         l.set_nonblocking(true).expect("non-blocking");
         let addr = l.local_addr().expect("local_addr").to_string();
         let log = Arc::new(Mutex::new(Vec::new()));
@@ -336,6 +340,98 @@ fn head_cung_luu_cookie() {
         http_get(&mut net, &s.url("/get"), 3_000).expect("get"),
         "ok"
     );
+}
+
+#[test]
+fn localhost_bind_127_va_ipv6() {
+    let s = Server::moi(|_, req| {
+        assert_eq!(path_cua(req), "/x");
+        dap("200 OK", "ok", "")
+    });
+    let port = s.addr.rsplit_once(':').expect("port").1;
+    let mut net = Net::moi(false);
+    assert_eq!(http_get(&mut net, &s.url("/x"), 3_000).expect("127"), "ok");
+    assert_eq!(
+        http_get(&mut net, &format!("http://localhost:{port}/x"), 3_000)
+            .expect("localhost thử mọi địa chỉ"),
+        "ok"
+    );
+
+    // `[::1]` chỉ chạy khi môi trường bật IPv6 loopback; server bind riêng.
+    match TcpListener::bind("[::1]:0") {
+        Ok(l) => drop(l),
+        Err(e) => {
+            eprintln!("bỏ qua [::1]: IPv6 loopback không dùng được ({e})");
+            return;
+        }
+    }
+    let s6 = Server::moi_tren("[::1]:0", |_, req| {
+        assert_eq!(path_cua(req), "/x");
+        dap("200 OK", "ok6", "")
+    });
+    assert!(s6.addr.starts_with("[::1]:"), "địa chỉ: {}", s6.addr);
+    assert_eq!(
+        http_get(&mut net, &s6.url("/x"), 3_000).expect("[::1]"),
+        "ok6"
+    );
+
+    // Host không loopback bị từ chối trước khi nối.
+    let e = http_get(&mut net, "http://example.com/", 300).expect_err("remote");
+    assert!(e.contains("loopback"), "{e}");
+    let e = http_get(&mut net, "http://10.0.0.1/", 300).expect_err("remote ip");
+    assert!(e.contains("loopback"), "{e}");
+}
+
+#[test]
+fn strict_caps_kiem_localhost() {
+    let s = Server::moi(|_, _| dap("200 OK", "cap-ok", ""));
+    let port = s.addr.rsplit_once(':').expect("port").1;
+    let d = tam("cap");
+    let p = d.join("cap.vis");
+    std::fs::write(
+        &p,
+        format!(
+            "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.http\n\
+             fn main(net: cap[Net] @ \"localhost\"):\n\
+             \x20   match http.get(\"http://localhost:{port}/x\"):\n\
+             \x20       Ok(s): print(s)\n\
+             \x20       Err(e): print(e)\n"
+        ),
+    )
+    .expect("ghi chương trình");
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .args(["run", "--strict-caps"])
+        .arg(&p)
+        .output()
+        .expect("chạy vis");
+    assert_eq!(o.status.code(), Some(0), "stderr: {:?}", o.stderr);
+    assert_eq!(String::from_utf8_lossy(&o.stdout).trim(), "cap-ok");
+
+    // Không khai cap ⇒ strict vẫn chặn (cap vẫn kiểm).
+    let p2 = d.join("khong-cap.vis");
+    std::fs::write(
+        &p2,
+        format!(
+            "# SPDX-License-Identifier: MIT OR Apache-2.0\nuse std.http\n\
+             fn main():\n\
+             \x20   match http.get(\"http://localhost:{port}/x\"):\n\
+             \x20       Ok(s): print(s)\n\
+             \x20       Err(e): print(e)\n"
+        ),
+    )
+    .expect("ghi chương trình");
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .args(["run", "--strict-caps"])
+        .arg(&p2)
+        .output()
+        .expect("chạy vis");
+    assert_eq!(o.status.code(), Some(2), "stderr: {:?}", o.stderr);
+    assert!(
+        String::from_utf8_lossy(&o.stderr).contains("VS0604"),
+        "stderr: {:?}",
+        o.stderr
+    );
+    let _ = std::fs::remove_dir_all(&d);
 }
 
 #[test]

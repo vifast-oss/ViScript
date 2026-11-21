@@ -113,8 +113,11 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 
 ## HTTP client (ST-104, ST-109, VS3-4a) — bảo đảm và giới hạn
 
-- `http://` **chỉ loopback** (`127.0.0.1`/`localhost`); `https://` (VS3-4a) cho host bất kỳ, xác
+- `http://` **chỉ loopback** (`localhost`/`127.0.0.0/8`/`::1`); `https://` (VS3-4a) cho host bất kỳ, xác
   thực chứng chỉ theo bundle gốc Mozilla (`webpki-roots`), vẫn qua `cap[Net]`. **Không** HTTP/2.
+- **Phân giải loopback**: `localhost` thử **mọi** địa chỉ phân giải (ưu tiên IPv4, luôn có fallback
+  `127.0.0.1`) trong cùng deadline; chỉ địa chỉ `is_loopback()` được nối. `[::1]`/`127.0.0.x` được
+  phép; host ngoài loopback bị từ chối trước khi nối.
 - **TLS**: `rustls` + `ring`; lỗi chứng chỉ/handshake là `Err` dữ liệu có chữ `TLS`, không panic;
   handshake nằm trong **cùng deadline** với connect/redirect/đọc. Không cho hạ cấp `HTTPS → HTTP`.
   Root store **release** là `webpki-roots`; bản **debug** có hook `VIS_TLS_TEST_ROOT_DER` (một cert

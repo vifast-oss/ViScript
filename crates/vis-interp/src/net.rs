@@ -3,7 +3,7 @@
 //! socket thô qua [`NetHost`], tự dựng/đọc **HTTP/1.1**. Nhờ vậy interp ↔ VM **cùng byte** và codegen
 //! **không** phải sửa (`std.http.*` hạ theo tên như mọi `std.*`).
 //!
-//! Phạm vi: `http://` **chỉ loopback** (`127.0.0.1`/`localhost`, giữ nguyên VD-100/105) và
+//! Phạm vi: `http://` **chỉ loopback** (`localhost`/`127.0.0.0/8`/`::1`, giữ nguyên VD-100/105) và
 //! **VS3-4a** `https://` qua `NetHost::connect_tls` (TLS nằm ở host, không ở crate lõi); **không**
 //! HTTP/2; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect; phản hồi cap
 //! **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte** tới khi
@@ -19,6 +19,7 @@
 //! (mặc định của trait) vẫn one-shot. Kết nối idle chết được thử lại **một lần** trên kết nối mới
 //! (GET/HEAD idempotent), trong cùng deadline.
 
+use std::net::IpAddr;
 use std::time::{Duration, Instant};
 
 use crate::builtin::NetHost;
@@ -181,9 +182,19 @@ fn tach_authority(authority: &str, mac_dinh: u16) -> Result<(String, u16), Strin
     Ok((host.to_string(), cong))
 }
 
+/// Host có phải loopback cho `http://`: `localhost`, `127.0.0.0/8`, `::1`.
+fn la_host_loopback(host: &str) -> bool {
+    host == "localhost"
+        || host
+            .parse::<IpAddr>()
+            .map(|ip| ip.is_loopback())
+            .unwrap_or(false)
+}
+
 /// Tách `http|https://host[:port][/path][?query]`.
 ///
-/// `http://` **chỉ loopback** (giữ nguyên VD-100/105); `https://` cho host bất kỳ (TLS + `cap[Net]`).
+/// `http://` **chỉ loopback** (`localhost`/`127.0.0.0/8`/`::1`, giữ nguyên VD-100/105); `https://`
+/// cho host bất kỳ (TLS + `cap[Net]`).
 fn tach_url(url: &str) -> Result<UrlHttp, String> {
     let (giao_thuc, rest) = if let Some(r) = url.strip_prefix("http://") {
         (GiaoThuc::Http, r)
@@ -219,9 +230,9 @@ fn tach_url(url: &str) -> Result<UrlHttp, String> {
         None => None,
     };
     let (host, cong) = tach_authority(authority, giao_thuc.cong_mac_dinh())?;
-    if giao_thuc == GiaoThuc::Http && host != "127.0.0.1" && host != "localhost" {
+    if giao_thuc == GiaoThuc::Http && !la_host_loopback(&host) {
         return Err(format!(
-            "`http://` chỉ cho phép loopback (`127.0.0.1`/`localhost`), được `{host}`; dùng `https://` cho host ngoài"
+            "`http://` chỉ cho phép loopback (`localhost`/`127.0.0.0/8`/`::1`), được `{host}`; dùng `https://` cho host ngoài"
         ));
     }
     let target = if duong.is_empty() {
@@ -879,6 +890,9 @@ mod tests {
         assert!(tach_url("http://127.0.0.1:99999/").is_err());
         assert!(tach_url("ftp://127.0.0.1/").is_err());
         assert!(tach_url("http://user@127.0.0.1/").is_err());
+        assert!(tach_url("http://[::1]:8080/").is_ok());
+        assert!(tach_url("http://127.0.0.2:8080/").is_ok());
+        assert!(tach_url("http://10.0.0.1/").is_err());
     }
 
     /// **VS3-4a**: `https://` cho host bất kỳ; cổng mặc định 443; IPv6 bọc `[]` khi dựng authority.
