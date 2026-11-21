@@ -104,7 +104,7 @@ targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, H
 
 **v0.3.0 đã tag** @ `0d26527`.
 **v0.3.1 đã tag** @ `e689c3d`.
-**v0.3.3 candidate** `0f18592`: fix h2 flow-control (body >64 KiB), 8 MiB/header/trailer/GOAWAY; Linux gate **3535/3**, h2 release 19/19. Chờ W4 Windows + W3 fresh-clone để tag. Không GitHub Actions.
+**v0.3.3 candidate** `0f18592` / `bbf3484`: fix h2 flow-control; Linux 3535/3; W3 local+fresh-clone PASS; chờ W4 Windows để tag. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 

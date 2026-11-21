@@ -6,7 +6,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 ## v0.3.3 — 2026-11-21 (candidate)
 
 - **Fix HTTP/2 flow-control**: release capacity sau mỗi chunk; body >64 KiB không còn timeout; 8 MiB cap đúng, header 64 KiB, trailer/GOAWAY/timeout.
-- Linux gate **3535/3**; `vs3_http2` release **19/19**. Windows/fresh-clone đang verify.
+- Linux gate **3535/3**; `vs3_http2` release **19/19**; fresh-clone `bbf3484` PASS; Windows đang verify.
 - Không GitHub Actions; macOS ngoài phạm vi.
 
 ## v0.3.2 — 2026-11-21
