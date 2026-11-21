@@ -299,8 +299,7 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // **SỬA KÈM LÝ DO (VD-270 fs-current-dir, 2026-11-21)**: +**1** hàm
     // `std.fs.current_dir` (`() -> Result[str, Error]`; **params rỗng**, trả cwd **tuyệt đối**
     // UTF-8 từ `std::env::current_dir`, không path người dùng nên không cap; cwd xoá/không
-    // truy cập/không UTF-8 ⇒ `Err`; tái dùng `Ty::ResultStrErr`, **không** sugar) ⇒ **163** hàm;
-    // không xoá/đổi hàm cũ nào.
+    // truy cập/không UTF-8 ⇒ `Err`; tái dùng `Ty::ResultStrErr`, **không** sugar) ⇒ **163** hàm; không xoá/đổi hàm cũ nào.
     assert_eq!(FUNCS.len(), 165, "bảng chữ ký phải đủ 165 hàm");
 }
 
