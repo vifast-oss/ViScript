@@ -567,6 +567,18 @@ impl vis_interp::builtin::FsHost for Runner {
         }
     }
 
+    /// **VD-270 (fs-current-dir)**: `std::env::current_dir` trả đường dẫn **tuyệt đối**;
+    /// `OsString::into_string` **từ chối** UTF-8 không hợp lệ (không cắt cụt bằng lossy). Không
+    /// có đường dẫn người dùng nên **không** kiểm `cap` — tầng quyền không tham gia.
+    fn current_dir(&mut self) -> Result<String, String> {
+        self.nhat_ky("current_dir", ".");
+        std::env::current_dir()
+            .map_err(|e| format!("không lấy được thư mục làm việc hiện tại: {e}"))?
+            .into_os_string()
+            .into_string()
+            .map_err(|_| "thư mục làm việc hiện tại không phải UTF-8".to_string())
+    }
+
     /// **VD-269**: chép tệp — xem [`chep_tep`] (chỉ tệp thường, không symlink, không ghi đè đích).
     fn copy(&mut self, from: &str, to: &str) -> Result<(), String> {
         self.nhat_ky("copy", from);

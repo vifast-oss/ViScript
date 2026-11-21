@@ -387,6 +387,16 @@ impl FsHost for FsMock {
         ))
     }
 
+    /// **VD-270 (fs-current-dir)**: kịch bản `--fs-mock` **không** có `cwd`/môi trường thật ⇒
+    /// **luôn** `Err` dữ liệu, **tất định** — cùng lý do `canonicalize`/`read_link` luôn `Err`;
+    /// mock **không** đọc cwd thật của tiến trình (phải hermetic, cùng kết quả mọi lần chạy).
+    fn current_dir(&mut self) -> Result<String, String> {
+        Err(
+            "không lấy được thư mục làm việc hiện tại: kịch bản `--fs-mock` không có cwd/môi trường"
+                .to_string(),
+        )
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.

@@ -27,6 +27,7 @@ mod flatten;
 mod frame_net;
 mod fsbytes;
 mod fscanonicalize;
+mod fscurrentdir;
 mod fsissymlink;
 mod fsmkdirall;
 mod fsreadlink;
@@ -866,6 +867,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `std::fs::canonicalize` (**chạm đĩa** + đọc `cwd`, khác `path.normalize`); `p` phải tồn
         // tại, thiếu/rỗng/lỗi ⇒ `Err(Error)` dữ liệu, không trap; ngoài cap ⇒ `VS0604`.
         "fs.canonicalize" => fscanonicalize::goi(host, name, &args, span),
+        // **VD-270 (fs-current-dir)**: `() -> Result[str, Error]` — cwd **tuyệt đối** + UTF-8,
+        // đọc môi trường; **không** có path người dùng nên **không** kiểm `cap`/`FsGuard`; cwd
+        // xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, không trap.
+        "fs.current_dir" => fscurrentdir::goi(host, name, &args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
         "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, &args, span),

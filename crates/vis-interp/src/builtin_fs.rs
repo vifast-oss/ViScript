@@ -195,6 +195,14 @@ pub trait FsHost {
         Err("chưa hỗ trợ".to_string())
     }
 
+    /// **VD-270 (fs-current-dir)**: **thư mục làm việc hiện tại** — đường dẫn **tuyệt đối** dạng
+    /// chuỗi UTF-8; đọc môi trường, **không** nhận đường dẫn người dùng nên tầng quyền **không**
+    /// áp `cap` và hàm **không** có side effect. cwd bị xoá/không truy cập được/không phải UTF-8
+    /// ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock vẫn biên dịch.
+    fn current_dir(&mut self) -> Result<String, String> {
+        Err("chưa hỗ trợ".to_string())
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (mọi giá trị `0..=255`).
     /// Thiếu tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**. Default: **chưa hỗ trợ** ⇒ host cũ/mock
     /// vẫn biên dịch.

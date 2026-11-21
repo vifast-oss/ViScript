@@ -230,6 +230,14 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.canonicalize(p),
         }
     }
+    /// **VD-270 (fs-current-dir)**: thư mục làm việc hiện tại — host thật (môi trường OS) hoặc
+    /// mock (luôn `Err` tất định); cùng chữ ký.
+    fn current_dir(&mut self) -> Result<String, String> {
+        match self {
+            HostFs::That(r) => r.current_dir(),
+            HostFs::Mock(m) => m.current_dir(),
+        }
+    }
     /// **VD-270 (fsbytes)**: byte thô — host thật (OS) hoặc mock, cùng chữ ký.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
         match self {
