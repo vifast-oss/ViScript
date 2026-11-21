@@ -1,0 +1,83 @@
+# VS3-W2 soak async-h2 — 2026-11-22T00:09:40+09:00
+# git 32cb511 main 32cb511; VS3_W2_SOAK_SECS=1800
+$ cargo test -p vis-cli --features async-h2 --test vs3_http2 async_h2_soak_env_gated -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/debug/build/vis-cli/a856d8c49ff4aa21/out/vs3_http2-a856d8c49ff4aa21)
+
+running 1 test
+soak batch: vòng=21 giây=34 fd=9 rss=9.8MB threads=6 cold=21 redirect=21 cap=5 timeout=21 goaway=21 conns(cold/thuong)=21/26 streams=84/110 cold_p50=37ms cold_p95=80ms
+soak batch: vòng=30 giây=45 fd=9 rss=9.8MB threads=6 cold=30 redirect=30 cap=6 timeout=30 goaway=30 conns(cold/thuong)=30/36 streams=120/156 cold_p50=37ms cold_p95=81ms
+test h2_async_spike::async_h2_soak_env_gated has been running for over 60 seconds
+soak batch: vòng=52 giây=75 fd=9 rss=9.8MB threads=6 cold=52 redirect=52 cap=11 timeout=52 goaway=52 conns(cold/thuong)=52/63 streams=208/271 cold_p50=37ms cold_p95=80ms
+soak batch: vòng=60 giây=80 fd=9 rss=9.8MB threads=6 cold=60 redirect=60 cap=12 timeout=60 goaway=60 conns(cold/thuong)=60/72 streams=240/312 cold_p50=32ms cold_p95=80ms
+soak batch: vòng=90 giây=101 fd=9 rss=9.8MB threads=6 cold=90 redirect=90 cap=18 timeout=90 goaway=90 conns(cold/thuong)=90/108 streams=360/468 cold_p50=18ms cold_p95=77ms
+soak batch: vòng=116 giây=136 fd=9 rss=9.8MB threads=6 cold=116 redirect=116 cap=24 timeout=116 goaway=116 conns(cold/thuong)=116/140 streams=464/604 cold_p50=14ms cold_p95=77ms
+soak batch: vòng=120 giây=138 fd=9 rss=9.8MB threads=6 cold=120 redirect=120 cap=24 timeout=120 goaway=120 conns(cold/thuong)=120/144 streams=480/624 cold_p50=15ms cold_p95=77ms
+soak batch: vòng=144 giây=168 fd=9 rss=9.9MB threads=6 cold=144 redirect=144 cap=29 timeout=144 goaway=144 conns(cold/thuong)=144/173 streams=576/749 cold_p50=20ms cold_p95=80ms
+soak batch: vòng=150 giây=176 fd=9 rss=9.9MB threads=6 cold=150 redirect=150 cap=30 timeout=150 goaway=150 conns(cold/thuong)=150/180 streams=600/780 cold_p50=21ms cold_p95=80ms
+soak batch: vòng=173 giây=207 fd=9 rss=9.9MB threads=6 cold=173 redirect=173 cap=35 timeout=173 goaway=173 conns(cold/thuong)=173/208 streams=692/900 cold_p50=19ms cold_p95=80ms
+soak batch: vòng=180 giây=211 fd=9 rss=9.9MB threads=6 cold=180 redirect=180 cap=36 timeout=180 goaway=180 conns(cold/thuong)=180/216 streams=720/936 cold_p50=18ms cold_p95=80ms
+soak batch: vòng=210 giây=241 fd=9 rss=9.9MB threads=6 cold=210 redirect=210 cap=42 timeout=210 goaway=210 conns(cold/thuong)=210/252 streams=840/1092 cold_p50=16ms cold_p95=78ms
+soak batch: vòng=240 giây=266 fd=9 rss=9.9MB threads=6 cold=240 redirect=240 cap=48 timeout=240 goaway=240 conns(cold/thuong)=240/288 streams=960/1248 cold_p50=14ms cold_p95=75ms
+soak batch: vòng=270 giây=294 fd=9 rss=9.9MB threads=6 cold=270 redirect=270 cap=54 timeout=270 goaway=270 conns(cold/thuong)=270/324 streams=1080/1404 cold_p50=14ms cold_p95=74ms
+soak batch: vòng=300 giây=312 fd=9 rss=9.9MB threads=6 cold=300 redirect=300 cap=60 timeout=300 goaway=300 conns(cold/thuong)=300/360 streams=1200/1560 cold_p50=14ms cold_p95=71ms
+soak batch: vòng=330 giây=333 fd=9 rss=9.9MB threads=6 cold=330 redirect=330 cap=66 timeout=330 goaway=330 conns(cold/thuong)=330/396 streams=1320/1716 cold_p50=14ms cold_p95=70ms
+soak batch: vòng=360 giây=354 fd=9 rss=9.9MB threads=6 cold=360 redirect=360 cap=72 timeout=360 goaway=360 conns(cold/thuong)=360/432 streams=1440/1872 cold_p50=14ms cold_p95=67ms
+soak batch: vòng=390 giây=378 fd=9 rss=9.9MB threads=6 cold=390 redirect=390 cap=78 timeout=390 goaway=390 conns(cold/thuong)=390/468 streams=1560/2028 cold_p50=13ms cold_p95=67ms
+soak batch: vòng=420 giây=396 fd=9 rss=9.9MB threads=6 cold=420 redirect=420 cap=84 timeout=420 goaway=420 conns(cold/thuong)=420/504 streams=1680/2184 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=450 giây=423 fd=9 rss=9.9MB threads=6 cold=450 redirect=450 cap=90 timeout=450 goaway=450 conns(cold/thuong)=450/540 streams=1800/2340 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=480 giây=450 fd=9 rss=9.9MB threads=6 cold=480 redirect=480 cap=96 timeout=480 goaway=480 conns(cold/thuong)=480/576 streams=1920/2496 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=510 giây=473 fd=9 rss=9.9MB threads=6 cold=510 redirect=510 cap=102 timeout=510 goaway=510 conns(cold/thuong)=510/612 streams=2040/2652 cold_p50=13ms cold_p95=63ms
+soak batch: vòng=540 giây=502 fd=9 rss=9.9MB threads=6 cold=540 redirect=540 cap=108 timeout=540 goaway=540 conns(cold/thuong)=540/648 streams=2160/2808 cold_p50=13ms cold_p95=63ms
+soak batch: vòng=561 giây=537 fd=9 rss=9.9MB threads=6 cold=561 redirect=561 cap=113 timeout=561 goaway=561 conns(cold/thuong)=561/674 streams=2244/2918 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=570 giây=547 fd=9 rss=9.9MB threads=6 cold=570 redirect=570 cap=114 timeout=570 goaway=570 conns(cold/thuong)=570/684 streams=2280/2964 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=600 giây=578 fd=9 rss=9.9MB threads=6 cold=600 redirect=600 cap=120 timeout=600 goaway=600 conns(cold/thuong)=600/720 streams=2400/3120 cold_p50=13ms cold_p95=66ms
+soak batch: vòng=630 giây=601 fd=9 rss=9.9MB threads=6 cold=630 redirect=630 cap=126 timeout=630 goaway=630 conns(cold/thuong)=630/756 streams=2520/3276 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=660 giây=624 fd=9 rss=9.9MB threads=6 cold=660 redirect=660 cap=132 timeout=660 goaway=660 conns(cold/thuong)=660/792 streams=2640/3432 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=690 giây=641 fd=9 rss=9.9MB threads=6 cold=690 redirect=690 cap=138 timeout=690 goaway=690 conns(cold/thuong)=690/828 streams=2760/3588 cold_p50=13ms cold_p95=64ms
+soak batch: vòng=720 giây=665 fd=9 rss=9.9MB threads=6 cold=720 redirect=720 cap=144 timeout=720 goaway=720 conns(cold/thuong)=720/864 streams=2880/3744 cold_p50=13ms cold_p95=63ms
+soak batch: vòng=750 giây=687 fd=9 rss=9.9MB threads=6 cold=750 redirect=750 cap=150 timeout=750 goaway=750 conns(cold/thuong)=750/900 streams=3000/3900 cold_p50=13ms cold_p95=63ms
+soak batch: vòng=780 giây=705 fd=9 rss=9.9MB threads=6 cold=780 redirect=780 cap=156 timeout=780 goaway=780 conns(cold/thuong)=780/936 streams=3120/4056 cold_p50=13ms cold_p95=63ms
+soak KẾT THÚC: vòng=800 cold=801 redirect=801 cap=160 timeout=800 goaway=800 giây=719.6 fd=8->8 rss=5.3->9.9MB threads=6->6 conns(cold/thuong/treo/goaway)=801/962/800/800 streams(cold/thuong)=3204/4166 cold_p50=13ms cold_p95=63ms
+
+thread 'h2_async_spike::async_h2_soak_env_gated' (290413) panicked at crates/vis-cli/tests/support/h2_async_spike.rs:904:9:
+soak FAIL: cap vòng 800 vm=false: code=101 out="" err=/tmp/vs3-w2-h2-290408/soak-cap.vis:1:1: error VS0501: vòng lặp scheduler quá giới hạn (200000 turn) — kiểm tra await vòng tròn/deadlock
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test h2_async_spike::async_h2_soak_env_gated ... FAILED
+
+failures:
+
+failures:
+    h2_async_spike::async_h2_soak_env_gated
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 33 filtered out; finished in 719.64s
+
+error: test failed, to rerun pass `-p vis-cli --test vs3_http2`
+EXIT=101
+
+# --- chạy bổ sung sau khi soak dừng ở vòng 800 ---
+# 1000 vòng cold-start (test async_h2_cold_multiplex_20_vong):
+$ VS3_W2_COLD_ROUNDS=1000 cargo test -p vis-cli --features async-h2 --test vs3_http2 async_h2_cold_multiplex_20_vong
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 12.69s
+
+# Chẩn đoán cap 8 MiB (test-only async_h2_cap_loop_env_gated):
+$ VS3_W2_CAP_ROUNDS=300 ... async_h2_cap_loop_env_gated
+FAIL tại vòng 128: "loi: phản hồi HTTP không đủ header (kết nối đóng sớm)"
+$ VS3_W2_CAP_ROUNDS=200 ... (lần 1)
+FAIL tại vòng 2: "VS0501: vòng lặp scheduler quá giới hạn (200000 turn)"
+$ VS3_W2_CAP_ROUNDS=200 ... (lần 2)
+FAIL tại vòng 20: "VS0501: vòng lặp scheduler quá giới hạn (200000 turn)"
+
+# Regression sau soak:
+$ cargo test -p vis-cli --features async-h2 --test vs3_http2
+test result: ok. 34 passed; 0 failed; 1 ignored (soak/cap diagnostic skip mặc định)
+$ cargo test -p vis-cli --test vs3_http2
+test result: ok. 19 passed
+$ cargo test -p vis-cli --features async-h2 --test vs3_tls
+test result: ok. 21 passed
+$ cargo test -p vis-cli --features async-h2 --test vs3_default async_http
+test result: ok. 9 passed
+$ cargo fmt --check / clippy (default + feature)                OK
+$ ./vis-dev check                                               PASS
+$ df -h .                                                       13 G trống

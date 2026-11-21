@@ -651,3 +651,305 @@ fn async_h2_timeout_lap_khong_ro_fd_con() {
     eprintln!("fd sau 20 timeout: {truoc} -> {sau}");
     assert!(sau <= truoc + 4, "rò fd sau 20 timeout: {truoc} -> {sau}");
 }
+
+// ===========================================================================
+// **VS3-W2 soak (test-only, env-gated)** — không sửa production.
+// `VS3_W2_SOAK_SECS` (mặc định 5 giây để L0 không chậm; soak thật 1800).
+// ===========================================================================
+
+fn proc_stats() -> (usize, u64, usize) {
+    let fd = dem_fd();
+    let status = fs::read_to_string("/proc/self/status").unwrap_or_default();
+    let mut rss_kb = 0u64;
+    let mut threads = 0usize;
+    for dong in status.lines() {
+        if let Some(v) = dong.strip_prefix("VmRSS:") {
+            rss_kb = v
+                .split_whitespace()
+                .next()
+                .and_then(|x| x.parse().ok())
+                .unwrap_or(0);
+        } else if let Some(v) = dong.strip_prefix("Threads:") {
+            threads = v.trim().parse().unwrap_or(0);
+        }
+    }
+    (fd, rss_kb, threads)
+}
+
+fn pct(ds: &mut [f64], p: f64) -> f64 {
+    if ds.is_empty() {
+        return 0.0;
+    }
+    ds.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let i = (((ds.len() - 1) as f64) * p).round() as usize;
+    ds[i]
+}
+
+const SOAK_TIMEOUT_SRC: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 400):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+const SOAK_GOAWAY_SRC: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+const SOAK_CAP_SRC: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 20000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+const SOAK_REDIRECT_SRC: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+    print(await spawn lay(args[1]))
+    print(await spawn lay(args[2]))
+    print(await spawn lay(args[3]))
+"#;
+
+#[test]
+fn async_h2_soak_env_gated() {
+    let secs: u64 = std::env::var("VS3_W2_SOAK_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(5);
+    if secs == 0 {
+        eprintln!("soak: bỏ qua (VS3_W2_SOAK_SECS=0)");
+        return;
+    }
+    // Mặc định không chạm cap trong smoke ngắn; soak thật đặt `..._CAP_EVERY=5`.
+    let cap_moi: usize = std::env::var("VS3_W2_SOAK_CAP_EVERY")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(50)
+        .max(1);
+    let batch = 30usize;
+    let cold = MayChuSpike::moi(Kieu::Cho4);
+    let thuong = MayChuSpike::moi(Kieu::Thuong);
+    let treo = MayChuSpike::moi(Kieu::Treo);
+    let goaway = MayChuSpike::moi(Kieu::GoAway);
+    let (fd0, rss0, th0) = proc_stats();
+    let bat = Instant::now();
+    let mut cold_wall: Vec<f64> = Vec::new();
+    let mut cold_runs = 0usize;
+    let mut redirect_runs = 0usize;
+    let mut cap_runs = 0usize;
+    let mut timeout_runs = 0usize;
+    let mut goaway_runs = 0usize;
+    let mut i = 0usize;
+    let mut luc_batch = Instant::now();
+    let mut loi: Option<String> = None;
+    while bat.elapsed() < Duration::from_secs(secs) {
+        let vm = i % 2 == 1;
+        let c0 = (cold.conns(), cold.streams());
+        let args: Vec<String> = (0..4).map(|j| cold.url(&format!("/s{i}-{j}"))).collect();
+        let (code, out, err, wall) = chay_chuong_trinh("soak-cold", BON_TAC_VU_COLD, &args, vm);
+        if code != 0 {
+            loi = Some(format!("cold vòng {i} vm={vm}: {err}"));
+            break;
+        }
+        let mut dong: Vec<String> = out.lines().map(str::to_string).collect();
+        dong.sort_unstable();
+        let mong: Vec<String> = (0..4).map(|j| format!("/s{i}-{j}")).collect();
+        if dong != mong {
+            loi = Some(format!("cold vòng {i} sai output: {out:?}"));
+            break;
+        }
+        if (cold.conns() - c0.0, cold.streams() - c0.1) != (1, 4) {
+            loi = Some(format!(
+                "cold vòng {i}: connection/stream = {:?}/{:?}",
+                cold.conns() - c0.0,
+                cold.streams() - c0.1
+            ));
+            break;
+        }
+        cold_wall.push(wall.as_secs_f64() * 1_000.0);
+        cold_runs += 1;
+
+        // Redirect + Set-Cookie: 4 request tuần tự trên một connection (idle pool).
+        let t0 = (thuong.conns(), thuong.streams());
+        let args = vec![
+            thuong.url("/redir-cookie"),
+            thuong.url("/echo-cookie"),
+            thuong.url("/set-cookie"),
+            thuong.url("/echo-cookie"),
+        ];
+        let (code, out, err, _) = chay_chuong_trinh("soak-cookie", SOAK_REDIRECT_SRC, &args, vm);
+        if code != 0 || out != "sid=xyz\nsid=xyz\nset\nsid=abc\n" {
+            loi = Some(format!(
+                "redirect/cookie vòng {i} vm={vm}: code={code} out={out:?} err={err}"
+            ));
+            break;
+        }
+        if (thuong.conns() - t0.0, thuong.streams() - t0.1) != (1, 5) {
+            loi = Some(format!(
+                "redirect vòng {i}: connection/stream = {:?}/{:?}",
+                thuong.conns() - t0.0,
+                thuong.streams() - t0.1
+            ));
+            break;
+        }
+        redirect_runs += 1;
+
+        // Cap 8 MiB (mỗi `cap_moi` vòng để soak không chỉ đo allocator).
+        if i.is_multiple_of(cap_moi) {
+            let c0 = (thuong.conns(), thuong.streams());
+            let (code, out, err, _) =
+                chay_chuong_trinh("soak-cap", SOAK_CAP_SRC, &[thuong.url("/big")], vm);
+            if code != 0
+                || !(out.contains("8 MiB")
+                    || out.contains("vượt giới hạn")
+                    || out.contains("HTTP/2"))
+            {
+                loi = Some(format!(
+                    "cap vòng {i} vm={vm}: code={code} out={out:?} err={err}"
+                ));
+                break;
+            }
+            if (thuong.conns() - c0.0, thuong.streams() - c0.1) != (1, 1) {
+                loi = Some(format!("cap vòng {i}: connection/stream sai"));
+                break;
+            }
+            cap_runs += 1;
+        }
+
+        // Timeout 400 ms + GOAWAY.
+        let (code, out, err, _) =
+            chay_chuong_trinh("soak-timeout", SOAK_TIMEOUT_SRC, &[treo.url("/x")], vm);
+        if code != 0 || !out.contains("thời gian") {
+            loi = Some(format!(
+                "timeout vòng {i} vm={vm}: code={code} out={out:?} err={err}"
+            ));
+            break;
+        }
+        timeout_runs += 1;
+        let (code, out, err, _) =
+            chay_chuong_trinh("soak-goaway", SOAK_GOAWAY_SRC, &[goaway.url("/x")], vm);
+        if code != 0 || !(out.contains("GOAWAY") || out.contains("HTTP/2")) {
+            loi = Some(format!(
+                "goaway vòng {i} vm={vm}: code={code} out={out:?} err={err}"
+            ));
+            break;
+        }
+        goaway_runs += 1;
+
+        i += 1;
+        if i.is_multiple_of(batch) || luc_batch.elapsed() >= Duration::from_secs(30) {
+            let (fd, rss, th) = proc_stats();
+            let p50 = pct(&mut cold_wall.clone(), 0.50);
+            let p95 = pct(&mut cold_wall.clone(), 0.95);
+            eprintln!(
+                "soak batch: vòng={i} giây={:.0} fd={fd} rss={:.1}MB threads={th} \
+                 cold={} redirect={} cap={} timeout={} goaway={} \
+                 conns(cold/thuong)={}/{} streams={}/{} cold_p50={p50:.0}ms cold_p95={p95:.0}ms",
+                bat.elapsed().as_secs_f64(),
+                rss as f64 / 1024.0,
+                cold_runs,
+                redirect_runs,
+                cap_runs,
+                timeout_runs,
+                goaway_runs,
+                cold.conns(),
+                thuong.conns(),
+                cold.streams(),
+                thuong.streams()
+            );
+            luc_batch = Instant::now();
+        }
+    }
+    let (fd1, rss1, th1) = proc_stats();
+    let p50 = pct(&mut cold_wall.clone(), 0.50);
+    let p95 = pct(&mut cold_wall.clone(), 0.95);
+    eprintln!(
+        "soak KẾT THÚC: vòng={i} cold={cold_runs} redirect={redirect_runs} cap={cap_runs} \
+         timeout={timeout_runs} goaway={goaway_runs} giây={:.1} \
+         fd={fd0}->{fd1} rss={:.1}->{:.1}MB threads={th0}->{th1} \
+         conns(cold/thuong/treo/goaway)={}/{}/{}/{} streams(cold/thuong)={}/{} \
+         cold_p50={p50:.0}ms cold_p95={p95:.0}ms",
+        bat.elapsed().as_secs_f64(),
+        rss0 as f64 / 1024.0,
+        rss1 as f64 / 1024.0,
+        cold.conns(),
+        thuong.conns(),
+        treo.conns(),
+        goaway.conns(),
+        cold.streams(),
+        thuong.streams()
+    );
+    if let Some(e) = loi {
+        panic!("soak FAIL: {e}");
+    }
+    assert_eq!(cold.conns(), cold_runs, "cold: mỗi vòng đúng 1 connection");
+    assert_eq!(
+        cold.streams(),
+        cold_runs * 4,
+        "cold: mỗi connection 4 stream"
+    );
+    assert_eq!(
+        thuong.conns(),
+        redirect_runs + cap_runs,
+        "thuong: 1 connection/lần"
+    );
+    assert_eq!(
+        thuong.streams(),
+        redirect_runs * 5 + cap_runs,
+        "thuong: 5 stream/lần redirect-cookie + 1 cap"
+    );
+    assert!(fd1 <= fd0 + 8, "rò fd: {fd0} -> {fd1}");
+    assert!(th1 <= th0 + 2, "rò thread: {th0} -> {th1}");
+    assert!(
+        rss1 <= rss0 + 262_144,
+        "RSS tăng quá 256 MB: {rss0} -> {rss1} KB"
+    );
+    eprintln!("soak: PASS");
+}
+
+/// Rà riêng cap 8 MiB qua production (test-only) để đếm tần suất lỗi scheduler.
+/// `VS3_W2_CAP_ROUNDS` (mặc định 5 để gate ngắn).
+#[test]
+fn async_h2_cap_loop_env_gated() {
+    // 0 = bỏ qua: đây là test chẩn đoán cap, không chạy mặc định trong gate.
+    let n: usize = std::env::var("VS3_W2_CAP_ROUNDS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+    if n == 0 {
+        return;
+    }
+    let s = MayChuSpike::moi(Kieu::Thuong);
+    for i in 0..n {
+        let (code, out, err, _) =
+            chay_chuong_trinh("cap-loop", SOAK_CAP_SRC, &[s.url("/big")], i % 2 == 1);
+        assert_eq!(code, 0, "cap vòng {i} vm={}: {err}", i % 2 == 1);
+        assert!(
+            out.contains("8 MiB") || out.contains("vượt giới hạn") || out.contains("HTTP/2"),
+            "cap vòng {i}: {out:?}"
+        );
+    }
+    eprintln!("cap loop: {n}/{n} PASS");
+}
