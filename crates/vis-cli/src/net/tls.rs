@@ -38,7 +38,7 @@ fn boi_canh(goc: RootCertStore) -> Result<CauHinh, String> {
 ///
 /// Bản **debug** có hook `goc_kiem_thu` để test hermetic (registry TLS local); bản **release**
 /// không biên dịch hook đó, nên không có cách đổi root store từ môi trường.
-pub(super) fn mac_dinh() -> Result<CauHinh, String> {
+pub(crate) fn mac_dinh() -> Result<CauHinh, String> {
     #[cfg(debug_assertions)]
     if let Some(goc) = goc_kiem_thu()? {
         return boi_canh(goc);
@@ -73,7 +73,7 @@ fn goc_kiem_thu() -> Result<Option<RootCertStore>, String> {
 ///
 /// Binary `vis` không gọi hàm này; nó chỉ tồn tại để `tests/vs3_tls.rs` dựng server tự ký mà
 /// không cần Internet hay đụng kho gốc của máy.
-pub(super) fn tu_goc_der(ds: &[&[u8]]) -> Result<CauHinh, String> {
+pub(crate) fn tu_goc_der(ds: &[&[u8]]) -> Result<CauHinh, String> {
     if ds.is_empty() {
         return Err("cần ít nhất một chứng chỉ gốc TLS cho cấu hình test".to_string());
     }
@@ -95,7 +95,7 @@ pub(super) fn cau_hinh_h2(cfg: &CauHinh) -> CauHinh {
 }
 
 /// Tách `host` khỏi `dia_chi` (`host:port`, IPv6 `[::1]:443`) để làm `ServerName`.
-fn ten_may_chu(dia_chi: &str) -> Result<&str, String> {
+pub(crate) fn ten_may_chu(dia_chi: &str) -> Result<&str, String> {
     let host = if let Some(rest) = dia_chi.strip_prefix('[') {
         rest.split_once(']')
             .map(|(h, _)| h)

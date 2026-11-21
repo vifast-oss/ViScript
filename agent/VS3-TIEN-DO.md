@@ -24,15 +24,15 @@
 | VS3-1a — budget/step-cap | W1 | `vs3_budget.rs` + diff | **DONE (một phần)** — `3941619`; fuel 100M, parity 2M; BUDGET/Q/default còn mở |
 | VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage_matrix.rs` | **DONE (một phần)** — `7e1deed`; 10 ca, sửa `?.` frame; `Pipe`/nested async chặn 1d |
-| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa` + `098b649`; async cap≥1 wait-set; async net production còn mở |
+| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa` + `098b649` + `0be0bb0` + `425b7df`; async net + TLS Unix; Windows backend mở |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
 | VS3-2b — timeout kênh (`select` hoãn 2c) | W5 | `vs3_chan_timeout.rs` | **DONE (một phần)** — `8da533b`; 17 ca `recv_timeout`/`send_timeout`; `select` VS3-2c |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
-| VS3-3b — worker pool | W5 | `vs3_worker.rs` | **DONE (một phần)** — `58de0f0`; worker-copy/move, B7 list10k 3,18× map1k 3,14×; chưa nối evaluator |
+| VS3-3b — worker pool | W5 | `vs3_worker.rs` | **DONE (một phần)** — `c0bb127`; stress 10k, worker-copy B7; chưa nối evaluator |
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
 | VS3-4b — keep-alive + IPv6 + registry HTTPS + cookie/auth | W2 | `vs3_keepalive.rs`, `vs3_registry_https.rs`, `vs3_cookie_auth.rs` | **DONE (một phần)** — `b7385e9` + `cc74dbc` + `096ea2c`; 8+6+9 ca |
 | VS3-4b2 — HTTP/2 | W2 | `vs3_http2.rs` | **DONE** — `7d73268`; **default-on**; 8 ca h2; Windows verify 3452/0 |
-| VS3-4b3/4b4 — h2 reuse + idle | W2 | `vs3_http2.rs` | **DONE** — `20c0471`; queue tuần tự 4 authority, idle 15 s; 8 ca h2 |
+| VS3-4b3/4b4/4b5 — h2 reuse/idle/hardening | W2 | `vs3_http2.rs` | **DONE** — `58e1b90`; GOAWAY/RST/trailer/body/header; 13 ca h2 |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
@@ -44,11 +44,11 @@
 
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
-| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/1c/1d/2a | **DONE (một phần)** — `1de3faa`; async default + Pipe; cap>0/net async còn mở |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2/4b3/4b4 | **DONE** — h2 queue + idle 15 s; default-on; Windows h2 chờ W4 |
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a | **DONE (một phần)** — async default+cap+net+TLS Unix; Windows backend mở |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b5 | **DONE** — h2 queue/idle/hardening; default-on; Windows chờ W4 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA v0.3.0)** — `0832f59`; gate 3496/3, nightly 18,09M fuzz 0 vi phạm, diff 100k 0 lệch, host 54/54, fresh-clone PASS |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (v0.2.0)** — `ec29204` 3436/0; targets 18/18+17/1; **không GitHub Actions** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — `58de0f0`; timeout + worker-copy payload lớn; chưa nối evaluator |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 10k; timeout + worker-copy; chưa nối evaluator |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -101,8 +101,8 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 **v0.2.0 đã tag** @ `42b700c`: Linux 3480/3; Windows 3436/0; fresh-clone PASS; host 54/54;
 targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, HTTP/2 default-off.
 
-**v0.3.0 đã tag** @ `0d26527`: W1f async cap≥1, HTTP/2 default-on + h2 queue/idle, worker-copy payload lớn. Linux **3496/3**; Windows **3452/0**; fresh-clone PASS.
-Sau tag: async net production `0be0bb0` đã merge main (`b6fe9d4`, gate 3501/3) → hướng `v0.3.1`. Không GitHub Actions.
+**v0.3.0 đã tag** @ `0d26527`.
+**v0.3.1 candidate** `a96841a`: async net production + async TLS (Unix), h2 hardening, worker stress, test Windows gating. Linux gate **3512/3**; W3/W4 đang verify. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
