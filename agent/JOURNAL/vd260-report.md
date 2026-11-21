@@ -344,3 +344,8 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Wave 25 merged tiếp**: `str.split_inclusive` (`7b52f89`); gate **3024 passed / 3 skipped**; FUNCS **150**.
 - `VIS_DIFF_N=100000` seed 20261217 @ `9d59eea`: **0 lệch** (93.768 chạy, xem log `/tmp/opencode/diff100k_w37.out`).
 - **sqlite.application_id** merged (`f1755e0`); gate **3033 passed / 3 skipped**; FUNCS **151**.
+- **Frame `+=` đường** (`e47914e`): frame interp hỗ trợ gán ghép trên trường/phần tử/đường lồng, đồng bộ VM; test mới `vd270_frame_add_assign` 3/3 + cập nhật ca nested cũ; gate **3036**.
+- **`vis test --jobs <N>`** (`b442565`): chạy đơn vị song song, giữ thứ tự TAP/JSON; `--jobs 1` byte y hệt; fail-fast dừng lập lịch; 8 test; gate **3044**.
+- **Tối ưu `eq_value` record** (`68b5e1c`): fast path cùng tên kiểu, fallback đa tập; microbench ~21–233×; gate **3052**.
+- `VIS_DIFF_N=100000` seed 20261218 @ `a6c30c5`: **0 lệch** (93.768 chạy, 161,1 s).
+- **Đang chạy**: `sqlite.data_version`, `path.components`, `fs.canonicalize`, LSP semantic tokens.

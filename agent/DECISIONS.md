@@ -3527,3 +3527,17 @@ chỉ đọc; fresh `:memory:` ⇒ `0`; DDL/ghi dữ liệu không đổi; lưu 
 `Ty::ResultIntErr`. Authorizer host được mở **chỉ đọc** `application_id` (`pragma_value.is_none()`);
 ghi `PRAGMA application_id = …` vẫn bị từ chối. Chọn pragma thay TVF vì TVF có thể bị bảng người
 dùng trùng tên che.
+
+### VD-270 (bổ sung) · frame gán ghép đường, test --jobs, eq-record — A0, 2026-11-21
+
+- **Frame `+=` đường**: `ApplyAssignPath` của frame interp **hỗ trợ** mọi `AssignOp` trên lá đường
+  (`a.b += 1`, `xs[0] *= 2`, đường lồng) bằng **cùng** ngữ nghĩa `interp::gan_long`: đọc lá cũ từ
+  ảnh chụp gốc, áp `BinOp`, dựng lại đường; `=` giữ nguyên lift `Option`; trap chia 0 vẫn đồng mã
+  hai engine. Bỏ nợ "gán ghép trên trường/phần tử chưa được đường frame test hỗ trợ".
+- **`vis test --jobs <N>`**: N ≥ 1, mặc định 1 (đi đúng nhánh tuần tự, byte y hệt); N > 1 chạy
+  đơn vị (ca × lần lặp) song song nhưng in theo **thứ tự gốc**; `--fail-fast` dừng **lập lịch** sau
+  đỏ đầu, đơn vị đang chạy hoàn tất (plan có thể > vị trí đỏ — đã tài liệu hoá); `--list` bỏ qua
+  jobs; cờ sai/lặp ⇒ exit 2.
+- **Tối ưu `eq_value` record**: fast path khi hai record cùng **tên kiểu khác rỗng**, cùng độ dài:
+  so theo vị trí (vẫn kiểm tên trường), fallback nguyên logic đa tập cho tên rỗng/khác/khác thứ tự;
+  ngữ nghĩa không đổi; đo ~21–233× cho record 100–1000 trường (microbenchmark debug).
