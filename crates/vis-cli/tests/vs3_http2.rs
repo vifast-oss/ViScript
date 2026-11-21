@@ -152,6 +152,26 @@ fn serve_h1(s: &mut StreamOwned<ServerConnection, TcpStream>, route: &Route) -> 
     Ok(())
 }
 
+fn gui_than(send: &mut ::h2::SendStream<Bytes>, body: &[u8], end: bool) -> io::Result<()> {
+    const CHUNK: usize = 64 * 1024;
+    if body.is_empty() {
+        if !end {
+            send.send_data(Bytes::new(), false)
+                .map_err(|e| io::Error::other(format!("h2 data rỗng: {e}")))?;
+        }
+        return Ok(());
+    }
+    let mut du = body;
+    while !du.is_empty() {
+        let n = du.len().min(CHUNK);
+        let cuoi = n == du.len();
+        send.send_data(Bytes::copy_from_slice(&du[..n]), end && cuoi)
+            .map_err(|e| io::Error::other(format!("h2 data chunk: {e}")))?;
+        du = &du[n..];
+    }
+    Ok(())
+}
+
 fn serve_h2(s: StreamOwned<ServerConnection, TcpStream>, route: &Route) -> io::Result<()> {
     s.sock.set_nonblocking(true)?;
     let io = Adapter {
@@ -195,19 +215,31 @@ fn serve_h2(s: StreamOwned<ServerConnection, TcpStream>, route: &Route) -> io::R
                     .map_err(|e| io::Error::other(format!("h2 cut: {e}")))?;
                 return Ok(());
             }
+            "/goaway-mid" => {
+                // Gửi header + một phần body rồi GOAWAY khi stream còn mở.
+                send.send_data(Bytes::from_static(b"abc"), false)
+                    .map_err(|e| io::Error::other(format!("h2 goaway-mid: {e}")))?;
+                // Đẩy frame data đã xếp hàng ra socket trước khi GOAWAY.
+                let _ = conn.poll_accept(&mut cx);
+                conn.abrupt_shutdown(::h2::Reason::NO_ERROR);
+                return Ok(());
+            }
+            "/stall-body" => {
+                // Gửi header + một phần body rồi treo quá timeout của client.
+                send.send_data(Bytes::from_static(b"abc"), false)
+                    .map_err(|e| io::Error::other(format!("h2 stall-body: {e}")))?;
+                std::thread::sleep(Duration::from_millis(900));
+                return Ok(());
+            }
             "/trailer" => {
-                send.send_data(Bytes::from(body), false)
-                    .map_err(|e| io::Error::other(format!("h2 trailer data: {e}")))?;
+                gui_than(&mut send, &body, false)?;
                 let mut hm = HeaderMap::new();
                 hm.insert("x-trailer", http::HeaderValue::from_static("1"));
                 send.send_trailers(hm)
                     .map_err(|e| io::Error::other(format!("h2 trailer: {e}")))?;
             }
             _ => {
-                if !body.is_empty() {
-                    send.send_data(Bytes::from(body), true)
-                        .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
-                }
+                gui_than(&mut send, &body, true)?;
             }
         }
         if dac_biet == "/goaway" {
@@ -671,5 +703,176 @@ fn stress_100_request_4_authority() {
         "sau idle 15,2 s: {:.0} ms; connection/authority = {:?}",
         bd_idle.elapsed().as_secs_f64() * 1_000.0,
         ds.iter().map(MayChu::so_ket_noi).collect::<Vec<_>>()
+    );
+}
+
+/// **VS3-W2 release limits**: body đúng 8 MiB phải nhận đủ; vượt 1 byte phải lỗi rõ,
+/// không treo; phiên lỗi bị bỏ và request sau mở connection mới.
+#[test]
+fn h2_body_8mib_va_vuot_cap() {
+    const MAX: usize = 8 * 1024 * 1024;
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/full") => (200, vec![], vec![b'x'; MAX]),
+        ("GET", "/over") => (200, vec![], vec![b'y'; MAX + 1]),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let body = http_get(&mut net, &s.url("/full"), 30_000).expect("body đúng 8 MiB");
+    assert_eq!(body.len(), MAX, "phải nhận đủ 8 MiB");
+    let raw = body.as_bytes();
+    assert_eq!(raw[0], b'x');
+    assert_eq!(raw[MAX - 1], b'x');
+
+    let bat = Instant::now();
+    let e = http_get(&mut net, &s.url("/over"), 20_000).expect_err("body vượt cap phải lỗi");
+    assert!(
+        e.contains("8 MiB") || e.contains("vượt giới hạn") || e.contains("HTTP/2"),
+        "lỗi phải rõ: {e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(25_000), "không treo");
+    assert_eq!(
+        s.so_ket_noi(),
+        1,
+        "sau 8 MiB, request vượt cap phải dùng lại connection cũ"
+    );
+
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 5_000).expect("sau body lỗi"),
+        "b"
+    );
+    assert_eq!(
+        s.so_ket_noi(),
+        2,
+        "phiên lỗi phải bị bỏ, request sau mở connection mới"
+    );
+}
+
+/// **VS3-W2 release limits**: header tổng đúng 64 KiB phải nhận; vượt 1 byte phải lỗi rõ;
+/// connection sạch sau lỗi được thay bằng connection mới.
+#[test]
+fn h2_header_sat_cap_va_vuot() {
+    const MAX: usize = 64 * 1024;
+    let ten = "x-near";
+    let gia_tri = "a".repeat(MAX - ten.len());
+    let ten_vuot = "x-over";
+    let gia_tri_vuot = "b".repeat(MAX - ten_vuot.len() + 1);
+    let s = MayChu::moi(true, move |method, path, _| match (method, path) {
+        ("HEAD", "/near") => (200, vec![(ten.to_string(), gia_tri.clone())], vec![]),
+        ("GET", "/over") => (
+            200,
+            vec![(ten_vuot.to_string(), gia_tri_vuot.clone())],
+            vec![],
+        ),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let (st, hs) = http_head(&mut net, &s.url("/near"), 10_000).expect("header sát cap");
+    assert_eq!(st, 200);
+    let got = hs
+        .iter()
+        .find(|(k, _)| k == ten)
+        .map(|(_, v)| v.len())
+        .expect("header sát cap phải có");
+    assert_eq!(got, MAX - ten.len(), "tổng name+value đúng 64 KiB");
+
+    let bat = Instant::now();
+    let e = http_get(&mut net, &s.url("/over"), 10_000).expect_err("header vượt cap phải lỗi");
+    assert!(
+        e.contains("header HTTP/2") || e.contains("64") || e.contains("HTTP/2"),
+        "lỗi phải rõ: {e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(10_000), "không treo");
+
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 5_000).expect("sau header lỗi"),
+        "b"
+    );
+    assert_eq!(
+        s.so_ket_noi(),
+        2,
+        "phiên lỗi phải bị bỏ, request sau mở connection mới"
+    );
+}
+
+/// **VS3-W2 release limits**: body 1 MiB + trailer phải đọc hết trailer và tái dùng
+/// connection cho request kế tiếp.
+#[test]
+fn h2_trailer_body_lon_va_tai_su_dung() {
+    const N: usize = 1024 * 1024;
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/trailer") => (200, vec![], vec![b't'; N]),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let body = http_get(&mut net, &s.url("/trailer"), 15_000).expect("trailer + body lớn");
+    assert_eq!(body.len(), N);
+    assert_eq!(body.as_bytes()[0], b't');
+    assert_eq!(body.as_bytes()[N - 1], b't');
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 3_000).expect("sau trailer"),
+        "b"
+    );
+    assert_eq!(s.so_ket_noi(), 1, "trailer xong phải tái dùng connection");
+}
+
+/// **VS3-W2 release limits**: GOAWAY khi stream còn body ⇒ lỗi rõ, không treo; request sau
+/// dùng connection mới (không dùng lại phiên đã GOAWAY).
+#[test]
+fn h2_goaway_giua_body() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/goaway-mid") => (200, vec![], b"abc".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let bat = Instant::now();
+    let e =
+        http_get(&mut net, &s.url("/goaway-mid"), 1_500).expect_err("GOAWAY giữa body phải lỗi");
+    assert!(
+        e.contains("GOAWAY") || e.contains("HTTP/2") || e.contains("body"),
+        "lỗi phải rõ: {e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(4_000), "không treo");
+    let truoc = s.so_ket_noi();
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 3_000).expect("sau GOAWAY"),
+        "b"
+    );
+    assert!(
+        s.so_ket_noi() > truoc,
+        "request sau GOAWAY phải mở connection mới ({truoc} -> {})",
+        s.so_ket_noi()
+    );
+}
+
+/// **VS3-W2 release limits**: timeout khi server đã gửi header + một phần body ⇒ lỗi rõ,
+/// không treo; request sau mở connection mới.
+#[test]
+fn h2_timeout_giua_body_va_cleanup() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/stall-body") => (200, vec![], b"abc".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let bat = Instant::now();
+    let e = http_get(&mut net, &s.url("/stall-body"), 250).expect_err("phải timeout");
+    assert!(
+        e.contains("thời gian") || e.contains("HTTP/2") || e.contains("TimedOut"),
+        "lỗi phải rõ: {e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(3_000), "không treo");
+    let truoc = s.so_ket_noi();
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 3_000).expect("sau timeout"),
+        "b"
+    );
+    assert!(
+        s.so_ket_noi() > truoc,
+        "request sau timeout phải mở connection mới ({truoc} -> {})",
+        s.so_ket_noi()
     );
 }
