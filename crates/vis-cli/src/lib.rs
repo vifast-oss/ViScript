@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(unix)]
+pub mod async_net;
 pub mod net;
 /// **VS3-5b (VD-271)**: chữ ký Ed25519 cho registry HTTP — tách vào lib để test dùng **chính**
 /// hàm sinh thông điệp chuẩn (`vispkg-sig1`), không lặp định dạng trong test.
