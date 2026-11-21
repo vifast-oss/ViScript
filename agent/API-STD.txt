@@ -92,6 +92,7 @@ path.join_all	(list[str]) -> str
 path.normalize	(str) -> str
 path.relative	(str, str) -> str
 path.stem	(str) -> str
+path.strip_prefix	(str, str) -> str?
 path.with_extension	(str, str) -> str
 path.with_file_name	(str, str) -> str
 path.with_stem	(str, str) -> str
