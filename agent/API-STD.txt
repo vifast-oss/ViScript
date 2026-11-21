@@ -143,6 +143,7 @@ str.replace_n	(str, str, str, int) -> str
 str.rfind	(str, str) -> int?
 str.rsplit_once	(str, str) -> list[str]?
 str.split	(str, str) -> list[str]
+str.split_inclusive	(str, str) -> list[str]
 str.split_once	(str, str) -> list[str]?
 str.split_whitespace	(str) -> list[str]
 str.splitn	(str, str, int) -> list[str]
