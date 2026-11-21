@@ -304,12 +304,16 @@ fn cli_async_noi_host_fs() {
 
 // ---------------------------------------------------------------------------
 // Async net production (loopback): backend mio trong CLI.
+// **Windows (VS3-W4)**: `async_net.rs` hiện `#![cfg(unix)]` — chưa có backend async net
+// trên Windows ⇒ các ca production dưới đây chỉ chạy Unix, tránh deadlock VS0505 giả tạo.
+// Xem đề xuất backend Windows: `agent/JOURNAL/vs3-w4-asyncnet-windows.md`.
 // ---------------------------------------------------------------------------
 
 /// Các ca net dùng port loopback + server thread: serialize trong test binary để tránh
 /// tranh port khi `cargo test` chạy song song (không ảnh hưởng sản phẩm).
 static NET_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[cfg(unix)]
 fn server_mot_lan(noi_dung: &'static [u8]) -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind server");
     let addr = l.local_addr().expect("addr").to_string();
@@ -323,6 +327,7 @@ fn server_mot_lan(noi_dung: &'static [u8]) -> String {
     addr
 }
 
+#[cfg(unix)]
 const ASYNC_NET_READ: &str = r#"use std.net
 
 async fn doc(addr: str) -> str:
@@ -340,6 +345,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
+#[cfg(unix)]
 fn cli_async_net_read_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("net");
@@ -384,6 +390,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
+#[cfg(unix)]
 fn server_dem(so_byte: usize) -> (String, thread::JoinHandle<Vec<u8>>) {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind dem");
     let addr = l.local_addr().expect("addr").to_string();
@@ -403,6 +410,7 @@ fn server_dem(so_byte: usize) -> (String, thread::JoinHandle<Vec<u8>>) {
     (addr, h)
 }
 
+#[cfg(unix)]
 const ASYNC_NET_WRITE: &str = r#"use std.net
 use std.str
 
@@ -420,6 +428,7 @@ fn main(args: list[str]):
     print(await spawn ghi(args[0]))
 "#;
 
+#[cfg(unix)]
 const ASYNC_NET_ACCEPT: &str = r#"use std.net
 
 async fn serve(addr: str) -> int:
@@ -439,6 +448,7 @@ fn main(args: list[str]):
     print(await spawn serve(args[0]))
 "#;
 
+#[cfg(unix)]
 const ASYNC_NET_TIMEOUT: &str = r#"use std.net
 
 async fn cho(addr: str) -> int:
@@ -454,6 +464,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
+#[cfg(unix)]
 fn cli_async_net_read_timeout_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("nettimeout");
@@ -481,6 +492,7 @@ fn cli_async_net_read_timeout_loopback_hai_engine() {
 }
 
 #[test]
+#[cfg(unix)]
 fn cli_async_net_accept_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("netaccept");
@@ -510,6 +522,7 @@ fn cli_async_net_accept_loopback_hai_engine() {
 }
 
 #[test]
+#[cfg(unix)]
 fn cli_async_net_write_partial_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("netwrite");
