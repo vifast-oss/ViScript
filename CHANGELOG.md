@@ -6,6 +6,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 ## Unreleased (sau v0.3.3)
 
 - **Windows async net/TLS/HTTP-1.1**: backend `mio::Source` trực tiếp (IOCP/AFD), `la_would_block` 10035/10036, invariant `host_poll`; psvn **22/22 + 22/22 ×10**, workspace **3496/0 ×2**, host 54/54; flake test-only `tcp_explain_tong` (10053) fixed; async-h2 vẫn Unix-only.
+- **Evaluator VM P3 (opt-in hidden)**: `run_workers_*_vm`; VM spawn/await/join, snapshot globals, budget/cancel/cross-write; **10 test**, VM nhanh hơn interp **~2,3×** (CPU 4 task), 10k task nhỏ còn overhead; gate **3571/3**. Frame P4 còn mở.
 - **Evaluator W>1 CPU-only (opt-in hidden)**: `WorkerMode::Parallel(n)`, pool HIR runner, env snapshot, budget lease, cancel, cross-write `VS0501`; 14 test, **10k task byte-identical W=1/2/4**, CPU 4 task **3,75×**; 10k task cực nhỏ còn **<1×** (overhead). Gate **3561/3**.
 - **Evaluator W=1 (opt-in hidden)**: `WorkerMode::Local`/`run_workers_local`; chạy trên caller, shared env, `chan(0)` giữ `VS0505`; 8 test, gate **3547/3**.
 - **Evaluator ↔ worker prototype**: `Hir`/`Module`/`SendValue` Send+Sync; 10k job W=1/W=4 byte-identical, **13.070.000 job** soak 600 s, RSS 14,5 MB phẳng, threads 1, fd 4; chưa nối production.
