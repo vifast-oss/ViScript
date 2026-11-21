@@ -26,6 +26,20 @@ use vis_interp::net::MAX_HTTP;
 
 use super::tls::{self, CauHinh, KenhTls};
 
+/// Cap header phản hồi HTTP/2 (cùng ngưỡng HTTP/1.1 64 KiB) để server không làm phình bộ nhớ.
+const MAX_HEADER: usize = 64 * 1024;
+
+fn loi_h2(e: &::h2::Error, viec: &str) -> String {
+    let loai = if e.is_go_away() {
+        "GOAWAY"
+    } else if e.is_reset() {
+        "RST_STREAM"
+    } else {
+        "lỗi"
+    };
+    format!("{loai} HTTP/2 khi {viec}: {e}")
+}
+
 /// Kết quả bước mở phiên: hoặc phiên h2 dùng lại được, hoặc trả lại kết nối TLS cho HTTP/1.1.
 pub(super) enum MoH2 {
     Phien(PhienH2),
@@ -98,7 +112,7 @@ impl PhienH2 {
         let (resp, _body) = self
             .send
             .send_request(req, true)
-            .map_err(|e| format!("lỗi gửi HTTP/2: {e}"))?;
+            .map_err(|e| loi_h2(&e, "gửi request"))?;
         let kq = self.doc_phan_hoi(resp, method)?;
         self.luc_dung = Instant::now();
         Ok(kq)
@@ -112,7 +126,7 @@ impl PhienH2 {
     fn doc_phan_hoi(
         &mut self,
         resp: ::h2::client::ResponseFuture,
-        method: &str,
+        _method: &str,
     ) -> Result<KetQuaHttp2, String> {
         let w = Waker::noop();
         let mut cx = Context::from_waker(w);
@@ -121,14 +135,13 @@ impl PhienH2 {
         let mut status = 0u16;
         let mut headers: Vec<(String, String)> = Vec::new();
         let mut body: Vec<u8> = Vec::new();
+        let mut xong_data = false;
 
         loop {
             let mut tien = false;
             match self.conn.as_mut().poll(&mut cx) {
                 Poll::Ready(Ok(())) => {}
-                Poll::Ready(Err(e)) => {
-                    return Err(format!("lỗi kết nối HTTP/2: {e}"));
-                }
+                Poll::Ready(Err(e)) => return Err(loi_h2(&e, "kết nối")),
                 Poll::Pending => {}
             }
             if recv.is_none() {
@@ -136,6 +149,14 @@ impl PhienH2 {
                     Poll::Ready(Ok(r)) => {
                         let (parts, b) = r.into_parts();
                         status = parts.status.as_u16();
+                        let tong: usize = parts
+                            .headers
+                            .iter()
+                            .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
+                            .sum();
+                        if tong > MAX_HEADER {
+                            return Err(format!("header HTTP/2 quá lớn (> {MAX_HEADER} byte)"));
+                        }
                         headers = parts
                             .headers
                             .iter()
@@ -146,44 +167,45 @@ impl PhienH2 {
                                 )
                             })
                             .collect();
-                        if method.eq_ignore_ascii_case("HEAD") {
+                        recv = Some(b);
+                        tien = true;
+                    }
+                    Poll::Ready(Err(e)) => return Err(loi_h2(&e, "response")),
+                    Poll::Pending => {}
+                }
+            }
+            if let Some(r) = recv.as_mut() {
+                if !xong_data {
+                    match r.poll_data(&mut cx) {
+                        Poll::Ready(Some(Ok(b))) => {
+                            if body.len().saturating_add(b.len()) > MAX_HTTP {
+                                return Err(format!(
+                                    "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
+                                ));
+                            }
+                            body.extend_from_slice(&b);
+                            tien = true;
+                        }
+                        Poll::Ready(Some(Err(e))) => return Err(loi_h2(&e, "đọc body")),
+                        Poll::Ready(None) => {
+                            xong_data = true;
+                            tien = true;
+                        }
+                        Poll::Pending => {}
+                    }
+                } else {
+                    // Đọc hết trailer (bỏ nội dung) để stream đóng sạch trước khi tái dùng.
+                    match r.poll_trailers(&mut cx) {
+                        Poll::Ready(Ok(_)) => {
                             return Ok(KetQuaHttp2 {
                                 status,
                                 headers,
                                 body,
                             });
                         }
-                        recv = Some(b);
-                        tien = true;
+                        Poll::Ready(Err(e)) => return Err(loi_h2(&e, "trailer")),
+                        Poll::Pending => {}
                     }
-                    Poll::Ready(Err(e)) => {
-                        return Err(format!("lỗi response HTTP/2: {e}"));
-                    }
-                    Poll::Pending => {}
-                }
-            }
-            if let Some(r) = recv.as_mut() {
-                match r.poll_data(&mut cx) {
-                    Poll::Ready(Some(Ok(b))) => {
-                        if body.len().saturating_add(b.len()) > MAX_HTTP {
-                            return Err(format!(
-                                "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
-                            ));
-                        }
-                        body.extend_from_slice(&b);
-                        tien = true;
-                    }
-                    Poll::Ready(Some(Err(e))) => {
-                        return Err(format!("lỗi đọc body HTTP/2: {e}"));
-                    }
-                    Poll::Ready(None) => {
-                        return Ok(KetQuaHttp2 {
-                            status,
-                            headers,
-                            body,
-                        });
-                    }
-                    Poll::Pending => {}
                 }
             }
             if !tien {

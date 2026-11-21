@@ -179,13 +179,40 @@ fn serve_h2(s: StreamOwned<ServerConnection, TcpStream>, route: &Route) -> io::R
         for (k, v) in headers {
             rb = rb.header(k, v);
         }
-        let end = body.is_empty();
+        let dac_biet = path.as_str();
+        let end = body.is_empty() && !matches!(dac_biet, "/trailer" | "/cut" | "/rst");
         let mut send = respond
             .send_response(rb.body(()).map_err(io::Error::other)?, end)
             .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
-        if !body.is_empty() {
-            send.send_data(Bytes::from(body), true)
-                .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
+        match dac_biet {
+            "/rst" => {
+                send.send_reset(::h2::Reason::CANCEL);
+                continue;
+            }
+            "/cut" => {
+                // Header khai Content-Length 100 nhưng chỉ gửi 3 byte rồi bỏ connection.
+                send.send_data(Bytes::from_static(b"abc"), false)
+                    .map_err(|e| io::Error::other(format!("h2 cut: {e}")))?;
+                return Ok(());
+            }
+            "/trailer" => {
+                send.send_data(Bytes::from(body), false)
+                    .map_err(|e| io::Error::other(format!("h2 trailer data: {e}")))?;
+                let mut hm = HeaderMap::new();
+                hm.insert("x-trailer", http::HeaderValue::from_static("1"));
+                send.send_trailers(hm)
+                    .map_err(|e| io::Error::other(format!("h2 trailer: {e}")))?;
+            }
+            _ => {
+                if !body.is_empty() {
+                    send.send_data(Bytes::from(body), true)
+                        .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
+                }
+            }
+        }
+        if dac_biet == "/goaway" {
+            // Đóng mềm sau response: client nhận body rồi mới thấy GOAWAY ở request kế tiếp.
+            conn.graceful_shutdown();
         }
     }
 }
@@ -444,6 +471,92 @@ fn tar(entries: &[(&str, &str)]) -> Vec<u8> {
     }
     out.extend(std::iter::repeat_n(0u8, 1_024));
     out
+}
+
+#[test]
+fn h2_trailer_roi_moi_tai_su_dung() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/trailer") => (200, vec![], b"t".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    assert_eq!(
+        http_get(&mut net, &s.url("/trailer"), 3_000).expect("trailer"),
+        "t"
+    );
+    assert_eq!(http_get(&mut net, &s.url("/b"), 3_000).expect("b"), "b");
+    assert_eq!(s.so_ket_noi(), 1, "trailer xong phải tái dùng connection");
+}
+
+#[test]
+fn h2_goaway_retry_mot_lan() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/goaway") => (200, vec![], b"g".to_vec()),
+        ("GET", "/b") => (200, vec![], b"b".to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    assert_eq!(
+        http_get(&mut net, &s.url("/goaway"), 3_000).expect("goaway"),
+        "g"
+    );
+    assert_eq!(
+        http_get(&mut net, &s.url("/b"), 3_000).expect("retry sau GOAWAY"),
+        "b"
+    );
+    assert_eq!(s.so_ket_noi(), 2, "GOAWAY phải mở connection mới");
+}
+
+#[test]
+fn h2_rst_stream_loi_ro() {
+    let s = MayChu::moi(true, |_, _, _| (200, vec![], b"x".to_vec()));
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let bat = Instant::now();
+    let e = http_get(&mut net, &s.url("/rst"), 2_000).expect_err("RST phải lỗi");
+    assert!(
+        e.contains("RST_STREAM") || e.contains("HTTP/2"),
+        "lỗi phải rõ: {e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(4_000), "không treo");
+}
+
+#[test]
+fn h2_khong_body_va_header_lon() {
+    let s = MayChu::moi(true, |method, path, _| match (method, path) {
+        ("GET", "/empty") => (204, vec![], vec![]),
+        ("GET", "/big") => (200, vec![("x-big".to_string(), "a".repeat(70_000))], vec![]),
+        _ => (404, vec![], vec![]),
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    assert_eq!(
+        http_get(&mut net, &s.url("/empty"), 3_000).expect("empty"),
+        ""
+    );
+    let e = http_get(&mut net, &s.url("/big"), 3_000).expect_err("header lớn phải lỗi");
+    assert!(
+        e.contains("header HTTP/2") || e.contains("HTTP/2"),
+        "lỗi phải rõ: {e}"
+    );
+}
+
+#[test]
+fn h2_server_dong_giua_chung() {
+    let s = MayChu::moi(true, |_, _, _| {
+        (
+            200,
+            vec![("content-length".to_string(), "100".to_string())],
+            vec![],
+        )
+    });
+    let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let bat = Instant::now();
+    let e = http_get(&mut net, &s.url("/cut"), 600).expect_err("server đóng giữa chừng phải lỗi");
+    assert!(
+        e.contains("HTTP/2") || e.contains("body") || e.contains("kết nối"),
+        "{e}"
+    );
+    assert!(bat.elapsed() < Duration::from_millis(3_000), "không treo");
 }
 
 /// **VS3-4b4**: phiên h2 idle quá 15 s bị đóng; request sau mở connection mới.
