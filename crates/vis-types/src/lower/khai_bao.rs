@@ -136,6 +136,86 @@ impl<'a> Lowerer<'a> {
             .unwrap_or_default()
     }
 
+    /// **VD-270** — tham số kiểu của `impl` (`impl Hop[T]:`).
+    ///
+    /// Parser hạ `[T]` **bên trong** node `Type` của kiểu nhận (không phải `Generics` anh em như
+    /// `fn f[T]`), nên không dùng được [`Self::generics_of`]. Ở đây chỉ nhận đối số là **một
+    /// ident trần** chưa được khai là kiểu (`T`, không phải `Hop[int]`/`T?`/`list[T]`); tên đã
+    /// khai (`type`/`enum`/`alias`/`newtype`/dựng sẵn) là kiểu **cụ thể**, không phải tham số.
+    /// Giữ đúng thứ tự nguồn, bỏ trùng.
+    pub(crate) fn impl_generics_of(&self, node: &Node) -> Vec<String> {
+        let Some(ty) = node.child(NodeKind::Type) else {
+            return Vec::new();
+        };
+        let Some(g) = ty.child(NodeKind::Generics) else {
+            return Vec::new();
+        };
+        // Tham số **khai báo** của kiểu nhận (`type Hop[T]`/`enum E[A, B]`) — template đã dựng
+        // ở pre-pass nên có mặt ở đây. Nhờ vậy `impl Hop[KhongCo]` **không** bị coi là generic.
+        let recv_params: Option<Vec<String>> = ty
+            .child(NodeKind::DottedPath)
+            .map(|p| self.dotted_text(p))
+            .and_then(|name| {
+                self.rec_tmpl
+                    .iter()
+                    .find(|(n, _, _)| *n == name)
+                    .map(|(_, ps, _)| ps.clone())
+                    .or_else(|| {
+                        self.enum_tmpl
+                            .iter()
+                            .find(|(n, _, _)| *n == name)
+                            .map(|(_, ps, _)| ps.clone())
+                    })
+            });
+        let mut out: Vec<String> = Vec::new();
+        for arg in g.children().filter(|n| n.kind == NodeKind::Type) {
+            // Chỉ đối số **trần** `T`: không có generics lồng (`Hop[int]`), không hậu tố `?`,
+            // không đường dẫn chấm (`std.X`).
+            if arg.child(NodeKind::Generics).is_some()
+                || arg.tokens(&self.cst.tokens).any(|t| t.is_punct("?"))
+            {
+                continue;
+            }
+            let Some(name) = arg.child(NodeKind::DottedPath).map(|p| self.dotted_text(p)) else {
+                continue;
+            };
+            if name.contains('.') || name.is_empty() {
+                continue;
+            }
+            if let Some(ps) = &recv_params {
+                if !ps.contains(&name) {
+                    continue;
+                }
+            }
+            if Type::builtin(&name).is_some()
+                || self.rec_names.iter().any(|(n, _)| *n == name)
+                || self.enum_names.iter().any(|(n, _)| *n == name)
+                || self.aliases.iter().any(|(n, _)| *n == name)
+                || self.newtypes.contains(&name)
+            {
+                continue;
+            }
+            if !out.contains(&name) {
+                out.push(name);
+            }
+        }
+        out
+    }
+
+    /// **VD-270** — `generics` của phương thức = tham số của chính hàm **∪** tham số của `impl`
+    /// (giữ thứ tự: hàm trước, impl sau; bỏ trùng). Nhờ vậy `T` trong `fn get(self) -> T`
+    /// thuộc `impl Hop[T]` là **ký hiệu** khi hạ chữ ký và bị `erase_gen` trong thân — cùng quy
+    /// tắc `fn f[T]`.
+    pub(crate) fn generics_phuong_thuc(&self, node: &Node) -> Vec<String> {
+        let mut generics = self.generics_of(node);
+        for g in &self.cur_impl_generics {
+            if !generics.contains(g) {
+                generics.push(g.clone());
+            }
+        }
+        generics
+    }
+
     fn lower_fn(&mut self, node: &Node, kind: FnKind) -> HFn {
         // **R20b-fix (VD-178)**: `test fn tên()` — `test` cũng là `Ident` ⇒ lấy ident **thứ hai**.
         let name = if kind == FnKind::Test {
@@ -147,7 +227,13 @@ impl<'a> Lowerer<'a> {
         } else {
             self.decl_name(node).unwrap_or_default()
         };
-        let generics = self.generics_of(node);
+        // **VD-270**: phương thức của `impl Hop[T]` mang thêm tham số kiểu của `impl` — chữ ký
+        // giữ `T` dạng ký hiệu (`TypeRef`) như `fn f[T]`, thân xoá generic khi tyck.
+        let generics = if kind == FnKind::ImplMethod {
+            self.generics_phuong_thuc(node)
+        } else {
+            self.generics_of(node)
+        };
         let is_pub = self.has_token(node, "pub");
         let is_async = self.has_token(node, "async");
         self.push_frame(FrameKind::Fn, node.span);
@@ -546,9 +632,13 @@ impl<'a> Lowerer<'a> {
         let truct = self.ten_kieu(&ty);
         self.cur_impl = truct.clone();
         self.cur_impl_ty = Some(ty.clone());
+        // **VD-270**: `impl Hop[T]` — `T` có hiệu lực trong **mọi** phương thức (params/return).
+        let luu_gen = std::mem::take(&mut self.cur_impl_generics);
+        self.cur_impl_generics = self.impl_generics_of(node);
         for m in node.children().filter(|n| n.kind == NodeKind::FnDecl) {
             methods.push(self.lower_fn(m, FnKind::ImplMethod));
         }
+        self.cur_impl_generics = luu_gen;
         self.cur_impl = None;
         self.cur_impl_ty = None;
         self.kiem_impl_khop(node, &trait_name, &ty, &methods);

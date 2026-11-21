@@ -334,6 +334,26 @@ impl<'a> Checker<'a> {
             // ST-35: `Hop[T]` — thay ràng buộc đã biết; khớp theo **instantiation** (id riêng) nên
             // `Hop[int]` ≠ `Hop[str]`; chưa suy được `T` ⇒ **bỏ qua** (giữ hành vi xoá kiểu ST-28).
             Type::TypeRef { name, args } if !args.is_empty() => {
+                // **VD-270**: kiểu nhận của phương thức `impl Hop[T]` là `TypeRef{"Hop",[T]}`;
+                // đối số thật thường là **instantiation** `Record(id)` (không phải `TypeRef`) ⇒
+                // buộc `T` theo **vị trí** từ `rec_inst_of`/`enum_inst_of`. Nhờ vậy `a.get()`
+                // trả `int` (không còn ký hiệu `T`) và đối số sau bị kiểm theo `T` đã suy.
+                let inst = match that {
+                    Type::Record(id) => self.types.rec_inst_of(*id).cloned(),
+                    Type::Enum(id) => self.types.enum_inst_of(*id).cloned(),
+                    _ => None,
+                };
+                if let Some((ten, ds)) = inst {
+                    if ten == *name && ds.len() == args.len() {
+                        let mut ok = true;
+                        for (mau, that_arg) in args.iter().zip(ds.iter()) {
+                            if !self.hop_nhat(mau, that_arg, gens, bang, &ten, span) {
+                                ok = false;
+                            }
+                        }
+                        return ok;
+                    }
+                }
                 let cu: Vec<Type> = args.iter().map(|a| thay_gen(a, bang)).collect();
                 if cu
                     .iter()
@@ -816,13 +836,24 @@ impl<'a> Checker<'a> {
     /// **VD-265** — chữ ký phương thức `impl` vào `sigs`/`env` (cùng quy tắc hàm cấp tệp:
     /// giữ `TypeRef{"T"}` khi hợp nhất call-site, thân dùng bản đã xoá generic).
     /// Không đẩy vào `item_types` (tên phương thức không phải item cấp tệp).
-    fn dang_ky_sig_phuong_thuc(&mut self, f: &HFn) {
+    fn dang_ky_sig_phuong_thuc(&mut self, f: &HFn, recv: Option<&Type>) {
         let luu = std::mem::take(&mut self.generic_scope);
         self.generic_scope = f.generics.clone();
         let raw_params: Vec<Type> = f
             .params
             .iter()
-            .map(|p| self.resolve_ann(&p.ty, p.span))
+            .map(|p| {
+                // **VD-270**: `self` của `impl Hop[T]` mang kiểu nhận **còn ký hiệu**
+                // (`TypeRef{"Hop", [T]}`) để `hop_nhat` buộc được `T` từ đối số thật
+                // (`Hop[int]`) rồi thay vào kiểu trả. HParam.ty vẫn `{error}` (VD-262) nên
+                // chỉ chèn ở đây — thân phương thức không đổi chẩn đoán.
+                if p.is_self && !f.generics.is_empty() {
+                    if let Some(t) = recv {
+                        return t.clone();
+                    }
+                }
+                self.resolve_ann(&p.ty, p.span)
+            })
             .collect();
         let raw_ret = self.resolve_ann(&f.ret, f.span);
         self.generic_scope = luu;
@@ -957,7 +988,7 @@ impl<'a> Checker<'a> {
                 // vậy `let x = if …: self.m() else: 5` biết `x: T?` và `match` trên nó hợp lệ.
                 HItem::Impl(im) => {
                     for m in &im.methods {
-                        self.dang_ky_sig_phuong_thuc(m);
+                        self.dang_ky_sig_phuong_thuc(m, Some(&im.ty));
                     }
                     self.kiem_impl(im);
                 }

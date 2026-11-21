@@ -42,6 +42,15 @@ impl<'a> Lowerer<'a> {
                 .enum_def(*id)
                 .map(|e| e.name.clone())
                 .or_else(|| Some(format!("enum#{}", id.0))),
+            // **VD-270**: `impl Hop[T]` giữ kiểu nhận dạng `TypeRef` (đối số còn ký hiệu) —
+            // vẫn phải quy về **tên kiểu gốc** để đăng ký/khớp dispatch với `Hop[int]`.
+            // Chỉ nhận tên đã khai `type`/`enum`; `TypeRef{"T"}` (tham số kiểu) vẫn `None`.
+            Type::TypeRef { name, .. }
+                if self.rec_names.iter().any(|(n, _)| n == name)
+                    || self.enum_names.iter().any(|(n, _)| n == name) =>
+            {
+                Some(name.clone())
+            }
             _ => None,
         }
     }

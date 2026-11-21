@@ -204,6 +204,8 @@ impl<'a> Lowerer<'a> {
             .map(|t| self.resolve_type(t))
             .unwrap_or(Type::Error);
         let ten = self.ten_kieu(&ty);
+        // **VD-270**: `impl Hop[T]` — `T` thuộc chữ ký mọi phương thức (giữ ký hiệu để hợp nhất).
+        let impl_generics = self.impl_generics_of(node);
         for m in node.children().filter(|n| n.kind == NodeKind::FnDecl) {
             let Some(mn) = self.decl_name(m) else {
                 continue;
@@ -216,7 +218,12 @@ impl<'a> Lowerer<'a> {
             else {
                 continue;
             };
-            let generics = self.generics_of(m);
+            let mut generics = self.generics_of(m);
+            for g in &impl_generics {
+                if !generics.contains(g) {
+                    generics.push(g.clone());
+                }
+            }
             let (params, ret) = self.chu_ky_ham(m, &generics);
             self.fn_params.insert(sym, params);
             self.fn_ret.insert(sym, ret);
