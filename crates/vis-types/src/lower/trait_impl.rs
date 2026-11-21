@@ -8,7 +8,7 @@
 use vis_diag::TYPE_CODES;
 use vis_syntax::{Node, NodeKind};
 
-use super::{FrameKind, Lowerer, SymKind};
+use super::{FrameKind, ImplDangKy, Lowerer, SymKind};
 use crate::hir::{BinOp, HExpr, HFn, HImpl, HItem, HParam, HStmt, InterpPart};
 use crate::ty::Type;
 
@@ -122,17 +122,54 @@ impl<'a> Lowerer<'a> {
     /// impl (giống bộ lọc của [`Lowerer::dispatch_tinh`]).
     pub(crate) fn method_sym(&self, ty: &Type, name: &str) -> Option<u32> {
         let ten = self.ten_kieu(ty)?;
-        let mut khop = self
-            .impls
-            .iter()
-            .filter(|(t, n, _)| n == name && self.ten_kieu(t).as_deref() == Some(ten.as_str()))
-            .map(|(_, _, sym)| *sym);
+        let mut khop = self.khop_impl(&ten, name).into_iter();
         let first = khop.next()?;
         if khop.next().is_some() {
             None
         } else {
             Some(first)
         }
+    }
+
+    /// **VD-270** — đăng ký một phương thức `impl` vào bảng **cục bộ** của tệp và bảng **chung**
+    /// của đơn vị biên dịch (để module khác dispatch được). Bản ghi chung khử trùng theo
+    /// `(module, sym)` — tệp bị hạ lại không nhân đôi.
+    pub(crate) fn dang_ky_impl(&mut self, ty: &Type, method: &str, sym: u32) {
+        self.impls.push((ty.clone(), method.to_string(), sym));
+        if self
+            .symbols
+            .impls
+            .iter()
+            .any(|r| r.sym == sym && r.mod_id == self.opts.mod_id)
+        {
+            return;
+        }
+        self.symbols.impls.push(ImplDangKy {
+            ty: ty.clone(),
+            method: method.to_string(),
+            sym,
+            mod_id: self.opts.mod_id,
+        });
+    }
+
+    /// **VD-270** — các `sym` phương thức `name` cho kiểu tên `ten`: bảng **cục bộ** + bảng
+    /// **chung** của module khác. Giữ **cả** trùng lặp để `dispatch_tinh` còn báo mơ hồ.
+    pub(crate) fn khop_impl(&self, ten: &str, name: &str) -> Vec<u32> {
+        let mut ra: Vec<u32> = self
+            .impls
+            .iter()
+            .filter(|(t, n, _)| n == name && self.ten_kieu(t).as_deref() == Some(ten))
+            .map(|(_, _, sym)| *sym)
+            .collect();
+        for r in &self.symbols.impls {
+            if r.mod_id == self.opts.mod_id || r.method != name {
+                continue;
+            }
+            if self.ten_kieu(&r.ty).as_deref() == Some(ten) {
+                ra.push(r.sym);
+            }
+        }
+        ra
     }
 
     /// Lượt 1b — thu thập `trait` (tên + **siêu trait** + chữ ký phương thức).
@@ -193,7 +230,7 @@ impl<'a> Lowerer<'a> {
                 continue;
             };
             let sym = self.declare(&mn, SymKind::Item, m.span, None);
-            self.impls.push((ty.clone(), mn, sym));
+            self.dang_ky_impl(&ty, &mn, sym);
         }
     }
 
@@ -539,7 +576,7 @@ impl<'a> Lowerer<'a> {
             return None;
         }
         let sym = self.declare(&format!("{ten}.{ten_pt}"), SymKind::Item, span, None);
-        self.impls.push((ty.clone(), ten_pt.to_string(), sym));
+        self.dang_ky_impl(ty, ten_pt, sym);
         self.push_frame(FrameKind::Fn, span);
         let mut ids: Vec<u32> = Vec::with_capacity(m.tham.len());
         let mut params: Vec<HParam> = Vec::with_capacity(m.tham.len());
