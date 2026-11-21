@@ -45,7 +45,7 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a/1c | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a` + `7e1deed`; còn cap≥1/select, 1d |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9`; loopback fix; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + verify release | **REVIEW** — `041ee50` đỏ 5 ca; đã cherry-pick `3d6bfe4` + `5dec89b` + merge `d9046a9`; chờ verify `8776947` để tag |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CI + verify | **DONE** — tag `v0.1.0` xác nhận 3404/0; workflow `windows.yml`; đang mở target cross-check |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
@@ -90,7 +90,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **VS3-1d** async default + Pipe parity | W1 | **WIP** | async chạy frame, sync byte-identical, guard rõ, cache |
 | **VS3-3b** worker opt-in | W5 | **WIP** | TaskId/proxy, print merge, budget atomic, W=1/2/4 |
 | **VS3-4b2** HTTP/2 | W2 | **WIP** | feature `http2` default-off, local h2 test, HTTP/1.1 không hồi quy |
-| **VS3-6** Windows CI | W4 | **WIP** | verify tag v0.1.0 + workflow windows |
+| **VS3-6** Windows CI | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; `windows.yml`; cross-target xem sau |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
 | **VS3-2b** timeout kênh | — | **NEXT** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
 
