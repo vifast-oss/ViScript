@@ -14,7 +14,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.2`** @ `864cc96`; `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
+| Tag | **`v0.3.3`** @ `bbf3484`; `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -104,7 +104,7 @@ targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, H
 
 **v0.3.0 đã tag** @ `0d26527`.
 **v0.3.1 đã tag** @ `e689c3d`.
-**v0.3.3 candidate** `0f18592` / `bbf3484`: fix h2 flow-control; Linux 3535/3; W3 local+fresh-clone PASS; chờ W4 Windows để tag. Không GitHub Actions.
+**v0.3.3 đã tag** @ `bbf3484`: fix h2 flow-control; Linux 3535/3; Windows 3469/0; fresh-clone PASS. Tiếp tục hardening tới 09:00 T2. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
