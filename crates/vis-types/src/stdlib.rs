@@ -52,6 +52,11 @@ pub enum Ty {
     RowSet,
     /// **VD-241 (Gate 1)** — `Result[int, Error]` (`std.sqlite.execute`).
     ResultIntErr,
+    /// **VD-270 (sqlite-journal-mode)** — `Result[str, Error]` (`std.sqlite.journal_mode`).
+    /// `ResultStrStr` cũng hạ ra **cùng** kiểu (`str` + bản ghi `Error` từ VD-222), nhưng tên cũ
+    /// thuộc thời `Result[str, str]` (ST-33); biến thể này nêu **đúng** lớp lỗi `Error` theo mẫu
+    /// `ResultIntErr`, không ép kiểu gần đúng.
+    ResultStrErr,
     /// **VD-241 (Gate 1)** — `Result[bool, Error]` (`std.sqlite.in_transaction`,
     /// `std.sqlite.table_exists`, `std.sqlite.index_exists` — VD-270).
     ResultBoolErr,
@@ -117,6 +122,10 @@ impl Ty {
             Ty::RowSet => Type::Record(crate::ty::RecId(1)),
             Ty::ResultIntErr => {
                 Type::Result(Box::new(Type::Int), Box::new(Self::Error.sang_type()))
+            }
+            // **VD-270 (sqlite-journal-mode)** — `Result[str, Error]`: `str` + bản ghi `Error`.
+            Ty::ResultStrErr => {
+                Type::Result(Box::new(Type::Str), Box::new(Self::Error.sang_type()))
             }
             Ty::ResultBoolErr => {
                 Type::Result(Box::new(Type::Bool), Box::new(Self::Error.sang_type()))
@@ -193,6 +202,8 @@ impl Ty {
             Ty::SqlValue => "SqlValue",
             Ty::RowSet => "RowSet",
             Ty::ResultIntErr => "Result[int, Error]",
+            // **VD-270 (sqlite-journal-mode)**
+            Ty::ResultStrErr => "Result[str, Error]",
             Ty::ResultBoolErr => "Result[bool, Error]",
             Ty::ResultRowSetErr => "Result[RowSet, Error]",
             // **VD-267**
@@ -256,7 +267,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 158] = [
+pub const FUNCS: [StdFn; 159] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -1276,6 +1287,16 @@ pub const FUNCS: [StdFn; 158] = [
         name: "sqlite.data_version",
         params: &[Ty::Str],
         ret: Ty::ResultIntErr,
+    },
+    // **VD-270 (sqlite-journal-mode)** — chế độ journal **hiện tại** của connection, **chỉ đọc**
+    // qua `PRAGMA journal_mode` (không tham số; authorizer allow-list mở **đúng** mục đọc
+    // `journal_mode`, ghi `PRAGMA journal_mode = …` vẫn bị chối); `:memory:` mới ⇒ `memory`,
+    // tệp mới ⇒ `delete`, đọc lặp **không** đổi mode; hợp đồng **không** hứa danh sách đóng;
+    // lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
+    StdFn {
+        name: "sqlite.journal_mode",
+        params: &[Ty::Str],
+        ret: Ty::ResultStrErr,
     },
 ];
 

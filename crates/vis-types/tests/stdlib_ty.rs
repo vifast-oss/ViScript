@@ -268,7 +268,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `is_ascii_whitespace` (`(str) -> bool`; `true` ⇔ **không rỗng** và **mọi scalar** ASCII
     // thuộc nhóm `char::is_ascii_*`, rỗng ⇒ `false`, VT `U+000B` **không** phải whitespace,
     // sugar R5c) ⇒ **157** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 158, "bảng chữ ký phải đủ 158 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-journal-mode, 2026-11-21)**: +**1** hàm
+    // `sqlite.journal_mode` (`(str) -> Result[str, Error]`; chế độ journal hiện tại đọc qua
+    // `PRAGMA journal_mode`, chỉ đọc, `:memory:` mới ⇒ `memory`, tệp mới ⇒ `delete`, đọc lặp
+    // không đổi mode) ⇒ **154** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 159, "bảng chữ ký phải đủ 159 hàm");
 }
 
 #[test]
@@ -1162,6 +1166,30 @@ fn sqlite_data_version_kieu_str_va_result_int() {
         "`sqlite.data_version`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[int, Error]");
+}
+
+/// **VD-270 (sqlite-journal-mode)**: chữ ký `(str) -> Result[str, Error]` — biến thể **riêng**
+/// `Ty::ResultStrErr` (theo mẫu `ResultIntErr`; `ResultStrStr` cũng hạ ra cùng kiểu nhưng tên cũ
+/// thuộc thời `Result[str, str]`), hạ ra `Result[Str, Error]`.
+#[test]
+fn sqlite_journal_mode_kieu_str_va_result_str() {
+    let f = sig_of("sqlite.journal_mode").expect("sqlite.journal_mode");
+    assert_eq!(
+        f.params,
+        &[Ty::Str],
+        "`sqlite.journal_mode`: tham số (handle)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultStrErr,
+        "`sqlite.journal_mode`: kiểu trả phải là biến thể `ResultStrErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
+        "`sqlite.journal_mode`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[str, Error]");
 }
 
 /// **VD-270 (sqlite-schema-sql)**: chữ ký `(str, str) -> Result[str?, Error]` — biến thể **riêng**
