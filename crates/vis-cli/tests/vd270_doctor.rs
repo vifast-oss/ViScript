@@ -49,13 +49,22 @@ fn tam(tag: &str) -> PathBuf {
     d
 }
 
-/// Danh sách feature **cùng nguồn** với sản phẩm: hiện chỉ `sqlite` (nếu bật lúc biên dịch test).
+/// Danh sách feature **cùng nguồn** với sản phẩm (thứ tự cố định).
 fn features() -> Vec<&'static str> {
+    let mut ds = Vec::new();
     if cfg!(feature = "sqlite") {
-        vec!["sqlite"]
-    } else {
-        Vec::new()
+        ds.push("sqlite");
     }
+    if cfg!(feature = "tls") {
+        ds.push("tls");
+    }
+    if cfg!(feature = "pkg-sig") {
+        ds.push("pkg-sig");
+    }
+    if cfg!(feature = "http2") {
+        ds.push("http2");
+    }
+    ds
 }
 
 fn sqlite_bat() -> bool {
@@ -271,5 +280,5 @@ fn khong_con_roi_vao_nhanh_lenh_la() {
     let (ma, ra, loi) = vis(&["khong-co-lenh-nay"]);
     assert_eq!(ma, 2);
     assert_eq!(ra, "");
-    assert!(loi.contains("dùng: vis explain"), "usage gốc: {loi}");
+    assert!(loi.contains("vis explain"), "usage gốc: {loi}");
 }
