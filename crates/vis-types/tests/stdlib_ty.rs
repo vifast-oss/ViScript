@@ -250,7 +250,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `sqlite.application_id` (`(str) -> Result[int, Error]`; định danh ứng dụng 32-bit trong
     // header tệp DB đọc qua `PRAGMA application_id`, DDL/ghi dữ liệu không đổi, lưu theo tệp
     // trong `0..=i32::MAX`, chỉ đọc) ⇒ **148** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 151, "bảng chữ ký phải đủ 151 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-components, 2026-11-21)**: +**1** hàm
+    // `std.path.components` (`(str) -> list[str]`; tách **từ vựng** POSIX, tuyệt đối ⇒ `"/"`
+    // đầu, bỏ thành phần rỗng, giữ nguyên `.`/`..`, **không** sugar) ⇒ **152** hàm; không
+    // xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 152, "bảng chữ ký phải đủ 152 hàm");
 }
 
 #[test]
@@ -417,6 +421,22 @@ fn flatten_kieu_long_mot_cap() {
         })),
         "`list.flatten`: hạ `list[T]`"
     );
+}
+
+#[test]
+fn path_components_kieu_str_sang_list_str_va_khong_sugar() {
+    // **VD-270 (path.components)**: chữ ký `(str) -> list[str]`, tái dùng `Ty::ListStr`;
+    // **không** sugar (`components` không nằm trong `module_sugar`, tránh đoán module nhận).
+    let f = sig_of("path.components").expect("path.components");
+    assert_eq!(f.params, &[Ty::Str], "`path.components`: tham số");
+    assert_eq!(f.ret, Ty::ListStr, "`path.components`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`path.components`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "components"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "components"), None);
 }
 
 #[test]

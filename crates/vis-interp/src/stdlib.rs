@@ -38,6 +38,7 @@ mod listminmaxfloat;
 mod listsumfloat;
 mod mapcontainskey;
 mod netconst;
+mod pathcomponents;
 mod pathisabs;
 mod pathjoinall;
 mod pathnorm;
@@ -613,6 +614,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (path.join_all)**: nối `list[str]` trái→phải bằng **đúng** quy tắc
         // `path.join` (gấp trái, `[]` ⇒ `""`).
         "path.join_all" => pathjoinall::goi(&args, span),
+        // **VD-270 (path.components)**: tách **từ vựng** POSIX thành thành phần; tuyệt đối ⇒
+        // phần tử đầu `"/"`, bỏ thành phần rỗng, giữ nguyên `.`/`..` (không chuẩn hoá).
+        "path.components" => pathcomponents::goi(&args, span),
         "path.basename" | "path.dirname" | "path.ext" | "path.stem" => {
             let p = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(match name {
