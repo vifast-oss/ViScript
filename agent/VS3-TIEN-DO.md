@@ -43,9 +43,9 @@
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a/1c | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a` + `7e1deed`; còn cap≥1/select, 1d |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c`; cookie/auth xong; HTTP/2 chờ 4b2 |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9`; loopback fix; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + verify release | **REVIEW** — `041ee50` đỏ 5 ca (2 product); cherry-pick `3d6bfe4` + `5dec89b`; chờ fix `net.rs` của W2 rồi verify lại |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + verify release | **REVIEW** — `041ee50` đỏ 5 ca; đã cherry-pick `3d6bfe4` + `5dec89b` + merge `d9046a9`; chờ verify `8776947` để tag |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
@@ -68,8 +68,8 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
   host 54/54. `vis-dev check` không chạy full `cargo test` nên không đủ kết luận.
 - 5 ca: 2 **product** (overlay LSP tra canonical; `localhost` phân giải `::1` trước khi server bind
   `127.0.0.1`) + 3 **test-only** (registry HTTPS socket non-blocking).
-- Đã cherry-pick `3d6bfe4` (overlay) + `5dec89b` (registry test); **`net.rs`** đang được W2 sửa
-  (thử lần lượt địa chỉ loopback).
+- Đã cherry-pick `3d6bfe4` (overlay) + `5dec89b` (registry test); W2 sửa `net.rs` xong (`d9046a9`:
+  thử lần lượt mọi địa chỉ loopback, IPv4 trước) → merge `8776947`; gate Linux **3448/3**.
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
@@ -79,7 +79,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3445 passed / 3 skipped**; diff 100k chờ |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3448 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag `v0.1.0-rc2` nếu xanh (rc1 có Windows đỏ) |
 
