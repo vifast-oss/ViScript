@@ -20,8 +20,8 @@ use vis_interp::value::Value;
 
 /// **VS3-5b (VD-271)**: dọn blob/thư mục gói không còn được `vis.lock` tham chiếu.
 mod gc;
-/// **VS3-5a (VD-271)**: registry **HTTP** (index + tarball, SHA-256 trước khi cài) — dựng trên HTTP
-/// client hiện có của `vis-interp` (chưa TLS; TLS thuộc VS3-4).
+/// **VS3-5a (VD-271)**: registry **HTTP/HTTPS** (index + tarball, SHA-256 trước khi cài) — dựng trên
+/// HTTP client hiện có của `vis-interp`; `https://` dùng TLS của `vis-cli::net` (VS3-4a).
 mod registry_http;
 /// **ST-128 (VD-125)**: resolver **tất định** trên registry nhiều phiên bản (chọn cao nhất thoả,
 /// quay lui khi xung đột; không giải được ⇒ `VS0704` kèm chuỗi ràng buộc).
@@ -48,7 +48,7 @@ pub fn run(args: &[String]) -> ExitCode {
 }
 
 fn dung() -> &'static str {
-    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port>] [--registry-key <64-hex>] | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port>] [--registry-key <64-hex>] | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] | vis pkg migrate"
+    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>] | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>] | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] | vis pkg migrate"
 }
 
 fn chay(args: &[String]) -> Result<(), String> {
@@ -910,8 +910,9 @@ enum Registry {
     Http(String),
 }
 
-/// Chọn nguồn từ `--registry` / `VIS_REGISTRY`; `http://` ⇒ HTTP, `https://` ⇒ từ chối rõ (chưa
-/// TLS — VS3-4), còn lại là **đường dẫn thư mục** như trước.
+/// Chọn nguồn từ `--registry` / `VIS_REGISTRY`; `http://`/`https://` ⇒ registry HTTP(S), còn lại là
+/// **đường dẫn thư mục** như trước. `http://` vẫn chỉ loopback (do `http_get`); `https://` host bất
+/// kỳ nhưng vẫn qua `cap[Net]`.
 fn registry_tu_chon(chon: Option<String>) -> Result<Registry, String> {
     let s = match chon {
         Some(s) => s,
@@ -924,19 +925,20 @@ fn registry_tu_chon(chon: Option<String>) -> Result<Registry, String> {
             None => "registry".to_string(),
         },
     };
-    if s.starts_with("http://") {
+    if s.starts_with("http://") || s.starts_with("https://") {
+        let scheme = if s.starts_with("https://") {
+            "https://"
+        } else {
+            "http://"
+        };
         let base = s.trim_end_matches('/');
-        if base.len() <= "http://".len() {
+        if base.len() <= scheme.len() {
             return Err(format!("registry `{s}` thiếu host"));
         }
         Ok(Registry::Http(base.to_string()))
-    } else if s.starts_with("https://") {
-        Err(format!(
-            "registry `{s}` chưa hỗ trợ `https://` cho `vis pkg` (TLS đã có ở `net` — VS3-4; lát VS3-5b giữ `http://` loopback) — dùng registry cục bộ hoặc `http://` loopback"
-        ))
     } else if s.contains("://") {
         Err(format!(
-            "registry `{s}` có giao thức lạ — chỉ hỗ trợ thư mục hoặc `http://host:port`"
+            "registry `{s}` có giao thức lạ — chỉ hỗ trợ thư mục, `http://host:port` hoặc `https://host[:port][/path]`"
         ))
     } else {
         Ok(Registry::CucBo(PathBuf::from(s)))
@@ -958,7 +960,7 @@ fn khoa_cong_tu_chon(chon: Option<String>, reg: &Registry) -> Result<Option<[u8;
     if matches!(reg, Registry::CucBo(_)) {
         return if tu_co {
             Err(
-                "`--registry-key` chỉ áp dụng cho registry HTTP (`--registry http://...`)"
+                "`--registry-key` chỉ áp dụng cho registry HTTP(S) (`--registry http://...` hoặc `https://...`)"
                     .to_string(),
             )
         } else {

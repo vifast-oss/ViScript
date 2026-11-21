@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **VS3-5a/VS3-5b (VD-271)** — registry **HTTP** cho `vis pkg` (index + tarball + chữ ký).
+//! **VS3-5a/VS3-5b (VD-271)** — registry **HTTP/HTTPS** cho `vis pkg` (index + tarball + chữ ký).
 //!
 //! Giao thức `vispkg-http1`:
 //!
@@ -25,8 +25,9 @@
 //! như cũ. Mọi kiểm tra xảy ra **trước** khi chạm `.vis/`; lỗi hash dùng **`VS0707`**, lỗi giải
 //! ràng buộc dùng **`VS0704`** (mã hiện có, không cấp mã mới).
 //!
-//! TLS **chưa** có (VS3-4): client hiện tại chỉ `http://` loopback. Tarball đi qua base64 vì
-//! `http_get` trả `str`; byte tar sau giải mã vẫn được băm/kiểm đúng.
+//! TLS **đã có** (VS3-4a): `base` có thể là `https://host[:port][/path]`; client dùng root store,
+//! deadline và keep-alive của `vis-cli::net` qua `http_get`. `http://` vẫn chỉ loopback. Tarball đi
+//! qua base64 vì `http_get` trả `str`; byte tar sau giải mã vẫn được băm/kiểm đúng.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};

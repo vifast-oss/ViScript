@@ -1594,19 +1594,20 @@ fn tính_tổng(danh_sách: list[int]) -> int:
 
 **Không** phải mô hình C.1. Cái **đang có**:
 
-- Lệnh: `vis pkg add <tên>[@<ràng buộc>] [--entry <path>] [--registry <dir|http://host:port>]
+- Lệnh: `vis pkg add <tên>[@<ràng buộc>] [--entry <path>] [--registry <dir|http://host:port|https://host[:port][/path]>]
   [--registry-key <64-hex>]`, `vis pkg install`,
-  `vis pkg update [<tên>] [--registry <dir|http://host:port>] [--registry-key <64-hex>]`,
+  `vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]`,
   `vis pkg list [--json]`, `vis pkg remove <tên>`, `vis pkg gc [--dry-run]`, `vis pkg migrate`
   (`crates/vis-cli/src/pkg.rs`).
 - **Registry CỤC BỘ** (thư mục; mặc định `./registry`, đổi bằng `--registry`): **không** mạng, **không**
   tải theo đường dẫn, **không** meta tag, **không** sổ hash, **không** proxy.
-- **Registry HTTP loopback — VS3-5a (VD-271)**: `--registry http://host:port[/đường]` (hoặc
-  `VIS_REGISTRY`) tải `index.json`, chọn phiên bản bằng **resolver semver hiện có**, rồi **chỉ** tải
-  tarball của phiên bản đã chọn; kiểm **SHA-256 tarball** và **SHA-256 từng tệp** (canonical hoá như
-  registry cục bộ) **trước khi** ghi `.vis`; lỗi hash là **`VS0707`**, không giải được ràng buộc là
-  **`VS0704`**. Tarball là tar ustar đi qua base64 vì client HTTP hiện có trả `str`. **Chưa** TLS
-  (VS3-4), **chưa** TLS cho registry; `https://` bị từ chối rõ.
+- **Registry HTTP(S) — VS3-5a + VS3-4a (VD-271)**: `--registry http://host:port[/đường]` (loopback)
+  hoặc `https://host[:port][/path]` (mọi host, TLS/root store/deadline của `vis-cli::net`) tải
+  `index.json`, chọn phiên bản bằng **resolver semver hiện có**, rồi **chỉ** tải tarball của phiên
+  bản đã chọn; kiểm **SHA-256 tarball** và **SHA-256 từng tệp** (canonical hoá như registry cục bộ)
+  **trước khi** ghi `.vis`; lỗi hash là **`VS0707`**, không giải được ràng buộc là **`VS0704`**.
+  Tarball là tar ustar đi qua base64 vì client HTTP hiện có trả `str`. TLS dùng cùng client với
+  `http.get` (không HTTP/2, không proxy/cookie); `http://` vẫn chỉ loopback.
 - **Chữ ký + GC + migrate — VS3-5b (VD-271)**: `--registry-key`/`VIS_REGISTRY_KEY` bật **bắt buộc**
   chữ ký **Ed25519** (`ring` đã có trong cây, feature `pkg-sig`): mọi phiên bản được chọn phải có
   `signature_ed25519` trên thông điệp chuẩn `vispkg-sig1` (phủ name/version/entry/deps/files/
@@ -1632,7 +1633,7 @@ Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. S�
 - **assert <điều kiện>**: có từ ST-83.
 - **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
 - **HTTP**: HTTP/1.1; `http://` **chỉ loopback** và `https://` (TLS client, VS3-4a) cho host bất kỳ qua `cap[Net]`; có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Có **deadline tổng** cho toàn lời gọi (ST-265/VD-250): connect/handshake/redirect/đọc dùng chung một hạn monotonic, mỗi bước chờ dùng thời gian còn lại, không reset theo hop. **VS3-4b** có keep-alive HTTP/1.1 (pool 8 idle / 15 s, thử lại một lần khi idle chết); **chưa** có HTTP/2.
-- **Gói**: `vis pkg add|install|update|list|remove|gc|migrate` trên **registry cục bộ** (thư mục, `--registry`) và **registry HTTP loopback** (VS3-5a: index + tarball, SHA-256 tarball/từng tệp trước khi cài; **chưa TLS cho registry** — `https://` bị từ chối), **chữ ký Ed25519 tuỳ chọn/bắt buộc** theo khoá cấu hình (VS3-5b), `vis.lock` có SHA-256, chọn phiên bản bằng **bộ giải ràng buộc** semver; **GC store + migrate lock** (VS3-5b). **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
+- **Gói**: `vis pkg add|install|update|list|remove|gc|migrate` trên **registry cục bộ** (thư mục, `--registry`) và **registry HTTP(S)** (VS3-5a + VS3-4a: `http://` loopback hoặc `https://` mọi host; index + tarball, SHA-256 tarball/từng tệp trước khi cài; TLS dùng cùng client `vis-cli::net`, không HTTP/2/proxy/cookie), **chữ ký Ed25519 tuỳ chọn/bắt buộc** theo khoá cấu hình (VS3-5b), `vis.lock` có SHA-256, chọn phiên bản bằng **bộ giải ràng buộc** semver; **GC store + migrate lock** (VS3-5b). **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
 - **LSP**: publish chẩn đoán cho **tài liệu đang mở** (VD-126); **VS3-7 (VD-271)** mở rộng: khi một **tệp module phụ** đổi/mở/đóng, publish lại chẩn đoán module-aware cho **mọi tài liệu đang mở phụ thuộc** (trực tiếp/gián tiếp), mỗi URI tối đa một frame mỗi sự kiện; buffer đang mở làm **overlay** cho phân tích module của tài liệu khác (kể cả chưa ghi đĩa), `didClose` quay lại đĩa. Đã có definition, documentSymbol, references, rename + prepareRename, signatureHelp, foldingRange, workspace/symbol, documentHighlight, selectionRange, formatting, typeDefinition, implementation, hover (biến/trường/enum/method/builtin) và completion `std.*`; cache phân tích theo `(uri, text)` + cache module bị xoá khi văn bản đổi. **Còn mở**: incremental sync (`textDocumentSync:1` = full; `didChange` có `range` bị bỏ qua an toàn), chưa publish chẩn đoán cho tệp phụ **không mở**.
 - **Nền tảng**: **Linux chạy thật** (`ps`; host suite xanh, Landlock chạy thật). **Windows**: Tier 2 — workspace xanh @ `c7cef71` (20/11), **chưa verify lại ở HEAD**, **chưa tuyên bố hỗ trợ**. **macOS**: **chưa verify** — không có máy Darwin; `vis-remote mac` từ chối nếu `uname -s` ≠ Darwin (ST-242). **wasm32**: chỉ `cargo check` (chưa có runner).
 - **Ngôn ngữ đã hiện thực thêm**: `let … else` (buộc thoát mọi nhánh, `VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, khởi tạo top-level `let`/`var` trước `fn main`, gán lồng `x.f.g`/`x[i][j]`, literal `i64::MIN`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.

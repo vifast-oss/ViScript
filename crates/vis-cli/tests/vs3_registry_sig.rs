@@ -530,7 +530,7 @@ fn khoa_voi_registry_cuc_bo_bi_tu_choi() {
         ],
     );
     assert_eq!(code, 2, "stderr: {err}");
-    assert!(err.contains("chỉ áp dụng cho registry HTTP"), "{err}");
+    assert!(err.contains("chỉ áp dụng cho registry"), "{err}");
     assert!(!d.join(".vis").exists());
     let _ = std::fs::remove_dir_all(&d);
 }

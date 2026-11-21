@@ -3,11 +3,12 @@
 //!
 //! - Root store mặc định là **bundle Mozilla** (`webpki_roots`), không phụ thuộc kho hệ điều hành;
 //!   nhờ vậy hành vi giống nhau trên Linux/Windows và test không cần Internet.
-//! - Chỉ **test** mới dựng được cấu hình với gốc riêng ([`tu_goc_der`]) — binary `vis` không có cờ
-//!   hay biến môi trường nào để đổi root store.
+//! - Chỉ **test** mới dựng được cấu hình với gốc riêng ([`tu_goc_der`]). Bản **release** của binary
+//!   `vis` không có cờ/biến môi trường nào đổi root store; bản **debug** có hook
+//!   `VIS_TLS_TEST_ROOT_DER` (một chứng chỉ DER) **chỉ để test hermetic** — xem `mac_dinh`.
 //! - Handshake dùng **phần thời gian còn lại** của deadline chung (`http_get`/`http_head` tính một
 //!   lần), không panic; mọi lỗi chứng chỉ/alert trả `Err` có tiền tố `TLS`.
-//! - **Không** HTTP/2: không đặt ALPN, không keep-alive (VS3-4b để sau).
+//! - **Không** HTTP/2; HTTP/1.1 keep-alive do pool của `Net` (VS3-4b).
 
 use std::net::TcpStream;
 use std::net::ToSocketAddrs;
@@ -33,11 +34,39 @@ fn boi_canh(goc: RootCertStore) -> Result<CauHinh, String> {
     Ok(Arc::new(cfg))
 }
 
-/// Cấu hình **sản phẩm**: tin bundle gốc Mozilla (`webpki-roots`). Không đọc biến môi trường.
+/// Cấu hình **sản phẩm**: tin bundle gốc Mozilla (`webpki-roots`).
+///
+/// Bản **debug** có hook `goc_kiem_thu` để test hermetic (registry TLS local); bản **release**
+/// không biên dịch hook đó, nên không có cách đổi root store từ môi trường.
 pub(super) fn mac_dinh() -> Result<CauHinh, String> {
+    #[cfg(debug_assertions)]
+    if let Some(goc) = goc_kiem_thu()? {
+        return boi_canh(goc);
+    }
     let mut goc = RootCertStore::empty();
     goc.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     boi_canh(goc)
+}
+
+/// **CHỈ BẢN DEBUG**: nếu `VIS_TLS_TEST_ROOT_DER` trỏ tới một chứng chỉ DER, dùng nó làm root store
+/// duy nhất. Release **không** biên dịch hàm này; mục đích là để integration test chạy `vis pkg` với
+/// registry TLS local (chứng chỉ fixture) mà không cần Internet hay cài root vào máy.
+#[cfg(debug_assertions)]
+fn goc_kiem_thu() -> Result<Option<RootCertStore>, String> {
+    let Some(p) = std::env::var_os("VIS_TLS_TEST_ROOT_DER") else {
+        return Ok(None);
+    };
+    let duong = std::path::Path::new(&p);
+    let der = std::fs::read(duong).map_err(|e| {
+        format!(
+            "VIS_TLS_TEST_ROOT_DER `{}` không đọc được: {e}",
+            duong.display()
+        )
+    })?;
+    let mut goc = RootCertStore::empty();
+    goc.add(CertificateDer::from(der))
+        .map_err(|e| format!("VIS_TLS_TEST_ROOT_DER không phải DER hợp lệ: {e}"))?;
+    Ok(Some(goc))
 }
 
 /// Cấu hình **chỉ test/embedding**: tin đúng các chứng chỉ DER cho trước.
