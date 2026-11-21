@@ -374,3 +374,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **sqlite.database_list** merged (`a3b9f3d` + R1 `c26b906`); gate **3245 passed / 3 skipped**; FUNCS **166**.
 - **impl Hop[T] generic** merged (`e229c63`); gate **3251 passed / 3 skipped**; `Ty::ListRowSet`, `ResultListRowSetErr` thêm cho db-list.
 - **Đang chạy**: `perf-map-eq`, `str.matches`, `vis test --slowest`, `impl xuyên module`.
+- `./vis-dev nightly` @ `5a396bc`: **PASS** — parser fuzz **7.509.064 ca / 170.392.740 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
