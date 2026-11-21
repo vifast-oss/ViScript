@@ -533,6 +533,65 @@ fn set_cookie_cua(d: &DauHttp) -> Vec<String> {
         .collect()
 }
 
+/// Header `(tên, giá trị)` gửi kèm h2 (đã hạ tên; giá trị không log).
+fn header_h2(auth: Option<&str>, cookie: Option<&str>) -> Vec<(String, String)> {
+    let mut hs = Vec::new();
+    if let Some(a) = auth {
+        hs.push(("authorization".to_string(), a.to_string()));
+    }
+    if let Some(c) = cookie {
+        hs.push(("cookie".to_string(), c.to_string()));
+    }
+    hs
+}
+
+fn header_gia_tri(headers: &[(String, String)], ten: &str) -> Option<String> {
+    headers
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case(ten))
+        .map(|(_, v)| v.clone())
+}
+
+/// Xử lý một response HTTP/2 (status/Location/body) theo đúng luật redirect của HTTP/1.1.
+fn xu_ly_h2(
+    net: &mut dyn NetHost,
+    u: &UrlHttp,
+    path: &str,
+    kq: crate::builtin::KetQuaHttp2,
+    so: &mut u8,
+    hien_tai: &mut String,
+    da_thu_lai: &mut bool,
+) -> Result<Option<String>, String> {
+    let set_cookie: Vec<String> = kq
+        .headers
+        .iter()
+        .filter(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
+        .map(|(_, v)| v.clone())
+        .collect();
+    if let Some(j) = net.cookie_jar() {
+        j.nhan_set_cookie(&u.host, path, &set_cookie);
+    }
+    if (300..400).contains(&kq.status) {
+        let Some(loc) = header_gia_tri(&kq.headers, "location") else {
+            return Err(format!("HTTP {}", kq.status));
+        };
+        let Some(url) = noi_location(u, &loc)? else {
+            return Err(format!("HTTP {}", kq.status));
+        };
+        *so += 1;
+        if *so > 5 {
+            return Err("quá 5 lần chuyển hướng HTTP (tối đa 5)".to_string());
+        }
+        *hien_tai = url;
+        *da_thu_lai = false;
+        return Ok(None);
+    }
+    if !(200..300).contains(&kq.status) {
+        return Err(format!("HTTP {}", kq.status));
+    }
+    Ok(Some(String::from_utf8_lossy(&kq.body).into_owned()))
+}
+
 /// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body, giữ_kết_nối, set-cookie)`.
 ///
 /// `han` là deadline **chung của cả lời gọi** (do `http_get` tạo một lần); `timeout` chỉ dùng để
@@ -683,6 +742,23 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
                 timeout.max(1)
             )
         })?;
+        // **VS3-4b2**: thử HTTP/2 (ALPN) trước; `None` ⇒ fallback HTTP/1.1 trên cùng kết nối TLS.
+        if la_https {
+            let hs = header_h2(auth.as_deref(), cookie.as_deref());
+            if let Some(kq) = net.http2_get(&u.dia_chi(), &u.target, "GET", &hs, con)? {
+                net.ghi_nhat_ky(&format!(
+                    "NET {} GET {authority}{}",
+                    u.giao_thuc.ten(),
+                    u.target
+                ));
+                if let Some(body) =
+                    xu_ly_h2(net, &u, path, kq, &mut so, &mut hien_tai, &mut da_thu_lai)?
+                {
+                    return Ok(body);
+                }
+                continue;
+            }
+        }
         // **VS3-4a**: `https://` đi qua TLS của host; **VS3-4b**: dùng lại kết nối idle nếu có.
         let (tay, tai_su_dung) = net.connect_http(&u.dia_chi(), la_https, !da_thu_lai, con)?;
         net.ghi_nhat_ky(&format!(
@@ -817,6 +893,26 @@ pub fn http_head(
                 timeout.max(1)
             )
         })?;
+        if la_https {
+            let hs = header_h2(auth.as_deref(), cookie.as_deref());
+            if let Some(kq) = net.http2_get(&u.dia_chi(), &u.target, "HEAD", &hs, con)? {
+                net.ghi_nhat_ky(&format!(
+                    "NET {} HEAD {authority}{}",
+                    u.giao_thuc.ten(),
+                    u.target
+                ));
+                let set_cookie: Vec<String> = kq
+                    .headers
+                    .iter()
+                    .filter(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
+                    .map(|(_, v)| v.clone())
+                    .collect();
+                if let Some(j) = net.cookie_jar() {
+                    j.nhan_set_cookie(&u.host, path, &set_cookie);
+                }
+                return Ok((kq.status, kq.headers));
+            }
+        }
         let (tay, tai_su_dung) = net.connect_http(&u.dia_chi(), la_https, !da_thu_lai, con)?;
         net.ghi_nhat_ky(&format!(
             "NET {} HEAD {authority}{}",

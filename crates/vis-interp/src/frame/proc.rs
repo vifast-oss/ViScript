@@ -1250,3 +1250,26 @@ fn method_writeback(frame: &mut IFrame<'_>, name: &str, base_var: Option<u32>, k
         }
     }
 }
+
+pub(super) fn purge_terminal_frames<V>(
+    frames: &mut HashMap<u32, V>,
+    s: &rt::Scheduler,
+    keep: Option<u32>,
+) -> Vec<u32> {
+    let dead: Vec<u32> = frames
+        .keys()
+        .copied()
+        .filter(|id| *id != 0 && Some(*id) != keep)
+        .filter(|id| {
+            s.tasks
+                .iter()
+                .find(|t| t.id == *id)
+                .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
+                .unwrap_or(true)
+        })
+        .collect();
+    for id in &dead {
+        frames.remove(id);
+    }
+    dead
+}

@@ -24,13 +24,14 @@
 | VS3-1a — budget/step-cap | W1 | `vs3_budget.rs` + diff | **DONE (một phần)** — `3941619`; fuel 100M, parity 2M; BUDGET/Q/default còn mở |
 | VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage_matrix.rs` | **DONE (một phần)** — `7e1deed`; 10 ca, sửa `?.` frame; `Pipe`/nested async chặn 1d |
-| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | TODO | chỉ sau 1a–1c |
+| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa`; sync giữ nguyên, Pipe parity; cap>0/net async còn mở |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
 | VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
 | VS3-3b — worker pool | W1 | `vs3_worker.rs` | **REVIEW** — prototype `3fcd7ef`; W1 tích hợp sau VS3-2a |
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
-| VS3-4b — keep-alive + IPv6 + registry HTTPS + cookie/auth (HTTP/2 tách 4b2) | W2 | `vs3_keepalive.rs`, `vs3_registry_https.rs`, `vs3_cookie_auth.rs` | **DONE (một phần)** — `b7385e9` + `cc74dbc` + `096ea2c`; 8+6+9 ca; HTTP/2 chỉ review |
+| VS3-4b — keep-alive + IPv6 + registry HTTPS + cookie/auth | W2 | `vs3_keepalive.rs`, `vs3_registry_https.rs`, `vs3_cookie_auth.rs` | **DONE (một phần)** — `b7385e9` + `cc74dbc` + `096ea2c`; 8+6+9 ca |
+| VS3-4b2 — HTTP/2 | W2 | `vs3_http2.rs` | **DONE** — `7d73268`; feature `http2` default-off, 5 ca h2; Windows h2 chờ verify |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
@@ -42,8 +43,8 @@
 
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
-| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a/1c | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a` + `7e1deed`; còn cap≥1/select, 1d |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9`; loopback fix; HTTP/2 chờ 4b2 |
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/1c/1d/2a | **DONE (một phần)** — `1de3faa`; async default + Pipe; cap>0/net async còn mở |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2 | **DONE** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9` + `7d73268`; HTTP/2 feature default-off |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
@@ -79,7 +80,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3448 passed / 3 skipped**; diff 100k chờ |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3463 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | dừng 09:00; tag mục tiêu v0.2.0/v0.3.0 |
 
@@ -87,9 +88,9 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 
 | Việc | Chủ | Trạng thái | Điều kiện xong |
 |---|---|---|---|
-| **VS3-1d** async default + Pipe parity | W1 | **WIP** | async chạy frame, sync byte-identical, guard rõ, cache |
+| **VS3-1d** async default + Pipe parity | W1 | **DONE (một phần)** — async chạy frame, sync byte-identical, guard rõ; cap>0/net async W3 |
 | **VS3-3b** worker opt-in | W5 | **WIP** | TaskId/proxy, print merge, budget atomic, W=1/2/4 |
-| **VS3-4b2** HTTP/2 | W2 | **WIP** | feature `http2` default-off, local h2 test, HTTP/1.1 không hồi quy |
+| **VS3-4b2** HTTP/2 | W2 | **DONE** — feature `http2` default-off; 5 ca h2; HTTP/1.1 không hồi quy; Windows h2 chờ |
 | **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
 | **VS3-2b** timeout kênh | — | **NEXT** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |

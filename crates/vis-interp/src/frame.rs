@@ -30,6 +30,7 @@ use crate::value::{Env, ForIter, Name, Value};
 mod expr;
 mod params;
 mod proc;
+use proc::purge_terminal_frames;
 
 use expr::{call_value, dispatch, eval_work, exec_work};
 use params::{env_for_params, khoi_tao_bien_cap_tep_frame, opt_depth_ty};
@@ -758,6 +759,20 @@ pub fn run_frame_for_test<'a>(
     config: FrameConfig,
 ) -> FrameOutput {
     let mut it = Interp::new(hir, symbols, types);
+    run_frame_driver(&mut it, text, hir, symbols, types, args, config)
+}
+
+/// **VS3-1d** — driver frame dùng chung cho test và runtime thật. `it` đã có host/caps do
+/// caller gắn; hàm chỉ chạy scheduler + trả `FrameOutput`.
+pub(crate) fn run_frame_driver<'a>(
+    it: &mut Interp<'a>,
+    text: &str,
+    hir: &'a vis_types::hir::Hir,
+    symbols: &'a vis_types::lower::Symbols,
+    _types: &'a vis_types::TypeTable,
+    args: &[String],
+    config: FrameConfig,
+) -> FrameOutput {
     let _ = symbols;
 
     // **VD-255 / Group B**: hằng cấp tệp được đánh giá trước main (khớp `interp.rs:229`).
@@ -773,12 +788,12 @@ pub fn run_frame_for_test<'a>(
         })
         .collect();
     for (sym, e) in consts {
-        match eval_expr_in(&mut it, e, &globals, &mutable) {
+        match eval_expr_in(it, e, &globals, &mutable) {
             Ok(v) => {
                 globals.borrow_mut().insert(sym, v);
             }
-            Err(Abort::Trap(t)) => return frame_output_early(&mut it, text, None, Some(t)),
-            Err(_) => return frame_output_early(&mut it, text, None, None),
+            Err(Abort::Trap(t)) => return frame_output_early(it, text, None, Some(t)),
+            Err(_) => return frame_output_early(it, text, None, None),
         }
     }
 
@@ -790,8 +805,8 @@ pub fn run_frame_for_test<'a>(
     // **VD-262**: biến cấp tệp là global — khai báo `let`/`var` chạy trước `main`; không có
     // `main` thì để thân cấp tệp tự chạy như cũ (tránh thi hành hai lần).
     if main_fn.is_some() {
-        if let Some(t) = khoi_tao_bien_cap_tep_frame(&mut it, hir, &globals, &mutable) {
-            return frame_output_early(&mut it, text, None, Some(t));
+        if let Some(t) = khoi_tao_bien_cap_tep_frame(it, hir, &globals, &mutable) {
+            return frame_output_early(it, text, None, Some(t));
         }
     }
     let body: &'a [HStmt] = main_fn.map(|f| f.body.as_slice()).unwrap_or(&hir.stmts);
@@ -800,13 +815,25 @@ pub fn run_frame_for_test<'a>(
     // argv cho tham số 1 và `Unit` cho mọi tham số còn lại ⇒ `b: int = 7` bị `Unit`.
     let main_env = match main_fn {
         Some(f) => {
+            // **VS3-1d**: nối `caps` của CLI như runtime mặc định — tham số `cap[...]` nhận
+            // `Value::Cap`; tham số khác nhận `argv` (tương thích đường cũ).
             let pos = if f.params.is_empty() {
                 Vec::new()
-            } else {
+            } else if it.caps().is_empty() {
                 vec![argv]
+            } else {
+                (0..f.params.len())
+                    .map(|i| {
+                        it.caps()
+                            .iter()
+                            .find(|(pos, _)| *pos as usize == i)
+                            .map(|(_, v)| v.clone())
+                            .unwrap_or_else(|| argv.clone())
+                    })
+                    .collect()
             };
             match env_for_params(
-                &mut it,
+                it,
                 &f.params,
                 &pos,
                 &[],
@@ -816,8 +843,8 @@ pub fn run_frame_for_test<'a>(
                 f.span,
             ) {
                 Ok(env) => env,
-                Err(Abort::Trap(t)) => return frame_output_early(&mut it, text, None, Some(t)),
-                Err(_) => return frame_output_early(&mut it, text, None, None),
+                Err(Abort::Trap(t)) => return frame_output_early(it, text, None, Some(t)),
+                Err(_) => return frame_output_early(it, text, None, None),
             }
         }
         // **VD-259**: không có `main` ⇒ chạy câu lệnh cấp tệp như runtime mặc định, KHÔNG
@@ -840,12 +867,17 @@ pub fn run_frame_for_test<'a>(
     let mut final_value: Option<Value> = None;
     let mut trap: Option<Trap> = None;
     let mut guard = 0usize;
+    let max_turns = crate::rt::frame_max_turns_for_test().unwrap_or(200_000);
     loop {
         guard += 1;
-        if guard > 200_000 {
+        // **VS3-1d**: `RunOutput.steps` phải >0 như runtime mặc định (chống xanh-giả).
+        it.steps += 1;
+        if guard > max_turns {
             trap = Some(Trap::new(
                 RT,
-                "frame test: vòng lặp scheduler quá giới hạn",
+                format!(
+                    "vòng lặp scheduler quá giới hạn ({max_turns} turn) — kiểm tra await vòng tròn/deadlock"
+                ),
                 Span::new(0, 0),
             ));
             break;
@@ -867,7 +899,7 @@ pub fn run_frame_for_test<'a>(
         }
         // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng ngân sách tổng).
         crate::rt::fee::quota_reset_for_test();
-        let outcome = step_frame(&mut it, current, &mut frames);
+        let outcome = step_frame(it, current, &mut frames);
         match outcome {
             Ok(v) => {
                 // **VD-259**: frame đã terminal ⇒ bỏ khỏi map ngay (không giữ `IFrame`/env
@@ -1028,7 +1060,7 @@ pub fn run_frame_for_test<'a>(
                 match frames.entry(n) {
                     std::collections::hash_map::Entry::Occupied(_) => {}
                     std::collections::hash_map::Entry::Vacant(e) => {
-                        match build_task_frame(&mut it, n, &globals, &mutable) {
+                        match build_task_frame(it, n, &globals, &mutable) {
                             Ok(Some((body, env))) => {
                                 e.insert(IFrame::new(body, env, &globals, mutable.clone()));
                             }
@@ -1120,32 +1152,6 @@ pub fn run_frame_for_test<'a>(
         log,
         snapshot,
     }
-}
-
-/// **VD-260**: bỏ frame của task đã terminal (`Xong`/`Huy`) hoặc không còn task tương ứng
-/// (frame mồ côi). `keep` là frame vừa được chọn chạy — không bao giờ bỏ. Main (id 0) luôn
-/// giữ. Trả danh sách id đã bỏ để driver ghi log tất định.
-fn purge_terminal_frames<V>(
-    frames: &mut HashMap<u32, V>,
-    s: &rt::Scheduler,
-    keep: Option<u32>,
-) -> Vec<u32> {
-    let dead: Vec<u32> = frames
-        .keys()
-        .copied()
-        .filter(|id| *id != 0 && Some(*id) != keep)
-        .filter(|id| {
-            s.tasks
-                .iter()
-                .find(|t| t.id == *id)
-                .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
-                .unwrap_or(true)
-        })
-        .collect();
-    for id in &dead {
-        frames.remove(id);
-    }
-    dead
 }
 
 /// Trả `FrameOutput` sớm khi đánh giá hằng cấp tệp lỗi (trước khi scheduler chạy).

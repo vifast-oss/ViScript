@@ -466,6 +466,46 @@ pub fn run_frame_for_test_with_budget<'m>(
     run_frame_with_budget(m, text, args, config, Some((fee, limit)))
 }
 
+/// **VS3-1d** — chạy chương trình **có async** bằng frame scheduler thật trên VM, cùng host/
+/// args/caps với `vis_vm::run_with_full_hosts_caps`. Caller chỉ chọn khi HIR có `async fn`.
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_with_full_hosts_caps<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
+    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
+    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
+    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    caps: &[(u32, Value)],
+) -> vis_interp::RunOutput {
+    let mut vm = Vm::new(m, text);
+    if let Some(n) = ngoai {
+        vm.set_ngoai(n);
+    }
+    if let Some(f) = fs {
+        vm.set_fs(f);
+    }
+    if let Some(g) = net {
+        vm.set_net(g);
+    }
+    if let Some(d) = db {
+        vm.set_db(d);
+    }
+    if !caps.is_empty() {
+        vm.caps = caps.to_vec();
+    }
+    let (fo, _) = run_frame_vm_driver(&mut vm, m, text, args, FrameConfig::default(), None);
+    vis_interp::RunOutput {
+        stdout: fo.stdout,
+        diagnostics: fo.diagnostics,
+        value: fo.value,
+        exit: fo.exit,
+        steps: vm.steps,
+    }
+}
+
 fn run_frame_with_budget<'m>(
     m: &'m vis_bytecode::Module,
     text: &'m str,
@@ -474,6 +514,18 @@ fn run_frame_with_budget<'m>(
     budget: Option<(FeeTable, u64)>,
 ) -> (FrameOutput, Vec<FeeEntry>) {
     let mut vm: Vm<'m> = Vm::new(m, text);
+    run_frame_vm_driver(&mut vm, m, text, args, config, budget)
+}
+
+/// **VS3-1d** — driver frame dùng chung test/runtime; `vm` đã có host/caps do caller gắn.
+fn run_frame_vm_driver<'m>(
+    vm: &mut Vm<'m>,
+    m: &'m vis_bytecode::Module,
+    _text: &'m str,
+    args: &[String],
+    config: FrameConfig,
+    budget: Option<(FeeTable, u64)>,
+) -> (FrameOutput, Vec<FeeEntry>) {
     if let Err(e) = vis_bytecode::verify(m) {
         return (
             FrameOutput {
@@ -508,17 +560,17 @@ fn run_frame_with_budget<'m>(
     LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = 0);
     vm.init_globals();
     let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
-    let main_th = match main_th(&vm, &argv) {
+    let main_th = match main_th(vm, &argv) {
         Ok(t) => t,
         Err(Abort::Trap(t)) => {
             return (
-                frame_output(&vm, None, Some(t), Default::default()),
+                frame_output(vm, None, Some(t), Default::default()),
                 vm.budget_trace_for_test().to_vec(),
             )
         }
         Err(_) => {
             return (
-                frame_output(&vm, None, None, Default::default()),
+                frame_output(vm, None, None, Default::default()),
                 vm.budget_trace_for_test().to_vec(),
             )
         }
@@ -540,12 +592,15 @@ fn run_frame_with_budget<'m>(
     let mut final_value: Option<Value> = None;
     let mut trap: Option<Trap> = None;
     let mut guard = 0usize;
+    let max_turns = vis_interp::rt::frame_max_turns_for_test().unwrap_or(200_000);
     loop {
         guard += 1;
-        if guard > 200_000 {
+        if guard > max_turns {
             trap = Some(Trap::new(
                 vis_interp::interp::RT,
-                "frame test: vòng lặp scheduler quá giới hạn",
+                format!(
+                    "vòng lặp scheduler quá giới hạn ({max_turns} turn) — kiểm tra await vòng tròn/deadlock"
+                ),
                 Span::new(0, 0),
             ));
             break;
@@ -567,7 +622,7 @@ fn run_frame_with_budget<'m>(
         // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng budget tổng).
         vm.quota_reset_for_test();
         let mut th = frames.remove(&current).expect("frame hiện tại");
-        let outcome = th.exec(&mut vm);
+        let outcome = th.exec(vm);
         match outcome {
             Ok(v) => {
                 if current == 0 {
@@ -719,7 +774,7 @@ fn run_frame_with_budget<'m>(
                     if let Some(t) = t {
                         // VD-252/ST-268: task cần capture bị từ chối RÕ (không âm thầm dựng
                         // `captured = Vec::new()`/`writeback = None` — kết quả sai mà vẫn pass).
-                        match task_th(&vm, t.than, t.args.clone()) {
+                        match task_th(vm, t.than, t.args.clone()) {
                             Ok(th) => {
                                 e.insert(th);
                             }
@@ -772,7 +827,7 @@ fn run_frame_with_budget<'m>(
     vm.sched.borrow_mut().frame_reactor_shutdown();
     LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = vm.quota_yields_for_test());
     (
-        frame_output(&vm, final_value, trap, snapshot),
+        frame_output(vm, final_value, trap, snapshot),
         vm.budget_trace_for_test().to_vec(),
     )
 }

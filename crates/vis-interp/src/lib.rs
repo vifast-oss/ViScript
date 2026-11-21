@@ -231,3 +231,58 @@ pub fn run_with_hosts_caps<'a>(
         },
     }
 }
+
+/// **VS3-1d** — chạy chương trình **có async** bằng frame scheduler thật (không phải test
+/// harness). Cùng host/args/caps với [`run_with_hosts_caps`]; caller (CLI) chỉ chọn hàm này khi
+/// HIR có `async fn`. Sync vẫn đi `run`/`run_with_hosts_caps` nguyên vẹn.
+///
+/// Giới hạn đã biết: `std.net` read/accept/connect/write trên đường frame cần
+/// `FrameReactorBackend` thật; API này không tự cấp adapter (W2/W3 sở hữu host). Không fallback
+/// đồng bộ — thiếu backend sẽ là trap `VS0505` rõ, không chạy sai.
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_with_hosts_caps<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+) -> RunOutput {
+    let mut it = interp::Interp::new(hir, symbols, types);
+    if !caps.is_empty() {
+        it.set_caps(caps.to_vec());
+    }
+    if let Some(n) = ngoai {
+        it.set_ngoai(n);
+    }
+    if let Some(f) = fs {
+        it.set_fs(f);
+    }
+    if let Some(g) = net {
+        it.set_net(g);
+    }
+    if let Some(d) = db {
+        it.set_db(d);
+    }
+    let fo = frame::run_frame_driver(
+        &mut it,
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        frame::FrameConfig::default(),
+    );
+    RunOutput {
+        stdout: fo.stdout,
+        diagnostics: fo.diagnostics,
+        value: fo.value,
+        exit: fo.exit,
+        steps: it.steps,
+    }
+}
