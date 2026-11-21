@@ -93,6 +93,7 @@ path.stem	(str) -> str
 path.with_extension	(str, str) -> str
 path.with_file_name	(str, str) -> str
 path.with_stem	(str, str) -> str
+sqlite.application_id	(str) -> Result[int, Error]
 sqlite.begin	(str) -> Result[(), Error]
 sqlite.changes	(str) -> Result[int, Error]
 sqlite.close	(str) -> Result[(), Error]

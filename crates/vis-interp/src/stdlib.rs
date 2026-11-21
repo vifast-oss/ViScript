@@ -47,6 +47,7 @@ mod pathwithext;
 mod pathwithfilename;
 mod pathwithstem;
 mod sqlite_explain;
+mod sqliteappid;
 mod sqlitecols;
 mod sqliteexists;
 mod sqliteidx;
@@ -1170,6 +1171,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteuserver::chay(host, h).map(Value::Int), span)
+        }
+        // **VD-270 (sqlite-application-id)** — `application_id` (định danh ứng dụng trong header
+        // tệp DB), chỉ đọc qua `PRAGMA application_id`; DDL/ghi dữ liệu **không** đổi, giá trị
+        // lưu theo tệp; ngoài `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒
+        // `Err(Error)` dữ liệu, không trap.
+        "sqlite.application_id" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqliteappid::chay(host, h).map(Value::Int), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {
