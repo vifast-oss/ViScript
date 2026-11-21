@@ -351,3 +351,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Đang chạy**: `sqlite.data_version`, `path.components`, `fs.canonicalize`, LSP semantic tokens.
 - **Wave tiếp**: `path.components` (`409e005`), `sqlite.data_version` (`1734ab5`) đã merge; gate **3077 passed / 3 skipped**; FUNCS **153**.
 - **Đang chạy**: `fs.canonicalize`, LSP semantic tokens, `sqlite.journal_mode`, `str` ASCII predicates.
+- **Wave tiếp**: `fs.canonicalize` (`c20b730`), LSP semantic tokens (`aa9f9ee`), 4 `str.is_ascii_*` (`e28eeb7`) đã merge; gate **3119 passed / 3 skipped**; FUNCS **158**.
+- **Đang chạy**: `sqlite.journal_mode`, `str.rsplit`, `str.split_terminator`, `path.ancestors`.

@@ -3551,3 +3551,17 @@ dùng trùng tên che.
   chỉ đọc; tăng khi **connection khác** commit vào cùng DB (DML/DDL), không đổi vì ghi/DDL của chính
   connection; thay đổi chưa commit/ROLLBACK không đổi; `:memory:` mỗi connection một DB riêng; mới
   ⇒ `1` (probe, không phải hợp đồng); hợp đồng `0..=i32::MAX`; reuse `Ty::ResultIntErr`.
+
+### VD-270 (bổ sung) · fs.canonicalize, LSP semanticTokens, str.is_ascii_* — A0, 2026-11-21
+
+- **fs.canonicalize**: `(str) -> Result[str, Error]` dùng `std::fs::canonicalize` — **chạm đĩa**,
+  đọc `cwd`, phân giải symlink/`..`; `p` phải tồn tại, rỗng/thiếu/dangling/ENOTDIR/không UTF-8/lỗi
+  quyền ⇒ `Err` dữ liệu; cap đọc như `fs.is_file` (ngoài root/symlink trỏ ra ngoài ⇒ `VS0604`);
+  mock luôn `Err`; không sugar; reuse `Ty::ResultStrStr`.
+- **LSP `textDocument/semanticTokens/full`**: capability `semanticTokensProvider { legend, full: true }`;
+  legend 9 loại `keyword,type,function,variable,string,number,comment,operator,parameter`; mã hoá
+  5 số/token (deltaLine, deltaStartChar, length, tokenType, 0), 0-based **UTF-16**, cắt chuỗi nhiều
+  dòng, bỏ token rỗng/chồng lấn; phân loại heuristic từ lexer + CST; URI chưa mở ⇒ `-32602`.
+- **str.is_ascii_digit/alphabetic/alphanumeric/whitespace**: `(str) -> bool`; đúng ⇔ **không rỗng**
+  và mọi scalar là ASCII thuộc nhóm; rỗng ⇒ `false` (khác `str.is_ascii("")` ⇒ `true`); whitespace
+  đúng Rust (space, `\t`, `\n`, `\r`, `\x0C`; **không** `\x0B`); sugar R5c cả bốn.
