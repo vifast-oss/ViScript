@@ -133,6 +133,12 @@ pub fn van_ban_doi(kv: &[(Value, Value)]) -> Option<(String, String)> {
     let Value::Map(last) = xs.last()? else {
         return None;
     };
+    // **VS3-7**: server công bố `textDocumentSync: 1` (full sync). Nếu client vẫn gửi thay đổi có
+    // `range`, **không** được coi `text` là toàn bộ tài liệu (sẽ làm hỏng buffer) — bỏ qua thay đổi;
+    // incremental sync là việc còn mở (xem báo cáo VS3-7).
+    if lay(last, "range").is_some() {
+        return None;
+    }
     let text = chuoi(lay(last, "text")?)?.to_string();
     Some((uri, text))
 }

@@ -40,7 +40,10 @@ pub(crate) fn xoa_cache_module() {
 }
 
 /// Các `use ./x` **địa phương** trong buffer (đủ để phát hiện đổi cấu trúc module mà không nạp lại).
-fn use_dia_phuong(text: &str, dir: &Path) -> Vec<PathBuf> {
+///
+/// **VS3-7**: `pub(super)` để `chan_doan` dùng làm đường dự phòng khi không nạp được cả cây module
+/// (vẫn nhận ra tài liệu phụ trực tiếp đang mở).
+pub(super) fn use_dia_phuong(text: &str, dir: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     for l in text.lines() {
         let Some(rest) = l.trim().strip_prefix("use ") else {

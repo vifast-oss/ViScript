@@ -44,6 +44,27 @@ struct MucTepPhu {
 
 thread_local! {
     static CACHE_PHU: RefCell<HashMap<std::path::PathBuf, MucTepPhu>> = RefCell::new(HashMap::new());
+    /// **VS3-7 (VD-271)**: buffer LSP đang mở theo đường dẫn **canonical** — dùng làm nội dung tệp
+    /// phụ khi phân tích module của tài liệu khác (kể cả chưa ghi đĩa). CLI không bật overlay.
+    static PHU_MO: RefCell<HashMap<std::path::PathBuf, String>> = RefCell::new(HashMap::new());
+}
+
+/// **VS3-7**: `didOpen`/`didChange` của LSP — đăng ký nội dung buffer cho một tệp (canonical hoá
+/// đường dẫn). Lần đọc tệp phụ sau đó dùng buffer thay cho đĩa; `didClose` gọi
+/// [`xoa_noi_dung_mo`] để quay lại đĩa.
+pub fn dat_noi_dung_mo(path: &Path, text: &str) {
+    let p = chuan_hoa(path);
+    PHU_MO.with(|c| {
+        c.borrow_mut().insert(p, text.to_string());
+    });
+}
+
+/// **VS3-7**: bỏ overlay buffer của một tệp (LSP `didClose`).
+pub fn xoa_noi_dung_mo(path: &Path) {
+    let p = chuan_hoa(path);
+    PHU_MO.with(|c| {
+        c.borrow_mut().remove(&p);
+    });
 }
 
 /// **ST-100**: dọn cache tệp phụ (gọi khi LSP `didClose`).
@@ -52,6 +73,10 @@ pub fn xoa_cache_phu() {
 }
 
 fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
+    // **VS3-7**: buffer LSP đang mở thắng đĩa (kể cả tệp chưa tồn tại trên đĩa).
+    if let Some(t) = PHU_MO.with(|c| c.borrow().get(path).cloned()) {
+        return Ok(t);
+    }
     let meta = std::fs::metadata(path)?;
     let mtime = meta.modified().ok();
     let size = meta.len();
@@ -908,4 +933,42 @@ pub fn dump_deps(l: &Loaded) -> String {
         }
     }
     s
+}
+
+#[cfg(test)]
+mod tests_overlay {
+    use super::{dat_noi_dung_mo, doc_cache_phu, xoa_cache_phu, xoa_noi_dung_mo};
+
+    /// **VS3-7**: buffer đang mở thắng đĩa; `didClose` trả lại nội dung đĩa; tệp **chưa có** trên
+    /// đĩa vẫn đọc được từ overlay (module phụ mới mở).
+    #[test]
+    fn buffer_mo_thang_dia_va_close_tra_lai_dia() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static DEM: AtomicUsize = AtomicUsize::new(0);
+        let n = DEM.fetch_add(1, Ordering::Relaxed);
+        let d = std::env::temp_dir().join(format!("vis-phu-mo-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        let p = d.join("b.vis");
+        std::fs::write(&p, "dia\n").unwrap();
+        assert_eq!(doc_cache_phu(&p).unwrap(), "dia\n");
+
+        dat_noi_dung_mo(&p, "buffer\n");
+        assert_eq!(doc_cache_phu(&p).unwrap(), "buffer\n");
+        // Đổi buffer lần nữa cũng thắng cache đĩa.
+        dat_noi_dung_mo(&p, "buffer 2\n");
+        assert_eq!(doc_cache_phu(&p).unwrap(), "buffer 2\n");
+
+        xoa_noi_dung_mo(&p);
+        xoa_cache_phu();
+        assert_eq!(doc_cache_phu(&p).unwrap(), "dia\n");
+
+        // Tệp mới chưa ghi đĩa: overlay vẫn đọc được; đóng ⇒ lỗi đọc như cũ.
+        let moi = d.join("moi.vis");
+        dat_noi_dung_mo(&moi, "moi\n");
+        assert_eq!(doc_cache_phu(&moi).unwrap(), "moi\n");
+        xoa_noi_dung_mo(&moi);
+        assert!(doc_cache_phu(&moi).is_err());
+        let _ = std::fs::remove_dir_all(&d);
+    }
 }

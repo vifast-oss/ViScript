@@ -4,7 +4,9 @@
 //! `initialize` (capabilities cố định), `initialized` (notification, không frame), `shutdown`
 //! (`result:null`), `exit` (0 nếu đã shutdown, 1 nếu chưa), method lạ `-32601`, body JSON hỏng
 //! `-32700`, request trước `initialize` `-32002`; `didOpen/didChange/didClose` ⇒ publishDiagnostics
-//! (ST-68); `textDocument/completion` + `textDocument/hover` (ST-69, dùng văn bản đã lưu).
+//! (ST-68); **VS3-7 (VD-271)**: tệp module phụ đổi/mở/đóng ⇒ publish lại cho **mọi tài liệu đang mở
+//! phụ thuộc** (buffer mở làm overlay cho module), mỗi URI tối đa một frame/sự kiện; sync vẫn là
+//! **full** (`textDocumentSync:1`). `textDocument/completion` + `textDocument/hover` (ST-69).
 //!
 //! stdout **tuyệt đối sạch**: chỉ frame; mọi lỗi giao thức ghi ra stderr.
 
@@ -94,6 +96,17 @@ pub fn run(args: &[String]) -> ExitCode {
             }
         };
     }
+    // **VS3-7**: publish lại chẩn đoán cho mọi tài liệu **đang mở** phụ thuộc tài liệu vừa đổi.
+    // Dùng macro để mượn `gui!`/`out` của `run`; mỗi URI tối đa một frame mỗi sự kiện.
+    macro_rules! publish_lien_quan {
+        ($uri:expr, $vb:expr) => {
+            for u in chan_doan::uri_lien_quan($uri, $vb) {
+                if let Some(t) = $vb.get(&u) {
+                    gui!(chan_doan::than(&u, Some(t.as_str()), mode_cua(&u)));
+                }
+            }
+        };
+    }
 
     loop {
         let body = match doc.doc_frame() {
@@ -168,26 +181,31 @@ pub fn run(args: &[String]) -> ExitCode {
             // **ST-68**: văn bản mở/đổi (full sync) ⇒ tính lại chẩn đoán + `publishDiagnostics`.
             "textDocument/didOpen" => {
                 if let Some((uri, text)) = jsonrpc::van_ban_mo(kv) {
+                    dat_overlay(&uri, &text);
                     van_ban.insert(uri.clone(), text.clone());
-                    kq_cache.clear();
+                    xoa_cache_phan_tich(&mut kq_cache);
                     gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
+                    publish_lien_quan!(&uri, &van_ban);
                 }
             }
             "textDocument/didChange" => {
                 if let Some((uri, text)) = jsonrpc::van_ban_doi(kv) {
+                    dat_overlay(&uri, &text);
                     van_ban.insert(uri.clone(), text.clone());
-                    kq_cache.clear();
+                    xoa_cache_phan_tich(&mut kq_cache);
                     gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
+                    publish_lien_quan!(&uri, &van_ban);
                 }
             }
             "textDocument/didClose" => {
                 if let Some(uri) = jsonrpc::uri_cua(kv) {
                     van_ban.remove(&uri);
-                    kq_cache.clear();
+                    xoa_cache_phan_tich(&mut kq_cache);
+                    xoa_overlay(&uri);
                     // **ST-100**: dọn cache nạp module; URI khác vẫn dùng lại bình thường.
-                    crate::modules::xoa_cache_phu();
-                    module::xoa_cache_module();
                     gui!(chan_doan::than(&uri, None, mode_cua(&uri)));
+                    // **VS3-7**: tài liệu khác đang mở phụ thuộc tệp vừa đóng ⇒ đọc lại từ đĩa.
+                    publish_lien_quan!(&uri, &van_ban);
                 }
             }
             // **ST-69**: completion + hover (dùng văn bản đã lưu; chưa mở ⇒ rỗng).
@@ -802,6 +820,28 @@ fn percent_giai_ma(s: &str) -> Option<String> {
         i += 1;
     }
     String::from_utf8(out).ok()
+}
+
+/// **VS3-7**: đăng ký buffer LSP làm nội dung module phụ (thắng đĩa tới khi `didClose`).
+fn dat_overlay(uri: &str, text: &str) {
+    if let Some(p) = uri_thanh_duong(uri) {
+        crate::modules::dat_noi_dung_mo(std::path::Path::new(&p), text);
+    }
+}
+
+/// **VS3-7**: bỏ overlay buffer của tài liệu vừa đóng.
+fn xoa_overlay(uri: &str) {
+    if let Some(p) = uri_thanh_duong(uri) {
+        crate::modules::xoa_noi_dung_mo(std::path::Path::new(&p));
+    }
+}
+
+/// **VS3-7**: mọi thay đổi văn bản ⇒ xoá cache phân tích + cache module/tệp phụ. Nhờ vậy chẩn đoán
+/// của **tài liệu khác** không phục vụ item/nội dung module cũ (kể cả buffer chưa ghi đĩa).
+fn xoa_cache_phan_tich(cache: &mut HashMap<String, (String, Rc<KetQua>)>) {
+    cache.clear();
+    crate::modules::xoa_cache_phu();
+    module::xoa_cache_module();
 }
 
 /// `didOpen`: `params.textDocument.{uri,text}`.
