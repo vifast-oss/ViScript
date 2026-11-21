@@ -50,6 +50,7 @@ mod pathwithstem;
 mod sqlite_explain;
 mod sqliteappid;
 mod sqlitecols;
+mod sqlitedataver;
 mod sqliteexists;
 mod sqliteidx;
 mod sqliteidxcols;
@@ -1157,6 +1158,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                     .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
+        }
+        // **VD-270 (sqlite-data-version)** — `data_version` (bộ đếm theo connection), chỉ đọc qua
+        // `PRAGMA data_version`; tăng khi connection **khác** commit vào **cùng** DB, không đổi
+        // vì ghi/DDL của chính connection; `:memory:` mỗi connection một DB riêng; ngoài
+        // `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
+        "sqlite.data_version" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqlitedataver::chay(host, h).map(Value::Int), span)
         }
         // **VD-270 (sqlite-schema-version)** — `schema_version` (schema cookie) của **schema
         // chính** (`main`), chỉ đọc qua `PRAGMA schema_version`; mỗi lời gọi đọc lại nên DDL trên

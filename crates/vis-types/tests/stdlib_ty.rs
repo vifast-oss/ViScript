@@ -254,7 +254,12 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.path.components` (`(str) -> list[str]`; tách **từ vựng** POSIX, tuyệt đối ⇒ `"/"`
     // đầu, bỏ thành phần rỗng, giữ nguyên `.`/`..`, **không** sugar) ⇒ **152** hàm; không
     // xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 152, "bảng chữ ký phải đủ 152 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-data-version, 2026-11-21)**: +**1** hàm
+    // `sqlite.data_version` (`(str) -> Result[int, Error]`; bộ đếm theo connection đọc qua
+    // `PRAGMA data_version`, tăng khi connection **khác** commit vào cùng DB, không đổi vì
+    // ghi/DDL của chính connection, `:memory:` mỗi connection một DB riêng, chỉ đọc) ⇒
+    // **151** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 153, "bảng chữ ký phải đủ 153 hàm");
 }
 
 #[test]
@@ -1078,6 +1083,30 @@ fn sqlite_application_id_kieu_str_va_result_int() {
         f.ret.sang_type(),
         Type::Result(Box::new(Type::Int), Box::new(Ty::Error.sang_type())),
         "`sqlite.application_id`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[int, Error]");
+}
+
+/// **VD-270 (sqlite-data-version)**: chữ ký `(str) -> Result[int, Error]` — tái dùng **đúng**
+/// `Ty::ResultIntErr` (như `sqlite.changes`/`sqlite.last_insert_rowid`/`sqlite.schema_version`/
+/// `sqlite.user_version`), không thêm biến thể.
+#[test]
+fn sqlite_data_version_kieu_str_va_result_int() {
+    let f = sig_of("sqlite.data_version").expect("sqlite.data_version");
+    assert_eq!(
+        f.params,
+        &[Ty::Str],
+        "`sqlite.data_version`: tham số (handle)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultIntErr,
+        "`sqlite.data_version`: kiểu trả phải là `ResultIntErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Int), Box::new(Ty::Error.sang_type())),
+        "`sqlite.data_version`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[int, Error]");
 }
