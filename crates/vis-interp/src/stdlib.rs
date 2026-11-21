@@ -73,6 +73,7 @@ mod strcharat;
 mod strfind;
 mod strisblank;
 mod strlen;
+mod strmatches;
 mod strpad;
 mod strparse;
 mod strparsefloat;
@@ -327,6 +328,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let needle = chuoi(name, &args[1], 1, span)?;
             Ok(strfind::goi(name, s, needle))
         }
+        // **VD-270 (matches)**: **các chuỗi con** khớp `pat` theo đúng `str::matches` của Rust —
+        // khớp **không chồng**, trái → phải, `pat` rỗng khớp tại mọi biên scalar; không trap;
+        // lõi ở `stdlib/strmatches.rs`.
+        "str.matches" => strmatches::goi(name, &args, span),
         // **VD-269**: đệm theo **scalar** Unicode; `fill` rỗng ⇒ trap; `center` dư bên phải.
         "str.pad_left" | "str.pad_right" | "str.center" => {
             let s = chuoi(name, &args[0], 0, span)?;

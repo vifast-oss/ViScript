@@ -286,7 +286,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 166] = [
+pub const FUNCS: [StdFn; 167] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -426,6 +426,15 @@ pub const FUNCS: [StdFn; 166] = [
         name: "str.count",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::Int,
+    },
+    // **VD-270 (matches)**: trả **các chuỗi con** khớp `pat` — đúng Rust `str::matches`, khớp
+    // **không chồng** trái → phải; `pat` rỗng khớp tại mọi biên scalar (`"abc"` ⇒ 4 phần tử
+    // rỗng, `""` ⇒ 1); không khớp ⇒ `[]`. Kết quả tái dùng `Ty::ListStr` (không thêm biến thể
+    // `Ty`); cùng tham số đầu `str` nên sugar R5c `s.matches(pat)` chạy không cần `use`.
+    StdFn {
+        name: "str.matches",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ListStr,
     },
     // **VD-270 (strstrip)**: bỏ **một lần** tiền tố/hậu tố đúng nguyên văn; khớp ⇒
     // `Some(phần còn lại)`, không khớp ⇒ `None`; affix rỗng ⇒ `Some(s)`. Cùng tham số đầu
