@@ -3510,3 +3510,11 @@ nhiều phần tử bằng nhau (kể cả `-0.0`/`+0.0`) giữ **phần tử đ
 - **fs.read_link**: `(str) -> Result[str, Error]` trả đích symlink **nguyên văn**, **không** đi theo
   link; dangling ⇒ `Ok(target)`; tệp/thư mục thường/thiếu ⇒ `Err` dữ liệu; đích không UTF-8 ⇒
   `Err`; cap đọc như `fs.is_file`; mock luôn `Err`; không sugar; reuse `Ty::ResultStrStr`.
+
+### VD-270 (bổ sung) · str.split_inclusive — A0, 2026-11-21
+
+`str.split_inclusive(s, sep) -> list[str]` đúng Rust 1.100.0 (probe 26/26): giữ dấu phân cách ở
+cuối mỗi phần; không khớp/`sep` dài hơn `s` ⇒ `[s]`; dấu cuối **không** sinh phần rỗng; chồng lấn
+không khớp lại (`"aaa"/"aa"` ⇒ `["aa","a"]`); `sep` rỗng ⇒ `["", a, b, …]` (có phần rỗng đầu,
+**không** có phần rỗng cuối); `""`+`""` ⇒ `[""]`; `""`+sep khác rỗng ⇒ `[]` (khác `str.split` của
+ViScript); Unicode/emoji/ZWJ khớp chuỗi con trên biên scalar; sugar R5c; reuse `Ty::ListStr`.
