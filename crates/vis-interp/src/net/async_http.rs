@@ -24,8 +24,8 @@ use crate::stdlib::{DAU_QUYEN, FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CON
 use crate::value::Value;
 
 use super::{
-    con_lai_ms, doc_header_day_du, ghep_chunked, noi_location, tach_url, tim_header, DauHttp,
-    GiaoThuc, UrlHttp, MAX_HEADER, MAX_HTTP,
+    con_lai_ms, doc_header_day_du, ghep_chunked, header_h2, noi_location, tach_url, tim_header,
+    DauHttp, GiaoThuc, UrlHttp, MAX_HEADER, MAX_HTTP,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -62,6 +62,8 @@ struct HttpAsync {
     du: Vec<u8>,
     dau: Option<DauHttp>,
     than_bat_dau: usize,
+    /// **VS3-W2** — id stream h2 khi handle là `H<n>`; `None` ở đường HTTP/1.1.
+    h2_id: Option<u64>,
 }
 
 thread_local! {
@@ -148,6 +150,7 @@ impl HttpAsync {
             du: Vec::new(),
             dau: None,
             than_bat_dau: 0,
+            h2_id: None,
         }
     }
 
@@ -156,6 +159,7 @@ impl HttpAsync {
         self.du.clear();
         self.dau = None;
         self.than_bat_dau = 0;
+        self.h2_id = None;
     }
 
     /// Đóng handle/kết nối đang treo; huỷ mọi đăng ký reactor còn lại (timeout/lỗi).
@@ -167,6 +171,11 @@ impl HttpAsync {
             return;
         };
         if let Some(h) = self.handle.take() {
+            if h.starts_with('H') {
+                if let Some(id) = self.h2_id.take() {
+                    host.sched().borrow_mut().frame_reactor_h2_cancel(&h, id);
+                }
+            }
             let wk = format!("{FRAME_NET_WRITE}{h}");
             {
                 let mut sc = host.sched().borrow_mut();
@@ -217,6 +226,12 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             st.dat_lai_sau_chuyen_huong();
         }
         let handle = st.handle.clone().expect("handle vừa có");
+        if handle.starts_with('H') {
+            match drive_h2(host, st, span)? {
+                H2Buoc::Xong(v) => return Ok(Some(v)),
+                H2Buoc::ChuyenHuong => continue 'ngoai,
+            }
+        }
         if !st.da_gui {
             let u = match tach_url(&st.url) {
                 Ok(u) => u,
@@ -276,6 +291,115 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             }
         }
     }
+}
+
+enum H2Buoc {
+    Xong(Value),
+    ChuyenHuong,
+}
+
+/// **VS3-W2** — lái request h2 trên handle `H<n>` bằng meta có cấu trúc.
+fn drive_h2(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
+    let handle = st.handle.clone().expect("handle h2");
+    if st.h2_id.is_none() {
+        if con_lai_ms(st.han).is_none() {
+            return Ok(H2Buoc::Xong(het_gio(st)));
+        }
+        let u = match tach_url(&st.url) {
+            Ok(u) => u,
+            Err(e) => return Ok(H2Buoc::Xong(loi_http(e))),
+        };
+        let (auth, cookie) = thong_tin(host, &u);
+        ghi_log(host, st.phuong_thuc, &u);
+        let hs = header_h2(auth.as_deref(), cookie.as_deref());
+        let id = match host.sched().borrow_mut().frame_reactor_h2_send(
+            &handle,
+            st.phuong_thuc.ten(),
+            &u.target,
+            &hs,
+        ) {
+            Ok(id) => id,
+            Err(e) => return Ok(H2Buoc::Xong(loi_http(e))),
+        };
+        st.h2_id = Some(id);
+        st.da_gui = true;
+    }
+    let id = st.h2_id.expect("vừa gửi");
+    let Some(con) = con_lai_ms(st.han) else {
+        host.sched()
+            .borrow_mut()
+            .frame_reactor_h2_cancel(&handle, id);
+        return Ok(H2Buoc::Xong(het_gio(st)));
+    };
+    // Một lần poll h2 bao cả response (nhiều frame), không phải một chunk như h1;
+    // dùng trọn thời gian còn lại để không cắt body lớn giữa chừng.
+    let kq =
+        host.sched()
+            .borrow_mut()
+            .frame_reactor_h2_poll(&handle, id, con.max(1) as i64, span)?;
+    let resp = match kq {
+        Ok(r) => r,
+        Err(e) if e.contains("thời gian") => {
+            host.sched()
+                .borrow_mut()
+                .frame_reactor_h2_cancel(&handle, id);
+            return Ok(H2Buoc::Xong(het_gio(st)));
+        }
+        Err(e) => {
+            return Ok(H2Buoc::Xong(loi_http(e)));
+        }
+    };
+    if st.phuong_thuc == PhuongThuc::Head {
+        return Ok(H2Buoc::Xong(ket_qua_head_meta(resp.status, &resp.headers)));
+    }
+    if (300..400).contains(&resp.status) {
+        let Some(loc) = tim_header_gia_tri(&resp.headers, "location") else {
+            return Ok(H2Buoc::Xong(loi_http(format!("HTTP {}", resp.status))));
+        };
+        let u = match tach_url(&st.url) {
+            Ok(u) => u,
+            Err(e) => return Ok(H2Buoc::Xong(loi_http(e))),
+        };
+        let url = match noi_location(&u, &loc) {
+            Ok(Some(u)) => u,
+            Ok(None) => return Ok(H2Buoc::Xong(loi_http(format!("HTTP {}", resp.status)))),
+            Err(e) => return Ok(H2Buoc::Xong(loi_http(e))),
+        };
+        st.so_chuyen += 1;
+        if st.so_chuyen > 5 {
+            return Ok(H2Buoc::Xong(loi_http(
+                "quá 5 lần chuyển hướng HTTP (tối đa 5)".to_string(),
+            )));
+        }
+        st.dong(host);
+        st.url = url;
+        st.dat_lai_sau_chuyen_huong();
+        return Ok(H2Buoc::ChuyenHuong);
+    }
+    if !(200..300).contains(&resp.status) {
+        return Ok(H2Buoc::Xong(loi_http(format!("HTTP {}", resp.status))));
+    }
+    Ok(H2Buoc::Xong(ok_body(&resp.body)))
+}
+
+fn tim_header_gia_tri(headers: &[(String, String)], ten: &str) -> Option<String> {
+    headers
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case(ten))
+        .map(|(_, v)| v.clone())
+}
+
+fn ket_qua_head_meta(status: u16, headers: &[(String, String)]) -> Value {
+    let headers = Value::Map(
+        headers
+            .iter()
+            .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
+            .collect(),
+    );
+    Value::ok(Value::Map(vec![
+        (Value::Str("status".to_string()), Value::Int(status as i64)),
+        (Value::Str("headers".to_string()), headers),
+    ]))
 }
 
 fn kiem_tra(st: &mut HttpAsync, host: &mut dyn Host) -> Result<Buoc, String> {

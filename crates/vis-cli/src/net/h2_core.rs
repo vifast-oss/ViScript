@@ -241,6 +241,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> H2Core<T> {
     }
 
     /// Còn stream chưa có kết quả?
+    #[cfg(any(test, feature = "async-h2"))]
     pub(super) fn con_cho(&self) -> bool {
         self.songs.values().any(|s| s.ket_qua.is_none())
     }
@@ -266,7 +267,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> H2Core<T> {
             TaskPoll::Ready(Err(e)) => Some(loi_h2(&e, "kết nối")),
             TaskPoll::Pending => None,
         };
-        if loi_conn.is_some() {
+        if let Some(loi) = loi_conn {
             self.da_dong = true;
             // Connection đã đóng nhưng h2 có thể còn frame response đã đệm: poll cạn từng
             // stream (data/trailer) trước khi biến stream còn treo thành lỗi connection.
@@ -283,14 +284,8 @@ impl<T: AsyncRead + AsyncWrite + Unpin> H2Core<T> {
             // Connection đóng **sau** khi stream đã xong (vd GOAWAY sau response) không phải
             // lỗi của request đó; chỉ trả lỗi khi còn stream treo thật sự.
             let con_treo = self.songs.values().any(|s| s.ket_qua.is_none());
-            if let Some(loi) = &loi_conn {
-                self.loi_het(loi.clone());
-            }
-            return if con_treo {
-                Err(loi_conn.expect("có lỗi connection"))
-            } else {
-                Ok(tien)
-            };
+            self.loi_het(loi.clone());
+            return if con_treo { Err(loi) } else { Ok(tien) };
         }
         for song in self.songs.values_mut() {
             song.buoc(&mut cx, &mut tien);
@@ -307,9 +302,18 @@ impl<T: AsyncRead + AsyncWrite + Unpin> H2Core<T> {
     }
 
     /// Hết hạn: RST mọi stream còn mở và đánh dấu connection không tái dùng.
+    #[cfg(feature = "async-h2")]
     pub(super) fn huy(&mut self, loi: String) {
         self.loi_het(loi);
         self.da_dong = true;
+    }
+
+    /// Huỷ riêng một stream (timeout/cancel) nhưng giữ connection cho stream khác.
+    #[cfg(feature = "async-h2")]
+    pub(super) fn huy_stream(&mut self, id: u64) {
+        if let Some(s) = self.songs.get_mut(&id) {
+            s.dat_loi("quá thời gian chờ phản hồi HTTP/2".to_string());
+        }
     }
 
     /// Lấy kết quả của một stream (một lần).

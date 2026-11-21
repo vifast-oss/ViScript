@@ -19,9 +19,9 @@ use rustls::pki_types::{CertificateDer, ServerName};
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
 /// Luồng TLS đã handshake xong; đọc/ghi qua `StreamOwned`, socket gốc ở trường `sock`.
-pub(super) type KenhTls = StreamOwned<ClientConnection, TcpStream>;
+pub(crate) type KenhTls = StreamOwned<ClientConnection, TcpStream>;
 /// Cấu hình TLS dùng chung cho mọi kết nối HTTPS của một `Net`.
-pub(super) type CauHinh = Arc<ClientConfig>;
+pub(crate) type CauHinh = Arc<ClientConfig>;
 
 /// Dựng `ClientConfig` từ một root store; `ring` là provider mặc định (không kéo `aws-lc-rs`).
 fn boi_canh(goc: RootCertStore) -> Result<CauHinh, String> {
@@ -88,7 +88,7 @@ pub(crate) fn tu_goc_der(ds: &[&[u8]]) -> Result<CauHinh, String> {
 /// **VS3-4b2**: cấu hình TLS có ALPN `h2` rồi `http/1.1` (chỉ feature `http2`). Client HTTP/2 dùng
 /// cấu hình này; HTTP/1.1 mặc định vẫn không đặt ALPN.
 #[cfg(feature = "http2")]
-pub(super) fn cau_hinh_h2(cfg: &CauHinh) -> CauHinh {
+pub(crate) fn cau_hinh_h2(cfg: &CauHinh) -> CauHinh {
     let mut c = (**cfg).clone();
     c.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
     Arc::new(c)

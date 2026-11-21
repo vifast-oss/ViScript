@@ -15,6 +15,7 @@
 #![cfg(all(feature = "async-h2", feature = "http2", feature = "tls", unix))]
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::future::Future;
 use std::io::{self, ErrorKind, Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
@@ -372,6 +373,9 @@ type BapH2 = Pin<
     >,
 >;
 
+/// Request xếp trước handshake: id backend, method, target, headers.
+type YeuCauCho = (u64, String, String, Vec<(String, String)>);
+
 enum TrangThai {
     /// Đã có TLS, đang chờ SETTINGS/frame handshake h2.
     DangBap(BapH2),
@@ -385,11 +389,19 @@ pub struct H2Async {
     authority: String,
     co: Rc<Cell<u8>>,
     fd: RawFd,
+    /// Id request do backend cấp (ổn định kể cả khi còn chờ handshake).
+    next_req: u64,
+    /// Request xếp trước khi handshake xong: (id backend, method, target, headers).
+    cho_gui: Vec<YeuCauCho>,
+    /// id backend → id stream trong `H2Core`.
+    map_id: HashMap<u64, u64>,
+    /// Lỗi gửi của request đã xếp (id backend).
+    loi_gui: HashMap<u64, String>,
 }
 
 impl H2Async {
     /// Bọc `KenhTls` đã handshake TLS (ALPN h2) và bắt đầu h2 handshake **chưa chạy**.
-    pub(super) fn moi_cho_bap(k: KenhTls, authority: &str) -> Self {
+    pub(crate) fn moi_cho_bap(k: KenhTls, authority: &str) -> Self {
         let fd = k.sock.as_raw_fd();
         let co = Rc::new(Cell::new(0u8));
         let io = IoH2 {
@@ -401,6 +413,10 @@ impl H2Async {
             authority: authority.to_string(),
             co,
             fd,
+            next_req: 0,
+            cho_gui: Vec::new(),
+            map_id: HashMap::new(),
+            loi_gui: HashMap::new(),
         }
     }
 
@@ -413,7 +429,8 @@ impl H2Async {
         Ok(p)
     }
 
-    pub(super) fn fd(&self) -> RawFd {
+    #[allow(dead_code)] // checkpoint 2 (AsyncNet) dùng
+    pub(crate) fn fd(&self) -> RawFd {
         self.fd
     }
 
@@ -421,22 +438,24 @@ impl H2Async {
         matches!(self.trang_thai, TrangThai::Song(_))
     }
 
-    pub(super) fn san_sang(&self) -> bool {
+    pub(crate) fn san_sang(&self) -> bool {
         self.trang_thai_da_san_sang()
     }
 
-    pub(super) fn interest(&self) -> Interest {
+    #[allow(dead_code)] // checkpoint 2 (AsyncNet) dùng
+    pub(crate) fn interest(&self) -> Interest {
         interest_tu_co(self.co.get())
     }
 
-    pub(super) fn xoa_co(&self) {
+    #[allow(dead_code)] // checkpoint 2 (AsyncNet) dùng
+    pub(crate) fn xoa_co(&self) {
         self.co.set(0);
     }
 
     /// Lái **một** bước: handshake h2, hoặc connection + mọi stream.
     ///
     /// `Ok(true)` = có tiến triển (gọi lại ngay); `Ok(false)` = cần chờ fd sẵn sàng.
-    pub(super) fn tien(&mut self) -> Result<bool, String> {
+    pub(crate) fn tien(&mut self) -> Result<bool, String> {
         let mut tt = std::mem::replace(&mut self.trang_thai, TrangThai::Dong);
         let kq = match &mut tt {
             TrangThai::DangBap(f) => {
@@ -444,7 +463,18 @@ impl H2Async {
                 let mut cx = Context::from_waker(w);
                 match f.as_mut().poll(&mut cx) {
                     TaskPoll::Ready(Ok((send, conn))) => {
-                        tt = TrangThai::Song(H2Core::moi(send, conn, self.authority.clone()));
+                        let mut core = H2Core::moi(send, conn, self.authority.clone());
+                        for (id, method, target, headers) in self.cho_gui.drain(..) {
+                            match core.gui(&method, &target, &headers) {
+                                Ok(core_id) => {
+                                    self.map_id.insert(id, core_id);
+                                }
+                                Err(e) => {
+                                    self.loi_gui.insert(id, e);
+                                }
+                            }
+                        }
+                        tt = TrangThai::Song(core);
                         Ok(true)
                     }
                     TaskPoll::Ready(Err(e)) => Err(format!(
@@ -461,29 +491,43 @@ impl H2Async {
         kq
     }
 
-    /// Đưa request vào phiên (end_stream ngay); trả id nội bộ.
+    /// Đưa request vào phiên (end_stream ngay) hoặc xếp chờ handshake; trả id backend.
     pub fn gui(
         &mut self,
         method: &str,
         target: &str,
         headers: &[(String, String)],
     ) -> Result<u64, String> {
+        let id = self.next_req;
+        self.next_req += 1;
         match &mut self.trang_thai {
-            TrangThai::Song(core) => core.gui(method, target, headers),
-            TrangThai::Dong => Err("phiên HTTP/2 đã đóng".to_string()),
-            TrangThai::DangBap(_) => Err("phiên HTTP/2 chưa handshake xong".to_string()),
+            TrangThai::Song(core) => {
+                let core_id = core.gui(method, target, headers)?;
+                self.map_id.insert(id, core_id);
+                Ok(id)
+            }
+            TrangThai::DangBap(_) => {
+                self.cho_gui
+                    .push((id, method.to_string(), target.to_string(), headers.to_vec()));
+                Ok(id)
+            }
+            TrangThai::Dong => Err("GOAWAY HTTP/2 khi gửi request: phiên đã đóng".to_string()),
         }
     }
 
     pub fn ket_qua(&mut self, id: u64) -> Option<Result<KetQuaHttp2, String>> {
+        if let Some(e) = self.loi_gui.remove(&id) {
+            return Some(Err(e));
+        }
+        let core_id = *self.map_id.get(&id)?;
         match &mut self.trang_thai {
-            TrangThai::Song(core) => core.ket_qua(id),
+            TrangThai::Song(core) => core.ket_qua(core_id),
             _ => None,
         }
     }
 
     /// Còn việc: handshake chưa xong hoặc còn stream chờ.
-    pub(super) fn con_viec(&self) -> bool {
+    pub(crate) fn con_viec(&self) -> bool {
         match &self.trang_thai {
             TrangThai::DangBap(_) => true,
             TrangThai::Song(core) => core.con_cho(),
@@ -491,7 +535,18 @@ impl H2Async {
         }
     }
 
-    pub(super) fn huy(&mut self, loi: String) {
+    pub(crate) fn huy_stream(&mut self, id: u64) {
+        if let Some(core_id) = self.map_id.remove(&id) {
+            if let TrangThai::Song(core) = &mut self.trang_thai {
+                core.huy_stream(core_id);
+            }
+        } else {
+            self.cho_gui.retain(|(i, _, _, _)| *i != id);
+            self.loi_gui.remove(&id);
+        }
+    }
+
+    pub(crate) fn huy(&mut self, loi: String) {
         if let TrangThai::Song(core) = &mut self.trang_thai {
             core.huy(loi);
         }

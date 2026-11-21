@@ -22,7 +22,7 @@ use vis_interp::builtin::NetHost;
 use vis_interp::cookie::CookieJar;
 
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
-mod h2;
+pub(crate) mod h2;
 /// **VS3-W2** — HTTP/2 reactor-native cho async, feature `async-h2` (default-off).
 #[cfg(all(
     feature = "async-h2",

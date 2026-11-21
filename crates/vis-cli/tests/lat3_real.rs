@@ -115,6 +115,9 @@ impl FrameReactorBackend for Reactor {
                 Some(l) => self.poll.registry().register(l, tok, Interest::READABLE),
                 None => return Err(format!("không tìm thấy `{handle}` để đăng ký accept")),
             },
+            ReactorOp::ReadWrite => {
+                return Err("test adapter không hỗ trợ ReactorOp::ReadWrite".to_string())
+            }
         };
         match r {
             Ok(()) => {}
@@ -138,6 +141,7 @@ impl FrameReactorBackend for Reactor {
                 Some(l) => self.poll.registry().deregister(l),
                 None => return Ok(()),
             },
+            ReactorOp::ReadWrite => return Ok(()),
         };
         match r {
             Ok(()) => Ok(()),

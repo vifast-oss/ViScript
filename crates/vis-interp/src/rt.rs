@@ -239,6 +239,8 @@ pub struct DiagSnapshot {
 pub enum ReactorOp {
     Read,
     Accept,
+    /// **VS3-W2** — chờ cả READABLE lẫn WRITABLE cho một bước HTTP/2 (session tự quyết).
+    ReadWrite,
 }
 
 /// **Chỉ test (Lát 2)**: kết quả một sự kiện reactor giả.
@@ -325,6 +327,46 @@ pub trait FrameReactorBackend {
     fn wait(&mut self, timeout: Duration) -> Result<Vec<ReactorRawEvent>, String>;
     /// Đóng tay (`net.close`) — adapter đóng cả socket thật; stale event vô hiệu ở core.
     fn close(&mut self, handle: &str) -> Result<(), String>;
+    /// **VS3-W2** — lái handshake h2 một bước; `Ok(true)` = sẵn sàng gửi request.
+    /// Backend không hỗ trợ h2 giữ mặc định lỗi rõ (test scripted không phải sửa).
+    fn h2_ready(&mut self, _handle: &str) -> Result<bool, String> {
+        Err("backend không hỗ trợ HTTP/2 async".to_string())
+    }
+    /// **VS3-W2** — gửi request h2 trên connection `handle`; trả id stream nội bộ.
+    fn h2_send(
+        &mut self,
+        _handle: &str,
+        _method: &str,
+        _target: &str,
+        _headers: &[(String, String)],
+    ) -> Result<u64, String> {
+        Err("backend không hỗ trợ HTTP/2 async".to_string())
+    }
+    /// **VS3-W2** — poll một bước session + kiểm stream `id`.
+    fn h2_poll(&mut self, _handle: &str, _id: u64) -> ReactorH2Outcome {
+        ReactorH2Outcome::Err("backend không hỗ trợ HTTP/2 async".to_string())
+    }
+    /// **VS3-W2** — huỷ riêng stream `id` (timeout/cancel) mà không đóng session.
+    fn h2_cancel(&mut self, _handle: &str, _id: u64) {}
+}
+
+/// **VS3-W2** — response h2 có cấu trúc cho core (không nhồi lại thành HTTP/1.1).
+#[doc(hidden)]
+#[derive(Debug, Clone)]
+pub struct ReactorH2Response {
+    pub status: u16,
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
+/// **VS3-W2** — kết quả một bước `h2_poll`.
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum ReactorH2Outcome {
+    /// Cần readiness READABLE|WRITABLE (scheduler đăng ký rồi trả `Pending`).
+    WouldBlock,
+    Response(ReactorH2Response),
+    Err(String),
 }
 
 impl std::fmt::Debug for dyn FrameReactorBackend {
@@ -611,6 +653,100 @@ impl Scheduler {
         }
     }
 
+    /// **VS3-W2** — lái handshake h2 tới khi sẵn sàng; `WouldBlock` ⇒ đăng ký READ|WRITE
+    /// và trả `Pending` để frame khác chạy. Lỗi backend trả `Ok(Err)` (core đổi thành Error).
+    #[doc(hidden)]
+    pub fn frame_reactor_h2_ready(
+        &mut self,
+        handle: &str,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Result<(), String>> {
+        let Some(b) = self.frame.backend.clone() else {
+            return Ok(Err(
+                "HTTP/2 async cần reactor backend thật (không có backend)".to_string(),
+            ));
+        };
+        let kq = b.borrow_mut().h2_ready(handle);
+        match kq {
+            Ok(true) => {
+                self.frame_real_done(handle, ReactorOp::ReadWrite);
+                Ok(Ok(()))
+            }
+            Ok(false) => {
+                if let Some(msg) =
+                    self.frame_real_wait(&b, ReactorOp::ReadWrite, handle, timeout_ms, span)?
+                {
+                    return Ok(Err(msg));
+                }
+                unreachable!("frame_real_wait chỉ trả Pending hoặc lỗi")
+            }
+            Err(e) => {
+                self.frame_real_done(handle, ReactorOp::ReadWrite);
+                Ok(Err(e))
+            }
+        }
+    }
+
+    /// **VS3-W2** — gửi request h2 (không chờ); trả id stream nội bộ.
+    #[doc(hidden)]
+    pub fn frame_reactor_h2_send(
+        &mut self,
+        handle: &str,
+        method: &str,
+        target: &str,
+        headers: &[(String, String)],
+    ) -> Result<u64, String> {
+        let Some(b) = self.frame.backend.clone() else {
+            return Err("HTTP/2 async cần reactor backend thật (không có backend)".to_string());
+        };
+        let kq = b.borrow_mut().h2_send(handle, method, target, headers);
+        kq
+    }
+
+    /// **VS3-W2** — poll một bước h2 cho stream `id`; `WouldBlock` ⇒ đăng ký READ|WRITE.
+    #[doc(hidden)]
+    pub fn frame_reactor_h2_poll(
+        &mut self,
+        handle: &str,
+        id: u64,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Result<ReactorH2Response, String>> {
+        let Some(b) = self.frame.backend.clone() else {
+            return Ok(Err(
+                "HTTP/2 async cần reactor backend thật (không có backend)".to_string(),
+            ));
+        };
+        let kq = b.borrow_mut().h2_poll(handle, id);
+        match kq {
+            ReactorH2Outcome::WouldBlock => {
+                if let Some(msg) =
+                    self.frame_real_wait(&b, ReactorOp::ReadWrite, handle, timeout_ms, span)?
+                {
+                    return Ok(Err(msg));
+                }
+                unreachable!("frame_real_wait chỉ trả Pending hoặc lỗi")
+            }
+            ReactorH2Outcome::Response(r) => {
+                self.frame_real_done(handle, ReactorOp::ReadWrite);
+                Ok(Ok(r))
+            }
+            ReactorH2Outcome::Err(e) => {
+                self.frame_real_done(handle, ReactorOp::ReadWrite);
+                Ok(Err(e))
+            }
+        }
+    }
+
+    /// **VS3-W2** — huỷ riêng stream (timeout/cancel) nhưng giữ session cho stream khác.
+    #[doc(hidden)]
+    pub fn frame_reactor_h2_cancel(&mut self, handle: &str, id: u64) {
+        if let Some(b) = self.frame.backend.clone() {
+            b.borrow_mut().h2_cancel(handle, id);
+        }
+    }
+
     /// Lấy (và xoá) lỗi selector để driver đổi thành trap rõ — không bao giờ coi
     /// lỗi selector là "không có sự kiện".
     #[doc(hidden)]
@@ -688,6 +824,9 @@ impl Scheduler {
         let outcome = match op {
             ReactorOp::Read => b.borrow_mut().try_read(handle, max),
             ReactorOp::Accept => b.borrow_mut().try_accept(handle),
+            ReactorOp::ReadWrite => {
+                unreachable!("ReadWrite chỉ dùng cho frame_reactor_h2_*")
+            }
         };
         match outcome {
             ReactorIoOutcome::Data(bytes) => {
@@ -714,6 +853,21 @@ impl Scheduler {
             ReactorIoOutcome::WouldBlock => {}
         }
 
+        if let Some(msg) = self.frame_real_wait(b, op, handle, timeout_ms, span)? {
+            return Ok(RealPoll::Loi(msg));
+        }
+        unreachable!("frame_real_wait chỉ trả Pending hoặc lỗi")
+    }
+
+    /// Đăng ký/re-arm chờ `(handle, op)` và trả `Abort::Pending`; dùng chung cho mọi op.
+    fn frame_real_wait(
+        &mut self,
+        b: &Rc<RefCell<dyn FrameReactorBackend>>,
+        op: ReactorOp,
+        handle: &str,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Option<String>> {
         let deadline = if timeout_ms > 0 {
             Some(Instant::now() + Duration::from_millis(timeout_ms as u64))
         } else {
@@ -753,7 +907,7 @@ impl Scheduler {
                         .reactor
                         .log
                         .push(format!("rtimeout:{}:{}", handle, r.key));
-                    return Ok(RealPoll::Loi(format!(
+                    return Ok(Some(format!(
                         "quá thời gian chờ dữ liệu từ `{handle}` sau {timeout_ms} ms"
                     )));
                 }
@@ -766,9 +920,7 @@ impl Scheduler {
                 let reg = b.borrow_mut().register(token, handle, op);
                 if let Err(e) = reg {
                     self.frame_real_done(handle, op);
-                    return Ok(RealPoll::Loi(format!(
-                        "lỗi đăng ký readiness cho `{handle}`: {e}"
-                    )));
+                    return Ok(Some(format!("lỗi đăng ký readiness cho `{handle}`: {e}")));
                 }
                 self.frame.token_map.insert(token, (r.key, gen));
                 if let Some(reg) = self.frame.reactor.regs.iter_mut().find(|x| x.key == r.key) {
@@ -787,9 +939,7 @@ impl Scheduler {
                 self.frame.reactor.next_key += 1;
                 let token = self.mint_token();
                 if let Err(e) = b.borrow_mut().register(token, handle, op) {
-                    return Ok(RealPoll::Loi(format!(
-                        "lỗi đăng ký readiness cho `{handle}`: {e}"
-                    )));
+                    return Ok(Some(format!("lỗi đăng ký readiness cho `{handle}`: {e}")));
                 }
                 self.frame.token_map.insert(token, (key, 0));
                 self.frame.reactor.regs.push(ReactorReg {

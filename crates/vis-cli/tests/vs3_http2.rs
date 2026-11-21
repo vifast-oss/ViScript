@@ -889,6 +889,7 @@ mod h2_async_spike {
     enum Kieu {
         Thuong,
         Cho4,
+        Warm4,
         GoAway,
         Treo,
     }
@@ -984,16 +985,18 @@ mod h2_async_spike {
                         } else if path == "/hello" {
                             b"hello".to_vec()
                         } else {
-                            path.into_bytes()
+                            path.clone().into_bytes()
                         };
-                        let resp = Response::builder()
-                            .status(200)
-                            .body(())
-                            .map_err(io::Error::other)?;
+                        let mut rb = Response::builder().status(200);
+                        let chuyen = path == "/redir";
+                        if chuyen {
+                            rb = rb.status(302).header("location", "/hello");
+                        }
+                        let resp = rb.body(()).map_err(io::Error::other)?;
                         let mut send = respond
-                            .send_response(resp, head)
+                            .send_response(resp, head || chuyen)
                             .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
-                        if !head {
+                        if !head && !chuyen {
                             gui_than(&mut send, &body, true)?;
                         }
                     }
@@ -1025,6 +1028,59 @@ mod h2_async_spike {
                     }
                 }
                 // Trả ngược thứ tự để client không thể dựa vào thứ tự stream.
+                for (req, mut respond) in ds.into_iter().rev() {
+                    let body = Bytes::from(req.uri().path().as_bytes().to_vec());
+                    let resp = Response::builder()
+                        .status(200)
+                        .body(())
+                        .map_err(io::Error::other)?;
+                    let mut send = respond
+                        .send_response(resp, false)
+                        .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
+                    send.send_data(body, true)
+                        .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
+                }
+                loop {
+                    match conn.poll_closed(&mut cx) {
+                        Poll::Ready(_) => return Ok(()),
+                        Poll::Pending => std::thread::yield_now(),
+                    }
+                }
+            }
+            Kieu::Warm4 => {
+                // Trả ngay `/warm`; sau đó chờ đủ 4 stream khác rồi mới trả (multiplex thật
+                // trên connection đã ấm, không phụ thuộc race handshake đầu tiên).
+                let mut ds = Vec::new();
+                let han = Instant::now() + Duration::from_secs(10);
+                while ds.len() < 4 {
+                    if Instant::now() >= han {
+                        return Err(io::Error::other("server không nhận đủ 4 stream ấm"));
+                    }
+                    match conn.poll_accept(&mut cx) {
+                        Poll::Ready(Some(Ok((req, mut respond)))) => {
+                            streams.fetch_add(1, Ordering::SeqCst);
+                            let path = req.uri().path().to_string();
+                            if path == "/warm" {
+                                let resp = Response::builder()
+                                    .status(200)
+                                    .body(())
+                                    .map_err(io::Error::other)?;
+                                let mut send = respond
+                                    .send_response(resp, false)
+                                    .map_err(|e| io::Error::other(format!("h2 warm: {e}")))?;
+                                send.send_data(Bytes::from_static(b"/warm"), true)
+                                    .map_err(|e| io::Error::other(format!("h2 warm data: {e}")))?;
+                            } else {
+                                ds.push((req, respond));
+                            }
+                        }
+                        Poll::Ready(Some(Err(e))) => {
+                            return Err(io::Error::other(format!("h2 accept: {e}")))
+                        }
+                        Poll::Ready(None) => return Ok(()),
+                        Poll::Pending => std::thread::yield_now(),
+                    }
+                }
                 for (req, mut respond) in ds.into_iter().rev() {
                     let body = Bytes::from(req.uri().path().as_bytes().to_vec());
                     let resp = Response::builder()
@@ -1181,6 +1237,153 @@ mod h2_async_spike {
 
     /// `/proc/self/fd` là **process-wide**, nên phép đếm phải chạy trong tiến trình con
     /// riêng; chạy song song với 24 test khác sẽ đếm cả fd của chúng (không phải rò của spike).
+    fn chay_chuong_trinh(
+        ten: &str,
+        src: &str,
+        args: &[String],
+        vm: bool,
+    ) -> (i32, String, String, Duration) {
+        let d = std::env::temp_dir().join(format!("vs3-w2-h2-{}", std::process::id()));
+        fs::create_dir_all(&d).expect("thư mục tạm");
+        let p = d.join(format!("{ten}.vis"));
+        fs::write(&p, src).expect("ghi chương trình");
+        let goc = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/vs3_tls/localhost.cert.der");
+        let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+        c.arg("run");
+        if vm {
+            c.arg("--vm").arg("--no-cache");
+        }
+        c.env("VIS_TLS_TEST_ROOT_DER", goc);
+        c.arg(&p).arg("--");
+        for a in args {
+            c.arg(a);
+        }
+        let bat = Instant::now();
+        let o = c.output().expect("chạy vis run");
+        (
+            o.status.code().unwrap_or(-1),
+            String::from_utf8_lossy(&o.stdout).to_string(),
+            String::from_utf8_lossy(&o.stderr).to_string(),
+            bat.elapsed(),
+        )
+    }
+
+    const BON_TAC_VU: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    let am = await spawn lay(args[0])
+    let a = spawn lay(args[1])
+    let b = spawn lay(args[2])
+    let c = spawn lay(args[3])
+    let d = spawn lay(args[4])
+    print(am)
+    print(await a)
+    print(await b)
+    print(await c)
+    print(await d)
+"#;
+
+    /// **Production** (không gọi backend trực tiếp): 4 task async cùng authority, server chỉ
+    /// nhận đủ 4 stream trên một connection rồi mới trả ⇒ chứng minh multiplex qua `http.get`.
+    #[test]
+    fn async_h2_production_bon_stream_mot_connection() {
+        let s = MayChuSpike::moi(Kieu::Warm4);
+        let mut tong_dong = 0usize;
+        for vm in [false, true] {
+            let mut args = vec![s.url("/warm")];
+            args.extend((0..4).map(|i| s.url(&format!("/p{i}"))));
+            let (code, out, err, bat) = chay_chuong_trinh("bon-tac-vu", BON_TAC_VU, &args, vm);
+            assert_eq!(code, 0, "4 task vm={vm}: {err}");
+            assert!(bat < Duration::from_secs(10), "không treo vm={vm}");
+            let mut dong: Vec<&str> = out.lines().collect();
+            dong.sort_unstable();
+            assert_eq!(
+                dong,
+                vec!["/p0", "/p1", "/p2", "/p3", "/warm"],
+                "vm={vm}: {out:?}"
+            );
+            tong_dong += dong.len();
+        }
+        assert_eq!(s.conns(), 2, "mỗi engine một connection (ấm + 4 task)");
+        assert_eq!(s.streams(), 10, "mỗi connection: 1 warm + 4 stream");
+        assert_eq!(tong_dong, 10);
+    }
+
+    #[test]
+    fn async_h2_production_timeout_va_goaway() {
+        let treo = MayChuSpike::moi(Kieu::Treo);
+        let src = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 400):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+        let (code, out, err, bat) = chay_chuong_trinh("timeout", src, &[treo.url("/x")], false);
+        assert_eq!(code, 0, "timeout: {err}");
+        assert!(out.contains("thời gian"), "phải timeout rõ: {out:?}");
+        assert!(bat < Duration::from_secs(3), "timeout không treo: {bat:?}");
+
+        let goaway = MayChuSpike::moi(Kieu::GoAway);
+        let (code, out, err, bat) = chay_chuong_trinh("goaway", src, &[goaway.url("/x")], false);
+        assert_eq!(code, 0, "goaway: {err}");
+        assert!(
+            out.contains("GOAWAY") || out.contains("HTTP/2"),
+            "GOAWAY rõ: {out:?}"
+        );
+        assert!(bat < Duration::from_secs(3), "GOAWAY không treo: {bat:?}");
+    }
+
+    #[test]
+    fn async_h2_production_cap_body() {
+        let s = MayChuSpike::moi(Kieu::Thuong);
+        let src = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 20000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+        let (code, out, err, bat) = chay_chuong_trinh("cap", src, &[s.url("/big")], false);
+        assert_eq!(code, 0, "cap: {err}");
+        assert!(
+            out.contains("8 MiB") || out.contains("vượt giới hạn") || out.contains("HTTP/2"),
+            "cap body rõ: out={out:?} err={err:?}"
+        );
+        assert!(bat < Duration::from_secs(30), "cap không treo");
+    }
+
+    #[test]
+    fn async_h2_production_redirect() {
+        let s = MayChuSpike::moi(Kieu::Thuong);
+        let src = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+        let (code, out, err, bat) = chay_chuong_trinh("redir", src, &[s.url("/redir")], false);
+        assert_eq!(code, 0, "redirect: {err}");
+        assert_eq!(out, "hello\n", "h2 phải theo redirect: {out:?}");
+        assert!(bat < Duration::from_secs(3), "redirect không treo");
+    }
+
     #[cfg(target_os = "linux")]
     #[test]
     fn async_h2_timeout_lap_khong_ro_fd() {

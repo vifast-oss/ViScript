@@ -33,7 +33,7 @@ pub(super) enum MoH2 {
 }
 
 /// Idle tối đa của một phiên h2 trước khi Net đóng (VS3-4b4).
-pub(super) const H2_IDLE: Duration = Duration::from_secs(15);
+pub(crate) const H2_IDLE: Duration = Duration::from_secs(15);
 
 /// Request cho prototype multiplex test-only.
 #[cfg(test)]
