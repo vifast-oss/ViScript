@@ -63,7 +63,10 @@ pub fn dat_noi_dung_mo(path: &Path, text: &str) {
 pub fn xoa_noi_dung_mo(path: &Path) {
     let p = chuan_hoa(path);
     PHU_MO.with(|c| {
-        c.borrow_mut().remove(&p);
+        let mut m = c.borrow_mut();
+        // Xoá cả khoá thô (tệp mới chưa có trên đĩa lúc `didOpen`) lẫn canonical.
+        m.remove(path);
+        m.remove(&p);
     });
 }
 
@@ -74,8 +77,17 @@ pub fn xoa_cache_phu() {
 
 fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
     // **VS3-7**: buffer LSP đang mở thắng đĩa (kể cả tệp chưa tồn tại trên đĩa).
+    // **VS3-W4 (Windows)**: `dat_noi_dung_mo` ghi theo `chuan_hoa(path)` (canonical), nên tra
+    // thêm khoá canonical — nếu chỉ tra đường dẫn thô, Windows (`\\?\`, hoa/thường) trượt overlay
+    // và đọc đĩa ⇒ buffer LSP bị bỏ qua. Tra thô trước để tệp mới (chưa có trên đĩa) vẫn khớp.
     if let Some(t) = PHU_MO.with(|c| c.borrow().get(path).cloned()) {
         return Ok(t);
+    }
+    let khoa = chuan_hoa(path);
+    if khoa != path {
+        if let Some(t) = PHU_MO.with(|c| c.borrow().get(&khoa).cloned()) {
+            return Ok(t);
+        }
     }
     let meta = std::fs::metadata(path)?;
     let mtime = meta.modified().ok();
