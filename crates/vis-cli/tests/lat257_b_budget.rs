@@ -349,24 +349,25 @@ fn ngan_sach_nho_ta_ranh_gioi_tac_dung_phu() {
 }
 
 #[test]
-fn fuel_chay_truoc_khi_budget_khi_budget_lon_hon_fuel() {
-    // VD-257 §: fuel 10^7 LỆNH, budget đề xuất 20M. Vòng 1.2M tốn ~10.8M lệnh nhưng chi phí
-    // ngữ nghĩa ~10.8M < 20M ⇒ **fuel** phải là thứ kích hoạt, KHÔNG phải budget. Đây là bằng
-    // chứng "fuel 10^7 chặn chương trình compiler sinh trước khi budget cạn" — root cause không
-    // phải ở tên `MAX_STEPS`/`SAFETY_FUEL`.
+fn fuel_khong_chan_truoc_budget_sau_khi_mo_rong() {
+    // **VS3-1a** — ca lịch sử: vòng 1.2M tốn ~10,8M lệnh nhưng chi phí ngữ nghĩa ~10,8M < 20M.
+    // Trước VS3-1a VM trap `VS0501-FUEL` ở 10^7 lệnh (fuel chặn trước ngân sách). Sau hợp đồng,
+    // fuel ≥ trần ngân sách định cỡ × tỷ lệ bước/lệnh trần ⇒ chương trình còn trong ngân sách
+    // **phải chạy xong** và vượt qua ngưỡng fuel cũ. Test này thay cho khẳng định "fuel phải
+    // thắng budget" — đó chính là lỗi mà VS3-1a sửa.
     let src = "var i = 0\nwhile i < 1200000:\n    i = i + 1\n";
     let (hir, syms, _tys) = tien_trinh(src);
-    let m = vis_bytecode::compile(&hir, &syms, src).unwrap();
-    let fee = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap().1;
+    let (m, fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap();
     let mut vm = Vm::new(&m, src);
-    vm.budget_enable_for_test(fee, 20_000_000);
+    // Chế độ đo: ngân sách vẫn được kiểm nhưng không lưu ~10,8M entry trace.
+    vm.budget_enable_measure_for_test(fee, 20_000_000);
     let vo = vm.run(&[]);
-    assert_eq!(vo.exit, 1);
-    assert_eq!(
-        vo.codes(),
-        vec!["VS0501-FUEL"],
-        "fuel phải kích hoạt trước budget, got {:?}",
-        vo.diagnostics
+    assert_eq!(vo.exit, 0, "VM: {:?}", vo.diagnostics);
+    assert!(vo.codes().is_empty(), "không được trap: {:?}", vo.codes());
+    assert!(
+        vo.steps > 10_000_000,
+        "ca này phải vượt ngưỡng fuel cũ (10^7) để chứng minh đã sửa; steps={}",
+        vo.steps
     );
-    assert_eq!(vo.steps, vis_vm::vm::SAFETY_FUEL + 1);
+    assert!(vo.steps <= vis_vm::vm::SAFETY_FUEL);
 }

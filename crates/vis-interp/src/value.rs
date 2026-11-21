@@ -1245,7 +1245,7 @@ pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<ForIter
             } else {
                 i128::from(b) - i128::from(a)
             };
-            if n > 10_000_000 {
+            if n > i128::from(crate::rt::fee::MAX_LOOP_ITERATIONS) {
                 return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
                     crate::interp::RT,
                     "khoảng quá dài (>10^7 phần tử)",

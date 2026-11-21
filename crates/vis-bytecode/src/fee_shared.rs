@@ -19,6 +19,38 @@ pub const EVENT_TABLE_VERSION: u16 = VERSION;
 /// trailer, và ngược lại.
 pub const WEIGHT_TABLE_VERSION: u16 = 1;
 
+// ---------------------------------------------------------------------------
+// VS3-1a — HỢP ĐỒNG NGÂN SÁCH / FUEL DÙNG CHUNG interp ↔ VM.
+//
+// `BUDGET_SIZING_CEILING` KHÔNG phải ngân sách mặc định (budget vẫn chỉ bật qua test-hook
+// VD-256/VD-257); nó là **trần của miền hỗ trợ** dùng để định cỡ hàng rào an toàn của VM.
+// Bất biến bắt buộc: một chương trình còn trong trần ngân sách **không** được trap fuel
+// trước khi ngân sách cạn. Vì vậy `VM_SAFETY_FUEL` phải ≥ ceiling × tỷ lệ bước/lệnh trần.
+// ---------------------------------------------------------------------------
+
+/// Số vòng lặp/range tối đa mà interp chấp nhận cho **một** cấu trúc lặp (giữ nguyên giá trị
+/// lịch sử `10^7`; tách hằng để một nguồn định nghĩa với định cỡ fuel).
+pub const MAX_LOOP_ITERATIONS: u64 = 10_000_000;
+
+/// **VS3-1a** — trần ngân sách ngữ nghĩa dùng để **định cỡ** fuel, chưa phải `BUDGET` được A0
+/// chốt (VD-257-B §3.6). Chọn 40M đơn vị `standard_weight`: cùng bậc với `MAX_LOOP_ITERATIONS`
+/// vòng × 3–6 sự kiện/vòng (đo VS3-1a), và phủ trọn ca 2M với biên rộng. Nếu A0 chốt `BUDGET`
+/// khác, phải tính lại [`VM_SAFETY_FUEL`] theo [`VM_STEPS_PER_COST_CEILING`] và chạy lại
+/// `crates/vis-cli/tests/vs3_budget.rs`.
+pub const BUDGET_SIZING_CEILING: u64 = 40_000_000;
+
+/// Tỷ lệ `số lệnh VM / đơn vị ngân sách` lớn nhất trong miền hỗ trợ. Đo VS3-1a (debug):
+/// `for` range 2M ≈ **1,17** (thân gán), **1,67** (thân literal); `while` 2M ≈ **1,0**; các
+/// workload VD-257-B ≤ 1,0. Chọn trần **2** để có biên cho construct chưa đo; nếu đo thấy vượt,
+/// phải tăng [`VM_SAFETY_FUEL`] tương ứng.
+pub const VM_STEPS_PER_COST_CEILING: u64 = 2;
+
+/// **VS3-1a** — fuel an toàn của VM, **một nguồn** cho `vis_vm::vm::SAFETY_FUEL` và test.
+/// `100M = 40M (ceiling) × 2 (tỷ lệ trần) × 1,25 (biên)`. Fuel **không** phải ngân sách ngữ
+/// nghĩa, **không** bật ngân sách mặc định; nó chỉ phải lớn hơn ngưỡng mà chương trình còn
+/// trong ngân sách có thể chạm (bất biến kiểm ở `vs3_budget.rs`).
+pub const VM_SAFETY_FUEL: u64 = 100_000_000;
+
 /// Một loại sự kiện ngữ nghĩa — **một định nghĩa duy nhất** cho compiler và interpreter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u8)]

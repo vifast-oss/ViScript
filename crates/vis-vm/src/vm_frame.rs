@@ -275,6 +275,15 @@ impl<'a> Vm<'a> {
         self.budget_remaining = limit.min(i64::MAX as u64) as i64;
         self.budget_trace.clear();
         self.budget_hit = false;
+        self.budget_measure = false;
+    }
+
+    /// **VS3-1a** — bật ngân sách ở **chế độ đo**: vẫn trừ và trap như
+    /// [`Self::budget_enable_for_test`] nhưng **không** lưu trace từng sự kiện. Dùng cho workload
+    /// lớn (vòng 2M ≈ 12M sự kiện) để test hợp đồng fuel/ngân sách không cấp phát trace khổng lồ.
+    pub fn budget_enable_measure_for_test(&mut self, fee: FeeTable, limit: u64) {
+        self.budget_enable_for_test(fee, limit);
+        self.budget_measure = true;
     }
 
     /// Dãy sự kiện **có thứ tự** đã charge (so với trace của compiler/interp).
@@ -340,12 +349,17 @@ impl<'a> Vm<'a> {
             .as_ref()
             .and_then(|f| f.funcs.get(fi as usize))
         {
-            Some(v) => v.iter().filter(|e| e.pc as usize == pc).copied().collect(),
-            None => return Ok(()),
+            // VS3-1a: phần lớn lệnh không có sự kiện — tránh cấp phát Vec rỗng mỗi bước.
+            Some(v) if v.iter().any(|e| e.pc as usize == pc) => {
+                v.iter().filter(|e| e.pc as usize == pc).copied().collect()
+            }
+            Some(_) | None => return Ok(()),
         };
         for e in events {
             let w = vis_bytecode::fee::standard_weight(e.kind) as i64;
-            self.budget_trace.push(e);
+            if !self.budget_measure {
+                self.budget_trace.push(e);
+            }
             if w > self.budget_remaining {
                 self.budget_hit = true;
                 return Err(Abort::Trap(Trap::new(
