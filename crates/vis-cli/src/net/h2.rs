@@ -270,8 +270,16 @@ impl PhienH2 {
                                         "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
                                     )));
                                 } else {
+                                    let n = b.len();
                                     d.body.extend_from_slice(&b);
-                                    tien = true;
+                                    drop(b);
+                                    if let Err(e) = r.flow_control().release_capacity(n) {
+                                        d.ket_qua = Some(Err(format!(
+                                            "lỗi HTTP/2 khi giải phóng flow-control: {e}"
+                                        )));
+                                    } else {
+                                        tien = true;
+                                    }
                                 }
                             }
                             Poll::Ready(Some(Err(e))) => {
@@ -373,7 +381,14 @@ impl PhienH2 {
                                     "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
                                 ));
                             }
+                            let n = b.len();
                             body.extend_from_slice(&b);
+                            drop(b);
+                            // `Bytes` của h2 không tự trả cửa sổ flow-control; phải release
+                            // từng chunk, nếu không body > 64 KiB sẽ treo tới timeout.
+                            if let Err(e) = r.flow_control().release_capacity(n) {
+                                return Err(format!("lỗi HTTP/2 khi giải phóng flow-control: {e}"));
+                            }
                             tien = true;
                         }
                         Poll::Ready(Some(Err(e))) => return Err(loi_h2(&e, "đọc body")),

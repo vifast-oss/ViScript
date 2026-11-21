@@ -1,0 +1,186 @@
+# VS3-W2 release limits — log (main 5103da4)
+
+## full release + từng test mới
+## release full vs3_http2
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 2.23s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/99faceaef5e29a1d/out/vs3_http2-99faceaef5e29a1d)
+
+running 19 tests
+test fallback_http1_khi_khong_alpn ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_goaway_giua_body ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_basic_auth ... ok
+test h2_redirect_va_cookie ... ok
+test h2_get_va_head ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_header_sat_cap_va_vuot ... ok
+test h2_trailer_body_lon_va_tai_su_dung ... ok
+test h2_timeout_ro_rang ... ok
+test h2_timeout_giua_body_va_cleanup ... ok
+test h2_body_8mib_va_vuot_cap ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.29s
+
+wall=17.56 s
+## h2_body_8mib_va_vuot_cap
+
+running 1 test
+over err="phản hồi HTTP/2 vượt giới hạn 8388608 byte (8 MiB)" elapsed=188.578985ms conns=1
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.28s
+
+wall=0.39 s
+## h2_header_sat_cap_va_vuot
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.13s
+
+wall=0.19 s
+## h2_trailer_body_lon_va_tai_su_dung
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.01s
+
+wall=0.07 s
+## h2_goaway_giua_body
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.05s
+
+wall=0.11 s
+## h2_timeout_giua_body_va_cleanup
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.95s
+
+wall=1.02 s
+
+## 3 vòng full release + tls/http/debug/clippy
+## release full lần 1
+
+running 19 tests
+...................
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.44s
+
+wall=15.50 s
+## release full lần 2
+
+running 19 tests
+...................
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.56 s
+## release full lần 3
+
+running 19 tests
+...................
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.40s
+
+wall=15.47 s
+## release vs3_tls
+    Finished `release` profile [optimized] target(s) in 0.03s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/0c06e757a4ff5a4e/out/vs3_tls-0c06e757a4ff5a4e)
+
+running 21 tests
+test async_https_get_loopback_hai_engine ... ok
+test async_https_redirect_loopback_hai_engine ... ok
+test async_https_handshake_timeout_hai_engine ... ok
+test async_net_backend_tls_doc_ghi_qua_reactor ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test async_https_tu_choi_chung_chi_sai_hai_engine ... ok
+test async_https_head_loopback_hai_engine ... ok
+test async_https_body_lon_loopback_hai_engine ... ok
+test https_ipv6_loopback ... ok
+test async_https_timeout_doc_than_hai_engine ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_head_khong_theo_redirect ... ok
+test async_net_backend_tls_connect_qua_reactor ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_chan_ha_cap_ve_http ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.27s
+
+## release http
+    Finished `release` profile [optimized] target(s) in 0.02s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/833e3d26956c7967/out/http-833e3d26956c7967)
+
+running 22 tests
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_body_rong ... ok
+test http_200_byte ... ok
+test http_chunked_ba_chunk ... ok
+test http_gioi_han ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_chunked_co_mo_rong ... ok
+test http_404 ... ok
+test http_head_khong_doc_than ... ok
+test http_duong_mac_dinh ... ok
+test http_het_gio ... ok
+test http_head_khong_theo_redirect ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.01s
+
+## debug vs3_http2
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/e47fc46cd56ffcd3/out/vs3_http2-e47fc46cd56ffcd3)
+
+running 19 tests
+test fallback_http1_khi_khong_alpn ... ok
+test h2_basic_auth ... ok
+test h2_get_va_head ... ok
+test h2_redirect_va_cookie ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test h2_goaway_giua_body ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_header_sat_cap_va_vuot ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_trailer_body_lon_va_tai_su_dung ... ok
+test h2_timeout_ro_rang ... ok
+test h2_timeout_giua_body_va_cleanup ... ok
+test h2_body_8mib_va_vuot_cap ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.51s
+
+## clippy
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
+## check wasm http2
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+## rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
