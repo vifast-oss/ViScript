@@ -11,7 +11,7 @@
 
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -494,5 +494,274 @@ fn vis_run_https_loi_tls_khong_panic() {
         "không được panic: stderr={:?}",
         a.2
     );
+    s.dung();
+}
+
+// ===========================================================================
+// **VS3-1d/W1f-TLS** — TLS trên đường async (`AsyncNet`, frame scheduler).
+// ===========================================================================
+
+/// Chạy `vis run` nhánh async với root TLS test (hook debug) + một đối số chương trình.
+fn chay_async(p: &Path, vm: bool, goc: &Path, arg: &str) -> (i32, String, String, Duration) {
+    let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    c.arg("run");
+    if vm {
+        c.arg("--vm").arg("--no-cache");
+    }
+    c.env("VIS_TLS_TEST_ROOT_DER", goc);
+    c.arg(p).arg("--").arg(arg);
+    let bat_dau = Instant::now();
+    let o = c.output().expect("chạy `vis run` async https");
+    (
+        o.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stderr).to_string(),
+        bat_dau.elapsed(),
+    )
+}
+
+fn goc_localhost() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der")
+}
+
+const ASYNC_HTTPS_GET: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+const ASYNC_HTTPS_HEAD: &str = r#"use std.http
+
+async fn h(url: str) -> int:
+    match http.head_timeout(url, 3000):
+        Ok(m):
+            print(m["status"])
+            print(m["headers"]["x-thu"])
+        Err(e): print(e)
+    1
+
+fn main(args: list[str]):
+    print(await spawn h(args[0]))
+"#;
+
+const ASYNC_HTTPS_LOI: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 300):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+#[test]
+fn async_https_get_loopback_hai_engine() {
+    let _k = kho();
+    if !cfg!(debug_assertions) {
+        eprintln!("bỏ qua async_https_get_loopback_hai_engine: cần binary debug cho root test");
+        return;
+    }
+    let d = tam("async-https-get");
+    let p = d.join("get.vis");
+    std::fs::write(&p, ASYNC_HTTPS_GET).expect("ghi chương trình");
+    let goc = goc_localhost();
+    for vm in [false, true] {
+        let s = may_chu_tls(
+            CERT_LOCALHOST,
+            KEY_LOCALHOST,
+            vec![dap_ung("200 OK", "xin chào TLS async".as_bytes(), "")],
+            0,
+        );
+        let url = format!("https://{}/", s.dia_chi);
+        let (code, out, err, _) = chay_async(&p, vm, &goc, &url);
+        assert_eq!(code, 0, "async https GET vm={vm}: {err}");
+        assert_eq!(out, "xin chào TLS async\n", "async https GET vm={vm}");
+        let log = String::from_utf8_lossy(&s.log.lock().expect("log")).to_string();
+        assert!(
+            log.starts_with(&format!("GET / HTTP/1.1\r\nHost: {}\r\n", s.dia_chi)),
+            "request async https sai: {log:?}"
+        );
+        s.dung();
+    }
+}
+
+#[test]
+fn async_https_head_loopback_hai_engine() {
+    let _k = kho();
+    if !cfg!(debug_assertions) {
+        eprintln!("bỏ qua async_https_head_loopback_hai_engine: cần binary debug cho root test");
+        return;
+    }
+    let d = tam("async-https-head");
+    let p = d.join("head.vis");
+    std::fs::write(&p, ASYNC_HTTPS_HEAD).expect("ghi chương trình");
+    let goc = goc_localhost();
+    for vm in [false, true] {
+        let s = may_chu_tls(
+            CERT_LOCALHOST,
+            KEY_LOCALHOST,
+            vec![b"HTTP/1.1 204 No Content\r\nX-Thu: 1\r\n\r\n".to_vec()],
+            0,
+        );
+        let url = format!("https://{}/x", s.dia_chi);
+        let (code, out, err, _) = chay_async(&p, vm, &goc, &url);
+        assert_eq!(code, 0, "async https HEAD vm={vm}: {err}");
+        assert_eq!(out, "204\n1\n1\n", "async https HEAD vm={vm}: {out:?}");
+        let log = String::from_utf8_lossy(&s.log.lock().expect("log")).to_string();
+        assert!(
+            log.starts_with("HEAD /x HTTP/1.1\r\n"),
+            "phải gửi HEAD async: {log:?}"
+        );
+        s.dung();
+    }
+}
+
+#[test]
+fn async_https_handshake_timeout_hai_engine() {
+    let _k = kho();
+    let d = tam("async-https-timeout");
+    let p = d.join("timeout.vis");
+    std::fs::write(&p, ASYNC_HTTPS_LOI).expect("ghi chương trình");
+    let goc = goc_localhost();
+    for vm in [false, true] {
+        let l = TcpListener::bind("127.0.0.1:0").expect("bind timeout");
+        let dia_chi = l.local_addr().expect("addr").to_string();
+        let tay = std::thread::spawn(move || {
+            if let Ok((s, _)) = l.accept() {
+                std::thread::sleep(Duration::from_millis(900));
+                drop(s);
+            }
+        });
+        let url = format!("https://{dia_chi}/");
+        let (code, out, err, mat) = chay_async(&p, vm, &goc, &url);
+        assert_eq!(code, 0, "async https timeout vm={vm}: {err}");
+        assert!(
+            out.contains("quá thời gian TLS handshake"),
+            "async https timeout vm={vm}: {out:?}"
+        );
+        assert!(out.contains("TLS"), "lỗi phải nêu TLS: {out:?}");
+        assert!(
+            mat < Duration::from_millis(2_500),
+            "async https handshake timeout quá chậm: {mat:?}"
+        );
+        tay.join().expect("join server treo");
+    }
+}
+
+#[test]
+fn async_https_tu_choi_chung_chi_sai_hai_engine() {
+    let _k = kho();
+    if !cfg!(debug_assertions) {
+        eprintln!("bỏ qua async_https_tu_choi_chung_chi_sai_hai_engine: cần binary debug");
+        return;
+    }
+    let d = tam("async-https-cert");
+    let p = d.join("cert.vis");
+    std::fs::write(&p, ASYNC_HTTPS_LOI).expect("ghi chương trình");
+    let goc = goc_localhost();
+    for vm in [false, true] {
+        let s = may_chu_tls(
+            CERT_SAI_TEN,
+            KEY_SAI_TEN,
+            vec![dap_ung("200 OK", b"khong-duoc", "")],
+            0,
+        );
+        let url = format!("https://{}/", s.dia_chi);
+        let (code, out, err, _) = chay_async(&p, vm, &goc, &url);
+        assert_eq!(code, 0, "async https cert vm={vm}: {err}");
+        assert!(
+            out.contains("TLS") && (out.contains("UnknownIssuer") || out.contains("certificate")),
+            "async https phải từ chối chứng chỉ sai vm={vm}: {out:?}"
+        );
+        assert!(!err.contains("panicked"), "không được panic: {err}");
+        s.dung();
+    }
+}
+
+/// TLS cũng đi qua `FrameReactorBackend` (không chỉ host): handshake host + write/read reactor
+/// trên cùng handle `C<n>`.
+#[cfg(unix)]
+#[test]
+fn async_net_backend_tls_doc_ghi_qua_reactor() {
+    use vis_cli::async_net::AsyncNet;
+    use vis_interp::builtin::NetHost;
+    use vis_interp::rt::{FrameReactorBackend, ReactorOp};
+    use vis_interp::stdlib::{frame_net_set_write, frame_net_take_write};
+
+    let _k = kho();
+    let s = may_chu_tls(
+        CERT_LOCALHOST,
+        KEY_LOCALHOST,
+        vec![dap_ung("200 OK", b"pong", "")],
+        0,
+    );
+    let mut net = AsyncNet::moi_voi_goc_tls(false, &[CERT_LOCALHOST]).expect("cấu hình TLS test");
+    let handle = NetHost::connect_tls(&mut net, &s.dia_chi, 3_000).expect("connect_tls");
+    let req = format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+        s.dia_chi
+    );
+    let wk = format!("W:{handle}");
+    frame_net_set_write(&wk, req.as_bytes());
+    let mut da_ghi = false;
+    let mut da_dang_ky = false;
+    for _ in 0..50 {
+        match <AsyncNet as FrameReactorBackend>::try_read(&mut net, &wk, req.len()) {
+            vis_interp::rt::ReactorIoOutcome::Data(b) => {
+                assert!(b.is_empty(), "write TLS phải trả Data rỗng");
+                da_ghi = true;
+                break;
+            }
+            vis_interp::rt::ReactorIoOutcome::WouldBlock => {
+                if !da_dang_ky {
+                    net.register(1, &wk, ReactorOp::Read)
+                        .expect("register TLS write");
+                    da_dang_ky = true;
+                }
+                net.wait(Duration::from_millis(100))
+                    .expect("wait write TLS");
+            }
+            vis_interp::rt::ReactorIoOutcome::Err(e) => panic!("write TLS lỗi: {e}"),
+            vis_interp::rt::ReactorIoOutcome::Accepted(h) => panic!("write TLS nhận `{h}`"),
+        }
+    }
+    assert!(da_ghi, "write TLS chưa hoàn tất");
+    if da_dang_ky {
+        net.deregister(1, &wk, ReactorOp::Read)
+            .expect("deregister TLS write");
+    }
+    frame_net_take_write(&wk);
+    net.register(1, &handle, ReactorOp::Read)
+        .expect("register TLS read");
+    let mut all = Vec::new();
+    for _ in 0..50 {
+        match <AsyncNet as FrameReactorBackend>::try_read(&mut net, &handle, 1024) {
+            vis_interp::rt::ReactorIoOutcome::Data(b) => {
+                if b.is_empty() {
+                    break;
+                }
+                all.extend_from_slice(&b);
+                if all.windows(4).any(|w| w == b"pong") {
+                    break;
+                }
+            }
+            vis_interp::rt::ReactorIoOutcome::WouldBlock => {
+                net.wait(Duration::from_millis(100)).expect("wait read TLS");
+            }
+            vis_interp::rt::ReactorIoOutcome::Err(e) => panic!("read TLS lỗi: {e}"),
+            vis_interp::rt::ReactorIoOutcome::Accepted(h) => panic!("read TLS nhận `{h}`"),
+        }
+    }
+    net.deregister(1, &handle, ReactorOp::Read)
+        .expect("deregister TLS read");
+    let text = String::from_utf8_lossy(&all);
+    assert!(text.contains("pong"), "phản hồi TLS thân: {text:?}");
+    NetHost::close(&mut net, &handle).expect("close TLS");
     s.dung();
 }

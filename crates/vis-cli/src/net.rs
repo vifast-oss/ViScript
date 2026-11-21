@@ -24,7 +24,7 @@ use vis_interp::cookie::CookieJar;
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
 mod h2;
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
-mod tls;
+pub(crate) mod tls;
 
 /// Kênh đã nối: TCP trần, hoặc TLS (chỉ khi bật feature `tls` trên nền không phải wasm32).
 enum Kenh {
