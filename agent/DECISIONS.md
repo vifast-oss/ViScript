@@ -3728,3 +3728,20 @@ VS3-2a ổn định.
 5. **B5**: `TaskId`/proxy, không đổi ABI `Value` cho tới VS3-3b; W1 sở hữu tích hợp.
 6. **B6**: tích hợp W1 **sau VS3-2a**; không đụng `rt.rs`/`Chan` trước.
 7. **B7**: gate VS3-3b dùng CPU-only + payload matrix, ghi topology/load; RSS chỉ tham khảo.
+
+### VD-271 (bổ sung) · Lộ trình v0.2.0/v0.3.0 — A0, 2026-11-21
+
+> **Căn cứ**: lệnh người điều hành 2026-11-21: tiếp tục 5 subagent tới **v0.3.0**, chạy đến
+> **09:00 thứ Hai 23/11/2026** rồi dừng. `v0.1.0` đã tag `50675dd`.
+
+1. **v0.2.0** = VS3-1d (flip async default cho chương trình có `async fn`) + VS3-2b (timeout kênh)
+   + VS3-3b opt-in (worker pool bản đầu). Sync program không đổi.
+2. **1d**: chỉ chọn frame runtime khi HIR có `async fn`; `Pipe` phải parity hoặc bị từ chối rõ trước
+   flip; guard scheduler có lỗi rõ; nếu cache key đổi ⇒ bump `PHIEN_BAN`, nếu không giữ nguyên.
+3. **2b**: chốt API `recv_timeout(ms) -> T?` (None = timeout/closed, ghi rõ) và
+   `send_timeout(ms, v) -> bool` (false = timeout/closed); `select` **hoãn VS3-2c** vì chưa có cú pháp/API.
+4. **3b**: tích hợp prototype sau 1d; `TaskId`/proxy, snapshot env W>1, print merge spawn order,
+   budget atomic + chunk reservation; worker **opt-in/test-only** tới nghiệm thu.
+5. **v0.3.0** = VS3-4b2 HTTP/2 nếu dependency `h2` qua review (ALPN default-off) + net/package ổn định
+   + Windows verify; nếu h2 không khả thi, ghi rõ và tag v0.3.0 với HTTP/1.1 hoàn chỉnh, HTTP/2 sang v0.3.1.
+6. **Dừng**: 09:00 thứ Hai 23/11/2026 — không mở task lớn mới sau 08:00; báo cáo + cây xác định.
