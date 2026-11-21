@@ -268,7 +268,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `is_ascii_whitespace` (`(str) -> bool`; `true` ⇔ **không rỗng** và **mọi scalar** ASCII
     // thuộc nhóm `char::is_ascii_*`, rỗng ⇒ `false`, VT `U+000B` **không** phải whitespace,
     // sugar R5c) ⇒ **157** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 158, "bảng chữ ký phải đủ 158 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 rsplit, 2026-11-21)**: +**1** hàm `std.str.rsplit`
+    // (`(str, str) -> list[str]`; tách **phải → trái**, thứ tự **ngược**, không khớp ⇒ `[s]`,
+    // `s` rỗng + `sep` khác rỗng ⇒ `[""]`, `sep` rỗng theo **đúng** nghĩa Rust; tái dùng
+    // `Ty::ListStr`, không thêm biến thể `Ty`; sugar R5c) ⇒ **159** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 159, "bảng chữ ký phải đủ 159 hàm");
 }
 
 #[test]
@@ -402,6 +406,25 @@ fn rsplit_once_kieu_str_str_va_sugar() {
     assert_eq!(f.ret, sig_of("str.split_once").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit_once"), None);
+}
+
+#[test]
+fn rsplit_kieu_str_str_list_str_va_sugar() {
+    // **VD-270 (rsplit)**: chữ ký `(str, str) -> list[str]`; tham số đầu `str` để sugar R5c
+    // `s.rsplit(sep)` nhận. Tái dùng **đúng** `Ty::ListStr` của `str.split`/`str.splitn`,
+    // không thêm biến thể `Ty` và không có lớp `Option`.
+    let f = sig_of("str.rsplit").expect("str.rsplit");
+    assert_eq!(f.params, &[Ty::Str, Ty::Str], "`str.rsplit`: tham số");
+    assert_eq!(f.ret, Ty::ListStr, "`str.rsplit`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`str.rsplit`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "list[str]", "`str.rsplit`: tên hiển thị");
+    assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit"), None);
 }
 
 #[test]

@@ -149,6 +149,7 @@ str.replace_first	(str, str, str) -> str
 str.replace_last	(str, str, str) -> str
 str.replace_n	(str, str, str, int) -> str
 str.rfind	(str, str) -> int?
+str.rsplit	(str, str) -> list[str]
 str.rsplit_once	(str, str) -> list[str]?
 str.split	(str, str) -> list[str]
 str.split_inclusive	(str, str) -> list[str]
