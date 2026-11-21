@@ -280,3 +280,63 @@ fn merge_spawn_order_khi_completion_lech() {
     let ids: Vec<u64> = r.outcomes.iter().map(|o| o.id.as_u64()).collect();
     assert_eq!(ids, vec![0, 1, 2, 3]);
 }
+
+/// **VS3-3b payload lớn**: `spawn_worker_copy` (clone trong worker) và
+/// `spawn_with_payload` (move) giữ output W=1==W=4 và budget atomic.
+#[test]
+fn worker_copy_va_move_payload_w1_w4_parity() {
+    let mut outs = Vec::new();
+    for w in [1usize, 4] {
+        let template = Arc::new(SendValue::List((0..1_000).map(SendValue::Int).collect()));
+        let b = Arc::new(SharedBudget::new(100_000, 256));
+        let mut pool = WorkerPool::with_budget(w, env(), Arc::clone(&b)).expect("pool");
+        for i in 0..8usize {
+            let payload = Arc::clone(&template);
+            pool.spawn_worker_copy(payload, move |ctx, p| {
+                let n = match &p {
+                    SendValue::List(xs) => xs.len(),
+                    _ => 0,
+                };
+                ctx.print_line(&format!("wc{i}:{n}"));
+                for _ in 0..10 {
+                    ctx.charge(1)?;
+                }
+                Ok(SendValue::Int(n as i64))
+            })
+            .unwrap();
+        }
+        let r = pool.join().expect("join");
+        let snap = r.budget.expect("budget");
+        assert_eq!(snap.used, 80);
+        assert_eq!(snap.used + snap.remaining, snap.limit);
+        assert_eq!(r.outcomes.len(), 8);
+        outs.push(r.output);
+    }
+    assert_eq!(outs[0], outs[1], "worker-copy W=1 vs W=4 output");
+    assert!(outs[0].starts_with("wc0:1000\n"));
+    assert_eq!(outs[0].lines().count(), 8);
+
+    // Move payload: không copy producer; W=1/W=4 cùng output.
+    let mut moved = Vec::new();
+    for w in [1usize, 4] {
+        let mut pool = WorkerPool::new(w, env()).expect("pool move");
+        for i in 0..4usize {
+            let p = SendValue::Record(
+                "R".to_string(),
+                vec![(format!("f{i}"), SendValue::Int(i as i64))],
+            );
+            pool.spawn_with_payload(p, move |ctx, p| {
+                let n = match &p {
+                    SendValue::Record(_, fs) => fs.len(),
+                    _ => 0,
+                };
+                ctx.print_line(&format!("mv{i}:{n}"));
+                Ok(SendValue::Unit)
+            })
+            .unwrap();
+        }
+        moved.push(pool.join().expect("join move").output);
+    }
+    assert_eq!(moved[0], moved[1], "move W=1 vs W=4 output");
+    assert!(moved[0].starts_with("mv0:1\n"));
+}
