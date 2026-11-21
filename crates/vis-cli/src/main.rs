@@ -12,6 +12,7 @@ mod fsmock;
 mod json_esc;
 mod lsp;
 mod modules;
+mod net_quyen;
 mod ngoai;
 mod pkg;
 mod quyen;

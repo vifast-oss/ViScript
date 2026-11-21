@@ -8,7 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
-use vis_interp::builtin::{DocQuaHandle, DuongDanHandle, FsHost, MucFs, NetHost};
+use vis_interp::builtin::{DocQuaHandle, DuongDanHandle, FsHost, MucFs};
 use vis_interp::stdlib::DAU_QUYEN;
 use vis_interp::value::Value;
 use vis_syntax::{Kind, Mode, NodeKind};
@@ -603,10 +603,11 @@ impl Quyen {
         if !self.bat {
             return Ok(());
         }
-        let host = dia_chi.rsplit_once(':').map(|(h, _)| h).unwrap_or(dia_chi);
+        let host = crate::net_quyen::host_cua(dia_chi);
         let co_net = self.moc.iter().any(|q| q.kind == "Net");
         let khop = self.moc.iter().any(|q| {
-            q.kind == "Net" && (q.root == host || (q.root.is_empty() && host == "localhost"))
+            let root = crate::net_quyen::host_cua(&q.root);
+            q.kind == "Net" && (root == host || (root.is_empty() && host == "localhost"))
         });
         let loopback = host == "127.0.0.1" || host == "localhost";
         if khop || (loopback && co_net) {
@@ -928,45 +929,9 @@ impl FsHost for FsGuard<'_> {
     }
 }
 
-/// Bọc `NetHost` để kiểm `cap[Net]`.
-pub struct NetGuard<'a> {
-    pub trong: &'a mut dyn NetHost,
-    pub quyen: &'a Quyen,
-}
-
-impl NetHost for NetGuard<'_> {
-    fn connect(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
-        self.quyen.kiem_net(dia_chi)?;
-        self.trong.connect(dia_chi, timeout_ms)
-    }
-    /// **VS3-4a (VD-271)**: TLS dùng cùng cổng `cap[Net]` trên `host:port` như TCP trần.
-    fn connect_tls(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
-        self.quyen.kiem_net(dia_chi)?;
-        self.trong.connect_tls(dia_chi, timeout_ms)
-    }
-    fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
-        self.quyen.kiem_net(dia_chi)?;
-        self.trong.listen(dia_chi)
-    }
-    fn local_addr(&mut self, tay: &str) -> Result<String, String> {
-        self.trong.local_addr(tay)
-    }
-    fn accept(&mut self, tay: &str, timeout_ms: u64) -> Result<String, String> {
-        self.trong.accept(tay, timeout_ms)
-    }
-    fn read(&mut self, tay: &str, toi_da: usize, timeout_ms: u64) -> Result<Vec<u8>, String> {
-        self.trong.read(tay, toi_da, timeout_ms)
-    }
-    fn write(&mut self, tay: &str, du_lieu: &[u8]) -> Result<(), String> {
-        self.trong.write(tay, du_lieu)
-    }
-    fn close(&mut self, tay: &str) -> Result<(), String> {
-        self.trong.close(tay)
-    }
-    fn ghi_nhat_ky(&mut self, dong: &str) {
-        self.trong.ghi_nhat_ky(dong);
-    }
-}
+/// **VS3-4b**: cầu `cap[Net]` + parser host:port nằm ở [`crate::net_quyen`] (R1); tái xuất để
+/// `quyen::NetGuard` giữ nguyên đường dùng cũ.
+pub use crate::net_quyen::NetGuard;
 
 #[cfg(test)]
 mod tests {

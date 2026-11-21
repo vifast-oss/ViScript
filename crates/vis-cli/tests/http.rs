@@ -261,7 +261,7 @@ fn http_sai_kieu() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Ca 7 — đường mặc định `/`, request đúng dạng + `Host` + `Connection: close`; `--explain-perms`
+/// Ca 7 — đường mặc định `/`, request đúng dạng + `Host` + `Connection: keep-alive`; `--explain-perms`
 /// in `NET http GET 127.0.0.1:…`.
 #[test]
 fn http_duong_mac_dinh() {
@@ -296,8 +296,8 @@ fn http_duong_mac_dinh() {
         "thiếu Host: {req:?}"
     );
     assert!(
-        req.contains("Connection: close\r\n"),
-        "thiếu Connection: close: {req:?}"
+        req.contains("Connection: keep-alive\r\n"),
+        "thiếu Connection: keep-alive: {req:?}"
     );
     let _ = std::fs::remove_dir_all(&d);
 }

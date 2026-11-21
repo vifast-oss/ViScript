@@ -120,7 +120,11 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 - **Chunked**: ghép chunk (bỏ `;ext`), dừng ở chunk `0`; **chunk trailer bị bỏ qua**.
 - **Redirect**: **chỉ GET**, tối đa **5** lần; theo `Location` tuyệt đối/tương đối, có `.`/`..`; query-only
   giữ path; fragment bị bỏ. `HEAD` **không** theo redirect (trả mã gốc + `Location`).
-- **Không keep-alive**: mỗi request một kết nối (`Connection: close`); không cookie/auth tự động.
+- **Keep-alive (VS3-4b)**: request HTTP/1.1 gửi `Connection: keep-alive`; response HTTP/1.1 không
+  `close` (hoặc HTTP/1.0 + `keep-alive`) và thân đã đọc hết ⇒ kết nối về **pool** theo
+  `scheme|host:port`; tối đa **8** idle, hết hạn sau **15 s**; server `close`/EOF ⇒ đóng. Host không
+  có pool (mặc định trait) vẫn one-shot. Kết nối idle chết được **thử lại một lần** (GET/HEAD).
+- **Không keep-alive qua process**: pool sống trong một lần chạy `vis`; không ghi ra đĩa.
 - **`Content-Length`** đọc đúng N byte; **timeout đọc 2 s/lần** (server im lặng ⇒ `Err` rõ).
 - **`http.head`**: gửi `HEAD`, **không đọc thân** dù server gửi `Content-Length`/chunked; trả
   `{status, headers}` (headers khoá chữ thường).
