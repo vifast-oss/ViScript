@@ -30,9 +30,14 @@ release-bins = ["vis"]
 # chứng) vẫn bật `sqlite` để giữ nguyên hành vi lịch sử; cấu hình core dùng
 # `--no-default-features` (xem `agent/TARGET-MATRIX-2026-11-20.md`). Không đụng default feature
 # không liên quan (crate này trước đây không có `[features]` nào khác).
+# **VS3-4a (VD-271, 2026-11-21)** — TLS client cho `http.get`/`http.head` (`https://`). A0
+# pre-approve `rustls` + `webpki-roots`; bật **mặc định** trên Linux/Windows, **cfg wasm32** (không
+# kéo dependency vào target wasm). Review license/transitive/unsafe:
+# `agent/BAO-CAO-VS3-4A-2026-11-21.md`. Không thêm crate nào khác ngoài hai crate này.
 [features]
-default = ["sqlite"]
+default = ["sqlite", "tls"]
 sqlite = ["dep:rusqlite"]
+tls = ["dep:rustls", "dep:webpki-roots"]
 
 # E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
 # feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
@@ -63,6 +68,13 @@ name = "vd270_db_batch"
 path = "tests/vd270_db_batch.rs"
 required-features = ["sqlite"]
 
+# **VS3-4a (VD-271)** — TLS client: server rustls + chứng chỉ tự ký trong test; chỉ chạy khi bật
+# feature `tls` (mặc định) và trên nền không phải wasm32.
+[[test]]
+name = "vs3_tls"
+path = "tests/vs3_tls.rs"
+required-features = ["tls"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
@@ -84,6 +96,14 @@ rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled
 # crate này vào (nó `#![cfg(target_os = "linux")]`), nên ma trận `cargo check --target` vẫn 18/18.
 [target.'cfg(target_os = "linux")'.dependencies]
 vis-host-linux = { path = "../../vis-host-linux" }
+
+# **VS3-4a (VD-271)** — TLS client. Ghim tuyệt đối để build tái lập; `default-features = false`
+# + `ring` để **không** kéo `aws-lc-rs`/NASM. `webpki-roots` là **dữ liệu** gốc Mozilla (không
+# code unsafe, không transitive). Chỉ target không phải wasm32 ⇒ `cargo check --target
+# wasm32-unknown-unknown` không thấy hai crate này; `net.rs` trả lỗi rõ khi gọi HTTPS ở wasm.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"], optional = true }
+webpki-roots = { version = "=1.0.11", optional = true }
 
 # **ST-271 / VD-254 (Lát 3)** — readiness selector thật cho đường frame test (`net.read`/
 # `net.accept`); cfg Linux-only, KHÔNG vào core crate (wasm32), KHÔNG có `log` (tắt qua
