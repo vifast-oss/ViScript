@@ -3,7 +3,8 @@
 //!
 //! Đây là bản production hoá adapter `Net2` của test `lat256_net`: cùng `mio` (epoll) + socket
 //! nonblocking, nhưng nằm trong binary `vis`. Chỉ dùng cho nhánh **async**; runtime sync vẫn dùng
-//! [`crate::net::Net`] nguyên vẹn. Linux/Unix trước; Windows/wasm không có backend này (đường cũ).
+//! [`crate::net::Net`] nguyên vẹn. **Linux/Unix và Windows** dùng backend này (mio `Source` trực
+//! tiếp: epoll / IOCP-AFD); wasm không có backend (đường cũ). Async-h2 vẫn Unix-only.
 //!
 //! Handle giữ đúng quy ước của `stdlib`: `C<n>` kết nối, `L<n>` listener, `N:<addr>` connect,
 //! `W:<tay>` write. `FrameReactorBackend` chỉ đăng ký fd; deadline/token/wake do `rt` quản.

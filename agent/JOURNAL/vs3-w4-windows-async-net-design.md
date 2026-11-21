@@ -1,6 +1,10 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VS3-W4 — thiết kế port async net/TLS backend sang Windows (`crates/vis-cli/src/async_net.rs`)
 
+> **CẬP NHẬT 2026-11-22**: đã **production hoá** trên `vs3/w4-windows` — xem
+> `agent/JOURNAL/vs3-w4-win-async-production.md` (10 vòng targeted + 2 vòng workspace xanh).
+> Async-h2 vẫn Unix-only/default-off.
+
 > **Người làm**: subagent VS3-W4, 2026-11-21.
 > **Mốc đọc code**: `vs3/w4-windows` @ `e272007` (code trùng `73af17b`; hai commit sau chỉ docs/journal).
 > **Branch thiết kế**: `vs3/w4-windows` (không commit vào `main`).

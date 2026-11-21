@@ -307,9 +307,9 @@ fn cli_async_noi_host_fs() {
 
 // ---------------------------------------------------------------------------
 // Async net production (loopback): backend mio trong CLI.
-// **Windows (VS3-W4)**: `async_net.rs` hiện `#![cfg(unix)]` — chưa có backend async net
-// trên Windows ⇒ các ca production dưới đây chỉ chạy Unix, tránh deadlock VS0505 giả tạo.
-// Xem đề xuất backend Windows: `agent/JOURNAL/vs3-w4-asyncnet-windows.md`.
+// **Windows (VS3-W4)**: backend `async_net` đã production hoá trên Windows (mio `Source` trực
+// tiếp, IOCP/AFD) ⇒ các ca loopback dưới đây chạy cả Unix lẫn Windows; async-h2 vẫn Unix-only,
+// feature `async-h2` default-off. Xem `agent/JOURNAL/vs3-w4-win-async-production.md`.
 // ---------------------------------------------------------------------------
 
 /// Các ca net dùng port loopback + server thread: serialize trong test binary để tránh
