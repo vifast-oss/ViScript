@@ -1126,17 +1126,6 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 return Err(a);
             }
             let rhs = frame.pop_val()?;
-            if !matches!(op, AssignOp::Set) {
-                // VD-270 giữ đúng phạm vi: chỉ `=`. `+=` trên lá đường vẫn bị từ chối như
-                // dạng một tầng cũ — không fallback âm thầm sang interp/VM.
-                let manh = match duong.last() {
-                    Some(crate::gan::Buoc::Truong(_)) => {
-                        "gán ghép trên trường chưa được đường frame test hỗ trợ"
-                    }
-                    _ => "gán ghép trên phần tử chưa được đường frame test hỗ trợ",
-                };
-                return Err(Abort::Trap(Trap::new(RT, manh, span)));
-            }
             if !frame.mutable.borrow().contains(&sym) {
                 let manh = match duong.last() {
                     Some(crate::gan::Buoc::Truong(_)) => {
@@ -1150,8 +1139,26 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                     span,
                 )));
             }
-            let rhs = crate::lift::lift_opt(rhs, opt_depth);
-            let moi = crate::gan::gan_duong(root, &duong, rhs, span)?;
+            // **VD-270 (frame gán ghép đường, 2026-11-21)**: `+=`/`-=`/… trên lá **đường** dùng
+            // **cùng** ngữ nghĩa `interp::gan_long`: đọc lá cũ từ ảnh chụp gốc, áp `BinOp`, rồi
+            // dựng lại đường. `=` giữ nguyên đường nâng `Option` như cũ.
+            let moi = if matches!(op, AssignOp::Set) {
+                let rhs = crate::lift::lift_opt(rhs, opt_depth);
+                crate::gan::gan_duong(root, &duong, rhs, span)?
+            } else {
+                let old = crate::gan::doc_duong(&root, &duong, span)?;
+                let bop = match op {
+                    AssignOp::Add => vis_types::hir::BinOp::Add,
+                    AssignOp::Sub => vis_types::hir::BinOp::Sub,
+                    AssignOp::Mul => vis_types::hir::BinOp::Mul,
+                    AssignOp::Div => vis_types::hir::BinOp::Div,
+                    AssignOp::FloorDiv => vis_types::hir::BinOp::FloorDiv,
+                    AssignOp::Rem => vis_types::hir::BinOp::Rem,
+                    AssignOp::Set => unreachable!("Set đã xử lý ở nhánh trên"),
+                };
+                let new = crate::builtin::bin(bop, old, rhs, span)?;
+                crate::gan::gan_duong(root, &duong, new, span)?
+            };
             frame.cur().env.borrow_mut().insert(sym, moi);
             Ok(())
         }

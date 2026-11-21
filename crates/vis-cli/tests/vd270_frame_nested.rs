@@ -318,44 +318,34 @@ fn goc_let_frame_interp_trap_phong_thu() {
 }
 
 // ===========================================================================
-// 5 — `+=` lồng: ngoài phạm vi VD-270, frame interp từ chối **nhất quán**
+// 5 — `+=` lồng: frame interp **hỗ trợ** như frame VM (VD-270)
 // ===========================================================================
 
 #[test]
-fn ghep_long_van_bi_frame_interp_tu_choi_nhat_quan() {
-    // Hai hình dạng lá (trường / phần tử) phải trap **cùng một kiểu**; interp/VM thường và
-    // frame VM vẫn chạy được — đây là nợ đã ghi, không phải parity giả.
+fn ghep_long_duong_frame_interp_ho_tro_nhu_vm() {
+    // Trước bản sửa, frame interp từ chối `+=` trên lá đường (nợ đã ghi). Nay cả hai engine
+    // dùng cùng ngữ nghĩa `gan_long`: đọc lá cũ, áp `BinOp`, dựng lại đường.
     let field_src = "type P:\n    n: int\n\ntype Q:\n    p: P\n\nfn main():\n    var q: Q = {p: {n: 40}}\n    q.p.n += 2\n    print(q.p.n)\n";
     let index_src = "type P:\n    xs: list[int]\n\ntype Q:\n    p: P\n\nfn main():\n    var q: Q = {p: {xs: [1, 2]}}\n    q.p.xs[1] += 8\n    print(q.p.xs)\n";
 
-    for (src, manh) in [
-        (field_src, "gán ghép trên trường"),
-        (index_src, "gán ghép trên phần tử"),
-    ] {
+    for (src, want) in [(field_src, "42\n"), (index_src, "[1, 10]\n")] {
         let (hir, syms, tys) = tien_trinh(src);
         let i = run_frame_i(src, &hir, &syms, &tys, &[], FrameConfig::default());
-        assert_eq!(i.exit, 1, "frame interp phải từ chối: {:?}", i.stdout);
-        assert_eq!(i.diagnostics.len(), 1);
-        assert_eq!(i.diagnostics[0].code.short, "VS0501");
+        assert_eq!(i.exit, 0, "frame interp: {:?}", i.diagnostics);
         assert!(
-            i.diagnostics[0].message.contains(manh),
-            "thông điệp phải nêu `{manh}`: {:?}",
+            i.diagnostics.is_empty(),
+            "frame interp: {:?}",
             i.diagnostics
         );
-        assert!(i.diagnostics[0]
-            .message
-            .contains("chưa được đường frame test hỗ trợ"));
+        assert_eq!(i.stdout, want, "frame interp stdout");
 
-        // Runtime chính vẫn hỗ trợ (VD-268), và frame VM chạy bytecode nên cũng hỗ trợ.
+        // Runtime chính hỗ trợ (VD-268), frame VM chạy bytecode cũng hỗ trợ.
         let (_o, e) = runtime_hai_duong(src);
         assert_eq!(e, 0);
         let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
         let v = run_frame_v(&m, src, &[], FrameConfig::default());
         assert_eq!(v.exit, 0, "frame VM: {:?}", v.diagnostics);
-        assert!(
-            !v.stdout.is_empty(),
-            "frame VM phải in kết quả, không trap như frame interp"
-        );
+        assert_eq!(v.stdout, i.stdout, "stdout lệch interp ↔ VM");
     }
 }
 
