@@ -32,6 +32,7 @@
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
 | VS3-4b — keep-alive + IPv6 + registry HTTPS + cookie/auth | W2 | `vs3_keepalive.rs`, `vs3_registry_https.rs`, `vs3_cookie_auth.rs` | **DONE (một phần)** — `b7385e9` + `cc74dbc` + `096ea2c`; 8+6+9 ca |
 | VS3-4b2 — HTTP/2 | W2 | `vs3_http2.rs` | **DONE** — `7d73268`; feature `http2` default-off, 5 ca h2; Windows h2 chờ verify |
+| VS3-4b3 — h2 reuse | W2 | `vs3_http2.rs` | **DONE (nhánh)** — `28f9ea2`; reuse tuần tự theo authority, 7 ca; **chưa merge trước tag v0.2.0** |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
@@ -44,7 +45,7 @@
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/1c/1d/2a | **DONE (một phần)** — `1de3faa`; async default + Pipe; cap>0/net async còn mở |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2 | **DONE** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9` + `7d73268`; HTTP/2 feature default-off |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2/4b3 | **DONE (nhánh)** — `28f9ea2`; h2 reuse; default-off giữ tới sau v0.2.0 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c + 2b | **DONE (một phần)** — `4bb20df` + `3fcd7ef` + `823b34c` + `8da533b`; timeout kênh xong |
@@ -90,7 +91,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | **VS3-1d** async default + Pipe parity | W1 | **DONE (một phần)** — async chạy frame, sync byte-identical, guard rõ; cap>0/net async W3 |
 | **VS3-3b** worker opt-in | W5 | **DONE (một phần)** — pool opt-in + TaskId/proxy + print merge + budget atomic; chưa nối evaluator |
-| **VS3-4b2** HTTP/2 | W2 | **DONE (một phần)** — feature `http2` default-off; 5 ca h2; **default-on thử `959d1aa` chưa merge** |
+| **VS3-4b2/4b3** HTTP/2 + reuse | W2 | **DONE (nhánh)** — `28f9ea2` reuse tuần tự; default-off; default-on `959d1aa` chờ v0.2.0 |
 | **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
 | **VS3-2b** timeout kênh | W5 | **DONE (một phần)** — `recv_timeout`/`send_timeout`, 17 ca; `select` VS3-2c |

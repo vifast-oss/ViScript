@@ -52,6 +52,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-4b3 (h2 reuse)**: tái dùng connection h2 theo authority (tuần tự, tối đa 4), retry một lần khi GOAWAY/lỗi; 7 ca h2; feature default-off; nhánh `28f9ea2`, chưa merge trước tag v0.2.0.
 - **2026-11-21** — **VS3-2b (timeout kênh)**: `recv_timeout(ms)->T?`, `send_timeout(ms,v)->bool`; frame path timer/reactor, `ms=0` một lần, `ms<0` trap; 17 ca; `select` hoãn VS3-2c; merge `42b700c`.
 - **2026-11-21** — **VS3-1d (async default)**: chương trình có `async fn` chạy frame runtime (interp/VM), sync giữ nguyên; Pipe parity; guard 200k trap rõ; cache warm/cold; 7 ca `vs3_default` + sem 525 ×2; merge `78527a4`.
 - **2026-11-21** — **VS3-4b2 (HTTP/2)**: feature `http2` default-off; `h2`+tokio io-util, ALPN h2, fallback HTTP/1.1 cùng kết nối; 5 ca h2 + 12 TLS; không default/wasm; merge `55d3489`.
