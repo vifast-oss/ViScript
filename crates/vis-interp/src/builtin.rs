@@ -77,6 +77,32 @@ pub trait NetHost {
         let _ = (dia_chi, timeout_ms);
         Err("HTTPS không được hỗ trợ bởi host mạng này".to_string())
     }
+
+    /// **VS3-4b (VD-271)**: nối cho **HTTP** — `tls` chọn `connect_tls`/`connect`,
+    /// `cho_phep_pool` cho phép host tái dùng kết nối idle. Trả `(handle, tái_sử_dụng)`; host
+    /// không có pool (mặc định) luôn trả `false` và hoạt động one-shot như cũ.
+    fn connect_http(
+        &mut self,
+        dia_chi: &str,
+        tls: bool,
+        cho_phep_pool: bool,
+        timeout_ms: u64,
+    ) -> Result<(String, bool), String> {
+        let _ = cho_phep_pool;
+        let tay = if tls {
+            self.connect_tls(dia_chi, timeout_ms)?
+        } else {
+            self.connect(dia_chi, timeout_ms)?
+        };
+        Ok((tay, false))
+    }
+
+    /// **VS3-4b (VD-271)**: kết thúc một request HTTP. `giu_lai = true` ⇒ host **có thể** đưa kết
+    /// nối về pool idle (chỉ khi response cho phép keep-alive); mặc định **đóng** như one-shot cũ.
+    fn tra_http(&mut self, tay: &str, giu_lai: bool) -> Result<(), String> {
+        let _ = giu_lai;
+        self.close(tay)
+    }
     /// **ST-65**: lắng nghe trên `dia_chi`. Trả **handle mờ**.
     fn listen(&mut self, dia_chi: &str) -> Result<String, String>;
     /// **ST-65**: địa chỉ local của tay.

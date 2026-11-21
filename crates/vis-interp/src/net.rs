@@ -5,13 +5,19 @@
 //!
 //! Phạm vi: `http://` **chỉ loopback** (`127.0.0.1`/`localhost`, giữ nguyên VD-100/105) và
 //! **VS3-4a** `https://` qua `NetHost::connect_tls` (TLS nằm ở host, không ở crate lõi); **không**
-//! HTTP/2, **không** keep-alive; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect;
-//! phản hồi cap **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte**
-//! tới khi chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte. **Chunk trailer bị bỏ qua**.
+//! HTTP/2; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect; phản hồi cap
+//! **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte** tới khi
+//! chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte. **Chunk trailer được đọc hết nhưng bỏ nội dung**.
 //!
 //! **VS3-4a (VD-271)**: thêm `https://` — host TLS xác thực chứng chỉ theo root store; `https://`
 //! được phép host ngoài loopback (đi qua `cap[Net]` như mọi host khác), còn `http://` **vẫn** chỉ
 //! loopback để không mở thêm bề mặt trần. Không cho chuyển hướng **HTTPS → HTTP** (Q2 (3)).
+//!
+//! **VS3-4b (VD-271)**: HTTP/1.1 **keep-alive** — request gửi `Connection: keep-alive`; response
+//! cho phép (HTTP/1.1 không `close`, hoặc HTTP/1.0 + `keep-alive`) và thân đã đọc hết ⇒ trả kết nối
+//! về host (`NetHost::tra_http`) để tái dùng; server `close`/EOF/khung lạ ⇒ đóng. Host không có pool
+//! (mặc định của trait) vẫn one-shot. Kết nối idle chết được thử lại **một lần** trên kết nối mới
+//! (GET/HEAD idempotent), trong cùng deadline.
 
 use std::time::{Duration, Instant};
 
@@ -191,18 +197,21 @@ struct DauHttp {
     cl: Option<usize>,
     chunked: bool,
     location: Option<String>,
+    /// **VS3-4b**: response cho phép giữ kết nối? (HTTP/1.1 mặc định có, `Connection: close` tắt;
+    /// HTTP/1.0 chỉ khi `Connection: keep-alive`).
+    giu_ket_noi: bool,
     /// Header đã hạ **chữ thường**, giữ thứ tự; dùng cho `http.head`.
     headers: Vec<(String, String)>,
 }
 
-/// Đọc status + `Content-Length` + `Transfer-Encoding` + `Location` từ khối header (không gồm
-/// `\r\n\r\n`).
+/// Đọc status + `Content-Length` + `Transfer-Encoding` + `Location` + `Connection` từ khối header
+/// (không gồm `\r\n\r\n`).
 fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
     let text = String::from_utf8_lossy(dau);
     let mut lines = text.split("\r\n");
     let status_line = lines.next().unwrap_or("");
     let mut phan = status_line.split_whitespace();
-    let _ver = phan.next();
+    let phien_ban = phan.next().unwrap_or("");
     let status: u16 = phan
         .next()
         .and_then(|s| s.parse().ok())
@@ -211,6 +220,7 @@ fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
         status,
         ..Default::default()
     };
+    let mut ket_noi = String::new();
     for l in lines {
         if let Some((k, v)) = l.split_once(':') {
             let k = k.trim();
@@ -226,9 +236,22 @@ fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
                     .any(|x| x.trim().eq_ignore_ascii_case("chunked"));
             } else if k.eq_ignore_ascii_case("location") {
                 out.location = Some(v.to_string());
+            } else if k.eq_ignore_ascii_case("connection") {
+                ket_noi = v.to_ascii_lowercase();
             }
             out.headers.push((k.to_ascii_lowercase(), v.to_string()));
         }
+    }
+    let dong = ket_noi.split(',').any(|x| x.trim() == "close");
+    let giu = ket_noi.split(',').any(|x| x.trim() == "keep-alive");
+    out.giu_ket_noi = if phien_ban.eq_ignore_ascii_case("HTTP/1.1") {
+        !dong
+    } else {
+        giu
+    };
+    // 101 Switching Protocols không phải HTTP/1.1 thường ⇒ không tái dùng.
+    if out.status == 101 {
+        out.giu_ket_noi = false;
     }
     Ok(out)
 }
@@ -240,9 +263,10 @@ fn doc_header(dau: &[u8]) -> Result<(u16, Option<usize>), String> {
     Ok((d.status, d.cl))
 }
 
-/// Ghép thân **chunked** (RFC 7230 §4.1); `None` = còn thiếu byte, `Err` = cú pháp/chunk quá cap.
-/// Hỗ trợ **chunk mở rộng** `<hex>;ext=1\r\n` (bỏ phần sau `;`); chunk `0` kết thúc.
-fn ghep_chunked(du: &[u8]) -> Result<Option<Vec<u8>>, String> {
+/// Ghép thân **chunked** (RFC 7230 §4.1). `None` = còn thiếu byte; `Err` = cú pháp/chunk quá cap.
+/// Hỗ trợ **chunk mở rộng** `<hex>;ext=1\r\n` (bỏ phần sau `;`); chunk `0` kết thúc, **bỏ trailer**
+/// nhưng đọc hết trailer để kết nối có thể tái dùng. Trả `(body, số byte đã dùng)`.
+fn ghep_chunked(du: &[u8]) -> Result<Option<(Vec<u8>, usize)>, String> {
     let mut i = 0usize;
     let mut out = Vec::new();
     loop {
@@ -267,7 +291,21 @@ fn ghep_chunked(du: &[u8]) -> Result<Option<Vec<u8>>, String> {
         })?;
         i += pos + 2;
         if n == 0 {
-            return Ok(Some(out));
+            // Trailer: 0+ dòng header rồi dòng trống; bỏ nội dung, nhưng phải đọc hết.
+            let bat_dau = i;
+            loop {
+                let Some(pos) = du[i..].windows(2).position(|w| w == b"\r\n") else {
+                    return Ok(None);
+                };
+                let dong = &du[i..i + pos];
+                i += pos + 2;
+                if dong.is_empty() {
+                    return Ok(Some((out, i)));
+                }
+                if i - bat_dau > MAX_HEADER {
+                    return Err(format!("chunk trailer quá lớn (> {MAX_HEADER} byte)"));
+                }
+            }
         }
         if out.len().saturating_add(n) > MAX_HTTP {
             return Err(format!("phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"));
@@ -278,7 +316,7 @@ fn ghep_chunked(du: &[u8]) -> Result<Option<Vec<u8>>, String> {
         out.extend_from_slice(&du[i..i + n]);
         i += n;
         if &du[i..i + 2] != b"\r\n" {
-            return Err("chunk thiếu `\r\n` sau dữ liệu".to_string());
+            return Err("chunk thiếu `\\r\\n` sau dữ liệu".to_string());
         }
         i += 2;
     }
@@ -349,7 +387,50 @@ fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
     )))
 }
 
-/// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body)`.
+/// Lỗi tầng HTTP kèm cờ **có nên thử lại một lần** trên kết nối mới (chỉ khi lỗi đến từ kết nối
+/// idle đã bị server đóng, không phải lỗi cú pháp/timeout).
+struct LoiHttp {
+    thong_diep: String,
+    retry_duoc: bool,
+}
+
+impl LoiHttp {
+    fn khong_thu_lai(s: impl Into<String>) -> Self {
+        Self {
+            thong_diep: s.into(),
+            retry_duoc: false,
+        }
+    }
+
+    fn ket_noi(s: impl Into<String>) -> Self {
+        Self {
+            thong_diep: s.into(),
+            retry_duoc: true,
+        }
+    }
+}
+
+impl From<String> for LoiHttp {
+    fn from(s: String) -> Self {
+        Self::khong_thu_lai(s)
+    }
+}
+
+/// Lỗi `read` do hết giờ **không** thử lại (đã dùng hết hạn); lỗi kết nối khác thì thử lại được.
+fn loi_doc(e: String) -> LoiHttp {
+    if e.contains("quá thời gian") {
+        LoiHttp::khong_thu_lai(e)
+    } else {
+        LoiHttp::ket_noi(e)
+    }
+}
+
+/// Kết quả một response GET: `(status, Location, body, giữ_kết_nối)`.
+type KetQuaGet = (u16, Option<String>, String, bool);
+/// Kết quả một response HEAD: `(status, headers, giữ_kết_nối)`.
+type KetQuaHead = (u16, Vec<(String, String)>, bool);
+
+/// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body, giữ_kết_nối)`.
 ///
 /// `han` là deadline **chung của cả lời gọi** (do `http_get` tạo một lần); `timeout` chỉ dùng để
 /// giữ nguyên thông điệp lỗi lịch sử. Mỗi lần đọc chỉ dùng phần thời gian **còn lại** tới `han`.
@@ -360,68 +441,80 @@ fn doc_http_mot(
     target: &str,
     han: Instant,
     timeout: u64,
-) -> Result<(u16, Option<String>, String), String> {
-    let req = format!("GET {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
-    net.write(tay, req.as_bytes())?;
+) -> Result<KetQuaGet, LoiHttp> {
+    let req =
+        format!("GET {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: keep-alive\r\n\r\n");
+    net.write(tay, req.as_bytes()).map_err(LoiHttp::ket_noi)?;
     let mut du: Vec<u8> = Vec::new();
     let mut info: Option<DauHttp> = None;
     let mut h = 0usize;
     loop {
         if let Some(d) = &info {
             if d.chunked {
-                if let Some(body) = ghep_chunked(&du[h..])? {
+                if let Some((body, dung)) = ghep_chunked(&du[h..])? {
+                    // Còn byte lạ sau chunk cuối ⇒ không tái dùng (tránh lệch frame).
+                    let giu = d.giu_ket_noi && h + dung == du.len();
                     return Ok((
                         d.status,
                         d.location.clone(),
                         String::from_utf8_lossy(&body).into_owned(),
+                        giu,
                     ));
                 }
             } else if let Some(n) = d.cl {
                 if du.len() >= h + n {
                     let cuoi = (h + n).min(du.len());
+                    let giu = d.giu_ket_noi && cuoi == du.len();
                     return Ok((
                         d.status,
                         d.location.clone(),
                         String::from_utf8_lossy(&du[h..cuoi]).into_owned(),
+                        giu,
                     ));
                 }
             }
         }
         let con = con_lai_ms(han).ok_or_else(|| {
-            format!(
+            LoiHttp::khong_thu_lai(format!(
                 "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
                 timeout.max(1)
-            )
+            ))
         })?;
         // Giữ nguyên clamp 2 000 ms **mỗi lần đọc** (VD-183) — không nới, không bỏ.
-        let doc = net.read(tay, 16 * 1024, con.clamp(1, 2_000))?;
+        let doc = net
+            .read(tay, 16 * 1024, con.clamp(1, 2_000))
+            .map_err(loi_doc)?;
         if doc.is_empty() {
-            let d =
-                info.ok_or_else(|| "phản hồi HTTP không đủ header (kết nối đóng sớm)".to_string())?;
+            let d = info.ok_or_else(|| {
+                LoiHttp::ket_noi("phản hồi HTTP không đủ header (kết nối đóng sớm)")
+            })?;
             if d.chunked {
                 return match ghep_chunked(&du[h..])? {
-                    Some(body) => Ok((
+                    Some((body, _)) => Ok((
                         d.status,
                         d.location,
                         String::from_utf8_lossy(&body).into_owned(),
+                        false,
                     )),
-                    None => Err("chunked: kết nối đóng khi chưa đủ chunk".to_string()),
+                    None => Err(LoiHttp::ket_noi("chunked: kết nối đóng khi chưa đủ chunk")),
                 };
             }
             return match d.cl {
-                Some(n) if du.len() < h + n => Err(format!(
+                Some(n) if du.len() < h + n => Err(LoiHttp::ket_noi(format!(
                     "Content-Length {n} nhưng mới đọc {} byte (kết nối đóng sớm)",
                     du.len() - h
-                )),
+                ))),
                 Some(n) => Ok((
                     d.status,
                     d.location,
                     String::from_utf8_lossy(&du[h..h + n]).into_owned(),
+                    false,
                 )),
                 None => Ok((
                     d.status,
                     d.location,
                     String::from_utf8_lossy(&du[h..]).into_owned(),
+                    false,
                 )),
             };
         }
@@ -432,31 +525,39 @@ fn doc_http_mot(
                 let d = doc_header_day_du(&du[..i])?;
                 if let Some(n) = d.cl {
                     if n > MAX_HTTP {
-                        return Err(format!("phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"));
+                        return Err(LoiHttp::khong_thu_lai(format!(
+                            "phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"
+                        )));
                     }
                 }
                 info = Some(d);
             } else if du.len() > MAX_HEADER {
-                return Err(format!(
+                return Err(LoiHttp::khong_thu_lai(format!(
                     "phản hồi HTTP header quá lớn (> {MAX_HEADER} byte)"
-                ));
+                )));
             }
         }
         if info.is_some() && du.len().saturating_sub(h) > MAX_HTTP {
-            return Err(format!("phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"));
+            return Err(LoiHttp::khong_thu_lai(format!(
+                "phản hồi vượt giới hạn {MAX_HTTP} byte (8 MiB)"
+            )));
         }
     }
 }
 
-/// `http.get`/`get_timeout` — nối qua `NetHost`, chạy giao thức, **đóng tay** (best-effort).
+/// `http.get`/`get_timeout` — nối qua `NetHost`, chạy giao thức, **trả kết nối về pool** khi response
+/// cho phép keep-alive; lỗi/hết giờ đóng ngay. Vẫn one-shot với host không có pool.
 ///
 /// **ST-265 (VD-250, #148)**: một deadline monotonic duy nhất cho **toàn bộ** lời gọi — tính ở đây
 /// một lần, truyền xuống connect và từng hop `doc_http_mot`; **không** đặt lại khi chuyển hướng.
+/// **VS3-4b**: kết nối idle lấy từ pool có thể đã bị server đóng ⇒ thử lại **một lần** trên kết nối
+/// mới (GET idempotent), không tính là redirect.
 pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<String, String> {
     let timeout = timeout_ms.max(1);
     let han = Instant::now() + Duration::from_millis(timeout);
     let mut hien_tai = url.to_string();
     let mut so = 0u8;
+    let mut da_thu_lai = false;
     loop {
         let u = tach_url(&hien_tai)?;
         let authority = u.authority();
@@ -467,44 +568,58 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
                 timeout.max(1)
             )
         })?;
-        // **VS3-4a**: `https://` đi qua TLS của host; `http://` giữ đường trần cũ.
-        let tay = match u.giao_thuc {
-            GiaoThuc::Http => net.connect(&u.dia_chi(), con)?,
-            GiaoThuc::Https => net.connect_tls(&u.dia_chi(), con)?,
-        };
+        // **VS3-4a**: `https://` đi qua TLS của host; **VS3-4b**: dùng lại kết nối idle nếu có.
+        let (tay, tai_su_dung) = net.connect_http(
+            &u.dia_chi(),
+            u.giao_thuc == GiaoThuc::Https,
+            !da_thu_lai,
+            con,
+        )?;
         net.ghi_nhat_ky(&format!(
             "NET {} GET {authority}{}",
             u.giao_thuc.ten(),
             u.target
         ));
         let kq = doc_http_mot(net, &tay, &authority, &u.target, han, timeout);
-        let _ = net.close(&tay);
-        let (status, location, body) = kq?;
-        if (300..400).contains(&status) {
-            let Some(loc) = location else {
-                return Err(format!("HTTP {status}"));
-            };
-            let Some(url) = noi_location(&u, &loc)? else {
-                // `Location` rỗng/fragment cùng URL ⇒ **trả mã gốc**, không lỗi, không theo.
-                return Err(format!("HTTP {status}"));
-            };
-            so += 1;
-            if so > 5 {
-                return Err("quá 5 lần chuyển hướng HTTP (tối đa 5)".to_string());
+        match kq {
+            Ok((status, location, body, giu_lai)) => {
+                let _ = net.tra_http(&tay, giu_lai);
+                if (300..400).contains(&status) {
+                    let Some(loc) = location else {
+                        return Err(format!("HTTP {status}"));
+                    };
+                    let Some(url) = noi_location(&u, &loc)? else {
+                        // `Location` rỗng/fragment cùng URL ⇒ **trả mã gốc**, không lỗi, không theo.
+                        return Err(format!("HTTP {status}"));
+                    };
+                    so += 1;
+                    if so > 5 {
+                        return Err("quá 5 lần chuyển hướng HTTP (tối đa 5)".to_string());
+                    }
+                    hien_tai = url;
+                    da_thu_lai = false;
+                    continue;
+                }
+                if !(200..300).contains(&status) {
+                    return Err(format!("HTTP {status}"));
+                }
+                return Ok(body);
             }
-            hien_tai = url;
-            continue;
+            Err(e) => {
+                let _ = net.tra_http(&tay, false);
+                if tai_su_dung && !da_thu_lai && e.retry_duoc {
+                    da_thu_lai = true;
+                    continue;
+                }
+                return Err(e.thong_diep);
+            }
         }
-        if !(200..300).contains(&status) {
-            return Err(format!("HTTP {status}"));
-        }
-        return Ok(body);
     }
 }
 
-/// `HEAD` — gửi `HEAD`, chỉ đọc **header**, trả `(status, headers)`. **Không** đọc thân (kể cả khi
-/// server gửi `Content-Length`/chunked); **không** theo redirect (trả mã gốc + `Location`), khớp tài
-/// liệu “redirect chỉ GET”.
+/// `HEAD` — gửi `HEAD`, chỉ đọc **header**, trả `(status, headers, giữ_kết_nối)`. **Không** đọc thân
+/// (kể cả khi server gửi `Content-Length`/chunked); **không** theo redirect (trả mã gốc + `Location`),
+/// khớp tài liệu “redirect chỉ GET”.
 fn head_mot(
     net: &mut dyn NetHost,
     tay: &str,
@@ -512,34 +627,40 @@ fn head_mot(
     target: &str,
     han: Instant,
     timeout: u64,
-) -> Result<(u16, Vec<(String, String)>), String> {
-    let req = format!("HEAD {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
-    net.write(tay, req.as_bytes())?;
+) -> Result<KetQuaHead, LoiHttp> {
+    let req =
+        format!("HEAD {target} HTTP/1.1\r\nHost: {authority}\r\nConnection: keep-alive\r\n\r\n");
+    net.write(tay, req.as_bytes()).map_err(LoiHttp::ket_noi)?;
     let mut du: Vec<u8> = Vec::new();
     loop {
         let con = con_lai_ms(han).ok_or_else(|| {
-            format!(
+            LoiHttp::khong_thu_lai(format!(
                 "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
                 timeout.max(1)
-            )
+            ))
         })?;
         // Giữ nguyên clamp 2 000 ms **mỗi lần đọc** (VD-183) — không nới, không bỏ.
-        let doc = net.read(tay, 16 * 1024, con.clamp(1, 2_000))?;
+        let doc = net
+            .read(tay, 16 * 1024, con.clamp(1, 2_000))
+            .map_err(loi_doc)?;
         if doc.is_empty() {
-            let i = tim_header(&du)
-                .ok_or_else(|| "phản hồi HTTP không đủ header (kết nối đóng sớm)".to_string())?;
+            let i = tim_header(&du).ok_or_else(|| {
+                LoiHttp::ket_noi("phản hồi HTTP không đủ header (kết nối đóng sớm)")
+            })?;
             let d = doc_header_day_du(&du[..i])?;
-            return Ok((d.status, d.headers));
+            return Ok((d.status, d.headers, false));
         }
         du.extend_from_slice(&doc);
         if let Some(i) = tim_header(&du) {
             let d = doc_header_day_du(&du[..i])?;
-            return Ok((d.status, d.headers));
+            // Byte sau header (server gửi thân cho HEAD) ⇒ không tái dùng để tránh lệch frame.
+            let giu = d.giu_ket_noi && du.len() == i + 4;
+            return Ok((d.status, d.headers, giu));
         }
         if du.len() > MAX_HEADER {
-            return Err(format!(
+            return Err(LoiHttp::khong_thu_lai(format!(
                 "phản hồi HTTP header quá lớn (> {MAX_HEADER} byte)"
-            ));
+            )));
         }
     }
 }
@@ -548,6 +669,7 @@ fn head_mot(
 ///
 /// **ST-265 (VD-250, #148)**: deadline monotonic tính một lần ở đầu lời gọi, dùng chung cho
 /// connect + đọc header (dù HEAD không có redirect, vẫn nhất quán với `http_get`).
+/// **VS3-4b**: dùng pool như GET; kết nối idle chết được thử lại một lần.
 pub fn http_head(
     net: &mut dyn NetHost,
     url: &str,
@@ -557,30 +679,48 @@ pub fn http_head(
     let han = Instant::now() + Duration::from_millis(timeout);
     let u = tach_url(url)?;
     let authority = u.authority();
-    let con = con_lai_ms(han).ok_or_else(|| {
-        format!(
-            "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
-            timeout.max(1)
-        )
-    })?;
-    // **VS3-4a**: HEAD dùng cùng đường TLS; vẫn **không** theo redirect.
-    let tay = match u.giao_thuc {
-        GiaoThuc::Http => net.connect(&u.dia_chi(), con)?,
-        GiaoThuc::Https => net.connect_tls(&u.dia_chi(), con)?,
-    };
-    net.ghi_nhat_ky(&format!(
-        "NET {} HEAD {authority}{}",
-        u.giao_thuc.ten(),
-        u.target
-    ));
-    let kq = head_mot(net, &tay, &authority, &u.target, han, timeout);
-    let _ = net.close(&tay);
-    kq
+    let mut da_thu_lai = false;
+    loop {
+        let con = con_lai_ms(han).ok_or_else(|| {
+            format!(
+                "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
+                timeout.max(1)
+            )
+        })?;
+        let (tay, tai_su_dung) = net.connect_http(
+            &u.dia_chi(),
+            u.giao_thuc == GiaoThuc::Https,
+            !da_thu_lai,
+            con,
+        )?;
+        net.ghi_nhat_ky(&format!(
+            "NET {} HEAD {authority}{}",
+            u.giao_thuc.ten(),
+            u.target
+        ));
+        match head_mot(net, &tay, &authority, &u.target, han, timeout) {
+            Ok((status, headers, giu_lai)) => {
+                let _ = net.tra_http(&tay, giu_lai);
+                return Ok((status, headers));
+            }
+            Err(e) => {
+                let _ = net.tra_http(&tay, false);
+                if tai_su_dung && !da_thu_lai && e.retry_duoc {
+                    da_thu_lai = true;
+                    continue;
+                }
+                return Err(e.thong_diep);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{chuan_hoa_target, doc_header, noi_location, tach_url, GiaoThuc};
+    use super::{
+        chuan_hoa_target, doc_header, doc_header_day_du, ghep_chunked, noi_location, tach_url,
+        GiaoThuc,
+    };
 
     #[test]
     fn tach_url_dung_va_chan_ngoai_loopback() {
@@ -690,5 +830,49 @@ mod tests {
         assert_eq!(doc_header(b"HTTP/1.1 204 No Content").unwrap(), (204, None));
         assert!(doc_header(b"rac").is_err());
         assert!(doc_header(b"HTTP/1.1 200 OK\r\nContent-Length: x").is_err());
+    }
+
+    /// **VS3-4b**: mặc định HTTP/1.1 giữ kết nối; `Connection: close`/HTTP1.0 không header thì không;
+    /// HTTP/1.0 + `keep-alive` thì có.
+    #[test]
+    fn header_giu_ket_noi_theo_phien_ban_va_connection() {
+        assert!(
+            doc_header_day_du(b"HTTP/1.1 200 OK\r\nContent-Length: 0")
+                .unwrap()
+                .giu_ket_noi
+        );
+        assert!(
+            !doc_header_day_du(b"HTTP/1.1 200 OK\r\nConnection: close")
+                .unwrap()
+                .giu_ket_noi
+        );
+        assert!(
+            !doc_header_day_du(b"HTTP/1.0 200 OK\r\nContent-Length: 0")
+                .unwrap()
+                .giu_ket_noi
+        );
+        assert!(
+            doc_header_day_du(b"HTTP/1.0 200 OK\r\nConnection: keep-alive")
+                .unwrap()
+                .giu_ket_noi
+        );
+        assert!(
+            !doc_header_day_du(b"HTTP/1.1 101 Switching Protocols")
+                .unwrap()
+                .giu_ket_noi
+        );
+    }
+
+    /// **VS3-4b**: đọc hết **trailer** để kết nối chunked có thể tái dùng; trả đúng số byte đã dùng.
+    #[test]
+    fn chunked_doc_trailer_va_byte_da_dung() {
+        let du = b"3\r\nabc\r\n0\r\nX-A: 1\r\n\r\nRAC";
+        let (body, dung) = ghep_chunked(du).unwrap().expect("đủ chunk");
+        assert_eq!(body, b"abc");
+        assert_eq!(dung, du.len() - 3, "3 byte `RAC` phải còn lại");
+        let du = b"3\r\nabc\r\n0\r\n\r\n";
+        let (body, dung) = ghep_chunked(du).unwrap().expect("đủ chunk");
+        assert_eq!(body, b"abc");
+        assert_eq!(dung, du.len());
     }
 }

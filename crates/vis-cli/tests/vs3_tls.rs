@@ -13,6 +13,7 @@ use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener};
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -64,8 +65,18 @@ fn cau_hinh_may_chu(cert: &[u8], key: &[u8]) -> Arc<ServerConfig> {
 /// Server TLS loopback: mỗi kết nối đọc request tới `\r\n\r\n`, ghi **mọi byte** vào log, (tuỳ) ngủ
 /// `ngu_ms`, ghi phản hồi tương ứng (phản hồi cuối được lặp lại), gửi `close_notify` rồi đóng.
 fn may_chu_tls(cert: &[u8], key: &[u8], phan_hoi: Vec<Vec<u8>>, ngu_ms: u64) -> MayChu {
+    may_chu_tls_tren("127.0.0.1:0", cert, key, phan_hoi, ngu_ms)
+}
+
+fn may_chu_tls_tren(
+    bind: &str,
+    cert: &[u8],
+    key: &[u8],
+    phan_hoi: Vec<Vec<u8>>,
+    ngu_ms: u64,
+) -> MayChu {
     assert!(!phan_hoi.is_empty(), "cần ít nhất một phản hồi");
-    let l = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+    let l = TcpListener::bind(bind).expect("bind loopback");
     let dia_chi = l.local_addr().expect("local_addr").to_string();
     let log = Arc::new(Mutex::new(Vec::new()));
     let log2 = Arc::clone(&log);
@@ -345,6 +356,93 @@ fn https_het_gio_handshake_ro_rang() {
         "handshake hết giờ quá chậm"
     );
     tay.join().expect("join server treo");
+}
+
+/// **VS3-4b**: TLS qua IPv6 loopback `[::1]` — parser authority + `ServerName` IP + cap dùng chung.
+/// Bỏ qua có ghi chú nếu nền không bật IPv6 loopback (môi trường CI cũ).
+#[test]
+fn https_ipv6_loopback() {
+    let _k = kho();
+    match TcpListener::bind("[::1]:0") {
+        Ok(l) => drop(l),
+        Err(e) => {
+            eprintln!("bỏ qua https_ipv6_loopback: IPv6 loopback không dùng được ({e})");
+            return;
+        }
+    }
+    let s = may_chu_tls_tren(
+        "[::1]:0",
+        CERT_LOCALHOST,
+        KEY_LOCALHOST,
+        vec![dap_ung("200 OK", b"ipv6", "")],
+        0,
+    );
+    assert!(s.dia_chi.starts_with("[::1]:"), "địa chỉ: {}", s.dia_chi);
+    let mut net = net_tin_goc(CERT_LOCALHOST);
+    let body = http_get(&mut net, &format!("https://{}/", s.dia_chi), 3_000)
+        .expect("HTTPS IPv6 phải thành công");
+    assert_eq!(body, "ipv6");
+    s.dung();
+}
+
+/// **VS3-4b**: TLS keep-alive — 2 request HTTPS dùng chung một kết nối TLS.
+#[test]
+fn https_hai_request_cung_mot_ket_noi() {
+    let _k = kho();
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+    let dia_chi = l.local_addr().expect("local_addr").to_string();
+    let cfg = cau_hinh_may_chu(CERT_LOCALHOST, KEY_LOCALHOST);
+    let dem = Arc::new(AtomicUsize::new(0));
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let dem2 = Arc::clone(&dem);
+    let log2 = Arc::clone(&log);
+    let tay = std::thread::spawn(move || {
+        let Ok((tcp, _)) = l.accept() else { return };
+        dem2.fetch_add(1, Ordering::SeqCst);
+        let Ok(conn) = ServerConnection::new(cfg) else {
+            return;
+        };
+        let mut s = StreamOwned::new(conn, tcp);
+        for body in ["mot", "hai"] {
+            let mut req = Vec::new();
+            let mut buf = [0u8; 4096];
+            while req.len() < 65_536 && !req.windows(4).any(|w| w == b"\r\n\r\n") {
+                match s.read(&mut buf) {
+                    Ok(0) => return,
+                    Ok(n) => req.extend_from_slice(&buf[..n]),
+                    Err(_) => return,
+                }
+            }
+            log2.lock().expect("log").extend_from_slice(&req);
+            let dap = dap_ung("200 OK", body.as_bytes(), "Connection: keep-alive\r\n");
+            let _ = s.write_all(&dap);
+            let _ = s.flush();
+        }
+        s.conn.send_close_notify();
+        let _ = s.flush();
+        let _ = s.sock.shutdown(Shutdown::Both);
+    });
+    let mut net = net_tin_goc(CERT_LOCALHOST);
+    assert_eq!(
+        http_get(&mut net, &format!("https://{dia_chi}/mot"), 3_000).expect("request 1"),
+        "mot"
+    );
+    assert_eq!(
+        http_get(&mut net, &format!("https://{dia_chi}/hai"), 3_000).expect("request 2"),
+        "hai"
+    );
+    tay.join().expect("join TLS server");
+    assert_eq!(
+        dem.load(Ordering::SeqCst),
+        1,
+        "hai request HTTPS phải dùng chung một kết nối TLS"
+    );
+    let log = log.lock().expect("log");
+    assert_eq!(
+        log.windows(5).filter(|w| *w == b"GET /").count(),
+        2,
+        "server phải thấy đúng 2 request"
+    );
 }
 
 #[test]
