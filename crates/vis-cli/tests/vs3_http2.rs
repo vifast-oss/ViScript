@@ -8,7 +8,9 @@
 use std::future::Future;
 use std::io::{self, Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
+use std::path::PathBuf;
 use std::pin::Pin;
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
@@ -361,4 +363,110 @@ fn h2_timeout_ro_rang() {
     let e = http_get(&mut net, &s.url("/cham"), 250).expect_err("phải hết giờ");
     assert!(bat.elapsed() < Duration::from_millis(2_000));
     assert!(e.contains("HTTP/2") || e.contains("thời gian"), "{e}");
+}
+
+fn hex(b: &[u8]) -> String {
+    let mut s = String::with_capacity(b.len() * 2);
+    for x in b {
+        s.push_str(&format!("{x:02x}"));
+    }
+    s
+}
+
+fn b64(bytes: &[u8]) -> String {
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for c in bytes.chunks(3) {
+        let b = [c[0], *c.get(1).unwrap_or(&0), *c.get(2).unwrap_or(&0)];
+        out.push(A[(b[0] >> 2) as usize] as char);
+        out.push(A[(((b[0] & 0b11) << 4) | (b[1] >> 4)) as usize] as char);
+        out.push(if c.len() > 1 {
+            A[(((b[1] & 0b1111) << 2) | (b[2] >> 6)) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if c.len() > 2 {
+            A[(b[2] & 0b111111) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+fn tar(entries: &[(&str, &str)]) -> Vec<u8> {
+    let mut out = Vec::new();
+    for (path, noi_dung) in entries {
+        let data = noi_dung.as_bytes();
+        let mut h = [0u8; 512];
+        let p = path.as_bytes();
+        h[..p.len()].copy_from_slice(p);
+        h[100..108].copy_from_slice(b"0000644\0");
+        h[124..136].copy_from_slice(format!("{:011o}\0", data.len()).as_bytes());
+        h[136..148].copy_from_slice(b"00000000000\0");
+        for x in &mut h[148..156] {
+            *x = b' ';
+        }
+        h[156] = b'0';
+        h[257..263].copy_from_slice(b"ustar\0");
+        h[263..265].copy_from_slice(b"00");
+        let sum: u32 = h.iter().map(|&x| u32::from(x)).sum();
+        h[148..156].copy_from_slice(format!("{sum:06o}\0 ").as_bytes());
+        out.extend_from_slice(&h);
+        out.extend_from_slice(data);
+        let pad = (512 - (data.len() % 512)) % 512;
+        out.extend(std::iter::repeat_n(0u8, pad));
+    }
+    out.extend(std::iter::repeat_n(0u8, 1_024));
+    out
+}
+
+/// **VS3-W2**: registry `vis pkg` thật sự thương lượng h2 (không fallback h1).
+#[test]
+fn registry_https_thuong_luong_h2() {
+    if !cfg!(debug_assertions) {
+        eprintln!("bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug");
+        return;
+    }
+    let noi_dung = "fn util() -> i64:\n    7\n";
+    let file_sha = hex(&vis_bytecode::bytes_hash(noi_dung.as_bytes()));
+    let tar_bytes = tar(&[("src/util.vis", noi_dung)]);
+    let tar_sha = hex(&vis_bytecode::bytes_hash(&tar_bytes));
+    let manifest = format!(
+        "{{\"name\":\"util\",\"version\":\"0.1.0\",\"entry\":\"src/util.vis\",\"deps\":{{}},\"files\":[{{\"path\":\"src/util.vis\",\"sha256\":\"{file_sha}\"}}]}}"
+    );
+    let index = format!(
+        "{{\"format\":\"vispkg-http1\",\"packages\":{{\"util\":{{\"0.1.0\":{{\"tarball\":\"util/0.1.0.tar.b64\",\"tarball_sha256\":\"{tar_sha}\",\"manifest\":{manifest}}}}}}}}}\n"
+    );
+    let tar_b64 = b64(&tar_bytes);
+    let s = MayChu::moi(true, move |_, path, _| match path {
+        "/index.json" => (200, vec![], index.as_bytes().to_vec()),
+        "/util/0.1.0.tar.b64" => (200, vec![], tar_b64.as_bytes().to_vec()),
+        _ => (404, vec![], vec![]),
+    });
+    let d = std::env::temp_dir().join(format!("vis-h2-reg-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    std::fs::create_dir_all(&d).expect("tmp");
+    let root =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der");
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .current_dir(&d)
+        .args(["pkg", "add", "util", "--registry", &s.url("")])
+        .env("VIS_TLS_TEST_ROOT_DER", root)
+        .env_remove("VIS_REGISTRY")
+        .env_remove("VIS_REGISTRY_KEY")
+        .output()
+        .expect("chạy vis pkg");
+    assert_eq!(
+        o.status.code(),
+        Some(0),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&o.stdout),
+        String::from_utf8_lossy(&o.stderr)
+    );
+    assert!(
+        d.join(".vis/pkg/util/0.1.0/src/util.vis").is_file(),
+        "không cài được qua h2"
+    );
+    let _ = std::fs::remove_dir_all(&d);
 }
