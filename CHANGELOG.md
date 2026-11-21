@@ -52,6 +52,8 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-1d+ (async cap≥1)**: bỏ fallback `chan(n>0)`, wait-set blocking send/recv trên frame, close/cancel/timeout tương tác; 6 ca `vs3_chan_cap` + 17 timeout; merge `0857de8` (sau candidate v0.2.0).
+- **2026-11-21** — **W4 verify v0.2.0**: psvn `ec29204` **3436/0**, gate PASS, host 54/54, targets 18/18+17/1; không GitHub Actions.
 - **2026-11-21** — **VS3-4b3 (h2 reuse)**: tái dùng connection h2 theo authority (tuần tự, tối đa 4), retry một lần khi GOAWAY/lỗi; 7 ca h2; feature default-off; nhánh `28f9ea2`, chưa merge trước tag v0.2.0.
 - **2026-11-21** — **VS3-2b (timeout kênh)**: `recv_timeout(ms)->T?`, `send_timeout(ms,v)->bool`; frame path timer/reactor, `ms=0` một lần, `ms<0` trap; 17 ca; `select` hoãn VS3-2c; merge `42b700c`.
 - **2026-11-21** — **VS3-1d (async default)**: chương trình có `async fn` chạy frame runtime (interp/VM), sync giữ nguyên; Pipe parity; guard 200k trap rõ; cache warm/cold; 7 ca `vs3_default` + sem 525 ×2; merge `78527a4`.

@@ -24,7 +24,7 @@
 | VS3-1a — budget/step-cap | W1 | `vs3_budget.rs` + diff | **DONE (một phần)** — `3941619`; fuel 100M, parity 2M; BUDGET/Q/default còn mở |
 | VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage_matrix.rs` | **DONE (một phần)** — `7e1deed`; 10 ca, sửa `?.` frame; `Pipe`/nested async chặn 1d |
-| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa`; sync giữ nguyên, Pipe parity; cap>0/net async còn mở |
+| VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa` + `098b649`; async cap≥1 wait-set; async net production còn mở |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
 | VS3-2b — timeout kênh (`select` hoãn 2c) | W5 | `vs3_chan_timeout.rs` | **DONE (một phần)** — `8da533b`; 17 ca `recv_timeout`/`send_timeout`; `select` VS3-2c |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
@@ -47,8 +47,8 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/1c/1d/2a | **DONE (một phần)** — `1de3faa`; async default + Pipe; cap>0/net async còn mở |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2/4b3 | **DONE (nhánh)** — `28f9ea2`; h2 reuse; default-off giữ tới sau v0.2.0 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA v0.2.0)** — `629acf0`; gate 3480/3, nightly 14,7M fuzz 0 vi phạm, diff 100k 0 lệch, host 54/54, targets 18/18; fresh-clone chờ |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c + 2b | **DONE (một phần)** — `4bb20df` + `3fcd7ef` + `823b34c` + `8da533b`; timeout kênh xong |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (v0.2.0)** — `ec29204` 3436/0; targets 18/18+17/1; **không GitHub Actions** |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c + 2b | **DONE (một phần)** — `...` + `8da533b` + `1844370`; timeout + bench example (không ignore) |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -81,7 +81,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3480 passed / 3 skipped**; diff 100k chờ |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3487 passed / 3 skipped**; diff 100k W3 PASS |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | dừng 09:00; tag mục tiêu v0.2.0/v0.3.0 |
 
@@ -99,9 +99,10 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 **v0.3.0 default-on**: W2 thử `959d1aa` (+7,8% release, wasm không kéo h2) — **chỉ merge sau khi tag
 v0.2.0 và W4 verify h2 trên Windows**. Trước đó main giữ `http2` default-off.
 
-**v0.2.0 candidate**: `42b700c` (async default + timeout + worker opt-in; gate **3480/3**) —
-W3 local **PASS** (gate/nightly 14,7M fuzz 0 vi phạm/diff 100k 0 lệch/host 54/54/targets 18/18);
-chờ W4 psvn + fresh-clone rồi A0 tag. Tàn dư ghi rõ: async `chan>0`/net (W1 đang làm), worker chưa nối evaluator.
+**v0.2.0 candidate**: `42b700c` / `ec29204` — W3 local **PASS** (3480/3, nightly 14,7M fuzz,
+diff 100k 0 lệch, host 54/54, targets 18/18); W4 psvn **PASS 3436/0**; chờ fresh-clone rồi A0 tag.
+W1f (`098b649`, async cap≥1) và W5 bench example (`1844370`) là **sau candidate**, vào v0.3.0.
+Tàn dư v0.2.0: async net production; worker chưa nối evaluator; HTTP/2 default-off.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
