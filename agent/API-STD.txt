@@ -80,6 +80,7 @@ net.local_addr	(str) -> Result[str, Error]
 net.read	(str, int, int) -> Result[str, Error]
 net.write	(str, str) -> Result[(), Error]
 path.basename	(str) -> str
+path.components	(str) -> list[str]
 path.dirname	(str) -> str
 path.ext	(str) -> str
 path.is_abs	(str) -> bool
