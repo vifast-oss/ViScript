@@ -232,6 +232,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             span,
         } => {
             frame.cur().work.push(Work::ApplyField {
+                base,
                 name: name.clone(),
                 optional: *optional,
                 span: *span,

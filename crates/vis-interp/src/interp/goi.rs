@@ -567,7 +567,7 @@ impl<'a> Interp<'a> {
     /// **VD-258** — field của `?.` có kiểu `T?` không (theo kiểu tĩnh của base, hoặc tên bản
     /// ghi runtime khi base không annot). Quyết định `Some(None)` (field optional thật) khác
     /// `None` (field thường nhưng giá trị bất thường — giữ tương thích `lift_opt`).
-    fn field_dich_la_opt(&self, base: &HExpr, name: &str, raw: &Value) -> bool {
+    pub(crate) fn field_dich_la_opt(&self, base: &HExpr, name: &str, raw: &Value) -> bool {
         let root = match raw {
             Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => &ag[0],
             other => other,

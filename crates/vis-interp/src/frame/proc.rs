@@ -418,11 +418,17 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             Ok(())
         }
         Work::ApplyField {
+            base,
             name,
             optional,
             span,
         } => {
             let b = frame.pop_val()?;
+            // **VS3-1c**: `?.` phải phân biệt field `T?` (bọc thêm một `Some`, kể cả
+            // `Some(None)`) với field thường (lift tới độ sâu 1). Dùng đúng helper của
+            // runtime mặc định; trước đây frame chỉ `lift_opt(v,1)` nên `Some(3)` thành
+            // `Some(3)` thay vì `Some(Some(3))`, còn `None` bị rơi mất lớp.
+            let field_la_opt = optional && it.field_dich_la_opt(base, &name, &b);
             let (b, nang) = if optional {
                 match b {
                     Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
@@ -439,7 +445,15 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
                 (b, false)
             };
             let v = field_of(b, &name, span)?;
-            frame.push_val(if nang { crate::lift::lift_opt(v, 1) } else { v });
+            frame.push_val(if nang {
+                if field_la_opt {
+                    Value::some(v)
+                } else {
+                    crate::lift::lift_opt(v, 1)
+                }
+            } else {
+                v
+            });
             Ok(())
         }
         Work::ApplyIndex { span } => {
