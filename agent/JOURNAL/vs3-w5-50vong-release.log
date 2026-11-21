@@ -1,0 +1,323 @@
+# VS3-3b/W5 — 50 vòng stress release-mode (10 batch × 5 vòng × 10k)
+# Baseline: 71d52b4 (CLI merged, gate 3530); branch vs3/w5-spike.
+# Release: /home/ps/ViScript/target/vs3-w5-release
+# Debug:   /home/ps/ViScript/target/vs3-w5
+# Cmd: <test-bin> stress_dai --nocapture --test-threads=1; 10 cặp release/debug xen kẽ.
+
+## Monitor summaries (release/debug từng cặp)
+PAIR 1 load=9.94 7.99 7.67 20/2216 2166608
+REL1 RC=0 MAX_RSS_KB=9816 RU_MAXRSS_KB=12572 MAX_THREADS=7
+DBG1 RC=0 MAX_RSS_KB=11376 RU_MAXRSS_KB=12600 MAX_THREADS=6
+PAIR 2 load=13.11 8.95 8.00 18/2177 2180826
+REL2 RC=0 MAX_RSS_KB=10864 RU_MAXRSS_KB=12636 MAX_THREADS=6
+DBG2 RC=0 MAX_RSS_KB=11020 RU_MAXRSS_KB=12408 MAX_THREADS=6
+PAIR 3 load=16.04 10.04 8.39 21/2135 2203173
+REL3 RC=0 MAX_RSS_KB=10144 RU_MAXRSS_KB=12604 MAX_THREADS=6
+DBG3 RC=0 MAX_RSS_KB=11176 RU_MAXRSS_KB=12648 MAX_THREADS=6
+PAIR 4 load=14.71 10.14 8.47 8/2125 2204224
+REL4 RC=0 MAX_RSS_KB=10124 RU_MAXRSS_KB=12604 MAX_THREADS=6
+DBG4 RC=0 MAX_RSS_KB=10220 RU_MAXRSS_KB=12588 MAX_THREADS=6
+PAIR 5 load=12.44 9.92 8.43 7/2083 2204595
+REL5 RC=0 MAX_RSS_KB=9940 RU_MAXRSS_KB=12604 MAX_THREADS=6
+DBG5 RC=0 MAX_RSS_KB=10408 RU_MAXRSS_KB=12588 MAX_THREADS=6
+PAIR 6 load=12.07 10.00 8.49 7/2107 2206269
+REL6 RC=0 MAX_RSS_KB=10036 RU_MAXRSS_KB=12524 MAX_THREADS=6
+DBG6 RC=0 MAX_RSS_KB=11456 RU_MAXRSS_KB=12604 MAX_THREADS=6
+PAIR 7 load=14.01 10.54 8.70 19/2179 2213722
+REL7 RC=0 MAX_RSS_KB=10720 RU_MAXRSS_KB=12628 MAX_THREADS=6
+DBG7 RC=0 MAX_RSS_KB=11112 RU_MAXRSS_KB=12604 MAX_THREADS=6
+PAIR 8 load=15.13 11.11 8.95 20/2130 2237951
+REL8 RC=0 MAX_RSS_KB=10728 RU_MAXRSS_KB=12588 MAX_THREADS=7
+DBG8 RC=0 MAX_RSS_KB=10964 RU_MAXRSS_KB=12600 MAX_THREADS=6
+PAIR 9 load=16.21 11.72 9.21 11/2153 2247039
+REL9 RC=0 MAX_RSS_KB=10596 RU_MAXRSS_KB=12500 MAX_THREADS=6
+DBG9 RC=0 MAX_RSS_KB=10356 RU_MAXRSS_KB=12628 MAX_THREADS=6
+PAIR 10 load=13.90 11.48 9.19 8/2115 2247461
+REL10 RC=0 MAX_RSS_KB=10132 RU_MAXRSS_KB=12648 MAX_THREADS=6
+DBG10 RC=0 MAX_RSS_KB=10332 RU_MAXRSS_KB=12584 MAX_THREADS=6
+
+### Release batch 1
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.77	rss_kb=10704	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.93	rss_kb=9688	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.83	rss_kb=9816	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.84	rss_kb=9816	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=3.05	rss_kb=9772	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=14.44	print_s=0.55	cancel_s=12.67	budget_s=0.63	cross_s=0.59	rss0_kb=3232	rss1_kb=6960	hwm_kb=10328	threads0=2	threads1=2	rss_rounds=[10704, 9688, 9816, 9816, 9772]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 14.44s
+
+
+### Debug batch 1
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.66	rss_kb=11376	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.31	rss_kb=10156	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.77	rss_kb=10436	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.92	rss_kb=10228	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=3.06	rss_kb=10420	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=13.74	print_s=0.90	cancel_s=11.79	budget_s=0.50	cross_s=0.54	rss0_kb=3280	rss1_kb=10420	hwm_kb=10944	threads0=2	threads1=2	rss_rounds=[11376, 10156, 10436, 10228, 10420]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 13.74s
+
+
+### Release batch 2
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.60	rss_kb=9680	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.42	rss_kb=10812	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.61	rss_kb=10856	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.75	rss_kb=10864	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.47	rss_kb=10864	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=12.86	print_s=0.54	cancel_s=11.37	budget_s=0.49	cross_s=0.46	rss0_kb=3204	rss1_kb=8176	hwm_kb=10168	threads0=2	threads1=2	rss_rounds=[9680, 10812, 10856, 10864, 10864]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 12.86s
+
+
+### Debug batch 2
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=3.10	rss_kb=11020	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.90	rss_kb=10548	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.75	rss_kb=10720	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.71	rss_kb=10732	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.77	rss_kb=10740	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=14.25	print_s=1.16	cancel_s=11.37	budget_s=0.81	cross_s=0.89	rss0_kb=3292	rss1_kb=10740	hwm_kb=10740	threads0=2	threads1=2	rss_rounds=[11020, 10548, 10720, 10732, 10740]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 14.26s
+
+
+### Release batch 3
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.49	rss_kb=9684	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.42	rss_kb=9720	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.12	rss_kb=9816	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.26	rss_kb=9892	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.05	rss_kb=10144	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=11.34	print_s=0.49	cancel_s=10.12	budget_s=0.38	cross_s=0.35	rss0_kb=3232	rss1_kb=10144	hwm_kb=10144	threads0=2	threads1=2	rss_rounds=[9684, 9720, 9816, 9892, 10144]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 11.34s
+
+
+### Debug batch 3
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.42	rss_kb=11176	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.20	rss_kb=10116	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.19	rss_kb=10180	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.20	rss_kb=10188	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.19	rss_kb=10188	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=11.21	print_s=0.73	cancel_s=9.72	budget_s=0.35	cross_s=0.40	rss0_kb=3260	rss1_kb=10188	hwm_kb=10368	threads0=2	threads1=2	rss_rounds=[11176, 10116, 10180, 10188, 10188]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 11.21s
+
+
+### Release batch 4
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.07	rss_kb=9992	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.03	rss_kb=10056	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.03	rss_kb=10096	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.03	rss_kb=10124	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.03	rss_kb=10124	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.20	print_s=0.28	cancel_s=9.47	budget_s=0.22	cross_s=0.22	rss0_kb=3308	rss1_kb=10124	hwm_kb=10124	threads0=2	threads1=2	rss_rounds=[9992, 10056, 10096, 10124, 10124]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.20s
+
+
+### Debug batch 4
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.18	rss_kb=10048	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.19	rss_kb=10076	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.18	rss_kb=10220	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.18	rss_kb=10156	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.17	rss_kb=10148	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.91	print_s=0.57	cancel_s=9.63	budget_s=0.33	cross_s=0.38	rss0_kb=3312	rss1_kb=7392	hwm_kb=9820	threads0=2	threads1=2	rss_rounds=[10048, 10076, 10220, 10156, 10148]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.91s
+
+
+### Release batch 5
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.02	rss_kb=9872	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.00	rss_kb=9848	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=1.98	rss_kb=9940	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.08	rss_kb=9912	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.05	rss_kb=9940	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.14	print_s=0.25	cancel_s=9.51	budget_s=0.20	cross_s=0.18	rss0_kb=3244	rss1_kb=7212	hwm_kb=9616	threads0=2	threads1=2	rss_rounds=[9872, 9848, 9940, 9912, 9940]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.14s
+
+
+### Debug batch 5
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.12	rss_kb=9880	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.14	rss_kb=10264	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=3.03	rss_kb=10392	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=3.19	rss_kb=10392	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.24	rss_kb=10408	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=12.73	print_s=0.74	cancel_s=10.95	budget_s=0.52	cross_s=0.52	rss0_kb=3324	rss1_kb=10408	hwm_kb=10408	threads0=2	threads1=2	rss_rounds=[9880, 10264, 10392, 10392, 10408]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 12.73s
+
+
+### Release batch 6
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.06	rss_kb=9856	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.02	rss_kb=10000	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.05	rss_kb=10020	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.02	rss_kb=10016	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.03	rss_kb=10036	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.20	print_s=0.27	cancel_s=9.52	budget_s=0.20	cross_s=0.21	rss0_kb=3316	rss1_kb=7240	hwm_kb=9100	threads0=2	threads1=2	rss_rounds=[9856, 10000, 10020, 10016, 10036]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.20s
+
+
+### Debug batch 6
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.15	rss_kb=9892	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.66	rss_kb=10508	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=3.34	rss_kb=10328	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=3.34	rss_kb=10244	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=3.18	rss_kb=11456	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=14.68	print_s=0.85	cancel_s=12.23	budget_s=0.71	cross_s=0.89	rss0_kb=3276	rss1_kb=11456	hwm_kb=11456	threads0=2	threads1=2	rss_rounds=[9892, 10508, 10328, 10244, 11456]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 14.69s
+
+
+### Release batch 7
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.88	rss_kb=10720	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.86	rss_kb=9700	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.30	rss_kb=9744	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.94	rss_kb=9872	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.48	rss_kb=9788	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=13.47	print_s=0.68	cancel_s=11.79	budget_s=0.52	cross_s=0.47	rss0_kb=3288	rss1_kb=6896	hwm_kb=10108	threads0=2	threads1=2	rss_rounds=[10720, 9700, 9744, 9872, 9788]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 13.47s
+
+
+### Debug batch 7
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=3.21	rss_kb=9992	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.94	rss_kb=11084	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.98	rss_kb=11112	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.63	rss_kb=11112	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.53	rss_kb=11112	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=14.30	print_s=0.97	cancel_s=12.08	budget_s=0.65	cross_s=0.60	rss0_kb=3296	rss1_kb=8424	hwm_kb=10772	threads0=2	threads1=2	rss_rounds=[9992, 11084, 11112, 11112, 11112]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 14.30s
+
+
+### Release batch 8
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.42	rss_kb=10728	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.29	rss_kb=10288	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.22	rss_kb=10292	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.53	rss_kb=10332	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.51	rss_kb=10332	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=11.98	print_s=0.45	cancel_s=10.64	budget_s=0.52	cross_s=0.38	rss0_kb=3236	rss1_kb=10332	hwm_kb=10332	threads0=2	threads1=2	rss_rounds=[10728, 10288, 10292, 10332, 10332]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 11.99s
+
+
+### Debug batch 8
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.87	rss_kb=10964	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.67	rss_kb=10484	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.37	rss_kb=10680	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.34	rss_kb=10688	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.64	rss_kb=10700	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=12.90	print_s=1.16	cancel_s=10.47	budget_s=0.56	cross_s=0.70	rss0_kb=3328	rss1_kb=10700	hwm_kb=10700	threads0=2	threads1=2	rss_rounds=[10964, 10484, 10680, 10688, 10700]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 12.90s
+
+
+### Release batch 9
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.23	rss_kb=10596	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.13	rss_kb=10412	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.02	rss_kb=10544	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.02	rss_kb=10576	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.02	rss_kb=10576	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.43	print_s=0.35	cancel_s=9.59	budget_s=0.25	cross_s=0.24	rss0_kb=3264	rss1_kb=10576	hwm_kb=10576	threads0=2	threads1=2	rss_rounds=[10596, 10412, 10544, 10576, 10576]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.43s
+
+
+### Debug batch 9
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.26	rss_kb=9980	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.19	rss_kb=10148	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.20	rss_kb=10196	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.20	rss_kb=10108	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.12	rss_kb=10356	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.98	print_s=0.61	cancel_s=9.66	budget_s=0.32	cross_s=0.38	rss0_kb=3284	rss1_kb=7484	hwm_kb=10040	threads0=2	threads1=2	rss_rounds=[9980, 10148, 10196, 10108, 10356]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.98s
+
+
+### Release batch 10
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.02	rss_kb=10024	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.03	rss_kb=10076	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.02	rss_kb=10112	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.03	rss_kb=10132	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.00	rss_kb=10132	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=10.11	print_s=0.27	cancel_s=9.43	budget_s=0.20	cross_s=0.21	rss0_kb=3288	rss1_kb=10132	hwm_kb=10132	threads0=2	threads1=2	rss_rounds=[10024, 10076, 10112, 10132, 10132]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 10.11s
+
+
+### Debug batch 10
+
+running 1 test
+test stress_dai_5x10k_cancel_budget_print_cross ... STRESS_DAI	round=0	tasks=10000	secs=2.17	rss_kb=9848	threads=2
+STRESS_DAI	round=1	tasks=10000	secs=2.20	rss_kb=9928	threads=2
+STRESS_DAI	round=2	tasks=10000	secs=2.24	rss_kb=10284	threads=2
+STRESS_DAI	round=3	tasks=10000	secs=2.34	rss_kb=10324	threads=2
+STRESS_DAI	round=4	tasks=10000	secs=2.24	rss_kb=10332	threads=2
+STRESS_DAI_SUMMARY	rounds=5	tasks_per_round=10000	total_tasks=50000	secs=11.19	print_s=0.63	cancel_s=9.73	budget_s=0.35	cross_s=0.47	rss0_kb=3280	rss1_kb=10332	hwm_kb=10332	threads0=2	threads1=2	rss_rounds=[9848, 9928, 10284, 10324, 10332]
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 11.19s
+
+
+## Full suite (load ~8,7-9,2)
+/tmp/opencode/vs3w5-50rel-suite.log:test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.08s
+/tmp/opencode/vs3w5-50rel-suite.log:REL_WALL=10.15 REL_RSS=31800
+/tmp/opencode/vs3w5-50dbg-suite.log:test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.86s
+/tmp/opencode/vs3w5-50dbg-suite.log:DBG_WALL=10.93 DBG_RSS=32168
