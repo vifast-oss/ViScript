@@ -382,25 +382,29 @@ fn sua_tep_khong_lien_quan_khong_publish_a() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// **VS3-7** — hiện công bố `textDocumentSync:1` (full sync): `didChange` có `range` bị **bỏ qua
-/// an toàn**, không lấy `text` của range làm toàn tài liệu. Incremental sync còn mở (báo cáo).
+/// **VS3-7** — `didChange` có `range` được **áp incremental**, không lấy `text` làm toàn tài liệu.
 #[test]
-fn did_change_co_range_bi_bo_qua_an_toan() {
+fn did_change_co_range_ap_dung() {
     let d = tam("range");
-    let a_text = "let x = 1\n";
+    let a_text = "let x: int = 1\n";
     ghi(&d, "a.vis", a_text);
     let ua = uri(&d, "a.vis");
     let vao = format!(
         "{}{}{}",
         khung(&init()),
         khung(&did_open(&ua, a_text)),
-        khung(&did_change_range(&ua, 2, 0, 8, 0, 9, "2"))
+        khung(&did_change_range(&ua, 2, 0, 13, 0, 14, "\"s\""))
     );
     let out = chay(&vao);
     assert_eq!(
         cac_publish(&out),
-        vec![ua],
-        "range change bị bỏ qua ⇒ không publish thêm: {out}"
+        vec![ua.clone(), ua],
+        "mở a, rồi đổi range ⇒ publish lại đúng một lần: {out}"
+    );
+    assert_eq!(dem_ca(&out), 1, "range tạo lỗi kiểu: {out}");
+    assert!(
+        publish_cuoi(&out, &uri(&d, "a.vis")).contains(r#""line":0,"character":13"#),
+        "vị trí lỗi sau range: {out}"
     );
     let _ = std::fs::remove_dir_all(&d);
 }
