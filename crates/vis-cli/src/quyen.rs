@@ -6,6 +6,7 @@
 //! `VS0604`** (không bắt được), exit 2. **Không** khai `cap` ⇒ `bat=false` ⇒ **không hạn chế**
 //! (tương thích 858 test cũ; "siết mặc định" là **nợ**).
 
+use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 
 use vis_interp::builtin::{DocQuaHandle, DuongDanHandle, FsHost, MucFs};
@@ -609,7 +610,11 @@ impl Quyen {
             let root = crate::net_quyen::host_cua(&q.root);
             q.kind == "Net" && (root == host || (root.is_empty() && host == "localhost"))
         });
-        let loopback = host == "127.0.0.1" || host == "localhost";
+        let loopback = host == "localhost"
+            || host
+                .parse::<IpAddr>()
+                .map(|ip| ip.is_loopback())
+                .unwrap_or(false);
         if khop || (loopback && co_net) {
             Ok(())
         } else if self.siet && !co_net {

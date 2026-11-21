@@ -15,7 +15,7 @@
 //! mở kết nối mới. Server đóng kết nối idle ⇒ tầng HTTP thử lại một lần (GET/HEAD) trên kết nối mới.
 
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::time::{Duration, Instant};
 
 use vis_interp::builtin::NetHost;
@@ -186,24 +186,70 @@ impl Net {
     }
 }
 
-/// Chỉ **loopback** (VD-100/105 (4)): `127.0.0.1`/`localhost`; host khác ⇒ `Err`.
-fn chi_loopback(dia_chi: &str) -> Result<SocketAddr, String> {
-    let (host, cong) = dia_chi
-        .rsplit_once(':')
-        .ok_or_else(|| format!("địa chỉ `{dia_chi}` phải có dạng `host:port`"))?;
-    if host != "127.0.0.1" && host != "localhost" {
+/// Tách `host:port`/`[IPv6]:port`; trả host + cổng **chưa** phân giải.
+fn tach_dia_chi(dia_chi: &str) -> Result<(&str, u16), String> {
+    let (host, cong) = if let Some(rest) = dia_chi.strip_prefix('[') {
+        let (h, sau) = rest
+            .split_once(']')
+            .ok_or_else(|| format!("địa chỉ IPv6 `{dia_chi}` thiếu `]`"))?;
+        let c = sau
+            .strip_prefix(':')
+            .ok_or_else(|| format!("địa chỉ `{dia_chi}` phải có dạng `host:port`"))?;
+        (h, c)
+    } else {
+        let (h, c) = dia_chi
+            .rsplit_once(':')
+            .ok_or_else(|| format!("địa chỉ `{dia_chi}` phải có dạng `host:port`"))?;
+        if h.contains(':') {
+            return Err(format!("địa chỉ IPv6 `{dia_chi}` phải bọc `[IPv6]:port`"));
+        }
+        (h, c)
+    };
+    if host.is_empty() {
+        return Err(format!("địa chỉ `{dia_chi}` thiếu host"));
+    }
+    let cong = cong
+        .parse::<u16>()
+        .map_err(|_| format!("cổng `{cong}` không hợp lệ (0..65535)"))?;
+    Ok((host, cong))
+}
+
+/// **Chỉ loopback** (VD-100/105 (4)): host phải là `localhost`/`127.0.0.0/8`/`::1`, và **tất cả**
+/// địa chỉ phân giải được cũng phải loopback. Trả **mọi** địa chỉ để caller thử lần lượt (Windows
+/// thường trả `::1` trước `127.0.0.1` cho `localhost`).
+fn chi_loopback(dia_chi: &str) -> Result<Vec<SocketAddr>, String> {
+    let (host, cong) = tach_dia_chi(dia_chi)?;
+    let ten_loopback = host == "localhost"
+        || host
+            .parse::<IpAddr>()
+            .map(|ip| ip.is_loopback())
+            .unwrap_or(false);
+    if !ten_loopback {
         return Err(format!(
-            "chỉ cho phép loopback (`127.0.0.1`/`localhost`) trong vòng này, được `{host}`"
+            "chỉ cho phép địa chỉ loopback (`127.0.0.0/8`, `::1`, `localhost`), được `{host}`"
         ));
     }
-    if cong.parse::<u16>().is_err() {
-        return Err(format!("cổng `{cong}` không hợp lệ (0..65535)"));
-    }
-    let mut ds = dia_chi
+    let mut ds: Vec<SocketAddr> = dia_chi
         .to_socket_addrs()
-        .map_err(|e| format!("địa chỉ `{dia_chi}` không phân giải được: {e}"))?;
-    ds.next()
-        .ok_or_else(|| format!("địa chỉ `{dia_chi}` không có kết quả phân giải"))
+        .map_err(|e| format!("địa chỉ `{dia_chi}` không phân giải được: {e}"))?
+        .filter(|a| a.ip().is_loopback())
+        .collect();
+    // Windows có thể trả `::1` trước/không trả 127 cho `localhost`; vẫn phải nối được server
+    // bind `127.0.0.1` (ca release blocker). Chỉ thêm địa chỉ loopback.
+    if host == "localhost" {
+        let v4 = SocketAddr::from(([127, 0, 0, 1], cong));
+        if !ds.contains(&v4) {
+            ds.push(v4);
+        }
+    }
+    // Ưu tiên IPv4 để Windows/`localhost` không phải chờ `::1` bị từ chối trước.
+    ds.sort_by_key(|a| !a.is_ipv4());
+    if ds.is_empty() {
+        return Err(format!(
+            "địa chỉ `{dia_chi}` không có kết quả phân giải loopback"
+        ));
+    }
+    Ok(ds)
 }
 
 /// **Cả** `WouldBlock` (macOS) **và** `TimedOut` là **hết giờ** (VD-100 (4)).
@@ -251,19 +297,29 @@ fn accept_tren(l: &TcpListener, timeout_ms: u64) -> Result<TcpStream, String> {
 impl NetHost for Net {
     fn connect(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
         self.nhat_ky("connect", dia_chi);
-        let addr = chi_loopback(dia_chi)?;
-        let s = TcpStream::connect_timeout(&addr, Duration::from_millis(timeout_ms.max(1)))
-            .map_err(|e| {
-                if la_het_gio(&e) {
-                    format!("quá thời gian chờ nối tới `{dia_chi}`")
-                } else if e.kind() == std::io::ErrorKind::ConnectionRefused {
-                    format!("bị từ chối kết nối tới `{dia_chi}`: {e}")
-                } else {
-                    format!("lỗi nối tới `{dia_chi}`: {e}")
+        let ds = chi_loopback(dia_chi)?;
+        let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
+        let mut loi: Option<std::io::Error> = None;
+        for addr in ds {
+            let Some(con) = han.checked_duration_since(Instant::now()) else {
+                break;
+            };
+            match TcpStream::connect_timeout(&addr, con.max(Duration::from_millis(1))) {
+                Ok(s) => {
+                    let _ = s.set_nodelay(true);
+                    return Ok(self.giu(s, khoa_http(false, dia_chi)));
                 }
-            })?;
-        let _ = s.set_nodelay(true);
-        Ok(self.giu(s, khoa_http(false, dia_chi)))
+                Err(e) => loi = Some(e),
+            }
+        }
+        let e = loi.ok_or_else(|| format!("quá thời gian chờ nối tới `{dia_chi}`"))?;
+        Err(if la_het_gio(&e) {
+            format!("quá thời gian chờ nối tới `{dia_chi}`")
+        } else if e.kind() == std::io::ErrorKind::ConnectionRefused {
+            format!("bị từ chối kết nối tới `{dia_chi}`: {e}")
+        } else {
+            format!("lỗi nối tới `{dia_chi}`: {e}")
+        })
     }
 
     /// **VS3-4a (VD-271)**: TLS chỉ tồn tại khi bật feature `tls` và không phải wasm32; nếu không,
@@ -331,7 +387,8 @@ impl NetHost for Net {
     }
 
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
-        let addr = chi_loopback(dia_chi)?;
+        let mut ds = chi_loopback(dia_chi)?;
+        let addr = ds.remove(0);
         self.nhat_ky("listen", dia_chi);
         let l = TcpListener::bind(addr).map_err(|e| {
             if e.kind() == std::io::ErrorKind::AddrInUse {
@@ -440,7 +497,7 @@ impl NetHost for Net {
 
 #[cfg(test)]
 mod tests {
-    use super::{Kenh, Net, POOL_IDLE, POOL_TOI_DA};
+    use super::{chi_loopback, Kenh, Net, POOL_IDLE, POOL_TOI_DA};
     use std::net::{TcpListener, TcpStream};
     use std::time::{Duration, Instant};
 
@@ -449,6 +506,37 @@ mod tests {
         let s = TcpStream::connect(l.local_addr().expect("addr")).expect("connect");
         let _ = l.accept();
         Kenh::Tho(s)
+    }
+
+    /// **Windows/localhost**: trả **mọi** địa chỉ loopback (IPv4 trước) và chặn host không loopback.
+    #[test]
+    fn chi_loopback_tra_moi_dia_chi_va_chan_remote() {
+        let ds = chi_loopback("localhost:80").expect("localhost loopback");
+        assert!(!ds.is_empty());
+        assert!(
+            ds.iter().all(|a| a.ip().is_loopback()),
+            "chỉ loopback: {ds:?}"
+        );
+        assert!(
+            ds.iter()
+                .any(|a| a.ip() == std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST)),
+            "localhost phải có 127.0.0.1: {ds:?}"
+        );
+        if ds.iter().any(|a| a.is_ipv4()) {
+            assert!(ds[0].is_ipv4(), "phải ưu tiên IPv4: {ds:?}");
+        }
+        assert!(chi_loopback("[::1]:80")
+            .expect("IPv6 literal")
+            .iter()
+            .all(|a| a.ip().is_loopback()));
+        assert!(
+            chi_loopback("127.0.0.2:80").is_ok(),
+            "127.0.0.0/8 là loopback"
+        );
+        assert!(chi_loopback("127.0.0.1:99999").is_err());
+        assert!(chi_loopback("example.com:80").is_err());
+        assert!(chi_loopback("10.0.0.1:80").is_err());
+        assert!(chi_loopback("[::2]:80").is_err());
     }
 
     /// **VS3-4b**: kết nối idle quá hạn bị bỏ; pool bị cắt về trần.
