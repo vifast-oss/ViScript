@@ -363,3 +363,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **path.strip_prefix** merged (`dca695a`); gate **3202 passed / 3 skipped**; FUNCS **163**.
 - **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `list.chunks_exact`, `impl Hop[T]`.
 - `./vis-dev core-test` @ `2aa1edd`: **PASS**.
+- `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `7fa5ffa`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
