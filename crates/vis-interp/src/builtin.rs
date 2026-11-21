@@ -200,6 +200,25 @@ pub trait Host {
         String::new()
     }
 
+    /// **VS3-3b/W5 (P3)** — spawn task qua host (interp: scheduler cũ; VM: pool ở mode Parallel).
+    fn spawn_task(
+        &mut self,
+        than: u32,
+        args: Vec<Value>,
+        ten: String,
+        span: Span,
+    ) -> crate::interp::R<Value>;
+
+    /// **VS3-3b/W5 (P3)** — await tác vụ qua host (mặc định Off: `rt::await_task`).
+    fn await_task(
+        &mut self,
+        t: &std::rc::Rc<crate::rt::Task>,
+        span: Span,
+    ) -> crate::interp::R<Value>;
+
+    /// **VS3-3b/W5 (P3)** — join cuối qua host (mặc định Off: `rt::join_all`).
+    fn join_tasks(&mut self) -> crate::interp::R<()>;
+
     /// Như [`Host::ngoai`] nhưng trả **đủ** `stdout/stderr/code` (ST-34, cho `| complete`).
     fn ngoai_day_du(
         &mut self,
@@ -638,7 +657,7 @@ pub fn call(
         }
         if kieu == "await" {
             return match args.into_iter().next() {
-                Some(Value::Task(t)) => crate::rt::await_task(host, &t, span),
+                Some(Value::Task(t)) => host.await_task(&t, span),
                 _ => Err(trap(crate::interp::RT, "`await` cần một `Task[T]`", span)),
             };
         }
@@ -662,11 +681,8 @@ pub fn call(
                 Ok(Value::Task(t))
             }
             "spawn" => {
-                let t = host
-                    .sched()
-                    .borrow_mut()
-                    .spawn(fi, con, host.ten_than(fi), span);
-                Ok(Value::Task(t))
+                let ten = host.ten_than(fi);
+                host.spawn_task(fi, con, ten, span)
             }
             _ => Err(trap(
                 crate::interp::RT,

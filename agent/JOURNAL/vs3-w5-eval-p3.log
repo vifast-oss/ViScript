@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 P3 VM parity — log
+# Branch vs3/w5-spike, baseline ffe202b. Toolchain ~/.cargo/bin/cargo 1.100.0.
+# Production changes: vm/worker.rs mới, hook tối thiểu vm.rs/builtin.rs/host.rs/vm_frame.rs/lib.rs.
+
+## DIFF
+$ git diff --stat
+ crates/vis-interp/src/builtin.rs | 28 ++++++++++++++----
+ crates/vis-interp/src/host.rs    | 13 +++++++++
+ crates/vis-vm/src/lib.rs         | 61 ++++++++++++++++++++++++++++++++++++++++
+ crates/vis-vm/src/vm.rs          | 18 +++++++++++-
+ crates/vis-vm/src/vm_frame.rs    |  3 ++
+ 5 files changed, 116 insertions(+), 7 deletions(-)
++ crates/vis-vm/src/vm/worker.rs (mới, 454 dòng)
++ crates/vis-cli/tests/vs3_worker_eval_vm.rs (mới, 363 dòng)
+
+$ wc -l crates/vis-vm/src/vm.rs crates/vis-vm/src/vm/worker.rs crates/vis-vm/src/lib.rs \
+        crates/vis-vm/src/vm_frame.rs crates/vis-interp/src/builtin.rs crates/vis-interp/src/host.rs \
+        crates/vis-cli/tests/vs3_worker_eval_vm.rs
+1500 vm.rs
+ 454 vm/worker.rs
+ 106 lib.rs
+ 988 vm_frame.rs
+1323 builtin.rs
+ 117 host.rs
+ 363 test
+
+Không đụng value.rs/frame.rs/net.rs. R1: vm.rs đúng 1500; còn lại ≤1500.
+
+## TEST MỚI — DEBUG
+$ cargo test -p vis-cli --test vs3_worker_eval_vm -- --test-threads=1
+running 10 tests
+..........
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.85s
+
+Các ca: cpu_w1_w2_w4_parity, muoi_nghin_task_parity, nested_spawn_await_parity,
+print_merge_parity, chan0_bi_tu_choi_parity, host_fs_bi_tu_choi_parity,
+budget_vm_used_cong_remaining_bang_limit, cancel_vm_giua_chung,
+cross_write_vm_voi_w1_w4, vm_khong_tao_them_thread_sau_khi_join.
+
+## TEST MỚI — RELEASE
+$ cargo test --release -p vis-cli --test vs3_worker_eval_vm -- --test-threads=1
+running 10 tests
+..........
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.71s
+real 0m5.578s
+
+## HỒI QUY
+$ cargo test -p vis-cli --test vs3_worker_eval_local --test vs3_worker_eval_parallel \
+    --test vs3_worker --test vs3_default --test vs3_budget -- --test-threads=1
+running 8 tests   -> 8 passed (P1)
+running 22 tests  -> 22 passed (vs3_default)
+running 14 tests  -> 14 passed (vs3_worker)
+running 8 tests   -> 8 passed (vs3_worker_eval_local)
+running 14 tests  -> 14 passed (vs3_worker_eval_parallel)
+(running order theo tên; tất cả 0 failed)
+$ cargo test -q -p vis-interp --lib
+303 passed; 0 failed
+
+## GATE --FAST (final)
+$ ./vis-dev gate --fast
+--- luật R1..R6: OK
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+--- L0 test: cargo-nextest (song song) + doc-test
+Summary [ 108.984s] 3571 tests run: 3571 passed (1 slow), 3 skipped
+--- L0 test: OK
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+GATE_EXIT=0
+
+## FMT / CHECK / CLIPPY
+$ cargo fmt --all -- --check
+FMT_OK
+$ cargo check --all-targets
+Finished dev profile [unoptimized + debuginfo]
+$ cargo clippy -p vis-vm -p vis-cli --all-targets -- -D warnings
+Finished dev profile [unoptimized + debuginfo] target(s) in 6.11s
+
+## SỐ ĐO PARITY (VS3_W5_MEASURE=1, load 8–15)
+CPU 4 task × 5k (3 lần):
+MEASURE_PARITY W=1 interp_ms=190.4 vm_ms=65.1  VM/interp=0.34x
+MEASURE_PARITY W=1 interp_ms=141.3 vm_ms=59.4  VM/interp=0.42x
+MEASURE_PARITY W=1 interp_ms=142.4 vm_ms=60.2  VM/interp=0.42x
+MEASURE_PARITY W=2 interp_ms=72.3  vm_ms=30.9  VM/interp=0.43x
+MEASURE_PARITY W=2 interp_ms=71.6  vm_ms=30.5  VM/interp=0.43x
+MEASURE_PARITY W=2 interp_ms=71.2  vm_ms=30.0  VM/interp=0.42x
+MEASURE_PARITY W=4 interp_ms=36.1  vm_ms=16.4  VM/interp=0.45x
+MEASURE_PARITY W=4 interp_ms=36.2  vm_ms=16.0  VM/interp=0.44x
+MEASURE_PARITY W=4 interp_ms=35.9  vm_ms=15.9  VM/interp=0.44x
+(median W=1 0.42x, W=2 0.43x, W=4 0.44x — VM nhanh hơn ~2.3x; không assert wall)
+
+10k spawn/await (3 lần):
+MEASURE_PARITY W=1 interp_ms=146.4 vm_ms=220.4 VM/interp=1.51x
+MEASURE_PARITY W=1 interp_ms=160.5 vm_ms=81.8  VM/interp=0.51x
+MEASURE_PARITY W=1 interp_ms=254.8 vm_ms=250.1 VM/interp=0.98x
+MEASURE_PARITY W=2 interp_ms=771.8 vm_ms=599.3 VM/interp=0.78x
+MEASURE_PARITY W=2 interp_ms=796.0 vm_ms=590.0 VM/interp=0.74x
+MEASURE_PARITY W=2 interp_ms=792.5 vm_ms=524.3 VM/interp=0.66x
+MEASURE_PARITY W=4 interp_ms=789.8 vm_ms=625.9 VM/interp=0.79x
+MEASURE_PARITY W=4 interp_ms=804.4 vm_ms=639.1 VM/interp=0.79x
+MEASURE_PARITY W=4 interp_ms=551.8 vm_ms=496.2 VM/interp=0.90x
+(median W=1 0.98x, W=2 0.74x, W=4 0.79x; nhiễu load)
+
+MEASURE_BUDGET_VM used=9984 remaining=16 limit=10000 exhausted=true
+(interp P2 budget 10000/0; khác chunk, cùng tổng)
+cancel_vm_giua_chung: task 2M vòng, cancel-after 5 ms, pass
+cross/host/chan0/print/nested: parity pass
+
+## DF
+df /home sau test: 12G; sau khi xoá target riêng của worktree: 22G.
+Không GitHub Actions, không push/merge/tag.

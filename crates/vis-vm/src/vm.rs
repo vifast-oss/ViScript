@@ -110,6 +110,7 @@ pub const MAX_STEPS: usize = SAFETY_FUEL;
 
 pub use crate::vm_frame::{VmError, SAFETY_FUEL_CODE};
 mod vm_helpers;
+pub(crate) mod worker;
 use vm_helpers::*;
 
 /// **ST-238 (VD-242, ca 8)**: ô chia sẻ của closure và cặp `(ô cục bộ mirror, chỉ số ô bắt)`.
@@ -150,6 +151,8 @@ pub struct Vm<'a> {
     pub(crate) db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_interp::rt`).
     pub(crate) sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
+    /// **VS3-3b/W5 (P3)**: evaluator worker VM (CPU-only, opt-in); mặc định Off.
+    pub(crate) worker: std::cell::RefCell<crate::vm::worker::WorkerState>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
     pub(crate) caps: Vec<(u32, Value)>,
     /// **ST-238 (VD-242, ca 3)**: kho biến cấp tệp, ánh xạ từ ô `>= GLOBAL_SLOT_BASE`.
@@ -198,6 +201,7 @@ impl<'a> Vm<'a> {
             db: None,
             ngoai: None,
             sched: std::cell::RefCell::new(vis_interp::rt::Scheduler::new()),
+            worker: std::cell::RefCell::new(Default::default()),
             caps: Vec::new(),
             globals: Vec::new(),
             closure_cells: HashMap::new(),
@@ -254,7 +258,7 @@ impl<'a> Vm<'a> {
         // **ST-60 (VD-90/VD-95)**: join mọi tác vụ **theo thứ tự tạo**, **chỉ khi main thành công**
         // (và **trước** `take_stdout` ⇒ thân tác vụ in vẫn vào stdout, đúng thứ tự).
         let kq = match self.chay_chuong_trinh(&argv) {
-            Ok(v) => match vis_interp::rt::join_all(self) {
+            Ok(v) => match self.join_tasks() {
                 Ok(()) => Ok(v),
                 Err(e) => Err(e),
             },
@@ -591,6 +595,18 @@ impl Host for Vm<'_> {
                 span,
             ))),
         }
+    }
+
+    fn spawn_task(&mut self, fi: u32, args: Vec<Value>, ten: String, span: Span) -> R<Value> {
+        crate::vm::worker::spawn_task(self, fi, args, ten, span)
+    }
+
+    fn await_task(&mut self, t: &std::rc::Rc<vis_interp::rt::Task>, span: Span) -> R<Value> {
+        crate::vm::worker::await_task(self, t, span)
+    }
+
+    fn join_tasks(&mut self) -> R<()> {
+        crate::vm::worker::join_tasks(self)
     }
 }
 

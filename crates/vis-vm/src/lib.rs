@@ -32,11 +32,72 @@
 //! dựng sẵn trần qua `Value::Builtin`, ví dụ `<builtin Some>`), LSP hover/`print(f)` giữ nguyên,
 //! và disassemble (`vis run --dump-bytecode`) ẩn tiền tố (in `<builtin Some>`).
 
+use vis_interp::RunOutput;
+
 pub mod dump;
 pub mod vm;
 /// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường VM thật.
 #[doc(hidden)]
 pub mod vm_frame;
+
+/// **VS3-3b/W5 (P3)** — VM non-frame **W=1** (shared globals, cùng đường `Vm::run`).
+#[doc(hidden)]
+pub fn run_workers_local_vm(m: &vis_bytecode::Module, text: &str, args: &[String]) -> RunOutput {
+    vm::Vm::new(m, text).run(args)
+}
+
+/// **VS3-3b/W5 (P3)** — VM non-frame `Parallel(n)` CPU-only (test/opt-in).
+///
+/// Mỗi task dựng `Vm` riêng trên `Arc<ModuleImage>`, globals snapshot, output merge spawn order;
+/// budget/cancel opt-in. Không host/`chan(0)`/frame.
+#[doc(hidden)]
+pub fn run_workers_parallel_vm(
+    m: &vis_bytecode::Module,
+    text: &str,
+    args: &[String],
+    workers: usize,
+) -> RunOutput {
+    run_workers_parallel_vm_mode(m, text, args, workers, None, None)
+}
+
+/// Như [`run_workers_parallel_vm`] nhưng dùng `SharedBudget` atomic (caller giữ `Arc` để đọc
+/// `snapshot()` sau khi chạy).
+#[doc(hidden)]
+pub fn run_workers_parallel_vm_with_budget(
+    m: &vis_bytecode::Module,
+    text: &str,
+    args: &[String],
+    workers: usize,
+    budget: std::sync::Arc<vis_interp::rt::fee::SharedBudget>,
+) -> RunOutput {
+    run_workers_parallel_vm_mode(m, text, args, workers, Some(budget), None)
+}
+
+/// **Test hook P3**: huỷ task VM đang chạy sau `ms` mili giây (safe point 1.024 lệnh).
+#[doc(hidden)]
+pub fn run_workers_parallel_vm_cancel_after(
+    m: &vis_bytecode::Module,
+    text: &str,
+    args: &[String],
+    workers: usize,
+    ms: u64,
+) -> RunOutput {
+    run_workers_parallel_vm_mode(m, text, args, workers, None, Some(ms))
+}
+
+fn run_workers_parallel_vm_mode(
+    m: &vis_bytecode::Module,
+    text: &str,
+    args: &[String],
+    workers: usize,
+    budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+    cancel_after_ms: Option<u64>,
+) -> RunOutput {
+    assert!(workers >= 2, "P3 cần W>=2; W=1 dùng run_workers_local_vm");
+    let mut vm = vm::Vm::new(m, text);
+    vm::worker::cau_hinh(&mut vm, m, text, workers, budget, cancel_after_ms);
+    vm.run(args)
+}
 
 pub use vm::{
     run, run_with_fs, run_with_full_hosts_caps, run_with_hosts, run_with_hosts_caps, Vm, VmError,
