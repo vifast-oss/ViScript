@@ -14,7 +14,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.0`** @ `0d26527`; `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; tiếp tục hardening tới 09:00 T2 23/11 |
+| Tag | **`v0.3.1`** @ `e689c3d`; `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -102,7 +102,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, HTTP/2 default-off.
 
 **v0.3.0 đã tag** @ `0d26527`.
-**v0.3.1 candidate** `a96841a` / `e689c3d`: async net + async TLS (Unix), h2 hardening, worker stress, Windows test gating. W3 local+fresh-clone **PASS** (gate 3512/3, nightly 18,99M fuzz 0, diff 0, host 54/54); chờ W4 psvn để tag. Không GitHub Actions.
+**v0.3.1 đã tag** @ `e689c3d`: async net/TLS Unix, h2 hardening, worker stress. Linux 3512/3; Windows 3463/0; fresh-clone PASS. Tiếp tục hardening v0.3.2: async HTTP cooperative, true h2 multiplex, Windows async net, worker evaluator. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
