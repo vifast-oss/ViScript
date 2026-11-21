@@ -276,7 +276,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str) -> list[str]`; tách **phải → trái**, thứ tự **ngược**, không khớp ⇒ `[s]`,
     // `s` rỗng + `sep` khác rỗng ⇒ `[""]`, `sep` rỗng theo **đúng** nghĩa Rust; tái dùng
     // `Ty::ListStr`, không thêm biến thể `Ty`; sugar R5c) ⇒ **159** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 160, "bảng chữ ký phải đủ 160 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-ancestors, 2026-11-21)**: +**1** hàm
+    // `std.path.ancestors` (`(str) -> list[str]`; chuỗi tổ tiên **từ vựng** POSIX gồm chính
+    // `p`, chỉ bỏ `/` cuối, giữ `.`/`..`, gốc `/` là cuối không thêm `""`, rỗng ⇒ `[""]`,
+    // **không** sugar) ⇒ **159** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 161, "bảng chữ ký phải đủ 161 hàm");
 }
 
 #[test]
@@ -482,6 +486,22 @@ fn flatten_kieu_long_mot_cap() {
         })),
         "`list.flatten`: hạ `list[T]`"
     );
+}
+
+#[test]
+fn path_ancestors_kieu_str_sang_list_str_va_khong_sugar() {
+    // **VD-270 (path.ancestors)**: chữ ký `(str) -> list[str]`, tái dùng `Ty::ListStr`;
+    // **không** sugar (`ancestors` không nằm trong `module_sugar`, tránh đoán module nhận).
+    let f = sig_of("path.ancestors").expect("path.ancestors");
+    assert_eq!(f.params, &[Ty::Str], "`path.ancestors`: tham số");
+    assert_eq!(f.ret, Ty::ListStr, "`path.ancestors`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`path.ancestors`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "ancestors"), None);
+    assert_eq!(vis_types::stdlib::module_sugar("path", "ancestors"), None);
 }
 
 #[test]
