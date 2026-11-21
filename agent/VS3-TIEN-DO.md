@@ -32,7 +32,7 @@
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
 | VS3-4b — keep-alive + IPv6 + registry HTTPS + cookie/auth | W2 | `vs3_keepalive.rs`, `vs3_registry_https.rs`, `vs3_cookie_auth.rs` | **DONE (một phần)** — `b7385e9` + `cc74dbc` + `096ea2c`; 8+6+9 ca |
 | VS3-4b2 — HTTP/2 | W2 | `vs3_http2.rs` | **DONE** — `7d73268`; **default-on**; 8 ca h2; Windows verify 3452/0 |
-| VS3-4b3/4b4/4b5 — h2 reuse/idle/hardening | W2 | `vs3_http2.rs` | **DONE** — `58e1b90`; GOAWAY/RST/trailer/body/header; 13 ca h2 |
+| VS3-4b3..4b6 — h2 reuse/idle/hardening/multiplex | W2 | `vs3_http2.rs`, h2 unit | **DONE (một phần)** — `735ef39`; 13 ca h2 + prototype 4 stream test-only; production vẫn tuần tự |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
 | VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
@@ -81,7 +81,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3496 passed / 3 skipped**; diff 100k W3 PASS |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3513 passed / 3 skipped**; diff 100k W3 PASS |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | `v0.3.0` đã tag; hardening tới 09:00 |
 
