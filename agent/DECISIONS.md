@@ -3582,3 +3582,15 @@ liệu không đổi mode; trả **đúng chuỗi** SQLite (không lowercase/val
 `delete/truncate/persist/memory/wal/off`); shape đúng 1 cột/1 hàng/`SqlValue.Text`, lỗi ⇒ `Err` dữ
 liệu; authorizer mở **chỉ đọc** `journal_mode` và một ngoại lệ hẹp cho query constant của std; ghi
 `PRAGMA journal_mode = …` vẫn bị chặn; thêm `Ty::ResultStrErr` = `Result[str, Error]`.
+
+### VD-270 (bổ sung) · str.rsplit, path.ancestors, str.split_terminator — A0, 2026-11-21
+
+- **str.rsplit**: `(str, str) -> list[str]` đúng Rust `rsplit` — tách **phải → trái**, thứ tự
+  **ngược**; không khớp/`sep` dài hơn `s` ⇒ `[s]`; `s` rỗng + `sep` khác rỗng ⇒ `[""]`; `sep` rỗng
+  theo đúng Rust (`["", c, b, a, ""]`); chồng lấn không khớp lại; sugar R5c; reuse `Ty::ListStr`.
+- **path.ancestors**: `(str) -> list[str]` **gồm chính `p`**, chỉ bỏ `/` cuối (trừ gốc); bỏ dần
+  thành phần cuối; gốc `/` là cuối không thêm `""`; rỗng ⇒ `[""]`; giữ nguyên `.`/`..`, `//` đầu
+  không gộp; không sugar; reuse `Ty::ListStr`.
+- **str.split_terminator**: `(str, str) -> list[str]` đúng Rust — như `split` nhưng bỏ **đúng một**
+  phần rỗng cuối khi `s` kết thúc bằng `sep`; `s` rỗng + `sep` khác rỗng ⇒ `[]`; `sep` rỗng theo
+  đúng Rust (`["", a, b, c]`); sugar R5c; reuse `Ty::ListStr`.
