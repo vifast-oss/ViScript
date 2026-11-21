@@ -8,7 +8,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **Async net production** (mio) + **async TLS** (rustls nonblocking) trên Unix; loopback read/accept/connect/write/HTTPS.
 - **HTTP/2 hardening**: GOAWAY/RST/trailer/204/header cap 64 KiB, retry một lần.
 - **Worker stress** 10k task, cancel/budget/print/cross-write; 10 ca.
-- Windows async net chưa có backend (test gated); Linux gate **3512/3**; W3/W4 đang verify.
+- Windows async net chưa có backend (test gated); Linux gate **3512/3**, nightly 18,99M fuzz 0; fresh-clone PASS; W4 psvn đang verify.
 - Không GitHub Actions; macOS ngoài phạm vi.
 
 ## v0.3.0 — 2026-11-21
