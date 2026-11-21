@@ -1,10 +1,14 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# VS3-W4 — xác nhận tag `v0.1.0` + Windows CI
+# VS3-W4 — xác nhận tag `v0.1.0` + Windows local verification
+
+> **ĐÍNH CHÍNH 21/11 (A0)**: **KHÔNG dùng GitHub Actions**. Workflow `.github/workflows/windows.yml`
+> đã được **gỡ** theo yêu cầu người điều hành (tránh rủi ro khoá tài khoản); repo chỉ chạy
+> **local/psvn**. Các lệnh trong tài liệu này vẫn đúng khi chạy tay trên Windows.
 
 > **Người thực hiện**: subagent VS3-W4 (`psvn`), 2026-11-21.
 > **Tag xác nhận**: `v0.1.0` = `50675ddbc861df40b6f4fade3518fc040a9a55c5`
 > (`[VS3] release: v0.1.0 — Linux 3448/3, Windows 3404/0, mac ngoai pham vi`).
-> **CI**: thêm `.github/workflows/windows.yml` (repo trước đó **chưa có** workflow nào).
+> **CI**: GitHub Actions **đã gỡ**; chỉ chạy local/psvn.
 > Không push/merge/tag; không đụng `net.rs`/`pkg.rs`/`frame/**`/`value.rs`; không cài dependency.
 
 ## 0. TL;DR
@@ -16,7 +20,7 @@
 | `bin/vis-dev check` | **PASS** (toàn bộ bước, gồm clippy `-D warnings`, build, doc/readme examples) |
 | `bin/vis-host-suite` | **54/54 PASS** (`host_posix_real` bỏ qua — Windows dùng `test-child`) |
 | Code so với `777af63` | **không đổi** — chỉ docs/journal (0 tệp trong `crates/`, `Cargo.toml`, `Cargo.lock`) |
-| Windows CI | `.github/workflows/windows.yml`; YAML parse OK; **chưa chạy trên GitHub Actions** (chưa có runner ở đây) |
+| Windows local | GitHub Actions **đã gỡ**; các lệnh dưới chạy tay trên `psvn` |
 | Đĩa trước khi làm | `/` còn **21G** (> ngưỡng 5G) |
 
 ## 1. Xác nhận tag `v0.1.0`
@@ -34,7 +38,10 @@
   ```
   Vì vậy tag `v0.1.0` mang đúng cây code đã verify 3404/0.
 
-## 2. Windows CI
+## 2. Windows local verification (GitHub Actions đã gỡ)
+
+> Phần workflow dưới đây là **lịch sử**; file `.github/workflows/windows.yml` đã bị xoá. Repo chỉ
+> chạy local/psvn theo yêu cầu A0.
 
 ### 2.1. Hiện trạng
 

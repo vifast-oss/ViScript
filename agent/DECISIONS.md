@@ -3745,3 +3745,10 @@ VS3-2a ổn định.
 5. **v0.3.0** = VS3-4b2 HTTP/2 nếu dependency `h2` qua review (ALPN default-off) + net/package ổn định
    + Windows verify; nếu h2 không khả thi, ghi rõ và tag v0.3.0 với HTTP/1.1 hoàn chỉnh, HTTP/2 sang v0.3.1.
 6. **Dừng**: 09:00 thứ Hai 23/11/2026 — không mở task lớn mới sau 08:00; báo cáo + cây xác định.
+
+### VD-271 (đính chính) · Không dùng GitHub Actions — A0, 2026-11-21
+
+Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh rủi ro khoá tài khoản).
+- Đã gỡ `.github/workflows/windows.yml`; repo **không** có workflow GitHub.
+- Mọi verify chạy **local/psvn** bằng script (`vis-dev`, `vis-host-suite`, `vis-targets`, `vis-remote psvn`).
+- Không thêm `.github/workflows/` trong các đợt sau; Windows verify thủ công trên psvn.
