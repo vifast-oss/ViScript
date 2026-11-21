@@ -4,6 +4,8 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 use vis_syntax::Span;
 use vis_types::hir::*;
@@ -49,6 +51,14 @@ pub(crate) struct Interp<'a> {
     pub(crate) mutable: HashSet<u32>,
     pub(crate) out: String,
     pub steps: usize,
+    /// **VS3-3b/W5 (P2)** — `sym` binding cấp tệp để snapshot worker (không lấy local `main`).
+    pub(crate) top_syms: Vec<u32>,
+    /// **VS3-3b/W5 (P2)** — cờ huỷ hợp tác do worker pool gắn; `None` ở runtime thường.
+    pub(crate) worker_cancel: Option<Arc<AtomicBool>>,
+    /// **VS3-3b/W5 (P2)** — hạn huỷ theo thời gian (test hook cancel-after); `None` thường.
+    pub(crate) worker_cancel_deadline: Option<std::time::Instant>,
+    /// **VS3-3b/W5 (P2)** — lease ngân sách atomic của task worker; `None` ở runtime thường.
+    pub(crate) worker_budget: Option<crate::rt::fee::BudgetLease>,
     /// Giá trị của câu lệnh `Expr` **vừa chạy** (để `value` cấp tệp, không eval hai lần).
     last: Option<Value>,
     /// Độ sâu vòng lặp đang chạy (ST-13b mục 8: `break`/`continue` ngoài vòng ⇒ `VS0501`).
@@ -130,6 +140,10 @@ impl<'a> Interp<'a> {
             mutable: HashSet::new(),
             out: String::new(),
             steps: 0,
+            top_syms: crate::interp::worker::top_syms(&hir.stmts),
+            worker_cancel: None,
+            worker_cancel_deadline: None,
+            worker_budget: None,
             last: None,
             loop_depth: 0,
             fn_depth: 0,
@@ -267,6 +281,9 @@ impl<'a> Interp<'a> {
 
     fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
         self.steps += 1;
+        if let Some(a) = self.worker_tick(s.span()) {
+            return Err(a);
+        }
         if let Some(a) = self.charge(crate::rt::fee::FeeKind::Stmt, s.span()) {
             return Err(a);
         }
@@ -681,6 +698,9 @@ impl<'a> Interp<'a> {
 
     fn eval(&mut self, e: &HExpr) -> R<Value> {
         self.steps += 1;
+        if let Some(a) = self.worker_tick(e.span()) {
+            return Err(a);
+        }
         // ST-276: E_EXPR cho nút nguồn; call/spawn/await có sự kiện riêng.
         if !matches!(
             e,
@@ -1106,15 +1126,22 @@ impl<'a> Interp<'a> {
                 for a in args {
                     pos.push(self.eval(a)?);
                 }
-                // P1: `Off` giữ nguyên `get_mut` cũ; `Local` mới ghi order qua exec.
-                if self.sched.borrow().exec.mode == crate::rt::exec::WorkerMode::Local {
-                    crate::rt::exec::spawn_local(self, f.sym, pos, f.name.clone(), *span)
-                } else {
-                    let t = self
-                        .sched
-                        .get_mut()
-                        .spawn(f.sym, pos, f.name.clone(), *span);
-                    Ok(Value::Task(t))
+                // P1/P2: `Off` giữ nguyên đường cũ; `Local` chạy caller; `Parallel` đẩy pool.
+                let mode = self.sched.borrow().exec.mode;
+                match mode {
+                    crate::rt::exec::WorkerMode::Off => {
+                        let t = self
+                            .sched
+                            .get_mut()
+                            .spawn(f.sym, pos, f.name.clone(), *span);
+                        Ok(Value::Task(t))
+                    }
+                    crate::rt::exec::WorkerMode::Local => {
+                        crate::rt::exec::spawn_local(self, f.sym, pos, f.name.clone(), *span)
+                    }
+                    crate::rt::exec::WorkerMode::Parallel(_) => {
+                        crate::rt::exec::spawn_parallel(self, f.sym, pos, f.name.clone(), *span)
+                    }
                 }
             }
             // ST-14: chuỗi nội suy — đánh giá từng mảnh rồi ghép (không parse lại lúc chạy).

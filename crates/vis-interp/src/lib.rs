@@ -84,6 +84,8 @@ pub use builtin::{BuiltinSig, Host, SIGS};
 pub use interp::{pos, Abort, Trap, R};
 pub use value::{exit_code, show, Closure, Value};
 
+use std::sync::Arc;
+
 use vis_syntax::Diagnostic;
 use vis_types::hir::Hir;
 use vis_types::lower::Symbols;
@@ -184,6 +186,9 @@ pub fn run_with_hosts_caps<'a>(
         db,
         caps,
         crate::rt::exec::WorkerMode::Off,
+        None,
+        false,
+        None,
     )
 }
 
@@ -202,10 +207,26 @@ fn run_with_hosts_caps_mode<'a>(
     db: Option<&'a mut dyn crate::builtin::DbHost>,
     caps: &[(u32, Value)],
     mode: crate::rt::exec::WorkerMode,
+    budget: Option<Arc<crate::rt::fee::SharedBudget>>,
+    cancel_before: bool,
+    cancel_after_ms: Option<u64>,
 ) -> RunOutput {
     let mut it = interp::Interp::new(hir, symbols, types);
     if mode != crate::rt::exec::WorkerMode::Off {
-        it.sched.borrow_mut().exec.mode = mode;
+        let mut s = it.sched.borrow_mut();
+        s.exec.mode = mode;
+        if let crate::rt::exec::WorkerMode::Parallel(_) = mode {
+            s.exec.image = Some(Arc::new(crate::rt::exec::HirImage {
+                hir: hir.clone(),
+                symbols: symbols.clone(),
+                types: types.clone(),
+                text: Arc::from(text),
+            }));
+            s.exec.budget = budget;
+            s.exec.cancel_before = cancel_before;
+            s.exec.cancel_deadline = cancel_after_ms
+                .map(|ms| std::time::Instant::now() + std::time::Duration::from_millis(ms));
+        }
     }
     if !caps.is_empty() {
         it.set_caps(caps.to_vec());
@@ -308,6 +329,119 @@ pub fn run_workers_local_with_hosts_caps<'a>(
         db,
         caps,
         crate::rt::exec::WorkerMode::Local,
+        None,
+        false,
+        None,
+    )
+}
+
+/// **VS3-3b/W5 (P2)** — chạy non-frame ở chế độ **`Parallel(n)`** (test/opt-in, CPU thuần).
+///
+/// Mỗi task spawn được đẩy lên `WorkerPool`; evaluator HIR dựng **trong worker** từ ảnh
+/// `Arc<HirImage>`, env là snapshot top-level `SendValue::Map`. Output merge spawn order.
+/// Không host/`chan(0)`/frame: task dùng các đường đó sẽ lỗi rõ (không fallback).
+#[doc(hidden)]
+pub fn run_workers_parallel(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+    workers: usize,
+) -> RunOutput {
+    run_workers_parallel_mode(text, hir, symbols, types, args, workers, None, false, None)
+}
+
+/// Như [`run_workers_parallel`] nhưng dùng `SharedBudget` atomic; caller giữ `Arc` để đọc
+/// `snapshot()` sau khi chạy (mọi lease đã drop).
+#[doc(hidden)]
+pub fn run_workers_parallel_with_budget(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+    workers: usize,
+    budget: Arc<crate::rt::fee::SharedBudget>,
+) -> RunOutput {
+    run_workers_parallel_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        workers,
+        Some(budget),
+        false,
+        None,
+    )
+}
+
+/// **Test hook P2**: huỷ mọi task **trước khi** worker chạy (cancel hợp tác ở biên job).
+#[doc(hidden)]
+pub fn run_workers_parallel_cancel_before(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+    workers: usize,
+) -> RunOutput {
+    run_workers_parallel_mode(text, hir, symbols, types, args, workers, None, true, None)
+}
+
+/// **Test hook P2**: huỷ các task đang chạy sau `ms` mili giây (safe point mỗi 1.024 bước).
+#[doc(hidden)]
+pub fn run_workers_parallel_cancel_after(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+    workers: usize,
+    ms: u64,
+) -> RunOutput {
+    run_workers_parallel_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        workers,
+        None,
+        false,
+        Some(ms),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_workers_parallel_mode(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+    workers: usize,
+    budget: Option<Arc<crate::rt::fee::SharedBudget>>,
+    cancel_before: bool,
+    cancel_after_ms: Option<u64>,
+) -> RunOutput {
+    assert!(workers >= 2, "P2 cần W>=2; W=1 dùng run_workers_local");
+    run_with_hosts_caps_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        None,
+        None,
+        None,
+        None,
+        &[],
+        crate::rt::exec::WorkerMode::Parallel(workers),
+        budget,
+        cancel_before,
+        cancel_after_ms,
     )
 }
 

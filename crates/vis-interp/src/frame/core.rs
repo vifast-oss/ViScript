@@ -126,7 +126,19 @@ impl<'a> Interp<'a> {
     }
 
     /// Ghi một sự kiện ngữ nghĩa. `None` khi hook tắt (mặc định) — không đổi hành vi.
+    /// **P2**: task worker dùng lease atomic trong `worker_budget` thay thread-local.
     pub(crate) fn charge(&mut self, kind: crate::rt::fee::FeeKind, span: Span) -> Option<Abort> {
+        if let Some(b) = &mut self.worker_budget {
+            let w = crate::rt::fee::standard_weight(kind) as i64;
+            if b.charge(w).is_err() {
+                return Some(Abort::Trap(Trap::new(
+                    BUDGET,
+                    "VS0501-BUDGET: vượt ngân sách worker".to_string(),
+                    span,
+                )));
+            }
+            return None;
+        }
         let (w, remaining) = crate::rt::fee::charge(kind, span.start as u32)?;
         Some(Abort::Trap(Trap::new(
             BUDGET,
