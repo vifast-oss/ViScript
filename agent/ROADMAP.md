@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi**; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.1.0-rc1`** @ `0985030`; `pha1-rc1` giữ nguyên. Runtime mặc định chỉ flip async sau VS3-1a/1b/1c.
+>
 > **Cập nhật 2026-11-21 (VD-270)** — A0 tiếp tục đợt **tối ưu liên tục** VD-258..VD-270 (uỷ quyền đến 09:00 23/11); **chưa** mở pha 2/VS3, **chưa** tag mới (`pha1-rc1` = `05e42d0` giữ nguyên), runtime mặc định **không đổi**. HEAD lúc ghi `745851a` (08:04 21/11); số đo mới nhất trong `CHANGELOG.md`: `gate --fast` **2840 passed / 0 skipped**, `vis test test/sem` **525/525** cả interp và VM; core-test/release/toolchain/host 54/54 PASS. API-STD **136** mục. Số đo sẽ còn tăng trong đợt. Windows Tier 2 (xanh @ `c7cef71`, **chưa verify lại ở HEAD**); macOS **chưa verify**. **Đọc khối “Trạng thái sau VD-270” ở cuối tệp**; các khối R22/R23/R26/R27/R29 trong thân là lịch sử, số cũ không xoá (VD-142). Chi tiết từng mục: `JOURNAL/vd260-report.md`.
 >
 > **Cập nhật 2026-11-20 (VD-242)**: A0 mở đợt **“Ổn định sau pha 1”** — baseline `31b51d2`; chưa mở pha 2/VS3. Duyệt cả 10 parity + triage đủ 18 std/CLI; ngữ nghĩa chốt trong `DECISIONS.md` VD-242; bốn luồng Agent 2 tại `QUEUE.md` ST-237..ST-243. Tag `pha1-rc1` giữ nguyên; macOS chưa verify; Windows Tier 2 + verify commit cuối; RFC typed/CSV/str hoãn. Điều kiện mở pha 2 ở VD-242 §8. Các cập nhật dưới đây là lịch sử. **VD-243**: #172 `percent` báo `VS0507`, không bão hoà; gỡ blocker quyết định, ST-240 được chuẩn bị/sửa khi không xung đột tệp.
@@ -368,3 +370,20 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 **Còn mở / chưa tuyên bố**: step-cap parity; P3 enum alloc (#152); #190 `pop_frame`; #191 Windows nextest;
 #147/#152 blocked phần cứng; TLS/HTTP2/keep-alive; runner wasm; runner macOS (Landlock **đã có** trên Linux,
 15/15); budget/fuel/Q chưa chốt default. **Đợt chưa đóng** — chờ mốc A0 09:00 23/11.
+
+### VS3 — mục tiêu G0..G5 (2026-11-21, VD-271)
+
+> Kế hoạch đầy đủ + bảng bao phủ tính năng: `agent/KE-HOACH-VS3-2026-11-21.md`.
+> Tiến độ từng lát: `agent/VS3-TIEN-DO.md`. **macOS ngoài phạm vi**.
+
+| Mốc | Mục tiêu | Tag |
+|---|---|---|
+| **G0** | Baseline sau pha 1 (`fc01b9a`, gate 3298/3, nightly PASS) | **`v0.1.0-rc1`** (đã đánh) |
+| **G1** | Nền VS3: 1a/1b/2a/4a/5a + test; 1c/1d/2b/4b/5b test/kế hoạch; 3a spike | — |
+| **G2** | Async default + kênh (1a–1d, 2a–2b) | `v0.2.0` |
+| **G3** | TLS/HTTP2/keep-alive + registry HTTP/chữ ký/GC | `v0.3.0` |
+| **G4** | Worker pool + Windows Tier 1 + wasm runner | `v0.4.0` |
+| **G5** | LSP tệp phụ/incremental + plugin/ViTerm | `v0.5.0` / `v1.0.0` candidate |
+
+**Luật**: mọi tính năng VS3 phải có lát + test + docs + gate; không bỏ mảng nào; không tuyên bố xong
+khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.

@@ -14,7 +14,7 @@
 | Gate baseline | **3298 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** |
-| Tag | `pha1-rc1` (không di chuyển); `v0.1.0-rc1` dự kiến cuối tuần |
+| Tag | `v0.1.0-rc1` @ `0985030` (đã đánh 21/11); `pha1-rc1` giữ nguyên; `v0.1.0` sau Windows verify |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt

@@ -3656,3 +3656,41 @@ chương trình và tái dùng `RecId`/`EnumId`, nên `impl Hop[T]` dùng đư�
 đúng theo instantiation. Giữ **luật mồ côi** (impl phải ở module khai trait hoặc kiểu), chẩn đoán
 "kiểu nhận không tĩnh" vẫn chỉ theo impl cục bộ để không hồi quy `xs.get(1)`, impl trùng same-module
 vẫn lỗi; registry không lọc theo `imports` nhưng tên trait/kiểu vẫn qua gate `use`/`pub`.
+
+### VD-271 · Mở chương trình VS3 — tất cả tính năng, macOS ngoài phạm vi, batch test 4 giờ — A0, 2026-11-21
+
+> **Người quyết định**: Agent 0 (theo lệnh người điều hành 2026-11-21). **Người ghi**: A0.
+> **Baseline**: `fc01b9a`; tag `v0.1.0-rc1` trên `0985030` (đã push 21/11). `pha1-rc1` giữ nguyên.
+> **Kế hoạch**: `agent/KE-HOACH-VS3-2026-11-21.md`; tiến độ: `agent/VS3-TIEN-DO.md`.
+
+#### 1. Quyết định
+
+- **Mở chương trình VS3** từ 2026-11-21, triển khai theo lát cắt, **bao gồm tất cả tính năng** trong
+  bảng bao phủ §11 của kế hoạch: async, kênh, net/TLS, quyền, LSP, gói, nền tảng, hợp chuẩn host,
+  plugin/ViTerm. Không bỏ mảng nào; mục chưa có lát phải bổ sung lát trước khi tuyên bố “đã bao phủ”.
+- **macOS ngoài phạm vi**: không đo, không tuyên bố, không dùng làm điều kiện nghiệm thu; code vẫn
+  portable; mở lại khi có máy Darwin thật.
+- **Batch test 4 giờ**: mỗi lát có test hợp đồng **trước** merge; full `gate --fast` tại mốc 4 giờ;
+  nightly cuối ngày. Không full gate sau từng commit; **không** dồn test đến cuối tuần.
+- **Bốn luồng** tối đa, worktree riêng, phân quyền sở hữu tệp trước khi chạy; W1 runtime là critical path.
+- **Runtime mặc định**: chỉ flip async default sau khi VS3-1a/1b/1c xong + VERSION/cache; không
+  fallback đồng bộ im lặng.
+- **Phát hành**: `v0.1.0-rc1` đã đánh; `v0.1.0` sau khi Windows Tier 2 được verify lại (hoặc A0 quyết
+  định chấp nhận rc1 làm baseline, phải ghi rõ); các tag VS3 theo G2..G5.
+- **Quyền tag/release**: A0 giữ; không tự tạo/push tag ngoài kế hoạch.
+
+#### 2. Điều kiện không đổi
+
+- VS3-1 **single-thread** trước; worker/GC/TLS chỉ sau khi dependency được duyệt và có lát riêng.
+- Không thêm API/cú pháp công khai trong VS3-1 nếu không cần; mọi thay đổi bytecode/cache phải bump
+  `VERSION`/`PHIEN_BAN` + test tương thích.
+- macOS **không tuyên bố**; Windows **Tier 2** tới VS3-6; wasm tách VS3-6.
+- Mọi mục phải có **code + test + docs + gate**; không đánh dấu DONE nếu thiếu.
+
+#### 3. Việc đầu tiên
+
+1. VS3-1a — budget/step-cap parity.
+2. VS3-2a — wait-set + `chan(0)`.
+3. VS3-4a — TLS client + HTTPS.
+4. VS3-5a — registry HTTP + chữ ký.
+5. VS3-3a — spike worker/heap (chỉ đo, chưa production).
