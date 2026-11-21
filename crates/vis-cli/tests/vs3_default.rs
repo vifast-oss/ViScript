@@ -10,10 +10,13 @@
 //!
 //! Không đổi bytecode/VERSION/cache key: chỉ chọn entry runtime.
 
+#[cfg(unix)]
 use std::io::{Read, Write};
+#[cfg(unix)]
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+#[cfg(unix)]
 use std::thread;
 
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
@@ -311,6 +314,7 @@ fn cli_async_noi_host_fs() {
 
 /// Các ca net dùng port loopback + server thread: serialize trong test binary để tránh
 /// tranh port khi `cargo test` chạy song song (không ảnh hưởng sản phẩm).
+#[cfg(unix)]
 static NET_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[cfg(unix)]
