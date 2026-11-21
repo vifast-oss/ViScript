@@ -1,3 +1,8 @@
+> **VM thread flake đã sửa (22/11)**: `vm_khong_tao_them_thread_sau_khi_join` đỏ 2/5 attempt
+> dưới tải (`2→5`, `2→4`) do thread pool chưa được OS thu hồi ngay sau join. Fix test-only
+> `eb99c19`: poll tối đa 500 ms (10 ms/lần) cho về nền rồi mới assert; targeted **10/10**,
+> gate **3571/3**. Cần soak lại để xác nhận.
+
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VS3 final QA — `ae247f7` (fresh-clone + 3× soak PASS, còn flake VM)
 
