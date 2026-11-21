@@ -344,8 +344,8 @@ fn phan_loai_async_sync_cho_1d() {
 
 // Ghi chú 1d (ĐÃ FLIP theo VD-271, xem `vs3_default.rs`):
 // 1) Phân loại: `HItem::Fn/Impl/Trait` có `is_async` ⇒ frame runtime; sync không có async fn
-//    giữ `Interp::run`/`Vm::run`. Async có `chan(n>0)` hoặc cap động tạm giữ runtime cũ
-//    (`co_chan_cap_khong_zero` trong CLI) đến VS3-2b/W3; async net read cần backend thật.
+//    giữ `Interp::run`/`Vm::run`. `chan(n≥1)` dùng wait-set frame (VS3-1d/2a); async net
+//    read/accept/connect/write còn chờ backend production.
 // 2) Entry runtime thật: `vis_interp::run_async_with_hosts_caps` và
 //    `vis_vm::run_async_with_full_hosts_caps`, nối host/fs/net/db/args/caps; guard 200_000 turn
 //    có trap rõ, hook test hạ trần để kiểm chứng.
@@ -354,8 +354,8 @@ fn phan_loai_async_sync_cho_1d() {
 // 4) Test bắt buộc đã chạy: `vs3_default`, `vs3_budget`, `vs3_cancel`, `vs3_chan0`,
 //    `vs3_coverage_matrix`, `lat255_coverage`, `lat257_a_coverage`, `lat257_c_lifecycle`,
 //    `lat256_net`, `lat3_real`, toàn bộ `test/sem/async`, golden sync, cache warm/cold.
-// 5) Blocker còn lại: nested async lồng sâu chưa xác minh; async `chan(n>0)`/net reactor dùng
-//    runtime cũ; hợp đồng mã/result khi huỷ chờ A0.
+// 5) Blocker còn lại: nested async lồng sâu chưa xác minh; async net cần `FrameReactorBackend`
+//    production; hợp đồng mã/result khi huỷ chờ A0.
 
 #[test]
 fn nested_async_co_ban_qua_bon_duong() {
