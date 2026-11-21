@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 158] = [
+pub const FUNCS: [StdFn; 159] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -768,6 +768,13 @@ pub const FUNCS: [StdFn; 158] = [
         name: "path.join_all",
         params: &[Ty::ListStr],
         ret: Ty::Str,
+    },
+    // **VD-270 (path.ancestors)**: chuỗi **tổ tiên từ vựng** POSIX gồm chính `p` (bỏ `/` cuối,
+    // dừng ở `/` hoặc `""`; giữ nguyên văn `.`/`..`); **không** sugar — module-only.
+    StdFn {
+        name: "path.ancestors",
+        params: &[Ty::Str],
+        ret: Ty::ListStr,
     },
     // **VD-270 (path.components)**: tách **từ vựng** POSIX thành thành phần; tuyệt đối ⇒ phần
     // tử đầu `"/"`, bỏ thành phần rỗng giữa/cuối, giữ **nguyên văn** `.`/`..` (không chuẩn
