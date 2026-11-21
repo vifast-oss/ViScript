@@ -11,6 +11,7 @@
 mod chan_doan;
 mod chon;
 mod chu_ky;
+mod code_action;
 mod codelens;
 mod dinh_dang;
 mod dinh_nghia;
@@ -589,6 +590,33 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
             }
+            // **VD-270**: code action toàn tài liệu — hiện chỉ `source.fixAll` = bản đã format.
+            // `range`/`context` bị bỏ qua có tài liệu hoá; URI chưa mở ⇒ `-32602` như semanticTokens.
+            "textDocument/codeAction" => {
+                if let Some(id) = id {
+                    if !da_khoi_tao {
+                        gui!(jsonrpc::loi(
+                            &id,
+                            -32002,
+                            "chưa `initialize`",
+                            Value::none()
+                        ));
+                    } else if let Some(uri) = jsonrpc::uri_cua(kv) {
+                        match van_ban.get(&uri) {
+                            None => gui!(jsonrpc::loi(
+                                &id,
+                                -32602,
+                                "tài liệu chưa mở",
+                                Value::Str(uri),
+                            )),
+                            Some(text) => {
+                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                                gui!(code_action::tra_loi(&kq, &uri, mode_cua(&uri), &id));
+                            }
+                        }
+                    }
+                }
+            }
             // **ST-279**: format toàn tệp bằng formatter CLI.
             "textDocument/formatting" => {
                 if let Some(id) = id {
@@ -679,6 +707,7 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("foldingRangeProvider", Value::Bool(true)),
         jsonrpc::kv("workspaceSymbolProvider", Value::Bool(true)),
         jsonrpc::kv("documentFormattingProvider", Value::Bool(true)),
+        jsonrpc::kv("codeActionProvider", code_action::provider()),
         jsonrpc::kv("referencesProvider", Value::Bool(true)),
         jsonrpc::kv("documentHighlightProvider", Value::Bool(true)),
         jsonrpc::kv("selectionRangeProvider", Value::Bool(true)),
