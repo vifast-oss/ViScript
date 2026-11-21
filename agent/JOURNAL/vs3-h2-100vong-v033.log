@@ -1,0 +1,1101 @@
+=== vòng 1 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 173 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 111 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=15.60 s
+exit=0
+=== vòng 2 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 227 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 141 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.61s
+
+wall=15.85 s
+exit=0
+=== vòng 3 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 268 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 139 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.66s
+
+wall=15.95 s
+exit=0
+=== vòng 4 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 148 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 107 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.47s
+
+wall=15.62 s
+exit=0
+=== vòng 5 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 100 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 80 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.42s
+
+wall=15.55 s
+exit=0
+=== vòng 6 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 206 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 105 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.56s
+
+wall=15.88 s
+exit=0
+=== vòng 7 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 405 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 37 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.68s
+
+wall=15.88 s
+exit=0
+=== vòng 8 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 25 ms; connection/authority = [1, 1, 1, 1]
+.......sau idle 15,2 s: 58 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.31s
+
+wall=15.50 s
+exit=0
+=== vòng 9 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 62 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.46s
+
+wall=15.66 s
+exit=0
+=== vòng 10 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 101 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.42s
+
+wall=15.53 s
+exit=0
+=== vòng 11 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 102 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.60 s
+exit=0
+=== vòng 12 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 15 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 68 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.31s
+
+wall=15.42 s
+exit=0
+=== vòng 13 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 131 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.56s
+
+wall=15.72 s
+exit=0
+=== vòng 14 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 54 ms; connection/authority = [1, 1, 1, 1]
+.......sau idle 15,2 s: 45 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.32s
+
+wall=15.42 s
+exit=0
+=== vòng 15 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 387 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 90 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.76s
+
+wall=15.96 s
+exit=0
+=== vòng 16 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 575 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 46 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.92s
+
+wall=16.50 s
+exit=0
+=== vòng 17 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 208 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 20 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.47s
+
+wall=15.70 s
+exit=0
+=== vòng 18 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 197 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 178 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.61s
+
+wall=15.84 s
+exit=0
+=== vòng 19 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 107 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 94 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.42s
+
+wall=15.55 s
+exit=0
+=== vòng 20 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 138 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 54 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.49 s
+exit=0
+=== vòng 21 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 137 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 136 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.59 s
+exit=0
+=== vòng 22 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.55 s
+exit=0
+=== vòng 23 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 205 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=15.60 s
+exit=0
+=== vòng 24 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 59 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 97 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.51 s
+exit=0
+=== vòng 25 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 64 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 94 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.47 s
+exit=0
+=== vòng 26 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.58s
+
+wall=15.68 s
+exit=0
+=== vòng 27 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 139 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.44s
+
+wall=15.54 s
+exit=0
+=== vòng 28 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 136 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 135 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.56 s
+exit=0
+=== vòng 29 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 133 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 39 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.43s
+
+wall=15.51 s
+exit=0
+=== vòng 30 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 114 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 136 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.47s
+
+wall=15.67 s
+exit=0
+=== vòng 31 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 138 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 172 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=16.08 s
+exit=0
+=== vòng 32 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 94 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.59 s
+exit=0
+=== vòng 33 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.100 request: 21 ms; connection/authority = [1, 1, 1, 1]
+...........sau idle 15,2 s: 143 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.38s
+
+wall=15.47 s
+exit=0
+=== vòng 34 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 382 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 144 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.77s
+
+wall=15.94 s
+exit=0
+=== vòng 35 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 92 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 99 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.43s
+
+wall=15.62 s
+exit=0
+=== vòng 36 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+....100 request: 30 ms; connection/authority = [1, 1, 1, 1]
+.......sau idle 15,2 s: 143 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.77 s
+exit=0
+=== vòng 37 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 405 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 171 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.80s
+
+wall=15.91 s
+exit=0
+=== vòng 38 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 92 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.60 s
+exit=0
+=== vòng 39 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 44 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.58 s
+exit=0
+=== vòng 40 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 94 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.59 s
+exit=0
+=== vòng 41 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 164 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 34 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.43s
+
+wall=15.56 s
+exit=0
+=== vòng 42 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 169 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 62 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.75 s
+exit=0
+=== vòng 43 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 241 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 101 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.58s
+
+wall=15.75 s
+exit=0
+=== vòng 44 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 150 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 139 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=15.73 s
+exit=0
+=== vòng 45 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 128 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 134 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.74 s
+exit=0
+=== vòng 46 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 171 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 180 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.58s
+
+wall=15.70 s
+exit=0
+=== vòng 47 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 98 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 134 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.55 s
+exit=0
+=== vòng 48 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 206 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 95 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.54s
+
+wall=15.71 s
+exit=0
+=== vòng 49 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 103 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.61 s
+exit=0
+=== vòng 50 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 102 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.67 s
+exit=0
+=== vòng 51 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 36 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 76 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.36s
+
+wall=15.65 s
+exit=0
+=== vòng 52 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 317 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.75s
+
+wall=16.12 s
+exit=0
+=== vòng 53 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 136 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=15.64 s
+exit=0
+=== vòng 54 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 101 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 54 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.37s
+
+wall=15.48 s
+exit=0
+=== vòng 55 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 12 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.51 s
+exit=0
+=== vòng 56 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 57 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 179 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.56 s
+exit=0
+=== vòng 57 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 164 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.59s
+
+wall=15.70 s
+exit=0
+=== vòng 58 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 142 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.57s
+
+wall=15.67 s
+exit=0
+=== vòng 59 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 52 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.58 s
+exit=0
+=== vòng 60 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 107 ms; connection/authority = [1, 1, 1, 1]
+......sau idle 15,2 s: 57 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.39s
+
+wall=15.47 s
+exit=0
+=== vòng 61 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 288 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 76 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.60s
+
+wall=15.77 s
+exit=0
+=== vòng 62 ===
+
+running 19 tests
+.........bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+....100 request: 216 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 178 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.64s
+
+wall=15.84 s
+exit=0
+=== vòng 63 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 139 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 80 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.44s
+
+wall=15.51 s
+exit=0
+=== vòng 64 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 424 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 77 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.75s
+
+wall=16.03 s
+exit=0
+=== vòng 65 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 421 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 99 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.77s
+
+wall=16.03 s
+exit=0
+=== vòng 66 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+....100 request: 19 ms; connection/authority = [1, 1, 1, 1]
+........sau idle 15,2 s: 100 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.34s
+
+wall=15.53 s
+exit=0
+=== vòng 67 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 175 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 58 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.76 s
+exit=0
+=== vòng 68 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+....100 request: 32 ms; connection/authority = [1, 1, 1, 1]
+........sau idle 15,2 s: 95 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.37s
+
+wall=15.64 s
+exit=0
+=== vòng 69 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 171 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 93 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.48s
+
+wall=15.57 s
+exit=0
+=== vòng 70 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 97 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.37s
+
+wall=15.45 s
+exit=0
+=== vòng 71 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 19 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 74 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.31s
+
+wall=15.43 s
+exit=0
+=== vòng 72 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 546 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.97s
+
+wall=16.25 s
+exit=0
+=== vòng 73 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.100 request: 15 ms; connection/authority = [1, 1, 1, 1]
+...........sau idle 15,2 s: 111 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.35s
+
+wall=15.47 s
+exit=0
+=== vòng 74 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 398 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 98 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.74s
+
+wall=16.05 s
+exit=0
+=== vòng 75 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 247 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 103 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.59s
+
+wall=15.76 s
+exit=0
+=== vòng 76 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 247 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 16 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.73 s
+exit=0
+=== vòng 77 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 143 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.55s
+
+wall=15.82 s
+exit=0
+=== vòng 78 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 297 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.58s
+
+wall=15.67 s
+exit=0
+=== vòng 79 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 102 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 94 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.52 s
+exit=0
+=== vòng 80 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 12 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 178 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.48 s
+exit=0
+=== vòng 81 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 124 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.55s
+
+wall=15.66 s
+exit=0
+=== vòng 82 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 53 ms; connection/authority = [1, 1, 1, 1]
+.......sau idle 15,2 s: 179 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.54 s
+exit=0
+=== vòng 83 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 142 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.60 s
+exit=0
+=== vòng 84 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 137 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 134 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.49s
+
+wall=15.56 s
+exit=0
+=== vòng 85 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 122 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 91 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.47s
+
+wall=15.54 s
+exit=0
+=== vòng 86 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 99 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 135 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.53 s
+exit=0
+=== vòng 87 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 56 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 10 ms; connection/authority = [2, 2, 2, 2]
+..
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.29s
+
+wall=15.39 s
+exit=0
+=== vòng 88 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 151 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 135 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.50s
+
+wall=15.58 s
+exit=0
+=== vòng 89 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.....100 request: 57 ms; connection/authority = [1, 1, 1, 1]
+.......sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.52 s
+exit=0
+=== vòng 90 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+...100 request: 15 ms; connection/authority = [1, 1, 1, 1]
+.........sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.37s
+
+wall=15.44 s
+exit=0
+=== vòng 91 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+........100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.45s
+
+wall=15.53 s
+exit=0
+=== vòng 92 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 176 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 52 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.46s
+
+wall=15.56 s
+exit=0
+=== vòng 93 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 138 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.52s
+
+wall=15.62 s
+exit=0
+=== vòng 94 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 14 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.41s
+
+wall=15.50 s
+exit=0
+=== vòng 95 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 102 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 177 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.53s
+
+wall=15.65 s
+exit=0
+=== vòng 96 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+...100 request: 17 ms; connection/authority = [1, 1, 1, 1]
+.........sau idle 15,2 s: 42 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.27s
+
+wall=15.42 s
+exit=0
+=== vòng 97 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 467 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 10 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.72s
+
+wall=15.88 s
+exit=0
+=== vòng 98 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+..100 request: 23 ms; connection/authority = [1, 1, 1, 1]
+..........sau idle 15,2 s: 85 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.32s
+
+wall=15.41 s
+exit=0
+=== vòng 99 ===
+
+running 19 tests
+......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+.......100 request: 329 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 57 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.65s
+
+wall=15.94 s
+exit=0
+=== vòng 100 ===
+
+running 19 tests
+.......bỏ qua registry_https_thuong_luong_h2: hook root chỉ có ở bản debug
+......100 request: 152 ms; connection/authority = [1, 1, 1, 1]
+.....sau idle 15,2 s: 133 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.52s
+
+wall=15.68 s
+exit=0
+TOTAL_WALL=1567 s
