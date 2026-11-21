@@ -755,6 +755,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 #[cfg(unix)]
                 let mut async_host = vis_cli::async_net::AsyncNetHost {
                     inner: async_rc.clone(),
+                    cookie: vis_interp::cookie::CookieJar::new(),
                 };
                 #[cfg(unix)]
                 let mut async_guard = quyen::NetGuard {
