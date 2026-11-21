@@ -377,3 +377,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `5a396bc`: **PASS** — parser fuzz **7.509.064 ca / 170.392.740 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - **vis test --slowest** merged (`67cf137`): báo N đơn vị chậm nhất ra stderr, stdout TAP/JSON không đổi; gate **3260 passed / 3 skipped**.
 - **Tối ưu eq_map** merged (`db59eea`): chỉ mục băm cho map khoá vô hướng, fallback đa tập; gate xem log.
+- **str.matches** merged (`458408b`): khớp không chồng trái→phải, sugar R5c; FUNCS **167**; gate xem log.
