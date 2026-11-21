@@ -242,6 +242,7 @@ Method trên giá trị (không cần `use`):
 | Nhóm | Method / việc |
 |---|---|
 | Soạn thảo | `completion` (kể cả module `std.*`), `hover` (biến, trường, biến thể enum, phương thức người dùng, phương thức lõi + builtin), `signatureHelp`, `documentHighlight`, `selectionRange` |
+| Tô màu ngữ nghĩa | `semanticTokens/full` — legend 9 loại `keyword,type,function,variable,string,number,comment,operator,parameter`; mã hoá 5 số/token, **UTF-16**, không chồng lấn; chỉ full (chưa delta/range) |
 | Điều hướng | `definition` (trong tệp + qua `rootUri`), `references`, `documentSymbol`, `workspace/symbol`, `foldingRange` |
 | Sửa | `rename` + `prepareRename`, `formatting` (dùng `vis fmt`) |
 | Chẩn đoán | publish diagnostics khi mở/đổi/lưu; module-aware; UTF-16 |
