@@ -34,14 +34,24 @@
 //!   Hợp `N` phần = đúng tập đã chọn, không trùng; `--list`/`--repeat`/`--json` áp **sau** shard.
 //!   Cú pháp sai (`0/2`, `3/2`, `1/0`, thiếu `/`, thừa `/`, không nguyên, thiếu giá trị, lặp cờ)
 //!   ⇒ exit **2** + usage nêu `--shard`.
+//! - `--jobs <N>` — chạy **song song** `N` **đơn vị** (ca đã chọn × lần lặp `k` của `--repeat`;
+//!   `N ≥ 1`, mặc định **1**). Kết quả in theo **đúng thứ tự cũ** (chỉ số ca, rồi k) dù worker
+//!   xong lệch thứ tự; `--json`/`--json-out` cùng shape/thứ tự. `N = 1` giữ **nguyên byte**
+//!   TAP/JSON. `--list` bỏ qua `--jobs` (vẫn kiểm N). Thiếu/`0`/âm/không nguyên/lặp cờ ⇒ exit
+//!   **2** + usage nêu `--jobs`.
+//! - `--fail-fast` + `--jobs > 1`: ngừng **lập lịch** đơn vị mới ngay sau lần đỏ đầu tiên; đơn
+//!   vị **đang chạy** được hoàn tất; in theo thứ tự gốc; plan/cases đếm **đơn vị đã chạy**.
+//!   Khác bản tuần tự: vài ca có chỉ số **sau** ca đỏ có thể đã kịp chạy (đã lập lịch trước khi
+//!   thấy đỏ) nên plan có thể lớn hơn vị trí ca đỏ.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --timeout <ms>: giới hạn mỗi ca (test fn **và** fixture .out/.err) ≤ ms (≥ 50); quá hạn ⇒ kill + `not ok` với `quá hạn <ms> ms`; mặc định **không** giới hạn");
@@ -49,6 +59,7 @@ fn usage() -> ExitCode {
     eprintln!("  --repeat <N>: chạy mỗi ca đã chọn N lần (số nguyên ≥ 1, mặc định 1); N > 1 ⇒ mỗi lần lặp là một ca TAP/JSON tên `<tên> [k/N]`; --list bỏ qua --repeat (liệt kê một lần)");
     eprintln!("  --shuffle [--seed <u64>]: xáo thứ tự ca đã chọn trước khi chạy/liệt kê; cùng seed ⇒ cùng thứ tự, mặc định seed 0; --seed chỉ dùng cùng --shuffle (thiếu/sai ⇒ exit 2)");
     eprintln!("  --shard <I>/<N>: chỉ chạy phần I/N của ca đã chọn (1 ≤ I ≤ N); chia theo chỉ số sau --filter/--shuffle, trước --list/--repeat; N phần rời nhau, hợp = đủ tập");
+    eprintln!("  --jobs <N>: chạy N đơn vị (ca × lần lặp) song song (số nguyên ≥ 1, mặc định 1); kết quả/TAP/JSON in theo đúng thứ tự cũ; --fail-fast ngừng lập lịch sau lần đỏ đầu (đơn vị đang chạy vẫn xong ⇒ plan = số đã chạy); --list bỏ qua --jobs");
     ExitCode::from(2)
 }
 
@@ -353,8 +364,11 @@ impl Kq {
 ///
 /// Tách khỏi vòng chọn ca để `--repeat` gọi lại nguyên xi từng lần; `--timeout` áp **mỗi lần**
 /// chạy của **cả hai** nhánh — `test fn` **và** fixture `.out/.err` (VD-270 mở rộng ST-105).
+///
+/// `don_vi` là chỉ số **đơn vị** (ca × lần lặp, 0-based) — duy nhất kể cả khi `--jobs > 1`, nên
+/// thư mục tạm `vis-test-{pid}-{don_vi}` không đụng nhau giữa các worker.
 fn chay_mot_lan(
-    chi_so: usize,
+    don_vi: usize,
     p: &Path,
     bai_test: Option<&(String, String)>,
     ten: &str,
@@ -364,7 +378,7 @@ fn chay_mot_lan(
 ) -> Kq {
     if let Some((_, src)) = bai_test {
         // Ghi bản sao tạm, chạy `vis run` (interp hoặc VM), TAP theo **tên test**.
-        let d = std::env::temp_dir().join(format!("vis-test-{}-{}", std::process::id(), chi_so));
+        let d = std::env::temp_dir().join(format!("vis-test-{}-{}", std::process::id(), don_vi));
         let _ = std::fs::remove_dir_all(&d);
         let _ = std::fs::create_dir_all(&d);
         let tep = d.join("t.vis");
@@ -480,6 +494,141 @@ fn parse_shard(s: &str) -> Option<(usize, usize)> {
     Some((i, n))
 }
 
+/// **VD-270**: kết quả từng **đơn vị** theo đúng thứ tự gốc (chỉ số ca, rồi k); `None` = chưa
+/// chạy (`--fail-fast` bỏ phần đuôi chưa lập lịch).
+type KetQuaDonVi = Vec<Option<(String, Kq)>>;
+
+/// **VD-270**: tên gốc của ca (không hậu tố `[k/N]`) — `test fn` dùng **tên test**, fixture dùng
+/// đường dẫn hiển thị như trước.
+fn ten_goc_cua(goc: &Path, p: &Path, bai_test: Option<&(String, String)>) -> String {
+    match bai_test {
+        Some((ten_test, _)) => ten_test.clone(),
+        None => p
+            .strip_prefix(goc)
+            .unwrap_or(p)
+            .to_string_lossy()
+            .to_string(),
+    }
+}
+
+/// **VD-270**: tên in ra của **một đơn vị**; hậu tố `[k/N]` chỉ thêm khi `--repeat > 1`.
+fn ten_don_vi(ten_goc: &str, k: usize, repeat: usize) -> String {
+    if repeat > 1 {
+        format!("{ten_goc} [{k}/{repeat}]")
+    } else {
+        ten_goc.to_string()
+    }
+}
+
+/// **VD-270**: cấu hình chạy chung cho đường tuần tự và song song (gom tham số, tránh lặp).
+#[derive(Clone, Copy)]
+struct CauHinhChay<'a> {
+    goc: &'a Path,
+    vm: bool,
+    strict: bool,
+    timeout_han: Option<u64>,
+    repeat: usize,
+    jobs: usize,
+    fail_fast: bool,
+}
+
+/// **VD-270**: chạy **tuần tự** mọi đơn vị (hành vi cũ, `--jobs 1`) — `--fail-fast` dừng **trước**
+/// đơn vị kế tiếp ngay sau lần đỏ đầu; đuôi chưa chạy để `None`.
+fn chay_tuan_tu(ca: &[(PathBuf, Option<(String, String)>)], cfg: &CauHinhChay<'_>) -> KetQuaDonVi {
+    let so_don_vi = ca.len().saturating_mul(cfg.repeat);
+    let mut ra: KetQuaDonVi = (0..so_don_vi).map(|_| None).collect();
+    let mut hong = 0usize;
+    let mut don_vi = 0usize;
+    'ca: for (p, bai_test) in ca {
+        let ten_goc = ten_goc_cua(cfg.goc, p, bai_test.as_ref());
+        for k in 1..=cfg.repeat {
+            // **VD-267/VD-270**: `--fail-fast` dừng **trước** lần lặp kế tiếp ngay sau lần đỏ đầu.
+            if cfg.fail_fast && hong > 0 {
+                break 'ca;
+            }
+            let ten = ten_don_vi(&ten_goc, k, cfg.repeat);
+            let kq = chay_mot_lan(
+                don_vi,
+                p,
+                bai_test.as_ref(),
+                &ten_goc,
+                cfg.vm,
+                cfg.strict,
+                cfg.timeout_han,
+            );
+            if !kq.ok {
+                hong += 1;
+            }
+            ra[don_vi] = Some((ten, kq));
+            don_vi += 1;
+        }
+    }
+    ra
+}
+
+/// **VD-270**: chạy **song song** `jobs` đơn vị bằng `std::thread::scope` + atomic + kênh; kết quả
+/// ghi vào **đúng ô** của nó nên in ra vẫn theo thứ tự gốc.
+///
+/// `--fail-fast`: worker kiểm cờ `dung` **trước khi nhận** đơn vị mới; đơn vị đã nhận vẫn hoàn tất
+/// rồi mới gửi kết quả. Vì chỉ số phát bằng `fetch_add` nên tập đã nhận luôn là **tiền tố** của
+/// thứ tự gốc; đơn vị sau ca đỏ có thể đã kịp chạy (khác bản tuần tự), plan đếm đúng số đã chạy.
+fn chay_song_song(
+    ca: &[(PathBuf, Option<(String, String)>)],
+    cfg: &CauHinhChay<'_>,
+) -> KetQuaDonVi {
+    let so_don_vi = ca.len().saturating_mul(cfg.repeat);
+    let mut ra: KetQuaDonVi = (0..so_don_vi).map(|_| None).collect();
+    if so_don_vi == 0 {
+        return ra;
+    }
+    let tiep = AtomicUsize::new(0);
+    let dung = AtomicBool::new(false);
+    let (tx, rx) = std::sync::mpsc::channel::<(usize, String, Kq)>();
+    std::thread::scope(|s| {
+        for _ in 0..cfg.jobs.min(so_don_vi) {
+            let tx = tx.clone();
+            let tiep = &tiep;
+            let dung = &dung;
+            let cfg = *cfg;
+            s.spawn(move || loop {
+                if cfg.fail_fast && dung.load(Ordering::Acquire) {
+                    break;
+                }
+                let don_vi = tiep.fetch_add(1, Ordering::AcqRel);
+                if don_vi >= so_don_vi {
+                    break;
+                }
+                let i_ca = don_vi / cfg.repeat;
+                let k = don_vi % cfg.repeat + 1;
+                let (p, bai_test) = &ca[i_ca];
+                let ten_goc = ten_goc_cua(cfg.goc, p, bai_test.as_ref());
+                let ten = ten_don_vi(&ten_goc, k, cfg.repeat);
+                let kq = chay_mot_lan(
+                    don_vi,
+                    p,
+                    bai_test.as_ref(),
+                    &ten_goc,
+                    cfg.vm,
+                    cfg.strict,
+                    cfg.timeout_han,
+                );
+                if cfg.fail_fast && !kq.ok {
+                    dung.store(true, Ordering::Release);
+                }
+                if tx.send((don_vi, ten, kq)).is_err() {
+                    break;
+                }
+            });
+        }
+        // Đóng đầu gửi gốc: vòng nhận dưới đây kết thúc khi **mọi** worker xong.
+        drop(tx);
+        for (don_vi, ten, kq) in rx {
+            ra[don_vi] = Some((ten, kq));
+        }
+    });
+    ra
+}
+
 /// **VD-270**: object JSON của `--json`/`--json-out` (một dòng + `\n`).
 fn json_body(cases: &[CaJson], hong: usize) -> String {
     let mut ds = String::new();
@@ -524,6 +673,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut seed: Option<u64> = None;
     // **VD-270**: `--shard <I>/<N>` — chỉ chạy phần `I` của `N` phần rời nhau (1-based).
     let mut shard: Option<(usize, usize)> = None;
+    // **VD-270**: `--jobs <N>` — số worker song song; mặc định 1 (tuần tự, byte cũ).
+    let mut jobs: Option<usize> = None;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -628,6 +779,44 @@ pub fn run(args: &[String]) -> ExitCode {
                     return ExitCode::from(2);
                 }
                 shard = Some((i_shard, n_shard));
+            }
+            // **VD-270**: `--jobs <N>` — N sai (0, âm, không nguyên, thiếu) hoặc lặp cờ ⇒ exit 2,
+            // thông điệp/usage nêu `--jobs`.
+            "--jobs" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--jobs` cần số nguyên ≥ 1");
+                    return ExitCode::from(2);
+                };
+                if jobs.is_some() {
+                    eprintln!("vis test: `--jobs` lặp lại");
+                    return ExitCode::from(2);
+                }
+                let Ok(n) = v.parse::<usize>() else {
+                    eprintln!("vis test: `--jobs` cần số nguyên ≥ 1, được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if n < 1 {
+                    eprintln!("vis test: `--jobs` phải ≥ 1, được {n}");
+                    return ExitCode::from(2);
+                }
+                jobs = Some(n);
+                i += 1;
+            }
+            s if s.starts_with("--jobs=") => {
+                if jobs.is_some() {
+                    eprintln!("vis test: `--jobs` lặp lại");
+                    return ExitCode::from(2);
+                }
+                let v = &s["--jobs=".len()..];
+                let Ok(n) = v.parse::<usize>() else {
+                    eprintln!("vis test: `--jobs` cần số nguyên ≥ 1, được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if n < 1 {
+                    eprintln!("vis test: `--jobs` phải ≥ 1, được {n}");
+                    return ExitCode::from(2);
+                }
+                jobs = Some(n);
             }
             "--filter" => {
                 let Some(v) = args.get(i + 1) else {
@@ -787,43 +976,36 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut than = String::new();
     let mut hong = 0usize;
     let mut cases: Vec<CaJson> = Vec::new();
-    // **VD-270**: số **lần lặp** đã chạy — cũng là số dòng TAP / độ dài `cases`/plan.
-    let mut da_chay = 0usize;
-    'ca: for (i, (p, bai_test)) in ca.iter().enumerate() {
-        // **VD-270**: tên gốc của ca (không hậu tố) — `test fn` dùng **tên test**, fixture dùng
-        // đường dẫn hiển thị như trước; hậu tố `[k/N]` chỉ thêm khi N > 1.
-        let ten_goc = match bai_test {
-            Some((ten_test, _)) => ten_test.clone(),
-            None => p
-                .strip_prefix(&goc)
-                .unwrap_or(p)
-                .to_string_lossy()
-                .to_string(),
-        };
-        for k in 1..=repeat {
-            // **VD-267/VD-270**: `--fail-fast` dừng **trước** lần lặp kế tiếp ngay sau lần đỏ đầu.
-            if fail_fast && hong > 0 {
-                break 'ca;
-            }
-            da_chay += 1;
-            let ten = if repeat > 1 {
-                format!("{ten_goc} [{k}/{repeat}]")
-            } else {
-                ten_goc.clone()
-            };
-            let kq = chay_mot_lan(i, p, bai_test.as_ref(), &ten_goc, vm, strict, timeout_han);
-            if kq.ok {
-                than.push_str(&format!("ok {da_chay} - {ten}\n"));
-            } else {
-                hong += 1;
-                than.push_str(&format!("not ok {da_chay} - {ten}\n# {}\n", kq.chi_tiet));
-            }
-            cases.push(CaJson {
-                ten,
-                ok: kq.ok,
-                msg: kq.msg,
-            });
+    // **VD-270**: mọi đơn vị (ca × lần lặp) chạy tuần tự khi `--jobs 1` (giữ nguyên byte), song
+    // song khi `--jobs > 1`; kết quả vẫn nằm đúng ô theo **thứ tự gốc** nên phần in bên dưới
+    // không đổi thứ tự.
+    let cfg = CauHinhChay {
+        goc: &goc,
+        vm,
+        strict,
+        timeout_han,
+        repeat,
+        jobs: jobs.unwrap_or(1),
+        fail_fast,
+    };
+    let ket_qua = if cfg.jobs <= 1 {
+        chay_tuan_tu(&ca, &cfg)
+    } else {
+        chay_song_song(&ca, &cfg)
+    };
+    for (ten, kq) in ket_qua.into_iter().flatten() {
+        let so = cases.len() + 1;
+        if kq.ok {
+            than.push_str(&format!("ok {so} - {ten}\n"));
+        } else {
+            hong += 1;
+            than.push_str(&format!("not ok {so} - {ten}\n# {}\n", kq.chi_tiet));
         }
+        cases.push(CaJson {
+            ten,
+            ok: kq.ok,
+            msg: kq.msg,
+        });
     }
     let mut tap = String::new();
     tap.push_str("TAP version 13\n");
