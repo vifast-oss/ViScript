@@ -15,6 +15,7 @@ Khối ` ```python ` thật (ví dụ FizzBuzz bằng Python) không có chữ �
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -57,13 +58,17 @@ def resolve_bin(explicit: str | None) -> str:
         if not p.is_file():
             raise SystemExit(f"readme-examples: không thấy binary {p}")
         return str(p)
-    built = REPO / "target" / "debug" / "vis"
+    # Windows: binary là `vis.exe`. Nếu chỉ thử `target/debug/vis` sẽ rơi xuống shim bash ở gốc
+    # (`REPO/vis`) và `CreateProcess` báo WinError 193 (không phải PE) — đúng lỗi gặp trên psvn.
+    ten = "vis.exe" if os.name == "nt" else "vis"
+    built = REPO / "target" / "debug" / ten
     if built.is_file():
         return str(built)
-    shim = REPO / "vis"
-    if shim.is_file():
-        return str(shim)
-    raise SystemExit("readme-examples: chưa có target/debug/vis — chạy build trước")
+    if os.name != "nt":
+        shim = REPO / "vis"
+        if shim.is_file():
+            return str(shim)
+    raise SystemExit(f"readme-examples: chưa có target/debug/{ten} — chạy build trước")
 
 
 def main() -> int:
