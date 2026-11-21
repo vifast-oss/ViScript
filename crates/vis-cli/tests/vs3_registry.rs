@@ -4,7 +4,7 @@
 //!
 //! Hermetic: server loopback thật trong test (`std::net`), fixture dựng tại chỗ; **không** Internet.
 //! Ca phủ: add/install qua HTTP, hai lần add cùng byte, hash tarball sai, hash tệp sai, index thiếu
-//! gói, index 404/hỏng, `https://` bị từ chối, và `update` chọn bản mới qua HTTP.
+//! gói, index 404/hỏng, `https://` được nhận (lỗi nối TLS rõ), và `update` chọn bản mới qua HTTP.
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
@@ -505,9 +505,9 @@ fn index_hong_loi_ro() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Ca 8 — `https://` bị từ chối **rõ** (client hiện tại chưa có TLS — VS3-4), không nối mạng.
+/// Ca 8 — `https://` **được nhận**; host đóng ⇒ lỗi nối TLS rõ (không còn "chưa hỗ trợ").
 #[test]
-fn https_bi_tu_choi_ro() {
+fn https_duoc_nhan_loi_noi_tls_ro() {
     let d = tmp_dir("https");
     let (code, _out, err) = vis(
         &d,
@@ -515,6 +515,7 @@ fn https_bi_tu_choi_ro() {
     );
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("TLS"), "phải nêu TLS: {err}");
+    assert!(!err.contains("chưa hỗ trợ"), "https phải được nhận: {err}");
     assert!(!d.join(".vis").exists(), "KHÔNG được tạo .vis");
     let _ = std::fs::remove_dir_all(&d);
 }

@@ -82,6 +82,12 @@ name = "vs3_tls"
 path = "tests/vs3_tls.rs"
 required-features = ["tls"]
 
+# **VS3-W2 (VD-271)** — registry `vis pkg` qua HTTPS: server rustls local + fixture cert; cần `tls`.
+[[test]]
+name = "vs3_registry_https"
+path = "tests/vs3_registry_https.rs"
+required-features = ["tls"]
+
 # **VS3-5b (VD-271)** — chữ ký Ed25519: test ký bằng chính `ring` (feature `pkg-sig`) và chạy
 # server HTTP loopback; bỏ qua khi build core không có feature.
 [[test]]

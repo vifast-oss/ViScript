@@ -1,0 +1,226 @@
+# VS3-W2 registry HTTPS — test (2026-11-21, main 2d6ca2b)
+CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --test vs3_registry_https
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_registry_https.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/2d743128bcd37a84/out/vs3_registry_https-2d743128bcd37a84)
+
+running 6 tests
+test https_duoc_nhan_loi_noi_ro ... ok
+test https_khong_root_test_loi_ro ... ok
+test https_sai_cert_loi_ro ... ok
+test https_sai_san_van_tu_choi ... ok
+test add_qua_https_roi_cai_dung ... ok
+test add_https_co_chu_ky ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## cargo test -p vis-cli --test vs3_registry
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_registry.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/b092fc0753e5706b/out/vs3_registry-b092fc0753e5706b)
+
+running 11 tests
+test https_duoc_nhan_loi_noi_tls_ro ... ok
+test index_404_loi_ro ... ok
+test index_thieu_goi_bao_vs0704 ... ok
+test index_hong_loi_ro ... ok
+test index_thieu_tarball_sha_bi_tu_choi ... ok
+test tu_choi_hash_tarball_sai ... ok
+test manifest_hong_khong_chan_goi_khac ... ok
+test tu_choi_tep_la_trong_tarball ... ok
+test tu_choi_hash_tep_sai ... ok
+test add_qua_http_roi_install_khong_can_registry ... ok
+test update_qua_http_chon_ban_moi ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+## cargo test -p vis-cli --test vs3_registry_sig
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running tests/vs3_registry_sig.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/5e7400f6e018946f/out/vs3_registry_sig-5e7400f6e018946f)
+
+running 9 tests
+test khoa_voi_registry_cuc_bo_bi_tu_choi ... ok
+test khoa_sai_hex ... ok
+test chu_ky_sai_dinh_dang ... ok
+test thieu_chu_ky_khi_co_khoa ... ok
+test ky_sai_thi_tu_choi ... ok
+test sua_manifest_sau_ky_bi_tu_choi ... ok
+test khoa_qua_bien_moi_truong ... ok
+test khong_co_khoa_thi_bo_qua_chu_ky ... ok
+test ky_dung_thi_cai ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## cargo test -p vis-cli --test vs3_tls
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/bfbf39e1b78bd7ba/out/vs3_tls-bfbf39e1b78bd7ba)
+
+running 12 tests
+test https_chan_ha_cap_ve_http ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_head_khong_theo_redirect ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_ipv6_loopback ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.50s
+
+## cargo test -p vis-cli --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/3e524bb53a82ff90/out/vs3_keepalive-3e524bb53a82ff90)
+
+running 8 tests
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test hai_request_cung_mot_ket_noi ... ok
+test head_hai_lan_cung_mot_ket_noi ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo test -p vis-cli --test http
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/123e87a5230895ff/out/http-123e87a5230895ff)
+
+running 22 tests
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_body_rong ... ok
+test http_chunked_co_mo_rong ... ok
+test http_200_byte ... ok
+test http_404 ... ok
+test http_chunked_ba_chunk ... ok
+test http_duong_mac_dinh ... ok
+test http_gioi_han ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_head_khong_theo_redirect ... ok
+test http_het_gio ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_head_khong_doc_than ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.11s
+
+## cargo test -p vis-cli --bin vis net_quyen::tests
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.62s
+     Running unittests src/main.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/80192266d0767a14/out/vis-80192266d0767a14)
+
+running 3 tests
+test net_quyen::tests::kiem_net_khop_cap_ipv6_va_khong_noi_quyen ... ok
+test net_quyen::tests::host_cua_tach_dung_ipv4_ipv6_va_cong ... ok
+test net_quyen::tests::net_guard_kiem_cap_truoc_khi_connect ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 184 filtered out; finished in 0.00s
+
+
+
+## cargo check -p vis-cli
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s
+## cargo check -p vis-cli --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo test -p vis-cli --no-default-features --test vs3_registry
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_registry.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/26d9111070889bd9/out/vs3_registry-26d9111070889bd9)
+
+running 11 tests
+test https_duoc_nhan_loi_noi_tls_ro ... ok
+test index_404_loi_ro ... ok
+test index_hong_loi_ro ... ok
+test index_thieu_goi_bao_vs0704 ... ok
+test index_thieu_tarball_sha_bi_tu_choi ... ok
+test tu_choi_hash_tep_sai ... ok
+test tu_choi_hash_tarball_sai ... ok
+test manifest_hong_khong_chan_goi_khac ... ok
+test tu_choi_tep_la_trong_tarball ... ok
+test update_qua_http_chon_ban_moi ... ok
+test add_qua_http_roi_install_khong_can_registry ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+## cargo check -p vis-cli --target wasm32-unknown-unknown --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo clippy -p vis-cli --bin vis --test vs3_registry_https --test vs3_registry --test vs3_registry_sig -- -D warnings
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.38s
+## ./vis-dev rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+## ./bin/vis-targets
+
+=== core (vis-cli --no-default-features) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       PASS
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       PASS
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+core (vis-cli --no-default-features): PASS=18 EXPECTED_RED=0 FAIL=0
+
+=== sqlite (vis-cli default, cấu hình cũ) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       EXPECTED_RED
+  error: failed to run custom build command for `ring v0.17.14`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       EXPECTED_RED
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+sqlite (vis-cli default, cấu hình cũ): PASS=16 EXPECTED_RED=2 FAIL=0
+vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)
+
+## thủ công có Internet: vis pkg add --registry https://example.com (chỉ kiểm TLS/root store)
+vis pkg: không tải được index registry `https://example.com/index.json`: HTTP 404
+
+## cargo check -p vis-cli --release
+    Finished `release` profile [optimized] target(s) in 0.04s
