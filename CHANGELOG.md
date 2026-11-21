@@ -5,6 +5,8 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Unreleased (sau v0.3.3)
 
+- **Windows async net/TLS/HTTP-1.1**: backend `mio::Source` trực tiếp (IOCP/AFD), `la_would_block` 10035/10036, invariant `host_poll`; psvn **22/22 + 22/22 ×10**, workspace **3496/0 ×2**, host 54/54; flake test-only `tcp_explain_tong` (10053) fixed; async-h2 vẫn Unix-only.
+- **Evaluator ↔ worker prototype**: `Hir`/`Module`/`SendValue` Send+Sync; 10k job W=1/W=4 byte-identical, **13.070.000 job** soak 600 s, RSS 14,5 MB phẳng, threads 1, fd 4; chưa nối production.
 - **Async HTTP/2 (feature `async-h2`, default-off)**: **known issue**: cap 8 MiB hot-spin (VS0501 / rơi h1) sau ~800 vòng soak; đang sửa, chưa bật default. `H2Core` dùng chung sync+async; `H<n>` nhiều frame/1 session; **cold-start 4 stream/1 connection** (300/300 vòng), cap 8 MiB, timeout/GOAWAY/redirect, fallback h1; **Set-Cookie response** lưu cho cả h1/h2; sync **19/19**, feature **32/32 + 1 ignored (fd 5→5)**.
 - **Worker `spawn_shared` (opt-in/test-only)**: task giữ `Arc<SendValue>` read-only, không deep clone; map1k 5,62 ms vs producer 24,63 ms, list10k 5,25 vs 16,19 ms; API cũ/default không đổi.
 - **Windows test flake** `net::tcp_explain_tong` (RST 10054) fixed test-only ở bản trước; psvn 3/3 3469/0 trên v0.3.3.

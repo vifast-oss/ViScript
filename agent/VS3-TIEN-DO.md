@@ -48,8 +48,8 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a + fuzz | **DONE (một phần)** — async default+cap+net+TLS+HTTP Unix **và Windows** (W4, 10 vòng psvn); fuzz 4h chạy trên d1f8f70 |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b6 | **DONE** — h2 100 vòng v0.3.3; async-h2 production default-off (29 pass) |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA)** — soak 10/10 v0.3.3 646 s; nightly 13,7M fuzz 0; fresh-clone PASS; đang 20× soak |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CLI + verify | **DONE (v0.3.3)** — 3/3 3469/0, H2 19/19 debug+release, host 54/54; đang 5 vòng |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — `spawn_shared` + 100 vòng 6M spawn; soak hỗn hợp 30 phút; chưa nối evaluator |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CLI + async net | **DONE (Windows async net/TLS)** — `12e961c`; 22/22+22/22×10, workspace 3496/0×2, host 54/54; async-h2 Unix-only |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b + evaluator | **DONE (prototype)** — `spawn_shared` 6M spawn; evaluator 13M job; plan P1; chưa nối production |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
