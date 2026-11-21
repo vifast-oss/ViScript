@@ -1,0 +1,27 @@
+# VS3-W2 cap fix + cold-wake — log
+# target dir: $PWD/target/w2 (isolated; không dùng target chung)
+# branch vs3/w2-tls, main fdd9e88
+
+=== Cap 2000 x2 (release, debug-assertions=true) ===
+cap loop: 2000/2000 PASS              (lần 1, 305 s)
+cap loop: 2000/2000 PASS              (lần 2, 376 s)
+
+=== Cold 1000 vòng song song (full feature suite parallel) ===
+VS3_W2_COLD_ROUNDS=1000 cargo test -p vis-cli --features async-h2 --test vs3_http2
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 44.61s
+(cold test assert conns=1000, streams=4000)
+
+=== Feature suite song song x3 + serial ===
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 15.94s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 15.99s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 16.10s
+test result: ok. 34 passed; 0 failed; 1 ignored; finished in 51.07s   (--test-threads=1)
+
+=== Khác ===
+default vs3_http2: 19 passed
+feature vs3_default: 22 passed
+feature vs3_tls: 21 passed
+fmt: OK; clippy workspace/all-targets: OK; clippy feature async-h2: OK
+./vis-dev check: PASS
+R1: async_net.rs 1490, h2 176, nguon 312, host 111, support 987
+df: 12 G trống

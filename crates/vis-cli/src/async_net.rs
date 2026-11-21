@@ -28,6 +28,7 @@ mod nguon_impl;
 
 use host_impl::loopback_addr;
 pub use host_impl::AsyncNetHost;
+use nguon_impl::interest_tu_huong;
 use nguon_impl::la_would_block;
 #[cfg(feature = "tls")]
 use nguon_impl::{cho_san_sang, LoiChoSanSang};
@@ -45,7 +46,7 @@ use rustls::pki_types::ServerName;
 #[cfg(feature = "tls")]
 use rustls::{ClientConfig, ClientConnection};
 
-use mio::{Events, Interest, Poll, Token};
+use mio::{Events, Interest, Poll, Token, Waker};
 
 use vis_interp::builtin::NetHost;
 #[cfg(feature = "async-h2")]
@@ -108,6 +109,12 @@ pub struct AsyncNet {
     next_h2: u32,
     poll: Poll,
     events: Events,
+    /// Waker để đánh thức `wait` khi một frame h2 vừa lái session và làm xong stream
+    /// của frame khác (không còn readiness socket nào để wake tự nhiên).
+    #[allow(dead_code)] // chỉ dùng khi feature async-h2 bật
+    waker: Waker,
+    /// Khoá nguồn cần phát event tổng hợp ngay ở `wait` kế tiếp.
+    wake_nguon: HashSet<String>,
     /// Poll riêng cho các lời gọi host đồng bộ (`http.get/head`) trên kênh TLS; không dùng chung
     /// token với reactor để không đụng đăng ký của scheduler.
     #[cfg(feature = "tls")]
@@ -115,15 +122,13 @@ pub struct AsyncNet {
     #[cfg(feature = "tls")]
     host_events: Events,
     tokens: HashMap<u64, String>,
-    /// **VS3-W2 / Windows** — token scheduler → **khoá nguồn canonical** (`khoa_thuc`), và
-    /// khoá nguồn → mọi token cùng chờ. Nhờ vậy nhiều frame cùng chờ một connection h2 không
-    /// ghi đè registration của nhau, không cần fd thô (Windows không có `SourceFd`).
+    /// Token scheduler → khoá nguồn canonical; khoá nguồn → mọi token cùng chờ.
     token_nguon: HashMap<u64, String>,
     nguon_tokens: HashMap<String, HashSet<u64>>,
     /// Khoá nguồn → token nội bộ của `Poll` (một registration cho mỗi socket).
     poll_token: HashMap<String, usize>,
     poll_nguon: HashMap<usize, String>,
-    nguon_wants: HashMap<String, (bool, bool)>,
+    token_wants: HashMap<u64, (bool, bool)>,
     next_poll: usize,
     /// `N:<addr>` đã khởi tạo connect, chờ WRITABLE/kiểm SO_ERROR.
     connects: HashSet<String>,
@@ -135,6 +140,8 @@ pub struct AsyncNet {
 
 impl AsyncNet {
     pub fn new(giai_thich: bool) -> Self {
+        let poll = Poll::new().expect("mio::Poll::new");
+        let waker = Waker::new(poll.registry(), Token(usize::MAX)).expect("mio::Waker");
         Self {
             streams: HashMap::new(),
             listeners: HashMap::new(),
@@ -158,8 +165,10 @@ impl AsyncNet {
             h2_idle: HashMap::new(),
             #[cfg(feature = "async-h2")]
             next_h2: 0,
-            poll: Poll::new().expect("mio::Poll::new"),
+            poll,
             events: Events::with_capacity(128),
+            waker,
+            wake_nguon: HashSet::new(),
             #[cfg(feature = "tls")]
             host_poll: Poll::new().expect("mio::Poll::new (host TLS)"),
             #[cfg(feature = "tls")]
@@ -169,7 +178,7 @@ impl AsyncNet {
             nguon_tokens: HashMap::new(),
             poll_token: HashMap::new(),
             poll_nguon: HashMap::new(),
-            nguon_wants: HashMap::new(),
+            token_wants: HashMap::new(),
             next_poll: 0,
             connects: HashSet::new(),
             writes: HashMap::new(),
@@ -1270,7 +1279,22 @@ impl FrameReactorBackend for AsyncNet {
         let doc_hoac_ghi =
             key.starts_with(FRAME_NET_CONNECT) || key.starts_with(FRAME_NET_WRITE) || la_tls_noi;
         let (want_doc, want_ghi) = match op {
-            ReactorOp::ReadWrite => (true, true),
+            ReactorOp::ReadWrite => {
+                #[cfg(feature = "async-h2")]
+                {
+                    if let Some(p) = self.h2.get(&tra) {
+                        let i = p.interest();
+                        (i.is_readable(), i.is_writable())
+                    } else {
+                        (true, false)
+                    }
+                }
+                #[cfg(not(feature = "async-h2"))]
+                {
+                    let _ = &tra;
+                    (true, false)
+                }
+            }
             _ => {
                 #[cfg(feature = "tls")]
                 if la_tls_noi {
@@ -1293,41 +1317,36 @@ impl FrameReactorBackend for AsyncNet {
                 }
             }
         };
-        // Gộp interest theo **khoá nguồn canonical**: nhiều frame cùng chờ một connection h2
-        // dùng chung một registration (một đối tượng mio, một `Poll`).
-        let (er, ew) = self
-            .nguon_wants
+        self.token_nguon.insert(token, tra.clone());
+        self.nguon_tokens
             .entry(tra.clone())
-            .or_insert((false, false));
-        *er |= want_doc;
-        *ew |= want_ghi;
-        let interest = match (*er, *ew) {
-            (true, true) => Interest::READABLE | Interest::WRITABLE,
-            (false, true) => Interest::WRITABLE,
-            _ => Interest::READABLE,
-        };
+            .or_default()
+            .insert(token);
+        self.token_wants.insert(token, (want_doc, want_ghi));
+        let (er, ew) = self.interest_cua_nguon(&tra);
+        let interest = interest_tu_huong(er, ew);
         if let Some(&ep) = self.poll_token.get(&tra) {
             if let Err(e) = self.dang_ky_lai_nguon(&tra, Token(ep), interest) {
+                self.bo_token(token);
                 return Err(format!("register `{tra}` thất bại: {e}"));
             }
         } else {
             let ep = self.next_poll;
             self.next_poll += 1;
             if let Err(e) = self.dang_ky_nguon(&tra, Token(ep), interest) {
-                self.nguon_wants.remove(&tra);
+                self.bo_token(token);
                 return Err(format!("register `{tra}` thất bại: {e}"));
             }
             self.poll_token.insert(tra.clone(), ep);
             self.poll_nguon.insert(ep, tra.clone());
         }
-        self.token_nguon.insert(token, tra.clone());
-        self.nguon_tokens.entry(tra).or_default().insert(token);
         self.tokens.insert(token, handle.to_string());
         Ok(())
     }
 
     fn deregister(&mut self, token: u64, _handle: &str, _op: ReactorOp) -> Result<(), String> {
         self.tokens.remove(&token);
+        self.token_wants.remove(&token);
         let Some(tra) = self.token_nguon.remove(&token) else {
             return Ok(());
         };
@@ -1340,13 +1359,20 @@ impl FrameReactorBackend for AsyncNet {
         };
         if !con_lai {
             self.nguon_tokens.remove(&tra);
-            self.nguon_wants.remove(&tra);
             if let Some(ep) = self.poll_token.remove(&tra) {
                 self.poll_nguon.remove(&ep);
                 match self.huy_nguon(&tra) {
                     Ok(()) => {}
                     Err(e) if e.kind() == ErrorKind::NotFound => {}
                     Err(e) => return Err(format!("deregister `{tra}` thất bại: {e}")),
+                }
+            }
+        } else {
+            // Còn token khác: thu hẹp interest về đúng nhu cầu còn lại.
+            let (er, ew) = self.interest_cua_nguon(&tra);
+            if let Some(&ep) = self.poll_token.get(&tra) {
+                if let Err(e) = self.dang_ky_lai_nguon(&tra, Token(ep), interest_tu_huong(er, ew)) {
+                    return Err(format!("deregister `{tra}` thất bại: {e}"));
                 }
             }
         }
@@ -1382,49 +1408,29 @@ impl FrameReactorBackend for AsyncNet {
                 }
             }
         }
+        // Frame vừa poll h2 có thể đã hoàn tất stream của frame khác; phát event tổng hợp
+        // cho mọi token cùng nguồn để không mất wake.
+        for key in std::mem::take(&mut self.wake_nguon) {
+            if let Some(ds) = self.nguon_tokens.get(&key) {
+                for t in ds {
+                    if da_co.insert(*t) {
+                        out.push(ReactorRawEvent {
+                            token: *t,
+                            readable: true,
+                            hup: false,
+                            error: false,
+                        });
+                    }
+                }
+            }
+        }
         Ok(out)
     }
 
     fn close(&mut self, handle: &str) -> Result<(), String> {
         #[cfg(feature = "async-h2")]
-        if handle.starts_with(FRAME_TLS_CONNECT) {
-            if let Some(ck) = self.tls_alias.remove(handle) {
-                if !self.tls_alias.values().any(|v| *v == ck) {
-                    self.tls_connects.remove(&ck);
-                }
-            } else {
-                self.tls_connects.remove(handle);
-            }
-            self.streams.remove(handle);
-            self.listeners.remove(handle);
-            self.connects.remove(handle);
-            let keys: Vec<u64> = self
-                .tokens
-                .iter()
-                .filter(|(_, k)| k.as_str() == handle)
-                .map(|(t, _)| *t)
-                .collect();
-            for t in keys {
-                let _ = <Self as FrameReactorBackend>::deregister(self, t, handle, ReactorOp::Read);
-            }
-            self.writes.retain(|_, w| w.tay != handle);
-            self.bo_sach_nguon(handle);
+        if self.dong_h2(handle) {
             return Ok(());
-        }
-        #[cfg(feature = "async-h2")]
-        if self.h2.contains_key(Self::h2_base(handle)) {
-            let base = Self::h2_base(handle).to_string();
-            let con_lai = match self.h2_users.get_mut(&base) {
-                Some(n) => {
-                    *n = n.saturating_sub(1);
-                    *n
-                }
-                None => 0,
-            };
-            if con_lai == 0 {
-                // Giữ phiên idle cho request sau (pool async); dọn khi quá H2_IDLE lúc connect.
-                self.h2_idle.insert(base.clone(), Instant::now());
-            }
         }
         self.streams.remove(handle);
         self.listeners.remove(handle);

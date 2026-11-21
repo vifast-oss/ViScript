@@ -67,7 +67,45 @@ fn nguon_tcp<'a>(
     listeners.get_mut(key).map(Nguon::Listen)
 }
 
+/// Đổi cờ hướng chờ sang `mio::Interest`; luôn có ít nhất READABLE.
+pub(super) fn interest_tu_huong(doc: bool, ghi: bool) -> Interest {
+    match (doc, ghi) {
+        (true, true) => Interest::READABLE | Interest::WRITABLE,
+        (false, true) => Interest::WRITABLE,
+        _ => Interest::READABLE,
+    }
+}
+
 impl AsyncNet {
+    /// Hợp interest **hiện tại** của mọi token còn chờ trên khoá nguồn `key`.
+    pub(super) fn interest_cua_nguon(&self, key: &str) -> (bool, bool) {
+        let mut doc = false;
+        let mut ghi = false;
+        if let Some(ds) = self.nguon_tokens.get(key) {
+            for t in ds {
+                if let Some((r, w)) = self.token_wants.get(t) {
+                    doc |= *r;
+                    ghi |= *w;
+                }
+            }
+        }
+        (doc, ghi)
+    }
+
+    /// Gỡ token khỏi sổ (dùng khi register lỗi) — không đụng epoll.
+    pub(super) fn bo_token(&mut self, token: u64) {
+        self.tokens.remove(&token);
+        self.token_wants.remove(&token);
+        if let Some(tra) = self.token_nguon.remove(&token) {
+            if let Some(ds) = self.nguon_tokens.get_mut(&tra) {
+                ds.remove(&token);
+                if ds.is_empty() {
+                    self.nguon_tokens.remove(&tra);
+                }
+            }
+        }
+    }
+
     /// Socket `tay` có đang được **reactor** đăng ký không?
     ///
     /// **Windows**: một `mio::net::TcpStream`/`TcpListener` chỉ thuộc **một** `Poll`; host call
@@ -197,14 +235,6 @@ impl AsyncNet {
                 self.token_nguon.insert(t, moi.to_string());
             }
         }
-        if let Some(w) = self.nguon_wants.remove(cu) {
-            let e = self
-                .nguon_wants
-                .entry(moi.to_string())
-                .or_insert((false, false));
-            e.0 |= w.0;
-            e.1 |= w.1;
-        }
         if let Some(ep) = self.poll_token.remove(cu) {
             self.poll_token.insert(moi.to_string(), ep);
             self.poll_nguon.insert(ep, moi.to_string());
@@ -213,13 +243,13 @@ impl AsyncNet {
 
     /// Dọn sổ sách của một khoá nguồn **đã bị drop** (không gọi deregister trên đối tượng).
     pub(super) fn bo_sach_nguon(&mut self, key: &str) {
-        self.nguon_wants.remove(key);
         if let Some(ep) = self.poll_token.remove(key) {
             self.poll_nguon.remove(&ep);
         }
         if let Some(ds) = self.nguon_tokens.remove(key) {
             for t in ds {
                 self.token_nguon.remove(&t);
+                self.token_wants.remove(&t);
             }
         }
     }
