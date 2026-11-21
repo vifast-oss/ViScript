@@ -33,7 +33,8 @@ impl<'a> Checker<'a> {
     }
 
     /// Phương thức kênh: `send(v)` đòi khớp `T` (**`VS0412` tĩnh**), `recv()` ⇒ `T?`, `close()` ⇒
-    /// `()`; tên khác ⇒ `None` (đường chung báo `VS0403` như mọi kiểu không phải bản ghi).
+    /// `()`; **VS3-2b**: `recv_timeout(ms)` ⇒ `T?`, `send_timeout(ms, v)` ⇒ `bool` (ms phải `int`;
+    /// âm là lỗi lúc chạy `VS0501`). Tên khác ⇒ `None` (đường chung báo `VS0403`).
     pub(super) fn kiem_chan_method(
         &mut self,
         c_args: &[Type],
@@ -52,6 +53,19 @@ impl<'a> Checker<'a> {
             "recv" => {
                 self.arity(args, 0, name, span);
                 Some(Type::Opt(Box::new(t)))
+            }
+            // Hợp đồng VS3-2b: None = timeout **hoặc** kênh đóng (không phân biệt).
+            "recv_timeout" => {
+                self.arity(args, 1, name, span);
+                self.arg_ty(arg_tys, 0, &Type::Int, name, args, span);
+                Some(Type::Opt(Box::new(t)))
+            }
+            // Hợp đồng VS3-2b: false = timeout **hoặc** kênh đóng.
+            "send_timeout" => {
+                self.arity(args, 2, name, span);
+                self.arg_ty(arg_tys, 0, &Type::Int, name, args, span);
+                self.arg_ty(arg_tys, 1, &t, name, args, span);
+                Some(Type::Bool)
             }
             "close" => {
                 self.arity(args, 0, name, span);
