@@ -52,6 +52,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-1d (async default)**: chương trình có `async fn` chạy frame runtime (interp/VM), sync giữ nguyên; Pipe parity; guard 200k trap rõ; cache warm/cold; 7 ca `vs3_default` + sem 525 ×2; merge `78527a4`.
 - **2026-11-21** — **VS3-4b2 (HTTP/2)**: feature `http2` default-off; `h2`+tokio io-util, ALPN h2, fallback HTTP/1.1 cùng kết nối; 5 ca h2 + 12 TLS; không default/wasm; merge `55d3489`.
 - **2026-11-21** — **VS3-1c (coverage HIR)**: ma trận 10 ca HIR→frame; sửa lỗi `?.` mất một lớp Option trên frame interp; `Pipe`/nested async là blocker 1d; merge `ccecc97`.
 - **2026-11-21** — **VS3-4d (cookie/auth)**: cookie jar nội bộ (Path/Domain/Secure/Max-Age/Expires, 64 cookie/4096 B), giữ qua redirect cùng host; Basic auth qua userinfo không lộ credential; 9 ca hermetic; merge `cdbd8e0`.
