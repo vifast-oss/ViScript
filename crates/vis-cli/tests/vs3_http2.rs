@@ -876,3 +876,346 @@ fn h2_timeout_giua_body_va_cleanup() {
         s.so_ket_noi()
     );
 }
+
+/// **VS3-W2 spike** — HTTP/2 reactor-native (`feature = "h2-async-spike"`, default-off).
+/// Chỉ chạy khi bật feature; 19 test sync phía trên không đổi.
+#[cfg(feature = "h2-async-spike")]
+mod h2_async_spike {
+    use super::*;
+    use std::fs;
+    use vis_cli::net::h2_async::{h2_get_async_voi_goc, phien_voi_goc};
+
+    #[derive(Clone, Copy)]
+    enum Kieu {
+        Thuong,
+        Cho4,
+        GoAway,
+        Treo,
+    }
+
+    struct MayChuSpike {
+        addr: String,
+        stop: Arc<AtomicBool>,
+        conns: Arc<AtomicUsize>,
+        streams: Arc<AtomicUsize>,
+        handle: Option<std::thread::JoinHandle<()>>,
+    }
+
+    impl MayChuSpike {
+        fn moi(kieu: Kieu) -> Self {
+            let l = TcpListener::bind("127.0.0.1:0").expect("bind");
+            l.set_nonblocking(true).expect("nonblocking");
+            let addr = l.local_addr().expect("addr").to_string();
+            let stop = Arc::new(AtomicBool::new(false));
+            let stop2 = Arc::clone(&stop);
+            let conns = Arc::new(AtomicUsize::new(0));
+            let conns2 = Arc::clone(&conns);
+            let streams = Arc::new(AtomicUsize::new(0));
+            let streams2 = Arc::clone(&streams);
+            let handle = std::thread::spawn(move || {
+                while !stop2.load(Ordering::Relaxed) {
+                    match l.accept() {
+                        Ok((tcp, _)) => {
+                            conns2.fetch_add(1, Ordering::SeqCst);
+                            let _ = serve_spike(tcp, kieu, Arc::clone(&streams2));
+                        }
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            std::thread::sleep(Duration::from_millis(2));
+                        }
+                        Err(_) => break,
+                    }
+                }
+            });
+            Self {
+                addr,
+                stop,
+                conns,
+                streams,
+                handle: Some(handle),
+            }
+        }
+
+        fn url(&self, path: &str) -> String {
+            format!("https://{}{path}", self.addr)
+        }
+
+        fn conns(&self) -> usize {
+            self.conns.load(Ordering::SeqCst)
+        }
+
+        fn streams(&self) -> usize {
+            self.streams.load(Ordering::SeqCst)
+        }
+    }
+
+    impl Drop for MayChuSpike {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::Relaxed);
+            if let Some(h) = self.handle.take() {
+                let _ = h.join();
+            }
+        }
+    }
+
+    fn serve_spike(tcp: TcpStream, kieu: Kieu, streams: Arc<AtomicUsize>) -> io::Result<()> {
+        tcp.set_nonblocking(false)?;
+        tcp.set_read_timeout(Some(Duration::from_secs(5)))?;
+        tcp.set_write_timeout(Some(Duration::from_secs(5)))?;
+        let conn = ServerConnection::new(cau_hinh_tls(true)).map_err(io::Error::other)?;
+        let s = StreamOwned::new(conn, tcp);
+        s.sock.set_nonblocking(true)?;
+        let io = Adapter {
+            s,
+            han: Instant::now() + Duration::from_secs(30),
+        };
+        let mut conn = cho(::h2::server::handshake(io))
+            .map_err(|e| io::Error::other(format!("h2 server: {e}")))?;
+        let w = Waker::noop();
+        let mut cx = Context::from_waker(w);
+        match kieu {
+            Kieu::Thuong => loop {
+                match conn.poll_accept(&mut cx) {
+                    Poll::Ready(Some(Ok((req, mut respond)))) => {
+                        streams.fetch_add(1, Ordering::SeqCst);
+                        let head = req.method() == http::Method::HEAD;
+                        let path = req.uri().path().to_string();
+                        let body: Vec<u8> = if path == "/big" {
+                            vec![b'z'; 8 * 1024 * 1024 + 1]
+                        } else if path == "/hello" {
+                            b"hello".to_vec()
+                        } else {
+                            path.into_bytes()
+                        };
+                        let resp = Response::builder()
+                            .status(200)
+                            .body(())
+                            .map_err(io::Error::other)?;
+                        let mut send = respond
+                            .send_response(resp, head)
+                            .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
+                        if !head {
+                            gui_than(&mut send, &body, true)?;
+                        }
+                    }
+                    Poll::Ready(Some(Err(e))) => {
+                        return Err(io::Error::other(format!("h2 accept: {e}")))
+                    }
+                    Poll::Ready(None) => return Ok(()),
+                    Poll::Pending => std::thread::yield_now(),
+                }
+            },
+            Kieu::Cho4 => {
+                // Nhận đủ 4 stream TRƯỚC khi trả bất kỳ response nào ⇒ chứng minh in-flight.
+                let mut ds = Vec::new();
+                let han = Instant::now() + Duration::from_secs(10);
+                while ds.len() < 4 {
+                    if Instant::now() >= han {
+                        return Err(io::Error::other("server không nhận đủ 4 stream"));
+                    }
+                    match conn.poll_accept(&mut cx) {
+                        Poll::Ready(Some(Ok(x))) => {
+                            streams.fetch_add(1, Ordering::SeqCst);
+                            ds.push(x);
+                        }
+                        Poll::Ready(Some(Err(e))) => {
+                            return Err(io::Error::other(format!("h2 accept: {e}")))
+                        }
+                        Poll::Ready(None) => return Ok(()),
+                        Poll::Pending => std::thread::yield_now(),
+                    }
+                }
+                // Trả ngược thứ tự để client không thể dựa vào thứ tự stream.
+                for (req, mut respond) in ds.into_iter().rev() {
+                    let body = Bytes::from(req.uri().path().as_bytes().to_vec());
+                    let resp = Response::builder()
+                        .status(200)
+                        .body(())
+                        .map_err(io::Error::other)?;
+                    let mut send = respond
+                        .send_response(resp, false)
+                        .map_err(|e| io::Error::other(format!("h2 response: {e}")))?;
+                    send.send_data(body, true)
+                        .map_err(|e| io::Error::other(format!("h2 data: {e}")))?;
+                }
+                loop {
+                    match conn.poll_closed(&mut cx) {
+                        Poll::Ready(_) => return Ok(()),
+                        Poll::Pending => std::thread::yield_now(),
+                    }
+                }
+            }
+            Kieu::GoAway => {
+                // GOAWAY ngay sau handshake, trước khi accept stream nào: last_stream_id = 0.
+                conn.abrupt_shutdown(::h2::Reason::INTERNAL_ERROR);
+                let han = Instant::now() + Duration::from_secs(2);
+                while Instant::now() < han {
+                    match conn.poll_closed(&mut cx) {
+                        Poll::Ready(_) => break,
+                        Poll::Pending => std::thread::yield_now(),
+                    }
+                }
+                // Giữ socket thêm một nhịp để GOAWAY đã xếp hàng tới client trước FIN/RST.
+                std::thread::sleep(Duration::from_millis(100));
+                Ok(())
+            }
+            Kieu::Treo => loop {
+                match conn.poll_closed(&mut cx) {
+                    Poll::Ready(_) => return Ok(()),
+                    Poll::Pending => std::thread::yield_now(),
+                }
+            },
+        }
+    }
+
+    fn dem_fd() -> usize {
+        fs::read_dir("/proc/self/fd")
+            .map(|d| d.count())
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn async_h2_get_va_head() {
+        let s = MayChuSpike::moi(Kieu::Thuong);
+        let kq = h2_get_async_voi_goc(&s.url("/hello"), 5_000, &[CERT]).expect("GET async h2");
+        assert_eq!(kq.status, 200);
+        assert_eq!(kq.body, b"hello");
+        assert_eq!(s.conns(), 1);
+
+        let mut p = phien_voi_goc(&s.addr, 5_000, &[CERT]).expect("phiên h2");
+        let id = p.gui("HEAD", "/hello", &[]).expect("gửi HEAD");
+        p.tai(5_000).expect("HEAD xong");
+        let kq = p.ket_qua(id).expect("có kết quả").expect("HEAD ok");
+        assert_eq!(kq.status, 200);
+        assert!(kq.body.is_empty(), "HEAD không có body");
+        assert_eq!(s.streams(), 2);
+    }
+
+    #[test]
+    fn async_h2_bon_stream_mot_connection() {
+        let s = MayChuSpike::moi(Kieu::Cho4);
+        let mut p = phien_voi_goc(&s.addr, 5_000, &[CERT]).expect("phiên h2");
+        let ids: Vec<u64> = (0..4)
+            .map(|i| p.gui("GET", &format!("/{i}"), &[]).expect("gửi"))
+            .collect();
+        let bat = Instant::now();
+        p.tai(5_000).expect("4 stream xong");
+        eprintln!(
+            "4 stream/1 connection: {:.2} ms, connection={}, stream={}",
+            bat.elapsed().as_secs_f64() * 1_000.0,
+            s.conns(),
+            s.streams()
+        );
+        for (i, id) in ids.into_iter().enumerate() {
+            let kq = p.ket_qua(id).expect("có kết quả").expect("stream ok");
+            assert_eq!(kq.body, format!("/{i}").into_bytes(), "stream {i}");
+        }
+        assert_eq!(s.conns(), 1, "chỉ một connection");
+        assert_eq!(s.streams(), 4, "server nhận đủ 4 stream trước khi trả");
+    }
+
+    #[test]
+    fn async_h2_goaway_loi_ro() {
+        let s = MayChuSpike::moi(Kieu::GoAway);
+        let mut p = phien_voi_goc(&s.addr, 5_000, &[CERT]).expect("phiên h2");
+        let bat = Instant::now();
+        // GOAWAY có thể tới trước hoặc sau khi request được xếp; cả hai đều phải lỗi rõ,
+        // không được treo và không được "thành công im lặng".
+        let id = match p.gui("GET", "/x", &[]) {
+            Ok(id) => id,
+            Err(e) => {
+                assert!(
+                    e.contains("GOAWAY") || e.contains("HTTP/2"),
+                    "lỗi phải rõ: {e}"
+                );
+                return;
+            }
+        };
+        let kq = match p.tai(3_000) {
+            Ok(()) => p.ket_qua(id).expect("có kết quả").map(|_| ()),
+            Err(e) => Err(e),
+        };
+        let e = kq.expect_err("GOAWAY phải lỗi");
+        eprintln!("GOAWAY: {e}");
+        assert!(e.contains("GOAWAY"), "lỗi phải nêu GOAWAY: {e}");
+        assert!(
+            !e.contains("quá thời gian") && bat.elapsed() < Duration::from_secs(3),
+            "GOAWAY phải được reactor đánh thức, không chờ hết hạn: {e}"
+        );
+    }
+
+    #[test]
+    fn async_h2_timeout_khong_treo() {
+        let s = MayChuSpike::moi(Kieu::Treo);
+        let bat = Instant::now();
+        let e = h2_get_async_voi_goc(&s.url("/x"), 400, &[CERT])
+            .map(|_| ())
+            .expect_err("phải timeout");
+        eprintln!(
+            "timeout sau {:.1} ms: {e}",
+            bat.elapsed().as_secs_f64() * 1_000.0
+        );
+        assert!(e.contains("thời gian"), "lỗi phải rõ: {e}");
+        assert!(bat.elapsed() < Duration::from_secs(3), "không treo: {e}");
+    }
+
+    #[test]
+    fn async_h2_cap_body() {
+        let s = MayChuSpike::moi(Kieu::Thuong);
+        let bat = Instant::now();
+        let e = h2_get_async_voi_goc(&s.url("/big"), 30_000, &[CERT])
+            .map(|_| ())
+            .expect_err("body vượt 8 MiB phải lỗi");
+        eprintln!(
+            "cap body sau {:.1} ms: {e}",
+            bat.elapsed().as_secs_f64() * 1_000.0
+        );
+        assert!(
+            e.contains("8 MiB") || e.contains("vượt giới hạn") || e.contains("HTTP/2"),
+            "lỗi phải rõ: {e}"
+        );
+        assert!(bat.elapsed() < Duration::from_secs(30), "không treo");
+        let kq = h2_get_async_voi_goc(&s.url("/hello"), 5_000, &[CERT])
+            .expect("request sau lỗi cap vẫn chạy");
+        assert_eq!(kq.body, b"hello");
+    }
+
+    /// `/proc/self/fd` là **process-wide**, nên phép đếm phải chạy trong tiến trình con
+    /// riêng; chạy song song với 24 test khác sẽ đếm cả fd của chúng (không phải rò của spike).
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn async_h2_timeout_lap_khong_ro_fd() {
+        let exe = std::env::current_exe().expect("current_exe");
+        let out = std::process::Command::new(exe)
+            .args([
+                "--exact",
+                "h2_async_spike::async_h2_timeout_lap_khong_ro_fd_con",
+                "--ignored",
+                "--nocapture",
+            ])
+            .output()
+            .expect("chạy tiến trình con");
+        assert!(
+            out.status.success(),
+            "tiến trình con FAIL:\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&out.stdout),
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "chạy trong tiến trình con bởi async_h2_timeout_lap_khong_ro_fd"]
+    fn async_h2_timeout_lap_khong_ro_fd_con() {
+        let s = MayChuSpike::moi(Kieu::Treo);
+        let truoc = dem_fd();
+        for _ in 0..20 {
+            let e = h2_get_async_voi_goc(&s.url("/x"), 150, &[CERT])
+                .map(|_| ())
+                .expect_err("timeout");
+            assert!(e.contains("thời gian"), "lỗi phải rõ: {e}");
+        }
+        let sau = dem_fd();
+        eprintln!("fd sau 20 timeout: {truoc} -> {sau}");
+        assert!(sau <= truoc + 4, "rò fd sau 20 timeout: {truoc} -> {sau}");
+    }
+}

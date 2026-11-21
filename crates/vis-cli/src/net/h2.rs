@@ -29,9 +29,9 @@ use vis_interp::net::MAX_HTTP;
 use super::tls::{self, CauHinh, KenhTls};
 
 /// Cap header phản hồi HTTP/2 (cùng ngưỡng HTTP/1.1 64 KiB) để server không làm phình bộ nhớ.
-const MAX_HEADER: usize = 64 * 1024;
+pub(super) const MAX_HEADER: usize = 64 * 1024;
 
-fn loi_h2(e: &::h2::Error, viec: &str) -> String {
+pub(super) fn loi_h2(e: &::h2::Error, viec: &str) -> String {
     let loai = if e.is_go_away() {
         "GOAWAY"
     } else if e.is_reset() {

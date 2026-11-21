@@ -23,6 +23,14 @@ use vis_interp::cookie::CookieJar;
 
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
 mod h2;
+/// **VS3-W2 spike** — HTTP/2 reactor-native, feature `h2-async-spike` (default-off).
+#[cfg(all(
+    feature = "h2-async-spike",
+    feature = "http2",
+    feature = "tls",
+    not(target_arch = "wasm32")
+))]
+pub mod h2_async;
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
 pub(crate) mod tls;
 
