@@ -37,7 +37,7 @@ use mio::{Events, Interest, Poll, Token};
 
 use vis_interp::builtin::NetHost;
 use vis_interp::rt::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
-use vis_interp::stdlib::{FRAME_NET_CONNECT, FRAME_NET_WRITE, NET_READ_CAP};
+use vis_interp::stdlib::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT, NET_READ_CAP};
 
 struct WriteState {
     tay: String,
@@ -52,12 +52,24 @@ struct TlsChan {
     sock: MioStream,
 }
 
+/// **VS3-1d/W1f-HTTP** — TLS connect đang chạy trên reactor (`T:<addr>`):
+/// TCP nonblocking trước, rồi handshake rustls; `interest` quyết định chiều chờ kế tiếp.
+#[cfg(feature = "tls")]
+struct DangTls {
+    sock: MioStream,
+    conn: Option<ClientConnection>,
+    interest: Interest,
+    dia_chi: String,
+}
+
 /// Host mạng production cho đường async + backend reactor của nó (cùng một đối tượng).
 pub struct AsyncNet {
     streams: HashMap<String, MioStream>,
     listeners: HashMap<String, MioListener>,
     #[cfg(feature = "tls")]
     tls: HashMap<String, TlsChan>,
+    #[cfg(feature = "tls")]
+    tls_connects: HashMap<String, DangTls>,
     #[cfg(feature = "tls")]
     cau_hinh_tls: Option<Result<Arc<ClientConfig>, String>>,
     poll: Poll,
@@ -84,6 +96,8 @@ impl AsyncNet {
             listeners: HashMap::new(),
             #[cfg(feature = "tls")]
             tls: HashMap::new(),
+            #[cfg(feature = "tls")]
+            tls_connects: HashMap::new(),
             #[cfg(feature = "tls")]
             cau_hinh_tls: None,
             poll: Poll::new().expect("mio::Poll::new"),
@@ -115,6 +129,12 @@ impl AsyncNet {
         }
     }
 
+    /// Khoá connect của HTTP async có hậu tố `|frame` để hai task cùng host không chung state.
+    fn dia_chi_cua_khoa_noi<'a>(key: &'a str, tien_to: &str) -> &'a str {
+        let raw = key.strip_prefix(tien_to).unwrap_or(key);
+        raw.split_once('|').map(|(a, _)| a).unwrap_or(raw)
+    }
+
     fn dat_c(&mut self, s: MioStream) -> String {
         self.next_conn += 1;
         let h = format!("C{}", self.next_conn);
@@ -138,7 +158,7 @@ impl AsyncNet {
     }
 
     fn try_connect(&mut self, key: &str) -> ReactorIoOutcome {
-        let addr_text = &key[FRAME_NET_CONNECT.len()..];
+        let addr_text = Self::dia_chi_cua_khoa_noi(key, FRAME_NET_CONNECT);
         let addr = match loopback_addr(addr_text) {
             Ok(a) => a,
             Err(e) => return ReactorIoOutcome::Err(e),
@@ -158,10 +178,18 @@ impl AsyncNet {
             self.connects.remove(key);
             return ReactorIoOutcome::Err(format!("tay nối `{addr_text}` đã đóng"));
         };
-        if let Err(e) = s.take_error() {
-            self.streams.remove(key);
-            self.connects.remove(key);
-            return ReactorIoOutcome::Err(format!("lỗi kiểm tra nối `{addr_text}`: {e}"));
+        match s.take_error() {
+            Ok(Some(e)) => {
+                self.streams.remove(key);
+                self.connects.remove(key);
+                return ReactorIoOutcome::Err(format!("nối tới `{addr_text}` thất bại: {e}"));
+            }
+            Err(e) => {
+                self.streams.remove(key);
+                self.connects.remove(key);
+                return ReactorIoOutcome::Err(format!("lỗi kiểm tra nối `{addr_text}`: {e}"));
+            }
+            Ok(None) => {}
         }
         // take_error() chỉ báo lỗi; phải kiểm peer_addr để chắc đã nối xong.
         match s.peer_addr() {
@@ -220,7 +248,10 @@ impl AsyncNet {
         }
         let w = self.writes.get_mut(key).expect("write");
         match s.write(&w.data[w.off..]) {
-            Ok(0) => ReactorIoOutcome::Err(format!("ghi `{tay}` trả 0 byte")),
+            Ok(0) => {
+                self.writes.remove(key);
+                ReactorIoOutcome::Err(format!("ghi `{tay}` trả 0 byte"))
+            }
             Ok(n) => {
                 w.off += n;
                 if w.off >= w.data.len() {
@@ -233,7 +264,10 @@ impl AsyncNet {
             Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::Interrupted => {
                 ReactorIoOutcome::WouldBlock
             }
-            Err(e) => ReactorIoOutcome::Err(format!("lỗi ghi `{tay}`: {e}")),
+            Err(e) => {
+                self.writes.remove(key);
+                ReactorIoOutcome::Err(format!("lỗi ghi `{tay}`: {e}"))
+            }
         }
     }
 }
@@ -452,6 +486,173 @@ impl AsyncNet {
             }
         }
         Ok(())
+    }
+
+    /// **HTTP async**: connect TLS trên reactor, key `T:<dia_chi>`. TCP connect + handshake
+    /// nhiều bước; trả `Accepted("C<n>")` chỉ khi handshake xong. Deadline/token do core giữ.
+    fn try_connect_tls(&mut self, key: &str) -> ReactorIoOutcome {
+        if !self.tls_connects.contains_key(key) {
+            let dia_chi = Self::dia_chi_cua_khoa_noi(key, FRAME_TLS_CONNECT).to_string();
+            let mut ds: Vec<SocketAddr> = match dia_chi.to_socket_addrs() {
+                Ok(x) => x.collect(),
+                Err(e) => {
+                    return ReactorIoOutcome::Err(format!(
+                        "địa chỉ TLS `{dia_chi}` không phân giải được: {e}"
+                    ))
+                }
+            };
+            ds.sort_by_key(|a| !a.is_ipv4());
+            let Some(addr) = ds.into_iter().next() else {
+                return ReactorIoOutcome::Err(format!(
+                    "địa chỉ TLS `{dia_chi}` không có kết quả phân giải"
+                ));
+            };
+            let sock = match MioStream::connect(addr) {
+                Ok(s) => s,
+                Err(e) => {
+                    return ReactorIoOutcome::Err(format!("nối TLS tới `{dia_chi}` thất bại: {e}"))
+                }
+            };
+            self.tls_connects.insert(
+                key.to_string(),
+                DangTls {
+                    sock,
+                    conn: None,
+                    interest: Interest::WRITABLE,
+                    dia_chi,
+                },
+            );
+            return ReactorIoOutcome::WouldBlock;
+        }
+        let can_cfg = self
+            .tls_connects
+            .get(key)
+            .map(|s| s.conn.is_none())
+            .unwrap_or(false);
+        let cfg = if can_cfg {
+            match self.cau_hinh() {
+                Ok(c) => Some(c),
+                Err(e) => {
+                    self.tls_connects.remove(key);
+                    return ReactorIoOutcome::Err(e);
+                }
+            }
+        } else {
+            None
+        };
+        let Some(st) = self.tls_connects.get_mut(key) else {
+            return ReactorIoOutcome::Err(format!("TLS connect `{key}` biến mất"));
+        };
+        match Self::bap_tay_reactor(st, cfg) {
+            Ok(true) => {
+                let Some(st) = self.tls_connects.remove(key) else {
+                    return ReactorIoOutcome::Err(format!("TLS connect `{key}` biến mất"));
+                };
+                let Some(conn) = st.conn else {
+                    return ReactorIoOutcome::Err(format!("TLS connect `{key}` thiếu phiên"));
+                };
+                let h = self.dat_tls(TlsChan {
+                    conn,
+                    sock: st.sock,
+                });
+                ReactorIoOutcome::Accepted(h)
+            }
+            Ok(false) => ReactorIoOutcome::WouldBlock,
+            Err(e) => {
+                self.tls_connects.remove(key);
+                ReactorIoOutcome::Err(e)
+            }
+        }
+    }
+
+    /// Một bước không chặn của TLS connect: hoàn tất TCP (nếu cần), rồi bơm handshake.
+    /// `Ok(true)` = handshake xong; `Ok(false)` = chờ `st.interest`; `Err` = lỗi TLS/TCP.
+    fn bap_tay_reactor(st: &mut DangTls, cfg: Option<Arc<ClientConfig>>) -> Result<bool, String> {
+        if st.conn.is_none() {
+            match st.sock.take_error() {
+                Ok(Some(e)) => return Err(format!("nối TLS tới `{}` thất bại: {e}", st.dia_chi)),
+                Err(e) => return Err(format!("kiểm tra nối TLS `{}`: {e}", st.dia_chi)),
+                Ok(None) => {}
+            }
+            if let Err(e) = st.sock.peer_addr() {
+                // Chưa nối xong (EINPROGRESS/NotConnected): chờ WRITABLE tiếp.
+                let _ = e;
+                st.interest = Interest::WRITABLE;
+                return Ok(false);
+            }
+            let _ = st.sock.set_nodelay(true);
+            let host = crate::net::tls::ten_may_chu(&st.dia_chi)?;
+            let ten = ServerName::try_from(host.to_string())
+                .map_err(|e| format!("tên máy chủ TLS `{host}` không hợp lệ: {e}"))?;
+            let cfg = cfg.ok_or_else(|| {
+                format!(
+                    "thiếu cấu hình TLS cho `{}` (trạng thái nội bộ)",
+                    st.dia_chi
+                )
+            })?;
+            let conn = ClientConnection::new(cfg, ten)
+                .map_err(|e| format!("lỗi tạo phiên TLS tới `{}`: {e}", st.dia_chi))?;
+            st.conn = Some(conn);
+        }
+        let conn = st.conn.as_mut().expect("vừa tạo");
+        loop {
+            let mut tien = false;
+            loop {
+                if !conn.wants_write() {
+                    break;
+                }
+                match conn.write_tls(&mut st.sock) {
+                    Ok(0) => break,
+                    Ok(_) => tien = true,
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+                    Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(format!("lỗi TLS handshake tới `{}`: {e}", st.dia_chi)),
+                }
+            }
+            if conn.wants_read() {
+                match conn.read_tls(&mut st.sock) {
+                    Ok(0) => {
+                        return Err(format!(
+                            "lỗi TLS handshake tới `{}`: kết nối đóng trước khi hoàn tất",
+                            st.dia_chi
+                        ));
+                    }
+                    Ok(_) => {
+                        conn.process_new_packets()
+                            .map_err(|e| format!("lỗi TLS handshake tới `{}`: {e}", st.dia_chi))?;
+                        tien = true;
+                    }
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => {}
+                    Err(e) if e.kind() == ErrorKind::Interrupted => {}
+                    Err(e) => {
+                        return Err(format!("lỗi TLS handshake tới `{}`: {e}", st.dia_chi));
+                    }
+                }
+            }
+            if !conn.is_handshaking() {
+                // Đẩy nốt Finished nếu socket còn ghi được; nếu không, lần I/O sau sẽ đẩy.
+                while conn.wants_write() {
+                    match conn.write_tls(&mut st.sock) {
+                        Ok(0) => break,
+                        Ok(_) => {}
+                        Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+                        Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                        Err(e) => {
+                            return Err(format!("lỗi TLS handshake tới `{}`: {e}", st.dia_chi))
+                        }
+                    }
+                }
+                return Ok(true);
+            }
+            if !tien {
+                st.interest = if conn.wants_write() {
+                    Interest::WRITABLE
+                } else {
+                    Interest::READABLE
+                };
+                return Ok(false);
+            }
+        }
     }
 
     /// Đọc plaintext TLS cho API host đồng bộ (`http.get/head`), vẫn nonblocking + `Poll`.
@@ -800,6 +1001,7 @@ impl NetHost for AsyncNet {
         #[cfg(feature = "tls")]
         {
             existed |= self.tls.remove(tay).is_some();
+            existed |= self.tls_connects.remove(tay).is_some();
         }
         // `net.close` có thể đóng một tay đang nối/write (khoá N:/W:).
         if let Some(k) = self
@@ -837,6 +1039,17 @@ impl NetHost for AsyncNet {
 
 impl FrameReactorBackend for AsyncNet {
     fn try_read(&mut self, handle: &str, max: usize) -> ReactorIoOutcome {
+        #[cfg(feature = "tls")]
+        if handle.starts_with(FRAME_TLS_CONNECT) {
+            return self.try_connect_tls(handle);
+        }
+        #[cfg(not(feature = "tls"))]
+        if handle.starts_with(FRAME_TLS_CONNECT) {
+            return ReactorIoOutcome::Err(
+                "`https://` cần TLS: feature `tls` của `vis-cli` phải bật và nền không phải wasm32"
+                    .to_string(),
+            );
+        }
         if handle.starts_with(FRAME_NET_CONNECT) {
             return self.try_connect(handle);
         }
@@ -889,11 +1102,28 @@ impl FrameReactorBackend for AsyncNet {
         } else {
             handle.to_string()
         };
-        let doc_hoac_ghi =
-            handle.starts_with(FRAME_NET_CONNECT) || handle.starts_with(FRAME_NET_WRITE);
+        #[cfg(feature = "tls")]
+        let la_tls_noi = key.starts_with(FRAME_TLS_CONNECT);
+        #[cfg(not(feature = "tls"))]
+        let la_tls_noi = false;
+        let doc_hoac_ghi = handle.starts_with(FRAME_NET_CONNECT)
+            || handle.starts_with(FRAME_NET_WRITE)
+            || la_tls_noi;
         // Chỉ đăng ký đúng chiều cần: TLS read mà đăng ký luôn WRITABLE sẽ bị đánh thức liên tục
         // (socket gần như luôn ghi được), làm scheduler quay vòng. Alert/Finished còn treo được
         // đẩy tiếp ở lần I/O kế cận hoặc khi đóng.
+        #[cfg(feature = "tls")]
+        let interest = if la_tls_noi {
+            self.tls_connects
+                .get(&key)
+                .map(|s| s.interest)
+                .unwrap_or(Interest::WRITABLE)
+        } else if doc_hoac_ghi {
+            Interest::WRITABLE
+        } else {
+            Interest::READABLE
+        };
+        #[cfg(not(feature = "tls"))]
         let interest = if doc_hoac_ghi {
             Interest::WRITABLE
         } else {
@@ -904,6 +1134,7 @@ impl FrameReactorBackend for AsyncNet {
             .tls
             .get(&key)
             .map(|t| t.sock.as_raw_fd())
+            .or_else(|| self.tls_connects.get(&key).map(|s| s.sock.as_raw_fd()))
             .or_else(|| self.streams.get(&key).map(AsRawFd::as_raw_fd))
             .or_else(|| self.listeners.get(&key).map(AsRawFd::as_raw_fd));
         #[cfg(not(feature = "tls"))]
@@ -916,20 +1147,29 @@ impl FrameReactorBackend for AsyncNet {
             return Err(format!("không tìm thấy `{key}` để đăng ký readiness"));
         };
         let mut src = SourceFd(&fd);
-        let r = self
+        let mut r = self
             .poll
             .registry()
             .register(&mut src, Token(token as usize), interest);
+        if matches!(&r, Err(e) if e.kind() == ErrorKind::AlreadyExists) {
+            // Cùng fd vừa được adapter chuyển từ handle tạm (`N:`/`T:`) sang `C<n>`:
+            // registration cũ còn trong epoll. Gỡ rồi đăng ký lại để token/interest đúng,
+            // nếu không event sẽ mang token cũ (stale) và frame treo tới hết hạn.
+            let _ = self.poll.registry().deregister(&mut src);
+            r = self
+                .poll
+                .registry()
+                .register(&mut src, Token(token as usize), interest);
+        }
         match r {
             Ok(()) => {}
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
             Err(e) => return Err(format!("register `{key}` thất bại: {e}")),
         }
         self.tokens.insert(token, key);
         Ok(())
     }
 
-    fn deregister(&mut self, token: u64, handle: &str, _op: ReactorOp) -> Result<(), String> {
+    fn deregister(&mut self, token: u64, _handle: &str, _op: ReactorOp) -> Result<(), String> {
         let Some(key) = self.tokens.remove(&token) else {
             return Ok(());
         };
@@ -938,6 +1178,7 @@ impl FrameReactorBackend for AsyncNet {
             .tls
             .get(&key)
             .map(|t| t.sock.as_raw_fd())
+            .or_else(|| self.tls_connects.get(&key).map(|s| s.sock.as_raw_fd()))
             .or_else(|| self.streams.get(&key).map(AsRawFd::as_raw_fd))
             .or_else(|| self.listeners.get(&key).map(AsRawFd::as_raw_fd));
         #[cfg(not(feature = "tls"))]
@@ -951,13 +1192,6 @@ impl FrameReactorBackend for AsyncNet {
         };
         let mut src = SourceFd(&fd);
         let r = self.poll.registry().deregister(&mut src);
-        if handle.starts_with(FRAME_NET_WRITE) {
-            self.writes.remove(handle);
-        }
-        if handle.starts_with(FRAME_NET_CONNECT) {
-            self.connects.remove(handle);
-            self.streams.remove(handle);
-        }
         match r {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
@@ -988,6 +1222,7 @@ impl FrameReactorBackend for AsyncNet {
         #[cfg(feature = "tls")]
         {
             self.tls.remove(handle);
+            self.tls_connects.remove(handle);
         }
         let keys: Vec<u64> = self
             .tokens

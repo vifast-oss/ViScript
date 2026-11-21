@@ -22,6 +22,9 @@
 use std::net::IpAddr;
 use std::time::{Duration, Instant};
 
+mod async_http;
+pub(crate) use async_http::{http_get_async, http_head_async};
+
 use crate::builtin::NetHost;
 
 /// Cap **phản hồi** (8 MiB, mẫu `MAX_STDIN` của ST-34) — vượt ⇒ `Err`, không OOM.

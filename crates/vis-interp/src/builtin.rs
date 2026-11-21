@@ -85,6 +85,12 @@ pub trait NetHost {
         Err("HTTPS không được hỗ trợ bởi host mạng này".to_string())
     }
 
+    /// **VS3-1d/W1f-HTTP** — kiểm quyền `cap[Net]` **không mở kết nối**. Đường async tự
+    /// đăng ký reactor nên phải gọi hook này trước khi connect; host không có policy trả `Ok`.
+    fn check_net(&mut self, _dia_chi: &str) -> Result<(), String> {
+        Ok(())
+    }
+
     /// **VS3-4b (VD-271)**: nối cho **HTTP** — `tls` chọn `connect_tls`/`connect`,
     /// `cho_phep_pool` cho phép host tái dùng kết nối idle. Trả `(handle, tái_sử_dụng)`; host
     /// không có pool (mặc định) luôn trả `false` và hoạt động one-shot như cũ.

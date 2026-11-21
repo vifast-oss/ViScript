@@ -365,6 +365,7 @@ fn cli_async_net_read_loopback_hai_engine() {
     }
 }
 
+#[cfg(unix)]
 fn server_http_mot_lan() -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http");
     let addr = l.local_addr().expect("addr").to_string();
@@ -379,6 +380,7 @@ fn server_http_mot_lan() -> String {
     addr
 }
 
+#[cfg(unix)]
 const ASYNC_HTTP: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -545,6 +547,7 @@ fn cli_async_net_write_partial_loopback_hai_engine() {
 }
 
 #[test]
+#[cfg(unix)]
 fn cli_async_http_get_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http");
@@ -561,6 +564,357 @@ fn cli_async_http_get_loopback_hai_engine() {
         let (c, out, err) = chay(&d, &args);
         assert_eq!(c, 0, "http vm={vm}: {err}");
         assert_eq!(out, "ok\n", "http vm={vm}");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// VS3-1d/W1f-HTTP — state machine HTTP/1.1 hợp tác (không host blocking).
+// ---------------------------------------------------------------------------
+
+#[cfg(unix)]
+fn doc_yeu_cau(s: &mut std::net::TcpStream) -> String {
+    let mut all = Vec::new();
+    let mut buf = [0u8; 4096];
+    while all.len() < 65_536 && !all.windows(4).any(|w| w == b"\r\n\r\n") {
+        match s.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => all.extend_from_slice(&buf[..n]),
+            Err(_) => break,
+        }
+    }
+    String::from_utf8_lossy(&all).to_string()
+}
+
+#[cfg(unix)]
+fn server_http_sau(body: String, tre_ms: u64) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind http sau");
+    let addr = l.local_addr().expect("addr").to_string();
+    thread::spawn(move || {
+        if let Ok((mut s, _)) = l.accept() {
+            let _ = doc_yeu_cau(&mut s);
+            if tre_ms > 0 {
+                thread::sleep(std::time::Duration::from_millis(tre_ms));
+            }
+            let dap = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = s.write_all(dap.as_bytes());
+        }
+    });
+    addr
+}
+
+#[cfg(unix)]
+fn server_http_head() -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind http head");
+    let addr = l.local_addr().expect("addr").to_string();
+    thread::spawn(move || {
+        if let Ok((mut s, _)) = l.accept() {
+            let _ = doc_yeu_cau(&mut s);
+            let _ =
+                s.write_all(b"HTTP/1.1 204 No Content\r\nX-Thu: 1\r\nConnection: close\r\n\r\n");
+        }
+    });
+    addr
+}
+
+#[cfg(unix)]
+fn server_http_chuyen_huong() -> (String, thread::JoinHandle<Vec<String>>) {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind http redirect");
+    let addr = l.local_addr().expect("addr").to_string();
+    let h = thread::spawn(move || {
+        let mut log = Vec::new();
+        for i in 0..2 {
+            let Ok((mut s, _)) = l.accept() else { break };
+            let req = doc_yeu_cau(&mut s);
+            log.push(req.lines().next().unwrap_or("").to_string());
+            let dap = if i == 0 {
+                b"HTTP/1.1 302 Found\r\nLocation: /b\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec()
+            } else {
+                b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\ndich".to_vec()
+            };
+            let _ = s.write_all(&dap);
+        }
+        log
+    });
+    (addr, h)
+}
+
+#[cfg(unix)]
+const ASYNC_HTTP_LON: &str = r#"use std.http
+
+async fn lay(url: str) -> int:
+    match http.get_timeout(url, 5000):
+        Ok(s): s.len()
+        Err(e): -1
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+#[cfg(unix)]
+const ASYNC_HTTP_REDIRECT: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+#[cfg(unix)]
+const ASYNC_HTTP_HEAD: &str = r#"use std.http
+
+async fn h(url: str) -> int:
+    match http.head_timeout(url, 3000):
+        Ok(m):
+            print(m["status"])
+            print(m["headers"]["x-thu"])
+        Err(e): print(e)
+    1
+
+fn main(args: list[str]):
+    print(await spawn h(args[0]))
+"#;
+
+#[cfg(unix)]
+const ASYNC_HTTP_TIMEOUT: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 300):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+#[cfg(unix)]
+const ASYNC_HTTP_HAI_TAC_VU: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get_timeout(url, 3000):
+        Ok(s): s
+        Err(e): "loi: {e}"
+
+fn main(args: list[str]):
+    let cham = spawn lay(args[0])
+    let nhanh = spawn lay(args[1])
+    print(await nhanh)
+    print(await cham)
+"#;
+
+#[cfg(unix)]
+fn server_http_hai_lan(body: &'static str) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind http hai");
+    let addr = l.local_addr().expect("addr").to_string();
+    thread::spawn(move || {
+        for _ in 0..2 {
+            if let Ok((mut s, _)) = l.accept() {
+                let _ = doc_yeu_cau(&mut s);
+                let dap = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                let _ = s.write_all(dap.as_bytes());
+            }
+        }
+    });
+    addr
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_hai_tac_vu_cung_host_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-coop-same");
+    let p = viet(&d, "http-coop-same.vis", ASYNC_HTTP_HAI_TAC_VU);
+    for vm in [false, true] {
+        let addr = server_http_hai_lan("ok");
+        let url = format!("http://{addr}/same");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &url, &url]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http same host vm={vm}: {err}");
+        assert_eq!(out, "ok\nok\n", "http same host vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_cache_warm_cold_vm() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-cache");
+    let p = viet(&d, "http-cache.vis", ASYNC_HTTP);
+    let addr = server_http_hai_lan("ok");
+    let url = format!("http://{addr}/cache");
+    for lan in 0..2 {
+        let args = vec!["run", "--vm", p.to_str().unwrap(), "--", &url];
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "async http cache lần {lan}: {err}");
+        assert_eq!(out, "ok\n", "async http cache lần {lan}: {out:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_body_lon_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("httpbig");
+    let p = viet(&d, "httpbig.vis", ASYNC_HTTP_LON);
+    for vm in [false, true] {
+        let addr = server_http_sau("x".repeat(200_000), 0);
+        let url = format!("http://{addr}/big");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &url]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http big vm={vm}: {err}");
+        assert_eq!(out, "200000\n", "http big vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_redirect_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-redir");
+    let p = viet(&d, "http-redir.vis", ASYNC_HTTP_REDIRECT);
+    for vm in [false, true] {
+        let (addr, h) = server_http_chuyen_huong();
+        let url = format!("http://{addr}/a");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &url]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http redirect vm={vm}: {err}");
+        assert_eq!(out, "dich\n", "http redirect vm={vm}: {out:?}");
+        let log = h.join().expect("join redirect server");
+        assert_eq!(
+            log,
+            vec!["GET /a HTTP/1.1".to_string(), "GET /b HTTP/1.1".to_string()],
+            "redirect vm={vm}"
+        );
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_head_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-head");
+    let p = viet(&d, "http-head.vis", ASYNC_HTTP_HEAD);
+    for vm in [false, true] {
+        let addr = server_http_head();
+        let url = format!("http://{addr}/x");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &url]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http HEAD vm={vm}: {err}");
+        assert_eq!(out, "204\n1\n1\n", "http HEAD vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_timeout_than_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-timeout");
+    let p = viet(&d, "http-timeout.vis", ASYNC_HTTP_TIMEOUT);
+    for vm in [false, true] {
+        let addr = server_http_sau("muon".to_string(), 900);
+        let url = format!("http://{addr}/slow");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &url]);
+        let bat = std::time::Instant::now();
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http timeout vm={vm}: {err}");
+        assert!(
+            out.contains("quá thời gian"),
+            "http timeout vm={vm}: {out:?}"
+        );
+        assert!(
+            bat.elapsed() < std::time::Duration::from_millis(2_500),
+            "http timeout quá chậm vm={vm}: {:?}",
+            bat.elapsed()
+        );
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_hai_tac_vu_khong_block_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-coop");
+    let p = viet(&d, "http-coop.vis", ASYNC_HTTP_HAI_TAC_VU);
+    for vm in [false, true] {
+        let cham = server_http_sau("cham".to_string(), 350);
+        let nhanh = server_http_sau("nhanh".to_string(), 0);
+        let u1 = format!("http://{cham}/cham");
+        let u2 = format!("http://{nhanh}/nhanh");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.extend(["--", &u1, &u2]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http coop vm={vm}: {err}");
+        assert_eq!(out, "nhanh\ncham\n", "http coop vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn cli_async_http_khong_bo_qua_cap_net() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http-cap");
+    let root = d.join("root");
+    std::fs::create_dir_all(&root).expect("root");
+    let src = format!(
+        "use std.http\n\n\
+         async fn lay(url: str) -> str:\n\
+         \x20   match http.get_timeout(url, 300):\n\
+         \x20       Ok(s): s\n\
+         \x20       Err(e): \"loi: {{e}}\"\n\n\
+         fn main(d: cap[Dir] @ p\"{}\"):\n\
+         \x20   let _ = d\n\
+         \x20   print(await spawn lay(\"http://127.0.0.1:1/\"))\n",
+        root.display().to_string().replace('\\', "/")
+    );
+    let p = viet(&d, "http-cap.vis", &src);
+    for vm in [false, true] {
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        let (c, _out, err) = chay(&d, &args);
+        assert_eq!(c, 101, "async http cap vm={vm}: {err}");
+        assert!(err.contains("VS0506"), "async http cap vm={vm}: {err}");
+        assert!(err.contains("VS0604"), "async http cap vm={vm}: {err}");
+        assert!(err.contains("cap[Net]"), "async http cap vm={vm}: {err}");
     }
 }
 
