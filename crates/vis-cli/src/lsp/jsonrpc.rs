@@ -120,8 +120,27 @@ pub fn van_ban_mo(kv: &[(Value, Value)]) -> Option<(String, String)> {
     Some((uri, text))
 }
 
-/// `didChange` full sync: `(uri, contentChanges[last].text)`.
-pub fn van_ban_doi(kv: &[(Value, Value)]) -> Option<(String, String)> {
+/// Một `contentChanges[]` của `didChange`: `range = None` ⇒ thay **toàn** tài liệu.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThayDoi {
+    pub range: Option<((u32, u32), (u32, u32))>,
+    pub text: String,
+}
+
+fn vi_tri_cua(v: &Value) -> Option<(u32, u32)> {
+    let Value::Map(kv) = v else {
+        return None;
+    };
+    Some((
+        so_nguyen(lay(kv, "line")?)?,
+        so_nguyen(lay(kv, "character")?)?,
+    ))
+}
+
+/// `didChange` **incremental/full**: `(uri, contentChanges)` — giữ **mọi** thay đổi theo thứ tự.
+///
+/// `range` vắng/null ⇒ full replace; có `range` ⇒ áp lên trạng thái sau thay đổi trước (LSP).
+pub fn thay_doi_van_ban(kv: &[(Value, Value)]) -> Option<(String, Vec<ThayDoi>)> {
     let uri = uri_cua(kv)?;
     let p = lay_params(kv)?;
     let Value::Map(p) = p else {
@@ -130,17 +149,24 @@ pub fn van_ban_doi(kv: &[(Value, Value)]) -> Option<(String, String)> {
     let Value::List(xs) = lay(p, "contentChanges")? else {
         return None;
     };
-    let Value::Map(last) = xs.last()? else {
-        return None;
-    };
-    // **VS3-7**: server công bố `textDocumentSync: 1` (full sync). Nếu client vẫn gửi thay đổi có
-    // `range`, **không** được coi `text` là toàn bộ tài liệu (sẽ làm hỏng buffer) — bỏ qua thay đổi;
-    // incremental sync là việc còn mở (xem báo cáo VS3-7).
-    if lay(last, "range").is_some() {
-        return None;
+    let mut out = Vec::with_capacity(xs.len());
+    for x in xs {
+        let Value::Map(c) = x else {
+            return None;
+        };
+        let text = chuoi(lay(c, "text")?)?.to_string();
+        let range = match lay(c, "range") {
+            None => None,
+            Some(v) if v.is_none() => None,
+            Some(Value::Map(r)) => {
+                Some((vi_tri_cua(lay(r, "start")?)?, vi_tri_cua(lay(r, "end")?)?))
+            }
+            // `range` sai kiểu: từ chối cả sự kiện thay vì đoán thành full replace.
+            Some(_) => return None,
+        };
+        out.push(ThayDoi { range, text });
     }
-    let text = chuoi(lay(last, "text")?)?.to_string();
-    Some((uri, text))
+    Some((uri, out))
 }
 
 fn so_nguyen(v: &Value) -> Option<u32> {

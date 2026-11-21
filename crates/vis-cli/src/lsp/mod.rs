@@ -5,8 +5,10 @@
 //! (`result:null`), `exit` (0 nếu đã shutdown, 1 nếu chưa), method lạ `-32601`, body JSON hỏng
 //! `-32700`, request trước `initialize` `-32002`; `didOpen/didChange/didClose` ⇒ publishDiagnostics
 //! (ST-68); **VS3-7 (VD-271)**: tệp module phụ đổi/mở/đóng ⇒ publish lại cho **mọi tài liệu đang mở
-//! phụ thuộc** (buffer mở làm overlay cho module), mỗi URI tối đa một frame/sự kiện; sync vẫn là
-//! **full** (`textDocumentSync:1`). `textDocument/completion` + `textDocument/hover` (ST-69).
+//! phụ thuộc** (buffer mở làm overlay cho module), mỗi URI tối đa một frame/sự kiện;
+//! `textDocumentSync = {openClose:true, change:2}` — `didChange` áp **incremental** (range UTF-16,
+//! nhiều thay đổi tuần tự, giữ CRLF) hoặc full khi không có range.
+//! `textDocument/completion` + `textDocument/hover` (ST-69).
 //!
 //! stdout **tuyệt đối sạch**: chỉ frame; mọi lỗi giao thức ghi ra stderr.
 
@@ -28,6 +30,7 @@ mod module;
 mod phan_tich;
 mod phuong_loi;
 mod semantic_tokens;
+mod sua;
 mod thanh_vien;
 mod thuc_thi;
 mod type_definition;
@@ -189,12 +192,23 @@ pub fn run(args: &[String]) -> ExitCode {
                 }
             }
             "textDocument/didChange" => {
-                if let Some((uri, text)) = jsonrpc::van_ban_doi(kv) {
-                    dat_overlay(&uri, &text);
-                    van_ban.insert(uri.clone(), text.clone());
-                    xoa_cache_phan_tich(&mut kq_cache);
-                    gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
-                    publish_lien_quan!(&uri, &van_ban);
+                if let Some((uri, thay_doi)) = jsonrpc::thay_doi_van_ban(kv) {
+                    // Tài liệu chưa mở: bỏ qua (không tự tạo buffer từ chênh lệch).
+                    if let Some(cu) = van_ban.get(&uri).cloned() {
+                        match sua::ap_dung(&cu, &thay_doi) {
+                            // Không đổi byte (change rỗng) ⇒ không publish thừa.
+                            Ok(moi) if moi == cu => {}
+                            Ok(moi) => {
+                                dat_overlay(&uri, &moi);
+                                van_ban.insert(uri.clone(), moi.clone());
+                                xoa_cache_phan_tich(&mut kq_cache);
+                                gui!(chan_doan::than(&uri, Some(&moi), mode_cua(&uri)));
+                                publish_lien_quan!(&uri, &van_ban);
+                            }
+                            // Range hỏng/ngược: bỏ qua sự kiện, giữ buffer cũ (không panic).
+                            Err(_) => {}
+                        }
+                    }
                 }
             }
             "textDocument/didClose" => {
@@ -712,7 +726,13 @@ fn ket_qua_khoi_tao() -> Value {
         Value::List(vec![Value::Str(".".to_string())]),
     )]);
     let capabilities = Value::Map(vec![
-        jsonrpc::kv("textDocumentSync", Value::Int(1)),
+        jsonrpc::kv(
+            "textDocumentSync",
+            jsonrpc::m(vec![
+                ("openClose", Value::Bool(true)),
+                ("change", Value::Int(2)),
+            ]),
+        ),
         jsonrpc::kv("positionEncoding", Value::Str("utf-16".to_string())),
         jsonrpc::kv("hoverProvider", Value::Bool(true)),
         jsonrpc::kv("definitionProvider", Value::Bool(true)),
