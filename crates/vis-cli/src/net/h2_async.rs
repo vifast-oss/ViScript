@@ -434,6 +434,39 @@ impl H2Async {
         self.fd
     }
 
+    /// **VS3-W4** — `Nguon` của async_net: đăng ký readiness cho socket h2.
+    ///
+    /// `H2Async` giữ `KenhTls` (socket) **bên trong** connection h2 nên không thể mượn
+    /// `&mut MioStream`; trên Unix dùng fd ổn định đã lưu (`SourceFd`) — đây là module Unix-only,
+    /// Windows dùng đường `Nguon` trực tiếp cho stream/TLS (async-h2 default-off, chưa port).
+    pub(crate) fn dang_ky_nguon(
+        &mut self,
+        poll: &Poll,
+        token: Token,
+        interest: Interest,
+    ) -> io::Result<()> {
+        let fd = self.fd;
+        let mut src = SourceFd(&fd);
+        poll.registry().register(&mut src, token, interest)
+    }
+
+    pub(crate) fn dang_ky_lai_nguon(
+        &mut self,
+        poll: &Poll,
+        token: Token,
+        interest: Interest,
+    ) -> io::Result<()> {
+        let fd = self.fd;
+        let mut src = SourceFd(&fd);
+        poll.registry().reregister(&mut src, token, interest)
+    }
+
+    pub(crate) fn huy_nguon(&mut self, poll: &Poll) -> io::Result<()> {
+        let fd = self.fd;
+        let mut src = SourceFd(&fd);
+        poll.registry().deregister(&mut src)
+    }
+
     fn trang_thai_da_san_sang(&self) -> bool {
         matches!(self.trang_thai, TrangThai::Song(_))
     }

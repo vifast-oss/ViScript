@@ -156,7 +156,7 @@ ring = { version = "=0.17.14", default-features = false, features = ["std"], opt
 # A0 duyệt ghim tuyệt đối `=1.2.5` (MIT); transitive trên Linux chỉ `libc` (đã có).
 # **VS3-1d/W1f** — adapter async net production (frame scheduler) dùng cùng mio đã được duyệt
 # cho test côté Linux. Chỉ target Unix; Windows/wasm giữ đường cũ (không có backend).
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(any(unix, windows))'.dependencies]
 mio = { version = "=1.2.5", default-features = false, features = ["os-poll", "net", "os-ext"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]

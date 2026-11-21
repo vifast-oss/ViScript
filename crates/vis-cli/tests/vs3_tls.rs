@@ -11,7 +11,7 @@
 
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener};
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -504,7 +504,7 @@ fn vis_run_https_loi_tls_khong_panic() {
 // ===========================================================================
 
 /// Chạy `vis run` nhánh async với root TLS test (hook debug) + một đối số chương trình.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn chay_async(p: &Path, vm: bool, goc: &Path, arg: &str) -> (i32, String, String, Duration) {
     let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
     c.arg("run");
@@ -523,12 +523,12 @@ fn chay_async(p: &Path, vm: bool, goc: &Path, arg: &str) -> (i32, String, String
     )
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn goc_localhost() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der")
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTPS_GET: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -540,7 +540,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTPS_HEAD: &str = r#"use std.http
 
 async fn h(url: str) -> int:
@@ -555,7 +555,7 @@ fn main(args: list[str]):
     print(await spawn h(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTPS_LOI: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -568,7 +568,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_get_loopback_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -600,7 +600,7 @@ fn async_https_get_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_head_loopback_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -632,7 +632,7 @@ fn async_https_head_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_handshake_timeout_hai_engine() {
     let _k = kho();
     let d = tam("async-https-timeout");
@@ -665,7 +665,7 @@ fn async_https_handshake_timeout_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_tu_choi_chung_chi_sai_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -695,7 +695,7 @@ fn async_https_tu_choi_chung_chi_sai_hai_engine() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTPS_LON: &str = r#"use std.http
 
 async fn lay(url: str) -> int:
@@ -708,7 +708,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_redirect_loopback_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -741,7 +741,7 @@ fn async_https_redirect_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_body_lon_loopback_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -769,7 +769,7 @@ fn async_https_body_lon_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn async_https_timeout_doc_than_hai_engine() {
     let _k = kho();
     if !cfg!(debug_assertions) {
@@ -804,7 +804,7 @@ fn async_https_timeout_doc_than_hai_engine() {
 
 /// TLS cũng đi qua `FrameReactorBackend` (không chỉ host): handshake host + write/read reactor
 /// trên cùng handle `C<n>`.
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn async_net_backend_tls_doc_ghi_qua_reactor() {
     use vis_cli::async_net::AsyncNet;
@@ -884,7 +884,7 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
     s.dung();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn async_net_backend_tls_connect_qua_reactor() {
     use vis_cli::async_net::AsyncNet;
@@ -921,6 +921,39 @@ fn async_net_backend_tls_connect_qua_reactor() {
     }
     let handle = handle.expect("TLS connect phải xong");
     assert!(handle.starts_with('C'), "handle: {handle}");
+    drop(net);
+    s.dung();
+}
+
+/// **VS3-W4 (Windows)** — invariant: host call trên socket đang thuộc reactor phải trả lỗi **rõ**,
+/// không deregister mù (mio Windows: một đối tượng chỉ thuộc một `Poll`).
+#[cfg(windows)]
+#[test]
+fn host_tls_tren_socket_reactor_tra_loi_ro() {
+    use vis_cli::async_net::AsyncNet;
+    use vis_interp::builtin::NetHost;
+    use vis_interp::rt::{FrameReactorBackend, ReactorOp};
+
+    let _k = kho();
+    let s = may_chu_tls(
+        CERT_LOCALHOST,
+        KEY_LOCALHOST,
+        vec![dap_ung("200 OK", b"x", "")],
+        0,
+    );
+    let mut net = AsyncNet::moi_voi_goc_tls(false, &[CERT_LOCALHOST]).expect("cấu hình TLS");
+    let h = NetHost::connect_tls(&mut net, &s.dia_chi, 3_000).expect("connect_tls");
+    net.register(1, &h, ReactorOp::Read)
+        .expect("register reactor cho TLS");
+    let e =
+        NetHost::read(&mut net, &h, 8, 100).expect_err("host read trên socket reactor phải lỗi rõ");
+    assert!(
+        e.contains("reactor"),
+        "lỗi phải nêu reactor (không deregister mù): {e}"
+    );
+    net.deregister(1, &h, ReactorOp::Read)
+        .expect("deregister reactor");
+    NetHost::close(&mut net, &h).expect("close TLS");
     drop(net);
     s.dung();
 }

@@ -420,6 +420,12 @@ fn tcp_explain_tong() {
                 let _ = s.write_all(
                     b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
                 );
+                // Windows: đóng ngay sau write có thể gửi RST ⇒ client đọc 10053/10054.
+                // Đóng chiều ghi rồi đọc nốt tới EOF/timeout ngắn để close êm (như `server_n`).
+                let _ = s.shutdown(Shutdown::Write);
+                let _ = s.set_read_timeout(Some(Duration::from_millis(500)));
+                let mut rac = [0u8; 64];
+                while matches!(s.read(&mut rac), Ok(n) if n > 0) {}
             }
         }
     });

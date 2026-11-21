@@ -1,0 +1,66 @@
+# VS3-W4 — bằng chứng spike Windows async net (branch `spike/w4-win-async-check` @ `4319b5d`)
+# KHÔNG merge. Mốc code đọc: `vs3/w4-windows` @ e272007 (= code 73af17b).
+# Ngày: 2026-11-21. Máy đo: psvn (MINGW64_NT-10.0-26300, 6 CPU, cargo/rustc 1.100.0, MSVC native).
+
+## 0. Môi trường / mốc
+psvn repo /c/Users/ps/viscript-moi @ 73af17bd, dirty 0
+Worktree spike: /c/Users/ps/viscript-winspike (detached 73af17b), đã xoá sau đo
+Spike branch local: spike/w4-win-async-check @ 4319b5d426a0ee9b1b3ea4bd5982e1c707217f07
+Diffstat spike (6 tệp): +198 / -134
+  crates/vis-cli/Cargo.toml            2 +-
+  crates/vis-cli/src/async_net.rs    206 +++---
+  crates/vis-cli/src/lib.rs            2 +-
+  crates/vis-cli/src/main.rs          20 +-
+  crates/vis-cli/tests/vs3_default.rs 70 +-
+  crates/vis-cli/tests/vs3_tls.rs     32 +-
+
+## 1. Biên dịch trên Windows (native MSVC)
+- cargo check -p vis-cli                          : PASS 3 s
+- cargo check -p vis-cli --all-targets            : PASS 19 s
+- cargo check -p vis-cli --no-default-features    : PASS 2,33 s
+
+## 2. Test chạy thật trên Windows (loopback)
+- vs3_default cli_async_net  : 4 passed; 0 failed (2,23 s)
+    cli_async_net_accept_loopback_hai_engine
+    cli_async_net_read_loopback_hai_engine
+    cli_async_net_read_timeout_loopback_hai_engine
+    cli_async_net_write_partial_loopback_hai_engine
+- vs3_default cli_async_http : 9 passed; 0 failed (1,74 s)
+    get/head/redirect/body_lon/timeout/hai_tac_vu/cache/warm-cold/khop cap
+- vs3_tls                    : 21 passed; 0 failed (6,47 s)
+    gồm async_https_* và async_net_backend_tls_{doc_ghi,connect}_qua_reactor
+
+## 3. Lặp 3 vòng (net/http + TLS)
+ROUND 1 rc=0/0 10 s  vs3_default cli_async_ 15 passed / vs3_tls 21 passed
+ROUND 2 rc=0/0  9 s  vs3_default cli_async_ 15 passed / vs3_tls 21 passed
+ROUND 3 rc=0/0 10 s  vs3_default cli_async_ 15 passed / vs3_tls 21 passed
+=> 0 fail, 0 flake trong 3 vòng.
+
+## 4. Hồi quy Unix local (cùng nhánh spike)
+- cargo check -p vis-cli --all-targets : PASS
+- vs3_default : 21 passed / 0 failed
+- vs3_tls     : 21 passed / 0 failed
+
+## 5. sha256 log trên psvn (/c/Users/ps/vislogs/)
+dce4bf19…9c60  w4-73af17b-winspike-check.log     (check lần 1: đỏ vì thiếu cfg lib.rs)
+c2251025…1f88  w4-73af17b-winspike-check2.log    (check PASS)
+0be8c2d4…d375  w4-73af17b-winspike-check3.log    (all-targets PASS)
+fe5a1dda…4910  w4-73af17b-winspike-asyncnet.log
+3d89053f…a946  w4-73af17b-winspike-asynchttp.log
+ae550658…bc0e  w4-73af17b-winspike-asynctls.log
+3f5f4d2b…b0ac  w4-73af17b-winspike-loop.log
+b4fad7cc…e66b  w4-73af17b-winspike-loop.log.check
+
+## 6. Dọn dẹp
+git worktree remove --force /c/Users/ps/viscript-winspike  => REMOVED
+psvn repo chính: HEAD 73af17bd, dirty 0; C: còn 184G.
+
+## 7. BLOCKED-ENV
+Local Linux không có target x86_64-pc-windows-gnu, không có mingw/clang:
+  rustup target list --installed => rỗng (cargo hệ thống 1.93.1 không dùng được;
+  toolchain hợp lệ là ~/.cargo/bin 1.100.0, chỉ có target Linux).
+=> Dùng MSVC native trên psvn (đích Windows thật), mạnh hơn cross-check GNU.
+
+## 8. Không tuyên bố
+Không merge, không push, không tag, không đổi main. Spike chỉ là bằng chứng khả thi
+biên dịch + loopback; chưa soak 10 vòng, chưa leak test, chưa async h2 (W2 WIP).
