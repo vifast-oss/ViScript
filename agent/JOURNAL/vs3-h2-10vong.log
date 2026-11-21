@@ -1,0 +1,170 @@
+=== vòng 1 ===
+
+running 1 test
+100 request: 210 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.59s
+
+stress wall=15.66 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.06 s
+fallback_exit=0
+=== vòng 2 ===
+
+running 1 test
+100 request: 200 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 180 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.59s
+
+stress wall=15.64 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.07 s
+fallback_exit=0
+=== vòng 3 ===
+
+running 1 test
+100 request: 201 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 98 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.51s
+
+stress wall=15.56 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.08 s
+fallback_exit=0
+=== vòng 4 ===
+
+running 1 test
+100 request: 211 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 185 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.61s
+
+stress wall=15.68 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.09 s
+fallback_exit=0
+=== vòng 5 ===
+
+running 1 test
+100 request: 212 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 139 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.64 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.09 s
+fallback_exit=0
+=== vòng 6 ===
+
+running 1 test
+100 request: 212 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 101 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.52s
+
+stress wall=15.59 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.10 s
+fallback_exit=0
+=== vòng 7 ===
+
+running 1 test
+100 request: 215 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 183 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.61s
+
+stress wall=15.70 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.07 s
+fallback_exit=0
+=== vòng 8 ===
+
+running 1 test
+100 request: 216 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 181 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.61s
+
+stress wall=15.67 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.07 s
+fallback_exit=0
+=== vòng 9 ===
+
+running 1 test
+100 request: 211 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 141 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.63 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.09 s
+fallback_exit=0
+=== vòng 10 ===
+
+running 1 test
+100 request: 204 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 142 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.55s
+
+stress wall=15.63 s
+stress_exit=0
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+
+fallback wall=0.08 s
+fallback_exit=0

@@ -635,6 +635,7 @@ fn stress_100_request_4_authority() {
         }));
     }
     let mut net = Net::moi_voi_goc_tls(false, &[CERT]).expect("root test");
+    let bd = Instant::now();
     for i in 0..100 {
         let a = i % 4;
         let path = format!("/r{i}");
@@ -649,9 +650,15 @@ fn stress_100_request_4_authority() {
             "authority {i} phải chỉ 1 connection cho 25 request"
         );
     }
+    eprintln!(
+        "100 request: {:.0} ms; connection/authority = {:?}",
+        bd.elapsed().as_secs_f64() * 1_000.0,
+        ds.iter().map(MayChu::so_ket_noi).collect::<Vec<_>>()
+    );
 
     // Idle 15 s: lần request kế tiếp của mỗi authority phải mở connection mới.
     std::thread::sleep(Duration::from_millis(15_200));
+    let bd_idle = Instant::now();
     for (i, s) in ds.iter().enumerate() {
         let path = format!("/idle{i}");
         let body = http_get(&mut net, &s.url(&path), 3_000).expect("sau idle");
@@ -660,4 +667,9 @@ fn stress_100_request_4_authority() {
     for (i, s) in ds.iter().enumerate() {
         assert_eq!(s.so_ket_noi(), 2, "authority {i} phải mở lại sau idle");
     }
+    eprintln!(
+        "sau idle 15,2 s: {:.0} ms; connection/authority = {:?}",
+        bd_idle.elapsed().as_secs_f64() * 1_000.0,
+        ds.iter().map(MayChu::so_ket_noi).collect::<Vec<_>>()
+    );
 }
