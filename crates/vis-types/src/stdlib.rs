@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 153] = [
+pub const FUNCS: [StdFn; 157] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -516,6 +516,30 @@ pub const FUNCS: [StdFn; 153] = [
     // không cần `use std.str`.
     StdFn {
         name: "str.is_ascii",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    // **VD-270 (ascii-preds)**: bốn vị từ ASCII — `true` ⇔ `s` **không rỗng** và **mọi
+    // scalar** là ASCII thuộc nhóm (`char::is_ascii_*`); rỗng ⇒ `false` (khác
+    // `str.is_ascii("")` ⇒ `true`). Tham số đầu `str` nên sugar R5c `s.is_ascii_*()` chạy
+    // không cần `use std.str`.
+    StdFn {
+        name: "str.is_ascii_digit",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    StdFn {
+        name: "str.is_ascii_alphabetic",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    StdFn {
+        name: "str.is_ascii_alphanumeric",
+        params: &[Ty::Str],
+        ret: Ty::Bool,
+    },
+    StdFn {
+        name: "str.is_ascii_whitespace",
         params: &[Ty::Str],
         ret: Ty::Bool,
     },
