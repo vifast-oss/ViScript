@@ -1063,9 +1063,8 @@ pub fn method(
     }
 }
 
-/// **ST-61 (VD-96)**: phương thức kênh. Chặn (`send` đầy, `recv` rỗng) ⇒ **drain** hàng đợi sẵn
-/// sàng ([`crate::rt::chay_mot`]) rồi thử lại; hết queue ⇒ **`VS0505`** (deadlock, **không** treo).
-/// `send` sau `close` ⇒ **`VS0504`**; `close` **idempotent**; `recv` sau close trả nốt hàng rồi `None`.
+/// **ST-61 (VD-96) / VS3-2a**: phương thức kênh — chuyển sang `rt::chan` (wait-set `chan(0)`
+/// chỉ đường frame test; cap ≥ 1 giữ nguyên run-to-completion + `VS0505` khi hết task).
 fn chan_method(
     host: &mut dyn Host,
     c: std::rc::Rc<std::cell::RefCell<crate::rt::Chan>>,
@@ -1073,64 +1072,7 @@ fn chan_method(
     args: Vec<Value>,
     span: Span,
 ) -> crate::interp::R<Value> {
-    match name {
-        "send" => {
-            let Some(v) = args.into_iter().next() else {
-                return Err(trap(RT, "`send` cần 1 đối số", span));
-            };
-            loop {
-                {
-                    let mut ch = c.borrow_mut();
-                    if ch.closed {
-                        return Err(trap(
-                            crate::interp::SEND_CLOSED,
-                            "`send` vào kênh đã `close` (không nhận thêm phần tử)",
-                            span,
-                        ));
-                    }
-                    if !ch.day() {
-                        ch.buf.push_back(v);
-                        return Ok(Value::Unit);
-                    }
-                }
-                if !crate::rt::chay_mot(host)? {
-                    return Err(trap(
-                        crate::interp::DEADLOCK,
-                        "deadlock: `send` vào kênh **đầy** và không còn tác vụ nào chạy được",
-                        span,
-                    ));
-                }
-            }
-        }
-        "recv" => loop {
-            {
-                let mut ch = c.borrow_mut();
-                if let Some(v) = ch.buf.pop_front() {
-                    return Ok(Value::some(v));
-                }
-                if ch.closed {
-                    return Ok(Value::none());
-                }
-            }
-            if !crate::rt::chay_mot(host)? {
-                return Err(trap(
-                    crate::interp::DEADLOCK,
-                    "deadlock: `recv` trên kênh **rỗng** và không còn tác vụ nào chạy được",
-                    span,
-                ));
-            }
-        },
-        // `close` **idempotent** (VD-96 (3)): lần hai **không** lỗi.
-        "close" => {
-            c.borrow_mut().closed = true;
-            Ok(Value::Unit)
-        }
-        _ => Err(trap(
-            RT,
-            format!("kênh không có phương thức `{name}` (chỉ `send`, `recv`, `close`)"),
-            span,
-        )),
-    }
+    crate::rt::chan::method(host, c, name, args, span)
 }
 
 fn list_method(

@@ -21,6 +21,7 @@ use crate::builtin::Host;
 use crate::interp::{Abort, Trap, R, RT};
 use crate::value::Value;
 
+pub(crate) mod chan;
 /// **ST-276 (VD-256)**: định nghĩa sự kiện ngân sách **dùng chung** với `vis-bytecode`.
 /// Khai báo ở đây (thay vì `frame.rs`) để giữ nguyên phạm vi sửa của ST-278 — file nguồn nằm
 /// trong `frame/**`, nội dung là `include!` của `vis-bytecode/src/fee_shared.rs`.
@@ -76,6 +77,32 @@ pub struct Chan {
     pub cap: usize,
     pub buf: VecDeque<Value>,
     pub closed: bool,
+    /// **VS3-2a (chỉ frame test)** — sender `cap(0)` đang chờ, FIFO. `Taken` giữ record tới
+    /// khi sender resume để phân biệt "đã ghép xong" với "chưa gửi"; `Closed` để sender
+    /// resume trả `VS0504`.
+    pub(crate) send_waiters: VecDeque<ChanSend>,
+    /// **VS3-2a (chỉ frame test)** — frame receiver `cap(0)` đang chờ, FIFO.
+    pub(crate) recv_waiters: VecDeque<u32>,
+    /// **VS3-2a (chỉ frame test)** — giá trị đã ghép cho một receiver cụ thể (chờ resume).
+    pub(crate) recv_values: HashMap<u32, Value>,
+}
+
+/// **VS3-2a**: trạng thái một sender `cap(0)` đang chờ.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ChanSendState {
+    Pending,
+    Taken,
+    Closed,
+}
+
+/// **VS3-2a**: một sender `cap(0)` đang chờ (frame + giá trị + trạng thái).
+#[doc(hidden)]
+#[derive(Debug, Clone)]
+pub(crate) struct ChanSend {
+    pub frame: u32,
+    pub value: Value,
+    pub state: ChanSendState,
 }
 
 impl Chan {
@@ -84,6 +111,21 @@ impl Chan {
     }
     pub fn rong(&self) -> bool {
         self.buf.is_empty()
+    }
+
+    /// **VS3-2a** — gỡ mọi trạng thái chờ kênh của frame bị huỷ. Trả `true` nếu có thay đổi.
+    /// Giá trị đã ghép cho receiver bị huỷ bị bỏ (không refund); sender đã `Taken` coi như
+    /// đã gửi xong (không gửi lại). Không đóng kênh, không đụng handle.
+    pub(crate) fn huy_frame(&mut self, frame: u32) -> bool {
+        let mut changed = false;
+        let before = self.send_waiters.len();
+        self.send_waiters.retain(|s| s.frame != frame);
+        changed |= self.send_waiters.len() != before;
+        let before = self.recv_waiters.len();
+        self.recv_waiters.retain(|f| *f != frame);
+        changed |= self.recv_waiters.len() != before;
+        changed |= self.recv_values.remove(&frame).is_some();
+        changed
     }
 }
 
@@ -122,6 +164,9 @@ pub enum Wait {
     /// duy nhất và thế hệ `gen`. `key` là số thứ tự đăng ký tăng dần (không phải fd/tay),
     /// nên tay được mở lại không bao giờ bị event cũ đánh thức nhầm.
     Reactor { key: u64, gen: u64 },
+    /// **VS3-2a**: chờ rendezvous `chan(0)` — `id` là id kênh, `send` là chiều chờ.
+    /// Chỉ đường frame test phát sinh; runtime mặc định vẫn từ chối `chan(0)`.
+    Chan { id: u32, send: bool },
 }
 
 impl Wait {
@@ -129,7 +174,7 @@ impl Wait {
     pub fn gen_of(&self, fallback: u64) -> u64 {
         match self {
             Wait::Event { gen, .. } | Wait::Reactor { gen, .. } => *gen,
-            Wait::Task(_) => fallback,
+            Wait::Task(_) | Wait::Chan { .. } => fallback,
         }
     }
 }
@@ -831,11 +876,11 @@ pub fn tao_kenh(host: &mut dyn Host, cap: i64, span: Span) -> R<Value> {
             span,
         )));
     }
-    // **ST-94 (VD-112)**: capacity 0 (rendezvous) **không thể** trên scheduler một luồng.
-    // tyck **không** kiểm `cap` (VD-154 (c)): `kiem_chan_new` chỉ đòi `n` là `int`; `VS0505` là
-    // **runtime** trap (exit 1) kể cả với literal `chan[T](0)` — đường **động** (`let n = 0`) cũng
-    // **từ chối** tại đây, không treo. Bảng mã: `VS0505` UNCLASSIFIED ở `interp.rs`/VM (vd. test/kenh_cap0.rs).
-    if cap == 0 {
+    // **ST-94 (VD-112)**: capacity 0 (rendezvous) **không thể** trên scheduler một luồng
+    // mặc định. **VS3-2a**: riêng đường frame test đã có wait-set `chan(0)` (send chờ recv và
+    // ngược lại) ⇒ cho phép tạo; runtime mặc định (`frame.enabled == false`) vẫn từ chối.
+    // tyck **không** kiểm `cap` (VD-154 (c)): `kiem_chan_new` chỉ đòi `n` là `int`.
+    if cap == 0 && !host.sched().borrow().frame.enabled {
         return Err(Abort::Trap(Trap::new(
             crate::interp::DEADLOCK,
             "`chan[T](0)`: kênh capacity 0 (rendezvous) cần scheduler thật — chưa hỗ trợ ở vòng này; dùng capacity ≥ 1",
@@ -849,6 +894,9 @@ pub fn tao_kenh(host: &mut dyn Host, cap: i64, span: Span) -> R<Value> {
         cap: cap as usize,
         buf: VecDeque::new(),
         closed: false,
+        send_waiters: VecDeque::new(),
+        recv_waiters: VecDeque::new(),
+        recv_values: HashMap::new(),
     }));
     s.kenh.push(Rc::clone(&c));
     Ok(Value::Chan(c))
