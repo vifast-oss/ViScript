@@ -45,6 +45,20 @@ impl NetHost for NetGuard<'_> {
     fn cookie_jar(&mut self) -> Option<&mut vis_interp::cookie::CookieJar> {
         self.trong.cookie_jar()
     }
+    /// **VS3-4b2**: HTTP/2 cũng là truy cập mạng ⇒ kiểm `cap[Net]` trước khi host mở TLS.
+    #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+    fn http2_get(
+        &mut self,
+        dia_chi: &str,
+        target: &str,
+        method: &str,
+        headers: &[(String, String)],
+        timeout_ms: u64,
+    ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+        self.quyen.kiem_net(dia_chi)?;
+        self.trong
+            .http2_get(dia_chi, target, method, headers, timeout_ms)
+    }
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong.listen(dia_chi)
