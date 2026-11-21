@@ -1,0 +1,256 @@
+# VS3-W2 release mode — log (main 14310f4)
+
+## cargo test --release -p vis-cli --test vs3_http2 --test vs3_tls --test http
+   Compiling shlex v2.0.1
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling find-msvc-tools v0.1.15
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling version_check v0.9.5
+   Compiling cfg-if v1.0.5
+   Compiling typenum v1.20.1
+   Compiling tinyvec v1.13.3
+   Compiling vis-diag v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-diag)
+   Compiling vcpkg v0.2.15
+   Compiling pkg-config v0.3.34
+   Compiling thiserror v2.0.21
+   Compiling cc v1.11.2
+   Compiling zeroize v1.9.2
+   Compiling once_cell v1.21.4
+   Compiling pin-project-lite v0.2.18
+   Compiling generic-array v0.14.7
+   Compiling bytes v1.12.2
+   Compiling rustls-pki-types v1.16.0
+   Compiling untrusted v0.9.0
+   Compiling cpufeatures v0.2.17
+   Compiling foldhash v0.1.5
+   Compiling tracing-core v0.1.36
+   Compiling equivalent v1.0.3
+   Compiling rustls v0.23.46
+   Compiling unicode-normalization v0.1.26
+   Compiling hashbrown v0.15.5
+   Compiling futures-core v0.3.34
+   Compiling itoa v1.0.19
+   Compiling hashbrown v0.17.1
+   Compiling futures-sink v0.3.34
+   Compiling subtle v2.6.1
+   Compiling bitflags v2.13.2
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling vis-syntax v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-syntax)
+   Compiling syn v2.0.119
+   Compiling syn v3.0.10
+   Compiling getrandom v0.2.17
+   Compiling tokio v1.54.1
+   Compiling hashlink v0.10.0
+   Compiling http v1.5.0
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling tracing v0.1.44
+   Compiling digest v0.10.7
+   Compiling atomic-waker v1.1.2
+   Compiling indexmap v2.14.2
+   Compiling sha2 v0.10.9
+   Compiling smallvec v1.16.6
+   Compiling slab v0.4.12
+   Compiling fnv v1.0.7
+   Compiling fallible-iterator v0.3.0
+   Compiling mio v1.2.5
+   Compiling webpki-roots v1.0.11
+   Compiling ring v0.17.14
+   Compiling libsqlite3-sys v0.35.0
+   Compiling vis-types v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-types)
+   Compiling vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-fmt)
+   Compiling enumflags2_derive v0.7.12
+   Compiling tokio-util v0.7.20
+   Compiling thiserror-impl v2.0.21
+   Compiling enumflags2 v0.7.12
+   Compiling h2 v0.4.20
+   Compiling landlock v0.4.7
+   Compiling vis-host-linux v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/vis-host-linux)
+   Compiling vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-bytecode)
+   Compiling vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+   Compiling vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+   Compiling rustls-webpki v0.103.17
+   Compiling rusqlite v0.37.0
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 3m 32s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/833e3d26956c7967/out/http-833e3d26956c7967)
+
+running 22 tests
+test http_content_length_khong_dong_connection ... ok
+test http_head_khong_theo_redirect ... ok
+test http_chunked_co_mo_rong ... ok
+test http_het_gio ... ok
+test http_200_byte ... ok
+test http_duong_mac_dinh ... ok
+test http_404 ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+test http_body_rong ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_chunked_ba_chunk ... ok
+test http_gioi_han ... ok
+test http_head_khong_doc_than ... ok
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.25s
+
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/99faceaef5e29a1d/out/vs3_http2-99faceaef5e29a1d)
+
+running 14 tests
+test h2_basic_auth ... ok
+test fallback_http1_khi_khong_alpn ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_redirect_va_cookie ... ok
+test h2_get_va_head ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_timeout_ro_rang ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.61s
+
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/release/build/vis-cli/0c06e757a4ff5a4e/out/vs3_tls-0c06e757a4ff5a4e)
+
+running 21 tests
+test async_https_timeout_doc_than_hai_engine ... ok
+test async_net_backend_tls_doc_ghi_qua_reactor ... ok
+test async_https_tu_choi_chung_chi_sai_hai_engine ... ok
+test async_net_backend_tls_connect_qua_reactor ... ok
+test async_https_body_lon_loopback_hai_engine ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test async_https_redirect_loopback_hai_engine ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+test https_chan_ha_cap_ve_http ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_head_khong_theo_redirect ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test async_https_head_loopback_hai_engine ... ok
+test https_ipv6_loopback ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test async_https_get_loopback_hai_engine ... ok
+test async_https_handshake_timeout_hai_engine ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.37s
+
+RELEASE_TEST_WALL=237.51 s
+
+## 10 vòng stress release
+=== vòng 1 ===
+
+running 1 test
+100 request: 190 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 171 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.57s
+
+stress wall=15.72 s
+stress_exit=0
+=== vòng 2 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.63 s
+stress_exit=0
+=== vòng 3 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 173 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.65 s
+stress_exit=0
+=== vòng 4 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 175 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.63 s
+stress_exit=0
+=== vòng 5 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 51 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.44s
+
+stress wall=15.51 s
+stress_exit=0
+=== vòng 6 ===
+
+running 1 test
+100 request: 179 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 7 ===
+
+running 1 test
+100 request: 181 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 178 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.57s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 8 ===
+
+running 1 test
+100 request: 182 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 92 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.48s
+
+stress wall=15.57 s
+stress_exit=0
+=== vòng 9 ===
+
+running 1 test
+100 request: 180 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 174 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.64 s
+stress_exit=0
+=== vòng 10 ===
+
+running 1 test
+100 request: 176 ms; connection/authority = [1, 1, 1, 1]
+sau idle 15,2 s: 176 ms; connection/authority = [2, 2, 2, 2]
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 15.56s
+
+stress wall=15.61 s
+stress_exit=0
+TOTAL_WALL=156 s
