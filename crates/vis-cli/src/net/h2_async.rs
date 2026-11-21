@@ -1,28 +1,20 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **VS3-W2 SPIKE (2026-11-21)** — HTTP/2 **reactor-native** trên Unix.
+//! **VS3-W2 (VD-271)** — HTTP/2 **reactor-native** cho đường async, feature `async-h2`
+//! (**default-off**).
 //!
-//! Feature `h2-async-spike` (**default-off**); không đổi API sync/`Net`/`PhienH2`.
+//! Session dùng chung protocol với client sync qua [`super::h2_core::H2Core`]; module này chỉ
+//! thêm phần **I/O không chặn**: adapter [`IoH2`] trên rustls nonblocking, handshake nhiều bước,
+//! và vòng chờ `mio` khi driver cần. Không executor tự quay, không thread bridge.
 //!
-//! Mục tiêu spike: chứng minh có thể giữ **một** connection h2 và lái state machine của
-//! `h2::client` bằng readiness của reactor, không executor tự quay (`yield_now`), không thread
-//! bridge. Framing/HPACK/flow-control vẫn là crate `h2` (không copy), TLS vẫn là rustls + cấu
-//! hình `cau_hinh_h2` của `net/tls.rs`.
-//!
-//! - [`H2Async`] là phiên nhiều stream: [`H2Async::gui`] đưa request vào **trước**, [`H2Async::tai`]
-//!   lái tới khi mọi stream xong. Mỗi vòng `tai` chỉ `poll` future rồi chờ fd bằng `mio`; adapter
-//!   [`IoH2`] trả `Pending` khi socket `WouldBlock` và ghi lại chiều cần chờ.
-//! - [`h2_get_async`] là API tối thiểu (`GET`, một request) dựng trên phiên đó.
-//! - Giới hạn: header 64 KiB, body 8 MiB; vượt cap ⇒ `RST_STREAM(CANCEL)` + lỗi rõ.
-//! - Timeout: một hạn monotonic cho cả connect/handshake/response; hết hạn ⇒ RST các stream còn
-//!   mở + `Err` chứa "quá thời gian", phiên bị bỏ (không tái dùng).
-//!
-//! **Chưa nối vào `FrameReactorBackend`/`async_net.rs`**: đây là spike chứng minh phần lõi
-//! (session poll-driven). Xem `agent/JOURNAL/vs3-w2-async-h2-spike.md` cho gap analysis.
+//! - [`H2Async::moi_cho_bap`] nhận `KenhTls` đã handshake TLS (ALPN h2) và để h2 handshake ở
+//!   trạng thái chờ; `tien()` lái một bước, trả `false` khi cần readiness.
+//! - [`h2_get_async`] là API tối thiểu (`GET`) cho test/embedding. Đường production dùng
+//!   [`H2Async`] qua `AsyncNet` (`h2_ready`/`h2_send`/`h2_poll`).
+//! - Feature này **không** đổi API sync/`Net`; sync vẫn dùng `net/h2.rs` trên cùng `H2Core`.
 
-#![cfg(all(feature = "h2-async-spike", feature = "http2", feature = "tls", unix))]
+#![cfg(all(feature = "async-h2", feature = "http2", feature = "tls", unix))]
 
 use std::cell::Cell;
-use std::collections::HashMap;
 use std::future::Future;
 use std::io::{self, ErrorKind, Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
@@ -33,176 +25,24 @@ use std::task::{Context, Poll as TaskPoll, Waker};
 use std::time::{Duration, Instant};
 
 use bytes::Bytes;
-use http::Request;
 use mio::unix::SourceFd;
 use mio::{Events, Interest, Poll, Token};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use vis_interp::builtin::KetQuaHttp2;
-use vis_interp::net::MAX_HTTP;
 
-use super::h2::{loi_h2, MAX_HEADER};
+use super::h2_core::H2Core;
 use super::tls::{self, CauHinh, KenhTls};
 
 /// Bit trong [`IoH2::co`]: lần `poll` gần nhất đã gặp `WouldBlock` ở chiều đọc/ghi.
 const MUON_DOC: u8 = 1;
 const MUON_GHI: u8 = 2;
 
-/// Một stream h2 đang chờ; tách khỏi connection để nhiều stream sống song song.
-struct Song {
-    /// Giữ `SendStream` để còn `RST_STREAM` khi timeout/cap/lỗi.
-    gui: Option<::h2::SendStream<Bytes>>,
-    /// Chờ header response; `None` sau khi đã nhận header.
-    resp: Option<Pin<Box<::h2::client::ResponseFuture>>>,
-    recv: Option<::h2::RecvStream>,
-    status: u16,
-    headers: Vec<(String, String)>,
-    body: Vec<u8>,
-    xong_data: bool,
-    ket_qua: Option<Result<KetQuaHttp2, String>>,
-}
-
-impl Song {
-    fn moi(resp: ::h2::client::ResponseFuture, gui: ::h2::SendStream<Bytes>) -> Self {
-        Self {
-            gui: Some(gui),
-            resp: Some(Box::pin(resp)),
-            recv: None,
-            status: 0,
-            headers: Vec::new(),
-            body: Vec::new(),
-            xong_data: false,
-            ket_qua: None,
-        }
-    }
-
-    fn dat_loi(&mut self, loi: String) {
-        if let Some(s) = self.gui.as_mut() {
-            s.send_reset(::h2::Reason::CANCEL);
-        }
-        self.ket_qua = Some(Err(loi));
-        self.gui = None;
-        self.resp = None;
-        self.recv = None;
-    }
-
-    fn hoan_tat(&mut self) {
-        self.ket_qua = Some(Ok(KetQuaHttp2 {
-            status: self.status,
-            headers: std::mem::take(&mut self.headers),
-            body: std::mem::take(&mut self.body),
-        }));
-        self.gui = None;
-        self.resp = None;
-        self.recv = None;
-    }
-
-    /// Một lượt poll stream; lỗi **của stream** được ghi vào `ket_qua`, không phá session.
-    fn buoc(&mut self, cx: &mut Context<'_>, tien: &mut bool) {
-        if self.ket_qua.is_some() {
-            return;
-        }
-        if self.recv.is_none() {
-            let Some(resp) = self.resp.as_mut() else {
-                return;
-            };
-            match resp.as_mut().poll(cx) {
-                TaskPoll::Ready(Ok(r)) => {
-                    *tien = true;
-                    let (parts, b) = r.into_parts();
-                    let tong: usize = parts
-                        .headers
-                        .iter()
-                        .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
-                        .sum();
-                    if tong > MAX_HEADER {
-                        self.dat_loi(format!("header HTTP/2 quá lớn (> {MAX_HEADER} byte)"));
-                        return;
-                    }
-                    self.status = parts.status.as_u16();
-                    self.headers = parts
-                        .headers
-                        .iter()
-                        .map(|(k, v)| {
-                            (
-                                k.as_str().to_string(),
-                                String::from_utf8_lossy(v.as_bytes()).into_owned(),
-                            )
-                        })
-                        .collect();
-                    self.recv = Some(b);
-                    self.resp = None;
-                }
-                TaskPoll::Ready(Err(e)) => {
-                    *tien = true;
-                    self.dat_loi(loi_h2(&e, "response"));
-                    return;
-                }
-                TaskPoll::Pending => {}
-            }
-        }
-        if self.ket_qua.is_some() {
-            return;
-        }
-        let Some(mut r) = self.recv.take() else {
-            return;
-        };
-        if !self.xong_data {
-            match r.poll_data(cx) {
-                TaskPoll::Ready(Some(Ok(b))) => {
-                    *tien = true;
-                    if self.body.len().saturating_add(b.len()) > MAX_HTTP {
-                        self.dat_loi(format!(
-                            "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
-                        ));
-                        return;
-                    }
-                    let n = b.len();
-                    self.body.extend_from_slice(&b);
-                    drop(b);
-                    // h2 không tự trả cửa sổ flow-control; phải release từng chunk.
-                    if let Err(e) = r.flow_control().release_capacity(n) {
-                        self.dat_loi(format!("lỗi HTTP/2 khi giải phóng flow-control: {e}"));
-                        return;
-                    }
-                    self.recv = Some(r);
-                }
-                TaskPoll::Ready(Some(Err(e))) => {
-                    *tien = true;
-                    self.dat_loi(loi_h2(&e, "đọc body"));
-                }
-                TaskPoll::Ready(None) => {
-                    *tien = true;
-                    self.xong_data = true;
-                    self.recv = Some(r);
-                }
-                TaskPoll::Pending => {
-                    self.recv = Some(r);
-                }
-            }
-        } else {
-            match r.poll_trailers(cx) {
-                TaskPoll::Ready(Ok(_)) => {
-                    *tien = true;
-                    self.hoan_tat();
-                }
-                TaskPoll::Ready(Err(e)) => {
-                    *tien = true;
-                    self.dat_loi(loi_h2(&e, "trailer"));
-                }
-                TaskPoll::Pending => {
-                    self.recv = Some(r);
-                }
-            }
-        }
-    }
-}
-
 /// Adapter `AsyncRead/AsyncWrite` **reactor-native** trên `KenhTls` nonblocking.
 ///
 /// Không tự chờ: `poll_read`/`poll_write`/`poll_flush` trả `Pending` khi `WouldBlock` và đánh dấu
 /// chiều cần đăng ký với reactor trong `co`.
-struct IoH2 {
+pub(super) struct IoH2 {
     k: KenhTls,
     co: Rc<Cell<u8>>,
 }
@@ -212,7 +52,7 @@ impl IoH2 {
         self.co.set(self.co.get() | bit);
     }
 
-    /// Đẩy record TLS đang đệm ra socket; `Ok(false)` nếu `WouldBlock` (đã đánh dấu WRITE).
+    /// Đẩy record TLS đang đệm ra socket; `WouldBlock` chỉ đánh dấu WRITE, không mất byte.
     fn thu_ghi(&mut self) -> io::Result<()> {
         while self.k.conn.wants_write() {
             match self.k.conn.write_tls(&mut self.k.sock) {
@@ -382,34 +222,6 @@ fn cho_san_sang(
     }
 }
 
-/// Lái một future (handshake h2) bằng readiness; không executor, không thread.
-fn cho_future<F: Future>(
-    f: F,
-    co: &Rc<Cell<u8>>,
-    fd: RawFd,
-    han: Instant,
-) -> Result<F::Output, String> {
-    let mut poll = Poll::new().map_err(|e| format!("không tạo được mio::Poll: {e}"))?;
-    let mut events = Events::with_capacity(16);
-    let w = Waker::noop();
-    let mut cx = Context::from_waker(w);
-    let mut f = Box::pin(f);
-    loop {
-        co.set(0);
-        match f.as_mut().poll(&mut cx) {
-            TaskPoll::Ready(v) => return Ok(v),
-            TaskPoll::Pending => {}
-        }
-        if Instant::now() >= han {
-            return Err("quá thời gian HTTP/2 (handshake)".to_string());
-        }
-        match cho_san_sang(&mut poll, &mut events, fd, interest_tu_co(co.get()), han)? {
-            Cho::SanSang => {}
-            Cho::HetHan => return Err("quá thời gian HTTP/2 (handshake)".to_string()),
-        }
-    }
-}
-
 /// Connect TCP nonblocking + TLS handshake trong **một** hạn; socket trả về nonblocking.
 fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String> {
     use rustls::pki_types::ServerName;
@@ -467,7 +279,6 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
             loi_cuoi = Some(format!("{addr}: {e}"));
             continue;
         }
-        // Chuyển sang `std::net::TcpStream` (giữ nguyên nonblocking) để dùng `KenhTls` chung.
         let mut sock: TcpStream = sock.into();
         let _ = sock.set_nodelay(true);
         let mut conn = ClientConnection::new(std::sync::Arc::clone(cfg), ten.clone())
@@ -489,7 +300,7 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
 }
 
 /// Handshake rustls không chặn socket: chỉ `read_tls`/`write_tls` khi reactor báo sẵn sàng.
-fn bap_tay(
+pub(super) fn bap_tay(
     conn: &mut rustls::ClientConnection,
     sock: &mut TcpStream,
     dia_chi: &str,
@@ -547,116 +358,174 @@ fn bap_tay(
     Ok(())
 }
 
-/// Phiên HTTP/2 nhiều stream trên **một** connection; caller tự quyết định thời điểm chờ.
+type BapH2 = Pin<
+    Box<
+        dyn Future<
+            Output = Result<
+                (
+                    ::h2::client::SendRequest<Bytes>,
+                    ::h2::client::Connection<IoH2, Bytes>,
+                ),
+                ::h2::Error,
+            >,
+        >,
+    >,
+>;
+
+enum TrangThai {
+    /// Đã có TLS, đang chờ SETTINGS/frame handshake h2.
+    DangBap(BapH2),
+    Song(H2Core<IoH2>),
+    Dong,
+}
+
+/// Phiên HTTP/2 nhiều stream trên **một** connection; `tien()` không bao giờ block.
 pub struct H2Async {
-    send: ::h2::client::SendRequest<Bytes>,
-    conn: Pin<Box<::h2::client::Connection<IoH2, Bytes>>>,
+    trang_thai: TrangThai,
     authority: String,
-    songs: HashMap<u64, Song>,
-    next_id: u64,
     co: Rc<Cell<u8>>,
     fd: RawFd,
-    da_dong: bool,
 }
 
 impl H2Async {
-    /// Mở TLS + ALPN h2 + handshake h2 trong hạn `timeout_ms`; server không chọn h2 ⇒ lỗi rõ.
-    pub(crate) fn moi(cfg: &CauHinh, dia_chi: &str, timeout_ms: u64) -> Result<Self, String> {
-        let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
-        let k = noi_tls(cfg, dia_chi, han)?;
+    /// Bọc `KenhTls` đã handshake TLS (ALPN h2) và bắt đầu h2 handshake **chưa chạy**.
+    pub(super) fn moi_cho_bap(k: KenhTls, authority: &str) -> Self {
         let fd = k.sock.as_raw_fd();
         let co = Rc::new(Cell::new(0u8));
         let io = IoH2 {
             k,
             co: Rc::clone(&co),
         };
-        let kq = cho_future(::h2::client::handshake(io), &co, fd, han)?;
-        let (send, conn) = kq.map_err(|e| format!("lỗi HTTP/2 handshake tới `{dia_chi}`: {e}"))?;
-        Ok(Self {
-            send,
-            conn: Box::pin(conn),
-            authority: dia_chi.to_string(),
-            songs: HashMap::new(),
-            next_id: 0,
+        Self {
+            trang_thai: TrangThai::DangBap(Box::pin(::h2::client::handshake(io))),
+            authority: authority.to_string(),
             co,
             fd,
-            da_dong: false,
-        })
+        }
     }
 
-    /// Gửi request (end_stream ngay, body rỗng) và trả id nội bộ để lấy kết quả.
+    /// Mở TLS + ALPN h2 + handshake h2 trong hạn `timeout_ms` (test/embedding).
+    pub(crate) fn moi(cfg: &CauHinh, dia_chi: &str, timeout_ms: u64) -> Result<Self, String> {
+        let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
+        let k = noi_tls(cfg, dia_chi, han)?;
+        let mut p = Self::moi_cho_bap(k, dia_chi);
+        p.tai_handshake(han)?;
+        Ok(p)
+    }
+
+    pub(super) fn fd(&self) -> RawFd {
+        self.fd
+    }
+
+    fn trang_thai_da_san_sang(&self) -> bool {
+        matches!(self.trang_thai, TrangThai::Song(_))
+    }
+
+    pub(super) fn san_sang(&self) -> bool {
+        self.trang_thai_da_san_sang()
+    }
+
+    pub(super) fn interest(&self) -> Interest {
+        interest_tu_co(self.co.get())
+    }
+
+    pub(super) fn xoa_co(&self) {
+        self.co.set(0);
+    }
+
+    /// Lái **một** bước: handshake h2, hoặc connection + mọi stream.
+    ///
+    /// `Ok(true)` = có tiến triển (gọi lại ngay); `Ok(false)` = cần chờ fd sẵn sàng.
+    pub(super) fn tien(&mut self) -> Result<bool, String> {
+        let mut tt = std::mem::replace(&mut self.trang_thai, TrangThai::Dong);
+        let kq = match &mut tt {
+            TrangThai::DangBap(f) => {
+                let w = Waker::noop();
+                let mut cx = Context::from_waker(w);
+                match f.as_mut().poll(&mut cx) {
+                    TaskPoll::Ready(Ok((send, conn))) => {
+                        tt = TrangThai::Song(H2Core::moi(send, conn, self.authority.clone()));
+                        Ok(true)
+                    }
+                    TaskPoll::Ready(Err(e)) => Err(format!(
+                        "lỗi HTTP/2 handshake tới `{}`: {e}",
+                        self.authority
+                    )),
+                    TaskPoll::Pending => Ok(false),
+                }
+            }
+            TrangThai::Song(core) => core.buoc(),
+            TrangThai::Dong => Ok(false),
+        };
+        self.trang_thai = if kq.is_err() { TrangThai::Dong } else { tt };
+        kq
+    }
+
+    /// Đưa request vào phiên (end_stream ngay); trả id nội bộ.
     pub fn gui(
         &mut self,
         method: &str,
         target: &str,
         headers: &[(String, String)],
     ) -> Result<u64, String> {
-        if self.da_dong {
-            return Err("phiên HTTP/2 đã đóng".to_string());
+        match &mut self.trang_thai {
+            TrangThai::Song(core) => core.gui(method, target, headers),
+            TrangThai::Dong => Err("phiên HTTP/2 đã đóng".to_string()),
+            TrangThai::DangBap(_) => Err("phiên HTTP/2 chưa handshake xong".to_string()),
         }
-        let uri = format!("https://{}{}", self.authority, target);
-        let mut builder = Request::builder().method(method).uri(uri);
-        for (k, v) in headers {
-            builder = builder.header(k.as_str(), v.as_str());
-        }
-        let req = builder
-            .body(())
-            .map_err(|e| format!("request HTTP/2 không hợp lệ: {e}"))?;
-        let (resp, gui) = self
-            .send
-            .send_request(req, true)
-            .map_err(|e| loi_h2(&e, "gửi request"))?;
-        let id = self.next_id;
-        self.next_id += 1;
-        self.songs.insert(id, Song::moi(resp, gui));
-        Ok(id)
     }
 
-    /// Còn stream chưa có kết quả?
-    pub fn con_cho(&self) -> bool {
-        self.songs.values().any(|s| s.ket_qua.is_none())
+    pub fn ket_qua(&mut self, id: u64) -> Option<Result<KetQuaHttp2, String>> {
+        match &mut self.trang_thai {
+            TrangThai::Song(core) => core.ket_qua(id),
+            _ => None,
+        }
     }
 
-    /// Poll connection + mọi stream **một lượt**; `true` = vừa có tiến triển.
-    fn buoc(&mut self) -> Result<bool, String> {
-        if self.da_dong {
-            return Ok(false);
+    /// Còn việc: handshake chưa xong hoặc còn stream chờ.
+    pub(super) fn con_viec(&self) -> bool {
+        match &self.trang_thai {
+            TrangThai::DangBap(_) => true,
+            TrangThai::Song(core) => core.con_cho(),
+            TrangThai::Dong => false,
         }
-        let mut tien = false;
-        let w = Waker::noop();
-        let mut cx = Context::from_waker(w);
-        // Khi connection đóng/lỗi, poll nốt các stream **trước** để h2 kịp trả lỗi GOAWAY/RST
-        // theo từng stream; chỉ stream còn treo mới nhận lỗi connection.
-        let loi_conn = match self.conn.as_mut().poll(&mut cx) {
-            TaskPoll::Ready(Ok(())) => {
-                Some("kết nối HTTP/2 đã đóng khi còn stream chờ".to_string())
-            }
-            TaskPoll::Ready(Err(e)) => Some(loi_h2(&e, "kết nối")),
-            TaskPoll::Pending => None,
-        };
-        if loi_conn.is_some() {
-            self.da_dong = true;
-            for song in self.songs.values_mut() {
-                song.buoc(&mut cx, &mut tien);
-            }
-            if let Some(loi) = &loi_conn {
-                self.loi_het(loi.clone());
-            }
-            return match &loi_conn {
-                Some(loi) => Err(loi.clone()),
-                None => Ok(tien),
-            };
-        }
-        for song in self.songs.values_mut() {
-            song.buoc(&mut cx, &mut tien);
-        }
-        Ok(tien)
     }
 
-    fn loi_het(&mut self, loi: String) {
-        for s in self.songs.values_mut() {
-            if s.ket_qua.is_none() {
-                s.dat_loi(loi.clone());
+    pub(super) fn huy(&mut self, loi: String) {
+        if let TrangThai::Song(core) = &mut self.trang_thai {
+            core.huy(loi);
+        }
+        self.trang_thai = TrangThai::Dong;
+    }
+
+    fn tai_handshake(&mut self, han: Instant) -> Result<(), String> {
+        let mut poll = Poll::new().map_err(|e| format!("không tạo được mio::Poll: {e}"))?;
+        let mut events = Events::with_capacity(16);
+        loop {
+            self.co.set(0);
+            while self.tien()? {
+                if self.san_sang() {
+                    return Ok(());
+                }
+                if Instant::now() >= han {
+                    return Err("quá thời gian HTTP/2 (handshake)".to_string());
+                }
+            }
+            if self.san_sang() {
+                return Ok(());
+            }
+            if Instant::now() >= han {
+                return Err("quá thời gian HTTP/2 (handshake)".to_string());
+            }
+            match cho_san_sang(
+                &mut poll,
+                &mut events,
+                self.fd,
+                interest_tu_co(self.co.get()),
+                han,
+            )? {
+                Cho::SanSang => {}
+                Cho::HetHan => return Err("quá thời gian HTTP/2 (handshake)".to_string()),
             }
         }
     }
@@ -667,26 +536,24 @@ impl H2Async {
         let mut events = Events::with_capacity(16);
         loop {
             self.co.set(0);
-            while self.buoc()? {
-                if !self.con_cho() {
+            while self.tien()? {
+                if !self.con_viec() {
                     return Ok(());
                 }
                 // Server có thể bơm dữ liệu liên tục; deadline vẫn phải có hiệu lực trong
                 // vòng "còn tiến triển", không chỉ lúc socket WouldBlock.
                 if Instant::now() >= han {
                     let loi = "quá thời gian chờ phản hồi HTTP/2".to_string();
-                    self.loi_het(loi.clone());
-                    self.da_dong = true;
+                    self.huy(loi.clone());
                     return Err(loi);
                 }
             }
-            if !self.con_cho() {
+            if !self.con_viec() {
                 return Ok(());
             }
             if Instant::now() >= han {
                 let loi = "quá thời gian chờ phản hồi HTTP/2".to_string();
-                self.loi_het(loi.clone());
-                self.da_dong = true;
+                self.huy(loi.clone());
                 return Err(loi);
             }
             match cho_san_sang(
@@ -699,8 +566,7 @@ impl H2Async {
                 Cho::SanSang => {}
                 Cho::HetHan => {
                     let loi = "quá thời gian chờ phản hồi HTTP/2".to_string();
-                    self.loi_het(loi.clone());
-                    self.da_dong = true;
+                    self.huy(loi.clone());
                     return Err(loi);
                 }
             }
@@ -711,11 +577,6 @@ impl H2Async {
     pub fn tai(&mut self, timeout_ms: u64) -> Result<(), String> {
         let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
         self.tai_trong_han(han)
-    }
-
-    /// Lấy kết quả của một stream (một lần).
-    pub fn ket_qua(&mut self, id: u64) -> Option<Result<KetQuaHttp2, String>> {
-        self.songs.get_mut(&id).and_then(|s| s.ket_qua.take())
     }
 }
 

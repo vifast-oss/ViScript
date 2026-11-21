@@ -877,9 +877,9 @@ fn h2_timeout_giua_body_va_cleanup() {
     );
 }
 
-/// **VS3-W2 spike** — HTTP/2 reactor-native (`feature = "h2-async-spike"`, default-off).
+/// **VS3-W2 spike** — HTTP/2 reactor-native (`feature = "async-h2"`, default-off).
 /// Chỉ chạy khi bật feature; 19 test sync phía trên không đổi.
-#[cfg(feature = "h2-async-spike")]
+#[cfg(feature = "async-h2")]
 mod h2_async_spike {
     use super::*;
     use std::fs;

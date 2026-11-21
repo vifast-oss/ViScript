@@ -49,10 +49,10 @@ pkg-sig = ["dep:ring"]
 # chọn `--features http2`. Kéo `h2` + tokio (chỉ IO traits, không runtime mặc định) + http/bytes;
 # đã review license/unsafe ở `agent/BAO-CAO-VS3-4B2-H2-IMPLEMENT-2026-11-21.md`.
 http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
-# **VS3-W2 spike (2026-11-21)** — HTTP/2 **reactor-native** cho đường async. **Default-off**,
-# chỉ dùng để chứng minh khả thi (`net/h2_async.rs`, test `vs3_http2`). Không đổi API sync;
-# không thêm dependency (dùng lại `h2`/`http2`, rustls và mio đã có).
-h2-async-spike = ["http2", "tls"]
+# **VS3-W2 (2026-11-21)** — HTTP/2 **reactor-native** cho đường async. **Default-off**;
+# dùng chung `H2Core` với sync (`net/h2_core.rs`), không đổi API sync, không thêm dependency
+# (dùng lại `h2`/`http2`, rustls và mio đã có).
+async-h2 = ["http2", "tls"]
 
 # E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
 # feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
