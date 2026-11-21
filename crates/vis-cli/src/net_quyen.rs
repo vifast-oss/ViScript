@@ -26,6 +26,12 @@ impl NetHost for NetGuard<'_> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong.connect_tls(dia_chi, timeout_ms)
     }
+    /// **VS3-1d/W1f-HTTP**: đường async tự gọi reactor nên CLI kiểm `cap[Net]` qua hook này
+    /// trước khi mở kết nối; không thực hiện I/O.
+    fn check_net(&mut self, dia_chi: &str) -> Result<(), String> {
+        self.quyen.kiem_net(dia_chi)
+    }
+
     /// **VS3-4b**: kể cả lấy kết nối từ pool, mỗi lần `connect_http` vẫn kiểm `cap[Net]` trên host.
     fn connect_http(
         &mut self,

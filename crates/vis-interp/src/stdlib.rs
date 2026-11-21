@@ -97,7 +97,9 @@ pub use frame_net::{
     frame_net_set_write, frame_net_set_write_timeout, frame_net_take_write, frame_net_write_timeout,
 };
 use netconst::gioi_han_net_read;
-pub use netconst::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP};
+pub use netconst::{
+    FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT, FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP,
+};
 
 // ===========================================================================
 // ST-277 / VD-256 — connect/write nonblocking trên ĐƯỜNG FRAME TEST (chỉ test).
@@ -1035,6 +1037,17 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             } else {
                 5_000
             };
+            // **VS3-1d/W1f-HTTP**: chương trình async chạy state machine reactor, không gọi
+            // host blocking giữa request. Không backend ⇒ lỗi rõ, không fallback chặn.
+            if host.sched().borrow().frame.enabled {
+                if host.sched().borrow().frame.backend.is_some() {
+                    return crate::net::http_get_async(host, url, timeout.max(0) as u64, span);
+                }
+                return Ok(Value::err(Value::ban_ghi_error(
+                    "async HTTP cần reactor backend thật (không fallback blocking)",
+                    None,
+                )));
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 crate::net::http_get(host, url, timeout.max(0) as u64).map(Value::Str),
@@ -1049,6 +1062,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             } else {
                 5_000
             };
+            if host.sched().borrow().frame.enabled {
+                if host.sched().borrow().frame.backend.is_some() {
+                    return crate::net::http_head_async(host, url, timeout.max(0) as u64, span);
+                }
+                return Ok(Value::err(Value::ban_ghi_error(
+                    "async HTTP cần reactor backend thật (không fallback blocking)",
+                    None,
+                )));
+            }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             let kq = crate::net::http_head(host, url, timeout.max(0) as u64).map(|(st, hs)| {
                 let headers = Value::Map(

@@ -9,6 +9,10 @@ pub const NET_READ_CAP: i64 = 8 * 1024 * 1024;
 /// Tiền tố handle cho một lần `net.connect` trên đường frame test (`N:<dia_chi>`).
 #[doc(hidden)]
 pub const FRAME_NET_CONNECT: &str = "N:";
+/// Tiền tố handle cho **TLS connect** trên đường frame (HTTP async): `T:<dia_chi>`.
+/// Chỉ `async_http` dùng; không lộ ra API ngôn ngữ.
+#[doc(hidden)]
+pub const FRAME_TLS_CONNECT: &str = "T:";
 /// Tiền tố handle cho một lần `net.write` trên đường frame test (`W:<tay>`).
 #[doc(hidden)]
 pub const FRAME_NET_WRITE: &str = "W:";

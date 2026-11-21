@@ -543,6 +543,14 @@ impl Scheduler {
 // ST-267 / VD-251 — API điều khiển frame scheduler (CHỈ TEST/DEBUG) nằm trong `rt/sched.rs`.
 // ===========================================================================
 
+/// Kết quả nội bộ của một lần thử reactor thật — cho phép `net.read` giữ chuỗi lossy
+/// còn HTTP async nhận **byte thô** (không cắt UTF-8/không đổi Content-Length).
+enum RealPoll {
+    Value(Value),
+    Bytes(Vec<u8>),
+    Loi(String),
+}
+
 // ===========================================================================
 // ST-271 / VD-254 — LÁT 3: readiness THẬT qua adapter selector (CHỈ test).
 //
@@ -568,10 +576,38 @@ impl Scheduler {
         span: Span,
     ) -> R<Value> {
         if let Some(b) = self.frame.backend.clone() {
-            self.frame_real_poll(&b, op, handle, max, timeout_ms, span)
+            match self.frame_real_poll(&b, op, handle, max, timeout_ms, span, false)? {
+                RealPoll::Value(v) => Ok(v),
+                RealPoll::Loi(e) => Ok(err_str(e)),
+                RealPoll::Bytes(_) => unreachable!("non-raw poll không trả byte thô"),
+            }
         } else {
             let _ = max;
             self.frame_reactor_poll(op, handle, timeout_ms, span)
+        }
+    }
+
+    /// **VS3-1d/W1f-HTTP** — như [`frame_reactor_poll_io`] nhưng trả **byte thô** cho parser
+    /// HTTP async. Không dùng cho `net.read` (hợp đồng `str` lossy không đổi).
+    #[doc(hidden)]
+    pub fn frame_reactor_poll_bytes(
+        &mut self,
+        handle: &str,
+        max: usize,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Result<Vec<u8>, String>> {
+        let Some(b) = self.frame.backend.clone() else {
+            return Ok(Err(
+                "async HTTP cần reactor backend thật (không có backend)".to_string(),
+            ));
+        };
+        match self.frame_real_poll(&b, ReactorOp::Read, handle, max, timeout_ms, span, true)? {
+            RealPoll::Bytes(bytes) => Ok(Ok(bytes)),
+            RealPoll::Loi(e) => Ok(Err(e)),
+            RealPoll::Value(_) => Ok(Err(
+                "reactor trả giá trị không phải byte cho HTTP async".to_string()
+            )),
         }
     }
 
@@ -638,6 +674,7 @@ impl Scheduler {
 
     /// `read`/`accept` thật: thử I/O trước; `WouldBlock` ⇒ đăng ký/re-arm + `Pending`.
     /// Kết quả EOF/lỗi/hết giờ gỡ đăng ký đúng một lần rồi trả `Result` (không trap).
+    #[allow(clippy::too_many_arguments)]
     fn frame_real_poll(
         &mut self,
         b: &Rc<RefCell<dyn FrameReactorBackend>>,
@@ -646,7 +683,8 @@ impl Scheduler {
         max: usize,
         timeout_ms: i64,
         span: Span,
-    ) -> R<Value> {
+        raw: bool,
+    ) -> R<RealPoll> {
         let outcome = match op {
             ReactorOp::Read => b.borrow_mut().try_read(handle, max),
             ReactorOp::Accept => b.borrow_mut().try_accept(handle),
@@ -655,12 +693,15 @@ impl Scheduler {
             ReactorIoOutcome::Data(bytes) => {
                 self.frame_real_done(handle, op);
                 self.frame.reactor.log.push(format!("rdone:{}", handle));
-                return Ok(ok_str(String::from_utf8_lossy(&bytes)));
+                if raw {
+                    return Ok(RealPoll::Bytes(bytes));
+                }
+                return Ok(RealPoll::Value(ok_str(String::from_utf8_lossy(&bytes))));
             }
             ReactorIoOutcome::Accepted(new_handle) => {
                 self.frame_real_done(handle, op);
                 self.frame.reactor.log.push(format!("raccepted:{}", handle));
-                return Ok(ok_str(new_handle));
+                return Ok(RealPoll::Value(ok_str(new_handle)));
             }
             ReactorIoOutcome::Err(msg) => {
                 self.frame_real_done(handle, op);
@@ -668,7 +709,7 @@ impl Scheduler {
                     .reactor
                     .log
                     .push(format!("rerr:{}:{}", handle, msg));
-                return Ok(err_str(msg));
+                return Ok(RealPoll::Loi(msg));
             }
             ReactorIoOutcome::WouldBlock => {}
         }
@@ -712,7 +753,7 @@ impl Scheduler {
                         .reactor
                         .log
                         .push(format!("rtimeout:{}:{}", handle, r.key));
-                    return Ok(err_str(format!(
+                    return Ok(RealPoll::Loi(format!(
                         "quá thời gian chờ dữ liệu từ `{handle}` sau {timeout_ms} ms"
                     )));
                 }
@@ -725,7 +766,7 @@ impl Scheduler {
                 let reg = b.borrow_mut().register(token, handle, op);
                 if let Err(e) = reg {
                     self.frame_real_done(handle, op);
-                    return Ok(err_str(format!(
+                    return Ok(RealPoll::Loi(format!(
                         "lỗi đăng ký readiness cho `{handle}`: {e}"
                     )));
                 }
@@ -746,7 +787,7 @@ impl Scheduler {
                 self.frame.reactor.next_key += 1;
                 let token = self.mint_token();
                 if let Err(e) = b.borrow_mut().register(token, handle, op) {
-                    return Ok(err_str(format!(
+                    return Ok(RealPoll::Loi(format!(
                         "lỗi đăng ký readiness cho `{handle}`: {e}"
                     )));
                 }
