@@ -1069,8 +1069,9 @@ pub fn method(
     }
 }
 
-/// **ST-61 (VD-96) / VS3-2a**: phương thức kênh — chuyển sang `rt::chan` (wait-set `chan(0)`
-/// chỉ đường frame test; cap ≥ 1 giữ nguyên run-to-completion + `VS0505` khi hết task).
+/// **ST-61 (VD-96) / VS3-2a/2b**: phương thức kênh — chuyển sang `rt::chan` (wait-set `chan(0)`
+/// + `recv_timeout`/`send_timeout` chỉ đường frame test; cap ≥ 1 giữ nguyên run-to-completion
+/// + `VS0505` khi hết task).
 fn chan_method(
     host: &mut dyn Host,
     c: std::rc::Rc<std::cell::RefCell<crate::rt::Chan>>,
