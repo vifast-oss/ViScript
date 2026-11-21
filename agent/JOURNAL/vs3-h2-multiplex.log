@@ -1,0 +1,129 @@
+# VS3-4b6 h2 multiplex prototype — test (2026-11-21, main c85b523)
+CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --lib
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.36s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/28ace4cdaec8d153/out/vis_cli-28ace4cdaec8d153)
+
+running 7 tests
+test pkg_sig::tests::thong_diep_pin_va_sap_xep ... ok
+test pkg_sig::tests::hex_dung_va_tu_choi_sai ... ok
+test net::tests::chi_loopback_tra_moi_dia_chi_va_chan_remote ... ok
+test net::tests::pool_het_han_va_gioi_han ... ok
+test pkg_sig::tests::ky_va_xac_minh_that ... ok
+test pkg_sig::tests::nhieu_khoa_chi_can_mot_khoa_khop ... ok
+test net::h2::tests::bon_stream_in_flight_mot_connection ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+## cargo test -p vis-cli --test vs3_http2
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.26s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/917666997f6e35c7/out/vs3_http2-917666997f6e35c7)
+
+running 13 tests
+test fallback_http1_khi_khong_alpn ... ok
+test h2_redirect_va_cookie ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_get_va_head ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_basic_auth ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_timeout_ro_rang ... ok
+test h2_idle_timeout_dong_phien ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.30s
+
+## cargo test -p vis-cli --test vs3_tls
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/cc151cc215840e97/out/vs3_tls-cc151cc215840e97)
+
+running 17 tests
+test async_https_handshake_timeout_hai_engine ... ok
+test async_https_head_loopback_hai_engine ... ok
+test https_chan_ha_cap_ve_http ... ok
+test async_https_get_loopback_hai_engine ... ok
+test async_net_backend_tls_doc_ghi_qua_reactor ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test async_https_tu_choi_chung_chi_sai_hai_engine ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_head_khong_theo_redirect ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_ipv6_loopback ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.34s
+
+## cargo test -p vis-cli --test http
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/cf1e355178e04b5a/out/http-cf1e355178e04b5a)
+
+running 22 tests
+test http_200_byte ... ok
+test http_404 ... ok
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_chunked_ba_chunk ... ok
+test http_chunked_co_mo_rong ... ok
+test http_body_rong ... ok
+test http_duong_mac_dinh ... ok
+test http_head_khong_doc_than ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_het_gio ... ok
+test http_gioi_han ... ok
+test http_head_khong_theo_redirect ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.02s
+
+## cargo test -p vis-cli --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/f26248987ec99056/out/vs3_keepalive-f26248987ec99056)
+
+running 8 tests
+test hai_request_cung_mot_ket_noi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test head_hai_lan_cung_mot_ket_noi ... ok
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+
+
+## cargo check -p vis-cli
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.21s
+## cargo check -p vis-cli --no-default-features
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+## cargo check -p vis-cli --target wasm32-unknown-unknown --no-default-features --features http2
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
+## cargo clippy -p vis-cli --bin vis --lib --test vs3_http2 -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+## ./vis-dev rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
