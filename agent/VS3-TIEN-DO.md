@@ -47,7 +47,7 @@
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a | **DONE (một phần)** — async default+cap+net+TLS Unix; Windows backend mở |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b5 | **DONE** — h2 queue/idle/hardening; default-on; Windows chờ W4 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (soak v0.3.1)** — `d6fcf95`; soak 10/10 502 s, gate 3512/3, nightly 15,69M fuzz 0, diff 0, fresh-clone PASS |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (v0.2.0)** — `ec29204` 3436/0; targets 18/18+17/1; **không GitHub Actions** |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (stress)** — `0e5ebe0`; 3 vòng 3463/0, host 54/54, no flake; **không GitHub Actions** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 10k; timeout + worker-copy; chưa nối evaluator |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
