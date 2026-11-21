@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi**; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.1.0-rc1`** @ `0985030`; `pha1-rc1` giữ nguyên. Runtime mặc định chỉ flip async sau VS3-1a/1b/1c.
+> **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi**; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.1.0`** (tag tại commit chứa dòng này); `v0.1.0-rc1` @ `0985030` giữ lịch sử; `pha1-rc1` giữ nguyên. Runtime mặc định chỉ flip async sau VS3-1a/1b/1c.
 >
 > **Cập nhật 2026-11-21 (VD-270)** — A0 tiếp tục đợt **tối ưu liên tục** VD-258..VD-270 (uỷ quyền đến 09:00 23/11); **chưa** mở pha 2/VS3, **chưa** tag mới (`pha1-rc1` = `05e42d0` giữ nguyên), runtime mặc định **không đổi**. HEAD lúc ghi `745851a` (08:04 21/11); số đo mới nhất trong `CHANGELOG.md`: `gate --fast` **2840 passed / 0 skipped**, `vis test test/sem` **525/525** cả interp và VM; core-test/release/toolchain/host 54/54 PASS. API-STD **136** mục. Số đo sẽ còn tăng trong đợt. Windows Tier 2 (xanh @ `c7cef71`, **chưa verify lại ở HEAD**); macOS **chưa verify**. **Đọc khối “Trạng thái sau VD-270” ở cuối tệp**; các khối R22/R23/R26/R27/R29 trong thân là lịch sử, số cũ không xoá (VD-142). Chi tiết từng mục: `JOURNAL/vd260-report.md`.
 >
@@ -378,7 +378,7 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 
 | Mốc | Mục tiêu | Tag |
 |---|---|---|
-| **G0** | Baseline sau pha 1 (`fc01b9a`, gate 3298/3, nightly PASS) | **`v0.1.0-rc1`** (đã đánh) |
+| **G0** | Baseline sau pha 1 + VS3 wave 1 (Linux gate 3448/3; Windows 3404/0) | **`v0.1.0`** (tag tại commit này; `rc1` lịch sử) |
 | **G1** | Nền VS3: 1a/1b/2a/4a/5a + test; 1c/1d/2b/4b/5b test/kế hoạch; 3a spike | — |
 | **G2** | Async default + kênh (1a–1d, 2a–2b) | `v0.2.0` |
 | **G3** | TLS/HTTP2/keep-alive + registry HTTP/chữ ký/GC | `v0.3.0` |

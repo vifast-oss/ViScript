@@ -3,6 +3,15 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.1.0 — 2026-11-21
+
+- Baseline sau pha 1 + VS3 wave 1: async frame test path (budget/cancel/chan0), TLS/keep-alive/cookie/auth,
+  registry HTTP(S) + Ed25519 + GC/migrate, LSP tệp phụ/incremental, Windows fixes.
+- Linux gate **3448 passed / 3 skipped**; Windows `cargo test --workspace` **3404 passed / 0 failed**
+  (cây tương đương `777af63`); host suite **54/54**.
+- **macOS ngoài phạm vi/chưa verify**. Cross-target wasm/Linux trên psvn **BLOCKED-ENV** (thiếu std target).
+- Runtime mặc định vẫn single-thread; async default **chưa flip**; HTTP/2 chưa có.
+
 | Đợt | HEAD (mac) | Cổng `--fast` | Số task trong báo cáo |
 |---|---|---|---|
 | R1 | `b4d7d469` | PASS | 11 |
