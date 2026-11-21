@@ -10,11 +10,11 @@
 
 | Mục | Giá trị |
 |---|---|
-| Baseline VS3 | `fc01b9a` (đợt A0 dừng 21/11) |
-| Gate baseline | **3298 passed / 3 skipped** |
+| Baseline v0.1.0 | `50675dd` (tag `v0.1.0`) |
+| Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
-| `FUNCS` | **167** |
-| Tag | **`v0.1.0`** (tag tại commit chứa dòng này); `v0.1.0-rc1` @ `0985030` giữ lịch sử; `pha1-rc1` giữ nguyên |
+| `FUNCS` | **167** (mốc v0.1.0) |
+| Tag | **`v0.1.0`**; `v0.1.0-rc1` @ `0985030` lịch sử; `pha1-rc1` giữ nguyên; mục tiêu **v0.2.0**, **v0.3.0** trước 09:00 T2 23/11 |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -81,7 +81,20 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
 | M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3448 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
-| M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag `v0.1.0-rc2` nếu xanh (rc1 có Windows đỏ) |
+| M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | dừng 09:00; tag mục tiêu v0.2.0/v0.3.0 |
+
+## 3a. Vòng v0.2.0/v0.3.0 (21/11 15:40 → 23/11 09:00)
+
+| Việc | Chủ | Trạng thái | Điều kiện xong |
+|---|---|---|---|
+| **VS3-1d** async default + Pipe parity | W1 | **WIP** | async chạy frame, sync byte-identical, guard rõ, cache |
+| **VS3-3b** worker opt-in | W5 | **WIP** | TaskId/proxy, print merge, budget atomic, W=1/2/4 |
+| **VS3-4b2** HTTP/2 | W2 | **WIP** | feature `http2` default-off, local h2 test, HTTP/1.1 không hồi quy |
+| **VS3-6** Windows CI | W4 | **WIP** | verify tag v0.1.0 + workflow windows |
+| **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
+| **VS3-2b** timeout kênh | — | **NEXT** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
+
+**Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
 ## 3b. A0 chốt VS3-3b (từ spike W5)
 
