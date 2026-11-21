@@ -43,6 +43,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-2a (chan(0) rendezvous)**: wait-set FIFO trên đường frame test; send/recv ghép đúng một lần, close đánh thức receiver/sender, cancel gỡ đúng 1 lần; sửa resume `CallMethod` VM khi Pending; runtime mặc định vẫn từ chối `chan(0)`; 13 ca `vs3_chan0`; merge `d060f5a`.
 - **2026-11-21** — **VS3-7 (LSP tệp phụ)**: publish chẩn đoán module-aware cho mọi tài liệu mở phụ thuộc; overlay buffer chưa ghi đĩa; `didClose` đọc lại đĩa; 4 ca mới + 148 ca LSP; merge `f3da8c9`.
 - **2026-11-21** — **VS3-4c (registry HTTPS)**: `vis pkg --registry https://…` dùng TLS/roots/deadline hiện có; 6 ca hermetic; merge `46f5d8b`.
 - **2026-11-21** — **VS3-3b prototype (W5b)**: TaskId/proxy, Env snapshot, print merge tất định (W=1/2/4 cùng 334 byte), budget atomic `used+remaining==limit`; budget CAS 12→57 ns/charge khi W=1→4 ⇒ đề xuất chunk reservation; W=4 2,74×; không sửa production; commit `3fcd7ef`.

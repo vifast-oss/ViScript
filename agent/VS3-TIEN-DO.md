@@ -25,7 +25,7 @@
 | VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage.rs` | TODO | ma trận đầy đủ |
 | VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | TODO | chỉ sau 1a–1c |
-| VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | TODO | song song 1b |
+| VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
 | VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
 | VS3-3b — worker pool | W1 | `vs3_worker.rs` | **REVIEW** — prototype `3fcd7ef`; W1 tích hợp sau VS3-2a |
@@ -41,7 +41,7 @@
 
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
-| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a + 1b | **DONE (một phần)** — merge `71dc8a4` + `97676c6`; còn BUDGET/Q/default, channel wait-set |
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/2a | **DONE (một phần)** — `71dc8a4` + `97676c6` + `d060f5a`; còn cap≥1/select, BUDGET/Q/default |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — merge `9ceec53` + `b730661`; keep-alive/IPv6 xong; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE (một phần)** — `756bb1d` + `cea1643` + `1aefb88`; LSP incremental WIP |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
@@ -67,7 +67,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3391 passed / 3 skipped**; diff 100k chờ |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3404 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag `v0.1.0-rc2` nếu xanh (rc1 có Windows đỏ) |
 
