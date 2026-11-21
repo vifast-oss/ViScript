@@ -600,22 +600,18 @@ impl Value {
                     && a.iter()
                         .all(|(k, v)| b.iter().any(|(k2, v2)| k.eq_value(k2) && v.eq_value(v2)))
             }
-            (Value::Record(ta, a), Value::Record(tb, b)) => {
+            (Value::Record(_ta, a), Value::Record(_tb, b)) => {
                 if a.len() != b.len() {
                     return false;
                 }
-                // **VD-270**: bản ghi **cùng tên kiểu khác rỗng** được dựng từ cùng một khai
-                // báo nên có cùng thứ tự trường; so **theo vị trí** là O(n) thay vì quét
-                // chéo O(n²). Vẫn kiểm tên từng trường (và cả tên kiểu) để chỉ dùng đường
-                // nhanh khi hai vế thật sự cùng hình dạng. Mọi trường hợp lệch — tên kiểu
-                // rỗng/khác nhau, thứ tự trường khác (literal ghi không theo thứ tự khai),
-                // hay một giá trị khác — đều **rơi về** phép so đa tập cũ, nên ngữ nghĩa
-                // không đổi kể cả với bản ghi có tên trường trùng (đường dựng lạ).
-                if !ta.is_empty()
-                    && ta == tb
-                    && a.iter()
-                        .zip(b)
-                        .all(|((n1, v1), (n2, v2))| n1 == n2 && v1.eq_value(v2))
+                // **VD-270**: mọi cặp bản ghi cùng độ dài đều thử **đường nhanh theo vị trí**
+                // trước — nếu tên + giá trị từng trường khớp thì chắc chắn phép đa tập cũng
+                // khớp, bất kể tên kiểu rỗng/khác nhau (ngữ nghĩa cũ **bỏ qua** tên kiểu).
+                // Lệch bất kỳ vị trí nào ⇒ **rơi về** phép so đa tập cũ, nên không đổi ngữ nghĩa
+                // với bản ghi đảo thứ tự hoặc có tên trường trùng (đường dựng động).
+                if a.iter()
+                    .zip(b)
+                    .all(|((n1, v1), (n2, v2))| n1 == n2 && v1.eq_value(v2))
                 {
                     true
                 } else {
@@ -1267,6 +1263,20 @@ mod tests_eq_record {
         let lon_a = ban_ghi("", 1000, false, None);
         let lon_b = ban_ghi("", 1000, true, None);
         assert!(lon_a.eq_value(&lon_b));
+    }
+
+    /// Bản ghi ẩn danh **cùng thứ tự** dùng được đường nhanh theo vị trí; lệch một trường
+    /// vẫn `false`, và đảo thứ tự vẫn `true` qua fallback (ca trên).
+    #[test]
+    fn ten_rong_cung_thu_tu_dung_duong_nhanh() {
+        for n in [100, 1000] {
+            let a = ban_ghi("", n, false, None);
+            let b = ban_ghi("", n, false, None);
+            assert!(a.eq_value(&b), "{n} trường ẩn danh cùng thứ tự phải bằng");
+            assert!(b.eq_value(&a));
+            let c = ban_ghi("", n, false, Some((n / 2, -1)));
+            assert!(!a.eq_value(&c), "{n} trường ẩn danh lệch phải khác");
+        }
     }
 
     /// Tên kiểu khác nhau (đều khác rỗng) **không** được lọc sớm: hành vi cũ bỏ qua tên kiểu
