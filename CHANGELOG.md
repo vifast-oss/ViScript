@@ -3,6 +3,13 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.0 — 2026-11-21 (candidate)
+
+- **HTTP/2 default-on** (h2 + ALPN, fallback HTTP/1.1, reuse theo authority); `http2` vào default non-wasm.
+- Async `chan(n≥1)` wait-set trên frame (W1f); worker benchmark chuyển example.
+- Linux gate **3494/3**; HTTP/2 7 ca + TLS 12 + HTTP 22; Windows/fresh-clone đang verify.
+- Không GitHub Actions; macOS ngoài phạm vi.
+
 ## v0.2.0 — 2026-11-21
 
 - **Async default** cho chương trình có `async fn` (interp + VM); sync giữ nguyên; Pipe parity; guard 200k.
