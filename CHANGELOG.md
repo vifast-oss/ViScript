@@ -9,6 +9,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **HTTP/2 hardening**: GOAWAY/RST/trailer/204/header cap 64 KiB, retry một lần.
 - **Worker stress** 10k task, cancel/budget/print/cross-write; 10 ca.
 - **h2 multiplex prototype** 4 stream/1 connection, test-only; production vẫn queue tuần tự.
+- **TaskId/Value prototype** (feature `taskid-proto` default-off) + proxy completion; ABI mặc định giữ nguyên.
 - Linux gate **3512/3**, nightly 18,99M fuzz 0; Windows psvn **3463/0**; fresh-clone PASS; host 54/54.
 - Windows async net chưa có backend (test gated).
 - Không GitHub Actions; macOS ngoài phạm vi.
