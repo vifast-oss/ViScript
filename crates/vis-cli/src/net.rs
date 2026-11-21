@@ -19,6 +19,7 @@ use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::time::{Duration, Instant};
 
 use vis_interp::builtin::NetHost;
+use vis_interp::cookie::CookieJar;
 
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
 mod tls;
@@ -112,6 +113,8 @@ pub struct Net {
     /// **VS3-4b**: kết nối HTTP idle (khoá, lúc trả về, kênh) — giới hạn [`POOL_TOI_DA`] +
     /// [`POOL_IDLE`]. Không chứa handle đang dùng; mọi thứ đóng khi `Net` drop.
     ho: Vec<(String, Instant, Kenh)>,
+    /// **VS3-4b**: cookie jar nội bộ (không ra đĩa, không API ngôn ngữ).
+    cookie: CookieJar,
     /// **VS3-4a**: cấu hình TLS dựng **một lần** cho cả tiến trình; `Err` được giữ lại để mọi lần
     /// gọi HTTPS sau đó báo cùng lý do (không panic, không thử lại vô ích).
     #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
@@ -127,6 +130,7 @@ impl Net {
             nghe: Vec::new(),
             tiep_nghe: 0,
             ho: Vec::new(),
+            cookie: CookieJar::new(),
             #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
             cau_hinh_tls: None,
         }
@@ -320,6 +324,10 @@ impl NetHost for Net {
             self.don_ho();
         }
         Ok(())
+    }
+
+    fn cookie_jar(&mut self) -> Option<&mut CookieJar> {
+        Some(&mut self.cookie)
     }
 
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
