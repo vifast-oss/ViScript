@@ -1,0 +1,62 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_worker_bench.rs (/home/ps/ViScript/target/vs3-w5/debug/build/vis-cli/b61da6061e9165c9/out/vs3_worker_bench-b61da6061e9165c9)
+
+running 1 test
+test worker_bench_b7 ... ENV	nproc=12	cpu=12th Gen Intel(R) Core(TM) i5-1235U	load_start=2.34 9.12 12.89 2/2059 3122764	os=linux
+CALIB	cpu_iters=31850	per_task_us=228.2
+CLONE	payload	ns_med	bytes_logical
+CLONE	unit	20	0
+CLONE	list1k	35076	80000
+CLONE	list10k	351358	800000
+CLONE	map1k	66031	155890
+CLONE	record	34444	81694
+CLONE	enum	33987	80072
+CLONE	str1MiB	46591	1048576
+MATRIX	payload	workers	ms_med	ms_min	ns_per_task	speedup	used	remaining	limit
+MATRIX	unit	1	12.33	12.32	192586	1.00	6400	10000	16400
+MATRIX	unit	2	8.67	8.64	135395	1.42	6400	10000	16400
+MATRIX	unit	4	4.59	4.48	71696	2.69	6400	10000	16400
+MATRIX	list1k	1	17.16	16.60	268195	1.00	6400	10000	16400
+MATRIX	list1k	2	9.43	9.33	147302	1.82	6400	10000	16400
+MATRIX	list1k	4	4.85	4.85	75803	3.54	6400	10000	16400
+MATRIX	list10k	1	56.20	55.55	878114	1.00	6400	10000	16400
+MATRIX	list10k	2	28.88	26.58	451230	1.95	6400	10000	16400
+MATRIX	list10k	4	29.15	26.21	455479	1.93	6400	10000	16400
+MATRIX	map1k	1	22.70	21.87	354739	1.00	6400	10000	16400
+MATRIX	map1k	2	24.25	23.22	378832	0.94	6400	10000	16400
+MATRIX	map1k	4	29.54	28.83	461514	0.77	6400	10000	16400
+MATRIX	record	1	16.47	16.43	257332	1.00	6400	10000	16400
+MATRIX	record	2	9.72	9.64	151816	1.70	6400	10000	16400
+MATRIX	record	4	5.09	5.01	79576	3.23	6400	10000	16400
+MATRIX	enum	1	17.18	16.93	268494	1.00	6400	10000	16400
+MATRIX	enum	2	10.11	10.08	157901	1.70	6400	10000	16400
+MATRIX	enum	4	5.06	4.96	79098	3.39	6400	10000	16400
+MATRIX	str1MiB	1	41.98	41.02	655976	1.00	6400	10000	16400
+MATRIX	str1MiB	2	11.38	11.22	177875	3.69	6400	10000	16400
+MATRIX	str1MiB	4	9.06	8.76	141638	4.63	6400	10000	16400
+PROBE	payload	mode	workers	ms_med
+PROBE	list10k	producer	1	56.79
+PROBE	list10k	producer	4	27.78
+PROBE	list10k	worker	1	42.72
+PROBE	list10k	worker	4	12.36
+PROBE	list10k	move	1	18.62
+PROBE	list10k	move	4	10.41
+PROBE	map1k	producer	1	24.66
+PROBE	map1k	producer	4	30.15
+PROBE	map1k	worker	1	21.28
+PROBE	map1k	worker	4	6.83
+PROBE	map1k	move	1	16.40
+PROBE	map1k	move	4	11.64
+CHUNK	chunk	workers	tasks	charges	ms_med	ns_per_charge	used	remaining	limit
+CHUNK	1	4	64	2000	25.43	198.7	128000	10000	138000
+CHUNK	16	4	64	2000	7.11	55.5	128000	10000	138000
+CHUNK	256	4	64	2000	6.48	50.6	128000	10000	138000
+CHUNK	4096	4	64	2000	6.51	50.8	128000	10000	138000
+CHECK	print_merge	W=1==W=4	OK	124 byte
+CHECK	cross_write	W=1 allowed/W=4 refused	OK
+CHECK	budget	used+remaining==limit	OK
+LOAD_END	2.34 9.12 12.89 2/2099 3123220
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.64s
+
