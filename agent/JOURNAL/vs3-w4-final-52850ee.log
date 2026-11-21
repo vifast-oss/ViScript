@@ -1,0 +1,41 @@
+# VS3-W4 — log verify cuối 52850ee trên psvn, 2026-11-22
+# psvn: MINGW64_NT-10.0-26300, 6 CPU, cargo/rustc 1.100.0, MSVC native
+# worktree /c/Users/ps/viscript-w4k detached 52850eea, dirty 0
+# đã xoá sau đo; repo chính psvn @ 73af17bd, dirty 0; C: còn 174G
+
+## workspace (1 vòng)
+WS 524s: 353 block, 3528 passed / 0 failed / 3 ignored
+
+## P3 / P2 / P1
+vs3_worker_eval_vm debug:   10/10 (2.86s)
+vs3_worker_eval_vm release: 10/10 (1.11s; build 68s)
+vs3_worker_eval_parallel:   14/14 (1.56s)
+vs3_worker_eval_local:       8/8 (0.24s)
+
+## 5 vòng targeted
+R1 16s  net 9/9  default 22/22  tls 22/22
+R2 11s  net 9/9  default 22/22  tls 22/22
+R3 12s  net 9/9  default 22/22  tls 22/22
+R4 12s  net 9/9  default 22/22  tls 22/22
+R5 12s  net 9/9  default 22/22  tls 22/22
+=> 0 fail, 0 flake; 10053 không tái hiện.
+
+## host / targets
+host 54/54; targets core 18/18; sqlite 17 PASS + 1 EXPECTED_RED (#156); 0 FAIL
+
+## release / CLI
+target/release/vis.exe: 11 205 120 B
+sha256 560df71ec27b9f506619e48c9cc44d2b206c0d631f4f0beac8ee1040e0d03ba7
+vis --version => vis 0.1.0; doctor => windows/x86_64/sqlite on/features sqlite,tls,pkg-sig,http2
+vis check => TAP 1..1 ok 1; vis run => 42; vis run --version => rc 2
+
+## async-h2 Windows (EXPECTED RED)
+cargo check --features async-h2 => rc 101, h2_async.rs cfg(..., unix) — không sửa.
+
+## sha256 log
+e74177728d4522450cd476636e836f9eebd5d9caaa2293ea5b14248a14848cce  w4k-targeted.log
+486efeca91ee7447dbf5c6f19ac055e48519edadfd89928a1fd1ebd80445f37b  w4k-workspace.log
+ab586d36de972b9e1ae8f50b475ea8d025cc725ed8786260935b90cb928cb837  w4k-release.log
+
+## Đĩa
+local / còn 22G; psvn C: còn 174G (>5G).
