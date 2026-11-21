@@ -1,0 +1,381 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 P3 soak VM/interp — log
+# Branch vs3/w5-spike, baseline 647cc29 (P3 736dc5c đã merge). Toolchain ~/.cargo/bin/cargo 1.100.0.
+
+## CONFIG
+VS3_SOAK_SECS=1800; 8 task CPU × 20.000 vòng; 10.000 spawn/await; interp P2 W=4 vs VM P3 W=4;
+budget 10k/chunk 256 cả hai; cancel-after 5 ms; cross-write cả hai; RSS/threads/fd mỗi batch.
+
+## GATE / TEST TRƯỚC SOAK
+$ cargo test -p vis-cli --test vs3_worker_eval_vm -- --test-threads=1
+running 10 tests
+..........
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.94s
+
+$ cargo test -p vis-cli --test vs3_worker_eval_local --test vs3_worker_eval_parallel -- --test-threads=1
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.60s
+
+$ ./vis-dev gate --fast
+--- luật R1..R6: OK
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+--- L0 test: cargo-nextest (song song) + doc-test
+Summary [ 91.202s] 3571 tests run: 3571 passed (1 slow), 3 skipped
+--- L0 test: OK
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+GATE_EXIT=0
+
+$ cargo fmt --all -- --check
+FMT_OK
+$ cargo clippy -p vis-cli --all-targets -- -D warnings
+Finished dev profile [unoptimized + debuginfo]
+
+## SMOKE RELEASE 20 s
+SOAK_P3	bat_dau	secs=20	cpu_tasks=8	cpu_iters=20000	load=16.59 15.72 15.69 5/2089 4058498	rss_kb=5064	threads=Some(1)	fd=Some(4)
+SOAK_BATCH	8	elapsed_s=5.1	batch_ms=810	cpu_i_ms=38	cpu_v_ms=21	k10_i_ms=178	k10_v_ms=162	rss_kb=12012	threads=Some(1)	fd=Some(4)	load=15.90 15.59 15.65 5/2116 4059054
+SOAK_BATCH	16	elapsed_s=10.8	batch_ms=747	cpu_i_ms=39	cpu_v_ms=22	k10_i_ms=171	k10_v_ms=171	rss_kb=12072	threads=Some(1)	fd=Some(4)	load=15.11 15.43 15.60 7/2108 4059667
+SOAK_BATCH	23	elapsed_s=16.1	batch_ms=820	cpu_i_ms=37	cpu_v_ms=17	k10_i_ms=182	k10_v_ms=172	rss_kb=12176	threads=Some(1)	fd=Some(4)	load=14.30 15.25 15.54 7/2093 4060326
+SOAK_TONG	secs=20	elapsed_s=20.0	batches=28	batches_s=1.40	tasks=560616	tasks_s=28021
+SOAK_WALL	cpu_i_p50=38	cpu_i_p95=41	cpu_v_p50=17	cpu_v_p95=22	k10_i_p50=183	k10_i_p95=218	k10_v_p50=162	k10_v_p95=186
+SOAK_TAI_NGUYEN	rss0=5064	rss_min_sau_warm=12472	rss_max_sau_warm=12472	rss_cuoi=12472	hwm=18696	threads=Some(1)	fd=Some(4)
+KET_LUAN	PASS	28 batch	20.0s	không lỗi
+
+## SOAK 30 PHÚT (1800 s)
+
+SOAK_P3	bat_dau	secs=1800	cpu_tasks=8	cpu_iters=20000	load=16.83 19.10 17.18 19/2167 4154811	rss_kb=4912	threads=Some(1)	fd=Some(4)
+SOAK_BATCH	2	elapsed_s=5.4	batch_ms=2134	cpu_i_ms=157	cpu_v_ms=56	k10_i_ms=560	k10_v_ms=607	rss_kb=11912	threads=Some(1)	fd=Some(4)	load=17.01 19.10 17.19 20/2191 4156999
+SOAK_BATCH	5	elapsed_s=12.3	batch_ms=2091	cpu_i_ms=135	cpu_v_ms=82	k10_i_ms=667	k10_v_ms=472	rss_kb=11968	threads=Some(1)	fd=Some(4)	load=17.17 19.10 17.20 16/2172 4159687
+SOAK_BATCH	8	elapsed_s=18.8	batch_ms=1852	cpu_i_ms=109	cpu_v_ms=82	k10_i_ms=625	k10_v_ms=503	rss_kb=11944	threads=Some(1)	fd=Some(4)	load=16.86 18.98 17.18 6/2087 4161941
+SOAK_BATCH	14	elapsed_s=25.6	batch_ms=1999	cpu_i_ms=120	cpu_v_ms=77	k10_i_ms=611	k10_v_ms=552	rss_kb=12036	threads=Some(1)	fd=Some(4)	load=15.83 18.73 17.11 11/2124 4166428
+SOAK_BATCH	18	elapsed_s=30.6	batch_ms=1774	cpu_i_ms=67	cpu_v_ms=49	k10_i_ms=574	k10_v_ms=456	rss_kb=12036	threads=Some(1)	fd=Some(4)	load=15.44 18.60 17.08 14/2144 4172581
+SOAK_BATCH	21	elapsed_s=36.0	batch_ms=1816	cpu_i_ms=102	cpu_v_ms=80	k10_i_ms=419	k10_v_ms=477	rss_kb=12040	threads=Some(1)	fd=Some(4)	load=15.57 18.57 17.08 20/2165 4177996
+SOAK_BATCH	24	elapsed_s=42.3	batch_ms=1780	cpu_i_ms=164	cpu_v_ms=64	k10_i_ms=501	k10_v_ms=436	rss_kb=12052	threads=Some(1)	fd=Some(4)	load=16.16 18.65 17.11 17/2184 4184145
+SOAK_BATCH	27	elapsed_s=47.5	batch_ms=1654	cpu_i_ms=144	cpu_v_ms=54	k10_i_ms=380	k10_v_ms=349	rss_kb=12044	threads=Some(1)	fd=Some(4)	load=16.31 18.63 17.11 21/2178 4189255
+SOAK_BATCH	30	elapsed_s=52.8	batch_ms=1575	cpu_i_ms=183	cpu_v_ms=93	k10_i_ms=366	k10_v_ms=356	rss_kb=12032	threads=Some(1)	fd=Some(4)	load=16.60 18.66 17.13 25/2181 4191495
+SOAK_BATCH	34	elapsed_s=59.7	batch_ms=2066	cpu_i_ms=167	cpu_v_ms=74	k10_i_ms=491	k10_v_ms=565	rss_kb=12040	threads=Some(1)	fd=Some(4)	load=16.89 18.65 17.14 17/2164 4193724
+SOAK_BATCH	37	elapsed_s=65.3	batch_ms=1142	cpu_i_ms=56	cpu_v_ms=38	k10_i_ms=273	k10_v_ms=256	rss_kb=12060	threads=Some(1)	fd=Some(4)	load=16.82 18.61 17.14 7/2137 4194292
+SOAK_BATCH	43	elapsed_s=70.9	batch_ms=982	cpu_i_ms=51	cpu_v_ms=36	k10_i_ms=250	k10_v_ms=198	rss_kb=12068	threads=Some(1)	fd=Some(4)	load=15.95 18.40 17.08 6/2135 679
+SOAK_BATCH	49	elapsed_s=76.2	batch_ms=772	cpu_i_ms=39	cpu_v_ms=16	k10_i_ms=184	k10_v_ms=166	rss_kb=12144	threads=Some(1)	fd=Some(4)	load=15.23 18.21 17.02 5/2123 1061
+SOAK_BATCH	56	elapsed_s=81.5	batch_ms=817	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=176	k10_v_ms=171	rss_kb=12120	threads=Some(1)	fd=Some(4)	load=14.41 17.99 16.96 6/2117 1467
+SOAK_BATCH	62	elapsed_s=86.6	batch_ms=862	cpu_i_ms=44	cpu_v_ms=19	k10_i_ms=219	k10_v_ms=190	rss_kb=12116	threads=Some(1)	fd=Some(4)	load=13.66 17.77 16.89 6/2118 2036
+SOAK_BATCH	71	elapsed_s=92.2	batch_ms=670	cpu_i_ms=38	cpu_v_ms=20	k10_i_ms=180	k10_v_ms=145	rss_kb=12184	threads=Some(1)	fd=Some(4)	load=12.89 17.54 16.82 4/2083 2638
+SOAK_BATCH	79	elapsed_s=97.3	batch_ms=602	cpu_i_ms=25	cpu_v_ms=13	k10_i_ms=103	k10_v_ms=99	rss_kb=12204	threads=Some(1)	fd=Some(4)	load=12.25 17.34 16.76 5/2094 3101
+SOAK_BATCH	87	elapsed_s=102.9	batch_ms=653	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=162	k10_v_ms=142	rss_kb=12184	threads=Some(1)	fd=Some(4)	load=11.67 17.13 16.70 8/2131 3671
+SOAK_BATCH	95	elapsed_s=108.2	batch_ms=732	cpu_i_ms=38	cpu_v_ms=21	k10_i_ms=189	k10_v_ms=162	rss_kb=12268	threads=Some(1)	fd=Some(4)	load=11.14 16.93 16.63 5/2122 4340
+SOAK_BATCH	102	elapsed_s=113.5	batch_ms=695	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=182	k10_v_ms=148	rss_kb=12264	threads=Some(1)	fd=Some(4)	load=10.04 16.50 16.50 5/2117 5183
+SOAK_BATCH	109	elapsed_s=119.7	batch_ms=2008	cpu_i_ms=106	cpu_v_ms=84	k10_i_ms=608	k10_v_ms=478	rss_kb=12260	threads=Some(1)	fd=Some(4)	load=10.84 16.56 16.52 19/2168 5946
+SOAK_BATCH	113	elapsed_s=125.5	batch_ms=736	cpu_i_ms=39	cpu_v_ms=20	k10_i_ms=175	k10_v_ms=167	rss_kb=12280	threads=Some(1)	fd=Some(4)	load=10.37 16.37 16.45 4/2120 6648
+SOAK_BATCH	120	elapsed_s=130.9	batch_ms=868	cpu_i_ms=39	cpu_v_ms=19	k10_i_ms=186	k10_v_ms=164	rss_kb=12292	threads=Some(1)	fd=Some(4)	load=9.86 16.16 16.39 8/2121 7675
+SOAK_BATCH	127	elapsed_s=136.0	batch_ms=764	cpu_i_ms=39	cpu_v_ms=20	k10_i_ms=191	k10_v_ms=160	rss_kb=12292	threads=Some(1)	fd=Some(4)	load=9.39 15.96 16.32 5/2077 9029
+SOAK_BATCH	134	elapsed_s=143.4	batch_ms=2495	cpu_i_ms=160	cpu_v_ms=77	k10_i_ms=848	k10_v_ms=606	rss_kb=12288	threads=Some(1)	fd=Some(4)	load=9.83 15.83 16.27 15/2152 12005
+SOAK_BATCH	137	elapsed_s=150.0	batch_ms=2154	cpu_i_ms=138	cpu_v_ms=72	k10_i_ms=652	k10_v_ms=482	rss_kb=12288	threads=Some(1)	fd=Some(4)	load=10.64 15.90 16.29 26/2194 14702
+SOAK_BATCH	140	elapsed_s=156.2	batch_ms=2088	cpu_i_ms=153	cpu_v_ms=70	k10_i_ms=751	k10_v_ms=485	rss_kb=12288	threads=Some(1)	fd=Some(4)	load=10.99 15.89 16.29 18/2160 17118
+SOAK_BATCH	144	elapsed_s=162.6	batch_ms=1504	cpu_i_ms=116	cpu_v_ms=103	k10_i_ms=349	k10_v_ms=356	rss_kb=12296	threads=Some(1)	fd=Some(4)	load=11.72 15.95 16.31 9/2121 23240
+SOAK_BATCH	147	elapsed_s=167.9	batch_ms=1764	cpu_i_ms=131	cpu_v_ms=56	k10_i_ms=482	k10_v_ms=463	rss_kb=12300	threads=Some(1)	fd=Some(4)	load=12.06 15.95 16.31 16/2127 30086
+SOAK_BATCH	151	elapsed_s=173.4	batch_ms=873	cpu_i_ms=53	cpu_v_ms=30	k10_i_ms=240	k10_v_ms=200	rss_kb=12272	threads=Some(1)	fd=Some(4)	load=12.37 15.96 16.30 18/2130 38043
+SOAK_BATCH	155	elapsed_s=179.6	batch_ms=1970	cpu_i_ms=127	cpu_v_ms=92	k10_i_ms=594	k10_v_ms=543	rss_kb=12296	threads=Some(1)	fd=Some(4)	load=13.15 16.01 16.32 21/2128 44809
+SOAK_BATCH	159	elapsed_s=185.7	batch_ms=1450	cpu_i_ms=141	cpu_v_ms=106	k10_i_ms=569	k10_v_ms=228	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=13.94 16.12 16.35 22/2158 46861
+SOAK_BATCH	163	elapsed_s=191.6	batch_ms=1140	cpu_i_ms=93	cpu_v_ms=44	k10_i_ms=219	k10_v_ms=220	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=14.27 16.15 16.36 21/2176 48883
+SOAK_BATCH	166	elapsed_s=196.8	batch_ms=1125	cpu_i_ms=47	cpu_v_ms=22	k10_i_ms=368	k10_v_ms=252	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=14.65 16.20 16.38 10/2158 49527
+SOAK_BATCH	172	elapsed_s=201.9	batch_ms=705	cpu_i_ms=39	cpu_v_ms=20	k10_i_ms=169	k10_v_ms=165	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=14.11 16.06 16.33 7/2135 49864
+SOAK_BATCH	179	elapsed_s=207.6	batch_ms=747	cpu_i_ms=37	cpu_v_ms=19	k10_i_ms=180	k10_v_ms=159	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=14.10 16.03 16.32 6/2140 50473
+SOAK_BATCH	186	elapsed_s=213.2	batch_ms=846	cpu_i_ms=37	cpu_v_ms=20	k10_i_ms=192	k10_v_ms=177	rss_kb=12340	threads=Some(1)	fd=Some(4)	load=13.45 15.86 16.26 6/2126 50999
+SOAK_BATCH	193	elapsed_s=219.0	batch_ms=835	cpu_i_ms=39	cpu_v_ms=21	k10_i_ms=191	k10_v_ms=172	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=12.15 15.50 16.14 5/2126 51547
+SOAK_BATCH	201	elapsed_s=224.7	batch_ms=786	cpu_i_ms=39	cpu_v_ms=16	k10_i_ms=184	k10_v_ms=161	rss_kb=12340	threads=Some(1)	fd=Some(4)	load=11.58 15.33 16.08 5/2117 52069
+SOAK_BATCH	208	elapsed_s=229.8	batch_ms=783	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=184	k10_v_ms=157	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=11.05 15.16 16.02 4/2114 52534
+SOAK_BATCH	215	elapsed_s=235.5	batch_ms=860	cpu_i_ms=35	cpu_v_ms=18	k10_i_ms=183	k10_v_ms=181	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=10.49 14.97 15.96 4/2113 53075
+SOAK_BATCH	222	elapsed_s=240.9	batch_ms=772	cpu_i_ms=35	cpu_v_ms=21	k10_i_ms=170	k10_v_ms=153	rss_kb=12336	threads=Some(1)	fd=Some(4)	load=10.05 14.81 15.90 5/2109 53498
+SOAK_BATCH	230	elapsed_s=246.5	batch_ms=756	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=169	k10_v_ms=153	rss_kb=12340	threads=Some(1)	fd=Some(4)	load=9.48 14.61 15.83 4/2108 53850
+SOAK_BATCH	238	elapsed_s=252.0	batch_ms=772	cpu_i_ms=34	cpu_v_ms=19	k10_i_ms=175	k10_v_ms=153	rss_kb=12344	threads=Some(1)	fd=Some(4)	load=9.04 14.43 15.76 4/2111 54235
+SOAK_BATCH	246	elapsed_s=257.7	batch_ms=757	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=159	k10_v_ms=156	rss_kb=12344	threads=Some(1)	fd=Some(4)	load=8.72 14.28 15.71 4/2111 54650
+SOAK_BATCH	253	elapsed_s=263.0	batch_ms=767	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=174	k10_v_ms=159	rss_kb=12352	threads=Some(1)	fd=Some(4)	load=8.34 14.11 15.64 4/2104 54973
+SOAK_BATCH	260	elapsed_s=268.3	batch_ms=808	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=186	k10_v_ms=167	rss_kb=12344	threads=Some(1)	fd=Some(4)	load=7.99 13.94 15.58 5/2105 55482
+SOAK_BATCH	267	elapsed_s=273.9	batch_ms=798	cpu_i_ms=36	cpu_v_ms=21	k10_i_ms=179	k10_v_ms=162	rss_kb=12344	threads=Some(1)	fd=Some(4)	load=7.53 13.64 15.47 5/2103 55978
+SOAK_BATCH	274	elapsed_s=279.4	batch_ms=800	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=179	k10_v_ms=167	rss_kb=12356	threads=Some(1)	fd=Some(4)	load=7.33 13.50 15.41 4/2103 56452
+SOAK_BATCH	283	elapsed_s=285.1	batch_ms=843	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=182	k10_v_ms=156	rss_kb=12356	threads=Some(1)	fd=Some(4)	load=7.14 13.36 15.35 7/2119 57111
+SOAK_BATCH	290	elapsed_s=290.3	batch_ms=630	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=170	k10_v_ms=130	rss_kb=12356	threads=Some(1)	fd=Some(4)	load=6.97 13.22 15.30 4/2116 57600
+SOAK_BATCH	298	elapsed_s=295.6	batch_ms=679	cpu_i_ms=36	cpu_v_ms=21	k10_i_ms=170	k10_v_ms=159	rss_kb=12368	threads=Some(1)	fd=Some(4)	load=6.81 13.08 15.24 5/2112 58159
+SOAK_BATCH	306	elapsed_s=301.0	batch_ms=775	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=174	k10_v_ms=158	rss_kb=12360	threads=Some(1)	fd=Some(4)	load=6.83 12.98 15.20 4/2108 58720
+SOAK_BATCH	313	elapsed_s=306.4	batch_ms=783	cpu_i_ms=36	cpu_v_ms=18	k10_i_ms=174	k10_v_ms=161	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=7.00 12.92 15.16 5/2106 59230
+SOAK_BATCH	320	elapsed_s=311.8	batch_ms=803	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=185	k10_v_ms=164	rss_kb=12380	threads=Some(1)	fd=Some(4)	load=6.84 12.78 15.11 4/2111 59745
+SOAK_BATCH	327	elapsed_s=317.2	batch_ms=687	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=182	k10_v_ms=159	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=6.77 12.67 15.06 3/2112 60275
+SOAK_BATCH	335	elapsed_s=322.4	batch_ms=791	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=178	k10_v_ms=159	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=6.63 12.54 15.01 5/2105 60870
+SOAK_BATCH	342	elapsed_s=327.7	batch_ms=714	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=178	k10_v_ms=174	rss_kb=12388	threads=Some(1)	fd=Some(4)	load=6.42 12.40 14.95 5/2108 61470
+SOAK_BATCH	350	elapsed_s=333.1	batch_ms=739	cpu_i_ms=35	cpu_v_ms=18	k10_i_ms=184	k10_v_ms=172	rss_kb=12396	threads=Some(1)	fd=Some(4)	load=6.23 12.26 14.89 4/2103 62053
+SOAK_BATCH	357	elapsed_s=338.3	batch_ms=703	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=182	k10_v_ms=163	rss_kb=12384	threads=Some(1)	fd=Some(4)	load=6.13 12.14 14.83 4/2102 62533
+SOAK_BATCH	364	elapsed_s=343.6	batch_ms=771	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=171	k10_v_ms=161	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.87 11.89 14.72 4/2116 62880
+SOAK_BATCH	371	elapsed_s=348.8	batch_ms=634	cpu_i_ms=37	cpu_v_ms=17	k10_i_ms=180	k10_v_ms=133	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.80 11.77 14.67 4/2116 63265
+SOAK_BATCH	379	elapsed_s=354.5	batch_ms=821	cpu_i_ms=36	cpu_v_ms=20	k10_i_ms=185	k10_v_ms=174	rss_kb=12376	threads=Some(1)	fd=Some(4)	load=5.66 11.64 14.61 5/2107 63709
+SOAK_BATCH	387	elapsed_s=359.9	batch_ms=765	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=173	k10_v_ms=155	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.53 11.52 14.56 5/2106 64126
+SOAK_BATCH	394	elapsed_s=365.0	batch_ms=775	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=183	k10_v_ms=155	rss_kb=12376	threads=Some(1)	fd=Some(4)	load=5.40 11.39 14.50 5/2106 64598
+SOAK_BATCH	401	elapsed_s=370.3	batch_ms=810	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=181	k10_v_ms=158	rss_kb=12380	threads=Some(1)	fd=Some(4)	load=5.37 11.29 14.45 4/2082 65116
+SOAK_BATCH	408	elapsed_s=375.5	batch_ms=682	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=181	k10_v_ms=158	rss_kb=12396	threads=Some(1)	fd=Some(4)	load=5.50 11.22 14.41 4/2076 65558
+SOAK_BATCH	416	elapsed_s=381.1	batch_ms=771	cpu_i_ms=34	cpu_v_ms=20	k10_i_ms=178	k10_v_ms=153	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.38 11.10 14.35 4/2069 66021
+SOAK_BATCH	423	elapsed_s=386.2	batch_ms=547	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=174	k10_v_ms=129	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.43 11.01 14.31 4/2072 66465
+SOAK_BATCH	431	elapsed_s=391.3	batch_ms=637	cpu_i_ms=37	cpu_v_ms=20	k10_i_ms=172	k10_v_ms=132	rss_kb=12380	threads=Some(1)	fd=Some(4)	load=5.40 10.91 14.26 4/2071 67096
+SOAK_BATCH	439	elapsed_s=396.4	batch_ms=695	cpu_i_ms=36	cpu_v_ms=20	k10_i_ms=175	k10_v_ms=167	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.36 10.81 14.21 4/2071 67620
+SOAK_BATCH	447	elapsed_s=401.6	batch_ms=569	cpu_i_ms=25	cpu_v_ms=11	k10_i_ms=121	k10_v_ms=105	rss_kb=12396	threads=Some(1)	fd=Some(4)	load=5.25 10.70 14.15 3/2074 68051
+SOAK_BATCH	454	elapsed_s=406.8	batch_ms=737	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=168	k10_v_ms=148	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.15 10.59 14.10 3/2102 68385
+SOAK_BATCH	461	elapsed_s=411.9	batch_ms=738	cpu_i_ms=34	cpu_v_ms=20	k10_i_ms=166	k10_v_ms=148	rss_kb=12376	threads=Some(1)	fd=Some(4)	load=4.98 10.46 14.04 3/2093 68684
+SOAK_BATCH	468	elapsed_s=417.2	batch_ms=728	cpu_i_ms=33	cpu_v_ms=14	k10_i_ms=165	k10_v_ms=149	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.06 10.39 13.99 3/2100 69051
+SOAK_BATCH	476	elapsed_s=422.6	batch_ms=714	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=146	k10_v_ms=149	rss_kb=12376	threads=Some(1)	fd=Some(4)	load=4.90 10.26 13.93 3/2102 69513
+SOAK_BATCH	479	elapsed_s=428.0	batch_ms=2175	cpu_i_ms=159	cpu_v_ms=59	k10_i_ms=685	k10_v_ms=643	rss_kb=12384	threads=Some(1)	fd=Some(4)	load=5.63 10.33 13.93 4/2099 70514
+SOAK_BATCH	487	elapsed_s=433.5	batch_ms=769	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=169	k10_v_ms=158	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=5.30 10.10 13.82 3/2071 71512
+SOAK_BATCH	497	elapsed_s=438.8	batch_ms=660	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=171	k10_v_ms=148	rss_kb=12384	threads=Some(1)	fd=Some(4)	load=5.11 9.98 13.76 4/2063 73175
+SOAK_BATCH	503	elapsed_s=444.9	batch_ms=2384	cpu_i_ms=107	cpu_v_ms=73	k10_i_ms=655	k10_v_ms=654	rss_kb=12372	threads=Some(1)	fd=Some(4)	load=6.06 10.10 13.78 24/2173 75889
+SOAK_BATCH	506	elapsed_s=451.9	batch_ms=2253	cpu_i_ms=149	cpu_v_ms=54	k10_i_ms=621	k10_v_ms=713	rss_kb=13708	threads=Some(1)	fd=Some(4)	load=7.10 10.25 13.81 15/2161 78886
+SOAK_BATCH	509	elapsed_s=457.5	batch_ms=2020	cpu_i_ms=156	cpu_v_ms=62	k10_i_ms=633	k10_v_ms=485	rss_kb=12380	threads=Some(1)	fd=Some(4)	load=8.13 10.41 13.84 3/2114 81494
+SOAK_BATCH	513	elapsed_s=463.3	batch_ms=1212	cpu_i_ms=96	cpu_v_ms=47	k10_i_ms=288	k10_v_ms=236	rss_kb=12436	threads=Some(1)	fd=Some(4)	load=8.92 10.54 13.87 8/2153 87871
+SOAK_BATCH	516	elapsed_s=468.4	batch_ms=1721	cpu_i_ms=121	cpu_v_ms=52	k10_i_ms=532	k10_v_ms=438	rss_kb=12444	threads=Some(1)	fd=Some(4)	load=9.33 10.59 13.87 15/2148 95998
+SOAK_BATCH	519	elapsed_s=473.6	batch_ms=1714	cpu_i_ms=126	cpu_v_ms=69	k10_i_ms=463	k10_v_ms=394	rss_kb=12404	threads=Some(1)	fd=Some(4)	load=10.52 10.81 13.90 14/2149 102718
+SOAK_BATCH	523	elapsed_s=480.2	batch_ms=1996	cpu_i_ms=81	cpu_v_ms=72	k10_i_ms=830	k10_v_ms=293	rss_kb=12420	threads=Some(1)	fd=Some(4)	load=10.80 10.86 13.90 13/2146 109814
+SOAK_BATCH	527	elapsed_s=486.3	batch_ms=2144	cpu_i_ms=151	cpu_v_ms=67	k10_i_ms=752	k10_v_ms=432	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=11.62 11.03 13.94 22/2146 110706
+SOAK_BATCH	530	elapsed_s=491.5	batch_ms=1898	cpu_i_ms=137	cpu_v_ms=106	k10_i_ms=376	k10_v_ms=489	rss_kb=12460	threads=Some(1)	fd=Some(4)	load=12.21 11.16 13.97 21/2151 112306
+SOAK_BATCH	535	elapsed_s=496.7	batch_ms=804	cpu_i_ms=42	cpu_v_ms=19	k10_i_ms=192	k10_v_ms=203	rss_kb=12444	threads=Some(1)	fd=Some(4)	load=12.75 11.29 13.99 6/2121 113216
+SOAK_BATCH	541	elapsed_s=501.8	batch_ms=754	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=189	k10_v_ms=167	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=12.13 11.19 13.95 7/2109 113521
+SOAK_BATCH	549	elapsed_s=507.3	batch_ms=538	cpu_i_ms=26	cpu_v_ms=14	k10_i_ms=122	k10_v_ms=102	rss_kb=12448	threads=Some(1)	fd=Some(4)	load=11.48 11.07 13.89 4/2100 114096
+SOAK_BATCH	556	elapsed_s=512.3	batch_ms=770	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=174	k10_v_ms=156	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=10.88 10.95 13.84 4/2101 114397
+SOAK_BATCH	563	elapsed_s=517.3	batch_ms=566	cpu_i_ms=32	cpu_v_ms=13	k10_i_ms=138	k10_v_ms=106	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=10.33 10.83 13.79 3/2069 114703
+SOAK_BATCH	571	elapsed_s=522.6	batch_ms=718	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=160	k10_v_ms=136	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=9.74 10.70 13.73 3/2064 115206
+SOAK_BATCH	579	elapsed_s=527.8	batch_ms=737	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=169	k10_v_ms=151	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=9.76 10.69 13.71 3/2097 115788
+SOAK_BATCH	586	elapsed_s=533.0	batch_ms=767	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=172	k10_v_ms=156	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=9.22 10.56 13.65 3/2080 116123
+SOAK_BATCH	593	elapsed_s=538.5	batch_ms=737	cpu_i_ms=33	cpu_v_ms=15	k10_i_ms=168	k10_v_ms=149	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=8.27 10.31 13.54 3/2100 116564
+SOAK_BATCH	600	elapsed_s=543.6	batch_ms=722	cpu_i_ms=34	cpu_v_ms=17	k10_i_ms=162	k10_v_ms=147	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=7.84 10.19 13.48 3/2106 116871
+SOAK_BATCH	607	elapsed_s=548.7	batch_ms=770	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=171	k10_v_ms=150	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=7.46 10.07 13.42 3/2088 117211
+SOAK_BATCH	614	elapsed_s=553.8	batch_ms=739	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=163	k10_v_ms=151	rss_kb=12456	threads=Some(1)	fd=Some(4)	load=7.10 9.95 13.37 4/2098 117588
+SOAK_BATCH	621	elapsed_s=559.1	batch_ms=733	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=162	k10_v_ms=151	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=6.77 9.84 13.31 3/2086 117926
+SOAK_BATCH	631	elapsed_s=564.5	batch_ms=535	cpu_i_ms=25	cpu_v_ms=11	k10_i_ms=119	k10_v_ms=106	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=6.47 9.72 13.25 3/2088 118348
+SOAK_BATCH	640	elapsed_s=569.6	batch_ms=615	cpu_i_ms=35	cpu_v_ms=20	k10_i_ms=165	k10_v_ms=132	rss_kb=12444	threads=Some(1)	fd=Some(4)	load=6.51 9.68 13.22 3/2089 118878
+SOAK_BATCH	647	elapsed_s=574.6	batch_ms=745	cpu_i_ms=34	cpu_v_ms=19	k10_i_ms=163	k10_v_ms=147	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=6.23 9.57 13.16 3/2089 119178
+SOAK_BATCH	654	elapsed_s=579.6	batch_ms=772	cpu_i_ms=37	cpu_v_ms=20	k10_i_ms=174	k10_v_ms=156	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.97 9.46 13.11 4/2089 119555
+SOAK_BATCH	661	elapsed_s=584.7	batch_ms=740	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=167	k10_v_ms=152	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.73 9.35 13.06 3/2102 119935
+SOAK_BATCH	668	elapsed_s=589.7	batch_ms=737	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=167	k10_v_ms=149	rss_kb=12468	threads=Some(1)	fd=Some(4)	load=5.51 9.25 13.00 3/2102 120238
+SOAK_BATCH	675	elapsed_s=594.8	batch_ms=740	cpu_i_ms=34	cpu_v_ms=20	k10_i_ms=164	k10_v_ms=155	rss_kb=12444	threads=Some(1)	fd=Some(4)	load=5.31 9.14 12.95 3/2101 120540
+SOAK_BATCH	683	elapsed_s=600.5	batch_ms=762	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=168	k10_v_ms=143	rss_kb=12468	threads=Some(1)	fd=Some(4)	load=5.13 9.04 12.89 3/2087 120928
+SOAK_BATCH	690	elapsed_s=605.7	batch_ms=741	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=171	k10_v_ms=152	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=4.96 8.94 12.84 3/2086 121230
+SOAK_BATCH	697	elapsed_s=610.7	batch_ms=713	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=177	k10_v_ms=157	rss_kb=12468	threads=Some(1)	fd=Some(4)	load=4.80 8.84 12.79 6/2052 121579
+SOAK_BATCH	704	elapsed_s=616.3	batch_ms=708	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=179	k10_v_ms=167	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=4.73 8.76 12.74 7/2066 122967
+SOAK_BATCH	712	elapsed_s=621.5	batch_ms=429	cpu_i_ms=25	cpu_v_ms=11	k10_i_ms=110	k10_v_ms=98	rss_kb=12436	threads=Some(1)	fd=Some(4)	load=4.92 8.73 12.71 3/2059 127045
+SOAK_BATCH	721	elapsed_s=626.7	batch_ms=728	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=146	k10_v_ms=145	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=4.76 8.64 12.66 8/2062 129689
+SOAK_BATCH	730	elapsed_s=632.3	batch_ms=553	cpu_i_ms=31	cpu_v_ms=13	k10_i_ms=142	k10_v_ms=114	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=4.62 8.54 12.60 3/2053 133160
+SOAK_BATCH	738	elapsed_s=637.6	batch_ms=677	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=166	k10_v_ms=156	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=4.49 8.45 12.55 2/2049 135248
+SOAK_BATCH	749	elapsed_s=643.0	batch_ms=424	cpu_i_ms=25	cpu_v_ms=12	k10_i_ms=110	k10_v_ms=92	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=4.29 8.34 12.50 2/2037 135797
+SOAK_BATCH	759	elapsed_s=648.1	batch_ms=550	cpu_i_ms=34	cpu_v_ms=16	k10_i_ms=131	k10_v_ms=119	rss_kb=12436	threads=Some(1)	fd=Some(4)	load=4.11 8.24 12.44 2/2086 136358
+SOAK_BATCH	767	elapsed_s=653.7	batch_ms=1750	cpu_i_ms=33	cpu_v_ms=18	k10_i_ms=285	k10_v_ms=555	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=4.74 8.23 12.39 14/2152 137141
+SOAK_BATCH	772	elapsed_s=660.2	batch_ms=1618	cpu_i_ms=202	cpu_v_ms=96	k10_i_ms=372	k10_v_ms=299	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.25 8.28 12.38 7/2122 137929
+SOAK_BATCH	778	elapsed_s=665.9	batch_ms=870	cpu_i_ms=45	cpu_v_ms=25	k10_i_ms=218	k10_v_ms=178	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.23 8.22 12.34 3/2105 138330
+SOAK_BATCH	785	elapsed_s=670.9	batch_ms=795	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=181	k10_v_ms=162	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.61 8.25 12.33 7/2104 138964
+SOAK_BATCH	792	elapsed_s=676.1	batch_ms=698	cpu_i_ms=35	cpu_v_ms=19	k10_i_ms=175	k10_v_ms=154	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.48 8.18 12.29 5/2093 139637
+SOAK_BATCH	799	elapsed_s=681.4	batch_ms=781	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=190	k10_v_ms=172	rss_kb=12452	threads=Some(1)	fd=Some(4)	load=5.28 8.09 12.24 3/2093 140315
+SOAK_BATCH	807	elapsed_s=686.6	batch_ms=434	cpu_i_ms=29	cpu_v_ms=14	k10_i_ms=116	k10_v_ms=92	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.10 8.01 12.19 3/2078 141107
+SOAK_BATCH	815	elapsed_s=692.1	batch_ms=828	cpu_i_ms=41	cpu_v_ms=20	k10_i_ms=190	k10_v_ms=173	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.01 7.94 12.14 3/2055 141978
+SOAK_BATCH	823	elapsed_s=697.4	batch_ms=780	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=180	k10_v_ms=144	rss_kb=12448	threads=Some(1)	fd=Some(4)	load=5.09 7.91 12.11 8/2057 142824
+SOAK_BATCH	831	elapsed_s=702.9	batch_ms=767	cpu_i_ms=34	cpu_v_ms=20	k10_i_ms=167	k10_v_ms=156	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=4.92 7.83 12.06 5/2087 143411
+SOAK_BATCH	840	elapsed_s=708.1	batch_ms=496	cpu_i_ms=26	cpu_v_ms=11	k10_i_ms=135	k10_v_ms=140	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=4.93 7.78 12.02 3/2093 144687
+SOAK_BATCH	846	elapsed_s=713.4	batch_ms=1250	cpu_i_ms=52	cpu_v_ms=28	k10_i_ms=331	k10_v_ms=280	rss_kb=12468	threads=Some(1)	fd=Some(4)	load=4.77 7.70 11.97 14/2114 145380
+SOAK_BATCH	852	elapsed_s=718.6	batch_ms=760	cpu_i_ms=41	cpu_v_ms=23	k10_i_ms=197	k10_v_ms=179	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=5.78 7.83 11.97 7/2095 145703
+SOAK_BATCH	859	elapsed_s=723.8	batch_ms=901	cpu_i_ms=62	cpu_v_ms=19	k10_i_ms=200	k10_v_ms=178	rss_kb=12452	threads=Some(1)	fd=Some(4)	load=5.88 7.81 11.94 7/2095 146024
+SOAK_BATCH	864	elapsed_s=729.1	batch_ms=1487	cpu_i_ms=91	cpu_v_ms=28	k10_i_ms=518	k10_v_ms=309	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=6.61 7.93 11.96 14/2121 146552
+SOAK_BATCH	868	elapsed_s=734.5	batch_ms=931	cpu_i_ms=44	cpu_v_ms=24	k10_i_ms=205	k10_v_ms=202	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=6.72 7.93 11.93 8/2097 147875
+SOAK_BATCH	874	elapsed_s=739.7	batch_ms=807	cpu_i_ms=42	cpu_v_ms=17	k10_i_ms=193	k10_v_ms=173	rss_kb=12440	threads=Some(1)	fd=Some(4)	load=6.74 7.92 11.91 7/2095 148225
+SOAK_BATCH	881	elapsed_s=745.2	batch_ms=838	cpu_i_ms=39	cpu_v_ms=18	k10_i_ms=212	k10_v_ms=160	rss_kb=12452	threads=Some(1)	fd=Some(4)	load=6.44 7.83 11.86 6/2100 148984
+SOAK_BATCH	888	elapsed_s=751.2	batch_ms=1035	cpu_i_ms=116	cpu_v_ms=56	k10_i_ms=317	k10_v_ms=201	rss_kb=12456	threads=Some(1)	fd=Some(4)	load=6.41 7.80 11.83 9/2063 149916
+SOAK_BATCH	897	elapsed_s=756.7	batch_ms=671	cpu_i_ms=43	cpu_v_ms=24	k10_i_ms=157	k10_v_ms=135	rss_kb=12444	threads=Some(1)	fd=Some(4)	load=6.69 7.84 11.82 10/2105 150444
+SOAK_BATCH	900	elapsed_s=763.0	batch_ms=3372	cpu_i_ms=230	cpu_v_ms=84	k10_i_ms=1225	k10_v_ms=361	rss_kb=12464	threads=Some(1)	fd=Some(4)	load=8.32 8.16 11.90 15/2145 151211
+SOAK_BATCH	903	elapsed_s=768.3	batch_ms=1294	cpu_i_ms=81	cpu_v_ms=34	k10_i_ms=438	k10_v_ms=248	rss_kb=12424	threads=Some(1)	fd=Some(4)	load=9.26 8.36 11.94 7/2144 151791
+SOAK_BATCH	909	elapsed_s=773.3	batch_ms=694	cpu_i_ms=34	cpu_v_ms=17	k10_i_ms=171	k10_v_ms=152	rss_kb=12432	threads=Some(1)	fd=Some(4)	load=9.08 8.33 11.92 3/2113 152180
+SOAK_BATCH	913	elapsed_s=779.1	batch_ms=2163	cpu_i_ms=148	cpu_v_ms=84	k10_i_ms=584	k10_v_ms=519	rss_kb=12468	threads=Some(1)	fd=Some(4)	load=9.18 8.37 11.89 15/2132 153345
+SOAK_BATCH	918	elapsed_s=784.6	batch_ms=1671	cpu_i_ms=46	cpu_v_ms=22	k10_i_ms=313	k10_v_ms=503	rss_kb=10904	threads=Some(1)	fd=Some(4)	load=9.97 8.55 11.93 16/2165 154653
+SOAK_BATCH	921	elapsed_s=789.7	batch_ms=1619	cpu_i_ms=56	cpu_v_ms=26	k10_i_ms=354	k10_v_ms=334	rss_kb=10944	threads=Some(1)	fd=Some(4)	load=11.09 8.81 11.99 17/2155 155209
+SOAK_BATCH	923	elapsed_s=794.9	batch_ms=2677	cpu_i_ms=202	cpu_v_ms=92	k10_i_ms=614	k10_v_ms=794	rss_kb=10436	threads=Some(1)	fd=Some(4)	load=12.29 9.09 12.07 19/2146 156016
+SOAK_BATCH	928	elapsed_s=801.3	batch_ms=2234	cpu_i_ms=181	cpu_v_ms=63	k10_i_ms=582	k10_v_ms=658	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=12.58 9.21 12.09 17/2125 157048
+SOAK_BATCH	933	elapsed_s=806.3	batch_ms=772	cpu_i_ms=34	cpu_v_ms=21	k10_i_ms=178	k10_v_ms=167	rss_kb=10396	threads=Some(1)	fd=Some(4)	load=11.90 9.12 12.05 4/2080 157982
+SOAK_BATCH	938	elapsed_s=812.6	batch_ms=2076	cpu_i_ms=78	cpu_v_ms=61	k10_i_ms=640	k10_v_ms=561	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=13.59 9.52 12.16 28/2202 160639
+SOAK_BATCH	942	elapsed_s=819.0	batch_ms=1517	cpu_i_ms=206	cpu_v_ms=88	k10_i_ms=417	k10_v_ms=354	rss_kb=10340	threads=Some(1)	fd=Some(4)	load=15.70 10.11 12.33 25/2138 163895
+SOAK_BATCH	945	elapsed_s=825.2	batch_ms=2115	cpu_i_ms=215	cpu_v_ms=126	k10_i_ms=528	k10_v_ms=378	rss_kb=10300	threads=Some(1)	fd=Some(4)	load=16.29 10.32 12.38 21/2165 166393
+SOAK_BATCH	948	elapsed_s=830.5	batch_ms=1004	cpu_i_ms=43	cpu_v_ms=24	k10_i_ms=229	k10_v_ms=218	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=16.59 10.48 12.42 5/2101 168155
+SOAK_BATCH	954	elapsed_s=836.6	batch_ms=2015	cpu_i_ms=41	cpu_v_ms=18	k10_i_ms=488	k10_v_ms=737	rss_kb=10336	threads=Some(1)	fd=Some(4)	load=15.58 10.38 12.38 17/2144 171672
+SOAK_BATCH	957	elapsed_s=841.6	batch_ms=1568	cpu_i_ms=77	cpu_v_ms=33	k10_i_ms=427	k10_v_ms=408	rss_kb=10300	threads=Some(1)	fd=Some(4)	load=15.61 10.47 12.40 14/2146 176815
+SOAK_BATCH	960	elapsed_s=847.9	batch_ms=2188	cpu_i_ms=147	cpu_v_ms=63	k10_i_ms=780	k10_v_ms=494	rss_kb=10340	threads=Some(1)	fd=Some(4)	load=16.04 10.64 12.44 16/2147 184827
+SOAK_BATCH	963	elapsed_s=853.6	batch_ms=1786	cpu_i_ms=122	cpu_v_ms=71	k10_i_ms=438	k10_v_ms=476	rss_kb=10300	threads=Some(1)	fd=Some(4)	load=16.83 10.99 12.54 13/2175 191761
+SOAK_BATCH	967	elapsed_s=859.2	batch_ms=1631	cpu_i_ms=144	cpu_v_ms=66	k10_i_ms=342	k10_v_ms=497	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=17.16 11.15 12.58 19/2114 198057
+SOAK_BATCH	970	elapsed_s=864.8	batch_ms=1614	cpu_i_ms=97	cpu_v_ms=45	k10_i_ms=391	k10_v_ms=395	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=17.39 11.30 12.62 19/2113 200035
+SOAK_BATCH	973	elapsed_s=871.1	batch_ms=2070	cpu_i_ms=227	cpu_v_ms=77	k10_i_ms=515	k10_v_ms=412	rss_kb=10332	threads=Some(1)	fd=Some(4)	load=17.44 11.41 12.65 19/2100 201846
+SOAK_BATCH	976	elapsed_s=876.5	batch_ms=1615	cpu_i_ms=145	cpu_v_ms=73	k10_i_ms=549	k10_v_ms=370	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=17.48 11.52 12.68 9/2092 204006
+SOAK_BATCH	982	elapsed_s=881.6	batch_ms=712	cpu_i_ms=39	cpu_v_ms=21	k10_i_ms=192	k10_v_ms=151	rss_kb=10336	threads=Some(1)	fd=Some(4)	load=16.56 11.43 12.64 7/2080 204340
+SOAK_BATCH	989	elapsed_s=887.0	batch_ms=757	cpu_i_ms=33	cpu_v_ms=18	k10_i_ms=168	k10_v_ms=148	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=15.88 11.37 12.62 4/2064 204856
+SOAK_BATCH	997	elapsed_s=892.7	batch_ms=769	cpu_i_ms=34	cpu_v_ms=19	k10_i_ms=172	k10_v_ms=159	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=15.08 11.28 12.58 4/2065 205198
+SOAK_BATCH	1005	elapsed_s=898.4	batch_ms=749	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=168	k10_v_ms=153	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=14.20 11.16 12.54 3/2060 205557
+SOAK_BATCH	1012	elapsed_s=903.6	batch_ms=653	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=169	k10_v_ms=147	rss_kb=10348	threads=Some(1)	fd=Some(4)	load=12.56 10.91 12.44 5/2078 205907
+SOAK_BATCH	1019	elapsed_s=909.1	batch_ms=732	cpu_i_ms=39	cpu_v_ms=20	k10_i_ms=193	k10_v_ms=166	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=11.87 10.79 12.39 4/2077 207229
+SOAK_BATCH	1026	elapsed_s=914.5	batch_ms=662	cpu_i_ms=34	cpu_v_ms=18	k10_i_ms=171	k10_v_ms=147	rss_kb=10312	threads=Some(1)	fd=Some(4)	load=11.16 10.66 12.34 3/2056 208346
+SOAK_BATCH	1034	elapsed_s=920.2	batch_ms=1162	cpu_i_ms=38	cpu_v_ms=21	k10_i_ms=203	k10_v_ms=431	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=10.75 10.59 12.31 19/2170 212980
+SOAK_BATCH	1037	elapsed_s=925.3	batch_ms=638	cpu_i_ms=48	cpu_v_ms=17	k10_i_ms=273	k10_v_ms=105	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=12.13 10.88 12.39 2/2158 221121
+SOAK_BATCH	1045	elapsed_s=930.6	batch_ms=487	cpu_i_ms=26	cpu_v_ms=11	k10_i_ms=103	k10_v_ms=94	rss_kb=10388	threads=Some(1)	fd=Some(4)	load=13.32 11.14 12.47 12/2115 224251
+SOAK_BATCH	1053	elapsed_s=935.6	batch_ms=616	cpu_i_ms=35	cpu_v_ms=21	k10_i_ms=157	k10_v_ms=135	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=15.06 11.54 12.59 3/2121 227002
+SOAK_BATCH	1060	elapsed_s=941.3	batch_ms=716	cpu_i_ms=37	cpu_v_ms=18	k10_i_ms=189	k10_v_ms=153	rss_kb=10404	threads=Some(1)	fd=Some(4)	load=15.53 11.70 12.64 3/2145 230217
+SOAK_BATCH	1066	elapsed_s=946.3	batch_ms=1317	cpu_i_ms=37	cpu_v_ms=23	k10_i_ms=388	k10_v_ms=406	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=15.97 11.85 12.68 10/2257 232736
+SOAK_BATCH	1071	elapsed_s=952.4	batch_ms=1318	cpu_i_ms=123	cpu_v_ms=43	k10_i_ms=309	k10_v_ms=272	rss_kb=10336	threads=Some(1)	fd=Some(4)	load=17.41 12.22 12.80 33/2257 235951
+SOAK_BATCH	1078	elapsed_s=957.7	batch_ms=759	cpu_i_ms=28	cpu_v_ms=15	k10_i_ms=133	k10_v_ms=137	rss_kb=10408	threads=Some(1)	fd=Some(4)	load=19.54 12.75 12.97 10/2247 238260
+SOAK_BATCH	1084	elapsed_s=962.9	batch_ms=683	cpu_i_ms=35	cpu_v_ms=18	k10_i_ms=172	k10_v_ms=144	rss_kb=10320	threads=Some(1)	fd=Some(4)	load=20.86 13.14 13.09 3/2197 240354
+SOAK_BATCH	1093	elapsed_s=968.4	batch_ms=590	cpu_i_ms=33	cpu_v_ms=15	k10_i_ms=123	k10_v_ms=135	rss_kb=10396	threads=Some(1)	fd=Some(4)	load=20.71 13.23 13.12 2/2086 241153
+SOAK_BATCH	1097	elapsed_s=974.0	batch_ms=1458	cpu_i_ms=71	cpu_v_ms=31	k10_i_ms=379	k10_v_ms=363	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=19.02 13.11 13.08 12/2143 246476
+SOAK_BATCH	1101	elapsed_s=980.1	batch_ms=1809	cpu_i_ms=96	cpu_v_ms=37	k10_i_ms=484	k10_v_ms=418	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=19.18 13.24 13.13 27/2149 254109
+SOAK_BATCH	1104	elapsed_s=985.7	batch_ms=1904	cpu_i_ms=143	cpu_v_ms=74	k10_i_ms=433	k10_v_ms=425	rss_kb=10392	threads=Some(1)	fd=Some(4)	load=19.00 13.31 13.15 15/2143 259624
+SOAK_BATCH	1107	elapsed_s=992.6	batch_ms=1967	cpu_i_ms=130	cpu_v_ms=89	k10_i_ms=463	k10_v_ms=589	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=19.56 13.52 13.22 24/2156 265388
+SOAK_BATCH	1110	elapsed_s=998.0	batch_ms=1875	cpu_i_ms=121	cpu_v_ms=48	k10_i_ms=527	k10_v_ms=508	rss_kb=10392	threads=Some(1)	fd=Some(4)	load=19.68 13.64 13.26 29/2113 269880
+SOAK_BATCH	1113	elapsed_s=1004.4	batch_ms=2354	cpu_i_ms=142	cpu_v_ms=69	k10_i_ms=600	k10_v_ms=865	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=20.34 13.98 13.38 22/2131 271281
+SOAK_BATCH	1116	elapsed_s=1010.7	batch_ms=2366	cpu_i_ms=105	cpu_v_ms=79	k10_i_ms=592	k10_v_ms=649	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=20.31 14.08 13.41 20/2139 273082
+SOAK_BATCH	1119	elapsed_s=1016.1	batch_ms=1641	cpu_i_ms=122	cpu_v_ms=82	k10_i_ms=383	k10_v_ms=473	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=20.04 14.13 13.43 11/2134 274785
+SOAK_BATCH	1124	elapsed_s=1022.2	batch_ms=1801	cpu_i_ms=46	cpu_v_ms=21	k10_i_ms=338	k10_v_ms=310	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=19.16 14.05 13.41 21/2186 275501
+SOAK_BATCH	1127	elapsed_s=1029.4	batch_ms=2824	cpu_i_ms=186	cpu_v_ms=123	k10_i_ms=1073	k10_v_ms=774	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=19.35 14.26 13.48 11/2137 276747
+SOAK_BATCH	1131	elapsed_s=1035.1	batch_ms=1354	cpu_i_ms=60	cpu_v_ms=27	k10_i_ms=264	k10_v_ms=424	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=18.53 14.17 13.46 8/2124 277161
+SOAK_BATCH	1137	elapsed_s=1040.1	batch_ms=847	cpu_i_ms=46	cpu_v_ms=21	k10_i_ms=186	k10_v_ms=220	rss_kb=10324	threads=Some(1)	fd=Some(4)	load=17.52 14.03 13.42 17/2143 277635
+SOAK_BATCH	1140	elapsed_s=1045.2	batch_ms=1269	cpu_i_ms=168	cpu_v_ms=35	k10_i_ms=302	k10_v_ms=229	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=17.48 14.08 13.44 6/2091 278473
+SOAK_BATCH	1146	elapsed_s=1051.1	batch_ms=2273	cpu_i_ms=149	cpu_v_ms=91	k10_i_ms=602	k10_v_ms=588	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=16.56 13.95 13.40 13/2132 279847
+SOAK_BATCH	1151	elapsed_s=1056.9	batch_ms=1029	cpu_i_ms=51	cpu_v_ms=26	k10_i_ms=245	k10_v_ms=247	rss_kb=10368	threads=Some(1)	fd=Some(4)	load=15.79 13.83 13.36 6/2127 280251
+SOAK_BATCH	1157	elapsed_s=1062.1	batch_ms=813	cpu_i_ms=36	cpu_v_ms=21	k10_i_ms=186	k10_v_ms=169	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=15.17 13.74 13.33 5/2116 280609
+SOAK_BATCH	1164	elapsed_s=1067.5	batch_ms=829	cpu_i_ms=39	cpu_v_ms=17	k10_i_ms=182	k10_v_ms=168	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=14.36 13.59 13.29 4/2123 281829
+SOAK_BATCH	1171	elapsed_s=1074.4	batch_ms=2300	cpu_i_ms=134	cpu_v_ms=74	k10_i_ms=641	k10_v_ms=609	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=13.72 13.47 13.25 15/2146 284562
+SOAK_BATCH	1174	elapsed_s=1081.9	batch_ms=2744	cpu_i_ms=198	cpu_v_ms=79	k10_i_ms=868	k10_v_ms=551	rss_kb=10652	threads=Some(1)	fd=Some(4)	load=14.07 13.55 13.28 15/2159 287387
+SOAK_BATCH	1177	elapsed_s=1087.2	batch_ms=1598	cpu_i_ms=81	cpu_v_ms=34	k10_i_ms=384	k10_v_ms=335	rss_kb=10396	threads=Some(1)	fd=Some(4)	load=14.94 13.74 13.34 19/2208 289842
+SOAK_BATCH	1179	elapsed_s=1092.7	batch_ms=2812	cpu_i_ms=181	cpu_v_ms=104	k10_i_ms=934	k10_v_ms=623	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=15.27 13.83 13.37 18/2184 291932
+SOAK_BATCH	1186	elapsed_s=1099.2	batch_ms=1828	cpu_i_ms=81	cpu_v_ms=50	k10_i_ms=603	k10_v_ms=482	rss_kb=10384	threads=Some(1)	fd=Some(4)	load=14.32 13.67 13.33 11/2136 296928
+SOAK_BATCH	1190	elapsed_s=1105.4	batch_ms=1851	cpu_i_ms=104	cpu_v_ms=41	k10_i_ms=587	k10_v_ms=508	rss_kb=10316	threads=Some(1)	fd=Some(4)	load=14.61 13.74 13.35 15/2132 304205
+SOAK_BATCH	1194	elapsed_s=1111.7	batch_ms=1738	cpu_i_ms=127	cpu_v_ms=63	k10_i_ms=483	k10_v_ms=424	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=14.88 13.81 13.38 17/2133 312588
+SOAK_BATCH	1198	elapsed_s=1118.0	batch_ms=1698	cpu_i_ms=67	cpu_v_ms=35	k10_i_ms=248	k10_v_ms=392	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=15.21 13.90 13.41 17/2147 319829
+SOAK_BATCH	1200	elapsed_s=1123.3	batch_ms=2821	cpu_i_ms=185	cpu_v_ms=122	k10_i_ms=541	k10_v_ms=505	rss_kb=10368	threads=Some(1)	fd=Some(4)	load=15.52 13.98 13.44 30/2163 321452
+SOAK_BATCH	1202	elapsed_s=1129.6	batch_ms=3123	cpu_i_ms=196	cpu_v_ms=107	k10_i_ms=753	k10_v_ms=572	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=18.43 14.66 13.66 29/2168 322150
+SOAK_BATCH	1204	elapsed_s=1135.5	batch_ms=3022	cpu_i_ms=166	cpu_v_ms=85	k10_i_ms=543	k10_v_ms=682	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=19.44 14.93 13.76 31/2168 322746
+SOAK_BATCH	1206	elapsed_s=1141.2	batch_ms=2360	cpu_i_ms=230	cpu_v_ms=80	k10_i_ms=580	k10_v_ms=492	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=20.20 15.16 13.84 23/2164 324429
+SOAK_BATCH	1208	elapsed_s=1146.2	batch_ms=1980	cpu_i_ms=145	cpu_v_ms=77	k10_i_ms=526	k10_v_ms=381	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=19.63 15.13 13.83 19/2146 324796
+SOAK_BATCH	1212	elapsed_s=1153.4	batch_ms=2267	cpu_i_ms=150	cpu_v_ms=86	k10_i_ms=357	k10_v_ms=505	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=18.86 15.04 13.81 16/2149 325141
+SOAK_BATCH	1215	elapsed_s=1158.8	batch_ms=1473	cpu_i_ms=163	cpu_v_ms=84	k10_i_ms=832	k10_v_ms=178	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=18.26 15.04 13.83 8/2137 325342
+SOAK_BATCH	1222	elapsed_s=1164.5	batch_ms=765	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=188	k10_v_ms=167	rss_kb=10376	threads=Some(1)	fd=Some(4)	load=17.12 14.86 13.77 5/2123 325833
+SOAK_BATCH	1229	elapsed_s=1169.9	batch_ms=701	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=184	k10_v_ms=164	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=16.14 14.69 13.73 5/2112 326332
+SOAK_BATCH	1236	elapsed_s=1175.4	batch_ms=673	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=172	k10_v_ms=153	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=15.17 14.52 13.67 4/2114 326752
+SOAK_BATCH	1244	elapsed_s=1180.8	batch_ms=649	cpu_i_ms=37	cpu_v_ms=20	k10_i_ms=178	k10_v_ms=136	rss_kb=10420	threads=Some(1)	fd=Some(4)	load=14.36 14.36 13.63 4/2101 327218
+SOAK_BATCH	1251	elapsed_s=1185.9	batch_ms=757	cpu_i_ms=39	cpu_v_ms=24	k10_i_ms=169	k10_v_ms=161	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=13.53 14.18 13.58 4/2066 327738
+SOAK_BATCH	1258	elapsed_s=1191.7	batch_ms=765	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=173	k10_v_ms=154	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=13.08 14.08 13.54 4/2106 328508
+SOAK_BATCH	1265	elapsed_s=1197.7	batch_ms=1338	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=197	k10_v_ms=318	rss_kb=10344	threads=Some(1)	fd=Some(4)	load=12.36 13.91 13.49 18/2143 329171
+SOAK_BATCH	1268	elapsed_s=1203.0	batch_ms=825	cpu_i_ms=41	cpu_v_ms=18	k10_i_ms=181	k10_v_ms=168	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=12.81 13.98 13.52 5/2119 329990
+SOAK_BATCH	1276	elapsed_s=1208.7	batch_ms=757	cpu_i_ms=37	cpu_v_ms=14	k10_i_ms=157	k10_v_ms=174	rss_kb=10420	threads=Some(1)	fd=Some(4)	load=11.53 13.67 13.42 4/2113 331197
+SOAK_BATCH	1283	elapsed_s=1214.2	batch_ms=796	cpu_i_ms=38	cpu_v_ms=16	k10_i_ms=183	k10_v_ms=167	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=10.93 13.51 13.37 4/2122 332817
+SOAK_BATCH	1289	elapsed_s=1220.1	batch_ms=1465	cpu_i_ms=155	cpu_v_ms=79	k10_i_ms=549	k10_v_ms=297	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=11.33 13.55 13.38 26/2195 335545
+SOAK_BATCH	1292	elapsed_s=1225.8	batch_ms=2231	cpu_i_ms=170	cpu_v_ms=71	k10_i_ms=676	k10_v_ms=650	rss_kb=10360	threads=Some(1)	fd=Some(4)	load=12.11 13.67 13.43 19/2183 338181
+SOAK_BATCH	1296	elapsed_s=1231.9	batch_ms=2100	cpu_i_ms=119	cpu_v_ms=63	k10_i_ms=708	k10_v_ms=585	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=12.74 13.78 13.46 4/2068 341135
+SOAK_BATCH	1300	elapsed_s=1238.1	batch_ms=1296	cpu_i_ms=96	cpu_v_ms=45	k10_i_ms=305	k10_v_ms=265	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=13.56 13.93 13.51 15/2112 347482
+SOAK_BATCH	1303	elapsed_s=1243.3	batch_ms=1684	cpu_i_ms=118	cpu_v_ms=47	k10_i_ms=455	k10_v_ms=438	rss_kb=10380	threads=Some(1)	fd=Some(4)	load=13.28 13.87 13.49 15/2113 355137
+SOAK_BATCH	1307	elapsed_s=1249.9	batch_ms=1701	cpu_i_ms=113	cpu_v_ms=72	k10_i_ms=426	k10_v_ms=434	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=13.84 13.97 13.53 17/2174 363119
+SOAK_BATCH	1310	elapsed_s=1254.9	batch_ms=1783	cpu_i_ms=125	cpu_v_ms=66	k10_i_ms=413	k10_v_ms=450	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=14.33 14.07 13.57 15/2160 368153
+SOAK_BATCH	1313	elapsed_s=1261.2	batch_ms=2212	cpu_i_ms=193	cpu_v_ms=94	k10_i_ms=656	k10_v_ms=433	rss_kb=10424	threads=Some(1)	fd=Some(4)	load=14.31 14.07 13.57 15/2148 370171
+SOAK_BATCH	1317	elapsed_s=1267.1	batch_ms=1249	cpu_i_ms=120	cpu_v_ms=41	k10_i_ms=293	k10_v_ms=265	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=14.68 14.15 13.60 11/2133 370598
+SOAK_BATCH	1323	elapsed_s=1272.5	batch_ms=779	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=177	k10_v_ms=159	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=14.55 14.13 13.59 4/2118 370993
+SOAK_BATCH	1330	elapsed_s=1277.6	batch_ms=784	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=174	k10_v_ms=163	rss_kb=10360	threads=Some(1)	fd=Some(4)	load=13.86 14.00 13.55 4/2132 371457
+SOAK_BATCH	1339	elapsed_s=1282.9	batch_ms=504	cpu_i_ms=25	cpu_v_ms=11	k10_i_ms=117	k10_v_ms=103	rss_kb=10392	threads=Some(1)	fd=Some(4)	load=13.07 13.83 13.50 4/2131 371931
+SOAK_BATCH	1347	elapsed_s=1288.3	batch_ms=762	cpu_i_ms=34	cpu_v_ms=19	k10_i_ms=171	k10_v_ms=157	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=12.35 13.67 13.45 4/2094 372550
+SOAK_BATCH	1355	elapsed_s=1293.9	batch_ms=733	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=163	k10_v_ms=144	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=10.91 13.32 13.34 3/2067 373019
+SOAK_BATCH	1361	elapsed_s=1301.2	batch_ms=2473	cpu_i_ms=146	cpu_v_ms=58	k10_i_ms=590	k10_v_ms=615	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=11.32 13.36 13.35 17/2105 374016
+SOAK_BATCH	1365	elapsed_s=1306.7	batch_ms=1129	cpu_i_ms=53	cpu_v_ms=25	k10_i_ms=271	k10_v_ms=235	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=11.21 13.30 13.33 10/2125 374639
+SOAK_BATCH	1372	elapsed_s=1312.0	batch_ms=733	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=178	k10_v_ms=165	rss_kb=10364	threads=Some(1)	fd=Some(4)	load=10.79 13.18 13.30 4/2113 375092
+SOAK_BATCH	1376	elapsed_s=1317.9	batch_ms=1903	cpu_i_ms=135	cpu_v_ms=71	k10_i_ms=470	k10_v_ms=552	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=11.13 13.21 13.30 15/2142 376034
+SOAK_BATCH	1381	elapsed_s=1323.9	batch_ms=1585	cpu_i_ms=102	cpu_v_ms=51	k10_i_ms=308	k10_v_ms=419	rss_kb=10364	threads=Some(1)	fd=Some(4)	load=11.80 13.29 13.33 18/2156 377467
+SOAK_BATCH	1389	elapsed_s=1329.3	batch_ms=777	cpu_i_ms=25	cpu_v_ms=12	k10_i_ms=140	k10_v_ms=141	rss_kb=10412	threads=Some(1)	fd=Some(4)	load=12.94 13.50 13.40 11/2136 378068
+SOAK_BATCH	1396	elapsed_s=1334.3	batch_ms=666	cpu_i_ms=37	cpu_v_ms=19	k10_i_ms=175	k10_v_ms=136	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=12.22 13.34 13.35 4/2103 378816
+SOAK_BATCH	1403	elapsed_s=1339.5	batch_ms=812	cpu_i_ms=38	cpu_v_ms=21	k10_i_ms=186	k10_v_ms=160	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=11.56 13.19 13.30 5/2081 380606
+SOAK_BATCH	1407	elapsed_s=1345.4	batch_ms=2492	cpu_i_ms=151	cpu_v_ms=90	k10_i_ms=711	k10_v_ms=653	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=13.12 13.48 13.39 17/2163 382991
+SOAK_BATCH	1409	elapsed_s=1350.6	batch_ms=2530	cpu_i_ms=138	cpu_v_ms=89	k10_i_ms=630	k10_v_ms=669	rss_kb=10356	threads=Some(1)	fd=Some(4)	load=13.91 13.64 13.44 17/2145 385099
+SOAK_BATCH	1412	elapsed_s=1357.5	batch_ms=2367	cpu_i_ms=143	cpu_v_ms=79	k10_i_ms=719	k10_v_ms=568	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=14.16 13.70 13.46 15/2140 387774
+SOAK_BATCH	1415	elapsed_s=1363.4	batch_ms=1271	cpu_i_ms=129	cpu_v_ms=82	k10_i_ms=517	k10_v_ms=204	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=14.71 13.82 13.50 6/2071 390036
+SOAK_BATCH	1421	elapsed_s=1368.8	batch_ms=1832	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=483	k10_v_ms=618	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=14.24 13.74 13.48 18/2107 392998
+SOAK_BATCH	1425	elapsed_s=1375.2	batch_ms=1714	cpu_i_ms=84	cpu_v_ms=41	k10_i_ms=580	k10_v_ms=426	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=14.30 13.77 13.49 18/2123 400319
+SOAK_BATCH	1429	elapsed_s=1381.1	batch_ms=1465	cpu_i_ms=77	cpu_v_ms=38	k10_i_ms=362	k10_v_ms=398	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=15.00 13.92 13.54 16/2106 408016
+SOAK_BATCH	1432	elapsed_s=1386.1	batch_ms=1669	cpu_i_ms=115	cpu_v_ms=57	k10_i_ms=443	k10_v_ms=420	rss_kb=10376	threads=Some(1)	fd=Some(4)	load=15.08 13.95 13.55 20/2150 414044
+SOAK_BATCH	1436	elapsed_s=1392.1	batch_ms=1529	cpu_i_ms=172	cpu_v_ms=75	k10_i_ms=445	k10_v_ms=332	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=15.39 14.04 13.58 15/2150 418991
+SOAK_BATCH	1440	elapsed_s=1398.5	batch_ms=2076	cpu_i_ms=98	cpu_v_ms=54	k10_i_ms=622	k10_v_ms=682	rss_kb=10412	threads=Some(1)	fd=Some(4)	load=15.68 14.12 13.61 21/2171 420183
+SOAK_BATCH	1443	elapsed_s=1403.6	batch_ms=2039	cpu_i_ms=158	cpu_v_ms=87	k10_i_ms=357	k10_v_ms=651	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=16.51 14.32 13.68 24/2157 421480
+SOAK_BATCH	1447	elapsed_s=1409.4	batch_ms=1049	cpu_i_ms=57	cpu_v_ms=36	k10_i_ms=228	k10_v_ms=220	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=16.76 14.45 13.73 7/2140 423000
+SOAK_BATCH	1454	elapsed_s=1415.0	batch_ms=949	cpu_i_ms=44	cpu_v_ms=19	k10_i_ms=226	k10_v_ms=202	rss_kb=10400	threads=Some(1)	fd=Some(4)	load=16.22 14.38 13.71 7/2137 423596
+SOAK_BATCH	1460	elapsed_s=1420.4	batch_ms=852	cpu_i_ms=40	cpu_v_ms=21	k10_i_ms=202	k10_v_ms=175	rss_kb=10420	threads=Some(1)	fd=Some(4)	load=15.40 14.24 13.67 6/2131 424078
+SOAK_BATCH	1463	elapsed_s=1425.5	batch_ms=1578	cpu_i_ms=164	cpu_v_ms=96	k10_i_ms=706	k10_v_ms=174	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=15.53 14.29 13.69 6/2122 425118
+SOAK_BATCH	1470	elapsed_s=1431.1	batch_ms=850	cpu_i_ms=48	cpu_v_ms=20	k10_i_ms=224	k10_v_ms=190	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=15.25 14.25 13.68 6/2121 427065
+SOAK_BATCH	1477	elapsed_s=1436.3	batch_ms=690	cpu_i_ms=38	cpu_v_ms=20	k10_i_ms=171	k10_v_ms=159	rss_kb=10364	threads=Some(1)	fd=Some(4)	load=14.43 14.09 13.63 5/2113 427512
+SOAK_BATCH	1485	elapsed_s=1441.8	batch_ms=686	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=182	k10_v_ms=156	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=13.67 13.94 13.58 4/2110 428000
+SOAK_BATCH	1494	elapsed_s=1447.1	batch_ms=456	cpu_i_ms=25	cpu_v_ms=14	k10_i_ms=108	k10_v_ms=102	rss_kb=10364	threads=Some(1)	fd=Some(4)	load=13.06 13.81 13.54 4/2111 428536
+SOAK_BATCH	1502	elapsed_s=1452.4	batch_ms=679	cpu_i_ms=36	cpu_v_ms=21	k10_i_ms=181	k10_v_ms=144	rss_kb=10408	threads=Some(1)	fd=Some(4)	load=12.49 13.68 13.50 4/2101 429118
+SOAK_BATCH	1509	elapsed_s=1458.0	batch_ms=660	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=173	k10_v_ms=137	rss_kb=10364	threads=Some(1)	fd=Some(4)	load=11.81 13.52 13.45 4/2102 429795
+SOAK_BATCH	1515	elapsed_s=1464.7	batch_ms=2235	cpu_i_ms=144	cpu_v_ms=62	k10_i_ms=620	k10_v_ms=525	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=11.73 13.44 13.43 14/2097 430681
+SOAK_BATCH	1520	elapsed_s=1470.2	batch_ms=722	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=170	k10_v_ms=161	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=11.11 13.28 13.38 4/2074 431989
+SOAK_BATCH	1527	elapsed_s=1475.4	batch_ms=661	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=172	k10_v_ms=143	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=10.54 13.13 13.32 5/2065 432941
+SOAK_BATCH	1535	elapsed_s=1481.0	batch_ms=693	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=176	k10_v_ms=164	rss_kb=10368	threads=Some(1)	fd=Some(4)	load=10.02 12.97 13.27 4/2071 434995
+SOAK_BATCH	1538	elapsed_s=1486.0	batch_ms=1474	cpu_i_ms=70	cpu_v_ms=34	k10_i_ms=325	k10_v_ms=288	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=10.58 13.04 13.29 24/2145 437617
+SOAK_BATCH	1541	elapsed_s=1491.4	batch_ms=1786	cpu_i_ms=162	cpu_v_ms=75	k10_i_ms=533	k10_v_ms=387	rss_kb=10368	threads=Some(1)	fd=Some(4)	load=11.17 13.12 13.32 3/2077 440100
+SOAK_BATCH	1545	elapsed_s=1496.5	batch_ms=880	cpu_i_ms=39	cpu_v_ms=18	k10_i_ms=199	k10_v_ms=193	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=11.56 13.17 13.33 5/2077 442513
+SOAK_BATCH	1550	elapsed_s=1502.9	batch_ms=1798	cpu_i_ms=113	cpu_v_ms=53	k10_i_ms=496	k10_v_ms=449	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=11.03 13.04 13.29 15/2117 448021
+SOAK_BATCH	1554	elapsed_s=1508.5	batch_ms=1680	cpu_i_ms=126	cpu_v_ms=57	k10_i_ms=487	k10_v_ms=412	rss_kb=10452	threads=Some(1)	fd=Some(4)	load=11.43 13.09 13.30 19/2110 455827
+SOAK_BATCH	1557	elapsed_s=1513.8	batch_ms=1648	cpu_i_ms=141	cpu_v_ms=68	k10_i_ms=432	k10_v_ms=417	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=12.45 13.25 13.35 22/2109 462374
+SOAK_BATCH	1560	elapsed_s=1518.9	batch_ms=1634	cpu_i_ms=93	cpu_v_ms=63	k10_i_ms=494	k10_v_ms=357	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=12.65 13.28 13.36 19/2117 468431
+SOAK_BATCH	1563	elapsed_s=1525.1	batch_ms=2223	cpu_i_ms=159	cpu_v_ms=53	k10_i_ms=639	k10_v_ms=502	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=13.40 13.42 13.41 17/2126 472112
+SOAK_BATCH	1566	elapsed_s=1530.9	batch_ms=1972	cpu_i_ms=154	cpu_v_ms=64	k10_i_ms=491	k10_v_ms=595	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=14.65 13.68 13.49 21/2120 473492
+SOAK_BATCH	1569	elapsed_s=1537.2	batch_ms=2410	cpu_i_ms=157	cpu_v_ms=80	k10_i_ms=938	k10_v_ms=520	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=15.40 13.85 13.55 24/2112 475298
+SOAK_BATCH	1573	elapsed_s=1542.5	batch_ms=1005	cpu_i_ms=48	cpu_v_ms=23	k10_i_ms=203	k10_v_ms=205	rss_kb=10380	threads=Some(1)	fd=Some(4)	load=15.53 13.91 13.57 7/2086 476188
+SOAK_BATCH	1579	elapsed_s=1547.9	batch_ms=940	cpu_i_ms=43	cpu_v_ms=19	k10_i_ms=235	k10_v_ms=204	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=14.93 13.81 13.54 6/2084 476598
+SOAK_BATCH	1586	elapsed_s=1553.2	batch_ms=469	cpu_i_ms=25	cpu_v_ms=13	k10_i_ms=116	k10_v_ms=106	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=14.21 13.68 13.50 5/2102 477115
+SOAK_BATCH	1595	elapsed_s=1558.8	batch_ms=695	cpu_i_ms=38	cpu_v_ms=16	k10_i_ms=179	k10_v_ms=154	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=12.79 13.39 13.41 5/2101 477607
+SOAK_BATCH	1603	elapsed_s=1564.0	batch_ms=469	cpu_i_ms=24	cpu_v_ms=11	k10_i_ms=118	k10_v_ms=107	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=12.17 13.25 13.36 4/2095 478034
+SOAK_BATCH	1612	elapsed_s=1569.1	batch_ms=426	cpu_i_ms=26	cpu_v_ms=11	k10_i_ms=117	k10_v_ms=88	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=11.52 13.10 13.31 4/2092 478662
+SOAK_BATCH	1619	elapsed_s=1574.1	batch_ms=670	cpu_i_ms=37	cpu_v_ms=18	k10_i_ms=161	k10_v_ms=152	rss_kb=10440	threads=Some(1)	fd=Some(4)	load=10.91 12.95 13.26 4/2100 479254
+SOAK_BATCH	1626	elapsed_s=1579.4	batch_ms=696	cpu_i_ms=37	cpu_v_ms=18	k10_i_ms=173	k10_v_ms=167	rss_kb=10412	threads=Some(1)	fd=Some(4)	load=10.44 12.81 13.22 5/2096 479706
+SOAK_BATCH	1633	elapsed_s=1584.5	batch_ms=783	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=179	k10_v_ms=162	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=10.00 12.68 13.17 4/2057 480100
+SOAK_BATCH	1641	elapsed_s=1590.1	batch_ms=770	cpu_i_ms=37	cpu_v_ms=18	k10_i_ms=169	k10_v_ms=156	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=9.52 12.54 13.12 5/2056 480662
+SOAK_BATCH	1648	elapsed_s=1595.1	batch_ms=750	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=176	k10_v_ms=147	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=9.08 12.40 13.07 4/2057 481053
+SOAK_BATCH	1655	elapsed_s=1600.1	batch_ms=756	cpu_i_ms=35	cpu_v_ms=19	k10_i_ms=176	k10_v_ms=148	rss_kb=10380	threads=Some(1)	fd=Some(4)	load=8.99 12.32 13.05 4/2055 481445
+SOAK_BATCH	1662	elapsed_s=1605.2	batch_ms=766	cpu_i_ms=36	cpu_v_ms=18	k10_i_ms=172	k10_v_ms=153	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=8.59 12.18 13.00 4/2097 481883
+SOAK_BATCH	1670	elapsed_s=1610.7	batch_ms=762	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=172	k10_v_ms=158	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=8.23 12.05 12.95 4/2099 482320
+SOAK_BATCH	1677	elapsed_s=1615.8	batch_ms=768	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=176	k10_v_ms=157	rss_kb=10428	threads=Some(1)	fd=Some(4)	load=7.89 11.91 12.90 4/2091 482723
+SOAK_BATCH	1684	elapsed_s=1621.0	batch_ms=774	cpu_i_ms=37	cpu_v_ms=20	k10_i_ms=180	k10_v_ms=161	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=7.58 11.78 12.85 4/2090 483108
+SOAK_BATCH	1692	elapsed_s=1626.5	batch_ms=768	cpu_i_ms=36	cpu_v_ms=20	k10_i_ms=174	k10_v_ms=156	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=7.29 11.65 12.81 4/2092 483551
+SOAK_BATCH	1699	elapsed_s=1631.7	batch_ms=599	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=152	k10_v_ms=119	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=7.03 11.53 12.76 4/2093 483950
+SOAK_BATCH	1707	elapsed_s=1637.0	batch_ms=728	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=159	k10_v_ms=154	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=6.86 11.42 12.72 4/2102 484391
+SOAK_BATCH	1715	elapsed_s=1642.5	batch_ms=768	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=172	k10_v_ms=150	rss_kb=10376	threads=Some(1)	fd=Some(4)	load=6.55 11.28 12.66 4/2103 484823
+SOAK_BATCH	1723	elapsed_s=1647.7	batch_ms=750	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=177	k10_v_ms=150	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=6.59 11.21 12.63 4/2103 485438
+SOAK_BATCH	1732	elapsed_s=1653.5	batch_ms=796	cpu_i_ms=36	cpu_v_ms=20	k10_i_ms=184	k10_v_ms=167	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=6.38 11.09 12.59 4/2104 485920
+SOAK_BATCH	1740	elapsed_s=1659.0	batch_ms=751	cpu_i_ms=36	cpu_v_ms=19	k10_i_ms=166	k10_v_ms=159	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=6.02 10.85 12.49 4/2095 486367
+SOAK_BATCH	1747	elapsed_s=1664.3	batch_ms=776	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=178	k10_v_ms=159	rss_kb=10392	threads=Some(1)	fd=Some(4)	load=5.85 10.74 12.45 4/2100 486767
+SOAK_BATCH	1754	elapsed_s=1669.5	batch_ms=726	cpu_i_ms=35	cpu_v_ms=18	k10_i_ms=178	k10_v_ms=160	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=5.70 10.63 12.40 4/2100 487191
+SOAK_BATCH	1761	elapsed_s=1674.5	batch_ms=747	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=177	k10_v_ms=154	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=5.57 10.52 12.36 4/2095 487588
+SOAK_BATCH	1768	elapsed_s=1679.8	batch_ms=773	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=179	k10_v_ms=157	rss_kb=10452	threads=Some(1)	fd=Some(4)	load=5.52 10.42 12.32 4/2093 487975
+SOAK_BATCH	1775	elapsed_s=1684.9	batch_ms=764	cpu_i_ms=35	cpu_v_ms=16	k10_i_ms=171	k10_v_ms=155	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=5.40 10.32 12.27 4/2091 488363
+SOAK_BATCH	1782	elapsed_s=1690.0	batch_ms=766	cpu_i_ms=36	cpu_v_ms=17	k10_i_ms=176	k10_v_ms=150	rss_kb=10404	threads=Some(1)	fd=Some(4)	load=5.37 10.23 12.23 5/2114 488773
+SOAK_BATCH	1791	elapsed_s=1695.7	batch_ms=698	cpu_i_ms=34	cpu_v_ms=15	k10_i_ms=166	k10_v_ms=154	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=5.26 10.13 12.19 4/2104 489275
+SOAK_BATCH	1799	elapsed_s=1701.3	batch_ms=772	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=176	k10_v_ms=152	rss_kb=10452	threads=Some(1)	fd=Some(4)	load=5.16 10.02 12.14 4/2101 489706
+SOAK_BATCH	1806	elapsed_s=1706.7	batch_ms=798	cpu_i_ms=38	cpu_v_ms=17	k10_i_ms=194	k10_v_ms=157	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=5.06 9.92 12.10 4/2095 490232
+SOAK_BATCH	1813	elapsed_s=1711.9	batch_ms=756	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=170	k10_v_ms=148	rss_kb=10448	threads=Some(1)	fd=Some(4)	load=4.98 9.82 12.06 4/2095 490624
+SOAK_BATCH	1820	elapsed_s=1717.4	batch_ms=770	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=179	k10_v_ms=154	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=4.90 9.73 12.01 4/2089 490988
+SOAK_BATCH	1827	elapsed_s=1722.7	batch_ms=764	cpu_i_ms=35	cpu_v_ms=15	k10_i_ms=173	k10_v_ms=156	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=4.83 9.63 11.97 4/2058 491356
+SOAK_BATCH	1834	elapsed_s=1728.0	batch_ms=613	cpu_i_ms=36	cpu_v_ms=15	k10_i_ms=168	k10_v_ms=117	rss_kb=10424	threads=Some(1)	fd=Some(4)	load=4.84 9.56 11.93 4/2100 491778
+SOAK_BATCH	1842	elapsed_s=1733.7	batch_ms=771	cpu_i_ms=37	cpu_v_ms=18	k10_i_ms=176	k10_v_ms=153	rss_kb=10396	threads=Some(1)	fd=Some(4)	load=4.71 9.37 11.85 4/2091 492202
+SOAK_BATCH	1850	elapsed_s=1739.3	batch_ms=653	cpu_i_ms=25	cpu_v_ms=13	k10_i_ms=126	k10_v_ms=126	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=4.65 9.28 11.80 4/2092 492615
+SOAK_BATCH	1858	elapsed_s=1745.0	batch_ms=776	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=174	k10_v_ms=152	rss_kb=10444	threads=Some(1)	fd=Some(4)	load=4.68 9.21 11.77 4/2091 493039
+SOAK_BATCH	1865	elapsed_s=1750.4	batch_ms=770	cpu_i_ms=36	cpu_v_ms=21	k10_i_ms=168	k10_v_ms=157	rss_kb=10392	threads=Some(1)	fd=Some(4)	load=4.71 9.14 11.73 4/2093 493437
+SOAK_BATCH	1872	elapsed_s=1755.7	batch_ms=785	cpu_i_ms=36	cpu_v_ms=20	k10_i_ms=182	k10_v_ms=156	rss_kb=10432	threads=Some(1)	fd=Some(4)	load=4.65 9.06 11.69 4/2100 493822
+SOAK_BATCH	1879	elapsed_s=1761.1	batch_ms=818	cpu_i_ms=36	cpu_v_ms=16	k10_i_ms=189	k10_v_ms=164	rss_kb=10452	threads=Some(1)	fd=Some(4)	load=4.60 8.97 11.65 4/2064 494350
+SOAK_BATCH	1883	elapsed_s=1766.2	batch_ms=2267	cpu_i_ms=125	cpu_v_ms=71	k10_i_ms=699	k10_v_ms=464	rss_kb=10460	threads=Some(1)	fd=Some(4)	load=5.59 9.10 11.68 20/2093 495153
+SOAK_BATCH	1887	elapsed_s=1771.5	batch_ms=717	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=171	k10_v_ms=159	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=6.59 9.25 11.71 5/2076 495952
+SOAK_BATCH	1894	elapsed_s=1776.8	batch_ms=683	cpu_i_ms=37	cpu_v_ms=16	k10_i_ms=185	k10_v_ms=148	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=6.38 9.17 11.67 5/2077 497161
+SOAK_BATCH	1902	elapsed_s=1782.2	batch_ms=765	cpu_i_ms=32	cpu_v_ms=19	k10_i_ms=163	k10_v_ms=163	rss_kb=10452	threads=Some(1)	fd=Some(4)	load=6.19 9.08 11.63 4/2077 499160
+SOAK_BATCH	1906	elapsed_s=1788.0	batch_ms=2526	cpu_i_ms=146	cpu_v_ms=87	k10_i_ms=722	k10_v_ms=690	rss_kb=10460	threads=Some(1)	fd=Some(4)	load=6.97 9.19 11.65 17/2150 501699
+SOAK_BATCH	1910	elapsed_s=1794.6	batch_ms=1561	cpu_i_ms=65	cpu_v_ms=36	k10_i_ms=305	k10_v_ms=382	rss_kb=10456	threads=Some(1)	fd=Some(4)	load=8.68 9.49 11.72 16/2159 505026
+SOAK_BATCH	1914	elapsed_s=1799.9	batch_ms=1055	cpu_i_ms=45	cpu_v_ms=25	k10_i_ms=235	k10_v_ms=184	rss_kb=10372	threads=Some(1)	fd=Some(4)	load=8.63 9.46 11.70 6/2098 507633
+SOAK_TONG	secs=1800	elapsed_s=1801.7	batches=1915	batches_s=1.06	tasks=38342130	tasks_s=21281
+SOAK_WALL	cpu_i_p50=36	cpu_i_p95=150	cpu_v_p50=18	cpu_v_p95=77	k10_i_p50=177	k10_i_p95=605	k10_v_p50=158	k10_v_p95=546
+SOAK_TAI_NGUYEN	rss0=4912	rss_min_sau_warm=10292	rss_max_sau_warm=13708	rss_cuoi=10448	hwm=18540	threads=Some(1)	fd=Some(4)
+KET_LUAN	PASS	1915 batch	1801.7s	không lỗi
+
+SOAK_EXIT=0
+df /home sau khi xoá target riêng: 21G trống. Không GitHub Actions, không push/merge/tag.
