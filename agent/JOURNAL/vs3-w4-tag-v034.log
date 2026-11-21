@@ -1,0 +1,46 @@
+# VS3-W4 — log verify tag v0.3.4 tren psvn, 2026-11-22
+# tag annotated dec51929e02a40d664a657f8cf719f64ed13e0da
+# commit (^{commit}) = 8fa1f96720b5cb37613226e7713beb50527b3f71
+# psvn: MINGW64_NT-10.0-26300, 6 CPU, cargo/rustc 1.100.0, MSVC native
+# worktree /c/Users/ps/viscript-w4m detached v0.3.4, dirty 0
+# git describe --tags --exact-match = v0.3.4
+# đã xoá sau đo; repo chính psvn @ 73af17bd, dirty 0; C: còn 174G
+
+## workspace (1 vòng)
+WS 526s: 353 block, 3528 passed / 0 failed / 3 ignored
+
+## 5 vòng targeted
+R1 15s  net 9/9  default 22/22  tls 22/22
+R2 12s  net 9/9  default 22/22  tls 22/22
+R3 12s  net 9/9  default 22/22  tls 22/22
+R4 12s  net 9/9  default 22/22  tls 22/22
+R5 12s  net 9/9  default 22/22  tls 22/22
+=> 0 fail, 0 flake; 10053 không tái hiện.
+
+## P3 / P2 / P1 / h2 / worker
+vs3_worker_eval_vm debug:   10/10 (2.72s)
+vs3_worker_eval_vm release: 10/10 (1.12s; build 68s)
+vs3_worker_eval_parallel:   14/14 (1.58s)
+vs3_worker_eval_local:       8/8 (0.22s)
+vs3_http2 (sync):           19/19 (15.35s)
+vs3_worker:                 14/14 (24.74s)
+
+## host / targets
+host 54/54; targets core 18/18; sqlite 17 PASS + 1 EXPECTED_RED (#156); 0 FAIL
+
+## release / CLI
+target/release/vis.exe: 11 205 120 B
+sha256 a9368472708ce40688c8d8d43b92fc90e17a1ca97700b44ac707dd85717717e7
+vis --version => vis 0.1.0; doctor => windows/x86_64/sqlite on/features sqlite,tls,pkg-sig,http2
+vis check => TAP 1..1 ok 1; vis run => 42; vis run --version => rc 2
+
+## async-h2 Windows (EXPECTED RED)
+cargo check --features async-h2 => rc 101, h2_async.rs cfg(..., unix) — không sửa.
+
+## sha256 log
+f1ea88753754c7804604e628b8d38a687afcd8776a503bf8814b108792a9f89f  w4m-targeted.log
+b4b82e8b58a3ff90ea7a8f802f88896dc81fac7379e1cb7a222c6dd126f740e4  w4m-workspace.log
+546be60a54cde5cba640263aa343e33ad2c70304ee585cebba44a3cfe477d9b7  w4m-release.log
+
+## Đĩa
+local / còn 21G; psvn C: còn 174G (>5G).
