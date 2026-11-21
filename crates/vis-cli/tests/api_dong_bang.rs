@@ -145,6 +145,9 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::ResultStrErr => "Result[str, Error]".to_string(),
         Ty::ResultBoolErr => "Result[bool, Error]".to_string(),
         Ty::ResultRowSetErr => "Result[RowSet, Error]".to_string(),
+        // **VD-270 (sqlite-database-list)**: `list[RowSet]` / `Result[list[RowSet], Error]`.
+        Ty::ListRowSet => "list[RowSet]".to_string(),
+        Ty::ResultListRowSetErr => "Result[list[RowSet], Error]".to_string(),
         // **VD-267**: `never` chỉ dùng cho chữ ký builtin trần, không có mục `FUNCS` nào.
         Ty::Never => "never".to_string(),
         // **VD-270 (strfind)**: `int?` = `Option[int]` (kiểu trả `str.find`/`str.rfind`).

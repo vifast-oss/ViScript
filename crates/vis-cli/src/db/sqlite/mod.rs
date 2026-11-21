@@ -17,7 +17,7 @@
 //!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read` (trừ trang thô), mọi `Function` trừ
 //!   `load_extension`/`sqlite_offset`;
 //!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version`/`data_version`/
-//!   `application_id`/`journal_mode` (không ghi); cấm
+//!   `application_id`/`journal_mode`/`database_list` (không ghi); cấm
 //!   `ATTACH`/`DETACH`/ghi `PRAGMA` khác/`load_extension`/**`CREATE VIRTUAL TABLE`** (`SQLITE_CREATE_VTABLE`)
 //!   ở **mọi** chế độ. `VACUUM` (cả `VACUUM INTO`) bị chặn gián tiếp — nó tự **ATTACH** ở đường
 //!   nội tại, authorizer từ chối ⇒ câu lệnh lỗi.
@@ -85,6 +85,9 @@ use vis_interp::value::Value;
 
 mod tach_cau;
 use tach_cau::TachCau;
+
+mod pragma_doc;
+use pragma_doc::la_pragma_journal_mode_chi_doc;
 
 /// max hàng mỗi query — vượt ⇒ `Err` (không trả dữ liệu cắt).
 pub const MAX_ROWS: usize = 10_000;
@@ -473,7 +476,7 @@ fn la_bang_trang_tho(ten: &str) -> bool {
 /// | `SQLITE_TRANSACTION` (BEGIN/COMMIT/ROLLBACK) · `SQLITE_SAVEPOINT` | giao dịch | **Allow** (đã duyệt — không tự mở thêm) |
 /// | `SQLITE_REINDEX` · `SQLITE_ANALYZE` | maintenance | **Allow** |
 /// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`/`sqlite_offset`) | hàm SQL | **Allow** |
-/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version`/`data_version`/`application_id`/`journal_mode` (không giá trị) | đọc cấu trúc/version/định danh ứng dụng/chế độ journal | **Allow** |
+/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version`/`data_version`/`application_id`/`journal_mode`/`database_list` (không giá trị) | đọc cấu trúc/version/định danh ứng dụng/chế độ journal/danh sách database | **Allow** |
 /// | `SQLITE_PRAGMA` khác (kể cả ghi `user_version`, `temp_store`, `journal_mode`…) | đổi cấu hình | **Deny** |
 /// | `SQLITE_ATTACH` / `SQLITE_DETACH` | gắn db ngoài | **Deny** |
 /// | `SQLITE_CREATE_VTABLE` / `SQLITE_DROP_VTABLE` | virtual table (FTS5…) | **Deny** |
@@ -552,7 +555,8 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
                 || n == "schema_version"
                 || n == "data_version"
                 || n == "application_id"
-                || n == "journal_mode")
+                || n == "journal_mode"
+                || n == "database_list")
                 && pragma_value.is_none()
             {
                 // **đọc** user_version/schema_version/data_version/application_id/journal_mode —
@@ -562,6 +566,10 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
                 // SQLite không dùng cho việc gì — chỉ đọc, không đổi hành vi ghi/DDL.
                 // journal_mode (VD-270) là **đọc** chế độ journal hiện tại cho
                 // `sqlite.journal_mode`; ghi `PRAGMA journal_mode = …` vẫn bị từ chối.
+                // database_list (VD-270 sqlite-database-list) là **đọc** danh sách database gắn
+                // với connection cho `sqlite.database_list`; `ATTACH`/`DETACH` vẫn bị từ chối nên
+                // không thể gắn thêm database qua đường người dùng. `= value` (pragma không có
+                // dạng ghi hợp lệ) cũng bị từ chối vì có giá trị.
                 Authorization::Allow
             } else {
                 Authorization::Deny
@@ -1224,21 +1232,12 @@ enum ToiDaHang {
 
 /// **VD-270 (sqlite-journal-mode)** — `PRAGMA journal_mode` **không giá trị** là truy vấn **chỉ
 /// đọc**, nhưng SQLite đánh dấu statement là **không** read-only ở `sqlite3_stmt_readonly` (cùng
-/// một câu có thể đổi mode khi có giá trị). Host chỉ mở **đúng dạng hằng** này cho `db_query`:
-/// sau `trim`, bỏ **một** `;` cuối, đúng **hai** token `PRAGMA` + `journal_mode` (không phân biệt
-/// hoa/thường, cho phép khoảng trắng giữa). Mọi dạng khác — `= value`, `main.journal_mode`,
-/// comment/token thừa — ⇒ `false` (rơi về kiểm `sqlite3_stmt_readonly` như cũ).
-fn la_pragma_journal_mode_chi_doc(sql: &str) -> bool {
-    let s = sql.trim();
-    let s = s.strip_suffix(';').unwrap_or(s);
-    let mut it = s.split_whitespace();
-    matches!(
-        (it.next(), it.next(), it.next()),
-        (Some(a), Some(b), None)
-            if a.eq_ignore_ascii_case("PRAGMA") && b.eq_ignore_ascii_case("journal_mode")
-    )
-}
-
+/// một câu có thể đổi mode khi có giá trị). Host chỉ mở **đúng dạng hằng** này cho `db_query`
+/// qua [`la_pragma_journal_mode_chi_doc`] (xem `pragma_doc.rs`); dạng có giá trị/khác vẫn rơi về
+/// kiểm read-only (và authorizer đã chặn ghi pragma).
+///
+/// **VD-270 (sqlite-database-list)** — `PRAGMA database_list` là read-only thật
+/// (`sqlite3_stmt_readonly` = true), chỉ cần authorizer mở mục đọc; **không** thêm ngoại lệ ở đây.
 /// `query`: **chỉ đọc** — phân loại **sau** `prepare`, **trước** mọi step (VD-242 §3.6): câu ghi
 /// ⇒ `Err`, câu không trả hàng ⇒ `Err`; không thực thi rồi mới phát hiện ghi. Sau đó bind đủ số
 /// lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
@@ -1493,5 +1492,7 @@ mod tests;
 mod tests_batch;
 #[cfg(test)]
 mod tests_cache;
+#[cfg(test)]
+mod tests_db_list;
 #[cfg(test)]
 mod tests_journal;

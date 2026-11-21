@@ -300,7 +300,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.fs.current_dir` (`() -> Result[str, Error]`; **params rỗng**, trả cwd **tuyệt đối**
     // UTF-8 từ `std::env::current_dir`, không path người dùng nên không cap; cwd xoá/không
     // truy cập/không UTF-8 ⇒ `Err`; tái dùng `Ty::ResultStrErr`, **không** sugar) ⇒ **163** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 165, "bảng chữ ký phải đủ 165 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-database-list, 2026-11-21)**: +**1** hàm
+    // `std.sqlite.database_list` (`(str) -> Result[list[RowSet], Error]`; mỗi hàng
+    // `PRAGMA database_list` thành một `RowSet` 3 cột `seq,name,file` đúng một hàng, sắp theo
+    // `seq`, module-only không sugar) ⇒ **163** hàm (trước 162); không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 166, "bảng chữ ký phải đủ 166 hàm");
 }
 
 #[test]
@@ -1369,6 +1373,39 @@ fn sqlite_journal_mode_kieu_str_va_result_str() {
         "`sqlite.journal_mode`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[str, Error]");
+}
+
+/// **VD-270 (sqlite-database-list)**: chữ ký `(str) -> Result[list[RowSet], Error]` — biến thể
+/// **riêng** `Ty::ListRowSet` (`list[RowSet]`) + `Ty::ResultListRowSetErr`, theo mẫu
+/// `RowSet`/`ResultRowSetErr`; hạ ra `Result[list[Record(RecId(1))], Error]`.
+#[test]
+fn sqlite_database_list_kieu_str_va_result_list_rowset() {
+    let f = sig_of("sqlite.database_list").expect("sqlite.database_list");
+    assert_eq!(
+        f.params,
+        &[Ty::Str],
+        "`sqlite.database_list`: tham số (handle)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultListRowSetErr,
+        "`sqlite.database_list`: kiểu trả phải là `ResultListRowSetErr`"
+    );
+    assert_eq!(
+        Ty::ListRowSet.sang_type(),
+        Type::List(Box::new(Ty::RowSet.sang_type())),
+        "`list[RowSet]` hạ ra list của bản ghi `RowSet`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(
+            Box::new(Type::List(Box::new(Type::Record(vis_types::ty::RecId(1))))),
+            Box::new(Ty::Error.sang_type())
+        ),
+        "`sqlite.database_list`: hạ kiểu trả"
+    );
+    assert_eq!(Ty::ListRowSet.ten(), "list[RowSet]");
+    assert_eq!(f.ret.ten(), "Result[list[RowSet], Error]");
 }
 
 /// **VD-270 (sqlite-schema-sql)**: chữ ký `(str, str) -> Result[str?, Error]` — biến thể **riêng**

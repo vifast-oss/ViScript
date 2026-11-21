@@ -62,6 +62,14 @@ pub enum Ty {
     ResultBoolErr,
     /// **VD-241 (Gate 1)** — `Result[RowSet, Error]` (`std.sqlite.query`).
     ResultRowSetErr,
+    /// **VD-270 (sqlite-database-list)** — `list[RowSet]`: mỗi phần tử là **một** `RowSet` của
+    /// một hàng `PRAGMA database_list`. `Ty` chưa có `list[RowSet]` cụ thể (chỉ `List(&Ty)` với
+    /// `ten()` chung là `"list"`), nên giữ biến riêng để chữ ký/tên hiển thị đúng lớp phần tử.
+    ListRowSet,
+    /// **VD-270 (sqlite-database-list)** — `Result[list[RowSet], Error]`
+    /// (`std.sqlite.database_list`). Theo mẫu [`Ty::ResultRowSetErr`]: giữ đúng cả lớp `list` lẫn
+    /// lớp `Result`.
+    ResultListRowSetErr,
     /// **VD-267** — `never`: kiểu của biểu thức **không bao giờ cho giá trị** (`panic(…)`).
     /// Chỉ dùng cho chữ ký builtin trần ([`BUILTIN_FUNCS`]); `std.*` chưa có hàm nào trả `never`.
     Never,
@@ -132,6 +140,14 @@ impl Ty {
             }
             Ty::ResultRowSetErr => Type::Result(
                 Box::new(Ty::RowSet.sang_type()),
+                Box::new(Self::Error.sang_type()),
+            ),
+            // **VD-270 (sqlite-database-list)** — `list[RowSet]`: `RowSet` là bản ghi dựng sẵn
+            // `RecId(1)`, giữ đúng lớp danh sách.
+            Ty::ListRowSet => Type::List(Box::new(Type::Record(crate::ty::RecId(1)))),
+            // **VD-270 (sqlite-database-list)** — `Result[list[RowSet], Error]`.
+            Ty::ResultListRowSetErr => Type::Result(
+                Box::new(Ty::ListRowSet.sang_type()),
                 Box::new(Self::Error.sang_type()),
             ),
             // **VD-267** — `panic(…)` phân kỳ: kiểu `never` (khớp mọi kiểu đích ở `coerce`).
@@ -206,6 +222,9 @@ impl Ty {
             Ty::ResultStrErr => "Result[str, Error]",
             Ty::ResultBoolErr => "Result[bool, Error]",
             Ty::ResultRowSetErr => "Result[RowSet, Error]",
+            // **VD-270 (sqlite-database-list)**
+            Ty::ListRowSet => "list[RowSet]",
+            Ty::ResultListRowSetErr => "Result[list[RowSet], Error]",
             // **VD-267**
             Ty::Never => "never",
             // **VD-270 (strfind)**
@@ -267,7 +286,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 165] = [
+pub const FUNCS: [StdFn; 166] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -1355,6 +1374,18 @@ pub const FUNCS: [StdFn; 165] = [
         name: "sqlite.journal_mode",
         params: &[Ty::Str],
         ret: Ty::ResultStrErr,
+    },
+    // **VD-270 (sqlite-database-list)** — danh sách database gắn với connection qua `PRAGMA
+    // database_list` (câu **hằng**, không bind); **mỗi hàng** thành một `RowSet` 3 cột
+    // `seq,name,file` đúng **một** hàng, ô giữ nguyên `SqlValue`, sắp theo `seq`. SQLite bundled
+    // trả `main` + `temp` (temp `file` rỗng); DB tệp ⇒ `main.file` là đường dẫn tệp. Authorizer
+    // host mở **đúng mục đọc** `database_list` (không giá trị); ATTACH/DETACH vẫn bị chặn nên
+    // danh sách không đổi qua `sqlite.execute`. Lỗi handle/host/kết quả sai hình dạng ⇒
+    // `Err(Error)` dữ liệu, không trap.
+    StdFn {
+        name: "sqlite.database_list",
+        params: &[Ty::Str],
+        ret: Ty::ResultListRowSetErr,
     },
 ];
 
