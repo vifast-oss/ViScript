@@ -46,7 +46,7 @@
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a/1b/1c/1d/2a | **DONE (một phần)** — `1de3faa`; async default + Pipe; cap>0/net async còn mở |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2/4b3 | **DONE (nhánh)** — `28f9ea2`; h2 reuse; default-off giữ tới sau v0.2.0 |
-| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA v0.2.0)** — `629acf0`; gate 3480/3, nightly 14,7M fuzz 0 vi phạm, diff 100k 0 lệch, host 54/54, targets 18/18; fresh-clone chờ |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c + 2b | **DONE (một phần)** — `4bb20df` + `3fcd7ef` + `823b34c` + `8da533b`; timeout kênh xong |
 
@@ -100,7 +100,8 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 v0.2.0 và W4 verify h2 trên Windows**. Trước đó main giữ `http2` default-off.
 
 **v0.2.0 candidate**: `42b700c` (async default + timeout + worker opt-in; gate **3480/3**) —
-chờ W3/W4 verify local/psvn rồi A0 tag.
+W3 local **PASS** (gate/nightly 14,7M fuzz 0 vi phạm/diff 100k 0 lệch/host 54/54/targets 18/18);
+chờ W4 psvn + fresh-clone rồi A0 tag. Tàn dư ghi rõ: async `chan>0`/net (W1 đang làm), worker chưa nối evaluator.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
