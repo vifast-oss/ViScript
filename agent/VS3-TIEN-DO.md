@@ -90,7 +90,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | Việc | Chủ | Trạng thái | Điều kiện xong |
 |---|---|---|---|
 | **VS3-1d** async default + Pipe parity | W1 | **DONE (một phần)** — async chạy frame, sync byte-identical, guard rõ; cap>0/net async W3 |
-| **VS3-3b** worker opt-in | W5 | **DONE (một phần)** — pool opt-in + TaskId/proxy + print merge + budget atomic; chưa nối evaluator |
+| **VS3-3b** worker opt-in | W5 | **DONE (một phần)** — pool opt-in + TaskId/proxy + print merge + budget atomic; B7 CPU-only 2,69×; payload lớn chưa đạt; chưa nối evaluator |
 | **VS3-4b2/4b3** HTTP/2 + reuse | W2 | **DONE (nhánh)** — `28f9ea2` reuse tuần tự; default-off; default-on `959d1aa` chờ v0.2.0 |
 | **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
@@ -121,6 +121,9 @@ chờ W3/W4 verify local/psvn rồi A0 tag.
 - **B5**: `TaskId`/proxy, không đổi ABI `Value` cho tới VS3-3b; W1 sở hữu.
 - **B6**: tích hợp W1 **sau VS3-2a**.
 - **B7**: gate 3b dùng CPU-only + payload matrix, ghi topology/load; RSS chỉ tham khảo.
+  **Kết quả W5 (21/11)**: CPU-only W=4 **2,69×** (PASS ≥2,4); payload nhỏ/record/enum/str đạt;
+  `list10k` 1,93× và `map1k` 0,77× fail vì copy trên producer — worker-copy đạt 3,42×/3,12×;
+  chunk **256**; map allocator/drop còn mở. Benchmark chuyển example (không `#[ignore]`) đang sửa.
 
 ## 4. Quy tắc cập nhật
 
