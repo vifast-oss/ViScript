@@ -3634,3 +3634,16 @@ cwd bị xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, khôn
   một action toàn tài liệu "Định dạng tài liệu" (`source.fixAll`) chứa TextEdit thay toàn tệp bằng
   bản `vis fmt` **chỉ khi** khác nội dung; đã đúng format/cú pháp hỏng ⇒ `[]`; range/context bỏ qua
   có tài liệu hoá; URI chưa mở ⇒ `-32602`.
+
+### VD-270 (bổ sung) · perf-map-eq, str.matches, vis test --slowest — A0, 2026-11-21
+
+- **perf-map-eq**: `Value::eq_value` map có fast path **chỉ mục băm** khi mọi khoá hai vế vô hướng
+  (tag số chung cho Int/Float/Percent với `-0.0` chuẩn hoá; tag riêng Size/Duration/Str/Path/Bool/
+  Char/Bytes); gộp last-wins, lookup theo hash + `eq_value`; map nhỏ (<200 entry) hoặc khoá cấu
+  trúc ⇒ fallback O(n²) cũ. Ngữ nghĩa không đổi (có test đối chiếu ngẫu nhiên 5000 ca); chỉ tối ưu.
+- **str.matches**: `(str, str) -> list[str]` đúng Rust `str::matches` — khớp **không chồng**
+  trái→phải, trả chuỗi con; `pat` rỗng khớp tại mọi biên scalar; `s` rỗng + pat khác rỗng ⇒ `[]`;
+  sugar R5c; reuse `Ty::ListStr`.
+- **vis test --slowest `<N>`**: N ≥1; đo từng đơn vị đã chạy; in tối đa N dòng ra **stderr** sau
+  TAP/JSON, giảm dần, hoà giữ thứ tự gốc, dạng `# slowest: <ms> ms - <tên>` (hoặc `us` khi <1 ms);
+  `--list`/cờ sai/lặp ⇒ exit 2; stdout không đổi khi không cờ.
