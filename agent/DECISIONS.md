@@ -3518,3 +3518,12 @@ cuối mỗi phần; không khớp/`sep` dài hơn `s` ⇒ `[s]`; dấu cuối *
 không khớp lại (`"aaa"/"aa"` ⇒ `["aa","a"]`); `sep` rỗng ⇒ `["", a, b, …]` (có phần rỗng đầu,
 **không** có phần rỗng cuối); `""`+`""` ⇒ `[""]`; `""`+sep khác rỗng ⇒ `[]` (khác `str.split` của
 ViScript); Unicode/emoji/ZWJ khớp chuỗi con trên biên scalar; sugar R5c; reuse `Ty::ListStr`.
+
+### VD-270 (bổ sung) · sqlite.application_id — A0, 2026-11-21
+
+`sqlite.application_id(handle) -> Result[int, Error]` đọc `PRAGMA application_id` qua `db_query`,
+chỉ đọc; fresh `:memory:` ⇒ `0`; DDL/ghi dữ liệu không đổi; lưu theo tệp; hợp đồng `0..=i32::MAX`
+(giá trị âm/ngoài miền từ tệp ngoài ⇒ `Err` dữ liệu); shape đúng 1 cột/1 hàng/`Integer`; reuse
+`Ty::ResultIntErr`. Authorizer host được mở **chỉ đọc** `application_id` (`pragma_value.is_none()`);
+ghi `PRAGMA application_id = …` vẫn bị từ chối. Chọn pragma thay TVF vì TVF có thể bị bảng người
+dùng trùng tên che.

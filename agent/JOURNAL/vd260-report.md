@@ -343,3 +343,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Wave 25 merged tiếp**: `path.with_file_name` (`44a8d0d`), `fs.read_link` (`11fdaec`); gate **3009 passed / 3 skipped**; FUNCS **149**.
 - **Wave 25 merged tiếp**: `str.split_inclusive` (`7b52f89`); gate **3024 passed / 3 skipped**; FUNCS **150**.
 - `VIS_DIFF_N=100000` seed 20261217 @ `9d59eea`: **0 lệch** (93.768 chạy, xem log `/tmp/opencode/diff100k_w37.out`).
+- **sqlite.application_id** merged (`f1755e0`); gate **3033 passed / 3 skipped**; FUNCS **151**.
