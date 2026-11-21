@@ -4,12 +4,12 @@
 //! **từng byte** stdout/stderr/exit. Server là `TcpListener` thật trong test Rust (không mock, không
 //! mạng ngoài). `Chan`/kênh không liên quan — đây là host mạng, ca nằm ở Rust theo VD-105 (7).
 
-use std::io::Write;
-use std::net::TcpListener;
+use std::io::{Read, Write};
+use std::net::{Shutdown, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// **Chống flake**: ca timeout đo thời gian nên các ca trong binary này chạy **tuần tự** (chỉ giảm
 /// nhiễu tài nguyên; **không** nới ngưỡng nào).
@@ -76,6 +76,12 @@ fn server_n(du: &'static str, n: usize) -> String {
         for _ in 0..n {
             if let Ok((mut s, _)) = l.accept() {
                 let _ = s.write_all(du.as_bytes());
+                // Windows: đóng ngay sau write có thể gửi RST (client đọc 10054). Đóng chiều ghi,
+                // đọc nốt tới EOF/timeout ngắn để close êm.
+                let _ = s.shutdown(Shutdown::Write);
+                let _ = s.set_read_timeout(Some(Duration::from_millis(500)));
+                let mut rac = [0u8; 64];
+                while matches!(s.read(&mut rac), Ok(n) if n > 0) {}
             }
         }
     });
@@ -91,6 +97,10 @@ fn server_bytes(du: Vec<u8>, n: usize) -> String {
         for _ in 0..n {
             if let Ok((mut s, _)) = l.accept() {
                 let _ = s.write_all(&du);
+                let _ = s.shutdown(Shutdown::Write);
+                let _ = s.set_read_timeout(Some(Duration::from_millis(500)));
+                let mut rac = [0u8; 64];
+                while matches!(s.read(&mut rac), Ok(n) if n > 0) {}
             }
         }
     });
