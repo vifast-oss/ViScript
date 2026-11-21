@@ -1,0 +1,74 @@
+# VS3-W2 integration — HTTP/2 async reactor-native (feature async-h2, default-off)
+# date: 2026-11-21T23:40:16+09:00 · host: Linux 7.0.0-43-generic x86_64 · nproc=12
+# git: e8fb68b (main 73af17b)
+# toolchain: rustc 1.100.0 (0ef1bc386 2026-11-09)
+
+$ cargo test -p vis-cli --test vs3_http2   # default, không feature
+test stress_100_request_4_authority ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.62s
+
+
+$ cargo test -p vis-cli --features async-h2 --test vs3_http2
+test stress_100_request_4_authority ... ok
+
+test result: ok. 29 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.90s
+
+
+$ cargo test ... async_h2_timeout_lap_khong_ro_fd_con -- --ignored --nocapture
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd_con ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 3.02s
+
+
+$ cargo test -p vis-cli --features async-h2 --test vs3_tls
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.26s
+
+
+$ cargo test -p vis-cli --features async-h2 --test vs3_default async_http
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 1.43s
+
+
+$ cargo fmt --all -- --check
+fmt: OK
+$ cargo clippy --workspace --all-targets -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s
+$ cargo clippy -p vis-cli --all-targets --features async-h2 -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+
+$ ./vis-dev check
+ok 2 - fixture bad-commit bị bắt
+ok 3 - fixture bad-status bị bắt
+ok 4 - fixture missing-task bị bắt
+ok 5 - fixture bad-project bị bắt
+# fixtures: PASS
+--- báo cáo fixtures: OK
+--- build: OK
+--- doc-examples: OK (24 khối tài liệu: 19 xanh + 5 ngoại lệ đỏ đúng; 12 fixture QD §7.1..7.3)
+ok 1 - README.md:46
+ok 2 - README.md:56
+ok 3 - README.md:71
+ok 4 - README.md:86
+ok 5 - README.md:108
+ok 6 - README.md:131
+ok 7 - README.md:148
+ok 8 - README.md:161
+ok 9 - README.md:182
+ok 10 - README.md:205
+ok 11 - README.md:224
+ok 12 - README.md:243
+ok 13 - README.md:259
+ok 14 - README.md:283
+ok 15 - README.md:383
+ok 16 - README.md:433
+ok 17 - README.md:468
+ok 18 - README.md:505
+ok 19 - README.md:526
+ok 20 - README.md:548
+--- readme-examples: OK
+vis-dev check: PASS
+
+$ df -h .
+/dev/nvme0n1p2  233G  209G   17G  93% /

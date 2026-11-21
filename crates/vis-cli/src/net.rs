@@ -22,7 +22,18 @@ use vis_interp::builtin::NetHost;
 use vis_interp::cookie::CookieJar;
 
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
-mod h2;
+pub(crate) mod h2;
+/// **VS3-W2** — HTTP/2 reactor-native cho async, feature `async-h2` (default-off).
+#[cfg(all(
+    feature = "async-h2",
+    feature = "http2",
+    feature = "tls",
+    not(target_arch = "wasm32")
+))]
+pub mod h2_async;
+/// **VS3-W2** — protocol HTTP/2 dùng chung sync + async (`H2Core`, cap, lỗi).
+#[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+pub(crate) mod h2_core;
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
 pub(crate) mod tls;
 
