@@ -53,6 +53,7 @@ mod sqlite_explain;
 mod sqliteappid;
 mod sqlitecols;
 mod sqlitedataver;
+mod sqlitedblist;
 mod sqliteexists;
 mod sqliteidx;
 mod sqliteidxcols;
@@ -1250,6 +1251,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqlitejournal::chay(host, h).map(Value::Str), span)
+        }
+        // **VD-270 (sqlite-database-list)** — danh sách database gắn với connection, chỉ đọc qua
+        // `PRAGMA database_list` (câu hằng, không bind); **mỗi hàng** thành một `RowSet`
+        // `seq,name,file`, sắp theo `seq`; lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)`
+        // dữ liệu, không trap. ATTACH/DETACH vẫn bị authorizer chặn.
+        "sqlite.database_list" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqlitedblist::chay(host, h).map(Value::List), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {

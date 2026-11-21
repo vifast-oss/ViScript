@@ -32,12 +32,18 @@ pub(crate) fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value,
 /// **VD-266** — `(columns, rows)` từ host → `Ok(RowSet { columns, rows })` (dùng chung
 /// `sqlite.query`/`query_one`).
 pub(crate) fn rowset(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
+    Value::ok(rowset_record(columns, rows))
+}
+
+/// **VD-270 (sqlite-database-list)** — dựng **một** bản ghi `RowSet` (không bọc `Ok`) để dùng
+/// trong danh sách `list[RowSet]`; cùng hình dạng `columns` + `rows` với [`rowset`].
+pub(crate) fn rowset_record(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
     let columns = Value::List(columns.into_iter().map(Value::Str).collect());
     let rows = Value::List(rows.into_iter().map(Value::List).collect());
-    Value::ok(Value::Record(
+    Value::Record(
         "RowSet".into(),
         vec![("columns".into(), columns), ("rows".into(), rows)],
-    ))
+    )
 }
 
 /// Không có host ⇒ `VS0604` (cùng câu với chương trình ngoài, VD-60 (2)).
@@ -103,6 +109,10 @@ pub(crate) fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> 
             | Ty::ResultStrErr
             | Ty::ResultBoolErr
             | Ty::ResultRowSetErr
+            // **VD-270 (sqlite-database-list)**: `list[RowSet]` / `Result[list[RowSet], Error]`
+            // là kiểu **trả** của `sqlite.database_list`.
+            | Ty::ListRowSet
+            | Ty::ResultListRowSetErr
             // **VD-270 (fsbytes)**: `Result[list[int], Error]` là kiểu **trả** của `fs.read_bytes`.
             | Ty::ResultListIntErr
             // **VD-270 (strfind)**: `int?` là kiểu **trả** của `str.find`/`str.rfind`.
