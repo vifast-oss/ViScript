@@ -3647,3 +3647,12 @@ cwd bị xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, khôn
 - **vis test --slowest `<N>`**: N ≥1; đo từng đơn vị đã chạy; in tối đa N dòng ra **stderr** sau
   TAP/JSON, giảm dần, hoà giữ thứ tự gốc, dạng `# slowest: <ms> ms - <tên>` (hoặc `us` khi <1 ms);
   `--list`/cờ sai/lặp ⇒ exit 2; stdout không đổi khi không cờ.
+
+### VD-270 (bổ sung) · impl Trait for Type xuyên module — A0, 2026-11-21
+
+`impl Trait for Type` được đăng ký vào **registry chung toàn chương trình** (`Symbols.impls`), không
+chỉ module hiện tại; dispatch tra cả impl cục bộ lẫn chung; `type/enum` generic chia sẻ template toàn
+chương trình và tái dùng `RecId`/`EnumId`, nên `impl Hop[T]` dùng được từ module khác với `T` thay
+đúng theo instantiation. Giữ **luật mồ côi** (impl phải ở module khai trait hoặc kiểu), chẩn đoán
+"kiểu nhận không tĩnh" vẫn chỉ theo impl cục bộ để không hồi quy `xs.get(1)`, impl trùng same-module
+vẫn lỗi; registry không lọc theo `imports` nhưng tên trait/kiểu vẫn qua gate `use`/`pub`.

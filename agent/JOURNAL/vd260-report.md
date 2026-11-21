@@ -378,3 +378,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **vis test --slowest** merged (`67cf137`): báo N đơn vị chậm nhất ra stderr, stdout TAP/JSON không đổi; gate **3260 passed / 3 skipped**.
 - **Tối ưu eq_map** merged (`db59eea`): chỉ mục băm cho map khoá vô hướng, fallback đa tập; gate xem log.
 - **str.matches** merged (`458408b`): khớp không chồng trái→phải, sugar R5c; FUNCS **167**; gate xem log.
+- **impl Trait for Type xuyên module** merged (`fc01b9a`): registry impl toàn chương trình, generic template dùng chung; 10 test; gate **3298 passed / 3 skipped**.
+- **ĐỢT A0 DỪNG** theo yêu cầu người dùng; không còn subagent chạy.
