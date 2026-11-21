@@ -380,3 +380,7 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **str.matches** merged (`458408b`): khớp không chồng trái→phải, sugar R5c; FUNCS **167**; gate xem log.
 - **impl Trait for Type xuyên module** merged (`fc01b9a`): registry impl toàn chương trình, generic template dùng chung; 10 test; gate **3298 passed / 3 skipped**.
 - **ĐỢT A0 DỪNG** theo yêu cầu người dùng; không còn subagent chạy.
+- `./vis-dev gate --fast` @ `73be697`: **PASS — 3298 passed / 3 skipped**.
+- `./vis-dev core-test` @ `73be697`: **PASS**.
+- `./vis-dev nightly` @ `73be697`: **PASS** — parser fuzz **17.198.259 ca / 390.318.666 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
+- **Kết thúc đợt A0**: không còn subagent; `main` sạch, đã push.
