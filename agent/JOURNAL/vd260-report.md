@@ -369,3 +369,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`.
 - **fs.current_dir** merged (`74f6e02`, R1 fix `3ead421`); gate **3224 passed / 3 skipped**; FUNCS **165**.
 - **Đang chạy**: `sqlite.database_list`, `impl Hop[T]`, LSP `codeAction`, tối ưu `eq_map`.
+- `./vis-dev core-test` @ `f091136`: **PASS**.
+- **LSP codeAction** merged (`ae1ec2d`): `source.fixAll` định dạng toàn tài liệu; gate xem log.
