@@ -49,7 +49,7 @@
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b6 | **DONE** — h2 100 vòng v0.3.3; async-h2 production default-off (29 pass) |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA)** — soak 10/10 v0.3.3 646 s; nightly 13,7M fuzz 0; fresh-clone PASS; đang 20× soak |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CLI + async net | **DONE (Windows async net/TLS)** — `12e961c`; 22/22+22/22×10, workspace 3496/0×2, host 54/54; async-h2 Unix-only |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b + evaluator | **DONE (prototype)** — `spawn_shared` 6M spawn; evaluator 13M job; plan P1; chưa nối production |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b + evaluator | **DONE (P1)** — `spawn_shared` 6M spawn; evaluator P1 W=1 `54021de`; gate 3547/3; P2 W>1 đang làm |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
