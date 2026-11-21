@@ -3573,3 +3573,12 @@ khác rỗng): thử so **theo vị trí** trước; khớp hoàn toàn ⇒ `tru
 kỳ vị trí nào ⇒ **rơi về** phép đa tập cũ. Ngữ nghĩa không đổi: đảo thứ tự vẫn `true`, record ẩn
 danh/khác tên kiểu cùng ruột vẫn `true`, trùng tên trường động vẫn theo đa tập; chỉ tăng tốc trường
 hợp bằng nhau cùng thứ tự (JSON decode/record ẩn danh).
+
+### VD-270 (bổ sung) · sqlite.journal_mode — A0, 2026-11-21
+
+`sqlite.journal_mode(handle) -> Result[str, Error]` đọc `PRAGMA journal_mode` qua `db_query`, **chỉ
+đọc**, không tham số/bind; `:memory:` mới ⇒ `"memory"`, tệp mới ⇒ `"delete"`, đọc lặp/DDL/ghi dữ
+liệu không đổi mode; trả **đúng chuỗi** SQLite (không lowercase/validate closed-set; hợp đồng nêu
+`delete/truncate/persist/memory/wal/off`); shape đúng 1 cột/1 hàng/`SqlValue.Text`, lỗi ⇒ `Err` dữ
+liệu; authorizer mở **chỉ đọc** `journal_mode` và một ngoại lệ hẹp cho query constant của std; ghi
+`PRAGMA journal_mode = …` vẫn bị chặn; thêm `Ty::ResultStrErr` = `Result[str, Error]`.

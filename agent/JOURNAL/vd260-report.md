@@ -354,3 +354,6 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Wave tiếp**: `fs.canonicalize` (`c20b730`), LSP semantic tokens (`aa9f9ee`), 4 `str.is_ascii_*` (`e28eeb7`) đã merge; gate **3119 passed / 3 skipped**; FUNCS **158**.
 - **Đang chạy**: `sqlite.journal_mode`, `str.rsplit`, `str.split_terminator`, `path.ancestors`.
 - **eq_value record ẩn danh** (`45928f1`): đường nhanh theo vị trí cho mọi record cùng độ dài, fallback đa tập khi lệch; gate **3120 passed / 3 skipped**.
+- **sqlite.journal_mode** merged (`f00bc50`); gate **3131 passed / 3 skipped**; FUNCS **159**; thêm `Ty::ResultStrErr`.
+- `VIS_DIFF_N=100000` seed 20261219 @ `7133231`: **0 lệch** (93.767 chạy, 180,8 s).
+- **Đang chạy**: `str.rsplit`, `str.split_terminator`, `path.ancestors`, `path.strip_prefix`.
