@@ -229,7 +229,12 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // (`(str, str) -> list[str]?`; tách tại lần xuất hiện **cuối** của `sep`, `Some` đúng 2
     // phần, không khớp ⇒ `None`, `sep` rỗng ⇒ `Some([s, ""])`; tái dùng `Ty::OptListStr`,
     // không thêm biến thể `Ty`) ⇒ **145** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 145, "bảng chữ ký phải đủ 145 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 split-inclusive, 2026-11-21)**: +**1** hàm
+    // `std.str.split_inclusive` (`(str, str) -> list[str]`; giữ dấu phân cách ở cuối mỗi phần,
+    // không khớp ⇒ `[s]`, dấu cuối không sinh phần rỗng, `sep` rỗng theo đúng nghĩa Rust,
+    // `s` rỗng + `sep` khác rỗng ⇒ `[]`; tái dùng `Ty::ListStr`, không thêm biến thể `Ty`) ⇒
+    // **146** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 146, "bảng chữ ký phải đủ 146 hàm");
 }
 
 #[test]
@@ -323,6 +328,32 @@ fn rsplit_once_kieu_str_str_va_sugar() {
     assert_eq!(f.ret, sig_of("str.split_once").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit_once"), None);
+}
+
+#[test]
+fn split_inclusive_kieu_str_str_list_str_va_sugar() {
+    // **VD-270 (split-inclusive)**: chữ ký `(str, str) -> list[str]`; tham số đầu `str` để
+    // sugar R5c `s.split_inclusive(sep)` nhận. Tái dùng **đúng** `Ty::ListStr` (cùng biến thể
+    // của `str.split`/`str.splitn`), không thêm biến thể `Ty` và không có lớp `Option`.
+    let f = sig_of("str.split_inclusive").expect("str.split_inclusive");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`str.split_inclusive`: tham số"
+    );
+    assert_eq!(f.ret, Ty::ListStr, "`str.split_inclusive`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::List(Box::new(Type::Str)),
+        "`str.split_inclusive`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "list[str]", "`str.split_inclusive`: tên");
+    assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
+    // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "split_inclusive"),
+        None
+    );
 }
 
 #[test]

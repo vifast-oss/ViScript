@@ -66,6 +66,7 @@ mod strreplace;
 mod strreplacelast;
 mod strreplacen;
 mod strrsplitonce;
+mod strsplitincl;
 mod strsplitn;
 mod strsplitonce;
 mod strstrip;
@@ -129,6 +130,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `None`; `sep` rỗng ⇒ `Some([s, ""])`; `s` rỗng + `sep` khác rỗng ⇒ `None`. `Some`
         // luôn có **đúng 2** phần, không trap; lõi ở `stdlib/strrsplitonce.rs`.
         "str.rsplit_once" => strrsplitonce::goi(name, &args, span),
+        // **VD-270 (split-inclusive)**: tách tại mỗi lần xuất hiện **không chồng** của `sep`,
+        // **giữ** dấu phân cách ở cuối mỗi phần: `split_inclusive("a,b,c", ",")` ⇒
+        // `["a,", "b,", "c"]`; không khớp ⇒ `[s]`; dấu cuối **không** sinh phần rỗng thêm; `sep`
+        // rỗng theo **đúng** nghĩa Rust (`"abc"` ⇒ `["", "a", "b", "c"]`); `s` rỗng + `sep` khác
+        // rỗng ⇒ `[]` (probe Rust 1.100.0, khác `str.split` của VS); lõi ở
+        // `stdlib/strsplitincl.rs`.
+        "str.split_inclusive" => strsplitincl::goi(name, &args, span),
         // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần
         // còn lại (kể cả dấu phân cách): `splitn("a,b,c", ",", 2)` ⇒ `["a", "b,c"]`.
         // `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`, `n > số phần` ⇒ như `str.split`; `sep` rỗng theo

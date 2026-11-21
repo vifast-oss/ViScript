@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 145] = [
+pub const FUNCS: [StdFn; 146] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -280,6 +280,18 @@ pub const FUNCS: [StdFn; 145] = [
         name: "str.rsplit_once",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::OptListStr,
+    },
+    // **VD-270 (split-inclusive)**: tách tại mỗi lần xuất hiện **không chồng** của `sep`,
+    // **giữ** dấu phân cách ở cuối mỗi phần: `split_inclusive("a,b,c", ",")` ⇒
+    // `["a,", "b,", "c"]`; không khớp ⇒ `[s]`; dấu cuối **không** sinh phần rỗng thêm; dấu liên
+    // tiếp là phần tử riêng; `sep` rỗng theo **đúng** nghĩa Rust (`"abc"` ⇒
+    // `["", "a", "b", "c"]`, `""` ⇒ `[""]`); `s` rỗng + `sep` khác rỗng ⇒ `[]` (probe Rust
+    // 1.100.0). Kết quả luôn `list[str]` (tái dùng `Ty::ListStr`, không thêm biến thể `Ty`).
+    // Sugar R5c `s.split_inclusive(sep)`.
+    StdFn {
+        name: "str.split_inclusive",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ListStr,
     },
     // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần còn
     // lại (kể cả dấu phân cách); `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`; `sep` rỗng theo nghĩa Rust
