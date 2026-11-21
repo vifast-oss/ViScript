@@ -152,3 +152,31 @@ Worktree sạch tại `32b750d`; log `/c/Users/ps/vislogs/w4prod-*`.
   xanh liên tiếp (WS3, WS4) + host/targets xanh; fd-leak và invariant host_poll có test riêng.
 - **Async-h2 vẫn chưa hỗ trợ trên Windows** (default-off, Unix-only) — không tuyên bố.
 - Gate `--fast` chưa xanh vì **R1 có sẵn trên main**, không do W4.
+
+## 9. Bổ sung 22/11 — merge `f75b246` + fix flake 10053
+
+- Merge `origin/main` **`f75b246`** (R1 fix `f90d6d0`: `vs3_worker.rs` 1228 +
+  `vs3_worker_soak.rs` 794; async-h2 cap blocker) vào branch — xung đột duy nhất
+  `agent/VS3-TIEN-DO.md` (giữ cả dòng Windows của W4 và blocker h2 của main).
+- **Fix flake test-only** `crates/vis-cli/tests/net.rs::tcp_explain_tong`: server HTTP nội tuyến
+  trước đây `write_all` rồi **drop ngay** ⇒ Windows gửi RST `10053`. Nay áp đúng cách `0bd3a64`:
+  `shutdown(Shutdown::Write)` + `set_read_timeout(500ms)` + đọc tới EOF trước khi drop.
+  Không đổi sản phẩm.
+- **Linux**:
+  - `./vis-dev gate --fast` **PASS**: `3539 tests run: 3539 passed, 3 skipped` (3538 của main
+    + 1 ca fd-leak của W4); R1 OK.
+  - `cargo test --workspace --no-fail-fast`: **350 block; 3544 / 0 / 3**.
+  - `cargo test -p vis-cli --features async-h2 --test vs3_http2`: **34 passed + 1 ignored**
+    (main đã thêm ca cap 8 MiB).
+  - fmt/clippy: OK (trong gate).
+- **`psvn`** (worktree `54f813f`, sạch):
+  - 10 vòng `vs3_default`+`vs3_tls`+`net`: mỗi vòng **22/22 + 22/22 + 9/9**, 0 fail (R1 50 s,
+    R2–R10 11–12 s).
+  - Thêm **10 vòng `net` riêng** (N11–N20): **9/9** mỗi vòng ⇒ **20 lần chạy net, 10053 không
+    tái hiện**.
+  - Workspace **2/2 xanh**: WS1 **3496 / 0 / 3** (515 s), WS2 **3496 / 0 / 3** (462 s).
+  - `vis-host-suite` **54/54**; `vis-targets` core **18/18**, sqlite **17 + 1 EXPECTED_RED**.
+- **Async-h2 trên Windows vẫn chưa hỗ trợ**: `cargo check --features async-h2` = **101**
+  (`h2_async.rs` `cfg(…, unix)`); feature default-off, giữ nguyên tuyên bố Unix-only.
+- Log: `w4b-10round.log` (`20cf4bd4…eeae`), `w4b-workspace.log` (`bc337845…40df`);
+  `psvn C:` còn **175G**; local `/` còn **12G**.

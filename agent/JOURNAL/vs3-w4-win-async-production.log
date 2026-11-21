@@ -63,3 +63,17 @@ d96fcbd32da1ac0611cf7e4ceef271273673b4c4b3bf39390d9ecab3cce1e599  w4prod-workspa
 
 ## 7. Đĩa
 psvn C: 476G, còn 175G; local / còn 17G (>5G).
+
+## 8. Bổ sung 22/11 — merge f75b246 + fix flake
+merge 1c1fa43 (origin/main f75b246; xung đột VS3-TIEN-DO.md) + fix 54f813f (net.rs tcp_explain_tong)
+Linux gate --fast: PASS 3539 tests run / 3539 passed / 3 skipped (R1 OK)
+Linux workspace: 350 block; 3544 passed / 0 failed / 3 ignored
+Linux async-h2 vs3_http2: 34 passed + 1 ignored
+psvn 10 vòng: vs3_default 22/22, vs3_tls 22/22, net 9/9 (R1 50s, R2-R10 11-12s)
+psvn +10 vòng net (N11-N20): 9/9 mỗi vòng => 20 lần net, 0 lần 10053
+psvn workspace: WS1 3496/0/3 515s; WS2 3496/0/3 462s
+psvn host 54/54; targets core 18/18, sqlite 17 + 1 EXPECTED_RED
+Windows --features async-h2: rc 101 (h2_async cfg unix) — vẫn Unix-only/default-off
+sha256: w4b-10round.log 20cf4bd46b18fee0e6b7e73c658878c5cd98f36b9bd3e98bad6378f8d2eceeae
+        w4b-workspace.log bc33784583b0d8ff7007abf73ce68ab753fc76ea0d4bd2337c85bfec555a40df
+psvn C: còn 175G; local / còn 12G.
