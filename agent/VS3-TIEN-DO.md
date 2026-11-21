@@ -45,11 +45,11 @@
 
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
-| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a | **DONE (một phần)** — async default+cap+net+TLS+HTTP Unix; Windows backend mở |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b6 | **DONE** — h2 soak 10/10 (1000 req), multiplex proto, design async h2; default-on |
-| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (soak v0.3.2)** — `2188ec7`; soak 10/10 604 s, gate 3528/3, diff 0, fresh-clone PASS |
-| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CLI + verify | **DONE (flake fix)** — `0bd3a64`; 3/3 3464/0, host 54/54; **không GitHub Actions** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 5×10k (10,9 s, RSS 10 MB, 2 thread); timeout + worker-copy; chưa nối evaluator |
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a + fuzz | **DONE (một phần)** — async default+cap+net+TLS+HTTP Unix; fuzz 4h chạy trên d1f8f70; Windows backend mở |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b6 | **DONE** — h2 100 vòng v0.3.3 (10k req, 0 fail); spike async h2 time-box |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA)** — soak 10/10 v0.3.3 646 s; nightly 13,7M fuzz 0; fresh-clone PASS; đang 20× soak |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + CLI + verify | **DONE (v0.3.3)** — 3/3 3469/0, H2 19/19 debug+release, host 54/54; đang 5 vòng |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — `spawn_shared` + 100 vòng 6M spawn; soak hỗn hợp 30 phút; chưa nối evaluator |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -104,7 +104,7 @@ targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, H
 
 **v0.3.0 đã tag** @ `0d26527`.
 **v0.3.1 đã tag** @ `e689c3d`.
-**v0.3.3 đã tag** @ `bbf3484`: fix h2 flow-control; Linux 3535/3; Windows 3469/0; fresh-clone PASS. Tiếp tục hardening tới 09:00 T2. Không GitHub Actions.
+**v0.3.3 đã tag** @ `bbf3484`: fix h2 flow-control; Linux 3535/3; Windows 3469/0; fresh-clone PASS. Sau tag, main thêm `spawn_shared` opt-in và gate **3536/3**. Tiếp tục hardening tới 09:00 T2. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
