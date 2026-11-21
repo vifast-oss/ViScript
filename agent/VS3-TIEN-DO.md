@@ -46,7 +46,7 @@
 |---|---|---|---|
 | **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a..1d/2a | **DONE (một phần)** — async default+cap+net+TLS Unix; Windows backend mở |
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2..4b5 | **DONE** — h2 queue/idle/hardening; default-on; Windows chờ W4 |
-| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA v0.3.0)** — `0832f59`; gate 3496/3, nightly 18,09M fuzz 0 vi phạm, diff 100k 0 lệch, host 54/54, fresh-clone PASS |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b/7 + QA | **DONE (QA v0.3.1)** — `122234f`; gate 3512/3, nightly 18,99M fuzz 0, diff 0, fresh-clone PASS |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE (v0.2.0)** — `ec29204` 3436/0; targets 18/18+17/1; **không GitHub Actions** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c/2b | **DONE (một phần)** — stress 10k; timeout + worker-copy; chưa nối evaluator |
 
@@ -102,7 +102,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, HTTP/2 default-off.
 
 **v0.3.0 đã tag** @ `0d26527`.
-**v0.3.1 candidate** `a96841a`: async net production + async TLS (Unix), h2 hardening, worker stress, test Windows gating. Linux gate **3512/3**; W3/W4 đang verify. Không GitHub Actions.
+**v0.3.1 candidate** `a96841a` / `e689c3d`: async net + async TLS (Unix), h2 hardening, worker stress, Windows test gating. W3 local+fresh-clone **PASS** (gate 3512/3, nightly 18,99M fuzz 0, diff 0, host 54/54); chờ W4 psvn để tag. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
