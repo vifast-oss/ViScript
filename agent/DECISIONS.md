@@ -3565,3 +3565,11 @@ dùng trùng tên che.
 - **str.is_ascii_digit/alphabetic/alphanumeric/whitespace**: `(str) -> bool`; đúng ⇔ **không rỗng**
   và mọi scalar là ASCII thuộc nhóm; rỗng ⇒ `false` (khác `str.is_ascii("")` ⇒ `true`); whitespace
   đúng Rust (space, `\t`, `\n`, `\r`, `\x0C`; **không** `\x0B`); sugar R5c cả bốn.
+
+### VD-270 (bổ sung) · eq_value record ẩn danh cùng thứ tự — A0, 2026-11-21
+
+Mở rộng đường nhanh `Value::eq_value` cho **mọi** cặp record cùng độ dài (không chỉ cùng tên kiểu
+khác rỗng): thử so **theo vị trí** trước; khớp hoàn toàn ⇒ `true` (chắc chắn đúng đa tập); lệch bất
+kỳ vị trí nào ⇒ **rơi về** phép đa tập cũ. Ngữ nghĩa không đổi: đảo thứ tự vẫn `true`, record ẩn
+danh/khác tên kiểu cùng ruột vẫn `true`, trùng tên trường động vẫn theo đa tập; chỉ tăng tốc trường
+hợp bằng nhau cùng thứ tự (JSON decode/record ẩn danh).
