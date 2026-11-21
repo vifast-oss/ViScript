@@ -584,21 +584,12 @@ impl Value {
             (Value::Map(a), Value::Map(b)) => {
                 // **ST-239 (VD-242 §3.4)**: so **ánh xạ khoá → giá trị**, không phụ thuộc entry
                 // trùng hay thứ tự chèn. Gộp last-wins hai vế rồi so từng khoá một.
-                fn gop(xs: &[(Value, Value)]) -> Vec<&(Value, Value)> {
-                    let mut out: Vec<&(Value, Value)> = Vec::with_capacity(xs.len());
-                    for e in xs {
-                        if let Some(prev) = out.iter_mut().find(|p| p.0.eq_value(&e.0)) {
-                            *prev = e;
-                        } else {
-                            out.push(e);
-                        }
-                    }
-                    out
+                // **VD-270 (perf-map-eq)**: khoá vô hướng + map đủ lớn ⇒ chỉ mục băm O(n);
+                // còn lại ⇒ nguyên logic O(n²) cũ.
+                match eq_map_vo_huong(a, b) {
+                    Some(kq) => kq,
+                    None => eq_map_cham(a, b),
                 }
-                let (a, b) = (gop(a), gop(b));
-                a.len() == b.len()
-                    && a.iter()
-                        .all(|(k, v)| b.iter().any(|(k2, v2)| k.eq_value(k2) && v.eq_value(v2)))
             }
             (Value::Record(_ta, a), Value::Record(_tb, b)) => {
                 if a.len() != b.len() {
@@ -652,6 +643,150 @@ impl Value {
             _ => None,
         }
     }
+}
+
+/// **VD-270 (perf-map-eq)** — khoá **vô hướng** dùng được chỉ mục băm; biến thể khác
+/// (`List`/`Map`/`Record`/`Enum`/`Range`/`Fn`/`Builtin`/`Task`/…) ⇒ `false` để dùng O(n²) cũ.
+fn khoa_vo_huong(v: &Value) -> bool {
+    matches!(v, Value::Int(_) | Value::Float(_))
+        || matches!(v, Value::Size(_) | Value::Duration(_) | Value::Percent(_))
+        || matches!(v, Value::Str(_) | Value::Path(_) | Value::Bool(_))
+        || matches!(v, Value::Char(_) | Value::Bytes(_))
+}
+
+/// Băm **miền số** (`Int`/`Float`/`Percent`) qua `f64`, nhất quán `eq_value`: `Int(1) == Float(1.0)`,
+/// `Percent(0.5) == Float(0.5)`; `-0.0 == +0.0` ⇒ cùng băm; NaN giữ bit (bucket không khớp); `Int`
+/// > 2^53 có thể trùng băm — bucket còn kiểm.
+fn bam_so(x: f64) -> u64 {
+    let mut h = Fnv::default();
+    h.write_u8(1);
+    h.write_u64(if x == 0.0 { 0.0 } else { x }.to_bits());
+    h.finish()
+}
+
+fn bam_raw(tag: u8, bs: &[u8]) -> u64 {
+    let mut h = Fnv::default();
+    h.write_u8(tag);
+    h.write(bs);
+    h.finish()
+}
+
+/// Băm khoá vô hướng **nhất quán với `eq_value`**: `Size`/`Duration`, `Str`/`Path`,
+/// `Bool`/`Char`/`Bytes` mỗi loại tag riêng; trùng băm (collision/khác kiểu) do bucket quyết.
+fn bam_khoa_vo_huong(v: &Value) -> Option<u64> {
+    Some(match v {
+        Value::Int(i) => bam_so(*i as f64),
+        Value::Float(f) | Value::Percent(f) => bam_so(*f),
+        Value::Size(n) => bam_raw(2, &n.to_ne_bytes()),
+        Value::Duration(n) => bam_raw(3, &n.to_ne_bytes()),
+        Value::Str(s) => bam_raw(4, s.as_bytes()),
+        Value::Path(p) => bam_raw(5, p.as_bytes()),
+        Value::Bool(b) => bam_raw(6, &[u8::from(*b)]),
+        Value::Char(c) => bam_raw(7, &(*c as u32).to_ne_bytes()),
+        Value::Bytes(b) => bam_raw(8, b),
+        _ => return None,
+    })
+}
+
+/// Chỉ mục băm một vế map đã gộp (`dau` mở, `sau` liên kết; không `Vec` cho từng bucket).
+#[derive(Default)]
+struct ChiMucKhoa {
+    dau: HashMap<u64, usize, BuildHasherDefault<Fnv>>,
+    sau: Vec<usize>,
+}
+
+impl ChiMucKhoa {
+    /// Tìm entry khớp băm + khoá (+ giá trị nếu `gia_tri`); chain mới→cũ nên khi chỉ tìm khoá
+    /// thì ghi đè ⇒ trả entry **cũ nhất**, đúng `gop` cũ (eq_value không bắc cầu).
+    fn tim(
+        &self,
+        xs: &[(Value, Value)],
+        gop: &[(usize, u64)],
+        h: u64,
+        k: &Value,
+        gia_tri: Option<&Value>,
+    ) -> Option<usize> {
+        let mut i = *self.dau.get(&h)?;
+        let mut tim = None;
+        while i != usize::MAX {
+            let (k2, v2) = &xs[gop[i].0];
+            if k2.eq_value(k) && gia_tri.is_none_or(|v| v.eq_value(v2)) {
+                if gia_tri.is_some() {
+                    return Some(i);
+                }
+                tim = Some(i);
+            }
+            i = self.sau[i];
+        }
+        tim
+    }
+
+    fn them(&mut self, h: u64) {
+        let i = self.sau.len();
+        self.sau.push(self.dau.insert(h, i).unwrap_or(usize::MAX));
+    }
+}
+
+/// Gộp **last-wins** đúng `gop` cũ + dựng chỉ mục băm song song; `None` nếu khoá không vô hướng.
+fn gop_vo_huong(xs: &[(Value, Value)]) -> Option<(Vec<(usize, u64)>, ChiMucKhoa)> {
+    let mut gop: Vec<(usize, u64)> = Vec::with_capacity(xs.len());
+    let mut cm = ChiMucKhoa::default();
+    for (j, (k, _)) in xs.iter().enumerate() {
+        let h = bam_khoa_vo_huong(k)?;
+        match cm.tim(xs, &gop, h, k, None) {
+            Some(i) => gop[i].0 = j,
+            None => {
+                cm.them(h);
+                gop.push((j, h));
+            }
+        }
+    }
+    Some((gop, cm))
+}
+
+const NGUONG_MAP_NHANH: usize = 200;
+
+/// **VD-270 (perf-map-eq)** — đường nhanh O(n) trung bình khi mọi khoá hai vế vô hướng và map
+/// đủ lớn: gộp last-wins + chỉ mục băm, tra từng khoá trong bucket (`eq_value`). `None` ⇒ logic cũ.
+fn eq_map_vo_huong(a: &[(Value, Value)], b: &[(Value, Value)]) -> Option<bool> {
+    // Nhỏ hơn ngưỡng (crossover debug ~96 khoá/vế): O(n²) cũ rẻ hơn dựng chỉ mục.
+    if a.len() + b.len() < NGUONG_MAP_NHANH {
+        return None;
+    }
+    if a.iter().any(|(k, _)| !khoa_vo_huong(k)) || b.iter().any(|(k, _)| !khoa_vo_huong(k)) {
+        return None;
+    }
+    let (ga, _) = gop_vo_huong(a)?;
+    let (gb, cmb) = gop_vo_huong(b)?;
+    if ga.len() != gb.len() {
+        return Some(false);
+    }
+    for &(ia, h) in &ga {
+        let (ka, va) = &a[ia];
+        if cmb.tim(b, &gb, h, ka, Some(va)).is_none() {
+            return Some(false);
+        }
+    }
+    Some(true)
+}
+
+/// Logic map O(n²) cũ — **nguyên văn** cho map có khoá không vô hướng.
+fn eq_map_cham(a: &[(Value, Value)], b: &[(Value, Value)]) -> bool {
+    fn gop(xs: &[(Value, Value)]) -> Vec<&(Value, Value)> {
+        let mut out: Vec<&(Value, Value)> = Vec::with_capacity(xs.len());
+        for e in xs {
+            if let Some(prev) = out.iter_mut().find(|p| p.0.eq_value(&e.0)) {
+                *prev = e;
+            } else {
+                out.push(e);
+            }
+        }
+        out
+    }
+    let (a, b) = (gop(a), gop(b));
+    a.len() == b.len()
+        && a.iter()
+            .all(|(k, v)| b.iter().any(|(k2, v2)| k.eq_value(k2) && v.eq_value(v2)))
 }
 
 fn show_map_key(k: &Value) -> String {
