@@ -10,6 +10,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - Linux gate **3528/3**; Windows psvn **3462/0** (fix test-only clippy); fresh-clone PASS; host 54/54.
 - Windows async HTTP/net chưa có backend. Không GitHub Actions; macOS ngoài phạm vi.
 - CLI: `vis --version`/`-V`; `vis doctor` liệt kê đủ `sqlite,tls,pkg-sig,http2`.
+- Windows test flake `net::tcp_explain_tong` (RST 10054) fixed test-only; psvn 3/3 3464/0.
 
 ## v0.3.1 — 2026-11-21
 
