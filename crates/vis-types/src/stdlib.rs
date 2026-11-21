@@ -267,7 +267,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 159] = [
+pub const FUNCS: [StdFn; 160] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -310,6 +310,17 @@ pub const FUNCS: [StdFn; 159] = [
     StdFn {
         name: "str.splitn",
         params: &[Ty::Str, Ty::Str, Ty::Int],
+        ret: Ty::ListStr,
+    },
+    // **VD-270 (rsplit)**: tách **phải → trái**, trả các phần theo **thứ tự ngược** (phần cuối
+    // trước), đúng nghĩa Rust `str::rsplit`: `rsplit("a,b,c", ",")` ⇒ `["c", "b", "a"]`; không
+    // khớp ⇒ `[s]`; `s` rỗng + `sep` khác rỗng ⇒ `[""]`; dấu cuối sinh phần rỗng **đầu**, dấu
+    // đầu sinh phần rỗng **cuối**; chồng lấn không khớp lại; `sep` rỗng theo **đúng** nghĩa
+    // Rust (`"abc"` ⇒ `["", "c", "b", "a", ""]`). Kết quả tái dùng `Ty::ListStr` (không thêm
+    // biến thể `Ty`). Sugar R5c `s.rsplit(sep)`.
+    StdFn {
+        name: "str.rsplit",
+        params: &[Ty::Str, Ty::Str],
         ret: Ty::ListStr,
     },
     // **VD-265**: tách dòng kiểu Rust `lines()` — `\n`, bỏ `\r` cuối dòng; tách khoảng trắng
