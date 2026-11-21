@@ -1,0 +1,360 @@
+<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
+# VS3-3b/W5 — log 100 vòng stress release-mode cho spawn_shared read-only
+# Baseline: main 0c911b3 (tag v0.3.3 = bbf3484); branch vs3/w5-spike; ngày 2026-11-21.
+# Máy: i5-1235U (2 P-core + 8 E-core), nproc=12, Linux; build release trong worktree.
+
+==================== 1) 100 VÒNG RELEASE (log đầy đủ, load 14,97 -> 18,47) ====================
+2026-11-21T22:39:43+09:00
+LOAD_START 14.97 14.54 11.58 10/2080 3037083
+/dev/nvme0n1p2  233G  210G   16G  94% /
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 4.86s
+     Running tests/vs3_worker.rs (target/release/build/vis-cli/dfa6e459b96da178/out/vs3_worker-dfa6e459b96da178)
+
+running 1 test
+test spawn_shared_stress_rounds_read_only ... SHARED_STRESS_ENV	rounds=100	n=10000	spawns_per_round=60000	cpu_iters=23843	per_task_us=119.6	rss0_kb=3324	threads0=2
+SHARED_STRESS	round=0	payload=map1k	n=10000	secs=0.378	rss_kb=10048	hwm_kb=10048	threads=2
+SHARED_STRESS	round=1	payload=list10k	n=10000	secs=0.362	rss_kb=10812	hwm_kb=10812	threads=2
+SHARED_STRESS	round=2	payload=map1k	n=10000	secs=0.232	rss_kb=9008	hwm_kb=10384	threads=2
+SHARED_STRESS	round=3	payload=list10k	n=10000	secs=0.293	rss_kb=10928	hwm_kb=10928	threads=2
+SHARED_STRESS	round=4	payload=map1k	n=10000	secs=0.289	rss_kb=9028	hwm_kb=10528	threads=2
+SHARED_STRESS	round=5	payload=list10k	n=10000	secs=0.699	rss_kb=10844	hwm_kb=10844	threads=2
+SHARED_STRESS	round=6	payload=map1k	n=10000	secs=0.614	rss_kb=10312	hwm_kb=10528	threads=2
+SHARED_STRESS	round=7	payload=list10k	n=10000	secs=0.574	rss_kb=10960	hwm_kb=10960	threads=2
+SHARED_STRESS	round=8	payload=map1k	n=10000	secs=0.342	rss_kb=8856	hwm_kb=10528	threads=2
+SHARED_STRESS	round=9	payload=list10k	n=10000	secs=0.260	rss_kb=10104	hwm_kb=10528	threads=2
+SHARED_BENCH10	round=10	payload=map1k	w=1	mode=shared	ms=21.64
+SHARED_BENCH10	round=10	payload=map1k	w=1	mode=worker	ms=57.37
+SHARED_BENCH10	round=10	payload=map1k	w=1	mode=producer	ms=77.13
+SHARED_BENCH10	round=10	payload=map1k	w=4	mode=shared	ms=19.86
+SHARED_BENCH10	round=10	payload=map1k	w=4	mode=worker	ms=54.78
+SHARED_BENCH10	round=10	payload=map1k	w=4	mode=producer	ms=73.07
+SHARED_BENCH10	round=10	payload=list10k	w=1	mode=shared	ms=29.64
+SHARED_BENCH10	round=10	payload=list10k	w=1	mode=worker	ms=83.40
+SHARED_BENCH10	round=10	payload=list10k	w=1	mode=producer	ms=206.92
+SHARED_BENCH10	round=10	payload=list10k	w=4	mode=shared	ms=26.54
+SHARED_BENCH10	round=10	payload=list10k	w=4	mode=worker	ms=73.16
+SHARED_BENCH10	round=10	payload=list10k	w=4	mode=producer	ms=83.97
+SHARED_STRESS	round=10	payload=map1k	n=10000	secs=0.259	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=11	payload=list10k	n=10000	secs=0.506	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=12	payload=map1k	n=10000	secs=0.453	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=13	payload=list10k	n=10000	secs=0.592	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=14	payload=map1k	n=10000	secs=0.445	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=15	payload=list10k	n=10000	secs=0.488	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=16	payload=map1k	n=10000	secs=0.629	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=17	payload=list10k	n=10000	secs=0.371	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=18	payload=map1k	n=10000	secs=0.353	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_STRESS	round=19	payload=list10k	n=10000	secs=0.385	rss_kb=55744	hwm_kb=190084	threads=2
+SHARED_BENCH10	round=20	payload=map1k	w=1	mode=shared	ms=29.85
+SHARED_BENCH10	round=20	payload=map1k	w=1	mode=worker	ms=62.21
+SHARED_BENCH10	round=20	payload=map1k	w=1	mode=producer	ms=64.07
+SHARED_BENCH10	round=20	payload=map1k	w=4	mode=shared	ms=24.60
+SHARED_BENCH10	round=20	payload=map1k	w=4	mode=worker	ms=40.66
+SHARED_BENCH10	round=20	payload=map1k	w=4	mode=producer	ms=74.35
+SHARED_BENCH10	round=20	payload=list10k	w=1	mode=shared	ms=23.34
+SHARED_BENCH10	round=20	payload=list10k	w=1	mode=worker	ms=52.65
+SHARED_BENCH10	round=20	payload=list10k	w=1	mode=producer	ms=126.89
+SHARED_BENCH10	round=20	payload=list10k	w=4	mode=shared	ms=10.91
+SHARED_BENCH10	round=20	payload=list10k	w=4	mode=worker	ms=32.90
+SHARED_BENCH10	round=20	payload=list10k	w=4	mode=producer	ms=62.99
+SHARED_STRESS	round=20	payload=map1k	n=10000	secs=0.435	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=21	payload=list10k	n=10000	secs=0.554	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=22	payload=map1k	n=10000	secs=0.473	rss_kb=55808	hwm_kb=192680	threads=3
+SHARED_STRESS	round=23	payload=list10k	n=10000	secs=0.309	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=24	payload=map1k	n=10000	secs=0.391	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=25	payload=list10k	n=10000	secs=0.453	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=26	payload=map1k	n=10000	secs=0.450	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=27	payload=list10k	n=10000	secs=0.219	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=28	payload=map1k	n=10000	secs=0.359	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_STRESS	round=29	payload=list10k	n=10000	secs=0.423	rss_kb=55808	hwm_kb=192680	threads=2
+SHARED_BENCH10	round=30	payload=map1k	w=1	mode=shared	ms=30.56
+SHARED_BENCH10	round=30	payload=map1k	w=1	mode=worker	ms=64.41
+SHARED_BENCH10	round=30	payload=map1k	w=1	mode=producer	ms=71.26
+SHARED_BENCH10	round=30	payload=map1k	w=4	mode=shared	ms=23.99
+SHARED_BENCH10	round=30	payload=map1k	w=4	mode=worker	ms=49.64
+SHARED_BENCH10	round=30	payload=map1k	w=4	mode=producer	ms=64.68
+SHARED_BENCH10	round=30	payload=list10k	w=1	mode=shared	ms=35.14
+SHARED_BENCH10	round=30	payload=list10k	w=1	mode=worker	ms=91.88
+SHARED_BENCH10	round=30	payload=list10k	w=1	mode=producer	ms=221.56
+SHARED_BENCH10	round=30	payload=list10k	w=4	mode=shared	ms=24.45
+SHARED_BENCH10	round=30	payload=list10k	w=4	mode=worker	ms=54.92
+SHARED_BENCH10	round=30	payload=list10k	w=4	mode=producer	ms=98.93
+SHARED_STRESS	round=30	payload=map1k	n=10000	secs=0.449	rss_kb=55864	hwm_kb=192936	threads=3
+SHARED_STRESS	round=31	payload=list10k	n=10000	secs=0.359	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=32	payload=map1k	n=10000	secs=0.529	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=33	payload=list10k	n=10000	secs=0.225	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=34	payload=map1k	n=10000	secs=0.357	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=35	payload=list10k	n=10000	secs=0.514	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=36	payload=map1k	n=10000	secs=0.509	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=37	payload=list10k	n=10000	secs=0.240	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=38	payload=map1k	n=10000	secs=0.318	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_STRESS	round=39	payload=list10k	n=10000	secs=0.515	rss_kb=55864	hwm_kb=192936	threads=2
+SHARED_BENCH10	round=40	payload=map1k	w=1	mode=shared	ms=27.88
+SHARED_BENCH10	round=40	payload=map1k	w=1	mode=worker	ms=65.99
+SHARED_BENCH10	round=40	payload=map1k	w=1	mode=producer	ms=71.12
+SHARED_BENCH10	round=40	payload=map1k	w=4	mode=shared	ms=20.41
+SHARED_BENCH10	round=40	payload=map1k	w=4	mode=worker	ms=52.15
+SHARED_BENCH10	round=40	payload=map1k	w=4	mode=producer	ms=72.90
+SHARED_BENCH10	round=40	payload=list10k	w=1	mode=shared	ms=55.50
+SHARED_BENCH10	round=40	payload=list10k	w=1	mode=worker	ms=164.20
+SHARED_BENCH10	round=40	payload=list10k	w=1	mode=producer	ms=308.62
+SHARED_BENCH10	round=40	payload=list10k	w=4	mode=shared	ms=15.00
+SHARED_BENCH10	round=40	payload=list10k	w=4	mode=worker	ms=44.97
+SHARED_BENCH10	round=40	payload=list10k	w=4	mode=producer	ms=57.48
+SHARED_STRESS	round=40	payload=map1k	n=10000	secs=0.274	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=41	payload=list10k	n=10000	secs=0.360	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=42	payload=map1k	n=10000	secs=0.436	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=43	payload=list10k	n=10000	secs=0.505	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=44	payload=map1k	n=10000	secs=0.351	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=45	payload=list10k	n=10000	secs=0.342	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=46	payload=map1k	n=10000	secs=0.496	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=47	payload=list10k	n=10000	secs=0.547	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=48	payload=map1k	n=10000	secs=0.399	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_STRESS	round=49	payload=list10k	n=10000	secs=0.337	rss_kb=55884	hwm_kb=192996	threads=2
+SHARED_BENCH10	round=50	payload=map1k	w=1	mode=shared	ms=31.73
+SHARED_BENCH10	round=50	payload=map1k	w=1	mode=worker	ms=45.13
+SHARED_BENCH10	round=50	payload=map1k	w=1	mode=producer	ms=39.05
+SHARED_BENCH10	round=50	payload=map1k	w=4	mode=shared	ms=9.03
+SHARED_BENCH10	round=50	payload=map1k	w=4	mode=worker	ms=12.47
+SHARED_BENCH10	round=50	payload=map1k	w=4	mode=producer	ms=52.25
+SHARED_BENCH10	round=50	payload=list10k	w=1	mode=shared	ms=17.70
+SHARED_BENCH10	round=50	payload=list10k	w=1	mode=worker	ms=51.79
+SHARED_BENCH10	round=50	payload=list10k	w=1	mode=producer	ms=161.28
+SHARED_BENCH10	round=50	payload=list10k	w=4	mode=shared	ms=21.03
+SHARED_BENCH10	round=50	payload=list10k	w=4	mode=worker	ms=68.01
+SHARED_BENCH10	round=50	payload=list10k	w=4	mode=producer	ms=93.60
+SHARED_STRESS	round=50	payload=map1k	n=10000	secs=0.454	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=51	payload=list10k	n=10000	secs=0.458	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=52	payload=map1k	n=10000	secs=0.384	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=53	payload=list10k	n=10000	secs=0.345	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=54	payload=map1k	n=10000	secs=0.194	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=55	payload=list10k	n=10000	secs=0.267	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=56	payload=map1k	n=10000	secs=0.382	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=57	payload=list10k	n=10000	secs=0.312	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=58	payload=map1k	n=10000	secs=0.228	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_STRESS	round=59	payload=list10k	n=10000	secs=0.238	rss_kb=55936	hwm_kb=192996	threads=2
+SHARED_BENCH10	round=60	payload=map1k	w=1	mode=shared	ms=21.60
+SHARED_BENCH10	round=60	payload=map1k	w=1	mode=worker	ms=57.77
+SHARED_BENCH10	round=60	payload=map1k	w=1	mode=producer	ms=86.68
+SHARED_BENCH10	round=60	payload=map1k	w=4	mode=shared	ms=23.16
+SHARED_BENCH10	round=60	payload=map1k	w=4	mode=worker	ms=71.77
+SHARED_BENCH10	round=60	payload=map1k	w=4	mode=producer	ms=77.76
+SHARED_BENCH10	round=60	payload=list10k	w=1	mode=shared	ms=21.67
+SHARED_BENCH10	round=60	payload=list10k	w=1	mode=worker	ms=92.23
+SHARED_BENCH10	round=60	payload=list10k	w=1	mode=producer	ms=218.94
+SHARED_BENCH10	round=60	payload=list10k	w=4	mode=shared	ms=21.40
+SHARED_BENCH10	round=60	payload=list10k	w=4	mode=worker	ms=65.58
+SHARED_BENCH10	round=60	payload=list10k	w=4	mode=producer	ms=44.10
+SHARED_STRESS	round=60	payload=map1k	n=10000	secs=0.490	rss_kb=55948	hwm_kb=193096	threads=3
+SHARED_STRESS	round=61	payload=list10k	n=10000	secs=0.581	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=62	payload=map1k	n=10000	secs=0.424	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=63	payload=list10k	n=10000	secs=0.208	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=64	payload=map1k	n=10000	secs=0.207	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=65	payload=list10k	n=10000	secs=0.375	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=66	payload=map1k	n=10000	secs=0.391	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=67	payload=list10k	n=10000	secs=0.303	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=68	payload=map1k	n=10000	secs=0.440	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_STRESS	round=69	payload=list10k	n=10000	secs=0.718	rss_kb=55948	hwm_kb=193096	threads=2
+SHARED_BENCH10	round=70	payload=map1k	w=1	mode=shared	ms=20.38
+SHARED_BENCH10	round=70	payload=map1k	w=1	mode=worker	ms=58.01
+SHARED_BENCH10	round=70	payload=map1k	w=1	mode=producer	ms=56.32
+SHARED_BENCH10	round=70	payload=map1k	w=4	mode=shared	ms=11.90
+SHARED_BENCH10	round=70	payload=map1k	w=4	mode=worker	ms=31.62
+SHARED_BENCH10	round=70	payload=map1k	w=4	mode=producer	ms=70.78
+SHARED_BENCH10	round=70	payload=list10k	w=1	mode=shared	ms=20.58
+SHARED_BENCH10	round=70	payload=list10k	w=1	mode=worker	ms=88.63
+SHARED_BENCH10	round=70	payload=list10k	w=1	mode=producer	ms=159.01
+SHARED_BENCH10	round=70	payload=list10k	w=4	mode=shared	ms=8.23
+SHARED_BENCH10	round=70	payload=list10k	w=4	mode=worker	ms=55.98
+SHARED_BENCH10	round=70	payload=list10k	w=4	mode=producer	ms=94.87
+SHARED_STRESS	round=70	payload=map1k	n=10000	secs=0.322	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=71	payload=list10k	n=10000	secs=0.331	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=72	payload=map1k	n=10000	secs=0.315	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=73	payload=list10k	n=10000	secs=0.329	rss_kb=55972	hwm_kb=193828	threads=3
+SHARED_STRESS	round=74	payload=map1k	n=10000	secs=0.300	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=75	payload=list10k	n=10000	secs=0.305	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=76	payload=map1k	n=10000	secs=0.315	rss_kb=55972	hwm_kb=193828	threads=3
+SHARED_STRESS	round=77	payload=list10k	n=10000	secs=0.325	rss_kb=55972	hwm_kb=193828	threads=3
+SHARED_STRESS	round=78	payload=map1k	n=10000	secs=0.272	rss_kb=55972	hwm_kb=193828	threads=2
+SHARED_STRESS	round=79	payload=list10k	n=10000	secs=0.313	rss_kb=55972	hwm_kb=193828	threads=3
+SHARED_BENCH10	round=80	payload=map1k	w=1	mode=shared	ms=26.17
+SHARED_BENCH10	round=80	payload=map1k	w=1	mode=worker	ms=55.51
+SHARED_BENCH10	round=80	payload=map1k	w=1	mode=producer	ms=53.97
+SHARED_BENCH10	round=80	payload=map1k	w=4	mode=shared	ms=10.81
+SHARED_BENCH10	round=80	payload=map1k	w=4	mode=worker	ms=26.82
+SHARED_BENCH10	round=80	payload=map1k	w=4	mode=producer	ms=91.30
+SHARED_BENCH10	round=80	payload=list10k	w=1	mode=shared	ms=20.47
+SHARED_BENCH10	round=80	payload=list10k	w=1	mode=worker	ms=88.74
+SHARED_BENCH10	round=80	payload=list10k	w=1	mode=producer	ms=181.09
+SHARED_BENCH10	round=80	payload=list10k	w=4	mode=shared	ms=17.48
+SHARED_BENCH10	round=80	payload=list10k	w=4	mode=worker	ms=33.44
+SHARED_BENCH10	round=80	payload=list10k	w=4	mode=producer	ms=44.69
+SHARED_STRESS	round=80	payload=map1k	n=10000	secs=0.231	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=81	payload=list10k	n=10000	secs=0.254	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=82	payload=map1k	n=10000	secs=0.221	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=83	payload=list10k	n=10000	secs=0.205	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=84	payload=map1k	n=10000	secs=0.206	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=85	payload=list10k	n=10000	secs=0.231	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=86	payload=map1k	n=10000	secs=0.214	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=87	payload=list10k	n=10000	secs=0.199	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=88	payload=map1k	n=10000	secs=0.213	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_STRESS	round=89	payload=list10k	n=10000	secs=0.225	rss_kb=55976	hwm_kb=193828	threads=2
+SHARED_BENCH10	round=90	payload=map1k	w=1	mode=shared	ms=17.79
+SHARED_BENCH10	round=90	payload=map1k	w=1	mode=worker	ms=40.09
+SHARED_BENCH10	round=90	payload=map1k	w=1	mode=producer	ms=40.06
+SHARED_BENCH10	round=90	payload=map1k	w=4	mode=shared	ms=6.50
+SHARED_BENCH10	round=90	payload=map1k	w=4	mode=worker	ms=13.10
+SHARED_BENCH10	round=90	payload=map1k	w=4	mode=producer	ms=109.90
+SHARED_BENCH10	round=90	payload=list10k	w=1	mode=shared	ms=20.12
+SHARED_BENCH10	round=90	payload=list10k	w=1	mode=worker	ms=61.14
+SHARED_BENCH10	round=90	payload=list10k	w=1	mode=producer	ms=183.65
+SHARED_BENCH10	round=90	payload=list10k	w=4	mode=shared	ms=13.85
+SHARED_BENCH10	round=90	payload=list10k	w=4	mode=worker	ms=42.68
+SHARED_BENCH10	round=90	payload=list10k	w=4	mode=producer	ms=59.84
+SHARED_STRESS	round=90	payload=map1k	n=10000	secs=0.325	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=91	payload=list10k	n=10000	secs=0.341	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=92	payload=map1k	n=10000	secs=0.332	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=93	payload=list10k	n=10000	secs=0.230	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=94	payload=map1k	n=10000	secs=0.096	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=95	payload=list10k	n=10000	secs=0.129	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=96	payload=map1k	n=10000	secs=0.148	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=97	payload=list10k	n=10000	secs=0.157	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=98	payload=map1k	n=10000	secs=0.162	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_STRESS	round=99	payload=list10k	n=10000	secs=0.154	rss_kb=55980	hwm_kb=193828	threads=2
+SHARED_BENCH10	round=100	payload=map1k	w=1	mode=shared	ms=18.67
+SHARED_BENCH10	round=100	payload=map1k	w=1	mode=worker	ms=42.06
+SHARED_BENCH10	round=100	payload=map1k	w=1	mode=producer	ms=42.54
+SHARED_BENCH10	round=100	payload=map1k	w=4	mode=shared	ms=12.13
+SHARED_BENCH10	round=100	payload=map1k	w=4	mode=worker	ms=29.41
+SHARED_BENCH10	round=100	payload=map1k	w=4	mode=producer	ms=104.63
+SHARED_BENCH10	round=100	payload=list10k	w=1	mode=shared	ms=18.59
+SHARED_BENCH10	round=100	payload=list10k	w=1	mode=worker	ms=82.19
+SHARED_BENCH10	round=100	payload=list10k	w=1	mode=producer	ms=190.04
+SHARED_BENCH10	round=100	payload=list10k	w=4	mode=shared	ms=7.53
+SHARED_BENCH10	round=100	payload=list10k	w=4	mode=worker	ms=21.60
+SHARED_BENCH10	round=100	payload=list10k	w=4	mode=producer	ms=38.91
+SHARED_STRESS_SUMMARY	rounds=100	n=10000	spawns_total=6000000	secs=57.48	secs_med=0.342	secs_min=0.096	secs_max=0.718	rss0_kb=3324	rss1_kb=55992	rss_min_kb=8856	rss_med_kb=55936	rss_max_kb=55980	rss_dau10_kb=10312	rss_plateau_kb=55744	rss_cuoi10_kb=55980	hwm_peak_kb=193828	hwm_final_kb=193828	threads0=2	threads1=2	threads_peak=6	threads_round_max=3
+SHARED_BENCH_MEDIAN	payload=map1k	w=1	mode=shared	ms=26.17	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=map1k	w=1	mode=worker	ms=57.77	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=map1k	w=1	mode=producer	ms=64.07	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=map1k	w=4	mode=shared	ms=19.86	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=map1k	w=4	mode=worker	ms=40.66	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=map1k	w=4	mode=producer	ms=74.35	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=1	mode=shared	ms=21.67	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=1	mode=worker	ms=88.63	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=1	mode=producer	ms=190.04	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=4	mode=shared	ms=17.48	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=4	mode=worker	ms=54.92	checkpoints=10
+SHARED_BENCH_MEDIAN	payload=list10k	w=4	mode=producer	ms=62.99	checkpoints=10
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 57.49s
+
+LOAD_END 18.47 15.75 12.19 10/2127 3070416
+/dev/nvme0n1p2  233G  210G   16G  94% /
+
+==================== 2) FULL SUITE RELEASE (mặc định 10 vòng; gồm 14 test) ====================
+2026-11-21T22:41:12+09:00
+LOAD_START 14.61 15.07 12.08 11/2137 3071027
+    Finished `release` profile [optimized] target(s) in 0.06s
+     Running tests/vs3_worker.rs (target/release/build/vis-cli/dfa6e459b96da178/out/vs3_worker-dfa6e459b96da178)
+
+running 14 tests
+test value_task_show_va_taskid_khong_doi_abi ... ok
+test taskid_proto_value_show_eq_roundtrip ... ok
+test budget_exhaustion_khong_deadlock ... ok
+test budget_atomic_chunk_used_remaining_limit ... ok
+test cross_write_w1_allowed_wn_refused ... ok
+test w1_shared_env_va_wn_snapshot ... ok
+test w1_w2_w4_cung_output_byte_identical ... ok
+test worker_copy_va_move_payload_w1_w4_parity ... ok
+test cancel_va_join_khong_deadlock ... ok
+test merge_spawn_order_khi_completion_lech ... ok
+test taskid_proxy_await_w1_w4 ... ok
+test spawn_shared_map_list_w1_w4_parity ... ok
+test spawn_shared_stress_rounds_read_only ... ok
+test stress_dai_5x10k_cancel_budget_print_cross ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.50s
+
+LOAD_END 14.03 14.93 12.06 9/2123 3071813
+/dev/nvme0n1p2  233G  210G   16G  94% /
+
+==================== 3) FMT + CLIPPY ====================
+2026-11-21T22:41:29+09:00
+/dev/nvme0n1p2  233G  210G   16G  94% /
+   Compiling unicode-ident v1.0.27
+    Checking tinyvec v1.13.3
+    Checking cfg-if v1.0.5
+    Checking typenum v1.20.1
+    Checking vis-diag v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-diag)
+    Checking bytes v1.12.2
+    Checking libc v0.2.191
+    Checking zeroize v1.9.2
+    Checking once_cell v1.21.4
+    Checking pin-project-lite v0.2.18
+    Checking foldhash v0.1.5
+    Checking untrusted v0.9.0
+    Checking cpufeatures v0.2.17
+    Checking futures-sink v0.3.34
+    Checking itoa v1.0.19
+   Compiling proc-macro2 v1.0.107
+    Checking hashbrown v0.15.5
+    Checking equivalent v1.0.3
+    Checking futures-core v0.3.34
+    Checking hashbrown v0.17.1
+    Checking tracing-core v0.1.36
+    Checking rustls-pki-types v1.16.0
+    Checking libsqlite3-sys v0.35.0
+    Checking subtle v2.6.1
+    Checking smallvec v1.16.6
+    Checking fallible-streaming-iterator v0.1.9
+    Checking bitflags v2.13.2
+    Checking fnv v1.0.7
+    Checking unicode-normalization v0.1.26
+    Checking fallible-iterator v0.3.0
+    Checking slab v0.4.12
+    Checking atomic-waker v1.1.2
+    Checking webpki-roots v1.0.11
+   Compiling quote v1.0.47
+    Checking generic-array v0.14.7
+    Checking tracing v0.1.44
+    Checking vis-syntax v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-syntax)
+    Checking tokio v1.54.1
+    Checking http v1.5.0
+    Checking indexmap v2.14.2
+    Checking hashlink v0.10.0
+   Compiling syn v2.0.119
+   Compiling syn v3.0.10
+    Checking rusqlite v0.37.0
+    Checking getrandom v0.2.17
+    Checking mio v1.2.5
+    Checking ring v0.17.14
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+    Checking digest v0.10.7
+    Checking sha2 v0.10.9
+    Checking vis-types v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-types)
+    Checking vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-fmt)
+    Checking rustls-webpki v0.103.17
+   Compiling thiserror-impl v2.0.21
+    Checking tokio-util v0.7.20
+   Compiling enumflags2_derive v0.7.12
+    Checking rustls v0.23.46
+    Checking enumflags2 v0.7.12
+    Checking h2 v0.4.20
+    Checking thiserror v2.0.21
+    Checking landlock v0.4.7
+    Checking vis-host-linux v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/vis-host-linux)
+    Checking vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-bytecode)
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 19.64s
+/dev/nvme0n1p2  233G  211G   16G  94% /
+
+==================== 4) GHI CHÚ ====================
+- Lần chạy 100 vòng thứ nhất (load 13,11; 2026-11-21T22:35): 100/100 pass, 37,27 s,
+  secs median 0,209 s; log không giữ đầy đủ (bị lần chạy 2 ghi đè), số liệu chính ở journal.
+- Lần chạy 2 (log này) dùng đúng code đã commit, có thêm dòng rss_plateau_kb.
+- Không chạy GitHub Actions; không push/merge/tag; chỉ test + journal/log thay đổi.
