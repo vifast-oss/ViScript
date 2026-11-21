@@ -43,6 +43,9 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-1c (coverage HIR)**: ma trận 10 ca HIR→frame; sửa lỗi `?.` mất một lớp Option trên frame interp; `Pipe`/nested async là blocker 1d; merge `ccecc97`.
+- **2026-11-21** — **VS3-4d (cookie/auth)**: cookie jar nội bộ (Path/Domain/Secure/Max-Age/Expires, 64 cookie/4096 B), giữ qua redirect cùng host; Basic auth qua userinfo không lộ credential; 9 ca hermetic; merge `cdbd8e0`.
+- **2026-11-21** — **VS3-5c (key rotation + GC đa lock)**: `--registry-key` lặp/nhiều khoá, verify một trong N; `pkg gc --lock/--root` giữ blob được bất kỳ lock nào dùng, chống symlink, giới hạn quét; 3 ca multi-lock + 10 sig; merge `96d554a`.
 - **2026-11-21** — **VS3-7 incremental (W3d)**: LSP `textDocumentSync {openClose:true,change:2}`; áp `contentChanges` range UTF-16/CRLF tuần tự; 4 ca mới + 152 ca LSP; merge `f71fba0`.
 - **2026-11-21** — **Windows xanh (W4d)**: 38 ca đỏ đã sửa (clippy, 2 cap-confine, 35 portability/test-only); `cargo test --workspace` 3340/0, `vis-dev check` PASS, host 54/54 trên psvn; merge `848b8e9`; verify release `f71fba0` đang chạy.
 - **2026-11-21** — **VS3-2a (chan(0) rendezvous)**: wait-set FIFO trên đường frame test; send/recv ghép đúng một lần, close đánh thức receiver/sender, cancel gỡ đúng 1 lần; sửa resume `CallMethod` VM khi Pending; runtime mặc định vẫn từ chối `chan(0)`; 13 ca `vs3_chan0`; merge `d060f5a`.
