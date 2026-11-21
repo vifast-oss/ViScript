@@ -553,7 +553,7 @@ impl<'a> Interp<'a> {
                         break;
                     }
                     guard += 1;
-                    if guard > 10_000_000 {
+                    if guard > crate::rt::fee::MAX_LOOP_ITERATIONS as usize {
                         return Err(Abort::Trap(Trap::new(
                             RT,
                             "vòng lặp quá lâu (>10^7 bước)",
@@ -571,7 +571,7 @@ impl<'a> Interp<'a> {
             }
             HStmt::Loop { body, .. } => {
                 self.loop_depth += 1;
-                for _ in 0..10_000_000usize {
+                for _ in 0..crate::rt::fee::MAX_LOOP_ITERATIONS as usize {
                     if let Some(a) = self.charge(crate::rt::fee::FeeKind::Loop, s.span()) {
                         self.loop_depth -= 1;
                         return Err(a);

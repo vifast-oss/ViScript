@@ -5,9 +5,9 @@
 //! Bất biến (mọi vòng):
 //! 1. `decode` **không panic**;
 //! 2. `verify` **không panic**;
-//! 3. nếu `verify` OK ⇒ VM chạy **không panic** (bắt bằng `catch_unwind`), **kết thúc** (cap 10^7
-//!    lệnh), và **độ sâu ngăn xếp ≤ `need`** mà verifier tính (cộng dồn theo hàm vì VM dùng **một**
-//!    ngăn xếp giá trị cho mọi khung).
+//! 3. nếu `verify` OK ⇒ VM chạy **không panic** (bắt bằng `catch_unwind`), **kết thúc** (cap fuel
+//!    `vis_vm::vm::SAFETY_FUEL` = `fee::VM_SAFETY_FUEL`, VS3-1a), và **độ sâu ngăn xếp ≤ `need`**
+//!    mà verifier tính (cộng dồn theo hàm vì VM dùng **một** ngăn xếp giá trị cho mọi khung).
 //!
 //! Chạy 10 phút: `VBC_FUZZ_PHUT=10 cargo test -p vis-vm --test fuzz_mutate -- --nocapture`.
 

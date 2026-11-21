@@ -18,12 +18,19 @@ use std::process::ExitCode;
 use vis_interp::stdlib::json;
 use vis_interp::value::Value;
 
+/// **VS3-5b (VD-271)**: dọn blob/thư mục gói không còn được `vis.lock` tham chiếu.
+mod gc;
+/// **VS3-5a (VD-271)**: registry **HTTP** (index + tarball, SHA-256 trước khi cài) — dựng trên HTTP
+/// client hiện có của `vis-interp` (chưa TLS; TLS thuộc VS3-4).
+mod registry_http;
 /// **ST-128 (VD-125)**: resolver **tất định** trên registry nhiều phiên bản (chọn cao nhất thoả,
 /// quay lui khi xung đột; không giải được ⇒ `VS0704` kèm chuỗi ràng buộc).
 pub mod resolver;
 /// **ST-127 (VD-125)**: semver tối giản (`Version`/`VersionReq`) — resolver dùng ở ST-128, lock ghi
 /// `version_req` ở ST-129. Không crate mới.
 pub mod semver;
+/// **VS3-5a**: base64 + tar ustar tối giản — cùng lát, tách tệp cho R1.
+mod tar_b64;
 
 use std::collections::BTreeMap;
 
@@ -41,7 +48,7 @@ pub fn run(args: &[String]) -> ExitCode {
 }
 
 fn dung() -> &'static str {
-    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir>] | vis pkg install | vis pkg update [<tên>] [--registry <dir>] | vis pkg list [--json] | vis pkg remove <tên>"
+    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port>] [--registry-key <64-hex>] | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port>] [--registry-key <64-hex>] | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] | vis pkg migrate"
 }
 
 fn chay(args: &[String]) -> Result<(), String> {
@@ -54,6 +61,8 @@ fn chay(args: &[String]) -> Result<(), String> {
         "update" => lenh_update(&args[1..]),
         "list" => lenh_list(&args[1..]),
         "remove" => lenh_remove(&args[1..]),
+        "gc" => lenh_gc(&args[1..]),
+        "migrate" => lenh_migrate(&args[1..]),
         khac => Err(format!("lệnh lạ `{khac}` — {}", dung())),
     }
 }
@@ -160,52 +169,50 @@ fn doc_manifest(duong: &Path, entry_override: Option<&str>) -> Result<Manifest, 
         .map_err(|e| format!("manifest `{}` không phải UTF-8: {e}", duong.display()))?;
     let v = vis_interp::json::decode(text)
         .map_err(|e| format!("manifest `{}` hỏng: {e}", duong.display()))?;
-    let Value::Map(kv) = &v else {
-        return Err(format!("manifest `{}` phải là object", duong.display()));
+    let nguon = format!("manifest `{}`", duong.display());
+    manifest_tu_gia_tri(&v, &nguon, entry_override)
+}
+
+/// Validate một manifest từ [`Value`] đã giải mã; `nguon` là mô tả cho chẩn đoán:
+/// `manifest \`<đường dẫn>\`` (registry cục bộ) hoặc `index gói \`<tên>@<phiên bản>\`` (HTTP —
+/// VS3-5a). Dùng chung để hai nguồn có **cùng** luật chấp nhận/từ chối.
+fn manifest_tu_gia_tri(
+    v: &Value,
+    nguon: &str,
+    entry_override: Option<&str>,
+) -> Result<Manifest, String> {
+    let Value::Map(kv) = v else {
+        return Err(format!("{nguon} phải là object"));
     };
-    let name = lay_chuoi(kv, "name")
-        .ok_or_else(|| format!("manifest `{}` thiếu trường `name`", duong.display()))?;
-    let version = lay_chuoi(kv, "version")
-        .ok_or_else(|| format!("manifest `{}` thiếu trường `version`", duong.display()))?;
+    let name = lay_chuoi(kv, "name").ok_or_else(|| format!("{nguon} thiếu trường `name`"))?;
+    let version =
+        lay_chuoi(kv, "version").ok_or_else(|| format!("{nguon} thiếu trường `version`"))?;
     // **ST-90**: `entry` của manifest vẫn là nguồn chính; `--entry` chỉ **đổi** khi manifest thiếu
     // hoặc người dùng muốn chỉ định khác (vẫn phải nằm trong `files`).
     let entry = lay_chuoi(kv, "entry")
         .or_else(|| entry_override.map(str::to_string))
-        .ok_or_else(|| format!("manifest `{}` thiếu trường `entry`", duong.display()))?;
+        .ok_or_else(|| format!("{nguon} thiếu trường `entry`"))?;
     kiem_path(&entry)?;
-    let fs_v = lay(kv, "files")
-        .ok_or_else(|| format!("manifest `{}` thiếu trường `files`", duong.display()))?;
+    let fs_v = lay(kv, "files").ok_or_else(|| format!("{nguon} thiếu trường `files`"))?;
     let Value::List(ds) = fs_v else {
-        return Err(format!(
-            "manifest `{}`: `files` phải là mảng",
-            duong.display()
-        ));
+        return Err(format!("{nguon}: `files` phải là mảng"));
     };
     let mut files = Vec::new();
     let mut da = BTreeSet::new();
     for it in ds {
         let Value::Map(f) = it else {
-            return Err(format!(
-                "manifest `{}`: mỗi `files[]` phải là object",
-                duong.display()
-            ));
+            return Err(format!("{nguon}: mỗi `files[]` phải là object"));
         };
-        let path = lay_chuoi(f, "path")
-            .ok_or_else(|| format!("manifest `{}`: `files[]` thiếu `path`", duong.display()))?;
+        let path =
+            lay_chuoi(f, "path").ok_or_else(|| format!("{nguon}: `files[]` thiếu `path`"))?;
         kiem_path(&path)?;
-        let sha = lay_chuoi(f, "sha256")
-            .ok_or_else(|| format!("manifest `{}`: `files[]` thiếu `sha256`", duong.display()))?;
+        let sha =
+            lay_chuoi(f, "sha256").ok_or_else(|| format!("{nguon}: `files[]` thiếu `sha256`"))?;
         if !la_hex64(&sha) {
-            return Err(format!(
-                "manifest `{}`: `sha256` của `{path}` phải 64 chữ số hex",
-                duong.display()
-            ));
+            return Err(format!("{nguon}: `sha256` của `{path}` phải 64 chữ số hex"));
         }
         if !da.insert(path.clone()) {
-            return Err(format!(
-                "manifest `{}`: trùng `files[].path` `{path}`",
-                duong.display()
-            ));
+            return Err(format!("{nguon}: trùng `files[].path` `{path}`"));
         }
         files.push(TepManifest {
             path,
@@ -213,43 +220,29 @@ fn doc_manifest(duong: &Path, entry_override: Option<&str>) -> Result<Manifest, 
         });
     }
     if files.is_empty() {
-        return Err(format!("manifest `{}`: `files` rỗng", duong.display()));
+        return Err(format!("{nguon}: `files` rỗng"));
     }
     if !files.iter().any(|f| f.path == entry) {
         return Err(format!(
-            "manifest `{}`: `entry` `{entry}` không nằm trong `files`",
-            duong.display()
+            "{nguon}: `entry` `{entry}` không nằm trong `files`"
         ));
     }
     let mut deps = Vec::new();
     if let Some(dv) = lay(kv, "deps") {
         let Value::Map(dm) = dv else {
-            return Err(format!(
-                "manifest `{}`: `deps` phải là object",
-                duong.display()
-            ));
+            return Err(format!("{nguon}: `deps` phải là object"));
         };
         for (k, v) in dm {
             let Some(dn) = chuoi(k) else {
-                return Err(format!(
-                    "manifest `{}`: tên dep phải là chuỗi",
-                    duong.display()
-                ));
+                return Err(format!("{nguon}: tên dep phải là chuỗi"));
             };
             let Some(dver) = chuoi(v) else {
-                return Err(format!(
-                    "manifest `{}`: version của dep `{dn}` phải là chuỗi",
-                    duong.display()
-                ));
+                return Err(format!("{nguon}: version của dep `{dn}` phải là chuỗi"));
             };
             // **ST-128 (VD-125)**: `deps` là **ràng buộc** semver (`^1.2`, `>=1, <2`, `1.0.0`…),
             // không còn bắt buộc là version chính xác. Chẩn đoán nêu đúng tên gói + chuỗi sai.
-            VersionReq::parse(dver).map_err(|e| {
-                format!(
-                    "manifest `{}`: ràng buộc của dep `{dn}` không hợp lệ: {e}",
-                    duong.display()
-                )
-            })?;
+            VersionReq::parse(dver)
+                .map_err(|e| format!("{nguon}: ràng buộc của dep `{dn}` không hợp lệ: {e}"))?;
             deps.push((dn.to_string(), dver.to_string()));
         }
     }
@@ -398,6 +391,22 @@ impl Khoa {
     pub(crate) fn can_migrate(&self) -> bool {
         self.phien_ban < LOCK_PHIEN_BAN || self.goi.iter().any(|g| g.version_req.is_none())
     }
+}
+
+/// **VS3-5b**: nâng lock cũ lên [`LOCK_PHIEN_BAN`] **an toàn** — mỗi gói thiếu `version_req` được
+/// **ghim** đúng phiên bản đang có (`=<version>`), không nới ràng buộc; `roots` giữ nguyên (lock cũ
+/// không có `roots` ⇒ để trống, `roots_tu_lock` đã ghim khi cần). Trả `true` nếu cần ghi.
+fn nang_cap_lock(khoa: &mut Khoa) -> bool {
+    let can = khoa.can_migrate();
+    if can {
+        for g in &mut khoa.goi {
+            if g.version_req.is_none() {
+                g.version_req = Some(format!("={}", g.version));
+            }
+        }
+        khoa.phien_ban = LOCK_PHIEN_BAN;
+    }
+    can
 }
 
 fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
@@ -732,22 +741,33 @@ fn tao_khoa(
     }
 }
 
-/// Giải **cả đồ thị** từ tập ràng buộc gốc, rồi đọc nội dung từng gói đã chọn.
-fn giai_va_doc(
+/// Giải **đồ thị** từ tập ràng buộc gốc (chưa đọc nội dung gói).
+///
+/// **VS3-5a** tách khỏi [`doc_tat_ca`] để registry HTTP có thể giải trước, **chỉ tải tarball của
+/// phiên bản đã chọn**, rồi mới đọc nội dung — cùng resolver, cùng ngữ nghĩa với registry cục bộ.
+fn giai_roots(
     reg: &Path,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
-) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
+) -> Result<BTreeMap<String, Version>, String> {
     let ds_goc: Vec<(String, VersionReq)> =
         roots.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     let mut bo = resolver::Resolver::moi(reg);
     if let Some((ten, e)) = entry_override {
         bo = bo.voi_entry_goc(ten, e);
     }
-    let giai = bo.giai(&ds_goc).map_err(|e| loi_xung_dot(&e))?;
+    bo.giai(&ds_goc).map_err(|e| loi_xung_dot(&e))
+}
+
+/// Đọc nội dung các gói trong **lời giải** (manifest + tệp + `tree_sha`) từ registry cục bộ.
+fn doc_tat_ca(
+    reg: &Path,
+    giai: &BTreeMap<String, Version>,
+    entry_override: Option<(&str, &str)>,
+) -> Result<Vec<GoiCai>, String> {
     // `--entry` chỉ áp cho gói gốc được gọi; lời giải trả về **toàn bộ** gói.
     let mut ds = Vec::with_capacity(giai.len());
-    for (ten, ver) in &giai {
+    for (ten, ver) in giai {
         let eo = match entry_override {
             Some((t, e)) if t == ten.as_str() => Some(e),
             _ => None,
@@ -755,6 +775,17 @@ fn giai_va_doc(
         ds.push(doc_goi(reg, ten, &ver.to_string(), eo)?);
     }
     ds.sort_by(|a, b| a.name.cmp(&b.name).then(a.version.cmp(&b.version)));
+    Ok(ds)
+}
+
+/// Giải **cả đồ thị** từ tập ràng buộc gốc, rồi đọc nội dung từng gói đã chọn.
+fn giai_va_doc(
+    reg: &Path,
+    roots: &BTreeMap<String, VersionReq>,
+    entry_override: Option<(&str, &str)>,
+) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
+    let giai = giai_roots(reg, roots, entry_override)?;
+    let ds = doc_tat_ca(reg, &giai, entry_override)?;
     Ok((giai, ds))
 }
 
@@ -819,13 +850,22 @@ fn req_moi_phien_ban() -> VersionReq {
     VersionReq::parse(">=0.0.0").expect("hằng ràng buộc `>=0.0.0` phải hợp lệ")
 }
 
-/// `(tên, registry, entry)` từ đối số CLI.
-type TuyChon = (Option<String>, Option<PathBuf>, Option<String>);
+/// Đối số CLI của `pkg add`/`update` (và kiểm “không nhận” cho `install`/`list`).
+struct TuyChon {
+    ten: Option<String>,
+    reg: Option<String>,
+    entry: Option<String>,
+    /// **VS3-5b**: khoá công khai Ed25519 (64 hex) cho registry HTTP.
+    khoa: Option<String>,
+}
 
 fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
-    let mut ten = None;
-    let mut reg = None;
-    let mut entry = None;
+    let mut tc = TuyChon {
+        ten: None,
+        reg: None,
+        entry: None,
+        khoa: None,
+    };
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -834,7 +874,7 @@ fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
                 let Some(v) = args.get(i) else {
                     return Err("thiếu giá trị sau `--registry`".to_string());
                 };
-                reg = Some(PathBuf::from(v));
+                tc.reg = Some(v.clone());
             }
             "--entry" if cho_registry => {
                 i += 1;
@@ -842,24 +882,110 @@ fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
                     return Err("thiếu giá trị sau `--entry`".to_string());
                 };
                 kiem_path(v)?;
-                entry = Some(v.clone());
+                tc.entry = Some(v.clone());
+            }
+            "--registry-key" if cho_registry => {
+                i += 1;
+                let Some(v) = args.get(i) else {
+                    return Err("thiếu giá trị sau `--registry-key`".to_string());
+                };
+                tc.khoa = Some(v.clone());
             }
             a if a.starts_with('-') => return Err(format!("cờ lạ `{a}`")),
             a => {
-                if ten.is_some() {
+                if tc.ten.is_some() {
                     return Err(format!("thừa đối số `{a}`"));
                 }
-                ten = Some(a.to_string());
+                tc.ten = Some(a.to_string());
             }
         }
         i += 1;
     }
-    Ok((ten, reg, entry))
+    Ok(tc)
 }
 
-fn thu_muc_registry(chon: Option<PathBuf>) -> PathBuf {
-    chon.or_else(|| std::env::var_os("VIS_REGISTRY").map(PathBuf::from))
-        .unwrap_or_else(|| PathBuf::from("registry"))
+/// **VS3-5a (VD-271)**: nguồn gói — thư mục cục bộ (mặc định, giữ nguyên ST-70) hoặc registry HTTP.
+enum Registry {
+    CucBo(PathBuf),
+    Http(String),
+}
+
+/// Chọn nguồn từ `--registry` / `VIS_REGISTRY`; `http://` ⇒ HTTP, `https://` ⇒ từ chối rõ (chưa
+/// TLS — VS3-4), còn lại là **đường dẫn thư mục** như trước.
+fn registry_tu_chon(chon: Option<String>) -> Result<Registry, String> {
+    let s = match chon {
+        Some(s) => s,
+        // Giữ nguyên đường dẫn cục bộ **không** phải UTF-8 (hành vi cũ dùng `var_os`).
+        None => match std::env::var_os("VIS_REGISTRY") {
+            Some(os) => match os.to_str() {
+                Some(s) => s.to_string(),
+                None => return Ok(Registry::CucBo(PathBuf::from(os))),
+            },
+            None => "registry".to_string(),
+        },
+    };
+    if s.starts_with("http://") {
+        let base = s.trim_end_matches('/');
+        if base.len() <= "http://".len() {
+            return Err(format!("registry `{s}` thiếu host"));
+        }
+        Ok(Registry::Http(base.to_string()))
+    } else if s.starts_with("https://") {
+        Err(format!(
+            "registry `{s}` chưa hỗ trợ `https://` cho `vis pkg` (TLS đã có ở `net` — VS3-4; lát VS3-5b giữ `http://` loopback) — dùng registry cục bộ hoặc `http://` loopback"
+        ))
+    } else if s.contains("://") {
+        Err(format!(
+            "registry `{s}` có giao thức lạ — chỉ hỗ trợ thư mục hoặc `http://host:port`"
+        ))
+    } else {
+        Ok(Registry::CucBo(PathBuf::from(s)))
+    }
+}
+
+/// **VS3-5b**: khoá công khai Ed25519 (32 byte) từ `--registry-key` / `VIS_REGISTRY_KEY`.
+///
+/// Cờ tường minh + registry cục bộ ⇒ lỗi (tránh hiểu nhầm là đã kiểm chữ ký); biến môi trường +
+/// registry cục bộ ⇒ bỏ qua. Không có khoá ⇒ `None` ⇒ registry HTTP **không** đòi chữ ký.
+fn khoa_cong_tu_chon(chon: Option<String>, reg: &Registry) -> Result<Option<[u8; 32]>, String> {
+    let (s, tu_co) = match chon {
+        Some(s) => (s, true),
+        None => match std::env::var("VIS_REGISTRY_KEY") {
+            Ok(s) => (s, false),
+            Err(_) => return Ok(None),
+        },
+    };
+    if matches!(reg, Registry::CucBo(_)) {
+        return if tu_co {
+            Err(
+                "`--registry-key` chỉ áp dụng cho registry HTTP (`--registry http://...`)"
+                    .to_string(),
+            )
+        } else {
+            Ok(None)
+        };
+    }
+    let b = vis_cli::pkg_sig::hex_giai(&s, 32).map_err(|e| {
+        format!("khoá công khai Ed25519 (`--registry-key`/`VIS_REGISTRY_KEY`): {e}")
+    })?;
+    let mut khoa = [0u8; 32];
+    khoa.copy_from_slice(&b);
+    Ok(Some(khoa))
+}
+
+/// Giải + đọc gói từ nguồn đã chọn. Cục bộ đọc thẳng thư mục; HTTP tải **index**, giải bằng cùng
+/// resolver, rồi chỉ tải tarball của phiên bản đã chọn (xem [`registry_http`]). `khoa_cong` chỉ có
+/// tác dụng với HTTP (**VS3-5b**).
+fn nap_goi(
+    reg: &Registry,
+    roots: &BTreeMap<String, VersionReq>,
+    entry_override: Option<(&str, &str)>,
+    khoa_cong: Option<&[u8; 32]>,
+) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
+    match reg {
+        Registry::CucBo(p) => giai_va_doc(p, roots, entry_override),
+        Registry::Http(base) => registry_http::tai_va_giai(base, roots, entry_override, khoa_cong),
+    }
 }
 
 fn cwd() -> Result<PathBuf, String> {
@@ -875,12 +1001,18 @@ fn cwd() -> Result<PathBuf, String> {
 /// từng gói (ràng buộc **hiệu lực** = AND của mọi ràng buộc trỏ tới nó). Không ghi `@` ⇒ root là
 /// `^<phiên bản đã chọn>` (giống "lấy bản mới nhất, ở lại major đó").
 fn lenh_add(args: &[String]) -> Result<(), String> {
-    let (ten, reg, entry_override) = tuy_chon(args, true)?;
+    let TuyChon {
+        ten,
+        reg,
+        entry: entry_override,
+        khoa,
+    } = tuy_chon(args, true)?;
     let Some(spec) = ten else {
         return Err(format!("thiếu tên gói — {}", dung()));
     };
     let (ten, req_nguoi_dung) = tach_ten(&spec)?;
-    let reg = thu_muc_registry(reg);
+    let reg = registry_tu_chon(reg)?;
+    let khoa_cong = khoa_cong_tu_chon(khoa, &reg)?;
     let cwd = cwd()?;
     // Đọc lock cũ **trước** khi ghi gì (lock hỏng ⇒ dừng, không nửa vời).
     let khoa_cu = doc_lock(&cwd.join("vis.lock"), false)?;
@@ -889,10 +1021,11 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
     let req_tam = req_nguoi_dung.clone().unwrap_or_else(req_moi_phien_ban);
     roots.insert(ten.clone(), req_tam);
     // Giải **trước** khi ghi bất cứ thứ gì: xung đột ⇒ không tạo `.vis/`, không sửa `vis.lock`.
-    let (giai, ds) = giai_va_doc(
+    let (giai, ds) = nap_goi(
         &reg,
         &roots,
         entry_override.as_deref().map(|e| (ten.as_str(), e)),
+        khoa_cong.as_ref(),
     )?;
     // Root **ghi vào lock**: `@req` ⇒ đúng req đó; không `@` ⇒ `^<phiên bản đã chọn>`.
     if req_nguoi_dung.is_none() {
@@ -918,11 +1051,11 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
 /// Lock định dạng mới nhưng **không** còn thoả ⇒ lỗi rõ, chỉ đường `vis pkg update` (install không
 /// có registry nên **không** tự giải lại).
 fn lenh_install(args: &[String]) -> Result<(), String> {
-    let (ten, reg, entry) = tuy_chon(args, false)?;
-    if ten.is_some() || entry.is_some() {
+    let tc = tuy_chon(args, false)?;
+    if tc.ten.is_some() || tc.entry.is_some() || tc.khoa.is_some() {
         return Err(format!("`install` không nhận đối số — {}", dung()));
     }
-    if reg.is_some() {
+    if tc.reg.is_some() {
         return Err("`install` không nhận `--registry`".to_string());
     }
     let cwd = cwd()?;
@@ -930,15 +1063,7 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
     let mut khoa = doc_lock(&lock_path, true)?;
     // Migration: lock định dạng cũ ⇒ sinh `version_req` = `=<version>` cho từng gói rồi ghi lại
     // **một lần**; lock định dạng 2 còn thoả ⇒ **không** chạm tệp (byte y hệt).
-    let can_ghi = khoa.can_migrate();
-    if can_ghi {
-        for g in &mut khoa.goi {
-            if g.version_req.is_none() {
-                g.version_req = Some(format!("={}", g.version));
-            }
-        }
-        khoa.phien_ban = LOCK_PHIEN_BAN;
-    }
+    let can_ghi = nang_cap_lock(&mut khoa);
     lock_con_thoa(&khoa)?;
     // Kiểm **toàn bộ** blob trước khi chạm `.vis/pkg` (lock hỏng/thiếu blob ⇒ cây giữ nguyên).
     struct GoiLai {
@@ -995,7 +1120,12 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
 /// gói được chọn lại theo ràng buộc, nội dung đổi ⇒ cài lại + cập nhật sha; ghi lại lock **định dạng
 /// mới**. Có `<tên>` ⇒ **ghim** các gói khác ở phiên bản đang có (chỉ giải lại nhánh liên quan).
 fn lenh_update(args: &[String]) -> Result<(), String> {
-    let (ten, reg, entry) = tuy_chon(args, true)?;
+    let TuyChon {
+        ten,
+        reg,
+        entry,
+        khoa,
+    } = tuy_chon(args, true)?;
     if entry.is_some() {
         return Err("`update` không nhận `--entry`".to_string());
     }
@@ -1007,7 +1137,8 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
             return Err(format!("chưa cài gói `{t}` — không có trong `vis.lock`"));
         }
     }
-    let reg = thu_muc_registry(reg);
+    let reg = registry_tu_chon(reg)?;
+    let khoa_cong = khoa_cong_tu_chon(khoa, &reg)?;
     let mut roots = roots_tu_lock(&khoa_cu)?;
     // Có `<tên>` ⇒ **ghim** mọi gói khác ở phiên bản đang có (update một gói không đụng gói khác).
     if let Some(t) = &ten {
@@ -1020,7 +1151,7 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
         }
     }
     // Giải **lại** toàn bộ (tất định) rồi so với lock cũ để biết gói nào đổi.
-    let (giai, ds) = giai_va_doc(&reg, &roots, None)?;
+    let (giai, ds) = nap_goi(&reg, &roots, None, khoa_cong.as_ref())?;
     let cu: BTreeMap<&str, &GoiKhoa> = khoa_cu.goi.iter().map(|g| (g.name.as_str(), g)).collect();
     let mut doi = khoa_cu.can_migrate() || khoa_cu.roots.is_empty();
     let mut can_cai: Vec<GoiCai> = Vec::new();
@@ -1073,8 +1204,8 @@ fn lenh_list(args: &[String]) -> Result<(), String> {
         .filter(|a| a.as_str() != "--json")
         .cloned()
         .collect();
-    let (ten, reg, entry) = tuy_chon(&args, false)?;
-    if ten.is_some() || reg.is_some() || entry.is_some() {
+    let tc = tuy_chon(&args, false)?;
+    if tc.ten.is_some() || tc.reg.is_some() || tc.entry.is_some() || tc.khoa.is_some() {
         return Err(format!("`list` không nhận đối số — {}", dung()));
     }
     let cwd = cwd()?;
@@ -1149,6 +1280,77 @@ fn lenh_remove(args: &[String]) -> Result<(), String> {
     let _ = std::fs::remove_dir_all(thu_muc.join(&goi.version));
     let _ = std::fs::remove_dir(thu_muc);
     ghi_lock(&khoa_path, &khoa)
+}
+
+/// `vis pkg gc [--dry-run]` — dọn blob `.vis/store` + thư mục phiên bản `.vis/pkg` **không còn**
+/// được `vis.lock` tham chiếu.
+///
+/// **VS3-5b (VD-271)**: idempotent; **không** xoá bản đang dùng; **không** chạm tệp không phải hex
+/// trong store; thiếu `vis.lock` ⇒ từ chối (không dọn mù). `--dry-run` chỉ in số sẽ xoá.
+fn lenh_gc(args: &[String]) -> Result<(), String> {
+    let mut dry = false;
+    for a in args {
+        match a.as_str() {
+            "--dry-run" => dry = true,
+            a if a.starts_with('-') => return Err(format!("cờ lạ `{a}` — {}", dung())),
+            a => return Err(format!("thừa đối số `{a}` — {}", dung())),
+        }
+    }
+    let cwd = cwd()?;
+    let lock_path = cwd.join("vis.lock");
+    if !lock_path.is_file() {
+        return Err("chưa có `vis.lock` — không dọn store để tránh xoá nhầm".to_string());
+    }
+    let khoa = doc_lock(&lock_path, true)?;
+    // Tên gói chứa `/` (mô hình đường dẫn tương lai) làm việc phân biệt tên gói/phiên bản không an
+    // toàn ⇒ từ chối, **không xoá gì**.
+    if khoa.goi.iter().any(|g| g.name.contains('/')) {
+        return Err("GC chưa hỗ trợ tên gói chứa `/` — không xoá gì".to_string());
+    }
+    let blobs: BTreeSet<String> = khoa
+        .goi
+        .iter()
+        .flat_map(|g| g.files.iter().map(|f| f.sha256.clone()))
+        .collect();
+    let goi: BTreeSet<(String, String)> = khoa
+        .goi
+        .iter()
+        .map(|g| (g.name.clone(), g.version.clone()))
+        .collect();
+    let (so_blob, so_goi) = gc::don(&cwd, &blobs, &goi, dry)?;
+    if dry {
+        println!("sẽ xoá {so_blob} blob, {so_goi} mục gói (không xoá gì)");
+    } else {
+        println!("đã xoá {so_blob} blob, {so_goi} mục gói");
+    }
+    Ok(())
+}
+
+/// `vis pkg migrate` — nâng `vis.lock` cũ lên định dạng hiện tại **một cách tường minh** (cùng logic
+/// `install`/`update`: ghim đúng phiên bản đang có, không nới ràng buộc).
+///
+/// **VS3-5b (VD-271)**: không mạng, không đụng `.vis/pkg`/store; lock đã hiện tại ⇒ **không ghi lại**
+/// (byte y hệt); thiếu lock ⇒ lỗi rõ.
+fn lenh_migrate(args: &[String]) -> Result<(), String> {
+    if !args.is_empty() {
+        return Err(format!("`migrate` không nhận đối số — {}", dung()));
+    }
+    let cwd = cwd()?;
+    let lock_path = cwd.join("vis.lock");
+    if !lock_path.is_file() {
+        return Err("chưa có `vis.lock` — không có gì để migrate".to_string());
+    }
+    let mut khoa = doc_lock(&lock_path, true)?;
+    let can_ghi = nang_cap_lock(&mut khoa);
+    // Kể cả lock đã mới: vẫn kiểm nhất quán trước khi báo “không đổi”.
+    lock_con_thoa(&khoa)?;
+    if !can_ghi {
+        println!("vis.lock đã ở định dạng {LOCK_PHIEN_BAN} — không đổi");
+        return Ok(());
+    }
+    ghi_lock(&lock_path, &khoa)?;
+    println!("đã nâng cấp vis.lock lên định dạng {LOCK_PHIEN_BAN}");
+    Ok(())
 }
 
 #[cfg(test)]

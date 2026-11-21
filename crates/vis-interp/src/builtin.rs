@@ -67,6 +67,16 @@ pub trait Ngoai {
 pub trait NetHost {
     /// Nối TCP tới `dia_chi` (`host:port`), chờ tối đa `timeout_ms`. Trả **handle mờ**.
     fn connect(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String>;
+    /// **VS3-4a (VD-271)**: nối **TLS** tới `dia_chi` (`host:port`), xác thực chứng chỉ theo kho
+    /// gốc của host, chờ tối đa `timeout_ms` cho cả TCP + handshake. Trả **handle mờ** dùng chung
+    /// `read`/`write`/`close` với [`connect`](Self::connect).
+    ///
+    /// Mặc định **từ chối** (host không có TLS) — lỗi dữ liệu rõ ràng, không panic; host nào hỗ trợ
+    /// thì cài đặt. `vis-cli` bật TLS mặc định trên nền không phải wasm32.
+    fn connect_tls(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
+        let _ = (dia_chi, timeout_ms);
+        Err("HTTPS không được hỗ trợ bởi host mạng này".to_string())
+    }
     /// **ST-65**: lắng nghe trên `dia_chi`. Trả **handle mờ**.
     fn listen(&mut self, dia_chi: &str) -> Result<String, String>;
     /// **ST-65**: địa chỉ local của tay.

@@ -2,8 +2,9 @@
 //! **VD-257 / stream B** — đo SỐ LỆNH VM (`RunOutput.steps`) trên workload đại diện.
 //!
 //! Chạy riêng: `cargo test -p vis-cli --test lat257_b_vm_steps -- --ignored --nocapture`.
-//! Mọi số là ĐỀ XUẤT / bằng chứng, **KHÔNG** bật budget làm mặc định, không đổi fuel trong code.
-//! Workload chạy finite (debug, vài giây); ghi rõ seed/duration trong report.
+//! Mọi số là ĐỀ XUẤT / bằng chứng; **VS3-1a** đã nâng fuel an toàn lên `fee::VM_SAFETY_FUEL`
+//! (100M) để chương trình còn trong ngân sách không bị fuel chặn trước. Workload vẫn finite
+//! (debug, vài giây); ghi rõ seed/duration trong report.
 
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
@@ -27,7 +28,8 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
 }
 
 /// Chạy một workload qua **VM thật**, đọc số lệnh đã thực thi (`steps`). Không bật budget;
-/// fuel an toàn (10^7) vẫn là hàng rào cuối — test ghi nhận nếu workload chạm trần đó.
+/// fuel an toàn (`fee::VM_SAFETY_FUEL`, VS3-1a) vẫn là hàng rào cuối — test ghi nhận nếu
+/// workload chạm trần đó.
 fn do_steps(tag: &str, src: &str) {
     let tag2 = tag.to_string();
     let src2 = src.to_string();

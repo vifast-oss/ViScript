@@ -36,6 +36,8 @@ vis test --shard 1/4 x.vis      # CI: chạy phần 1 của 4 (rời nhau, hợp
 vis explain VS0412               # giải thích mã lỗi
 vis explain --list --json        # toàn bộ sổ mã, máy đọc
 vis pkg add "vifast.org/vis/json@v1.2.3"   # gói + vis.lock (mô hình phi tập trung, VD-180)
+vis pkg gc --dry-run             # dọn blob/bản cũ không còn trong vis.lock (không đụng bản đang dùng)
+vis pkg migrate                  # lock định dạng cũ → 2 (ghim đúng bản đang có)
 ```
 
 **Mã thoát** (C1 của VD-178 — áp cho **mọi** chương trình):

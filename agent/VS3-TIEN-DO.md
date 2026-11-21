@@ -21,18 +21,18 @@
 
 | Lát | Chủ | Test chính | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| VS3-1a — budget/step-cap | W1 | `vs3_budget.rs` + diff | TODO | critical path |
-| VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | TODO | sau 1a |
+| VS3-1a — budget/step-cap | W1 | `vs3_budget.rs` + diff | **DONE (một phần)** — `3941619`; fuel 100M, parity 2M; BUDGET/Q/default còn mở |
+| VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage.rs` | TODO | ma trận đầy đủ |
 | VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | TODO | chỉ sau 1a–1c |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | TODO | song song 1b |
 | VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
 | VS3-3a — spike worker/heap | W1 | `vs3_spike.md` + bench | TODO | chỉ đo, không production |
 | VS3-3b — worker pool | W1 | `vs3_worker.rs` | TODO | sau spike + quyết định |
-| VS3-4a — TLS client | W2 | `vs3_tls.rs` | TODO | rustls review trước |
+| VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
 | VS3-4b — HTTP/2/keep-alive | W2 | `vs3_http2.rs` | TODO | sau 4a |
-| VS3-5a — registry HTTP + chữ ký | W2 | `vs3_registry.rs` | TODO | độc lập |
-| VS3-5b — GC store/lock | W2 | `vs3_pkg_gc.rs` | TODO | sau 5a |
+| VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
+| VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
 | VS3-6 — Windows Tier 1 + wasm | W3 | `test/host`, CI | TODO | sau P0/P1 |
 | VS3-7 — LSP tệp phụ/incremental | W3 | `lsp_da_tep` mở rộng | TODO | P2 |
 | VS3-8 — Plugin/ViTerm | W3 | `vs3_plugin.rs` | TODO | P3 |
@@ -41,9 +41,9 @@
 
 | Luồng | Worktree / branch | Phạm vi | Trạng thái |
 |---|---|---|---|
-| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a budget/step-cap | **WIP** |
-| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS client | **WIP** |
-| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a registry HTTP | **WIP** |
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a + 1b | **DONE (một phần)** — merge `71dc8a4` + `97676c6`; còn BUDGET/Q/default, channel wait-set |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS | **DONE** — merge `9ceec53`; HTTP/2/keep-alive/IPv6 đang làm |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a + 5b | **DONE** — merge `756bb1d` + `cea1643`; chữ ký/GC xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
 | **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **WIP** |
 
@@ -65,11 +65,11 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 
 | Mốc | Giờ (JST) | Việc | Kết quả |
 |---|---|---|---|
-| M1 | T7 19:00 | merge wave 1 + `gate --fast` | gate xanh |
-| M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | gate xanh |
+| M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
+| M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
 | M3 | CN 14:00 | merge wave 3 + gate + diff 100k | 0 lệch |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
-| M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag rc1 nếu xanh |
+| M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | tag `v0.1.0-rc2` nếu xanh (rc1 có Windows đỏ) |
 
 ## 4. Quy tắc cập nhật
 

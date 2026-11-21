@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-63/ST-65 (VD-100/VD-105)** — `NetHost` của CLI: **TCP thật**, chỉ **loopback** trong vòng 11.
+//! **ST-63/ST-65 (VD-100/VD-105)** — `NetHost` của CLI: **TCP thật**; `http://` chỉ **loopback**,
+//! `https://` (VS3-4a) đi TLS tới host bất kỳ (vẫn qua `cap[Net]`).
 //!
 //! Handle là chuỗi **mờ**: `"C<n>"` cho kết nối, `"L<n>"` cho listener — chương trình ngôn ngữ không
 //! thấy địa chỉ/socket. Coi **cả** `WouldBlock` (macOS trả os error 35 cho `set_read_timeout`) **và**
 //! `TimedOut` là **hết giờ**. `accept` timeout 0 ⇒ **chặn**; ngược lại poll non-blocking tới hạn.
+//!
+//! **VS3-4a (VD-271)**: kênh `C<n>` có thể là TCP trần hoặc **TLS** (rustls + webpki-roots); TLS chỉ
+//! bật khi feature `tls` (mặc định trên nền không phải wasm32). `connect_tls` làm luôn TCP +
+//! handshake trong **một** hạn; lỗi chứng chỉ/alert trả `Err` có tiền tố `TLS`, không panic.
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
@@ -11,14 +16,82 @@ use std::time::{Duration, Instant};
 
 use vis_interp::builtin::NetHost;
 
+#[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+mod tls;
+
+/// Kênh đã nối: TCP trần, hoặc TLS (chỉ khi bật feature `tls` trên nền không phải wasm32).
+enum Kenh {
+    Tho(TcpStream),
+    #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+    Tls(Box<tls::KenhTls>),
+}
+
+impl Read for Kenh {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Kenh::Tho(s) => s.read(buf),
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(s) => s.read(buf),
+        }
+    }
+}
+
+impl Write for Kenh {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            Kenh::Tho(s) => s.write(buf),
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(s) => s.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            Kenh::Tho(s) => s.flush(),
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(s) => s.flush(),
+        }
+    }
+}
+
+impl Kenh {
+    fn la_tls(&self) -> bool {
+        match self {
+            Kenh::Tho(_) => false,
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(_) => true,
+        }
+    }
+
+    fn set_read_timeout(&self, d: Option<Duration>) -> std::io::Result<()> {
+        match self {
+            Kenh::Tho(s) => s.set_read_timeout(d),
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(s) => s.sock.set_read_timeout(d),
+        }
+    }
+
+    fn local_addr(&self) -> std::io::Result<SocketAddr> {
+        match self {
+            Kenh::Tho(s) => s.local_addr(),
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            Kenh::Tls(s) => s.sock.local_addr(),
+        }
+    }
+}
+
 /// Host mạng của CLI. `--explain-perms` ⇒ in `NET …` ra **stderr** (không trộn stdout).
 pub struct Net {
     giai_thich: bool,
-    tay: Vec<(String, TcpStream)>,
+    tay: Vec<(String, Kenh)>,
     tiep: u32,
     /// **ST-65**: listener đang mở — handle `"L<n>"` (tách khỏi `"C<n>"` của kết nối).
     nghe: Vec<(String, TcpListener)>,
     tiep_nghe: u32,
+    /// **VS3-4a**: cấu hình TLS dựng **một lần** cho cả tiến trình; `Err` được giữ lại để mọi lần
+    /// gọi HTTPS sau đó báo cùng lý do (không panic, không thử lại vô ích).
+    #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+    cau_hinh_tls: Option<Result<tls::CauHinh, String>>,
 }
 
 impl Net {
@@ -29,7 +102,20 @@ impl Net {
             tiep: 0,
             nghe: Vec::new(),
             tiep_nghe: 0,
+            #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+            cau_hinh_tls: None,
         }
+    }
+
+    /// **VS3-4a — chỉ test/embedding**: dựng `Net` tin đúng các chứng chỉ DER cho trước thay vì
+    /// bundle Mozilla. Binary `vis` **không** gọi hàm này và không có cờ/biến môi trường nào đổi
+    /// root store; nhờ vậy test local TLS chạy offline mà không mở backdoor cho người dùng.
+    #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+    pub fn moi_voi_goc_tls(giai_thich: bool, goc_der: &[&[u8]]) -> Result<Self, String> {
+        let cau_hinh = tls::tu_goc_der(goc_der)?;
+        let mut net = Self::moi(giai_thich);
+        net.cau_hinh_tls = Some(Ok(cau_hinh));
+        Ok(net)
     }
 
     fn nhat_ky(&self, thao_tac: &str, p: &str) {
@@ -38,7 +124,7 @@ impl Net {
         }
     }
 
-    fn tim(&mut self, tay: &str) -> Result<&mut TcpStream, String> {
+    fn tim(&mut self, tay: &str) -> Result<&mut Kenh, String> {
         self.tay
             .iter_mut()
             .find(|(t, _)| t == tay)
@@ -46,11 +132,15 @@ impl Net {
             .ok_or_else(|| format!("tay mạng `{tay}` không tồn tại (chưa nối hoặc đã `close`)"))
     }
 
-    fn giu(&mut self, s: TcpStream) -> String {
+    fn giu_k(&mut self, s: Kenh) -> String {
         self.tiep += 1;
         let tay = format!("C{}", self.tiep);
         self.tay.push((tay.clone(), s));
         tay
+    }
+
+    fn giu(&mut self, s: TcpStream) -> String {
+        self.giu_k(Kenh::Tho(s))
     }
 }
 
@@ -134,6 +224,27 @@ impl NetHost for Net {
         Ok(self.giu(s))
     }
 
+    /// **VS3-4a (VD-271)**: TLS chỉ tồn tại khi bật feature `tls` và không phải wasm32; nếu không,
+    /// trả lỗi dữ liệu rõ ràng thay vì "không nối được" mơ hồ.
+    #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+    fn connect_tls(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
+        self.nhat_ky("connect_tls", dia_chi);
+        let con = timeout_ms.max(1);
+        let cau_hinh = match self.cau_hinh_tls.get_or_insert_with(tls::mac_dinh) {
+            Ok(c) => c.clone(),
+            Err(e) => return Err(e.clone()),
+        };
+        let k = tls::noi(&cau_hinh, dia_chi, con)?;
+        Ok(self.giu_k(Kenh::Tls(Box::new(k))))
+    }
+
+    #[cfg(not(all(feature = "tls", not(target_arch = "wasm32"))))]
+    fn connect_tls(&mut self, dia_chi: &str, _timeout_ms: u64) -> Result<String, String> {
+        Err(format!(
+            "`https://` cần TLS: feature `tls` của `vis-cli` phải bật và nền không phải wasm32 (đang gọi `{dia_chi}`)"
+        ))
+    }
+
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
         let addr = chi_loopback(dia_chi)?;
         self.nhat_ky("listen", dia_chi);
@@ -201,15 +312,21 @@ impl NetHost for Net {
             Err(e) if la_het_gio(&e) => Err(format!(
                 "quá thời gian chờ dữ liệu từ `{tay}` sau {timeout_ms} ms"
             )),
+            Err(e) if s.la_tls() => Err(format!("lỗi TLS khi đọc từ `{tay}`: {e}")),
             Err(e) => Err(format!("lỗi đọc từ `{tay}`: {e}")),
         }
     }
 
     fn write(&mut self, tay: &str, du_lieu: &[u8]) -> Result<(), String> {
         let s = self.tim(tay)?;
-        s.write_all(du_lieu)
-            .and_then(|()| s.flush())
-            .map_err(|e| format!("lỗi ghi tới `{tay}`: {e}"))
+        let la_tls = s.la_tls();
+        s.write_all(du_lieu).and_then(|()| s.flush()).map_err(|e| {
+            if la_tls {
+                format!("lỗi TLS khi ghi tới `{tay}`: {e}")
+            } else {
+                format!("lỗi ghi tới `{tay}`: {e}")
+            }
+        })
     }
 
     fn close(&mut self, tay: &str) -> Result<(), String> {

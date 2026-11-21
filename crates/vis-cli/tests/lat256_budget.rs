@@ -169,7 +169,25 @@ fn budget_va_safety_fuel_co_chan_doan_rieng() {
     assert_ne!(BUDGET.short, SAFETY_FUEL_CODE.short);
     assert_ne!(BUDGET.short, "VS0501");
     assert_ne!(BUDGET.short, "VS0506");
-    assert_eq!(vis_vm::vm::SAFETY_FUEL, 10_000_000, "D9: không tăng ngưỡng");
+    // **VS3-1a**: fuel không còn là 10^7 cứng; nó là một nguồn dùng chung và **phải** lớn hơn
+    // trần ngân sách định cỡ × tỷ lệ bước/lệnh trần (nếu không fuel chặn trước ngân sách).
+    assert_eq!(
+        vis_vm::vm::SAFETY_FUEL as u64,
+        vis_bytecode::fee::VM_SAFETY_FUEL
+    );
+    assert_eq!(
+        vis_interp::rt::fee::VM_SAFETY_FUEL,
+        vis_bytecode::fee::VM_SAFETY_FUEL,
+        "interp và compiler/VM phải thấy cùng một hằng số"
+    );
+    const {
+        assert!(
+            vis_bytecode::fee::VM_SAFETY_FUEL
+                >= vis_bytecode::fee::BUDGET_SIZING_CEILING
+                    * vis_bytecode::fee::VM_STEPS_PER_COST_CEILING,
+            "bất biến VS3-1a: fuel ≥ trần ngân sách định cỡ × tỷ lệ bước/lệnh trần"
+        );
+    }
     assert_eq!(vis_vm::vm::MAX_STEPS, vis_vm::vm::SAFETY_FUEL);
 }
 

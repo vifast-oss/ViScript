@@ -12,7 +12,6 @@ mod fsmock;
 mod json_esc;
 mod lsp;
 mod modules;
-mod net;
 mod ngoai;
 mod pkg;
 mod quyen;
@@ -26,8 +25,9 @@ use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
 use vis_syntax::Mode;
 
 use cli::run::{doc_stdin, in_sandbox_check, in_thoi_gian, ma_thoat_khi_loi, run_dry, usage_run};
-/// **ST-63 (VD-105)**: host mạng của CLI (TCP thật, chỉ loopback) — tên cục bộ cho rõ điểm nối.
-use net::Net as HostNet;
+/// **ST-63 (VD-105)**: host mạng của CLI (TCP thật; `http://` chỉ loopback, `https://` có TLS).
+/// **VS3-4a**: `Net` nằm trong lib (`vis_cli::net`) để test TLS gọi thẳng.
+use vis_cli::net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(

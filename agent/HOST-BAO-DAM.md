@@ -111,9 +111,12 @@ tệp mà **mọi** dòng thụt lề ⇒ chương trình **không in gì**, exi
 (không đỏ) và `vis fmt --indent-report` **đếm** dòng lệch chuẩn `4 × độ sâu khối` (ước lượng theo dòng
 khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 dòng** trong `test/` lệch (không sửa).
 
-## HTTP client (ST-104, ST-109) — bảo đảm và giới hạn
+## HTTP client (ST-104, ST-109, VS3-4a) — bảo đảm và giới hạn
 
-- **Chỉ** `http://`, **chỉ loopback** (`127.0.0.1`/`localhost`); **không** TLS, **không** HTTP/2.
+- `http://` **chỉ loopback** (`127.0.0.1`/`localhost`); `https://` (VS3-4a) cho host bất kỳ, xác
+  thực chứng chỉ theo bundle gốc Mozilla (`webpki-roots`), vẫn qua `cap[Net]`. **Không** HTTP/2.
+- **TLS**: `rustls` + `ring`; lỗi chứng chỉ/handshake là `Err` dữ liệu có chữ `TLS`, không panic;
+  handshake nằm trong **cùng deadline** với connect/redirect/đọc. Không cho hạ cấp `HTTPS → HTTP`.
 - **Chunked**: ghép chunk (bỏ `;ext`), dừng ở chunk `0`; **chunk trailer bị bỏ qua**.
 - **Redirect**: **chỉ GET**, tối đa **5** lần; theo `Location` tuyệt đối/tương đối, có `.`/`..`; query-only
   giữ path; fragment bị bỏ. `HEAD` **không** theo redirect (trả mã gốc + `Location`).
