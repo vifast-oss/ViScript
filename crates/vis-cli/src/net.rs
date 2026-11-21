@@ -21,6 +21,8 @@ use std::time::{Duration, Instant};
 use vis_interp::builtin::NetHost;
 use vis_interp::cookie::CookieJar;
 
+#[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+mod h2;
 #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
 mod tls;
 
@@ -119,6 +121,12 @@ pub struct Net {
     /// gọi HTTPS sau đó báo cùng lý do (không panic, không thử lại vô ích).
     #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
     cau_hinh_tls: Option<Result<tls::CauHinh, String>>,
+    /// **VS3-4b2**: đã biết authority có h2? `false` = server không chọn ALPN h2, khỏi thử lại.
+    #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+    h2_biet: std::collections::HashMap<String, bool>,
+    /// Kết nối TLS đã handshake khi thử h2 nhưng server chọn HTTP/1.1; tầng HTTP/1.1 dùng lại.
+    #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+    h2_http1: Option<(String, tls::KenhTls)>,
 }
 
 impl Net {
@@ -133,6 +141,10 @@ impl Net {
             cookie: CookieJar::new(),
             #[cfg(all(feature = "tls", not(target_arch = "wasm32")))]
             cau_hinh_tls: None,
+            #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+            h2_biet: std::collections::HashMap::new(),
+            #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+            h2_http1: None,
         }
     }
 
@@ -353,6 +365,16 @@ impl NetHost for Net {
         timeout_ms: u64,
     ) -> Result<(String, bool), String> {
         let khoa = khoa_http(tls, dia_chi);
+        // **VS3-4b2**: nếu vừa thử ALPN h2 mà server chọn HTTP/1.1, dùng lại đúng kết nối TLS đó.
+        #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+        {
+            let dung = self.h2_http1.as_ref().is_some_and(|(k, _)| k == &khoa);
+            if dung {
+                let (_, kenh) = self.h2_http1.take().expect("đã kiểm Some");
+                return Ok((self.giu_k(Kenh::Tls(Box::new(kenh)), khoa), false));
+            }
+            self.h2_http1 = None;
+        }
         if cho_phep_pool {
             self.don_ho();
             if let Some(i) = self.ho.iter().rposition(|(k, _, _)| k == &khoa) {
@@ -384,6 +406,39 @@ impl NetHost for Net {
 
     fn cookie_jar(&mut self) -> Option<&mut CookieJar> {
         Some(&mut self.cookie)
+    }
+
+    /// **VS3-4b2**: thử ALPN h2; nếu server chọn h1, giữ kết nối TLS cho `connect_http` dùng lại.
+    #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
+    fn http2_get(
+        &mut self,
+        dia_chi: &str,
+        target: &str,
+        method: &str,
+        headers: &[(String, String)],
+        timeout_ms: u64,
+    ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+        let khoa = khoa_http(true, dia_chi);
+        if self.h2_biet.get(&khoa) == Some(&false) {
+            return Ok(None);
+        }
+        let cau_hinh = match self.cau_hinh_tls.get_or_insert_with(tls::mac_dinh) {
+            Ok(c) => c.clone(),
+            Err(e) => return Err(e.clone()),
+        };
+        let cau_hinh = tls::cau_hinh_h2(&cau_hinh);
+        match h2::request(&cau_hinh, dia_chi, target, method, headers, timeout_ms)? {
+            h2::KqH2::Xong(kq) => {
+                self.h2_biet.insert(khoa, true);
+                self.h2_http1 = None;
+                Ok(Some(kq))
+            }
+            h2::KqH2::Http1(k) => {
+                self.h2_biet.insert(khoa.clone(), false);
+                self.h2_http1 = Some((khoa, *k));
+                Ok(None)
+            }
+        }
     }
 
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {

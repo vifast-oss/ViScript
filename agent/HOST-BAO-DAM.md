@@ -114,7 +114,11 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 ## HTTP client (ST-104, ST-109, VS3-4a) — bảo đảm và giới hạn
 
 - `http://` **chỉ loopback** (`localhost`/`127.0.0.0/8`/`::1`); `https://` (VS3-4a) cho host bất kỳ, xác
-  thực chứng chỉ theo bundle gốc Mozilla (`webpki-roots`), vẫn qua `cap[Net]`. **Không** HTTP/2.
+  thực chứng chỉ theo bundle gốc Mozilla (`webpki-roots`), vẫn qua `cap[Net]`. Mặc định HTTP/1.1;
+  HTTP/2 chỉ khi bật feature `http2` (xem dưới).
+- **HTTP/2 (VS3-4b2, feature `http2` default-off)**: TLS + ALPN `h2`; server không chọn h2 ⇒
+  fallback HTTP/1.1 **trên cùng kết nối**. Một request/kết nối (không multiplex/push/pool h2),
+  body cap 8 MiB, timeout chung; `cap[Net]` vẫn kiểm trước khi mở TLS.
 - **Phân giải loopback**: `localhost` thử **mọi** địa chỉ phân giải (ưu tiên IPv4, luôn có fallback
   `127.0.0.1`) trong cùng deadline; chỉ địa chỉ `is_loopback()` được nối. `[::1]`/`127.0.0.x` được
   phép; host ngoài loopback bị từ chối trước khi nối.
