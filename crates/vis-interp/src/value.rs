@@ -600,10 +600,28 @@ impl Value {
                     && a.iter()
                         .all(|(k, v)| b.iter().any(|(k2, v2)| k.eq_value(k2) && v.eq_value(v2)))
             }
-            (Value::Record(_, a), Value::Record(_, b)) => {
-                a.len() == b.len()
+            (Value::Record(ta, a), Value::Record(tb, b)) => {
+                if a.len() != b.len() {
+                    return false;
+                }
+                // **VD-270**: bản ghi **cùng tên kiểu khác rỗng** được dựng từ cùng một khai
+                // báo nên có cùng thứ tự trường; so **theo vị trí** là O(n) thay vì quét
+                // chéo O(n²). Vẫn kiểm tên từng trường (và cả tên kiểu) để chỉ dùng đường
+                // nhanh khi hai vế thật sự cùng hình dạng. Mọi trường hợp lệch — tên kiểu
+                // rỗng/khác nhau, thứ tự trường khác (literal ghi không theo thứ tự khai),
+                // hay một giá trị khác — đều **rơi về** phép so đa tập cũ, nên ngữ nghĩa
+                // không đổi kể cả với bản ghi có tên trường trùng (đường dựng lạ).
+                if !ta.is_empty()
+                    && ta == tb
                     && a.iter()
+                        .zip(b)
+                        .all(|((n1, v1), (n2, v2))| n1 == n2 && v1.eq_value(v2))
+                {
+                    true
+                } else {
+                    a.iter()
                         .all(|(n, v)| b.iter().any(|(n2, v2)| n == n2 && v.eq_value(v2)))
+                }
             }
             (Value::Enum(ea, va, aa), Value::Enum(eb, vb, ab)) => {
                 // **VD-204 (1)**: so khớp **cả tên enum** — `Option.Some(5)` ≠ `Foo.Some(5)`
@@ -1168,6 +1186,134 @@ mod tests_show_char {
         assert_eq!(show_char('\t'), "'\\t'");
         assert_eq!(show_char('\''), "'\\''");
         assert_eq!(show_char('a'), "'a'");
+    }
+}
+
+#[cfg(test)]
+mod tests_eq_record {
+    use super::Value;
+
+    /// Bản ghi `ten` có `n` trường `f0000…`, giá trị `Int(i)`; `dao` đảo thứ tự trường,
+    /// `sua` thay giá trị tại một vị trí (dùng để tạo cặp khác nhau).
+    fn ban_ghi(ten: &str, n: usize, dao: bool, sua: Option<(usize, i64)>) -> Value {
+        let mut fs = Vec::with_capacity(n);
+        for i in 0..n {
+            let j = if dao { n - 1 - i } else { i };
+            let v = match sua {
+                Some((k, x)) if k == j => x,
+                _ => j as i64,
+            };
+            fs.push((format!("f{j:04}"), Value::Int(v)));
+        }
+        Value::Record(ten.to_string(), fs)
+    }
+
+    /// **VD-270**: cùng tên kiểu khác rỗng ⇒ đường nhanh so theo vị trí, đúng ở 100 lẫn
+    /// 1000 trường.
+    #[test]
+    fn cung_ten_kieu_khop_theo_vi_tri() {
+        for n in [100, 1000] {
+            let a = ban_ghi("Lon", n, false, None);
+            let b = ban_ghi("Lon", n, false, None);
+            assert!(a.eq_value(&b), "{n} trường cùng thứ tự phải bằng nhau");
+        }
+    }
+
+    /// Cùng tên kiểu, cùng độ dài, một trường khác ⇒ `false` (không được "khớp nhầm" sang
+    /// trường khác).
+    #[test]
+    fn cung_ten_kieu_khac_gia_tri() {
+        for n in [100, 1000] {
+            let a = ban_ghi("Lon", n, false, None);
+            let b = ban_ghi("Lon", n, false, Some((n / 2, -1)));
+            assert!(!a.eq_value(&b), "{n} trường, lệch giữa phải khác");
+            let c = ban_ghi("Lon", n, false, Some((n - 1, -1)));
+            assert!(!a.eq_value(&c), "{n} trường, lệch cuối phải khác");
+        }
+    }
+
+    /// Cùng tên kiểu nhưng **khác thứ tự trường** ⇒ vẫn `true` qua fallback đa tập (đường
+    /// dựng thật luôn theo thứ tự khai, nhưng giá trị `Value` có thể được dựng trực tiếp).
+    #[test]
+    fn cung_ten_kieu_khac_thu_tu_van_bang() {
+        for n in [100, 1000] {
+            let a = ban_ghi("Lon", n, false, None);
+            let b = ban_ghi("Lon", n, true, None);
+            assert!(a.eq_value(&b), "{n} trường đảo thứ tự vẫn phải bằng");
+            assert!(b.eq_value(&a));
+        }
+    }
+
+    /// Bản ghi **ẩn danh** (tên kiểu rỗng) giữ nguyên ngữ nghĩa đa tập, kể cả khi đảo thứ tự.
+    #[test]
+    fn ten_rong_khac_thu_tu_van_bang() {
+        let a = Value::Record(
+            String::new(),
+            vec![
+                ("b".to_string(), Value::Int(1)),
+                ("a".to_string(), Value::Int(2)),
+            ],
+        );
+        let b = Value::Record(
+            String::new(),
+            vec![
+                ("a".to_string(), Value::Int(2)),
+                ("b".to_string(), Value::Int(1)),
+            ],
+        );
+        assert!(a.eq_value(&b));
+        assert!(b.eq_value(&a));
+
+        let lon_a = ban_ghi("", 1000, false, None);
+        let lon_b = ban_ghi("", 1000, true, None);
+        assert!(lon_a.eq_value(&lon_b));
+    }
+
+    /// Tên kiểu khác nhau (đều khác rỗng) **không** được lọc sớm: hành vi cũ bỏ qua tên kiểu
+    /// khi so trường, nên hai bản ghi cùng ruột vẫn bằng — test khoá lại để không đổi ngữ nghĩa.
+    #[test]
+    fn khac_ten_kieu_cung_ruot_van_bang() {
+        let a = ban_ghi("A", 100, false, None);
+        let b = ban_ghi("B", 100, false, None);
+        assert!(a.eq_value(&b));
+    }
+
+    /// **Đường dựng động** `let f = U; f(a: 1, a: 2, b: 3)` (kiểm bằng CLI) cho phép trùng
+    /// tên trường, nên đường nhanh **phải fallback khi lệch**, không được trả `false` ngay:
+    /// hai bản ghi trùng tên trường đảo giá trị vẫn bằng theo ngữ nghĩa đa tập cũ.
+    #[test]
+    fn trung_ten_truong_dong_van_theo_da_tap() {
+        let a = Value::Record(
+            "U".to_string(),
+            vec![
+                ("a".to_string(), Value::Int(1)),
+                ("a".to_string(), Value::Int(2)),
+                ("b".to_string(), Value::Int(3)),
+            ],
+        );
+        let b = Value::Record(
+            "U".to_string(),
+            vec![
+                ("a".to_string(), Value::Int(2)),
+                ("a".to_string(), Value::Int(1)),
+                ("b".to_string(), Value::Int(3)),
+            ],
+        );
+        assert!(a.eq_value(&b));
+        assert!(b.eq_value(&a));
+    }
+
+    /// Khác độ dài ⇒ `false`; bản ghi rỗng cùng tên kiểu ⇒ `true`.
+    #[test]
+    fn khac_do_dai_va_rong() {
+        let a = ban_ghi("Lon", 100, false, None);
+        let b = ban_ghi("Lon", 99, false, None);
+        assert!(!a.eq_value(&b));
+        assert!(!b.eq_value(&a));
+
+        let r1 = ban_ghi("Lon", 0, false, None);
+        let r2 = ban_ghi("Lon", 0, false, None);
+        assert!(r1.eq_value(&r2));
     }
 }
 
