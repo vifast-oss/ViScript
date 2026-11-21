@@ -721,7 +721,9 @@ impl Scheduler {
                 self.frame.token_map.remove(&r.token);
                 let gen = r.gen + 1;
                 let token = self.mint_token();
-                if let Err(e) = b.borrow_mut().register(token, handle, op) {
+                // Giữ kết quả trước khi `frame_real_done` (tránh RefMut sống qua `if let`).
+                let reg = b.borrow_mut().register(token, handle, op);
+                if let Err(e) = reg {
                     self.frame_real_done(handle, op);
                     return Ok(err_str(format!(
                         "lỗi đăng ký readiness cho `{handle}`: {e}"
