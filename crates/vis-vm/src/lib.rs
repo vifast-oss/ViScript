@@ -11,13 +11,15 @@
 //!
 //! Ngăn xếp là `Vec<Value>` **động** — **không** tin `max_stack` trong module (VD-54 (2)); mọi
 //! `pop` rỗng ⇒ [`VmError`] ⇒ `VS0501` "bytecode hỏng", **không** panic. Cap khung gọi
-//! [`MAX_FRAMES`] = 2.000 (VD-49) và cap bước [`MAX_STEPS`] = 10^7, **cùng mã/cùng thông điệp**
-//! với interp.
+//! [`MAX_FRAMES`] = 2.000 (VD-49) và fuel an toàn [`MAX_STEPS`] = `fee::VM_SAFETY_FUEL` (100M,
+//! VS3-1a) — fuel là hàng rào bytecode, lớn hơn trần ngân sách định cỡ nên không chặn chương
+//! trình còn trong ngân sách trước `VS0501-BUDGET`.
 //!
 //! # `steps` khác đơn vị
 //!
 //! `steps` của VM đếm **lệnh đã thực thi**, của interp đếm **bước ngữ nghĩa** ⇒ test differential
-//! **không** so `steps` (chỉ `stdout`, `exit`, `(mã, dòng, cột)` của chẩn đoán).
+//! **không** so `steps` (chỉ `stdout`, `exit`, `(mã, dòng, cột)` của chẩn đoán). Hợp đồng VS3-1a
+//! ràng buộc **quan hệ** giữa hai đại lượng qua `fee::VM_STEPS_PER_COST_CEILING`, không đòi bằng nhau.
 //!
 //! # Builtin làm giá trị — `$value:<tên>` (VD-208 (2), VD-218)
 //!

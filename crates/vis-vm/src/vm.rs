@@ -101,9 +101,11 @@ pub fn run_with_full_hosts_caps<'a>(
 
 /// Cap số khung gọi lồng nhau (VD-49).
 pub const MAX_FRAMES: usize = 2_000;
-/// **VD-256 D8/D9** — fuel an toàn **chỉ của VM**: không phải ngân sách ngữ nghĩa, không che
-/// verifier (chạy trước ở [`Vm::run`]); ngưỡng giữ 10^7, chẩn đoán riêng [`SAFETY_FUEL_CODE`].
-pub const SAFETY_FUEL: usize = 10_000_000;
+/// **VD-256 D8/D9**, **VS3-1a** — fuel an toàn **chỉ của VM**: không phải ngân sách ngữ nghĩa,
+/// không che verifier (chạy trước ở [`Vm::run`]). Một nguồn với interp/compiler:
+/// [`vis_bytecode::fee::VM_SAFETY_FUEL`] (100M) — phải lớn hơn trần ngân sách định cỡ × tỷ lệ
+/// bước/lệnh trần, nếu không fuel sẽ chặn chương trình hợp lệ trước ngân sách (VS3-1a).
+pub const SAFETY_FUEL: usize = vis_bytecode::fee::VM_SAFETY_FUEL as usize;
 pub const MAX_STEPS: usize = SAFETY_FUEL;
 
 pub use crate::vm_frame::{VmError, SAFETY_FUEL_CODE};
@@ -169,6 +171,9 @@ pub struct Vm<'a> {
     pub(crate) budget_remaining: i64,
     pub(crate) budget_trace: Vec<FeeEntry>,
     pub(crate) budget_hit: bool,
+    /// **VS3-1a** — test-hook đo: vẫn trừ/kiểm ngân sách nhưng **không** lưu từng sự kiện
+    /// (workload lớn như vòng 2M không làm trace phình lên hàng chục triệu entry).
+    pub(crate) budget_measure: bool,
     // VD-257/D — hạn ngạch lượt THỬ NGHIỆM (test-hook), RIÊNG khỏi budget tổng.
     // `quota_active = false` (mặc định) ⇒ mọi thao tác quota là no-op.
     pub(crate) quota_active: bool,
@@ -203,6 +208,7 @@ impl<'a> Vm<'a> {
             budget_remaining: 0,
             budget_trace: Vec::new(),
             budget_hit: false,
+            budget_measure: false,
             quota_active: false,
             quota_limit: 0,
             quota_remaining: 0,
@@ -781,10 +787,14 @@ impl<'m> Th<'m> {
             self.frames.last_mut().expect("khung").pc += 1;
             vm.steps += 1;
             if vm.steps > SAFETY_FUEL {
-                // VD-256 D8: fuel AN TOÀN VM, chẩn đoán RIÊNG; parity step-cap vẫn MỞ (D9).
+                // VD-256 D8 / VS3-1a: fuel AN TOÀN VM, chẩn đoán RIÊNG. Ngưỡng lấy từ hợp đồng
+                // dùng chung (`fee::VM_SAFETY_FUEL`), lớn hơn trần ngân sách định cỡ ⇒ chương
+                // trình còn trong ngân sách không bị fuel chặn trước.
                 return Err(Abort::Trap(Trap::new(
                     SAFETY_FUEL_CODE,
-                    "VM safety fuel cạn (>10^7 lệnh) — hàng rào an toàn bytecode, không phải ngân sách ngữ nghĩa",
+                    format!(
+                        "VM safety fuel cạn (>{SAFETY_FUEL} lệnh) — hàng rào an toàn bytecode, không phải ngân sách ngữ nghĩa"
+                    ),
                     span,
                 )));
             }
