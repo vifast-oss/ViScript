@@ -9,6 +9,24 @@ use vis_syntax::Span;
 use crate::interp::{Abort, Interp, Trap, R, RT};
 use crate::value::Value;
 
+/// **VS3-3b** — buffer `print` của **một task** (worker pool opt-in). Task chỉ ghi vào buffer
+/// riêng; worker pool merge theo **thứ tự spawn** để W=1/W>1 byte-identical (VD-271 B3).
+#[doc(hidden)]
+#[derive(Debug, Default)]
+pub(crate) struct TaskOutput {
+    buf: String,
+}
+
+impl TaskOutput {
+    pub(crate) fn push_str(&mut self, s: &str) {
+        self.buf.push_str(s);
+    }
+
+    pub(crate) fn into_string(self) -> String {
+        self.buf
+    }
+}
+
 impl crate::builtin::Host for Interp<'_> {
     fn out(&mut self) -> &mut String {
         &mut self.out
