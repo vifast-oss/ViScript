@@ -102,6 +102,15 @@ fn dung(tag: &str, src: &str, stdout: &str) {
     assert_eq!(out, stdout, "{tag}: stdout sai");
 }
 
+/// Kỳ vọng theo **nền**: `posix` cho Unix, `windows` cho Windows (`Path::is_relative` của host).
+fn ky_vong(posix: &'static str, windows: &'static str) -> &'static str {
+    if cfg!(windows) {
+        windows
+    } else {
+        posix
+    }
+}
+
 /// Lỗi **tĩnh**: `vis check` đỏ (exit 1, mã trong TAP) và **cả hai** engine từ chối (exit 2).
 fn tu_choi(tag: &str, src: &str, ma: &str) {
     let (d, p) = ghi_tep(tag, src);
@@ -176,7 +185,10 @@ fn main():
     print(path.is_relative("///a"))
     print(path.is_relative("//server/share"))
 "#,
-        "false\nfalse\nfalse\nfalse\nfalse\nfalse\n",
+        ky_vong(
+            "false\nfalse\nfalse\nfalse\nfalse\nfalse\n",
+            "true\ntrue\ntrue\nfalse\nfalse\nfalse\n",
+        ),
     );
 }
 
@@ -242,7 +254,10 @@ fn main():
     print(path.is_relative("/\\a"))
     print(path.is_relative("/a\0b"))
 "#,
-        "true\ntrue\ntrue\ntrue\nfalse\nfalse\n",
+        ky_vong(
+            "true\ntrue\ntrue\ntrue\nfalse\nfalse\n",
+            "true\ntrue\ntrue\ntrue\ntrue\ntrue\n",
+        ),
     );
 }
 
@@ -264,7 +279,10 @@ fn main():
     print(path.is_relative("e\u{0302}\u{0301}/x"))
     print(path.is_relative("/đ😀"))
 "#,
-        "true\ntrue\nfalse\ntrue\nfalse\n",
+        ky_vong(
+            "true\ntrue\nfalse\ntrue\nfalse\n",
+            "true\ntrue\ntrue\ntrue\ntrue\n",
+        ),
     );
 }
 
@@ -337,6 +355,9 @@ fn main():
     let r: bool = path.is_relative("x")
     print(r)
 "#,
-        "true\ntrue\nfalse\nfalse\ntrue\ntrue\ntrue\nfalse\ntrue\ntrue\ntrue\n",
+        ky_vong(
+            "true\ntrue\nfalse\nfalse\ntrue\ntrue\ntrue\nfalse\ntrue\ntrue\ntrue\n",
+            "true\ntrue\ntrue\nfalse\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n",
+        ),
     );
 }

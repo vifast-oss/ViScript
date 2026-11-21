@@ -43,12 +43,18 @@ fn gom_tep() -> Vec<PathBuf> {
 }
 
 /// Các dòng sau marker (giữ nguyên phần sau **một** dấu cách đầu tiên).
+/// Đọc các dòng kỳ vọng sau `marker` (đến hết tệp); thay `{SEP}` bằng phân cách đường dẫn của
+/// host — cheat sheet dùng token này cho ví dụ `path.join` (Unix `/`, Windows `\`).
 fn ky_vong(src: &str, marker: &str) -> Vec<String> {
     let mut ds = Vec::new();
     for line in src.lines() {
         let t = line.trim_start();
         if let Some(rest) = t.strip_prefix(marker) {
-            ds.push(rest.strip_prefix(' ').unwrap_or(rest).to_string());
+            ds.push(
+                rest.strip_prefix(' ')
+                    .unwrap_or(rest)
+                    .replace("{SEP}", std::path::MAIN_SEPARATOR_STR),
+            );
         }
     }
     ds

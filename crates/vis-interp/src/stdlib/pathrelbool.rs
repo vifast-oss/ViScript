@@ -20,6 +20,10 @@
 //! bool` — **không** sugar R5c (module-only): tên `is_relative` không nằm trong bảng
 //! `module_sugar`, tránh nhập nhằng receiver `str`/`path`; gọi `s.is_relative()` ⇒ `VS0403`,
 //! sai kiểu ⇒ `VS0412`, sai arity ⇒ `VS0401`.
+//!
+//! **Windows** (`cfg!(windows)`): `/` đơn là **tương đối** (thiếu ổ đĩa/UNC), nên
+//! `is_relative("/") == true`; `//…` hoặc `<ổ>:` + phân cách mới tuyệt đối. Bảng trên là quy
+//! tắc POSIX; test có nhánh Windows riêng.
 
 use vis_syntax::Span;
 
@@ -57,12 +61,24 @@ mod tests {
 
     #[test]
     fn tuyet_doi_posix() {
-        assert!(!la_tuong_doi("/"));
-        assert!(!la_tuong_doi("/a"));
-        assert!(!la_tuong_doi("/a/b"));
-        // Không gộp `/`: `//` vẫn mở đầu bằng `/` ⇒ tuyệt đối.
-        assert!(!la_tuong_doi("//"));
-        assert!(!la_tuong_doi("///a"));
+        #[cfg(not(windows))]
+        {
+            assert!(!la_tuong_doi("/"));
+            assert!(!la_tuong_doi("/a"));
+            assert!(!la_tuong_doi("/a/b"));
+            // Không gộp `/`: `//` vẫn mở đầu bằng `/` ⇒ tuyệt đối.
+            assert!(!la_tuong_doi("//"));
+            assert!(!la_tuong_doi("///a"));
+        }
+        #[cfg(windows)]
+        {
+            // Windows: `/` đơn không có ổ đĩa/UNC ⇒ tương đối (bù của `is_absolute`).
+            assert!(la_tuong_doi("/"));
+            assert!(la_tuong_doi("/a"));
+            assert!(la_tuong_doi("/a/b"));
+            assert!(!la_tuong_doi("//"));
+            assert!(!la_tuong_doi("///a"));
+        }
     }
 
     #[test]

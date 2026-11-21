@@ -20,6 +20,10 @@
 //! bool` — **không** sugar R5c (module-only): tên `is_absolute` không nằm trong bảng
 //! `module_sugar`, tránh nhập nhằng receiver `str`/`path`; gọi `s.is_absolute()` ⇒ `VS0403`,
 //! sai kiểu ⇒ `VS0412`, sai arity ⇒ `VS0401`.
+//!
+//! **Windows** (`cfg!(windows)`): `/` đơn và `/a` **không** tuyệt đối; `//…`/`\\…` hoặc
+//! `<ổ>:` + `/`/`\` mới tuyệt đối (đúng `Path::is_absolute` của Windows). Các dòng `/`, `/\a`
+//! trong bảng trên là quy tắc POSIX; test có nhánh Windows riêng.
 
 use vis_syntax::Span;
 
@@ -57,12 +61,24 @@ mod tests {
 
     #[test]
     fn tuyet_doi_posix() {
-        assert!(tuyet_doi("/"));
-        assert!(tuyet_doi("/a"));
-        assert!(tuyet_doi("/a/b"));
-        // Không gộp `/`: `//` vẫn mở đầu bằng `/` ⇒ tuyệt đối.
-        assert!(tuyet_doi("//"));
-        assert!(tuyet_doi("///a"));
+        #[cfg(not(windows))]
+        {
+            assert!(tuyet_doi("/"));
+            assert!(tuyet_doi("/a"));
+            assert!(tuyet_doi("/a/b"));
+            // Không gộp `/`: `//` vẫn mở đầu bằng `/` ⇒ tuyệt đối.
+            assert!(tuyet_doi("//"));
+            assert!(tuyet_doi("///a"));
+        }
+        #[cfg(windows)]
+        {
+            // Windows: `/` đơn không có ổ đĩa/UNC ⇒ KHÔNG tuyệt đối (đúng `Path::is_absolute`).
+            assert!(!tuyet_doi("/"));
+            assert!(!tuyet_doi("/a"));
+            assert!(!tuyet_doi("/a/b"));
+            assert!(tuyet_doi("//"));
+            assert!(tuyet_doi("///a"));
+        }
     }
 
     #[test]
@@ -80,16 +96,28 @@ mod tests {
 
     #[test]
     fn ky_tu_thuong_unicode_va_nul() {
-        // `\` và NUL là ký tự **thường**, không phải phân cách.
+        // `\` và NUL là ký tự **thường** trên POSIX; trên Windows `\` là phân cách (và `/a\b`
+        // không có ổ đĩa ⇒ vẫn tương đối).
         assert!(!tuyet_doi(r"a\b"));
         assert!(!tuyet_doi("a\0b"));
-        assert!(tuyet_doi(r"/a\b"));
-        assert!(tuyet_doi("/a\0b"));
+        #[cfg(not(windows))]
+        {
+            assert!(tuyet_doi(r"/a\b"));
+            assert!(tuyet_doi("/a\0b"));
+        }
+        #[cfg(windows)]
+        {
+            assert!(!tuyet_doi(r"/a\b"));
+            assert!(!tuyet_doi("/a\0b"));
+        }
         // Thành phần Unicode giữ nguyên từng scalar, kể cả tổ hợp.
         assert!(!tuyet_doi("thư/mục/tệp.txt"));
         assert!(!tuyet_doi("đ😀"));
         assert!(!tuyet_doi("đ😀/x"));
+        #[cfg(not(windows))]
         assert!(tuyet_doi("/thư/mục"));
+        #[cfg(windows)]
+        assert!(!tuyet_doi("/thư/mục"));
         assert!(!tuyet_doi("e\u{0302}\u{0301}/x"));
     }
 }

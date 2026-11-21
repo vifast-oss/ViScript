@@ -218,13 +218,12 @@ fn tep_khong_doc_duoc_exit_2() {
     let (ma, out, err) = vis(&["fmt", "--check", "--list", &s(&khong_co)]);
     assert_eq!(ma, 2, "stderr: {err}");
     assert_eq!(out, "", "không in đường dẫn khi không đọc/định dạng được");
-    assert_eq!(
-        err,
-        format!(
-            "# {}: không đọc được: No such file or directory (os error 2)\n",
-            s(&khong_co)
-        )
-    );
+    // Không so nguyên văn thông điệp OS (Windows: "The system cannot find the file specified");
+    // chỉ đòi đúng đường dẫn + mã lỗi OS 2 + xuống dòng.
+    let dau = format!("# {}: không đọc được: ", s(&khong_co));
+    assert!(err.starts_with(&dau), "stderr: {err}");
+    assert!(err.contains("os error 2"), "stderr: {err}");
+    assert!(err.ends_with('\n'), "stderr: {err}");
     let _ = std::fs::remove_dir_all(&d);
 }
 

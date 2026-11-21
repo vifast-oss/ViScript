@@ -199,11 +199,12 @@ fn tep_db_duong_dan_main_va_temp_rong() {
     let d = tam("tep");
     let db = d.join("du-lieu.db");
     let duong = db.to_string_lossy().to_string();
+    let duong_src = duong.replace('\\', "\\\\");
     let src = format!(
         r#"use std.sqlite
 
 fn main():
-    match sqlite.open("{duong}"):
+    match sqlite.open("{duong_src}"):
         Err(e): print("mo loi {{e.message}}")
         Ok(h):
             match sqlite.database_list(h):
@@ -249,6 +250,7 @@ fn attach_bi_chan_danh_sach_giu_nguyen() {
     let d = tam("attach");
     let aux = d.join("aux.db");
     let duong = aux.to_string_lossy().to_string();
+    let duong_src = duong.replace('\\', "\\\\");
     let src = format!(
         r#"use std.sqlite
 
@@ -256,7 +258,7 @@ fn main():
     match sqlite.open(":memory:"):
         Err(e): print("mo loi {{e.message}}")
         Ok(h):
-            match sqlite.execute(h, "ATTACH '{duong}' AS aux", []):
+            match sqlite.execute(h, "ATTACH '{duong_src}' AS aux", []):
                 Ok(n): print("attach-ok {{n}}")
                 Err(e): print("attach-bi-chan")
             match sqlite.database_list(h):

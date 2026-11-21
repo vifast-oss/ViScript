@@ -4,7 +4,7 @@
 # kỳ vọng: [1, 2, 3]
 # kỳ vọng: [a]
 # kỳ vọng: a-b
-# kỳ vọng: a/b
+# kỳ vọng: a{SEP}b
 # kỳ vọng: Ok(Arr([Num(1), Num(2)]))
 # kỳ vọng: 3
 # kỳ vọng: Some(1)
