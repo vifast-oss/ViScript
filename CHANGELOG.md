@@ -43,6 +43,8 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-5b (chữ ký + GC + migrate)**: Ed25519 `vispkg-sig1` (`--registry-key`/`VIS_REGISTRY_KEY`), xác minh trước tarball; `vis pkg gc [--dry-run]`; `vis pkg migrate` lock 1→2; 9+5 ca mới; merge `0861a8e`/`cea1643`.
+- **2026-11-21** — **VS3-1b (cancellation/cleanup)**: shared waiter registration, gỡ timer/reactor/write buffer đúng một lần, handle sống giữ kết quả, final join `VS0506`; 14 ca `vs3_cancel`; measurement chuyển sang example (bỏ `#[ignore]`); merge `97676c6`.
 - **2026-11-21** — **VS3-4a (TLS client)**: `http.get/head` nhận `https://` qua `rustls` + `webpki-roots`; cert/SAN validate, deadline chung connect+handshake+redirect+đọc; HTTPS→HTTP bị chặn; HTTP/2/keep-alive chưa có; 10 ca TLS; merge `9ceec53`.
 - **2026-11-21** — **VS3-1a (step-cap parity)**: một nguồn `VM_SAFETY_FUEL = 100M` (budget ceiling 40M × ratio 2 × 1,25); VM không trap fuel trước budget trên workload 2M; 8 ca `vs3_budget` + lat256/257/264 xanh; BUDGET/Q/default còn mở; merge `71dc8a4`.
 - **2026-11-21** — **VS3-5a (registry HTTP)**: `vis pkg --registry http://…` / `VIS_REGISTRY`; index `vispkg-http1`, tarball + SHA-256 trước khi cài, giữ registry cục bộ; `https://` từ chối rõ (chờ VS3-4); 11 ca hermetic + 40 ca pkg/hash xanh; merge `756bb1d`.
