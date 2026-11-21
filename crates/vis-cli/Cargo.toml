@@ -45,6 +45,10 @@ default = ["sqlite", "tls", "pkg-sig"]
 sqlite = ["dep:rusqlite"]
 tls = ["dep:rustls", "dep:webpki-roots"]
 pkg-sig = ["dep:ring"]
+# **VS3-4b2 (VD-271)** — HTTP/2 qua TLS + ALPN. **Default-off**; chỉ bật khi A0/người dùng
+# chọn `--features http2`. Kéo `h2` + tokio (chỉ IO traits, không runtime mặc định) + http/bytes;
+# đã review license/unsafe ở `agent/BAO-CAO-VS3-4B2-H2-IMPLEMENT-2026-11-21.md`.
+http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
 
 # E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
 # feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
@@ -88,6 +92,12 @@ name = "vs3_registry_https"
 path = "tests/vs3_registry_https.rs"
 required-features = ["tls"]
 
+# **VS3-4b2 (VD-271)** — HTTP/2 client + ALPN, chỉ chạy khi bật feature `http2` (default-off).
+[[test]]
+name = "vs3_http2"
+path = "tests/vs3_http2.rs"
+required-features = ["http2"]
+
 # **VS3-5b (VD-271)** — chữ ký Ed25519: test ký bằng chính `ring` (feature `pkg-sig`) và chạy
 # server HTTP loopback; bỏ qua khi build core không có feature.
 [[test]]
@@ -124,6 +134,12 @@ vis-host-linux = { path = "../../vis-host-linux" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"], optional = true }
 webpki-roots = { version = "=1.0.11", optional = true }
+# **VS3-4b2** — chỉ khi feature `http2`. `h2` ghim tuyệt đối; tokio chỉ để có `AsyncRead/AsyncWrite`
+# (không bật `rt`/`net`); http/bytes là kiểu request/body của h2. WASM không thấy các crate này.
+h2 = { version = "=0.4.20", default-features = false, optional = true }
+tokio = { version = "=1.54.1", default-features = false, features = ["io-util"], optional = true }
+http = { version = "=1.5.0", optional = true }
+bytes = { version = "=1.12.2", optional = true }
 # **VS3-5b**: xác minh Ed25519 cho chữ ký index registry. Cùng phiên bản/nguồn mà `rustls` đã kéo
 # (không thêm crate vào lock); ghim tuyệt đối để build tái lập. `default-features = false` +
 # `std` là đủ cho `signature::UnparsedPublicKey::verify`.

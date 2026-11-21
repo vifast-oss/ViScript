@@ -85,6 +85,15 @@ pub(super) fn tu_goc_der(ds: &[&[u8]]) -> Result<CauHinh, String> {
     boi_canh(goc)
 }
 
+/// **VS3-4b2**: cấu hình TLS có ALPN `h2` rồi `http/1.1` (chỉ feature `http2`). Client HTTP/2 dùng
+/// cấu hình này; HTTP/1.1 mặc định vẫn không đặt ALPN.
+#[cfg(feature = "http2")]
+pub(super) fn cau_hinh_h2(cfg: &CauHinh) -> CauHinh {
+    let mut c = (**cfg).clone();
+    c.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+    Arc::new(c)
+}
+
 /// Tách `host` khỏi `dia_chi` (`host:port`, IPv6 `[::1]:443`) để làm `ServerName`.
 fn ten_may_chu(dia_chi: &str) -> Result<&str, String> {
     let host = if let Some(rest) = dia_chi.strip_prefix('[') {

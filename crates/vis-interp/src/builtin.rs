@@ -61,6 +61,13 @@ pub trait Ngoai {
     }
 }
 
+/// **VS3-4b2 (VD-271)**: kết quả một request HTTP/2 (không phải API ngôn ngữ).
+pub struct KetQuaHttp2 {
+    pub status: u16,
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
 /// **Host mạng** (ST-63, VD-100/VD-105) — `vis-interp`/`vis-vm` **không** biết `std::net`; `vis-cli`
 /// cài TCP thật. Thiếu host ⇒ `VS0604` (cùng mẫu [`FsHost`], VD-60 (2)). Handle là **chuỗi mờ** —
 /// chương trình không thấy địa chỉ/socket; body **nhị phân** (`Vec<u8>`) để không cắt sai UTF-8.
@@ -108,6 +115,20 @@ pub trait NetHost {
     /// gửi/lưu cookie; host hỗ trợ trả jar để tầng HTTP đọc/ghi. Không phải API ngôn ngữ.
     fn cookie_jar(&mut self) -> Option<&mut crate::cookie::CookieJar> {
         None
+    }
+
+    /// **VS3-4b2**: thử một request qua **HTTP/2** nếu host/feature hỗ trợ. `Ok(None)` = host không
+    /// dùng h2 (feature tắt, hoặc server không chọn ALPN `h2`) ⇒ tầng HTTP fallback HTTP/1.1.
+    /// Mặc định `None`; `vis-cli` cài khi bật feature `http2`.
+    fn http2_get(
+        &mut self,
+        _dia_chi: &str,
+        _target: &str,
+        _method: &str,
+        _headers: &[(String, String)],
+        _timeout_ms: u64,
+    ) -> Result<Option<KetQuaHttp2>, String> {
+        Ok(None)
     }
     /// **ST-65**: lắng nghe trên `dia_chi`. Trả **handle mờ**.
     fn listen(&mut self, dia_chi: &str) -> Result<String, String>;

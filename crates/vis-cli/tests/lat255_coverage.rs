@@ -396,16 +396,13 @@ fn classify(name: &str) -> &'static str {
         | "task-khong-await-van-chay"
         | "task-tra-list"
         | "task-tra-record"
-        | "task-tra-str" => "frame",
+        | "task-tra-str"
+        | "grid-await-nghich-thu-tu" => "frame",
         "than-task-loi-await" => "frame-err",
         // Lỗi VS0506 chỉ bật khi **final join** (task không ai await) — frame path hiện
         // không lan lỗi join cuối ra exit code ⇒ NGOÀI phạm vi VD-255, golden vẫn đúng
         // ở runtime mặc định (xem report).
         "than-task-loi-join" => "out-join-err",
-        // Frame path chạy được (hai engine đồng nhau) nhưng thứ tự task là cooperative
-        // FIFO theo spawn, khác với run-to-completion của golden. Golden KHÔNG đổi —
-        // runtime mặc định vẫn trả đúng golden; chỉ frame path có thứ tự khác.
-        "grid-await-nghich-thu-tu" => "frame-sched",
         "async-lam-gia-tri"
         | "await-khong-phai-task"
         | "spawn-co-ten"
@@ -480,16 +477,6 @@ fn z_all_async_fixtures_classified_and_run_through_frame_path() {
                 if cls == "frame" {
                     let want = golden_stdout(&root.join(format!("{name}.out")));
                     assert_eq!(i.stdout, want, "{name}: golden .out bị đổi?");
-                } else if cls == "frame-sched" {
-                    let want = golden_stdout(&root.join(format!("{name}.out")));
-                    // Không so stdout frame↔golden (khác thứ tự do scheduler hợp tác), nhưng
-                    // runtime mặc định vẫn đúng golden ⇒ golden không hề được cập nhật.
-                    assert_ne!(i.stdout, want, "{name}: kỳ vọng lệch thứ tự khi chạy frame");
-                    assert_eq!(
-                        vis_interp::run(&src, &h.hir, &h.symbols, &h.types, &[]).stdout,
-                        want,
-                        "{name}: runtime mặc định phải giữ nguyên golden"
-                    );
                 } else if cls == "frame-err" {
                     assert_eq!(i.exit, 1, "{name}: fixture lỗi phải exit 1");
                     assert_eq!(i.diagnostics[0].code.short, "VS0506");
