@@ -259,7 +259,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `PRAGMA data_version`, tăng khi connection **khác** commit vào cùng DB, không đổi vì
     // ghi/DDL của chính connection, `:memory:` mỗi connection một DB riêng, chỉ đọc) ⇒
     // **151** hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 153, "bảng chữ ký phải đủ 153 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 fs-canonicalize, 2026-11-21)**: +**1** hàm
+    // `std.fs.canonicalize` (`(str) -> Result[str, Error]`; `std::fs::canonicalize` — **chạm
+    // đĩa** + đọc `cwd`, phân giải symlink/`..`, `p` phải tồn tại, thiếu/rỗng/dangling ⇒ `Err`,
+    // **không** sugar) ⇒ **152** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 154, "bảng chữ ký phải đủ 154 hàm");
 }
 
 #[test]
@@ -315,6 +319,26 @@ fn fs_read_link_kieu_str_result_va_khong_sugar() {
         "`fs.read_link`: hạ kiểu trả"
     );
     assert_eq!(vis_types::stdlib::module_sugar("str", "read_link"), None);
+}
+
+#[test]
+fn fs_canonicalize_kieu_str_result_va_khong_sugar() {
+    // **VD-270 (fs-canonicalize)**: `(str) -> Result[str, Error]`, tái dùng `Ty::ResultStrStr`
+    // (cùng biến thể của `fs.read`/`fs.read_link`); fs là module-only nên **không** sugar —
+    // `p.canonicalize()` bị `VS0403`, không ánh xạ sang `fs`.
+    let f = sig_of("fs.canonicalize").expect("fs.canonicalize");
+    assert_eq!(f.params, &[Ty::Str], "`fs.canonicalize`: tham số");
+    assert_eq!(
+        f.ret,
+        Ty::ResultStrStr,
+        "`fs.canonicalize`: kiểu trả phải tái dùng `ResultStrStr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
+        "`fs.canonicalize`: hạ kiểu trả"
+    );
+    assert_eq!(vis_types::stdlib::module_sugar("str", "canonicalize"), None);
 }
 
 #[test]

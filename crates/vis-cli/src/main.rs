@@ -222,6 +222,14 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.read_link(p),
         }
     }
+    /// **VD-270 (fs-canonicalize)**: đường dẫn tuyệt đối đã phân giải — host thật (OS) hoặc mock,
+    /// cùng chữ ký.
+    fn canonicalize(&mut self, p: &str) -> Result<String, String> {
+        match self {
+            HostFs::That(r) => r.canonicalize(p),
+            HostFs::Mock(m) => m.canonicalize(p),
+        }
+    }
     /// **VD-270 (fsbytes)**: byte thô — host thật (OS) hoặc mock, cùng chữ ký.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {
         match self {

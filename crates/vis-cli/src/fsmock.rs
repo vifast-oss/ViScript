@@ -377,6 +377,16 @@ impl FsHost for FsMock {
         ))
     }
 
+    /// **VD-270 (fs-canonicalize)**: `canonicalize` cần **đĩa thật** (`cwd` + symlink + tồn tại);
+    /// kịch bản `--fs-mock` không có đĩa/cwd nên **luôn** `Err` dữ liệu, **tất định** — cùng lý do
+    /// `read_link` luôn `Err` (mock không biểu diễn symlink). Không "đoán" đường dẫn tuyệt đối từ
+    /// khoá kịch bản để tránh ngữ nghĩa khác host thật.
+    fn canonicalize(&mut self, p: &str) -> Result<String, String> {
+        Err(format!(
+            "không phân giải được đường dẫn `{p}`: kịch bản `--fs-mock` không có đĩa/cwd thật"
+        ))
+    }
+
     /// **VD-268**: duyệt cây trong kịch bản, cùng hợp đồng với host thật: tương đối, thư mục kèm
     /// `/`, DFS sắp theo byte tên từng cấp. Thư mục con không khai trong `dirs` coi như **rỗng**
     /// (kịch bản không cần liệt kê mọi thư mục rỗng). Root không có ⇒ `Err` dữ liệu.

@@ -648,6 +648,20 @@ impl vis_interp::builtin::FsHost for Runner {
             .map_err(|_| format!("không đọc được liên kết `{p}`: đích không phải UTF-8 hợp lệ"))
     }
 
+    /// **VD-270 (fs-canonicalize)**: đường dẫn **tuyệt đối đã phân giải** của `p` bằng
+    /// `std::fs::canonicalize` — **chạm đĩa** và đọc `cwd` cho đường dẫn tương đối; symlink và
+    /// `..` được phân giải theo trạng thái **hiện tại** của hệ tệp (khác `path.normalize` thuần
+    /// từ vựng). `p` phải **tồn tại**: rỗng/thiếu/`ENOENT` (gồm cả **dangling**), lỗi quyền OS,
+    /// hoặc kết quả không phải UTF-8 ⇒ `Err` dữ liệu (không cắt cụt thay bằng lossy).
+    fn canonicalize(&mut self, p: &str) -> Result<String, String> {
+        self.nhat_ky("canonicalize", p);
+        let c = std::fs::canonicalize(p)
+            .map_err(|e| format!("không phân giải được đường dẫn `{p}`: {e}"))?;
+        c.into_os_string().into_string().map_err(|_| {
+            format!("không phân giải được đường dẫn `{p}`: kết quả không phải UTF-8 hợp lệ")
+        })
+    }
+
     /// **VD-270 (fsbytes)**: đọc **toàn bộ** tệp thành byte thô (`std::fs::read`); thiếu
     /// tệp/thư mục/lỗi đọc ⇒ `Err` **dữ liệu**.
     fn read_bytes(&mut self, p: &str) -> Result<Vec<u8>, String> {

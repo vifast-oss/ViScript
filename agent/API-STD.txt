@@ -11,6 +11,7 @@
 # KHÔNG tái dùng số mã/số thẻ. Thêm mới CHỈ khi có VD nêu đích danh tên được thêm.
 # Tệp thuộc Agent 0 sau lần tạo đầu (ST-126). Định dạng: <khoá><TAB><giá trị>.
 fs.append	(str, str) -> Result[(), Error]
+fs.canonicalize	(str) -> Result[str, Error]
 fs.copy	(str, str) -> Result[(), Error]
 fs.exists	(str) -> bool
 fs.glob	(str, str) -> Result[list[str], Error]
