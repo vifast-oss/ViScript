@@ -9,7 +9,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use vis_interp::rt::fee::SharedBudget;
 use vis_interp::rt::{Task, TrangThai};
@@ -339,4 +339,122 @@ fn worker_copy_va_move_payload_w1_w4_parity() {
     }
     assert_eq!(moved[0], moved[1], "move W=1 vs W=4 output");
     assert!(moved[0].starts_with("mv0:1\n"));
+}
+
+fn status_kb(key: &str) -> u64 {
+    let s = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
+    for line in s.lines() {
+        if let Some(rest) = line.strip_prefix(key) {
+            return rest
+                .split_whitespace()
+                .next()
+                .and_then(|x| x.parse().ok())
+                .unwrap_or(0);
+        }
+    }
+    0
+}
+
+/// Stress 10k task: print merge W=1/W=4, cancel giữa chừng, budget cạn,
+/// cross-write; đo RSS/thời gian, bảo đảm join trả về (không deadlock).
+#[test]
+fn stress_10k_cancel_budget_print_cross() {
+    let t0 = Instant::now();
+    let rss0 = status_kb("VmRSS:");
+    let threads0 = status_kb("Threads:");
+
+    // 10k task in một dòng; W=1 == W=4 byte-identical, outcomes đủ.
+    let mut outs = Vec::new();
+    for w in [1usize, 4] {
+        let mut pool = WorkerPool::new(w, env()).expect("pool print");
+        for i in 0..10_000usize {
+            pool.spawn(move |ctx| {
+                ctx.print_line(&format!("t{i}"));
+                Ok(SendValue::Unit)
+            })
+            .unwrap();
+        }
+        let r = pool.join().expect("join print");
+        assert_eq!(r.outcomes.len(), 10_000);
+        outs.push(r.output);
+    }
+    assert_eq!(outs[0], outs[1], "stress print W=1/W=4");
+    assert_eq!(outs[0].lines().count(), 10_000);
+
+    // Cancel 10k task (một nửa) ở W=1/W=4; task tự kiểm cancel.
+    for w in [1usize, 4] {
+        let mut pool = WorkerPool::new(w, env()).expect("pool cancel");
+        let mut handles = Vec::with_capacity(10_000);
+        for i in 0..10_000usize {
+            let h = pool
+                .spawn(move |ctx| {
+                    ctx.check_cancel()?;
+                    std::thread::sleep(Duration::from_micros(200));
+                    ctx.check_cancel()?;
+                    if i % 2 == 0 {
+                        ctx.print_line(&format!("c{i}"));
+                    }
+                    Ok(SendValue::Unit)
+                })
+                .unwrap();
+            handles.push(h);
+        }
+        for h in handles.iter().step_by(2) {
+            h.cancel();
+        }
+        let r = pool.join().expect("join cancel");
+        assert_eq!(r.outcomes.len(), 10_000);
+        assert!(
+            r.outcomes.iter().any(|o| o.cancelled),
+            "phải có task bị huỷ ở W={w}"
+        );
+    }
+
+    // Budget cạn: 10k task cùng pool 5k đơn vị; không deadlock, accounting đúng.
+    let b = Arc::new(SharedBudget::new(5_000, 256));
+    let mut pool = WorkerPool::with_budget(4, env(), Arc::clone(&b)).expect("pool budget");
+    for _ in 0..10_000 {
+        pool.spawn(|ctx| {
+            ctx.charge(1)?;
+            Ok(SendValue::Unit)
+        })
+        .unwrap();
+    }
+    let r = pool.join().expect("join budget");
+    let snap = r.budget.expect("budget");
+    assert_eq!(r.outcomes.len(), 10_000);
+    assert_eq!(snap.used, 5_000, "dùng đúng pool");
+    assert_eq!(snap.remaining, 0, "cạn đúng 0");
+    assert_eq!(snap.used + snap.remaining, snap.limit);
+    assert!(snap.exhausted);
+
+    // Cross-write 100 task: W=4 refused, không deadlock.
+    let mut pool = WorkerPool::new(4, env()).expect("pool cross");
+    for i in 0..100usize {
+        pool.spawn(move |ctx| {
+            ctx.set("counter", SendValue::Int(i as i64));
+            Ok(SendValue::Unit)
+        })
+        .unwrap();
+    }
+    match pool.join() {
+        Err(WorkerError::CrossWrite { vars, tasks }) => {
+            assert_eq!(vars, vec!["counter".to_string()]);
+            assert_eq!(tasks.len(), 100);
+        }
+        other => panic!("stress cross-write phải refused: {other:?}"),
+    }
+
+    let rss1 = status_kb("VmRSS:");
+    let hwm = status_kb("VmHWM:");
+    let threads1 = status_kb("Threads:");
+    let secs = t0.elapsed().as_secs_f64();
+    println!(
+        "STRESS\ttasks=10000\tprint+cancel+budget+cross\tsecs={secs:.2}\trss0_kb={rss0}\trss1_kb={rss1}\thwm_kb={hwm}\tthreads0={threads0}\tthreads1={threads1}"
+    );
+    assert!(
+        threads1 <= threads0 + 1,
+        "worker thread rò: {threads0} -> {threads1}"
+    );
+    assert!(secs < 30.0, "stress quá chậm: {secs:.2}s");
 }
