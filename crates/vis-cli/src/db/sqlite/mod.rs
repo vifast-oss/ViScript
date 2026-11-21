@@ -16,7 +16,8 @@
 //!   **allow-list theo action code** (mặc định từ chối): DDL/CRUD thường, `BEGIN`/`COMMIT`/`ROLLBACK`,
 //!   `REINDEX`/`ANALYZE`, `Savepoint`, `Recursive`, `Read` (trừ trang thô), mọi `Function` trừ
 //!   `load_extension`/`sqlite_offset`;
-//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version`/`data_version` (không ghi); cấm
+//!   `PRAGMA` chỉ `table_info` và **đọc** `user_version`/`schema_version`/`data_version`/
+//!   `application_id` (không ghi); cấm
 //!   `ATTACH`/`DETACH`/ghi `PRAGMA` khác/`load_extension`/**`CREATE VIRTUAL TABLE`** (`SQLITE_CREATE_VTABLE`)
 //!   ở **mọi** chế độ. `VACUUM` (cả `VACUUM INTO`) bị chặn gián tiếp — nó tự **ATTACH** ở đường
 //!   nội tại, authorizer từ chối ⇒ câu lệnh lỗi.
@@ -469,7 +470,7 @@ fn la_bang_trang_tho(ten: &str) -> bool {
 /// | `SQLITE_TRANSACTION` (BEGIN/COMMIT/ROLLBACK) · `SQLITE_SAVEPOINT` | giao dịch | **Allow** (đã duyệt — không tự mở thêm) |
 /// | `SQLITE_REINDEX` · `SQLITE_ANALYZE` | maintenance | **Allow** |
 /// | `SQLITE_FUNCTION` (trừ `load_extension`/`sqlite_load_extension`/`sqlite_offset`) | hàm SQL | **Allow** |
-/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version`/`data_version` (không giá trị) | đọc cấu trúc/version | **Allow** |
+/// | `SQLITE_PRAGMA` `table_info` · **đọc** `user_version`/`schema_version`/`data_version`/`application_id` (không giá trị) | đọc cấu trúc/version/định danh ứng dụng | **Allow** |
 /// | `SQLITE_PRAGMA` khác (kể cả ghi `user_version`, `temp_store`, `journal_mode`…) | đổi cấu hình | **Deny** |
 /// | `SQLITE_ATTACH` / `SQLITE_DETACH` | gắn db ngoài | **Deny** |
 /// | `SQLITE_CREATE_VTABLE` / `SQLITE_DROP_VTABLE` | virtual table (FTS5…) | **Deny** |
@@ -544,12 +545,17 @@ fn chinh_sach(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authori
             let n = pragma_name.to_ascii_lowercase();
             if n == "table_info" {
                 Authorization::Allow
-            } else if (n == "user_version" || n == "schema_version" || n == "data_version")
+            } else if (n == "user_version"
+                || n == "schema_version"
+                || n == "data_version"
+                || n == "application_id")
                 && pragma_value.is_none()
             {
-                // **đọc** user_version/schema_version/data_version — ghi (có giá trị) ⇒ Deny.
-                // schema_version + data_version dùng cache lần quét schema UTF-8 (VD-261);
-                // temp.schema_version dùng phát hiện DDL bảng TEMP (VD-268).
+                // **đọc** user_version/schema_version/data_version/application_id — ghi (có giá
+                // trị) ⇒ Deny. schema_version + data_version dùng cache lần quét schema UTF-8
+                // (VD-261); temp.schema_version dùng phát hiện DDL bảng TEMP (VD-268);
+                // application_id là metadata định danh ứng dụng 32-bit trong header (VD-270),
+                // SQLite không dùng cho việc gì — chỉ đọc, không đổi hành vi ghi/DDL.
                 Authorization::Allow
             } else {
                 Authorization::Deny

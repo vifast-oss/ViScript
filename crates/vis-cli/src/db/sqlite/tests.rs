@@ -473,6 +473,8 @@ fn authorizer_chan_attach_pragma_ghi_load_extension() {
         "DETACH x",
         "PRAGMA user_version=1",
         "PRAGMA user_version = 42",
+        "PRAGMA application_id=1",
+        "PRAGMA application_id = 42",
         "PRAGMA journal_mode=MEMORY",
         "PRAGMA temp_store=FILE",
         "PRAGMA temp_store=OFF",
@@ -493,11 +495,12 @@ fn authorizer_chan_attach_pragma_ghi_load_extension() {
         .db_execute(&h, "CREATE VIRTUAL TABLE tv2 USING fts5(x)", &[])
         .unwrap_err();
     assert!(e.contains("quyền (authorizer)"), "{e}");
-    // table_info và đọc user_version/schema_version/data_version thì được phép.
+    // table_info và đọc user_version/schema_version/data_version/application_id thì được phép.
     assert!(d.db_query(&h, "PRAGMA table_info(t)", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA user_version", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA schema_version", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA data_version", &[]).is_ok());
+    assert!(d.db_query(&h, "PRAGMA application_id", &[]).is_ok());
     // DDL/CRUD/maintenance thường thì được phép.
     assert!(d.db_execute(&h, "CREATE INDEX idx_t ON t (a)", &[]).is_ok());
     assert!(d.db_execute(&h, "DROP INDEX idx_t", &[]).is_ok());
@@ -831,16 +834,19 @@ fn query_chi_doc_tu_choi_lenh_ghi_va_lenh_khong_tra_hang() {
         e, "câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`",
         "{e}"
     );
-    // Chỉ `table_info` + **đọc** `user_version`/`schema_version`/`data_version` được phép.
+    // Chỉ `table_info` + **đọc** `user_version`/`schema_version`/`data_version`/`application_id`
+    // được phép.
     assert!(d.db_query(&h, "PRAGMA user_version", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA schema_version", &[]).is_ok());
     assert!(d.db_query(&h, "PRAGMA data_version", &[]).is_ok());
+    assert!(d.db_query(&h, "PRAGMA application_id", &[]).is_ok());
     for sql in [
         "PRAGMA index_list(t)",
         "PRAGMA table_xinfo(t)",
         "PRAGMA user_version = 1",
         "PRAGMA schema_version = 1",
         "PRAGMA data_version = 1",
+        "PRAGMA application_id = 1",
     ] {
         let e = d.db_query(&h, sql, &[]).unwrap_err();
         assert!(e.contains("quyền (authorizer)"), "{sql}: {e}");
@@ -991,6 +997,14 @@ fn chinh_sach_action_code_ma_tran() {
             pragma_name: "user_version",
             pragma_value: None,
         },
+        Pragma {
+            pragma_name: "schema_version",
+            pragma_value: None,
+        },
+        Pragma {
+            pragma_name: "application_id",
+            pragma_value: None,
+        },
     ];
     for a in allow {
         assert_eq!(
@@ -1035,6 +1049,14 @@ fn chinh_sach_action_code_ma_tran() {
         },
         Pragma {
             pragma_name: "user_version",
+            pragma_value: Some(""),
+        },
+        Pragma {
+            pragma_name: "application_id",
+            pragma_value: Some("42"),
+        },
+        Pragma {
+            pragma_name: "application_id",
             pragma_value: Some(""),
         },
         Pragma {

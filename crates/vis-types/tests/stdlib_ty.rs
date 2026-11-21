@@ -233,7 +233,11 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `std.list.min_float`/`std.list.max_float` (`(list[float]) -> float?`; rỗng ⇒ `None`, có
     // `NaN` ⇒ `None`, `±inf` so bình thường, phần tử bằng nhau kể cả `±0.0` giữ đầu tiên) ⇒ **146**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 147, "bảng chữ ký phải đủ 147 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 sqlite-application-id, 2026-11-21)**: +**1** hàm
+    // `sqlite.application_id` (`(str) -> Result[int, Error]`; định danh ứng dụng 32-bit trong
+    // header tệp DB đọc qua `PRAGMA application_id`, DDL/ghi dữ liệu không đổi, lưu theo tệp
+    // trong `0..=i32::MAX`, chỉ đọc) ⇒ **148** hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 148, "bảng chữ ký phải đủ 148 hàm");
 }
 
 #[test]
@@ -945,6 +949,30 @@ fn sqlite_user_version_kieu_str_va_result_int() {
         f.ret.sang_type(),
         Type::Result(Box::new(Type::Int), Box::new(Ty::Error.sang_type())),
         "`sqlite.user_version`: hạ kiểu trả"
+    );
+    assert_eq!(f.ret.ten(), "Result[int, Error]");
+}
+
+/// **VD-270 (sqlite-application-id)**: chữ ký `(str) -> Result[int, Error]` — tái dùng **đúng**
+/// `Ty::ResultIntErr` (như `sqlite.changes`/`sqlite.last_insert_rowid`/`sqlite.schema_version`/
+/// `sqlite.user_version`), không thêm biến thể.
+#[test]
+fn sqlite_application_id_kieu_str_va_result_int() {
+    let f = sig_of("sqlite.application_id").expect("sqlite.application_id");
+    assert_eq!(
+        f.params,
+        &[Ty::Str],
+        "`sqlite.application_id`: tham số (handle)"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::ResultIntErr,
+        "`sqlite.application_id`: kiểu trả phải là `ResultIntErr`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Result(Box::new(Type::Int), Box::new(Ty::Error.sang_type())),
+        "`sqlite.application_id`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[int, Error]");
 }

@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 147] = [
+pub const FUNCS: [StdFn; 148] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -1186,6 +1186,14 @@ pub const FUNCS: [StdFn; 147] = [
     // tệp trong `0..=i32::MAX`; lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu.
     StdFn {
         name: "sqlite.user_version",
+        params: &[Ty::Str],
+        ret: Ty::ResultIntErr,
+    },
+    // **VD-270 (sqlite-application-id)** — `application_id` (định danh ứng dụng 32-bit trong
+    // header tệp DB), **chỉ đọc** qua `PRAGMA application_id`; DDL/ghi dữ liệu không đổi, giá trị
+    // lưu theo tệp trong `0..=i32::MAX`; lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)`.
+    StdFn {
+        name: "sqlite.application_id",
         params: &[Ty::Str],
         ret: Ty::ResultIntErr,
     },
