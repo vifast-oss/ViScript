@@ -26,7 +26,7 @@
 | VS3-1c — coverage HIR | W1 | `vs3_coverage_matrix.rs` | **DONE (một phần)** — `7e1deed`; 10 ca, sửa `?.` frame; `Pipe`/nested async chặn 1d |
 | VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `1de3faa`; sync giữ nguyên, Pipe parity; cap>0/net async còn mở |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
-| VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
+| VS3-2b — timeout kênh (`select` hoãn 2c) | W5 | `vs3_chan_timeout.rs` | **DONE (một phần)** — `8da533b`; 17 ca `recv_timeout`/`send_timeout`; `select` VS3-2c |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
 | VS3-3b — worker pool | W1 | `vs3_worker.rs` | **REVIEW** — prototype `3fcd7ef`; W1 tích hợp sau VS3-2a |
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
@@ -47,7 +47,7 @@
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a/4b/4b2 | **DONE** — `9ceec53` + `b730661` + `096ea2c` + `d9046a9` + `7d73268`; HTTP/2 feature default-off |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a/5b + 7 | **DONE** — `756bb1d` + `cea1643` + `1aefb88` + `3510232`; LSP incremental xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | Windows fixes + local verify | **DONE** — tag `v0.1.0` 3404/0; `vis-targets` 18/18+17/1; **GitHub Actions đã gỡ** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b + 5c | **DONE** — `4bb20df` + `3fcd7ef` + `823b34c`; key rotation + GC đa lock |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a/3b/5c + 2b | **DONE (một phần)** — `4bb20df` + `3fcd7ef` + `823b34c` + `8da533b`; timeout kênh xong |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -80,7 +80,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 |---|---|---|---|
 | M1 | T7 19:00 | merge wave 1 + `gate --fast` | **PASS — 3332 passed / 4 skipped** (21/11) |
 | M2 | CN 02:00 | merge wave 2 + gate + nightly nhẹ | **PASS — 3364 passed / 3 skipped** (21/11) |
-| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3463 passed / 3 skipped**; diff 100k chờ |
+| M3 | CN 14:00 | merge wave 3 + gate + diff 100k | **gate PASS — 3480 passed / 3 skipped**; diff 100k chờ |
 | M4 | CN 21:00 | hardening + gate + nightly đầy đủ | PASS |
 | M5 | T2 06:00 | fresh-clone + Windows (nếu runner) + báo cáo | dừng 09:00; tag mục tiêu v0.2.0/v0.3.0 |
 
@@ -93,10 +93,13 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **VS3-4b2** HTTP/2 | W2 | **DONE (một phần)** — feature `http2` default-off; 5 ca h2; **default-on thử `959d1aa` chưa merge** |
 | **VS3-6** Windows local | W4 | **DONE (một phần)** — tag v0.1.0 3404/0; psvn target 18/18+17/1; **không GitHub Actions** |
 | **QA/release** | W3 | **WIP** | gate/nightly/diff/host + checklist v0.2/v0.3 |
-| **VS3-2b** timeout kênh | W5 | **WIP** | `recv_timeout`/`send_timeout`; `select` hoãn VS3-2c |
+| **VS3-2b** timeout kênh | W5 | **DONE (một phần)** — `recv_timeout`/`send_timeout`, 17 ca; `select` VS3-2c |
 
 **v0.3.0 default-on**: W2 thử `959d1aa` (+7,8% release, wasm không kéo h2) — **chỉ merge sau khi tag
 v0.2.0 và W4 verify h2 trên Windows**. Trước đó main giữ `http2` default-off.
+
+**v0.2.0 candidate**: `42b700c` (async default + timeout + worker opt-in; gate **3480/3**) —
+chờ W3/W4 verify local/psvn rồi A0 tag.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
