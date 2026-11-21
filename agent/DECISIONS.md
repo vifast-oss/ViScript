@@ -3715,3 +3715,16 @@ vẫn lỗi; registry không lọc theo `imports` nhưng tên trait/kiểu vẫn
 
 **Không tuyên bố VS3-3b xong**; mở lát VS3-3b1 (TaskId/proxy + budget atomic + print merge) sau khi
 VS3-2a ổn định.
+
+### VD-271 (bổ sung) · VS3-3b — chốt B1–B7 từ prototype W5 — A0, 2026-11-21
+
+> **Căn cứ**: `agent/JOURNAL/vs3-w5-worker-proto.md` + `agent/JOURNAL/vs3-w5-spike/worker_proto.rs`
+> (commit `3fcd7ef`). Prototype chỉ mô hình, **chưa** tích hợp runtime.
+
+1. **B1**: chưa cấp mã lỗi mới cho ghi chéo worker; VS3-3b dùng lỗi rõ, A0 cấp mã sau.
+2. **B2**: W=1 giữ **shared env** như hiện tại; W>1 snapshot top-level + **từ chối** ghi chéo.
+3. **B3**: print merge theo **spawn order**; output task lỗi/cancel giữ tới trap, lỗi surfaced ở join.
+4. **B4**: budget atomic + **chunk reservation** (`fetch_sub` block) để giảm tranh chấp CAS; default off.
+5. **B5**: `TaskId`/proxy, không đổi ABI `Value` cho tới VS3-3b; W1 sở hữu tích hợp.
+6. **B6**: tích hợp W1 **sau VS3-2a**; không đụng `rt.rs`/`Chan` trước.
+7. **B7**: gate VS3-3b dùng CPU-only + payload matrix, ghi topology/load; RSS chỉ tham khảo.

@@ -43,6 +43,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-3b prototype (W5b)**: TaskId/proxy, Env snapshot, print merge tất định (W=1/2/4 cùng 334 byte), budget atomic `used+remaining==limit`; budget CAS 12→57 ns/charge khi W=1→4 ⇒ đề xuất chunk reservation; W=4 2,74×; không sửa production; commit `3fcd7ef`.
 - **2026-11-21** — **VS3-4b (keep-alive + IPv6)**: HTTP/1.1 pool 8 idle/15 s, retry một lần khi idle chết, `Connection: close` giữ đúng; `cap[Net]` nhận `[::1]`/`::1` không nới quyền; 8 ca keep-alive + 12 TLS; HTTP/2 chỉ review (`h2` 18 crate, chưa thêm); merge `b730661`.
 - **2026-11-21** — **VS3-3a (spike worker/heap)**: đo 14 lần; chọn **affine + heap theo luồng + copy/move tại biên**, TaskId/proxy, channel `Arc<Mutex<ChanBuf<Wire>>>`, budget atomic, print merge; W=4 2,45× (ngưỡng 2,4); worker pool vẫn opt-in/test-only; merge báo cáo `4bb20df`.
 - **2026-11-21** — **VS3-5b (chữ ký + GC + migrate)**: Ed25519 `vispkg-sig1` (`--registry-key`/`VIS_REGISTRY_KEY`), xác minh trước tarball; `vis pkg gc [--dry-run]`; `vis pkg migrate` lock 1→2; 9+5 ca mới; merge `0861a8e`/`cea1643`.

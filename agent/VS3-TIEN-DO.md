@@ -28,7 +28,7 @@
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | TODO | song song 1b |
 | VS3-2b — `select`/timeout | W1 | `vs3_select.rs` | TODO | sau 2a |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
-| VS3-3b — worker pool | W1 | `vs3_worker.rs` | TODO | sau spike + quyết định |
+| VS3-3b — worker pool | W1 | `vs3_worker.rs` | **REVIEW** — prototype `3fcd7ef`; W1 tích hợp sau VS3-2a |
 | VS3-4a — TLS client | W2 | `vs3_tls.rs` | **DONE** — `a5e3040`; 10 ca TLS, HTTP/1.1 giữ; HTTP/2/keep-alive còn mở |
 | VS3-4b — keep-alive + IPv6 (HTTP/2 tách 4b2) | W2 | `vs3_keepalive.rs` | **DONE (một phần)** — `b7385e9`; 8 ca keep-alive, 12 TLS; HTTP/2 chỉ review |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
@@ -45,7 +45,7 @@
 | **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a + 4b | **DONE (một phần)** — merge `9ceec53` + `b730661`; keep-alive/IPv6 xong; HTTP/2 chờ 4b2 |
 | **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a + 5b | **DONE** — merge `756bb1d` + `cea1643`; chữ ký/GC xong |
 | **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn → **đã đo, đỏ**; đang sửa | **WIP (fix)** |
-| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **DONE** — merge sau `4bb20df`; đề xuất affine + per-worker heap |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a + prototype 3b | **DONE** — `4bb20df` + `3fcd7ef`; TaskId/proxy, snapshot, print, budget atomic |
 
 **Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
 vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
@@ -81,6 +81,13 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - Ngân sách: một pool **atomic** dùng chung, không thread-local.
 - Benchmark gate: CPU-only + payload matrix; ghi topology/load; ngưỡng 2,4× có caveat (hybrid 2P+8E đo 2,45×).
 - Worker pool **opt-in/test-only**; default vẫn single-thread tới khi nghiệm thu + VERSION/cache.
+- **B1**: chưa cấp mã mới cho ghi chéo worker; VS3-3b dùng lỗi rõ, A0 cấp mã sau.
+- **B2**: W=1 giữ **shared env** như hiện tại; W>1 snapshot + từ chối ghi chéo.
+- **B3**: print merge **spawn order**; output task lỗi/cancel giữ tới trap, lỗi surfaced ở join.
+- **B4**: budget atomic + **chunk reservation** (fetch_sub block) để giảm tranh chấp; default off.
+- **B5**: `TaskId`/proxy, không đổi ABI `Value` cho tới VS3-3b; W1 sở hữu.
+- **B6**: tích hợp W1 **sau VS3-2a**.
+- **B7**: gate 3b dùng CPU-only + payload matrix, ghi topology/load; RSS chỉ tham khảo.
 
 ## 4. Quy tắc cập nhật
 
