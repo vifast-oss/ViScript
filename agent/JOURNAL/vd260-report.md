@@ -349,3 +349,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - **Tối ưu `eq_value` record** (`68b5e1c`): fast path cùng tên kiểu, fallback đa tập; microbench ~21–233×; gate **3052**.
 - `VIS_DIFF_N=100000` seed 20261218 @ `a6c30c5`: **0 lệch** (93.768 chạy, 161,1 s).
 - **Đang chạy**: `sqlite.data_version`, `path.components`, `fs.canonicalize`, LSP semantic tokens.
+- **Wave tiếp**: `path.components` (`409e005`), `sqlite.data_version` (`1734ab5`) đã merge; gate **3077 passed / 3 skipped**; FUNCS **153**.
+- **Đang chạy**: `fs.canonicalize`, LSP semantic tokens, `sqlite.journal_mode`, `str` ASCII predicates.

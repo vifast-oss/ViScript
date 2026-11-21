@@ -3541,3 +3541,13 @@ dùng trùng tên che.
 - **Tối ưu `eq_value` record**: fast path khi hai record cùng **tên kiểu khác rỗng**, cùng độ dài:
   so theo vị trí (vẫn kiểm tên trường), fallback nguyên logic đa tập cho tên rỗng/khác/khác thứ tự;
   ngữ nghĩa không đổi; đo ~21–233× cho record 100–1000 trường (microbenchmark debug).
+
+### VD-270 (bổ sung) · path.components, sqlite.data_version — A0, 2026-11-21
+
+- **path.components**: `(str) -> list[str]`, tách **từ vựng POSIX**: rỗng ⇒ `[]`; tuyệt đối ⇒ `"/"`
+  đầu (mọi `/` đầu gộp), bỏ thành phần rỗng giữa/cuối, giữ nguyên `.`/`..` (không phân giải), `\`/
+  NUL thường, Unicode từng scalar; không sugar; reuse `Ty::ListStr`.
+- **sqlite.data_version**: `(handle) -> Result[int, Error]`, đọc `PRAGMA data_version` qua `db_query`,
+  chỉ đọc; tăng khi **connection khác** commit vào cùng DB (DML/DDL), không đổi vì ghi/DDL của chính
+  connection; thay đổi chưa commit/ROLLBACK không đổi; `:memory:` mỗi connection một DB riêng; mới
+  ⇒ `1` (probe, không phải hợp đồng); hợp đồng `0..=i32::MAX`; reuse `Ty::ResultIntErr`.
