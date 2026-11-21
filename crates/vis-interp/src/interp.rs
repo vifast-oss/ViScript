@@ -172,6 +172,11 @@ impl<'a> Interp<'a> {
         self.caps = caps;
     }
 
+    /// **VS3-1d** — đọc caps đã gắn (frame driver dùng để đặt đúng tham số `main`).
+    pub(crate) fn caps(&self) -> &[(u32, Value)] {
+        &self.caps
+    }
+
     pub(crate) fn take_stdout(&mut self) -> String {
         std::mem::take(&mut self.out)
     }

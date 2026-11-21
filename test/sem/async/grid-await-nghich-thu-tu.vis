@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
-# VD-240 (b) grid: await **ngược** thứ tự spawn — task được chạy khi **await** (run-to-completion
-# một luồng), thứ tự thực hiện quyết định bởi **thứ tự await**, không phải thứ tự spawn.
+# VD-240 (b) grid / VS3-1d: scheduler frame chạy task theo **thứ tự spawn/ready**; `await`
+# ngược thứ tự spawn không làm đổi thứ tự đã chạy. Đây là chủ đích của scheduler mới.
 async fn in_so(n: int) -> int:
     print("task {n}")
     n
