@@ -291,7 +291,12 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // `Some("")`, `base` toàn `/` = gốc, khác loại ⇒ `None`; `Ty::OptStr` thật; **không** sugar
     // — `str.strip_prefix` đã có nên receiver `str` vẫn đi `str.*`, không đi `path.*`) ⇒ **160**
     // hàm; không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 163, "bảng chữ ký phải đủ 163 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 chunks-exact, 2026-11-21)**: +**1** hàm
+    // `std.list.chunks_exact` (`(list[T], int) -> list[list[T]]`; nhóm **đúng `n`**, **bỏ
+    // phần dư** cuối, `n <= 0` ⇒ trap `VS0501`, `n > len`/rỗng ⇒ `[]`, sugar R5c; tái dùng
+    // `Ty::List(&Ty::List(&Ty::Var(0)))`, không thêm biến thể `Ty`) ⇒ **163** hàm; không
+    // xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 164, "bảng chữ ký phải đủ 164 hàm");
 }
 
 #[test]
@@ -522,6 +527,44 @@ fn flatten_kieu_long_mot_cap() {
             args: Vec::new()
         })),
         "`list.flatten`: hạ `list[T]`"
+    );
+}
+
+#[test]
+fn chunks_exact_kieu_list_long_va_khong_bien_the_ty_moi() {
+    // **VD-270 (chunks-exact)**: `(list[T], int) -> list[list[T]]`; tái dùng đúng hình dạng
+    // `Ty::List(&Ty::List(&Ty::Var(0)))` của `list.chunk`/`list.windows` — **không** thêm biến
+    // thể `Ty`; `T` buộc từ `xs` nên sugar R5c `xs.chunks_exact(n)` hợp lệ và trả kiểu lồng.
+    let f = sig_of("list.chunks_exact").expect("list.chunks_exact");
+    assert_eq!(
+        f.params,
+        &[Ty::List(&Ty::Var(0)), Ty::Int],
+        "`list.chunks_exact`: tham số"
+    );
+    assert_eq!(
+        f.ret,
+        Ty::List(&Ty::List(&Ty::Var(0))),
+        "`list.chunks_exact`: kiểu trả"
+    );
+    assert_eq!(
+        f.params[0].sang_type(),
+        Ty::List(&Ty::Var(0)).sang_type(),
+        "`list.chunks_exact`: hạ `list[T]`"
+    );
+    assert_eq!(
+        f.ret.sang_type(),
+        Ty::List(&Ty::List(&Ty::Var(0))).sang_type(),
+        "`list.chunks_exact`: hạ `list[list[T]]`"
+    );
+    let chunk = sig_of("list.chunk").expect("list.chunk");
+    assert_eq!(
+        chunk.ret, f.ret,
+        "`list.chunks_exact` phải cùng kiểu trả với `list.chunk`"
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "chunks_exact"),
+        None,
+        "sugar `chunks_exact` thuộc `list`, không phải `str`"
     );
 }
 

@@ -31,6 +31,7 @@ mod fsissymlink;
 mod fsmkdirall;
 mod fsreadlink;
 mod indexof;
+mod listchunksexact;
 mod listcontains;
 mod listmath;
 mod listmean;
@@ -459,6 +460,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 xs.chunks(n).map(|c| Value::List(c.to_vec())).collect(),
             ))
         }
+        // **VD-270 (chunks-exact)**: nhóm **đúng `n`** phần tử, **bỏ phần dư** cuối (khác
+        // `list.chunk` giữ nhóm cuối ngắn). `n <= 0` ⇒ trap `VS0501` kiểm **trước khi chia**
+        // (kể cả `xs` rỗng); `n > len`/rỗng ⇒ `[]`. Lõi ở `stdlib/listchunksexact.rs`.
+        "list.chunks_exact" => listchunksexact::goi(name, &args, span),
         // **VD-270**: cửa sổ **trượt** độ dài `n`, bước 1 (chồng nhau `n-1` phần tử), theo thứ
         // tự. Khác `list.chunk` (nhóm rời). `n <= 0` ⇒ trap `VS0501` — kiểm **trước** dữ liệu
         // nên `list.windows([], 0)` cũng trap; `n > len(xs)` ⇒ `[]`; `n == len(xs)` ⇒ một cửa
