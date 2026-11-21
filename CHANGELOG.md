@@ -5,9 +5,9 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## v0.3.0 — 2026-11-21 (candidate)
 
-- **HTTP/2 default-on** (h2 + ALPN, fallback HTTP/1.1, reuse theo authority); `http2` vào default non-wasm.
-- Async `chan(n≥1)` wait-set trên frame (W1f); worker benchmark chuyển example.
-- Linux gate **3494/3**; HTTP/2 7 ca + TLS 12 + HTTP 22; Windows/fresh-clone đang verify.
+- **HTTP/2 default-on** (h2 + ALPN, fallback HTTP/1.1, queue reuse 4 authority, idle 15 s); `http2` vào default non-wasm.
+- Async `chan(n≥1)` wait-set trên frame (W1f); worker-copy payload lớn (list10k 3,18×, map1k 3,14×).
+- Linux gate **3496/3**; HTTP/2 8 ca + TLS 12 + HTTP 22; W4 đã verify `a26ec4b` 3450/0, cần verify `6f0ea95`.
 - Không GitHub Actions; macOS ngoài phạm vi.
 
 ## v0.2.0 — 2026-11-21
