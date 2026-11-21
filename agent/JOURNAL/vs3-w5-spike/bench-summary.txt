@@ -1,0 +1,123 @@
+Median 14 lần chạy (run 16..29, đã warm; load 2.4–4.2); ngoặc là [min,max] thô.
+
+files: 14 (run 16..29)
+
+== CLONE median (ns) ==
+value.list1k	5475.8	[min 5364.6, max 12064.5]
+value.list10k	59666.6	[min 55724.3, max 105775.3]
+value.map1k	24388.5	[min 23768.5, max 41099.5]
+value.map10k	252778.5	[min 249489.3, max 755868.3]
+value.record16+list1k	6189.8	[min 5890.3, max 10908.2]
+value.record16+list10k	62538.2	[min 58748.9, max 107504.8]
+value.enum(list1k)	5678.2	[min 5603.9, max 10075.0]
+value.enum(list10k)	62007.9	[min 57570.7, max 102068.6]
+value.10k-enum-values	341097.1	[min 332580.5, max 602359.8]
+value.str1KiB	14.5	[min 14.4, max 25.3]
+value.str1MiB	35152.5	[min 33799.7, max 61352.3]
+value.bytes1MiB	34988.3	[min 33991.7, max 67000.6]
+value.closure(Rc)	2.4	[min 2.3, max 4.0]
+move.list10k(in-thread)	3.7	[min 3.6, max 6.3]
+value.list1k.clone+push	5679.4	[min 5576.4, max 9636.1]
+value.list10k.clone+push	62583.5	[min 57436.9, max 94710.5]
+wire.list1k.clone	5415.9	[min 5087.0, max 8616.0]
+wire.list10k.clone	57609.0	[min 52138.3, max 91931.0]
+to_wire.list1k	7201.8	[min 6811.3, max 10766.5]
+to_wire.list10k	70201.9	[min 68189.4, max 108914.0]
+wire_to_value.list1k	7125.7	[min 6557.5, max 14637.7]
+wire_to_value.list10k	71640.4	[min 65846.9, max 148192.0]
+to_wire.batch.list1k	7555.6	[min 7363.9, max 25121.2]
+into_wire.move.list1k	11268.6	[min 10382.4, max 28427.9]
+to_wire.batch.list10k	76368.7	[min 73747.9, max 122026.7]
+into_wire.move.list10k	118929.7	[min 110603.1, max 184749.3]
+wire_to_value.batch.list1k	7492.1	[min 7020.1, max 12525.9]
+wire_into_value.move.list1k	10090.4	[min 9361.1, max 15477.8]
+wire_to_value.batch.list10k	77160.7	[min 70806.7, max 125942.3]
+wire_into_value.move.list10k	104885.2	[min 95243.8, max 153969.8]
+to_wire.batch.str1MiB	70409.4	[min 65457.2, max 95610.4]
+into_wire.move.str1MiB	38517.4	[min 32378.2, max 49672.4]
+wire_to_value.batch.str1MiB	70211.1	[min 65307.4, max 95659.4]
+wire_into_value.move.str1MiB	39378.3	[min 33003.8, max 50290.2]
+arc.list1k.clone	10.8	[min 9.8, max 16.7]
+arc.list10k.clone	10.6	[min 9.8, max 16.4]
+arc.map1k.clone	10.8	[min 9.8, max 15.6]
+arc.record16+list1k.clone	18.8	[min 17.6, max 26.4]
+arc.enum-list1k.clone	27.5	[min 26.1, max 37.0]
+arc.str1KiB.clone	10.1	[min 9.8, max 13.5]
+arc.str1MiB.clone	10.4	[min 9.8, max 13.5]
+arc.bytes1MiB.clone	10.3	[min 9.8, max 13.5]
+wire.str1MiB.clone	34760.0	[min 33256.1, max 47062.3]
+to_wire.str1MiB	36035.9	[min 33407.3, max 49278.5]
+wire_to_value.str1MiB	34844.9	[min 33300.2, max 48510.0]
+arc.list1k.cow-push	5687.1	[min 5652.2, max 8039.5]
+arc.list10k.cow-push	56894.4	[min 56123.9, max 79756.4]
+
+== POOL median (ms, speedup) ==
+('arc', 'list10k', '1')	63.3 ms	speedup 1.00
+('arc', 'list10k', '2')	39.7 ms	speedup 1.65
+('arc', 'list10k', '4')	24.4 ms	speedup 2.55
+('arc', 'list1k', '1')	126.8 ms	speedup 1.00
+('arc', 'list1k', '2')	76.0 ms	speedup 1.67
+('arc', 'list1k', '4')	48.1 ms	speedup 2.49
+('arc-local', 'list10k', '0')	61.8 ms	speedup 0.00
+('arc-local', 'list1k', '0')	119.4 ms	speedup 0.00
+('copy', 'cpu-unit', '1')	127.5 ms	speedup 1.00
+('copy', 'cpu-unit', '2')	73.2 ms	speedup 1.67
+('copy', 'cpu-unit', '4')	48.0 ms	speedup 2.65
+('copy', 'list10k', '1')	94.2 ms	speedup 1.00
+('copy', 'list10k', '2')	64.5 ms	speedup 1.48
+('copy', 'list10k', '4')	37.9 ms	speedup 2.58
+('copy', 'list1k', '1')	137.0 ms	speedup 1.00
+('copy', 'list1k', '2')	78.5 ms	speedup 1.85
+('copy', 'list1k', '4')	51.5 ms	speedup 2.51
+('copy', 'unit', '1')	3.2 ms	speedup 1.00
+('copy', 'unit', '2')	3.0 ms	speedup 1.09
+('copy', 'unit', '4')	3.5 ms	speedup 0.91
+('copy-local', 'list10k', '0')	95.5 ms	speedup 0.00
+('copy-local', 'list1k', '0')	129.8 ms	speedup 0.00
+
+== CHANNEL median (us/msg, MiB/s) ==
+('arc', 'list10k', '2')	0.31 us	1460616.5 MiB/s
+('arc', 'list10k', '4')	0.21 us	2132210.5 MiB/s
+('arc', 'list1k', '2')	0.11 us	411905.2 MiB/s
+('arc', 'list1k', '4')	0.15 us	311592.5 MiB/s
+('arc', 'str1MiB', '2')	0.61 us	77601565.5 MiB/s
+('arc', 'str1MiB', '4')	0.38 us	126515633.6 MiB/s
+('arc', 'unit', '2')	0.08 us	0.0 MiB/s
+('arc', 'unit', '4')	0.13 us	0.0 MiB/s
+('copy+decode', 'list10k', '2')	132.53 us	4039.7 MiB/s
+('copy+decode', 'list10k', '4')	141.05 us	3788.8 MiB/s
+('copy+decode', 'list1k', '2')	12.62 us	4231.0 MiB/s
+('copy+decode', 'list1k', '4')	12.75 us	4261.5 MiB/s
+('copy+decode', 'str1MiB', '2')	125.25 us	447166.8 MiB/s
+('copy+decode', 'str1MiB', '4')	155.44 us	361009.1 MiB/s
+('copy+decode', 'unit', '2')	0.07 us	0.0 MiB/s
+('copy+decode', 'unit', '4')	0.11 us	0.0 MiB/s
+('move', 'list10k', '1')	56.04 us	9537.2 MiB/s
+('move', 'list1k', '1')	3.86 us	13947.6 MiB/s
+('move', 'str1MiB', '1')	38.89 us	1443505.6 MiB/s
+
+== RSS median (MB) ==
+baseline	2.6
+threads4-idle	2.8
+threads4-256m-stack-idle	2.8
+copy-50x10k-built	33.3
+copy-50x10k-cloned	64.0
+copy-50x10k-dropped-clone	33.4
+per-thread-copy-100x10k-live	64.2
+arc-100x10k-built	48.7
+arc-100x10k-4heap-clones	48.8
+queue-copy-64x10k	36.9
+queue-arc-64x10k	3.1
+calib-1m-values	63.7
+
+== CPU-SCALE (6 vòng, median của 3 lần lặp bên trong mỗi vòng) ==
+workers=1: 1.00
+workers=2: 1.71 [1.62,1.83]
+workers=4: 2.45 [2.30,2.52]
+workers=8: 4.56 [4.51,4.72]
+workers=12: 6.83 [6.55,6.94]
+
+== POOL-CPU-SCALE (6 vòng, median của 3 lần lặp bên trong mỗi vòng) ==
+workers=1: 1.00
+workers=2: 1.75 [1.62,1.83]
+workers=4: 2.45 [2.32,2.61]

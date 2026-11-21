@@ -1,0 +1,107 @@
+ENV	nproc=12	load=2.45 2.13 3.59 1/2079 1120918	arch=x86_64	os=linux	cpu=12th Gen Intel(R) Core(TM) i5-1235U
+SIZE	Value=64	Wire=56	ArcValue=48
+CLONE	label	ns_med	ns_min	MiB/s	allocs	KiB
+CLONE	value.list1k	5441.71	5411.46	11216.2	1	62.5
+CLONE	value.list10k	58995.18	58717.19	10345.8	1	625.0
+CLONE	value.map1k	24452.57	23843.48	5143.8	1001	128.8
+CLONE	value.map10k	251036.19	249951.91	5048.4	10001	1297.7
+CLONE	value.record16+list1k	5933.11	5917.30	10519.8	19	63.9
+CLONE	value.record16+list10k	62251.97	62107.93	9826.7	19	626.4
+CLONE	value.enum(list1k)	5639.89	5630.73	10832.9	2	62.6
+CLONE	value.enum(list10k)	61024.18	60751.61	10002.8	2	625.1
+CLONE	value.10k-enum-values	332580.46	331089.62	3670.4	10001	1250.0
+CLONE	value.str1KiB	14.43	14.36	67675.3	1	1.0
+CLONE	value.str1MiB	35375.42	35279.37	28268.2	1	1024.0
+CLONE	value.bytes1MiB	34435.36	34213.46	29039.9	1	1024.0
+CLONE	value.closure(Rc)	2.29	2.28	0.0	0	0.0
+CLONE	move.list10k(in-thread)	3.57	3.56	0.0	0	0.0
+CLONE	value.list1k.clone+push	5683.18	5646.63	0.0	1	0.0
+CLONE	value.list10k.clone+push	64532.41	62127.94	0.0	1	0.0
+CLONE	wire.list1k.clone	5414.04	5363.71	9864.3	1	54.7
+CLONE	wire.list10k.clone	60670.83	56949.01	8802.5	1	546.9
+CLONE	to_wire.list1k	7399.55	6827.22	7217.4	1	54.7
+CLONE	to_wire.list10k	69028.63	68472.23	7736.8	1	546.9
+CLONE	wire_to_value.list1k	7028.93	7006.53	7598.0	1	54.7
+CLONE	wire_to_value.list10k	70560.34	70364.63	7568.8	1	546.9
+CLONE	to_wire.batch.list1k	7412.24	7293.61	7205.1	1	54.7
+CLONE	into_wire.move.list1k	10678.58	10539.78	5001.2	1	54.7
+CLONE	to_wire.batch.list10k	76922.43	74701.26	6942.8	1	546.9
+CLONE	into_wire.move.list10k	122681.80	122491.68	4353.2	1	546.9
+CLONE	wire_to_value.batch.list1k	8206.97	8186.19	6507.4	1	54.7
+CLONE	wire_into_value.move.list1k	10365.20	10192.79	5152.4	1	54.7
+CLONE	wire_to_value.batch.list10k	82479.60	82379.79	6475.0	1	546.9
+CLONE	wire_into_value.move.list10k	104895.73	104804.30	5091.3	1	546.9
+CLONE	to_wire.batch.str1MiB	70138.08	69971.68	14257.6	1	1024.0
+CLONE	into_wire.move.str1MiB	42010.38	36648.08	23803.6	1	1024.0
+CLONE	wire_to_value.batch.str1MiB	70916.64	70629.84	14101.1	1	1024.0
+CLONE	wire_into_value.move.str1MiB	36820.12	35975.30	27159.1	1	1024.0
+CLONE	arc.list1k.clone	10.81	10.80	0.0	0	0.0
+CLONE	arc.list10k.clone	10.41	9.99	0.0	0	0.0
+CLONE	arc.map1k.clone	10.79	10.42	0.0	0	0.0
+CLONE	arc.record16+list1k.clone	18.37	17.72	0.0	0	0.0
+CLONE	arc.enum-list1k.clone	26.29	26.06	0.0	0	0.0
+CLONE	arc.str1KiB.clone	9.85	9.81	0.0	0	0.0
+CLONE	arc.str1MiB.clone	13.35	13.33	0.0	0	0.0
+CLONE	arc.bytes1MiB.clone	10.30	10.27	0.0	0	0.0
+CLONE	wire.str1MiB.clone	34306.56	34038.96	29148.9	1	1024.0
+CLONE	to_wire.str1MiB	33407.33	33371.66	29933.5	1	1024.0
+CLONE	wire_to_value.str1MiB	34296.68	34130.58	29157.3	1	1024.0
+CLONE	arc.list1k.cow-push	5666.30	5652.51	8086.8	1	46.9
+CLONE	arc.list10k.cow-push	56878.53	56539.97	8048.9	1	468.8
+CPU	iters=175598	per_task_us=241.2
+POOL	mode	payload	workers	tasks	ms	us_per_task	speedup	got
+POOL	copy	unit	1	20000	3.0	0.15	1.00	20000
+POOL	copy	unit	2	20000	2.5	0.12	1.20	20000
+POOL	copy	unit	4	20000	3.4	0.17	0.87	20000
+POOL	copy	cpu-unit	1	512	127.5	249.01	1.00	512
+POOL	copy	cpu-unit	2	512	87.7	171.25	1.45	512
+POOL	copy	cpu-unit	4	512	51.9	101.40	2.46	512
+POOL	copy-local	list1k	0	512	131.4	256.60	-	512
+POOL	arc-local	list1k	0	512	123.6	241.35	-	512
+POOL	copy	list1k	1	512	138.2	269.96	1.00	512
+POOL	arc	list1k	1	512	155.5	303.73	1.00	512
+POOL	copy	list1k	2	512	80.7	157.71	1.71	512
+POOL	arc	list1k	2	512	70.1	136.89	2.22	512
+POOL	copy	list1k	4	512	52.8	103.05	2.62	512
+POOL	arc	list1k	4	512	51.9	101.33	3.00	512
+POOL	copy-local	list10k	0	256	100.1	391.12	-	256
+POOL	arc-local	list10k	0	256	61.7	240.96	-	256
+POOL	copy	list10k	1	256	92.9	363.00	1.00	256
+POOL	arc	list10k	1	256	62.7	245.05	1.00	256
+POOL	copy	list10k	2	256	60.7	237.17	1.53	256
+POOL	arc	list10k	2	256	43.7	170.62	1.44	256
+POOL	copy	list10k	4	256	37.5	146.62	2.48	256
+POOL	arc	list10k	4	256	25.9	101.21	2.42	256
+CHANNEL	mode	payload	producers	msgs	ms	us_per_msg	MiB/s	got
+CHANNEL	copy+decode	unit	2	40000	1.4	0.03	0.0	40000
+CHANNEL	arc	unit	2	40000	3.6	0.09	0.0	40000
+CHANNEL	copy+decode	unit	4	80000	7.8	0.10	0.0	80000
+CHANNEL	arc	unit	4	80000	9.4	0.12	0.0	80000
+CHANNEL	copy+decode	list1k	2	10000	127.3	12.73	4195.8	10000
+CHANNEL	arc	list1k	2	10000	1.1	0.11	405694.8	10000
+CHANNEL	copy+decode	list1k	4	20000	289.3	14.46	3692.6	20000
+CHANNEL	arc	list1k	4	20000	2.8	0.14	324258.3	20000
+CHANNEL	move	list1k	1	1000	3.2	3.23	16509.0	1000
+CHANNEL	copy+decode	list10k	2	1000	113.6	113.62	4700.6	1000
+CHANNEL	arc	list10k	2	1000	0.3	0.32	1431549.3	1000
+CHANNEL	copy+decode	list10k	4	2000	252.8	126.42	4224.3	2000
+CHANNEL	arc	list10k	4	2000	0.5	0.23	1987856.8	2000
+CHANNEL	move	list10k	1	100	4.7	47.22	11310.5	100
+CHANNEL	copy+decode	str1MiB	2	400	39.9	99.84	560911.9	400
+CHANNEL	arc	str1MiB	2	400	0.3	0.65	73906416.0	400
+CHANNEL	copy+decode	str1MiB	4	800	118.8	148.47	377188.4	800
+CHANNEL	arc	str1MiB	4	800	0.4	0.49	97443627.3	800
+CHANNEL	move	str1MiB	1	50	2.0	40.75	1374292.5	50
+RSS	label	RSS_MB	HWM_MB
+RSS	baseline	2.6	2.6
+RSS	threads4-idle	2.8	2.8
+RSS	threads4-256m-stack-idle	2.8	2.8
+RSS	copy-50x10k-built	33.3	33.3
+RSS	copy-50x10k-cloned	64.0	64.0
+RSS	copy-50x10k-dropped-clone	33.3	63.9
+RSS	per-thread-copy-100x10k-live	64.2	64.2
+RSS	arc-100x10k-built	48.8	48.8
+RSS	arc-100x10k-4heap-clones	48.8	48.8
+RSS	queue-copy-64x10k	36.9	36.9
+RSS	queue-arc-64x10k	3.1	3.1
+RSS	calib-1m-values	63.7	63.7
