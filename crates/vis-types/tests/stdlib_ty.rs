@@ -285,7 +285,13 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
     // sinh phần rỗng cuối khi `s` kết thúc bằng `sep`, chỉ bỏ **một** phần rỗng; `s` rỗng +
     // `sep` khác rỗng ⇒ `[]`, `sep` rỗng theo đúng nghĩa Rust, sugar R5c) ⇒ **159** hàm
     // (trước 158); không xoá/đổi hàm cũ nào.
-    assert_eq!(FUNCS.len(), 162, "bảng chữ ký phải đủ 162 hàm");
+    // **SỬA KÈM LÝ DO (VD-270 path-strip-prefix, 2026-11-21)**: +**1** hàm
+    // `std.path.strip_prefix` (`(str, str) -> str?`; bỏ tiền tố **theo thành phần** đường dẫn,
+    // thuần từ vựng POSIX, phần còn lại **nguyên văn**, `base` rỗng ⇒ `Some(p)`, bằng nhau ⇒
+    // `Some("")`, `base` toàn `/` = gốc, khác loại ⇒ `None`; `Ty::OptStr` thật; **không** sugar
+    // — `str.strip_prefix` đã có nên receiver `str` vẫn đi `str.*`, không đi `path.*`) ⇒ **160**
+    // hàm; không xoá/đổi hàm cũ nào.
+    assert_eq!(FUNCS.len(), 163, "bảng chữ ký phải đủ 163 hàm");
 }
 
 #[test]
@@ -640,6 +646,36 @@ fn path_with_stem_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.with_stem`: hạ kiểu");
     assert_eq!(vis_types::stdlib::module_sugar("str", "with_stem"), None);
     assert_eq!(vis_types::stdlib::module_sugar("path", "with_stem"), None);
+}
+
+#[test]
+fn path_strip_prefix_hai_tham_so_optstr_va_khong_sugar() {
+    // **VD-270 (path.strip_prefix)**: chữ ký `(str, str) -> str?` dùng `Ty::OptStr`; **không**
+    // sugar **path** — `module_sugar` không ánh xạ `strip_prefix` sang `path`. Lưu ý
+    // `str.strip_prefix` đã có từ trước nên receiver `str` vẫn đi `str.*` (không phải path).
+    let f = sig_of("path.strip_prefix").expect("path.strip_prefix");
+    assert_eq!(
+        f.params,
+        &[Ty::Str, Ty::Str],
+        "`path.strip_prefix`: tham số"
+    );
+    assert_eq!(f.ret, Ty::OptStr, "`path.strip_prefix`: kiểu trả");
+    assert_eq!(
+        f.ret.sang_type(),
+        Type::Opt(Box::new(Type::Str)),
+        "`path.strip_prefix`: hạ kiểu `str?`"
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("str", "strip_prefix"),
+        None,
+        "`strip_prefix` không được ánh xạ sang `path`"
+    );
+    assert_eq!(
+        vis_types::stdlib::module_sugar("path", "strip_prefix"),
+        None
+    );
+    // `str.strip_prefix` vẫn là hàm `str` độc lập (sugar receiver `str` không đổi).
+    assert!(sig_of("str.strip_prefix").is_some());
 }
 
 #[test]

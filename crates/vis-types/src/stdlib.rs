@@ -267,7 +267,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 162] = [
+pub const FUNCS: [StdFn; 163] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -869,6 +869,15 @@ pub const FUNCS: [StdFn; 162] = [
         name: "path.relative",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::Str,
+    },
+    // **VD-270 (path.strip_prefix)**: bỏ tiền tố **theo thành phần** đường dẫn, thuần từ vựng
+    // POSIX; `base` rỗng ⇒ `Some(p)`, `p == base` ⇒ `Some("")`, phần còn lại **nguyên văn**
+    // (bỏ đúng một `/` phân cách; giữ `.`/`..`/`//`), `base` toàn `/` = gốc, khác loại tuyệt
+    // đối/tương đối ⇒ `None`; `str?` thật (`Ty::OptStr`); **không** sugar — module-only.
+    StdFn {
+        name: "path.strip_prefix",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::OptStr,
     },
     // **VD-270 (path.with_extension)**: thay/đặt/bỏ phần mở rộng của **thành phần cuối**, thuần
     // chuỗi; `ext` rỗng ⇒ xoá (kể cả dấu chấm), chưa có ext ⇒ nối `.` + ext; tên bắt đầu `.`
