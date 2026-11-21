@@ -25,7 +25,7 @@
 | VS3-1b — cancellation/cleanup | W1 | `vs3_cancel.rs` | **DONE (một phần)** — `97676c6`; 14 ca; channel wait-set để VS3-2a |
 | VS3-1c — coverage HIR | W1 | `vs3_coverage_matrix.rs` | **DONE (một phần)** — `7e1deed`; 10 ca, sửa `?.` frame; `Pipe`/nested async chặn 1d |
 | VS3-1d — flip default `async` | W1 | `vs3_default.rs` + gate | **DONE (một phần)** — `d0e7998`; async net/TLS/HTTP/1.1 Unix; async h2 **design-only** (W2 đang giữ `net/h2.rs`); Windows backend mở |
-| VS3-1d/h2 — async HTTP/2 | W1 | design + test plan | **DESIGN** — `agent/VS3-W1-ASYNC-H2-DESIGN.md`; chưa code vì `PhienH2` sync/không reactor; chờ W2 mở `H2Session` |
+| VS3-1d/h2 — async HTTP/2 | W1/W2 | design + spike + tích hợp | **WIP (spike PASS)** — `dffdef5` nhánh W2: 4 stream/1 connection qua `h2_async`, cap/GOAWAY/timeout, 25 pass feature; đang tách `h2_core` + nối `AsyncNet`, default-off |
 | VS3-2a — wait-set/`chan(0)` | W1 | `vs3_chan0.rs` | **DONE (một phần)** — `d060f5a`; 13 ca; cap≥1/select còn mở |
 | VS3-2b — timeout kênh (`select` hoãn 2c) | W5 | `vs3_chan_timeout.rs` | **DONE (một phần)** — `8da533b`; 17 ca `recv_timeout`/`send_timeout`; `select` VS3-2c |
 | VS3-3a — spike worker/heap | W5 | `vs3_spike.md` + bench | **DONE** — `4bb20df`; chọn affine + per-worker heap (B1–B6) |
