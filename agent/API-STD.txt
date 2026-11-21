@@ -153,6 +153,7 @@ str.rsplit_once	(str, str) -> list[str]?
 str.split	(str, str) -> list[str]
 str.split_inclusive	(str, str) -> list[str]
 str.split_once	(str, str) -> list[str]?
+str.split_terminator	(str, str) -> list[str]
 str.split_whitespace	(str) -> list[str]
 str.splitn	(str, str, int) -> list[str]
 str.starts_with	(str, str) -> bool

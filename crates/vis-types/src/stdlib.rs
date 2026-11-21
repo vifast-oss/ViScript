@@ -256,7 +256,7 @@ pub const MODULES: [&str; 10] = [
 pub const MODULES_HOAN: [&str; 1] = ["io"];
 
 /// Toàn bộ hàm `std.*` của ST-26.
-pub const FUNCS: [StdFn; 158] = [
+pub const FUNCS: [StdFn; 159] = [
     // ----- std.str -----
     StdFn {
         name: "str.split",
@@ -290,6 +290,18 @@ pub const FUNCS: [StdFn; 158] = [
     // Sugar R5c `s.split_inclusive(sep)`.
     StdFn {
         name: "str.split_inclusive",
+        params: &[Ty::Str, Ty::Str],
+        ret: Ty::ListStr,
+    },
+    // **VD-270 (split-terminator)**: như `str.split` nhưng **không** sinh phần rỗng cuối khi
+    // `s` kết thúc bằng `sep`: `split_terminator("a,b,", ",")` ⇒ `["a", "b"]`; chỉ bỏ **một**
+    // phần rỗng cuối (`","` ⇒ `[""]`, `",,"` ⇒ `["", ""]`); không khớp ⇒ `[s]`; `s` rỗng +
+    // `sep` khác rỗng ⇒ `[]` (probe Rust 1.100.0); `sep` rỗng theo **đúng** nghĩa Rust
+    // (`"abc"` ⇒ `["", "a", "b", "c"]`, `""` ⇒ `[""]`) — khác `str.split` của VS. Kết quả luôn
+    // `list[str]` (tái dùng `Ty::ListStr`, không thêm biến thể `Ty`). Sugar R5c
+    // `s.split_terminator(sep)`; không đụng `str.split`/`splitn`/`split_inclusive`.
+    StdFn {
+        name: "str.split_terminator",
         params: &[Ty::Str, Ty::Str],
         ret: Ty::ListStr,
     },
