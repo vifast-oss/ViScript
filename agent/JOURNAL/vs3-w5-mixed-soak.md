@@ -14,6 +14,11 @@ assertion test quá chặt (xem §4).
 
 ## 1. Test và cách chạy
 
+
+> **R1 fix (22/11)**: merge đầu `73f63ff` để `vs3_worker.rs` 1926 dòng ⇒ gate đỏ R1.
+> Đã tách mixed soak sang `vs3_worker_soak.rs` tại `f90d6d0`: `vs3_worker.rs` 1228 dòng,
+> `vs3_worker_soak.rs` 794 dòng; gate **3538/3** xanh, `vis-dev rules` OK. Không đổi logic test.
+
 Test mới `mixed_soak_shared_copy_move_w1_w4` trong `crates/vis-cli/tests/vs3_worker_soak.rs`
 (không `#[ignore]`), **env-gated**:
 
