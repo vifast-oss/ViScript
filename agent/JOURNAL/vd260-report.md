@@ -340,3 +340,4 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `VIS_DIFF_N=100000` seed 20261216 @ `db5cdfe`: **0 lệch** (xem log `/tmp/opencode/diff100k_w36.out`).
 - **Wave 25 merged**: `str.rsplit_once` (`0161008`), `list.min_float/max_float` (`2b20b55`); gate **2977 passed / 3 skipped**; FUNCS **147**.
 - `test/release/run.sh` + `test/toolchain/run.sh` + `bin/vis-host-suite` @ `693ffb5`: **PASS** (artifact chỉ `vis`; toolchain 1.100.0; host 54/54 + POSIX real).
+- **Wave 25 merged tiếp**: `path.with_file_name` (`44a8d0d`), `fs.read_link` (`11fdaec`); gate **3009 passed / 3 skipped**; FUNCS **149**.

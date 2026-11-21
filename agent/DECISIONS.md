@@ -3500,3 +3500,13 @@ reuse `Ty::OptListStr`.
 vị trí ⇒ `None`** (tất định, cùng `median`); `±inf` so bình thường; trả đúng phần tử đã lưu; khi
 nhiều phần tử bằng nhau (kể cả `-0.0`/`+0.0`) giữ **phần tử đầu tiên** theo danh sách; chỉ
 `list[float]`; sugar R5c; reuse `Ty::OptFloat`.
+
+### VD-270 (bổ sung) · with_file_name, fs.read_link — A0, 2026-11-21
+
+- **path.with_file_name**: `(str, str) -> str` thay **toàn bộ thành phần cuối** (kể cả ext) bằng
+  `name` **nguyên văn**, giữ tiền tố nguyên văn; `name` rỗng ⇒ bỏ thành phần cuối + giữ `/`;
+  không có tên tệp (`""`, `/`, `.`, `..`, `a/.`) ⇒ trả `p` nguyên văn; tiền tố không chuẩn hoá
+  (`a//b`, `a/./b` giữ nguyên — khác Rust); `name` tuyệt đối **không** thay path; không sugar.
+- **fs.read_link**: `(str) -> Result[str, Error]` trả đích symlink **nguyên văn**, **không** đi theo
+  link; dangling ⇒ `Ok(target)`; tệp/thư mục thường/thiếu ⇒ `Err` dữ liệu; đích không UTF-8 ⇒
+  `Err`; cap đọc như `fs.is_file`; mock luôn `Err`; không sugar; reuse `Ty::ResultStrStr`.
