@@ -1,0 +1,468 @@
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 3.68s
+     Running tests/vs3_worker.rs (target/release/build/vis-cli/dfa6e459b96da178/out/vs3_worker-dfa6e459b96da178)
+
+running 1 test
+test mixed_soak_shared_copy_move_w1_w4 ... MIXED_SOAK_ENV	target_rounds=1000000	target_secs=1800	batch=5	n=10000	spawns_per_round=80000	rss0_kb=3640	threads0=2
+MIXED_ROUND	round=0	secs=3.594	print_s=0.658	budget_s=1.131	cancel_s=1.075	cross_s=0.730	rss_kb=59644	hwm_kb=59644	threads=2	peak_threads=6
+MIXED_ROUND	round=1	secs=5.566	print_s=0.811	budget_s=1.155	cancel_s=2.218	cross_s=1.382	rss_kb=60472	hwm_kb=60472	threads=3	peak_threads=6
+MIXED_ROUND	round=2	secs=6.141	print_s=1.093	budget_s=1.297	cancel_s=2.377	cross_s=1.375	rss_kb=62028	hwm_kb=62028	threads=2	peak_threads=6
+MIXED_ROUND	round=3	secs=6.589	print_s=1.656	budget_s=1.215	cancel_s=2.247	cross_s=1.470	rss_kb=62032	hwm_kb=62032	threads=2	peak_threads=6
+MIXED_ROUND	round=4	secs=6.406	print_s=1.745	budget_s=1.752	cancel_s=1.594	cross_s=1.314	rss_kb=62032	hwm_kb=62032	threads=2	peak_threads=6
+MIXED_BATCH	batch=1	rounds=5	total_rounds=5	tasks=400000	secs=28.30	rss0_kb=3640	rss_kb=62032	hwm_kb=62032	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=5	secs=6.439	print_s=1.379	budget_s=1.754	cancel_s=1.670	cross_s=1.637	rss_kb=62192	hwm_kb=62192	threads=3	peak_threads=6
+MIXED_ROUND	round=6	secs=4.308	print_s=1.340	budget_s=1.101	cancel_s=1.003	cross_s=0.865	rss_kb=62192	hwm_kb=62192	threads=2	peak_threads=6
+MIXED_ROUND	round=7	secs=4.116	print_s=1.401	budget_s=0.905	cancel_s=0.990	cross_s=0.820	rss_kb=62196	hwm_kb=62196	threads=2	peak_threads=6
+MIXED_ROUND	round=8	secs=3.444	print_s=0.970	budget_s=0.777	cancel_s=0.949	cross_s=0.749	rss_kb=62312	hwm_kb=62312	threads=2	peak_threads=6
+MIXED_ROUND	round=9	secs=3.313	print_s=0.825	budget_s=0.839	cancel_s=0.939	cross_s=0.709	rss_kb=62332	hwm_kb=62332	threads=2	peak_threads=6
+MIXED_BATCH	batch=2	rounds=5	total_rounds=10	tasks=800000	secs=21.62	rss0_kb=3640	rss_kb=62332	hwm_kb=62332	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=10	secs=3.650	print_s=1.014	budget_s=0.870	cancel_s=0.980	cross_s=0.787	rss_kb=62716	hwm_kb=62716	threads=2	peak_threads=6
+MIXED_ROUND	round=11	secs=6.866	print_s=0.837	budget_s=1.945	cancel_s=2.116	cross_s=1.967	rss_kb=62724	hwm_kb=62724	threads=2	peak_threads=6
+MIXED_ROUND	round=12	secs=6.361	print_s=2.460	budget_s=1.845	cancel_s=1.022	cross_s=1.034	rss_kb=62728	hwm_kb=62844	threads=3	peak_threads=6
+MIXED_ROUND	round=13	secs=4.187	print_s=1.424	budget_s=0.827	cancel_s=0.954	cross_s=0.982	rss_kb=62728	hwm_kb=62844	threads=2	peak_threads=6
+MIXED_ROUND	round=14	secs=7.145	print_s=1.910	budget_s=1.254	cancel_s=2.411	cross_s=1.570	rss_kb=63436	hwm_kb=63436	threads=2	peak_threads=6
+MIXED_BATCH	batch=3	rounds=5	total_rounds=15	tasks=1200000	secs=28.22	rss0_kb=3640	rss_kb=60584	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=15	secs=3.287	print_s=1.174	budget_s=0.853	cancel_s=0.823	cross_s=0.436	rss_kb=62748	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=16	secs=2.147	print_s=0.477	budget_s=0.421	cancel_s=0.783	cross_s=0.465	rss_kb=63440	hwm_kb=63440	threads=2	peak_threads=6
+MIXED_ROUND	round=17	secs=6.307	print_s=1.724	budget_s=1.438	cancel_s=2.349	cross_s=0.796	rss_kb=62732	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=18	secs=3.083	print_s=0.768	budget_s=0.669	cancel_s=0.913	cross_s=0.733	rss_kb=63440	hwm_kb=63440	threads=2	peak_threads=6
+MIXED_ROUND	round=19	secs=3.198	print_s=0.872	budget_s=0.772	cancel_s=0.907	cross_s=0.646	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=4	rounds=5	total_rounds=20	tasks=1600000	secs=18.02	rss0_kb=3640	rss_kb=62760	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=20	secs=2.626	print_s=0.759	budget_s=0.630	cancel_s=0.801	cross_s=0.436	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=21	secs=4.243	print_s=0.595	budget_s=0.689	cancel_s=1.143	cross_s=1.815	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=22	secs=9.428	print_s=2.487	budget_s=2.020	cancel_s=3.005	cross_s=1.916	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=23	secs=6.832	print_s=2.744	budget_s=1.969	cancel_s=1.178	cross_s=0.940	rss_kb=62760	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=24	secs=4.901	print_s=1.932	budget_s=1.068	cancel_s=1.033	cross_s=0.867	rss_kb=62744	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=5	rounds=5	total_rounds=25	tasks=2000000	secs=28.03	rss0_kb=3640	rss_kb=62744	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=25	secs=6.177	print_s=0.908	budget_s=1.267	cancel_s=2.514	cross_s=1.489	rss_kb=63452	hwm_kb=63452	threads=3	peak_threads=6
+MIXED_ROUND	round=26	secs=7.278	print_s=1.989	budget_s=1.355	cancel_s=2.444	cross_s=1.489	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=27	secs=5.553	print_s=1.101	budget_s=1.191	cancel_s=1.411	cross_s=1.850	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=28	secs=6.175	print_s=1.125	budget_s=1.667	cancel_s=1.536	cross_s=1.847	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=29	secs=5.052	print_s=1.840	budget_s=1.186	cancel_s=1.086	cross_s=0.940	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=6	rounds=5	total_rounds=30	tasks=2400000	secs=30.24	rss0_kb=3640	rss_kb=62760	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=30	secs=3.658	print_s=0.974	budget_s=0.958	cancel_s=0.957	cross_s=0.770	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=31	secs=3.586	print_s=0.958	budget_s=0.965	cancel_s=0.966	cross_s=0.697	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=32	secs=3.224	print_s=0.862	budget_s=0.701	cancel_s=0.914	cross_s=0.747	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=33	secs=3.284	print_s=0.856	budget_s=0.741	cancel_s=0.933	cross_s=0.754	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=34	secs=3.257	print_s=0.865	budget_s=0.746	cancel_s=0.915	cross_s=0.730	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=7	rounds=5	total_rounds=35	tasks=2800000	secs=17.01	rss0_kb=3640	rss_kb=62760	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=35	secs=3.169	print_s=0.892	budget_s=0.678	cancel_s=0.889	cross_s=0.710	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=36	secs=3.143	print_s=0.832	budget_s=0.712	cancel_s=0.895	cross_s=0.704	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=37	secs=3.169	print_s=0.915	budget_s=0.665	cancel_s=0.876	cross_s=0.713	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=38	secs=3.206	print_s=0.879	budget_s=0.732	cancel_s=0.913	cross_s=0.682	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=39	secs=3.657	print_s=1.232	budget_s=0.805	cancel_s=0.889	cross_s=0.731	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=8	rounds=5	total_rounds=40	tasks=3200000	secs=16.35	rss0_kb=3640	rss_kb=62760	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=40	secs=2.808	print_s=0.684	budget_s=0.493	cancel_s=0.910	cross_s=0.721	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=41	secs=2.894	print_s=0.710	budget_s=0.606	cancel_s=0.885	cross_s=0.693	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=42	secs=3.212	print_s=0.937	budget_s=0.679	cancel_s=0.900	cross_s=0.696	rss_kb=62760	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=43	secs=2.891	print_s=0.942	budget_s=0.613	cancel_s=0.789	cross_s=0.547	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=44	secs=3.197	print_s=0.910	budget_s=0.690	cancel_s=0.897	cross_s=0.699	rss_kb=63116	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_BATCH	batch=9	rounds=5	total_rounds=45	tasks=3600000	secs=15.00	rss0_kb=3640	rss_kb=63116	hwm_kb=63116	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=45	secs=3.126	print_s=0.827	budget_s=0.697	cancel_s=0.905	cross_s=0.697	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=46	secs=3.092	print_s=0.844	budget_s=0.662	cancel_s=0.899	cross_s=0.687	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=47	secs=3.145	print_s=0.857	budget_s=0.704	cancel_s=0.894	cross_s=0.689	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=48	secs=2.905	print_s=0.838	budget_s=0.724	cancel_s=0.825	cross_s=0.517	rss_kb=63152	hwm_kb=63152	threads=2	peak_threads=6
+MIXED_ROUND	round=49	secs=2.660	print_s=0.591	budget_s=0.631	cancel_s=0.897	cross_s=0.541	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=10	rounds=5	total_rounds=50	tasks=4000000	secs=14.93	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=50	secs=2.697	print_s=0.595	budget_s=0.541	cancel_s=0.913	cross_s=0.648	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=51	secs=2.682	print_s=0.594	budget_s=0.509	cancel_s=0.880	cross_s=0.699	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=52	secs=3.136	print_s=0.949	budget_s=0.604	cancel_s=0.893	cross_s=0.689	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=53	secs=3.293	print_s=0.865	budget_s=0.740	cancel_s=0.937	cross_s=0.752	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=54	secs=3.039	print_s=0.901	budget_s=0.817	cancel_s=0.800	cross_s=0.520	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=11	rounds=5	total_rounds=55	tasks=4400000	secs=14.85	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=55	secs=3.149	print_s=0.829	budget_s=0.720	cancel_s=0.889	cross_s=0.711	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=56	secs=3.246	print_s=0.751	budget_s=0.769	cancel_s=0.965	cross_s=0.761	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=57	secs=3.088	print_s=0.812	budget_s=0.657	cancel_s=0.889	cross_s=0.729	rss_kb=63796	hwm_kb=63796	threads=2	peak_threads=6
+MIXED_ROUND	round=58	secs=3.167	print_s=0.848	budget_s=0.713	cancel_s=0.894	cross_s=0.712	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=59	secs=3.011	print_s=0.844	budget_s=0.706	cancel_s=0.902	cross_s=0.559	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=12	rounds=5	total_rounds=60	tasks=4800000	secs=15.66	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=60	secs=2.757	print_s=0.594	budget_s=0.564	cancel_s=0.885	cross_s=0.715	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=61	secs=3.007	print_s=0.731	budget_s=0.656	cancel_s=0.908	cross_s=0.711	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=62	secs=3.071	print_s=0.735	budget_s=0.728	cancel_s=0.888	cross_s=0.720	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=63	secs=3.035	print_s=0.732	budget_s=0.705	cancel_s=0.891	cross_s=0.707	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=64	secs=3.100	print_s=0.803	budget_s=0.706	cancel_s=0.889	cross_s=0.701	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=13	rounds=5	total_rounds=65	tasks=5200000	secs=14.97	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=65	secs=2.596	print_s=0.710	budget_s=0.515	cancel_s=0.785	cross_s=0.586	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=66	secs=3.039	print_s=0.719	budget_s=0.714	cancel_s=0.903	cross_s=0.703	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=67	secs=3.136	print_s=0.724	budget_s=0.698	cancel_s=0.966	cross_s=0.747	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=68	secs=3.233	print_s=0.882	budget_s=0.719	cancel_s=0.847	cross_s=0.784	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=69	secs=3.213	print_s=0.851	budget_s=0.714	cancel_s=0.894	cross_s=0.753	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=14	rounds=5	total_rounds=70	tasks=5600000	secs=15.22	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=70	secs=3.136	print_s=0.742	budget_s=0.746	cancel_s=0.889	cross_s=0.759	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=71	secs=3.179	print_s=0.883	budget_s=0.744	cancel_s=0.917	cross_s=0.635	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=72	secs=2.845	print_s=0.625	budget_s=0.610	cancel_s=0.894	cross_s=0.715	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=73	secs=3.146	print_s=0.848	budget_s=0.710	cancel_s=0.891	cross_s=0.697	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=74	secs=3.238	print_s=0.842	budget_s=0.716	cancel_s=0.889	cross_s=0.792	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=15	rounds=5	total_rounds=75	tasks=6000000	secs=15.55	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=75	secs=3.243	print_s=0.817	budget_s=0.708	cancel_s=0.898	cross_s=0.820	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=76	secs=2.617	print_s=0.668	budget_s=0.508	cancel_s=0.836	cross_s=0.605	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=77	secs=2.559	print_s=0.610	budget_s=0.562	cancel_s=0.834	cross_s=0.554	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=78	secs=3.122	print_s=0.802	budget_s=0.757	cancel_s=0.896	cross_s=0.667	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=79	secs=3.517	print_s=0.765	budget_s=0.760	cancel_s=1.030	cross_s=0.962	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=16	rounds=5	total_rounds=80	tasks=6400000	secs=15.06	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=80	secs=4.526	print_s=1.511	budget_s=1.067	cancel_s=1.111	cross_s=0.837	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=81	secs=3.306	print_s=0.872	budget_s=0.756	cancel_s=0.893	cross_s=0.784	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=82	secs=3.907	print_s=1.340	budget_s=0.873	cancel_s=0.984	cross_s=0.710	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=83	secs=3.253	print_s=0.954	budget_s=0.709	cancel_s=0.891	cross_s=0.699	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=84	secs=3.089	print_s=0.778	budget_s=0.696	cancel_s=0.898	cross_s=0.716	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=17	rounds=5	total_rounds=85	tasks=6800000	secs=18.08	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=85	secs=3.279	print_s=1.007	budget_s=0.718	cancel_s=0.865	cross_s=0.689	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=86	secs=3.135	print_s=0.814	budget_s=0.702	cancel_s=0.934	cross_s=0.685	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=87	secs=3.154	print_s=0.809	budget_s=0.675	cancel_s=0.930	cross_s=0.739	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=88	secs=2.910	print_s=0.670	budget_s=0.645	cancel_s=0.878	cross_s=0.717	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=89	secs=2.487	print_s=0.625	budget_s=0.435	cancel_s=0.786	cross_s=0.641	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=18	rounds=5	total_rounds=90	tasks=7200000	secs=14.97	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=90	secs=2.899	print_s=0.684	budget_s=0.620	cancel_s=0.891	cross_s=0.704	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=91	secs=2.666	print_s=0.728	budget_s=0.506	cancel_s=0.871	cross_s=0.562	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=92	secs=2.584	print_s=0.571	budget_s=0.646	cancel_s=0.808	cross_s=0.560	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=93	secs=2.728	print_s=0.695	budget_s=0.591	cancel_s=0.783	cross_s=0.659	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=94	secs=3.015	print_s=0.731	budget_s=0.707	cancel_s=0.887	cross_s=0.690	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=19	rounds=5	total_rounds=95	tasks=7600000	secs=13.89	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=95	secs=2.981	print_s=0.640	budget_s=0.695	cancel_s=0.896	cross_s=0.750	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=96	secs=3.145	print_s=0.843	budget_s=0.643	cancel_s=0.893	cross_s=0.766	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=97	secs=3.100	print_s=0.727	budget_s=0.733	cancel_s=0.905	cross_s=0.736	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=98	secs=6.782	print_s=0.970	budget_s=2.071	cancel_s=2.754	cross_s=0.986	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=99	secs=2.973	print_s=0.816	budget_s=0.664	cancel_s=0.844	cross_s=0.650	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=20	rounds=5	total_rounds=100	tasks=8000000	secs=18.98	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=100	secs=3.016	print_s=0.667	budget_s=0.620	cancel_s=0.916	cross_s=0.813	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=101	secs=2.541	print_s=0.684	budget_s=0.617	cancel_s=0.804	cross_s=0.436	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=102	secs=2.621	print_s=0.474	budget_s=0.540	cancel_s=0.909	cross_s=0.697	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=103	secs=7.082	print_s=0.794	budget_s=1.388	cancel_s=2.792	cross_s=2.108	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=104	secs=9.810	print_s=2.950	budget_s=1.883	cancel_s=2.931	cross_s=2.045	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=21	rounds=5	total_rounds=105	tasks=8400000	secs=25.08	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=105	secs=4.103	print_s=1.638	budget_s=0.704	cancel_s=0.924	cross_s=0.836	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=106	secs=4.727	print_s=0.707	budget_s=0.593	cancel_s=1.697	cross_s=1.730	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=107	secs=4.835	print_s=1.494	budget_s=1.078	cancel_s=1.314	cross_s=0.949	rss_kb=63100	hwm_kb=63100	threads=3	peak_threads=6
+MIXED_ROUND	round=108	secs=5.206	print_s=1.549	budget_s=0.738	cancel_s=1.928	cross_s=0.992	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=109	secs=6.001	print_s=1.055	budget_s=1.003	cancel_s=2.244	cross_s=1.700	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=22	rounds=5	total_rounds=110	tasks=8800000	secs=24.88	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=110	secs=6.216	print_s=1.716	budget_s=0.781	cancel_s=1.468	cross_s=2.251	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=111	secs=7.166	print_s=2.038	budget_s=1.186	cancel_s=2.420	cross_s=1.522	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=112	secs=4.680	print_s=1.547	budget_s=1.036	cancel_s=1.216	cross_s=0.880	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=113	secs=3.852	print_s=1.186	budget_s=0.795	cancel_s=0.974	cross_s=0.896	rss_kb=63240	hwm_kb=63240	threads=2	peak_threads=6
+MIXED_ROUND	round=114	secs=3.488	print_s=1.047	budget_s=0.745	cancel_s=0.968	cross_s=0.729	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=23	rounds=5	total_rounds=115	tasks=9200000	secs=25.41	rss0_kb=3640	rss_kb=62532	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=115	secs=3.261	print_s=0.870	budget_s=0.730	cancel_s=0.936	cross_s=0.725	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=116	secs=3.379	print_s=0.979	budget_s=0.752	cancel_s=0.901	cross_s=0.746	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=117	secs=3.300	print_s=0.888	budget_s=0.719	cancel_s=0.924	cross_s=0.768	rss_kb=62532	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=118	secs=3.233	print_s=0.820	budget_s=0.723	cancel_s=0.950	cross_s=0.740	rss_kb=62740	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=119	secs=2.730	print_s=0.827	budget_s=0.705	cancel_s=0.764	cross_s=0.435	rss_kb=62740	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=24	rounds=5	total_rounds=120	tasks=9600000	secs=15.91	rss0_kb=3640	rss_kb=62740	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=120	secs=3.086	print_s=0.677	budget_s=0.684	cancel_s=0.978	cross_s=0.748	rss_kb=63448	hwm_kb=63448	threads=2	peak_threads=6
+MIXED_ROUND	round=121	secs=3.593	print_s=0.992	budget_s=0.804	cancel_s=0.995	cross_s=0.801	rss_kb=62740	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=122	secs=3.690	print_s=0.894	budget_s=0.856	cancel_s=1.027	cross_s=0.914	rss_kb=62740	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=123	secs=3.741	print_s=1.127	budget_s=0.976	cancel_s=0.914	cross_s=0.724	rss_kb=62740	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=124	secs=4.099	print_s=0.997	budget_s=1.125	cancel_s=1.022	cross_s=0.955	rss_kb=63448	hwm_kb=63448	threads=2	peak_threads=6
+MIXED_BATCH	batch=25	rounds=5	total_rounds=125	tasks=10000000	secs=18.21	rss0_kb=3640	rss_kb=60576	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=125	secs=3.240	print_s=0.773	budget_s=0.761	cancel_s=0.954	cross_s=0.752	rss_kb=62744	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=126	secs=3.490	print_s=0.881	budget_s=0.768	cancel_s=0.985	cross_s=0.856	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=127	secs=3.794	print_s=1.111	budget_s=0.847	cancel_s=1.055	cross_s=0.781	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=128	secs=3.631	print_s=0.858	budget_s=0.836	cancel_s=1.006	cross_s=0.931	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=129	secs=5.055	print_s=1.204	budget_s=1.302	cancel_s=1.406	cross_s=1.143	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=26	rounds=5	total_rounds=130	tasks=10400000	secs=19.21	rss0_kb=3640	rss_kb=62752	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=130	secs=4.959	print_s=0.661	budget_s=1.425	cancel_s=1.777	cross_s=1.095	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=131	secs=3.755	print_s=1.042	budget_s=0.866	cancel_s=1.004	cross_s=0.843	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=132	secs=3.392	print_s=1.065	budget_s=0.739	cancel_s=0.870	cross_s=0.717	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=133	secs=3.594	print_s=0.981	budget_s=0.730	cancel_s=0.944	cross_s=0.939	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=134	secs=4.058	print_s=1.142	budget_s=0.904	cancel_s=0.945	cross_s=1.067	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=27	rounds=5	total_rounds=135	tasks=10800000	secs=19.76	rss0_kb=3640	rss_kb=62752	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=135	secs=6.150	print_s=2.546	budget_s=0.750	cancel_s=2.020	cross_s=0.834	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=136	secs=3.196	print_s=0.879	budget_s=0.712	cancel_s=0.890	cross_s=0.715	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=137	secs=2.948	print_s=0.704	budget_s=0.623	cancel_s=0.900	cross_s=0.720	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=138	secs=3.359	print_s=0.956	budget_s=0.726	cancel_s=0.916	cross_s=0.760	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=139	secs=3.243	print_s=0.918	budget_s=0.638	cancel_s=0.928	cross_s=0.759	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=28	rounds=5	total_rounds=140	tasks=11200000	secs=18.90	rss0_kb=3640	rss_kb=62752	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=140	secs=3.128	print_s=0.778	budget_s=0.672	cancel_s=0.936	cross_s=0.742	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=141	secs=3.184	print_s=0.867	budget_s=0.702	cancel_s=0.944	cross_s=0.671	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=142	secs=2.778	print_s=0.852	budget_s=0.707	cancel_s=0.796	cross_s=0.423	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=143	secs=2.787	print_s=0.539	budget_s=0.512	cancel_s=0.885	cross_s=0.851	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=144	secs=3.405	print_s=1.012	budget_s=0.693	cancel_s=0.895	cross_s=0.806	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=29	rounds=5	total_rounds=145	tasks=11600000	secs=15.29	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=145	secs=3.093	print_s=0.817	budget_s=0.664	cancel_s=0.901	cross_s=0.711	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=146	secs=2.963	print_s=0.762	budget_s=0.676	cancel_s=0.894	cross_s=0.632	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=147	secs=2.493	print_s=0.604	budget_s=0.541	cancel_s=0.831	cross_s=0.517	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=148	secs=2.972	print_s=0.683	budget_s=0.692	cancel_s=0.899	cross_s=0.698	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=149	secs=3.310	print_s=0.873	budget_s=0.746	cancel_s=0.938	cross_s=0.753	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=30	rounds=5	total_rounds=150	tasks=12000000	secs=14.84	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=150	secs=7.132	print_s=2.048	budget_s=1.885	cancel_s=2.503	cross_s=0.696	rss_kb=63116	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=151	secs=3.425	print_s=0.947	budget_s=0.768	cancel_s=0.958	cross_s=0.752	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=152	secs=3.473	print_s=0.879	budget_s=0.784	cancel_s=1.023	cross_s=0.786	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=153	secs=3.343	print_s=0.834	budget_s=0.760	cancel_s=0.973	cross_s=0.776	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=154	secs=3.811	print_s=1.045	budget_s=0.914	cancel_s=1.048	cross_s=0.804	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=31	rounds=5	total_rounds=155	tasks=12400000	secs=21.19	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=155	secs=3.237	print_s=0.792	budget_s=0.714	cancel_s=0.961	cross_s=0.770	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=156	secs=3.392	print_s=0.796	budget_s=0.802	cancel_s=0.987	cross_s=0.806	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=157	secs=3.105	print_s=0.760	budget_s=0.665	cancel_s=1.023	cross_s=0.657	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=158	secs=2.893	print_s=0.707	budget_s=0.678	cancel_s=0.882	cross_s=0.627	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=159	secs=2.890	print_s=0.840	budget_s=0.632	cancel_s=0.866	cross_s=0.552	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=32	rounds=5	total_rounds=160	tasks=12800000	secs=15.52	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=160	secs=2.296	print_s=0.480	budget_s=0.552	cancel_s=0.790	cross_s=0.474	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=161	secs=2.354	print_s=0.623	budget_s=0.463	cancel_s=0.810	cross_s=0.457	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=162	secs=2.397	print_s=0.476	budget_s=0.466	cancel_s=0.800	cross_s=0.655	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=163	secs=3.082	print_s=0.820	budget_s=0.659	cancel_s=0.912	cross_s=0.691	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=164	secs=2.866	print_s=0.655	budget_s=0.676	cancel_s=0.876	cross_s=0.658	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=33	rounds=5	total_rounds=165	tasks=13200000	secs=13.00	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=165	secs=2.891	print_s=0.702	budget_s=0.680	cancel_s=0.858	cross_s=0.650	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=166	secs=2.558	print_s=0.658	budget_s=0.567	cancel_s=0.788	cross_s=0.545	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=167	secs=2.520	print_s=0.650	budget_s=0.548	cancel_s=0.783	cross_s=0.539	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=168	secs=2.526	print_s=0.637	budget_s=0.554	cancel_s=0.784	cross_s=0.551	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=169	secs=2.516	print_s=0.628	budget_s=0.555	cancel_s=0.795	cross_s=0.539	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=34	rounds=5	total_rounds=170	tasks=13600000	secs=13.01	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=170	secs=2.526	print_s=0.638	budget_s=0.563	cancel_s=0.790	cross_s=0.535	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=171	secs=2.513	print_s=0.638	budget_s=0.555	cancel_s=0.793	cross_s=0.526	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=172	secs=2.576	print_s=0.632	budget_s=0.551	cancel_s=0.819	cross_s=0.575	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=173	secs=2.544	print_s=0.664	budget_s=0.564	cancel_s=0.784	cross_s=0.531	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=174	secs=2.124	print_s=0.508	budget_s=0.419	cancel_s=0.769	cross_s=0.428	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=35	rounds=5	total_rounds=175	tasks=14000000	secs=12.28	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=175	secs=3.938	print_s=0.634	budget_s=0.971	cancel_s=1.225	cross_s=1.108	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=176	secs=3.658	print_s=0.984	budget_s=0.840	cancel_s=1.034	cross_s=0.800	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=177	secs=3.514	print_s=0.905	budget_s=0.804	cancel_s=0.985	cross_s=0.820	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=178	secs=3.630	print_s=0.894	budget_s=0.874	cancel_s=0.992	cross_s=0.870	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=179	secs=3.090	print_s=0.888	budget_s=0.679	cancel_s=0.890	cross_s=0.634	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=36	rounds=5	total_rounds=180	tasks=14400000	secs=17.83	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=180	secs=5.874	print_s=0.772	budget_s=0.733	cancel_s=2.312	cross_s=2.057	rss_kb=63100	hwm_kb=63100	threads=3	peak_threads=6
+MIXED_ROUND	round=181	secs=6.666	print_s=1.345	budget_s=1.640	cancel_s=1.932	cross_s=1.748	rss_kb=63116	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=182	secs=4.898	print_s=1.673	budget_s=1.307	cancel_s=1.034	cross_s=0.885	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=183	secs=4.088	print_s=0.832	budget_s=0.807	cancel_s=0.946	cross_s=1.504	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=184	secs=3.902	print_s=1.217	budget_s=1.276	cancel_s=0.885	cross_s=0.525	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=37	rounds=5	total_rounds=185	tasks=14800000	secs=25.43	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=185	secs=2.548	print_s=0.664	budget_s=0.652	cancel_s=0.788	cross_s=0.444	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=186	secs=4.295	print_s=1.533	budget_s=1.339	cancel_s=0.852	cross_s=0.572	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=187	secs=3.281	print_s=0.870	budget_s=0.615	cancel_s=0.949	cross_s=0.847	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=188	secs=3.315	print_s=0.948	budget_s=0.749	cancel_s=0.930	cross_s=0.687	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=189	secs=3.042	print_s=0.646	budget_s=0.815	cancel_s=0.929	cross_s=0.652	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_BATCH	batch=38	rounds=5	total_rounds=190	tasks=15200000	secs=16.48	rss0_kb=3640	rss_kb=63100	hwm_kb=63100	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=190	secs=2.853	print_s=0.787	budget_s=0.682	cancel_s=0.881	cross_s=0.503	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=191	secs=2.827	print_s=0.499	budget_s=0.525	cancel_s=0.916	cross_s=0.887	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=192	secs=9.590	print_s=2.568	budget_s=1.808	cancel_s=2.795	cross_s=2.419	rss_kb=63804	hwm_kb=63804	threads=3	peak_threads=6
+MIXED_ROUND	round=193	secs=8.724	print_s=2.297	budget_s=1.899	cancel_s=2.507	cross_s=2.020	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=194	secs=4.434	print_s=1.781	budget_s=0.870	cancel_s=1.063	cross_s=0.720	rss_kb=63804	hwm_kb=63804	threads=2	peak_threads=6
+MIXED_BATCH	batch=39	rounds=5	total_rounds=195	tasks=15600000	secs=28.43	rss0_kb=3640	rss_kb=60936	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=195	secs=4.756	print_s=0.769	budget_s=0.724	cancel_s=1.875	cross_s=1.388	rss_kb=63100	hwm_kb=63100	threads=3	peak_threads=6
+MIXED_ROUND	round=196	secs=4.738	print_s=1.243	budget_s=1.451	cancel_s=1.272	cross_s=0.772	rss_kb=63100	hwm_kb=63100	threads=3	peak_threads=6
+MIXED_ROUND	round=197	secs=7.467	print_s=2.141	budget_s=1.547	cancel_s=2.290	cross_s=1.489	rss_kb=63804	hwm_kb=63804	threads=2	peak_threads=6
+MIXED_ROUND	round=198	secs=6.686	print_s=1.964	budget_s=1.434	cancel_s=1.873	cross_s=1.415	rss_kb=63100	hwm_kb=63100	threads=3	peak_threads=6
+MIXED_ROUND	round=199	secs=7.345	print_s=2.051	budget_s=1.354	cancel_s=1.870	cross_s=2.070	rss_kb=63808	hwm_kb=63808	threads=2	peak_threads=6
+MIXED_BATCH	batch=40	rounds=5	total_rounds=200	tasks=16000000	secs=31.00	rss0_kb=3640	rss_kb=60936	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=200	secs=5.864	print_s=2.414	budget_s=1.191	cancel_s=1.402	cross_s=0.858	rss_kb=61480	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=201	secs=7.324	print_s=2.453	budget_s=1.931	cancel_s=1.792	cross_s=1.148	rss_kb=62764	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=202	secs=3.921	print_s=1.077	budget_s=0.798	cancel_s=0.975	cross_s=1.071	rss_kb=62068	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=203	secs=3.558	print_s=0.984	budget_s=0.738	cancel_s=1.039	cross_s=0.797	rss_kb=62376	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=204	secs=3.344	print_s=0.889	budget_s=0.705	cancel_s=0.943	cross_s=0.806	rss_kb=62708	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=41	rounds=5	total_rounds=205	tasks=16400000	secs=24.02	rss0_kb=3640	rss_kb=62708	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=205	secs=4.551	print_s=0.905	budget_s=0.874	cancel_s=1.437	cross_s=1.335	rss_kb=63416	hwm_kb=63416	threads=3	peak_threads=6
+MIXED_ROUND	round=206	secs=5.468	print_s=1.096	budget_s=1.420	cancel_s=1.598	cross_s=1.353	rss_kb=62708	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=207	secs=4.108	print_s=1.423	budget_s=0.613	cancel_s=1.018	cross_s=1.054	rss_kb=62708	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=208	secs=3.473	print_s=1.020	budget_s=0.587	cancel_s=0.860	cross_s=1.007	rss_kb=63412	hwm_kb=63412	threads=2	peak_threads=6
+MIXED_ROUND	round=209	secs=5.091	print_s=1.351	budget_s=1.205	cancel_s=1.392	cross_s=1.143	rss_kb=63804	hwm_kb=63804	threads=2	peak_threads=6
+MIXED_BATCH	batch=42	rounds=5	total_rounds=210	tasks=16800000	secs=22.70	rss0_kb=3640	rss_kb=60936	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=210	secs=3.230	print_s=1.060	budget_s=0.469	cancel_s=1.030	cross_s=0.671	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=211	secs=4.360	print_s=1.329	budget_s=0.992	cancel_s=1.108	cross_s=0.932	rss_kb=63100	hwm_kb=63100	threads=2	peak_threads=6
+MIXED_ROUND	round=212	secs=3.675	print_s=1.123	budget_s=0.904	cancel_s=0.953	cross_s=0.694	rss_kb=62392	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=213	secs=5.691	print_s=0.932	budget_s=0.625	cancel_s=2.131	cross_s=2.002	rss_kb=62392	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=214	secs=4.630	print_s=2.300	budget_s=0.745	cancel_s=0.902	cross_s=0.683	rss_kb=62392	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=43	rounds=5	total_rounds=215	tasks=17200000	secs=21.59	rss0_kb=3640	rss_kb=62392	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=215	secs=3.225	print_s=0.812	budget_s=0.647	cancel_s=0.930	cross_s=0.836	rss_kb=62736	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=216	secs=3.846	print_s=0.830	budget_s=0.718	cancel_s=1.101	cross_s=1.197	rss_kb=62736	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=217	secs=4.959	print_s=1.514	budget_s=1.171	cancel_s=1.204	cross_s=1.070	rss_kb=63440	hwm_kb=63440	threads=2	peak_threads=6
+MIXED_ROUND	round=218	secs=7.302	print_s=1.316	budget_s=1.872	cancel_s=2.194	cross_s=1.920	rss_kb=62736	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=219	secs=8.538	print_s=2.339	budget_s=1.078	cancel_s=2.973	cross_s=2.148	rss_kb=63440	hwm_kb=63440	threads=3	peak_threads=6
+MIXED_BATCH	batch=44	rounds=5	total_rounds=220	tasks=17600000	secs=27.88	rss0_kb=3640	rss_kb=60572	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=220	secs=4.585	print_s=1.053	budget_s=1.062	cancel_s=1.194	cross_s=1.277	rss_kb=62736	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=221	secs=7.815	print_s=1.603	budget_s=1.527	cancel_s=3.201	cross_s=1.484	rss_kb=63444	hwm_kb=63444	threads=2	peak_threads=6
+MIXED_ROUND	round=222	secs=5.041	print_s=1.385	budget_s=1.325	cancel_s=1.529	cross_s=0.802	rss_kb=62736	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=223	secs=6.821	print_s=1.967	budget_s=1.597	cancel_s=1.691	cross_s=1.567	rss_kb=62752	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=224	secs=6.740	print_s=2.339	budget_s=1.491	cancel_s=1.565	cross_s=1.346	rss_kb=63444	hwm_kb=63444	threads=2	peak_threads=6
+MIXED_BATCH	batch=45	rounds=5	total_rounds=225	tasks=18000000	secs=31.01	rss0_kb=3640	rss_kb=63444	hwm_kb=63444	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=225	secs=7.076	print_s=1.539	budget_s=1.530	cancel_s=2.227	cross_s=1.781	rss_kb=62752	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=226	secs=6.644	print_s=2.245	budget_s=1.565	cancel_s=1.353	cross_s=1.481	rss_kb=63444	hwm_kb=63444	threads=3	peak_threads=6
+MIXED_ROUND	round=227	secs=6.255	print_s=2.238	budget_s=1.634	cancel_s=1.224	cross_s=1.159	rss_kb=62736	hwm_kb=63000	threads=3	peak_threads=6
+MIXED_ROUND	round=228	secs=5.479	print_s=1.231	budget_s=1.231	cancel_s=1.449	cross_s=1.567	rss_kb=63444	hwm_kb=63444	threads=3	peak_threads=6
+MIXED_ROUND	round=229	secs=5.073	print_s=1.433	budget_s=0.929	cancel_s=1.424	cross_s=1.287	rss_kb=62736	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_BATCH	batch=46	rounds=5	total_rounds=230	tasks=18400000	secs=30.53	rss0_kb=3640	rss_kb=62736	hwm_kb=63000	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=230	secs=4.269	print_s=1.300	budget_s=0.951	cancel_s=1.071	cross_s=0.947	rss_kb=63444	hwm_kb=63444	threads=2	peak_threads=6
+MIXED_ROUND	round=231	secs=3.693	print_s=1.093	budget_s=0.850	cancel_s=0.997	cross_s=0.752	rss_kb=62736	hwm_kb=63000	threads=2	peak_threads=6
+MIXED_ROUND	round=232	secs=2.940	print_s=0.858	budget_s=0.717	cancel_s=0.791	cross_s=0.574	rss_kb=63444	hwm_kb=63444	threads=2	peak_threads=6
+MIXED_ROUND	round=233	secs=3.361	print_s=0.950	budget_s=0.745	cancel_s=0.909	cross_s=0.757	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=234	secs=2.771	print_s=0.718	budget_s=0.614	cancel_s=0.903	cross_s=0.536	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_BATCH	batch=47	rounds=5	total_rounds=235	tasks=18800000	secs=17.04	rss0_kb=3640	rss_kb=63104	hwm_kb=63116	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=235	secs=2.526	print_s=0.498	budget_s=0.523	cancel_s=0.882	cross_s=0.623	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=236	secs=2.698	print_s=0.722	budget_s=0.568	cancel_s=0.786	cross_s=0.621	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=237	secs=3.219	print_s=0.741	budget_s=0.797	cancel_s=0.943	cross_s=0.739	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=238	secs=3.368	print_s=0.771	budget_s=0.725	cancel_s=1.049	cross_s=0.822	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=239	secs=3.395	print_s=0.912	budget_s=0.765	cancel_s=0.970	cross_s=0.748	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=48	rounds=5	total_rounds=240	tasks=19200000	secs=15.21	rss0_kb=3640	rss_kb=60940	hwm_kb=63116	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=240	secs=3.356	print_s=0.914	budget_s=0.771	cancel_s=0.945	cross_s=0.726	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=241	secs=3.134	print_s=0.807	budget_s=0.697	cancel_s=0.921	cross_s=0.709	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=242	secs=3.112	print_s=0.894	budget_s=0.737	cancel_s=0.882	cross_s=0.599	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_ROUND	round=243	secs=2.892	print_s=0.686	budget_s=0.616	cancel_s=0.896	cross_s=0.694	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=244	secs=2.350	print_s=0.570	budget_s=0.449	cancel_s=0.764	cross_s=0.567	rss_kb=63104	hwm_kb=63116	threads=2	peak_threads=6
+MIXED_BATCH	batch=49	rounds=5	total_rounds=245	tasks=19600000	secs=14.85	rss0_kb=3640	rss_kb=63104	hwm_kb=63116	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=245	secs=3.115	print_s=0.936	budget_s=0.692	cancel_s=0.897	cross_s=0.589	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=246	secs=2.564	print_s=0.541	budget_s=0.424	cancel_s=0.852	cross_s=0.747	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=247	secs=3.144	print_s=0.859	budget_s=0.672	cancel_s=0.898	cross_s=0.714	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=248	secs=3.207	print_s=0.817	budget_s=0.706	cancel_s=0.893	cross_s=0.791	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=249	secs=3.493	print_s=1.071	budget_s=0.701	cancel_s=0.919	cross_s=0.803	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=50	rounds=5	total_rounds=250	tasks=20000000	secs=15.53	rss0_kb=3640	rss_kb=60940	hwm_kb=63172	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=250	secs=2.993	print_s=0.946	budget_s=0.704	cancel_s=0.794	cross_s=0.549	rss_kb=63120	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=251	secs=3.191	print_s=0.827	budget_s=0.699	cancel_s=0.901	cross_s=0.764	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=252	secs=3.208	print_s=0.891	budget_s=0.711	cancel_s=0.902	cross_s=0.705	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=253	secs=3.040	print_s=0.728	budget_s=0.700	cancel_s=0.907	cross_s=0.706	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=254	secs=3.161	print_s=0.818	budget_s=0.749	cancel_s=0.897	cross_s=0.698	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=51	rounds=5	total_rounds=255	tasks=20400000	secs=15.60	rss0_kb=3640	rss_kb=60940	hwm_kb=63172	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=255	secs=3.106	print_s=0.829	budget_s=0.667	cancel_s=0.909	cross_s=0.702	rss_kb=63104	hwm_kb=63172	threads=2	peak_threads=6
+MIXED_ROUND	round=256	secs=3.126	print_s=0.807	budget_s=0.725	cancel_s=0.881	cross_s=0.713	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=257	secs=3.002	print_s=0.828	budget_s=0.620	cancel_s=0.788	cross_s=0.767	rss_kb=63120	hwm_kb=63184	threads=2	peak_threads=6
+MIXED_ROUND	round=258	secs=7.822	print_s=2.144	budget_s=2.063	cancel_s=2.538	cross_s=1.077	rss_kb=63120	hwm_kb=63184	threads=2	peak_threads=6
+MIXED_ROUND	round=259	secs=3.430	print_s=0.929	budget_s=0.796	cancel_s=0.951	cross_s=0.754	rss_kb=63104	hwm_kb=63184	threads=2	peak_threads=6
+MIXED_BATCH	batch=52	rounds=5	total_rounds=260	tasks=20800000	secs=20.49	rss0_kb=3640	rss_kb=63104	hwm_kb=63184	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=260	secs=3.297	print_s=0.875	budget_s=0.723	cancel_s=0.949	cross_s=0.751	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=261	secs=2.952	print_s=0.575	budget_s=0.543	cancel_s=0.967	cross_s=0.868	rss_kb=63104	hwm_kb=63236	threads=2	peak_threads=6
+MIXED_ROUND	round=262	secs=2.885	print_s=0.591	budget_s=0.613	cancel_s=0.974	cross_s=0.707	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=263	secs=2.913	print_s=0.708	budget_s=0.615	cancel_s=0.889	cross_s=0.700	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=264	secs=2.753	print_s=0.647	budget_s=0.515	cancel_s=0.835	cross_s=0.756	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=53	rounds=5	total_rounds=265	tasks=21200000	secs=14.80	rss0_kb=3640	rss_kb=60940	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=265	secs=2.971	print_s=0.918	budget_s=0.643	cancel_s=0.890	cross_s=0.520	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=266	secs=2.749	print_s=0.590	budget_s=0.549	cancel_s=0.905	cross_s=0.704	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=267	secs=2.990	print_s=0.701	budget_s=0.705	cancel_s=0.943	cross_s=0.640	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=268	secs=3.037	print_s=0.728	budget_s=0.761	cancel_s=0.926	cross_s=0.623	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=269	secs=3.010	print_s=0.769	budget_s=0.599	cancel_s=0.891	cross_s=0.751	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=54	rounds=5	total_rounds=270	tasks=21600000	secs=14.76	rss0_kb=3640	rss_kb=63104	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=270	secs=3.110	print_s=0.746	budget_s=0.703	cancel_s=0.890	cross_s=0.771	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=271	secs=2.978	print_s=0.724	budget_s=0.675	cancel_s=0.897	cross_s=0.682	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=272	secs=2.910	print_s=0.700	budget_s=0.624	cancel_s=0.890	cross_s=0.696	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=273	secs=3.096	print_s=0.857	budget_s=0.719	cancel_s=0.883	cross_s=0.637	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=274	secs=3.086	print_s=0.765	budget_s=0.709	cancel_s=0.903	cross_s=0.709	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=55	rounds=5	total_rounds=275	tasks=22000000	secs=15.18	rss0_kb=3640	rss_kb=60940	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=275	secs=2.807	print_s=0.728	budget_s=0.716	cancel_s=0.842	cross_s=0.521	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=276	secs=2.775	print_s=0.634	budget_s=0.663	cancel_s=0.913	cross_s=0.565	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=277	secs=2.799	print_s=0.592	budget_s=0.591	cancel_s=0.899	cross_s=0.717	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=278	secs=3.139	print_s=0.825	budget_s=0.706	cancel_s=0.906	cross_s=0.702	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=279	secs=3.018	print_s=0.834	budget_s=0.713	cancel_s=0.896	cross_s=0.575	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_BATCH	batch=56	rounds=5	total_rounds=280	tasks=22400000	secs=14.54	rss0_kb=3640	rss_kb=60940	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=280	secs=2.390	print_s=0.594	budget_s=0.547	cancel_s=0.823	cross_s=0.427	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=281	secs=2.479	print_s=0.439	budget_s=0.446	cancel_s=0.886	cross_s=0.708	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=282	secs=3.183	print_s=0.884	budget_s=0.704	cancel_s=0.904	cross_s=0.691	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=283	secs=2.930	print_s=0.678	budget_s=0.658	cancel_s=0.895	cross_s=0.698	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=284	secs=3.035	print_s=0.726	budget_s=0.709	cancel_s=0.903	cross_s=0.697	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=57	rounds=5	total_rounds=285	tasks=22800000	secs=14.02	rss0_kb=3640	rss_kb=63104	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=285	secs=3.093	print_s=0.850	budget_s=0.647	cancel_s=0.894	cross_s=0.702	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=286	secs=3.008	print_s=0.749	budget_s=0.696	cancel_s=0.897	cross_s=0.666	rss_kb=63104	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=287	secs=2.700	print_s=0.809	budget_s=0.497	cancel_s=0.792	cross_s=0.603	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=288	secs=3.023	print_s=0.802	budget_s=0.621	cancel_s=0.904	cross_s=0.697	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=289	secs=3.219	print_s=0.852	budget_s=0.694	cancel_s=0.905	cross_s=0.768	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=58	rounds=5	total_rounds=290	tasks=23200000	secs=15.05	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=290	secs=3.190	print_s=1.103	budget_s=0.738	cancel_s=0.799	cross_s=0.550	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=291	secs=2.916	print_s=0.673	budget_s=0.657	cancel_s=0.902	cross_s=0.684	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=292	secs=3.159	print_s=0.808	budget_s=0.743	cancel_s=0.922	cross_s=0.685	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=293	secs=3.114	print_s=0.858	budget_s=0.696	cancel_s=0.890	cross_s=0.671	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=294	secs=3.034	print_s=0.718	budget_s=0.700	cancel_s=0.902	cross_s=0.714	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=59	rounds=5	total_rounds=295	tasks=23600000	secs=15.42	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=295	secs=3.215	print_s=0.856	budget_s=0.707	cancel_s=0.898	cross_s=0.754	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=296	secs=3.008	print_s=0.840	budget_s=0.627	cancel_s=0.896	cross_s=0.646	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=297	secs=3.126	print_s=0.768	budget_s=0.673	cancel_s=0.907	cross_s=0.778	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=298	secs=5.838	print_s=2.107	budget_s=1.986	cancel_s=1.243	cross_s=0.502	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=299	secs=2.976	print_s=0.754	budget_s=0.705	cancel_s=0.871	cross_s=0.647	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=60	rounds=5	total_rounds=300	tasks=24000000	secs=18.17	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=300	secs=2.819	print_s=0.735	budget_s=0.693	cancel_s=0.890	cross_s=0.500	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=301	secs=2.423	print_s=0.509	budget_s=0.670	cancel_s=0.796	cross_s=0.448	rss_kb=63812	hwm_kb=63812	threads=2	peak_threads=6
+MIXED_ROUND	round=302	secs=2.818	print_s=0.615	budget_s=0.661	cancel_s=0.907	cross_s=0.636	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=303	secs=6.611	print_s=0.537	budget_s=1.134	cancel_s=2.550	cross_s=2.391	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=304	secs=9.197	print_s=2.567	budget_s=1.947	cancel_s=3.229	cross_s=1.454	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=61	rounds=5	total_rounds=305	tasks=24400000	secs=23.88	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=305	secs=5.047	print_s=0.931	budget_s=0.818	cancel_s=2.055	cross_s=1.243	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=306	secs=5.279	print_s=1.362	budget_s=1.127	cancel_s=1.891	cross_s=0.898	rss_kb=63120	hwm_kb=63408	threads=3	peak_threads=6
+MIXED_ROUND	round=307	secs=6.423	print_s=1.244	budget_s=1.331	cancel_s=2.480	cross_s=1.368	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=308	secs=6.585	print_s=1.590	budget_s=1.382	cancel_s=2.144	cross_s=1.470	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=309	secs=7.094	print_s=1.744	budget_s=1.455	cancel_s=2.132	cross_s=1.763	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=62	rounds=5	total_rounds=310	tasks=24800000	secs=30.43	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=310	secs=6.007	print_s=2.155	budget_s=1.736	cancel_s=1.248	cross_s=0.868	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=311	secs=3.434	print_s=0.576	budget_s=1.014	cancel_s=1.014	cross_s=0.830	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=312	secs=3.024	print_s=0.703	budget_s=0.630	cancel_s=0.956	cross_s=0.734	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=313	secs=3.434	print_s=0.837	budget_s=0.890	cancel_s=0.961	cross_s=0.747	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=314	secs=3.229	print_s=0.851	budget_s=0.717	cancel_s=0.922	cross_s=0.739	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=63	rounds=5	total_rounds=315	tasks=25200000	secs=19.13	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=315	secs=3.332	print_s=0.922	budget_s=0.743	cancel_s=0.926	cross_s=0.740	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=316	secs=3.239	print_s=0.893	budget_s=0.688	cancel_s=0.924	cross_s=0.735	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=317	secs=3.224	print_s=0.903	budget_s=0.720	cancel_s=0.925	cross_s=0.675	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=318	secs=2.970	print_s=0.713	budget_s=0.606	cancel_s=0.898	cross_s=0.753	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=319	secs=2.540	print_s=0.622	budget_s=0.419	cancel_s=0.773	cross_s=0.726	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=64	rounds=5	total_rounds=320	tasks=25600000	secs=15.31	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=320	secs=3.273	print_s=0.833	budget_s=0.728	cancel_s=0.915	cross_s=0.797	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=321	secs=3.365	print_s=0.941	budget_s=0.759	cancel_s=0.905	cross_s=0.760	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=322	secs=2.922	print_s=0.840	budget_s=0.747	cancel_s=0.816	cross_s=0.518	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=323	secs=3.099	print_s=0.740	budget_s=0.713	cancel_s=0.896	cross_s=0.750	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=324	secs=2.990	print_s=0.748	budget_s=0.604	cancel_s=0.883	cross_s=0.754	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=65	rounds=5	total_rounds=325	tasks=26000000	secs=15.65	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=325	secs=3.081	print_s=0.864	budget_s=0.636	cancel_s=0.882	cross_s=0.699	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=326	secs=3.209	print_s=0.855	budget_s=0.697	cancel_s=0.897	cross_s=0.760	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=327	secs=3.274	print_s=0.962	budget_s=0.669	cancel_s=0.892	cross_s=0.751	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=328	secs=3.299	print_s=0.935	budget_s=0.709	cancel_s=0.902	cross_s=0.753	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=329	secs=3.082	print_s=0.968	budget_s=0.701	cancel_s=0.875	cross_s=0.538	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=66	rounds=5	total_rounds=330	tasks=26400000	secs=15.95	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=330	secs=2.764	print_s=0.623	budget_s=0.637	cancel_s=0.900	cross_s=0.603	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=331	secs=2.454	print_s=0.626	budget_s=0.513	cancel_s=0.794	cross_s=0.521	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=332	secs=3.123	print_s=0.761	budget_s=0.758	cancel_s=0.906	cross_s=0.698	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=333	secs=3.144	print_s=0.861	budget_s=0.691	cancel_s=0.896	cross_s=0.696	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=334	secs=3.299	print_s=0.978	budget_s=0.714	cancel_s=0.901	cross_s=0.707	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=67	rounds=5	total_rounds=335	tasks=26800000	secs=14.79	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=335	secs=2.917	print_s=0.701	budget_s=0.612	cancel_s=0.903	cross_s=0.701	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=336	secs=2.866	print_s=0.862	budget_s=0.705	cancel_s=0.806	cross_s=0.493	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=337	secs=2.414	print_s=0.536	budget_s=0.514	cancel_s=0.790	cross_s=0.575	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=338	secs=3.469	print_s=1.157	budget_s=0.661	cancel_s=0.893	cross_s=0.757	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=339	secs=3.072	print_s=0.838	budget_s=0.742	cancel_s=0.881	cross_s=0.611	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=68	rounds=5	total_rounds=340	tasks=27200000	secs=14.74	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=340	secs=2.958	print_s=0.701	budget_s=0.653	cancel_s=0.899	cross_s=0.705	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=341	secs=3.349	print_s=0.978	budget_s=0.707	cancel_s=0.914	cross_s=0.751	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=342	secs=2.967	print_s=0.746	budget_s=0.619	cancel_s=0.898	cross_s=0.704	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=343	secs=3.141	print_s=0.846	budget_s=0.692	cancel_s=0.893	cross_s=0.710	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=344	secs=3.147	print_s=0.812	budget_s=0.695	cancel_s=0.927	cross_s=0.713	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=69	rounds=5	total_rounds=345	tasks=27600000	secs=15.57	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=345	secs=3.275	print_s=0.910	budget_s=0.697	cancel_s=0.891	cross_s=0.778	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=346	secs=3.322	print_s=0.986	budget_s=0.729	cancel_s=0.895	cross_s=0.712	rss_kb=63156	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=347	secs=2.635	print_s=0.713	budget_s=0.507	cancel_s=0.806	cross_s=0.608	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=348	secs=2.868	print_s=0.710	budget_s=0.521	cancel_s=0.888	cross_s=0.748	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=349	secs=3.055	print_s=0.658	budget_s=0.566	cancel_s=1.059	cross_s=0.772	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=70	rounds=5	total_rounds=350	tasks=28000000	secs=15.16	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=350	secs=2.949	print_s=0.725	budget_s=0.667	cancel_s=0.883	cross_s=0.675	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=351	secs=3.241	print_s=0.723	budget_s=0.637	cancel_s=1.003	cross_s=0.878	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=352	secs=3.314	print_s=1.093	budget_s=0.677	cancel_s=0.875	cross_s=0.670	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=353	secs=3.422	print_s=0.788	budget_s=0.575	cancel_s=0.966	cross_s=1.092	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=354	secs=3.754	print_s=1.116	budget_s=0.827	cancel_s=1.000	cross_s=0.811	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=71	rounds=5	total_rounds=355	tasks=28400000	secs=16.68	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=355	secs=3.661	print_s=0.925	budget_s=0.885	cancel_s=1.017	cross_s=0.834	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=356	secs=3.899	print_s=1.043	budget_s=0.918	cancel_s=1.064	cross_s=0.874	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=357	secs=4.014	print_s=1.084	budget_s=0.831	cancel_s=1.015	cross_s=1.084	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=358	secs=9.141	print_s=2.651	budget_s=2.054	cancel_s=2.178	cross_s=2.258	rss_kb=63120	hwm_kb=63408	threads=3	peak_threads=6
+MIXED_ROUND	round=359	secs=3.802	print_s=1.372	budget_s=1.033	cancel_s=0.825	cross_s=0.573	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=72	rounds=5	total_rounds=360	tasks=28800000	secs=24.52	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=360	secs=3.301	print_s=0.690	budget_s=0.489	cancel_s=0.853	cross_s=1.270	rss_kb=63120	hwm_kb=63408	threads=3	peak_threads=6
+MIXED_ROUND	round=361	secs=6.740	print_s=2.060	budget_s=1.873	cancel_s=1.633	cross_s=1.175	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=362	secs=5.785	print_s=1.422	budget_s=1.245	cancel_s=1.783	cross_s=1.335	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=363	secs=5.065	print_s=1.586	budget_s=1.155	cancel_s=1.112	cross_s=1.212	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=364	secs=3.776	print_s=1.041	budget_s=0.761	cancel_s=1.243	cross_s=0.730	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_BATCH	batch=73	rounds=5	total_rounds=365	tasks=29200000	secs=24.67	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=365	secs=2.793	print_s=0.723	budget_s=0.624	cancel_s=0.928	cross_s=0.518	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=366	secs=2.721	print_s=0.578	budget_s=0.541	cancel_s=0.913	cross_s=0.690	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=367	secs=3.284	print_s=0.795	budget_s=0.643	cancel_s=1.017	cross_s=0.829	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=368	secs=7.960	print_s=1.542	budget_s=2.040	cancel_s=2.723	cross_s=1.655	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=369	secs=8.446	print_s=1.352	budget_s=1.526	cancel_s=3.188	cross_s=2.380	rss_kb=63120	hwm_kb=63408	threads=3	peak_threads=6
+MIXED_BATCH	batch=74	rounds=5	total_rounds=370	tasks=29600000	secs=25.21	rss0_kb=3640	rss_kb=63120	hwm_kb=63408	threads0=2	threads=3	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=370	secs=5.906	print_s=2.663	budget_s=1.057	cancel_s=1.395	cross_s=0.785	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=371	secs=3.761	print_s=0.671	budget_s=0.954	cancel_s=1.244	cross_s=0.893	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+MIXED_ROUND	round=372	secs=4.963	print_s=1.484	budget_s=0.927	cancel_s=1.463	cross_s=1.090	rss_kb=63120	hwm_kb=63408	threads=2	peak_threads=6
+
+thread 'mixed_soak_shared_copy_move_w1_w4' (3191296) panicked at crates/vis-cli/tests/vs3_worker.rs:1629:17:
+vòng 373: task huỷ W=4 phải trả Err
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    mixed_soak_shared_copy_move_w1_w4
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 1436.15s
+
+error: test failed, to rerun pass `-p vis-cli --test vs3_worker`
+EXIT=101
