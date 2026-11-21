@@ -6,7 +6,8 @@
 git merge origin/main (73f63ff) — xung đột duy nhất crates/vis-cli/src/async_net.rs
   => giải bằng khoá nguồn canonical + Nguon; async-h2 giữ Unix (SourceFd trong h2_async.rs)
 Tách crates/vis-cli/src/async_net_nguon.rs (282 dòng); async_net.rs 1483 dòng (R1 <= 1500).
-psvn worktree /c/Users/ps/viscript-w4prod @ 32b750d, dirty 0.
+psvn worktree /c/Users/ps/viscript-w4prod @ 32b750d (10 vòng/workspace) rồi 12e961c
+  (docs/comment-only) — chạy lại 1 vòng: 22/22 + 22/22, rc=0.
 FEATURE FILES: lib.rs/main.rs/Cargo.toml + async_net.rs + async_net_nguon.rs
   + async_net_h2.rs + tests/vs3_default.rs + tests/vs3_tls.rs + agent/VS3-TIEN-DO.md
 

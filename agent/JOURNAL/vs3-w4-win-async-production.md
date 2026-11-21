@@ -140,7 +140,9 @@ Worktree sạch tại `32b750d`; log `/c/Users/ps/vislogs/w4prod-*`.
 | `w4prod-workspace4.log` | `d96fcbd32da1ac0611cf7e4ceef271273673b4c4b3bf39390d9ecab3cce1e599` |
 
 - Linux: `/tmp/opencode/w4-prod2-linux-workspace.log` (3544/0/3), `w4-prod-gate-final.log`.
-- Local `psvn` worktree `32b750d`, dirty 0, `C:` còn **175G**; local `/` còn **17G** (>5G).
+- `psvn` worktree `32b750d` (10 vòng + workspace) rồi `12e961c` (chỉ docs/comment so với `32b750d`)
+  — chạy lại 1 vòng `vs3_default`+`vs3_tls` = **22/22 + 22/22**, dirty 0; `C:` còn **183G**.
+- Local `/` còn **12G** (>5G).
 - Không tag/push/merge; không GitHub Actions; `main` không bị sửa (`e272007` ở local, origin
   `73f63ff`).
 
