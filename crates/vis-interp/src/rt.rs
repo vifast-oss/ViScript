@@ -1146,10 +1146,12 @@ pub fn chay_mot(host: &mut dyn Host) -> R<bool> {
 /// Chạy một tác vụ **tới hoàn tất** (hoặc trả cache) — dùng chung cho `await` và join.
 /// `Local` (W=1) chỉ dispatch sang runner caller; mặc định `Off` giữ nguyên đường cũ.
 pub fn await_task(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
-    if host.sched().borrow().exec.mode == exec::WorkerMode::Local {
-        return exec::await_local(host, t, span);
+    let mode = host.sched().borrow().exec.mode;
+    match mode {
+        exec::WorkerMode::Local => exec::await_local(host, t, span),
+        exec::WorkerMode::Parallel(_) => exec::await_parallel(host, t, span),
+        exec::WorkerMode::Off => await_task_off(host, t, span),
     }
-    await_task_off(host, t, span)
 }
 
 /// Thân `await` của đường một luồng (Off) — P1 tách tên, **không đổi ngữ nghĩa**.
@@ -1252,10 +1254,12 @@ pub(crate) fn wrap_task_error(ten: &str, goc: Trap, span: Span) -> Trap {
 /// **Join** mọi tác vụ theo **thứ tự tạo** (chỉ gọi khi main thành công — VD-95 (6)).
 /// `Local` (W=1) dispatch sang `join_local`; mặc định `Off` giữ nguyên đường cũ.
 pub fn join_all(host: &mut dyn Host) -> R<()> {
-    if host.sched().borrow().exec.mode == exec::WorkerMode::Local {
-        return exec::join_local(host);
+    let mode = host.sched().borrow().exec.mode;
+    match mode {
+        exec::WorkerMode::Local => exec::join_local(host),
+        exec::WorkerMode::Parallel(_) => exec::join_parallel(host),
+        exec::WorkerMode::Off => join_all_off(host),
     }
-    join_all_off(host)
 }
 
 /// Thân join của đường một luồng (Off) — P1 tách tên, **không đổi ngữ nghĩa**.

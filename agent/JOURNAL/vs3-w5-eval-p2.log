@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 P2 evaluator W>1 (CPU-only, non-frame) — log
+# Branch vs3/w5-spike, baseline a8100ab (P1 54021de đã merge). Toolchain ~/.cargo/bin/cargo 1.100.0.
+
+## DIFF
+$ git diff --numstat
+12	0	crates/vis-interp/src/frame/core.rs
+36	9	crates/vis-interp/src/interp.rs
+181	7	crates/vis-interp/src/interp/worker.rs
+135	1	crates/vis-interp/src/lib.rs
+10	6	crates/vis-interp/src/rt.rs
+326	12	crates/vis-interp/src/rt/exec.rs
+110	2	crates/vis-interp/src/rt/worker.rs
++ crates/vis-cli/tests/vs3_worker_eval_parallel.rs (mới, 487 dòng)
+
+$ wc -l crates/vis-interp/src/{rt/exec.rs,interp/worker.rs,rt.rs,interp.rs,lib.rs,rt/worker.rs,frame/core.rs}
+  376 rt/exec.rs
+  208 interp/worker.rs
+ 1273 rt.rs
+ 1458 interp.rs
+  526 lib.rs
+ 1123 rt/worker.rs
+  154 frame/core.rs
+
+Không đụng value.rs/frame.rs/vm.rs/net.rs.
+
+## TEST MỚI — DEBUG
+$ cargo test -p vis-cli --test vs3_worker_eval_parallel -- --test-threads=1
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.75s
+
+Các ca: w2_print_byte_identical, w4_print_byte_identical, muoi_nghin_task_w2_w4_byte_identical,
+muoi_nghin_task_join_cuoi_in_spawn_order, nested_spawn_await_trong_worker,
+snapshot_tai_spawn_w1_khac_w2_co_chu_dinh, budget_atomic_used_cong_remaining_bang_limit,
+cross_write_w1_shared_w2_loi_ro, chan0_trong_task_bi_tu_choi_ro,
+host_fs_trong_task_bi_tu_choi_ro, cancel_pre_run_tra_loi_ro, cancel_giua_chung_safe_point,
+muoi_vong_threads_fd_rss_khong_ro, cpu_nang_w1_w2_w4_byte_identical.
+
+## TEST MỚI — RELEASE
+$ cargo test --release -p vis-cli --test vs3_worker_eval_parallel -- --test-threads=1
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.18s
+real 0m50.171s
+
+## HỒI QUY
+$ cargo test -p vis-cli --test vs3_worker_eval_local --test vs3_default --test vs3_worker --test vs3_budget -- --test-threads=1
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
+running 22 tests
+......................
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.92s
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.65s
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 89.78s
+(running order theo tên test; vs3_budget 8 ca ~89,78 s)
+
+$ cargo test -p vis-interp --lib
+running 303 tests
+... (303/303)
+test result: ok. 303 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+## GATE --FAST (final)
+$ ./vis-dev gate --fast
+--- luật R1..R6: OK
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+--- L0 test: cargo-nextest (song song) + doc-test
+Summary [ 91.978s] 3561 tests run: 3561 passed, 3 skipped
+--- L0 test: OK
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+GATE_EXIT=0
+
+## FMT / CHECK / CLIPPY
+$ cargo fmt --all -- --check
+FMT_OK
+$ cargo check --all-targets
+Finished dev profile [unoptimized + debuginfo]
+$ cargo clippy -p vis-cli --all-targets -- -D warnings
+Finished dev profile [unoptimized + debuginfo] target(s) in 11.93s
+
+## SỐ ĐO (VS3_W5_MEASURE=1)
+MEASURE_CPU	W=2	local_ms=1570.1	parallel_ms=988.5	speedup=1.59x
+MEASURE_CPU	W=4	local_ms=1570.1	parallel_ms=418.7	speedup=3.75x
+MEASURE_CPU	W=2	local_ms=1400.7	parallel_ms=410.6	speedup=3.41x
+MEASURE_CPU	W=4	local_ms=1400.7	parallel_ms=251.1	speedup=5.58x
+MEASURE_CPU	W=2	local_ms=911.2	parallel_ms=815.9	speedup=1.12x
+MEASURE_CPU	W=4	local_ms=911.2	parallel_ms=316.3	speedup=2.88x
+(median của 3 lần: W=2 1,59×; W=4 3,75× — load 8–15, không assert wall)
+
+MEASURE_10K	W=2	local_ms=647.5	parallel_ms=2730.9	speedup=0.24x	threads=Some(2)	fd=Some(4)	rss_kb=Some(12716)
+MEASURE_10K	W=4	local_ms=647.5	parallel_ms=1064.3	speedup=0.61x	threads=Some(2)	fd=Some(4)	rss_kb=Some(14876)
+MEASURE_10K	W=2	local_ms=312.9	parallel_ms=787.3	speedup=0.40x	threads=Some(2)	fd=Some(4)	rss_kb=Some(12552)
+MEASURE_10K	W=4	local_ms=312.9	parallel_ms=453.4	speedup=0.69x	threads=Some(2)	fd=Some(4)	rss_kb=Some(13852)
+MEASURE_10K	W=2	local_ms=68.5	parallel_ms=489.6	speedup=0.14x	threads=Some(2)	fd=Some(4)	rss_kb=Some(12764)
+MEASURE_10K	W=4	local_ms=68.5	parallel_ms=498.7	speedup=0.14x	threads=Some(2)	fd=Some(4)	rss_kb=Some(14048)
+
+MEASURE_10K_FINAL	W=2	local_ms=91.4	parallel_ms=299.5	speedup=0.31x
+MEASURE_10K_FINAL	W=4	local_ms=91.4	parallel_ms=238.9	speedup=0.38x
+MEASURE_10K_FINAL	W=2	local_ms=285.6	parallel_ms=318.0	speedup=0.90x
+MEASURE_10K_FINAL	W=4	local_ms=285.6	parallel_ms=222.3	speedup=1.28x
+MEASURE_10K_FINAL	W=2	local_ms=107.9	parallel_ms=314.2	speedup=0.34x
+MEASURE_10K_FINAL	W=4	local_ms=107.9	parallel_ms=254.0	speedup=0.42x
+
+MEASURE_BUDGET	used=10000	remaining=0	limit=10000	exhausted=true
+MEASURE_10_VONG	ms=11.0	threads=Some(2)	fd=Some(4)	rss_kb=Some(19632)
+(cancel_giua_chung: task 2M vòng, cancel sau 5 ms, test 0,01 s)
+
+## DF / CLEANUP
+df /home trước P2: 25G trống; sau test: 13G; sau khi xoá target riêng: 24G.
+Đã xoá target riêng của worktree sau khi chốt:
+  /home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/target
+Không đụng target/cache repo chính. Không GitHub Actions.

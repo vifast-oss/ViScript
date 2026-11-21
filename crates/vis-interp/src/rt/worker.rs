@@ -404,7 +404,7 @@ pub mod worker {
 
     /// Kết quả một task, giữ output riêng để merge theo spawn order.
     #[doc(hidden)]
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct TaskOutcome {
         pub id: TaskId,
         pub result: Result<SendValue, String>,
@@ -540,6 +540,79 @@ pub mod worker {
         }
     }
 
+    /// **VS3-3b/W5 (P2)** — board outcome **đầy đủ** (result + output + dirty + budget) để
+    /// evaluator `await` một task trước `join` mà vẫn merge output đúng thứ tự tiêu thụ.
+    /// Worker publish ngay khi task xong; `join` vẫn giữ bản trên completion channel để final
+    /// join không phụ thuộc việc caller đã `await`. Chỉ `Send`; không shared heap ngôn ngữ.
+    #[doc(hidden)]
+    #[derive(Debug, Default)]
+    pub struct OutcomeBoard {
+        state: Mutex<OutcomeState>,
+        cv: Condvar,
+    }
+
+    #[derive(Debug, Default)]
+    struct OutcomeState {
+        done: HashMap<TaskId, TaskOutcome>,
+        closed: bool,
+    }
+
+    impl OutcomeBoard {
+        pub fn new() -> Self {
+            Self::default()
+        }
+
+        /// Công bố outcome một lần; gọi lại cùng `id` là no-op (first wins).
+        pub fn publish(&self, outcome: TaskOutcome) {
+            let mut st = self.lock();
+            st.done.entry(outcome.id).or_insert(outcome);
+            self.cv.notify_all();
+        }
+
+        pub fn try_take(&self, id: TaskId) -> Option<TaskOutcome> {
+            self.lock().done.remove(&id)
+        }
+
+        pub fn wait_timeout(&self, id: TaskId, timeout: Duration) -> Result<TaskOutcome, WaitError> {
+            let mut st = self.lock();
+            let deadline = Instant::now() + timeout;
+            loop {
+                if let Some(o) = st.done.remove(&id) {
+                    return Ok(o);
+                }
+                if st.closed {
+                    return Err(WaitError::Closed);
+                }
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    return Err(WaitError::Timeout);
+                }
+                let (guard, _) = self
+                    .cv
+                    .wait_timeout(st, left)
+                    .unwrap_or_else(|e| e.into_inner());
+                st = guard;
+            }
+        }
+
+        pub fn close(&self) {
+            self.lock().closed = true;
+            self.cv.notify_all();
+        }
+
+        pub fn len(&self) -> usize {
+            self.lock().done.len()
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+
+        fn lock(&self) -> std::sync::MutexGuard<'_, OutcomeState> {
+            self.state.lock().unwrap_or_else(|e| e.into_inner())
+        }
+    }
+
     /// Env + output cục bộ của **một task**. Không chia sẻ với task/worker khác.
     pub struct WorkerCtx {
         globals: EnvMap,
@@ -605,6 +678,16 @@ pub mod worker {
             self.cancel.load(Ordering::Acquire)
         }
 
+        /// **P2**: cờ huỷ để evaluator kiểm tại safe point.
+        pub fn cancel_flag(&self) -> Arc<AtomicBool> {
+            Arc::clone(&self.cancel)
+        }
+
+        /// **P2**: đánh dấu top-level `var` bị task ghi (cross-write W>1).
+        pub fn mark_dirty(&mut self, name: impl Into<String>) {
+            self.dirty.insert(name.into());
+        }
+
         /// Task tự kiểm huỷ tại safe point; trả lỗi để dừng thân.
         pub fn check_cancel(&self) -> Result<(), String> {
             if self.is_cancelled() {
@@ -666,6 +749,7 @@ pub mod worker {
         snapshot: EnvMap,
         task: TaskFn,
         wait_board: Option<Arc<TaskWaitBoard>>,
+        outcome_board: Option<Arc<OutcomeBoard>>,
     }
 
     struct CompletionBoard {
@@ -708,6 +792,7 @@ pub mod worker {
         root: EnvMap,
         budget: Option<Arc<SharedBudget>>,
         wait_board: Option<Arc<TaskWaitBoard>>,
+        outcome_board: Option<Arc<OutcomeBoard>>,
         mode: Option<PoolMode>,
         next: u64,
         order: Vec<TaskId>,
@@ -762,6 +847,7 @@ pub mod worker {
                 root,
                 budget,
                 wait_board: None,
+                outcome_board: None,
                 mode: Some(mode),
                 next: 0,
                 order: Vec::new(),
@@ -785,6 +871,11 @@ pub mod worker {
         /// Một board dùng cho một pool; kết quả đã publish vẫn đọc được sau `join`.
         pub fn attach_wait_board(&mut self, board: Arc<TaskWaitBoard>) {
             self.wait_board = Some(board);
+        }
+
+        /// **P2**: gắn board outcome đầy đủ (result/output/dirty) để `await` trước `join`.
+        pub fn attach_outcome_board(&mut self, board: Arc<OutcomeBoard>) {
+            self.outcome_board = Some(board);
         }
 
         /// Spawn một task; closure phải `Send` và không được giữ `Value`/`Rc`.
@@ -820,6 +911,7 @@ pub mod worker {
                             snapshot,
                             task,
                             wait_board: self.wait_board.clone(),
+                            outcome_board: self.outcome_board.clone(),
                         })
                         .map_err(|_| WorkerError::ChannelClosed)?;
                 }
@@ -921,6 +1013,11 @@ pub mod worker {
                     board.publish(o.id, o.result.clone());
                 }
             }
+            if let Some(board) = &self.outcome_board {
+                for o in &outcomes {
+                    board.publish(o.clone());
+                }
+            }
 
             // Parallel: bất kỳ dirty nào ⇒ từ chối, main env không đổi.
             if self.workers > 1 {
@@ -968,6 +1065,9 @@ pub mod worker {
             if let Some(board) = &self.wait_board {
                 board.close();
             }
+            if let Some(board) = &self.outcome_board {
+                board.close();
+            }
         }
     }
 
@@ -994,11 +1094,15 @@ pub mod worker {
                 snapshot,
                 task,
                 wait_board,
+                outcome_board,
             } = job;
             if cancel.load(Ordering::Acquire) {
                 let outcome = cancelled_outcome(id);
                 if let Some(board) = &wait_board {
                     board.publish(id, outcome.result.clone());
+                }
+                if let Some(board) = &outcome_board {
+                    board.publish(outcome.clone());
                 }
                 if out_tx.send(outcome).is_err() {
                     break;
@@ -1007,7 +1111,11 @@ pub mod worker {
             }
             let mut ctx = WorkerCtx::new(snapshot, false, cancel, budget.clone());
             let result = task(&mut ctx);
-            if out_tx.send(ctx.into_outcome(id, result)).is_err() {
+            let outcome = ctx.into_outcome(id, result);
+            if let Some(board) = &outcome_board {
+                board.publish(outcome.clone());
+            }
+            if out_tx.send(outcome).is_err() {
                 break;
             }
         }
