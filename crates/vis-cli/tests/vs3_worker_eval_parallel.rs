@@ -362,7 +362,15 @@ fn muoi_vong_threads_fd_rss_khong_ro() {
         assert_eq!(out.exit, 0, "vòng {vong}: {:?}", out.diagnostics);
         assert_eq!(out.stdout, "56\n");
     }
-    if let (Some(t0), Some(t1)) = (t0, dem_thread()) {
+    // Thread của pool có thể chưa được OS thu hồi ngay sau join (nhất là khi gate chạy tải
+    // cao). Chờ tối đa 500 ms cho về mức nền trước khi kết luận rò; nếu vẫn cao hơn mới fail.
+    if let Some(t0) = t0 {
+        let mut t1 = dem_thread().unwrap_or(t0);
+        let han = Instant::now() + std::time::Duration::from_millis(500);
+        while t1 > t0 + 1 && Instant::now() < han {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            t1 = dem_thread().unwrap_or(t1);
+        }
         assert!(t1 <= t0 + 1, "rò thread: {t0} -> {t1}");
     }
     if let (Some(f0), Some(f1)) = (f0, dem_fd()) {
