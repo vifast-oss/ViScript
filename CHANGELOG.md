@@ -3,6 +3,12 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.3 — 2026-11-21 (candidate)
+
+- **Fix HTTP/2 flow-control**: release capacity sau mỗi chunk; body >64 KiB không còn timeout; 8 MiB cap đúng, header 64 KiB, trailer/GOAWAY/timeout.
+- Linux gate **3535/3**; `vs3_http2` release **19/19**. Windows/fresh-clone đang verify.
+- Không GitHub Actions; macOS ngoài phạm vi.
+
 ## v0.3.2 — 2026-11-21
 
 - **Async HTTP/1.1 cooperative** (Unix): state machine trên reactor, GET/HEAD/redirect/chunked/EOF, TLS nonblocking, cap 8 MiB; sync giữ nguyên.
