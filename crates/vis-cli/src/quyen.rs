@@ -939,6 +939,11 @@ impl NetHost for NetGuard<'_> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong.connect(dia_chi, timeout_ms)
     }
+    /// **VS3-4a (VD-271)**: TLS dùng cùng cổng `cap[Net]` trên `host:port` như TCP trần.
+    fn connect_tls(&mut self, dia_chi: &str, timeout_ms: u64) -> Result<String, String> {
+        self.quyen.kiem_net(dia_chi)?;
+        self.trong.connect_tls(dia_chi, timeout_ms)
+    }
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong.listen(dia_chi)

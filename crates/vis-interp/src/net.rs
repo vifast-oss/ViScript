@@ -3,10 +3,15 @@
 //! socket thô qua [`NetHost`], tự dựng/đọc **HTTP/1.1**. Nhờ vậy interp ↔ VM **cùng byte** và codegen
 //! **không** phải sửa (`std.http.*` hạ theo tên như mọi `std.*`).
 //!
-//! Phạm vi: **chỉ** `http://`, **chỉ loopback** (`127.0.0.1`/`localhost`); **không** TLS/HTTP2,
-//! **không** keep-alive; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect; phản hồi
-//! cap **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte** tới khi
-//! chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte. **Chunk trailer bị bỏ qua**; **không** TLS/keep-alive.
+//! Phạm vi: `http://` **chỉ loopback** (`127.0.0.1`/`localhost`, giữ nguyên VD-100/105) và
+//! **VS3-4a** `https://` qua `NetHost::connect_tls` (TLS nằm ở host, không ở crate lõi); **không**
+//! HTTP/2, **không** keep-alive; GET theo redirect tối đa 5 (chỉ GET), HEAD **không** theo redirect;
+//! phản hồi cap **8 MiB** (mẫu `MAX_STDIN`, ST-34) ⇒ vượt cap là `Err`, không OOM. Body giữ **byte**
+//! tới khi chuyển `str` (lossy) — ngôn ngữ chưa có kiểu byte. **Chunk trailer bị bỏ qua**.
+//!
+//! **VS3-4a (VD-271)**: thêm `https://` — host TLS xác thực chứng chỉ theo root store; `https://`
+//! được phép host ngoài loopback (đi qua `cap[Net]` như mọi host khác), còn `http://` **vẫn** chỉ
+//! loopback để không mở thêm bề mặt trần. Không cho chuyển hướng **HTTPS → HTTP** (Q2 (3)).
 
 use std::time::{Duration, Instant};
 
@@ -17,11 +22,121 @@ pub const MAX_HTTP: usize = 8 * 1024 * 1024;
 /// Cap **header** (64 KiB) — header lớn hơn ⇒ `Err` (không đọc vô hạn).
 const MAX_HEADER: usize = 64 * 1024;
 
-/// Tách `http://host[:port][/path][?query]` → `(authority, target)`; chỉ **loopback**.
-fn tach_url(url: &str) -> Result<(String, String), String> {
-    let rest = url
-        .strip_prefix("http://")
-        .ok_or_else(|| format!("chỉ hỗ trợ `http://`, được `{url}`"))?;
+/// Giao thức của URL — quyết định cổng mặc định + đường nối (`connect` hay `connect_tls`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum GiaoThuc {
+    Http,
+    Https,
+}
+
+impl GiaoThuc {
+    fn ten(self) -> &'static str {
+        match self {
+            GiaoThuc::Http => "http",
+            GiaoThuc::Https => "https",
+        }
+    }
+
+    fn cong_mac_dinh(self) -> u16 {
+        match self {
+            GiaoThuc::Http => 80,
+            GiaoThuc::Https => 443,
+        }
+    }
+}
+
+/// URL đã tách: `scheme://host[:port][/path][?query]`.
+struct UrlHttp {
+    giao_thuc: GiaoThuc,
+    /// Host **không** kèm `[]` của IPv6 (dùng làm `ServerName` cho TLS).
+    host: String,
+    cong: u16,
+    target: String,
+}
+
+impl UrlHttp {
+    /// `host[:port]` cho `Host:` và `cap[Net]`; bỏ cổng mặc định, IPv6 bọc `[]`.
+    fn authority(&self) -> String {
+        let host = if self.host.contains(':') {
+            format!("[{}]", self.host)
+        } else {
+            self.host.clone()
+        };
+        if self.cong == self.giao_thuc.cong_mac_dinh() {
+            host
+        } else {
+            format!("{host}:{}", self.cong)
+        }
+    }
+
+    /// `host:port` **luôn có cổng** — dạng `connect`/`connect_tls` cần để phân giải.
+    fn dia_chi(&self) -> String {
+        let host = if self.host.contains(':') {
+            format!("[{}]", self.host)
+        } else {
+            self.host.clone()
+        };
+        format!("{host}:{}", self.cong)
+    }
+
+    #[cfg(test)]
+    fn url(&self) -> String {
+        format!(
+            "{}://{}{}",
+            self.giao_thuc.ten(),
+            self.authority(),
+            self.target
+        )
+    }
+}
+
+/// Tách authority `host[:port]`, hỗ trợ IPv6 `[::1]:443`; cổng thiếu ⇒ `mac_dinh`.
+fn tach_authority(authority: &str, mac_dinh: u16) -> Result<(String, u16), String> {
+    let (host, cong) = if let Some(rest) = authority.strip_prefix('[') {
+        let (h, sau) = rest
+            .split_once(']')
+            .ok_or_else(|| format!("authority IPv6 thiếu `]`: `{authority}`"))?;
+        let c = if sau.is_empty() {
+            None
+        } else {
+            Some(
+                sau.strip_prefix(':')
+                    .ok_or_else(|| format!("authority IPv6 sai dạng: `{authority}`"))?,
+            )
+        };
+        (h, c)
+    } else if authority.matches(':').count() == 1 {
+        let (h, c) = authority.rsplit_once(':').expect("đã kiểm một dấu `:`");
+        (h, Some(c))
+    } else {
+        // Không có cổng (hoặc IPv6 trần — URL chuẩn phải bọc `[]`).
+        (authority, None)
+    };
+    if host.is_empty() {
+        return Err(format!("URL thiếu host: `{authority}`"));
+    }
+    let cong = match cong {
+        Some(c) => c
+            .parse::<u16>()
+            .map_err(|_| format!("cổng `{c}` không hợp lệ (0..65535)"))?,
+        None => mac_dinh,
+    };
+    Ok((host.to_string(), cong))
+}
+
+/// Tách `http|https://host[:port][/path][?query]`.
+///
+/// `http://` **chỉ loopback** (giữ nguyên VD-100/105); `https://` cho host bất kỳ (TLS + `cap[Net]`).
+fn tach_url(url: &str) -> Result<UrlHttp, String> {
+    let (giao_thuc, rest) = if let Some(r) = url.strip_prefix("http://") {
+        (GiaoThuc::Http, r)
+    } else if let Some(r) = url.strip_prefix("https://") {
+        (GiaoThuc::Https, r)
+    } else {
+        return Err(format!(
+            "chỉ hỗ trợ `http://` hoặc `https://`, được `{url}`"
+        ));
+    };
     if rest.contains('@') {
         return Err(format!("URL có userinfo không hỗ trợ: `{url}`"));
     }
@@ -30,22 +145,12 @@ fn tach_url(url: &str) -> Result<(String, String), String> {
     if authority.is_empty() {
         return Err(format!("URL thiếu host: `{url}`"));
     }
-    let (host, cong) = match authority.rsplit_once(':') {
-        Some((h, c)) => (h, c),
-        None => (authority, "80"),
-    };
-    if host != "127.0.0.1" && host != "localhost" {
+    let (host, cong) = tach_authority(authority, giao_thuc.cong_mac_dinh())?;
+    if giao_thuc == GiaoThuc::Http && host != "127.0.0.1" && host != "localhost" {
         return Err(format!(
-            "chỉ cho phép loopback (`127.0.0.1`/`localhost`), được `{host}`"
+            "`http://` chỉ cho phép loopback (`127.0.0.1`/`localhost`), được `{host}`; dùng `https://` cho host ngoài"
         ));
     }
-    cong.parse::<u16>()
-        .map_err(|_| format!("cổng `{cong}` không hợp lệ (0..65535)"))?;
-    let authority = if cong == "80" {
-        host.to_string()
-    } else {
-        format!("{host}:{cong}")
-    };
     let target = if duong.is_empty() {
         "/".to_string()
     } else if duong.starts_with('/') {
@@ -53,7 +158,12 @@ fn tach_url(url: &str) -> Result<(String, String), String> {
     } else {
         format!("/{duong}")
     };
-    Ok((authority, target))
+    Ok(UrlHttp {
+        giao_thuc,
+        host,
+        cong,
+        target,
+    })
 }
 
 /// Tìm `\r\n\r\n` trong `du` — vị trí **byte đầu** của dấu phân cách.
@@ -200,11 +310,20 @@ fn chuan_hoa_target(target: &str) -> String {
 }
 
 /// Ghép `Location` với URL hiện tại (RFC 3986 mức đơn giản). `None` = **không theo** (rỗng/fragment
-/// thuần, hoặc URL sau khi chuẩn hoá **trùng** URL cũ ⇒ tránh vòng). `Err` = `Location` không hỗ trợ.
-fn noi_location(authority: &str, target: &str, location: &str) -> Result<Option<String>, String> {
+/// thuần, hoặc URL sau khi chuẩn hoá **trùng** URL cũ ⇒ tránh vòng). `Err` = `Location` không hỗ trợ,
+/// hoặc **hạ cấp** HTTPS → HTTP (VS3-4a, Q2 (3)).
+fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
     if location.starts_with("http://") || location.starts_with("https://") {
-        let (auth, t) = tach_url(location)?;
-        return Ok(Some(format!("http://{auth}{}", chuan_hoa_target(&t))));
+        if u.giao_thuc == GiaoThuc::Https && location.starts_with("http://") {
+            return Err("không cho phép chuyển hướng HTTPS → HTTP".to_string());
+        }
+        let moi = tach_url(location)?;
+        return Ok(Some(format!(
+            "{}://{}{}",
+            moi.giao_thuc.ten(),
+            moi.authority(),
+            chuan_hoa_target(&moi.target)
+        )));
     }
     // Fragment không gửi lên server; `#f` một mình ⇒ cùng URL ⇒ không theo.
     let loc = location.split('#').next().unwrap_or("");
@@ -213,17 +332,21 @@ fn noi_location(authority: &str, target: &str, location: &str) -> Result<Option<
     }
     let moi = if loc.starts_with('?') {
         // Query-only: giữ **path cũ**, thay query.
-        let path = target.split('?').next().unwrap_or("/");
+        let path = u.target.split('?').next().unwrap_or("/");
         format!("{path}{loc}")
     } else if loc.starts_with('/') {
         chuan_hoa_target(loc)
     } else {
         // Tương đối theo **thư mục** của target hiện tại.
-        let path = target.split('?').next().unwrap_or("/");
+        let path = u.target.split('?').next().unwrap_or("/");
         let thu_muc = path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
         chuan_hoa_target(&format!("{thu_muc}/{loc}"))
     };
-    Ok(Some(format!("http://{authority}{moi}")))
+    Ok(Some(format!(
+        "{}://{}{moi}",
+        u.giao_thuc.ten(),
+        u.authority()
+    )))
 }
 
 /// Gửi GET + đọc **một** phản hồi (đã nối). Trả `(status, Location, body)`.
@@ -335,7 +458,8 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
     let mut hien_tai = url.to_string();
     let mut so = 0u8;
     loop {
-        let (authority, target) = tach_url(&hien_tai)?;
+        let u = tach_url(&hien_tai)?;
+        let authority = u.authority();
         // Connect chỉ được dùng phần thời gian còn lại; hết hạn ⇒ lỗi, không mở kết nối mới.
         let con = con_lai_ms(han).ok_or_else(|| {
             format!(
@@ -343,16 +467,24 @@ pub fn http_get(net: &mut dyn NetHost, url: &str, timeout_ms: u64) -> Result<Str
                 timeout.max(1)
             )
         })?;
-        let tay = net.connect(&authority, con)?;
-        net.ghi_nhat_ky(&format!("NET http GET {authority}{target}"));
-        let kq = doc_http_mot(net, &tay, &authority, &target, han, timeout);
+        // **VS3-4a**: `https://` đi qua TLS của host; `http://` giữ đường trần cũ.
+        let tay = match u.giao_thuc {
+            GiaoThuc::Http => net.connect(&u.dia_chi(), con)?,
+            GiaoThuc::Https => net.connect_tls(&u.dia_chi(), con)?,
+        };
+        net.ghi_nhat_ky(&format!(
+            "NET {} GET {authority}{}",
+            u.giao_thuc.ten(),
+            u.target
+        ));
+        let kq = doc_http_mot(net, &tay, &authority, &u.target, han, timeout);
         let _ = net.close(&tay);
         let (status, location, body) = kq?;
         if (300..400).contains(&status) {
             let Some(loc) = location else {
                 return Err(format!("HTTP {status}"));
             };
-            let Some(url) = noi_location(&authority, &target, &loc)? else {
+            let Some(url) = noi_location(&u, &loc)? else {
                 // `Location` rỗng/fragment cùng URL ⇒ **trả mã gốc**, không lỗi, không theo.
                 return Err(format!("HTTP {status}"));
             };
@@ -423,38 +555,81 @@ pub fn http_head(
 ) -> Result<(u16, Vec<(String, String)>), String> {
     let timeout = timeout_ms.max(1);
     let han = Instant::now() + Duration::from_millis(timeout);
-    let (authority, target) = tach_url(url)?;
+    let u = tach_url(url)?;
+    let authority = u.authority();
     let con = con_lai_ms(han).ok_or_else(|| {
         format!(
             "quá thời gian chờ HTTP từ `{authority}` sau {} ms",
             timeout.max(1)
         )
     })?;
-    let tay = net.connect(&authority, con)?;
-    net.ghi_nhat_ky(&format!("NET http HEAD {authority}{target}"));
-    let kq = head_mot(net, &tay, &authority, &target, han, timeout);
+    // **VS3-4a**: HEAD dùng cùng đường TLS; vẫn **không** theo redirect.
+    let tay = match u.giao_thuc {
+        GiaoThuc::Http => net.connect(&u.dia_chi(), con)?,
+        GiaoThuc::Https => net.connect_tls(&u.dia_chi(), con)?,
+    };
+    net.ghi_nhat_ky(&format!(
+        "NET {} HEAD {authority}{}",
+        u.giao_thuc.ten(),
+        u.target
+    ));
+    let kq = head_mot(net, &tay, &authority, &u.target, han, timeout);
     let _ = net.close(&tay);
     kq
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{chuan_hoa_target, doc_header, noi_location, tach_url};
+    use super::{chuan_hoa_target, doc_header, noi_location, tach_url, GiaoThuc};
 
     #[test]
     fn tach_url_dung_va_chan_ngoai_loopback() {
+        let u = tach_url("http://127.0.0.1:8080/a?b=1").unwrap();
+        assert_eq!(u.giao_thuc, GiaoThuc::Http);
+        assert_eq!(u.authority(), "127.0.0.1:8080");
+        assert_eq!(u.target, "/a?b=1");
+        assert_eq!(u.host, "127.0.0.1");
+        assert_eq!(u.cong, 8080);
         assert_eq!(
-            tach_url("http://127.0.0.1:8080/a?b=1").unwrap(),
-            ("127.0.0.1:8080".to_string(), "/a?b=1".to_string())
+            tach_url("http://localhost").unwrap().authority(),
+            "localhost".to_string()
         );
         assert_eq!(
-            tach_url("http://localhost").unwrap(),
-            ("localhost".to_string(), "/".to_string())
+            tach_url("http://localhost").unwrap().dia_chi(),
+            "localhost:80".to_string()
         );
-        assert_eq!(tach_url("http://127.0.0.1:81").unwrap().1, "/".to_string());
-        assert!(tach_url("https://127.0.0.1/").is_err());
+        assert_eq!(
+            tach_url("http://127.0.0.1:81").unwrap().target,
+            "/".to_string()
+        );
         assert!(tach_url("http://example.com/").is_err());
         assert!(tach_url("http://127.0.0.1:99999/").is_err());
+        assert!(tach_url("ftp://127.0.0.1/").is_err());
+        assert!(tach_url("http://user@127.0.0.1/").is_err());
+    }
+
+    /// **VS3-4a**: `https://` cho host bất kỳ; cổng mặc định 443; IPv6 bọc `[]` khi dựng authority.
+    #[test]
+    fn tach_url_https_va_cong_mac_dinh() {
+        let u = tach_url("https://example.com/a?x=1").unwrap();
+        assert_eq!(u.giao_thuc, GiaoThuc::Https);
+        assert_eq!(u.authority(), "example.com");
+        assert_eq!(u.target, "/a?x=1");
+        assert_eq!(u.url(), "https://example.com/a?x=1");
+        assert_eq!(u.dia_chi(), "example.com:443");
+
+        let u = tach_url("https://127.0.0.1:8443").unwrap();
+        assert_eq!(u.authority(), "127.0.0.1:8443");
+        assert_eq!(u.target, "/");
+        assert_eq!(u.url(), "https://127.0.0.1:8443/");
+
+        let u = tach_url("https://[::1]:8443/x").unwrap();
+        assert_eq!(u.host, "::1");
+        assert_eq!(u.cong, 8443);
+        assert_eq!(u.authority(), "[::1]:8443");
+        assert_eq!(u.url(), "https://[::1]:8443/x");
+        assert!(tach_url("https://[::1/x").is_err());
+        assert!(tach_url("https://").is_err());
     }
 
     /// `..`/`.` chuẩn hoá, query-only giữ path, fragment/rỗng ⇒ **không theo**.
@@ -463,23 +638,42 @@ mod tests {
         assert_eq!(chuan_hoa_target("/a/b/../c?x=1"), "/a/c?x=1");
         assert_eq!(chuan_hoa_target("/a/./b/"), "/a/b/");
         assert_eq!(chuan_hoa_target("/../x"), "/x");
+        let co_so = tach_url("http://127.0.0.1:1/a").unwrap();
         assert_eq!(
-            noi_location("127.0.0.1:1", "/a", "/a/b/../c?x=1").unwrap(),
+            noi_location(&co_so, "/a/b/../c?x=1").unwrap(),
             Some("http://127.0.0.1:1/a/c?x=1".to_string())
         );
+        let co_so_query = tach_url("http://127.0.0.1:1/a?old=1").unwrap();
         assert_eq!(
-            noi_location("127.0.0.1:1", "/a?old=1", "?y=2").unwrap(),
+            noi_location(&co_so_query, "?y=2").unwrap(),
             Some("http://127.0.0.1:1/a?y=2".to_string())
         );
         assert_eq!(
-            noi_location("127.0.0.1:1", "/a/b", "c").unwrap(),
-            Some("http://127.0.0.1:1/a/c".to_string())
+            noi_location(&co_so, "b/c").unwrap(),
+            Some("http://127.0.0.1:1/b/c".to_string())
         );
-        assert_eq!(noi_location("127.0.0.1:1", "/a", "#f").unwrap(), None);
-        assert_eq!(noi_location("127.0.0.1:1", "/a", "").unwrap(), None);
+        assert_eq!(noi_location(&co_so, "#f").unwrap(), None);
+        assert_eq!(noi_location(&co_so, "").unwrap(), None);
         assert_eq!(
-            noi_location("127.0.0.1:1", "/a", "http://127.0.0.1:1/x/../y").unwrap(),
-            Some("http://127.0.0.1:1/y".to_string())
+            noi_location(&co_so, "http://127.0.0.1:2/x/../y").unwrap(),
+            Some("http://127.0.0.1:2/y".to_string())
+        );
+    }
+
+    /// **VS3-4a**: redirect giữ scheme; nâng cấp HTTP → HTTPS được, **hạ cấp** HTTPS → HTTP thì không.
+    #[test]
+    fn location_giu_scheme_va_chan_ha_cap() {
+        let https = tach_url("https://127.0.0.1:1/a").unwrap();
+        assert_eq!(
+            noi_location(&https, "/x").unwrap(),
+            Some("https://127.0.0.1:1/x".to_string())
+        );
+        let e = noi_location(&https, "http://127.0.0.1:2/x").unwrap_err();
+        assert!(e.contains("HTTPS → HTTP"), "lỗi hạ cấp sai: {e}");
+        let http = tach_url("http://127.0.0.1:1/a").unwrap();
+        assert_eq!(
+            noi_location(&http, "https://example.com/x").unwrap(),
+            Some("https://example.com/x".to_string())
         );
     }
 
