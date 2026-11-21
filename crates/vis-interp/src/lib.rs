@@ -172,7 +172,41 @@ pub fn run_with_hosts_caps<'a>(
     db: Option<&'a mut dyn crate::builtin::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
+    run_with_hosts_caps_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        ngoai,
+        fs,
+        net,
+        db,
+        caps,
+        crate::rt::exec::WorkerMode::Off,
+    )
+}
+
+/// **VS3-3b/W5 (P1)** — thân chung `run_with_hosts_caps` + chọn chế độ evaluator.
+/// `Off` (mặc định) giữ nguyên hành vi; `Local` chỉ đánh dấu scheduler để W=1 chạy caller.
+#[allow(clippy::too_many_arguments)]
+fn run_with_hosts_caps_mode<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    mode: crate::rt::exec::WorkerMode,
+) -> RunOutput {
     let mut it = interp::Interp::new(hir, symbols, types);
+    if mode != crate::rt::exec::WorkerMode::Off {
+        it.sched.borrow_mut().exec.mode = mode;
+    }
     if !caps.is_empty() {
         it.set_caps(caps.to_vec());
     }
@@ -230,6 +264,51 @@ pub fn run_with_hosts_caps<'a>(
             steps,
         },
     }
+}
+
+/// **VS3-3b/W5 (P1)** — chạy non-frame ở chế độ evaluator **W=1 Local** (test/opt-in).
+///
+/// Hành vi phải **byte-identical** với [`run`]: cùng `Scheduler` một luồng, shared env, in trực
+/// tiếp, cùng `VS0501`/`VS0505`/`VS0506`. Không tạo thread, không snapshot, không đổi default.
+#[doc(hidden)]
+pub fn run_workers_local(
+    text: &str,
+    hir: &Hir,
+    symbols: &Symbols,
+    types: &TypeTable,
+    args: &[String],
+) -> RunOutput {
+    run_workers_local_with_hosts_caps(text, hir, symbols, types, args, None, None, None, None, &[])
+}
+
+/// Như [`run_workers_local`] nhưng gắn đủ host/caps như [`run_with_hosts_caps`].
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_workers_local_with_hosts_caps<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+) -> RunOutput {
+    run_with_hosts_caps_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        ngoai,
+        fs,
+        net,
+        db,
+        caps,
+        crate::rt::exec::WorkerMode::Local,
+    )
 }
 
 /// **VS3-1d** — chạy chương trình **có async** bằng frame scheduler thật (không phải test

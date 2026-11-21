@@ -1,0 +1,89 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 P1 evaluator W=1 non-frame — log
+# Branch vs3/w5-spike, baseline a8100ab (merge main; gate user 3539/3).
+# Toolchain: ~/.cargo/bin/cargo 1.100.0. df /home đầu: 11G trống.
+
+## DIFF / FILE
+$ git diff --stat
+ crates/vis-interp/src/interp.rs | 18 +++++++---
+ crates/vis-interp/src/lib.rs    | 79 +++++++++++++++++++++++++++++++++++++++++
+ crates/vis-interp/src/rt.rs     | 33 +++++++++++++++---
+ 3 files changed, 120 insertions(+), 10 deletions(-)
+
+$ wc -l crates/vis-interp/src/rt/exec.rs crates/vis-interp/src/interp/worker.rs \
+        crates/vis-cli/tests/vs3_worker_eval_local.rs
+  62 crates/vis-interp/src/rt/exec.rs
+  34 crates/vis-interp/src/interp/worker.rs
+ 256 crates/vis-cli/tests/vs3_worker_eval_local.rs
+
+$ wc -l crates/vis-interp/src/rt.rs crates/vis-interp/src/interp.rs crates/vis-interp/src/lib.rs
+1269 crates/vis-interp/src/rt.rs
+1431 crates/vis-interp/src/interp.rs
+ 392 crates/vis-interp/src/lib.rs
+
+Không đụng value.rs/frame.rs/vm.rs/net.rs (git diff --name-only không có các tệp này).
+
+## TEST MỚI — DEBUG
+$ cargo test -p vis-cli --test vs3_worker_eval_local -- --test-threads=1
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+Các ca: sync_byte_identical, print_va_thu_tu_byte_identical, nested_spawn_await_byte_identical,
+muoi_nghin_task_byte_identical, loi_than_boc_vs0506_giong_default,
+chan0_giu_vs0505_nhu_non_frame, budget_can_giong_default,
+await_hai_lan_tra_cache_byte_identical.
+
+## TEST MỚI — RELEASE
+$ cargo test --release -p vis-cli --test vs3_worker_eval_local -- --test-threads=1
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+real 0m23.870s
+
+## HỒI QUY
+$ cargo test -p vis-cli --test vs3_default --test vs3_worker --test vs3_budget -- --test-threads=1
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 50.34s
+running 22 tests
+......................
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.45s
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.48s
+
+$ cargo test -p vis-interp --lib
+running 303 tests
+... (303/303)
+test result: ok. 303 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## GATE --FAST
+$ ./vis-dev gate --fast
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- luật R1..R6: OK
+ok 1 - thiếu SPDX bị bắt (R3)
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+ok 4 - vis-host-vifast trong cây nguồn bị bắt (R4)
+--- L0 test: cargo-nextest (song song) + doc-test
+... PASS [ 57.092s] (3547/3547) vis-cli::vs3_budget loop_2m_bien_ngan_sach_khong_trap_fuel_hai_engine
+Summary [ 76.856s] 3547 tests run: 3547 passed, 3 skipped
+--- L0 test: OK
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+GATE_EXIT=0
+
+## FMT / CHECK / CLIPPY
+$ cargo fmt --all -- --check
+FMT_OK
+$ cargo check --all-targets
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.12s
+$ cargo clippy -p vis-cli --all-targets -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.76s
+
+## DF CẢNH BÁO
+$ df -h /home/ps
+/dev/nvme0n1p2  233G  224G  2.3G 100% /
+Trước P1: 11G. Release test + gate làm target/debug tăng lên 9.5G (build 7G, incremental 2.5G).
+Theo điều kiện dừng <5G: không chạy thêm build/test trong phiên này.
+Đề xuất dọn target/debug/incremental và target/debug/build của worktree trước P2.
