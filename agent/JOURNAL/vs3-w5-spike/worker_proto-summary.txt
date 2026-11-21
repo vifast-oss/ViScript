@@ -1,0 +1,22 @@
+Median 6 lần chạy (run 3..8), mỗi lần prototype tự lặp 3 lần cho budget/perf.
+Máy: i5-1235U 2P+8E, nproc=12; số chỉ hướng, không phải gate production.
+
+== BUDGET (ns/charge; ms) ==
+local	W=1	ns/charge=0.9	ms=0.28	range_ms=[0.24,0.39]
+local	W=2	ns/charge=0.6	ms=0.21	range_ms=[0.16,0.23]
+local	W=4	ns/charge=0.4	ms=0.12	range_ms=[0.09,0.18]
+shared	W=1	ns/charge=12.0	ms=3.83	range_ms=[3.41,4.25]
+shared	W=2	ns/charge=42.8	ms=13.68	range_ms=[12.22,18.07]
+shared	W=4	ns/charge=57.2	ms=18.32	range_ms=[15.95,28.73]
+exhaust	W=4	ms=13.38	used=[160000]	remaining=[0]	failed_charge_attempts=[33, 34, 35]
+
+== PERF safe (64 task, CPU 50k iters, snapshot 5k, budget 200 charge/task) ==
+W=1	ms=6.38	range=[6.05,7.60]
+W=2	ms=4.17	range=[3.69,4.23]
+W=4	ms=2.33	range=[2.16,2.66]
+speedup W=2: 1.53x; W=4: 2.74x
+
+== RSS (tiến trình con sạch; heap pad 50k/worker) ==
+W=1	RSS=3.5 MB	HWM=6.0 MB
+W=2	RSS=3.5 MB	HWM=7.4 MB
+W=4	RSS=3.6 MB	HWM=10.4 MB
