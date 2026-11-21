@@ -1,0 +1,574 @@
+# VS3 W5 mixed soak 10 phút — main 32cb511 — 2026-11-22T00:11:28+09:00
+# host: Linux 7.0.0-43-generic x86_64 / 12 cpu
+# cmd: VS3_W5_MIXED_SECS=600 VS3_W5_MIXED_ROUNDS=1000000 cargo test --release -p vis-cli --test vs3_worker_soak mixed_soak -- --nocapture --test-threads=1
+=== BEFORE ===
+ 00:11:28 up 13 days, 20:55,  7 users,  load average: 10.57, 15.57, 16.05
+               total        used        free      shared  buff/cache   available
+Mem:           14651        6294        1939        1687        8406        8357
+Swap:           4095        4095           0
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  233G  214G   12G  95% /
+tmpfs           7.2G  1.4G  5.8G  20% /tmp
+
+    Finished `release` profile [optimized] target(s) in 0.05s
+     Running tests/vs3_worker_soak.rs (target/release/build/vis-cli/7b75224c74233996/out/vs3_worker_soak-7b75224c74233996)
+
+running 1 test
+test mixed_soak_shared_copy_move_w1_w4 ... MIXED_SOAK_ENV	target_rounds=1000000	target_secs=600	batch=5	n=10000	spawns_per_round=80000	rss0_kb=3360	threads0=2
+MIXED_ROUND	round=0	secs=6.789	print_s=1.188	budget_s=1.890	cancel_s=2.155	cross_s=1.556	rss_kb=60104	hwm_kb=60104	threads=2	peak_threads=6
+MIXED_ROUND	round=1	secs=3.526	print_s=0.964	budget_s=0.804	cancel_s=0.973	cross_s=0.785	rss_kb=60936	hwm_kb=60936	threads=2	peak_threads=6
+MIXED_ROUND	round=2	secs=3.754	print_s=1.013	budget_s=0.872	cancel_s=0.966	cross_s=0.903	rss_kb=61912	hwm_kb=61912	threads=2	peak_threads=6
+MIXED_ROUND	round=3	secs=3.763	print_s=1.285	budget_s=0.764	cancel_s=0.959	cross_s=0.755	rss_kb=61608	hwm_kb=61608	threads=2	peak_threads=6
+MIXED_ROUND	round=4	secs=3.507	print_s=0.925	budget_s=0.789	cancel_s=0.963	cross_s=0.829	rss_kb=61616	hwm_kb=61616	threads=2	peak_threads=6
+MIXED_BATCH	batch=1	rounds=5	total_rounds=5	tasks=400000	secs=21.34	rss0_kb=3360	rss_kb=61616	hwm_kb=61616	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=5	secs=6.593	print_s=0.882	budget_s=0.825	cancel_s=2.569	cross_s=2.317	rss_kb=61824	hwm_kb=61824	threads=2	peak_threads=6
+MIXED_ROUND	round=6	secs=8.966	print_s=2.202	budget_s=1.882	cancel_s=2.653	cross_s=2.229	rss_kb=61824	hwm_kb=61824	threads=2	peak_threads=6
+MIXED_ROUND	round=7	secs=7.556	print_s=2.732	budget_s=2.027	cancel_s=1.318	cross_s=1.479	rss_kb=61824	hwm_kb=61824	threads=3	peak_threads=6
+MIXED_ROUND	round=8	secs=6.792	print_s=2.105	budget_s=1.392	cancel_s=1.885	cross_s=1.410	rss_kb=61824	hwm_kb=61824	threads=2	peak_threads=6
+MIXED_ROUND	round=9	secs=6.497	print_s=1.766	budget_s=1.322	cancel_s=2.289	cross_s=1.120	rss_kb=62548	hwm_kb=62548	threads=3	peak_threads=6
+MIXED_BATCH	batch=2	rounds=5	total_rounds=10	tasks=800000	secs=36.41	rss0_kb=3360	rss_kb=60412	hwm_kb=62084	threads0=2	threads=3	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=10	secs=6.292	print_s=1.397	budget_s=0.973	cancel_s=2.310	cross_s=1.612	rss_kb=61784	hwm_kb=62084	threads=2	peak_threads=6
+MIXED_ROUND	round=11	secs=6.179	print_s=2.145	budget_s=0.969	cancel_s=1.567	cross_s=1.498	rss_kb=62324	hwm_kb=62324	threads=3	peak_threads=6
+MIXED_ROUND	round=12	secs=6.968	print_s=1.998	budget_s=1.045	cancel_s=1.945	cross_s=1.980	rss_kb=62324	hwm_kb=62324	threads=2	peak_threads=6
+MIXED_ROUND	round=13	secs=5.747	print_s=2.246	budget_s=1.272	cancel_s=1.290	cross_s=0.939	rss_kb=60716	hwm_kb=62084	threads=2	peak_threads=6
+MIXED_ROUND	round=14	secs=3.999	print_s=1.084	budget_s=0.994	cancel_s=1.078	cross_s=0.843	rss_kb=62000	hwm_kb=62084	threads=2	peak_threads=6
+MIXED_BATCH	batch=3	rounds=5	total_rounds=15	tasks=1200000	secs=29.19	rss0_kb=3360	rss_kb=62000	hwm_kb=62084	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=15	secs=3.933	print_s=1.027	budget_s=1.069	cancel_s=1.026	cross_s=0.811	rss_kb=62000	hwm_kb=62084	threads=2	peak_threads=6
+MIXED_ROUND	round=16	secs=3.658	print_s=1.016	budget_s=0.835	cancel_s=0.994	cross_s=0.812	rss_kb=62332	hwm_kb=62332	threads=2	peak_threads=6
+MIXED_ROUND	round=17	secs=3.531	print_s=0.930	budget_s=0.801	cancel_s=0.980	cross_s=0.819	rss_kb=62332	hwm_kb=62332	threads=2	peak_threads=6
+MIXED_ROUND	round=18	secs=3.551	print_s=1.013	budget_s=0.735	cancel_s=0.989	cross_s=0.815	rss_kb=62336	hwm_kb=62336	threads=2	peak_threads=6
+MIXED_ROUND	round=19	secs=3.649	print_s=1.063	budget_s=0.831	cancel_s=0.946	cross_s=0.809	rss_kb=62336	hwm_kb=62336	threads=2	peak_threads=6
+MIXED_BATCH	batch=4	rounds=5	total_rounds=20	tasks=1600000	secs=18.33	rss0_kb=3360	rss_kb=62336	hwm_kb=62336	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=20	secs=3.636	print_s=0.994	budget_s=0.916	cancel_s=0.967	cross_s=0.759	rss_kb=62336	hwm_kb=62336	threads=2	peak_threads=6
+MIXED_ROUND	round=21	secs=3.435	print_s=0.866	budget_s=0.784	cancel_s=0.951	cross_s=0.834	rss_kb=62336	hwm_kb=62336	threads=2	peak_threads=6
+MIXED_ROUND	round=22	secs=3.749	print_s=1.153	budget_s=0.767	cancel_s=0.961	cross_s=0.869	rss_kb=62336	hwm_kb=62336	threads=2	peak_threads=6
+MIXED_ROUND	round=23	secs=3.669	print_s=0.978	budget_s=0.712	cancel_s=1.064	cross_s=0.915	rss_kb=62684	hwm_kb=62684	threads=2	peak_threads=6
+MIXED_ROUND	round=24	secs=3.096	print_s=0.843	budget_s=0.517	cancel_s=0.940	cross_s=0.795	rss_kb=62684	hwm_kb=62684	threads=2	peak_threads=6
+MIXED_BATCH	batch=5	rounds=5	total_rounds=25	tasks=2000000	secs=17.59	rss0_kb=3360	rss_kb=62684	hwm_kb=62684	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=25	secs=3.776	print_s=1.265	budget_s=0.829	cancel_s=0.942	cross_s=0.740	rss_kb=62684	hwm_kb=62684	threads=2	peak_threads=6
+MIXED_ROUND	round=26	secs=3.511	print_s=0.998	budget_s=0.780	cancel_s=0.952	cross_s=0.780	rss_kb=63388	hwm_kb=63388	threads=2	peak_threads=6
+MIXED_ROUND	round=27	secs=3.437	print_s=0.807	budget_s=0.793	cancel_s=1.003	cross_s=0.833	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=28	secs=3.221	print_s=0.936	budget_s=0.834	cancel_s=0.834	cross_s=0.617	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=29	secs=3.302	print_s=0.926	budget_s=0.853	cancel_s=0.988	cross_s=0.535	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=6	rounds=5	total_rounds=30	tasks=2400000	secs=17.25	rss0_kb=3360	rss_kb=62684	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=30	secs=3.130	print_s=0.658	budget_s=0.693	cancel_s=0.977	cross_s=0.802	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=31	secs=3.392	print_s=0.979	budget_s=0.748	cancel_s=0.939	cross_s=0.726	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=32	secs=3.354	print_s=0.840	budget_s=0.752	cancel_s=0.997	cross_s=0.764	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=33	secs=3.273	print_s=0.744	budget_s=0.813	cancel_s=0.972	cross_s=0.744	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=34	secs=3.015	print_s=0.824	budget_s=0.748	cancel_s=0.954	cross_s=0.489	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=7	rounds=5	total_rounds=35	tasks=2800000	secs=16.17	rss0_kb=3360	rss_kb=62684	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=35	secs=3.373	print_s=0.731	budget_s=0.814	cancel_s=0.997	cross_s=0.831	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_ROUND	round=36	secs=3.631	print_s=0.917	budget_s=0.894	cancel_s=1.002	cross_s=0.818	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=37	secs=3.685	print_s=1.008	budget_s=0.854	cancel_s=1.008	cross_s=0.815	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_ROUND	round=38	secs=3.746	print_s=1.083	budget_s=0.840	cancel_s=0.991	cross_s=0.832	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=39	secs=3.295	print_s=1.000	budget_s=0.587	cancel_s=0.857	cross_s=0.850	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=8	rounds=5	total_rounds=40	tasks=3200000	secs=17.73	rss0_kb=3360	rss_kb=62684	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=40	secs=3.622	print_s=1.082	budget_s=0.821	cancel_s=0.971	cross_s=0.747	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_ROUND	round=41	secs=3.785	print_s=1.145	budget_s=0.819	cancel_s=0.983	cross_s=0.838	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=42	secs=3.828	print_s=1.176	budget_s=0.830	cancel_s=1.007	cross_s=0.815	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=43	secs=3.428	print_s=0.714	budget_s=0.777	cancel_s=1.004	cross_s=0.932	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_ROUND	round=44	secs=3.440	print_s=0.825	budget_s=0.798	cancel_s=0.988	cross_s=0.830	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=9	rounds=5	total_rounds=45	tasks=3600000	secs=18.11	rss0_kb=3360	rss_kb=62684	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=45	secs=3.290	print_s=0.774	budget_s=0.714	cancel_s=1.001	cross_s=0.801	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_ROUND	round=46	secs=3.262	print_s=0.861	budget_s=0.824	cancel_s=0.944	cross_s=0.632	rss_kb=62684	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=47	secs=3.035	print_s=0.602	budget_s=0.692	cancel_s=0.974	cross_s=0.768	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=48	secs=3.266	print_s=0.804	budget_s=0.774	cancel_s=0.985	cross_s=0.703	rss_kb=62688	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=49	secs=3.545	print_s=0.926	budget_s=0.803	cancel_s=1.003	cross_s=0.814	rss_kb=63392	hwm_kb=63392	threads=2	peak_threads=6
+MIXED_BATCH	batch=10	rounds=5	total_rounds=50	tasks=4000000	secs=16.40	rss0_kb=3360	rss_kb=60540	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=50	secs=3.348	print_s=0.958	budget_s=0.609	cancel_s=0.919	cross_s=0.862	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=51	secs=3.651	print_s=0.945	budget_s=0.812	cancel_s=1.006	cross_s=0.888	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=52	secs=3.773	print_s=0.982	budget_s=0.809	cancel_s=0.997	cross_s=0.983	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=53	secs=3.253	print_s=1.047	budget_s=0.774	cancel_s=0.893	cross_s=0.538	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=54	secs=3.171	print_s=1.005	budget_s=0.822	cancel_s=0.822	cross_s=0.523	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=11	rounds=5	total_rounds=55	tasks=4400000	secs=17.20	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=55	secs=3.484	print_s=0.800	budget_s=0.836	cancel_s=0.993	cross_s=0.856	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=56	secs=3.455	print_s=0.939	budget_s=0.819	cancel_s=0.945	cross_s=0.752	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=57	secs=3.528	print_s=0.918	budget_s=0.918	cancel_s=0.976	cross_s=0.716	rss_kb=62844	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=58	secs=3.280	print_s=0.824	budget_s=0.730	cancel_s=0.962	cross_s=0.764	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=59	secs=3.607	print_s=1.013	budget_s=0.830	cancel_s=0.970	cross_s=0.795	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=12	rounds=5	total_rounds=60	tasks=4800000	secs=17.36	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=60	secs=3.806	print_s=1.001	budget_s=0.831	cancel_s=0.965	cross_s=1.010	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=61	secs=3.653	print_s=1.083	budget_s=0.801	cancel_s=0.925	cross_s=0.844	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=62	secs=3.600	print_s=0.897	budget_s=0.794	cancel_s=0.990	cross_s=0.919	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=63	secs=3.523	print_s=0.855	budget_s=0.847	cancel_s=0.970	cross_s=0.851	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=64	secs=3.265	print_s=0.857	budget_s=0.776	cancel_s=0.913	cross_s=0.719	rss_kb=62808	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=13	rounds=5	total_rounds=65	tasks=5200000	secs=17.85	rss0_kb=3360	rss_kb=62808	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=65	secs=3.460	print_s=0.978	budget_s=0.746	cancel_s=0.945	cross_s=0.790	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=66	secs=3.134	print_s=0.909	budget_s=0.566	cancel_s=0.926	cross_s=0.733	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=67	secs=3.413	print_s=0.897	budget_s=0.791	cancel_s=0.980	cross_s=0.746	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=68	secs=2.980	print_s=0.778	budget_s=0.512	cancel_s=0.936	cross_s=0.755	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=69	secs=3.170	print_s=0.968	budget_s=0.631	cancel_s=0.830	cross_s=0.741	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=14	rounds=5	total_rounds=70	tasks=5600000	secs=16.16	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=70	secs=3.466	print_s=0.926	budget_s=0.715	cancel_s=1.005	cross_s=0.819	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=71	secs=3.547	print_s=0.974	budget_s=0.818	cancel_s=0.957	cross_s=0.798	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=72	secs=3.403	print_s=0.976	budget_s=0.726	cancel_s=0.939	cross_s=0.762	rss_kb=62772	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=73	secs=3.352	print_s=0.867	budget_s=0.754	cancel_s=0.939	cross_s=0.791	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=74	secs=3.468	print_s=0.942	budget_s=0.786	cancel_s=0.971	cross_s=0.769	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=15	rounds=5	total_rounds=75	tasks=6000000	secs=17.24	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=75	secs=3.460	print_s=0.848	budget_s=0.832	cancel_s=0.962	cross_s=0.818	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=76	secs=3.370	print_s=0.840	budget_s=0.776	cancel_s=0.982	cross_s=0.772	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=77	secs=3.352	print_s=0.784	budget_s=0.807	cancel_s=0.966	cross_s=0.796	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=78	secs=3.454	print_s=0.918	budget_s=0.696	cancel_s=1.003	cross_s=0.836	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=79	secs=3.113	print_s=0.862	budget_s=0.788	cancel_s=0.839	cross_s=0.623	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=16	rounds=5	total_rounds=80	tasks=6400000	secs=16.75	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=80	secs=2.966	print_s=0.864	budget_s=0.804	cancel_s=0.833	cross_s=0.465	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=81	secs=2.570	print_s=0.519	budget_s=0.676	cancel_s=0.894	cross_s=0.481	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=82	secs=3.442	print_s=0.834	budget_s=0.794	cancel_s=0.982	cross_s=0.832	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=83	secs=3.605	print_s=0.974	budget_s=0.836	cancel_s=0.967	cross_s=0.828	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=84	secs=3.389	print_s=0.832	budget_s=0.753	cancel_s=0.977	cross_s=0.826	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=17	rounds=5	total_rounds=85	tasks=6800000	secs=15.97	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=85	secs=3.321	print_s=0.858	budget_s=0.717	cancel_s=0.991	cross_s=0.754	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=86	secs=3.385	print_s=0.941	budget_s=0.793	cancel_s=0.936	cross_s=0.715	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=87	secs=3.712	print_s=1.017	budget_s=0.901	cancel_s=0.960	cross_s=0.834	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=88	secs=3.629	print_s=1.042	budget_s=0.784	cancel_s=0.971	cross_s=0.832	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=89	secs=3.735	print_s=1.174	budget_s=0.784	cancel_s=0.963	cross_s=0.814	rss_kb=62732	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=18	rounds=5	total_rounds=90	tasks=7200000	secs=17.78	rss0_kb=3360	rss_kb=62732	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=90	secs=3.211	print_s=0.821	budget_s=0.735	cancel_s=0.976	cross_s=0.680	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=91	secs=3.276	print_s=0.784	budget_s=0.737	cancel_s=0.999	cross_s=0.757	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=92	secs=3.384	print_s=0.896	budget_s=0.804	cancel_s=0.962	cross_s=0.722	rss_kb=62772	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=93	secs=3.996	print_s=1.169	budget_s=0.966	cancel_s=0.968	cross_s=0.893	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=94	secs=3.874	print_s=1.045	budget_s=1.002	cancel_s=0.976	cross_s=0.852	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=19	rounds=5	total_rounds=95	tasks=7600000	secs=17.74	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=95	secs=3.784	print_s=1.110	budget_s=0.886	cancel_s=0.977	cross_s=0.812	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=96	secs=3.730	print_s=1.146	budget_s=0.863	cancel_s=0.962	cross_s=0.759	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=97	secs=6.374	print_s=0.872	budget_s=0.888	cancel_s=2.605	cross_s=2.009	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=98	secs=4.100	print_s=1.777	budget_s=0.923	cancel_s=0.859	cross_s=0.541	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=99	secs=3.649	print_s=0.993	budget_s=0.853	cancel_s=0.972	cross_s=0.831	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=20	rounds=5	total_rounds=100	tasks=8000000	secs=21.64	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=100	secs=3.683	print_s=0.994	budget_s=0.848	cancel_s=1.000	cross_s=0.841	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=101	secs=3.597	print_s=1.043	budget_s=0.757	cancel_s=0.994	cross_s=0.803	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=102	secs=5.853	print_s=0.888	budget_s=1.200	cancel_s=1.978	cross_s=1.786	rss_kb=62700	hwm_kb=62872	threads=3	peak_threads=6
+MIXED_ROUND	round=103	secs=7.205	print_s=1.480	budget_s=1.674	cancel_s=2.335	cross_s=1.715	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=104	secs=8.266	print_s=2.674	budget_s=1.785	cancel_s=2.207	cross_s=1.600	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=21	rounds=5	total_rounds=105	tasks=8400000	secs=28.61	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=105	secs=6.744	print_s=1.803	budget_s=1.296	cancel_s=2.317	cross_s=1.328	rss_kb=62700	hwm_kb=62872	threads=3	peak_threads=6
+MIXED_ROUND	round=106	secs=7.190	print_s=1.687	budget_s=1.484	cancel_s=2.739	cross_s=1.279	rss_kb=62700	hwm_kb=62872	threads=3	peak_threads=6
+MIXED_ROUND	round=107	secs=6.046	print_s=1.603	budget_s=1.691	cancel_s=1.524	cross_s=1.227	rss_kb=62700	hwm_kb=62872	threads=3	peak_threads=6
+MIXED_ROUND	round=108	secs=5.456	print_s=1.093	budget_s=1.141	cancel_s=1.274	cross_s=1.948	rss_kb=62700	hwm_kb=62872	threads=3	peak_threads=6
+MIXED_ROUND	round=109	secs=7.956	print_s=1.919	budget_s=2.117	cancel_s=2.072	cross_s=1.848	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=22	rounds=5	total_rounds=110	tasks=8800000	secs=33.40	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=110	secs=4.672	print_s=1.503	budget_s=1.331	cancel_s=1.079	cross_s=0.758	rss_kb=62720	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=111	secs=3.129	print_s=0.594	budget_s=0.769	cancel_s=0.986	cross_s=0.780	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=112	secs=3.896	print_s=1.021	budget_s=1.107	cancel_s=1.032	cross_s=0.736	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=113	secs=3.507	print_s=0.988	budget_s=0.737	cancel_s=1.003	cross_s=0.779	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=114	secs=3.531	print_s=0.960	budget_s=0.807	cancel_s=0.986	cross_s=0.778	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=23	rounds=5	total_rounds=115	tasks=9200000	secs=18.74	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=115	secs=3.646	print_s=0.847	budget_s=1.005	cancel_s=0.979	cross_s=0.815	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=116	secs=3.738	print_s=1.096	budget_s=0.857	cancel_s=0.979	cross_s=0.806	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=117	secs=3.382	print_s=0.865	budget_s=0.804	cancel_s=0.953	cross_s=0.759	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=118	secs=3.345	print_s=0.897	budget_s=0.742	cancel_s=0.920	cross_s=0.787	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=119	secs=3.651	print_s=0.996	budget_s=0.801	cancel_s=0.990	cross_s=0.864	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=24	rounds=5	total_rounds=120	tasks=9600000	secs=17.76	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=120	secs=3.544	print_s=1.324	budget_s=0.569	cancel_s=0.914	cross_s=0.736	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=121	secs=3.556	print_s=0.976	budget_s=0.767	cancel_s=0.991	cross_s=0.822	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=122	secs=3.663	print_s=0.998	budget_s=0.809	cancel_s=0.959	cross_s=0.897	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=123	secs=3.477	print_s=0.847	budget_s=0.836	cancel_s=0.975	cross_s=0.818	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=124	secs=3.678	print_s=1.134	budget_s=0.791	cancel_s=0.962	cross_s=0.791	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=25	rounds=5	total_rounds=125	tasks=10000000	secs=17.92	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=125	secs=3.454	print_s=0.936	budget_s=0.733	cancel_s=1.002	cross_s=0.783	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=126	secs=3.597	print_s=1.038	budget_s=0.781	cancel_s=0.990	cross_s=0.787	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=127	secs=3.402	print_s=0.920	budget_s=0.741	cancel_s=0.951	cross_s=0.790	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=128	secs=3.165	print_s=0.953	budget_s=0.690	cancel_s=0.808	cross_s=0.715	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=129	secs=3.154	print_s=0.996	budget_s=0.777	cancel_s=0.881	cross_s=0.500	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=26	rounds=5	total_rounds=130	tasks=10400000	secs=16.77	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=130	secs=2.671	print_s=0.619	budget_s=0.558	cancel_s=0.804	cross_s=0.689	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=131	secs=3.383	print_s=0.844	budget_s=0.738	cancel_s=1.005	cross_s=0.796	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=132	secs=3.281	print_s=0.814	budget_s=0.806	cancel_s=0.922	cross_s=0.739	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=133	secs=3.531	print_s=0.882	budget_s=0.825	cancel_s=1.003	cross_s=0.821	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=134	secs=3.535	print_s=0.959	budget_s=0.750	cancel_s=0.985	cross_s=0.841	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=27	rounds=5	total_rounds=135	tasks=10800000	secs=16.40	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=135	secs=3.445	print_s=0.989	budget_s=0.737	cancel_s=0.992	cross_s=0.727	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=136	secs=3.469	print_s=0.882	budget_s=0.761	cancel_s=1.007	cross_s=0.819	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=137	secs=3.608	print_s=0.965	budget_s=0.799	cancel_s=1.012	cross_s=0.832	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=138	secs=3.705	print_s=1.139	budget_s=0.775	cancel_s=0.957	cross_s=0.834	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=139	secs=3.773	print_s=1.165	budget_s=0.753	cancel_s=1.017	cross_s=0.838	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=28	rounds=5	total_rounds=140	tasks=11200000	secs=18.00	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=140	secs=3.621	print_s=0.997	budget_s=0.823	cancel_s=1.001	cross_s=0.800	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=141	secs=3.573	print_s=0.932	budget_s=0.797	cancel_s=1.004	cross_s=0.839	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=142	secs=3.490	print_s=0.884	budget_s=0.820	cancel_s=1.013	cross_s=0.773	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=143	secs=3.552	print_s=0.928	budget_s=0.803	cancel_s=0.992	cross_s=0.829	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=144	secs=3.363	print_s=1.120	budget_s=0.586	cancel_s=0.897	cross_s=0.760	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=29	rounds=5	total_rounds=145	tasks=11600000	secs=17.60	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=145	secs=3.396	print_s=0.828	budget_s=0.713	cancel_s=1.011	cross_s=0.844	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=146	secs=3.469	print_s=0.922	budget_s=0.805	cancel_s=0.946	cross_s=0.796	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=147	secs=3.505	print_s=0.807	budget_s=0.912	cancel_s=1.001	cross_s=0.784	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=148	secs=3.640	print_s=1.116	budget_s=0.779	cancel_s=0.993	cross_s=0.752	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=149	secs=2.977	print_s=0.861	budget_s=0.511	cancel_s=0.834	cross_s=0.771	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=30	rounds=5	total_rounds=150	tasks=12000000	secs=16.99	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_ROUND	round=150	secs=3.436	print_s=0.866	budget_s=0.738	cancel_s=1.002	cross_s=0.830	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=151	secs=3.308	print_s=0.819	budget_s=0.822	cancel_s=0.946	cross_s=0.721	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=152	secs=3.107	print_s=0.949	budget_s=0.675	cancel_s=0.832	cross_s=0.652	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=153	secs=3.607	print_s=0.951	budget_s=0.834	cancel_s=1.003	cross_s=0.819	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_ROUND	round=154	secs=3.411	print_s=1.221	budget_s=0.712	cancel_s=0.827	cross_s=0.651	rss_kb=62700	hwm_kb=62872	threads=2	peak_threads=6
+MIXED_BATCH	batch=31	rounds=5	total_rounds=155	tasks=12400000	secs=16.87	rss0_kb=3360	rss_kb=62700	hwm_kb=62872	threads0=2	threads=2	peak_threads=6	print=10	budget=20	cancel=10	cross=10	arc=40	payload=120	partial=false
+MIXED_SOAK_SUMMARY	batches=31	rounds=155	tasks=12400000	batch_size=5	target_secs=600	secs=603.30	secs_batch_med=17.73	print_s=162.23	budget_s=134.20	cancel_s=169.95	cross_s=136.79	rss0_kb=3360	rss1_kb=62700	rss_min_kb=60412	rss_med_kb=62700	rss_max_kb=62808	hwm0_kb=3364	hwm_peak_kb=63392	hwm_final_kb=62872	threads0=2	threads1=2	threads_peak_sample=6	threads_peak_batch=3	print_checks=310	budget_checks=620	cancel_checks=310	cross_checks=310	arc_checks=1240	payload_checks=3720
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 603.30s
+
+
+=== AFTER ===
+ 00:21:32 up 13 days, 21:05,  7 users,  load average: 5.91, 8.72, 12.25
+               total        used        free      shared  buff/cache   available
+Mem:           14651        6002        2121        1688        8499        8648
+Swap:           4095        4095           0
+SOAK_EXIT=0
+# sampler 2s: ts\tpid\tfd\trss_kb\tthreads\tload1_5_15
+1795273890	327790	3	57472	6	10.57 15.57 16.05
+1795273893	327790	3	56172	6	10.57 15.57 16.05
+1795273895	327790	3	60104	6	11.17 15.61 16.06
+1795273897	327790	3	60612	6	11.17 15.61 16.06
+1795273899	327790	3	60944	2	10.75 15.45 16.00
+1795273901	327790	3	61912	6	10.75 15.45 16.00
+1795273903	327790	3	60880	2	10.29 15.28 15.94
+1795273905	327790	3	61608	6	10.29 15.28 15.94
+1795273907	327790	3	60256	2	10.29 15.28 15.94
+1795273909	327790	3	61616	2	9.87 15.11 15.88
+1795273911	327790	3	61824	6	9.87 15.11 15.88
+1795273913	327790	3	61824	6	11.32 15.32 15.95
+1795273916	327790	3	61824	6	11.32 15.32 15.95
+1795273918	327790	3	59680	6	11.32 15.32 15.95
+1795273920	327790	3	61824	6	11.78 15.35 15.95
+1795273922	327790	3	61824	6	11.78 15.35 15.95
+1795273924	327790	3	61824	6	12.60 15.46 15.99
+1795273927	327790	3	61832	2	12.60 15.46 15.99
+1795273929	327790	3	61824	6	13.11 15.52 16.00
+1795273931	327790	3	61824	6	13.11 15.52 16.00
+1795273933	327790	3	61832	2	13.42 15.54 16.01
+1795273935	327790	3	61492	2	13.42 15.54 16.01
+1795273938	327790	3	61824	6	13.42 15.54 16.01
+1795273940	327790	3	61832	2	13.71 15.57 16.01
+1795273942	327790	3	61832	2	13.71 15.57 16.01
+1795273944	327790	3	62548	6	14.29 15.66 16.04
+1795273946	327790	3	62548	6	14.29 15.66 16.04
+1795273948	327790	3	60936	6	14.35 15.65 16.04
+1795273950	327790	3	61784	6	14.35 15.65 16.04
+1795273952	327790	3	61784	6	14.35 15.65 16.04
+1795273954	327790	3	60180	6	14.80 15.72 16.06
+1795273957	327790	3	62324	6	14.80 15.72 16.06
+1795273959	327790	3	62332	2	15.54 15.86 16.10
+1795273961	327790	3	61780	2	15.54 15.86 16.10
+1795273963	327790	3	62324	6	16.22 15.99 16.14
+1795273965	327790	3	62324	6	16.22 15.99 16.14
+1795273967	327790	3	60216	6	16.22 15.99 16.14
+1795273970	327790	3	60684	2	15.96 15.94 16.13
+1795273972	327790	3	60724	2	15.96 15.94 16.13
+1795273974	327790	3	61996	2	15.88 15.93 16.12
+1795273976	327790	3	62008	2	15.88 15.93 16.12
+1795273978	327790	3	62000	2	15.88 15.93 16.12
+1795273980	327790	3	62008	2	15.25 15.80 16.08
+1795273982	327790	3	62332	6	15.25 15.80 16.08
+1795273984	327790	3	61156	2	14.51 15.63 16.02
+1795273986	327790	3	62332	2	14.51 15.63 16.02
+1795273988	327790	3	62332	6	13.83 15.47 15.97
+1795273990	327790	3	62344	2	13.83 15.47 15.97
+1795273992	327790	3	62336	2	13.83 15.47 15.97
+1795273994	327790	3	60192	6	13.20 15.31 15.91
+1795273996	327790	3	62336	6	13.20 15.31 15.91
+1795273998	327790	3	61608	2	12.54 15.14 15.85
+1795274000	327790	3	62336	6	12.54 15.14 15.85
+1795274002	327790	3	62336	6	12.54 15.14 15.85
+1795274005	327790	3	62344	2	11.94 14.97 15.80
+1795274007	327790	3	62684	6	11.94 14.97 15.80
+1795274009	327790	3	62692	2	11.38 14.81 15.74
+1795274011	327790	3	62684	2	11.38 14.81 15.74
+1795274013	327790	3	62156	2	11.38 14.81 15.74
+1795274015	327790	3	62684	6	11.03 14.68 15.69
+1795274017	327790	3	62692	2	11.03 14.68 15.69
+1795274019	327790	3	60540	6	10.55 14.52 15.63
+1795274021	327790	3	62684	6	10.55 14.52 15.63
+1795274023	327790	3	61860	2	10.10 14.36 15.58
+1795274025	327790	3	62684	6	10.10 14.36 15.58
+1795274027	327790	3	62684	2	10.10 14.36 15.58
+1795274029	327790	3	61692	2	9.69 14.20 15.52
+1795274031	327790	3	62684	6	9.69 14.20 15.52
+1795274033	327790	3	62684	2	9.32 14.05 15.46
+1795274035	327790	3	62692	2	9.32 14.05 15.46
+1795274038	327790	3	62684	6	9.32 14.05 15.46
+1795274040	327790	3	62684	6	9.05 13.92 15.41
+1795274042	327790	3	62684	6	9.05 13.92 15.41
+1795274044	327790	3	62684	6	8.73 13.77 15.35
+1795274046	327790	3	62692	2	8.73 13.77 15.35
+1795274048	327790	3	63392	6	8.73 13.77 15.35
+1795274050	327790	3	62684	3	8.43 13.62 15.30
+1795274052	327790	3	62692	2	8.43 13.62 15.30
+1795274054	327790	3	63392	6	8.23 13.50 15.25
+1795274056	327790	3	62512	2	8.23 13.50 15.25
+1795274058	327790	3	60540	6	7.97 13.35 15.19
+1795274060	327790	3	61384	2	7.97 13.35 15.19
+1795274062	327790	3	62684	6	7.97 13.35 15.19
+1795274064	327790	3	62692	6	7.74 13.22 15.14
+1795274066	327790	3	61824	2	7.74 13.22 15.14
+1795274068	327790	3	63364	2	7.52 13.08 15.08
+1795274070	327790	3	60540	6	7.52 13.08 15.08
+1795274073	327790	3	60540	6	7.52 13.08 15.08
+1795274075	327790	3	62692	2	7.32 12.94 15.03
+1795274077	327790	3	63392	2	7.32 12.94 15.03
+1795274079	327790	3	62684	6	7.13 12.81 14.97
+1795274081	327790	3	62692	2	7.13 12.81 14.97
+1795274083	327790	3	63392	6	7.13 12.81 14.97
+1795274085	327790	3	61840	2	6.88 12.67 14.92
+1795274087	327790	3	62684	6	6.88 12.67 14.92
+1795274089	327790	3	60540	6	6.73 12.54 14.86
+1795274091	327790	3	61516	2	6.73 12.54 14.86
+1795274093	327790	3	62688	6	6.73 12.54 14.86
+1795274095	327790	3	62696	3	6.67 12.43 14.81
+1795274097	327790	3	61680	2	6.67 12.43 14.81
+1795274099	327790	3	60540	6	6.54 12.31 14.76
+1795274101	327790	3	61428	2	6.54 12.31 14.76
+1795274103	327790	3	62700	2	6.33 12.17 14.70
+1795274105	327790	3	62688	6	6.33 12.17 14.70
+1795274107	327790	3	62700	6	6.33 12.17 14.70
+1795274109	327790	3	62700	6	6.31 12.06 14.66
+1795274112	327790	3	60540	6	6.31 12.06 14.66
+1795274114	327790	3	62700	6	6.12 11.93 14.60
+1795274116	327790	3	62700	6	6.12 11.93 14.60
+1795274118	327790	3	62708	2	6.12 11.93 14.60
+1795274120	327790	3	62700	6	6.03 11.82 14.55
+1795274122	327790	3	60540	6	6.03 11.82 14.55
+1795274124	327790	3	62700	2	5.95 11.70 14.50
+1795274126	327790	3	62700	6	5.95 11.70 14.50
+1795274128	327790	3	62708	2	5.95 11.70 14.50
+1795274130	327790	3	62700	2	5.87 11.59 14.44
+1795274132	327790	3	60540	6	5.87 11.59 14.44
+1795274134	327790	3	62700	6	5.80 11.48 14.39
+1795274136	327790	3	60540	6	5.80 11.48 14.39
+1795274138	327790	3	62700	2	5.66 11.36 14.34
+1795274140	327790	3	62700	6	5.66 11.36 14.34
+1795274142	327790	3	62700	6	5.66 11.36 14.34
+1795274144	327790	3	62700	2	5.60 11.25 14.29
+1795274147	327790	3	62708	2	5.60 11.25 14.29
+1795274149	327790	3	62700	6	5.56 11.15 14.24
+1795274151	327790	3	62428	2	5.56 11.15 14.24
+1795274153	327790	3	62700	6	5.56 11.15 14.24
+1795274155	327790	3	62700	6	5.51 11.04 14.19
+1795274157	327790	3	60540	6	5.51 11.04 14.19
+1795274159	327790	3	62700	2	5.47 10.94 14.14
+1795274161	327790	3	62700	2	5.47 10.94 14.14
+1795274163	327790	3	60540	6	5.47 10.94 14.14
+1795274165	327790	3	62700	2	5.75 10.91 14.11
+1795274167	327790	3	62700	6	5.75 10.91 14.11
+1795274169	327790	3	62708	2	5.69 10.81 14.06
+1795274171	327790	3	62700	6	5.69 10.81 14.06
+1795274173	327790	3	60540	6	5.64 10.72 14.01
+1795274175	327790	3	62772	2	5.64 10.72 14.01
+1795274177	327790	3	62700	6	5.64 10.72 14.01
+1795274179	327790	3	62708	2	5.58 10.62 13.96
+1795274181	327790	3	62700	6	5.58 10.62 13.96
+1795274184	327790	3	60540	6	5.54 10.53 13.91
+1795274186	327790	3	62700	2	5.54 10.53 13.91
+1795274188	327790	3	62700	6	5.54 10.53 13.91
+1795274190	327790	3	62708	2	5.49 10.44 13.87
+1795274192	327790	3	62700	6	5.49 10.44 13.87
+1795274194	327790	3	60540	6	5.45 10.35 13.82
+1795274196	327790	3	62700	2	5.45 10.35 13.82
+1795274198	327790	3	62700	6	5.45 10.35 13.82
+1795274200	327790	3	60540	6	5.42 10.26 13.77
+1795274202	327790	3	62700	2	5.42 10.26 13.77
+1795274204	327790	3	62700	6	5.38 10.17 13.72
+1795274206	327790	3	62292	2	5.38 10.17 13.72
+1795274208	327790	3	62700	6	5.35 10.08 13.68
+1795274210	327790	3	62700	6	5.35 10.08 13.68
+1795274212	327790	3	62708	2	5.35 10.08 13.68
+1795274214	327790	3	62700	6	5.32 10.00 13.63
+1795274216	327790	3	61676	2	5.32 10.00 13.63
+1795274218	327790	3	62700	6	5.30 9.92 13.58
+1795274221	327790	3	62700	2	5.30 9.92 13.58
+1795274223	327790	3	62708	2	5.30 9.92 13.58
+1795274225	327790	3	62700	6	5.27 9.83 13.54
+1795274227	327790	3	60540	6	5.27 9.83 13.54
+1795274229	327790	3	62700	2	5.17 9.74 13.48
+1795274231	327790	3	61700	2	5.17 9.74 13.48
+1795274233	327790	3	62732	6	5.17 9.74 13.48
+1795274235	327790	3	62700	2	5.24 9.67 13.44
+1795274237	327790	3	60540	6	5.24 9.67 13.44
+1795274239	327790	3	62700	2	5.14 9.58 13.39
+1795274241	327790	3	62700	6	5.14 9.58 13.39
+1795274243	327790	3	62780	2	5.13 9.50 13.35
+1795274245	327790	3	62700	6	5.13 9.50 13.35
+1795274247	327790	3	62708	2	5.13 9.50 13.35
+1795274249	327790	3	62700	2	5.44 9.49 13.32
+1795274251	327790	3	62708	2	5.44 9.49 13.32
+1795274253	327790	3	62700	6	5.40 9.42 13.28
+1795274256	327790	3	60540	6	5.40 9.42 13.28
+1795274258	327790	3	62700	6	5.40 9.42 13.28
+1795274260	327790	3	62248	2	5.37 9.35 13.23
+1795274262	327790	3	62700	6	5.37 9.35 13.23
+1795274264	327790	3	62700	6	6.62 9.54 13.28
+1795274266	327790	3	62708	2	6.62 9.54 13.28
+1795274268	327790	3	62700	6	6.41 9.45 13.23
+1795274270	327790	3	62020	2	6.41 9.45 13.23
+1795274272	327790	3	62700	6	6.41 9.45 13.23
+1795274274	327790	3	62700	6	6.62 9.44 13.20
+1795274276	327790	3	62708	2	6.62 9.44 13.20
+1795274278	327790	3	62700	2	6.65 9.40 13.17
+1795274280	327790	3	60540	6	6.65 9.40 13.17
+1795274283	327790	3	62700	2	6.65 9.40 13.17
+1795274285	327790	3	62700	2	7.48 9.53 13.19
+1795274287	327790	3	60540	6	7.48 9.53 13.19
+1795274289	327790	3	62700	2	8.16 9.63 13.21
+1795274291	327790	3	62700	6	8.16 9.63 13.21
+1795274293	327790	3	62708	2	9.19 9.82 13.25
+1795274295	327790	3	60540	6	9.19 9.82 13.25
+1795274298	327790	3	62708	2	9.19 9.82 13.25
+1795274300	327790	3	61440	2	9.82 9.94 13.27
+1795274302	327790	3	62708	2	9.82 9.94 13.27
+1795274304	327790	3	62700	6	10.23 10.03 13.28
+1795274306	327790	3	62700	6	10.23 10.03 13.28
+1795274308	327790	3	62708	2	10.85 10.16 13.30
+1795274310	327790	3	62700	6	10.85 10.16 13.30
+1795274313	327790	3	62700	6	10.85 10.16 13.30
+1795274315	327790	3	62700	6	11.67 10.34 13.35
+1795274317	327790	3	61408	2	11.67 10.34 13.35
+1795274319	327790	3	62700	2	12.49 10.53 13.39
+1795274321	327790	3	62700	6	12.49 10.53 13.39
+1795274323	327790	3	62700	6	13.34 10.74 13.44
+1795274325	327790	3	62700	2	13.34 10.74 13.44
+1795274327	327790	3	62708	2	13.34 10.74 13.44
+1795274329	327790	3	62424	2	13.95 10.91 13.48
+1795274332	327790	3	62700	6	13.95 10.91 13.48
+1795274334	327790	3	62700	6	14.19 11.01 13.50
+1795274336	327790	3	60540	6	14.19 11.01 13.50
+1795274338	327790	3	62720	6	14.19 11.01 13.50
+1795274340	327790	3	61880	2	13.62 10.95 13.47
+1795274342	327790	3	62700	6	13.62 10.95 13.47
+1795274344	327790	3	62700	6	13.17 10.90 13.44
+1795274346	327790	3	62700	6	13.17 10.90 13.44
+1795274348	327790	3	62700	2	12.59 10.81 13.40
+1795274350	327790	3	62708	2	12.59 10.81 13.40
+1795274352	327790	3	62700	6	12.59 10.81 13.40
+1795274354	327790	3	61804	2	12.06 10.73 13.36
+1795274356	327790	3	62700	2	12.06 10.73 13.36
+1795274359	327790	3	62700	6	11.58 10.66 13.32
+1795274361	327790	3	62700	6	11.58 10.66 13.32
+1795274363	327790	3	62700	2	11.58 10.66 13.32
+1795274365	327790	3	60540	6	11.13 10.58 13.28
+1795274367	327790	3	62700	2	11.13 10.58 13.28
+1795274369	327790	3	62492	2	10.64 10.49 13.23
+1795274371	327790	3	62700	6	10.64 10.49 13.23
+1795274373	327790	3	62700	6	10.64 10.49 13.23
+1795274375	327790	3	62708	2	10.19 10.39 13.19
+1795274377	327790	3	62700	6	10.19 10.39 13.19
+1795274379	327790	3	60540	6	9.77 10.30 13.15
+1795274381	327790	3	62700	2	9.77 10.30 13.15
+1795274383	327790	3	62700	6	9.39 10.22 13.10
+1795274385	327790	3	62700	6	9.39 10.22 13.10
+1795274387	327790	3	62700	2	9.39 10.22 13.10
+1795274389	327790	3	62708	2	9.04 10.13 13.06
+1795274391	327790	3	62700	6	9.04 10.13 13.06
+1795274394	327790	3	60540	3	8.88 10.08 13.03
+1795274396	327790	3	62700	2	8.88 10.08 13.03
+1795274398	327790	3	62700	6	8.88 10.08 13.03
+1795274400	327790	3	62708	2	8.56 9.99 12.98
+1795274402	327790	3	62700	6	8.56 9.99 12.98
+1795274404	327790	3	61816	2	8.28 9.91 12.94
+1795274406	327790	3	62708	2	8.28 9.91 12.94
+1795274408	327790	3	62700	2	8.28 9.91 12.94
+1795274410	327790	3	62700	6	7.94 9.81 12.89
+1795274412	327790	3	62708	2	7.94 9.81 12.89
+1795274414	327790	3	62700	6	7.78 9.75 12.85
+1795274416	327790	3	61580	2	7.78 9.75 12.85
+1795274418	327790	3	62700	2	7.56 9.67 12.81
+1795274420	327790	3	62700	6	7.56 9.67 12.81
+1795274422	327790	3	62708	2	7.56 9.67 12.81
+1795274424	327790	3	62700	6	7.43 9.61 12.77
+1795274426	327790	3	60540	6	7.43 9.61 12.77
+1795274428	327790	3	62700	2	7.24 9.53 12.73
+1795274431	327790	3	62700	6	7.24 9.53 12.73
+1795274433	327790	3	62700	6	7.24 9.53 12.73
+1795274435	327790	3	62700	2	7.06 9.45 12.69
+1795274437	327790	3	62708	2	7.06 9.45 12.69
+1795274439	327790	3	62700	6	6.89 9.38 12.65
+1795274441	327790	3	60540	6	6.89 9.38 12.65
+1795274443	327790	3	62700	6	6.89 9.38 12.65
+1795274445	327790	3	61820	2	6.74 9.31 12.61
+1795274447	327790	3	62700	6	6.74 9.31 12.61
+1795274449	327790	3	62700	6	6.68 9.25 12.57
+1795274451	327790	3	62708	2	6.68 9.25 12.57
+1795274453	327790	3	62700	6	6.47 9.17 12.53
+1795274455	327790	3	60540	6	6.47 9.17 12.53
+1795274457	327790	3	62700	2	6.47 9.17 12.53
+1795274459	327790	3	62700	2	6.35 9.10 12.48
+1795274461	327790	3	62708	2	6.35 9.10 12.48
+1795274463	327790	3	62700	6	6.16 9.01 12.44
+1795274466	327790	3	61392	2	6.16 9.01 12.44
+1795274468	327790	3	62700	2	6.16 9.01 12.44
+1795274470	327790	3	62488	2	6.07 8.94 12.40
+1795274472	327790	3	62700	6	6.07 8.94 12.40
+1795274474	327790	3	62700	6	5.98 8.88 12.36
+1795274476	327790	3	61800	2	5.98 8.88 12.36
+1795274478	327790	3	62700	6	5.98 8.88 12.36
+1795274480	327790	3	62700	2	5.90 8.81 12.32
+1795274482	327790	3	62708	2	5.90 8.81 12.32
+1795274484	327790	3	62700	2	5.99 8.78 12.29
+1795274486	327790	3	62700	6	5.99 8.78 12.29
+1795274488	327790	3	62700	6	5.91 8.72 12.25
+1795274490	327790	3	62700	2	5.91 8.72 12.25
+# summary
+samples=290 fd_min=3 fd_avg=3.0 fd_max=3 rss_max_kb=63392 threads_max=6
+
+=== TÁCH TỆP: KIỂM CHỨNG ===
+commit tách: f90d6d0 [VS3][W5-fix] tach mixed soak sang vs3_worker_soak.rs (R1 1228+794 dong).
+- Khối mixed soak từ `const MIXED_N` đến hết tệp: cũ (f90d6d0^:vs3_worker.rs) 680 dòng, mới (vs3_worker_soak.rs) 680 dòng, `diff` rỗng (DIFF_EXIT=0) => di chuyển nguyên văn.
+- md5 khối/tệp soak tại f90d6d0 == hiện tại: c10d927c813e303facf241145d2b8488 (không sửa sau khi tách).
+- vs3_worker.rs 1.228 dòng + vs3_worker_soak.rs 794 dòng; R1 ≤1500 dòng/tệp.
+
+=== RELEASE TESTS (mặc định, không env) ===
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 3.69s
+     Running tests/vs3_worker.rs (target/release/build/vis-cli/dfa6e459b96da178/out/vs3_worker-dfa6e459b96da178)
+
+running 14 tests
+test value_task_show_va_taskid_khong_doi_abi ... ok
+test taskid_proto_value_show_eq_roundtrip ... ok
+test w1_shared_env_va_wn_snapshot ... ok
+test cross_write_w1_allowed_wn_refused ... ok
+test worker_copy_va_move_payload_w1_w4_parity ... ok
+test budget_exhaustion_khong_deadlock ... ok
+test w1_w2_w4_cung_output_byte_identical ... ok
+test budget_atomic_chunk_used_remaining_limit ... ok
+test cancel_va_join_khong_deadlock ... ok
+test merge_spawn_order_khi_completion_lech ... ok
+test taskid_proxy_await_w1_w4 ... ok
+test spawn_shared_map_list_w1_w4_parity ... ok
+test spawn_shared_stress_rounds_read_only ... ok
+test stress_dai_5x10k_cancel_budget_print_cross ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.36s
+
+     Running tests/vs3_worker_soak.rs (target/release/build/vis-cli/7b75224c74233996/out/vs3_worker_soak-7b75224c74233996)
+
+running 1 test
+test mixed_soak_shared_copy_move_w1_w4 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.41s
+
+
+=== FMT / CLIPPY / RULES / DF ===
+=== fmt 2026-11-22T00:23:08+09:00 ===
+FMT_EXIT=0
+=== clippy ===
+    Checking vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-fmt)
+    Checking tokio-util v0.7.20
+   Compiling enumflags2_derive v0.7.12
+   Compiling thiserror-impl v2.0.21
+    Checking h2 v0.4.20
+    Checking enumflags2 v0.7.12
+    Checking landlock v0.4.7
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-interp)
+    Checking vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-bytecode)
+    Checking vis-host-linux v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/vis-host-linux)
+    Checking rustls-webpki v0.103.17
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-vm)
+    Checking rusqlite v0.37.0
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w5-spike/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 33.25s
+CLIPPY_EXIT=0
+=== rules ===
+vis-dev: chọn cargo /home/ps/.rustup/toolchains/1.100.0-x86_64-unknown-linux-gnu/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+RULES_EXIT=0
+=== df ===
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  233G  214G   12G  95% /
+tmpfs           7.2G  1.4G  5.8G  20% /tmp

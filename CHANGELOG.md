@@ -5,7 +5,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Unreleased (sau v0.3.3)
 
-- **Async HTTP/2 (feature `async-h2`, default-off)**: `H2Core` dùng chung sync+async; `H<n>` nhiều frame/1 session; 4 stream đồng thời/1 connection (interp+VM), cap 8 MiB, timeout/GOAWAY/redirect, fallback h1; sync **19/19**, feature **29/29 + 1 ignored (fd 5→5)**.
+- **Async HTTP/2 (feature `async-h2`, default-off)**: **known issue**: cap 8 MiB hot-spin (VS0501 / rơi h1) sau ~800 vòng soak; đang sửa, chưa bật default. `H2Core` dùng chung sync+async; `H<n>` nhiều frame/1 session; **cold-start 4 stream/1 connection** (300/300 vòng), cap 8 MiB, timeout/GOAWAY/redirect, fallback h1; **Set-Cookie response** lưu cho cả h1/h2; sync **19/19**, feature **32/32 + 1 ignored (fd 5→5)**.
 - **Worker `spawn_shared` (opt-in/test-only)**: task giữ `Arc<SendValue>` read-only, không deep clone; map1k 5,62 ms vs producer 24,63 ms, list10k 5,25 vs 16,19 ms; API cũ/default không đổi.
 - **Windows test flake** `net::tcp_explain_tong` (RST 10054) fixed test-only ở bản trước; psvn 3/3 3469/0 trên v0.3.3.
 

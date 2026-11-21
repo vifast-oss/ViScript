@@ -7,12 +7,15 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::rc::Rc;
 
 use vis_interp::builtin::NetHost;
+use vis_interp::cookie::CookieJar;
 
 use super::AsyncNet;
 
 /// Proxy `NetHost` chia sẻ cùng `AsyncNet` với backend đã gắn vào scheduler.
 pub struct AsyncNetHost {
     pub inner: Rc<RefCell<AsyncNet>>,
+    /// **VS3-W2** — cookie jar của đường async (sync có jar riêng trong `HostNet`).
+    pub cookie: CookieJar,
 }
 
 impl NetHost for AsyncNetHost {
@@ -44,6 +47,9 @@ impl NetHost for AsyncNetHost {
     }
     fn ghi_nhat_ky(&mut self, d: &str) {
         self.inner.borrow_mut().ghi_nhat_ky(d)
+    }
+    fn cookie_jar(&mut self) -> Option<&mut CookieJar> {
+        Some(&mut self.cookie)
     }
 }
 
