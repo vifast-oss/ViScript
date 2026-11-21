@@ -34,10 +34,17 @@ release-bins = ["vis"]
 # pre-approve `rustls` + `webpki-roots`; bật **mặc định** trên Linux/Windows, **cfg wasm32** (không
 # kéo dependency vào target wasm). Review license/transitive/unsafe:
 # `agent/BAO-CAO-VS3-4A-2026-11-21.md`. Không thêm crate nào khác ngoài hai crate này.
+#
+# **VS3-5b (VD-271)** — chữ ký Ed25519 cho registry HTTP. Dùng lại **`ring` 0.17.14** đã có trong
+# cây (transitive của `rustls`; license Apache-2.0 AND ISC; có unsafe/C/asm nội bộ — đã review ở
+# `agent/BAO-CAO-VS3-4A-2026-11-21.md`). Không thêm crate mới, không kéo `aws-lc-rs`. Feature
+# `pkg-sig` bật mặc định trên nền không phải wasm32; tắt feature ⇒ lệnh cài có yêu cầu chữ ký báo
+# lỗi rõ thay vì bỏ qua kiểm tra.
 [features]
-default = ["sqlite", "tls"]
+default = ["sqlite", "tls", "pkg-sig"]
 sqlite = ["dep:rusqlite"]
 tls = ["dep:rustls", "dep:webpki-roots"]
+pkg-sig = ["dep:ring"]
 
 # E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
 # feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
@@ -75,6 +82,13 @@ name = "vs3_tls"
 path = "tests/vs3_tls.rs"
 required-features = ["tls"]
 
+# **VS3-5b (VD-271)** — chữ ký Ed25519: test ký bằng chính `ring` (feature `pkg-sig`) và chạy
+# server HTTP loopback; bỏ qua khi build core không có feature.
+[[test]]
+name = "vs3_registry_sig"
+path = "tests/vs3_registry_sig.rs"
+required-features = ["pkg-sig"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
@@ -104,6 +118,10 @@ vis-host-linux = { path = "../../vis-host-linux" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"], optional = true }
 webpki-roots = { version = "=1.0.11", optional = true }
+# **VS3-5b**: xác minh Ed25519 cho chữ ký index registry. Cùng phiên bản/nguồn mà `rustls` đã kéo
+# (không thêm crate vào lock); ghim tuyệt đối để build tái lập. `default-features = false` +
+# `std` là đủ cho `signature::UnparsedPublicKey::verify`.
+ring = { version = "=0.17.14", default-features = false, features = ["std"], optional = true }
 
 # **ST-271 / VD-254 (Lát 3)** — readiness selector thật cho đường frame test (`net.read`/
 # `net.accept`); cfg Linux-only, KHÔNG vào core crate (wasm32), KHÔNG có `log` (tắt qua

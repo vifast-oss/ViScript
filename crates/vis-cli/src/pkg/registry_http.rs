@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **VS3-5a (VD-271)** — registry **HTTP** cho `vis pkg` (index + tarball).
+//! **VS3-5a/VS3-5b (VD-271)** — registry **HTTP** cho `vis pkg` (index + tarball + chữ ký).
 //!
-//! Giao thức `vispkg-http1` (đủ cho lát 5a; chữ ký số/GC thuộc VS3-5b):
+//! Giao thức `vispkg-http1`:
 //!
 //! ```text
 //! GET <base>/index.json
 //! {"format":"vispkg-http1","packages":{
 //!   "<tên>":{"<ver>":{"tarball":"<tên>/<ver>.tar.b64",
 //!                      "tarball_sha256":"<sha256 của byte tar>",
+//!                      "signature_ed25519":"<128 hex — tuỳ chọn/VS3-5b>",
 //!                      "manifest":{...như registry cục bộ...}}}}}
 //!
 //! GET <base>/<tarball>   → body base64 của tar ustar
 //! ```
+//!
+//! Khi người dùng cấu hình khoá công khai (`--registry-key`/`VIS_REGISTRY_KEY`), **mọi** phiên bản
+//! được chọn phải có `signature_ed25519` hợp lệ trên thông điệp chuẩn
+//! [`vis_cli::pkg_sig::thong_diep_ky`]; kiểm **trước khi tải tarball**. Không cấu hình khoá ⇒
+//! trường chữ ký được bỏ qua (registry cục bộ cũng không đòi chữ ký).
 //!
 //! Luồng: tải index → ghi **manifest** vào thư mục tạm → dùng **đúng resolver semver hiện có** để
 //! chọn phiên bản → **chỉ tải tarball của gói đã chọn** → kiểm **SHA-256 tarball** → giải tar, kiểm
@@ -32,7 +38,7 @@ use vis_interp::value::Value;
 use super::semver::{Version, VersionReq};
 use super::{
     bam, chuan_hoa, chuoi, doc_tat_ca, giai_roots, kiem_path, la_hex64, lay, lay_chuoi,
-    manifest_tu_gia_tri, GoiCai,
+    manifest_tu_gia_tri, GoiCai, Manifest,
 };
 use vis_cli::net::Net;
 
@@ -51,6 +57,9 @@ struct Muc {
     tar: Option<String>,
     /// SHA-256 của **byte tar** sau giải mã base64.
     tar_sha: Option<String>,
+    /// **VS3-5b**: chữ ký Ed25519 (128 hex) trên thông điệp chuẩn `vispkg-sig1`; chỉ bắt buộc khi
+    /// người dùng cấu hình khoá công khai.
+    signature: Option<String>,
 }
 
 struct Index {
@@ -85,6 +94,7 @@ pub(super) fn tai_va_giai(
     base: &str,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
+    khoa_cong: Option<&[u8; 32]>,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     let mut net = Net::moi(false);
     let url = format!("{}/index.json", base.trim_end_matches('/'));
@@ -102,7 +112,7 @@ pub(super) fn tai_va_giai(
             Some((t, e)) if t == ten.as_str() => Some(e),
             _ => None,
         };
-        tai_goi(&mut net, base, muc, tmp.path(), eo)?;
+        tai_goi(&mut net, base, muc, tmp.path(), eo, khoa_cong)?;
     }
     let ds = doc_tat_ca(tmp.path(), &giai, entry_override)?;
     Ok((giai, ds))
@@ -163,6 +173,7 @@ fn doc_index(body: &str) -> Result<Index, String> {
                 manifest: manifest.clone(),
                 tar: lay_chuoi(muc, "tarball"),
                 tar_sha: lay_chuoi(muc, "tarball_sha256"),
+                signature: lay_chuoi(muc, "signature_ed25519"),
             });
         }
     }
@@ -177,6 +188,7 @@ fn tai_goi(
     muc: &Muc,
     goc: &Path,
     entry_override: Option<&str>,
+    khoa_cong: Option<&[u8; 32]>,
 ) -> Result<(), String> {
     let nguon = format!("index gói `{}@{}`", muc.ten, muc.version_s);
     let manifest = manifest_tu_gia_tri(&muc.manifest, &nguon, entry_override)?;
@@ -199,6 +211,10 @@ fn tai_goi(
         .clone()
         .unwrap_or_else(|| format!("{}/{}.tar.b64", muc.ten, muc.version_s));
     kiem_path(&tar_path).map_err(|e| format!("{nguon}: `tarball` {e}"))?;
+    // **VS3-5b**: xác minh chữ ký **trước khi** tải tarball (chữ ký phủ cả metadata manifest).
+    if let Some(khoa) = khoa_cong {
+        kiem_chu_ky(muc, &manifest, &tar_sha, khoa)?;
+    }
     let url = format!("{}/{}", base.trim_end_matches('/'), tar_path);
     let body = vis_interp::net::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
         format!(
@@ -268,6 +284,40 @@ fn tai_goi(
             .map_err(|e| format!("lỗi ghi `{}`: {e}", p.display()))?;
     }
     Ok(())
+}
+
+/// **VS3-5b**: kiểm `signature_ed25519` của một phiên bản trên thông điệp chuẩn `vispkg-sig1`.
+///
+/// Không cấu hình khoá ⇒ không gọi hàm này (registry không bắt buộc chữ ký). Có khoá mà thiếu/sai
+/// chữ ký ⇒ lỗi rõ, **không** cấp mã mới (đề xuất `VS0708` cho A0; hiện dùng thông điệp).
+fn kiem_chu_ky(
+    muc: &Muc,
+    manifest: &Manifest,
+    tar_sha: &str,
+    khoa: &[u8; 32],
+) -> Result<(), String> {
+    let nguon = format!("index gói `{}@{}`", muc.ten, muc.version_s);
+    let Some(sig) = muc.signature.as_deref() else {
+        return Err(format!(
+            "{nguon}: thiếu `signature_ed25519` — registry yêu cầu chữ ký (đã cấu hình khoá công khai)"
+        ));
+    };
+    let sig = vis_cli::pkg_sig::hex_giai(sig, 64)
+        .map_err(|e| format!("{nguon}: `signature_ed25519`: {e}"))?;
+    let files: Vec<(String, String)> = manifest
+        .files
+        .iter()
+        .map(|f| (f.path.clone(), f.sha256.clone()))
+        .collect();
+    let msg = vis_cli::pkg_sig::thong_diep_ky(
+        &muc.ten,
+        &muc.version_s,
+        tar_sha,
+        &manifest.entry,
+        &manifest.deps,
+        &files,
+    );
+    vis_cli::pkg_sig::xac_minh(khoa, &msg, &sig).map_err(|e| format!("{nguon}: {e} — từ chối cài"))
 }
 
 fn hex(b: &[u8]) -> String {
