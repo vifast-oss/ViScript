@@ -4,12 +4,24 @@
 
 use std::cell::RefCell;
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::os::fd::RawFd;
 use std::rc::Rc;
 
 use vis_interp::builtin::NetHost;
 use vis_interp::cookie::CookieJar;
 
+use mio::Interest;
+
 use super::AsyncNet;
+
+/// Đổi cờ hướng chờ sang `mio::Interest`; luôn có ít nhất READABLE để không đăng ký rỗng.
+pub(super) fn interest_tu_huong(doc: bool, ghi: bool) -> Interest {
+    match (doc, ghi) {
+        (true, true) => Interest::READABLE | Interest::WRITABLE,
+        (false, true) => Interest::WRITABLE,
+        _ => Interest::READABLE,
+    }
+}
 
 /// Proxy `NetHost` chia sẻ cùng `AsyncNet` với backend đã gắn vào scheduler.
 pub struct AsyncNetHost {
@@ -108,4 +120,35 @@ pub(super) fn tach(dia_chi: &str) -> Result<(&str, u16), String> {
         .parse::<u16>()
         .map_err(|_| format!("cổng `{cong}` không hợp lệ (0..65535)"))?;
     Ok((host, cong))
+}
+
+impl AsyncNet {
+    /// Hợp interest hiện tại của mọi token còn chờ trên `fd`.
+    pub(super) fn interest_cua_fd(&self, fd: RawFd) -> (bool, bool) {
+        let mut doc = false;
+        let mut ghi = false;
+        if let Some(ds) = self.fd_tokens.get(&fd) {
+            for t in ds {
+                if let Some((r, w)) = self.token_wants.get(t) {
+                    doc |= *r;
+                    ghi |= *w;
+                }
+            }
+        }
+        (doc, ghi)
+    }
+
+    /// Gỡ token khỏi sổ (dùng khi register lỗi giữa chừng) — không đụng epoll.
+    pub(super) fn bo_token(&mut self, token: u64) {
+        self.tokens.remove(&token);
+        self.token_wants.remove(&token);
+        if let Some(fd) = self.token_fd.remove(&token) {
+            if let Some(ds) = self.fd_tokens.get_mut(&fd) {
+                ds.remove(&token);
+                if ds.is_empty() {
+                    self.fd_tokens.remove(&fd);
+                }
+            }
+        }
+    }
 }

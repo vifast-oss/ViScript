@@ -226,6 +226,9 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             st.dat_lai_sau_chuyen_huong();
         }
         let handle = st.handle.clone().expect("handle vừa có");
+        if std::env::var_os("VIS_DEBUG_H2").is_some() {
+            eprintln!("DBG core handle {handle} url={}", st.url);
+        }
         if handle.starts_with('H') {
             match drive_h2(host, st, span)? {
                 H2Buoc::Xong(v) => return Ok(Some(v)),

@@ -20,8 +20,8 @@ mod h2_impl;
 #[path = "async_net_host.rs"]
 mod host_impl;
 
-use host_impl::loopback_addr;
 pub use host_impl::AsyncNetHost;
+use host_impl::{interest_tu_huong, loopback_addr};
 
 use mio::net::{TcpListener as MioListener, TcpStream as MioStream};
 use std::collections::{HashMap, HashSet};
@@ -114,7 +114,8 @@ pub struct AsyncNet {
     fd_tokens: HashMap<RawFd, HashSet<u64>>,
     epoll_token: HashMap<RawFd, usize>,
     epoll_fd: HashMap<usize, RawFd>,
-    fd_wants: HashMap<RawFd, (bool, bool)>,
+    /// Hướng chờ **của từng token**; interest epoll = hợp hiện tại (không tích luỹ).
+    token_wants: HashMap<u64, (bool, bool)>,
     next_epoll: usize,
     /// `N:<addr>` đã khởi tạo connect, chờ WRITABLE/kiểm SO_ERROR.
     connects: HashSet<String>,
@@ -160,7 +161,7 @@ impl AsyncNet {
             fd_tokens: HashMap::new(),
             epoll_token: HashMap::new(),
             epoll_fd: HashMap::new(),
-            fd_wants: HashMap::new(),
+            token_wants: HashMap::new(),
             next_epoll: 0,
             connects: HashSet::new(),
             writes: HashMap::new(),
@@ -668,6 +669,9 @@ impl AsyncNet {
                 let Some(conn) = st.conn else {
                     return ReactorIoOutcome::Err(format!("TLS connect `{key}` thiếu phiên"));
                 };
+                if std::env::var_os("VIS_DEBUG_H2").is_some() {
+                    eprintln!("DBG tls done key={key} alpn={:?}", conn.alpn_protocol());
+                }
                 #[cfg(feature = "async-h2")]
                 if conn.alpn_protocol() == Some(&b"h2"[..]) {
                     let sock: std::net::TcpStream = st.sock.into();
@@ -690,6 +694,9 @@ impl AsyncNet {
                     conn,
                     sock: st.sock,
                 });
+                if std::env::var_os("VIS_DEBUG_H2").is_some() {
+                    eprintln!("DBG h1 handle {h} key={key}");
+                }
                 ReactorIoOutcome::Accepted(h)
             }
             Ok(false) => ReactorIoOutcome::WouldBlock,
@@ -1245,7 +1252,24 @@ impl FrameReactorBackend for AsyncNet {
         let doc_hoac_ghi =
             key.starts_with(FRAME_NET_CONNECT) || key.starts_with(FRAME_NET_WRITE) || la_tls_noi;
         let (want_doc, want_ghi) = match op {
-            ReactorOp::ReadWrite => (true, true),
+            ReactorOp::ReadWrite => {
+                // h2 chỉ chờ đúng chiều đang tắc (`muon_doc`/`muon_ghi`); không đăng ký
+                // WRITABLE chỉ vì socket gần như luôn ghi được.
+                #[cfg(feature = "async-h2")]
+                {
+                    if let Some(p) = self.h2.get(&tra) {
+                        let i = p.interest();
+                        (i.is_readable(), i.is_writable())
+                    } else {
+                        (true, false)
+                    }
+                }
+                #[cfg(not(feature = "async-h2"))]
+                {
+                    let _ = &tra;
+                    (true, false)
+                }
+            }
             _ => {
                 #[cfg(feature = "tls")]
                 if la_tls_noi {
@@ -1294,17 +1318,12 @@ impl FrameReactorBackend for AsyncNet {
         let Some(fd) = fd else {
             return Err(format!("không tìm thấy `{tra}` để đăng ký readiness"));
         };
-        // Một fd có thể có nhiều token cùng chờ (nhiều frame trên một connection h2):
-        // đăng ký epoll **một lần** với token nội bộ ổn định, rồi `wait` phát event cho
-        // mọi token scheduler của fd đó. Interest là hợp của mọi waiter.
-        let (er, ew) = self.fd_wants.entry(fd).or_insert((false, false));
-        *er |= want_doc;
-        *ew |= want_ghi;
-        let interest = match (*er, *ew) {
-            (true, true) => Interest::READABLE | Interest::WRITABLE,
-            (false, true) => Interest::WRITABLE,
-            _ => Interest::READABLE,
-        };
+        // Nhiều token cùng chờ một fd: epoll đăng ký một lần; interest = hợp hiện tại.
+        self.token_fd.insert(token, fd);
+        self.fd_tokens.entry(fd).or_default().insert(token);
+        self.token_wants.insert(token, (want_doc, want_ghi));
+        let (er, ew) = self.interest_cua_fd(fd);
+        let interest = interest_tu_huong(er, ew);
         let mut src = SourceFd(&fd);
         if let Some(&ep) = self.epoll_token.get(&fd) {
             if let Err(e) = self
@@ -1312,26 +1331,26 @@ impl FrameReactorBackend for AsyncNet {
                 .registry()
                 .reregister(&mut src, Token(ep), interest)
             {
+                self.bo_token(token);
                 return Err(format!("register `{tra}` thất bại: {e}"));
             }
         } else {
             let ep = self.next_epoll;
             self.next_epoll += 1;
             if let Err(e) = self.poll.registry().register(&mut src, Token(ep), interest) {
-                self.fd_wants.remove(&fd);
+                self.bo_token(token);
                 return Err(format!("register `{tra}` thất bại: {e}"));
             }
             self.epoll_token.insert(fd, ep);
             self.epoll_fd.insert(ep, fd);
         }
-        self.token_fd.insert(token, fd);
-        self.fd_tokens.entry(fd).or_default().insert(token);
         self.tokens.insert(token, handle.to_string());
         Ok(())
     }
 
     fn deregister(&mut self, token: u64, _handle: &str, _op: ReactorOp) -> Result<(), String> {
         self.tokens.remove(&token);
+        self.token_wants.remove(&token);
         let Some(fd) = self.token_fd.remove(&token) else {
             return Ok(());
         };
@@ -1344,11 +1363,20 @@ impl FrameReactorBackend for AsyncNet {
         };
         if !con_lai {
             self.fd_tokens.remove(&fd);
-            self.fd_wants.remove(&fd);
             if let Some(ep) = self.epoll_token.remove(&fd) {
                 self.epoll_fd.remove(&ep);
                 let mut src = SourceFd(&fd);
                 let _ = self.poll.registry().deregister(&mut src);
+            }
+        } else {
+            // Còn waiter khác: thu hẹp interest về đúng nhu cầu còn lại.
+            let (er, ew) = self.interest_cua_fd(fd);
+            if let Some(&ep) = self.epoll_token.get(&fd) {
+                let mut src = SourceFd(&fd);
+                let _ =
+                    self.poll
+                        .registry()
+                        .reregister(&mut src, Token(ep), interest_tu_huong(er, ew));
             }
         }
         Ok(())

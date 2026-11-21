@@ -442,7 +442,6 @@ impl H2Async {
         self.trang_thai_da_san_sang()
     }
 
-    #[allow(dead_code)] // checkpoint 2 (AsyncNet) dùng
     pub(crate) fn interest(&self) -> Interest {
         interest_tu_co(self.co.get())
     }

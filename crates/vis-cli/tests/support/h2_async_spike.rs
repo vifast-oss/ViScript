@@ -4,6 +4,7 @@
 
 use super::*;
 use std::fs;
+use std::path::Path;
 use vis_cli::net::h2_async::{h2_get_async_voi_goc, phien_voi_goc};
 
 #[derive(Clone, Copy)]
@@ -384,13 +385,33 @@ fn chay_chuong_trinh(
     args: &[String],
     vm: bool,
 ) -> (i32, String, String, Duration) {
+    chay_bang_bin(Path::new(env!("CARGO_BIN_EXE_vis")), ten, src, args, vm)
+}
+
+/// Bản sao binary ổn định: tránh cargo build đồng thời (feature khác) ghi đè
+/// `target/debug/vis` giữa các vòng soak.
+fn snapshot_vis() -> PathBuf {
+    let d = std::env::temp_dir().join(format!("vs3-w2-bin-{}", std::process::id()));
+    fs::create_dir_all(&d).expect("thư mục binary");
+    let dst = d.join("vis");
+    fs::copy(env!("CARGO_BIN_EXE_vis"), &dst).expect("copy vis");
+    dst
+}
+
+fn chay_bang_bin(
+    bin: &Path,
+    ten: &str,
+    src: &str,
+    args: &[String],
+    vm: bool,
+) -> (i32, String, String, Duration) {
     let d = std::env::temp_dir().join(format!("vs3-w2-h2-{}", std::process::id()));
     fs::create_dir_all(&d).expect("thư mục tạm");
     let p = d.join(format!("{ten}.vis"));
     fs::write(&p, src).expect("ghi chương trình");
     let goc =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der");
-    let mut c = Command::new(env!("CARGO_BIN_EXE_vis"));
+    let mut c = Command::new(bin);
     c.arg("run");
     if vm {
         c.arg("--vm").arg("--no-cache");
@@ -754,6 +775,7 @@ fn async_h2_soak_env_gated() {
     let treo = MayChuSpike::moi(Kieu::Treo);
     let goaway = MayChuSpike::moi(Kieu::GoAway);
     let (fd0, rss0, th0) = proc_stats();
+    let bin = snapshot_vis();
     let bat = Instant::now();
     let mut cold_wall: Vec<f64> = Vec::new();
     let mut cold_runs = 0usize;
@@ -768,7 +790,7 @@ fn async_h2_soak_env_gated() {
         let vm = i % 2 == 1;
         let c0 = (cold.conns(), cold.streams());
         let args: Vec<String> = (0..4).map(|j| cold.url(&format!("/s{i}-{j}"))).collect();
-        let (code, out, err, wall) = chay_chuong_trinh("soak-cold", BON_TAC_VU_COLD, &args, vm);
+        let (code, out, err, wall) = chay_bang_bin(&bin, "soak-cold", BON_TAC_VU_COLD, &args, vm);
         if code != 0 {
             loi = Some(format!("cold vòng {i} vm={vm}: {err}"));
             break;
@@ -839,8 +861,13 @@ fn async_h2_soak_env_gated() {
         }
 
         // Timeout 400 ms + GOAWAY.
-        let (code, out, err, _) =
-            chay_chuong_trinh("soak-timeout", SOAK_TIMEOUT_SRC, &[treo.url("/x")], vm);
+        let (code, out, err, _) = chay_bang_bin(
+            &bin,
+            "soak-timeout",
+            SOAK_TIMEOUT_SRC,
+            &[treo.url("/x")],
+            vm,
+        );
         if code != 0 || !out.contains("thời gian") {
             loi = Some(format!(
                 "timeout vòng {i} vm={vm}: code={code} out={out:?} err={err}"
@@ -848,8 +875,13 @@ fn async_h2_soak_env_gated() {
             break;
         }
         timeout_runs += 1;
-        let (code, out, err, _) =
-            chay_chuong_trinh("soak-goaway", SOAK_GOAWAY_SRC, &[goaway.url("/x")], vm);
+        let (code, out, err, _) = chay_bang_bin(
+            &bin,
+            "soak-goaway",
+            SOAK_GOAWAY_SRC,
+            &[goaway.url("/x")],
+            vm,
+        );
         if code != 0 || !(out.contains("GOAWAY") || out.contains("HTTP/2")) {
             loi = Some(format!(
                 "goaway vòng {i} vm={vm}: code={code} out={out:?} err={err}"
@@ -948,7 +980,7 @@ fn async_h2_cap_loop_env_gated() {
         assert_eq!(code, 0, "cap vòng {i} vm={}: {err}", i % 2 == 1);
         assert!(
             out.contains("8 MiB") || out.contains("vượt giới hạn") || out.contains("HTTP/2"),
-            "cap vòng {i}: {out:?}"
+            "cap vòng {i}: out={out:?} err={err:?}"
         );
     }
     eprintln!("cap loop: {n}/{n} PASS");
