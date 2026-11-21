@@ -117,6 +117,22 @@ fn chay_vm(a: &Image, w: usize) -> vis_interp::RunOutput {
     }
 }
 
+fn run_kind(kind: &Kind, _ctx: &mut WorkerCtx) -> Result<SendValue, String> {
+    match kind {
+        Kind::None => Ok(SendValue::Int(1)),
+        Kind::Interp(img) => {
+            let out = vis_interp::run(&img.src, &img.hir, &img.syms, &img.tys, &[]);
+            Ok(SendValue::Int(out.exit as i64))
+        }
+        Kind::Vm(img) => {
+            let mut vm = Vm::new(&img.module, &img.src);
+            let out = vm.run(&[]);
+            Ok(SendValue::Int(out.exit as i64))
+        }
+        Kind::VmReuse(m, text) => vm_reuse_job(m, text),
+    }
+}
+
 fn do_pool(workers: usize, n: usize, board: bool, print: bool, kind: Kind) -> f64 {
     let root: HashMap<String, SendValue> = HashMap::new();
     let mut pool = WorkerPool::new(workers, root).expect("pool");
@@ -130,19 +146,7 @@ fn do_pool(workers: usize, n: usize, board: bool, print: bool, kind: Kind) -> f6
             if print {
                 ctx.print("x");
             }
-            match &kind {
-                Kind::None => Ok(SendValue::Int(1)),
-                Kind::Interp(img) => {
-                    let out = vis_interp::run(&img.src, &img.hir, &img.syms, &img.tys, &[]);
-                    Ok(SendValue::Int(out.exit as i64))
-                }
-                Kind::Vm(img) => {
-                    let mut vm = Vm::new(&img.module, &img.src);
-                    let out = vm.run(&[]);
-                    Ok(SendValue::Int(out.exit as i64))
-                }
-                Kind::VmReuse(m, text) => vm_reuse_job(m, text),
-            }
+            run_kind(&kind, ctx)
         })
         .expect("spawn");
     }
@@ -271,6 +275,30 @@ fn do_pool_shared(n: usize) -> f64 {
     t.elapsed().as_secs_f64() * 1000.0
 }
 
+fn do_lazy(workers: usize, n: usize, kind: Kind) -> f64 {
+    // Mô phỏng P2b-1: tạo Task (Scheduler::tao) + proxy map nhưng **chưa gửi pool**;
+    // flush toàn bộ queue một lần, rồi join. Đây chỉ là mô phỏng bằng API công khai.
+    let mut sched = Scheduler::new();
+    let mut queue = Vec::with_capacity(n);
+    let mut proxy: HashMap<u32, u32> = HashMap::with_capacity(n);
+    let t = Instant::now();
+    for i in 0..n {
+        let task = sched.tao(0, Vec::new(), "t".to_string(), Span::new(0, 0));
+        proxy.insert(task.id, i as u32);
+        queue.push((task.id, kind.clone()));
+    }
+    let mut pool = WorkerPool::new(workers, HashMap::new()).expect("pool");
+    for (_, job) in queue {
+        let payload = Arc::new(SendValue::Int(0));
+        pool.spawn_shared(payload, move |ctx, _snap| run_kind(&job, ctx))
+            .expect("spawn");
+    }
+    let r = pool.join().expect("join");
+    assert_eq!(r.outcomes.len(), n);
+    assert_eq!(proxy.len(), n);
+    t.elapsed().as_secs_f64() * 1000.0
+}
+
 fn main() {
     let n = std::env::var("VS3_P2B_N")
         .ok()
@@ -341,6 +369,16 @@ fn main() {
         assert_eq!(v.exit, 0, "batch VM W={w}: {:?}", v.diagnostics);
         assert!(v.stdout.is_empty());
         println!("P2B_BATCH\tW={w}\tinterp_ms={mi:.1}\tvm_ms={mv:.1}");
+    }
+
+    // 1c) Lazy/batched queue mô phỏng P2b-1: tạo Task/proxy, chưa gửi pool; flush một lần.
+    for w in [1usize, 2, 4] {
+        let mi = do_lazy(w, n, Kind::Interp(rong.clone()));
+        let mv = do_lazy(w, n, Kind::Vm(rong.clone()));
+        println!(
+            "P2B_LAZY\tW={w}\tinterp_ms={mi:.1}\tvm_ms={mv:.1}\tinterp_tasks_s={:.0}",
+            n as f64 / (mi / 1000.0)
+        );
     }
 
     // 2) Dựng evaluator/task + tái dùng VM.
