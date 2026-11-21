@@ -1,6 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # VS3-3b/W5 — stress `WorkerPool` **50k task**
 
+**Kế tiếp**: test 50k một lượt được thay bằng **5×10k vòng** ở
+[`vs3-w5-stress-dai.md`](vs3-w5-stress-dai.md) (tổng 50k task/pha, đo RSS theo vòng).
+
 **Trạng thái**: stress + đo, không đổi runtime/API. **Không** nối evaluator, không bật default.
 **Baseline**: `a33f46c`; đã `git merge main` trên `vs3/w5-spike`; **không** push/merge.
 **Phạm vi sửa**: `crates/vis-cli/tests/vs3_worker.rs` + journal này. Không đụng
