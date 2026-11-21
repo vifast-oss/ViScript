@@ -3,6 +3,11 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## Unreleased (sau v0.3.3)
+
+- **Worker `spawn_shared` (opt-in/test-only)**: task giữ `Arc<SendValue>` read-only, không deep clone; map1k 5,62 ms vs producer 24,63 ms, list10k 5,25 vs 16,19 ms; API cũ/default không đổi.
+- **Windows test flake** `net::tcp_explain_tong` (RST 10054) fixed test-only ở bản trước; psvn 3/3 3469/0 trên v0.3.3.
+
 ## v0.3.3 — 2026-11-21
 
 - **Fix HTTP/2 flow-control**: release capacity sau mỗi chunk; body >64 KiB không còn timeout; 8 MiB cap đúng, header 64 KiB, trailer/GOAWAY/timeout.
