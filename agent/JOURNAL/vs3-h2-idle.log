@@ -1,0 +1,118 @@
+# VS3-4b4 h2 idle/queue — test (2026-11-21, main a26ec4b)
+CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --test vs3_http2
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests/vs3_http2.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/5aaaac259b3d512f/out/vs3_http2-5aaaac259b3d512f)
+
+running 8 tests
+test h2_basic_auth ... ok
+test fallback_http1_khi_khong_alpn ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_get_va_head ... ok
+test h2_redirect_va_cookie ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_timeout_ro_rang ... ok
+test h2_idle_timeout_dong_phien ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.29s
+
+## cargo test -p vis-cli --test vs3_tls
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/2ebb8d47d042558b/out/vs3_tls-2ebb8d47d042558b)
+
+running 12 tests
+test https_chan_ha_cap_ve_http ... ok
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_ipv6_loopback ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_head_khong_theo_redirect ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_theo_redirect_giu_tls ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.50s
+
+## cargo test -p vis-cli --test http
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/f0c4b49a87b18612/out/http-f0c4b49a87b18612)
+
+running 22 tests
+test http_200_byte ... ok
+test http_body_rong ... ok
+test http_404 ... ok
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_gioi_han ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_duong_mac_dinh ... ok
+test http_chunked_ba_chunk ... ok
+test http_chunked_co_mo_rong ... ok
+test http_head_khong_doc_than ... ok
+test http_het_gio ... ok
+test http_head_khong_theo_redirect ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.10s
+
+## cargo test -p vis-cli --test vs3_keepalive
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/ce281bdc15625032/out/vs3_keepalive-ce281bdc15625032)
+
+running 8 tests
+test head_hai_lan_cung_mot_ket_noi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test hai_request_cung_mot_ket_noi ... ok
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo test -p vis-cli --no-default-features --test vs3_http2 (skip do required)
+error: target `vs3_http2` in package `vis-cli` requires the features: `http2`
+Consider enabling them by passing, e.g., `--features="http2"`
+
+GHI CHU: lệnh --no-default-features --test vs3_http2 ở trên được cố ý chạy để xác nhận test target yêu cầu feature; core không build h2.
+
+
+## check default
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.40s
+## check no-default
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.50s
+## check wasm http2
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.31s
+## clippy default
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.76s
+## clippy interp
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
+## rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK

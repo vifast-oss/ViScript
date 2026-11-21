@@ -489,6 +489,37 @@ pub mod worker {
             Ok(TaskHandle { id, cancel })
         }
 
+        /// **Move payload**: chuyển hẳn `payload` vào task, không copy trên producer.
+        /// Dùng khi caller không còn cần giá trị (payload dựng mới hoặc đã tách ownership);
+        /// handler nhận payload trong heap của worker (W=1: ngay trên caller).
+        pub fn spawn_with_payload<F>(
+            &mut self,
+            payload: SendValue,
+            f: F,
+        ) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn(move |ctx| f(ctx, payload))
+        }
+
+        /// **Worker-copy**: gửi `Arc<SendValue>` (O(1)); worker tự clone payload vào heap
+        /// của mình khi chạy task. Tránh copy tuần tự trên producer cho payload lớn
+        /// (list10k/map1k); `Arc` chỉ là template bất biến, không shared mutable heap.
+        pub fn spawn_worker_copy<F>(
+            &mut self,
+            payload: Arc<SendValue>,
+            f: F,
+        ) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn(move |ctx| {
+                let payload = (*payload).clone();
+                f(ctx, payload)
+            })
+        }
+
         /// Join tất cả task; merge output theo **spawn order**. W>1 có ghi chéo ⇒ `CrossWrite`.
         pub fn join(mut self) -> Result<PoolResult, WorkerError> {
             let mode = self.mode.take().ok_or(WorkerError::ChannelClosed)?;

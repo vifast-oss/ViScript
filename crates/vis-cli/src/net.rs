@@ -430,6 +430,9 @@ impl NetHost for Net {
         if self.h2_biet.get(&khoa) == Some(&false) {
             return Ok(None);
         }
+        // **VS3-4b4**: đóng mọi phiên h2 đã idle quá 15 s trước khi tái dùng.
+        let now = Instant::now();
+        self.h2_phien.retain(|_, p| !p.qua_idle(now));
         if let Some(phien) = self.h2_phien.get_mut(&khoa) {
             match phien.request(target, method, headers, timeout_ms) {
                 Ok(kq) => return Ok(Some(kq)),
