@@ -10,13 +10,13 @@
 //!
 //! Không đổi bytecode/VERSION/cache key: chỉ chọn entry runtime.
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use std::io::{Read, Write};
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use std::thread;
 
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
@@ -314,10 +314,10 @@ fn cli_async_noi_host_fs() {
 
 /// Các ca net dùng port loopback + server thread: serialize trong test binary để tránh
 /// tranh port khi `cargo test` chạy song song (không ảnh hưởng sản phẩm).
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 static NET_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_mot_lan(noi_dung: &'static [u8]) -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind server");
     let addr = l.local_addr().expect("addr").to_string();
@@ -331,7 +331,36 @@ fn server_mot_lan(noi_dung: &'static [u8]) -> String {
     addr
 }
 
-#[cfg(unix)]
+/// **VS3-W4 (Windows port)** — 200 vòng mở/đóng qua host API: không rò tay nội bộ.
+/// Đo `AsyncNet::dem_tay_dang_mo` (test-only) thay cho đếm handle OS — cùng nguồn sự thật
+/// với các map `streams`/`listeners`/`tls`/`writes`/`connects`.
+#[test]
+fn async_net_khong_ro_ri_tay_sau_200_vong() {
+    use vis_cli::async_net::AsyncNet;
+    use vis_interp::builtin::NetHost;
+
+    let mut net = AsyncNet::new(false);
+    let l = NetHost::listen(&mut net, "127.0.0.1:0").expect("listen");
+    let addr = NetHost::local_addr(&mut net, &l).expect("local_addr");
+    for i in 0..200 {
+        let c = NetHost::connect(&mut net, &addr, 1_000).expect("connect");
+        let a = NetHost::accept(&mut net, &l, 1_000).expect("accept");
+        NetHost::write(&mut net, &c, b"x").expect("write");
+        let b = NetHost::read(&mut net, &a, 8, 1_000).expect("read");
+        assert_eq!(b, b"x", "vòng {i}");
+        NetHost::close(&mut net, &c).expect("close c");
+        NetHost::close(&mut net, &a).expect("close a");
+        assert_eq!(
+            net.dem_tay_dang_mo(),
+            1,
+            "vòng {i}: chỉ còn listener, không rò tay"
+        );
+    }
+    NetHost::close(&mut net, &l).expect("close l");
+    assert_eq!(net.dem_tay_dang_mo(), 0, "phải đóng hết tay");
+}
+
+#[cfg(any(unix, windows))]
 const ASYNC_NET_READ: &str = r#"use std.net
 
 async fn doc(addr: str) -> str:
@@ -349,7 +378,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_net_read_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("net");
@@ -369,7 +398,7 @@ fn cli_async_net_read_loopback_hai_engine() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_http_mot_lan() -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http");
     let addr = l.local_addr().expect("addr").to_string();
@@ -384,7 +413,7 @@ fn server_http_mot_lan() -> String {
     addr
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -396,7 +425,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_dem(so_byte: usize) -> (String, thread::JoinHandle<Vec<u8>>) {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind dem");
     let addr = l.local_addr().expect("addr").to_string();
@@ -416,7 +445,7 @@ fn server_dem(so_byte: usize) -> (String, thread::JoinHandle<Vec<u8>>) {
     (addr, h)
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_NET_WRITE: &str = r#"use std.net
 use std.str
 
@@ -434,7 +463,7 @@ fn main(args: list[str]):
     print(await spawn ghi(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_NET_ACCEPT: &str = r#"use std.net
 
 async fn serve(addr: str) -> int:
@@ -454,7 +483,7 @@ fn main(args: list[str]):
     print(await spawn serve(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_NET_TIMEOUT: &str = r#"use std.net
 
 async fn cho(addr: str) -> int:
@@ -470,7 +499,7 @@ fn main(args: list[str]):
 "#;
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_net_read_timeout_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("nettimeout");
@@ -498,7 +527,7 @@ fn cli_async_net_read_timeout_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_net_accept_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("netaccept");
@@ -528,7 +557,7 @@ fn cli_async_net_accept_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_net_write_partial_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("netwrite");
@@ -551,7 +580,7 @@ fn cli_async_net_write_partial_loopback_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_get_loopback_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http");
@@ -575,7 +604,7 @@ fn cli_async_http_get_loopback_hai_engine() {
 // VS3-1d/W1f-HTTP — state machine HTTP/1.1 hợp tác (không host blocking).
 // ---------------------------------------------------------------------------
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn doc_yeu_cau(s: &mut std::net::TcpStream) -> String {
     let mut all = Vec::new();
     let mut buf = [0u8; 4096];
@@ -589,7 +618,7 @@ fn doc_yeu_cau(s: &mut std::net::TcpStream) -> String {
     String::from_utf8_lossy(&all).to_string()
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_http_sau(body: String, tre_ms: u64) -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http sau");
     let addr = l.local_addr().expect("addr").to_string();
@@ -609,7 +638,7 @@ fn server_http_sau(body: String, tre_ms: u64) -> String {
     addr
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_http_head() -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http head");
     let addr = l.local_addr().expect("addr").to_string();
@@ -623,7 +652,7 @@ fn server_http_head() -> String {
     addr
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_http_chuyen_huong() -> (String, thread::JoinHandle<Vec<String>>) {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http redirect");
     let addr = l.local_addr().expect("addr").to_string();
@@ -645,7 +674,7 @@ fn server_http_chuyen_huong() -> (String, thread::JoinHandle<Vec<String>>) {
     (addr, h)
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP_LON: &str = r#"use std.http
 
 async fn lay(url: str) -> int:
@@ -657,7 +686,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP_REDIRECT: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -669,7 +698,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP_HEAD: &str = r#"use std.http
 
 async fn h(url: str) -> int:
@@ -684,7 +713,7 @@ fn main(args: list[str]):
     print(await spawn h(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP_TIMEOUT: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -696,7 +725,7 @@ fn main(args: list[str]):
     print(await spawn lay(args[0]))
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 const ASYNC_HTTP_HAI_TAC_VU: &str = r#"use std.http
 
 async fn lay(url: str) -> str:
@@ -711,7 +740,7 @@ fn main(args: list[str]):
     print(await cham)
 "#;
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn server_http_hai_lan(body: &'static str) -> String {
     let l = TcpListener::bind("127.0.0.1:0").expect("bind http hai");
     let addr = l.local_addr().expect("addr").to_string();
@@ -731,7 +760,7 @@ fn server_http_hai_lan(body: &'static str) -> String {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_hai_tac_vu_cung_host_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-coop-same");
@@ -752,7 +781,7 @@ fn cli_async_http_hai_tac_vu_cung_host_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_cache_warm_cold_vm() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-cache");
@@ -768,7 +797,7 @@ fn cli_async_http_cache_warm_cold_vm() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_body_lon_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("httpbig");
@@ -789,7 +818,7 @@ fn cli_async_http_body_lon_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_redirect_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-redir");
@@ -816,7 +845,7 @@ fn cli_async_http_redirect_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_head_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-head");
@@ -837,7 +866,7 @@ fn cli_async_http_head_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_timeout_than_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-timeout");
@@ -867,7 +896,7 @@ fn cli_async_http_timeout_than_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_hai_tac_vu_khong_block_hai_engine() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-coop");
@@ -890,7 +919,7 @@ fn cli_async_http_hai_tac_vu_khong_block_hai_engine() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn cli_async_http_khong_bo_qua_cap_net() {
     let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let d = tam("http-cap");

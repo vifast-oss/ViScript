@@ -7,7 +7,7 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 pub mod async_net;
 pub mod net;
 /// **VS3-5b (VD-271)**: chữ ký Ed25519 cho registry HTTP — tách vào lib để test dùng **chính**

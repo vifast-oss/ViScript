@@ -748,20 +748,20 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     trong: &mut db_tho,
                     quyen: &quyen,
                 };
-                #[cfg(unix)]
+                #[cfg(any(unix, windows))]
                 let async_rc = std::rc::Rc::new(std::cell::RefCell::new(
                     vis_cli::async_net::AsyncNet::new(explain_perms),
                 ));
-                #[cfg(unix)]
+                #[cfg(any(unix, windows))]
                 let mut async_host = vis_cli::async_net::AsyncNetHost {
                     inner: async_rc.clone(),
                 };
-                #[cfg(unix)]
+                #[cfg(any(unix, windows))]
                 let mut async_guard = quyen::NetGuard {
                     trong: &mut async_host,
                     quyen: &quyen,
                 };
-                #[cfg(unix)]
+                #[cfg(any(unix, windows))]
                 let async_backend: Option<
                     std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>,
                 > = Some(async_rc);
@@ -803,7 +803,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         if co_ngoai { Some(&mut runner) } else { None };
                     do_luong_chay(do_thoi_gian, || {
                         if la_async {
-                            #[cfg(unix)]
+                            #[cfg(any(unix, windows))]
                             {
                                 vis_vm::run_async_with_full_hosts_caps_backend(
                                     &m,
@@ -817,7 +817,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     async_backend.clone(),
                                 )
                             }
-                            #[cfg(not(unix))]
+                            #[cfg(not(any(unix, windows)))]
                             {
                                 vis_vm::run_async_with_full_hosts_caps(
                                     &m,
@@ -847,7 +847,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     // ST-27: `.vish` với runner chương trình ngoài (chỉ CLI biết OS).
                     do_luong_chay(do_thoi_gian, || {
                         if la_async {
-                            #[cfg(unix)]
+                            #[cfg(any(unix, windows))]
                             {
                                 vis_interp::run_async_with_hosts_caps_backend(
                                     &text,
@@ -863,7 +863,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     async_backend.clone(),
                                 )
                             }
-                            #[cfg(not(unix))]
+                            #[cfg(not(any(unix, windows)))]
                             {
                                 vis_interp::run_async_with_hosts_caps(
                                     &text,
@@ -897,7 +897,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     // ST-33: `.vis` cũng có `std.fs` (không có chương trình ngoài).
                     do_luong_chay(do_thoi_gian, || {
                         if la_async {
-                            #[cfg(unix)]
+                            #[cfg(any(unix, windows))]
                             {
                                 vis_interp::run_async_with_hosts_caps_backend(
                                     &text,
@@ -913,7 +913,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     async_backend.clone(),
                                 )
                             }
-                            #[cfg(not(unix))]
+                            #[cfg(not(any(unix, windows)))]
                             {
                                 vis_interp::run_async_with_hosts_caps(
                                     &text,
