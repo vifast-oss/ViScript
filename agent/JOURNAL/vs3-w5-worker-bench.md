@@ -2,83 +2,64 @@
 # VS3-3b gate B7 — CPU-only + payload matrix (`WorkerPool` opt-in)
 
 **Trạng thái**: **đo + đánh giá gate**, không nối evaluator, không bật default.
-**Baseline**: `ec29204` (đã `git merge main`).
+**Baseline**: `a26ec4b` (đã `git merge main`).
 **Mã đo**: `crates/vis-cli/examples/vs3_worker_bench.rs` (**example chạy tay**, không nằm
 trong test suite); log: `agent/JOURNAL/vs3-w5-worker-bench.log`.
-**Máy**: i5-1235U, **2 P-core + 8 E-core**, `nproc=12`, Linux. Clean runs có
-`load_start 2,23–2,85`; log đại diện `load_start 2,23`. Các lần đầu khi máy tải
-`5,8–15,9` bị nhiễu, không dùng làm median.
+**Máy**: i5-1235U, **2 P-core + 8 E-core**, `nproc=12`, Linux. Median lấy từ **3 lần sạch
+gần nhất** (`load_start 8,16–8,71`); log đại diện `load_start 8,71`. Các lần đầu load
+`15–28` bị nhiễu, không dùng làm median.
 
 ---
 
-## 1. Cách đo
+## 1. Thay đổi API (W5 sở hữu `rt/worker.rs`)
 
-- `WorkerPool` opt-in hiện tại: N worker, `SendValue`, budget `SharedBudget` atomic +
-  chunk; W=1 tuần tự/shared env; W>1 thread/snapshot.
-- 64 task/lần; CPU ~**229 µs/task** (calibrate sau warm 400 ms); mỗi task **100 charge**;
-  chunk **256**; mỗi ô **5 reps nội bộ**, lấy median; matrix lặp **3 lần sạch** example
-  (`load_start 2,23–2,85`), báo median 3 lần + range.
-- **Payload copy trên producer** (biên spawn): mỗi task `payload.clone()` trước `spawn`
-  — mô hình xấu nhất của `spawn f(biến)`. Có thêm probe `producer` / `worker-copy` /
-  `move` cho `list10k`/`map1k` để tách chi phí copy.
+Thêm 2 lối gửi payload lớn, không đổi `spawn` cũ:
+
+| API | Ngữ nghĩa |
+|---|---|
+| `spawn_with_payload(payload: SendValue, f)` | **move** payload vào task; không copy producer. Dùng khi caller không còn cần giá trị. |
+| `spawn_worker_copy(payload: Arc<SendValue>, f)` | producer chỉ clone `Arc` O(1); **worker tự clone** payload vào heap khi chạy. `Arc` chỉ là template bất biến, **không** shared mutable heap. |
+
+Cả hai dùng cùng `WorkerCtx`/completion/cross-write/budget; W=1 chạy tuần tự, W>1 thread.
+`vs3_worker` thêm ca `worker_copy_va_move_payload_w1_w4_parity` (9 ca tổng): W=1==W=4 output,
+budget `used+remaining==limit`, move/worker-copy cùng hành vi.
+
+## 2. Cách đo
+
+- 64 task; CPU ~**229 µs/task**; 100 charge/task; chunk **256**; mỗi ô **5 reps nội bộ**;
+  matrix lặp 3 lần sạch, lấy median.
+- **Before — producer-copy**: mỗi task `payload.clone()` trước `spawn` (worst case
+  `spawn f(biến)`), như report trước.
+- **After — worker-copy**: `spawn_worker_copy`; producer clone `Arc` O(1), worker clone payload.
 - Payload: `unit`, `list1k`, `list10k`, `map1k`, `record` 16 trường + list1k,
   `enum(Result.Ok(list1k))`, `str1MiB`.
-- Kiểm kèm: `used + remaining == limit` mỗi lần; print merge W=1 vs W=4;
+- Kiểm: `used+remaining==limit`; print merge W=1 vs W=4; cross-write W=1 allowed/W=4 refused.
+- Clone cost producer (median 20): list1k 34 µs, list10k 338 µs, map1k 50 µs, record 35 µs,
+  enum 35 µs, str1MiB 46 µs.
+
+## 3. Trước / sau
+
+| Payload | Before W=4 (producer) | After W=4 (worker-copy) | After W=1 | After speedup |
+|---|---:|---:|---:|---:|
+| **unit (CPU-only)** | 4,90 ms — **2,85×** | **5,09 ms** | 15,16 | **2,93×** |
+| list1k | 5,23 — 3,51× | 5,98 | 17,30 | **3,13×** |
+| **list10k** | 28,18 — **2,02×** | **12,95** | 40,99 | **3,18×** |
+| **map1k** | 27,09 — **0,90×** | **6,84** | 21,50 | **3,14×** |
+| record | 5,36 — 3,63× | 5,85 | 17,72 | **3,03×** |
+| enum | 5,31 — 3,53× | 5,85 | 17,38 | **3,01×** |
+| str1MiB | 9,91 — 4,28× | 7,73 | 18,49 | **2,39×** |
+
+- **Mục tiêu list10k/map1k ≥ 2,4×: ĐẠT** với worker-copy (3,18× / 3,14×), trong khi
+  producer-copy chỉ 2,02× / 0,90×.
+- CPU-only worker-copy **2,93×** — PASS ngưỡng 2,4 (caveat hybrid).
+- list1k/record/enum pass (3,0–3,1×); str1MiB **2,39×** sát dưới 2,4 (producer-copy 4,28×
+  do copy nhỏ 46 µs/task và pipeline; worker-copy thêm clone trong worker, không cần thiết cho
+  payload này).
+- `used=6.400`, `remaining=10.000`, `limit=16.400` mọi ô; print merge **124 byte**;
   cross-write W=1 allowed / W=4 refused.
 
-## 2. Kết quả (median 3 lần sạch; ms)
-
-| Payload | W=1 | W=2 | W=4 | Speedup W=4 | Đánh giá B7 |
-|---|---:|---:|---:|---:|---|
-| **unit (CPU-only)** | **11,87** | **8,89** | **4,58** | **2,59×** | **PASS** ngưỡng 2,4 |
-| list1k | 15,68 | 9,26 | 4,95 | **3,13×** | PASS |
-| list10k | 41,63 | 19,90 | 19,46 | **2,22×** | FAIL |
-| map1k | 17,72 | 16,38 | 18,57 | **0,95×** | FAIL |
-| record 16 + list1k | 14,21 | 9,28 | 4,69 | **3,03×** | PASS |
-| enum(list1k) | 14,51 | 9,30 | 4,68 | **3,11×** | PASS |
-| str1MiB | 32,64 | 10,71 | 7,11 | **4,84×** | PASS |
-
-Range W=4 (3 lần): unit 4,55–4,62; list1k 4,85–5,00; list10k 18,74–19,72;
-map1k 18,50–19,28; record 4,68–4,74; enum 4,66–4,93; str 6,62–7,20.
-
-`used=6.400`, `remaining=10.000`, `limit=16.400` ở **mọi** ô; `print_merge` W=1==W=4
-**124 byte**; `cross_write` W=1 allowed / W=4 refused **OK**.
-
-### 2.1 Clone cost (producer, median 20 lần)
-
-| Payload | clone | logical bytes |
-|---|---:|---:|
-| unit | 20 ns | 0 |
-| list1k | 25 µs | 80.000 |
-| list10k | 265 µs | 800.000 |
-| map1k | 38 µs | 155.890 |
-| record | 26 µs | 81.694 |
-| enum | 26 µs | 80.072 |
-| str1MiB | 35 µs | 1.048.576 |
-
-64 task ⇒ copy producer **~1,6 ms** (list1k) / **17,0 ms** (list10k) / **2,4 ms** (map) /
-**2,2 ms** (str). Đây là chi phí **tuần tự trên main** trước/trong khi dispatch.
-
-## 3. Probe producer-copy / worker-copy / move (3 reps)
-
-| Payload | mode | W=1 | W=4 | Speedup |
-|---|---|---:|---:|---:|
-| list10k | producer | 42,30 | 19,33 | 2,19× |
-| list10k | worker-copy | 31,97 | 10,56 | 3,03× |
-| list10k | move (prebuild) | 16,85 | 9,80 | 1,72× |
-| map1k | producer | 19,05 | 19,36 | 1,02× |
-| map1k | worker-copy | 17,64 | 6,10 | 2,89× |
-| map1k | move (prebuild) | 14,47 | 7,31 | 1,98× |
-
-Đọc số:
-- **Producer-copy là nút cổ chai tuần tự**: list10k/map fail B7 vì copy trên main, không
-  phải worker pool không song song.
-- **Worker-copy** (copy trong worker) đạt **2,9–3,0×** cho cả hai: copy song song được.
-- **Move** (payload dựng sẵn, move ownership) giảm tuyệt đối mạnh (list10k 42,3→16,9;
-  map 19,1→14,5) nhưng speedup W=4 của map chỉ **1,98×** — còn **drop/free + allocator**
-  của map 1k string trên worker/main, chưa song song hoá.
-- Vì vậy kết luận gate phải tách: CPU-only + payload nhỏ đạt; payload lớn **chưa đạt
-  nếu spawn copy trên producer**; move/worker-copy là hướng cần chốt.
+Range W=4 worker-copy 3 lần: unit 5,01–5,47; list1k 5,53–6,43; list10k 12,45–13,17;
+map1k 6,77–6,95; record 5,82–5,92; enum 5,53–5,92; str 7,20–7,74.
 
 ## 4. Chunk reservation
 
@@ -86,42 +67,37 @@ Charges-only, W=4, 64 task × 2000 charge:
 
 | chunk | ms | ns/charge |
 |---:|---:|---:|
-| 1 | 17,95 | **140,3** |
-| 16 | 4,91 | 38,4 |
-| **256** | **4,59** | **35,9** |
-| 4096 | 5,10 | 39,9 |
+| 1 | 24,69 | **192,9** |
+| 16 | 6,69 | 52,3 |
+| **256** | **6,17** | **48,2** |
+| 4096 | 6,16 | 48,1 |
 
-Chunk 1 tranh chấp CAS rất đắt; **256–4096** tương đương, **256** là mặc định đề xuất
-(đủ giảm contention, ít giữ budget dư). `SharedBudget::new(limit, chunk)` hiện do caller
-chọn; W1 nên dùng 256 (hoặc hằng dùng chung) khi nối.
+Chunk 1 tranh chấp CAS rất đắt; **256–4096** tương đương, **256** là mặc định đề xuất.
+`SharedBudget::new(limit, chunk)` do caller chọn; W1 nên dùng 256 khi nối.
 
 ## 5. Khuyến nghị
 
-1. **Gate cứng B7**: CPU-only W=4 **2,59× ≥ 2,4** → PASS trên máy này (caveat hybrid).
-2. **Payload matrix**: báo cáo theo từng payload, không gộp một ngưỡng:
-   - list1k / record / enum / str1MiB đạt (3,03–4,84×).
-   - list10k (2,22×) và map1k (0,95×) **chưa đạt** trong mô hình copy producer.
-3. Trước khi tuyên bố “payload lớn song song”, W1 cần chốt một trong:
-   - **local-first + move** cho `spawn` khi giá trị không còn dùng (không copy producer);
-   - **worker-copy** có kiểm soát (copy trong worker, giới hạn bộ nhớ);
-   - hoặc công bố rõ “payload lớn không đạt B7, dùng nhiều task nhỏ/chunk dữ liệu”.
-4. Map 1k cần điều tra **allocator/drop/free** (worker-copy đạt 2,89× nhưng move 1,98×, producer 1,02×).
-   Có thể do 64 lần drop 1k string; cân nhắc per-thread allocator, cap, hoặc move.
-5. Chunk **256** cho `SharedBudget`; không cần sửa `frame/fee.rs` (caller-controlled).
-6. Benchmark phải chạy khi máy tải thấp (clean runs load 2,2–2,9); ghi topology/load.
+1. **Dùng `spawn_worker_copy` cho payload lớn** (list10k/map1k) khi caller còn giữ template:
+   producer O(1), clone song song trong worker; mục tiêu B7 đạt.
+2. **Dùng `spawn_with_payload` (move)** khi giá trị không còn dùng; tránh copy hoàn toàn.
+3. Giữ producer-copy cho payload nhỏ/str1MiB nếu đo thấy nhanh hơn (str producer 4,28× vs
+   worker-copy 2,39×); chọn theo kích thước/ownership, không một chế độ cho mọi payload.
+4. Chunk **256**; không cần sửa `frame/fee.rs`.
+5. Gate cứng B7 dùng **CPU-only** (2,93× PASS); payload matrix báo từng payload, không gộp.
+6. Chạy benchmark khi tải thấp; ghi topology/load.
 
 ## 6. Blocker
 
-- **Chưa nối evaluator**: WorkerPool nhận closure + `SendValue`, không chạy `async fn` thật;
-  gate B7 mới là gate cơ chế, chưa phải nghiệm thu runtime (W1 1d/3b).
-- **Copy semantics**: chưa chốt `spawn` copy hay move; producer-copy matrix là worst case.
-  W1 sở hữu `interp.rs`/`vm.rs`/`frame/**`, cần nối `spawn`/`await` thật.
-- **Map allocator**: W=4 chậm hơn W=1 khi copy producer; worker-copy đạt nhưng move không;
-  cần điều tra trước khi nhận payload map.
-- **Hybrid CPU**: 2P+8E, W=4 threshold 2,4 sát; load thấp mới ổn định. Không dùng số cũ
-  load 5,8–15,9 làm median.
-- **RSS**: chưa đo trong gate này (B7 nói chỉ tham khảo); nếu cần cap bộ nhớ, đo riêng.
-- **Không** kết luận worker pool production; default vẫn single-thread.
+- **Chưa nối evaluator**: WorkerPool nhận closure + `SendValue`, chưa chạy `async fn` thật;
+  W1 1d/3b phải map `spawn`/`await` sang `spawn_worker_copy`/`spawn_with_payload` theo kiểu
+  payload.
+- **`Arc<SendValue>` template**: chỉ bất biến; không shared mutable heap. Nếu payload chứa
+  handle/closure vẫn phải `VS0508`; W1 kiểm ở checker/spawn.
+- **Map allocator**: worker-copy đạt 3,14×; move/producer vẫn kém (map1k producer 0,90×);
+  nếu W1 chọn move cho map, cần đo lại drop/free/allocator.
+- **str1MiB**: worker-copy 2,39× sát dưới 2,4; chọn producer-copy hoặc leaf-Arc theo workload.
+- **Load/hybrid**: 2P+8E, kết quả phụ thuộc load; chỉ dùng median 3 lần load 8,2–8,7.
+- **RSS** chưa đo trong gate này; B7 chỉ tham khảo. Không tuyên bố production/default.
 
 ## 7. Tái lập
 
@@ -130,4 +106,4 @@ CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w5 \
   cargo run -p vis-cli --example vs3_worker_bench
 ```
 
-Log đại diện: `agent/JOURNAL/vs3-w5-worker-bench.log` (example run, load 2,23).
+Log đại diện: `agent/JOURNAL/vs3-w5-worker-bench.log` (load 8,71).

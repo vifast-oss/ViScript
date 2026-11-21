@@ -208,6 +208,49 @@ fn run_matrix(
     }
 }
 
+/// **Worker-copy**: producer chỉ clone `Arc` O(1); worker clone payload vào heap.
+fn run_worker_copy(
+    workers: usize,
+    payload: &SendValue,
+    cpu_iters: u64,
+    tasks: usize,
+    charges: usize,
+    chunk: u64,
+) -> BenchRun {
+    let limit = (tasks * charges) as i64 + 10_000;
+    let budget = Arc::new(SharedBudget::new(limit as u64, chunk));
+    let template = Arc::new(payload.clone());
+    let t0 = Instant::now();
+    let mut pool = WorkerPool::with_budget(workers, tmp_env(), Arc::clone(&budget)).expect("pool");
+    for _ in 0..tasks {
+        let p = Arc::clone(&template);
+        let cpu = cpu_iters;
+        let charge = charges;
+        pool.spawn_worker_copy(p, move |ctx, payload| {
+            std::hint::black_box(&payload);
+            std::hint::black_box(cpu_work(cpu));
+            for _ in 0..charge {
+                ctx.charge(1)?;
+            }
+            Ok(SendValue::Unit)
+        })
+        .expect("spawn worker-copy");
+    }
+    let r = pool.join().expect("join");
+    let ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let snap = r.budget.expect("budget");
+    assert_eq!(snap.used, (tasks * charges) as i64);
+    assert_eq!(snap.used + snap.remaining, snap.limit);
+    assert!(!snap.exhausted);
+    assert_eq!(r.outcomes.len(), tasks);
+    BenchRun {
+        ms,
+        used: snap.used,
+        remaining: snap.remaining,
+        limit: snap.limit,
+    }
+}
+
 fn run_charge_only(workers: usize, tasks: usize, charges: usize, chunk: u64) -> BenchRun {
     let limit = (tasks * charges) as i64 + 10_000;
     let budget = Arc::new(SharedBudget::new(limit as u64, chunk));
@@ -404,6 +447,47 @@ fn main() {
                 (tasks * charges) as i64,
                 10_000,
                 (tasks * charges) as i64 + 10_000
+            );
+        }
+    }
+
+    println!(
+        "MATRIX_WC\tpayload\tworkers\tms_med\tms_min\tns_per_task\tspeedup\tused\tremaining\tlimit"
+    );
+    for (name, payload) in payloads() {
+        let mut base = 0.0;
+        let mut rows = Vec::new();
+        for w in [1usize, 2, 4] {
+            let mut samples = Vec::new();
+            let mut used = 0;
+            let mut remaining = 0;
+            let mut limit = 0;
+            for _ in 0..reps {
+                let r = run_worker_copy(w, &payload, cpu_iters, tasks, charges, chunk);
+                assert_eq!(r.used + r.remaining, r.limit);
+                samples.push(r.ms);
+                used = r.used;
+                remaining = r.remaining;
+                limit = r.limit;
+            }
+            let med = median(samples.clone());
+            if w == 1 {
+                base = med;
+            }
+            rows.push((
+                w,
+                med,
+                samples.iter().copied().fold(f64::INFINITY, f64::min),
+                base / med,
+                used,
+                remaining,
+                limit,
+            ));
+        }
+        for (w, med, min, sp, used, remaining, limit) in rows {
+            println!(
+                "MATRIX_WC\t{name}\t{w}\t{med:.2}\t{min:.2}\t{:.0}\t{sp:.2}\t{used}\t{remaining}\t{limit}",
+                med * 1e6 / tasks as f64
             );
         }
     }
