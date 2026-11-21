@@ -342,6 +342,9 @@ impl<'a> Vm<'a> {
     /// Charge **mọi** sự kiện tại `(hàm, pc)` theo thứ tự bảng phụ. D6: pc lưu sau charge ⇒
     /// resume không charge lại nhóm cũ.
     pub(crate) fn budget_charge(&mut self, fi: u32, pc: usize, span: Span) -> R<()> {
+        if let Some(a) = self.worker_tick(span) {
+            return Err(a);
+        }
         // Copy ra Vec để kết thúc mượn immutable của `self.budget_fee` trước khi
         // gọi `self.quota_charge(w)` (cần mượn mutable). `FeeEntry` là Copy.
         let events: Vec<FeeEntry> = match self

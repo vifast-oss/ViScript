@@ -59,6 +59,19 @@ impl crate::builtin::Host for Interp<'_> {
             .unwrap_or_default()
     }
 
+    fn spawn_task(&mut self, than: u32, args: Vec<Value>, ten: String, span: Span) -> R<Value> {
+        let t = self.sched.borrow_mut().spawn(than, args, ten, span);
+        Ok(Value::Task(t))
+    }
+
+    fn await_task(&mut self, t: &std::rc::Rc<crate::rt::Task>, span: Span) -> R<Value> {
+        crate::rt::await_task(self, t, span)
+    }
+
+    fn join_tasks(&mut self) -> R<()> {
+        crate::rt::join_all(self)
+    }
+
     fn fs(&mut self) -> Option<&mut dyn crate::builtin::FsHost> {
         self.fs
             .as_mut()
