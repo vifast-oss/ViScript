@@ -141,6 +141,8 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         Ty::SqlValue => "SqlValue".to_string(),
         Ty::RowSet => "RowSet".to_string(),
         Ty::ResultIntErr => "Result[int, Error]".to_string(),
+        // **VD-270 (sqlite-journal-mode)**: `Result[str, Error]` (`sqlite.journal_mode`).
+        Ty::ResultStrErr => "Result[str, Error]".to_string(),
         Ty::ResultBoolErr => "Result[bool, Error]".to_string(),
         Ty::ResultRowSetErr => "Result[RowSet, Error]".to_string(),
         // **VD-267**: `never` chỉ dùng cho chữ ký builtin trần, không có mục `FUNCS` nào.

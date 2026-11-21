@@ -98,6 +98,9 @@ pub(crate) fn kiem(name: &str, args: &[Value], span: Span) -> Result<(), Abort> 
             | Ty::Json
             // **VD-241 (Gate 1)**: `Result[RowSet, Error]` cũng là kiểu **trả** của `std.sqlite.query`.
             | Ty::ResultIntErr
+            // **VD-270 (sqlite-journal-mode)**: `Result[str, Error]` là kiểu **trả** của
+            // `sqlite.journal_mode` (biến thể riêng, không phải kiểu đối số).
+            | Ty::ResultStrErr
             | Ty::ResultBoolErr
             | Ty::ResultRowSetErr
             // **VD-270 (fsbytes)**: `Result[list[int], Error]` là kiểu **trả** của `fs.read_bytes`.

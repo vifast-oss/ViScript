@@ -55,6 +55,7 @@ mod sqliteexists;
 mod sqliteidx;
 mod sqliteidxcols;
 mod sqliteidxexists;
+mod sqlitejournal;
 mod sqlitepk;
 mod sqliteschema;
 mod sqliteschemaver;
@@ -1194,6 +1195,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteappid::chay(host, h).map(Value::Int), span)
+        }
+        // **VD-270 (sqlite-journal-mode)** — chế độ journal hiện tại của connection, chỉ đọc qua
+        // `PRAGMA journal_mode` (không tham số); `:memory:` mới ⇒ `memory`, tệp mới ⇒ `delete`,
+        // đọc lặp **không** đổi mode; ghi `PRAGMA journal_mode = …` bị authorizer chối; lỗi
+        // handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
+        "sqlite.journal_mode" => {
+            let h = chuoi(name, &args[0], 0, span)?;
+            let host = host.db().ok_or_else(|| khong_host(name, span))?;
+            hop_nhat_fs(sqlitejournal::chay(host, h).map(Value::Str), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         "sqlite.last_insert_rowid" => {
