@@ -37,6 +37,19 @@
 | VS3-7 — LSP tệp phụ/incremental | W3 | `lsp_da_tep` mở rộng | TODO | P2 |
 | VS3-8 — Plugin/ViTerm | W3 | `vs3_plugin.rs` | TODO | P3 |
 
+## 2b. Đang chạy (21/11, 5 luồng)
+
+| Luồng | Worktree / branch | Phạm vi | Trạng thái |
+|---|---|---|---|
+| **W1** | `vs3-w1-runtime` / `vs3/w1-runtime` | VS3-1a budget/step-cap | **WIP** |
+| **W2** | `vs3-w2-tls` / `vs3/w2-tls` | VS3-4a TLS client | **WIP** |
+| **W3** | `vs3-w3-registry` / `vs3/w3-registry` | VS3-5a registry HTTP | **WIP** |
+| **W4** | `vs3-w4-windows` / `vs3/w4-windows` | verify `v0.1.0-rc1` @ `0985030` trên psvn | **WIP** |
+| **W5** | `vs3-w5-spike` / `vs3/w5-spike` | VS3-3a spike worker/heap | **WIP** |
+
+**Quy tắc tích hợp**: subagent commit local trong nhánh; A0 review + chạy targeted test; merge tuần tự
+vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge trực tiếp.
+
 ## 3. Mốc tích hợp cuối tuần
 
 | Mốc | Giờ (JST) | Việc | Kết quả |
