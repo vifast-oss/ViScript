@@ -715,7 +715,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // **VD-241 §3/T5 (A0, 2026-11-19)**: phần tử thứ 5 = `exit_val` từ `RunOutput` (Err ⇒ 1).
     // **VD-270**: phần tử thứ 6 = số **micro-giây** quanh lời gọi runtime (`None` nếu không xin
     // `--time`, hoặc runtime chưa từng chạy vì codegen lỗi).
-    let la_async = hir_co_async(&h.hir) && !co_chan_cap_khong_zero(&h.hir);
+    let la_async = hir_co_async(&h.hir);
     let (stdout, diags, steps, loi_codegen, exit_val, thoi_gian_us) = std::thread::scope(|scope| {
         std::thread::Builder::new()
             .name("vis-run".into())
@@ -946,131 +946,6 @@ fn hir_co_async(h: &vis_types::Hir) -> bool {
         vis_types::hir::HItem::Trait(t) => t.methods.iter().any(|f| f.is_async),
         _ => false,
     })
-}
-
-/// **VS3-1d** — tạm giữ runtime sync cho chương trình async có `chan(n>0)`/cap động: các
-/// chương trình đó đang dùng semantics run-to-completion cũ (W3/VS3-2b sẽ mở wait-set cap>0).
-/// Chỉ `chan(0)` literal mới chắc chắn đi frame. Trả `true` khi có ChanNew không phải literal 0.
-fn co_chan_cap_khong_zero(h: &vis_types::Hir) -> bool {
-    use vis_types::hir::{HBody, HCond, HExpr, HItem, HStmt, LitKind};
-    fn lit_zero(e: &HExpr) -> bool {
-        matches!(e, HExpr::Lit { lit, .. } if lit.kind == LitKind::Int && lit.text == "0")
-    }
-    fn e(x: &HExpr) -> bool {
-        match x {
-            HExpr::ChanNew { cap, .. } => !lit_zero(cap) || e(cap),
-            HExpr::Bin { lhs, rhs, .. } => e(lhs) || e(rhs),
-            HExpr::Un { expr, .. } | HExpr::Ref { expr, .. } | HExpr::Await { expr, .. } => e(expr),
-            HExpr::Call {
-                callee,
-                args,
-                named,
-                ..
-            } => e(callee) || args.iter().any(e) || named.iter().any(|(_, v)| e(v)),
-            HExpr::Spawn {
-                callee,
-                args,
-                named,
-                ..
-            } => e(callee) || args.iter().any(e) || named.iter().any(|(_, v)| e(v)),
-            HExpr::Field { base, .. } => e(base),
-            HExpr::Index { base, index, .. } => e(base) || e(index),
-            HExpr::List { items, .. } | HExpr::Set { items, .. } | HExpr::Tuple { items, .. } => {
-                items.iter().any(e)
-            }
-            HExpr::Map { entries, .. } => entries.iter().any(|(k, v)| e(k) || e(v)),
-            HExpr::Record { fields, .. } => fields.iter().any(|(_, v)| e(v)),
-            HExpr::EnumLit { args, .. } => args.iter().any(e),
-            HExpr::Opt { value, .. } => value.as_deref().map(e).unwrap_or(false),
-            HExpr::Try { expr, .. } => e(expr),
-            HExpr::With { base, fields, .. } => e(base) || fields.iter().any(|(_, v)| e(v)),
-            HExpr::If {
-                cond,
-                then,
-                elifs,
-                else_,
-                ..
-            } => {
-                c(cond)
-                    || then.iter().any(s)
-                    || elifs.iter().any(|(cnd, b)| c(cnd) || b.iter().any(s))
-                    || else_.iter().any(s)
-            }
-            HExpr::Match { subject, arms, .. } => {
-                e(subject)
-                    || arms
-                        .iter()
-                        .any(|a| a.guard.as_ref().map(e).unwrap_or(false) || a.body.iter().any(s))
-            }
-            HExpr::Lambda { body, .. } => b(body),
-            HExpr::Interp { parts, .. } => parts.iter().any(|p| match p {
-                vis_types::hir::InterpPart::Str(_) => false,
-                vis_types::hir::InterpPart::Expr(x)
-                | vis_types::hir::InterpPart::ExprSpec { expr: x, .. } => e(x),
-            }),
-            HExpr::Lit { .. }
-            | HExpr::Var { .. }
-            | HExpr::CmdBlock { .. }
-            | HExpr::Error { .. } => false,
-        }
-    }
-    fn b(x: &HBody) -> bool {
-        match x {
-            HBody::Expr(x) => e(x),
-            HBody::Stmts(v) => v.iter().any(s),
-        }
-    }
-    fn c(x: &HCond) -> bool {
-        match x {
-            HCond::Expr(x) => e(x),
-            HCond::Let { value, .. } => e(value),
-        }
-    }
-    fn s(x: &HStmt) -> bool {
-        match x {
-            HStmt::Let { init, else_, .. } => {
-                e(init)
-                    || else_
-                        .as_ref()
-                        .map(|el| el.body.iter().any(s))
-                        .unwrap_or(false)
-            }
-            HStmt::Var { init, .. } => e(init),
-            HStmt::Assign { target, value, .. } => e(target) || e(value),
-            HStmt::Expr(x) => e(x),
-            HStmt::If {
-                cond,
-                then,
-                elifs,
-                else_,
-                ..
-            } => {
-                c(cond)
-                    || then.iter().any(s)
-                    || elifs.iter().any(|(cn, b)| c(cn) || b.iter().any(s))
-                    || else_.as_ref().map(|b| b.iter().any(s)).unwrap_or(false)
-            }
-            HStmt::For { iter, body, .. } => e(iter) || body.iter().any(s),
-            HStmt::While { cond, body, .. } => c(cond) || body.iter().any(s),
-            HStmt::Loop { body, .. } | HStmt::Scope { body, .. } | HStmt::Block { body, .. } => {
-                body.iter().any(s)
-            }
-            HStmt::Return { value, .. } => value.as_ref().map(e).unwrap_or(false),
-            HStmt::Match { subject, arms, .. } => {
-                e(subject)
-                    || arms
-                        .iter()
-                        .any(|a| a.guard.as_ref().map(e).unwrap_or(false) || a.body.iter().any(s))
-            }
-            HStmt::Break { .. } | HStmt::Continue { .. } => false,
-        }
-    }
-    h.items.iter().any(|it| match it {
-        HItem::Fn(f) => f.body.iter().any(s),
-        HItem::Impl(i) => i.methods.iter().any(|f| f.body.iter().any(s)),
-        HItem::Const(cst) => e(&cst.value),
-        _ => false,
-    }) || h.stmts.iter().any(s)
 }
 
 fn main() -> ExitCode {

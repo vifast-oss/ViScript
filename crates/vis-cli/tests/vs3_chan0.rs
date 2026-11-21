@@ -487,18 +487,22 @@ const P_CAP1: &str = r#"fn main():
 "#;
 
 #[test]
-fn chan1_giu_nguyen_semantics_khong_wait_set() {
+fn chan1_day_khong_task_van_trap_vs0505() {
     let (i, v) = chay_hai(P_CAP1, vec![], &[]);
     for out in [&i, &v] {
-        // cap 1 + gửi 2 trước khi nhận: send thứ hai chặn và không có task khác chạy
-        // ⇒ deadlock VS0505 như trước VS3-2a (không âm thầm đổi thành wait-set cap>0).
-        assert_ne!(out.exit, 0, "cap 1 đầy vẫn deadlock như cũ");
+        // VS3-1d: cap 1 cũng dùng wait-set; gửi 2 khi đầy thì **chờ** (không `chay_mot`),
+        // hết task chạy được ⇒ `frame_stuck_trap` VS0505, không treo.
+        assert_ne!(out.exit, 0, "cap 1 đầy không có receiver phải deadlock");
         assert_eq!(
             out.diagnostics.first().map(|d| d.code.short),
             Some("VS0505"),
             "{:?}",
             out.diagnostics
         );
-        assert!(!out.log.iter().any(|l| l.starts_with("wait:0:Chan")));
+        assert!(
+            out.log.iter().any(|l| l.starts_with("wait:0:Chan")),
+            "phải dùng wait-set cap≥1: {:?}",
+            out.log
+        );
     }
 }

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **VS3-4b2 (VD-271)** — client HTTP/2 tối thiểu cho `https://` (feature `http2`, default-off).
+//! **VS3-4b2/4b3 (VD-271)** — client HTTP/2 cho `https://` (feature `http2`, default-off).
 //!
 //! - TLS handshake dùng ALPN `["h2","http/1.1"]`; nếu server không chọn `h2` thì trả lại **cùng**
 //!   `KenhTls` để tầng HTTP/1.1 dùng tiếp (không mở thêm kết nối/không đốt một slot server test).
+//! - **4b3**: giữ một `PhienH2` (một connection + `SendRequest`) cho mỗi authority; nhiều request
+//!   **tuần tự** dùng lại connection, không multiplex đồng thời. Net giới hạn số phiên và đóng khi
+//!   hết hạn/lỗi.
 //! - `h2` cần `AsyncRead/AsyncWrite` + executor; module này bọc `KenhTls` **đồng bộ** bằng adapter
-//!   chặn theo timeout và một executor một luồng tối thiểu (`poll` + `yield`). Không bật tokio
-//!   runtime/network feature, không thêm async vào đường HTTP/1.1.
-//! - Một request/kết nối; không multiplex/pool h2 (đó là phần mở rộng sau, không làm hồi quy h1).
+//!   nonblocking + một executor một luồng tối thiểu (`poll` + `yield`). Không bật tokio runtime/
+//!   network feature, không thêm async vào đường HTTP/1.1.
 
 use std::future::Future;
 use std::io::{self, Read, Write};
 use std::pin::Pin;
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 
@@ -23,134 +26,156 @@ use vis_interp::net::MAX_HTTP;
 
 use super::tls::{self, CauHinh, KenhTls};
 
-/// Kết quả bước “thử h2”: hoặc đã có response h2, hoặc trả lại kết nối TLS để chạy HTTP/1.1.
-pub(super) enum KqH2 {
-    Xong(KetQuaHttp2),
+/// Kết quả bước mở phiên: hoặc phiên h2 dùng lại được, hoặc trả lại kết nối TLS cho HTTP/1.1.
+pub(super) enum MoH2 {
+    Phien(PhienH2),
     Http1(Box<KenhTls>),
 }
 
-/// Thử HTTP/2 trên `dia_chi` (authority TLS). `Ok(Http1(k))` = ALPN không chọn h2; caller dùng `k`.
-pub(super) fn request(
-    cfg: &CauHinh,
-    dia_chi: &str,
-    target: &str,
-    method: &str,
-    headers: &[(String, String)],
-    timeout_ms: u64,
-) -> Result<KqH2, String> {
-    let con = timeout_ms.max(1);
-    let han = Instant::now() + Duration::from_millis(con);
-    let k = tls::noi(cfg, dia_chi, con)?;
-    if k.conn.alpn_protocol() != Some(&b"h2"[..]) {
-        return Ok(KqH2::Http1(Box::new(k)));
-    }
-    // h2 cần `poll` không chặn: socket nonblocking + adapter trả `Pending`; executor một luồng tự
-    // chạy lại. Nếu fallback h1 ở trên, socket vẫn blocking cho tầng HTTP/1.1.
-    k.sock
-        .set_nonblocking(true)
-        .map_err(|e| format!("không đặt non-blocking cho HTTP/2 `{dia_chi}`: {e}"))?;
-
-    let io = DongBo { k, han };
-    let (mut send, conn) = cho(::h2::client::handshake(io))
-        .map_err(|e| format!("lỗi HTTP/2 handshake tới `{dia_chi}`: {e}"))?;
-
-    let uri = format!("https://{dia_chi}{target}");
-    let mut builder = Request::builder().method(method).uri(uri);
-    for (k, v) in headers {
-        builder = builder.header(k.as_str(), v.as_str());
-    }
-    let req = builder
-        .body(())
-        .map_err(|e| format!("request HTTP/2 không hợp lệ tới `{dia_chi}`: {e}"))?;
-    let (resp, _body) = send
-        .send_request(req, true)
-        .map_err(|e| format!("lỗi gửi HTTP/2 tới `{dia_chi}`: {e}"))?;
-
-    let kq = doc_phan_hoi(conn, resp, method, dia_chi)?;
-    Ok(KqH2::Xong(kq))
+/// Một connection h2 đã handshake, dùng cho nhiều request **tuần tự** cùng authority.
+pub(super) struct PhienH2 {
+    send: ::h2::client::SendRequest<Bytes>,
+    conn: Pin<Box<::h2::client::Connection<DongBo, Bytes>>>,
+    han: Arc<Mutex<Instant>>,
+    /// Authority TLS (`host:port`) để dựng URI tuyệt đối/`:authority` cho mọi request.
+    authority: String,
 }
 
-fn doc_phan_hoi(
-    conn: ::h2::client::Connection<DongBo, Bytes>,
-    resp: ::h2::client::ResponseFuture,
-    method: &str,
-    dia_chi: &str,
-) -> Result<KetQuaHttp2, String> {
-    let w = Waker::noop();
-    let mut cx = Context::from_waker(w);
-    let mut conn = Box::pin(conn);
-    let mut resp = Box::pin(resp);
-    let mut recv: Option<::h2::RecvStream> = None;
-    let mut status = 0u16;
-    let mut headers: Vec<(String, String)> = Vec::new();
-    let mut body: Vec<u8> = Vec::new();
-
-    loop {
-        let mut tien = false;
-        match conn.as_mut().poll(&mut cx) {
-            Poll::Ready(Ok(())) => {}
-            Poll::Ready(Err(e)) => {
-                return Err(format!("lỗi kết nối HTTP/2 tới `{dia_chi}`: {e}"));
-            }
-            Poll::Pending => {}
+impl PhienH2 {
+    /// Mở TLS + h2 handshake. `Http1(k)` = server không chọn ALPN h2, caller dùng `k`.
+    pub(super) fn moi(cfg: &CauHinh, dia_chi: &str, timeout_ms: u64) -> Result<MoH2, String> {
+        let con = timeout_ms.max(1);
+        let k = tls::noi(cfg, dia_chi, con)?;
+        if k.conn.alpn_protocol() != Some(&b"h2"[..]) {
+            return Ok(MoH2::Http1(Box::new(k)));
         }
-        if recv.is_none() {
-            match resp.as_mut().poll(&mut cx) {
-                Poll::Ready(Ok(r)) => {
-                    let (parts, b) = r.into_parts();
-                    status = parts.status.as_u16();
-                    headers = parts
-                        .headers
-                        .iter()
-                        .map(|(k, v)| {
-                            (
-                                k.as_str().to_string(),
-                                String::from_utf8_lossy(v.as_bytes()).into_owned(),
-                            )
-                        })
-                        .collect();
-                    if method.eq_ignore_ascii_case("HEAD") {
+        // h2 cần `poll` không chặn: socket nonblocking + adapter trả `Pending`; executor một luồng tự
+        // chạy lại. Nếu fallback h1 ở trên, socket vẫn blocking cho tầng HTTP/1.1.
+        k.sock
+            .set_nonblocking(true)
+            .map_err(|e| format!("không đặt non-blocking cho HTTP/2 `{dia_chi}`: {e}"))?;
+        let han = Arc::new(Mutex::new(Instant::now() + Duration::from_millis(con)));
+        let io = DongBo {
+            k,
+            han: Arc::clone(&han),
+        };
+        let (send, conn) = cho(::h2::client::handshake(io))
+            .map_err(|e| format!("lỗi HTTP/2 handshake tới `{dia_chi}`: {e}"))?;
+        Ok(MoH2::Phien(Self {
+            send,
+            conn: Box::pin(conn),
+            han,
+            authority: dia_chi.to_string(),
+        }))
+    }
+
+    /// Gửi một request tuần tự và đọc response; connection vẫn sống cho request sau.
+    pub(super) fn request(
+        &mut self,
+        target: &str,
+        method: &str,
+        headers: &[(String, String)],
+        timeout_ms: u64,
+    ) -> Result<KetQuaHttp2, String> {
+        let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
+        if let Ok(mut h) = self.han.lock() {
+            *h = han;
+        }
+        let uri = format!("https://{}{}", self.authority, target);
+        let mut builder = Request::builder().method(method).uri(uri);
+        for (k, v) in headers {
+            builder = builder.header(k.as_str(), v.as_str());
+        }
+        let req = builder
+            .body(())
+            .map_err(|e| format!("request HTTP/2 không hợp lệ: {e}"))?;
+        let (resp, _body) = self
+            .send
+            .send_request(req, true)
+            .map_err(|e| format!("lỗi gửi HTTP/2: {e}"))?;
+        self.doc_phan_hoi(resp, method)
+    }
+
+    fn doc_phan_hoi(
+        &mut self,
+        resp: ::h2::client::ResponseFuture,
+        method: &str,
+    ) -> Result<KetQuaHttp2, String> {
+        let w = Waker::noop();
+        let mut cx = Context::from_waker(w);
+        let mut resp = Box::pin(resp);
+        let mut recv: Option<::h2::RecvStream> = None;
+        let mut status = 0u16;
+        let mut headers: Vec<(String, String)> = Vec::new();
+        let mut body: Vec<u8> = Vec::new();
+
+        loop {
+            let mut tien = false;
+            match self.conn.as_mut().poll(&mut cx) {
+                Poll::Ready(Ok(())) => {}
+                Poll::Ready(Err(e)) => {
+                    return Err(format!("lỗi kết nối HTTP/2: {e}"));
+                }
+                Poll::Pending => {}
+            }
+            if recv.is_none() {
+                match resp.as_mut().poll(&mut cx) {
+                    Poll::Ready(Ok(r)) => {
+                        let (parts, b) = r.into_parts();
+                        status = parts.status.as_u16();
+                        headers = parts
+                            .headers
+                            .iter()
+                            .map(|(k, v)| {
+                                (
+                                    k.as_str().to_string(),
+                                    String::from_utf8_lossy(v.as_bytes()).into_owned(),
+                                )
+                            })
+                            .collect();
+                        if method.eq_ignore_ascii_case("HEAD") {
+                            return Ok(KetQuaHttp2 {
+                                status,
+                                headers,
+                                body,
+                            });
+                        }
+                        recv = Some(b);
+                        tien = true;
+                    }
+                    Poll::Ready(Err(e)) => {
+                        return Err(format!("lỗi response HTTP/2: {e}"));
+                    }
+                    Poll::Pending => {}
+                }
+            }
+            if let Some(r) = recv.as_mut() {
+                match r.poll_data(&mut cx) {
+                    Poll::Ready(Some(Ok(b))) => {
+                        if body.len().saturating_add(b.len()) > MAX_HTTP {
+                            return Err(format!(
+                                "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
+                            ));
+                        }
+                        body.extend_from_slice(&b);
+                        tien = true;
+                    }
+                    Poll::Ready(Some(Err(e))) => {
+                        return Err(format!("lỗi đọc body HTTP/2: {e}"));
+                    }
+                    Poll::Ready(None) => {
                         return Ok(KetQuaHttp2 {
                             status,
                             headers,
                             body,
                         });
                     }
-                    recv = Some(b);
-                    tien = true;
+                    Poll::Pending => {}
                 }
-                Poll::Ready(Err(e)) => {
-                    return Err(format!("lỗi response HTTP/2 từ `{dia_chi}`: {e}"));
-                }
-                Poll::Pending => {}
             }
-        }
-        if let Some(r) = recv.as_mut() {
-            match r.poll_data(&mut cx) {
-                Poll::Ready(Some(Ok(b))) => {
-                    if body.len().saturating_add(b.len()) > MAX_HTTP {
-                        return Err(format!(
-                            "phản hồi HTTP/2 vượt giới hạn {MAX_HTTP} byte (8 MiB)"
-                        ));
-                    }
-                    body.extend_from_slice(&b);
-                    tien = true;
-                }
-                Poll::Ready(Some(Err(e))) => {
-                    return Err(format!("lỗi đọc body HTTP/2 từ `{dia_chi}`: {e}"));
-                }
-                Poll::Ready(None) => {
-                    return Ok(KetQuaHttp2 {
-                        status,
-                        headers,
-                        body,
-                    });
-                }
-                Poll::Pending => {}
+            if !tien {
+                std::thread::yield_now();
             }
-        }
-        if !tien {
-            std::thread::yield_now();
         }
     }
 }
@@ -158,7 +183,16 @@ fn doc_phan_hoi(
 /// Adapter `AsyncRead/AsyncWrite` trên [`KenhTls`] đồng bộ; mỗi lần chờ dùng phần thời gian còn lại.
 struct DongBo {
     k: KenhTls,
-    han: Instant,
+    han: Arc<Mutex<Instant>>,
+}
+
+impl DongBo {
+    fn het_han(&self) -> bool {
+        self.han
+            .lock()
+            .map(|h| *h <= Instant::now())
+            .unwrap_or(true)
+    }
 }
 
 impl AsyncRead for DongBo {
@@ -171,7 +205,7 @@ impl AsyncRead for DongBo {
         if buf.remaining() == 0 {
             return Poll::Ready(Ok(()));
         }
-        if this.han <= Instant::now() {
+        if this.het_han() {
             return Poll::Ready(Err(io::Error::new(
                 io::ErrorKind::TimedOut,
                 "quá thời gian HTTP/2",
@@ -195,7 +229,7 @@ impl AsyncWrite for DongBo {
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
         let this = self.get_mut();
-        if this.han <= Instant::now() {
+        if this.het_han() {
             return Poll::Ready(Err(io::Error::new(
                 io::ErrorKind::TimedOut,
                 "quá thời gian HTTP/2",
@@ -213,7 +247,7 @@ impl AsyncWrite for DongBo {
         match this.k.flush() {
             Ok(()) => Poll::Ready(Ok(())),
             Err(e) if tam_thoi(&e) => {
-                if this.han <= Instant::now() {
+                if this.het_han() {
                     Poll::Ready(Err(io::Error::new(
                         io::ErrorKind::TimedOut,
                         "quá thời gian HTTP/2",
@@ -238,8 +272,7 @@ fn tam_thoi(e: &io::Error) -> bool {
     )
 }
 
-/// Executor một luồng: IO adapter không bao giờ trả `Pending`, nên chỉ cần poll + yield khi
-/// `h2` chưa sẵn sàng (không timer/runtime).
+/// Executor một luồng: IO adapter không bao giờ trả `Pending`; chỉ poll + yield khi h2 chưa sẵn sàng.
 fn cho<F: Future>(f: F) -> F::Output {
     let w = Waker::noop();
     let mut cx = Context::from_waker(w);

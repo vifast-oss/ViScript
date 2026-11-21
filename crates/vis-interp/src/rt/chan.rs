@@ -36,7 +36,8 @@ pub(crate) fn method(
     args: Vec<Value>,
     span: Span,
 ) -> R<Value> {
-    let rendezvous = host.sched().borrow().frame.enabled && c.borrow().cap == 0;
+    let frame = host.sched().borrow().frame.enabled;
+    let rendezvous = frame && c.borrow().cap == 0;
     match name {
         "send" => {
             let Some(v) = args.into_iter().next() else {
@@ -44,6 +45,8 @@ pub(crate) fn method(
             };
             if rendezvous {
                 send_rendezvous(host, c, v, span)
+            } else if frame {
+                send_buf_frame(host, c, v, span)
             } else {
                 send_buffered(host, c, v, span)
             }
@@ -51,6 +54,8 @@ pub(crate) fn method(
         "recv" => {
             if rendezvous {
                 recv_rendezvous(host, c, span)
+            } else if frame {
+                recv_buf_frame(host, c, span)
             } else {
                 recv_buffered(host, c, span)
             }
@@ -61,7 +66,7 @@ pub(crate) fn method(
         "send_timeout" => send_timeout(host, c, args, span),
         // `close` **idempotent** (VD-96 (3)): lần hai **không** lỗi.
         "close" => {
-            if rendezvous {
+            if frame {
                 close_rendezvous(host, c)
             } else {
                 c.borrow_mut().closed = true;
@@ -203,6 +208,108 @@ fn close_rendezvous(host: &mut dyn Host, c: Rc<RefCell<Chan>>) -> R<Value> {
     wake_chan_timeouts(host, id, true);
     wake_chan_timeouts(host, id, false);
     Ok(Value::Unit)
+}
+
+/// **VS3-1d** — `send` trên `chan(n≥1)` đường frame: đệm nếu còn chỗ, chờ nếu đầy.
+fn send_buf_frame(host: &mut dyn Host, c: Rc<RefCell<Chan>>, v: Value, span: Span) -> R<Value> {
+    let (id, frame) = hien_tai(host, &c);
+    {
+        let mut ch = c.borrow_mut();
+        if let Some(pos) = ch.send_waiters.iter().position(|s| s.frame == frame) {
+            match ch.send_waiters[pos].state {
+                ChanSendState::Taken => {
+                    ch.send_waiters.remove(pos);
+                    return Ok(Value::Unit);
+                }
+                ChanSendState::Closed => {
+                    ch.send_waiters.remove(pos);
+                    return Err(trap(
+                        SEND_CLOSED,
+                        "`send` vào kênh đã `close` (không nhận thêm phần tử)",
+                        span,
+                    ));
+                }
+                ChanSendState::Pending => return Err(pending(id, true, span)),
+            }
+        }
+        if ch.closed {
+            return Err(trap(
+                SEND_CLOSED,
+                "`send` vào kênh đã `close` (không nhận thêm phần tử)",
+                span,
+            ));
+        }
+        if let Some(rf) = ch.recv_waiters.pop_front() {
+            ch.recv_values.insert(rf, v);
+            drop(ch);
+            host.sched().borrow_mut().frame_wake_chan(id, false, rf);
+            wake_chan_timeouts(host, id, false);
+            return Ok(Value::Unit);
+        }
+        if !ch.day() {
+            ch.buf.push_back(v);
+            drop(ch);
+            wake_chan_timeouts(host, id, false);
+            return Ok(Value::Unit);
+        }
+        ch.send_waiters.push_back(ChanSend {
+            frame,
+            value: v,
+            state: ChanSendState::Pending,
+        });
+    }
+    Err(pending(id, true, span))
+}
+
+/// **VS3-1d** — `recv` trên `chan(n≥1)` đường frame: lấy đệm/ghép sender, hoặc chờ.
+fn recv_buf_frame(host: &mut dyn Host, c: Rc<RefCell<Chan>>, span: Span) -> R<Value> {
+    let (id, frame) = hien_tai(host, &c);
+    {
+        let mut ch = c.borrow_mut();
+        if let Some(v) = ch.recv_values.remove(&frame) {
+            return Ok(Value::some(v));
+        }
+        if let Some(v) = ch.buf.pop_front() {
+            // Vừa trống một chỗ: chuyển sender đang chờ vào đệm, đánh thức sender.
+            let mut wake = None;
+            if let Some(pos) = ch
+                .send_waiters
+                .iter()
+                .position(|s| s.state == ChanSendState::Pending)
+            {
+                let f = ch.send_waiters[pos].frame;
+                let nv = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
+                ch.send_waiters[pos].state = ChanSendState::Taken;
+                ch.buf.push_back(nv);
+                wake = Some(f);
+            }
+            drop(ch);
+            if let Some(f) = wake {
+                host.sched().borrow_mut().frame_wake_chan(id, true, f);
+            }
+            // Vừa có chỗ trống ⇒ đánh thức cả `send_timeout` đang chờ.
+            wake_chan_timeouts(host, id, true);
+            return Ok(Value::some(v));
+        }
+        if ch.closed {
+            return Ok(Value::none());
+        }
+        if let Some(pos) = ch
+            .send_waiters
+            .iter()
+            .position(|s| s.state == ChanSendState::Pending)
+        {
+            let f = ch.send_waiters[pos].frame;
+            let v = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
+            ch.send_waiters[pos].state = ChanSendState::Taken;
+            drop(ch);
+            host.sched().borrow_mut().frame_wake_chan(id, true, f);
+            wake_chan_timeouts(host, id, true);
+            return Ok(Value::some(v));
+        }
+        ch.recv_waiters.push_back(frame);
+    }
+    Err(pending(id, false, span))
 }
 
 // ---------------------------------------------------------------------------
@@ -479,7 +586,23 @@ fn recv_timeout_buffered(
     {
         let mut ch = c.borrow_mut();
         if let Some(v) = ch.buf.pop_front() {
+            // Vừa có chỗ: chuyển sender đang chờ (nếu có) vào đệm, đánh thức sender.
+            let mut wake = None;
+            if let Some(pos) = ch
+                .send_waiters
+                .iter()
+                .position(|s| s.state == ChanSendState::Pending)
+            {
+                let f = ch.send_waiters[pos].frame;
+                let nv = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
+                ch.send_waiters[pos].state = ChanSendState::Taken;
+                ch.buf.push_back(nv);
+                wake = Some(f);
+            }
             drop(ch);
+            if let Some(f) = wake {
+                host.sched().borrow_mut().frame_wake_chan(id, true, f);
+            }
             wake_chan_timeouts(host, id, true);
             return Ok(Value::some(v));
         }
@@ -585,6 +708,13 @@ fn send_timeout_buffered(
         let mut ch = c.borrow_mut();
         if ch.closed {
             return Ok(Value::Bool(false));
+        }
+        if let Some(rf) = ch.recv_waiters.pop_front() {
+            ch.recv_values.insert(rf, v);
+            drop(ch);
+            host.sched().borrow_mut().frame_wake_chan(id, false, rf);
+            wake_chan_timeouts(host, id, false);
+            return Ok(Value::Bool(true));
         }
         if !ch.day() {
             ch.buf.push_back(v);

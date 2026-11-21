@@ -41,7 +41,7 @@ release-bins = ["vis"]
 # `pkg-sig` bật mặc định trên nền không phải wasm32; tắt feature ⇒ lệnh cài có yêu cầu chữ ký báo
 # lỗi rõ thay vì bỏ qua kiểm tra.
 [features]
-default = ["sqlite", "tls", "pkg-sig"]
+default = ["sqlite", "tls", "pkg-sig", "http2"]
 sqlite = ["dep:rusqlite"]
 tls = ["dep:rustls", "dep:webpki-roots"]
 pkg-sig = ["dep:ring"]
