@@ -10,8 +10,11 @@
 //!
 //! Không đổi bytecode/VERSION/cache key: chỉ chọn entry runtime.
 
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread;
 
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
 use vis_syntax::{lex, parse, Mode};
@@ -296,6 +299,255 @@ fn cli_async_noi_host_fs() {
         let (c, out, err) = chay(&d, &args);
         assert_eq!(c, 0, "fs vm={vm}: {err}");
         assert_eq!(out, "hello\n", "fs vm={vm}");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Async net production (loopback): backend mio trong CLI.
+// ---------------------------------------------------------------------------
+
+/// Các ca net dùng port loopback + server thread: serialize trong test binary để tránh
+/// tranh port khi `cargo test` chạy song song (không ảnh hưởng sản phẩm).
+static NET_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn server_mot_lan(noi_dung: &'static [u8]) -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind server");
+    let addr = l.local_addr().expect("addr").to_string();
+    thread::spawn(move || {
+        for _ in 0..8 {
+            if let Ok((mut s, _)) = l.accept() {
+                let _ = s.write_all(noi_dung);
+            }
+        }
+    });
+    addr
+}
+
+const ASYNC_NET_READ: &str = r#"use std.net
+
+async fn doc(addr: str) -> str:
+    match net.connect_timeout(addr, 1000):
+        Ok(t):
+            let r = match net.read(t, 32, 1000):
+                Ok(s): s
+                Err(e): "loi-doc"
+            let _ = net.close(t)
+            r
+        Err(e): "loi-noi"
+
+fn main(args: list[str]):
+    print(await spawn doc(args[0]))
+"#;
+
+#[test]
+fn cli_async_net_read_loopback_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("net");
+    let p = viet(&d, "net.vis", ASYNC_NET_READ);
+    for vm in [false, true] {
+        let addr = server_mot_lan(b"hello");
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.push("--");
+        args.push(&addr);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "net vm={vm}: {err}");
+        assert_eq!(out, "hello\n", "net vm={vm}");
+    }
+}
+
+fn server_http_mot_lan() -> String {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind http");
+    let addr = l.local_addr().expect("addr").to_string();
+    thread::spawn(move || {
+        if let Ok((mut s, _)) = l.accept() {
+            let mut buf = [0u8; 1024];
+            let _ = s.read(&mut buf);
+            let _ =
+                s.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok");
+        }
+    });
+    addr
+}
+
+const ASYNC_HTTP: &str = r#"use std.http
+
+async fn lay(url: str) -> str:
+    match http.get(url):
+        Ok(s): s
+        Err(e): "loi-http: {e}"
+
+fn main(args: list[str]):
+    print(await spawn lay(args[0]))
+"#;
+
+fn server_dem(so_byte: usize) -> (String, thread::JoinHandle<Vec<u8>>) {
+    let l = TcpListener::bind("127.0.0.1:0").expect("bind dem");
+    let addr = l.local_addr().expect("addr").to_string();
+    let h = thread::spawn(move || {
+        let (mut s, _) = l.accept().expect("accept dem");
+        let mut all = Vec::new();
+        let mut buf = [0u8; 8192];
+        while all.len() < so_byte {
+            match s.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => all.extend_from_slice(&buf[..n]),
+                Err(e) => panic!("server đọc: {e}"),
+            }
+        }
+        all
+    });
+    (addr, h)
+}
+
+const ASYNC_NET_WRITE: &str = r#"use std.net
+use std.str
+
+async fn ghi(addr: str) -> int:
+    let data = str.repeat("x", 300_000)
+    match net.connect_timeout(addr, 1000):
+        Ok(t):
+            let r = net.write(t, data)
+            print(r)
+            let _ = net.close(t)
+        Err(e): print(e)
+    1
+
+fn main(args: list[str]):
+    print(await spawn ghi(args[0]))
+"#;
+
+const ASYNC_NET_ACCEPT: &str = r#"use std.net
+
+async fn serve(addr: str) -> int:
+    match net.listen(addr):
+        Ok(l):
+            match net.accept_timeout(l, 2000):
+                Ok(t):
+                    let r = net.read(t, 8, 1000)
+                    print(r)
+                    let _ = net.close(t)
+                Err(e): print(e)
+            let _ = net.close_listen(l)
+        Err(e): print(e)
+    1
+
+fn main(args: list[str]):
+    print(await spawn serve(args[0]))
+"#;
+
+const ASYNC_NET_TIMEOUT: &str = r#"use std.net
+
+async fn cho(addr: str) -> int:
+    match net.connect_timeout(addr, 1000):
+        Ok(t):
+            print(net.read(t, 8, 50))
+            let _ = net.close(t)
+        Err(e): print(e)
+    1
+
+fn main(args: list[str]):
+    print(await spawn cho(args[0]))
+"#;
+
+#[test]
+fn cli_async_net_read_timeout_loopback_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("nettimeout");
+    let p = viet(&d, "nettimeout.vis", ASYNC_NET_TIMEOUT);
+    for vm in [false, true] {
+        let l = TcpListener::bind("127.0.0.1:0").expect("bind timeout");
+        let addr = l.local_addr().expect("addr").to_string();
+        thread::spawn(move || {
+            if let Ok((_s, _)) = l.accept() {
+                thread::sleep(std::time::Duration::from_millis(500));
+            }
+        });
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.push("--");
+        args.push(&addr);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "timeout vm={vm}: {err}");
+        assert!(out.contains("Err("), "timeout vm={vm}: {out:?}");
+        assert!(out.contains("thời gian"), "timeout vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+fn cli_async_net_accept_loopback_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("netaccept");
+    let p = viet(&d, "netaccept.vis", ASYNC_NET_ACCEPT);
+    for vm in [false, true] {
+        let l = TcpListener::bind("127.0.0.1:0").expect("bind port");
+        let addr = l.local_addr().expect("addr").to_string();
+        drop(l);
+        let addr2 = addr.clone();
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(200));
+            if let Ok(mut s) = std::net::TcpStream::connect(&addr2) {
+                let _ = s.write_all(b"hi");
+            }
+        });
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.push("--");
+        args.push(&addr);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "accept vm={vm}: {err}");
+        assert_eq!(out, "Ok(hi)\n1\n", "accept vm={vm}: {out:?}");
+    }
+}
+
+#[test]
+fn cli_async_net_write_partial_loopback_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("netwrite");
+    let p = viet(&d, "netwrite.vis", ASYNC_NET_WRITE);
+    for vm in [false, true] {
+        let (addr, h) = server_dem(300_000);
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        args.push("--");
+        args.push(&addr);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "write vm={vm}: {err}");
+        assert!(out.contains("Ok(())"), "write vm={vm}: {out:?}");
+        let data = h.join().expect("server write");
+        assert_eq!(data.len(), 300_000, "write vm={vm}: thiếu byte");
+    }
+}
+
+#[test]
+fn cli_async_http_get_loopback_hai_engine() {
+    let _net = NET_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let d = tam("http");
+    let p = viet(&d, "http.vis", ASYNC_HTTP);
+    for vm in [false, true] {
+        let addr = server_http_mot_lan();
+        let mut args = vec!["run"];
+        if vm {
+            args.extend(["--vm", "--no-cache"]);
+        }
+        args.push(p.to_str().unwrap());
+        let url = format!("http://{addr}/");
+        args.extend(["--", &url]);
+        let (c, out, err) = chay(&d, &args);
+        assert_eq!(c, 0, "http vm={vm}: {err}");
+        assert_eq!(out, "ok\n", "http vm={vm}");
     }
 }
 

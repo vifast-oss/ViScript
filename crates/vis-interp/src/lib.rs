@@ -253,6 +253,28 @@ pub fn run_async_with_hosts_caps<'a>(
     db: Option<&'a mut dyn crate::builtin::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
+    run_async_with_hosts_caps_backend(
+        text, hir, symbols, types, args, ngoai, fs, net, db, caps, None,
+    )
+}
+
+/// **VS3-1d/W1f** — như [`run_async_with_hosts_caps`] nhưng gắn thêm reactor backend production
+/// (async net). Backend chia sẻ token/deadline với scheduler; `None` giữ đường test/fake.
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_with_hosts_caps_backend<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn crate::rt::FrameReactorBackend>>>,
+) -> RunOutput {
     let mut it = interp::Interp::new(hir, symbols, types);
     if !caps.is_empty() {
         it.set_caps(caps.to_vec());
@@ -276,7 +298,10 @@ pub fn run_async_with_hosts_caps<'a>(
         symbols,
         types,
         args,
-        frame::FrameConfig::default(),
+        frame::FrameConfig {
+            backend,
+            ..Default::default()
+        },
     );
     RunOutput {
         stdout: fo.stdout,

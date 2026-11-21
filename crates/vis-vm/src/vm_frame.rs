@@ -480,6 +480,23 @@ pub fn run_async_with_full_hosts_caps<'m>(
     db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
     caps: &[(u32, Value)],
 ) -> vis_interp::RunOutput {
+    run_async_with_full_hosts_caps_backend(m, text, args, ngoai, fs, net, db, caps, None)
+}
+
+/// **VS3-1d/W1f** — như [`run_async_with_full_hosts_caps`] nhưng gắn reactor backend production.
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_with_full_hosts_caps_backend<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
+    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
+    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
+    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>>,
+) -> vis_interp::RunOutput {
     let mut vm = Vm::new(m, text);
     if let Some(n) = ngoai {
         vm.set_ngoai(n);
@@ -496,7 +513,17 @@ pub fn run_async_with_full_hosts_caps<'m>(
     if !caps.is_empty() {
         vm.caps = caps.to_vec();
     }
-    let (fo, _) = run_frame_vm_driver(&mut vm, m, text, args, FrameConfig::default(), None);
+    let (fo, _) = run_frame_vm_driver(
+        &mut vm,
+        m,
+        text,
+        args,
+        FrameConfig {
+            backend,
+            ..Default::default()
+        },
+        None,
+    );
     vis_interp::RunOutput {
         stdout: fo.stdout,
         diagnostics: fo.diagnostics,
