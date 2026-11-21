@@ -52,6 +52,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-4b2 (HTTP/2)**: feature `http2` default-off; `h2`+tokio io-util, ALPN h2, fallback HTTP/1.1 cùng kết nối; 5 ca h2 + 12 TLS; không default/wasm; merge `55d3489`.
 - **2026-11-21** — **VS3-1c (coverage HIR)**: ma trận 10 ca HIR→frame; sửa lỗi `?.` mất một lớp Option trên frame interp; `Pipe`/nested async là blocker 1d; merge `ccecc97`.
 - **2026-11-21** — **VS3-4d (cookie/auth)**: cookie jar nội bộ (Path/Domain/Secure/Max-Age/Expires, 64 cookie/4096 B), giữ qua redirect cùng host; Basic auth qua userinfo không lộ credential; 9 ca hermetic; merge `cdbd8e0`.
 - **2026-11-21** — **VS3-5c (key rotation + GC đa lock)**: `--registry-key` lặp/nhiều khoá, verify một trong N; `pkg gc --lock/--root` giữ blob được bất kỳ lock nào dùng, chống symlink, giới hạn quét; 3 ca multi-lock + 10 sig; merge `96d554a`.
