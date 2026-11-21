@@ -360,3 +360,5 @@ Kết quả wave 11 chưa merge tại mốc ghi; gate/QA cuối sẽ chạy lạ
 - `./vis-dev nightly` @ `9e2873c`: **PASS** — parser fuzz **8.826.939 ca / 200.276.919 token / 0 vi phạm** (120 s), fmt 475 tệp bất động.
 - **Wave tiếp**: `str.rsplit` (`1a119f2`), `path.ancestors` (`091140d`), `str.split_terminator` (`17b31cb`) đã merge; gate **3181 passed / 3 skipped**; FUNCS **162**.
 - **Đang chạy**: `path.strip_prefix`, `fs.current_dir`, `sqlite.database_list`, `list.chunks_exact`.
+- **path.strip_prefix** merged (`dca695a`); gate **3202 passed / 3 skipped**; FUNCS **163**.
+- **Đang chạy**: `fs.current_dir`, `sqlite.database_list`, `list.chunks_exact`, `impl Hop[T]`.

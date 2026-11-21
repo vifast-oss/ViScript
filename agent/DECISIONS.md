@@ -3594,3 +3594,12 @@ liệu; authorizer mở **chỉ đọc** `journal_mode` và một ngoại lệ h
 - **str.split_terminator**: `(str, str) -> list[str]` đúng Rust — như `split` nhưng bỏ **đúng một**
   phần rỗng cuối khi `s` kết thúc bằng `sep`; `s` rỗng + `sep` khác rỗng ⇒ `[]`; `sep` rỗng theo
   đúng Rust (`["", a, b, c]`); sugar R5c; reuse `Ty::ListStr`.
+
+### VD-270 (bổ sung) · path.strip_prefix — A0, 2026-11-21
+
+`path.strip_prefix(p, base) -> str?` bỏ tiền tố **theo thành phần** đường dẫn, thuần từ vựng POSIX:
+`base` rỗng ⇒ `Some(p)`; `p == base` ⇒ `Some("")`; khớp trọn thành phần ⇒ `Some(phần còn lại)`,
+bỏ đúng một `/` phân cách, giữ nguyên văn phần còn lại; `base` toàn `/` ⇒ gốc cho mọi `//`; khác
+loại tuyệt đối/tương đối ⇒ `None`; không chuẩn hoá `.`/`..`; `\`/NUL thường; so **BINARY**.
+Không sugar; reuse `Ty::OptStr`. Lưu ý: `str.strip_prefix` đã có nên sugar trên `str` vẫn đi
+`str.strip_prefix` (không đổi), chỉ `path.strip_prefix` là hàm module.
