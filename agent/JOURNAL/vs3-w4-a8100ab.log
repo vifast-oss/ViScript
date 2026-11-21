@@ -1,0 +1,41 @@
+# VS3-W4 — log xác nhận a8100ab trên psvn (2026-11-22)
+# psvn: MINGW64_NT-10.0-26300, 6 CPU, cargo/rustc 1.100.0, MSVC native
+# worktree /c/Users/ps/viscript-w4c detached a8100ab6, dirty 0
+# worktree đã xoá sau đo; repo chính psvn @ 73af17bd, dirty 0; C: còn 175G
+
+## 5 vòng targeted (default + tls + net)
+R1 47s  net 9/9   default 22/22  tls 22/22
+R2 12s  net 9/9   default 22/22  tls 22/22
+R3 12s  net 9/9   default 22/22  tls 22/22
+R4 12s  net 9/9   default 22/22  tls 22/22
+R5 12s  net 9/9   default 22/22  tls 22/22
+=> 0 fail, 0 flake; 10053 không tái hiện.
+
+## 2 vòng workspace
+WS1 523s: 350 block, 3496 passed / 0 failed / 3 ignored
+WS2 460s: 350 block, 3496 passed / 0 failed / 3 ignored
+
+## host / targets
+host 54/54 (host_posix_real bỏ qua - Windows test-child)
+targets core 18/18; sqlite 17 PASS + 1 EXPECTED_RED (#156); 0 FAIL
+
+## Release + CLI
+cargo build --release -p vis-cli: rc 0, 69s
+target/release/vis.exe: 10 752 512 B
+sha256 77963595c22c3c0d606533c2feab1f41ac93fdacaaf105558bfd37e5d60b834f
+vis --version => vis 0.1.0 (rc 0)
+vis doctor => os windows / arch x86_64 / sqlite on / features sqlite,tls,pkg-sig,http2 (rc 0)
+vis check w4c-smoke.vis => TAP 1..1 ok 1 (rc 0)
+vis run w4c-smoke.vis => 42 (rc 0)
+vis run --version => rc 2, "vis run: không hỗ trợ cờ `--version`"
+
+## async-h2 Windows (EXPECTED RED)
+cargo check -p vis-cli --features async-h2 => rc 101
+  h2_async.rs:15 cfg(..., unix) — feature default-off, Unix-only; không sửa.
+
+## sha256 log
+173b168922ab518cea43eda221173423fd3e32303c901be2c9e674693ae49d82  w4c-run.log
+ea87ee9e2dc371f4716690a85f53d60e30110b34612652cbb55399f057b6e964  w4c-release.log
+
+## Đĩa
+local / còn 11G; psvn C: còn 175G (>5G).
