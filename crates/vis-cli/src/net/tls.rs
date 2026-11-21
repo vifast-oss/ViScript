@@ -123,6 +123,9 @@ pub(super) fn noi(cfg: &CauHinh, dia_chi: &str, timeout_ms: u64) -> Result<KenhT
     let ds = dia_chi
         .to_socket_addrs()
         .map_err(|e| format!("địa chỉ `{dia_chi}` không phân giải được: {e}"))?;
+    let mut ds: Vec<_> = ds.collect();
+    // IPv4 trước: Windows có thể trả `::1` trước cho `localhost`.
+    ds.sort_by_key(|a| !a.is_ipv4());
     let mut sock: Option<TcpStream> = None;
     let mut loi_cuoi: Option<String> = None;
     for a in ds {

@@ -1,0 +1,371 @@
+# VS3-W2 localhost/loopback Windows fix — test (2026-11-21, main 5dec89b)
+CARGO_TARGET_DIR=/home/ps/ViScript/target/vs3-w2-tls
+
+## cargo test -p vis-cli --test vs3_cookie_auth
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/vs3_cookie_auth.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/9c2a3af2404f2b0c/out/vs3_cookie_auth-9c2a3af2404f2b0c)
+
+running 11 tests
+test userinfo_sai_khong_panic_va_khong_lo ... ok
+test auth_khong_di_theo_redirect_khac_host ... ok
+test cookie_giu_giua_hai_loi_goi ... ok
+test head_cung_luu_cookie ... ok
+test set_cookie_qua_redirect_duoc_gui_lai ... ok
+test basic_auth_dung_va_khong_lo_credential ... ok
+test secure_khong_gui_qua_http ... ok
+test cookie_het_han_bi_bo ... ok
+test localhost_bind_127_va_ipv6 ... ok
+test strict_caps_kiem_localhost ... ok
+test cookie_path_va_cross_host ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## cargo test -p vis-cli --test http
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/http.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/123e87a5230895ff/out/http-123e87a5230895ff)
+
+running 22 tests
+test http_200_byte ... ok
+test http_body_rong ... ok
+test http148_timeout_mot_deadline_qua_moi_hop_redirect ... ok
+test http_chunked_co_mo_rong ... ok
+test http_chunked_ba_chunk ... ok
+test http_404 ... ok
+test http_head_khong_theo_redirect ... ok
+test http_head_khong_doc_than ... ok
+test http_duong_mac_dinh ... ok
+test http_content_length_khong_dong_connection ... ok
+test http_gioi_han ... ok
+test http_het_gio ... ok
+test http_location_chuan_hoa_dotdot ... ok
+test http_location_fragment_dung ... ok
+test http_location_query_only ... ok
+test http_path_query ... ok
+test http_redirect_qua_5_loi ... ok
+test http_redirect_tuong_doi_hai_lan ... ok
+test http_redirect_tuyet_doi ... ok
+test http_sai_kieu ... ok
+test http_server_im_lang_timeout_duoi_3s ... ok
+test http_tu_choi ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.11s
+
+## cargo test -p vis-cli --test net
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running tests/net.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/ece053eab0bd7616/out/net-ece053eab0bd7616)
+
+running 9 tests
+test tcp_tay_la ... ok
+test tcp_explain_tong ... ok
+test tcp_khong_host ... ok
+test tcp_het_gio_doc ... ok
+test tcp_doc_ghi_sau_close ... ok
+test tcp_read_cap_64 ... ok
+test tcp_noi_va_doc ... ok
+test tcp_tu_choi ... ok
+test tcp_explain_perms ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+## cargo test -p vis-cli --test vs3_keepalive
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_keepalive.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/3e524bb53a82ff90/out/vs3_keepalive-3e524bb53a82ff90)
+
+running 8 tests
+test chunked_trailer_roi_moi_tai_su_dung ... ok
+test server_dong_giua_chung_thi_thu_lai ... ok
+test hai_request_cung_mot_ket_noi ... ok
+test head_hai_lan_cung_mot_ket_noi ... ok
+test redirect_cung_host_dung_lai_ket_noi ... ok
+test server_yeu_cau_close_thi_mo_ket_noi_moi ... ok
+test redirect_khac_host_khong_ro_ket_noi ... ok
+test timeout_tren_ket_noi_idle_khong_lam_hong_pool ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+## cargo test -p vis-cli --test vs3_tls
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/vs3_tls.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/bfbf39e1b78bd7ba/out/vs3_tls-bfbf39e1b78bd7ba)
+
+running 12 tests
+test https_get_tra_body_va_gui_host_dung ... ok
+test https_ipv6_loopback ... ok
+test https_het_gio_handshake_ro_rang ... ok
+test https_het_gio_ro_rang_va_khong_treo ... ok
+test https_theo_redirect_giu_tls ... ok
+test https_head_chi_doc_header_khong_doc_than ... ok
+test https_chan_ha_cap_ve_http ... ok
+test vis_run_https_loi_tls_khong_panic ... ok
+test https_hai_request_cung_mot_ket_noi ... ok
+test https_tu_choi_sai_ten_du_goc_da_tin ... ok
+test https_head_khong_theo_redirect ... ok
+test https_tu_choi_chung_chi_tu_ky ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s
+
+## cargo test -p vis-interp --lib net::tests
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-interp/09ecea3a87e30842/out/vis_interp-09ecea3a87e30842)
+
+running 8 tests
+test net::tests::chunked_doc_trailer_va_byte_da_dung ... ok
+test net::tests::doc_header_doc_status_va_content_length ... ok
+test net::tests::location_giu_scheme_va_chan_ha_cap ... ok
+test net::tests::header_giu_ket_noi_theo_phien_ban_va_connection ... ok
+test net::tests::chuan_hoa_va_location_day_du ... ok
+test net::tests::tach_url_https_va_cong_mac_dinh ... ok
+test net::tests::tach_url_dung_va_chan_ngoai_loopback ... ok
+test net::tests::tach_url_userinfo_basic_auth ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 295 filtered out; finished in 0.00s
+
+## cargo test -p vis-cli --lib
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/lib.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/ee9c78331c85eedd/out/vis_cli-ee9c78331c85eedd)
+
+running 6 tests
+test pkg_sig::tests::hex_dung_va_tu_choi_sai ... ok
+test pkg_sig::tests::thong_diep_pin_va_sap_xep ... ok
+test net::tests::chi_loopback_tra_moi_dia_chi_va_chan_remote ... ok
+test net::tests::pool_het_han_va_gioi_han ... ok
+test pkg_sig::tests::nhieu_khoa_chi_can_mot_khoa_khop ... ok
+test pkg_sig::tests::ky_va_xac_minh_that ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+## cargo test -p vis-cli --test cap --test strict_caps --test quyen
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/cap.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/85e20ece8ba30366/out/cap-85e20ece8ba30366)
+
+running 4 tests
+test dry_khong_quyen ... ok
+test dry_in_danh_sach ... ok
+test cap_khong_in_duoc ... ok
+test dry_khong_chay ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/quyen.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/8b120b4db33d8d1a/out/quyen-8b120b4db33d8d1a)
+
+running 8 tests
+test doc_trong_quyen ... ok
+test net_thieu_cap ... ok
+test khong_khai_cap_thi_khong_han_che ... ok
+test ghi_thieu_co ... ok
+test doc_ngoai_quyen ... ok
+test ghi_co_co ... ok
+test grant_doi_duong_dan ... ok
+test hai_cap_dir ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/strict_caps.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/a8243e59bb79e3c7/out/strict_caps-a8243e59bb79e3c7)
+
+running 7 tests
+test strict_van_kiem_tren_fs_mock ... ok
+test mac_dinh_khong_siet ... ok
+test strict_cap_dir_ngoai_root ... ok
+test strict_khong_cap_doc_thi_vs0604 ... ok
+test strict_khong_cap_net_thi_vs0604 ... ok
+test strict_cap_dir_trong_root ... ok
+test vis_test_strict_caps_truyen_co ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## cargo test -p vis-cli --bin vis net_quyen::tests
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src/main.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/80192266d0767a14/out/vis-80192266d0767a14)
+
+running 3 tests
+test net_quyen::tests::host_cua_tach_dung_ipv4_ipv6_va_cong ... ok
+test net_quyen::tests::net_guard_kiem_cap_truoc_khi_connect ... ok
+test net_quyen::tests::kiem_net_khop_cap_ipv6_va_khong_noi_quyen ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 192 filtered out; finished in 0.00s
+
+
+
+## cargo check -p vis-cli
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.53s
+## cargo check -p vis-cli --no-default-features
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.91s
+## cargo test -p vis-cli --no-default-features --test vs3_cookie_auth
+   Compiling vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.01s
+     Running tests/vs3_cookie_auth.rs (/home/ps/ViScript/target/vs3-w2-tls/debug/build/vis-cli/43a2a77427f369c8/out/vs3_cookie_auth-43a2a77427f369c8)
+
+running 11 tests
+test userinfo_sai_khong_panic_va_khong_lo ... ok
+test cookie_giu_giua_hai_loi_goi ... ok
+test basic_auth_dung_va_khong_lo_credential ... ok
+test head_cung_luu_cookie ... ok
+test auth_khong_di_theo_redirect_khac_host ... ok
+test secure_khong_gui_qua_http ... ok
+test cookie_het_han_bi_bo ... ok
+test set_cookie_qua_redirect_duoc_gui_lai ... ok
+test strict_caps_kiem_localhost ... ok
+test localhost_bind_127_va_ipv6 ... ok
+test cookie_path_va_cross_host ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+## cargo check -p vis-cli --target wasm32-unknown-unknown --no-default-features
+   Compiling version_check v0.9.5
+    Checking typenum v1.20.1
+    Checking tinyvec v1.13.3
+    Checking vis-diag v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-diag)
+    Checking unicode-ident v1.0.27
+    Checking cfg-if v1.0.5
+   Compiling generic-array v0.14.7
+    Checking unicode-normalization v0.1.26
+    Checking vis-syntax v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-syntax)
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+    Checking digest v0.10.7
+    Checking sha2 v0.10.9
+    Checking vis-types v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-types)
+    Checking vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-fmt)
+    Checking vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-bytecode)
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.42s
+## cargo check -p vis-cli --target x86_64-pc-windows-msvc --no-default-features
+   Compiling generic-array v0.14.7
+    Checking typenum v1.20.1
+    Checking tinyvec v1.13.3
+    Checking vis-diag v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-diag)
+    Checking unicode-ident v1.0.27
+    Checking cpufeatures v0.2.17
+    Checking cfg-if v1.0.5
+    Checking unicode-normalization v0.1.26
+    Checking vis-syntax v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-syntax)
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking digest v0.10.7
+    Checking sha2 v0.10.9
+    Checking vis-types v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-types)
+    Checking vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-fmt)
+    Checking vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-bytecode)
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.71s
+## cargo check -p vis-cli --release
+   Compiling find-msvc-tools v0.1.15
+   Compiling shlex v2.0.1
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling version_check v0.9.5
+   Compiling libc v0.2.191
+    Checking cfg-if v1.0.5
+    Checking typenum v1.20.1
+    Checking tinyvec v1.13.3
+    Checking vis-diag v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-diag)
+    Checking zeroize v1.9.2
+   Compiling vcpkg v0.2.15
+   Compiling pkg-config v0.3.34
+   Compiling thiserror v2.0.21
+   Compiling cc v1.11.2
+    Checking rustls-pki-types v1.16.0
+    Checking untrusted v0.9.0
+    Checking cpufeatures v0.2.17
+   Compiling generic-array v0.14.7
+    Checking foldhash v0.1.5
+   Compiling rustls v0.23.46
+    Checking bitflags v2.13.2
+    Checking hashbrown v0.15.5
+    Checking fallible-streaming-iterator v0.1.9
+    Checking once_cell v1.21.4
+    Checking unicode-normalization v0.1.26
+    Checking subtle v2.6.1
+    Checking fallible-iterator v0.3.0
+    Checking smallvec v1.16.6
+    Checking webpki-roots v1.0.11
+    Checking hashlink v0.10.0
+    Checking vis-syntax v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-syntax)
+   Compiling syn v2.0.119
+   Compiling syn v3.0.10
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+    Checking digest v0.10.7
+    Checking getrandom v0.2.17
+    Checking sha2 v0.10.9
+   Compiling ring v0.17.14
+   Compiling libsqlite3-sys v0.35.0
+    Checking vis-types v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-types)
+    Checking vis-fmt v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-fmt)
+   Compiling thiserror-impl v2.0.21
+   Compiling enumflags2_derive v0.7.12
+    Checking enumflags2 v0.7.12
+    Checking landlock v0.4.7
+    Checking vis-host-linux v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/vis-host-linux)
+    Checking vis-interp v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+    Checking vis-bytecode v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-bytecode)
+    Checking vis-vm v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+    Checking rustls-webpki v0.103.17
+    Checking rusqlite v0.37.0
+    Checking vis-cli v0.1.0 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `release` profile [optimized] target(s) in 34.75s
+## cargo clippy -p vis-interp --lib -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+## cargo clippy -p vis-cli --bin vis --lib --test vs3_cookie_auth --test http --test net --test vs3_keepalive --test vs3_tls -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
+## ./vis-dev rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+## ./bin/vis-targets
+
+=== core (vis-cli --no-default-features) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       PASS
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       PASS
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+core (vis-cli --no-default-features): PASS=18 EXPECTED_RED=0 FAIL=0
+
+=== sqlite (vis-cli default, cấu hình cũ) ===
+crate            target                       result
+vis-diag         x86_64-pc-windows-msvc       PASS
+vis-syntax       x86_64-pc-windows-msvc       PASS
+vis-types        x86_64-pc-windows-msvc       PASS
+vis-bytecode     x86_64-pc-windows-msvc       PASS
+vis-fmt          x86_64-pc-windows-msvc       PASS
+vis-interp       x86_64-pc-windows-msvc       PASS
+vis-vm           x86_64-pc-windows-msvc       PASS
+vis-cli          x86_64-pc-windows-msvc       EXPECTED_RED
+  error: failed to run custom build command for `ring v0.17.14`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-diag         wasm32-unknown-unknown       PASS
+vis-syntax       wasm32-unknown-unknown       PASS
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       EXPECTED_RED
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+sqlite (vis-cli default, cấu hình cũ): PASS=16 EXPECTED_RED=2 FAIL=0
+vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)

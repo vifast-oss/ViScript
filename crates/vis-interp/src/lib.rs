@@ -53,6 +53,8 @@ pub mod builtin_list;
 mod builtin_ls;
 /// **VD-267** — `panic(msg)`: trap `VS0501` (exit 101), kiểu tĩnh `never`.
 pub mod builtin_panic;
+/// **VS3-4b (VD-271)** — cookie jar nội bộ cho `http.get/head` (không API ngôn ngữ).
+pub mod cookie;
 mod gan;
 mod host;
 pub mod json;

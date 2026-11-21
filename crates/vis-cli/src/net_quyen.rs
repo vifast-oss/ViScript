@@ -42,6 +42,9 @@ impl NetHost for NetGuard<'_> {
     fn tra_http(&mut self, tay: &str, giu_lai: bool) -> Result<(), String> {
         self.trong.tra_http(tay, giu_lai)
     }
+    fn cookie_jar(&mut self) -> Option<&mut vis_interp::cookie::CookieJar> {
+        self.trong.cookie_jar()
+    }
     fn listen(&mut self, dia_chi: &str) -> Result<String, String> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong.listen(dia_chi)
