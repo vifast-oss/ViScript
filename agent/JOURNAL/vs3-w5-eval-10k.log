@@ -1,0 +1,323 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# VS3-3b/W5 — log evaluator 10k + soak 10 phút (branch vs3/w5-spike, baseline 629782a)
+# Máy: i5-1235U, nproc=12, Linux. Toolchain: ~/.cargo/bin/cargo 1.100.0.
+# df /home trước/sau: 11G trống (>5G). Không GitHub Actions, không push/merge/tag.
+# Lệnh: ~/.cargo/bin/cargo run -q -p vis-cli --example vs3_worker_eval_proto
+#   (env VS3_EVAL_N=10000 VS3_EVAL_ITERS=1 cho 3 lần 10k; soak thêm VS3_EVAL_SOAK_SECS=600)
+
+## RUN 10K #1
+VS3_W5_PROTO	bat_dau	N=10000	W=4	iters=1	soak_s=0	load=10.26 11.21 12.79 18/2140 1330594
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=184
+ORACLE	stdout="0\n"	exit=0	steps_hir=34	steps_vm=39	checksum=-478856010891637171	echo=false
+VONG	0	W=1_ms=1868.5	W=4_ms=854.6	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=1576.9	W=4_ms=703.9	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=1714.3	W=4_ms=808.1	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=1714.3	N=10000	echo=false	checksum=-478856010891637171
+POOL_EVAL	W=4	wall_median_ms=808.1	N=10000	echo=false	checksum=-478856010891637171	speedup=2.12x
+CHECK	byte_identical	OK	checksum=-478856010891637171	results=10000	output_bytes=0
+BUDGET	W=1	used=10000	remaining=1000	limit=11000	exhausted=false
+BUDGET	W=4	used=10000	remaining=1000	limit=11000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=10000	vm_new_us/task=2.97	vm_fresh_us/task=60.01	vm_reuse_us/task=51.94	vm_reuse_speedup=1.16x	interp_fresh_us/task=93.98
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	skip	VS3_EVAL_SOAK_SECS=0
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=5120	sau=14252	hwm=15140
+WALL_TONG	ms=9636.3	load_cuoi=11.61 11.47 12.85 20/2151 1341205
+KET_LUAN	PASS	N=10000	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## RUN 10K #2
+VS3_W5_PROTO	bat_dau	N=10000	W=4	iters=1	soak_s=0	load=12.99 11.77 12.94 24/2151 1344679
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=184
+ORACLE	stdout="0\n"	exit=0	steps_hir=34	steps_vm=39	checksum=-478856010891637171	echo=false
+VONG	0	W=1_ms=692.8	W=4_ms=486.9	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=1405.6	W=4_ms=1037.5	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=1667.7	W=4_ms=894.3	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=1405.6	N=10000	echo=false	checksum=-478856010891637171
+POOL_EVAL	W=4	wall_median_ms=894.3	N=10000	echo=false	checksum=-478856010891637171	speedup=1.57x
+CHECK	byte_identical	OK	checksum=-478856010891637171	results=10000	output_bytes=0
+BUDGET	W=1	used=10000	remaining=1000	limit=11000	exhausted=false
+BUDGET	W=4	used=10000	remaining=1000	limit=11000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=10000	vm_new_us/task=4.85	vm_fresh_us/task=79.11	vm_reuse_us/task=57.70	vm_reuse_speedup=1.37x	interp_fresh_us/task=105.09
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	skip	VS3_EVAL_SOAK_SECS=0
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4912	sau=14076	hwm=14844
+WALL_TONG	ms=8674.6	load_cuoi=13.23 11.84 12.95 14/2138 1346656
+KET_LUAN	PASS	N=10000	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## RUN 10K #3
+VS3_W5_PROTO	bat_dau	N=10000	W=4	iters=1	soak_s=0	load=13.23 11.84 12.95 13/2143 1346672
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=184
+ORACLE	stdout="0\n"	exit=0	steps_hir=34	steps_vm=39	checksum=-478856010891637171	echo=false
+VONG	0	W=1_ms=1471.2	W=4_ms=377.3	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=534.5	W=4_ms=302.2	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=542.9	W=4_ms=292.0	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=542.9	N=10000	echo=false	checksum=-478856010891637171
+POOL_EVAL	W=4	wall_median_ms=302.2	N=10000	echo=false	checksum=-478856010891637171	speedup=1.80x
+CHECK	byte_identical	OK	checksum=-478856010891637171	results=10000	output_bytes=0
+BUDGET	W=1	used=10000	remaining=1000	limit=11000	exhausted=false
+BUDGET	W=4	used=10000	remaining=1000	limit=11000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=10000	vm_new_us/task=0.99	vm_fresh_us/task=16.03	vm_reuse_us/task=16.06	vm_reuse_speedup=1.00x	interp_fresh_us/task=29.94
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	skip	VS3_EVAL_SOAK_SECS=0
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=5032	sau=14140	hwm=14976
+WALL_TONG	ms=4157.3	load_cuoi=12.81 11.77 12.93 6/2122 1346783
+KET_LUAN	PASS	N=10000	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## RUN N=64 (echo output)
+VS3_W5_PROTO	bat_dau	N=64	W=4	iters=2000	soak_s=0	load=9.28 9.75 11.80 20/2160 1367433
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=187
+ORACLE	stdout="12002\n"	exit=0	steps_hir=30019	steps_vm=34022	checksum=-584310717414563833	echo=true
+VONG	0	W=1_ms=3172.1	W=4_ms=975.8	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=2654.1	W=4_ms=866.0	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=3098.0	W=4_ms=775.8	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=3098.0	N=64	echo=true	checksum=-584310717414563833
+POOL_EVAL	W=4	wall_median_ms=866.0	N=64	echo=true	checksum=-584310717414563833	speedup=3.58x
+CHECK	byte_identical	OK	checksum=-584310717414563833	results=64	output_bytes=384
+BUDGET	W=1	used=64	remaining=1000	limit=1064	exhausted=false
+BUDGET	W=4	used=64	remaining=1000	limit=1064	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=64	vm_new_us/task=2.36	vm_fresh_us/task=15479.56	vm_reuse_us/task=15502.63	vm_reuse_speedup=1.00x	interp_fresh_us/task=28449.62
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	skip	VS3_EVAL_SOAK_SECS=0
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4752	sau=9660	hwm=10392
+WALL_TONG	ms=15416.0	load_cuoi=9.91 9.87 11.81 10/2115 1368230
+KET_LUAN	PASS	N=64	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## SOAK 10 PHÚT W=4 (N=10000, ITERS=1)
+VS3_W5_PROTO	bat_dau	N=10000	W=4	iters=1	soak_s=600	load=11.53 11.53 12.83 5/2117 1347223
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=184
+ORACLE	stdout="0\n"	exit=0	steps_hir=34	steps_vm=39	checksum=-478856010891637171	echo=false
+VONG	0	W=1_ms=1253.6	W=4_ms=363.1	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=1293.5	W=4_ms=366.2	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=526.9	W=4_ms=334.9	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=1253.6	N=10000	echo=false	checksum=-478856010891637171
+POOL_EVAL	W=4	wall_median_ms=363.1	N=10000	echo=false	checksum=-478856010891637171	speedup=3.45x
+CHECK	byte_identical	OK	checksum=-478856010891637171	results=10000	output_bytes=0
+BUDGET	W=1	used=10000	remaining=1000	limit=11000	exhausted=false
+BUDGET	W=4	used=10000	remaining=1000	limit=11000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=10000	vm_new_us/task=1.28	vm_fresh_us/task=18.50	vm_reuse_us/task=15.67	vm_reuse_speedup=1.18x	interp_fresh_us/task=28.33
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	elapsed_s=5.2	batches=14	jobs=140000	rss_kb=Some(14352)	threads=Some(1)	fd=Some(4)	load=10.68 11.35 12.76 4/2106 1347601
+SOAK	elapsed_s=10.3	batches=27	jobs=270000	rss_kb=Some(14376)	threads=Some(1)	fd=Some(4)	load=10.30 11.26 12.72 5/2107 1347901
+SOAK	elapsed_s=15.3	batches=41	jobs=410000	rss_kb=Some(14380)	threads=Some(1)	fd=Some(4)	load=9.96 11.17 12.69 4/2105 1348083
+SOAK	elapsed_s=20.6	batches=57	jobs=570000	rss_kb=Some(14436)	threads=Some(1)	fd=Some(4)	load=9.72 11.11 12.66 5/2077 1348288
+SOAK	elapsed_s=25.9	batches=72	jobs=720000	rss_kb=Some(14456)	threads=Some(1)	fd=Some(4)	load=9.50 11.04 12.63 4/2077 1348437
+SOAK	elapsed_s=31.1	batches=87	jobs=870000	rss_kb=Some(14460)	threads=Some(1)	fd=Some(4)	load=9.38 10.99 12.60 4/2069 1348536
+SOAK	elapsed_s=36.4	batches=102	jobs=1020000	rss_kb=Some(14460)	threads=Some(1)	fd=Some(4)	load=9.27 10.94 12.58 4/2064 1348647
+SOAK	elapsed_s=41.5	batches=116	jobs=1160000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=9.07 10.84 12.53 5/2059 1348797
+SOAK	elapsed_s=46.6	batches=131	jobs=1310000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=8.82 10.76 12.49 4/2065 1348911
+SOAK	elapsed_s=51.7	batches=149	jobs=1490000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=8.68 10.70 12.46 4/2101 1349173
+SOAK	elapsed_s=56.7	batches=166	jobs=1660000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=8.62 10.65 12.44 5/2109 1349303
+SOAK	elapsed_s=61.8	batches=180	jobs=1800000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=8.49 10.59 12.41 6/2115 1349491
+SOAK	elapsed_s=66.9	batches=196	jobs=1960000	rss_kb=Some(14508)	threads=Some(1)	fd=Some(4)	load=8.37 10.53 12.38 8/2121 1349782
+SOAK	elapsed_s=72.1	batches=209	jobs=2090000	rss_kb=Some(14508)	threads=Some(1)	fd=Some(4)	load=8.34 10.49 12.36 5/2110 1350050
+SOAK	elapsed_s=77.5	batches=225	jobs=2250000	rss_kb=Some(14508)	threads=Some(1)	fd=Some(4)	load=8.15 10.41 12.32 4/2113 1350238
+SOAK	elapsed_s=82.6	batches=239	jobs=2390000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.90 10.32 12.28 4/2099 1350442
+SOAK	elapsed_s=87.6	batches=253	jobs=2530000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.75 10.25 12.25 5/2097 1350534
+SOAK	elapsed_s=92.6	batches=267	jobs=2670000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.69 10.20 12.22 4/2070 1350675
+SOAK	elapsed_s=97.9	batches=282	jobs=2820000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.55 10.13 12.19 4/2071 1350760
+SOAK	elapsed_s=103.3	batches=297	jobs=2970000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.51 10.07 12.16 5/2070 1350866
+SOAK	elapsed_s=108.6	batches=312	jobs=3120000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.55 10.04 12.13 4/2067 1351089
+SOAK	elapsed_s=113.7	batches=328	jobs=3280000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.50 9.99 12.11 5/2066 1351188
+SOAK	elapsed_s=118.9	batches=345	jobs=3450000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.46 9.94 12.08 4/2066 1351356
+SOAK	elapsed_s=124.0	batches=359	jobs=3590000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.43 9.89 12.05 4/2067 1351571
+SOAK	elapsed_s=129.1	batches=372	jobs=3720000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.31 9.83 12.02 5/2103 1352372
+SOAK	elapsed_s=134.3	batches=387	jobs=3870000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.37 9.79 12.00 4/2096 1355305
+SOAK	elapsed_s=139.4	batches=402	jobs=4020000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.42 9.76 11.98 4/2098 1357579
+SOAK	elapsed_s=144.6	batches=415	jobs=4150000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.62 9.77 11.96 5/2113 1360212
+SOAK	elapsed_s=149.7	batches=429	jobs=4290000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.66 9.74 11.94 4/2110 1362160
+SOAK	elapsed_s=154.8	batches=443	jobs=4430000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.60 9.69 11.92 4/2090 1362991
+SOAK	elapsed_s=159.8	batches=458	jobs=4580000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.39 9.62 11.88 5/2056 1363214
+SOAK	elapsed_s=164.9	batches=473	jobs=4730000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.28 9.56 11.85 4/2055 1363433
+SOAK	elapsed_s=170.0	batches=489	jobs=4890000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.26 9.51 11.82 4/2061 1363758
+SOAK	elapsed_s=175.3	batches=504	jobs=5040000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.32 9.49 11.80 3/2088 1364024
+SOAK	elapsed_s=180.4	batches=518	jobs=5180000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=7.21 9.43 11.77 4/2100 1364326
+SOAK	elapsed_s=185.9	batches=523	jobs=5230000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=8.08 9.57 11.80 10/2132 1364932
+SOAK	elapsed_s=191.3	batches=529	jobs=5290000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=8.79 9.70 11.83 8/2122 1365323
+SOAK	elapsed_s=196.5	batches=543	jobs=5430000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=8.74 9.66 11.79 4/2101 1365523
+SOAK	elapsed_s=202.4	batches=550	jobs=5500000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=9.48 9.79 11.83 16/2129 1366362
+SOAK	elapsed_s=207.7	batches=563	jobs=5630000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=9.28 9.75 11.80 16/2156 1367429
+SOAK	elapsed_s=212.7	batches=570	jobs=5700000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=10.06 9.90 11.84 7/2118 1367722
+SOAK	elapsed_s=218.1	batches=580	jobs=5800000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=9.81 9.85 11.81 5/2116 1367920
+SOAK	elapsed_s=223.3	batches=593	jobs=5930000	rss_kb=Some(14512)	threads=Some(1)	fd=Some(4)	load=9.91 9.87 11.81 5/2104 1368265
+SOAK	elapsed_s=228.4	batches=607	jobs=6070000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=10.64 10.02 11.85 4/2106 1369890
+SOAK	elapsed_s=233.8	batches=615	jobs=6150000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=11.31 10.17 11.89 15/2181 1372181
+SOAK	elapsed_s=239.9	batches=620	jobs=6200000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.00 10.34 11.93 19/2182 1374796
+SOAK	elapsed_s=246.0	batches=624	jobs=6240000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=13.29 10.63 12.02 25/2225 1377006
+SOAK	elapsed_s=251.9	batches=628	jobs=6280000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=14.32 10.94 12.10 14/2103 1378813
+SOAK	elapsed_s=257.1	batches=640	jobs=6400000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=14.61 11.06 12.14 20/2134 1380405
+SOAK	elapsed_s=262.5	batches=646	jobs=6460000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=14.88 11.17 12.17 11/2151 1384936
+SOAK	elapsed_s=267.6	batches=651	jobs=6510000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=15.45 11.35 12.22 18/2162 1390502
+SOAK	elapsed_s=272.9	batches=656	jobs=6560000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=15.66 11.46 12.25 15/2161 1395965
+SOAK	elapsed_s=278.8	batches=662	jobs=6620000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.49 11.70 12.33 15/2163 1402298
+SOAK	elapsed_s=284.2	batches=667	jobs=6670000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.69 11.83 12.36 17/2157 1406044
+SOAK	elapsed_s=290.0	batches=673	jobs=6730000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.19 12.01 12.42 18/2111 1408246
+SOAK	elapsed_s=295.7	batches=680	jobs=6800000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.58 12.18 12.47 18/2125 1409768
+SOAK	elapsed_s=300.8	batches=689	jobs=6890000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.93 12.34 12.52 6/2129 1410124
+SOAK	elapsed_s=305.9	batches=700	jobs=7000000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.30 12.30 12.51 6/2128 1410242
+SOAK	elapsed_s=311.1	batches=713	jobs=7130000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.11 12.35 12.52 5/2119 1410543
+SOAK	elapsed_s=316.4	batches=727	jobs=7270000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.38 12.27 12.50 5/2116 1410686
+SOAK	elapsed_s=321.6	batches=741	jobs=7410000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=15.09 12.13 12.45 5/2115 1410775
+SOAK	elapsed_s=326.8	batches=755	jobs=7550000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=14.45 12.05 12.42 5/2116 1410889
+SOAK	elapsed_s=332.0	batches=770	jobs=7700000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=13.85 11.96 12.39 5/2071 1411017
+SOAK	elapsed_s=337.3	batches=784	jobs=7840000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=13.30 11.88 12.36 4/2073 1411290
+SOAK	elapsed_s=342.6	batches=797	jobs=7970000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.88 11.82 12.34 4/2067 1411663
+SOAK	elapsed_s=347.6	batches=812	jobs=8120000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.49 11.75 12.31 6/2076 1411961
+SOAK	elapsed_s=352.6	batches=816	jobs=8160000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=13.01 11.87 12.35 18/2105 1412710
+SOAK	elapsed_s=357.6	batches=829	jobs=8290000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.53 11.79 12.32 4/2075 1413623
+SOAK	elapsed_s=362.7	batches=843	jobs=8430000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.00 11.70 12.29 4/2065 1414420
+SOAK	elapsed_s=368.6	batches=856	jobs=8560000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=11.68 11.64 12.26 21/2170 1416436
+SOAK	elapsed_s=374.7	batches=860	jobs=8600000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=12.75 11.86 12.33 23/2168 1418574
+SOAK	elapsed_s=381.0	batches=865	jobs=8650000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=14.29 12.19 12.44 26/2162 1421066
+SOAK	elapsed_s=386.4	batches=870	jobs=8700000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.03 12.59 12.57 14/2138 1423244
+SOAK	elapsed_s=391.5	batches=877	jobs=8770000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=15.71 12.63 12.58 8/2155 1428426
+SOAK	elapsed_s=396.9	batches=883	jobs=8830000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.29 12.81 12.64 19/2122 1435177
+SOAK	elapsed_s=402.7	batches=889	jobs=8890000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.75 12.96 12.69 19/2116 1441656
+SOAK	elapsed_s=407.9	batches=895	jobs=8950000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.85 13.04 12.72 17/2164 1447222
+SOAK	elapsed_s=413.6	batches=900	jobs=9000000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.34 13.21 12.77 21/2164 1450531
+SOAK	elapsed_s=418.6	batches=904	jobs=9040000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.88 13.39 12.83 21/2141 1452022
+SOAK	elapsed_s=423.7	batches=909	jobs=9090000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=18.13 13.52 12.88 21/2145 1453519
+SOAK	elapsed_s=429.0	batches=915	jobs=9150000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=18.28 13.62 12.92 8/2122 1454114
+SOAK	elapsed_s=434.2	batches=926	jobs=9260000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.54 13.55 12.89 6/2118 1454349
+SOAK	elapsed_s=439.4	batches=938	jobs=9380000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=17.09 13.52 12.89 5/2120 1454608
+SOAK	elapsed_s=444.7	batches=955	jobs=9550000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=16.36 13.43 12.86 6/2117 1454810
+SOAK	elapsed_s=450.0	batches=969	jobs=9690000	rss_kb=Some(14516)	threads=Some(1)	fd=Some(4)	load=15.69 13.34 12.84 5/2114 1454962
+SOAK	elapsed_s=455.1	batches=983	jobs=9830000	rss_kb=Some(14532)	threads=Some(1)	fd=Some(4)	load=15.00 13.23 12.80 4/2113 1455161
+SOAK	elapsed_s=460.2	batches=999	jobs=9990000	rss_kb=Some(14532)	threads=Some(1)	fd=Some(4)	load=14.36 13.13 12.77 4/2061 1455490
+SOAK	elapsed_s=465.3	batches=1012	jobs=10120000	rss_kb=Some(14532)	threads=Some(1)	fd=Some(4)	load=13.85 13.04 12.75 10/2085 1455697
+SOAK	elapsed_s=470.3	batches=1024	jobs=10240000	rss_kb=Some(14548)	threads=Some(1)	fd=Some(4)	load=13.30 12.94 12.72 6/2071 1456129
+SOAK	elapsed_s=475.6	batches=1037	jobs=10370000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=12.79 12.84 12.69 4/2093 1456340
+SOAK	elapsed_s=480.9	batches=1052	jobs=10520000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=12.33 12.75 12.65 5/2092 1456484
+SOAK	elapsed_s=486.1	batches=1066	jobs=10660000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=11.90 12.65 12.62 5/2101 1456709
+SOAK	elapsed_s=492.2	batches=1079	jobs=10790000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=12.26 12.70 12.64 18/2137 1457296
+SOAK	elapsed_s=497.3	batches=1089	jobs=10890000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=11.92 12.62 12.61 5/2118 1458508
+SOAK	elapsed_s=502.6	batches=1101	jobs=11010000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=11.61 12.54 12.59 5/2071 1459128
+SOAK	elapsed_s=507.9	batches=1116	jobs=11160000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=11.32 12.47 12.56 5/2079 1460156
+SOAK	elapsed_s=513.0	batches=1126	jobs=11260000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=12.09 12.61 12.61 18/2161 1463542
+SOAK	elapsed_s=518.1	batches=1132	jobs=11320000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=12.81 12.75 12.65 16/2124 1470313
+SOAK	elapsed_s=523.3	batches=1143	jobs=11430000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=13.62 12.92 12.71 12/2136 1473102
+SOAK	elapsed_s=528.8	batches=1154	jobs=11540000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=14.21 13.05 12.76 5/2163 1476235
+SOAK	elapsed_s=534.0	batches=1168	jobs=11680000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=14.68 13.17 12.79 5/2164 1477915
+SOAK	elapsed_s=539.1	batches=1182	jobs=11820000	rss_kb=Some(14552)	threads=Some(1)	fd=Some(4)	load=17.11 13.70 12.97 4/2169 1479889
+SOAK	elapsed_s=544.4	batches=1201	jobs=12010000	rss_kb=Some(14488)	threads=Some(1)	fd=Some(4)	load=19.82 14.32 13.17 5/2235 1481637
+SOAK	elapsed_s=549.6	batches=1213	jobs=12130000	rss_kb=Some(14488)	threads=Some(1)	fd=Some(4)	load=21.04 14.66 13.29 4/2175 1483607
+SOAK	elapsed_s=554.9	batches=1225	jobs=12250000	rss_kb=Some(14488)	threads=Some(1)	fd=Some(4)	load=21.19 14.80 13.34 8/2210 1485424
+SOAK	elapsed_s=560.0	batches=1237	jobs=12370000	rss_kb=Some(14488)	threads=Some(1)	fd=Some(4)	load=23.34 15.35 13.53 4/2284 1487306
+SOAK	elapsed_s=565.4	batches=1250	jobs=12500000	rss_kb=Some(14488)	threads=Some(1)	fd=Some(4)	load=23.79 15.58 13.61 5/2185 1489125
+SOAK	elapsed_s=570.8	batches=1264	jobs=12640000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=25.01 15.97 13.75 24/2249 1491127
+SOAK	elapsed_s=576.1	batches=1276	jobs=12760000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=29.18 16.98 14.09 4/2124 1491784
+SOAK	elapsed_s=581.4	batches=1288	jobs=12880000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=27.96 16.93 14.09 19/2136 1493473
+SOAK	elapsed_s=587.2	batches=1293	jobs=12930000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=26.97 17.08 14.17 14/2122 1497400
+SOAK	elapsed_s=592.6	batches=1298	jobs=12980000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=26.57 17.16 14.21 17/2104 1502698
+SOAK	elapsed_s=597.8	batches=1303	jobs=13030000	rss_kb=Some(14500)	threads=Some(1)	fd=Some(4)	load=26.04 17.21 14.24 19/2110 1507407
+SOAK_TONG	secs=600	W=4	N=10000	batches=1307	jobs=13070000	rss_min_kb=14228	rss_max_kb=14552	hwm_kb=15556	threads=Some(1)	fd=Some(4)
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=5024	sau=14500	hwm=15556
+WALL_TONG	ms=604950.9	load_cuoi=26.04 17.21 14.24 16/2121 1511135
+KET_LUAN	PASS	N=10000	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## RUN 10K AUTO (không đặt VS3_EVAL_ITERS; N=10000 ⇒ tự iters=1)
+VS3_W5_PROTO	bat_dau	N=10000	W=4	iters=1	soak_s=0	load=23.76 17.37 14.38 13/2106 1523024
+SEND_SYNC	Hir	OK
+SEND_SYNC	Symbols	OK
+SEND_SYNC	TypeTable	OK
+SEND_SYNC	Module	OK
+SEND_SYNC	SendValue	OK
+SEND_SYNC	Anh(Arc<Module>)	OK
+ANH	hir_items=2	module_funcs=3	module_code=37	src_bytes=184
+ORACLE	stdout="0\n"	exit=0	steps_hir=34	steps_vm=39	checksum=-478856010891637171	echo=false
+VONG	0	W=1_ms=1833.5	W=4_ms=495.6	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	1	W=1_ms=1292.5	W=4_ms=411.8	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+VONG	2	W=1_ms=607.9	W=4_ms=546.2	W=1_threads=Some(1)	W=4_threads=Some(1)	W=1_fd=Some(4)	W=4_fd=Some(4)
+POOL_EVAL	W=1	wall_median_ms=1292.5	N=10000	echo=false	checksum=-478856010891637171
+POOL_EVAL	W=4	wall_median_ms=495.6	N=10000	echo=false	checksum=-478856010891637171	speedup=2.61x
+CHECK	byte_identical	OK	checksum=-478856010891637171	results=10000	output_bytes=0
+BUDGET	W=1	used=10000	remaining=1000	limit=11000	exhausted=false
+BUDGET	W=4	used=10000	remaining=1000	limit=11000	exhausted=false
+CROSS_WRITE	W=1	W=1 shared-env counter=3
+CROSS_WRITE	W=4	W=4 CrossWrite vars=["counter"] tasks=4
+CHECK	cross_write	OK
+EVAL_COST	N=10000	vm_new_us/task=5.54	vm_fresh_us/task=62.39	vm_reuse_us/task=54.23	vm_reuse_speedup=1.15x	interp_fresh_us/task=94.82
+EVAL_COST	caveat=vm_reuse_chỉ_đúng_khi_không_spawn/chan;Interp_new_pub(crate)_không_tái_dùng_được
+SOAK	skip	VS3_EVAL_SOAK_SECS=0
+THREADS	truoc=1	sau=1	ro=0	OK
+FD	truoc=4	sau=4	ro=0	OK
+RSS_KB	truoc=4732	sau=14240	hwm=14980
+WALL_TONG	ms=7370.0	load_cuoi=21.89 17.18 14.35 8/2104 1523470
+KET_LUAN	PASS	N=10000	W=1/W=4 evaluator độc lập, checksum byte-identical, không rò thread
+
+## GATE CUỐI
+$ cargo fmt --all -- --check
+
+
+$ cargo check --all-targets
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s
+
+$ cargo clippy -p vis-cli --all-targets -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.31s
+
+$ cargo test -p vis-cli --test vs3_worker -- --test-threads=1
+
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.97s
+
+$ cargo test -p vis-cli --test vs3_default -- --test-threads=1
+
+running 21 tests
+.....................
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.10s
+
+df /home sau: 11G trống (>5G). R1: example 689 dòng, journal 326 dòng.
