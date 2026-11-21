@@ -24,13 +24,25 @@ use crate::json_esc;
 use std::process::ExitCode;
 
 /// Danh sách feature **cố định lúc biên dịch** — không dò runtime, không đọc tệp.
-/// Thêm feature mới sau này ⇒ thêm một `const` ở đây để `doctor` và test cùng thấy.
-#[cfg(feature = "sqlite")]
-const FEATURES: &[&str] = &["sqlite"];
-#[cfg(not(feature = "sqlite"))]
-const FEATURES: &[&str] = &[];
+/// Thứ tự cố định: `sqlite`, `tls`, `pkg-sig`, `http2` (feature nào bật mới xuất hiện).
+fn features() -> Vec<&'static str> {
+    let mut ds = Vec::new();
+    if cfg!(feature = "sqlite") {
+        ds.push("sqlite");
+    }
+    if cfg!(feature = "tls") {
+        ds.push("tls");
+    }
+    if cfg!(feature = "pkg-sig") {
+        ds.push("pkg-sig");
+    }
+    if cfg!(feature = "http2") {
+        ds.push("http2");
+    }
+    ds
+}
 
-/// `true` khi feature `sqlite` bật — **cùng nguồn** với [`FEATURES`].
+/// `true` khi feature `sqlite` bật — **cùng nguồn** với [`features`].
 fn co_sqlite() -> bool {
     cfg!(feature = "sqlite")
 }
@@ -49,16 +61,17 @@ fn in_thuong() {
     println!("os {}", std::env::consts::OS);
     println!("arch {}", std::env::consts::ARCH);
     println!("sqlite {}", if co_sqlite() { "on" } else { "off" });
-    if FEATURES.is_empty() {
+    let features = features();
+    if features.is_empty() {
         println!("features");
     } else {
-        println!("features {}", FEATURES.join(","));
+        println!("features {}", features.join(","));
     }
 }
 
 /// Một object JSON nén, một dòng; thứ tự khoá cố định như hợp đồng.
 fn in_json() {
-    let features = FEATURES
+    let features = features()
         .iter()
         .map(|f| format!("\"{}\"", json_esc::esc(f)))
         .collect::<Vec<_>>()

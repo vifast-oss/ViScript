@@ -46,3 +46,23 @@ fn version_sai_dung_exit_2_stdout_rong() {
         assert!(err.contains("vis version"), "args {args:?}: {err}");
     }
 }
+
+/// Top-level `--version`/`-V` (hardening): in `vis <ver>`, exit 0, stderr rỗng.
+#[test]
+fn top_level_version_va_v() {
+    for co in ["--version", "-V"] {
+        let (ma, out, err) = chay(&[co]);
+        assert_eq!(ma, 0, "{co}: stderr: {err}");
+        assert_eq!(out, format!("vis {}\n", env!("CARGO_PKG_VERSION")), "{co}");
+        assert!(err.is_empty(), "{co}: stderr: {err}");
+    }
+}
+
+/// Top-level version không được nuốt cờ của lệnh con: `vis run --version` vẫn lỗi dùng như cũ.
+#[test]
+fn top_level_version_khong_anh_huong_lenh_con() {
+    let (ma, out, err) = chay(&["run", "--version"]);
+    assert_eq!(ma, 2, "stderr: {err}");
+    assert_eq!(out, "", "không được in version cấp cao nhất");
+    assert!(err.contains("vis run"), "stderr: {err}");
+}
