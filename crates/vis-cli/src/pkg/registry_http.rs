@@ -14,8 +14,9 @@
 //! GET <base>/<tarball>   → body base64 của tar ustar
 //! ```
 //!
-//! Khi người dùng cấu hình khoá công khai (`--registry-key`/`VIS_REGISTRY_KEY`), **mọi** phiên bản
-//! được chọn phải có `signature_ed25519` hợp lệ trên thông điệp chuẩn
+//! Khi người dùng cấu hình một hoặc nhiều khoá công khai (`--registry-key` lặp lại /
+//! `VIS_REGISTRY_KEY` danh sách), **mọi** phiên bản được chọn phải có `signature_ed25519` khớp
+//! **một trong** các khoá trên thông điệp chuẩn
 //! [`vis_cli::pkg_sig::thong_diep_ky`]; kiểm **trước khi tải tarball**. Không cấu hình khoá ⇒
 //! trường chữ ký được bỏ qua (registry cục bộ cũng không đòi chữ ký).
 //!
@@ -95,7 +96,7 @@ pub(super) fn tai_va_giai(
     base: &str,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
-    khoa_cong: Option<&[u8; 32]>,
+    khoa_cong: &[[u8; 32]],
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     let mut net = Net::moi(false);
     let url = format!("{}/index.json", base.trim_end_matches('/'));
@@ -189,7 +190,7 @@ fn tai_goi(
     muc: &Muc,
     goc: &Path,
     entry_override: Option<&str>,
-    khoa_cong: Option<&[u8; 32]>,
+    khoa_cong: &[[u8; 32]],
 ) -> Result<(), String> {
     let nguon = format!("index gói `{}@{}`", muc.ten, muc.version_s);
     let manifest = manifest_tu_gia_tri(&muc.manifest, &nguon, entry_override)?;
@@ -213,8 +214,8 @@ fn tai_goi(
         .unwrap_or_else(|| format!("{}/{}.tar.b64", muc.ten, muc.version_s));
     kiem_path(&tar_path).map_err(|e| format!("{nguon}: `tarball` {e}"))?;
     // **VS3-5b**: xác minh chữ ký **trước khi** tải tarball (chữ ký phủ cả metadata manifest).
-    if let Some(khoa) = khoa_cong {
-        kiem_chu_ky(muc, &manifest, &tar_sha, khoa)?;
+    if !khoa_cong.is_empty() {
+        kiem_chu_ky(muc, &manifest, &tar_sha, khoa_cong)?;
     }
     let url = format!("{}/{}", base.trim_end_matches('/'), tar_path);
     let body = vis_interp::net::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
@@ -295,7 +296,7 @@ fn kiem_chu_ky(
     muc: &Muc,
     manifest: &Manifest,
     tar_sha: &str,
-    khoa: &[u8; 32],
+    khoas: &[[u8; 32]],
 ) -> Result<(), String> {
     let nguon = format!("index gói `{}@{}`", muc.ten, muc.version_s);
     let Some(sig) = muc.signature.as_deref() else {
@@ -318,7 +319,8 @@ fn kiem_chu_ky(
         &manifest.deps,
         &files,
     );
-    vis_cli::pkg_sig::xac_minh(khoa, &msg, &sig).map_err(|e| format!("{nguon}: {e} — từ chối cài"))
+    vis_cli::pkg_sig::xac_minh_nhieu(khoas, &msg, &sig)
+        .map_err(|e| format!("{nguon}: {e} — từ chối cài"))
 }
 
 fn hex(b: &[u8]) -> String {

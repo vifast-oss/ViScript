@@ -18,7 +18,8 @@ use std::process::ExitCode;
 use vis_interp::stdlib::json;
 use vis_interp::value::Value;
 
-/// **VS3-5b (VD-271)**: dọn blob/thư mục gói không còn được `vis.lock` tham chiếu.
+/// **VS3-5b/5c (VD-271)**: dọn blob/thư mục gói không còn được **bất kỳ** `vis.lock` nào tham chiếu
+/// (một lock mặc định, `--lock` lặp lại, hoặc `--root` quét có kiểm soát).
 mod gc;
 /// **VS3-5a (VD-271)**: registry **HTTP/HTTPS** (index + tarball, SHA-256 trước khi cài) — dựng trên
 /// HTTP client hiện có của `vis-interp`; `https://` dùng TLS của `vis-cli::net` (VS3-4a).
@@ -48,7 +49,7 @@ pub fn run(args: &[String]) -> ExitCode {
 }
 
 fn dung() -> &'static str {
-    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>] | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>] | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] | vis pkg migrate"
+    "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]... | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]... | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] [--lock <path>]... [--root <dir>]... | vis pkg migrate"
 }
 
 fn chay(args: &[String]) -> Result<(), String> {
@@ -61,7 +62,7 @@ fn chay(args: &[String]) -> Result<(), String> {
         "update" => lenh_update(&args[1..]),
         "list" => lenh_list(&args[1..]),
         "remove" => lenh_remove(&args[1..]),
-        "gc" => lenh_gc(&args[1..]),
+        "gc" => gc::lenh(&args[1..]),
         "migrate" => lenh_migrate(&args[1..]),
         khac => Err(format!("lệnh lạ `{khac}` — {}", dung())),
     }
@@ -855,8 +856,9 @@ struct TuyChon {
     ten: Option<String>,
     reg: Option<String>,
     entry: Option<String>,
-    /// **VS3-5b**: khoá công khai Ed25519 (64 hex) cho registry HTTP.
-    khoa: Option<String>,
+    /// **VS3-5b/5c**: khoá công khai Ed25519 (mỗi khoá 64 hex) cho registry HTTP.
+    /// Lặp `--registry-key` để hỗ trợ **key rotation**; khoá cũ vẫn verify bản cũ.
+    khoa: Vec<String>,
 }
 
 fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
@@ -864,7 +866,7 @@ fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
         ten: None,
         reg: None,
         entry: None,
-        khoa: None,
+        khoa: Vec::new(),
     };
     let mut i = 0;
     while i < args.len() {
@@ -889,7 +891,7 @@ fn tuy_chon(args: &[String], cho_registry: bool) -> Result<TuyChon, String> {
                 let Some(v) = args.get(i) else {
                     return Err("thiếu giá trị sau `--registry-key`".to_string());
                 };
-                tc.khoa = Some(v.clone());
+                tc.khoa.push(v.clone());
             }
             a if a.starts_with('-') => return Err(format!("cờ lạ `{a}`")),
             a => {
@@ -945,17 +947,20 @@ fn registry_tu_chon(chon: Option<String>) -> Result<Registry, String> {
     }
 }
 
-/// **VS3-5b**: khoá công khai Ed25519 (32 byte) từ `--registry-key` / `VIS_REGISTRY_KEY`.
+/// **VS3-5b/5c**: danh sách khoá công khai Ed25519 (32 byte) từ `--registry-key` lặp lại /
+/// `VIS_REGISTRY_KEY`.
 ///
+/// Danh sách phân tách bằng dấu phẩy hoặc khoảng trắng (mỗi phần tử vẫn phải đúng 64 hex).
 /// Cờ tường minh + registry cục bộ ⇒ lỗi (tránh hiểu nhầm là đã kiểm chữ ký); biến môi trường +
-/// registry cục bộ ⇒ bỏ qua. Không có khoá ⇒ `None` ⇒ registry HTTP **không** đòi chữ ký.
-fn khoa_cong_tu_chon(chon: Option<String>, reg: &Registry) -> Result<Option<[u8; 32]>, String> {
-    let (s, tu_co) = match chon {
-        Some(s) => (s, true),
-        None => match std::env::var("VIS_REGISTRY_KEY") {
-            Ok(s) => (s, false),
-            Err(_) => return Ok(None),
-        },
+/// registry cục bộ ⇒ bỏ qua. Không có khoá ⇒ vec rỗng ⇒ registry HTTP **không** đòi chữ ký.
+fn khoa_cong_tu_chon(chon: &[String], reg: &Registry) -> Result<Vec<[u8; 32]>, String> {
+    let (raws, tu_co) = if !chon.is_empty() {
+        (chon.to_vec(), true)
+    } else {
+        match std::env::var("VIS_REGISTRY_KEY") {
+            Ok(s) => (vec![s], false),
+            Err(_) => return Ok(Vec::new()),
+        }
     };
     if matches!(reg, Registry::CucBo(_)) {
         return if tu_co {
@@ -964,15 +969,46 @@ fn khoa_cong_tu_chon(chon: Option<String>, reg: &Registry) -> Result<Option<[u8;
                     .to_string(),
             )
         } else {
-            Ok(None)
+            Ok(Vec::new())
         };
     }
-    let b = vis_cli::pkg_sig::hex_giai(&s, 32).map_err(|e| {
-        format!("khoá công khai Ed25519 (`--registry-key`/`VIS_REGISTRY_KEY`): {e}")
-    })?;
-    let mut khoa = [0u8; 32];
-    khoa.copy_from_slice(&b);
-    Ok(Some(khoa))
+
+    let mut out = Vec::new();
+    let mut da = BTreeSet::new();
+    for raw in &raws {
+        let mut co = false;
+        for phan in raw
+            .split(|c: char| c == ',' || c.is_whitespace())
+            .filter(|p| !p.is_empty())
+        {
+            co = true;
+            let b = vis_cli::pkg_sig::hex_giai(phan, 32).map_err(|e| {
+                format!(
+                    "khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): {e}",
+                    out.len() + 1
+                )
+            })?;
+            let mut khoa = [0u8; 32];
+            khoa.copy_from_slice(&b);
+            // Giữ thứ tự xuất hiện; bỏ khoá trùng hoàn toàn.
+            if da.insert(khoa) {
+                out.push(khoa);
+            }
+        }
+        if !co {
+            return Err(format!(
+                "khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): cần ít nhất một khoá 64 hex",
+                out.len() + 1
+            ));
+        }
+    }
+    if out.is_empty() {
+        return Err(
+            "cần ít nhất một khoá công khai Ed25519 (`--registry-key`/`VIS_REGISTRY_KEY`)"
+                .to_string(),
+        );
+    }
+    Ok(out)
 }
 
 /// Giải + đọc gói từ nguồn đã chọn. Cục bộ đọc thẳng thư mục; HTTP tải **index**, giải bằng cùng
@@ -982,7 +1018,7 @@ fn nap_goi(
     reg: &Registry,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
-    khoa_cong: Option<&[u8; 32]>,
+    khoa_cong: &[[u8; 32]],
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     match reg {
         Registry::CucBo(p) => giai_va_doc(p, roots, entry_override),
@@ -1014,7 +1050,7 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
     };
     let (ten, req_nguoi_dung) = tach_ten(&spec)?;
     let reg = registry_tu_chon(reg)?;
-    let khoa_cong = khoa_cong_tu_chon(khoa, &reg)?;
+    let khoa_cong = khoa_cong_tu_chon(&khoa, &reg)?;
     let cwd = cwd()?;
     // Đọc lock cũ **trước** khi ghi gì (lock hỏng ⇒ dừng, không nửa vời).
     let khoa_cu = doc_lock(&cwd.join("vis.lock"), false)?;
@@ -1027,7 +1063,7 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
         &reg,
         &roots,
         entry_override.as_deref().map(|e| (ten.as_str(), e)),
-        khoa_cong.as_ref(),
+        &khoa_cong,
     )?;
     // Root **ghi vào lock**: `@req` ⇒ đúng req đó; không `@` ⇒ `^<phiên bản đã chọn>`.
     if req_nguoi_dung.is_none() {
@@ -1054,7 +1090,7 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
 /// có registry nên **không** tự giải lại).
 fn lenh_install(args: &[String]) -> Result<(), String> {
     let tc = tuy_chon(args, false)?;
-    if tc.ten.is_some() || tc.entry.is_some() || tc.khoa.is_some() {
+    if tc.ten.is_some() || tc.entry.is_some() || !tc.khoa.is_empty() {
         return Err(format!("`install` không nhận đối số — {}", dung()));
     }
     if tc.reg.is_some() {
@@ -1140,7 +1176,7 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
         }
     }
     let reg = registry_tu_chon(reg)?;
-    let khoa_cong = khoa_cong_tu_chon(khoa, &reg)?;
+    let khoa_cong = khoa_cong_tu_chon(&khoa, &reg)?;
     let mut roots = roots_tu_lock(&khoa_cu)?;
     // Có `<tên>` ⇒ **ghim** mọi gói khác ở phiên bản đang có (update một gói không đụng gói khác).
     if let Some(t) = &ten {
@@ -1153,7 +1189,7 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
         }
     }
     // Giải **lại** toàn bộ (tất định) rồi so với lock cũ để biết gói nào đổi.
-    let (giai, ds) = nap_goi(&reg, &roots, None, khoa_cong.as_ref())?;
+    let (giai, ds) = nap_goi(&reg, &roots, None, &khoa_cong)?;
     let cu: BTreeMap<&str, &GoiKhoa> = khoa_cu.goi.iter().map(|g| (g.name.as_str(), g)).collect();
     let mut doi = khoa_cu.can_migrate() || khoa_cu.roots.is_empty();
     let mut can_cai: Vec<GoiCai> = Vec::new();
@@ -1207,7 +1243,7 @@ fn lenh_list(args: &[String]) -> Result<(), String> {
         .cloned()
         .collect();
     let tc = tuy_chon(&args, false)?;
-    if tc.ten.is_some() || tc.reg.is_some() || tc.entry.is_some() || tc.khoa.is_some() {
+    if tc.ten.is_some() || tc.reg.is_some() || tc.entry.is_some() || !tc.khoa.is_empty() {
         return Err(format!("`list` không nhận đối số — {}", dung()));
     }
     let cwd = cwd()?;
@@ -1282,50 +1318,6 @@ fn lenh_remove(args: &[String]) -> Result<(), String> {
     let _ = std::fs::remove_dir_all(thu_muc.join(&goi.version));
     let _ = std::fs::remove_dir(thu_muc);
     ghi_lock(&khoa_path, &khoa)
-}
-
-/// `vis pkg gc [--dry-run]` — dọn blob `.vis/store` + thư mục phiên bản `.vis/pkg` **không còn**
-/// được `vis.lock` tham chiếu.
-///
-/// **VS3-5b (VD-271)**: idempotent; **không** xoá bản đang dùng; **không** chạm tệp không phải hex
-/// trong store; thiếu `vis.lock` ⇒ từ chối (không dọn mù). `--dry-run` chỉ in số sẽ xoá.
-fn lenh_gc(args: &[String]) -> Result<(), String> {
-    let mut dry = false;
-    for a in args {
-        match a.as_str() {
-            "--dry-run" => dry = true,
-            a if a.starts_with('-') => return Err(format!("cờ lạ `{a}` — {}", dung())),
-            a => return Err(format!("thừa đối số `{a}` — {}", dung())),
-        }
-    }
-    let cwd = cwd()?;
-    let lock_path = cwd.join("vis.lock");
-    if !lock_path.is_file() {
-        return Err("chưa có `vis.lock` — không dọn store để tránh xoá nhầm".to_string());
-    }
-    let khoa = doc_lock(&lock_path, true)?;
-    // Tên gói chứa `/` (mô hình đường dẫn tương lai) làm việc phân biệt tên gói/phiên bản không an
-    // toàn ⇒ từ chối, **không xoá gì**.
-    if khoa.goi.iter().any(|g| g.name.contains('/')) {
-        return Err("GC chưa hỗ trợ tên gói chứa `/` — không xoá gì".to_string());
-    }
-    let blobs: BTreeSet<String> = khoa
-        .goi
-        .iter()
-        .flat_map(|g| g.files.iter().map(|f| f.sha256.clone()))
-        .collect();
-    let goi: BTreeSet<(String, String)> = khoa
-        .goi
-        .iter()
-        .map(|g| (g.name.clone(), g.version.clone()))
-        .collect();
-    let (so_blob, so_goi) = gc::don(&cwd, &blobs, &goi, dry)?;
-    if dry {
-        println!("sẽ xoá {so_blob} blob, {so_goi} mục gói (không xoá gì)");
-    } else {
-        println!("đã xoá {so_blob} blob, {so_goi} mục gói");
-    }
-    Ok(())
 }
 
 /// `vis pkg migrate` — nâng `vis.lock` cũ lên định dạng hiện tại **một cách tường minh** (cùng logic
