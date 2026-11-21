@@ -6,7 +6,7 @@
 //! | Nhóm HIR | Trạng thái | Bằng chứng |
 //! |---|---|---|
 //! | `Lit`/`Var`/`Bin` (`+ - * / // % ** .. ..= == != < <= > >= and or ??`)/`Un` | **CÓ** | `lat255_coverage` A3/B1 + file này |
-//! | `Pipe` (toán tử ống) | **KHÔNG parity mặc định** — interp default chạy, VM default `VS0501` ("Pipe phải xử lý ở tầng biểu thức"); frame không được tuyên bố tương thích | ghi nhận, xem §1d blocker |
+//! | `Pipe` (toán tử ống) | **CÓ** — VM đã parity (`l |> f` gọi giá trị `f`) | file này |
 //! | `Call`/`CallValue`/`Lambda`/capture | **CÓ** | `lat255_coverage` C1/C2, `lat257_b_closure_await` |
 //! | `Field` (gồm `?.`)/`Index`/`Record`/`Tuple`/`List`/`Set`/`Map`/`EnumLit` | **CÓ** | `lat257_coverage_extra` + file này (đã sửa `?.` giữ đúng lớp `Option`) |
 //! | `Opt`/`Try` (`?`)/`With`/`If`/`Match`/`Interp` (kể cả `{expr:spec}`) | **CÓ** | `lat257_a_coverage` + file này |
@@ -18,8 +18,8 @@
 //! | `cmd { … }` | **TỪ CHỐI RÕ** (`VS1`; VM compile `Unsupported("cmd-block")`) | `lat257_a_coverage::c1`, file này |
 //! | `Ref` (VS1) | **KHÔNG áp dụng / guard test** — parser/lower/checker có thể chặn trước | `ref_node_khop_runtime_mac_dinh` |
 //!
-//! **1d chưa flip**: file này chỉ chứng minh đường frame chạy được cùng source với runtime mặc
-//! định cho các cấu trúc sync/async đã phủ. Điều kiện flip nằm ở ghi chú cuối file.
+//! **VS3-1d đã flip** theo VD-271: chương trình có `async fn` dùng frame scheduler, sync giữ
+//! runtime cũ. `vs3_default.rs` kiểm entry/cache/guard; file này giữ ma trận coverage.
 
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
 use vis_interp::rt::DiagSnapshot;
@@ -189,7 +189,10 @@ fn main():
 
 #[test]
 fn interp_with_spec_with_nonvar_coalesce() {
-    let src = r#"fn main():
+    let src = r#"fn id(n: int) -> int:
+    n
+
+fn main():
     let x = 3.14159
     print("x={x:.2} n={1 + 2}")
     let r = {x: 1, y: 2} with x: 9
@@ -197,8 +200,13 @@ fn interp_with_spec_with_nonvar_coalesce() {
     print(r.y)
     let o: int? = None
     print(o ?? 42)
+    print(5 |> id)
 "#;
-    duong("interp-with-coalesce", src, "x=3.14 n=3\n9\n2\n42\n");
+    duong(
+        "interp-with-coalesce-pipe",
+        src,
+        "x=3.14 n=3\n9\n2\n42\n5\n",
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -334,24 +342,20 @@ fn phan_loai_async_sync_cho_1d() {
     assert!(co_async(&ha), "có async fn phải chọn frame runtime");
 }
 
-// Ghi chú 1d (CHƯA FLIP — chỉ điều kiện/checklist):
-//
-// 1) Phân loại: chỉ chương trình có `HItem::Fn { is_async: true }` hoặc có `HExpr::Await`/
-//    `HExpr::Spawn` trong HIR mới chọn frame runtime; **chương trình sync tuyệt đối giữ**
-//    `Interp::run`/`Vm::run` hiện tại. Cần helper phân loại tĩnh (đề xuất đặt ở vis-types hoặc
-//    CLI) + test sync-không-đổi trước khi flip.
-// 2) Test bắt buộc trước flip: `vs3_budget`, `vs3_cancel`, `vs3_chan0`, `vs3_coverage_matrix`,
-//    `lat255_coverage`, `lat257_a_coverage`, `lat257_c_lifecycle`, `lat256_net`, `lat3_real`,
-//    toàn bộ fixture `test/sem/async`, golden sync của `vis run`/`vis run --vm`, diagnostics
-//    parity, cache warm/cold.
-// 3) VERSION/cache: 1d chỉ đổi **chọn runtime**, không đổi HIR/bytecode/opcode ⇒ không cần bump
-//    `VERSION`. Nếu thêm nhãn chọn-runtime vào cache key thì bump `PHIEN_BAN` + test
-//    `st246_cache_compat` trong cùng commit; nếu không, cache giữ nguyên.
-// 4) Hạ tầng trước flip: `run_frame_for_test` hiện là entry **test-only**; cần một entry runtime
-//    nội bộ (không API công khai) nối host/fs/net/args/caps như `Interp::run`/`Vm::run`, và chính
-//    sách guard `200_000` turn cho chương trình thật. Chưa làm trong 1c.
-// 5) Blocker trước flip: biến thể nested async lồng sâu (báo cáo cũ) chưa được xác minh; `Pipe`
-//    default VM chưa parity; `chan(n≥1)` blocking vẫn `VS0505`; hợp đồng mã/result khi huỷ chờ A0.
+// Ghi chú 1d (ĐÃ FLIP theo VD-271, xem `vs3_default.rs`):
+// 1) Phân loại: `HItem::Fn/Impl/Trait` có `is_async` ⇒ frame runtime; sync không có async fn
+//    giữ `Interp::run`/`Vm::run`. Async có `chan(n>0)` hoặc cap động tạm giữ runtime cũ
+//    (`co_chan_cap_khong_zero` trong CLI) đến VS3-2b/W3; async net read cần backend thật.
+// 2) Entry runtime thật: `vis_interp::run_async_with_hosts_caps` và
+//    `vis_vm::run_async_with_full_hosts_caps`, nối host/fs/net/db/args/caps; guard 200_000 turn
+//    có trap rõ, hook test hạ trần để kiểm chứng.
+// 3) VERSION/cache: không đổi HIR/bytecode/opcode và không thêm nhãn cache ⇒ không bump
+//    `VERSION`/`PHIEN_BAN`; cache warm/cold được test trong `vs3_default`.
+// 4) Test bắt buộc đã chạy: `vs3_default`, `vs3_budget`, `vs3_cancel`, `vs3_chan0`,
+//    `vs3_coverage_matrix`, `lat255_coverage`, `lat257_a_coverage`, `lat257_c_lifecycle`,
+//    `lat256_net`, `lat3_real`, toàn bộ `test/sem/async`, golden sync, cache warm/cold.
+// 5) Blocker còn lại: nested async lồng sâu chưa xác minh; async `chan(n>0)`/net reactor dùng
+//    runtime cũ; hợp đồng mã/result khi huỷ chờ A0.
 
 #[test]
 fn nested_async_co_ban_qua_bon_duong() {

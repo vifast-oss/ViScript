@@ -454,6 +454,24 @@ pub fn frame_cancel_clear_triggers_for_test() {
     FRAME_CANCEL_TEST.with(|x| x.borrow_mut().clear());
 }
 
+// **VS3-1d (chỉ test)** — hạ trần turn scheduler để kiểm chứng guard mà không chạy 200k turn.
+// Runtime production dùng mặc định 200_000; hook này không có CLI/API ngôn ngữ.
+thread_local! {
+    static FRAME_MAX_TURNS_TEST: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
+}
+
+/// **Chỉ test**: đặt trần turn scheduler (`None` = mặc định production 200_000).
+#[doc(hidden)]
+pub fn frame_set_max_turns_for_test(n: Option<usize>) {
+    FRAME_MAX_TURNS_TEST.with(|x| x.set(n));
+}
+
+/// **Chỉ test**: trần turn scheduler đang đặt, hoặc `None`.
+#[doc(hidden)]
+pub fn frame_max_turns_for_test() -> Option<usize> {
+    FRAME_MAX_TURNS_TEST.with(|x| x.get())
+}
+
 impl Scheduler {
     pub fn new() -> Self {
         Self::default()
