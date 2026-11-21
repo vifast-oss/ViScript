@@ -43,6 +43,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 
 ## Mốc đáng chú ý
 
+- **2026-11-21** — **VS3-3a (spike worker/heap)**: đo 14 lần; chọn **affine + heap theo luồng + copy/move tại biên**, TaskId/proxy, channel `Arc<Mutex<ChanBuf<Wire>>>`, budget atomic, print merge; W=4 2,45× (ngưỡng 2,4); worker pool vẫn opt-in/test-only; merge báo cáo `4bb20df`.
 - **2026-11-21** — **VS3-5b (chữ ký + GC + migrate)**: Ed25519 `vispkg-sig1` (`--registry-key`/`VIS_REGISTRY_KEY`), xác minh trước tarball; `vis pkg gc [--dry-run]`; `vis pkg migrate` lock 1→2; 9+5 ca mới; merge `0861a8e`/`cea1643`.
 - **2026-11-21** — **VS3-1b (cancellation/cleanup)**: shared waiter registration, gỡ timer/reactor/write buffer đúng một lần, handle sống giữ kết quả, final join `VS0506`; 14 ca `vs3_cancel`; measurement chuyển sang example (bỏ `#[ignore]`); merge `97676c6`.
 - **2026-11-21** — **VS3-4a (TLS client)**: `http.get/head` nhận `https://` qua `rustls` + `webpki-roots`; cert/SAN validate, deadline chung connect+handshake+redirect+đọc; HTTPS→HTTP bị chặn; HTTP/2/keep-alive chưa có; 10 ca TLS; merge `9ceec53`.
