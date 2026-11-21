@@ -43,6 +43,13 @@
 //!   vị **đang chạy** được hoàn tất; in theo thứ tự gốc; plan/cases đếm **đơn vị đã chạy**.
 //!   Khác bản tuần tự: vài ca có chỉ số **sau** ca đỏ có thể đã kịp chạy (đã lập lịch trước khi
 //!   thấy đỏ) nên plan có thể lớn hơn vị trí ca đỏ.
+//! - `--slowest <N>` — đo **thời gian tường** từng **đơn vị đã chạy** (ca × lần lặp; `--fail-fast`
+//!   chỉ đơn vị đã chạy), sau TAP/JSON (stdout **không đổi**) in tối đa `N` dòng ra **stderr**,
+//!   **giảm dần**, hoà giữ **thứ tự gốc**: `# slowest: <ms> ms - <tên>`, dưới 1 ms dùng
+//!   `# slowest: <us> us - <tên>`. `N` nguyên ≥ 1; thiếu/`0`/âm/không nguyên/lặp cờ ⇒ exit **2**
+//!   và usage nêu `--slowest`; `--slowest` + `--list` ⇒ exit **2** (không có thời gian chạy).
+//!   `--jobs`/`--repeat`/`--shard`/`--filter`/`--shuffle` compose; `--slowest` áp **sau** khi đã
+//!   có danh sách đơn vị.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -51,7 +58,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
 fn usage() -> ExitCode {
-    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [thư mục|tệp]");
+    eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
   --list: chỉ in tên các ca đã chọn (mỗi dòng), không chạy; --list --json in {{\"tests\":[…]}}.");
     eprintln!("  --timeout <ms>: giới hạn mỗi ca (test fn **và** fixture .out/.err) ≤ ms (≥ 50); quá hạn ⇒ kill + `not ok` với `quá hạn <ms> ms`; mặc định **không** giới hạn");
@@ -60,6 +67,7 @@ fn usage() -> ExitCode {
     eprintln!("  --shuffle [--seed <u64>]: xáo thứ tự ca đã chọn trước khi chạy/liệt kê; cùng seed ⇒ cùng thứ tự, mặc định seed 0; --seed chỉ dùng cùng --shuffle (thiếu/sai ⇒ exit 2)");
     eprintln!("  --shard <I>/<N>: chỉ chạy phần I/N của ca đã chọn (1 ≤ I ≤ N); chia theo chỉ số sau --filter/--shuffle, trước --list/--repeat; N phần rời nhau, hợp = đủ tập");
     eprintln!("  --jobs <N>: chạy N đơn vị (ca × lần lặp) song song (số nguyên ≥ 1, mặc định 1); kết quả/TAP/JSON in theo đúng thứ tự cũ; --fail-fast ngừng lập lịch sau lần đỏ đầu (đơn vị đang chạy vẫn xong ⇒ plan = số đã chạy); --list bỏ qua --jobs");
+    eprintln!("  --slowest <N>: sau TAP/JSON (stdout không đổi) in tối đa N đơn vị đã chạy lâu nhất ra stderr, giảm dần, hoà giữ thứ tự gốc: `# slowest: <ms> ms - <tên>` (dưới 1 ms dùng `<us> us`); N nguyên ≥ 1; không đi với --list");
     ExitCode::from(2)
 }
 
@@ -494,9 +502,9 @@ fn parse_shard(s: &str) -> Option<(usize, usize)> {
     Some((i, n))
 }
 
-/// **VD-270**: kết quả từng **đơn vị** theo đúng thứ tự gốc (chỉ số ca, rồi k); `None` = chưa
-/// chạy (`--fail-fast` bỏ phần đuôi chưa lập lịch).
-type KetQuaDonVi = Vec<Option<(String, Kq)>>;
+/// **VD-270**: kết quả từng **đơn vị** theo đúng thứ tự gốc (chỉ số ca, rồi k) — tên, kết quả,
+/// **thời gian tường** của lần chạy; `None` = chưa chạy (`--fail-fast` bỏ phần đuôi chưa lập lịch).
+type KetQuaDonVi = Vec<Option<(String, Kq, std::time::Duration)>>;
 
 /// **VD-270**: tên gốc của ca (không hậu tố `[k/N]`) — `test fn` dùng **tên test**, fixture dùng
 /// đường dẫn hiển thị như trước.
@@ -518,6 +526,27 @@ fn ten_don_vi(ten_goc: &str, k: usize, repeat: usize) -> String {
     } else {
         ten_goc.to_string()
     }
+}
+
+/// **VD-270**: định dạng thời gian cho `--slowest` — `≥ 1 ms` dùng `"<ms> ms"`, dưới 1 ms dùng
+/// `"<us> us"` (micro giây; cắt xuống theo đơn vị, không in phần lẻ).
+fn dinh_dang_thoi_gian(d: std::time::Duration) -> String {
+    if d.as_millis() >= 1 {
+        format!("{} ms", d.as_millis())
+    } else {
+        format!("{} us", d.as_micros())
+    }
+}
+
+/// **VD-270**: sắp **giảm dần** theo thời gian rồi lấy tối đa `n` mục; hoà giữ **thứ tự gốc**
+/// (`sort_by_key` của Rust là **ổn định**). Tách khỏi vòng chạy để test phần “hoà” độc lập đồng hồ.
+fn sap_xep_slowest(
+    mut ds: Vec<(String, std::time::Duration)>,
+    n: usize,
+) -> Vec<(String, std::time::Duration)> {
+    ds.sort_by_key(|a| std::cmp::Reverse(a.1));
+    ds.truncate(n);
+    ds
 }
 
 /// **VD-270**: cấu hình chạy chung cho đường tuần tự và song song (gom tham số, tránh lặp).
@@ -547,6 +576,8 @@ fn chay_tuan_tu(ca: &[(PathBuf, Option<(String, String)>)], cfg: &CauHinhChay<'_
                 break 'ca;
             }
             let ten = ten_don_vi(&ten_goc, k, cfg.repeat);
+            // **VD-270** (`--slowest`): chỉ đo **lần chạy** của đơn vị, không tính lúc in.
+            let bat = std::time::Instant::now();
             let kq = chay_mot_lan(
                 don_vi,
                 p,
@@ -556,10 +587,11 @@ fn chay_tuan_tu(ca: &[(PathBuf, Option<(String, String)>)], cfg: &CauHinhChay<'_
                 cfg.strict,
                 cfg.timeout_han,
             );
+            let thoi_gian = bat.elapsed();
             if !kq.ok {
                 hong += 1;
             }
-            ra[don_vi] = Some((ten, kq));
+            ra[don_vi] = Some((ten, kq, thoi_gian));
             don_vi += 1;
         }
     }
@@ -583,7 +615,7 @@ fn chay_song_song(
     }
     let tiep = AtomicUsize::new(0);
     let dung = AtomicBool::new(false);
-    let (tx, rx) = std::sync::mpsc::channel::<(usize, String, Kq)>();
+    let (tx, rx) = std::sync::mpsc::channel::<(usize, String, Kq, std::time::Duration)>();
     std::thread::scope(|s| {
         for _ in 0..cfg.jobs.min(so_don_vi) {
             let tx = tx.clone();
@@ -603,6 +635,8 @@ fn chay_song_song(
                 let (p, bai_test) = &ca[i_ca];
                 let ten_goc = ten_goc_cua(cfg.goc, p, bai_test.as_ref());
                 let ten = ten_don_vi(&ten_goc, k, cfg.repeat);
+                // **VD-270** (`--slowest`): thời gian tường của **đơn vị** (chỉ lúc chạy).
+                let bat = std::time::Instant::now();
                 let kq = chay_mot_lan(
                     don_vi,
                     p,
@@ -612,18 +646,19 @@ fn chay_song_song(
                     cfg.strict,
                     cfg.timeout_han,
                 );
+                let thoi_gian = bat.elapsed();
                 if cfg.fail_fast && !kq.ok {
                     dung.store(true, Ordering::Release);
                 }
-                if tx.send((don_vi, ten, kq)).is_err() {
+                if tx.send((don_vi, ten, kq, thoi_gian)).is_err() {
                     break;
                 }
             });
         }
         // Đóng đầu gửi gốc: vòng nhận dưới đây kết thúc khi **mọi** worker xong.
         drop(tx);
-        for (don_vi, ten, kq) in rx {
-            ra[don_vi] = Some((ten, kq));
+        for (don_vi, ten, kq, thoi_gian) in rx {
+            ra[don_vi] = Some((ten, kq, thoi_gian));
         }
     });
     ra
@@ -675,6 +710,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut shard: Option<(usize, usize)> = None;
     // **VD-270**: `--jobs <N>` — số worker song song; mặc định 1 (tuần tự, byte cũ).
     let mut jobs: Option<usize> = None;
+    // **VD-270**: `--slowest <N>` — in N đơn vị chậm nhất ra stderr sau TAP/JSON.
+    let mut slowest: Option<usize> = None;
     let mut duong: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
@@ -818,6 +855,44 @@ pub fn run(args: &[String]) -> ExitCode {
                 }
                 jobs = Some(n);
             }
+            // **VD-270**: `--slowest <N>` — N sai (0, âm, không nguyên, thiếu) hoặc lặp cờ ⇒
+            // exit 2, thông điệp/usage nêu `--slowest`.
+            "--slowest" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("vis test: `--slowest` cần số nguyên ≥ 1");
+                    return ExitCode::from(2);
+                };
+                if slowest.is_some() {
+                    eprintln!("vis test: `--slowest` lặp lại");
+                    return ExitCode::from(2);
+                }
+                let Ok(n) = v.parse::<usize>() else {
+                    eprintln!("vis test: `--slowest` cần số nguyên ≥ 1, được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if n < 1 {
+                    eprintln!("vis test: `--slowest` phải ≥ 1, được {n}");
+                    return ExitCode::from(2);
+                }
+                slowest = Some(n);
+                i += 1;
+            }
+            s if s.starts_with("--slowest=") => {
+                if slowest.is_some() {
+                    eprintln!("vis test: `--slowest` lặp lại");
+                    return ExitCode::from(2);
+                }
+                let v = &s["--slowest=".len()..];
+                let Ok(n) = v.parse::<usize>() else {
+                    eprintln!("vis test: `--slowest` cần số nguyên ≥ 1, được `{v}`");
+                    return ExitCode::from(2);
+                };
+                if n < 1 {
+                    eprintln!("vis test: `--slowest` phải ≥ 1, được {n}");
+                    return ExitCode::from(2);
+                }
+                slowest = Some(n);
+            }
             "--filter" => {
                 let Some(v) = args.get(i + 1) else {
                     eprintln!("vis test: `--filter` cần chuỗi con");
@@ -863,6 +938,11 @@ pub fn run(args: &[String]) -> ExitCode {
     // **VD-270**: `--json-out` không đi với `--list` (hai đầu ra máy khác khuôn).
     if json_out.is_some() && list {
         eprintln!("vis test: `--json-out` không đi với `--list`");
+        return ExitCode::from(2);
+    }
+    // **VD-270**: `--slowest` cần ca **đã chạy**; `--list` không chạy ⇒ không có thời gian.
+    if slowest.is_some() && list {
+        eprintln!("vis test: `--slowest` không đi với `--list` (không có ca nào chạy)");
         return ExitCode::from(2);
     }
     // **VD-270**: `--seed` chỉ có nghĩa khi xáo; thiếu `--shuffle` ⇒ lỗi dùng (exit 2).
@@ -993,13 +1073,19 @@ pub fn run(args: &[String]) -> ExitCode {
     } else {
         chay_song_song(&ca, &cfg)
     };
-    for (ten, kq) in ket_qua.into_iter().flatten() {
+    // **VD-270** (`--slowest`): chỉ giữ thời gian của **đơn vị đã chạy** (đúng thứ tự gốc);
+    // `--fail-fast` để đuôi `None` nên không bao giờ lọt vào báo cáo.
+    let mut thoi_gian_ds: Vec<(String, std::time::Duration)> = Vec::new();
+    for (ten, kq, thoi_gian) in ket_qua.into_iter().flatten() {
         let so = cases.len() + 1;
         if kq.ok {
             than.push_str(&format!("ok {so} - {ten}\n"));
         } else {
             hong += 1;
             than.push_str(&format!("not ok {so} - {ten}\n# {}\n", kq.chi_tiet));
+        }
+        if slowest.is_some() {
+            thoi_gian_ds.push((ten.clone(), thoi_gian));
         }
         cases.push(CaJson {
             ten,
@@ -1028,6 +1114,13 @@ pub fn run(args: &[String]) -> ExitCode {
         print!("{}", body.as_deref().unwrap_or_default());
     } else {
         print!("{tap}");
+    }
+    // **VD-270** (`--slowest`): sau TAP/JSON, **chỉ stderr**, tối đa N dòng, giảm dần; hoà giữ
+    // thứ tự gốc nhờ `sort_by_key` ổn định. Không cờ ⇒ không in gì thêm.
+    if let Some(n) = slowest {
+        for (ten, tg) in sap_xep_slowest(thoi_gian_ds, n) {
+            eprintln!("# slowest: {} - {ten}", dinh_dang_thoi_gian(tg));
+        }
     }
     if hong > 0 {
         ExitCode::from(1)
@@ -1104,6 +1197,37 @@ mod tests {
             dt.as_millis() < 3_000,
             "{dt:?} ≥ 3 s ⇒ đang chờ cháu đóng ống"
         );
+    }
+
+    /// **VD-270**: `--slowest` in `<ms> ms` khi ≥ 1 ms, `<us> us` khi dưới 1 ms (cắt xuống).
+    #[test]
+    fn slowest_dinh_dang_thoi_gian() {
+        use std::time::Duration;
+        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(0)), "0 us");
+        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(999)), "999 us");
+        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(1_500)), "1 ms");
+        assert_eq!(dinh_dang_thoi_gian(Duration::from_millis(2_500)), "2500 ms");
+    }
+
+    /// **VD-270**: `--slowest` sắp **giảm dần**; thời gian **bằng nhau** giữ **thứ tự gốc**;
+    /// lấy tối đa N mục.
+    #[test]
+    fn slowest_sap_giam_dan_hoa_giu_thu_tu_goc() {
+        use std::time::Duration;
+        let ds = vec![
+            ("a".to_string(), Duration::from_millis(5)),
+            ("b".to_string(), Duration::from_millis(9)),
+            ("c".to_string(), Duration::from_millis(5)),
+            ("d".to_string(), Duration::from_millis(1)),
+        ];
+        let ra = sap_xep_slowest(ds.clone(), 3);
+        let tens: Vec<&str> = ra.iter().map(|(t, _)| t.as_str()).collect();
+        assert_eq!(
+            tens,
+            ["b", "a", "c"],
+            "hoà 5 ms phải giữ thứ tự gốc (a rồi c)"
+        );
+        assert_eq!(sap_xep_slowest(ds, 99).len(), 4, "N > số mục ⇒ in hết");
     }
 
     /// **ST-230**: PATH cho tiến trình con có thư mục binary ở **đầu**, phần PATH cũ giữ nguyên
