@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VS3-3b gate B7** — benchmark CPU-only + payload matrix cho `WorkerPool` opt-in.
 //!
-//! Chạy thủ công (không nằm trong gate thường):
+//! Chạy thủ công (example, không nằm trong test suite):
 //! ```text
-//! cargo test -p vis-cli --test vs3_worker_bench -- --ignored --nocapture --test-threads=1
+//! cargo run -p vis-cli --example vs3_worker_bench
 //! ```
 //! Đo W=1/2/4; payload list 1k/10k, map 1k, record 16 trường + list1k, enum(list1k),
 //! str 1MiB; mỗi task copy payload **trên producer** (giống spawn snapshot một lần) rồi
@@ -342,9 +342,7 @@ fn check_cross_write() {
     }
 }
 
-#[test]
-#[ignore = "benchmark B7: chạy thủ công --ignored --nocapture"]
-fn worker_bench_b7() {
+fn main() {
     warm_cpu(400);
     let (cpu_iters, cpu_us) = calibrate_cpu(200_000.0);
     let nproc = std::thread::available_parallelism()
