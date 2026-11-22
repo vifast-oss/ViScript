@@ -108,7 +108,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vis-bytecode"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "sha2",
  "vis-diag",
@@ -118,7 +118,7 @@ dependencies = [
 
 [[package]]
 name = "vis-diag"
-version = "0.4.1"
+version = "0.4.5"
 
 [[package]]
 name = "vis-host-wasm"
@@ -135,7 +135,7 @@ dependencies = [
 
 [[package]]
 name = "vis-interp"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "unicode-normalization",
  "vis-diag",
@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "vis-loader"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "vis-bytecode",
  "vis-diag",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "vis-syntax"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "unicode-ident",
  "unicode-normalization",
@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "vis-types"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "vis-diag",
  "vis-syntax",
@@ -173,7 +173,7 @@ dependencies = [
 
 [[package]]
 name = "vis-vm"
-version = "0.4.1"
+version = "0.4.5"
 dependencies = [
  "vis-bytecode",
  "vis-diag",
