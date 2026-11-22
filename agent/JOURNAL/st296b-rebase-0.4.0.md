@@ -49,3 +49,11 @@ Log: `JOURNAL/st296b-gate.log`, `JOURNAL/st296b-targets.log`.
 - ST-296b đã rebase sạch lên `ceac954` với version `0.4.0`, không xung đột logic, gate đúng
   **3656/4**, targets core 18/18.
 - **Chưa merge vào main** — chờ A0 tag `v0.4.0` xong; không tag/push/merge.
+
+## Log lớn ngoài repo (R7)
+
+Đã chuyển `st296b-gate.log`/`st296b-targets.log` sang `/home/ps/vislogs/st296b/`; sha256:
+```
+c55eab3d6b95a1480c6fc243509316bbbe90dc6b9439314b78117b2809b1c881  st296b-gate.log
+7debefd1a86aeff25d13a5407b2e5a537739658c77331fd713543c74d6dbef38  st296b-targets.log
+```

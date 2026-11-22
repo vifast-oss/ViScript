@@ -30,14 +30,14 @@ use std::path::PathBuf;
 // **SỬA KÈM LÝ DO (VD-258 / stream A, 2026-11-20)**: checker/codegen đổi ngữ nghĩa
 // `Result?`, `?.` lồng, record ctor/default, `None`; `VERSION` VBC1 không đổi ⇒ cache cũ
 // cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
-// **ST-289 (VD-272 điểm 3)**: `CARGO_PKG_VERSION` nay là **0.4.0** (workspace một nguồn) ⇒
+// **ST-289 (VD-272 điểm 3)**: `CARGO_PKG_VERSION` nay là **0.4.1** (workspace một nguồn) ⇒
 // `PHIEN_BAN` đổi theo, cache bản 0.1.0 tự vô hiệu; **không** đổi `VERSION` VBC1/ABI/định dạng.
 // **ST-290 (VD-273)**: ngân sách ngữ nghĩa bật **mặc định** 40M và artifact VM có trailer `VFEE`
 // (bảng phí) ⇒ cache cũ không mang ngữ nghĩa ngân sách mới phải tự vô hiệu; `VERSION` VBC1 và
 // ABI không đổi.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -245,16 +245,22 @@ mod tests {
     #[test]
     fn khoa_cache_ghim() {
         let k = hex(&khoa_multi(&don_vi(), vis_syntax::Mode::Script));
-        // **ST-289 (VD-272 điểm 3)**: phiên bản workspace `0.1.0 → 0.4.0` (một nguồn
+        // **ST-289 (VD-272 điểm 3)**: phiên bản workspace `0.1.0 → 0.4.1` (một nguồn
         // `version.workspace = true`). `PHIEN_BAN` nhúng `CARGO_PKG_VERSION` **có chủ ý**
         // (VD-129) ⇒ khoá đổi, cache của bản 0.1.0 tự vô hiệu; `VERSION` VBC1 và ABI **không đổi**.
         // **ST-290 (VD-273)**: ngân sách mặc định 40M + artifact VM mang bảng phí (trailer VFEE)
         // ⇒ cache cũ không mang ngữ nghĩa ngân sách mới bị bỏ; ghim lại lần nữa.
         // **v0.4.0 (ST-296, VD-129)**: bump `CARGO_PKG_VERSION` 0.3.6 → 0.4.0 + nhãn
         // `v040-release` ⇒ khoá đổi có chủ ý; cache 0.3.6 tự vô hiệu, `VERSION` VBC1/ABI không đổi.
+        // **v0.4.1 (ST-296d, VD-129)**: bump 0.4.0 → 0.4.1 + nhãn `v041-release` ⇒ ghim lại;
+        // cache 0.4.0 tự vô hiệu, `VERSION` VBC1/ABI/định dạng không đổi.
         assert_eq!(
-            k, "22572d0b3267c93ddecc223a7522cc69767b3a5c1f6b46f8bff04d95d3803a8b",
+            k, "42f5389364ae126f8b9dea4c3bf107c983c3b92d7b1743a5293d547f3d4d7c0f",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "22572d0b3267c93ddecc223a7522cc69767b3a5c1f6b46f8bff04d95d3803a8b",
+            "v0.4.1: cache sinh trước bump 0.4.1 không được tái dùng"
         );
         assert_ne!(
             k, "e5373caf155dfad15e8173df5f5218651847d17d0963e9f0784b42c8ccdf026d",
@@ -351,8 +357,12 @@ mod tests {
             "v0.4.0: cache phải mang nhãn phát hành"
         );
         assert!(
-            PHIEN_BAN.starts_with("0.4.0+"),
-            "PHIEN_BAN phải bắt đầu 0.4.0"
+            PHIEN_BAN.contains("v041-release-2026-11-23"),
+            "v0.4.1: cache phải mang nhãn phát hành"
+        );
+        assert!(
+            PHIEN_BAN.starts_with("0.4.1+"),
+            "PHIEN_BAN phải bắt đầu 0.4.1"
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);

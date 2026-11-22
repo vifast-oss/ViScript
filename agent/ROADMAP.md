@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Cập nhật 2026-11-23 (chuẩn bị `v0.4.1` — CHƯA TAG)** — GĐ 1.5 đã merge đủ
+> **ST-296a** (`53990c0`), **ST-296b** (`067e1a5`/merge `1b27cb8`), **ST-296c** (`ab8d393`),
+> **ST-296d** (`a1730c5`); workspace **0.4.1**, cache re-pin; gate **3656/4** (92 binary,
+> 210,77 s). **`v0.4.0` đã tag @ `c2accdf`**. **`v0.4.1` chưa tag** — tag trên commit R34 sau
+> final QA Linux/Windows. **ST-297 READY** `plan/w2-st297-paths` @ `a188f15` (gate **3660/4**,
+> 4 ca mới) chờ sau `v0.4.1`; **ST-298 BLOCKED**.
 > **Cập nhật 2026-11-23 (`v0.4.0` — R33 CHỐT)** — workspace **0.4.0** (`version.workspace`),
 > `vis --version` = `vis 0.4.0`; cache `PHIEN_BAN` ghim lại (`+v040-release-2026-11-23`).
 > Linux final QA @ `e47b3ca`: gate **3656/4**, release **3661/0/4**, 2× soak **10/10**; Windows
