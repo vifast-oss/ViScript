@@ -135,9 +135,30 @@ pub struct AsyncNet {
     /// `N:<addr>` đã khởi tạo connect, chờ WRITABLE/kiểm SO_ERROR.
     connects: HashSet<String>,
     writes: HashMap<String, WriteState>,
+    /// **ST-287 (VD-273)** — tay HTTP async (`C<n>`/`H<n>#frame`/`N:`/`T:`) theo frame, để
+    /// safe point huỷ đóng đúng tay. Chỉ `net/async_http.rs` ghi sổ; language handle không vào đây.
+    frame_tay: HashMap<u32, Vec<String>>,
+    /// **ST-287** — stream h2 theo frame: huỷ gửi `RST_STREAM` đúng stream, session dùng chung
+    /// với frame khác không bị đóng.
+    frame_h2: HashMap<u32, Vec<(String, u64)>>,
     next_conn: u32,
     next_listen: u32,
     giai_thich: bool,
+}
+
+impl AsyncNet {
+    /// **ST-287 (VD-273)** — bỏ `handle` khỏi sổ tay HTTP async của mọi frame (đã đóng/hoàn tất).
+    fn xoa_so_tay(&mut self, handle: &str) {
+        // Chỉ xoá **đúng** handle: `H<n>#frame` của frame khác dùng chung session phải giữ.
+        self.frame_tay.retain(|_, ds| {
+            ds.retain(|h| h != handle);
+            !ds.is_empty()
+        });
+        self.frame_h2.retain(|_, ds| {
+            ds.retain(|(h, _)| h != handle);
+            !ds.is_empty()
+        });
+    }
 }
 
 impl NetHost for AsyncNet {
@@ -544,6 +565,8 @@ impl FrameReactorBackend for AsyncNet {
     }
 
     fn close(&mut self, handle: &str) -> Result<(), String> {
+        // **ST-287 (VD-273)**: tay đã đóng/hoàn tất không còn trong sổ huỷ của frame.
+        self.xoa_so_tay(handle);
         #[cfg(feature = "async-h2")]
         if self.dong_h2(handle) {
             return Ok(());
@@ -578,6 +601,38 @@ impl FrameReactorBackend for AsyncNet {
         Ok(())
     }
 
+    fn note_task_handle(&mut self, frame_id: u32, handle: &str) {
+        let ds = self.frame_tay.entry(frame_id).or_default();
+        // Connect xong (`C`/`H`) thì khoá chờ `N:`/`T:` không còn là tay sống.
+        if handle.starts_with('C') || handle.starts_with('H') {
+            ds.retain(|h| !(h.starts_with(FRAME_NET_CONNECT) || h.starts_with(FRAME_TLS_CONNECT)));
+        }
+        if !ds.iter().any(|h| h == handle) {
+            ds.push(handle.to_string());
+        }
+    }
+
+    fn note_task_h2(&mut self, frame_id: u32, handle: &str, id: u64) {
+        let ds = self.frame_h2.entry(frame_id).or_default();
+        if !ds.iter().any(|(h, i)| h == handle && *i == id) {
+            ds.push((handle.to_string(), id));
+        }
+    }
+
+    fn cancel_task_handles(&mut self, frame_id: u32) {
+        let h2 = self.frame_h2.remove(&frame_id).unwrap_or_default();
+        let mut tay = self.frame_tay.remove(&frame_id).unwrap_or_default();
+        for (h, id) in h2 {
+            <Self as FrameReactorBackend>::h2_cancel(self, &h, id);
+            if !tay.iter().any(|x| x == &h) {
+                tay.push(h);
+            }
+        }
+        for h in tay {
+            let _ = <Self as FrameReactorBackend>::close(self, &h);
+        }
+    }
+
     #[cfg(feature = "async-h2")]
     fn h2_ready(&mut self, handle: &str) -> Result<bool, String> {
         self.h2_ready_impl(handle)
@@ -601,6 +656,10 @@ impl FrameReactorBackend for AsyncNet {
 
     #[cfg(feature = "async-h2")]
     fn h2_cancel(&mut self, handle: &str, id: u64) {
+        // Stream đã huỷ/hoàn tất không còn trong sổ safe point.
+        for ds in self.frame_h2.values_mut() {
+            ds.retain(|(h, i)| !(h == handle && *i == id));
+        }
         self.h2_cancel_impl(handle, id);
     }
 }

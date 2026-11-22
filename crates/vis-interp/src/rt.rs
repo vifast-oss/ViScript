@@ -350,6 +350,17 @@ pub trait FrameReactorBackend {
     }
     /// **VS3-W2** — huỷ riêng stream `id` (timeout/cancel) mà không đóng session.
     fn h2_cancel(&mut self, _handle: &str, _id: u64) {}
+    /// **ST-287 (VD-273)** — ghi nhận `handle` do **HTTP async** của frame `frame_id` đang giữ.
+    /// Chỉ dùng cho tài nguyên nội bộ của `http.get/head` (không phải language handle); backend
+    /// mặc định bỏ qua, backend thật ghi sổ để [`Self::cancel_task_handles`] đóng đúng tay.
+    fn note_task_handle(&mut self, _frame_id: u32, _handle: &str) {}
+    /// **ST-287 (VD-273)** — ghi nhận stream h2 `id` trên `handle` của frame `frame_id` để huỷ
+    /// gửi `RST_STREAM` đúng stream (session có thể dùng chung với frame khác).
+    fn note_task_h2(&mut self, _frame_id: u32, _handle: &str, _id: u64) {}
+    /// **ST-287 (VD-273)** — **safe point** của huỷ task: đóng mọi tay HTTP async còn treo của
+    /// frame `frame_id` (`H2Async::dong()` + `RST_STREAM` cho h2, đóng socket cho h1).
+    /// Backend mặc định no-op để adapter scripted/test cũ không phải sửa.
+    fn cancel_task_handles(&mut self, _frame_id: u32) {}
 }
 
 /// **VS3-W2** — response h2 có cấu trúc cho core (không nhồi lại thành HTTP/1.1).
@@ -459,6 +470,10 @@ pub struct FrameTest {
     /// **VD-257/C**: `(seq sự kiện, task id)` — khi event có `seq` fire, ghi nhận huỷ `id`
     /// TRƯỚC khi wake, để task đang treo không bao giờ chạy lại source.
     pub cancel_on_seq: Vec<(u64, u32)>,
+    /// **ST-287**: `(số turn, task id)` — huỷ tại safe point sau `turn` lượt `frame_next`.
+    pub cancel_on_turn: Vec<(u64, u32)>,
+    /// **ST-287**: số turn đã qua (chỉ tăng khi `cancel_on_turn` không rỗng).
+    pub turn: u64,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -486,6 +501,9 @@ pub struct Scheduler {
 // nên cả hai engine (interp + VM) cùng thấy một trigger — không CLI flag, không API ngôn ngữ.
 thread_local! {
     static FRAME_CANCEL_TEST: RefCell<Vec<(u64, u32)>> = const { RefCell::new(Vec::new()) };
+    /// **ST-287** — trigger huỷ theo **số turn scheduler** (đếm `frame_next`), drain vào
+    /// `FrameTest.cancel_on_turn` ở `frame_enable_for_test` như trigger theo `seq`.
+    static FRAME_CANCEL_TURNS: RefCell<Vec<(u64, u32)>> = const { RefCell::new(Vec::new()) };
 }
 
 /// **VD-257/C (chỉ test)**: đăng ký "khi event `seq` fire thì ghi nhận huỷ task `id`".
@@ -494,10 +512,19 @@ pub fn frame_cancel_on_seq_for_test(seq: u64, id: u32) {
     FRAME_CANCEL_TEST.with(|x| x.borrow_mut().push((seq, id)));
 }
 
+/// **ST-287 (chỉ test)** — ghi nhận huỷ task `id` tại safe point sau `turns` lượt
+/// `frame_next`. Dùng để huỷ **giữa thân HTTP chậm** (sau khi request đã đi và client đã
+/// đọc phần thân đầu), không phụ thuộc thứ tự event giả.
+#[doc(hidden)]
+pub fn frame_cancel_after_turns_for_test(turns: u64, id: u32) {
+    FRAME_CANCEL_TURNS.with(|x| x.borrow_mut().push((turns, id)));
+}
+
 /// **VD-257/C (chỉ test)**: xoá mọi trigger huỷ còn tồn trong thread-local (dọn giữa các ca).
 #[doc(hidden)]
 pub fn frame_cancel_clear_triggers_for_test() {
     FRAME_CANCEL_TEST.with(|x| x.borrow_mut().clear());
+    FRAME_CANCEL_TURNS.with(|x| x.borrow_mut().clear());
 }
 
 // **VS3-1d (chỉ test)** — hạ trần turn scheduler để kiểm chứng guard mà không chạy 200k turn.
@@ -704,8 +731,20 @@ impl Scheduler {
         let Some(b) = self.frame.backend.clone() else {
             return Err("HTTP/2 async cần reactor backend thật (không có backend)".to_string());
         };
-        let kq = b.borrow_mut().h2_send(handle, method, target, headers);
-        kq
+        let id = b.borrow_mut().h2_send(handle, method, target, headers)?;
+        // **ST-287 (VD-273)**: ghi sổ stream để safe point huỷ gửi `RST_STREAM` đúng stream.
+        b.borrow_mut().note_task_h2(self.frame.current, handle, id);
+        Ok(id)
+    }
+
+    /// **ST-287 (VD-273)** — ghi sổ tay HTTP async (`C<n>`/`H<n>#frame`/`N:…`/`T:…`) của frame
+    /// hiện tại để safe point huỷ đóng đúng tay. Chỉ `net/async_http.rs` gọi; language handle
+    /// của `net.read`/`net.write` không đi qua đây.
+    #[doc(hidden)]
+    pub fn frame_reactor_note_handle(&mut self, handle: &str) {
+        if let Some(b) = self.frame.backend.clone() {
+            b.borrow_mut().note_task_handle(self.frame.current, handle);
+        }
     }
 
     /// **VS3-W2** — poll một bước h2 cho stream `id`; `WouldBlock` ⇒ đăng ký READ|WRITE.

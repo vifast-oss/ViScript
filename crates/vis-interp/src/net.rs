@@ -23,7 +23,7 @@ use std::net::IpAddr;
 use std::time::{Duration, Instant};
 
 mod async_http;
-pub(crate) use async_http::{http_get_async, http_head_async};
+pub(crate) use async_http::{http_get_async, http_head_async, xoa_trang_thai_frame};
 
 use crate::builtin::NetHost;
 

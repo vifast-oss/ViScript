@@ -71,6 +71,17 @@ thread_local! {
     static DANG_CHAY: RefCell<HashMap<u32, HttpAsync>> = RefCell::new(HashMap::new());
 }
 
+/// **ST-287 (VD-273)** — bỏ state `http.get/head` đang treo của frame tại safe point huỷ.
+///
+/// Backend đã đóng tay (`cancel_task_handles`) trước khi gọi hàm này; ở đây chỉ quên state để
+/// frame id tái dùng không `dong()` lần hai (h2 đếm user/`RST_STREAM` đúng một lần). Không đóng
+/// tay, không đổi policy language handle.
+pub(crate) fn xoa_trang_thai_frame(id: u32) {
+    DANG_CHAY.with(|m| {
+        m.borrow_mut().remove(&id);
+    });
+}
+
 enum Buoc {
     Cho,
     Xong(Value),
@@ -208,6 +219,7 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
                 format!("{FRAME_NET_CONNECT}{}|{}", u.dia_chi(), st.khoa)
             };
             st.dang_noi = Some(key.clone());
+            host.sched().borrow_mut().frame_reactor_note_handle(&key);
             let v = host.sched().borrow_mut().frame_reactor_poll_io(
                 crate::rt::ReactorOp::Read,
                 &key,
@@ -223,6 +235,7 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             };
             st.dang_noi = None;
             st.handle = Some(h.to_string());
+            host.sched().borrow_mut().frame_reactor_note_handle(h);
             st.dat_lai_sau_chuyen_huong();
         }
         let handle = st.handle.clone().expect("handle vừa có");
