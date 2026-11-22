@@ -1,0 +1,54 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T07:55:18Z
+# host=psvn
+# lenh: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st287-target\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-final2\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --no-run\ \>/dev/null\ 2\>\&1\;\ s=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-final2/serial\$i.log\ 2\>\&1\ \|\|\ \{\ s=\$\(\(s+1\)\)\;\ echo\ \"SERIAL\ FAIL\ \$i\"\;\ \}\;\ done\;\ p=0\;\ for\ i\ in\ \$\(seq\ 1\ 10\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ \>\ /c/Users/ps/vislogs/st287-final2/par\$i.log\ 2\>\&1\ \|\|\ \{\ p=\$\(\(p+1\)\)\;\ echo\ \"PAR\ FAIL\ \$i\"\;\ \}\;\ done\;\ e=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_lap_nhieu_vong_khong_ro\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-final2/exactlap\$i.log\ 2\>\&1\ \|\|\ \{\ e=\$\(\(e+1\)\)\;\ echo\ \"EXACTLAP\ FAIL\ \$i\"\;\ \}\;\ done\;\ echo\ \"SUMMARY\ commit=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\)\ serial_fail=\$s/20\ par_fail=\$p/10\ exact_lap_fail=\$e/20\" 
+# lenh_do: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st287-target\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-final2\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --no-run\ \>/dev/null\ 2\>\&1\;\ s=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-final2/serial\$i.log\ 2\>\&1\ \|\|\ \{\ s=\$\(\(s+1\)\)\;\ echo\ \"SERIAL\ FAIL\ \$i\"\;\ \}\;\ done\;\ p=0\;\ for\ i\ in\ \$\(seq\ 1\ 10\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ \>\ /c/Users/ps/vislogs/st287-final2/par\$i.log\ 2\>\&1\ \|\|\ \{\ p=\$\(\(p+1\)\)\;\ echo\ \"PAR\ FAIL\ \$i\"\;\ \}\;\ done\;\ e=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_lap_nhieu_vong_khong_ro\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-final2/exactlap\$i.log\ 2\>\&1\ \|\|\ \{\ e=\$\(\(e+1\)\)\;\ echo\ \"EXACTLAP\ FAIL\ \$i\"\;\ \}\;\ done\;\ echo\ \"SUMMARY\ commit=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\)\ serial_fail=\$s/20\ par_fail=\$p/10\ exact_lap_fail=\$e/20\" 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T075516Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T075516Z.log.exit
+# log_cuc_bo=/tmp/opencode/st287-psvn-final2-matrix.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 6b2a2161daf08456cf9d2850fbb0c8f3aecfe6f4
+# head_ngan: 6b2a2161
+# git_nhanh: st287-fix2
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 6b2a2161daf08456cf9d2850fbb0c8f3aecfe6f4
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 6b2a2161daf08456cf9d2850fbb0c8f3aecfe6f4
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T075516Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+SUMMARY commit=6b2a2161 dirty=0 serial_fail=0/20 par_fail=0/10 exact_lap_fail=0/20
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T07:56:12Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=60c5fa4e291f4cdc1d9e0e4b89964dae6a5a81e1dfddcabb8d9423abef5dac08
+[exit=0]

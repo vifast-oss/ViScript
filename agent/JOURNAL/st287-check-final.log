@@ -1,0 +1,106 @@
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+== vis-dev check ==
+--- fmt: OK
+    Checking ring v0.17.14
+    Checking rustls-webpki v0.103.17
+    Checking rustls v0.23.46
+    Checking vis-cli v0.3.6 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.48s
+--- clippy: OK
+--- luật R1..R6: OK
+ok - toolchain: parse được rust-version từ Cargo.toml
+ok - toolchain: rust-toolchain.toml (1.100.0) khớp rust-version (1.100.0)
+ok - vis: cargo cũ + không có fallback ⇒ exit 78
+ok - vis: thông báo nêu phiên bản quá cũ
+ok - vis: thông báo nêu yêu cầu workspace
+ok - vis: thông báo nêu ứng viên đã thử
+ok - vis: fallback rustup default được chọn khi PATH cũ
+ok - vis: tôn trọng cargo đang hoạt động trên PATH
+ok - infra/linux/Dockerfile: FROM rust:1.100.0-bookworm
+ok - infra/windows/measure.sh: ghim 1.100.0-x86_64-pc-windows-msvc
+ok - infra/windows/setup.ps1: $Toolchain = 1.100.0-x86_64-pc-windows-msvc
+ok - infra/windows/setup.md: nêu 1.100.0-x86_64-pc-windows-msvc
+# toolchain: PASS
+--- toolchain: OK
+ok - Cargo.toml: release-bins = ["vis"] (thật: [vis])
+ok - Cargo.toml: [[bin]] test-child vẫn còn cho test
+ok - vis-release --dry-run exit 0 (thật: 0)
+ok - dry-run: có `--bin vis`
+ok - dry-run: KHÔNG dùng `--bins`
+ok - dry-run: không có `--bin test-child`
+ok - metadata có test-child ⇒ bị từ chối
+ok - thông báo từ chối nêu test-child
+ok - staging exit 0 (thật: 0; vis-release: lệnh: /tmp/tmp.D3DUuRPXVq/bin/cargo build --release --manifest-path /home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/Cargo.toml -p vis-cli --bin vis
+vis-release: artifact /tmp/tmp.D3DUuRPXVq/out:
+  vis (17 byte)
+vis-release: PASS (không có test-child))
+ok - artifact có vis
+ok - artifact KHÔNG có test-child
+ok - cargo giả đã tạo test-child trong target (phép kiểm có răng)
+ok - artifact chỉ có vis + giấy phép (thật: LICENSE-APACHE,LICENSE-MIT,vis)
+# release: PASS
+--- release: OK
+1..13
+ok 1 - thiếu SPDX bị bắt (R3)
+ok 2 - tệp 1.501 dòng bị bắt (R1)
+ok 3 - unsafe bị bắt (R2)
+ok 4 - vis-host-vifast trong cây nguồn bị bắt (R4)
+ok 5 - thiếu cargo báo rõ (78)
+ok 6 - doc-examples: khối đỏ ngoài allowlist bị bắt (khối đỏ không khai báo)
+ok 7 - doc-examples: ngoại lệ cũ đã xanh bị bắt (ngoại lệ cũ)
+ok 8 - doc-examples: allowlist sai số mục bị bắt (phải đúng 5 mục)
+ok 9 - doc-examples: fixture lệch byte bị bắt (KHÔNG khớp khối)
+ok 10 - doc-examples: qd-* = 10 bị bắt (phải đúng 12 fixture qd)
+ok 11 - doc-examples: qd-* = 13 bị bắt (phải đúng 12 fixture qd)
+ok 12 - doc-examples: binary cũ bị từ chối bị bắt (cũ hơn mã nguồn)
+ok 13 - danh sách cấm (R6): từ khoá cũ bị bắt bị bắt (R6)
+# fixtures: PASS (cây sạch phải xanh)
+--- self-test case âm: OK
+vis: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- vis explain: OK
+--- báo cáo R*-viscript (Khối E)
+report-check: PASS (32 báo cáo, 322 hàng QUEUE phủ đủ)
+--- báo cáo: OK
+--- fixture âm của máy kiểm báo cáo
+1..5
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+ok 1 - fixture bad-head bị bắt
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+ok 2 - fixture bad-commit bị bắt
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+ok 3 - fixture bad-status bị bắt
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+ok 4 - fixture missing-task bị bắt
+test/report/run_fixtures.sh: line 16: /tmp/vrepfx.out: Permission denied
+ok 5 - fixture bad-project bị bắt
+# fixtures: PASS
+--- báo cáo fixtures: OK
+   Compiling vis-cli v0.3.6 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s
+--- build: OK
+--- doc-examples: OK (24 khối tài liệu: 19 xanh + 5 ngoại lệ đỏ đúng; 12 fixture QD §7.1..7.3)
+TAP version 13
+1..20
+ok 1 - README.md:46
+ok 2 - README.md:56
+ok 3 - README.md:71
+ok 4 - README.md:86
+ok 5 - README.md:108
+ok 6 - README.md:131
+ok 7 - README.md:148
+ok 8 - README.md:161
+ok 9 - README.md:182
+ok 10 - README.md:205
+ok 11 - README.md:224
+ok 12 - README.md:243
+ok 13 - README.md:259
+ok 14 - README.md:283
+ok 15 - README.md:383
+ok 16 - README.md:433
+ok 17 - README.md:468
+ok 18 - README.md:505
+ok 19 - README.md:526
+ok 20 - README.md:548
+# readme-examples: 20/20 khối xanh
+--- readme-examples: OK
+vis-dev check: PASS

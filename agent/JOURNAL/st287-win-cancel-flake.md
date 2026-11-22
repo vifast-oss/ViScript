@@ -2,7 +2,7 @@
 # ST-287 — triage flake `vs3_http_cancel` trên Windows (trước tag `v0.3.6`)
 
 > **Người làm**: subagent VS3-W2, 2026-11-22. **Base**: `92e381b` (merge final Windows
-> `a1930cb`). Không push/merge/tag; không GitHub Actions. **Không sửa mã sản phẩm.**
+> `a1930cb`). Không push/merge/tag; không GitHub Actions. Sửa test fixture + P0/P1 sản phẩm tối thiểu.
 
 ## 0. TL;DR
 
@@ -14,9 +14,10 @@
 | Windows ca riêng `server_khong_tra_header` ×20 | 3/10 fail (W4) | **20/20 pass** |
 | Windows ca riêng `dong_socket` | 1/10 fail (W4) | chạy trong 20 suite serial — 0 fail |
 | Linux `vs3_http_cancel` default / `--features async-h2` | — | **10/10** / **10/10** |
-| `./vis-dev gate --fast` Linux | 3581/3 | **3581/3 PASS** |
+| `./vis-dev gate --fast` / `./vis-dev check` Linux | 3581/3 | **3581/3 PASS** / **check PASS** (report-check 32/322) |
 | Nguyên nhân | — | **test fixture**: socket `accept` trên Windows thừa hưởng nonblocking |
 | Quyết định tag | — | **đủ điều kiện tag theo matrix này**; không tag trong phiên |
+| Commit | — | `e43ca43` (fixture) + `6b2a216` (P0/P1 + bytes trigger) |
 
 ## 1. Triệu chứng W4
 
@@ -82,19 +83,22 @@ trả 10053). `cancel_task_handles`/`RST_STREAM` giữ nguyên.
 
 | Nền / cách chạy | Kết quả |
 |---|---|
-| Windows full suite `--test-threads=1` ×20 | **20/20 pass** |
-| Windows full suite default ×10 | **10/10 pass** |
-| Windows ca riêng `lap_nhieu_vong` ×20 `--test-threads=1` | **20/20 pass** |
-| Windows ca riêng `server_khong_tra_header` ×20 `--test-threads=1` | **20/20 pass** (fixture fix) |
-| Windows workspace 1 vòng | xem §5 (chạy tại commit sửa) |
+| Windows full suite `--test-threads=1` ×20 @ `6b2a2161` | **20/20 pass** (trước 7/20 fail) |
+| Windows full suite default ×10 @ `6b2a2161` | **10/10 pass** |
+| Windows ca riêng `lap_nhieu_vong` ×20 @ `6b2a2161` | **20/20 pass** |
+| Windows ca riêng `server_khong_tra_header` ×20 (fixture fix) | **20/20 pass** (trước 3/10 fail) |
+| Windows workspace @ `6b2a2161` | **3538/0/3**, 355 block, dirty 0 |
 | Linux default ×10 | **10/10 pass** |
 | Linux `--features async-h2` ×10 | **10/10 pass** |
 | Linux `./vis-dev gate --fast` | **PASS — 3581 passed / 0 failed / 3 skipped** |
 
-## 5. Windows workspace tại commit sửa
+## 5. Windows workspace tại commit `6b2a2161`
 
-(chèn kết quả `cargo test --workspace --no-fail-fast` tại commit `[ST-287]` sau khi chạy;
-target riêng `/c/Users/ps/vt-st287-target`.)
+- `psvn` detached `6b2a2161`, dirty 0, `CARGO_TARGET_DIR=/c/Users/ps/vt-st287-target`.
+- `cargo test --workspace --no-fail-fast` — **355 block; 3538 passed / 0 failed / 3 ignored**,
+  `rc=0` (532 s). Log `JOURNAL/st287-win-cancel-workspace.log`.
+- Suite `vs3_http_cancel` tại đúng commit: serial **20/20**, default **10/10**, exact lap
+  **20/20** (`JOURNAL/st287-win-cancel-final-matrix.log`).
 
 ## 6. Quyết định
 
