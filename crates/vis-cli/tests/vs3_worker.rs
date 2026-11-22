@@ -1159,7 +1159,21 @@ fn spawn_shared_stress_rounds_read_only() {
 
     let rss1 = status_kb("VmRSS:");
     let hwm_final = status_kb("VmHWM:");
-    let threads1 = status_kb("Threads:");
+    // **ST-296c (T-INFRA, VD-282)**: `pool.join()` đã join mọi worker; dưới tải cao
+    // `/proc/self/status` có thể còn thấy task của worker trong lúc kernel/scheduler thu hồi.
+    // Đo 60 vòng (rounds=10/20, load 30–48): threads1=2 = threads0, 0/60 đỏ; gate từng đỏ
+    // một lần 2→4. Chờ **có hạn 2 s** — rò thật sẽ không về mức nền và vẫn fail.
+    let mut threads1 = status_kb("Threads:");
+    let mut threads_max = threads1;
+    let han = Instant::now() + std::time::Duration::from_secs(2);
+    while threads1 > threads0 + 1 && Instant::now() < han {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        threads1 = status_kb("Threads:");
+        threads_max = threads_max.max(threads1);
+    }
+    println!(
+        "SHARED_THREADS_SAU_JOIN\tthreads0={threads0}\tthreads1={threads1}\tmax={threads_max}"
+    );
     let secs_all = t_all.elapsed().as_secs_f64();
     let mut sorted_rss = rss_rounds.clone();
     sorted_rss.sort_unstable();
@@ -1214,7 +1228,7 @@ fn spawn_shared_stress_rounds_read_only() {
 
     assert!(
         threads1 <= threads0 + 1,
-        "rò worker thread: {threads0} -> {threads1}"
+        "rò worker thread: {threads0} -> {threads1} (max {threads_max} sau 2 s)"
     );
     assert!(
         rss1.saturating_sub(rss0) < 256 * 1024,
