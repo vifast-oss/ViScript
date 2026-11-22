@@ -25,8 +25,14 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **Final QA Windows @ `5d7791c` + `11e8120`**: full **3607/0/3** (478 s); release **3606/0/3**
   (384 s); worker_frame 12/12+6/6, P1/P2/P3 8/14/10, select 25, h2 33, cancel 8, lsp 27, loader 29;
   `vis 0.4.1`, khoá cache `42f53893…7c0f`.
-- **Tag `v0.4.0` @ `c2accdf`** (R33). **`v0.4.1` — tag trên commit R34 này**. Nhánh **ST-297 READY**
-  `plan/w2-st297-paths` @ `4cad7a0` (gate **3660/4**, 4 ca mới) chờ sau `v0.4.1`; **ST-298 BLOCKED**.
+- **ST-297** (`f4cb136`, merged sau tag): LSP URI/UNC + `--grant` Windows (`#149`); gate **3660/4**
+  (4 ca mới UNC/mixed/percent + `--grant` Windows), Linux `vis-lsp` **29/29**, `path_impl` **2/2**;
+  **#149 code/test xong, chờ W4 xác nhận Windows** (chưa đóng `SO-NO`).
+- **Flake fix** (`044b289`, test-only): `vs3_worker::spawn_shared_stress_rounds_read_only` poll
+  **2 s** sau join (T-INFRA; **0/60** đỏ dưới tải).
+- **ST-298** đang chạy trên `f4cb136`: **3× `vis-gate-windows --full` + soak 4h**; **chưa**
+  tuyên bố Windows Tier 1, **chưa** đóng `#149`.
+- **Tag `v0.4.1` @ `90844bc`** (annotated, pushed); tag trước **`v0.4.0` @ `c2accdf`**.
 
 ## v0.4.0 — 2026-11-23
 
