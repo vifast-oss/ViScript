@@ -85,3 +85,17 @@ crates/vis-cli/tests/lsp_it/  lsp.rs (9) + lsp/lsp_part1.rs (759) + lsp/lsp_part
 - **0 đổi hành vi** theo bằng chứng: gate 3660/4, targets 18/18, diff 100k lệch 0, LSP 152/152.
 - Chưa merge/push/tag; chờ sau `v0.4.5`.
 - **Blocker: không**.
+
+## 6. Rebase lên `7a3bf6b` (v0.4.5 prep + R35) — 2026-11-23
+
+- `git rebase 7a3bf6b`: **không xung đột text**; `Cargo.toml` giữ `version.workspace = true`,
+  `Cargo.lock` được cargo làm mới để `vis-host-native`/`vis-pkg` = **0.4.5**
+  (commit `ddd6ee8`), không còn entry 0.4.1 của hai crate mới.
+- `cargo check --workspace` (default features, gồm `vis-cli` 0.4.5): **PASS** 16,6 s.
+- `./vis-dev gate --fast`: **PASS — 3660 passed / 0 failed / 4 skipped** (151,1 s).
+- `bin/vis-targets`: core **18 PASS / 0 FAIL**; sqlite **16 + 2 EXPECTED_RED** (#156).
+- Log:
+  - `/home/ps/vislogs/st300b-rebase-check.log` — sha256 `a4c9805e46f3aecbf1f8c65be0fe5520a496c0b5ace9902e568405f508c1e671`.
+  - `/home/ps/vislogs/st300b-rebase-gate.log` — sha256 `cea670080073521599ecda57699fa25282ef64d855018049acbe4f77417066b2`.
+  - `/home/ps/vislogs/st300b-rebase-targets.log` — sha256 `0f03e66f1389440d32d03f17c11ea029eb717970918d24d1405b9506cfff9bf7`.
+- Không merge/push/tag. HEAD sau rebase: `ddd6ee8` (+ commit journal này).
