@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-296d-tools / VD-282(3)** — `vis-gc-targets`: canh đĩa (mặc định ≥10 GB, nhắm ≥15 GB)
+# và dọn `target/` của **worktree khác** đã merge hoặc đã cũ, an toàn.
+#
+# Dùng:
+#   bin/vis-gc-targets                 # dry-run: chỉ in ứng viên + dung lượng
+#   bin/vis-gc-targets --apply         # xoá thật (chỉ ứng viên thoả điều kiện)
+#   bin/vis-gc-targets --min-free-gb 10 --target-free-gb 15 --age-days 2
+#   bin/vis-gc-targets --force         # xét cả khi đĩa còn trên ngưỡng
+#
+# An toàn: KHÔNG bao giờ xoá `target/` của chính repo hiện tại; bỏ qua worktree đang có tiến
+# trình nhắc tới đường dẫn; chỉ xoá khi HEAD của worktree đã là tổ tiên của `main` (đã merge)
+# **hoặc** `target/` cũ hơn `--age-days`; không đụng nguồn/log.
+set -u
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+APPLY=0
+FORCE=0
+MIN_FREE_GB=10
+TARGET_FREE_GB=15
+AGE_DAYS=2
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --apply) APPLY=1 ;;
+        --dry-run) APPLY=0 ;;
+        --force) FORCE=1 ;;
+        --min-free-gb) shift; MIN_FREE_GB="${1:-}";;
+        --target-free-gb) shift; TARGET_FREE_GB="${1:-}";;
+        --age-days) shift; AGE_DAYS="${1:-}";;
+        -h | --help) sed -n '2,18p' "$0"; exit 0 ;;
+        *) echo "vis-gc-targets: đối số không hiểu: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+case "$MIN_FREE_GB$TARGET_FREE_GB$AGE_DAYS" in *[!0-9]*) echo "vis-gc-targets: tham số phải là số nguyên" >&2; exit 2 ;; esac
+
+free_gb() { df -Pk "$REPO" 2>/dev/null | awk 'NR==2 { printf "%d", $4 / 1024 / 1024 }'; }
+free="$(free_gb)"
+echo "vis-gc-targets: repo=$REPO free=${free}G (min=${MIN_FREE_GB}G, target=${TARGET_FREE_GB}G)"
+if [ "$free" -ge "$MIN_FREE_GB" ] && [ "$FORCE" -eq 0 ]; then
+    echo "vis-gc-targets: OK — đĩa trên ngưỡng, không cần dọn (dùng --force để xét)"
+    exit 0
+fi
+if [ "$AGE_DAYS" -lt 1 ]; then echo "vis-gc-targets: --age-days phải ≥ 1" >&2; exit 2; fi
+
+MAIN=main
+git -C "$REPO" rev-parse --verify -q main >/dev/null 2>&1 || MAIN=origin/main
+if ! git -C "$REPO" rev-parse --verify -q "$MAIN" >/dev/null 2>&1; then
+    echo "vis-gc-targets: không thấy nhánh $MAIN; từ chối dọn" >&2
+    exit 1
+fi
+
+# Danh sách worktree (một dòng "worktree <path>").
+worktrees=()
+while IFS= read -r wt; do [ -n "$wt" ] && worktrees+=("$wt"); done < <(git -C "$REPO" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')
+proj="$free"
+freed=0
+removed=0
+for wt in ${worktrees[@]+"${worktrees[@]}"}; do
+    [ -n "$wt" ] || continue
+    wt_real="$(cd "$wt" 2>/dev/null && pwd -P)" || continue
+    repo_real="$(cd "$REPO" && pwd -P)"
+        [ "$wt_real" = "$repo_real" ] && continue
+    t="$wt/target"
+    [ -d "$t" ] || continue
+    # Bỏ qua worktree đang được dùng bởi tiến trình (cargo/rustc/vis-*).
+    if ps -eo args= 2>/dev/null | grep -F -- "$wt_real" | grep -vq 'vis-gc-targets'; then
+        echo "SKIP (đang dùng): $wt_real"
+        continue
+    fi
+    merged=0
+    head="$(git -C "$wt" rev-parse HEAD 2>/dev/null || true)"
+    if [ -n "$head" ] && git -C "$REPO" merge-base --is-ancestor "$head" "$MAIN" 2>/dev/null; then merged=1; fi
+    old=0
+    if [ -n "$(find "$t" -maxdepth 0 -mtime +"$AGE_DAYS" 2>/dev/null)" ]; then old=1; fi
+    if [ "$merged" -eq 0 ] && [ "$old" -eq 0 ]; then
+        echo "SKIP (chưa merge và chưa cũ): $wt_real"
+        continue
+    fi
+    size_k="$(du -sk "$t" 2>/dev/null | awk '{print $1}')"
+    size_k="${size_k:-0}"
+    echo "CANDIDATE merged=$merged old=$old size=$((size_k / 1024))M $t"
+    if [ "$APPLY" -eq 1 ]; then
+        rm -rf "$t" || { echo "vis-gc-targets: xoá lỗi: $t" >&2; continue; }
+        removed=$((removed + 1))
+        freed=$((freed + size_k))
+        proj=$((proj + size_k / 1024 / 1024))
+        echo "  đã xoá target (ước giải phóng $((size_k / 1024))M)"
+        if [ "$proj" -ge "$TARGET_FREE_GB" ]; then
+            echo "vis-gc-targets: đạt ${proj}G ≥ ${TARGET_FREE_GB}G — dừng"
+            break
+        fi
+    fi
+done
+
+after="$(free_gb)"
+if [ "$APPLY" -eq 1 ]; then
+    echo "vis-gc-targets: đã xoá $removed target, ước ${freed}K; free ${free}G -> ${after}G"
+else
+    echo "vis-gc-targets: dry-run — thêm --apply để xoá (free=${after}G)"
+fi

@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-296d-tools / VD-282(3)** — `vis-jobs`: liệt kê & kiểm tiến trình nền nguy hiểm
+# (cargo/rustc/nextest/vis-dev/vis-soak/vis-remote/vis-gate-windows/vis-diff).
+#
+# Dùng:
+#   bin/vis-jobs                 # liệt kê (mặc định)
+#   bin/vis-jobs --check         # exit 1 nếu còn job nền (trừ --protect)
+#   bin/vis-jobs --protect <pid> # bảo vệ PID (không tính vào --check); lặp được
+#   bin/vis-jobs --json          # JSON thô (mỗi job một dòng)
+#
+# Chỉ đọc `ps`; không kill, không đổi trạng thái tiến trình. Dùng trước khi
+# `bin/vis-gc-targets --apply` hoặc trước khi dọn worktree.
+set -u
+JSON=0
+CHECK=0
+PROTECT=" "
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --json) JSON=1 ;;
+        --check) CHECK=1 ;;
+        --protect)
+            shift
+            [ $# -gt 0 ] || { echo "vis-jobs: --protect cần <pid>" >&2; exit 2; }
+            case "$1" in '' | *[!0-9]*) echo "vis-jobs: PID không hợp lệ: $1" >&2; exit 2 ;; esac
+            PROTECT="$PROTECT$1 "
+            ;;
+        -h | --help) sed -n '2,18p' "$0"; exit 0 ;;
+        *) echo "vis-jobs: đối số không hiểu: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+
+SELF=$$
+PARENT=$PPID
+# `ps -eo` trên Linux/macOS; chỉ khớp **tên chương trình** (token đầu/cuối script), không khớp
+# chuỗi nằm trong `-c "…"` của tiến trình khác (ví dụ tailscaled chứa chữ `rustc` trong probe).
+jobs="$(ps -eo pid=,ppid=,etime=,stat=,args= 2>/dev/null |
+    awk -v self="$SELF" -v parent="$PARENT" -v protect="$PROTECT" '
+        function protected(p,   a, i, n) { n = split(protect, a, " "); for (i = 1; i <= n; i++) if (a[i] == p) return 1; return 0 }
+        function base(s) { sub(/.*\//, "", s); return s }
+        {
+          pid = $1; ppid = $2
+          if (pid == self || pid == parent) next
+          cmd = $0; sub(/^[ \t]*[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+/, "", cmd)
+          n = split(cmd, a, /[ \t]+/); b1 = base(a[1]); b2 = base(a[2])
+          hit = (b1 ~ /^(cargo|rustc|cargo-nextest|nextest|vis-dev|vis-soak|vis-remote|vis-gate-windows|vis-diff)$/)
+          if (!hit && b1 ~ /^(ba|da|z|k)?sh$/ && b2 ~ /^(vis-dev|vis-soak|vis-remote|vis-gate-windows|vis-diff)$/) hit = 1
+          if (!hit) next
+          if (cmd ~ /vis-jobs/) next
+          if (protected(pid)) { mark = "PROTECTED" } else { mark = "-" }
+          printf "%s\t%s\t%s\t%s\t%s\n", pid, ppid, $3, mark, substr(cmd, 1, 120)
+        }')"
+
+count=$(printf '%s\n' "$jobs" | grep -c . || true)
+if [ "$JSON" -eq 1 ]; then
+    printf '%s\n' "$jobs" | while IFS=$'\t' read -r pid ppid etime mark cmd; do
+        [ -n "${pid:-}" ] || continue
+        printf '{"pid":%s,"ppid":%s,"etime":"%s","protected":%s,"cmd":"%s"}\n' \
+            "$pid" "$ppid" "$etime" "$([ "$mark" = PROTECTED ] && echo true || echo false)" \
+            "$(printf '%s' "$cmd" | sed 's/["\\]/ /g')"
+    done
+else
+    if [ "$count" -eq 0 ]; then
+        echo "vis-jobs: không có job nền nguy hiểm"
+    else
+        printf '%-8s %-8s %-10s %-10s %s\n' PID PPID ELAPSED TRẠNG_THÁI CMD
+        printf '%s\n' "$jobs" | while IFS=$'\t' read -r pid ppid etime mark cmd; do
+            [ -n "${pid:-}" ] || continue
+            printf '%-8s %-8s %-10s %-10s %s\n' "$pid" "$ppid" "$etime" "$mark" "$cmd"
+        done
+    fi
+fi
+
+if [ "$CHECK" -eq 1 ]; then
+    active=$(printf '%s\n' "$jobs" | awk -F'\t' '$4 != "PROTECTED" && $1 != "" { n++ } END { print n + 0 }')
+    if [ "$active" -gt 0 ]; then
+        echo "vis-jobs: còn $active job nền chưa bảo vệ (--protect <pid> nếu cố ý)" >&2
+        exit 1
+    fi
+    echo "vis-jobs: OK (không có job nền chưa bảo vệ)"
+fi
+exit 0

@@ -13,7 +13,7 @@ VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-echo "1..13"
+echo "1..15"
 n=0; bad=0
 expect_fail() {
     n=$((n + 1))
@@ -36,6 +36,15 @@ expect_fail_dev() {
         echo "ok $n - $name bị bắt ($want)"
     else
         echo "not ok $n - $name bị bắt nhưng sai lý do"; sed 's/^/    /' "$tmp/out"; bad=$((bad + 1))
+    fi
+}
+expect_ok_dev() {
+    n=$((n + 1))
+    local name="$1" dir="$2"
+    if bash "$DEV" rules --root "$dir" >"$tmp/out" 2>&1; then
+        echo "ok $n - $name"
+    else
+        echo "not ok $n - $name (phải xanh)"; sed 's/^/    /' "$tmp/out"; bad=$((bad + 1))
     fi
 }
 # qd fixtures (symlink) cho cây tạm: $1 = gốc, $2 = số lượng
@@ -150,5 +159,17 @@ mkdir -p "$tmp/13/docs" "$tmp/13/test/gate"
 printf '# tài liệu sạch\n\n```vis\nlet x: int? = none\n```\n' > "$tmp/13/docs/bad.md"
 cp "$VIS_ROOT/test/gate/cu-cam.txt" "$tmp/13/test/gate/cu-cam.txt"
 expect_fail_dev "danh sách cấm (R6): từ khoá cũ bị bắt" "R6" bash "$DEV" rules --root "$tmp/13"
+# 14) R7 (VD-282): log > 50 KB mới trong agent/JOURNAL ⇒ đỏ
+mkdir -p "$tmp/14/agent/JOURNAL" "$tmp/14/test/gate"
+head -c 52000 /dev/zero | tr '\0' 'x' > "$tmp/14/agent/JOURNAL/moi.log"
+: > "$tmp/14/test/gate/r7-legacy-logs.txt"
+: > "$tmp/14/test/gate/r7-legacy-logs.txt.license"
+expect_fail_dev "R7: log > 50 KB mới bị bắt" "R7" bash "$DEV" rules --root "$tmp/14"
+# 15) R7: cùng tệp nằm trong danh sách legacy ⇒ được miễn (đóng băng lịch sử)
+mkdir -p "$tmp/15/agent/JOURNAL" "$tmp/15/test/gate"
+head -c 52000 /dev/zero | tr '\0' 'x' > "$tmp/15/agent/JOURNAL/legacy.log"
+printf 'agent/JOURNAL/legacy.log\n' > "$tmp/15/test/gate/r7-legacy-logs.txt"
+: > "$tmp/15/test/gate/r7-legacy-logs.txt.license"
+expect_ok_dev "R7: legacy được miễn" "$tmp/15"
 if [ "$bad" -ne 0 ]; then echo "# fixtures: FAIL ($bad)"; exit 1; fi
 echo "# fixtures: PASS (cây sạch phải xanh)"

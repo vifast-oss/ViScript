@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-296d-tools / VD-282(3)** — `vis-status`: bảng điều khiển nhanh (≤ 60 dòng).
+# In HEAD/branch/dirty, đĩa, dung lượng target, job nền và 3 journal mới nhất.
+# Chỉ đọc; không sửa cây, không kill tiến trình.
+set -u
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO" || exit 1
+
+head="$(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+desc="$(git describe --tags --always 2>/dev/null || echo '?')"
+dirty="$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+df_line="$(df -h "$REPO" 2>/dev/null | awk 'NR==2 {print $4" free / "$2" ("$5")"}')"
+target_size="$(du -sh "$REPO/target" 2>/dev/null | awk '{print $1}')"
+jobs="$("$REPO/bin/vis-jobs" 2>/dev/null | tail -n +2 | head -n 8)"
+
+echo "== vis-status $(date -u +%Y-%m-%dT%H:%M:%SZ) =="
+echo "repo     : $REPO"
+echo "HEAD     : $head ($desc)"
+echo "branch   : $branch (dirty $dirty)"
+echo "disk     : ${df_line:-?}"
+echo "target   : ${target_size:-?}"
+echo "jobs     :"
+if [ -n "$jobs" ]; then printf '%s\n' "$jobs" | sed 's/^/  /'; else echo "  (không có)"; fi
+echo "journal  :"
+ls -1t agent/JOURNAL 2>/dev/null | head -3 | sed 's/^/  /'

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-296d-tools / VD-282(3)**: giữ nguyên luật "không che flake" — nextest không retry.
+# Flake phải lộ ra ở cổng, không được tự động chạy lại để xanh.
+[profile.default]
+retries = 0
