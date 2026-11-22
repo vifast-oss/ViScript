@@ -1,0 +1,71 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T11:35:12Z
+# host=psvn
+# lenh: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-verify\;\ ./bin/vis-host-suite\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-host.log\ \|\ tail\ -6\;\ ./bin/vis-targets\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-targets.log\ \|\ tail\ -12 
+# lenh_do: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-verify\;\ ./bin/vis-host-suite\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-host.log\ \|\ tail\ -6\;\ ./bin/vis-targets\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-targets.log\ \|\ tail\ -12 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T113510Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T113510Z.log.exit
+# log_cuc_bo=/tmp/opencode/st294v-host-targets.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# head_ngan: cce2d0fb
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T113510Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+cap_khong_khai               PASS
+det_list                     PASS
+det_map                      PASS
+det_for                      PASS
+vis-host-suite: 54/54 ca xanh (nền: MINGW64_NT-10.0-26300 x86_64; các nền khác chưa đo)
+vis-host-suite: host_posix_real: BỎ QUA (Windows dùng test-child)
+vis-types        wasm32-unknown-unknown       PASS
+vis-bytecode     wasm32-unknown-unknown       PASS
+vis-fmt          wasm32-unknown-unknown       PASS
+vis-interp       wasm32-unknown-unknown       PASS
+vis-vm           wasm32-unknown-unknown       PASS
+vis-cli          wasm32-unknown-unknown       EXPECTED_RED
+  error: failed to run custom build command for `libsqlite3-sys v0.35.0`
+  ly do: #156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md
+vis-host-wasm    wasm32-unknown-unknown       PASS
+vis-host-linux   x86_64-unknown-linux-gnu     PASS
+sqlite (vis-cli default, cấu hình cũ): PASS=17 EXPECTED_RED=1 FAIL=0
+vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T11:36:23Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=341e7bd8cf09790402d6085964ef9b354d288ed3e3afa7a9e5073aa6256ea7e8
+[exit=0]
