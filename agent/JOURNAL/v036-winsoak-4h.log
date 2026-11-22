@@ -1,0 +1,1430 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-289 — soak Windows 4h tren tag v0.3.6 (8fa2c09) — raw summaries
+# Phan 1: /c/Users/ps/vislogs/soak4h-summary.log (psvn shared; R1..R660 hop le)
+# Phan 2: /c/Users/ps/vislogs/soak4b-summary.log (worktree cach ly /c/Users/ps/viscript-w4soak-v036)
+# FAIL/FLAKE: phan 2 R1 p3 rc=127 (env, rerun pass); phan 1 R670+ do HEAD bi doi (8 test cancel).
+
+=== PHAN 1 (psvn shared, tag v0.3.6, 08:58Z) ===
+START utc=2026-11-22T08:58:09Z HEAD=8fa2c097bcdf2eb1eace583ac7fae016a90647b6
+describe=v0.3.6 dirty=0
+free_start_mb=9499
+R1 p2:14/0 p1:8/0 p3:10/0 freeMB=9571 dt=8s
+R2 p2:14/0 p1:8/0 p3:10/0 freeMB=9564 dt=7s
+R3 p2:14/0 p1:8/0 p3:10/0 freeMB=9564 dt=6s
+R4 p2:14/0 p1:8/0 p3:10/0 freeMB=9546 dt=6s
+R5 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9568 dt=23s
+R6 p2:14/0 p1:8/0 p3:10/0 freeMB=9142 dt=7s
+R7 p2:14/0 p1:8/0 p3:10/0 freeMB=9282 dt=7s
+R8 p2:14/0 p1:8/0 p3:10/0 freeMB=9279 dt=7s
+R9 p2:14/0 p1:8/0 p3:10/0 freeMB=9398 dt=7s
+R10 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9445 dt=23s
+R11 p2:14/0 p1:8/0 p3:10/0 freeMB=9419 dt=6s
+R12 p2:14/0 p1:8/0 p3:10/0 freeMB=9551 dt=8s
+R13 p2:14/0 p1:8/0 p3:10/0 freeMB=9536 dt=7s
+R14 p2:14/0 p1:8/0 p3:10/0 freeMB=9596 dt=7s
+R15 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9364 dt=21s
+R16 p2:14/0 p1:8/0 p3:10/0 freeMB=9393 dt=7s
+R17 p2:14/0 p1:8/0 p3:10/0 freeMB=9394 dt=7s
+R18 p2:14/0 p1:8/0 p3:10/0 freeMB=9380 dt=7s
+R19 p2:14/0 p1:8/0 p3:10/0 freeMB=9370 dt=7s
+R20 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9394 dt=23s
+R21 p2:14/0 p1:8/0 p3:10/0 freeMB=9370 dt=7s
+R22 p2:14/0 p1:8/0 p3:10/0 freeMB=9353 dt=7s
+R23 p2:14/0 p1:8/0 p3:10/0 freeMB=9432 dt=7s
+R24 p2:14/0 p1:8/0 p3:10/0 freeMB=9421 dt=7s
+R25 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9409 dt=21s
+R26 p2:14/0 p1:8/0 p3:10/0 freeMB=9413 dt=7s
+R27 p2:14/0 p1:8/0 p3:10/0 freeMB=9405 dt=7s
+R28 p2:14/0 p1:8/0 p3:10/0 freeMB=9382 dt=6s
+R29 p2:14/0 p1:8/0 p3:10/0 freeMB=9362 dt=6s
+R30 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9405 dt=22s
+R31 p2:14/0 p1:8/0 p3:10/0 freeMB=9542 dt=6s
+R32 p2:14/0 p1:8/0 p3:10/0 freeMB=9594 dt=7s
+R33 p2:14/0 p1:8/0 p3:10/0 freeMB=9581 dt=7s
+R34 p2:14/0 p1:8/0 p3:10/0 freeMB=9568 dt=6s
+R35 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9397 dt=21s
+R36 p2:14/0 p1:8/0 p3:10/0 freeMB=9385 dt=7s
+R37 p2:14/0 p1:8/0 p3:10/0 freeMB=9396 dt=7s
+R38 p2:14/0 p1:8/0 p3:10/0 freeMB=9379 dt=6s
+R39 p2:14/0 p1:8/0 p3:10/0 freeMB=9430 dt=7s
+R40 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9385 dt=23s
+R41 p2:14/0 p1:8/0 p3:10/0 freeMB=9592 dt=7s
+R42 p2:14/0 p1:8/0 p3:10/0 freeMB=9567 dt=7s
+R43 p2:14/0 p1:8/0 p3:10/0 freeMB=9553 dt=7s
+R44 p2:14/0 p1:8/0 p3:10/0 freeMB=9537 dt=7s
+R45 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9259 dt=21s
+R46 p2:14/0 p1:8/0 p3:10/0 freeMB=9261 dt=7s
+R47 p2:14/0 p1:8/0 p3:10/0 freeMB=9312 dt=6s
+R48 p2:14/0 p1:8/0 p3:10/0 freeMB=9350 dt=7s
+R49 p2:14/0 p1:8/0 p3:10/0 freeMB=9370 dt=7s
+R50 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9423 dt=23s
+R51 p2:14/0 p1:8/0 p3:10/0 freeMB=9406 dt=7s
+R52 p2:14/0 p1:8/0 p3:10/0 freeMB=9392 dt=7s
+R53 p2:14/0 p1:8/0 p3:10/0 freeMB=9529 dt=7s
+R54 p2:14/0 p1:8/0 p3:10/0 freeMB=9305 dt=7s
+R55 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9380 dt=21s
+R56 p2:14/0 p1:8/0 p3:10/0 freeMB=9369 dt=6s
+R57 p2:14/0 p1:8/0 p3:10/0 freeMB=9425 dt=7s
+R58 p2:14/0 p1:8/0 p3:10/0 freeMB=9559 dt=7s
+R59 p2:14/0 p1:8/0 p3:10/0 freeMB=9546 dt=7s
+R60 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9569 dt=23s
+R61 p2:14/0 p1:8/0 p3:10/0 freeMB=9557 dt=7s
+R62 p2:14/0 p1:8/0 p3:10/0 freeMB=9548 dt=6s
+R63 p2:14/0 p1:8/0 p3:10/0 freeMB=9498 dt=7s
+R64 p2:14/0 p1:8/0 p3:10/0 freeMB=9569 dt=7s
+R65 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9519 dt=21s
+R66 p2:14/0 p1:8/0 p3:10/0 freeMB=9566 dt=7s
+R67 p2:14/0 p1:8/0 p3:10/0 freeMB=9570 dt=7s
+R68 p2:14/0 p1:8/0 p3:10/0 freeMB=9562 dt=6s
+R69 p2:14/0 p1:8/0 p3:10/0 freeMB=9529 dt=6s
+R70 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9571 dt=23s
+R71 p2:14/0 p1:8/0 p3:10/0 freeMB=9548 dt=7s
+R72 p2:14/0 p1:8/0 p3:10/0 freeMB=9533 dt=7s
+R73 p2:14/0 p1:8/0 p3:10/0 freeMB=9586 dt=7s
+R74 p2:14/0 p1:8/0 p3:10/0 freeMB=9574 dt=7s
+R75 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9574 dt=21s
+R76 p2:14/0 p1:8/0 p3:10/0 freeMB=9577 dt=6s
+R77 p2:14/0 p1:8/0 p3:10/0 freeMB=9553 dt=6s
+R78 p2:14/0 p1:8/0 p3:10/0 freeMB=9569 dt=7s
+R79 p2:14/0 p1:8/0 p3:10/0 freeMB=9557 dt=7s
+R80 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9337 dt=23s
+R81 p2:14/0 p1:8/0 p3:10/0 freeMB=9227 dt=6s
+R82 p2:14/0 p1:8/0 p3:10/0 freeMB=9284 dt=7s
+R83 p2:14/0 p1:8/0 p3:10/0 freeMB=9405 dt=7s
+R84 p2:14/0 p1:8/0 p3:10/0 freeMB=9397 dt=7s
+R85 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9424 dt=21s
+R86 p2:14/0 p1:8/0 p3:10/0 freeMB=9416 dt=7s
+R87 p2:14/0 p1:8/0 p3:10/0 freeMB=9398 dt=6s
+R88 p2:14/0 p1:8/0 p3:10/0 freeMB=9383 dt=6s
+R89 p2:14/0 p1:8/0 p3:10/0 freeMB=9436 dt=7s
+R90 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=9418 dt=23s
+R91 p2:14/0 p1:8/0 p3:10/0 freeMB=9464 dt=6s
+R92 p2:14/0 p1:8/0 p3:10/0 freeMB=9605 dt=7s
+R93 p2:14/0 p1:8/0 p3:10/0 freeMB=9597 dt=7s
+R94 p2:14/0 p1:8/0 p3:10/0 freeMB=9581 dt=7s
+R95 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=9611 dt=21s
+R96 p2:14/0 p1:8/0 p3:10/0 freeMB=9594 dt=6s
+R97 p2:14/0 p1:8/0 p3:10/0 freeMB=8839 dt=9s
+R98 p2:14/0 p1:8/0 p3:10/0 freeMB=8821 dt=8s
+R99 p2:14/0 p1:8/0 p3:10/0 freeMB=8728 dt=8s
+R100 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8451 dt=25s
+R101 p2:14/0 p1:8/0 p3:10/0 freeMB=8395 dt=8s
+R102 p2:14/0 p1:8/0 p3:10/0 freeMB=8467 dt=8s
+R103 p2:14/0 p1:8/0 p3:10/0 freeMB=8504 dt=8s
+R104 p2:14/0 p1:8/0 p3:10/0 freeMB=8401 dt=8s
+R105 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8356 dt=22s
+R106 p2:14/0 p1:8/0 p3:10/0 freeMB=8427 dt=7s
+R107 p2:14/0 p1:8/0 p3:10/0 freeMB=8395 dt=7s
+R108 p2:14/0 p1:8/0 p3:10/0 freeMB=8385 dt=7s
+R109 p2:14/0 p1:8/0 p3:10/0 freeMB=8411 dt=7s
+R110 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8493 dt=23s
+R111 p2:14/0 p1:8/0 p3:10/0 freeMB=8500 dt=6s
+R112 p2:14/0 p1:8/0 p3:10/0 freeMB=8540 dt=7s
+R113 p2:14/0 p1:8/0 p3:10/0 freeMB=8518 dt=7s
+R114 p2:14/0 p1:8/0 p3:10/0 freeMB=8466 dt=7s
+R115 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8470 dt=21s
+R116 p2:14/0 p1:8/0 p3:10/0 freeMB=8485 dt=7s
+R117 p2:14/0 p1:8/0 p3:10/0 freeMB=8481 dt=7s
+R118 p2:14/0 p1:8/0 p3:10/0 freeMB=8498 dt=7s
+R119 p2:14/0 p1:8/0 p3:10/0 freeMB=8446 dt=7s
+R120 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8344 dt=24s
+R121 p2:14/0 p1:8/0 p3:10/0 freeMB=7932 dt=8s
+R122 p2:14/0 p1:8/0 p3:10/0 freeMB=7884 dt=8s
+R123 p2:14/0 p1:8/0 p3:10/0 freeMB=7832 dt=8s
+R124 p2:14/0 p1:8/0 p3:10/0 freeMB=7854 dt=8s
+R125 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8054 dt=24s
+R126 p2:14/0 p1:8/0 p3:10/0 freeMB=8025 dt=8s
+R127 p2:14/0 p1:8/0 p3:10/0 freeMB=7903 dt=9s
+R128 p2:14/0 p1:8/0 p3:10/0 freeMB=7943 dt=9s
+R129 p2:14/0 p1:8/0 p3:10/0 freeMB=7943 dt=8s
+R130 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7892 dt=24s
+R131 p2:14/0 p1:8/0 p3:10/0 freeMB=7858 dt=7s
+R132 p2:14/0 p1:8/0 p3:10/0 freeMB=7848 dt=8s
+R133 p2:14/0 p1:8/0 p3:10/0 freeMB=7831 dt=7s
+R134 p2:14/0 p1:8/0 p3:10/0 freeMB=7906 dt=8s
+R135 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7668 dt=23s
+R136 p2:14/0 p1:8/0 p3:10/0 freeMB=7587 dt=8s
+R137 p2:14/0 p1:8/0 p3:10/0 freeMB=7820 dt=8s
+R138 p2:14/0 p1:8/0 p3:10/0 freeMB=7656 dt=8s
+R139 p2:14/0 p1:8/0 p3:10/0 freeMB=7541 dt=8s
+R140 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7381 dt=26s
+R141 p2:14/0 p1:8/0 p3:10/0 freeMB=7474 dt=8s
+R142 p2:14/0 p1:8/0 p3:10/0 freeMB=7452 dt=8s
+R143 p2:14/0 p1:8/0 p3:10/0 freeMB=7519 dt=7s
+R144 p2:14/0 p1:8/0 p3:10/0 freeMB=7455 dt=8s
+R145 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7430 dt=22s
+R146 p2:14/0 p1:8/0 p3:10/0 freeMB=7438 dt=8s
+R147 p2:14/0 p1:8/0 p3:10/0 freeMB=7418 dt=7s
+R148 p2:14/0 p1:8/0 p3:10/0 freeMB=7407 dt=8s
+R149 p2:14/0 p1:8/0 p3:10/0 freeMB=7507 dt=7s
+R150 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7513 dt=24s
+R151 p2:14/0 p1:8/0 p3:10/0 freeMB=7550 dt=8s
+R152 p2:14/0 p1:8/0 p3:10/0 freeMB=7590 dt=7s
+R153 p2:14/0 p1:8/0 p3:10/0 freeMB=7610 dt=7s
+R154 p2:14/0 p1:8/0 p3:10/0 freeMB=7585 dt=7s
+R155 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7620 dt=22s
+R156 p2:14/0 p1:8/0 p3:10/0 freeMB=7594 dt=7s
+R157 p2:14/0 p1:8/0 p3:10/0 freeMB=7611 dt=7s
+R158 p2:14/0 p1:8/0 p3:10/0 freeMB=7637 dt=7s
+R159 p2:14/0 p1:8/0 p3:10/0 freeMB=7669 dt=7s
+R160 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7665 dt=25s
+R161 p2:14/0 p1:8/0 p3:10/0 freeMB=7596 dt=8s
+R162 p2:14/0 p1:8/0 p3:10/0 freeMB=7212 dt=9s
+R163 p2:14/0 p1:8/0 p3:10/0 freeMB=7321 dt=7s
+R164 p2:14/0 p1:8/0 p3:10/0 freeMB=7328 dt=7s
+R165 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7444 dt=23s
+R166 p2:14/0 p1:8/0 p3:10/0 freeMB=7518 dt=7s
+R167 p2:14/0 p1:8/0 p3:10/0 freeMB=7483 dt=8s
+R168 p2:14/0 p1:8/0 p3:10/0 freeMB=7394 dt=8s
+R169 p2:14/0 p1:8/0 p3:10/0 freeMB=7377 dt=8s
+R170 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7451 dt=24s
+R171 p2:14/0 p1:8/0 p3:10/0 freeMB=7557 dt=6s
+R172 p2:14/0 p1:8/0 p3:10/0 freeMB=7551 dt=7s
+R173 p2:14/0 p1:8/0 p3:10/0 freeMB=7556 dt=7s
+R174 p2:14/0 p1:8/0 p3:10/0 freeMB=7532 dt=7s
+R175 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7557 dt=21s
+R176 p2:14/0 p1:8/0 p3:10/0 freeMB=7576 dt=7s
+R177 p2:14/0 p1:8/0 p3:10/0 freeMB=7572 dt=7s
+R178 p2:14/0 p1:8/0 p3:10/0 freeMB=7593 dt=7s
+R179 p2:14/0 p1:8/0 p3:10/0 freeMB=7596 dt=7s
+R180 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7520 dt=24s
+R181 p2:14/0 p1:8/0 p3:10/0 freeMB=7509 dt=7s
+R182 p2:14/0 p1:8/0 p3:10/0 freeMB=7497 dt=8s
+R183 p2:14/0 p1:8/0 p3:10/0 freeMB=7468 dt=7s
+R184 p2:14/0 p1:8/0 p3:10/0 freeMB=7552 dt=7s
+R185 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7409 dt=21s
+R186 p2:14/0 p1:8/0 p3:10/0 freeMB=7526 dt=8s
+R187 p2:14/0 p1:8/0 p3:10/0 freeMB=7520 dt=7s
+R188 p2:14/0 p1:8/0 p3:10/0 freeMB=7479 dt=7s
+R189 p2:14/0 p1:8/0 p3:10/0 freeMB=7462 dt=7s
+R190 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7443 dt=24s
+R191 p2:14/0 p1:8/0 p3:10/0 freeMB=7386 dt=7s
+R192 p2:14/0 p1:8/0 p3:10/0 freeMB=7399 dt=7s
+R193 p2:14/0 p1:8/0 p3:10/0 freeMB=7440 dt=7s
+R194 p2:14/0 p1:8/0 p3:10/0 freeMB=7491 dt=8s
+R195 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7427 dt=22s
+R196 p2:14/0 p1:8/0 p3:10/0 freeMB=7387 dt=7s
+R197 p2:14/0 p1:8/0 p3:10/0 freeMB=7395 dt=7s
+R198 p2:14/0 p1:8/0 p3:10/0 freeMB=7410 dt=7s
+R199 p2:14/0 p1:8/0 p3:10/0 freeMB=7432 dt=8s
+R200 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7422 dt=24s
+R201 p2:14/0 p1:8/0 p3:10/0 freeMB=7513 dt=7s
+R202 p2:14/0 p1:8/0 p3:10/0 freeMB=7513 dt=8s
+R203 p2:14/0 p1:8/0 p3:10/0 freeMB=7444 dt=7s
+R204 p2:14/0 p1:8/0 p3:10/0 freeMB=7432 dt=8s
+R205 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7471 dt=22s
+R206 p2:14/0 p1:8/0 p3:10/0 freeMB=7491 dt=7s
+R207 p2:14/0 p1:8/0 p3:10/0 freeMB=7541 dt=8s
+R208 p2:14/0 p1:8/0 p3:10/0 freeMB=7533 dt=7s
+R209 p2:14/0 p1:8/0 p3:10/0 freeMB=7525 dt=8s
+R210 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7598 dt=24s
+R211 p2:14/0 p1:8/0 p3:10/0 freeMB=7733 dt=7s
+R212 p2:14/0 p1:8/0 p3:10/0 freeMB=7704 dt=8s
+R213 p2:14/0 p1:8/0 p3:10/0 freeMB=7692 dt=7s
+R214 p2:14/0 p1:8/0 p3:10/0 freeMB=7671 dt=8s
+R215 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7740 dt=23s
+R216 p2:14/0 p1:8/0 p3:10/0 freeMB=7742 dt=7s
+R217 p2:14/0 p1:8/0 p3:10/0 freeMB=7730 dt=7s
+R218 p2:14/0 p1:8/0 p3:10/0 freeMB=7715 dt=8s
+R219 p2:14/0 p1:8/0 p3:10/0 freeMB=7788 dt=7s
+R220 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7712 dt=23s
+R221 p2:14/0 p1:8/0 p3:10/0 freeMB=7757 dt=6s
+R222 p2:14/0 p1:8/0 p3:10/0 freeMB=7733 dt=7s
+R223 p2:14/0 p1:8/0 p3:10/0 freeMB=7734 dt=7s
+R224 p2:14/0 p1:8/0 p3:10/0 freeMB=7650 dt=7s
+R225 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7640 dt=23s
+R226 p2:14/0 p1:8/0 p3:10/0 freeMB=7639 dt=7s
+R227 p2:14/0 p1:8/0 p3:10/0 freeMB=7635 dt=7s
+R228 p2:14/0 p1:8/0 p3:10/0 freeMB=7673 dt=7s
+R229 p2:14/0 p1:8/0 p3:10/0 freeMB=7630 dt=8s
+R230 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7617 dt=24s
+R231 p2:14/0 p1:8/0 p3:10/0 freeMB=7639 dt=7s
+R232 p2:14/0 p1:8/0 p3:10/0 freeMB=7530 dt=7s
+R233 p2:14/0 p1:8/0 p3:10/0 freeMB=7626 dt=7s
+R234 p2:14/0 p1:8/0 p3:10/0 freeMB=7651 dt=8s
+R235 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7700 dt=22s
+R236 p2:14/0 p1:8/0 p3:10/0 freeMB=7730 dt=7s
+R237 p2:14/0 p1:8/0 p3:10/0 freeMB=7718 dt=7s
+R238 p2:14/0 p1:8/0 p3:10/0 freeMB=7712 dt=7s
+R239 p2:14/0 p1:8/0 p3:10/0 freeMB=7699 dt=7s
+R240 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7712 dt=24s
+R241 p2:14/0 p1:8/0 p3:10/0 freeMB=7684 dt=7s
+R242 p2:14/0 p1:8/0 p3:10/0 freeMB=7753 dt=7s
+R243 p2:14/0 p1:8/0 p3:10/0 freeMB=7732 dt=7s
+R244 p2:14/0 p1:8/0 p3:10/0 freeMB=7717 dt=8s
+R245 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7733 dt=21s
+R246 p2:14/0 p1:8/0 p3:10/0 freeMB=7673 dt=7s
+R247 p2:14/0 p1:8/0 p3:10/0 freeMB=7696 dt=7s
+R248 p2:14/0 p1:8/0 p3:10/0 freeMB=7751 dt=7s
+R249 p2:14/0 p1:8/0 p3:10/0 freeMB=7738 dt=7s
+R250 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8148 dt=23s
+R251 p2:14/0 p1:8/0 p3:10/0 freeMB=8151 dt=7s
+R252 p2:14/0 p1:8/0 p3:10/0 freeMB=8100 dt=7s
+R253 p2:14/0 p1:8/0 p3:10/0 freeMB=8067 dt=8s
+R254 p2:14/0 p1:8/0 p3:10/0 freeMB=7947 dt=7s
+R255 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8095 dt=23s
+R256 p2:14/0 p1:8/0 p3:10/0 freeMB=8108 dt=7s
+R257 p2:14/0 p1:8/0 p3:10/0 freeMB=8134 dt=8s
+R258 p2:14/0 p1:8/0 p3:10/0 freeMB=8130 dt=7s
+R259 p2:14/0 p1:8/0 p3:10/0 freeMB=8113 dt=8s
+R260 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8094 dt=24s
+R261 p2:14/0 p1:8/0 p3:10/0 freeMB=8142 dt=7s
+R262 p2:14/0 p1:8/0 p3:10/0 freeMB=8137 dt=7s
+R263 p2:14/0 p1:8/0 p3:10/0 freeMB=8181 dt=7s
+R264 p2:14/0 p1:8/0 p3:10/0 freeMB=8157 dt=7s
+R265 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8118 dt=21s
+R266 p2:14/0 p1:8/0 p3:10/0 freeMB=8091 dt=7s
+R267 p2:14/0 p1:8/0 p3:10/0 freeMB=8068 dt=8s
+R268 p2:14/0 p1:8/0 p3:10/0 freeMB=7815 dt=8s
+R269 p2:14/0 p1:8/0 p3:10/0 freeMB=7609 dt=8s
+R270 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7723 dt=25s
+R271 p2:14/0 p1:8/0 p3:10/0 freeMB=7741 dt=7s
+R272 p2:14/0 p1:8/0 p3:10/0 freeMB=7745 dt=7s
+R273 p2:14/0 p1:8/0 p3:10/0 freeMB=7773 dt=7s
+R274 p2:14/0 p1:8/0 p3:10/0 freeMB=7744 dt=7s
+R275 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7760 dt=22s
+R276 p2:14/0 p1:8/0 p3:10/0 freeMB=7753 dt=7s
+R277 p2:14/0 p1:8/0 p3:10/0 freeMB=7791 dt=7s
+R278 p2:14/0 p1:8/0 p3:10/0 freeMB=7784 dt=7s
+R279 p2:14/0 p1:8/0 p3:10/0 freeMB=7769 dt=7s
+R280 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7703 dt=25s
+R281 p2:14/0 p1:8/0 p3:10/0 freeMB=7646 dt=8s
+R282 p2:14/0 p1:8/0 p3:10/0 freeMB=7658 dt=7s
+R283 p2:14/0 p1:8/0 p3:10/0 freeMB=7718 dt=7s
+R284 p2:14/0 p1:8/0 p3:10/0 freeMB=7658 dt=8s
+R285 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7620 dt=22s
+R286 p2:14/0 p1:8/0 p3:10/0 freeMB=7647 dt=8s
+R287 p2:14/0 p1:8/0 p3:10/0 freeMB=7664 dt=8s
+R288 p2:14/0 p1:8/0 p3:10/0 freeMB=7605 dt=8s
+R289 p2:14/0 p1:8/0 p3:10/0 freeMB=7582 dt=8s
+R290 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7712 dt=24s
+R291 p2:14/0 p1:8/0 p3:10/0 freeMB=7768 dt=7s
+R292 p2:14/0 p1:8/0 p3:10/0 freeMB=7766 dt=7s
+R293 p2:14/0 p1:8/0 p3:10/0 freeMB=7675 dt=8s
+R294 p2:14/0 p1:8/0 p3:10/0 freeMB=7703 dt=8s
+R295 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7736 dt=23s
+R296 p2:14/0 p1:8/0 p3:10/0 freeMB=7706 dt=7s
+R297 p2:14/0 p1:8/0 p3:10/0 freeMB=7599 dt=8s
+R298 p2:14/0 p1:8/0 p3:10/0 freeMB=7637 dt=8s
+R299 p2:14/0 p1:8/0 p3:10/0 freeMB=7633 dt=7s
+R300 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7267 dt=26s
+R301 p2:14/0 p1:8/0 p3:10/0 freeMB=7224 dt=7s
+R302 p2:14/0 p1:8/0 p3:10/0 freeMB=7266 dt=8s
+R303 p2:14/0 p1:8/0 p3:10/0 freeMB=7345 dt=7s
+R304 p2:14/0 p1:8/0 p3:10/0 freeMB=7388 dt=7s
+R305 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7570 dt=22s
+R306 p2:14/0 p1:8/0 p3:10/0 freeMB=7547 dt=7s
+R307 p2:14/0 p1:8/0 p3:10/0 freeMB=7557 dt=6s
+R308 p2:14/0 p1:8/0 p3:10/0 freeMB=7592 dt=6s
+R309 p2:14/0 p1:8/0 p3:10/0 freeMB=7589 dt=7s
+R310 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7655 dt=23s
+R311 p2:14/0 p1:8/0 p3:10/0 freeMB=7646 dt=7s
+R312 p2:14/0 p1:8/0 p3:10/0 freeMB=7695 dt=7s
+R313 p2:14/0 p1:8/0 p3:10/0 freeMB=7676 dt=7s
+R314 p2:14/0 p1:8/0 p3:10/0 freeMB=7676 dt=7s
+R315 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7700 dt=21s
+R316 p2:14/0 p1:8/0 p3:10/0 freeMB=7693 dt=7s
+R317 p2:14/0 p1:8/0 p3:10/0 freeMB=7681 dt=7s
+R318 p2:14/0 p1:8/0 p3:10/0 freeMB=7658 dt=7s
+R319 p2:14/0 p1:8/0 p3:10/0 freeMB=7752 dt=7s
+R320 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7933 dt=23s
+R321 p2:14/0 p1:8/0 p3:10/0 freeMB=7961 dt=7s
+R322 p2:14/0 p1:8/0 p3:10/0 freeMB=7957 dt=7s
+R323 p2:14/0 p1:8/0 p3:10/0 freeMB=7930 dt=7s
+R324 p2:14/0 p1:8/0 p3:10/0 freeMB=7869 dt=7s
+R325 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7624 dt=23s
+R326 p2:14/0 p1:8/0 p3:10/0 freeMB=7684 dt=7s
+R327 p2:14/0 p1:8/0 p3:10/0 freeMB=7677 dt=7s
+R328 p2:14/0 p1:8/0 p3:10/0 freeMB=7668 dt=7s
+R329 p2:14/0 p1:8/0 p3:10/0 freeMB=7653 dt=7s
+R330 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7761 dt=24s
+R331 p2:14/0 p1:8/0 p3:10/0 freeMB=7184 dt=8s
+R332 p2:14/0 p1:8/0 p3:10/0 freeMB=7592 dt=8s
+R333 p2:14/0 p1:8/0 p3:10/0 freeMB=7681 dt=7s
+R334 p2:14/0 p1:8/0 p3:10/0 freeMB=7713 dt=7s
+R335 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7826 dt=22s
+R336 p2:14/0 p1:8/0 p3:10/0 freeMB=7784 dt=7s
+R337 p2:14/0 p1:8/0 p3:10/0 freeMB=7779 dt=7s
+R338 p2:14/0 p1:8/0 p3:10/0 freeMB=7776 dt=6s
+R339 p2:14/0 p1:8/0 p3:10/0 freeMB=7789 dt=6s
+R340 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7879 dt=24s
+R341 p2:14/0 p1:8/0 p3:10/0 freeMB=7872 dt=6s
+R342 p2:14/0 p1:8/0 p3:10/0 freeMB=7921 dt=6s
+R343 p2:14/0 p1:8/0 p3:10/0 freeMB=7909 dt=7s
+R344 p2:14/0 p1:8/0 p3:10/0 freeMB=7915 dt=7s
+R345 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7924 dt=22s
+R346 p2:14/0 p1:8/0 p3:10/0 freeMB=7910 dt=6s
+R347 p2:14/0 p1:8/0 p3:10/0 freeMB=7898 dt=6s
+R348 p2:14/0 p1:8/0 p3:10/0 freeMB=7902 dt=7s
+R349 p2:14/0 p1:8/0 p3:10/0 freeMB=7934 dt=7s
+R350 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7921 dt=23s
+R351 p2:14/0 p1:8/0 p3:10/0 freeMB=7969 dt=7s
+R352 p2:14/0 p1:8/0 p3:10/0 freeMB=7967 dt=7s
+R353 p2:14/0 p1:8/0 p3:10/0 freeMB=7933 dt=7s
+R354 p2:14/0 p1:8/0 p3:10/0 freeMB=7924 dt=7s
+R355 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7858 dt=21s
+R356 p2:14/0 p1:8/0 p3:10/0 freeMB=7722 dt=7s
+R357 p2:14/0 p1:8/0 p3:10/0 freeMB=7866 dt=8s
+R358 p2:14/0 p1:8/0 p3:10/0 freeMB=7981 dt=7s
+R359 p2:14/0 p1:8/0 p3:10/0 freeMB=7939 dt=7s
+R360 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7944 dt=25s
+R361 p2:14/0 p1:8/0 p3:10/0 freeMB=7911 dt=8s
+R362 p2:14/0 p1:8/0 p3:10/0 freeMB=7914 dt=7s
+R363 p2:14/0 p1:8/0 p3:10/0 freeMB=7890 dt=7s
+R364 p2:14/0 p1:8/0 p3:10/0 freeMB=7927 dt=7s
+R365 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7863 dt=23s
+R366 p2:14/0 p1:8/0 p3:10/0 freeMB=7909 dt=7s
+R367 p2:14/0 p1:8/0 p3:10/0 freeMB=7876 dt=7s
+R368 p2:14/0 p1:8/0 p3:10/0 freeMB=7871 dt=7s
+R369 p2:14/0 p1:8/0 p3:10/0 freeMB=7850 dt=7s
+R370 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7867 dt=24s
+R371 p2:14/0 p1:8/0 p3:10/0 freeMB=7892 dt=7s
+R372 p2:14/0 p1:8/0 p3:10/0 freeMB=7934 dt=7s
+R373 p2:14/0 p1:8/0 p3:10/0 freeMB=7812 dt=7s
+R374 p2:14/0 p1:8/0 p3:10/0 freeMB=7809 dt=8s
+R375 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7884 dt=21s
+R376 p2:14/0 p1:8/0 p3:10/0 freeMB=7877 dt=6s
+R377 p2:14/0 p1:8/0 p3:10/0 freeMB=7869 dt=7s
+R378 p2:14/0 p1:8/0 p3:10/0 freeMB=7424 dt=8s
+R379 p2:14/0 p1:8/0 p3:10/0 freeMB=7322 dt=8s
+R380 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7368 dt=24s
+R381 p2:14/0 p1:8/0 p3:10/0 freeMB=7686 dt=8s
+R382 p2:14/0 p1:8/0 p3:10/0 freeMB=7745 dt=8s
+R383 p2:14/0 p1:8/0 p3:10/0 freeMB=7720 dt=7s
+R384 p2:14/0 p1:8/0 p3:10/0 freeMB=7757 dt=7s
+R385 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7916 dt=22s
+R386 p2:14/0 p1:8/0 p3:10/0 freeMB=7921 dt=7s
+R387 p2:14/0 p1:8/0 p3:10/0 freeMB=7932 dt=7s
+R388 p2:14/0 p1:8/0 p3:10/0 freeMB=7892 dt=7s
+R389 p2:14/0 p1:8/0 p3:10/0 freeMB=7913 dt=8s
+R390 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7845 dt=25s
+R391 p2:14/0 p1:8/0 p3:10/0 freeMB=7884 dt=7s
+R392 p2:14/0 p1:8/0 p3:10/0 freeMB=7941 dt=8s
+R393 p2:14/0 p1:8/0 p3:10/0 freeMB=7940 dt=7s
+R394 p2:14/0 p1:8/0 p3:10/0 freeMB=7834 dt=7s
+R395 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8318 dt=22s
+R396 p2:14/0 p1:8/0 p3:10/0 freeMB=8314 dt=7s
+R397 p2:14/0 p1:8/0 p3:10/0 freeMB=8292 dt=7s
+R398 p2:14/0 p1:8/0 p3:10/0 freeMB=8347 dt=7s
+R399 p2:14/0 p1:8/0 p3:10/0 freeMB=8338 dt=7s
+R400 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8382 dt=23s
+R401 p2:14/0 p1:8/0 p3:10/0 freeMB=8169 dt=8s
+R402 p2:14/0 p1:8/0 p3:10/0 freeMB=8196 dt=7s
+R403 p2:14/0 p1:8/0 p3:10/0 freeMB=8208 dt=7s
+R404 p2:14/0 p1:8/0 p3:10/0 freeMB=8192 dt=7s
+R405 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8078 dt=23s
+R406 p2:14/0 p1:8/0 p3:10/0 freeMB=7876 dt=8s
+R407 p2:14/0 p1:8/0 p3:10/0 freeMB=7696 dt=8s
+R408 p2:14/0 p1:8/0 p3:10/0 freeMB=8006 dt=7s
+R409 p2:14/0 p1:8/0 p3:10/0 freeMB=8017 dt=7s
+R410 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8065 dt=24s
+R411 p2:14/0 p1:8/0 p3:10/0 freeMB=8078 dt=7s
+R412 p2:14/0 p1:8/0 p3:10/0 freeMB=8065 dt=7s
+R413 p2:14/0 p1:8/0 p3:10/0 freeMB=8126 dt=8s
+R414 p2:14/0 p1:8/0 p3:10/0 freeMB=8110 dt=7s
+R415 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8138 dt=22s
+R416 p2:14/0 p1:8/0 p3:10/0 freeMB=8110 dt=7s
+R417 p2:14/0 p1:8/0 p3:10/0 freeMB=8101 dt=7s
+R418 p2:14/0 p1:8/0 p3:10/0 freeMB=8093 dt=7s
+R419 p2:14/0 p1:8/0 p3:10/0 freeMB=8119 dt=7s
+R420 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8066 dt=24s
+R421 p2:14/0 p1:8/0 p3:10/0 freeMB=8131 dt=7s
+R422 p2:14/0 p1:8/0 p3:10/0 freeMB=8122 dt=7s
+R423 p2:14/0 p1:8/0 p3:10/0 freeMB=8092 dt=7s
+R424 p2:14/0 p1:8/0 p3:10/0 freeMB=8094 dt=7s
+R425 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8140 dt=21s
+R426 p2:14/0 p1:8/0 p3:10/0 freeMB=8113 dt=6s
+R427 p2:14/0 p1:8/0 p3:10/0 freeMB=8108 dt=7s
+R428 p2:14/0 p1:8/0 p3:10/0 freeMB=8160 dt=7s
+R429 p2:14/0 p1:8/0 p3:10/0 freeMB=8086 dt=7s
+R430 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8063 dt=24s
+R431 p2:14/0 p1:8/0 p3:10/0 freeMB=8378 dt=7s
+R432 p2:14/0 p1:8/0 p3:10/0 freeMB=8360 dt=7s
+R433 p2:14/0 p1:8/0 p3:10/0 freeMB=8356 dt=7s
+R434 p2:14/0 p1:8/0 p3:10/0 freeMB=8403 dt=7s
+R435 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8332 dt=22s
+R436 p2:14/0 p1:8/0 p3:10/0 freeMB=8374 dt=7s
+R437 p2:14/0 p1:8/0 p3:10/0 freeMB=8349 dt=8s
+R438 p2:14/0 p1:8/0 p3:10/0 freeMB=8372 dt=7s
+R439 p2:14/0 p1:8/0 p3:10/0 freeMB=8376 dt=7s
+R440 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8426 dt=23s
+R441 p2:14/0 p1:8/0 p3:10/0 freeMB=8402 dt=7s
+R442 p2:14/0 p1:8/0 p3:10/0 freeMB=8405 dt=7s
+R443 p2:14/0 p1:8/0 p3:10/0 freeMB=8421 dt=7s
+R444 p2:14/0 p1:8/0 p3:10/0 freeMB=8417 dt=7s
+R445 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8523 dt=22s
+R446 p2:14/0 p1:8/0 p3:10/0 freeMB=8529 dt=7s
+R447 p2:14/0 p1:8/0 p3:10/0 freeMB=8503 dt=7s
+R448 p2:14/0 p1:8/0 p3:10/0 freeMB=8484 dt=7s
+R449 p2:14/0 p1:8/0 p3:10/0 freeMB=8505 dt=7s
+R450 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8483 dt=23s
+R451 p2:14/0 p1:8/0 p3:10/0 freeMB=8539 dt=6s
+R452 p2:14/0 p1:8/0 p3:10/0 freeMB=8535 dt=6s
+R453 p2:14/0 p1:8/0 p3:10/0 freeMB=8485 dt=7s
+R454 p2:14/0 p1:8/0 p3:10/0 freeMB=8468 dt=7s
+R455 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8488 dt=21s
+R456 p2:14/0 p1:8/0 p3:10/0 freeMB=8488 dt=7s
+R457 p2:14/0 p1:8/0 p3:10/0 freeMB=8482 dt=7s
+R458 p2:14/0 p1:8/0 p3:10/0 freeMB=8520 dt=7s
+R459 p2:14/0 p1:8/0 p3:10/0 freeMB=8518 dt=7s
+R460 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8494 dt=24s
+R461 p2:14/0 p1:8/0 p3:10/0 freeMB=8496 dt=7s
+R462 p2:14/0 p1:8/0 p3:10/0 freeMB=8471 dt=7s
+R463 p2:14/0 p1:8/0 p3:10/0 freeMB=8470 dt=7s
+R464 p2:14/0 p1:8/0 p3:10/0 freeMB=8455 dt=7s
+R465 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8445 dt=22s
+R466 p2:14/0 p1:8/0 p3:10/0 freeMB=8462 dt=7s
+R467 p2:14/0 p1:8/0 p3:10/0 freeMB=8510 dt=7s
+R468 p2:14/0 p1:8/0 p3:10/0 freeMB=8501 dt=6s
+R469 p2:14/0 p1:8/0 p3:10/0 freeMB=8478 dt=6s
+R470 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8522 dt=23s
+R471 p2:14/0 p1:8/0 p3:10/0 freeMB=8505 dt=6s
+R472 p2:14/0 p1:8/0 p3:10/0 freeMB=8491 dt=6s
+R473 p2:14/0 p1:8/0 p3:10/0 freeMB=8480 dt=7s
+R474 p2:14/0 p1:8/0 p3:10/0 freeMB=8522 dt=7s
+R475 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8465 dt=21s
+R476 p2:14/0 p1:8/0 p3:10/0 freeMB=8618 dt=7s
+R477 p2:14/0 p1:8/0 p3:10/0 freeMB=8601 dt=7s
+R478 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=6s
+R479 p2:14/0 p1:8/0 p3:10/0 freeMB=8585 dt=6s
+R480 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8458 dt=23s
+R481 p2:14/0 p1:8/0 p3:10/0 freeMB=8454 dt=7s
+R482 p2:14/0 p1:8/0 p3:10/0 freeMB=8459 dt=6s
+R483 p2:14/0 p1:8/0 p3:10/0 freeMB=8646 dt=7s
+R484 p2:14/0 p1:8/0 p3:10/0 freeMB=8627 dt=7s
+R485 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8318 dt=21s
+R486 p2:14/0 p1:8/0 p3:10/0 freeMB=8334 dt=7s
+R487 p2:14/0 p1:8/0 p3:10/0 freeMB=8328 dt=7s
+R488 p2:14/0 p1:8/0 p3:10/0 freeMB=8308 dt=7s
+R489 p2:14/0 p1:8/0 p3:10/0 freeMB=8570 dt=7s
+R490 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8592 dt=23s
+R491 p2:14/0 p1:8/0 p3:10/0 freeMB=8291 dt=7s
+R492 p2:14/0 p1:8/0 p3:10/0 freeMB=8359 dt=7s
+R493 p2:14/0 p1:8/0 p3:10/0 freeMB=8354 dt=7s
+R494 p2:14/0 p1:8/0 p3:10/0 freeMB=8335 dt=7s
+R495 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8281 dt=21s
+R496 p2:14/0 p1:8/0 p3:10/0 freeMB=8323 dt=7s
+R497 p2:14/0 p1:8/0 p3:10/0 freeMB=8306 dt=7s
+R498 p2:14/0 p1:8/0 p3:10/0 freeMB=8608 dt=7s
+R499 p2:14/0 p1:8/0 p3:10/0 freeMB=8716 dt=6s
+R500 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8675 dt=23s
+R501 p2:14/0 p1:8/0 p3:10/0 freeMB=8703 dt=6s
+R502 p2:14/0 p1:8/0 p3:10/0 freeMB=8818 dt=7s
+R503 p2:14/0 p1:8/0 p3:10/0 freeMB=8803 dt=7s
+R504 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R505 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8678 dt=21s
+R506 p2:14/0 p1:8/0 p3:10/0 freeMB=8687 dt=7s
+R507 p2:14/0 p1:8/0 p3:10/0 freeMB=8800 dt=7s
+R508 p2:14/0 p1:8/0 p3:10/0 freeMB=8844 dt=6s
+R509 p2:14/0 p1:8/0 p3:10/0 freeMB=8835 dt=6s
+R510 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8700 dt=23s
+R511 p2:14/0 p1:8/0 p3:10/0 freeMB=8679 dt=7s
+R512 p2:14/0 p1:8/0 p3:10/0 freeMB=8665 dt=6s
+R513 p2:14/0 p1:8/0 p3:10/0 freeMB=8795 dt=6s
+R514 p2:14/0 p1:8/0 p3:10/0 freeMB=8862 dt=6s
+R515 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8627 dt=21s
+R516 p2:14/0 p1:8/0 p3:10/0 freeMB=8638 dt=6s
+R517 p2:14/0 p1:8/0 p3:10/0 freeMB=8685 dt=7s
+R518 p2:14/0 p1:8/0 p3:10/0 freeMB=8709 dt=7s
+R519 p2:14/0 p1:8/0 p3:10/0 freeMB=8816 dt=7s
+R520 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8714 dt=23s
+R521 p2:14/0 p1:8/0 p3:10/0 freeMB=8705 dt=7s
+R522 p2:14/0 p1:8/0 p3:10/0 freeMB=8720 dt=7s
+R523 p2:14/0 p1:8/0 p3:10/0 freeMB=8759 dt=7s
+R524 p2:14/0 p1:8/0 p3:10/0 freeMB=8754 dt=7s
+R525 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8810 dt=21s
+R526 p2:14/0 p1:8/0 p3:10/0 freeMB=8852 dt=7s
+R527 p2:14/0 p1:8/0 p3:10/0 freeMB=8841 dt=6s
+R528 p2:14/0 p1:8/0 p3:10/0 freeMB=8644 dt=7s
+R529 p2:14/0 p1:8/0 p3:10/0 freeMB=8650 dt=6s
+R530 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8843 dt=23s
+R531 p2:14/0 p1:8/0 p3:10/0 freeMB=8832 dt=6s
+R532 p2:14/0 p1:8/0 p3:10/0 freeMB=8817 dt=6s
+R533 p2:14/0 p1:8/0 p3:10/0 freeMB=8858 dt=7s
+R534 p2:14/0 p1:8/0 p3:10/0 freeMB=8605 dt=7s
+R535 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8588 dt=21s
+R536 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=6s
+R537 p2:14/0 p1:8/0 p3:10/0 freeMB=8684 dt=6s
+R538 p2:14/0 p1:8/0 p3:10/0 freeMB=8668 dt=7s
+R539 p2:14/0 p1:8/0 p3:10/0 freeMB=8713 dt=7s
+R540 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8711 dt=23s
+R541 p2:14/0 p1:8/0 p3:10/0 freeMB=8696 dt=7s
+R542 p2:14/0 p1:8/0 p3:10/0 freeMB=8709 dt=7s
+R543 p2:14/0 p1:8/0 p3:10/0 freeMB=8703 dt=7s
+R544 p2:14/0 p1:8/0 p3:10/0 freeMB=8692 dt=6s
+R545 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8734 dt=21s
+R546 p2:14/0 p1:8/0 p3:10/0 freeMB=8715 dt=6s
+R547 p2:14/0 p1:8/0 p3:10/0 freeMB=8704 dt=7s
+R548 p2:14/0 p1:8/0 p3:10/0 freeMB=8639 dt=7s
+R549 p2:14/0 p1:8/0 p3:10/0 freeMB=8698 dt=7s
+R550 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8779 dt=23s
+R551 p2:14/0 p1:8/0 p3:10/0 freeMB=8808 dt=7s
+R552 p2:14/0 p1:8/0 p3:10/0 freeMB=8630 dt=7s
+R553 p2:14/0 p1:8/0 p3:10/0 freeMB=8617 dt=7s
+R554 p2:14/0 p1:8/0 p3:10/0 freeMB=8721 dt=7s
+R555 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8917 dt=21s
+R556 p2:14/0 p1:8/0 p3:10/0 freeMB=8578 dt=7s
+R557 p2:14/0 p1:8/0 p3:10/0 freeMB=8591 dt=7s
+R558 p2:14/0 p1:8/0 p3:10/0 freeMB=8652 dt=7s
+R559 p2:14/0 p1:8/0 p3:10/0 freeMB=8625 dt=7s
+R560 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8861 dt=23s
+R561 p2:14/0 p1:8/0 p3:10/0 freeMB=8857 dt=7s
+R562 p2:14/0 p1:8/0 p3:10/0 freeMB=8834 dt=7s
+R563 p2:14/0 p1:8/0 p3:10/0 freeMB=8816 dt=7s
+R564 p2:14/0 p1:8/0 p3:10/0 freeMB=8864 dt=6s
+R565 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8836 dt=20s
+R566 p2:14/0 p1:8/0 p3:10/0 freeMB=8837 dt=6s
+R567 p2:14/0 p1:8/0 p3:10/0 freeMB=8884 dt=7s
+R568 p2:14/0 p1:8/0 p3:10/0 freeMB=8867 dt=7s
+R569 p2:14/0 p1:8/0 p3:10/0 freeMB=8841 dt=7s
+R570 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8679 dt=23s
+R571 p2:14/0 p1:8/0 p3:10/0 freeMB=8678 dt=7s
+R572 p2:14/0 p1:8/0 p3:10/0 freeMB=8650 dt=7s
+R573 p2:14/0 p1:8/0 p3:10/0 freeMB=8730 dt=7s
+R574 p2:14/0 p1:8/0 p3:10/0 freeMB=8853 dt=7s
+R575 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8838 dt=21s
+R576 p2:14/0 p1:8/0 p3:10/0 freeMB=8880 dt=7s
+R577 p2:14/0 p1:8/0 p3:10/0 freeMB=8875 dt=6s
+R578 p2:14/0 p1:8/0 p3:10/0 freeMB=8853 dt=6s
+R579 p2:14/0 p1:8/0 p3:10/0 freeMB=8832 dt=7s
+R580 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8860 dt=23s
+R581 p2:14/0 p1:8/0 p3:10/0 freeMB=8846 dt=7s
+R582 p2:14/0 p1:8/0 p3:10/0 freeMB=8833 dt=7s
+R583 p2:14/0 p1:8/0 p3:10/0 freeMB=8836 dt=7s
+R584 p2:14/0 p1:8/0 p3:10/0 freeMB=8636 dt=7s
+R585 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8706 dt=21s
+R586 p2:14/0 p1:8/0 p3:10/0 freeMB=8704 dt=7s
+R587 p2:14/0 p1:8/0 p3:10/0 freeMB=8713 dt=7s
+R588 p2:14/0 p1:8/0 p3:10/0 freeMB=8683 dt=7s
+R589 p2:14/0 p1:8/0 p3:10/0 freeMB=8742 dt=7s
+R590 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8714 dt=23s
+R591 p2:14/0 p1:8/0 p3:10/0 freeMB=8747 dt=7s
+R592 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=7s
+R593 p2:14/0 p1:8/0 p3:10/0 freeMB=8884 dt=6s
+R594 p2:14/0 p1:8/0 p3:10/0 freeMB=8860 dt=6s
+R595 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8677 dt=21s
+R596 p2:14/0 p1:8/0 p3:10/0 freeMB=8711 dt=7s
+R597 p2:14/0 p1:8/0 p3:10/0 freeMB=8692 dt=7s
+R598 p2:14/0 p1:8/0 p3:10/0 freeMB=8703 dt=7s
+R599 p2:14/0 p1:8/0 p3:10/0 freeMB=8729 dt=7s
+R600 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8683 dt=23s
+R601 p2:14/0 p1:8/0 p3:10/0 freeMB=8708 dt=7s
+R602 p2:14/0 p1:8/0 p3:10/0 freeMB=8702 dt=6s
+R603 p2:14/0 p1:8/0 p3:10/0 freeMB=8694 dt=6s
+R604 p2:14/0 p1:8/0 p3:10/0 freeMB=8673 dt=7s
+R605 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8854 dt=21s
+R606 p2:14/0 p1:8/0 p3:10/0 freeMB=8851 dt=7s
+R607 p2:14/0 p1:8/0 p3:10/0 freeMB=8832 dt=7s
+R608 p2:14/0 p1:8/0 p3:10/0 freeMB=8544 dt=7s
+R609 p2:14/0 p1:8/0 p3:10/0 freeMB=8550 dt=6s
+R610 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8872 dt=23s
+R611 p2:14/0 p1:8/0 p3:10/0 freeMB=8708 dt=7s
+R612 p2:14/0 p1:8/0 p3:10/0 freeMB=8718 dt=6s
+R613 p2:14/0 p1:8/0 p3:10/0 freeMB=8702 dt=7s
+R614 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=7s
+R615 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8736 dt=21s
+R616 p2:14/0 p1:8/0 p3:10/0 freeMB=8715 dt=7s
+R617 p2:14/0 p1:8/0 p3:10/0 freeMB=8908 dt=7s
+R618 p2:14/0 p1:8/0 p3:10/0 freeMB=8893 dt=6s
+R619 p2:14/0 p1:8/0 p3:10/0 freeMB=8877 dt=6s
+R620 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8734 dt=22s
+R621 p2:14/0 p1:8/0 p3:10/0 freeMB=8719 dt=7s
+R622 p2:14/0 p1:8/0 p3:10/0 freeMB=8705 dt=7s
+R623 p2:14/0 p1:8/0 p3:10/0 freeMB=8756 dt=7s
+R624 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=7s
+R625 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8699 dt=21s
+R626 p2:14/0 p1:8/0 p3:10/0 freeMB=8754 dt=7s
+R627 p2:14/0 p1:8/0 p3:10/0 freeMB=8744 dt=7s
+R628 p2:14/0 p1:8/0 p3:10/0 freeMB=8728 dt=6s
+R629 p2:14/0 p1:8/0 p3:10/0 freeMB=8713 dt=6s
+R630 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8587 dt=23s
+R631 p2:14/0 p1:8/0 p3:10/0 freeMB=8575 dt=7s
+R632 p2:14/0 p1:8/0 p3:10/0 freeMB=8731 dt=7s
+R633 p2:14/0 p1:8/0 p3:10/0 freeMB=8744 dt=7s
+R634 p2:14/0 p1:8/0 p3:10/0 freeMB=8727 dt=7s
+R635 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8747 dt=21s
+R636 p2:14/0 p1:8/0 p3:10/0 freeMB=8735 dt=7s
+R637 p2:14/0 p1:8/0 p3:10/0 freeMB=8711 dt=7s
+R638 p2:14/0 p1:8/0 p3:10/0 freeMB=8711 dt=6s
+R639 p2:14/0 p1:8/0 p3:10/0 freeMB=8749 dt=6s
+R640 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8705 dt=23s
+R641 p2:14/0 p1:8/0 p3:10/0 freeMB=8742 dt=7s
+R642 p2:14/0 p1:8/0 p3:10/0 freeMB=8732 dt=7s
+R643 p2:14/0 p1:8/0 p3:10/0 freeMB=8713 dt=7s
+R644 p2:14/0 p1:8/0 p3:10/0 freeMB=8712 dt=7s
+R645 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8729 dt=21s
+R646 p2:14/0 p1:8/0 p3:10/0 freeMB=8717 dt=7s
+R647 p2:14/0 p1:8/0 p3:10/0 freeMB=8707 dt=7s
+R648 p2:14/0 p1:8/0 p3:10/0 freeMB=8748 dt=6s
+R649 p2:14/0 p1:8/0 p3:10/0 freeMB=8738 dt=6s
+R650 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8721 dt=23s
+R651 p2:14/0 p1:8/0 p3:10/0 freeMB=8715 dt=6s
+R652 p2:14/0 p1:8/0 p3:10/0 freeMB=8711 dt=7s
+R653 p2:14/0 p1:8/0 p3:10/0 freeMB=8675 dt=7s
+R654 p2:14/0 p1:8/0 p3:10/0 freeMB=8658 dt=7s
+R655 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8672 dt=21s
+R656 p2:14/0 p1:8/0 p3:10/0 freeMB=8608 dt=7s
+R657 p2:14/0 p1:8/0 p3:10/0 freeMB=8703 dt=7s
+R658 p2:14/0 p1:8/0 p3:10/0 freeMB=8696 dt=7s
+R659 p2:14/0 p1:8/0 p3:10/0 freeMB=8687 dt=7s
+R660 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8745 dt=23s
+R661 p2:14/0 p1:8/0 p3:10/0 freeMB=8722 dt=6s
+R662 p2:14/0 p1:8/0 p3:10/0 freeMB=8721 dt=7s
+R663 p2:14/0 p1:8/0 p3:10/0 freeMB=8692 dt=7s
+R664 p2:14/0 p1:8/0 p3:10/0 freeMB=8747 dt=7s
+R665 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8702 dt=21s
+R666 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=7s
+R667 p2:14/0 p1:8/0 p3:10/0 freeMB=8749 dt=7s
+R668 p2:14/0 p1:8/0 p3:10/0 freeMB=8704 dt=7s
+R669 p2:14/0 p1:8/0 p3:10/0 freeMB=8099 dt=13s
+FAIL R670 cancel rc=0 exp=5 got=8/0
+FAIL-THAT R670 cancel lan2=8/0 rc=0
+FAIL R670 cancels rc=0 exp=5 got=8/0
+FAIL-THAT R670 cancels lan2=8/0 rc=0
+R670 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:8/0 cxls:8/0 freeMB=8368 dt=75s
+R671 p2:14/0 p1:8/0 p3:10/0 freeMB=8546 dt=7s
+R672 p2:14/0 p1:8/0 p3:10/0 freeMB=8620 dt=7s
+R673 p2:14/0 p1:8/0 p3:10/0 freeMB=8724 dt=7s
+R674 p2:14/0 p1:8/0 p3:10/0 freeMB=8734 dt=7s
+R675 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8723 dt=22s
+R676 p2:14/0 p1:8/0 p3:10/0 freeMB=8799 dt=7s
+R677 p2:14/0 p1:8/0 p3:10/0 freeMB=8791 dt=7s
+R678 p2:14/0 p1:8/0 p3:10/0 freeMB=8777 dt=7s
+R679 p2:14/0 p1:8/0 p3:10/0 freeMB=8559 dt=7s
+FAIL R680 cancel rc=0 exp=5 got=8/0
+FAIL-THAT R680 cancel lan2=8/0 rc=0
+FAIL R680 cancels rc=0 exp=5 got=8/0
+FAIL-THAT R680 cancels lan2=8/0 rc=0
+R680 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:8/0 cxls:8/0 freeMB=8617 dt=27s
+R681 p2:14/0 p1:8/0 p3:10/0 freeMB=8683 dt=7s
+R682 p2:14/0 p1:8/0 p3:10/0 freeMB=8670 dt=7s
+R683 p2:14/0 p1:8/0 p3:10/0 freeMB=8660 dt=7s
+R684 p2:14/0 p1:8/0 p3:10/0 freeMB=8647 dt=7s
+R685 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8675 dt=21s
+R686 p2:14/0 p1:8/0 p3:10/0 freeMB=8666 dt=7s
+R687 p2:14/0 p1:8/0 p3:10/0 freeMB=8648 dt=7s
+R688 p2:14/0 p1:8/0 p3:10/0 freeMB=8694 dt=6s
+R689 p2:14/0 p1:8/0 p3:10/0 freeMB=8673 dt=7s
+FAIL R690 cancel rc=0 exp=5 got=8/0
+FAIL-THAT R690 cancel lan2=8/0 rc=0
+FAIL R690 cancels rc=0 exp=5 got=8/0
+FAIL-THAT R690 cancels lan2=8/0 rc=0
+DIRTY R690 count=4 — STOP de bao toan bang chung
+== SOAK XONG: rounds=690 fail=6 flake=0 giay=7167 dirty_stop=1 ==
+END utc=2026-11-22T10:58:07Z rounds=690 fail=6 flake=0 giay=7198
+free_start_mb=9499 free_end_mb=8713
+HEAD_END=a48d5b87245a0ab4d67950503865e19d0a844595 dirty_end=4
+vis-remote-exit=0
+
+=== PHAN 2 (worktree cach ly, tag v0.3.6, 11:00Z) ===
+START utc=2026-11-22T11:00:56Z HEAD=8fa2c097bcdf2eb1eace583ac7fae016a90647b6
+describe=v0.3.6 dirty=0
+free_start_mb=8176
+FAIL R1 p3 rc=127 exp=10 got=0/0
+FLAKE R1 p3 lan2=10/0 (da tinh 1 fail)
+R1 p2:14/0 p1:8/0 p3:0/0 freeMB=8414 dt=10s
+R2 p2:14/0 p1:8/0 p3:10/0 freeMB=7898 dt=10s
+R3 p2:14/0 p1:8/0 p3:10/0 freeMB=7766 dt=16s
+R4 p2:14/0 p1:8/0 p3:10/0 freeMB=7331 dt=15s
+R5 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7764 dt=49s
+R6 p2:14/0 p1:8/0 p3:10/0 freeMB=7766 dt=17s
+R7 p2:14/0 p1:8/0 p3:10/0 freeMB=7304 dt=17s
+R8 p2:14/0 p1:8/0 p3:10/0 freeMB=6706 dt=19s
+R9 p2:14/0 p1:8/0 p3:10/0 freeMB=7409 dt=15s
+R10 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8334 dt=28s
+R11 p2:14/0 p1:8/0 p3:10/0 freeMB=8334 dt=9s
+R12 p2:14/0 p1:8/0 p3:10/0 freeMB=8510 dt=8s
+R13 p2:14/0 p1:8/0 p3:10/0 freeMB=8487 dt=8s
+R14 p2:14/0 p1:8/0 p3:10/0 freeMB=8270 dt=8s
+R15 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8225 dt=23s
+R16 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=8s
+R17 p2:14/0 p1:8/0 p3:10/0 freeMB=8558 dt=8s
+R18 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=7s
+R19 p2:14/0 p1:8/0 p3:10/0 freeMB=8549 dt=7s
+R20 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8533 dt=26s
+R21 p2:14/0 p1:8/0 p3:10/0 freeMB=8586 dt=7s
+R22 p2:14/0 p1:8/0 p3:10/0 freeMB=8629 dt=7s
+R23 p2:14/0 p1:8/0 p3:10/0 freeMB=8416 dt=8s
+R24 p2:14/0 p1:8/0 p3:10/0 freeMB=8358 dt=9s
+R25 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8495 dt=24s
+R26 p2:14/0 p1:8/0 p3:10/0 freeMB=8478 dt=8s
+R27 p2:14/0 p1:8/0 p3:10/0 freeMB=8506 dt=8s
+R28 p2:14/0 p1:8/0 p3:10/0 freeMB=8521 dt=9s
+R29 p2:14/0 p1:8/0 p3:10/0 freeMB=8508 dt=8s
+R30 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8432 dt=27s
+R31 p2:14/0 p1:8/0 p3:10/0 freeMB=8420 dt=10s
+R32 p2:14/0 p1:8/0 p3:10/0 freeMB=8484 dt=9s
+R33 p2:14/0 p1:8/0 p3:10/0 freeMB=8475 dt=10s
+R34 p2:14/0 p1:8/0 p3:10/0 freeMB=8451 dt=9s
+R35 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8504 dt=23s
+R36 p2:14/0 p1:8/0 p3:10/0 freeMB=8495 dt=8s
+R37 p2:14/0 p1:8/0 p3:10/0 freeMB=8518 dt=8s
+R38 p2:14/0 p1:8/0 p3:10/0 freeMB=8491 dt=8s
+R39 p2:14/0 p1:8/0 p3:10/0 freeMB=8502 dt=9s
+R40 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8510 dt=25s
+R41 p2:14/0 p1:8/0 p3:10/0 freeMB=8491 dt=8s
+R42 p2:14/0 p1:8/0 p3:10/0 freeMB=8454 dt=8s
+R43 p2:14/0 p1:8/0 p3:10/0 freeMB=8509 dt=8s
+R44 p2:14/0 p1:8/0 p3:10/0 freeMB=8463 dt=8s
+R45 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8223 dt=24s
+R46 p2:14/0 p1:8/0 p3:10/0 freeMB=8341 dt=8s
+R47 p2:14/0 p1:8/0 p3:10/0 freeMB=8341 dt=8s
+R48 p2:14/0 p1:8/0 p3:10/0 freeMB=8456 dt=8s
+R49 p2:14/0 p1:8/0 p3:10/0 freeMB=8469 dt=8s
+R50 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8572 dt=25s
+R51 p2:14/0 p1:8/0 p3:10/0 freeMB=8581 dt=8s
+R52 p2:14/0 p1:8/0 p3:10/0 freeMB=8563 dt=7s
+R53 p2:14/0 p1:8/0 p3:10/0 freeMB=8538 dt=7s
+R54 p2:14/0 p1:8/0 p3:10/0 freeMB=8602 dt=8s
+R55 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8547 dt=22s
+R56 p2:14/0 p1:8/0 p3:10/0 freeMB=8622 dt=7s
+R57 p2:14/0 p1:8/0 p3:10/0 freeMB=8611 dt=8s
+R58 p2:14/0 p1:8/0 p3:10/0 freeMB=8644 dt=7s
+R59 p2:14/0 p1:8/0 p3:10/0 freeMB=8631 dt=8s
+R60 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8769 dt=24s
+R61 p2:14/0 p1:8/0 p3:10/0 freeMB=8760 dt=7s
+R62 p2:14/0 p1:8/0 p3:10/0 freeMB=8516 dt=8s
+R63 p2:14/0 p1:8/0 p3:10/0 freeMB=8519 dt=7s
+R64 p2:14/0 p1:8/0 p3:10/0 freeMB=8514 dt=8s
+R65 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8620 dt=22s
+R66 p2:14/0 p1:8/0 p3:10/0 freeMB=8581 dt=7s
+R67 p2:14/0 p1:8/0 p3:10/0 freeMB=8616 dt=7s
+R68 p2:14/0 p1:8/0 p3:10/0 freeMB=8574 dt=8s
+R69 p2:14/0 p1:8/0 p3:10/0 freeMB=8641 dt=7s
+R70 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8641 dt=24s
+R71 p2:14/0 p1:8/0 p3:10/0 freeMB=8621 dt=7s
+R72 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R73 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=7s
+R74 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=7s
+R75 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8646 dt=22s
+R76 p2:14/0 p1:8/0 p3:10/0 freeMB=8761 dt=7s
+R77 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=8s
+R78 p2:14/0 p1:8/0 p3:10/0 freeMB=8568 dt=7s
+R79 p2:14/0 p1:8/0 p3:10/0 freeMB=8573 dt=7s
+R80 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8630 dt=24s
+R81 p2:14/0 p1:8/0 p3:10/0 freeMB=8617 dt=7s
+R82 p2:14/0 p1:8/0 p3:10/0 freeMB=8588 dt=8s
+R83 p2:14/0 p1:8/0 p3:10/0 freeMB=8620 dt=7s
+R84 p2:14/0 p1:8/0 p3:10/0 freeMB=8612 dt=8s
+R85 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8628 dt=22s
+R86 p2:14/0 p1:8/0 p3:10/0 freeMB=8633 dt=7s
+R87 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=7s
+R88 p2:14/0 p1:8/0 p3:10/0 freeMB=8603 dt=7s
+R89 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=7s
+R90 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8726 dt=23s
+R91 p2:14/0 p1:8/0 p3:10/0 freeMB=8783 dt=7s
+R92 p2:14/0 p1:8/0 p3:10/0 freeMB=8787 dt=7s
+R93 p2:14/0 p1:8/0 p3:10/0 freeMB=8777 dt=7s
+R94 p2:14/0 p1:8/0 p3:10/0 freeMB=8761 dt=6s
+R95 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8789 dt=20s
+R96 p2:14/0 p1:8/0 p3:10/0 freeMB=8768 dt=6s
+R97 p2:14/0 p1:8/0 p3:10/0 freeMB=8751 dt=6s
+R98 p2:14/0 p1:8/0 p3:10/0 freeMB=8797 dt=6s
+R99 p2:14/0 p1:8/0 p3:10/0 freeMB=8787 dt=6s
+R100 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8527 dt=23s
+R101 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=6s
+R102 p2:14/0 p1:8/0 p3:10/0 freeMB=8593 dt=6s
+R103 p2:14/0 p1:8/0 p3:10/0 freeMB=8576 dt=6s
+R104 p2:14/0 p1:8/0 p3:10/0 freeMB=8542 dt=7s
+R105 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8596 dt=21s
+R106 p2:14/0 p1:8/0 p3:10/0 freeMB=8568 dt=7s
+R107 p2:14/0 p1:8/0 p3:10/0 freeMB=8571 dt=7s
+R108 p2:14/0 p1:8/0 p3:10/0 freeMB=7874 dt=13s
+R109 p2:14/0 p1:8/0 p3:10/0 freeMB=7439 dt=14s
+R110 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=7228 dt=45s
+R111 p2:14/0 p1:8/0 p3:10/0 freeMB=7781 dt=18s
+R112 p2:14/0 p1:8/0 p3:10/0 freeMB=7762 dt=18s
+R113 p2:14/0 p1:8/0 p3:10/0 freeMB=6780 dt=17s
+R114 p2:14/0 p1:8/0 p3:10/0 freeMB=7727 dt=16s
+R115 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7719 dt=44s
+R116 p2:14/0 p1:8/0 p3:10/0 freeMB=7504 dt=22s
+R117 p2:14/0 p1:8/0 p3:10/0 freeMB=8035 dt=9s
+R118 p2:14/0 p1:8/0 p3:10/0 freeMB=8362 dt=8s
+R119 p2:14/0 p1:8/0 p3:10/0 freeMB=8402 dt=9s
+R120 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8431 dt=26s
+R121 p2:14/0 p1:8/0 p3:10/0 freeMB=8418 dt=8s
+R122 p2:14/0 p1:8/0 p3:10/0 freeMB=8619 dt=9s
+R123 p2:14/0 p1:8/0 p3:10/0 freeMB=8608 dt=8s
+R124 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=8s
+R125 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8470 dt=24s
+R126 p2:14/0 p1:8/0 p3:10/0 freeMB=8456 dt=8s
+R127 p2:14/0 p1:8/0 p3:10/0 freeMB=8639 dt=8s
+R128 p2:14/0 p1:8/0 p3:10/0 freeMB=8634 dt=8s
+R129 p2:14/0 p1:8/0 p3:10/0 freeMB=8612 dt=9s
+R130 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8593 dt=26s
+R131 p2:14/0 p1:8/0 p3:10/0 freeMB=8613 dt=9s
+R132 p2:14/0 p1:8/0 p3:10/0 freeMB=8710 dt=7s
+R133 p2:14/0 p1:8/0 p3:10/0 freeMB=8506 dt=7s
+R134 p2:14/0 p1:8/0 p3:10/0 freeMB=8491 dt=8s
+R135 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8543 dt=23s
+R136 p2:14/0 p1:8/0 p3:10/0 freeMB=8509 dt=9s
+R137 p2:14/0 p1:8/0 p3:10/0 freeMB=8612 dt=9s
+R138 p2:14/0 p1:8/0 p3:10/0 freeMB=8644 dt=10s
+R139 p2:14/0 p1:8/0 p3:10/0 freeMB=8627 dt=9s
+R140 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8618 dt=28s
+R141 p2:14/0 p1:8/0 p3:10/0 freeMB=8646 dt=9s
+R142 p2:14/0 p1:8/0 p3:10/0 freeMB=8634 dt=8s
+R143 p2:14/0 p1:8/0 p3:10/0 freeMB=8697 dt=8s
+R144 p2:14/0 p1:8/0 p3:10/0 freeMB=8673 dt=8s
+R145 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8693 dt=23s
+R146 p2:14/0 p1:8/0 p3:10/0 freeMB=8509 dt=9s
+R147 p2:14/0 p1:8/0 p3:10/0 freeMB=8335 dt=8s
+R148 p2:14/0 p1:8/0 p3:10/0 freeMB=8399 dt=8s
+R149 p2:14/0 p1:8/0 p3:10/0 freeMB=8379 dt=9s
+R150 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8507 dt=25s
+R151 p2:14/0 p1:8/0 p3:10/0 freeMB=8471 dt=8s
+R152 p2:14/0 p1:8/0 p3:10/0 freeMB=8493 dt=8s
+R153 p2:14/0 p1:8/0 p3:10/0 freeMB=8132 dt=8s
+R154 p2:14/0 p1:8/0 p3:10/0 freeMB=8281 dt=9s
+R155 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8370 dt=23s
+R156 p2:14/0 p1:8/0 p3:10/0 freeMB=8471 dt=8s
+R157 p2:14/0 p1:8/0 p3:10/0 freeMB=8473 dt=8s
+R158 p2:14/0 p1:8/0 p3:10/0 freeMB=8395 dt=8s
+R159 p2:14/0 p1:8/0 p3:10/0 freeMB=8225 dt=9s
+R160 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8085 dt=27s
+R161 p2:14/0 p1:8/0 p3:10/0 freeMB=8244 dt=8s
+R162 p2:14/0 p1:8/0 p3:10/0 freeMB=8335 dt=8s
+R163 p2:14/0 p1:8/0 p3:10/0 freeMB=8510 dt=8s
+R164 p2:14/0 p1:8/0 p3:10/0 freeMB=8605 dt=7s
+R165 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8415 dt=26s
+R166 p2:14/0 p1:8/0 p3:10/0 freeMB=8371 dt=8s
+R167 p2:14/0 p1:8/0 p3:10/0 freeMB=8429 dt=8s
+R168 p2:14/0 p1:8/0 p3:10/0 freeMB=8162 dt=8s
+R169 p2:14/0 p1:8/0 p3:10/0 freeMB=8324 dt=8s
+R170 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8079 dt=29s
+R171 p2:14/0 p1:8/0 p3:10/0 freeMB=8190 dt=9s
+R172 p2:14/0 p1:8/0 p3:10/0 freeMB=8448 dt=8s
+R173 p2:14/0 p1:8/0 p3:10/0 freeMB=8482 dt=7s
+R174 p2:14/0 p1:8/0 p3:10/0 freeMB=7688 dt=15s
+R175 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=7807 dt=33s
+R176 p2:14/0 p1:8/0 p3:10/0 freeMB=8019 dt=11s
+R177 p2:14/0 p1:8/0 p3:10/0 freeMB=8250 dt=11s
+R178 p2:14/0 p1:8/0 p3:10/0 freeMB=8160 dt=9s
+R179 p2:14/0 p1:8/0 p3:10/0 freeMB=8245 dt=11s
+R180 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8564 dt=26s
+R181 p2:14/0 p1:8/0 p3:10/0 freeMB=8699 dt=7s
+R182 p2:14/0 p1:8/0 p3:10/0 freeMB=8676 dt=8s
+R183 p2:14/0 p1:8/0 p3:10/0 freeMB=8442 dt=8s
+R184 p2:14/0 p1:8/0 p3:10/0 freeMB=8427 dt=7s
+R185 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8583 dt=22s
+R186 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=7s
+R187 p2:14/0 p1:8/0 p3:10/0 freeMB=8567 dt=7s
+R188 p2:14/0 p1:8/0 p3:10/0 freeMB=8547 dt=8s
+R189 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=8s
+R190 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8688 dt=24s
+R191 p2:14/0 p1:8/0 p3:10/0 freeMB=8733 dt=7s
+R192 p2:14/0 p1:8/0 p3:10/0 freeMB=8477 dt=8s
+R193 p2:14/0 p1:8/0 p3:10/0 freeMB=8537 dt=8s
+R194 p2:14/0 p1:8/0 p3:10/0 freeMB=8535 dt=7s
+R195 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8564 dt=22s
+R196 p2:14/0 p1:8/0 p3:10/0 freeMB=8560 dt=7s
+R197 p2:14/0 p1:8/0 p3:10/0 freeMB=8501 dt=7s
+R198 p2:14/0 p1:8/0 p3:10/0 freeMB=8595 dt=7s
+R199 p2:14/0 p1:8/0 p3:10/0 freeMB=8585 dt=7s
+R200 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8734 dt=24s
+R201 p2:14/0 p1:8/0 p3:10/0 freeMB=8376 dt=8s
+R202 p2:14/0 p1:8/0 p3:10/0 freeMB=8396 dt=8s
+R203 p2:14/0 p1:8/0 p3:10/0 freeMB=8393 dt=7s
+R204 p2:14/0 p1:8/0 p3:10/0 freeMB=8446 dt=7s
+R205 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8684 dt=22s
+R206 p2:14/0 p1:8/0 p3:10/0 freeMB=8719 dt=8s
+R207 p2:14/0 p1:8/0 p3:10/0 freeMB=8716 dt=7s
+R208 p2:14/0 p1:8/0 p3:10/0 freeMB=8323 dt=8s
+R209 p2:14/0 p1:8/0 p3:10/0 freeMB=8558 dt=7s
+R210 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8576 dt=24s
+R211 p2:14/0 p1:8/0 p3:10/0 freeMB=8570 dt=7s
+R212 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=8s
+R213 p2:14/0 p1:8/0 p3:10/0 freeMB=8533 dt=8s
+R214 p2:14/0 p1:8/0 p3:10/0 freeMB=8546 dt=8s
+R215 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8596 dt=21s
+R216 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=8s
+R217 p2:14/0 p1:8/0 p3:10/0 freeMB=8712 dt=7s
+R218 p2:14/0 p1:8/0 p3:10/0 freeMB=8753 dt=7s
+R219 p2:14/0 p1:8/0 p3:10/0 freeMB=8747 dt=8s
+R220 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8743 dt=24s
+R221 p2:14/0 p1:8/0 p3:10/0 freeMB=8753 dt=7s
+R222 p2:14/0 p1:8/0 p3:10/0 freeMB=8740 dt=7s
+R223 p2:14/0 p1:8/0 p3:10/0 freeMB=8715 dt=7s
+R224 p2:14/0 p1:8/0 p3:10/0 freeMB=8711 dt=7s
+R225 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8698 dt=21s
+R226 p2:14/0 p1:8/0 p3:10/0 freeMB=8699 dt=7s
+R227 p2:14/0 p1:8/0 p3:10/0 freeMB=8771 dt=7s
+R228 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=7s
+R229 p2:14/0 p1:8/0 p3:10/0 freeMB=8732 dt=7s
+R230 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8755 dt=24s
+R231 p2:14/0 p1:8/0 p3:10/0 freeMB=8738 dt=6s
+R232 p2:14/0 p1:8/0 p3:10/0 freeMB=8722 dt=6s
+R233 p2:14/0 p1:8/0 p3:10/0 freeMB=8763 dt=7s
+R234 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=6s
+R235 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8567 dt=22s
+R236 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R237 p2:14/0 p1:8/0 p3:10/0 freeMB=8600 dt=7s
+R238 p2:14/0 p1:8/0 p3:10/0 freeMB=8531 dt=7s
+R239 p2:14/0 p1:8/0 p3:10/0 freeMB=8536 dt=7s
+R240 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8576 dt=24s
+R241 p2:14/0 p1:8/0 p3:10/0 freeMB=8560 dt=6s
+R242 p2:14/0 p1:8/0 p3:10/0 freeMB=8616 dt=6s
+R243 p2:14/0 p1:8/0 p3:10/0 freeMB=8607 dt=7s
+R244 p2:14/0 p1:8/0 p3:10/0 freeMB=8594 dt=7s
+R245 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8759 dt=21s
+R246 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=6s
+R247 p2:14/0 p1:8/0 p3:10/0 freeMB=8738 dt=6s
+R248 p2:14/0 p1:8/0 p3:10/0 freeMB=8690 dt=6s
+R249 p2:14/0 p1:8/0 p3:10/0 freeMB=8757 dt=7s
+R250 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8702 dt=23s
+R251 p2:14/0 p1:8/0 p3:10/0 freeMB=8760 dt=7s
+R252 p2:14/0 p1:8/0 p3:10/0 freeMB=8443 dt=7s
+R253 p2:14/0 p1:8/0 p3:10/0 freeMB=8431 dt=7s
+R254 p2:14/0 p1:8/0 p3:10/0 freeMB=8428 dt=7s
+R255 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8583 dt=21s
+R256 p2:14/0 p1:8/0 p3:10/0 freeMB=8577 dt=6s
+R257 p2:14/0 p1:8/0 p3:10/0 freeMB=8565 dt=7s
+R258 p2:14/0 p1:8/0 p3:10/0 freeMB=8617 dt=7s
+R259 p2:14/0 p1:8/0 p3:10/0 freeMB=8603 dt=7s
+R260 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8744 dt=23s
+R261 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=7s
+R262 p2:14/0 p1:8/0 p3:10/0 freeMB=8706 dt=7s
+R263 p2:14/0 p1:8/0 p3:10/0 freeMB=8694 dt=7s
+R264 p2:14/0 p1:8/0 p3:10/0 freeMB=8676 dt=7s
+R265 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8724 dt=21s
+R266 p2:14/0 p1:8/0 p3:10/0 freeMB=8744 dt=6s
+R267 p2:14/0 p1:8/0 p3:10/0 freeMB=8792 dt=6s
+R268 p2:14/0 p1:8/0 p3:10/0 freeMB=8775 dt=7s
+R269 p2:14/0 p1:8/0 p3:10/0 freeMB=8760 dt=7s
+R270 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8776 dt=24s
+R271 p2:14/0 p1:8/0 p3:10/0 freeMB=8763 dt=6s
+R272 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=6s
+R273 p2:14/0 p1:8/0 p3:10/0 freeMB=8725 dt=7s
+R274 p2:14/0 p1:8/0 p3:10/0 freeMB=8790 dt=6s
+R275 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8719 dt=22s
+R276 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=7s
+R277 p2:14/0 p1:8/0 p3:10/0 freeMB=8537 dt=7s
+R278 p2:14/0 p1:8/0 p3:10/0 freeMB=8449 dt=7s
+R279 p2:14/0 p1:8/0 p3:10/0 freeMB=8430 dt=7s
+R280 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8618 dt=23s
+R281 p2:14/0 p1:8/0 p3:10/0 freeMB=8593 dt=7s
+R282 p2:14/0 p1:8/0 p3:10/0 freeMB=8594 dt=7s
+R283 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=7s
+R284 p2:14/0 p1:8/0 p3:10/0 freeMB=8555 dt=7s
+R285 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8611 dt=21s
+R286 p2:14/0 p1:8/0 p3:10/0 freeMB=8626 dt=6s
+R287 p2:14/0 p1:8/0 p3:10/0 freeMB=8578 dt=7s
+R288 p2:14/0 p1:8/0 p3:10/0 freeMB=8582 dt=7s
+R289 p2:14/0 p1:8/0 p3:10/0 freeMB=8640 dt=7s
+R290 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8582 dt=23s
+R291 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=7s
+R292 p2:14/0 p1:8/0 p3:10/0 freeMB=8629 dt=7s
+R293 p2:14/0 p1:8/0 p3:10/0 freeMB=8752 dt=7s
+R294 p2:14/0 p1:8/0 p3:10/0 freeMB=8742 dt=7s
+R295 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8750 dt=21s
+R296 p2:14/0 p1:8/0 p3:10/0 freeMB=8753 dt=7s
+R297 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=7s
+R298 p2:14/0 p1:8/0 p3:10/0 freeMB=8796 dt=7s
+R299 p2:14/0 p1:8/0 p3:10/0 freeMB=8495 dt=7s
+R300 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8590 dt=24s
+R301 p2:14/0 p1:8/0 p3:10/0 freeMB=8635 dt=7s
+R302 p2:14/0 p1:8/0 p3:10/0 freeMB=8618 dt=6s
+R303 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=6s
+R304 p2:14/0 p1:8/0 p3:10/0 freeMB=8730 dt=6s
+R305 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8770 dt=20s
+R306 p2:14/0 p1:8/0 p3:10/0 freeMB=8757 dt=6s
+R307 p2:14/0 p1:8/0 p3:10/0 freeMB=8798 dt=6s
+R308 p2:14/0 p1:8/0 p3:10/0 freeMB=8789 dt=7s
+R309 p2:14/0 p1:8/0 p3:10/0 freeMB=8775 dt=7s
+R310 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8597 dt=24s
+R311 p2:14/0 p1:8/0 p3:10/0 freeMB=8596 dt=6s
+R312 p2:14/0 p1:8/0 p3:10/0 freeMB=8578 dt=7s
+R313 p2:14/0 p1:8/0 p3:10/0 freeMB=8576 dt=7s
+R314 p2:14/0 p1:8/0 p3:10/0 freeMB=8644 dt=6s
+R315 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8754 dt=21s
+R316 p2:14/0 p1:8/0 p3:10/0 freeMB=8800 dt=7s
+R317 p2:14/0 p1:8/0 p3:10/0 freeMB=8781 dt=7s
+R318 p2:14/0 p1:8/0 p3:10/0 freeMB=8771 dt=6s
+R319 p2:14/0 p1:8/0 p3:10/0 freeMB=8756 dt=6s
+R320 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8622 dt=23s
+R321 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=6s
+R322 p2:14/0 p1:8/0 p3:10/0 freeMB=8593 dt=7s
+R323 p2:14/0 p1:8/0 p3:10/0 freeMB=8768 dt=7s
+R324 p2:14/0 p1:8/0 p3:10/0 freeMB=8774 dt=7s
+R325 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8784 dt=22s
+R326 p2:14/0 p1:8/0 p3:10/0 freeMB=8776 dt=7s
+R327 p2:14/0 p1:8/0 p3:10/0 freeMB=8756 dt=7s
+R328 p2:14/0 p1:8/0 p3:10/0 freeMB=8740 dt=6s
+R329 p2:14/0 p1:8/0 p3:10/0 freeMB=8720 dt=6s
+R330 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8762 dt=23s
+R331 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=7s
+R332 p2:14/0 p1:8/0 p3:10/0 freeMB=8800 dt=6s
+R333 p2:14/0 p1:8/0 p3:10/0 freeMB=8786 dt=7s
+R334 p2:14/0 p1:8/0 p3:10/0 freeMB=8773 dt=7s
+R335 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8605 dt=21s
+R336 p2:14/0 p1:8/0 p3:10/0 freeMB=8619 dt=6s
+R337 p2:14/0 p1:8/0 p3:10/0 freeMB=8570 dt=8s
+R338 p2:14/0 p1:8/0 p3:10/0 freeMB=8568 dt=7s
+R339 p2:14/0 p1:8/0 p3:10/0 freeMB=8623 dt=7s
+R340 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8584 dt=23s
+R341 p2:14/0 p1:8/0 p3:10/0 freeMB=8631 dt=7s
+R342 p2:14/0 p1:8/0 p3:10/0 freeMB=8616 dt=7s
+R343 p2:14/0 p1:8/0 p3:10/0 freeMB=8595 dt=7s
+R344 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=7s
+R345 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8769 dt=21s
+R346 p2:14/0 p1:8/0 p3:10/0 freeMB=8758 dt=7s
+R347 p2:14/0 p1:8/0 p3:10/0 freeMB=8739 dt=7s
+R348 p2:14/0 p1:8/0 p3:10/0 freeMB=8795 dt=7s
+R349 p2:14/0 p1:8/0 p3:10/0 freeMB=8777 dt=7s
+R350 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8797 dt=23s
+R351 p2:14/0 p1:8/0 p3:10/0 freeMB=8781 dt=7s
+R352 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=7s
+R353 p2:14/0 p1:8/0 p3:10/0 freeMB=8748 dt=7s
+R354 p2:14/0 p1:8/0 p3:10/0 freeMB=8804 dt=7s
+R355 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8753 dt=21s
+R356 p2:14/0 p1:8/0 p3:10/0 freeMB=8742 dt=7s
+R357 p2:14/0 p1:8/0 p3:10/0 freeMB=8793 dt=6s
+R358 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=6s
+R359 p2:14/0 p1:8/0 p3:10/0 freeMB=8766 dt=6s
+R360 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8782 dt=24s
+R361 p2:14/0 p1:8/0 p3:10/0 freeMB=8494 dt=7s
+R362 p2:14/0 p1:8/0 p3:10/0 freeMB=8564 dt=7s
+R363 p2:14/0 p1:8/0 p3:10/0 freeMB=8624 dt=7s
+R364 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=6s
+R365 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8589 dt=21s
+R366 p2:14/0 p1:8/0 p3:10/0 freeMB=8640 dt=6s
+R367 p2:14/0 p1:8/0 p3:10/0 freeMB=8770 dt=7s
+R368 p2:14/0 p1:8/0 p3:10/0 freeMB=8750 dt=6s
+R369 p2:14/0 p1:8/0 p3:10/0 freeMB=8737 dt=6s
+R370 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8604 dt=23s
+R371 p2:14/0 p1:8/0 p3:10/0 freeMB=8576 dt=7s
+R372 p2:14/0 p1:8/0 p3:10/0 freeMB=8657 dt=7s
+R373 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=7s
+R374 p2:14/0 p1:8/0 p3:10/0 freeMB=8633 dt=7s
+R375 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8778 dt=21s
+R376 p2:14/0 p1:8/0 p3:10/0 freeMB=8776 dt=7s
+R377 p2:14/0 p1:8/0 p3:10/0 freeMB=8761 dt=7s
+R378 p2:14/0 p1:8/0 p3:10/0 freeMB=8556 dt=7s
+R379 p2:14/0 p1:8/0 p3:10/0 freeMB=8637 dt=7s
+R380 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8615 dt=23s
+R381 p2:14/0 p1:8/0 p3:10/0 freeMB=8656 dt=7s
+R382 p2:14/0 p1:8/0 p3:10/0 freeMB=8660 dt=7s
+R383 p2:14/0 p1:8/0 p3:10/0 freeMB=8766 dt=7s
+R384 p2:14/0 p1:8/0 p3:10/0 freeMB=8747 dt=7s
+R385 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8787 dt=22s
+R386 p2:14/0 p1:8/0 p3:10/0 freeMB=8773 dt=6s
+R387 p2:14/0 p1:8/0 p3:10/0 freeMB=8766 dt=7s
+R388 p2:14/0 p1:8/0 p3:10/0 freeMB=8805 dt=7s
+R389 p2:14/0 p1:8/0 p3:10/0 freeMB=8791 dt=7s
+R390 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8627 dt=23s
+R391 p2:14/0 p1:8/0 p3:10/0 freeMB=8623 dt=7s
+R392 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R393 p2:14/0 p1:8/0 p3:10/0 freeMB=8586 dt=7s
+R394 p2:14/0 p1:8/0 p3:10/0 freeMB=8673 dt=7s
+R395 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8764 dt=21s
+R396 p2:14/0 p1:8/0 p3:10/0 freeMB=8749 dt=7s
+R397 p2:14/0 p1:8/0 p3:10/0 freeMB=8809 dt=7s
+R398 p2:14/0 p1:8/0 p3:10/0 freeMB=8789 dt=7s
+R399 p2:14/0 p1:8/0 p3:10/0 freeMB=8783 dt=7s
+R400 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8607 dt=24s
+R401 p2:14/0 p1:8/0 p3:10/0 freeMB=8580 dt=6s
+R402 p2:14/0 p1:8/0 p3:10/0 freeMB=8587 dt=6s
+R403 p2:14/0 p1:8/0 p3:10/0 freeMB=8657 dt=7s
+R404 p2:14/0 p1:8/0 p3:10/0 freeMB=8645 dt=7s
+R405 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8598 dt=21s
+R406 p2:14/0 p1:8/0 p3:10/0 freeMB=8656 dt=6s
+R407 p2:14/0 p1:8/0 p3:10/0 freeMB=8640 dt=7s
+R408 p2:14/0 p1:8/0 p3:10/0 freeMB=8772 dt=7s
+R409 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=7s
+R410 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8784 dt=23s
+R411 p2:14/0 p1:8/0 p3:10/0 freeMB=8738 dt=7s
+R412 p2:14/0 p1:8/0 p3:10/0 freeMB=8801 dt=7s
+R413 p2:14/0 p1:8/0 p3:10/0 freeMB=8786 dt=7s
+R414 p2:14/0 p1:8/0 p3:10/0 freeMB=8763 dt=7s
+R415 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8806 dt=21s
+R416 p2:14/0 p1:8/0 p3:10/0 freeMB=8798 dt=7s
+R417 p2:14/0 p1:8/0 p3:10/0 freeMB=8789 dt=6s
+R418 p2:14/0 p1:8/0 p3:10/0 freeMB=8771 dt=6s
+R419 p2:14/0 p1:8/0 p3:10/0 freeMB=8816 dt=6s
+R420 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8763 dt=24s
+R421 p2:14/0 p1:8/0 p3:10/0 freeMB=8816 dt=7s
+R422 p2:14/0 p1:8/0 p3:10/0 freeMB=8801 dt=6s
+R423 p2:14/0 p1:8/0 p3:10/0 freeMB=8408 dt=8s
+R424 p2:14/0 p1:8/0 p3:10/0 freeMB=8592 dt=7s
+R425 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8628 dt=21s
+R426 p2:14/0 p1:8/0 p3:10/0 freeMB=8614 dt=6s
+R427 p2:14/0 p1:8/0 p3:10/0 freeMB=8603 dt=7s
+R428 p2:14/0 p1:8/0 p3:10/0 freeMB=8794 dt=7s
+R429 p2:14/0 p1:8/0 p3:10/0 freeMB=8782 dt=7s
+R430 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8771 dt=24s
+R431 p2:14/0 p1:8/0 p3:10/0 freeMB=8571 dt=7s
+R432 p2:14/0 p1:8/0 p3:10/0 freeMB=8575 dt=7s
+R433 p2:14/0 p1:8/0 p3:10/0 freeMB=8573 dt=7s
+R434 p2:14/0 p1:8/0 p3:10/0 freeMB=8563 dt=7s
+R435 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8764 dt=21s
+R436 p2:14/0 p1:8/0 p3:10/0 freeMB=8699 dt=7s
+R437 p2:14/0 p1:8/0 p3:10/0 freeMB=8544 dt=7s
+R438 p2:14/0 p1:8/0 p3:10/0 freeMB=8588 dt=7s
+R439 p2:14/0 p1:8/0 p3:10/0 freeMB=8585 dt=7s
+R440 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8782 dt=23s
+R441 p2:14/0 p1:8/0 p3:10/0 freeMB=8768 dt=7s
+R442 p2:14/0 p1:8/0 p3:10/0 freeMB=8746 dt=7s
+R443 p2:14/0 p1:8/0 p3:10/0 freeMB=8736 dt=7s
+R444 p2:14/0 p1:8/0 p3:10/0 freeMB=8788 dt=7s
+R445 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8743 dt=21s
+R446 p2:14/0 p1:8/0 p3:10/0 freeMB=8786 dt=7s
+R447 p2:14/0 p1:8/0 p3:10/0 freeMB=8579 dt=7s
+R448 p2:14/0 p1:8/0 p3:10/0 freeMB=8589 dt=7s
+R449 p2:14/0 p1:8/0 p3:10/0 freeMB=8573 dt=7s
+R450 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8596 dt=24s
+R451 p2:14/0 p1:8/0 p3:10/0 freeMB=8599 dt=7s
+R452 p2:14/0 p1:8/0 p3:10/0 freeMB=8582 dt=7s
+R453 p2:14/0 p1:8/0 p3:10/0 freeMB=8657 dt=7s
+R454 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=7s
+R455 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8667 dt=21s
+R456 p2:14/0 p1:8/0 p3:10/0 freeMB=8679 dt=7s
+R457 p2:14/0 p1:8/0 p3:10/0 freeMB=8657 dt=7s
+R458 p2:14/0 p1:8/0 p3:10/0 freeMB=8647 dt=6s
+R459 p2:14/0 p1:8/0 p3:10/0 freeMB=8836 dt=6s
+R460 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8794 dt=23s
+R461 p2:14/0 p1:8/0 p3:10/0 freeMB=8728 dt=7s
+R462 p2:14/0 p1:8/0 p3:10/0 freeMB=8802 dt=7s
+R463 p2:14/0 p1:8/0 p3:10/0 freeMB=8793 dt=7s
+R464 p2:14/0 p1:8/0 p3:10/0 freeMB=8776 dt=7s
+R465 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8808 dt=21s
+R466 p2:14/0 p1:8/0 p3:10/0 freeMB=8806 dt=7s
+R467 p2:14/0 p1:8/0 p3:10/0 freeMB=8787 dt=6s
+R468 p2:14/0 p1:8/0 p3:10/0 freeMB=8835 dt=6s
+R469 p2:14/0 p1:8/0 p3:10/0 freeMB=8827 dt=6s
+R470 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8666 dt=23s
+R471 p2:14/0 p1:8/0 p3:10/0 freeMB=8663 dt=7s
+R472 p2:14/0 p1:8/0 p3:10/0 freeMB=8797 dt=7s
+R473 p2:14/0 p1:8/0 p3:10/0 freeMB=8782 dt=6s
+R474 p2:14/0 p1:8/0 p3:10/0 freeMB=8769 dt=6s
+R475 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8773 dt=21s
+R476 p2:14/0 p1:8/0 p3:10/0 freeMB=8763 dt=7s
+R477 p2:14/0 p1:8/0 p3:10/0 freeMB=8839 dt=7s
+R478 p2:14/0 p1:8/0 p3:10/0 freeMB=8835 dt=6s
+R479 p2:14/0 p1:8/0 p3:10/0 freeMB=8823 dt=7s
+R480 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8817 dt=23s
+R481 p2:14/0 p1:8/0 p3:10/0 freeMB=8823 dt=7s
+R482 p2:14/0 p1:8/0 p3:10/0 freeMB=8808 dt=7s
+R483 p2:14/0 p1:8/0 p3:10/0 freeMB=8787 dt=7s
+R484 p2:14/0 p1:8/0 p3:10/0 freeMB=8836 dt=7s
+R485 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8789 dt=21s
+R486 p2:14/0 p1:8/0 p3:10/0 freeMB=8799 dt=7s
+R487 p2:14/0 p1:8/0 p3:10/0 freeMB=8815 dt=7s
+R488 p2:14/0 p1:8/0 p3:10/0 freeMB=8801 dt=7s
+R489 p2:14/0 p1:8/0 p3:10/0 freeMB=8783 dt=7s
+R490 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8654 dt=24s
+R491 p2:14/0 p1:8/0 p3:10/0 freeMB=8630 dt=6s
+R492 p2:14/0 p1:8/0 p3:10/0 freeMB=8634 dt=6s
+R493 p2:14/0 p1:8/0 p3:10/0 freeMB=8691 dt=7s
+R494 p2:14/0 p1:8/0 p3:10/0 freeMB=8663 dt=7s
+R495 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8683 dt=21s
+R496 p2:14/0 p1:8/0 p3:10/0 freeMB=8677 dt=6s
+R497 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=7s
+R498 p2:14/0 p1:8/0 p3:10/0 freeMB=8637 dt=7s
+R499 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=7s
+R500 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8624 dt=24s
+R501 p2:14/0 p1:8/0 p3:10/0 freeMB=8605 dt=7s
+R502 p2:14/0 p1:8/0 p3:10/0 freeMB=8654 dt=6s
+R503 p2:14/0 p1:8/0 p3:10/0 freeMB=8656 dt=7s
+R504 p2:14/0 p1:8/0 p3:10/0 freeMB=8647 dt=6s
+R505 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8644 dt=21s
+R506 p2:14/0 p1:8/0 p3:10/0 freeMB=8631 dt=7s
+R507 p2:14/0 p1:8/0 p3:10/0 freeMB=8608 dt=7s
+R508 p2:14/0 p1:8/0 p3:10/0 freeMB=8594 dt=7s
+R509 p2:14/0 p1:8/0 p3:10/0 freeMB=8645 dt=7s
+R510 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8597 dt=23s
+R511 p2:14/0 p1:8/0 p3:10/0 freeMB=8603 dt=7s
+R512 p2:14/0 p1:8/0 p3:10/0 freeMB=8590 dt=7s
+R513 p2:14/0 p1:8/0 p3:10/0 freeMB=8586 dt=7s
+R514 p2:14/0 p1:8/0 p3:10/0 freeMB=8556 dt=7s
+R515 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8616 dt=21s
+R516 p2:14/0 p1:8/0 p3:10/0 freeMB=8613 dt=6s
+R517 p2:14/0 p1:8/0 p3:10/0 freeMB=8593 dt=7s
+R518 p2:14/0 p1:8/0 p3:10/0 freeMB=8632 dt=7s
+R519 p2:14/0 p1:8/0 p3:10/0 freeMB=8783 dt=7s
+R520 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8802 dt=23s
+R521 p2:14/0 p1:8/0 p3:10/0 freeMB=8795 dt=6s
+R522 p2:14/0 p1:8/0 p3:10/0 freeMB=8566 dt=7s
+R523 p2:14/0 p1:8/0 p3:10/0 freeMB=8441 dt=7s
+R524 p2:14/0 p1:8/0 p3:10/0 freeMB=8485 dt=7s
+R525 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8580 dt=21s
+R526 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=6s
+R527 p2:14/0 p1:8/0 p3:10/0 freeMB=8635 dt=7s
+R528 p2:14/0 p1:8/0 p3:10/0 freeMB=8623 dt=7s
+R529 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=7s
+R530 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8794 dt=23s
+R531 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=7s
+R532 p2:14/0 p1:8/0 p3:10/0 freeMB=8769 dt=7s
+R533 p2:14/0 p1:8/0 p3:10/0 freeMB=8810 dt=7s
+R534 p2:14/0 p1:8/0 p3:10/0 freeMB=8668 dt=7s
+R535 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8470 dt=22s
+R536 p2:14/0 p1:8/0 p3:10/0 freeMB=8471 dt=7s
+R537 p2:14/0 p1:8/0 p3:10/0 freeMB=8743 dt=7s
+R538 p2:14/0 p1:8/0 p3:10/0 freeMB=8429 dt=7s
+R539 p2:14/0 p1:8/0 p3:10/0 freeMB=8399 dt=7s
+R540 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8615 dt=24s
+R541 p2:14/0 p1:8/0 p3:10/0 freeMB=8600 dt=6s
+R542 p2:14/0 p1:8/0 p3:10/0 freeMB=8654 dt=6s
+R543 p2:14/0 p1:8/0 p3:10/0 freeMB=8650 dt=7s
+R544 p2:14/0 p1:8/0 p3:10/0 freeMB=8626 dt=7s
+R545 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8658 dt=21s
+R546 p2:14/0 p1:8/0 p3:10/0 freeMB=8794 dt=7s
+R547 p2:14/0 p1:8/0 p3:10/0 freeMB=8786 dt=7s
+R548 p2:14/0 p1:8/0 p3:10/0 freeMB=8767 dt=7s
+R549 p2:14/0 p1:8/0 p3:10/0 freeMB=8803 dt=7s
+R550 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8581 dt=23s
+R551 p2:14/0 p1:8/0 p3:10/0 freeMB=8619 dt=7s
+R552 p2:14/0 p1:8/0 p3:10/0 freeMB=8628 dt=6s
+R553 p2:14/0 p1:8/0 p3:10/0 freeMB=8762 dt=6s
+R554 p2:14/0 p1:8/0 p3:10/0 freeMB=8748 dt=6s
+R555 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8603 dt=22s
+R556 p2:14/0 p1:8/0 p3:10/0 freeMB=8598 dt=7s
+R557 p2:14/0 p1:8/0 p3:10/0 freeMB=8577 dt=7s
+R558 p2:14/0 p1:8/0 p3:10/0 freeMB=8649 dt=6s
+R559 p2:14/0 p1:8/0 p3:10/0 freeMB=8632 dt=6s
+R560 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8630 dt=23s
+R561 p2:14/0 p1:8/0 p3:10/0 freeMB=8777 dt=7s
+R562 p2:14/0 p1:8/0 p3:10/0 freeMB=8760 dt=7s
+R563 p2:14/0 p1:8/0 p3:10/0 freeMB=8743 dt=7s
+R564 p2:14/0 p1:8/0 p3:10/0 freeMB=8798 dt=7s
+R565 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8588 dt=21s
+R566 p2:14/0 p1:8/0 p3:10/0 freeMB=8616 dt=7s
+R567 p2:14/0 p1:8/0 p3:10/0 freeMB=8662 dt=7s
+R568 p2:14/0 p1:8/0 p3:10/0 freeMB=8659 dt=7s
+R569 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=7s
+R570 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8804 dt=23s
+R571 p2:14/0 p1:8/0 p3:10/0 freeMB=8562 dt=7s
+R572 p2:14/0 p1:8/0 p3:10/0 freeMB=8467 dt=7s
+R573 p2:14/0 p1:8/0 p3:10/0 freeMB=8478 dt=7s
+R574 p2:14/0 p1:8/0 p3:10/0 freeMB=8504 dt=7s
+R575 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8478 dt=21s
+R576 p2:14/0 p1:8/0 p3:10/0 freeMB=8532 dt=6s
+R577 p2:14/0 p1:8/0 p3:10/0 freeMB=8536 dt=7s
+R578 p2:14/0 p1:8/0 p3:10/0 freeMB=8519 dt=7s
+R579 p2:14/0 p1:8/0 p3:10/0 freeMB=8604 dt=7s
+R580 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8639 dt=23s
+R581 p2:14/0 p1:8/0 p3:10/0 freeMB=8622 dt=7s
+R582 p2:14/0 p1:8/0 p3:10/0 freeMB=8814 dt=7s
+R583 p2:14/0 p1:8/0 p3:10/0 freeMB=8799 dt=7s
+R584 p2:14/0 p1:8/0 p3:10/0 freeMB=8789 dt=7s
+R585 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8612 dt=21s
+R586 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=7s
+R587 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=7s
+R588 p2:14/0 p1:8/0 p3:10/0 freeMB=8745 dt=7s
+R589 p2:14/0 p1:8/0 p3:10/0 freeMB=8816 dt=7s
+R590 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8768 dt=23s
+R591 p2:14/0 p1:8/0 p3:10/0 freeMB=8815 dt=7s
+R592 p2:14/0 p1:8/0 p3:10/0 freeMB=8790 dt=7s
+R593 p2:14/0 p1:8/0 p3:10/0 freeMB=8782 dt=7s
+R594 p2:14/0 p1:8/0 p3:10/0 freeMB=8588 dt=7s
+R595 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8621 dt=21s
+R596 p2:14/0 p1:8/0 p3:10/0 freeMB=8632 dt=6s
+R597 p2:14/0 p1:8/0 p3:10/0 freeMB=8612 dt=7s
+R598 p2:14/0 p1:8/0 p3:10/0 freeMB=8777 dt=7s
+R599 p2:14/0 p1:8/0 p3:10/0 freeMB=8782 dt=6s
+R600 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8783 dt=24s
+R601 p2:14/0 p1:8/0 p3:10/0 freeMB=8786 dt=6s
+R602 p2:14/0 p1:8/0 p3:10/0 freeMB=8552 dt=7s
+R603 p2:14/0 p1:8/0 p3:10/0 freeMB=8572 dt=6s
+R604 p2:14/0 p1:8/0 p3:10/0 freeMB=8570 dt=7s
+R605 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8764 dt=21s
+R606 p2:14/0 p1:8/0 p3:10/0 freeMB=8757 dt=7s
+R607 p2:14/0 p1:8/0 p3:10/0 freeMB=8598 dt=7s
+R608 p2:14/0 p1:8/0 p3:10/0 freeMB=8616 dt=6s
+R609 p2:14/0 p1:8/0 p3:10/0 freeMB=8594 dt=7s
+R610 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8623 dt=23s
+R611 p2:14/0 p1:8/0 p3:10/0 freeMB=8598 dt=6s
+R612 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=6s
+R613 p2:14/0 p1:8/0 p3:10/0 freeMB=8639 dt=6s
+R614 p2:14/0 p1:8/0 p3:10/0 freeMB=8643 dt=6s
+R615 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8489 dt=21s
+R616 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R617 p2:14/0 p1:8/0 p3:10/0 freeMB=8596 dt=7s
+R618 p2:14/0 p1:8/0 p3:10/0 freeMB=8586 dt=7s
+R619 p2:14/0 p1:8/0 p3:10/0 freeMB=8576 dt=7s
+R620 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8630 dt=23s
+R621 p2:14/0 p1:8/0 p3:10/0 freeMB=8610 dt=7s
+R622 p2:14/0 p1:8/0 p3:10/0 freeMB=8529 dt=7s
+R623 p2:14/0 p1:8/0 p3:10/0 freeMB=8619 dt=7s
+R624 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=7s
+R625 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8641 dt=21s
+R626 p2:14/0 p1:8/0 p3:10/0 freeMB=8627 dt=7s
+R627 p2:14/0 p1:8/0 p3:10/0 freeMB=8603 dt=7s
+R628 p2:14/0 p1:8/0 p3:10/0 freeMB=8590 dt=7s
+R629 p2:14/0 p1:8/0 p3:10/0 freeMB=8636 dt=7s
+R630 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8604 dt=23s
+R631 p2:14/0 p1:8/0 p3:10/0 freeMB=8811 dt=7s
+R632 p2:14/0 p1:8/0 p3:10/0 freeMB=8795 dt=7s
+R633 p2:14/0 p1:8/0 p3:10/0 freeMB=8778 dt=7s
+R634 p2:14/0 p1:8/0 p3:10/0 freeMB=8764 dt=7s
+R635 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8604 dt=21s
+R636 p2:14/0 p1:8/0 p3:10/0 freeMB=8599 dt=7s
+R637 p2:14/0 p1:8/0 p3:10/0 freeMB=8608 dt=7s
+R638 p2:14/0 p1:8/0 p3:10/0 freeMB=8661 dt=7s
+R639 p2:14/0 p1:8/0 p3:10/0 freeMB=8795 dt=7s
+R640 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8616 dt=24s
+R641 p2:14/0 p1:8/0 p3:10/0 freeMB=8619 dt=6s
+R642 p2:14/0 p1:8/0 p3:10/0 freeMB=8617 dt=6s
+R643 p2:14/0 p1:8/0 p3:10/0 freeMB=8597 dt=7s
+R644 p2:14/0 p1:8/0 p3:10/0 freeMB=8577 dt=7s
+R645 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8752 dt=21s
+R646 p2:14/0 p1:8/0 p3:10/0 freeMB=8522 dt=7s
+R647 p2:14/0 p1:8/0 p3:10/0 freeMB=8613 dt=7s
+R648 p2:14/0 p1:8/0 p3:10/0 freeMB=8611 dt=7s
+R649 p2:14/0 p1:8/0 p3:10/0 freeMB=8583 dt=7s
+R650 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8639 dt=23s
+R651 p2:14/0 p1:8/0 p3:10/0 freeMB=8618 dt=7s
+R652 p2:14/0 p1:8/0 p3:10/0 freeMB=8748 dt=7s
+R653 p2:14/0 p1:8/0 p3:10/0 freeMB=8734 dt=7s
+R654 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=7s
+R655 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8570 dt=21s
+R656 p2:14/0 p1:8/0 p3:10/0 freeMB=8661 dt=7s
+R657 p2:14/0 p1:8/0 p3:10/0 freeMB=8656 dt=7s
+R658 p2:14/0 p1:8/0 p3:10/0 freeMB=8640 dt=7s
+R659 p2:14/0 p1:8/0 p3:10/0 freeMB=8617 dt=7s
+R660 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8633 dt=23s
+R661 p2:14/0 p1:8/0 p3:10/0 freeMB=8596 dt=6s
+R662 p2:14/0 p1:8/0 p3:10/0 freeMB=8590 dt=7s
+R663 p2:14/0 p1:8/0 p3:10/0 freeMB=8675 dt=7s
+R664 p2:14/0 p1:8/0 p3:10/0 freeMB=8651 dt=7s
+R665 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8659 dt=21s
+R666 p2:14/0 p1:8/0 p3:10/0 freeMB=8658 dt=7s
+R667 p2:14/0 p1:8/0 p3:10/0 freeMB=8650 dt=7s
+R668 p2:14/0 p1:8/0 p3:10/0 freeMB=8635 dt=7s
+R669 p2:14/0 p1:8/0 p3:10/0 freeMB=8599 dt=7s
+R670 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8624 dt=23s
+R671 p2:14/0 p1:8/0 p3:10/0 freeMB=8606 dt=7s
+R672 p2:14/0 p1:8/0 p3:10/0 freeMB=8635 dt=7s
+R673 p2:14/0 p1:8/0 p3:10/0 freeMB=8638 dt=7s
+R674 p2:14/0 p1:8/0 p3:10/0 freeMB=8762 dt=7s
+R675 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8795 dt=21s
+R676 p2:14/0 p1:8/0 p3:10/0 freeMB=8784 dt=7s
+R677 p2:14/0 p1:8/0 p3:10/0 freeMB=8568 dt=7s
+R678 p2:14/0 p1:8/0 p3:10/0 freeMB=8584 dt=7s
+R679 p2:14/0 p1:8/0 p3:10/0 freeMB=8641 dt=7s
+R680 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8586 dt=23s
+R681 p2:14/0 p1:8/0 p3:10/0 freeMB=8637 dt=7s
+R682 p2:14/0 p1:8/0 p3:10/0 freeMB=8590 dt=7s
+R683 p2:14/0 p1:8/0 p3:10/0 freeMB=8573 dt=7s
+R684 p2:14/0 p1:8/0 p3:10/0 freeMB=8553 dt=7s
+R685 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8541 dt=22s
+R686 p2:14/0 p1:8/0 p3:10/0 freeMB=8536 dt=6s
+R687 p2:14/0 p1:8/0 p3:10/0 freeMB=8524 dt=6s
+R688 p2:14/0 p1:8/0 p3:10/0 freeMB=8628 dt=6s
+R689 p2:14/0 p1:8/0 p3:10/0 freeMB=8620 dt=6s
+R690 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8627 dt=23s
+R691 p2:14/0 p1:8/0 p3:10/0 freeMB=8611 dt=7s
+R692 p2:14/0 p1:8/0 p3:10/0 freeMB=8596 dt=7s
+R693 p2:14/0 p1:8/0 p3:10/0 freeMB=8576 dt=7s
+R694 p2:14/0 p1:8/0 p3:10/0 freeMB=8642 dt=7s
+R695 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 freeMB=8740 dt=21s
+R696 p2:14/0 p1:8/0 p3:10/0 freeMB=8796 dt=6s
+R697 p2:14/0 p1:8/0 p3:10/0 freeMB=8760 dt=7s
+R698 p2:14/0 p1:8/0 p3:10/0 freeMB=8751 dt=7s
+R699 p2:14/0 p1:8/0 p3:10/0 freeMB=8529 dt=7s
+R700 p2:14/0 p1:8/0 p3:10/0 def:22/0 tls:22/0 net:9/0 pkg:25/0 cxl:5/0 cxls:5/0 freeMB=8579 dt=23s
+R701 p2:14/0 p1:8/0 p3:10/0 freeMB=8611 dt=6s
+== SOAK XONG: rounds=701 fail=1 flake=1 giay=7505 dirty_stop=0 ==
+END utc=2026-11-22T13:07:34Z rounds=701 fail=1 flake=1 giay=7598
+free_start_mb=8176 free_end_mb=8298
+HEAD_END=8fa2c097bcdf2eb1eace583ac7fae016a90647b6 dirty_end=0
+vis-remote-exit=0
