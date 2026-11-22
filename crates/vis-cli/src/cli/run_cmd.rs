@@ -791,6 +791,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                         &quyen.gia_tri(),
                                         workers,
                                         worker_budget.clone(),
+                                        async_backend.clone(),
                                     )
                                 } else {
                                     vis_vm::run_async_with_full_hosts_caps_backend(

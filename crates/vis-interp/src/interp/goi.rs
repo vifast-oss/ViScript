@@ -348,7 +348,7 @@ impl<'a> Interp<'a> {
 /// Đích `Opt(_)` bọc giá trị tới **ít nhất** đủ lớp của annot. Lõi được giữ đúng (giá trị đã là
 /// `Opt`/`Result` thuộc đúng lớp đó không bị bọc thêm). (Checker từ chối từ nguồn lúc < `annot−1`
 /// lớp — nên vòng lặp chỉ là kỹ thuật, không còn lớp > 1/chuyển đổi cho các chương trình hợp lệ.)
-pub(in crate::interp) fn opt_lift_maybe(v: Value, depth_target: usize) -> Value {
+pub(crate) fn opt_lift_maybe(v: Value, depth_target: usize) -> Value {
     crate::lift::lift_opt(v, depth_target)
 }
 

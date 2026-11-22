@@ -47,6 +47,7 @@ fn vm_w(a: &Anh, w: usize) -> RunOutput {
         &[],
         w,
         None,
+        None,
     )
 }
 
@@ -161,4 +162,54 @@ fn vm_p4a_w2_w4_byte_identical_20_vong() {
             assert_eq!(w1.codes(), out.codes(), "vòng {v} W={w}");
         }
     }
+}
+
+/// **VD-283/ST-301 (#192)** — cancel worker qua trigger frame (event `seq` của scheduler),
+/// VM `--workers 4`: task bị huỷ tại safe point, không chạy tiếp `V:post`, không treo.
+#[test]
+fn vm_p4b_cancel_worker_qua_trigger_frame() {
+    use vis_interp::frame::FrameConfig;
+    use vis_interp::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
+    let src = r#"async fn src1() -> int:
+    0
+
+async fn victim() -> int:
+    print("V:pre")
+    var i = 0
+    while i < 500000:
+        i = i + 1
+    print("V:post")
+    1
+
+fn main():
+    let a = spawn victim()
+    let x = await src1()
+    print("main {x}")
+"#;
+    let a = anh(src);
+    frame_cancel_clear_triggers_for_test();
+    frame_cancel_on_seq_for_test(0, 1);
+    let cfg = FrameConfig {
+        fake_sources: vec![("src1".into(), 1)],
+        events: vec![vis_interp::rt::FakeEvent {
+            seq: 0,
+            key: 1,
+            gen: 0,
+            value: vis_interp::Value::Int(7),
+        }],
+        ..Default::default()
+    };
+    let fo = vis_vm::vm_frame::run_frame_workers_for_test(&a.module, &a.src, &[], 4, cfg);
+    frame_cancel_clear_triggers_for_test();
+    assert_eq!(fo.exit, 1, "diagnostics: {:?}", fo.diagnostics);
+    assert!(
+        !fo.stdout.contains("V:post"),
+        "task huỷ chạy tiếp: {:?}",
+        fo.stdout
+    );
+    assert!(
+        fo.log.iter().any(|l| l == "cancel:1"),
+        "thiếu cancel:1: {:?}",
+        fo.log
+    );
 }

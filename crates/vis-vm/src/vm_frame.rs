@@ -525,6 +525,21 @@ pub fn run_frame_for_test_with_budget<'m>(
     run_frame_with_budget(m, text, args, config, Some((fee, limit)))
 }
 
+/// **VD-283/ST-301 (#192)** — test-only: frame + `Parallel(workers)` với `FrameConfig` đầy đủ
+/// (fake_sources/events/cancel trigger) để khoá cancel worker qua trigger frame.
+#[doc(hidden)]
+pub fn run_frame_workers_for_test<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    workers: usize,
+    config: FrameConfig,
+) -> FrameOutput {
+    let mut vm = Vm::new(m, text);
+    crate::vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), None, None);
+    run_frame_vm_driver(&mut vm, m, text, args, config, None).0
+}
+
 /// **VS3-1d** — chạy chương trình **có async** bằng frame scheduler thật trên VM, cùng host/
 /// args/caps với `vis_vm::run_with_full_hosts_caps`. Caller chỉ chọn khi HIR có `async fn`.
 #[doc(hidden)]
@@ -606,6 +621,7 @@ pub fn run_async_workers_with_full_hosts_caps<'m>(
     caps: &[(u32, Value)],
     workers: usize,
     budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>>,
 ) -> vis_interp::RunOutput {
     let mut vm = Vm::new(m, text);
     crate::vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), budget, None);
@@ -630,7 +646,7 @@ pub fn run_async_workers_with_full_hosts_caps<'m>(
         text,
         args,
         FrameConfig {
-            backend: None,
+            backend,
             ..Default::default()
         },
         None,

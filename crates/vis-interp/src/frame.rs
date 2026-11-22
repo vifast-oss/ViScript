@@ -324,6 +324,8 @@ enum Work<'a> {
     /// Tạo closure: chụp **env chia sẻ** hiện tại.
     MakeLambda {
         params: Vec<u32>,
+        /// **ST-301**: số lớp `Opt` của annot từng tham số (0 = không nâng).
+        param_depths: Vec<usize>,
         ret_depth: usize,
         body: HBody,
     },
@@ -964,6 +966,7 @@ mod tests {
             Value::Fn(Rc::new(crate::value::Closure {
                 name: "f".into(),
                 params: vec![7],
+                param_depths: vec![0],
                 body: HBody::Stmts(Vec::new()),
                 env: env.clone(),
                 ret_depth: 0,

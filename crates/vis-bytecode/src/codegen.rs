@@ -398,6 +398,8 @@ pub fn compile_with_fee_voi_bang(
             st.f.push(Instr::Assign(slot), Span::new(0, 0), -1);
         }
         let base = c.params.len() as u16;
+        // **VD-283/ST-301**: nâng `T → …T?…` cho tham số closure có annotation, mirror interp.
+        st.lift_params_opt(&c.params, Span::new(0, 0))?;
         st.than(&c.body, base, Span::new(0, 0))?;
         st.f.push(Instr::Return, Span::new(0, 0), 0);
         let (done, fee) = st.f.finish()?;

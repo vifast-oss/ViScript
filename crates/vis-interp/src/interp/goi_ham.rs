@@ -178,7 +178,10 @@ impl<'a> Interp<'a> {
         let mut old = Vec::with_capacity(c.params.len());
         for (i, p) in c.params.iter().enumerate() {
             old.push((*p, self.env.borrow().get(p).cloned()));
-            self.env.borrow_mut().insert(*p, pos[i].clone());
+            let depth = c.param_depths.get(i).copied().unwrap_or(0);
+            self.env
+                .borrow_mut()
+                .insert(*p, opt_lift_maybe(pos[i].clone(), depth));
         }
         let r = match &c.body {
             HBody::Expr(e) => self.eval(e),

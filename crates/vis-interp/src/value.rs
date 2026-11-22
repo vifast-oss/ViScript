@@ -294,6 +294,10 @@ pub(crate) fn let_else_binder(pat: &HPat, v: &Value) -> Value {
 pub struct Closure {
     pub name: String,
     pub params: Vec<u32>,
+    /// **VD-283/ST-301** — số lớp `Opt` của annot từng tham số (`T?` → 1, `T??` → 2);
+    /// `0` = không nâng. Dùng ở biên gọi closure (mirror `lift_params_opt` của VM).
+    #[doc(hidden)]
+    pub param_depths: Vec<usize>,
     pub body: HBody,
     pub env: Env,
     /// **VD-241 §3 (A0, 2026-11-19)** — số lớp `Opt` của annot return (`T?` → 1, `T??` → 2).
