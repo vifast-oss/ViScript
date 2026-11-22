@@ -4,7 +4,7 @@
 //! (tiếng Việt/emoji) — hợp lệ JSON, không đổi giá trị sau parse. Không dùng serde.
 
 /// Escape một chuỗi thành **nội dung** trong dấu `"` của JSON (không thêm dấu bao).
-pub(crate) fn esc(s: &str) -> String {
+pub fn esc(s: &str) -> String {
     let mut o = String::with_capacity(s.len() + 8);
     for c in s.chars() {
         match c {

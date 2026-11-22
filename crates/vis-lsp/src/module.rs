@@ -138,7 +138,7 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
         }
         return Some(kq);
     }
-    let l = crate::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
+    let l = vis_loader::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
     let mut kq = phan_tich::phan_tich(text, mode);
     let ten_chinh = path.file_name()?.to_string_lossy().to_string();
     let mut da: HashSet<String> = kq.items.iter().map(|g| g.label.clone()).collect();

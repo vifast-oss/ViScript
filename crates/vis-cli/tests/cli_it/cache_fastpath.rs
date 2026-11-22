@@ -63,7 +63,8 @@ fn tim_vbc(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn khong_con_fast_path_khoa_v1() {
     let main = std::fs::read_to_string(goc().join("crates/vis-cli/src/main.rs")).expect("main");
-    let cache = std::fs::read_to_string(goc().join("crates/vis-cli/src/cache.rs")).expect("cache");
+    let cache =
+        std::fs::read_to_string(goc().join("crates/vis-loader/src/cache.rs")).expect("cache");
     assert!(
         !main.contains("cache::khoa("),
         "main.rs còn đọc khoá v1 (fast-path chết)"

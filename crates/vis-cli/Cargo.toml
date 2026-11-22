@@ -90,6 +90,9 @@ vis-types = { path = "../vis-types" }
 vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-vm = { path = "../vis-vm" }
+# **ST-296b (VD-281/VD-282)**: nạp đa tệp/lock metadata + LSP tách crate riêng.
+vis-loader = { path = "../vis-loader" }
+vis-lsp = { path = "../vis-lsp" }
 # **VD-241 (Gate 1, 2026-11-19)** — `std.sqlite` MVP: **rusqlite bundled**, ghim version; không tự
 # viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.50.2, sqlite3.c public domain;
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).
@@ -97,7 +100,7 @@ vis-vm = { path = "../vis-vm" }
 # (cấm ATTACH/DETACH/VACUUM/load_extension/ghi PRAGMA user_version). `limits` (VD-258):
 # `Connection::set_limit(SQLITE_LIMIT_LENGTH, …)` chặn `zeroblob`/text lớn materialize trước cap.
 # Feature rỗng, không dep thêm.
-rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks", "limits"], optional = true }
+rusqlite = { workspace = true, optional = true }
 
 # **ST-132 (VD-120)**: chỉ trên Linux, chỉ để cưỡng chế kernel (Landlock). Nền khác không kéo
 # crate này vào (nó `#![cfg(target_os = "linux")]`), nên ma trận `cargo check --target` vẫn 18/18.
@@ -109,25 +112,25 @@ vis-host-linux = { path = "../../vis-host-linux" }
 # Windows/wasm không kéo crate này. Giấy phép: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
 # (thoả allowlist qua nhánh Apache-2.0); log kiểm toàn cây: `agent/JOURNAL/st295-license.log`.
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std"] }
+rustix = { workspace = true }
 
 # **VS3-4a (VD-271)** — TLS client. Ghim tuyệt đối để build tái lập; `default-features = false`
 # + `ring` để **không** kéo `aws-lc-rs`/NASM. `webpki-roots` là **dữ liệu** gốc Mozilla (không
 # code unsafe, không transitive). Chỉ target không phải wasm32 ⇒ `cargo check --target
 # wasm32-unknown-unknown` không thấy hai crate này; `net.rs` trả lỗi rõ khi gọi HTTPS ở wasm.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"], optional = true }
-webpki-roots = { version = "=1.0.11", optional = true }
+rustls = { workspace = true, optional = true }
+webpki-roots = { workspace = true, optional = true }
 # **VS3-4b2** — chỉ khi feature `http2`. `h2` ghim tuyệt đối; tokio chỉ để có `AsyncRead/AsyncWrite`
 # (không bật `rt`/`net`); http/bytes là kiểu request/body của h2. WASM không thấy các crate này.
-h2 = { version = "=0.4.20", default-features = false, optional = true }
-tokio = { version = "=1.54.1", default-features = false, features = ["io-util"], optional = true }
-http = { version = "=1.5.0", optional = true }
-bytes = { version = "=1.12.2", optional = true }
+h2 = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
+bytes = { workspace = true, optional = true }
 # **VS3-5b**: xác minh Ed25519 cho chữ ký index registry. Cùng phiên bản/nguồn mà `rustls` đã kéo
 # (không thêm crate vào lock); ghim tuyệt đối để build tái lập. `default-features = false` +
 # `std` là đủ cho `signature::UnparsedPublicKey::verify`.
-ring = { version = "=0.17.14", default-features = false, features = ["std"], optional = true }
+ring = { workspace = true, optional = true }
 
 # **ST-271 / VD-254 (Lát 3)** — readiness selector thật cho đường frame test (`net.read`/
 # `net.accept`); cfg Linux-only, KHÔNG vào core crate (wasm32), KHÔNG có `log` (tắt qua
@@ -137,7 +140,7 @@ ring = { version = "=0.17.14", default-features = false, features = ["std"], opt
 # **VS3-1d/W1f** — adapter async net production (frame scheduler) dùng cùng mio đã được duyệt
 # cho test côté Linux. Chỉ target Unix; Windows/wasm giữ đường cũ (không có backend).
 [target.'cfg(any(unix, windows))'.dependencies]
-mio = { version = "=1.2.5", default-features = false, features = ["os-poll", "net", "os-ext"] }
+mio = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-mio = { version = "=1.2.5", default-features = false, features = ["os-poll", "net", "os-ext"] }
+mio = { workspace = true }

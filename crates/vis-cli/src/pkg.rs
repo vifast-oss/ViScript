@@ -12,7 +12,7 @@
 //! [`vis_bytecode::source_hash`] (SHA-256 thật, không thêm crate).
 
 use std::collections::BTreeSet;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use vis_interp::stdlib::json;
@@ -29,13 +29,20 @@ mod registry_http;
 pub mod resolver;
 /// **ST-127 (VD-125)**: semver tối giản (`Version`/`VersionReq`) — resolver dùng ở ST-128, lock ghi
 /// `version_req` ở ST-129. Không crate mới.
-pub mod semver;
+pub use vis_loader::semver;
 /// **VS3-5a**: base64 + tar ustar tối giản — cùng lát, tách tệp cho R1.
 mod tar_b64;
 
 use std::collections::BTreeMap;
 
 use semver::{Version, VersionReq};
+
+// **ST-296b (VD-281/VD-282)**: metadata lock + băm/chuẩn hoá đã chuyển sang `vis-loader`;
+// re-export để các module con (`gc`, `registry_http`, `resolver`) và test giữ nguyên đường gọi.
+pub(crate) use vis_loader::lock_meta::{
+    bam, chuan_hoa, chuoi, doc_lock, kiem_path, la_hex64, lay, lay_chuoi, nang_cap_lock,
+    so_phien_ban, GoiKhoa, Khoa, TepKhoa, LOCK_PHIEN_BAN,
+};
 
 /// Chạy `vis pkg …`; lỗi ⇒ `vis pkg: …` + exit **2** (mẫu `vis cache`, không mã mới).
 pub fn run(args: &[String]) -> ExitCode {
@@ -68,29 +75,6 @@ fn chay(args: &[String]) -> Result<(), String> {
     }
 }
 
-/// Băm hex của một chuỗi (SHA-256 thật, qua `vis-bytecode`).
-pub(crate) fn bam(s: &str) -> String {
-    let h = vis_bytecode::source_hash(s);
-    let mut out = String::with_capacity(64);
-    for b in h {
-        out.push_str(&format!("{b:02x}"));
-    }
-    out
-}
-
-/// Chuẩn hoá **khi ingest**: bỏ BOM, CRLF→LF, đúng **một** LF cuối; từ chối non-UTF-8.
-pub(crate) fn chuan_hoa(bytes: &[u8]) -> Result<String, String> {
-    let s = std::str::from_utf8(bytes).map_err(|e| format!("tệp không phải UTF-8: {e}"))?;
-    let s = s.strip_prefix('\u{feff}').unwrap_or(s);
-    let s = s.replace("\r\n", "\n");
-    let s = s.trim_end_matches('\n');
-    if s.is_empty() {
-        Ok(String::new())
-    } else {
-        Ok(format!("{s}\n"))
-    }
-}
-
 /// `tree_sha` trên danh sách `(path, file_sha)` — sắp theo **byte** của path.
 fn bam_cay(files: &[(String, String)]) -> String {
     let mut ds = files.to_vec();
@@ -103,49 +87,6 @@ fn bam_cay(files: &[(String, String)]) -> String {
         s.push('\n');
     }
     bam(&s)
-}
-
-// ----- JSON tiện ích -----
-
-fn lay<'a>(kv: &'a [(Value, Value)], k: &str) -> Option<&'a Value> {
-    kv.iter().find_map(|(kk, v)| match kk {
-        Value::Str(s) if s == k => Some(v),
-        _ => None,
-    })
-}
-
-fn chuoi(v: &Value) -> Option<&str> {
-    match v {
-        Value::Str(s) => Some(s),
-        _ => None,
-    }
-}
-
-fn lay_chuoi(kv: &[(Value, Value)], k: &str) -> Option<String> {
-    lay(kv, k).and_then(chuoi).map(str::to_string)
-}
-
-fn la_hex64(s: &str) -> bool {
-    s.len() == 64 && s.bytes().all(|b| b.is_ascii_hexdigit())
-}
-
-/// Đường dẫn tương đối an toàn: chỉ component `Normal`, không `..`/tuyệt đối/`\`.
-fn kiem_path(p: &str) -> Result<(), String> {
-    if p.is_empty() || p.contains('\\') {
-        return Err(format!("đường dẫn `{p}` không hợp lệ"));
-    }
-    let mut co = false;
-    for c in Path::new(p).components() {
-        match c {
-            Component::Normal(_) => co = true,
-            _ => return Err(format!("đường dẫn `{p}` phải tương đối, không `..`/gốc")),
-        }
-    }
-    if co {
-        Ok(())
-    } else {
-        Err(format!("đường dẫn `{p}` không hợp lệ"))
-    }
 }
 
 // ----- manifest -----
@@ -256,22 +197,6 @@ fn manifest_tu_gia_tri(
     })
 }
 
-// ----- phiên bản theo **số** -----
-
-fn so_phien_ban(v: &str) -> Result<Vec<u64>, String> {
-    if v.is_empty() {
-        return Err("version rỗng".to_string());
-    }
-    let mut ds = Vec::new();
-    for p in v.split('.') {
-        ds.push(
-            p.parse::<u64>()
-                .map_err(|_| format!("version `{v}` không phải số (phần `{p}`)"))?,
-        );
-    }
-    Ok(ds)
-}
-
 // ----- gom closure để cài -----
 
 struct TepCai {
@@ -354,189 +279,6 @@ fn doc_goi(
 fn loi_xung_dot(e: &resolver::LoiXungDot) -> String {
     // `vis_diag::code` = `VS` + 4 chữ số (hàm có sẵn của sổ mã) — không viết literal mã ở đây.
     format!("{}: {e}", vis_diag::code(704))
-}
-
-// ----- vis.lock -----
-
-pub(crate) struct TepKhoa {
-    pub(crate) path: String,
-    pub(crate) sha256: String,
-}
-
-pub(crate) struct GoiKhoa {
-    pub(crate) name: String,
-    pub(crate) version: String,
-    pub(crate) sha256: String,
-    /// **ST-90 (VD-110)**: entry của gói; `None` = lock **cũ** (fallback quy ước).
-    pub(crate) entry: Option<String>,
-    pub(crate) files: Vec<TepKhoa>,
-    /// **ST-129 (VD-125)**: ràng buộc đã chọn ra phiên bản này (dạng **chuẩn hoá**);
-    /// `None` = lock **định dạng cũ** (không có trường) ⇒ khi ghi lại phải sinh `=<version>`.
-    pub(crate) version_req: Option<String>,
-}
-
-/// Định dạng **hiện tại** của `vis.lock` (ST-129).
-pub(crate) const LOCK_PHIEN_BAN: u16 = 2;
-
-/// Toàn bộ `vis.lock` đã đọc: định dạng + **ràng buộc gốc** + các gói (ST-129, VD-125).
-pub(crate) struct Khoa {
-    /// `1` = định dạng cũ (ST-70..ST-128), `2` = định dạng có `roots`/`version_req`.
-    pub(crate) phien_ban: u16,
-    /// Ràng buộc **gốc** người dùng đòi (`pkg add`), đã chuẩn hoá — chỉ có ở định dạng 2.
-    pub(crate) roots: BTreeMap<String, String>,
-    pub(crate) goi: Vec<GoiKhoa>,
-}
-
-impl Khoa {
-    /// Lock định dạng cũ (hoặc thiếu trường mới) ⇒ cần **migrate** khi ghi.
-    pub(crate) fn can_migrate(&self) -> bool {
-        self.phien_ban < LOCK_PHIEN_BAN || self.goi.iter().any(|g| g.version_req.is_none())
-    }
-}
-
-/// **VS3-5b**: nâng lock cũ lên [`LOCK_PHIEN_BAN`] **an toàn** — mỗi gói thiếu `version_req` được
-/// **ghim** đúng phiên bản đang có (`=<version>`), không nới ràng buộc; `roots` giữ nguyên (lock cũ
-/// không có `roots` ⇒ để trống, `roots_tu_lock` đã ghim khi cần). Trả `true` nếu cần ghi.
-fn nang_cap_lock(khoa: &mut Khoa) -> bool {
-    let can = khoa.can_migrate();
-    if can {
-        for g in &mut khoa.goi {
-            if g.version_req.is_none() {
-                g.version_req = Some(format!("={}", g.version));
-            }
-        }
-        khoa.phien_ban = LOCK_PHIEN_BAN;
-    }
-    can
-}
-
-fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
-    let bytes = match std::fs::read(duong) {
-        Ok(b) => b,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound && !bat_buoc => {
-            return Ok(Khoa {
-                phien_ban: LOCK_PHIEN_BAN,
-                roots: BTreeMap::new(),
-                goi: Vec::new(),
-            })
-        }
-        Err(e) => return Err(format!("không đọc được `{}`: {e}", duong.display())),
-    };
-    let text =
-        std::str::from_utf8(&bytes).map_err(|e| format!("`vis.lock` không phải UTF-8: {e}"))?;
-    let v = vis_interp::json::decode(text).map_err(|e| format!("`vis.lock` hỏng: {e}"))?;
-    let Value::Map(kv) = &v else {
-        return Err("`vis.lock` hỏng: phải là object".to_string());
-    };
-    let phien_ban = match lay(kv, "lock") {
-        Some(Value::Int(1)) => 1u16,
-        Some(Value::Int(2)) => 2u16,
-        _ => {
-            return Err(format!(
-                "`vis.lock` hỏng: thiếu `lock` = 1 hoặc {LOCK_PHIEN_BAN}"
-            ))
-        }
-    };
-    // **ST-129**: `roots` chỉ có ở định dạng 2; vắng ⇒ map rỗng (không phải lỗi).
-    let mut roots: BTreeMap<String, String> = BTreeMap::new();
-    if let Some(rv) = lay(kv, "roots") {
-        let Value::Map(rm) = rv else {
-            return Err("`vis.lock` hỏng: `roots` phải là object".to_string());
-        };
-        for (k, v) in rm {
-            let Some(ten) = chuoi(k) else {
-                return Err("`vis.lock` hỏng: tên trong `roots` phải là chuỗi".to_string());
-            };
-            let Some(req) = chuoi(v) else {
-                return Err(format!("`vis.lock` hỏng: `roots.{ten}` phải là chuỗi"));
-            };
-            let chuan = VersionReq::parse(req)
-                .map_err(|e| format!("`vis.lock` hỏng: `roots.{ten}`: {e}"))?
-                .chuan_hoa();
-            roots.insert(ten.to_string(), chuan);
-        }
-    }
-    let Some(Value::List(ps)) = lay(kv, "packages") else {
-        return Err("`vis.lock` hỏng: thiếu `packages`".to_string());
-    };
-    let mut out = Vec::new();
-    for p in ps {
-        let Value::Map(p) = p else {
-            return Err("`vis.lock` hỏng: `packages[]` phải là object".to_string());
-        };
-        let name = lay_chuoi(p, "name")
-            .ok_or_else(|| "`vis.lock` hỏng: package thiếu `name`".to_string())?;
-        let version = lay_chuoi(p, "version")
-            .ok_or_else(|| "`vis.lock` hỏng: package thiếu `version`".to_string())?;
-        so_phien_ban(&version)?;
-        let sha256 = lay_chuoi(p, "sha256")
-            .ok_or_else(|| "`vis.lock` hỏng: package thiếu `sha256`".to_string())?;
-        if !la_hex64(&sha256) {
-            return Err("`vis.lock` hỏng: `sha256` package không phải 64 hex".to_string());
-        }
-        let Some(Value::List(fs)) = lay(p, "files") else {
-            return Err("`vis.lock` hỏng: package thiếu `files`".to_string());
-        };
-        let mut files = Vec::new();
-        for f in fs {
-            let Value::Map(f) = f else {
-                return Err("`vis.lock` hỏng: `files[]` phải là object".to_string());
-            };
-            let path = lay_chuoi(f, "path")
-                .ok_or_else(|| "`vis.lock` hỏng: file thiếu `path`".to_string())?;
-            kiem_path(&path)?;
-            let sha = lay_chuoi(f, "sha256")
-                .ok_or_else(|| "`vis.lock` hỏng: file thiếu `sha256`".to_string())?;
-            if !la_hex64(&sha) {
-                return Err("`vis.lock` hỏng: `sha256` file không phải 64 hex".to_string());
-            }
-            files.push(TepKhoa {
-                path,
-                sha256: sha.to_ascii_lowercase(),
-            });
-        }
-        files.sort_by(|a, b| a.path.as_bytes().cmp(b.path.as_bytes()));
-        let entry = match lay_chuoi(p, "entry") {
-            Some(e) => {
-                kiem_path(&e)?;
-                Some(e)
-            }
-            None => None, // lock cũ: fallback quy ước (không cảnh báo)
-        };
-        // **ST-129**: `version_req` (định dạng cũ **không** có) — chuẩn hoá khi đọc.
-        let version_req = match lay_chuoi(p, "version_req") {
-            Some(r) => Some(
-                VersionReq::parse(&r)
-                    .map_err(|e| format!("`vis.lock` hỏng: `version_req` của `{name}`: {e}"))?
-                    .chuan_hoa(),
-            ),
-            None => None,
-        };
-        out.push(GoiKhoa {
-            name,
-            version,
-            sha256: sha256.to_ascii_lowercase(),
-            entry,
-            files,
-            version_req,
-        });
-    }
-    out.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
-    Ok(Khoa {
-        phien_ban,
-        roots,
-        goi: out,
-    })
-}
-
-/// Như [`doc_lock`] nhưng chỉ trả danh sách gói (đường cũ của `use pkg.*`/LSP).
-fn doc_khoa(duong: &Path, bat_buoc: bool) -> Result<Vec<GoiKhoa>, String> {
-    Ok(doc_lock(duong, bat_buoc)?.goi)
-}
-
-/// Đọc + validate `vis.lock` trong `dir` — dùng cho `use pkg.*` (ST-71).
-pub(crate) fn doc_khoa_cua(dir: &Path) -> Result<Vec<GoiKhoa>, String> {
-    doc_khoa(&dir.join("vis.lock"), true)
 }
 
 fn gia_tri_khoa(khoa: &Khoa) -> Value {

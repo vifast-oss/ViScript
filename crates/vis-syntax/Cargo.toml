@@ -17,8 +17,8 @@ path = "src/lib.rs"
 # Kéo theo `tinyvec` (Zlib OR Apache-2.0 OR MIT) — cũng trong allowlist.
 [dependencies]
 vis-diag = { path = "../vis-diag" }
-unicode-ident = "1"
-unicode-normalization = "0.1"
+unicode-ident = { workspace = true }
+unicode-normalization = { workspace = true }
 
 # Công cụ fuzz 10 phút của ST-04 (QD §7.5). Chạy tay, không phải một phần `gate --fast`.
 [[bin]]

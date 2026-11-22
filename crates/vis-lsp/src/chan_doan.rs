@@ -18,7 +18,7 @@ use super::vi_tri;
 /// hiện. Trả `None` nếu nạp lỗi ⇒ rơi về đường một tệp.
 fn chan_doan_module(path: &Path, text: &str) -> Option<Vec<ChanDoan>> {
     let ten = path.file_name()?.to_string_lossy().to_string();
-    let l = crate::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
+    let l = vis_loader::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
     let mut ds: Vec<ChanDoan> = l
         .diags
         .iter()
@@ -54,7 +54,7 @@ fn phu_thuoc(main_uri: &str, text: &str, target: &Path) -> bool {
     let Some(main) = super::uri_thanh_duong(main_uri) else {
         return false;
     };
-    if let Ok(l) = crate::modules::load_full_voi_text(&main, text, true, true) {
+    if let Ok(l) = vis_loader::modules::load_full_voi_text(&main, text, true, true) {
         if l.files.iter().any(|f| chuan(&f.path) == *target) {
             return true;
         }

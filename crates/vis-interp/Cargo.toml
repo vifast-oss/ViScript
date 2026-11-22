@@ -14,7 +14,7 @@ taskid-proto = []
 
 [dependencies]
 # ST-41: NFC để đếm **số char** khi render bảng (license MIT OR Apache-2.0 + Unicode-3.0, đã allowlist ở ST-01).
-unicode-normalization = "0.1"
+unicode-normalization = { workspace = true }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }

@@ -12,6 +12,8 @@
 //!
 //! stdout **tuyệt đối sạch**: chỉ frame; mọi lỗi giao thức ghi ra stderr.
 
+#![forbid(unsafe_code)]
+
 mod chan_doan;
 mod chon;
 mod chu_ky;
@@ -845,14 +847,14 @@ fn percent_giai_ma(s: &str) -> Option<String> {
 /// **VS3-7**: đăng ký buffer LSP làm nội dung module phụ (thắng đĩa tới khi `didClose`).
 fn dat_overlay(uri: &str, text: &str) {
     if let Some(p) = uri_thanh_duong(uri) {
-        crate::modules::dat_noi_dung_mo(std::path::Path::new(&p), text);
+        vis_loader::modules::dat_noi_dung_mo(std::path::Path::new(&p), text);
     }
 }
 
 /// **VS3-7**: bỏ overlay buffer của tài liệu vừa đóng.
 fn xoa_overlay(uri: &str) {
     if let Some(p) = uri_thanh_duong(uri) {
-        crate::modules::xoa_noi_dung_mo(std::path::Path::new(&p));
+        vis_loader::modules::xoa_noi_dung_mo(std::path::Path::new(&p));
     }
 }
 
@@ -860,7 +862,7 @@ fn xoa_overlay(uri: &str) {
 /// của **tài liệu khác** không phục vụ item/nội dung module cũ (kể cả buffer chưa ghi đĩa).
 fn xoa_cache_phan_tich(cache: &mut HashMap<String, (String, Rc<KetQua>)>) {
     cache.clear();
-    crate::modules::xoa_cache_phu();
+    vis_loader::modules::xoa_cache_phu();
     module::xoa_cache_module();
 }
 
@@ -884,7 +886,7 @@ mod vd258_tests {
 
     #[test]
     fn cache_phan_tich_theo_text() {
-        let mut c: HashMap<String, (String, Rc<crate::lsp::phan_tich::KetQua>)> = HashMap::new();
+        let mut c: HashMap<String, (String, Rc<crate::phan_tich::KetQua>)> = HashMap::new();
         let a = phan_tich_cache(
             &mut c,
             "file:///x.vis",

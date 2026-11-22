@@ -13,7 +13,7 @@
 //! đa tệp ở `test/modules/` là chỗ duy nhất không làm lệch `sem`/`vis test`/parity.
 //!
 //! Audit **toàn bộ** HIR (không hardcode danh sách tệp) nằm ở unit test của bin crate:
-//! `crates/vis-cli/src/audit_span.rs` (cần `modules::load`, mà integration test không thấy được).
+//! `crates/vis-loader/src/audit_span.rs` (cần `modules::load`, mà integration test không thấy được).
 
 use std::path::PathBuf;
 use std::process::Command;

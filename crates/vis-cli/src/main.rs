@@ -3,15 +3,12 @@
 
 use std::process::ExitCode;
 
-#[cfg(test)]
-mod audit_span;
-mod cache;
 mod cli;
 mod db;
 mod fsmock;
-mod json_esc;
-mod lsp;
-mod modules;
+// **ST-296b**: `modules`/`cache`/`json_esc` (+ audit test) chuyển sang `vis-loader`; LSP sang
+// `vis-lsp`. Re-export giữ nguyên mọi đường gọi `crate::modules::…`/`cache::…` trong crate này.
+pub(crate) use vis_loader::{cache, json_esc, modules};
 mod net_quyen;
 mod ngoai;
 mod pkg;
@@ -1388,7 +1385,7 @@ fn main() -> ExitCode {
         // ST-30: chạy bộ ca `test/sem/**` in TAP.
         Some("test") => vistest::run(&args[1..]),
         // ST-67 (VD-102): server LSP tối thiểu trên stdio (khung + JSON-RPC).
-        Some("lsp") => lsp::run(&args[1..]),
+        Some("lsp") => vis_lsp::run(&args[1..]),
         // ST-70 (VD-101): registry **local** cho gói ViScript.
         Some("pkg") => pkg::run(&args[1..]),
         Some("fmt") => cli::fmt::run_fmt(&args[1..]),

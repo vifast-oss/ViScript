@@ -88,7 +88,7 @@ fn byte_tu_vi_tri(text: &str, line: u32, character: u32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{ap_dung, byte_tu_vi_tri};
-    use crate::lsp::jsonrpc::ThayDoi;
+    use crate::jsonrpc::ThayDoi;
 
     fn doi(range: ((u32, u32), (u32, u32)), text: &str) -> ThayDoi {
         ThayDoi {
