@@ -883,9 +883,26 @@ pub mod worker {
         where
             F: FnOnce(&mut WorkerCtx) -> Result<SendValue, String> + Send + 'static,
         {
+            self.spawn_inner(f, false)
+        }
+
+        /// **P2b/test**: spawn với cờ huỷ **bật trước khi job vào queue**. Dùng cho
+        /// `cancel_before`: worker kiểm cờ trước khi chạy nên không có race
+        /// “check false → main cancel → chạy task”.
+        pub fn spawn_cancelled<F>(&mut self, f: F) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn_inner(f, true)
+        }
+
+        fn spawn_inner<F>(&mut self, f: F, cancelled: bool) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx) -> Result<SendValue, String> + Send + 'static,
+        {
             let id = TaskId(self.next);
             self.next += 1;
-            let cancel = Arc::new(AtomicBool::new(false));
+            let cancel = Arc::new(AtomicBool::new(cancelled));
             let wait_board = self.wait_board.clone();
             let task: TaskFn = Box::new(move |ctx| {
                 let result = f(ctx);
@@ -966,6 +983,31 @@ pub mod worker {
             F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
         {
             self.spawn(move |ctx| f(ctx, &payload))
+        }
+
+        /// Như [`Self::spawn_shared`] nhưng cờ huỷ **true từ trước khi gửi job**.
+        pub fn spawn_shared_cancelled<F>(
+            &mut self,
+            payload: Arc<SendValue>,
+            f: F,
+        ) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn_shared_with_cancel(payload, f, true)
+        }
+
+        /// Như [`Self::spawn_shared`] với cờ huỷ chọn trước (`cancelled=true` ⇒ pre-cancelled).
+        pub fn spawn_shared_with_cancel<F>(
+            &mut self,
+            payload: Arc<SendValue>,
+            f: F,
+            cancelled: bool,
+        ) -> Result<TaskHandle, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            self.spawn_inner(move |ctx| f(ctx, &payload), cancelled)
         }
 
         /// Join tất cả task; merge output theo **spawn order**. W>1 có ghi chéo ⇒ `CrossWrite`.
