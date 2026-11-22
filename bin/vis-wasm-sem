@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""ST-300 — harness `test/sem` trên WASI (interp + VM) so với **oracle native** W1.
+
+Oracle: `/home/ps/vislogs/sem-native-baseline.tsv` (475/475 native):
+`path, category, interp_rc, interp_stdout_sha256, vm_rc, vm_stdout_sha256`.
+Không chạy lại native; mỗi ca wasm so **rc + sha256(stdout)** với oracle tương ứng.
+
+Phân loại WASI: chạy được (ngôn ngữ + stdlib lõi) vs loại trừ có lý do (`sqlite`, `net`/`proc`/
+`fs` host, `async`/`kenh`, `cap`, `.vish` command). Coverage = pass / eligible; mục tiêu >=85%.
+
+Runtime: wasmtime CLI → Python `wasmtime` → Node `node:wasi` (như ST-299a/b).
+"""
+
+import argparse
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WS = ROOT / "vis-host-wasm"
+WASM = WS / "target/wasm32-wasip1/release/vis-wasm-run.wasm"
+SEM = ROOT / "test/sem"
+ORACLE = Path("/home/ps/vislogs/sem-native-baseline.tsv")
+ORACLE_SHA = "482b35c276d76fca9200770f78b3cba891535b09b65dbce0fc52bce6379a308d"
+
+EXCLUDE_GROUP = {
+    "sqlite": "sqlite feature/host không có trên WASI",
+    "async": "async/spawn chưa hỗ trợ WASI (chưa có backend scheduler)",
+    "kenh": "chan/spawn chưa hỗ trợ WASI",
+    "cap": "cap/host quyền ngoài phạm vi chương trình thuần WASI",
+}
+EXCLUDE_PAT = (
+    ("use std.net", "net host bị từ chối trên WASI"),
+    ("use std.proc", "proc host bị từ chối trên WASI"),
+    ("use std.sqlite", "sqlite host bị từ chối trên WASI"),
+    ("use std.fs", "fs cần preopen/host path ngoài phạm vi sem thuần"),
+    ("use ./", "module phụ ngoài entrypoint đơn tệp"),
+    ("use pkg.", "pkg/module ngoài entrypoint đơn tệp"),
+)
+
+NODE_DRIVER = r"""
+import { WASI } from 'node:wasi';
+import { readFile } from 'node:fs/promises';
+const [wasmPath, guest, host, ...args] = process.argv.slice(2);
+const wasi = new WASI({
+  version: 'preview1',
+  args: ['vis-wasm-run', ...args],
+  env: { VIS_WASM_PREOPENS: guest },
+  preopens: { [guest]: host },
+});
+const wasm = await WebAssembly.compile(await readFile(wasmPath));
+const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
+process.exit(wasi.start(instance));
+"""
+
+PY_DRIVER = r"""
+import sys
+from wasmtime import Engine, Store, Module, Linker, WasiConfig
+wasm, guest, host = sys.argv[1], sys.argv[2], sys.argv[3]
+args = sys.argv[4:]
+engine = Engine()
+store = Store(engine)
+wasi = WasiConfig()
+wasi.argv = ["vis-wasm-run", *args]
+wasi.env = [("VIS_WASM_PREOPENS", guest)]
+wasi.preopen_dir(host, guest)
+wasi.inherit_stdout()
+wasi.inherit_stderr()
+store.set_wasi(wasi)
+linker = Linker(engine)
+linker.define_wasi()
+instance = linker.instantiate(store, Module.from_file(engine, wasm))
+try:
+    instance.exports(store)["_start"](store)
+except Exception as e:
+    sys.exit(getattr(e, "code", 1) or 1)
+"""
+
+
+def cargo() -> str:
+    return str(Path.home() / ".cargo/bin/cargo")
+
+
+def build_wasm() -> None:
+    env = os.environ.copy()
+    env.setdefault("CARGO_BUILD_JOBS", "3")
+    env.setdefault("TMPDIR", "/home/ps/tmp")
+    env["CARGO_TARGET_DIR"] = str(WS / "target")
+    cmd = [
+        cargo(),
+        "build",
+        "--release",
+        "--target",
+        "wasm32-wasip1",
+        "--manifest-path",
+        str(WS / "Cargo.toml"),
+    ]
+    print("# build:", " ".join(cmd), file=sys.stderr)
+    r = subprocess.run(cmd, cwd=ROOT, env=env)
+    if r.returncode != 0 or not WASM.is_file():
+        print("BLOCKED-ENV: build wasm32-wasip1 lỗi/không thấy wasm", file=sys.stderr)
+        sys.exit(2)
+
+
+def chon_runtime(want: str):
+    wt = os.environ.get("WASMTIME") or shutil.which("wasmtime")
+    if want in ("auto", "wasmtime") and wt:
+        return "wasmtime", wt
+    if want in ("auto", "python"):
+        r = subprocess.run(
+            [sys.executable, "-c", "import wasmtime"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if r.returncode == 0:
+            return "python", sys.executable
+    if want in ("auto", "node"):
+        node = shutil.which("node")
+        if node:
+            r = subprocess.run(
+                [node, "-e", "require('node:wasi')"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if r.returncode == 0:
+                return "node", node
+    return None, None
+
+
+def phan_loai(f: Path) -> tuple[str, str | None]:
+    rel = f.relative_to(SEM)
+    group = rel.parts[0]
+    if f.suffix != ".vis":
+        return group, "không phải .vis (command/library)"
+    if group in EXCLUDE_GROUP:
+        return group, EXCLUDE_GROUP[group]
+    text = f.read_text(encoding="utf-8", errors="replace")
+    for pat, why in EXCLUDE_PAT:
+        if pat in text:
+            return group, why
+    if "chan[" in text or "spawn " in text or "await " in text or "async fn" in text:
+        return group, "async/chan chưa hỗ trợ WASI"
+    if "cap[" in text:
+        return group, "cap/host quyền ngoài phạm vi WASI"
+    if "fs." in text:
+        return group, "fs cần preopen/host path ngoài phạm vi sem thuần"
+    return group, None
+
+
+def doc_oracle(path: Path) -> dict[str, tuple[str, int, str, int, str]]:
+    data = {}
+    with path.open(encoding="utf-8") as fh:
+        header = fh.readline().rstrip("\n").split("\t")
+        if header[:6] != [
+            "path",
+            "category",
+            "interp_rc",
+            "interp_stdout_sha256",
+            "vm_rc",
+            "vm_stdout_sha256",
+        ]:
+            raise SystemExit(f"oracle header sai: {header}")
+        for line in fh:
+            c = line.rstrip("\n").split("\t")
+            if len(c) != 6:
+                continue
+            data[c[0]] = (c[1], int(c[2]), c[3], int(c[4]), c[5])
+    return data
+
+
+def run_wasm(rt, exe, driver, wasm: Path, work: Path, f: Path, engine: str):
+    root = work / "root"
+    root.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(f, root / "prog.vis")
+    guest = "/data"
+    args = [f"--{engine}", f"{guest}/prog.vis"]
+    if rt == "wasmtime":
+        cmd = [
+            exe,
+            "run",
+            "--dir",
+            f"{root}::{guest}",
+            "--env",
+            f"VIS_WASM_PREOPENS={guest}",
+            str(wasm),
+            "--",
+            *args,
+        ]
+    elif rt == "python":
+        cmd = [exe, str(driver), str(wasm), guest, str(root), *args]
+    else:
+        cmd = [exe, "--no-warnings", str(driver), str(wasm), guest, str(root), *args]
+    r = subprocess.run(cmd, cwd=work, capture_output=True, text=True, timeout=120)
+    return r.returncode, r.stdout, r.stderr
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="ST-300 sem suite trên WASI")
+    ap.add_argument("--build", action="store_true", help="build wasm trước")
+    ap.add_argument("--runtime", choices=["auto", "wasmtime", "python", "node"], default="auto")
+    ap.add_argument("--oracle", default=str(ORACLE), help="TSV baseline native W1")
+    ap.add_argument("--filter", default="")
+    ap.add_argument("--require-target", action="store_true", help="coverage <85%% ⇒ exit 1")
+    a = ap.parse_args()
+    if a.build:
+        build_wasm()
+    if not WASM.is_file():
+        print("BLOCKED-ENV: thiếu wasm; dùng --build", file=sys.stderr)
+        return 2
+    oracle_path = Path(a.oracle)
+    if not oracle_path.is_file():
+        print(f"BLOCKED-ENV: thiếu oracle `{oracle_path}`", file=sys.stderr)
+        return 2
+    oracle_sha = hashlib.sha256(oracle_path.read_bytes()).hexdigest()
+    oracle = doc_oracle(oracle_path)
+    rt, exe = chon_runtime(a.runtime)
+    if rt is None:
+        print("BLOCKED-ENV: không có wasmtime/Python wasmtime/node:wasi", file=sys.stderr)
+        return 2
+    work = Path(tempfile.mkdtemp(prefix="vis-wasm-sem-", dir=os.environ.get("TMPDIR") or None))
+    driver = None
+    try:
+        if rt == "node":
+            driver = work / "driver.mjs"
+            driver.write_text(NODE_DRIVER, encoding="utf-8")
+        elif rt == "python":
+            driver = work / "driver.py"
+            driver.write_text(PY_DRIVER, encoding="utf-8")
+        files = sorted(SEM.rglob("*.vis")) + sorted(SEM.rglob("*.vish"))
+        total = len(files)
+        eligible = []
+        excluded = []
+        for f in files:
+            cat, why = phan_loai(f)
+            rel = str(f.relative_to(ROOT))
+            if why is None and rel not in oracle:
+                why = "thiếu trong oracle native"
+            if why is None:
+                eligible.append((f, cat, rel))
+            else:
+                excluded.append((f, cat, why))
+        print(
+            f"# sem total={total} eligible={len(eligible)} excluded={len(excluded)} "
+            f"runtime={rt} oracle_sha256={oracle_sha}"
+        )
+        if oracle_sha != ORACLE_SHA:
+            print(
+                f"# WARN: oracle sha khác baseline W1 đã biết ({ORACLE_SHA})",
+                file=sys.stderr,
+            )
+        print("file\tcategory\tnative_rc\twasm_interp_rc\twasm_vm_rc\tstdout_sha256\tstatus")
+        passed = failed = 0
+        for f, cat, rel in eligible:
+            if a.filter and a.filter not in rel:
+                continue
+            ocat, irc, ihash, vrc, vhash = oracle[rel]
+            wi_rc, wi_out, wi_err = run_wasm(
+                rt, exe, driver, WASM, work / (f.stem + "-i"), f, "interp"
+            )
+            wv_rc, wv_out, wv_err = run_wasm(
+                rt, exe, driver, WASM, work / (f.stem + "-v"), f, "vm"
+            )
+            wi_hash = hashlib.sha256(wi_out.encode()).hexdigest()
+            wv_hash = hashlib.sha256(wv_out.encode()).hexdigest()
+            ok = (
+                wi_rc == irc
+                and wi_hash == ihash
+                and wv_rc == vrc
+                and wv_hash == vhash
+            )
+            print(
+                f"{rel}\t{ocat}\t{irc}/{vrc}\t{wi_rc}\t{wv_rc}\t{ihash}\t"
+                f"{'PASS' if ok else 'FAIL'}"
+            )
+            if ok:
+                passed += 1
+                continue
+            failed += 1
+            if wi_rc != irc or wi_hash != ihash:
+                print(
+                    f"  # wasm interp rc={wi_rc} chờ {irc}; "
+                    f"hash={wi_hash[:16]} chờ {ihash}; err={wi_err[:200]!r}"
+                )
+            if wv_rc != vrc or wv_hash != vhash:
+                print(
+                    f"  # wasm vm rc={wv_rc} chờ {vrc}; "
+                    f"hash={wv_hash[:16]} chờ {vhash[:16]}; err={wv_err[:200]!r}"
+                )
+        eligible_n = len(eligible)
+        cov = (passed * 100.0 / eligible_n) if eligible_n else 0.0
+        print(
+            f"# SUMMARY total={total} eligible={eligible_n} excluded={len(excluded)} "
+            f"pass={passed} fail={failed} coverage={cov:.1f}% target=85%"
+        )
+        for f, cat, why in excluded:
+            print(f"# EXCLUDE {f.relative_to(ROOT)}\t{cat}\t{why}")
+        if a.require_target and cov < 85.0:
+            return 1
+        return 0
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
