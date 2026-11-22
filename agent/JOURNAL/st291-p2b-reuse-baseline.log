@@ -1,0 +1,17 @@
+P2B_BASE	interp	W=1	ms=7.7	task_s=1298144
+P2B_BASE	vm	W=1	ms=6.4	task_s=1553427
+P2B_BASE	interp	W=2	ms=209.1	task_s=47818
+P2B_BASE	vm	W=2	ms=264.1	task_s=37863
+P2B_BASE	interp	W=4	ms=198.4	task_s=50416
+P2B_BASE	vm	W=4	ms=213.6	task_s=46822
+P2B_BATCH	W=1	interp_ms=8.5	vm_ms=7.4
+P2B_BATCH	W=4	interp_ms=33.0	vm_ms=31.6
+P2B_POOL	no_board	W=1	ms=2.4
+P2B_POOL	no_board	W=2	ms=11.4
+P2B_POOL	no_board	W=4	ms=15.2
+P2B_POOL	W=4	no_board_ms=15.5	board_ms=17.0	board_delta_ms=1.6	print_same_board_off_ms=12.5
+P2B_POOL	shared_payload_W=4	ms=18.5
+P2B_POOL_EVAL	W=4	pool_vm_ms=13.8	pool_interp_ms=14.5	pool_vm_reuse_ms=13.4	vm_reuse_speedup=1.03x
+P2B_POOL_NEW	W=4	us_pool=0.1
+P2B_SUMMARY	N=10000	interp_W4_ms=198.4	vm_W4_ms=213.6	pool4_none_ms=15.5	pool4_vm_ms=13.8	pool4_interp_ms=14.5	vm_new_us_task=0.14	interp_run_us_task=0.76
+KET_LUAN	PASS	N=10000	sum=50005000	baseline W4 interp=198.4ms vm=213.6ms
