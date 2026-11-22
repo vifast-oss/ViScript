@@ -41,17 +41,19 @@ release-bins = ["vis"]
 # `pkg-sig` bật mặc định trên nền không phải wasm32; tắt feature ⇒ lệnh cài có yêu cầu chữ ký báo
 # lỗi rõ thay vì bỏ qua kiểm tra.
 [features]
-default = ["sqlite", "tls", "pkg-sig", "http2"]
+default = ["sqlite", "tls", "pkg-sig", "http2", "async-h2"]
 sqlite = ["dep:rusqlite"]
 tls = ["dep:rustls", "dep:webpki-roots"]
 pkg-sig = ["dep:ring"]
-# **VS3-4b2 (VD-271)** — HTTP/2 qua TLS + ALPN. **Default-off**; chỉ bật khi A0/người dùng
-# chọn `--features http2`. Kéo `h2` + tokio (chỉ IO traits, không runtime mặc định) + http/bytes;
-# đã review license/unsafe ở `agent/BAO-CAO-VS3-4B2-H2-IMPLEMENT-2026-11-21.md`.
+# **VS3-4b2 (VD-271)** — HTTP/2 qua TLS + ALPN. Bật mặc định qua `async-h2`; vẫn có thể
+# `--no-default-features --features …` để build core không h2. Kéo `h2` + tokio (chỉ IO traits,
+# không runtime mặc định) + http/bytes; đã review license/unsafe ở
+# `agent/BAO-CAO-VS3-4B2-H2-IMPLEMENT-2026-11-21.md`.
 http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
-# **VS3-W2 (2026-11-21)** — HTTP/2 **reactor-native** cho đường async. **Default-off**;
-# dùng chung `H2Core` với sync (`net/h2_core.rs`), không đổi API sync, không thêm dependency
-# (dùng lại `h2`/`http2`, rustls và mio đã có).
+# **VS3-W2 (2026-11-21)** — HTTP/2 **reactor-native** cho đường async. **Default-on non-wasm**
+# (Linux + Windows; wasm32 loại module/deps theo target). Dùng chung `H2Core` với sync
+# (`net/h2_core.rs`), không đổi API sync, không thêm dependency (dùng lại `h2`/`http2`,
+# rustls và mio đã có). Fallback HTTP/1.1 khi ALPN không chọn h2 giữ nguyên.
 async-h2 = ["http2", "tls"]
 
 # E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật

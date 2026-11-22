@@ -112,6 +112,7 @@ impl AsyncNet {
     /// (dùng `host_poll` riêng) gặp socket reactor-owned phải trả lỗi rõ thay vì deregister mù
     /// (sẽ cướp selector, event stale). Unix nhiều epoll cùng theo dõi một fd được, nên giữ
     /// hành vi cũ (không chặn).
+    #[cfg_attr(not(feature = "tls"), allow(dead_code))]
     pub(super) fn dang_reactor_win(&self, tay: &str) -> bool {
         #[cfg(windows)]
         {
@@ -127,17 +128,12 @@ impl AsyncNet {
     /// **CHỈ TEST** — số tay/handle nội bộ còn giữ (đo rò rỉ sau nhiều vòng mở/đóng).
     #[doc(hidden)]
     pub fn dem_tay_dang_mo(&self) -> usize {
-        let mut n =
-            self.streams.len() + self.listeners.len() + self.writes.len() + self.connects.len();
+        let n = self.streams.len() + self.listeners.len() + self.writes.len() + self.connects.len();
         #[cfg(feature = "tls")]
-        {
-            n += self.tls.len() + self.tls_connects.len();
-        }
+        let n = n + self.tls.len() + self.tls_connects.len();
         // **ST-287** — h2 giữ session cho tái dùng, nhưng **user** phải về 0 sau huỷ.
         #[cfg(feature = "async-h2")]
-        {
-            n += self.h2_users.values().sum::<usize>();
-        }
+        let n = n + self.h2_users.values().sum::<usize>();
         n
     }
 
