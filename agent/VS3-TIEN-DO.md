@@ -121,7 +121,28 @@ Matrix: `vs3_http_cancel` serial **20/20**, default **10/10**, exact lap **20/20
 **BLOCKED-ENV** rc 101 (Unix-only). Nguồn `JOURNAL/st287-win-cancel-flake.md`,
 `JOURNAL/st287-win-cancel-final-matrix.log`, `JOURNAL/st287-win-cancel-workspace.log`.
 
-**Trạng thái Stage 0**: **đủ 6/6 DONE — A0 ĐÃ DUYỆT (`VD-280`)** trên `main` @ **`0645700`** (tag **`v0.3.6`** @ `8fa2c09`; Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). **Giai đoạn 1 (`v0.4.0`) ĐÃ MỞ theo `VD-280`**: `ST-290` (`W3`), `ST-291` (`W1`), `ST-293` (`W3`), `ST-294`/`ST-295` (`W2`) đang `READY`; `ST-292` chờ `ST-290`+`ST-291`; `ST-296` (`W4`) chờ `ST-290..295` (W4 chạy ngay `nightly` bù R32 + chốt fuzz `20261126` + đo sớm `#191` `nextest` trên `psvn`).
+**Trạng thái Stage 0**: **đủ 6/6 DONE — A0 ĐÃ DUYỆT (`VD-280`)** trên `main` @ **`0645700`** (tag **`v0.3.6`** @ `8fa2c09`; Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`).
+
+**Giai đoạn 1 (`v0.4.0`) — trạng thái @ `3fbf31a`**: `ST-290` **DONE** (`a48d5b87`); `ST-294`
+**DONE** (`cce2d0fb`); `ST-293` **REVIEW** (`6d6bfe9`/code `82064e9`); `ST-295` **REVIEW**
+(`cd76da5`/code `ba4023f`); `ST-291` **WIP**; `ST-292` **BLOCKED** (chờ `ST-291`; phải nối
+`gioi_han_phien()` vào `SharedBudget` khi `--workers > 1`); `ST-296` **QA/WIP** — release h2
+harness fixed (`3896bc6`: release **3643/0/4**, gate **3638/4**), 2 soak **20/20** @ `6d6bfe9`.
+
+## 2d. Giai đoạn 1 — `v0.4.0` G4a Core (mở `VD-280`/`VD-281`)
+
+| Task | Trạng thái | Commit / bằng chứng |
+|---|---|---|
+| **ST-290** — budget `40M` + `VS0509`/`VS0510` + cache `VFEE` | **DONE** (A0 duyệt `VD-281`) | `a48d5b87` (merge `3627f3bc`); 3.594/0/3, diff 0; `JOURNAL/st290-budget-default.md` |
+| **ST-294** — `async-h2` Windows + default non-wasm | **DONE** (A0 duyệt `VD-281`) | `cce2d0fb` (merge `e35dcf6`); Linux 3.607/4, Windows 3.563/0/3, h2 33/33, cancel 8/8 |
+| **ST-293** — `select_recv*`/`select_send*` | **REVIEW** | `6d6bfe9` (code `82064e9`); 25 ca, gate **3632/4**, diff 100k seed `202611222100` **0 lệch**; `JOURNAL/st293-select.md` |
+| **ST-295** — `rustix` `openat2`/`O_NOFOLLOW` + Landlock `#125` | **REVIEW** | `cd76da5` (code `ba4023f`); race ghi **100/100 → 0/100**, Landlock **18/18**, gate **3613/4**, diff 0; license `st295-license.log` |
+| **ST-291** — Worker `P2b-1/2` lazy/batched submit + compact `Vec` proxy | **WIP** | `rt/exec.rs`/`rt/worker.rs`; chưa có commit chốt |
+| **ST-292** — Worker Frame `P4a..P4c` + `--workers <N>` | **BLOCKED** | Chờ `ST-291`; **bắt buộc** nối `gioi_han_phien()` vào `SharedBudget` khi `N > 1` (`VD-281`); test `--workers 4 --max-budget 5000` phải trap `VS0510` giống `W = 1` |
+| **ST-296** — QA/nightly/R33/release `v0.4.0` | **QA/WIP** | Partial QA: release h2 harness fixed `3896bc6` (release **3643/0/4**, gate **3638/4**); 2 soak **20/20** @ `6d6bfe9`; chờ `ST-291/292/293/295` chốt |
+
+**Ghi chú `ST-292`**: `gioi_han_phien()` là **bắt buộc** khi `--workers > 1`; `--unlimited-budget`
+truyền `None`; không được để worker vượt trần ngân sách phiên (xem `VD-281`).
 
 ## 3. Mốc tích hợp cuối tuần
 
