@@ -42,10 +42,22 @@ Cả 3 tệp cận trần R1 nay **< 900** dòng. Mọi tệp `.rs` sửa/thêm 
   `cargo test -p vis-interp --lib` **303/303**; `cargo test -p vis-cli --bin vis db::sqlite`
   **87/87**.
 - `./vis-dev gate --fast` ⇒ **PASS**: **3656 passed / 4 skipped**, fmt/clippy/R1..R7/self-test/
-  build/doc-examples OK (log `st296c-gate.log`).
-- `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` ⇒ **lech=0** (87,4 s;
+  build/doc-examples OK. Log đầy đủ **ngoài repo** (R7/VD-282):
+  `/home/ps/vislogs/st296c-gate.log` sha256 `18e16706…ecdd` (vòng trước rebase) và
+  `/home/ps/vislogs/st296c-rebase-gate.log` sha256 `b5622329…c4474` (vòng sau rebase).
+- `VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff` ⇒ **lech=0** (140,5 s;
   `st296c-diff-100k.log`).
-- Đĩa còn **28 G** (> 10 G).
+- Đĩa còn **27 G** (> 10 G).
+
+## 3b. Rebase lên `main` `1b27cb8` (ST-296a + ST-296b)
+
+- `git rebase main` **không xung đột**; commit rebase `28738fe` (nội dung y nguyên 47b7c85).
+- `cargo check --workspace` xanh, gồm `vis-loader` và `vis-lsp` mới của ST-296b.
+- Gate **3656/4** PASS; `api_dong_bang` (API-STD ↔ FUNCS) xanh trong L0.
+- R7 mới của ST-296b bắt log gate 338 KB còn trong repo ⇒ đã chuyển ra
+  `/home/ps/vislogs/st296c-gate.log` (sha256 `18e16706…`), chỉ giữ log diff 264 B + tóm tắt này.
+- Một lần gate đỏ do flake thread-count `vs3_worker::spawn_shared_stress_rounds_read_only`
+  (2→4) dưới tải cao; chạy riêng xanh, gate lại xanh — không phải hồi quy ST-296c.
 
 ## 4. Ghi chú / còn lại
 
