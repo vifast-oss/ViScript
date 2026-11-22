@@ -3,6 +3,16 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.6 — 2026-11-22
+
+- **Stage 0 — R0 refactor 0 đổi hành vi**: `vm.rs` **1240**, `frame.rs` **1042**, `value.rs` **1186**, `codegen.rs` **1045**, `tyck/expr.rs` **1064**, `interp/goi.rs` **1155** dòng (ngưỡng ≤1.250); tách `vm/host.rs`, `frame/worker.rs`, `value/show_eq.rs`, `codegen/cau.rs`, `tyck/expr/goi.rs`, `interp/goi_ham.rs`; 0 đổi API/ABI/cache/golden.
+- **Gói**: `VS0708` (xác minh chữ ký/khoá tin cậy registry; vi/en/ja; sổ **54** mã, **8** mã module); `pkg update <tên>` dùng **soft pin** — đóng **#142**; `pkg gc --root` lặp/lồng dedupe lock/workspace, không tạo `.vis`.
+- **HTTP cancel h1/h2**: `FrameReactorBackend::cancel_task_handles` + safe point `frame_cancel_one` — h1 đóng socket, h2 `RST_STREAM` đúng stream/giữ session dùng chung; `vs3_http_cancel` **5/5** mặc định, **8/8** feature `async-h2`; soak 1 giờ fd/RSS/threads phẳng.
+- **Phiên bản**: **0.3.6** (`version.workspace = true` cho 8 crate); `vis --version` = `vis 0.3.6`.
+- **Linux — fresh-clone `4c5dec6`**: gate **3581 passed / 3 skipped**; `cargo test --release --workspace --no-fail-fast` **3586 passed / 0 failed / 3 ignored**; P2 **14/14**, P1 **8/8**, P3 **10/10**; h2 **19/19**, feature **34+1**; `pkg` **25/25**, `vs3_registry_sig` **10/10**, `vs3_http_cancel` **5+8**, host **54/54**; diff 100k seed `202611221700` **0 lệch**; **2× soak 10/10 = 20/20 vòng** (593 s + 602 s); `./vis-dev check` PASS.
+- **Windows final**: **chờ verify** trên `psvn` tại commit chốt (chưa ghi số).
+- Không GitHub Actions; macOS ngoài phạm vi. **Tag `v0.3.6` chưa tạo** — chờ Windows final.
+
 ## v0.3.5 — 2026-11-22
 
 - **Fix race cancel-before-run**: `WorkerPool` đặt cờ huỷ **trước** khi enqueue (`spawn_inner`, `spawn_cancelled`, `spawn_shared_with_cancel`); `spawn_parallel` truyền `cancel_before`, bỏ `handle.cancel()` sau spawn. 20.000 vòng sau fix 0 fail; P2 **10× = 140/140**, cancel-before **1.000/1.000**.

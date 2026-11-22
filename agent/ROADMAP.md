@@ -1,16 +1,18 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `f8f1d4b`)** — Giai đoạn 0 **đủ 6/6**:
+> **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `4c5dec6` — CHƯA TAG)** — Giai đoạn 0 **đủ 6/6**:
 > **DONE** `ST-284` (`83a9a10`/merge `e363a15`: `vm.rs` 1240, `frame.rs` 1042), `ST-285`
 > (`ab5d292`/merge `246b6c5`: `value` 1186, `codegen` 1045, `tyck/expr` 1064, `interp/goi` 1155),
 > `ST-286` (`f193c57`/merge `cfba662`: `async_net` 606, `quyen` 1190, `sqlite` 1245), `ST-287`
 > (`03ed84c`/merge `f8f1d4b`: hook huỷ HTTP h1/h2 — `vs3_http_cancel` h1 **5/5**, h2 **8/8**),
 > `ST-288` (`c513e7a`/merge `545a38d`: `VS0708` + `#142`; **Gatekeeper DONE 2026-11-22**), `ST-289`
-> (`ff55056`/merge `84915aa`: `0.3.6`, `#111`/`#151`, khung R32). Gate `f8f1d4b` **3581/3**;
-> Windows @ `0d057e5` **3533/0/3**, `vis 0.3.6`; diff 100k seed `20261115`/`20261122` **0 lệch**.
-> **Stage 0 đủ 6/6; R32 đã chốt phần Stage 0**; chưa chạy full/nightly/fresh-clone, chưa tag
-> `v0.3.6`; GĐ 1..4 vẫn `BLOCKED` chờ A0 mở.
+> (`ff55056`/merge `84915aa`: `0.3.6`, `#111`/`#151`, khung R32). **Final QA** (fresh-clone
+> `4c5dec6`): gate **3581/3**, release workspace **3586/0/3**, diff 100k seed `202611221700`
+> **0 lệch**, **2× soak = 20/20 vòng** (593 s + 602 s); P2/P1/P3 14/8/10, h2 19 + feature 34+1,
+> `pkg` 25, sig 10, http_cancel 5+8, host 54/54. Main merge **`a1930cb`**; R32 chốt phần Stage 0.
+> **Windows final đang verify trên `psvn`; tag `v0.3.6` CHƯA tạo — chờ Windows final**; GĐ 1..4 vẫn
+> `BLOCKED` chờ A0 mở.
 >
 > **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
 >
@@ -401,7 +403,7 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 **Luật**: mọi tính năng VS3 phải có lát + test + docs + gate; không bỏ mảng nào; không tuyên bố xong
 khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.
 
-### Stage 0 — `v0.3.6` (2026-11-22, `main` `f8f1d4b`)
+### Stage 0 — `v0.3.6` (2026-11-22, `main` `4c5dec6`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `VS3-TIEN-DO.md` §2c, `JOURNAL/st284-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,6}-diff-100k.log`,
@@ -416,7 +418,10 @@ khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.
 | ST-288 — `VS0708` + `#142` + `pkg gc --root` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + explain 54 + API-CODES 54; 6 ca âm chữ ký/khoá đều `VS0708`; soft pin #142; `gc --root` 4/4; `pkg` 25/25, sig 10/10. QUEUE còn REVIEW — chờ A0 lật |
 | ST-289 — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | 8 crate `version.workspace`; `vis 0.3.6`; 24 fixture slug R100%; R32 khung |
 
-**Gate Stage 0** @ `f8f1d4b`: `gate --fast` **3581 passed / 3 skipped**; Windows @ `0d057e5`
-**3533/0/3**, `vis 0.3.6`. Soak huỷ HTTP 1 giờ (`vs3_http_cancel` 5/5 + 8/8 mỗi vòng, fd/RSS/threads
-phẳng) ghi `JOURNAL/st287-soak-1h.md`. **Chưa** full/nightly/fresh-clone, **chưa** tag `v0.3.6`.
+**Gate Stage 0 — final QA** @ **`4c5dec6`**: fresh-clone `gate --fast` **3581 passed / 3 skipped**;
+release workspace **3586 passed / 0 failed / 3 ignored**; P2 14, P1 8, P3 10; h2 19 + feature 34+1;
+`pkg` 25, sig 10, http_cancel 5+8, host 54/54; diff 100k seed `202611221700` **0 lệch**;
+**2× soak 20/20 vòng** (593 s + 602 s). Soak huỷ HTTP 1 giờ (`vs3_http_cancel` 5/5 + 8/8 mỗi vòng,
+fd/RSS/threads phẳng) ghi `JOURNAL/st287-soak-1h.md`. Windows final đang verify trên `psvn`
+(`0d057e5` trước đó: 3533/0/3, `vis 0.3.6`). **Tag `v0.3.6` CHƯA tạo — chờ Windows final.**
 **Stage 0 đủ 6/6** — R32 chốt phần Stage 0; GĐ 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
