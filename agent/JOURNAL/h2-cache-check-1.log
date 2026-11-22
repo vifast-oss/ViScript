@@ -1,0 +1,40 @@
+
+running 35 tests
+test h2_async_spike::async_h2_cap_loop_env_gated ... ok
+test fallback_http1_khi_khong_alpn ... ok
+test h2_async_spike::async_h2_soak_env_gated ... ok
+test h2_async_spike::async_h2_bon_stream_mot_connection ... ok
+test h2_async_spike::async_h2_get_va_head ... ok
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd_con ... ignored, chạy trong tiến trình con bởi async_h2_timeout_lap_khong_ro_fd
+test h2_async_spike::async_h2_goaway_loi_ro ... ok
+test h2_basic_auth ... ok
+test h2_get_va_head ... ok
+test h2_goaway_giua_body ... ok
+test h2_goaway_retry_mot_lan ... ok
+test h2_async_spike::async_h2_timeout_khong_treo ... ok
+test h2_header_sat_cap_va_vuot ... ok
+test h2_khong_body_va_header_lon ... ok
+test h2_redirect_va_cookie ... ok
+test h2_rst_stream_loi_ro ... ok
+test h2_server_dong_giua_chung ... ok
+test h2_tai_su_dung_ket_noi ... ok
+test h2_async_spike::async_h2_production_redirect ... ok
+test h2_async_spike::async_h2_production_cookie_redirect ... ok
+test h2_trailer_body_lon_va_tai_su_dung ... ok
+test h2_trailer_roi_moi_tai_su_dung ... ok
+test h2_async_spike::async_h2_production_bon_stream_mot_connection ... ok
+test h2_async_spike::async_h2_production_bon_stream_cold ... ok
+test h2_async_spike::async_h2_production_timeout_va_goaway ... ok
+test h2_timeout_giua_body_va_cleanup ... ok
+test registry_https_thuong_luong_h2 ... ok
+test h2_timeout_ro_rang ... ok
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd ... ok
+test h2_async_spike::async_h2_production_cap_body ... ok
+test h2_async_spike::async_h2_cap_body ... ok
+test h2_async_spike::async_h2_cold_multiplex_20_vong ... ok
+test h2_body_8mib_va_vuot_cap ... ok
+test h2_idle_timeout_dong_phien ... ok
+test stress_100_request_4_authority ... ok
+
+test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 17.36s
+
