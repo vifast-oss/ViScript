@@ -406,14 +406,47 @@ fn chay_chuong_trinh(
 /// Bản sao binary ổn định: tránh cargo build đồng thời (feature khác) ghi đè
 /// `target/debug/vis` giữa các vòng soak.
 fn snapshot_vis() -> PathBuf {
-    // Một bản sao / process: tránh vừa copy vừa exec cùng đường dẫn (ETXTBSY) và
-    // tránh nhân bản ~100 MB mỗi lần gọi làm đầy tmpfs.
+    // **ST-294 (triage soak cycle 31)**: cache theo **danh tính binary nguồn**
+    // (đường dẫn + size + mtime), không theo PID. Bản cũ copy ~108 MB cho **mỗi process**
+    // (`/tmp/vs3-w2-bin-<pid>`) và không dọn ⇒ soak 31 cycle làm đầy tmpfs 7,2 G, khiến
+    // nhiều ca h2 fail rc101 vì hết chỗ — không phải lỗi sản phẩm.
+    //
+    // Ghi qua file tạm `vis.tmp-<pid>` rồi `rename` (atomic) để hai process song song không
+    // exec file đang bị ghi (ETXTBSY); nếu đích đã có (process khác thắng) thì dùng đích.
     static SNAP: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     SNAP.get_or_init(|| {
-        let d = std::env::temp_dir().join(format!("vs3-w2-bin-{}", std::process::id()));
-        fs::create_dir_all(&d).expect("thư mục binary");
+        let src = Path::new(env!("CARGO_BIN_EXE_vis"));
+        let meta = fs::metadata(src).expect("metadata vis");
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        for b in src.to_string_lossy().bytes() {
+            h ^= u64::from(b);
+            h = h.wrapping_mul(0x100_0000_01b3);
+        }
+        for b in meta.len().to_le_bytes() {
+            h ^= u64::from(b);
+            h = h.wrapping_mul(0x100_0000_01b3);
+        }
+        let mtime = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+        for b in mtime.to_le_bytes() {
+            h ^= u64::from(b);
+            h = h.wrapping_mul(0x100_0000_01b3);
+        }
+        let d = std::env::temp_dir().join(format!("vs3-w2-bin-cache-{h:016x}"));
         let dst = d.join("vis");
-        fs::copy(env!("CARGO_BIN_EXE_vis"), &dst).expect("copy vis");
+        if !dst.is_file() {
+            fs::create_dir_all(&d).expect("thư mục binary");
+            let tmp = d.join(format!("vis.tmp-{}", std::process::id()));
+            fs::copy(src, &tmp).expect("copy vis");
+            if fs::rename(&tmp, &dst).is_err() {
+                let _ = fs::remove_file(&tmp);
+                assert!(dst.is_file(), "snapshot vis không tồn tại sau rename");
+            }
+        }
         dst
     })
     .clone()
