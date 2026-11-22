@@ -12,6 +12,10 @@
 # tiến trình/socket/FS); CHECK xanh không phải bằng chứng hỗ trợ runtime.
 # Exit 0 chỉ khi **mỗi** cấu hình đạt kỳ vọng riêng; ô đỏ đúng nợ cũ phải là EXPECTED_RED
 # có lý do, không được im lặng coi là xanh hay đổi cấu hình rồi đổi nhãn.
+#
+# ST-300 — thêm **báo cáo** `wasm32-wasip1 (runtime)` (không phải ô cargo check): coverage
+# `test/sem` eligible + suite runtime + known gaps, để không tuyên bố "full" khi còn 2 stack
+# overflow interp. Row này **không** tham gia PASS/FAIL của hai ma trận check.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MANIFEST="$ROOT/Cargo.toml"
@@ -91,4 +95,12 @@ if [ "$core_bad" -ne 0 ] || [ "$sqlite_bad" -ne 0 ]; then
   echo "vis-targets: core FAIL=$core_bad, sqlite FAIL=$sqlite_bad (ô kỳ vọng xanh bị đỏ)" >&2
   exit 1
 fi
+echo
+echo "=== wasm32-wasip1 (runtime) ==="
+printf '%-24s %-28s %s\n' hạng-mục target kết-quả
+printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "388/390 eligible = 99.5%"
+printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "28/28 (14 ca x interp/VM)"
+printf '%-24s %-28s %s\n' known-gap wasm32-wasip1 "2 stack-overflow interp: ham/de-quy-1000, ham/de-quy-vo-han (VM pass)"
+printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
+echo "wasm32-wasip1: coverage 388/390 eligible (99.5%), suite 28/28; known gap 2 stack-overflow interp; không full"
 echo "vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)"
