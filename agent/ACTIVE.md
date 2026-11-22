@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ACTIVE — Bảng điều khiển nhanh cho Agent 2 (≤ 100 dòng)
 
-> **Cập nhật**: 2026-11-22 (`VD-282` @ `d53d2588`) · **Tag mới nhất**: `v0.3.6` (`8fa2c09`) · **Giai đoạn đang mở**: **GĐ 1 (`v0.4.0`) + Zero-Idle GĐ 1.5/2**
+> **Cập nhật**: 2026-11-23 (`VD-282` @ `a1127f5`) · **Tag mới nhất**: `v0.3.6` (`8fa2c09`) · **Giai đoạn đang mở**: **GĐ 1 (`v0.4.0`) + Zero-Idle GĐ 1.5/2**
 > **Kế hoạch đêm tới 09:00 sáng 2026-11-23**: xem chi tiết tại `agent/JOURNAL/ke-hoach-dem-2026-11-22-vd282.md`.
 > **Khởi động 30 giây**: Đọc `AGENTS.md` → tệp này → phần cuối `agent/QUEUE.md` (`ST-290`..`ST-309`). Chỉ mở `agent/DECISIONS.md` đúng mục `VD-###` được dẫn chiếu.
 
@@ -13,13 +13,13 @@
 | **ST-294** | W2 | **DONE** (`cce2d0fb`) | `async-h2` Windows + default-on non-wasm + fix soak `9c0ffd12`; Windows h2 33/33 ×2 |
 | **ST-293** | W3 | **DONE** (`6d6bfe9c`) | APPROVED `VD-282`: 4 `select_*` tại `rt/select.rs` + `tyck/expr/kenh.rs`; 25/25 Linux+Win, diff 0 |
 | **ST-295** | W2 | **DONE** (`cd76da56`) | APPROVED `VD-282`: `rustix =1.1.6` `openat2`/`O_NOFOLLOW`, race ghi 0/100, Landlock 18/18; đóng `#109b`/`#125`/`#140` |
-| **ST-291** | **W1** | **WIP (ƯU TIÊN 1)** | `P2b-1/2` lazy/batched submit + compact `Vec` proxy (`rt/exec.rs`, `rt/worker.rs`) — **KHÔNG làm gián đoạn** |
-| **ST-292** | **W1** | **BLOCKED (chờ ST-291)** | `P4a..c` + `--workers <N>` + `VS0509` + **bắt buộc nối `gioi_han_phien()` vào `SharedBudget`** (`VD-281`) |
-| **ST-296** | W4 | **BLOCKED (chờ W1)** | Pre-QA xanh toàn diện (release 3.643/0/4, Win 3.588/0/3, `#191` đóng); chốt cuối sau `ST-292` → `R33` + tag `v0.4.0` |
-| **ST-296d-tools** | **W4** | **READY (Merge NGAY)** | Vá `bin/vis-soak` TMPDIR ngoài `target/` + vá `hieu_nang_cache_5_tep_duoi_2ms` + **Luật R7** + `.config/nextest.toml` + `bin/vis-{gc-targets,jobs,status,gate-windows}` + auto `CARGO_BUILD_JOBS`/`sccache` |
-| **ST-296a** | **W4** | **READY (nhánh riêng)** | Sau `ST-296d-tools`: chạy trên `plan/w4-st296a-tests` (gom 280 → 13 test binary + `tests/common/mod.rs`, trừ `vs3_worker*`); **CHỈ merge vào `main` SAU tag `v0.4.0`** |
-| **ST-296b** | **W3** | **READY (nhánh riêng)** | Chạy ngay trên `plan/w3-st296b-crates` (tách `vis-loader` + `vis-lsp` + `[workspace.dependencies]`, không đụng `vis-interp`/`vis-vm`); **CHỈ merge vào `main` SAU tag `v0.4.0`** |
-| **ST-299a** | **W2** | **READY (Merge NGAY)** | Chạy ngay trong workspace độc lập `vis-host-wasm/` (`WasiHost` `wasm32-wasip1` + `wasmtime` smoke test, 0% xung đột với W1/W3/W4) |
+| **ST-291** | **W1** | **REVIEW** (`269ff71`/merge `8cc3588`) | `P2b-1/2` lazy/batched submit + compact `Vec` proxy; batch 10k **29,1 ms** (interp) / **28,6–29,7 ms** (VM). Tỉ lệ **≤1,5× W=1 chưa đạt** (~3,3–4,0×; trần dựng Interp/Vm mỗi task — cần P2b-3/4, ngoài ST-291) |
+| **ST-292** | **W1** | **WIP** | `P4a..c` + `--workers <N>` + `VS0509`; **bắt buộc nối `gioi_han_phien()` vào `SharedBudget`** khi `N>1` (`VD-281`), `--unlimited-budget` ⇒ `None`; test `--workers 4 --max-budget 5000` trap `VS0510` như `W=1` |
+| **ST-296** | W4 | **BLOCKED (chờ ST-292)** | Pre-QA xanh (release 3.643/0/4, Win 3.588/0/3, `#191` nextest 3.583/0/3); **R33 chưa chốt**, chưa commit `R33-viscript.json`; chốt sau ST-292 → `R33` + tag `v0.4.0` |
+| **ST-296d-tools** | **W4** | **DONE** (`b36f8a5` + `4b2484f`) | **Luật R7** (173 legacy log đóng băng) + `.config/nextest.toml` (`retries=0`) + `bin/vis-{gc-targets,jobs,status,gate-windows}` + auto `CARGO_BUILD_JOBS`/`sccache`; quick Windows `--quick` PASS (pkg 25, h2 33, cancel 8, select 25) |
+| **ST-296a** | **W4** | **WIP (nhánh riêng)** | `plan/w4-st296a-tests` **chưa merge** (đầu nhánh hiện `8cc3588`); gom test binary + `tests/common/mod.rs`, trừ `vs3_worker*`; **chỉ merge sau tag `v0.4.0`** |
+| **ST-296b** | **W3** | **WIP (nhánh riêng)** | `plan/w3-st296b-crates` **chưa merge** (đầu nhánh `30a7f98`, chưa có commit ST-296b); tách `vis-loader` + `vis-lsp` + `[workspace.dependencies]`; **chỉ merge sau tag `v0.4.0`** |
+| **ST-299a** | **W2** | **DONE** (`5cc1903`/merge `060a744`) | `WasiHost` `wasm32-wasip1` + `vis-wasm-run`; **wasm 26/26** (13 ca × 2 đường). `wasmtime` CLI **BLOCKED-ENV**; smoke dùng Python/Node WASI |
 
 ## 2. Sổ nợ & Đường dài (`v0.4.1 → v1.0.0-rc1`)
 

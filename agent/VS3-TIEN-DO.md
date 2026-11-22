@@ -102,7 +102,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **ST-286** — R0c `async_net.rs`/`quyen.rs`/`db/sqlite/mod.rs` | **DONE** | `f193c57` (merge `cfba662`) | `async_net` **606**, `quyen` **1190**, `sqlite/mod.rs` **1245** dòng; module con tách giữ API; gate PASS; diff 100k seed `20261122` **lech=0** (93 770 ca chạy) |
 | **ST-287** — hook huỷ giữa HTTP request | **DONE — Windows fix merged** | `03ed84c` (merge `f8f1d4b`); fix `e43ca43`+`6b2a216` (merge `0645700`) | `FrameReactorBackend::cancel_task_handles` + safe point; Linux h1 **5/5**, h2 **8/8**, đỏ-trước 5/5+7/7, soak fd/RSS/threads phẳng, gate `3581/3`, diff 100k **lech=0**. **Windows fix**: root cause test fixture (`accept` thừa nonblocking) — server blocking + trigger byte; product guard `cancelled`/close order; serial **20/20**, default **10/10**, exact lap **20/20**, workspace **3538/0/3** |
 | **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + `vis explain --list` **54** + `API-CODES.txt` **54**; 6 ca âm (gồm key rotation) đều nêu `VS0708`; soft pin `pkg update` (`update_mot_ten_*` 2/2 + unit) ⇒ **#142 đóng**; `gc --root` lặp/lồng dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4. QUEUE còn `REVIEW` — chờ A0 lật sổ |
-| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** (docs + QA) | `ff55056` (merge `84915aa`); QA `c69127f`/`a997e06`; docs `705afcf` | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); Linux final QA §2c; R32 cập nhật fix ST-287 Windows; **tag chưa tạo** |
+| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE — tag `v0.3.6`** | `ff55056` (merge `84915aa`); QA `c69127f`/`a997e06`; docs `705afcf` | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); Linux final QA §2c; tag **`v0.3.6`** @ `8fa2c09` (code `0645700`); Windows tag verify `be51ae09`: **3538/0/3**, cancel **10/10**, host **54/54** |
 
 **Cổng Stage 0 — final QA** @ **`4c5dec6`** (fresh-clone Linux): `./vis-dev gate --fast` **PASS — 3581 passed / 0 failed / 3 skipped**
 (fmt, clippy, R1..R6, self-test, doc-examples 24 khối, L0 nextest); `cargo test --release --workspace --no-fail-fast`
@@ -123,11 +123,18 @@ Matrix: `vs3_http_cancel` serial **20/20**, default **10/10**, exact lap **20/20
 
 **Trạng thái Stage 0**: **đủ 6/6 DONE — A0 ĐÃ DUYỆT (`VD-280`)** trên `main` @ **`0645700`** (tag **`v0.3.6`** @ `8fa2c09`; Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`).
 
-**Giai đoạn 1 (`v0.4.0`) — trạng thái @ `3fbf31a`**: `ST-290` **DONE** (`a48d5b87`); `ST-294`
-**DONE** (`cce2d0fb`); `ST-293` **REVIEW** (`6d6bfe9`/code `82064e9`); `ST-295` **REVIEW**
-(`cd76da5`/code `ba4023f`); `ST-291` **WIP**; `ST-292` **BLOCKED** (chờ `ST-291`; phải nối
-`gioi_han_phien()` vào `SharedBudget` khi `--workers > 1`); `ST-296` **QA/WIP** — release h2
-harness fixed (`3896bc6`: release **3643/0/4**, gate **3638/4**), 2 soak **20/20** @ `6d6bfe9`.
+**Hậu Stage 0 (2026-11-23)**: `ST-296d-tools` **DONE** (`b36f8a5` + `4b2484f`, merge `a1127f5`):
+Luật **R7** (173 log legacy đóng băng), `.config/nextest.toml` (`retries=0`), `bin/vis-{gc-targets,
+jobs,status,gate-windows}`, auto `CARGO_BUILD_JOBS`/`sccache`; `vis-gate-windows --quick` trên psvn
+worktree riêng **PASS** (pkg 25, h2 33, cancel 8, select 25). Chi tiết `JOURNAL/st296d-tools.md`,
+`JOURNAL/st296d-tools-verify.md`.
+
+**Giai đoạn 1 (`v0.4.0`) — trạng thái @ `a1127f5`**: `ST-290` **DONE** (`a48d5b87`); `ST-294`
+**DONE** (`cce2d0fb`); `ST-293` **DONE** (`6d6bfe9`/code `82064e9`, `VD-282`); `ST-295` **DONE**
+(`cd76da5`/code `ba4023f`, `VD-282`); `ST-291` **REVIEW** (`269ff71`/merge `8cc3588`); `ST-292`
+**WIP** (W1; phải nối `gioi_han_phien()` vào `SharedBudget` khi `--workers > 1`); `ST-296`
+**BLOCKED** (chờ ST-292; **R33 chưa chốt**) — pre-QA: release h2 harness `3896bc6` (release
+**3643/0/4**, gate **3638/4**), 2 soak **20/20** @ `6d6bfe9`, Windows release **3588/0/3**.
 
 ## 2d. Giai đoạn 1 — `v0.4.0` G4a Core (mở `VD-280`/`VD-281`)
 
@@ -135,11 +142,15 @@ harness fixed (`3896bc6`: release **3643/0/4**, gate **3638/4**), 2 soak **20/20
 |---|---|---|
 | **ST-290** — budget `40M` + `VS0509`/`VS0510` + cache `VFEE` | **DONE** (A0 duyệt `VD-281`) | `a48d5b87` (merge `3627f3bc`); 3.594/0/3, diff 0; `JOURNAL/st290-budget-default.md` |
 | **ST-294** — `async-h2` Windows + default non-wasm | **DONE** (A0 duyệt `VD-281`) | `cce2d0fb` (merge `e35dcf6`); Linux 3.607/4, Windows 3.563/0/3, h2 33/33, cancel 8/8 |
-| **ST-293** — `select_recv*`/`select_send*` | **REVIEW** | `6d6bfe9` (code `82064e9`); 25 ca, gate **3632/4**, diff 100k seed `202611222100` **0 lệch**; `JOURNAL/st293-select.md` |
-| **ST-295** — `rustix` `openat2`/`O_NOFOLLOW` + Landlock `#125` | **REVIEW** | `cd76da5` (code `ba4023f`); race ghi **100/100 → 0/100**, Landlock **18/18**, gate **3613/4**, diff 0; license `st295-license.log` |
-| **ST-291** — Worker `P2b-1/2` lazy/batched submit + compact `Vec` proxy | **WIP** | `rt/exec.rs`/`rt/worker.rs`; chưa có commit chốt |
-| **ST-292** — Worker Frame `P4a..P4c` + `--workers <N>` | **BLOCKED** | Chờ `ST-291`; **bắt buộc** nối `gioi_han_phien()` vào `SharedBudget` khi `N > 1` (`VD-281`); test `--workers 4 --max-budget 5000` phải trap `VS0510` giống `W = 1` |
-| **ST-296** — QA/nightly/R33/release `v0.4.0` | **QA/WIP** | Partial QA: release h2 harness fixed `3896bc6` (release **3643/0/4**, gate **3638/4**); 2 soak **20/20** @ `6d6bfe9`; chờ `ST-291/292/293/295` chốt |
+| **ST-293** — `select_recv*`/`select_send*` | **DONE** (A0 duyệt `VD-282`) | `6d6bfe9` (code `82064e9`); 25 ca, gate **3632/4**, diff 100k seed `202611222100` **0 lệch**; `JOURNAL/st293-select.md` |
+| **ST-295** — `rustix` `openat2`/`O_NOFOLLOW` + Landlock `#125` | **DONE** (A0 duyệt `VD-282`) | `cd76da5` (code `ba4023f`); race ghi **100/100 → 0/100**, Landlock **18/18**, gate **3613/4**, diff 0; license `st295-license.log` |
+| **ST-291** — Worker `P2b-1/2` lazy/batched submit + compact `Vec` proxy | **REVIEW** | `269ff71` (merge `8cc3588`); batch 10k **29,1 ms** (interp) / **28,6–29,7 ms** (VM); **tỉ lệ ≤1,5× W=1 CHƯA ĐẠT** (~3,3–4,0×; trần dựng Interp/Vm mỗi task — cần P2b-3/4, ngoài ST-291); gate **3638/4**, diff 100k **0 lệch**, 133 vòng soak RSS/fd phẳng; `JOURNAL/st291-p2b.md` |
+| **ST-292** — Worker Frame `P4a..P4c` + `--workers <N>` | **WIP** (W1) | Nối `gioi_han_phien()` vào `SharedBudget` khi `N > 1` (`VD-281`); `--unlimited-budget` ⇒ `None`; test `--workers 4 --max-budget 5000` phải trap `VS0510` giống `W = 1` |
+| **ST-296d-tools** — R7 + nextest + bộ tool vận hành | **DONE** | `b36f8a5` + `4b2484f` (merge `a1127f5`); R7 + `.config/nextest.toml` (`retries=0`) + `bin/vis-{gc-targets,jobs,status,gate-windows}` + auto jobs/sccache; quick Windows **PASS** (pkg 25, h2 33, cancel 8, select 25); `JOURNAL/st296d-tools.md`, `st296d-tools-verify.md` |
+| **ST-299a** — `WasiHost` `wasm32-wasip1` + `vis-wasm-run` | **DONE** | `5cc1903` (merge `060a744`); **wasm 26/26** (13 ca × 2 đường); `wasmtime` CLI **BLOCKED-ENV**, smoke dùng Python/Node WASI; `JOURNAL/st299a-wasi-core.md` |
+| **ST-296a** — gom test binary `vis-cli` | **WIP (nhánh riêng)** | `plan/w4-st296a-tests` **chưa merge** (đầu nhánh hiện `8cc3588`); **chỉ merge sau tag `v0.4.0`** |
+| **ST-296b** — tách `vis-loader` + `vis-lsp` | **WIP (nhánh riêng)** | `plan/w3-st296b-crates` **chưa merge** (đầu nhánh `30a7f98`); **chỉ merge sau tag `v0.4.0`** |
+| **ST-296** — QA/nightly/R33/release `v0.4.0` | **BLOCKED** (chờ ST-292) | Pre-QA: release h2 harness `3896bc6` (release **3643/0/4**, gate **3638/4**); 2 soak **20/20** @ `6d6bfe9`; Windows release **3588/0/3**; **R33 CHƯA chốt**, chưa commit `R33-viscript.json` |
 
 **Ghi chú `ST-292`**: `gioi_han_phien()` là **bắt buộc** khi `--workers > 1`; `--unlimited-budget`
 truyền `None`; không được để worker vượt trần ngân sách phiên (xem `VD-281`).
