@@ -114,7 +114,8 @@ cp "$VIS_ROOT"/docs/*.md "$tmp/9/docs/"
 cp "$VIS_ROOT"/docs/doc-examples-allow.txt "$tmp/9/docs/"
 cp "$VIS_ROOT"/test/doc-examples/doc-* "$tmp/9/test/doc-examples/"
 mk_qd "$tmp/9" 12
-printf '\n# lệch byte\n' >> "$tmp/9/test/doc-examples/doc-ViScript-thiet-ke-325.vis"
+# **#151/ST-289**: tên fixture là slug ổn định (không còn số dòng) — chọn khối §4.1.
+printf '\n# lệch byte\n' >> "$tmp/9/test/doc-examples/doc-viscript-thiet-ke-4-1-bien-va-scope-1.vis"
 expect_fail_dev "doc-examples: fixture lệch byte" "KHÔNG khớp khối" \
     bash "$DEV" doc-examples --root "$tmp/9"
 # 10) thiếu fixture qd (10) ⇒ đỏ (số do Agent 0 chốt: đúng 12)

@@ -20,7 +20,9 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+# **ST-289 / VD-272(3)**: phiên bản workspace là **một nguồn** cho mọi crate thành viên;
+# mỗi mốc phát hành bump ở đây, crate dùng `version.workspace = true` (không chép số).
+version = "0.3.6"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.100.0"

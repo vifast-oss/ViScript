@@ -4,7 +4,7 @@
 | Thư mục / tệp | Nội dung |
 |---|---|
 | `std/` | ví dụ + kết quả mong đợi cho thư viện chuẩn (`.vis` + `.out`) |
-| `doc-examples/` | khối ví dụ sinh từ `docs/ViScript-thiet-ke.md` (kiểm bằng `vis-dev doc-examples`) |
+| `doc-examples/` | khối ví dụ sinh từ `docs/ViScript-thiet-ke.md` (kiểm bằng `vis-dev doc-examples`); tên fixture là **slug ổn định** `doc-<tài-liệu>-<tiêu-đề>-<số-thứ-tự>.<ext>` (#151/ST-289), không theo số dòng |
 | `report/` | `check_report.py` + fixture cho báo cáo đợt (`agent/reports/R##-viscript.json`) |
 | `fixtures/` | `run_fixtures.sh` — ca âm cho luật cấu trúc R1–R4 |
 | `release/` | `run.sh` — canh artifact phát hành chỉ có `vis` (không `test-child`) |

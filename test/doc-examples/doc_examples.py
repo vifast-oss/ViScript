@@ -6,6 +6,10 @@ Ba chế độ:
   * (mặc định)  kiểm fixture `test/doc-examples/doc-*` == khối trong `docs/*.md`
   * `--regen`    sinh lại toàn bộ fixture `doc-*` từ tài liệu
   * `--gate`     bước cổng: đếm khối/fixture + chạy `vis check` trên **mọi** khối
+
+**#151 / ST-289**: tên fixture là **slug ổn định** — `doc-<slug-tài-liệu>-<slug-tiêu-đề>-<số-thứ-tự-
+trong-mục>.<ext>`, không còn số dòng. Chèn/xoá đoạn văn **không** đổi tên fixture; chỉ thêm/bớt khối
+mới đổi. Allowlist (`docs/doc-examples-allow.txt`) vẫn khoá theo `tệp:dòng` (ngoài phạm vi #151).
                  (`.vis`/`.vish`), đối chiếu `doc-examples-allow.txt`, rồi kiểm fixture
                  viết tay `qd-*` theo dòng `# kỳ vọng:` của chúng
 
@@ -25,6 +29,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -33,6 +38,8 @@ DOCS = REPO / "docs"
 FIXTURES = REPO / "test" / "doc-examples"
 SPDX = "# SPDX-License-Identifier: MIT OR Apache-2.0"
 FENCE = re.compile(r"^```(vis|vish-session)\s*$")
+# **#151 / ST-289**: tiêu đề markdown gần nhất + số thứ tự khối trong mục = tên ổn định.
+HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 # Số do Agent 0 chốt cho VT09/QD §7.4 — ĐỔI là thay đổi ngưỡng, phải xin Agent 0.
 # **8 mục (ST-27, Agent 0 APPROVED): khối 662 `extern cmd git(…, ...rest: str)` đã XANH** vì variadic
 # có mặt (đúng §9.5) ⇒ bỏ khỏi allowlist; đây là **chặt hơn**, không nới ngưỡng (xem VD-60).
@@ -47,26 +54,55 @@ VISH_COUNT = 2
 QD_COUNT = 12
 
 
+def slugify(text: str) -> str:
+    """Slug ASCII ổn định: bỏ dấu tiếng Việt, gộp ký tự lạ thành `-`, viết thường."""
+    text = text.replace("`", " ").replace("đ", "d").replace("Đ", "D")
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    text = re.sub(r"[^0-9a-zA-Z]+", "-", text).strip("-").lower()
+    return text or "muc"
+
+
 @dataclass(frozen=True)
 class Block:
     md: str  # tên tệp markdown (không đường dẫn)
-    line: int  # dòng 1-based của hàng ``` mở khối
+    line: int  # dòng 1-based của dòng **đầu thân khối** (cho allowlist)
     ext: str  # "vis" | "vish"
+    slug: str  # `<slug-tài-liệu>-<slug-tiêu-đề>-<số-thứ-tự>` — ổn định theo #151
     body: str
 
     @property
     def stem(self) -> str:
-        return f"doc-{self.md[:-3]}-{self.line}.{self.ext}"
+        return f"doc-{self.slug}.{self.ext}"
 
 
 def md_blocks(docs: Path) -> list[Block]:
     out: list[Block] = []
     for md in sorted(docs.glob("*.md")):
         lines = md.read_text(encoding="utf-8").splitlines()
+        md_slug = slugify(md.stem)
+        # Mục hiện hành + số thứ tự khối **trong mục** (không phải số dòng).
+        heading = "mo-dau"
+        heading_slugs: dict[str, int] = {}
+        counts: dict[str, int] = {}
         i = 0
         while i < len(lines):
             m = FENCE.match(lines[i])
             if not m:
+                if lines[i].startswith("```"):
+                    # Khối rào không phải vis/vish-session (rust, text, ebnf…): bỏ qua cả khối
+                    # để `#` bên trong không bị nhận nhầm là tiêu đề markdown.
+                    i += 1
+                    while i < len(lines) and lines[i].strip() != "```":
+                        i += 1
+                    i += 1
+                    continue
+                h = HEADING.match(lines[i])
+                if h:
+                    base = slugify(h.group(2))
+                    k = heading_slugs.get(base, 0) + 1
+                    heading_slugs[base] = k
+                    heading = base if k == 1 else f"{base}-{k}"
                 i += 1
                 continue
             ext = "vis" if m.group(1) == "vis" else "vish"
@@ -76,7 +112,11 @@ def md_blocks(docs: Path) -> list[Block]:
             while i < len(lines) and lines[i].strip() != "```":
                 body.append(lines[i])
                 i += 1
-            out.append(Block(md.name, start, ext, "\n".join(body) + "\n"))
+            n = counts.get(heading, 0) + 1
+            counts[heading] = n
+            out.append(
+                Block(md.name, start, ext, f"{md_slug}-{heading}-{n}", "\n".join(body) + "\n")
+            )
             i += 1
     return out
 

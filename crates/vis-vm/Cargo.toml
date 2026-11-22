@@ -2,9 +2,9 @@
 [package]
 rust-version.workspace = true
 name = "vis-vm"
-version = "0.1.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 description = "Máy ảo VBC1 cho ViScript — ngữ nghĩa trùng interp (ST-20, VD-54)"
 
 [dependencies]

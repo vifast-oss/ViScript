@@ -2,9 +2,9 @@
 [package]
 rust-version.workspace = true
 name = "vis-bytecode"
-version = "0.1.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 description = "VBC1 — định dạng bytecode nội bộ của ViScript (ST-19, VD-52)"
 
 [dependencies]
