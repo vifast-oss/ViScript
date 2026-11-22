@@ -14,7 +14,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.4`** @ `8fa1f96` (Windows async net/TLS, async-h2 default-off, evaluator P1-P3); `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
+| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -104,7 +104,7 @@ targets 18/18. Tàn dư ghi trong tag: async net production, worker evaluator, H
 
 **v0.3.0 đã tag** @ `0d26527`.
 **v0.3.1 đã tag** @ `e689c3d`.
-**v0.3.4 đã tag** @ `8fa1f96`: Linux **3571/3**; Windows **3528/0** debug+release; fresh-clone b37aa41 PASS; soak 20/20 + 30/30; fuzz 1,385B+987M 0; async-h2 default-off; evaluator P1/P2/P3 opt-in. Tiếp tục hardening tới 09:00 T2. Không GitHub Actions.
+**v0.3.5 đã tag** @ `03bb7b9` (thay `v0.3.4` @ `8fa1f96` do race cancel-before): Linux **3571/3**; Windows **3528/0**; fresh-clone 7e72afd PASS; cancel 1000/1000; feature h2 34+1 ×3; soak 20/20; diff 0. Tiếp tục hardening tới 09:00 T2. Không GitHub Actions.
 
 **Dừng**: 09:00 thứ Hai 23/11/2026; sau 08:00 không mở task lớn mới, chỉ đóng/tag/báo cáo.
 
