@@ -25,16 +25,10 @@ pub const OVERFLOW: &Code = &RUNTIME_CODES[6];
 /// `VS0412` — gán cho `let`/tham số (phòng thủ: tyck đã chặn trước).
 pub(crate) const MISMATCH: &Code = &TYPE_CODES[3];
 
-/// **ST-276 (VD-256)** — chẩn đoán **phân biệt** cho ngân sách ngữ nghĩa (chỉ test-hook).
-/// Không đổi bảng `RUNTIME_CODES`; `short` riêng để không nhầm với `VS0501`/`VS0506`/fuel VM.
-pub const BUDGET: &Code = &Code {
-    id: 501,
-    short: "VS0501-BUDGET",
-    message_vi: "vượt ngân sách ngữ nghĩa (VD-256, test-hook)",
-    message_en: "semantic budget exceeded (VD-256, test hook)",
-    message_ja: "意味予算を超過（VD-256、テストフック）",
-    severity: vis_diag::Severity::Error,
-};
+/// **ST-290 (VD-273)** — `VS0510`: vượt **ngân sách thực thi ngữ nghĩa**, tách hẳn khỏi
+/// `VS0501` (trap nội bộ) và khỏi fuel `SAFETY_FUEL` của VM. Trước VD-273 đây là mã test-hook
+/// `VS0510`; nay là mã chính thức trong sổ runtime.
+pub const BUDGET: &Code = &RUNTIME_CODES[9];
 
 /// **ST-63 (VD-105 (6))**: phần **gọi hàm/closure** tách khỏi `interp.rs` để giữ **R1 ≤ 1.500 dòng**
 /// — chuyển **nguyên văn**, không đổi ngữ nghĩa.
@@ -133,7 +127,7 @@ impl<'a> Interp<'a> {
             if b.charge(w).is_err() {
                 return Some(Abort::Trap(Trap::new(
                     BUDGET,
-                    "VS0501-BUDGET: vượt ngân sách worker".to_string(),
+                    "vượt ngân sách worker".to_string(),
                     span,
                 )));
             }
@@ -143,7 +137,7 @@ impl<'a> Interp<'a> {
         Some(Abort::Trap(Trap::new(
             BUDGET,
             format!(
-                "vượt ngân sách ngữ nghĩa VD-256 ({}): cần {}, còn {}",
+                "vượt ngân sách ngữ nghĩa ({}): cần {}, còn {} — dùng `--max-budget <N>` hoặc `--unlimited-budget`",
                 kind.name(),
                 w,
                 remaining

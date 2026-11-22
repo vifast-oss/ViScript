@@ -177,21 +177,22 @@ fn explain_help_theo_lang() {
     let vi = ki(&["explain"]);
     // **SỬA KÈM LÝ DO (VD-270)**: usage nêu `--json` (đầu ra máy đọc) theo yêu cầu VD-270;
     // không có `--json` thì đầu ra của mã/bảng vẫn nguyên văn (các ca khác khoá).
+    // **SỬA KÈM LÝ DO (ST-290/VD-273)**: sổ 54 → 56 mã (`VS0509`/`VS0510`) — chỉ đổi số đếm.
     assert_eq!(
         vi,
         "dùng: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]\n\
-         sổ mã: 7 khối, 54 mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc\n"
+         sổ mã: 7 khối, 56 mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc\n"
     );
     let en = ki(&["explain", "--lang", "en"]);
     assert_eq!(
         en,
         "usage: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]\n\
-         code book: 7 blocks, 54 codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line\n"
+         code book: 7 blocks, 56 codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line\n"
     );
     let ja = ki(&["explain", "--lang", "ja"]);
     assert_eq!(
         ja,
         "使い方: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]\n\
-         コード帳: 7 ブロック、54 コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行\n"
+         コード帳: 7 ブロック、56 コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行\n"
     );
 }

@@ -702,7 +702,7 @@ pub mod worker {
             match &mut self.budget {
                 Some(b) => b.charge(weight).map_err(|e| match e {
                     BudgetError::Exhausted { remaining } => {
-                        format!("vượt ngân sách worker (còn {remaining})")
+                        format!("VS0510: vượt ngân sách worker (còn {remaining})")
                     }
                 }),
                 None => Ok(()),

@@ -6,7 +6,7 @@
 //! thread, không snapshot, không đổi `Value`/`Task`/`VERSION`/cache.
 //!
 //! Phủ: sync + print/order, nested `spawn`/`await`, 10.000 task, lỗi thân `VS0506`, `chan(0)`
-//! giữ `VS0505`, ngân sách `VS0501-BUDGET`. `chan(0)`/frame async parity là P4, không phải P1.
+//! giữ `VS0505`, ngân sách `VS0510`. `chan(0)`/frame async parity là P4, không phải P1.
 
 use vis_interp::rt::fee as ifee;
 use vis_interp::RunOutput;
@@ -237,13 +237,8 @@ fn chan0_giu_vs0505_nhu_non_frame() {
 #[test]
 fn budget_can_giong_default() {
     let (a, b) = so_khop_budget(LOOP_BUDGET, 10_000);
-    assert_eq!(
-        a.codes(),
-        vec!["VS0501-BUDGET"],
-        "default: {:?}",
-        a.diagnostics
-    );
-    assert_eq!(b.codes(), vec!["VS0501-BUDGET"], "W=1: {:?}", b.diagnostics);
+    assert_eq!(a.codes(), vec!["VS0510"], "default: {:?}", a.diagnostics);
+    assert_eq!(b.codes(), vec!["VS0510"], "W=1: {:?}", b.diagnostics);
     assert_eq!(a.steps, b.steps);
     assert_eq!(a.exit, 1);
 }

@@ -112,7 +112,9 @@ fn cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine() {
     let src = cache.join("prog.vis");
     std::fs::write(&src, "print(42)\n").expect("ghi source");
 
-    // (1) Lần đầu: biên dịch từ source, ghi artifact v2 vào cache, VM in đúng 42.
+    // (1) Lần đầu: biên dịch từ source, ghi artifact **có trailer bảng phí** vào cache, VM in đúng 42.
+    // **SỬA KÈM LÝ DO (ST-290/VD-273)**: ngân sách mặc định bật ⇒ cache VM phải mang bảng phí
+    // (`INSTRUMENTED_VERSION = 3`), không còn v2 trơn; `VERSION` lõi vẫn 2.
     let (c1, o1, e1) = chay(&cache, &src, &["--vm"]);
     assert_eq!(c1, 0, "lần đầu: {e1:?}");
     assert_eq!(o1, b"42\n", "lần đầu VM");
@@ -120,8 +122,8 @@ fn cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine() {
     let b1 = std::fs::read(&p).expect("doc vbc");
     assert_eq!(
         u16::from_le_bytes([b1[4], b1[5]]),
-        2,
-        "artifact vừa ghi phải là v2"
+        vis_bytecode::INSTRUMENTED_VERSION,
+        "artifact vừa ghi phải mang bảng phí (version 3)"
     );
 
     // (2) Đặt artifact v1 **in sai 999** đúng vào đường dẫn cache hiện tại. Nếu loader không kiểm
@@ -130,7 +132,7 @@ fn cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine() {
     let b1 = std::fs::read(&p).expect("doc");
     assert_eq!(u16::from_le_bytes([b1[4], b1[5]]), 1, "đã cài artifact v1");
 
-    // (3) Lần hai: v1 bị từ chối ⇒ source được biên dịch lại ⇒ vẫn in 42, cache được ghi đè v2.
+    // (3) Lần hai: v1 bị từ chối ⇒ source được biên dịch lại ⇒ vẫn in 42, cache được ghi đè.
     let (c2, o2, e2) = chay(&cache, &src, &["--vm"]);
     assert_eq!(c2, 0, "lần hai: {e2:?}");
     assert_eq!(
@@ -143,8 +145,8 @@ fn cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine() {
     let b2 = std::fs::read(&p2).expect("doc vbc sau recompile");
     assert_eq!(
         u16::from_le_bytes([b2[4], b2[5]]),
-        2,
-        "cache phải được ghi lại dưới VERSION = 2"
+        vis_bytecode::INSTRUMENTED_VERSION,
+        "cache phải được ghi lại dưới INSTRUMENTED_VERSION (có bảng phí)"
     );
 
     // (4) Cùng source chạy đúng trên **interp** và **VM --no-cache** (hai engine, không cache).

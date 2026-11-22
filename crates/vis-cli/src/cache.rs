@@ -32,9 +32,12 @@ use std::path::PathBuf;
 // cùng nguồn có thể chạy bytecode trước bản sửa. Đổi nhãn logic để cache cũ tự vô hiệu.
 // **ST-289 (VD-272 điểm 3)**: `CARGO_PKG_VERSION` nay là **0.3.6** (workspace một nguồn) ⇒
 // `PHIEN_BAN` đổi theo, cache bản 0.1.0 tự vô hiệu; **không** đổi `VERSION` VBC1/ABI/định dạng.
+// **ST-290 (VD-273)**: ngân sách ngữ nghĩa bật **mặc định** 40M và artifact VM có trailer `VFEE`
+// (bảng phí) ⇒ cache cũ không mang ngữ nghĩa ngân sách mới phải tự vô hiệu; `VERSION` VBC1 và
+// ABI không đổi.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -130,16 +133,26 @@ pub fn duong_dan(k: &[u8; 32]) -> Option<PathBuf> {
     Some(thu_muc()?.join(ten))
 }
 
-/// Nạp module từ cache — **chỉ** khi `load_verified` chấp nhận.
-pub fn nap(k: &[u8; 32]) -> Option<vis_bytecode::Module> {
+/// **ST-290 (VD-273)** — nạp **cả** module lẫn bảng phí từ cache có trailer `VFEE` (artifact
+/// được đóng dấu `INSTRUMENTED_VERSION`). Trả `None` nếu thiếu/hỏng ⇒ caller biên dịch lại.
+///
+/// Module được hạ dấu về `VERSION` sau khi tách bảng phí: bytecode **không đổi**, dấu `3` chỉ
+/// bảo vệ đường nạp (VD-257); đường chạy thường (`Vm::run` → `verify`) nhận `VERSION`.
+pub fn nap_co_phi(k: &[u8; 32]) -> Option<(vis_bytecode::Module, vis_bytecode::fee::FeeTable)> {
     let p = duong_dan(k)?;
     let bytes = std::fs::read(&p).ok()?;
-    vis_bytecode::load_verified(&bytes).ok()
+    let (mut m, fee) = vis_bytecode::load_verified_with_fee(&bytes).ok()?;
+    m.version = vis_bytecode::VERSION;
+    Some((m, fee))
 }
 
-/// Ghi module đã xác minh xuống cache (lỗi I/O ⇒ bỏ qua, không làm hỏng lần chạy).
-pub fn luu(k: &[u8; 32], m: &vis_bytecode::Module) -> bool {
-    // Chỉ ghi thứ **qua được** verifier.
+/// **ST-290 (VD-273)** — ghi module + bảng phí thành artifact có trailer (cache cho đường VM
+/// bật ngân sách mặc định). Vẫn chỉ ghi thứ qua được verifier.
+pub fn luu_co_phi(
+    k: &[u8; 32],
+    m: &vis_bytecode::Module,
+    fee: &vis_bytecode::fee::FeeTable,
+) -> bool {
     if vis_bytecode::verify(m).is_err() {
         return false;
     }
@@ -151,8 +164,7 @@ pub fn luu(k: &[u8; 32], m: &vis_bytecode::Module) -> bool {
             return false;
         }
     }
-    let bytes = vis_bytecode::encode(m);
-    // Ghi tạm rồi đổi tên: tránh tệp cụt khi bị ngắt.
+    let bytes = vis_bytecode::encode_with_fee(m, fee);
     let tmp = p.with_extension("vbc.tmp");
     if std::fs::write(&tmp, &bytes).is_err() {
         return false;
@@ -236,9 +248,15 @@ mod tests {
         // **ST-289 (VD-272 điểm 3)**: phiên bản workspace `0.1.0 → 0.3.6` (một nguồn
         // `version.workspace = true`). `PHIEN_BAN` nhúng `CARGO_PKG_VERSION` **có chủ ý**
         // (VD-129) ⇒ khoá đổi, cache của bản 0.1.0 tự vô hiệu; `VERSION` VBC1 và ABI **không đổi**.
+        // **ST-290 (VD-273)**: ngân sách mặc định 40M + artifact VM mang bảng phí (trailer VFEE)
+        // ⇒ cache cũ không mang ngữ nghĩa ngân sách mới bị bỏ; ghim lại lần nữa.
         assert_eq!(
-            k, "2c0382c5bf04f2657aeec1155ab00e5ed1f193e0838b048c9be9f24685ecbbbf",
+            k, "e5373caf155dfad15e8173df5f5218651847d17d0963e9f0784b42c8ccdf026d",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "2c0382c5bf04f2657aeec1155ab00e5ed1f193e0838b048c9be9f24685ecbbbf",
+            "ST-290: cache sinh trước ngân sách mặc định 40M không được tái dùng"
         );
         assert_ne!(
             k, "c7e09d0f0b535a3f8edb9d794c9d852f4e15c5fe07586b5d37fcdbe55f3fd393",
@@ -317,6 +335,10 @@ mod tests {
         assert!(
             PHIEN_BAN.contains("vd269-optmethod"),
             "VD-269: cache phải mang nhãn gọi phương thức qua ?."
+        );
+        assert!(
+            PHIEN_BAN.contains("vd273-budget-default-40m"),
+            "ST-290: cache phải mang nhãn ngân sách mặc định 40M"
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);

@@ -12,9 +12,43 @@ use std::process::ExitCode;
 /// `--dump-deps`, `--dry`).
 pub(crate) fn usage_run() -> ExitCode {
     eprintln!(
-        "dùng: vis run [--tap] [--vm] [--stdin] [--time] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --stdin: đọc UTF-8 từ stdin, chạy như một tệp script ảo tên `-`; không nhận tệp, không đọc/ghi cache; thoát như đường tệp (0 sạch / 1 `Result::Err` / 2 lỗi dùng–kiểu / 101 trap); `--tap` báo `ok|not ok 1 - -`; `--dump-bytecode`/`--dump-deps`/`--dry` không đi với `--stdin`\n  --time: in **một** dòng `# time: <ms> ms` (hoặc `# time: <us> us` khi < 1 ms) ra stderr; đo **đồng hồ tường** quanh **đúng lời gọi runtime** (không tính nạp/parse/tyck/codegen/cache/sandbox, không tính lúc in kết quả); chỉ in khi runtime **đã chạy** (lỗi trước khi chạy ⇒ không có dòng); với `--tap`, dòng này là chú thích TAP, in **sau** dòng `ok|not ok`\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
+        "dùng: vis run [--tap] [--vm] [--stdin] [--time] [--max-budget <N>|--unlimited-budget] [--dump-bytecode] [--dump-deps] [--dry] [--sandbox] [--sandbox-check] [--strict-caps] [--no-strict-caps] [--grant tên=path] [--no-cache] [--sqlite-debug] <tệp.vis> [-- args…]\n  --stdin: đọc UTF-8 từ stdin, chạy như một tệp script ảo tên `-`; không nhận tệp, không đọc/ghi cache; thoát như đường tệp (0 sạch / 1 `Result::Err` / 2 lỗi dùng–kiểu / 101 trap); `--tap` báo `ok|not ok 1 - -`; `--dump-bytecode`/`--dump-deps`/`--dry` không đi với `--stdin`\n  --max-budget <N>: ngân sách thực thi ngữ nghĩa cho lần chạy (mặc định 40000000 đơn vị; vượt ⇒ `VS0510`, exit 101); `N` là số nguyên dương\n  --unlimited-budget: tắt giới hạn ngân sách ngữ nghĩa cho workload hợp lệ dài hơn (hàng rào fuel của VM vẫn giữ)\n  --time: in **một** dòng `# time: <ms> ms` (hoặc `# time: <us> us` khi < 1 ms) ra stderr; đo **đồng hồ tường** quanh **đúng lời gọi runtime** (không tính nạp/parse/tyck/codegen/cache/sandbox, không tính lúc in kết quả); chỉ in khi runtime **đã chạy** (lỗi trước khi chạy ⇒ không có dòng); với `--tap`, dòng này là chú thích TAP, in **sau** dòng `ok|not ok`\n  --strict-caps: mọi truy cập `std.fs`/`net` và tiến trình ngoài (`cap[Proc]`) phải nằm trong `cap` đã khai (mặc định: không siết, **trừ** khi chương trình dùng gói `use pkg.*` ⇒ siết — VD-124)\n  --no-strict-caps: thoát tường minh chế độ siết khi dùng gói; in **một** dòng cảnh báo ra stderr\n  --sqlite-debug: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values; mặc định: chỉ mã lỗi)"
     );
     ExitCode::from(2)
+}
+
+/// **ST-290 (VD-273)** — lựa chọn ngân sách của `vis run`. `MacDinh` giữ `BUDGET_DEFAULT` (40M).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NganSach {
+    MacDinh,
+    GioiHan(u64),
+    KhongGioiHan,
+}
+
+/// Đọc giá trị `--max-budget <N>`: số nguyên dương thập phân; `0`, rỗng hoặc tràn `u64` ⇒ lỗi dùng.
+pub(crate) fn doc_gioi_han(s: &str) -> Result<u64, String> {
+    if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
+        return Err(format!("`--max-budget {s}` phải là số nguyên dương"));
+    }
+    let n: u64 = s
+        .parse()
+        .map_err(|_| format!("`--max-budget {s}` vượt miền u64"))?;
+    if n == 0 {
+        return Err(
+            "`--max-budget` phải > 0 (dùng `--unlimited-budget` để bỏ giới hạn)".to_string(),
+        );
+    }
+    Ok(n)
+}
+
+/// **ST-290 (VD-273)** — áp lựa chọn ngân sách vào chính sách phiên (**một nguồn** cho interp
+/// và VM). Gọi **trước** khi chạy; mặc định không đụng gì (giữ `BUDGET_DEFAULT`).
+pub(crate) fn ap_ngan_sach(chon: NganSach) {
+    match chon {
+        NganSach::MacDinh => {}
+        NganSach::GioiHan(n) => vis_interp::rt::fee::dat_gioi_han(n),
+        NganSach::KhongGioiHan => vis_interp::rt::fee::bo_gioi_han(),
+    }
 }
 
 /// **VD-270**: định dạng **một** dòng `vis run --time`.

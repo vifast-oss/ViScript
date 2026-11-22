@@ -247,7 +247,10 @@ pub enum FeeVerifyError {
     /// `pc` hợp lệ nhưng hàm không có span tương ứng (module hỏng; `verify` thường đã chặn
     /// `SpanMismatch`, nhưng `verify_fee` phải chịu được lời gọi trực tiếp).
     SpanMissing { func: usize, pc: u32 },
-    /// `site` không nằm trong span của lệnh tại `pc` (ràng buộc suy từ cấu trúc, không tin artifact).
+    /// `site` nằm ngoài **phạm vi văn bản nguồn** suy từ span của mọi lệnh (ràng buộc suy từ
+    /// cấu trúc, không tin artifact). Không buộc `site` nằm trong span của **đúng** lệnh tại
+    /// `pc`: sự kiện `E_STMT` mang span **cả câu lệnh**, còn span lệnh đầu tiên là span hẹp của
+    /// biểu thức con — ràng buộc cũ từ chối chính artifact do codegen sinh (ST-290).
     BadSite {
         func: usize,
         pc: u32,
@@ -280,6 +283,15 @@ pub fn verify_fee(m: &Module, fee: &FeeTable) -> Result<(), FeeVerifyError> {
     if total > MAX_FEE_ENTRIES {
         return Err(FeeVerifyError::TooMany(total));
     }
+    // **ST-290** — biên trên của văn bản nguồn suy từ **mọi** span lệnh. `site` hợp lệ chỉ cần
+    // nằm trong biên này (xem `BadSite`), không cần nằm trong span hẹp của đúng lệnh tại `pc`.
+    let max_end: u32 = m
+        .funcs
+        .iter()
+        .flat_map(|f| f.spans.iter())
+        .map(|s| s.end)
+        .max()
+        .unwrap_or(0);
     for (fi, f) in m.funcs.iter().enumerate() {
         let mut per_pc: std::collections::HashMap<u32, usize> = std::collections::HashMap::new();
         for e in &fee.funcs[fi] {
@@ -295,20 +307,19 @@ pub fn verify_fee(m: &Module, fee: &FeeTable) -> Result<(), FeeVerifyError> {
             if *k > MAX_PER_PC {
                 return Err(FeeVerifyError::TooMany(total));
             }
-            // `site` do artifact tự khai ⇒ chỉ tin khi nó nằm trong span của chính lệnh đó.
+            // `site` do artifact tự khai ⇒ chỉ tin khi nó nằm trong phạm vi văn bản nguồn.
             // Không tin bất biến `code.len() == spans.len()` của `verify`: `verify_fee` là API
             // công khai, có thể nhận `Module` dựng tay (test/verifier khác) ⇒ không được panic.
-            let sp = f
-                .spans
+            f.spans
                 .get(e.pc as usize)
                 .ok_or(FeeVerifyError::SpanMissing { func: fi, pc: e.pc })?;
-            if e.site != 0 && (e.site < sp.start || e.site > sp.end) {
+            if e.site != 0 && e.site > max_end {
                 return Err(FeeVerifyError::BadSite {
                     func: fi,
                     pc: e.pc,
                     site: e.site,
-                    start: sp.start,
-                    end: sp.end,
+                    start: 0,
+                    end: max_end,
                 });
             }
         }

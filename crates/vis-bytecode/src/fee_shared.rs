@@ -22,8 +22,9 @@ pub const WEIGHT_TABLE_VERSION: u16 = 1;
 // ---------------------------------------------------------------------------
 // VS3-1a — HỢP ĐỒNG NGÂN SÁCH / FUEL DÙNG CHUNG interp ↔ VM.
 //
-// `BUDGET_SIZING_CEILING` KHÔNG phải ngân sách mặc định (budget vẫn chỉ bật qua test-hook
-// VD-256/VD-257); nó là **trần của miền hỗ trợ** dùng để định cỡ hàng rào an toàn của VM.
+// `BUDGET_SIZING_CEILING` là **trần của miền hỗ trợ** dùng để định cỡ hàng rào an toàn của VM.
+// **ST-290 (VD-273)**: từ `v0.4.0`, `BUDGET_DEFAULT = 40M` là ngân sách **mặc định** dùng chung
+// interp ↔ VM (không còn chỉ test-hook); `--max-budget`/`--unlimited-budget` đổi theo phiên.
 // Bất biến bắt buộc: một chương trình còn trong trần ngân sách **không** được trap fuel
 // trước khi ngân sách cạn. Vì vậy `VM_SAFETY_FUEL` phải ≥ ceiling × tỷ lệ bước/lệnh trần.
 // ---------------------------------------------------------------------------
@@ -32,11 +33,20 @@ pub const WEIGHT_TABLE_VERSION: u16 = 1;
 /// lịch sử `10^7`; tách hằng để một nguồn định nghĩa với định cỡ fuel).
 pub const MAX_LOOP_ITERATIONS: u64 = 10_000_000;
 
+/// **ST-290 (VD-273)** — ngân sách ngữ nghĩa **mặc định** của một lần chạy, dùng chung
+/// interp ↔ VM. Từ `v0.4.0` ngân sách **bật mặc định** (không còn chỉ test-hook như VD-256);
+/// vượt ngân sách báo `VS0510` (tách khỏi `VS0501` trap nội bộ và fuel VM). Người dùng có
+/// workload hợp lệ dài hơn dùng `vis run --max-budget <N>` hoặc `--unlimited-budget`.
+pub const BUDGET_DEFAULT: u64 = 40_000_000;
+
 /// **VS3-1a** — trần ngân sách ngữ nghĩa dùng để **định cỡ** fuel, chưa phải `BUDGET` được A0
 /// chốt (VD-257-B §3.6). Chọn 40M đơn vị `standard_weight`: cùng bậc với `MAX_LOOP_ITERATIONS`
 /// vòng × 3–6 sự kiện/vòng (đo VS3-1a), và phủ trọn ca 2M với biên rộng. Nếu A0 chốt `BUDGET`
 /// khác, phải tính lại [`VM_SAFETY_FUEL`] theo [`VM_STEPS_PER_COST_CEILING`] và chạy lại
 /// `crates/vis-cli/tests/vs3_budget.rs`.
+///
+/// **ST-290 (VD-273)**: A0 đã chốt đúng giá trị này làm mặc định ⇒ trần định cỡ **trùng**
+/// [`BUDGET_DEFAULT`]; fuel vẫn giữ `100M` (> 2× trần).
 pub const BUDGET_SIZING_CEILING: u64 = 40_000_000;
 
 /// Tỷ lệ `số lệnh VM / đơn vị ngân sách` lớn nhất trong miền hỗ trợ. Đo VS3-1a (debug):

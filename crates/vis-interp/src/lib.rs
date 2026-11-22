@@ -211,6 +211,9 @@ fn run_with_hosts_caps_mode<'a>(
     cancel_before: bool,
     cancel_after_ms: Option<u64>,
 ) -> RunOutput {
+    // **ST-290 (VD-273)**: ngân sách ngữ nghĩa bật **mặc định** cho mọi lần chạy; test-hook
+    // VD-256/VD-257 đặt `explicit` thì giữ nguyên ngân sách của ca.
+    crate::rt::fee::bat_dau_phien();
     let mut it = interp::Interp::new(hir, symbols, types);
     if mode != crate::rt::exec::WorkerMode::Off {
         let mut s = it.sched.borrow_mut();
@@ -488,6 +491,8 @@ pub fn run_async_with_hosts_caps_backend<'a>(
     caps: &[(u32, Value)],
     backend: Option<std::rc::Rc<std::cell::RefCell<dyn crate::rt::FrameReactorBackend>>>,
 ) -> RunOutput {
+    // **ST-290 (VD-273)**: frame path dùng **cùng** ngân sách phiên (mặc định bật).
+    crate::rt::fee::bat_dau_phien();
     let mut it = interp::Interp::new(hir, symbols, types);
     if !caps.is_empty() {
         it.set_caps(caps.to_vec());

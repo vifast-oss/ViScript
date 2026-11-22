@@ -5,11 +5,13 @@
 include!("../../../vis-bytecode/src/fee_shared.rs");
 
 // ---------------------------------------------------------------------------
-// Test-hook ngân sách — CHỈ internal, KHÔNG mặc định (VD-256 §5).
-// Thread-local để vis-cli có thể bật/lấy trace mà không đổi `lib.rs`/API công khai khác.
+// Ngân sách ngữ nghĩa. **ST-290 (VD-273)**: chạy **mặc định** `BUDGET_DEFAULT = 40M` cho mỗi
+// phiên (CLI đặt `--max-budget`/`--unlimited-budget`); test-hook VD-256/VD-257 vẫn giữ để đo
+// biên/trace và **thắng** chính sách mặc định. Thread-local để CLI bật/lấy số đo mà không đổi
+// chữ ký API công khai.
 // ---------------------------------------------------------------------------
 use std::cell::RefCell;
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use vis_syntax::Span;
@@ -26,9 +28,19 @@ struct Budget {
     measure: bool,
     counts: [u64; 8],
     // -----------------------------------------------------------------------
+    // **ST-290 (VD-273)** — ngân sách **mặc định** bật cho mỗi phiên chạy. `explicit`
+    // đánh dấu trạng thái do test-hook tự đặt ⇒ `bat_dau_phien` **không** ghi đè để
+    // các ca VD-256/VD-257 giữ nguyên ngân sách nhỏ của chúng.
+    // -----------------------------------------------------------------------
+    explicit: bool,
+    /// Ngân sách ban đầu của phiên (để tính `da_dung_phien`). `0` khi tắt.
+    limit: i64,
+    /// Bản chạy thường **không** lưu trace từng sự kiện (40M sự kiện sẽ ngốn hàng trăm MB).
+    trace_on: bool,
+    // -----------------------------------------------------------------------
     // VD-257 / stream D — hạn ngạch lượt (quota) THỬ NGHIỆM, CHỈ test-hook.
     // `quota_*` là bộ đếm RIÊNG, reset mỗi turn, hết ⇒ yield (KHÔNG trap). Nó
-    // KHÔNG thay `remaining` (ngân sách tổng vẫn trap VS0501-BUDGET như cũ).
+    // KHÔNG thay `remaining` (ngân sách tổng vẫn trap VS0510 như cũ).
     // -----------------------------------------------------------------------
     /// Bật phát sự kiện trên **đường frame** (test-only). Tắt (mặc định) ⇒ frame
     /// path vẫn KHÔNG charge, nên test `f2_interp_frame_path_khong_tu_charge` của
@@ -50,23 +62,108 @@ thread_local! {
     static BUDGET: RefCell<Budget> = RefCell::new(Budget::default());
 }
 
+/// **ST-290 (VD-273)** — giới hạn ngân sách của phiên chạy hiện tại (`None` = không giới hạn).
+/// Một nguồn cho **cả** interp và VM: CLI đặt một lần từ `--max-budget`/`--unlimited-budget`.
+/// Giá trị mặc định là [`BUDGET_DEFAULT`] (40M).
+static GIOI_HAN_PHIEN: AtomicU64 = AtomicU64::new(BUDGET_DEFAULT);
+
+/// Giá trị gửi riêng cho "không giới hạn" — không thể trùng một ngân sách hợp lệ vì parser CLI
+/// chặn giá trị `u64::MAX` và ngân sách luôn được kẹp theo `i64`.
+const KHONG_GIOI_HAN: u64 = u64::MAX;
+
+/// Đặt ngân sách phiên (CLI `--max-budget <N>`). Giá trị `0` được kẹp thành `1`; giá trị lớn
+/// được kẹp theo `i64` (ngân sách luôn dương).
+pub fn dat_gioi_han(n: u64) {
+    GIOI_HAN_PHIEN.store(n.min(i64::MAX as u64).max(1), Ordering::Relaxed);
+}
+
+/// Bỏ giới hạn ngân sách phiên (CLI `--unlimited-budget`).
+pub fn bo_gioi_han() {
+    GIOI_HAN_PHIEN.store(KHONG_GIOI_HAN, Ordering::Relaxed);
+}
+
+/// Ngân sách phiên hiện tại; `None` = không giới hạn.
+pub fn gioi_han_phien() -> Option<u64> {
+    let v = GIOI_HAN_PHIEN.load(Ordering::Relaxed);
+    (v != KHONG_GIOI_HAN).then_some(v)
+}
+
+/// Khởi động ngân sách cho **một lần chạy**: copy `GIOI_HAN_PHIEN` vào thread-local trừ khi
+/// test-hook đã đặt trạng thái tường minh. Gọi ở cửa vào runtime interp (đồng bộ lẫn frame).
+pub fn bat_dau_phien() {
+    let Some(limit) = gioi_han_phien() else {
+        // `--unlimited-budget`: tắt charge (nhanh) nhưng **không** đè test-hook tường minh.
+        BUDGET.with(|b| {
+            let mut b = b.borrow_mut();
+            if !b.explicit {
+                *b = Budget::default();
+            }
+        });
+        return;
+    };
+    BUDGET.with(|b| {
+        let mut b = b.borrow_mut();
+        if b.explicit {
+            return;
+        }
+        b.enabled = true;
+        b.limit = i64_sat(limit);
+        b.remaining = b.limit;
+        b.trace.clear();
+        b.hit = false;
+        b.measure = false;
+        b.trace_on = false;
+        b.counts = [0; 8];
+        // Frame path phải charge cùng ngân sách — nếu không, chương trình `async` né phí.
+        b.frame_emit = true;
+    });
+}
+
+/// Số đơn vị ngân sách đã dùng trong phiên gần nhất (0 khi tắt/không giới hạn).
+pub fn da_dung_phien() -> u64 {
+    BUDGET.with(|b| {
+        let b = b.borrow();
+        if !b.enabled {
+            return 0;
+        }
+        (b.limit - b.remaining).max(0) as u64
+    })
+}
+
+/// Tắt ngân sách **tường minh** cho các ca cần chứng minh "hook tắt" (VD-257/stream A).
+/// Khác [`disable_for_test`]: trạng thái này **không** bị `bat_dau_phien` ghi đè.
+#[doc(hidden)]
+pub fn tat_ngan_sach_phien_for_test() {
+    BUDGET.with(|b| {
+        let mut b = b.borrow_mut();
+        *b = Budget::default();
+        b.explicit = true;
+    });
+}
+
 /// Trần `u64 → i64` an toàn: giá trị lớn hơn `i64::MAX` được **bão hoà**, không quay âm.
 fn i64_sat(limit: u64) -> i64 {
     limit.min(i64::MAX as u64) as i64
 }
 
 /// Bật instrumentation + ngưỡng (internal test hook). Mặc định `false` ⇒ mọi `charge` là no-op.
+/// **ST-290**: hook tự đặt `explicit` ⇒ `bat_dau_phien` không ghi đè ngân sách nhỏ của ca test.
 pub fn enable_for_test(limit: u64) {
     BUDGET.with(|b| {
         let mut b = b.borrow_mut();
         b.enabled = true;
-        b.remaining = i64_sat(limit);
+        b.explicit = true;
+        b.limit = i64_sat(limit);
+        b.remaining = b.limit;
         b.trace.clear();
         b.hit = false;
+        b.measure = false;
+        b.trace_on = true;
     });
 }
 
-/// Tắt instrumentation — trả trạng thái về mặc định (kể cả quota/frame-emit).
+/// Tắt instrumentation — trả trạng thái về mặc định (kể cả quota/frame-emit). Trạng thái
+/// **không** tường minh ⇒ lần chạy kế tiếp lại nhận ngân sách mặc định của phiên.
 pub fn disable_for_test() {
     BUDGET.with(|b| *b.borrow_mut() = Budget::default());
 }
@@ -90,7 +187,7 @@ pub fn frame_emit_enabled() -> bool {
 }
 
 /// Charge trên đường frame **chỉ khi** hook frame bật — dùng từ `frame/expr.rs`
-/// và `frame/proc.rs`. Gọi lại `Interp::charge` ⇒ cùng trap `VS0501-BUDGET` với
+/// và `frame/proc.rs`. Gọi lại `Interp::charge` ⇒ cùng trap `VS0510` với
 /// đường trực tiếp; kiểm ngân sách nằm ngay trước điểm charge (trước side-effect).
 #[doc(hidden)]
 pub(crate) fn frame_charge(it: &mut Interp<'_>, kind: FeeKind, span: Span) -> Option<Abort> {
@@ -150,10 +247,13 @@ pub fn enable_measure_for_test(limit: u64) {
     BUDGET.with(|b| {
         let mut b = b.borrow_mut();
         b.enabled = true;
-        b.remaining = i64_sat(limit);
+        b.explicit = true;
+        b.limit = i64_sat(limit);
+        b.remaining = b.limit;
         b.trace.clear();
         b.hit = false;
         b.measure = true;
+        b.trace_on = false;
         b.counts = [0; 8];
     });
 }
@@ -184,7 +284,7 @@ pub fn charge(kind: FeeKind, site: u32) -> Option<(u64, i64)> {
         let w = standard_weight(kind);
         if b.measure {
             b.counts[kind.tag() as usize - 1] += 1;
-        } else {
+        } else if b.trace_on {
             b.trace.push(FeeEntry::new(0, kind, site));
         }
         let budget_over = w as i64 > b.remaining;

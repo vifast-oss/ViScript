@@ -230,9 +230,7 @@ fn budget_atomic_used_cong_remaining_bang_limit() {
     );
     assert_eq!(out.exit, 1, "budget phải dừng task");
     assert!(
-        out.diagnostics
-            .iter()
-            .any(|d| d.message.contains("VS0501-BUDGET")),
+        out.diagnostics.iter().any(|d| d.message.contains("VS0510")),
         "phải giữ mã ngân sách: {:?}",
         out.diagnostics
     );

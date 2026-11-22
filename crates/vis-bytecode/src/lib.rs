@@ -22,8 +22,8 @@ pub mod util;
 pub mod verify;
 
 pub use codegen::{
-    compile, compile_kiem, compile_kiem_voi_bang, compile_voi_bang, compile_with_fee,
-    compile_with_fee_voi_bang, CodegenError,
+    compile, compile_kiem, compile_kiem_voi_bang, compile_kiem_voi_bang_co_phi, compile_voi_bang,
+    compile_with_fee, compile_with_fee_voi_bang, CodegenError,
 };
 pub use decode::{decode, DecodeError};
 pub use encode::encode;

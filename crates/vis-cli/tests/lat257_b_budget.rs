@@ -315,16 +315,12 @@ fn ngan_sach_nho_ta_ranh_gioi_tac_dung_phu() {
     assert!(cost >= 2, "print(42) phải có ít nhất Stmt+Expr+Builtin");
     let (hir, syms, tys) = tien_trinh(src);
 
-    // (a) budget = cost-1 ⇒ trap TRƯỚC khi print in ra ⇒ stdout rỗng + VS0501-BUDGET.
+    // (a) budget = cost-1 ⇒ trap TRƯỚC khi print in ra ⇒ stdout rỗng + VS0510.
     ifee::enable_for_test(cost - 1);
     let low = vis_interp::run(src, &hir, &syms, &tys, &[]);
     ifee::disable_for_test();
     assert_eq!(low.stdout, "", "ranh giới: chưa tới ngân sách thì không in");
-    assert!(
-        low.codes().contains(&"VS0501-BUDGET"),
-        "{:?}",
-        low.diagnostics
-    );
+    assert!(low.codes().contains(&"VS0510"), "{:?}", low.diagnostics);
 
     // (b) VM cùng ngưỡng ⇒ cũng không in, cùng short code (khác engine).
     let (m, fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap();
@@ -333,9 +329,7 @@ fn ngan_sach_nho_ta_ranh_gioi_tac_dung_phu() {
     let vo = vm.run(&[]);
     assert_eq!(vo.stdout, "", "VM ranh giới thấp không in");
     assert!(
-        vo.diagnostics
-            .iter()
-            .any(|d| d.code.short == "VS0501-BUDGET"),
+        vo.diagnostics.iter().any(|d| d.code.short == "VS0510"),
         "{:?}",
         vo.diagnostics
     );
