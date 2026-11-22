@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 32,
-  "head": "a1930cbe84231c2362626dca9bd919a906fab0b9",
+  "head": "06457003ae3e38bfa682d4ec953157606130849e",
   "build_id": "stage0-v036-20261122",
   "tasks": [
     {
@@ -2731,12 +2731,15 @@
       "status": "DONE",
       "commits": [
         "03ed84c",
-        "f8f1d4b"
+        "f8f1d4b",
+        "e43ca43",
+        "6b2a216",
+        "0645700"
       ],
       "gates": [
         "fast"
       ],
-      "note": "ST-287 DONE (VD-273): cancel_task_handles + safe point frame_cancel_one; Linux h1 5/5 + h2 8/8, do-truoc 5/5 + 7/7, soak 1h; gate 3581/3, diff 100k lech=0. WINDOWS BLOCKER: vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro flake ~21% (3/14 suite, ca rieng 10/10; task bi huy van in V:post sau 10053) — cho fix truoc tag v0.3.6.",
+      "note": "ST-287 DONE: hook cancel_task_handles + safe point; Linux h1 5/5, h2 8/8, do-truoc 5/5+7/7, soak fd/RSS/threads phang, gate 3581/3, diff 100k lech=0. Windows fix (test fixture accept inherits nonblocking -> server blocking + trigger byte; product guard cancelled + close order): serial 20/20, default 10/10, exact lap 20/20, workspace 3538/0/3 (JOURNAL/st287-win-cancel-flake.md). Tag candidate 0645700, W3/W4 verify cuoi.",
       "queue": "READY"
     },
     {
@@ -2762,7 +2765,7 @@
       "gates": [
         "fast"
       ],
-      "note": "DONE phan chuan bi + Stage 0 du 6/6: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + R32 chot Stage 0. Final QA Linux 4c5dec6: gate 3581/3, release 3586/0/3, 2 soak 20/20, diff 0. v0.3.6 CHUA tag vi blocker Windows h1 cancel; docs phat hanh da cap nhat (R32/STATE/VS3-TIEN-DO).",
+      "note": "DONE: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + R32; ST-287 Windows fix merge 0645700 (tag candidate, cho W3/W4 verify cuoi)",
       "queue": "READY"
     },
     {
@@ -2972,8 +2975,8 @@
     "alive": null
   },
   "perf": {
-    "head_do": "a1930cbe84231c2362626dca9bd919a906fab0b9",
-    "baseline": "Stage 0 v0.3.6 — du 6/6 DONE @ 4c5dec6 (merge a1930cb); CHUA tag",
+    "head_do": "06457003ae3e38bfa682d4ec953157606130849e",
+    "baseline": "Stage 0 v0.3.6 — du 6/6; ST-287 Windows fix merged 0645700 (tag candidate)",
     "host": "ps (Linux; rustc 1.100.0)",
     "workspace": {
       "suites": 0,
@@ -2991,7 +2994,7 @@
       "seed_20261122": "tong=100000 lech=0 (172.8 s ST-286, 94.4 s ST-287, 93770 ca chay)",
       "seed_202611221700": "tong=100000 lech=0 (81.5 s, 93768 ca chay) — final QA 4c5dec6"
     },
-    "windows": "Windows Tier 2 final @ a1930cb: workspace lan 2 3538/0/3 (463 s, dung ky vong); lan 1 3533/5/3 (528 s) — 5/5 vs3_http_cancel h1 do, chay chong 10 phut cuoi soak f80f774. vs3_http_cancel default FLAKE: 3/14 lan suite do (~21%), ke ca --test-threads=1; ca rieng x10 10/10; loi task bi huy van in V:post sau WSAECONNABORTED 10053. --features async-h2 tren Windows BLOCKED-ENV rc101 (Unix-only), khong do 8/8. P2 14/14, P1 8/8, P3 10/10; h2 19, pkg 25, sig 10, default 22, TLS 22, net 9; host 54/54; targets 18/18 + 17/1; release vis.exe 11228672 B sha256 fa363043...5d3b08b. Nguon: JOURNAL/final-win-v036.md",
+    "windows": "ST-287 fix @ 6b2a2161 (code cua 0645700): vs3_http_cancel serial 20/20, default 10/10, exact lap 20/20; workspace 355 block 3538/0/3, dirty 0. Truoc fix @ a1930cb: serial 2/10 pass, default 8/10; root cause accept inherits nonblocking tren Windows. Tag candidate 0645700, W3/W4 verify cuoi.",
     "stage0": {
       "ST-284": "vm.rs 1240 / frame.rs 1042",
       "ST-285": "value 1186 / codegen 1045 / tyck/expr 1064 / interp/goi 1155",
@@ -3000,7 +3003,7 @@
       "ST-289": "0.3.6 + #111 + #151",
       "ST-287": "hook huy HTTP h1/h2: Linux h1 5/5, h2 8/8, soak 1h; Windows h1 cancel FLAKE ~21% (V:post sau 10053) — cho fix ST-287"
     },
-    "note": "Linux final QA (fresh-clone 4c5dec6): gate 3581/3, release workspace 3586/0/3, 2x soak 20/20, diff 100k seed 202611221700 lech=0. Windows final @ a1930cb: workspace lan 2 3538/0/3 nhung vs3_http_cancel h1 flake ~21% — v0.3.6 CHUA tag, cho fix ST-287."
+    "note": "gate 3581/3 tai 4c5dec6/f8f1d4b; Windows fix @ 6b2a2161; full/nightly/fresh-clone da chay Linux final QA; tag candidate 0645700 cho W3/W4 verify cuoi"
   },
   "blocked": [
     {
