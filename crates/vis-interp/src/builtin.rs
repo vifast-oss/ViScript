@@ -636,6 +636,13 @@ pub fn call(
         return crate::builtin_value::value_builtin(ten)
             .ok_or_else(|| trap(RT, "giá trị dựng sẵn không xác định", span));
     }
+    // **ST-293 (VD-274/VD-280)**: select nhiều kênh — logic/wait-set ở `rt/select.rs`.
+    if matches!(
+        name,
+        "select_recv" | "select_recv_timeout" | "select_send" | "select_send_timeout"
+    ) {
+        return crate::rt::select::call(host, name, args, span);
+    }
     // **ST-60 (VD-95)**: ba builtin **nội bộ** của async — tên có `$` ⇒ người dùng **không** viết
     // được. `Int` của chúng là **handle của host** (interp: `sym`; VM: chỉ số hàm bytecode),
     // **không** phải giá trị chương trình. Phòng thủ: bytecode đột biến ⇒ `VS0501`, **không** panic.

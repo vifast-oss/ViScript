@@ -784,6 +784,8 @@ impl Scheduler {
             b.borrow_mut().cancel_task_handles(id);
         }
         crate::net::xoa_trang_thai_frame(id);
+        // **ST-293**: dọn state/wait-set `select_*` của frame bị huỷ (nếu có).
+        select::huy_frame(self, id);
 
         // 3) Nguồn giả + ready: bỏ entry của task này ⇒ event nhắm vào nó thành stale.
         self.frame.external.retain(|tid, _| *tid != id);

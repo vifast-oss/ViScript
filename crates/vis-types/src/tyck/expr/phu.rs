@@ -59,6 +59,10 @@ pub(super) fn builtin_is_value(name: &str) -> bool {
             | "sort_by"
             | "get"
             | "select"
+            | "select_recv"
+            | "select_recv_timeout"
+            | "select_send"
+            | "select_send_timeout"
     )
 }
 

@@ -134,7 +134,7 @@ fn send_rendezvous(host: &mut dyn Host, c: Rc<RefCell<Chan>>, v: Value, span: Sp
             ));
         }
         // Receiver chờ trước ⇒ ghép ngay, đánh thức receiver.
-        if let Some(rf) = ch.recv_waiters.pop_front() {
+        if let Some(rf) = super::select::pop_recv_waiter(host, id, &mut ch) {
             ch.recv_values.insert(rf, v);
             drop(ch);
             host.sched().borrow_mut().frame_wake_chan(id, false, rf);
@@ -145,6 +145,7 @@ fn send_rendezvous(host: &mut dyn Host, c: Rc<RefCell<Chan>>, v: Value, span: Sp
             frame,
             value: v,
             state: ChanSendState::Pending,
+            select: false,
         });
     }
     Err(pending(id, true, span))
@@ -162,11 +163,7 @@ fn recv_rendezvous(host: &mut dyn Host, c: Rc<RefCell<Chan>>, span: Span) -> R<V
             return Ok(Value::none());
         }
         // Sender chờ trước ⇒ lấy giá trị, đánh dấu đã gửi, đánh thức sender.
-        if let Some(pos) = ch
-            .send_waiters
-            .iter()
-            .position(|s| s.state == ChanSendState::Pending)
-        {
+        if let Some(pos) = super::select::vi_tri_sender(host, id, &mut ch) {
             let f = ch.send_waiters[pos].frame;
             let v = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
             ch.send_waiters[pos].state = ChanSendState::Taken;
@@ -239,7 +236,7 @@ fn send_buf_frame(host: &mut dyn Host, c: Rc<RefCell<Chan>>, v: Value, span: Spa
                 span,
             ));
         }
-        if let Some(rf) = ch.recv_waiters.pop_front() {
+        if let Some(rf) = super::select::pop_recv_waiter(host, id, &mut ch) {
             ch.recv_values.insert(rf, v);
             drop(ch);
             host.sched().borrow_mut().frame_wake_chan(id, false, rf);
@@ -256,6 +253,7 @@ fn send_buf_frame(host: &mut dyn Host, c: Rc<RefCell<Chan>>, v: Value, span: Spa
             frame,
             value: v,
             state: ChanSendState::Pending,
+            select: false,
         });
     }
     Err(pending(id, true, span))
@@ -294,11 +292,7 @@ fn recv_buf_frame(host: &mut dyn Host, c: Rc<RefCell<Chan>>, span: Span) -> R<Va
         if ch.closed {
             return Ok(Value::none());
         }
-        if let Some(pos) = ch
-            .send_waiters
-            .iter()
-            .position(|s| s.state == ChanSendState::Pending)
-        {
+        if let Some(pos) = super::select::vi_tri_sender(host, id, &mut ch) {
             let f = ch.send_waiters[pos].frame;
             let v = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
             ch.send_waiters[pos].state = ChanSendState::Taken;
@@ -554,11 +548,7 @@ fn recv_timeout_rendezvous(
         if ch.closed {
             return Ok(Value::none());
         }
-        if let Some(pos) = ch
-            .send_waiters
-            .iter()
-            .position(|s| s.state == ChanSendState::Pending)
-        {
+        if let Some(pos) = super::select::vi_tri_sender(host, id, &mut ch) {
             let f = ch.send_waiters[pos].frame;
             let v = std::mem::replace(&mut ch.send_waiters[pos].value, Value::Unit);
             ch.send_waiters[pos].state = ChanSendState::Taken;
@@ -676,7 +666,7 @@ fn send_timeout_rendezvous(
         if ch.closed {
             return Ok(Value::Bool(false));
         }
-        if let Some(rf) = ch.recv_waiters.pop_front() {
+        if let Some(rf) = super::select::pop_recv_waiter(host, id, &mut ch) {
             ch.recv_values.insert(rf, v);
             drop(ch);
             host.sched().borrow_mut().frame_wake_chan(id, false, rf);
@@ -687,6 +677,7 @@ fn send_timeout_rendezvous(
             frame,
             value: v,
             state: ChanSendState::Pending,
+            select: false,
         });
     }
     if ms == 0 {
@@ -709,7 +700,7 @@ fn send_timeout_buffered(
         if ch.closed {
             return Ok(Value::Bool(false));
         }
-        if let Some(rf) = ch.recv_waiters.pop_front() {
+        if let Some(rf) = super::select::pop_recv_waiter(host, id, &mut ch) {
             ch.recv_values.insert(rf, v);
             drop(ch);
             host.sched().borrow_mut().frame_wake_chan(id, false, rf);

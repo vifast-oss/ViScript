@@ -13,8 +13,8 @@ pub struct BuiltinSig {
 }
 
 /// Bảng chữ ký: **8 tên dựng sẵn** cũ + **3 lệnh chế độ lệnh** (ST-18) + `assert` + `panic`.
-// **ST-79**: `assert` (dùng cho `test fn`); **VD-267**: `panic` — 23 mục.
-pub const SIGS: [BuiltinSig; 23] = [
+// **ST-79**: `assert` (dùng cho `test fn`); **VD-267**: `panic`; **ST-293**: 4 `select_*` — 27 mục.
+pub const SIGS: [BuiltinSig; 27] = [
     BuiltinSig {
         name: "print",
         // **R6d (VD-178)**: `print(a, b, …)` — cách nhau 1 dấu cách; `print()` ⇒ `\n`.
@@ -132,6 +132,27 @@ pub const SIGS: [BuiltinSig; 23] = [
         name: "ref",
         min: 1,
         max: 1,
+    },
+    // **ST-293 (VD-274/VD-280)**: select nhiều kênh (kiểu ở `tyck/expr/kenh.rs`).
+    BuiltinSig {
+        name: "select_recv",
+        min: 1,
+        max: 1,
+    },
+    BuiltinSig {
+        name: "select_recv_timeout",
+        min: 2,
+        max: 2,
+    },
+    BuiltinSig {
+        name: "select_send",
+        min: 2,
+        max: 2,
+    },
+    BuiltinSig {
+        name: "select_send_timeout",
+        min: 3,
+        max: 3,
     },
 ];
 

@@ -724,6 +724,14 @@ impl<'a> Checker<'a> {
 
     /// Chữ ký 8 tên dựng sẵn (VD-44 #3): đối số đúng số lượng + đúng kiểu.
     fn kiem_builtin(&mut self, name: &str, args: &[HExpr], span: vis_syntax::Span) -> Option<Type> {
+        // **ST-293 (VD-274/VD-280)**: `select_recv*`/`select_send*` — kiểu kênh + phần tử
+        // suy từ `list[Chan[T]]`; logic ở `expr/kenh.rs` (R1), không đổi parser/EBNF.
+        if matches!(
+            name,
+            "select_recv" | "select_recv_timeout" | "select_send" | "select_send_timeout"
+        ) {
+            return Some(self.kiem_select(name, args, span));
+        }
         // ST-42: `ls` ⇒ `list[FileEntry]` (tra bản ghi **theo tên** trong bảng kiểu); `open` ⇒ `str`.
         if name == "ls" || name == "open" {
             let mut tys: Vec<Type> = Vec::new();
