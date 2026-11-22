@@ -322,7 +322,7 @@ fn doc_blocks() -> (usize, Vec<(usize, String)>) {
 // 6 khối **loại trừ tường minh** theo VD-36 (6 khối `...`); khối `Entry(trường: …)` nay xanh (R11).
 // **Một nguồn duy nhất** (nợ #129, ST-158): số dòng + lý do từng khối + cách dịch toạ độ
 // (ST-120b: 610→614, 662→666, 737→745, 1412→1420) nằm ở `test/doc_excluded.rs`.
-include!("../../../test/doc_excluded.rs");
+include!("../../../../test/doc_excluded.rs");
 
 fn tmp_dir(tag: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("vis-check-{}-{}", tag, std::process::id()));

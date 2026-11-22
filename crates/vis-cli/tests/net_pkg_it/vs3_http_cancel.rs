@@ -468,8 +468,8 @@ mod h2 {
     use rustls::{ServerConfig, ServerConnection, StreamOwned};
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-    const CERT: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.cert.der");
-    const KEY: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.key.der");
+    const CERT: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
+    const KEY: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
 
     fn cau_hinh_tls() -> Arc<ServerConfig> {
         let nha = Arc::new(rustls::crypto::ring::default_provider());
