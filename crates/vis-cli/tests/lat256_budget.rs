@@ -201,7 +201,7 @@ fn budget_nho_trap_ro_khong_che_verifier() {
     assert!(hit, "phải đánh dấu vượt ngân sách");
     assert_ne!(out.exit, 0, "vượt ngân sách ⇒ không exit thành công");
     assert!(
-        out.codes().contains(&"VS0501-BUDGET"),
+        out.codes().contains(&"VS0510"),
         "chẩn đoán phân biệt: {:?}",
         out.diagnostics
     );

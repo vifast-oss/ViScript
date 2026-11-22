@@ -7,10 +7,12 @@
 //!
 //! 1. cùng chương trình ⇒ cùng `stdout`/`exit`/chẩn đoán trên hai engine;
 //! 2. fuel là **hàng rào an toàn**, không được chặn chương trình còn trong ngân sách;
-//! 3. vượt ngân sách ⇒ `VS0501-BUDGET` (không phải `VS0501-FUEL`) trên **cả hai** engine;
+//! 3. vượt ngân sách ⇒ `VS0510` (không phải `VS0501-FUEL`) trên **cả hai** engine;
 //! 4. ngân sách dùng chung cho cả lần chạy: không reset khi `spawn`/`await`/final join.
 //!
-//! Ngân sách **không bật mặc định**; mọi test ngân sách đi qua hook nội bộ như VD-256/VD-257.
+//! **ST-290 (VD-273)**: từ `v0.4.0` ngân sách **bật mặc định** `40M` (xem
+//! `vs3_budget_default.rs`). Các ca ở đây vẫn bật **hook nội bộ** với hạn nhỏ để đo biên
+//! chính xác; hook tường minh thắng chính sách mặc định.
 
 use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
@@ -114,7 +116,7 @@ fn nhieu_task_parity_hai_engine() {
     });
 }
 
-/// Vượt ngân sách phải báo `VS0501-BUDGET`, **không** phải `VS0501-FUEL` — ở cả hai engine.
+/// Vượt ngân sách phải báo `VS0510`, **không** phải `VS0501-FUEL` — ở cả hai engine.
 /// Dùng vòng nhỏ để test nhanh; ca 2M ở trên mới là ca biên fuel.
 #[test]
 fn vuot_ngan_sach_bao_budget_khong_bao_fuel_hai_engine() {
@@ -128,19 +130,14 @@ fn vuot_ngan_sach_bao_budget_khong_bao_fuel_hai_engine() {
         let i = vis_interp::run(src, &hir, &syms, &tys, &[]);
         ifee::disable_for_test();
         assert_ne!(i.exit, 0, "interp: vượt ngân sách phải lỗi");
-        assert_eq!(
-            i.codes(),
-            vec!["VS0501-BUDGET"],
-            "interp: {:?}",
-            i.diagnostics
-        );
+        assert_eq!(i.codes(), vec!["VS0510"], "interp: {:?}", i.diagnostics);
 
         let (m, fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap();
         let mut vm = Vm::new(&m, src);
         vm.budget_enable_for_test(fee, cost - 1);
         let v = vm.run(&[]);
         assert_ne!(v.exit, 0, "VM: vượt ngân sách phải lỗi");
-        assert_eq!(v.codes(), vec!["VS0501-BUDGET"], "VM: {:?}", v.diagnostics);
+        assert_eq!(v.codes(), vec!["VS0510"], "VM: {:?}", v.diagnostics);
     });
 }
 
@@ -173,7 +170,14 @@ fn hang_so_ngan_sach_fuel_mot_nguon_va_bat_bien() {
         "VM phải dùng fuel từ hợp đồng chung, không hardcode"
     );
     assert_eq!(vis_vm::vm::MAX_STEPS, vis_vm::vm::SAFETY_FUEL);
+    // **ST-290 (VD-273)**: A0 chốt ngân sách **mặc định** đúng trần định cỡ 40M.
+    assert_eq!(bfee::BUDGET_DEFAULT, 40_000_000, "BUDGET_DEFAULT = 40M");
+    assert_eq!(bfee::BUDGET_DEFAULT, bfee::BUDGET_SIZING_CEILING);
     const {
+        assert!(
+            bfee::VM_SAFETY_FUEL >= 2 * bfee::BUDGET_DEFAULT,
+            "fuel phải > 2× trần ngân sách mặc định"
+        );
         assert!(
             bfee::VM_SAFETY_FUEL >= bfee::BUDGET_SIZING_CEILING * bfee::VM_STEPS_PER_COST_CEILING,
             "bất biến: fuel ≥ trần ngân sách định cỡ × tỷ lệ bước/lệnh trần"
@@ -186,7 +190,7 @@ fn hang_so_ngan_sach_fuel_mot_nguon_va_bat_bien() {
 }
 
 /// **Biên ngân sách trên ca 2M**: còn ngân sách (đúng trần định cỡ) ⇒ không trap fuel; vượt
-/// ngân sách 1 đơn vị ⇒ `VS0501-BUDGET` trên **cả hai** engine, không phải `VS0501-FUEL`.
+/// ngân sách 1 đơn vị ⇒ `VS0510` trên **cả hai** engine, không phải `VS0501-FUEL`.
 #[test]
 fn loop_2m_bien_ngan_sach_khong_trap_fuel_hai_engine() {
     tren_stack_lon(|| {
@@ -211,7 +215,7 @@ fn loop_2m_bien_ngan_sach_khong_trap_fuel_hai_engine() {
         ifee::disable_for_test();
         assert_eq!(
             bad_i.codes(),
-            vec!["VS0501-BUDGET"],
+            vec!["VS0510"],
             "interp: {:?}",
             bad_i.diagnostics
         );
@@ -238,7 +242,7 @@ fn loop_2m_bien_ngan_sach_khong_trap_fuel_hai_engine() {
         let bad_v = vm2.run(&[]);
         assert_eq!(
             bad_v.codes(),
-            vec!["VS0501-BUDGET"],
+            vec!["VS0510"],
             "VM: {:?} (steps={})",
             bad_v.diagnostics,
             bad_v.steps
@@ -269,7 +273,7 @@ fn nhieu_task_await_dung_chung_mot_ngan_sach() {
         ifee::disable_for_test();
         assert_eq!(
             bad_i.codes(),
-            vec!["VS0501-BUDGET"],
+            vec!["VS0510"],
             "interp task: {:?}",
             bad_i.diagnostics
         );
@@ -286,7 +290,7 @@ fn nhieu_task_await_dung_chung_mot_ngan_sach() {
         let bad_v = vm2.run(&[]);
         assert_eq!(
             bad_v.codes(),
-            vec!["VS0501-BUDGET"],
+            vec!["VS0510"],
             "VM task: {:?}",
             bad_v.diagnostics
         );
@@ -296,11 +300,11 @@ fn nhieu_task_await_dung_chung_mot_ngan_sach() {
 /// **Final join**: thân task chạy ở cuối chương trình (spawn nhưng **không** await) vẫn tiêu
 /// **cùng** ngân sách. Nếu engine reset ngân sách sau `main`, `cost-1` sẽ không trap.
 /// Chẩn đoán có phải **ngân sách** không: lỗi trong thân task được bọc `VS0506` nhưng phải giữ
-/// mã gốc `VS0501-BUDGET` trong thông điệp (ST-278) — không được biến thành `VS0501-FUEL`.
+/// mã gốc `VS0510` trong thông điệp (ST-278) — không được biến thành `VS0501-FUEL`.
 fn la_budget(diags: &[vis_syntax::Diagnostic]) -> bool {
     diags
         .iter()
-        .any(|d| d.code.short == "VS0501-BUDGET" || d.message.contains("VS0501-BUDGET"))
+        .any(|d| d.code.short == "VS0510" || d.message.contains("VS0510"))
 }
 
 #[test]

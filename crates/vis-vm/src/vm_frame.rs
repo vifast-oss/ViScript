@@ -227,6 +227,8 @@ impl<'m> Th<'m> {
 // VD-257 / D — cấu hình budget+quota cho `run_frame_for_test` (test-only). Dùng
 // thread-local để KHÔNG đổi chữ ký `run_frame_for_test` / `FrameConfig`, không API
 // công, không CLI. Mặc định rỗng ⇒ đường frame VM không charge (test f2 vẫn đúng).
+// **ST-290 (VD-273)** — thêm **bảng phí** cho lần chạy kế tiếp do CLI đặt; nó là
+// **một-lần** (take) để chương trình kế tiếp không dùng nhầm bảng phí của chương trình trước.
 // ---------------------------------------------------------------------------
 #[derive(Default)]
 struct FrameBudgetCfg {
@@ -239,6 +241,41 @@ thread_local! {
     static FRAME_BUDGET_CFG: RefCell<FrameBudgetCfg> = RefCell::new(FrameBudgetCfg::default());
     /// Số lần quota yield của lần `run_frame_*` gần nhất (test/đo).
     static LAST_QUOTA_YIELDS: RefCell<u64> = const { RefCell::new(0) };
+    /// **ST-290** — bảng phí do CLI đặt cho **một** lần chạy VM kế tiếp.
+    static PHI_LAN_CHAY: RefCell<Option<FeeTable>> = const { RefCell::new(None) };
+    /// Đơn vị ngân sách VM đã dùng trong lần chạy gần nhất (báo cáo/đo).
+    static DUNG_GAN_NHAT: std::cell::Cell<i64> = const { std::cell::Cell::new(0) };
+}
+
+/// **ST-290 (VD-273)** — CLI đặt bảng phí ngữ nghĩa cho **một** lần chạy VM trên luồng này.
+/// Bảng phí đi kèm module đã verify (`FeeTable` từ `compile_with_fee` hoặc cache có trailer).
+#[doc(hidden)]
+pub fn dat_phi_lan_chay(fee: FeeTable) {
+    PHI_LAN_CHAY.with(|p| *p.borrow_mut() = Some(fee));
+}
+
+/// Đơn vị ngân sách VM đã dùng trong lần chạy gần nhất (0 nếu không bật).
+#[doc(hidden)]
+pub fn da_dung_gan_nhat() -> i64 {
+    DUNG_GAN_NHAT.with(|n| n.get())
+}
+
+/// Lấy (một lần) bảng phí đã đặt cho lần chạy kế tiếp, kèm giới hạn ngân sách phiên.
+/// `None` khi không có bảng phí hoặc phiên chạy `--unlimited-budget`.
+fn phi_va_gioi_han() -> Option<(FeeTable, u64)> {
+    let limit = vis_interp::rt::fee::gioi_han_phien()?;
+    let fee = PHI_LAN_CHAY.with(|p| p.borrow_mut().take())?;
+    Some((fee, limit))
+}
+
+/// Bật ngân sách VM từ bảng phí của lần chạy nếu caller chưa đặt ngân sách tường minh.
+pub(crate) fn bat_dau_ngan_sach_vm(vm: &mut Vm<'_>) {
+    DUNG_GAN_NHAT.with(|n| n.set(0));
+    if vm.budget_fee.is_none() {
+        if let Some((fee, limit)) = phi_va_gioi_han() {
+            vm.budget_enable(fee, limit);
+        }
+    }
 }
 
 /// Số lần quota yield của lần chạy frame VM gần nhất.
@@ -269,21 +306,27 @@ pub fn frame_budget_disable_for_test() {
 // **ST-276 (VD-256)** — test-hook ngân sách của VM; tách sang tệp này để giữ R1 ≤ 1500 dòng
 // cho `vm.rs`. Mặc định `budget_fee == None` ⇒ `budget_charge` là no-op.
 impl<'a> Vm<'a> {
-    /// Bật ngân sách ngữ nghĩa bằng bảng phụ S (internal test hook).
-    pub fn budget_enable_for_test(&mut self, fee: FeeTable, limit: u64) {
+    /// **ST-290 (VD-273)** — bật ngân sách ngữ nghĩa ở chế độ chạy **thường** (không lưu trace).
+    /// Dùng chung với CLI (`40M` mặc định hoặc `--max-budget`); giữ API test qua wrapper dưới.
+    pub fn budget_enable(&mut self, fee: FeeTable, limit: u64) {
         self.budget_fee = Some(fee);
         self.budget_remaining = limit.min(i64::MAX as u64) as i64;
         self.budget_trace.clear();
         self.budget_hit = false;
-        self.budget_measure = false;
+        self.budget_trace_on = false;
+    }
+
+    /// Bật ngân sách ngữ nghĩa bằng bảng phụ S (internal test hook).
+    pub fn budget_enable_for_test(&mut self, fee: FeeTable, limit: u64) {
+        self.budget_enable(fee, limit);
+        self.budget_trace_on = true;
     }
 
     /// **VS3-1a** — bật ngân sách ở **chế độ đo**: vẫn trừ và trap như
     /// [`Self::budget_enable_for_test`] nhưng **không** lưu trace từng sự kiện. Dùng cho workload
     /// lớn (vòng 2M ≈ 12M sự kiện) để test hợp đồng fuel/ngân sách không cấp phát trace khổng lồ.
     pub fn budget_enable_measure_for_test(&mut self, fee: FeeTable, limit: u64) {
-        self.budget_enable_for_test(fee, limit);
-        self.budget_measure = true;
+        self.budget_enable(fee, limit);
     }
 
     /// Dãy sự kiện **có thứ tự** đã charge (so với trace của compiler/interp).
@@ -345,30 +388,41 @@ impl<'a> Vm<'a> {
         if let Some(a) = self.worker_tick(span) {
             return Err(a);
         }
-        // Copy ra Vec để kết thúc mượn immutable của `self.budget_fee` trước khi
-        // gọi `self.quota_charge(w)` (cần mượn mutable). `FeeEntry` là Copy.
-        let events: Vec<FeeEntry> = match self
+        if self.budget_fee.is_none() {
+            return Ok(());
+        }
+        // `MAX_PER_PC` = 16 (đã verify): gom tại chỗ, không cấp phát `Vec` mỗi lệnh — đường chạy
+        // mặc định (ngân sách 40M) charge hàng chục triệu lần.
+        let mut ev: [Option<FeeEntry>; vis_bytecode::fee::MAX_PER_PC] =
+            [None; vis_bytecode::fee::MAX_PER_PC];
+        let mut n = 0usize;
+        if let Some(v) = self
             .budget_fee
             .as_ref()
             .and_then(|f| f.funcs.get(fi as usize))
         {
-            // VS3-1a: phần lớn lệnh không có sự kiện — tránh cấp phát Vec rỗng mỗi bước.
-            Some(v) if v.iter().any(|e| e.pc as usize == pc) => {
-                v.iter().filter(|e| e.pc as usize == pc).copied().collect()
+            for e in v.iter().filter(|e| e.pc as usize == pc) {
+                if n == ev.len() {
+                    break;
+                }
+                ev[n] = Some(*e);
+                n += 1;
             }
-            Some(_) | None => return Ok(()),
-        };
-        for e in events {
+        }
+        if n == 0 {
+            return Ok(());
+        }
+        for e in ev[..n].iter().flatten() {
             let w = vis_bytecode::fee::standard_weight(e.kind) as i64;
-            if !self.budget_measure {
-                self.budget_trace.push(e);
+            if self.budget_trace_on {
+                self.budget_trace.push(*e);
             }
             if w > self.budget_remaining {
                 self.budget_hit = true;
                 return Err(Abort::Trap(Trap::new(
                     BUDGET,
                     format!(
-                        "vượt ngân sách ngữ nghĩa VD-256 ({}): cần {}, còn {}",
+                        "vượt ngân sách ngữ nghĩa ({}): cần {}, còn {} — dùng `--max-budget <N>` hoặc `--unlimited-budget`",
                         e.kind.name(),
                         w,
                         self.budget_remaining
@@ -377,6 +431,7 @@ impl<'a> Vm<'a> {
                 )));
             }
             self.budget_remaining -= w;
+            DUNG_GAN_NHAT.with(|n| n.set(n.get() + w));
             // VD-257/D — MỘT sự kiện trừ CẢ HAI bộ đếm; quota KHÔNG trap.
             self.quota_charge(w);
         }
@@ -583,6 +638,9 @@ fn run_frame_vm_driver<'m>(
     let budget = budget.or_else(|| cfg.0.map(|f| (f, cfg.1)));
     if let Some((fee, limit)) = budget {
         vm.budget_enable_for_test(fee, limit);
+    } else {
+        // **ST-290 (VD-273)** — không có hook test ⇒ dùng bảng phí + ngân sách phiên của CLI.
+        crate::vm_frame::bat_dau_ngan_sach_vm(vm);
     }
     if let Some(q) = cfg.2 {
         vm.quota_setup_for_test(q);

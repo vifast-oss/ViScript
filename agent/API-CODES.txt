@@ -46,6 +46,8 @@ VS0505	error: deadlock: kênh bị chặn và không còn tác vụ nào chạy 
 VS0506	error: tác vụ (`async fn`) lỗi: lỗi phát sinh trong thân tác vụ (kèm mã gốc)
 VS0507	error: tràn `i64` lúc chạy
 VS0508	error: giá trị không gửi được sang tác vụ khác (không `Sendable`)
+VS0509	error: ghi biến cấp tệp chéo worker ở chế độ song song (W > 1)
+VS0510	error: chương trình vượt ngân sách thực thi ngữ nghĩa
 VS0601	error: không có lệnh này: tên không có trong bảng chữ ký (cmd/builtin/extern)
 VS0602	error: sai đối số lệnh: thiếu, thừa hoặc sai kiểu
 VS0603	error: pipeline không nối được: kiểu ra của stage trước ≠ kiểu vào của stage sau

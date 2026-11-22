@@ -262,7 +262,7 @@ fn quota_rieng_khong_phai_ngan_sach() {
 #[test]
 fn ngan_sach_van_trap_khong_bi_quota_che() {
     let (hir, syms, tys) = tien_trinh(CPU);
-    // Budget nhỏ hơnchi phí ⇒ phải trap VS0501-BUDGET dù quota lớn (không reset/né).
+    // Budget nhỏ hơnchi phí ⇒ phải trap VS0510 dù quota lớn (không reset/né).
     let (out, _trace, y) = chay_i(
         CPU,
         &hir,
@@ -275,10 +275,8 @@ fn ngan_sach_van_trap_khong_bi_quota_che() {
     assert_eq!(out.exit, 1, "budget phải trap");
     assert_eq!(y, 0, "quota không hoạt động khi budget trap trước");
     assert!(
-        out.diagnostics
-            .iter()
-            .any(|d| d.code.short == "VS0501-BUDGET"),
-        "phải là VS0501-BUDGET: {:?}",
+        out.diagnostics.iter().any(|d| d.code.short == "VS0510"),
+        "phải là VS0510: {:?}",
         out.diagnostics
     );
 }
@@ -304,10 +302,8 @@ fn ngan_sach_khong_reset_qua_nhieu_yield() {
     );
     assert!(y > 0, "phải có yield trước khi budget trap");
     assert!(
-        out.diagnostics
-            .iter()
-            .any(|d| d.code.short == "VS0501-BUDGET"),
-        "vẫn phải VS0501-BUDGET: {:?}",
+        out.diagnostics.iter().any(|d| d.code.short == "VS0510"),
+        "vẫn phải VS0510: {:?}",
         out.diagnostics
     );
 }

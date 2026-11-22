@@ -444,7 +444,7 @@ fn chay_than_vm(
     let mut con = vm.steps as i64;
     while con > 0 {
         let w = con.min(256);
-        ctx.charge(w).map_err(|e| format!("VS0501-BUDGET: {e}"))?;
+        ctx.charge(w)?;
         con -= w;
     }
     res.and_then(|v| {

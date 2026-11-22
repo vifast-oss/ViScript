@@ -285,9 +285,7 @@ fn main() {
         );
         assert_eq!(bo.exit, 1, "budget phải lỗi");
         assert!(
-            bo.diagnostics
-                .iter()
-                .any(|d| d.message.contains("VS0501-BUDGET")),
+            bo.diagnostics.iter().any(|d| d.message.contains("VS0510")),
             "budget message: {:?}",
             bo.diagnostics
         );

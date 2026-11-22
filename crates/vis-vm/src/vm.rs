@@ -102,14 +102,14 @@ pub struct Vm<'a> {
     /// chỉ tách + nội bộ hoá tên một lần; các lần dựng sau chỉ clone `Name` (refcount), hết cảnh
     /// `ten_str → String` + hai `String` mỗi giá trị enum.
     pub(crate) enum_tags: Vec<std::cell::OnceCell<EnumTag>>,
-    // ST-276/VD-256 — test-hook ngân sách; `None` ⇒ KHÔNG charge (mặc định).
+    // ST-276/VD-256 — ngân sách ngữ nghĩa; `None` ⇒ KHÔNG charge (khi `--unlimited-budget`
+    // hoặc đường API thấp không kèm bảng phí).
     pub(crate) budget_fee: Option<FeeTable>,
     pub(crate) budget_remaining: i64,
     pub(crate) budget_trace: Vec<FeeEntry>,
     pub(crate) budget_hit: bool,
-    /// **VS3-1a** — test-hook đo: vẫn trừ/kiểm ngân sách nhưng **không** lưu từng sự kiện
-    /// (workload lớn như vòng 2M không làm trace phình lên hàng chục triệu entry).
-    pub(crate) budget_measure: bool,
+    /// **ST-290 (VD-273)** — chỉ test-hook mới lưu trace; chạy mặc định (40M) **không** lưu.
+    pub(crate) budget_trace_on: bool,
     // VD-257/D — hạn ngạch lượt THỬ NGHIỆM (test-hook), RIÊNG khỏi budget tổng.
     // `quota_active = false` (mặc định) ⇒ mọi thao tác quota là no-op.
     pub(crate) quota_active: bool,
@@ -145,7 +145,7 @@ impl<'a> Vm<'a> {
             budget_remaining: 0,
             budget_trace: Vec::new(),
             budget_hit: false,
-            budget_measure: false,
+            budget_trace_on: false,
             quota_active: false,
             quota_limit: 0,
             quota_remaining: 0,
@@ -183,9 +183,12 @@ impl<'a> Vm<'a> {
             };
         }
         self.steps = 0; // VD-256 D8: fuel reset mỗi lần chạy, không cộng dồn.
-                        // **ST-250 (VD-245)**: reset + cấp phát kho global **theo module** ở đầu mỗi lần chạy.
-                        // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
-                        // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
+                        // **ST-290 (VD-273)** — ngân sách phiên (mặc định 40M): lấy bảng phí
+                        // CLI đặt cho đúng lần chạy này; không có bảng phí ⇒ không charge (API thấp).
+        crate::vm_frame::bat_dau_ngan_sach_vm(self);
+        // **ST-250 (VD-245)**: reset + cấp phát kho global **theo module** ở đầu mỗi lần chạy.
+        // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
+        // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
         self.init_globals();
         let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
         // **ST-60 (VD-90/VD-95)**: join mọi tác vụ **theo thứ tự tạo**, **chỉ khi main thành công**

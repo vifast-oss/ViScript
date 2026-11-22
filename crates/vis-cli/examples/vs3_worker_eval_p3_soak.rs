@@ -9,7 +9,7 @@
 //! Mỗi batch:
 //! - 8 task CPU × 20k vòng: interp W=4 vs VM W=4; stdout/exit/codes/value byte-identical.
 //! - 10k `spawn`/`await`: interp W=4 vs VM W=4; byte-identical.
-//! - budget 10k/chunk 256: cả interp/VM cạn, `used+remaining==limit`, message `VS0501-BUDGET`.
+//! - budget 10k/chunk 256: cả interp/VM cạn, `used+remaining==limit`, message `VS0510`.
 //! - cancel-after 5 ms: task 2M vòng dừng, message `huỷ`.
 //! - cross-write W=4: `VS0501` + `ghi chéo`; RSS/threads/fd sau mỗi batch; dừng nếu fail.
 //!
@@ -294,9 +294,7 @@ fn main() {
         for (ten, o, s) in [("interp", &bi, &si), ("vm", &bv, &sv)] {
             assert_eq!(o.exit, 1, "budget {ten} phải lỗi");
             assert!(
-                o.diagnostics
-                    .iter()
-                    .any(|d| d.message.contains("VS0501-BUDGET")),
+                o.diagnostics.iter().any(|d| d.message.contains("VS0510")),
                 "budget {ten}: {:?}",
                 o.diagnostics
             );

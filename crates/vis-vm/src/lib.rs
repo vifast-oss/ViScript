@@ -13,7 +13,7 @@
 //! `pop` rỗng ⇒ [`VmError`] ⇒ `VS0501` "bytecode hỏng", **không** panic. Cap khung gọi
 //! [`MAX_FRAMES`] = 2.000 (VD-49) và fuel an toàn [`MAX_STEPS`] = `fee::VM_SAFETY_FUEL` (100M,
 //! VS3-1a) — fuel là hàng rào bytecode, lớn hơn trần ngân sách định cỡ nên không chặn chương
-//! trình còn trong ngân sách trước `VS0501-BUDGET`.
+//! trình còn trong ngân sách trước `VS0510`.
 //!
 //! # `steps` khác đơn vị
 //!

@@ -25,7 +25,10 @@ mod vistest;
 use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
 use vis_syntax::Mode;
 
-use cli::run::{doc_stdin, in_sandbox_check, in_thoi_gian, ma_thoat_khi_loi, run_dry, usage_run};
+use cli::run::{
+    ap_ngan_sach, doc_gioi_han, doc_stdin, in_sandbox_check, in_thoi_gian, ma_thoat_khi_loi,
+    run_dry, usage_run, NganSach,
+};
 /// **ST-63 (VD-105)**: host mạng của CLI (TCP thật; `http://` chỉ loopback, `https://` có TLS).
 /// **VS3-4a**: `Net` nằm trong lib (`vis_cli::net`) để test TLS gọi thẳng.
 use vis_cli::net::Net as HostNet;
@@ -445,6 +448,9 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut stdin_ra = false;
     // **VD-270**: `--time` — in một dòng đồng hồ tường quanh **đúng lời gọi runtime** ra stderr.
     let mut do_thoi_gian = false;
+    // **ST-290 (VD-273)**: ngân sách thực thi ngữ nghĩa — mặc định 40M, đổi bằng một trong hai cờ.
+    let mut ngan_sach = NganSach::MacDinh;
+    let mut da_chon_budget = false;
     let mut tep: Option<String> = None;
     let mut prog_args: Vec<String> = Vec::new();
     let mut mock_tep: Option<String> = None;
@@ -486,6 +492,34 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--stdin" => stdin_ra = true,
             // **VD-270**: đo đồng hồ tường quanh lời gọi runtime (xem `usage_run`/`in_thoi_gian`).
             "--time" => do_thoi_gian = true,
+            // **ST-290 (VD-273)**: ngân sách ngữ nghĩa của lần chạy.
+            "--max-budget" => {
+                if da_chon_budget {
+                    eprintln!("vis run: chỉ nhận **một** cờ ngân sách");
+                    return ExitCode::from(2);
+                }
+                i += 1;
+                let Some(v) = rest.get(i) else {
+                    eprintln!("vis run: `--max-budget` cần số nguyên dương");
+                    return ExitCode::from(2);
+                };
+                match doc_gioi_han(v) {
+                    Ok(n) => ngan_sach = NganSach::GioiHan(n),
+                    Err(e) => {
+                        eprintln!("vis run: {e}");
+                        return ExitCode::from(2);
+                    }
+                }
+                da_chon_budget = true;
+            }
+            "--unlimited-budget" => {
+                if da_chon_budget {
+                    eprintln!("vis run: chỉ nhận **một** cờ ngân sách");
+                    return ExitCode::from(2);
+                }
+                ngan_sach = NganSach::KhongGioiHan;
+                da_chon_budget = true;
+            }
             // ST-42: `FsHost` **mock tất định** từ kịch bản JSON (test hermetic).
             "--fs-mock" => {
                 if i + 1 >= rest.len() {
@@ -541,6 +575,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         eprintln!("vis run: `--strict-caps` và `--no-strict-caps` mâu thuẫn nhau");
         return ExitCode::from(2);
     }
+    // **ST-290 (VD-273)**: áp ngân sách phiên **một lần** cho cả interp lẫn VM.
+    ap_ngan_sach(ngan_sach);
     // ST-18: `.vish` chạy được (parse → `cmd_lower` → tyck → interp), không còn `Bail out!`.
     let fs_mock: Option<fsmock::FsMock> = match &mock_tep {
         None => None,
@@ -770,23 +806,29 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     // ST-20: đường **VM** — cùng `Show`/builtin/bảng ngữ nghĩa với interp.
                     // ST-23: cache theo hash closure; **luôn** nạp qua `load_verified`.
                     let khoa = cache::khoa_multi(&loaded.files, che_do);
-                    let tu_cache = if dung_cache { cache::nap(&khoa) } else { None };
-                    let m = match tu_cache {
-                        Some(m) => m,
+                    let tu_cache = if dung_cache {
+                        cache::nap_co_phi(&khoa)
+                    } else {
+                        None
+                    };
+                    let (m, fee) = match tu_cache {
+                        Some(x) => x,
                         None => {
                             // **VD-263**: kèm `TypeTable` để codegen thấy trường instantiation.
-                            match vis_bytecode::compile_kiem_voi_bang(
+                            // **ST-290 (VD-273)**: lấy **cả** bảng phí để bật ngân sách mặc định;
+                            // cache lưu artifact có trailer `VFEE` ⇒ lần sau khỏi tính lại.
+                            match vis_bytecode::compile_kiem_voi_bang_co_phi(
                                 &h.hir,
                                 &h.symbols,
                                 Some(&h.types),
                                 &text,
                                 &chan_doan,
                             ) {
-                                Ok(m) => {
+                                Ok((m, fee)) => {
                                     if dung_cache {
-                                        let _ = cache::luu(&khoa, &m);
+                                        let _ = cache::luu_co_phi(&khoa, &m, &fee);
                                     }
-                                    m
+                                    (m, fee)
                                 }
                                 Err(e) => {
                                     // **ST-56b (VD-97 (5))**: in chẩn đoán **và** báo hiệu
@@ -797,6 +839,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                             }
                         }
                     };
+                    // **ST-290**: VM charge theo bảng phí của **đúng** module này.
+                    vis_vm::vm_frame::dat_phi_lan_chay(fee);
                     if dump {
                         eprintln!("{}", vis_vm::dump::dump(&m));
                     }
@@ -947,6 +991,19 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 };
                 // **VD-270**: tách kết quả đo khỏi `RunOutput` để xử lý như cũ.
                 let (out, thoi_gian_us) = out;
+                // **ST-290 (VD-273)** — hook **đo** cho quy trình nghiệm thu ngân sách: in số
+                // đơn vị đã dùng **trên đúng luồng chạy** (thread-local). Bật `VIS_BUDGET_REPORT=1`.
+                if std::env::var_os("VIS_BUDGET_REPORT").is_some() {
+                    let used = if dung_vm {
+                        vis_vm::vm_frame::da_dung_gan_nhat().max(0) as u64
+                    } else {
+                        vis_interp::rt::fee::da_dung_phien()
+                    };
+                    match vis_interp::rt::fee::gioi_han_phien() {
+                        Some(limit) => eprintln!("# budget: used={used} limit={limit} file={tep}"),
+                        None => eprintln!("# budget: used={used} limit=unlimited file={tep}"),
+                    }
+                }
                 // **VD-241 §9**: kết thúc **phiên** Host ⇒ đóng mọi connection còn mở
                 // (**không** auto-commit); rò chỉ cảnh báo ở chế độ diagnostics.
                 let con_mo = vis_interp::builtin::DbHost::db_cleanup(&mut dbg).unwrap_or(0);

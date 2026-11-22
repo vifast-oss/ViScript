@@ -441,7 +441,7 @@ pub const COMMAND_CODES: [Code; 6] = [
     },
 ];
 
-pub const RUNTIME_CODES: [Code; 8] = [
+pub const RUNTIME_CODES: [Code; 10] = [
     Code {
         id: 501,
         short: "VS0501",
@@ -511,6 +511,26 @@ pub const RUNTIME_CODES: [Code; 8] = [
         message_vi: "giá trị không gửi được sang tác vụ khác (không `Sendable`)",
         message_en: "value cannot be sent to another task (not `Sendable`)",
         message_ja: "他のタスクに送信できない値です（`Sendable` ではありません）",
+        severity: Severity::Error,
+    },
+    // **ST-290 (VD-273)** — hai mã cấp đích danh, cùng lượt để W1 (`ST-292`) dùng `VS0509`
+    // ngay sau merge. `VS0509` tách khỏi `VS0508` (không Sendable) và khỏi mọi lỗi task;
+    // `VS0510` tách hẳn ngân sách ngữ nghĩa khỏi `VS0501` (trap nội bộ / fuel VM là hàng rào
+    // an toàn riêng, không phải ngân sách).
+    Code {
+        id: 509,
+        short: "VS0509",
+        message_vi: "ghi biến cấp tệp chéo worker ở chế độ song song (W > 1)",
+        message_en: "cross-worker write to a file-level variable in parallel mode (W > 1)",
+        message_ja: "並列モード (W > 1) でのワーカー間のファイルレベル変数への書き込み",
+        severity: Severity::Error,
+    },
+    Code {
+        id: 510,
+        short: "VS0510",
+        message_vi: "chương trình vượt ngân sách thực thi ngữ nghĩa",
+        message_en: "program exceeded the semantic execution budget",
+        message_ja: "プログラムが意味実行予算を超過しました",
         severity: Severity::Error,
     },
 ];
@@ -788,8 +808,9 @@ mod tests {
         // và **VS0505** (deadlock/khoá) — vẫn ở cuối khối, index 0..2 giữ nguyên.
         assert_eq!(
             ids,
-            vec![501, 502, 503, 504, 505, 506, 507, 508],
-            "sổ runtime đúng thứ tự tăng dần (R9: +VS0507 tràn i64, +VS0508 không Sendable)"
+            vec![501, 502, 503, 504, 505, 506, 507, 508, 509, 510],
+            "sổ runtime đúng thứ tự tăng dần (R9: +VS0507 tràn i64, +VS0508 không Sendable; \
+             ST-290/VD-273: +VS0509 ghi chéo worker, +VS0510 vượt ngân sách ngữ nghĩa)"
         );
         for c in RUNTIME_CODES.iter() {
             assert_eq!(lookup(c.id).map(|x| x.short), Some(c.short));
@@ -864,7 +885,8 @@ mod tests {
         // **VD-215 (2026-11-18)**: +**VS0207**/**VS0208** ⇒ **52** mã.
         // **VD-223 (proxy A0)**: +**VS0211** ⇒ 53; **VD-224 (proxy A0)**: huỷ VS0209.
         // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **54** mã.
-        assert_eq!(all_codes().count(), 54);
+        // **ST-290 (VD-273)**: +**VS0509**/**VS0510** ⇒ **56** mã.
+        assert_eq!(all_codes().count(), 56);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(

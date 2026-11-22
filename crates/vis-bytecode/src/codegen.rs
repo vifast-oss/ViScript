@@ -133,6 +133,18 @@ pub fn compile_kiem_voi_bang(
     text: &str,
     chan_doan: &[vis_syntax::Diagnostic],
 ) -> Result<Module, CodegenError> {
+    compile_kiem_voi_bang_co_phi(hir, symbols, types, text, chan_doan).map(|(m, _)| m)
+}
+
+/// **ST-290 (VD-273)** — như [`compile_kiem_voi_bang`] nhưng trả kèm **bảng phí** để runtime
+/// bật ngân sách mặc định. Cùng cổng chẩn đoán front end (chỉ `Severity::Error` chặn).
+pub fn compile_kiem_voi_bang_co_phi(
+    hir: &Hir,
+    symbols: &Symbols,
+    types: Option<&vis_types::TypeTable>,
+    text: &str,
+    chan_doan: &[vis_syntax::Diagnostic],
+) -> Result<(Module, FeeTable), CodegenError> {
     if let Some(d) = chan_doan
         .iter()
         .find(|d| d.code.severity == vis_diag::Severity::Error)
@@ -144,7 +156,7 @@ pub fn compile_kiem_voi_bang(
             msg: d.message.clone(),
         });
     }
-    compile_voi_bang(hir, symbols, types, text)
+    compile_with_fee_voi_bang(hir, symbols, types, text)
 }
 
 /// Hạ một chương trình HIR xuống module VBC1 (API cũ — **không** kèm chẩn đoán; xem

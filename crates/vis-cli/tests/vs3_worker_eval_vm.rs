@@ -254,9 +254,7 @@ fn budget_vm_used_cong_remaining_bang_limit() {
         vis_vm::run_workers_parallel_vm_with_budget(&a.3, BUDGET, &[], 2, Arc::clone(&budget));
     assert_eq!(out.exit, 1, "budget phải dừng");
     assert!(
-        out.diagnostics
-            .iter()
-            .any(|d| d.message.contains("VS0501-BUDGET")),
+        out.diagnostics.iter().any(|d| d.message.contains("VS0510")),
         "{:?}",
         out.diagnostics
     );

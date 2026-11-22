@@ -1,0 +1,42 @@
+# ST-290 — log nghiệm thu (Linux x86_64, debug, rustc 1.100.0)
+# base 12c9092; sinh 2026-11-22
+
+## test/sem (interp)
+ok_ca=525
+not_ok=0
+
+## test/sem (--vm)
+ok_ca=525
+not_ok=0
+
+## budget peak — test/sem (interp | VM)
+# budget: used=18019 limit=9223372036854775807 file=test/sem/ham/de-quy-1000.vis
+# budget: used=18019 limit=9223372036854775807 file=test/sem/ham/de-quy-1000.vis
+
+## budget — vòng 10M (vượt 40M, cả 2 engine cùng trap)
+/home/ps/.local/share/opencode/tmp/st290/loop10m.vis:4:13: error VS0510: vượt ngân sách ngữ nghĩa (E_EXPR): cần 1, còn 0 — dùng `--max-budget <N>` hoặc `--unlimited-budget`
+/home/ps/.local/share/opencode/tmp/st290/loop10m.vis:4:13: error VS0510: vượt ngân sách ngữ nghĩa (E_EXPR): cần 1, còn 0 — dùng `--max-budget <N>` hoặc `--unlimited-budget`
+# budget: used=60000013 limit=9223372036854775807 file=/home/ps/.local/share/opencode/tmp/st290/loop10m.vis
+
+## host suite
+vis-host-suite: 54/54 ca xanh (nền: Linux x86_64; host_posix_real PASS)
+
+## diff 100k
+DIFF tong=2000 loi_tinh=126 chay=1874 lech=0 giay=2.9 toc_do=695/s seed=20261115
+DIFF tong=100000 loi_tinh=6232 chay=93768 lech=0 giay=132.8 toc_do=753/s seed=3523158054
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 132.81s
+
+## gate --fast
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+
+## chương trình gần trần (loop10m.vis)
+```
+fn main():
+    var n = 0
+    for i in 0..10_000_000:
+        n = n + 1
+    print(n)
+```
+
+## cargo test --workspace --no-fail-fast (2026-11-22 19:37)
+passed=3594 failed=0 ignored=3 (356 target)
