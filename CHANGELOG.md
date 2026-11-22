@@ -30,12 +30,18 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
   54/54, targets **18/18 + 17/1**; Linux **10×** `vis-lsp` **29/29**, `path_impl` **2/2** (`8b03077`).
 - **ST-299b** (`3b8049c`, merged): `vis-loader` vào `vis-wasm-run` — nạp **đa tệp + `use`** trên
   WASI; native **29/29**, wasm **28/28**.
+- **ST-300** (`3581c9a` + `8286caf`, merged): harness `bin/vis-wasm-sem` **388/390 eligible =
+  99,5%** (2 stack-overflow interp, VM pass); suite cũ **28/28**, native **29/29**, row
+  **`wasm32-wasip1 (runtime)`** trong `vis-targets`.
+- **Final Linux soak** (`45122b7`/`84e8eb6`): **10/10** (759 s), 3× diff 100k `lech=0`, host
+  54/54, cache 5/5, wasm **28/28**.
 - **P2b-3/4** (`16fba3a`, merged): **NO-GO** — bench tỉ lệ **4,0×**, không đạt ≤1,5×; **không đổi
   production**.
 - **Flake fix** (`044b289`, test-only): `vs3_worker::spawn_shared_stress_rounds_read_only` poll
   **2 s** sau join (T-INFRA; **0/60** đỏ dưới tải).
-- **ST-298** đang chạy trên `f4cb136`: **3× `vis-gate-windows --full` (đã xanh 3611/0/3) + soak
-  4h**; **chưa** tuyên bố Windows Tier 1.
+- **ST-298** @ `f4cb136`: **3× `vis-gate-windows --full` PASS 3611/0/3** (host 54/54, targets
+  18/18 + 17/1, dirty 0); **soak 4h đang chạy** — `[SOAK_ROUNDS]` vòng, `[SOAK_FAIL]` fail,
+  fd/RSS `[SOAK_FD_RSS]`; **chưa** tuyên bố Windows Tier 1.
 - **Tag `v0.4.1` @ `90844bc`** (annotated, pushed); tag trước **`v0.4.0` @ `c2accdf`**.
 
 ## v0.4.0 — 2026-11-23
