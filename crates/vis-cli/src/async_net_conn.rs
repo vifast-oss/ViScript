@@ -545,9 +545,8 @@ impl AsyncNet {
                 };
                 #[cfg(feature = "async-h2")]
                 if conn.alpn_protocol() == Some(&b"h2"[..]) {
-                    let sock: std::net::TcpStream = st.sock.into();
-                    let kenh = rustls::StreamOwned::new(conn, sock);
-                    let phien = crate::net::h2_async::H2Async::moi_cho_bap(kenh, &st.dia_chi);
+                    let phien =
+                        crate::net::h2_async::H2Async::moi_cho_bap(conn, st.sock, &st.dia_chi);
                     let h = self.dat_h2(phien);
                     self.doi_khoa_nguon(ck, &h);
                     self.h2_theo_authority.insert(st.dia_chi.clone(), h.clone());

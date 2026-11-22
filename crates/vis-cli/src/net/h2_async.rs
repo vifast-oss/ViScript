@@ -12,28 +12,33 @@
 //!   [`H2Async`] qua `AsyncNet` (`h2_ready`/`h2_send`/`h2_poll`).
 //! - Feature này **không** đổi API sync/`Net`; sync vẫn dùng `net/h2.rs` trên cùng `H2Core`.
 
-#![cfg(all(feature = "async-h2", feature = "http2", feature = "tls", unix))]
+#![cfg(all(
+    feature = "async-h2",
+    feature = "http2",
+    feature = "tls",
+    not(target_arch = "wasm32")
+))]
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::future::Future;
 use std::io::{self, ErrorKind, Read, Write};
-use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
-use std::os::fd::{AsRawFd, RawFd};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::pin::Pin;
 use std::rc::Rc;
 use std::task::{Context, Poll as TaskPoll, Waker};
 use std::time::{Duration, Instant};
 
 use bytes::Bytes;
-use mio::unix::SourceFd;
+use mio::net::TcpStream as MioStream;
 use mio::{Events, Interest, Poll, Token};
+use rustls::{ClientConnection, StreamOwned};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use vis_interp::builtin::KetQuaHttp2;
 
 use super::h2_core::H2Core;
-use super::tls::{self, CauHinh, KenhTls};
+use super::tls::{self, CauHinh};
 
 /// Bit trong [`IoH2::co`]: lần `poll` gần nhất đã gặp `WouldBlock` ở chiều đọc/ghi.
 const MUON_DOC: u8 = 1;
@@ -43,8 +48,29 @@ const MUON_GHI: u8 = 2;
 ///
 /// Không tự chờ: `poll_read`/`poll_write`/`poll_flush` trả `Pending` khi `WouldBlock` và đánh dấu
 /// chiều cần đăng ký với reactor trong `co`.
+/// Socket dùng chung giữa `rustls::StreamOwned` (I/O TLS) và reactor `mio` (đăng ký readiness).
+/// `Rc<RefCell<…>>` cần vì `H2Core` sở hữu connection bên trong; trên Windows không thể
+/// `SourceFd`/fd thô — `mio` bắt buộc đăng ký trên chính đối tượng `TcpStream`.
+#[derive(Clone)]
+struct SockChiaSe(Rc<RefCell<MioStream>>);
+
+impl Read for SockChiaSe {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.borrow_mut().read(buf)
+    }
+}
+
+impl Write for SockChiaSe {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.borrow_mut().write(buf)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.borrow_mut().flush()
+    }
+}
+
 pub(super) struct IoH2 {
-    k: KenhTls,
+    k: StreamOwned<ClientConnection, SockChiaSe>,
     co: Rc<Cell<u8>>,
 }
 
@@ -199,19 +225,18 @@ enum Cho {
 fn cho_san_sang(
     poll: &mut Poll,
     events: &mut Events,
-    fd: RawFd,
+    sock: &mut MioStream,
     interest: Interest,
     han: Instant,
 ) -> Result<Cho, String> {
     let Some(con) = han.checked_duration_since(Instant::now()) else {
         return Ok(Cho::HetHan);
     };
-    let mut src = SourceFd(&fd);
     poll.registry()
-        .register(&mut src, Token(0), interest)
+        .register(sock, Token(0), interest)
         .map_err(|e| format!("đăng ký readiness HTTP/2 thất bại: {e}"))?;
     let r = poll.poll(events, Some(con));
-    let _ = poll.registry().deregister(&mut src);
+    let _ = poll.registry().deregister(sock);
     match r {
         Ok(()) => Ok(if events.is_empty() && Instant::now() >= han {
             Cho::HetHan
@@ -224,7 +249,11 @@ fn cho_san_sang(
 }
 
 /// Connect TCP nonblocking + TLS handshake trong **một** hạn; socket trả về nonblocking.
-fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String> {
+fn noi_tls(
+    cfg: &CauHinh,
+    dia_chi: &str,
+    han: Instant,
+) -> Result<(ClientConnection, MioStream), String> {
     use rustls::pki_types::ServerName;
     use rustls::ClientConnection;
 
@@ -246,15 +275,14 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
         if han.checked_duration_since(Instant::now()).is_none() {
             break;
         }
-        let sock = match mio::net::TcpStream::connect(addr) {
+        let mut sock = match mio::net::TcpStream::connect(addr) {
             Ok(s) => s,
             Err(e) => {
                 loi_cuoi = Some(format!("{addr}: {e}"));
                 continue;
             }
         };
-        let fd = sock.as_raw_fd();
-        match cho_san_sang(&mut poll, &mut events, fd, Interest::WRITABLE, han) {
+        match cho_san_sang(&mut poll, &mut events, &mut sock, Interest::WRITABLE, han) {
             Ok(Cho::SanSang) => {}
             Ok(Cho::HetHan) => {
                 loi_cuoi = Some(format!("{addr}: hết hạn chờ nối"));
@@ -280,7 +308,6 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
             loi_cuoi = Some(format!("{addr}: {e}"));
             continue;
         }
-        let mut sock: TcpStream = sock.into();
         let _ = sock.set_nodelay(true);
         let mut conn = ClientConnection::new(std::sync::Arc::clone(cfg), ten.clone())
             .map_err(|e| format!("lỗi tạo phiên TLS tới `{dia_chi}`: {e}"))?;
@@ -292,7 +319,7 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
                     .map(|p| String::from_utf8_lossy(p).into_owned())
             ));
         }
-        return Ok(rustls::StreamOwned::new(conn, sock));
+        return Ok((conn, sock));
     }
     Err(match loi_cuoi {
         Some(e) => format!("lỗi nối TLS tới `{dia_chi}`: {e}"),
@@ -302,14 +329,13 @@ fn noi_tls(cfg: &CauHinh, dia_chi: &str, han: Instant) -> Result<KenhTls, String
 
 /// Handshake rustls không chặn socket: chỉ `read_tls`/`write_tls` khi reactor báo sẵn sàng.
 pub(super) fn bap_tay(
-    conn: &mut rustls::ClientConnection,
-    sock: &mut TcpStream,
+    conn: &mut ClientConnection,
+    sock: &mut MioStream,
     dia_chi: &str,
     han: Instant,
     poll: &mut Poll,
     events: &mut Events,
 ) -> Result<(), String> {
-    let fd = sock.as_raw_fd();
     while conn.is_handshaking() {
         let mut tien = false;
         if conn.wants_write() {
@@ -346,7 +372,7 @@ pub(super) fn bap_tay(
             } else {
                 Interest::READABLE
             };
-            match cho_san_sang(poll, events, fd, interest, han)? {
+            match cho_san_sang(poll, events, sock, interest, han)? {
                 Cho::SanSang => {}
                 Cho::HetHan => {
                     return Err(format!(
@@ -388,7 +414,7 @@ pub struct H2Async {
     trang_thai: TrangThai,
     authority: String,
     co: Rc<Cell<u8>>,
-    fd: RawFd,
+    sock: Rc<RefCell<MioStream>>,
     /// Id request do backend cấp (ổn định kể cả khi còn chờ handshake).
     next_req: u64,
     /// Request xếp trước khi handshake xong: (id backend, method, target, headers).
@@ -401,18 +427,18 @@ pub struct H2Async {
 
 impl H2Async {
     /// Bọc `KenhTls` đã handshake TLS (ALPN h2) và bắt đầu h2 handshake **chưa chạy**.
-    pub(crate) fn moi_cho_bap(k: KenhTls, authority: &str) -> Self {
-        let fd = k.sock.as_raw_fd();
+    pub(crate) fn moi_cho_bap(conn: ClientConnection, sock: MioStream, authority: &str) -> Self {
+        let sock = Rc::new(RefCell::new(sock));
         let co = Rc::new(Cell::new(0u8));
         let io = IoH2 {
-            k,
+            k: StreamOwned::new(conn, SockChiaSe(Rc::clone(&sock))),
             co: Rc::clone(&co),
         };
         Self {
             trang_thai: TrangThai::DangBap(Box::pin(::h2::client::handshake(io))),
             authority: authority.to_string(),
             co,
-            fd,
+            sock,
             next_req: 0,
             cho_gui: Vec::new(),
             map_id: HashMap::new(),
@@ -423,31 +449,22 @@ impl H2Async {
     /// Mở TLS + ALPN h2 + handshake h2 trong hạn `timeout_ms` (test/embedding).
     pub(crate) fn moi(cfg: &CauHinh, dia_chi: &str, timeout_ms: u64) -> Result<Self, String> {
         let han = Instant::now() + Duration::from_millis(timeout_ms.max(1));
-        let k = noi_tls(cfg, dia_chi, han)?;
-        let mut p = Self::moi_cho_bap(k, dia_chi);
+        let (conn, sock) = noi_tls(cfg, dia_chi, han)?;
+        let mut p = Self::moi_cho_bap(conn, sock, dia_chi);
         p.tai_handshake(han)?;
         Ok(p)
     }
 
-    #[allow(dead_code)] // checkpoint 2 (AsyncNet) dùng
-    pub(crate) fn fd(&self) -> RawFd {
-        self.fd
-    }
-
-    /// **VS3-W4** — `Nguon` của async_net: đăng ký readiness cho socket h2.
-    ///
-    /// `H2Async` giữ `KenhTls` (socket) **bên trong** connection h2 nên không thể mượn
-    /// `&mut MioStream`; trên Unix dùng fd ổn định đã lưu (`SourceFd`) — đây là module Unix-only,
-    /// Windows dùng đường `Nguon` trực tiếp cho stream/TLS (async-h2 default-off, chưa port).
+    /// **ST-294** — `Nguon` của async_net: đăng ký readiness trên chính `MioStream` (Linux epoll
+    /// và Windows IOCP/AFD). `Rc<RefCell<…>>` cho phép vừa lái TLS trong `H2Core` vừa đăng ký.
     pub(crate) fn dang_ky_nguon(
         &mut self,
         poll: &Poll,
         token: Token,
         interest: Interest,
     ) -> io::Result<()> {
-        let fd = self.fd;
-        let mut src = SourceFd(&fd);
-        poll.registry().register(&mut src, token, interest)
+        poll.registry()
+            .register(&mut *self.sock.borrow_mut(), token, interest)
     }
 
     pub(crate) fn dang_ky_lai_nguon(
@@ -456,15 +473,12 @@ impl H2Async {
         token: Token,
         interest: Interest,
     ) -> io::Result<()> {
-        let fd = self.fd;
-        let mut src = SourceFd(&fd);
-        poll.registry().reregister(&mut src, token, interest)
+        poll.registry()
+            .reregister(&mut *self.sock.borrow_mut(), token, interest)
     }
 
     pub(crate) fn huy_nguon(&mut self, poll: &Poll) -> io::Result<()> {
-        let fd = self.fd;
-        let mut src = SourceFd(&fd);
-        poll.registry().deregister(&mut src)
+        poll.registry().deregister(&mut *self.sock.borrow_mut())
     }
 
     fn trang_thai_da_san_sang(&self) -> bool {
@@ -604,13 +618,17 @@ impl H2Async {
             if Instant::now() >= han {
                 return Err("quá thời gian HTTP/2 (handshake)".to_string());
             }
-            match cho_san_sang(
-                &mut poll,
-                &mut events,
-                self.fd,
-                interest_tu_co(self.co.get()),
-                han,
-            )? {
+            let cho = {
+                let mut sock = self.sock.borrow_mut();
+                cho_san_sang(
+                    &mut poll,
+                    &mut events,
+                    &mut sock,
+                    interest_tu_co(self.co.get()),
+                    han,
+                )?
+            };
+            match cho {
                 Cho::SanSang => {}
                 Cho::HetHan => return Err("quá thời gian HTTP/2 (handshake)".to_string()),
             }
@@ -643,13 +661,17 @@ impl H2Async {
                 self.huy(loi.clone());
                 return Err(loi);
             }
-            match cho_san_sang(
-                &mut poll,
-                &mut events,
-                self.fd,
-                interest_tu_co(self.co.get()),
-                han,
-            )? {
+            let cho = {
+                let mut sock = self.sock.borrow_mut();
+                cho_san_sang(
+                    &mut poll,
+                    &mut events,
+                    &mut sock,
+                    interest_tu_co(self.co.get()),
+                    han,
+                )?
+            };
+            match cho {
                 Cho::SanSang => {}
                 Cho::HetHan => {
                     let loi = "quá thời gian chờ phản hồi HTTP/2".to_string();
