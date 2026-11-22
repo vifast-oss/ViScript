@@ -202,4 +202,25 @@ impl Host for Vm<'_> {
     fn join_tasks(&mut self) -> R<()> {
         crate::vm::worker::join_tasks(self)
     }
+
+    // **ST-292 (P4)** — hook frame driver ↔ evaluator worker (default no-op ở trait).
+    fn worker_is_task(&self, id: u32) -> bool {
+        crate::vm::worker::is_worker_task(self, id)
+    }
+
+    fn worker_in_flight(&self) -> bool {
+        crate::vm::worker::in_flight(self)
+    }
+
+    fn worker_pump(&mut self, block: bool) -> R<usize> {
+        crate::vm::worker::pump(self, block)
+    }
+
+    fn worker_final_join(&mut self) -> R<()> {
+        crate::vm::worker::final_join(self)
+    }
+
+    fn worker_cancel(&mut self, id: u32) {
+        crate::vm::worker::cancel_worker(self, id);
+    }
 }

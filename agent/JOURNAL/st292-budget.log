@@ -1,0 +1,9 @@
+# W=1
+/home/ps/tmp/st292/as.vis:10:13: error VS0506: tác vụ `dem` lỗi: VS0510: vượt ngân sách ngữ nghĩa (E_EXPR): cần 1, còn 0 — dùng `--max-budget <N>` hoặc `--unlimited-budget`
+exit=101
+# W=4
+/home/ps/tmp/st292/as.vis:10:13: error VS0506: tác vụ `dem` lỗi: VS0510: vượt ngân sách worker
+exit=101
+# W=0
+vis run: `--workers 0` không hợp lệ (phải >= 1)
+exit=2

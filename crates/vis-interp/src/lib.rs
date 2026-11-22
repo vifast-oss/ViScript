@@ -358,6 +358,41 @@ pub fn run_workers_parallel(
 /// Như [`run_workers_parallel`] nhưng dùng `SharedBudget` atomic; caller giữ `Arc` để đọc
 /// `snapshot()` sau khi chạy (mọi lease đã drop).
 #[doc(hidden)]
+/// **ST-292 (P4)** — `Parallel(n)` có đủ host/caps (CLI `vis run --workers`).
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_workers_parallel_with_hosts_caps<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    workers: usize,
+    budget: Option<Arc<crate::rt::fee::SharedBudget>>,
+) -> RunOutput {
+    run_with_hosts_caps_mode(
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        ngoai,
+        fs,
+        net,
+        db,
+        caps,
+        crate::rt::exec::WorkerMode::Parallel(workers.max(2)),
+        budget,
+        false,
+        None,
+    )
+}
+
 pub fn run_workers_parallel_with_budget(
     text: &str,
     hir: &Hir,
@@ -494,6 +529,74 @@ pub fn run_async_with_hosts_caps_backend<'a>(
     // **ST-290 (VD-273)**: frame path dùng **cùng** ngân sách phiên (mặc định bật).
     crate::rt::fee::bat_dau_phien();
     let mut it = interp::Interp::new(hir, symbols, types);
+    if !caps.is_empty() {
+        it.set_caps(caps.to_vec());
+    }
+    if let Some(n) = ngoai {
+        it.set_ngoai(n);
+    }
+    if let Some(f) = fs {
+        it.set_fs(f);
+    }
+    if let Some(g) = net {
+        it.set_net(g);
+    }
+    if let Some(d) = db {
+        it.set_db(d);
+    }
+    let fo = frame::run_frame_driver(
+        &mut it,
+        text,
+        hir,
+        symbols,
+        types,
+        args,
+        frame::FrameConfig {
+            backend,
+            ..Default::default()
+        },
+    );
+    RunOutput {
+        stdout: fo.stdout,
+        diagnostics: fo.diagnostics,
+        value: fo.value,
+        exit: fo.exit,
+        steps: it.steps,
+    }
+}
+
+/// **ST-292 (P4)** — như [`run_async_with_hosts_caps_backend`] nhưng chạy frame + evaluator
+/// **`Parallel(workers)`** (main frame đẩy `spawn` lên pool, task frame chạy local).
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_workers_with_hosts_caps<'a>(
+    text: &'a str,
+    hir: &'a Hir,
+    symbols: &'a Symbols,
+    types: &'a TypeTable,
+    args: &[String],
+    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    workers: usize,
+    budget: Option<Arc<crate::rt::fee::SharedBudget>>,
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn crate::rt::FrameReactorBackend>>>,
+) -> RunOutput {
+    crate::rt::fee::bat_dau_phien();
+    let mut it = interp::Interp::new(hir, symbols, types);
+    {
+        let mut s = it.sched.borrow_mut();
+        s.exec.mode = crate::rt::exec::WorkerMode::Parallel(workers.max(2));
+        s.exec.image = Some(Arc::new(crate::rt::exec::HirImage {
+            hir: hir.clone(),
+            symbols: symbols.clone(),
+            types: types.clone(),
+            text: Arc::from(text),
+        }));
+        s.exec.budget = budget;
+    }
     if !caps.is_empty() {
         it.set_caps(caps.to_vec());
     }

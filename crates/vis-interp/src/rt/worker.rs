@@ -573,6 +573,36 @@ pub mod worker {
             self.lock().done.remove(&id)
         }
 
+        /// **ST-292 (P4)** — chờ **một trong** `ids` có outcome; trả `(id, outcome)` đầu tiên.
+        /// Dùng cho pump frame: không giữ `RefCell` borrow của scheduler khi chờ.
+        pub fn wait_any_timeout(
+            &self,
+            ids: &[TaskId],
+            timeout: Duration,
+        ) -> Result<(TaskId, TaskOutcome), WaitError> {
+            let mut st = self.lock();
+            let deadline = Instant::now() + timeout;
+            loop {
+                for id in ids {
+                    if let Some(o) = st.done.remove(id) {
+                        return Ok((*id, o));
+                    }
+                }
+                if st.closed {
+                    return Err(WaitError::Closed);
+                }
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    return Err(WaitError::Timeout);
+                }
+                let (guard, _) = self
+                    .cv
+                    .wait_timeout(st, left)
+                    .unwrap_or_else(|e| e.into_inner());
+                st = guard;
+            }
+        }
+
         pub fn wait_timeout(&self, id: TaskId, timeout: Duration) -> Result<TaskOutcome, WaitError> {
             let mut st = self.lock();
             let deadline = Instant::now() + timeout;

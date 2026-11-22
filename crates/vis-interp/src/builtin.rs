@@ -229,6 +229,35 @@ pub trait Host {
     ) -> Option<Result<KetQua, crate::interp::Abort>> {
         None
     }
+
+    // -----------------------------------------------------------------------
+    // **ST-292 (VD-275/VD-280/VD-281/VD-282)** — hook evaluator worker cho frame driver.
+    // Mặc định no-op ⇒ `Off`/`Local`/non-frame P1..P3 giữ nguyên hành vi. Interp và VM
+    // override để pump outcome/cancel/final join mà driver không cần biết `Scheduler.exec`.
+    // -----------------------------------------------------------------------
+
+    /// `true` nếu `id` là task evaluator **worker** (đang chờ/gửi pool), không phải frame local.
+    fn worker_is_task(&self, _id: u32) -> bool {
+        false
+    }
+
+    /// `true` nếu còn job/task worker chưa có outcome (pool đang in-flight).
+    fn worker_in_flight(&self) -> bool {
+        false
+    }
+
+    /// Rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa ~50 ms rồi trả. Trả số task vừa đánh thức.
+    fn worker_pump(&mut self, _block: bool) -> crate::interp::R<usize> {
+        Ok(0)
+    }
+
+    /// Final join worker: chờ pool, cache mọi task, flush output chưa flush theo spawn order.
+    fn worker_final_join(&mut self) -> crate::interp::R<()> {
+        Ok(())
+    }
+
+    /// Huỷ hợp tác task worker (idempotent); không preempt task đang chờ host/chan.
+    fn worker_cancel(&mut self, _id: u32) {}
 }
 
 /// Lỗi runtime kèm `span` (cùng cấu trúc với `Interp::trap`).
