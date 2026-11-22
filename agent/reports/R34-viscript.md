@@ -33,8 +33,8 @@ Sau tag: **ST-297 đã merge** (`f4cb136`, **#149 đóng**), flake fix **`044b28
   **`22572d0b…3a8b`** xanh; `VERSION` VBC1/ABI không đổi.
 - **Tag**: **`v0.4.1` @ `90844bc`** (annotated, pushed); **`v0.4.0` @ `c2accdf`**.
 - **ST-298**: **3× `vis-gate-windows --full` PASS 3611/0/3** @ `f4cb136` (host 54/54, targets
-  18/18 + 17/1, dirty 0); **soak 4h đang chạy** — `[SOAK_ROUNDS]` vòng, `[SOAK_FAIL]` fail,
-  fd/RSS `[SOAK_FD_RSS]`; **Windows Tier 1 CHƯA công bố**.
+  18/18 + 17/1, dirty 0); **soak 4h đang chạy** — `985` vòng, `0` fail,
+  fd/RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`; **Windows Tier 1 CHƯA công bố**.
 - **Final Linux soak** `45122b7`/`84e8eb6`: **10/10** (759 s), 3× diff 100k `lech=0`, host
   54/54, cache 5/5, wasm **28/28**.
 
@@ -52,7 +52,7 @@ Sau tag: **ST-297 đã merge** (`f4cb136`, **#149 đóng**), flake fix **`044b28
 | Windows post-merge ST-296b | **3607/0/3**; lsp 27/27, loader 29/29, targets core 18/18 |
 | ST-296c diff 100k | **0 lệch** |
 | `vis --version` | **`vis 0.4.1`** |
-| ST-298 | **3× full PASS 3611/0/3** @ `f4cb136`; soak 4h `[SOAK_ROUNDS]`/`[SOAK_FAIL]`/`[SOAK_FD_RSS]`; chưa công bố Tier 1 |
+| ST-298 | **3× full PASS 3611/0/3** @ `f4cb136`; soak 4h `985`/`0`/`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`; chưa công bố Tier 1 |
 
 ## 4. Tài liệu & phạm vi
 
@@ -72,7 +72,7 @@ Sau tag: **ST-297 đã merge** (`f4cb136`, **#149 đóng**), flake fix **`044b28
 - **ST-299b** đã merge `3b8049c`: `vis-loader` đa tệp trong `vis-wasm-run`, native 29/29, wasm 28/28.
 - **P2b-3/4 NO-GO** `16fba3a`: bench 4,0×, không đổi production.
 - **ST-298**: **3× full PASS 3611/0/3** @ `f4cb136` (host 54/54, targets 18/18 + 17/1, dirty 0);
-  **soak 4h đang chạy**: `[SOAK_ROUNDS]` vòng, fail `[SOAK_FAIL]`, fd/RSS `[SOAK_FD_RSS]`;
+  **soak 4h đang chạy**: `985` vòng, fail `0`, fd/RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`;
   **chưa** tuyên bố Windows Tier 1 — điều kiện: soak đủ vòng, fail 0, fd/RSS phẳng.
 - **ST-300** đã merge (`3581c9a` + `8286caf`); final Linux soak `45122b7`/`84e8eb6` 10/10 759 s.
 - Flake thread-count đã xử lý test-only (`044b289`): poll 2 s sau join, 0/60 đỏ dưới tải.

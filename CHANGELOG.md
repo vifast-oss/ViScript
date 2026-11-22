@@ -3,6 +3,20 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.4.5 — 2026-11-23 (Giai đoạn 2 — Platforms)
+
+- **ST-297** (`f4cb136`): đóng `#149`; LSP URI UNC/Windows + `--grant` path; Windows 3× full **3611/0/3**;
+  Linux 10× `vis-lsp` 29/29 + `path_impl` 2/2.
+- **ST-298** (`f4cb136`): Windows **3× `vis-gate-windows --full` PASS 3611/0/3**; soak 4h
+  **985 vòng, fail 0, flake 1**, free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0; **Windows Tier 1** công bố (caveat `FsGuard`,
+  uỷ quyền `VD-283`).
+- **ST-299a/299b**: `WasiHost` + `vis-loader` đa tệp trên WASI; native **29/29**, wasm **28/28**.
+- **ST-300**: `bin/vis-wasm-sem` **388/390 eligible = 99,5%** (VM 100%), suite **28/28**, nợ `#193`
+  (2 ca stack-overflow interp); row `wasm32-wasip1 (runtime)` trong `vis-targets`.
+- **Version** 0.4.5; cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá
+  `d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce`; fix `bin/vis-dev` fuzz theo
+  `CARGO_TARGET_DIR`. **Tag `v0.4.5` trên commit R35 này**; trước: `v0.4.1 @ 90844bc`, `v0.4.0 @ c2accdf`.
+
 ## v0.4.1 — 2026-11-23 (Giai đoạn 1.5)
 
 - **Phiên bản**: workspace **0.4.1** (`version.workspace = true`); `vis --version` ⇒ **`vis 0.4.1`**;
@@ -40,8 +54,8 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **Flake fix** (`044b289`, test-only): `vs3_worker::spawn_shared_stress_rounds_read_only` poll
   **2 s** sau join (T-INFRA; **0/60** đỏ dưới tải).
 - **ST-298** @ `f4cb136`: **3× `vis-gate-windows --full` PASS 3611/0/3** (host 54/54, targets
-  18/18 + 17/1, dirty 0); **soak 4h đang chạy** — `[SOAK_ROUNDS]` vòng, `[SOAK_FAIL]` fail,
-  fd/RSS `[SOAK_FD_RSS]`; **chưa** tuyên bố Windows Tier 1.
+  18/18 + 17/1, dirty 0); **soak 4h đang chạy** — `985` vòng, `0` fail,
+  fd/RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`; **chưa** tuyên bố Windows Tier 1.
 - **Tag `v0.4.1` @ `90844bc`** (annotated, pushed); tag trước **`v0.4.0` @ `c2accdf`**.
 
 ## v0.4.0 — 2026-11-23

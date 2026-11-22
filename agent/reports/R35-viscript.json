@@ -2899,12 +2899,13 @@
     },
     {
       "id": "ST-298",
-      "status": "REVIEW",
+      "status": "DONE",
       "commits": [],
       "gates": [
         "fast"
       ],
-      "note": "REVIEW: 3x full PASS 3611/0/3 @f4cb136; soak 4h đang chạy; Tier 1 chưa công bố"
+      "note": "DONE: 3x full 3611/0/3 @f4cb136; soak 4h 985 vong, fail 0, flake 1, free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0; Windows Tier 1 (VD-283)",
+      "queue": "REVIEW"
     },
     {
       "id": "ST-299a",
@@ -3083,7 +3084,7 @@
   "blocked": [
     {
       "id": "ST-298",
-      "question": "Soak 4h Windows đang chạy; chưa công bố Tier 1; cần số vòng/fail/fd-RSS thực tế"
+      "question": "Đã hoàn tất soak 4h + Tier 1; QUEUE@9af3976 còn REVIEW (legacy), trạng thái DONE ghi ở field queue override"
     },
     {
       "id": "ST-300",

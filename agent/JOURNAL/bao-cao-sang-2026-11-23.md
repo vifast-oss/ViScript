@@ -2,7 +2,7 @@
 
 > **Trạng thái**: khung báo cáo sáng; số liệu đã xác nhận, chỗ cần đo điền sau.
 > **Tag**: `v0.4.0 @ c2accdf`; **`v0.4.1 @ 90844bc`** (annotated, pushed).
-> **Main**: `3581c9a` + các merge sau (nếu HEAD đã tiến, dùng HEAD thực tế khi chốt).
+> **Main/tag**: `v0.4.5` trên commit R35 (xem `git rev-parse v0.4.5`).
 > Docs-only; không merge/push/tag trong lượt này; không GitHub Actions.
 
 ## 1. Giai đoạn 1 — `v0.4.0`
@@ -27,6 +27,14 @@
   `vis-host-wasm` 0.4.1 sạch.
 - Tag `v0.4.1 @ 90844bc`.
 
+## 2b. Giai đoạn 2 — `v0.4.5` (tag trên commit R35)
+
+- **ST-298**: Windows **3× full 3611/0/3**; **soak 4h 985 vòng, fail 0, flake 1**,
+  free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0; **Windows Tier 1** công bố (caveat `FsGuard`, uỷ quyền `VD-283`).
+- **ST-299a/b**: `WasiHost` + `vis-loader` đa tệp; native 29/29, wasm 28/28.
+- **ST-300**: `vis-wasm-sem` **388/390 = 99,5%** (VM 100%); nợ `#193` 2 stack interp.
+- **Version 0.4.5**, cache `d92f31c2…`, R35 md+json; fix `bin/vis-dev` fuzz theo `CARGO_TARGET_DIR`.
+
 ## 3. Sau tag — ST-297 / ST-299b / ST-300
 
 - **ST-297** merged `f4cb136`: gate **3660/4** (4 ca mới UNC/mixed/percent + `--grant` Windows);
@@ -42,9 +50,9 @@
 ## 4. ST-298 — soak 4h (chỗ trống)
 
 - Trạng thái: **đang chạy** trên `f4cb136`; 3× `vis-gate-windows --full` **đã xanh 3611/0/3**;
-  soak 4h: `[SOAK_ROUNDS]` vòng, fail `[SOAK_FAIL]`, fd/RSS `[SOAK_FD_RSS]`.
-- **Windows Tier 1 CHƯA công bố.** Điều kiện công bố: soak 4h đủ vòng, `[SOAK_FAIL]` = 0,
-  fd/RSS phẳng (`[SOAK_FD_RSS]`), 3× full xanh, host 54/54, targets 18/18 + 17/1.
+  soak 4h: `985` vòng, fail `0`, fd/RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`.
+- **Windows Tier 1 đã công bố** (caveat `FsGuard`). Điều kiện công bố: soak 4h đủ vòng, `0` = 0,
+  fd/RSS phẳng (`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`), 3× full xanh, host 54/54, targets 18/18 + 17/1.
 
 ## 5. A0 cần quyết
 
@@ -62,5 +70,5 @@
 
 ## 7. Kết
 
-- Đĩa: `[DISK]`; **R7 xanh** (không log >50 KB mới trong repo); **0 unsafe** trong mã ViScript.
+- Đĩa: `17 G`; **R7 xanh** (không log >50 KB mới trong repo); **0 unsafe** trong mã ViScript.
 - Không GitHub Actions; không merge/push/tag trong lượt soạn khung.

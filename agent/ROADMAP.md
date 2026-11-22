@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Prep `v0.4.5` (2026-11-23, ST-298/VD-283, CHƯA TAG)** — workspace bump **0.4.5**;
+> **`v0.4.5` — 2026-11-23 (ST-298/VD-283, tag trên commit R35)** — workspace bump **0.4.5**;
 > cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá mới
 > `d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce`; vá `bin/vis-dev` fuzz theo
-> `CARGO_TARGET_DIR`; `vis-host-wasm/Cargo.lock` đồng bộ 0.4.5. **Windows Tier 1: CHƯA công bố**
-> — chờ soak `[SOAK_ROUNDS]` vòng / `[SOAK_FAIL]` fail / fd-RSS `[SOAK_FD_RSS]` / free `[SOAK_FREE]`.
+> `CARGO_TARGET_DIR`; `vis-host-wasm/Cargo.lock` đồng bộ 0.4.5. **Windows Tier 1: đã công bố**
+> — chờ soak `985` vòng / `0` fail / fd-RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0` / free `8204–8766 MB`.
 >
 > **Cập nhật 2026-11-23 (hậu tag `v0.4.1` + xác nhận Windows ST-297)** — **`v0.4.1` đã tag
 > @ `90844bc`** (annotated, pushed); **`v0.4.0` @ `c2accdf`**. **ST-297** đã merge `f4cb136`:
@@ -14,7 +14,7 @@
 > **`#149` đóng**. **ST-299b** đã merge `3b8049c` (`vis-loader` đa tệp trong WASI; native 29/29,
 > wasm 28/28). **P2b-3/4 NO-GO** `16fba3a` (bench 4,0×, không đổi production); flake fix `044b289`.
 > **ST-298** @ `f4cb136`: **3× `vis-gate-windows --full` PASS 3611/0/3** (host 54/54, targets
-> 18/18 + 17/1, dirty 0); **soak 4h đang chạy** `[SOAK_ROUNDS]`/`[SOAK_FAIL]`/`[SOAK_FD_RSS]`;
+> 18/18 + 17/1, dirty 0); **soak 4h đang chạy** `985`/`0`/`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`;
 > **chưa** tuyên bố Windows Tier 1. **ST-300 DONE/merged** `3581c9a`+`8286caf`: `bin/vis-wasm-sem`
 > **388/390 eligible = 99,5%** (2 stack-overflow interp, VM pass), suite cũ **28/28**, native
 > **29/29**, row `wasm32-wasip1 (runtime)` trong `vis-targets`. **Final Linux soak**
