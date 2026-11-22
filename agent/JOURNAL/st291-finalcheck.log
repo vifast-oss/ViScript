@@ -1,0 +1,56 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T16:16:03Z
+# host=psvn
+# lenh: bash -lc cd\ /c/Users/ps/viscript-moi\;\ ./target/release/vis.exe\ run\ --version\ \>/dev/null\ 2\>\&1\;\ echo\ RUN_VERSION_RC=\$\?\;\ echo\ HEAD=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\)\;\ df\ -h\ /c\ \|\ tail\ -1 
+# lenh_do: bash -lc cd\ /c/Users/ps/viscript-moi\;\ ./target/release/vis.exe\ run\ --version\ \>/dev/null\ 2\>\&1\;\ echo\ RUN_VERSION_RC=\$\?\;\ echo\ HEAD=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\)\;\ df\ -h\ /c\ \|\ tail\ -1 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T161601Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T161601Z.log.exit
+# log_cuc_bo=/tmp/opencode/st291-finalcheck.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 8cc3588ae9b0b17e54456900f1ac06fefc46de6e
+# head_ngan: 8cc3588a
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 8cc3588ae9b0b17e54456900f1ac06fefc46de6e
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 8cc3588ae9b0b17e54456900f1ac06fefc46de6e
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T161601Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+RUN_VERSION_RC=2
+HEAD=8cc3588a dirty=0
+C:              476G  363G  114G  77% /c
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T16:16:04Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=ca0aa5c82b821b58ac9e70d2319f96baf6862eb9f4fdae563ea5a7b8d413a3da
+[exit=0]
