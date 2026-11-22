@@ -13,8 +13,8 @@
 | `crates/vis-host-native` | **13.107 dòng**, 0 tham chiếu `vis_cli` ngược, `#![forbid(unsafe_code)]` |
 | `crates/vis-pkg` | **3.270 dòng**, re-export `vis_cli::pkg`/`pkg_sig` |
 | `crates/vis-cli/src` | **21.147 → 4.809 dòng** (`-77,3 %`) |
-| `main.rs` | **1.403 → 226 dòng** |
-| `tests/lsp_it/lsp.rs` | **1.478 → 9 dòng** + `lsp_part1` 760 + `lsp_part2` 731 |
+| `main.rs` | **1.403 → 225 dòng** |
+| `tests/lsp_it/lsp.rs` | **1.478 → 9 dòng** + `lsp_part1` 759 + `lsp_part2` 728 |
 | Feature matrix | 12 tổ hợp `cargo check` xanh (`vis-host-native`/`vis-pkg`/`vis-cli`) |
 | Unit test crate mới | host-native **113/113** (`--all-features`), vis-pkg **27/27** |
 | `bin/vis-targets` | core **18/18**, sqlite **16 PASS + 2 EXPECTED_RED** (#156) |
@@ -36,9 +36,9 @@ Nếu trừ hai tệp này, vỏ CLI còn **3.331** dòng. Không cắt bớt ch
 crates/vis-host-native/src/   quyen{,_chuan,_guard,_mo,_path,_st174,_st295}.rs, ngoai.rs,
                               fsmock.rs, net{,/**}, net_quyen.rs, async_net*.rs, db/**
 crates/vis-pkg/src/           pkg.rs, pkg/**, pkg_sig.rs
-crates/vis-cli/src/           main.rs (226), cli/{run_cmd,fmt,check,run,doctor,version}.rs,
+crates/vis-cli/src/           main.rs (225), cli/{run_cmd,fmt,check,run,doctor,version}.rs,
                               vistest.rs, bin/test_child.rs
-crates/vis-cli/tests/lsp_it/  lsp.rs (9) + lsp/lsp_part1.rs (760) + lsp/lsp_part2.rs (731)
+crates/vis-cli/tests/lsp_it/  lsp.rs (9) + lsp/lsp_part1.rs (759) + lsp/lsp_part2.rs (728)
 ```
 
 - `vis-host-native` giữ nguyên body mã; chỉ đổi `crate::` nội bộ (đều trỏ trong crate mới) và
