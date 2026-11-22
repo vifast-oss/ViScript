@@ -434,6 +434,8 @@ fn do_luong_chay<T>(bat: bool, f: impl FnOnce() -> T) -> (T, Option<u128>) {
 pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     let mut tap = false;
     let mut dung_vm = false;
+    // **ST-292 (P4)**: số worker evaluator; mặc định 1 = đường cũ, không đổi default.
+    let mut workers = 1usize;
     let mut dump = false;
     let mut dung_cache = true;
     let mut dump_deps = false;
@@ -472,6 +474,25 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
             "--tap" => tap = true,
             // ST-20: chạy đường **VM** thay cho interp (cùng ngữ nghĩa; `steps` đơn vị **lệnh**).
             "--vm" => dung_vm = true,
+            // **ST-292 (P4)**: `--workers <N>` — N=1 giữ đường cũ; N=0/không phải số ⇒ lỗi dùng.
+            "--workers" => {
+                i += 1;
+                let Some(v) = rest.get(i) else {
+                    eprintln!("vis run: `--workers` cần số nguyên >= 1");
+                    return ExitCode::from(2);
+                };
+                match v.parse::<usize>() {
+                    Ok(0) => {
+                        eprintln!("vis run: `--workers 0` không hợp lệ (phải >= 1)");
+                        return ExitCode::from(2);
+                    }
+                    Ok(n) => workers = n,
+                    Err(_) => {
+                        eprintln!("vis run: `--workers {v}` phải là số nguyên >= 1");
+                        return ExitCode::from(2);
+                    }
+                }
+            }
             "--dump-bytecode" => dump = true,
             // ST-23: cache bytecode bật **mặc định** cho đường VM; `--no-cache` để tắt.
             "--no-cache" => dung_cache = false,
@@ -589,6 +610,14 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     }
     // **ST-290 (VD-273)**: áp ngân sách phiên **một lần** cho cả interp lẫn VM.
     ap_ngan_sach(ngan_sach);
+    // **ST-292 (P4)**: N>1 nối **cùng** giới hạn phiên vào `SharedBudget` của pool;
+    // `--unlimited-budget` ⇒ `None` (không charge). N=1 không tạo budget (đường cũ).
+    let worker_budget = if workers > 1 {
+        vis_interp::rt::fee::gioi_han_phien()
+            .map(|n| std::sync::Arc::new(vis_interp::rt::fee::SharedBudget::new(n, 256)))
+    } else {
+        None
+    };
     // ST-18: `.vish` chạy được (parse → `cmd_lower` → tyck → interp), không còn `Bail out!`.
     let fs_mock: Option<fsmock::FsMock> = match &mock_tep {
         None => None,
@@ -862,21 +891,77 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         if la_async {
                             #[cfg(any(unix, windows))]
                             {
-                                vis_vm::run_async_with_full_hosts_caps_backend(
+                                if workers > 1 {
+                                    vis_vm::run_async_workers_with_full_hosts_caps(
+                                        &m,
+                                        &text,
+                                        &prog_args,
+                                        ngoai_host,
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                    )
+                                } else {
+                                    vis_vm::run_async_with_full_hosts_caps_backend(
+                                        &m,
+                                        &text,
+                                        &prog_args,
+                                        ngoai_host,
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        async_backend.clone(),
+                                    )
+                                }
+                            }
+                            #[cfg(not(any(unix, windows)))]
+                            {
+                                if workers > 1 {
+                                    vis_vm::run_async_workers_with_full_hosts_caps(
+                                        &m,
+                                        &text,
+                                        &prog_args,
+                                        ngoai_host,
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                    )
+                                } else {
+                                    vis_vm::run_async_with_full_hosts_caps(
+                                        &m,
+                                        &text,
+                                        &prog_args,
+                                        ngoai_host,
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                    )
+                                }
+                            }
+                        } else {
+                            if workers > 1 {
+                                vis_vm::run_workers_parallel_vm_with_full_hosts_caps(
                                     &m,
                                     &text,
                                     &prog_args,
                                     ngoai_host,
                                     Some(&mut fs),
-                                    Some(&mut async_guard),
+                                    Some(&mut net),
                                     Some(&mut dbg),
                                     &quyen.gia_tri(),
-                                    async_backend.clone(),
+                                    workers,
+                                    worker_budget.clone(),
                                 )
-                            }
-                            #[cfg(not(any(unix, windows)))]
-                            {
-                                vis_vm::run_async_with_full_hosts_caps(
+                            } else {
+                                vis_vm::run_with_full_hosts_caps(
                                     &m,
                                     &text,
                                     &prog_args,
@@ -887,17 +972,6 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     &quyen.gia_tri(),
                                 )
                             }
-                        } else {
-                            vis_vm::run_with_full_hosts_caps(
-                                &m,
-                                &text,
-                                &prog_args,
-                                ngoai_host,
-                                Some(&mut fs),
-                                Some(&mut net),
-                                Some(&mut dbg),
-                                &quyen.gia_tri(),
-                            )
                         }
                     })
                 } else if co_ngoai {
@@ -906,7 +980,74 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         if la_async {
                             #[cfg(any(unix, windows))]
                             {
-                                vis_interp::run_async_with_hosts_caps_backend(
+                                if workers > 1 {
+                                    vis_interp::run_async_workers_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        Some(&mut runner),
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                        async_backend.clone(),
+                                    )
+                                } else {
+                                    vis_interp::run_async_with_hosts_caps_backend(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        Some(&mut runner),
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        async_backend.clone(),
+                                    )
+                                }
+                            }
+                            #[cfg(not(any(unix, windows)))]
+                            {
+                                if workers > 1 {
+                                    vis_interp::run_async_workers_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        Some(&mut runner),
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                        None,
+                                    )
+                                } else {
+                                    vis_interp::run_async_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        Some(&mut runner),
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                    )
+                                }
+                            }
+                        } else {
+                            if workers > 1 {
+                                vis_interp::run_workers_parallel_with_hosts_caps(
                                     &text,
                                     &h.hir,
                                     &h.symbols,
@@ -914,15 +1055,14 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     &prog_args,
                                     Some(&mut runner),
                                     Some(&mut fs),
-                                    Some(&mut async_guard),
+                                    Some(&mut net),
                                     Some(&mut dbg),
                                     &quyen.gia_tri(),
-                                    async_backend.clone(),
+                                    workers,
+                                    worker_budget.clone(),
                                 )
-                            }
-                            #[cfg(not(any(unix, windows)))]
-                            {
-                                vis_interp::run_async_with_hosts_caps(
+                            } else {
+                                vis_interp::run_with_hosts_caps(
                                     &text,
                                     &h.hir,
                                     &h.symbols,
@@ -935,19 +1075,6 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     &quyen.gia_tri(),
                                 )
                             }
-                        } else {
-                            vis_interp::run_with_hosts_caps(
-                                &text,
-                                &h.hir,
-                                &h.symbols,
-                                &h.types,
-                                &prog_args,
-                                Some(&mut runner),
-                                Some(&mut fs),
-                                Some(&mut net),
-                                Some(&mut dbg),
-                                &quyen.gia_tri(),
-                            )
                         }
                     })
                 } else {
@@ -956,7 +1083,74 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                         if la_async {
                             #[cfg(any(unix, windows))]
                             {
-                                vis_interp::run_async_with_hosts_caps_backend(
+                                if workers > 1 {
+                                    vis_interp::run_async_workers_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        None,
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                        async_backend.clone(),
+                                    )
+                                } else {
+                                    vis_interp::run_async_with_hosts_caps_backend(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        None,
+                                        Some(&mut fs),
+                                        Some(&mut async_guard),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        async_backend.clone(),
+                                    )
+                                }
+                            }
+                            #[cfg(not(any(unix, windows)))]
+                            {
+                                if workers > 1 {
+                                    vis_interp::run_async_workers_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        None,
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                        workers,
+                                        worker_budget.clone(),
+                                        None,
+                                    )
+                                } else {
+                                    vis_interp::run_async_with_hosts_caps(
+                                        &text,
+                                        &h.hir,
+                                        &h.symbols,
+                                        &h.types,
+                                        &prog_args,
+                                        None,
+                                        Some(&mut fs),
+                                        Some(&mut net),
+                                        Some(&mut dbg),
+                                        &quyen.gia_tri(),
+                                    )
+                                }
+                            }
+                        } else {
+                            if workers > 1 {
+                                vis_interp::run_workers_parallel_with_hosts_caps(
                                     &text,
                                     &h.hir,
                                     &h.symbols,
@@ -964,15 +1158,14 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     &prog_args,
                                     None,
                                     Some(&mut fs),
-                                    Some(&mut async_guard),
+                                    Some(&mut net),
                                     Some(&mut dbg),
                                     &quyen.gia_tri(),
-                                    async_backend.clone(),
+                                    workers,
+                                    worker_budget.clone(),
                                 )
-                            }
-                            #[cfg(not(any(unix, windows)))]
-                            {
-                                vis_interp::run_async_with_hosts_caps(
+                            } else {
+                                vis_interp::run_with_hosts_caps(
                                     &text,
                                     &h.hir,
                                     &h.symbols,
@@ -985,19 +1178,6 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                     &quyen.gia_tri(),
                                 )
                             }
-                        } else {
-                            vis_interp::run_with_hosts_caps(
-                                &text,
-                                &h.hir,
-                                &h.symbols,
-                                &h.types,
-                                &prog_args,
-                                None,
-                                Some(&mut fs),
-                                Some(&mut net),
-                                Some(&mut dbg),
-                                &quyen.gia_tri(),
-                            )
                         }
                     })
                 };

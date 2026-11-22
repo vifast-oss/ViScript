@@ -114,4 +114,25 @@ impl crate::builtin::Host for Interp<'_> {
         let n = self.ngoai.as_mut()?;
         Some(n.chay_day_du(ten, args, stdin, span))
     }
+
+    // **ST-292 (P4)** — hook frame driver ↔ evaluator worker (default no-op ở trait).
+    fn worker_is_task(&self, id: u32) -> bool {
+        crate::rt::exec::is_worker_task(&self.sched.borrow(), id)
+    }
+
+    fn worker_in_flight(&self) -> bool {
+        crate::rt::exec::in_flight(&self.sched.borrow())
+    }
+
+    fn worker_pump(&mut self, block: bool) -> R<usize> {
+        crate::rt::exec::pump(self, block)
+    }
+
+    fn worker_final_join(&mut self) -> R<()> {
+        crate::rt::exec::final_join(self)
+    }
+
+    fn worker_cancel(&mut self, id: u32) {
+        crate::rt::exec::cancel_worker(&mut self.sched.borrow_mut(), id);
+    }
 }

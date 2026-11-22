@@ -8,6 +8,7 @@
 use super::params::env_for_params;
 use super::proc::purge_terminal_frames;
 use super::*;
+use crate::builtin::Host;
 use crate::rt::Waiter;
 
 /// **VS3-1d** — driver frame dùng chung cho test và runtime thật. `it` đã có host/caps do
@@ -137,6 +138,11 @@ pub(crate) fn run_frame_driver<'a>(
             continue;
         }
         it.sched.borrow_mut().frame.current = current;
+        // **ST-292 (P4b)**: chuyển cancel của scheduler tới handle worker (idempotent).
+        let huy: Vec<u32> = it.sched.borrow().frame.cancelled.iter().copied().collect();
+        for id in huy {
+            it.worker_cancel(id);
+        }
         // **VD-258**: task đang chạy phải mang `DangChay` (trước đây không bao giờ đặt)
         // ⇒ `await` chính nó bị phát hiện thay vì treo im lặng.
         if current != 0 {
@@ -273,9 +279,27 @@ pub(crate) fn run_frame_driver<'a>(
         // main treo khi await một task thường. **VD-258**: CHỈ `Moi` (chưa chạy) — task
         // `Pending` đang chờ event không được đẩy lại ready (quay vô ích tới guard).
         let need_join = true;
-        let next = it.sched.borrow_mut().frame_next();
+        let mut next = it.sched.borrow_mut().frame_next();
         if it.sched.borrow().frame.selector_error.is_some() {
             break;
+        }
+        // **ST-292 (P4)**: không có frame sẵn sàng nhưng pool còn in-flight ⇒ pump outcome
+        // (50 ms/lần) và thử `frame_next` lại; timer/reactor vẫn có cơ hội fire giữa các lần.
+        if next.is_none() && it.worker_in_flight() {
+            for _ in 0..400 {
+                match it.worker_pump(true) {
+                    Ok(_) => {}
+                    Err(crate::interp::Abort::Trap(t)) => {
+                        trap = Some(t);
+                        break;
+                    }
+                    Err(_) => {}
+                }
+                next = it.sched.borrow_mut().frame_next();
+                if next.is_some() || !it.worker_in_flight() {
+                    break;
+                }
+            }
         }
         let next = match next {
             Some(n) => Some(n),
@@ -286,6 +310,7 @@ pub(crate) fn run_frame_driver<'a>(
                         .iter()
                         .filter(|t| t.trang_thai.get() == rt::TrangThai::Moi)
                         .filter(|t| !s.frame.external.contains_key(&t.id))
+                        .filter(|t| !it.worker_is_task(t.id))
                         .map(|t| t.id)
                         .collect()
                 };
@@ -372,13 +397,19 @@ pub(crate) fn run_frame_driver<'a>(
     frames.clear();
     it.sched.borrow_mut().frame_drain_events();
     // **ST-278 (VD-256)**: lỗi task cache ở final join phải surfaced (cùng hợp đồng VS0506).
+    // **ST-292 (P4)**: chờ worker pool, cache task chưa await, flush output theo spawn order.
+    if trap.is_none() {
+        if let Err(crate::interp::Abort::Trap(t)) = it.worker_final_join() {
+            trap = Some(t);
+        }
+    }
     let final_join_err = it.sched.borrow_mut().frame_final_join();
     if trap.is_none() {
         trap = final_join_err;
     }
     // **VD-258**: không còn frame sẵn sàng mà vẫn có waiter/task chưa terminal ⇒ deadlock
     // thật (event không bao giờ tới), KHÔNG được trả exit 0 như thành công.
-    if trap.is_none() {
+    if trap.is_none() && !it.worker_in_flight() {
         trap = it.sched.borrow().frame_stuck_trap();
     }
     // **VD-259**: đo **trước** `frame_reactor_shutdown` — nếu đo sau, regs/timers luôn 0 và

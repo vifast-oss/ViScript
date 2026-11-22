@@ -22,7 +22,7 @@ use vis_interp::interp::{Abort, Trap, RT, TASK_ERR};
 use vis_interp::rt::fee::SharedBudget;
 use vis_interp::rt::Task;
 use vis_interp::value::worker::{
-    OutcomeBoard, SendValue, TaskHandle, TaskId, WaitError, WorkerError, WorkerPool,
+    OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerError, WorkerPool,
 };
 use vis_interp::value::Value;
 use vis_syntax::Span;
@@ -49,6 +49,11 @@ struct Proxy {
     pool_id: TaskId,
     handle: TaskHandle,
     flushed: bool,
+    /// **ST-292 (P4)**: outcome đã pump; output/dirty chờ flush tại await/final.
+    done: bool,
+    output: String,
+    dirty: Vec<String>,
+    cancelled: bool,
 }
 
 /// Trạng thái evaluator worker của một `Vm`. `Vm` không `Send`; pool/board là opt-in.
@@ -150,7 +155,9 @@ pub(crate) fn spawn_task(
     span: Span,
 ) -> vis_interp::interp::R<Value> {
     let mode = vm.worker.borrow().mode;
-    if mode == Mode::Off {
+    // **ST-292 (P4a)**: chỉ main frame đẩy spawn lên pool; frame task chạy local.
+    let frame_task = vm.sched.borrow().frame.current != 0;
+    if mode == Mode::Off || frame_task {
         let t = vm.sched.borrow_mut().spawn(fi, args, ten, span);
         return Ok(Value::Task(t));
     }
@@ -193,89 +200,209 @@ pub(crate) fn spawn_task(
             pool_id,
             handle,
             flushed: false,
+            done: false,
+            output: String::new(),
+            dirty: Vec::new(),
+            cancelled: false,
         },
     );
     Ok(Value::Task(t))
 }
 
-/// `$await` của VM: Off dùng `rt::await_task`; Parallel chờ outcome board.
+fn code_cross() -> &'static vis_diag::Code {
+    &vis_diag::RUNTIME_CODES[8]
+}
+
+fn code_budget() -> &'static vis_diag::Code {
+    &vis_diag::RUNTIME_CODES[9]
+}
+
+/// Trap từ lỗi worker: **luôn** bọc `VS0506`, giữ mã gốc trong message (kể cả `VS0510`).
+fn loi_task(task: &Task, m: String) -> Trap {
+    Trap::new(
+        TASK_ERR,
+        format!("tác vụ `{}` lỗi: {m}", task.ten),
+        task.span,
+    )
+}
+
+/// Áp outcome vào proxy + cache `Task`; **không** flush output.
+fn apply_outcome(vm: &mut Vm<'_>, o: vis_interp::value::worker::TaskOutcome) {
+    let mut w = vm.worker.borrow_mut();
+    let Some(main_id) = w.pool_to_task.get(&o.id).copied() else {
+        return;
+    };
+    let Some(p) = w.proxy.get_mut(&main_id) else {
+        return;
+    };
+    p.done = true;
+    p.output = o.output.clone();
+    p.dirty = o.dirty.clone();
+    p.cancelled = o.cancelled;
+    let task = Rc::clone(&p.task);
+    drop(w);
+    let ket = match o.result {
+        Ok(sv) => Ok(sv.to_value()),
+        Err(m) => Err(loi_task(&task, m)),
+    };
+    *task.kq.borrow_mut() = Some(ket.clone());
+    task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
+    vm.sched.borrow_mut().frame_task_done(main_id, ket);
+}
+
+/// **ST-292 (P4)**: rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa 50 ms.
+pub(crate) fn pump(vm: &mut Vm<'_>, block: bool) -> vis_interp::interp::R<usize> {
+    let (board, ids) = {
+        let w = vm.worker.borrow();
+        let Some(board) = w.board.clone() else {
+            return Ok(0);
+        };
+        let ids: Vec<TaskId> = w
+            .proxy
+            .values()
+            .filter(|p| !p.done)
+            .map(|p| p.pool_id)
+            .collect();
+        (board, ids)
+    };
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    let mut outs = Vec::new();
+    if block {
+        if let Ok((_, o)) = board.wait_any_timeout(&ids, Duration::from_millis(50)) {
+            outs.push(o);
+        }
+    }
+    for id in &ids {
+        if let Some(o) = board.try_take(*id) {
+            outs.push(o);
+        }
+    }
+    let n = outs.len();
+    for o in outs {
+        apply_outcome(vm, o);
+    }
+    Ok(n)
+}
+
+/// Còn proxy chưa có outcome.
+pub(crate) fn in_flight(vm: &Vm<'_>) -> bool {
+    vm.worker.borrow().proxy.values().any(|p| !p.done)
+}
+
+/// `id` là worker task (spawn từ main frame).
+pub(crate) fn is_worker_task(vm: &Vm<'_>, id: u32) -> bool {
+    let w = vm.worker.borrow();
+    w.mode != Mode::Off && w.proxy.contains_key(&id)
+}
+
+/// Huỷ hợp tác task worker (idempotent).
+pub(crate) fn cancel_worker(vm: &mut Vm<'_>, id: u32) {
+    if let Some(p) = vm.worker.borrow().proxy.get(&id) {
+        p.handle.cancel();
+    }
+}
+
+/// Flush output của proxy đúng một lần; dirty ⇒ `VS0509`, cancelled ⇒ `VS0506`.
+fn flush_proxy(vm: &mut Vm<'_>, id: u32, span: Span) -> vis_interp::interp::R<()> {
+    let (output, dirty, cancelled, ten) = {
+        let mut w = vm.worker.borrow_mut();
+        let Some(p) = w.proxy.get_mut(&id) else {
+            return Ok(());
+        };
+        if p.flushed {
+            return Ok(());
+        }
+        p.flushed = true;
+        (
+            std::mem::take(&mut p.output),
+            std::mem::take(&mut p.dirty),
+            p.cancelled,
+            p.task.ten.clone(),
+        )
+    };
+    vm.out.push_str(&output);
+    if !dirty.is_empty() {
+        return Err(Abort::Trap(Trap::new(
+            code_cross(),
+            format!(
+                "ghi chéo worker (W>1): biến {} (task `{ten}`)",
+                dirty.join(", ")
+            ),
+            span,
+        )));
+    }
+    if cancelled {
+        return Err(Abort::Trap(Trap::new(
+            TASK_ERR,
+            "tác vụ bị huỷ".to_string(),
+            span,
+        )));
+    }
+    Ok(())
+}
+
+/// `$await` của VM: frame mode ⇒ suspend; non-frame chờ board; flush output tại tiêu thụ.
 pub(crate) fn await_task(
     vm: &mut Vm<'_>,
     t: &Rc<Task>,
     span: Span,
 ) -> vis_interp::interp::R<Value> {
-    let found = {
+    let (frame_on, has_proxy, done) = {
         let w = vm.worker.borrow();
-        if w.mode == Mode::Off {
-            None
-        } else {
-            w.proxy.get(&t.id).map(|p| (p.pool_id, w.board.clone()))
-        }
+        let p = w.proxy.get(&t.id);
+        (
+            vm.sched.borrow().frame.enabled,
+            p.is_some(),
+            p.map(|p| p.done).unwrap_or(false),
+        )
     };
-    let Some((pool_id, board)) = found else {
+    if !has_proxy {
         return vis_interp::rt::await_task(vm, t, span);
-    };
-    let Some(board) = board else {
-        return Err(loi_abort("worker VM thiếu outcome board", span));
-    };
-    let outcome = loop {
-        match board.wait_timeout(pool_id, Duration::from_millis(50)) {
-            Ok(o) => break o,
-            Err(WaitError::Timeout) => continue,
-            Err(WaitError::Closed) => {
-                return Err(loi_abort("worker pool đóng bất ngờ khi await", span))
-            }
-        }
-    };
-    {
-        let mut w = vm.worker.borrow_mut();
-        if let Some(p) = w.proxy.get_mut(&t.id) {
-            p.flushed = true;
-        }
     }
-    vm.out.push_str(&outcome.output);
-    let tr = if !outcome.dirty.is_empty() {
-        Some(loi(
-            format!(
-                "ghi chéo worker (W>1): biến {} (task `{}`)",
-                outcome.dirty.join(", "),
-                t.ten
-            ),
+    if frame_on && !done {
+        return Err(Abort::Pending(vis_interp::rt::Pending {
+            task: Some(Rc::clone(t)),
+            wait: None,
             span,
-        ))
-    } else if outcome.cancelled {
-        Some(Trap::new(TASK_ERR, "tác vụ bị huỷ".to_string(), t.span))
-    } else {
-        None
-    };
-    if let Some(tr) = tr {
-        *t.kq.borrow_mut() = Some(Err(tr.clone()));
-        t.trang_thai.set(vis_interp::rt::TrangThai::Xong);
-        return Err(Abort::Trap(tr));
+        }));
     }
-    match outcome.result {
-        Ok(sv) => {
-            let v = sv.to_value();
-            *t.kq.borrow_mut() = Some(Ok(v.clone()));
-            t.trang_thai.set(vis_interp::rt::TrangThai::Xong);
-            Ok(v)
-        }
-        Err(m) => {
-            let tr = Trap::new(TASK_ERR, format!("tác vụ `{}` lỗi: {m}", t.ten), t.span);
-            *t.kq.borrow_mut() = Some(Err(tr.clone()));
-            t.trang_thai.set(vis_interp::rt::TrangThai::Xong);
-            Err(Abort::Trap(tr))
+    while !vm
+        .worker
+        .borrow()
+        .proxy
+        .get(&t.id)
+        .map(|p| p.done)
+        .unwrap_or(false)
+    {
+        let _ = pump(vm, false)?;
+        if !vm
+            .worker
+            .borrow()
+            .proxy
+            .get(&t.id)
+            .map(|p| p.done)
+            .unwrap_or(false)
+        {
+            let _ = pump(vm, true)?;
         }
     }
+    flush_proxy(vm, t.id, span)?;
+    if let Some(kq) = t.kq.borrow().clone() {
+        return kq.map_err(Abort::Trap);
+    }
+    Err(loi_abort("task worker thiếu kết quả sau pump", span))
 }
 
-/// Join cuối của VM.
-pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
-    let (pool, proxy, map) = {
+/// Final join VM: chờ pool, cache task chưa await, flush output theo spawn order.
+pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
+    let (pool, mut proxy, map) = {
         let mut w = vm.worker.borrow_mut();
         if w.mode == Mode::Off {
-            drop(w);
-            return vis_interp::rt::join_all(vm);
+            // Frame Off/W1: no-op (giữ nguyên hành vi trước P4); non-frame đã gọi
+            // `Host::join_tasks` riêng.
+            return Ok(());
         }
         (
             w.pool.take(),
@@ -289,14 +416,15 @@ pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
     let outcomes = match pool.join() {
         Ok(r) => r.outcomes,
         Err(WorkerError::CrossWrite { vars, tasks }) => {
-            return Err(loi_abort(
+            return Err(Abort::Trap(Trap::new(
+                code_cross(),
                 format!(
                     "ghi chéo worker (W>1): biến {} (task {:?})",
                     vars.join(", "),
                     tasks
                 ),
                 Span::new(0, 0),
-            ))
+            )))
         }
         Err(e) => {
             return Err(loi_abort(
@@ -309,54 +437,61 @@ pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
         let Some(main_id) = map.get(&o.id).copied() else {
             continue;
         };
-        let Some(p) = proxy.get(&main_id) else {
+        let Some(p) = proxy.get_mut(&main_id) else {
             continue;
         };
-        if p.flushed {
-            continue;
-        }
-        vm.out.push_str(&o.output);
-        let task = Rc::clone(&p.task);
-        let tr = if !o.dirty.is_empty() {
-            Some(loi(
-                format!(
-                    "ghi chéo worker (W>1): biến {} (task `{}`)",
-                    o.dirty.join(", "),
-                    task.ten
-                ),
-                task.span,
-            ))
-        } else if o.cancelled {
-            Some(Trap::new(TASK_ERR, "tác vụ bị huỷ".to_string(), task.span))
-        } else {
-            None
-        };
-        if let Some(tr) = tr {
-            *task.kq.borrow_mut() = Some(Err(tr.clone()));
+        if !p.done {
+            p.done = true;
+            p.output = o.output.clone();
+            p.dirty = o.dirty.clone();
+            p.cancelled = o.cancelled;
+            let task = Rc::clone(&p.task);
+            let ket = match o.result {
+                Ok(sv) => Ok(sv.to_value()),
+                Err(m) => Err(loi_task(&task, m)),
+            };
+            *task.kq.borrow_mut() = Some(ket);
             task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
-            return Err(Abort::Trap(tr));
         }
-        match o.result {
-            Ok(sv) => {
-                *task.kq.borrow_mut() = Some(Ok(sv.to_value()));
-                task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
+        if !p.flushed {
+            p.flushed = true;
+            let output = std::mem::take(&mut p.output);
+            let dirty = std::mem::take(&mut p.dirty);
+            let cancelled = p.cancelled;
+            let ten = p.task.ten.clone();
+            let span = p.task.span;
+            vm.out.push_str(&output);
+            if !dirty.is_empty() {
+                return Err(Abort::Trap(Trap::new(
+                    code_cross(),
+                    format!(
+                        "ghi chéo worker (W>1): biến {} (task `{ten}`)",
+                        dirty.join(", ")
+                    ),
+                    span,
+                )));
             }
-            Err(m) => {
-                let tr = Trap::new(
+            if cancelled {
+                return Err(Abort::Trap(Trap::new(
                     TASK_ERR,
-                    format!("tác vụ `{}` lỗi: {m}", task.ten),
-                    task.span,
-                );
-                *task.kq.borrow_mut() = Some(Err(tr.clone()));
-                task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
-                return Err(Abort::Trap(tr));
+                    "tác vụ bị huỷ".to_string(),
+                    span,
+                )));
             }
         }
     }
     Ok(())
 }
 
-/// Safe point huỷ trong VM (gọi mỗi 1.024 lệnh từ vòng fetch).
+/// Alias cũ.
+pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
+    // Non-frame default: giữ nguyên `join_all` cũ (kể cả task không ai await).
+    if vm.worker.borrow().mode == Mode::Off {
+        return vis_interp::rt::join_all(vm);
+    }
+    final_join(vm)
+}
+
 impl Vm<'_> {
     pub(crate) fn worker_tick(&self, span: Span) -> Option<Abort> {
         if self.steps & 1023 != 0 {

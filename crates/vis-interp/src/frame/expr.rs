@@ -814,12 +814,24 @@ pub(super) fn dispatch<'a>(
             Ok(())
         }
         Callee::Spawn(sym, ten) => {
-            let t = it
-                .sched
-                .borrow_mut()
-                .spawn(sym, args, ten.to_string(), span);
+            // **ST-292 (P4a)**: chỉ frame **main** đẩy spawn lên pool; spawn trong frame task
+            // chạy local trong driver (không chạy thân lần hai, không worker-await-worker).
+            let song_song = {
+                let s = it.sched.borrow();
+                matches!(s.exec.mode, crate::rt::exec::WorkerMode::Parallel(_))
+                    && s.frame.current == 0
+            };
+            let v = if song_song {
+                crate::rt::exec::spawn_parallel(it, sym, args, ten.to_string(), span)?
+            } else {
+                let t = it
+                    .sched
+                    .borrow_mut()
+                    .spawn(sym, args, ten.to_string(), span);
+                Value::Task(t)
+            };
             let _ = named;
-            frame.push_val(Value::Task(t));
+            frame.push_val(v);
             Ok(())
         }
         Callee::Named(sym, is_async, ten) => {

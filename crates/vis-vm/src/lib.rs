@@ -73,6 +73,41 @@ pub fn run_workers_parallel_vm_with_budget(
     run_workers_parallel_vm_mode(m, text, args, workers, Some(budget), None)
 }
 
+/// **ST-292 (P4)** — `Parallel(n)` có đủ host/caps (CLI `vis run --workers`).
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_workers_parallel_vm_with_full_hosts_caps<'a>(
+    m: &'a vis_bytecode::Module,
+    text: &'a str,
+    args: &[String],
+    ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
+    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
+    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
+    caps: &[(u32, vis_interp::value::Value)],
+    workers: usize,
+    budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+) -> RunOutput {
+    let mut vm = vm::Vm::new(m, text);
+    vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), budget, None);
+    if let Some(n) = ngoai {
+        vm.set_ngoai(n);
+    }
+    if let Some(f) = fs {
+        vm.set_fs(f);
+    }
+    if let Some(g) = net {
+        vm.set_net(g);
+    }
+    if let Some(d) = db {
+        vm.set_db(d);
+    }
+    if !caps.is_empty() {
+        vm.caps = caps.to_vec();
+    }
+    vm.run(args)
+}
+
 /// **Test hook P3**: huỷ task VM đang chạy sau `ms` mili giây (safe point 1.024 lệnh).
 #[doc(hidden)]
 pub fn run_workers_parallel_vm_cancel_after(
@@ -103,4 +138,7 @@ pub use vm::{
     run, run_with_fs, run_with_full_hosts_caps, run_with_hosts, run_with_hosts_caps, Vm, VmError,
     MAX_FRAMES, MAX_STEPS,
 };
-pub use vm_frame::{run_async_with_full_hosts_caps, run_async_with_full_hosts_caps_backend};
+pub use vm_frame::{
+    run_async_with_full_hosts_caps, run_async_with_full_hosts_caps_backend,
+    run_async_workers_with_full_hosts_caps,
+};

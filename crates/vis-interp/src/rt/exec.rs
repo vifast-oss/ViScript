@@ -21,7 +21,7 @@ use crate::interp::{Interp, Trap, R, RT};
 use crate::rt::fee::SharedBudget;
 use crate::rt::Task;
 use crate::value::worker::{
-    OutcomeBoard, SendValue, TaskHandle, TaskId, WaitError, WorkerCtx, WorkerError, WorkerPool,
+    OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerCtx, WorkerError, WorkerPool,
 };
 use crate::value::Value;
 
@@ -49,7 +49,13 @@ pub(crate) struct TaskProxy {
     pub(crate) task: Rc<Task>,
     pub(crate) pool_id: TaskId,
     pub(crate) handle: TaskHandle,
+    /// Output đã append vào `host.out` (flush đúng một lần).
     pub(crate) flushed: bool,
+    /// **ST-292 (P4)**: outcome đã được pump lấy (output/dirty nằm trong proxy).
+    pub(crate) done: bool,
+    pub(crate) output: String,
+    pub(crate) dirty: Vec<String>,
+    pub(crate) cancelled: bool,
 }
 
 /// **ST-291 (P2b-1)** — job đã tạo `Task` nhưng **chưa gửi** pool.
@@ -86,6 +92,9 @@ pub(crate) struct ExecState {
     pub(crate) pending: Vec<PendingJob>,
     /// **ST-291 (P2b-2)**: `Task.id` theo đúng thứ tự gửi pool — thay `HashMap` task↔pool.
     pub(crate) pool_order: Vec<u32>,
+    /// **ST-292 (P4)**: `Task.id` là worker task (spawn từ **main frame**) — fallback frame
+    /// không được dựng frame chạy lại thân.
+    pub(crate) worker_ids: Vec<bool>,
 }
 
 impl fmt::Debug for ExecState {
@@ -99,6 +108,10 @@ impl fmt::Debug for ExecState {
             )
             .field("pending_len", &self.pending.len())
             .field("pool_order_len", &self.pool_order.len())
+            .field(
+                "worker_ids",
+                &self.worker_ids.iter().filter(|w| **w).count(),
+            )
             .field("budget", &self.budget.is_some())
             .finish()
     }
@@ -180,6 +193,10 @@ pub(crate) fn spawn_parallel(
         .ensure_pool()
         .map_err(|m| crate::interp::Abort::Trap(loi(format!("worker pool: {m}"), span)))?;
     s.exec.order.push(t.id);
+    if s.exec.worker_ids.len() <= t.id as usize {
+        s.exec.worker_ids.resize(t.id as usize + 1, false);
+    }
+    s.exec.worker_ids[t.id as usize] = true;
     // **ST-291 (P2b-1)**: không gửi job ngay — gom vào lô, `flush_jobs` gửi trước await/join.
     s.exec.pending.push(PendingJob {
         task: Rc::clone(&t),
@@ -253,6 +270,10 @@ pub(crate) fn flush_jobs(host: &mut dyn Host) -> R<()> {
             pool_id,
             handle,
             flushed: false,
+            done: false,
+            output: String::new(),
+            dirty: Vec::new(),
+            cancelled: false,
         });
         s.exec.pool_order.push(idx as u32);
     }
@@ -264,87 +285,191 @@ pub(crate) fn await_local(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Va
     crate::rt::await_task_off(host, t, span)
 }
 
-/// **P2**: `await` task worker — chờ outcome board, flush output tại điểm tiêu thụ, cache kết quả.
+/// Mã **VS0509** — ghi chéo worker (ST-290 cấp, ST-292 dùng).
+fn code_cross() -> &'static vis_diag::Code {
+    &vis_diag::RUNTIME_CODES[8]
+}
+
+/// Trap từ lỗi chuỗi của worker: **luôn** bọc `VS0506`, giữ mã gốc trong message (kể cả
+/// `VS0510`) — cùng hợp đồng task-error với W=1.
+fn loi_task(task: &Task, m: String) -> Trap {
+    Trap::new(
+        crate::interp::TASK_ERR,
+        format!("tác vụ `{}` lỗi: {m}", task.ten),
+        task.span,
+    )
+}
+
+/// **ST-292 (P4)**: áp một outcome vào proxy + cache `Task`; **không** flush output.
+fn apply_outcome(s: &mut crate::rt::Scheduler, o: crate::value::worker::TaskOutcome) {
+    let Some(main_id) = s.exec.pool_order.get(o.id.as_u64() as usize).copied() else {
+        return;
+    };
+    let Some(p) = s
+        .exec
+        .proxy
+        .get_mut(main_id as usize)
+        .and_then(|p| p.as_mut())
+    else {
+        return;
+    };
+    p.done = true;
+    p.output = o.output.clone();
+    p.dirty = o.dirty.clone();
+    p.cancelled = o.cancelled;
+    let task = Rc::clone(&p.task);
+    let ket = match o.result {
+        Ok(sv) => Ok(sv.to_value()),
+        Err(m) => Err(loi_task(&task, m)),
+    };
+    *task.kq.borrow_mut() = Some(ket.clone());
+    task.trang_thai.set(crate::rt::TrangThai::Xong);
+    s.frame_task_done(main_id, ket);
+}
+
+/// Flush output của proxy đúng **một lần**; dirty ⇒ `VS0509`, cancelled ⇒ `VS0506`.
+fn flush_proxy(host: &mut dyn Host, id: u32, span: Span) -> R<()> {
+    let (output, dirty, cancelled, ten) = {
+        let mut s = host.sched().borrow_mut();
+        let Some(p) = s.exec.proxy.get_mut(id as usize).and_then(|p| p.as_mut()) else {
+            return Ok(());
+        };
+        if p.flushed {
+            return Ok(());
+        }
+        p.flushed = true;
+        (
+            std::mem::take(&mut p.output),
+            std::mem::take(&mut p.dirty),
+            p.cancelled,
+            p.task.ten.clone(),
+        )
+    };
+    host.out().push_str(&output);
+    if !dirty.is_empty() {
+        return Err(crate::interp::Abort::Trap(Trap::new(
+            code_cross(),
+            format!(
+                "ghi chéo worker (W>1): biến {} (task `{ten}`)",
+                dirty.join(", ")
+            ),
+            span,
+        )));
+    }
+    if cancelled {
+        return Err(crate::interp::Abort::Trap(Trap::new(
+            crate::interp::TASK_ERR,
+            "tác vụ bị huỷ".to_string(),
+            span,
+        )));
+    }
+    Ok(())
+}
+
+/// **ST-292 (P4)**: rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa 50 ms. Trả số task vừa
+/// được đánh thức. Không giữ borrow `RefCell` khi chờ.
+pub(crate) fn pump(host: &mut dyn Host, block: bool) -> R<usize> {
+    let (board, ids) = {
+        let s = host.sched().borrow();
+        let Some(board) = s.exec.outcome_board.clone() else {
+            return Ok(0);
+        };
+        let ids: Vec<TaskId> = s
+            .exec
+            .proxy
+            .iter()
+            .flatten()
+            .filter(|p| !p.done)
+            .map(|p| p.pool_id)
+            .collect();
+        (board, ids)
+    };
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    let mut outs = Vec::new();
+    if block {
+        if let Ok((_, o)) = board.wait_any_timeout(&ids, Duration::from_millis(50)) {
+            outs.push(o);
+        }
+    }
+    for id in &ids {
+        if let Some(o) = board.try_take(*id) {
+            outs.push(o);
+        }
+    }
+    let n = outs.len();
+    if n > 0 {
+        let mut s = host.sched().borrow_mut();
+        for o in outs {
+            apply_outcome(&mut s, o);
+        }
+    }
+    Ok(n)
+}
+
+/// Còn job/task worker chưa có outcome.
+pub(crate) fn in_flight(s: &crate::rt::Scheduler) -> bool {
+    !s.exec.pending.is_empty() || s.exec.proxy.iter().flatten().any(|p| !p.done)
+}
+
+/// `id` là worker task (spawn từ main frame) — fallback không được chạy lại thân.
+pub(crate) fn is_worker_task(s: &crate::rt::Scheduler, id: u32) -> bool {
+    s.exec.worker_ids.get(id as usize).copied().unwrap_or(false)
+}
+
+/// Huỷ hợp tác task worker (idempotent).
+pub(crate) fn cancel_worker(s: &mut crate::rt::Scheduler, id: u32) {
+    if let Some(p) = s.exec.proxy.get(id as usize).and_then(|p| p.as_ref()) {
+        p.handle.cancel();
+    }
+}
+
+/// **P2/P4**: `await` task worker. Frame mode ⇒ suspend (`Pending`) tới khi pump xong; non-frame
+/// giữ nguyên chờ board. Output flush đúng điểm tiêu thụ; cache kết quả cho lần await sau.
 pub(crate) fn await_parallel(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
     // **ST-291 (P2b-1)**: bảo đảm job của `t` (và mọi job đang chờ trước đó) đã xuống pool.
     flush_jobs(host)?;
-    let (pool_id, board) = {
+    let (frame_on, has_proxy, done) = {
         let s = host.sched().borrow();
-        let Some(p) = s.exec.proxy.get(t.id as usize).and_then(|p| p.as_ref()) else {
-            return Err(crate::interp::Abort::Trap(loi(
-                format!("task worker `{}` thiếu proxy", t.ten),
-                span,
-            )));
-        };
-        (p.pool_id, s.exec.outcome_board.clone())
+        let p = s.exec.proxy.get(t.id as usize).and_then(|p| p.as_ref());
+        (
+            s.frame.enabled,
+            p.is_some(),
+            p.map(|p| p.done).unwrap_or(false),
+        )
     };
-    let Some(board) = board else {
-        return Err(crate::interp::Abort::Trap(loi(
-            "worker Parallel thiếu outcome board",
+    if !has_proxy {
+        return crate::rt::await_task_off(host, t, span);
+    }
+    if frame_on && !done {
+        return Err(crate::interp::Abort::Pending(crate::rt::Pending {
+            task: Some(Rc::clone(t)),
+            wait: None,
             span,
-        )));
-    };
-    let outcome = loop {
-        match board.wait_timeout(pool_id, Duration::from_millis(50)) {
-            Ok(o) => break o,
-            Err(WaitError::Timeout) => continue,
-            Err(WaitError::Closed) => {
-                return Err(crate::interp::Abort::Trap(loi(
-                    "worker pool đóng bất ngờ khi await",
-                    span,
-                )))
-            }
-        }
-    };
+        }));
+    }
+    // Non-frame: chờ board như cũ (pump block 50 ms tới khi có outcome).
+    while !host
+        .sched()
+        .borrow()
+        .exec
+        .proxy
+        .get(t.id as usize)
+        .and_then(|p| p.as_ref())
+        .map(|p| p.done)
+        .unwrap_or(false)
     {
-        let mut s = host.sched().borrow_mut();
-        if let Some(p) = s.exec.proxy.get_mut(t.id as usize).and_then(|p| p.as_mut()) {
-            p.flushed = true;
-        }
+        let _ = pump(host, true)?;
     }
-    host.out().push_str(&outcome.output);
-
-    let tr = if !outcome.dirty.is_empty() {
-        Some(loi(
-            format!(
-                "ghi chéo worker (W>1): biến {} (task `{}`)",
-                outcome.dirty.join(", "),
-                t.ten
-            ),
-            span,
-        ))
-    } else if outcome.cancelled {
-        Some(Trap::new(
-            crate::interp::TASK_ERR,
-            "tác vụ bị huỷ".to_string(),
-            t.span,
-        ))
-    } else {
-        None
-    };
-    if let Some(tr) = tr {
-        *t.kq.borrow_mut() = Some(Err(tr.clone()));
-        t.trang_thai.set(crate::rt::TrangThai::Xong);
-        return Err(crate::interp::Abort::Trap(tr));
+    flush_proxy(host, t.id, span)?;
+    if let Some(kq) = t.kq.borrow().clone() {
+        return kq.map_err(crate::interp::Abort::Trap);
     }
-    match outcome.result {
-        Ok(sv) => {
-            let v = sv.to_value();
-            *t.kq.borrow_mut() = Some(Ok(v.clone()));
-            t.trang_thai.set(crate::rt::TrangThai::Xong);
-            Ok(v)
-        }
-        Err(m) => {
-            let tr = Trap::new(
-                crate::interp::TASK_ERR,
-                format!("tác vụ `{}` lỗi: {m}", t.ten),
-                t.span,
-            );
-            *t.kq.borrow_mut() = Some(Err(tr.clone()));
-            t.trang_thai.set(crate::rt::TrangThai::Xong);
-            Err(crate::interp::Abort::Trap(tr))
-        }
-    }
+    Err(crate::interp::Abort::Trap(loi(
+        "task worker thiếu kết quả sau pump",
+        span,
+    )))
 }
 
 /// W=1: join mọi task theo thứ tự tạo, không thread/buffer.
@@ -352,15 +477,23 @@ pub(crate) fn join_local(host: &mut dyn Host) -> R<()> {
     crate::rt::join_all_off(host)
 }
 
-/// **P2**: join cuối — chờ pool, flush output task chưa await theo spawn order, cache, cross-write.
-pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
-    // **ST-291 (P2b-1)**: gửi nốt các job chưa flush (batch 10k spawn rồi join một lần).
+/// **P2/P4**: final join — chờ pool, cache task chưa await, flush output theo **spawn order**
+/// (outcome của pool đúng thứ tự gửi), surface dirty `VS0509`/cancel `VS0506`/lỗi task.
+pub(crate) fn final_join(host: &mut dyn Host) -> R<()> {
+    // Đường không song song: không có pool ⇒ no-op. Frame Off/W1 giữ nguyên hành vi trước P4
+    // (`frame_final_join` lo phần task cache); non-frame đã gọi `Host::join_tasks` riêng.
+    if !matches!(host.sched().borrow().exec.mode, WorkerMode::Parallel(_)) {
+        return Ok(());
+    }
     flush_jobs(host)?;
-    let (pool, proxy, pool_order) = {
+    let (pool, mut proxy, pool_order) = {
         let mut s = host.sched().borrow_mut();
         let pool = s.exec.pool.take();
         let proxy = std::mem::take(&mut s.exec.proxy);
         let order = std::mem::take(&mut s.exec.pool_order);
+        s.exec.worker_ids.clear();
+        s.exec.pending.clear();
+        s.exec.outcome_board = None;
         (pool, proxy, order)
     };
     let Some(pool) = pool else {
@@ -369,7 +502,8 @@ pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
     let outcomes = match pool.join() {
         Ok(r) => r.outcomes,
         Err(WorkerError::CrossWrite { vars, tasks }) => {
-            return Err(crate::interp::Abort::Trap(loi(
+            return Err(crate::interp::Abort::Trap(Trap::new(
+                code_cross(),
                 format!(
                     "ghi chéo worker (W>1): biến {} (task {:?})",
                     vars.join(", "),
@@ -385,54 +519,58 @@ pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
             )))
         }
     };
-    for (o, main_id) in outcomes.into_iter().zip(pool_order) {
-        let Some(p) = proxy.get(main_id as usize).and_then(|p| p.as_ref()) else {
+    for o in outcomes {
+        let Some(main_id) = pool_order.get(o.id.as_u64() as usize).copied() else {
             continue;
         };
-        if p.flushed {
+        let Some(p) = proxy.get_mut(main_id as usize).and_then(|p| p.as_mut()) else {
             continue;
-        }
-        host.out().push_str(&o.output);
-        let task = Rc::clone(&p.task);
-        let tr = if !o.dirty.is_empty() {
-            Some(loi(
-                format!(
-                    "ghi chéo worker (W>1): biến {} (task `{}`)",
-                    o.dirty.join(", "),
-                    task.ten
-                ),
-                task.span,
-            ))
-        } else if o.cancelled {
-            Some(Trap::new(
-                crate::interp::TASK_ERR,
-                "tác vụ bị huỷ".to_string(),
-                task.span,
-            ))
-        } else {
-            None
         };
-        if let Some(tr) = tr {
-            *task.kq.borrow_mut() = Some(Err(tr.clone()));
+        if !p.done {
+            p.done = true;
+            p.output = o.output.clone();
+            p.dirty = o.dirty.clone();
+            p.cancelled = o.cancelled;
+            let task = Rc::clone(&p.task);
+            let ket = match o.result {
+                Ok(sv) => Ok(sv.to_value()),
+                Err(m) => Err(loi_task(&task, m)),
+            };
+            *task.kq.borrow_mut() = Some(ket.clone());
             task.trang_thai.set(crate::rt::TrangThai::Xong);
-            return Err(crate::interp::Abort::Trap(tr));
         }
-        match o.result {
-            Ok(sv) => {
-                *task.kq.borrow_mut() = Some(Ok(sv.to_value()));
-                task.trang_thai.set(crate::rt::TrangThai::Xong);
+        // Flush output **một lần**, kể cả task đã được pump (done) nhưng chưa ai await.
+        if !p.flushed {
+            p.flushed = true;
+            let output = std::mem::take(&mut p.output);
+            let dirty = std::mem::take(&mut p.dirty);
+            let cancelled = p.cancelled;
+            let ten = p.task.ten.clone();
+            let span = p.task.span;
+            host.out().push_str(&output);
+            if !dirty.is_empty() {
+                return Err(crate::interp::Abort::Trap(Trap::new(
+                    code_cross(),
+                    format!(
+                        "ghi chéo worker (W>1): biến {} (task `{ten}`)",
+                        dirty.join(", ")
+                    ),
+                    span,
+                )));
             }
-            Err(m) => {
-                let tr = Trap::new(
+            if cancelled {
+                return Err(crate::interp::Abort::Trap(Trap::new(
                     crate::interp::TASK_ERR,
-                    format!("tác vụ `{}` lỗi: {m}", task.ten),
-                    task.span,
-                );
-                *task.kq.borrow_mut() = Some(Err(tr.clone()));
-                task.trang_thai.set(crate::rt::TrangThai::Xong);
-                return Err(crate::interp::Abort::Trap(tr));
+                    "tác vụ bị huỷ".to_string(),
+                    span,
+                )));
             }
         }
     }
     Ok(())
+}
+
+/// Alias cũ (non-frame `join_all` gọi tên này).
+pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
+    final_join(host)
 }

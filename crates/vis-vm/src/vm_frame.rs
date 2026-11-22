@@ -16,6 +16,7 @@ use std::rc::Rc;
 use vis_bytecode::fee::{FeeEntry, FeeTable};
 use vis_bytecode::Instr;
 use vis_interp::builtin;
+use vis_interp::builtin::Host;
 use vis_interp::frame::{FrameConfig, FrameOutput};
 use vis_interp::interp::{Abort, Trap, BUDGET, R, RT};
 use vis_interp::rt::{self, Waiter};
@@ -591,6 +592,58 @@ pub fn run_async_with_full_hosts_caps_backend<'m>(
     }
 }
 
+/// **ST-292 (P4)** — frame + evaluator **`Parallel(workers)`** cho VM (main frame spawn ⇒ pool).
+#[doc(hidden)]
+#[allow(clippy::too_many_arguments)]
+pub fn run_async_workers_with_full_hosts_caps<'m>(
+    m: &'m vis_bytecode::Module,
+    text: &'m str,
+    args: &[String],
+    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
+    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
+    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
+    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    caps: &[(u32, Value)],
+    workers: usize,
+    budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+) -> vis_interp::RunOutput {
+    let mut vm = Vm::new(m, text);
+    crate::vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), budget, None);
+    if let Some(n) = ngoai {
+        vm.set_ngoai(n);
+    }
+    if let Some(f) = fs {
+        vm.set_fs(f);
+    }
+    if let Some(g) = net {
+        vm.set_net(g);
+    }
+    if let Some(d) = db {
+        vm.set_db(d);
+    }
+    if !caps.is_empty() {
+        vm.caps = caps.to_vec();
+    }
+    let (fo, _) = run_frame_vm_driver(
+        &mut vm,
+        m,
+        text,
+        args,
+        FrameConfig {
+            backend: None,
+            ..Default::default()
+        },
+        None,
+    );
+    vis_interp::RunOutput {
+        stdout: fo.stdout,
+        diagnostics: fo.diagnostics,
+        value: fo.value,
+        exit: fo.exit,
+        steps: vm.steps,
+    }
+}
+
 fn run_frame_with_budget<'m>(
     m: &'m vis_bytecode::Module,
     text: &'m str,
@@ -694,6 +747,11 @@ fn run_frame_vm_driver<'m>(
             break;
         }
         vm.sched.borrow_mut().frame.current = current;
+        // **ST-292 (P4b)**: chuyển cancel của scheduler tới handle worker (idempotent).
+        let huy: Vec<u32> = vm.sched.borrow().frame.cancelled.iter().copied().collect();
+        for id in huy {
+            vm.worker_cancel(id);
+        }
         // **VD-258**: task đang chạy mang `DangChay` ⇒ `await` chính nó bị phát hiện.
         if current != 0 {
             if let Some(t) = vm
@@ -812,10 +870,27 @@ fn run_frame_vm_driver<'m>(
         }
 
         let need_join = true; // final join luôn được phép sau khi main xong
-        let next = vm.sched.borrow_mut().frame_next();
+        let mut next = vm.sched.borrow_mut().frame_next();
         // Lát 3: lỗi selector là điểm dừng — KHÔNG final-join rồi chạy lại vô hạn.
         if vm.sched.borrow().frame.selector_error.is_some() {
             break;
+        }
+        // **ST-292 (P4)**: pool còn in-flight ⇒ pump 50 ms/lần rồi thử frame_next lại.
+        if next.is_none() && vm.worker_in_flight() {
+            for _ in 0..400 {
+                match vm.worker_pump(true) {
+                    Ok(_) => {}
+                    Err(Abort::Trap(t)) => {
+                        trap = Some(t);
+                        break;
+                    }
+                    Err(_) => {}
+                }
+                next = vm.sched.borrow_mut().frame_next();
+                if next.is_some() || !vm.worker_in_flight() {
+                    break;
+                }
+            }
         }
         let next = match next {
             Some(n) => Some(n),
@@ -829,6 +904,7 @@ fn run_frame_vm_driver<'m>(
                         .iter()
                         .filter(|t| t.trang_thai.get() == rt::TrangThai::Moi)
                         .filter(|t| !s.frame.external.contains_key(&t.id))
+                        .filter(|t| !vm.worker_is_task(t.id))
                         .map(|t| t.id)
                         .collect()
                 };
@@ -898,6 +974,12 @@ fn run_frame_vm_driver<'m>(
     vm.sched.borrow_mut().frame.live_frames = frames.len();
     frames.clear();
     vm.sched.borrow_mut().frame_drain_events();
+    // **ST-292 (P4)**: chờ worker pool, cache task chưa await, flush output theo spawn order.
+    if trap.is_none() {
+        if let Err(Abort::Trap(t)) = vm.worker_final_join() {
+            trap = Some(t);
+        }
+    }
     let final_join_err = vm.sched.borrow_mut().frame_final_join();
     // **ST-278 (VD-256)**: lỗi task ở final join phải **surfaced** — không exit 0. Ưu tiên trap
     // đã có (main lỗi); nếu chưa có thì dùng lỗi `VS0506` đã bọc sẵn trong `Task.kq`.
@@ -906,7 +988,7 @@ fn run_frame_vm_driver<'m>(
     }
     // **VD-258**: hết frame sẵn sàng mà còn waiter/task chưa terminal/đăng ký reactor
     // ⇒ deadlock thật, không được trả exit 0.
-    if trap.is_none() {
+    if trap.is_none() && !vm.worker_in_flight() {
         trap = vm.sched.borrow().frame_stuck_trap();
     }
     // **VD-259**: snapshot **trước** shutdown — nếu không, regs/timers luôn 0.
