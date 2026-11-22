@@ -3,6 +3,38 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.4.0 — 2026-11-23 (chuẩn bị phát hành — **CHƯA TAG**)
+
+- **Phiên bản**: workspace **0.4.0** (`version.workspace = true` cho mọi crate thành viên);
+  `vis --version` ⇒ **`vis 0.4.0`**; `PHIEN_BAN` thêm nhãn `+v040-release-2026-11-23`, khoá cache
+  ghim lại (VD-129) — cache 0.3.6 tự vô hiệu, `VERSION` VBC1/ABI không đổi.
+- **ST-290** (`3627f3bc`, merge `a48d5b8`): ngân sách ngữ nghĩa mặc định **40M** interp↔VM,
+  `VS0509`/`VS0510` (sổ **56** mã), cache VM có trailer `VFEE`; workspace **3594/0/3**, diff 0.
+- **ST-291** (`269ff71`, merge `8cc3588`): P2b-1/2 lazy/batched submit + compact `Vec` proxy;
+  batch 10k **29,1 ms** interp / **28,6–29,7 ms** VM; gate **3638/4**, Windows verify **3588/0/3**.
+- **ST-292** (`eca4e82`, merge `e47b3ca`): P4a/P4b frame + worker pump, `VS0509`/`VS0510` cho
+  cross-write/budget, CLI `vis run --workers <N>` (mặc định 1); 12+6 ca frame; gate Linux
+  **3656/4**, diff 100k **0 lệch**.
+- **ST-293** (`82064e9`, merge `6d6bfe9`): `select_recv*`/`select_send*` trên frame runtime;
+  **25 ca**, fairness/waiter, interp↔VM byte-identical; gate **3632/4**, diff 0.
+- **ST-294** (`39cc81cc`, merge `e35dcf6`): `async-h2` bỏ giới hạn Unix, chạy Windows qua
+  `Nguon`/`mio` và bật **mặc định non-wasm**; Windows h2 **33/33**, Linux gate **3607/4**.
+- **ST-295** (`ba4023f`, merge `cd76da5`): `rustix =1.1.6` `openat2(RESOLVE_BENEATH|
+  RESOLVE_NO_SYMLINKS)` + fallback `O_NOFOLLOW`; ca đua ghi **100/100 → 0/100**; Landlock `#125`
+  (Execute + libs) **18/18**; gate **3613/4**, diff 0.
+- **ST-296d** (`b36f8a5` + `4b2484f`): luật **R7** (log >50 KB phải ngoài repo/legacy), nextest
+  `retries=0`, `bin/vis-{gc-targets,jobs,status,gate-windows}`; Windows quick **pkg 25 / h2 33 /
+  cancel 8 / select 25**.
+- **ST-299a** (`5cc1903`, merge `060a744`): `WasiHost` thật cho `wasm32-wasip1` + `vis-wasm-run`;
+  native **27/27**, wasm **26/26** trên wasmtime 51 + Node 26; binary **3.430.132 B**.
+- **Timing fix** `6c7e188`: `vd270_test_slowest` chịu tải (không `#[ignore]`), giữ kiểm regression.
+- **QA đang chốt**: Linux gate **3656 passed / 4 skipped** @ `e47b3ca`; Windows full
+  **3589/0/3**; release/fresh-clone và soak cuối đang chạy trong final QA — số release sẽ chốt
+  cùng tag. **`v0.4.0` CHƯA TAG**; tag hiện hành vẫn **`v0.3.6` @ `8fa2c09`**.
+- **Nhánh chờ sau tag**: `plan/w4-st296a-tests` @ `f961b83` (gom test binary, gate 3638/4) và
+  `plan/w3-st296b-crates` @ `7c4c205` (tách `vis-loader`/`vis-lsp`, targets 18/18) — **READY,
+  chưa merge**; không nằm trong bản phát hành này.
+
 ## v0.3.6 — 2026-11-22
 
 - **Stage 0 — R0 refactor 0 đổi hành vi**: `vm.rs` **1240**, `frame.rs` **1042**, `value.rs` **1186**, `codegen.rs` **1045**, `tyck/expr.rs` **1064**, `interp/goi.rs` **1155** dòng (ngưỡng ≤1.250); tách `vm/host.rs`, `frame/worker.rs`, `value/show_eq.rs`, `codegen/cau.rs`, `tyck/expr/goi.rs`, `interp/goi_ham.rs`; 0 đổi API/ABI/cache/golden.
