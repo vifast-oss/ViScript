@@ -1,0 +1,6 @@
+# Bằng chứng trước fix (quan sát lúc triage)
+# /tmp là tmpfs 7,2G; soak cũ để lại snapshot theo PID:
+count=41
+du=4.2G (/tmp/vs3-w2-bin-*)
+df /tmp: 7.2G total, 6.0G used, 1.3G free
+# Mỗi snapshot ~108MB; 31 cycle × 2 binary http2 ≈ 62 snapshot > tmpfs.

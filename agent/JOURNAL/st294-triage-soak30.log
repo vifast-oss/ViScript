@@ -1,0 +1,178 @@
+SOAK_START 1 2026-11-22T11:58:24Z
+
+running 1 test
+soak batch: vòng=25 giây=30 fd=9 rss=9.9MB threads=6 cold=25 redirect=25 cap=5 timeout=25 goaway=25 conns(cold/thuong)=25/30 streams=100/130 cold_p50=23ms cold_p95=77ms
+soak batch: vòng=30 giây=34 fd=9 rss=9.9MB threads=6 cold=30 redirect=30 cap=6 timeout=30 goaway=30 conns(cold/thuong)=30/36 streams=120/156 cold_p50=18ms cold_p95=77ms
+soak batch: vòng=60 giây=54 fd=9 rss=9.9MB threads=6 cold=60 redirect=60 cap=12 timeout=60 goaway=60 conns(cold/thuong)=60/72 streams=240/312 cold_p50=15ms cold_p95=65ms
+test h2_async_spike::async_h2_soak_env_gated has been running for over 60 seconds
+soak batch: vòng=90 giây=76 fd=9 rss=9.9MB threads=6 cold=90 redirect=90 cap=18 timeout=90 goaway=90 conns(cold/thuong)=90/108 streams=360/468 cold_p50=14ms cold_p95=56ms
+soak batch: vòng=106 giây=109 fd=9 rss=9.9MB threads=6 cold=106 redirect=106 cap=22 timeout=106 goaway=106 conns(cold/thuong)=106/128 streams=424/552 cold_p50=15ms cold_p95=86ms
+soak batch: vòng=120 giây=131 fd=9 rss=9.9MB threads=6 cold=120 redirect=120 cap=24 timeout=120 goaway=120 conns(cold/thuong)=120/144 streams=480/624 cold_p50=15ms cold_p95=78ms
+soak batch: vòng=138 giây=161 fd=9 rss=9.9MB threads=6 cold=138 redirect=138 cap=28 timeout=138 goaway=138 conns(cold/thuong)=138/166 streams=552/718 cold_p50=16ms cold_p95=91ms
+soak batch: vòng=150 giây=176 fd=9 rss=9.9MB threads=6 cold=150 redirect=150 cap=30 timeout=150 goaway=150 conns(cold/thuong)=150/180 streams=600/780 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=171 giây=210 fd=9 rss=9.9MB threads=6 cold=171 redirect=171 cap=35 timeout=171 goaway=171 conns(cold/thuong)=171/206 streams=684/890 cold_p50=15ms cold_p95=89ms
+soak batch: vòng=180 giây=222 fd=9 rss=9.9MB threads=6 cold=180 redirect=180 cap=36 timeout=180 goaway=180 conns(cold/thuong)=180/216 streams=720/936 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=196 giây=254 fd=9 rss=9.9MB threads=6 cold=196 redirect=196 cap=40 timeout=196 goaway=196 conns(cold/thuong)=196/236 streams=784/1020 cold_p50=17ms cold_p95=96ms
+soak batch: vòng=210 giây=275 fd=9 rss=9.9MB threads=6 cold=210 redirect=210 cap=42 timeout=210 goaway=210 conns(cold/thuong)=210/252 streams=840/1092 cold_p50=18ms cold_p95=96ms
+soak batch: vòng=240 giây=300 fd=9 rss=9.9MB threads=6 cold=240 redirect=240 cap=48 timeout=240 goaway=240 conns(cold/thuong)=240/288 streams=960/1248 cold_p50=17ms cold_p95=95ms
+soak batch: vòng=270 giây=324 fd=9 rss=9.9MB threads=6 cold=270 redirect=270 cap=54 timeout=270 goaway=270 conns(cold/thuong)=270/324 streams=1080/1404 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=286 giây=355 fd=9 rss=10.0MB threads=6 cold=286 redirect=286 cap=58 timeout=286 goaway=286 conns(cold/thuong)=286/344 streams=1144/1488 cold_p50=16ms cold_p95=97ms
+soak batch: vòng=300 giây=375 fd=9 rss=10.0MB threads=6 cold=300 redirect=300 cap=60 timeout=300 goaway=300 conns(cold/thuong)=300/360 streams=1200/1560 cold_p50=17ms cold_p95=97ms
+soak batch: vòng=316 giây=407 fd=9 rss=10.0MB threads=6 cold=316 redirect=316 cap=64 timeout=316 goaway=316 conns(cold/thuong)=316/380 streams=1264/1644 cold_p50=17ms cold_p95=97ms
+soak batch: vòng=330 giây=427 fd=9 rss=10.0MB threads=6 cold=330 redirect=330 cap=66 timeout=330 goaway=330 conns(cold/thuong)=330/396 streams=1320/1716 cold_p50=18ms cold_p95=97ms
+soak batch: vòng=360 giây=451 fd=9 rss=10.0MB threads=6 cold=360 redirect=360 cap=72 timeout=360 goaway=360 conns(cold/thuong)=360/432 streams=1440/1872 cold_p50=16ms cold_p95=96ms
+soak batch: vòng=385 giây=481 fd=9 rss=9.9MB threads=6 cold=385 redirect=385 cap=77 timeout=385 goaway=385 conns(cold/thuong)=385/462 streams=1540/2002 cold_p50=17ms cold_p95=96ms
+soak batch: vòng=390 giây=484 fd=9 rss=9.9MB threads=6 cold=390 redirect=390 cap=78 timeout=390 goaway=390 conns(cold/thuong)=390/468 streams=1560/2028 cold_p50=16ms cold_p95=96ms
+soak batch: vòng=420 giây=504 fd=9 rss=9.9MB threads=6 cold=420 redirect=420 cap=84 timeout=420 goaway=420 conns(cold/thuong)=420/504 streams=1680/2184 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=450 giây=525 fd=9 rss=9.9MB threads=6 cold=450 redirect=450 cap=90 timeout=450 goaway=450 conns(cold/thuong)=450/540 streams=1800/2340 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=480 giây=550 fd=9 rss=9.9MB threads=6 cold=480 redirect=480 cap=96 timeout=480 goaway=480 conns(cold/thuong)=480/576 streams=1920/2496 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=506 giây=582 fd=9 rss=9.9MB threads=6 cold=506 redirect=506 cap=102 timeout=506 goaway=506 conns(cold/thuong)=506/608 streams=2024/2632 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=510 giây=584 fd=9 rss=9.9MB threads=6 cold=510 redirect=510 cap=102 timeout=510 goaway=510 conns(cold/thuong)=510/612 streams=2040/2652 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=536 giây=619 fd=9 rss=9.9MB threads=6 cold=536 redirect=536 cap=108 timeout=536 goaway=536 conns(cold/thuong)=536/644 streams=2144/2788 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=540 giây=622 fd=9 rss=10.0MB threads=6 cold=540 redirect=540 cap=108 timeout=540 goaway=540 conns(cold/thuong)=540/648 streams=2160/2808 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=556 giây=653 fd=9 rss=10.0MB threads=6 cold=556 redirect=556 cap=112 timeout=556 goaway=556 conns(cold/thuong)=556/668 streams=2224/2892 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=570 giây=675 fd=9 rss=10.0MB threads=6 cold=570 redirect=570 cap=114 timeout=570 goaway=570 conns(cold/thuong)=570/684 streams=2280/2964 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=591 giây=708 fd=9 rss=10.0MB threads=6 cold=591 redirect=591 cap=119 timeout=591 goaway=591 conns(cold/thuong)=591/710 streams=2364/3074 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=600 giây=720 fd=9 rss=10.0MB threads=6 cold=600 redirect=600 cap=120 timeout=600 goaway=600 conns(cold/thuong)=600/720 streams=2400/3120 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=616 giây=752 fd=9 rss=10.0MB threads=6 cold=616 redirect=616 cap=124 timeout=616 goaway=616 conns(cold/thuong)=616/740 streams=2464/3204 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=630 giây=768 fd=9 rss=10.0MB threads=6 cold=630 redirect=630 cap=126 timeout=630 goaway=630 conns(cold/thuong)=630/756 streams=2520/3276 cold_p50=17ms cold_p95=93ms
+soak batch: vòng=648 giây=798 fd=9 rss=10.0MB threads=6 cold=648 redirect=648 cap=130 timeout=648 goaway=648 conns(cold/thuong)=648/778 streams=2592/3370 cold_p50=17ms cold_p95=93ms
+soak batch: vòng=660 giây=817 fd=9 rss=10.0MB threads=6 cold=660 redirect=660 cap=132 timeout=660 goaway=660 conns(cold/thuong)=660/792 streams=2640/3432 cold_p50=17ms cold_p95=94ms
+soak batch: vòng=677 giây=847 fd=9 rss=10.0MB threads=6 cold=677 redirect=677 cap=136 timeout=677 goaway=677 conns(cold/thuong)=677/813 streams=2708/3521 cold_p50=17ms cold_p95=94ms
+soak batch: vòng=690 giây=869 fd=9 rss=10.0MB threads=6 cold=690 redirect=690 cap=138 timeout=690 goaway=690 conns(cold/thuong)=690/828 streams=2760/3588 cold_p50=18ms cold_p95=95ms
+soak batch: vòng=711 giây=902 fd=9 rss=10.0MB threads=6 cold=711 redirect=711 cap=143 timeout=711 goaway=711 conns(cold/thuong)=711/854 streams=2844/3698 cold_p50=18ms cold_p95=95ms
+soak batch: vòng=720 giây=914 fd=9 rss=10.0MB threads=6 cold=720 redirect=720 cap=144 timeout=720 goaway=720 conns(cold/thuong)=720/864 streams=2880/3744 cold_p50=18ms cold_p95=95ms
+soak batch: vòng=739 giây=944 fd=9 rss=10.0MB threads=6 cold=739 redirect=739 cap=148 timeout=739 goaway=739 conns(cold/thuong)=739/887 streams=2956/3843 cold_p50=19ms cold_p95=96ms
+soak batch: vòng=750 giây=964 fd=9 rss=10.0MB threads=6 cold=750 redirect=750 cap=150 timeout=750 goaway=750 conns(cold/thuong)=750/900 streams=3000/3900 cold_p50=20ms cold_p95=96ms
+soak batch: vòng=771 giây=997 fd=9 rss=10.0MB threads=6 cold=771 redirect=771 cap=155 timeout=771 goaway=771 conns(cold/thuong)=771/926 streams=3084/4010 cold_p50=19ms cold_p95=95ms
+soak batch: vòng=780 giây=1002 fd=9 rss=10.0MB threads=6 cold=780 redirect=780 cap=156 timeout=780 goaway=780 conns(cold/thuong)=780/936 streams=3120/4056 cold_p50=19ms cold_p95=94ms
+soak batch: vòng=810 giây=1022 fd=9 rss=10.0MB threads=6 cold=810 redirect=810 cap=162 timeout=810 goaway=810 conns(cold/thuong)=810/972 streams=3240/4212 cold_p50=18ms cold_p95=94ms
+soak batch: vòng=840 giây=1041 fd=9 rss=10.0MB threads=6 cold=840 redirect=840 cap=168 timeout=840 goaway=840 conns(cold/thuong)=840/1008 streams=3360/4368 cold_p50=17ms cold_p95=93ms
+soak batch: vòng=870 giây=1065 fd=9 rss=10.0MB threads=6 cold=870 redirect=870 cap=174 timeout=870 goaway=870 conns(cold/thuong)=870/1044 streams=3480/4524 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=900 giây=1084 fd=9 rss=10.0MB threads=6 cold=900 redirect=900 cap=180 timeout=900 goaway=900 conns(cold/thuong)=900/1080 streams=3600/4680 cold_p50=16ms cold_p95=93ms
+soak batch: vòng=930 giây=1113 fd=9 rss=10.0MB threads=6 cold=930 redirect=930 cap=186 timeout=930 goaway=930 conns(cold/thuong)=930/1116 streams=3720/4836 cold_p50=16ms cold_p95=92ms
+soak batch: vòng=960 giây=1131 fd=9 rss=10.0MB threads=6 cold=960 redirect=960 cap=192 timeout=960 goaway=960 conns(cold/thuong)=960/1152 streams=3840/4992 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=990 giây=1154 fd=9 rss=10.0MB threads=6 cold=990 redirect=990 cap=198 timeout=990 goaway=990 conns(cold/thuong)=990/1188 streams=3960/5148 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1020 giây=1175 fd=9 rss=10.0MB threads=6 cold=1020 redirect=1020 cap=204 timeout=1020 goaway=1020 conns(cold/thuong)=1020/1224 streams=4080/5304 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1050 giây=1197 fd=9 rss=10.0MB threads=6 cold=1050 redirect=1050 cap=210 timeout=1050 goaway=1050 conns(cold/thuong)=1050/1260 streams=4200/5460 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1080 giây=1220 fd=9 rss=10.0MB threads=6 cold=1080 redirect=1080 cap=216 timeout=1080 goaway=1080 conns(cold/thuong)=1080/1296 streams=4320/5616 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1101 giây=1254 fd=9 rss=10.0MB threads=6 cold=1101 redirect=1101 cap=221 timeout=1101 goaway=1101 conns(cold/thuong)=1101/1322 streams=4404/5726 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1110 giây=1267 fd=9 rss=10.0MB threads=6 cold=1110 redirect=1110 cap=222 timeout=1110 goaway=1110 conns(cold/thuong)=1110/1332 streams=4440/5772 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1126 giây=1304 fd=10 rss=9.9MB threads=6 cold=1126 redirect=1126 cap=226 timeout=1126 goaway=1126 conns(cold/thuong)=1126/1352 streams=4504/5856 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1140 giây=1326 fd=9 rss=9.9MB threads=6 cold=1140 redirect=1140 cap=228 timeout=1140 goaway=1140 conns(cold/thuong)=1140/1368 streams=4560/5928 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=1160 giây=1356 fd=9 rss=9.9MB threads=6 cold=1160 redirect=1160 cap=232 timeout=1160 goaway=1160 conns(cold/thuong)=1160/1392 streams=4640/6032 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=1170 giây=1374 fd=9 rss=9.9MB threads=6 cold=1170 redirect=1170 cap=234 timeout=1170 goaway=1170 conns(cold/thuong)=1170/1404 streams=4680/6084 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=1200 giây=1402 fd=9 rss=9.9MB threads=6 cold=1200 redirect=1200 cap=240 timeout=1200 goaway=1200 conns(cold/thuong)=1200/1440 streams=4800/6240 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=1230 giây=1426 fd=9 rss=9.9MB threads=6 cold=1230 redirect=1230 cap=246 timeout=1230 goaway=1230 conns(cold/thuong)=1230/1476 streams=4920/6396 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=1260 giây=1456 fd=9 rss=9.9MB threads=6 cold=1260 redirect=1260 cap=252 timeout=1260 goaway=1260 conns(cold/thuong)=1260/1512 streams=5040/6552 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1290 giây=1484 fd=9 rss=9.9MB threads=6 cold=1290 redirect=1290 cap=258 timeout=1290 goaway=1290 conns(cold/thuong)=1290/1548 streams=5160/6708 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1320 giây=1506 fd=9 rss=9.9MB threads=6 cold=1320 redirect=1320 cap=264 timeout=1320 goaway=1320 conns(cold/thuong)=1320/1584 streams=5280/6864 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1350 giây=1530 fd=9 rss=9.9MB threads=6 cold=1350 redirect=1350 cap=270 timeout=1350 goaway=1350 conns(cold/thuong)=1350/1620 streams=5400/7020 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1380 giây=1547 fd=9 rss=9.9MB threads=6 cold=1380 redirect=1380 cap=276 timeout=1380 goaway=1380 conns(cold/thuong)=1380/1656 streams=5520/7176 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1410 giây=1575 fd=9 rss=9.9MB threads=6 cold=1410 redirect=1410 cap=282 timeout=1410 goaway=1410 conns(cold/thuong)=1410/1692 streams=5640/7332 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1438 giây=1605 fd=9 rss=9.9MB threads=6 cold=1438 redirect=1438 cap=288 timeout=1438 goaway=1438 conns(cold/thuong)=1438/1726 streams=5752/7478 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1440 giây=1606 fd=9 rss=9.9MB threads=6 cold=1440 redirect=1440 cap=288 timeout=1440 goaway=1440 conns(cold/thuong)=1440/1728 streams=5760/7488 cold_p50=15ms cold_p95=90ms
+soak batch: vòng=1456 giây=1638 fd=9 rss=8.5MB threads=6 cold=1456 redirect=1456 cap=292 timeout=1456 goaway=1456 conns(cold/thuong)=1456/1748 streams=5824/7572 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1470 giây=1660 fd=9 rss=8.5MB threads=6 cold=1470 redirect=1470 cap=294 timeout=1470 goaway=1470 conns(cold/thuong)=1470/1764 streams=5880/7644 cold_p50=15ms cold_p95=91ms
+soak batch: vòng=1486 giây=1691 fd=9 rss=8.5MB threads=6 cold=1486 redirect=1486 cap=298 timeout=1486 goaway=1486 conns(cold/thuong)=1486/1784 streams=5944/7728 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1500 giây=1711 fd=9 rss=8.5MB threads=6 cold=1500 redirect=1500 cap=300 timeout=1500 goaway=1500 conns(cold/thuong)=1500/1800 streams=6000/7800 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1516 giây=1746 fd=9 rss=8.5MB threads=6 cold=1516 redirect=1516 cap=304 timeout=1516 goaway=1516 conns(cold/thuong)=1516/1820 streams=6064/7884 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1530 giây=1768 fd=9 rss=8.5MB threads=6 cold=1530 redirect=1530 cap=306 timeout=1530 goaway=1530 conns(cold/thuong)=1530/1836 streams=6120/7956 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=1560 giây=1799 fd=9 rss=8.5MB threads=6 cold=1560 redirect=1560 cap=312 timeout=1560 goaway=1560 conns(cold/thuong)=1560/1872 streams=6240/8112 cold_p50=15ms cold_p95=92ms
+soak KẾT THÚC: vòng=1562 cold=1562 redirect=1562 cap=313 timeout=1562 goaway=1562 giây=1800.2 fd=8->9 rss=6.0->8.5MB threads=6->6 conns(cold/thuong/treo/goaway)=1562/1875/1562/1562 streams(cold/thuong)=6248/8123 cold_p50=15ms cold_p95=92ms
+soak: PASS
+test h2_async_spike::async_h2_soak_env_gated ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 1800.28s
+
+SOAK_EXIT 1 rc=0
+SOAK_START 2 2026-11-22T12:28:24Z
+
+running 1 test
+soak batch: vòng=26 giây=31 fd=9 rss=9.4MB threads=6 cold=26 redirect=26 cap=6 timeout=26 goaway=26 conns(cold/thuong)=26/32 streams=104/136 cold_p50=33ms cold_p95=119ms
+soak batch: vòng=30 giây=34 fd=9 rss=9.4MB threads=6 cold=30 redirect=30 cap=6 timeout=30 goaway=30 conns(cold/thuong)=30/36 streams=120/156 cold_p50=36ms cold_p95=119ms
+test h2_async_spike::async_h2_soak_env_gated has been running for over 60 seconds
+soak batch: vòng=46 giây=68 fd=9 rss=9.4MB threads=6 cold=46 redirect=46 cap=10 timeout=46 goaway=46 conns(cold/thuong)=46/56 streams=184/240 cold_p50=49ms cold_p95=114ms
+soak batch: vòng=60 giây=89 fd=9 rss=9.4MB threads=6 cold=60 redirect=60 cap=12 timeout=60 goaway=60 conns(cold/thuong)=60/72 streams=240/312 cold_p50=43ms cold_p95=114ms
+soak batch: vòng=76 giây=123 fd=9 rss=9.4MB threads=6 cold=76 redirect=76 cap=16 timeout=76 goaway=76 conns(cold/thuong)=76/92 streams=304/396 cold_p50=52ms cold_p95=114ms
+soak batch: vòng=90 giây=144 fd=9 rss=9.4MB threads=6 cold=90 redirect=90 cap=18 timeout=90 goaway=90 conns(cold/thuong)=90/108 streams=360/468 cold_p50=53ms cold_p95=114ms
+soak batch: vòng=106 giây=177 fd=9 rss=9.4MB threads=6 cold=106 redirect=106 cap=22 timeout=106 goaway=106 conns(cold/thuong)=106/128 streams=424/552 cold_p50=50ms cold_p95=112ms
+soak batch: vòng=120 giây=188 fd=9 rss=9.4MB threads=6 cold=120 redirect=120 cap=24 timeout=120 goaway=120 conns(cold/thuong)=120/144 streams=480/624 cold_p50=46ms cold_p95=107ms
+soak batch: vòng=150 giây=211 fd=9 rss=9.5MB threads=6 cold=150 redirect=150 cap=30 timeout=150 goaway=150 conns(cold/thuong)=150/180 streams=600/780 cold_p50=36ms cold_p95=107ms
+soak batch: vòng=180 giây=234 fd=9 rss=9.5MB threads=6 cold=180 redirect=180 cap=36 timeout=180 goaway=180 conns(cold/thuong)=180/216 streams=720/936 cold_p50=27ms cold_p95=105ms
+soak batch: vòng=210 giây=253 fd=9 rss=9.5MB threads=6 cold=210 redirect=210 cap=42 timeout=210 goaway=210 conns(cold/thuong)=210/252 streams=840/1092 cold_p50=16ms cold_p95=105ms
+soak batch: vòng=240 giây=280 fd=9 rss=9.5MB threads=6 cold=240 redirect=240 cap=48 timeout=240 goaway=240 conns(cold/thuong)=240/288 streams=960/1248 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=270 giây=300 fd=9 rss=9.5MB threads=6 cold=270 redirect=270 cap=54 timeout=270 goaway=270 conns(cold/thuong)=270/324 streams=1080/1404 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=300 giây=327 fd=9 rss=9.5MB threads=6 cold=300 redirect=300 cap=60 timeout=300 goaway=300 conns(cold/thuong)=300/360 streams=1200/1560 cold_p50=15ms cold_p95=86ms
+soak batch: vòng=330 giây=348 fd=9 rss=9.5MB threads=6 cold=330 redirect=330 cap=66 timeout=330 goaway=330 conns(cold/thuong)=330/396 streams=1320/1716 cold_p50=14ms cold_p95=84ms
+soak batch: vòng=360 giây=376 fd=9 rss=9.5MB threads=6 cold=360 redirect=360 cap=72 timeout=360 goaway=360 conns(cold/thuong)=360/432 streams=1440/1872 cold_p50=14ms cold_p95=84ms
+soak batch: vòng=381 giây=410 fd=9 rss=9.5MB threads=6 cold=381 redirect=381 cap=77 timeout=381 goaway=381 conns(cold/thuong)=381/458 streams=1524/1982 cold_p50=14ms cold_p95=81ms
+soak batch: vòng=390 giây=419 fd=9 rss=9.5MB threads=6 cold=390 redirect=390 cap=78 timeout=390 goaway=390 conns(cold/thuong)=390/468 streams=1560/2028 cold_p50=14ms cold_p95=81ms
+soak batch: vòng=420 giây=445 fd=9 rss=9.5MB threads=6 cold=420 redirect=420 cap=84 timeout=420 goaway=420 conns(cold/thuong)=420/504 streams=1680/2184 cold_p50=14ms cold_p95=79ms
+soak batch: vòng=442 giây=476 fd=9 rss=9.5MB threads=6 cold=442 redirect=442 cap=89 timeout=442 goaway=442 conns(cold/thuong)=442/531 streams=1768/2299 cold_p50=14ms cold_p95=84ms
+soak batch: vòng=450 giây=487 fd=9 rss=9.5MB threads=6 cold=450 redirect=450 cap=90 timeout=450 goaway=450 conns(cold/thuong)=450/540 streams=1800/2340 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=466 giây=521 fd=9 rss=9.5MB threads=6 cold=466 redirect=466 cap=94 timeout=466 goaway=466 conns(cold/thuong)=466/560 streams=1864/2424 cold_p50=14ms cold_p95=88ms
+soak batch: vòng=480 giây=545 fd=9 rss=9.5MB threads=6 cold=480 redirect=480 cap=96 timeout=480 goaway=480 conns(cold/thuong)=480/576 streams=1920/2496 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=495 giây=575 fd=9 rss=9.5MB threads=6 cold=495 redirect=495 cap=99 timeout=495 goaway=495 conns(cold/thuong)=495/594 streams=1980/2574 cold_p50=15ms cold_p95=102ms
+soak batch: vòng=510 giây=602 fd=9 rss=9.5MB threads=6 cold=510 redirect=510 cap=102 timeout=510 goaway=510 conns(cold/thuong)=510/612 streams=2040/2652 cold_p50=15ms cold_p95=105ms
+soak batch: vòng=529 giây=632 fd=9 rss=9.5MB threads=6 cold=529 redirect=529 cap=106 timeout=529 goaway=529 conns(cold/thuong)=529/635 streams=2116/2751 cold_p50=15ms cold_p95=103ms
+soak batch: vòng=540 giây=639 fd=9 rss=9.5MB threads=6 cold=540 redirect=540 cap=108 timeout=540 goaway=540 conns(cold/thuong)=540/648 streams=2160/2808 cold_p50=15ms cold_p95=103ms
+soak batch: vòng=570 giây=666 fd=9 rss=9.5MB threads=6 cold=570 redirect=570 cap=114 timeout=570 goaway=570 conns(cold/thuong)=570/684 streams=2280/2964 cold_p50=15ms cold_p95=102ms
+soak batch: vòng=600 giây=688 fd=9 rss=9.5MB threads=6 cold=600 redirect=600 cap=120 timeout=600 goaway=600 conns(cold/thuong)=600/720 streams=2400/3120 cold_p50=15ms cold_p95=101ms
+soak batch: vòng=626 giây=718 fd=9 rss=9.5MB threads=6 cold=626 redirect=626 cap=126 timeout=626 goaway=626 conns(cold/thuong)=626/752 streams=2504/3256 cold_p50=14ms cold_p95=101ms
+soak batch: vòng=630 giây=720 fd=9 rss=9.5MB threads=6 cold=630 redirect=630 cap=126 timeout=630 goaway=630 conns(cold/thuong)=630/756 streams=2520/3276 cold_p50=14ms cold_p95=101ms
+soak batch: vòng=660 giây=749 fd=9 rss=9.5MB threads=6 cold=660 redirect=660 cap=132 timeout=660 goaway=660 conns(cold/thuong)=660/792 streams=2640/3432 cold_p50=14ms cold_p95=99ms
+soak batch: vòng=690 giây=774 fd=9 rss=9.5MB threads=6 cold=690 redirect=690 cap=138 timeout=690 goaway=690 conns(cold/thuong)=690/828 streams=2760/3588 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=720 giây=797 fd=9 rss=9.4MB threads=6 cold=720 redirect=720 cap=144 timeout=720 goaway=720 conns(cold/thuong)=720/864 streams=2880/3744 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=750 giây=814 fd=9 rss=9.4MB threads=6 cold=750 redirect=750 cap=150 timeout=750 goaway=750 conns(cold/thuong)=750/900 streams=3000/3900 cold_p50=14ms cold_p95=94ms
+soak batch: vòng=780 giây=840 fd=9 rss=9.4MB threads=6 cold=780 redirect=780 cap=156 timeout=780 goaway=780 conns(cold/thuong)=780/936 streams=3120/4056 cold_p50=14ms cold_p95=94ms
+soak batch: vòng=796 giây=872 fd=9 rss=9.4MB threads=6 cold=796 redirect=796 cap=160 timeout=796 goaway=796 conns(cold/thuong)=796/956 streams=3184/4140 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=810 giây=891 fd=9 rss=9.4MB threads=6 cold=810 redirect=810 cap=162 timeout=810 goaway=810 conns(cold/thuong)=810/972 streams=3240/4212 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=826 giây=924 fd=9 rss=9.4MB threads=6 cold=826 redirect=826 cap=166 timeout=826 goaway=826 conns(cold/thuong)=826/992 streams=3304/4296 cold_p50=14ms cold_p95=97ms
+soak batch: vòng=840 giây=937 fd=9 rss=9.4MB threads=6 cold=840 redirect=840 cap=168 timeout=840 goaway=840 conns(cold/thuong)=840/1008 streams=3360/4368 cold_p50=14ms cold_p95=94ms
+soak batch: vòng=870 giây=967 fd=9 rss=9.4MB threads=6 cold=870 redirect=870 cap=174 timeout=870 goaway=870 conns(cold/thuong)=870/1044 streams=3480/4524 cold_p50=14ms cold_p95=94ms
+soak batch: vòng=892 giây=997 fd=9 rss=9.4MB threads=6 cold=892 redirect=892 cap=179 timeout=892 goaway=892 conns(cold/thuong)=892/1071 streams=3568/4639 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=900 giây=1002 fd=9 rss=9.4MB threads=6 cold=900 redirect=900 cap=180 timeout=900 goaway=900 conns(cold/thuong)=900/1080 streams=3600/4680 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=916 giây=1034 fd=9 rss=9.4MB threads=6 cold=916 redirect=916 cap=184 timeout=916 goaway=916 conns(cold/thuong)=916/1100 streams=3664/4764 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=930 giây=1054 fd=9 rss=9.4MB threads=6 cold=930 redirect=930 cap=186 timeout=930 goaway=930 conns(cold/thuong)=930/1116 streams=3720/4836 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=960 giây=1078 fd=9 rss=9.4MB threads=6 cold=960 redirect=960 cap=192 timeout=960 goaway=960 conns(cold/thuong)=960/1152 streams=3840/4992 cold_p50=15ms cold_p95=94ms
+soak batch: vòng=990 giây=1101 fd=9 rss=9.4MB threads=6 cold=990 redirect=990 cap=198 timeout=990 goaway=990 conns(cold/thuong)=990/1188 streams=3960/5148 cold_p50=15ms cold_p95=93ms
+soak batch: vòng=1020 giây=1123 fd=9 rss=9.4MB threads=6 cold=1020 redirect=1020 cap=204 timeout=1020 goaway=1020 conns(cold/thuong)=1020/1224 streams=4080/5304 cold_p50=15ms cold_p95=92ms
+soak batch: vòng=1050 giây=1142 fd=9 rss=9.4MB threads=6 cold=1050 redirect=1050 cap=210 timeout=1050 goaway=1050 conns(cold/thuong)=1050/1260 streams=4200/5460 cold_p50=14ms cold_p95=91ms
+soak batch: vòng=1080 giây=1160 fd=9 rss=9.4MB threads=6 cold=1080 redirect=1080 cap=216 timeout=1080 goaway=1080 conns(cold/thuong)=1080/1296 streams=4320/5616 cold_p50=14ms cold_p95=89ms
+soak batch: vòng=1110 giây=1180 fd=9 rss=9.4MB threads=6 cold=1110 redirect=1110 cap=222 timeout=1110 goaway=1110 conns(cold/thuong)=1110/1332 streams=4440/5772 cold_p50=14ms cold_p95=88ms
+soak batch: vòng=1140 giây=1202 fd=9 rss=9.4MB threads=6 cold=1140 redirect=1140 cap=228 timeout=1140 goaway=1140 conns(cold/thuong)=1140/1368 streams=4560/5928 cold_p50=14ms cold_p95=88ms
+soak batch: vòng=1170 giây=1225 fd=9 rss=9.5MB threads=6 cold=1170 redirect=1170 cap=234 timeout=1170 goaway=1170 conns(cold/thuong)=1170/1404 streams=4680/6084 cold_p50=14ms cold_p95=87ms
+soak batch: vòng=1200 giây=1245 fd=9 rss=9.5MB threads=6 cold=1200 redirect=1200 cap=240 timeout=1200 goaway=1200 conns(cold/thuong)=1200/1440 streams=4800/6240 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1223 giây=1276 fd=9 rss=9.5MB threads=6 cold=1223 redirect=1223 cap=245 timeout=1223 goaway=1223 conns(cold/thuong)=1223/1468 streams=4892/6360 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1230 giây=1279 fd=9 rss=9.5MB threads=6 cold=1230 redirect=1230 cap=246 timeout=1230 goaway=1230 conns(cold/thuong)=1230/1476 streams=4920/6396 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1260 giây=1305 fd=9 rss=9.5MB threads=6 cold=1260 redirect=1260 cap=252 timeout=1260 goaway=1260 conns(cold/thuong)=1260/1512 streams=5040/6552 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1290 giây=1326 fd=9 rss=9.5MB threads=6 cold=1290 redirect=1290 cap=258 timeout=1290 goaway=1290 conns(cold/thuong)=1290/1548 streams=5160/6708 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1320 giây=1344 fd=9 rss=9.5MB threads=6 cold=1320 redirect=1320 cap=264 timeout=1320 goaway=1320 conns(cold/thuong)=1320/1584 streams=5280/6864 cold_p50=14ms cold_p95=85ms
+soak batch: vòng=1350 giây=1368 fd=9 rss=9.5MB threads=6 cold=1350 redirect=1350 cap=270 timeout=1350 goaway=1350 conns(cold/thuong)=1350/1620 streams=5400/7020 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1366 giây=1400 fd=9 rss=9.5MB threads=6 cold=1366 redirect=1366 cap=274 timeout=1366 goaway=1366 conns(cold/thuong)=1366/1640 streams=5464/7104 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1380 giây=1420 fd=9 rss=9.5MB threads=6 cold=1380 redirect=1380 cap=276 timeout=1380 goaway=1380 conns(cold/thuong)=1380/1656 streams=5520/7176 cold_p50=14ms cold_p95=87ms
+soak batch: vòng=1397 giây=1450 fd=9 rss=9.5MB threads=6 cold=1397 redirect=1397 cap=280 timeout=1397 goaway=1397 conns(cold/thuong)=1397/1677 streams=5588/7265 cold_p50=14ms cold_p95=87ms
+soak batch: vòng=1410 giây=1467 fd=9 rss=9.5MB threads=6 cold=1410 redirect=1410 cap=282 timeout=1410 goaway=1410 conns(cold/thuong)=1410/1692 streams=5640/7332 cold_p50=14ms cold_p95=87ms
+soak batch: vòng=1440 giây=1492 fd=9 rss=9.5MB threads=6 cold=1440 redirect=1440 cap=288 timeout=1440 goaway=1440 conns(cold/thuong)=1440/1728 streams=5760/7488 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1469 giây=1522 fd=9 rss=9.5MB threads=6 cold=1469 redirect=1469 cap=294 timeout=1469 goaway=1469 conns(cold/thuong)=1469/1763 streams=5876/7639 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1470 giây=1523 fd=9 rss=9.5MB threads=6 cold=1470 redirect=1470 cap=294 timeout=1470 goaway=1470 conns(cold/thuong)=1470/1764 streams=5880/7644 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1486 giây=1554 fd=9 rss=9.4MB threads=6 cold=1486 redirect=1486 cap=298 timeout=1486 goaway=1486 conns(cold/thuong)=1486/1784 streams=5944/7728 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1500 giây=1573 fd=9 rss=9.4MB threads=6 cold=1500 redirect=1500 cap=300 timeout=1500 goaway=1500 conns(cold/thuong)=1500/1800 streams=6000/7800 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1516 giây=1607 fd=9 rss=9.4MB threads=6 cold=1516 redirect=1516 cap=304 timeout=1516 goaway=1516 conns(cold/thuong)=1516/1820 streams=6064/7884 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1530 giây=1616 fd=9 rss=9.4MB threads=6 cold=1530 redirect=1530 cap=306 timeout=1530 goaway=1530 conns(cold/thuong)=1530/1836 streams=6120/7956 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1560 giây=1645 fd=9 rss=9.4MB threads=6 cold=1560 redirect=1560 cap=312 timeout=1560 goaway=1560 conns(cold/thuong)=1560/1872 streams=6240/8112 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1588 giây=1676 fd=9 rss=9.4MB threads=6 cold=1588 redirect=1588 cap=318 timeout=1588 goaway=1588 conns(cold/thuong)=1588/1906 streams=6352/8258 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1590 giây=1677 fd=9 rss=9.4MB threads=6 cold=1590 redirect=1590 cap=318 timeout=1590 goaway=1590 conns(cold/thuong)=1590/1908 streams=6360/8268 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1613 giây=1707 fd=9 rss=9.4MB threads=6 cold=1613 redirect=1613 cap=323 timeout=1613 goaway=1613 conns(cold/thuong)=1613/1936 streams=6452/8388 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1620 giây=1716 fd=9 rss=9.4MB threads=6 cold=1620 redirect=1620 cap=324 timeout=1620 goaway=1620 conns(cold/thuong)=1620/1944 streams=6480/8424 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1641 giây=1752 fd=9 rss=9.4MB threads=6 cold=1641 redirect=1641 cap=329 timeout=1641 goaway=1641 conns(cold/thuong)=1641/1970 streams=6564/8534 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1650 giây=1762 fd=9 rss=9.4MB threads=6 cold=1650 redirect=1650 cap=330 timeout=1650 goaway=1650 conns(cold/thuong)=1650/1980 streams=6600/8580 cold_p50=14ms cold_p95=86ms
+soak batch: vòng=1671 giây=1793 fd=9 rss=8.3MB threads=6 cold=1671 redirect=1671 cap=335 timeout=1671 goaway=1671 conns(cold/thuong)=1671/2006 streams=6684/8690 cold_p50=14ms cold_p95=86ms
+soak KẾT THÚC: vòng=1678 cold=1678 redirect=1678 cap=336 timeout=1678 goaway=1678 giây=1800.9 fd=8->9 rss=5.7->8.3MB threads=6->6 conns(cold/thuong/treo/goaway)=1678/2014/1678/1678 streams(cold/thuong)=6712/8726 cold_p50=14ms cold_p95=86ms
+soak: PASS
+test h2_async_spike::async_h2_soak_env_gated ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 1801.06s
+
+SOAK_EXIT 2 rc=0

@@ -1,0 +1,159 @@
+ENV start=2026-11-22T17:51:48 duration=7200s host_file_nr=alloc=18388 free=0 max=9223372036854775807 cwd=/tmp/opencode
+RUN cycle=1 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13364 max_thr=16 last=(3, 12396, 1) secs=0.24 timeout=0
+RUN cycle=1 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19160 max_thr=25 last=(9, 17540, 4) secs=0.39 timeout=0
+RUN cycle=1 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=58600 max_thr=27 last=(6, 17188, 5) secs=15.60 timeout=0
+RUN cycle=1 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=91564 max_thr=30 last=(5, 34136, 4) secs=16.48 timeout=0
+RUN cycle=2 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13384 max_thr=16 last=(4, 12608, 3) secs=0.24 timeout=0
+RUN cycle=2 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19304 max_thr=25 last=(9, 17688, 4) secs=0.40 timeout=0
+RUN cycle=2 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=58636 max_thr=29 last=(5, 17040, 4) secs=15.50 timeout=0
+RUN cycle=2 variant=http2-h2 ok=1 rc=0 max_fd=56 max_rss_kb=100956 max_thr=31 last=(6, 34428, 5) secs=16.07 timeout=0
+PROGRESS elapsed=64s cycles=2 fails=0 cancel-default peak=[33, 13384, 16] last=(4, 12608, 3) cancel-h2 peak=[51, 19304, 25] last=(9, 17688, 4) http2-default peak=[42, 58636, 29] last=(5, 17040, 4) http2-h2 peak=[56, 100956, 31] last=(6, 34428, 5) host_file_nr=alloc=18548 free=0 max=9223372036854775807
+RUN cycle=3 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13328 max_thr=17 last=(4, 12552, 3) secs=0.27 timeout=0
+RUN cycle=3 variant=cancel-h2 ok=1 rc=0 max_fd=54 max_rss_kb=19240 max_thr=25 last=(9, 17628, 4) secs=0.42 timeout=0
+RUN cycle=3 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=49884 max_thr=26 last=(4, 15888, 3) secs=15.82 timeout=0
+RUN cycle=3 variant=http2-h2 ok=1 rc=0 max_fd=53 max_rss_kb=99428 max_thr=31 last=(4, 33704, 3) secs=16.35 timeout=0
+RUN cycle=4 variant=cancel-default ok=1 rc=0 max_fd=35 max_rss_kb=13352 max_thr=17 last=(4, 12588, 3) secs=0.23 timeout=0
+RUN cycle=4 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19236 max_thr=25 last=(9, 17612, 4) secs=0.39 timeout=0
+RUN cycle=4 variant=http2-default ok=1 rc=0 max_fd=45 max_rss_kb=51360 max_thr=28 last=(5, 16928, 4) secs=15.64 timeout=0
+RUN cycle=4 variant=http2-h2 ok=1 rc=0 max_fd=53 max_rss_kb=106064 max_thr=31 last=(5, 34600, 4) secs=16.05 timeout=0
+PROGRESS elapsed=130s cycles=4 fails=0 cancel-default peak=[35, 13384, 17] last=(4, 12588, 3) cancel-h2 peak=[54, 19304, 25] last=(9, 17612, 4) http2-default peak=[45, 58636, 29] last=(5, 16928, 4) http2-h2 peak=[56, 106064, 31] last=(5, 34600, 4) host_file_nr=alloc=18359 free=0 max=9223372036854775807
+RUN cycle=5 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13416 max_thr=16 last=(4, 12644, 3) secs=0.23 timeout=0
+RUN cycle=5 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19264 max_thr=25 last=(9, 17664, 4) secs=0.39 timeout=0
+RUN cycle=5 variant=http2-default ok=1 rc=0 max_fd=39 max_rss_kb=49344 max_thr=25 last=(3, 15712, 2) secs=15.65 timeout=0
+RUN cycle=5 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=100732 max_thr=31 last=(5, 34256, 4) secs=16.01 timeout=0
+RUN cycle=6 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13328 max_thr=16 last=(4, 12556, 3) secs=0.24 timeout=0
+RUN cycle=6 variant=cancel-h2 ok=1 rc=0 max_fd=54 max_rss_kb=19320 max_thr=25 last=(4, 17608, 3) secs=0.39 timeout=0
+RUN cycle=6 variant=http2-default ok=1 rc=0 max_fd=49 max_rss_kb=58780 max_thr=28 last=(5, 17176, 4) secs=15.49 timeout=0
+RUN cycle=6 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=91664 max_thr=31 last=(3, 33580, 1) secs=16.08 timeout=0
+PROGRESS elapsed=194s cycles=6 fails=0 cancel-default peak=[35, 13416, 17] last=(4, 12556, 3) cancel-h2 peak=[54, 19320, 25] last=(4, 17608, 3) http2-default peak=[49, 58780, 29] last=(5, 17176, 4) http2-h2 peak=[56, 106064, 31] last=(3, 33580, 1) host_file_nr=alloc=18313 free=0 max=9223372036854775807
+RUN cycle=7 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13480 max_thr=16 last=(4, 12712, 3) secs=0.23 timeout=0
+RUN cycle=7 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19272 max_thr=25 last=(3, 17248, 1) secs=0.40 timeout=0
+RUN cycle=7 variant=http2-default ok=1 rc=0 max_fd=43 max_rss_kb=58344 max_thr=28 last=(5, 17080, 4) secs=15.56 timeout=0
+RUN cycle=7 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=100460 max_thr=31 last=(4, 33920, 3) secs=16.16 timeout=0
+RUN cycle=8 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13308 max_thr=16 last=(4, 12536, 3) secs=0.24 timeout=0
+RUN cycle=8 variant=cancel-h2 ok=1 rc=0 max_fd=53 max_rss_kb=19240 max_thr=25 last=(9, 17636, 4) secs=0.39 timeout=0
+RUN cycle=8 variant=http2-default ok=1 rc=0 max_fd=43 max_rss_kb=49896 max_thr=28 last=(3, 15748, 1) secs=15.52 timeout=0
+RUN cycle=8 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=109052 max_thr=31 last=(6, 34668, 5) secs=16.08 timeout=0
+PROGRESS elapsed=259s cycles=8 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12536, 3) cancel-h2 peak=[54, 19320, 25] last=(9, 17636, 4) http2-default peak=[49, 58780, 29] last=(3, 15748, 1) http2-h2 peak=[56, 109052, 31] last=(6, 34668, 5) host_file_nr=alloc=18271 free=0 max=9223372036854775807
+RUN cycle=9 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13460 max_thr=16 last=(4, 12684, 3) secs=0.23 timeout=0
+RUN cycle=9 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19224 max_thr=25 last=(9, 17624, 4) secs=0.39 timeout=0
+RUN cycle=9 variant=http2-default ok=1 rc=0 max_fd=41 max_rss_kb=57472 max_thr=25 last=(5, 15932, 4) secs=15.57 timeout=0
+RUN cycle=9 variant=http2-h2 ok=1 rc=0 max_fd=59 max_rss_kb=96404 max_thr=30 last=(4, 34352, 3) secs=16.11 timeout=0
+RUN cycle=10 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13304 max_thr=16 last=(4, 12528, 3) secs=0.23 timeout=0
+RUN cycle=10 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19316 max_thr=25 last=(5, 17720, 4) secs=0.39 timeout=0
+RUN cycle=10 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=59052 max_thr=28 last=(4, 16984, 3) secs=15.63 timeout=0
+RUN cycle=10 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=89272 max_thr=30 last=(5, 33968, 4) secs=16.16 timeout=0
+PROGRESS elapsed=323s cycles=10 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12528, 3) cancel-h2 peak=[54, 19320, 25] last=(5, 17720, 4) http2-default peak=[49, 59052, 29] last=(4, 16984, 3) http2-h2 peak=[59, 109052, 31] last=(5, 33968, 4) host_file_nr=alloc=18480 free=0 max=9223372036854775807
+RUN cycle=11 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13264 max_thr=16 last=(4, 12488, 3) secs=0.24 timeout=0
+RUN cycle=11 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19260 max_thr=25 last=(4, 17528, 4) secs=0.39 timeout=0
+RUN cycle=11 variant=http2-default ok=1 rc=0 max_fd=47 max_rss_kb=49532 max_thr=28 last=(4, 15964, 3) secs=15.52 timeout=0
+RUN cycle=11 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=97144 max_thr=31 last=(5, 33960, 4) secs=16.05 timeout=0
+RUN cycle=12 variant=cancel-default ok=1 rc=0 max_fd=34 max_rss_kb=13312 max_thr=16 last=(4, 12544, 3) secs=0.24 timeout=0
+RUN cycle=12 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19364 max_thr=25 last=(9, 17760, 4) secs=0.39 timeout=0
+RUN cycle=12 variant=http2-default ok=1 rc=0 max_fd=46 max_rss_kb=49476 max_thr=26 last=(3, -1, 1) secs=15.47 timeout=0
+RUN cycle=12 variant=http2-h2 ok=1 rc=0 max_fd=53 max_rss_kb=91632 max_thr=31 last=(4, 34232, 3) secs=16.01 timeout=0
+PROGRESS elapsed=388s cycles=12 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12544, 3) cancel-h2 peak=[54, 19364, 25] last=(9, 17760, 4) http2-default peak=[49, 59052, 29] last=(3, -1, 1) http2-h2 peak=[59, 109052, 31] last=(4, 34232, 3) host_file_nr=alloc=18274 free=0 max=9223372036854775807
+RUN cycle=13 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13360 max_thr=16 last=(4, 12584, 3) secs=0.24 timeout=0
+RUN cycle=13 variant=cancel-h2 ok=1 rc=0 max_fd=53 max_rss_kb=19372 max_thr=25 last=(9, 17764, 4) secs=0.38 timeout=0
+RUN cycle=13 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=49500 max_thr=26 last=(3, 15752, 2) secs=15.54 timeout=0
+RUN cycle=13 variant=http2-h2 ok=1 rc=0 max_fd=55 max_rss_kb=92888 max_thr=31 last=(4, 35156, 3) secs=16.43 timeout=0
+RUN cycle=14 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13364 max_thr=16 last=(4, 12600, 3) secs=0.24 timeout=0
+RUN cycle=14 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19232 max_thr=25 last=(9, 17628, 4) secs=0.39 timeout=0
+RUN cycle=14 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=50520 max_thr=26 last=(7, 17260, 5) secs=15.54 timeout=0
+RUN cycle=14 variant=http2-h2 ok=1 rc=0 max_fd=54 max_rss_kb=100264 max_thr=31 last=(5, 33900, 4) secs=16.04 timeout=0
+PROGRESS elapsed=453s cycles=14 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12600, 3) cancel-h2 peak=[54, 19372, 25] last=(9, 17628, 4) http2-default peak=[49, 59052, 29] last=(7, 17260, 5) http2-h2 peak=[59, 109052, 31] last=(5, 33900, 4) host_file_nr=alloc=18491 free=0 max=9223372036854775807
+RUN cycle=15 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13316 max_thr=16 last=(4, 12556, 3) secs=0.24 timeout=0
+RUN cycle=15 variant=cancel-h2 ok=1 rc=0 max_fd=52 max_rss_kb=19240 max_thr=25 last=(5, 17672, 4) secs=0.46 timeout=0
+RUN cycle=15 variant=http2-default ok=1 rc=0 max_fd=41 max_rss_kb=58664 max_thr=25 last=(8, 17256, 6) secs=15.53 timeout=0
+RUN cycle=15 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=102360 max_thr=31 last=(11, 34700, 6) secs=16.33 timeout=0
+RUN cycle=16 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=12940 max_thr=17 last=(4, 12552, 3) secs=0.28 timeout=0
+RUN cycle=16 variant=cancel-h2 ok=1 rc=0 max_fd=53 max_rss_kb=19284 max_thr=26 last=(9, 17652, 4) secs=0.41 timeout=0
+RUN cycle=16 variant=http2-default ok=1 rc=0 max_fd=41 max_rss_kb=50444 max_thr=26 last=(4, 16924, 3) secs=15.85 timeout=0
+RUN cycle=16 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=85664 max_thr=31 last=(6, 34476, 5) secs=16.07 timeout=0
+PROGRESS elapsed=518s cycles=16 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12552, 3) cancel-h2 peak=[54, 19372, 26] last=(9, 17652, 4) http2-default peak=[49, 59052, 29] last=(4, 16924, 3) http2-h2 peak=[59, 109052, 31] last=(6, 34476, 5) host_file_nr=alloc=18350 free=0 max=9223372036854775807
+RUN cycle=17 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13384 max_thr=17 last=(4, 12616, 3) secs=0.23 timeout=0
+RUN cycle=17 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19144 max_thr=25 last=(9, 17544, 4) secs=0.39 timeout=0
+RUN cycle=17 variant=http2-default ok=1 rc=0 max_fd=45 max_rss_kb=49572 max_thr=28 last=(3, -1, 1) secs=15.52 timeout=0
+RUN cycle=17 variant=http2-h2 ok=1 rc=0 max_fd=50 max_rss_kb=85124 max_thr=31 last=(5, 34668, 4) secs=15.97 timeout=0
+RUN cycle=18 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13384 max_thr=16 last=(4, 12616, 3) secs=0.24 timeout=0
+RUN cycle=18 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19196 max_thr=25 last=(9, 17592, 4) secs=0.40 timeout=0
+RUN cycle=18 variant=http2-default ok=1 rc=0 max_fd=44 max_rss_kb=58564 max_thr=28 last=(5, 17076, 4) secs=15.59 timeout=0
+RUN cycle=18 variant=http2-h2 ok=1 rc=0 max_fd=50 max_rss_kb=100648 max_thr=31 last=(3, 33676, 1) secs=16.06 timeout=0
+PROGRESS elapsed=582s cycles=18 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12616, 3) cancel-h2 peak=[54, 19372, 26] last=(9, 17592, 4) http2-default peak=[49, 59052, 29] last=(5, 17076, 4) http2-h2 peak=[59, 109052, 31] last=(3, 33676, 1) host_file_nr=alloc=18519 free=0 max=9223372036854775807
+RUN cycle=19 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13368 max_thr=16 last=(4, 12596, 3) secs=0.24 timeout=0
+RUN cycle=19 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19192 max_thr=25 last=(9, 17600, 4) secs=0.40 timeout=0
+RUN cycle=19 variant=http2-default ok=1 rc=0 max_fd=39 max_rss_kb=58796 max_thr=26 last=(3, 16932, 2) secs=15.64 timeout=0
+RUN cycle=19 variant=http2-h2 ok=1 rc=0 max_fd=50 max_rss_kb=107876 max_thr=31 last=(5, 33960, 4) secs=16.02 timeout=0
+RUN cycle=20 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13296 max_thr=16 last=(4, 12532, 3) secs=0.23 timeout=0
+RUN cycle=20 variant=cancel-h2 ok=1 rc=0 max_fd=55 max_rss_kb=19360 max_thr=26 last=(9, 17744, 4) secs=0.39 timeout=0
+RUN cycle=20 variant=http2-default ok=1 rc=0 max_fd=46 max_rss_kb=58656 max_thr=28 last=(3, 16692, 1) secs=15.44 timeout=0
+RUN cycle=20 variant=http2-h2 ok=1 rc=0 max_fd=53 max_rss_kb=92072 max_thr=31 last=(3, 33624, 2) secs=15.98 timeout=0
+PROGRESS elapsed=646s cycles=20 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12532, 3) cancel-h2 peak=[55, 19372, 26] last=(9, 17744, 4) http2-default peak=[49, 59052, 29] last=(3, 16692, 1) http2-h2 peak=[59, 109052, 31] last=(3, 33624, 2) host_file_nr=alloc=18352 free=0 max=9223372036854775807
+RUN cycle=21 variant=cancel-default ok=1 rc=0 max_fd=35 max_rss_kb=13356 max_thr=16 last=(4, 12584, 3) secs=0.24 timeout=0
+RUN cycle=21 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19248 max_thr=25 last=(9, 17652, 4) secs=0.40 timeout=0
+RUN cycle=21 variant=http2-default ok=1 rc=0 max_fd=39 max_rss_kb=58384 max_thr=25 last=(5, 17120, 4) secs=15.58 timeout=0
+RUN cycle=21 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=94568 max_thr=32 last=(4, 33876, 3) secs=16.12 timeout=0
+RUN cycle=22 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13400 max_thr=16 last=(4, 12636, 3) secs=0.24 timeout=0
+RUN cycle=22 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19288 max_thr=25 last=(4, 17548, 2) secs=0.39 timeout=0
+RUN cycle=22 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=49568 max_thr=28 last=(5, 16168, 4) secs=15.64 timeout=0
+RUN cycle=22 variant=http2-h2 ok=1 rc=0 max_fd=55 max_rss_kb=100948 max_thr=31 last=(15, 34612, 6) secs=16.20 timeout=0
+PROGRESS elapsed=711s cycles=22 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12636, 3) cancel-h2 peak=[55, 19372, 26] last=(4, 17548, 2) http2-default peak=[49, 59052, 29] last=(5, 16168, 4) http2-h2 peak=[59, 109052, 32] last=(15, 34612, 6) host_file_nr=alloc=19027 free=0 max=9223372036854775807
+RUN cycle=23 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13344 max_thr=17 last=(3, 12568, 3) secs=0.28 timeout=0
+RUN cycle=23 variant=cancel-h2 ok=1 rc=0 max_fd=57 max_rss_kb=19356 max_thr=28 last=(9, 17744, 4) secs=0.46 timeout=0
+RUN cycle=23 variant=http2-default ok=1 rc=0 max_fd=41 max_rss_kb=49540 max_thr=27 last=(5, 16120, 4) secs=16.01 timeout=0
+RUN cycle=23 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=104220 max_thr=31 last=(5, 37784, 4) secs=16.17 timeout=0
+RUN cycle=24 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13376 max_thr=16 last=(4, 12600, 3) secs=0.24 timeout=0
+RUN cycle=24 variant=cancel-h2 ok=1 rc=0 max_fd=52 max_rss_kb=19204 max_thr=25 last=(4, 17512, 3) secs=0.41 timeout=0
+RUN cycle=24 variant=http2-default ok=1 rc=0 max_fd=45 max_rss_kb=49620 max_thr=28 last=(4, 16024, 3) secs=15.55 timeout=0
+RUN cycle=24 variant=http2-h2 ok=1 rc=0 max_fd=56 max_rss_kb=95896 max_thr=31 last=(7, 34468, 5) secs=16.05 timeout=0
+PROGRESS elapsed=776s cycles=24 fails=0 cancel-default peak=[35, 13480, 17] last=(4, 12600, 3) cancel-h2 peak=[57, 19372, 28] last=(4, 17512, 3) http2-default peak=[49, 59052, 29] last=(4, 16024, 3) http2-h2 peak=[59, 109052, 32] last=(7, 34468, 5) host_file_nr=alloc=19063 free=0 max=9223372036854775807
+RUN cycle=25 variant=cancel-default ok=1 rc=0 max_fd=36 max_rss_kb=13216 max_thr=17 last=(4, 12640, 3) secs=0.27 timeout=0
+RUN cycle=25 variant=cancel-h2 ok=1 rc=0 max_fd=53 max_rss_kb=19212 max_thr=26 last=(3, 17564, 3) secs=0.48 timeout=0
+RUN cycle=25 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=50020 max_thr=28 last=(5, 16128, 4) secs=15.70 timeout=0
+RUN cycle=25 variant=http2-h2 ok=1 rc=0 max_fd=56 max_rss_kb=100444 max_thr=31 last=(6, 34492, 5) secs=16.36 timeout=0
+RUN cycle=26 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13348 max_thr=17 last=(4, 12580, 3) secs=0.26 timeout=0
+RUN cycle=26 variant=cancel-h2 ok=1 rc=0 max_fd=55 max_rss_kb=19196 max_thr=26 last=(9, 17624, 4) secs=0.44 timeout=0
+RUN cycle=26 variant=http2-default ok=1 rc=0 max_fd=43 max_rss_kb=49488 max_thr=28 last=(3, -1, 1) secs=15.95 timeout=0
+RUN cycle=26 variant=http2-h2 ok=1 rc=0 max_fd=50 max_rss_kb=93336 max_thr=31 last=(4, 33892, 3) secs=16.28 timeout=0
+PROGRESS elapsed=842s cycles=26 fails=0 cancel-default peak=[36, 13480, 17] last=(4, 12580, 3) cancel-h2 peak=[57, 19372, 28] last=(9, 17624, 4) http2-default peak=[49, 59052, 29] last=(3, -1, 1) http2-h2 peak=[59, 109052, 32] last=(4, 33892, 3) host_file_nr=alloc=18490 free=0 max=9223372036854775807
+RUN cycle=27 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13328 max_thr=16 last=(4, 12560, 3) secs=0.24 timeout=0
+RUN cycle=27 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19260 max_thr=25 last=(9, 17660, 4) secs=0.40 timeout=0
+RUN cycle=27 variant=http2-default ok=1 rc=0 max_fd=46 max_rss_kb=57676 max_thr=26 last=(4, 16060, 3) secs=15.45 timeout=0
+RUN cycle=27 variant=http2-h2 ok=1 rc=0 max_fd=51 max_rss_kb=106752 max_thr=31 last=(4, 33800, 3) secs=16.08 timeout=0
+RUN cycle=28 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13396 max_thr=16 last=(4, 12632, 3) secs=0.24 timeout=0
+RUN cycle=28 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19252 max_thr=25 last=(9, 17656, 4) secs=0.39 timeout=0
+RUN cycle=28 variant=http2-default ok=1 rc=0 max_fd=43 max_rss_kb=58864 max_thr=28 last=(5, 17192, 4) secs=15.65 timeout=0
+RUN cycle=28 variant=http2-h2 ok=1 rc=0 max_fd=50 max_rss_kb=94676 max_thr=31 last=(5, 34000, 4) secs=16.03 timeout=0
+PROGRESS elapsed=907s cycles=28 fails=0 cancel-default peak=[36, 13480, 17] last=(4, 12632, 3) cancel-h2 peak=[57, 19372, 28] last=(9, 17656, 4) http2-default peak=[49, 59052, 29] last=(5, 17192, 4) http2-h2 peak=[59, 109052, 32] last=(5, 34000, 4) host_file_nr=alloc=18519 free=0 max=9223372036854775807
+RUN cycle=29 variant=cancel-default ok=1 rc=0 max_fd=33 max_rss_kb=13320 max_thr=16 last=(3, 12544, 2) secs=0.24 timeout=0
+RUN cycle=29 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19296 max_thr=25 last=(9, 17684, 4) secs=0.40 timeout=0
+RUN cycle=29 variant=http2-default ok=1 rc=0 max_fd=40 max_rss_kb=57660 max_thr=25 last=(4, 15996, 4) secs=15.57 timeout=0
+RUN cycle=29 variant=http2-h2 ok=1 rc=0 max_fd=55 max_rss_kb=99504 max_thr=31 last=(5, 33928, 4) secs=16.24 timeout=0
+RUN cycle=30 variant=cancel-default ok=1 rc=0 max_fd=38 max_rss_kb=13316 max_thr=19 last=(5, 12556, 4) secs=0.26 timeout=0
+RUN cycle=30 variant=cancel-h2 ok=1 rc=0 max_fd=53 max_rss_kb=19288 max_thr=25 last=(5, 17756, 4) secs=0.43 timeout=0
+RUN cycle=30 variant=http2-default ok=1 rc=0 max_fd=45 max_rss_kb=57736 max_thr=28 last=(6, 16332, 5) secs=15.73 timeout=0
+RUN cycle=30 variant=http2-h2 ok=1 rc=0 max_fd=52 max_rss_kb=100344 max_thr=31 last=(3, 33548, 2) secs=16.10 timeout=0
+PROGRESS elapsed=972s cycles=30 fails=0 cancel-default peak=[38, 13480, 19] last=(5, 12556, 4) cancel-h2 peak=[57, 19372, 28] last=(5, 17756, 4) http2-default peak=[49, 59052, 29] last=(6, 16332, 5) http2-h2 peak=[59, 109052, 32] last=(3, 33548, 2) host_file_nr=alloc=18508 free=0 max=9223372036854775807
+RUN cycle=31 variant=cancel-default ok=1 rc=0 max_fd=38 max_rss_kb=13416 max_thr=18 last=(4, 12652, 3) secs=0.24 timeout=0
+RUN cycle=31 variant=cancel-h2 ok=1 rc=0 max_fd=51 max_rss_kb=19200 max_thr=25 last=(9, 17660, 4) secs=0.42 timeout=0
+RUN cycle=31 variant=http2-default ok=1 rc=0 max_fd=42 max_rss_kb=50608 max_thr=28 last=(5, 17184, 4) secs=15.92 timeout=0
+RUN cycle=31 variant=http2-h2 ok=0 rc=101 max_fd=44 max_rss_kb=75048 max_thr=27 last=(5, 34580, 4) secs=15.68 timeout=0
+FAIL cycle=31 variant=http2-h2
+
+running 35 tests
+test h2_async_spike::async_h2_cap_loop_env_gated ... ok
+test h2_async_spike::async_h2_production_cookie_redirect ... FAILED
+test h2_async_spike::async_h2_cold_multiplex_20_vong ... FAILED
+test h2_async_spike::async_h2_production_bon_stream_mot_connection ... FAILED
+test h2_async_spike::async_h2_production_redirect ... FAILED
+test h2_async_spike::async_h2_timeout_lap_khong_ro_fd_con ... ignored, chạy trong tiến trình con bởi async_h2_timeout_lap_khong_ro_fd
+test h2_async_spike::async_h2_production_timeout_va_goaway ... FAILED
+test h2_async_spike::async_h2_production_cap_body ... FAILED
+test h2_async_spike::async_h2_production_bon_stream_cold ... FAILED
+test h2_basic_auth ... ok
+test h2_get_va_head ... ok
+test fallback_http1_khi_khong_alpn ... ok
+test h2_async_spike::async_h2_soak_env_gated ... FAILED
+test h2_async_SUMMARY status=FAIL reason=cycle31_http2-h2_rc101 no_summary_from_runner
+
+SUMMARY status=FAIL reason=cycle31_http2-h2_rc101 no_summary_from_runner
