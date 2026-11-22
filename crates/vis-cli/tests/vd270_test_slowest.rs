@@ -15,8 +15,10 @@
 //! **0 xanh / 7 đỏ** — mọi lệnh `vis test --slowest …` in `vis test: không hỗ trợ cờ
 //! '--slowest'` (kèm usage cũ) và exit **2**; `--slowest` + `--list` cũng exit 2 nhưng vì cờ
 //! lạ, còn ca usage đỏ vì usage chưa nêu `--slowest`. Ca chậm dùng busy loop
-//! `time.monotonic_ms()` ~50 ms; ca nhanh chỉ `assert true` ⇒ chênh lệch lớn (~50 ms vs ~1–5 ms
+//! `time.monotonic_ms()` ~300 ms; ca nhanh chỉ `assert true` ⇒ chênh lệch lớn (~300 ms vs ~1–5 ms
 //! cả thời gian spawn), không phụ thuộc tốc độ máy.
+//! **ST-296/VD-281(2)**: nới ca chậm 50 → 300 ms và ngưỡng 40 → 250 ms để test chịu tải cao
+//! (load ≥20: spawn ca nhanh vẫn « 250 ms) mà vẫn bắt regression (sai thứ tự slowest/thời gian).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -50,13 +52,13 @@ fn vis(args: &[&str]) -> (i32, String, String) {
     )
 }
 
-/// Ca chậm **tất định tương đối**: busy loop tới khi `monotonic_ms` đi qua ~50 ms. Không dùng
+/// Ca chậm **tất định tương đối**: busy loop tới khi `monotonic_ms` đi qua ~300 ms. Không dùng
 /// `sleep` (stdlib chưa có) và không phụ thuộc tốc độ CPU — chỉ cần đồng hồ thật.
 const CHAM: &str = r#"use std.time
 test fn cham():
     let t0 = time.monotonic_ms()
     var x = 0
-    while time.monotonic_ms() - t0 < 50:
+    while time.monotonic_ms() - t0 < 300:
         x += 1
     assert x > 0
 "#;
@@ -126,7 +128,7 @@ fn slowest_1_chi_ca_cham() {
     assert_eq!(ds_dong.len(), 1, "đúng 1 dòng slowest: {e1}");
     let (us, ten) = tach_dong(&ds_dong[0]);
     assert_eq!(ten, "cham", "ca chậm nhất phải là `cham`: {e1}");
-    assert!(us >= 40_000, "ca chậm phải ≥ 40 ms, được {us} us: {e1}");
+    assert!(us >= 250_000, "ca chậm phải ≥ 250 ms, được {us} us: {e1}");
 
     // Dạng `--slowest=N` tương đương.
     let (cb, ob, eb) = vis(&["test", "--slowest=1", ds]);
@@ -153,7 +155,7 @@ fn slowest_2_giam_dan() {
     assert_eq!(ten0, "cham", "dòng đầu phải là ca chậm: {e}");
     assert_eq!(ten1, "nhanh", "dòng sau phải là ca nhanh: {e}");
     assert!(us0 >= us1, "phải sắp giảm dần: {us0} us < {us1} us: {e}");
-    assert!(us0 >= 40_000, "ca chậm ≥ 40 ms: {e}");
+    assert!(us0 >= 250_000, "ca chậm ≥ 250 ms: {e}");
     assert!(us1 < us0, "ca nhanh phải nhanh hơn hẳn: {e}");
 
     let _ = std::fs::remove_dir_all(&d);
