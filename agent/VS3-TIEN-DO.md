@@ -121,11 +121,7 @@ Matrix: `vs3_http_cancel` serial **20/20**, default **10/10**, exact lap **20/20
 **BLOCKED-ENV** rc 101 (Unix-only). Nguồn `JOURNAL/st287-win-cancel-flake.md`,
 `JOURNAL/st287-win-cancel-final-matrix.log`, `JOURNAL/st287-win-cancel-workspace.log`.
 
-**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ **`0645700`** (ST-287 fix merge); R32 chốt
-phần Stage 0 (`agent/reports/R32-viscript.md`); docs phát hành cập nhật (CHANGELOG `v0.3.6`,
-STATE/ROADMAP/VS3-TIEN-DO). **`v0.3.6` đã tag @ `8fa2c09` — W3/W4 verify cuối xanh
-(Windows suite 20/20 + workspace 1 vòng; Linux gate 3581/3).** Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED`
-chờ A0 mở.
+**Trạng thái Stage 0**: **đủ 6/6 DONE — A0 ĐÃ DUYỆT (`VD-280`)** trên `main` @ **`0645700`** (tag **`v0.3.6`** @ `8fa2c09`; Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). **Giai đoạn 1 (`v0.4.0`) ĐÃ MỞ theo `VD-280`**: `ST-290` (`W3`), `ST-291` (`W1`), `ST-293` (`W3`), `ST-294`/`ST-295` (`W2`) đang `READY`; `ST-292` chờ `ST-290`+`ST-291`; `ST-296` (`W4`) chờ `ST-290..295` (W4 chạy ngay `nightly` bù R32 + chốt fuzz `20261126` + đo sớm `#191` `nextest` trên `psvn`).
 
 ## 3. Mốc tích hợp cuối tuần
 

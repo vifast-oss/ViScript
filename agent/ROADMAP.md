@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Cập nhật 2026-11-22 (VD-280 — Duyệt đóng GĐ 0 `v0.3.6`, MỞ GĐ 1 `v0.4.0`)** — A0 duyệt `APPROVED` toàn bộ `ST-284`..`ST-289` → **`DONE`** (tag `v0.3.6` @ `8fa2c09`, Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). Mở **Giai đoạn 1 (`v0.4.0`)** với phân luồng tái cân bằng (`W1`: `ST-291`→`ST-292`; `W2`: `ST-294` + `ST-295`; `W3`: `ST-290`→`ST-293`; `W4`: nightly bù R32 + `#191` sớm + `ST-296`/`R33`), rào R1 đợt 2 và đăng ký chung `VS0509`/`VS0510` ở `ST-290`. Chi tiết: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd280.md`.
+>
 > **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `8fa2c09` — ĐÃ TAG)** — Giai đoạn 0 **đủ 6/6**:
 > **DONE** `ST-284` (`83a9a10`/merge `e363a15`: `vm.rs` 1240, `frame.rs` 1042), `ST-285`
 > (`ab5d292`/merge `246b6c5`: `value` 1186, `codegen` 1045, `tyck/expr` 1064, `interp/goi` 1155),

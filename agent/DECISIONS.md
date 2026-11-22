@@ -3849,3 +3849,21 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
      3. **Cấm tự nới luật khi gặp lỗi mã**: Đang ở vai `Builder` gặp test đỏ hoặc đụng ngưỡng R1..R6 thì phải sửa mã; nếu thật sự cần đổi luật/ngữ nghĩa phải dừng nhánh mã, lập VD mới có lý do và commit `[ST-00]` riêng trước khi tiếp tục.
 3. **Liên kết lịch sử**: `VD-119`, `VD-137`, `VD-196` tiếp tục có hiệu lực như trường hợp riêng của `Agent 0 (Chat-only)` và mô hình đa-agent tách máy.
 
+### VD-280 · Duyệt đóng Giai đoạn 0 (`v0.3.6`) & Mở Giai đoạn 1 (`v0.4.0`) kèm 6 tinh chỉnh điều phối — A0, 2026-11-22
+
+> **Căn cứ**: `agent/reports/R32-viscript.md`, `agent/JOURNAL/tag-v036-win.md`, `agent/JOURNAL/st287-http-cancel.md`, tag `v0.3.6` @ `8fa2c09`, `HEAD` `be51ae09`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd280.md`.
+
+1. **Duyệt đóng Giai đoạn 0 (`APPROVED 2026-11-22 Agent 0`)**: Lật `ST-284`..`ST-289` → **`DONE`** trong `agent/QUEUE.md`. Giữ nguyên `R32` (VD-142); ghi đính chính mốc tag `v0.3.6` @ `8fa2c09` + Windows verify `be51ae09` ở đầu `R33`.
+2. **Mở Giai đoạn 1 (`v0.4.0`) & tái cân bằng 4 luồng**:
+   - Lật **`ST-290`, `ST-291`, `ST-293`, `ST-294`, `ST-295`** → **`READY`**; giữ `ST-292` (`BLOCKED` chờ `ST-291` + `ST-290`) và `ST-296` (`BLOCKED` chờ `ST-290`..`ST-295`).
+   - **W1 (`plan/w1-runtime`)**: `ST-291` (`P2b-1/2`) → `ST-292` (`P4a..c` + `--workers` + dùng `VS0509`).
+   - **W3 (`plan/w3-platform`)**: `ST-290` (ngân sách mặc định `40M` + `--max-budget`/`--unlimited-budget` + đăng ký **cả `VS0509` và `VS0510`** + bump cache) → `ST-293` (`select_recv*`/`select_send*`).
+   - **W2 (`plan/w2-net-sec`)**: `ST-294` (`async-h2` Windows + default-on) và `ST-295` (`rustix` TOCTOU đường ghi `#109b`/`#140` + Landlock `#125`) — độc lập tệp (`net/` vs `quyen*`/`vis-host-linux`), được chạy nối tiếp hoặc nhánh phụ song song.
+   - **W4 (`plan/w4-qa-docs`)**: chạy 1 lượt `vis-dev nightly` nền đầu GĐ 1 (bù R32), chốt kết quả fuzz seed `20261126`, verify từng merge lên `psvn`, **đo sớm `#191` (`cargo nextest` trên `psvn`)**, và dẫn `ST-296` + `R33`.
+3. **Rào R1 đợt 2**: `interp.rs` (1.458), `vis-types/src/stdlib.rs` (1.456), `lower/expr.rs` (1.456), `lower.rs` (1.446), `vis-interp/src/stdlib.rs` (1.418), `rt.rs` (1.329), `builtin.rs` (1.323) đã sát trần ⇒ `ST-293` đặt logic mới trong `crates/vis-interp/src/rt/select.rs` + `crates/vis-types/src/tyck/expr/kenh.rs`; `ST-290` đặt parsing cờ ngân sách ở `cli/run.rs` hoặc module con riêng. Không nhồi thêm dòng vào tệp > 1.400 dòng.
+4. **Chống xung đột `API-CODES.txt`**: `ST-290` (W3) đăng ký đồng thời cả `VS0509` và `VS0510` (3 ngôn ngữ `vi/en/ja`, `API-CODES.txt` 54 → 56) và merge trước `ST-292` để W1 dùng trực tiếp `VS0509`.
+5. **Đo đỉnh ngân sách corpus thật (`ST-290`)**: Trước khi bật default `40_000_000`, đo và lưu nhật ký đỉnh ngân sách lớn nhất trên 3.581 workspace test + 525 `test/sem` + 54 host + `diff 100k`; nếu có workload hợp lệ vượt `40M` ⇒ báo A0 chỉnh ngưỡng trước khi merge.
+6. **Kiến trúc Windows `ST-294` + cảnh báo non-TLS**: Gỡ `AsRawFd`/`RawFd`/`mio::unix::SourceFd` trong `net/h2_async.rs`, chuyển sang adapter `mio::net::TcpStream` / `Nguon` (IOCP/AFD) dùng chung Unix+Windows; dọn luôn 2 cảnh báo compile `--no-default-features` ở `async_net_nguon.rs`.
+7. **Đối chiếu đóng nợ cũ (`ST-296`)**: W4 rà các mục lịch sử đã hoàn thành thực tế trong `SO-NO.md` (`#16`, `#17`, `#19`, `#21`, `#26`, `#27`, `#31`, `#84`, `#98`...), chỉ đóng mục có commit hash + bằng chứng máy xác nhận, giữ luật R5 xanh.
+
+
