@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 32,
-  "head": "eaf22a222787511026c39569c90f0fda96b4fc83",
+  "head": "89f6e6b72e1f1877e303a0ae45dc04af614edadc",
   "build_id": "stage0-v036-20261122",
   "tasks": [
     {
@@ -2265,7 +2265,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-237",
@@ -2274,7 +2274,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-238",
@@ -2283,7 +2283,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-239",
@@ -2292,7 +2292,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-240",
@@ -2301,7 +2301,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-241",
@@ -2310,7 +2310,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-242",
@@ -2319,7 +2319,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-243",
@@ -2328,7 +2328,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-244",
@@ -2337,7 +2337,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-245",
@@ -2346,7 +2346,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-246",
@@ -2355,7 +2355,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-247",
@@ -2364,7 +2364,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-248",
@@ -2373,7 +2373,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-249",
@@ -2382,7 +2382,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-250",
@@ -2391,7 +2391,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-251",
@@ -2400,7 +2400,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-252",
@@ -2409,7 +2409,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-253",
@@ -2418,7 +2418,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-254",
@@ -2427,7 +2427,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-255",
@@ -2436,7 +2436,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-257",
@@ -2445,7 +2445,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-258",
@@ -2454,7 +2454,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-259",
@@ -2463,7 +2463,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-260",
@@ -2472,7 +2472,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-261",
@@ -2481,7 +2481,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (design-only)"
     },
     {
@@ -2491,7 +2491,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (design-only)"
     },
     {
@@ -2501,7 +2501,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (chờ A0 chốt hợp đồng)"
     },
     {
@@ -2511,7 +2511,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (prototype, chưa nối runtime)"
     },
     {
@@ -2521,7 +2521,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-266",
@@ -2530,7 +2530,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (draft, chờ A0 chốt)"
     },
     {
@@ -2540,7 +2540,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-268",
@@ -2549,7 +2549,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-269",
@@ -2558,7 +2558,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-270",
@@ -2567,7 +2567,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-271",
@@ -2576,7 +2576,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-272",
@@ -2585,7 +2585,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-273",
@@ -2594,7 +2594,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-274",
@@ -2603,7 +2603,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-275",
@@ -2612,7 +2612,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-276",
@@ -2621,7 +2621,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)",
       "queue": "DONE (subset, chưa bật default)"
     },
     {
@@ -2631,7 +2631,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-278",
@@ -2640,7 +2640,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-279",
@@ -2649,7 +2649,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-280",
@@ -2658,7 +2658,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-281",
@@ -2667,7 +2667,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-282",
@@ -2676,7 +2676,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-283",
@@ -2685,7 +2685,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
+      "note": "chi tiết trong QUEUE.md (baseline 89f6e6b)"
     },
     {
       "id": "ST-284",
@@ -2737,7 +2737,7 @@
     },
     {
       "id": "ST-288",
-      "status": "REVIEW",
+      "status": "DONE",
       "commits": [
         "c513e7a",
         "545a38d"
@@ -2745,7 +2745,8 @@
       "gates": [
         "fast"
       ],
-      "note": "REVIEW: VS0708 vi/en/ja (54 ma), soft pin pkg update (#142 dong), gc --root dedupe; pkg 25/25, vs3_registry_sig 10/10, vs3_pkg_gc_multi 4/4; cho Gatekeeper"
+      "note": "DONE (Gatekeeper doc lap 2026-11-22): VS0708 vi/en/ja + explain --list 54, API-CODES 54; sig 10/10 (6 ca am + key rotation deu VS0708); #142 soft pin update_mot_ten_* 2/2 + unit soft_pin; gc --root 4/4; pkg 25/25, vs3_pkg_gc_multi 4/4; chi tiet JOURNAL/st288-goi.md",
+      "queue": "REVIEW"
     },
     {
       "id": "ST-289",
@@ -2966,7 +2967,7 @@
     "alive": null
   },
   "perf": {
-    "head_do": "eaf22a222787511026c39569c90f0fda96b4fc83",
+    "head_do": "89f6e6b72e1f1877e303a0ae45dc04af614edadc",
     "baseline": "Stage 0 v0.3.6 — 5/6, chi con ST-287 WIP",
     "host": "ps (Linux; rustc 1.100.0)",
     "workspace": {
@@ -2997,7 +2998,7 @@
   "blocked": [
     {
       "id": "ST-288",
-      "question": "Gatekeeper nghiem thu VS0708 + soft pin pkg update (#142) + pkg gc --root de chuyen REVIEW -> DONE"
+      "question": "Gatekeeper da duyet 2026-11-22 (VS0708/#142/gc --root xanh); cho A0 lat QUEUE REVIEW -> DONE"
     },
     {
       "id": "ST-290",

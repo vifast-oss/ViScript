@@ -84,7 +84,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
-## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `eaf22a2`)
+## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `89f6e6b`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `JOURNAL/st284-refactor.md`, `JOURNAL/st285-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,5,6}-diff-100k.log`,
@@ -97,8 +97,8 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **ST-285** — R0b `value.rs`/`codegen.rs`/`tyck/expr.rs`/`interp/goi.rs` | **DONE** | `ab5d292` (merge `246b6c5`) | `value` **1186**, `codegen` **1045**, `tyck/expr` **1064**, `interp/goi` **1155** dòng (≤1250); tách `value/show_eq.rs`, `codegen/cau.rs`, `tyck/expr/goi.rs`, `interp/goi_ham.rs`; 0 đổi golden/API/cache; gate `3576/3`; diff 100k seed `20261115` **lech=0** (200,5 s) |
 | **ST-286** — R0c `async_net.rs`/`quyen.rs`/`db/sqlite/mod.rs` | **DONE** | `f193c57` (merge `cfba662`) | `async_net` **606**, `quyen` **1190**, `sqlite/mod.rs` **1245** dòng; module con tách giữ API; gate PASS; diff 100k seed `20261122` **lech=0** (93 770 ca chạy) |
 | **ST-287** — hook huỷ giữa HTTP request | **WIP** | — | nhánh W2 chưa merge; `vs3_http_cancel.rs` chưa có trên `main` |
-| **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **REVIEW** | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja (54 mã), soft pin `pkg update`, `gc --root` dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4; **#142 đóng** |
-| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); R32 khung Stage 0 @ `eaf22a2` |
+| **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + `vis explain --list` **54** + `API-CODES.txt` **54**; 6 ca âm (gồm key rotation) đều nêu `VS0708`; soft pin `pkg update` (`update_mot_ten_*` 2/2 + unit) ⇒ **#142 đóng**; `gc --root` lặp/lồng dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4. QUEUE còn `REVIEW` — chờ A0 lật sổ |
+| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); R32 khung Stage 0 @ `89f6e6b` |
 
 **Cổng Stage 0** @ `eaf22a2`: `./vis-dev gate --fast` **PASS — 3576 passed / 3 skipped** (fmt, clippy,
 R1..R6, self-test, doc-examples 24 khối, L0 nextest). Windows @ `0d057e5`:
@@ -107,8 +107,8 @@ R1..R6, self-test, doc-examples 24 khối, L0 nextest). Windows @ `0d057e5`:
 **chưa** tag `v0.3.6`.
 
 **Việc còn lại để đóng Stage 0**: `ST-287` merge → gate lại + diff 100k → verify Windows tại commit
-chốt + fresh-clone → chốt R32 → mở Giai đoạn 1 (`ST-290..`). `ST-288` cần Gatekeeper chuyển
-`REVIEW → DONE`.
+chốt + fresh-clone → chốt R32 → mở Giai đoạn 1 (`ST-290..`). `ST-288` đã được Gatekeeper duyệt
+**DONE** (2026-11-22); A0 cần lật QUEUE `REVIEW → DONE` khi chốt sổ.
 
 ## 3. Mốc tích hợp cuối tuần
 
