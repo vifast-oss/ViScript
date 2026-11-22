@@ -3,7 +3,7 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
-## v0.4.1 — 2026-11-23 (Giai đoạn 1.5 — **CHƯA TAG**)
+## v0.4.1 — 2026-11-23 (Giai đoạn 1.5)
 
 - **Phiên bản**: workspace **0.4.1** (`version.workspace = true`); `vis --version` ⇒ **`vis 0.4.1`**;
   `PHIEN_BAN` thêm `+v041-release-2026-11-23`, khoá cache ghim lại (VD-129) — cache 0.4.0 tự vô
@@ -18,9 +18,15 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
   interp stdlib **68 → 17 tệp**; gate **3656/4**, diff 100k **0 lệch**.
 - **ST-296d** (`a1730c5`): **63 tệp R100** vào `agent/archive/`, `DECISIONS-INDEX` **271 VD**;
   `agent/` rời **77 → 19**; **report-check PASS 33/329**.
-- **Tag `v0.4.0` @ `c2accdf`** (R33). **`v0.4.1` CHƯA TAG** — tag sẽ đặt trên **commit R34** sau
-  final QA Linux/Windows. Nhánh **ST-297 READY** `plan/w2-st297-paths` @ `a188f15` (gate **3660/4**,
-  4 ca mới) chờ sau `v0.4.1`; **ST-298 BLOCKED**.
+- **Lock fix final QA** (`11e8120`): `vis-host-wasm/Cargo.lock` ghim **0.4.1** (trước đó 0.4.0 làm
+  `bin/vis-targets` bẩn cây trên Windows) — đã xác nhận chạy lại sạch.
+- **Final QA Linux @ `5d7791c`**: fresh-clone gate **3656/4**; release **3661/0/4** (445 s);
+  **soak 10/10 = 530 s** (3× gate 3656/4, 3× diff 100k `lech=0`, host 54/54, cache 5/5).
+- **Final QA Windows @ `5d7791c` + `11e8120`**: full **3607/0/3** (478 s); release **3606/0/3**
+  (384 s); worker_frame 12/12+6/6, P1/P2/P3 8/14/10, select 25, h2 33, cancel 8, lsp 27, loader 29;
+  `vis 0.4.1`, khoá cache `42f53893…7c0f`.
+- **Tag `v0.4.0` @ `c2accdf`** (R33). **`v0.4.1` — tag trên commit R34 này**. Nhánh **ST-297 READY**
+  `plan/w2-st297-paths` @ `4cad7a0` (gate **3660/4**, 4 ca mới) chờ sau `v0.4.1`; **ST-298 BLOCKED**.
 
 ## v0.4.0 — 2026-11-23
 
