@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 32,
-  "head": "89f6e6b72e1f1877e303a0ae45dc04af614edadc",
+  "head": "f8f1d4b7abfe383c6f6946a0ede9b873e9675a4f",
   "build_id": "stage0-v036-20261122",
   "tasks": [
     {
@@ -2728,12 +2728,16 @@
     },
     {
       "id": "ST-287",
-      "status": "READY",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "03ed84c",
+        "f8f1d4b"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "hook huy HTTP WIP — nhanh W2 chua merge; vs3_http_cancel.rs chua co tren main"
+      "note": "ST-287 DONE (VD-273): cancel_task_handles + safe point frame_cancel_one; h1 dong socket, h2 RST_STREAM dung stream/giu session dung chung; vs3_http_cancel h1 5/5 (default) + h2 8/8 (async-h2), do-truoc 5/5 + 7/7; khong ro tay, parity interp<->VM; gate 3581/3; diff 100k seed 20261122 lech=0 (JOURNAL/st287-http-cancel.md, JOURNAL/st287-soak-1h.md)",
+      "queue": "READY"
     },
     {
       "id": "ST-288",
@@ -2758,7 +2762,7 @@
       "gates": [
         "fast"
       ],
-      "note": "DONE phan chuan bi + Stage 0: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + khung R32; full R32 cho ST-285/287",
+      "note": "DONE phan chuan bi + Stage 0 du 6/6: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + R32 chot Stage 0 @ f8f1d4b",
       "queue": "READY"
     },
     {
@@ -2954,7 +2958,7 @@
       20261115,
       20261122
     ],
-    "note": "differential 100k seed 20261115 (ST-284) va 20261122 (ST-286): lech=0"
+    "note": "differential 100k seed 20261115 (ST-284/ST-285) va 20261122 (ST-286/ST-287): lech=0"
   },
   "coverage": {
     "tokens": 0,
@@ -2967,12 +2971,12 @@
     "alive": null
   },
   "perf": {
-    "head_do": "89f6e6b72e1f1877e303a0ae45dc04af614edadc",
-    "baseline": "Stage 0 v0.3.6 — 5/6, chi con ST-287 WIP",
+    "head_do": "f8f1d4b7abfe383c6f6946a0ede9b873e9675a4f",
+    "baseline": "Stage 0 v0.3.6 — du 6/6 DONE @ f8f1d4b",
     "host": "ps (Linux; rustc 1.100.0)",
     "workspace": {
       "suites": 0,
-      "passed": 3576,
+      "passed": 3581,
       "failed": 0,
       "skipped": 3
     },
@@ -2983,7 +2987,7 @@
     },
     "diff": {
       "seed_20261115": "tong=100000 lech=0 (158.4 s / 200.5 s ST-285, 93770 ca chay)",
-      "seed_20261122": "tong=100000 lech=0 (172.8 s, 93770 ca chay)"
+      "seed_20261122": "tong=100000 lech=0 (172.8 s ST-286, 94.4 s ST-287, 93770 ca chay)"
     },
     "windows": "Stage 0 0d057e5: workspace 354 block 3533/0/3 (534 s), vis 0.3.6; P2 14/14, P1 8/8, P3 10/10 debug+release; h2 19, pkg 25, sig 10, default 22, tls 22, net 9; host 54/54; targets 18/18 + 17/1; release 11211776 B sha256 eede7c57...a49442 (JOURNAL/stage0-win-0d057e5.md)",
     "stage0": {
@@ -2991,9 +2995,10 @@
       "ST-285": "value 1186 / codegen 1045 / tyck/expr 1064 / interp/goi 1155",
       "ST-286": "async_net 606 / quyen 1190 / sqlite 1245",
       "ST-288": "VS0708 + #142 + gc --root",
-      "ST-289": "0.3.6 + #111 + #151"
+      "ST-289": "0.3.6 + #111 + #151",
+      "ST-287": "hook huy HTTP h1/h2: h1 5/5, h2 8/8, soak 1h"
     },
-    "note": "gate 3576/3 tai eaf22a2; Windows Stage 0 0d057e5 3533/0/3; full/nightly/fresh-clone chua chay cho Stage 0"
+    "note": "gate 3581/3 tai f8f1d4b; Windows Stage 0 0d057e5 3533/0/3 (chua verify lai f8f1d4b); full/nightly/fresh-clone chua chay cho Stage 0"
   },
   "blocked": [
     {
@@ -3002,83 +3007,83 @@
     },
     {
       "id": "ST-290",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Bật Ngân sách mặc định (`40M`) + mã `VS0510` + bump cache (`VS3-1a`)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Bật Ngân sách mặc định (`40M`) + mã `VS0510` + bump cache (`VS3-1a`)** — xem QUEUE.md"
     },
     {
       "id": "ST-291",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Worker `P2b-1 + P2b-2`: lazy/batched job submit & compact `Vec` proxy** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Worker `P2b-1 + P2b-2`: lazy/batched job submit & compact `Vec` proxy** — xem QUEUE.md"
     },
     {
       "id": "ST-292",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Worker Frame `P4a..P4c` + `VS0509` + cờ CLI `--workers <N>` (`VS3-3b`)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Worker Frame `P4a..P4c` + `VS0509` + cờ CLI `--workers <N>` (`VS3-3b`)** — xem QUEUE.md"
     },
     {
       "id": "ST-293",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Kênh `select` (`VS3-2c`): `select_recv*` / `select_send*`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Kênh `select` (`VS3-2c`): `select_recv*` / `select_send*`** — xem QUEUE.md"
     },
     {
       "id": "ST-294",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W2) Port `async-h2` sang Windows & bật mặc định non-wasm** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W2) Port `async-h2` sang Windows & bật mặc định non-wasm** — xem QUEUE.md"
     },
     {
       "id": "ST-295",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W2) Đóng khe TOCTOU đường ghi Unix (`#109b`/`#140`) & Landlock `#125`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W2) Đóng khe TOCTOU đường ghi Unix (`#109b`/`#140`) & Landlock `#125`** — xem QUEUE.md"
     },
     {
       "id": "ST-296",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W4) Tổng QA, Soak, Fuzz, `R33` & Release `v0.4.0`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W4) Tổng QA, Soak, Fuzz, `R33` & Release `v0.4.0`** — xem QUEUE.md"
     },
     {
       "id": "ST-297",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3) Đóng toàn bộ nợ `#149` (Path-split audit đa nền)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3) Đóng toàn bộ nợ `#149` (Path-split audit đa nền)** — xem QUEUE.md"
     },
     {
       "id": "ST-298",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W4) Gate `bin/vis-gate-windows`, chốt `#191` & nâng Windows Tier 1** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W4) Gate `bin/vis-gate-windows`, chốt `#191` & nâng Windows Tier 1** — xem QUEUE.md"
     },
     {
       "id": "ST-299",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3) Triển khai `vis-host-wasm` thật cho `wasm32-wasip1`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3) Triển khai `vis-host-wasm` thật cho `wasm32-wasip1`** — xem QUEUE.md"
     },
     {
       "id": "ST-300",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3/W4) Runner `bin/vis-wasm-suite` (Wasmtime), `R34` & Release `v0.4.5`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3/W4) Runner `bin/vis-wasm-suite` (Wasmtime), `R34` & Release `v0.4.5`** — xem QUEUE.md"
     },
     {
       "id": "ST-301",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Pha 2a: Chốt `T??` + Lambda param annotation + đóng `#155`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Pha 2a: Chốt `T??` + Lambda param annotation + đóng `#155`** — xem QUEUE.md"
     },
     {
       "id": "ST-302",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1) Pha 2b: `async` method/`cmd` (`#13`) & `derives Json` codegen (`#8`)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1) Pha 2b: `async` method/`cmd` (`#13`) & `derives Json` codegen (`#8`)** — xem QUEUE.md"
     },
     {
       "id": "ST-303",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3) Công cụ CLI: `vis new`, `vis doc`, `vis repl`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3) Công cụ CLI: `vis new`, `vis doc`, `vis repl`** — xem QUEUE.md"
     },
     {
       "id": "ST-304",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3) ViShell tương tác MVP (`VSH1`, `crates/vish-edit`)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3) ViShell tương tác MVP (`VSH1`, `crates/vish-edit`)** — xem QUEUE.md"
     },
     {
       "id": "ST-305",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3/W4) Hoàn tất LSP, Extension VS Code mỏng, `R35` & Release `v0.5.0`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3/W4) Hoàn tất LSP, Extension VS Code mỏng, `R35` & Release `v0.5.0`** — xem QUEUE.md"
     },
     {
       "id": "ST-306",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1/W2) Crate `vis-plugin-abi` (`VIS_PLUGIN_ABI_V1`) & liên kết tĩnh** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1/W2) Crate `vis-plugin-abi` (`VIS_PLUGIN_ABI_V1`) & liên kết tĩnh** — xem QUEUE.md"
     },
     {
       "id": "ST-307",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W2) `vis-plugin-macros` (`#[vis::module]`/`#[vis::func]`) & Nạp động có kiểm soát** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W2) `vis-plugin-macros` (`#[vis::module]`/`#[vis::func]`) & Nạp động có kiểm soát** — xem QUEUE.md"
     },
     {
       "id": "ST-308",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W3) `Terminal` trait & Giao thức hiển thị có cấu trúc ViTerm (`VS3-8`)** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W3) `Terminal` trait & Giao thức hiển thị có cấu trúc ViTerm (`VS3-8`)** — xem QUEUE.md"
     },
     {
       "id": "ST-309",
-      "question": "Chờ GĐ 0 (ST-284..ST-289) DONE rồi mới mở: **(W1..W4) Tổng Nghiệm thu, `docs/SPEC.md`, Kiểm toán Bảo mật, `R36` & Tag `v0.6.0` → `v1.0.0-rc1`** — xem QUEUE.md"
+      "question": "GĐ 0 đã đủ 6/6 (2026-11-22); chờ A0 mở GĐ 1: **(W1..W4) Tổng Nghiệm thu, `docs/SPEC.md`, Kiểm toán Bảo mật, `R36` & Tag `v0.6.0` → `v1.0.0-rc1`** — xem QUEUE.md"
     }
   ]
 }

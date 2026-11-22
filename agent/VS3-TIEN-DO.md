@@ -11,8 +11,8 @@
 > **Cổng chặn cứng**: trước ST-284..286, không mở task tính năng chạm `vm.rs`, `frame.rs`, `value.rs`,
 > `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs`, `async_net.rs`, `quyen.rs`, `db/sqlite/mod.rs`;
 > các tệp lõi phải **≤1.250 dòng**, 0 đổi hành vi. **4 worktree** (`W1` runtime, `W2` net/sec, `W3` platform, `W4` QA/docs);
-> W5 đã nghỉ. Baseline v0.3.5 @ `03bb7b9`; Stage 0 `ST-284`..`ST-289`: **5/6 xong, 1/6 WIP**
-> (cập nhật 2026-11-22 @ `eaf22a2` — xem §2c; chỉ còn `ST-287` **chưa merge**).
+> W5 đã nghỉ. Baseline v0.3.5 @ `03bb7b9`; Stage 0 `ST-284`..`ST-289`: **đủ 6/6 DONE**
+> (cập nhật 2026-11-22 @ `f8f1d4b` — xem §2c; `ST-287` đã merge).
 
 ## 1. Mốc hiện tại
 
@@ -84,31 +84,33 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
-## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `89f6e6b`)
+## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `f8f1d4b`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `JOURNAL/st284-refactor.md`, `JOURNAL/st285-refactor.md`,
-> `JOURNAL/st286-tach-module.md`, `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,5,6}-diff-100k.log`,
-> `JOURNAL/stage0-win-0d057e5.md`, `agent/reports/R32-viscript.md`. **Chưa đóng Stage 0** — chỉ còn
-> `ST-287`; R32 giữ trạng thái khung. Không push/merge/tag từ W4; không GitHub Actions.
+> `JOURNAL/st286-tach-module.md`, `JOURNAL/st287-http-cancel.md`, `JOURNAL/st287-soak-1h.md`,
+> `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,5,6,7}-diff-100k.log`, `JOURNAL/stage0-win-0d057e5.md`,
+> `agent/reports/R32-viscript.md`. **Stage 0 đủ 6/6 DONE**; R32 đã chốt phần Stage 0. Không
+> push/merge/tag từ W4; không GitHub Actions.
 
 | Task | Trạng thái | Commit | Bằng chứng |
 |---|---|---|---|
 | **ST-284** — R0a `vm.rs`/`frame.rs` | **DONE** | `83a9a10` (merge `e363a15`) | `vm.rs` **1240** dòng, `frame.rs` **1042** (ngưỡng 1250); 0 đổi API/ABI/cache; gate `3571/3`; diff 100k seed `20261115` **lech=0** |
 | **ST-285** — R0b `value.rs`/`codegen.rs`/`tyck/expr.rs`/`interp/goi.rs` | **DONE** | `ab5d292` (merge `246b6c5`) | `value` **1186**, `codegen` **1045**, `tyck/expr` **1064**, `interp/goi` **1155** dòng (≤1250); tách `value/show_eq.rs`, `codegen/cau.rs`, `tyck/expr/goi.rs`, `interp/goi_ham.rs`; 0 đổi golden/API/cache; gate `3576/3`; diff 100k seed `20261115` **lech=0** (200,5 s) |
 | **ST-286** — R0c `async_net.rs`/`quyen.rs`/`db/sqlite/mod.rs` | **DONE** | `f193c57` (merge `cfba662`) | `async_net` **606**, `quyen` **1190**, `sqlite/mod.rs` **1245** dòng; module con tách giữ API; gate PASS; diff 100k seed `20261122` **lech=0** (93 770 ca chạy) |
-| **ST-287** — hook huỷ giữa HTTP request | **WIP** | — | nhánh W2 chưa merge; `vs3_http_cancel.rs` chưa có trên `main` |
+| **ST-287** — hook huỷ giữa HTTP request | **DONE** | `03ed84c` (merge `f8f1d4b`) | `FrameReactorBackend::cancel_task_handles` + safe point `frame_cancel_one`; h1 đóng socket, h2 `RST_STREAM` đúng stream/giữ session dùng chung; `vs3_http_cancel` h1 **5/5**, h2 **8/8**, đỏ-trước 5/5 + 7/7; không rò tay, parity interp↔VM; gate `3581/3`; diff 100k seed `20261122` **lech=0**; soak 1 giờ fd/RSS/threads phẳng |
 | **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + `vis explain --list` **54** + `API-CODES.txt` **54**; 6 ca âm (gồm key rotation) đều nêu `VS0708`; soft pin `pkg update` (`update_mot_ten_*` 2/2 + unit) ⇒ **#142 đóng**; `gc --root` lặp/lồng dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4. QUEUE còn `REVIEW` — chờ A0 lật sổ |
 | **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); R32 khung Stage 0 @ `89f6e6b` |
 
-**Cổng Stage 0** @ `eaf22a2`: `./vis-dev gate --fast` **PASS — 3576 passed / 3 skipped** (fmt, clippy,
-R1..R6, self-test, doc-examples 24 khối, L0 nextest). Windows @ `0d057e5`:
+**Cổng Stage 0** @ `f8f1d4b`: `./vis-dev gate --fast` **PASS — 3581 passed / 0 failed / 3 skipped**
+(fmt, clippy, R1..R6, self-test, doc-examples 24 khối, L0 nextest). Windows @ `0d057e5`:
 **3533 passed / 0 failed / 3 ignored** (534 s), `vis 0.3.6`, host 54/54, targets 18/18 + 17/1
 (`JOURNAL/stage0-win-0d057e5.md`). **Chưa** chạy full/nightly/fresh-clone cho Stage 0;
 **chưa** tag `v0.3.6`.
 
-**Việc còn lại để đóng Stage 0**: `ST-287` merge → gate lại + diff 100k → verify Windows tại commit
-chốt + fresh-clone → chốt R32 → mở Giai đoạn 1 (`ST-290..`). `ST-288` đã được Gatekeeper duyệt
-**DONE** (2026-11-22); A0 cần lật QUEUE `REVIEW → DONE` khi chốt sổ.
+**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ `f8f1d4b`; R32 chốt phần Stage 0
+(`agent/reports/R32-viscript.md`). **Việc còn lại trước khi tag/mở GĐ 1**: full gate + nightly +
+fresh-clone Linux, verify `psvn` tại đúng commit chốt; `ST-288` chờ A0 lật QUEUE `REVIEW → DONE`.
+Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
 
 ## 3. Mốc tích hợp cuối tuần
 
