@@ -385,17 +385,25 @@ fn chay_chuong_trinh(
     args: &[String],
     vm: bool,
 ) -> (i32, String, String, Duration) {
-    chay_bang_bin(Path::new(env!("CARGO_BIN_EXE_vis")), ten, src, args, vm)
+    // Luôn exec bản snapshot: `target/debug/vis` có thể bị cargo build khác ghi đè.
+    let bin = snapshot_vis();
+    chay_bang_bin(&bin, ten, src, args, vm)
 }
 
 /// Bản sao binary ổn định: tránh cargo build đồng thời (feature khác) ghi đè
 /// `target/debug/vis` giữa các vòng soak.
 fn snapshot_vis() -> PathBuf {
-    let d = std::env::temp_dir().join(format!("vs3-w2-bin-{}", std::process::id()));
-    fs::create_dir_all(&d).expect("thư mục binary");
-    let dst = d.join("vis");
-    fs::copy(env!("CARGO_BIN_EXE_vis"), &dst).expect("copy vis");
-    dst
+    // Một bản sao / process: tránh vừa copy vừa exec cùng đường dẫn (ETXTBSY) và
+    // tránh nhân bản ~100 MB mỗi lần gọi làm đầy tmpfs.
+    static SNAP: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SNAP.get_or_init(|| {
+        let d = std::env::temp_dir().join(format!("vs3-w2-bin-{}", std::process::id()));
+        fs::create_dir_all(&d).expect("thư mục binary");
+        let dst = d.join("vis");
+        fs::copy(env!("CARGO_BIN_EXE_vis"), &dst).expect("copy vis");
+        dst
+    })
+    .clone()
 }
 
 fn chay_bang_bin(
