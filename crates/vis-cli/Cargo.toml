@@ -56,59 +56,30 @@ http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
 # rustls và mio đã có). Fallback HTTP/1.1 khi ALPN không chọn h2 giữ nguyên.
 async-h2 = ["http2", "tls"]
 
-# E2e SQLite dùng trực tiếp `rusqlite::Connection` để tạo WAL thật — chỉ có nghĩa khi bật
-# feature. Với `--no-default-features` target này bị bỏ qua (các integration test khác giữ
-# nguyên chế độ tự phát hiện).
+# **ST-296a (VD-282)** — binary test gộp theo miền + `required-features` giữ nguyên.
+# SQLite: `sqlite_it` gom 20 tệp ca gốc (gồm `sqlite`, `vd266_db`, `vd268_dbcache`,
+# `vd270_db_batch` + các `vd270_sqlite_*`).
 [[test]]
-name = "sqlite"
-path = "tests/sqlite.rs"
+name = "sqlite_it"
+path = "tests/sqlite_it.rs"
 required-features = ["sqlite"]
 
-# **VD-266** — helper `sqlite.query_one`/`last_insert_rowid`/`changes`; chỉ có nghĩa khi bật
-# feature `sqlite` (cấu hình core không có host backend).
+# TLS: `vs3_tls` + `vs3_registry_https`.
 [[test]]
-name = "vd266_db"
-path = "tests/vd266_db.rs"
-required-features = ["sqlite"]
-
-# **VD-268** — cache statement chuẩn bị sẵn (`prepare_cached`): e2e hành vi không đổi (lặp lại,
-# schema đổi, giao dịch, ca âm chính sách); chỉ có nghĩa khi bật feature `sqlite`.
-[[test]]
-name = "vd268_dbcache"
-path = "tests/vd268_dbcache.rs"
-required-features = ["sqlite"]
-
-# **VD-270 (db-batch)** — `sqlite.execute_batch`: tách câu an toàn, migration nhiều DDL/DML,
-# lỗi dừng một phần, authorizer/cap/timeout từng câu; chỉ có nghĩa khi bật feature `sqlite`.
-[[test]]
-name = "vd270_db_batch"
-path = "tests/vd270_db_batch.rs"
-required-features = ["sqlite"]
-
-# **VS3-4a (VD-271)** — TLS client: server rustls + chứng chỉ tự ký trong test; chỉ chạy khi bật
-# feature `tls` (mặc định) và trên nền không phải wasm32.
-[[test]]
-name = "vs3_tls"
-path = "tests/vs3_tls.rs"
+name = "tls_it"
+path = "tests/tls_it.rs"
 required-features = ["tls"]
 
-# **VS3-W2 (VD-271)** — registry `vis pkg` qua HTTPS: server rustls local + fixture cert; cần `tls`.
+# HTTP/2 + ALPN.
 [[test]]
-name = "vs3_registry_https"
-path = "tests/vs3_registry_https.rs"
-required-features = ["tls"]
-
-# **VS3-4b2 (VD-271)** — HTTP/2 client + ALPN, chỉ chạy khi bật feature `http2` (default-off).
-[[test]]
-name = "vs3_http2"
-path = "tests/vs3_http2.rs"
+name = "http2_it"
+path = "tests/http2_it.rs"
 required-features = ["http2"]
 
-# **VS3-5b (VD-271)** — chữ ký Ed25519: test ký bằng chính `ring` (feature `pkg-sig`) và chạy
-# server HTTP loopback; bỏ qua khi build core không có feature.
+# Chữ ký Ed25519 (pkg-sig).
 [[test]]
-name = "vs3_registry_sig"
-path = "tests/vs3_registry_sig.rs"
+name = "sig_it"
+path = "tests/sig_it.rs"
 required-features = ["pkg-sig"]
 
 [dependencies]

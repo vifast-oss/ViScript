@@ -24,8 +24,8 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use vis_cli::net::Net;
 use vis_interp::net::{http_get, http_head};
 
-const CERT: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.cert.der");
-const KEY: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.key.der");
+const CERT: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
+const KEY: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
 
 fn cau_hinh_tls(alpn: bool) -> Arc<ServerConfig> {
     let nha = Arc::new(rustls::crypto::ring::default_provider());
@@ -880,5 +880,5 @@ fn h2_timeout_giua_body_va_cleanup() {
 /// **VS3-W2 spike** — HTTP/2 reactor-native (`feature = "async-h2"`, default-off).
 /// Chỉ chạy khi bật feature; 19 test sync phía trên không đổi.
 #[cfg(feature = "async-h2")]
-#[path = "support/h2_async_spike.rs"]
+#[path = "../support/h2_async_spike.rs"]
 mod h2_async_spike;

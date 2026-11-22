@@ -19,10 +19,10 @@ use std::time::Duration;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::{ServerConfig, ServerConnection, StreamOwned};
 
-const CERT_LOCALHOST: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.cert.der");
-const KEY_LOCALHOST: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.key.der");
-const CERT_SAI_TEN: &[u8] = include_bytes!("fixtures/vs3_tls/sai-ten.cert.der");
-const KEY_SAI_TEN: &[u8] = include_bytes!("fixtures/vs3_tls/sai-ten.key.der");
+const CERT_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
+const KEY_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
+const CERT_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.cert.der");
+const KEY_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.key.der");
 
 fn tmp_dir(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering as O};

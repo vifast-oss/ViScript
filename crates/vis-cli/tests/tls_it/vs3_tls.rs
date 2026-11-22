@@ -24,10 +24,10 @@ use rustls::{ServerConfig, ServerConnection, StreamOwned};
 use vis_cli::net::Net;
 use vis_interp::net::{http_get, http_head};
 
-const CERT_LOCALHOST: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.cert.der");
-const KEY_LOCALHOST: &[u8] = include_bytes!("fixtures/vs3_tls/localhost.key.der");
-const CERT_SAI_TEN: &[u8] = include_bytes!("fixtures/vs3_tls/sai-ten.cert.der");
-const KEY_SAI_TEN: &[u8] = include_bytes!("fixtures/vs3_tls/sai-ten.key.der");
+const CERT_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
+const KEY_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
+const CERT_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.cert.der");
+const KEY_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.key.der");
 
 /// **Chống flake**: ca timeout đo thời gian ⇒ tuần tự hoá các ca trong binary này (không nới ngưỡng).
 fn kho() -> std::sync::MutexGuard<'static, ()> {

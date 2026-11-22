@@ -162,8 +162,8 @@ fn a3_try_result_early_return_and_fixture_ok() {
     );
 
     // Fixture `?` trên Result thật: nhánh Ok, stdout = golden, cả hai engine.
-    let ok_fixture = include_str!("../../../test/sem/result/hoi-cham-ok.vis");
-    let golden = include_str!("../../../test/sem/result/hoi-cham-ok.out");
+    let ok_fixture = include_str!("../../../../test/sem/result/hoi-cham-ok.vis");
+    let golden = include_str!("../../../../test/sem/result/hoi-cham-ok.out");
     let (i2, v2) = chay(ok_fixture, cfg(&[], vec![]));
     assert_eq!(i2.exit, 0, "{:?}", i2.diagnostics);
     let want = golden
@@ -210,13 +210,13 @@ fn b2_chan_async_fixtures_frame_path() {
     for (name, src, out) in [
         (
             "grid-chan-hai-task-kenh",
-            include_str!("../../../test/sem/async/grid-chan-hai-task-kenh.vis"),
-            include_str!("../../../test/sem/async/grid-chan-hai-task-kenh.out"),
+            include_str!("../../../../test/sem/async/grid-chan-hai-task-kenh.vis"),
+            include_str!("../../../../test/sem/async/grid-chan-hai-task-kenh.out"),
         ),
         (
             "grid-kenh-list",
-            include_str!("../../../test/sem/async/grid-kenh-list.vis"),
-            include_str!("../../../test/sem/async/grid-kenh-list.out"),
+            include_str!("../../../../test/sem/async/grid-kenh-list.vis"),
+            include_str!("../../../../test/sem/async/grid-kenh-list.out"),
         ),
     ] {
         let (i, v) = chay(src, cfg(&[], vec![]));
