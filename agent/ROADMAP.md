@@ -1,7 +1,15 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289` đang `READY`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
+> **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `84915aa`)** — Giai đoạn 0 **4/6 xong, 2/6 WIP**:
+> **DONE** `ST-284` (`83a9a10`/merge `e363a15`: `vm.rs` 1240, `frame.rs` 1042), `ST-286`
+> (`f193c57`/merge `cfba662`: `async_net` 606, `quyen` 1190, `sqlite` 1245), `ST-289`
+> (`ff55056`/merge `84915aa`: `0.3.6`, `#111`/`#151`, khung R32); **REVIEW** `ST-288`
+> (`c513e7a`/merge `545a38d`: `VS0708` + `#142`); **WIP — chưa merge** `ST-285` (R0b) và `ST-287`
+> (hook huỷ HTTP). Gate `84915aa` **3576/3**; diff 100k seed `20261115`/`20261122` **0 lệch**.
+> **Stage 0 chưa đóng, R32 chưa chốt**, chưa tag `v0.3.6`; GĐ 1..4 vẫn `BLOCKED`.
+>
+> **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
 >
 > **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi**; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.3.5`** @ `03bb7b9`; `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` giữ lịch sử; `pha1-rc1` giữ nguyên. Runtime async default đã flip (v0.2.0); HTTP/2 default-on (v0.3.0).
 >
@@ -389,3 +397,22 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 
 **Luật**: mọi tính năng VS3 phải có lát + test + docs + gate; không bỏ mảng nào; không tuyên bố xong
 khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.
+
+### Stage 0 — `v0.3.6` (2026-11-22, `main` `84915aa`)
+
+> Nguồn: `QUEUE.md` ST-284..289, `VS3-TIEN-DO.md` §2c, `JOURNAL/st284-refactor.md`,
+> `JOURNAL/st286-tach-module.md`, `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,6}-diff-100k.log`,
+> `agent/reports/R32-viscript.md`. Chi tiết từng task: QUEUE + R32.
+
+| Task | Trạng thái | Commit | Bằng chứng chính |
+|---|---|---|---|
+| ST-284 — R0a `vm.rs`/`frame.rs` | **DONE** | `83a9a10` (merge `e363a15`) | `vm.rs` 1240, `frame.rs` 1042 dòng (≤1250); gate `3571/3`; diff 100k `20261115` **0 lệch** |
+| ST-285 — R0b `value`/`codegen`/`tyck`/`interp/goi` | **WIP** | — | chưa merge |
+| ST-286 — R0c `async_net`/`quyen`/`sqlite` | **DONE** | `f193c57` (merge `cfba662`) | 606 / 1190 / 1245 dòng; gate PASS; diff 100k `20261122` **0 lệch** (93 770 ca) |
+| ST-287 — hook huỷ HTTP request | **WIP** | — | chưa merge |
+| ST-288 — `VS0708` + `#142` + `pkg gc --root` | **REVIEW** | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4 |
+| ST-289 — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | 8 crate `version.workspace`; `vis 0.3.6`; 24 fixture slug R100%; R32 khung |
+
+**Gate Stage 0** @ `84915aa`: `gate --fast` **3576 passed / 3 skipped**. **Chưa** full/nightly/fresh-clone/
+`psvn`, **chưa** tag `v0.3.6`. **Stage 0 chưa đóng** — còn ST-285/ST-287; R32 chưa chốt; GĐ 1 (`ST-290..`)
+vẫn `BLOCKED`.
