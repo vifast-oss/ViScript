@@ -1,13 +1,14 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-23 (hậu tag `v0.4.1`)** — **`v0.4.1` đã tag @ `90844bc`** (annotated,
-> pushed); **`v0.4.0` @ `c2accdf`**. GĐ 1.5 đã merge đủ **ST-296a/b/c/d** (gate **3656/4**,
-> 92 binary, 210,77 s). **ST-297 đã merge** `f4cb136`: gate **3660/4** (4 ca mới UNC/mixed/
-> percent + `--grant` Windows), Linux `vis-lsp` **29/29**, `path_impl` **2/2** — **#149 code/test
-> xong, chờ W4 xác nhận Windows**. Flake fix `044b289` (poll 2 s sau join, test-only). **ST-298
-> đang chạy** trên `f4cb136`: **3× `vis-gate-windows --full` + soak 4h**; **chưa** tuyên bố
-> Windows Tier 1, **chưa** đóng `#149`.
+> **Cập nhật 2026-11-23 (hậu tag `v0.4.1` + xác nhận Windows ST-297)** — **`v0.4.1` đã tag
+> @ `90844bc`** (annotated, pushed); **`v0.4.0` @ `c2accdf`**. **ST-297** đã merge `f4cb136`:
+> Windows **3× full 3611/0/3** (4 ca mới UNC/mixed/percent + `--grant` Windows), host 54/54,
+> targets **18/18 + 17/1**; Linux **10×** `vis-lsp` **29/29**, `path_impl` **2/2** (`8b03077`);
+> **`#149` đóng**. **ST-299b** đã merge `3b8049c` (`vis-loader` đa tệp trong WASI; native 29/29,
+> wasm 28/28). **P2b-3/4 NO-GO** `16fba3a` (bench 4,0×, không đổi production); flake fix `044b289`.
+> **ST-298 đang chạy** trên `f4cb136`: **3× `vis-gate-windows --full` đã xanh 3611/0/3 + soak 4h**;
+> **chưa** tuyên bố Windows Tier 1.
 > **Cập nhật 2026-11-23 (`v0.4.0` — R33 CHỐT)** — workspace **0.4.0** (`version.workspace`),
 > `vis --version` = `vis 0.4.0`; cache `PHIEN_BAN` ghim lại (`+v040-release-2026-11-23`).
 > Linux final QA @ `e47b3ca`: gate **3656/4**, release **3661/0/4**, 2× soak **10/10**; Windows
