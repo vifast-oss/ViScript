@@ -72,7 +72,7 @@ crates/vis-cli/tests/lsp_it/  lsp.rs (9) + lsp/lsp_part1.rs (760) + lsp/lsp_part
 
 | Tệp | Kích thước | sha256 |
 |---|---|---|
-| `/home/ps/vislogs/st300b-gate-5.log` | 361 KB | `501e616676111adbbd46cc598347c69b65c38ae7b61eb3eac6f9abfb9825d7c2` |
+| `/home/ps/vislogs/st300b-gate-6.log` | 361 KB | `08ce4b0586c4e18f1596fabfd8aec837bac6f4af700ceab177304f7a0397a9be` |
 | `/home/ps/vislogs/st300b-targets.log` | 3,4 KB | `0f03e66f1389440d32d03f17c11ea029eb717970918d24d1405b9506cfff9bf7` |
 | `/home/ps/vislogs/st300b-diff100k.log` | 265 B | `d76c46e3118fb9c3095efeee393dddd64f1b469fe73e76995274c0dad9027164` |
 | `/home/ps/vislogs/st300b-features.log` | 527 B | `0492701a0d6cb98b8b74745fc2ef4f05c0faf236d1b6de9c389d3427dadd692e` |
