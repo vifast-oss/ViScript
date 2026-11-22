@@ -8,8 +8,8 @@
 #![forbid(unsafe_code)]
 
 #[cfg(any(unix, windows))]
-pub mod async_net;
-pub mod net;
-/// **VS3-5b (VD-271)**: chữ ký Ed25519 cho registry HTTP — tách vào lib để test dùng **chính**
-/// hàm sinh thông điệp chuẩn (`vispkg-sig1`), không lặp định dạng trong test.
-pub mod pkg_sig;
+pub use vis_host_native::async_net;
+pub use vis_host_native::net;
+/// **VS3-5b / ST-300b**: chữ ký Ed25519 cho registry HTTP nằm ở `vis-pkg`; re-export giữ
+/// `vis_cli::pkg_sig` cho test hiện có.
+pub use vis_pkg::pkg_sig;

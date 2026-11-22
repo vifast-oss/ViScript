@@ -308,7 +308,7 @@ impl Db {
     }
 
     /// Bật/tắt thông điệp thô từ SQLite (`--sqlite-debug`) — opt-in, chỉ CLI.
-    pub(crate) fn dat_sqlite_debug(&mut self, on: bool) {
+    pub fn dat_sqlite_debug(&mut self, on: bool) {
         self.sqlite_debug = on;
     }
 

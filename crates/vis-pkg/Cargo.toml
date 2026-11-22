@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+name = "vis-pkg"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Gói ViScript: manifest, resolver, registry HTTP, lock/store, Ed25519 — ST-300b"
+
+[features]
+default = []
+tls = ["vis-host-native/tls"]
+pkg-sig = ["dep:ring"]
+
+[dependencies]
+vis-diag = { path = "../vis-diag" }
+vis-loader = { path = "../vis-loader" }
+vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
+vis-bytecode = { path = "../vis-bytecode" }
+vis-host-native = { path = "../vis-host-native" }
+ring = { workspace = true, optional = true }

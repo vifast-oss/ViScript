@@ -267,8 +267,15 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-    const CERT: &[u8] = include_bytes!("../../tests/fixtures/vs3_tls/localhost.cert.der");
-    const KEY: &[u8] = include_bytes!("../../tests/fixtures/vs3_tls/localhost.key.der");
+    // **ST-300b**: fixture TLS dùng chung với `vis-cli` (giữ một bản, không nhân đôi).
+    const CERT: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../vis-cli/tests/fixtures/vs3_tls/localhost.cert.der"
+    ));
+    const KEY: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../vis-cli/tests/fixtures/vs3_tls/localhost.key.der"
+    ));
 
     struct MayChuIo {
         s: StreamOwned<ServerConnection, TcpStream>,

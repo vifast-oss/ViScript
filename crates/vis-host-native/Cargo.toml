@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+name = "vis-host-native"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Host native của ViScript (quyền, FS, net/TLS, SQLite) — ST-300b"
+
+[features]
+default = []
+sqlite = ["dep:rusqlite"]
+tls = ["dep:rustls", "dep:webpki-roots"]
+http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
+async-h2 = ["http2", "tls"]
+
+[dependencies]
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }
+vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
+rusqlite = { workspace = true, optional = true }
+
+[target.'cfg(any(unix, windows))'.dependencies]
+mio = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustls = { workspace = true, optional = true }
+webpki-roots = { workspace = true, optional = true }
+h2 = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
+bytes = { workspace = true, optional = true }

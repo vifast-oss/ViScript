@@ -17,6 +17,8 @@ members = [
     "crates/vis-interp",
     "crates/vis-bytecode",
     "crates/vis-vm",
+    "crates/vis-host-native",
+    "crates/vis-pkg",
     "crates/vis-loader",
     "crates/vis-lsp",
 ]
