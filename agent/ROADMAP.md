@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-23 (chuẩn bị phát hành `v0.4.0` — CHƯA TAG)** — workspace **0.4.0**
-> (`version.workspace`), `vis --version` = `vis 0.4.0`; cache `PHIEN_BAN` ghim lại
-> (`+v040-release-2026-11-23`). Bằng chứng: Linux gate **3656 passed / 4 skipped** @ `e47b3ca`;
-> Windows full **3589/0/3**. **Final QA Linux/Windows đang chạy/chốt** — chưa dùng để tag.
-> Hai nhánh **READY chưa merge**: `plan/w4-st296a-tests` @ `f961b83` (gom test binary),
-> `plan/w3-st296b-crates` @ `7c4c205` (tách `vis-loader`/`vis-lsp`); chỉ xét sau `v0.4.0`.
-> **`v0.4.0` chưa tag**; tag hiện hành vẫn **`v0.3.6` @ `8fa2c09`**.
+> **Cập nhật 2026-11-23 (`v0.4.0` — R33 CHỐT)** — workspace **0.4.0** (`version.workspace`),
+> `vis --version` = `vis 0.4.0`; cache `PHIEN_BAN` ghim lại (`+v040-release-2026-11-23`).
+> Linux final QA @ `e47b3ca`: gate **3656/4**, release **3661/0/4**, 2× soak **10/10**; Windows
+> @ `e47b3ca`: full **3607/0/3**, release **3606/0/3**; Windows release `0.4.0` @ `8696edc`
+> (`vis.exe` 11.530.240 B, sha256 `3813a1b3…cb065`). **Tag `v0.4.0` trên commit R33**; tag trước
+> **`v0.3.6` @ `8fa2c09`**. Hai nhánh **READY chưa merge** — `plan/w4-st296a-tests` @ `f961b83`,
+> `plan/w3-st296b-crates` @ `7c4c205` — **merge sau tag**.
 > **Cập nhật 2026-11-22 (VD-281 — Duyệt `ST-290`/`ST-294` DONE, Chèn GĐ 1.5 `v0.4.1` Tối ưu Repo & DevEx)** — A0 duyệt **`ST-290` (`a48d5b87`, budget 40M + `VS0509`/`VS0510`)** và **`ST-294` (`cce2d0fb`, `async-h2` Windows + default-on non-wasm, Linux 3.607/4, Windows 3.563/0/3)** → **`DONE`**. Bổ sung nối `SharedBudget` vào `ST-292`, fix chịu tải `vd270_test_slowest` + `TMPDIR` ngoài `/tmp` vào `ST-296`, chèn **GĐ 1.5 (`v0.4.1`, `ST-296a`..`ST-296d`)** (gom 278 test binary → 12–15, tách `vis-loader`/`vis-lsp`, gom stdlib theo miền, dọn `agent/archive/` + `agent/ACTIVE.md` + `bin/vis-{gc-targets,jobs,status,gate-windows}`), tách `ST-304`/`ST-304b`, và chốt Plugin Phương án A (`Native static` + `WASI/WASM dynamic`, 0 `unsafe`). Chi tiết: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd281.md`, bảng điều khiển nhanh: `agent/ACTIVE.md`.
 >
 > **Cập nhật 2026-11-22 (VD-280 — Duyệt đóng GĐ 0 `v0.3.6`, MỞ GĐ 1 `v0.4.0`)** — A0 duyệt `APPROVED` toàn bộ `ST-284`..`ST-289` → **`DONE`** (tag `v0.3.6` @ `8fa2c09`, Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). Mở **Giai đoạn 1 (`v0.4.0`)** với phân luồng tái cân bằng (`W1`: `ST-291`→`ST-292`; `W2`: `ST-294` + `ST-295`; `W3`: `ST-290`→`ST-293`; `W4`: nightly bù R32 + `#191` sớm + `ST-296`/`R33`), rào R1 đợt 2 và đăng ký chung `VS0509`/`VS0510` ở `ST-290`. Chi tiết: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd280.md`.
