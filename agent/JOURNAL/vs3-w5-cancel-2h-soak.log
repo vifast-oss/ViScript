@@ -1,0 +1,125 @@
+2026-11-22T11:09:09+09:00	START\tsecs=7200\texact=1000\tp2=target/debug/build/vis-cli/5581727a7a73d516/out/vs3_worker_eval_parallel-5581727a7a73d516\tload=7.58 14.70 14.82 8/2116 2729477\tfree=1319MB\tdf=19517268KB
+2026-11-22T11:09:10+09:00	EXACT\t100
+2026-11-22T11:09:10+09:00	EXACT\t200
+2026-11-22T11:09:11+09:00	EXACT\t300
+2026-11-22T11:09:11+09:00	EXACT\t400
+2026-11-22T11:09:11+09:00	EXACT\t500
+2026-11-22T11:09:12+09:00	EXACT\t600
+2026-11-22T11:09:12+09:00	EXACT\t700
+2026-11-22T11:09:12+09:00	EXACT\t800
+2026-11-22T11:09:13+09:00	EXACT\t900
+2026-11-22T11:09:13+09:00	EXACT\t1000
+2026-11-22T11:09:13+09:00	EXACT_DONE\t1000
+2026-11-22T11:10:38+09:00	FULL\t20\texact=1000\tp1=2\tp3=2\telapsed=89s\tmaxrss_kb=34656\tload=17.65 15.78 15.17 14/2172 2754005\tfree=891MB\tfd_shell=5
+2026-11-22T11:12:09+09:00	FULL\t40\texact=1000\tp1=4\tp3=4\telapsed=180s\tmaxrss_kb=35496\tload=16.72 16.48 15.50 9/2112 2782431\tfree=861MB\tfd_shell=5
+2026-11-22T11:13:04+09:00	FULL\t60\texact=1000\tp1=6\tp3=6\telapsed=235s\tmaxrss_kb=35496\tload=13.27 15.55 15.24 8/2114 2786280\tfree=885MB\tfd_shell=5
+2026-11-22T11:13:58+09:00	FULL\t80\texact=1000\tp1=8\tp3=8\telapsed=289s\tmaxrss_kb=35496\tload=11.48 14.65 14.94 8/2143 2789942\tfree=790MB\tfd_shell=5
+2026-11-22T11:14:54+09:00	FULL\t100\texact=1000\tp1=10\tp3=10\telapsed=345s\tmaxrss_kb=35564\tload=10.71 13.91 14.67 8/2109 2793625\tfree=764MB\tfd_shell=5
+2026-11-22T11:16:06+09:00	FULL\t120\texact=1000\tp1=12\tp3=12\telapsed=416s\tmaxrss_kb=35564\tload=12.39 13.63 14.51 19/2108 2809049\tfree=1517MB\tfd_shell=5
+2026-11-22T11:17:54+09:00	FULL\t140\texact=1000\tp1=14\tp3=14\telapsed=525s\tmaxrss_kb=35840\tload=20.17 15.69 15.14 21/2155 2847544\tfree=1580MB\tfd_shell=5
+2026-11-22T11:19:15+09:00	FULL\t160\texact=1000\tp1=16\tp3=16\telapsed=606s\tmaxrss_kb=35840\tload=16.53 16.01 15.32 8/2100 2860152\tfree=1328MB\tfd_shell=5
+2026-11-22T11:21:02+09:00	FULL\t180\texact=1000\tp1=18\tp3=18\telapsed=713s\tmaxrss_kb=35940\tload=22.58 17.85 16.03 22/2127 2903177\tfree=1288MB\tfd_shell=5
+2026-11-22T11:22:14+09:00	FULL\t200\texact=1000\tp1=20\tp3=20\telapsed=785s\tmaxrss_kb=35940\tload=16.14 16.91 15.84 9/2102 2909524\tfree=1432MB\tfd_shell=5
+2026-11-22T11:23:10+09:00	FULL\t220\texact=1000\tp1=22\tp3=22\telapsed=841s\tmaxrss_kb=35940\tload=12.31 15.72 15.49 8/2104 2913179\tfree=1501MB\tfd_shell=5
+2026-11-22T11:24:02+09:00	FULL\t240\texact=1000\tp1=24\tp3=24\telapsed=892s\tmaxrss_kb=35940\tload=11.47 14.95 15.24 8/2109 2916587\tfree=1484MB\tfd_shell=5
+2026-11-22T11:24:59+09:00	FULL\t260\texact=1000\tp1=26\tp3=26\telapsed=950s\tmaxrss_kb=35940\tload=11.54 14.34 15.01 8/2119 2920212\tfree=1448MB\tfd_shell=5
+2026-11-22T11:25:55+09:00	FULL\t280\texact=1000\tp1=28\tp3=28\telapsed=1006s\tmaxrss_kb=35940\tload=11.17 13.76 14.77 8/2075 2923804\tfree=1489MB\tfd_shell=5
+2026-11-22T11:26:47+09:00	FULL\t300\texact=1000\tp1=30\tp3=30\telapsed=1058s\tmaxrss_kb=35940\tload=11.52 13.45 14.61 8/2071 2927315\tfree=1448MB\tfd_shell=5
+2026-11-22T11:27:48+09:00	FULL\t320\texact=1000\tp1=32\tp3=32\telapsed=1119s\tmaxrss_kb=35940\tload=12.18 13.28 14.47 12/2115 2932723\tfree=1150MB\tfd_shell=5
+2026-11-22T11:29:37+09:00	FULL\t340\texact=1000\tp1=34\tp3=34\telapsed=1228s\tmaxrss_kb=38552\tload=20.56 16.22 15.42 9/2120 2976334\tfree=1432MB\tfd_shell=5
+2026-11-22T11:30:33+09:00	FULL\t360\texact=1000\tp1=36\tp3=36\telapsed=1284s\tmaxrss_kb=38868\tload=14.84 15.38 15.18 8/2076 2980163\tfree=1466MB\tfd_shell=5
+2026-11-22T11:31:29+09:00	FULL\t380\texact=1000\tp1=38\tp3=38\telapsed=1340s\tmaxrss_kb=38868\tload=12.65 14.69 14.95 8/2115 2983818\tfree=1436MB\tfd_shell=5
+2026-11-22T11:32:25+09:00	FULL\t400\texact=1000\tp1=40\tp3=40\telapsed=1396s\tmaxrss_kb=38868\tload=12.46 14.25 14.78 8/2108 2987401\tfree=1421MB\tfd_shell=5
+2026-11-22T11:33:27+09:00	FULL\t420\texact=1000\tp1=42\tp3=42\telapsed=1458s\tmaxrss_kb=38868\tload=12.25 13.87 14.62 8/2104 3000129\tfree=1343MB\tfd_shell=5
+2026-11-22T11:34:22+09:00	FULL\t440\texact=1000\tp1=44\tp3=44\telapsed=1512s\tmaxrss_kb=38868\tload=11.42 13.30 14.37 19/2141 3006004\tfree=2083MB\tfd_shell=5
+2026-11-22T11:35:30+09:00	FULL\t460\texact=1000\tp1=46\tp3=46\telapsed=1581s\tmaxrss_kb=38868\tload=13.13 13.32 14.30 9/2113 3013195\tfree=1775MB\tfd_shell=5
+2026-11-22T11:37:21+09:00	FULL\t480\texact=1000\tp1=48\tp3=48\telapsed=1692s\tmaxrss_kb=38868\tload=23.42 16.73 15.41 26/2162 3055805\tfree=941MB\tfd_shell=5
+2026-11-22T11:38:29+09:00	FULL\t500\texact=1000\tp1=50\tp3=50\telapsed=1760s\tmaxrss_kb=38868\tload=17.42 16.29 15.34 7/2069 3062006\tfree=1130MB\tfd_shell=5
+2026-11-22T11:39:32+09:00	FULL\t520\texact=1000\tp1=52\tp3=52\telapsed=1823s\tmaxrss_kb=38868\tload=13.85 15.51 15.14 8/2112 3068641\tfree=1071MB\tfd_shell=5
+2026-11-22T11:40:28+09:00	FULL\t540\texact=1000\tp1=54\tp3=54\telapsed=1879s\tmaxrss_kb=38868\tload=11.86 14.66 14.87 8/2058 3078885\tfree=1125MB\tfd_shell=5
+2026-11-22T11:41:25+09:00	FULL\t560\texact=1000\tp1=56\tp3=56\telapsed=1936s\tmaxrss_kb=38868\tload=10.42 13.80 14.56 7/2091 3088694\tfree=1123MB\tfd_shell=5
+2026-11-22T11:42:32+09:00	FULL\t580\texact=1000\tp1=58\tp3=58\telapsed=2003s\tmaxrss_kb=38868\tload=14.31 14.23 14.65 12/2111 3093304\tfree=1051MB\tfd_shell=5
+2026-11-22T11:43:52+09:00	FULL\t600\texact=1000\tp1=60\tp3=60\telapsed=2083s\tmaxrss_kb=38868\tload=16.17 14.86 14.84 10/2117 3100277\tfree=1946MB\tfd_shell=5
+2026-11-22T11:45:38+09:00	FULL\t620\texact=1000\tp1=62\tp3=62\telapsed=2189s\tmaxrss_kb=38868\tload=21.75 16.83 15.53 25/2170 3142918\tfree=1139MB\tfd_shell=5
+2026-11-22T11:46:44+09:00	FULL\t640\texact=1000\tp1=64\tp3=64\telapsed=2255s\tmaxrss_kb=38868\tload=15.41 16.04 15.35 8/2070 3149711\tfree=1159MB\tfd_shell=5
+2026-11-22T11:48:24+09:00	FULL\t660\texact=1000\tp1=66\tp3=66\telapsed=2355s\tmaxrss_kb=38868\tload=19.36 16.87 15.70 21/2168 3191781\tfree=975MB\tfd_shell=5
+2026-11-22T11:49:39+09:00	FULL\t680\texact=1000\tp1=68\tp3=68\telapsed=2430s\tmaxrss_kb=38868\tload=15.30 16.46 15.66 8/2107 3200578\tfree=1271MB\tfd_shell=5
+2026-11-22T11:50:36+09:00	FULL\t700\texact=1000\tp1=70\tp3=70\telapsed=2487s\tmaxrss_kb=38868\tload=12.86 15.62 15.42 8/2069 3204240\tfree=1448MB\tfd_shell=5
+2026-11-22T11:51:32+09:00	FULL\t720\texact=1000\tp1=72\tp3=72\telapsed=2543s\tmaxrss_kb=38868\tload=11.38 14.76 15.14 8/2109 3207880\tfree=1433MB\tfd_shell=5
+2026-11-22T11:52:26+09:00	FULL\t740\texact=1000\tp1=74\tp3=74\telapsed=2597s\tmaxrss_kb=38868\tload=10.90 14.09 14.89 8/2108 3211446\tfree=1440MB\tfd_shell=5
+2026-11-22T11:53:20+09:00	FULL\t760\texact=1000\tp1=76\tp3=76\telapsed=2651s\tmaxrss_kb=38868\tload=10.77 13.52 14.65 8/2115 3214922\tfree=1429MB\tfd_shell=5
+2026-11-22T11:54:15+09:00	FULL\t780\texact=1000\tp1=78\tp3=78\telapsed=2706s\tmaxrss_kb=38868\tload=10.44 12.99 14.40 8/2116 3218674\tfree=1394MB\tfd_shell=5
+2026-11-22T11:55:09+09:00	FULL\t800\texact=1000\tp1=80\tp3=80\telapsed=2760s\tmaxrss_kb=38868\tload=11.05 12.72 14.23 8/2108 3222364\tfree=1287MB\tfd_shell=5
+2026-11-22T11:57:00+09:00	FULL\t820\texact=1000\tp1=82\tp3=82\telapsed=2871s\tmaxrss_kb=38868\tload=22.44 16.20 15.30 15/2104 3267165\tfree=1106MB\tfd_shell=5
+2026-11-22T11:58:06+09:00	FULL\t840\texact=1000\tp1=84\tp3=84\telapsed=2937s\tmaxrss_kb=38868\tload=15.05 15.32 15.07 8/2110 3271553\tfree=1462MB\tfd_shell=5
+2026-11-22T11:59:01+09:00	FULL\t860\texact=1000\tp1=86\tp3=86\telapsed=2992s\tmaxrss_kb=38868\tload=13.27 14.75 14.88 8/2064 3275107\tfree=1486MB\tfd_shell=5
+2026-11-22T11:59:55+09:00	FULL\t880\texact=1000\tp1=88\tp3=88\telapsed=3046s\tmaxrss_kb=38868\tload=11.79 14.12 14.66 8/2110 3278730\tfree=1471MB\tfd_shell=5
+2026-11-22T12:00:54+09:00	FULL\t900\texact=1000\tp1=90\tp3=90\telapsed=3105s\tmaxrss_kb=38868\tload=11.41 13.57 14.43 10/2090 3287053\tfree=1265MB\tfd_shell=5
+2026-11-22T12:02:11+09:00	FULL\t920\texact=1000\tp1=92\tp3=92\telapsed=3182s\tmaxrss_kb=38868\tload=13.06 13.56 14.36 10/2115 3300360\tfree=2308MB\tfd_shell=5
+2026-11-22T12:04:03+09:00	FULL\t940\texact=1000\tp1=94\tp3=94\telapsed=3294s\tmaxrss_kb=38868\tload=19.82 15.96 15.14 14/2128 3345103\tfree=1445MB\tfd_shell=5
+2026-11-22T12:05:00+09:00	FULL\t960\texact=1000\tp1=96\tp3=96\telapsed=3351s\tmaxrss_kb=38868\tload=14.80 15.17 14.91 8/2076 3348984\tfree=1376MB\tfd_shell=5
+2026-11-22T12:06:46+09:00	FULL\t980\texact=1000\tp1=98\tp3=98\telapsed=3457s\tmaxrss_kb=38868\tload=20.53 16.95 15.57 21/2130 3392075\tfree=1391MB\tfd_shell=5
+2026-11-22T12:07:55+09:00	FULL\t1000\texact=1000\tp1=100\tp3=100\telapsed=3526s\tmaxrss_kb=38868\tload=16.26 16.53 15.53 8/2098 3398099\tfree=1339MB\tfd_shell=5
+2026-11-22T12:08:49+09:00	FULL\t1020\texact=1000\tp1=102\tp3=102\telapsed=3580s\tmaxrss_kb=38868\tload=13.48 15.72 15.31 9/2070 3401998\tfree=1448MB\tfd_shell=5
+2026-11-22T12:09:47+09:00	FULL\t1040\texact=1000\tp1=104\tp3=104\telapsed=3638s\tmaxrss_kb=38868\tload=11.71 14.83 15.03 9/2119 3405914\tfree=1334MB\tfd_shell=5
+2026-11-22T12:10:44+09:00	FULL\t1060\texact=1000\tp1=106\tp3=106\telapsed=3695s\tmaxrss_kb=38868\tload=10.44 13.94 14.71 11/2108 3410986\tfree=1452MB\tfd_shell=5
+2026-11-22T12:11:38+09:00	FULL\t1080\texact=1000\tp1=108\tp3=108\telapsed=3749s\tmaxrss_kb=38868\tload=10.18 13.31 14.45 8/2106 3414609\tfree=1448MB\tfd_shell=5
+2026-11-22T12:12:36+09:00	FULL\t1100\texact=1000\tp1=110\tp3=110\telapsed=3806s\tmaxrss_kb=38868\tload=12.21 13.35 14.40 8/2120 3418381\tfree=1411MB\tfd_shell=5
+2026-11-22T12:13:36+09:00	FULL\t1120\texact=1000\tp1=112\tp3=112\telapsed=3867s\tmaxrss_kb=38868\tload=13.44 13.44 14.36 8/2123 3423735\tfree=1211MB\tfd_shell=5
+2026-11-22T12:15:20+09:00	FULL\t1140\texact=1000\tp1=114\tp3=114\telapsed=3971s\tmaxrss_kb=38868\tload=21.70 16.06 15.19 12/2120 3467145\tfree=1106MB\tfd_shell=5
+2026-11-22T12:16:25+09:00	FULL\t1160\texact=1000\tp1=116\tp3=116\telapsed=4036s\tmaxrss_kb=38868\tload=14.84 15.15 14.93 21/2120 3471946\tfree=714MB\tfd_shell=5
+2026-11-22T12:17:51+09:00	FULL\t1180\texact=1000\tp1=118\tp3=118\telapsed=4122s\tmaxrss_kb=38868\tload=14.37 15.15 14.97 9/2107 3480741\tfree=961MB\tfd_shell=5
+2026-11-22T12:18:53+09:00	FULL\t1200\texact=1000\tp1=120\tp3=120\telapsed=4184s\tmaxrss_kb=38868\tload=13.11 14.60 14.79 9/2081 3487708\tfree=800MB\tfd_shell=5
+2026-11-22T12:20:17+09:00	FULL\t1220\texact=1000\tp1=122\tp3=122\telapsed=4268s\tmaxrss_kb=38868\tload=25.37 18.30 16.08 21/2116 3534563\tfree=323MB\tfd_shell=5
+2026-11-22T12:21:52+09:00	FULL\t1240\texact=1000\tp1=124\tp3=124\telapsed=4363s\tmaxrss_kb=38868\tload=18.34 18.41 16.38 10/2126 3565231\tfree=1357MB\tfd_shell=5
+2026-11-22T12:23:00+09:00	FULL\t1260\texact=1000\tp1=126\tp3=126\telapsed=4431s\tmaxrss_kb=38868\tload=15.63 17.53 16.21 8/2107 3572210\tfree=1101MB\tfd_shell=5
+2026-11-22T12:23:56+09:00	FULL\t1280\texact=1000\tp1=128\tp3=128\telapsed=4487s\tmaxrss_kb=38868\tload=12.94 16.52 15.94 9/2109 3575988\tfree=1074MB\tfd_shell=5
+2026-11-22T12:24:48+09:00	FULL\t1300\texact=1000\tp1=130\tp3=130\telapsed=4539s\tmaxrss_kb=38868\tload=11.27 15.48 15.62 7/2061 3579655\tfree=1187MB\tfd_shell=5
+2026-11-22T12:25:38+09:00	FULL\t1320\texact=1000\tp1=132\tp3=132\telapsed=4589s\tmaxrss_kb=38868\tload=12.05 14.96 15.43 8/2117 3583981\tfree=725MB\tfd_shell=5
+2026-11-22T12:26:51+09:00	FULL\t1340\texact=1000\tp1=134\tp3=134\telapsed=4662s\tmaxrss_kb=38868\tload=15.68 15.54 15.61 19/2091 3588471\tfree=349MB\tfd_shell=5
+2026-11-22T12:27:49+09:00	FULL\t1360\texact=1000\tp1=136\tp3=136\telapsed=4720s\tmaxrss_kb=38868\tload=14.38 15.22 15.49 13/2105 3593656\tfree=212MB\tfd_shell=5
+2026-11-22T12:28:59+09:00	FULL\t1380\texact=1000\tp1=138\tp3=138\telapsed=4790s\tmaxrss_kb=38868\tload=15.78 15.45 15.55 16/2118 3597653\tfree=452MB\tfd_shell=5
+2026-11-22T12:30:00+09:00	FULL\t1400\texact=1000\tp1=140\tp3=140\telapsed=4851s\tmaxrss_kb=38868\tload=14.33 15.00 15.39 14/2106 3601842\tfree=4814MB\tfd_shell=5
+2026-11-22T12:31:17+09:00	FULL\t1420\texact=1000\tp1=142\tp3=142\telapsed=4928s\tmaxrss_kb=38868\tload=18.42 16.18 15.77 8/2069 3606203\tfree=4358MB\tfd_shell=5
+2026-11-22T12:32:27+09:00	FULL\t1440\texact=1000\tp1=144\tp3=144\telapsed=4998s\tmaxrss_kb=38868\tload=26.18 18.39 16.54 8/2201 3639466\tfree=2674MB\tfd_shell=5
+2026-11-22T12:34:04+09:00	FULL\t1460\texact=1000\tp1=146\tp3=146\telapsed=5095s\tmaxrss_kb=38868\tload=21.09 19.28 17.07 9/2126 3676238\tfree=2205MB\tfd_shell=5
+2026-11-22T12:35:05+09:00	FULL\t1480\texact=1000\tp1=148\tp3=148\telapsed=5156s\tmaxrss_kb=38868\tload=15.40 17.95 16.75 8/2152 3681931\tfree=1784MB\tfd_shell=5
+2026-11-22T12:36:22+09:00	FULL\t1500\texact=1000\tp1=150\tp3=150\telapsed=5233s\tmaxrss_kb=38868\tload=15.04 17.19 16.57 12/2097 3690062\tfree=1721MB\tfd_shell=5
+2026-11-22T12:38:19+09:00	FULL\t1520\texact=1000\tp1=152\tp3=152\telapsed=5350s\tmaxrss_kb=38868\tload=19.72 18.65 17.20 9/2123 3733652\tfree=1249MB\tfd_shell=5
+2026-11-22T12:39:18+09:00	FULL\t1540\texact=1000\tp1=154\tp3=154\telapsed=5409s\tmaxrss_kb=38868\tload=14.62 17.42 16.87 9/2113 3737963\tfree=1266MB\tfd_shell=5
+2026-11-22T12:40:25+09:00	FULL\t1560\texact=1000\tp1=156\tp3=156\telapsed=5476s\tmaxrss_kb=38868\tload=15.53 17.11 16.79 21/2138 3742743\tfree=1160MB\tfd_shell=5
+2026-11-22T12:41:27+09:00	FULL\t1580\texact=1000\tp1=158\tp3=158\telapsed=5538s\tmaxrss_kb=38868\tload=13.00 16.13 16.48 8/2104 3751942\tfree=999MB\tfd_shell=5
+2026-11-22T12:42:26+09:00	FULL\t1600\texact=1000\tp1=160\tp3=160\telapsed=5597s\tmaxrss_kb=38868\tload=10.93 15.00 16.07 8/2096 3762715\tfree=1005MB\tfd_shell=5
+2026-11-22T12:43:48+09:00	FULL\t1620\texact=1000\tp1=162\tp3=162\telapsed=5679s\tmaxrss_kb=38868\tload=14.36 15.03 15.98 8/2106 3772286\tfree=2354MB\tfd_shell=5
+2026-11-22T12:45:39+09:00	FULL\t1640\texact=1000\tp1=164\tp3=164\telapsed=5790s\tmaxrss_kb=38868\tload=20.24 16.85 16.53 10/2139 3817003\tfree=1116MB\tfd_shell=5
+2026-11-22T12:46:40+09:00	FULL\t1660\texact=1000\tp1=166\tp3=166\telapsed=5851s\tmaxrss_kb=38868\tload=14.25 15.82 16.20 21/2119 3821295\tfree=964MB\tfd_shell=5
+2026-11-22T12:48:30+09:00	FULL\t1680\texact=1000\tp1=168\tp3=168\telapsed=5961s\tmaxrss_kb=38868\tload=21.83 17.75 16.83 11/2098 3866137\tfree=1116MB\tfd_shell=5
+2026-11-22T12:49:35+09:00	FULL\t1700\texact=1000\tp1=170\tp3=170\telapsed=6026s\tmaxrss_kb=38868\tload=15.86 16.81 16.57 10/2119 3870356\tfree=1252MB\tfd_shell=5
+2026-11-22T12:50:32+09:00	FULL\t1720\texact=1000\tp1=172\tp3=172\telapsed=6083s\tmaxrss_kb=38868\tload=12.83 15.81 16.24 8/2080 3873928\tfree=1412MB\tfd_shell=5
+2026-11-22T12:51:26+09:00	FULL\t1740\texact=1000\tp1=174\tp3=174\telapsed=6137s\tmaxrss_kb=38868\tload=11.61 15.00 15.93 9/2067 3877428\tfree=1239MB\tfd_shell=5
+2026-11-22T12:52:22+09:00	FULL\t1760\texact=1000\tp1=176\tp3=176\telapsed=6193s\tmaxrss_kb=38868\tload=11.50 14.35 15.65 8/2106 3881008\tfree=1362MB\tfd_shell=5
+2026-11-22T12:53:19+09:00	FULL\t1780\texact=1000\tp1=178\tp3=178\telapsed=6250s\tmaxrss_kb=38868\tload=12.25 14.13 15.51 8/2102 3884540\tfree=1322MB\tfd_shell=5
+2026-11-22T12:54:11+09:00	FULL\t1800\texact=1000\tp1=180\tp3=180\telapsed=6302s\tmaxrss_kb=38868\tload=11.21 13.59 15.25 8/2074 3888027\tfree=1338MB\tfd_shell=5
+2026-11-22T12:55:15+09:00	FULL\t1820\texact=1000\tp1=182\tp3=182\telapsed=6366s\tmaxrss_kb=38868\tload=13.01 13.54 15.11 9/2105 3893753\tfree=1232MB\tfd_shell=5
+2026-11-22T12:57:04+09:00	FULL\t1840\texact=1000\tp1=184\tp3=184\telapsed=6475s\tmaxrss_kb=38868\tload=20.44 16.37 15.97 9/2096 3936890\tfree=1216MB\tfd_shell=5
+2026-11-22T12:58:01+09:00	FULL\t1860\texact=1000\tp1=186\tp3=186\telapsed=6532s\tmaxrss_kb=38868\tload=15.82 15.76 15.78 8/2112 3940789\tfree=1283MB\tfd_shell=5
+2026-11-22T12:58:58+09:00	FULL\t1880\texact=1000\tp1=188\tp3=188\telapsed=6589s\tmaxrss_kb=38868\tload=12.69 14.89 15.48 8/2076 3944306\tfree=1276MB\tfd_shell=5
+2026-11-22T12:59:51+09:00	FULL\t1900\texact=1000\tp1=190\tp3=190\telapsed=6642s\tmaxrss_kb=38868\tload=11.43 14.21 15.21 9/2106 3947880\tfree=1280MB\tfd_shell=5
+2026-11-22T13:00:49+09:00	FULL\t1920\texact=1000\tp1=192\tp3=192\telapsed=6700s\tmaxrss_kb=38868\tload=10.52 13.42 14.88 8/2064 3958125\tfree=1307MB\tfd_shell=5
+2026-11-22T13:02:08+09:00	FULL\t1940\texact=1000\tp1=194\tp3=194\telapsed=6779s\tmaxrss_kb=38868\tload=14.68 14.03 14.97 19/2173 3971085\tfree=1990MB\tfd_shell=5
+2026-11-22T13:03:58+09:00	FULL\t1960\texact=1000\tp1=196\tp3=196\telapsed=6889s\tmaxrss_kb=38868\tload=19.28 16.39 15.75 9/2115 4013477\tfree=1215MB\tfd_shell=5
+2026-11-22T13:04:59+09:00	FULL\t1980\texact=1000\tp1=198\tp3=198\telapsed=6950s\tmaxrss_kb=38868\tload=16.46 16.02 15.66 8/2076 4018954\tfree=1100MB\tfd_shell=5
+2026-11-22T13:06:41+09:00	FULL\t2000\texact=1000\tp1=200\tp3=200\telapsed=7052s\tmaxrss_kb=38868\tload=21.46 17.68 16.28 14/2125 4062304\tfree=788MB\tfd_shell=5
+2026-11-22T13:07:44+09:00	FULL\t2020\texact=1000\tp1=202\tp3=202\telapsed=7115s\tmaxrss_kb=38868\tload=15.26 16.69 16.04 8/2107 4066433\tfree=1055MB\tfd_shell=5
+2026-11-22T13:08:41+09:00	FULL\t2040\texact=1000\tp1=204\tp3=204\telapsed=7172s\tmaxrss_kb=38868\tload=14.21 16.13 15.88 8/2111 4070061\tfree=1191MB\tfd_shell=5
+2026-11-22T13:09:10+09:00	DONE\texact=1000\tfull=2050\tp1=205\tp3=205\telapsed=7201s\tmaxrss_kb=38868\tload=12.84 15.61 15.71 8/2079 4071977\tfree=1184MB\tdf=19451732KB
+
+## FINAL TESTS / GATE
+P2 x10: 10 × 14 passed; 0 failed (1.56-1.92s/run)
+P1 vs3_worker_eval_local: 8 passed; 0 failed (0.39s)
+P3 vs3_worker_eval_vm: 10 passed; 0 failed (5.69s)
+cargo fmt --all -- --check: FMT_OK
+cargo clippy -p vis-cli --all-targets -- -D warnings: PASS
+gate --fast: Summary [109.783s] 3571 tests run: 3571 passed, 3 skipped
+gate --fast: PASS; GATE_EXIT=0
+df /home sau khi xoá target riêng: 20G trống.
