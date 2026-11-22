@@ -577,7 +577,9 @@ do_vong_tron_fmt() {
 # Fuzz **parser** (ST-16): chạy `vis-parse-fuzz` với số phút cho trước; vi phạm ⇒ FAIL.
 do_fuzz_parser() {
     local phut="$1"
-    local bin="$VIS_ROOT/target/release/vis-parse-fuzz"
+    # **VD-283 / ST-298**: tôn trọng `CARGO_TARGET_DIR` (nightly trước đây gọi cứng
+    # `target/release/...` nên đỏ khi target dir là đường khác — `nightly-8286caf.md` §2).
+    local bin="${CARGO_TARGET_DIR:-$VIS_ROOT/target}/release/vis-parse-fuzz"
     if [ ! -x "$bin" ]; then
         if ! "$CARGO" build --release --manifest-path "$MANIFEST" -p vis-syntax --bin vis-parse-fuzz; then
             echo "--- fuzz parser: FAIL (không build được)" >&2

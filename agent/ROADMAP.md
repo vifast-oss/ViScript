@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **Prep `v0.4.5` (2026-11-23, ST-298/VD-283, CHƯA TAG)** — workspace bump **0.4.5**;
+> cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá mới
+> `d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce`; vá `bin/vis-dev` fuzz theo
+> `CARGO_TARGET_DIR`; `vis-host-wasm/Cargo.lock` đồng bộ 0.4.5. **Windows Tier 1: CHƯA công bố**
+> — chờ soak `[SOAK_ROUNDS]` vòng / `[SOAK_FAIL]` fail / fd-RSS `[SOAK_FD_RSS]` / free `[SOAK_FREE]`.
+>
 > **Cập nhật 2026-11-23 (hậu tag `v0.4.1` + xác nhận Windows ST-297)** — **`v0.4.1` đã tag
 > @ `90844bc`** (annotated, pushed); **`v0.4.0` @ `c2accdf`**. **ST-297** đã merge `f4cb136`:
 > Windows **3× full 3611/0/3** (4 ca mới UNC/mixed/percent + `--grant` Windows), host 54/54,

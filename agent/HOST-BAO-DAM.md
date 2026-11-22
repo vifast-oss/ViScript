@@ -19,6 +19,15 @@
 > Tệp này **chỉ** sửa phần Windows đã có bằng chứng tag `v0.3.5`; các tuyên bố macOS/wasm giữ nguyên
 > (macOS **không** có máy thật, wasm **chưa có runner**). **R32 chờ ST-284..288** trước khi chốt lại.
 
+> **ỨNG VIÊN Windows Tier 1 — 2026-11-23 (ST-298 / VD-283)** — **CHƯA TUYÊN BỐ**.
+> Bằng chứng đã có: **3× `bin/vis-gate-windows --full` PASS liên tiếp** @ `f4cb136`
+> (**3611 passed / 0 failed / 3 ignored** mỗi lần; host 54/54; targets 18/18 + 17/1; dirty 0).
+> Soak 4h cùng worktree đang chạy; số liệu do A0/W4 điền sau:
+> **`[SOAK_ROUNDS]` vòng / fail `[SOAK_FAIL]` / flake `[SOAK_FLAKE]`; fd/handle `[SOAK_FD_RSS]`;
+> free RAM `[SOAK_FREE]`; dirty cuối `[SOAK_DIRTY]`; ETA `[SOAK_ETA]`**.
+> Chỉ tuyên bố Tier 1 khi soak đạt (0 lỗi sản phẩm, fd/RSS phẳng) và A0 duyệt; **không** dùng
+> mục này để nói Windows đã được hỗ trợ.
+
 Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 ~02:30 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify: @ `6ccf367` → 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`, verify nền); Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 (ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **ST-295/VD-276**: **đường đọc và đường ghi**
