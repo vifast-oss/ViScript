@@ -6,6 +6,13 @@
 > **Luật**: mỗi lát phải có test **trước** khi merge; full gate tại mốc 4 giờ; không dồn test cuối tuần.
 > macOS **ngoài phạm vi**; Linux là nền chính; Windows Tier 2 tới VS3-6.
 
+> **Cập nhật 2026-11-22 (VD-272..VD-279, A0 commit `1c58ba3`)** — A0 chốt **roadmap hậu `v0.3.5`**:
+> `v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm.
+> **Cổng chặn cứng**: trước ST-284..286, không mở task tính năng chạm `vm.rs`, `frame.rs`, `value.rs`,
+> `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs`, `async_net.rs`, `quyen.rs`, `db/sqlite/mod.rs`;
+> các tệp lõi phải **≤1.250 dòng**, 0 đổi hành vi. **4 worktree** (`W1` runtime, `W2` net/sec, `W3` platform, `W4` QA/docs);
+> W5 đã nghỉ. Baseline v0.3.5 @ `03bb7b9`; Stage 0 `ST-284`..`ST-289` đang `READY`.
+
 ## 1. Mốc hiện tại
 
 | Mục | Giá trị |
