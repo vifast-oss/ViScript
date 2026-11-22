@@ -17,9 +17,15 @@ mod ngoai;
 mod pkg;
 mod quyen;
 mod quyen_chuan;
+/// **ST-295 (VD-276)** — mở `openat` an toàn cho đường đọc/ghi Unix (`cap[Dir]`/`cap[File]`).
+#[cfg(unix)]
+mod quyen_mo;
 /// **ST-174 (VD-176 §2)** — ca **tất định** cho nợ `#146` (điểm chèn `quyen::chen`); **chỉ** test.
 #[cfg(test)]
 mod quyen_st174;
+/// **ST-295 (VD-276)** — ca tất định đường ghi `openat` (điểm chèn chỉ test).
+#[cfg(all(test, unix))]
+mod quyen_st295;
 mod vistest;
 
 use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
@@ -121,6 +127,12 @@ enum HostFs {
 }
 
 impl vis_interp::builtin::FsHost for HostFs {
+    /// **ST-295 (VD-276)**: chỉ host **hệ tệp thật** mới mở được bằng `openat` từ fd gốc; mock
+    /// không có không gian tên ⇒ giữ đường cũ (và mọi test mock vẫn tất định).
+    #[cfg(unix)]
+    fn ho_tro_mo_duoi_goc(&self) -> bool {
+        matches!(self, HostFs::That(_))
+    }
     fn read(&mut self, p: &str) -> Result<String, String> {
         match self {
             HostFs::That(r) => r.read(p),

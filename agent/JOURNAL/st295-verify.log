@@ -1,0 +1,54 @@
+# ST-295 — log nghiệm thu (Linux x86_64, debug, rustc 1.100.0)
+# base a48d5b8; sinh 2026-11-22T11:30:15Z
+
+## giấy phép
+# Gói MỚI do ST-295 (so với Cargo.lock @ a48d5b8): rustix 1.1.6, linux-raw-sys 0.12.1, errno 0.3.15.
+#   · rustix        : Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT  ⇒ CÓ (nhánh Apache-2.0/MIT)
+#   · linux-raw-sys : Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT  ⇒ CÓ
+#   · errno         : MIT OR Apache-2.0                                   ⇒ CÓ
+# KẾT LUẬN: ST-295 KHÔNG thêm gói nào ngoài allowlist ⇒ KHÔNG BLOCKED.
+# Ngoại lệ NGOÀI allowlist trong cây là các gói ĐÃ CÓ trước ST-295 (ring ISC, webpki-roots CDLA-Permissive-2.0,
+# subtle/untrusted BSD-3/ISC, unicode-ident Unicode-3.0…) — được duyệt ở các task trước (VD-271/VD-272);
+# ST-295 không đổi phiên bản/nhánh nào của chúng (Cargo.lock chỉ thêm 3 gói ở trên).
+
+## đua symlink ghi (điểm chèn chỉ test)
+# ST-295 — ca đua symlink đường GHI (điểm chèn chỉ test, 100 vòng mỗi nhánh)
+# Lệnh: cargo test -p vis-cli --bin vis quyen_st295 -- --nocapture
+# Ngày: 2026-11-22T11:02:56Z
+ST295-DUA moi: ro=0/100 dem=100/100 (openat/O_NOFOLLOW)
+ST295-DUA cu: ro=100/100 dem=100/100 (nhanh kiem-roi-mo cu)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 196 filtered out; finished in 0.03s
+
+## vis-host-linux (Landlock)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+## CLI --sandbox + cap[Proc]
+test result: ok. 3 passed; 0 failed; 0 ignored (st295_sandbox_proc)
+
+## test/sem
+interp ok=525
+interp not_ok=0
+vm ok=525
+vm not_ok=0
+
+## host suite
+vis-host-suite: 54/54 ca xanh (Linux x86_64; host_posix_real PASS)
+
+## vis-targets
+core (vis-cli --no-default-features): PASS=18 EXPECTED_RED=0 FAIL=0
+sqlite (vis-cli default, cấu hình cũ): PASS=16 EXPECTED_RED=2 FAIL=0
+
+## cargo test --workspace --no-fail-fast
+targets=357
+passed=3600 failed=0 ignored=3
+
+## diff 100k
+DIFF tong=2000 loi_tinh=126 chay=1874 lech=0 giay=1.8 toc_do=1092/s seed=20261115
+DIFF tong=100000 loi_tinh=6232 chay=93768 lech=0 giay=75.6 toc_do=1323/s seed=3523158054
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 75.57s
+
+## gate --fast
+vis-dev gate --fast: PASS (L1 chưa có tới khi có sim ViScript)
+
+## df
+/dev/nvme0n1p2  233G  197G   30G  88% /

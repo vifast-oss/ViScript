@@ -90,35 +90,42 @@ impl std::fmt::Display for LoiSandbox {
     }
 }
 
-/// Toàn bộ quyền hệ tệp của ABI, **trừ `Execute`**.
+/// Toàn bộ quyền hệ tệp của ABI, **gồm `Execute`**.
 ///
-/// Vì sao trừ: quyền **chạy chương trình** thuộc `cap[Proc]` và được cưỡng chế ở **runtime**
-/// (`Runner` + allowlist), không phải `cap[Dir]`/`cap[File]`. Nếu bật `Execute` trong ruleset thì
-/// mọi lần `exec` (kể cả `/bin/cat` của một ca kiểm) đều bị chặn vì không có luật nào cấp — sai
-/// phạm vi mà VD-120 chốt ("chỉ hệ tệp (Dir/File đọc/ghi theo cap khai báo)").
-fn toan_bo(abi: ABI) -> landlock::BitFlags<AccessFs> {
+/// **ST-295 (VD-276 §3)** — chỉ khi `--sandbox` có `cap[Proc]` **và** `--grant`, ruleset mới
+/// **xử lý** `Execute` (để chương trình ngoài trong allowlist chạy được). Không grant ⇒ giữ
+/// nguyên tập quyền cũ (không đụng `Execute`), tránh đổi hành vi “không giới hạn lệnh”.
+fn toan_bo(abi: ABI, execute: bool) -> landlock::BitFlags<AccessFs> {
     let mut a = AccessFs::from_all(abi);
-    a.remove(AccessFs::Execute);
+    if !execute {
+        a.remove(AccessFs::Execute);
+    }
     a
 }
 
-/// Tập quyền **đọc** của ABI, trừ `Execute`.
-fn chi_doc(abi: ABI) -> landlock::BitFlags<AccessFs> {
+/// Tập quyền **đọc** của ABI (kèm `Execute` khi bật `--grant` cho `cap[Proc]`).
+fn chi_doc(abi: ABI, execute: bool) -> landlock::BitFlags<AccessFs> {
     let mut a = AccessFs::from_read(abi);
-    a.remove(AccessFs::Execute);
+    if !execute {
+        a.remove(AccessFs::Execute);
+    }
     a
 }
 
 /// Tập quyền cho một mục: tệp chỉ xin quyền hợp lệ trên tệp; thư mục xin cả cây.
-fn quyen(c: &ChoPhep, abi: ABI) -> landlock::BitFlags<AccessFs> {
-    match (c.la_tep, c.ghi) {
+fn quyen(c: &ChoPhep, abi: ABI, execute: bool) -> landlock::BitFlags<AccessFs> {
+    let mut q = match (c.la_tep, c.ghi) {
         // Tệp: chỉ ReadFile/WriteFile hợp lệ (ReadDir trên tệp ⇒ EINVAL).
         (true, false) => AccessFs::ReadFile.into(),
         (true, true) => AccessFs::ReadFile | AccessFs::WriteFile,
-        // Thư mục: đọc = ReadFile|ReadDir; ghi = toàn bộ tập quyền (đã trừ Execute).
-        (false, false) => chi_doc(abi),
-        (false, true) => toan_bo(abi),
+        // Thư mục: đọc = ReadFile|ReadDir; ghi = toàn bộ tập quyền.
+        (false, false) => chi_doc(abi, execute),
+        (false, true) => toan_bo(abi, execute),
+    };
+    if execute {
+        q |= AccessFs::Execute;
     }
+    q
 }
 
 /// Áp **một** ruleset Landlock cho **luồng hiện tại** (và mọi tiến trình con kế tiếp).
@@ -126,11 +133,17 @@ fn quyen(c: &ChoPhep, abi: ABI) -> landlock::BitFlags<AccessFs> {
 /// Gọi **sau** khi đã đọc xong mọi tệp cần đọc (nạp chương trình, module) và **trước** khi chạy
 /// chương trình: Landlock chỉ chặn được truy cập phát sinh **sau** lời gọi này.
 pub fn ap_dung(cho: &[ChoPhep]) -> Result<KetQua, LoiSandbox> {
+    ap_dung_voi_execute(cho, false)
+}
+
+/// **ST-295 (VD-276 §3)** — như [`ap_dung`] nhưng có/không **xử lý `Execute`**. `vis run --sandbox`
+/// bật `true` **chỉ khi** có `cap[Proc]` + `--grant`; đường cũ/test giữ `false`.
+pub fn ap_dung_voi_execute(cho: &[ChoPhep], execute: bool) -> Result<KetQua, LoiSandbox> {
     let abi = ABI::V1;
     let mut ruleset = Ruleset::default();
     // Bắt buộc: chỉ định rõ tập quyền **xử lý**; quyền không xử lý vẫn theo quyền cũ của tiến trình.
     ruleset = ruleset
-        .handle_access(toan_bo(abi))
+        .handle_access(toan_bo(abi, execute))
         .map_err(|e| LoiSandbox::KhongHoTro(e.to_string()))?;
     let mut da_tao = ruleset
         .create()
@@ -139,7 +152,7 @@ pub fn ap_dung(cho: &[ChoPhep]) -> Result<KetQua, LoiSandbox> {
     for c in cho {
         let fd = PathFd::new(&c.duong)
             .map_err(|e| LoiSandbox::HeThong(format!("{}: {e}", c.duong.display())))?;
-        let luat: PathBeneath<PathFd> = PathBeneath::new(fd, quyen(c, abi));
+        let luat: PathBeneath<PathFd> = PathBeneath::new(fd, quyen(c, abi, execute));
         da_tao = da_tao
             .add_rule(luat)
             .map_err(|e| LoiSandbox::HeThong(format!("thêm luật {}: {e}", c.duong.display())))?;

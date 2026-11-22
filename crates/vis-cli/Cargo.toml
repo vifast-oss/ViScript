@@ -133,6 +133,13 @@ rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled
 [target.'cfg(target_os = "linux")'.dependencies]
 vis-host-linux = { path = "../../vis-host-linux" }
 
+# **ST-295 (VD-276, phương án A)** — `openat`/`openat2` an toàn cho đường đọc+ghi Unix.
+# Ghim **tuyệt đối**, feature tối giản `fs` (+`std` cho `OwnedFd`/`std::io`), chỉ trên Unix nên
+# Windows/wasm không kéo crate này. Giấy phép: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
+# (thoả allowlist qua nhánh Apache-2.0); log kiểm toàn cây: `agent/JOURNAL/st295-license.log`.
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std"] }
+
 # **VS3-4a (VD-271)** — TLS client. Ghim tuyệt đối để build tái lập; `default-features = false`
 # + `ring` để **không** kéo `aws-lc-rs`/NASM. `webpki-roots` là **dữ liệu** gốc Mozilla (không
 # code unsafe, không transitive). Chỉ target không phải wasm32 ⇒ `cargo check --target

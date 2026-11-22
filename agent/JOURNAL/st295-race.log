@@ -1,0 +1,6 @@
+# ST-295 — ca đua symlink đường GHI (điểm chèn chỉ test, 100 vòng mỗi nhánh)
+# Lệnh: cargo test -p vis-cli --bin vis quyen_st295 -- --nocapture
+# Ngày: 2026-11-22T11:02:56Z
+ST295-DUA moi: ro=0/100 dem=100/100 (openat/O_NOFOLLOW)
+ST295-DUA cu: ro=100/100 dem=100/100 (nhanh kiem-roi-mo cu)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 196 filtered out; finished in 0.03s
