@@ -1,0 +1,26 @@
+SOAK_P2	bat_dau	secs=120	cpu_tasks=8	cpu_iters=20000	load=13.01 18.52 18.49 4/2085 1576444	rss_kb=4704	threads=Some(1)	fd=Some(4)
+SOAK_BATCH	3	elapsed_s=5.7	batch_ms=1733	cpu_w1_ms=229	cpu_w2_ms=214	cpu_w4_ms=230	k10_w1_ms=32	k10_w2_ms=531	k10_w4_ms=487	rss_kb=14156	threads=Some(1)	fd=Some(4)	load=13.09 18.44 18.46 10/2126 1582343
+SOAK_BATCH	6	elapsed_s=11.8	batch_ms=2435	cpu_w1_ms=247	cpu_w2_ms=228	cpu_w4_ms=241	k10_w1_ms=78	k10_w2_ms=791	k10_w4_ms=842	rss_kb=15656	threads=Some(1)	fd=Some(4)	load=13.80 18.50 18.48 20/2127 1592140
+SOAK_BATCH	9	elapsed_s=18.2	batch_ms=2354	cpu_w1_ms=270	cpu_w2_ms=247	cpu_w4_ms=215	k10_w1_ms=32	k10_w2_ms=708	k10_w4_ms=856	rss_kb=15652	threads=Some(1)	fd=Some(4)	load=14.06 18.48 18.47 19/2144 1599983
+SOAK_BATCH	12	elapsed_s=23.7	batch_ms=1725	cpu_w1_ms=245	cpu_w2_ms=275	cpu_w4_ms=307	k10_w1_ms=70	k10_w2_ms=398	k10_w4_ms=423	rss_kb=15652	threads=Some(1)	fd=Some(4)	load=14.13 18.42 18.45 18/2143 1604198
+SOAK_BATCH	16	elapsed_s=29.8	batch_ms=1319	cpu_w1_ms=180	cpu_w2_ms=203	cpu_w4_ms=197	k10_w1_ms=26	k10_w2_ms=330	k10_w4_ms=371	rss_kb=15388	threads=Some(1)	fd=Some(4)	load=14.33 18.32 18.42 17/2135 1605066
+SOAK_BATCH	19	elapsed_s=36.3	batch_ms=2180	cpu_w1_ms=350	cpu_w2_ms=308	cpu_w4_ms=364	k10_w1_ms=38	k10_w2_ms=533	k10_w4_ms=581	rss_kb=15668	threads=Some(1)	fd=Some(4)	load=14.63 18.31 18.42 22/2142 1605535
+SOAK_BATCH	22	elapsed_s=41.8	batch_ms=2050	cpu_w1_ms=280	cpu_w2_ms=424	cpu_w4_ms=243	k10_w1_ms=37	k10_w2_ms=385	k10_w4_ms=672	rss_kb=15676	threads=Some(1)	fd=Some(4)	load=14.74 18.28 18.41 20/2128 1606645
+SOAK_BATCH	25	elapsed_s=47.6	batch_ms=1626	cpu_w1_ms=394	cpu_w2_ms=225	cpu_w4_ms=251	k10_w1_ms=61	k10_w2_ms=414	k10_w4_ms=269	rss_kb=15668	threads=Some(1)	fd=Some(4)	load=14.68 18.20 18.38 11/2125 1608286
+SOAK_BATCH	32	elapsed_s=53.1	batch_ms=740	cpu_w1_ms=120	cpu_w2_ms=97	cpu_w4_ms=143	k10_w1_ms=19	k10_w2_ms=172	k10_w4_ms=182	rss_kb=15672	threads=Some(1)	fd=Some(4)	load=13.98 18.00 18.32 5/2077 1608558
+SOAK_BATCH	39	elapsed_s=58.9	batch_ms=860	cpu_w1_ms=144	cpu_w2_ms=151	cpu_w4_ms=150	k10_w1_ms=20	k10_w2_ms=195	k10_w4_ms=193	rss_kb=15676	threads=Some(1)	fd=Some(4)	load=13.26 17.79 18.24 4/2061 1608851
+SOAK_BATCH	45	elapsed_s=64.0	batch_ms=810	cpu_w1_ms=153	cpu_w2_ms=144	cpu_w4_ms=143	k10_w1_ms=19	k10_w2_ms=173	k10_w4_ms=173	rss_kb=15676	threads=Some(1)	fd=Some(4)	load=12.52 17.56 18.17 5/2060 1609016
+SOAK_BATCH	54	elapsed_s=69.3	batch_ms=548	cpu_w1_ms=100	cpu_w2_ms=100	cpu_w4_ms=99	k10_w1_ms=13	k10_w2_ms=117	k10_w4_ms=114	rss_kb=15676	threads=Some(1)	fd=Some(4)	load=11.13 17.09 18.01 3/2058 1609259
+SOAK_BATCH	64	elapsed_s=74.7	batch_ms=750	cpu_w1_ms=132	cpu_w2_ms=130	cpu_w4_ms=130	k10_w1_ms=17	k10_w2_ms=164	k10_w4_ms=169	rss_kb=15676	threads=Some(1)	fd=Some(4)	load=10.48 16.86 17.93 3/2049 1609676
+SOAK_BATCH	72	elapsed_s=79.8	batch_ms=508	cpu_w1_ms=100	cpu_w2_ms=100	cpu_w4_ms=69	k10_w1_ms=9	k10_w2_ms=123	k10_w4_ms=102	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=9.96 16.65 17.85 3/2061 1610118
+SOAK_BATCH	82	elapsed_s=85.0	batch_ms=632	cpu_w1_ms=105	cpu_w2_ms=133	cpu_w4_ms=106	k10_w1_ms=17	k10_w2_ms=138	k10_w4_ms=126	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=9.40 16.42 17.77 3/2050 1610391
+SOAK_BATCH	90	elapsed_s=90.2	batch_ms=606	cpu_w1_ms=81	cpu_w2_ms=80	cpu_w4_ms=80	k10_w1_ms=18	k10_w2_ms=173	k10_w4_ms=168	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=8.89 16.20 17.69 3/2044 1610661
+SOAK_BATCH	98	elapsed_s=95.4	batch_ms=671	cpu_w1_ms=88	cpu_w2_ms=86	cpu_w4_ms=137	k10_w1_ms=18	k10_w2_ms=170	k10_w4_ms=166	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=8.42 15.98 17.61 3/2074 1610909
+SOAK_BATCH	106	elapsed_s=101.1	batch_ms=757	cpu_w1_ms=135	cpu_w2_ms=136	cpu_w4_ms=132	k10_w1_ms=18	k10_w2_ms=168	k10_w4_ms=161	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=7.98 15.76 17.54 3/2076 1611280
+SOAK_BATCH	113	elapsed_s=106.3	batch_ms=725	cpu_w1_ms=137	cpu_w2_ms=137	cpu_w4_ms=109	k10_w1_ms=14	k10_w2_ms=158	k10_w4_ms=165	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=7.58 15.55 17.46 3/2084 1611484
+SOAK_BATCH	120	elapsed_s=111.6	batch_ms=762	cpu_w1_ms=135	cpu_w2_ms=136	cpu_w4_ms=133	k10_w1_ms=18	k10_w2_ms=168	k10_w4_ms=165	rss_kb=15688	threads=Some(1)	fd=Some(4)	load=7.22 15.34 17.38 3/2082 1611675
+SOAK_BATCH	127	elapsed_s=116.9	batch_ms=771	cpu_w1_ms=136	cpu_w2_ms=135	cpu_w4_ms=136	k10_w1_ms=19	k10_w2_ms=169	k10_w4_ms=171	rss_kb=15684	threads=Some(1)	fd=Some(4)	load=6.88 15.14 17.30 3/2073 1611864
+SOAK_TONG	secs=120	elapsed_s=120.3	batches=133	batches_s=1.11	tasks=3993591	tasks_s=33187
+SOAK_WALL	cpu_w1_p50=132	cpu_w1_p95=279	cpu_w2_p50=133	cpu_w2_p95=275	cpu_w4_p50=132	cpu_w4_p95=286	k10_w1_p50=18	k10_w1_p95=44	k10_w4_p50=168	k10_w4_p95=629
+SOAK_TAI_NGUYEN	rss0=4704	rss_min_sau_warm=15108	rss_max_sau_warm=15696	rss_cuoi=15696	hwm=21836	threads=Some(1)	fd=Some(4)
+KET_LUAN	PASS	133 batch	120.3s	không lỗi
