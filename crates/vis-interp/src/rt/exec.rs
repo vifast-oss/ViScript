@@ -20,7 +20,9 @@ use crate::builtin::Host;
 use crate::interp::{Interp, Trap, R, RT};
 use crate::rt::fee::SharedBudget;
 use crate::rt::Task;
-use crate::value::worker::{OutcomeBoard, TaskHandle, TaskId, WaitError, WorkerError, WorkerPool};
+use crate::value::worker::{
+    OutcomeBoard, SendValue, TaskHandle, TaskId, WaitError, WorkerCtx, WorkerError, WorkerPool,
+};
 use crate::value::Value;
 
 /// Ảnh chương trình **bất biến** chia sẻ cho mọi worker (P2).
@@ -50,6 +52,18 @@ pub(crate) struct TaskProxy {
     pub(crate) flushed: bool,
 }
 
+/// **ST-291 (P2b-1)** — job đã tạo `Task` nhưng **chưa gửi** pool.
+///
+/// Snapshot top-level vẫn chụp tại thời điểm `spawn` (đúng semantics P2); chỉ việc gửi
+/// xuống `WorkerPool` được hoãn tới `await`/final join để gửi **một lô**.
+pub(crate) struct PendingJob {
+    pub(crate) task: Rc<Task>,
+    pub(crate) than: u32,
+    pub(crate) args: Vec<SendValue>,
+    pub(crate) snap: Arc<SendValue>,
+    pub(crate) span: Span,
+}
+
 /// Trạng thái điều phối tác vụ của một `Scheduler`.
 #[derive(Default)]
 pub(crate) struct ExecState {
@@ -66,8 +80,12 @@ pub(crate) struct ExecState {
     pub(crate) cancel_deadline: Option<Instant>,
     pool: Option<WorkerPool>,
     pub(crate) outcome_board: Option<Arc<OutcomeBoard>>,
-    pub(crate) proxy: HashMap<u32, TaskProxy>,
-    pub(crate) pool_to_task: HashMap<TaskId, u32>,
+    /// **ST-291 (P2b-2)**: proxy theo `Task.id` (dày, bắt đầu từ 1) — thay `HashMap`.
+    pub(crate) proxy: Vec<Option<TaskProxy>>,
+    /// **ST-291 (P2b-1)**: job đã tạo `Task` nhưng chưa gửi pool.
+    pub(crate) pending: Vec<PendingJob>,
+    /// **ST-291 (P2b-2)**: `Task.id` theo đúng thứ tự gửi pool — thay `HashMap` task↔pool.
+    pub(crate) pool_order: Vec<u32>,
 }
 
 impl fmt::Debug for ExecState {
@@ -75,7 +93,12 @@ impl fmt::Debug for ExecState {
         f.debug_struct("ExecState")
             .field("mode", &self.mode)
             .field("order_len", &self.order.len())
-            .field("proxy_len", &self.proxy.len())
+            .field(
+                "proxy_len",
+                &self.proxy.iter().filter(|p| p.is_some()).count(),
+            )
+            .field("pending_len", &self.pending.len())
+            .field("pool_order_len", &self.pool_order.len())
             .field("budget", &self.budget.is_some())
             .finish()
     }
@@ -151,8 +174,37 @@ pub(crate) fn spawn_parallel(
     }
 
     let t = it.sched.borrow_mut().tao(than, Vec::new(), ten, span);
+
+    let mut s = it.sched.borrow_mut();
+    s.exec
+        .ensure_pool()
+        .map_err(|m| crate::interp::Abort::Trap(loi(format!("worker pool: {m}"), span)))?;
+    s.exec.order.push(t.id);
+    // **ST-291 (P2b-1)**: không gửi job ngay — gom vào lô, `flush_jobs` gửi trước await/join.
+    s.exec.pending.push(PendingJob {
+        task: Rc::clone(&t),
+        than,
+        args: args_send,
+        snap,
+        span,
+    });
+    Ok(Value::Task(t))
+}
+
+/// **ST-291 (P2b-1)** — gửi **toàn bộ** job đang chờ xuống pool theo một lô, giữ thứ tự spawn.
+///
+/// Gọi ở đầu `await_parallel` và `join_parallel`; như vậy chương trình spawn N rồi await/join
+/// chỉ trả một lần chi phí gửi lô, còn spawn→await tuần tự vẫn flush đúng 1 job mỗi lần.
+pub(crate) fn flush_jobs(host: &mut dyn Host) -> R<()> {
+    let mut s = host.sched().borrow_mut();
+    if s.exec.pending.is_empty() {
+        return Ok(());
+    }
+    let span = s.exec.pending[0].span;
+    s.exec
+        .ensure_pool()
+        .map_err(|m| crate::interp::Abort::Trap(loi(format!("worker pool: {m}"), span)))?;
     let (image, budget, cancel_before, deadline) = {
-        let s = it.sched.borrow();
         (
             s.exec.image.clone().ok_or_else(|| {
                 crate::interp::Abort::Trap(loi("worker Parallel thiếu HirImage (P2)", span))
@@ -162,41 +214,49 @@ pub(crate) fn spawn_parallel(
             s.exec.cancel_deadline,
         )
     };
-
-    let mut s = it.sched.borrow_mut();
-    s.exec
-        .ensure_pool()
-        .map_err(|m| crate::interp::Abort::Trap(loi(format!("worker pool: {m}"), span)))?;
-    let handle = {
+    let jobs = std::mem::take(&mut s.exec.pending);
+    let mut batch = Vec::with_capacity(jobs.len());
+    let mut tasks = Vec::with_capacity(jobs.len());
+    for j in jobs {
+        let PendingJob {
+            task,
+            than,
+            args,
+            snap,
+            span,
+        } = j;
+        tasks.push(task);
+        let image = Arc::clone(&image);
+        let budget = budget.clone();
+        batch.push((snap, move |ctx: &mut WorkerCtx, snap: &SendValue| {
+            crate::interp::worker::chay_than_worker(
+                &image, than, args, span, ctx, snap, budget, deadline,
+            )
+        }));
+    }
+    let handles = {
         let pool =
             s.exec.pool.as_mut().ok_or_else(|| {
                 crate::interp::Abort::Trap(loi("worker Parallel thiếu pool", span))
             })?;
-        let image = Arc::clone(&image);
-        pool.spawn_shared_with_cancel(
-            snap,
-            move |ctx, snap| {
-                crate::interp::worker::chay_than_worker(
-                    &image, than, args_send, span, ctx, snap, budget, deadline,
-                )
-            },
-            cancel_before,
-        )
-        .map_err(|e| crate::interp::Abort::Trap(loi_pool(e, span)))?
+        pool.spawn_shared_batch(batch, cancel_before)
+            .map_err(|e| crate::interp::Abort::Trap(loi_pool(e, span)))?
     };
-    let pool_id = handle.id();
-    s.exec.pool_to_task.insert(pool_id, t.id);
-    s.exec.proxy.insert(
-        t.id,
-        TaskProxy {
-            task: Rc::clone(&t),
+    for (task, handle) in tasks.into_iter().zip(handles) {
+        let idx = task.id as usize;
+        if s.exec.proxy.len() <= idx {
+            s.exec.proxy.resize_with(idx + 1, || None);
+        }
+        let pool_id = handle.id();
+        s.exec.proxy[idx] = Some(TaskProxy {
+            task,
             pool_id,
             handle,
             flushed: false,
-        },
-    );
-    s.exec.order.push(t.id);
-    Ok(Value::Task(t))
+        });
+        s.exec.pool_order.push(idx as u32);
+    }
+    Ok(())
 }
 
 /// W=1: `await` chạy trên caller, dùng cache/trạng thái của đường cũ.
@@ -206,9 +266,11 @@ pub(crate) fn await_local(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Va
 
 /// **P2**: `await` task worker — chờ outcome board, flush output tại điểm tiêu thụ, cache kết quả.
 pub(crate) fn await_parallel(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Value> {
+    // **ST-291 (P2b-1)**: bảo đảm job của `t` (và mọi job đang chờ trước đó) đã xuống pool.
+    flush_jobs(host)?;
     let (pool_id, board) = {
         let s = host.sched().borrow();
-        let Some(p) = s.exec.proxy.get(&t.id) else {
+        let Some(p) = s.exec.proxy.get(t.id as usize).and_then(|p| p.as_ref()) else {
             return Err(crate::interp::Abort::Trap(loi(
                 format!("task worker `{}` thiếu proxy", t.ten),
                 span,
@@ -236,7 +298,7 @@ pub(crate) fn await_parallel(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R
     };
     {
         let mut s = host.sched().borrow_mut();
-        if let Some(p) = s.exec.proxy.get_mut(&t.id) {
+        if let Some(p) = s.exec.proxy.get_mut(t.id as usize).and_then(|p| p.as_mut()) {
             p.flushed = true;
         }
     }
@@ -292,12 +354,14 @@ pub(crate) fn join_local(host: &mut dyn Host) -> R<()> {
 
 /// **P2**: join cuối — chờ pool, flush output task chưa await theo spawn order, cache, cross-write.
 pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
-    let (pool, proxy, pool_to_task) = {
+    // **ST-291 (P2b-1)**: gửi nốt các job chưa flush (batch 10k spawn rồi join một lần).
+    flush_jobs(host)?;
+    let (pool, proxy, pool_order) = {
         let mut s = host.sched().borrow_mut();
         let pool = s.exec.pool.take();
         let proxy = std::mem::take(&mut s.exec.proxy);
-        let map = std::mem::take(&mut s.exec.pool_to_task);
-        (pool, proxy, map)
+        let order = std::mem::take(&mut s.exec.pool_order);
+        (pool, proxy, order)
     };
     let Some(pool) = pool else {
         return Ok(());
@@ -321,11 +385,8 @@ pub(crate) fn join_parallel(host: &mut dyn Host) -> R<()> {
             )))
         }
     };
-    for o in outcomes {
-        let Some(main_id) = pool_to_task.get(&o.id).copied() else {
-            continue;
-        };
-        let Some(p) = proxy.get(&main_id) else {
+    for (o, main_id) in outcomes.into_iter().zip(pool_order) {
+        let Some(p) = proxy.get(main_id as usize).and_then(|p| p.as_ref()) else {
             continue;
         };
         if p.flushed {

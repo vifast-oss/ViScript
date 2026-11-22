@@ -737,17 +737,41 @@ pub mod worker {
 
     type TaskFn = Box<dyn FnOnce(&mut WorkerCtx) -> Result<SendValue, String> + Send>;
 
+    /// **ST-291 (P2b-1)** — closure của một job trong lô gửi pool (payload `Arc` + fn).
+    type SharedFn = Box<dyn FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send>;
+
+    /// Số task con tối đa trong một message `Job` (batch). 512 đủ cắt chi phí channel cho
+    /// 10k task mà vẫn cân tải tốt khi task không đều.
+    const BATCH_CHUNK: usize = 512;
+
+    /// Một task con trong job lô: giữ `TaskId`/cờ huỷ riêng để `await`/cancel từng task.
+    struct BatchItem {
+        id: TaskId,
+        cancel: Arc<AtomicBool>,
+        payload: Arc<SendValue>,
+        f: SharedFn,
+    }
+
     struct QueuedTask {
         id: TaskId,
         cancel: Arc<AtomicBool>,
         task: TaskFn,
     }
 
+    /// **ST-291 (P2b-1)**: job đơn (đường cũ) hoặc **một lô** task con. Lô chỉ gửi `workers`
+    /// message thay vì N message, cắt chi phí channel/wakeup cho 10k task cực nhỏ.
+    enum JobKind {
+        One {
+            id: TaskId,
+            cancel: Arc<AtomicBool>,
+            task: TaskFn,
+        },
+        Batch(Vec<BatchItem>),
+    }
+
     struct Job {
-        id: TaskId,
-        cancel: Arc<AtomicBool>,
+        kind: JobKind,
         snapshot: EnvMap,
-        task: TaskFn,
         wait_board: Option<Arc<TaskWaitBoard>>,
         outcome_board: Option<Arc<OutcomeBoard>>,
     }
@@ -923,10 +947,12 @@ pub mod worker {
                     let idx = (self.next as usize - 1) % txs.len();
                     txs[idx]
                         .send(Job {
-                            id,
-                            cancel: Arc::clone(&cancel),
+                            kind: JobKind::One {
+                                id,
+                                cancel: Arc::clone(&cancel),
+                                task,
+                            },
                             snapshot,
-                            task,
                             wait_board: self.wait_board.clone(),
                             outcome_board: self.outcome_board.clone(),
                         })
@@ -1008,6 +1034,83 @@ pub mod worker {
             F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
         {
             self.spawn_inner(move |ctx| f(ctx, &payload), cancelled)
+        }
+
+        /// **ST-291 (P2b-1)** — gửi **một lô** job `(payload, f)` xuống pool, trả handle đúng thứ tự.
+        ///
+        /// Gộp phần dựng `TaskId`/cờ huỷ/board vào một lần gọi; W=1 vẫn chạy tuần tự trong
+        /// `join` như `spawn_shared`. Không đổi semantics `spawn`: task chưa chạy tới `await`/join.
+        pub fn spawn_shared_batch<F>(
+            &mut self,
+            jobs: Vec<(Arc<SendValue>, F)>,
+            cancelled: bool,
+        ) -> Result<Vec<TaskHandle>, WorkerError>
+        where
+            F: FnOnce(&mut WorkerCtx, &SendValue) -> Result<SendValue, String> + Send + 'static,
+        {
+            let mut handles = Vec::with_capacity(jobs.len());
+            match self.mode.as_mut().ok_or(WorkerError::ChannelClosed)? {
+                PoolMode::Sequential { queue } => {
+                    let wait_board = self.wait_board.clone();
+                    for (payload, f) in jobs {
+                        let id = TaskId(self.next);
+                        self.next += 1;
+                        let cancel = Arc::new(AtomicBool::new(cancelled));
+                        let wb = wait_board.clone();
+                        let task: TaskFn = Box::new(move |ctx| {
+                            let result = f(ctx, &payload);
+                            if let Some(board) = &wb {
+                                board.publish(id, result.clone());
+                            }
+                            result
+                        });
+                        queue.push(QueuedTask {
+                            id,
+                            cancel: Arc::clone(&cancel),
+                            task,
+                        });
+                        self.order.push(id);
+                        handles.push(TaskHandle { id, cancel });
+                    }
+                }
+                PoolMode::Parallel { txs, .. } => {
+                    let n = txs.len();
+                    let wait_board = self.wait_board.clone();
+                    let outcome_board = self.outcome_board.clone();
+                    // **ST-291 (P2b-1)**: gộp tối đa `BATCH_CHUNK` task/message, xoay vòng kênh
+                    // để cân tải; N task cực nhỏ chỉ tốn ~N/BATCH_CHUNK lần gửi channel.
+                    let mut chunks: Vec<Vec<BatchItem>> = (0..n).map(|_| Vec::new()).collect();
+                    for (i, (payload, f)) in jobs.into_iter().enumerate() {
+                        let id = TaskId(self.next);
+                        self.next += 1;
+                        let cancel = Arc::new(AtomicBool::new(cancelled));
+                        let f: SharedFn = Box::new(f);
+                        let chunk = (i / BATCH_CHUNK) % n;
+                        chunks[chunk].push(BatchItem {
+                            id,
+                            cancel: Arc::clone(&cancel),
+                            payload,
+                            f,
+                        });
+                        self.order.push(id);
+                        handles.push(TaskHandle { id, cancel });
+                    }
+                    for (ci, items) in chunks.into_iter().enumerate() {
+                        if items.is_empty() {
+                            continue;
+                        }
+                        txs[ci]
+                            .send(Job {
+                                kind: JobKind::Batch(items),
+                                snapshot: self.root.clone(),
+                                wait_board: wait_board.clone(),
+                                outcome_board: outcome_board.clone(),
+                            })
+                            .map_err(|_| WorkerError::ChannelClosed)?;
+                    }
+                }
+            }
+            Ok(handles)
         }
 
         /// Join tất cả task; merge output theo **spawn order**. W>1 có ghi chéo ⇒ `CrossWrite`.
@@ -1131,34 +1234,74 @@ pub mod worker {
     ) {
         while let Ok(job) = rx.recv() {
             let Job {
-                id,
-                cancel,
+                kind,
                 snapshot,
-                task,
                 wait_board,
                 outcome_board,
             } = job;
-            if cancel.load(Ordering::Acquire) {
-                let outcome = cancelled_outcome(id);
-                if let Some(board) = &wait_board {
-                    board.publish(id, outcome.result.clone());
+            match kind {
+                JobKind::One { id, cancel, task } => {
+                    if cancel.load(Ordering::Acquire) {
+                        let outcome = cancelled_outcome(id);
+                        if let Some(board) = &wait_board {
+                            board.publish(id, outcome.result.clone());
+                        }
+                        if let Some(board) = &outcome_board {
+                            board.publish(outcome.clone());
+                        }
+                        if out_tx.send(outcome).is_err() {
+                            break;
+                        }
+                        continue;
+                    }
+                    let mut ctx = WorkerCtx::new(snapshot, false, cancel, budget.clone());
+                    let result = task(&mut ctx);
+                    let outcome = ctx.into_outcome(id, result);
+                    if let Some(board) = &outcome_board {
+                        board.publish(outcome.clone());
+                    }
+                    if out_tx.send(outcome).is_err() {
+                        break;
+                    }
                 }
-                if let Some(board) = &outcome_board {
-                    board.publish(outcome.clone());
+                // **ST-291 (P2b-1)**: chạy cả lô task con trên worker này; mỗi task vẫn có
+                // `WorkerCtx`/cờ huỷ/outcome riêng → semantics từng task không đổi.
+                JobKind::Batch(items) => {
+                    for item in items {
+                        let BatchItem {
+                            id,
+                            cancel,
+                            payload,
+                            f,
+                        } = item;
+                        if cancel.load(Ordering::Acquire) {
+                            let outcome = cancelled_outcome(id);
+                            if let Some(board) = &wait_board {
+                                board.publish(id, outcome.result.clone());
+                            }
+                            if let Some(board) = &outcome_board {
+                                board.publish(outcome.clone());
+                            }
+                            if out_tx.send(outcome).is_err() {
+                                return;
+                            }
+                            continue;
+                        }
+                        let mut ctx =
+                            WorkerCtx::new(snapshot.clone(), false, cancel, budget.clone());
+                        let result = f(&mut ctx, &payload);
+                        if let Some(board) = &wait_board {
+                            board.publish(id, result.clone());
+                        }
+                        let outcome = ctx.into_outcome(id, result);
+                        if let Some(board) = &outcome_board {
+                            board.publish(outcome.clone());
+                        }
+                        if out_tx.send(outcome).is_err() {
+                            return;
+                        }
+                    }
                 }
-                if out_tx.send(outcome).is_err() {
-                    break;
-                }
-                continue;
-            }
-            let mut ctx = WorkerCtx::new(snapshot, false, cancel, budget.clone());
-            let result = task(&mut ctx);
-            let outcome = ctx.into_outcome(id, result);
-            if let Some(board) = &outcome_board {
-                board.publish(outcome.clone());
-            }
-            if out_tx.send(outcome).is_err() {
-                break;
             }
         }
     }
