@@ -96,7 +96,7 @@ pub fn tra_loi_symbol(root: Option<&Path>, query: &str, id: &Value) -> Vec<u8> {
             Mode::Script
         };
         let kq = phan_tich(&text, mode);
-        let uri = format!("file://{}", p.display());
+        let uri = super::duong_thanh_uri(&p, cfg!(windows));
         for k in &kq.ky_hieu {
             if !query.is_empty() && !k.ten.contains(query) {
                 continue;
@@ -142,7 +142,7 @@ pub fn tra_loi_definition(root: Option<&Path>, ten: &str, id: &Value) -> Vec<u8>
             Mode::Script
         };
         let kq = phan_tich(&text, mode);
-        let uri = format!("file://{}", p.display());
+        let uri = super::duong_thanh_uri(&p, cfg!(windows));
         for k in &kq.ky_hieu {
             if k.ten != ten {
                 continue;
@@ -163,5 +163,35 @@ pub fn tra_loi_definition(root: Option<&Path>, ten: &str, id: &Value) -> Vec<u8>
         phan_hoi(id, Value::none())
     } else {
         phan_hoi(id, Value::List(locs))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tra_loi_symbol;
+    use vis_interp::value::Value;
+
+    #[test]
+    fn symbol_uri_chuan_hoa_percent_utf8() {
+        let n = std::process::id();
+        let d = std::env::temp_dir().join(format!("vis-lsp-st297-{n}"));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tmp");
+        std::fs::write(d.join("a b-é.vis"), "fn alpha():\n    print(1)\n").expect("ghi");
+        let out = tra_loi_symbol(Some(&d), "alph", &Value::Int(7));
+        let _ = std::fs::remove_dir_all(&d);
+        let s = String::from_utf8_lossy(&out);
+        assert!(s.contains(r#""name":"alpha""#), "{s}");
+        assert!(
+            s.contains(r#""uri":"file:///"#),
+            "URI phải `file:///…` (không `file://C:`): {s}"
+        );
+        assert!(s.contains("a%20b-%C3%A9.vis"), "thiếu percent-encode: {s}");
+        assert!(!s.contains(r"file://C:"), "sai URI drive: {s}");
+        assert!(!s.contains("a b-é.vis"), "URI chưa encode: {s}");
+        assert!(
+            !s.contains(r"C:\\"),
+            "không được có backslash trong URI: {s}"
+        );
     }
 }

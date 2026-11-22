@@ -788,39 +788,96 @@ fn uri_thanh_duong_voi(uri: &str, windows: bool) -> Option<String> {
     let rest = uri.strip_prefix("file://")?;
     // Percent-decode trước (UTF-8), rồi mới chuẩn hoá đường dẫn theo nền tảng.
     let rest = percent_giai_ma(rest)?;
+    // **ST-297**: trên Windows `\` là dấu phân cách; chuẩn hoá **trước** khi nhận diện
+    // drive/UNC để mixed slash (`C:/a\b`, `%5C`) về cùng một dạng. Trên POSIX `\` là ký tự
+    // thường nên KHÔNG đổi.
+    let rest = if windows {
+        rest.replace('\\', "/")
+    } else {
+        rest
+    };
     // **VD-241 § fix(Windows/CRLF #psvn-A5)**: LSP trên Windows gửi `file:///c:/path` (3 slash)
-    // hoặc `file:///c:\path`. Trên đường dẫn tồn tại `/c:/...` không phải path hợp lệ trên Windows
-    // (Rust Path coi `/c:/...` là tương đối); chuẩn hoá về `c:/...` khi phát hiện drive letter.
+    // hoặc `file:///c:\path`; chuẩn hoá về `c:/...` khi phát hiện drive letter.
     fn trim_win_drive(r: &str) -> Option<String> {
         let b = r.as_bytes();
-        // `/c:/path` or `/C:\path` → `c:/path` (lowercase drive)
+        // `/c:/path` → `c:/path`
         if b.len() >= 3
             && b[0] == b'/'
             && b[1].is_ascii_alphabetic()
             && b[2] == b':'
-            && (b.len() == 3 || b[3] == b'/' || b[3] == b'\\')
+            && (b.len() == 3 || b[3] == b'/')
         {
-            return Some(r[1..].replace('\\', "/"));
+            return Some(r[1..].to_string());
         }
-        // `c:/path` or `C:\path` (no leading slash) → `c:/path`
-        if b.len() >= 3
-            && b[0].is_ascii_alphabetic()
-            && b[1] == b':'
-            && (b[2] == b'/' || b[2] == b'\\')
-        {
-            return Some(r.replace('\\', "/"));
+        // `c:/path` (no leading slash) → `c:/path`
+        if b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'/' {
+            return Some(r.to_string());
         }
         None
     }
     if windows {
-        match trim_win_drive(&rest) {
-            Some(r) => Some(r),
-            None if rest.starts_with('/') => Some(rest),
-            None => None,
+        if let Some(r) = trim_win_drive(&rest) {
+            return Some(r);
         }
+        // `file:////server/share` (path `//server/share`) giữ nguyên.
+        if rest.starts_with("//") {
+            return Some(rest);
+        }
+        // `file://server/share/a` — authority là UNC server; LSP file URI không có
+        // authority nghĩa là path tương đối, nhưng trên Windows đây là UNC hợp lệ.
+        if !rest.starts_with('/') {
+            if rest.is_empty() || !rest.contains('/') {
+                return None;
+            }
+            return Some(format!("//{rest}"));
+        }
+        // `file:///etc/x` — đường dẫn tuyệt đối kiểu POSIX/Windows rooted.
+        Some(rest)
     } else {
-        // Non-Windows: only accept absolute paths starting with `/`
+        // Non-Windows: authority (`file://server/...`) không phải path cục bộ; `file:////…`
+        // cho path `//…` vẫn giữ.
         rest.starts_with('/').then_some(rest)
+    }
+}
+
+/// **ST-297** — path → URI `file:` chuẩn (percent-encode). `windows` chỉ đổi cách nhận
+/// drive/UNC, không phụ thuộc nền tảng host nên test được trên Linux.
+pub(crate) fn duong_thanh_uri(p: &std::path::Path, windows: bool) -> String {
+    fn ma_hoa(s: &str) -> String {
+        let mut out = String::with_capacity(s.len());
+        for &b in s.as_bytes() {
+            match b {
+                b'A'..=b'Z'
+                | b'a'..=b'z'
+                | b'0'..=b'9'
+                | b'-'
+                | b'.'
+                | b'_'
+                | b'~'
+                | b'/'
+                | b':' => out.push(b as char),
+                _ => out.push_str(&format!("%{b:02X}")),
+            }
+        }
+        out
+    }
+    let s = p.to_string_lossy();
+    if windows {
+        let s = s.replace('\\', "/");
+        if let Some(rest) = s.strip_prefix("//") {
+            // UNC: `file://server/share/...` (authority), không phải `file:////`.
+            return format!("file://{}", ma_hoa(rest));
+        }
+        if let Some(rest) = s.strip_prefix('/') {
+            return format!("file:///{}", ma_hoa(rest));
+        }
+        // Drive `C:/...` hoặc path tương đối (LSP luôn gửi absolute; giữ an toàn).
+        return format!("file:///{}", ma_hoa(&s));
+    }
+    if let Some(rest) = s.strip_prefix('/') {
+        format!("file:///{}", ma_hoa(rest))
+    } else {
+        format!("file:///{}", ma_hoa(&s))
     }
 }
 
@@ -947,12 +1004,94 @@ mod vd258_tests {
             uri_thanh_duong_voi("file:///C%3A/a%zz.vis", true).as_deref(),
             Some("C:/a%zz.vis")
         );
-        // Tương đối/không drive ⇒ None (trừ đường dẫn bắt đầu `/`).
-        assert_eq!(uri_thanh_duong_voi("file://relative/x", true), None);
+        // **ST-297**: authority `file://server/share` là UNC trên Windows (trước đây None).
+        assert_eq!(
+            uri_thanh_duong_voi("file://relative/x", true).as_deref(),
+            Some("//relative/x")
+        );
         assert_eq!(
             uri_thanh_duong_voi("file:///etc/x", true).as_deref(),
             Some("/etc/x")
         );
+    }
+
+    #[test]
+    fn uri_st297_unc_mixed_percent_roundtrip() {
+        use super::{duong_thanh_uri, uri_thanh_duong_voi};
+        use std::path::Path;
+
+        // URI → path: UNC authority, `file:////…`, mixed slash, percent UTF-8.
+        assert_eq!(
+            uri_thanh_duong_voi("file://server/share/a.vis", true).as_deref(),
+            Some("//server/share/a.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:////server/share/a.vis", true).as_deref(),
+            Some("//server/share/a.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file://server/share/a%20b/%C3%A9.vis", true).as_deref(),
+            Some("//server/share/a b/é.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C:/a\\b/c.vis", true).as_deref(),
+            Some("C:/a/b/c.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///%43%3A%5Ca%5Cb.vis", true).as_deref(),
+            Some("C:/a/b.vis")
+        );
+        // `%25`/`%23` giải mã đúng; `%` hỏng giữ nguyên.
+        assert_eq!(
+            uri_thanh_duong_voi("file:///C:/a%25b%23c.vis", true).as_deref(),
+            Some("C:/a%b#c.vis")
+        );
+        // Non-Windows: authority không phải path cục bộ; `//…` vẫn giữ; `\` là ký tự thường.
+        assert_eq!(
+            uri_thanh_duong_voi("file://server/share/a.vis", false),
+            None
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:////server/share/a.vis", false).as_deref(),
+            Some("//server/share/a.vis")
+        );
+        assert_eq!(
+            uri_thanh_duong_voi("file:///a%5Cb", false).as_deref(),
+            Some("/a\\b")
+        );
+
+        // Path → URI: percent-encode space/UTF-8/#/%, giữ `/` và `:` drive.
+        assert_eq!(
+            duong_thanh_uri(Path::new("/tmp/a b/é.vis"), false),
+            "file:///tmp/a%20b/%C3%A9.vis"
+        );
+        assert_eq!(
+            duong_thanh_uri(Path::new("C:\\a b\\é.vis"), true),
+            "file:///C:/a%20b/%C3%A9.vis"
+        );
+        assert_eq!(
+            duong_thanh_uri(Path::new("\\\\server\\share\\a b.vis"), true),
+            "file://server/share/a%20b.vis"
+        );
+        assert_eq!(
+            duong_thanh_uri(Path::new("/tmp/a#b%c?.vis"), false),
+            "file:///tmp/a%23b%25c%3F.vis"
+        );
+
+        // Round-trip các dạng chính.
+        for (p, w) in [
+            (Path::new("/tmp/a b/é.vis"), false),
+            (Path::new("C:/a b/é.vis"), true),
+            (Path::new("//server/share/a b.vis"), true),
+        ] {
+            let uri = duong_thanh_uri(p, w);
+            let lai = uri_thanh_duong_voi(&uri, w);
+            assert_eq!(
+                lai.as_deref(),
+                Some(p.to_string_lossy().as_ref()),
+                "uri={uri}"
+            );
+        }
     }
 
     #[test]
