@@ -17,6 +17,7 @@
 | Sau fix | `vs3_http2` **20/20 pass**, chỉ **1 cache dir**; `async_h2_soak_env_gated` **2 × 1800 s** pass |
 | Soak 30 phút ×2 | **1562 + 1678 vòng**, 0 fail; fd 8→9, RSS 6,0→8,5 MB, threads 6→6 |
 | Gate Linux | **3613 passed / 0 failed / 4 skipped** |
+| Windows `vs3_http2` @ `fd06d528` | **33/33 ×2**, snapshot cache 5→6 (một bản mới, lần 2 tái dùng) |
 | Blocker | **không** |
 
 ## 1. Triệu chứng
@@ -69,7 +70,8 @@ Log: `JOURNAL/st294-soak31.log` (soak cũ fail), `JOURNAL/st294-triage-before.tx
 
 - `vs3_http2` Linux: **34 passed / 1 ignored**; `vs3_http_cancel` **8/8**.
 - `./vis-dev gate --fast` (TMPDIR=`/home/ps/soak-tmp`): **PASS — 3613 passed / 0 failed / 4 skipped**.
-- Windows `vs3_http2` 33/33 (Windows bỏ 2 ca Unix-only) — kiểm tại commit fix.
+- Windows `vs3_http2` tại `fd06d528`: **33/33** hai lần liên tiếp; số dir snapshot
+  `%TEMP%/vs3-w2-bin-*` **5 → 6** (một cache mới, lần 2 tái dùng; Windows bỏ 2 ca Unix-only).
 - df sau đo: **14 G** trống (>10 G); cache snapshot chỉ 1 bản.
 
 ## 6. Kết luận

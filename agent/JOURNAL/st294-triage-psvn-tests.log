@@ -1,0 +1,58 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T13:06:22Z
+# host=psvn
+# lenh: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-triage\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --no-run\ \>/dev/null\ 2\>\&1\;\ EXE=\$\(cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --no-run\ --message-format=json\ 2\>/dev/null\ \|\ grep\ -o\ \"\\\"executable\\\":\\\"\[\^\\\"\]\*vs3_http2\[\^\\\"\]\*\"\ \|\ tail\ -1\ \|\ cut\ -d\\\"\ -f4\)\;\ echo\ EXE=\$EXE\;\ before=\$\(ls\ -d\ \"\$TEMP\"/vs3-w2-bin-\*\ 2\>/dev/null\ \|\ wc\ -l\)\;\ for\ i\ in\ 1\ 2\;\ do\ \"\$EXE\"\ \>\ /c/Users/ps/vislogs/st294-triage-win\$i.log\ 2\>\&1\;\ echo\ RUN\$i\ rc=\$\?\ \$\(grep\ \"test\ result\"\ /c/Users/ps/vislogs/st294-triage-win\$i.log\ \|\ tail\ -1\)\;\ done\;\ after=\$\(ls\ -d\ \"\$TEMP\"/vs3-w2-bin-\*\ 2\>/dev/null\ \|\ wc\ -l\)\;\ echo\ SNAP=\$before/\$after\;\ echo\ HEAD=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\) 
+# lenh_do: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-triage\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --no-run\ \>/dev/null\ 2\>\&1\;\ EXE=\$\(cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --no-run\ --message-format=json\ 2\>/dev/null\ \|\ grep\ -o\ \"\\\"executable\\\":\\\"\[\^\\\"\]\*vs3_http2\[\^\\\"\]\*\"\ \|\ tail\ -1\ \|\ cut\ -d\\\"\ -f4\)\;\ echo\ EXE=\$EXE\;\ before=\$\(ls\ -d\ \"\$TEMP\"/vs3-w2-bin-\*\ 2\>/dev/null\ \|\ wc\ -l\)\;\ for\ i\ in\ 1\ 2\;\ do\ \"\$EXE\"\ \>\ /c/Users/ps/vislogs/st294-triage-win\$i.log\ 2\>\&1\;\ echo\ RUN\$i\ rc=\$\?\ \$\(grep\ \"test\ result\"\ /c/Users/ps/vislogs/st294-triage-win\$i.log\ \|\ tail\ -1\)\;\ done\;\ after=\$\(ls\ -d\ \"\$TEMP\"/vs3-w2-bin-\*\ 2\>/dev/null\ \|\ wc\ -l\)\;\ echo\ SNAP=\$before/\$after\;\ echo\ HEAD=\$\(git\ rev-parse\ --short\ HEAD\)\ dirty=\$\(git\ status\ --porcelain\ \|\ wc\ -l\) 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T130620Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T130620Z.log.exit
+# log_cuc_bo=/tmp/opencode/st294-triage-psvn-tests.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: fd06d5282e5beea044e5d6f3bd3fd08c288d41c1
+# head_ngan: fd06d528
+# git_nhanh: st294-triage
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: fd06d5282e5beea044e5d6f3bd3fd08c288d41c1
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: fd06d5282e5beea044e5d6f3bd3fd08c288d41c1
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T130620Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+EXE=C:/Users/ps/vt-st294-triage\\debug\\build\\vis-cli/4b34b6f9a9e1dd94\\out\\vs3_http2-4b34b6f9a9e1dd94.exe
+RUN1 rc=0 test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.00s
+RUN2 rc=0 test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.97s
+SNAP=5/6
+HEAD=fd06d528 dirty=0
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T13:07:52Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=911edee1d315dc89346ef42f4544600c06ff013d6a5edcec512accaab190da7a
+[exit=0]
