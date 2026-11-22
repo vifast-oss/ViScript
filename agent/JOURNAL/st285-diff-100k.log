@@ -1,0 +1,3 @@
+DIFF tong=2000 loi_tinh=126 chay=1874 lech=0 giay=1.7 toc_do=1183/s seed=20261115
+DIFF tong=100000 loi_tinh=6230 chay=93770 lech=0 giay=200.5 toc_do=499/s seed=20261115
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 200.49s
