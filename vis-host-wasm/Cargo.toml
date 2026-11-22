@@ -5,7 +5,20 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.100.0"
-description = "Khung host wasm cho ViScript (chưa có runner; chỉ check biên dịch chéo)"
+description = "Host WASI cho ViScript (ST-299a): FS preopen, clock, stdout/stderr; từ chối net/proc/sqlite"
 
-# Workspace riêng: **không** thuộc workspace OS gốc và **không** thuộc `viscript/`.
+# Workspace riêng (ST-171/VD-282): **không** thuộc workspace chính, **không** đụng W1/W3/W4.
+# Crate lõi dùng qua `path` từ repo chính; workspace vẫn tách biệt (Cargo.lock riêng).
 [workspace]
+
+[dependencies]
+vis-diag = { path = "../crates/vis-diag" }
+vis-syntax = { path = "../crates/vis-syntax" }
+vis-types = { path = "../crates/vis-types" }
+vis-bytecode = { path = "../crates/vis-bytecode" }
+vis-interp = { path = "../crates/vis-interp" }
+vis-vm = { path = "../crates/vis-vm" }
+
+[[bin]]
+name = "vis-wasm-run"
+path = "src/bin/vis-wasm-run.rs"

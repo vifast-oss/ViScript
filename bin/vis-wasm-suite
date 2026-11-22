@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""**ST-299a (VD-277)** — smoke suite cho `vis-host-wasm` trên `wasm32-wasip1`.
+
+Chạy `vis-wasm-run.wasm` thật trên runtime WASI có sẵn, cho **cả interp và VM**, gồm: đọc/ghi
+trong preopen, preopen chỉ đọc, chặn thoát gốc/symlink, từ chối `net`/`proc`/`sqlite`, đồng hồ,
+argv. Mỗi ca so stdout/exit/stderr với kỳ vọng.
+
+Thứ tự chọn runtime:
+1. `wasmtime` CLI (được duyệt ở VD-277) — `WASMTIME` hoặc `PATH`.
+2. Python package `wasmtime` chính thức (nếu đã cài).
+3. Node built-in `node:wasi` (Node ≥ 20; không tải gì thêm).
+4. Không có ⇒ in `BLOCKED-ENV`, exit 0 (trừ `--require-runtime`).
+
+Không tự tải binary nguồn lạ. Build wasm bằng `cargo` của rustup 1.100 (nếu có).
+"""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WS = ROOT / "vis-host-wasm"
+WASM = WS / "target/wasm32-wasip1/release/vis-wasm-run.wasm"
+
+NODE_DRIVER = r"""
+import { WASI } from 'node:wasi';
+import { readFile } from 'node:fs/promises';
+const [wasmPath, guest, host, ro, ...args] = process.argv.slice(2);
+const env = { VIS_WASM_PREOPENS: guest + (ro === '1' ? '@ro' : '') };
+const wasi = new WASI({
+  version: 'preview1',
+  args: ['vis-wasm-run', ...args],
+  env,
+  preopens: { [guest]: host },
+});
+const wasm = await WebAssembly.compile(await readFile(wasmPath));
+const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
+const code = wasi.start(instance);
+process.exit(code);
+"""
+
+PY_DRIVER = r"""
+import sys
+try:
+    from wasmtime import Engine, Store, Module, Linker, WasiConfig
+except Exception as e:  # pragma: no cover
+    print(f"PY-WASMTIME-UNAVAILABLE: {e}", file=sys.stderr)
+    sys.exit(97)
+wasm, guest, host, ro = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == '1'
+args = sys.argv[5:]
+engine = Engine()
+store = Store(engine)
+wasi = WasiConfig()
+wasi.argv = ["vis-wasm-run", *args]
+wasi.env = [("VIS_WASM_PREOPENS", guest + ("@ro" if ro else ""))]
+wasi.preopen_dir(host, guest)
+wasi.inherit_stdout()
+wasi.inherit_stderr()
+wasi.inherit_stdin()
+store.set_wasi(wasi)
+linker = Linker(engine)
+linker.define_wasi()
+module = Module.from_file(engine, wasm)
+instance = linker.instantiate(store, module)
+code = 0
+try:
+    instance.exports(store)["_start"](store)
+except Exception as e:
+    code = getattr(e, "code", None)
+    if code is None:
+        import traceback
+        traceback.print_exc()
+        code = 1
+sys.exit(code)
+"""
+
+FS_READ = """\
+use std.fs
+fn main():
+    match fs.read("/data/in.txt"):
+        Ok(s):
+            print(s)
+        Err(e):
+            print("ERR-DOC")
+"""
+
+FS_WRITE = """\
+use std.fs
+fn main():
+    match fs.write("/data/out.txt", "đã ghi"):
+        Ok(_):
+            match fs.read("/data/out.txt"):
+                Ok(s):
+                    print(s)
+                Err(e):
+                    print("ERR-DOC")
+        Err(e):
+            print("ERR-GHI")
+"""
+
+FS_LIST = """\
+use std.fs
+fn main():
+    match fs.list("/data"):
+        Ok(xs):
+            print(xs.join(","))
+        Err(e):
+            print("ERR-LIST")
+"""
+
+FS_RO = """\
+use std.fs
+fn main():
+    fs.write("/data/x.txt", "x")
+    print("GHI-DUOC")
+"""
+
+FS_ESCAPE = """\
+use std.fs
+fn main():
+    match fs.read("/data/../outside.txt"):
+        Ok(s):
+            print(s)
+        Err(e):
+            print("CHAN")
+"""
+
+FS_SYMLINK = """\
+use std.fs
+fn main():
+    match fs.read("/data/link-ra"):
+        Ok(s):
+            print(s)
+        Err(e):
+            print("CHAN")
+"""
+
+NET_TU_CHOI = """\
+use std.net
+fn main():
+    match net.connect("127.0.0.1:9"):
+        Ok(t):
+            print("NO")
+        Err(e):
+            print("CHAN")
+"""
+
+SQLITE_TU_CHOI = """\
+use std.sqlite
+fn main():
+    match sqlite.open(":memory:"):
+        Ok(h):
+            print("NO")
+        Err(e):
+            print("CHAN")
+"""
+
+CLOCK = """\
+use std.time
+fn main():
+    if time.now_ms() > 0 and time.monotonic_ms() >= 0:
+        print("CLOCK")
+    else:
+        print("BAD")
+"""
+
+ARGV = """\
+fn main(args: list[str]):
+    print(args)
+"""
+
+PROC = """\
+khong-co-lenh x
+"""
+
+# `files`: tệp đặt trong preopen (ngoài `prog.vis`/`prog.vish`).
+CASES = [
+    dict(name="so_hoc", src="print(1 + 2)\n", out="3\n"),
+    dict(name="chuoi_unicode", src='print("xin chào wasi")\n', out="xin chào wasi\n"),
+    dict(name="argv", src=ARGV, args=["a", "b"], out="[a, b]\n"),
+    dict(name="fs_doc", src=FS_READ, files={"in.txt": "nội dung preopen"}, out="nội dung preopen\n"),
+    dict(name="fs_ghi", src=FS_WRITE, out="đã ghi\n", host_file=("out.txt", "đã ghi")),
+    dict(name="fs_list", src=FS_LIST, files={"a.txt": "a", "b.txt": "b"}, out="a.txt,b.txt,prog.vis\n"),
+    dict(name="clock", src=CLOCK, out="CLOCK\n"),
+    dict(name="net_tu_choi", src=NET_TU_CHOI, out="CHAN\n"),
+    dict(name="sqlite_tu_choi", src=SQLITE_TU_CHOI, out="CHAN\n"),
+    dict(
+        name="fs_chi_doc",
+        src=FS_RO,
+        ro=True,
+        exit=2,
+        stderr=["VS0604"],
+        host_missing="x.txt",
+    ),
+    dict(
+        name="fs_thoat_goc",
+        src=FS_ESCAPE,
+        outside={"outside.txt": "ngoài"},
+        exit=2,
+        stderr=["VS0604"],
+    ),
+    dict(
+        name="fs_symlink_ra_ngoai",
+        src=FS_SYMLINK,
+        outside={"outside.txt": "ngoài"},
+        symlink=("link-ra", "outside.txt"),
+        exit=2,
+        stderr=["VS0604"],
+    ),
+    dict(
+        name="proc_tu_choi",
+        src=PROC,
+        ext="vish",
+        exit=1,
+        stderr=["VS0604", "proc"],
+    ),
+]
+
+
+def cargo_exe() -> str:
+    p = Path.home() / ".cargo/bin/cargo"
+    return str(p) if p.is_file() else (shutil.which("cargo") or "cargo")
+
+
+def build(force: bool) -> None:
+    if WASM.is_file() and not force:
+        print(f"# dùng wasm có sẵn: {WASM.relative_to(ROOT)}")
+        return
+    env = os.environ.copy()
+    env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
+    env.setdefault("CARGO_BUILD_JOBS", "3")
+    env.setdefault("CARGO_PROFILE_DEV_DEBUG", "0")
+    env.setdefault("TMPDIR", "/home/ps/tmp")
+    cmd = [
+        cargo_exe(),
+        "build",
+        "--release",
+        "--target",
+        "wasm32-wasip1",
+        "--manifest-path",
+        str(WS / "Cargo.toml"),
+    ]
+    print("# build:", " ".join(cmd))
+    r = subprocess.run(cmd, cwd=ROOT, env=env)
+    if r.returncode != 0:
+        print("BLOCKED-ENV: build wasm32-wasip1 lỗi", file=sys.stderr)
+        sys.exit(2)
+    if not WASM.is_file():
+        print(f"BLOCKED-ENV: không thấy {WASM}", file=sys.stderr)
+        sys.exit(2)
+
+
+def chon_runtime(want: str):
+    wt = os.environ.get("WASMTIME") or shutil.which("wasmtime")
+    if want in ("auto", "wasmtime") and wt:
+        return "wasmtime", wt
+    if want in ("auto", "python"):
+        try:
+            r = subprocess.run(
+                [sys.executable, "-c", "import wasmtime"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if r.returncode == 0:
+                return "python", sys.executable
+        except Exception:
+            pass
+    if want in ("auto", "node"):
+        node = shutil.which("node")
+        if node:
+            r = subprocess.run(
+                [node, "-e", "require('node:wasi')"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if r.returncode == 0:
+                return "node", node
+    return None, None
+
+
+def run_case(rt, exe, driver, work: Path, case, engine: str):
+    root = work / "root"
+    root.mkdir(parents=True, exist_ok=True)
+    ext = case.get("ext", "vis")
+    prog = root / f"prog.{ext}"
+    prog.write_text(case["src"], encoding="utf-8")
+    for name, noi_dung in case.get("files", {}).items():
+        p = root / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(noi_dung, encoding="utf-8")
+    for name, noi_dung in case.get("outside", {}).items():
+        (work / name).write_text(noi_dung, encoding="utf-8")
+    if "symlink" in case:
+        ten, dich = case["symlink"]
+        os.symlink(work / dich, root / ten)
+    guest = "/data"
+    ro = bool(case.get("ro"))
+    runner_args = [f"--{engine}", guest + f"/prog.{ext}"]
+    if case.get("args"):
+        runner_args += ["--", *case["args"]]
+
+    if rt == "wasmtime":
+        cmd = [
+            exe,
+            "run",
+            "--dir",
+            f"{root}::{guest}",
+            "--env",
+            f"VIS_WASM_PREOPENS={guest}" + ("@ro" if ro else ""),
+            str(WASM),
+            "--",
+            *runner_args,
+        ]
+    elif rt == "python":
+        cmd = [
+            exe,
+            str(driver),
+            str(WASM),
+            guest,
+            str(root),
+            "1" if ro else "0",
+            *runner_args,
+        ]
+    else:
+        cmd = [
+            exe,
+            "--no-warnings",
+            str(driver),
+            str(WASM),
+            guest,
+            str(root),
+            "1" if ro else "0",
+            *runner_args,
+        ]
+    r = subprocess.run(cmd, cwd=work, capture_output=True, text=True, timeout=120)
+    loi = []
+    if r.stdout != case.get("out", ""):
+        loi.append(f"stdout={r.stdout!r} (chờ {case.get('out', '')!r})")
+    if r.returncode != case.get("exit", 0):
+        loi.append(f"exit={r.returncode} (chờ {case.get('exit', 0)})")
+    for s in case.get("stderr", []):
+        if s not in r.stderr:
+            loi.append(f"stderr thiếu {s!r}: {r.stderr!r}")
+    if "host_file" in case:
+        ten, noi_dung = case["host_file"]
+        p = root / ten
+        if not p.is_file() or p.read_text(encoding="utf-8") != noi_dung:
+            loi.append(f"host_file {ten!r} sai/thiếu")
+    if "host_missing" in case and (root / case["host_missing"]).exists():
+        loi.append(f"host_missing {case['host_missing']!r} vẫn tồn tại")
+    return loi, r
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Smoke suite vis-host-wasm (ST-299a)")
+    ap.add_argument("--build", action="store_true", help="build lại wasm")
+    ap.add_argument(
+        "--runtime",
+        choices=["auto", "wasmtime", "python", "node"],
+        default="auto",
+        help="runtime WASI (mặc định auto)",
+    )
+    ap.add_argument(
+        "--require-runtime",
+        action="store_true",
+        help="thiếu runtime ⇒ exit 2 thay vì BLOCKED-ENV/0",
+    )
+    ap.add_argument("--keep", action="store_true", help="giữ thư mục tạm")
+    ap.add_argument("--filter", default="", help="chỉ chạy ca có tên chứa chuỗi này")
+    a = ap.parse_args()
+
+    build(a.build)
+    print(f"# wasm: {WASM.relative_to(ROOT)} ({WASM.stat().st_size} byte)")
+    rt, exe = chon_runtime(a.runtime)
+    if rt is None:
+        print(
+            "BLOCKED-ENV: không có wasmtime CLI, Python wasmtime, hay node:wasi — "
+            "không chạy được wasm (không tự tải binary nguồn lạ)"
+        )
+        return 2 if a.require_runtime else 0
+
+    work = Path(tempfile.mkdtemp(prefix="vis-wasm-suite-", dir=os.environ.get("TMPDIR") or None))
+    driver = None
+    try:
+        if rt == "node":
+            driver = work / "node-driver.mjs"
+            driver.write_text(NODE_DRIVER, encoding="utf-8")
+        elif rt == "python":
+            driver = work / "py-driver.py"
+            driver.write_text(PY_DRIVER, encoding="utf-8")
+        print(f"# runtime={rt} ({exe})")
+        tong = 0
+        hong = 0
+        for case in CASES:
+            if a.filter and a.filter not in case["name"]:
+                continue
+            for engine in ("interp", "vm"):
+                tong += 1
+                cw = work / f"{case['name']}-{engine}"
+                cw.mkdir(parents=True, exist_ok=True)
+                loi, r = run_case(rt, exe, driver, cw, case, engine)
+                if loi:
+                    hong += 1
+                    print(f"not ok {tong} - {case['name']} [{engine}]")
+                    for x in loi:
+                        print(f"  # {x}")
+                    if r.stderr and not any(s in r.stderr for s in case.get("stderr", [])):
+                        print(f"  # stderr: {r.stderr!r}")
+                else:
+                    print(f"ok {tong} - {case['name']} [{engine}]")
+        print(f"# tổng: {tong} ca, {hong} hỏng, runtime={rt}")
+        return 0 if hong == 0 else 1
+    finally:
+        if not a.keep:
+            shutil.rmtree(work, ignore_errors=True)
+        else:
+            print(f"# giữ: {work}")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
