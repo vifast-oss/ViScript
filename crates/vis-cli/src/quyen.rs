@@ -319,7 +319,9 @@ impl Quyen {
             .collect()
     }
 
-    fn tuyet_doi(&self, p: &str) -> PathBuf {
+    /// **ST-295 (VD-276)**: ghép đường dẫn người dùng với `goc`; `quyen_mo` dùng lại để chuẩn hoá
+    /// từ vựng trước khi mở bằng `openat` (không phụ thuộc `canonicalize`).
+    pub(crate) fn tuyet_doi(&self, p: &str) -> PathBuf {
         let p = Path::new(p);
         if p.is_absolute() {
             p.to_path_buf()

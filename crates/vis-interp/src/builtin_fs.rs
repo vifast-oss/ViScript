@@ -62,6 +62,16 @@ pub trait FsHost {
     /// Tệp/thư mục có tồn tại.
     fn exists(&mut self, p: &str) -> bool;
 
+    /// **ST-295 (VD-276 §1)** — host **hệ tệp thật trên Unix** trả `true` để `FsGuard` mở bằng
+    /// `openat` từ fd gốc (`O_NOFOLLOW`/`openat2`) thay cho kiểm-rồi-mở theo tên.
+    ///
+    /// Default `false`: mọi host khác (mock, host tuỳ biến trong test, Windows) giữ **nguyên**
+    /// hành vi cũ — không đổi API/ngữ nghĩa của chúng.
+    #[cfg(unix)]
+    fn ho_tro_mo_duoi_goc(&self) -> bool {
+        false
+    }
+
     /// **ST-83 (VD-109)**: như [`exists`](Self::exists) nhưng **có thể báo vượt quyền** (chuỗi bắt
     /// đầu bằng [`DAU_QUYEN`](crate::stdlib::DAU_QUYEN)) ⇒ `VS0604`. Default: gọi `exists` (host cũ
     /// không đổi chữ ký).

@@ -4,9 +4,15 @@
 > trong tệp này là **số cũ**, **chưa đo lại** trên máy Darwin thật. Ngày 20/11 `bin/vis-remote mac --check`
 > trả Linux x86_64/Ubuntu (alias `mac` còn chạy tại chỗ) ⇒ **không dùng làm bằng chứng macOS**. Hiện
 > **không tuyên bố hỗ trợ macOS**; bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
-> `vis-host-linux` **15/15**. Windows: **Tier 2**, verify lại trên `psvn` @ tag **`v0.3.5`** (`03bb7b9`):
+> `vis-host-linux` **18/18** (ST-295 thêm 3 ca `Execute`/lib). Windows: **Tier 2**, verify lại trên `psvn` @ tag **`v0.3.5`** (`03bb7b9`):
 > workspace **3528 passed / 0 failed / 3 ignored** (debug + release), P2 10/10, P3 10/10 — **vẫn chưa
 > tuyên bố hỗ trợ**. Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
+
+> **Cập nhật 2026-11-22 (ST-295 / VD-276)** — **đường ghi** trên Unix đã đóng khe kiểm-rồi-mở
+> bằng `openat`/`openat2` (`rustix =1.1.6`, feature `fs`; ca đua **100/100 → 0/100**,
+> `JOURNAL/st295-race.log`). Landlock `#125`: ruleset xử lý `Execute`, cấp chỉ-đọc + Execute cho
+> thư viện chuẩn và binary trong grant — `vis-host-linux` **18/18**. Windows vẫn **Tier 2**
+> (không có `openat`); macOS dùng cùng mã nhưng **chưa verify** lại.
 
 > **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
 > `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
@@ -15,15 +21,16 @@
 
 Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 ~02:30 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify: @ `6ccf367` → 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`, verify nền); Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
-(ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **VD-186**: mục FsGuard ghi rõ **đường đọc đã đóng**,
-**đường ghi còn khe hở** tới khi VS3-QĐ-4 merge, **Windows mức bảo đảm thấp hơn**).
+(ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **ST-295/VD-276**: **đường đọc và đường ghi**
+đều đã đóng khe kiểm-rồi-mở trên Unix bằng `openat`/`openat2` (`#109b`/`#140`); macOS **chưa verify**
+lại, **Windows mức bảo đảm thấp hơn**).
 
 ## Bảng nền tảng ↔ bảo đảm
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
 | macOS (mps) — **CHƯA verify** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Số cũ, không dùng làm bằng chứng**: `vis-remote mac --check` 20/11 trả Linux (ST-242); `mac|macos` nay **từ chối** nếu `uname -s` ≠ Darwin. Cần đo lại trên máy Darwin thật. |
-| Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **15/15 ca** trên `ps` (ST-150/ST-166/ST-173) | `cargo test -p vis-host-linux --test landlock` → `15 passed` (log `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`) |
+| Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
 | Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
 
 > **Windows (VD-186)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
@@ -53,7 +60,7 @@ Mã thoát: `0` = Linux có `landlock`; `3` = không có / nền khác; `4` = Li
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
 | `vis-host-wasm` | — | check xanh (khung; `probe()` = “runtime kiểm, không có sandbox OS”) | **check** |
-| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13 tại ST-137, **15/15** từ ST-150/ST-166/ST-173 — xem mục cuối; host suite 54/54) |
+| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13 tại ST-137, **15/15** từ ST-150/ST-166/ST-173, **18/18** từ ST-295 — xem mục cuối; host suite 54/54) |
 
 Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “chạy trên Windows/wasm”;
 đúng là “**check** biên dịch chéo xanh, **chưa chạy**”.
@@ -81,17 +88,17 @@ Log: `agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính c
 ## Cấm ngôn từ
 
 - **Sai**: “đã cưỡng chế bằng Landlock” khi nói về **macOS/Windows**; “Landlock đã bảo vệ chương trình” trên nền không phải Linux; “cách ly kernel đã bật” chung chung.
-- **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)” trên **mọi** nền; “**Landlock cưỡng chế chỉ trên Linux** — đo **15/15** ca (ST-132/ST-150/ST-166/ST-173)”.
+- **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)” trên **mọi** nền; “**Landlock cưỡng chế chỉ trên Linux** — đo **18/18** ca (ST-132/ST-150/ST-166/ST-173/ST-295)”.
 - `vis-host-linux` **chỉ biên dịch trên Linux**: `src/lib.rs` và `tests/landlock.rs` có `#![cfg(target_os = "linux")]`, `landlock` nằm trong `[target.'cfg(target_os = "linux")'.dependencies]` (ST-173). Trên mac/Windows đây là crate **rỗng, 0 ca** — **giới hạn nền**, không phải thiếu sót; xem mục cuối tệp.
 
 - Cấm nói "async song song", "chạy đồng thời", "rendezvous", "HTTPS", "sandbox kernel" khi mô tả VS2 (VD-122, VD-123, VD-120).
 - Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
-- **Sai (VD-186)**: “macOS không còn khe hở” / “macOS đã an toàn” khi **đường ghi** chưa vá; “Windows được
-  hỗ trợ” / “Windows có sandbox kernel”; “hardlink là lỗi đua”.
-- **Đúng (VD-186, sửa 21/11)**: “**đường đọc** đã đóng khe symlink trên **Unix/Linux** (`#146`, ST-174;
-  macOS **chưa verify** lại — xem đính chính đầu tệp)”; “**đường ghi** còn kiểm-rồi-mở trên **mọi nền
-  Unix** (`#140`/`#109b`) cho tới khi **VS3-QĐ-4** merge”; “**hardlink** là **giới hạn chính sách**”;
-  “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
+- **Sai (ST-295/VD-276)**: “macOS đã an toàn” (macOS **chưa verify** lại); “Windows được hỗ trợ” /
+  “Windows có sandbox kernel”; “hardlink là lỗi đua”; “đường ghi còn kiểm-rồi-mở trên Unix” (đã đóng
+  từ ST-295 bằng `openat`/`openat2`).
+- **Đúng (ST-295, sửa 22/11)**: “**đường đọc + đường ghi** đã đóng khe symlink trên **Unix/Linux**
+  (`#146`/`#140`/`#109b`; ST-174 + ST-295; macOS **chưa verify** lại — xem đính chính đầu tệp)”;
+  “**hardlink** là **giới hạn chính sách**”; “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
 
 ## Điều kiện để có Landlock thật (VD-107 (4))
 
@@ -103,7 +110,7 @@ Cần **một** trong hai, kèm runner Linux để **đo**:
 Hiện cả hai đều **chưa** được duyệt (R2 cấm `unsafe`, allowlist crate đóng).
 
 **Cập nhật 2026-11-17 (ST-132/ST-166/ST-173):** điều kiện **1 đã đạt** — VD-120 duyệt crate
-`landlock =0.4.7` (MIT OR Apache-2.0) **chỉ** trong crate `vis-host-linux`; suite kernel **15/15**
+`landlock =0.4.7` (MIT OR Apache-2.0) **chỉ** trong crate `vis-host-linux`; suite kernel **18/18**
 trên `ps`, nợ **#132 đóng** (ST-166). Điều kiện 2 (`unsafe`) **không** dùng.
 
 ## Thụt lề `.vish` — **có ngữ nghĩa ở cấp tệp** (ST-85, VD-109)
@@ -157,19 +164,16 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 
 | Đường | Trạng thái trong **mã đang chạy** | Nguồn |
 |---|---|---|
-| **Đọc** | **Đã đóng** khe symlink trên **Unix/Linux** (macOS **chưa verify** lại) — nợ `#146` đóng ở ST-174 | VD-176 §1 · `JOURNAL/st174-*.log` |
-| **Ghi** | **Còn khe hở** kiểm-rồi-mở trên **mọi nền Unix** — nợ `#140`/`#109b` | VD-186 · VD-191 (VS3-QĐ-4) |
+| **Đọc** | **Đã đóng** khe symlink trên **Unix/Linux** — nợ `#146` đóng ở ST-174; với `cap[Dir]`/`cap[File]`, ST-295 mở **từ fd gốc** (`openat`/`openat2`) (macOS **chưa verify** lại) | VD-176 §1 · VD-276 §1 · `JOURNAL/st174-*.log`, `st295-*.log` |
+| **Ghi** | **Đã đóng** trên **Unix/Linux**: `openat`/`openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)` + `O_NOFOLLOW`; ca đua **100/100 → 0/100** (macOS **chưa verify** lại) — nợ `#140`/`#109b` đóng ở ST-295 | VD-276 §1 · `JOURNAL/st295-*.log` |
 | **Hardlink** | **Giới hạn chính sách**, **không** phải lỗi đua — mục riêng bên dưới | VD-176 §3 |
 | **Windows** | **Mức bảo đảm thấp hơn**: chỉ kiểm theo **đường dẫn**, không có danh tính tệp | VD-146 · VD-178 QĐ-4 |
 
-- **Unix (Linux đã đo; macOS chưa verify) còn khe hở — nhưng chỉ ở đường GHI**, cho tới khi **VS3-QĐ-4** merge (thiết kế `openat` +
-  `O_NOFOLLOW`, đi từng thành phần từ fd gốc; VD-191). Câu này **chỉ được xoá trong cùng commit merge
-  QĐ-4**, không xoá sớm hơn: đường đọc đã đóng, đường ghi **chưa**.
 
 - **Đường đọc — nợ `#146` ĐÃ ĐÓNG (ST-174, VD-176 §1): không còn đua symlink trên macOS và Linux.** Mở handle trước, quyết định quyền trên đường dẫn thật của chính handle, rồi đọc nội dung từ chính handle đó. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
   - **Linux**: đường dẫn thật lấy qua /proc/self/fd/<fd>. /proc không đọc được thì từ chối, không quay về kiểm theo tên. Bảo đảm theo cơ chế (ST-137: 0/50 000).
-  - **macOS (số cũ, CHƯA verify lại): cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) là việc VS3, cùng #140/#109b.
-- **Đường ghi: KHE HỞ HIỆN CÓ trên mọi nền Unix (nợ `#140`/`#109b`), chưa vá.** FsGuard **kiểm đường dẫn rồi mới ghi** (kiểm-rồi-mở), vì mở trước để lấy handle là đã tạo hoặc cắt tệp. Trong khoảng giữa hai bước, nếu bên khác ghi được vào thư mục cha, đường dẫn có thể bị thay bằng symlink trỏ ra ngoài vùng được cấp. Đây là **cùng một khe hở trên macOS và Linux**: bản vá `#146` (ST-174) **chỉ** đóng đường đọc, **không** đổi đường ghi. Sửa triệt để = **VS3-QĐ-4** (VD-191): đọc và ghi **chung một hàm** đi từng thành phần từ fd gốc bằng `openat` + `O_NOFOLLOW`/`O_DIRECTORY` (Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`), ca khoá đổi symlink giữa hai bước. Trên Linux khi chạy với `--sandbox`, Landlock chặn ghi ra ngoài vùng được cấp ở mức kernel; **không** có `--sandbox` thì giới hạn này còn nguyên, và Landlock **không** áp dụng trên macOS.
+  - **macOS (số cũ, CHƯA verify lại): cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) **đã làm ở ST-295** cho đường đọc/ghi có `cap` trên Unix (xem mục Đường ghi).
+- **Đường ghi — nợ `#140`/`#109b` ĐÃ ĐÓNG (ST-295, VD-276 §1): không còn kiểm-rồi-mở trên Unix/Linux.** `FsGuard` mở **từ fd gốc** bằng `openat` từng thành phần với `O_NOFOLLOW`/`O_DIRECTORY`; Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`; kernel cũ (`ENOSYS`) rơi về đi từng thành phần. Áp cho `write`/`append`/`write_bytes`/`mkdir`/`mkdir_all`/`remove`/`copy`/`rename`, đọc `read`/`read_bytes` cũng đi cùng hàm. Ca đua **tất định** (điểm chèn chỉ test giữa kiểm và mở): nhánh cũ **100/100** rò ra ngoài, nhánh mới **0/100** — `JOURNAL/st295-baove.md`, `quyen_st295.rs`. **Giới hạn còn lại**: Windows không có `openat` (chỉ kiểm theo đường dẫn); macOS dùng cùng mã `openat` nhưng **chưa verify** lại; **hardlink** vẫn là giới hạn chính sách (mục dưới).
 - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
 - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.
 - exists và list không trả nội dung tệp.
@@ -190,12 +194,12 @@ vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTO
   tệp** (hardlink không qua hệ tệp). Người chỉ có `cap[Dir]` **đọc** không tạo được hardlink.
 - **Landlock cũng không chặn:** Landlock áp trên **đường dẫn lúc mở**, không trên nguồn gốc inode ⇒ ca
   hardlink lọt cả khi có `--sandbox`.
-- **Đường ghi vẫn còn giới hạn riêng** (kiểm-rồi-ghi; xem gạch đầu dòng "Đường ghi" ở trên) — ST-174
-  **không** đổi đường ghi.
+- **Đường ghi đã đóng khe đua (ST-295)**; hardlink ở trên chỉ ảnh hưởng **đường đọc** theo chính sách
+  "cây tên", không mở lại khe kiểm-rồi-ghi.
 - **Muốn chặn theo chính sách (không làm trong VS2):** đổi định nghĩa vùng từ "cây tên" sang "vật" (so
   `(dev, ino)` của mọi tên trong root với tệp đích), hoặc chuyển sang `openat`/`openat2` +
-  `RESOLVE_BENEATH` + kiểm quyền trên **handle** ⇒ thuộc **VS3**, cùng #140/#109b. **Không** tự đổi
-  chính sách trong VS2.
+  `RESOLVE_BENEATH` + kiểm quyền trên **handle** ⇒ là **chính sách tương lai** (không cùng #109b — nợ đó
+  đã đóng ở ST-295). **Không** tự đổi chính sách trong VS2.
 
 ### Windows — mức bảo đảm **thấp hơn**, chỉ **đo** (VD-146, VD-178 QĐ-4, VD-186)
 
@@ -206,8 +210,9 @@ hỗ trợ** (VD-121/VD-146).
 - **Không có danh tính tệp:** `xac_nhan_sau_mo` chỉ so **đường dẫn trước ≠ đường dẫn sau** (nhánh
   `#[cfg(not(unix))]` trong `crates/vis-cli/src/quyen.rs`) ⇒ chặn được ca "đổi sang đường dẫn khác rồi để
   nguyên", **không** chặn được ca "đổi rồi đổi lại".
-- **Chỉ kiểm theo đường dẫn:** không có `openat`/`O_NOFOLLOW`; **đường ghi** vẫn kiểm-rồi-mở như mọi nền
-  Unix, **cộng** việc không xác nhận được danh tính ⇒ khe hở **rộng hơn**, không hẹp hơn.
+- **Chỉ kiểm theo đường dẫn:** Windows **không** có `openat`/`O_NOFOLLOW` (bản vá ST-295 chỉ bật trên
+  Unix) ⇒ **đường ghi** vẫn kiểm-rồi-mở, **cộng** việc không xác nhận được danh tính ⇒ khe hở **rộng
+  hơn** Unix, không hẹp hơn.
 - **Không có Landlock:** Landlock **chỉ Linux** (mục cuối tệp) ⇒ không có lớp kernel nào bù.
 - **Số đo — chỉ để biết, KHÔNG phải tuyên bố hỗ trợ:** host suite **39/54**; `cargo test` **1053/100**;
   L0 dừng ở suite `cap_proc` (`/bin/echo`, `/bin/sh` không tồn tại); `bin/vis-targets` **18/18**;
@@ -247,7 +252,7 @@ test bị bỏ.
 
 | Nền | Biên dịch `vis-host-linux` | Số ca Landlock chạy | Bằng chứng |
 |---|---|---|---|
-| Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **15/15** | `st173-ps-truoc.log`, `st173-ps-sau.log` |
+| Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **18/18** | `st173-ps-truoc.log`, `st173-ps-sau.log`; `st295-verify.log` |
 | macOS — **số cũ, chưa verify** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log` — **không** dùng làm bằng chứng macOS (ST-242) |
 | Windows | — | **0** (không áp dụng) | chưa có runner |
 

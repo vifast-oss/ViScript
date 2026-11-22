@@ -192,8 +192,8 @@ pub(crate) fn run_dry(tep: &str, text: &str, mode: Mode) -> ExitCode {
 /// dựng luật (đường dẫn không tồn tại, kernel từ chối).
 #[cfg(target_os = "linux")]
 pub(crate) fn ap_sandbox(q: &quyen::Quyen) -> Result<(), ExitCode> {
-    use vis_host_linux::sandbox::{ap_dung, ChoPhep, LoiSandbox, Muc};
-    let cho: Vec<ChoPhep> = q
+    use vis_host_linux::sandbox::{ap_dung_voi_execute, ChoPhep, LoiSandbox, Muc};
+    let mut cho: Vec<ChoPhep> = q
         .moc
         .iter()
         .filter(|c| (c.kind == "Dir" || c.kind == "File") && !c.root.is_empty())
@@ -203,7 +203,41 @@ pub(crate) fn ap_sandbox(q: &quyen::Quyen) -> Result<(), ExitCode> {
             la_tep: c.kind == "File",
         })
         .collect();
-    match ap_dung(&cho) {
+    // **ST-295 (VD-276 §3)** — `cap[Proc]` + `--grant`: mở **chỉ đọc + Execute** cho thư viện động
+    // chuẩn và **đúng binary đã canonicalize**. Nhờ đó `--sandbox` không còn chặn oan mọi
+    // `execve`; quyền chạy **lệnh nào** vẫn do allowlist runtime quyết định.
+    if let Some(ds) = &q.allow_proc {
+        let them = |ds: &mut Vec<ChoPhep>, duong: std::path::PathBuf, la_tep: bool| {
+            let Ok(duong) = std::fs::canonicalize(duong) else {
+                return;
+            };
+            let c = ChoPhep {
+                duong,
+                ghi: false,
+                la_tep,
+            };
+            if !ds.contains(&c) {
+                ds.push(c);
+            }
+        };
+        for d in [
+            "/lib",
+            "/lib64",
+            "/usr/lib",
+            "/usr/lib64",
+            "/usr/bin",
+            "/bin",
+            "/sbin",
+            "/usr/sbin",
+        ] {
+            them(&mut cho, std::path::PathBuf::from(d), false);
+        }
+        for b in ds {
+            them(&mut cho, std::path::PathBuf::from(b), true);
+        }
+    }
+    // Chỉ xử lý `Execute` khi có `cap[Proc]` + `--grant` (VD-276 §3); không grant ⇒ giữ tập quyền cũ.
+    match ap_dung_voi_execute(&cho, q.allow_proc.is_some()) {
         Ok(kq) => {
             eprintln!("{}", kq.dong());
             if matches!(kq.muc, Muc::Khong) {

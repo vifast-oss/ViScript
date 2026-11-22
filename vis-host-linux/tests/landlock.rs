@@ -13,7 +13,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use vis_host_linux::sandbox::{ap_dung, ChoPhep, KetQua, LoiSandbox, Muc};
+use vis_host_linux::sandbox::{ap_dung, ap_dung_voi_execute, ChoPhep, KetQua, LoiSandbox, Muc};
 
 /// Thư mục tạm riêng cho từng ca (dưới `/tmp`, tồn tại trước khi áp sandbox).
 fn tam(tag: &str) -> PathBuf {
@@ -28,6 +28,14 @@ fn ap(cho: &[ChoPhep]) -> KetQua {
     let kq = ap_dung(cho).expect("áp sandbox phải thành công trên runner Linux");
     assert_eq!(kq.muc, Muc::Day, "kernel phải cưỡng chế ĐẦY ĐỦ: {kq:?}");
     assert!(kq.no_new_privs, "PR_SET_NO_NEW_PRIVS phải bật");
+    kq
+}
+
+/// **ST-295** — như [`ap`] nhưng ruleset **xử lý `Execute`** (đường CLI khi có `cap[Proc]` +
+/// `--grant`).
+fn ap_exec(cho: &[ChoPhep]) -> KetQua {
+    let kq = ap_dung_voi_execute(cho, true).expect("áp sandbox (Execute) phải thành công");
+    assert_eq!(kq.muc, Muc::Day, "kernel phải cưỡng chế ĐẦY ĐỦ: {kq:?}");
     kq
 }
 
@@ -703,4 +711,157 @@ fn duong_dan_khong_ton_tai_la_loi_he_thong() {
         Err(LoiSandbox::HeThong(s)) => assert!(s.contains("khong/ton/tai"), "thông điệp: {s}"),
         other => panic!("phải là LoiSandbox::HeThong, thật {other:?}"),
     }
+}
+
+// ===========================================================================
+// **ST-295 (VD-276 §3)** — `Execute`: chạy được đúng binary/lib trong grant,
+// chặn binary ngoài grant, và luật thư viện là **chỉ đọc**.
+// ===========================================================================
+
+/// Các thư mục thư viện động chuẩn mà `vis run --sandbox` cấp chỉ-đọc + `Execute`
+/// (cùng danh sách `cli::run::ap_sandbox`; ở đây lặp lại để test độc lập với CLI).
+fn thu_vien_chuan() -> Vec<PathBuf> {
+    let mut v = Vec::new();
+    for d in [
+        "/lib",
+        "/lib64",
+        "/usr/lib",
+        "/usr/lib64",
+        "/usr/bin",
+        "/bin",
+        "/sbin",
+        "/usr/sbin",
+    ] {
+        if let Ok(p) = fs::canonicalize(d) {
+            if !v.contains(&p) {
+                v.push(p);
+            }
+        }
+    }
+    v
+}
+
+/// **16/18** — `cap[Proc]` + grant: binary **tĩnh** đã canonicalize chạy được khi ruleset xử lý
+/// `Execute` và cấp nó trên đúng tệp + thư mục thư viện. Đây là ca đỏ-trước của bản cũ (mọi
+/// `execve` trong domain trả `EACCES`).
+#[test]
+fn con_binary_trong_grant_chay_duoc_voi_execute() {
+    let d = tam("exec-duoc");
+    let helper = dung_helper(&d);
+    let ra = d.join("ra.txt");
+    fs::write(&ra, "x\n").expect("tệp dữ liệu");
+    let mut cho: Vec<ChoPhep> = thu_vien_chuan()
+        .into_iter()
+        .map(|duong| ChoPhep {
+            duong,
+            ghi: false,
+            la_tep: false,
+        })
+        .collect();
+    cho.push(ChoPhep {
+        duong: helper.clone(),
+        ghi: false,
+        la_tep: true,
+    });
+    cho.push(ChoPhep {
+        duong: d.clone(),
+        ghi: true,
+        la_tep: false,
+    });
+    let kq = ap_exec(&cho);
+    assert_eq!(kq.muc, Muc::Day);
+    let o = chay_con(&helper, &["doc", ra.to_str().unwrap()]);
+    assert_eq!(
+        o.status.code(),
+        Some(0),
+        "binary trong grant phải chạy được (Execute): {:?}",
+        o
+    );
+    let _ = fs::remove_dir_all(&d);
+}
+
+/// **17/18** — binary **ngoài** grant (thư mục không có luật) vẫn bị kernel chặn ở `execve`.
+#[test]
+fn con_binary_ngoai_grant_bi_chan() {
+    let d = tam("exec-ngoai");
+    let helper = dung_helper(&d);
+    let ngoai = d.join("ngoai");
+    fs::create_dir_all(&ngoai).expect("thư mục ngoài");
+    let copy = ngoai.join("helper");
+    fs::copy(&helper, &copy).expect("copy helper");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).expect("chmod helper");
+    }
+    let mut cho: Vec<ChoPhep> = thu_vien_chuan()
+        .into_iter()
+        .map(|duong| ChoPhep {
+            duong,
+            ghi: false,
+            la_tep: false,
+        })
+        .collect();
+    // Chỉ cấp helper gốc + thư mục tạm (không gồm `ngoai/`).
+    cho.push(ChoPhep {
+        duong: helper.clone(),
+        ghi: false,
+        la_tep: true,
+    });
+    ap_exec(&cho);
+    // `execve` bị kernel từ chối ngay ⇒ `Command::output` trả `Err(PermissionDenied)` (không
+    // có tiến trình con nào chạy, nên không có exit code/stderr).
+    let e = std::process::Command::new(&copy)
+        .arg("doc")
+        .arg(&helper)
+        .output()
+        .expect_err("exec binary ngoài grant phải bị chặn");
+    assert_eq!(
+        e.kind(),
+        std::io::ErrorKind::PermissionDenied,
+        "kernel phải trả Permission denied: {e:?}"
+    );
+    let _ = fs::remove_dir_all(&d);
+}
+
+/// **18/18** — luật dạng **thư viện** (`/lib*`, cấp chỉ-đọc) vẫn chặn **ghi** ở mức kernel.
+///
+/// Dùng một bản sao thư mục thư viện trong temp với tệp **ghi được bởi user** để chứng minh
+/// `AccessFs::WriteFile` bị chặn (không phải quyền OS của `/lib` root-owned). Kèm phép thử
+/// `/lib` thật: tạo tệp mới vẫn lỗi (OS hoặc Landlock — không phân biệt được, ghi chú rõ).
+#[test]
+fn luat_thu_vien_chi_doc_chan_ghi() {
+    let d = tam("lib-chi-doc");
+    let lib_gia = d.join("lib");
+    fs::create_dir_all(&lib_gia).expect("lib giả");
+    let tep = lib_gia.join("co-the-ghi.txt");
+    fs::write(&tep, "x\n").expect("tệp trong lib giả");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&lib_gia, fs::Permissions::from_mode(0o777)).expect("chmod lib giả");
+        fs::set_permissions(&tep, fs::Permissions::from_mode(0o666)).expect("chmod tệp");
+    }
+    let mut cho: Vec<ChoPhep> = thu_vien_chuan()
+        .into_iter()
+        .map(|duong| ChoPhep {
+            duong,
+            ghi: false,
+            la_tep: false,
+        })
+        .collect();
+    cho.push(ChoPhep {
+        duong: lib_gia.clone(),
+        ghi: false,
+        la_tep: false,
+    });
+    ap(&cho);
+    let e = fs::write(&tep, "GHI\n").expect_err("luật chỉ-đọc phải chặn ghi");
+    assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied, "thật {e:?}");
+    // `/lib` thật: dù root-owned hay Landlock, lần tạo mới phải thất bại.
+    assert!(
+        fs::write("/lib/vis-st295-khong-duoc-ghi", "x").is_err(),
+        "không được ghi vào /lib"
+    );
+    let _ = fs::remove_dir_all(&d);
 }
