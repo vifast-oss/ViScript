@@ -116,6 +116,10 @@ impl Drop for MayChuH1 {
 }
 
 fn phuc_vu_h1(mut tcp: TcpStream, stop: Arc<AtomicBool>, da_gui: Arc<AtomicUsize>) {
+    // **ST-287 (Windows)**: socket `accept` trên Windows **thừa hưởng nonblocking** từ listener;
+    // handler này dùng API blocking + timeout. Thiếu bước này ⇒ `read`/`write_all` trả
+    // `WSAEWOULDBLOCK`/abort (10053) giữa body, client thấy lỗi trước khi safe point huỷ chạy.
+    tcp.set_nonblocking(false).expect("server blocking");
     let _ = tcp.set_nodelay(true);
     let _ = tcp.set_read_timeout(Some(Duration::from_secs(3)));
     let _ = tcp.set_write_timeout(Some(Duration::from_secs(1)));
@@ -243,8 +247,9 @@ fn kiem_sau_huy(out: &FrameOutput) {
     assert!(out.stdout.contains("V:pre"), "{:?}", out.stdout);
     assert!(
         !out.stdout.contains("V:post"),
-        "task bị huỷ phải dừng: {:?}",
-        out.stdout
+        "task bị huỷ phải dừng: stdout={:?} log={:?}",
+        out.stdout,
+        out.log
     );
     assert!(
         out.log.iter().any(|l| l == "cancel:1"),
@@ -414,8 +419,9 @@ fn cancel_http_h1_mot_task_khong_anh_huong_task_khac() {
     assert!(out.stdout.contains("V:pre"), "{:?}", out.stdout);
     assert!(
         !out.stdout.contains("V:post"),
-        "task bị huỷ phải dừng: {:?}",
-        out.stdout
+        "task bị huỷ phải dừng: stdout={:?} log={:?}",
+        out.stdout,
+        out.log
     );
     assert!(
         out.stdout.contains("ok"),
