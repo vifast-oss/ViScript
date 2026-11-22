@@ -173,16 +173,17 @@ pub(crate) fn spawn_parallel(
                 crate::interp::Abort::Trap(loi("worker Parallel thiếu pool", span))
             })?;
         let image = Arc::clone(&image);
-        pool.spawn_shared(snap, move |ctx, snap| {
-            crate::interp::worker::chay_than_worker(
-                &image, than, args_send, span, ctx, snap, budget, deadline,
-            )
-        })
+        pool.spawn_shared_with_cancel(
+            snap,
+            move |ctx, snap| {
+                crate::interp::worker::chay_than_worker(
+                    &image, than, args_send, span, ctx, snap, budget, deadline,
+                )
+            },
+            cancel_before,
+        )
         .map_err(|e| crate::interp::Abort::Trap(loi_pool(e, span)))?
     };
-    if cancel_before {
-        handle.cancel();
-    }
     let pool_id = handle.id();
     s.exec.pool_to_task.insert(pool_id, t.id);
     s.exec.proxy.insert(
