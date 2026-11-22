@@ -4,8 +4,14 @@
 > trong tệp này là **số cũ**, **chưa đo lại** trên máy Darwin thật. Ngày 20/11 `bin/vis-remote mac --check`
 > trả Linux x86_64/Ubuntu (alias `mac` còn chạy tại chỗ) ⇒ **không dùng làm bằng chứng macOS**. Hiện
 > **không tuyên bố hỗ trợ macOS**; bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
-> `vis-host-linux` **15/15**. Windows: **Tier 2**, workspace xanh @ `c7cef71` (20/11), **chưa verify ở HEAD**.
-> Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
+> `vis-host-linux` **15/15**. Windows: **Tier 2**, verify lại trên `psvn` @ tag **`v0.3.5`** (`03bb7b9`):
+> workspace **3528 passed / 0 failed / 3 ignored** (debug + release), P2 10/10, P3 10/10 — **vẫn chưa
+> tuyên bố hỗ trợ**. Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
+
+> **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
+> `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
+> Tệp này **chỉ** sửa phần Windows đã có bằng chứng tag `v0.3.5`; các tuyên bố macOS/wasm giữ nguyên
+> (macOS **không** có máy thật, wasm **chưa có runner**). **R32 chờ ST-284..288** trước khi chốt lại.
 
 Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 ~02:30 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify: @ `6ccf367` → 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`, verify nền); Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
