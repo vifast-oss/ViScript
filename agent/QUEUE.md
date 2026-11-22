@@ -2117,3 +2117,60 @@ APPROVED 2026-11-14 Agent 0
 - Windows Tier 2: workspace xanh @ `c7cef71` (20/11), **chưa verify lại ở HEAD**; macOS **chưa verify**.
 - Còn mở: step-cap parity; P3 enum alloc (#152); #190; #191; #147/#152 blocked phần cứng; TLS/HTTP2;
   runner wasm/macOS; budget/fuel/Q chưa chốt default.
+
+## Chương trình Dài hạn hậu `v0.3.5` — `VD-272`..`VD-279` (`v0.3.6` → `v1.0.0-rc1`)
+
+> **Nguồn quyết định**: `agent/DECISIONS.md` `VD-272`..`VD-279` (2026-11-22), `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`.
+> **Luật thực thi (`VD-279`)**: 4 luồng worktree riêng (`W1` Runtime, `W2` Net/Sec/Pkg, `W3` Platform/Tooling/ViShell, `W4` QA/Windows/Docs); batch test 4 giờ; **không** GitHub Actions; macOS ngoài phạm vi. Giai đoạn sau chỉ chuyển `BLOCKED → READY` khi toàn bộ task giai đoạn trước ở trạng thái `DONE` (hoặc `CHỜ DUYỆT` với cổng xanh).
+
+### Giai đoạn 0 — Khử nghẽn R1, Hook huỷ HTTP, Khép G3 Gói & Đồng bộ Sự thật (`v0.3.6`)
+
+| ID | Mục tiêu | Phụ thuộc | Ước lượng | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|
+| ST-284 | **(W1) R0a Refactor `vm.rs` & `frame.rs` (0 đổi hành vi)** | VD-272 | 1 ngày | READY | Tách `impl Host for Vm` sang `crates/vis-vm/src/vm/host.rs` và khối fallback/idle của `frame.rs` sang `crates/vis-interp/src/frame/worker.rs`. Tiêu chí: `vm.rs` ≤ 1.250 dòng, `frame.rs` ≤ 1.250 dòng, 0 đổi ABI/cache/hành vi, `gate --fast` PASS, `diff 100k` = 0 lệch. |
+| ST-285 | **(W1) R0b Refactor `value.rs`, `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs` (0 đổi hành vi)** | VD-272 | 1 ngày | READY | Tách `eq_value`/`show` khỏi `value.rs`, helper phát lệnh khỏi `codegen.rs`, nhánh gọi khỏi `tyck/expr.rs` và `interp/goi.rs`. Tiêu chí: mọi tệp lõi ≤ 1.250 dòng, 0 đổi golden/API/cache, `gate --fast` PASS. |
+| ST-286 | **(W2) R0c Refactor `async_net.rs`, `quyen.rs`, `db/sqlite/mod.rs` (0 đổi hành vi)** | VD-272 | 1 ngày | READY | Tách quản lý kết nối `async_net.rs`, helper path/guard `quyen.rs`, pragma/schema `db/sqlite/mod.rs`. Tiêu chí: cả 3 tệp ≤ 1.250 dòng; `vs3_http2`, `vs3_tls`, `quyen`, `sqlite` xanh toàn bộ. |
+| ST-287 | **(W2) Hook huỷ giữa HTTP request cho cả HTTP/1.1 và HTTP/2 (`VS3-1b`)** | ST-286 / VD-273 | 1 ngày | READY | Thêm `FrameReactorBackend::cancel_task_handles(frame_id)` gọi `HttpAsync::dong()` + `RST_STREAM` (h2) / đóng socket (h1) khi task bị huỷ ở safe point. Test đỏ-trước `vs3_http_cancel.rs` (h1 + `--features async-h2`): huỷ giữa body chậm không rò fd, không treo, parity interp↔VM. |
+| ST-288 | **(W3) Khép G3 Gói: cấp `VS0708`, chốt `pkg gc --root` & vá `#142`** | VD-273 | 1 ngày | READY | Cấp mã `VS0708` (`vi/en/ja`) vào `vis-diag` + `API-CODES.txt` cho lỗi chữ ký registry; khoá semantics + ca biên `pkg gc --root`; vá `#142` (`pkg update <tên>` không ghim cứng cản nâng dep chung khi manifest cho phép). Test đỏ-trước + `vs3_pkg_gc_multi` + `vs3_registry_sig` xanh. |
+| ST-289 | **(W4) Đồng bộ Version, `SO-NO.md`, Docs hiện thực, `#151` & Báo cáo `R32` (`v0.3.6`)** | ST-284, ST-285, ST-286, ST-287, ST-288 / VD-272 | 1,5 ngày | READY | Chuyển toàn bộ workspace sang `version.workspace = true` (`0.3.6`); rà đóng các nợ đã hoàn thành trong `SO-NO.md` kèm commit hash; kiểm chứng và khoá `#111` (`cap[Dir]` không tạo được từ `json.decode`); đóng `#151` (đổi tên `test/doc-examples/` theo slug ổn định); cập nhật `docs/ViScript-thiet-ke.md` §Mức hiện thực & `agent/HOST-BAO-DAM.md`; xuất `R32-viscript.{md,json,json.license}` + fresh-clone Linux + verify `psvn`. |
+
+### Giai đoạn 1 — G4a Core: Ngân sách, Worker `P2b`/`P4`, `select`, `async-h2` & TOCTOU Ghi (`v0.4.0`)
+
+| ID | Mục tiêu | Phụ thuộc | Ước lượng | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|
+| ST-290 | **(W1) Bật Ngân sách mặc định (`40M`) + mã `VS0510` + bump cache (`VS3-1a`)** | ST-284, ST-289 / VD-273 | 2 ngày | BLOCKED | Chờ GĐ 0 xong. Bật `BUDGET_DEFAULT = 40_000_000`, thêm `--max-budget`/`--unlimited-budget`, cấp `VS0510` (`API-CODES.txt`), giữ `VM_SAFETY_FUEL = 100M`, bump `PHIEN_BAN` + re-pin cache. Test parity 2M loop, đệ quy, đa task, crafted bytecode không né phí. |
+| ST-291 | **(W1) Worker `P2b-1 + P2b-2`: lazy/batched job submit & compact `Vec` proxy** | ST-284, ST-285, ST-289 / VD-275 | 2 ngày | BLOCKED | Chờ GĐ 0 xong. Cài `PendingJob`/`flush_jobs` (`rt/exec.rs`), `spawn_shared_batch` (`rt/worker.rs`), thay 2 `HashMap` proxy bằng `Vec<Option<TaskProxy>>`. Tiêu chí: release N=10k batch W=4 ≤ 25–30 ms (≤ 1,5× W=1), sequential không hồi quy, 20 vòng RSS/fd phẳng. |
+| ST-292 | **(W1) Worker Frame `P4a..P4c` + `VS0509` + cờ CLI `--workers <N>` (`VS3-3b`)** | ST-291 / VD-275 | 4–5 ngày | BLOCKED | Chờ ST-291. Nối `OutcomeBoard::wait_any_timeout`, 5 hook `Host`, `frame.rs` + `vm_frame.rs` pump 50 ms, flush output tại `await`/spawn order ở `final_join`, cancel worker, từ chối rõ `chan(0)`/host trong worker, cấp `VS0509` cho cross-write, mở `vis run --workers <N>` (mặc định 1). Test `vs3_worker_frame.rs` (12 ca) + `vs3_worker_frame_vm.rs` ×20 vòng + soak 10 phút + Windows. |
+| ST-293 | **(W1) Kênh `select` (`VS3-2c`): `select_recv*` / `select_send*`** | ST-285, ST-289 / VD-274 | 3 ngày | BLOCKED | Chờ GĐ 0 xong. Cài 4 hàm `select_recv`, `select_recv_timeout`, `select_send`, `select_send_timeout` trên frame runtime (cả interp & VM); fairness xoay vòng, gỡ waiter nhánh thua đúng 1 lần, không rò/double-wake. Test `vs3_select.rs` ≥ 18 ca byte-identical interp↔VM. |
+| ST-294 | **(W2) Port `async-h2` sang Windows & bật mặc định non-wasm** | ST-287, ST-289 / VD-277 | 3 ngày | BLOCKED | Chờ GĐ 0 xong. Bỏ `#![cfg(unix)]` trong `net/h2_async.rs`, chuyển adapter sang `Nguon`/`mio` chạy trên cả Linux và Windows; kiểm chứng cold-start 4 stream + timeout + GOAWAY + cancel hook trên `ps` và `psvn`; đưa `async-h2` vào feature `default` non-wasm. |
+| ST-295 | **(W2) Đóng khe TOCTOU đường ghi Unix (`#109b`/`#140`) & Landlock `#125`** | ST-286, ST-289 / VD-276 | 3 ngày | BLOCKED | Chờ GĐ 0 xong. Dùng `rustix` (feature `fs`, kiểm license `st295-license.log`) cài `openat` + `O_NOFOLLOW`/`O_DIRECTORY` (`openat2` Linux) chung cho đọc/ghi; ca đua symlink ghi đỏ-trước 100/100 → 0/100; sửa `--sandbox` cho lệnh ngoài được grant load `/lib*` chỉ-đọc (`vis-host-linux` ≥ 18/18); xoá cảnh báo đường ghi ở `HOST-BAO-DAM.md`. |
+| ST-296 | **(W4) Tổng QA, Soak, Fuzz, `R33` & Release `v0.4.0`** | ST-290, ST-291, ST-292, ST-293, ST-294, ST-295 / VD-272 | 2 ngày | BLOCKED | Chờ ST-290..295. Fresh-clone Linux, `psvn` debug+release, 2× soak 10/10, diff 100k ×3 seed, fuzz 4h, cập nhật `Cargo.toml` `0.4.0`, `R33`, `CHANGELOG.md`, `ROADMAP.md`, `VS3-TIEN-DO.md`. |
+
+### Giai đoạn 2 — G4b Platforms: Windows Tier 1 & WASI/Wasmtime Runtime (`v0.4.5`)
+
+| ID | Mục tiêu | Phụ thuộc | Ước lượng | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|
+| ST-297 | **(W3) Đóng toàn bộ nợ `#149` (Path-split audit đa nền)** | ST-296 / VD-277 | 2 ngày | BLOCKED | Chờ `v0.4.0`. Rà và chuẩn hoá mọi điểm tách `/` thủ công còn lại trong `PATH-SPLIT-AUDIT-2026-11-18.md`; thêm ca khoá Windows/UNC/mixed-slash xanh cả Linux và `psvn`; đóng `#149` trong `SO-NO.md`. |
+| ST-298 | **(W4) Gate `bin/vis-gate-windows`, chốt `#191` & nâng Windows Tier 1** | ST-294, ST-297 / VD-277 | 3 ngày | BLOCKED | Chờ ST-297. Đo lại `cargo nextest` trên `psvn` (`#191`); tạo `bin/vis-gate-windows` một lệnh; chạy xanh 3 lần liên tiếp + soak 4h trên `psvn`; cập nhật `ROADMAP.md` & `HOST-BAO-DAM.md` tuyên bố Windows Tier 1 (giữ caveat `FsGuard`). |
+| ST-299 | **(W3) Triển khai `vis-host-wasm` thật cho `wasm32-wasip1`** | ST-296 / VD-277 | 4 ngày | BLOCKED | Chờ `v0.4.0`. Cài `WasiHost` (FS preopened dirs, clock, stdout/stderr; từ chối rõ `net`/`proc`/`sqlite`), dựng `vis-wasm-run` biên dịch `wasm32-wasip1` dùng 5 crate lõi (`vis-syntax`, `vis-types`, `vis-bytecode`, `vis-interp`, `vis-vm`), 0 `unsafe` trong mã ViScript. |
+| ST-300 | **(W3/W4) Runner `bin/vis-wasm-suite` (Wasmtime), `R34` & Release `v0.4.5`** | ST-298, ST-299 / VD-277 | 3 ngày | BLOCKED | Chờ ST-298..299. Chạy ≥ 85% `test/sem` (thuần ngôn ngữ + stdlib lõi) cả interp & VM trên `wasmtime`, 0 lệch byte với Linux native; bổ sung bảng `wasm32-wasip1 (runtime)` vào `bin/vis-targets`; cập nhật `0.4.5`, xuất `R34` (đóng G4). |
+
+### Giai đoạn 3 — Pha 2 Ngôn ngữ, CLI Developer & ViShell MVP (`v0.5.0`)
+
+| ID | Mục tiêu | Phụ thuộc | Ước lượng | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|
+| ST-301 | **(W1) Pha 2a: Chốt `T??` + Lambda param annotation + đóng `#155`** | ST-300 / VD-278 | 3 ngày | BLOCKED | Chờ `v0.4.5`. Đồng bộ EBNF/§4.4 cho `T??`; hỗ trợ `(x: int?, y: str) => expr` trong `vis-syntax`/`vis-fmt`/`vis-types`; nối auto-lift tham số closure cả interp & VM; ≥ 20 ca mới, fuzz parser 1h 0 vi phạm, đóng `#155`. |
+| ST-302 | **(W1) Pha 2b: `async` method/`cmd` (`#13`) & `derives Json` codegen (`#8`)** | ST-301 / VD-278 | 4 ngày | BLOCKED | Chờ ST-301. Hỗ trợ `async fn` trong `impl` và `async cmd`; sinh mã serialize/deserialize thật cho `record ... derives Json` tích hợp với `Json` enum R4; ≥ 15 ca interp↔VM, đóng `#8` & `#13`, cập nhật `CHEAT-SHEET-ViScript.md`. |
+| ST-303 | **(W3) Công cụ CLI: `vis new`, `vis doc`, `vis repl`** | ST-300 / VD-278 | 4 ngày | BLOCKED | Chờ `v0.4.5`. `vis new` sinh dự án mẫu chạy ngay; `vis doc` trích `##` từ CST ra Markdown/JSON; `vis repl` chạy tăng dần giữ biến phiên, lỗi kiểu không mất trạng thái. Test CLI đầy đủ cả Linux & `psvn`. |
+| ST-304 | **(W3) ViShell tương tác MVP (`VSH1`, `crates/vish-edit`)** | ST-303 / VD-278 | 6 ngày | BLOCKED | Chờ ST-303. Soạn dòng đa nền (ANSI POSIX + Windows Console), tô màu CST + trạng thái lệnh, gợi ý tab theo kiểu, lịch sử append-only + tìm mờ, job control POSIX (`&`/`jobs`/`fg`/`bg`/`kill`), Ctrl-C exit 130, panic giữ phiên. Test kịch bản PTY giả, khởi động ấm < 50 ms. |
+| ST-305 | **(W3/W4) Hoàn tất LSP, Extension VS Code mỏng, `R35` & Release `v0.5.0`** | ST-302, ST-304 / VD-278 | 3 ngày | BLOCKED | Chờ ST-302, ST-304. Hoàn thiện hover generic/method, completion `std.*`, đóng gói `editors/vscode/` (JSON-RPC client + TextMate grammar); fresh-clone Linux + Windows Tier 1 + WASI suite + `R35` + `0.5.0`. |
+
+### Giai đoạn 4 — G5 Hệ sinh thái: Plugin Rust ABI, ViTerm Protocol & `v1.0.0-rc1` (`v0.6.0` → `v1.0.0-rc1`)
+
+| ID | Mục tiêu | Phụ thuộc | Ước lượng | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|
+| ST-306 | **(W1/W2) Crate `vis-plugin-abi` (`VIS_PLUGIN_ABI_V1`) & liên kết tĩnh** | ST-305 / VD-278 | 5 ngày | BLOCKED | Chờ `v0.5.0`. Định nghĩa ABI ổn định, trao đổi `PluginValue` ↔ `Value`, `vis::Error`, truyền `cap[...]` tường minh (0 ambient authority); plugin tĩnh mẫu chạy parity interp↔VM, test âm chặn đọc FS khi thiếu `cap[Dir]`. |
+| ST-307 | **(W2) `vis-plugin-macros` (`#[vis::module]`/`#[vis::func]`) & Nạp động có kiểm soát** | ST-306 / VD-278 | 5 ngày | BLOCKED | Chờ ST-306. Sinh chữ ký kiểm kiểu lúc build; nạp `.so`/`.dll` kiểm khớp `VIS_PLUGIN_ABI_V1`; tắt cứng plugin động khi `--strict-caps` hoặc `--sandbox` (`vs3_plugin.rs`). |
+| ST-308 | **(W3) `Terminal` trait & Giao thức hiển thị có cấu trúc ViTerm (`VS3-8`)** | ST-304, ST-305 / VD-278 | 4 ngày | BLOCKED | Chờ `v0.5.0`. Tách `Terminal` (`AnsiPosix`, `WinConsole`, `ViTermFramed`) cho `render` & `vish-edit`; khung cấu trúc cho bảng/bản ghi/lỗi; snapshot `vs3_viterm.rs`; không kéo phụ thuộc ViFastOs (giữ R4). |
+| ST-309 | **(W1..W4) Tổng Nghiệm thu, `docs/SPEC.md`, Kiểm toán Bảo mật, `R36` & Tag `v0.6.0` → `v1.0.0-rc1`** | ST-307, ST-308 / VD-272 | 5 ngày | BLOCKED | Chờ ST-307..308. Xuất `docs/SPEC.md` đầy đủ; kiểm toán bảo mật (TOCTOU đọc+ghi, Landlock, `Value::Cap`, fuzz verifier/decoder 100M ca); chạy tổ hợp cuối: fresh-clone Linux + `bin/vis-gate-windows` + `bin/vis-wasm-suite` + diff 100k ×5 seed + soak 24h + fuzz 8h; xuất `R36`, tag `v0.6.0` (đóng G5) và ứng viên `v1.0.0-rc1`. |
+

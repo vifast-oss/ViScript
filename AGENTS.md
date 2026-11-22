@@ -29,7 +29,7 @@ QD thắng tài liệu thiết kế.
 ## 3. Trạng thái duyệt hiện tại
 
 **Trạng thái dòng ViScript**: không ghi ở tệp này. Đọc theo thứ tự: `agent/ROADMAP.md` (8 hạng mục × mức thật), báo cáo mới nhất `ls agent/reports/ | sort -V | tail -1`, rồi `agent/QUEUE.md`. Tệp luật không chứa số đếm (số vòng, số test, VD mới nhất) để không lỗi thời.
-**Quy trình hiện hành**: VD-119 (Agent 0 soạn, Agent 2 dán nguyên văn, commit [ST-00]).
+**Quy trình hiện hành**: **VD-279** (mở rộng VD-119/VD-137) — phân vai theo quyền hạn (`Architect`/`Agent 0`, `Builder`/`Agent 2`, `Gatekeeper`/`Agent 1`), độc lập môi trường: Agent 0 có repo ghi trực tiếp commit `[ST-00]` và đẩy lên `origin`; Agent 0 chỉ trò chuyện dùng khuôn dán nguyên văn `VD-119`; một tác nhân kiêm nhiệm cả 3 vai vẫn phải tách riêng commit `[ST-00]` khỏi `[ST-###]` và nghiệm thu bằng cổng máy tái lập được.
 
 ## 4. Lệnh
 
