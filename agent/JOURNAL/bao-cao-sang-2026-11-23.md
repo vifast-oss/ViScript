@@ -1,8 +1,8 @@
 # Báo cáo sáng 2026-11-23 — ViScript (chốt)
 
 > **Trạng thái**: báo cáo chốt; số liệu đã xác nhận bằng máy.
-> **Tag**: `v0.4.0 @ c2accdf`; **`v0.4.1 @ 90844bc`** (annotated, pushed).
-> **Main/tag**: `v0.4.5` trên commit R35 (xem `git rev-parse v0.4.5`).
+> **Tag**: `v0.4.5 @ 3daff62`; `v0.4.1 @ 90844bc`; `v0.4.0 @ c2accdf` (annotated, pushed).
+> **Main**: `0039837` (sau merge ST-300b/301/303); tag `v0.4.5` @ `3daff62`.
 > Docs-only; không GitHub Actions; macOS ngoài phạm vi.
 
 ## 1. Giai đoạn 1 — `v0.4.0`
@@ -27,7 +27,7 @@
   `vis-host-wasm` 0.4.1 sạch.
 - Tag `v0.4.1 @ 90844bc`.
 
-## 2b. Giai đoạn 2 — `v0.4.5` (tag trên commit R35)
+## 2b. Giai đoạn 2 — `v0.4.5` @ `3daff62`
 
 - **ST-298**: Windows **3× full 3611/0/3**; **soak 4h 985 vòng, fail 0, flake 1**,
   free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0; **Windows Tier 1** công bố (caveat `FsGuard`, uỷ quyền `VD-283`).
