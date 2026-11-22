@@ -7,8 +7,12 @@
 > targets **18/18 + 17/1**; Linux **10×** `vis-lsp` **29/29**, `path_impl` **2/2** (`8b03077`);
 > **`#149` đóng**. **ST-299b** đã merge `3b8049c` (`vis-loader` đa tệp trong WASI; native 29/29,
 > wasm 28/28). **P2b-3/4 NO-GO** `16fba3a` (bench 4,0×, không đổi production); flake fix `044b289`.
-> **ST-298 đang chạy** trên `f4cb136`: **3× `vis-gate-windows --full` đã xanh 3611/0/3 + soak 4h**;
-> **chưa** tuyên bố Windows Tier 1.
+> **ST-298** @ `f4cb136`: **3× `vis-gate-windows --full` PASS 3611/0/3** (host 54/54, targets
+> 18/18 + 17/1, dirty 0); **soak 4h đang chạy** `[SOAK_ROUNDS]`/`[SOAK_FAIL]`/`[SOAK_FD_RSS]`;
+> **chưa** tuyên bố Windows Tier 1. **ST-300 DONE/merged** `3581c9a`+`8286caf`: `bin/vis-wasm-sem`
+> **388/390 eligible = 99,5%** (2 stack-overflow interp, VM pass), suite cũ **28/28**, native
+> **29/29**, row `wasm32-wasip1 (runtime)` trong `vis-targets`. **Final Linux soak**
+> `45122b7`/`84e8eb6`: **10/10** (759 s), 3× diff 0, host 54/54, cache 5/5, wasm 28/28.
 > **Cập nhật 2026-11-23 (`v0.4.0` — R33 CHỐT)** — workspace **0.4.0** (`version.workspace`),
 > `vis --version` = `vis 0.4.0`; cache `PHIEN_BAN` ghim lại (`+v040-release-2026-11-23`).
 > Linux final QA @ `e47b3ca`: gate **3656/4**, release **3661/0/4**, 2× soak **10/10**; Windows
