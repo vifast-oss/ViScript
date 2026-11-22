@@ -590,9 +590,11 @@ dependencies = [
  "vis-diag",
  "vis-fmt",
  "vis-host-linux",
+ "vis-host-native",
  "vis-interp",
  "vis-loader",
  "vis-lsp",
+ "vis-pkg",
  "vis-syntax",
  "vis-types",
  "vis-vm",
@@ -615,6 +617,24 @@ name = "vis-host-linux"
 version = "0.1.0"
 dependencies = [
  "landlock",
+]
+
+[[package]]
+name = "vis-host-native"
+version = "0.4.1"
+dependencies = [
+ "bytes",
+ "h2",
+ "http",
+ "mio",
+ "rusqlite",
+ "rustix",
+ "rustls",
+ "tokio",
+ "vis-diag",
+ "vis-interp",
+ "vis-syntax",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -648,6 +668,18 @@ dependencies = [
  "vis-loader",
  "vis-syntax",
  "vis-types",
+]
+
+[[package]]
+name = "vis-pkg"
+version = "0.4.1"
+dependencies = [
+ "ring",
+ "vis-bytecode",
+ "vis-diag",
+ "vis-host-native",
+ "vis-interp",
+ "vis-loader",
 ]
 
 [[package]]

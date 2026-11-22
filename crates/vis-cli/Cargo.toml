@@ -42,19 +42,19 @@ release-bins = ["vis"]
 # lỗi rõ thay vì bỏ qua kiểm tra.
 [features]
 default = ["sqlite", "tls", "pkg-sig", "http2", "async-h2"]
-sqlite = ["dep:rusqlite"]
-tls = ["dep:rustls", "dep:webpki-roots"]
-pkg-sig = ["dep:ring"]
+sqlite = ["dep:rusqlite", "vis-host-native/sqlite"]
+tls = ["dep:rustls", "dep:webpki-roots", "vis-host-native/tls", "vis-pkg/tls"]
+pkg-sig = ["dep:ring", "vis-pkg/pkg-sig"]
 # **VS3-4b2 (VD-271)** — HTTP/2 qua TLS + ALPN. Bật mặc định qua `async-h2`; vẫn có thể
 # `--no-default-features --features …` để build core không h2. Kéo `h2` + tokio (chỉ IO traits,
 # không runtime mặc định) + http/bytes; đã review license/unsafe ở
 # `agent/BAO-CAO-VS3-4B2-H2-IMPLEMENT-2026-11-21.md`.
-http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
+http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes", "vis-host-native/http2"]
 # **VS3-W2 (2026-11-21)** — HTTP/2 **reactor-native** cho đường async. **Default-on non-wasm**
 # (Linux + Windows; wasm32 loại module/deps theo target). Dùng chung `H2Core` với sync
 # (`net/h2_core.rs`), không đổi API sync, không thêm dependency (dùng lại `h2`/`http2`,
 # rustls và mio đã có). Fallback HTTP/1.1 khi ALPN không chọn h2 giữ nguyên.
-async-h2 = ["http2", "tls"]
+async-h2 = ["http2", "tls", "vis-host-native/async-h2"]
 
 # **ST-296a (VD-282)** — binary test gộp theo miền + `required-features` giữ nguyên.
 # SQLite: `sqlite_it` gom 20 tệp ca gốc (gồm `sqlite`, `vd266_db`, `vd268_dbcache`,
@@ -93,6 +93,8 @@ vis-vm = { path = "../vis-vm" }
 # **ST-296b (VD-281/VD-282)**: nạp đa tệp/lock metadata + LSP tách crate riêng.
 vis-loader = { path = "../vis-loader" }
 vis-lsp = { path = "../vis-lsp" }
+vis-host-native = { path = "../vis-host-native" }
+vis-pkg = { path = "../vis-pkg" }
 # **VD-241 (Gate 1, 2026-11-19)** — `std.sqlite` MVP: **rusqlite bundled**, ghim version; không tự
 # viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.50.2, sqlite3.c public domain;
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).

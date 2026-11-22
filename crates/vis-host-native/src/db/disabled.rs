@@ -35,7 +35,7 @@ impl Db {
     }
 
     /// Bật/tắt thông điệp thô từ SQLite — vô nghĩa khi không có backend; giữ để khớp chữ ký.
-    pub(crate) fn dat_sqlite_debug(&mut self, _on: bool) {}
+    pub fn dat_sqlite_debug(&mut self, _on: bool) {}
 }
 
 impl DbHost for Db {

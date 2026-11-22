@@ -17,7 +17,7 @@
 //! Khi người dùng cấu hình một hoặc nhiều khoá công khai (`--registry-key` lặp lại /
 //! `VIS_REGISTRY_KEY` danh sách), **mọi** phiên bản được chọn phải có `signature_ed25519` khớp
 //! **một trong** các khoá trên thông điệp chuẩn
-//! [`vis_cli::pkg_sig::thong_diep_ky`]; kiểm **trước khi tải tarball**. Không cấu hình khoá ⇒
+//! [`crate::pkg_sig::thong_diep_ky`]; kiểm **trước khi tải tarball**. Không cấu hình khoá ⇒
 //! trường chữ ký được bỏ qua (registry cục bộ cũng không đòi chữ ký).
 //!
 //! Luồng: tải index → ghi **manifest** vào thư mục tạm → dùng **đúng resolver semver hiện có** để
@@ -43,7 +43,7 @@ use super::{
     bam, chuan_hoa, chuoi, doc_tat_ca, giai_roots, kiem_path, la_hex64, lay, lay_chuoi,
     manifest_tu_gia_tri, GoiCai, Manifest,
 };
-use vis_cli::net::Net;
+use vis_host_native::net::Net;
 
 /// Hạn mỗi lời gọi HTTP của registry (connect + đọc) — đủ cho mạng cục bộ, không treo CLI.
 const TIMEOUT_MS: u64 = 30_000;
@@ -307,14 +307,14 @@ fn kiem_chu_ky(
             "{ma}: {nguon}: thiếu `signature_ed25519` — registry yêu cầu chữ ký (đã cấu hình khoá công khai)"
         ));
     };
-    let sig = vis_cli::pkg_sig::hex_giai(sig, 64)
+    let sig = crate::pkg_sig::hex_giai(sig, 64)
         .map_err(|e| format!("{ma}: {nguon}: `signature_ed25519`: {e}"))?;
     let files: Vec<(String, String)> = manifest
         .files
         .iter()
         .map(|f| (f.path.clone(), f.sha256.clone()))
         .collect();
-    let msg = vis_cli::pkg_sig::thong_diep_ky(
+    let msg = crate::pkg_sig::thong_diep_ky(
         &muc.ten,
         &muc.version_s,
         tar_sha,
@@ -322,7 +322,7 @@ fn kiem_chu_ky(
         &manifest.deps,
         &files,
     );
-    vis_cli::pkg_sig::xac_minh_nhieu(khoas, &msg, &sig)
+    crate::pkg_sig::xac_minh_nhieu(khoas, &msg, &sig)
         .map_err(|e| format!("{ma}: {nguon}: {e} — từ chối cài"))
 }
 

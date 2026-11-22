@@ -728,7 +728,7 @@ fn khoa_cong_tu_chon(chon: &[String], reg: &Registry) -> Result<Vec<[u8; 32]>, S
             .filter(|p| !p.is_empty())
         {
             co = true;
-            let b = vis_cli::pkg_sig::hex_giai(phan, 32).map_err(|e| {
+            let b = crate::pkg_sig::hex_giai(phan, 32).map_err(|e| {
                 format!(
                     "{ma}: khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): {e}",
                     out.len() + 1
