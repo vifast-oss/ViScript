@@ -99,22 +99,22 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 13 | `async` trên method/`cmd` ⇒ `VS0201`; `async fn` không nhận `--tên`. | R11 §5 + R12 §5 | mở |
 | 14 | `p.x += 1` là lỗi cú pháp `VS0201` (front end chặn trước tyck). | R11 §5 + R12 §5 | mở |
 | 15 | Drain chỉ task `ready` (`spawn`): task `Moi` do gọi `async fn` chưa chạy ⇒ `recv` có thể `VS0505`. | R11 §5 + R12 §5 | mở |
-| 16 | `close` idempotent nhưng không đánh thức ai (không wait-set). | R11 §5 + R12 §5 · VD-123 | chuyển VS3 |
-| 17 | Không `select`/timeout trên kênh. | R11 §5 + R12 §5 · R23 §4 hàng 2 · VD-123 | chuyển VS3 |
+| 16 | `close` idempotent nhưng không đánh thức ai (không wait-set). | R11 §5 + R12 §5 · VD-123 · `d060f5a` · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`d060f5a`, VD-282: wait-set + close đánh thức receiver `None`/sender `VS0504`, `vs3_chan0` 13/13) |
+| 17 | Không `select`/timeout trên kênh. | R11 §5 + R12 §5 · R23 §4 hàng 2 · VD-123 · `8da533b` · `82064e96` (ST-293) | đóng ở ST-293 (`VD-282`: `recv_timeout`/`send_timeout` 17/17 + `select_*` 4 hàm 25/25 interp↔VM) |
 | 18 | `Chan` không truyền qua biên host. | R11 §5 + R12 §5 | mở |
-| 19 | `cap = 0` thực tế không dùng được (hai phía chặn đều drain rồi `VS0505`). | R11 §5 + R12 §5 · VD-123 | chuyển VS3 |
+| 19 | `cap = 0` thực tế không dùng được (hai phía chặn đều drain rồi `VS0505`). | R11 §5 + R12 §5 · VD-123 · `d060f5a` · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`d060f5a`, VD-282 có phạm vi: `chan(0)` rendezvous chạy trên frame/async `vs3_chan0` 13/13; runtime đồng bộ đơn luồng từ chối đúng thiết kế) |
 | 20 | Dung lượng âm là lỗi lúc chạy `VS0501`; `Chan` in `<kênh>` | R11 §5 + R12 §5 | mở |
-| 21 | Net chỉ loopback, host khác ⇒ Err; không TLS/keep-alive (redirect + chunked đã có ở ST-104/ST-105) — phần còn lại là VS3 | R11 §5 + R12 §5 · R23 §4 hàng 3 · VD-122 | chuyển VS3 |
+| 21 | Net chỉ loopback, host khác ⇒ Err; không TLS/keep-alive (redirect + chunked đã có ở ST-104/ST-105) — phần còn lại là VS3 | R11 §5 + R12 §5 · R23 §4 hàng 3 · VD-122 · `a5e3040` · `b7385e9` · ST-294 | đóng ở VS3/ST-294 (`VD-282`: TLS `vs3_tls` 21/21 + keep-alive `vs3_keepalive` 8/8 + HTTP/2 `vs3_http2` 33/33; chính sách loopback giữ có chủ đích) |
 | 22 | Một luồng: server phục vụ tuần tự một client, không `select`/epoll; handle per-process. | R11 §5 + R12 §5 | mở |
 | 23 | `net.read` 3 đối số; `std.net.connect` dạng đầy đủ chưa hạ; bỏ `is_open`; `read` trả `str` lossy; connect mặc định 1 s | R11 §5 + R12 §5 | mở |
 | 24 | `vis check` chẩn đoán = exit 1; thiếu `use std.http` ⇒ `VS0501` lúc chạy (không `VS0301`); `vis check` permissive với tên cấp tệp | R11 §5 + R12 §5 | mở |
 | 25 | Cap body 8 MiB, header 64 KiB; HTTP chỉ `http://`; ca net/http nằm ở `net*.rs`/`http.rs`, không trong sem | R11 §5 + R12 §5 | mở |
-| 26 | LSP module-aware chỉ ở chẩn đoán (ST-80); completion/hover vẫn `phan_tich` một tệp; chẩn đoán tệp phụ không publish | R11 §5 + R12 §5 | mở |
-| 27 | Chỉ full sync (`didChange` toàn văn), một luồng; EOF ⇒ exit 0 (khác spec LSP — cần cho test/CI). | R11 §5 + R12 §5 | mở |
+| 26 | LSP module-aware chỉ ở chẩn đoán (ST-80); completion/hover vẫn `phan_tich` một tệp; chẩn đoán tệp phụ không publish | R11 §5 + R12 §5 · `9efa420` (ST-84) · `JOURNAL/st296-debt-audit.md` | đóng ở ST-84 (`VD-282`: completion/hover module-aware thấy `pub` của `use ./x` + `std.*`) |
+| 27 | Chỉ full sync (`didChange` toàn văn), một luồng; EOF ⇒ exit 0 (khác spec LSP — cần cho test/CI). | R11 §5 + R12 §5 · `3510232` · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`3510232`, VD-282 có phạm vi: incremental `change:2` `lsp_incremental` 4/4; một luồng & `EOF → exit 0` là hợp đồng test/CI có chủ ý) |
 | 28 | Completion chưa theo ngữ cảnh sau `.`/kiểu; hover chưa field; biến gộp mọi phạm vi. | R11 §5 + R12 §5 | mở |
 | 29 | Lower/tyck vẫn chạy khi lex/parse lỗi ⇒ có thể thêm nhiễu chẩn đoán | R11 §5 + R12 §5 | mở |
 | 30 | Chưa resolver dải: phụ thuộc ghim phiên bản chính xác (đã có ở ST-128); phần còn lại — ký số, registry HTTP — chuyển #118 | R11 §5 + R12 §5 · VD-125 | đóng ở ST-128 |
-| 31 | Lock chưa lưu `entry` (dùng quy ước); lock chỉ tìm ở `main_dir`; `.vis/store` không GC. | R11 §5 + R12 §5 | mở |
+| 31 | Lock chưa lưu `entry` (dùng quy ước); lock chỉ tìm ở `main_dir`; `.vis/store` không GC. | R11 §5 + R12 §5 · `837d5ff` (ST-90) · `cea1643` (ST-288) · VD-282 | mở — thu hẹp theo `VD-282`: đã xong `entry` (ST-90) & `pkg gc --root` (ST-288); chỉ còn vế tìm `vis.lock` leo ngược thư mục cha ngoài `main_dir` (ưu tiên thấp GĐ 3) |
 | 32 | Chưa `pkg remove`/`update` (đã có ở ST-90/ST-102); `use pkg.*` chỉ nạp tệp có trong lock; chưa kiểm toàn vẹn cây ngoài `file_sha` | R11 §5 + R12 §5 | mở |
 | 33 | Siết mặc định vẫn là nợ: `--strict-caps` opt-in; muốn siết mặc định phải chuyển toàn bộ fixture/host suite sang khai `cap` | R11 §5 + R12 §5 · R23 §4 hàng 4 · VD-124 | chuyển VS3 |
 | 34 | Landlock chỉ probe ở mọi nền; Linux chưa chạy thật; `vis-cli` chưa dùng crate `vis-host-linux` (đã đóng khi Landlock thật chạy 13/13 ca) | R11 §5 + R12 §5 · R23 §4 hàng 4 · R24 §4 hàng 4 | đóng ở ST-132/132b |
@@ -167,7 +167,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 81 | Cache LSP global (`thread_local`) + tệp dùng `pkg` luôn nạp lại; `didClose` xoá toàn bộ cache; hover chỉ khi tên duy nhất | R17 §5 | mở |
 | 82 | `pkg update` chưa đủ resolver/blob: chỉ ghi gói đích, không cập nhật phụ thuộc; blob cũ không GC; registry cục bộ | R17 §5 | mở |
 | 83 | Chưa TLS/HTTP2/keep-alive: `http.get` chỉ `http://`, một request/kết nối, không nén. | R18 §5 · R23 §4 hàng 3 · VD-122 | chuyển VS3 |
-| 84 | Redirect chỉ GET/không cookie-auth: 303 không đổi POST, không giữ `Cookie`/`Authorization`; không giới hạn host đích ngoài loopback (vẫn `tach_url` chặn) | R18 §5 | mở |
+| 84 | Redirect chỉ GET/không cookie-auth: 303 không đổi POST, không giữ `Cookie`/`Authorization`; không giới hạn host đích ngoài loopback (vẫn `tach_url` chặn) | R18 §5 · `096ea2c` · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`096ea2c`, VD-282: cookie jar + same-origin auth `vs3_cookie_auth` 11/11; loopback giữ có chủ đích) |
 | 85 | Chunk trailer bị bỏ qua: dừng ở chunk `0`, không đọc/không kiểm trailer. | R18 §5 | mở |
 | 86 | `Location` tương đối chưa resolve `..`/query-only: chỉ ghép thư mục hiện tại; `../x`/`?q` chưa chuẩn. (ST-109: `Location` đủ `..`/query-only/fragment) | R18 §5 · R19 §6 (ST-109) | đóng ở ST-109 |
 | 87 | `--timeout` chỉ `test fn`: fixture `.out/.err` không có timeout; không timeout theo ca/bộ | R18 §5 | mở |
@@ -181,7 +181,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 95 | `cmd.rs` 1060 vẫn max R1: dưới 1.200 nhưng `ha_stage` 782 dòng chưa tách; tách tiếp nếu muốn <900. | R19 §5 | mở |
 | 96 | `check --json` nhiều đối số có thể lặp module; `files` chưa có metadata `main`/`phu`; TAP vẫn báo chẩn đoán đầu | R19 §5 | mở |
 | 97 | Span tổng hợp `file=0`: vài node do lower sinh dùng `Span::new` mặc định ⇒ chẩn đoán có thể về tệp chính; chưa audit | R21 §5 | mở |
-| 98 | LSP chưa publish chẩn đoán tệp phụ theo file-id — hành vi LSP không đổi; mới có module-aware. | R21 §5 | mở |
+| 98 | LSP chưa publish chẩn đoán tệp phụ theo file-id — hành vi LSP không đổi; mới có module-aware. | R21 §5 · `1aefb88` · VD-126 · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`1aefb88`, VD-282 có phạm vi: publish chẩn đoán tài liệu đang mở + overlay `lsp_da_tep` 8/8; tệp chưa mở giữ ngoài phạm vi theo `VD-126`/`#104`) |
 | 99 | Bytecode `Span` không mang file — `VBC1` giữ 53; nếu cần debug đa tệp trong VM phải bump format. | R21 §5 | mở |
 | 100 | `parse/mod.rs` 1452 dòng gần trần R1 1500; thêm chức năng parse đa tệp dễ vượt — cần tách trước khi mở rộng | R21 §5 | mở |
 | 101 | `lower/cmd.rs` 1060 — dưới luật R1 1500 nhưng trên mục tiêu nội bộ ≤1000; `parse/cmd.rs` 1007 cũng vậy; cần task tách riêng nếu muốn ≤1000 toàn cục. | R22 §5 | mở |
@@ -193,7 +193,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 107 | `test/sem` không chứa được ca đa tệp (5 harness một tầng + `vistest::gom` đệ quy) | R23 §6 · ST-122 | mở |
 | 108 | `Command::new(tên)` để OS phân giải `PATH` lần nữa sau khi kiểm | R23 §6 · ST-123 | mở |
 | 109a | `next_block()` trả `801` trong khi khối `07xx` vẫn còn chỗ (`704` đã cấp): hàm là “khối mới”, không phải “số kế tiếp” | JOURNAL/st128-resolver.md §8 · ST-128 · QUEUE ST-128 · R23 §6 #116 | chuyển VS3 |
-| 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3; **dòng giới hạn đã có trong `HOST-BAO-DAM.md`**; sửa kỹ thuật thuộc VS3 | R23 §6 · ST-124 · R24 §5 #140 · JOURNAL/st124-review.md §7 · HOST-BAO-DAM.md mục FsGuard | mở |
+| 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3; **dòng giới hạn đã có trong `HOST-BAO-DAM.md`**; sửa kỹ thuật thuộc VS3 | R23 §6 · ST-124 · R24 §5 #140 · **ST-295** (`ba4023fb`/`cd76da56`) · `JOURNAL/st295-baove.md` | đóng ở ST-295 (`VD-282`: `rustix =1.1.6` `openat2`/`O_NOFOLLOW` chung đọc+ghi trong `quyen_mo.rs`, race ghi tất định **100/100 → 0/100**, đã gỡ cảnh báo ghi ở `HOST-BAO-DAM.md`) |
 | 110 | VM không đưa `argv` vào tham số không-`cap` của `main` (interp `list[str]`, VM `()`) — **ST-157**: VM chạy thẳng `main` (bỏ qua "vỏ" `Call(main, 0); Halt` của codegen) và đặt `argv` vào mọi tham số **không-`cap`**, `Value::Cap` đúng chỉ số (ST-72b); ca mới `vm_main_argv.rs` 4 ca **so byte** hai đường | R23 §6 · ST-124 · ST-157 · `JOURNAL/st157-do-truoc.log` · QUEUE ST-157 | đóng ở ST-157 |
 | 111 | tyck chấp nhận `let e: cap[Dir] = json.decode(...)` | R23 §6 · ST-124 · **ST-289** | **đóng ở ST-289** (khoá bằng ca đỏ-trước có sẵn `crates/vis-cli/tests/cap_khong_lo.rs` ca (1b) `gan_json_vao_bien_cap_khong_sinh_quyen`: `json.decode` trả `Result[Json, Error]` ⇒ gán vào `cap[Dir]` là lỗi tĩnh **VS0412** exit 2, `--strict-caps`, stdout rỗng — không có đường cấp quyền từ JSON; `cargo test -p vis-cli --test cap_khong_lo` xanh) |
 | 112 | Thực tế có 2 bộ escape JSON (`json_esc` + `json_tai`); VD-130e “nguồn duy nhất” chưa đúng | R23 §6 · ST-124 | mở |
@@ -209,7 +209,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 122 | `sandbox.rs:59` chưa `cfg` theo nền (lệch 3) (ST-134: `sandbox` 6/6 hai nền) | R23 §6 · ST-131 · R23 §4.4 · QUEUE ST-134 | đóng ở ST-134 |
 | 123 | runner thiếu `wasm32` target (lệch 5) (ST-134: `setup.sh` cài `wasm32`, targets 18/18) | R23 §6 · ST-131 · R23 §4.4 · QUEUE ST-134 | đóng ở ST-134 |
 | 124 | `vish_cmd_body.rs:312` đường dẫn thư mục tạm (lệch 6) (ST-134: `vish_cmd_body` 16/16 hai nền) | R23 §6 · ST-131 · R23 §4.4 · QUEUE ST-134 | đóng ở ST-134 |
-| 125 | `--sandbox` chưa cấp `EXECUTE` cho `/lib*` ⇒ lệnh ngoài không chạy được dưới sandbox | R23 §6 · ST-132 | mở |
+| 125 | `--sandbox` chưa cấp `EXECUTE` cho `/lib*` ⇒ lệnh ngoài không chạy được dưới sandbox | R23 §6 · ST-132 · **ST-295** (`ba4023fb`/`cd76da56`) · `JOURNAL/st295-baove.md` | đóng ở ST-295 (`VD-282`: Landlock ruleset xử lý `Execute`, cấp chỉ-đọc+`Execute` cho `/lib*` & binary canonicalize trong grant; `vis-host-linux` 18/18, `st295_sandbox_proc` 3/3) |
 | 126 | `unicode-ident` (`(MIT OR Apache-2.0) AND Unicode-3.0`, build-time) ngoài allowlist hẹp — cần Agent 0 quyết (VD-135: hợp lệ theo QD §9.3) | R23 §6 · ST-132 · VD-135 · QUEUE đính chính 2026-11-16 | đóng ở ST-132 (VD-135) |
 | 127 | `ap_dung` mới dùng `ABI::V1`; ABI 8 có thêm `REFER`/`TRUNCATE`/`IOCTL_DEV` chưa xét | R23 §6 · ST-132 · JOURNAL/st132-landlock.md §7 | chuyển VS3 |
 | 128 | RÒ RỈ TOCTOU trên Linux 798/50 000 — lỗi sản phẩm, ưu tiên cao nhất đợt 24 (ST-137: 0/50 000 trên `ps` và macOS) | R23 §6 · ST-133 · VD-141 · QUEUE ST-137 | đóng ở ST-137 |
@@ -224,7 +224,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 | chuyển VS3 |
 | 138 | `/proc` phải đọc được trên Linux, nếu không ⇒ `VS0604` (hành vi đúng, nhưng người vận hành phải biết) — **đóng ở ST-165**: đo trên `ps` thấy `/proc/self/{status,cmdline}` **đọc được**, không `VS0604`; cái sai là **chẩn đoán** (không nêu đích `/dev/null`, không phân biệt `pipe:/socket:`); sửa `quyen.rs` (`kiem_canon` nêu đích phân giải + nhánh phi-đường-dẫn; `xac_nhan_handle` thêm hướng dẫn procfs) — **Agent 1 ghi nhận, CHỜ A0 XÁC NHẬN** | R24 §5 · ST-137 · ST-165 · `JOURNAL/st165-proc-sau.log`, `st165-proc-khong-doc-duoc.log` | **đóng ở ST-165** |
 | 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 · JOURNAL/st140-red-ps.log · JOURNAL/st140-cargo-test-ps.log | đóng ở ST-140 |
-| 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900; **sửa kỹ thuật thuộc VS3** | R24 §5 · HOST-BAO-DAM.md mục FsGuard | mở |
+| 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900; **sửa kỹ thuật thuộc VS3** | R24 §5 · HOST-BAO-DAM.md mục FsGuard · **ST-295** (`ba4023fb`/`cd76da56`) | đóng ở ST-295 (`VD-282`: đóng cùng `#109b`, đường ghi dùng `openat2`/`O_NOFOLLOW`, race 0/100, đã gỡ cảnh báo ở `HOST-BAO-DAM.md`) |
 | 141 | Mục điều hướng: nợ cũ #121..#124, #128, #129, #130 đã xử lý hoặc chuyển VS3 — xem R23 §6 | R24 §5 | không phải nợ (điều hướng) |
 | 142 | **`pkg update <tên>` ghim mọi gói khác** (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách (trước là nhãn tạm `#113b`) — **đóng ở ST-288**: thay ghim cứng bằng **soft pin** trong resolver (bản đang có được thử trước, không chặn nâng khi manifest của gói được update đòi hỏi); gói không liên quan vẫn giữ phiên bản; ca `update_mot_ten_nang_duoc_dep_chung` + unit `soft_pin_giu_ban_cu_nhung_khong_chan_nang` | JOURNAL/st129-lock.md §9 · QUEUE ST-129 · VD-149 · **ST-288** · `JOURNAL/st288-goi.md` | đóng ở ST-288 |
 | 143 | **`NamePolicy::Strict` bật cho mọi tệp có `use`** (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 (trước là nhãn tạm `#114b`) | JOURNAL/st130-siet-caps.md §9 · QUEUE ST-130 · VD-133 · VD-149 · **VD-154(b)** | chuyển VS3 — VD-154(b): chuyển VS3 vì ca st130b xanh |
@@ -277,7 +277,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 188 | **Global hợp lệ chỉ số nhưng chưa khởi tạo ⇒ `Unit` thành công**: verifier đếm tĩnh mọi lệnh ghi (kể cả nhánh không chạy/hàm chưa gọi) nên mở miền; runtime `unwrap_or(Unit)` trả giá trị mặc định, **không chẩn đoán**. A0 chọn **runtime trap** (VD-245), không chấp nhận giữ `Unit`, chưa mở CFG definite-assignment. | ST-247 (`JOURNAL/st247-review.md`) · `BLOCKED.md` §14 · **VD-245** · ST-250 (`JOURNAL/st250-review.md`) | **đóng ở ST-250** — `Vec<Option<Value>>`, `doc_global` trap `VS0501` exit 1, 8/8 test, `cargo test -p vis-vm` xanh, `vis test` 525/525 ×2 |
 | 189 | **Finding riêng ST-250 — capture/local đọc ngoài miền vẫn trả `Unit` (mức Trung bình/Thấp)**: `Instr::LoadCaptured(i)` trong `vm.rs` dùng `get(i).unwrap_or(Unit)` và verifier (`verify.rs:449`) **không kiểm biên capture** ⇒ crafted bytecode có thể đọc capture ngoài phạm vi thành `Unit` thành công (cùng lớp lỗi với global, nhưng là đường local/capture). `LoadLocal` nhánh local cũng `unwrap_or(Unit)` nhưng verifier chặn `s ≥ nlocals` và khung khởi tạo sẵn `Unit` ⇒ chỉ defense-in-depth (Thấp). A0 yêu cầu ghi finding riêng, **không tuyên bố đã an toàn** chỉ vì global đã sửa. | ST-250 (`JOURNAL/st250-review.md` §4) · `BLOCKED.md` §17 · **VD-246 / ST-252** (`JOURNAL/st252-review.md`) | **đóng ở ST-252** — verifier giữ `ClosureFree`, runtime `doc_local`/`doc_captured`/`ghi_local` trap `VS0501`, 8/8 ca, hết thành công giả |
 | 190 | **Finding riêng ST-252 — `pop_frame` writeback silent skip** (`vm.rs:686`): `if let (Some(dst), Some(src)) = (c.get_mut(*i), fr.locals.get(*slot))` bỏ qua khi ô mirror ngoài miền. **Khác ngữ nghĩa** (ghi ngược trạng thái closure, không phải đọc trả `Unit`) và **không thể xảy ra** với bytecode đã verify + thực thi (mọi `LoadCaptured(i)` prologue mirror đã trap trước writeback). Đổi `pop_frame` (`Option<Frame>` → `R<…>`) là refactor 3 call-site, vượt phạm vi “không viết lại VM”. | ST-252 (`JOURNAL/st252-review.md` §2) · `BLOCKED.md` §18 | **mở** — ghi riêng, không tự sửa; **chưa tìm thấy đường tới từ bytecode đã verify** (A0, không viết thành bảo đảm tuyệt đối); nâng blocker ngay nếu có đường tới thực tế |
-| 191 | **Windows nextest chưa đạt (VD-247/A0)**: `cargo nextest run --workspace --no-fail-fast` trên `dbae70a` cho **1417 chạy / 1416 passed / 1 failed**; ca fail `tcp_explain_tong` gặp `WSAECONNABORTED` (chạy riêng đạt **1/3**). **Nguyên nhân chưa được phân lập đầy đủ** — không kết luận “race của test socket, không phải sản phẩm”. Nextest **không** được dùng làm đường nghiệm thu Windows tại mốc này; đường chuẩn đã nghiệm thu là `cargo test --workspace --no-fail-fast` (1422/0). Cần đảm bảo cài nextest không tự động đưa người dùng sang đường gate chưa được hỗ trợ mà tài liệu vẫn gọi là đạt. | A0/VD-247 (2026-11-20) · `QUEUE` ST-259 · `BAO-CAO-NGHIEM-THU-2026-11-20.md` dòng 6 · `BLOCKED.md` §19 | **mở** — ghi finding riêng, giữ kết quả đỏ, không chạy lại tới khi xanh rồi xóa; nâng blocker nếu phân lập ra lỗi sản phẩm |
+| 191 | **Windows nextest chưa đạt (VD-247/A0)**: `cargo nextest run --workspace --no-fail-fast` trên `dbae70a` cho **1417 chạy / 1416 passed / 1 failed**; ca fail `tcp_explain_tong` gặp `WSAECONNABORTED` (chạy riêng đạt **1/3**). **Nguyên nhân chưa được phân lập đầy đủ** — không kết luận “race của test socket, không phải sản phẩm”. Nextest **không** được dùng làm đường nghiệm thu Windows tại mốc này; đường chuẩn đã nghiệm thu là `cargo test --workspace --no-fail-fast` (1422/0). Cần đảm bảo cài nextest không tự động đưa người dùng sang đường gate chưa được hỗ trợ mà tài liệu vẫn gọi là đạt. | A0/VD-247 (2026-11-20) · `QUEUE` ST-259 · `ST-296` (`15271f12`) · `JOURNAL/st296-pre-qa.md` | đóng ở ST-296 (`VD-282`: `cargo nextest run --workspace --no-fail-fast` trên `psvn` @ `f6939721` — **350 binaries, 3.583/3.583 passed, 3 skipped, 0 fail/flake**, 213,4 s test / 481 s tổng, sha256 `412a4e43…b47b`; công nhận nextest là đường QA Windows hợp lệ) |
 
 ## 5. Nợ chuyển VS3 (23 mục)
 
@@ -395,15 +395,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **192** (1..191; #109 tách `a`/`b`) |
-| `mở` | **93** |
-| `đóng` | **74** |
-| `chuyển VS3` | **22** |
+| `mở` | **85** |
+| `đóng` | **86** |
+| `chuyển VS3` | **18** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 93 mở + 74 đóng + 22 VS3 + 2 không làm + 1 điều hướng = **192** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; thêm #185/#186/#187/#188/#189/#190/#191).
+Kiểm: 85 mở + 86 đóng + 18 VS3 + 2 không làm + 1 điều hướng = **192** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; thêm #185/#186/#187/#188/#189/#190/#191).
 **Stage 0 `v0.3.6` (2026-11-22, `f8f1d4b`)** — trạng thái nợ theo lát (không thêm dòng nợ mới):
 `ST-284` DONE (`83a9a10`, merge `e363a15`; R0a 0 đổi hành vi), `ST-285` DONE (`ab5d292`, merge `246b6c5`;
 R0b 0 đổi hành vi), `ST-286` DONE (`f193c57`, merge `cfba662`; R0c 0 đổi hành vi), `ST-287` DONE

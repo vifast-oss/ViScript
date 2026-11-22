@@ -90,10 +90,17 @@ fi
 kiem_ghi_de
 
 # **ST-296/VD-281(2)**: `/tmp` trên nhiều máy là tmpfs nhỏ (7,2 GB) ⇒ soak/cargo test hết chỗ.
-# Ép TMPDIR/TMP/TEMP ra thư mục dưới repo (mặc định `target/`), tạo thư mục con riêng cho lần chạy
-# và **dọn khi thoát** (kể cả lỗi/bị ngắt). `VIS_SOAK_TMPDIR` cho phép đổi gốc; không đổi 10 vòng
-# hay semantics soak. Chỉ tạo sau khi đã qua kiểm ghi đè log và `--dry-run`.
-SOAK_TMP_GOC="${VIS_SOAK_TMPDIR:-$PWD/target}"
+# **ST-296 test/harness**: mặc định TMPDIR ra **ngoài repo** (cache người dùng); tôn trọng
+# `VIS_SOAK_TMPDIR` (ưu tiên) rồi `TMPDIR` sẵn có. Tạo thư mục con riêng cho lần chạy và **dọn
+# khi thoát** (kể cả lỗi/bị ngắt). `--dry-run` đã trả về trước khối này ⇒ không tạo thư mục.
+# Không đổi 10 vòng hay semantics soak.
+if [ -n "${VIS_SOAK_TMPDIR:-}" ]; then
+    SOAK_TMP_GOC="$VIS_SOAK_TMPDIR"
+elif [ -n "${TMPDIR:-}" ]; then
+    SOAK_TMP_GOC="$TMPDIR"
+else
+    SOAK_TMP_GOC="${XDG_CACHE_HOME:-$HOME/.cache}"
+fi
 mkdir -p "$SOAK_TMP_GOC" || exit 2
 SOAK_TMP="$SOAK_TMP_GOC/vis-soak-tmp-$$"
 mkdir -p "$SOAK_TMP" || exit 2
@@ -102,7 +109,7 @@ TMP="$SOAK_TMP"
 TEMP="$SOAK_TMP"
 export TMPDIR TMP TEMP
 trap 'rm -rf "$SOAK_TMP"' EXIT INT TERM HUP
-echo "vis-soak: TMPDIR=$TMPDIR (dưới repo, dọn khi thoát)" >&2
+echo "vis-soak: TMPDIR=$TMPDIR (ngoài repo, dọn khi thoát)" >&2
 
 mkdir -p "$(dirname "$LOG")" || exit 2
 if [ "$APPEND" -ne 1 ]; then
