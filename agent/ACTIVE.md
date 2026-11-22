@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ACTIVE — Bảng điều khiển nhanh cho Agent 2 (≤ 100 dòng)
 
-> **Cập nhật**: 2026-11-22 (`VD-281`) · **Tag mới nhất**: `v0.3.6` (`8fa2c09`) · **Giai đoạn đang mở**: **Giai đoạn 1 (`v0.4.0` — G4a Core)**
+> **Cập nhật**: 2026-11-22 (`VD-281`; QA GĐ1 `3fbf31a`) · **Tag mới nhất**: `v0.3.6` (`8fa2c09`) · **Giai đoạn đang mở**: **Giai đoạn 1 (`v0.4.0` — G4a Core)**
 > **Khởi động 30 giây**: Đọc `AGENTS.md` → tệp này → phần cuối `agent/QUEUE.md` (`ST-290`..`ST-309`). Chỉ mở `agent/DECISIONS.md` đúng mục `VD-###` được dẫn chiếu.
 
 ## 1. Trạng thái Giai đoạn 1 (`v0.4.0`)
@@ -9,12 +9,12 @@
 | Lát | Luồng | Trạng thái | Ghi chú thực thi |
 |---|---|---|---|
 | **ST-290** | W3 | **DONE** (`a48d5b87`) | Budget mặc định `40M`, `VS0509`/`VS0510` (56 mã), cache `VFEE`; 3.594/0/3, diff 0 |
-| **ST-294** | W2 | **DONE** (`cce2d0fb`) | `async-h2` Windows + default-on non-wasm + 0 warning non-TLS; Linux 3.607/4, Windows 3.563/0/3 |
-| **ST-291** | W1 | **READY** | `P2b-1/2` lazy/batched submit + compact `Vec` proxy (`rt/exec.rs`, `rt/worker.rs`) |
-| **ST-293** | W3 | **READY** | Kênh `select_recv*`/`select_send*` — đặt ở `rt/select.rs` + `tyck/expr/kenh.rs` (giữ R1) |
-| **ST-295** | W2 | **READY** | Đóng TOCTOU đường ghi Unix bằng `rustix` (`fs`) + Landlock `#125` (log license `st295-license.log`) |
-| **ST-292** | W1 | **BLOCKED** | Chờ `ST-291` (`VS0509` đã có); **bắt buộc** nối `gioi_han_phien()` vào `SharedBudget` khi `--workers > 1` (`VD-281`) |
-| **ST-296** | W4 | **BLOCKED** | Chờ `ST-291/292/293/295`; W4 chạy trước: `nightly` bù R32 + fuzz `20261126` + đo `#191` `nextest` `psvn` + fix `vd270_test_slowest` + đối chiếu `SO-NO.md` |
+| **ST-294** | W2 | **DONE** (`cce2d0fb`) | `async-h2` Windows + default-on non-wasm + 0 warning non-TLS; Linux 3.607/4, Windows 3.563/0/3, h2 33/33 |
+| **ST-291** | W1 | **WIP** | `P2b-1/2` lazy/batched submit + compact `Vec` proxy (`rt/exec.rs`, `rt/worker.rs`) — chưa có commit chốt |
+| **ST-293** | W3 | **REVIEW** (`6d6bfe9`, code `82064e9`) | 4 `select_*` ở `rt/select.rs` + `tyck/expr/kenh.rs`; **25 ca**, gate **3632/4**, diff 100k seed `202611222100` **0 lệch** (`JOURNAL/st293-select.md`) |
+| **ST-295** | W2 | **REVIEW** (`cd76da5`, code `ba4023f`) | `rustix` `openat2`/`O_NOFOLLOW`; race ghi **100/100 → 0/100**, Landlock **18/18**, gate **3613/4**, diff 0; license `st295-license.log` (`JOURNAL/st295-baove.md`) |
+| **ST-292** | W1 | **BLOCKED** | Chờ `ST-291`; **bắt buộc** nối `gioi_han_phien()` vào `SharedBudget` khi `--workers > 1` (`VD-281`); test `--workers 4 --max-budget 5000` trap `VS0510` giống W=1 |
+| **ST-296** | W4 | **QA/WIP** | Partial QA GĐ1: release h2 harness fixed `3896bc6` (release **3643/0/4**, gate **3638/4**); 2 soak **20/20** @ `6d6bfe9`; chờ `ST-291/292/293/295` chốt để `R33`/release |
 
 ## 2. Chặng tiếp theo (đã chốt `VD-272`..`VD-281`, đang `BLOCKED` chờ mốc trước)
 
