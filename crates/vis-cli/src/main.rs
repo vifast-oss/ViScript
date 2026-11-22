@@ -9,14 +9,13 @@ mod cli;
 pub(crate) use vis_host_native::{db, fsmock, ngoai, quyen};
 // **ST-296b**: `modules`/`cache`/`json_esc` (+ audit test) chuyển sang `vis-loader`; LSP sang
 // `vis-lsp`. Re-export giữ nguyên mọi đường gọi `crate::modules::…`/`cache::…` trong crate này.
+pub(crate) use cli::run_cmd::{dong_chan_doan, xuat_stdout};
 pub(crate) use vis_loader::{cache, json_esc, modules};
 pub(crate) use vis_pkg::pkg;
-pub(crate) use cli::run_cmd::{dong_chan_doan, xuat_stdout};
 use vis_syntax::Mode;
 mod vistest;
 
 use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
-
 
 fn usage() -> ExitCode {
     eprintln!(

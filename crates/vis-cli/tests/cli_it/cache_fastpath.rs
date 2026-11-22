@@ -58,22 +58,28 @@ fn tim_vbc(dir: &Path) -> Vec<PathBuf> {
     ds
 }
 
-/// **ST-87b** — không còn nhánh chết: `main.rs` **không** đọc khoá v1, `cache.rs` **không** còn
+/// **ST-87b** — không còn nhánh chết: đường `run` **không** đọc khoá v1, `cache.rs` **không** còn
 /// `khoa` v1; chỉ còn `khoa_multi`. (Ca đỏ trước khi sửa.)
+/// **ST-300b**: `run_run` chuyển sang `cli/run_cmd.rs`; quét cả tệp đó (cùng một đường chạy).
 #[test]
 fn khong_con_fast_path_khoa_v1() {
     let main = std::fs::read_to_string(goc().join("crates/vis-cli/src/main.rs")).expect("main");
+    let run =
+        std::fs::read_to_string(goc().join("crates/vis-cli/src/cli/run_cmd.rs")).expect("run_cmd");
     let cache =
         std::fs::read_to_string(goc().join("crates/vis-loader/src/cache.rs")).expect("cache");
     assert!(
-        !main.contains("cache::khoa("),
-        "main.rs còn đọc khoá v1 (fast-path chết)"
+        !main.contains("cache::khoa(") && !run.contains("cache::khoa("),
+        "đường run còn đọc khoá v1 (fast-path chết)"
     );
     assert!(
         !cache.contains("pub fn khoa("),
         "cache.rs còn `khoa` v1 không ai ghi"
     );
-    assert!(main.contains("cache::khoa_multi("), "phải dùng khoá multi");
+    assert!(
+        main.contains("cache::khoa_multi(") || run.contains("cache::khoa_multi("),
+        "phải dùng khoá multi"
+    );
 }
 
 /// **ST-87b ca (a)** — một tệp **một module**: hai lần `--vm --tap` **byte y hệt**, lần 2 **~12–20 ms**
