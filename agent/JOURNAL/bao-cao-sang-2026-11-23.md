@@ -1,9 +1,9 @@
-# Báo cáo sáng 2026-11-23 — ViScript (khung)
+# Báo cáo sáng 2026-11-23 — ViScript (chốt)
 
-> **Trạng thái**: khung báo cáo sáng; số liệu đã xác nhận, chỗ cần đo điền sau.
+> **Trạng thái**: báo cáo chốt; số liệu đã xác nhận bằng máy.
 > **Tag**: `v0.4.0 @ c2accdf`; **`v0.4.1 @ 90844bc`** (annotated, pushed).
 > **Main/tag**: `v0.4.5` trên commit R35 (xem `git rev-parse v0.4.5`).
-> Docs-only; không merge/push/tag trong lượt này; không GitHub Actions.
+> Docs-only; không GitHub Actions; macOS ngoài phạm vi.
 
 ## 1. Giai đoạn 1 — `v0.4.0`
 
@@ -47,19 +47,19 @@
 - **P2b-3/4 NO-GO** `16fba3a`: bench **4,0×**, không đạt ≤1,5×, không đổi production.
 - Flake fix `044b289`: poll 2 s sau join (test-only; 0/60 đỏ dưới tải).
 
-## 4. ST-298 — soak 4h (chỗ trống)
+## 4. ST-298 — soak 4h (PASS)
 
-- Trạng thái: **đang chạy** trên `f4cb136`; 3× `vis-gate-windows --full` **đã xanh 3611/0/3**;
+- Trạng thái: **PASS** trên `f4cb136`; 3× `vis-gate-windows --full` **xanh 3611/0/3**;
   soak 4h: `985` vòng, fail `0`, fd/RSS `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`.
 - **Windows Tier 1 đã công bố** (caveat `FsGuard`). Điều kiện công bố: soak 4h đủ vòng, `0` = 0,
   fd/RSS phẳng (`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`), 3× full xanh, host 54/54, targets 18/18 + 17/1.
 
 ## 5. A0 cần quyết
 
-1. Cập nhật `QUEUE.md`/JSON báo cáo (R33 JSON giữ baseline `90cfc39`; R34 JSON A0 chốt).
-2. Công bố **Windows Tier 1** sau khi soak 4h đạt điều kiện §4.
-3. Phạm vi release **`v0.4.5`** (ST-300/harness WASI + ST-298) và mốc tag.
-4. Mở nhánh **ST-301** (Pha 2 ngôn ngữ) sau khi chốt Tier 1/release.
+1. Merge theo thứ tự **ST-300b → ST-301 → ST-303** (nhánh đã rebase trên 0.4.5, gate 3660/3663/3668).
+2. **ST-302** (Pha 2b) + **ST-304** (ViShell) + **ST-305** (LSP/VS Code) hướng `v0.5.0`.
+3. Chốt **R36**/`v0.5.0`; R34/R35 JSON do A0 rà soát theo `VD-142`.
+4. Duy trì caveat Windows **Tier 1**: `FsGuard` chỉ kiểm path, không file identity/Landlock.
 
 ## 6. Rủi ro
 
@@ -71,4 +71,4 @@
 ## 7. Kết
 
 - Đĩa: `17 G`; **R7 xanh** (không log >50 KB mới trong repo); **0 unsafe** trong mã ViScript.
-- Không GitHub Actions; không merge/push/tag trong lượt soạn khung.
+- Không GitHub Actions; tag `v0.4.5` trên commit R35; macOS ngoài phạm vi.
