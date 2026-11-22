@@ -59,3 +59,12 @@ Bắt đầu **23:00:40 JST** khi load về **4,66**; deadline **01:10 JST**. K�
 **Kết luận**: trên `main` `fa9a39d`, 130 vòng soak kết hợp (gate + diff 100k + host + cache) đều xanh;
 không có lỗi sản phẩm. Hai sự cố đều **T-INFRA/harness** (tải máy 36 và biến môi trường), đã ghi rõ
 và không tính là flake sản phẩm. Không sửa mã.
+
+## Log ngoài repo (R7)
+
+Các log soak >50 KB đã chuyển khỏi `agent/JOURNAL/` sang `/home/ps/vislogs/st296/` (R7); sha256:
+```
+8725c94ff5d110cd3a0e76177f17e23887d9287b444b95eab6b00aa324918165  st296-soak-harness-env-fail.log
+8a5539b49657aece4419f828fd72a37e998b22b880250619a368dee65d7f956b  st296-soak-lan1-4x10-fail-load36.log
+2600475b362728f2346ac7be2a43d4a78a1c6f0de557e23a5f6e567b98989bfc  st296-soak-lan2.log
+```
