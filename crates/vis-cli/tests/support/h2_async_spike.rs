@@ -271,6 +271,19 @@ fn dem_fd() -> usize {
         .unwrap_or(0)
 }
 
+/// **ST-296 (test-harness)**: các ca dưới đây chạy binary `vis` con với
+/// `VIS_TLS_TEST_ROOT_DER`; hook chỉ có ở bản `debug_assertions` (`net/tls.rs`).
+/// Release **bỏ qua có lý do** (khớp `vs3_registry_https.rs`), không đánh đổi coverage debug.
+fn bo_qua_release(ten: &str) -> bool {
+    if cfg!(debug_assertions) {
+        return false;
+    }
+    eprintln!(
+        "bỏ qua {ten}: VIS_TLS_TEST_ROOT_DER chỉ có ở bản debug (release không tin cert fixture)"
+    );
+    true
+}
+
 #[test]
 fn async_h2_get_va_head() {
     let s = MayChuSpike::moi(Kieu::Thuong);
@@ -463,6 +476,9 @@ fn main(args: list[str]):
 /// nhận đủ 4 stream trên một connection rồi mới trả ⇒ chứng minh multiplex qua `http.get`.
 #[test]
 fn async_h2_production_bon_stream_mot_connection() {
+    if bo_qua_release("async_h2_production_bon_stream_mot_connection") {
+        return;
+    }
     let s = MayChuSpike::moi(Kieu::Warm4);
     let mut tong_dong = 0usize;
     for vm in [false, true] {
@@ -487,6 +503,9 @@ fn async_h2_production_bon_stream_mot_connection() {
 
 #[test]
 fn async_h2_production_timeout_va_goaway() {
+    if bo_qua_release("async_h2_production_timeout_va_goaway") {
+        return;
+    }
     let treo = MayChuSpike::moi(Kieu::Treo);
     let src = r#"use std.http
 
@@ -515,6 +534,9 @@ fn main(args: list[str]):
 
 #[test]
 fn async_h2_production_cookie_redirect() {
+    if bo_qua_release("async_h2_production_cookie_redirect") {
+        return;
+    }
     let s = MayChuSpike::moi(Kieu::Thuong);
     let src = r#"use std.http
 
@@ -546,6 +568,9 @@ fn main(args: list[str]):
 
 #[test]
 fn async_h2_production_cap_body() {
+    if bo_qua_release("async_h2_production_cap_body") {
+        return;
+    }
     let s = MayChuSpike::moi(Kieu::Thuong);
     let src = r#"use std.http
 
@@ -586,6 +611,9 @@ fn main(args: list[str]):
 
 #[test]
 fn async_h2_production_bon_stream_cold() {
+    if bo_qua_release("async_h2_production_bon_stream_cold") {
+        return;
+    }
     let s = MayChuSpike::moi(Kieu::Cho4);
     for vm in [false, true] {
         let args: Vec<String> = (0..4).map(|i| s.url(&format!("/c{i}"))).collect();
@@ -604,6 +632,9 @@ fn async_h2_production_bon_stream_cold() {
 /// không treo, fd không tăng. Số vòng đổi được bằng `VS3_W2_COLD_ROUNDS` (mặc định 20).
 #[test]
 fn async_h2_cold_multiplex_20_vong() {
+    if bo_qua_release("async_h2_cold_multiplex_20_vong") {
+        return;
+    }
     let rounds: usize = std::env::var("VS3_W2_COLD_ROUNDS")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -626,6 +657,9 @@ fn async_h2_cold_multiplex_20_vong() {
 
 #[test]
 fn async_h2_production_redirect() {
+    if bo_qua_release("async_h2_production_redirect") {
+        return;
+    }
     let s = MayChuSpike::moi(Kieu::Thuong);
     let src = r#"use std.http
 
@@ -763,6 +797,9 @@ fn main(args: list[str]):
 
 #[test]
 fn async_h2_soak_env_gated() {
+    if bo_qua_release("async_h2_soak_env_gated") {
+        return;
+    }
     let secs: u64 = std::env::var("VS3_W2_SOAK_SECS")
         .ok()
         .and_then(|s| s.parse().ok())
