@@ -2,8 +2,11 @@
 //! **ST-116b**: tách lệnh con khỏi `main.rs` để `main.rs` ≤1.000 dòng (R1); chỉ di chuyển mã.
 
 pub(crate) mod check;
+pub(crate) mod doc;
 pub(crate) mod doctor;
 pub(crate) mod fmt;
+pub(crate) mod new;
+pub(crate) mod repl;
 pub(crate) mod run;
 pub(crate) mod run_cmd;
 pub(crate) mod version;
