@@ -126,3 +126,6 @@ mod vm_main_argv;
 mod vsh1b;
 #[path = "cli_it/where_tinh.rs"]
 mod where_tinh;
+
+#[path = "cli_it/st303_cli_dev.rs"]
+mod st303_cli_dev;

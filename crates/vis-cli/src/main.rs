@@ -38,7 +38,7 @@ use vis_cli::net::Net as HostNet;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis --version | vis -V | vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list | vis doctor [--json] | vis version [--json]"
+        "dùng: vis --version | vis -V | vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list | vis doctor [--json] | vis version [--json] | vis new <dir> [--template bin|lib] | vis doc <path> [--format md|json] | vis repl"
     );
     eprintln!(
         "  vis test --timeout <ms>: áp mọi ca — `test fn` và fixture `.out/.err`; quá hạn ⇒ kill + `not ok` (`quá hạn <ms> ms`), mặc định không giới hạn"
@@ -1382,6 +1382,9 @@ fn main() -> ExitCode {
         // VD-270: thông tin chẩn đoán tất định (không đọc môi trường/tệp/mạng).
         Some("doctor") => cli::doctor::run_doctor(&args[1..]),
         Some("version") => cli::version::run(&args[1..]),
+        Some("new") => cli::new::run(&args[1..]),
+        Some("doc") => cli::doc::run(&args[1..]),
+        Some("repl") => cli::repl::run(&args[1..]),
         // ST-30: chạy bộ ca `test/sem/**` in TAP.
         Some("test") => vistest::run(&args[1..]),
         // ST-67 (VD-102): server LSP tối thiểu trên stdio (khung + JSON-RPC).
