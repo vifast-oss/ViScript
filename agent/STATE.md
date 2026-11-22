@@ -1,12 +1,14 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-> **CẬP NHẬT 22/11/2026 (Stage 0 `v0.3.6` — CHƯA TAG)** — `main` **`a1930cb`** (merge final QA `4c5dec6`), version **0.3.6**.
+> **CẬP NHẬT 22/11/2026 (Stage 0 `v0.3.6` — CHƯA TAG: blocker Windows h1 cancel)** — `main` **`92e381b`** (final code `4c5dec6`, merge QA `a1930cb`), version **0.3.6**.
 > **Linux final QA** (fresh-clone `4c5dec6`): gate **3581/3**; release workspace **3586/0/3**; P2 14/14, P1 8/8, P3 10/10;
 > h2 19/19, feature 34+1; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_http_cancel` 5+8, host 54/54; diff 100k seed
 > `202611221700` **0 lệch**; **2× soak 10/10 = 20/20 vòng** (593 s + 602 s). R0 refactor giữ 0 đổi hành vi:
 > `vm.rs` 1240, `frame.rs` 1042, `value.rs` 1186, `codegen.rs` 1045, `tyck/expr.rs` 1064, `interp/goi.rs` 1155 dòng.
-> Gói: `VS0708` + `#142` (soft pin) + `pkg gc --root`; HTTP cancel h1/h2 (`vs3_http_cancel` 5/5 + 8/8).
-> **Windows final đang verify trên `psvn`; tag `v0.3.6` CHƯA tạo — chờ Windows final.** Không GitHub Actions; macOS ngoài phạm vi.
-> Chi tiết: `JOURNAL/final-qa-v036.md`, `JOURNAL/stage0-release-13d184d.md`, `JOURNAL/stage0-qa-84915aa.md`, `reports/R32-viscript.md`.
+> Gói: `VS0708` + `#142` (soft pin) + `pkg gc --root`; HTTP cancel h1/h2 trên Linux (`vs3_http_cancel` 5/5 + 8/8).
+> **Windows final @ `a1930cb`**: workspace lần 2 **3538/0/3** (đúng kỳ vọng) nhưng lần 1 **3533/5/3**;
+> `vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro` **flake ~21 %** (3/14 suite; `V:post` sau 10053);
+> feature h2 8/8 **BLOCKED-ENV** (Unix-only). **`v0.3.6` CHƯA tag — chờ fix ST-287 rồi verify lại Windows.**
+> Không GitHub Actions; macOS ngoài phạm vi. Chi tiết: `JOURNAL/final-win-v036.md`, `JOURNAL/final-qa-v036.md`, `reports/R32-viscript.md`.
 >
 > **CẬP NHẬT 22/11/2026 (VD-272..VD-279, A0 `1c58ba3`)** — A0 chốt roadmap dài hạn hậu `v0.3.5` và **cổng R0**:
 > core files (`vm.rs`, `frame.rs`, `value.rs`, `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs`, `async_net.rs`,
@@ -37,7 +39,7 @@
 > **CẬP NHẬT 18/11/2026 (đêm 17→18/11, pha 1 công thái học)**: **ST-178..ST-196 DONE** — **R19c**, **P0-3**, **R9** (50 mã, exit 101), **R6**, **R17**, **R3b**, **R3a**, **R16**, **R12a**, **R11**, **R7** (`/` float, `//`, `//=`, `%` khớp), **R8** (`xs[i]?`), **R5a** (`f(1, b: 5)` + mặc định bản ghi), **R5c** (method toàn std), **R1a** (`VS0111` cảnh báo chữ hoa + fmt sửa), **R20a** (`assert cond, "msg"`), **R20b** (`enumerate/any/all/find`). `cargo test --workspace` xanh (464 ca sem), `vis-dev check` PASS (24 khối: 19 xanh + 5 ngoại lệ). **Task kế: R2** (Option/Result enum, bỏ `none`) / **R4** (Error record) / **R5b** (`{…}` chỉ map). Dòng dưới là lịch sử, giữ nguyên.
 
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# STATE — ViScript (**2026-11-22 — HEAD `a1930cb` = final QA `4c5dec6`, `v0.3.6` chưa tag, chờ Windows final**)
+# STATE — ViScript (**2026-11-22 — HEAD `92e381b`, `v0.3.6` chưa tag: blocker h1 cancel Windows, chờ fix ST-287**)
 
 > **CẬP NHẬT 20/11/2026 (~02:15 — VD-winport B/C/D/E xong)**: HEAD **`c7cef71`** (= `origin/main`) (commits `6ccf367` json_ra/fmt/clippy · `f9430b9` nhóm B/C/D/E: CRLF/path, PATHEXT, Git Bash · `c7cef71` net_server fixture slash); Linux **gate `--fast` PASS** (3 lần); nightly **PASS** @ `f9430b9` (fuzz 18,769,716 ca; fmt 475 tệp; L0 OK). **Windows (psvn)**: verify @ `6ccf367` exit 101, **7 suite đỏ**; **@ `f9430b9`** chỉ còn **1 ca đỏ** (`server_hai_ket_noi_lien_tiep`); **@ `c7cef71` → exit 0, toàn workspace xanh (150 khối ok, 0 đỏ)** — log `/c/Users/ps/vislogs/c7cef71-ws.out`; trước VD-winport tại `8355022`: sem 525/525 ×2, sqlite 15/15, CRLF 3/3, smoke 22/22. **pha1-rc1** `05e42d0…` nguyên vẹn; **Windows Tier 2** giữ; **macOS** chưa verify. **Narrow freeze** (+9 `std.sqlite.*`) không đổi; **pha 2** chưa mở; **RFC Typed Serialization** chưa ratify; **B-3** chưa ratify. HEAD mọi cập nhật mới nhất: `SNAPSHOT-2026-11-20.md` / `LICH-SANG-2026-11-20.md`.
 

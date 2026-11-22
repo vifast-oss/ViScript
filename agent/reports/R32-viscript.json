@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 32,
-  "head": "f8f1d4b7abfe383c6f6946a0ede9b873e9675a4f",
+  "head": "a1930cbe84231c2362626dca9bd919a906fab0b9",
   "build_id": "stage0-v036-20261122",
   "tasks": [
     {
@@ -2736,7 +2736,7 @@
       "gates": [
         "fast"
       ],
-      "note": "ST-287 DONE (VD-273): cancel_task_handles + safe point frame_cancel_one; h1 dong socket, h2 RST_STREAM dung stream/giu session dung chung; vs3_http_cancel h1 5/5 (default) + h2 8/8 (async-h2), do-truoc 5/5 + 7/7; khong ro tay, parity interp<->VM; gate 3581/3; diff 100k seed 20261122 lech=0 (JOURNAL/st287-http-cancel.md, JOURNAL/st287-soak-1h.md)",
+      "note": "ST-287 DONE (VD-273): cancel_task_handles + safe point frame_cancel_one; Linux h1 5/5 + h2 8/8, do-truoc 5/5 + 7/7, soak 1h; gate 3581/3, diff 100k lech=0. WINDOWS BLOCKER: vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro flake ~21% (3/14 suite, ca rieng 10/10; task bi huy van in V:post sau 10053) — cho fix truoc tag v0.3.6.",
       "queue": "READY"
     },
     {
@@ -2762,7 +2762,7 @@
       "gates": [
         "fast"
       ],
-      "note": "DONE phan chuan bi + Stage 0 du 6/6: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + R32 chot Stage 0 @ f8f1d4b",
+      "note": "DONE phan chuan bi + Stage 0 du 6/6: version.workspace 0.3.6 (8 crate), #111 khoa VS0412, #151 24 fixture slug (R100%), docs/SO-NO/HOST + R32 chot Stage 0. Final QA Linux 4c5dec6: gate 3581/3, release 3586/0/3, 2 soak 20/20, diff 0. v0.3.6 CHUA tag vi blocker Windows h1 cancel; docs phat hanh da cap nhat (R32/STATE/VS3-TIEN-DO).",
       "queue": "READY"
     },
     {
@@ -2956,9 +2956,10 @@
     "failures": 0,
     "diff_seeds": [
       20261115,
-      20261122
+      20261122,
+      202611221700
     ],
-    "note": "differential 100k seed 20261115 (ST-284/ST-285) va 20261122 (ST-286/ST-287): lech=0"
+    "note": "differential 100k seed 20261115 (ST-284/ST-285), 20261122 (ST-286/ST-287), 202611221700 (final QA 4c5dec6): lech=0"
   },
   "coverage": {
     "tokens": 0,
@@ -2971,12 +2972,12 @@
     "alive": null
   },
   "perf": {
-    "head_do": "f8f1d4b7abfe383c6f6946a0ede9b873e9675a4f",
-    "baseline": "Stage 0 v0.3.6 — du 6/6 DONE @ f8f1d4b",
+    "head_do": "a1930cbe84231c2362626dca9bd919a906fab0b9",
+    "baseline": "Stage 0 v0.3.6 — du 6/6 DONE @ 4c5dec6 (merge a1930cb); CHUA tag",
     "host": "ps (Linux; rustc 1.100.0)",
     "workspace": {
       "suites": 0,
-      "passed": 3581,
+      "passed": 3586,
       "failed": 0,
       "skipped": 3
     },
@@ -2987,20 +2988,25 @@
     },
     "diff": {
       "seed_20261115": "tong=100000 lech=0 (158.4 s / 200.5 s ST-285, 93770 ca chay)",
-      "seed_20261122": "tong=100000 lech=0 (172.8 s ST-286, 94.4 s ST-287, 93770 ca chay)"
+      "seed_20261122": "tong=100000 lech=0 (172.8 s ST-286, 94.4 s ST-287, 93770 ca chay)",
+      "seed_202611221700": "tong=100000 lech=0 (81.5 s, 93768 ca chay) — final QA 4c5dec6"
     },
-    "windows": "Stage 0 0d057e5: workspace 354 block 3533/0/3 (534 s), vis 0.3.6; P2 14/14, P1 8/8, P3 10/10 debug+release; h2 19, pkg 25, sig 10, default 22, tls 22, net 9; host 54/54; targets 18/18 + 17/1; release 11211776 B sha256 eede7c57...a49442 (JOURNAL/stage0-win-0d057e5.md)",
+    "windows": "Windows Tier 2 final @ a1930cb: workspace lan 2 3538/0/3 (463 s, dung ky vong); lan 1 3533/5/3 (528 s) — 5/5 vs3_http_cancel h1 do, chay chong 10 phut cuoi soak f80f774. vs3_http_cancel default FLAKE: 3/14 lan suite do (~21%), ke ca --test-threads=1; ca rieng x10 10/10; loi task bi huy van in V:post sau WSAECONNABORTED 10053. --features async-h2 tren Windows BLOCKED-ENV rc101 (Unix-only), khong do 8/8. P2 14/14, P1 8/8, P3 10/10; h2 19, pkg 25, sig 10, default 22, TLS 22, net 9; host 54/54; targets 18/18 + 17/1; release vis.exe 11228672 B sha256 fa363043...5d3b08b. Nguon: JOURNAL/final-win-v036.md",
     "stage0": {
       "ST-284": "vm.rs 1240 / frame.rs 1042",
       "ST-285": "value 1186 / codegen 1045 / tyck/expr 1064 / interp/goi 1155",
       "ST-286": "async_net 606 / quyen 1190 / sqlite 1245",
       "ST-288": "VS0708 + #142 + gc --root",
       "ST-289": "0.3.6 + #111 + #151",
-      "ST-287": "hook huy HTTP h1/h2: h1 5/5, h2 8/8, soak 1h"
+      "ST-287": "hook huy HTTP h1/h2: Linux h1 5/5, h2 8/8, soak 1h; Windows h1 cancel FLAKE ~21% (V:post sau 10053) — cho fix ST-287"
     },
-    "note": "gate 3581/3 tai f8f1d4b; Windows Stage 0 0d057e5 3533/0/3 (chua verify lai f8f1d4b); full/nightly/fresh-clone chua chay cho Stage 0"
+    "note": "Linux final QA (fresh-clone 4c5dec6): gate 3581/3, release workspace 3586/0/3, 2x soak 20/20, diff 100k seed 202611221700 lech=0. Windows final @ a1930cb: workspace lan 2 3538/0/3 nhung vs3_http_cancel h1 flake ~21% — v0.3.6 CHUA tag, cho fix ST-287."
   },
   "blocked": [
+    {
+      "id": "ST-287",
+      "question": "Windows Tier 2: vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro flake ~21% (V:post sau WSAECONNABORTED 10053; 3/14 suite, ca rieng 10/10) — cho fix ST-287 truoc khi tag v0.3.6; feature h2 8/8 la BLOCKED-ENV tren Windows (Unix-only)."
+    },
     {
       "id": "ST-288",
       "question": "Gatekeeper da duyet 2026-11-22 (VS0708/#142/gc --root xanh); cho A0 lat QUEUE REVIEW -> DONE"

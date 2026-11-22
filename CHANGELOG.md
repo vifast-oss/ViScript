@@ -10,8 +10,7 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **HTTP cancel h1/h2**: `FrameReactorBackend::cancel_task_handles` + safe point `frame_cancel_one` — h1 đóng socket, h2 `RST_STREAM` đúng stream/giữ session dùng chung; `vs3_http_cancel` **5/5** mặc định, **8/8** feature `async-h2`; soak 1 giờ fd/RSS/threads phẳng.
 - **Phiên bản**: **0.3.6** (`version.workspace = true` cho 8 crate); `vis --version` = `vis 0.3.6`.
 - **Linux — fresh-clone `4c5dec6`**: gate **3581 passed / 3 skipped**; `cargo test --release --workspace --no-fail-fast` **3586 passed / 0 failed / 3 ignored**; P2 **14/14**, P1 **8/8**, P3 **10/10**; h2 **19/19**, feature **34+1**; `pkg` **25/25**, `vs3_registry_sig` **10/10**, `vs3_http_cancel` **5+8**, host **54/54**; diff 100k seed `202611221700` **0 lệch**; **2× soak 10/10 = 20/20 vòng** (593 s + 602 s); `./vis-dev check` PASS.
-- **Windows final**: **chờ verify** trên `psvn` tại commit chốt (chưa ghi số).
-- Không GitHub Actions; macOS ngoài phạm vi. **Tag `v0.3.6` chưa tạo** — chờ Windows final.
+- **Windows final @ `a1930cb`**: workspace lần 2 **3538/0/3** (đúng kỳ vọng) nhưng `vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro` **flake ~21 %** (3/14 suite; `V:post` sau 10053); feature h2 **BLOCKED-ENV** (Unix-only). **Tag `v0.3.6` chưa tạo — chờ fix ST-287 rồi verify lại Windows.**
 
 ## v0.3.5 — 2026-11-22
 

@@ -11,7 +11,8 @@
 > `4c5dec6`): gate **3581/3**, release workspace **3586/0/3**, diff 100k seed `202611221700`
 > **0 lệch**, **2× soak = 20/20 vòng** (593 s + 602 s); P2/P1/P3 14/8/10, h2 19 + feature 34+1,
 > `pkg` 25, sig 10, http_cancel 5+8, host 54/54. Main merge **`a1930cb`**; R32 chốt phần Stage 0.
-> **Windows final đang verify trên `psvn`; tag `v0.3.6` CHƯA tạo — chờ Windows final**; GĐ 1..4 vẫn
+> **Windows final @ `a1930cb`**: workspace lần 2 **3538/0/3** nhưng `vs3_http_cancel` h1 **flake ~21 %**
+> (`V:post` sau 10053); **`v0.3.6` CHƯA tag — blocker h1 cancel, chờ fix ST-287**; GĐ 1..4 vẫn
 > `BLOCKED` chờ A0 mở.
 >
 > **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
@@ -422,6 +423,8 @@ khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.
 release workspace **3586 passed / 0 failed / 3 ignored**; P2 14, P1 8, P3 10; h2 19 + feature 34+1;
 `pkg` 25, sig 10, http_cancel 5+8, host 54/54; diff 100k seed `202611221700` **0 lệch**;
 **2× soak 20/20 vòng** (593 s + 602 s). Soak huỷ HTTP 1 giờ (`vs3_http_cancel` 5/5 + 8/8 mỗi vòng,
-fd/RSS/threads phẳng) ghi `JOURNAL/st287-soak-1h.md`. Windows final đang verify trên `psvn`
-(`0d057e5` trước đó: 3533/0/3, `vis 0.3.6`). **Tag `v0.3.6` CHƯA tạo — chờ Windows final.**
-**Stage 0 đủ 6/6** — R32 chốt phần Stage 0; GĐ 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
+fd/RSS/threads phẳng) ghi `JOURNAL/st287-soak-1h.md`. Windows final @ `a1930cb`: workspace lần 2
+**3538/0/3** nhưng `vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro` **flake ~21 %**
+(`V:post` sau 10053); feature h2 **BLOCKED-ENV** (Unix-only). **`v0.3.6` CHƯA tag — chờ fix ST-287
+rồi verify lại Windows.** **Stage 0 đủ 6/6** — R32 chốt phần Stage 0; GĐ 1 (`ST-290..`) vẫn
+`BLOCKED` chờ A0 mở.
