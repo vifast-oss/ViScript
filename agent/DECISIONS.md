@@ -3866,4 +3866,23 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 6. **Kiến trúc Windows `ST-294` + cảnh báo non-TLS**: Gỡ `AsRawFd`/`RawFd`/`mio::unix::SourceFd` trong `net/h2_async.rs`, chuyển sang adapter `mio::net::TcpStream` / `Nguon` (IOCP/AFD) dùng chung Unix+Windows; dọn luôn 2 cảnh báo compile `--no-default-features` ở `async_net_nguon.rs`.
 7. **Đối chiếu đóng nợ cũ (`ST-296`)**: W4 rà các mục lịch sử đã hoàn thành thực tế trong `SO-NO.md` (`#16`, `#17`, `#19`, `#21`, `#26`, `#27`, `#31`, `#84`, `#98`...), chỉ đóng mục có commit hash + bằng chứng máy xác nhận, giữ luật R5 xanh.
 
+### VD-281 · Duyệt `ST-290`/`ST-294`, Chèn Giai đoạn 1.5 (`v0.4.1` Tối ưu Repo & DevEx) & Tinh chỉnh GĐ 1–4 — A0, 2026-11-22
+
+> **Căn cứ**: `agent/JOURNAL/st290-budget-default.md`, `agent/JOURNAL/st294-h2-windows.md`, `agent/JOURNAL/v036-soak-4h.md`, đo thực tế repository tại `a308cd85` (278 test binary `vis-cli`, 28 MB `agent/`, 68 tệp `stdlib/`, `vis-cli` 29,8k LOC). Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd281.md`.
+
+1. **Duyệt đóng (`APPROVED 2026-11-22 Agent 0`)**: Lật **`ST-290`** (`a48d5b87`, budget default `40M` + `VS0509`/`VS0510` + cache `VFEE`, 3.594/0/3, diff 0) và **`ST-294`** (`cce2d0fb`, `async-h2` Windows `mio::net::TcpStream` + default-on non-wasm + 0 warning non-TLS, Linux 3.607/4, Windows 3.563/0/3, `vs3_http2` 33/33, `vs3_http_cancel` 8/8) → **`DONE`**.
+2. **Bổ sung cho `ST-292` & `ST-296` (GĐ 1)**:
+   - `ST-292` bắt buộc nối `gioi_han_phien()` vào `SharedBudget` của worker pool khi `--workers > 1` (`--unlimited-budget` ⇒ `None`), kèm test khoá `--workers 4 --max-budget 5000` trap **`VS0510`** nhất quán `W = 1`.
+   - `ST-296` bổ sung sửa độ chịu tải `vd270_test_slowest` (không `#[ignore]`) và đặt `TMPDIR` ra ngoài `/tmp` tmpfs 7,2 GB trong `bin/vis-soak`.
+3. **Chèn Giai đoạn 1.5 (`v0.4.1` — Tối ưu Repo & Quy trình DevEx, 0 đổi hành vi)** ngay sau `v0.4.0` và trước GĐ 2 (`v0.4.5`):
+   - `ST-296a` (W4): gom 278 test binary `crates/vis-cli/tests/` → 12–15 test binary theo miền + `tests/common/mod.rs` (giữ 100% test count, giảm ~60–75% `target/`, tăng tốc cổng 2–4×).
+   - `ST-296b` (W3): tách `crates/vis-loader` (`modules`, `cache`, `json_esc`, `audit_span`) và `crates/vis-lsp` (`lsp/**`) khỏi `vis-cli` + chuẩn hoá `[workspace.dependencies]` trong `Cargo.toml` gốc.
+   - `ST-296c` (W1): gom 68 tệp `crates/vis-interp/src/stdlib/` + tách `crates/vis-types/src/stdlib.rs` theo miền song song (300–700 dòng/tệp).
+   - `ST-296d` (W4): quy hoạch `agent/archive/` (giữ 100% lịch sử `VD-142`), duy trì bảng điều khiển nhanh `agent/ACTIVE.md` (≤ 100 dòng), thêm `bin/vis-gc-targets`, `bin/vis-jobs`, `bin/vis-status`, `bin/vis-gate-windows --quick|--full`, ngừng commit `.log` > 50 KB + xuất báo cáo & tag **`v0.4.1`**.
+4. **Tách `ST-304` (ViShell MVP — GĐ 3)**: giữ `ST-304` cho `crates/vish-edit` (soạn dòng đa nền, CST coloring, lịch sử mờ, Ctrl-C 130, panic giữ phiên) và thêm **`ST-304b`** cho tab completion theo kiểu + job control POSIX (`&`/`jobs`/`fg`/`bg`/`kill`) + bộ test PTY giả.
+5. **Định hướng Plugin ABI (`ST-306`/`ST-307` — GĐ 4 `v0.6.0`, Phương án A, giữ 0 `unsafe`)**:
+   - `ST-306`: Plugin **tĩnh Native Rust** (`vis-plugin-abi` + `vis-plugin-macros`, 0 `unsafe`, truyền `cap[...]`).
+   - `ST-307`: Plugin **động WASI/WASM** trên hạ tầng Wasmtime của GĐ 2 (0 `unsafe`, đa nền Linux/Windows, sandbox theo `cap[...]`, tắt cứng khi `--strict-caps`/`--sandbox`). Loader `.so`/`.dll` C-ABI chỉ xét sau nếu cần thư viện hệ thống native (và phải qua VD ngoại lệ R2 riêng cho 1 crate đóng `vis-plugin-dl`).
+
+
 
