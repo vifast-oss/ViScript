@@ -5,6 +5,9 @@
 > **Giai đoạn đang mở**: **Chốt cuối GĐ 2 (`v0.4.5`, W4 soak 4h)** + **Zero-Idle GĐ 3 (`v0.5.0`: W1/W2/W3 chạy song song trên nhánh riêng!)**
 > **Toàn văn quyết định & kế hoạch GĐ 2→3→4**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd283.md` · `agent/DECISIONS.md` (`VD-283`).
 
+> **Sau tag `v0.4.5`**: đã merge **ST-300b** `770fdf7` → **ST-301** `2bc6be7` → **ST-303** `a114e38`;
+gate **3671/4**; ST-302/ST-304/ST-305 tiếp theo.
+
 ## 1. Mốc đã phê chuẩn (`APPROVED VD-283`)
 
 - **GĐ 1 (`v0.4.0` @ `c2accdf`)**: 7/7 **DONE** (`ST-290`..`ST-296`; `P2b-3/4 NO-GO` chốt; phần tồn đọng `P4c` tách nợ **`#192`**).
@@ -16,9 +19,9 @@
 | Luồng | Lát việc | Trạng thái | Nhánh & Quy tắc Merge |
 |---|---|---|---|
 | **W4** *(Đường găng `v0.4.5`)* | **`ST-298` + `ST-300` Release `v0.4.5`** | **DONE — soak 4h PASS**; prep `v0.4.5` đã có (version 0.4.5, cache `d92f31c2…`, fix fuzz `CARGO_TARGET_DIR`); **Windows Tier 1 đã công bố** | Khi soak xong (0 lỗi sản phẩm, fd/RSS phẳng): điền `985`/`0`/`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`/`8204–8766 MB`, tuyên bố **Windows Tier 1** (`ROADMAP` + `HOST-BAO-DAM`) **chỉ khi A0 duyệt**, ghép **`R35`** do W3b làm (W4 chỉ `report-check`), **tag & push `v0.4.5`** (uỷ quyền `VD-283` §3). |
-| **W2** *(Kiến trúc mỏng)* | **`ST-300b`** (`vis-host-native` + `vis-pkg` + `main.rs` < 900 + tách `lsp.rs`) | **READY (Zero-Idle)** | Chạy ngay trên **`plan/w2-st300b-host-pkg`** (0 đổi hành vi). **Rebase & merge đầu tiên ngay SAU tag `v0.4.5`**! |
-| **W1** *(Pha 2 Ngôn ngữ)* | **`ST-301`** (`#192` + `T??` + Lambda annot + `#155`) → **`ST-302`** (`async` impl/cmd `#13` + `derives Json` `#8`) | **READY (Zero-Idle)** | Chạy ngay trên **`plan/w1-st301-pha2a`** (áp hợp đồng văn phạm `VD-283` §4, chỉ chạm core crates, 0 đụng `vis-cli/src/`). **Rebase & merge SAU `v0.4.5` + `ST-300b`**, rồi tiếp nối `ST-302`. |
-| **W3** *(CLI Dev & ViShell)* | **`ST-303`** (`vis new`/`doc`/`repl`) → **`ST-304`** (`crates/vish-edit`) | **READY (Zero-Idle)** | Chạy ngay trên **`plan/w3-st303-cli-dev`** (viết mới `cli/{new,doc,repl}.rs`, chạm `main.rs` ≤ 20 dòng). **Rebase & merge SAU `v0.4.5` + `ST-300b`**, rồi mở `crates/vish-edit` (`crossterm`/`rustix::termios` duyệt có điều kiện, log `st304-license.log`). |
+| **W2** *(Kiến trúc mỏng)* | **`ST-300b`** (`vis-host-native` + `vis-pkg` + `main.rs` 225 + tách `lsp.rs`) | **DONE — merged `770fdf7`** | Chạy ngay trên **`plan/w2-st300b-host-pkg`** (0 đổi hành vi). **Rebase & merge đầu tiên ngay SAU tag `v0.4.5`**! |
+| **W1** *(Pha 2 Ngôn ngữ)* | **`ST-301`** (`#192` + `T??` + Lambda annot + `#155`) → **`ST-302`** (`async` impl/cmd `#13` + `derives Json` `#8`) | **ST-301 DONE — merged `2bc6be7`; ST-302 READY** | Chạy ngay trên **`plan/w1-st301-pha2a`** (áp hợp đồng văn phạm `VD-283` §4, chỉ chạm core crates, 0 đụng `vis-cli/src/`). **Rebase & merge SAU `v0.4.5` + `ST-300b`**, rồi tiếp nối `ST-302`. |
+| **W3** *(CLI Dev & ViShell)* | **`ST-303`** (`vis new`/`doc`/`repl`) → **`ST-304`** (`crates/vish-edit`) | **ST-303 DONE — merged `a114e38`; ST-304 READY** | Chạy ngay trên **`plan/w3-st303-cli-dev`** (viết mới `cli/{new,doc,repl}.rs`, chạm `main.rs` ≤ 20 dòng). **Rebase & merge SAU `v0.4.5` + `ST-300b`**, rồi mở `crates/vish-edit` (`crossterm`/`rustix::termios` duyệt có điều kiện, log `st304-license.log`). |
 
 ## 3. Sổ nợ & Chặng tiếp (`v0.5.0 → v1.0.0-rc1`)
 

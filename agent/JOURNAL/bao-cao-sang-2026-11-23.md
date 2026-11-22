@@ -45,6 +45,7 @@
 - **ST-300 harness** `3581c9a`: `test/sem` WASI trên oracle native — **388/390 = 99,5%**
   eligible; 2 fail còn lại là **stack overflow interp WASI** (VM pass), đã ghi rõ.
 - **P2b-3/4 NO-GO** `16fba3a`: bench **4,0×**, không đạt ≤1,5×, không đổi production.
+- **Sau tag `v0.4.5`**: merge **ST-300b** `770fdf7` → **ST-301** `2bc6be7` → **ST-303** `a114e38`; gate **3671/4**.
 - Flake fix `044b289`: poll 2 s sau join (test-only; 0/60 đỏ dưới tải).
 
 ## 4. ST-298 — soak 4h (PASS)
