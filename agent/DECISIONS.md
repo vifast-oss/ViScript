@@ -3884,5 +3884,36 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
    - `ST-306`: Plugin **tĩnh Native Rust** (`vis-plugin-abi` + `vis-plugin-macros`, 0 `unsafe`, truyền `cap[...]`).
    - `ST-307`: Plugin **động WASI/WASM** trên hạ tầng Wasmtime của GĐ 2 (0 `unsafe`, đa nền Linux/Windows, sandbox theo `cap[...]`, tắt cứng khi `--strict-caps`/`--sandbox`). Loader `.so`/`.dll` C-ABI chỉ xét sau nếu cần thư viện hệ thống native (và phải qua VD ngoại lệ R2 riêng cho 1 crate đóng `vis-plugin-dl`).
 
+### VD-282 · Duyệt `ST-293`/`ST-295`, Đóng 12 Nợ Sổ, Luật R7, Cơ chế Zero-Idle & Kế hoạch Chạy Đêm 22–23/11 — A0, 2026-11-22
+
+> **Căn cứ**: `agent/JOURNAL/st293-select.md` (`6d6bfe9c`), `agent/JOURNAL/st295-baove.md` (`cd76da56`), `agent/JOURNAL/st296-pre-qa.md` (`15271f12`), `agent/JOURNAL/st296-debt-audit.md` (`90cfc394`), `agent/JOURNAL/gd1-2h-soak-832787e.md` (`d53d2588`), quét phụ thuộc `crates/vis-cli/src/` tại `832787e2`. Kế hoạch xuyên đêm đầy đủ: `agent/JOURNAL/ke-hoach-dem-2026-11-22-vd282.md`.
+
+1. **Duyệt đóng (`APPROVED 2026-11-22 Agent 0`)**:
+   - **`ST-293`** (`6d6bfe9c` / code `82064e96`): 4 hàm `select_recv*`/`select_send*` cô lập trong `rt/select.rs` + `tyck/expr/kenh.rs` (không đụng `interp.rs`/`stdlib.rs`), **25/25** ca byte-identical interp↔VM cả Linux & Windows release, gate **3.632/4**, diff 100k = 0 → lật **`DONE`**.
+   - **`ST-295`** (`cd76da56` / code `ba4023fb`): `rustix =1.1.6` (`fs`+`std`, Unix-only; 3 gói mới đều MIT/Apache-2.0 trong `st295-license.log`), `openat2`/`O_NOFOLLOW` chung đọc+ghi trong `quyen_mo.rs`, ca đua ghi tất định **100/100 → 0/100**, Landlock `Execute` **18/18** + `st295_sandbox_proc` **3/3**, đã gỡ cảnh báo ghi trong `HOST-BAO-DAM.md`, gate **3.613/4**, diff 0 → lật **`DONE`**.
+2. **Phán quyết dọn `agent/SO-NO.md` (đóng 12 nợ, thu hẹp 1 nợ, giữ pass R5)**:
+   - **Đóng thẳng (9 mục)**: `#16` (wait-set + close `d060f5a`, `vs3_chan0` 13/13), `#17` (timeout `8da533b` + select `82064e96`, 17+25 ca), `#21` (TLS `a5e3040` + keep-alive `b7385e9` + HTTP/2, loopback giữ có chủ đích), `#26` (LSP module-aware completion/hover `9efa420`), `#84` (cookie/auth same-origin `096ea2c`, 11/11), `#191` (Windows `cargo nextest` @ `f6939721` **3.583/0/3**, 0 flake, `st296-pre-qa.md`), `#109b` + `#140` (TOCTOU đường ghi Unix `ba4023fb`, 100/100 → 0/100), `#125` (Landlock `Execute` + `/lib*` `ba4023fb`, 18/18).
+   - **Đóng có phạm vi rõ (3 mục)**:
+     - **`#19`**: `chan(0)` rendezvous hoạt động đầy đủ trên **frame/async** (`vs3_chan0` 13/13); runtime đồng bộ đơn luồng không có peer scheduler nên từ chối là đúng thiết kế.
+     - **`#27`**: đã hỗ trợ incremental `didChange` (`change: 2`, `3510232`, `lsp_incremental` 4/4); chạy một luồng và `EOF → exit 0` là hợp đồng test/CI có chủ ý.
+     - **`#98`**: đã publish chẩn đoán cho **tài liệu phụ đang mở** kèm overlay (`1aefb88`, `lsp_da_tep` 8/8); không publish tệp chưa mở giữ nguyên phạm vi `VD-126` (khớp `#104`).
+   - **Giữ mở thu hẹp (1 mục)**: **`#31`** đã xong 2/3 vế (`entry` ở ST-90, `pkg gc --root` ở ST-288); chỉ còn vế hẹp *"tìm `vis.lock` leo ngược thư mục cha ngoài `main_dir`"*, xếp ưu tiên thấp ở GĐ 3.
+   - Sổ `SO-NO.md §8` cập nhật: **85 mở / 86 đóng / 18 chuyển VS3 / 2 không làm / 1 điều hướng = 192**.
+3. **Ban hành Luật cổng R7 & Mở ngay `ST-296d-tools` (W4 merge vào `main`)**:
+   - **Luật R7** trong `bin/vis-dev`: chặn mọi tệp `*.log`/`*.log.*`/`*.txt` mới > **50 KB** trong `agent/JOURNAL/` (bỏ qua sidecar `*.license`), kèm danh sách đóng băng lịch sử `test/gate/r7-legacy-logs.txt` (không thêm mới). Chứng cứ chạy cổng lưu bằng tóm tắt `.md` ≤ 15 KB + đường dẫn log cục bộ ngoài repo + `sha256`.
+   - **`ST-296d-tools`** (`READY` ngay cho W4, không chạm logic sản phẩm):
+     1. Vá ngay **2 lỗi harness/timing** vừa phát hiện tại `d53d2588` (`gd1-2h-soak-832787e.md`): (a) đổi `TMPDIR` mặc định của `bin/vis-soak` ra **ngoài `target/`** và **ngoài `/tmp` tmpfs** (ví dụ `${VIS_SOAK_TMPDIR:-$HOME/.vis-soak-tmp}` — tránh tự làm `vis-dev` prune cây self-test R1..R4); (b) gia cố `lsp::module::tests::hieu_nang_cache_5_tep_duoi_2ms` chịu tải song song (lấy `min` nhiều vòng / biên hợp lý, không `#[ignore]`).
+     2. Thêm **Luật R7** vào `bin/vis-dev` + tự điều tiết `CARGO_BUILD_JOBS = max(2, nproc / active_jobs)` + `CARGO_PROFILE_DEV_DEBUG=0` + tự dùng `sccache` nếu có trên `PATH`.
+     3. Thêm `.config/nextest.toml` (`retries = 0` giữ nguyên luật không che flake), `bin/vis-gc-targets`, `bin/vis-jobs`, `bin/vis-status`, `bin/vis-gate-windows --quick|--full`.
+4. **Mở cơ chế *Zero-Idle* cho 3 luồng đang rảnh (trong khi W1 hoàn tất `ST-291` → `ST-292`)**:
+   - **Tuyệt đối không làm gián đoạn W1** (không kill job nền, không `git reset --hard`, không đẩy refactor cấu trúc crate vào `main` trước tag `v0.4.0`).
+   - **W4**: hoàn tất & merge ngay `ST-296d-tools` vào `main`; sau đó chạy trước **`ST-296a`** (gom 280 test binary `vis-cli` → 13 binary theo miền + `tests/common/mod.rs`, trừ `vs3_worker*` của W1) trên nhánh riêng `plan/w4-st296a-tests` (giữ sẵn để rebase & merge ngay sau tag `v0.4.0`).
+   - **W3**: chạy trước **`ST-296b`** (tách `crates/vis-loader` + `crates/vis-lsp` + `[workspace.dependencies]`; chuyển 4 hàm thuần `{bam, chuan_hoa, doc_khoa_cua, GoiKhoa}` sang `vis-loader::lock_meta` để 0 vòng lặp & biên dịch `wasm32`) trên nhánh riêng `plan/w3-st296b-crates` (chỉ merge vào `main` sau tag `v0.4.0`).
+   - **W2**: tách `ST-299` thành **`ST-299a`** (`READY` ngay trong workspace độc lập `vis-host-wasm/` đã `exclude` khỏi root `Cargo.toml` — cài `WasiHost` `wasm32-wasip1` + smoke runner `wasmtime`, 0% xung đột với W1/W3/W4!) và **`ST-299b`** (`BLOCKED` chờ `ST-299a` + `ST-296b` để nối `vis-loader` + bộ `test/sem`).
+5. **Mở rộng `ST-296c` & Kỷ luật báo cáo**:
+   - `ST-296c` ngoài gom 68 tệp `vis-interp/src/stdlib/` & tách `vis-types/src/stdlib.rs`, bổ sung tách trước **3 tệp cận trần R1**: `crates/vis-cli/src/db/sqlite/tests.rs` (1.495), `crates/vis-types/src/lower/expr.rs` (1.456), `crates/vis-types/src/lower.rs` (1.446) về < 900 dòng trước GĐ 3.
+   - **Không commit `agent/reports/R##-viscript.json` nháp** trước khi toàn bộ lát của giai đoạn xong; bản nháp ghi ở `agent/JOURNAL/`; mỗi lát nộp 1 chuỗi commit gọn (tránh tạo nhiều merge commit docs lẻ).
+
+
 
 
