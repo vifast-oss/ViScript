@@ -179,8 +179,20 @@ khong-co-lenh x
 """
 
 # `files`: tệp đặt trong preopen (ngoài `prog.vis`/`prog.vish`).
+DA_TEP = """\
+use ./util
+fn main():
+    print(cong(4, 6))
+"""
+
 CASES = [
     dict(name="so_hoc", src="print(1 + 2)\n", out="3\n"),
+    dict(
+        name="da_tep",
+        src=DA_TEP,
+        files={"util.vis": "pub fn cong(a: int, b: int) -> int:\n    a + b\n"},
+        out="10\n",
+    ),
     dict(name="chuoi_unicode", src='print("xin chào wasi")\n', out="xin chào wasi\n"),
     dict(name="argv", src=ARGV, args=["a", "b"], out="[a, b]\n"),
     dict(name="fs_doc", src=FS_READ, files={"in.txt": "nội dung preopen"}, out="nội dung preopen\n"),

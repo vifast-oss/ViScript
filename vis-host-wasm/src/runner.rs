@@ -140,7 +140,133 @@ fn ma_thoat(out: &vis_interp::RunOutput) -> u8 {
     }
 }
 
-/// Chạy một nguồn với host WASI.
+/// **ST-299b** — bỏ `main` khi chạy `.vish` có câu lệnh cấp tệp (cùng luật CLI).
+fn loc_main(hir: &mut vis_types::Hir, mode: vis_syntax::Mode) {
+    if mode == vis_syntax::Mode::Command
+        && !hir.stmts.is_empty()
+        && hir
+            .items
+            .iter()
+            .any(|it| matches!(it, HItem::Fn(f) if f.name == "main"))
+    {
+        hir.items
+            .retain(|it| !matches!(it, HItem::Fn(f) if f.name == "main"));
+    }
+}
+
+/// Chạy HIR đã frontend + tyck với host WASI.
+#[allow(clippy::too_many_arguments)]
+fn chay_hir(
+    ten: &str,
+    nguon: &str,
+    hir: &vis_types::Hir,
+    symbols: &vis_types::Symbols,
+    types: &vis_types::TypeTable,
+    args: &[String],
+    engine: Engine,
+    preopens: &[Preopen],
+) -> KetQua {
+    let mut stderr = String::new();
+    let mut host = match WasiHost::moi(preopens) {
+        Ok(h) => h,
+        Err(e) => {
+            stderr.push_str(&format!("error host: {e}\n"));
+            return KetQua {
+                stdout: String::new(),
+                stderr,
+                exit: 2,
+                steps: 0,
+                engine,
+            };
+        }
+    };
+    let tp = host.tach();
+    let la_async = co_async(hir);
+    let out = match engine {
+        Engine::Interp => {
+            if la_async {
+                vis_interp::run_async_with_hosts_caps(
+                    nguon,
+                    hir,
+                    symbols,
+                    types,
+                    args,
+                    Some(tp.proc),
+                    Some(tp.fs),
+                    Some(tp.net),
+                    Some(tp.db),
+                    &[],
+                )
+            } else {
+                vis_interp::run_with_hosts_caps(
+                    nguon,
+                    hir,
+                    symbols,
+                    types,
+                    args,
+                    Some(tp.proc),
+                    Some(tp.fs),
+                    Some(tp.net),
+                    Some(tp.db),
+                    &[],
+                )
+            }
+        }
+        Engine::Vm => match vis_bytecode::compile_voi_bang(hir, symbols, Some(types), nguon) {
+            Ok(m) => {
+                if la_async {
+                    vis_vm::run_async_with_full_hosts_caps(
+                        &m,
+                        nguon,
+                        args,
+                        Some(tp.proc),
+                        Some(tp.fs),
+                        Some(tp.net),
+                        Some(tp.db),
+                        &[],
+                    )
+                } else {
+                    vis_vm::run_with_full_hosts_caps(
+                        &m,
+                        nguon,
+                        args,
+                        Some(tp.proc),
+                        Some(tp.fs),
+                        Some(tp.net),
+                        Some(tp.db),
+                        &[],
+                    )
+                }
+            }
+            Err(e) => {
+                stderr.push_str(&format!("codegen lỗi: {e}\n"));
+                return KetQua {
+                    stdout: String::new(),
+                    stderr,
+                    exit: 1,
+                    steps: 0,
+                    engine,
+                };
+            }
+        },
+    };
+    for d in &out.diagnostics {
+        stderr.push_str(&format!(
+            "{ten}:{}:{}: error {}: {}\n",
+            d.line, d.col, d.code.short, d.message
+        ));
+    }
+    let exit = ma_thoat(&out);
+    KetQua {
+        stdout: out.stdout,
+        stderr,
+        exit,
+        steps: out.steps,
+        engine,
+    }
+}
+
+/// Chạy **một nguồn** với host WASI (đường stdin/test một tệp — giữ nguyên).
 pub fn chay(yc: &YeuCau) -> KetQua {
     let mut stderr = String::new();
     let parsed = vis_syntax::parse(&yc.nguon, yc.mode);
@@ -169,7 +295,7 @@ pub fn chay(yc: &YeuCau) -> KetQua {
         };
     }
     if let Some(e) = &h.error {
-        stderr.push_str(&format!("{0}: error hạ: {e:?}\n", yc.ten));
+        stderr.push_str(&format!("{}: error hạ: {e:?}\n", yc.ten));
         return KetQua {
             stdout: String::new(),
             stderr,
@@ -178,19 +304,7 @@ pub fn chay(yc: &YeuCau) -> KetQua {
             engine: yc.engine,
         };
     }
-    // **ST-93 (VD-111)**: `.vish` — pipeline cấp tệp là chương trình; bỏ `main` khi có câu lệnh
-    // cấp tệp (giữ nguyên luật CLI).
-    if yc.mode == vis_syntax::Mode::Command
-        && !h.hir.stmts.is_empty()
-        && h.hir
-            .items
-            .iter()
-            .any(|it| matches!(it, HItem::Fn(f) if f.name == "main"))
-    {
-        h.hir
-            .items
-            .retain(|it| !matches!(it, HItem::Fn(f) if f.name == "main"));
-    }
+    loc_main(&mut h.hir, yc.mode);
     let t = vis_types::check(&h.hir, &h.symbols, &h.types);
     if in_chan_doan(&mut stderr, &yc.ten, &t.diags) {
         return KetQua {
@@ -201,106 +315,86 @@ pub fn chay(yc: &YeuCau) -> KetQua {
             engine: yc.engine,
         };
     }
+    chay_hir(
+        &yc.ten,
+        &yc.nguon,
+        &h.hir,
+        &h.symbols,
+        &h.types,
+        &yc.args,
+        yc.engine,
+        &yc.preopens,
+    )
+}
 
-    let mut host = match WasiHost::moi(&yc.preopens) {
-        Ok(h) => h,
+/// **ST-299b** — chạy tệp chính **đa tệp** qua [`vis_loader::modules::load_full`].
+///
+/// `use ./x` được nạp theo thư mục tệp chính; lỗi thiếu tệp/vòng/kiểu trả `exit=2` kèm tên
+/// tệp. Mọi đọc tệp đi qua `std::fs` (trên WASI: preopen của runtime), không cache/thread.
+pub fn chay_tep(tep: &str, engine: Engine, args: &[String], preopens: &[Preopen]) -> KetQua {
+    let mode = if tep.ends_with(".vish") {
+        vis_syntax::Mode::Command
+    } else {
+        vis_syntax::Mode::Script
+    };
+    let loaded = match vis_loader::modules::load_full(tep, true, true) {
+        Ok(l) => l,
         Err(e) => {
-            stderr.push_str(&format!("{}: error host: {e}\n", yc.ten));
             return KetQua {
                 stdout: String::new(),
-                stderr,
+                stderr: format!("{tep}: error nạp: {e}\n"),
                 exit: 2,
                 steps: 0,
-                engine: yc.engine,
+                engine,
             };
         }
     };
-    let tp = host.tach();
-    let la_async = co_async(&h.hir);
-    let out = match yc.engine {
-        Engine::Interp => {
-            if la_async {
-                vis_interp::run_async_with_hosts_caps(
-                    &yc.nguon,
-                    &h.hir,
-                    &h.symbols,
-                    &h.types,
-                    &yc.args,
-                    Some(tp.proc),
-                    Some(tp.fs),
-                    Some(tp.net),
-                    Some(tp.db),
-                    &[],
-                )
-            } else {
-                vis_interp::run_with_hosts_caps(
-                    &yc.nguon,
-                    &h.hir,
-                    &h.symbols,
-                    &h.types,
-                    &yc.args,
-                    Some(tp.proc),
-                    Some(tp.fs),
-                    Some(tp.net),
-                    Some(tp.db),
-                    &[],
-                )
+    let mut stderr = String::new();
+    let mut co_loi = false;
+    for (rel, d) in &loaded.diags {
+        let nhan = match d.code.severity {
+            Severity::Error => {
+                co_loi = true;
+                "error"
             }
-        }
-        Engine::Vm => {
-            match vis_bytecode::compile_voi_bang(&h.hir, &h.symbols, Some(&h.types), &yc.nguon) {
-                Ok(m) => {
-                    if la_async {
-                        vis_vm::run_async_with_full_hosts_caps(
-                            &m,
-                            &yc.nguon,
-                            &yc.args,
-                            Some(tp.proc),
-                            Some(tp.fs),
-                            Some(tp.net),
-                            Some(tp.db),
-                            &[],
-                        )
-                    } else {
-                        vis_vm::run_with_full_hosts_caps(
-                            &m,
-                            &yc.nguon,
-                            &yc.args,
-                            Some(tp.proc),
-                            Some(tp.fs),
-                            Some(tp.net),
-                            Some(tp.db),
-                            &[],
-                        )
-                    }
-                }
-                Err(e) => {
-                    stderr.push_str(&format!("{}: codegen lỗi: {e}\n", yc.ten));
-                    return KetQua {
-                        stdout: String::new(),
-                        stderr,
-                        exit: 1,
-                        steps: 0,
-                        engine: yc.engine,
-                    };
-                }
-            }
-        }
-    };
-    for d in &out.diagnostics {
+            _ => "warning",
+        };
         stderr.push_str(&format!(
-            "{0}:{1}:{2}: error {3}: {4}\n",
-            yc.ten, d.line, d.col, d.code.short, d.message
+            "{rel}:{}:{}: {nhan} {}: {}\n",
+            d.line, d.col, d.code.short, d.message
         ));
     }
-    let exit = ma_thoat(&out);
-    KetQua {
-        stdout: out.stdout,
-        stderr,
-        exit,
-        steps: out.steps,
-        engine: yc.engine,
+    if co_loi {
+        return KetQua {
+            stdout: String::new(),
+            stderr,
+            exit: 2,
+            steps: 0,
+            engine,
+        };
     }
+    let nguon = loaded
+        .tep_chinh()
+        .map(|f| f.text.clone())
+        .unwrap_or_default();
+    let mut hir = loaded.hir;
+    loc_main(&mut hir, mode);
+    let mut kq = chay_hir(
+        tep,
+        &nguon,
+        &hir,
+        &loaded.symbols,
+        &loaded.types,
+        args,
+        engine,
+        preopens,
+    );
+    if !kq.stderr.is_empty() {
+        kq.stderr = format!("{stderr}{}", kq.stderr);
+    } else {
+        kq.stderr = stderr;
+    }
+    kq
 }
 
 #[cfg(test)]

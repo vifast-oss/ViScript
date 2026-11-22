@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-299a (VD-277)** — `vis-wasm-run`: chạy **một tệp** ViScript trên `wasm32-wasip1`.
+//! **ST-299b (VD-277)** — `vis-wasm-run`: chạy **một tệp hoặc module đa tệp** ViScript trên
+//! `wasm32-wasip1` (nối `vis-loader`; `use ./x` đọc qua preopen WASI).
 //!
 //! ```text
 //! vis-wasm-run [--interp|--vm] [--preopen <guest>[=<host>][@ro]]... [--stdin] <tệp> [-- args…]
 //! ```
 //!
-//! Không module đa tệp/cache (ST-299b nối `vis-loader`). Mọi `std.fs` đi qua preopen; `net`/`proc`/
-//! `sqlite` bị từ chối rõ. Cùng binary chạy native (để test) và `wasm32-wasip1`.
+//! Mọi `std.fs` đi qua preopen; `net`/`proc`/`sqlite` bị từ chối rõ. Cùng binary chạy native
+//! (để test) và `wasm32-wasip1`.
 
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use vis_host_wasm::runner::{chay, Engine, YeuCau};
+use vis_host_wasm::runner::{chay, chay_tep, Engine, YeuCau};
 use vis_host_wasm::{preopen_moi_truong, preopen_tu_argv, Preopen};
 
 const DUNG: &str = "\
-vis-wasm-run — chạy một tệp ViScript (ST-299a)\n\
+vis-wasm-run — chạy một tệp hoặc module đa tệp ViScript (ST-299b)\n\
 \n\
 Dùng: vis-wasm-run [--interp|--vm] [--preopen <guest>[=<host>][@ro]]... [--stdin] <tệp> [-- args…]\n\
 \n\
@@ -128,13 +129,7 @@ fn main() -> ExitCode {
             }
         }
     } else {
-        match std::fs::read_to_string(&ten) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("vis-wasm-run: không đọc được `{ten}`: {e}");
-                return ExitCode::from(2);
-            }
-        }
+        String::new()
     };
     if !co_preopen_cli {
         match preopen_moi_truong() {
@@ -145,19 +140,20 @@ fn main() -> ExitCode {
             }
         }
     }
-    let mode = if !stdin_ra && ten.ends_with(".vish") {
-        vis_syntax::Mode::Command
+    let kq = if stdin_ra {
+        let mode = vis_syntax::Mode::Script;
+        chay(&YeuCau {
+            nguon,
+            ten: ten.clone(),
+            mode,
+            args: prog_args,
+            engine,
+            preopens,
+        })
     } else {
-        vis_syntax::Mode::Script
+        // **ST-299b** — tệp chính đi qua `vis-loader`: `use ./x` đa tệp, chẩn đoán mang tên tệp.
+        chay_tep(&ten, engine, &prog_args, &preopens)
     };
-    let kq = chay(&YeuCau {
-        nguon,
-        ten: ten.clone(),
-        mode,
-        args: prog_args,
-        engine,
-        preopens,
-    });
     if !kq.stdout.is_empty() {
         let mut w = std::io::stdout().lock();
         if let Err(e) = w.write_all(kq.stdout.as_bytes()).and_then(|()| w.flush()) {
