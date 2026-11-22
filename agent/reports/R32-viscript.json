@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 32,
-  "head": "84915aa137b2f8754a933ecb42bd9b1de90bbee7",
+  "head": "eaf22a222787511026c39569c90f0fda96b4fc83",
   "build_id": "stage0-v036-20261122",
   "tasks": [
     {
@@ -2265,7 +2265,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-237",
@@ -2274,7 +2274,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-238",
@@ -2283,7 +2283,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-239",
@@ -2292,7 +2292,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-240",
@@ -2301,7 +2301,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-241",
@@ -2310,7 +2310,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-242",
@@ -2319,7 +2319,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-243",
@@ -2328,7 +2328,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-244",
@@ -2337,7 +2337,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-245",
@@ -2346,7 +2346,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-246",
@@ -2355,7 +2355,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-247",
@@ -2364,7 +2364,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-248",
@@ -2373,7 +2373,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-249",
@@ -2382,7 +2382,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-250",
@@ -2391,7 +2391,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-251",
@@ -2400,7 +2400,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-252",
@@ -2409,7 +2409,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-253",
@@ -2418,7 +2418,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-254",
@@ -2427,7 +2427,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-255",
@@ -2436,7 +2436,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-257",
@@ -2445,7 +2445,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-258",
@@ -2454,7 +2454,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-259",
@@ -2463,7 +2463,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-260",
@@ -2472,7 +2472,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-261",
@@ -2481,7 +2481,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (design-only)"
     },
     {
@@ -2491,7 +2491,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (design-only)"
     },
     {
@@ -2501,7 +2501,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (chờ A0 chốt hợp đồng)"
     },
     {
@@ -2511,7 +2511,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (prototype, chưa nối runtime)"
     },
     {
@@ -2521,7 +2521,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-266",
@@ -2530,7 +2530,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (draft, chờ A0 chốt)"
     },
     {
@@ -2540,7 +2540,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-268",
@@ -2549,7 +2549,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-269",
@@ -2558,7 +2558,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-270",
@@ -2567,7 +2567,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-271",
@@ -2576,7 +2576,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-272",
@@ -2585,7 +2585,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-273",
@@ -2594,7 +2594,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-274",
@@ -2603,7 +2603,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-275",
@@ -2612,7 +2612,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-276",
@@ -2621,7 +2621,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)",
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)",
       "queue": "DONE (subset, chưa bật default)"
     },
     {
@@ -2631,7 +2631,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-278",
@@ -2640,7 +2640,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-279",
@@ -2649,7 +2649,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-280",
@@ -2658,7 +2658,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-281",
@@ -2667,7 +2667,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-282",
@@ -2676,7 +2676,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-283",
@@ -2685,7 +2685,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chi tiết trong QUEUE.md (baseline 84915aa)"
+      "note": "chi tiết trong QUEUE.md (baseline eaf22a2)"
     },
     {
       "id": "ST-284",
@@ -2702,12 +2702,16 @@
     },
     {
       "id": "ST-285",
-      "status": "READY",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "ab5d292",
+        "246b6c5"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "R0b WIP — nhanh W1 chua merge; chua co so dong/gate de chot"
+      "note": "R0b DONE: value.rs 1186 / codegen.rs 1045 / tyck/expr.rs 1064 / interp/goi.rs 1155 (<=1250); 0 doi golden/API/cache; gate 3576/3; diff 100k seed 20261115 lech=0 (JOURNAL/st285-refactor.md)",
+      "queue": "READY"
     },
     {
       "id": "ST-286",
@@ -2763,7 +2767,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-291",
@@ -2772,7 +2776,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-292",
@@ -2781,7 +2785,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-293",
@@ -2790,7 +2794,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-294",
@@ -2799,7 +2803,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-295",
@@ -2808,7 +2812,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-296",
@@ -2817,7 +2821,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-297",
@@ -2826,7 +2830,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-298",
@@ -2835,7 +2839,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-299",
@@ -2844,7 +2848,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-300",
@@ -2853,7 +2857,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-301",
@@ -2862,7 +2866,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-302",
@@ -2871,7 +2875,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-303",
@@ -2880,7 +2884,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-304",
@@ -2889,7 +2893,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-305",
@@ -2898,7 +2902,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-306",
@@ -2907,7 +2911,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-307",
@@ -2916,7 +2920,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-308",
@@ -2925,7 +2929,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     },
     {
       "id": "ST-309",
@@ -2934,7 +2938,7 @@
       "gates": [
         "fast"
       ],
-      "note": "chờ Stage 0 đóng (ST-285/ST-287) — cổng chặn cứng R0; xem QUEUE.md"
+      "note": "chờ Stage 0 đóng (còn ST-287) — cổng chặn cứng R0; xem QUEUE.md"
     }
   ],
   "gates": {
@@ -2962,8 +2966,8 @@
     "alive": null
   },
   "perf": {
-    "head_do": "84915aa137b2f8754a933ecb42bd9b1de90bbee7",
-    "baseline": "Stage 0 v0.3.6 — 4/6 DONE/REVIEW, ST-285/287 WIP",
+    "head_do": "eaf22a222787511026c39569c90f0fda96b4fc83",
+    "baseline": "Stage 0 v0.3.6 — 5/6, chi con ST-287 WIP",
     "host": "ps (Linux; rustc 1.100.0)",
     "workspace": {
       "suites": 0,
@@ -2977,18 +2981,18 @@
       "vm": "chua chay lai"
     },
     "diff": {
-      "seed_20261115": "tong=100000 lech=0 (158.4 s, 93770 ca chay)",
+      "seed_20261115": "tong=100000 lech=0 (158.4 s / 200.5 s ST-285, 93770 ca chay)",
       "seed_20261122": "tong=100000 lech=0 (172.8 s, 93770 ca chay)"
     },
-    "windows": "tag v0.3.5 @ 03bb7b9: 3528/0/3 (debug+release), P2 10/10, P3 10/10",
+    "windows": "Stage 0 0d057e5: workspace 354 block 3533/0/3 (534 s), vis 0.3.6; P2 14/14, P1 8/8, P3 10/10 debug+release; h2 19, pkg 25, sig 10, default 22, tls 22, net 9; host 54/54; targets 18/18 + 17/1; release 11211776 B sha256 eede7c57...a49442 (JOURNAL/stage0-win-0d057e5.md)",
     "stage0": {
       "ST-284": "vm.rs 1240 / frame.rs 1042",
+      "ST-285": "value 1186 / codegen 1045 / tyck/expr 1064 / interp/goi 1155",
       "ST-286": "async_net 606 / quyen 1190 / sqlite 1245",
       "ST-288": "VS0708 + #142 + gc --root",
       "ST-289": "0.3.6 + #111 + #151"
     },
-    "note": "gate 3576/3 tai 84915aa; full/nightly/fresh-clone/psvn chua chay cho Stage 0",
-    "fast_log": "/tmp/st289-stage0-gate.log (phien Stage 0, 84915aa)"
+    "note": "gate 3576/3 tai eaf22a2; Windows Stage 0 0d057e5 3533/0/3; full/nightly/fresh-clone chua chay cho Stage 0"
   },
   "blocked": [
     {
