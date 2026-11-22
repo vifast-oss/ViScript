@@ -74,4 +74,70 @@ impl<'a> Checker<'a> {
             _ => None,
         }
     }
+
+    /// **ST-293 (VD-274/VD-280)** — 4 `select_*` dựng sẵn: phần tử `T` suy từ `list[Chan[T]]`;
+    /// trả **pseudo-record** `SelectRecv[T]` (chỉ `kenh.rs`/`truong.rs` biết hai trường
+    /// `index:int`, `value:T?`) hoặc `int?` cho chiều gửi. Không đổi parser/EBNF.
+    pub(super) fn kiem_select(&mut self, name: &str, args: &[HExpr], span: Span) -> Type {
+        let want = match name {
+            "select_recv" => 1,
+            "select_recv_timeout" | "select_send" => 2,
+            "select_send_timeout" => 3,
+            _ => 0,
+        };
+        self.arity(args, want, name, span);
+        let tys: Vec<Type> = args.iter().map(|a| self.kiem_expr(a)).collect();
+        let elem = match tys.first() {
+            Some(Type::Error) | None => Type::Error,
+            Some(Type::List(inner)) => match &**inner {
+                Type::TypeRef { name: n, args: a } if n == "Chan" && a.len() == 1 => a[0].clone(),
+                Type::Error => Type::Error,
+                other => {
+                    self.diag(
+                        MISMATCH,
+                        format!(
+                            "`{name}`: đối số 1 phải `list[Chan[T]]`, được `list[{}]`",
+                            self.show(other)
+                        ),
+                        span,
+                    );
+                    Type::Error
+                }
+            },
+            Some(other) => {
+                self.diag(
+                    MISMATCH,
+                    format!(
+                        "`{name}`: đối số 1 phải `list[Chan[T]]`, được `{}`",
+                        self.show(other)
+                    ),
+                    span,
+                );
+                Type::Error
+            }
+        };
+        match name {
+            "select_recv" => Type::TypeRef {
+                name: "SelectRecv".into(),
+                args: vec![elem],
+            },
+            "select_recv_timeout" => {
+                self.arg_ty(&tys, 1, &Type::Int, name, args, span);
+                Type::Opt(Box::new(Type::TypeRef {
+                    name: "SelectRecv".into(),
+                    args: vec![elem],
+                }))
+            }
+            "select_send" => {
+                self.arg_ty(&tys, 1, &elem, name, args, span);
+                Type::Opt(Box::new(Type::Int))
+            }
+            "select_send_timeout" => {
+                self.arg_ty(&tys, 1, &elem, name, args, span);
+                self.arg_ty(&tys, 2, &Type::Int, name, args, span);
+                Type::Opt(Box::new(Type::Int))
+            }
+            _ => Type::Error,
+        }
+    }
 }

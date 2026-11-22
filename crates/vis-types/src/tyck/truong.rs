@@ -43,6 +43,22 @@ impl<'a> Checker<'a> {
                     Type::Error
                 }
             },
+            // **ST-293 (VD-274/VD-280)**: pseudo-record `SelectRecv[T]` — hai trường cố định.
+            Type::TypeRef { name: ten, args: a } if ten == "SelectRecv" && a.len() == 1 => {
+                let t = a[0].clone();
+                match name {
+                    "index" => Type::Int,
+                    "value" => Type::Opt(Box::new(t)),
+                    _ => {
+                        self.diag(
+                            vis_diag::ma_truong(),
+                            format!("`SelectRecv` không có trường `{name}`"),
+                            span,
+                        );
+                        Type::Error
+                    }
+                }
+            }
             Type::Enum(id) => {
                 if self.types.variant(*id, name).is_some() {
                     bt.clone()
@@ -82,6 +98,22 @@ impl<'a> Checker<'a> {
                             Type::Error
                         }
                     },
+                    // **ST-293**: `r?.index`/`r?.value` trên `SelectRecv[T]?`.
+                    Type::TypeRef { name: ten, args: a } if ten == "SelectRecv" && a.len() == 1 => {
+                        let t = a[0].clone();
+                        match name {
+                            "index" => Type::Opt(Box::new(Type::Int)),
+                            "value" => Type::Opt(Box::new(Type::Opt(Box::new(t)))),
+                            _ => {
+                                self.diag(
+                                    vis_diag::ma_truong(),
+                                    format!("`SelectRecv` không có trường `{name}`"),
+                                    span,
+                                );
+                                Type::Error
+                            }
+                        }
+                    }
                     Type::Error => Type::Error,
                     other => {
                         // Kiểu **không phải bản ghi**: giữ mã cũ `VS0403` (không phải "trường

@@ -30,6 +30,8 @@ pub(crate) mod exec;
 #[path = "frame/fee.rs"]
 pub mod fee;
 mod sched;
+/// **ST-293 (VD-274/VD-280)** — `select_recv*`/`select_send*`: wait-set nhiều kênh + fairness.
+pub(crate) mod select;
 
 /// Chặn **lồng** `await` (mỗi tầng là một khung gọi thật) — 256 như chốt VD-95 (7).
 pub const MAX_TASK_NEST: usize = 256;
@@ -105,6 +107,8 @@ pub(crate) struct ChanSend {
     pub frame: u32,
     pub value: Value,
     pub state: ChanSendState,
+    /// **ST-293** — entry do `select_send` đăng ký (value dùng chung; claim ở scheduler).
+    pub select: bool,
 }
 
 impl Chan {
@@ -477,6 +481,11 @@ pub struct FrameTest {
     /// **ST-287 (P0)**: `(tiền tố handle, task id, số byte còn lại)` — huỷ sau khi
     /// `try_read` thật của frame đã trả đủ byte (bám handle `C…`/`H…`, không đếm turn).
     pub cancel_on_bytes: Vec<(String, u32, usize)>,
+    /// **ST-293 (VD-274)** — trạng thái `select_*` đang treo theo frame (claim chung nhiều kênh,
+    /// điểm xoay vòng fairness, timer tuỳ chọn).
+    pub select: HashMap<u32, select::SelectState>,
+    /// **ST-293** — bộ đếm turn chọn để xoay vòng điểm bắt đầu giữa các lần gọi.
+    pub select_turn: u64,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**

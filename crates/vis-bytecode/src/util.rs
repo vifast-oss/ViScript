@@ -56,6 +56,11 @@ pub fn la_builtin(name: &str) -> bool {
             | "ref"
             // **VD-267**: `panic` là builtin phân kỳ (`never`).
             | "panic"
+            // **ST-293 (VD-274/VD-280)**: select nhiều kênh.
+            | "select_recv"
+            | "select_recv_timeout"
+            | "select_send"
+            | "select_send_timeout"
     )
 }
 
