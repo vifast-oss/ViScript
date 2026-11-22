@@ -14,6 +14,7 @@
 | Cảnh báo `--no-default-features` (`async_net_nguon.rs`) | **0** — sửa `dem_tay_dang_mo` (shadow) + `allow(dead_code)` cho `dang_reactor_win` |
 | Windows `cargo check --features async-h2` | **PASS** (psvn, target riêng `/c/Users/ps/vt-st294-target`) |
 | Windows tests | `vs3_http2` **33/33**; `vs3_http_cancel` **8/8** (gồm cold-start 4 stream/1 conn, timeout/GOAWAY/cancel h2) |
+| Windows workspace | **3563 passed / 0 failed / 3 ignored**, 356 block, rc 0, dirty 0 @ `39cc81cc` |
 | Linux gate | **3607 passed / 0 failed / 4 skipped**, PASS |
 | Blocker | **không** (Windows workspace xem §5) |
 
@@ -65,4 +66,6 @@
 - wasm32: default đầy đủ vẫn cần `clang` cho ring (môi trường local thiếu); `cargo check
   --target wasm32-unknown-unknown --no-default-features` **PASS**. Module `h2_async` vẫn
   `not(target_arch = "wasm32")`.
-- Windows workspace: xem §5.
+- Windows workspace (exact commit `39cc81cc`, target riêng): **3563 passed / 0 failed / 3 ignored**
+  (356 block), dirty 0; log `JOURNAL/st294-psvn-workspace.log`. Trước ST-294 Windows 3538; +25 là
+  các ca h2 async (http2 33 thay 19, cancel 8 thay 5) nay chạy mặc định.
