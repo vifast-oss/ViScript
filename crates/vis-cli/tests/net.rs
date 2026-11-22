@@ -170,7 +170,13 @@ fn tcp_tu_choi() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
-/// Ca 3 — server ngủ 300 ms, `read(t, 64, 80)` ⇒ `Err` hết giờ; **tổng ≤ 400 ms** (không treo).
+/// Ca 3 — server ngủ 300 ms, `read(t, 64, 80)` ⇒ `Err` hết giờ; **tổng ≤ 3 s** (không treo).
+///
+/// **VS3-W4 — biên cũ 400 ms quá chặt** (flake soak 4h `v0.3.4`, vòng 1150): 400 ms là
+/// wall-clock **cả process** (spawn + DLL/antivirus + connect + timeout 80 ms), không phải
+/// riêng `net.read`. Đo trên `psvn`: 100 lần ấm 87–130 ms; lần đầu sau build (nguội) **1,41 s**.
+/// 3 s = ~2,1× cold / ~23× warm ⇒ vẫn bắt treo thật (hàng giây) mà không phụ thuộc tải máy.
+/// Hành vi sản phẩm vẫn kiểm bằng stdout `quá thời gian` + exit 0 bên dưới.
 #[test]
 fn tcp_het_gio_doc() {
     let _k = kho();
@@ -208,8 +214,8 @@ fn tcp_het_gio_doc() {
             "vm={vm}: phải báo quá thời gian, stdout: {out:?}"
         );
         assert!(
-            dt.as_millis() <= 400,
-            "vm={vm}: **treo** {dt:?} — phải ≤ 400 ms"
+            dt.as_millis() <= 3_000,
+            "vm={vm}: **treo** {dt:?} — phải ≤ 3 s (wall-clock cả process; xem lý do ở doc test)"
         );
     }
     let _ = std::fs::remove_dir_all(&d);
