@@ -63,8 +63,30 @@ fn ung_vien_path(thu_muc: &Path, v: &str) -> Vec<PathBuf> {
     vec![thu_muc.join(v)]
 }
 
+/// **ST-297** — `v` được hiểu là **đường dẫn** (không dò `PATH`)? Phân loại theo cả `/` và `\`,
+/// drive `C:`/`C:\`, UNC. Trên Unix `\` là **ký tự thường** trong tên tệp nên chỉ bật các quy
+/// tắc Windows khi `windows == true` (test thuần trên Linux vẫn kiểm được nhánh Windows).
+fn la_duong_dan(v: &str, windows: bool) -> bool {
+    if v.contains('/') {
+        return true;
+    }
+    if !windows {
+        return false;
+    }
+    if v.contains('\\') {
+        return true;
+    }
+    let b = v.as_bytes();
+    b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':'
+}
+
 pub fn phan_giai_lenh(v: &str, goc: &Path) -> Result<PathBuf, String> {
-    if !v.contains('/') {
+    phan_giai_lenh_voi(v, goc, cfg!(windows))
+}
+
+/// Như [`phan_giai_lenh`] nhưng nhận cờ nền tảng (test nhánh Windows trên Linux).
+fn phan_giai_lenh_voi(v: &str, goc: &Path, windows: bool) -> Result<PathBuf, String> {
+    if !la_duong_dan(v, windows) {
         let path = std::env::var_os("PATH").unwrap_or_default();
         for thu_muc in std::env::split_paths(&path) {
             for ung in ung_vien_path(&thu_muc, v) {
@@ -101,4 +123,52 @@ pub fn phan_giai_lenh(v: &str, goc: &Path) -> Result<PathBuf, String> {
 pub fn chuan_lenh(ten: &str) -> Option<PathBuf> {
     let goc = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     phan_giai_lenh(ten, &goc).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{la_duong_dan, phan_giai_lenh_voi};
+    use std::path::PathBuf;
+
+    #[test]
+    fn phan_loai_path_windows_va_unix() {
+        for p in [
+            r"C:\bin\tool.exe",
+            r"C:/bin/tool.exe",
+            r"C:\server\share\tool.exe",
+            r"\\server\share\tool.exe",
+            "//server/share/tool.exe",
+            "C:relative.exe",
+        ] {
+            assert!(la_duong_dan(p, true), "Windows phải là path: {p}");
+        }
+        for p in [r"C:\bin\tool.exe", r"\\server\share\tool.exe"] {
+            assert!(la_duong_dan(p, true));
+            assert!(!la_duong_dan(p, false), r"Unix: `\` là ký tự thường: {p}");
+        }
+        assert!(!la_duong_dan("vis", true));
+        assert!(!la_duong_dan("vis", false));
+        assert!(la_duong_dan("./vis", false));
+    }
+
+    #[test]
+    fn phan_giai_lenh_windows_khong_do_path() {
+        let goc = PathBuf::from(".");
+        // Trên Linux, `Path::is_absolute()` của `C:\…` là false, nhưng với cờ windows=true
+        // phải đi nhánh path (lỗi "không phân giải được"), KHÔNG dò PATH.
+        for p in [
+            r"C:\definitely\missing\tool.exe",
+            r"\\server\share\tool.exe",
+        ] {
+            let e = phan_giai_lenh_voi(p, &goc, true).expect_err("không tồn tại");
+            assert!(
+                e.contains("không phân giải được"),
+                "phải là lỗi path, không phải PATH: {p} ⇒ {e}"
+            );
+            assert!(!e.contains("trong `PATH`"), "không được dò PATH: {e}");
+        }
+        let e = phan_giai_lenh_voi("khong-co-lenh-nay-12345", &goc, true)
+            .expect_err("không có trong PATH");
+        assert!(e.contains("trong `PATH`"), "tên trần vẫn dò PATH: {e}");
+    }
 }
