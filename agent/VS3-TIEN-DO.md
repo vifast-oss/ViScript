@@ -12,7 +12,8 @@
 > `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs`, `async_net.rs`, `quyen.rs`, `db/sqlite/mod.rs`;
 > các tệp lõi phải **≤1.250 dòng**, 0 đổi hành vi. **4 worktree** (`W1` runtime, `W2` net/sec, `W3` platform, `W4` QA/docs);
 > W5 đã nghỉ. Baseline v0.3.5 @ `03bb7b9`; Stage 0 `ST-284`..`ST-289`: **đủ 6/6 DONE**
-> (cập nhật 2026-11-22 @ **`92e381b`** / code `4c5dec6` — final QA Linux xanh; **tag `v0.3.6` CHƯA tạo vì blocker h1 cancel Windows**, chờ fix ST-287; xem §2c).
+> (cập nhật 2026-11-22 @ **`0645700`** / code `6b2a216` — ST-287 Windows fix đã merge; **tag candidate
+> `0645700`, chờ W3/W4 verify cuối**; xem §2c).
 
 ## 1. Mốc hiện tại
 
@@ -22,7 +23,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); **`v0.3.6` CHƯA tag** @ `4c5dec6` (Linux final QA xanh; **blocker h1 cancel Windows — chờ fix ST-287**); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên |
+| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); **`v0.3.6` CHƯA tag — tag candidate `0645700`** (Linux final QA xanh; ST-287 Windows fix merged; chờ W3/W4 verify cuối); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -84,22 +85,24 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
-## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `4c5dec6`)
+## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `0645700`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `JOURNAL/st284-refactor.md`, `JOURNAL/st285-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st287-http-cancel.md`, `JOURNAL/st287-soak-1h.md`,
 > `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,5,6,7}-diff-100k.log`, `JOURNAL/stage0-win-0d057e5.md`,
-> `JOURNAL/final-win-v036.md`, `JOURNAL/final-qa-v036.md`, `agent/reports/R32-viscript.md`.
-> **Stage 0 đủ 6/6 DONE**; R32 đã chốt phần Stage 0. Không push/merge/tag từ W4; không GitHub Actions.
+> `JOURNAL/final-win-v036.md`, `JOURNAL/final-qa-v036.md`, `JOURNAL/st287-win-cancel-flake.md`,
+> `JOURNAL/win-h1-cancel-matrix.md`, `agent/reports/R32-viscript.md`.
+> **Stage 0 đủ 6/6 DONE**; R32 đã chốt phần Stage 0; ST-287 Windows fix đã merge. Không push/merge/tag
+> từ W4; không GitHub Actions.
 
 | Task | Trạng thái | Commit | Bằng chứng |
 |---|---|---|---|
 | **ST-284** — R0a `vm.rs`/`frame.rs` | **DONE** | `83a9a10` (merge `e363a15`) | `vm.rs` **1240** dòng, `frame.rs` **1042** (ngưỡng 1250); 0 đổi API/ABI/cache; gate `3571/3`; diff 100k seed `20261115` **lech=0** |
 | **ST-285** — R0b `value.rs`/`codegen.rs`/`tyck/expr.rs`/`interp/goi.rs` | **DONE** | `ab5d292` (merge `246b6c5`) | `value` **1186**, `codegen` **1045**, `tyck/expr` **1064**, `interp/goi` **1155** dòng (≤1250); tách `value/show_eq.rs`, `codegen/cau.rs`, `tyck/expr/goi.rs`, `interp/goi_ham.rs`; 0 đổi golden/API/cache; gate `3576/3`; diff 100k seed `20261115` **lech=0** (200,5 s) |
 | **ST-286** — R0c `async_net.rs`/`quyen.rs`/`db/sqlite/mod.rs` | **DONE** | `f193c57` (merge `cfba662`) | `async_net` **606**, `quyen` **1190**, `sqlite/mod.rs` **1245** dòng; module con tách giữ API; gate PASS; diff 100k seed `20261122` **lech=0** (93 770 ca chạy) |
-| **ST-287** — hook huỷ giữa HTTP request | **DONE — BLOCKER Windows** | `03ed84c` (merge `f8f1d4b`) | `FrameReactorBackend::cancel_task_handles` + safe point `frame_cancel_one`; Linux: h1 **5/5**, h2 **8/8**, đỏ-trước 5/5 + 7/7, soak 1 giờ fd/RSS/threads phẳng; gate `3581/3`; diff 100k **lech=0**. **Windows: `cancel_http_h1_lap_nhieu_vong_khong_ro` flake ~21 %** (3/14 suite; `V:post` sau 10053) — chờ fix |
+| **ST-287** — hook huỷ giữa HTTP request | **DONE — Windows fix merged** | `03ed84c` (merge `f8f1d4b`); fix `e43ca43`+`6b2a216` (merge `0645700`) | `FrameReactorBackend::cancel_task_handles` + safe point; Linux h1 **5/5**, h2 **8/8**, đỏ-trước 5/5+7/7, soak fd/RSS/threads phẳng, gate `3581/3`, diff 100k **lech=0**. **Windows fix**: root cause test fixture (`accept` thừa nonblocking) — server blocking + trigger byte; product guard `cancelled`/close order; serial **20/20**, default **10/10**, exact lap **20/20**, workspace **3538/0/3** |
 | **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + `vis explain --list` **54** + `API-CODES.txt` **54**; 6 ca âm (gồm key rotation) đều nêu `VS0708`; soft pin `pkg update` (`update_mot_ten_*` 2/2 + unit) ⇒ **#142 đóng**; `gc --root` lặp/lồng dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4. QUEUE còn `REVIEW` — chờ A0 lật sổ |
-| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** (docs + QA) | `ff55056` (merge `84915aa`); QA `c69127f`/`a997e06`; docs `705afcf` | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); Linux final QA §2c; R32 cập nhật blocker Windows; **tag chưa tạo** |
+| **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** (docs + QA) | `ff55056` (merge `84915aa`); QA `c69127f`/`a997e06`; docs `705afcf` | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); Linux final QA §2c; R32 cập nhật fix ST-287 Windows; **tag chưa tạo** |
 
 **Cổng Stage 0 — final QA** @ **`4c5dec6`** (fresh-clone Linux): `./vis-dev gate --fast` **PASS — 3581 passed / 0 failed / 3 skipped**
 (fmt, clippy, R1..R6, self-test, doc-examples 24 khối, L0 nextest); `cargo test --release --workspace --no-fail-fast`
@@ -108,18 +111,21 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 **0 lệch**; **2× soak 10/10 = 20/20 vòng** (593 s + 602 s), mỗi soak 3 gate 3581/3 + 3 diff 0 lệch + 2 host 54/54
 và 2 cache 5/5.
 
-**Windows final @ `a1930cb`** (`psvn`, Tier 2): workspace lần 2 **3538/0/3** (463 s, đúng kỳ vọng);
-lần 1 **3533/5/3** (528 s) — 5/5 `vs3_http_cancel` h1 đỏ, chạy chồng 10 phút cuối soak `f80f774`.
-**`vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro` flake ~21 %** (3/14 lần suite, kể cả
-`--test-threads=1`; ca riêng ×10 **10/10**): task bị huỷ vẫn in `V:post` sau `WSAECONNABORTED 10053`.
-Feature `async-h2` trên Windows **BLOCKED-ENV** rc 101 (Unix-only), không đo 8/8. Targeted khác:
-P2 14/14, P1 8/8, P3 10/10; h2 19, `pkg` 25, sig 10, default 22, TLS 22, net 9; host 54/54;
-targets 18/18 + 17/1; release `vis.exe` 11 228 672 B (`JOURNAL/final-win-v036.md`).
+**Windows ST-287 fix @ `6b2a2161`** (`psvn`, Tier 2): root cause là **test fixture** — listener
+`set_nonblocking(true)` và Windows `accept` **thừa hưởng nonblocking**, server handler blocking gặp
+`WSAEWOULDBLOCK/10053` và đóng connection trước safe point (log scheduler không có `cancelreq`/`cancel:1`).
+Fix: handler `set_nonblocking(false)`; trigger test theo **byte trên handle `C`**; product guard
+`cancelled` trước `step_frame`/cache + `AsyncNet::close` deregister trước drop socket.
+Matrix: `vs3_http_cancel` serial **20/20**, default **10/10**, exact lap **20/20** (trước serial
+2/10 pass, default 8/10); workspace **355 block, 3538/0/3**, dirty 0. Feature `async-h2` Windows
+**BLOCKED-ENV** rc 101 (Unix-only). Nguồn `JOURNAL/st287-win-cancel-flake.md`,
+`JOURNAL/st287-win-cancel-final-matrix.log`, `JOURNAL/st287-win-cancel-workspace.log`.
 
-**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ **`4c5dec6`** (merge **`a1930cb`**, docs `92e381b`);
-R32 chốt phần Stage 0 (`agent/reports/R32-viscript.md`); docs phát hành cập nhật (CHANGELOG `v0.3.6`,
-STATE/ROADMAP/VS3-TIEN-DO). **`v0.3.6` CHƯA tag — blocker h1 cancel Windows; chờ fix ST-287 rồi verify lại
-(`vs3_http_cancel` ×10 + workspace 1 vòng).** Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
+**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ **`0645700`** (ST-287 fix merge); R32 chốt
+phần Stage 0 (`agent/reports/R32-viscript.md`); docs phát hành cập nhật (CHANGELOG `v0.3.6`,
+STATE/ROADMAP/VS3-TIEN-DO). **`v0.3.6` CHƯA tag — tag candidate `0645700`, chờ W3/W4 verify cuối
+(Windows suite 20/20 + workspace 1 vòng; Linux gate 3581/3).** Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED`
+chờ A0 mở.
 
 ## 3. Mốc tích hợp cuối tuần
 
