@@ -571,15 +571,8 @@ impl FrameReactorBackend for AsyncNet {
         if self.dong_h2(handle) {
             return Ok(());
         }
-        self.streams.remove(handle);
-        self.listeners.remove(handle);
-        self.connects.remove(handle);
-        #[cfg(feature = "tls")]
-        {
-            self.tls.remove(handle);
-            #[cfg(not(feature = "async-h2"))]
-            self.tls_connects.remove(handle);
-        }
+        // **ST-287 (Windows)**: deregister TRƯỚC khi drop `MioStream`. Trên Windows, drop/
+        // `closesocket` huỷ I/O đang chờ; deregister sau đó có thể trả lỗi/abort (10053).
         let keys: Vec<u64> = self
             .tokens
             .iter()
@@ -591,6 +584,15 @@ impl FrameReactorBackend for AsyncNet {
         }
         // write treo theo tay bị đóng.
         self.writes.retain(|_, w| w.tay != handle);
+        self.streams.remove(handle);
+        self.listeners.remove(handle);
+        self.connects.remove(handle);
+        #[cfg(feature = "tls")]
+        {
+            self.tls.remove(handle);
+            #[cfg(not(feature = "async-h2"))]
+            self.tls_connects.remove(handle);
+        }
         #[cfg(feature = "async-h2")]
         let la_h2 = handle.starts_with('H');
         #[cfg(not(feature = "async-h2"))]

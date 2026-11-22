@@ -40,6 +40,14 @@ impl Scheduler {
         for (turn, id) in &self.frame.cancel_on_turn {
             self.frame.log.push(format!("cancelonturn:{}:{}", turn, id));
         }
+        FRAME_CANCEL_BYTES.with(|x| {
+            self.frame.cancel_on_bytes = x.borrow_mut().drain(..).collect();
+        });
+        for (pre, id, n) in &self.frame.cancel_on_bytes {
+            self.frame
+                .log
+                .push(format!("cancelonbytes:{}:{}:{}", pre, n, id));
+        }
     }
 
     /// Tăng thế hệ khi một nguồn giả được **đăng ký lại** (re-arm) — event cũ phải
@@ -607,6 +615,29 @@ impl Scheduler {
     // sẵn (`frame_next`, `frame_fire`, `frame_reactor_fire`, `frame_wake_one`). Không API
     // ngôn ngữ, không CLI flag, không đổi runtime mặc định (`frame.enabled == false`).
     // -----------------------------------------------------------------------
+
+    /// **ST-287 (P0, chỉ test)** — cộng byte `try_read` thật của frame hiện tại vào trigger
+    /// `cancel_on_bytes`; đủ ngưỡng ⇒ ghi nhận huỷ (xử lý ở safe point `frame_next` kế tiếp).
+    pub(super) fn frame_dem_byte_va_yeu_cau_huy(&mut self, handle: &str, n: usize) {
+        if self.frame.cancel_on_bytes.is_empty() {
+            return;
+        }
+        let cur = self.frame.current;
+        let mut due = Vec::new();
+        self.frame.cancel_on_bytes.retain_mut(|(pre, id, con)| {
+            if *id == cur && handle.starts_with(pre.as_str()) {
+                *con = con.saturating_sub(n);
+                if *con == 0 {
+                    due.push(*id);
+                    return false;
+                }
+            }
+            true
+        });
+        for id in due {
+            self.frame_cancel_request_for_test(id);
+        }
+    }
 
     /// Ghi nhận một cancellation request cho task `id`. Idempotent — request trùng bị bỏ.
     /// Không dọn gì ngay: phải đợi safe point (`frame_cancel_process_for_test`).

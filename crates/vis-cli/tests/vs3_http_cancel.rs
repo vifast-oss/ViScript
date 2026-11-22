@@ -17,7 +17,10 @@ use std::time::{Duration, Instant};
 
 use vis_cli::async_net::AsyncNet;
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{frame_cancel_after_turns_for_test, frame_cancel_clear_triggers_for_test};
+use vis_interp::rt::{
+    frame_cancel_after_bytes_for_test, frame_cancel_after_turns_for_test,
+    frame_cancel_clear_triggers_for_test,
+};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -214,6 +217,9 @@ fn main():
 fn chay_i(src: &str, net: &Rc<RefCell<AsyncNet>>, id: u32) -> FrameOutput {
     let (hir, syms, tys) = tien_trinh(src);
     frame_cancel_clear_triggers_for_test();
+    // **ST-287 (P0)**: h1 huỷ theo **byte đã đọc trên handle C** (giữa body), không chỉ turn;
+    // turn là fallback cho h2 (`H`) và server chưa gửi header (`/im`).
+    frame_cancel_after_bytes_for_test("C", 8192, id);
     frame_cancel_after_turns_for_test(SO_TURN, id);
     let out = run_i(src, &hir, &syms, &tys, &[], cfg_huy(net));
     frame_cancel_clear_triggers_for_test();
@@ -224,6 +230,7 @@ fn chay_v(src: &str, net: &Rc<RefCell<AsyncNet>>, id: u32) -> FrameOutput {
     let (hir, syms, _) = tien_trinh(src);
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
     frame_cancel_clear_triggers_for_test();
+    frame_cancel_after_bytes_for_test("C", 8192, id);
     frame_cancel_after_turns_for_test(SO_TURN, id);
     let out = run_v(&m, src, &[], cfg_huy(net));
     frame_cancel_clear_triggers_for_test();
@@ -245,15 +252,18 @@ fn kiem_sau_huy(out: &FrameOutput) {
     assert_eq!(out.exit, 0, "huỷ không tạo lỗi: {:?}", out.diagnostics);
     assert!(out.stdout.contains("main"), "{:?}", out.stdout);
     assert!(out.stdout.contains("V:pre"), "{:?}", out.stdout);
+    // **ST-287 (P0)**: kiểm dấu vết huỷ TRƯỚC — trigger tới muộn sẽ thiếu `cancel:1`
+    // ngay tại đây thay vì chỉ thấy V:post.
     assert!(
-        !out.stdout.contains("V:post"),
-        "task bị huỷ phải dừng: stdout={:?} log={:?}",
+        out.log.iter().any(|l| l == "cancel:1"),
+        "phải huỷ task 1 trước khi nó chạy tiếp: stdout={:?} log={:?}",
         out.stdout,
         out.log
     );
     assert!(
-        out.log.iter().any(|l| l == "cancel:1"),
-        "phải huỷ task 1: {:?}",
+        !out.stdout.contains("V:post"),
+        "task bị huỷ phải dừng: stdout={:?} log={:?}",
+        out.stdout,
         out.log
     );
     assert_eq!(out.snapshot, baseline(), "{:?}", out.log);
@@ -417,6 +427,12 @@ fn cancel_http_h1_mot_task_khong_anh_huong_task_khac() {
     let out = chay_i(&src, &net, 1);
     assert_eq!(out.exit, 0, "{:?}", out.diagnostics);
     assert!(out.stdout.contains("V:pre"), "{:?}", out.stdout);
+    assert!(
+        out.log.iter().any(|l| l == "cancel:1"),
+        "phải huỷ task 1 trước khi nó chạy tiếp: stdout={:?} log={:?}",
+        out.stdout,
+        out.log
+    );
     assert!(
         !out.stdout.contains("V:post"),
         "task bị huỷ phải dừng: stdout={:?} log={:?}",

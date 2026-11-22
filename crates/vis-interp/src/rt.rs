@@ -474,6 +474,9 @@ pub struct FrameTest {
     pub cancel_on_turn: Vec<(u64, u32)>,
     /// **ST-287**: số turn đã qua (chỉ tăng khi `cancel_on_turn` không rỗng).
     pub turn: u64,
+    /// **ST-287 (P0)**: `(tiền tố handle, task id, số byte còn lại)` — huỷ sau khi
+    /// `try_read` thật của frame đã trả đủ byte (bám handle `C…`/`H…`, không đếm turn).
+    pub cancel_on_bytes: Vec<(String, u32, usize)>,
 }
 
 /// Bộ lập lịch **một luồng, tất định**: danh sách tác vụ **theo thứ tự tạo** + hàng đợi **FIFO**
@@ -504,6 +507,9 @@ thread_local! {
     /// **ST-287** — trigger huỷ theo **số turn scheduler** (đếm `frame_next`), drain vào
     /// `FrameTest.cancel_on_turn` ở `frame_enable_for_test` như trigger theo `seq`.
     static FRAME_CANCEL_TURNS: RefCell<Vec<(u64, u32)>> = const { RefCell::new(Vec::new()) };
+    /// **ST-287 (P0)** — trigger huỷ theo **byte đã đọc** trên handle, drain như trên.
+    static FRAME_CANCEL_BYTES: RefCell<Vec<(String, u32, usize)>> =
+        const { RefCell::new(Vec::new()) };
 }
 
 /// **VD-257/C (chỉ test)**: đăng ký "khi event `seq` fire thì ghi nhận huỷ task `id`".
@@ -520,11 +526,21 @@ pub fn frame_cancel_after_turns_for_test(turns: u64, id: u32) {
     FRAME_CANCEL_TURNS.with(|x| x.borrow_mut().push((turns, id)));
 }
 
+/// **ST-287 (P0, chỉ test)** — huỷ task `id` sau khi `try_read` thật đã trả đủ `bytes` byte
+/// trên handle có tiền tố `handle_prefix` (vd `C`/`H`). Bám **dữ liệu đã đọc**, không đếm turn.
+#[doc(hidden)]
+pub fn frame_cancel_after_bytes_for_test(handle_prefix: &str, bytes: usize, id: u32) {
+    FRAME_CANCEL_BYTES.with(|x| {
+        x.borrow_mut().push((handle_prefix.to_string(), id, bytes));
+    });
+}
+
 /// **VD-257/C (chỉ test)**: xoá mọi trigger huỷ còn tồn trong thread-local (dọn giữa các ca).
 #[doc(hidden)]
 pub fn frame_cancel_clear_triggers_for_test() {
     FRAME_CANCEL_TEST.with(|x| x.borrow_mut().clear());
     FRAME_CANCEL_TURNS.with(|x| x.borrow_mut().clear());
+    FRAME_CANCEL_BYTES.with(|x| x.borrow_mut().clear());
 }
 
 // **VS3-1d (chỉ test)** — hạ trần turn scheduler để kiểm chứng guard mà không chạy 200k turn.
@@ -874,6 +890,7 @@ impl Scheduler {
         match outcome {
             ReactorIoOutcome::Data(bytes) => {
                 self.frame_real_done(handle, op);
+                self.frame_dem_byte_va_yeu_cau_huy(handle, bytes.len());
                 self.frame.reactor.log.push(format!("rdone:{}", handle));
                 if raw {
                     return Ok(RealPoll::Bytes(bytes));

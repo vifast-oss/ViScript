@@ -56,17 +56,27 @@ Matrix W4 bổ sung @ `a1930cb`:
   mới mỗi ca. Không thấy static/thread-local rò giữa ca. Nguyên nhân là fixture, không phải
   safe-point sản phẩm.
 
-## 3. Sửa tối thiểu (test-only)
+## 3. Sửa tối thiểu
 
-`crates/vis-cli/tests/vs3_http_cancel.rs` — `phuc_vu_h1`:
+**Test fixture (P0, commit `e43ca43`)**: `phuc_vu_h1` thêm
 
 ```rust
 tcp.set_nonblocking(false).expect("server blocking");
 ```
 
-kèm chú thích Windows; thông điệp assertion `V:post` in thêm `out.log` để lần sau thấy ngay
-`cancelreq`/`cancel:` (không đổi kỳ vọng/ngưỡng). Không đụng `FrameReactorBackend`,
-`frame_cancel_one`, `AsyncNet` hay bất kỳ mã sản phẩm nào.
+**Test trigger (P0, bám dữ liệu)**: `frame_cancel_after_bytes_for_test("C", 8192, id)` — huỷ khi
+`try_read` thật của frame đã trả đủ 8192 byte trên handle `C…` (giữa body), không phụ thuộc
+`SO_TURN=20`; turn chỉ còn là fallback cho h2 (`H`) và `/im` (chưa có header). Log scheduler có
+`cancelonbytes:C:8192:1` rồi `cancel:1`.
+
+**Product P0**: driver frame bỏ qua frame đã nằm trong `frame.cancelled` **trước** khi set
+`DangChay`/chạy `step_frame`; không ghi `Xong`/cache cho task đã huỷ.
+
+**Product P1 (Windows)**: `AsyncNet::close` deregister token + dọn `writes` **trước** khi drop
+`MioStream`/`TlsChan` (drop/`closesocket` trên Windows huỷ I/O đang chờ; deregister sau có thể
+trả 10053). `cancel_task_handles`/`RST_STREAM` giữ nguyên.
+
+**P2**: chưa thêm `clear_all_for_test` — không thấy state thread-local rò giữa ca; xem §2.
 
 ## 4. Matrix sau sửa
 
@@ -75,7 +85,7 @@ kèm chú thích Windows; thông điệp assertion `V:post` in thêm `out.log` �
 | Windows full suite `--test-threads=1` ×20 | **20/20 pass** |
 | Windows full suite default ×10 | **10/10 pass** |
 | Windows ca riêng `lap_nhieu_vong` ×20 `--test-threads=1` | **20/20 pass** |
-| Windows ca riêng `server_khong_tra_header` ×20 `--test-threads=1` | **20/20 pass** |
+| Windows ca riêng `server_khong_tra_header` ×20 `--test-threads=1` | **20/20 pass** (fixture fix) |
 | Windows workspace 1 vòng | xem §5 (chạy tại commit sửa) |
 | Linux default ×10 | **10/10 pass** |
 | Linux `--features async-h2` ×10 | **10/10 pass** |
@@ -88,7 +98,9 @@ target riêng `/c/Users/ps/vt-st287-target`.)
 
 ## 6. Quyết định
 
-- Flake **không phải lỗi sản phẩm**; sửa test fixture là đủ và tối thiểu, không che lỗi: trigger
-  huỷ vẫn chạy sau khi request đã đi, các assertion `cancel:1`/`V:post`/`dem_tay` giữ nguyên.
+- Flake **không phải race scheduler thuần**: fixture nonblocking tạo lỗi 10053 trước safe point.
+  Vẫn áp P0/P1 phòng vệ (không chạy/cache task đã huỷ; deregister trước drop) và trigger theo
+  byte để test bám dữ liệu thật, không che lỗi: assertion `cancel:1` kiểm **trước** `V:post`,
+  `dem_tay`/`snapshot` giữ nguyên.
 - **Đủ điều kiện tag `v0.3.6`** theo matrix Windows + Linux + gate 3581/3; phiên này **không tag**,
   không push/merge.
