@@ -195,6 +195,51 @@ fn gc_nhieu_lock_root_giu_blob_chia_se() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// Ca 4 — `--root` **lặp lại, lồng nhau** (`.` chứa `a`,`b`) ⇒ lock/workspace **không đếm trùng**;
+/// root **không có `.vis`** thì GC là no-op và **không được tạo** `.vis`/store giả.
+#[test]
+fn gc_lap_root_long_nhau_khong_dem_trung_va_khong_tao_vis() {
+    let root = tmp_dir("root-lap");
+    let a = root.join("a");
+    let b = root.join("b");
+    std::fs::create_dir_all(&a).unwrap();
+    std::fs::create_dir_all(&b).unwrap();
+    them_goi(&a, "http@1.0.0");
+    them_goi(&b, "http@1.0.0");
+
+    let blob_a = ten_blob_trong(&a);
+    let blob_b = ten_blob_trong(&b);
+    let shared = blob_a
+        .intersection(&blob_b)
+        .next()
+        .expect("hai lock phải chia sẻ blob")
+        .clone();
+    let rac_b = blob_rác("rac-root-lap");
+    ghi(&b.join(".vis/store").join(&rac_b), "x");
+
+    let args = ["pkg", "gc", "--root", "a", "--root", "b", "--root", "."];
+    let (c, o, e) = vis(&root, &args);
+    assert_eq!(c, 0, "{e}");
+    assert!(
+        o.contains("2 lock, 3 workspace"),
+        "phải dedupe lock (2) và gồm root + a + b (3): {o}"
+    );
+    assert!(o.contains("đã xoá 1 blob, 0 mục gói"), "{o}");
+    assert!(a.join(".vis/store").join(&shared).is_file());
+    assert!(b.join(".vis/store").join(&shared).is_file());
+    assert!(!b.join(".vis/store").join(&rac_b).exists());
+    // Root không có `.vis`: no-op, **không tạo** thư mục/store giả.
+    assert!(!root.join(".vis").exists(), "không được tạo `.vis` ở root");
+    assert!(!root.join(".vis/store").exists());
+
+    // Idempotent: lần hai 0/0, vẫn không tạo `.vis`.
+    let (c, o, e) = vis(&root, &args);
+    assert_eq!(c, 0, "{e}");
+    assert!(o.contains("đã xoá 0 blob, 0 mục gói"), "{o}");
+    assert!(!root.join(".vis").exists());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// Ca 2 — không có lock ⇒ từ chối, không xoá; `--lock` thiếu tệp/`--root` không có lock cũng vậy.
 #[test]
 fn gc_nhieu_lock_tu_choi_khi_thieu_lock() {

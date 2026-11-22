@@ -88,6 +88,11 @@ pub struct Resolver<'a> {
     entry_goc: Option<(String, String)>,
     /// Lỗi đọc manifest theo từng gói (để thông điệp cuối nêu lỗi cấu hình thay vì "không có bản").
     loi_manh: BTreeMap<String, Vec<String>>,
+    /// **ST-288 (#142)**: phiên bản **ưu tiên** (soft pin) theo gói — dùng cho `pkg update <tên>`.
+    /// Resolver vẫn chọn **cao nhất thoả**; nếu bản ưu tiên thoả ràng buộc thì **thử trước** để gói
+    /// không liên quan giữ nguyên, nhưng **không** chặn việc nâng khi manifest của gói được update
+    /// đòi hỏi (khác `=<version>` ghim cứng).
+    uu_tien: BTreeMap<String, Version>,
 }
 
 impl<'a> Resolver<'a> {
@@ -99,7 +104,15 @@ impl<'a> Resolver<'a> {
             xung_dot: None,
             entry_goc: None,
             loi_manh: BTreeMap::new(),
+            uu_tien: BTreeMap::new(),
         }
+    }
+
+    /// **ST-288 (#142)**: đặt phiên bản **ưu tiên** (soft pin) — bản ưu tiên được **thử trước** nếu
+    /// thoả ràng buộc; không thoả thì resolver vẫn chọn bản cao nhất thoả (không ghim cứng).
+    pub fn voi_uu_tien(mut self, uu_tien: BTreeMap<String, Version>) -> Self {
+        self.uu_tien = uu_tien;
+        self
     }
 
     /// Áp `--entry` cho **gói gốc** (chỉ khi manifest của nó thiếu `entry` — như `doc_manifest`).
@@ -237,7 +250,7 @@ impl<'a> Resolver<'a> {
             });
             return Ok(false);
         }
-        let ung_vien: Vec<Muc> = self
+        let mut ung_vien: Vec<Muc> = self
             .chi_muc
             .get(&ten)
             .map(|ds| {
@@ -247,6 +260,15 @@ impl<'a> Resolver<'a> {
                     .collect()
             })
             .unwrap_or_default();
+        // **ST-288 (#142)**: soft pin — bản ưu tiên (đang có trong lock) được thử **trước** khi
+        // thoả ràng buộc; phần còn lại giữ thứ tự giảm dần ⇒ tất định. Không thay đổi lựa chọn
+        // "cao nhất thoả" khi bản ưu tiên không thoả.
+        if let Some(v) = self.uu_tien.get(&ten) {
+            if let Some(pos) = ung_vien.iter().position(|m| &m.version == v) {
+                let uu = ung_vien.remove(pos);
+                ung_vien.insert(0, uu);
+            }
+        }
         if ung_vien.is_empty() {
             let co: Vec<Version> = self
                 .chi_muc
@@ -428,6 +450,53 @@ mod tests {
             .unwrap();
         assert_eq!(g["a"], v("1.0.0"));
         assert_eq!(g["b"], v("0.1.9"), "^0.1 ⇒ <0.2.0 (luật ^0.x)");
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    /// **ST-288 (#142)**: soft pin — bản ưu tiên được **thử trước** (gói không liên quan giữ
+    /// nguyên), nhưng **không** chặn nâng khi manifest của gói được update đòi hỏi.
+    #[test]
+    fn soft_pin_giu_ban_cu_nhung_khong_chan_nang() {
+        let d = tam("soft-pin");
+        let reg = d.join("registry");
+        goi(&reg, "a", "1.0.0", &[("b", "^1")]);
+        goi(&reg, "a", "1.1.0", &[("b", "^1.1")]);
+        goi(&reg, "b", "1.0.0", &[]);
+        goi(&reg, "b", "1.1.0", &[]);
+        goi(&reg, "c", "1.0.0", &[]);
+        goi(&reg, "c", "1.1.0", &[]);
+        let goc = [("a".into(), req("^1")), ("c".into(), req("^1"))];
+
+        // Không ưu tiên ⇒ chọn **cao nhất** (như `pkg update` không tên).
+        let g = Resolver::moi(&reg).giai(&goc).unwrap();
+        assert_eq!(g["a"], v("1.1.0"));
+        assert_eq!(g["b"], v("1.1.0"));
+        assert_eq!(g["c"], v("1.1.0"));
+
+        // Ưu tiên cả ba ở bản cũ ⇒ giữ nguyên dù có bản cao hơn.
+        let uu: BTreeMap<String, Version> = [
+            ("a".to_string(), v("1.0.0")),
+            ("b".to_string(), v("1.0.0")),
+            ("c".to_string(), v("1.0.0")),
+        ]
+        .into_iter()
+        .collect();
+        let g = Resolver::moi(&reg)
+            .voi_uu_tien(uu.clone())
+            .giai(&goc)
+            .unwrap();
+        assert_eq!(g["a"], v("1.0.0"));
+        assert_eq!(g["b"], v("1.0.0"));
+        assert_eq!(g["c"], v("1.0.0"));
+
+        // Bỏ ưu tiên `a`, giữ `b`/`c` cũ ⇒ `a` lên 1.1.0, **kéo `b` lên** (manifest đòi `^1.1`),
+        // còn `c` không liên quan vẫn giữ 1.0.0.
+        let mut uu2 = uu;
+        uu2.remove("a");
+        let g = Resolver::moi(&reg).voi_uu_tien(uu2).giai(&goc).unwrap();
+        assert_eq!(g["a"], v("1.1.0"));
+        assert_eq!(g["b"], v("1.1.0"), "dep chung phải nâng khi manifest đòi");
+        assert_eq!(g["c"], v("1.0.0"), "gói không liên quan giữ nguyên");
         let _ = fs::remove_dir_all(&d);
     }
 

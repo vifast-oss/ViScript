@@ -392,6 +392,7 @@ fn ky_sai_thi_tu_choi() {
     );
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("chữ ký"), "phải nêu chữ ký: {err}");
+    assert!(err.contains("VS0708"), "phải nêu mã VS0708: {err}");
     assert!(!d.join(".vis").exists(), "KHÔNG được tạo .vis");
     assert!(!d.join("vis.lock").exists(), "KHÔNG được ghi lock");
     let _ = std::fs::remove_dir_all(&d);
@@ -426,6 +427,7 @@ fn sua_manifest_sau_ky_bi_tu_choi() {
         err.contains("chữ ký"),
         "phải bắt ở chữ ký (trước hash tệp): {err}"
     );
+    assert!(err.contains("VS0708"), "phải nêu mã VS0708: {err}");
     assert!(
         !err.contains("VS0707"),
         "không được rơi xuống kiểm hash: {err}"
@@ -461,6 +463,7 @@ fn thieu_chu_ky_khi_co_khoa() {
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("signature_ed25519"), "{err}");
     assert!(err.contains("yêu cầu chữ ký"), "{err}");
+    assert!(err.contains("VS0708"), "phải nêu mã VS0708: {err}");
     assert!(!d.join(".vis").exists());
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -492,6 +495,7 @@ fn chu_ky_sai_dinh_dang() {
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("signature_ed25519"), "{err}");
     assert!(err.contains("hex"), "{err}");
+    assert!(err.contains("VS0708"), "phải nêu mã VS0708: {err}");
     assert!(!d.join(".vis").exists());
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -534,6 +538,7 @@ fn khoa_sai_hex() {
     );
     assert_eq!(code, 2, "stderr: {err}");
     assert!(err.contains("khoá công khai"), "{err}");
+    assert!(err.contains("VS0708"), "phải nêu mã VS0708: {err}");
     assert!(!d.join(".vis").exists());
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -621,6 +626,7 @@ fn key_rotation_hai_khoa_va_tu_choi_sai() {
     let (c, _o, e) = them(&d, "0.2.0", &url, &[&cu.pub_hex]);
     assert_eq!(c, 2, "bản mới với khoá cũ phải bị từ chối");
     assert!(e.contains("không khớp bất kỳ khoá"), "{e}");
+    assert!(e.contains("VS0708"), "phải nêu mã VS0708: {e}");
     assert!(
         !d.join(".vis").exists(),
         "không được tạo .vis khi chữ ký sai"
@@ -636,6 +642,7 @@ fn key_rotation_hai_khoa_va_tu_choi_sai() {
     let (c, _o, e) = them(&d, "0.1.0", &url, &[&moi.pub_hex]);
     assert_eq!(c, 2, "bản cũ với khoá mới phải bị từ chối");
     assert!(e.contains("không khớp bất kỳ khoá"), "{e}");
+    assert!(e.contains("VS0708"), "phải nêu mã VS0708: {e}");
     assert!(!d.join(".vis").exists());
     let _ = std::fs::remove_dir_all(&d);
 

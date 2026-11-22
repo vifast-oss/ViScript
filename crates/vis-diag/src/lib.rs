@@ -523,7 +523,10 @@ pub const RUNTIME_CODES: [Code; 8] = [
 /// **ST-128 (VD-125)**: cấp **`VS0704`** trong **cùng khối `07xx`** — "không giải được ràng buộc gói";
 /// thông điệp **kèm chuỗi ràng buộc** gây xung đột. Chọn số **kế tiếp của khối** (`704`) theo VD-125;
 /// **không** dùng `next_block()` (nó trả `801` vì suy từ khối đã dành trước — xem JOURNAL ST-128 §7).
-pub const MODULE_CODES: [Code; 7] = [
+///
+/// **ST-288 (VD-273)**: cấp **`VS0708`** — lỗi xác minh **chữ ký số / khoá tin cậy** registry gói
+/// (`VS3-5b/5c`); tách hẳn khỏi `VS0707` (hash nội dung lệch).
+pub const MODULE_CODES: [Code; 8] = [
     Code {
         id: 701,
         short: "VS0701",
@@ -579,6 +582,16 @@ pub const MODULE_CODES: [Code; 7] = [
         message_vi: "hash gói không khớp `vis.lock`/sổ",
         message_en: "package hash does not match `vis.lock`/sumdb",
         message_ja: "パッケージのハッシュが `vis.lock`/sumdb と一致しません",
+        severity: Severity::Error,
+    },
+    // **ST-288 (VD-273)**: cấp `VS0708` cho lỗi xác minh chữ ký/khoá tin cậy của registry gói
+    // (`VS3-5b/5c`). Tách hẳn khỏi `VS0707` (hash nội dung) — chữ ký hỏng là lỗi **niềm tin**.
+    Code {
+        id: 708,
+        short: "VS0708",
+        message_vi: "lỗi xác minh chữ ký số hoặc khoá tin cậy của registry gói",
+        message_en: "package registry signature or trusted key verification failed",
+        message_ja: "パッケージレジストリの署名または信頼キーの検証に失敗しました",
         severity: Severity::Error,
     },
 ];
@@ -850,7 +863,8 @@ mod tests {
         // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
         // **VD-215 (2026-11-18)**: +**VS0207**/**VS0208** ⇒ **52** mã.
         // **VD-223 (proxy A0)**: +**VS0211** ⇒ 53; **VD-224 (proxy A0)**: huỷ VS0209.
-        assert_eq!(all_codes().count(), 53);
+        // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **54** mã.
+        assert_eq!(all_codes().count(), 54);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(

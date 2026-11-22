@@ -226,7 +226,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 · JOURNAL/st140-red-ps.log · JOURNAL/st140-cargo-test-ps.log | đóng ở ST-140 |
 | 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900; **sửa kỹ thuật thuộc VS3** | R24 §5 · HOST-BAO-DAM.md mục FsGuard | mở |
 | 141 | Mục điều hướng: nợ cũ #121..#124, #128, #129, #130 đã xử lý hoặc chuyển VS3 — xem R23 §6 | R24 §5 | không phải nợ (điều hướng) |
-| 142 | **`pkg update <tên>` ghim mọi gói khác** (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách (trước là nhãn tạm `#113b`) | JOURNAL/st129-lock.md §9 · QUEUE ST-129 · VD-149 | mở |
+| 142 | **`pkg update <tên>` ghim mọi gói khác** (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách (trước là nhãn tạm `#113b`) — **đóng ở ST-288**: thay ghim cứng bằng **soft pin** trong resolver (bản đang có được thử trước, không chặn nâng khi manifest của gói được update đòi hỏi); gói không liên quan vẫn giữ phiên bản; ca `update_mot_ten_nang_duoc_dep_chung` + unit `soft_pin_giu_ban_cu_nhung_khong_chan_nang` | JOURNAL/st129-lock.md §9 · QUEUE ST-129 · VD-149 · **ST-288** · `JOURNAL/st288-goi.md` | đóng ở ST-288 |
 | 143 | **`NamePolicy::Strict` bật cho mọi tệp có `use`** (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 (trước là nhãn tạm `#114b`) | JOURNAL/st130-siet-caps.md §9 · QUEUE ST-130 · VD-133 · VD-149 · **VD-154(b)** | chuyển VS3 — VD-154(b): chuyển VS3 vì ca st130b xanh |
 | 144 | **Vế 2 của `#133`**: chưa có ca **dương** `read_dir` trên thư mục **CÓ quyền ghi** ở tiến trình con (ST-132b §7) — **ST-154 đã bù**: ca 15 `con_read_dir_thu_muc_co_quyen_ghi_van_liet_ke_duoc` trong `vis-host-linux/tests/landlock.rs` (**MỘT** ruleset **hai** luật: `trong` chỉ-đọc + `trong-ghi` ghi; `co.txt` ghi **trước** khi áp ruleset; helper `ls trong-ghi` ⇒ `exit 0` + danh sách có `co.txt`; helper `ghi` trong `trong-ghi` ⇒ `exit 0` rồi `ls` thấy `co.txt` + `moi.txt`; âm cùng ca: `ls ngoai` ⇒ `exit 7` + `Permission denied`) | JOURNAL/st154-landlock-ps.log · QUEUE ST-154 · VD-153 | đóng ở ST-154 |
 | 145 | **Chú thích `rt.rs` nói sai đường chặn `chan(0)`**: `rt.rs:128-129` nói literal `chan(0)` bị **tyck** chặn (exit 2); thực tế tyck **không** kiểm `cap` (`tyck/expr/kenh.rs:16-33` — `kiem_chan_new` chỉ kiểm `n` là `int`), **runtime** mới chặn (exit 1, `kenh_cap0.rs:57-68`); sửa chú thích hoặc thêm kiểm tyck | JOURNAL/st155-vs3-dieu-tra.md §2 · VD-154(c) | mở (xử khi có task VS3 kênh) |
@@ -373,7 +373,7 @@ R23 chuẩn hoá lại một dãy duy nhất theo thứ tự hợp nhất.” B�
 
 | Nhãn tạm | Nghĩa | Nguồn | Số chuẩn + trạng thái |
 |---|---|---|---|
-| **#113b** | `pkg update <tên>` ghim mọi gói khác (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách | `JOURNAL/st129-lock.md` §9 (số cũ 113) · `QUEUE` ST-129 | **#142** (VD-149) — bảng chính: **mở** (VS2 **không** sửa; xét ở VS3 nếu cần) |
+| **#113b** | `pkg update <tên>` ghim mọi gói khác (`=<version>`): gói được update cần nâng dep chung thì resolver báo `VS0704` thay vì nâng; cần quyết định chính sách | `JOURNAL/st129-lock.md` §9 (số cũ 113) · `QUEUE` ST-129 | **#142** (VD-149) — bảng chính: **đóng ở ST-288** (soft pin; VS2 **không** sửa) |
 | **#114b** | `NamePolicy::Strict` bật cho **mọi** tệp có `use` (`modules.rs:606`), không chỉ tệp trong cây module; từng che lỗi VD-124 | `JOURNAL/st130-siet-caps.md` §9 (số cũ 114) · `VD-133` · `JOURNAL/st130b-ca-thu-8.md` | **#143** (VD-149) — bảng chính: **chuyển VS3** từ ST-154 (**VD-154(b)**; trước đó **mở**); VD-133 cho phép chuyển VS3 khi ca khoá xanh (ca `st130b` **đã xanh**) |
 
 **Ánh xạ chính thức (VD-149, 2026-11-17): `#113b → #142`, `#114b → #143`.**
@@ -396,15 +396,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **192** (1..191; #109 tách `a`/`b`) |
-| `mở` | **95** |
-| `đóng` | **71** |
+| `mở` | **94** |
+| `đóng` | **72** |
 | `chuyển VS3` | **23** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 95 mở + 71 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **192** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; thêm #185/#186/#187/#188/#189/#190/#191).
+Kiểm: 94 mở + 72 đóng + 23 VS3 + 2 không làm + 1 điều hướng = **192** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; thêm #185/#186/#187/#188/#189/#190/#191).
 **Đợt VD-258..VD-270 (21/11)**: ngoài **#148** đã đóng ở ST-265, các gap còn mở của đợt (step-cap parity;
 budget/fuel/Q chưa chốt default; coverage frame; nested async guard 200 000; parser chưa nhận `[.., z]`;
 method `self`/gán sâu) **chưa cấp số nợ** — theo dõi ở `JOURNAL/vd260-report.md` §6 và
