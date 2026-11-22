@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ACTIVE — Bảng điều khiển nhanh cho Agent 2 (≤ 100 dòng)
 
-> **Cập nhật**: 2026-11-23 (`v0.4.0` prep @ `bf42d6d`) · **Tag mới nhất**: `v0.3.6` (`8fa2c09`); **`v0.4.0` CHƯA TAG** · **Giai đoạn đang mở**: **GĐ 1 (`v0.4.0`) + Zero-Idle GĐ 1.5/2**
-> **Chuẩn bị `v0.4.0`**: workspace **0.4.0**, gate Linux **3656/4** @ `e47b3ca`, Windows full **3589/0/3**; **final QA Linux/Windows đang chạy/chốt**.
+> **Cập nhật**: 2026-11-23 (`R33` chốt @ `ab17f1a`) · **Tag `v0.4.0` trên commit R33**; tag trước **`v0.3.6` (`8fa2c09`)** · **Giai đoạn đang mở**: GĐ 1.5/2 (sau tag)
+> **Final QA `v0.4.0`**: Linux @ `e47b3ca` gate **3656/4**, release **3661/0/4**, 2× soak **10/10**; Windows @ `e47b3ca` full **3607/0/3**, release **3606/0/3**; Windows release `0.4.0` @ `8696edc` (`vis.exe` 11.530.240 B).
 > **Kế hoạch đêm tới 09:00 sáng 2026-11-23**: xem chi tiết tại `agent/JOURNAL/ke-hoach-dem-2026-11-22-vd282.md`.
 > **Khởi động 30 giây**: Đọc `AGENTS.md` → tệp này → phần cuối `agent/QUEUE.md` (`ST-290`..`ST-309`). Chỉ mở `agent/DECISIONS.md` đúng mục `VD-###` được dẫn chiếu.
 
@@ -16,7 +16,7 @@
 | **ST-295** | W2 | **DONE** (`cd76da56`) | APPROVED `VD-282`: `rustix =1.1.6` `openat2`/`O_NOFOLLOW`, race ghi 0/100, Landlock 18/18; đóng `#109b`/`#125`/`#140` |
 | **ST-291** | **W1** | **DONE** (`269ff71`/merge `8cc3588`) | `P2b-1/2` lazy/batched submit + compact `Vec` proxy; batch 10k **29,1 ms** (interp) / **28,6–29,7 ms** (VM). Tỉ lệ **≤1,5× W=1 chưa đạt** (~3,3–4,0×; trần dựng Interp/Vm mỗi task — cần P2b-3/4, ngoài ST-291) |
 | **ST-292** | **W1** | **DONE** (`eca4e82`/merge `e47b3ca`) | `P4a..c` + `--workers <N>` + `VS0509`; **bắt buộc nối `gioi_han_phien()` vào `SharedBudget`** khi `N>1` (`VD-281`), `--unlimited-budget` ⇒ `None`; test `--workers 4 --max-budget 5000` trap `VS0510` như `W=1` |
-| **ST-296** | W4 | **WIP — chuẩn bị `v0.4.0`** | Version **0.4.0**, cache re-pin, CHANGELOG/ROADMAP/ACTIVE; Linux gate **3656/4** @ `e47b3ca`, Windows full **3589/0/3**; final QA đang chốt, `v0.4.0` **chưa tag**; R33 JSON giữ nguyên baseline |
+| **ST-296** | W4 | **DONE** | R33 **CHỐT**; version **0.4.0** @ `8696edc`, cache re-pin, final QA Linux/Windows xong; tag **`v0.4.0` trên commit R33**; R33 JSON giữ baseline `90cfc39` |
 | **ST-296d-tools** | **W4** | **DONE** (`b36f8a5` + `4b2484f`) | **Luật R7** (173 legacy log đóng băng) + `.config/nextest.toml` (`retries=0`) + `bin/vis-{gc-targets,jobs,status,gate-windows}` + auto `CARGO_BUILD_JOBS`/`sccache`; quick Windows `--quick` PASS (pkg 25, h2 33, cancel 8, select 25) |
 | **ST-296a** | **W4** | **READY (nhánh riêng, chưa merge)** | `plan/w4-st296a-tests` @ `f961b83`; gom 272 tệp test → 12 binary + common + 3 standalone, gate 3638/4, 350→90 binary; **chỉ merge sau tag `v0.4.0`** |
 | **ST-296b** | **W3** | **READY (nhánh riêng, chưa merge)** | `plan/w3-st296b-crates` @ `7c4c205`; tách `vis-loader` + `vis-lsp` + `[workspace.dependencies]`, gate 3638/4, targets core 18/18, diff 0; **chỉ merge sau tag `v0.4.0`** |
@@ -35,4 +35,4 @@
 - **KHÔNG** kill tiến trình nền đang sống (`W1`/fuzz/soak/`psvn`); **KHÔNG** `git reset --hard` worktree đang bận; đợi lát hiện tại hoàn tất rồi kéo `origin/main`.
 - **CPU & Đĩa (`ps`)**: Giới hạn `CARGO_BUILD_JOBS` (`≤ nproc / số luồng đang chạy`, ví dụ `4` mỗi luồng khi chạy 3–4 luồng), đặt `CARGO_PROFILE_DEV_DEBUG=0`, `TMPDIR=/home/ps/tmp` (KHÔNG `/tmp`, KHÔNG `target/`), giữ trống đĩa > 10 GB.
 - **Luật cứng**: `0 unsafe` (R2); R1 ≤ 1.500 dòng; **R7 không commit `.log`/`.txt` > 50 KB trong `agent/JOURNAL/`** (lưu log ngoài repo + trích tóm tắt `.md` & `sha256`); **không** commit `R##-viscript.json` nháp; **không** `.github/workflows/`; macOS ngoài phạm vi.
-- **Cổng**: test đỏ-trước; `./vis-dev gate --fast` trước khi báo `REVIEW`; giữ `main` sạch trước tag `v0.4.0` (đã merge `ST-291`, `ST-292`, `ST-296d-tools`, `ST-299a`, `ST-296`; **chưa tag**; `ST-296a`/`ST-296b` để sau tag).
+- **Cổng**: test đỏ-trước; `./vis-dev gate --fast` trước khi báo `REVIEW`; tag `v0.4.0` trên commit R33 (sau `./vis-dev check`); `ST-296a`/`ST-296b` READY **merge sau tag**.

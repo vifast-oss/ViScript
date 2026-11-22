@@ -3,7 +3,7 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
-## v0.4.0 — 2026-11-23 (chuẩn bị phát hành — **CHƯA TAG**)
+## v0.4.0 — 2026-11-23
 
 - **Phiên bản**: workspace **0.4.0** (`version.workspace = true` cho mọi crate thành viên);
   `vis --version` ⇒ **`vis 0.4.0`**; `PHIEN_BAN` thêm nhãn `+v040-release-2026-11-23`, khoá cache
@@ -28,12 +28,20 @@ Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent
 - **ST-299a** (`5cc1903`, merge `060a744`): `WasiHost` thật cho `wasm32-wasip1` + `vis-wasm-run`;
   native **27/27**, wasm **26/26** trên wasmtime 51 + Node 26; binary **3.430.132 B**.
 - **Timing fix** `6c7e188`: `vd270_test_slowest` chịu tải (không `#[ignore]`), giữ kiểm regression.
-- **QA đang chốt**: Linux gate **3656 passed / 4 skipped** @ `e47b3ca`; Windows full
-  **3589/0/3**; release/fresh-clone và soak cuối đang chạy trong final QA — số release sẽ chốt
-  cùng tag. **`v0.4.0` CHƯA TAG**; tag hiện hành vẫn **`v0.3.6` @ `8fa2c09`**.
-- **Nhánh chờ sau tag**: `plan/w4-st296a-tests` @ `f961b83` (gom test binary, gate 3638/4) và
-  `plan/w3-st296b-crates` @ `7c4c205` (tách `vis-loader`/`vis-lsp`, targets 18/18) — **READY,
-  chưa merge**; không nằm trong bản phát hành này.
+- **Linux final QA @ `e47b3ca`**: gate **3656 passed / 4 skipped** (352 binary, 195,84 s);
+  release **3661/0/4** (445,18 s); **2× soak 10/10** (531 s + 642 s; mỗi soak 3× gate 3656/4,
+  3× diff 100k seed `20261115` `lech=0`, 2× host 54/54, 2× cache 5/5); diff ngoài soak seed
+  `202611230230` **0 lệch** (100.000; 69,2 s); worker_frame **12/12**, frame_vm **6/6**, P1 **8/8**,
+  P2 **14/14**, P3 **10/10**, h2 **34+1**, cancel **8/8**, select **25/25**, pkg **25/25**, host
+  **54/54**; budget `--workers 4 --max-budget 5000` → **101 + VS0506/VS0510**.
+- **Windows final QA @ `e47b3ca`**: full **3607/0/3** (361 block, 700 s); release **3606/0/3**
+  (534 s); worker_frame 12/12 + 6/6, P1 8, P2 14, P3 10, select 25, h2 33, cancel 8, host 54/54,
+  targets **18/18 + 17/1**. Release **0.4.0 @ `8696edc`**: `vis.exe` **11.530.240 B**, sha256
+  `3813a1b3e7aa2f8608aaf0a168e2dffbc0d904554bf0a096fee5927a821cb065`, `vis 0.4.0`; version 2/2,
+  cache 3/3 (khoá `22572d0b…3a8b`), budget parity 101/VS0510, `--workers 0` rc 2.
+- **Tag `v0.4.0` trên commit R33** (sau `./vis-dev check` xanh); tag trước **`v0.3.6` @
+  `8fa2c09`**. Nhánh **READY chưa merge**, xét sau tag: `plan/w4-st296a-tests` @ `f961b83`
+  (gom test binary) và `plan/w3-st296b-crates` @ `7c4c205` (tách `vis-loader`/`vis-lsp`).
 
 ## v0.3.6 — 2026-11-22
 
