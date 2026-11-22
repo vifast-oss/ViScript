@@ -127,6 +127,7 @@ dependencies = [
  "vis-bytecode",
  "vis-diag",
  "vis-interp",
+ "vis-loader",
  "vis-syntax",
  "vis-types",
  "vis-vm",
@@ -138,6 +139,17 @@ version = "0.4.1"
 dependencies = [
  "unicode-normalization",
  "vis-diag",
+ "vis-syntax",
+ "vis-types",
+]
+
+[[package]]
+name = "vis-loader"
+version = "0.4.1"
+dependencies = [
+ "vis-bytecode",
+ "vis-diag",
+ "vis-interp",
  "vis-syntax",
  "vis-types",
 ]

@@ -1,7 +1,7 @@
-# vis-host-wasm — host WASI cho ViScript (ST-299a)
+# vis-host-wasm — host WASI cho ViScript (ST-299b)
 
 Workspace **riêng** (không thuộc workspace chính; `exclude` từ ST-171) chứa host WASI thật cho
-`wasm32-wasip1` và runner một tệp `vis-wasm-run`.
+`wasm32-wasip1` và runner **một tệp hoặc module đa tệp** `vis-wasm-run` (ST-299b nối `vis-loader`).
 
 ## Phạm vi
 
@@ -11,16 +11,16 @@ Workspace **riêng** (không thuộc workspace chính; `exclude` từ ST-171) ch
 | `dong_ho` | wall clock + monotonic qua `SystemTime`/`Instant` (WASI `clock_time_get`) |
 | `stdio::Stdio` | ghi thật ra stdout/stderr, hoặc gom bộ đệm để test; broken pipe là lỗi trả về |
 | `tu_choi::{TuChoiNet,TuChoiProc,TuChoiDb}` | từ chối rõ `net` / `proc` / `sqlite`, không panic |
-| `runner::chay` | pipeline một tệp `parse → lower → tyck → (compile) → interp\|VM` |
+| `runner::chay` / `chay_tep` | pipeline `parse → lower → tyck → (compile) → interp\|VM`; `chay_tep` nạp đa tệp bằng `vis-loader` (`use ./x`) |
 | `src/bin/vis-wasm-run.rs` | binary chạy trên native và `wasm32-wasip1` |
 
 Crate đặt `#![forbid(unsafe_code)]`; không dependency ngoài crate lõi ViScript (`vis-syntax`,
-`vis-types`, `vis-bytecode`, `vis-interp`, `vis-vm`, `vis-diag`).
+`vis-types`, `vis-bytecode`, `vis-interp`, `vis-vm`, `vis-loader`, `vis-diag`).
 
 ## Dùng
 
 ```bash
-# native
+# native — một tệp hoặc đa tệp (`use ./util` đọc cạnh tệp chính)
 cargo run --bin vis-wasm-run -- --interp --preopen /data=$PWD/data data/prog.vis
 cargo run --bin vis-wasm-run -- --vm     --preopen /data=$PWD/data data/prog.vis
 
@@ -41,10 +41,10 @@ hàng rào cứng trên WASI vẫn là preopen của runtime.
 ## Kiểm
 
 ```bash
-cargo test                 # 27 test native: preopen/deny/symlink/ro/clock/stdio/refuse/parity
+cargo test                 # 29 test native: preopen/deny/symlink/ro/clock/stdio/refuse/parity/đa tệp
 cargo clippy --all-targets -- -D warnings
 cargo check --target wasm32-wasip1
-bin/vis-wasm-suite --build  # 13 ca × interp/VM trên runtime WASI có sẵn
+bin/vis-wasm-suite --build  # 14 ca × interp/VM = 28 lượt trên runtime WASI có sẵn
 ```
 
 `bin/vis-wasm-suite` chọn runtime theo thứ tự `wasmtime` CLI → Python `wasmtime` → Node `node:wasi`;

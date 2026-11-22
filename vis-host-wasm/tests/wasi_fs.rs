@@ -259,3 +259,56 @@ fn runner_tu_choi_ghi_ngoai_preopen() {
         assert!(kq.stdout.is_empty(), "{engine:?}: {:?}", kq.stdout);
     }
 }
+
+#[test]
+fn da_tep_relative_use_ca_hai_engine() {
+    let d = tam("da-tep");
+    let root = d.p.join("src");
+    ghi(
+        &root.join("util.vis"),
+        "pub fn cong(a: int, b: int) -> int:\n    a + b\n",
+    );
+    ghi(
+        &root.join("main.vis"),
+        "use ./util\n\nfn main():\n    print(cong(2, 3))\n",
+    );
+    std::fs::create_dir_all(d.p.join("data")).unwrap();
+    let pre = vis_host_wasm::Preopen::moi("/data", d.p.join("data"));
+    let main = root.join("main.vis");
+    for engine in [Engine::Interp, Engine::Vm] {
+        let kq = vis_host_wasm::runner::chay_tep(
+            &main.to_string_lossy(),
+            engine,
+            &[],
+            std::slice::from_ref(&pre),
+        );
+        assert_eq!(kq.stdout, "5\n", "{engine:?}: {}", kq.stderr);
+        assert_eq!(kq.exit, 0, "{engine:?}: {}", kq.stderr);
+        assert!(kq.stderr.is_empty(), "{engine:?}: {}", kq.stderr);
+    }
+}
+
+#[test]
+fn da_tep_thieu_tep_bao_ro() {
+    let d = tam("thieu-tep");
+    let root = d.p.join("src");
+    ghi(
+        &root.join("main.vis"),
+        "use ./khong_co\n\nfn main():\n    print(1)\n",
+    );
+    std::fs::create_dir_all(d.p.join("data")).unwrap();
+    let pre = vis_host_wasm::Preopen::moi("/data", d.p.join("data"));
+    let kq = vis_host_wasm::runner::chay_tep(
+        &root.join("main.vis").to_string_lossy(),
+        Engine::Interp,
+        &[],
+        &[pre],
+    );
+    assert_eq!(kq.exit, 2, "stderr={}", kq.stderr);
+    assert!(kq.stdout.is_empty());
+    assert!(
+        kq.stderr.contains("khong_co") || kq.stderr.contains("VS0303"),
+        "phải nêu tệp thiếu: {}",
+        kq.stderr
+    );
+}

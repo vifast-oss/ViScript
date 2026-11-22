@@ -18,6 +18,7 @@ vis-types = { path = "../crates/vis-types" }
 vis-bytecode = { path = "../crates/vis-bytecode" }
 vis-interp = { path = "../crates/vis-interp" }
 vis-vm = { path = "../crates/vis-vm" }
+vis-loader = { path = "../crates/vis-loader" }
 
 [[bin]]
 name = "vis-wasm-run"
