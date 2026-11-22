@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-287 — Windows h1 cancel matrix @ a1930cb — raw summary (psvn, 2026-11-22)
+# Nguon: /c/Users/ps/vislogs/matrix-summary.log (A/B/D/E dung cargo test; C chay truc tiep binary)
+# Moi dong A/B/D: "<lan> rc=<ma> <test result>"; dong FAIL/PANIC/STDOUT la chi tiet lan do.
+# C: "C<vong> p1=<rc> [<result>] p2=<rc> [<result>]" — 2 tien trinh song song.
+
+### PHASE A: ca rieng x20 (test-threads=1)
+A1 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A2 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.90s
+A3 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A4 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.88s
+A5 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A6 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.88s
+A7 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.88s
+A8 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.88s
+A9 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A10 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A11 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A12 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A13 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.89s
+A14 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.87s
+A15 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.86s
+A16 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.88s
+A17 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.87s
+A18 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.86s
+A19 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.86s
+A20 rc=0 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.87s
+### PHASE B: full suite x10 (default)
+B1 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+B2 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s
+  FAILED_B2: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s 
+  PANIC_B2: thread 'cancel_http_h1_mot_task_khong_anh_huong_task_khac' (12088) panicked at crates\vis-cli\tests\vs3_http_cancel.rs:420:5:
+  STDOUT_B2: 
+B3 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+B4 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.89s
+B5 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.89s
+B6 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.88s
+B7 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+B8 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s
+  FAILED_B8: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s 
+  PANIC_B8: thread 'cancel_http_h1_mot_task_khong_anh_huong_task_khac' (11548) panicked at crates\vis-cli\tests\vs3_http_cancel.rs:415:5:
+  STDOUT_B8: task bị huỷ phải dừng: "V:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\nok\n"
+B9 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+B10 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.89s
+### TONG A/B
+### PHASE C: 2 tien trinh song song (full suite) x5
+C1 p1=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s] p2=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s]
+C2 p1=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s] p2=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.96s]
+C3 p1=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s] p2=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.98s]
+C4 p1=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.93s] p2=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s]
+C5 p1=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.92s] p2=0 [test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s]
+### PHASE D: full suite --test-threads=1 x10
+D1 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.54s
+  FAILED_D1: test cancel_http_h1_dong_socket_va_parity ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.54s 
+  STDOUT_D1: task bị huỷ phải dừng: "main\nV:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\n"
+D2 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.75s
+D3 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+D4 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+  FAILED_D4: test cancel_http_h1_dong_socket_va_parity ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s 
+  STDOUT_D4: task bị huỷ phải dừng: "main\nV:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\n"
+D5 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.60s
+  FAILED_D5: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.60s 
+  STDOUT_D5: task bị huỷ phải dừng: "V:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\nok\n"
+D6 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.63s
+  FAILED_D6: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.63s 
+  STDOUT_D6: task bị huỷ phải dừng: "V:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\nloi: lỗi đọc `C2`: An established connection was aborted by the software in your host machine. (os error 10053)\n"
+D7 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+  FAILED_D7: test cancel_http_h1_dong_socket_va_parity ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s 
+  STDOUT_D7: task bị huỷ phải dừng: "main\nV:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\n"
+D8 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.76s
+  FAILED_D8: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.76s 
+  STDOUT_D8: task còn lại phải xong: "V:pre\nloi: lỗi đọc `C2`: An established connection was aborted by the software in your host machine. (os error 10053)\n"
+D9 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.56s
+  FAILED_D9: test cancel_http_h1_dong_socket_va_parity ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.56s 
+  STDOUT_D9: task bị huỷ phải dừng: "main\nV:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\n"
+D10 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+  FAILED_D10: test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s 
+  STDOUT_D10: task bị huỷ phải dừng: "V:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\nok\n"
+### PHASE E: tung ca rieng x10
+E cancel_http_h1_dong_socket_va_parity: fail=1/10
+E cancel_http_h1_lap_nhieu_vong_khong_ro: fail=0/10
+E cancel_http_h1_mot_task_khong_anh_huong_task_khac: fail=0/10
+E cancel_http_h1_sau_huy_van_goi_duoc: fail=0/10
+E cancel_http_h1_server_khong_tra_header: fail=3/10
