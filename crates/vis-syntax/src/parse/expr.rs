@@ -44,7 +44,9 @@ impl<'a> Parser<'a> {
             return true;
         }
         if self.at_punct("(") {
-            // Quét tới ')' cân bằng rồi xem token kế có phải `=>`.
+            // **VD-283/ST-301**: quét tới `)` cân bằng; là lambda params khi sau `)` là `=>`
+            // hoặc `-> <type> =>` (chỉ nhìn token, không đoán nội dung — parser tham số sẽ
+            // báo lỗi cú pháp nếu không phải IDENT/annot).
             let mut depth = 0usize;
             let mut k = 0usize;
             loop {
@@ -57,12 +59,25 @@ impl<'a> Parser<'a> {
                 } else if t.is_punct(")") {
                     depth -= 1;
                     if depth == 0 {
-                        return self.peek_punct(k + 1, "=>");
+                        if self.peek_punct(k + 1, "=>") {
+                            return true;
+                        }
+                        if self.peek_punct(k + 1, "->") {
+                            // Bỏ qua type tới `=>` (type ngắn: IDENT/`?`/`[`/`]`/`,`/`.`).
+                            let mut j = k + 2;
+                            while self.tok_at(j).kind != Kind::Eof {
+                                if self.peek_punct(j, "=>") {
+                                    return true;
+                                }
+                                if self.peek_punct(j, ":") || self.peek_punct(j, ";") {
+                                    return false;
+                                }
+                                j += 1;
+                            }
+                            return false;
+                        }
+                        return false;
                     }
-                } else if t.is_punct(",") || t.kind == Kind::Ident {
-                    // hợp lệ trong danh sách tham số lambda
-                } else {
-                    return false;
                 }
                 k += 1;
             }
@@ -117,6 +132,10 @@ impl<'a> Parser<'a> {
                 self.node(NodeKind::LambdaParams, params),
             )));
             elems.push(self.expect_punct(")")?);
+            // **VD-283/ST-301**: `(x: T) -> U => expr` — kiểu trả về tuỳ chọn.
+            if self.eat_punct("->").is_some() {
+                elems.push(Elem::Node(Box::new(self.parse_type()?)));
+            }
         } else {
             let mut params = Vec::new();
             let id = self.expect_ident()?;

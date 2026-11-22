@@ -2,6 +2,7 @@
 //! **ST-274 / VD-255** — đánh giá HExpr/HStmt + gọi hàm của frame evaluator.
 //! Tách từ `frame.rs` cho luật R1 (≤1500 dòng/file). Mọi item dùng chung lấy qua `super`.
 use super::*;
+use crate::interp::goi::opt_lift_maybe;
 use crate::rt::fee::FeeKind;
 
 /// Đánh giá một `HExpr` (đẩy kết quả vào `vals` hoặc continuation).
@@ -49,6 +50,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
                 frame.push_val(Value::Fn(Rc::new(crate::value::Closure {
                     name: f.name.clone(),
                     params: f.params.iter().map(|p| p.sym).collect(),
+                    param_depths: f.params.iter().map(|p| opt_depth_ty(&p.ty)).collect(),
                     body: HBody::Stmts(f.body.clone()),
                     env: cenv,
                     ret_depth: opt_depth_ty(&f.ret),
@@ -363,6 +365,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
         } => {
             frame.cur().work.push(Work::MakeLambda {
                 params: params.iter().map(|p| p.sym).collect(),
+                param_depths: params.iter().map(|p| opt_depth_ty(&p.ty)).collect(),
                 ret_depth: opt_depth_ty(ret),
                 body: body.clone(),
             });
@@ -710,7 +713,9 @@ pub(super) fn call_value<'a>(
             let mut restore = Vec::new();
             for (i, p) in c.params.iter().enumerate() {
                 restore.push((*p, env.borrow().get(p).cloned()));
-                env.borrow_mut().insert(*p, pos[i].clone());
+                let depth = c.param_depths.get(i).copied().unwrap_or(0);
+                env.borrow_mut()
+                    .insert(*p, opt_lift_maybe(pos[i].clone(), depth));
             }
             // `c.body` là HBody sở hữu trong Value::Fn. Frame evaluator cần tham chiếu
             // `'static` để `Work` sống qua suspend; closure cache bản dựng **một lần cho mỗi

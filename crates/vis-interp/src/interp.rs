@@ -723,6 +723,7 @@ impl<'a> Interp<'a> {
                         return Ok(Value::Fn(Rc::new(Closure {
                             name: f.name.clone(),
                             params: f.params.iter().map(|p| p.sym).collect(),
+                            param_depths: f.params.iter().map(|p| opt_depth_ty(&p.ty)).collect(),
                             body: HBody::Stmts(f.body.clone()),
                             env: self.env.clone(),
                             ret_depth: opt_depth_ty(&f.ret),
@@ -1047,6 +1048,7 @@ impl<'a> Interp<'a> {
             } => Ok(Value::Fn(Rc::new(Closure {
                 name: String::new(),
                 params: params.iter().map(|p| p.sym).collect(),
+                param_depths: params.iter().map(|p| opt_depth_ty(&p.ty)).collect(),
                 body: body.clone(),
                 ret_depth: opt_depth_ty(ret),
                 // ST-15b (mục 2): **chụp snapshot** môi trường tại điểm tạo closure — interp dùng

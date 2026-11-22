@@ -1000,6 +1000,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
         }
         Work::MakeLambda {
             params,
+            param_depths,
             ret_depth,
             body,
         } => {
@@ -1008,6 +1009,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             frame.push_val(Value::Fn(Rc::new(crate::value::Closure {
                 name: String::new(),
                 params,
+                param_depths,
                 body,
                 env,
                 ret_depth,

@@ -1322,8 +1322,9 @@ expr_stmt       := expr NEWLINE
 
 expr            := lambda | pipe_expr
 lambda          := 'fn' '(' params? ')' ['->' type] ':' suite
-                 | lambda_params '=>' expr
-lambda_params   := IDENT | '(' IDENT (',' IDENT)* ')'
+                 | lambda_params ['->' type] '=>' expr
+lambda_params   := IDENT | '(' [lambda_param (',' lambda_param)* ','?] ')'
+lambda_param    := IDENT [':' type]
 
 pipe_expr       := or_expr ('|>' or_expr)*
 or_expr         := and_expr ('or' and_expr)*
