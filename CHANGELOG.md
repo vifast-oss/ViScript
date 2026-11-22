@@ -3,6 +3,14 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.3.5 — 2026-11-22
+
+- **Fix race cancel-before-run**: `WorkerPool` đặt cờ huỷ **trước** khi enqueue (`spawn_inner`, `spawn_cancelled`, `spawn_shared_with_cancel`); `spawn_parallel` truyền `cancel_before`, bỏ `handle.cancel()` sau spawn. 20.000 vòng sau fix 0 fail; P2 **10× = 140/140**, cancel-before **1.000/1.000**.
+- **Windows**: workspace **3528/0/3**, P2 10× 14/14, P1 8/8, P3 10/10 debug+release; release 11.205.120 B; host 54/54.
+- **Test-only**: nới biên `net::tcp_het_gio_doc` 400 ms → **3 s** (đo wall-clock cả process 87–130 ms ấm / 1,41 s nguội); 50/50 dưới tải.
+- Linux gate **3571/3**; `vis-dev check` PASS. Tag `v0.3.4` chứa race cancel-before, **v0.3.5 thay thế**.
+- Không GitHub Actions; macOS ngoài phạm vi.
+
 ## v0.3.4 — 2026-11-22
 
 - **Windows async net/TLS/HTTP-1.1**: backend `mio::Source` trực tiếp (IOCP/AFD), `Nguon`, invariant `host_poll`, mã lỗi 10035/10036; psvn **22/22 + 22/22 ×10**, soak **420 vòng / 18.024 test**, workspace **3528/0/3** debug+release, host 54/54, targets 18/18 + 17/1; flake test-only `tcp_explain_tong` (10053) fixed. Async-h2 vẫn **Unix-only**.
