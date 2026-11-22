@@ -750,10 +750,11 @@ fn giai_roots(
     reg: &Path,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
+    uu_tien: &BTreeMap<String, Version>,
 ) -> Result<BTreeMap<String, Version>, String> {
     let ds_goc: Vec<(String, VersionReq)> =
         roots.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-    let mut bo = resolver::Resolver::moi(reg);
+    let mut bo = resolver::Resolver::moi(reg).voi_uu_tien(uu_tien.clone());
     if let Some((ten, e)) = entry_override {
         bo = bo.voi_entry_goc(ten, e);
     }
@@ -784,8 +785,9 @@ fn giai_va_doc(
     reg: &Path,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
+    uu_tien: &BTreeMap<String, Version>,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
-    let giai = giai_roots(reg, roots, entry_override)?;
+    let giai = giai_roots(reg, roots, entry_override, uu_tien)?;
     let ds = doc_tat_ca(reg, &giai, entry_override)?;
     Ok((giai, ds))
 }
@@ -975,6 +977,8 @@ fn khoa_cong_tu_chon(chon: &[String], reg: &Registry) -> Result<Vec<[u8; 32]>, S
 
     let mut out = Vec::new();
     let mut da = BTreeSet::new();
+    // **ST-288 (VD-273)**: khoá tin cậy cấu hình sai là lỗi **VS0708** (cùng mã với lúc xác minh).
+    let ma = vis_diag::code(708);
     for raw in &raws {
         let mut co = false;
         for phan in raw
@@ -984,7 +988,7 @@ fn khoa_cong_tu_chon(chon: &[String], reg: &Registry) -> Result<Vec<[u8; 32]>, S
             co = true;
             let b = vis_cli::pkg_sig::hex_giai(phan, 32).map_err(|e| {
                 format!(
-                    "khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): {e}",
+                    "{ma}: khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): {e}",
                     out.len() + 1
                 )
             })?;
@@ -997,32 +1001,34 @@ fn khoa_cong_tu_chon(chon: &[String], reg: &Registry) -> Result<Vec<[u8; 32]>, S
         }
         if !co {
             return Err(format!(
-                "khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): cần ít nhất một khoá 64 hex",
+                "{ma}: khoá công khai Ed25519 thứ {} (`--registry-key`/`VIS_REGISTRY_KEY`): cần ít nhất một khoá 64 hex",
                 out.len() + 1
             ));
         }
     }
     if out.is_empty() {
-        return Err(
-            "cần ít nhất một khoá công khai Ed25519 (`--registry-key`/`VIS_REGISTRY_KEY`)"
-                .to_string(),
-        );
+        return Err(format!(
+            "{ma}: cần ít nhất một khoá công khai Ed25519 (`--registry-key`/`VIS_REGISTRY_KEY`)"
+        ));
     }
     Ok(out)
 }
 
 /// Giải + đọc gói từ nguồn đã chọn. Cục bộ đọc thẳng thư mục; HTTP tải **index**, giải bằng cùng
 /// resolver, rồi chỉ tải tarball của phiên bản đã chọn (xem [`registry_http`]). `khoa_cong` chỉ có
-/// tác dụng với HTTP (**VS3-5b**).
+/// tác dụng với HTTP (**VS3-5b**). `uu_tien` là **soft pin** cho `pkg update <tên>` (**#142**).
 fn nap_goi(
     reg: &Registry,
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
     khoa_cong: &[[u8; 32]],
+    uu_tien: &BTreeMap<String, Version>,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     match reg {
-        Registry::CucBo(p) => giai_va_doc(p, roots, entry_override),
-        Registry::Http(base) => registry_http::tai_va_giai(base, roots, entry_override, khoa_cong),
+        Registry::CucBo(p) => giai_va_doc(p, roots, entry_override, uu_tien),
+        Registry::Http(base) => {
+            registry_http::tai_va_giai(base, roots, entry_override, khoa_cong, uu_tien)
+        }
     }
 }
 
@@ -1064,6 +1070,7 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
         &roots,
         entry_override.as_deref().map(|e| (ten.as_str(), e)),
         &khoa_cong,
+        &BTreeMap::new(),
     )?;
     // Root **ghi vào lock**: `@req` ⇒ đúng req đó; không `@` ⇒ `^<phiên bản đã chọn>`.
     if req_nguoi_dung.is_none() {
@@ -1156,7 +1163,12 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
 ///
 /// **ST-129 (VD-125)**: **giải lại** từ `roots` của lock (lock cũ ⇒ mỗi gói thành root `=<version>`);
 /// gói được chọn lại theo ràng buộc, nội dung đổi ⇒ cài lại + cập nhật sha; ghi lại lock **định dạng
-/// mới**. Có `<tên>` ⇒ **ghim** các gói khác ở phiên bản đang có (chỉ giải lại nhánh liên quan).
+/// mới**.
+///
+/// **ST-288 (#142)**: có `<tên>` ⇒ **soft pin** các gói khác ở phiên bản đang có — resolver *thử
+/// trước* bản đó để gói không liên quan giữ nguyên, nhưng **không** ghim cứng `=<version>`: nếu
+/// manifest của gói được update đòi nâng một dep chung thì dep đó được nâng trong phạm vi ràng buộc
+/// (thay vì báo `VS0704`/bỏ qua bản mới). Gói không liên quan vẫn giữ phiên bản.
 fn lenh_update(args: &[String]) -> Result<(), String> {
     let TuyChon {
         ten,
@@ -1177,19 +1189,20 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
     }
     let reg = registry_tu_chon(reg)?;
     let khoa_cong = khoa_cong_tu_chon(&khoa, &reg)?;
-    let mut roots = roots_tu_lock(&khoa_cu)?;
-    // Có `<tên>` ⇒ **ghim** mọi gói khác ở phiên bản đang có (update một gói không đụng gói khác).
+    let roots = roots_tu_lock(&khoa_cu)?;
+    // **ST-288 (#142)**: soft pin (không hard pin) — xem doc hàm. Gói được update **không** ưu tiên.
+    let mut uu_tien: BTreeMap<String, Version> = BTreeMap::new();
     if let Some(t) = &ten {
         for g in &khoa_cu.goi {
             if &g.name != t {
-                let r = VersionReq::parse(&format!("={}", g.version))
-                    .map_err(|e| format!("`vis.lock` hỏng: version `{}`: {e}", g.version))?;
-                roots.insert(g.name.clone(), r);
+                if let Ok(v) = Version::parse(&g.version) {
+                    uu_tien.insert(g.name.clone(), v);
+                }
             }
         }
     }
     // Giải **lại** toàn bộ (tất định) rồi so với lock cũ để biết gói nào đổi.
-    let (giai, ds) = nap_goi(&reg, &roots, None, &khoa_cong)?;
+    let (giai, ds) = nap_goi(&reg, &roots, None, &khoa_cong, &uu_tien)?;
     let cu: BTreeMap<&str, &GoiKhoa> = khoa_cu.goi.iter().map(|g| (g.name.as_str(), g)).collect();
     let mut doi = khoa_cu.can_migrate() || khoa_cu.roots.is_empty();
     let mut can_cai: Vec<GoiCai> = Vec::new();

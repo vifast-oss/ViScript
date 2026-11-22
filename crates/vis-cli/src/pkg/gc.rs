@@ -125,7 +125,16 @@ pub(super) fn don(
 ///
 /// Hợp tham chiếu của **mọi** lock (tệp `--lock` + `vis.lock` quét dưới `--root`, có kiểm soát);
 /// chỉ xoá blob/mục gói không được **bất kỳ** lock nào tham chiếu. Không có lock ⇒ từ chối.
-/// Store được dọn: workspace chứa lock, root của `--root`, và cwd ở chế độ mặc định (một lock).
+///
+/// **Ngữ nghĩa `--root` (khoá ở ST-288)**:
+/// - lặp lại được; mỗi root **quét đệ quy** tìm `vis.lock` (bỏ `.git`/`.vis`/`target`/
+///   `node_modules`, không theo symlink, giới hạn độ sâu/số thư mục — quá giới hạn ⇒ lỗi, không
+///   bỏ qua im lặng vì có thể bỏ sót lock đang dùng blob);
+/// - **workspace được dọn** = chính các root (đã canonical hoá) **+** thư mục chứa từng lock; trùng
+///   nhau (root lồng nhau, hai root cùng trỏ một cây) **chỉ tính một lần**;
+/// - root **không có** `.vis`/store là **no-op**, không tạo thư mục; mọi tham chiếu được hợp trước
+///   khi xoá; kiểm symlink **toàn bộ** workspace trước khi xoá mục đầu tiên;
+/// - `--root` không tìm thấy `vis.lock` nào ⇒ lỗi (không dọn mù).
 pub(super) fn lenh(args: &[String]) -> Result<(), String> {
     let mut dry = false;
     let mut lock_args: Vec<PathBuf> = Vec::new();

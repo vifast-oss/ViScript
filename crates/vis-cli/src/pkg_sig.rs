@@ -6,6 +6,7 @@
 //! phân tách phẩy hoặc khoảng trắng); khi có khoá, mọi phiên bản được chọn **phải** có
 //! `signature_ed25519` khớp **một trong** các khoá, nếu không ⇒ từ chối cài (trước khi tải tarball).
 //! Nhiều khoá hỗ trợ **key rotation**: khoá cũ vẫn verify bản cũ, khoá mới verify bản mới.
+//! Mọi lỗi cấu hình khoá/xác minh chữ ký được báo bằng mã **`VS0708`** (ST-288/VD-273).
 //!
 //! # Thông điệp được ký (hợp đồng `vispkg-sig1`)
 //!

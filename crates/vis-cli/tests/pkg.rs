@@ -652,6 +652,24 @@ fn tao_goi(reg: &Path, ten: &str, ver: &str, src: &str) {
     );
 }
 
+/// Tạo gói **có deps** trong registry: manifest `deps` là map `tên -> ràng buộc`.
+fn tao_goi_deps(reg: &Path, ten: &str, ver: &str, src: &str, deps: &[(&str, &str)]) {
+    let dir = reg.join(ten).join(ver);
+    ghi(&dir.join("src/main.vis"), src);
+    let sha = hex(&vis_bytecode::source_hash(src));
+    let deps = deps
+        .iter()
+        .map(|(n, r)| format!("\"{n}\":\"{r}\""))
+        .collect::<Vec<_>>()
+        .join(",");
+    ghi(
+        &dir.join("manifest.json"),
+        &format!(
+            "{{\"name\":\"{ten}\",\"version\":\"{ver}\",\"entry\":\"src/main.vis\",\"deps\":{{{deps}}},\"files\":[{{\"path\":\"src/main.vis\",\"sha256\":\"{sha}\"}}]}}"
+        ),
+    );
+}
+
 fn cap_nhat(d: &Path, them: &[&str]) -> (i32, String, String) {
     let mut args = vec!["pkg", "update", "--registry"];
     let reg = d.join("reg");
@@ -736,6 +754,97 @@ fn update_mot_ten_khong_dung_goi_khac() {
         sha_goi_trong_lock(&doc(&d.join("vis.lock")), "b"),
         "sha b trong lock phải nguyên vẹn"
     );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **(#142 / ST-288)** — `update <tên>` **không ghim cứng** gói khác: bản mới của gói được
+/// update cần nâng **dep chung** (manifest của nó đòi `util ^0.2`) ⇒ resolver nâng `util` trong
+/// khi gói không liên quan (`other`) vẫn giữ phiên bản cũ.
+#[test]
+fn update_mot_ten_nang_duoc_dep_chung() {
+    let d = tmp_dir("upd-dep");
+    let reg = d.join("reg");
+    tao_goi_deps(&reg, "util", "0.1.0", "fn util() -> int:\n    1\n", &[]);
+    tao_goi_deps(
+        &reg,
+        "app",
+        "1.0.0",
+        "fn app() -> int:\n    1\n",
+        &[("util", "^0.1")],
+    );
+    tao_goi(&reg, "other", "1.0.0", "fn other() -> int:\n    1\n");
+    for ten in ["app", "other"] {
+        let (c, _, e) = vis(
+            &d,
+            &["pkg", "add", ten, "--registry", reg.to_str().unwrap()],
+        );
+        assert_eq!(c, 0, "{ten}: {e}");
+    }
+    let lock1 = doc(&d.join("vis.lock"));
+    assert!(
+        lock1.contains("\"name\":\"util\",\"version\":\"0.1.0\""),
+        "{lock1}"
+    );
+    assert!(
+        lock1.contains("\"name\":\"app\",\"version\":\"1.0.0\""),
+        "{lock1}"
+    );
+    assert!(
+        lock1.contains("\"name\":\"other\",\"version\":\"1.0.0\""),
+        "{lock1}"
+    );
+
+    // Bản mới: `app` cần `util ^0.2`; `other` cũng có bản mới nhưng **không** liên quan.
+    tao_goi_deps(&reg, "util", "0.2.0", "fn util() -> int:\n    2\n", &[]);
+    tao_goi_deps(
+        &reg,
+        "app",
+        "1.1.0",
+        "fn app() -> int:\n    2\n",
+        &[("util", "^0.2")],
+    );
+    tao_goi(&reg, "other", "1.1.0", "fn other() -> int:\n    2\n");
+
+    let (c, o, e) = cap_nhat(&d, &["app"]);
+    assert_eq!(c, 0, "update app: {e}");
+    assert!(o.contains("đã cập nhật app 1.1.0"), "{o}");
+    assert!(o.contains("đã cập nhật util 0.2.0"), "{o}");
+    assert!(
+        o.contains("không đổi other 1.0.0"),
+        "gói không liên quan phải giữ nguyên: {o}"
+    );
+
+    let lock2 = doc(&d.join("vis.lock"));
+    assert!(
+        lock2.contains("\"name\":\"app\",\"version\":\"1.1.0\""),
+        "{lock2}"
+    );
+    assert!(
+        lock2.contains("\"name\":\"util\",\"version\":\"0.2.0\""),
+        "{lock2}"
+    );
+    assert!(
+        lock2.contains("\"name\":\"other\",\"version\":\"1.0.0\""),
+        "other không được nâng: {lock2}"
+    );
+    assert!(
+        doc(&d.join(".vis/pkg/app/1.1.0/src/main.vis")).contains('2'),
+        "phải cài bản app mới"
+    );
+    assert!(
+        doc(&d.join(".vis/pkg/util/0.2.0/src/main.vis")).contains('2'),
+        "phải cài bản util mới"
+    );
+    assert!(
+        doc(&d.join(".vis/pkg/other/1.0.0/src/main.vis")).contains('1'),
+        "other phải nguyên vẹn"
+    );
+
+    // Lần hai: không đổi, lock byte-identical (soft-pin vẫn tất định).
+    let (c, o, e) = cap_nhat(&d, &["app"]);
+    assert_eq!(c, 0, "{e}");
+    assert!(o.contains("không đổi app 1.1.0"), "{o}");
+    assert_eq!(lock2, doc(&d.join("vis.lock")), "lần 2 phải idempotent");
     let _ = std::fs::remove_dir_all(&d);
 }
 

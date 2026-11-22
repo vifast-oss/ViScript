@@ -35,8 +35,8 @@
 | VS3-4b2 — HTTP/2 | W2 | `vs3_http2.rs` | **DONE** — `7d73268`; **default-on**; 8 ca h2; Windows verify 3452/0 |
 | VS3-4b3..4b6 — h2 reuse/idle/hardening/multiplex | W2 | `vs3_http2.rs`, h2 unit | **DONE (một phần)** — `735ef39`; 13 ca h2 + prototype 4 stream test-only; production vẫn tuần tự |
 | VS3-5a — registry HTTP + chữ ký | W3 | `vs3_registry.rs` | **DONE** — `756bb1d`; 11 ca + SHA-256; chữ ký/GC còn mở |
-| VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` chờ A0 |
-| VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; chờ A0 chốt semantics `--root` |
+| VS3-5b — chữ ký/GC/migrate | W3 | `vs3_pkg_gc.rs` | **DONE** — `cea1643`; Ed25519 + `pkg gc` + migrate; mã `VS0708` cấp ở **ST-288** |
+| VS3-5c — key rotation + GC nhiều lock | W5 | `vs3_pkg_gc_multi.rs` | **DONE** — `823b34c`; 3 ca multi-lock + 10 sig; semantics `--root` khoá ở **ST-288** (4 ca) |
 | VS3-6 — Windows Tier 1 + wasm | W3 | `test/host`, local/psvn | TODO | sau P0/P1; **không GitHub Actions** |
 | VS3-7 — LSP tệp phụ/incremental | W3 | `lsp_da_tep`, `lsp_incremental` | **DONE** — `1aefb88` + `3510232`; overlay + `change:2` UTF-16/CRLF |
 | VS3-8 — Plugin/ViTerm | W3 | `vs3_plugin.rs` | TODO | P3 |

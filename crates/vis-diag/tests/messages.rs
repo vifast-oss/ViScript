@@ -416,10 +416,10 @@ fn snapshot_20_render() {
     }
 }
 
-/// Bộ 9 snapshot cho **sổ module** `07xx` (ST-25, VD-57): 3 mã × vi/en/ja.
+/// Bộ 12 snapshot cho **sổ module** `07xx` (ST-25, VD-57; +VS0708 ở ST-288): 4 mã × vi/en/ja.
 #[test]
-fn snapshot_9_ca_so_module_07xx() {
-    let cases: [(u16, Lang, &str); 9] = [
+fn snapshot_12_ca_so_module_07xx() {
+    let cases: [(u16, Lang, &str); 12] = [
         (701, Lang::Vi, "không thấy tệp module"),
         (701, Lang::En, "module file not found"),
         (701, Lang::Ja, "モジュールファイルが見つかりません"),
@@ -429,6 +429,18 @@ fn snapshot_9_ca_so_module_07xx() {
         (703, Lang::Vi, "`use` trùng hoặc mơ hồ"),
         (703, Lang::En, "duplicate or ambiguous `use`"),
         (703, Lang::Ja, "重複または曖昧な `use`"),
+        // **ST-288 (VD-273)**: `VS0708` — chữ ký/khoá tin cậy registry.
+        (708, Lang::Vi, "lỗi xác minh chữ ký số hoặc khoá tin cậy"),
+        (
+            708,
+            Lang::En,
+            "package registry signature or trusted key verification failed",
+        ),
+        (
+            708,
+            Lang::Ja,
+            "パッケージレジストリの署名または信頼キーの検証に失敗しました",
+        ),
     ];
     for (id, lang, want) in cases {
         let c = lookup(id).unwrap_or_else(|| panic!("mã {id} phải có trong sổ module"));
@@ -443,7 +455,8 @@ fn snapshot_9_ca_so_module_07xx() {
     }
     // **SỬA KÈM LÝ DO (ST-128, VD-125)**: +**VS0704** (không giải được ràng buộc gói) ⇒ 4 mã module.
     // **R9 (VD-178)**: +**VS0705**/**VS0706**/**VS0707** ⇒ **7** mã module.
-    assert_eq!(vis_diag::MODULE_CODES.len(), 7);
+    // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **8** mã module.
+    assert_eq!(vis_diag::MODULE_CODES.len(), 8);
     assert_eq!(vis_diag::BOOKS.len(), 7, "ST-25: bảy sổ mã");
     // **SỬA KÈM LÝ DO (ST-50, Agent 0: VS0605 sai sổ — trường là lỗi kiểu)**: `VS0605` đổi tên
     // thành **VS0405**, chuyển sang sổ `04xx` ⇒ `06xx` **4**, `04xx` **5**; `all_codes()` **vẫn 29**
@@ -462,7 +475,8 @@ fn snapshot_9_ca_so_module_07xx() {
     // **R1a (VD-178)**: +**VS0111** (cảnh báo chữ hoa biến thể) ⇒ **50** mã.
     // **VD-215 (2026-11-18)**: +**VS0207** (trộn khoá, lỗi) +**VS0208** (danh sách làm khoá, cảnh báo) ⇒ **52** mã.
     // **VD-224 (uỷ quyền A0-proxy, huỷ VS0209)**: +**VS0211** (tên trùng module std đã import, cảnh báo) ⇒ **53** mã.
-    assert_eq!(vis_diag::all_codes().count(), 53);
+    // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **54** mã.
+    assert_eq!(vis_diag::all_codes().count(), 54);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }
 

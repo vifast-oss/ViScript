@@ -59,3 +59,4 @@ VS0704	error: không giải được ràng buộc gói: không phiên bản nào
 VS0705	error: `std` chưa hỗ trợ
 VS0706	error: `pkg` chưa hỗ trợ
 VS0707	error: hash gói không khớp `vis.lock`/sổ
+VS0708	error: lỗi xác minh chữ ký số hoặc khoá tin cậy của registry gói

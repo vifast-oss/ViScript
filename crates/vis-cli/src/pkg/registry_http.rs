@@ -24,7 +24,8 @@
 //! chọn phiên bản → **chỉ tải tarball của gói đã chọn** → kiểm **SHA-256 tarball** → giải tar, kiểm
 //! **SHA-256 từng tệp** theo manifest → đọc bằng [`super::doc_tat_ca`] → `add`/`update` ghi lock/store
 //! như cũ. Mọi kiểm tra xảy ra **trước** khi chạm `.vis/`; lỗi hash dùng **`VS0707`**, lỗi giải
-//! ràng buộc dùng **`VS0704`** (mã hiện có, không cấp mã mới).
+//! ràng buộc dùng **`VS0704`** (mã hiện có), lỗi xác minh chữ ký/khoá tin cậy dùng **`VS0708`**
+//! (ST-288/VD-273).
 //!
 //! TLS **đã có** (VS3-4a): `base` có thể là `https://host[:port][/path]`; client dùng root store,
 //! deadline và keep-alive của `vis-cli::net` qua `http_get`. `http://` vẫn chỉ loopback. Tarball đi
@@ -97,6 +98,7 @@ pub(super) fn tai_va_giai(
     roots: &BTreeMap<String, VersionReq>,
     entry_override: Option<(&str, &str)>,
     khoa_cong: &[[u8; 32]],
+    uu_tien: &BTreeMap<String, Version>,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     let mut net = Net::moi(false);
     let url = format!("{}/index.json", base.trim_end_matches('/'));
@@ -105,7 +107,7 @@ pub(super) fn tai_va_giai(
     let index = doc_index(&body)?;
     let tmp = ThuMucTam::moi()?;
     index.viet_manifest(tmp.path())?;
-    let giai = giai_roots(tmp.path(), roots, entry_override)?;
+    let giai = giai_roots(tmp.path(), roots, entry_override, uu_tien)?;
     for (ten, ver) in &giai {
         let muc = index
             .tim(ten, ver)
@@ -288,10 +290,10 @@ fn tai_goi(
     Ok(())
 }
 
-/// **VS3-5b**: kiểm `signature_ed25519` của một phiên bản trên thông điệp chuẩn `vispkg-sig1`.
+/// **VS3-5b/5c**: kiểm `signature_ed25519` của một phiên bản trên thông điệp chuẩn `vispkg-sig1`.
 ///
 /// Không cấu hình khoá ⇒ không gọi hàm này (registry không bắt buộc chữ ký). Có khoá mà thiếu/sai
-/// chữ ký ⇒ lỗi rõ, **không** cấp mã mới (đề xuất `VS0708` cho A0; hiện dùng thông điệp).
+/// chữ ký ⇒ lỗi **có mã `VS0708`** (ST-288/VD-273), không cấp mã khác.
 fn kiem_chu_ky(
     muc: &Muc,
     manifest: &Manifest,
@@ -299,13 +301,14 @@ fn kiem_chu_ky(
     khoas: &[[u8; 32]],
 ) -> Result<(), String> {
     let nguon = format!("index gói `{}@{}`", muc.ten, muc.version_s);
+    let ma = vis_diag::code(708);
     let Some(sig) = muc.signature.as_deref() else {
         return Err(format!(
-            "{nguon}: thiếu `signature_ed25519` — registry yêu cầu chữ ký (đã cấu hình khoá công khai)"
+            "{ma}: {nguon}: thiếu `signature_ed25519` — registry yêu cầu chữ ký (đã cấu hình khoá công khai)"
         ));
     };
     let sig = vis_cli::pkg_sig::hex_giai(sig, 64)
-        .map_err(|e| format!("{nguon}: `signature_ed25519`: {e}"))?;
+        .map_err(|e| format!("{ma}: {nguon}: `signature_ed25519`: {e}"))?;
     let files: Vec<(String, String)> = manifest
         .files
         .iter()
@@ -320,7 +323,7 @@ fn kiem_chu_ky(
         &files,
     );
     vis_cli::pkg_sig::xac_minh_nhieu(khoas, &msg, &sig)
-        .map_err(|e| format!("{nguon}: {e} — từ chối cài"))
+        .map_err(|e| format!("{ma}: {nguon}: {e} — từ chối cài"))
 }
 
 fn hex(b: &[u8]) -> String {
