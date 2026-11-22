@@ -85,3 +85,8 @@ VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 VS3_SOAK_SECS=600 cargo run --release -p vis-cli --example vs3_worker_eval_p2_soak
 ./target/debug/vis run --workers 4 --max-budget 5000 /path/prog.vis
 ```
+
+## Log lớn ngoài repo (R7)
+
+`st292-gate.log` → `/home/ps/vislogs/st292/st292-gate.log`
+c493e25f2e6100b4c0a1d3b45711b661b526852cc54a017475e49ea73aeb650d  st292-gate.log
