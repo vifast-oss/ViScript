@@ -23,7 +23,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); **`v0.3.6` CHƯA tag — tag candidate `0645700`** (Linux final QA xanh; ST-287 Windows fix merged; chờ W3/W4 verify cuối); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên |
+| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); **`v0.3.6` đã tag @ `8fa2c09`** (code `0645700`; Linux 3581/3, release 3586/0; Windows 3538/0, cancel 40/40); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -85,7 +85,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
-## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `0645700`)
+## 2c. Stage 0 — `v0.3.6` (2026-11-22, tag `8fa2c09`, code `0645700`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `JOURNAL/st284-refactor.md`, `JOURNAL/st285-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st287-http-cancel.md`, `JOURNAL/st287-soak-1h.md`,
@@ -123,7 +123,7 @@ Matrix: `vs3_http_cancel` serial **20/20**, default **10/10**, exact lap **20/20
 
 **Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ **`0645700`** (ST-287 fix merge); R32 chốt
 phần Stage 0 (`agent/reports/R32-viscript.md`); docs phát hành cập nhật (CHANGELOG `v0.3.6`,
-STATE/ROADMAP/VS3-TIEN-DO). **`v0.3.6` CHƯA tag — tag candidate `0645700`, chờ W3/W4 verify cuối
+STATE/ROADMAP/VS3-TIEN-DO). **`v0.3.6` đã tag @ `8fa2c09` — W3/W4 verify cuối xanh
 (Windows suite 20/20 + workspace 1 vòng; Linux gate 3581/3).** Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED`
 chờ A0 mở.
 

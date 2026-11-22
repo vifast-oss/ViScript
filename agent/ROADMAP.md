@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `4c5dec6` — CHƯA TAG)** — Giai đoạn 0 **đủ 6/6**:
+> **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `8fa2c09` — ĐÃ TAG)** — Giai đoạn 0 **đủ 6/6**:
 > **DONE** `ST-284` (`83a9a10`/merge `e363a15`: `vm.rs` 1240, `frame.rs` 1042), `ST-285`
 > (`ab5d292`/merge `246b6c5`: `value` 1186, `codegen` 1045, `tyck/expr` 1064, `interp/goi` 1155),
 > `ST-286` (`f193c57`/merge `cfba662`: `async_net` 606, `quyen` 1190, `sqlite` 1245), `ST-287`
@@ -12,7 +12,7 @@
 > **0 lệch**, **2× soak = 20/20 vòng** (593 s + 602 s); P2/P1/P3 14/8/10, h2 19 + feature 34+1,
 > `pkg` 25, sig 10, http_cancel 5+8, host 54/54. Main merge **`a1930cb`**; R32 chốt phần Stage 0.
 > **Windows final @ `a1930cb`**: workspace lần 2 **3538/0/3** nhưng `vs3_http_cancel` h1 **flake ~21 %**
-> (`V:post` sau 10053); **`v0.3.6` CHƯA tag — blocker h1 cancel, chờ fix ST-287**; GĐ 1..4 vẫn
+> (`V:post` sau 10053); **`v0.3.6` đã tag @ `8fa2c09`** (ST-287 fix xong; Linux 3581/3, Windows 3538/0); GĐ 1..4 vẫn
 > `BLOCKED` chờ A0 mở.
 >
 > **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
@@ -404,7 +404,7 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 **Luật**: mọi tính năng VS3 phải có lát + test + docs + gate; không bỏ mảng nào; không tuyên bố xong
 khi bảng `VS3-TIEN-DO.md` còn `TODO/BLOCKED` trong phạm vi mốc.
 
-### Stage 0 — `v0.3.6` (2026-11-22, `main` `4c5dec6`)
+### Stage 0 — `v0.3.6` (2026-11-22, tag `8fa2c09`, code `0645700`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `VS3-TIEN-DO.md` §2c, `JOURNAL/st284-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st288-goi.md`, `JOURNAL/st28{4,6}-diff-100k.log`,
@@ -425,6 +425,6 @@ release workspace **3586 passed / 0 failed / 3 ignored**; P2 14, P1 8, P3 10; h2
 **2× soak 20/20 vòng** (593 s + 602 s). Soak huỷ HTTP 1 giờ (`vs3_http_cancel` 5/5 + 8/8 mỗi vòng,
 fd/RSS/threads phẳng) ghi `JOURNAL/st287-soak-1h.md`. Windows final @ `a1930cb`: workspace lần 2
 **3538/0/3** nhưng `vs3_http_cancel::cancel_http_h1_lap_nhieu_vong_khong_ro` **flake ~21 %**
-(`V:post` sau 10053); feature h2 **BLOCKED-ENV** (Unix-only). **`v0.3.6` CHƯA tag — chờ fix ST-287
+(`V:post` sau 10053); feature h2 **BLOCKED-ENV** (Unix-only). **`v0.3.6` đã tag @ `8fa2c09` — ST-287 fix xong
 rồi verify lại Windows.** **Stage 0 đủ 6/6** — R32 chốt phần Stage 0; GĐ 1 (`ST-290..`) vẫn
 `BLOCKED` chờ A0 mở.
