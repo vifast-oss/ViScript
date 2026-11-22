@@ -1,0 +1,43 @@
+# Trích log soak 4h v0.3.4 — dừng ở vòng 1150 (fail test-only tcp_het_gio_doc)
+# Full: psvn /c/Users/ps/vislogs/w4o-soak.log (sha256 70639c90…63c59)
+
+TAG=v0.3.4 HEAD=8fa1f96720b5cb37613226e7713beb50527b3f71 DIRTY=0 START=2026-11-22T00:00:45Z
+FreePhysicalMemory_KB_start=9837352
+REPORT minute=10 rounds=69 free_mem_KB=10018364 vis_proc=0 fail=0
+REPORT minute=20 rounds=140 free_mem_KB=10075768 vis_proc=0 fail=0
+REPORT minute=30 rounds=205 free_mem_KB=10082100 vis_proc=0 fail=0
+REPORT minute=40 rounds=275 free_mem_KB=10061564 vis_proc=0 fail=0
+REPORT minute=50 rounds=347 free_mem_KB=10058108 vis_proc=0 fail=0
+REPORT minute=60 rounds=409 free_mem_KB=9822220 vis_proc=0 fail=0
+REPORT minute=70 rounds=478 free_mem_KB=10017808 vis_proc=0 fail=0
+REPORT minute=81 rounds=550 free_mem_KB=9747804 vis_proc=0 fail=0
+REPORT minute=91 rounds=618 free_mem_KB=9760928 vis_proc=0 fail=0
+REPORT minute=101 rounds=687 free_mem_KB=9840496 vis_proc=0 fail=0
+REPORT minute=111 rounds=755 free_mem_KB=9787196 vis_proc=0 fail=0
+REPORT minute=121 rounds=821 free_mem_KB=10004848 vis_proc=0 fail=0
+REPORT minute=131 rounds=890 free_mem_KB=9853888 vis_proc=0 fail=0
+REPORT minute=141 rounds=958 free_mem_KB=9914284 vis_proc=0 fail=0
+REPORT minute=151 rounds=1025 free_mem_KB=9895740 vis_proc=0 fail=0
+REPORT minute=161 rounds=1095 free_mem_KB=9934056 vis_proc=0 fail=0
+FreePhysicalMemory_KB_end=7794952
+TAG=v0.3.4 HEAD=8fa1f967 DIRTY=0
+
+ROUND 1149 rc=0/0/0 elapsed=6s vis_proc=0 | test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.54s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.80s test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s 
+ROUND 1150 rc=0/0/0 elapsed=8s vis_proc=0 | test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.81s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s 
+EXTRA default_tls_net_1150 rc=101 elapsed=6s test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.14s 
+FAIL_EXTRA=default_tls_net_1150
+test tcp_het_gio_doc ... FAILED
+thread 'tcp_het_gio_doc' (10880) panicked at crates\vis-cli\tests\net.rs:210:9:
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.14s
+SOAK rounds=1150 elapsed=10189s h2_debug=11 h2_release=2 worker_debug=11 worker_release=5 fail=1 END=2026-11-22T02:52:22Z
+FreePhysicalMemory_KB_end=7794952
+=== host ===
+det_for                      PASS
+vis-host-suite: 54/54 ca xanh (nền: MINGW64_NT-10.0-26300 x86_64; các nền khác chưa đo)
+vis-host-suite: host_posix_real: BỎ QUA (Windows dùng test-child)
+=== targets ===
+
+SOAK rounds=1150 elapsed=10189s h2_debug=11 h2_release=2 worker_debug=11 worker_release=5 fail=1 END=2026-11-22T02:52:22Z
+FreePhysicalMemory_KB_end=7794952
+=== host ===
+det_for                      PASS
