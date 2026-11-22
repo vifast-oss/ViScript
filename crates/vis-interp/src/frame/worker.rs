@@ -130,6 +130,12 @@ pub(crate) fn run_frame_driver<'a>(
             ));
             break;
         }
+        // **ST-287 (VD-273)**: task đã bị huỷ tại safe point trước đó **không** được chạy
+        // lại/cache kết quả (kể cả khi frame id còn sót trong hàng đợi do race nền).
+        if current != 0 && it.sched.borrow().frame.cancelled.contains(&current) {
+            frames.remove(&current);
+            continue;
+        }
         it.sched.borrow_mut().frame.current = current;
         // **VD-258**: task đang chạy phải mang `DangChay` (trước đây không bao giờ đặt)
         // ⇒ `await` chính nó bị phát hiện thay vì treo im lặng.

@@ -1,0 +1,53 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T07:30:25Z
+# host=psvn
+# lenh: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ git\ checkout\ --\ .\;\ echo\ \'ZGlmZiAtLWdpdCBhL2NyYXRlcy92aXMtY2xpL3Rlc3RzL3ZzM19odHRwX2NhbmNlbC5ycyBiL2NyYXRlcy92aXMtY2xpL3Rlc3RzL3ZzM19odHRwX2NhbmNlbC5ycwppbmRleCA4NzAwZTE1Li4yYmJjZjNiIDEwMDY0NAotLS0gYS9jcmF0ZXMvdmlzLWNsaS90ZXN0cy92czNfaHR0cF9jYW5jZWwucnMKKysrIGIvY3JhdGVzL3Zpcy1jbGkvdGVzdHMvdnMzX2h0dHBfY2FuY2VsLnJzCkBAIC0xMTYsNiArMTE2LDEwIEBAIGltcGwgRHJvcCBmb3IgTWF5Q2h1SDEgewogfQogCiBmbiBwaHVjX3Z1X2gxKG11dCB0Y3A6IFRjcFN0cmVhbSwgc3RvcDogQXJjPEF0b21pY0Jvb2w+LCBkYV9ndWk6IEFyYzxBdG9taWNVc2l6ZT4pIHsKKyAgICAvLyAqKlNULTI4NyAoV2luZG93cykqKjogc29ja2V0IGBhY2NlcHRgIHRyw6puIFdpbmRvd3MgKip0aOG7q2EgaMaw4bufbmcgbm9uYmxvY2tpbmcqKiB04burIGxpc3RlbmVyOworICAgIC8vIGhhbmRsZXIgbsOgeSBkw7luZyBBUEkgYmxvY2tpbmcgKyB0aW1lb3V0LiBUaGnhur91IGLGsOG7m2MgbsOgeSDih5IgYHJlYWRgL2B3cml0ZV9hbGxgIHRy4bqjCisgICAgLy8gYFdTQUVXT1VMREJMT0NLYC9hYm9ydCAoMTAwNTMpIGdp4buvYSBib2R5LCBjbGllbnQgdGjhuqV5IGzhu5dpIHRyxrDhu5tjIGtoaSBzYWZlIHBvaW50IGh14bu3IGNo4bqheS4KKyAgICB0Y3Auc2V0X25vbmJsb2NraW5nKGZhbHNlKS5leHBlY3QoInNlcnZlciBibG9ja2luZyIpOwogICAgIGxldCBfID0gdGNwLnNldF9ub2RlbGF5KHRydWUpOwogICAgIGxldCBfID0gdGNwLnNldF9yZWFkX3RpbWVvdXQoU29tZShEdXJhdGlvbjo6ZnJvbV9zZWNzKDMpKSk7CiAgICAgbGV0IF8gPSB0Y3Auc2V0X3dyaXRlX3RpbWVvdXQoU29tZShEdXJhdGlvbjo6ZnJvbV9zZWNzKDEpKSk7CkBAIC0yNDMsOCArMjQ3LDggQEAgZm4ga2llbV9zYXVfaHV5KG91dDogJkZyYW1lT3V0cHV0KSB7CiAgICAgYXNzZXJ0IShvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnByZSIpLCAiezo/fSIsIG91dC5zdGRvdXQpOwogICAgIGFzc2VydCEoCiAgICAgICAgICFvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnBvc3QiKSwKLSAgICAgICAgInRhc2sgYuG7iyBodeG7tyBwaOG6o2kgZOG7q25nOiB7Oj99IiwKLSAgICAgICAgb3V0LnN0ZG91dAorICAgICAgICAidGFzayBi4buLIGh14bu3IHBo4bqjaSBk4burbmc6IHN0ZG91dD17Oj99IGxvZz17Oj99IiwKKyAgICAgICAgb3V0LnN0ZG91dCwgb3V0LmxvZwogICAgICk7CiAgICAgYXNzZXJ0ISgKICAgICAgICAgb3V0LmxvZy5pdGVyKCkuYW55KHxsfCBsID09ICJjYW5jZWw6MSIpLApAQCAtNDE0LDggKzQxOCw4IEBAIGZuIGNhbmNlbF9odHRwX2gxX21vdF90YXNrX2tob25nX2FuaF9odW9uZ190YXNrX2toYWMoKSB7CiAgICAgYXNzZXJ0IShvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnByZSIpLCAiezo/fSIsIG91dC5zdGRvdXQpOwogICAgIGFzc2VydCEoCiAgICAgICAgICFvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnBvc3QiKSwKLSAgICAgICAgInRhc2sgYuG7iyBodeG7tyBwaOG6o2kgZOG7q25nOiB7Oj99IiwKLSAgICAgICAgb3V0LnN0ZG91dAorICAgICAgICAidGFzayBi4buLIGh14bu3IHBo4bqjaSBk4burbmc6IHN0ZG91dD17Oj99IGxvZz17Oj99IiwKKyAgICAgICAgb3V0LnN0ZG91dCwgb3V0LmxvZwogICAgICk7CiAgICAgYXNzZXJ0ISgKICAgICAgICAgb3V0LnN0ZG91dC5jb250YWlucygib2siKSwK\'\ \|\ base64\ -d\ \>\ /c/Users/ps/st287-fix.patch\;\ git\ apply\ /c/Users/ps/st287-fix.patch\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st287-target\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --no-run\ 2\>\&1\ \|\ tail\ -2\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-fix\;\ s=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/serial\$i.log\ 2\>\&1\ \|\|\ \{\ s=\$\(\(s+1\)\)\;\ echo\ \"SERIAL\ FAIL\ \$i\"\;\ \}\;\ done\;\ p=0\;\ for\ i\ in\ \$\(seq\ 1\ 10\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ \>\ /c/Users/ps/vislogs/st287-fix/par\$i.log\ 2\>\&1\ \|\|\ \{\ p=\$\(\(p+1\)\)\;\ echo\ \"PAR\ FAIL\ \$i\"\;\ \}\;\ done\;\ e=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_lap_nhieu_vong_khong_ro\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/exactlap\$i.log\ 2\>\&1\ \|\|\ \{\ e=\$\(\(e+1\)\)\;\ echo\ \"EXACTLAP\ FAIL\ \$i\"\;\ \}\;\ done\;\ h=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_server_khong_tra_header\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/exactim\$i.log\ 2\>\&1\ \|\|\ \{\ h=\$\(\(h+1\)\)\;\ echo\ \"EXACTIM\ FAIL\ \$i\"\;\ \}\;\ done\;\ echo\ \"SUMMARY\ serial_fail=\$s/20\ par_fail=\$p/10\ exact_lap_fail=\$e/20\ exact_im_fail=\$h/20\" 
+# lenh_do: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ git\ checkout\ --\ .\;\ echo\ \'ZGlmZiAtLWdpdCBhL2NyYXRlcy92aXMtY2xpL3Rlc3RzL3ZzM19odHRwX2NhbmNlbC5ycyBiL2NyYXRlcy92aXMtY2xpL3Rlc3RzL3ZzM19odHRwX2NhbmNlbC5ycwppbmRleCA4NzAwZTE1Li4yYmJjZjNiIDEwMDY0NAotLS0gYS9jcmF0ZXMvdmlzLWNsaS90ZXN0cy92czNfaHR0cF9jYW5jZWwucnMKKysrIGIvY3JhdGVzL3Zpcy1jbGkvdGVzdHMvdnMzX2h0dHBfY2FuY2VsLnJzCkBAIC0xMTYsNiArMTE2LDEwIEBAIGltcGwgRHJvcCBmb3IgTWF5Q2h1SDEgewogfQogCiBmbiBwaHVjX3Z1X2gxKG11dCB0Y3A6IFRjcFN0cmVhbSwgc3RvcDogQXJjPEF0b21pY0Jvb2w+LCBkYV9ndWk6IEFyYzxBdG9taWNVc2l6ZT4pIHsKKyAgICAvLyAqKlNULTI4NyAoV2luZG93cykqKjogc29ja2V0IGBhY2NlcHRgIHRyw6puIFdpbmRvd3MgKip0aOG7q2EgaMaw4bufbmcgbm9uYmxvY2tpbmcqKiB04burIGxpc3RlbmVyOworICAgIC8vIGhhbmRsZXIgbsOgeSBkw7luZyBBUEkgYmxvY2tpbmcgKyB0aW1lb3V0LiBUaGnhur91IGLGsOG7m2MgbsOgeSDih5IgYHJlYWRgL2B3cml0ZV9hbGxgIHRy4bqjCisgICAgLy8gYFdTQUVXT1VMREJMT0NLYC9hYm9ydCAoMTAwNTMpIGdp4buvYSBib2R5LCBjbGllbnQgdGjhuqV5IGzhu5dpIHRyxrDhu5tjIGtoaSBzYWZlIHBvaW50IGh14bu3IGNo4bqheS4KKyAgICB0Y3Auc2V0X25vbmJsb2NraW5nKGZhbHNlKS5leHBlY3QoInNlcnZlciBibG9ja2luZyIpOwogICAgIGxldCBfID0gdGNwLnNldF9ub2RlbGF5KHRydWUpOwogICAgIGxldCBfID0gdGNwLnNldF9yZWFkX3RpbWVvdXQoU29tZShEdXJhdGlvbjo6ZnJvbV9zZWNzKDMpKSk7CiAgICAgbGV0IF8gPSB0Y3Auc2V0X3dyaXRlX3RpbWVvdXQoU29tZShEdXJhdGlvbjo6ZnJvbV9zZWNzKDEpKSk7CkBAIC0yNDMsOCArMjQ3LDggQEAgZm4ga2llbV9zYXVfaHV5KG91dDogJkZyYW1lT3V0cHV0KSB7CiAgICAgYXNzZXJ0IShvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnByZSIpLCAiezo/fSIsIG91dC5zdGRvdXQpOwogICAgIGFzc2VydCEoCiAgICAgICAgICFvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnBvc3QiKSwKLSAgICAgICAgInRhc2sgYuG7iyBodeG7tyBwaOG6o2kgZOG7q25nOiB7Oj99IiwKLSAgICAgICAgb3V0LnN0ZG91dAorICAgICAgICAidGFzayBi4buLIGh14bu3IHBo4bqjaSBk4burbmc6IHN0ZG91dD17Oj99IGxvZz17Oj99IiwKKyAgICAgICAgb3V0LnN0ZG91dCwgb3V0LmxvZwogICAgICk7CiAgICAgYXNzZXJ0ISgKICAgICAgICAgb3V0LmxvZy5pdGVyKCkuYW55KHxsfCBsID09ICJjYW5jZWw6MSIpLApAQCAtNDE0LDggKzQxOCw4IEBAIGZuIGNhbmNlbF9odHRwX2gxX21vdF90YXNrX2tob25nX2FuaF9odW9uZ190YXNrX2toYWMoKSB7CiAgICAgYXNzZXJ0IShvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnByZSIpLCAiezo/fSIsIG91dC5zdGRvdXQpOwogICAgIGFzc2VydCEoCiAgICAgICAgICFvdXQuc3Rkb3V0LmNvbnRhaW5zKCJWOnBvc3QiKSwKLSAgICAgICAgInRhc2sgYuG7iyBodeG7tyBwaOG6o2kgZOG7q25nOiB7Oj99IiwKLSAgICAgICAgb3V0LnN0ZG91dAorICAgICAgICAidGFzayBi4buLIGh14bu3IHBo4bqjaSBk4burbmc6IHN0ZG91dD17Oj99IGxvZz17Oj99IiwKKyAgICAgICAgb3V0LnN0ZG91dCwgb3V0LmxvZwogICAgICk7CiAgICAgYXNzZXJ0ISgKICAgICAgICAgb3V0LnN0ZG91dC5jb250YWlucygib2siKSwK\'\ \|\ base64\ -d\ \>\ /c/Users/ps/st287-fix.patch\;\ git\ apply\ /c/Users/ps/st287-fix.patch\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st287-target\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --no-run\ 2\>\&1\ \|\ tail\ -2\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-fix\;\ s=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/serial\$i.log\ 2\>\&1\ \|\|\ \{\ s=\$\(\(s+1\)\)\;\ echo\ \"SERIAL\ FAIL\ \$i\"\;\ \}\;\ done\;\ p=0\;\ for\ i\ in\ \$\(seq\ 1\ 10\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ \>\ /c/Users/ps/vislogs/st287-fix/par\$i.log\ 2\>\&1\ \|\|\ \{\ p=\$\(\(p+1\)\)\;\ echo\ \"PAR\ FAIL\ \$i\"\;\ \}\;\ done\;\ e=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_lap_nhieu_vong_khong_ro\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/exactlap\$i.log\ 2\>\&1\ \|\|\ \{\ e=\$\(\(e+1\)\)\;\ echo\ \"EXACTLAP\ FAIL\ \$i\"\;\ \}\;\ done\;\ h=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http_cancel\ --\ --exact\ cancel_http_h1_server_khong_tra_header\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-fix/exactim\$i.log\ 2\>\&1\ \|\|\ \{\ h=\$\(\(h+1\)\)\;\ echo\ \"EXACTIM\ FAIL\ \$i\"\;\ \}\;\ done\;\ echo\ \"SUMMARY\ serial_fail=\$s/20\ par_fail=\$p/10\ exact_lap_fail=\$e/20\ exact_im_fail=\$h/20\" 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T073023Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T073023Z.log.exit
+# log_cuc_bo=/tmp/opencode/st287-psvn-fix-matrix.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# head_ngan: 92e381b5
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status:  M crates/vis-cli/tests/vs3_http_cancel.rs|
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=skip repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=skip stem=vis-remote-20261122T073023Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+SUMMARY serial_fail=0/20 par_fail=0/10 exact_lap_fail=0/20 exact_im_fail=0/20
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T07:31:55Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=ec3a115ab060b1de386cbc00b4dd7ea9b0970b2a871894aa10341603f707a862
+[exit=0]

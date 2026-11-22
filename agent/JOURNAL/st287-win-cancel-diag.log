@@ -1,0 +1,157 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T07:29:08Z
+# host=psvn
+# lenh: bash -lc grep\ -E\ \"H1SRV\|task\ bị\ huỷ\|test\ result\|FAILED\|panicked\"\ /c/Users/ps/vislogs/st287-diag2/run4.log\ \|\ head\ -40 
+# lenh_do: bash -lc grep\ -E\ \"H1SRV\|task\ bị\ huỷ\|test\ result\|FAILED\|panicked\"\ /c/Users/ps/vislogs/st287-diag2/run4.log\ \|\ head\ -40 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072906Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072906Z.log.exit
+# log_cuc_bo=/tmp/opencode/st287-psvn-run4b.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# head_ngan: 92e381b5
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status:  M crates/vis-cli/tests/vs3_http_cancel.rs|
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T072906Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ---------- ST-175: TU CHOI CAY BAN ----------
+# may: psvn · cay: /c/Users/ps/viscript-moi
+# so_muc_ban=1 (git status --porcelain, da bo qua tep bi gitignore)
+# 5 muc dau:
+#    M crates/vis-cli/tests/vs3_http_cancel.rs
+# => TU CHOI: cay khong sach, so do tren cay ban KHONG chung minh duoc ma khop commit.
+# goi y: git -C <repo> restore .  ·  git -C <repo> clean -fd  ·  hoac do tren clone/worktree sach
+# (chi chan doan moi dung --allow-dirty: co y bo kiem, KHONG dung cho phep do)
+# ma thoat=6 (BLOCKED-DIRTY)
+vis-remote-exit=6
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T07:29:09Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=6420259772a9e39cf98a15d48fe2b15261f7d386fa6b49034b539bcaaba0ecaa
+[exit=6]
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T07:29:14Z
+# host=psvn
+# lenh: bash -lc grep\ -E\ \"H1SRV\|task\ bị\ huỷ\|test\ result\|FAILED\|panicked\"\ /c/Users/ps/vislogs/st287-diag2/run4.log\ \|\ head\ -50 
+# lenh_do: bash -lc grep\ -E\ \"H1SRV\|task\ bị\ huỷ\|test\ result\|FAILED\|panicked\"\ /c/Users/ps/vislogs/st287-diag2/run4.log\ \|\ head\ -50 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072912Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072912Z.log.exit
+# log_cuc_bo=/tmp/opencode/st287-psvn-run4b.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# head_ngan: 92e381b5
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status:  M crates/vis-cli/tests/vs3_http_cancel.rs|
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=skip repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=skip stem=vis-remote-20261122T072912Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV body err An established connection was aborted by the software in your host machine. (os error 10053) after 189.1257ms
+H1SRV end after 179.263ms stop=true
+.H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV body err An established connection was aborted by the software in your host machine. (os error 10053) after 188.8755ms
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV body err An established connection was aborted by the software in your host machine. (os error 10053) after 188.7033ms
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV body err An established connection was aborted by the software in your host machine. (os error 10053) after 190.8061ms
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV body err An established connection was aborted by the software in your host machine. (os error 10053) after 190.0298ms
+H1SRV end after 177.9017ms stop=true
+.H1SRV start
+H1SRV req err A non-blocking socket operation could not be completed immediately. (os error 10035)
+H1SRV start
+H1SRV req ok Some("GET /nhanh HTTP/1.1")
+thread 'cancel_http_h1_mot_task_khong_anh_huong_task_khac' (15816) panicked at crates\vis-cli\tests\vs3_http_cancel.rs:422:5:
+task bị huỷ phải dừng: stdout="V:pre\nloi: lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)\nV:post\nok\n" log=["enable", "cancelonturn:20:1", "wait:0:Task(2)", "wait:1:Reactor { key: 0, gen: 0 }", "wait:2:Reactor { key: 1, gen: 0 }", "wake:1", "wake:2", "wait:2:Reactor { key: 2, gen: 0 }", "wake:2", "wake:0", "reclaim:1", "reclaim:2", "renable:0", "rreg:0:N:127.0.0.1:60433|1:Read:1:3999", "rreg:1:N:127.0.0.1:60433|2:Read:2:2999", "rev:0:0:r--", "rev:1:0:r--", "raccepted:N:127.0.0.1:60433|1", "rdone:W:C1", "rerr:C1:lỗi đọc `C1`: An established connection was aborted by the software in your host machine. (os error 10053)", "raccepted:N:127.0.0.1:60433|2", "rdone:W:C2", "rreg:2:C2:Read:2:2000", "rev:2:0:r--", "rdone:C2", "rshutdown"]
+cancel_http_h1_mot_task_khong_anh_huong_task_khac --- FAILED
+H1SRV start
+H1SRV req ok Some("GET /cham HTTP/1.1")
+H1SRV hdr sent
+H1SRV start
+H1SRV req ok Some("GET /nhanh HTTP/1.1")
+H1SRV end after 180.4268ms stop=true
+.H1SRV start
+H1SRV req ok Some("GET /im HTTP/1.1")
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.64s
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T07:29:15Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=b5068e200cffd40cf72072b2d6c27573a58661daa8269550cb6ca063b72754d7
+[exit=0]

@@ -1,0 +1,74 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T07:24:45Z
+# host=psvn
+# lenh: bash -lc EXE=\"/c/Users/ps/vt-st287-target/debug/build/vis-cli/5d8a72d6e6759a34/out/vs3_http_cancel-5d8a72d6e6759a34.exe\"\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-repro\;\ fail=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ \"\$EXE\"\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-repro/run\$i.log\ 2\>\&1\;\ rc=\$\?\;\ line=\$\(grep\ \"test\ result\"\ /c/Users/ps/vislogs/st287-repro/run\$i.log\ \|\ tail\ -1\)\;\ echo\ \"RUN\ \$i\ rc=\$rc\ \$line\"\;\ \[\ \$rc\ -eq\ 0\ \]\ \|\|\ fail=\$\(\(fail+1\)\)\;\ done\;\ echo\ \"TOTAL_FAIL=\$fail/20\" 
+# lenh_do: bash -lc EXE=\"/c/Users/ps/vt-st287-target/debug/build/vis-cli/5d8a72d6e6759a34/out/vs3_http_cancel-5d8a72d6e6759a34.exe\"\;\ mkdir\ -p\ /c/Users/ps/vislogs/st287-repro\;\ fail=0\;\ for\ i\ in\ \$\(seq\ 1\ 20\)\;\ do\ \"\$EXE\"\ --test-threads=1\ \>\ /c/Users/ps/vislogs/st287-repro/run\$i.log\ 2\>\&1\;\ rc=\$\?\;\ line=\$\(grep\ \"test\ result\"\ /c/Users/ps/vislogs/st287-repro/run\$i.log\ \|\ tail\ -1\)\;\ echo\ \"RUN\ \$i\ rc=\$rc\ \$line\"\;\ \[\ \$rc\ -eq\ 0\ \]\ \|\|\ fail=\$\(\(fail+1\)\)\;\ done\;\ echo\ \"TOTAL_FAIL=\$fail/20\" 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072444Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T072444Z.log.exit
+# log_cuc_bo=/tmp/opencode/st287-psvn-repro20.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# head_ngan: 92e381b5
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: 92e381b57b09da55b14ad20a124012d3b1d6febe
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T072444Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+RUN 1 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s
+RUN 2 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s
+RUN 3 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.71s
+RUN 4 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+RUN 5 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.70s
+RUN 6 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.54s
+RUN 7 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+RUN 8 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.75s
+RUN 9 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+RUN 10 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+RUN 11 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.62s
+RUN 12 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+RUN 13 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+RUN 14 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+RUN 15 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s
+RUN 16 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.71s
+RUN 17 rc=101 test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.40s
+RUN 18 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.70s
+RUN 19 rc=0 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.70s
+RUN 20 rc=101 test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.57s
+TOTAL_FAIL=7/20
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T07:25:23Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=0cb4a61462ba3f8b8e1109eb7fdd7cb6f4e7b1b9ccdf31daa7cb0c67c49cc07d
+[exit=0]
