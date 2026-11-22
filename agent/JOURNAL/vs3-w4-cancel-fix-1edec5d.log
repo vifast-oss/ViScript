@@ -1,0 +1,40 @@
+=== P2 10x ===
+P2_R1 rc=0 elapsed=44s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.67s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R2 rc=0 elapsed=3s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.84s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R3 rc=0 elapsed=3s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.17s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R4 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.07s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R5 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.71s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R6 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.75s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R7 rc=0 elapsed=3s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.86s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R8 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R9 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.75s
+test cancel_pre_run_tra_loi_ro ... ok
+P2_R10 rc=0 elapsed=2s test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.66s
+test cancel_pre_run_tra_loi_ro ... ok
+=== P1 ===
+P1 rc=0 test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+=== P3 debug ===
+P3_DEBUG rc=0 test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.90s
+=== P3 release ===
+P3_RELEASE rc=0 elapsed=73s test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+=== 3 rounds ===
+R1 rc=0 elapsed=17s test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.71s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.37s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.45s 
+R2 rc=0 elapsed=12s test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.61s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.36s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.48s 
+R3 rc=0 elapsed=11s test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.63s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.34s test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.44s 
+=== host ===
+det_for                      PASS
+vis-host-suite: 54/54 ca xanh (nền: MINGW64_NT-10.0-26300 x86_64; các nền khác chưa đo)
+vis-host-suite: host_posix_real: BỎ QUA (Windows dùng test-child)
+=== targets ===
+=== core (vis-cli --no-default-features) ===
+core (vis-cli --no-default-features): PASS=18 EXPECTED_RED=0 FAIL=0
+=== sqlite (vis-cli default, cấu hình cũ) ===
+sqlite (vis-cli default, cấu hình cũ): PASS=17 EXPECTED_RED=1 FAIL=0
