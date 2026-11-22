@@ -13,6 +13,10 @@
 | `vis-linux` | chạy cổng trong container Linux | đo đa nền |
 | `vis-targets` | kiểm crate `vis-host-*` theo nền | kiểm thử |
 | `vis-host-suite` | bộ kiểm host (Linux/Windows) | kiểm thử |
+| `vis-gc-targets` | canh đĩa ≥10/15 GB, dọn `target/` worktree đã merge/cũ (mặc định dry-run) | vận hành |
+| `vis-jobs` | liệt kê/kiểm tiến trình nền; `--protect <pid>` khi cố ý giữ | vận hành |
+| `vis-status` | bảng điều khiển nhanh HEAD/đĩa/target/job/journal | vận hành |
+| `vis-gate-windows` | `--quick`/`--full` chạy cổng Windows qua `vis-remote` | kiểm thử |
 
 Quy ước: mọi script có header SPDX `#`, log mang mã task (`ST-##`), không ghi đè log cũ.
 

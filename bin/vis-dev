@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # vis-dev — cổng của dòng ViScript (ST-01).
-#   check      : fmt + clippy + luật R1..R6 + self-test case âm + build
+#   check      : fmt + clippy + luật R1..R7 + self-test case âm + build
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
@@ -18,6 +18,28 @@ export PYTHONUTF8=1
 # `docs/R30-MAU-2026-11-18.md`. Ép `C.UTF-8` (có trên cả ps/mps/psvn) để phần miễn
 # trừ hoạt động; chỉ đặt khi `LC_ALL`chưa có giá trị — không đè lựa chọn người dùng.
 export LC_ALL="${LC_ALL:-C.UTF-8}"
+
+# **ST-296d-tools / VD-282(3)**: tự điều tiết build khi nhiều luồng chạy song song.
+#   - `CARGO_PROFILE_DEV_DEBUG=0` (nếu người dùng chưa đặt): giảm target/, tăng tốc gate;
+#   - `CARGO_BUILD_JOBS = max(2, nproc / active_jobs)` (nếu chưa đặt), active_jobs = số tiến
+#     trình cargo/rustc/nextest đang chạy;
+#   - dùng `sccache` nếu có trên PATH và người dùng chưa chọn `RUSTC_WRAPPER`.
+# Không đè biến người dùng đã đặt; không đổi hành vi cổng.
+if [ -z "${CARGO_PROFILE_DEV_DEBUG+x}" ]; then
+    export CARGO_PROFILE_DEV_DEBUG=0
+fi
+if [ -z "${CARGO_BUILD_JOBS+x}" ]; then
+    nproc_vis="$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+    case "$nproc_vis" in '' | *[!0-9]*) nproc_vis=4 ;; esac
+    active_vis="$(ps -eo comm= 2>/dev/null | grep -Ec '^(cargo|rustc|cargo-nextest|nextest)$')"
+    [ "${active_vis:-0}" -lt 1 ] && active_vis=1
+    jobs_vis=$((nproc_vis / active_vis))
+    [ "$jobs_vis" -lt 2 ] && jobs_vis=2
+    export CARGO_BUILD_JOBS="$jobs_vis"
+fi
+if [ -z "${RUSTC_WRAPPER+x}" ] && command -v sccache >/dev/null 2>&1; then
+    export RUSTC_WRAPPER=sccache
+fi
 VIS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$VIS_ROOT"
 MANIFEST="$VIS_ROOT/Cargo.toml"
@@ -183,7 +205,32 @@ rule_so_no() {
     esac
 }
 
-# R1..R6 trên một cây bất kỳ (dùng cho self-test với --root).
+# R7 (VD-282): cấm commit **mới** tệp log/txt > 50 KB trong `agent/JOURNAL/` (bằng chứng cổng phải
+# là tóm tắt `.md` ≤ 15 KB + đường dẫn log ngoài repo + sha256). `test/gate/r7-legacy-logs.txt` là
+# danh sách **đóng băng** các tệp lịch sử đã vượt ngưỡng — không thêm mới. Bỏ qua sidecar
+# `*.license`. Không có `agent/JOURNAL/` (cây self-test R1..R4) ⇒ bỏ qua.
+rule_journal_logs() {
+    local root="$1"
+    local dir="$root/agent/JOURNAL"
+    local list="$root/test/gate/r7-legacy-logs.txt"
+    [ -d "$dir" ] || return 0
+    if [ ! -f "$list" ]; then
+        echo "R7: thiếu $list (danh sách legacy đóng băng — VD-282)" >&2
+        return 1
+    fi
+    local found=0 f rel
+    while IFS= read -r f; do
+        rel="${f#"$root"/}"
+        case "$rel" in *.license) continue ;; esac
+        if ! grep -Fxq "$rel" "$list"; then
+            echo "R7 $rel: tệp .log/.log.*/.txt > 50 KB chưa có trong danh sách legacy (VD-282)" >&2
+            found=1
+        fi
+    done < <(find "$dir" -maxdepth 1 -type f \( -name '*.log' -o -name '*.log.*' -o -name '*.txt' \) -size +50k 2>/dev/null)
+    return "$found"
+}
+
+# R1..R7 trên một cây bất kỳ (dùng cho self-test với --root).
 # **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ tạo **một tiến trình cho mỗi tệp** — `wc`+`tr` cho R1,
 # `awk` cho R2, `head`+`grep` cho R3 — và **ba** lượt `find` đi qua cả `target/` (2,2 GB, 433 000 tệp).
 # macOS phạt tạo tiến trình 9,6× nên `rules` chậm 8,3× so với Linux. Nay: **một** lượt `find` (prune
@@ -298,6 +345,8 @@ run_rules() {
     rule_so_no "$root" || found=1
     # R6: danh sách cấm (VD-205) — cú pháp bị bỏ ở pha 1 không được lọt vào docs/cheatsheet.
     rule_forbidden_list "$root" || found=1
+    # R7: log bằng chứng > 50 KB trong agent/JOURNAL (VD-282).
+    rule_journal_logs "$root" || found=1
     return "$found"
 }
 
@@ -363,9 +412,9 @@ do_check() {
     fi
     echo "--- clippy: OK"
     if ! run_rules "$VIS_ROOT"; then
-        echo "--- luật R1..R6: FAIL" >&2; return 1
+        echo "--- luật R1..R7: FAIL" >&2; return 1
     fi
-    echo "--- luật R1..R6: OK"
+    echo "--- luật R1..R7: OK"
     # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
     # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
     if ! bash "$VIS_ROOT/test/toolchain/run.sh"; then
@@ -480,7 +529,7 @@ do_gate_fast() {
 
 # Vòng tròn fmt: `vis fmt` phải **bất động** (fmt(fmt(x)) == fmt(x)) trên mọi ca ngữ nghĩa.
 # **TỐI ƯU (ST-257)**: bản cũ gọi `vis fmt` **2 lần cho mỗi tệp** — 475 tệp ⇒ ~950 lần spawn
-# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R6 ở đầu tệp). Nay copy ca vào một thư
+# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R7 ở đầu tệp). Nay copy ca vào một thư
 # mục tạm rồi dùng **đúng 2 lệnh**: `fmt --write <tmp>` cho `a := fmt(f)`, `fmt --check <tmp>`
 # so `fmt(a)` với `a`. Phép kiểm/ngưỡng/số tệp/câu chữ giữ nguyên; chỉ giảm số lần spawn.
 do_vong_tron_fmt() {
