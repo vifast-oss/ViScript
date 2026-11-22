@@ -3914,6 +3914,47 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
    - `ST-296c` ngoài gom 68 tệp `vis-interp/src/stdlib/` & tách `vis-types/src/stdlib.rs`, bổ sung tách trước **3 tệp cận trần R1**: `crates/vis-cli/src/db/sqlite/tests.rs` (1.495), `crates/vis-types/src/lower/expr.rs` (1.456), `crates/vis-types/src/lower.rs` (1.446) về < 900 dòng trước GĐ 3.
    - **Không commit `agent/reports/R##-viscript.json` nháp** trước khi toàn bộ lát của giai đoạn xong; bản nháp ghi ở `agent/JOURNAL/`; mỗi lát nộp 1 chuỗi commit gọn (tránh tạo nhiều merge commit docs lẻ).
 
+### VD-283 · Phê chuẩn `v0.4.0`/`v0.4.1`, Chốt `P2b-3/4 NO-GO` & WASI Runtime, Điều kiện Tag `v0.4.5` (`R35`), & Mở Zero-Idle Giai đoạn 3 (`v0.5.0`) — A0, 2026-11-23
+
+> **Căn cứ**: Tag `v0.4.0` @ `c2accdf`, tag `v0.4.1` @ `90844bc`, `HEAD` `b3a97428`, `JOURNAL/st291-p2b-runner-reuse.md`, `JOURNAL/st292-p4-frame-worker.md`, `JOURNAL/st296a-tests.md`, `JOURNAL/st296d-tools.md`, `JOURNAL/st297-paths.md`, `JOURNAL/st299b-wasm-loader.md`, `JOURNAL/st300-sem-wasm.md`, `JOURNAL/nightly-8286caf.md`, `JOURNAL/final-linux-soak-84e8eb6.md`, `reports/R34-viscript.md`. Toàn văn & kế hoạch điều phối: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd283.md`.
+
+1. **Phê chuẩn chính thức (`APPROVED 2026-11-23 Agent 0`)**:
+   - **GĐ 1 (`v0.4.0` @ `c2accdf`)**: duyệt `ST-291` (`8cc3588`, batch 10k 28,6–29,7 ms), `ST-292` (`e47b3ca`, `P4a/P4b + SharedBudget + --workers`, 12/12 + 6/6 VM, soak 10m RSS phẳng), `ST-296` (`c2accdf`, Linux 3.656/4 + release 3.661/0/4 + 2× soak, Windows 3.607/0/3 + release 3.606/0/3) → **`DONE`**.
+   - **Phê chuẩn `P2b-3/4 NO-GO` (`16fba3a`)**: chấp nhận bằng chứng đo rằng chi phí 15,5 ms/10k là envelope worker per-task (VM reuse chỉ lợi 1,03×). **Không** đầu tư thiết kế lại `P2b-4b` chunk-local trừ khi phát sinh workload thực tế yêu cầu task siêu nhỏ < 1 µs.
+   - **GĐ 1.5 (`v0.4.1` @ `90844bc`)**: duyệt toàn bộ `ST-296d-tools` (Luật R7 + 4 script + nextest), `ST-296a` (`53990c0`, 280→22 test binary, gate 304→108–210 s), `ST-296b` (`067e1a5`/`1b27cb8`, tách `vis-loader` + `vis-lsp` + `[workspace.dependencies]`), `ST-296c` (`ab8d393`, gom stdlib + tách 3 tệp cận trần R1), `ST-296d` (`a1730c5`/`90844bc`, 63 tệp archive + `DECISIONS-INDEX.md` 271 VD) → **`DONE`**. Giữ `R34-viscript.md` là hồ sơ Markdown vòng 34 (`VD-142`), không bắt viết lại JSON hồi tố.
+   - **GĐ 2 đã hoàn tất**: duyệt `ST-297` (`f4cb136`, đóng `#149`, Windows 3× full 3.611/0/3, Linux 10× LSP/path), `ST-299a` (`060a744`), `ST-299b` (`3b8049c`, `vis-loader` đa tệp + `use` trong WASI, native 29/29, wasm 28/28) → **`DONE`**.
+2. **Chốt chính sách WASI Runtime (`cập nhật VD-277(2)`) & Ghi nợ minh bạch `#192`/`#193`**:
+   - **WASI Preview 1 host chính thức**: chấp nhận **mọi host WASI Preview 1 chuẩn (`wasmtime` HOẶC `node:wasi` ≥ v22, tự dò thứ tự `wasmtime → python-wasmtime → node`)** cho `bin/vis-wasm-suite` và `bin/vis-wasm-sem`. Duyệt kết quả `ST-300` harness **`388/390 eligible = 99,5%`** (vượt ngưỡng ≥ 85%; VM đạt **390/390 = 100%**; nightly fuzz 13,56M ca / 0 vi phạm; final Linux soak 10/10).
+   - **Mở nợ `#192`** (`mở`): phần tồn đọng `P4c` của `ST-292` — `vis run --vm --workers > 1` chưa nối `FrameReactorBackend` (async net báo `VS0505`) và thiếu ca test cancel worker qua trigger frame (`JOURNAL/st292-p4-frame-worker.md` §4). Xử lý ngay đầu **`ST-301`**.
+   - **Mở nợ `#193`** (`mở`): `vis-interp` đệ quy gặp stack overflow trên WASI ở 2 ca (`test/sem/ham/de-quy-1000.vis`, `de-quy-vo-han.vis`), trong khi `vis-vm` pass 100% (`JOURNAL/st300-sem-wasm.md` §3).
+3. **Điều kiện uỷ quyền chốt `ST-298`, `ST-300` & Tag `v0.4.5` (W4 thực thi khi soak 4h kết thúc — KHÔNG cắt ngang soak đang chạy!)**:
+   - W4 được **uỷ quyền gắn & push tag `v0.4.5`** khi và chỉ khi thoả đủ **5 điều kiện cứng**:
+     1. `ST-298` soak 4 giờ trên `psvn` hoàn tất với **0 lỗi sản phẩm**, fd/RSS phẳng; cập nhật `ROADMAP.md` & `HOST-BAO-DAM.md` tuyên bố **Windows Tier 1** (giữ nguyên caveat `FsGuard`).
+     2. Vá lỗi 1 dòng trong `bin/vis-dev` (`nightly-8286caf.md` §2): bước fuzz dùng `${CARGO_TARGET_DIR:-$VIS_ROOT/target}/release/vis-parse-fuzz` thay vì cứng `target/release/vis-parse-fuzz`.
+     3. Bump workspace `Cargo.toml` → `0.4.5`, đồng bộ `vis-host-wasm/Cargo.lock`, re-pin cache `PHIEN_BAN` (`+v045-release-2026-11-23`), xác nhận `vis --version` = `vis 0.4.5`.
+     4. Xuất đầy đủ **`agent/reports/R35-viscript.{md,json,json.license}`** (KHÔNG còn placeholder `[SOAK_*]`), chạy `python3 test/report/check_report.py --all` **PASS** (34 báo cáo) + `./vis-dev gate --fast` + `bin/vis-gate-windows --full` PASS.
+     5. Giữ `ST-298` và `ST-300` sạch bằng chứng trước khi tag; tuyệt đối không trộn nhánh GĐ 3 vào `main` trước tag `v0.4.5`.
+4. **Mở cơ chế *Zero-Idle* cho Giai đoạn 3 (`v0.5.0`) trên 3 luồng đang rảnh (W1, W2, W3) — CHỈ merge vào `main` SAU tag `v0.4.5`**:
+   - **W2 → `ST-300b` (MỚI, `READY` trên `plan/w2-st300b-host-pkg`, 0 đổi hành vi)**: tách **`crates/vis-host-native`** (`quyen*.rs`, `ngoai.rs`, `fsmock.rs`, `net*.rs`, `async_net*.rs`, `db/**` ~13,2k LOC, đã đo 0 tham chiếu `crate::` ngược) và **`crates/vis-pkg`** (`pkg.rs`, `pkg/**`, `pkg_sig.rs` ~4,0k LOC) khỏi `vis-cli` (rút `vis-cli/src/` từ 21,1k → ~3,9k LOC, đưa `main.rs` 1.415 → < 900 dòng); đồng thời tách `crates/vis-cli/tests/lsp_it/lsp.rs` (1.478 dòng) về < 800 dòng. Mở đường sạch cho `vis new/doc/repl/vish` và tách hẳn phụ thuộc C/TLS/SQLite khỏi vỏ CLI.
+   - **W1 → `ST-301` (`READY` trên `plan/w1-st301-pha2a`) → `ST-302` (`plan/w1-st302-pha2b`)**:
+     - Bước 0 (`ST-301`, 0,5 ngày): đóng **nợ `#192`** (nối `FrameReactorBackend` vào VM `--workers > 1` + ca test cancel worker qua trigger frame).
+     - **Hợp đồng văn phạm Pha 2a (`ST-301` — A0 chốt cứng, uỷ quyền `ST-301` đồng bộ `docs/ViScript-thiet-ke.md` cùng `doc-examples`)**:
+       - `T??` (`Option[Option[T]]`) xác nhận đủ parity cả trong lambda/generic/record/formatter.
+       - Chú thích kiểu tham số & kiểu trả về tùy chọn cho lambda (`#155`):
+         `lambda := 'fn' '(' params? ')' ['->' type] ':' suite | lambda_params ['->' type] '=>' expr`
+         `lambda_params := IDENT | '(' [lambda_param (',' lambda_param)* ','?] ')'`
+         `lambda_param := IDENT [':' type]`
+         Phân giải LL(k): ngoặc `(...)` là `lambda_params` khi và chỉ khi ngay sau `)` là `=>` hoặc `-> <type> =>`. Tự nâng `T → T?` cho tham số closure có annotation ở cả `vis-interp` & `vis-vm`, `vis-fmt` bất động, fuzz parser 1 giờ 0 vi phạm, đóng `#155`.
+     - **Hợp đồng Pha 2b (`ST-302`)**:
+       - `async fn` trong `impl` (hỗ trợ `self`/`var self`, gọi `await obj.m()`/`spawn obj.m()`) và `async cmd` (đóng `#13`; chốt rõ `--flag` giữ riêng cho `cmd`/`async cmd`, `fn`/`async fn` dùng named args `name: val`).
+       - `derives Json` sinh thật `.to_json() -> Json` và `Type.from_json(j: Json) -> Result[Type, Error]` cho `type` (record, áp dụng default khi thiếu trường tùy chọn) và `enum` (unit → `Json::Str("Variant")`, payload → `Json::Obj({"Variant": ...})`); hỗ trợ `int/float/bool/str/T?/list[T]/map[str,T]/Json` & kiểu lồng `derives Json`; kiểu không hợp lệ (`cap`/`Chan`/`fn`) ⇒ `VS0412` tĩnh; đóng `#8`.
+   - **W3 → `ST-303` (`READY` trên `plan/w3-st303-cli-dev`) → `ST-304` (`crates/vish-edit`)**:
+     - `ST-303`: đặt mã mới trong `crates/vis-cli/src/cli/{new.rs, doc.rs, repl.rs}` (chạm `main.rs` ≤ 20 dòng để 0 xung đột với `ST-300b`): `vis new [--template bin|lib]` sinh dự án chạy xanh `check`/`test`/`run`; `vis doc [--format md|json]` trích `##` bằng `vis-syntax` CST (không dùng regex); `vis repl` dùng `vis-loader` + `vis-interp`, lỗi kiểu/chạy chỉ rollback lượt lỗi không mất trạng thái phiên (`:help`, `:type`, `:reset`, `:quit`).
+     - **Phê duyệt phụ thuộc có điều kiện cho `ST-304` (`crates/vish-edit`, giữ 0 `unsafe` R2)**: cho phép dùng crate **`crossterm`** (MIT, ghim phiên bản tuyệt đối `=…`, feature tối giản không kéo `tokio`/`serde`) hoặc **`rustix` (`termios` trên Unix)** cho raw-mode terminal đa nền Linux/Windows, **bắt buộc** kiểm tra giấy phép toàn cây `cargo metadata` vào `agent/JOURNAL/st304-license.log` (chỉ allowlist MIT/Apache-2.0/Zlib/Unicode-3.0; ngoài allowlist ⇒ `BLOCKED` báo A0).
+5. **Thứ tự Merge chuẩn sau Tag `v0.4.5` (giảm tối đa xung đột)**:
+   - `(1)` Tag `v0.4.5` + `R35` (W4) → `(2)` Merge `ST-300b` (`vis-host-native` + `vis-pkg`, W2) → `(3)` Rebase & merge `ST-301` (W1) và `ST-303` (W3) → `(4)` Tiếp tục song song `ST-302` (W1), `ST-304`→`ST-304b` (W3), kiểm chuẩn đa nền & chuẩn bị `ST-305` (`vis-lsp` + `editors/vscode/`, W2/W4).
+
+
 
 
 

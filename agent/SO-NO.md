@@ -278,6 +278,8 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 189 | **Finding riêng ST-250 — capture/local đọc ngoài miền vẫn trả `Unit` (mức Trung bình/Thấp)**: `Instr::LoadCaptured(i)` trong `vm.rs` dùng `get(i).unwrap_or(Unit)` và verifier (`verify.rs:449`) **không kiểm biên capture** ⇒ crafted bytecode có thể đọc capture ngoài phạm vi thành `Unit` thành công (cùng lớp lỗi với global, nhưng là đường local/capture). `LoadLocal` nhánh local cũng `unwrap_or(Unit)` nhưng verifier chặn `s ≥ nlocals` và khung khởi tạo sẵn `Unit` ⇒ chỉ defense-in-depth (Thấp). A0 yêu cầu ghi finding riêng, **không tuyên bố đã an toàn** chỉ vì global đã sửa. | ST-250 (`JOURNAL/st250-review.md` §4) · `BLOCKED.md` §17 · **VD-246 / ST-252** (`JOURNAL/st252-review.md`) | **đóng ở ST-252** — verifier giữ `ClosureFree`, runtime `doc_local`/`doc_captured`/`ghi_local` trap `VS0501`, 8/8 ca, hết thành công giả |
 | 190 | **Finding riêng ST-252 — `pop_frame` writeback silent skip** (`vm.rs:686`): `if let (Some(dst), Some(src)) = (c.get_mut(*i), fr.locals.get(*slot))` bỏ qua khi ô mirror ngoài miền. **Khác ngữ nghĩa** (ghi ngược trạng thái closure, không phải đọc trả `Unit`) và **không thể xảy ra** với bytecode đã verify + thực thi (mọi `LoadCaptured(i)` prologue mirror đã trap trước writeback). Đổi `pop_frame` (`Option<Frame>` → `R<…>`) là refactor 3 call-site, vượt phạm vi “không viết lại VM”. | ST-252 (`JOURNAL/st252-review.md` §2) · `BLOCKED.md` §18 | **mở** — ghi riêng, không tự sửa; **chưa tìm thấy đường tới từ bytecode đã verify** (A0, không viết thành bảo đảm tuyệt đối); nâng blocker ngay nếu có đường tới thực tế |
 | 191 | **Windows nextest chưa đạt (VD-247/A0)**: `cargo nextest run --workspace --no-fail-fast` trên `dbae70a` cho **1417 chạy / 1416 passed / 1 failed**; ca fail `tcp_explain_tong` gặp `WSAECONNABORTED` (chạy riêng đạt **1/3**). **Nguyên nhân chưa được phân lập đầy đủ** — không kết luận “race của test socket, không phải sản phẩm”. Nextest **không** được dùng làm đường nghiệm thu Windows tại mốc này; đường chuẩn đã nghiệm thu là `cargo test --workspace --no-fail-fast` (1422/0). Cần đảm bảo cài nextest không tự động đưa người dùng sang đường gate chưa được hỗ trợ mà tài liệu vẫn gọi là đạt. | A0/VD-247 (2026-11-20) · `QUEUE` ST-259 · `ST-296` (`15271f12`) · `JOURNAL/st296-pre-qa.md` | đóng ở ST-296 (`VD-282`: `cargo nextest run --workspace --no-fail-fast` trên `psvn` @ `f6939721` — **350 binaries, 3.583/3.583 passed, 3 skipped, 0 fail/flake**, 213,4 s test / 481 s tổng, sha256 `412a4e43…b47b`; công nhận nextest là đường QA Windows hợp lệ) |
+| 192 | **Tồn đọng `P4c` của `ST-292` (VM `--workers` reactor & cancel test)**: entry CLI VM `--workers > 1` chưa truyền `FrameReactorBackend` (main frame dùng async net dưới `--vm --workers` trả `VS0505`) và thiếu ca test cancel worker chuyên biệt qua trigger frame | `ST-292` · `JOURNAL/st292-p4-frame-worker.md` §4 · `VD-283` | mở — xếp đóng ngay đầu `ST-301` |
+| 193 | **WASI stack overflow ở `vis-interp` cho đệ quy sâu (2/390 ca)**: `test/sem/ham/de-quy-1000.vis` và `de-quy-vo-han.vis` gặp `RuntimeError: memory access out of bounds` ở `vis-interp` trên `wasm32-wasip1`, trong khi `vis-vm` pass **390/390 = 100%** (tổng coverage 388/390 = 99,5%) | `ST-300` · `JOURNAL/st300-sem-wasm.md` §3 · `VD-283` | mở — theo dõi riêng (tăng stack WASI / trampoline interp) |
 
 ## 5. Nợ chuyển VS3 (23 mục)
 
@@ -394,8 +396,8 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 
 | Chỉ số | Số |
 |---|---|
-| Tổng dòng bảng chính | **192** (1..191; #109 tách `a`/`b`) |
-| `mở` | **84** |
+| Tổng dòng bảng chính | **194** (1..193; #109 tách `a`/`b`) |
+| `mở` | **86** |
 | `đóng` | **87** |
 | `chuyển VS3` | **18** |
 | `không làm có lý do` | **2** |
@@ -403,7 +405,7 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 84 mở + 87 đóng + 18 VS3 + 2 không làm + 1 điều hướng = **192** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; thêm #185/#186/#187/#188/#189/#190/#191).
+Kiểm: 86 mở + 87 đóng + 18 VS3 + 2 không làm + 1 điều hướng = **194** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191).
 **Stage 0 `v0.3.6` (2026-11-22, `f8f1d4b`)** — trạng thái nợ theo lát (không thêm dòng nợ mới):
 `ST-284` DONE (`83a9a10`, merge `e363a15`; R0a 0 đổi hành vi), `ST-285` DONE (`ab5d292`, merge `246b6c5`;
 R0b 0 đổi hành vi), `ST-286` DONE (`f193c57`, merge `cfba662`; R0c 0 đổi hành vi), `ST-287` DONE
