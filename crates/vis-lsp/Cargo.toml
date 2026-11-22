@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+rust-version.workspace = true
+name = "vis-lsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Language server (LSP/JSON-RPC) của ViScript — tách khỏi vis-cli (ST-296b)"
+
+[dependencies]
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }
+vis-types = { path = "../vis-types" }
+vis-fmt = { path = "../vis-fmt" }
+vis-interp = { path = "../vis-interp" }
+vis-loader = { path = "../vis-loader" }

@@ -16,7 +16,9 @@ use std::time::SystemTime;
 
 use vis_diag::{MODULE_CODES, SYNTAX_CODES};
 
-use crate::pkg::{bam as bam_noi_dung, chuan_hoa as chuan_hoa_noi_dung, doc_khoa_cua, GoiKhoa};
+use crate::lock_meta::{
+    bam as bam_noi_dung, chuan_hoa as chuan_hoa_noi_dung, doc_khoa_cua, GoiKhoa,
+};
 use vis_syntax::{Diagnostic, Mode, NodeKind, Span};
 use vis_types::{
     check, lower_into, HExpr, HItem, HStmt, Hir, LowerOptions, ModInfo, NamePolicy, Symbols,

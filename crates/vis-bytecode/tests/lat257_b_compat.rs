@@ -263,7 +263,7 @@ fn trailer_kind_la_bi_tu_choi() {
 fn cache_key_chua_bon_truc_qua_nguon() {
     // Trục 4 nằm ở `vis-cli::cache` — kiểm bằng source (không mở API công để test).
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
-    let s = std::fs::read_to_string(root.join("vis-cli/src/cache.rs")).expect("cache.rs");
+    let s = std::fs::read_to_string(root.join("vis-loader/src/cache.rs")).expect("cache.rs");
     assert!(
         s.contains("khoa_multi_voi_version(files, mode, the, vis_bytecode::VERSION)"),
         "module format trong khoá"

@@ -163,7 +163,8 @@ fn cache_v1_bi_bo_source_bien_dich_lai_chay_dung_hai_engine() {
 /// `cache.rs::khoa_cache_v1_khong_duoc_tai_dung_v2`).
 #[test]
 fn khoa_cache_co_version_trong_nguon() {
-    let s = std::fs::read_to_string(goc().join("crates/vis-cli/src/cache.rs")).expect("cache.rs");
+    let s =
+        std::fs::read_to_string(goc().join("crates/vis-loader/src/cache.rs")).expect("cache.rs");
     assert!(
         s.contains("vis_bytecode::VERSION"),
         "khoa_multi phải lấy VERSION từ vis_bytecode"
