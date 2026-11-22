@@ -12,7 +12,7 @@
 > `codegen.rs`, `tyck/expr.rs`, `interp/goi.rs`, `async_net.rs`, `quyen.rs`, `db/sqlite/mod.rs`;
 > các tệp lõi phải **≤1.250 dòng**, 0 đổi hành vi. **4 worktree** (`W1` runtime, `W2` net/sec, `W3` platform, `W4` QA/docs);
 > W5 đã nghỉ. Baseline v0.3.5 @ `03bb7b9`; Stage 0 `ST-284`..`ST-289`: **đủ 6/6 DONE**
-> (cập nhật 2026-11-22 @ `f8f1d4b` — xem §2c; `ST-287` đã merge).
+> (cập nhật 2026-11-22 @ **`4c5dec6`** — final QA xanh, xem §2c; **tag `v0.3.6` CHƯA tạo**, chờ Windows final).
 
 ## 1. Mốc hiện tại
 
@@ -22,7 +22,7 @@
 | Gate v0.1.0 | **3448 passed / 3 skipped** |
 | Nightly baseline | PASS (fuzz 17.198.259 ca / 0 vi phạm) |
 | `FUNCS` | **167** (mốc v0.1.0) |
-| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên; hardening tới 09:00 T2 23/11 |
+| Tag | **`v0.3.5`** @ `03bb7b9` (patch cancel-before; Windows async net/TLS, async-h2 default-off, evaluator P1-P3); **`v0.3.6` CHƯA tag** @ `4c5dec6` (final QA xanh; chờ Windows final); `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` lịch sử; `pha1-rc1` giữ nguyên |
 | Nền đo | Linux `ps`; macOS bỏ; Windows Tier 2 |
 
 ## 2. Bảng lát cắt
@@ -84,7 +84,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
 - Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
 
-## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `f8f1d4b`)
+## 2c. Stage 0 — `v0.3.6` (2026-11-22, `main` `4c5dec6`)
 
 > Nguồn: `QUEUE.md` ST-284..289, `JOURNAL/st284-refactor.md`, `JOURNAL/st285-refactor.md`,
 > `JOURNAL/st286-tach-module.md`, `JOURNAL/st287-http-cancel.md`, `JOURNAL/st287-soak-1h.md`,
@@ -101,16 +101,16 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 | **ST-288** — `VS0708` + `pkg gc --root` + `#142` | **DONE** (Gatekeeper 2026-11-22) | `c513e7a` (merge `545a38d`) | `VS0708` vi/en/ja + `vis explain --list` **54** + `API-CODES.txt` **54**; 6 ca âm (gồm key rotation) đều nêu `VS0708`; soft pin `pkg update` (`update_mot_ten_*` 2/2 + unit) ⇒ **#142 đóng**; `gc --root` lặp/lồng dedupe; `pkg` 25/25, `vs3_registry_sig` 10/10, `vs3_pkg_gc_multi` 4/4. QUEUE còn `REVIEW` — chờ A0 lật sổ |
 | **ST-289** — version `0.3.6` + `#111`/`#151` + R32 | **DONE** | `ff55056` (merge `84915aa`) | `version.workspace = true` 8 crate; `vis 0.3.6`; **#111** khoá `VS0412`; **#151** 24 fixture slug (R100%); R32 khung Stage 0 @ `89f6e6b` |
 
-**Cổng Stage 0** @ `f8f1d4b`: `./vis-dev gate --fast` **PASS — 3581 passed / 0 failed / 3 skipped**
-(fmt, clippy, R1..R6, self-test, doc-examples 24 khối, L0 nextest). Windows @ `0d057e5`:
-**3533 passed / 0 failed / 3 ignored** (534 s), `vis 0.3.6`, host 54/54, targets 18/18 + 17/1
-(`JOURNAL/stage0-win-0d057e5.md`). **Chưa** chạy full/nightly/fresh-clone cho Stage 0;
-**chưa** tag `v0.3.6`.
+**Cổng Stage 0 — final QA** @ **`4c5dec6`** (fresh-clone Linux): `./vis-dev gate --fast` **PASS — 3581 passed / 0 failed / 3 skipped**
+(fmt, clippy, R1..R6, self-test, doc-examples 24 khối, L0 nextest); `cargo test --release --workspace --no-fail-fast`
+**3586 passed / 0 failed / 3 ignored**; P2 14/14, P1 8/8, P3 10/10; h2 19/19 + feature 34+1; `pkg` 25/25,
+`vs3_registry_sig` 10/10, `vs3_http_cancel` 5/5 + feature 8/8, host 54/54; diff 100k seed `202611221700`
+**0 lệch**; **2× soak 10/10 = 20/20 vòng** (593 s + 602 s), mỗi soak 3 gate 3581/3 + 3 diff 0 lệch + 2 host 54/54
+và 2 cache 5/5. Windows final @ `psvn`: **đang verify** trên commit chốt (`0d057e5` trước đó: 3533/0/3, `vis 0.3.6`).
 
-**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ `f8f1d4b`; R32 chốt phần Stage 0
-(`agent/reports/R32-viscript.md`). **Việc còn lại trước khi tag/mở GĐ 1**: full gate + nightly +
-fresh-clone Linux, verify `psvn` tại đúng commit chốt; `ST-288` chờ A0 lật QUEUE `REVIEW → DONE`.
-Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
+**Trạng thái Stage 0**: **đủ 6/6 DONE** trên `main` @ **`4c5dec6`** (merge **`a1930cb`**); R32 chốt phần Stage 0
+(`agent/reports/R32-viscript.md`); docs phát hành cập nhật (CHANGELOG `v0.3.6`, STATE/ROADMAP/VS3-TIEN-DO).
+**Tag `v0.3.6` CHƯA tạo — chờ Windows final.** Giai đoạn 1 (`ST-290..`) vẫn `BLOCKED` chờ A0 mở.
 
 ## 3. Mốc tích hợp cuối tuần
 
