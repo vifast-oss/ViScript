@@ -1,0 +1,64 @@
+# vis-remote — một lệnh bash trên psvn (ST-162; sự cố R28 §5 #4/#5/#6)
+# thoi_diem_bat_dau=2026-11-22T11:34:00Z
+# host=psvn
+# lenh: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-verify\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --test\ vs3_http_cancel\ --test\ vs3_default\ --test\ vs3_tls\ --test\ net\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-targeted.log\ \|\ grep\ -E\ \"\^\(running\|test\ result\)\"\;\ echo\ rc=\$\? 
+# lenh_do: bash -lc set\ -e\;\ cd\ /c/Users/ps/viscript-moi\;\ export\ CARGO_TARGET_DIR=/c/Users/ps/vt-st294-verify\;\ cargo\ test\ -q\ -p\ vis-cli\ --test\ vs3_http2\ --test\ vs3_http_cancel\ --test\ vs3_default\ --test\ vs3_tls\ --test\ net\ 2\>\&1\ \|\ tee\ /c/Users/ps/vislogs/st294v-targeted.log\ \|\ grep\ -E\ \"\^\(running\|test\ result\)\"\;\ echo\ rc=\$\? 
+# home_may_dich=/c/Users/ps
+# log_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T113359Z.log
+# exit_tren_may_dich=/c/Users/ps/vislogs/vis-remote-20261122T113359Z.log.exit
+# log_cuc_bo=/tmp/opencode/st294v-targeted.log
+# ---------- HEADER VD-136: DO TREN psvn ----------
+# may: psvn
+# nhan: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# os: MINGW64_NT-10.0-26300
+# nproc: 6
+# shell: /c/windows/system32/windowspowershell/v1.0/powershell.exe (bash 5.2.37(1)-release)
+# cargo: cargo 1.100.0 (3acc79c0c 2026-11-05)
+# cargo_duong_dan: /c/Users/ps/.cargo/bin/cargo
+# rustc: rustc 1.100.0 (0ef1bc386 2026-11-09)
+# rustc_duong_dan: /c/Users/ps/.cargo/bin/rustc
+# repo: /c/Users/ps/viscript-moi
+# head_full: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# head_ngan: cce2d0fb
+# git_nhanh: HEAD
+# git_untracked: 0
+# git_status: 
+# vis-remote-home: /c/Users/ps
+# baseline_commit_do: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain_cargo: /c/Users/ps/.cargo/bin/cargo
+# toolchain_rustc: /c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check repo=/c/Users/ps/viscript-moi
+# ---------- HET HEADER ----------
+# ---------- ST-242: NHAN DANH HOST / BASELINE / CONFIG ----------
+# baseline_commit_do: cce2d0fbb6b07f590bb493ba49a29dfaecddcbee
+# kernel: MINGW64_NT-10.0-26300
+# arch: x86_64
+# os_arch_thuc: MINGW64_NT-10.0-26300 3.5.4-395fda67.x86_64 x86_64
+# toolchain: cargo=/c/Users/ps/.cargo/bin/cargo rustc=/c/Users/ps/.cargo/bin/rustc
+# cau_hinh: host=psvn dirty_policy=check stem=vis-remote-20261122T113359Z
+# host_check: khong yeu cau Darwin
+# ---------- HET ST-242 ----------
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+# ST-175: cay SACH (git status --porcelain rong) — duoc phep chay/do
+running 9 tests
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.84s
+running 22 tests
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.36s
+running 33 tests
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.36s
+running 8 tests
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+running 22 tests
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.48s
+rc=0
+vis-remote-exit=0
+# ---------- KET ----------
+# thoi_diem_ket_thuc=2026-11-22T11:34:39Z
+# ssh_rc=0 (chi de chan doan — KHONG phai bang chung)
+# sha256(log_tren_may_dich)=ad9bc9180c3f700eb454e58d56dde503d6fce2441640e2ba1844eacc8193db51
+[exit=0]
