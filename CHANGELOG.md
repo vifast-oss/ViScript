@@ -3,6 +3,25 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.4.1 — 2026-11-23 (Giai đoạn 1.5 — **CHƯA TAG**)
+
+- **Phiên bản**: workspace **0.4.1** (`version.workspace = true`); `vis --version` ⇒ **`vis 0.4.1`**;
+  `PHIEN_BAN` thêm `+v041-release-2026-11-23`, khoá cache ghim lại (VD-129) — cache 0.4.0 tự vô
+  hiệu; `VERSION` VBC1/ABI không đổi.
+- **ST-296a** (`53990c0`): gom test binary — `vis-cli` **280 → 22** binary; gate **352 → 92**
+  binary; gate **3656/4**; wall **304 → 210,77 s**.
+- **ST-296b** (`067e1a5`/merge `1b27cb8`): tách **`vis-loader`** + **`vis-lsp`**, gom
+  `[workspace.dependencies]`; gate **3656/4**; Windows post-merge **3607/0/3**; `lsp` **27/27**,
+  `loader` **29/29**, targets core **18/18**.
+- **ST-296c** (`ab8d393`): tách tệp sát R1 — `vis-types/stdlib.rs` **1456 → 23 + 11 module**;
+  sqlite tests **1495 → 68 + 3**; `lower/expr.rs` **1456 → 702 + 2**; `lower.rs` **1446 → 420 + 2**;
+  interp stdlib **68 → 17 tệp**; gate **3656/4**, diff 100k **0 lệch**.
+- **ST-296d** (`a1730c5`): **63 tệp R100** vào `agent/archive/`, `DECISIONS-INDEX` **271 VD**;
+  `agent/` rời **77 → 19**; **report-check PASS 33/329**.
+- **Tag `v0.4.0` @ `c2accdf`** (R33). **`v0.4.1` CHƯA TAG** — tag sẽ đặt trên **commit R34** sau
+  final QA Linux/Windows. Nhánh **ST-297 READY** `plan/w2-st297-paths` @ `a188f15` (gate **3660/4**,
+  4 ca mới) chờ sau `v0.4.1`; **ST-298 BLOCKED**.
+
 ## v0.4.0 — 2026-11-23
 
 - **Phiên bản**: workspace **0.4.0** (`version.workspace = true` cho mọi crate thành viên);
