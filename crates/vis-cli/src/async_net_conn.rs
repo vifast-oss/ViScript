@@ -56,6 +56,8 @@ impl AsyncNet {
             next_poll: 0,
             connects: HashSet::new(),
             writes: HashMap::new(),
+            frame_tay: HashMap::new(),
+            frame_h2: HashMap::new(),
             next_conn: 0,
             next_listen: 0,
             giai_thich,

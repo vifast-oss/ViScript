@@ -31,6 +31,15 @@ impl Scheduler {
         for (seq, id) in &self.frame.cancel_on_seq {
             self.frame.log.push(format!("cancelon:{}:{}", seq, id));
         }
+        // **ST-287**: trigger huỷ theo số turn (drain một lần như trigger theo seq).
+        FRAME_CANCEL_TURNS.with(|x| {
+            self.frame.cancel_on_turn = x.borrow_mut().drain(..).collect();
+        });
+        self.frame.cancel_on_turn.sort();
+        self.frame.turn = 0;
+        for (turn, id) in &self.frame.cancel_on_turn {
+            self.frame.log.push(format!("cancelonturn:{}:{}", turn, id));
+        }
     }
 
     /// Tăng thế hệ khi một nguồn giả được **đăng ký lại** (re-arm) — event cũ phải
@@ -93,6 +102,24 @@ impl Scheduler {
     pub fn frame_next(&mut self) -> Option<u32> {
         // VD-257/C: mỗi lần scheduler bước là một SAFE POINT — xử lý request đã ghi nhận,
         // trước khi chọn frame tiếp theo. Không bao giờ cắt ngang `step_frame`.
+        // **ST-287**: trigger huỷ theo số turn (chỉ test) — cho phép huỷ giữa thân HTTP chậm.
+        // Production: `cancel_on_turn` rỗng ⇒ chỉ một phép kiểm `is_empty`, không tăng bộ đếm.
+        if !self.frame.cancel_on_turn.is_empty() {
+            self.frame.turn += 1;
+            let turn = self.frame.turn;
+            let mut due = Vec::new();
+            self.frame.cancel_on_turn.retain(|(t, id)| {
+                if *t <= turn {
+                    due.push(*id);
+                    false
+                } else {
+                    true
+                }
+            });
+            for id in due {
+                self.frame_cancel_request_for_test(id);
+            }
+        }
         if !self.frame.cancel_req.is_empty() {
             self.frame_cancel_process_for_test();
         }
@@ -717,6 +744,15 @@ impl Scheduler {
                 .log
                 .push(format!("cancelregs:{}:{}", id, removed));
         }
+
+        // 2b) **ST-287 (VD-273)** — đóng tay HTTP async còn treo của task bị huỷ: `H2Async`
+        //     nhận `RST_STREAM` đúng stream, h1 đóng socket thật; sau đó bỏ state `http.get`
+        //     của frame để frame id tái dùng không đóng lần hai. Adapter không hỗ trợ HTTP
+        //     (scripted/test cũ) dùng mặc định no-op.
+        if let Some(b) = self.frame.backend.clone() {
+            b.borrow_mut().cancel_task_handles(id);
+        }
+        crate::net::xoa_trang_thai_frame(id);
 
         // 3) Nguồn giả + ready: bỏ entry của task này ⇒ event nhắm vào nó thành stale.
         self.frame.external.retain(|tid, _| *tid != id);

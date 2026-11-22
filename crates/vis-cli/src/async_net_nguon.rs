@@ -133,6 +133,11 @@ impl AsyncNet {
         {
             n += self.tls.len() + self.tls_connects.len();
         }
+        // **ST-287** — h2 giữ session cho tái dùng, nhưng **user** phải về 0 sau huỷ.
+        #[cfg(feature = "async-h2")]
+        {
+            n += self.h2_users.values().sum::<usize>();
+        }
         n
     }
 

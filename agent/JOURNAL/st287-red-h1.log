@@ -1,0 +1,79 @@
+   Compiling vis-interp v0.3.6 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-interp)
+warning: unused import: `xoa_trang_thai_frame`
+  --> crates/vis-interp/src/net.rs:26:62
+   |
+26 | pub(crate) use async_http::{http_get_async, http_head_async, xoa_trang_thai_frame};
+   |                                                              ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `xoa_trang_thai_frame` is never used
+  --> crates/vis-interp/src/net/async_http.rs:79:15
+   |
+79 | pub(crate) fn xoa_trang_thai_frame(id: u32) {
+   |               ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling vis-vm v0.3.6 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-vm)
+   Compiling vis-cli v0.3.6 (/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w2-tls/crates/vis-cli)
+warning: `vis-interp` (lib) generated 2 warnings (run `cargo fix --lib -p vis-interp` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.05s
+     Running tests/vs3_http_cancel.rs (target/w2/debug/build/vis-cli/a8662b957fe6020e/out/vs3_http_cancel-a8662b957fe6020e)
+
+running 5 tests
+test cancel_http_h1_mot_task_khong_anh_huong_task_khac ... FAILED
+test cancel_http_h1_server_khong_tra_header ... FAILED
+test cancel_http_h1_lap_nhieu_vong_khong_ro ... FAILED
+test cancel_http_h1_sau_huy_van_goi_duoc ... FAILED
+test cancel_http_h1_dong_socket_va_parity ... FAILED
+
+failures:
+
+---- cancel_http_h1_mot_task_khong_anh_huong_task_khac stdout ----
+
+thread 'cancel_http_h1_mot_task_khong_anh_huong_task_khac' (1722347) panicked at crates/vis-cli/tests/vs3_http_cancel.rs:407:5:
+assertion `left == right` failed: ["enable", "wait:0:Task(2)", "wait:1:Reactor { key: 0, gen: 0 }", "wait:2:Reactor { key: 1, gen: 0 }", "wake:1", "wake:2", "wait:1:Reactor { key: 2, gen: 0 }", "wait:2:Reactor { key: 3, gen: 0 }", "wake:2", "wake:1", "wake:0", "wait:1:Reactor { key: 4, gen: 0 }", "wake:1", "wait:1:Reactor { key: 5, gen: 0 }", "wake:1", "wait:1:Reactor { key: 6, gen: 0 }", "wake:1", "wait:1:Reactor { key: 7, gen: 0 }", "wake:1", "wait:1:Reactor { key: 8, gen: 0 }", "wake:1", "wait:1:Reactor { key: 9, gen: 0 }", "wake:1", "wait:1:Reactor { key: 10, gen: 0 }", "wake:1", "wait:1:Reactor { key: 11, gen: 0 }", "wake:1", "wait:1:Reactor { key: 12, gen: 0 }", "wake:1", "wait:1:Reactor { key: 13, gen: 0 }", "wake:1", "wait:1:Reactor { key: 14, gen: 0 }", "wake:1", "wait:1:Reactor { key: 15, gen: 0 }", "wake:1", "wait:1:Reactor { key: 16, gen: 0 }", "cancelreq:1", "cancelwait:1", "canceldereg:1:16", "cancelregs:1:1", "cancel:1", "purge:1", "reclaim:1", "reclaim:2", "renable:0", "rreg:0:N:127.0.0.1:36111|1:Read:1:3999", "rreg:1:N:127.0.0.1:36111|2:Read:2:2999", "rev:0:0:r--", "rev:1:0:r--", "raccepted:N:127.0.0.1:36111|1", "rdone:W:C1", "rreg:2:C1:Read:1:2000", "raccepted:N:127.0.0.1:36111|2", "rdone:W:C2", "rreg:3:C2:Read:2:2000", "rev:3:0:rh-", "rev:2:0:r--", "rdone:C2", "rdone:C1", "rreg:4:C1:Read:1:2000", "rev:4:0:r--", "rdone:C1", "rreg:5:C1:Read:1:2000", "rev:5:0:r--", "rdone:C1", "rreg:6:C1:Read:1:2000", "rev:6:0:r--", "rdone:C1", "rreg:7:C1:Read:1:2000", "rev:7:0:r--", "rdone:C1", "rreg:8:C1:Read:1:2000", "rev:8:0:r--", "rdone:C1", "rreg:9:C1:Read:1:2000", "rev:9:0:r--", "rdone:C1", "rreg:10:C1:Read:1:2000", "rev:10:0:r--", "rdone:C1", "rreg:11:C1:Read:1:2000", "rev:11:0:r--", "rdone:C1", "rreg:12:C1:Read:1:2000", "rev:12:0:r--", "rdone:C1", "rreg:13:C1:Read:1:2000", "rev:13:0:r--", "rdone:C1", "rreg:14:C1:Read:1:2000", "rev:14:0:r--", "rdone:C1", "rreg:15:C1:Read:1:2000", "rev:15:0:r--", "rdone:C1", "rreg:16:C1:Read:1:2000", "rshutdown"]
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- cancel_http_h1_server_khong_tra_header stdout ----
+
+thread 'cancel_http_h1_server_khong_tra_header' (1722349) panicked at crates/vis-cli/tests/vs3_http_cancel.rs:368:5:
+assertion `left == right` failed: ["enable", "wait:1:Reactor { key: 0, gen: 0 }", "wake:1", "wait:1:Reactor { key: 1, gen: 0 }", "wake:1", "wait:1:Reactor { key: 2, gen: 0 }", "wake:1", "wait:1:Reactor { key: 3, gen: 0 }", "wake:1", "wait:1:Reactor { key: 4, gen: 0 }", "wake:1", "wait:1:Reactor { key: 5, gen: 0 }", "wake:1", "wait:1:Reactor { key: 6, gen: 0 }", "wake:1", "wait:1:Reactor { key: 7, gen: 0 }", "wake:1", "wait:1:Reactor { key: 8, gen: 0 }", "wake:1", "wait:1:Reactor { key: 9, gen: 0 }", "wake:1", "wait:1:Reactor { key: 10, gen: 0 }", "wake:1", "wait:1:Reactor { key: 11, gen: 0 }", "wake:1", "wait:1:Reactor { key: 12, gen: 0 }", "wake:1", "wait:1:Reactor { key: 13, gen: 0 }", "wake:1", "wait:1:Reactor { key: 14, gen: 0 }", "wake:1", "wait:1:Reactor { key: 15, gen: 0 }", "wake:1", "wait:1:Reactor { key: 16, gen: 0 }", "wake:1", "wait:1:Reactor { key: 17, gen: 0 }", "wake:1", "wait:1:Reactor { key: 18, gen: 0 }", "cancelreq:1", "cancelwait:1", "canceldereg:1:18", "cancelregs:1:1", "cancel:1", "purge:1", "reclaim:1", "renable:0", "rreg:0:N:127.0.0.1:40205|1:Read:1:3999", "rev:0:0:r--", "raccepted:N:127.0.0.1:40205|1", "rdone:W:C1", "rreg:1:C1:Read:1:2000", "rev:1:0:r--", "rdone:C1", "rreg:2:C1:Read:1:2000", "rev:2:0:r--", "rdone:C1", "rreg:3:C1:Read:1:2000", "rev:3:0:r--", "rdone:C1", "rreg:4:C1:Read:1:2000", "rev:4:0:r--", "rdone:C1", "rreg:5:C1:Read:1:2000", "rev:5:0:r--", "rdone:C1", "rreg:6:C1:Read:1:2000", "rev:6:0:r--", "rdone:C1", "rreg:7:C1:Read:1:2000", "rev:7:0:r--", "rdone:C1", "rreg:8:C1:Read:1:2000", "rev:8:0:r--", "rdone:C1", "rreg:9:C1:Read:1:2000", "rev:9:0:r--", "rdone:C1", "rreg:10:C1:Read:1:2000", "rev:10:0:r--", "rdone:C1", "rreg:11:C1:Read:1:2000", "rev:11:0:r--", "rdone:C1", "rreg:12:C1:Read:1:2000", "rev:12:0:r--", "rdone:C1", "rreg:13:C1:Read:1:2000", "rev:13:0:r--", "rdone:C1", "rreg:14:C1:Read:1:2000", "rev:14:0:r--", "rdone:C1", "rreg:15:C1:Read:1:2000", "rev:15:0:r--", "rdone:C1", "rreg:16:C1:Read:1:2000", "rev:16:0:r--", "rdone:C1", "rreg:17:C1:Read:1:2000", "rev:17:0:r--", "rdone:C1", "rreg:18:C1:Read:1:2000", "rshutdown"]
+  left: 1
+ right: 0
+
+---- cancel_http_h1_lap_nhieu_vong_khong_ro stdout ----
+
+thread 'cancel_http_h1_lap_nhieu_vong_khong_ro' (1722346) panicked at crates/vis-cli/tests/vs3_http_cancel.rs:316:9:
+assertion `left == right` failed: vòng 0: rò tay: ["enable", "wait:1:Reactor { key: 0, gen: 0 }", "wake:1", "wait:1:Reactor { key: 1, gen: 0 }", "wake:1", "wait:1:Reactor { key: 2, gen: 0 }", "wake:1", "wait:1:Reactor { key: 3, gen: 0 }", "wake:1", "wait:1:Reactor { key: 4, gen: 0 }", "wake:1", "wait:1:Reactor { key: 5, gen: 0 }", "wake:1", "wait:1:Reactor { key: 6, gen: 0 }", "wake:1", "wait:1:Reactor { key: 7, gen: 0 }", "wake:1", "wait:1:Reactor { key: 8, gen: 0 }", "wake:1", "wait:1:Reactor { key: 9, gen: 0 }", "wake:1", "wait:1:Reactor { key: 10, gen: 0 }", "wake:1", "wait:1:Reactor { key: 11, gen: 0 }", "wake:1", "wait:1:Reactor { key: 12, gen: 0 }", "wake:1", "wait:1:Reactor { key: 13, gen: 0 }", "wake:1", "wait:1:Reactor { key: 14, gen: 0 }", "wake:1", "wait:1:Reactor { key: 15, gen: 0 }", "wake:1", "wait:1:Reactor { key: 16, gen: 0 }", "wake:1", "wait:1:Reactor { key: 17, gen: 0 }", "wake:1", "wait:1:Reactor { key: 18, gen: 0 }", "cancelreq:1", "cancelwait:1", "canceldereg:1:18", "cancelregs:1:1", "cancel:1", "purge:1", "reclaim:1", "renable:0", "rreg:0:N:127.0.0.1:34303|1:Read:1:3999", "rev:0:0:r--", "raccepted:N:127.0.0.1:34303|1", "rdone:W:C1", "rreg:1:C1:Read:1:2000", "rev:1:0:r--", "rdone:C1", "rreg:2:C1:Read:1:2000", "rev:2:0:r--", "rdone:C1", "rreg:3:C1:Read:1:2000", "rev:3:0:r--", "rdone:C1", "rreg:4:C1:Read:1:2000", "rev:4:0:r--", "rdone:C1", "rreg:5:C1:Read:1:2000", "rev:5:0:r--", "rdone:C1", "rreg:6:C1:Read:1:2000", "rev:6:0:r--", "rdone:C1", "rreg:7:C1:Read:1:2000", "rev:7:0:r--", "rdone:C1", "rreg:8:C1:Read:1:2000", "rev:8:0:r--", "rdone:C1", "rreg:9:C1:Read:1:2000", "rev:9:0:r--", "rdone:C1", "rreg:10:C1:Read:1:2000", "rev:10:0:r--", "rdone:C1", "rreg:11:C1:Read:1:2000", "rev:11:0:r--", "rdone:C1", "rreg:12:C1:Read:1:2000", "rev:12:0:r--", "rdone:C1", "rreg:13:C1:Read:1:2000", "rev:13:0:r--", "rdone:C1", "rreg:14:C1:Read:1:2000", "rev:14:0:r--", "rdone:C1", "rreg:15:C1:Read:1:2000", "rev:15:0:r--", "rdone:C1", "rreg:16:C1:Read:1:2000", "rev:16:0:r--", "rdone:C1", "rreg:17:C1:Read:1:2000", "rev:17:0:r--", "rdone:C1", "rreg:18:C1:Read:1:2000", "rshutdown"]
+  left: 1
+ right: 0
+
+---- cancel_http_h1_sau_huy_van_goi_duoc stdout ----
+
+thread 'cancel_http_h1_sau_huy_van_goi_duoc' (1722348) panicked at crates/vis-cli/tests/vs3_http_cancel.rs:333:5:
+assertion `left == right` failed: sau huỷ: ["enable", "wait:1:Reactor { key: 0, gen: 0 }", "wake:1", "wait:1:Reactor { key: 1, gen: 0 }", "wake:1", "wait:1:Reactor { key: 2, gen: 0 }", "wake:1", "wait:1:Reactor { key: 3, gen: 0 }", "wake:1", "wait:1:Reactor { key: 4, gen: 0 }", "wake:1", "wait:1:Reactor { key: 5, gen: 0 }", "wake:1", "wait:1:Reactor { key: 6, gen: 0 }", "wake:1", "wait:1:Reactor { key: 7, gen: 0 }", "wake:1", "wait:1:Reactor { key: 8, gen: 0 }", "wake:1", "wait:1:Reactor { key: 9, gen: 0 }", "wake:1", "wait:1:Reactor { key: 10, gen: 0 }", "wake:1", "wait:1:Reactor { key: 11, gen: 0 }", "wake:1", "wait:1:Reactor { key: 12, gen: 0 }", "wake:1", "wait:1:Reactor { key: 13, gen: 0 }", "wake:1", "wait:1:Reactor { key: 14, gen: 0 }", "wake:1", "wait:1:Reactor { key: 15, gen: 0 }", "wake:1", "wait:1:Reactor { key: 16, gen: 0 }", "wake:1", "wait:1:Reactor { key: 17, gen: 0 }", "wake:1", "wait:1:Reactor { key: 18, gen: 0 }", "cancelreq:1", "cancelwait:1", "canceldereg:1:18", "cancelregs:1:1", "cancel:1", "purge:1", "reclaim:1", "renable:0", "rreg:0:N:127.0.0.1:36989|1:Read:1:3999", "rev:0:0:r--", "raccepted:N:127.0.0.1:36989|1", "rdone:W:C1", "rreg:1:C1:Read:1:2000", "rev:1:0:r--", "rdone:C1", "rreg:2:C1:Read:1:2000", "rev:2:0:r--", "rdone:C1", "rreg:3:C1:Read:1:2000", "rev:3:0:r--", "rdone:C1", "rreg:4:C1:Read:1:2000", "rev:4:0:r--", "rdone:C1", "rreg:5:C1:Read:1:2000", "rev:5:0:r--", "rdone:C1", "rreg:6:C1:Read:1:2000", "rev:6:0:r--", "rdone:C1", "rreg:7:C1:Read:1:2000", "rev:7:0:r--", "rdone:C1", "rreg:8:C1:Read:1:2000", "rev:8:0:r--", "rdone:C1", "rreg:9:C1:Read:1:2000", "rev:9:0:r--", "rdone:C1", "rreg:10:C1:Read:1:2000", "rev:10:0:r--", "rdone:C1", "rreg:11:C1:Read:1:2000", "rev:11:0:r--", "rdone:C1", "rreg:12:C1:Read:1:2000", "rev:12:0:r--", "rdone:C1", "rreg:13:C1:Read:1:2000", "rev:13:0:r--", "rdone:C1", "rreg:14:C1:Read:1:2000", "rev:14:0:r--", "rdone:C1", "rreg:15:C1:Read:1:2000", "rev:15:0:r--", "rdone:C1", "rreg:16:C1:Read:1:2000", "rev:16:0:r--", "rdone:C1", "rreg:17:C1:Read:1:2000", "rev:17:0:r--", "rdone:C1", "rreg:18:C1:Read:1:2000", "rshutdown"]
+  left: 1
+ right: 0
+
+---- cancel_http_h1_dong_socket_va_parity stdout ----
+
+thread 'cancel_http_h1_dong_socket_va_parity' (1722345) panicked at crates/vis-cli/tests/vs3_http_cancel.rs:260:9:
+assertion `left == right` failed: interp: rò tay sau huỷ: ["enable", "wait:1:Reactor { key: 0, gen: 0 }", "wake:1", "wait:1:Reactor { key: 1, gen: 0 }", "wake:1", "wait:1:Reactor { key: 2, gen: 0 }", "wake:1", "wait:1:Reactor { key: 3, gen: 0 }", "wake:1", "wait:1:Reactor { key: 4, gen: 0 }", "wake:1", "wait:1:Reactor { key: 5, gen: 0 }", "wake:1", "wait:1:Reactor { key: 6, gen: 0 }", "wake:1", "wait:1:Reactor { key: 7, gen: 0 }", "wake:1", "wait:1:Reactor { key: 8, gen: 0 }", "wake:1", "wait:1:Reactor { key: 9, gen: 0 }", "wake:1", "wait:1:Reactor { key: 10, gen: 0 }", "wake:1", "wait:1:Reactor { key: 11, gen: 0 }", "wake:1", "wait:1:Reactor { key: 12, gen: 0 }", "wake:1", "wait:1:Reactor { key: 13, gen: 0 }", "wake:1", "wait:1:Reactor { key: 14, gen: 0 }", "wake:1", "wait:1:Reactor { key: 15, gen: 0 }", "wake:1", "wait:1:Reactor { key: 16, gen: 0 }", "wake:1", "wait:1:Reactor { key: 17, gen: 0 }", "wake:1", "wait:1:Reactor { key: 18, gen: 0 }", "cancelreq:1", "cancelwait:1", "canceldereg:1:18", "cancelregs:1:1", "cancel:1", "purge:1", "reclaim:1", "renable:0", "rreg:0:N:127.0.0.1:32841|1:Read:1:3999", "rev:0:0:r--", "raccepted:N:127.0.0.1:32841|1", "rdone:W:C1", "rreg:1:C1:Read:1:2000", "rev:1:0:r--", "rdone:C1", "rreg:2:C1:Read:1:2000", "rev:2:0:r--", "rdone:C1", "rreg:3:C1:Read:1:2000", "rev:3:0:r--", "rdone:C1", "rreg:4:C1:Read:1:2000", "rev:4:0:r--", "rdone:C1", "rreg:5:C1:Read:1:2000", "rev:5:0:r--", "rdone:C1", "rreg:6:C1:Read:1:2000", "rev:6:0:r--", "rdone:C1", "rreg:7:C1:Read:1:2000", "rev:7:0:r--", "rdone:C1", "rreg:8:C1:Read:1:2000", "rev:8:0:r--", "rdone:C1", "rreg:9:C1:Read:1:2000", "rev:9:0:r--", "rdone:C1", "rreg:10:C1:Read:1:2000", "rev:10:0:r--", "rdone:C1", "rreg:11:C1:Read:1:2000", "rev:11:0:r--", "rdone:C1", "rreg:12:C1:Read:1:2000", "rev:12:0:r--", "rdone:C1", "rreg:13:C1:Read:1:2000", "rev:13:0:r--", "rdone:C1", "rreg:14:C1:Read:1:2000", "rev:14:0:r--", "rdone:C1", "rreg:15:C1:Read:1:2000", "rev:15:0:r--", "rdone:C1", "rreg:16:C1:Read:1:2000", "rev:16:0:r--", "rdone:C1", "rreg:17:C1:Read:1:2000", "rev:17:0:r--", "rdone:C1", "rreg:18:C1:Read:1:2000", "rshutdown"]
+  left: 1
+ right: 0
+
+
+failures:
+    cancel_http_h1_dong_socket_va_parity
+    cancel_http_h1_lap_nhieu_vong_khong_ro
+    cancel_http_h1_mot_task_khong_anh_huong_task_khac
+    cancel_http_h1_sau_huy_van_goi_duoc
+    cancel_http_h1_server_khong_tra_header
+
+test result: FAILED. 0 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+error: test failed, to rerun pass `-p vis-cli --test vs3_http_cancel`

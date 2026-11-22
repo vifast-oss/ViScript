@@ -130,6 +130,15 @@ impl AsyncNet {
     pub(super) fn h2_cancel_impl(&mut self, handle: &str, id: u64) {
         if let Some(p) = self.h2.get_mut(Self::h2_base(handle)) {
             p.huy_stream(id);
+            // **ST-287 (VD-273)** — `send_reset` chỉ xếp frame vào `h2`; phải lái session
+            // một nhịp để `RST_STREAM` thực sự ra socket ngay tại safe point (không đợi
+            // request kế tiếp). Có trần để không kéo I/O không sẵn sàng.
+            for _ in 0..8 {
+                match p.tien() {
+                    Ok(true) => continue,
+                    _ => break,
+                }
+            }
         }
     }
     /// Xử lý close cho khoá TLS/h2. `true` = đã xử lý xong (không cần cleanup chung).
