@@ -1,23 +1,38 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
+> **ĐÍNH CHÍNH 2026-11-23 (ST-305, rà tài liệu) — đọc khối này trước.** Các khối dated bên dưới là
+> **lịch sử**; số cũ giữ nguyên (VD-142).
+> - **macOS arm64**: **đã verify `v0.4.5`** trên `mps` (macOS 27.0.1 / Darwin 27.0.0 arm64, Rust
+>   1.100.0): gate **3631/0/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**,
+>   `vis-wasm-sem` **388/390** (`JOURNAL/mac-v045-verify.md`); `ST-300m1` chạy thêm
+>   `bin/vis-gate-macos --quick` PASS. **Tier 1 CHƯA công bố** — chờ `ST-300m3` (3× `--full` + soak 4 h).
+>   Mọi câu “macOS không có máy thật/chưa verify” bên dưới **đã hết hiệu lực**.
+> - **Windows x86_64**: **Tier 1 đã công bố** từ `v0.4.5` (`VD-283`/`ST-298`), caveat `FsGuard`
+>   (chỉ kiểm theo đường dẫn, không có danh tính tệp).
+> - **wasm32-wasip1**: **đã có runner runtime** (`bin/vis-wasm-suite`, `bin/vis-wasm-sem`);
+>   không còn “chỉ cargo check”. `wasm32-unknown-unknown` vẫn chỉ `cargo check`.
+> - **Crate host**: `vis-host-native` (quyền/FS/net/TLS/SQLite) tách khỏi `vis-cli` ở `ST-300b`;
+>   `vis-host-linux` **18/18** trên `ps`; `vis-host-wasm` chạy `wasm32-wasip1`.
+
 > **ĐÍNH CHÍNH macOS — 2026-11-21 (ST-242 / VD-242 Q7).** Số “macOS 27.0.1 arm64” cũ đã được **đo lại trên Darwin thật** ngày 2026-11-23:
 > `mps` = macOS **27.0.1 arm64**, gate **3631/3**, workspace **3636/0/3**, host **54/54**,
 > WASI suite **28/28**, `vis-wasm-sem` **388/390 = 99,5%** (xem `JOURNAL/mac-v045-verify.md`).
 > **Vẫn chưa tuyên bố hỗ trợ macOS** (A0 quyết định tier); bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
-> `vis-host-linux` **18/18** (ST-295 thêm 3 ca `Execute`/lib). Windows: **Tier 2**, verify lại trên `psvn` @ tag **`v0.3.5`** (`03bb7b9`):
-> workspace **3528 passed / 0 failed / 3 ignored** (debug + release), P2 10/10, P3 10/10 — **vẫn chưa
-> tuyên bố hỗ trợ**. Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
+> `vis-host-linux` **18/18** (ST-295 thêm 3 ca `Execute`/lib). Đoạn Windows dưới đây là **lịch sử 20/11**;
+> từ `v0.4.5` Windows là **Tier 1** (xem đính chính đầu tệp). Xem `STATE.md`, `DECISIONS.md` VD-242/VD-283,
+> `agent/SNAPSHOT-2026-11-20.md` §6.
 
 > **Cập nhật 2026-11-22 (ST-295 / VD-276)** — **đường ghi** trên Unix đã đóng khe kiểm-rồi-mở
 > bằng `openat`/`openat2` (`rustix =1.1.6`, feature `fs`; ca đua **100/100 → 0/100**,
 > `JOURNAL/st295-race.log`). Landlock `#125`: ruleset xử lý `Execute`, cấp chỉ-đọc + Execute cho
-> thư viện chuẩn và binary trong grant — `vis-host-linux` **18/18**. Windows vẫn **Tier 2**
-> (không có `openat`); macOS dùng cùng mã, đã verify `v0.4.5` trên Darwin 27 arm64 ngày 2026-11-23.
+> thư viện chuẩn và binary trong grant — `vis-host-linux` **18/18**. Windows **Tier 1** từ `v0.4.5`
+> (không có `openat`, caveat `FsGuard`); macOS dùng cùng mã, đã verify `v0.4.5` trên Darwin 27 arm64
+> ngày 2026-11-23 (chưa công bố Tier 1).
 
 > **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
 > `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
-> Tệp này **chỉ** sửa phần Windows đã có bằng chứng tag `v0.3.5`; các tuyên bố macOS/wasm giữ nguyên
-> (macOS **không** có máy thật, wasm **chưa có runner**). **R32 chờ ST-284..288** trước khi chốt lại.
+> **Khối này là lịch sử**: từ `v0.4.5`, version workspace là **0.4.5**; macOS **đã verify** và wasm
+> `wasm32-wasip1` **đã có runner** (xem đính chính đầu tệp).
 
 > **Windows Tier 1 — CHÍNH THỨC (2026-11-23, ST-298 / VD-283)** — đã đủ điều kiện; giữ caveat `FsGuard`.
 > Bằng chứng đã có: **3× `bin/vis-gate-windows --full` PASS liên tiếp** @ `f4cb136`
@@ -28,23 +43,27 @@
 > Điều kiện đã đạt: soak 4h **0 lỗi sản phẩm**, RAM phẳng, 3× full xanh; A0 uỷ quyền tại `VD-283`.
 > Tier 1 là mức hỗ trợ sản phẩm, **không** phải sandbox kernel; `FsGuard` chỉ kiểm path, không file identity.
 
-Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Cập nhật: 2026-11-20 ~02:30 — **lưu ý**: VD-winport đang triển khai; L0 Windows verify: @ `6ccf367` → 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`, verify nền); Windows **vẫn chưa được tuyên bố hỗ trợ**; Tier 2 giữ; `pha1-rc1` nguyên vẹn. Nội dung nền cũ giữ nguyên; chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
+Tài liệu **ngắn** về cái gì **thật sự** được bảo đảm trên từng nền. Đoạn dưới là **lịch sử 20/11**
+(Windows khi đó chưa được tuyên bố hỗ trợ; từ `v0.4.5` là **Tier 1**): L0 Windows verify @ `6ccf367`
+→ 7 suite đỏ; @ `f9430b9` → **còn 1 ca** (`server_hai_ket_noi_lien_tiep` — đã fix @ `c7cef71`).
+Chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 (ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **ST-295/VD-276**: **đường đọc và đường ghi**
-đều đã đóng khe kiểm-rồi-mở trên Unix bằng `openat`/`openat2` (`#109b`/`#140`); macOS **chưa verify**
-lại, **Windows mức bảo đảm thấp hơn**).
+đều đã đóng khe kiểm-rồi-mở trên Unix bằng `openat`/`openat2` (`#109b`/`#140`); macOS **đã verify
+`v0.4.5`** (chưa công bố Tier 1), **Windows mức bảo đảm thấp hơn**).
 
 ## Bảng nền tảng ↔ bảo đảm
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
 | macOS (mps) — **ĐÃ verify `v0.4.5`** (chưa tuyên bố hỗ trợ) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64, 2026-11-23**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; `JOURNAL/mac-v045-verify.md`. |
-| Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
-| Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
+| Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
+| Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136`; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
+| wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **388/390 eligible** (2 stack-overflow interp); không tuyên bố full (`ST-299a/b`, `ST-300`) |
 
-> **Windows (VD-186)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
-> danh tính tệp** ⇒ mức bảo đảm **thấp hơn** macOS/Linux; Windows trong VS2 **chỉ đo**, **chưa hỗ trợ**
-> (VD-121/VD-146) — chi tiết ở mục **FsGuard**. wasm **chưa đo**.
+> **Windows (VD-186/VD-283)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
+> danh tính tệp** ⇒ mức bảo đảm **thấp hơn** macOS/Linux. Từ `v0.4.5`, Windows là **Tier 1** (mức hỗ trợ sản phẩm),
+> **không** phải sandbox kernel; caveat `FsGuard` giữ nguyên.
 
 ## Cách đọc `vis run --sandbox-check`
 
@@ -58,23 +77,25 @@ cap điều kiện: fs,net                 # loại quyền đang được cư�
 
 Mã thoát: `0` = Linux có `landlock`; `3` = không có / nền khác; `4` = Linux không đọc được tệp LSM.
 
-## Đa nền tảng — ma trận `cargo check --target` (ST-74)
+## Đa nền tảng — ma trận `cargo check --target` (ST-74) và runner runtime
 
-**Chỉ CHECK biên dịch chéo**; **KHÔNG** chạy trên Windows/wasm (chưa có runner). Lệnh:
-`viscript/bin/vis-targets` (in bảng, exit 1 nếu ô **kỳ vọng xanh** bị đỏ; kỳ vọng ghi trong script).
+**Check biên dịch chéo** vẫn là một mức bằng chứng riêng; **Windows** và **wasm32-wasip1** nay có runner
+runtime thật (xem cột cuối). Lệnh: `bin/vis-targets` (in bảng, exit 1 nếu ô **kỳ vọng xanh** bị đỏ;
+kỳ vọng ghi trong script).
 
 | Nhóm | `x86_64-pc-windows-msvc` | `wasm32-unknown-unknown` | Mức bằng chứng |
 |---|---|---|---|
 | 7 crate lõi (`vis-diag`, `vis-syntax`, `vis-types`, `vis-bytecode`, `vis-fmt`, `vis-interp`, `vis-vm`) | check xanh | check xanh | **check** |
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
-| `vis-host-wasm` | — | check xanh (khung; `probe()` = “runtime kiểm, không có sandbox OS”) | **check** |
-| `vis-host-*` chạy thật | **đo, chưa hỗ trợ** (39/54; 15 ca `not ok` trùng danh sách ST-136 — thiếu chương trình POSIX, VS3) | **chưa có runner** (chỉ check) | Windows: **đo**, Linux: **chạy thật** (`vis-host-linux` 13/13 tại ST-137, **15/15** từ ST-150/ST-166/ST-173, **18/18** từ ST-295 — xem mục cuối; host suite 54/54) |
+| `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` 388/390 eligible (`ST-299a/b`, `ST-300`) |
+| `vis-host-*` chạy thật | **Tier 1** (host suite 54/54 @ `f4cb136`; 3× full 3611/0/3; soak 4 h 985/0) | `wasm32-wasip1`: **chạy thật** (suite 28/28); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`vis-host-linux` 18/18 từ ST-295; host suite 54/54); wasm: **runtime có phạm vi** |
 
-Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “chạy trên Windows/wasm”;
-đúng là “**check** biên dịch chéo xanh, **chưa chạy**”.
+Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
+“wasm32-unknown-unknown chạy được”; đúng là “**check** biên dịch chéo” cho `wasm32-unknown-unknown`,
+và “**runtime `wasm32-wasip1`** — coverage 388/390 eligible” cho WASI.
 
-## Bộ hợp chuẩn host — chạy THẬT trên Linux; macOS là số cũ (ST-75, ST-131/ST-142)
+## Bộ hợp chuẩn host — chạy THẬT trên Linux, Windows và macOS (ST-75, ST-131/ST-142/ST-298)
 
 **54 ca**, mỗi ca chạy **cả** `vis run` và `vis run --vm --no-cache` (**120 lần chạy**), so **byte**
 stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
@@ -87,12 +108,12 @@ stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
 | Quyền `cap` | 5 | trong root, ngoài root `VS0604`, thiếu `(write)`, `--grant`, không khai cap |
 | Determinism | 3 | mỗi ca chạy **3 lần** mỗi đường, cùng stdout |
 
-Lệnh: `viscript/bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu/đỏ). Log:
-Log: `agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
-`st137-host-suite-macos.log` (nhãn macOS **cũ**), `st137-host-suite-ps.log`, `st142-*`,
-`st144-host-suite.log` (Windows). **Linux: đã đo** (54/54, ST-142 — bằng chứng hiện hành).
-**Windows: đã đo, chỉ đo** (39/54, VD-146/VD-121 — chưa hỗ trợ; workspace xanh @ `c7cef71` là cổng
-`cargo test`, **không** phải tuyên bố hỗ trợ). **wasm: chưa đo** (chỉ check, VD-121).
+Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu/đỏ). Log:
+`agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
+`st137-host-suite-ps.log`, `st142-*`, `st144-host-suite.log` (Windows cũ), `st300m1-macos.md`.
+**Linux: 54/54** (ST-142 — bằng chứng hiện hành). **Windows: 54/54** (ST-298, Tier 1; số 39/54 là
+đo cũ 20/11). **macOS: 54/54** (verify `v0.4.5`, 2026-11-23; **chưa** công bố Tier 1).
+**wasm: không nằm trong 54 ca host** — bằng chứng WASI là smoke suite 28/28 + `vis-wasm-sem` 388/390.
 
 ## Cấm ngôn từ
 
@@ -100,14 +121,17 @@ Log: `agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính c
 - **Đúng**: “**cưỡng chế ở tầng runtime** (ST-72b)” trên **mọi** nền; “**Landlock cưỡng chế chỉ trên Linux** — đo **18/18** ca (ST-132/ST-150/ST-166/ST-173/ST-295)”.
 - `vis-host-linux` **chỉ biên dịch trên Linux**: `src/lib.rs` và `tests/landlock.rs` có `#![cfg(target_os = "linux")]`, `landlock` nằm trong `[target.'cfg(target_os = "linux")'.dependencies]` (ST-173). Trên mac/Windows đây là crate **rỗng, 0 ca** — **giới hạn nền**, không phải thiếu sót; xem mục cuối tệp.
 
-- Cấm nói "async song song", "chạy đồng thời", "rendezvous", "HTTPS", "sandbox kernel" khi mô tả VS2 (VD-122, VD-123, VD-120).
-- Cấm nói "hỗ trợ Windows/wasm/Linux" khi chỉ có cargo check (VD-104, VD-121).
-- **Sai (ST-295/VD-276)**: “macOS đã an toàn” (macOS **chưa verify** lại); “Windows được hỗ trợ” /
-  “Windows có sandbox kernel”; “hardlink là lỗi đua”; “đường ghi còn kiểm-rồi-mở trên Unix” (đã đóng
-  từ ST-295 bằng `openat`/`openat2`).
-- **Đúng (ST-295, sửa 22/11)**: “**đường đọc + đường ghi** đã đóng khe symlink trên **Unix/Linux**
-  (`#146`/`#140`/`#109b`; ST-174 + ST-295; macOS **chưa verify** lại — xem đính chính đầu tệp)”;
-  “**hardlink** là **giới hạn chính sách**”; “**Windows** mức bảo đảm **thấp hơn**, chỉ **đo**”.
+- Cấm nói "async song song", "chạy đồng thời", "rendezvous", "sandbox kernel" khi mô tả **VS2**
+  (VD-122, VD-123, VD-120); riêng **HTTPS** đã có từ VS3-4a (`https://` qua TLS), không còn là “chưa có”.
+- Cấm nói "hỗ trợ đầy đủ wasm" khi chỉ có `vis-wasm-sem` **388/390 eligible** + suite 28/28
+  (VD-121/VD-277); cấm nói "macOS Tier 1" khi `ST-300m3` chưa chạy 3× `--full` + soak 4 h.
+- **Sai (2026-11-23)**: “macOS chưa verify” (đã verify `v0.4.5`); “Windows chưa hỗ trợ” (đã **Tier 1**
+  từ `v0.4.5`, caveat `FsGuard`); “wasm chưa có runner” (đã có `wasm32-wasip1`); “Windows có sandbox
+  kernel”; “hardlink là lỗi đua”; “đường ghi còn kiểm-rồi-mở trên Unix” (đã đóng từ ST-295).
+- **Đúng (2026-11-23)**: “**đường đọc + đường ghi** đã đóng khe symlink trên **Unix/Linux**
+  (`#146`/`#140`/`#109b`; ST-174 + ST-295), **macOS đã verify `v0.4.5`**”; “**hardlink** là **giới hạn
+  chính sách**”; “**Windows Tier 1** — mức hỗ trợ sản phẩm, caveat `FsGuard` (chỉ kiểm theo đường dẫn)”;
+  “**WASI `wasm32-wasip1`** — runtime có phạm vi, 388/390 eligible”.
 
 ## Điều kiện để có Landlock thật (VD-107 (4))
 
@@ -173,16 +197,16 @@ khi thân `cmd` chỉ là lệnh). Tại thời điểm ST-85: **8 tệp / 10 d�
 
 | Đường | Trạng thái trong **mã đang chạy** | Nguồn |
 |---|---|---|
-| **Đọc** | **Đã đóng** khe symlink trên **Unix/Linux** — nợ `#146` đóng ở ST-174; với `cap[Dir]`/`cap[File]`, ST-295 mở **từ fd gốc** (`openat`/`openat2`) (macOS **chưa verify** lại) | VD-176 §1 · VD-276 §1 · `JOURNAL/st174-*.log`, `st295-*.log` |
-| **Ghi** | **Đã đóng** trên **Unix/Linux**: `openat`/`openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)` + `O_NOFOLLOW`; ca đua **100/100 → 0/100** (macOS **chưa verify** lại) — nợ `#140`/`#109b` đóng ở ST-295 | VD-276 §1 · `JOURNAL/st295-*.log` |
+| **Đọc** | **Đã đóng** khe symlink trên **Unix** — nợ `#146` đóng ở ST-174; với `cap[Dir]`/`cap[File]`, ST-295 mở **từ fd gốc** (`openat`/`openat2`); **macOS đã verify `v0.4.5`** (6/6 ca APFS) | VD-176 §1 · VD-276 §1 · `JOURNAL/st174-*.log`, `st295-*.log`, `st300m1-macos.md` |
+| **Ghi** | **Đã đóng** trên **Unix**: `openat`/`openat2(RESOLVE_BENEATH\|RESOLVE_NO_SYMLINKS)` + `O_NOFOLLOW`; ca đua **100/100 → 0/100**; **macOS đã verify `v0.4.5`** — nợ `#140`/`#109b` đóng ở ST-295 | VD-276 §1 · `JOURNAL/st295-*.log`, `st300m1-macos.md` |
 | **Hardlink** | **Giới hạn chính sách**, **không** phải lỗi đua — mục riêng bên dưới | VD-176 §3 |
 | **Windows** | **Mức bảo đảm thấp hơn**: chỉ kiểm theo **đường dẫn**, không có danh tính tệp | VD-146 · VD-178 QĐ-4 |
 
 
 - **Đường đọc — nợ `#146` ĐÃ ĐÓNG (ST-174, VD-176 §1): không còn đua symlink trên macOS và Linux.** Mở handle trước, quyết định quyền trên đường dẫn thật của chính handle, rồi đọc nội dung từ chính handle đó. Bất biến: nội dung trả về là nội dung của chính tệp mà quyết định quyền đã áp.
   - **Linux**: đường dẫn thật lấy qua /proc/self/fd/<fd>. /proc không đọc được thì từ chối, không quay về kiểm theo tên. Bảo đảm theo cơ chế (ST-137: 0/50 000).
-  - **macOS (số cũ, CHƯA verify lại): cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) **đã làm ở ST-295** cho đường đọc/ghi có `cap` trên Unix (xem mục Đường ghi).
-- **Đường ghi — nợ `#140`/`#109b` ĐÃ ĐÓNG (ST-295, VD-276 §1): không còn kiểm-rồi-mở trên Unix/Linux.** `FsGuard` mở **từ fd gốc** bằng `openat` từng thành phần với `O_NOFOLLOW`/`O_DIRECTORY`; Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`; kernel cũ (`ENOSYS`) rơi về đi từng thành phần. Áp cho `write`/`append`/`write_bytes`/`mkdir`/`mkdir_all`/`remove`/`copy`/`rename`, đọc `read`/`read_bytes` cũng đi cùng hàm. Ca đua **tất định** (điểm chèn chỉ test giữa kiểm và mở): nhánh cũ **100/100** rò ra ngoài, nhánh mới **0/100** — `JOURNAL/st295-baove.md`, `quyen_st295.rs`. **Giới hạn còn lại**: Windows không có `openat` (chỉ kiểm theo đường dẫn); macOS dùng cùng mã `openat` nhưng **chưa verify** lại; **hardlink** vẫn là giới hạn chính sách (mục dưới).
+  - **macOS (đã verify `v0.4.5`, 2026-11-23): cửa sổ symlink của đường đọc ĐÃ ĐÓNG (ST-174, VD-176 §1).** Std an toàn không có cách lấy đường dẫn của handle, nên vẫn giữ bước xác nhận `(dev, ino)`; từ ST-174 bước kiểm dùng `std::fs::symlink_metadata` (**không đi theo symlink**) thay cho `std::fs::metadata`. Vì `canonicalize` chỉ trả **tên** và bước kiểm chạy sau đó, mục tên bị đổi thành symlink trong khe giữa hai syscall nay bị **từ chối** (`VS0604`, "bị thay đổi trong khi mở"): `(dev, ino)` của **symlink** không thể trùng `(dev, ino)` của handle đã mở. Bằng chứng **tất định** (không dựa số vòng): ca đỏ-trước 100/100 trên mã cũ, sau vá 100/100 chặn trên mac **và** `ps`, 6 triệu vòng ngẫu nhiên trên mac 0 đỏ — `agent/JOURNAL/st174-*.log`; `ST-300m1` chạy lại `quyen_st174`/`quyen_st295` trên APFS `mps`: **6/6 PASS**. Giới hạn **còn lại** của đường đọc: **hardlink** (mục dưới). Cách triệt để (mở từng thành phần bằng `openat` + `O_NOFOLLOW`, bỏ hẳn kiểm theo đường dẫn) **đã làm ở ST-295** cho đường đọc/ghi có `cap` trên Unix (xem mục Đường ghi).
+- **Đường ghi — nợ `#140`/`#109b` ĐÃ ĐÓNG (ST-295, VD-276 §1): không còn kiểm-rồi-mở trên Unix/Linux.** `FsGuard` mở **từ fd gốc** bằng `openat` từng thành phần với `O_NOFOLLOW`/`O_DIRECTORY`; Linux ≥ 5.6 dùng `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`; kernel cũ (`ENOSYS`) rơi về đi từng thành phần. Áp cho `write`/`append`/`write_bytes`/`mkdir`/`mkdir_all`/`remove`/`copy`/`rename`, đọc `read`/`read_bytes` cũng đi cùng hàm. Ca đua **tất định** (điểm chèn chỉ test giữa kiểm và mở): nhánh cũ **100/100** rò ra ngoài, nhánh mới **0/100** — `JOURNAL/st295-baove.md`, `quyen_st295.rs`. **Giới hạn còn lại**: Windows không có `openat` (chỉ kiểm theo đường dẫn); macOS dùng cùng mã `openat` và **đã verify `v0.4.5`** (ST-300m1: 6/6 ca APFS); **hardlink** vẫn là giới hạn chính sách (mục dưới).
 - **Host không báo danh tính tệp** (--fs-mock, Windows): chỉ so danh tính trước và sau có khác nhau không. Chặn được "đổi rồi để nguyên", không chặn được "đổi rồi đổi lại".
 - **Hardlink: giới hạn đã biết.** Hardlink nằm trong vùng được cấp nhưng trỏ tới cùng inode với tệp ngoài vùng thì đọc được, vì về mặt hệ tệp đó là cùng một tệp. Landlock cũng không chặn trường hợp này. Muốn tạo hardlink như vậy cần quyền ghi vào thư mục trong vùng và cùng hệ tệp với tệp đích.
 - exists và list không trả nội dung tệp.
@@ -210,25 +234,25 @@ vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTO
   `RESOLVE_BENEATH` + kiểm quyền trên **handle** ⇒ là **chính sách tương lai** (không cùng #109b — nợ đó
   đã đóng ở ST-295). **Không** tự đổi chính sách trong VS2.
 
-### Windows — mức bảo đảm **thấp hơn**, chỉ **đo** (VD-146, VD-178 QĐ-4, VD-186)
+### Windows — mức bảo đảm **thấp hơn**, nhưng đã **Tier 1** từ `v0.4.5` (VD-146, VD-178 QĐ-4, VD-186, VD-283)
 
 **Kết luận một dòng:** trên Windows, `FsGuard` **chỉ kiểm theo đường dẫn** và **không có danh tính tệp**
-(`(dev, ino)` = `(0, 0)`), nên mức bảo đảm **thấp hơn** macOS/Linux; Windows trong VS2 **chỉ đo**, **chưa
-hỗ trợ** (VD-121/VD-146).
+(`(dev, ino)` = `(0, 0)`), nên mức bảo đảm **thấp hơn** macOS/Linux. Windows là **Tier 1** từ `v0.4.5`
+(mức hỗ trợ sản phẩm, `VD-283`), **không** phải sandbox kernel; caveat `FsGuard` giữ nguyên.
 
 - **Không có danh tính tệp:** `xac_nhan_sau_mo` chỉ so **đường dẫn trước ≠ đường dẫn sau** (nhánh
-  `#[cfg(not(unix))]` trong `crates/vis-cli/src/quyen.rs`) ⇒ chặn được ca "đổi sang đường dẫn khác rồi để
+  `#[cfg(not(unix))]` trong `crates/vis-host-native/src/quyen*.rs`) ⇒ chặn được ca "đổi sang đường dẫn khác rồi để
   nguyên", **không** chặn được ca "đổi rồi đổi lại".
 - **Chỉ kiểm theo đường dẫn:** Windows **không** có `openat`/`O_NOFOLLOW` (bản vá ST-295 chỉ bật trên
   Unix) ⇒ **đường ghi** vẫn kiểm-rồi-mở, **cộng** việc không xác nhận được danh tính ⇒ khe hở **rộng
   hơn** Unix, không hẹp hơn.
 - **Không có Landlock:** Landlock **chỉ Linux** (mục cuối tệp) ⇒ không có lớp kernel nào bù.
-- **Số đo — chỉ để biết, KHÔNG phải tuyên bố hỗ trợ:** host suite **39/54**; `cargo test` **1053/100**;
-  L0 dừng ở suite `cap_proc` (`/bin/echo`, `/bin/sh` không tồn tại); `bin/vis-targets` **18/18**;
-  self-test **12/12**; cổng đi qua **9/10** bước rồi dừng ở L0 — `agent/reports/R26-viscript.md` §3.3,
-  log `st144-host-suite.log`, `st153-gate-psvn.log`.
-- **Điều kiện để nói khác đi:** chỉ khi VS3-5 (VD-188) xong và có runner Windows thật; **không** suy rộng
-  từ "cổng đi qua 9/10 bước" thành "Windows được hỗ trợ".
+- **Số đo (Tier 1, `v0.4.5`)**: 3× `bin/vis-gate-windows --full` **3611/0/3** @ `f4cb136`; host suite
+  **54/54**; `bin/vis-targets` **18/18 + 17/1**; soak 4 h **985 vòng / 0 fail**; self-test **12/12**.
+  Số cũ 20/11 (host 39/54, `cargo test` 1053/100, L0 dừng ở `cap_proc`) là **lịch sử** —
+  `agent/reports/R26-viscript.md` §3.3, `st144-host-suite.log`, `st153-gate-psvn.log`.
+- **Phạm vi Tier 1:** mức hỗ trợ sản phẩm (compiler/interp/VM/module/LSP/host suite) — **không** suy rộng
+  thành “Windows có sandbox kernel”; caveat `FsGuard` (chỉ kiểm path) giữ nguyên (`VD-283`).
 
 ## Landlock chỉ Linux — **giới hạn nền**, không phải thiếu sót (ST-173, VD-175 §2)
 
@@ -262,8 +286,8 @@ test bị bỏ.
 | Nền | Biên dịch `vis-host-linux` | Số ca Landlock chạy | Bằng chứng |
 |---|---|---|---|
 | Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **18/18** | `st173-ps-truoc.log`, `st173-ps-sau.log`; `st295-verify.log` |
-| macOS — **số cũ, chưa verify** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log` — **không** dùng làm bằng chứng macOS (ST-242) |
-| Windows | — | **0** (không áp dụng) | chưa có runner |
+| macOS — **đã verify `v0.4.5`** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log`; `ST-300m1` chạy trên `mps` — **không** có ca Landlock (giới hạn nền) |
+| Windows — **Tier 1** | — | **0** (không áp dụng) | runner Windows thật (`ST-298`), nhưng Landlock chỉ Linux |
 
 **Không** dùng câu: “Landlock bảo vệ trên mac/Windows”; “không biên dịch được nên bỏ qua”; “mac thiếu
 sandbox kernel”. Đúng: “**Landlock chỉ Linux** — mac/Windows chỉ có `FsGuard`/`NetGuard` ở tầng runtime”.
@@ -283,4 +307,5 @@ sandbox kernel”. Đúng: “**Landlock chỉ Linux** — mac/Windows chỉ có
 - `mps`: macOS **27.0.1** (Darwin 27.0.0) **arm64**, Rust **1.100.0**, Node **26.12.1**.
 - `./vis-dev check` PASS; gate **3631/3**; workspace **3636/0/3**; host **54/54**; WASI suite **28/28**; `vis-wasm-sem` **388/390 = 99,5%** (2 stack-overflow interp known, VM pass).
 - Fix test-only/tooling: `fix/macos-v045-tests` (APFS non-UTF-8 skip, `st295` cfg Linux, harness `CARGO_TARGET_DIR`, Python 3.9).
-- **Chưa tuyên bố hỗ trợ macOS**; cần A0 quyết định tier.
+- **Chưa tuyên bố Tier 1 macOS** — chờ `ST-300m3` (3× `bin/vis-gate-macos --full` + soak 4 h);
+  `ST-300m2` (bench `#147`/`#152`) chạy trước.

@@ -1,6 +1,21 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-23 (sau `ST-300m1`, merge `c3b7290`). Đọc khối này trước.**
+> - **Tag**: `v0.4.5` @ `3daff62` (annotated), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`;
+>   version workspace **0.4.5**. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (VD-142).
+> - **Windows x86_64: Tier 1 đã công bố** (`ST-298`: 3× `vis-gate-windows --full` 3611/0/3,
+>   soak 4 h 985 vòng / 0 fail; caveat `FsGuard`).
+> - **macOS arm64: đã verify `v0.4.5`** trên `mps` (Darwin 27.0.1 arm64: gate 3631/0/3,
+>   workspace 3636/0/3, host 54/54, WASI 28/28, `vis-wasm-sem` 388/390) nhưng **Tier 1 CHƯA
+>   công bố** — `ST-300m3` phải chạy 3× `bin/vis-gate-macos --full` + soak 4 h rồi mới tuyên bố.
+>   `ST-300m1` đã merge (`c3b7290`); **`ST-300m2` (bench `#147`/`#152`) và `ST-300m3` đang chờ**.
+> - **WASI `wasm32-wasip1`: có runner runtime** (`bin/vis-wasm-sem` 388/390 eligible,
+>   `bin/vis-wasm-suite` 28/28) — không còn “chỉ cargo check”.
+> - **Crate**: 12 crate trên `main` (thêm `vis-host-native`, `vis-pkg`, `vis-loader`, `vis-lsp`);
+>   `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` còn ở **nhánh riêng, chưa merge**.
+> - **Công cụ mới**: `bin/vis-gate-macos`, `bin/vis-wasm-sem`, `bin/vis-wasm-suite`, `bin/vis-lock`.
+
 > **`v0.4.5` — 2026-11-23 (ST-298/VD-283, tag trên commit R35)** — workspace bump **0.4.5**;
 > cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá mới
 > `d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce`; vá `bin/vis-dev` fuzz theo
@@ -46,7 +61,7 @@
 >
 > **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
 >
-> **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi**; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.3.5`** @ `03bb7b9`; `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` giữ lịch sử; `pha1-rc1` giữ nguyên. Runtime async default đã flip (v0.2.0); HTTP/2 default-on (v0.3.0).
+> **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi** *(lịch sử — `VD-284` đã đưa macOS arm64 vào phạm vi)*; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.3.5`** @ `03bb7b9`; `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` giữ lịch sử; `pha1-rc1` giữ nguyên. Runtime async default đã flip (v0.2.0); HTTP/2 default-on (v0.3.0).
 >
 > **Cập nhật 2026-11-21 (VD-270)** — A0 tiếp tục đợt **tối ưu liên tục** VD-258..VD-270 (uỷ quyền đến 09:00 23/11); **chưa** mở pha 2/VS3, **chưa** tag mới (`pha1-rc1` = `05e42d0` giữ nguyên), runtime mặc định **không đổi**. HEAD lúc ghi `745851a` (08:04 21/11); số đo mới nhất trong `CHANGELOG.md`: `gate --fast` **2840 passed / 0 skipped**, `vis test test/sem` **525/525** cả interp và VM; core-test/release/toolchain/host 54/54 PASS. API-STD **136** mục. Số đo sẽ còn tăng trong đợt. Windows Tier 2 (xanh @ `c7cef71`, **chưa verify lại ở HEAD**); macOS **chưa verify**. **Đọc khối “Trạng thái sau VD-270” ở cuối tệp**; các khối R22/R23/R26/R27/R29 trong thân là lịch sử, số cũ không xoá (VD-142). Chi tiết từng mục: `JOURNAL/vd260-report.md`.
 >
@@ -416,7 +431,7 @@ tag                   : chỉ pha1-rc1 = 05e42d0 (không di chuyển)
 #147/#152 blocked phần cứng; TLS/HTTP2/keep-alive; runner wasm; runner macOS (Landlock **đã có** trên Linux,
 15/15); budget/fuel/Q chưa chốt default. **Đợt chưa đóng** — chờ mốc A0 09:00 23/11.
 
-### VS3 — mục tiêu G0..G5 (2026-11-21, VD-271)
+### VS3 — mục tiêu G0..G5 (2026-11-21, VD-271) — *lịch sử; `VD-284` đã đưa macOS arm64 vào phạm vi*
 
 > Kế hoạch đầy đủ + bảng bao phủ tính năng: `agent/KE-HOACH-VS3-2026-11-21.md`.
 > Tiến độ từng lát: `agent/VS3-TIEN-DO.md`. **macOS ngoài phạm vi**.
