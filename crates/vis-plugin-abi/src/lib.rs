@@ -15,6 +15,11 @@ use std::path::{Path, PathBuf};
 
 use vis_interp::value::{Name, Value};
 
+/// **ST-307 (VD-278/VD-281/VD-283)** — nạp plugin động WASI/WASM trong sandbox `cap[...]`.
+pub mod wasi;
+
+pub use wasi::{ChinhSach, HamPlugin, Manifest, PluginWasi, Runtime, ABI_HANDSHAKE};
+
 /// Phiên bản ABI tĩnh hiện hành. Thay đổi cấu trúc `PluginValue`/`FuncDef` phải tăng số này.
 pub const VIS_PLUGIN_ABI_V1: u32 = 1;
 
