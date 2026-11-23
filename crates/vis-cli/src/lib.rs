@@ -7,6 +7,9 @@
 
 #![forbid(unsafe_code)]
 
+/// **ST-310b (VD-285)** — thân `vis repl` dùng chung cho binary và test (PTY giả/`--format viterm`).
+pub mod repl;
+
 #[cfg(any(unix, windows))]
 pub use vis_host_native::async_net;
 pub use vis_host_native::net;

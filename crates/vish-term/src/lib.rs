@@ -12,6 +12,10 @@
 //! - [`ViTermFramed`] — khung JSON Lines `vish-term/1` cho ViTerm; dữ liệu có cấu trúc được gửi
 //!   nguyên khung thay vì hạ thành văn bản.
 //!
+//! **ST-310b (VD-285)**: crate này là **tầng Terminal/Render duy nhất** của dòng ViScript. Raw mode
+//! ([`RawMode`], `rustix` Unix/macOS + `crossterm` Windows) cũng ở đây; `vish-edit`/`vis-interp`/
+//! `vis-cli` dùng lại thay vì giữ bản sao SGR/CSI/termios.
+//!
 //! **Hướng API ổn định**: chỉ thêm method có default; không đổi chữ ký đã công bố. Mã nguồn crate
 //! đặt `#![forbid(unsafe_code)]` (luật dòng ViScript).
 
@@ -20,6 +24,7 @@
 mod ansi;
 pub mod caps;
 pub mod posix;
+pub mod raw;
 pub mod render;
 pub mod style;
 pub mod viterm;
@@ -31,6 +36,7 @@ use std::io;
 
 pub use caps::{Capabilities, ColorMode, Size};
 pub use posix::AnsiPosix;
+pub use raw::RawMode;
 pub use render::{Align, Column, Diagnostic, Location, Record, Severity, Table};
 pub use style::{Attrs, Color, Style};
 pub use viterm::ViTermFramed;

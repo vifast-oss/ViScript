@@ -684,6 +684,8 @@ dependencies = [
  "vis-syntax",
  "vis-types",
  "vis-vm",
+ "vish-edit",
+ "vish-term",
  "webpki-roots",
 ]
 
@@ -736,11 +738,11 @@ dependencies = [
 name = "vis-interp"
 version = "0.5.0"
 dependencies = [
- "unicode-normalization",
  "vis-core",
  "vis-diag",
  "vis-syntax",
  "vis-types",
+ "vish-term",
 ]
 
 [[package]]
@@ -832,15 +834,16 @@ dependencies = [
 name = "vish-edit"
 version = "0.5.0"
 dependencies = [
- "crossterm",
- "rustix",
  "vis-syntax",
+ "vish-term",
 ]
 
 [[package]]
 name = "vish-term"
 version = "0.5.0"
 dependencies = [
+ "crossterm",
+ "rustix",
  "unicode-normalization",
 ]
 

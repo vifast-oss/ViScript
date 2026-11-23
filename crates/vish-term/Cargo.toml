@@ -5,7 +5,7 @@ name = "vish-term"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Terminal trait + AnsiPosix/WinConsole/ViTermFramed + hiển thị cấu trúc (ST-308)"
+description = "Terminal trait + AnsiPosix/WinConsole/ViTermFramed + hiển thị cấu trúc + raw mode (ST-308/ST-310b)"
 
 [lib]
 name = "vish_term"
@@ -15,3 +15,12 @@ path = "src/lib.rs"
 # NFC cho độ rộng cột — **cùng quy tắc** `Render` ST-41 (`vis-interp/src/render.rs`).
 # Giấy phép: (MIT OR Apache-2.0) AND Unicode-3.0; đã có trong workspace/lock, không dep mới.
 unicode-normalization = { workspace = true }
+
+# **ST-310b (VD-285)**: raw mode là phần điều khiển terminal của tầng này; chuyển từ `vish-edit`
+# sang để `vish-term` là **một** nơi giữ termios/crossterm. Cả hai dep đã có trong workspace/lock
+# và đã được duyệt (ST-295/ST-304); không thêm package mới.
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+crossterm = { version = "=0.29.0", default-features = false, features = ["windows"] }

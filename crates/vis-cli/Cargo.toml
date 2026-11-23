@@ -98,6 +98,9 @@ vis-pkg = { path = "../vis-pkg" }
 # **ST-307 (VD-278/VD-283)**: `vis plugin` nạp plugin động WASI/WASM qua `VIS_PLUGIN_ABI_V1`;
 # cùng crate ABI tĩnh ST-306, 0 `unsafe`, không thêm dependency ngoài workspace.
 vis-plugin-abi = { path = "../vis-plugin-abi" }
+# **ST-310b (VD-285)**: `vis repl` dùng `vish-edit` (TTY thật) + `vish-term` (Terminal/Render duy nhất).
+vish-edit = { path = "../vish-edit" }
+vish-term = { path = "../vish-term" }
 # **VD-241 (Gate 1, 2026-11-19)** — `std.sqlite` MVP: **rusqlite bundled**, ghim version; không tự
 # viết binding C. Kéo theo `libsqlite3-sys` (bundled SQLite 3.50.2, sqlite3.c public domain;
 # rusqlite MIT) — cần C compiler/linker trên máy build (Linux: cc/gcc đã kiểm).

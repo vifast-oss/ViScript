@@ -42,7 +42,12 @@ static DEM: AtomicU32 = AtomicU32::new(0);
 
 fn tam(tag: &str) -> PathBuf {
     let n = DEM.fetch_add(1, Ordering::Relaxed);
-    let d = std::env::temp_dir().join(format!("vis-vd270-st-{tag}-{}-{n}", std::process::id()));
+    // **ST-310b**: tiền tố riêng cho module — `vd270_str_title` dùng cùng `vis-vd270-st-…` + tag
+    // `sugar-arity-thua` + cùng pid, nên chạy song song có thể xoá nhầm thư mục của nhau.
+    let d = std::env::temp_dir().join(format!(
+        "vis-vd270-strtrim-{tag}-{}-{n}",
+        std::process::id()
+    ));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).expect("tạo thư mục tạm");
     d

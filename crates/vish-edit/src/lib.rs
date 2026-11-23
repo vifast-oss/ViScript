@@ -5,7 +5,10 @@
 //! - [`Editor`]: buffer đa dòng/thụt lề, cursor, history, tìm mờ (`Ctrl-R`), `Ctrl-C` trả
 //!   [`Action::Cancel`]; render màu bằng token **CST** của `vis-syntax`.
 //! - [`History`]: append-only, tìm mờ subsequence.
-//! - [`read_line`]: raw mode (`rustix::termios` Unix/macOS, `crossterm` Windows) + đọc phím.
+//! - [`read_line`]: raw mode (`rustix::termios` Unix/macOS, `crossterm` Windows — nay ở
+//!   `vish-term`) + đọc phím; [`read_line_from`] cho reader/writer bất kỳ (PTY giả).
+//!
+//! **ST-310b**: `vish-term` là tầng Terminal/Render duy nhất; crate này không tự phát SGR/CSI.
 //!
 //! 0 `unsafe`; raw-mode guard khôi phục termios khi `Drop` (kể cả panic).
 
@@ -25,4 +28,4 @@ pub use editor::{Action, Editor};
 pub use history::History;
 pub use job::{parse_command, JobCommand, JobControl, JobInfo, JobState};
 pub use key::{parse_keys, read_key, Key};
-pub use run::{read_line, Outcome};
+pub use run::{read_line, read_line_from, Outcome};
