@@ -818,12 +818,19 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "vish-edit"
 version = "0.4.5"
 dependencies = [
  "crossterm",
  "rustix",
  "vis-syntax",
+=======
+name = "vish-term"
+version = "0.4.5"
+dependencies = [
+ "unicode-normalization",
+>>>>>>> plan/w3b-st308-term
 ]
 
 [[package]]
