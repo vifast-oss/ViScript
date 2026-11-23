@@ -2,17 +2,19 @@
 
 > **Toàn văn quyết định & kế hoạch refactor**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md` · `agent/DECISIONS.md` (`VD-285`).
 
-## 1. Trạng thái Thực tế tại `7930e90` (`APPROVED VD-285`)
+## 1. Trạng thái Thực tế tại `eeb341b` (`v0.5.5`, `APPROVED VD-285`)
 
 - **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298`), WASI Preview 1 (`ST-299a/b`, `ST-300` 388/390 = 99,5%), `R35` PASS.
 - **Đợt tính năng GĐ 3 & GĐ 4 đã `APPROVED DONE` trên `main`**:
   - macOS Core & Bench: `ST-300m1` (`c3b72907`, đóng **`#137`**) · `ST-300m2` (`5741d234`, `mps` 0,73× `ps`, đóng **`#147`/`#152`**).
   - Ngôn ngữ Pha 2b: `ST-302` + `ST-302b` (`b79ae3ae`, `6bc4ac35`, đóng **`#8`/`#13`**).
   - ViShell & ViTerm: `ST-304` (`8e73e81f`) · `ST-304b` (`1eb2768c`) · `ST-308` (`a9eef01f`).
-  - LSP + VS Code + bump `0.5.0`: `ST-305` code (`374b4e8e`, `75e5a53e`, `7b79769b`) — **chưa tag `v0.5.0`**.
+  - LSP + VS Code + bump `0.5.0`: `ST-305` code (`374b4e8e`, `75e5a53e`, `7b79769b`); **tag `v0.5.0` @ `c06d7c6`**.
   - Plugin tĩnh & động WASI: `ST-306` (`6093aef0`) · `ST-307` (`ab6beb77`/`b5aa40b1`, 0 `unsafe`).
   - `ST-309` (2/3 DONE): `docs/SPEC.md` (`51e937db`/`f9e7503d`, 1.181 dòng, 31 doc-example PASS) + kiểm toán bảo mật (`59028879`, vá F1/F2, fuzz 1,5M = 0 panic, mở **`#194`**).
-- **macOS arm64 Tier 1 (đo xong, chờ merge docs)**: `ST-300m3` final6 @ `7930e90` — 3× `bin/vis-gate-macos --full` PASS (220/216/210 s; nextest **3.745/3 skip/0 fail**, doc-test **5/0/1**, host-wasm 29/29, WASI 28/28), soak 4 h **1.878 vòng / 0 lỗi sản phẩm**, `vis-wasm-sem` **388/390**, dirty 0; docs trên `plan/w4-st300m3-final6` (**chưa merge/push/tag**).
+- **macOS arm64 Tier 1 (DONE)**: `ST-300m3` final6 @ `7930e90` — 3× full PASS (220/216/210 s), soak **1.878 vòng/0 fail**, `vis-wasm-sem` **388/390**; docs merge `f381c8f`.
+- **Tag `v0.5.0` @ `c06d7c6`** (R36 CHỐT, 3-OS Tier 1 + WASI).
+- **`v0.5.5` (Phase B)**: main `eeb341b` — version **0.5.5**, gate **3773/4**, targets 18/18, diff 100k **0**; Windows/macOS quick đang chạy; **chưa tag**.
 - **Sổ nợ `SO-NO.md` §8**: **195 dòng = 82 mở / 94 đóng / 16 VS3 / 2 không làm / 1 điều hướng** (R5 xanh).
 
 ## 2. Trình tự 3 Pha Thực thi (KHÔNG trộn lẫn!)
