@@ -136,7 +136,9 @@ fn thanh(rel: &Path) -> io::Result<Vec<&OsStr>> {
     Ok(v)
 }
 
-fn mo_goc(goc: &Path) -> io::Result<OwnedFd> {
+/// **ST-310c** — mở gốc `cap` an toàn; công khai cho `vis-plugin-host` dùng lại (một nguồn
+/// primitive, không bản sao `openat2`).
+pub fn mo_goc(goc: &Path) -> io::Result<OwnedFd> {
     // **ST-309 (kiểm toán bảo mật)**: `O_NOFOLLOW` chỉ chặn **thành phần cuối**; các thư mục
     // **trung gian** vẫn bị đi theo symlink. Gốc `cap` đã canonicalize lúc khởi động, nhưng nếu
     // một thư mục cha của gốc bị đổi thành symlink **sau đó** thì `open(goc, O_NOFOLLOW)` vẫn mở
@@ -233,6 +235,26 @@ pub(crate) fn doc_byte(goc: &Path, rel: &Path) -> io::Result<Vec<u8>> {
     let mut b = Vec::new();
     f.read_to_end(&mut b)?;
     Ok(b)
+}
+
+/// **ST-310c** — đọc UTF-8 `rel` dưới gốc `goc` cho plugin tĩnh; cùng đường `openat2` với
+/// `FsGuard` (`RESOLVE_BENEATH|NO_SYMLINKS`), không có bản sao syscall.
+pub fn mo_tep_doc(goc: &Path, rel: &Path) -> io::Result<String> {
+    doc(goc, rel)
+}
+
+/// **ST-310c** — ghi đè `rel` dưới gốc `goc` cho plugin tĩnh; `O_CREAT|O_TRUNC|O_NOFOLLOW`
+/// trong `RESOLVE_BENEATH|NO_SYMLINKS` (F2 ST-309 giữ nguyên).
+pub fn mo_tep_ghi(goc: &Path, rel: &Path, data: &[u8]) -> io::Result<()> {
+    ghi_de(goc, rel, data)
+}
+
+/// **ST-310c** — lỗi mở do symlink/thoát gốc là vi phạm quyền (`VS0604` ở tầng plugin).
+/// Dùng errno **theo nền** (Darwin `ELOOP = 62`), như `FsGuard::loi_mo`.
+pub fn la_loi_symlink(e: &io::Error) -> bool {
+    let ma = e.raw_os_error();
+    ma == Some(rustix::io::Errno::LOOP.raw_os_error())
+        || ma == Some(rustix::io::Errno::XDEV.raw_os_error())
 }
 
 /// Ghi đè (tạo nếu thiếu) — `O_CREAT|O_TRUNC|O_NOFOLLOW`.
@@ -350,6 +372,11 @@ pub(crate) fn doi_ten(goc_a: &Path, a: &Path, goc_b: &Path, b: &Path) -> io::Res
     }
     #[cfg(not(any(target_os = "linux", target_vendor = "apple")))]
     {
+        // **#194 (rá soát ST-310c)**: `statat` chỉ là **kiểm tồn tại siêu dữ liệu** trên
+        // `(fd_b, ten_b)` — fd cha cố định, `SYMLINK_NOFOLLOW`, không đi theo thành phần nào;
+        // nó **không** thay đổi semantics đọc/ghi nội dung (`openat2` vẫn là đường duy nhất).
+        // Nợ #194 nằm ở các truy vấn `exists`/`size`/`list`/`walk` theo **đường dẫn** của
+        // `FsHost`, không phải nhánh `renameat` dự phòng này.
         match fs::statat(&fd_b, &ten_b, AtFlags::SYMLINK_NOFOLLOW) {
             Ok(_) => return Err(loi_os(rustix::io::Errno::EXIST)), // EEXIST
             Err(rustix::io::Errno::NOENT) => {}

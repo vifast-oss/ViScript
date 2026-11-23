@@ -3,7 +3,7 @@
 //!
 //! Không phụ thuộc crate nào (chỉ `std`), để `rustc --target wasm32-wasip1` dựng trực tiếp.
 //! Quyền chỉ đến từ preopen host trao (`/cap0`, `/cap1`, …); plugin không đọc env, không mở
-//! đường ngoài preopen. Giao thức: xem `crates/vis-plugin-abi/src/wasi.rs`.
+//! đường ngoài preopen. Giao thức: xem `crates/vis-plugin-host/src/wasi/protocol.rs`.
 
 use std::io::Write;
 

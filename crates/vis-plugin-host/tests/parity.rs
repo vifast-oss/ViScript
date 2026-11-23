@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-306** — plugin mẫu (macro sinh ABI) chạy parity interp↔VM + test âm `cap[Dir]`.
+//! **ST-306/ST-310c** — plugin tĩnh mẫu (macro sinh ABI) chạy parity interp↔VM + test âm
+//! `cap[Dir]`.
 //!
 //! Plugin **không** có quyền ngầm: `doc`/`ghi` chỉ chạm tệp qua `PluginCtx` do host truyền; không
 //! có `cap` ⇒ `VS0604`. Parity được kiểm ở **biên ABI**: cùng một phép tính chạy bằng interp và
 //! VM, chuyển cả hai sang `PluginValue`, rồi so với kết quả plugin — ba đường phải bằng nhau.
+//!
+//! **ST-310c**: plugin tĩnh lấy `PluginCtx` từ `vis_plugin_host::static_reg::ctx_voi_host` — I/O
+//! `cap[Dir]` đi qua `vis_host_native::quyen`, guest ABI không còn `cap_fs.rs`.
 
 use std::path::PathBuf;
 
 use vis_plugin_abi::{Cap, Error, PluginCtx, PluginValue, VIS_PLUGIN_ABI_V1};
+use vis_plugin_host::convert::tu_value;
+use vis_plugin_host::static_reg::ctx_voi_host;
 use vis_plugin_macros as vis;
 
 #[vis::module(name = "mau")]
@@ -89,8 +95,8 @@ fn plugin_parity_interp_vm_qua_bien_abi() {
     let (i, v) = chay_ca_hai(src);
     assert!(i.is_clean(), "interp: {:?}", i.diagnostics);
     assert!(v.is_clean(), "vm: {:?}", v.diagnostics);
-    let iv = PluginValue::try_from(i.value.clone().expect("interp value")).expect("interp ABI");
-    let vv = PluginValue::try_from(v.value.clone().expect("vm value")).expect("vm ABI");
+    let iv = tu_value(i.value.clone().expect("interp value")).expect("interp ABI");
+    let vv = tu_value(v.value.clone().expect("vm value")).expect("vm ABI");
     assert_eq!(iv, vv, "interp và VM phải cùng giá trị qua ABI");
 
     let ctx = PluginCtx::default();
@@ -118,7 +124,7 @@ fn cap_am_khong_co_quyen_thi_khong_doc_fs() {
     assert_eq!(e.code, "VS0604", "{e}");
     assert!(e.message.contains("cap[Dir]"), "{e}");
 
-    let co_cap = PluginCtx::new(vec![Cap::dir(&d, false)]);
+    let co_cap = ctx_voi_host(vec![Cap::dir(&d, false)]);
     let kq = mau::__vis_module()
         .tim("doc")
         .expect("doc")
@@ -134,7 +140,7 @@ fn cap_ghi_can_co_write_va_chan_duong_dan_thoat_root() {
     let d = thu_muc_tam("cap-ghi");
     let f = d.join("b.txt");
 
-    let chi_doc = PluginCtx::new(vec![Cap::dir(&d, false)]);
+    let chi_doc = ctx_voi_host(vec![Cap::dir(&d, false)]);
     let e = mau::__vis_module()
         .tim("ghi")
         .expect("ghi")
@@ -148,7 +154,7 @@ fn cap_ghi_can_co_write_va_chan_duong_dan_thoat_root() {
         .expect_err("cap chỉ đọc không được ghi");
     assert_eq!(e.code, "VS0604", "{e}");
 
-    let ghi = PluginCtx::new(vec![Cap::dir(&d, true)]);
+    let ghi = ctx_voi_host(vec![Cap::dir(&d, true)]);
     mau::__vis_module()
         .tim("ghi")
         .expect("ghi")
@@ -194,7 +200,7 @@ fn so_tham_sai_tra_loi_khong_panic() {
 
 #[test]
 fn chuyen_doi_khong_nuot_kieu_la() {
-    let e = PluginValue::try_from(vis_interp::value::Value::Builtin("in"))
+    let e = tu_value(vis_interp::value::Value::Builtin("in"))
         .expect_err("builtin không qua biên plugin");
     assert_eq!(e.code, "VS0501");
     let _ = Error::new("VS0501", "x");
@@ -203,7 +209,7 @@ fn chuyen_doi_khong_nuot_kieu_la() {
 /// **ST-309 (kiểm toán bảo mật) — đỏ trước, tất định.** `write_text` cũ canonicalize **thư mục
 /// cha** rồi `std::fs::write(canon_parent/ten)`; nếu **tên cuối** là symlink trỏ ra ngoài `cap`,
 /// lệnh ghi đi theo link và sửa tệp ngoài (không cần đua). Ca này khẳng định: từ chối + tệp ngoài
-/// giữ nguyên. Bản vá mở bằng `openat`/`O_NOFOLLOW` từ fd gốc như `FsGuard` (ST-295).
+/// giữ nguyên. **ST-310c**: bản vá nay đi qua `vis_host_native::quyen::mo_tep_ghi` (một nguồn).
 #[cfg(unix)]
 #[test]
 fn cap_ghi_khong_di_theo_symlink_o_ten_cuoi() {
@@ -215,7 +221,7 @@ fn cap_ghi_khong_di_theo_symlink_o_ten_cuoi() {
     let link = d.join("link.txt");
     symlink(&ngoai, &link).expect("symlink ra ngoài");
 
-    let ghi = PluginCtx::new(vec![Cap::dir(&d, true)]);
+    let ghi = ctx_voi_host(vec![Cap::dir(&d, true)]);
     let e = ghi
         .write_text(&link, "GHI-DE")
         .expect_err("ghi qua symlink ra ngoài cap phải bị từ chối");
