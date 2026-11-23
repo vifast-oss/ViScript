@@ -404,11 +404,18 @@ impl<'a> Checker<'a> {
                         for a in args {
                             self.kiem_expr(a);
                         }
-                        self.diag(
-                            MISMATCH,
-                            "`spawn` chỉ nhận hàm `async` (hàm này không `async`)",
-                            *span,
+                        // **ST-302b**: phân biệt phương thức `impl` (tên hạ `Ten.m`) với hàm
+                        // cấp tệp để thông điệp đúng chỗ.
+                        let la_phuong_thuc = matches!(
+                            &**callee,
+                            HExpr::Var { name, .. } if name.contains('.')
                         );
+                        let msg = if la_phuong_thuc {
+                            "`spawn` chỉ nhận hàm/phương thức `async` (phương thức này không `async`)"
+                        } else {
+                            "`spawn` chỉ nhận hàm `async` (hàm này không `async`)"
+                        };
+                        self.diag(MISMATCH, msg, *span);
                         Type::Error
                     }
                     None => {

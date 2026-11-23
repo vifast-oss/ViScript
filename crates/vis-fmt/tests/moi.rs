@@ -51,6 +51,15 @@ fn async_spawn_await() {
 }
 
 #[test]
+fn spawn_phuong_thuc_async() {
+    // **ST-302b**: `spawn obj.m(args)` — receiver + lời gọi phương thức giữ nguyên hình dạng.
+    kiem(
+        "type P:\n  x: int\nimpl P:\n  async fn lay(self) -> int:\n    self.x\nfn main():\n  let p: P = {x: 1}\n  let t = spawn p.lay()\n  print(await t)\n",
+        "type P:\n    x: int\nimpl P:\n    async fn lay(self) -> int:\n        self.x\nfn main():\n    let p: P = {x: 1}\n    let t = spawn p.lay()\n    print(await t)\n",
+    );
+}
+
+#[test]
 fn async_va_impl_cung_tep() {
     // Cú pháp hiện tại: `async` chỉ trên `fn` cấp tệp (không lồng trong `impl` — nợ ST-60 §5);
     // mẫu này kiểm `async fn` + `impl` cùng tệp và thân `impl` được thụt đúng.
