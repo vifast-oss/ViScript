@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn cong(a: int, b: int) -> int:
+    a + b
+
+async fn gui(c: Chan[int], n: int) -> ():
+    let _ = c.send(n)
+
+fn main():
+    let t = cong(1, 2)
+    print(await t)
+    let c = chan[int](1)
+    let w = spawn gui(c, 7)
+    let _ = await w
+    match c.recv():
+        Some(v): print(v)
+        None: print("hết")

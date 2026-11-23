@@ -49,7 +49,9 @@ HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 # **chương trình ngoài** (§9.3) và khe ống **hợp nhất** theo khả năng nhận (VD-69) ⇒ bỏ khỏi allowlist;
 # **chặt hơn**, không nới ngưỡng. Mỗi mục còn lại vẫn phải **thật đỏ** khi `vis check`.
 ALLOW_COUNT = 5
-BLOCK_COUNT = 24
+# **ST-309**: `docs/SPEC.md` thêm 7 khối `vis` (ví dụ tổng hợp ở Phụ lục B) — nâng ngưỡng
+# 24 → 31 theo đúng số khối mới. Đây là thay đổi **có chủ ý** của ST-309; mọi ngưỡng khác giữ nguyên.
+BLOCK_COUNT = 31
 VISH_COUNT = 2
 QD_COUNT = 12
 

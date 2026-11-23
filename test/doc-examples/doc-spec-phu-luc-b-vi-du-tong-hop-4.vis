@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+trait Chào:
+    fn chao(self) -> str
+
+type Người derives Show:
+    ten: str
+    tuoi: int
+
+impl Chào for Người:
+    fn chao(self) -> str:
+        "Xin chào {self.ten}"
+
+fn main():
+    let n: Người = Người(ten: "An", tuoi: 20)
+    print(n.chao())
