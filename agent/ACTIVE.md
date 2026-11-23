@@ -1,44 +1,33 @@
-# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-285`, cập nhật 2026-11-24)
+# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-286`, 2026-11-23/24)
 
-> **Toàn văn quyết định & kế hoạch refactor**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md` · `agent/DECISIONS.md` (`VD-285`).
+> **Toàn văn quyết định & kế hoạch đợt 2**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd286.md` · `agent/DECISIONS.md` (`VD-286`).
 
-## 1. Trạng thái Thực tế tại `4d96a8a` (`v0.5.5` tag `3d85bd2`, `APPROVED VD-285`)
+## 1. Mốc đã Phê chuẩn (`APPROVED VD-286`)
 
-- **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298`), WASI Preview 1 (`ST-299a/b`, `ST-300` 388/390 = 99,5%), `R35` PASS.
-- **Đợt tính năng GĐ 3 & GĐ 4 đã `APPROVED DONE` trên `main`**:
-  - macOS Core & Bench: `ST-300m1` (`c3b72907`, đóng **`#137`**) · `ST-300m2` (`5741d234`, `mps` 0,73× `ps`, đóng **`#147`/`#152`**).
-  - Ngôn ngữ Pha 2b: `ST-302` + `ST-302b` (`b79ae3ae`, `6bc4ac35`, đóng **`#8`/`#13`**).
-  - ViShell & ViTerm: `ST-304` (`8e73e81f`) · `ST-304b` (`1eb2768c`) · `ST-308` (`a9eef01f`).
-  - LSP + VS Code + bump `0.5.0`: `ST-305` code (`374b4e8e`, `75e5a53e`, `7b79769b`); **tag `v0.5.0` @ `c06d7c6`**.
-  - Plugin tĩnh & động WASI: `ST-306` (`6093aef0`) · `ST-307` (`ab6beb77`/`b5aa40b1`, 0 `unsafe`).
-  - `ST-309` (2/3 DONE): `docs/SPEC.md` (`51e937db`/`f9e7503d`, 1.181 dòng, 31 doc-example PASS) + kiểm toán bảo mật (`59028879`, vá F1/F2, fuzz 1,5M = 0 panic, mở **`#194`**).
-- **macOS arm64 Tier 1 (DONE)**: `ST-300m3` final6 @ `7930e90` — 3× full PASS (220/216/210 s), soak **1.878 vòng/0 fail**, `vis-wasm-sem` **388/390**; docs merge `f381c8f`.
-- **Tag `v0.5.0` @ `c06d7c6`** (R36 CHỐT, 3-OS Tier 1 + WASI).
-- **`v0.5.5` (Phase B)**: main `8f72f2b` — version **0.5.5**, gate **3773/4**, targets 18/18, diff 100k **0**; Windows full **3720/0/4**, macOS full **3764/3 + sem 388/390**, Linux fresh QA release **3778/0/5** + diff 5 seed 0; **tag `v0.5.5` trên commit này**.
-- **Phase C (một phần)**: 3-OS full PASS; verifier **100M/0**; soak v0.5.5 **10/10 628 s**; fuzz parser **2h 861M/0**, verifier 100M/0; **soak 24h/fuzz 8h chưa đủ**, R37 skeleton `d650300`, tag `v0.6.0` chưa chốt.
-- **Sổ nợ `SO-NO.md` §8**: **195 dòng = 82 mở / 94 đóng / 16 VS3 / 2 không làm / 1 điều hướng** (R5 xanh).
+- **`v0.5.0` @ `c06d7c6f`** (`ST-300m3` + `ST-305`): **DONE** — **macOS arm64 Tier 1** (3× full 220/216/210 s, soak 4h **1.878 vòng / 0 fail**, WASI sem 388/390) + `R36-viscript.{md,json,json.license}` PASS.
+- **`v0.5.5` @ `3d85bd2c`** (`ST-310a..ST-310f`): **6/6 DONE** — kiến trúc 4 tầng (`vis-core`, `vis-plugin-host`, `vis-plugin-abi` 0 dep, `vish-term` duy nhất, `vis-cli` 0 dep trực tiếp & 8 test binary, R8/R9, `vis-targets` 38/38 phủ 18/18 crate), đóng **`#112`**, full QA 3-OS PASS (Linux 3.773/4 + release 3.778/0/5 + diff 5×100k=0, Windows 3.720/0/4, macOS 3.764/0/3 + WASI 28/28 & 388/390).
+- **Phase C (`ST-309`) đã chạy trên `v0.5.5`**: verifier **100M/0** (35,7 s), parser fuzz 2h **861,37M ca / 0**, diff 6×100k = 0, soak 10/10 = 628 s; `R37` skeleton đã lập.
+- **Sổ nợ `SO-NO.md` §8**: **196 dòng = 82 mở / 95 đóng / 16 VS3 / 2 không làm / 1 điều hướng** (đã đăng ký blocker **`#195`**; R5 xanh).
 
-## 2. Trình tự 3 Pha Thực thi (KHÔNG trộn lẫn!)
+## 2. Đợt Hoàn thiện Bảo mật & Kiến trúc Tiền-`v0.6.0` (`ST-311a..ST-311d` — PHẢI XONG TRƯỚC KHI CHỐT `H` = `0.6.0`)
 
-### Pha A — Khóa gọn `v0.5.0` (ĐANG CHẠY — 0 đổi kiến trúc trước tag!)
-- **W4 (`mps` + `ps` + `psvn`)**: **`ST-300m3` DONE (đo)** — 3× `bin/vis-gate-macos --full` PASS (220/216/210 s), soak 4 h **1.878 vòng / 0 lỗi sản phẩm**, `vis-wasm-sem` 388/390, dirty 0; docs Tier 1 trên `plan/w4-st300m3-final6` (**chưa merge/push/tag**). Còn lại: `ST-305` R36 + tag `v0.5.0`.
-- Hoàn tất **`ST-305`**: làm mới `agent/reports/R36-viscript.{md,json,json.license}` trên `HEAD` chốt (đủ bằng chứng 3-OS Tier 1), xác minh `check_report.py --n 36` + `./vis-dev gate --fast` PASS → gắn & push tag **`v0.5.0`**.
-
-### Pha B — Đợt Refactor Kiến trúc 4 Tầng & Tối ưu Kho **`v0.5.5`** (`ST-310a..ST-310f`, ~3–4 ngày)
-
-> **Chỉ mở merge vào `main` SAU khi tag `v0.5.0` đã push** (có thể tạo nhánh chuẩn bị trước nếu luồng rảnh; `ST-300m3` đã đo xong trên `mps`).
-
-| Luồng | Lát việc | Thứ tự | Phạm vi & KPI cứng (`VD-285`) |
+| Luồng | Lát việc | Trạng thái | Phạm vi & KPI cứng (`VD-286`) |
 |---|---|---|---|
-| **W1** | **`ST-310a`** | Bước 1 (mở đường) | Tạo **`crates/vis-core`** (`value/`, `json/` 1 bộ `json_esc` đóng **`#112`**, `host/` traits, `reactor/` traits, `http_client`); gỡ dep `vis-interp` khỏi `vis-lsp`/`vis-loader`/`vis-host-native`/`vis-pkg`; chia `interp.rs` (< 900 LOC), `rt.rs` (< 800 LOC), gom `builtin/` & `json/`; diff 100k = 0, `vis-host-wasm` xanh. |
-| **W3** | **`ST-310b`** | Sau `ST-310a` | Chốt **`vish-term`** làm tầng Terminal/Render duy nhất (bỏ trùng lặp 4 nơi); nối `vish-edit` → `vish-term`; nối `vis-cli` → `vish-edit` + `vish-term` (`vis repl` TTY mặc định dùng `vish-edit`, non-TTY giữ pipe sạch; hỗ trợ `--format viterm`); **0 crate mồ côi**, 0 `unsafe`. |
-| **W2** | **`ST-310c`** → **`ST-310d`** | Sau `ST-310a` | **310c**: tách `vis-plugin-abi` mỏng (~350 LOC, **0 dep nội bộ**, `wasm32` < 1 s) vs **`crates/vis-plugin-host`** (`wasi/{protocol,runner,sandbox}.rs`, `static_reg.rs`, max file < 650 LOC); **xoá `cap_fs.rs`** trùng lặp, dùng duy nhất `vis_host_native::quyen::mo_goc`/`mo_tep_ghi`. **310d**: gỡ 7 dep OS/TLS/SQLite trực tiếp thừa khỏi `crates/vis-cli/Cargo.toml` (`[dependencies]` chỉ feature-forwarding), 12 feature matrix xanh. |
-| **W4** | **`ST-310e`** → **`ST-310f`** | Sau `310c/d` (`310f` sau `310b/e`) | **310e**: gom `vis-cli/tests/` **27 → ≤ 12 binary** (`vd283/284` → `lang_it`, 6 `vs3_worker*` → `worker_it.rs`, soak → `examples/`; chuyển suite về `vis-lsp`, `vis-pkg`, `vis-loader`, `vis-plugin-host`, `vis-host-native`); thêm cổng trong `bin/vis-dev` (≤ 15 binary + cấm bản sao `openat2`). **310f**: gom thư mục con `vis-lsp/src/` & `vis-host-native/src/`, `bin/vis-targets` phủ **100% workspace**, dọn 3 script khỏi `agent/JOURNAL/`, archive journal tiền-`v0.4.0` & `CHANGELOG.md` tiền-`v0.1.0` (`VD-142`), bump & tag **`v0.5.5`**. |
+| **W1** | **`ST-311a`** | `READY` | **Đóng `#195` & `#190` + chia `vm.rs`**: `loop_ends` theo `Frame` O(1) + `MAX_ITER_DEPTH = 1024` (`VS0501`) + `deadline: Option<Instant>` trong `Vm::run` + watchdog/slowcase trong `fuzz_mutate.rs` (1M→10M→100M tuyến tính < 300 s, ≤ 15×/bậc); `pop_frame` trả `R<Option<Frame>>` đóng `#190`; chia `vis-vm/src/vm.rs` (< 950 LOC). |
+| **W2** | **`ST-311b`** | `READY` | **Đóng `#194` (metadata FS theo `fd`) + chia `quyen/mod.rs`**: chuyển `size`/`is_*`/`exists`/`read_link`/`canonicalize`/`list`/`walk` trên Unix sang `rustix::fs::{openat, statat, readlinkat}` (0 `unsafe`, giữ R9); ca đua 100.000 vòng `rename`/`symlink` đạt **0 rò** trên cả `ps` và `mps`; cập nhật `HOST-BAO-DAM.md` (giữ caveat Windows); chia `quyen/mod.rs` (< 950 LOC). |
+| **W3** | **`ST-311c`** | `READY` | **Tối ưu kiến trúc test & liên kết**: gom 3 bản sao `fixtures/vs3_tls` thành **1 nguồn `test/fixtures/vs3_tls/`**; chuyển `vs3_http_cancel.rs` → `vis-host-native/tests/http2_it/` & gỡ 7 dev-dep thừa khỏi `vis-cli/Cargo.toml`; gom 56 binary rời ở `vis-syntax`/`vis-types`/`vis-bytecode`/`vis-interp`/`vis-vm` giảm tổng binary toàn workspace **78 → ≤ 35** (0 test mất); thêm `crates/vis-core/tests/`; mở rộng `R8` trong `bin/vis-dev` (tổng workspace ≤ 40 binary). |
+| **W4** | **`ST-311d`** | `READY` | **Chia 10 tệp > 1.150 LOC + dọn `vis-interp/src/` + thử `#193`**: chuyển 6 `builtin_*.rs` vào `vis-interp/src/builtin/`; chia 10 tệp sản phẩm > 1.150 LOC (`tyck/mod.rs`, `codegen/than.rs`, `lex/mod.rs`, `vistest.rs`, `sqlite/mod.rs`, `hir.rs`, `run_cmd.rs`, `parse/mod.rs`, `http_client/mod.rs`, `lower/trait_impl.rs`) về ≤ 1.150 LOC; thử `-zstack-size` WASI cho `#193` (không chặn). |
 
-### Pha C — Tổng Nghiệm thu Cuối `ST-309` & Tag `v0.6.0` → `v1.0.0-rc1`
-Chạy trên nền kiến trúc sạch **`v0.5.5`**: fresh-clone 3-OS Tier 1 (`ps`/`psvn`/`mps`) + WASI (`vis-wasm-suite`/`vis-wasm-sem`) + diff 100k ×5 seed + **soak 24h** + **fuzz parser 8h** + **fuzz decoder/verifier 100M ca** + `R37-viscript.{md,json,json.license}` → tag **`v0.6.0`** & **`v1.0.0-rc1`**.
+> **ADR `VD-286`**: **KHÔNG** tách `vis-runtime` khỏi `vis-interp` trước `v1.0.0-rc1` (hoãn sang `v1.x`).
 
-## 3. Rào An toàn Bắt buộc
-- **KHÔNG** kill tiến trình nền đang sống (soak/cổng đang chạy trên `mps`, `ps`, `psvn`); **KHÔNG** `git reset --hard` worktree bận; dùng `bin/vis-lock` khi đo độc quyền.
-- **CPU & Đĩa**: `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0` (`TMPDIR=/home/ps/tmp` trên `ps`, `TMPDIR=/Users/mps/tmp` trên `mps`); giữ đĩa trống > 10 GB (`bin/vis-gc-targets`).
-- **Luật cứng**: **0 `unsafe`** (`R2`), R1 ≤ 1.500 dòng (mục tiêu mềm sau `v0.5.5` ≤ 1.250), **R5 `SO-NO` §8 == §4**, **R7 không commit `.log`/`.txt` > 50 KB** trong `agent/JOURNAL/`, **không** `.github/workflows/`.
+## 3. Pha C Cuối (`ST-309` → Tag `v0.6.0` & `v1.0.0-rc1`)
+
+Sau khi `ST-311a..ST-311d` merge xanh và `#194`/`#195` đóng:
+1. Bump **`0.6.0`** (`Cargo.toml`, 2 `Cargo.lock`, `PHIEN_BAN`, khoá cache) → khóa commit `H` đồng nhất trên `ps`, `psvn`, `mps`.
+2. Chạy đủ ma trận trên `H`: Linux fresh (`check`/`gate`/`release`/`host`/`diff 5×100k`/`WASI`), Windows **3× `--full` + soak 4h**, macOS **3× `--full` + soak 4h**, **soak Linux 24h**, **fuzz parser 8h**, **verifier 100M**, **VM watchdog 2h** (`0 ca > 300 s`).
+3. Xuất **`agent/reports/R37-viscript.{md,json,json.license}`** (`check_report.py --all` PASS), trình A0 duyệt tag **`v0.6.0`** + **`v1.0.0-rc1`** trên cùng commit `D`.
+
+## 4. Rào An toàn Bắt buộc
+- **KHÔNG** kill tiến trình nền đang sống (`ps`/`psvn`/`mps`); **KHÔNG** `git reset --hard` worktree bận; dùng `bin/vis-lock` khi đo độc quyền.
+- **CPU & Đĩa**: `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`, đĩa trống > 10 GB (`bin/vis-gc-targets`).
+- **Luật cứng**: **0 `unsafe`** (R2), R1 ≤ 1.500 (mục tiêu mềm ≤ 1.150), R5 (`SO-NO` §8 == §4), R7 (không `.log`/`.txt` > 50 KB trong `agent/JOURNAL/`), R8/R9, không `.github/workflows/`.
