@@ -463,8 +463,8 @@ fn chay_bang_bin(
     fs::create_dir_all(&d).expect("thư mục tạm");
     let p = d.join(format!("{ten}.vis"));
     fs::write(&p, src).expect("ghi chương trình");
-    let goc =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der");
+    let goc = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../test/fixtures/vs3_tls/localhost.cert.der");
     let mut c = Command::new(bin);
     c.arg("run");
     if vm {

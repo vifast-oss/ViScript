@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use vis_cli::async_net::AsyncNet;
+use vis_host_native::async_net::AsyncNet;
 use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
 use vis_interp::rt::{
     frame_cancel_after_bytes_for_test, frame_cancel_after_turns_for_test,
@@ -468,8 +468,8 @@ mod h2 {
     use rustls::{ServerConfig, ServerConnection, StreamOwned};
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-    const CERT: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
-    const KEY: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
+    const CERT: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");
+    const KEY: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.key.der");
 
     fn cau_hinh_tls() -> Arc<ServerConfig> {
         let nha = Arc::new(rustls::crypto::ring::default_provider());

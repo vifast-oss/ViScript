@@ -26,8 +26,6 @@ mod vs3_cookie_auth;
 mod vs3_coverage_matrix;
 #[path = "net_pkg_it/vs3_default.rs"]
 mod vs3_default;
-#[path = "net_pkg_it/vs3_http_cancel.rs"]
-mod vs3_http_cancel;
 #[path = "net_pkg_it/vs3_keepalive.rs"]
 mod vs3_keepalive;
 #[path = "net_pkg_it/vs3_pkg_gc.rs"]

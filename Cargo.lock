@@ -662,15 +662,8 @@ dependencies = [
 name = "vis-cli"
 version = "0.5.5"
 dependencies = [
- "bytes",
- "h2",
- "http",
  "mio",
- "ring",
- "rusqlite",
  "rustix",
- "rustls",
- "tokio",
  "vis-bytecode",
  "vis-diag",
  "vis-fmt",

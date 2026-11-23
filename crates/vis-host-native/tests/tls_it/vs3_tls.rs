@@ -24,10 +24,11 @@ use rustls::{ServerConfig, ServerConnection, StreamOwned};
 use vis_host_native::net::Net;
 use vis_interp::net::{http_get, http_head};
 
-const CERT_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
-const KEY_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
-const CERT_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.cert.der");
-const KEY_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.key.der");
+const CERT_LOCALHOST: &[u8] =
+    include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");
+const KEY_LOCALHOST: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.key.der");
+const CERT_SAI_TEN: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/sai-ten.cert.der");
+const KEY_SAI_TEN: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/sai-ten.key.der");
 
 /// **Chống flake**: ca timeout đo thời gian ⇒ tuần tự hoá các ca trong binary này (không nới ngưỡng).
 fn kho() -> std::sync::MutexGuard<'static, ()> {
@@ -525,7 +526,7 @@ fn chay_async(p: &Path, vm: bool, goc: &Path, arg: &str) -> (i32, String, String
 
 #[cfg(any(unix, windows))]
 fn goc_localhost() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test/fixtures/vs3_tls/localhost.cert.der")
 }
 
 #[cfg(any(unix, windows))]

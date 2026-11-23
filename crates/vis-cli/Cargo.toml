@@ -95,28 +95,10 @@ vish-term = { path = "../vish-term" }
 [target.'cfg(target_os = "linux")'.dependencies]
 vis-host-linux = { path = "../../vis-host-linux" }
 
-# **ST-310d (VD-285)** — 6 dep OS/TLS/SQLite còn lại (`rusqlite`, `rustls`, `tokio`, `h2`,
-# `mio`, `rustix`) **chỉ test tích hợp** dùng trực tiếp (fixture WAL, server TLS/h2 local,
-# adapter epoll). Chúng nằm ở `[dev-dependencies]`, không vào artifact `vis`; ST-310e đã chuyển
-# phần lớn suite về crate chủ, số còn lại vẫn cần các dep này. `webpki-roots` không còn ai dùng
-# trực tiếp ở crate này.
-[dev-dependencies]
-rusqlite = { workspace = true }
-ring = { workspace = true }
-http = { workspace = true }
-bytes = { workspace = true }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-rustls = { workspace = true }
-tokio = { workspace = true }
-h2 = { workspace = true }
-
-# **ST-271 / VD-254 (Lát 3)** — readiness selector thật cho đường frame test (`net.read`/
-# `net.accept`); adapter nằm hoàn toàn ở test integration của đường frame test-only ⇒ khai
-# dev-dependency để không lọt vào artifact `vis` phát hành.
-# **VS3-1d/W1f** — adapter async net production dùng cùng mio; phần production nay ở
-# `vis-host-native`, test chỉ cần `mio` để dựng selector thật trên Unix.
-# A0 duyệt ghim tuyệt đối `=1.2.5` (MIT); transitive trên Linux chỉ `libc` (đã có).
+# **ST-311c (VD-286)** — sau khi chuyển `vs3_http_cancel.rs` sang `vis-host-native/tests/http2_it/`,
+# 7 dep cũ (`rusqlite`, `ring`, `http`, `bytes`, `rustls`, `tokio`, `h2`) không còn bất kỳ
+# caller nào trong `vis-cli` (kể cả test) và đã được gỡ sạch. Chỉ còn `mio` + `rustix` trên
+# Unix phục vụ bộ test frame selector (`async_it/lat256_net.rs`).
 [target.'cfg(unix)'.dev-dependencies]
 mio = { workspace = true }
 rustix = { workspace = true }

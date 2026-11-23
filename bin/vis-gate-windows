@@ -31,8 +31,8 @@ TMP="${VIS_GATE_WINDOWS_TMPDIR:-/c/Users/ps/tmp}"
 LOG="${VIS_GATE_WINDOWS_LOG:-/tmp/vis-gate-windows-${MODE#--}-$(date -u +%Y%m%dT%H%M%SZ).log}"
 
 if [ "$MODE" = "--quick" ]; then
-    # **ST-296a**: test binary đã gom nhóm; dùng binary nhóm + filter module.
-    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test -p vis-cli --test net_pkg_it pkg:: -- --skip siet_caps_pkg && cargo test -p vis-host-native --features http2,async-h2 --test http2_it && cargo test -p vis-cli --test net_pkg_it cancel_http_ && cargo test -p vis-cli --test async_it vs3_select::"
+    # **ST-296a / ST-311c**: `vs3_http_cancel` nay thuộc `vis-host-native --test http2_it`.
+    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test -p vis-cli --test net_pkg_it pkg:: -- --skip siet_caps_pkg && cargo test -p vis-host-native --features http2,async-h2 --test http2_it && cargo test -p vis-cli --test async_it vs3_select::"
 else
     body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test --workspace --no-fail-fast && cargo test -p vis-cli --test host_conformance -- --nocapture && bash bin/vis-targets"
 fi

@@ -72,7 +72,7 @@ const FULL_BODIED: usize = 16;
 // `test/doc_excluded.rs` (số dòng + lý do từng khối + cách dịch toạ độ ST-120b:
 // 610→614, 662→666, 737→745, 1412→1420). Trùng `docs/doc-examples-allow.txt`
 // (ST-120b) về **nội dung** khối, không chép số dòng ở đây.
-include!("../../../test/doc_excluded.rs");
+include!("../../../../test/doc_excluded.rs");
 
 /// (dòng mở khối, số item, số câu lệnh cấp tệp, số **khai báo** ngoài 8 tên dựng sẵn).
 ///

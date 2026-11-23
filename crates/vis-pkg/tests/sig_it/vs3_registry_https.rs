@@ -19,10 +19,11 @@ use std::time::Duration;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::{ServerConfig, ServerConnection, StreamOwned};
 
-const CERT_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
-const KEY_LOCALHOST: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
-const CERT_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.cert.der");
-const KEY_SAI_TEN: &[u8] = include_bytes!("../fixtures/vs3_tls/sai-ten.key.der");
+const CERT_LOCALHOST: &[u8] =
+    include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");
+const KEY_LOCALHOST: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.key.der");
+const CERT_SAI_TEN: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/sai-ten.cert.der");
+const KEY_SAI_TEN: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/sai-ten.key.der");
 
 fn tmp_dir(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicUsize, Ordering as O};
@@ -35,7 +36,7 @@ fn tmp_dir(tag: &str) -> PathBuf {
 }
 
 fn goc_kiem_thu() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test/fixtures/vs3_tls/localhost.cert.der")
 }
 
 fn vis(cwd: &Path, args: &[&str], root: Option<&Path>) -> (i32, String, String) {
@@ -390,8 +391,8 @@ fn https_khong_root_test_loi_ro() {
 #[test]
 fn https_sai_san_van_tu_choi() {
     let d = tmp_dir("sai-san");
-    let cert =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/sai-ten.cert.der");
+    let cert = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../test/fixtures/vs3_tls/sai-ten.cert.der");
     let srv = Server::moi(CERT_SAI_TEN, KEY_SAI_TEN, fixture());
     let (code, _out, err) = vis(
         &d,

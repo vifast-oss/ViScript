@@ -8,3 +8,5 @@ mod common;
 
 #[path = "http2_it/vs3_http2.rs"]
 mod vs3_http2;
+#[path = "http2_it/vs3_http_cancel.rs"]
+mod vs3_http_cancel;

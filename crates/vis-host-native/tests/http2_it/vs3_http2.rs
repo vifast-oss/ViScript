@@ -24,8 +24,8 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use vis_host_native::net::Net;
 use vis_interp::net::{http_get, http_head};
 
-const CERT: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.cert.der");
-const KEY: &[u8] = include_bytes!("../fixtures/vs3_tls/localhost.key.der");
+const CERT: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");
+const KEY: &[u8] = include_bytes!("../../../../test/fixtures/vs3_tls/localhost.key.der");
 
 fn cau_hinh_tls(alpn: bool) -> Arc<ServerConfig> {
     let nha = Arc::new(rustls::crypto::ring::default_provider());
@@ -632,8 +632,8 @@ fn registry_https_thuong_luong_h2() {
     let d = std::env::temp_dir().join(format!("vis-h2-reg-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).expect("tmp");
-    let root =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/vs3_tls/localhost.cert.der");
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../test/fixtures/vs3_tls/localhost.cert.der");
     let o = Command::new(crate::common::vis_bin())
         .current_dir(&d)
         .args(["pkg", "add", "util", "--registry", &s.url("")])

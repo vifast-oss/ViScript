@@ -270,11 +270,11 @@ mod tests {
     // **ST-300b**: fixture TLS dùng chung với `vis-cli` (giữ một bản, không nhân đôi).
     const CERT: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../vis-cli/tests/fixtures/vs3_tls/localhost.cert.der"
+        "/../../test/fixtures/vs3_tls/localhost.cert.der"
     ));
     const KEY: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../vis-cli/tests/fixtures/vs3_tls/localhost.key.der"
+        "/../../test/fixtures/vs3_tls/localhost.key.der"
     ));
 
     struct MayChuIo {

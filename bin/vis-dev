@@ -232,19 +232,27 @@ rule_journal_logs() {
     return "$found"
 }
 
-# R8 (ST-310e): chống phình test binary của `vis-cli` — tối đa 15 tệp `.rs` ở **cấp 1**
-# `crates/vis-cli/tests/` (Cargo coi mỗi tệp như vậy là một integration-test binary). KPI của
-# ST-310e là ≤ 12; ngưỡng cổng 15 để không chặn oan khi thêm 1-2 binary miền mới. Không có
-# `crates/vis-cli/tests/` (cây self-test R1..R4) ⇒ bỏ qua.
+# R8 (ST-310e / ST-311c): chống phình test binary — (a) tối đa 15 tệp `.rs` cấp 1 ở
+# `crates/vis-cli/tests/`, và (b) tổng số tệp `.rs` cấp 1 trong mọi `crates/*/tests/` ≤ 40
+# (sau ST-311c giảm từ 78 → 34 binary). Không có `crates/` (cây self-test R1..R4) ⇒ bỏ qua.
 rule_test_binaries() {
     local root="$1"
     local dir="$root/crates/vis-cli/tests"
-    [ -d "$dir" ] || return 0
-    local n
-    n=$(find "$dir" -maxdepth 1 -type f -name '*.rs' 2>/dev/null | wc -l | tr -d ' ')
-    if [ "${n:-0}" -gt 15 ]; then
-        echo "R8 crates/vis-cli/tests: $n binary > 15 (ST-310e: gom theo miền hoặc chuyển về crate chủ)" >&2
-        return 1
+    if [ -d "$dir" ]; then
+        local n
+        n=$(find "$dir" -maxdepth 1 -type f -name '*.rs' 2>/dev/null | wc -l | tr -d ' ')
+        if [ "${n:-0}" -gt 15 ]; then
+            echo "R8 crates/vis-cli/tests: $n binary > 15 (ST-310e: gom theo miền hoặc chuyển về crate chủ)" >&2
+            return 1
+        fi
+    fi
+    if [ -d "$root/crates" ]; then
+        local tot
+        tot=$(find "$root/crates" -mindepth 3 -maxdepth 3 -path '*/tests/*.rs' -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [ "${tot:-0}" -gt 40 ]; then
+            echo "R8 crates/*/tests: tổng $tot binary > 40 (ST-311c: gom test binary theo miền)" >&2
+            return 1
+        fi
     fi
     return 0
 }
