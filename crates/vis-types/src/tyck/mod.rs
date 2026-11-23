@@ -1000,11 +1000,12 @@ impl<'a> Checker<'a> {
     fn kiem_item(&mut self, item: &HItem) {
         match item {
             HItem::Fn(f) => {
-                // **ST-60 (VD-95 (4))**: `async` chỉ cho hàm cấp tệp — method/`cmd` ⇒ `VS0412` (nợ R10).
-                if f.is_async && f.kind != crate::hir::FnKind::Fn {
+                // **VD-284/ST-302 (#13)**: `async` cho method `impl` và `cmd` đã hỗ trợ;
+                // trait method async vẫn ngoài phạm vi (không có trait async).
+                if f.is_async && f.kind == crate::hir::FnKind::TraitMethod {
                     self.diag(
                         ASYNC_SAI_CHO,
-                        "`async` chỉ cho hàm cấp tệp (`async fn`) — method/`cmd` chưa hỗ trợ (nợ R10)",
+                        "`async` chưa hỗ trợ cho phương thức trait (chỉ `fn`/`impl`/`cmd`)",
                         f.span,
                     );
                 }

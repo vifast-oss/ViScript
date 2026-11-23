@@ -276,7 +276,12 @@ impl<'a> Parser<'a> {
         elems.push(self.expect_newline()?);
         elems.push(self.expect_indent()?);
         while !self.at_kind(Kind::Dedent) && !self.at_eof() {
-            let m = self.fn_decl(Vec::new())?;
+            // **VD-284/ST-302 (#13)**: `async fn` trong `impl` (cùng cú pháp mods như cấp tệp).
+            let mut mods = Vec::new();
+            if self.at_kw("async") {
+                mods.push(self.bump());
+            }
+            let m = self.fn_decl(mods)?;
             Self::push_node(&mut elems, m);
             self.require_line_end(&mut elems)?;
         }
