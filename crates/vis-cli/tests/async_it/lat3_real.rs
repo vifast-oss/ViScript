@@ -4,7 +4,7 @@
 //! test; `connect`/`write` vẫn đồng bộ ở runtime mặc định (xem report). Không CLI,
 //! không API ngôn ngữ, không `unsafe` trong mã dự án.
 
-#![cfg(target_os = "linux")]
+#![cfg(unix)]
 
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};

@@ -821,6 +821,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                                         &quyen.gia_tri(),
                                         workers,
                                         worker_budget.clone(),
+                                        // **ST-300m1**: wasm32 không có reactor frame ⇒ `None`.
+                                        None,
                                     )
                                 } else {
                                     vis_vm::run_async_with_full_hosts_caps(

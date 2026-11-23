@@ -74,7 +74,11 @@ impl FsGuard<'_> {
     /// Lỗi `openat`: symlink/thoát gốc là **vi phạm quyền** (`VS0604`); còn lại giữ câu chữ host cũ.
     #[cfg(unix)]
     fn loi_mo(p: &str, e: std::io::Error, ghi: bool) -> String {
-        if matches!(e.raw_os_error(), Some(40) | Some(18)) {
+        // **ST-300m1**: dùng errno **của nền** (Darwin `ELOOP = 62`, không phải 40).
+        let ma = e.raw_os_error();
+        if ma == Some(rustix::io::Errno::LOOP.raw_os_error())
+            || ma == Some(rustix::io::Errno::XDEV.raw_os_error())
+        {
             return format!(
                 "{DAU_QUYEN}[quyền] `{p}` chứa symlink hoặc thoát khỏi gốc `cap` (ST-295 · chống kiểm-rồi-mở)"
             );
@@ -172,7 +176,7 @@ impl FsHost for FsGuard<'_> {
         #[cfg(unix)]
         if let Some((goc, rel)) = self.goc_an_toan(p, true)? {
             return crate::quyen_mo::xoa_tep(&goc, &rel).map_err(|e| {
-                if matches!(e.raw_os_error(), Some(21)) {
+                if e.raw_os_error() == Some(rustix::io::Errno::ISDIR.raw_os_error()) {
                     format!("không xoá được `{p}`: là thư mục (chỉ xoá tệp)")
                 } else {
                     format!("không xoá được `{p}`: {e}")

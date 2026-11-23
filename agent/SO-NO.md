@@ -221,7 +221,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 134 | `setup.sh` cài thêm `x86_64-pc-windows-msvc` (ngoài `wasm32`) để đạt 18/18 — cần Agent 0 chuẩn thuận (VD-146(1) + ST-144: 2/2 target đã cài) | R24 §5 · ST-134 · VD-146(1) · QUEUE ST-144 | đóng ở ST-144 |
 | 135 | `vis-linux` phải sync cả `vis-host-wasm/`; chưa có kiểm tự động danh sách sync — **ST-151 đã kiểm**: danh sách là **một nguồn** (`SYNC_DIRS`/`SYNC_FILES` ở đầu tệp, `sync_tree()` chỉ đọc hai biến) + **`--check-sync`** (8/8 mục, exit **0** đủ · **2** thiếu, không ssh/rsync) + **9 ca** `crates/vis-cli/tests/sync_list.rs` (bỏ một mục ⇒ đỏ) | R24 §5 · ST-134 · QUEUE ST-151 · `JOURNAL/st151-do-truoc.log` · `JOURNAL/st151-gate-macos-lan2.log` | đóng ở ST-151 |
 | 136 | Phân loại thân `cmd` theo tên lệnh: biến trùng tên lệnh muốn làm biểu thức bị hiểu là lệnh (đường thoát `( … )`), chưa có ca khoá — **ST-149 đã sửa**: biến bind từ ngoài (`let`/`var`/`const` cấp tệp + tham số `cmd`/`fn`) **che** tên lệnh ⇒ thân là **biểu thức**; không bind ⇒ luật ST-134 nguyên vẹn | R24 §5 · ST-134 · QUEUE ST-149 · `JOURNAL/st149-do-truoc.log` · `JOURNAL/st149-tai-hien.log` | đóng ở ST-149 |
-| 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 | chuyển VS3 |
+| 137 | macOS vẫn dùng bước xác nhận hai-syscall của ST-124 (không có `/proc`, std an toàn không có fd→path) — đo 0/50 000 nhưng không bảo đảm theo cơ chế | R24 §5 · ST-137 · VD-145 · **ST-300m1** | **đóng ở ST-300m1** — macOS dùng cùng đường `openat(O_NOFOLLOW)` (`quyen_mo.rs`, 0 `unsafe`); errno so bằng `rustix::io::Errno` (`LOOP` Darwin = 62, `XDEV`) nên symlink thoát gốc trả `VS0604` `[quyền]`; `quyen_st174` + `quyen_st295` trên APFS `mps` PASS, rò **0/100**; không cần `/proc` |
 | 138 | `/proc` phải đọc được trên Linux, nếu không ⇒ `VS0604` (hành vi đúng, nhưng người vận hành phải biết) — **đóng ở ST-165**: đo trên `ps` thấy `/proc/self/{status,cmdline}` **đọc được**, không `VS0604`; cái sai là **chẩn đoán** (không nêu đích `/dev/null`, không phân biệt `pipe:/socket:`); sửa `quyen.rs` (`kiem_canon` nêu đích phân giải + nhánh phi-đường-dẫn; `xac_nhan_handle` thêm hướng dẫn procfs) — **Agent 1 ghi nhận, CHỜ A0 XÁC NHẬN** | R24 §5 · ST-137 · ST-165 · `JOURNAL/st165-proc-sau.log`, `st165-proc-khong-doc-duoc.log` | **đóng ở ST-165** |
 | 139 | Ca `symlink_canonicalize_hai_phia` đỏ trên Linux vì coreutils multicall — cần VD thứ 3 theo VD-132 hoặc cài `echo` thật trên runner (VD-144 + ST-140: ca xanh hai nền) | R24 §5 · ST-135 · VD-144 · QUEUE ST-140 · JOURNAL/st140-red-ps.log · JOURNAL/st140-cargo-test-ps.log | đóng ở ST-140 |
 | 140 | Nợ cũ #109b (đường ghi vẫn kiểm-rồi-mở) vẫn mở; cần một dòng giới hạn trong `HOST-BAO-DAM.md` (Agent 0) — dòng đó đã có từ commit 69112900; **sửa kỹ thuật thuộc VS3** | R24 §5 · HOST-BAO-DAM.md mục FsGuard · **ST-295** (`ba4023fb`/`cd76da56`) | đóng ở ST-295 (`VD-282`: đóng cùng `#109b`, đường ghi dùng `openat2`/`O_NOFOLLOW`, race 0/100, đã gỡ cảnh báo ở `HOST-BAO-DAM.md`) |
@@ -281,7 +281,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 192 | **Tồn đọng `P4c` của `ST-292` (VM `--workers` reactor & cancel test)**: entry CLI VM `--workers > 1` chưa truyền `FrameReactorBackend` (main frame dùng async net dưới `--vm --workers` trả `VS0505`) và thiếu ca test cancel worker chuyên biệt qua trigger frame | `ST-292` · `JOURNAL/st292-p4-frame-worker.md` §4 · `VD-283` | **đóng ở ST-301** — CLI VM `--workers > 1` đã truyền `FrameReactorBackend`; ca `vm_p4b_cancel_worker_qua_trigger_frame` + parity frame W=1/2/4 trong `vs3_worker_frame_vm` |
 | 193 | **WASI stack overflow ở `vis-interp` cho đệ quy sâu (2/390 ca)**: `test/sem/ham/de-quy-1000.vis` và `de-quy-vo-han.vis` gặp `RuntimeError: memory access out of bounds` ở `vis-interp` trên `wasm32-wasip1`, trong khi `vis-vm` pass **390/390 = 100%** (tổng coverage 388/390 = 99,5%) | `ST-300` · `JOURNAL/st300-sem-wasm.md` §3 · `VD-283` | mở — theo dõi riêng (tăng stack WASI / trampoline interp) |
 
-## 5. Nợ chuyển VS3 (23 mục)
+## 5. Nợ chuyển VS3 (21 mục)
 
 | Số | Lý do chuyển VS3 (1 dòng) | Nguồn |
 |---|---|---|
@@ -304,7 +304,6 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 119 | `JOURNAL/st129` §9 ghi mức VS3 | R23 §6 · ST-129 · JOURNAL/st129-lock.md §9 |
 | 120 | VD-133: nợ #115 (số cũ) chuyển VS3 | R23 §6 · ST-130 · VD-133 |
 | 127 | `JOURNAL/st132` §7 ghi VS3 | R23 §6 · ST-132 · JOURNAL/st132-landlock.md §7 |
-| 137 | VD-145: sửa cần libc/`unsafe` ⇒ VS3; VS2 giữ bước xác nhận + giới hạn trong `HOST-BAO-DAM.md` | R24 §5 · ST-137 · VD-145 |
 | 143 | VD-154(b): điều kiện VD-133 đã thoả (**ca `st130b` xanh** từ đợt 23) ⇒ `NamePolicy::Strict` chỉ bật cho tệp **trong cây module** là việc VS3 | JOURNAL/st130-siet-caps.md §9 · VD-133 · VD-149 · VD-154(b) |
 | 155 | VD-232: lambda params không parse annotation (VS0201) — lift params closure chỉ sau khi có syntax annot lambda; closure-biên return đã nâng (VD-229);  | VD-232 · `vd212-thiet-ke-ghi-chu.md` |
 
@@ -398,14 +397,14 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 |---|---|
 | Tổng dòng bảng chính | **194** (1..193; #109 tách `a`/`b`) |
 | `mở` | **85** |
-| `đóng` | **89** |
-| `chuyển VS3` | **17** |
+| `đóng` | **90** |
+| `chuyển VS3` | **16** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 85 mở + 89 đóng + 17 VS3 + 2 không làm + 1 điều hướng = **194** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191).
+Kiểm: 85 mở + 90 đóng + 16 VS3 + 2 không làm + 1 điều hướng = **194** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191; **ST-300m1: #137 `VS3 → đóng`**).
 **Stage 0 `v0.3.6` (2026-11-22, `f8f1d4b`)** — trạng thái nợ theo lát (không thêm dòng nợ mới):
 `ST-284` DONE (`83a9a10`, merge `e363a15`; R0a 0 đổi hành vi), `ST-285` DONE (`ab5d292`, merge `246b6c5`;
 R0b 0 đổi hành vi), `ST-286` DONE (`f193c57`, merge `cfba662`; R0c 0 đổi hành vi), `ST-287` DONE

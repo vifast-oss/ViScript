@@ -144,5 +144,5 @@ ring = { workspace = true, optional = true }
 [target.'cfg(any(unix, windows))'.dependencies]
 mio = { workspace = true }
 
-[target.'cfg(target_os = "linux")'.dev-dependencies]
+[target.'cfg(unix)'.dev-dependencies]
 mio = { workspace = true }

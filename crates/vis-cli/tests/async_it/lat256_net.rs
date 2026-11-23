@@ -10,7 +10,7 @@
 //!
 //! Mạng chỉ **loopback**, mọi hạn đều rộng, snapshot về baseline sau mỗi ca.
 
-#![cfg(target_os = "linux")]
+#![cfg(unix)]
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -180,8 +180,7 @@ impl Net2 {
             Err(e)
                 if e.kind() == ErrorKind::WouldBlock
                     || e.kind() == ErrorKind::NotConnected
-                    || e.raw_os_error() == Some(115) /* EINPROGRESS trên Linux */
-            =>
+                    || e.raw_os_error() == Some(rustix::io::Errno::INPROGRESS.raw_os_error()) =>
             {
                 ReactorIoOutcome::WouldBlock
             }

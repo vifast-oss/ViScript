@@ -23,6 +23,11 @@ use vis_interp::stdlib::DAU_QUYEN;
 
 use crate::quyen::{Quyen, QuyenCap};
 
+/// **ST-300m1** — `io::Error` từ errno **theo nền** (không hardcode số của Linux).
+fn loi_os(e: rustix::io::Errno) -> io::Error {
+    io::Error::from_raw_os_error(e.raw_os_error())
+}
+
 /// Chuẩn hoá **từ vựng**: bỏ `.`, gộp `//`, xử lý `..` bằng `PathBuf::pop` (không chạm đĩa).
 /// Trả đường dẫn **tuyệt đối** (mọi caller đã ghép `goc`).
 pub(crate) fn chuan_tu_van(p: &Path) -> PathBuf {
@@ -117,12 +122,12 @@ fn thanh(rel: &Path) -> io::Result<Vec<&OsStr>> {
             Component::Normal(x) => v.push(x),
             Component::CurDir => {}
             Component::RootDir | Component::ParentDir | Component::Prefix(_) => {
-                return Err(io::Error::from_raw_os_error(22));
+                return Err(loi_os(rustix::io::Errno::INVAL));
             }
         }
     }
     if v.is_empty() {
-        return Err(io::Error::from_raw_os_error(21)); // EISDIR
+        return Err(loi_os(rustix::io::Errno::ISDIR)); // EISDIR
     }
     Ok(v)
 }
@@ -220,7 +225,7 @@ pub(crate) fn tao_thu_muc(goc: &Path, rel: &Path) -> io::Result<()> {
     let ds = thanh(rel)?;
     let (ten, cha) = ds
         .split_last()
-        .ok_or_else(|| io::Error::from_raw_os_error(22))?;
+        .ok_or_else(|| loi_os(rustix::io::Errno::INVAL))?;
     let cha_rel: PathBuf = cha.iter().collect();
     let fd = if cha.is_empty() {
         mo_goc(goc)?
@@ -258,7 +263,7 @@ pub(crate) fn xoa_tep(goc: &Path, rel: &Path) -> io::Result<()> {
     let ds = thanh(rel)?;
     let (ten, cha) = ds
         .split_last()
-        .ok_or_else(|| io::Error::from_raw_os_error(22))?;
+        .ok_or_else(|| loi_os(rustix::io::Errno::INVAL))?;
     let cha_rel: PathBuf = cha.iter().collect();
     let fd = if cha.is_empty() {
         mo_goc(goc)?
@@ -277,7 +282,7 @@ fn mo_cha(goc: &Path, rel: &Path) -> io::Result<(OwnedFd, std::ffi::OsString)> {
     let ds = thanh(rel)?;
     let (ten, cha) = ds
         .split_last()
-        .ok_or_else(|| io::Error::from_raw_os_error(22))?;
+        .ok_or_else(|| loi_os(rustix::io::Errno::INVAL))?;
     let cha_rel: PathBuf = cha.iter().collect();
     let fd = if cha.is_empty() {
         mo_goc(goc)?
@@ -307,7 +312,7 @@ pub(crate) fn doi_ten(goc_a: &Path, a: &Path, goc_b: &Path, b: &Path) -> io::Res
     #[cfg(not(any(target_os = "linux", target_vendor = "apple")))]
     {
         match fs::statat(&fd_b, &ten_b, AtFlags::SYMLINK_NOFOLLOW) {
-            Ok(_) => return Err(io::Error::from_raw_os_error(17)), // EEXIST
+            Ok(_) => return Err(loi_os(rustix::io::Errno::EXIST)), // EEXIST
             Err(rustix::io::Errno::NOENT) => {}
             Err(e) => return Err(io::Error::from(e)),
         }
