@@ -13,7 +13,7 @@ VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-echo "1..15"
+echo "1..17"
 n=0; bad=0
 expect_fail() {
     n=$((n + 1))
@@ -171,5 +171,19 @@ head -c 52000 /dev/zero | tr '\0' 'x' > "$tmp/15/agent/JOURNAL/legacy.log"
 printf 'agent/JOURNAL/legacy.log\n' > "$tmp/15/test/gate/r7-legacy-logs.txt"
 : > "$tmp/15/test/gate/r7-legacy-logs.txt.license"
 expect_ok_dev "R7: legacy được miễn" "$tmp/15"
+# 16) R8 (ST-310e): > 15 integration-test binary cấp 1 của vis-cli ⇒ đỏ
+mkdir -p "$tmp/16/crates/vis-cli/tests"
+i=0
+while [ "$i" -lt 16 ]; do
+    printf '// SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/16/crates/vis-cli/tests/t$i.rs"
+    i=$((i + 1))
+done
+expect_fail "R8: > 15 test binary vis-cli bị bắt" "R8" "$tmp/16"
+# 17) R9 (ST-310e): bản sao openat2 ngoài vis-host-native ⇒ đỏ
+mkdir -p "$tmp/17/crates/vis-cli/src" "$tmp/17/test/gate"
+printf '// SPDX-License-Identifier: MIT OR Apache-2.0\nfn mo() { let _ = openat2(); }\n' > "$tmp/17/crates/vis-cli/src/sao.rs"
+: > "$tmp/17/test/gate/r9-openat2-ngoai-le.txt"
+: > "$tmp/17/test/gate/r9-openat2-ngoai-le.txt.license"
+expect_fail_dev "R9: openat2 ngoài vis-host-native bị bắt" "R9" bash "$DEV" rules --root "$tmp/17"
 if [ "$bad" -ne 0 ]; then echo "# fixtures: FAIL ($bad)"; exit 1; fi
 echo "# fixtures: PASS (cây sạch phải xanh)"

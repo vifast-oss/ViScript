@@ -680,11 +680,21 @@ dependencies = [
  "vis-loader",
  "vis-lsp",
  "vis-pkg",
- "vis-plugin-abi",
+ "vis-plugin-host",
  "vis-syntax",
  "vis-types",
  "vis-vm",
- "webpki-roots",
+ "vish-edit",
+ "vish-term",
+]
+
+[[package]]
+name = "vis-core"
+version = "0.5.0"
+dependencies = [
+ "vis-diag",
+ "vis-syntax",
+ "vis-types",
 ]
 
 [[package]]
@@ -717,9 +727,13 @@ dependencies = [
  "rustix",
  "rustls",
  "tokio",
+ "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-interp",
  "vis-syntax",
+ "vis-types",
+ "vis-vm",
  "webpki-roots",
 ]
 
@@ -727,10 +741,11 @@ dependencies = [
 name = "vis-interp"
 version = "0.5.0"
 dependencies = [
- "unicode-normalization",
+ "vis-core",
  "vis-diag",
  "vis-syntax",
  "vis-types",
+ "vish-term",
 ]
 
 [[package]]
@@ -738,8 +753,8 @@ name = "vis-loader"
 version = "0.5.0"
 dependencies = [
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
- "vis-interp",
  "vis-syntax",
  "vis-types",
 ]
@@ -748,9 +763,9 @@ dependencies = [
 name = "vis-lsp"
 version = "0.5.0"
 dependencies = [
+ "vis-core",
  "vis-diag",
  "vis-fmt",
- "vis-interp",
  "vis-loader",
  "vis-syntax",
  "vis-types",
@@ -761,20 +776,27 @@ name = "vis-pkg"
 version = "0.5.0"
 dependencies = [
  "ring",
+ "rustls",
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-host-native",
- "vis-interp",
  "vis-loader",
 ]
 
 [[package]]
 name = "vis-plugin-abi"
 version = "0.5.0"
+
+[[package]]
+name = "vis-plugin-host"
+version = "0.5.0"
 dependencies = [
- "rustix",
  "vis-bytecode",
+ "vis-core",
+ "vis-host-native",
  "vis-interp",
+ "vis-plugin-abi",
  "vis-plugin-macros",
  "vis-syntax",
  "vis-types",
@@ -822,15 +844,16 @@ dependencies = [
 name = "vish-edit"
 version = "0.5.0"
 dependencies = [
- "crossterm",
- "rustix",
  "vis-syntax",
+ "vish-term",
 ]
 
 [[package]]
 name = "vish-term"
 version = "0.5.0"
 dependencies = [
+ "crossterm",
+ "rustix",
  "unicode-normalization",
 ]
 

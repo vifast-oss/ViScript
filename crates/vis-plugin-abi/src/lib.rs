@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-306 / VD-278, VD-283** — ABI tĩnh `VIS_PLUGIN_ABI_V1` cho plugin Rust của ViScript.
+//! **ST-306 / ST-310c (VD-278, VD-283, VD-285)** — ABI tĩnh `VIS_PLUGIN_ABI_V1` (**guest ABI**).
 //!
-//! - `PluginValue` là biên **an toàn** giữa `vis_interp::value::Value` và plugin; chuyển đổi
-//!   tường minh, không có quyền ngầm.
-//! - `PluginCtx` chỉ cấp quyền qua `Cap` **do host truyền vào**; plugin đọc/ghi bằng
-//!   [`PluginCtx::read_text`]/[`PluginCtx::write_text`], không dùng `std::fs` trực tiếp.
+//! Crate này là **mặt tiếp xúc duy nhất** cho plugin Rust và cho host:
+//!
+//! - `PluginValue` là biên **an toàn** giữa giá trị ViScript và plugin; hàm/task/kênh không qua
+//!   biên. Chuyển đổi với `vis_core::value::Value` nằm ở **host** (`vis-plugin-host::convert`) để
+//!   crate này **0 phụ thuộc** (kể cả nội bộ workspace) và build `wasm32` trong < 1 s.
+//! - `PluginCtx` chỉ chứa `Cap` **do host truyền vào**; **không** đọc biến môi trường, **không**
+//!   tự mở tệp ngoài cap. Việc mở tệp Unix (`openat2`/`RESOLVE_BENEATH`) do host cài qua
+//!   [`PluginIo`] — crate này không chứa bản sao syscall nào.
 //! - `Error` là lỗi plugin (`vis::Error` khi đặt `use vis_plugin_abi as vis;`), mã `VS0604` cho
 //!   thiếu quyền, `VS0501` cho lỗi I/O/kiểu.
 //! - Crate **0 `unsafe`** (`#![forbid(unsafe_code)]`).
@@ -12,17 +16,6 @@
 
 use std::fmt;
 use std::path::{Path, PathBuf};
-
-use vis_interp::value::{Name, Value};
-
-/// **ST-309** — mở tệp an toàn từ fd gốc (`openat2`/`O_NOFOLLOW`) trên Unix.
-#[cfg(unix)]
-mod cap_fs;
-
-/// **ST-307 (VD-278/VD-281/VD-283)** — nạp plugin động WASI/WASM trong sandbox `cap[...]`.
-pub mod wasi;
-
-pub use wasi::{ChinhSach, HamPlugin, Manifest, PluginWasi, Runtime, ABI_HANDSHAKE};
 
 /// Phiên bản ABI tĩnh hiện hành. Thay đổi cấu trúc `PluginValue`/`FuncDef` phải tăng số này.
 pub const VIS_PLUGIN_ABI_V1: u32 = 1;
@@ -88,16 +81,38 @@ impl Cap {
     }
 }
 
+/// Hai thao tác tệp tối thiểu host cài cho [`PluginCtx`] (**ST-310c**).
+///
+/// Chữ ký nhận `(gốc cap đã canonicalize, đường tương đối, đường hiển thị)` để mọi kiểm tra
+/// quyền nằm ở host (`vis-plugin-host::static_reg` → `vis_host_native::quyen`) — crate guest
+/// ABI không chứa `openat2`/`rustix`.
+#[derive(Debug, Clone, Copy)]
+pub struct PluginIo {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub doc: fn(goc: &Path, rel: &Path, hien_thi: &Path) -> Result<String>,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub ghi: fn(goc: &Path, rel: &Path, data: &[u8], hien_thi: &Path) -> Result<()>,
+}
+
 /// Ngữ cảnh plugin: **chỉ** chứa các `Cap` host truyền vào. Không đọc biến môi trường, không
 /// tự mở tệp ngoài cap.
 #[derive(Debug, Clone, Default)]
 pub struct PluginCtx {
     caps: Vec<Cap>,
+    io: Option<PluginIo>,
 }
 
 impl PluginCtx {
+    /// Ngữ cảnh chỉ có cap (chưa gắn I/O của host).
     pub fn new(caps: Vec<Cap>) -> Self {
-        Self { caps }
+        Self { caps, io: None }
+    }
+
+    /// Gắn I/O do host cài (**ST-310c**); plugin tĩnh dùng
+    /// `vis_plugin_host::static_reg::ctx_voi_host`.
+    pub fn voi_io(mut self, io: PluginIo) -> Self {
+        self.io = Some(io);
+        self
     }
 
     pub fn caps(&self) -> &[Cap] {
@@ -114,8 +129,8 @@ impl PluginCtx {
         Ok(cap)
     }
 
-    /// Đọc UTF-8 trong `cap[Dir]`; canonicalize để chặn `..`/symlink ra ngoài root, rồi mở
-    /// **từ fd gốc** với `RESOLVE_BENEATH` (ST-309) — không còn khe kiểm-rồi-mở.
+    /// Đọc UTF-8 trong `cap[Dir]`; canonicalize để chặn `..`/symlink ra ngoài root, rồi nhờ
+    /// host mở **từ fd gốc** (`RESOLVE_BENEATH|NO_SYMLINKS`) — không còn khe kiểm-rồi-mở.
     pub fn read_text(&self, path: impl AsRef<Path>) -> Result<String> {
         let path = path.as_ref();
         let cap = self.cap_dir(path, false)?;
@@ -130,25 +145,30 @@ impl PluginCtx {
         if !canon.starts_with(&root) {
             return Err(Error::cap_denied("Dir", &path.to_string_lossy()));
         }
-        #[cfg(unix)]
+        #[cfg(not(target_arch = "wasm32"))]
         {
             let rel = canon
                 .strip_prefix(&root)
                 .map_err(|_| Error::cap_denied("Dir", &path.to_string_lossy()))?;
-            cap_fs::doc(&root, rel, path)
+            let io = self.io.as_ref().ok_or_else(|| {
+                Error::io("plugin tĩnh chưa được host cài I/O (`PluginCtx::voi_io`)")
+            })?;
+            (io.doc)(&root, rel, path)
         }
-        #[cfg(not(unix))]
+        #[cfg(target_arch = "wasm32")]
         {
-            std::fs::read_to_string(&canon)
-                .map_err(|e| Error::io(format!("không đọc được `{}`: {e}", canon.display())))
+            let _ = &root;
+            Err(Error::io(
+                "guest wasm32 không có filesystem trực tiếp: dùng preopen WASI `/capN`",
+            ))
         }
     }
 
     /// Ghi UTF-8 trong `cap[Dir]` có cờ `write`.
     ///
-    /// **ST-309**: trên Unix mở bằng `openat` từ fd gốc với `O_NOFOLLOW` + `RESOLVE_BENEATH`;
-    /// tên cuối là symlink (kể cả trỏ ra ngoài) ⇒ `VS0604`, không ghi xuyên link. Bản cũ
-    /// canonicalize thư mục cha rồi `std::fs::write` nên ghi đè được tệp ngoài `cap`.
+    /// **ST-309/ST-310c**: trên Unix host mở bằng `openat` từ fd gốc với `O_NOFOLLOW` +
+    /// `RESOLVE_BENEATH|NO_SYMLINKS`; tên cuối là symlink (kể cả trỏ ra ngoài) ⇒ `VS0604`,
+    /// không ghi xuyên link.
     pub fn write_text(&self, path: impl AsRef<Path>, noi_dung: &str) -> Result<()> {
         let path = path.as_ref();
         let cap = self.cap_dir(path, true)?;
@@ -168,7 +188,7 @@ impl PluginCtx {
         if !canon_parent.starts_with(&root) {
             return Err(Error::cap_denied("Dir (write)", &path.to_string_lossy()));
         }
-        #[cfg(unix)]
+        #[cfg(not(target_arch = "wasm32"))]
         {
             let ten = path.file_name().ok_or_else(|| {
                 Error::io(format!(
@@ -176,16 +196,22 @@ impl PluginCtx {
                     path.display()
                 ))
             })?;
-            let rel_dir = canon_parent
+            let rel = canon_parent
                 .strip_prefix(&root)
                 .map_err(|_| Error::cap_denied("Dir (write)", &path.to_string_lossy()))?;
-            cap_fs::ghi(&root, &rel_dir.join(ten), noi_dung.as_bytes(), path)
+            let io = self.io.as_ref().ok_or_else(|| {
+                Error::io("plugin tĩnh chưa được host cài I/O (`PluginCtx::voi_io`)")
+            })?;
+            (io.ghi)(&root, &rel.join(ten), noi_dung.as_bytes(), path)
         }
-        #[cfg(not(unix))]
+        #[cfg(target_arch = "wasm32")]
         {
-            let dich = canon_parent.join(path.file_name().unwrap_or_default());
-            std::fs::write(&dich, noi_dung)
-                .map_err(|e| Error::io(format!("không ghi được `{}`: {e}", dich.display())))
+            let _ = &root;
+            let _ = &canon_parent;
+            let _ = noi_dung;
+            Err(Error::io(
+                "guest wasm32 không có filesystem trực tiếp: dùng preopen WASI `/capN`",
+            ))
         }
     }
 }
@@ -208,103 +234,6 @@ pub enum PluginValue {
         root: String,
         write: bool,
     },
-}
-
-impl TryFrom<Value> for PluginValue {
-    type Error = Error;
-
-    fn try_from(v: Value) -> Result<Self> {
-        Ok(match v {
-            Value::Unit => Self::Unit,
-            Value::Bool(b) => Self::Bool(b),
-            Value::Int(i) | Value::Size(i) | Value::Duration(i) => Self::Int(i),
-            Value::Float(f) | Value::Percent(f) => Self::Float(f),
-            Value::Str(s) => Self::Str(s),
-            Value::Char(c) => Self::Str(c.to_string()),
-            Value::Path(s) => Self::Str(s),
-            Value::Bytes(b) => Self::Bytes(b),
-            Value::List(xs) => {
-                Self::List(xs.into_iter().map(Self::try_from).collect::<Result<_>>()?)
-            }
-            Value::Map(kv) => Self::Map(
-                kv.into_iter()
-                    .map(|(k, v)| Ok((Self::try_from(k)?, Self::try_from(v)?)))
-                    .collect::<Result<_>>()?,
-            ),
-            Value::Record(_, fs) => Self::Map(
-                fs.into_iter()
-                    .map(|(k, v)| Ok((Self::Str(k), Self::try_from(v)?)))
-                    .collect::<Result<_>>()?,
-            ),
-            Value::Enum(ten, bien, args) => match (ten.as_ref(), bien.as_ref()) {
-                ("Option", "Some") if args.len() == 1 => Self::Option(Some(Box::new(
-                    Self::try_from(args.into_iter().next().unwrap())?,
-                ))),
-                ("Option", "None") if args.is_empty() => Self::Option(None),
-                ("Result", "Ok") if args.len() == 1 => Self::Result(Ok(Box::new(Self::try_from(
-                    args.into_iter().next().unwrap(),
-                )?))),
-                ("Result", "Err") if args.len() == 1 => {
-                    Self::Result(Err(Box::new(Error::io(vis_interp::value::show(&args[0])))))
-                }
-                _ => {
-                    return Err(Error::type_mismatch(
-                        "giá trị thuần (không enum tuỳ ý)",
-                        &format!("{ten}::{bien}"),
-                    ))
-                }
-            },
-            Value::Cap { kind, root, write } => Self::Cap { kind, root, write },
-            other => {
-                return Err(Error::type_mismatch(
-                    "giá trị thuần",
-                    &vis_interp::value::show(&other),
-                ))
-            }
-        })
-    }
-}
-
-impl TryFrom<PluginValue> for Value {
-    type Error = Error;
-
-    fn try_from(v: PluginValue) -> Result<Self> {
-        Ok(match v {
-            PluginValue::Unit => Value::Unit,
-            PluginValue::Bool(b) => Value::Bool(b),
-            PluginValue::Int(i) => Value::Int(i),
-            PluginValue::Float(f) => Value::Float(f),
-            PluginValue::Str(s) => Value::Str(s),
-            PluginValue::Bytes(b) => Value::Bytes(b),
-            PluginValue::List(xs) => {
-                Value::List(xs.into_iter().map(Value::try_from).collect::<Result<_>>()?)
-            }
-            PluginValue::Map(kv) => Value::Map(
-                kv.into_iter()
-                    .map(|(k, v)| Ok((Value::try_from(k)?, Value::try_from(v)?)))
-                    .collect::<Result<_>>()?,
-            ),
-            PluginValue::Option(None) => {
-                Value::Enum(Name::from("Option"), Name::from("None"), Vec::new())
-            }
-            PluginValue::Option(Some(x)) => Value::Enum(
-                Name::from("Option"),
-                Name::from("Some"),
-                vec![Value::try_from(*x)?],
-            ),
-            PluginValue::Result(Ok(x)) => Value::Enum(
-                Name::from("Result"),
-                Name::from("Ok"),
-                vec![Value::try_from(*x)?],
-            ),
-            PluginValue::Result(Err(e)) => Value::Enum(
-                Name::from("Result"),
-                Name::from("Err"),
-                vec![Value::Str(e.message)],
-            ),
-            PluginValue::Cap { kind, root, write } => Value::Cap { kind, root, write },
-        })
-    }
 }
 
 macro_rules! tu_so {
@@ -389,10 +318,9 @@ mod tests {
     #[test]
     fn abi_version_va_chuyen_doi_co_ban() {
         assert_eq!(VIS_PLUGIN_ABI_V1, 1);
-        let v = Value::List(vec![Value::Int(1), Value::Str("x".into())]);
-        let p = PluginValue::try_from(v.clone()).expect("chuyển sang PluginValue");
-        let lai = Value::try_from(p).expect("chuyển lại");
-        assert_eq!(vis_interp::value::show(&lai), vis_interp::value::show(&v));
+        assert_eq!(PluginValue::from(5i64), PluginValue::Int(5));
+        assert_eq!(i64::try_from(PluginValue::Int(5)).expect("int"), 5);
+        assert!(i64::try_from(PluginValue::Bool(true)).is_err());
     }
 
     #[test]
@@ -404,6 +332,20 @@ mod tests {
         let ngoai = std::env::temp_dir().join("vis-plugin-ngoai-root.txt");
         let e = ctx.read_text(&ngoai).expect_err("phải từ chối");
         assert_eq!(e.code, "VS0604");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn cap_du_nhung_thieu_io_bao_ro() {
+        let d = std::env::temp_dir().join(format!("vis-plugin-cap-io-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tmp");
+        let f = d.join("a.txt");
+        std::fs::write(&f, "x").expect("fixture");
+        let ctx = PluginCtx::new(vec![Cap::dir(&d, false)]);
+        let e = ctx.read_text(&f).expect_err("thiếu I/O host phải lỗi rõ");
+        assert_eq!(e.code, "VS0501");
+        assert!(e.message.contains("voi_io"), "{e}");
         let _ = std::fs::remove_dir_all(&d);
     }
 }

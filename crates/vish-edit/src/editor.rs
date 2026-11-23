@@ -64,7 +64,7 @@ impl Editor {
     pub fn render(&self) -> String {
         let body = render_cst(&self.buffer);
         match &self.search {
-            Some(q) => format!("\x1b[2m[tìm: {q}]\x1b[0m {body}"),
+            Some(q) => format!("{} {body}", crate::render::dim(&format!("[tìm: {q}]"))),
             None => body,
         }
     }

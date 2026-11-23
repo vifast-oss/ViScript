@@ -12,7 +12,7 @@ description = "Host Linux cho ViScript: probe Landlock + cưỡng chế hệ t�
 
 # **ST-132 (VD-120)**: crate `landlock` được duyệt CÓ ĐIỀU KIỆN — chỉ trong crate này,
 # chỉ trên Linux, giấy phép MIT OR Apache-2.0 (khớp D2-21). Log kiểm giấy phép:
-# `agent/JOURNAL/st132-license.log`. Không thêm crate nào khác.
+# `agent/archive/journal-pre-v040/st132-license.log`. Không thêm crate nào khác.
 #
 # **ST-173 (VD-175 §2)**: `landlock` là crate **Linux-only** (dùng `libc::prctl`,
 # `SYS_landlock_*`, `O_PATH`), nên đặt trong bảng phụ thuộc theo **nền đích**. Trên macOS/

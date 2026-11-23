@@ -161,7 +161,7 @@ tại head này:
 - Mọi `commits[]` đã quét `git cat-file --batch-check` (script sinh tự chặn SHA không tồn tại).
 - `python3 test/report/check_report.py --all`: **PASS** (35 báo cáo, 339 hàng QUEUE).
 - Sidecar `agent/reports/R36-viscript.json.license`; sinh lại bằng
-  `python3 agent/JOURNAL/gen-r36-json.py` khi A0 đổi head.
+  `python3 test/report/gen_report_json.py --round 36` khi A0 đổi head.
 - Báo cáo này **docs-only**: không đổi mã/test; không chạy lại `./vis-dev check` trên nhánh này.
 
 ## 6. Journal bằng chứng, rủi ro và việc tiếp theo

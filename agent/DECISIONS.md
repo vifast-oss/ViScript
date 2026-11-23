@@ -3697,7 +3697,7 @@ vẫn lỗi; registry không lọc theo `imports` nhưng tên trait/kiểu vẫn
 
 ### VD-271 (bổ sung) · VS3-3b worker pool — chốt mô hình affine — A0, 2026-11-21
 
-> **Căn cứ**: spike W5 `agent/JOURNAL/vs3-w5-spike.md` (commit `4bb20df`), median 14 lần trên i5-1235U
+> **Căn cứ**: spike W5 `agent/archive/journal-pre-v040/vs3-w5-spike.md` (commit `4bb20df`), median 14 lần trên i5-1235U
 > (2P+8E). **Chưa** code production; đây là quyết định mô hình cho VS3-3b.
 
 1. **Mô hình (a)**: task **affine + heap theo luồng + copy/move tại biên**; **không** `Arc`/COW toàn cục,
@@ -3718,7 +3718,7 @@ VS3-2a ổn định.
 
 ### VD-271 (bổ sung) · VS3-3b — chốt B1–B7 từ prototype W5 — A0, 2026-11-21
 
-> **Căn cứ**: `agent/JOURNAL/vs3-w5-worker-proto.md` + `agent/JOURNAL/vs3-w5-spike/worker_proto.rs`
+> **Căn cứ**: `agent/archive/journal-pre-v040/vs3-w5-worker-proto.md` + `agent/archive/journal-pre-v040/vs3-w5-spike/worker_proto.rs`
 > (commit `3fcd7ef`). Prototype chỉ mô hình, **chưa** tích hợp runtime.
 
 1. **B1**: chưa cấp mã lỗi mới cho ghi chéo worker; VS3-3b dùng lỗi rõ, A0 cấp mã sau.
@@ -3789,7 +3789,7 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 
 ### VD-275 · Chốt triển khai Worker Pool `P2b` + `P4` & cờ CLI `--workers` (`VS3-3b`) — A0, 2026-11-22
 
-1. **Thứ tự bắt buộc**: `ST-284` (R0 refactor `vm/host.rs`, `frame/worker.rs`) → `ST-291` (`P2b-1` lazy/batched submit + `P2b-2` compact `Vec` proxy) → `ST-292` (`P4a → P4b → P4c` theo thiết kế `agent/JOURNAL/vs3-w5-p4-frame-plan.md`).
+1. **Thứ tự bắt buộc**: `ST-284` (R0 refactor `vm/host.rs`, `frame/worker.rs`) → `ST-291` (`P2b-1` lazy/batched submit + `P2b-2` compact `Vec` proxy) → `ST-292` (`P4a → P4b → P4c` theo thiết kế `agent/archive/journal-pre-v040/vs3-w5-p4-frame-plan.md`).
 2. **Chính sách `P4a` tại `v0.4.0`**:
    - Chỉ main frame (`current == 0`) offload `spawn` lên pool; frame task (`current != 0`) chạy local trong driver.
    - `chan(0)` và host/async I/O bên trong worker task bị **từ chối rõ** (không treo, không hứa wire channel qua pool ở `v0.4.0`).
@@ -3802,7 +3802,7 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 1. **Đường ghi + đọc dùng chung `openat`**: Thay đường ghi kiểm-rồi-mở của `FsGuard` trên Unix bằng hàm mở từng thành phần từ fd gốc (`openat` + `O_NOFOLLOW`/`O_DIRECTORY`, ưu tiên `openat2(RESOLVE_BENEATH | RESOLVE_NO_SYMLINKS)` trên Linux ≥ 5.6).
 2. **Phê duyệt phụ thuộc có điều kiện (giữ 0 `unsafe` trong mã ViScript — luật R2 nguyên vẹn)**:
    - Duyệt **Phương án A**: dùng crate **`rustix`** (chỉ bật feature tối giản `fs`, ghim phiên bản tuyệt đối `=…`, chỉ đặt trong `[target.'cfg(unix)'.dependencies]` của `vis-cli` hoặc `vis-host-linux`).
-   - Trước khi merge, Agent 2 bắt buộc chạy kiểm tra giấy phép toàn bộ cây bắc cầu bằng `cargo metadata` (mọi phụ thuộc phải thuộc allowlist `MIT / Apache-2.0 / Zlib / Unicode-3.0`, ghi log vào `agent/JOURNAL/st295-license.log`); nếu có phụ thuộc ngoài allowlist ⇒ `BLOCKED` báo A0 ngay.
+   - Trước khi merge, Agent 2 bắt buộc chạy kiểm tra giấy phép toàn bộ cây bắc cầu bằng `cargo metadata` (mọi phụ thuộc phải thuộc allowlist `MIT / Apache-2.0 / Zlib / Unicode-3.0`, ghi log vào `agent/archive/journal-pre-v040/st295-license.log`); nếu có phụ thuộc ngoài allowlist ⇒ `BLOCKED` báo A0 ngay.
 3. **Landlock `#125`**: Khi `--sandbox` chạy kèm `cap[Proc]` đã được `--grant`, cấp quyền chỉ-đọc + `AccessFs::Execute` cho các đường dẫn thư viện động chuẩn (`/lib`, `/lib64`, `/usr/lib`, `/usr/bin` nếu tồn tại) và đúng binary đã canonicalize trong grant; kèm ca âm chứng minh vẫn chặn ghi vào `/lib*` và chặn chạy binary ngoài grant.
 4. **Xoá cảnh báo**: Chỉ được xoá câu cảnh báo “đường ghi còn khe hở kiểm-rồi-mở” trong `agent/HOST-BAO-DAM.md` trong **cùng commit** mà ca đua symlink ghi đỏ-trước **100/100 → sau vá 0/100** đã xanh.
 
@@ -3851,7 +3851,7 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 
 ### VD-280 · Duyệt đóng Giai đoạn 0 (`v0.3.6`) & Mở Giai đoạn 1 (`v0.4.0`) kèm 6 tinh chỉnh điều phối — A0, 2026-11-22
 
-> **Căn cứ**: `agent/reports/R32-viscript.md`, `agent/JOURNAL/tag-v036-win.md`, `agent/JOURNAL/st287-http-cancel.md`, tag `v0.3.6` @ `8fa2c09`, `HEAD` `be51ae09`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd280.md`.
+> **Căn cứ**: `agent/reports/R32-viscript.md`, `agent/archive/journal-pre-v040/tag-v036-win.md`, `agent/archive/journal-pre-v040/st287-http-cancel.md`, tag `v0.3.6` @ `8fa2c09`, `HEAD` `be51ae09`. Toàn văn: `agent/archive/journal-pre-v040/quyet-dinh-a0-2026-11-22-vd280.md`.
 
 1. **Duyệt đóng Giai đoạn 0 (`APPROVED 2026-11-22 Agent 0`)**: Lật `ST-284`..`ST-289` → **`DONE`** trong `agent/QUEUE.md`. Giữ nguyên `R32` (VD-142); ghi đính chính mốc tag `v0.3.6` @ `8fa2c09` + Windows verify `be51ae09` ở đầu `R33`.
 2. **Mở Giai đoạn 1 (`v0.4.0`) & tái cân bằng 4 luồng**:
@@ -3868,7 +3868,7 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 
 ### VD-281 · Duyệt `ST-290`/`ST-294`, Chèn Giai đoạn 1.5 (`v0.4.1` Tối ưu Repo & DevEx) & Tinh chỉnh GĐ 1–4 — A0, 2026-11-22
 
-> **Căn cứ**: `agent/JOURNAL/st290-budget-default.md`, `agent/JOURNAL/st294-h2-windows.md`, `agent/JOURNAL/v036-soak-4h.md`, đo thực tế repository tại `a308cd85` (278 test binary `vis-cli`, 28 MB `agent/`, 68 tệp `stdlib/`, `vis-cli` 29,8k LOC). Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd281.md`.
+> **Căn cứ**: `agent/archive/journal-pre-v040/st290-budget-default.md`, `agent/archive/journal-pre-v040/st294-h2-windows.md`, `agent/archive/journal-pre-v040/v036-soak-4h.md`, đo thực tế repository tại `a308cd85` (278 test binary `vis-cli`, 28 MB `agent/`, 68 tệp `stdlib/`, `vis-cli` 29,8k LOC). Toàn văn: `agent/archive/journal-pre-v040/quyet-dinh-a0-2026-11-22-vd281.md`.
 
 1. **Duyệt đóng (`APPROVED 2026-11-22 Agent 0`)**: Lật **`ST-290`** (`a48d5b87`, budget default `40M` + `VS0509`/`VS0510` + cache `VFEE`, 3.594/0/3, diff 0) và **`ST-294`** (`cce2d0fb`, `async-h2` Windows `mio::net::TcpStream` + default-on non-wasm + 0 warning non-TLS, Linux 3.607/4, Windows 3.563/0/3, `vs3_http2` 33/33, `vs3_http_cancel` 8/8) → **`DONE`**.
 2. **Bổ sung cho `ST-292` & `ST-296` (GĐ 1)**:
@@ -3886,7 +3886,7 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 
 ### VD-282 · Duyệt `ST-293`/`ST-295`, Đóng 12 Nợ Sổ, Luật R7, Cơ chế Zero-Idle & Kế hoạch Chạy Đêm 22–23/11 — A0, 2026-11-22
 
-> **Căn cứ**: `agent/JOURNAL/st293-select.md` (`6d6bfe9c`), `agent/JOURNAL/st295-baove.md` (`cd76da56`), `agent/JOURNAL/st296-pre-qa.md` (`15271f12`), `agent/JOURNAL/st296-debt-audit.md` (`90cfc394`), `agent/JOURNAL/gd1-2h-soak-832787e.md` (`d53d2588`), quét phụ thuộc `crates/vis-cli/src/` tại `832787e2`. Kế hoạch xuyên đêm đầy đủ: `agent/JOURNAL/ke-hoach-dem-2026-11-22-vd282.md`.
+> **Căn cứ**: `agent/archive/journal-pre-v040/st293-select.md` (`6d6bfe9c`), `agent/archive/journal-pre-v040/st295-baove.md` (`cd76da56`), `agent/archive/journal-pre-v040/st296-pre-qa.md` (`15271f12`), `agent/archive/journal-pre-v040/st296-debt-audit.md` (`90cfc394`), `agent/archive/journal-pre-v040/gd1-2h-soak-832787e.md` (`d53d2588`), quét phụ thuộc `crates/vis-cli/src/` tại `832787e2`. Kế hoạch xuyên đêm đầy đủ: `agent/archive/journal-pre-v040/ke-hoach-dem-2026-11-22-vd282.md`.
 
 1. **Duyệt đóng (`APPROVED 2026-11-22 Agent 0`)**:
    - **`ST-293`** (`6d6bfe9c` / code `82064e96`): 4 hàm `select_recv*`/`select_send*` cô lập trong `rt/select.rs` + `tyck/expr/kenh.rs` (không đụng `interp.rs`/`stdlib.rs`), **25/25** ca byte-identical interp↔VM cả Linux & Windows release, gate **3.632/4**, diff 100k = 0 → lật **`DONE`**.

@@ -12,10 +12,20 @@ default = []
 tls = ["vis-host-native/tls"]
 pkg-sig = ["dep:ring"]
 
+# **ST-310e** — suite chữ ký + registry HTTPS chuyển từ `vis-cli/tests/` về crate chủ.
+[[test]]
+name = "sig_it"
+path = "tests/sig_it.rs"
+required-features = ["pkg-sig", "tls"]
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-loader = { path = "../vis-loader" }
-vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
+vis-core = { path = "../vis-core" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-host-native = { path = "../vis-host-native" }
 ring = { workspace = true, optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+# Chỉ test `sig_it` (registry HTTPS) dùng rustls làm server; không vào artifact.
+rustls = { workspace = true }

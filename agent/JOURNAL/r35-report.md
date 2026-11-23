@@ -11,7 +11,7 @@ Không merge/push/tag; không GitHub Actions.
 - `agent/reports/R35-viscript.json` + `.json.license`: 11 khoá, `round=35`, `head=9af3976`,
   **330 task** phủ đủ 330 hàng QUEUE@head, 10 blocked, commits có thật; không placeholder
   `[SOAK_*]`.
-- `agent/JOURNAL/gen-r35-json.py`: sinh lại JSON từ `QUEUE@HEAD_SHA`; đổi `HEAD_SHA` khi A0
+- `test/report/gen_report_json.py --round 35`: sinh lại JSON từ `QUEUE@HEAD_SHA`; đổi `HEAD_SHA` khi A0
   chốt soak/release rồi chạy lại.
 - Placeholder soak/Tier 1 **chỉ** trong R35 md: `[SOAK_ROUNDS]`, `[SOAK_FAIL]`, `[SOAK_FD_RSS]`.
 
@@ -24,4 +24,4 @@ Không merge/push/tag; không GitHub Actions.
 ## Blocker
 
 Không. A0 cập nhật `head` (sau soak/release), điền `[SOAK_*]` trong R35 md, chạy lại
-`gen-r35-json.py` + `check_report.py --all` rồi merge/tag `v0.4.5`.
+`gen_report_json.py --round 35` + `check_report.py --all` rồi merge/tag `v0.4.5`.

@@ -12,4 +12,4 @@ vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }
 vis-bytecode = { path = "../vis-bytecode" }
-vis-interp = { path = "../vis-interp" }
+vis-core = { path = "../vis-core" }

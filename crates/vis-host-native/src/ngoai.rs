@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use vis_core::host::{DocQuaHandle, DuongDanHandle};
+use vis_core::{Abort, Trap, Value};
 use vis_diag::{COMMAND_CODES, RUNTIME_CODES};
-use vis_interp::builtin::{DocQuaHandle, DuongDanHandle};
-use vis_interp::{Abort, Trap, Value};
 use vis_syntax::Span;
 
 /// Runner cho chương trình ngoài.
@@ -69,7 +69,7 @@ impl Runner {
         args: &[String],
         stdin: &str,
         span: Span,
-    ) -> Result<vis_interp::builtin::KetQua, Abort> {
+    ) -> Result<vis_core::host::KetQua, Abort> {
         // **ST-93 (VD-111)**: cưỡng chế **ở biên host**, dùng chung cho interp + VM
         // (`Ngoai::Runner` là host duy nhất); `cap[Proc]` là quyền chạy tiến trình, **không**
         // allowlist danh sách lệnh.
@@ -169,7 +169,7 @@ impl Runner {
                 span,
             ))
         })?;
-        Ok(vis_interp::builtin::KetQua {
+        Ok(vis_core::host::KetQua {
             stdout: String::from_utf8_lossy(&out.stdout).to_string(),
             stderr: String::from_utf8_lossy(&out.stderr).to_string(),
             code: out.status.code().unwrap_or(-1),
@@ -177,7 +177,7 @@ impl Runner {
     }
 }
 
-impl vis_interp::builtin::Ngoai for Runner {
+impl vis_core::host::Ngoai for Runner {
     fn chay(
         &mut self,
         ten: &str,
@@ -185,7 +185,7 @@ impl vis_interp::builtin::Ngoai for Runner {
         raw: bool,
         stdin: &str,
         span: Span,
-    ) -> vis_interp::R<Value> {
+    ) -> vis_core::R<Value> {
         let kq = self.chay_raw(ten, args, stdin, span)?;
         if kq.code != 0 {
             let gon = kq.stderr.trim();
@@ -211,7 +211,7 @@ impl vis_interp::builtin::Ngoai for Runner {
         args: &[String],
         stdin: &str,
         span: Span,
-    ) -> Result<vis_interp::builtin::KetQua, Abort> {
+    ) -> Result<vis_core::host::KetQua, Abort> {
         self.chay_raw(ten, args, stdin, span)
     }
 }
@@ -488,7 +488,7 @@ fn tao_thu_muc_de_quy(p: &str) -> Result<(), String> {
 ///
 /// Chốt an toàn (Agent 0 duyệt): **cho phép** đường dẫn tuyệt đối và `..` (không sandbox — consent
 /// thật/`cap[Dir]` là **VS2**); mỗi lần truy cập in `FS …` ra stderr khi `--explain-perms`.
-impl vis_interp::builtin::FsHost for Runner {
+impl vis_core::host::FsHost for Runner {
     fn read(&mut self, p: &str) -> Result<String, String> {
         self.nhat_ky("read", p);
         std::fs::read_to_string(p).map_err(|e| format!("không đọc được `{p}`: {e}"))
@@ -535,12 +535,12 @@ impl vis_interp::builtin::FsHost for Runner {
         f.write_all(s.as_bytes()).map_err(loi)
     }
 
-    /// **VD-266**: đọc tệp rồi tách dòng bằng [`chia_dong`](vis_interp::builtin::chia_dong) —
+    /// **VD-266**: đọc tệp rồi tách dòng bằng [`chia_dong`](vis_core::host::chia_dong) —
     /// **cùng** ngữ nghĩa với mock.
     fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
         self.nhat_ky("read_lines", p);
         std::fs::read_to_string(p)
-            .map(|s| vis_interp::builtin::chia_dong(&s))
+            .map(|s| vis_core::host::chia_dong(&s))
             .map_err(|e| format!("không đọc được `{p}`: {e}"))
     }
 
@@ -712,10 +712,10 @@ impl vis_interp::builtin::FsHost for Runner {
         std::path::Path::new(p).exists()
     }
 
-    fn list_entries(&mut self, p: &str) -> Result<Vec<vis_interp::builtin::MucFs>, String> {
+    fn list_entries(&mut self, p: &str) -> Result<Vec<vis_core::host::MucFs>, String> {
         self.nhat_ky("list_entries", p);
         let rd = std::fs::read_dir(p).map_err(|e| format!("không đọc được thư mục `{p}`: {e}"))?;
-        let mut muc: Vec<vis_interp::builtin::MucFs> = Vec::new();
+        let mut muc: Vec<vis_core::host::MucFs> = Vec::new();
         for e in rd {
             let e = e.map_err(|x| format!("lỗi đọc mục trong `{p}`: {x}"))?;
             let md = e
@@ -738,7 +738,7 @@ impl vis_interp::builtin::FsHost for Runner {
                     0
                 }
             };
-            muc.push(vis_interp::builtin::MucFs {
+            muc.push(vis_core::host::MucFs {
                 name: e.file_name().to_string_lossy().to_string(),
                 size: md.len(),
                 modified_ns,

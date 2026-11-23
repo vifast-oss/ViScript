@@ -61,9 +61,9 @@
 > (`vis.exe` 11.530.240 B, sha256 `3813a1b3…cb065`). **Tag `v0.4.0` trên commit R33**; tag trước
 > **`v0.3.6` @ `8fa2c09`**. Hai nhánh **READY chưa merge** — `plan/w4-st296a-tests` @ `f961b83`,
 > `plan/w3-st296b-crates` @ `7c4c205` — **merge sau tag**.
-> **Cập nhật 2026-11-22 (VD-281 — Duyệt `ST-290`/`ST-294` DONE, Chèn GĐ 1.5 `v0.4.1` Tối ưu Repo & DevEx)** — A0 duyệt **`ST-290` (`a48d5b87`, budget 40M + `VS0509`/`VS0510`)** và **`ST-294` (`cce2d0fb`, `async-h2` Windows + default-on non-wasm, Linux 3.607/4, Windows 3.563/0/3)** → **`DONE`**. Bổ sung nối `SharedBudget` vào `ST-292`, fix chịu tải `vd270_test_slowest` + `TMPDIR` ngoài `/tmp` vào `ST-296`, chèn **GĐ 1.5 (`v0.4.1`, `ST-296a`..`ST-296d`)** (gom 278 test binary → 12–15, tách `vis-loader`/`vis-lsp`, gom stdlib theo miền, dọn `agent/archive/` + `agent/ACTIVE.md` + `bin/vis-{gc-targets,jobs,status,gate-windows}`), tách `ST-304`/`ST-304b`, và chốt Plugin Phương án A (`Native static` + `WASI/WASM dynamic`, 0 `unsafe`). Chi tiết: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd281.md`, bảng điều khiển nhanh: `agent/ACTIVE.md`.
+> **Cập nhật 2026-11-22 (VD-281 — Duyệt `ST-290`/`ST-294` DONE, Chèn GĐ 1.5 `v0.4.1` Tối ưu Repo & DevEx)** — A0 duyệt **`ST-290` (`a48d5b87`, budget 40M + `VS0509`/`VS0510`)** và **`ST-294` (`cce2d0fb`, `async-h2` Windows + default-on non-wasm, Linux 3.607/4, Windows 3.563/0/3)** → **`DONE`**. Bổ sung nối `SharedBudget` vào `ST-292`, fix chịu tải `vd270_test_slowest` + `TMPDIR` ngoài `/tmp` vào `ST-296`, chèn **GĐ 1.5 (`v0.4.1`, `ST-296a`..`ST-296d`)** (gom 278 test binary → 12–15, tách `vis-loader`/`vis-lsp`, gom stdlib theo miền, dọn `agent/archive/` + `agent/ACTIVE.md` + `bin/vis-{gc-targets,jobs,status,gate-windows}`), tách `ST-304`/`ST-304b`, và chốt Plugin Phương án A (`Native static` + `WASI/WASM dynamic`, 0 `unsafe`). Chi tiết: `agent/archive/journal-pre-v040/quyet-dinh-a0-2026-11-22-vd281.md`, bảng điều khiển nhanh: `agent/ACTIVE.md`.
 >
-> **Cập nhật 2026-11-22 (VD-280 — Duyệt đóng GĐ 0 `v0.3.6`, MỞ GĐ 1 `v0.4.0`)** — A0 duyệt `APPROVED` toàn bộ `ST-284`..`ST-289` → **`DONE`** (tag `v0.3.6` @ `8fa2c09`, Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). Mở **Giai đoạn 1 (`v0.4.0`)** với phân luồng tái cân bằng (`W1`: `ST-291`→`ST-292`; `W2`: `ST-294` + `ST-295`; `W3`: `ST-290`→`ST-293`; `W4`: nightly bù R32 + `#191` sớm + `ST-296`/`R33`), rào R1 đợt 2 và đăng ký chung `VS0509`/`VS0510` ở `ST-290`. Chi tiết: `agent/JOURNAL/quyet-dinh-a0-2026-11-22-vd280.md`.
+> **Cập nhật 2026-11-22 (VD-280 — Duyệt đóng GĐ 0 `v0.3.6`, MỞ GĐ 1 `v0.4.0`)** — A0 duyệt `APPROVED` toàn bộ `ST-284`..`ST-289` → **`DONE`** (tag `v0.3.6` @ `8fa2c09`, Windows tag verify `be51ae09`: `3538/0/3`, cancel `10/10`, host `54/54`). Mở **Giai đoạn 1 (`v0.4.0`)** với phân luồng tái cân bằng (`W1`: `ST-291`→`ST-292`; `W2`: `ST-294` + `ST-295`; `W3`: `ST-290`→`ST-293`; `W4`: nightly bù R32 + `#191` sớm + `ST-296`/`R33`), rào R1 đợt 2 và đăng ký chung `VS0509`/`VS0510` ở `ST-290`. Chi tiết: `agent/archive/journal-pre-v040/quyet-dinh-a0-2026-11-22-vd280.md`.
 >
 > **Cập nhật 2026-11-22 (Stage 0 `v0.3.6` @ `8fa2c09` — ĐÃ TAG)** — Giai đoạn 0 **đủ 6/6**:
 > **DONE** `ST-284` (`83a9a10`/merge `e363a15`: `vm.rs` 1240, `frame.rs` 1042), `ST-285`
@@ -79,7 +79,7 @@
 > (`V:post` sau 10053); **`v0.3.6` đã tag @ `8fa2c09`** (ST-287 fix xong; Linux 3581/3, Windows 3538/0); GĐ 1..4 vẫn
 > `BLOCKED` chờ A0 mở.
 >
-> **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/JOURNAL/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
+> **Cập nhật 2026-11-22 (VD-272..VD-279)** — Chốt **kế hoạch dài hạn hậu `v0.3.5`** (`v0.3.6` R0 Refactor & Hygiene → `v0.4.0` G4a Core → `v0.4.5` Windows Tier 1 & WASI → `v0.5.0` Pha 2 Ngôn ngữ & ViShell → `v0.6.0`/`v1.0.0-rc1` Plugin ABI & ViTerm) và **quy trình vai trò độc lập môi trường `VD-279`**. Nguồn quyết định: `agent/archive/journal-pre-v040/quyet-dinh-a0-2026-11-22.md`, `agent/DECISIONS.md` (`VD-272`..`VD-279`); hàng việc: `agent/QUEUE.md` (`ST-284`..`ST-309`; GĐ 0 `ST-284`..`ST-289`, GĐ 1..4 `BLOCKED` chờ cổng chặn cứng R0).
 >
 > **Cập nhật 2026-11-21 (VD-271)** — **VS3 ĐÃ MỞ**. Kế hoạch đầy đủ: `KE-HOACH-VS3-2026-11-21.md`; tiến độ: `VS3-TIEN-DO.md`. Phạm vi **tất cả tính năng** (async, kênh, net/TLS, quyền, LSP, gói, nền tảng, host, plugin/ViTerm), triển khai theo lát cắt **G0→G5**; **macOS ngoài phạm vi** *(lịch sử — `VD-284` đã đưa macOS arm64 vào phạm vi)*; **batch test 4 giờ** (không big-bang). Tag mốc: **`v0.3.5`** @ `03bb7b9`; `v0.3.4` @ `8fa1f96`, `v0.3.3` @ `bbf3484`, `v0.3.2` @ `864cc96`, `v0.3.1` @ `e689c3d`, `v0.3.0` @ `0d26527`, `v0.2.0` @ `42b700c`, `v0.1.0` @ `50675dd` giữ lịch sử; `pha1-rc1` giữ nguyên. Runtime async default đã flip (v0.2.0); HTTP/2 default-on (v0.3.0).
 >
@@ -270,7 +270,7 @@ Sổ nợ : **146 mục** = **91 mở** / **32 đóng** / **21 VS3** / 1 không 
 ### Trạng thái cuối **sau R29** — tách repo + pha 1 công thái học (2026-11-18, HEAD `2f62022`)
 
 > Khối này **thêm** sau khối R27; số cũ **không xoá** (VD-142). Nguồn: `reports/R29-viscript.md`,
-> `agent/JOURNAL/2026-11-17-*.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ `39041b3f`.
+> `agent/JOURNAL/2026-11-17-*.md`, `agent/archive/journal-pre-v040/2026-11-18.md`, `git log` từ `39041b3f`.
 
 **Đã đóng trong đợt R29 (17/11):** **ST-174** (vá nợ #146 — TOCTOU symlink, phương án A VD-176; ca A đỏ-trước 100/100,
 sau vá 100/100 mac+ps, 6 000 000 vòng 0 đỏ; gate mac 3 lần PASS L0 **1184/0**) · **ST-175** (`vis-remote` từ chối cây bẩn) ·
@@ -306,7 +306,7 @@ R20b phần 2 (`(1..5).step(n)`). Pha 2 (R13–R24) và VS3 **chưa mở** (VD-1
 ### Trạng thái cuối sau R30 — pha 1 đóng trên **ps** (2026-11-19 sáng, HEAD `49b33b8`)
 
 > Khối này **thêm** sau khối R29; số cũ **không xoá** (VD-142). Nguồn: `BAO-CAO-A0-2026-11-19-0900.md`,
-> `agent/DEM-2026-11-18.md`, `agent/JOURNAL/2026-11-18.md`, `git log` từ commit `a570d77` (HEAD ban đầu của phiên, nay `d27e78d`).
+> `agent/DEM-2026-11-18.md`, `agent/archive/journal-pre-v040/2026-11-18.md`, `git log` từ commit `a570d77` (HEAD ban đầu của phiên, nay `d27e78d`).
 
 **Đã đóng trong đợt R30 (18–19/11):** **ST-205** (R4a — `trait Error: Show` 3 phương thức mặc định-less; `Json` enum dựng sẵn
 `EnumId(0)`; bản ghi `Error` `RecId(0)`; `AnyError` := alias bản ghi `Error` (**VD-231**, superseded VD-222 §5); `print(e)` chỉ `{message}`; std fns → `Result[T, Error]`) ·

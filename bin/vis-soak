@@ -13,7 +13,7 @@
 #   chỉ ghi tiếp khi có `--append` (hoặc `VIS_SOAK_APPEND=1`).
 #   `--dry-run` in đúng 10 tên vòng ra stdout, KHÔNG chạy soak, KHÔNG tạo/ghi tệp log — nhưng vẫn kiểm
 #   nhánh từ chối ở trên để thử được mà không phải soak thật.
-#   Vì sao cấm ghi đè: bản trước ghi cứng `agent/JOURNAL/st113-soak.log` và `: >` đầu mỗi lần chạy, nên
+#   Vì sao cấm ghi đè: bản trước ghi cứng `agent/archive/journal-pre-v040/st113-soak.log` và `: >` đầu mỗi lần chạy, nên
 #   log soak vòng 20 (ST-113) bị xoá 2 lần bởi ST-133 (`739f6e69`) và ST-138 (`a9f80d83`); ST-141 phải
 #   khôi phục từ git. Mỗi lần chạy công cụ dài phải để lại bằng chứng riêng, không xoá bằng chứng task khác.
 set -u
@@ -157,8 +157,8 @@ chay gate-3 ./vis-dev gate --fast
 chay diff-3 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay host-1 ./bin/vis-host-suite
 chay host-2 ./bin/vis-host-suite
-chay cache-1 cargo test -p vis-cli --test cache_khong_che
-chay cache-2 cargo test -p vis-cli --test cache_khong_che
+chay cache-1 cargo test -p vis-loader --test cache_khong_che
+chay cache-2 cargo test -p vis-loader --test cache_khong_che
 
 sau=$(uptime)
 echo "=== TỔNG | ${tong}s | 10/10 vòng OK | load sau: $sau" | tee -a "$LOG"

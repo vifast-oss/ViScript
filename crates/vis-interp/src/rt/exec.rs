@@ -21,7 +21,7 @@ use crate::interp::{Interp, Trap, R, RT};
 use crate::rt::fee::SharedBudget;
 use crate::rt::Task;
 use crate::value::worker::{
-    OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerCtx, WorkerError, WorkerPool,
+    OutcomeBoard, SendValue, TaskHandle, TaskId, ToSend, WorkerCtx, WorkerError, WorkerPool,
 };
 use crate::value::Value;
 

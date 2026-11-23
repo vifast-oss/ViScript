@@ -72,7 +72,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - 35 ca còn lại: 25 portability + 10 test-only; 1 BLOCKED-ENV (`wasm32` std target).
 - **Quyết định**: giữ `v0.1.0-rc1` làm mốc lịch sử, **không promote `v0.1.0`**; W4 đang sửa; tag
   `v0.1.0-rc2` sau khi `vis-dev check` xanh + workspace 0 product/test failure.
-- Báo cáo: `agent/JOURNAL/vs3-w4-windows-verify.md`.
+- Báo cáo: `agent/archive/journal-pre-v040/vs3-w4-windows-verify.md`.
 
 ### Sự kiện 21/11 — release `041ee50` đỏ 5 ca trên Windows
 
@@ -83,7 +83,7 @@ vào `main`; full `gate --fast` tại M1–M4. Không subagent nào push/merge t
 - Đã cherry-pick `3d6bfe4` (overlay) + `5dec89b` (registry test); W2 sửa `net.rs` xong (`d9046a9`:
   thử lần lượt mọi địa chỉ loopback, IPv4 trước) → merge `8776947`; gate Linux **3448/3**.
 - **Không tag `v0.1.0`** cho tới khi W4 verify lại toàn bộ trên commit mới.
-- Báo cáo: `agent/JOURNAL/vs3-w4-release-final.md`.
+- Báo cáo: `agent/archive/journal-pre-v040/vs3-w4-release-final.md`.
 
 ## 2c. Stage 0 — `v0.3.6` (2026-11-22, tag `8fa2c09`, code `0645700`)
 

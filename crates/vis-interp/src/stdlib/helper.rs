@@ -123,10 +123,8 @@ pub(crate) mod chung {
     use crate::value::Value;
 
     /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
-    /// **ST-72b (VD-103/VD-106)**: dấu **cưỡng chế quyền** trong `Err` của host — `hop_nhat_fs` đổi
-    /// thành **trap `VS0604`** (không bắt được), thay vì `Err(str)` dữ liệu (vượt quyền là lỗi **môi
-    /// trường**, không phải dữ liệu chương trình).
-    pub const DAU_QUYEN: &str = "\u{1}VS0604:";
+    /// **ST-310a**: dấu quyền dùng chung, nay ở `vis_core::host::DAU_QUYEN`.
+    pub use vis_core::host::DAU_QUYEN;
 
     pub(crate) fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
         match r {

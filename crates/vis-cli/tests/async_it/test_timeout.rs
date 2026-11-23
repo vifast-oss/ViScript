@@ -65,9 +65,9 @@ fn treo_bi_giet_trong_3s() {
     assert!(o.contains("quá hạn 300 ms"), "{o}");
     assert!(dt.as_millis() < 3_000, "tổng {dt:?} ≥ 3 s (kể cả kill)");
     assert!(
-        con_cua_minh().is_empty(),
+        con_cua_minh(&d).is_empty(),
         "rò tiến trình: {:?}",
-        con_cua_minh()
+        con_cua_minh(&d)
     );
     let _ = std::fs::remove_dir_all(&d);
 }
@@ -156,8 +156,11 @@ fn in_nhieu_roi_fail_bao_dung_loi() {
 }
 
 /// Đếm tiến trình con **còn sống** của chính test runner (macOS/Linux `ps`).
-fn con_cua_minh() -> Vec<String> {
+/// Con trực tiếp **của lượt chạy này** (lọc theo thư mục tạm riêng): nextest/libtest có thể chạy
+/// nhiều ca song song trong **cùng** tiến trình, nên không được tính `vis` của ca khác (flake cũ).
+fn con_cua_minh(dir: &Path) -> Vec<String> {
     let pid = std::process::id().to_string();
+    let rieng = dir.to_string_lossy();
     let o = Command::new("ps")
         .args(["-axo", "pid=,ppid=,command="])
         .output()
@@ -168,7 +171,7 @@ fn con_cua_minh() -> Vec<String> {
             let mut it = l.split_whitespace();
             let _pid = it.next();
             let ppid = it.next().unwrap_or("");
-            ppid == pid && l.contains("vis") && !l.contains("ps -axo")
+            ppid == pid && l.contains(rieng.as_ref()) && !l.contains("ps -axo")
         })
         .map(|l| l.to_string())
         .collect()

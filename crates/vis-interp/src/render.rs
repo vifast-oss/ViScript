@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **`Render`** (ST-41, §9.6) — hiển thị **giá trị cuối pipeline** của chế độ lệnh:
+//! **`Render`** (ST-41, §9.6; ST-310b) — hiển thị **giá trị cuối pipeline** của chế độ lệnh:
 //! `list[bản ghi]` ⇒ **bảng** (căn trái cho `str`, căn phải cho số/`size`/`duration`/`percent`);
 //! bản ghi **đơn** ⇒ **khối khoá–giá trị**; `list` rỗng ⇒ `(rỗng)`; còn lại ⇒ `None` (dùng `Show` cũ).
 //!
-//! Độ rộng cột đếm **số `char` sau NFC** (emoji/CJK/NFC tiếng Việt = 1), **không** đếm byte.
+//! **ST-310b**: bố cục cột/khoảng đệm/độ rộng không còn viết ở đây — chuyển giá trị sang
+//! [`vish_term::Table`]/[`vish_term::Record`] rồi để `vish-term` hạ văn bản. Nhờ vậy chỉ còn
+//! **một** quy tắc độ rộng (NFC) và **một** bản hạ bảng trong toàn dòng ViScript.
+
+use vish_term::{Align, AnsiPosix, ColorMode, Column, Record, Table, Terminal};
 
 use crate::value::Value;
 
-/// Độ rộng hiển thị: số `char` sau **NFC** (chốt ST-41).
+/// Độ rộng hiển thị: số `char` sau **NFC** (chốt ST-41) — nay lấy từ `vish-term`.
 pub fn rong(s: &str) -> usize {
-    use unicode_normalization::UnicodeNormalization;
-    s.nfc().collect::<String>().chars().count()
-}
-
-fn dem(s: &str, n: usize) -> String {
-    let d = rong(s);
-    let pad = n.saturating_sub(d);
-    format!("{s}{}", " ".repeat(pad))
-}
-
-fn trai(s: &str, n: usize) -> String {
-    let d = rong(s);
-    let pad = n.saturating_sub(d);
-    format!("{}{s}", " ".repeat(pad))
+    vish_term::display_width(s)
 }
 
 fn so(v: &Value) -> bool {
@@ -44,7 +35,11 @@ fn bang(items: &[Value]) -> String {
             }
         }
     }
-    let mut hang: Vec<Vec<String>> = Vec::new();
+    let mut table = Table::new(
+        cot.iter()
+            .map(|c| Column::new(c.clone()))
+            .collect::<Vec<_>>(),
+    );
     for it in items {
         let mut r: Vec<String> = Vec::new();
         for c in &cot {
@@ -58,68 +53,46 @@ fn bang(items: &[Value]) -> String {
             };
             r.push(s);
         }
-        hang.push(r);
+        table.push_row(r);
     }
-    let mut phai: Vec<bool> = Vec::new();
-    for (j, _) in cot.iter().enumerate() {
-        let mut p = true;
+    // Căn phải khi **mọi** ô có mặt ở cột đều là số và có ít nhất một ô như vậy.
+    for (j, c) in cot.iter().enumerate() {
+        let mut phai = true;
         let mut co_so = false;
         for it in items {
             if let Value::Record(_, fields) = it {
-                if let Some((_, v)) = fields.iter().find(|(k, _)| k == &cot[j]) {
+                if let Some((_, v)) = fields.iter().find(|(k, _)| k == c) {
                     if so(v) {
                         co_so = true;
                     } else {
-                        p = false;
+                        phai = false;
                     }
                 }
             }
         }
-        phai.push(co_so && p);
-    }
-    let mut rong_cot: Vec<usize> = cot.iter().map(|c| rong(c)).collect();
-    for r in &hang {
-        for (j, c) in r.iter().enumerate() {
-            rong_cot[j] = rong_cot[j].max(rong(c));
+        if co_so && phai {
+            table.columns[j].align = Align::Right;
         }
     }
-    let mut out = String::new();
-    let mut dong: Vec<String> = Vec::new();
-    for (j, c) in cot.iter().enumerate() {
-        dong.push(if phai[j] {
-            trai(c, rong_cot[j])
-        } else {
-            dem(c, rong_cot[j])
-        });
-    }
-    out.push_str(dong.join("  ").trim_end());
-    out.push('\n');
-    for r in &hang {
-        let mut d: Vec<String> = Vec::new();
-        for (j, c) in r.iter().enumerate() {
-            d.push(if phai[j] {
-                trai(c, rong_cot[j])
-            } else {
-                dem(c, rong_cot[j])
-            });
-        }
-        out.push_str(d.join("  ").trim_end());
-        out.push('\n');
-    }
-    out
+    ha_van_ban(|term| term.table(&table))
 }
 
 /// Khối `khoá  giá trị` cho **một** bản ghi (căn khoá theo độ rộng lớn nhất).
 fn khoi(fields: &[(String, Value)]) -> String {
-    let nhan = fields.iter().map(|(k, _)| rong(k)).max().unwrap_or(0);
-    let mut out = String::new();
+    let mut rec = Record::new();
     for (k, v) in fields {
-        out.push_str(&dem(k, nhan));
-        out.push_str("  ");
-        out.push_str(&v.show());
-        out.push('\n');
+        rec.push(k.clone(), v.show());
     }
-    out
+    ha_van_ban(|term| term.record(&rec))
+}
+
+/// Hạ một giá trị có cấu trúc thành văn bản **không màu** (Render của `.vish` là dữ liệu cho
+/// pipeline/ống, không phải TUI). Backend ghi vào bộ nhớ nên lỗi ghi không xảy ra.
+fn ha_van_ban(f: impl FnOnce(&mut AnsiPosix<Vec<u8>>) -> std::io::Result<()>) -> String {
+    let mut term = AnsiPosix::with_writer(Vec::new()).with_color(ColorMode::None);
+    let _ = f(&mut term);
+    let _ = term.flush();
+    String::from_utf8(term.into_inner()).expect("render văn bản là UTF-8")
 }
 
 /// `Some(chuỗi)` nếu giá trị cuối pipeline cần `Render`; `None` ⇒ dùng `Show` cũ.
@@ -136,5 +109,49 @@ pub fn in_gia_tri(v: &Value, co_ban_ghi: bool) -> Option<String> {
             Some(bang(items))
         }
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ban_ghi(ten: &str, n: i64) -> Value {
+        Value::Record(
+            "F".to_string(),
+            vec![
+                ("name".to_string(), Value::Str(ten.to_string())),
+                ("n".to_string(), Value::Int(n)),
+            ],
+        )
+    }
+
+    #[test]
+    fn bang_can_phai_cot_so() {
+        let v = Value::List(vec![ban_ghi("aa", 6), ban_ghi("bb", 1)]);
+        assert_eq!(
+            in_gia_tri(&v, false).unwrap(),
+            "name  n\naa    6\nbb    1\n"
+        );
+    }
+
+    #[test]
+    fn khoi_ban_ghi_don() {
+        let v = ban_ghi("a", 6);
+        let s = in_gia_tri(&v, false).unwrap();
+        assert_eq!(s, "name  a\nn     6\n");
+    }
+
+    #[test]
+    fn list_rong_chi_khi_co_ban_ghi() {
+        let v = Value::List(Vec::new());
+        assert_eq!(in_gia_tri(&v, false), None);
+        assert_eq!(in_gia_tri(&v, true).as_deref(), Some("(rỗng)\n"));
+    }
+
+    #[test]
+    fn rong_theo_nfc() {
+        assert_eq!(rong("Việt"), 4);
+        assert_eq!(rong("e\u{0302}\u{0301}"), 1);
     }
 }

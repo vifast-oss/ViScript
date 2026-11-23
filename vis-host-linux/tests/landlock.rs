@@ -131,7 +131,7 @@ fn ghi_trong_thu_muc_chi_doc_bi_chan() {
 // Hệ quả: **không dựng được** ca "tiến trình con bỏ qua FsGuard" bằng `exec` trong môi trường này,
 // nên ca đó **không** nằm ở đây. Bằng chứng kernel tương đương đã có ở các ca dưới: chúng gọi
 // thẳng syscall (`fs::read_to_string`/`fs::write`) — **không** đi qua `FsGuard`, nên bị chặn nghĩa
-// là **kernel** chặn. Chi tiết + biến thể: `viscript/agent/JOURNAL/st132-landlock.md` §4.
+// là **kernel** chặn. Chi tiết + biến thể: `viscript/agent/archive/journal-pre-v040/st132-landlock.md` §4.
 
 /// **Bằng chứng kernel ở TIẾN TRÌNH CON** (VD-120): dựng một helper **tĩnh** (`crt-static`) để nó
 /// không cần `ld.so` (execve một binary động cần quyền `EXECUTE` trên cả interpreter), rồi cho
