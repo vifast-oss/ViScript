@@ -148,18 +148,37 @@ fn cap_dir_ro_rw_va_ngoai_root() {
     assert_eq!(stdout(&o).trim(), "()");
     assert_eq!(std::fs::read_to_string(&f).expect("đọc lại"), "moi");
 
-    // Ngoài preopen ⇒ WASI từ chối.
-    let o = chay(&[
-        "plugin",
-        "run",
-        &w,
-        "doc",
-        "str:/etc/passwd",
-        "--cap-dir",
-        &dstr,
-    ]);
+    // Ngoài preopen: tệp **THẬT** ngoài cap (Windows không có `/etc/passwd`; ENOENT không
+    // chứng minh được sandbox).
+    let f_ngoai =
+        std::env::temp_dir().join(format!("vis-cli-plugin-ngoai-{}.txt", std::process::id()));
+    std::fs::write(&f_ngoai, "ngoài cap").expect("fixture ngoài cap");
+    let ngoai = format!("str:{}", f_ngoai.to_string_lossy());
+    let o = chay(&["plugin", "run", &w, "doc", &ngoai, "--cap-dir", &dstr]);
     assert_eq!(o.status.code(), Some(2), "{}", stderr(&o));
     assert!(stderr(&o).contains("VS0604"), "{}", stderr(&o));
+    assert!(stderr(&o).contains("không đọc được"), "{}", stderr(&o));
+    assert!(stderr(&o).contains("os error"), "{}", stderr(&o));
+    assert_eq!(
+        std::fs::read_to_string(&f_ngoai).expect("host vẫn đọc được tệp ngoài cap"),
+        "ngoài cap"
+    );
+
+    // Linux/macOS: `/etc/passwd` có thật nhưng ngoài preopen ⇒ vẫn bị từ chối (ca Linux cũ).
+    #[cfg(unix)]
+    {
+        let o = chay(&[
+            "plugin",
+            "run",
+            &w,
+            "doc",
+            "str:/etc/passwd",
+            "--cap-dir",
+            &dstr,
+        ]);
+        assert_eq!(o.status.code(), Some(2), "{}", stderr(&o));
+        assert!(stderr(&o).contains("VS0604"), "{}", stderr(&o));
+    }
 }
 
 #[test]

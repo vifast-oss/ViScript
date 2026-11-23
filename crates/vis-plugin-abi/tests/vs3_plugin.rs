@@ -7,7 +7,7 @@
 //! thiếu cả ba ⇒ in `BLOCKED-ENV` (cùng quy ước ST-299a/b), không giả vờ đã chạy.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
 use vis_plugin_abi::{Cap, ChinhSach, PluginValue, PluginWasi};
@@ -23,27 +23,89 @@ fn thu_muc_tam(ten: &str) -> PathBuf {
     d
 }
 
+/// Tệp chạy được: nhận đúng đường dẫn, hoặc thêm `.exe` trên Windows (`rustc` → `rustc.exe`).
+fn tep_rustc(p: &Path) -> Option<PathBuf> {
+    if p.is_file() {
+        return Some(p.to_path_buf());
+    }
+    #[cfg(windows)]
+    {
+        let exe = p.with_extension("exe");
+        if exe.is_file() {
+            return Some(exe);
+        }
+    }
+    None
+}
+
+/// Dò `rustc`: **ưu tiên `VIS_RUSTC`**, rồi `CARGO_HOME/bin`, `$HOME/.cargo/bin`,
+/// `%USERPROFILE%\.cargo\bin`, cuối cùng `PATH` — chấp nhận cả `rustc` lẫn `rustc.exe`
+/// (Windows quick ST-307 chỉ có `rustc.exe` nên bản cũ trả `None`).
 fn tim_rustc() -> Option<PathBuf> {
     if let Some(p) = std::env::var_os("VIS_RUSTC") {
         let p = PathBuf::from(p);
-        if p.is_file() {
-            return Some(p);
+        if let Some(t) = tep_rustc(&p) {
+            return Some(t);
         }
+        eprintln!(
+            "BLOCKED-ENV: VIS_RUSTC=`{}` không phải tệp chạy được — dò tiếp",
+            p.display()
+        );
     }
-    if let Some(home) = std::env::var_os("HOME") {
-        let p = PathBuf::from(home).join(".cargo/bin/rustc");
-        if p.is_file() {
-            return Some(p);
+    for bien in ["CARGO_HOME", "HOME", "USERPROFILE"] {
+        if let Some(goc) = std::env::var_os(bien) {
+            let goc = PathBuf::from(goc);
+            let bin = if bien == "CARGO_HOME" {
+                goc.join("bin")
+            } else {
+                goc.join(".cargo").join("bin")
+            };
+            for ten in ["rustc", "rustc.exe"] {
+                if let Some(t) = tep_rustc(&bin.join(ten)) {
+                    return Some(t);
+                }
+            }
         }
     }
     let path = std::env::var_os("PATH")?;
     for d in std::env::split_paths(&path) {
-        let p = d.join("rustc");
-        if p.is_file() {
-            return Some(p);
+        for ten in ["rustc", "rustc.exe"] {
+            if let Some(t) = tep_rustc(&d.join(ten)) {
+                return Some(t);
+            }
         }
     }
     None
+}
+
+/// `true` nếu `rustc` gọi được qua `PATH` (nguồn thứ hai, độc lập với [`tim_rustc`]).
+fn goi_duoc_rustc() -> bool {
+    Command::new("rustc")
+        .arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+/// Windows/macOS có `rustc` ⇒ máy đủ toolchain, **phải chạy WASI thật**; không được "xanh giả"
+/// bằng cách bỏ qua. Linux vẫn cho phép `BLOCKED-ENV` khi container thiếu runtime/target.
+fn bat_buoc_chay_that() -> bool {
+    cfg!(any(windows, target_os = "macos")) && goi_duoc_rustc()
+}
+
+/// Thiếu môi trường: in `BLOCKED-ENV`; trên Windows/macOS có `rustc` thì **panic** thay vì
+/// trả về âm thầm (bài học Windows quick ST-307: 4 ca bị bỏ qua mà vẫn báo pass).
+fn thieu_moi_truong(ly_do: &str) {
+    if bat_buoc_chay_that() {
+        panic!(
+            "BLOCKED-ENV: {ly_do} — {} có rustc nên test phải chạy WASI thật, không được bỏ qua",
+            std::env::consts::OS
+        );
+    }
+    eprintln!("BLOCKED-ENV: {ly_do}");
 }
 
 /// Dựng (một lần) plugin mẫu; `None` ⇒ môi trường thiếu toolchain wasm ⇒ `BLOCKED-ENV`.
@@ -65,16 +127,35 @@ fn plugin_mau() -> Option<&'static Path> {
             };
             if !moi_hon() {
                 std::fs::create_dir_all(out.parent()?).ok()?;
-                let rustc = tim_rustc()?;
-                let st = Command::new(rustc)
+                let rustc = match tim_rustc() {
+                    Some(r) => r,
+                    None => {
+                        thieu_moi_truong(
+                            "không tìm thấy rustc (đã dò VIS_RUSTC, CARGO_HOME/bin, \
+                             ~/.cargo/bin, USERPROFILE/.cargo/bin, PATH kể cả rustc.exe)",
+                        );
+                        return None;
+                    }
+                };
+                let st = match Command::new(rustc)
                     .args(["--target", "wasm32-wasip1", "-O", "--edition", "2021"])
                     .arg(&src)
                     .arg("-o")
                     .arg(&out)
                     .current_dir(&goc)
                     .status()
-                    .ok()?;
+                {
+                    Ok(st) => st,
+                    Err(e) => {
+                        thieu_moi_truong(&format!("không chạy được rustc: {e}"));
+                        return None;
+                    }
+                };
                 if !st.success() || !out.is_file() {
+                    thieu_moi_truong(
+                        "rustc không dựng được wasm32-wasip1 cho plugin mẫu \
+                         (cài `rustup target add wasm32-wasip1`)",
+                    );
                     return None;
                 }
             }
@@ -95,11 +176,11 @@ fn nap_mau(caps: Vec<Cap>) -> PluginWasi {
 #[test]
 fn nap_plugin_va_goi_cong() {
     if !co_runtime() {
-        eprintln!("BLOCKED-ENV: không có runtime WASI (wasmtime/python-wasmtime/node)");
+        thieu_moi_truong("không có runtime WASI (wasmtime/python-wasmtime/node)");
         return;
     }
     let Some(_) = plugin_mau() else {
-        eprintln!("BLOCKED-ENV: không dựng được wasm32-wasip1 cho plugin mẫu");
+        thieu_moi_truong("không dựng được wasm32-wasip1 cho plugin mẫu");
         return;
     };
     let p = nap_mau(Vec::new());
@@ -125,7 +206,7 @@ fn nap_plugin_va_goi_cong() {
 #[test]
 fn parity_interp_vm_qua_wasi() {
     if !co_runtime() || plugin_mau().is_none() {
-        eprintln!("BLOCKED-ENV: thiếu runtime WASI hoặc toolchain wasm");
+        thieu_moi_truong("thiếu runtime WASI hoặc toolchain wasm32-wasip1");
         return;
     }
     let src = "fn cong(a: int, b: int) -> int:\n    a + b\n\nfn main() -> int:\n    cong(2, 3)\n";
@@ -164,7 +245,7 @@ fn parity_interp_vm_qua_wasi() {
 #[test]
 fn cap_dir_la_sandbox_tu_nhien() {
     if !co_runtime() || plugin_mau().is_none() {
-        eprintln!("BLOCKED-ENV: thiếu runtime WASI hoặc toolchain wasm");
+        thieu_moi_truong("thiếu runtime WASI hoặc toolchain wasm32-wasip1");
         return;
     }
     let d = thu_muc_tam("cap");
@@ -214,11 +295,47 @@ fn cap_dir_la_sandbox_tu_nhien() {
     assert_eq!(kq, PluginValue::Unit);
     assert_eq!(std::fs::read_to_string(&f).expect("đọc lại"), "đã ghi");
 
-    // Ngoài preopen (kể cả `/etc/passwd`) ⇒ WASI từ chối.
+    // Ngoài preopen: dùng tệp **THẬT** nằm ngoài cap. Không lấy `/etc/passwd` làm fixture
+    // chính vì Windows không có tệp đó ⇒ ENOENT không chứng minh được sandbox.
+    let f_ngoai =
+        std::env::temp_dir().join(format!("vis-plugin-wasi-ngoai-{}.txt", std::process::id()));
+    std::fs::write(&f_ngoai, "ngoài cap").expect("fixture ngoài cap");
     let e = ghi
-        .goi("doc", &[PluginValue::Str("/etc/passwd".into())])
-        .expect_err("ngoài cap phải bị từ chối");
+        .goi(
+            "doc",
+            &[PluginValue::Str(f_ngoai.to_string_lossy().into_owned())],
+        )
+        .expect_err("tệp thật ngoài cap phải bị từ chối");
     assert_eq!(e.code, "VS0604", "{e}");
+    assert!(e.message.contains("không đọc được"), "{e}");
+    assert!(e.message.contains("os error"), "{e}");
+    assert_eq!(
+        std::fs::read_to_string(&f_ngoai).expect("host vẫn đọc được tệp ngoài cap"),
+        "ngoài cap",
+        "tệp ngoài cap phải tồn tại — bị từ chối là do sandbox, không phải ENOENT"
+    );
+
+    // Thoát cap bằng `..` tới đúng tệp thật đó cũng phải bị WASI từ chối.
+    let ten_ngoai = f_ngoai
+        .file_name()
+        .expect("tên tệp ngoài cap")
+        .to_string_lossy()
+        .into_owned();
+    let e = ghi
+        .goi("doc", &[PluginValue::Str(format!("/cap0/../{ten_ngoai}"))])
+        .expect_err("`..` ra ngoài cap phải bị từ chối");
+    assert_eq!(e.code, "VS0604", "{e}");
+    assert!(e.message.contains("os error"), "{e}");
+
+    // Linux/macOS: `/etc/passwd` tồn tại thật nhưng ngoài preopen ⇒ vẫn bị từ chối.
+    #[cfg(unix)]
+    {
+        assert!(Path::new("/etc/passwd").is_file());
+        let e = ghi
+            .goi("doc", &[PluginValue::Str("/etc/passwd".into())])
+            .expect_err("/etc/passwd ngoài cap phải bị từ chối");
+        assert_eq!(e.code, "VS0604", "{e}");
+    }
 }
 
 #[test]
@@ -246,7 +363,7 @@ fn tat_cung_khi_strict_caps_hoac_sandbox() {
 #[test]
 fn tu_choi_abi_lech_va_plugin_la() {
     if !co_runtime() || plugin_mau().is_none() {
-        eprintln!("BLOCKED-ENV: thiếu runtime WASI hoặc toolchain wasm");
+        thieu_moi_truong("thiếu runtime WASI hoặc toolchain wasm32-wasip1");
         return;
     }
     let d = thu_muc_tam("abi");
