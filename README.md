@@ -577,7 +577,7 @@ Gõ `./vis explain VS0412` để xem nghĩa của mã lỗi (có tiếng Việt,
 
 ## Trạng thái ngôn ngữ
 
-ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở bản hiện tại**. Một số thứ sẽ đổi trong thời gian tới:
+Bản hiện tại: **`v0.4.5`** (workspace `0.4.5`, tag @ `3daff62`). ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở bản hiện tại**. Một số thứ sẽ đổi trong thời gian tới:
 
 | Tính năng | Trạng thái |
 |---|---|
@@ -602,7 +602,9 @@ ViScript đang phát triển. Mọi ví dụ trên đều **chạy được ở 
 | `f(1, b: 5)` đối số có tên | ✅ ĐÃ CÓ (R5a) |
 | Method người dùng (`impl P:`) | ✅ ĐÃ CÓ (VD-265/VD-269; kể cả `recv?.m()`) |
 | `.lazy()` iterator | 🔜 DỰ KIẾN (R24); `for` trên range đã lười (VD-264) |
-| Windows hỗ trợ đầy đủ | 🔜 VS3 |
+| **Windows x86_64 — Tier 1** | ✅ ĐÃ CÓ (`v0.4.5`; caveat `FsGuard`: chỉ kiểm theo đường dẫn tệp) |
+| **macOS arm64** | ✅ ĐÃ VERIFY `v0.4.5` (host 54/54, WASI 28/28); **chưa công bố Tier 1** — chờ `ST-300m3` |
+| **WASI Preview 1 (`wasm32-wasip1`)** | ✅ CÓ RUNNER: `vis-wasm-sem` **388/390 eligible**, smoke suite **28/28** |
 
 Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.md`](agent/JOURNAL/vs-ergo.md).
 
@@ -616,10 +618,15 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 | `./vis fmt --check [--json\|--list\|--diff\|--stat] <tệp…>` | kiểm tra định dạng; đầu ra JSON, danh sách tệp, diff hoặc một dòng tổng hợp cho CI |
 | `./vis fmt --stdin [--check [--json\|--list\|--diff\|--stat]] [--mode script\|command]` | định dạng luồng, không đụng đĩa |
 | `./vis fmt --indent-report <tệp…>` | báo cáo số dòng lệch thụt lề (`.vish`) |
-| `./vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] <tệp\|thư-mục…>` | chạy/lọc/liệt kê/lặp/xáo/chia phần/chạy song song `test fn` và fixture |
+| `./vis test [--vm] [--json] [--json-out <tệp>] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] <tệp\|thư-mục…>` | chạy/lọc/liệt kê/lặp/xáo/chia phần/chạy song song `test fn` và fixture; báo N ca chậm nhất |
 | `./vis explain [--json] [--lang vi\|en\|ja] <mã>` | giải thích mã lỗi; `--list` in toàn bộ sổ mã |
-| `./vis lsp --stdio` | LSP: completion, hover, definition, references, rename/prepareRename, documentSymbol, workspace/symbol, signatureHelp, foldingRange, selectionRange, documentHighlight, formatting, codeLens, inlayHint, typeDefinition, semanticTokens/full |
-| `./vis pkg add <gói>` | thêm gói (mô hình phi tập trung, `vis.lock`) |
+| `./vis lsp --stdio` | LSP: completion, hover, definition, references, rename/prepareRename, documentSymbol, workspace/symbol, signatureHelp, foldingRange, selectionRange, documentHighlight, formatting, codeLens, inlayHint, typeDefinition, implementation, semanticTokens/full |
+| `./vis new <thư-mục> [--template bin\|lib]` | tạo dự án mới từ mẫu |
+| `./vis doc <đường-dẫn> [--format md\|json]` | sinh tài liệu từ chú thích `##` |
+| `./vis repl` | REPL tương tác |
+| `./vis doctor [--json]` | in thông tin chẩn đoán tất định (phiên bản, mã lỗi…) |
+| `./vis cache [--path\|--clear]` | xem/xoá cache bytecode |
+| `./vis pkg add\|install\|update\|list\|remove\|gc\|migrate` | quản lý gói (registry cục bộ hoặc HTTP(S), `vis.lock`) |
 
 ## Học tiếp
 
@@ -635,8 +642,9 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.
 ## Cấu trúc repo
 
 ```text
-crates/    8 crate Rust: từ vựng, kiểu, thông dịch, máy ảo, CLI…
-bin/       công cụ shell: vis, vis-dev, vis-remote, vis-linux, vis-soak, vis-targets, vis-diff…
+crates/    12 crate Rust: từ vựng, kiểu, thông dịch, máy ảo, CLI, host native, gói, loader, LSP…
+bin/       công cụ shell: vis, vis-dev, vis-remote, vis-linux, vis-soak, vis-targets, vis-diff,
+           vis-gate-{macos,windows}, vis-wasm-{sem,suite}, vis-lock…
 test/      bộ kiểm: ví dụ chạy được, fixture, báo cáo
 docs/      đặc tả ngôn ngữ (SPEC-lex.md) và thiết kế
 vi-du/     ví dụ chạy được (xin chào, CSV, báo cáo lớp, CLI…)
@@ -644,6 +652,10 @@ agent/     sổ quyết định, QUEUE, nhật ký, báo cáo từng đợt
 resources/ tài nguyên thương hiệu: icon ViScript + ViShell (brand/)
 infra/     hạ tầng: host Linux/Windows, sync, setup, runbooks
 ```
+
+> Bốn crate `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` đang nằm trên nhánh
+> riêng (`plan/w3-st304-vish`, `plan/w3b-st308-term`, `plan/w4-st306-plugin-abi`…), **chưa merge**
+> vào `main`. Bản `main` hiện có 12 crate ở trên.
 
 ## Góp ý / phát triển
 

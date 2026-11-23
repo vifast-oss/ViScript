@@ -34,7 +34,7 @@ QD thắng tài liệu thiết kế.
 ## 4. Lệnh
 
 ```bash
-./vis-dev check             # fmt + clippy + luật R1..R4 + self-test + build + doc-examples
+./vis-dev check             # fmt + clippy + luật R1..R7 + self-test + build + doc-examples
 ./vis-dev gate --fast       # cổng bắt buộc cuối mỗi task ViScript (check + L0 test)
 ./vis-dev nightly           # gate --fast + fuzz parser + vòng tròn fmt
 ./vis                   # chạy `vis` từ workspace

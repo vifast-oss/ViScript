@@ -11,12 +11,16 @@
 | `vis-lock` | giữ khoá `~/.vifast-measure.lock` khi đo thời gian (macOS không có `flock`) | đo hiệu năng |
 | `vis-remote` | chạy lệnh trên máy `mps`/`psvn` qua ssh (máy chủ đạo `ps` chạy tại chỗ), log ngoài repo, đọc mã thoát từ tệp | đo đa nền |
 | `vis-linux` | chạy cổng trong container Linux | đo đa nền |
-| `vis-targets` | kiểm crate `vis-host-*` theo nền | kiểm thử |
+| `vis-targets` | kiểm crate `vis-host-*` theo nền (gồm dòng `wasm32-wasip1 (runtime)` và `aarch64-apple-darwin (native)`) | kiểm thử |
 | `vis-host-suite` | bộ kiểm host (Linux/Windows) | kiểm thử |
+| `vis-wasm-sem` | chạy bộ ngữ nghĩa `test/sem` trên `wasm32-wasip1` bằng runtime WASI (Node/wasmtime) | kiểm thử |
+| `vis-wasm-suite` | smoke suite `vis-host-wasm` trên `wasm32-wasip1` (preopen/quyền/đồng hồ/argv) | kiểm thử |
 | `vis-gc-targets` | canh đĩa ≥10/15 GB, dọn `target/` worktree đã merge/cũ (mặc định dry-run) | vận hành |
 | `vis-jobs` | liệt kê/kiểm tiến trình nền; `--protect <pid>` khi cố ý giữ | vận hành |
 | `vis-status` | bảng điều khiển nhanh HEAD/đĩa/target/job/journal | vận hành |
 | `vis-gate-windows` | `--quick`/`--full` chạy cổng Windows qua `vis-remote` | kiểm thử |
+| `vis-gate-macos` | `--quick`/`--full`/`--dry-run`/`--self-test` chạy cổng macOS arm64 qua `vis-remote mps` (HEAD guard + `vis-lock`, Python 3.9+) | kiểm thử |
+| `_vis-toolchain.sh` | helper nội bộ: chọn cargo/rustup và biến môi trường cho các script khác | nội bộ |
 
 Quy ước: mọi script có header SPDX `#`, log mang mã task (`ST-##`), không ghi đè log cũ.
 
