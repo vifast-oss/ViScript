@@ -3,6 +3,44 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.5.5 — 2026-11-23 (Giai đoạn 4.5 — Refactor kiến trúc 4 tầng & tối ưu cấu trúc kho, Pha B)
+
+> **Chưa tag.** Mốc `v0.5.5` nằm trên nhánh `plan/v055-prep` tạo từ `b591e4d` (tích hợp Phase B
+> `ST-310a..f` + `main` `8906c70`); **chưa merge `main`**. `v0.5.0` vẫn **chưa tag** — macOS arm64
+> Tier 1 còn chờ bằng chứng của mốc đó (3× `bin/vis-gate-macos --full` + soak 4 h + `vis-wasm-sem`).
+
+- **ST-310a** (`23b91df`, merge `4746799`): tách **`crates/vis-core`** (`value/`, `json/` với **một**
+  bộ `json_esc` đóng **`#112`**, `host/`, `reactor/`, `http_client/`); **4 crate** `vis-lsp`/
+  `vis-loader`/`vis-host-native`/`vis-pkg` **0 dep `vis-interp`**; `interp.rs` 1.460 → **423**,
+  `rt.rs` 1.338 → **152**; 0 `unsafe`; diff 100k `lech=0`; `vis-host-wasm` xanh.
+- **ST-310b** (`5219f9b`, merge `71138de`): **`vish-term`** là tầng Terminal/Render duy nhất
+  (`raw.rs` giữ raw mode); `vis-interp/src/render.rs` chỉ chuyển `Value` → `Table`/`Record`;
+  `vish-edit` render qua `AnsiPosix`/`Terminal`; `vis-cli` nối `vish-edit` + `vish-term`
+  (`vis repl` TTY dùng editor, non-TTY pipe sạch, `--format text|viterm`); gate Linux **3766/4**.
+- **ST-310c** (`3c919f6`, merge `bed9582`): `vis-plugin-abi` còn **350 LOC, 0 dep** (build
+  `wasm32-wasip1` **0,22 s**); tách **`crates/vis-plugin-host`** (`wasi/{protocol,runner,sandbox}`,
+  `static_reg`, `convert`; tệp lớn nhất **601** < 650); **xoá `cap_fs.rs`** trùng lặp, plugin tĩnh
+  dùng duy nhất `vis_host_native::quyen` (0 bản sao `openat2`); gate Linux **3761/0/4**.
+- **ST-310d** (`f59ebd8`, merge `29b819b`): `crates/vis-cli/Cargo.toml` còn **12 crate nội bộ**,
+  **0 dep OS/TLS/SQLite trực tiếp** (`rusqlite`/`rustls`/`webpki-roots`/`h2`/`tokio`/`mio`/`rustix`
+  rời `[dependencies]`, chỉ feature-forwarding); 12/12 tổ hợp feature xanh; gate **3754/4**.
+- **ST-310e** (`c08cea5`, merge `dfd3bcf`): gom `vis-cli/tests/` **27 → 8 binary** (`async_it`,
+  `cli_it`, `host_conformance`, `host_it`, `lang_it`, `lsp_it`, `sig_it`, `vs3_plugin`); suite
+  chuyển về crate chủ (`vis-lsp`, `vis-pkg`, `vis-loader`, `vis-plugin-host`, `vis-host-native`);
+  thêm **R8** (≤ 15 binary) + **R9** (cấm bản sao `openat2` ngoài `vis-host-native`) trong `bin/vis-dev`.
+- **ST-310f** (`2dbf110`, merge `46a3425`; tích hợp `f0ff9cc` + `b591e4d`): chia thư mục con
+  `vis-lsp/src/` & `vis-host-native/src/` (`quyen/`, `async_net/`, `net/`); `bin/vis-targets` phủ
+  **100% crate workspace** (18/18); hợp nhất script báo cáo vào `test/report/gen_report_json.py`;
+  dọn `agent/JOURNAL/` + archive `CHANGELOG` tiền-`v0.1.0` (VD-142).
+- **Nợ**: **`#194` mở** (race metadata-only FS `size`/`list`/`exists`/`walk`, từ
+  `JOURNAL/st309-security.md` §4 — ST-310c chỉ thống nhất `openat2`, 0 đổi semantics);
+  **`#195` đề xuất** (VM back-edge O(n²)/fuel, chưa cấp số chính thức).
+- **Version** 0.5.5 (`version.workspace` một nguồn); `vis --version` ⇒ **`vis 0.5.5`**; cache
+  `PHIEN_BAN` thêm `+v055-release-2026-11-23`, khoá
+  `903995a78ed8585f360005df18a81a0be3a970c5fdaf2a3f7401cc90ec2100d9`; `assert_ne` khoá 0.5.0
+  `fc20a811…` ⇒ cache cũ tự vô hiệu; `Cargo.lock` + `vis-host-wasm/Cargo.lock` đồng bộ 0.5.5.
+  Gate Linux **3773/4**. **Tag `v0.5.5`: CHƯA** (và `v0.5.0` cũng chưa).
+
 ## v0.5.0 — 2026-11-23 (Giai đoạn 3 — Pha 2 ngôn ngữ, ViShell MVP, macOS Tier 1)
 
 > **Chưa tag.** Mốc `v0.5.0` mới ở trạng thái **prep** trên `main` `f2d3e73`; macOS arm64 Tier 1

@@ -650,7 +650,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vis-bytecode"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "sha2",
  "vis-diag",
@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "vis-cli"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "bytes",
  "h2",
@@ -690,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "vis-core"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-diag",
  "vis-syntax",
@@ -699,11 +699,11 @@ dependencies = [
 
 [[package]]
 name = "vis-diag"
-version = "0.5.0"
+version = "0.5.5"
 
 [[package]]
 name = "vis-fmt"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-syntax",
 ]
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "vis-host-native"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "bytes",
  "h2",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "vis-interp"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-core",
  "vis-diag",
@@ -750,7 +750,7 @@ dependencies = [
 
 [[package]]
 name = "vis-loader"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-bytecode",
  "vis-core",
@@ -761,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "vis-lsp"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-core",
  "vis-diag",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "vis-pkg"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "ring",
  "rustls",
@@ -786,11 +786,11 @@ dependencies = [
 
 [[package]]
 name = "vis-plugin-abi"
-version = "0.5.0"
+version = "0.5.5"
 
 [[package]]
 name = "vis-plugin-host"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-bytecode",
  "vis-core",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "vis-plugin-macros"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -814,7 +814,7 @@ dependencies = [
 
 [[package]]
 name = "vis-syntax"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "unicode-ident",
  "unicode-normalization",
@@ -823,7 +823,7 @@ dependencies = [
 
 [[package]]
 name = "vis-types"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-diag",
  "vis-syntax",
@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "vis-vm"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-bytecode",
  "vis-diag",
@@ -842,7 +842,7 @@ dependencies = [
 
 [[package]]
 name = "vish-edit"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "vis-syntax",
  "vish-term",
@@ -850,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "vish-term"
-version = "0.5.0"
+version = "0.5.5"
 dependencies = [
  "crossterm",
  "rustix",
