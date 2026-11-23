@@ -12,6 +12,8 @@ Phân loại WASI: chạy được (ngôn ngữ + stdlib lõi) vs loại trừ c
 Runtime: wasmtime CLI → Python `wasmtime` → Node `node:wasi` (như ST-299a/b).
 """
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import os
@@ -23,7 +25,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
-WASM = WS / "target/wasm32-wasip1/release/vis-wasm-run.wasm"
+TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
+WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
 SEM = ROOT / "test/sem"
 ORACLE = Path("/home/ps/vislogs/sem-native-baseline.tsv")
 ORACLE_SHA = "482b35c276d76fca9200770f78b3cba891535b09b65dbce0fc52bce6379a308d"
