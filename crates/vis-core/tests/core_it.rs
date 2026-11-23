@@ -15,7 +15,10 @@ use vis_syntax::Span;
 fn json_roundtrip_va_escape_duy_nhat() {
     let mau = "xin chào \"ViScript\" \\ dòng1\ndòng2\t\x08\x0c\r\x01";
     let da_esc = esc(mau);
-    let decoded = decode(&da_esc).expect("json::esc phải giải mã được bằng json::decode");
+    // `esc` trả **nội dung** trong dấu `"` (không thêm dấu bao — xem `json::esc`), nên phải bọc
+    // lại thành một chuỗi JSON hoàn chỉnh trước khi `decode`.
+    let decoded =
+        decode(&format!("\"{da_esc}\"")).expect("json::esc phải giải mã được bằng json::decode");
     assert!(eq(&decoded, &Value::Str(mau.to_string())));
 
     let obj = Value::Map(vec![
@@ -35,13 +38,18 @@ fn json_roundtrip_va_escape_duy_nhat() {
 
 #[test]
 fn value_parse_size_duration_va_exit_code() {
-    assert_eq!(parse_size("5kb"), Some(5 * 1024));
-    assert_eq!(parse_size("2mb"), Some(2 * 1024 * 1024));
+    // `kb`/`mb` là **SI** (1000), `kib`/`mib` mới là 1024 — xem `value::parse_size`.
+    assert_eq!(parse_size("5kb"), Some(5_000));
+    assert_eq!(parse_size("2mb"), Some(2_000_000));
+    assert_eq!(parse_size("5kib"), Some(5 * 1024));
     assert_eq!(parse_size("khong-hop-le"), None);
 
-    assert_eq!(parse_duration("250ms"), Some(250));
-    assert_eq!(parse_duration("3s"), Some(3_000));
-    assert_eq!(parse_duration("sai"), None);
+    // `parse_duration` trả **nanosecond** (xem `value::parse_duration`).
+    assert_eq!(parse_duration("250ms"), Some(250_000_000));
+    assert_eq!(parse_duration("3s"), Some(3_000_000_000));
+    // Nợ (JOURNAL ST-311d §5): văn bản **không có số** hiện trả `Some(0)` chứ không phải `None`
+    // (khác `parse_size`). ST-311d chỉ chia tệp nên **không** đổi hành vi; ghi nhận để vá riêng.
+    assert_eq!(parse_duration("sai"), Some(0));
 
     assert_eq!(vis_core::exit_code(&Value::Unit), 0);
     assert_eq!(vis_core::exit_code(&Value::ok(Value::Int(1))), 0);
