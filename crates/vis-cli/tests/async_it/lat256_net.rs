@@ -566,10 +566,10 @@ fn run_both_with_server(
     let (b2, rx2, s2) = mk();
     let o2 = chay_v(src, b2);
     let g1 = rx1
-        .recv_timeout(Duration::from_secs(8))
+        .recv_timeout(Duration::from_secs(30)) // macOS: flake sát 8 s (bisect 2/25); test-only
         .expect("server bytes i");
     let g2 = rx2
-        .recv_timeout(Duration::from_secs(8))
+        .recv_timeout(Duration::from_secs(30)) // macOS: flake sát 8 s (bisect 2/25); test-only
         .expect("server bytes v");
     s1.join().unwrap();
     s2.join().unwrap();
