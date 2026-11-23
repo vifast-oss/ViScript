@@ -2,7 +2,7 @@
 
 > **Toàn văn quyết định & kế hoạch refactor**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md` · `agent/DECISIONS.md` (`VD-285`).
 
-## 1. Trạng thái Thực tế tại `d650300` (`v0.5.5` tag `3d85bd2`, `APPROVED VD-285`)
+## 1. Trạng thái Thực tế tại `4d96a8a` (`v0.5.5` tag `3d85bd2`, `APPROVED VD-285`)
 
 - **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298`), WASI Preview 1 (`ST-299a/b`, `ST-300` 388/390 = 99,5%), `R35` PASS.
 - **Đợt tính năng GĐ 3 & GĐ 4 đã `APPROVED DONE` trên `main`**:
@@ -15,7 +15,7 @@
 - **macOS arm64 Tier 1 (DONE)**: `ST-300m3` final6 @ `7930e90` — 3× full PASS (220/216/210 s), soak **1.878 vòng/0 fail**, `vis-wasm-sem` **388/390**; docs merge `f381c8f`.
 - **Tag `v0.5.0` @ `c06d7c6`** (R36 CHỐT, 3-OS Tier 1 + WASI).
 - **`v0.5.5` (Phase B)**: main `8f72f2b` — version **0.5.5**, gate **3773/4**, targets 18/18, diff 100k **0**; Windows full **3720/0/4**, macOS full **3764/3 + sem 388/390**, Linux fresh QA release **3778/0/5** + diff 5 seed 0; **tag `v0.5.5` trên commit này**.
-- **Phase C (một phần)**: 3-OS full PASS; verifier **100M/0**; soak v0.5.5 **10/10 628 s**; fuzz parser **2h** đang chạy; **soak 24h/fuzz 8h chưa đủ**, R37 skeleton `d650300`, tag `v0.6.0` chưa chốt.
+- **Phase C (một phần)**: 3-OS full PASS; verifier **100M/0**; soak v0.5.5 **10/10 628 s**; fuzz parser **2h 861M/0**, verifier 100M/0; **soak 24h/fuzz 8h chưa đủ**, R37 skeleton `d650300`, tag `v0.6.0` chưa chốt.
 - **Sổ nợ `SO-NO.md` §8**: **195 dòng = 82 mở / 94 đóng / 16 VS3 / 2 không làm / 1 điều hướng** (R5 xanh).
 
 ## 2. Trình tự 3 Pha Thực thi (KHÔNG trộn lẫn!)

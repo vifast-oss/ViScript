@@ -104,10 +104,10 @@ Chi tiết: [`JOURNAL/mac-full-v055.md`](../JOURNAL/mac-full-v055.md).
 | Hạng mục | Yêu cầu Phase C | Đã có | Kết luận |
 |---|---|---|---|
 | Fuzz parser | **8 h**, `vi phạm 0` | 2 h đang chạy (≈35 phút tại lúc soạn) | **CHƯA ĐỦ** |
-| Fuzz verifier/decoder | **100 M ca**, `vi_pham=0` | 60 M ca, 0 vi phạm | **CHƯA ĐỦ** (thiếu 40 M) |
+| Fuzz verifier/decoder | **100 M ca**, `vi_pham=0` | **100 M ca, 0 vi phạm** (35,69 s) | **ĐẠT** |
 | Fuzz có VM + watchdog | **2 h**, 0 ca > 300 s | chưa chạy; harness watchdog không có @`3d85bd2` | **CHƯA ĐO** |
 | Differential | 100k × 5 seed, `lech=0` | 5 seed @`b4db374` + 1 seed mới | **ĐẠT (pre-H)** |
-| Soak Linux | **24 h** liên tục, 0 fail sản phẩm, RSS/fd phẳng, dirty 0 | mới có soak 10/10 (650 s) @`e9c62cb` — **không phải 24 h** | **CHƯA ĐO** |
+| Soak Linux | **24 h** liên tục, 0 fail sản phẩm, RSS/fd phẳng, dirty 0 | **10/10 628 s** @`b4db374` — **không phải 24 h** | **CHƯA ĐO** |
 | Soak Windows/macOS | 4 h mỗi nền (mức Tier 1) | chưa chạy trên `v0.5.5` | **CHƯA ĐO** |
 | Windows full | 3× `--full` | 1× @`e6ca52e` | **CHƯA ĐỦ** |
 | macOS full | 3× `--full` | 1× @`b4db374` | **CHƯA ĐỦ** |
@@ -180,7 +180,7 @@ Mọi số phải truy được về log ngoài repo + sha256; **không** suy t�
 - [ ] Tag annotated `v0.6.0` + `v1.0.0-rc1` trên **cùng `D`**; push; xác nhận `git ls-remote` khớp.
 - [ ] Không `tag -f`, không xoá/di chuyển tag, không `push --force`; nếu sai ⇒ dừng, báo A0.
 
-**Việc tiếp theo ngay**: (1) để fuzz parser 2 h chạy hết — **không kill** pid 2321124;
+**Việc tiếp theo ngay**: (1) fuzz parser 2 h đã xong **861.371.033 ca/0**; cần chạy thêm 6 h để đủ 8 h;
 (2) chạy verifier/decoder **100 M** (`VBC_FUZZ_CA=100000000`, ~70 s theo tốc độ 60 M/40,66 s);
 (3) A0 chốt hướng đóng `#194`/`#195` **trước** khi bỏ 24 h soak; (4) chốt `H` bump `0.6.0`
 rồi chạy lại ma trận. **Không merge/push/tag từ nhánh này.**
@@ -190,4 +190,5 @@ rồi chạy lại ma trận. **Không merge/push/tag từ nhánh này.**
 
 - **Verifier/decoder 100M ca**: `VBC_FUZZ_CA=100000000 cargo test --release -p vis-bytecode --test st309_fuzz_verify` → **100.000.000 ca, decode_ok 11.483.948, verify_ok 10.015.121, vi_pham 0**, 35,69 s (`/tmp/opencode/verifier-100m.log`).
 - **Soak 10/10 v0.5.5** (fresh clone `b4db374`): **PASS**, 628 s, gate 3773/4, diff 100k `lech=0`, host 54/54, cache 5/5; log `/home/ps/vislogs/v055-soak-10.log`.
-- Vẫn **chưa đủ** Phase C: soak **24 h**, fuzz parser **8 h** (2 h đang chạy), Windows/macOS 3× full + soak 4 h; tag `v0.6.0`/`v1.0.0-rc1` chưa chốt.
+- **Fuzz parser 2 h xong**: 861.371.033 ca / 19.550.360.573 token / 0 vi phạm; verifier 100 M 0; diff seed mới 0.
+- Vẫn **chưa đủ** Phase C: soak **24 h**, fuzz parser **8 h** (mới 2 h), Windows/macOS 3× full + soak 4 h; tag `v0.6.0`/`v1.0.0-rc1` chưa chốt.

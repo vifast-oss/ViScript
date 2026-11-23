@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **TRẠNG THÁI HIỆN HÀNH — 2026-11-24 (`main` `d650300`, version **0.5.5**; tag `v0.5.5` @ `3d85bd2`; `v0.5.0` @ `c06d7c6`).
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-24 (`main` `4d96a8a`, version **0.5.5**; tag `v0.5.5` @ `3d85bd2`; `v0.5.0` @ `c06d7c6`).
 > Đọc khối này trước.**
 > - **3-OS Tier 1**: **Linux** (runtime), **Windows x86_64** (`ST-298`), **macOS arm64**
 >   (`ST-300m3`, chứng nhận `aarch64-apple-darwin`) — cả 3 nền chính thức đều **Tier 1**;
@@ -15,8 +15,8 @@
 >   không phải lỗi sản phẩm — `st300m3-final5-macos-blocker.md`).
 > - **`v0.5.5` Phase B**: `ST-310a..f` đã merge; gate **3773/4**, targets 18/18, diff 100k **0**;
 >   Windows full **3720/0/4**, macOS full **3764/3 + sem 388/390**, Linux fresh QA **3778/0/5** + diff 5 seed 0;
->   **tag `v0.5.5` @ `3d85bd2`**. Phase C: 3-OS full PASS, verifier 100M/0, soak 10/10;
->   **soak 24h/fuzz 8h chưa đủ**, R37 skeleton `d650300`, chưa tag `v0.6.0`.
+>   **tag `v0.5.5` @ `3d85bd2`**. Phase C: 3-OS full PASS, verifier 100M/0, soak 10/10, fuzz parser 2h 861M/0;
+>   **soak 24h/fuzz 8h chưa đủ**, R37 skeleton `4d96a8a`, chưa tag `v0.6.0`.
 > - **Tag**: `v0.4.5` @ `3daff62` (annotated), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`.
 >   **`v0.5.0` CHƯA tag** (chờ QA 3-OS + `R36`). `main` `7930e90` gate Linux **3.754/4**
 >   (nextest; doc-test riêng); fmt/clippy/R1..R7/doc-examples PASS. Các khối dated bên dưới là
