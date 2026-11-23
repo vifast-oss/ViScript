@@ -78,6 +78,7 @@ impl FsGuard<'_> {
         let ma = e.raw_os_error();
         if ma == Some(rustix::io::Errno::LOOP.raw_os_error())
             || ma == Some(rustix::io::Errno::XDEV.raw_os_error())
+            || ma == Some(rustix::io::Errno::NOTDIR.raw_os_error())
         {
             return format!(
                 "{DAU_QUYEN}[quyền] `{p}` chứa symlink hoặc thoát khỏi gốc `cap` (ST-295 · chống kiểm-rồi-mở)"

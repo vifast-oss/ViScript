@@ -171,7 +171,9 @@ fn mo_goc(goc: &Path) -> io::Result<OwnedFd> {
         match c {
             Component::RootDir | Component::CurDir => {}
             Component::Normal(x) => {
-                let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+                // Darwin: O_DIRECTORY|O_NOFOLLOW trên symlink trả ENOTDIR(20), không ELOOP(62).
+                // Bỏ O_DIRECTORY để symlink trả ELOOP; thành phần tệp thật vẫn fail ở bước sau.
+                let fl = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
                 cur = fs::openat(&cur, x, fl, Mode::empty()).map_err(io::Error::from)?;
             }
             Component::ParentDir | Component::Prefix(_) => {
@@ -203,7 +205,8 @@ fn mo_duoi_goc(goc: &Path, rel: &Path, cuoi: OFlags, mode: Mode) -> io::Result<O
         }
     }
     // Fallback (macOS/BSD/kernel < 5.6): mở từng thành phần, không đi theo symlink ở bất kỳ cấp.
-    let giua = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+    // Không O_DIRECTORY: Darwin trả ENOTDIR cho symlink; ELOOP mới ánh xạ VS0604.
+    let giua = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
     let mut cur = root;
     let n = ds.len();
     for (i, x) in ds.iter().enumerate() {
@@ -284,7 +287,8 @@ pub(crate) fn tao_thu_muc_de_quy(goc: &Path, rel: &Path) -> io::Result<()> {
     let ds = thanh(rel)?;
     let mut cur = mo_goc(goc)?;
     for x in &ds {
-        let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        // Darwin fallback: symlink phải trả ELOOP (VS0604), không ENOTDIR.
+        let fl = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
         match fs::openat(&cur, *x, fl, Mode::empty()) {
             Ok(fd) => cur = fd,
             Err(rustix::io::Errno::NOENT) => {
