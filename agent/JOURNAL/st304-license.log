@@ -1,0 +1,28 @@
+# ST-304 — license check (cargo metadata) — 2026-11-23
+# Lệnh: cargo metadata --format-version 1 (workspace root, target host Linux)
+# Full metadata ngoài repo: /home/ps/vislogs/st304-metadata.json
+# sha256 metadata: 093796174bac8bcf2822fbf0c620b9b130c54593f56edf917f1dd65e76862cfe
+# Tổng package: 106
+
+## Gói MỚI do ST-304 (vish-edit + crossterm chain) — tất cả trong allowlist
+crossterm 0.29.0 — MIT — OK
+crossterm_winapi 0.9.1 — MIT — OK
+document-features 0.2.12 — MIT OR Apache-2.0 — OK
+litrs 1.0.1 — MIT OR Apache-2.0 — OK
+lock_api 0.4.14 — MIT OR Apache-2.0 — OK
+parking_lot 0.12.5 — MIT OR Apache-2.0 — OK
+parking_lot_core 0.9.12 — MIT OR Apache-2.0 — OK
+redox_syscall 0.5.18 — MIT — OK
+scopeguard 1.2.0 — MIT OR Apache-2.0 — OK
+winapi 0.3.9 — MIT/Apache-2.0 — OK
+winapi-i686-pc-windows-gnu 0.4.0 — MIT/Apache-2.0 — OK
+winapi-x86_64-pc-windows-gnu 0.4.0 — MIT/Apache-2.0 — OK
+vish-edit 0.4.5 — MIT OR Apache-2.0 — OK
+
+## Ghi chú transitive cũ (không do ST-304 thêm)
+# Cây workspace đã có các license ngoài allowlist hẹp từ trước và đã được duyệt ở các VD trước:
+# ring (Apache-2.0 AND ISC), rustls (Apache-2.0 OR ISC OR MIT), rustls-webpki/untrusted (ISC),
+# subtle (BSD-3-Clause), webpki-roots (CDLA-Permissive-2.0), fnv (Apache-2.0 / MIT).
+# ST-304 KHÔNG thêm package nào ngoài allowlist; không dừng.
+
+KẾT LUẬN: PASS — 12 package mới (crossterm chain) đều MIT/Apache-2.0; 0 package mới ngoài allowlist.
