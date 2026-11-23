@@ -203,11 +203,18 @@ fn than_fuzz() {
         "phải đủ 437 module nguồn (ST-41: 525 ca − 88 `.err`)"
     );
     let phut = so_phut();
+    // **ST-311a (#195)**: watchdog wall-clock cho mỗi ca đột biến (mặc định 300 s khớp R37 §4.2;
+    // cấu hình qua `VBC_FUZZ_CASE_SECS`; mọi ca vượt trần đều bị tính vi phạm và in định danh).
+    let case_secs: u64 = std::env::var("VBC_FUZZ_CASE_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(300);
     let bat_dau = std::time::Instant::now();
     let han = std::time::Duration::from_secs_f64(phut * 60.0);
     let mut rng = Lcg(0x5EED_2026_1121);
     let (mut tong, mut tu_choi_decode, mut tu_choi_verify, mut chay_duoc, mut vi_pham) =
         (0u64, 0u64, 0u64, 0u64, 0u64);
+    let mut max_case_ms: u128 = 0;
     let mut chi_tiet: Vec<String> = Vec::new();
     while bat_dau.elapsed() < han {
         let (ten, bytes) = &goc[rng.duoi(goc.len())];
@@ -222,7 +229,7 @@ fn than_fuzz() {
             }
             Err(_) => {
                 vi_pham += 1;
-                chi_tiet.push(format!("{ten}: decode PANIC"));
+                chi_tiet.push(format!("{ten} (#{tong}, {}B): decode PANIC", dot.len()));
                 continue;
             }
         };
@@ -235,35 +242,55 @@ fn than_fuzz() {
             }
             Err(_) => {
                 vi_pham += 1;
-                chi_tiet.push(format!("{ten}: verify PANIC"));
+                chi_tiet.push(format!("{ten} (#{tong}, {}B): verify PANIC", dot.len()));
                 continue;
             }
         }
-        // 3) verify OK ⇒ VM không panic + không vượt `need`
+        // 3) verify OK ⇒ VM không panic + không vượt `need` + không quá watchdog wall-clock
         let need = need_cua_module(&m);
+        let t_ca = std::time::Instant::now();
         let kq = std::panic::catch_unwind(AssertUnwindSafe(|| {
-            let mut vm = vis_vm::Vm::new(&m, "");
+            let mut vm =
+                vis_vm::Vm::new(&m, "").with_timeout(std::time::Duration::from_secs(case_secs));
             let out = vm.run(&[]);
-            (out.steps, vm.max_stack_used())
+            let hit_dl = out
+                .diagnostics
+                .iter()
+                .any(|d| d.code.short == "VS0501-TIME");
+            (out.steps, vm.max_stack_used(), hit_dl)
         }));
+        let ca_ms = t_ca.elapsed().as_millis();
+        if ca_ms > max_case_ms {
+            max_case_ms = ca_ms;
+        }
         match kq {
-            Ok((buoc, dinh)) => {
+            Ok((buoc, dinh, hit_dl)) => {
                 chay_duoc += 1;
                 if dinh > need {
                     vi_pham += 1;
                     chi_tiet.push(format!(
-                        "{ten}: ngăn xếp {dinh} > need {need} (steps {buoc})"
+                        "{ten} (#{tong}, {}B): ngăn xếp {dinh} > need {need} (steps {buoc})",
+                        dot.len()
+                    ));
+                }
+                if hit_dl || ca_ms > 300_000 {
+                    vi_pham += 1;
+                    chi_tiet.push(format!(
+                        "{ten} (#{tong}, {}B): vượt watchdog {ca_ms}ms (cap={case_secs}s, steps={buoc})",
+                        dot.len()
                     ));
                 }
             }
             Err(_) => {
                 vi_pham += 1;
-                chi_tiet.push(format!("{ten}: VM PANIC"));
+                chi_tiet.push(format!("{ten} (#{tong}, {}B): VM PANIC", dot.len()));
             }
         }
     }
-    println!("FUZZ phut={phut} tong={tong} decode_tu_choi={tu_choi_decode} verify_tu_choi={tu_choi_verify} chay_duoc={chay_duoc} vi_pham={vi_pham} giay={:.1}",
-        bat_dau.elapsed().as_secs_f64());
+    println!(
+        "FUZZ phut={phut} tong={tong} decode_tu_choi={tu_choi_decode} verify_tu_choi={tu_choi_verify} chay_duoc={chay_duoc} vi_pham={vi_pham} max_case_ms={max_case_ms} giay={:.1}",
+        bat_dau.elapsed().as_secs_f64()
+    );
     for l in chi_tiet.iter().take(10) {
         println!("VI_PHAM {l}");
     }

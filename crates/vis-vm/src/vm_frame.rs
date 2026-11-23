@@ -2,7 +2,7 @@
 //! **ST-267 / VD-251 — LÁT 1 (chỉ test/debug)**: frame-aware scheduler nối vào
 //! **đường VM thật** (`Vm` + `Th` + `Frame` + `pc` hiện hành).
 //!
-//! VM đã có sẵn ngăn xếp khung **trên heap** (`Th { frames, st, iters, loop_ends }`),
+//! VM đã có sẵn ngăn xếp khung **trên heap** (`Th { frames, st, iters }`, mỗi `Frame` giữ `loop_ends`),
 //! nên suspend/resume là dừng vòng `Th::exec` ở đúng instruction `$await` và giữ
 //! nguyên `Th`. Khác biệt duy nhất với runtime mặc định: `CallBuiltin "$await"` đi
 //! qua [`call_builtin_frame`] — khi task chưa xong, trả `Abort::Pending`, driver lưu
@@ -31,6 +31,16 @@ pub const SAFETY_FUEL_CODE: &vis_diag::Code = &vis_diag::Code {
     message_vi: "VM safety fuel cạn (hàng rào an toàn bytecode, không phải ngân sách ngữ nghĩa)",
     message_en: "VM safety fuel exhausted (bytecode safety barrier, not a semantic budget)",
     message_ja: "VM 安全フェイル枯渇（バイトコード安全装置、意味予算ではない）",
+    severity: vis_diag::Severity::Error,
+};
+
+/// **ST-311a (#195)**: hàng rào thời gian wall-clock monotonic của VM.
+pub const DEADLINE_CODE: &vis_diag::Code = &vis_diag::Code {
+    id: 501,
+    short: "VS0501-TIME",
+    message_vi: "VM hết thời gian chạy tối đa (deadline wall-clock)",
+    message_en: "VM execution deadline exceeded (wall-clock safety barrier)",
+    message_ja: "VM 実行期限超過（ウォールクロック安全装置）",
     severity: vis_diag::Severity::Error,
 };
 
@@ -134,6 +144,7 @@ impl<'m> Th<'m> {
         if let Some(fr) = self.frames.last_mut() {
             fr.st_cu = cu;
         }
+        let iter_base = self.iters.len();
         self.frames.push(Frame {
             fi,
             pc: 0,
@@ -141,6 +152,8 @@ impl<'m> Th<'m> {
             captured,
             st_cu: Vec::new(),
             writeback: Some((cells, mirror)),
+            iter_base,
+            loop_ends: HashMap::new(),
         });
         Ok(())
     }
