@@ -90,6 +90,21 @@ impl FsGuard<'_> {
             format!("không đọc được `{p}`: {e}")
         }
     }
+
+    /// Lỗi metadata theo fd (**ST-311b**): symlink/thoát gốc ⇒ `VS0604`; còn lại ghép tiền tố host cũ.
+    #[cfg(unix)]
+    fn loi_meta(p: &str, e: std::io::Error, tien_to: &str) -> String {
+        let ma = e.raw_os_error();
+        if ma == Some(rustix::io::Errno::LOOP.raw_os_error())
+            || ma == Some(rustix::io::Errno::XDEV.raw_os_error())
+            || ma == Some(rustix::io::Errno::NOTDIR.raw_os_error())
+        {
+            return format!(
+                "{DAU_QUYEN}[quyền] thiếu `cap[Dir]` cho `{p}` (chứa symlink hoặc thoát khỏi gốc `cap`, ST-311b · metadata theo fd)"
+            );
+        }
+        format!("{tien_to} `{p}`: {e}")
+    }
 }
 
 impl FsHost for FsGuard<'_> {
@@ -218,16 +233,31 @@ impl FsHost for FsGuard<'_> {
     /// (`can_write=false`), không đòi `(write)`. Host dùng `symlink_metadata` (không đi theo
     /// symlink) cho **thao tác**; bước kiểm quyền vẫn canonicalize như mọi đường đọc khác.
     fn size(&mut self, p: &str) -> Result<i64, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::kt_thuoc(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không lấy được kích thước"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.size(p)
     }
     /// **VD-270**: predicate **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size).
     fn is_file(&mut self, p: &str) -> Result<bool, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::la_tep(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không xem được loại"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_file(p)
     }
     /// **VD-270**: predicate **chỉ đọc** ⇒ cùng kiểm quyền như [`size`](Self::size).
     fn is_dir(&mut self, p: &str) -> Result<bool, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::la_thu_muc(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không xem được loại"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_dir(p)
     }
@@ -235,6 +265,11 @@ impl FsHost for FsGuard<'_> {
     /// [`size`](Self::size); bước kiểm quyền vẫn canonicalize như mọi đường đọc (symlink trỏ
     /// ngoài root ⇒ `VS0604`), còn **thao tác** dùng `symlink_metadata` (không đi theo link).
     fn is_symlink(&mut self, p: &str) -> Result<bool, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::la_symlink(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không xem được loại"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.is_symlink(p)
     }
@@ -242,6 +277,11 @@ impl FsHost for FsGuard<'_> {
     /// bước kiểm canonicalize như mọi đường đọc (symlink tồn tại trỏ ngoài root ⇒ `VS0604`), còn
     /// **thao tác** dùng `read_link` (không đi theo link) nên đọc được cả symlink dangling.
     fn read_link(&mut self, p: &str) -> Result<String, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::doc_link(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không đọc được liên kết"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.read_link(p)
     }
@@ -252,6 +292,21 @@ impl FsHost for FsGuard<'_> {
     /// canonicalize lần nữa để trả kết quả; đua giữa hai bước là cùng cửa sổ kiểm-rồi-dùng như mọi
     /// đường đọc khác.
     fn canonicalize(&mut self, p: &str) -> Result<String, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::chinh_tac(&goc, &rel).map_err(|e| {
+                let ma = e.raw_os_error();
+                if ma == Some(rustix::io::Errno::LOOP.raw_os_error())
+                    || ma == Some(rustix::io::Errno::XDEV.raw_os_error())
+                {
+                    format!(
+                        "{DAU_QUYEN}[quyền] thiếu `cap[Dir]` cho `{p}` (chứa symlink hoặc thoát khỏi gốc `cap`, ST-311b · metadata theo fd)"
+                    )
+                } else {
+                    format!("không phân giải được đường dẫn `{p}`: {e}")
+                }
+            });
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.canonicalize(p)
     }
@@ -285,6 +340,11 @@ impl FsHost for FsGuard<'_> {
     /// Host chỉ đi xuống thư mục con thật và **bỏ mọi symlink**, nên mọi đường dẫn trả về nằm dưới
     /// root đã kiểm (không thể thoát qua symlink); kiểm root là đủ, giống `list`/`list_entries`.
     fn walk(&mut self, p: &str) -> Result<Vec<String>, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::duyet(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không duyệt được thư mục"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.walk(p)
     }
@@ -293,10 +353,20 @@ impl FsHost for FsGuard<'_> {
         self.exists_quyen(p).unwrap_or(false)
     }
     fn exists_quyen(&mut self, p: &str) -> Result<bool, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::ton_tai(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không xem được"));
+        }
         self.quyen.kiem_fs(p, false)?;
         Ok(self.trong.exists(p))
     }
     fn list(&mut self, p: &str) -> Result<Vec<String>, String> {
+        #[cfg(unix)]
+        if let Some((goc, rel)) = self.goc_an_toan(p, false)? {
+            return crate::quyen_mo::ds_muc(&goc, &rel)
+                .map_err(|e| Self::loi_meta(p, e, "không đọc được thư mục"));
+        }
         self.quyen.kiem_fs(p, false)?;
         self.trong.list(p)
     }

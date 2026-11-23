@@ -16,9 +16,12 @@
 
 #![cfg(unix)]
 
-use std::ffi::OsStr;
+use std::collections::VecDeque;
+use std::ffi::{OsStr, OsString};
 use std::io::{self, Read as _, Write as _};
-use std::os::fd::OwnedFd;
+use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Component, Path, PathBuf};
 
 use rustix::fs::{self, AtFlags, Mode, OFlags};
@@ -402,5 +405,293 @@ pub(crate) fn chep(goc_a: &Path, a: &Path, goc_b: &Path, b: &Path) -> io::Result
     )?;
     let mut dich = std::fs::File::from(fd);
     io::copy(&mut nguon, &mut dich)?;
+    Ok(())
+}
+
+// ===========================================================================
+// **ST-311b (VD-286)** — metadata Unix theo fd (`statat`/`openat`/`readlinkat`).
+//
+// Đóng nợ `#194` (rá soát ST-309 §4): truy vấn siêu dữ liệu của `FsHost` trước đây kiểm-rồi-dùng
+// theo **tên** (`canonicalize` rồi `std::fs::*`), có khe đua ở tầng đường dẫn. Ở đây mọi thao tác
+// mở **từ fd gốc** `cap` (`openat`/`openat2` + `O_NOFOLLOW`) rồi dùng `statat`/`readlinkat`/`fstat`
+// ⇒ không còn cửa sổ "đổi tên/symlink giữa kiểm và dùng". **0 `unsafe`**, cùng nguồn `openat2`
+// (R9) với đường đọc/ghi đã có.
+// ===========================================================================
+
+/// Lỗi **dữ liệu** (không phải vi phạm quyền) cho metadata — `FsGuard` ghép tiền tố host cũ.
+fn loi_data(msg: &'static str) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, msg)
+}
+
+/// Mở thư mục cho các thành phần `ds` (đã phân giải, không symlink) dưới `goc`.
+fn mo_thu_muc_theo(goc: &Path, ds: &[OsString]) -> io::Result<OwnedFd> {
+    let mut cur = mo_goc(goc)?;
+    for c in ds {
+        let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        cur = fs::openat(&cur, c, fl, Mode::empty()).map_err(io::Error::from)?;
+    }
+    Ok(cur)
+}
+
+/// `lstat` `rel` dưới `goc` — mở cha theo fd (`O_NOFOLLOW` mọi thành phần giữa), `statat` thành phần
+/// cuối với `SYMLINK_NOFOLLOW` (không đi theo symlink cuối). `rel` rỗng ⇒ chính gốc `cap` (`fstat`).
+/// `NOENT` giữ nguyên cho caller xử lý.
+fn stat_khong_theo(goc: &Path, rel: &Path) -> io::Result<fs::Stat> {
+    if rel.as_os_str().is_empty() {
+        return fs::fstat(&mo_goc(goc)?).map_err(io::Error::from);
+    }
+    let (cha, ten) = mo_cha(goc, rel)?;
+    fs::statat(&cha, &ten, AtFlags::SYMLINK_NOFOLLOW).map_err(io::Error::from)
+}
+
+/// Phân giải `rel` dưới `goc` **theo symlink**, không thoát khỏi `goc`. Trả `(đường dẫn tuyệt đối đã
+/// phân giải, day_du)`; `day_du=false` khi gặp đuôi **dangling** (giữ từ vựng như `quyen_chuan::chuan`).
+///
+/// - symlink trỏ `..`/tuyệt đối **ra ngoài** `goc` ⇒ `Err` `XDEV` (→ `VS0604` ở `FsGuard`);
+/// - vòng symlink (số lần đi theo > `MAX_LINK`) ⇒ `Err` `LOOP`;
+/// - thành phần giữa thiếu ⇒ `Err` `NOENT`.
+pub(crate) fn phan_giai(goc: &Path, rel: &Path) -> io::Result<(PathBuf, bool)> {
+    const MAX_LINK: usize = 40;
+    if rel.as_os_str().is_empty() {
+        return Ok((goc.to_path_buf(), true));
+    }
+    let ds = thanh(rel)?;
+    let mut cur = mo_goc(goc)?;
+    let mut out: Vec<OsString> = Vec::new();
+    let mut todo: VecDeque<OsString> = ds.into_iter().map(OsStr::to_os_string).collect();
+    let mut budget = MAX_LINK;
+    let mut day_du = true;
+    let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+
+    while let Some(c) = todo.pop_front() {
+        if c == ".." {
+            if out.pop().is_none() {
+                return Err(loi_os(rustix::io::Errno::XDEV));
+            }
+            cur = mo_thu_muc_theo(goc, &out)?;
+            continue;
+        }
+        match fs::openat(&cur, &c, fl, Mode::empty()) {
+            Ok(fd) => {
+                out.push(c);
+                cur = fd;
+            }
+            // Linux: symlink ⇒ `ELOOP`; macOS/BSD: `O_DIRECTORY|O_NOFOLLOW` trên symlink ⇒ `ENOTDIR`.
+            Err(rustix::io::Errno::LOOP) | Err(rustix::io::Errno::NOTDIR) => {
+                match fs::statat(&cur, &c, AtFlags::SYMLINK_NOFOLLOW) {
+                    Ok(st) if fs::FileType::from_raw_mode(st.st_mode).is_symlink() => {
+                        if budget == 0 {
+                            return Err(loi_os(rustix::io::Errno::LOOP));
+                        }
+                        budget -= 1;
+                        let tgt = fs::readlinkat(&cur, &c, Vec::new()).map_err(io::Error::from)?;
+                        let tp = Path::new(OsStr::from_bytes(tgt.as_bytes()));
+                        if tp.is_absolute() {
+                            // Đích tuyệt đối phải nằm dưới `goc`; ngoài ⇒ thoát gốc.
+                            let suffix = match tp.strip_prefix(goc) {
+                                Ok(s) => s.to_path_buf(),
+                                Err(_) => return Err(loi_os(rustix::io::Errno::XDEV)),
+                            };
+                            cur = mo_goc(goc)?;
+                            out.clear();
+                            push_cac_thanh(suffix.components(), &mut todo, goc)?;
+                        } else {
+                            push_cac_thanh(tp.components(), &mut todo, goc)?;
+                        }
+                    }
+                    Ok(_) => {
+                        // Mục không-phải-thư-mục và không-phải-symlink: chỉ hợp lệ ở thành phần cuối.
+                        if !todo.is_empty() {
+                            return Err(loi_os(rustix::io::Errno::NOTDIR));
+                        }
+                        out.push(c);
+                    }
+                    Err(rustix::io::Errno::NOENT) => {
+                        if todo.is_empty() {
+                            out.push(c);
+                            day_du = false;
+                        } else {
+                            return Err(loi_os(rustix::io::Errno::NOENT));
+                        }
+                    }
+                    Err(e) => return Err(io::Error::from(e)),
+                }
+            }
+            Err(rustix::io::Errno::NOENT) => {
+                if todo.is_empty() {
+                    out.push(c);
+                    day_du = false;
+                } else {
+                    return Err(loi_os(rustix::io::Errno::NOENT));
+                }
+            }
+            Err(e) => return Err(io::Error::from(e)),
+        }
+    }
+    let mut p = goc.to_path_buf();
+    for c in &out {
+        p.push(c);
+    }
+    Ok((p, day_du))
+}
+
+/// Đẩy các thành phần của một symlink target vào **đầu** `todo` (đảo thứ tự), xử lý `.`/`..`.
+fn push_cac_thanh<'a>(
+    comps: impl Iterator<Item = Component<'a>>,
+    todo: &mut VecDeque<OsString>,
+    _goc: &Path,
+) -> io::Result<()> {
+    let mut extra: Vec<OsString> = Vec::new();
+    for comp in comps {
+        match comp {
+            Component::Normal(x) => extra.push(x.to_os_string()),
+            Component::CurDir => {}
+            Component::ParentDir => extra.push(OsString::from("..")),
+            Component::RootDir | Component::Prefix(_) => {
+                return Err(loi_os(rustix::io::Errno::INVAL));
+            }
+        }
+    }
+    for x in extra.into_iter().rev() {
+        todo.push_front(x);
+    }
+    Ok(())
+}
+
+/// `size`: số byte của **tệp thường**, lstat (không theo symlink cuối; symlink ⇒ `Err`).
+pub(crate) fn kt_thuoc(goc: &Path, rel: &Path) -> io::Result<i64> {
+    let st = stat_khong_theo(goc, rel)?;
+    let ft = fs::FileType::from_raw_mode(st.st_mode);
+    if ft.is_symlink() {
+        // Chặn symlink trỏ **ra ngoài** gốc (như `kiem_fs` cũ) trước khi báo "là symlink".
+        phan_giai(goc, rel)?;
+        return Err(loi_data("là symlink (không đi theo)"));
+    }
+    if !ft.is_file() {
+        return Err(loi_data("không phải tệp thường"));
+    }
+    Ok(st.st_size)
+}
+
+/// `is_file`: `true` ⇔ tệp thường; thiếu ⇒ `Ok(false)`.
+pub(crate) fn la_tep(goc: &Path, rel: &Path) -> io::Result<bool> {
+    match stat_khong_theo(goc, rel) {
+        Ok(st) => Ok(fs::FileType::from_raw_mode(st.st_mode).is_file()),
+        Err(e) if e.raw_os_error() == Some(rustix::io::Errno::NOENT.raw_os_error()) => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
+/// `is_dir`: `true` ⇔ thư mục; thiếu ⇒ `Ok(false)`.
+pub(crate) fn la_thu_muc(goc: &Path, rel: &Path) -> io::Result<bool> {
+    match stat_khong_theo(goc, rel) {
+        Ok(st) => Ok(fs::FileType::from_raw_mode(st.st_mode).is_dir()),
+        Err(e) if e.raw_os_error() == Some(rustix::io::Errno::NOENT.raw_os_error()) => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
+/// `is_symlink`: `true` ⇔ **chính** `rel` là symlink (dangling vẫn `true`); thiếu ⇒ `Ok(false)`.
+pub(crate) fn la_symlink(goc: &Path, rel: &Path) -> io::Result<bool> {
+    match stat_khong_theo(goc, rel) {
+        Ok(st) => Ok(fs::FileType::from_raw_mode(st.st_mode).is_symlink()),
+        Err(e) if e.raw_os_error() == Some(rustix::io::Errno::NOENT.raw_os_error()) => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
+/// `read_link`: đọc **đích** của symlink (nguyên văn), `readlinkat`; không đi theo link.
+/// Trước khi trả đích, kiểm đích phân giải **không thoát** gốc (dangling trong gốc vẫn `Ok`).
+pub(crate) fn doc_link(goc: &Path, rel: &Path) -> io::Result<String> {
+    let (cha, ten) = mo_cha(goc, rel)?;
+    let tgt = fs::readlinkat(&cha, &ten, Vec::new()).map_err(io::Error::from)?;
+    phan_giai(goc, rel)?;
+    OsStr::from_bytes(tgt.as_bytes())
+        .to_str()
+        .map(str::to_string)
+        .ok_or_else(|| loi_data("đích không phải UTF-8 hợp lệ"))
+}
+
+/// `canonicalize`: đường dẫn tuyệt đối đã phân giải (theo symlink, trong gốc). Dangling ⇒ `Err`.
+pub(crate) fn chinh_tac(goc: &Path, rel: &Path) -> io::Result<String> {
+    let (p, day_du) = phan_giai(goc, rel)?;
+    if !day_du {
+        return Err(loi_os(rustix::io::Errno::NOENT));
+    }
+    p.into_os_string()
+        .into_string()
+        .map_err(|_| loi_data("kết quả không phải UTF-8 hợp lệ"))
+}
+
+/// `exists`: `true` ⇔ vật tồn tại (theo symlink, trong gốc); thiếu/dangling ⇒ `Ok(false)`.
+pub(crate) fn ton_tai(goc: &Path, rel: &Path) -> io::Result<bool> {
+    match phan_giai(goc, rel) {
+        Ok((_, day_du)) => Ok(day_du),
+        Err(e) if e.raw_os_error() == Some(rustix::io::Errno::NOENT.raw_os_error()) => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
+/// `list`: tên các mục trong thư mục (không đệ quy), sắp theo byte. Thư mục mở theo fd `O_NOFOLLOW`.
+pub(crate) fn ds_muc(goc: &Path, rel: &Path) -> io::Result<Vec<String>> {
+    let fd = mo_thu_muc_hoac_goc(goc, rel)?;
+    let mut dir = fs::Dir::new(fd)?;
+    let mut ten: Vec<String> = Vec::new();
+    while let Some(e) = dir.read() {
+        let e = e.map_err(io::Error::from)?;
+        ten.push(e.file_name().to_string_lossy().to_string());
+    }
+    ten.sort();
+    Ok(ten)
+}
+
+/// Mở thư mục `rel` dưới `goc` (rel rỗng ⇒ chính gốc `cap`).
+fn mo_thu_muc_hoac_goc(goc: &Path, rel: &Path) -> io::Result<OwnedFd> {
+    if rel.as_os_str().is_empty() {
+        mo_goc(goc)
+    } else {
+        mo_duoi_goc(goc, rel, OFlags::RDONLY | OFlags::DIRECTORY, Mode::empty())
+    }
+}
+
+/// `walk`: duyệt đệ quy dưới `rel` (thư mục), bỏ symlink, DFS + sắp byte mỗi cấp, thư mục kèm `/`.
+pub(crate) fn duyet(goc: &Path, rel: &Path) -> io::Result<Vec<String>> {
+    let fd = mo_thu_muc_hoac_goc(goc, rel)?;
+    let mut ra = Vec::new();
+    duyet_de_quy(fd.as_fd(), "", &mut ra)?;
+    Ok(ra)
+}
+
+fn duyet_de_quy(dirfd: BorrowedFd<'_>, tuong_doi: &str, ra: &mut Vec<String>) -> io::Result<()> {
+    let mut dir = fs::Dir::read_from(dirfd)?;
+    let mut muc: Vec<(String, bool, bool)> = Vec::new();
+    while let Some(e) = dir.read() {
+        let e = e.map_err(io::Error::from)?;
+        let ft = e.file_type();
+        muc.push((
+            e.file_name().to_string_lossy().to_string(),
+            ft.is_dir(),
+            ft.is_symlink(),
+        ));
+    }
+    muc.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+    for (ten, la_thu_muc, la_symlink) in muc {
+        if la_symlink {
+            continue;
+        }
+        let rel = if tuong_doi.is_empty() {
+            ten.clone()
+        } else {
+            format!("{tuong_doi}/{ten}")
+        };
+        if la_thu_muc {
+            ra.push(format!("{rel}/"));
+            let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+            let sub = fs::openat(dirfd, &ten, fl, Mode::empty()).map_err(io::Error::from)?;
+            duyet_de_quy(sub.as_fd(), &rel, ra)?;
+        } else {
+            ra.push(rel);
+        }
+    }
     Ok(())
 }
