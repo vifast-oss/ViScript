@@ -282,3 +282,41 @@ fn completion_khong_them_phuong_thuc() {
         "completion cấp tệp không được có phương thức `lay`: {body}"
     );
 }
+
+// ===== ST-305: hover generic (hàm + phương thức) =====
+
+const NGUON_GENERIC_FN: &str = "fn first[T](xs: list[T]) -> T?:\n    xs.get(0)\n\nfn main():\n    first([1])\n";
+
+/// Ca — hover hàm generic phải nêu tham số kiểu `[T]` trong chữ ký.
+#[test]
+fn hover_ham_generic_neu_tham_so_kieu() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_GENERIC_FN)),
+        khung(&hover(2, URI, 4, 6))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains("first[T]"), "thiếu `first[T]`: {body}");
+    assert!(body.contains("xs: list[T]"), "thiếu kiểu tham số: {body}");
+}
+
+const NGUON_GENERIC_METHOD: &str = "type H:\n    n: int\n\nimpl H:\n    fn lay[T](self, x: T) -> T:\n        x\n\nfn f(h: H) -> int:\n    h.lay(1)\n";
+
+/// Ca — hover phương thức generic phải nêu `[T]` trong chữ ký.
+#[test]
+fn hover_phuong_thuc_generic_neu_tham_so_kieu() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_GENERIC_METHOD)),
+        khung(&hover(2, URI, 8, 6))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains("lay[T]"), "thiếu `lay[T]`: {body}");
+    assert!(body.contains("x: T"), "thiếu kiểu tham số: {body}");
+}
