@@ -12,6 +12,11 @@ description = "Host plugin ViScript: chuyển đổi Value, registry tĩnh và l
 [dependencies]
 vis-plugin-abi = { path = "../vis-plugin-abi" }
 vis-core = { path = "../vis-core" }
+
+# **Tích hợp `v0.5.5`**: `vis-host-native` chỉ dùng cho đường `openat2` trên Unix (xem
+# `static_reg::doc_host`/`ghi_host`); Windows/wasm dùng `std::fs`/từ chối, nên đặt theo target để
+# `cargo check --target wasm32-unknown-unknown` không báo "unused dependency".
+[target.'cfg(unix)'.dependencies]
 vis-host-native = { path = "../vis-host-native" }
 
 [dev-dependencies]

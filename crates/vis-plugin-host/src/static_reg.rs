@@ -7,17 +7,20 @@
 //! này (ST-310c). Trên Unix, `RESOLVE_BENEATH|NO_SYMLINKS` giữ nguyên bảo đảm F2 của ST-309;
 //! Windows giữ đường `canonicalize` như trước (mức bảo đảm đã ghi ở `agent/HOST-BAO-DAM.md`).
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 
-use vis_plugin_abi::{Cap, Error, PluginCtx, PluginIo, PluginModule, PluginValue, Result};
+#[cfg(not(target_arch = "wasm32"))]
+use vis_plugin_abi::PluginIo;
+use vis_plugin_abi::{Cap, Error, PluginCtx, PluginModule, PluginValue, Result};
 
 /// I/O host cho [`PluginCtx`] trên Unix: đọc/ghi **từ fd gốc** của cap.
-#[cfg(unix)]
+#[cfg(all(unix, not(target_arch = "wasm32")))]
 fn doc_host(goc: &Path, rel: &Path, hien_thi: &Path) -> Result<String> {
     vis_host_native::quyen::mo_tep_doc(goc, rel).map_err(|e| loi_mo(hien_thi, e, false))
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, not(target_arch = "wasm32")))]
 fn ghi_host(goc: &Path, rel: &Path, data: &[u8], hien_thi: &Path) -> Result<()> {
     vis_host_native::quyen::mo_tep_ghi(goc, rel, data).map_err(|e| loi_mo(hien_thi, e, true))
 }
@@ -40,14 +43,14 @@ fn loi_mo(hien_thi: &Path, e: std::io::Error, ghi: bool) -> Error {
 }
 
 /// Windows/không Unix: giữ đường `canonicalize` cũ (đã ghi giới hạn ở `HOST-BAO-DAM.md`).
-#[cfg(not(unix))]
+#[cfg(all(not(unix), not(target_arch = "wasm32")))]
 fn doc_host(goc: &Path, rel: &Path, hien_thi: &Path) -> Result<String> {
     let dich = goc.join(rel);
     std::fs::read_to_string(&dich)
         .map_err(|e| Error::io(format!("không đọc được `{}`: {e}", hien_thi.display())))
 }
 
-#[cfg(not(unix))]
+#[cfg(all(not(unix), not(target_arch = "wasm32")))]
 fn ghi_host(goc: &Path, rel: &Path, data: &[u8], hien_thi: &Path) -> Result<()> {
     let dich = goc.join(rel);
     std::fs::write(&dich, data)
@@ -55,11 +58,18 @@ fn ghi_host(goc: &Path, rel: &Path, data: &[u8], hien_thi: &Path) -> Result<()> 
 }
 
 /// `PluginCtx` đã cài I/O của host (dùng cho plugin tĩnh và test).
+///
+/// **ST-310f/tích hợp `v0.5.5`**: `PluginIo` chỉ có field trên nền **không** `wasm32` (guest wasm
+/// không có FS trực tiếp — xem `PluginCtx::read_text`); nên trên `wasm32` chỉ tạo ctx rỗng để
+/// `cargo check --target wasm32-unknown-unknown` xanh, không đổi hành vi nền khác.
 pub fn ctx_voi_host(caps: Vec<Cap>) -> PluginCtx {
-    PluginCtx::new(caps).voi_io(PluginIo {
+    let ctx = PluginCtx::new(caps);
+    #[cfg(not(target_arch = "wasm32"))]
+    let ctx = ctx.voi_io(PluginIo {
         doc: doc_host,
         ghi: ghi_host,
-    })
+    });
+    ctx
 }
 
 /// Sổ đăng ký plugin tĩnh: tên module → danh sách hàm do macro sinh.
