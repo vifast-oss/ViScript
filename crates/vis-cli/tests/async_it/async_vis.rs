@@ -39,29 +39,23 @@ fn chay(d: &Path, tag: &str, src: &str) -> (i32, String, String) {
 #[test]
 fn async_tren_method_la_vs0201_va_ghi_no() {
     let d = tam("method");
-    let (c, _, e) = chay(
+    let (c, o, e) = chay(
         &d,
         "m",
         "type P:\n    n: int\n\nimpl P:\n    async fn lay(self) -> int:\n        self.n\n\nprint(1)\n",
     );
-    assert_eq!(c, 2, "parser chưa nhận `async` trong `impl` — stderr: {e}");
-    assert!(e.contains("VS0201"), "stderr: {e}");
-    assert!(
-        e.contains("async"),
-        "thông điệp phải nêu chỗ sai (`async`): {e}"
-    );
+    // **VD-284/ST-302 (#13)**: `async fn` trong `impl` nay hợp lệ.
+    assert_eq!(c, 0, "async impl phải chạy — stderr: {e}");
+    assert_eq!(o.trim(), "1", "stdout: {o}");
     let _ = std::fs::remove_dir_all(&d);
 }
 
 #[test]
 fn async_tren_cmd_la_vs0201_va_ghi_no() {
     let d = tam("cmd");
-    let (c, _, e) = chay(
-        &d,
-        "c",
-        "async cmd f() -> int:\n    [1] | take 1\n\nprint(1)\n",
-    );
-    assert_eq!(c, 2, "parser chưa nhận `async cmd` — stderr: {e}");
-    assert!(e.contains("VS0201"), "stderr: {e}");
+    let (c, o, e) = chay(&d, "c", "async cmd f():\n    print(\"x\")\n\nprint(1)\n");
+    // **VD-284/ST-302 (#13)**: `async cmd` nay hợp lệ.
+    assert_eq!(c, 0, "async cmd phải chạy — stderr: {e}");
+    assert_eq!(o.trim(), "1", "stdout: {o}");
     let _ = std::fs::remove_dir_all(&d);
 }

@@ -20,6 +20,13 @@ impl<'a> Checker<'a> {
         named: &[(String, HExpr)],
         span: vis_syntax::Span,
     ) -> Type {
+        // **ST-302 (#8)**: builtin nội bộ của `derives Json` — thân sinh đã đúng kiểu, không
+        // cho người dùng viết `$json:`; trả `{error}` để coercion của `Return` chấp nhận.
+        if let HExpr::Var { name, .. } = callee {
+            if name.starts_with("$json:") {
+                return Type::Error;
+            }
+        }
         // Hàm dựng sẵn: kiểm **chữ ký** (ST-12b BLOCKER #3) — cả khi `sym = None` lẫn khi `sym`
         // trỏ tới ký hiệu `SymKind::Builtin` (ST-11 khai 8 tên dựng sẵn).
         if let HExpr::Var { name, sym, .. } = callee {

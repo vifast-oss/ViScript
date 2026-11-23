@@ -330,6 +330,37 @@ impl<'a> Lowerer<'a> {
                     .unwrap_or_default();
                 // ST-26: `str.split(…)`, `list.sort(…)` — **tên đầy đủ** `std.<module>.<fn>` khi tệp đã
                 // `use std.<module>`; gọi vào tên đã biết nhưng hoãn ⇒ `VS0301` "chưa hỗ trợ (VS1b)".
+                // **ST-302 (#8)**: `Type.from_json(j)` — gọi **tĩnh** phương thức sinh trên
+                // tên kiểu (không có receiver). Hạ thẳng `Call(Var(sym))` như hàm thường.
+                if let HExpr::Field {
+                    base,
+                    name: f,
+                    optional: false,
+                    ..
+                } = &callee
+                {
+                    if let HExpr::Var { name: m, .. } = &**base {
+                        if let Some(sym) = self
+                            .impls
+                            .iter()
+                            .find(|(t, n, _)| {
+                                n == f && self.ten_kieu(t).as_deref() == Some(m.as_str())
+                            })
+                            .map(|(_, _, s)| *s)
+                        {
+                            return HExpr::Call {
+                                callee: Box::new(HExpr::Var {
+                                    name: format!("{m}.{f}"),
+                                    sym: Some(sym),
+                                    span,
+                                }),
+                                args,
+                                named,
+                                span,
+                            };
+                        }
+                    }
+                }
                 // ST-29: **dispatch tĩnh** — `x.m(…)` với `x` kiểu tĩnh record/enum và `m` không
                 // phải phương thức nội tại ⇒ hạ thẳng `Call(impl_fn)` (chèn `self/dt` đầu).
                 if let Some(e) = self.dispatch_tinh(&callee, &args, span) {

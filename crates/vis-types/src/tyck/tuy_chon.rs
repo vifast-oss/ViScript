@@ -100,11 +100,11 @@ impl<'a> Checker<'a> {
             // lần), kể cả hợp nhất generic để kiểu trả không còn `T`.
             let arg_tys = self.kiem_args(&sig, args, named, span);
             if sig.is_async {
-                self.diag(
-                    super::ASYNC_SAI_CHO,
-                    "`async` chỉ cho hàm cấp tệp — không có phương thức `impl` async (nợ R10)",
-                    span,
-                );
+                // **VD-284/ST-302 (#13)**: gọi method async trả `Task[ret]` (không chạy thân).
+                return Type::TypeRef {
+                    name: "Task".into(),
+                    args: vec![sig.ret],
+                };
             }
             if sig.generics.is_empty() {
                 sig.ret

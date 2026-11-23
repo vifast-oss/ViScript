@@ -658,6 +658,23 @@ pub fn call(
     args: Vec<Value>,
     span: Span,
 ) -> crate::interp::R<Value> {
+    // **ST-302 (#8)**: runtime `derives Json` — descriptor do lower sinh, người dùng không thấy.
+    if name == "$json:to" || name == "$json:from" {
+        if args.len() != 2 {
+            return Err(trap(RT, "derives Json: sai số đối số nội bộ", span));
+        }
+        let Value::Str(desc) = &args[1] else {
+            return Err(trap(RT, "derives Json: thiếu descriptor", span));
+        };
+        if name == "$json:to" {
+            return crate::json_derive::to_json(&args[0], desc)
+                .map_err(|e| trap(RT, format!("to_json: {e}"), span));
+        }
+        return match crate::json_derive::from_json(&args[0], desc) {
+            Ok(v) => Ok(Value::ok(v)),
+            Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
+        };
+    }
     // **VD-208 (2)**: `$value:<tên>` — dựng **giá trị dựng sẵn** (dùng được như hàm ở cả hai
     // đường). `:` không hợp lệ trong tên ⇒ người dùng không viết được; `vis_fmt`/`check` không đụng.
     // **VD-218 (2026-11-18)**: tên `$value:…` **không bao giờ** xuất hiện ở thông báo lỗi/stack trace.

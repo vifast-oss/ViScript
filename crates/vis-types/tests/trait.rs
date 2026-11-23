@@ -91,8 +91,8 @@ fn derives_la_bao_vs0403() {
 }
 
 #[test]
-fn derives_json_tren_truong_ham_bao_vs0403() {
-    co("type F derives Json:\n    ham: fn(int) -> int\n", "VS0403");
+fn derives_json_tren_truong_ham_bao_vs0412() {
+    co("type F derives Json:\n    ham: fn(int) -> int\n", "VS0412");
 }
 
 #[test]

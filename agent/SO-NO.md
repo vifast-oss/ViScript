@@ -91,12 +91,12 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 5 | Siêu trait bắc cầu mới kiểm một tầng. | R11 §5 + R12 §5 | mở |
 | 6 | `impl_pairs` per-tệp: `impl` sinh từ `derives` ở tệp khác không thấy; dispatch xuyên tệp per-tệp. | R11 §5 + R12 §5 | mở |
 | 7 | `co_float_sau` không soi bản ghi lồng (`Eq` derives). | R11 §5 + R12 §5 | mở |
-| 8 | `derives Json` chưa sinh mã (chỉ kiểm tĩnh). | R11 §5 + R12 §5 | mở |
+| 8 | `derives Json` chưa sinh mã (chỉ kiểm tĩnh). | R11 §5 + R12 §5 | **đóng ở ST-302** — sinh `to_json`/`from_json` cho record/enum; 15 ca `vd284_derives_json.rs`; từ chối `cap`/`Chan`/`fn` bằng `VS0412` |
 | 9 | `Ty::Fn` thật cho `sort_by` (đang `Ty::FnKhoa`), map khoá không-`str`, thứ tự khoá map. | R11 §5 + R12 §5 | mở |
 | 10 | Nhóm nhiều pipeline + kiểu tĩnh lấy stage đầu; lambda `where` không chú thích ⇒ `{error}`. | R11 §5 + R12 §5 | mở |
 | 11 | `lower/cmd.rs` 1.491 dòng — sát ngưỡng R1, cần tách trước khi thêm tính năng. (ST-106: `cmd.rs` 1491→1060) | R11 §5 + R12 §5 · R18 §6 (ST-106 tách `cmd.rs`) | đóng ở ST-106 |
 | 12 | Async chưa song song thật: scheduler run-to-completion, không nhường, không GC (chu trình `Rc`); `await` lồng sát ngưỡng khung 256 | R11 §5 + R12 §5 · R23 §4 hàng 1 · VD-123 | chuyển VS3 |
-| 13 | `async` trên method/`cmd` ⇒ `VS0201`; `async fn` không nhận `--tên`. | R11 §5 + R12 §5 | mở |
+| 13 | `async` trên method/`cmd` ⇒ `VS0201`; `async fn` không nhận `--tên`. | R11 §5 + R12 §5 | **đóng ở ST-302** — `async fn` trong `impl` + `async cmd`; 3 ca `vd284_async_impl.rs`; `--flag` của `cmd` giữ riêng |
 | 14 | `p.x += 1` là lỗi cú pháp `VS0201` (front end chặn trước tyck). | R11 §5 + R12 §5 | mở |
 | 15 | Drain chỉ task `ready` (`spawn`): task `Moi` do gọi `async fn` chưa chạy ⇒ `recv` có thể `VS0505`. | R11 §5 + R12 §5 | mở |
 | 16 | `close` idempotent nhưng không đánh thức ai (không wait-set). | R11 §5 + R12 §5 · VD-123 · `d060f5a` · `JOURNAL/st296-debt-audit.md` | đóng ở VS3 (`d060f5a`, VD-282: wait-set + close đánh thức receiver `None`/sender `VS0504`, `vs3_chan0` 13/13) |
@@ -396,15 +396,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **194** (1..193; #109 tách `a`/`b`) |
-| `mở` | **83** |
-| `đóng` | **92** |
+| `mở` | **81** |
+| `đóng` | **94** |
 | `chuyển VS3` | **16** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 83 mở + 92 đóng + 16 VS3 + 2 không làm + 1 điều hướng = **194** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191; **ST-300m1: #137 `VS3 → đóng`**; **ST-300m2: #147 và #152 `mở → đóng`**).
+Kiểm: 81 mở + 94 đóng + 16 VS3 + 2 không làm + 1 điều hướng = **194** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191; **ST-300m1: #137 `VS3 → đóng`**; **ST-300m2: #147/#152 `mở → đóng`**; **ST-302: #8/#13 `mở → đóng`**).
 **Stage 0 `v0.3.6` (2026-11-22, `f8f1d4b`)** — trạng thái nợ theo lát (không thêm dòng nợ mới):
 `ST-284` DONE (`83a9a10`, merge `e363a15`; R0a 0 đổi hành vi), `ST-285` DONE (`ab5d292`, merge `246b6c5`;
 R0b 0 đổi hành vi), `ST-286` DONE (`f193c57`, merge `cfba662`; R0c 0 đổi hành vi), `ST-287` DONE

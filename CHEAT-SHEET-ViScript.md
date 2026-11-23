@@ -301,3 +301,22 @@ Method trên giá trị (không cần `use`):
 - **Nguồn đọc thêm**: `test/sem/**` (525 ca ngữ nghĩa chạy thật: 487 + 27 ca `sqlite/` VD-241 Gate 1 + 11 ca `sqlite/` VD-241 pre-merge),
   [`docs/SPEC-lex.md`](docs/SPEC-lex.md) (từ vựng + EBNF),
   mục "Mức hiện thực VS2" cuối [`docs/ViScript-thiet-ke.md`](docs/ViScript-thiet-ke.md).
+
+## `derives Json` (VD-284)
+
+```text
+type User derives Json:
+    name: str
+    age: int?
+    tags: list[str]
+
+let u: User = {name: "An", age: None, tags: ["a"]}
+let j = u.to_json()                 // Json.Obj(...)
+let r = User.from_json(j)           // Result[User, Error]
+```
+
+- Sinh `.to_json() -> Json` và `Type.from_json(j: Json) -> Result[Type, Error]` cho `type`/`enum`.
+- Hỗ trợ `int/float/bool/str/path/char/size/duration/percent`, `T?`, `list[T]`, `map[str,T]`,
+  `Result`, record/enum lồng nhau; enum unit ⇒ `Json.Str("Variant")`, có payload ⇒
+  `Json.Obj({"Variant": ...})`.
+- `cap`/`Chan`/`Task`/`fn` trong trường/biến thể ⇒ **`VS0412` tĩnh**.

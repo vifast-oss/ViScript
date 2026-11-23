@@ -91,7 +91,7 @@ impl<'a> Interp<'a> {
             name, sym: None, ..
         } = callee
         {
-            if builtin_name(name).is_some() {
+            if builtin_name(name).is_some() || name.starts_with("$json:") {
                 let (pos, _nm) = self.eval_args(args, named)?;
                 return crate::builtin::call(self, name, pos, span);
             }
