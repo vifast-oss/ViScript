@@ -120,11 +120,12 @@ hạ quyền filesystem; chạy lại **6/6**, rồi thêm 4 ca CLI **4/4**.
   quyền ghi. Đây là hệ quả của WASI P1 không có preopen chỉ-đọc, không phải nới quyền.
 - Runtime là tiến trình ngoài (`wasmtime`/Python/Node), không nhúng wasmtime vào `vis` — đúng
   chính sách VD-283 và giữ 0 `unsafe`/không thêm crate nặng.
-- Windows: logic `cfg(not(unix))` dùng `readonly` của std; **chưa chạy** Windows trong task này
-  (m2/psvn đang bận) — cần W4 xác nhận khi có máy.
+- Windows: logic `cfg(not(unix))` dùng `readonly` của std; **đã chạy** ở W4b — xem
+  [`st307-win-tests.md`](st307-win-tests.md): 6/6 WASI thật + CLI 4/4 trên `psvn`.
 
 ## 6. Việc còn lại
 
 - Chờ A0 merge `ST-306` rồi `ST-307`; không merge/push/tag.
-- W4: chạy `vs3_plugin` trên Windows (Node WASI) và, nếu có, `wasmtime` CLI để xác nhận nhánh
-  runtime thứ nhất.
+- W4b: **xong** — `vs3_plugin` 6/6 + CLI 4/4 trên Windows; chi tiết ở
+  [`st307-win-tests.md`](st307-win-tests.md). Còn nhánh runtime `wasmtime` CLI (nếu có máy cài)
+  để xác nhận thứ tự dò; `psvn` hiện chỉ có Node.
