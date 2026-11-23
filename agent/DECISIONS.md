@@ -3954,6 +3954,34 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 5. **Thứ tự Merge chuẩn sau Tag `v0.4.5` (giảm tối đa xung đột)**:
    - `(1)` Tag `v0.4.5` + `R35` (W4) → `(2)` Merge `ST-300b` (`vis-host-native` + `vis-pkg`, W2) → `(3)` Rebase & merge `ST-301` (W1) và `ST-303` (W3) → `(4)` Tiếp tục song song `ST-302` (W1), `ST-304`→`ST-304b` (W3), kiểm chuẩn đa nền & chuẩn bị `ST-305` (`vis-lsp` + `editors/vscode/`, W2/W4).
 
+### VD-284 · Phê chuẩn `v0.4.5` & `ST-300b/301/303`, Mở Chính thức Hỗ trợ macOS arm64 (`mps` Tier 1) & Điều phối GĐ 3 (`v0.5.0` — 3-OS Tier 1) — A0, 2026-11-23
+
+> **Căn cứ**: Tag `v0.4.5` @ `3daff62` (`R35-viscript.{md,json}`, soak Windows 4h 985 vòng / 0 fail — **Windows Tier 1**), `JOURNAL/bao-cao-sang-2026-11-23.md`, `JOURNAL/st300b-host-pkg.md` (`770fdf7b`), `JOURNAL/st301-pha2a-lambda-annot.md` (`2bc6be74`), `JOURNAL/st303-cli-dev.md` (`a114e389`), `JOURNAL/mac-v045-verify.md` (`faac0298` + `bcea91e4`), kiểm toán mã nguồn Darwin tại `bcea91e4`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd284.md`.
+
+1. **Phê chuẩn chính thức (`APPROVED 2026-11-23 Agent 0`)**:
+   - **Đóng hoàn toàn GĐ 2 (`v0.4.5` @ `3daff62`)**: duyệt **`ST-298`** (Windows 3× full 3.611/0/3 + soak 4h **985 vòng / 0 fail**, RAM 8.204–8.766 MB, proc/threads 0/0 ⇒ **Windows Tier 1** chính thức với caveat `FsGuard`) và **`ST-300`** (`R35-viscript.{md,json}` PASS `check_report`, `vis 0.4.5`, fix `CARGO_TARGET_DIR` cho `vis-parse-fuzz`) → **`DONE`**.
+   - **Duyệt 3 lát đầu GĐ 3**:
+     - **`ST-300b`** (`770fdf7b`): tách `crates/vis-host-native` (13.107 LOC, 0 tham chiếu ngược, `#![forbid(unsafe_code)]`) + `crates/vis-pkg` (3.270 LOC), rút `vis-cli/src/` 21.147 → 4.809 LOC (−77,3%), `main.rs` 225 dòng, tách `lsp_it/lsp.rs` < 760 dòng, diff 100k = 0 → **`DONE`**.
+     - **`ST-301`** (`2bc6be74`): đóng **`#192`** (VM `--workers` `FrameReactorBackend` + ca cancel worker frame) & **`#155`** (lambda param/return annot + auto-lift interp↔VM + `T??` parity), fuzz parser 1h **383.008.776 ca / 0 vi phạm**, diff 100k = 0 → **`DONE`**.
+     - **`ST-303`** (`a114e389`): `vis new`/`doc`/`repl`, 8/8 ca mới, gate Linux **3.671/4** → **`DONE`**.
+2. **Gỡ tạm đình chỉ macOS (supersede phần `"macOS ngoài phạm vi"` của `VD-271`/`VD-272`)**:
+   - Máy macOS thật **`mps`** (macOS 27.0.1 / Darwin 27.0.0 **arm64**, Rust `1.100.0`, Node `26.12.1`, Python `3.9.6`, `cargo-nextest 0.9.152`) đã rảnh và vượt qua lần đo đầu tại `v0.4.5` (`gate --fast` **3.631/0/3 trong 79,2 s**, workspace **3.636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390 = 99,5%**).
+   - **Chính sách bảo mật macOS (giữ 0 `unsafe` R2)**:
+     - `FsGuard` trên macOS dùng chung cơ chế `openat(O_NOFOLLOW | O_DIRECTORY)` đi từng thành phần từ `fd` gốc (`crates/vis-host-native/src/quyen_mo.rs`) cho **cả đọc lẫn ghi** — đóng khe TOCTOU theo cơ chế (mạnh hơn Windows `FsGuard` theo đường dẫn).
+     - **KHÔNG** bọc API `sandbox_init(3)`/`sandbox-exec` (đã bị Apple deprecate từ macOS 10.12 và cần `unsafe` C FFI vi phạm R2). Giữ `vis run --sandbox-check` trả mã thoát `3` (`landlock: không hỗ trợ trên macos`) và ghi trung thực trong `agent/HOST-BAO-DAM.md`.
+   - **Hai lỗi Darwin errno có thật phát hiện khi kiểm toán mã nguồn — bắt buộc vá ở `ST-300m1`**:
+     1. `crates/vis-host-native/src/quyen_guard.rs:77` hardcode `Some(40) | Some(18)` (`ELOOP` Linux = 40; trên Darwin **`ELOOP = 62`**!) ⇒ đổi sang `rustix::io::Errno::LOOP | XDEV` và thay các hằng cứng `22`/`21`/`17` trong `quyen_mo.rs`/`quyen_guard.rs` bằng hằng `rustix::io::Errno`; thêm ca test khẳng định symlink thoát gốc trên macOS trả đúng **`VS0604`**.
+     2. `crates/vis-host-native/src/async_net_nguon.rs:17` hardcode `Some(115 | 10035 | 10036)` (`EINPROGRESS` Linux = 115; trên Darwin **`EINPROGRESS = 36`**, `EALREADY = 37`!) ⇒ đổi nhánh Unix sang `rustix::io::Errno::INPROGRESS | ALREADY | AGAIN`, đồng thời mở `lat256_net.rs` & `lat3_real.rs` sang `#[cfg(unix)]` để kiểm `mio`/kqueue thật trên `mps`.
+3. **Tiêu chí công bố macOS arm64 Tier 1 (5 điều kiện cứng, đối xứng `VD-277`)**:
+   - (1) Merge `ST-300m1` (vá đủ 2 lỗi Darwin errno, kqueue test xanh, `quyen_st174` + `quyen_st295` 100/100 → 0/100 trên APFS `mps`, đóng **`#137`**, có `bin/vis-gate-macos --quick|--full` và kiểm đóng gói `bin/vis-release` trên `aarch64-apple-darwin`).
+   - (2) Xác minh độc lập **`#147`** & **`#152`** trên `mps` rảnh có khoá `bin/vis-lock` (`ST-300m2`).
+   - (3) **3× liên tiếp `bin/vis-gate-macos --full` PASS** trên `mps` (debug + release + host 54/54 + WASI 28/28 + `vis-release` smoke, `dirty = 0`).
+   - (4) **Soak 4 giờ trên `mps`** (0 lỗi sản phẩm, RSS/fd phẳng, `dirty = 0`) + `bin/vis-wasm-sem` ≥ 388/390 trên `mps`.
+   - (5) Cập nhật `agent/HOST-BAO-DAM.md` & `agent/ROADMAP.md` tuyên bố **macOS arm64 (Apple Silicon) Tier 1** kèm 2 giới hạn minh bạch: không có kernel Landlock; phạm vi chứng nhận runtime là `aarch64-apple-darwin` (chưa đo `x86_64-apple-darwin`).
+4. **Mở đợt thực thi kế tiếp hướng tới `v0.5.0` (3-OS Tier 1 + WASI + Pha 2 + ViShell)**:
+   - Lật **`ST-300m1`** (W2), **`ST-302`** (W1), **`ST-304`** (W3 — kiểm cả Linux/Windows/macOS PTY) → **`READY`**; thêm **`ST-300m2`** (W2) và **`ST-300m3`** (W4) ở trạng thái **`BLOCKED`** chờ `ST-300m1`; bổ sung `ST-300m3` làm điều kiện của **`ST-305`** (`v0.5.0` + `R36-viscript.{md,json}`).
+
+
 
 
 

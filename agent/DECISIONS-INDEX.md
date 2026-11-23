@@ -279,6 +279,7 @@
 | VD-281 | Duyệt `ST-290`/`ST-294`, Chèn Giai đoạn 1.5 (`v0.4.1` Tối ưu Repo & DevEx) & Tinh chỉnh GĐ 1–4 | đã chốt | 3869 |
 | VD-282 | Duyệt `ST-293`/`ST-295`, Đóng 12 Nợ Sổ, Luật R7, Cơ chế Zero-Idle & Kế hoạch Chạy Đêm 22–23/11 | đã chốt | 3887 |
 | VD-283 | Phê chuẩn `v0.4.0`/`v0.4.1`, Chốt `P2b-3/4 NO-GO` & WASI Runtime, Điều kiện Tag `v0.4.5` (`R35`), & Mở Zero-Idle GĐ 3 (`v0.5.0`) | đã chốt | 3917 |
+| VD-284 | Phê chuẩn `v0.4.5` & `ST-300b/301/303`, Mở Chính thức Hỗ trợ macOS arm64 (`mps` Tier 1) & Điều phối GĐ 3 (`v0.5.0` — 3-OS Tier 1) | đã chốt | 3957 |
 
 ## Ghi chú
 
