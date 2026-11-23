@@ -104,9 +104,9 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (622, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
     (735, 1, 0, 5),  // backup_big + ctx + dir + files + f
     (749, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1515, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (1528, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
     // **R11 (VD-178)**: khối 1435 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1468, 7, 0, 18), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
+    (1481, 7, 0, 18), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
 ];
 
 fn doc_path() -> PathBuf {
