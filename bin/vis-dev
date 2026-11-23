@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # vis-dev — cổng của dòng ViScript (ST-01).
-#   check      : fmt + clippy + luật R1..R7 + self-test case âm + build
+#   check      : fmt + clippy + luật R1..R9 + self-test case âm + build
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
@@ -230,7 +230,51 @@ rule_journal_logs() {
     return "$found"
 }
 
-# R1..R7 trên một cây bất kỳ (dùng cho self-test với --root).
+# R8 (ST-310e): chống phình test binary của `vis-cli` — tối đa 15 tệp `.rs` ở **cấp 1**
+# `crates/vis-cli/tests/` (Cargo coi mỗi tệp như vậy là một integration-test binary). KPI của
+# ST-310e là ≤ 12; ngưỡng cổng 15 để không chặn oan khi thêm 1-2 binary miền mới. Không có
+# `crates/vis-cli/tests/` (cây self-test R1..R4) ⇒ bỏ qua.
+rule_test_binaries() {
+    local root="$1"
+    local dir="$root/crates/vis-cli/tests"
+    [ -d "$dir" ] || return 0
+    local n
+    n=$(find "$dir" -maxdepth 1 -type f -name '*.rs' 2>/dev/null | wc -l | tr -d ' ')
+    if [ "${n:-0}" -gt 15 ]; then
+        echo "R8 crates/vis-cli/tests: $n binary > 15 (ST-310e: gom theo miền hoặc chuyển về crate chủ)" >&2
+        return 1
+    fi
+    return 0
+}
+
+# R9 (ST-310e): chỉ `vis-host-native` được chứa bản sao triển khai `openat2`. Danh sách ngoại lệ
+# `test/gate/r9-openat2-ngoai-le.txt` đóng băng nợ tạm thời (hiện chỉ `vis-plugin-abi/src/cap_fs.rs`
+# chờ ST-310c xoá); không thêm mục mới. Bỏ dòng chú thích trước khi quét để mention trong docs
+# không bị bắt. Không có `crates/` ⇒ bỏ qua (cây self-test).
+rule_openat2() {
+    local root="$1"
+    [ -d "$root/crates" ] || return 0
+    local list="$root/test/gate/r9-openat2-ngoai-le.txt"
+    if [ ! -f "$list" ]; then
+        echo "R9: thiếu $list (danh sách ngoại lệ đóng băng — ST-310e)" >&2
+        return 1
+    fi
+    local found=0 f rel
+    while IFS= read -r f; do
+        rel="${f#"$root"/}"
+        case "$rel" in crates/vis-host-native/*) continue ;; esac
+        if grep -Fxq "$rel" "$list"; then
+            continue
+        fi
+        if sed 's://.*::' "$f" | grep -qE '(^|[^A-Za-z0-9_])openat2([^A-Za-z0-9_]|$)'; then
+            echo "R9 $rel: bản sao openat2 ngoài crates/vis-host-native (ST-310e)" >&2
+            found=1
+        fi
+    done < <(find "$root/crates" -type d -name target -prune -o -type f -name '*.rs' -print0 2>/dev/null | tr '\0' '\n')
+    return "$found"
+}
+
+# R1..R9 trên một cây bất kỳ (dùng cho self-test với --root).
 # **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ tạo **một tiến trình cho mỗi tệp** — `wc`+`tr` cho R1,
 # `awk` cho R2, `head`+`grep` cho R3 — và **ba** lượt `find` đi qua cả `target/` (2,2 GB, 433 000 tệp).
 # macOS phạt tạo tiến trình 9,6× nên `rules` chậm 8,3× so với Linux. Nay: **một** lượt `find` (prune
@@ -347,6 +391,10 @@ run_rules() {
     rule_forbidden_list "$root" || found=1
     # R7: log bằng chứng > 50 KB trong agent/JOURNAL (VD-282).
     rule_journal_logs "$root" || found=1
+    # R8: số integration-test binary cấp 1 của vis-cli (ST-310e ≤ 15).
+    rule_test_binaries "$root" || found=1
+    # R9: bản sao openat2 ngoài vis-host-native (ST-310e).
+    rule_openat2 "$root" || found=1
     return "$found"
 }
 
@@ -412,9 +460,9 @@ do_check() {
     fi
     echo "--- clippy: OK"
     if ! run_rules "$VIS_ROOT"; then
-        echo "--- luật R1..R7: FAIL" >&2; return 1
+        echo "--- luật R1..R9: FAIL" >&2; return 1
     fi
-    echo "--- luật R1..R7: OK"
+    echo "--- luật R1..R9: OK"
     # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
     # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
     if ! bash "$VIS_ROOT/test/toolchain/run.sh"; then
@@ -529,7 +577,7 @@ do_gate_fast() {
 
 # Vòng tròn fmt: `vis fmt` phải **bất động** (fmt(fmt(x)) == fmt(x)) trên mọi ca ngữ nghĩa.
 # **TỐI ƯU (ST-257)**: bản cũ gọi `vis fmt` **2 lần cho mỗi tệp** — 475 tệp ⇒ ~950 lần spawn
-# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R7 ở đầu tệp). Nay copy ca vào một thư
+# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R9 ở đầu tệp). Nay copy ca vào một thư
 # mục tạm rồi dùng **đúng 2 lệnh**: `fmt --write <tmp>` cho `a := fmt(f)`, `fmt --check <tmp>`
 # so `fmt(a)` với `a`. Phép kiểm/ngưỡng/số tệp/câu chữ giữ nguyên; chỉ giảm số lần spawn.
 do_vong_tron_fmt() {

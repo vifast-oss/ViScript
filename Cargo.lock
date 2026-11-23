@@ -717,9 +717,12 @@ dependencies = [
  "rustix",
  "rustls",
  "tokio",
+ "vis-bytecode",
  "vis-diag",
  "vis-interp",
  "vis-syntax",
+ "vis-types",
+ "vis-vm",
  "webpki-roots",
 ]
 
@@ -761,6 +764,7 @@ name = "vis-pkg"
 version = "0.5.0"
 dependencies = [
  "ring",
+ "rustls",
  "vis-bytecode",
  "vis-diag",
  "vis-host-native",

@@ -1,0 +1,389 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! **VD-270** — hover **phương thức lõi dựng sẵn** (`list`/`map`/`str`): `xs.get(0)`, `s.upper()`,
+//! `m.get(k)`.
+//!
+//! Trước VD-270 các từ này trả `result:null` (đỏ): chúng không phải item/biến/trường/ký hiệu/
+//! builtin-giá-trị/từ khoá/phương thức `impl`. Nay hover trả markdown chữ ký thật + chủ module:
+//! ` ```vis\nlist.get(list[T], int) -> T?\n``` ` + `phương thức lõi của \`list\``. Phương thức
+//! người dùng vẫn **thắng** fallback này; người nhận không rõ kiểu hoặc tên lạ ⇒ `result:null`.
+//! Snapshot **nguyên văn** frame JSON (thứ tự khoá cố định) ở ca đầu.
+
+use std::io::Write;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+use vis_interp::value::Value;
+
+const URI: &str = "file:///a.vis";
+
+/// Snapshot body phản hồi `initialize` — VD-270 thêm `implementationProvider` (sau `definitionProvider`).
+const INIT: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":{"openClose":true,"change":2},"positionEncoding":"utf-16","hoverProvider":true,"definitionProvider":true,"implementationProvider":true,"documentSymbolProvider":true,"codeLensProvider":{"resolveProvider":false},"foldingRangeProvider":true,"workspaceSymbolProvider":true,"documentFormattingProvider":true,"codeActionProvider":{"codeActionKinds":["source.fixAll"]},"referencesProvider":true,"documentHighlightProvider":true,"selectionRangeProvider":true,"inlayHintProvider":true,"typeDefinitionProvider":true,"renameProvider":{"prepareProvider":true},"signatureHelpProvider":{"triggerCharacters":["(",","]},"completionProvider":{"triggerCharacters":["."]},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","type","function","variable","string","number","comment","operator","parameter"],"tokenModifiers":[]},"full":true}},"serverInfo":{"name":"vis"}}}"#;
+
+/// Đóng một frame LSP: header + body (byte).
+fn khung(body: &str) -> String {
+    format!("Content-Length: {}\r\n\r\n{body}", body.len())
+}
+
+/// Chạy `vis lsp --stdio`, bơm toàn bộ `dau_vao` rồi đóng stdin; **deadline 5 s** rồi kill.
+fn chay(dau_vao: &str) -> (i32, String, String) {
+    let mut con = Command::new(crate::common::vis_bin())
+        .args(["lsp", "--stdio"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn `vis lsp`");
+    con.stdin
+        .take()
+        .expect("stdin")
+        .write_all(dau_vao.as_bytes())
+        .expect("bơm stdin");
+    let han = Instant::now() + Duration::from_secs(5);
+    loop {
+        if con.try_wait().expect("try_wait").is_some() {
+            break;
+        }
+        if Instant::now() > han {
+            let _ = con.kill();
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let o = con.wait_with_output().expect("đọc output");
+    (
+        o.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&o.stdout).to_string(),
+        String::from_utf8_lossy(&o.stderr).to_string(),
+    )
+}
+
+fn s(x: &str) -> Value {
+    Value::Str(x.to_string())
+}
+
+fn m(kv: Vec<(&str, Value)>) -> Value {
+    Value::Map(
+        kv.into_iter()
+            .map(|(k, v)| (Value::Str(k.to_string()), v))
+            .collect(),
+    )
+}
+
+fn so(v: &Value) -> String {
+    let mut o = String::new();
+    vis_interp::stdlib::json(v, false, &mut o);
+    o
+}
+
+fn init() -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(1)),
+        ("method", s("initialize")),
+        ("params", m(vec![])),
+    ]))
+}
+
+fn did_open(uri: &str, text: &str) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("method", s("textDocument/didOpen")),
+        (
+            "params",
+            m(vec![(
+                "textDocument",
+                m(vec![
+                    ("uri", s(uri)),
+                    ("languageId", s("viscript")),
+                    ("version", Value::Int(1)),
+                    ("text", s(text)),
+                ]),
+            )]),
+        ),
+    ]))
+}
+
+fn req_vi_tri(id: i64, method: &str, uri: &str, line: i64, ch: i64) -> String {
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(id)),
+        ("method", s(method)),
+        (
+            "params",
+            m(vec![
+                ("textDocument", m(vec![("uri", s(uri))])),
+                (
+                    "position",
+                    m(vec![
+                        ("line", Value::Int(line)),
+                        ("character", Value::Int(ch)),
+                    ]),
+                ),
+            ]),
+        ),
+    ]))
+}
+
+fn hover(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/hover", uri, line, ch)
+}
+
+fn completion(id: i64, uri: &str, line: i64, ch: i64) -> String {
+    req_vi_tri(id, "textDocument/completion", uri, line, ch)
+}
+
+/// Frame **cuối** trong stdout (bỏ header) — dùng khi không snapshot cả chuỗi publish.
+fn frame_cuoi(out: &str) -> &str {
+    let i = out.rfind("Content-Length: ").expect("có frame");
+    let j = out[i..].find("\r\n\r\n").expect("header") + i + 4;
+    &out[j..]
+}
+
+/// JSON `textDocument/hover` **nguyên văn** (thứ tự khoá cố định) cho `value` + range một dòng.
+fn tra_hover(value: &str, line: i64, c0: i64, c1: i64) -> String {
+    let pos = |c: i64| {
+        m(vec![
+            ("line", Value::Int(line)),
+            ("character", Value::Int(c)),
+        ])
+    };
+    so(&m(vec![
+        ("jsonrpc", s("2.0")),
+        ("id", Value::Int(2)),
+        (
+            "result",
+            m(vec![
+                (
+                    "contents",
+                    m(vec![("kind", s("markdown")), ("value", s(value))]),
+                ),
+                ("range", m(vec![("start", pos(c0)), ("end", pos(c1))])),
+            ]),
+        ),
+    ]))
+}
+
+/// Khung `publishDiagnostics` rỗng (nguồn sạch).
+const PUBLISH_RONG: &str = r#"{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file:///a.vis","diagnostics":[]}}"#;
+
+/// Nguồn nền cho `list`: biến **có nhãn kiểu** `list[int]`, rồi ba lời gọi phương thức lõi.
+const NGUON_LIST: &str =
+    "let xs: list[int] = [1, 2]\n\nxs.get(0)\nxs.first()\nxs.find(x => x > 1)\n";
+
+/// Ca 1 — `xs.get` ⇒ `list.get(list[T], int) -> T?`; so **nguyên văn** cả ba frame.
+#[test]
+fn hover_builtin_list_get_nguyen_van() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_LIST)),
+        khung(&hover(2, URI, 2, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(err, "", "stderr phải rỗng");
+    let tra = tra_hover(
+        "```vis\nlist.get(list[T], int) -> T?\n```\n\nphương thức lõi của `list`",
+        2,
+        3,
+        6,
+    );
+    assert_eq!(
+        out,
+        format!("{}{}{}", khung(INIT), khung(PUBLISH_RONG), khung(&tra))
+    );
+}
+
+/// Ca 2 — `xs.first` (lõi, không có trong `FUNCS`) ⇒ `list.first(list[T]) -> T?`.
+#[test]
+fn hover_builtin_list_first() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_LIST)),
+        khung(&hover(2, URI, 3, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        tra_hover(
+            "```vis\nlist.first(list[T]) -> T?\n```\n\nphương thức lõi của `list`",
+            3,
+            3,
+            8
+        )
+    );
+}
+
+/// Ca 3 — `xs.find` ⇒ `list.find(list[T], fn(T) -> bool) -> T?`.
+#[test]
+fn hover_builtin_list_find() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, NGUON_LIST)),
+        khung(&hover(2, URI, 4, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        tra_hover(
+            "```vis\nlist.find(list[T], fn(T) -> bool) -> T?\n```\n\nphương thức lõi của `list`",
+            4,
+            3,
+            7
+        )
+    );
+}
+
+/// Ca 4 — `s.upper` (lõi và cũng có `std.str.upper`) ⇒ `str.upper(str) -> str`.
+#[test]
+fn hover_builtin_str_upper() {
+    let text = "let s: str = \"ab\"\n\ns.upper()\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 3))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        tra_hover(
+            "```vis\nstr.upper(str) -> str\n```\n\nphương thức lõi của `str`",
+            2,
+            2,
+            7
+        )
+    );
+}
+
+/// Ca 5 — `s.find` (**sugar R5c** từ `std.str.find`) ⇒ `str.find(str, str) -> int?`.
+#[test]
+fn hover_builtin_str_find_sugar() {
+    let text = "let s: str = \"abc\"\n\ns.find(\"b\")\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 3))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        tra_hover(
+            "```vis\nstr.find(str, str) -> int?\n```\n\nphương thức lõi của `str`",
+            2,
+            2,
+            6
+        )
+    );
+}
+
+/// Ca 6 — `m.get` (lõi map) ⇒ `map.get(map[K, V], K) -> V?`.
+#[test]
+fn hover_builtin_map_get() {
+    let text = "let m: map[str, int] = {\"a\": 1}\n\nm.get(\"a\")\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 3))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        tra_hover(
+            "```vis\nmap.get(map[K, V], K) -> V?\n```\n\nphương thức lõi của `map`",
+            2,
+            2,
+            5
+        )
+    );
+}
+
+/// Ca 7 — tên **không phải** phương thức lõi của `list` ⇒ `result:null` (không đoán bừa).
+#[test]
+fn hover_builtin_khong_ton_tai_tra_null() {
+    let text = "let xs: list[int] = [1, 2]\n\nxs.khong_co(0)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}
+
+/// Ca 8 — người nhận **không có kiểu tĩnh** (`let xs = [1, 2]`, không nhãn) ⇒ `result:null`.
+#[test]
+fn hover_builtin_nguoi_nhan_khong_kieu_tra_null() {
+    let text = "let xs = [1, 2]\n\nxs.get(0)\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 2, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        frame_cuoi(&out),
+        r#"{"jsonrpc":"2.0","id":2,"result":null}"#
+    );
+}
+
+/// Ca 9 — **ưu tiên giữ nguyên**: phương thức người dùng `R.upper` thắng `str.upper`/lõi.
+#[test]
+fn hover_phuong_thuc_nguoi_dung_thang_builtin() {
+    let text = "type R:\n    n: int\n\nimpl R:\n    fn upper(self) -> int:\n        self.n\n\nfn f(r: R) -> int:\n    r.upper()\n";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&hover(2, URI, 8, 7))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        body.contains("phương thức của `R`"),
+        "phải là phương thức người dùng: {body}"
+    );
+    assert!(
+        !body.contains("phương thức lõi"),
+        "không được rơi xuống builtin: {body}"
+    );
+}
+
+/// Ca 10 — completion sau `xs.` **không** thêm phương thức lõi (vd `get`).
+#[test]
+fn completion_khong_them_phuong_thuc_loi() {
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, "let xs: list[int] = [1, 2]\n\nxs.\n")),
+        khung(&completion(2, URI, 2, 3))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(
+        !body.contains(r#""label":"get""#),
+        "completion không được thêm `get`: {body}"
+    );
+    assert!(
+        body.contains(r#""result":[]"#),
+        "kiểu `list` không có thành viên ⇒ rỗng: {body}"
+    );
+}

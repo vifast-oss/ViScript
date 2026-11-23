@@ -57,30 +57,8 @@ http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes", "vis-host-native
 async-h2 = ["http2", "tls", "vis-host-native/async-h2"]
 
 # **ST-296a (VD-282)** — binary test gộp theo miền + `required-features` giữ nguyên.
-# SQLite: `sqlite_it` gom 20 tệp ca gốc (gồm `sqlite`, `vd266_db`, `vd268_dbcache`,
-# `vd270_db_batch` + các `vd270_sqlite_*`).
-[[test]]
-name = "sqlite_it"
-path = "tests/sqlite_it.rs"
-required-features = ["sqlite"]
-
-# TLS: `vs3_tls` + `vs3_registry_https`.
-[[test]]
-name = "tls_it"
-path = "tests/tls_it.rs"
-required-features = ["tls"]
-
-# HTTP/2 + ALPN.
-[[test]]
-name = "http2_it"
-path = "tests/http2_it.rs"
-required-features = ["http2"]
-
-# Chữ ký Ed25519 (pkg-sig).
-[[test]]
-name = "sig_it"
-path = "tests/sig_it.rs"
-required-features = ["pkg-sig"]
+# **ST-310e**: các suite đã chuyển về crate chủ (`vis-host-native`, `vis-pkg`, `vis-lsp`,
+# `vis-loader`, `vis-plugin-abi`); `vis-cli/tests/` còn 8 binary, cổng `bin/vis-dev` chặn > 15.
 
 [dependencies]
 vis-diag = { path = "../vis-diag" }

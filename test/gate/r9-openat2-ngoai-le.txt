@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-310e — danh sách ĐÓNG BĂNG ngoại lệ R9 (không thêm mục mới).
+# Mục duy nhất: bản sao lịch sử trong vis-plugin-abi; ST-310c xoá cap_fs.rs và sẽ làm rỗng tệp này.
+crates/vis-plugin-abi/src/cap_fs.rs

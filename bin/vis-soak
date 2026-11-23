@@ -157,8 +157,8 @@ chay gate-3 ./vis-dev gate --fast
 chay diff-3 env VIS_DIFF_N=100000 VIS_DIFF_SEED=20261115 ./bin/vis-diff
 chay host-1 ./bin/vis-host-suite
 chay host-2 ./bin/vis-host-suite
-chay cache-1 cargo test -p vis-cli --test cache_khong_che
-chay cache-2 cargo test -p vis-cli --test cache_khong_che
+chay cache-1 cargo test -p vis-loader --test cache_khong_che
+chay cache-2 cargo test -p vis-loader --test cache_khong_che
 
 sau=$(uptime)
 echo "=== TỔNG | ${tong}s | 10/10 vòng OK | load sau: $sau" | tee -a "$LOG"
