@@ -9,7 +9,7 @@
 
 use std::path::{Path, PathBuf};
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Mode;
 
 use super::jsonrpc::{m, phan_hoi, s};
@@ -169,7 +169,7 @@ pub fn tra_loi_definition(root: Option<&Path>, ten: &str, id: &Value) -> Vec<u8>
 #[cfg(test)]
 mod tests {
     use super::tra_loi_symbol;
-    use vis_interp::value::Value;
+    use vis_core::value::Value;
 
     #[test]
     fn symbol_uri_chuan_hoa_percent_utf8() {

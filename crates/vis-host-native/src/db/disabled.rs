@@ -6,8 +6,8 @@
 #![allow(dead_code)] // chữ ký dựng song song với nhánh `sqlite` (một số hàm chỉ dùng ở tests/debug).
 
 use crate::quyen::Quyen;
-use vis_interp::builtin::DbHost;
-use vis_interp::value::Value;
+use vis_core::host::DbHost;
+use vis_core::value::Value;
 
 /// Chẩn đoán duy nhất, dùng cho **mọi** API `std.sqlite.*` khi dựng core.
 pub const THIEU_FEATURE: &str = concat!(

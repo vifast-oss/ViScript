@@ -56,8 +56,8 @@ pub(crate) mod chen {
 
 use std::path::PathBuf;
 
-use vis_interp::builtin::FsHost;
-use vis_interp::stdlib::DAU_QUYEN;
+use vis_core::host::FsHost;
+use vis_core::host::DAU_QUYEN;
 
 use crate::quyen::{FsGuard, Quyen, QuyenCap};
 

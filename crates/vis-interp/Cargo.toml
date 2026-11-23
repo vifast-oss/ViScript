@@ -13,6 +13,7 @@ description = "Thông dịch cây trên HIR cho ViScript VS0 (ST-13)"
 taskid-proto = []
 
 [dependencies]
+vis-core = { path = "../vis-core" }
 # ST-41: NFC để đếm **số char** khi render bảng (license MIT OR Apache-2.0 + Unicode-3.0, đã allowlist ở ST-01).
 unicode-normalization = { workspace = true }
 vis-diag = { path = "../vis-diag" }

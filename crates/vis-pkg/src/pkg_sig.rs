@@ -23,8 +23,8 @@
 //! `ring` đã có trong cây (transitive của `rustls`, VS3-4a); feature `pkg-sig` chỉ bật trên nền không
 //! phải wasm32. Khi tắt feature, [`xac_minh`] trả lỗi rõ — **không** bỏ qua kiểm tra.
 
-use vis_interp::json::json;
-use vis_interp::value::Value;
+use vis_core::json::json;
+use vis_core::value::Value;
 
 /// Giải chuỗi hex **đúng** `so_byte` byte; chấp nhận hoa/thường, bỏ khoảng trắng hai đầu.
 pub fn hex_giai(s: &str, so_byte: usize) -> Result<Vec<u8>, String> {

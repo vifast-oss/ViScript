@@ -2,16 +2,16 @@
 //! **ST-72b (VD-103/VD-106)** — cưỡng chế quyền `cap[...]` ở **biên host** + `--grant`.
 //!
 //! `main` khai `cap` (CST) ⇒ [`Quyen::bat`] bật: `HostFs`/`HostNet` chỉ cho thao tác trong **root**
-//! đã khai; ngoài root ⇒ `Err` có dấu [`vis_interp::stdlib::DAU_QUYEN`] ⇒ tầng std đổi thành **trap
+//! đã khai; ngoài root ⇒ `Err` có dấu [`vis_core::host::DAU_QUYEN`] ⇒ tầng std đổi thành **trap
 //! `VS0604`** (không bắt được), exit 2. **Không** khai `cap` ⇒ `bat=false` ⇒ **không hạn chế**
 //! (tương thích 858 test cũ; "siết mặc định" là **nợ**).
 
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 
-use vis_interp::builtin::{DocQuaHandle, DuongDanHandle};
-use vis_interp::stdlib::DAU_QUYEN;
-use vis_interp::value::Value;
+use vis_core::host::DAU_QUYEN;
+use vis_core::host::{DocQuaHandle, DuongDanHandle};
+use vis_core::value::Value;
 use vis_syntax::{Kind, Mode, NodeKind};
 
 use crate::quyen_chuan::{chuan, chuan_de_quy};
@@ -668,7 +668,7 @@ pub use crate::net_quyen::NetGuard;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vis_interp::builtin::FsHost;
+    use vis_core::host::FsHost;
 
     fn tam(tag: &str) -> PathBuf {
         use std::sync::atomic::{AtomicUsize, Ordering};

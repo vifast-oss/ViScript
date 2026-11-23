@@ -5,7 +5,7 @@
 //! **đúng token tên** (UTF-16, 0-based). Không sinh lens cho `fn` thường, `cmd`, hay phương thức
 //! `impl`/`trait`; giữ **thứ tự nguồn**, tối đa **200** lens.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Span;
 use vis_types::hir::{HItem, Hir};
 use vis_types::FnKind;

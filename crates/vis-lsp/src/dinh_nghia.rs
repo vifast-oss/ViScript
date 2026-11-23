@@ -9,7 +9,7 @@
 //! Vị trí dùng [`super::vi_tri::khoang`] (0-based UTF-16, tab = 1) trên văn bản **đã chuẩn hoá**
 //! (`KetQua::text`), đúng quy ước completion/hover.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Span;
 use vis_types::hir::{HCond, HItem, HPat, HStmt, Hir};
 

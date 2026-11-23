@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use vis_interp::rt::fee::SharedBudget;
 use vis_interp::rt::{Task, TrangThai};
 use vis_interp::value::worker::{
-    EnvMap, SendValue, TaskWaitBoard, WaitError, WorkerError, WorkerPool,
+    EnvMap, SendValue, TaskWaitBoard, ToSend, WaitError, WorkerError, WorkerPool,
 };
 use vis_interp::value::{TaskId, Value};
 use vis_syntax::Span;

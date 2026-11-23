@@ -7,7 +7,7 @@
 //! Ngữ cảnh xác định bằng **token** (lexer), nên dấu ngoặc trong chuỗi/chú thích không đánh lừa.
 //! `activeParameter` = số dấu phẩy ở độ sâu 0 giữa `(` và con trỏ.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::{lex, Kind, Mode};
 
 use super::jsonrpc::{m, phan_hoi, s};

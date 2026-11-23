@@ -15,8 +15,8 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use vis_interp::stdlib::json;
-use vis_interp::value::Value;
+use vis_core::json::json;
+use vis_core::value::Value;
 
 /// **VS3-5b/5c (VD-271)**: dọn blob/thư mục gói không còn được **bất kỳ** `vis.lock` nào tham chiếu
 /// (một lock mặc định, `--lock` lặp lại, hoặc `--root` quét có kiểm soát).
@@ -109,7 +109,7 @@ fn doc_manifest(duong: &Path, entry_override: Option<&str>) -> Result<Manifest, 
         .map_err(|e| format!("không đọc được manifest `{}`: {e}", duong.display()))?;
     let text = std::str::from_utf8(&bytes)
         .map_err(|e| format!("manifest `{}` không phải UTF-8: {e}", duong.display()))?;
-    let v = vis_interp::json::decode(text)
+    let v = vis_core::json::decode(text)
         .map_err(|e| format!("manifest `{}` hỏng: {e}", duong.display()))?;
     let nguon = format!("manifest `{}`", duong.display());
     manifest_tu_gia_tri(&v, &nguon, entry_override)

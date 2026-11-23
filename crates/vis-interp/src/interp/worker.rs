@@ -16,7 +16,7 @@ use crate::builtin::Host;
 use crate::interp::{Abort, Interp, Trap, R, RT};
 use crate::rt::exec::HirImage;
 use crate::rt::fee::{BudgetLease, SharedBudget};
-use crate::value::worker::{SendValue, WorkerCtx};
+use crate::value::worker::{SendValue, ToSend, WorkerCtx};
 use crate::value::Value;
 
 /// Chạy thân một tác vụ **trên caller** (W=1). Không snapshot/buffer/thread; mọi ghi đi vào env

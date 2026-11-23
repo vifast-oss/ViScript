@@ -4,7 +4,7 @@
 //! Dùng đúng formatter của CLI (`vis_fmt::format_mode`) trên văn bản **đã chuẩn hoá** của LSP;
 //! trả **một** `TextEdit` phủ toàn tệp, hoặc `[]` nếu không đổi/lỗi cú pháp (client giữ nguyên).
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Mode;
 
 use super::jsonrpc::{m, phan_hoi, s};

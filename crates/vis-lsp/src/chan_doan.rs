@@ -4,8 +4,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use vis_core::value::Value;
 use vis_diag::Severity;
-use vis_interp::value::Value;
 use vis_syntax::Mode;
 
 use super::jsonrpc::{m, s, thong_bao};

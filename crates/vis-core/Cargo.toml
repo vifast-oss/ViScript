@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+rust-version.workspace = true
+name = "vis-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Lõi dùng chung của ViScript: Value, JSON, trait host/reactor, HTTP client — ST-310a"
+
+[dependencies]
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }
+vis-types = { path = "../vis-types" }

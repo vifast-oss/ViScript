@@ -12,7 +12,7 @@
 
 use std::collections::HashSet;
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::{Span, KEYWORDS};
 use vis_types::BUILTIN_VALUE_NAMES;
 

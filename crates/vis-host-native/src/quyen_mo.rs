@@ -23,7 +23,7 @@ use std::path::{Component, Path, PathBuf};
 
 use rustix::fs::{self, AtFlags, Mode, OFlags};
 
-use vis_interp::stdlib::DAU_QUYEN;
+use vis_core::host::DAU_QUYEN;
 
 use crate::quyen::{Quyen, QuyenCap};
 

@@ -22,25 +22,28 @@
 use std::net::IpAddr;
 use std::time::{Duration, Instant};
 
-mod async_http;
-pub(crate) use async_http::{http_get_async, http_head_async, xoa_trang_thai_frame};
+pub mod cookie;
+pub use cookie::CookieJar;
 
-use crate::builtin::NetHost;
+use crate::host::NetHost;
 
 /// Cap **phản hồi** (8 MiB, mẫu `MAX_STDIN` của ST-34) — vượt ⇒ `Err`, không OOM.
 pub const MAX_HTTP: usize = 8 * 1024 * 1024;
 /// Cap **header** (64 KiB) — header lớn hơn ⇒ `Err` (không đọc vô hạn).
-const MAX_HEADER: usize = 64 * 1024;
+#[doc(hidden)]
+pub const MAX_HEADER: usize = 64 * 1024;
 
 /// Giao thức của URL — quyết định cổng mặc định + đường nối (`connect` hay `connect_tls`).
+#[doc(hidden)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum GiaoThuc {
+pub enum GiaoThuc {
     Http,
     Https,
 }
 
 impl GiaoThuc {
-    fn ten(self) -> &'static str {
+    #[doc(hidden)]
+    pub fn ten(self) -> &'static str {
         match self {
             GiaoThuc::Http => "http",
             GiaoThuc::Https => "https",
@@ -56,20 +59,22 @@ impl GiaoThuc {
 }
 
 /// URL đã tách: `scheme://[user:pass@]host[:port][/path][?query]`.
+#[doc(hidden)]
 #[derive(Debug)]
-struct UrlHttp {
-    giao_thuc: GiaoThuc,
+pub struct UrlHttp {
+    pub giao_thuc: GiaoThuc,
     /// `user:pass` (chưa base64) nếu URL có userinfo; không bao giờ đưa vào log/`Host`.
-    userinfo: Option<(String, String)>,
+    pub userinfo: Option<(String, String)>,
     /// Host **không** kèm `[]` của IPv6 (dùng làm `ServerName` cho TLS).
-    host: String,
-    cong: u16,
-    target: String,
+    pub host: String,
+    pub cong: u16,
+    pub target: String,
 }
 
 impl UrlHttp {
     /// `host[:port]` cho `Host:` và `cap[Net]`; bỏ cổng mặc định, IPv6 bọc `[]`.
-    fn authority(&self) -> String {
+    #[doc(hidden)]
+    pub fn authority(&self) -> String {
         let host = if self.host.contains(':') {
             format!("[{}]", self.host)
         } else {
@@ -83,7 +88,8 @@ impl UrlHttp {
     }
 
     /// `host:port` **luôn có cổng** — dạng `connect`/`connect_tls` cần để phân giải.
-    fn dia_chi(&self) -> String {
+    #[doc(hidden)]
+    pub fn dia_chi(&self) -> String {
         let host = if self.host.contains(':') {
             format!("[{}]", self.host)
         } else {
@@ -107,7 +113,8 @@ impl UrlHttp {
     }
 
     /// Header `Authorization: Basic …` nếu URL có `user:pass@`.
-    fn authorization(&self) -> Option<String> {
+    #[doc(hidden)]
+    pub fn authorization(&self) -> Option<String> {
         let (u, p) = self.userinfo.as_ref()?;
         Some(format!("Basic {}", ma_b64(format!("{u}:{p}").as_bytes())))
     }
@@ -198,7 +205,8 @@ fn la_host_loopback(host: &str) -> bool {
 ///
 /// `http://` **chỉ loopback** (`localhost`/`127.0.0.0/8`/`::1`, giữ nguyên VD-100/105); `https://`
 /// cho host bất kỳ (TLS + `cap[Net]`).
-fn tach_url(url: &str) -> Result<UrlHttp, String> {
+#[doc(hidden)]
+pub fn tach_url(url: &str) -> Result<UrlHttp, String> {
     let (giao_thuc, rest) = if let Some(r) = url.strip_prefix("http://") {
         (GiaoThuc::Http, r)
     } else if let Some(r) = url.strip_prefix("https://") {
@@ -255,7 +263,8 @@ fn tach_url(url: &str) -> Result<UrlHttp, String> {
 }
 
 /// Tìm `\r\n\r\n` trong `du` — vị trí **byte đầu** của dấu phân cách.
-fn tim_header(du: &[u8]) -> Option<usize> {
+#[doc(hidden)]
+pub fn tim_header(du: &[u8]) -> Option<usize> {
     du.windows(4).position(|w| w == b"\r\n\r\n")
 }
 
@@ -263,7 +272,8 @@ fn tim_header(du: &[u8]) -> Option<usize> {
 /// hạn. Mọi chờ chặn (connect, mỗi lần read) chỉ được dùng phần thời gian **còn lại** này — deadline
 /// được tính **một lần** ở đầu `http_get`/`http_head` và **không** đặt lại cho mỗi hop redirect.
 /// Luôn trả ≥ 1 khi còn hạn (tránh truyền 0 cho `set_read_timeout`/`connect_timeout`).
-fn con_lai_ms(han: Instant) -> Option<u64> {
+#[doc(hidden)]
+pub fn con_lai_ms(han: Instant) -> Option<u64> {
     let con = han.saturating_duration_since(Instant::now());
     if con.is_zero() {
         None
@@ -274,21 +284,23 @@ fn con_lai_ms(han: Instant) -> Option<u64> {
 
 /// Thông tin header cần cho giao thức.
 #[derive(Default)]
-struct DauHttp {
-    status: u16,
-    cl: Option<usize>,
-    chunked: bool,
-    location: Option<String>,
+#[doc(hidden)]
+pub struct DauHttp {
+    pub status: u16,
+    pub cl: Option<usize>,
+    pub chunked: bool,
+    pub location: Option<String>,
     /// **VS3-4b**: response cho phép giữ kết nối? (HTTP/1.1 mặc định có, `Connection: close` tắt;
     /// HTTP/1.0 chỉ khi `Connection: keep-alive`).
-    giu_ket_noi: bool,
+    pub giu_ket_noi: bool,
     /// Header đã hạ **chữ thường**, giữ thứ tự; dùng cho `http.head`.
-    headers: Vec<(String, String)>,
+    pub headers: Vec<(String, String)>,
 }
 
 /// Đọc status + `Content-Length` + `Transfer-Encoding` + `Location` + `Connection` từ khối header
 /// (không gồm `\r\n\r\n`).
-fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
+#[doc(hidden)]
+pub fn doc_header_day_du(dau: &[u8]) -> Result<DauHttp, String> {
     let text = String::from_utf8_lossy(dau);
     let mut lines = text.split("\r\n");
     let status_line = lines.next().unwrap_or("");
@@ -348,7 +360,8 @@ fn doc_header(dau: &[u8]) -> Result<(u16, Option<usize>), String> {
 /// Ghép thân **chunked** (RFC 7230 §4.1). `None` = còn thiếu byte; `Err` = cú pháp/chunk quá cap.
 /// Hỗ trợ **chunk mở rộng** `<hex>;ext=1\r\n` (bỏ phần sau `;`); chunk `0` kết thúc, **bỏ trailer**
 /// nhưng đọc hết trailer để kết nối có thể tái dùng. Trả `(body, số byte đã dùng)`.
-fn ghep_chunked(du: &[u8]) -> Result<Option<(Vec<u8>, usize)>, String> {
+#[doc(hidden)]
+pub fn ghep_chunked(du: &[u8]) -> Result<Option<(Vec<u8>, usize)>, String> {
     let mut i = 0usize;
     let mut out = Vec::new();
     loop {
@@ -432,7 +445,8 @@ fn chuan_hoa_target(target: &str) -> String {
 /// Ghép `Location` với URL hiện tại (RFC 3986 mức đơn giản). `None` = **không theo** (rỗng/fragment
 /// thuần, hoặc URL sau khi chuẩn hoá **trùng** URL cũ ⇒ tránh vòng). `Err` = `Location` không hỗ trợ,
 /// hoặc **hạ cấp** HTTPS → HTTP (VS3-4a, Q2 (3)).
-fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
+#[doc(hidden)]
+pub fn noi_location(u: &UrlHttp, location: &str) -> Result<Option<String>, String> {
     if location.starts_with("http://") || location.starts_with("https://") {
         if u.giao_thuc == GiaoThuc::Https && location.starts_with("http://") {
             return Err("không cho phép chuyển hướng HTTPS → HTTP".to_string());
@@ -537,7 +551,8 @@ fn set_cookie_cua(d: &DauHttp) -> Vec<String> {
 }
 
 /// Header `(tên, giá trị)` gửi kèm h2 (đã hạ tên; giá trị không log).
-fn header_h2(auth: Option<&str>, cookie: Option<&str>) -> Vec<(String, String)> {
+#[doc(hidden)]
+pub fn header_h2(auth: Option<&str>, cookie: Option<&str>) -> Vec<(String, String)> {
     let mut hs = Vec::new();
     if let Some(a) = auth {
         hs.push(("authorization".to_string(), a.to_string()));
@@ -560,7 +575,7 @@ fn xu_ly_h2(
     net: &mut dyn NetHost,
     u: &UrlHttp,
     path: &str,
-    kq: crate::builtin::KetQuaHttp2,
+    kq: crate::host::KetQuaHttp2,
     so: &mut u8,
     hien_tai: &mut String,
     da_thu_lai: &mut bool,

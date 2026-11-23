@@ -2,10 +2,10 @@
 // **ST-276 (VD-256)**: prelude lõi của `interp` tách sang tệp riêng để giữ R1 ≤ 1500 dòng.
 // Nội dung chuyển Nguyên văn; `interp.rs` `pub use` lại ⇒ API `crate::interp::*` không đổi.
 use vis_diag::{Code, RUNTIME_CODES, TYPE_CODES};
-use vis_syntax::{Diagnostic, Span};
+use vis_syntax::Span;
 use vis_types::hir::*;
 
-use crate::interp::{pos, Interp};
+use crate::interp::Interp;
 use crate::value::Value;
 
 /// `VS0501` — lỗi runtime chung.
@@ -35,47 +35,8 @@ pub const BUDGET: &Code = &RUNTIME_CODES[9];
 #[path = "../interp/goi.rs"]
 pub(crate) mod goi;
 
-/// Lỗi runtime kèm `span`.
-#[derive(Debug, Clone)]
-pub struct Trap {
-    pub code: &'static Code,
-    pub msg: String,
-    pub span: Span,
-}
-
-impl Trap {
-    pub fn new(code: &'static Code, msg: impl Into<String>, span: Span) -> Self {
-        Self {
-            code,
-            msg: msg.into(),
-            span,
-        }
-    }
-
-    /// Chẩn đoán có **`line`/`col` thật** từ `span` + văn bản (VD-46).
-    pub fn to_diag(&self, text: &str) -> Diagnostic {
-        let (line, col) = pos(text, self.span);
-        Diagnostic {
-            code: self.code,
-            message: self.msg.clone(),
-            span: self.span,
-            line,
-            col,
-        }
-    }
-}
-
-/// Dừng chương trình: lỗi runtime, hoặc `return`/`?` trả sớm.
-#[derive(Debug)]
-pub enum Abort {
-    Trap(Trap),
-    Ret(Value),
-    /// **ST-267/VD-251 (chỉ đường test/frame)**: frame hiện tại phải treo tại `await`.
-    /// Runtime mặc định (`frame.enabled == false`) không bao giờ phát ra biến thể này.
-    Pending(crate::rt::Pending),
-}
-
-pub type R<T> = Result<T, Abort>;
+/// **ST-310a**: `Trap`/`Abort`/`R`/`pos` chuyển sang `vis-core` (dùng chung với host/reactor).
+pub use vis_core::trap::{pos, Abort, Trap, R};
 
 /// Đối số đã eval: (vị trí, có tên).
 pub(crate) type Args = (Vec<Value>, Vec<(String, Value)>);

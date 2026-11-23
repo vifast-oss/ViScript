@@ -10,6 +10,8 @@
 //! `WorkerState.mode == Parallel`.
 #![allow(dead_code)]
 
+use vis_interp::value::worker::ToSend;
+
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;

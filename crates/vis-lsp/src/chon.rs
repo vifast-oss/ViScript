@@ -6,7 +6,7 @@
 //! nhất** trong `KetQua.ky_hieu` bao vị trí → toàn tệp. Range trùng **liền nhau** được gộp;
 //! `parent` luôn bao `range` con (nên khai báo một dòng nằm trong dòng vật lý sẽ đứng trước dòng).
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::{lex, Kind, Mode, Token};
 
 use super::jsonrpc::{m, phan_hoi};

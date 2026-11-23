@@ -7,7 +7,7 @@
 
 use super::*;
 
-use vis_interp::rt::{ReactorH2Outcome, ReactorH2Response};
+use vis_core::reactor::{ReactorH2Outcome, ReactorH2Response};
 
 impl AsyncNet {
     /// **VS3-W2** — cấp handle `H<n>` cho một connection h2 dùng chung.

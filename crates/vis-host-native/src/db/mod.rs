@@ -10,7 +10,7 @@
 //!   chối rõ bằng một `Err(String)` có chẩn đoán (trở thành `Err(Error)` dữ liệu ở tầng stdlib,
 //!   `hop_nhat_fs`), **không** panic, **không** hành vi giả.
 //!
-//! Chữ ký của `Db`/`DbGuard` và trait `vis_interp::builtin::DbHost` giữ nguyên ở cả hai nhánh.
+//! Chữ ký của `Db`/`DbGuard` và trait `vis_core::host::DbHost` giữ nguyên ở cả hai nhánh.
 
 #[cfg(feature = "sqlite")]
 mod sqlite;

@@ -15,7 +15,7 @@
 
 use std::collections::HashSet;
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Span;
 
 use super::dinh_nghia::thu_hep_ten;

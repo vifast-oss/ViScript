@@ -80,9 +80,9 @@ use rusqlite::limits::Limit;
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OpenFlags};
 
-use vis_interp::builtin::DbHost;
-use vis_interp::stdlib::DAU_QUYEN;
-use vis_interp::value::Value;
+use vis_core::host::DbHost;
+use vis_core::host::DAU_QUYEN;
+use vis_core::value::Value;
 
 mod tach_cau;
 use tach_cau::TachCau;

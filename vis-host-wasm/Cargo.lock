@@ -117,6 +117,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "vis-core"
+version = "0.5.0"
+dependencies = [
+ "vis-diag",
+ "vis-syntax",
+ "vis-types",
+]
+
+[[package]]
 name = "vis-diag"
 version = "0.5.0"
 
@@ -138,6 +147,7 @@ name = "vis-interp"
 version = "0.5.0"
 dependencies = [
  "unicode-normalization",
+ "vis-core",
  "vis-diag",
  "vis-syntax",
  "vis-types",
@@ -148,8 +158,8 @@ name = "vis-loader"
 version = "0.5.0"
 dependencies = [
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
- "vis-interp",
  "vis-syntax",
  "vis-types",
 ]

@@ -196,7 +196,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 109b | Đường GHI vẫn kiểm-rồi-mở (`FsGuard::write`): đổi symlink giữa `kiem_fs` và `std::fs::write` có thể truncate/ghi ngoài root; sửa cần `O_NOFOLLOW`/`openat` = VS3; **dòng giới hạn đã có trong `HOST-BAO-DAM.md`**; sửa kỹ thuật thuộc VS3 | R23 §6 · ST-124 · R24 §5 #140 · **ST-295** (`ba4023fb`/`cd76da56`) · `JOURNAL/st295-baove.md` | đóng ở ST-295 (`VD-282`: `rustix =1.1.6` `openat2`/`O_NOFOLLOW` chung đọc+ghi trong `quyen_mo.rs`, race ghi tất định **100/100 → 0/100**, đã gỡ cảnh báo ghi ở `HOST-BAO-DAM.md`) |
 | 110 | VM không đưa `argv` vào tham số không-`cap` của `main` (interp `list[str]`, VM `()`) — **ST-157**: VM chạy thẳng `main` (bỏ qua "vỏ" `Call(main, 0); Halt` của codegen) và đặt `argv` vào mọi tham số **không-`cap`**, `Value::Cap` đúng chỉ số (ST-72b); ca mới `vm_main_argv.rs` 4 ca **so byte** hai đường | R23 §6 · ST-124 · ST-157 · `JOURNAL/st157-do-truoc.log` · QUEUE ST-157 | đóng ở ST-157 |
 | 111 | tyck chấp nhận `let e: cap[Dir] = json.decode(...)` | R23 §6 · ST-124 · **ST-289** | **đóng ở ST-289** (khoá bằng ca đỏ-trước có sẵn `crates/vis-cli/tests/cap_khong_lo.rs` ca (1b) `gan_json_vao_bien_cap_khong_sinh_quyen`: `json.decode` trả `Result[Json, Error]` ⇒ gán vào `cap[Dir]` là lỗi tĩnh **VS0412** exit 2, `--strict-caps`, stdout rỗng — không có đường cấp quyền từ JSON; `cargo test -p vis-cli --test cap_khong_lo` xanh) |
-| 112 | Thực tế có 2 bộ escape JSON (`json_esc` + `json_tai`); VD-130e “nguồn duy nhất” chưa đúng | R23 §6 · ST-124 | mở |
+| 112 | Thực tế có 2 bộ escape JSON (`json_esc` + `json_tai`); VD-130e “nguồn duy nhất” chưa đúng | R23 §6 · ST-124 · ST-310a · `JOURNAL/st310a-core.md` | **đóng ở ST-310a** — một `vis_core::json::esc` duy nhất; `vis-loader::json_esc` chỉ re-export, encoder dùng cùng hàm |
 | 113 | `TEN_THE` không ràng buộc lúc biên dịch | R23 §6 · ST-126 · JOURNAL/st126-dong-bang-api.md §8 | chuyển VS3 |
 | 114 | hash nguồn VBC1 ≠ khoá cache (hai giá trị khác nhau, không đối chiếu ở đâu) | R23 §6 · ST-126 · JOURNAL/st126-dong-bang-api.md §8 | chuyển VS3 |
 | 115 | quy ước "điền 0" khi so sánh thiếu thành phần phiên bản | R23 §6 · ST-128 · JOURNAL/st127-semver.md §8 | chuyển VS3 |
@@ -397,15 +397,15 @@ số mới, **kèm số cũ trong ngoặc** — ví dụ `#142` (`#113b`).
 | Chỉ số | Số |
 |---|---|
 | Tổng dòng bảng chính | **195** (1..194; #109 tách `a`/`b`) |
-| `mở` | **82** |
-| `đóng` | **94** |
+| `mở` | **81** |
+| `đóng` | **95** |
 | `chuyển VS3` | **16** |
 | `không làm có lý do` | **2** |
 | Không phải nợ (điều hướng `#141`) | **1** |
 | Ngoài dải chuẩn (nhãn tạm `#113b`, `#114b`) | **0** — đã nhận số **#142/#143** (VD-149, §7.3) |
 | Mục **không truy được nguồn** (không đưa vào sổ) | **0** |
 
-Kiểm: 82 mở + 94 đóng + 16 VS3 + 2 không làm + 1 điều hướng = **195** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191; **ST-300m1: #137 `VS3 → đóng`**; **ST-300m2: #147/#152 `mở → đóng`**; **ST-302: #8/#13 `mở → đóng`**; **VD-285: thêm `#194` (`mở`, race metadata-only FS `st309-security.md` §4)**).
+Kiểm: 81 mở + 95 đóng + 16 VS3 + 2 không làm + 1 điều hướng = **195** dòng (ST-238: #176 `mở → không làm`; ST-238/239/240/249/250/252: 9+5+13+1+1+1 mục `mở → đóng`; **ST-265: #148 `mở → đóng`**; **ST-288: #142 `mở → đóng`**; **ST-289: #111 `mở → đóng`, #151 `VS3 → đóng`**; **VD-282 (GĐ 1 / ST-293 / ST-295 / ST-296): đóng 12 mục** — 8 `mở → đóng` (`#26`, `#27`, `#84`, `#98`, `#109b`, `#125`, `#140`, `#191`) + 4 `VS3 → đóng` (`#16`, `#17`, `#19`, `#21`); `#31` giữ `mở` thu hẹp; **ST-297 (`f4cb136`): `#149` `mở → đóng`**; **VD-283: thêm `#192` (`mở`, P4c VM reactor/cancel) và `#193` (`mở`, WASI interp stack 2/390)**; thêm #185/#186/#187/#188/#189/#190/#191; **ST-300m1: #137 `VS3 → đóng`**; **ST-300m2: #147/#152 `mở → đóng`**; **ST-302: #8/#13 `mở → đóng`**; **VD-285: thêm `#194` (`mở`, race metadata-only FS `st309-security.md` §4)**; **ST-310a: #112 `mở → đóng`**).
 **Stage 0 `v0.3.6` (2026-11-22, `f8f1d4b`)** — trạng thái nợ theo lát (không thêm dòng nợ mới):
 `ST-284` DONE (`83a9a10`, merge `e363a15`; R0a 0 đổi hành vi), `ST-285` DONE (`ab5d292`, merge `246b6c5`;
 R0b 0 đổi hành vi), `ST-286` DONE (`f193c57`, merge `cfba662`; R0c 0 đổi hành vi), `ST-287` DONE

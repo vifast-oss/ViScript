@@ -12,5 +12,5 @@ vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }
 vis-fmt = { path = "../vis-fmt" }
-vis-interp = { path = "../vis-interp" }
+vis-core = { path = "../vis-core" }
 vis-loader = { path = "../vis-loader" }

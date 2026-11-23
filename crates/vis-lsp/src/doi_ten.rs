@@ -5,7 +5,7 @@
 //! Tên mới phải là định danh hợp lệ và không phải từ khoá; nếu không ⇒ `result:null`.
 //! Trả `WorkspaceEdit` dạng `changes: { uri: TextEdit[] }`, cap 200.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::{is_keyword, lex, Kind, Mode, Span};
 
 use super::goi_y::tu_tai;

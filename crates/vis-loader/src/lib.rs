@@ -3,7 +3,7 @@
 //!
 //! Crate **thuần**: không OS/TLS/SQLite, `#![forbid(unsafe_code)]`, biên dịch được cho
 //! `wasm32-unknown-unknown`/`wasm32-wasip1`. `modules`/`cache`/`json_esc`/`audit_span` chuyển
-//! nguyên từ `vis-cli` (0 đổi hành vi); `lock_meta` chứa `{bam, chuan_hoa, doc_khoa_cua, GoiKhoa}`.
+//! nguyên từ `vis-cli` (0 đổi hành vi); từ ST-310a `Value`/`json`/`json_esc` lấy từ `vis-core`; `lock_meta` chứa `{bam, chuan_hoa, doc_khoa_cua, GoiKhoa}`.
 //! `audit_span` chỉ là audit test (trước đây `#[cfg(test)] mod audit_span` trong `vis-cli`).
 
 #![forbid(unsafe_code)]
