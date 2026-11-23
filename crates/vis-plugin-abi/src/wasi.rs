@@ -705,7 +705,15 @@ fn khoi_phuc_quyen(d: &Path) -> Result<()> {
 }
 
 fn thu_muc_driver() -> Result<PathBuf> {
-    let d = std::env::temp_dir().join("vis-plugin-wasi-driver");
+    // **ST-300m3/QA**: mỗi lần gọi một thư mục riêng. Trước đây dùng chung
+    // `vis-plugin-wasi-driver` + ghi đè `driver.mjs`; hai test plugin chạy song song
+    // có thể đọc driver đang bị truncate ⇒ stdout rỗng/VS0501. Tên kèm pid + số thứ tự.
+    let dem = DEM.fetch_add(1, Ordering::Relaxed);
+    let d = std::env::temp_dir().join(format!(
+        "vis-plugin-wasi-driver-{}-{}",
+        std::process::id(),
+        dem
+    ));
     fs::create_dir_all(&d).map_err(|e| {
         Error::io(format!(
             "không tạo được thư mục driver `{}`: {e}",
@@ -1351,4 +1359,16 @@ fn giai_hex(s: &str) -> Option<Vec<u8>> {
         i += 2;
     }
     Some(ra)
+}
+
+#[cfg(test)]
+mod tests_driver_rieng {
+    #[test]
+    fn moi_lan_goi_thu_muc_driver_rieng() {
+        let a = super::thu_muc_driver().expect("driver a");
+        let b = super::thu_muc_driver().expect("driver b");
+        assert_ne!(a, b, "driver phải riêng mỗi lần gọi");
+        assert!(a.join("driver.mjs").is_file());
+        assert!(b.join("driver.mjs").is_file());
+    }
 }
