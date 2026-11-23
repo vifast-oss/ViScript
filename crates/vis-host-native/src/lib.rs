@@ -34,3 +34,8 @@ pub mod quyen_st174;
 #[cfg(all(test, unix))]
 #[path = "quyen/st295.rs"]
 pub mod quyen_st295;
+
+/// **ST-311b (VD-286)** — ca đua 100k vòng metadata theo fd `#194` (chỉ test).
+#[cfg(all(test, unix))]
+#[path = "quyen/st311b.rs"]
+pub mod quyen_st311b;

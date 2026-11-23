@@ -61,7 +61,18 @@
 > **Còn lại (không phải lỗi đua đọc/ghi nội dung)**: các thao tác **metadata** (`size`, `list`,
 > `exists`, `canonicalize`, `read_link`, `is_*`, `walk`) vẫn kiểm-rồi-dùng theo **tên** (API
 > `FsHost` không có fd); chúng không trả nội dung tệp ngoài, nhưng có thể lộ **metadata** qua khe
-> đua. Ghi ở `JOURNAL/st309-security.md` là nợ kiểm toán.
+> đua. Ghi ở `JOURNAL/st309-security.md` là nợ kiểm toán. **→ Đã đóng ở ST-311b (xem khối dưới).**
+
+> **Cập nhật 2026-11-24 (ST-311b — metadata theo fd, đóng #194)** — các truy vấn **metadata**
+> của `FsHost` (`size`, `is_file`, `is_dir`, `is_symlink`, `read_link`, `canonicalize`, `exists`,
+> `list`, `walk`) nay mở **từ fd gốc** `cap` bằng `openat`/`openat2` + `O_NOFOLLOW` rồi
+> `statat`/`readlinkat`/`fstat` (`quyen_mo.rs`; symlink thoát gốc ⇒ `ELOOP`/`EXDEV`/`ENOTDIR` ⇒
+> `VS0604`), **0 `unsafe`**, cùng nguồn `openat2` với đường đọc/ghi (R9). `canonicalize`/`exists`
+> đi theo symlink **trong** gốc qua `phan_giai` (realpath theo fd, `..`/đích tuyệt đối ra ngoài ⇒
+> từ chối). Ca đua **100 000 vòng** `rename`/`symlink` trên Linux `ps` và macOS `mps` đạt **0 rò**
+> (xem `agent/JOURNAL/st311b-race-*.log` ngoài repo, kèm sha256). `quyen/mod.rs` **1197 → 675** dòng
+> (tách `quyen/tests.rs`). **Windows giữ nguyên caveat**: không có `openat`/danh tính tệp, mức bảo
+> đảm thấp hơn (chỉ kiểm theo đường dẫn) — xem mục “Windows” bên dưới.
 
 > **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
 > `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
