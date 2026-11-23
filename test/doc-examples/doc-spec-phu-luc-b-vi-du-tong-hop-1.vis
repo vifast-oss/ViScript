@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# Chương trình: đếm tần suất từ, in ra màn hình.
+use std.str
+
+fn main():
+    let cau = "viết một lần, chạy nhiều nơi"
+    let tu = cau.split(" ")
+    let dem = map.keys({})
+    print("có {tu.len()} từ")

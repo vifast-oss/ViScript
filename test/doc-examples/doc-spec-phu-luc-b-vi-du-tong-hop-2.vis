@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type User derives Eq, Show, Json:
+    name: str
+    age: int?
+    email: str? = None
+
+enum Shape:
+    Circle(r: float)
+    Rect(w: float, h: float)
+    Empty
+
+fn area(s: Shape) -> float:
+    match s:
+        Circle(r): 3.14 * r * r
+        Rect(w, h): w * h
+        Empty: 0.0
+
+let u: User = User(name: "An", age: None, email: None)
+print(u)
+print(area(Circle(2.0)))
