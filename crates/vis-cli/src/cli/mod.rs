@@ -6,6 +6,7 @@ pub(crate) mod doc;
 pub(crate) mod doctor;
 pub(crate) mod fmt;
 pub(crate) mod new;
+pub(crate) mod plugin;
 pub(crate) mod repl;
 pub(crate) mod run;
 pub(crate) mod run_cmd;

@@ -680,6 +680,7 @@ dependencies = [
  "vis-loader",
  "vis-lsp",
  "vis-pkg",
+ "vis-plugin-abi",
  "vis-syntax",
  "vis-types",
  "vis-vm",
