@@ -45,6 +45,7 @@
 - **ST-300 harness** `3581c9a`: `test/sem` WASI trên oracle native — **388/390 = 99,5%**
   eligible; 2 fail còn lại là **stack overflow interp WASI** (VM pass), đã ghi rõ.
 - **P2b-3/4 NO-GO** `16fba3a`: bench **4,0×**, không đạt ≤1,5×, không đổi production.
+- **macOS `mps` lần đầu**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, sem **388/390**; fix test/tooling merged `faac029`; **chưa tuyên bố hỗ trợ**.
 - **Sau tag `v0.4.5`**: merge **ST-300b** `770fdf7` → **ST-301** `2bc6be7` → **ST-303** `a114e38`; gate **3671/4**.
 - Flake fix `044b289`: poll 2 s sau join (test-only; 0/60 đỏ dưới tải).
 

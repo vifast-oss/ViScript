@@ -1,9 +1,9 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
-> **ĐÍNH CHÍNH macOS — 2026-11-21 (ST-242 / VD-242 Q7).** Mọi câu “macOS…” và số “macOS 27.0.1 arm64”
-> trong tệp này là **số cũ**, **chưa đo lại** trên máy Darwin thật. Ngày 20/11 `bin/vis-remote mac --check`
-> trả Linux x86_64/Ubuntu (alias `mac` còn chạy tại chỗ) ⇒ **không dùng làm bằng chứng macOS**. Hiện
-> **không tuyên bố hỗ trợ macOS**; bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
+> **ĐÍNH CHÍNH macOS — 2026-11-21 (ST-242 / VD-242 Q7).** Số “macOS 27.0.1 arm64” cũ đã được **đo lại trên Darwin thật** ngày 2026-11-23:
+> `mps` = macOS **27.0.1 arm64**, gate **3631/3**, workspace **3636/0/3**, host **54/54**,
+> WASI suite **28/28**, `vis-wasm-sem` **388/390 = 99,5%** (xem `JOURNAL/mac-v045-verify.md`).
+> **Vẫn chưa tuyên bố hỗ trợ macOS** (A0 quyết định tier); bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
 > `vis-host-linux` **18/18** (ST-295 thêm 3 ca `Execute`/lib). Windows: **Tier 2**, verify lại trên `psvn` @ tag **`v0.3.5`** (`03bb7b9`):
 > workspace **3528 passed / 0 failed / 3 ignored** (debug + release), P2 10/10, P3 10/10 — **vẫn chưa
 > tuyên bố hỗ trợ**. Xem `STATE.md` addendum 20/11, `DECISIONS.md` VD-242, `agent/SNAPSHOT-2026-11-20.md` §6.
@@ -12,7 +12,7 @@
 > bằng `openat`/`openat2` (`rustix =1.1.6`, feature `fs`; ca đua **100/100 → 0/100**,
 > `JOURNAL/st295-race.log`). Landlock `#125`: ruleset xử lý `Execute`, cấp chỉ-đọc + Execute cho
 > thư viện chuẩn và binary trong grant — `vis-host-linux` **18/18**. Windows vẫn **Tier 2**
-> (không có `openat`); macOS dùng cùng mã nhưng **chưa verify** lại.
+> (không có `openat`); macOS dùng cùng mã, đã verify `v0.4.5` trên Darwin 27 arm64 ngày 2026-11-23.
 
 > **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
 > `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
@@ -38,7 +38,7 @@ lại, **Windows mức bảo đảm thấp hơn**).
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
-| macOS (mps) — **CHƯA verify** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Số cũ, không dùng làm bằng chứng**: `vis-remote mac --check` 20/11 trả Linux (ST-242); `mac|macos` nay **từ chối** nếu `uname -s` ≠ Darwin. Cần đo lại trên máy Darwin thật. |
+| macOS (mps) — **ĐÃ verify `v0.4.5`** (chưa tuyên bố hỗ trợ) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64, 2026-11-23**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; `JOURNAL/mac-v045-verify.md`. |
 | Linux | **Có** — cùng mã `vis-cli` | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
 | Windows / wasm | Chưa có host tương ứng | Không áp dụng | Chưa đo |
 
@@ -277,3 +277,10 @@ sandbox kernel”. Đúng: “**Landlock chỉ Linux** — mac/Windows chỉ có
   (bẩn ⇒ `[exit=6]`), `st175-cho-phep-cay-ban.log` (`--allow-dirty` ⇒ `[exit=0]`), `st175-kiem-che-do.log`.
 - `git rev-parse HEAD:viscript` là hash **của commit**, KHÔNG phải cây làm việc ⇒ không trích dẫn nó như
   bằng chứng “cây sạch”; bằng chứng đúng là `git status --porcelain` rỗng + dòng `# ST-175: cay SACH` trong log.
+
+## macOS — verify `v0.4.5` (2026-11-23)
+
+- `mps`: macOS **27.0.1** (Darwin 27.0.0) **arm64**, Rust **1.100.0**, Node **26.12.1**.
+- `./vis-dev check` PASS; gate **3631/3**; workspace **3636/0/3**; host **54/54**; WASI suite **28/28**; `vis-wasm-sem` **388/390 = 99,5%** (2 stack-overflow interp known, VM pass).
+- Fix test-only/tooling: `fix/macos-v045-tests` (APFS non-UTF-8 skip, `st295` cfg Linux, harness `CARGO_TARGET_DIR`, Python 3.9).
+- **Chưa tuyên bố hỗ trợ macOS**; cần A0 quyết định tier.

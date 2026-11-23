@@ -5,6 +5,7 @@
 > **Giai đoạn đang mở**: **Chốt cuối GĐ 2 (`v0.4.5`, W4 soak 4h)** + **Zero-Idle GĐ 3 (`v0.5.0`: W1/W2/W3 chạy song song trên nhánh riêng!)**
 > **Toàn văn quyết định & kế hoạch GĐ 2→3→4**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd283.md` · `agent/DECISIONS.md` (`VD-283`).
 
+> **macOS `mps` lần đầu (`v0.4.5`)**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; fix test-only merged `faac029`; **chưa tuyên bố hỗ trợ**.
 > **Sau tag `v0.4.5`**: đã merge **ST-300b** `770fdf7` → **ST-301** `2bc6be7` → **ST-303** `a114e38`;
 gate **3671/4**; ST-302/ST-304/ST-305 tiếp theo.
 
