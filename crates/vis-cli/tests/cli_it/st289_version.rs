@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-289 / VD-272(3)** — đồng bộ phiên bản: workspace là **một nguồn** (`0.4.1`), CLI in đúng
+//! **ST-289 / VD-272(3)** — đồng bộ phiên bản: workspace là **một nguồn** (`0.5.0`), CLI in đúng
 //! bản phát hành, mọi crate thành viên dùng `version.workspace = true` (không chép số).
 //!
 //! Test này **cố ý ghim** số phiên bản: bump phát hành phải sửa đúng một chỗ ở
@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Bản phát hành hiện hành — phải khớp `[workspace.package] version`.
-const BAN: &str = "0.4.5";
+const BAN: &str = "0.5.0";
 
 fn goc() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -46,7 +46,7 @@ fn cli_in_dung_ban_0_4_1() {
     assert_eq!(out, format!("{{\"name\":\"vis\",\"version\":\"{BAN}\"}}\n"));
 }
 
-/// Mọi crate thành viên khai `version.workspace = true`; root giữ đúng `version = "0.4.1"`.
+/// Mọi crate thành viên khai `version.workspace = true`; root giữ đúng `version = "0.5.0"`.
 #[test]
 fn moi_crate_thanh_vien_dung_version_workspace() {
     let goc = goc();

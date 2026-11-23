@@ -1,20 +1,39 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **TRẠNG THÁI HIỆN HÀNH — 2026-11-23 (sau `ST-300m1`, merge `c3b7290`). Đọc khối này trước.**
-> - **Tag**: `v0.4.5` @ `3daff62` (annotated), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`;
->   version workspace **0.4.5**. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (VD-142).
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-23 (`main` `f2d3e73`; prep `plan/v050-prep`). Đọc khối này trước.**
+> - **`main` `f2d3e73`**: GĐ 3 đã tích hợp — `ST-300m2` (`5741d23`), `ST-302` (`b79ae3a`),
+>   `ST-302b` (`6bc4ac3`), `ST-304` (`8e73e81`), `ST-304b` (`1eb2768`), `ST-305` (`374b4e8`),
+>   `ST-306` (`6093aef`), `ST-307` (`ab6beb7`/`b5aa40b`), `ST-308` (`a9eef01`).
+>   Gate Linux **3.747/4**; fmt/clippy/R1..R7/doc-examples PASS.
+> - **Tag**: `v0.4.5` @ `3daff62` (annotated), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`.
+>   Nhánh `plan/v050-prep` bump workspace **0.5.0** + cache `+v050-release-2026-11-23`
+>   (khoá `fc20a811…`) — **`v0.5.0` CHƯA tag, CHƯA merge**. Các khối dated bên dưới là **lịch sử**,
+>   số cũ giữ nguyên (VD-142).
 > - **Windows x86_64: Tier 1 đã công bố** (`ST-298`: 3× `vis-gate-windows --full` 3611/0/3,
 >   soak 4 h 985 vòng / 0 fail; caveat `FsGuard`).
-> - **macOS arm64: đã verify `v0.4.5`** trên `mps` (Darwin 27.0.1 arm64: gate 3631/0/3,
->   workspace 3636/0/3, host 54/54, WASI 28/28, `vis-wasm-sem` 388/390) nhưng **Tier 1 CHƯA
->   công bố** — `ST-300m3` phải chạy 3× `bin/vis-gate-macos --full` + soak 4 h rồi mới tuyên bố.
->   `ST-300m1` đã merge (`c3b7290`); **`ST-300m2` (bench `#147`/`#152`) và `ST-300m3` đang chờ**.
+> - **macOS arm64: CHƯA công bố Tier 1** — `ST-300m1`/`ST-300m2` đã merge (errno Darwin, gate
+>   macOS, đóng `#137`/`#147`/`#152`); `ST-300m3` (**3× `bin/vis-gate-macos --full` + soak 4 h +
+>   `vis-wasm-sem` ≥ 388/390**) **đang chạy / chờ kết quả**. Verify gần nhất `v0.4.5`: gate
+>   **3.631/0/3**, workspace **3.636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem`
+>   **388/390**.
 > - **WASI `wasm32-wasip1`: có runner runtime** (`bin/vis-wasm-sem` 388/390 eligible,
 >   `bin/vis-wasm-suite` 28/28) — không còn “chỉ cargo check”.
-> - **Crate**: 12 crate trên `main` (thêm `vis-host-native`, `vis-pkg`, `vis-loader`, `vis-lsp`);
->   `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` còn ở **nhánh riêng, chưa merge**.
-> - **Công cụ mới**: `bin/vis-gate-macos`, `bin/vis-wasm-sem`, `bin/vis-wasm-suite`, `bin/vis-lock`.
+> - **Crate**: **16 crate thành viên** trên `main` (thêm `vish-edit`, `vis-plugin-abi`,
+>   `vis-plugin-macros`, `vish-term`); `vis-host-linux`/`vis-host-wasm` là **workspace riêng**.
+> - **Công cụ**: `bin/vis-gate-macos`, `bin/vis-gate-windows`, `bin/vis-wasm-sem`,
+>   `bin/vis-wasm-suite`, `bin/vis-lock`.
+
+> **`v0.5.0` prep — 2026-11-23 (ST-305, chưa tag)** — workspace bump **0.5.0** (mọi crate
+> `version.workspace = true`); `vis --version` ⇒ **`vis 0.5.0`**; `PHIEN_BAN`
+> `+v050-release-2026-11-23`, khoá cache mới
+> `fc20a81123cdb432a976e7d3d1fa15b7f4a2dd3b2276241bd0888e55bda53117`; `assert_ne` khoá 0.4.5
+> `d92f31c2…` ⇒ cache cũ tự vô hiệu; `Cargo.lock` + `vis-host-wasm/Cargo.lock` đồng bộ 0.5.0.
+> Bằng chứng GĐ 3: gate Linux **3.747/4**; `ST-302`/`302b` (`#13`/`#8` + spawn method),
+> `ST-304`/`304b` (`vish-edit` 17/17), `ST-305` (`lsp_it` 155/155, `vis-lsp` 29/29, VS Code),
+> `ST-306`/`307` (plugin tĩnh/WASI, Windows quick **91/91**), `ST-308` (`vish-term`).
+> **macOS Tier 1 chờ `ST-300m3`** — không tuyên bố trước khi có 3× full + soak 4 h.
+> **Chưa tạo tag, chưa merge `plan/v050-prep`.**
 
 > **`v0.4.5` — 2026-11-23 (ST-298/VD-283, tag trên commit R35)** — workspace bump **0.4.5**;
 > cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá mới
