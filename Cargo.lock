@@ -680,7 +680,7 @@ dependencies = [
  "vis-loader",
  "vis-lsp",
  "vis-pkg",
- "vis-plugin-abi",
+ "vis-plugin-host",
  "vis-syntax",
  "vis-types",
  "vis-vm",
@@ -783,10 +783,16 @@ dependencies = [
 [[package]]
 name = "vis-plugin-abi"
 version = "0.5.0"
+
+[[package]]
+name = "vis-plugin-host"
+version = "0.5.0"
 dependencies = [
- "rustix",
  "vis-bytecode",
+ "vis-core",
+ "vis-host-native",
  "vis-interp",
+ "vis-plugin-abi",
  "vis-plugin-macros",
  "vis-syntax",
  "vis-types",

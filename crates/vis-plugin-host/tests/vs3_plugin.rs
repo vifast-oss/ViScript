@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
-use vis_plugin_abi::{Cap, ChinhSach, PluginValue, PluginWasi};
+use vis_plugin_abi::{Cap, PluginValue};
+use vis_plugin_host::{ChinhSach, PluginWasi};
 
 fn goc_repo() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -165,7 +166,7 @@ fn plugin_mau() -> Option<&'static Path> {
 }
 
 fn co_runtime() -> bool {
-    vis_plugin_abi::wasi::tim_runtime().is_ok()
+    vis_plugin_host::wasi::tim_runtime().is_ok()
 }
 
 fn nap_mau(caps: Vec<Cap>) -> PluginWasi {
@@ -190,9 +191,9 @@ fn nap_plugin_va_goi_cong() {
     assert!(
         matches!(
             p.runtime(),
-            vis_plugin_abi::Runtime::Wasmtime(_)
-                | vis_plugin_abi::Runtime::Python(_)
-                | vis_plugin_abi::Runtime::Node(_)
+            vis_plugin_host::Runtime::Wasmtime(_)
+                | vis_plugin_host::Runtime::Python(_)
+                | vis_plugin_host::Runtime::Node(_)
         ),
         "runtime: {:?}",
         p.runtime()
@@ -229,8 +230,10 @@ fn parity_interp_vm_qua_wasi() {
     let v = vis_vm::run(&m, src, &[]);
     assert!(i.is_clean(), "interp: {:?}", i.diagnostics);
     assert!(v.is_clean(), "vm: {:?}", v.diagnostics);
-    let iv = PluginValue::try_from(i.value.clone().expect("interp value")).expect("interp ABI");
-    let vv = PluginValue::try_from(v.value.clone().expect("vm value")).expect("vm ABI");
+    let iv = vis_plugin_host::convert::tu_value(i.value.clone().expect("interp value"))
+        .expect("interp ABI");
+    let vv =
+        vis_plugin_host::convert::tu_value(v.value.clone().expect("vm value")).expect("vm ABI");
     assert_eq!(iv, vv, "interp và VM phải cùng giá trị");
 
     let plugin = nap_mau(Vec::new());
@@ -464,13 +467,13 @@ fn codec_gia_tri_tron_vong_va_sai_thi_loi() {
         },
     ];
     for v in ds {
-        let s = vis_plugin_abi::wasi::ma_hoa(&v);
-        let lai = vis_plugin_abi::wasi::giai_ma(&s).expect("giải mã");
+        let s = vis_plugin_host::wasi::ma_hoa(&v);
+        let lai = vis_plugin_host::wasi::giai_ma(&s).expect("giải mã");
         assert_eq!(lai, v, "codec: {s}");
     }
     for sai in ["", "x:", "i:abc:", "s:2:61", "l:2:i:1:", "c:1:44"] {
         assert!(
-            vis_plugin_abi::wasi::giai_ma(sai).is_err(),
+            vis_plugin_host::wasi::giai_ma(sai).is_err(),
             "phải lỗi: `{sai}`"
         );
     }

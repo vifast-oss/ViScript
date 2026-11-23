@@ -28,6 +28,11 @@ pub use guard_impl::FsGuard;
 use path_impl::la_tep_thuc_thi;
 pub use path_impl::{chuan_lenh, phan_giai_lenh};
 
+/// **ST-310c (VD-285)** — primitive mở/đọc/ghi **một nguồn** dưới fd gốc `cap`, tái xuất cho
+/// `vis-plugin-host` dùng (plugin tĩnh). Không crate nào khác được chép `openat2`.
+#[cfg(unix)]
+pub use crate::quyen_mo::{la_loi_symlink, mo_goc, mo_tep_doc, mo_tep_ghi};
+
 /// Một `cap` khai trên `main` (đọc từ **CST**).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapKhai {

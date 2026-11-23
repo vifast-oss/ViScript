@@ -28,7 +28,7 @@ fn stdout(o: &Output) -> String {
 }
 
 fn co_runtime() -> bool {
-    vis_plugin_abi::wasi::tim_runtime().is_ok()
+    vis_plugin_host::wasi::tim_runtime().is_ok()
 }
 
 fn thu_muc_tam(ten: &str) -> PathBuf {

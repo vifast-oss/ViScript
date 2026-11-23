@@ -12,7 +12,8 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use vis_plugin_abi::{Cap, ChinhSach, Error, PluginValue, PluginWasi};
+use vis_plugin_host::convert::sang_value;
+use vis_plugin_host::{Cap, ChinhSach, Error, PluginValue, PluginWasi};
 
 fn usage() -> ExitCode {
     eprintln!(
@@ -200,7 +201,7 @@ fn run(args: &[String]) -> ExitCode {
     let ham = yc.ham.expect("run có hàm");
     match p.goi(&ham, &yc.args) {
         Ok(v) => {
-            let v = vis_interp::value::Value::try_from(v).unwrap_or(vis_interp::value::Value::Unit);
+            let v = sang_value(v).unwrap_or(vis_interp::value::Value::Unit);
             println!("{}", vis_interp::value::show(&v));
             ExitCode::SUCCESS
         }

@@ -37,7 +37,8 @@
 > (2) `PluginCtx::write_text` (plugin tĩnh) canonicalize **thư mục cha** rồi
 > `std::fs::write(cha/ten)`: **tên cuối** là symlink ⇒ ghi đè tệp ngoài (ca
 > `cap_ghi_khong_di_theo_symlink_o_ten_cuoi`, đỏ trước). Nay mở từ fd gốc bằng
-> `openat`/`RESOLVE_BENEATH|NO_SYMLINKS` (`vis-plugin-abi/src/cap_fs.rs`). WASI preopen vẫn từ chối
+> `openat`/`RESOLVE_BENEATH|NO_SYMLINKS` (`vis-plugin-host/src/static_reg.rs` →
+> `vis-host-native::quyen::mo_tep_ghi`; ST-310c xoá bản sao `cap_fs.rs`). WASI preopen vẫn từ chối
 > symlink ra ngoài (ca `preopen_khong_di_theo_symlink_ra_ngoai`).
 > **Còn lại (không phải lỗi đua đọc/ghi nội dung)**: các thao tác **metadata** (`size`, `list`,
 > `exists`, `canonicalize`, `read_link`, `is_*`, `walk`) vẫn kiểm-rồi-dùng theo **tên** (API

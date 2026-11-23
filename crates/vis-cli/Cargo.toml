@@ -95,9 +95,10 @@ vis-loader = { path = "../vis-loader" }
 vis-lsp = { path = "../vis-lsp" }
 vis-host-native = { path = "../vis-host-native" }
 vis-pkg = { path = "../vis-pkg" }
-# **ST-307 (VD-278/VD-283)**: `vis plugin` nạp plugin động WASI/WASM qua `VIS_PLUGIN_ABI_V1`;
-# cùng crate ABI tĩnh ST-306, 0 `unsafe`, không thêm dependency ngoài workspace.
-vis-plugin-abi = { path = "../vis-plugin-abi" }
+# **ST-307/ST-310c (VD-278/VD-283/VD-285)**: `vis plugin` nạp plugin động WASI/WASM qua
+# `VIS_PLUGIN_ABI_V1`; guest ABI mỏng ở `vis-plugin-abi`, host loader/chuyển đổi ở
+# `vis-plugin-host` (0 `unsafe`, không thêm dependency ngoài workspace).
+vis-plugin-host = { path = "../vis-plugin-host" }
 # **ST-310b (VD-285)**: `vis repl` dùng `vish-edit` (TTY thật) + `vish-term` (Terminal/Render duy nhất).
 vish-edit = { path = "../vish-edit" }
 vish-term = { path = "../vish-term" }

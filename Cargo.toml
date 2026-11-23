@@ -24,6 +24,7 @@ members = [
     "crates/vis-lsp",
     "crates/vish-edit",
     "crates/vis-plugin-abi",
+    "crates/vis-plugin-host",
     "crates/vis-plugin-macros",
     "crates/vish-term",
 ]

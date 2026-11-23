@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+name = "vis-plugin-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Host plugin ViScript: chuyển đổi Value, registry tĩnh và loader WASI/WASM (ST-310c)"
+
+# **ST-310c (VD-285)**: mọi phần cần OS/quyền nằm ở đây; `vis-plugin-abi` giữ guest ABI mỏng.
+# Không có bản sao `openat2`: I/O plugin tĩnh đi qua `vis_host_native::quyen`.
+[dependencies]
+vis-plugin-abi = { path = "../vis-plugin-abi" }
+vis-core = { path = "../vis-core" }
+vis-host-native = { path = "../vis-host-native" }
+
+[dev-dependencies]
+vis-syntax = { path = "../vis-syntax" }
+vis-types = { path = "../vis-types" }
+vis-bytecode = { path = "../vis-bytecode" }
+vis-vm = { path = "../vis-vm" }
+vis-interp = { path = "../vis-interp" }
+vis-plugin-macros = { path = "../vis-plugin-macros" }
