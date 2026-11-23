@@ -1,34 +1,40 @@
-<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# ACTIVE — Bảng điều khiển nhanh cho Agent 2 (≤ 100 dòng)
+# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-285`, 2026-11-23)
 
-> **Cập nhật**: 2026-11-23 (`main` **`f2d3e73`**; nhánh prep `plan/v050-prep`) · **Tags đã phê chuẩn**: **`v0.4.5`** (`3daff62`, Windows Tier 1 + R35), `v0.4.1` (`90844bc`), `v0.4.0` (`c2accdf`), `v0.3.6` (`8fa2c09`) · **`v0.5.0` CHƯA tag**
-> **Giai đoạn đang mở**: **GĐ 3 (`v0.5.0`) — Pha 2 Ngôn ngữ + ViShell MVP + macOS arm64 Tier 1 (3-OS Tier 1 + WASI!)**
-> **Toàn văn quyết định & kế hoạch macOS**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd284.md` · `agent/DECISIONS.md` (`VD-284`).
+> **Toàn văn quyết định & kế hoạch refactor**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md` · `agent/DECISIONS.md` (`VD-285`).
 
-## 1. Mốc đã phê chuẩn (`APPROVED VD-284`)
+## 1. Trạng thái Thực tế tại `f9e7503d` (`APPROVED VD-285`)
 
-- **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298` 3× full 3.611/0/3 + soak 4h **985 vòng / 0 fail**), WASI Preview 1 (`ST-299a/b` + `ST-300` **388/390 = 99,5%**, VM 100%), `R35-viscript.{md,json}` PASS.
-- **GĐ 3 đã tích hợp vào `main` `f2d3e73`** (trừ `ST-300m3`): `ST-300b` (`770fdf7b`), `ST-301` (`2bc6be74`), `ST-303` (`a114e389`), `ST-300m1` (`c3b7290`), `ST-300m2` (`5741d23`: đóng **`#147`**/**`#152`**), `ST-302` (`b79ae3a`: `#13` + `#8`), `ST-302b` (`6bc4ac3`: spawn method), `ST-304` (`8e73e81`: `vish-edit`), `ST-304b` (`1eb2768`: completion + job control), `ST-305` (`374b4e8`: LSP + VS Code), `ST-306` (`6093aef`: plugin tĩnh), `ST-307` (`ab6beb7`/`b5aa40b`: plugin WASI), `ST-308` (`a9eef01`: `vish-term`); workspace **16 crate**.
-- **Gate Linux `main` `f2d3e73`**: **3.747/4** (nextest, version 0.5.0 sau prep); fmt/clippy/R1..R7/doc-examples PASS.
-- **Version**: nhánh `plan/v050-prep` bump workspace **0.5.0** + `PHIEN_BAN` `+v050-release-2026-11-23` (khoá `fc20a811…`), lock root + `vis-host-wasm` đồng bộ; **chưa merge, chưa tag**.
-- **macOS `mps`**: verify `v0.4.5` **3.631/0/3** (gate), workspace **3.636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; **Tier 1 CHƯA công bố** — `ST-300m3` (**3× `--full` + soak 4 h**) **đang chạy / chờ kết quả**.
+- **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298`), WASI Preview 1 (`ST-299a/b`, `ST-300` 388/390 = 99,5%), `R35` PASS.
+- **Đợt tính năng GĐ 3 & GĐ 4 đã `APPROVED DONE` trên `main`**:
+  - macOS Core & Bench: `ST-300m1` (`c3b72907`, đóng **`#137`**) · `ST-300m2` (`5741d234`, `mps` 0,73× `ps`, đóng **`#147`/`#152`**).
+  - Ngôn ngữ Pha 2b: `ST-302` + `ST-302b` (`b79ae3ae`, `6bc4ac35`, đóng **`#8`/`#13`**).
+  - ViShell & ViTerm: `ST-304` (`8e73e81f`) · `ST-304b` (`1eb2768c`) · `ST-308` (`a9eef01f`).
+  - LSP + VS Code + bump `0.5.0`: `ST-305` code (`374b4e8e`, `75e5a53e`, `7b79769b`) — **chưa tag `v0.5.0`**.
+  - Plugin tĩnh & động WASI: `ST-306` (`6093aef0`) · `ST-307` (`ab6beb77`/`b5aa40b1`, 0 `unsafe`).
+  - `ST-309` (2/3 DONE): `docs/SPEC.md` (`51e937db`/`f9e7503d`, 1.181 dòng, 31 doc-example PASS) + kiểm toán bảo mật (`59028879`, vá F1/F2, fuzz 1,5M = 0 panic, mở **`#194`**).
+- **Sổ nợ `SO-NO.md` §8**: **195 dòng = 82 mở / 94 đóng / 16 VS3 / 2 không làm / 1 điều hướng** (R5 xanh).
 
-## 2. Phân làn 4 Luồng Đợt kế tiếp (`v0.5.0` — 3-OS Tier 1)
+## 2. Trình tự 3 Pha Thực thi (KHÔNG trộn lẫn!)
 
-| Luồng | Lát việc | Trạng thái | Phạm vi & Yêu cầu trọng yếu (`VD-284`) |
+### Pha A — Khóa gọn `v0.5.0` (ĐANG CHẠY — 0 đổi kiến trúc trước tag!)
+- **W4 (`mps` + `ps` + `psvn`)**: hoàn tất **`ST-300m3`** (**3× `bin/vis-gate-macos --full` PASS**, dirty 0 + **soak 4 giờ trên `mps`** + `vis-wasm-sem` ≥ 388/390; cập nhật `HOST-BAO-DAM.md` & `ROADMAP.md` công bố **macOS arm64 Tier 1**).
+- Hoàn tất **`ST-305`**: làm mới `agent/reports/R36-viscript.{md,json,json.license}` trên `HEAD` chốt (đủ bằng chứng 3-OS Tier 1), xác minh `check_report.py --n 36` + `./vis-dev gate --fast` PASS → gắn & push tag **`v0.5.0`**.
+
+### Pha B — Đợt Refactor Kiến trúc 4 Tầng & Tối ưu Kho **`v0.5.5`** (`ST-310a..ST-310f`, ~3–4 ngày)
+
+> **Chỉ mở merge vào `main` SAU khi tag `v0.5.0` đã push** (có thể tạo nhánh chuẩn bị trước nếu luồng rảnh, tuyệt đối không đụng `mps` khi `ST-300m3` đang đo!).
+
+| Luồng | Lát việc | Thứ tự | Phạm vi & KPI cứng (`VD-285`) |
 |---|---|---|---|
-| **W2** *(macOS Core)* | **`ST-300m1`** ✅ → **`ST-300m2`** ✅ → **`ST-300m3`** | **m1/m2 DONE/merged** (`c3b7290`, `5741d23`) · **m3 ĐANG CHẠY** | **m1**: errno Darwin, `VS0604` symlink APFS, `bin/vis-gate-macos`, release/targets arm64, đóng **`#137`**. **m2**: soak 10 vòng (`mps` 379,7 s / `ps` 517,1 s = **0,73×**), A/B 24 cặp (interp **1,0385** / VM **1,0626**) — đóng **`#147`**/**`#152`**. **m3**: 3× `bin/vis-gate-macos --full` PASS + soak 4 h (0 fail, RSS/fd phẳng) + `vis-wasm-sem` ≥ 388/390 ⇒ mới công bố **macOS arm64 Tier 1** (`HOST-BAO-DAM.md` & `ROADMAP.md`). |
-| **W1** *(Pha 2b)* | **`ST-302`** ✅ · **`ST-302b`** ✅ | **DONE/merged** (`b79ae3a`, `6bc4ac3`) | `async fn` trong `impl` + `async cmd` (đóng **`#13`**); `derives Json` codegen thật (đóng **`#8`**); `spawn obj.m()` cho method async; 0 `unsafe`. |
-| **W3** *(ViShell)* | **`ST-304`** ✅ · **`ST-304b`** ✅ · **`ST-308`** ✅ | **DONE/merged** (`8e73e81`, `1eb2768`, `a9eef01`) | `vish-edit` raw mode đa nền, CST coloring, history mờ, Ctrl-C 130; completion theo kiểu + job control POSIX; `vish-term` (`Terminal`, `ViTermFramed`) — **0 `unsafe` R2**. |
-| **W4** *(macOS Tier 1 & Release)* | **`ST-305`** ✅ · **`ST-306`** ✅ · **`ST-307`** ✅ → **`ST-300m3`** | **DONE/merged** · **m3 chờ kết quả** | LSP hover/completion + `editors/vscode/`; plugin tĩnh `VIS_PLUGIN_ABI_V1` + plugin động WASI (sandbox `cap`, 3 lớp ABI). **Tag `v0.5.0` chỉ sau** khi m3 xanh + QA 3-OS + `R36-viscript.{md,json}` chốt. **Hiện chưa tag.** |
+| **W1** | **`ST-310a`** | Bước 1 (mở đường) | Tạo **`crates/vis-core`** (`value/`, `json/` 1 bộ `json_esc` đóng **`#112`**, `host/` traits, `reactor/` traits, `http_client`); gỡ dep `vis-interp` khỏi `vis-lsp`/`vis-loader`/`vis-host-native`/`vis-pkg`; chia `interp.rs` (< 900 LOC), `rt.rs` (< 800 LOC), gom `builtin/` & `json/`; diff 100k = 0, `vis-host-wasm` xanh. |
+| **W3** | **`ST-310b`** | Sau `ST-310a` | Chốt **`vish-term`** làm tầng Terminal/Render duy nhất (bỏ trùng lặp 4 nơi); nối `vish-edit` → `vish-term`; nối `vis-cli` → `vish-edit` + `vish-term` (`vis repl` TTY mặc định dùng `vish-edit`, non-TTY giữ pipe sạch; hỗ trợ `--format viterm`); **0 crate mồ côi**, 0 `unsafe`. |
+| **W2** | **`ST-310c`** → **`ST-310d`** | Sau `ST-310a` | **310c**: tách `vis-plugin-abi` mỏng (~350 LOC, **0 dep nội bộ**, `wasm32` < 1 s) vs **`crates/vis-plugin-host`** (`wasi/{protocol,runner,sandbox}.rs`, `static_reg.rs`, max file < 650 LOC); **xoá `cap_fs.rs`** trùng lặp, dùng duy nhất `vis_host_native::quyen::mo_goc`/`mo_tep_ghi`. **310d**: gỡ 7 dep OS/TLS/SQLite trực tiếp thừa khỏi `crates/vis-cli/Cargo.toml` (`[dependencies]` chỉ feature-forwarding), 12 feature matrix xanh. |
+| **W4** | **`ST-310e`** → **`ST-310f`** | Sau `310c/d` (`310f` sau `310b/e`) | **310e**: gom `vis-cli/tests/` **27 → ≤ 12 binary** (`vd283/284` → `lang_it`, 6 `vs3_worker*` → `worker_it.rs`, soak → `examples/`; chuyển suite về `vis-lsp`, `vis-pkg`, `vis-loader`, `vis-plugin-host`, `vis-host-native`); thêm cổng trong `bin/vis-dev` (≤ 15 binary + cấm bản sao `openat2`). **310f**: gom thư mục con `vis-lsp/src/` & `vis-host-native/src/`, `bin/vis-targets` phủ **100% workspace**, dọn 3 script khỏi `agent/JOURNAL/`, archive journal tiền-`v0.4.0` & `CHANGELOG.md` tiền-`v0.1.0` (`VD-142`), bump & tag **`v0.5.5`**. |
 
-## 3. Sổ nợ & Chặng tiếp (`v0.6.0 → v1.0.0-rc1`)
+### Pha C — Tổng Nghiệm thu Cuối `ST-309` & Tag `v0.6.0` → `v1.0.0-rc1`
+Chạy trên nền kiến trúc sạch **`v0.5.5`**: fresh-clone 3-OS Tier 1 (`ps`/`psvn`/`mps`) + WASI (`vis-wasm-suite`/`vis-wasm-sem`) + diff 100k ×5 seed + **soak 24h** + **fuzz parser 8h** + **fuzz decoder/verifier 100M ca** + `R37-viscript.{md,json,json.license}` → tag **`v0.6.0`** & **`v1.0.0-rc1`**.
 
-- **`SO-NO.md`**: số hiện hành ở §8 là **nguồn duy nhất**; đợt này đã đóng **`#147`**/**`#152`** (`ST-300m2`) và **`#8`**/**`#13`** (`ST-302`).
-- **GĐ 4 (`v0.6.0 → v1.0.0-rc1`)**: `ST-309` (`docs/SPEC.md` + kiểm toán bảo mật 3-OS + soak 24h); các mốc `ST-306`/`ST-307`/`ST-308` đã xong sớm ở GĐ 3.
-
-## 4. Rào an toàn bắt buộc
-
-- **KHÔNG** kill tiến trình nền đang sống (`ps`/`psvn`/`mps`); **KHÔNG** `git reset --hard` worktree bận; không chạy soak/gate nặng trên `mps` khi `ST-300m3` đang đo (`bin/vis-lock`).
+## 3. Rào An toàn Bắt buộc
+- **KHÔNG** kill tiến trình nền đang sống (`ST-300m3` trên `mps`, `ps`, `psvn`); **KHÔNG** `git reset --hard` worktree bận; dùng `bin/vis-lock` khi đo độc quyền.
 - **CPU & Đĩa**: `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0` (`TMPDIR=/home/ps/tmp` trên `ps`, `TMPDIR=/Users/mps/tmp` trên `mps`); giữ đĩa trống > 10 GB (`bin/vis-gc-targets`).
-- **Luật cứng**: **0 `unsafe`** (R2 — không bọc `sandbox_init` deprecated của Apple!); R1 ≤ 1.500 dòng; **R7 không commit `.log`/`.txt` > 50 KB** trong `agent/JOURNAL/`; **không** `.github/workflows/`; **3 nền chính thức**: Linux (`ps`), Windows (`psvn`), macOS arm64 (`mps`).
+- **Luật cứng**: **0 `unsafe`** (`R2`), R1 ≤ 1.500 dòng (mục tiêu mềm sau `v0.5.5` ≤ 1.250), **R5 `SO-NO` §8 == §4**, **R7 không commit `.log`/`.txt` > 50 KB** trong `agent/JOURNAL/`, **không** `.github/workflows/`.

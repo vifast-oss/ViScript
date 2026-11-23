@@ -3981,6 +3981,25 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 4. **Mở đợt thực thi kế tiếp hướng tới `v0.5.0` (3-OS Tier 1 + WASI + Pha 2 + ViShell)**:
    - Lật **`ST-300m1`** (W2), **`ST-302`** (W1), **`ST-304`** (W3 — kiểm cả Linux/Windows/macOS PTY) → **`READY`**; thêm **`ST-300m2`** (W2) và **`ST-300m3`** (W4) ở trạng thái **`BLOCKED`** chờ `ST-300m1`; bổ sung `ST-300m3` làm điều kiện của **`ST-305`** (`v0.5.0` + `R36-viscript.{md,json}`).
 
+### VD-285 · Phê chuẩn Đợt tính năng GĐ 3–4, Mở Đợt Refactor Kiến trúc & Cấu trúc Kho `v0.5.5` (`ST-310a..ST-310f`) & Trình tự `v0.5.0 → v0.5.5 → v1.0.0-rc1` — A0, 2026-11-23
+
+> **Căn cứ**: Kiểm toán trực tiếp tại `HEAD` = `f9e7503d` (`./vis-dev rules` PASS R1..R7, `check_report.py --n 36` PASS 333 hàng QUEUE), `JOURNAL/st309-security.md`, `JOURNAL/st309-spec.md`, và đo trực tiếp 18 crate / 110.970 LOC `src/` + 114.217 LOC `tests/`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md`.
+
+1. **Phê chuẩn chính thức (`APPROVED 2026-11-23 Agent 0`)**:
+   - Đóng **`DONE`** trên `agent/QUEUE.md` cho toàn bộ lát đã hợp nhất sạch trên `main`: **`ST-300m1`** (`c3b72907`, đóng `#137`), **`ST-300m2`** (`5741d234`, `mps` soak 0,73× `ps`, đóng `#147`/`#152`), **`ST-302` + `ST-302b`** (`b79ae3ae`, `6bc4ac35`, đóng `#8`/`#13`), **`ST-304` + `ST-304b`** (`8e73e81f`, `1eb2768c`, `vish-edit`), **`ST-306` + `ST-307`** (`6093aef0`, `ab6beb77`/`b5aa40b1`, plugin tĩnh + WASI), **`ST-308`** (`a9eef01f`, `vish-term`), và công nhận 2/3 phần đầu của **`ST-309`** (`docs/SPEC.md` `51e937db`/`f9e7503d` + kiểm toán bảo mật vá F1/F2 `59028879`).
+   - Mở nợ **`#194`** trong `agent/SO-NO.md`: race metadata-only FS (`size`/`list`/`exists`/`walk`) từ `JOURNAL/st309-security.md` §4 (giữ khớp R5: 195 dòng = 82 mở / 94 đóng / 16 VS3 / 2 không làm / 1 điều hướng).
+2. **Chốt trình tự 3 pha không trộn lẫn**:
+   - **Pha A (`v0.5.0`, 0 đổi cấu trúc)**: giữ nguyên `ST-300m3` trên `mps` (3× `bin/vis-gate-macos --full` + soak 4h + `vis-wasm-sem` ≥ 388/390; công bố **macOS arm64 Tier 1** trên `HOST-BAO-DAM.md` & `ROADMAP.md`) → làm mới `R36-viscript.{md,json,json.license}` (`ST-305`) → gắn & push tag **`v0.5.0`**. Tuyệt đối không trộn refactor vào `main` trước tag `v0.5.0`.
+   - **Pha B (`v0.5.5`, Refactor kiến trúc & cấu trúc kho — `ST-310a..ST-310f`, ~3–4 ngày, 0 `unsafe`)**: xử lý dứt điểm 7 điểm nghẽn đo được tại `f9e7503d` theo kiến trúc đích **4 tầng DAG**:
+     - **`ST-310a`** (W1): tách **`crates/vis-core`** (`value/`, `json/` 1 bộ `json_esc` duy nhất đóng **`#112`**, `host/` traits, `reactor/` traits, `http_client`); gỡ dep `vis-interp` khỏi `vis-lsp`, `vis-loader`, `vis-host-native`, `vis-pkg`; chia `vis-interp/src/interp.rs` (1.460 → < 900 LOC), `rt.rs` (1.338 → < 800 LOC), gom `builtin/` & `json/`.
+     - **`ST-310b`** (W3): chốt **`vish-term`** làm tầng Terminal/Render chuẩn duy nhất (xoá trùng lặp render 4 nơi); nối `vish-edit` → `vish-term`; nối `vis-cli` → `vish-edit` + `vish-term` mặc định khi `vis repl` chạy trên TTY thật (non-TTY giữ pipe sạch) và cờ `--format viterm`.
+     - **`ST-310c`** (W2): tách **`vis-plugin-abi`** mỏng (~350 LOC, **0 dep nội bộ**, build `wasm32` < 1 s) khỏi **`crates/vis-plugin-host`** (`wasi/{protocol,runner,sandbox}.rs`, `static_reg.rs`); xoá `cap_fs.rs` trùng lặp và tái sử dụng duy nhất `vis_host_native::quyen::mo_goc`/`mo_tep_ghi` (0 bản sao `openat2`).
+     - **`ST-310d`** (W2): dọn 7 dep OS/TLS/SQLite trực tiếp thừa (`rusqlite`, `rustls`, `webpki-roots`, `h2`, `tokio`, `mio`, `rustix`) khỏi `[dependencies]` của `crates/vis-cli/Cargo.toml`, chỉ giữ feature-forwarding.
+     - **`ST-310e`** (W4): gom `vis-cli/tests/` từ **27 → ≤ 12 binary** (gộp `vd283_*`/`vd284_*` → `lang_it`, gộp 6 `vs3_worker*.rs` → `worker_it.rs`, tách soak → `examples/`; chuyển suite về đúng crate chủ `vis-lsp`, `vis-pkg`, `vis-loader`, `vis-plugin-host`, `vis-host-native`); bổ sung cổng trong `bin/vis-dev` chặn `vis-cli/tests/` > 15 binary và chặn bản sao `openat2` ngoài `vis-host-native`.
+     - **`ST-310f`** (W3/W4): tổ chức thư mục con cho `vis-lsp/src/` (`protocol/`, `analysis/`, `features/`) và `vis-host-native/src/` (`quyen/`, `async_net/`, `net/quyen.rs`); mở rộng `bin/vis-targets` phủ **100% crate workspace**; dọn 3 script từ `agent/JOURNAL/` về `test/report/gen_report_json.py` & `test/wasm/`; chuyển journal/log tiền-`v0.4.0` sang `agent/archive/journal-pre-v040/` (cập nhật `r7-legacy-logs.txt`, giữ lịch sử git `VD-142`) và tách tiền-`v0.1.0` của `CHANGELOG.md` sang `agent/archive/CHANGELOG-pre-v0.1.0.md`; bump & tag **`v0.5.5`**.
+   - **Pha C (`v0.6.0` → `v1.0.0-rc1`)**: chạy phần tổng nghiệm thu cuối của **`ST-309`** (fresh-clone 3-OS Tier 1 + WASI + diff 100k ×5 seed + soak 24h + fuzz parser 8h + fuzz decoder/verifier 100M ca + `R37-viscript.{md,json,json.license}`) trực tiếp trên nền kiến trúc sạch **`v0.5.5`** → tag **`v0.6.0`** & **`v1.0.0-rc1`**.
+
+
 
 
 
