@@ -35,9 +35,11 @@ use std::path::PathBuf;
 // **ST-290 (VD-273)**: ngân sách ngữ nghĩa bật **mặc định** 40M và artifact VM có trailer `VFEE`
 // (bảng phí) ⇒ cache cũ không mang ngữ nghĩa ngân sách mới phải tự vô hiệu; `VERSION` VBC1 và
 // ABI không đổi.
+// **ST-305 (v0.5.0)**: bump `CARGO_PKG_VERSION` 0.4.5 → 0.5.0 + nhãn `v050-release` ⇒ cache 0.4.5
+// tự vô hiệu; `VERSION` VBC1/ABI/định dạng không đổi.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23+st302-derives-json-async-impl-2026-11-23"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23+st302-derives-json-async-impl-2026-11-23+v050-release-2026-11-23"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -258,17 +260,23 @@ mod tests {
         // cache 0.4.1 tự vô hiệu, `VERSION` VBC1/ABI/định dạng không đổi.
         // **ST-302 (VD-284)**: sinh method `derives Json` + `async impl/cmd` ⇒ bytecode cùng
         // nguồn đổi nghĩa; nhãn `st302-derives-json-async-impl` buộc cache 0.4.5 cũ vô hiệu.
+        // **v0.5.0 (ST-305, VD-129)**: bump 0.4.5 → 0.5.0 + nhãn `v050-release` ⇒ ghim lại;
+        // cache 0.4.5 tự vô hiệu, `VERSION` VBC1/ABI/định dạng không đổi.
         assert_eq!(
-            k, "88613f2f2aa91f08fb2825e0d6769085818d3551feb54eb529e34099d43314dc",
+            k, "fc20a81123cdb432a976e7d3d1fa15b7f4a2dd3b2276241bd0888e55bda53117",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
         );
         assert_ne!(
-            k, "d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce",
+            k, "88613f2f2aa91f08fb2825e0d6769085818d3551feb54eb529e34099d43314dc",
             "ST-302: cache sinh trước derives Json/async impl không được tái dùng"
         );
         assert_ne!(
-            k, "42f5389364ae126f8b9dea4c3bf107c983c3b92d7b1743a5293d547f3d4d7c0f",
+            k, "d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce",
             "v0.4.5: cache sinh trước bump 0.4.5 không được tái dùng"
+        );
+        assert_ne!(
+            k, "42f5389364ae126f8b9dea4c3bf107c983c3b92d7b1743a5293d547f3d4d7c0f",
+            "v0.4.1: cache sinh trước bump 0.4.1 không được tái dùng"
         );
         assert_ne!(
             k, "22572d0b3267c93ddecc223a7522cc69767b3a5c1f6b46f8bff04d95d3803a8b",
@@ -377,8 +385,12 @@ mod tests {
             "v0.4.5: cache phải mang nhãn phát hành"
         );
         assert!(
-            PHIEN_BAN.starts_with("0.4.5+"),
-            "PHIEN_BAN phải bắt đầu 0.4.5"
+            PHIEN_BAN.contains("v050-release-2026-11-23"),
+            "v0.5.0: cache phải mang nhãn phát hành"
+        );
+        assert!(
+            PHIEN_BAN.starts_with("0.5.0+"),
+            "PHIEN_BAN phải bắt đầu 0.5.0"
         );
         assert_eq!(vis_bytecode::fee::WEIGHT_TABLE_VERSION, 1);
         assert_eq!(vis_bytecode::INSTRUMENTED_VERSION, 3);

@@ -3,6 +3,49 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.5.0 — 2026-11-23 (Giai đoạn 3 — Pha 2 ngôn ngữ, ViShell MVP, macOS Tier 1)
+
+> **Chưa tag.** Mốc `v0.5.0` mới ở trạng thái **prep** trên `main` `f2d3e73`; macOS arm64 Tier 1
+> còn **chờ kết quả `ST-300m3`** (3× `bin/vis-gate-macos --full` + soak 4 h + `vis-wasm-sem`).
+
+- **ST-302** (`d3ea467`, merge `b79ae3a`): Pha 2b — `async fn` trong `impl` (`self`/`var self`) +
+  `async cmd` (đóng `#13`, giữ `--flag` riêng của `cmd`); `derives Json` sinh **mã thật**
+  `to_json`/`from_json` cho `type`/`enum` (từ chối `cap`/`Chan`/`Task`/`fn` bằng `VS0412`, đóng `#8`);
+  15 + 3 ca; gate Linux **3676/4**; diff 100k `lech=0`.
+- **ST-302b** (`204af84`, merge `6bc4ac3`): `spawn obj.m(args)` / `spawn self.m(args)` cho method
+  `async` (method đồng bộ ⇒ `VS0412`), 12 + 1 ca, snapshot formatter; gate Linux **3689/4**.
+- **ST-304** (`6e0675a`, merge `8e73e81`): `crates/vish-edit` — soạn dòng đa nền, raw mode
+  `rustix::termios` (Unix/macOS) + `crossterm` (Windows), đa dòng tự thụt lề, lịch sử append-only +
+  tìm mờ, tô màu CST, Ctrl-C ⇒ 130; 0 `unsafe`; 8/8 + 9 Windows; gate Linux **3679/4**.
+- **ST-304b** (`426d636`, merge `1eb2768`): completion theo kiểu (record field/enum variant/`cmd`
+  flag/path) + POSIX job control (`&`, `jobs`/`fg`/`bg`/`kill`) + PTY giả; `vish-edit` **17/17**;
+  gate Linux **3688/4**.
+- **ST-305** (`fa1a70b`..`f2d3e73`, merge `374b4e8`): LSP hover in tham số generic + completion sau
+  `std.`; extension `editors/vscode/` (language client `vis lsp --stdio`, TextMate grammar);
+  `lsp_it` **155/155**, `vis-lsp` **29/29**; Windows quick **PASS**; refresh `agent/` + docs.
+- **ST-306** (`90b2964`, merge `6093aef`): Plugin **tĩnh** Native Rust — `VIS_PLUGIN_ABI_V1`,
+  `vis-plugin-abi` (`PluginValue`/`PluginCtx` chỉ quyền host cấp) + `vis-plugin-macros`
+  (`#[vis::module]`/`#[vis::func]`), parity interp↔VM; 0 `unsafe`; gate Linux **3680/4**;
+  Windows **8/8** + quick **91/91**.
+- **ST-307** (`3d247c4` + hardening `f291152`, merge `ab6beb7`/`b5aa40b`): Plugin **động**
+  WASI/WASM — `PluginWasi::nap` kiểm magic/version/`_start`/marker ABI trước khi chạy, sandbox chỉ
+  preopen `cap` được trao, tắt cứng `--strict-caps`/`--sandbox`; mẫu `test/plugin-wasi` parity qua
+  `node:wasi`; **10/10**; gate Linux **3690/4**; Windows quick **91/91**.
+- **ST-308** (`79a6d52`, merge `a9eef01`): `crates/vish-term` — `Terminal` trait,
+  `AnsiPosix`/`WinConsole`/`ViTermFramed` (JSON Lines `vish-term/1`), `Capabilities`/`Style`/SGR
+  16-256-truecolor, `Table`/`Diagnostic`, `display_width` NFC; workspace **16 crate**; gate Linux
+  **3691/4**.
+- **ST-300m2** (`101a4ad`, merge `5741d23`): đo độc quyền `mps` arm64 — đóng **`#147`** (soak 10
+  vòng: `mps` **379,7 s** / `ps` **517,1 s = 0,73×**; gate **0,93×**) và **`#152`** (24 cặp A/B:
+  interp **1,0385**, VM **1,0626**).
+- **macOS arm64 Tier 1**: **CHƯA công bố** — `ST-300m3` (3× `vis-gate-macos --full` + soak 4 h +
+  `vis-wasm-sem` ≥ 388/390) **đang chạy/chờ kết quả**; chỉ tuyên bố khi đủ bằng chứng.
+- **Version** 0.5.0 (`version.workspace` một nguồn); `vis --version` ⇒ **`vis 0.5.0`**; cache
+  `PHIEN_BAN` `+v050-release-2026-11-23`, khoá
+  `fc20a81123cdb432a976e7d3d1fa15b7f4a2dd3b2276241bd0888e55bda53117`; `assert_ne` khoá 0.4.5
+  `d92f31c2…` ⇒ cache cũ tự vô hiệu; `vis-host-wasm/Cargo.lock` đồng bộ 0.5.0. **Tag `v0.5.0`:
+  CHƯA** (trước: `v0.4.5` @ `3daff62`, `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`).
+
 ## v0.4.5 — 2026-11-23 (Giai đoạn 2 — Platforms)
 
 - **ST-297** (`f4cb136`): đóng `#149`; LSP URI UNC/Windows + `--grant` path; Windows 3× full **3611/0/3**;
