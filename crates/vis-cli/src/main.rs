@@ -4,6 +4,8 @@
 use std::process::ExitCode;
 
 mod cli;
+// **ST-310b (VD-285)**: `vis repl` dùng chung thân với thư viện (test PTY giả/viterm).
+mod repl;
 // **ST-300b (VD-283)**: host native (quyền/FS/net/TLS/SQLite) sang `vis-host-native`; re-export
 // module tại gốc để mọi `crate::quyen::…`/`crate::net::…`/`crate::db::…` cũ không đổi.
 pub(crate) use vis_host_native::{db, fsmock, ngoai, quyen};
@@ -19,7 +21,7 @@ use vis_diag::{all_codes, lookup_str, severity_label, Code, Lang, Severity};
 
 fn usage() -> ExitCode {
     eprintln!(
-        "dùng: vis --version | vis -V | vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list | vis doctor [--json] | vis version [--json] | vis new <dir> [--template bin|lib] | vis doc <path> [--format md|json] | vis repl | vis plugin check|run <plugin.wasm> …"
+        "dùng: vis --version | vis -V | vis explain [--json] [--lang vi|en|ja] <VSxxxx> | vis explain --list [--json] [--lang vi|en|ja] | vis run [--tap] [--stdin] [--time] [--strict-caps] <tệp.vis> [-- args…] | vis test [--vm] [--json] [--timeout <ms>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp] | vis check [--syntax] [--no-extern] [--json] <tệp…> | vis check --stdin [--syntax] [--no-extern] [--json] | vis fmt <tệp> | vis fmt --write <tệp…> | vis fmt --check [--json|--list|--diff|--stat] <tệp…> | vis fmt --indent-report <tệp…> | vis fmt --stdin [--check [--json|--list|--diff|--stat]] [--mode script|command] | vis lsp --stdio | vis pkg add|install|list | vis doctor [--json] | vis version [--json] | vis new <dir> [--template bin|lib] | vis doc <path> [--format md|json] | vis repl [--format text|viterm] | vis plugin check|run <plugin.wasm> …"
     );
     eprintln!(
         "  vis test --timeout <ms>: áp mọi ca — `test fn` và fixture `.out/.err`; quá hạn ⇒ kill + `not ok` (`quá hạn <ms> ms`), mặc định không giới hạn"
@@ -215,7 +217,7 @@ fn main() -> ExitCode {
         Some("version") => cli::version::run(&args[1..]),
         Some("new") => cli::new::run(&args[1..]),
         Some("doc") => cli::doc::run(&args[1..]),
-        Some("repl") => cli::repl::run(&args[1..]),
+        Some("repl") => repl::run(&args[1..]),
         // ST-307 (VD-278/VD-283): plugin động WASI/WASM, tắt cứng ở --strict-caps/--sandbox.
         Some("plugin") => cli::plugin::run_plugin(&args[1..]),
         // ST-30: chạy bộ ca `test/sem/**` in TAP.

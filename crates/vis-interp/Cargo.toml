@@ -14,8 +14,8 @@ taskid-proto = []
 
 [dependencies]
 vis-core = { path = "../vis-core" }
-# ST-41: NFC để đếm **số char** khi render bảng (license MIT OR Apache-2.0 + Unicode-3.0, đã allowlist ở ST-01).
-unicode-normalization = { workspace = true }
+# **ST-310b (VD-285)**: `Render` hạ bảng/bản ghi qua `vish-term` (một tầng Terminal/Render duy nhất).
+vish-term = { path = "../vish-term" }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }

@@ -50,6 +50,8 @@ mod nhom;
 mod pipeline;
 #[path = "cli_it/render.rs"]
 mod render;
+#[path = "cli_it/repl_term.rs"]
+mod repl_term;
 #[path = "cli_it/so_ma.rs"]
 mod so_ma;
 #[path = "cli_it/soak_script.rs"]
