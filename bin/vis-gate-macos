@@ -71,7 +71,7 @@ def commands(mode):
         "./vis-dev check",
         "./vis-dev gate --fast",
         "cargo test --workspace --no-fail-fast",
-        "cargo test -p vis-host-wasm",
+        "cargo test --manifest-path vis-host-wasm/Cargo.toml",
         "bin/vis-wasm-suite --build --runtime node",
     ]
 
