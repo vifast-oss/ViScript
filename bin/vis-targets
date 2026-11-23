@@ -103,4 +103,10 @@ printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "28/28 (14 ca x interp/VM
 printf '%-24s %-28s %s\n' known-gap wasm32-wasip1 "2 stack-overflow interp: ham/de-quy-1000, ham/de-quy-vo-han (VM pass)"
 printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
 echo "wasm32-wasip1: coverage 388/390 eligible (99.5%), suite 28/28; known gap 2 stack-overflow interp; không full"
+echo
+echo "=== aarch64-apple-darwin (native) ==="
+printf '%-24s %-28s %s\n' hạng-mục target kết-quả
+printf '%-24s %-28s %s\n' vis-release aarch64-apple-darwin "PASS — chỉ vis, không test-child (ST-300m1/mps)"
+printf '%-24s %-28s %s\n' gate-macos aarch64-apple-darwin "quick/full qua bin/vis-gate-macos (không cross-check)"
+echo "aarch64-apple-darwin (native): release chỉ vis; bằng chứng chạy thật trên mps, không phải cargo check chéo"
 echo "vis-targets: cả hai cấu hình đạt kỳ vọng riêng (chỉ CHECK, chưa chạy trên Windows/wasm)"

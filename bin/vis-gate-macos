@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""**ST-300m1 (VD-284 §2)** — cổng macOS thật (`mps`) qua `bin/vis-remote`.
+
+Chạy trên máy Linux/`ps`, ssh sang **macOS arm64 `mps`**; mọi job nặng được bọc trong
+`bin/vis-lock` để không tranh máy với W4/soak. Không merge/push/tag, không tự đồng bộ mã:
+cây trên `mps` phải **sạch** và **cùng HEAD** với cây gọi (nếu lệch ⇒ exit 4, in gợi ý).
+
+    bin/vis-gate-macos --quick [--dry-run]
+    bin/vis-gate-macos --full  [--dry-run]
+    bin/vis-gate-macos --self-test
+
+`--quick`: `cargo check --workspace` + `quyen_st174`/`quyen_st295` (unit) + `async_it lat`
+           (mio/kqueue thật). `--full`: thêm `./vis-dev check`, `./vis-dev gate --fast`,
+           `cargo test --workspace --no-fail-fast`, host native `vis-host-wasm`, và
+           `bin/vis-wasm-suite --build --runtime node` (WASI tối thiểu).
+
+Log mặc định `~/vislogs/vis-gate-macos-<mode>-<UTC>.log` (ngoài repo); đổi bằng
+`VIS_GATE_MACOS_LOG`. Biến môi trường: `VIS_GATE_MACOS_REMOTE` (mặc định `mps`),
+`VIS_GATE_MACOS_TARGET` (mặc định `target/gate-macos`), `VIS_GATE_MACOS_LOCK_TIMEOUT`
+(mặc định 7200 giây). Python 3.9+.
+"""
+
+import argparse
+import datetime
+import os
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+REMOTE = os.environ.get("VIS_GATE_MACOS_REMOTE", "mps")
+TARGET = os.environ.get("VIS_GATE_MACOS_TARGET", "target/gate-macos")
+LOCK_TIMEOUT = int(os.environ.get("VIS_GATE_MACOS_LOCK_TIMEOUT", "7200"))
+REPO = os.environ.get("VIS_GATE_MACOS_REPO", "/Users/mps/dvchd/ViScript")
+
+
+def log_path(mode):
+    raw = os.environ.get("VIS_GATE_MACOS_LOG")
+    if raw:
+        p = Path(raw).expanduser().resolve()
+    else:
+        stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        p = (Path.home() / "vislogs" / f"vis-gate-macos-{mode}-{stamp}.log").resolve()
+    try:
+        p.relative_to(ROOT)
+    except ValueError:
+        return p
+    sys.exit(f"vis-gate-macos: log nằm TRONG repo ({p}); chọn VIS_GATE_MACOS_LOG ngoài repo")
+
+
+def head():
+    out = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    return out.stdout.strip()
+
+
+def commands(mode):
+    if mode == "quick":
+        return [
+            "cargo check --workspace",
+            "cargo test -p vis-host-native --lib quyen_st",
+            "cargo test -p vis-cli --test async_it lat",
+        ]
+    return [
+        "./vis-dev check",
+        "./vis-dev gate --fast",
+        "cargo test --workspace --no-fail-fast",
+        "cargo test -p vis-host-wasm",
+        "bin/vis-wasm-suite --build --runtime node",
+    ]
+
+
+def body(mode):
+    inner = "\n".join(
+        [
+            "set -euo pipefail",
+            "cd %s" % shlex.quote(REPO),
+            'export PATH="$HOME/.cargo/bin:$PATH"',
+            "export CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0",
+            'export TMPDIR="${TMPDIR:-$HOME/tmp}"',
+            'mkdir -p "$TMPDIR"',
+            "export CARGO_TARGET_DIR=%s" % shlex.quote(str(Path(REPO) / TARGET)),
+        ]
+        + commands(mode)
+    )
+    return "\n".join(
+        [
+            "set -euo pipefail",
+            "cd %s" % shlex.quote(REPO),
+            'test "$(git rev-parse HEAD)" = "%s" || { echo "vis-gate-macos: HEAD mps khác %s — đồng bộ nhánh rồi chạy lại" >&2; exit 4; }'
+            % (head(), head()[:12]),
+            "bin/vis-lock --timeout %d --log \"$HOME/vislogs/vis-lock-gate-macos.log\" -- bash -c %s"
+            % (LOCK_TIMEOUT, shlex.quote(inner)),
+        ]
+    )
+
+
+def remote_cmd(mode, log):
+    return [
+        str(ROOT / "bin" / "vis-remote"),
+        REMOTE,
+        "--require-clean",
+        "--log",
+        str(log),
+        "--",
+        "bash",
+        "-lc",
+        body(mode),
+    ]
+
+
+def self_test():
+    quick, full = body("quick"), body("full")
+    checks = [
+        ("quick: quyền", "quyen_st" in quick),
+        ("quick: lat/kqueue", "async_it lat" in quick),
+        ("full: check", "./vis-dev check" in full),
+        ("full: gate", "./vis-dev gate --fast" in full),
+        ("full: workspace", "cargo test --workspace --no-fail-fast" in full),
+        ("full: host", "vis-host-wasm" in full),
+        ("full: wasm", "vis-wasm-suite --build --runtime node" in full),
+        ("lock", "bin/vis-lock" in quick and "bin/vis-lock" in full),
+        ("HEAD guard", 'git rev-parse HEAD' in quick),
+        ("no test-child", "test-child" not in quick and "test-child" not in full),
+    ]
+    bad = [name for name, ok in checks if not ok]
+    if bad:
+        sys.exit("vis-gate-macos: self-test FAIL: " + ", ".join(bad))
+    for mode in ("quick", "full"):
+        p = log_path(mode)
+        try:
+            p.relative_to(ROOT)
+            sys.exit("vis-gate-macos: self-test FAIL: log trong repo")
+        except ValueError:
+            pass
+    print("vis-gate-macos: self-test OK (10 kiểm, Python %d.%d)" % sys.version_info[:2])
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=True)
+    ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--full", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
+    a = ap.parse_args()
+    if a.self_test:
+        self_test()
+        return 0
+    if a.quick == a.full:
+        ap.error("cần đúng một trong --quick/--full")
+    mode = "quick" if a.quick else "full"
+    log = log_path(mode)
+    cmd = remote_cmd(mode, log)
+    if a.dry_run:
+        print(shlex.join(cmd))
+        return 0
+    log.parent.mkdir(parents=True, exist_ok=True)
+    print("vis-gate-macos: mode=%s remote=%s log=%s" % (mode, REMOTE, log), file=sys.stderr)
+    return subprocess.call(cmd)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

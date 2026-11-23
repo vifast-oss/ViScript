@@ -57,6 +57,7 @@ pub(crate) mod chen {
 use std::path::PathBuf;
 
 use vis_interp::builtin::FsHost;
+use vis_interp::stdlib::DAU_QUYEN;
 
 use crate::quyen::{FsGuard, Quyen, QuyenCap};
 
@@ -204,4 +205,35 @@ fn doi_chung_khong_hoan_doi_thi_ghi_dung_trong_root() {
         assert_eq!(std::fs::read_to_string(&tep).unwrap(), "GHI-DE");
         let _ = std::fs::remove_dir_all(&d);
     }
+}
+
+/// **ST-300m1** — symlink thoát gốc qua `openat` phải trả **`VS0604` (`[quyền]`)** trên **mọi**
+/// nền Unix. Trước vá, macOS nhận `ELOOP = 62` nhưng `loi_mo` chỉ khớp `40 | 18` (Linux) ⇒
+/// lỗi thường "Too many levels of symbolic links" (đỏ-trước); nay so `rustix::io::Errno::LOOP`.
+#[test]
+fn symlink_thoat_goc_tra_vs0604_tren_moi_nen() {
+    let d = tam("vs0604");
+    let root = d.join("root");
+    std::fs::create_dir_all(&root).expect("root");
+    let ngoai = d.join("ngoai.txt");
+    std::fs::write(&ngoai, "NGOAI").expect("ngoai");
+    let tep = root.join("tep");
+    std::os::unix::fs::symlink(&ngoai, &tep).expect("symlink");
+    let q = quyen_ghi(&root);
+    let mut host = HostThat { an_toan: true };
+    let mut g = FsGuard {
+        trong: &mut host,
+        quyen: &q,
+    };
+    let e = g
+        .write(tep.to_str().unwrap(), "GHI-DE")
+        .expect_err("symlink thoát gốc phải bị chặn");
+    assert!(e.starts_with(DAU_QUYEN), "lỗi phải mang mã VS0604: {e:?}");
+    assert!(e.contains("[quyền]"), "lỗi phải có dấu [quyền]: {e:?}");
+    assert_eq!(
+        std::fs::read_to_string(&ngoai).unwrap(),
+        "NGOAI",
+        "tệp ngoài gốc không được đổi"
+    );
+    let _ = std::fs::remove_dir_all(&d);
 }

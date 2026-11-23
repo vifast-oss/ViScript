@@ -10,11 +10,28 @@ use super::*;
 
 /// `WouldBlock` thật trên nền đang chạy.
 ///
-/// `ErrorKind` đã ánh xạ phần lớn, nhưng một số đường (mio/rustls/connect) trả mã thô:
-/// Unix `EINPROGRESS` = **115**, Windows `WSAEWOULDBLOCK` = **10035**,
-/// `WSAEINPROGRESS` = **10036**. Không dựa vào một mã duy nhất của Linux.
+/// `ErrorKind` đã ánh xạ phần lớn, nhưng một số đường (mio/rustls/connect) trả mã thô.
+/// **ST-300m1**: Unix dùng errno của nền (`EINPROGRESS` Linux 115 / Darwin 36, `EALREADY`,
+/// `EAGAIN`); Windows giữ mã Winsock (`WSAEWOULDBLOCK` 10035, `WSAEINPROGRESS` 10036).
 pub(super) fn la_would_block(e: &std::io::Error) -> bool {
-    e.kind() == ErrorKind::WouldBlock || matches!(e.raw_os_error(), Some(115 | 10035 | 10036))
+    if e.kind() == ErrorKind::WouldBlock {
+        return true;
+    }
+    #[cfg(unix)]
+    {
+        let ma = e.raw_os_error();
+        ma == Some(rustix::io::Errno::INPROGRESS.raw_os_error())
+            || ma == Some(rustix::io::Errno::ALREADY.raw_os_error())
+            || ma == Some(rustix::io::Errno::AGAIN.raw_os_error())
+    }
+    #[cfg(windows)]
+    {
+        matches!(e.raw_os_error(), Some(10035 | 10036))
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        false
+    }
 }
 
 /// Nguồn readiness của backend cho socket TCP thuần.
