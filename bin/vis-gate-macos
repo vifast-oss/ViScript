@@ -70,7 +70,12 @@ def commands(mode):
     return [
         "./vis-dev check",
         "./vis-dev gate --fast",
-        "cargo test --workspace --no-fail-fast",
+        # **ST-300m3**: dùng nextest (chuẩn L0 của repo) thay libtest cho workspace.
+        # Trên macOS, `lat256_net::t3` đỏ tất định dưới libtest nhưng xanh dưới nextest
+        # (mỗi ca một process); đây là khác biệt harness, không phải sản phẩm.
+        # Doc-test vẫn chạy riêng vì nextest không chạy doc-test.
+        "cargo nextest run --workspace",
+        "cargo test --doc",
         "cargo test --manifest-path vis-host-wasm/Cargo.toml",
         "bin/vis-wasm-suite --build --runtime node",
     ]
