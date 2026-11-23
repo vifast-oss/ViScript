@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # Workspace dòng ViScript (ST-01). Crate lõi theo thiết kế §14.2; hiện có `vis-diag` (sổ mã lỗi,
 # ST-02b), `vis-syntax` (lexer + parser/CST, ST-04/ST-05), `vis-fmt` (ST-07), `vis-types`
-# (HIR + giải tên, ST-11) và `vis-cli`.
+# (HIR + giải tên, ST-11), `vis-cli` và `vish-term` (Terminal/ViTerm, ST-308).
 [workspace]
 resolver = "2"
 # **ST-171**: `vis-host-linux`/`vis-host-wasm` là workspace RIÊNG (giữ nguyên như bản gốc
@@ -21,6 +21,7 @@ members = [
     "crates/vis-pkg",
     "crates/vis-loader",
     "crates/vis-lsp",
+    "crates/vish-term",
 ]
 
 [workspace.package]

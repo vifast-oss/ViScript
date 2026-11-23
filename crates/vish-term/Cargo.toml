@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+rust-version.workspace = true
+name = "vish-term"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Terminal trait + AnsiPosix/WinConsole/ViTermFramed + hiển thị cấu trúc (ST-308)"
+
+[lib]
+name = "vish_term"
+path = "src/lib.rs"
+
+[dependencies]
+# NFC cho độ rộng cột — **cùng quy tắc** `Render` ST-41 (`vis-interp/src/render.rs`).
+# Giấy phép: (MIT OR Apache-2.0) AND Unicode-3.0; đã có trong workspace/lock, không dep mới.
+unicode-normalization = { workspace = true }
