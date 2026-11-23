@@ -528,12 +528,21 @@ impl<'a> Parser<'a> {
             }
             // **ST-60**: `spawn f(args)` — **soft keyword**: `spawn` + token kế là **định danh**.
             // `s.spawn(1)` giữ nguyên là **phương thức** (sau `.` là Ident, không vào nhánh này).
-            Kind::Ident if t.text == "spawn" && self.tok_at(1).kind == Kind::Ident => {
+            // **ST-302b**: mở `spawn obj.m(args)`/`spawn self.m(args)` — sau `spawn` là một
+            // **postfix** (lời gọi hàm hoặc lời gọi phương thức), không chỉ `IDENT (`.
+            Kind::Ident
+                if t.text == "spawn"
+                    && (self.tok_at(1).kind == Kind::Ident
+                        || (self.tok_at(1).kind == Kind::Kw && self.tok_at(1).text == "self")) =>
+            {
                 let mut elems = vec![self.bump()];
-                let ten = self.bump();
-                elems.push(Elem::Node(Box::new(self.node(NodeKind::Ident, vec![ten]))));
-                let a = self.args()?;
-                elems.push(Elem::Node(Box::new(a)));
+                let goi = self.postfix()?;
+                if !matches!(goi.kind, NodeKind::Call | NodeKind::GenericCall) {
+                    return Err(self.err_here(
+                        "`spawn` cần lời gọi hàm/phương thức: `spawn f(…)` hoặc `spawn obj.m(…)`",
+                    ));
+                }
+                elems.push(Elem::Node(Box::new(goi)));
                 return Ok(self.node(NodeKind::SpawnExpr, elems));
             }
             Kind::Ident => {

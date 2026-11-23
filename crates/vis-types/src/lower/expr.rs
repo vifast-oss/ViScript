@@ -496,12 +496,39 @@ impl<'a> Lowerer<'a> {
                 }
             }
             // **ST-60**: `spawn f(args)` — callee là **tên hàm** (tyck đòi `async` cấp tệp).
+            // **ST-302b**: `spawn obj.m(args)`/`spawn self.m(args)` — parser giữ **một** nút
+            // `Call`; hạ lời gọi (dispatch tĩnh chèn `self`) rồi tách thành `Spawn` để interp/VM
+            // dùng chung đường tác vụ `HFn.is_async` sẵn có.
             NodeKind::SpawnExpr => {
-                let callee = node
-                    .children()
-                    .next()
-                    .map(|c| self.lower_expr(c))
-                    .unwrap_or(HExpr::Error { span });
+                let Some(goi) = node.children().next() else {
+                    return HExpr::Error { span };
+                };
+                if matches!(goi.kind, NodeKind::Call | NodeKind::GenericCall) {
+                    return match self.lower_expr(goi) {
+                        HExpr::Call {
+                            callee,
+                            args,
+                            named,
+                            ..
+                        } => HExpr::Spawn {
+                            callee,
+                            args,
+                            named,
+                            span,
+                        },
+                        // Hạ lời gọi đã báo lỗi (VS0403/VS0412…) — không thêm chẩn đoán nhiễu.
+                        e @ HExpr::Error { .. } => e,
+                        // Dạng khác (biến thể enum, newtype…) giữ nguyên để tyck báo `spawn`
+                        // cần hàm/phương thức `async` như cũ.
+                        other => HExpr::Spawn {
+                            callee: Box::new(other),
+                            args: Vec::new(),
+                            named: Vec::new(),
+                            span,
+                        },
+                    };
+                }
+                let callee = self.lower_expr(goi);
                 let (args, named) = node
                     .child(NodeKind::Args)
                     .map(|a| self.lower_args(a))
