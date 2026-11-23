@@ -29,6 +29,21 @@
 > (không có `openat`, caveat `FsGuard`); macOS dùng cùng mã, đã verify `v0.4.5` trên Darwin 27 arm64
 > ngày 2026-11-23 (chưa công bố Tier 1).
 
+> **Cập nhật 2026-11-23 (ST-309 — kiểm toán bảo mật)** — **đã vá 2 lỗ hổng thật**:
+> (1) `quyen_mo::mo_goc` trước đây chỉ `O_NOFOLLOW` ở **thành phần cuối**, nên đổi một thư mục
+> **cha** của gốc `cap` thành symlink sau khởi động ⇒ mở/ghi ra ngoài (ca tất định
+> `goc_bi_thay_bang_symlink_trung_gian_khong_duoc_ghi_ra_ngoai`, đỏ trước). Nay gốc mở bằng
+> `openat2(RESOLVE_NO_SYMLINKS)`, fallback đi từng thành phần từ `/` với `O_NOFOLLOW`.
+> (2) `PluginCtx::write_text` (plugin tĩnh) canonicalize **thư mục cha** rồi
+> `std::fs::write(cha/ten)`: **tên cuối** là symlink ⇒ ghi đè tệp ngoài (ca
+> `cap_ghi_khong_di_theo_symlink_o_ten_cuoi`, đỏ trước). Nay mở từ fd gốc bằng
+> `openat`/`RESOLVE_BENEATH|NO_SYMLINKS` (`vis-plugin-abi/src/cap_fs.rs`). WASI preopen vẫn từ chối
+> symlink ra ngoài (ca `preopen_khong_di_theo_symlink_ra_ngoai`).
+> **Còn lại (không phải lỗi đua đọc/ghi nội dung)**: các thao tác **metadata** (`size`, `list`,
+> `exists`, `canonicalize`, `read_link`, `is_*`, `walk`) vẫn kiểm-rồi-dùng theo **tên** (API
+> `FsHost` không có fd); chúng không trả nội dung tệp ngoài, nhưng có thể lộ **metadata** qua khe
+> đua. Ghi ở `JOURNAL/st309-security.md` là nợ kiểm toán.
+
 > **Cập nhật 2026-11-22 (ST-289, `v0.3.6`)** — phiên bản workspace là **một nguồn** (`Cargo.toml`
 > `version = "0.3.6"`, crate dùng `version.workspace = true`); `vis --version` = `vis 0.3.6`.
 > **Khối này là lịch sử**: từ `v0.4.5`, version workspace là **0.4.5**; macOS **đã verify** và wasm

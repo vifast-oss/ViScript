@@ -10,6 +10,9 @@ description = "ABI tĩnh VIS_PLUGIN_ABI_V1 cho plugin Rust của ViScript (ST-30
 [dependencies]
 vis-interp = { path = "../vis-interp" }
 
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
+
 [dev-dependencies]
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }

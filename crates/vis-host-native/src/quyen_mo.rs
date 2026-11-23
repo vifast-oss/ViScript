@@ -9,6 +9,10 @@
 //!
 //! Đường dẫn được **chuẩn hoá từ vựng** (`.`/`..`) trước khi đi; `..` ra ngoài gốc bị loại bằng
 //! `strip_prefix`, không dựa vào `canonicalize` (mà chính nó là bước kiểm-rồi-mở cũ).
+//!
+//! **ST-309 (kiểm toán bảo mật)**: gốc `cap` cũng được mở **không theo symlink ở mọi thành phần**
+//! (`mo_goc`), không chỉ thành phần cuối — đổi một thư mục cha của gốc thành symlink sau khi khởi
+//! động không còn mở sang cây khác.
 
 #![cfg(unix)]
 
@@ -133,14 +137,49 @@ fn thanh(rel: &Path) -> io::Result<Vec<&OsStr>> {
 }
 
 fn mo_goc(goc: &Path) -> io::Result<OwnedFd> {
-    // `NOFOLLOW`: gốc `cap` đã được canonicalize lúc khởi động; nếu tên gốc bị đổi thành symlink
-    // sau đó thì **từ chối**, không mở sang cây khác (chống thay gốc).
-    fs::open(
-        goc,
-        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+    // **ST-309 (kiểm toán bảo mật)**: `O_NOFOLLOW` chỉ chặn **thành phần cuối**; các thư mục
+    // **trung gian** vẫn bị đi theo symlink. Gốc `cap` đã canonicalize lúc khởi động, nhưng nếu
+    // một thư mục cha của gốc bị đổi thành symlink **sau đó** thì `open(goc, O_NOFOLLOW)` vẫn mở
+    // sang cây khác (đo: ghi được `ngoai/con/tep`). Nay gốc được mở **không theo symlink ở mọi
+    // thành phần** (`openat2(RESOLVE_NO_SYMLINKS)` hoặc đi từng thành phần từ `/`).
+    if !goc.is_absolute() {
+        return Err(loi_os(rustix::io::Errno::INVAL));
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use rustix::fs::{openat2, ResolveFlags};
+        match openat2(
+            rustix::fs::CWD,
+            goc,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
+            Mode::empty(),
+            ResolveFlags::NO_SYMLINKS,
+        ) {
+            Ok(fd) => return Ok(fd),
+            Err(e) if e == rustix::io::Errno::NOSYS => {}
+            Err(e) => return Err(io::Error::from(e)),
+        }
+    }
+    // Fallback (macOS/BSD/kernel < 5.6): mở `/` rồi đi từng thành phần với `O_NOFOLLOW`.
+    let mut cur = fs::open(
+        Path::new("/"),
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
         Mode::empty(),
     )
-    .map_err(io::Error::from)
+    .map_err(io::Error::from)?;
+    for c in goc.components() {
+        match c {
+            Component::RootDir | Component::CurDir => {}
+            Component::Normal(x) => {
+                let fl = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+                cur = fs::openat(&cur, x, fl, Mode::empty()).map_err(io::Error::from)?;
+            }
+            Component::ParentDir | Component::Prefix(_) => {
+                return Err(loi_os(rustix::io::Errno::INVAL));
+            }
+        }
+    }
+    Ok(cur)
 }
 
 /// Mở `rel` dưới `goc`: `openat2` (Linux) trước, rơi về đi từng thành phần khi `ENOSYS`.

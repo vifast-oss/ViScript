@@ -338,6 +338,35 @@ fn cap_dir_la_sandbox_tu_nhien() {
     }
 }
 
+/// **ST-309** — symlink **bên trong preopen** trỏ ra ngoài `cap[Dir]` vẫn bị WASI từ chối
+/// (`VS0604`), không rò nội dung ngoài. Chỉ Unix có symlink; cùng đường `cap_dir_la_sandbox_tu_nhien`.
+#[cfg(unix)]
+#[test]
+fn preopen_khong_di_theo_symlink_ra_ngoai() {
+    if !co_runtime() || plugin_mau().is_none() {
+        thieu_moi_truong("thiếu runtime WASI hoặc toolchain wasm32-wasip1");
+        return;
+    }
+    let d = thu_muc_tam("cap-link");
+    let ngoai = std::env::temp_dir().join(format!(
+        "vis-plugin-wasi-ngoai-link-{}.txt",
+        std::process::id()
+    ));
+    std::fs::write(&ngoai, "NGOAI").expect("tệp ngoài");
+    std::os::unix::fs::symlink(&ngoai, d.join("link.txt")).expect("symlink");
+    let p = nap_mau(vec![Cap::dir(&d, false)]);
+    let e = p
+        .goi("doc", &[PluginValue::Str("/cap0/link.txt".into())])
+        .expect_err("symlink ra ngoài preopen phải bị từ chối");
+    assert_eq!(e.code, "VS0604", "{e}");
+    assert!(
+        !e.message.contains("NGOAI"),
+        "không được rò nội dung ngoài: {e}"
+    );
+    let _ = std::fs::remove_file(&ngoai);
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 #[test]
 fn tat_cung_khi_strict_caps_hoac_sandbox() {
     let khong_ton_tai = std::env::temp_dir().join("vis-plugin-khong-ton-tai-307.wasm");

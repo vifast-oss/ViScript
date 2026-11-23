@@ -15,6 +15,10 @@ use std::path::{Path, PathBuf};
 
 use vis_interp::value::{Name, Value};
 
+/// **ST-309** — mở tệp an toàn từ fd gốc (`openat2`/`O_NOFOLLOW`) trên Unix.
+#[cfg(unix)]
+mod cap_fs;
+
 /// **ST-307 (VD-278/VD-281/VD-283)** — nạp plugin động WASI/WASM trong sandbox `cap[...]`.
 pub mod wasi;
 
@@ -110,7 +114,8 @@ impl PluginCtx {
         Ok(cap)
     }
 
-    /// Đọc UTF-8 trong `cap[Dir]`; canonicalize để chặn `..`/symlink ra ngoài root.
+    /// Đọc UTF-8 trong `cap[Dir]`; canonicalize để chặn `..`/symlink ra ngoài root, rồi mở
+    /// **từ fd gốc** với `RESOLVE_BENEATH` (ST-309) — không còn khe kiểm-rồi-mở.
     pub fn read_text(&self, path: impl AsRef<Path>) -> Result<String> {
         let path = path.as_ref();
         let cap = self.cap_dir(path, false)?;
@@ -125,11 +130,25 @@ impl PluginCtx {
         if !canon.starts_with(&root) {
             return Err(Error::cap_denied("Dir", &path.to_string_lossy()));
         }
-        std::fs::read_to_string(&canon)
-            .map_err(|e| Error::io(format!("không đọc được `{}`: {e}", canon.display())))
+        #[cfg(unix)]
+        {
+            let rel = canon
+                .strip_prefix(&root)
+                .map_err(|_| Error::cap_denied("Dir", &path.to_string_lossy()))?;
+            cap_fs::doc(&root, rel, path)
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::read_to_string(&canon)
+                .map_err(|e| Error::io(format!("không đọc được `{}`: {e}", canon.display())))
+        }
     }
 
     /// Ghi UTF-8 trong `cap[Dir]` có cờ `write`.
+    ///
+    /// **ST-309**: trên Unix mở bằng `openat` từ fd gốc với `O_NOFOLLOW` + `RESOLVE_BENEATH`;
+    /// tên cuối là symlink (kể cả trỏ ra ngoài) ⇒ `VS0604`, không ghi xuyên link. Bản cũ
+    /// canonicalize thư mục cha rồi `std::fs::write` nên ghi đè được tệp ngoài `cap`.
     pub fn write_text(&self, path: impl AsRef<Path>, noi_dung: &str) -> Result<()> {
         let path = path.as_ref();
         let cap = self.cap_dir(path, true)?;
@@ -149,9 +168,25 @@ impl PluginCtx {
         if !canon_parent.starts_with(&root) {
             return Err(Error::cap_denied("Dir (write)", &path.to_string_lossy()));
         }
-        let dich = canon_parent.join(path.file_name().unwrap_or_default());
-        std::fs::write(&dich, noi_dung)
-            .map_err(|e| Error::io(format!("không ghi được `{}`: {e}", dich.display())))
+        #[cfg(unix)]
+        {
+            let ten = path.file_name().ok_or_else(|| {
+                Error::io(format!(
+                    "không xác định được tên tệp để ghi: `{}`",
+                    path.display()
+                ))
+            })?;
+            let rel_dir = canon_parent
+                .strip_prefix(&root)
+                .map_err(|_| Error::cap_denied("Dir (write)", &path.to_string_lossy()))?;
+            cap_fs::ghi(&root, &rel_dir.join(ten), noi_dung.as_bytes(), path)
+        }
+        #[cfg(not(unix))]
+        {
+            let dich = canon_parent.join(path.file_name().unwrap_or_default());
+            std::fs::write(&dich, noi_dung)
+                .map_err(|e| Error::io(format!("không ghi được `{}`: {e}", dich.display())))
+        }
     }
 }
 

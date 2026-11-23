@@ -772,6 +772,7 @@ dependencies = [
 name = "vis-plugin-abi"
 version = "0.5.0"
 dependencies = [
+ "rustix",
  "vis-bytecode",
  "vis-interp",
  "vis-plugin-macros",

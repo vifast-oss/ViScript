@@ -199,3 +199,32 @@ fn chuyen_doi_khong_nuot_kieu_la() {
     assert_eq!(e.code, "VS0501");
     let _ = Error::new("VS0501", "x");
 }
+
+/// **ST-309 (kiểm toán bảo mật) — đỏ trước, tất định.** `write_text` cũ canonicalize **thư mục
+/// cha** rồi `std::fs::write(canon_parent/ten)`; nếu **tên cuối** là symlink trỏ ra ngoài `cap`,
+/// lệnh ghi đi theo link và sửa tệp ngoài (không cần đua). Ca này khẳng định: từ chối + tệp ngoài
+/// giữ nguyên. Bản vá mở bằng `openat`/`O_NOFOLLOW` từ fd gốc như `FsGuard` (ST-295).
+#[cfg(unix)]
+#[test]
+fn cap_ghi_khong_di_theo_symlink_o_ten_cuoi() {
+    use std::os::unix::fs::symlink;
+    let d = thu_muc_tam("cap-link-trong");
+    let n = thu_muc_tam("cap-link-ngoai");
+    let ngoai = n.join("that.txt");
+    std::fs::write(&ngoai, "NGOAI").expect("tệp ngoài");
+    let link = d.join("link.txt");
+    symlink(&ngoai, &link).expect("symlink ra ngoài");
+
+    let ghi = PluginCtx::new(vec![Cap::dir(&d, true)]);
+    let e = ghi
+        .write_text(&link, "GHI-DE")
+        .expect_err("ghi qua symlink ra ngoài cap phải bị từ chối");
+    assert_eq!(e.code, "VS0604", "phải là lỗi quyền, không phải I/O: {e}");
+    assert_eq!(
+        std::fs::read_to_string(&ngoai).expect("đọc tệp ngoài"),
+        "NGOAI",
+        "tệp ngoài cap không được bị ghi đè"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+    let _ = std::fs::remove_dir_all(&n);
+}

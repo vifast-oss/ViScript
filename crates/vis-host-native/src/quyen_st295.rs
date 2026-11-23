@@ -237,3 +237,39 @@ fn symlink_thoat_goc_tra_vs0604_tren_moi_nen() {
     );
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// **ST-309 (kiểm toán bảo mật) — đỏ trước, không cần đua.** `mo_goc` cũ dùng
+/// `open(goc, O_NOFOLLOW)`: `O_NOFOLLOW` chỉ chặn **thành phần cuối**, còn các thư mục **trung
+/// gian** vẫn bị đi theo symlink. Sau khi khởi động (gốc đã canonicalize), kẻ tấn công đổi một
+/// thư mục cha của gốc thành symlink ⇒ lần mở sau đi ra ngoài `cap` và ghi/đọc ở đó. Ca này đổi
+/// **ngay** thư mục cha (không đua) nên tất định: trước bản vá, `outside/con/tep` bị ghi.
+#[test]
+fn goc_bi_thay_bang_symlink_trung_gian_khong_duoc_ghi_ra_ngoai() {
+    let d = tam("goc-link");
+    let cha = d.join("cha");
+    let root = cha.join("con");
+    std::fs::create_dir_all(&root).expect("gốc cap");
+    let ngoai = d.join("ngoai");
+    std::fs::create_dir_all(ngoai.join("con")).expect("thư mục ngoài");
+    let root_canon = std::fs::canonicalize(&root).expect("canonicalize gốc");
+    let q = quyen_ghi(&root_canon);
+    // Đổi thư mục cha của gốc thành symlink trỏ sang cây ngoài; tên gốc cuối vẫn là thư mục thật.
+    let cha_that = d.join("cha-that");
+    std::fs::rename(&cha, &cha_that).expect("đổi tên cha");
+    std::os::unix::fs::symlink(&ngoai, &cha).expect("symlink cha");
+    let dich = cha.join("con").join("tep");
+    let mut host = HostThat { an_toan: true };
+    let mut g = FsGuard {
+        trong: &mut host,
+        quyen: &q,
+    };
+    let e = g
+        .write(dich.to_str().unwrap(), "RO-RA-NGOAI")
+        .expect_err("gốc bị đổi qua symlink trung gian phải bị chặn");
+    assert!(e.starts_with(DAU_QUYEN), "lỗi phải mang mã VS0604: {e:?}");
+    assert!(
+        !ngoai.join("con").join("tep").exists(),
+        "không được ghi ra cây ngoài qua symlink trung gian"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}

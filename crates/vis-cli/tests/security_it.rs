@@ -24,6 +24,8 @@ mod quyen;
 mod sandbox;
 #[path = "security_it/st295_sandbox_proc.rs"]
 mod st295_sandbox_proc;
+#[path = "security_it/st309.rs"]
+mod st309;
 #[path = "security_it/st83_no_nho.rs"]
 mod st83_no_nho;
 #[path = "security_it/strict_caps.rs"]
