@@ -52,11 +52,11 @@ Phần này tóm tắt **chuẩn tắc** của [`SPEC-lex.md`](SPEC-lex.md) và 
 
 ### 2.2 Từ khoá
 
-Lexer có **40** từ khoá (xếp ABC):
+Lexer có **40** token từ khoá; **39** từ khoá hiện hành (xếp ABC) — token còn lại là dạng viết thường của `None`, bị từ chối:
 
 ```text
 alias and async await break cmd const continue derives dyn elif else enum extern false fn for
-has if impl in let loop match newtype none not or pub ref return scope self trait true type use
+has if impl in let loop match newtype not or pub ref return scope self trait true type use
 var while with
 ```
 
@@ -66,7 +66,7 @@ Quy tắc đặc biệt:
   (`test fn tên():`). Ở chỗ khác `test` là định danh.
 - `assert` là từ khoá mềm ở đầu câu lệnh (xem §3.3); `assert(...)` vẫn là lời gọi.
 - `spawn` là định danh mềm: `spawn f(args)` là biểu thức spawn; `spawn(args)` là lời gọi hàm tên `spawn`.
-- `alias`, `newtype`, `none` vẫn là từ khoá của lexer nhưng **bị từ chối** khi dùng (xem §3.1).
+- `alias`, `newtype` và literal viết thường của `None` vẫn là từ khoá của lexer nhưng **bị từ chối** khi dùng (xem §3.1).
 - `Some`, `None`, `Ok`, `Err` là **định danh** (constructor/biến thể), không phải từ khoá.
 
 ### 2.3 Bảng token
@@ -129,7 +129,7 @@ Quy tắc maximal munch:
 - **`size`**: byte; hậu tố `b kb mb gb tb kib mib gib tib`; `kb`=1000, `kib`=1024.
 - **`duration`**: nanosecond; hậu tố `ns us ms s m h d w`, ghép **giảm dần** trong một token.
 - **`percent`**: tỉ lệ lưu trong `0..1`; literal dùng `pct` (`50pct` = 0.5).
-- **`None`** là constructor của `Option`; literal `none` viết thường bị từ chối `VS0203`.
+- **`None`** là constructor của `Option`; literal viết thường của `None` bị từ chối `VS0203`.
 - **List/map/set/record**:
   - `[a, b]` → `list[T]`;
   - `{k: v}` → map nếu mọi khoá là biểu thức/chuỗi; **record** nếu mọi khoá là định danh trần;
@@ -351,7 +351,7 @@ record_pat  := IDENT [':' pattern] | '..'
 ```
 
 - `None`, `Some(x)`, `Ok(v)`, `Err(e)` là **định danh** được phân giải thành biến thể; viết
-  thường (`none`, `some`) là `VS0203`.
+  thường của `None`/`Some` là `VS0203`.
 - Tên biến thể là **trần** (`Circle(r)`); dạng có tiền tố (`Shape.Circle(r)`) **chưa** được parser
   hỗ trợ (xem §12).
 - List rest: `[a, ..]`, `[a, ..rest]` cần ≥1 phần tử; `[..]`/`[..rest]` khớp mọi list kể cả rỗng;

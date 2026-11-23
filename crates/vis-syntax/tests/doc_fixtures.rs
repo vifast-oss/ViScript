@@ -99,6 +99,11 @@ fn doc_file_with_blocks() -> PathBuf {
 fn fixture_tai_lieu_dung_22_khoi_vis() {
     let mut total = 0usize;
     for f in md_files(&docs_dir()) {
+        // **ST-309**: `docs/SPEC.md` có 7 khối ```vis riêng, do `doc-examples` kiểm;
+        // test này giữ bất biến 22 khối của `ViScript-thiet-ke.md` (VD-36).
+        if f.file_name().and_then(|n| n.to_str()) == Some("SPEC.md") {
+            continue;
+        }
         let blocks = extract_vis_blocks(&f);
         if !blocks.is_empty() {
             assert!(
