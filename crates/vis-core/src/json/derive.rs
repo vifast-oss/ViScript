@@ -78,7 +78,7 @@ impl<'a> P<'a> {
 }
 
 /// `Value` → `Json` theo descriptor.
-pub(crate) fn to_json(v: &Value, desc: &str) -> Result<Value, String> {
+pub fn to_json(v: &Value, desc: &str) -> Result<Value, String> {
     let mut p = P::new(desc);
     to_json_p(v, &mut p)
 }
@@ -295,7 +295,7 @@ fn skip_desc(p: &mut P<'_>) -> Result<(), String> {
 }
 
 /// `Json` → `Value` theo descriptor; lỗi trả chuỗi để method bọc `Err(Error)`.
-pub(crate) fn from_json(j: &Value, desc: &str) -> Result<Value, String> {
+pub fn from_json(j: &Value, desc: &str) -> Result<Value, String> {
     let mut p = P::new(desc);
     from_json_p(j, &mut p)
 }

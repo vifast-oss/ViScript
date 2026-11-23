@@ -1,0 +1,840 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! **ST-310a (VD-285)** — nhóm biểu thức/gọi/gán đường của `process_work`, tách khỏi
+//! `frame/proc.rs` để giữ tệp dưới 1.150 dòng. Chuyển **nguyên văn**, không đổi ngữ nghĩa.
+
+use super::*;
+
+/// Xử lý nhóm work-item biểu thức, gọi hàm, pattern và gán đường.
+pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'a>) -> R<()> {
+    match w {
+        // ================= Group B: biểu thức & gọi =================
+        Work::ApplyUn { op, span } => {
+            let v = frame.pop_val()?;
+            let r = crate::ops::un(op, v, span)?;
+            frame.push_val(r);
+            Ok(())
+        }
+        Work::ApplyField {
+            base,
+            name,
+            optional,
+            span,
+        } => {
+            let b = frame.pop_val()?;
+            // **VS3-1c**: `?.` phải phân biệt field `T?` (bọc thêm một `Some`, kể cả
+            // `Some(None)`) với field thường (lift tới độ sâu 1). Dùng đúng helper của
+            // runtime mặc định; trước đây frame chỉ `lift_opt(v,1)` nên `Some(3)` thành
+            // `Some(3)` thay vì `Some(Some(3))`, còn `None` bị rơi mất lớp.
+            let field_la_opt = optional && it.field_dich_la_opt(base, &name, &b);
+            let (b, nang) = if optional {
+                match b {
+                    Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
+                        "None" => {
+                            frame.push_val(Value::none());
+                            return Ok(());
+                        }
+                        "Some" if ag.len() == 1 => (ag.pop().unwrap(), true),
+                        _ => (Value::Enum(ea, va, ag), false),
+                    },
+                    other => (other, false),
+                }
+            } else {
+                (b, false)
+            };
+            let v = field_of(b, &name, span)?;
+            frame.push_val(if nang {
+                if field_la_opt {
+                    Value::some(v)
+                } else {
+                    crate::lift::lift_opt(v, 1)
+                }
+            } else {
+                v
+            });
+            Ok(())
+        }
+        Work::ApplyIndex { span } => {
+            let i = frame.pop_val()?;
+            let b = frame.pop_val()?;
+            let v = index_of(b, i, span)?;
+            frame.push_val(v);
+            Ok(())
+        }
+        Work::BuildList { n } => {
+            let mut vs = pop_n(frame, n)?;
+            vs.reverse();
+            frame.push_val(Value::List(vs));
+            Ok(())
+        }
+        Work::BuildSet { n } => {
+            let mut vs = pop_n(frame, n)?;
+            vs.reverse();
+            let mut out: Vec<Value> = Vec::new();
+            for v in vs {
+                if !out.iter().any(|x| x.eq_value(&v)) {
+                    out.push(v);
+                }
+            }
+            frame.push_val(Value::List(out));
+            Ok(())
+        }
+        Work::BuildTuple { n } => {
+            let mut vs = pop_n(frame, n)?;
+            vs.reverse();
+            frame.push_val(Value::List(vs));
+            Ok(())
+        }
+        Work::BuildMap { n } => {
+            let mut flat = pop_n(frame, n * 2)?;
+            flat.reverse();
+            let mut kv: Vec<(Value, Value)> = Vec::new();
+            let mut it = flat.into_iter();
+            while let (Some(k), Some(v)) = (it.next(), it.next()) {
+                if let Some(e) = kv.iter_mut().find(|(kk, _)| kk.eq_value(&k)) {
+                    e.1 = v;
+                } else {
+                    kv.push((k, v));
+                }
+            }
+            frame.push_val(Value::Map(kv));
+            Ok(())
+        }
+        Work::EvalRecordFields { fields, idx, span } => {
+            if idx >= fields.len() {
+                return Ok(());
+            }
+            frame.cur().work.push(Work::EvalRecordFields {
+                fields,
+                idx: idx + 1,
+                span,
+            });
+            frame.cur().work.push(Work::Eval(&fields[idx].1));
+            Ok(())
+        }
+        Work::BuildRecord { name, fields, span } => {
+            let vals = pop_n(frame, fields.len())?;
+            let mut out = Vec::with_capacity(fields.len());
+            for ((n, _), v) in fields.iter().zip(vals.into_iter().rev()) {
+                out.push((n.clone(), v));
+            }
+            let _ = span;
+            frame.push_val(Value::Record(name, out));
+            Ok(())
+        }
+        Work::BuildEnum {
+            name,
+            variant,
+            n,
+            span,
+        } => {
+            let mut vs = pop_n(frame, n)?;
+            vs.reverse();
+            let _ = span;
+            frame.push_val(Value::Enum(name.into(), variant.into(), vs));
+            Ok(())
+        }
+        Work::ApplySome => {
+            let v = frame.pop_val()?;
+            frame.push_val(Value::some(v));
+            Ok(())
+        }
+        Work::WithCollect { names, n, span } => {
+            let mut vals = pop_n(frame, n)?;
+            vals.reverse();
+            let base = frame.pop_val()?;
+            match base {
+                Value::Record(name, mut cur) => {
+                    for (n, nv) in names.into_iter().zip(vals) {
+                        match cur.iter_mut().find(|(f, _)| *f == n) {
+                            Some(slot) => slot.1 = nv,
+                            None => {
+                                return Err(Abort::Trap(Trap::new(
+                                    RT,
+                                    format!("bản ghi không có trường `{n}`"),
+                                    span,
+                                )))
+                            }
+                        }
+                    }
+                    frame.push_val(Value::Record(name, cur));
+                    Ok(())
+                }
+                other => Err(Abort::Trap(Trap::new(
+                    RT,
+                    format!("`with` cần bản ghi, được `{}`", other.show()),
+                    span,
+                ))),
+            }
+        }
+        Work::InterpParts {
+            parts,
+            idx,
+            out,
+            span,
+        } => {
+            if idx >= parts.len() {
+                frame.push_val(Value::Str(out));
+                return Ok(());
+            }
+            match &parts[idx] {
+                InterpPart::Str(s) => {
+                    frame.cur().work.push(Work::InterpParts {
+                        parts,
+                        idx: idx + 1,
+                        out: format!("{out}{s}"),
+                        span,
+                    });
+                }
+                InterpPart::Expr(e) => {
+                    frame.cur().work.push(Work::InterpPartVal {
+                        parts,
+                        idx,
+                        out,
+                        spec: None,
+                        span,
+                    });
+                    frame.cur().work.push(Work::Eval(e));
+                }
+                InterpPart::ExprSpec { expr, spec } => {
+                    frame.cur().work.push(Work::InterpPartVal {
+                        parts,
+                        idx,
+                        out,
+                        spec: Some(spec.clone()),
+                        span,
+                    });
+                    frame.cur().work.push(Work::Eval(expr));
+                }
+            }
+            Ok(())
+        }
+        Work::InterpPartVal {
+            parts,
+            idx,
+            out,
+            spec,
+            span,
+        } => {
+            let v = frame.pop_val()?;
+            let piece = match spec {
+                Some(s) => crate::interp::dinh_dang(&v, &s, span)?,
+                None => v.show(),
+            };
+            frame.cur().work.push(Work::InterpParts {
+                parts,
+                idx: idx + 1,
+                out: format!("{out}{piece}"),
+                span,
+            });
+            Ok(())
+        }
+        Work::ApplyShortCircuit { op, rhs, span } => {
+            let l = frame.pop_val()?;
+            let lt = l.truthy(span)?;
+            match op {
+                BinOp::And if !lt => frame.push_val(Value::Bool(false)),
+                BinOp::Or if lt => frame.push_val(Value::Bool(true)),
+                _ => {
+                    frame.cur().work.push(Work::ApplyBoolRhs { span });
+                    frame.cur().work.push(Work::Eval(rhs));
+                }
+            }
+            Ok(())
+        }
+        Work::ApplyBoolRhs { span } => {
+            let r = frame.pop_val()?;
+            let rt = r.truthy(span)?;
+            frame.push_val(Value::Bool(rt));
+            Ok(())
+        }
+        Work::ApplyCoalesce { rhs } => {
+            let l = frame.pop_val()?;
+            if l.is_some() {
+                frame.push_val(l.into_some().expect("vừa kiểm is_some"));
+            } else if l.is_none() {
+                frame.cur().work.push(Work::Eval(rhs));
+            } else {
+                frame.push_val(l);
+            }
+            Ok(())
+        }
+        Work::ApplyPipe { rhs, span } => {
+            let l = frame.pop_val()?;
+            frame.cur().work.push(Work::ApplyPipeCall { lhs: l, span });
+            frame.cur().work.push(Work::Eval(rhs));
+            Ok(())
+        }
+        Work::ApplyPipeCall { lhs, span } => {
+            let f = frame.pop_val()?;
+            call_value(it, frame, f, vec![lhs], Vec::new(), span)
+        }
+        Work::MatchArm {
+            arms,
+            idx,
+            subj,
+            stmt_mode,
+            span,
+        } => {
+            if idx >= arms.len() {
+                return Err(Abort::Trap(Trap::new(
+                    RT,
+                    "`match` không khớp nhánh nào (không xét hết bị lọt)",
+                    span,
+                )));
+            }
+            let arm = &arms[idx];
+            let env = frame.cur().env.clone();
+            let snap = env.borrow().clone();
+            if !bind_pat_env(&arm.pat, &subj, &env) {
+                *env.borrow_mut() = snap;
+                frame.cur().work.push(Work::MatchArm {
+                    arms,
+                    idx: idx + 1,
+                    subj,
+                    stmt_mode,
+                    span,
+                });
+                return Ok(());
+            }
+            if let Some(g) = &arm.guard {
+                frame.cur().work.push(Work::MatchGuard {
+                    arms,
+                    idx,
+                    subj,
+                    stmt_mode,
+                    snapshot: snap,
+                    span,
+                });
+                frame.cur().work.push(Work::Eval(g));
+                return Ok(());
+            }
+            run_arm_body(frame, arm, stmt_mode);
+            Ok(())
+        }
+        Work::MatchGuard {
+            arms,
+            idx,
+            subj,
+            stmt_mode,
+            snapshot,
+            span,
+        } => {
+            let gv = frame.pop_val()?;
+            if gv.truthy(span)? {
+                run_arm_body(frame, &arms[idx], stmt_mode);
+            } else {
+                *frame.cur().env.borrow_mut() = snapshot;
+                frame.cur().work.push(Work::MatchArm {
+                    arms,
+                    idx: idx + 1,
+                    subj,
+                    stmt_mode,
+                    span,
+                });
+            }
+            Ok(())
+        }
+        Work::MatchSubj {
+            arms,
+            stmt_mode,
+            span,
+        } => {
+            let subj = frame.pop_val()?;
+            frame.cur().work.push(Work::MatchArm {
+                arms,
+                idx: 0,
+                subj,
+                stmt_mode,
+                span,
+            });
+            Ok(())
+        }
+        Work::ApplyNamedCall {
+            callee,
+            npos,
+            names,
+            span,
+        } => {
+            // E_CALL/E_BUILTIN đã charge tại nút Call trong `eval_work` (trước
+            // đối số) ⇒ KHÔNG charge lại ở đây, kể cả resume qua `Redispatch`.
+            let (pos, named_vals) = take_call_args_names(frame, npos, &names)?;
+            match dispatch(it, frame, callee, pos.clone(), named_vals.clone(), span) {
+                Ok(()) => Ok(()),
+                Err(Abort::Pending(p)) => {
+                    frame.cur().work.push(Work::Redispatch {
+                        callee,
+                        args: pos,
+                        named: named_vals,
+                        span,
+                    });
+                    Err(Abort::Pending(p))
+                }
+                Err(e) => Err(e),
+            }
+        }
+        Work::ApplyValueCall { npos, names, span } => {
+            // E_CALL đã charge tại nút Call — resume qua `RedispatchValue` không charge lại.
+            let (pos, named) = take_call_args_names(frame, npos, &names)?;
+            let f = frame.pop_val()?;
+            match call_value(it, frame, f.clone(), pos.clone(), named.clone(), span) {
+                Ok(()) => Ok(()),
+                Err(Abort::Pending(p)) => {
+                    frame.cur().work.push(Work::RedispatchValue {
+                        f,
+                        args: pos,
+                        named,
+                        span,
+                    });
+                    Err(Abort::Pending(p))
+                }
+                Err(e) => Err(e),
+            }
+        }
+        Work::RedispatchValue {
+            f,
+            args,
+            named,
+            span,
+        } => match call_value(it, frame, f.clone(), args.clone(), named.clone(), span) {
+            Ok(()) => Ok(()),
+            Err(Abort::Pending(p)) => {
+                frame.cur().work.push(Work::RedispatchValue {
+                    f,
+                    args,
+                    named,
+                    span,
+                });
+                Err(Abort::Pending(p))
+            }
+            Err(e) => Err(e),
+        },
+        Work::ApplyMethodOrField {
+            name,
+            args,
+            named,
+            base,
+            span,
+        } => {
+            let recv = frame.pop_val()?;
+            if matches!(
+                recv,
+                Value::List(_) | Value::Str(_) | Value::Map(_) | Value::Chan(_)
+            ) {
+                let base_var = if let HExpr::Var { sym: Some(id), .. } = base {
+                    Some(*id)
+                } else {
+                    None
+                };
+                frame.cur().work.push(args_works(
+                    args,
+                    &[],
+                    span,
+                    vec![Work::ApplyMethod {
+                        name,
+                        recv,
+                        nargs: args.len(),
+                        base_var,
+                        span,
+                    }],
+                ));
+            } else {
+                let f = field_of(recv, &name, span)?;
+                frame.push_val(f);
+                frame.cur().work.push(args_works(
+                    args,
+                    named,
+                    span,
+                    vec![Work::ApplyValueCall {
+                        npos: args.len(),
+                        names: named.iter().map(|(n, _)| n.clone()).collect(),
+                        span,
+                    }],
+                ));
+            }
+            Ok(())
+        }
+        Work::ApplyMethod {
+            name,
+            recv,
+            nargs,
+            base_var,
+            span,
+        } => {
+            // E_BUILTIN đã charge tại nút Call (dạng Field) — resume qua
+            // `RedispatchMethod` không charge lại.
+            let mut got = pop_n(frame, nargs)?;
+            got.reverse();
+            // **VD-258**: `list.map/filter/each` chạy vòng callback trên work stack
+            // (resume được khi callback `await`), KHÔNG gọi `host.call` một lần trong Rust
+            // — nếu không, suspend giữa phương thức sẽ mất trạng thái và chạy lại cả vòng.
+            if let Value::List(items) = &recv {
+                let kind = match name.as_str() {
+                    "map" => Some(MethodKind::Map),
+                    "filter" => Some(MethodKind::Filter),
+                    "each" => Some(MethodKind::Each),
+                    _ => None,
+                };
+                if let Some(kind) = kind {
+                    let f = got.into_iter().next().unwrap_or(Value::Unit);
+                    frame.cur().work.push(Work::MethodLoop {
+                        kind,
+                        f,
+                        items: items.clone(),
+                        idx: 0,
+                        acc: Vec::new(),
+                        awaiting: false,
+                        span,
+                    });
+                    return Ok(());
+                }
+            }
+            match crate::builtin::method(it, recv.clone(), &name, got.clone(), span) {
+                Ok(kq) => {
+                    method_writeback(frame, &name, base_var, &kq);
+                    frame.push_val(kq);
+                    Ok(())
+                }
+                // Kênh đầy/rỗng ⇒ `chay_mot` báo Pending. Giữ **đối số đã eval** trong
+                // continuation ⇒ resume thử lại méthode, KHÔNG eval lại đối số/side-effect.
+                Err(Abort::Pending(p)) => {
+                    frame.cur().work.push(Work::RedispatchMethod {
+                        name,
+                        recv,
+                        args: got,
+                        base_var,
+                        span,
+                    });
+                    Err(Abort::Pending(p))
+                }
+                Err(e) => Err(e),
+            }
+        }
+        Work::RedispatchMethod {
+            name,
+            recv,
+            args,
+            base_var,
+            span,
+        } => match crate::builtin::method(it, recv.clone(), &name, args.clone(), span) {
+            Ok(kq) => {
+                method_writeback(frame, &name, base_var, &kq);
+                frame.push_val(kq);
+                Ok(())
+            }
+            // **VD-258**: `builtin::method` không có continuation nội bộ. Treo lần nữa ở
+            // đây nghĩa là chạy lại cả phương thức (lặp side-effect callback) — từ chối rõ.
+            Err(Abort::Pending(_)) => Err(Abort::Trap(Trap::new(
+                RT,
+                format!(
+                    "phương thức `{name}` không resume được trên đường frame test (host treo giữa phương thức)"
+                ),
+                span,
+            ))),
+            Err(e) => Err(e),
+        },
+        // **VD-258**: một bước của vòng callback `list.map/filter/each`. `awaiting` ⇒
+        // giá trị callback vừa xong nằm trên `vals`; `idx`/`acc` sống qua suspend.
+        Work::MethodLoop {
+            kind,
+            f,
+            items,
+            idx,
+            acc,
+            awaiting,
+            span,
+        } => {
+            let mut acc = acc;
+            if awaiting {
+                let v = frame.pop_val()?;
+                if idx == 0 || idx > items.len() {
+                    return Err(Abort::Trap(Trap::new(
+                        RT,
+                        "frame test: trạng thái vòng callback không hợp lệ",
+                        span,
+                    )));
+                }
+                match kind {
+                    MethodKind::Map => acc.push(v),
+                    MethodKind::Filter => {
+                        if v.truthy(span)? {
+                            acc.push(items[idx - 1].clone());
+                        }
+                    }
+                    MethodKind::Each => {
+                        let _ = v;
+                    }
+                }
+            }
+            if idx >= items.len() {
+                let out = match kind {
+                    MethodKind::Each => Value::Unit,
+                    MethodKind::Map | MethodKind::Filter => Value::List(acc),
+                };
+                frame.push_val(out);
+                return Ok(());
+            }
+            let item = items[idx].clone();
+            frame.cur().work.push(Work::MethodLoop {
+                kind,
+                f: f.clone(),
+                items,
+                idx: idx + 1,
+                acc,
+                awaiting: true,
+                span,
+            });
+            match call_value(it, frame, f, vec![item], Vec::new(), span) {
+                Ok(()) => Ok(()),
+                // Callback là builtin có thể treo (vd `std.net.read`): `call_value` không
+                // giữ continuation cho builtin ⇒ từ chối rõ thay vì treo rồi underflow.
+                Err(Abort::Pending(_)) => Err(Abort::Trap(Trap::new(
+                    RT,
+                    "frame test: callback dạng builtin không resume được trong `map`/`filter`/`each`",
+                    span,
+                ))),
+                Err(e) => Err(e),
+            }
+        }
+        Work::MakeLambda {
+            params,
+            param_depths,
+            ret_depth,
+            body,
+        } => {
+            // Chụp snapshot vào Rc MỚI (khớp interp mặc định) — tránh chu trình Rc tự tham chiếu.
+            let env = Rc::new(RefCell::new(frame.cur().env.borrow().clone()));
+            frame.push_val(Value::Fn(Rc::new(crate::value::Closure {
+                name: String::new(),
+                params,
+                param_depths,
+                body,
+                env,
+                ret_depth,
+                frame_body: std::cell::OnceCell::new(),
+            })));
+            Ok(())
+        }
+        Work::ApplyAssignVar { sym, op, span } => {
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
+            let rhs = frame.pop_val()?;
+            if !frame.mutable.borrow().contains(&sym) {
+                return Err(Abort::Trap(Trap::new(
+                    crate::interp::MISMATCH,
+                    "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
+                    span,
+                )));
+            }
+            let new =
+                if matches!(op, AssignOp::Set) {
+                    rhs
+                } else {
+                    let cur =
+                        frame.cur().env.borrow().get(&sym).cloned().ok_or_else(|| {
+                            Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span))
+                        })?;
+                    let bop = match op {
+                        AssignOp::Add => BinOp::Add,
+                        AssignOp::Sub => BinOp::Sub,
+                        AssignOp::Mul => BinOp::Mul,
+                        AssignOp::Div => BinOp::Div,
+                        AssignOp::FloorDiv => BinOp::FloorDiv,
+                        _ => BinOp::Rem,
+                    };
+                    crate::ops::bin(bop, cur, rhs, span)?
+                };
+            frame.cur().env.borrow_mut().insert(sym, new);
+            Ok(())
+        }
+        // ================= VD-270: gán *đường* (`a.b.f`, `xs[0].f`, …) =================
+        Work::AssignPathStep(step) => {
+            let super::expr::AssignPathStep {
+                sym,
+                nuts,
+                k,
+                op,
+                span,
+                root,
+                mut duong,
+                opt_depth,
+                sau_chi_so,
+                value,
+            } = step;
+            if sau_chi_so {
+                // Chỉ số bước `k` vừa được đánh giá (work `Eval` ở dưới đã trả).
+                let iv = frame.pop_val()?;
+                duong.push(crate::gan::Buoc::ChiSo(iv));
+            } else {
+                match &nuts[k] {
+                    NutGan::Truong(ten) => duong.push(crate::gan::Buoc::Truong(ten.clone())),
+                    NutGan::ChiSo(idx) => {
+                        let idx = *idx;
+                        frame.cur().work.push(Work::AssignPathStep(
+                            super::expr::AssignPathStep {
+                                sym,
+                                nuts,
+                                k,
+                                op,
+                                span,
+                                root,
+                                duong,
+                                opt_depth,
+                                sau_chi_so: true,
+                                value,
+                            },
+                        ));
+                        frame.cur().work.push(Work::Eval(idx));
+                        return Ok(());
+                    }
+                }
+            }
+            if k + 1 < nuts.len() {
+                // Đọc tầng giữa **ngay** sau bước để trap ngoài phạm vi/sai hình dạng trước
+                // khi đánh giá chỉ số kế/vế phải (mirror `interp/gan_long.rs`).
+                let _ = crate::gan::doc_duong(&root, &duong, span)?;
+                frame
+                    .cur()
+                    .work
+                    .push(Work::AssignPathStep(super::expr::AssignPathStep {
+                        sym,
+                        nuts,
+                        k: k + 1,
+                        op,
+                        span,
+                        root,
+                        duong,
+                        opt_depth,
+                        sau_chi_so: false,
+                        value,
+                    }));
+            } else {
+                // Đường xong: ghi (đợi vế phải ở trên) — `Eval(value)` chạy trước `Apply`.
+                frame
+                    .cur()
+                    .work
+                    .push(Work::ApplyAssignPath(super::expr::ApplyAssignPath {
+                        sym,
+                        op,
+                        span,
+                        root,
+                        duong,
+                        opt_depth,
+                    }));
+                frame.cur().work.push(Work::Eval(value));
+            }
+            Ok(())
+        }
+        Work::ApplyAssignPath(apply) => {
+            let super::expr::ApplyAssignPath {
+                sym,
+                op,
+                span,
+                root,
+                duong,
+                opt_depth,
+            } = apply;
+            // Một E_ASSIGN cho cả đường (mirror codegen: sau vế phải, trước ghi ô).
+            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+                return Err(a);
+            }
+            let rhs = frame.pop_val()?;
+            if !frame.mutable.borrow().contains(&sym) {
+                let manh = match duong.last() {
+                    Some(crate::gan::Buoc::Truong(_)) => {
+                        "không gán được trường của `let`/tham số — chỉ `var` mới gán được (§4.1)"
+                    }
+                    _ => "không gán được phần tử của `let`/tham số — chỉ `var` mới gán được (§4.1)",
+                };
+                return Err(Abort::Trap(Trap::new(
+                    crate::interp::MISMATCH,
+                    manh,
+                    span,
+                )));
+            }
+            // **VD-270 (frame gán ghép đường, 2026-11-21)**: `+=`/`-=`/… trên lá **đường** dùng
+            // **cùng** ngữ nghĩa `interp::gan_long`: đọc lá cũ từ ảnh chụp gốc, áp `BinOp`, rồi
+            // dựng lại đường. `=` giữ nguyên đường nâng `Option` như cũ.
+            let moi = if matches!(op, AssignOp::Set) {
+                let rhs = crate::lift::lift_opt(rhs, opt_depth);
+                crate::gan::gan_duong(root, &duong, rhs, span)?
+            } else {
+                let old = crate::gan::doc_duong(&root, &duong, span)?;
+                let bop = match op {
+                    AssignOp::Add => vis_types::hir::BinOp::Add,
+                    AssignOp::Sub => vis_types::hir::BinOp::Sub,
+                    AssignOp::Mul => vis_types::hir::BinOp::Mul,
+                    AssignOp::Div => vis_types::hir::BinOp::Div,
+                    AssignOp::FloorDiv => vis_types::hir::BinOp::FloorDiv,
+                    AssignOp::Rem => vis_types::hir::BinOp::Rem,
+                    AssignOp::Set => unreachable!("Set đã xử lý ở nhánh trên"),
+                };
+                let new = crate::builtin::bin(bop, old, rhs, span)?;
+                crate::gan::gan_duong(root, &duong, new, span)?
+            };
+            frame.cur().env.borrow_mut().insert(sym, moi);
+            Ok(())
+        }
+
+        // ================= VD-257 / stream A =================
+        Work::ApplyTry { span } => {
+            let v = frame.pop_val()?;
+            match v {
+                Value::Enum(ref ea, ref va, ref ag) if ea == "Option" && va == "Some" => {
+                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
+                }
+                Value::Enum(ref ea, ref va, ref ag) if ea == "Result" && va == "Ok" => {
+                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
+                }
+                Value::Enum(ea, va, ag)
+                    if (ea == "Option" && va == "None") || (ea == "Result" && va == "Err") =>
+                {
+                    // Trả sớm từ khung hiện tại (khớp `Instr::Try` của VM): bỏ mọi
+                    // continuation còn lại của khung ⇒ side-effect sau `?` KHÔNG chạy.
+                    let cf = frame.cur();
+                    cf.last = Some(Value::Enum(ea, va, ag));
+                    cf.work.clear();
+                    cf.loops.clear();
+                }
+                other => {
+                    return Err(Abort::Trap(Trap::new(
+                        RT,
+                        format!("`?` cần `T?`/`Result`, được `{}`", other.show()),
+                        span,
+                    )))
+                }
+            }
+            Ok(())
+        }
+        Work::ApplyTryIndex { span } => {
+            let i = frame.pop_val()?;
+            let b = frame.pop_val()?;
+            let v = match (&b, &i) {
+                (Value::List(xs), Value::Int(n)) if *n >= 0 => {
+                    Value::opt(xs.get(*n as usize).cloned())
+                }
+                (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => {
+                    Value::opt(bs.get(*n as usize).map(|x| Value::Int(*x as i64)))
+                }
+                (Value::Map(kv), k) => Value::opt(
+                    kv.iter()
+                        .find(|(kk, _)| kk.eq_value(k))
+                        .map(|(_, v)| v.clone()),
+                ),
+                _ => Value::none(),
+            };
+            let _ = span;
+            frame.push_val(v);
+            Ok(())
+        }
+        Work::BuildChan { span } => {
+            let cap = frame.pop_val()?;
+            // Dùng đúng builtin nội bộ `$kenh` của runtime mặc định — tự created value
+            // ở đây sẽ lệch quản lý `sched.kenh` (ownership/snapshot).
+            let v = crate::builtin::call(it, "$kenh", vec![cap], span)?;
+            frame.push_val(v);
+            Ok(())
+        }
+        _ => unreachable!("work-item nhóm nền tảng/điều khiển đã xử lý ở proc.rs"),
+    }
+}

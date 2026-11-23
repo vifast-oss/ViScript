@@ -15,7 +15,7 @@
 
 use std::collections::HashMap;
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_types::hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir};
 use vis_types::{Symbols, Type, TypeTable};
 

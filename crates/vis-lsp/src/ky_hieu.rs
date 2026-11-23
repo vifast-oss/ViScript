@@ -5,7 +5,7 @@
 //! phương thức. `range` phủ cả khai báo; `selectionRange` thu về **đúng tên** (client chọn tên).
 //! Không có HIR (tệp chưa mở/hỏng) ⇒ mảng rỗng.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Span;
 use vis_types::hir::{HField, HItem, Hir};
 

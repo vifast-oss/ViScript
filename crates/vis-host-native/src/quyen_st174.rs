@@ -28,7 +28,7 @@
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
-use vis_interp::builtin::{DocQuaHandle, DuongDanHandle, FsHost};
+use vis_core::host::{DocQuaHandle, DuongDanHandle, FsHost};
 
 use crate::quyen::{chen, FsGuard, Quyen, QuyenCap};
 

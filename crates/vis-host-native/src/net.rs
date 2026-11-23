@@ -18,8 +18,8 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::time::{Duration, Instant};
 
-use vis_interp::builtin::NetHost;
-use vis_interp::cookie::CookieJar;
+use vis_core::host::NetHost;
+use vis_core::http_client::CookieJar;
 
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
 pub(crate) mod h2;
@@ -448,7 +448,7 @@ impl NetHost for Net {
         method: &str,
         headers: &[(String, String)],
         timeout_ms: u64,
-    ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+    ) -> Result<Option<vis_core::host::KetQuaHttp2>, String> {
         const PHEN_TOI_DA: usize = 4;
         let khoa = khoa_http(true, dia_chi);
         if self.h2_biet.get(&khoa) == Some(&false) {
@@ -567,7 +567,7 @@ impl NetHost for Net {
             .map_err(|e| format!("không đặt được timeout đọc cho `{tay}`: {e}"))?;
         // **ST-238 / VD-242 (nợ #167)**: hàng rào thứ hai — dù caller có truyền `usize` lớn (lỗi
         // chuyển kiểu/overflow), không bao giờ cấp phát quá trần ⇒ không OOM/abort do input.
-        let mut buf = vec![0u8; toi_da.min(vis_interp::stdlib::NET_READ_CAP as usize)];
+        let mut buf = vec![0u8; toi_da.min(vis_core::reactor::NET_READ_CAP as usize)];
         match s.read(&mut buf) {
             Ok(0) => Ok(Vec::new()),
             Ok(n) => {

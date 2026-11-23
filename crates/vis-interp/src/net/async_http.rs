@@ -23,7 +23,7 @@ use crate::interp::{Abort, Trap, R};
 use crate::stdlib::{DAU_QUYEN, FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT};
 use crate::value::Value;
 
-use super::{
+use vis_core::http_client::{
     con_lai_ms, doc_header_day_du, ghep_chunked, header_h2, noi_location, tach_url, tim_header,
     DauHttp, GiaoThuc, UrlHttp, MAX_HEADER, MAX_HTTP,
 };

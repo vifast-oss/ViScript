@@ -20,7 +20,10 @@ use std::rc::Rc;
 
 use vis_types::hir::{HBody, HPat};
 
+mod runtime;
 mod show_eq;
+
+pub use runtime::{Chan, ChanSend, ChanSendState, Pending, Task, TrangThai, Wait};
 
 thread_local! {
     /// **VD-259 (chỉ frame test)**: số lần phải dựng bản `'static` của thân closure.
@@ -278,7 +281,7 @@ pub type Env = Rc<RefCell<HashMap<u32, Value>>>;
 /// Cùng luật với checker/codegen (`HPat::else_binds_err`): tên trần/`Ok(...)` lấy payload `Err`
 /// khi giá trị **thật** là `Err`; `Err(e)`/`Some(x)`/`None`/pattern khác bind `()`. Dùng chung
 /// cho interp mặc định và frame test (VD-265) để hai đường không lệch giá trị binder.
-pub(crate) fn let_else_binder(pat: &HPat, v: &Value) -> Value {
+pub fn let_else_binder(pat: &HPat, v: &Value) -> Value {
     if pat.else_binds_err() {
         if let Value::Enum(ea, va, args) = v {
             if ea == "Result" && va == "Err" && args.len() == 1 {
@@ -367,9 +370,9 @@ pub enum Value {
     /// sinh biến thể này; `Show` in `<hàm>`.
     Vm(Rc<VmFunc>),
     /// **ST-60**: tác vụ `async` — chỉ `await`/join dùng; `Show` in `<tác vụ>` (không lộ handle).
-    Task(Rc<crate::rt::Task>),
+    Task(Rc<crate::value::Task>),
     /// **ST-61 (VD-96)**: kênh — `send`/`recv`/`close`; `Show` in `<kênh>` (không lộ id/nội dung).
-    Chan(Rc<std::cell::RefCell<crate::rt::Chan>>),
+    Chan(Rc<std::cell::RefCell<crate::value::Chan>>),
     /// **ST-72b (VD-103/VD-106)**: quyền runtime — `main` nhận từ khai báo `cap[...]`.
     /// `Show` in `<cap[Dir] ./x>` (không lộ chi tiết host); `eq` luôn **false** (tyck đã cấm).
     Cap {
@@ -657,7 +660,7 @@ fn show_bytes(b: &[u8]) -> String {
 /// Đọc literal `int` (thập phân, `0x`/`0b`/`0o`, cho phép `_`, dấu `-`/`+`) — tách khỏi
 /// `interp.rs` cho R1. **VD-266**: dùng chung bộ giải mã với checker/lexer; chỉ `-2^63` được
 /// chạm độ lớn `2^63` (`i64::MIN`), dương `2^63` là lỗi.
-pub(crate) fn parse_int_lit(text: &str) -> Option<i64> {
+pub fn parse_int_lit(text: &str) -> Option<i64> {
     vis_syntax::lit::decode_signed_int(text).ok()
 }
 
@@ -861,113 +864,21 @@ fn unescape(s: &str) -> String {
     out
 }
 
-/// Bộ lặp của `for` trên **mọi** kiểu lặp được (list/range/str/map) — dùng **chung** cho interp,
-/// VM (ST-20) và frame evaluator.
-///
-/// **VD-264**: `Range` duyệt **lười** bằng con trỏ `i64` (không dựng `Vec<Value>` N phần tử như
-/// trước — `for i in 0..2_000_000` từng tốn ~146 MB). Các kiểu khác vẫn vật chất hoá đúng như cũ.
-pub struct ForIter {
-    kind: ForIterKind,
-}
-
-enum ForIterKind {
-    /// `a..b` / `a..=b`: `cur` là phần tử kế, `done` chặn sau khi chạm cận/`i64::MAX`.
-    Range {
-        cur: i64,
-        end: i64,
-        incl: bool,
-        done: bool,
-    },
-    /// list/map/str — đã vật chất hoá (ngữ nghĩa các kiểu này không đổi).
-    Items(std::vec::IntoIter<Value>),
-}
-
-impl Iterator for ForIter {
-    type Item = Value;
-
-    fn next(&mut self) -> Option<Value> {
-        match &mut self.kind {
-            ForIterKind::Range {
-                cur,
-                end,
-                incl,
-                done,
-            } => {
-                if *done {
-                    return None;
-                }
-                let het = if *incl { *cur > *end } else { *cur >= *end };
-                if het {
-                    *done = true;
-                    return None;
-                }
-                let v = *cur;
-                // ST-13b (mục 2): **không** cộng tràn — `..=` với `i64::MAX` từng panic.
-                match cur.checked_add(1) {
-                    Some(n) => *cur = n,
-                    None => *done = true, // chạm `i64::MAX` ⇒ hết dải, **không** panic
-                }
-                Some(Value::Int(v))
+impl Value {
+    /// Chân trị cho `if`/`while`/`and`/`or`/`not`/guard.
+    pub fn truthy(&self, span: vis_syntax::Span) -> crate::trap::R<bool> {
+        match self {
+            Value::Bool(b) => Ok(*b),
+            Value::Enum(ea, va, ag) if ea == "Option" => {
+                Ok(matches!((va.as_str(), ag.len()), ("Some", 1)))
             }
-            ForIterKind::Items(xs) => xs.next(),
+            other => Err(crate::trap::Abort::Trap(crate::trap::Trap::new(
+                &vis_diag::RUNTIME_CODES[0],
+                format!("điều kiện cần `bool`, được `{}`", other.show()),
+                span,
+            ))),
         }
     }
-}
-
-/// Vật phẩm của `for` trên **mọi** kiểu lặp được (list/range/str/map) — dùng **chung** cho interp
-/// và VM (ST-20). Khoảng quá dài ⇒ `VS0501` (ST-13b: không cộng tràn `i64`).
-///
-/// **VD-264**: trả [`ForIter`]; range **không** cấp phát N phần tử. Trần `10^7` được kiểm **trước**
-/// khi vào vòng (đếm bằng `i128`, không tràn) để giữ đúng thời điểm trap của bản vật chất hoá cũ:
-/// trap trước mọi thân vòng và trước `E_LOOP` đầu tiên.
-pub fn iter_items(it: Value, span: vis_syntax::Span) -> crate::interp::R<ForIter> {
-    let kind = match it {
-        Value::List(xs) => ForIterKind::Items(xs.into_iter()),
-        Value::Range(a, b, incl) => {
-            let n: i128 = if incl {
-                if a > b {
-                    0
-                } else {
-                    i128::from(b) - i128::from(a) + 1
-                }
-            } else if a >= b {
-                0
-            } else {
-                i128::from(b) - i128::from(a)
-            };
-            if n > i128::from(crate::rt::fee::MAX_LOOP_ITERATIONS) {
-                return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
-                    crate::interp::RT,
-                    "khoảng quá dài (>10^7 phần tử)",
-                    span,
-                )));
-            }
-            ForIterKind::Range {
-                cur: a,
-                end: b,
-                incl,
-                done: false,
-            }
-        }
-        // ST-13b (mục 4): duyệt chuỗi cho **`char`** (không phải `str`).
-        Value::Str(s) => {
-            ForIterKind::Items(s.chars().map(Value::Char).collect::<Vec<_>>().into_iter())
-        }
-        Value::Map(kv) => ForIterKind::Items(
-            kv.into_iter()
-                .map(|(k, v)| Value::List(vec![k, v]))
-                .collect::<Vec<_>>()
-                .into_iter(),
-        ),
-        other => {
-            return Err(crate::interp::Abort::Trap(crate::interp::Trap::new(
-                crate::interp::RT,
-                format!("`for` không duyệt được `{}`", other.show()),
-                span,
-            )))
-        }
-    };
-    Ok(ForIter { kind })
 }
 
 /// Mã thoát chương trình: **chỉ** `Result::Err` ⇒ `1`; còn lại `0`.
@@ -1186,5 +1097,3 @@ mod tests_name {
         );
     }
 }
-include!("rt/worker.rs");
-pub use worker::TaskId;

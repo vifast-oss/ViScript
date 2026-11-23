@@ -6,7 +6,7 @@
 //! `host_cua` chuẩn hoá `[::1]:443`, `[::1]`, `::1` về cùng một host `::1` để so với `cap[Net]`;
 //! **không** tự coi `::1` là loopback (không nới quyền).
 
-use vis_interp::builtin::NetHost;
+use vis_core::host::NetHost;
 
 use crate::quyen::Quyen;
 
@@ -48,7 +48,7 @@ impl NetHost for NetGuard<'_> {
     fn tra_http(&mut self, tay: &str, giu_lai: bool) -> Result<(), String> {
         self.trong.tra_http(tay, giu_lai)
     }
-    fn cookie_jar(&mut self) -> Option<&mut vis_interp::cookie::CookieJar> {
+    fn cookie_jar(&mut self) -> Option<&mut vis_core::http_client::CookieJar> {
         self.trong.cookie_jar()
     }
     /// **VS3-4b2**: HTTP/2 cũng là truy cập mạng ⇒ kiểm `cap[Net]` trước khi host mở TLS.
@@ -60,7 +60,7 @@ impl NetHost for NetGuard<'_> {
         method: &str,
         headers: &[(String, String)],
         timeout_ms: u64,
-    ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+    ) -> Result<Option<vis_core::host::KetQuaHttp2>, String> {
         self.quyen.kiem_net(dia_chi)?;
         self.trong
             .http2_get(dia_chi, target, method, headers, timeout_ms)
@@ -116,7 +116,7 @@ mod tests {
     use super::{host_cua, NetGuard};
     use crate::quyen::{Quyen, QuyenCap};
     use std::path::PathBuf;
-    use vis_interp::builtin::NetHost;
+    use vis_core::host::NetHost;
 
     fn quyen_co_net(roots: &[&str]) -> Quyen {
         Quyen {

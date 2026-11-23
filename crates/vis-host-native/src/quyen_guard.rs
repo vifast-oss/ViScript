@@ -3,11 +3,11 @@
 //! (`mở-rồi-kiểm` chống TOCTOU, ST-124/ST-137/ST-174). Tách khỏi `quyen.rs` để giữ luật R1
 //! (≤ 1500 dòng/tệp); **0 đổi hành vi** — chỉ di chuyển mã nguyên văn.
 
-#[cfg(all(test, unix))]
-use vis_interp::builtin::{DocQuaHandle, DuongDanHandle};
-use vis_interp::builtin::{FsHost, MucFs};
 #[cfg(unix)]
-use vis_interp::stdlib::DAU_QUYEN;
+use vis_core::host::DAU_QUYEN;
+#[cfg(all(test, unix))]
+use vis_core::host::{DocQuaHandle, DuongDanHandle};
+use vis_core::host::{FsHost, MucFs};
 
 use super::Quyen;
 
@@ -138,7 +138,7 @@ impl FsHost for FsGuard<'_> {
     /// **VD-266**: đọc dòng **qua** [`read`](Self::read) ⇒ giữ nguyên **mở-rồi-kiểm** (chống TOCTOU)
     /// của đường đọc; tách dòng bằng cùng helper với host thật/mock.
     fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
-        self.read(p).map(|s| vis_interp::builtin::chia_dong(&s))
+        self.read(p).map(|s| vis_core::host::chia_dong(&s))
     }
     /// **VD-266**: thao tác **ghi** ⇒ cùng kiểm quyền như [`write`](Self::write) (`(write)` trên root).
     fn append(&mut self, p: &str, s: &str) -> Result<(), String> {

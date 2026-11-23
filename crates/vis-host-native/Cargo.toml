@@ -17,7 +17,7 @@ async-h2 = ["http2", "tls"]
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
-vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
+vis-core = { path = "../vis-core" }
 rusqlite = { workspace = true, optional = true }
 
 [target.'cfg(any(unix, windows))'.dependencies]

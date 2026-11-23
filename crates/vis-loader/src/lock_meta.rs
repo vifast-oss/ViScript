@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 use std::path::{Component, Path};
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 
 use crate::semver::VersionReq;
 
@@ -162,7 +162,7 @@ pub fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
     };
     let text =
         std::str::from_utf8(&bytes).map_err(|e| format!("`vis.lock` không phải UTF-8: {e}"))?;
-    let v = vis_interp::json::decode(text).map_err(|e| format!("`vis.lock` hỏng: {e}"))?;
+    let v = vis_core::json::decode(text).map_err(|e| format!("`vis.lock` hỏng: {e}"))?;
     let Value::Map(kv) = &v else {
         return Err("`vis.lock` hỏng: phải là object".to_string());
     };

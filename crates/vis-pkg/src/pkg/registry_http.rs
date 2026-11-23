@@ -35,8 +35,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use vis_interp::json::{decode, json};
-use vis_interp::value::Value;
+use vis_core::json::{decode, json};
+use vis_core::value::Value;
 
 use super::semver::{Version, VersionReq};
 use super::{
@@ -102,7 +102,7 @@ pub(super) fn tai_va_giai(
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     let mut net = Net::moi(false);
     let url = format!("{}/index.json", base.trim_end_matches('/'));
-    let body = vis_interp::net::http_get(&mut net, &url, TIMEOUT_MS)
+    let body = vis_core::http_client::http_get(&mut net, &url, TIMEOUT_MS)
         .map_err(|e| format!("không tải được index registry `{url}`: {e}"))?;
     let index = doc_index(&body)?;
     let tmp = ThuMucTam::moi()?;
@@ -220,7 +220,7 @@ fn tai_goi(
         kiem_chu_ky(muc, &manifest, &tar_sha, khoa_cong)?;
     }
     let url = format!("{}/{}", base.trim_end_matches('/'), tar_path);
-    let body = vis_interp::net::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
+    let body = vis_core::http_client::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
         format!(
             "không tải được tarball `{}@{}` từ `{url}`: {e}",
             muc.ten, muc.version_s

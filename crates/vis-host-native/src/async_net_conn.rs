@@ -184,7 +184,7 @@ impl AsyncNet {
             return self.try_write_tls(key);
         }
         if !self.writes.contains_key(key) {
-            let Some(data) = vis_interp::stdlib::frame_net_take_write(key) else {
+            let Some(data) = vis_core::reactor::frame_net_take_write(key) else {
                 return ReactorIoOutcome::Err("buffer write không có (tay đã đóng?)".into());
             };
             self.writes.insert(
@@ -864,7 +864,7 @@ impl AsyncNet {
     /// `FrameReactorBackend::try_write` cho kênh TLS — partial write giữ offset, không gửi lại.
     fn try_write_tls(&mut self, key: &str) -> ReactorIoOutcome {
         if !self.writes.contains_key(key) {
-            let Some(data) = vis_interp::stdlib::frame_net_take_write(key) else {
+            let Some(data) = vis_core::reactor::frame_net_take_write(key) else {
                 return ReactorIoOutcome::Err("buffer write không có (tay đã đóng?)".into());
             };
             self.writes.insert(

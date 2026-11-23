@@ -17,7 +17,7 @@
 //! token sau là hiệu so với token trước. Token nhiều dòng (chuỗi ba nháy) được **cắt theo dòng**;
 //! token rỗng bị bỏ; token chồng lấn bị bỏ (giữ token trước theo nguồn).
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::{Cst, Elem, Kind, Node, NodeKind, Token};
 
 use super::jsonrpc::{m, phan_hoi};
@@ -400,7 +400,7 @@ pub fn tra_loi(kq: &KetQua, id: &Value) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::{gom, ma_hoa, TOKEN_TYPES};
-    use vis_interp::value::Value;
+    use vis_core::value::Value;
     use vis_syntax::{lex, parse_voi, Mode};
 
     fn phan_tich(src: &str) -> Vec<(u32, u32, u32, u8)> {

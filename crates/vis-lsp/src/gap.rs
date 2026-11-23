@@ -4,7 +4,7 @@
 //! Gấp theo khai báo **nhiều dòng** trong cây ký hiệu (fn/type/enum/trait, trường/variant lồng).
 //! `endLine` là dòng cuối thực sự có nội dung: span kết thúc ở đầu dòng kế ⇒ lùi một dòng.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Span;
 
 use super::jsonrpc::{m, phan_hoi};

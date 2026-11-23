@@ -6,8 +6,8 @@ use std::cell::RefCell;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::rc::Rc;
 
-use vis_interp::builtin::NetHost;
-use vis_interp::cookie::CookieJar;
+use vis_core::host::NetHost;
+use vis_core::http_client::CookieJar;
 
 use super::AsyncNet;
 

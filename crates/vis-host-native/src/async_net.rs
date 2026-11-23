@@ -50,11 +50,11 @@ use rustls::{ClientConfig, ClientConnection};
 
 use mio::{Events, Interest, Poll, Token, Waker};
 
-use vis_interp::builtin::NetHost;
+use vis_core::host::NetHost;
 #[cfg(feature = "async-h2")]
-use vis_interp::rt::ReactorH2Outcome;
-use vis_interp::rt::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
-use vis_interp::stdlib::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT, NET_READ_CAP};
+use vis_core::reactor::ReactorH2Outcome;
+use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
+use vis_core::reactor::{FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT, NET_READ_CAP};
 
 struct WriteState {
     tay: String,

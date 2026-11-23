@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
-use vis_interp::builtin::KetQuaHttp2;
+use vis_core::host::KetQuaHttp2;
 
 use super::h2_core::H2Core;
 use super::tls::{self, CauHinh, KenhTls};

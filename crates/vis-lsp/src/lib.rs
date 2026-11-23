@@ -44,8 +44,8 @@ use std::io::{self, BufReader};
 use std::process::ExitCode;
 use std::rc::Rc;
 
-use vis_interp::json;
-use vis_interp::value::Value;
+use vis_core::json;
+use vis_core::value::Value;
 use vis_syntax::Mode;
 
 use phan_tich::KetQua;

@@ -11,7 +11,7 @@
 //! full-document nên không phụ thuộc vùng chọn/lý do client hỏi. URI chưa mở/URI lạ do dispatch
 //! trả lỗi chuẩn `-32602` (InvalidParams), giống `semanticTokens/full`.
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 use vis_syntax::Mode;
 
 use super::dinh_dang::edit_toan_tep;

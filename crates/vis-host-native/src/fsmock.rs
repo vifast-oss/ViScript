@@ -11,8 +11,8 @@
 //! `size` = literal `size` (bảng của lexer: `2mb` = **2 000 000** byte, `2mib` = 2 097 152) hoặc số
 //! byte; `modified` = literal `duration` **từ epoch** (tất định) ⇒ `sort_by modified --desc` = mới nhất trước.
 
-use vis_interp::builtin::{FsHost, MucFs};
-use vis_interp::value::Value;
+use vis_core::host::{FsHost, MucFs};
+use vis_core::value::Value;
 
 /// FsHost giả lập theo kịch bản.
 #[derive(Debug, Clone, Default)]
@@ -65,7 +65,7 @@ fn mode_tu_chuoi(s: &str) -> u32 {
 impl FsMock {
     /// Nạp kịch bản từ chuỗi JSON. `Err` nêu rõ lỗi định dạng.
     pub fn tu_json(s: &str) -> Result<Self, String> {
-        let v = vis_interp::json::decode(s)
+        let v = vis_core::json::decode(s)
             .map_err(|e| format!("kịch bản `--fs-mock` không hợp lệ: {e}"))?;
         let mut mock = FsMock::default();
         if let Some(dirs) = lay(&v, "dirs") {
@@ -86,7 +86,7 @@ impl FsMock {
                         Some(Value::Int(n)) => n,
                         Some(Value::Size(n)) => n,
                         Some(Value::Str(s)) => {
-                            vis_interp::value::parse_size(&s).ok_or_else(|| {
+                            vis_core::value::parse_size(&s).ok_or_else(|| {
                                 format!("`--fs-mock`: `size` của `{ten}` không hợp lệ: {s}")
                             })?
                         }
@@ -96,7 +96,7 @@ impl FsMock {
                         Some(Value::Duration(d)) => d,
                         Some(Value::Int(n)) => n,
                         Some(Value::Str(s)) => {
-                            vis_interp::value::parse_duration(&s).ok_or_else(|| {
+                            vis_core::value::parse_duration(&s).ok_or_else(|| {
                                 format!("`--fs-mock`: `modified` của `{ten}` không hợp lệ: {s}")
                             })?
                         }
@@ -113,7 +113,7 @@ impl FsMock {
                         Some(Value::Duration(d)) => d,
                         Some(Value::Int(n)) => n,
                         Some(Value::Str(s)) => {
-                            vis_interp::value::parse_duration(&s).ok_or_else(|| {
+                            vis_core::value::parse_duration(&s).ok_or_else(|| {
                                 format!("`--fs-mock`: `mtime` của `{ten}` không hợp lệ: {s}")
                             })?
                         }
@@ -210,7 +210,7 @@ impl FsHost for FsMock {
 
     /// **VD-266**: cùng ngữ nghĩa dòng với host thật (dùng chung `chia_dong`).
     fn read_lines(&mut self, p: &str) -> Result<Vec<String>, String> {
-        self.read(p).map(|s| vis_interp::builtin::chia_dong(&s))
+        self.read(p).map(|s| vis_core::host::chia_dong(&s))
     }
 
     /// **VD-266**: thêm cuối "tệp" trong kịch bản (tạo mục mới nếu thiếu).

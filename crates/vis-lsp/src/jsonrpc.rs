@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-67 (VD-102)** — dựng/giải JSON-RPC 2.0 trên [`Value`] của `vis-interp`.
 //!
-//! **Không** thêm crate: dùng lại `vis_interp::json::decode` và `vis_interp::stdlib::json`
+//! **Không** thêm crate: dùng lại `vis_core::json::decode` và `vis_core::json::json`
 //! (cùng encoder với `json.encode` của ngôn ngữ ⇒ snapshot tất định, thứ tự khoá = thứ tự chèn).
 
-use vis_interp::stdlib::json;
-use vis_interp::value::Value;
+use vis_core::json::json;
+use vis_core::value::Value;
 
 /// Dựng `Value::Map` từ danh sách khoá–giá trị (giữ thứ tự).
 pub fn m(kv: Vec<(&str, Value)>) -> Value {
