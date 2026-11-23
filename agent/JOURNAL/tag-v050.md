@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # Tag `v0.5.0` — message soạn sẵn + checklist 5 điều kiện (final2)
 
-> **Trạng thái: SOẠN SẴN — CHƯA TAG.** Head ứng viên
-> **`e9c62cb11eae2725a024a833ec9aa3de257cb248`** (version `0.5.0`; gồm security hotfix
+> **Trạng thái: ĐỦ 5/5 — TAG TRÊN COMMIT R36.** Head ứng viên
+> **`f381c8f97de0565d3bff6e7804d69447334fcd1c`** (version `0.5.0`; gồm security hotfix
 > `5902887`, `SPEC.md` `51e937d`/`f9e7503`). Không tạo tag/push/merge trong bước này.
 > Chỉ tạo tag annotated sau khi **đủ 5/5 điều kiện** **và** A0 phê duyệt head cuối.
 > Máy `mps` đang chạy `ST-300m3` — **Tier 1 macOS chưa công bố**.
@@ -26,12 +26,11 @@ ViScript v0.5.0 — 2026-11-23 (Giai đoạn 3: Pha 2 ngôn ngữ + ViShell + LS
   bảo mật vá F1/F2 symlink cap + plugin (5902887), mở #194; QA fuzz parser 1h
   286.313.039 ca/0, decode 1h 2.517.069.629 ca/0, diff 5x100k lech=0 (623f3ba).
 - QA final2 @e9c62cb: Linux gate 3754/4 x3; Linux soak final 10/10
-  (650 s, diff 100k lech=0 x3, host 54/54 x2 — log, chưa có .md tổng kết);
+  (650 s, diff 100k lech=0 x3, host 54/54 x2);
   Linux release 3753/0/5 (fresh clone c4337ce, host 54/54, vis 0.5.0);
   Windows full 3701/0/4 (f9e7503, host 54/54, targets 18/18 + 17/1).
-- macOS arm64 Tier 1 theo ST-300m3 (3× vis-gate-macos --full + soak 4 h +
-  vis-wasm-sem ≥ 388/390) — số đo trong R36-viscript.md; CHƯA công bố tại
-  thời điểm soạn tag message.
+- macOS arm64 Tier 1: 3× vis-gate-macos --full PASS, soak 1878 vòng 0 fail,
+  vis-wasm-sem 388/390; caveat không Landlock, chỉ arm64.
 - Nợ đã biết: #194 metadata TOCTOU; đề xuất #195 VM back-edge O(n²)/fuel
   wall-clock; #193 WASI interp stack 2/390; #156 sqlite wasm32.
 - Version 0.5.0; cache PHIEN_BAN +v050-release-2026-11-23.
@@ -54,9 +53,9 @@ git tag -l -n99 v0.5.0   # kiểm message
 |---|---|---|---|
 | 1 | Linux `./vis-dev gate --fast` 0 failed; skipped đúng danh sách known | `JOURNAL/final-linux-gate-e9c62cb.md` §2 — **3754/4 ×3** | **PASS** |
 | 2 | Linux release `3753/0/5` + `vis 0.5.0` + host 54/54 trên fresh clone | `JOURNAL/final-linux-release-c4337ce.md` §1–4 | **PASS** @`c4337ce` |
-| 3 | Linux soak 10/10 + diff 100 k `lech=0` + host 54/54 | `JOURNAL/final-linux-gate-e9c62cb.md` §3 — soak **đang chạy**; diff 5×100k `lech=0` @`623f3ba` | **ĐANG CHẠY** |
+| 3 | Linux soak 10/10 + diff 100 k `lech=0` + host 54/54 | `JOURNAL/final-linux-gate-e9c62cb.md` §3 — 10/10 650 s; diff 5×100k `lech=0` @`623f3ba` | **PASS** |
 | 4 | Windows full `3701/0/4` + host 54/54 + targets `18/18` & `17/1` | `JOURNAL/win-full-f9e7503.md` §0–4 — **550 s** | **PASS** @`f9e7503` |
-| 5 | macOS arm64 Tier 1: 3× `bin/vis-gate-macos --full` PASS + soak 4 h (0 fail, RSS/fd phẳng) + `vis-wasm-sem` ≥ 388/390 | `mps`, `ST-300m3` | **ĐANG CHẠY — chưa có kết quả** |
+| 5 | macOS arm64 Tier 1: 3× `bin/vis-gate-macos --full` PASS + soak 4 h (0 fail, RSS/fd phẳng) + `vis-wasm-sem` ≥ 388/390 | `mps`, `ST-300m3` — 3/3, 1878 vòng, 388/390 | **PASS** |
 
 **Điều kiện bổ sung trước khi tag**: `R36-viscript.json` chốt đúng head được tag;
 `python3 test/report/check_report.py --all` PASS; A0 phê duyệt checklist này.

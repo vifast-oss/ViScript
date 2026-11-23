@@ -1,7 +1,7 @@
 {
   "project": "viscript",
   "round": 36,
-  "head": "e9c62cb11eae2725a024a833ec9aa3de257cb248",
+  "head": "f381c8f97de0565d3bff6e7804d69447334fcd1c",
   "build_id": "gd3-v050-r36-e9c62cb-20261123",
   "tasks": [
     {
@@ -2986,16 +2986,17 @@
     },
     {
       "id": "ST-300m3",
-      "status": "BLOCKED",
+      "status": "DONE",
       "commits": [
         "c1c125e",
-        "c4337ce"
+        "c4337ce",
+        "f381c8f"
       ],
       "gates": [
         "fast"
       ],
       "queue": "READY",
-      "note": "ĐANG CHẠY trên mps: 3x vis-gate-macos --full + soak 4h + vis-wasm-sem; Tier 1 macOS CHƯA công bố — chặn tag v0.5.0"
+      "note": "DONE: macOS arm64 Tier 1 — 3x vis-gate-macos --full PASS (220/216/210 s), soak 4h 1878 vong 0 fail, RSS 6960-7008 kB, fd 6/6, dirty 0; vis-wasm-sem 388/390; docs f381c8f"
     },
     {
       "id": "ST-301",
@@ -3061,7 +3062,7 @@
     },
     {
       "id": "ST-305",
-      "status": "REVIEW",
+      "status": "DONE",
       "commits": [
         "fa1a70b",
         "374b4e8",
@@ -3073,7 +3074,7 @@
         "fast"
       ],
       "queue": "READY",
-      "note": "REVIEW: code merged 374b4e8 + v0.5.0 prep 75e5a53; R36 final2 @e9c62cb: Linux gate 3754/4, release 3753/0/5 @c4337ce, Windows full 3701/0/4 @f9e7503; tag v0.5.0 chờ macOS m3"
+      "note": "DONE: LSP hover/completion + editors/vscode; release v0.5.0 (R36 final2 + m3 Tier 1)"
     },
     {
       "id": "ST-306",
@@ -3222,14 +3223,6 @@
     "note": "Security F1/F2 vá @5902887; SPEC @51e937d/f9e7503; QA parser 1h 286.313.039 ca/0, decode 1h 2.517.069.629 ca/0, diff 5x100k=0 @623f3ba (pre-security/pre-SPEC, mốc c4337ce); nợ #194 (metadata TOCTOU), đề xuất #195 (VM back-edge O(n^2)/fuel wall-clock). Log ngoài repo + sha256 trong JOURNAL; tag message v0.5.0 + checklist 5 điều kiện tại JOURNAL/tag-v050.md, chưa tag"
   },
   "blocked": [
-    {
-      "id": "ST-300m3",
-      "question": "ĐANG CHẠY trên mps: 3x vis-gate-macos --full + soak 4h + vis-wasm-sem; Tier 1 macOS chưa công bố — chặn duy nhất của tag v0.5.0"
-    },
-    {
-      "id": "ST-305",
-      "question": "Code merged 374b4e8/75e5a53 + R36 final2 xong; tag v0.5.0 chờ macOS m3 xanh và A0 phê duyệt (chưa tag)"
-    },
     {
       "id": "ST-309",
       "question": "2/3 DONE (SPEC + security + QA fuzz/diff); 1/3 cuối chờ ST-310f/v0.5.5: fresh-clone 3-OS Tier 1 + WASI + diff 100k ×5 + soak 24h + fuzz 8h + R37"

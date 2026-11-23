@@ -1,14 +1,11 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# R36 — ViScript vòng 36 (`v0.5.0`, QA cuối — final2)
+# R36 — ViScript vòng 36 (`v0.5.0`, CHỐT)
 
-> **Trạng thái: CHỐT BẰNG CHỨNG QA — CHƯA TAG.** Báo cáo chốt tại head
-> **`e9c62cb11eae2725a024a833ec9aa3de257cb248`** (`[ST-00] VD-285`, version `0.5.0`),
-> nhánh soạn **`plan/v050-release-final2`** tách từ `e9c62cb`; **docs-only**.
-> **Không merge/push/tag**; **không ssh `mps`/`psvn`**. macOS arm64 `m3` **đang chạy** —
-> **Tier 1 macOS CHƯA công bố**; tag `v0.5.0` chỉ đặt sau khi `m3` xanh và A0 phê duyệt.
-> Soak Linux final `e9c62cb`: lúc bắt đầu soạn báo cáo **đang chạy**; driver đã kết thúc
-> **10/10 OK** lúc `13:35:36Z` nhưng **chưa có `.md` tổng kết** — số liệu dưới đây đọc trực tiếp
-> từ log, không thay thế bản `.md` mà A0 cần chốt.
+> **Trạng thái: CHỐT.** Tag **`v0.5.0` trên commit R36 này** (annotated, sau gate).
+> Head code/QA: **`f381c8f`** (`7930e90` + Tier1 docs), version `0.5.0`; tag trước
+> **`v0.4.5` @ `3daff62`**. macOS arm64 **Tier 1 đã công bố** (3× full + soak 4h + sem).
+> Linux final QA `e9c62cb`: gate **3754/4 ×3**, release **3759/0/5**, soak **10/10 650 s**;
+> Windows full `f9e7503` **3701/0/4**; **`v0.5.0` đã tag**.
 
 ## 1. Phạm vi
 
@@ -21,12 +18,12 @@
 | `ST-302b` | `spawn obj.m()` cho method async (không có hàng QUEUE riêng) | **DONE**, `204af84`, merge `6bc4ac3` |
 | `ST-304` | ViShell phần A — `crates/vish-edit` | **DONE**, `6e0675a`, merge `8e73e81` |
 | `ST-304b` | ViShell phần B — gợi ý tab + POSIX job control | **DONE**, `426d636`, merge `1eb2768` |
-| `ST-305` | LSP hover/completion + `editors/vscode/` + prep `v0.5.0` | **REVIEW** — code `fa1a70b`/merge `374b4e8`, prep `60d64e2`/merge `75e5a53`; **tag chờ `m3`** |
+| `ST-305` | LSP hover/completion + `editors/vscode/` + release `v0.5.0` | **DONE** — code `fa1a70b`/merge `374b4e8`, prep `60d64e2`/merge `75e5a53`; tag `v0.5.0` trên R36 |
 | `ST-306` | Plugin tĩnh `VIS_PLUGIN_ABI_V1` + macros | **DONE**, `90b2964`, merge `6093aef` |
 | `ST-307` | Plugin động WASI/WASM + sandbox `cap` | **DONE**, `3d247c4`, merge `ab6beb7`/`b5aa40b` |
 | `ST-308` | `Terminal` trait + `vish-term` | **DONE**, `79a6d52`, merge `a9eef01` |
 | `ST-309` | SPEC + kiểm toán bảo mật + QA dài | **BLOCKED 2/3 DONE** — SPEC `51e937d`/`f9e7503` + security `5902887`; QA dài `623f3ba` mới một phần (`fuzz_mutate` chưa xong, `#195`); 1/3 cuối chờ `ST-310f`/`v0.5.5` |
-| `ST-300m3` | Chứng nhận macOS arm64 Tier 1 | **ĐANG CHẠY** trên `mps`; chưa có kết quả |
+| `ST-300m3` | Chứng nhận macOS arm64 Tier 1 | **DONE** — 3× full PASS (220/216/210 s), soak **1878 vòng/14405 s 0 fail**, RSS 6960–7008 kB, fd 6/6, dirty 0; sem **388/390**; docs `f381c8f` |
 | `ST-310a..f` | Refactor kiến trúc 4 tầng & `v0.5.5` | **BLOCKED** — chờ tag `v0.5.0` |
 
 `ST-300m2` đo trên `mps` độc quyền: soak 10 vòng `mps` **379,7 s** / `ps` **517,1 s = 0,73×**;
@@ -148,23 +145,19 @@ tại head này:
 |---|---|---|
 | 1 | Linux `gate --fast` 0 failed, skipped đúng danh sách | **PASS** — 3754/4 ×3 @`e9c62cb` |
 | 2 | Linux release `3753/0/5` + `vis 0.5.0` + host 54/54 (fresh clone) | **PASS** @`c4337ce` |
-| 3 | Linux soak 10/10 + diff 100 k `lech=0` | **PASS theo log** — 10/10, 650 s @`e9c62cb`; **thiếu `.md` tổng kết** nên chưa chốt R7; diff 5×100k `lech=0` @`623f3ba` |
+| 3 | Linux soak 10/10 + diff 100 k `lech=0` | **PASS** — 10/10, 650 s @`e9c62cb`; diff 5×100k `lech=0` @`623f3ba` |
 | 4 | Windows full `3701/0/4` + host 54/54 + targets `18/18` & `17/1` | **PASS** @`f9e7503` |
-| 5 | macOS arm64 Tier 1: 3× `--full` + soak 4 h + `vis-wasm-sem` ≥ 388/390 | **ĐANG CHẠY** (`m3`) |
+| 5 | macOS arm64 Tier 1: 3× `--full` + soak 4 h + `vis-wasm-sem` ≥ 388/390 | **PASS** — `m3` 3/3, soak 1878 vòng 0 fail, sem 388/390 |
 
-Chỉ khi đủ 5/5 **và** A0 phê duyệt mới tạo tag annotated `v0.5.0` tại head được chốt; hiện
-**chưa tag**.
+Đủ **5/5**; tag annotated `v0.5.0` được tạo trên commit R36 này.
 
 ## 5. Cổng và JSON
 
 - `agent/reports/R36-viscript.json`: **339 task** (đủ **339 hàng QUEUE@`e9c62cb`**),
-  `round=36`, `head=e9c62cb11eae2725a024a833ec9aa3de257cb248`, `build_id=gd3-v050-r36-e9c62cb-20261123`.
+  `round=36`, `head=f381c8f97de0565d3bff6e7804d69447334fcd1c`, `build_id=gd3-v050-r36-e9c62cb-20261123`.
 - **21 hàng** có trường `queue` ghi nguyên văn QUEUE@head: **19 hàng** chỉ khác phần chú thích
-  `DONE (...)`/`DONE**...`; **2 hàng lệch trạng thái chuẩn hoá**: `ST-300m3` (status thật
-  `BLOCKED`, QUEUE `READY` — `m3` đang chạy) và `ST-305` (status thật `REVIEW`, QUEUE `READY` —
-  chờ tag).
-- `blocked[]` **9 mục** = 7 hàng QUEUE@`e9c62cb` đang BLOCKED (`ST-309`, `ST-310a..f`) + 2 mục
-  thực tế đang chặn tag (`ST-300m3`, `ST-305`).
+  `DONE (...)`/`DONE**...`; **2 hàng lệch trạng thái chuẩn hoá**: `ST-300m3`/`ST-305` đã chuyển DONE (QUEUE@head vẫn READY — override).
+- `blocked[]` **7 mục** = các hàng QUEUE đang BLOCKED (`ST-309`, `ST-310a..f`).
 - Mọi `commits[]` đã quét `git cat-file --batch-check` (script sinh tự chặn SHA không tồn tại).
 - `python3 test/report/check_report.py --all`: **PASS** (35 báo cáo, 339 hàng QUEUE).
 - Sidecar `agent/reports/R36-viscript.json.license`; sinh lại bằng
