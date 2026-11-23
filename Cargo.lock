@@ -686,7 +686,6 @@ dependencies = [
  "vis-vm",
  "vish-edit",
  "vish-term",
- "webpki-roots",
 ]
 
 [[package]]
