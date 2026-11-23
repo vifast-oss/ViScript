@@ -119,3 +119,5 @@
    `src` không tính trùng. Không tìm thấy “21k” trong các tệp thuộc phạm vi rà.
 8. Số dòng trong `DECISIONS-INDEX` là số của lần sinh tự động; không sinh lại toàn bộ (ngoài phạm vi
    docs-only), chỉ sửa **số lượng** và ghi chú cập nhật.
+
+> **Đính chính 2026-11-23**: AGENTS.md giữ **R1..R4** theo chỉ đạo hiện hành; dòng R1..R7 đã trả lại R1..R4.
