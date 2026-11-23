@@ -33,7 +33,7 @@ members = [
 # **ST-289 / VD-272(3)**: phiên bản workspace là **một nguồn** cho mọi crate thành viên;
 # mỗi mốc phát hành bump ở đây, crate dùng `version.workspace = true` (không chép số).
 # **ST-310f (v0.5.5)**: bump 0.5.0 → 0.5.5 cho mốc refactor kiến trúc Pha B.
-version = "0.5.5"
+version = "0.6.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.100.0"

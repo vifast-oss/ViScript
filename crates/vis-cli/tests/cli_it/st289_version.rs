@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Bản phát hành hiện hành — phải khớp `[workspace.package] version`.
-const BAN: &str = "0.5.5";
+const BAN: &str = "0.6.0";
 
 fn goc() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")

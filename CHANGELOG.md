@@ -3,6 +3,20 @@
 
 Tóm tắt theo từng đợt phát triển. Chi tiết đầy đủ ở [`agent/reports/`](agent/reports/) (mỗi đợt một cặp `.json` + `.md`).
 
+## v0.6.0 — 2026-11-24 (Tiền nghiệm thu: ST-311a–d)
+
+- **ST-311a** `525f5054`: vá `#195` — `Frame::loop_ends` O(1) + `MAX_ITER_DEPTH=1.024` +
+  `Vm::deadline` `VS0501-TIME` + watchdog `fuzz_mutate`; đóng `#190`; tách `vm/exec.rs`.
+- **ST-311b** `0e7532b`: metadata FS Unix theo **fd** (`statat`/`openat`/`readlinkat`), đóng
+  **`#194`**; race 100.000 vòng **0 rò** Linux+macOS; `quyen/mod.rs` 1.197→675.
+- **ST-311c** `a320e027`: gom test fixture TLS, chuyển http-cancel, gỡ 7 dev-dep, test binary
+  78→37, R8≤40.
+- **ST-311d** `7b7144b`: gom 6 `builtin_*` vào `builtin/`; chia **10 tệp >1.150 LOC** về ≤1.150;
+  thử `-zstack-size` WASI cho `#193` (chưa đóng).
+- Gate Linux **3782/4**; Phase C trước đó: 3-OS full PASS, verifier 100M/0, diff 5×100k=0,
+  soak 10/10, fuzz parser 2h 861M/0.
+- **Chưa tag `v0.6.0`**: chờ ma trận 3-OS + watchdog 2h + soak 24h/fuzz 8h và A0 duyệt `R37`.
+
 ## v0.5.5 — 2026-11-23 (Giai đoạn 4.5 — Refactor kiến trúc 4 tầng & tối ưu cấu trúc kho, Pha B)
 
 > **Chưa tag.** Mốc `v0.5.5` nằm trên nhánh `plan/v055-prep` tạo từ `b591e4d` (tích hợp Phase B

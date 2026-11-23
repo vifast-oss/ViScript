@@ -3,6 +3,8 @@
 > **Toàn văn quyết định & kế hoạch đợt 2**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd286.md` · `agent/DECISIONS.md` (`VD-286`).
 
 ## 1. Mốc đã Phê chuẩn (`APPROVED VD-286`)
+- **H = `0.6.0` (ST-311a–d, chưa tag)**: `ST-311b` metadata fd đóng `#194` (race 0/100k Linux+mac); `ST-311d` chia 10 tệp >1.150 + `builtin/`; gate Linux **3782/4**; `#195` đã vá mã, còn watchdog 2h.
+
 
 - **`v0.5.0` @ `c06d7c6f`** (`ST-300m3` + `ST-305`): **DONE** — **macOS arm64 Tier 1** (3× full 220/216/210 s, soak 4h **1.878 vòng / 0 fail**, WASI sem 388/390) + `R36-viscript.{md,json,json.license}` PASS.
 - **`v0.5.5` @ `3d85bd2c`** (`ST-310a..ST-310f`): **6/6 DONE** — kiến trúc 4 tầng (`vis-core`, `vis-plugin-host`, `vis-plugin-abi` 0 dep, `vish-term` duy nhất, `vis-cli` 0 dep trực tiếp & 8 test binary, R8/R9, `vis-targets` 38/38 phủ 18/18 crate), đóng **`#112`**, full QA 3-OS PASS (Linux 3.773/4 + release 3.778/0/5 + diff 5×100k=0, Windows 3.720/0/4, macOS 3.764/0/3 + WASI 28/28 & 388/390).
