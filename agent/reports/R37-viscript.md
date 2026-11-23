@@ -184,3 +184,10 @@ Mọi số phải truy được về log ngoài repo + sha256; **không** suy t�
 (2) chạy verifier/decoder **100 M** (`VBC_FUZZ_CA=100000000`, ~70 s theo tốc độ 60 M/40,66 s);
 (3) A0 chốt hướng đóng `#194`/`#195` **trước** khi bỏ 24 h soak; (4) chốt `H` bump `0.6.0`
 rồi chạy lại ma trận. **Không merge/push/tag từ nhánh này.**
+
+
+## 7. Bổ sung 2026-11-24 (sau skeleton)
+
+- **Verifier/decoder 100M ca**: `VBC_FUZZ_CA=100000000 cargo test --release -p vis-bytecode --test st309_fuzz_verify` → **100.000.000 ca, decode_ok 11.483.948, verify_ok 10.015.121, vi_pham 0**, 35,69 s (`/tmp/opencode/verifier-100m.log`).
+- **Soak 10/10 v0.5.5** (fresh clone `b4db374`): **PASS**, 628 s, gate 3773/4, diff 100k `lech=0`, host 54/54, cache 5/5; log `/home/ps/vislogs/v055-soak-10.log`.
+- Vẫn **chưa đủ** Phase C: soak **24 h**, fuzz parser **8 h** (2 h đang chạy), Windows/macOS 3× full + soak 4 h; tag `v0.6.0`/`v1.0.0-rc1` chưa chốt.
