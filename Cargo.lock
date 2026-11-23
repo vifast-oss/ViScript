@@ -684,7 +684,6 @@ dependencies = [
  "vis-syntax",
  "vis-types",
  "vis-vm",
- "webpki-roots",
 ]
 
 [[package]]
