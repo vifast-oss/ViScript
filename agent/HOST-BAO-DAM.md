@@ -1,11 +1,29 @@
 # Mức bảo đảm host của ViScript (ST-73, VD-107)
 
+> **macOS arm64 — Tier 1 CHÍNH THỨC (2026-11-24, `ST-300m3` / `VD-284`). Đọc khối này trước.**
+> Đã đủ điều kiện; **chứng nhận trên `aarch64-apple-darwin`** (macOS 27.0.1 / Darwin 27.0.0 arm64,
+> Rust 1.100.0) @ **`7930e90`**, clone sạch:
+> - **3× `bin/vis-gate-macos --full` PASS liên tiếp** — wall **220 / 216 / 210 s**; mỗi lần nextest
+>   **3.745 test / 3 skipped / 0 failed** (1 slow), doc-test **5 passed / 0 failed / 1 ignored**,
+>   `vis-host-wasm` **29/29**, WASI **28/28**, `vis-dev check` + `gate --fast` PASS, dirty **0**.
+>   Cổng `--full` dùng **nextest + doc-test** (libtest-only `lat256_net::t3` là khác biệt harness,
+>   không phải lỗi sản phẩm — xem `st300m3-final5-macos-blocker.md`).
+> - **Soak 4 h**: **1.878 vòng / 14.405 s**, **0 lỗi sản phẩm**; free RAM **15.163–15.854 MB**;
+>   `vis repl` thường trú RSS **6.960–7.008 kB** sau khởi động (slope **-0,009 kB/vòng**),
+>   fd **6/6 hằng**; dirty cuối **0**.
+> - **`bin/vis-wasm-sem --require-target`**: **388/390 = 99,5%** (interp 388, VM 390; 2
+>   stack-overflow interp đã biết), oracle native 475/475.
+> - **Caveat bắt buộc**: **không có Landlock** (Landlock chỉ Linux) — bảo vệ là **cưỡng chế runtime**
+>   `FsGuard`/`NetGuard` + `VS0604`, **không** phải sandbox kernel; hardlink là giới hạn chính sách;
+>   **chỉ chứng nhận arm64**, **chưa đo Intel x86_64**; Tier 1 là mức hỗ trợ sản phẩm.
+> Mọi câu “macOS chưa công bố Tier 1 / chưa verify” bên dưới là **lịch sử**.
+
 > **ĐÍNH CHÍNH 2026-11-23 (ST-305, rà tài liệu) — đọc khối này trước.** Các khối dated bên dưới là
 > **lịch sử**; số cũ giữ nguyên (VD-142).
 > - **macOS arm64**: **đã verify `v0.4.5`** trên `mps` (macOS 27.0.1 / Darwin 27.0.0 arm64, Rust
 >   1.100.0): gate **3631/0/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**,
 >   `vis-wasm-sem` **388/390** (`JOURNAL/mac-v045-verify.md`); `ST-300m1` chạy thêm
->   `bin/vis-gate-macos --quick` PASS. **Tier 1 CHƯA công bố** — chờ `ST-300m3` (3× `--full` + soak 4 h).
+>   `bin/vis-gate-macos --quick` PASS. **Tier 1 đã công bố** ở khối đầu tệp (`ST-300m3`: 3× `--full` + soak 4 h).
 >   Mọi câu “macOS không có máy thật/chưa verify” bên dưới **đã hết hiệu lực**.
 > - **Windows x86_64**: **Tier 1 đã công bố** từ `v0.4.5` (`VD-283`/`ST-298`), caveat `FsGuard`
 >   (chỉ kiểm theo đường dẫn, không có danh tính tệp).
@@ -17,7 +35,7 @@
 > **ĐÍNH CHÍNH macOS — 2026-11-21 (ST-242 / VD-242 Q7).** Số “macOS 27.0.1 arm64” cũ đã được **đo lại trên Darwin thật** ngày 2026-11-23:
 > `mps` = macOS **27.0.1 arm64**, gate **3631/3**, workspace **3636/0/3**, host **54/54**,
 > WASI suite **28/28**, `vis-wasm-sem` **388/390 = 99,5%** (xem `JOURNAL/mac-v045-verify.md`).
-> **Vẫn chưa tuyên bố hỗ trợ macOS** (A0 quyết định tier); bằng chứng đang hiệu lực là **Linux (`ps`)**: host suite **54/54**,
+> **Đã tuyên bố macOS arm64 Tier 1** (`ST-300m3`, khối đầu tệp); bằng chứng Linux (`ps`): host suite **54/54**,
 > `vis-host-linux` **18/18** (ST-295 thêm 3 ca `Execute`/lib). Đoạn Windows dưới đây là **lịch sử 20/11**;
 > từ `v0.4.5` Windows là **Tier 1** (xem đính chính đầu tệp). Xem `STATE.md`, `DECISIONS.md` VD-242/VD-283,
 > `agent/SNAPSHOT-2026-11-20.md` §6.
@@ -27,7 +45,7 @@
 > `JOURNAL/st295-race.log`). Landlock `#125`: ruleset xử lý `Execute`, cấp chỉ-đọc + Execute cho
 > thư viện chuẩn và binary trong grant — `vis-host-linux` **18/18**. Windows **Tier 1** từ `v0.4.5`
 > (không có `openat`, caveat `FsGuard`); macOS dùng cùng mã, đã verify `v0.4.5` trên Darwin 27 arm64
-> ngày 2026-11-23 (chưa công bố Tier 1).
+> ngày 2026-11-23 (Tier 1 từ `ST-300m3`).
 
 > **Cập nhật 2026-11-23 (ST-309 — kiểm toán bảo mật)** — **đã vá 2 lỗ hổng thật**:
 > (1) `quyen_mo::mo_goc` trước đây chỉ `O_NOFOLLOW` ở **thành phần cuối**, nên đổi một thư mục
@@ -65,13 +83,13 @@ Chi tiết ở `agent/SNAPSHOT-2026-11-20.md`.
 Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 (ST-173: Landlock **chỉ Linux** — xem mục cuối tệp. **ST-295/VD-276**: **đường đọc và đường ghi**
 đều đã đóng khe kiểm-rồi-mở trên Unix bằng `openat`/`openat2` (`#109b`/`#140`); macOS **đã verify
-`v0.4.5`** (chưa công bố Tier 1), **Windows mức bảo đảm thấp hơn**).
+`v0.4.5`** (**Tier 1 từ `ST-300m3`**), **Windows mức bảo đảm thấp hơn**).
 
 ## Bảng nền tảng ↔ bảo đảm
 
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
-| macOS (mps) — **ĐÃ verify `v0.4.5`** (chưa tuyên bố hỗ trợ) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64, 2026-11-23**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; `JOURNAL/mac-v045-verify.md`. |
+| macOS (mps) — **Tier 1 arm64** (`aarch64-apple-darwin`) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64 @ `7930e90`, 2026-11-24**: 3× gate full PASS (220/216/210 s; nextest 3.745/3/0, doc-test 5/0/1, host-wasm 29/29, WASI 28/28); soak 4 h **1.878 vòng / 0 fail**, RSS/fd phẳng; `vis-wasm-sem` **388/390**; `JOURNAL/st300m3-macos-tier1.md`. |
 | Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
 | Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136`; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
 | wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **388/390 eligible** (2 stack-overflow interp); không tuyên bố full (`ST-299a/b`, `ST-300`) |
@@ -127,7 +145,7 @@ Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu
 `agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
 `st137-host-suite-ps.log`, `st142-*`, `st144-host-suite.log` (Windows cũ), `st300m1-macos.md`.
 **Linux: 54/54** (ST-142 — bằng chứng hiện hành). **Windows: 54/54** (ST-298, Tier 1; số 39/54 là
-đo cũ 20/11). **macOS: 54/54** (verify `v0.4.5`, 2026-11-23; **chưa** công bố Tier 1).
+đo cũ 20/11). **macOS: 54/54** (verify `v0.4.5`; soak `ST-300m3` **187/187 lượt** host 54/54; **Tier 1 arm64** từ `ST-300m3`).
 **wasm: không nằm trong 54 ca host** — bằng chứng WASI là smoke suite 28/28 + `vis-wasm-sem` 388/390.
 
 ## Cấm ngôn từ
@@ -139,7 +157,9 @@ Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu
 - Cấm nói "async song song", "chạy đồng thời", "rendezvous", "sandbox kernel" khi mô tả **VS2**
   (VD-122, VD-123, VD-120); riêng **HTTPS** đã có từ VS3-4a (`https://` qua TLS), không còn là “chưa có”.
 - Cấm nói "hỗ trợ đầy đủ wasm" khi chỉ có `vis-wasm-sem` **388/390 eligible** + suite 28/28
-  (VD-121/VD-277); cấm nói "macOS Tier 1" khi `ST-300m3` chưa chạy 3× `--full` + soak 4 h.
+  (VD-121/VD-277). **Đúng (2026-11-24, `ST-300m3`)**: “**macOS arm64 Tier 1** — chứng nhận
+  `aarch64-apple-darwin`” (3× full + soak 4 h **1.878 vòng** + `vis-wasm-sem` 388/390) — luôn kèm caveat
+  **không Landlock** và **chưa đo Intel x86_64**; cấm nói “macOS có sandbox kernel”.
 - **Sai (2026-11-23)**: “macOS chưa verify” (đã verify `v0.4.5`); “Windows chưa hỗ trợ” (đã **Tier 1**
   từ `v0.4.5`, caveat `FsGuard`); “wasm chưa có runner” (đã có `wasm32-wasip1`); “Windows có sandbox
   kernel”; “hardlink là lỗi đua”; “đường ghi còn kiểm-rồi-mở trên Unix” (đã đóng từ ST-295).
@@ -301,7 +321,7 @@ test bị bỏ.
 | Nền | Biên dịch `vis-host-linux` | Số ca Landlock chạy | Bằng chứng |
 |---|---|---|---|
 | Linux (`ps`, kernel `7.0.0-43-generic`) | Có — dependency **bắt buộc** | **18/18** | `st173-ps-truoc.log`, `st173-ps-sau.log`; `st295-verify.log` |
-| macOS — **đã verify `v0.4.5`** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log`; `ST-300m1` chạy trên `mps` — **không** có ca Landlock (giới hạn nền) |
+| macOS — **Tier 1 (arm64)** | Có, nhưng crate **rỗng** | **0** (không áp dụng) | `st173-mac-truoc.log`, `st173-mac-sau.log`; `ST-300m3` 3× full + soak 4 h trên `mps` — **không** có ca Landlock (giới hạn nền) |
 | Windows — **Tier 1** | — | **0** (không áp dụng) | runner Windows thật (`ST-298`), nhưng Landlock chỉ Linux |
 
 **Không** dùng câu: “Landlock bảo vệ trên mac/Windows”; “không biên dịch được nên bỏ qua”; “mac thiếu
@@ -317,10 +337,10 @@ sandbox kernel”. Đúng: “**Landlock chỉ Linux** — mac/Windows chỉ có
 - `git rev-parse HEAD:viscript` là hash **của commit**, KHÔNG phải cây làm việc ⇒ không trích dẫn nó như
   bằng chứng “cây sạch”; bằng chứng đúng là `git status --porcelain` rỗng + dòng `# ST-175: cay SACH` trong log.
 
-## macOS — verify `v0.4.5` (2026-11-23)
+## macOS — verify `v0.4.5` + Tier 1 `ST-300m3` (2026-11-23/24)
 
 - `mps`: macOS **27.0.1** (Darwin 27.0.0) **arm64**, Rust **1.100.0**, Node **26.12.1**.
 - `./vis-dev check` PASS; gate **3631/3**; workspace **3636/0/3**; host **54/54**; WASI suite **28/28**; `vis-wasm-sem` **388/390 = 99,5%** (2 stack-overflow interp known, VM pass).
 - Fix test-only/tooling: `fix/macos-v045-tests` (APFS non-UTF-8 skip, `st295` cfg Linux, harness `CARGO_TARGET_DIR`, Python 3.9).
-- **Chưa tuyên bố Tier 1 macOS** — chờ `ST-300m3` (3× `bin/vis-gate-macos --full` + soak 4 h);
-  `ST-300m2` (bench `#147`/`#152`) chạy trước.
+- **Đã tuyên bố macOS arm64 Tier 1** — `ST-300m3`: 3× `bin/vis-gate-macos --full` + soak 4 h
+  **1.878 vòng / 0 fail**; `ST-300m2` đã đóng `#147`/`#152` trước đó.
