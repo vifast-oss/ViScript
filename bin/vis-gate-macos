@@ -65,7 +65,7 @@ def commands(mode):
         return [
             "cargo check --workspace",
             "cargo test -p vis-host-native --lib quyen_st",
-            "cargo test -p vis-cli --test async_it lat",
+            "cargo nextest run -p vis-cli --test async_it lat",
         ]
     return [
         "./vis-dev check",
