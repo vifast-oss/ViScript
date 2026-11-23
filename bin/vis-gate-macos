@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 REMOTE = os.environ.get("VIS_GATE_MACOS_REMOTE", "mps")
 TARGET = os.environ.get("VIS_GATE_MACOS_TARGET", "target/gate-macos")
 LOCK_TIMEOUT = int(os.environ.get("VIS_GATE_MACOS_LOCK_TIMEOUT", "7200"))
+REPO = os.environ.get("VIS_GATE_MACOS_REPO", "/Users/mps/dvchd/ViScript")
 
 
 def log_path(mode):
@@ -79,19 +80,19 @@ def body(mode):
     inner = "\n".join(
         [
             "set -euo pipefail",
-            'cd "$VIS_REPO"',
+            "cd %s" % shlex.quote(REPO),
             'export PATH="$HOME/.cargo/bin:$PATH"',
             "export CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0",
             'export TMPDIR="${TMPDIR:-$HOME/tmp}"',
             'mkdir -p "$TMPDIR"',
-            'export CARGO_TARGET_DIR="$VIS_REPO/%s"' % TARGET,
+            "export CARGO_TARGET_DIR=%s" % shlex.quote(str(Path(REPO) / TARGET)),
         ]
         + commands(mode)
     )
     return "\n".join(
         [
             "set -euo pipefail",
-            'cd "$VIS_REPO"',
+            "cd %s" % shlex.quote(REPO),
             'test "$(git rev-parse HEAD)" = "%s" || { echo "vis-gate-macos: HEAD mps khác %s — đồng bộ nhánh rồi chạy lại" >&2; exit 4; }'
             % (head(), head()[:12]),
             "bin/vis-lock --timeout %d --log \"$HOME/vislogs/vis-lock-gate-macos.log\" -- bash -c %s"
