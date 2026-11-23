@@ -16,7 +16,7 @@
 - ✔ = **đã chạy thật** đúng như ô ViScript trong lần kiểm chứng.
 - ✖ = thiết kế có nhưng **chưa có tại `<commit>`**; cột ghi chú nêu cách thay thế.
 - **[ĐÃ CÓ]** = chạy được ở HEAD hiện tại; **[ĐANG LÀM]** = đã có nhưng ngữ nghĩa sẽ đổi theo bộ quy tắc R1–R24;
-  **[DỰ KIẾN]** = thiết kế đã chốt, **chưa** có trong mã (thuộc pha 1/pha 2 của `agent/JOURNAL/vs-ergo.md`).
+  **[DỰ KIẾN]** = thiết kế đã chốt, **chưa** có trong mã (thuộc pha 1/pha 2 của `agent/archive/journal-pre-v040/vs-ergo.md`).
 - Cột Python/Rust/TS chỉ để **so cho quen mắt**, không phải cú pháp ViScript.
 - Bảng "Mức hiện thực VS2" ở cuối tài liệu thiết kế là nơi ghi chênh lệch thiết kế ↔ code.
 

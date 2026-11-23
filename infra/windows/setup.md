@@ -82,4 +82,4 @@ powershell -NoProfile -File ...\setup.ps1 -Check
 | Repo / target | `C:\Users\ps\vifast-windows\repo` (`core.autocrlf false`) · `C:\vis-target` |
 | Hash đã đo | `e369698adf28c4f8aa3b5883fec9af5569a93920` (`origin/main` 2026-11-16T07:53Z) |
 
-Số đo và danh sách ca lệch: [`agent/JOURNAL/st136-windows.md`](../../agent/JOURNAL/st136-windows.md).
+Số đo và danh sách ca lệch: [`agent/archive/journal-pre-v040/st136-windows.md`](../../agent/archive/journal-pre-v040/st136-windows.md).

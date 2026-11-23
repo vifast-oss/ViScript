@@ -42,14 +42,14 @@ harness `test/sem` WASI + row `vis-targets` (ST-300). Version/tag `v0.4.5` **ch�
 - `agent/reports/R35-viscript.json`: **330 task** (đúng **330 hàng QUEUE@`9af3976`**, gồm
   `ST-300b` mới), **9 blocked** (8 BLOCKED + ST-300 REVIEW), `round=35`, `head=9af3976`.
   Không còn placeholder soak trong JSON; các số soak đã điền trong tài liệu md.
-- Sinh lại bằng `python3 agent/JOURNAL/gen-r35-json.py` sau khi đổi `HEAD_SHA`.
+- Sinh lại bằng `python3 test/report/gen_report_json.py --round 35` sau khi đổi `HEAD_SHA`.
 - **Không** sửa `QUEUE.md`/`SO-NO.md`/`DECISIONS.md`; `report-check --all` PASS.
 
 ## 5. Điều kiện công bố Windows Tier 1 / tag `v0.4.5`
 
 - **Tier 1**: soak 4h đủ vòng, `0` = 0, fd/RSS phẳng (`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`), 3× full
   xanh, host 54/54, targets 18/18 + 17/1, dirty 0. **Chưa công bố** ở báo cáo này.
-- **Tag `v0.4.5`**: sau final QA/release Linux+Windows, cập nhật head JSON (`gen-r35-json.py`),
+- **Tag `v0.4.5`**: sau final QA/release Linux+Windows, cập nhật head JSON (`gen_report_json.py --round 35`),
   điền `985`/`0`/`free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`, `check_report.py --all` PASS, rồi tag theo
   uỷ quyền `VD-283`. Tag trước **`v0.4.1` @ `90844bc`**.
 

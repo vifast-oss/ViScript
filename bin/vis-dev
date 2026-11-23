@@ -207,7 +207,9 @@ rule_so_no() {
 
 # R7 (VD-282): cấm commit **mới** tệp log/txt > 50 KB trong `agent/JOURNAL/` (bằng chứng cổng phải
 # là tóm tắt `.md` ≤ 15 KB + đường dẫn log ngoài repo + sha256). `test/gate/r7-legacy-logs.txt` là
-# danh sách **đóng băng** các tệp lịch sử đã vượt ngưỡng — không thêm mới. Bỏ qua sidecar
+# danh sách **đóng băng** các tệp lịch sử đã vượt ngưỡng — không thêm mới. **ST-310f**: các log
+# tiền-`v0.4.0` đã chuyển sang `agent/archive/journal-pre-v040/`; danh sách giữ đường dẫn archive
+# (không quét archive), nên R7 chỉ còn chặn tệp mới trong `agent/JOURNAL/`. Bỏ qua sidecar
 # `*.license`. Không có `agent/JOURNAL/` (cây self-test R1..R4) ⇒ bỏ qua.
 rule_journal_logs() {
     local root="$1"

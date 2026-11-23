@@ -18,14 +18,14 @@
 // `SourceFd`/fd thô: trên Windows trạng thái đăng ký nằm trong chính đối tượng.
 #![cfg(any(unix, windows))]
 
-#[path = "async_net_conn.rs"]
+#[path = "conn.rs"]
 mod conn_impl;
 #[cfg(feature = "async-h2")]
-#[path = "async_net_h2.rs"]
+#[path = "h2.rs"]
 mod h2_impl;
-#[path = "async_net_host.rs"]
+#[path = "host.rs"]
 mod host_impl;
-#[path = "async_net_nguon.rs"]
+#[path = "nguon.rs"]
 mod nguon_impl;
 
 use host_impl::loopback_addr;

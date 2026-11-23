@@ -12,7 +12,7 @@ không chạy gate/soak/diff (W2/W4 đang chạy).
 - **Interp**: `vis run <tệp.vis>`
 - **VM**: `vis run --vm <tệp.vis>` (`--workers` mặc định 1, `--max-budget` mặc định 40M).
 - Mỗi lần: `timeout 20`, cwd = gốc repo, `TMPDIR=/home/ps/tmp`; stdout lưu file tạm rồi sha256.
-- Script tái lập: `agent/JOURNAL/st300-sem-native-baseline.sh`.
+- Script tái lập: `test/wasm/st300-sem-native-baseline.sh`.
 
 ## 2. Kết quả
 

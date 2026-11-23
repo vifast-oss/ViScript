@@ -80,7 +80,7 @@ Mọi số đo cuối phải kèm log ngoài repo + sha256; repo chỉ giữ tó
   `ST-307`..`ST-309`), `round=36`, `head=c3b7290`. Trạng thái lệch sổ đều có trường `queue`
   ghi đúng giá trị QUEUE@head (`m1` DONE/queue READY; `302/304/304b/305/306` REVIEW).
 - Sidecar `agent/reports/R36-viscript.json.license`; sinh lại bằng
-  `python3 agent/JOURNAL/gen-r36-json.py` khi A0 đổi head.
+  `python3 test/report/gen_report_json.py --round 36` khi A0 đổi head.
 - `python3 test/report/check_report.py --all`: **PASS** (35 báo cáo, 333 hàng QUEUE).
 - `./vis-dev check`: **PASS** (fmt, clippy, R1..R7, self-test, build, doc-examples).
 - `gates.fast = PASS` theo gate `@c3b7290` **3672/4**; `full`/`nightly` = `—` (chưa chạy R36).

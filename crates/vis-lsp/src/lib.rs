@@ -14,30 +14,61 @@
 
 #![forbid(unsafe_code)]
 
-mod chan_doan;
-mod chon;
-mod chu_ky;
-mod code_action;
-mod codelens;
-mod dinh_dang;
-mod dinh_nghia;
-mod doi_ten;
-mod gap;
-mod goi_y;
-mod inlay_hint;
+// **ST-310f**: gom tệp theo miền nhưng giữ **nguyên tên module phẳng** (`super::jsonrpc`, …)
+// để không đổi hành vi/đường dẫn API nội bộ; chỉ đổi vị trí tệp bằng `#[path]`.
+// `protocol/` — JSON-RPC, khung LSP, vị trí/UTF-16, sửa văn bản, URI.
+#[path = "protocol/jsonrpc.rs"]
 mod jsonrpc;
+#[path = "protocol/khung.rs"]
 mod khung;
-mod ky_hieu;
-mod module;
-mod phan_tich;
+#[path = "protocol/phuong_loi.rs"]
 mod phuong_loi;
-mod semantic_tokens;
+#[path = "protocol/sua.rs"]
 mod sua;
-mod thanh_vien;
-mod thuc_thi;
-mod type_definition;
+#[path = "protocol/vi_tri.rs"]
 mod vi_tri;
+
+// `analysis/` — mô hình phân tích, module/overlay, chẩn đoán, thành viên, workspace.
+#[path = "analysis/chan_doan.rs"]
+mod chan_doan;
+#[path = "analysis/module.rs"]
+mod module;
+#[path = "analysis/phan_tich.rs"]
+mod phan_tich;
+#[path = "analysis/thanh_vien.rs"]
+mod thanh_vien;
+#[path = "analysis/workspace.rs"]
 mod workspace;
+
+// `features/` — từng tính năng LSP (completion, hover, rename, format, …).
+#[path = "features/chon.rs"]
+mod chon;
+#[path = "features/chu_ky.rs"]
+mod chu_ky;
+#[path = "features/code_action.rs"]
+mod code_action;
+#[path = "features/codelens.rs"]
+mod codelens;
+#[path = "features/dinh_dang.rs"]
+mod dinh_dang;
+#[path = "features/dinh_nghia.rs"]
+mod dinh_nghia;
+#[path = "features/doi_ten.rs"]
+mod doi_ten;
+#[path = "features/gap.rs"]
+mod gap;
+#[path = "features/goi_y.rs"]
+mod goi_y;
+#[path = "features/inlay_hint.rs"]
+mod inlay_hint;
+#[path = "features/ky_hieu.rs"]
+mod ky_hieu;
+#[path = "features/semantic_tokens.rs"]
+mod semantic_tokens;
+#[path = "features/thuc_thi.rs"]
+mod thuc_thi;
+#[path = "features/type_definition.rs"]
+mod type_definition;
 
 use std::collections::HashMap;
 use std::io::{self, BufReader};

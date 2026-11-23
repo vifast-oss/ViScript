@@ -7,7 +7,7 @@
 #   VIS_DIFF_SEED=123 ./bin/vis-diff
 #
 # Cổng `gate --fast` chạy bản **1.000** chương trình (mặc định trong test) để giữ cổng nhanh;
-# con số **100.000** là của script này và được ghi thật vào `agent/JOURNAL/st22-diff-100k.log`.
+# con số **100.000** là của script này và được ghi thật vào `agent/archive/journal-pre-v040/st22-diff-100k.log`.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PATH="${HOME}/.cargo/bin:${PATH}"

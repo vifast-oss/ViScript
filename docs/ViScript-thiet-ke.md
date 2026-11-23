@@ -1536,7 +1536,7 @@ fn tính_tổng(danh_sách: list[int]) -> int:
 ## Phụ lục C. Gói — mô hình **phi tập trung kiểu Go** `[thiết kế VS3-6, chưa triển khai]`
 
 > **Nhãn `[thiết kế VS3-6, chưa triển khai]` áp cho TOÀN BỘ phụ lục này.** Đây là **đích thiết kế**
-> (VD-180/VD-181; bản đầy đủ ở `agent/JOURNAL/vs3-qd-6.md`), **không** phải hành vi của mã đang chạy.
+> (VD-180/VD-181; bản đầy đủ ở `agent/archive/journal-pre-v040/vs3-qd-6.md`), **không** phải hành vi của mã đang chạy.
 > **Trạng thái hiện tại** của lệnh `vis pkg` ở **C.2** — đọc C.2 trước khi trích dẫn C.1. Mục 8 chỉ còn
 > **một dòng trỏ** về đây.
 

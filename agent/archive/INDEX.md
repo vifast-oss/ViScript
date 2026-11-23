@@ -3,7 +3,8 @@
 
 > Sinh từ `git diff --name-status -M` tại commit quy hoạch. **Mọi mục là rename 100%**
 > (`git mv`, nội dung giữ nguyên; theo dõi bằng `git log --follow -- <đường-dẫn-mới>`).
-> Tổng **63 tệp**; nguồn gốc `agent/`, đích `agent/archive/`.
+> Tổng **63 tệp** (ST-296d) + **2 mục** ST-310f (`journal-pre-v040/`, `CHANGELOG-pre-v0.1.0.md`);
+> nguồn gốc `agent/`, đích `agent/archive/`.
 
 | # | Tệp gốc | Lưu tại | Nhóm | Dung lượng |
 |---:|---|---|---|---:|
@@ -70,11 +71,24 @@
 | 61 | `agent/TARGET-MATRIX-2026-11-20.md` | `agent/archive/reports/TARGET-MATRIX-2026-11-20.md` | reports | 5 KB |
 | 62 | `agent/WINDOWS-BASELINE-2026-11-19.md` | `agent/archive/reports/WINDOWS-BASELINE-2026-11-19.md` | reports | 10 KB |
 | 63 | `agent/STATE.md` | `agent/archive/state/STATE-2026-11-22.md` | state | 377 KB |
+| 64 | `agent/JOURNAL/*` (1.137 tệp tại `v0.4.0`) | `agent/archive/journal-pre-v040/*` | journal-pre-v040 | 26 MB |
+| 65 | `CHANGELOG.md` § "Mốc đáng chú ý" | `agent/archive/CHANGELOG-pre-v0.1.0.md` | changelog | 179 KB |
+
+## ST-310f — journal tiền-`v0.4.0` và CHANGELOG tiền-`v0.1.0`
+
+- **#64**: `git mv` nguyên trạng **1.137 tệp** trong `agent/JOURNAL/` tại tag `v0.4.0`
+  (`c2accdf`) sang `journal-pre-v040/`; giữ tên và thư mục con (`st234-repro/`,
+  `vs3-w5-spike/`). 62 tệp tạo sau `v0.4.0` vẫn ở `agent/JOURNAL/`. Chi tiết:
+  [`journal-pre-v040/README.md`](journal-pre-v040/README.md).
+- **#65**: tách phần "Mốc đáng chú ý" (lịch sử trước `v0.1.0`) khỏi `CHANGELOG.md` sang
+  `CHANGELOG-pre-v0.1.0.md`; `CHANGELOG.md` còn **21.656 B** (< 40 KB) và trỏ tới bản lưu.
+- `test/gate/r7-legacy-logs.txt` đổi 174 mục sang đường dẫn `journal-pre-v040/` tương ứng.
 
 ## Ghi chú
 
 - `reports/` gồm 44 tệp báo cáo/handoff/snapshot/đo lường rời.
 - `proposals/` gồm 15 tệp đề xuất/thiết kế/RFC/audit + 3 tệp trong `DU-THAO-VD186/`.
 - `state/` gồm `STATE-2026-11-22.md` (bản `STATE.md` cũ, 2.256 dòng).
-- Không có tệp nào bị xoá hay sửa nội dung; các tệp active (`ACTIVE.md`, `QUEUE.md`, `DECISIONS.md`,
-  `reports/R##-*`, `JOURNAL/`) vẫn ở nguyên vị trí.
+- Không có tệp nào bị xoá hay sửa nội dung (63 tệp ST-296d); các tệp active (`ACTIVE.md`,
+  `QUEUE.md`, `DECISIONS.md`, `reports/R##-*`) vẫn ở nguyên vị trí. ST-310f chỉ chuyển
+  `JOURNAL/` tiền-`v0.4.0` và tách phần `CHANGELOG.md` tiền-`v0.1.0`.

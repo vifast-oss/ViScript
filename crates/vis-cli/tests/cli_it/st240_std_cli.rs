@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-240 / VD-242 §3.5/§4 + VD-243** — hồi quy std/CLI hardening Đợt B (luồng C).
 //!
-//! Mỗi ca: repro đỏ baseline đã ghi trong `agent/JOURNAL/st235-audit-std-cli.md` và
+//! Mỗi ca: repro đỏ baseline đã ghi trong `agent/archive/journal-pre-v040/st235-audit-std-cli.md` và
 //! `st237-ma-tran-28.md`; ở đây là trạng thái **xanh** sau sửa. `#169` (ST-238), `#170`/Option
 //! (ST-239) chỉ kiểm tích hợp — không sửa/đóng lại; `#176` bị bác bỏ, không mở lại.
 

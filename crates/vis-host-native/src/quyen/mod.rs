@@ -19,9 +19,9 @@ use crate::quyen_chuan::{chuan, chuan_de_quy};
 /// **ST-286 (R0c)** — guard `FsHost` + helper đường dẫn `--grant` tách khỏi tệp này để giữ R1
 /// (≤ 1500 dòng/tệp); tái xuất giữ nguyên mọi đường dùng cũ (`quyen::FsGuard`,
 /// `quyen::chuan_lenh`, …). **0 đổi hành vi**.
-#[path = "quyen_guard.rs"]
+#[path = "guard.rs"]
 mod guard_impl;
-#[path = "quyen_path.rs"]
+#[path = "path.rs"]
 mod path_impl;
 
 pub use guard_impl::FsGuard;

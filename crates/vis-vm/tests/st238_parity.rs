@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-238 / VD-242 đợt A** — hồi quy parity ca 1,2,3,4,7,8 từ
-//! `agent/JOURNAL/st234-lech-vm-interp.md`. Mỗi ca: (a) interp ↔ VM **khớp byte**, và
+//! `agent/archive/journal-pre-v040/st234-lech-vm-interp.md`. Mỗi ca: (a) interp ↔ VM **khớp byte**, và
 //! (b) kết quả **đúng** theo căn cứ đã ghi (không nhận parity nếu cả hai cùng sai — VD-242 §3.1).
 
 use vis_bytecode::compile;

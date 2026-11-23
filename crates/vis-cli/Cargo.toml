@@ -97,8 +97,9 @@ vis-host-linux = { path = "../../vis-host-linux" }
 
 # **ST-310d (VD-285)** — 6 dep OS/TLS/SQLite còn lại (`rusqlite`, `rustls`, `tokio`, `h2`,
 # `mio`, `rustix`) **chỉ test tích hợp** dùng trực tiếp (fixture WAL, server TLS/h2 local,
-# adapter epoll). Chúng nằm ở `[dev-dependencies]`, không vào artifact `vis`; `ST-310e` sẽ
-# chuyển suite về đúng crate chủ. `webpki-roots` không còn ai dùng trực tiếp ở crate này.
+# adapter epoll). Chúng nằm ở `[dev-dependencies]`, không vào artifact `vis`; ST-310e đã chuyển
+# phần lớn suite về crate chủ, số còn lại vẫn cần các dep này. `webpki-roots` không còn ai dùng
+# trực tiếp ở crate này.
 [dev-dependencies]
 rusqlite = { workspace = true }
 ring = { workspace = true }

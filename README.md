@@ -606,7 +606,7 @@ Bản hiện tại: **`v0.4.5`** (workspace `0.4.5`, tag @ `3daff62`). ViScript 
 | **macOS arm64** | ✅ ĐÃ VERIFY `v0.4.5` (host 54/54, WASI 28/28); **chưa công bố Tier 1** — chờ `ST-300m3` |
 | **WASI Preview 1 (`wasm32-wasip1`)** | ✅ CÓ RUNNER: `vis-wasm-sem` **388/390 eligible**, smoke suite **28/28** |
 
-Danh sách đầy đủ 24 quy tắc công thái học: [`agent/JOURNAL/vs-ergo.md`](agent/JOURNAL/vs-ergo.md).
+Danh sách đầy đủ 24 quy tắc công thái học: [`agent/archive/journal-pre-v040/vs-ergo.md`](agent/archive/journal-pre-v040/vs-ergo.md).
 
 ## Các lệnh hay dùng
 
