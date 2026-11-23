@@ -25,7 +25,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
-WASM = WS / "target/wasm32-wasip1/release/vis-wasm-run.wasm"
+TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
+WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
 
 NODE_DRIVER = r"""
 import { WASI } from 'node:wasi';
@@ -241,7 +242,11 @@ def cargo_exe() -> str:
 
 def build(force: bool) -> None:
     if WASM.is_file() and not force:
-        print(f"# dùng wasm có sẵn: {WASM.relative_to(ROOT)}")
+        try:
+            rel = WASM.relative_to(ROOT)
+        except ValueError:
+            rel = WASM
+        print(f"# dùng wasm có sẵn: {rel}")
         return
     env = os.environ.copy()
     env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
@@ -387,7 +392,11 @@ def main() -> int:
     a = ap.parse_args()
 
     build(a.build)
-    print(f"# wasm: {WASM.relative_to(ROOT)} ({WASM.stat().st_size} byte)")
+    try:
+        rel = WASM.relative_to(ROOT)
+    except ValueError:
+        rel = WASM
+    print(f"# wasm: {rel} ({WASM.stat().st_size} byte)")
     rt, exe = chon_runtime(a.runtime)
     if rt is None:
         print(
