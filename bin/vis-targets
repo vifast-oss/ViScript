@@ -40,7 +40,8 @@ trap 'rm -f "$LOG"' EXIT
 check_workspace_coverage() {
   local actual
   actual=$("$CARGO" metadata --manifest-path "$MANIFEST" --no-deps --format-version 1 2>/dev/null \
-    | python3 -c 'import json,sys; print("\n".join(sorted(p["name"] for p in json.load(sys.stdin)["packages"])))')
+    | python3 -c 'import json,sys; print("\n".join(sorted(p["name"] for p in json.load(sys.stdin)["packages"])))' \
+    | tr -d '\r')
   if [ -z "$actual" ]; then
     echo "vis-targets: không đọc được workspace metadata từ $MANIFEST" >&2
     return 1
