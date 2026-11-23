@@ -18,9 +18,17 @@ pub use vis_core::host::{
 
 mod method;
 pub use method::*;
+
+/// **ST-311d (VD-286)** — 6 tệp phẳng `builtin_*.rs` gom về `builtin/` (giữ đăng ký/API).
+pub mod assert;
+pub mod list;
+pub(crate) mod ls;
+pub mod panic;
+pub(crate) mod sig;
+pub(crate) mod value;
 pub(crate) use method::{overflow, pct_moi, pct_nhan_f64};
 
-pub(crate) use crate::builtin_ls::{chuoi_quyen, thoi_gian_utc};
+pub(crate) use self::ls::{chuoi_quyen, thoi_gian_utc};
 
 use crate::interp::{Abort, Trap, DIV0, RT};
 use crate::value::Value;
@@ -140,9 +148,9 @@ pub(crate) fn trap(code: &'static vis_diag::Code, msg: impl Into<String>, span: 
     Abort::Trap(Trap::new(code, msg, span))
 }
 
-/// **VD-267** — bảng chữ ký tách sang `builtin_sig.rs` (R1); giữ nguyên đường dẫn công khai
+/// **VD-267** — bảng chữ ký tách sang `builtin/sig.rs` (R1); giữ nguyên đường dẫn công khai
 /// `crate::builtin::{SIGS, sig, builtin_name, BuiltinSig}`.
-pub use crate::builtin_sig::{builtin_name, sig, BuiltinSig, SIGS};
+pub use self::sig::{builtin_name, sig, BuiltinSig, SIGS};
 
 pub fn bin(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
     use BinOp::*;
@@ -554,7 +562,7 @@ pub fn call(
     // đường). `:` không hợp lệ trong tên ⇒ người dùng không viết được; `vis_fmt`/`check` không đụng.
     // **VD-218 (2026-11-18)**: tên `$value:…` **không bao giờ** xuất hiện ở thông báo lỗi/stack trace.
     if let Some(ten) = name.strip_prefix("$value:") {
-        return crate::builtin_value::value_builtin(ten)
+        return self::value::value_builtin(ten)
             .ok_or_else(|| trap(RT, "giá trị dựng sẵn không xác định", span));
     }
     // **ST-293 (VD-274/VD-280)**: select nhiều kênh — logic/wait-set ở `rt/select.rs`.
@@ -706,9 +714,9 @@ pub fn call(
         }
         // **ST-79 (VD-108)**: `assert(điều_kiện)` cho `test fn`; sai ⇒ trap `VS0501` để
         // `vis test` in `not ok` (không thêm mã mới — yêu cầu ST-79).
-        "assert" => crate::builtin_assert::assert_builtin(&args, span),
+        "assert" => self::assert::assert_builtin(&args, span),
         // **VD-267**: `panic(msg)` — trap `VS0501` (exit 101), không Rust panic/abort.
-        "panic" => crate::builtin_panic::panic_builtin(&args, span),
+        "panic" => self::panic::panic_builtin(&args, span),
         // ST-18 — 3 lệnh builtin chế độ lệnh (`echo`/`lines`/`take`), thuần, không FS.
         "echo" => {
             if args.len() > 4 {

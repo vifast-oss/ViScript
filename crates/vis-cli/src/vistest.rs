@@ -57,6 +57,10 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use vis_syntax::{Kind, Mode, NodeKind, Span};
 
+mod ten;
+
+use ten::*;
+
 fn usage() -> ExitCode {
     eprintln!("dùng: vis test [--vm] [--strict-caps] [--timeout <ms>] [--json] [--json-out <path>] [--filter <substr>] [--fail-fast] [--list] [--repeat <N>] [--shuffle [--seed <u64>]] [--shard <I>/<N>] [--jobs <N>] [--slowest <N>] [thư mục|tệp]");
     eprintln!("  --filter <substr>: chỉ chạy ca có tên `test fn` hoặc đường dẫn hiển thị chứa <substr> (phân biệt hoa/thường); chuỗi rỗng hoặc không khớp ⇒ `1..0`, exit 0
@@ -467,86 +471,6 @@ fn chay_mot_lan(
         format!("{ten}:1:1: VS0000 stdout khác kỳ vọng"),
         "VS0000 stdout khác kỳ vọng",
     )
-}
-
-/// **VD-270**: SplitMix64 — PRNG nhỏ, tất định, không phụ thuộc (trạng thái chỉ là `u64`).
-fn splitmix64(s: &mut u64) -> u64 {
-    *s = s.wrapping_add(0x9E37_79B9_7F4A_7C15);
-    let mut z = *s;
-    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-    z ^ (z >> 31)
-}
-
-/// **VD-270**: Fisher–Yates từ cuối, nguồn ngẫu nhiên là `splitmix64(seed)` ⇒ cùng seed cho
-/// **cùng hoán vị** trên mọi máy; không dùng crate `rand` nên không thêm phụ thuộc.
-fn xao_tron<T>(v: &mut [T], seed: u64) {
-    let mut s = seed;
-    for i in (1..v.len()).rev() {
-        let j = (splitmix64(&mut s) % (i as u64 + 1)) as usize;
-        v.swap(i, j);
-    }
-}
-
-/// **VD-270**: đọc `--shard <I>/<N>` — đúng một `/`, hai số nguyên dương, `1 ≤ I ≤ N`.
-fn parse_shard(s: &str) -> Option<(usize, usize)> {
-    let (a, b) = s.split_once('/')?;
-    if b.contains('/') {
-        return None;
-    }
-    let i = a.parse::<usize>().ok()?;
-    let n = b.parse::<usize>().ok()?;
-    if n == 0 || i == 0 || i > n {
-        return None;
-    }
-    Some((i, n))
-}
-
-/// **VD-270**: kết quả từng **đơn vị** theo đúng thứ tự gốc (chỉ số ca, rồi k) — tên, kết quả,
-/// **thời gian tường** của lần chạy; `None` = chưa chạy (`--fail-fast` bỏ phần đuôi chưa lập lịch).
-type KetQuaDonVi = Vec<Option<(String, Kq, std::time::Duration)>>;
-
-/// **VD-270**: tên gốc của ca (không hậu tố `[k/N]`) — `test fn` dùng **tên test**, fixture dùng
-/// đường dẫn hiển thị như trước.
-fn ten_goc_cua(goc: &Path, p: &Path, bai_test: Option<&(String, String)>) -> String {
-    match bai_test {
-        Some((ten_test, _)) => ten_test.clone(),
-        None => p
-            .strip_prefix(goc)
-            .unwrap_or(p)
-            .to_string_lossy()
-            .to_string(),
-    }
-}
-
-/// **VD-270**: tên in ra của **một đơn vị**; hậu tố `[k/N]` chỉ thêm khi `--repeat > 1`.
-fn ten_don_vi(ten_goc: &str, k: usize, repeat: usize) -> String {
-    if repeat > 1 {
-        format!("{ten_goc} [{k}/{repeat}]")
-    } else {
-        ten_goc.to_string()
-    }
-}
-
-/// **VD-270**: định dạng thời gian cho `--slowest` — `≥ 1 ms` dùng `"<ms> ms"`, dưới 1 ms dùng
-/// `"<us> us"` (micro giây; cắt xuống theo đơn vị, không in phần lẻ).
-fn dinh_dang_thoi_gian(d: std::time::Duration) -> String {
-    if d.as_millis() >= 1 {
-        format!("{} ms", d.as_millis())
-    } else {
-        format!("{} us", d.as_micros())
-    }
-}
-
-/// **VD-270**: sắp **giảm dần** theo thời gian rồi lấy tối đa `n` mục; hoà giữ **thứ tự gốc**
-/// (`sort_by_key` của Rust là **ổn định**). Tách khỏi vòng chạy để test phần “hoà” độc lập đồng hồ.
-fn sap_xep_slowest(
-    mut ds: Vec<(String, std::time::Duration)>,
-    n: usize,
-) -> Vec<(String, std::time::Duration)> {
-    ds.sort_by_key(|a| std::cmp::Reverse(a.1));
-    ds.truncate(n);
-    ds
 }
 
 /// **VD-270**: cấu hình chạy chung cho đường tuần tự và song song (gom tham số, tránh lặp).
@@ -1134,116 +1058,4 @@ pub fn run(args: &[String]) -> ExitCode {
 fn _mode(_: Mode) {}
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use vis_interp::json;
-    use vis_interp::value::Value;
-
-    /// Đo đỏ ST-101b: newline/tab/control trong `message` làm JSON **không parse được**.
-    #[test]
-    fn esc_json_newline_tab_control_parse_duoc() {
-        let goc = "a\"b\\c\n\t\r\u{1}";
-        let body = format!("{{\"m\":\"{}\"}}", esc_json(goc));
-        let v = json::decode(&body).expect("JSON phải hợp lệ");
-        let Value::Map(kv) = v else {
-            panic!("không phải map")
-        };
-        let m = kv.iter().find_map(|(k, v)| match (k, v) {
-            (Value::Str(k), Value::Str(v)) if k == "m" => Some(v.clone()),
-            _ => None,
-        });
-        assert_eq!(m.as_deref(), Some(goc));
-    }
-
-    /// `sh -c <script>` — `test fn` ViScript không in được ra stderr, cũng không chạy được lệnh
-    /// ngoài, nên hai ca dưới gọi thẳng `chay_co_han` với một con `sh`.
-    ///
-    /// **ST-139 (Agent 0)**: chỉ Unix — `/bin/sh` không có trên Windows. `test_timeout.rs` cũng đã
-    /// dùng `ps` (Unix) từ ST-105, nhưng ca **unit** này chạy trong `cargo test --workspace` của
-    /// cổng trên mọi nền, nên phải tự chặn để `gate --fast` không đỏ trên Windows (ST-136).
-    #[cfg(unix)]
-    fn sh(script: &str) -> Command {
-        let mut c = Command::new("/bin/sh");
-        c.arg("-c").arg(script);
-        c
-    }
-
-    /// Nợ #89 (issue #23): con in ~200 KB ra **stderr** (> buffer pipe ~64 KiB) rồi thoát ngay ⇒
-    /// không được báo quá hạn oan, stderr phải về **đủ**.
-    #[cfg(unix)]
-    #[test]
-    fn stderr_nhieu_khong_bi_qua_han_oan() {
-        let t0 = std::time::Instant::now();
-        let (ma, _out, err, qua_han) = chay_co_han(
-            &mut sh("i=0; while [ $i -lt 20000 ]; do echo 0123456789 >&2; i=$((i+1)); done"),
-            3_000,
-        );
-        assert!(!qua_han, "báo quá hạn oan sau {:?}", t0.elapsed());
-        assert_eq!(ma, 0);
-        assert_eq!(err.len(), 20_000 * 11, "stderr phải về đủ");
-        assert!(t0.elapsed().as_millis() < 3_000);
-    }
-
-    /// Quá hạn **không bao giờ treo**: con bị kill nhưng **cháu** (`sleep 5`, nợ #88 chưa kill
-    /// cây cháu) còn giữ đầu ghi stdout/stderr ⇒ vẫn phải trả `quá hạn` trong < 3 s.
-    #[cfg(unix)]
-    #[test]
-    fn chau_giu_ong_khong_lam_treo() {
-        let t0 = std::time::Instant::now();
-        let (_ma, _out, _err, qua_han) = chay_co_han(&mut sh("sleep 5 & sleep 10"), 300);
-        let dt = t0.elapsed();
-        assert!(qua_han);
-        assert!(
-            dt.as_millis() < 3_000,
-            "{dt:?} ≥ 3 s ⇒ đang chờ cháu đóng ống"
-        );
-    }
-
-    /// **VD-270**: `--slowest` in `<ms> ms` khi ≥ 1 ms, `<us> us` khi dưới 1 ms (cắt xuống).
-    #[test]
-    fn slowest_dinh_dang_thoi_gian() {
-        use std::time::Duration;
-        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(0)), "0 us");
-        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(999)), "999 us");
-        assert_eq!(dinh_dang_thoi_gian(Duration::from_micros(1_500)), "1 ms");
-        assert_eq!(dinh_dang_thoi_gian(Duration::from_millis(2_500)), "2500 ms");
-    }
-
-    /// **VD-270**: `--slowest` sắp **giảm dần**; thời gian **bằng nhau** giữ **thứ tự gốc**;
-    /// lấy tối đa N mục.
-    #[test]
-    fn slowest_sap_giam_dan_hoa_giu_thu_tu_goc() {
-        use std::time::Duration;
-        let ds = vec![
-            ("a".to_string(), Duration::from_millis(5)),
-            ("b".to_string(), Duration::from_millis(9)),
-            ("c".to_string(), Duration::from_millis(5)),
-            ("d".to_string(), Duration::from_millis(1)),
-        ];
-        let ra = sap_xep_slowest(ds.clone(), 3);
-        let tens: Vec<&str> = ra.iter().map(|(t, _)| t.as_str()).collect();
-        assert_eq!(
-            tens,
-            ["b", "a", "c"],
-            "hoà 5 ms phải giữ thứ tự gốc (a rồi c)"
-        );
-        assert_eq!(sap_xep_slowest(ds, 99).len(), 4, "N > số mục ⇒ in hết");
-    }
-
-    /// **ST-230**: PATH cho tiến trình con có thư mục binary ở **đầu**, phần PATH cũ giữ nguyên
-    /// thứ tự phía sau; thư mục rỗng ⇒ không đổi PATH (nhánh `current_exe()` fallback `"vis"`).
-    #[test]
-    fn path_voi_muc_dau_them_dau_va_giu_phan_con_lai() {
-        let p = super::path_voi_muc_dau(Path::new("/tmp/muc-vis"))
-            .expect("PATH phải join được (không chứa ký tự cấm)");
-        let ds: Vec<PathBuf> = std::env::split_paths(&p).collect();
-        assert_eq!(ds.first(), Some(&PathBuf::from("/tmp/muc-vis")));
-        let cu: Vec<PathBuf> =
-            std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).collect();
-        assert_eq!(&ds[1..], &cu[..], "PATH cũ phải giữ nguyên thứ tự");
-        assert!(
-            super::path_voi_muc_dau(Path::new("")).is_none(),
-            "thư mục rỗng ⇒ không đổi PATH"
-        );
-    }
-}
+mod tests;

@@ -44,14 +44,8 @@
 //! assert_eq!(out.exit, 1);
 //! ```
 
-pub mod builtin_assert;
 /// **ST-310a**: `DbHost`/`FsHost` nay ở `vis_core::host`; `builtin` re-export giữ API.
 pub(crate) use vis_core::json::derive as json_derive;
-pub mod builtin_list;
-/// **ST-46** — `ls --long` helpers.
-mod builtin_ls;
-/// **VD-267** — `panic(msg)`: trap `VS0501` (exit 101), kiểu tĩnh `never`.
-pub mod builtin_panic;
 /// **VS3-4b (VD-271)** — cookie jar nội bộ cho `http.get/head` (không API ngôn ngữ).
 pub mod cookie;
 mod gan;
@@ -70,9 +64,9 @@ pub mod ops {
 }
 
 pub mod builtin;
-/// **VD-267** — bảng chữ ký builtin trần (tách khỏi `builtin.rs` để giữ R1).
-mod builtin_sig;
-mod builtin_value;
+/// **ST-311d (VD-286)** — 6 tệp phẳng `builtin_*.rs` nay ở `builtin/`; re-export giữ nguyên
+/// đường dẫn công khai cũ (`builtin_assert`/`builtin_list`/`builtin_panic`).
+pub use builtin::{assert as builtin_assert, list as builtin_list, panic as builtin_panic};
 /// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường interp thật.
 #[doc(hidden)]
 pub mod frame;

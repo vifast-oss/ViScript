@@ -12,6 +12,8 @@ use super::{FrameKind, ImplDangKy, Lowerer, SymKind};
 use crate::hir::{BinOp, HExpr, HFn, HImpl, HItem, HParam, HStmt, InterpPart, Lit, LitKind};
 use crate::ty::{RecId, Type};
 
+mod sieu;
+
 /// Chữ ký một phương thức trait: `(tên, số tham số, kiểu trả, kiểu từng tham số)` (ST-29).
 pub type PhuongThucTrait = (String, usize, Type, Vec<Type>);
 
@@ -1117,36 +1119,4 @@ fn co_float_sau(t: &Type) -> bool {
 /// Kiểu của một trường có **so sánh toàn phần** không (đệ quy **sâu** — ST-60c).
 fn co_truong_khong_eq(truong: &[(String, Type)]) -> bool {
     truong.iter().any(|(_, t)| co_float_sau(t))
-}
-
-// ---------------------------------------------------------------------------
-// ST-57 (VD-98 (2)) — siêu trait
-// ---------------------------------------------------------------------------
-
-impl<'a> Lowerer<'a> {
-    /// **ST-57 (VD-98 (2))**: mỗi `impl Trait for Type`, mọi **siêu trait** của `Trait` phải có
-    /// `impl` cùng kiểu — kiểm **một tầng** (bắc cầu = nợ), `VS0403` (không cấp mã mới).
-    pub(crate) fn kiem_sieu_trait(&mut self) {
-        let pairs = self.impl_pairs.clone();
-        for (ty, tn, span) in &pairs {
-            let sieu: Vec<String> = self
-                .traits
-                .iter()
-                .find(|t| &t.name == tn)
-                .or_else(|| self.traits_ngoai.iter().find(|t| &t.name == tn))
-                .map(|t| t.supertraits.clone())
-                .unwrap_or_default();
-            for st in sieu {
-                if !pairs.iter().any(|(t2, n2, _)| n2 == &st && t2 == ty) {
-                    self.diag(
-                        &vis_diag::TYPE_CODES[2],
-                        format!(
-                            "`impl {tn} for …` thiếu `impl {st} for …` (siêu trait `{st}` — kiểm **một tầng**, VD-98)"
-                        ),
-                        *span,
-                    );
-                }
-            }
-        }
-    }
 }

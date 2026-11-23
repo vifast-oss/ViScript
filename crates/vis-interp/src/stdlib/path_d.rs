@@ -4,7 +4,7 @@
 
 use vis_syntax::Span;
 
-use crate::builtin_ls::{
+use crate::builtin::ls::{
     basename_voi, dirname_voi, ext_voi, la_tuyet_doi, noi_duong_voi, stem_voi,
 };
 use crate::interp::R;
