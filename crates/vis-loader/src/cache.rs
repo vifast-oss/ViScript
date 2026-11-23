@@ -37,7 +37,7 @@ use std::path::PathBuf;
 // ABI không đổi.
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23+st302-derives-json-async-impl-2026-11-23"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -256,9 +256,15 @@ mod tests {
         // cache 0.4.0 tự vô hiệu, `VERSION` VBC1/ABI/định dạng không đổi.
         // **v0.4.5 (ST-298, VD-129)**: bump 0.4.1 → 0.4.5 + nhãn `v045-release` ⇒ ghim lại;
         // cache 0.4.1 tự vô hiệu, `VERSION` VBC1/ABI/định dạng không đổi.
+        // **ST-302 (VD-284)**: sinh method `derives Json` + `async impl/cmd` ⇒ bytecode cùng
+        // nguồn đổi nghĩa; nhãn `st302-derives-json-async-impl` buộc cache 0.4.5 cũ vô hiệu.
         assert_eq!(
-            k, "d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce",
+            k, "88613f2f2aa91f08fb2825e0d6769085818d3551feb54eb529e34099d43314dc",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "d92f31c28ed5e97a07976b83be0fb6a3c4c3914120e4e8f98e9fc832685418ce",
+            "ST-302: cache sinh trước derives Json/async impl không được tái dùng"
         );
         assert_ne!(
             k, "42f5389364ae126f8b9dea4c3bf107c983c3b92d7b1743a5293d547f3d4d7c0f",
