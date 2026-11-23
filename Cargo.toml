@@ -21,6 +21,7 @@ members = [
     "crates/vis-pkg",
     "crates/vis-loader",
     "crates/vis-lsp",
+    "crates/vish-edit",
 ]
 
 [workspace.package]
@@ -42,7 +43,7 @@ unicode-ident = "1"
 # SQLite bundled (VD-241/VD-258): hooks + limits bắt buộc cho chính sách SQL.
 rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks", "limits"] }
 # ST-295 (VD-276): openat/openat2 an toàn cho đường đọc+ghi Unix.
-rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std"] }
+rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std", "termios"] }
 # VS3-4a/4b2 (VD-271): TLS + HTTP/2, ring thay aws-lc-rs; chỉ target không phải wasm32.
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"] }
 webpki-roots = "=1.0.11"
