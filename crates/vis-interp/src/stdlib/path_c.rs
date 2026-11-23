@@ -45,7 +45,7 @@ pub(crate) mod pathwithext {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::{basename_voi, ext_voi, la_phan_cach, stem_voi};
+    use crate::builtin::ls::{basename_voi, ext_voi, la_phan_cach, stem_voi};
     use crate::interp::R;
     use crate::value::Value;
 
@@ -268,7 +268,7 @@ pub(crate) mod pathwithfilename {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::{basename_voi, la_phan_cach};
+    use crate::builtin::ls::{basename_voi, la_phan_cach};
     use crate::interp::R;
     use crate::value::Value;
 
@@ -472,7 +472,7 @@ pub(crate) mod pathwithstem {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::{basename_voi, ext_voi, la_phan_cach, stem_voi};
+    use crate::builtin::ls::{basename_voi, ext_voi, la_phan_cach, stem_voi};
     use crate::interp::R;
     use crate::value::Value;
 

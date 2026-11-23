@@ -290,7 +290,7 @@ pub(crate) mod pathrelbool {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::la_tuyet_doi;
+    use crate::builtin::ls::la_tuyet_doi;
     use crate::interp::R;
     use crate::value::Value;
 

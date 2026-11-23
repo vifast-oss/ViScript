@@ -329,7 +329,7 @@ pub(crate) mod pathisabs {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::la_tuyet_doi;
+    use crate::builtin::ls::la_tuyet_doi;
     use crate::interp::R;
     use crate::value::Value;
 
@@ -446,7 +446,7 @@ pub(crate) mod pathjoinall {
     //! | `["a", "/b", "/c", "d"]` | `"/c/d"` | tuyệt đối **cuối** thắng |
     //! | `["a", "/"]`, `["a", "//b"]` | `"/"`, `"//b"` | thành phần tuyệt đối trả **nguyên văn** |
     //!
-    //! Mỗi bước gọi **đúng** helper của `path.join` ([`crate::builtin_ls::noi_duong_voi`]), nên
+    //! Mỗi bước gọi **đúng** helper của `path.join` ([`crate::builtin::ls::noi_duong_voi`]), nên
     //! mọi quy tắc `/` đầu/cuối, thành phần rỗng, ổ đĩa/UNC trên Windows trùng khớp tuyệt đối;
     //! bảng trên là hợp đồng POSIX (nền tảng test). `\` và NUL là ký tự **thường** trên POSIX;
     //! thành phần Unicode giữ nguyên từng scalar.
@@ -459,7 +459,7 @@ pub(crate) mod pathjoinall {
 
     use vis_syntax::Span;
 
-    use crate::builtin_ls::noi_duong_voi;
+    use crate::builtin::ls::noi_duong_voi;
     use crate::interp::R;
     use crate::value::Value;
 

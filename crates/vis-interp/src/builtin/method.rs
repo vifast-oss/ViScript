@@ -138,9 +138,9 @@ fn list_method(
             let parts: Vec<String> = xs.iter().map(Value::show).collect();
             Ok(Value::Str(parts.join(&sep)))
         }
-        // **R20b (VD-178)**: `enumerate`/`any`/`all`/`find` — tách sang `builtin_list.rs`.
+        // **R20b (VD-178)**: `enumerate`/`any`/`all`/`find` — tách sang `builtin/list.rs`.
         "enumerate" | "any" | "all" | "find" => {
-            crate::builtin_list::duyet_nang_cao(host, xs, name, args, span)
+            super::list::duyet_nang_cao(host, xs, name, args, span)
         }
         other => Err(trap(
             RT,
