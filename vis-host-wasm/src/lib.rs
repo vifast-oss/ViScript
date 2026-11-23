@@ -16,7 +16,7 @@
 //! # Bằng chứng
 //!
 //! `WasiFs` test được **native** (thư mục tạm) vì logic containment thuần `std::fs`; phần chạy
-//! thật cần `wasmtime` — xem `bin/vis-wasm-suite` và `agent/JOURNAL/st299a-wasi-core.md`.
+//! thật cần `wasmtime` — xem `bin/vis-wasm-suite` và `agent/archive/journal-pre-v040/st299a-wasi-core.md`.
 //! Mức bằng chứng **không** vượt quá thứ chạy được: nếu thiếu `wasmtime`, bước chạy wasm ghi
 //! `BLOCKED-ENV`, không tuyên bố đã chạy.
 

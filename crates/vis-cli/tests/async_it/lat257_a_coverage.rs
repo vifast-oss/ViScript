@@ -6,7 +6,7 @@
 //! HIR tay, không fallback đồng bộ, không đổi checker / runtime mặc định / golden.
 //!
 //! Ô không phủ được thì **từ chối rõ** (diagnostic có `Span`) và được ghi là "explicitly
-//! rejected" ở `agent/JOURNAL/vd257-a-coverage-report.md` — KHÔNG tuyên bố coverage complete.
+//! rejected" ở `agent/archive/journal-pre-v040/vd257-a-coverage-report.md` — KHÔNG tuyên bố coverage complete.
 
 use std::collections::HashSet;
 

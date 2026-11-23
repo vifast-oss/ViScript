@@ -54,7 +54,7 @@ fn moi_chu_ky_ha_duoc_va_bien_kieu_trong_0_3() {
         );
     }
     // Bảng chữ ký `std.*` mở rộng qua nhiều VD-270; mỗi hàm mới có test chữ ký riêng và mốc
-    // chi tiết trong `CHANGELOG.md` / `agent/JOURNAL/vd260-report.md`. Assertion dưới khoá tổng.
+    // chi tiết trong `CHANGELOG.md` / `agent/archive/journal-pre-v040/vd260-report.md`. Assertion dưới khoá tổng.
     assert_eq!(FUNCS.len(), 167, "bảng chữ ký phải đủ 167 hàm");
 }
 

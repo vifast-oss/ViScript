@@ -2,7 +2,7 @@
 //! Golden **30 biểu thức** — `viscript/test/expr/golden.expr` (Agent 0 soạn, VD-34; **chỉ đọc**).
 //!
 //! Đây là test **đỏ trước** của ST-05 (D2-05): chạy khi parser còn là khung rỗng ⇒ đỏ 30/30
-//! (log `viscript/agent/JOURNAL/st05-red-expr.log`), rồi mới hiện thực parser/CST.
+//! (log `viscript/agent/archive/journal-pre-v040/st05-red-expr.log`), rồi mới hiện thực parser/CST.
 //!
 //! Mỗi ca kiểm ba thứ (quy ước đầu `golden.expr`):
 //! 1. **sexp** của CST đúng kỳ vọng (`(op lhs rhs)`, `(paren X)`, postfix…), hoặc

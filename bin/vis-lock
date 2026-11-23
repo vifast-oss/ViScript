@@ -3,7 +3,7 @@
 # vis-lock — giu khoa may do thoi gian `~/.vifast-measure.lock` trong suot mot lenh (ST-176, VD-177 §3).
 #
 # Vi sao: macOS KHONG co lenh `flock` (da kiem `command -v flock` = rong tren may do), nen giao thuc
-#   `flock "$HOME/.vifast-measure.lock" -c '<lenh do>'` trong `agent/JOURNAL/khoa-may-do-luong.md`
+#   `flock "$HOME/.vifast-measure.lock" -c '<lenh do>'` trong `agent/archive/journal-pre-v040/khoa-may-do-luong.md`
 #   khong chay duoc tren mac. Cong cu nay thay bang `fcntl.flock(LOCK_EX)` cua python3, giu khoa
 #   tu luc lay duoc den khi tien trinh con thoat, va in bang chung ra stderr + (tuy chon) vao log do.
 #
@@ -28,7 +28,7 @@
 #   python3 · 124 het thoi gian cho khoa (lenh khong chay).
 #
 # Vi du:
-#   bin/vis-lock -- env VIS_TASK_ID=176 bin/vis-soak --log "$PWD/agent/JOURNAL/st176-soak-macos.log" --append
+#   bin/vis-lock -- env VIS_TASK_ID=176 bin/vis-soak --log "$PWD/agent/archive/journal-pre-v040/st176-soak-macos.log" --append
 #   bin/vis-lock --timeout 60 --log /tmp/do.log -- sh -c 'time cargo test -p vis-interp'
 set -u
 

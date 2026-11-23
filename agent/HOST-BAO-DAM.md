@@ -72,7 +72,7 @@ Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 | Nền tảng | Cưỡng chế **runtime** (ST-72b) | Landlock (kernel) | Bằng chứng |
 |---|---|---|---|
 | macOS (mps) — **ĐÃ verify `v0.4.5`** (chưa tuyên bố hỗ trợ) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64, 2026-11-23**: gate **3631/3**, workspace **3636/0/3**, host **54/54**, WASI **28/28**, `vis-wasm-sem` **388/390**; `JOURNAL/mac-v045-verify.md`. |
-| Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/JOURNAL/st295-verify.log`) |
+| Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/archive/journal-pre-v040/st295-verify.log`) |
 | Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136`; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
 | wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **388/390 eligible** (2 stack-overflow interp); không tuyên bố full (`ST-299a/b`, `ST-300`) |
 
@@ -106,7 +106,7 @@ kỳ vọng ghi trong script).
 | `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` 388/390 eligible (`ST-299a/b`, `ST-300`) |
 | `vis-host-*` chạy thật | **Tier 1** (host suite 54/54 @ `f4cb136`; 3× full 3611/0/3; soak 4 h 985/0) | `wasm32-wasip1`: **chạy thật** (suite 28/28); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`vis-host-linux` 18/18 từ ST-295; host suite 54/54); wasm: **runtime có phạm vi** |
 
-Bảng đầy đủ (18 ô) + log: `agent/JOURNAL/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
+Bảng đầy đủ (18 ô) + log: `agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
 “wasm32-unknown-unknown chạy được”; đúng là “**check** biên dịch chéo” cho `wasm32-unknown-unknown`,
 và “**runtime `wasm32-wasip1`** — coverage 388/390 eligible” cho WASI.
 
@@ -124,7 +124,7 @@ stdout + mã thoát (+ stderr chứa khi khai): **0 lệch**.
 | Determinism | 3 | mỗi ca chạy **3 lần** mỗi đường, cùng stdout |
 
 Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu/đỏ). Log:
-`agent/JOURNAL/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
+`agent/archive/journal-pre-v040/st75-suite.log` (nhãn macOS **cũ**, ST-75 — xem đính chính đầu tệp);
 `st137-host-suite-ps.log`, `st142-*`, `st144-host-suite.log` (Windows cũ), `st300m1-macos.md`.
 **Linux: 54/54** (ST-142 — bằng chứng hiện hành). **Windows: 54/54** (ST-298, Tier 1; số 39/54 là
 đo cũ 20/11). **macOS: 54/54** (verify `v0.4.5`, 2026-11-23; **chưa** công bố Tier 1).
@@ -163,7 +163,7 @@ trên `ps`, nợ **#132 đóng** (ST-166). Điều kiện 2 (`unsafe`) **không*
 
 ## Thụt lề `.vish` — **có ngữ nghĩa ở cấp tệp** (ST-85, VD-109)
 
-Đo ngày 2026-11-14 (log `agent/JOURNAL/st85-do.log`): trong **thân `cmd`**, 2 vs 4 dấu cách cho **cùng**
+Đo ngày 2026-11-14 (log `agent/archive/journal-pre-v040/st85-do.log`): trong **thân `cmd`**, 2 vs 4 dấu cách cho **cùng**
 stdout/exit (interp = VM); TAB bị lexer từ chối (`VS0107`). Nhưng ở **cấp tệp**, thụt lề **đổi hành vi**:
 tệp mà **mọi** dòng thụt lề ⇒ chương trình **không in gì**, exit 0; dòng cấp tệp thụt 1 dấu cách đứng
 **đầu** bị bỏ (`topmix` chỉ in `y`); đứng **sau** lại được chạy (`topmix2` in `y` rồi `x`).
@@ -292,7 +292,7 @@ test bị bỏ.
    Crate rỗng **không** phải “đã kiểm” — chỉ là “không áp dụng”.
 2. **Hành vi bảo vệ chỉ đo trên Linux.** Số ca trên `ps` (Linux `7.0.0-43-generic`, LSM có `landlock`):
    **trước 15 passed / sau 15 passed** (`0 failed`, `[exit=0]`) — **KHÔNG đổi**. Log:
-   `agent/JOURNAL/st173-ps-truoc.log`, `st173-ps-sau.log`.
+   `agent/archive/journal-pre-v040/st173-ps-truoc.log`, `st173-ps-sau.log`.
 3. **Cổng trên mac không phát hiện hồi quy Landlock.** Muốn biết Landlock còn chặn thật phải chạy
    `cargo test -p vis-host-linux --test landlock` trên **Linux** (runner `ps`).
 4. Trên mac/Windows, bảo đảm duy nhất là **cưỡng chế runtime** (`FsGuard`/`NetGuard`, ST-72b) —

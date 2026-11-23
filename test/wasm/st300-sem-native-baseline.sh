@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # ST-300 — baseline native interp↔VM cho test/sem/**/*.vis (không sửa sản phẩm).
-# Dùng: B=/path/vis ./st300-sem-native-baseline.sh  (cwd = gốc repo)
+# Dùng: B=/path/vis ROOT=/goc/repo OUT=/tmp/baseline.tsv ./test/wasm/st300-sem-native-baseline.sh
+# Mặc định giữ nguyên đường dẫn bằng chứng ST-300; đặt biến môi trường để chạy lại ở cây khác.
 set -u
-B=/home/ps/ViScript/target/vs3-w1-sem/release/vis
-ROOT=/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w1-runtime
-OUT=/home/ps/vislogs/sem-native-baseline.tsv
-EXC=/home/ps/vislogs/sem-native-exclusions.tsv
-T=/home/ps/tmp/semrun
+B=${B:-/home/ps/ViScript/target/vs3-w1-sem/release/vis}
+ROOT=${ROOT:-/home/ps/.local/share/opencode/worktree/cd45e5/vs3-w1-runtime}
+OUT=${OUT:-/home/ps/vislogs/sem-native-baseline.tsv}
+EXC=${EXC:-/home/ps/vislogs/sem-native-exclusions.tsv}
+T=${T:-/home/ps/tmp/semrun}
 mkdir -p "$T" "$(dirname "$OUT")"
 cd "$ROOT"
 printf 'path\tcategory\tinterp_rc\tinterp_stdout_sha256\tvm_rc\tvm_stdout_sha256\n' > "$OUT"

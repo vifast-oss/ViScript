@@ -203,7 +203,7 @@ crate host.
 1. **Bão hoà có kiểm soát**: giữ `i64::MAX`/`i64::MIN`, nhưng phải ghi rõ hợp đồng bão hoà + sửa `show` để không in số giả; hoặc
 2. **Lỗi**: `VS0507` cho mọi phép tính `percent` vượt miền (nhân/chia/show), exit ≠ 0, không trả giá trị bão hoà.
 
-**Bằng chứng**: `agent/JOURNAL/st237-ma-tran-28.md` dòng #172; `agent/JOURNAL/st235-audit-std-cli.md` #172; `builtin.rs:419-455`, `value.rs:421-428`.
+**Bằng chứng**: `agent/archive/journal-pre-v040/st237-ma-tran-28.md` dòng #172; `agent/archive/journal-pre-v040/st235-audit-std-cli.md` #172; `builtin.rs:419-455`, `value.rs:421-428`.
 
 **Không chặn** các task khác: ST-238/239/240/241/242 vẫn chạy; riêng phần sửa #172 trong ST-240 phải đợi câu trả lời này.
 

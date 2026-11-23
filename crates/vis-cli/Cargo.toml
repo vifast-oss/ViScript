@@ -115,7 +115,7 @@ vis-host-linux = { path = "../../vis-host-linux" }
 # **ST-295 (VD-276, phương án A)** — `openat`/`openat2` an toàn cho đường đọc+ghi Unix.
 # Ghim **tuyệt đối**, feature tối giản `fs` (+`std` cho `OwnedFd`/`std::io`), chỉ trên Unix nên
 # Windows/wasm không kéo crate này. Giấy phép: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
-# (thoả allowlist qua nhánh Apache-2.0); log kiểm toàn cây: `agent/JOURNAL/st295-license.log`.
+# (thoả allowlist qua nhánh Apache-2.0); log kiểm toàn cây: `agent/archive/journal-pre-v040/st295-license.log`.
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true }
 

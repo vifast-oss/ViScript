@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-11 — test ĐỎ TRƯỚC (D2-05)** của `vis-types`: hạ CST → HIR.
 //!
-//! Tệp này viết **trước** khi hiện thực `lower()` (log đỏ: `viscript/agent/JOURNAL/st11-red-types.log`);
+//! Tệp này viết **trước** khi hiện thực `lower()` (log đỏ: `viscript/agent/archive/journal-pre-v040/st11-red-types.log`);
 //! kỳ vọng lấy từ **nguồn của Agent 0**, không tự đặt:
 //! - **15 khối ```vis đủ thân** trong `docs/ViScript-thiet-ke.md` (VD-36) — parse sạch
 //!   (ST-05) **và** hạ **0 chẩn đoán**, đúng số **item / câu lệnh cấp tệp / khai báo**;
