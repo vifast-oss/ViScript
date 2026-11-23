@@ -22,6 +22,8 @@ members = [
     "crates/vis-loader",
     "crates/vis-lsp",
     "crates/vish-edit",
+    "crates/vis-plugin-abi",
+    "crates/vis-plugin-macros",
 ]
 
 [workspace.package]

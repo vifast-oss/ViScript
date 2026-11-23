@@ -768,6 +768,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "vis-plugin-abi"
+version = "0.4.5"
+dependencies = [
+ "vis-bytecode",
+ "vis-interp",
+ "vis-plugin-macros",
+ "vis-syntax",
+ "vis-types",
+ "vis-vm",
+]
+
+[[package]]
+name = "vis-plugin-macros"
+version = "0.4.5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "vis-syntax"
 version = "0.4.5"
 dependencies = [

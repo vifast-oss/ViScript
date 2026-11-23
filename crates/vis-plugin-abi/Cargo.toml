@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+[package]
+name = "vis-plugin-abi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "ABI tĩnh VIS_PLUGIN_ABI_V1 cho plugin Rust của ViScript (ST-306)"
+
+[dependencies]
+vis-interp = { path = "../vis-interp" }
+
+[dev-dependencies]
+vis-syntax = { path = "../vis-syntax" }
+vis-types = { path = "../vis-types" }
+vis-bytecode = { path = "../vis-bytecode" }
+vis-vm = { path = "../vis-vm" }
+vis-plugin-macros = { path = "../vis-plugin-macros" }
