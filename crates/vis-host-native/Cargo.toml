@@ -14,6 +14,42 @@ tls = ["dep:rustls", "dep:webpki-roots"]
 http2 = ["tls", "dep:h2", "dep:tokio", "dep:http", "dep:bytes"]
 async-h2 = ["http2", "tls"]
 
+# **ST-310e** — suite API/e2e của host chuyển từ `vis-cli/tests/` về crate chủ.
+# `required-features` giữ đúng feature của `vis-host-native`; khi chạy workspace, feature được
+# hợp nhất từ `vis-cli` (default) nên các test vẫn chạy đủ.
+[[test]]
+name = "sqlite_it"
+path = "tests/sqlite_it.rs"
+required-features = ["sqlite"]
+
+[[test]]
+name = "tls_it"
+path = "tests/tls_it.rs"
+required-features = ["tls"]
+
+[[test]]
+name = "http2_it"
+path = "tests/http2_it.rs"
+required-features = ["http2"]
+
+[[test]]
+name = "security_it"
+path = "tests/security_it.rs"
+
+[[test]]
+name = "host_posix_real"
+path = "tests/host_posix_real.rs"
+
+[dev-dependencies]
+# Dùng cho fixture chữ ký registry (`http2_it`) và dựng HIR/VM trong ca DB.
+vis-bytecode = { path = "../vis-bytecode" }
+# **ST-310a/ST-310e** — chỉ test: `sqlite_it` chạy interp trên HIR, `tls_it` cần hook
+# `FrameReactorBackend`/`ReactorIoOutcome` của đường frame test. Production vẫn 0 dep
+# `vis-interp` (ràng buộc của ST-310a); đây là dev-dependency, không vào artifact.
+vis-interp = { path = "../vis-interp" }
+vis-types = { path = "../vis-types" }
+vis-vm = { path = "../vis-vm" }
+
 [dependencies]
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }

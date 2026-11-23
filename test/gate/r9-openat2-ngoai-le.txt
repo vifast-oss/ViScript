@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-310e — danh sách ĐÓNG BĂNG ngoại lệ R9 (không thêm mục mới).
+# ST-310c đã xoá `crates/vis-plugin-abi/src/cap_fs.rs` (dùng duy nhất
+# `vis_host_native::quyen`), nên danh sách nay RỖNG: mọi bản sao `openat2` ngoài
+# `crates/vis-host-native/` đều là vi phạm.

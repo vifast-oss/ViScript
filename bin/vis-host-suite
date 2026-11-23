@@ -49,7 +49,7 @@ case "$(uname -s 2>/dev/null || echo unknown)" in
     echo "vis-host-suite: host_posix_real: BỎ QUA (Windows dùng test-child)"
     ;;
   *)
-    if ! "$CARGO" test --manifest-path "$ROOT/Cargo.toml" -p vis-cli --test host_posix_real \
+    if ! "$CARGO" test --manifest-path "$ROOT/Cargo.toml" -p vis-host-native --test host_posix_real \
       -- --nocapture >"$LOG_POSIX" 2>&1; then
       cat "$LOG_POSIX" >&2
       echo "vis-host-suite: host_posix_real HỎNG (log trên stderr)" >&2

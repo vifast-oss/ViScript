@@ -32,7 +32,7 @@ LOG="${VIS_GATE_WINDOWS_LOG:-/tmp/vis-gate-windows-${MODE#--}-$(date -u +%Y%m%dT
 
 if [ "$MODE" = "--quick" ]; then
     # **ST-296a**: test binary đã gom nhóm; dùng binary nhóm + filter module.
-    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test -p vis-cli --test net_pkg_it pkg:: -- --skip siet_caps_pkg && cargo test -p vis-cli --test http2_it && cargo test -p vis-cli --test net_pkg_it cancel_http_ && cargo test -p vis-cli --test async_it vs3_select::"
+    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test -p vis-cli --test net_pkg_it pkg:: -- --skip siet_caps_pkg && cargo test -p vis-host-native --features http2 --test http2_it && cargo test -p vis-cli --test net_pkg_it cancel_http_ && cargo test -p vis-cli --test async_it vs3_select::"
 else
     body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test --workspace --no-fail-fast && cargo test -p vis-cli --test host_conformance -- --nocapture && bash bin/vis-targets"
 fi
