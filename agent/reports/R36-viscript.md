@@ -26,7 +26,7 @@
 - `crates/vis-lsp`: hover generic (hàm/phương thức in `[T]`) + completion `std.` (module).
 - `editors/vscode/`: `package.json`, TextMate grammar, `language-configuration.json`,
   `extension.js` (client JSON-RPC `vis lsp --stdio`), `README.md`; không build/publish.
-- Gate nhánh: điền sau khi chạy `./vis-dev gate --fast` (kỳ vọng **3671/4**, tăng theo ca mới).
+- Gate nhánh: `./vis-dev gate --fast` **PASS — 3674 passed / 0 failed / 4 skipped** (+3 ca ST-305 so baseline 3671/4); fmt/clippy/R1..R7 OK.
 
 ## 4. QA 3-OS / WASI — sẽ điền sau
 
@@ -47,5 +47,5 @@
 ## 6. Ghi chú sổ sách
 
 `head` của báo cáo cuối sẽ là commit R36 (không phải commit chứa khung này). Không tag/push/merge
-từ W4; macOS ngoài phạm vi cho tới khi `ST-300m1..m3` hoàn tất. Các mục `[SOAK_*]`/số QA chỉ được
+từ W4; macOS ngoài phạm vi cho tới khi `ST-300m1..m3` hoàn tất. Các mục số QA/soak chỉ được
 điền khi có bằng chứng máy; khung này không thay thế `R36-viscript.json`.

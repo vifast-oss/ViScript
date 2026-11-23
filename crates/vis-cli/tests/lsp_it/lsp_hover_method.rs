@@ -285,7 +285,8 @@ fn completion_khong_them_phuong_thuc() {
 
 // ===== ST-305: hover generic (hàm + phương thức) =====
 
-const NGUON_GENERIC_FN: &str = "fn first[T](xs: list[T]) -> T?:\n    xs.get(0)\n\nfn main():\n    first([1])\n";
+const NGUON_GENERIC_FN: &str =
+    "fn first[T](xs: list[T]) -> T?:\n    xs.get(0)\n\nfn main():\n    first([1])\n";
 
 /// Ca — hover hàm generic phải nêu tham số kiểu `[T]` trong chữ ký.
 #[test]

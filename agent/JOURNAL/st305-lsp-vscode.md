@@ -1,42 +1,47 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# ST-305 — LSP hover generic/completion `std.*` + extension VS Code (PARTIAL)
+# ST-305 — LSP hover generic/completion `std.*` + extension VS Code
 
-> **Trạng thái: TẠM DỪNG theo chỉ đạo giờ cao điểm.** Nhánh `plan/w4-st305-lsp-vscode` từ
-> `700bb66` (VD-284). **Chưa chạy gate/test** (không build/test mới khi tạm dừng); không ssh mps;
-> không merge/push/tag. Tiếp tục **13:00–15:00** sau khi W2 xong `m1/m2`.
+> **Trạng thái: DONE (local, chưa merge).** Nhánh `plan/w4-st305-lsp-vscode` từ `700bb66`
+> (VD-284); commit `[ST-305] ...`; không merge/push/tag; **không ssh mps** (W2 đang độc quyền
+> `m1/m2`). `m3` (3× full + soak 4h + `vis-wasm-sem`) sẽ do A0 báo sau.
 
-## 1. Đã làm (chưa nghiệm thu)
+## 1. LSP — hover generic & completion `std.*`
 
 - `crates/vis-lsp/src/phan_tich.rs`: `chu_ky_fn` in **tham số kiểu generic** `[T, U]` cho hàm và
-  phương thức (hover/`detail`), không đổi API.
+  phương thức (hover/`detail`), giữ API.
 - `crates/vis-lsp/src/goi_y.rs`: completion sau **`std.`** gợi ý **module** (`fs`, `str`, `list`,
-  …) từ `FUNCS` (kind 9), vẫn giữ đường `fs.`/`sqlite.` cũ.
-- Test mới (chưa chạy):
+  …) từ `FUNCS` (kind 9); đường `fs.`/`sqlite.` cũ giữ nguyên.
+- Test mới:
   - `lsp_it/lsp_hover_method.rs`: `hover_ham_generic_neu_tham_so_kieu`,
     `hover_phuong_thuc_generic_neu_tham_so_kieu`.
   - `lsp_it/lsp_extra.rs`: `lsp_completion_sau_std_lieu_module`.
-- `editors/vscode/`: `package.json` (language `.vis/.vish`, grammar, `viscript.serverPath`),
-  `syntaxes/viscript.tmLanguage.json`, `language-configuration.json`, `extension.js`
-  (`LanguageClient` → `vis lsp --stdio`), `README.md`; sidecar `.license` cho JSON; **không**
-  build/publish.
-- `agent/reports/R36-viscript.md`: **khung** cho `v0.5.0`; chưa có JSON; QA 3-OS/WASI ghi rõ sẽ
-  điền sau; không tuyên bố phát hành.
+- Kết quả: `cargo test -p vis-cli --test lsp_it` **155/155 pass** (0,17 s);
+  `cargo test -p vis-lsp` **29/29 pass** (0,01 s).
 
-## 2. Chưa làm / rủi ro
+## 2. Extension VS Code (`editors/vscode/`)
 
-- **Chưa chạy** `cargo test` LSP, `./vis-dev gate --fast`, fmt/clippy/R1..R7 — kỳ vọng gate
-  **3671/4** nhưng **chưa xác nhận**.
-- Test generic method có thể cần chỉnh theo `TypeTable::show` thực tế (hover `[T]`).
-- R36 mới là khung; **không** tạo `R36-viscript.json` (W3b/A0 chốt).
+- `package.json`: language `viscript` (`.vis`, `.vish`), grammar, `viscript.serverPath` (mặc định
+  `vis`); dependency `vscode-languageclient` (không build/publish trong repo).
+- `syntaxes/viscript.tmLanguage.json`: TextMate cơ bản (comment `#`, string, số, keyword, type,
+  tên hàm).
+- `language-configuration.json`: comment/bracket/indent.
+- `extension.js`: `LanguageClient` chạy `vis lsp --stdio`.
+- `README.md`; sidecar `.license` cho các `.json` (R3).
 
-## 3. Việc tiếp theo (13:00–15:00)
+## 3. Cổng Linux
 
-1. Chạy `cargo test -p vis-cli --test lsp_it` + targeted LSP; sửa test nếu lệch.
-2. `./vis-dev gate --fast` (kỳ vọng 3671/4), fmt/clippy/R1..R7.
-3. Hoàn thiện R36 khung nếu cần; **không** merge/push/tag.
-4. Sau khi A0 báo `m1` merge + `m2` xong mới chạy `ST-300m3` trên mps (3× full + soak 4h +
-   `vis-wasm-sem` ≥388/390) — **chưa làm bây giờ**.
+- `./vis-dev gate --fast`: **PASS — 3674 passed / 0 failed / 4 skipped** (+3 ca ST-305 so baseline
+  3671/4); fmt/clippy/R1..R7 OK; `report-check` PASS (34 báo cáo, 333 hàng QUEUE);
+  doc-examples 24 khối.
+- Disk local `/`: còn **>10 G**.
 
-## 4. Blocker
+## 4. R36
 
-- Không blocker kỹ thuật; tạm dừng do giờ cao điểm. Không tag/push/merge; không GitHub Actions.
+- `agent/reports/R36-viscript.md`: **khung** cho `v0.5.0`; **chưa có JSON** (W3b/A0 chốt); QA
+  3-OS/WASI ghi rõ sẽ điền sau; không tuyên bố phát hành.
+
+## 5. Việc còn lại
+
+- Merge nhánh (A0) và chạy `ST-300m3` trên mps (3× `bin/vis-gate-macos --full` + soak 4h +
+  `vis-wasm-sem` ≥388/390) — **chưa làm**.
+- Không tag/push/merge; không GitHub Actions. Không blocker.

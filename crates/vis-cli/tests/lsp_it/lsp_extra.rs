@@ -308,5 +308,8 @@ fn lsp_completion_sau_std_lieu_module() {
     assert_eq!(code, 0, "stderr: {err}");
     let body = frame_cuoi(&out);
     assert!(body.contains(r#""label":"fs""#), "thiếu module fs: {body}");
-    assert!(body.contains(r#""label":"str""#), "thiếu module str: {body}");
+    assert!(
+        body.contains(r#""label":"str""#),
+        "thiếu module str: {body}"
+    );
 }
