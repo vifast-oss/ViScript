@@ -1,0 +1,3184 @@
+{
+  "project": "viscript",
+  "round": 36,
+  "head": "c3b7290751aaa9ab131eb89ba8829d4f78078e47",
+  "build_id": "gd3-v050-r36-c3b7290-20261123",
+  "tasks": [
+    {
+      "id": "ST-01",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-02a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-02b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-03",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-11",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-12",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-12b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-13",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-14",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-15b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-15",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-16",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-18",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-19",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-20b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-20",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-21",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-22",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-23",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-25",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-26",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-27",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-28",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-29",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-30",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-30b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-32",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-33",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-34",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-35",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-36",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-37",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-38",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-39",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-40a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-40b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-41",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-42",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-43",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-44",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-45",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-46",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-47",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-48",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-49",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-50",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-51",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-52",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-53",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-54",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-55",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-56",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-56b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-57",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-58",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-59",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-60",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-60b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-60c",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-61",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-62",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-63",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-64",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-65",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-66",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-67",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-68",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-69",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-70",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-71",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-72",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-72b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-73",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-74",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-75",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-76",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-77",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-78",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-79",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-80",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-81",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-82",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-83",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-84",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-85",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-85b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-86",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-87",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-87b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-88",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-89",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-90",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-91",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-92",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-93",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-93b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-94",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-95",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-96",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-97",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-98",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-99",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-100",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-101",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-101b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-102",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-103",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-104",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-105",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-106",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-107",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-108",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-109",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-110",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-111",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-112",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-113",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-114a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-114b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-115",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-116",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-116b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-117",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-118",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-119",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-120",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-121",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-122",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-123",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-124",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-125",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-126",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-127",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-128",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-129",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-130",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-131",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-132",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-132b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-133",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-134",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-135",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-136",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-137",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-138",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-139",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-138b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-140",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-141",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-142",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-143",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-144",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-145",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-146",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-147",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-148",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-149",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-150",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-151",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-152",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-153",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-154",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-155",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-156",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-157",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-158",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-159",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-160",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-161",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-162",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-163",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-164",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-165",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-166",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-167",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-173",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-174",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-175",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-176",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-168",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-169",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-170",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-171",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-178",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-179",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-180",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-181",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-182",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-183",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-184",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-185",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-186",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-187",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-188",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-189",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-190",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-191",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-192",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-193",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-194",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-195",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-196",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-197",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-198",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-199",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-200",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-215",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (gộp vào ST-203 của dòng kia)",
+      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-217",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-202b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (gộp vào ST-203 của dòng kia)",
+      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-218",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (gộp vào ST-203 của dòng kia)",
+      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+    },
+    {
+      "id": "ST-216",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-205",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)",
+      "note": "QUEUE@c3b7290: DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)"
+    },
+    {
+      "id": "ST-206",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)",
+      "note": "QUEUE@c3b7290: DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)"
+    },
+    {
+      "id": "ST-207",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)",
+      "note": "QUEUE@c3b7290: DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)"
+    },
+    {
+      "id": "ST-208",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-209",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)",
+      "note": "QUEUE@c3b7290: DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)"
+    },
+    {
+      "id": "ST-214",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "PS-DONE; mac BLOCK",
+      "note": "QUEUE@c3b7290: PS-DONE; mac BLOCK"
+    },
+    {
+      "id": "ST-219",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-220",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-210",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225",
+      "note": "QUEUE@c3b7290: DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225"
+    },
+    {
+      "id": "ST-211",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-225, proxy A0-uỷ quyền)",
+      "note": "QUEUE@c3b7290: DONE** (VD-225, proxy A0-uỷ quyền)"
+    },
+    {
+      "id": "ST-212",
+      "status": "READY",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: READY"
+    },
+    {
+      "id": "ST-228",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (proxy VD-225, chưa ratify)",
+      "note": "QUEUE@c3b7290: DONE (proxy VD-225, chưa ratify)"
+    },
+    {
+      "id": "ST-229",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (proxy VD-225, chưa ratify)",
+      "note": "QUEUE@c3b7290: DONE (proxy VD-225, chưa ratify)"
+    },
+    {
+      "id": "ST-230",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-231",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-232",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-233",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-234",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-235",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-226",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)",
+      "note": "QUEUE@c3b7290: DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)"
+    },
+    {
+      "id": "ST-213",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-201",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-202",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-203",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-204",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-172",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-172a",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-172b",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-31",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-24",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-17",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-04",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-05",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-06",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-07",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-08",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-09",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-10",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-236",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-237",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-238",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-239",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-240",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-241",
+      "status": "READY",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: READY"
+    },
+    {
+      "id": "ST-242",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-243",
+      "status": "READY",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: READY"
+    },
+    {
+      "id": "ST-244",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-245",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-246",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-247",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-248",
+      "status": "READY",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: READY"
+    },
+    {
+      "id": "ST-249",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-250",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-251",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-252",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-253",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-254",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-255",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-257",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-258",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-259",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-260",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-261",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (design-only)",
+      "note": "QUEUE@c3b7290: DONE (design-only)"
+    },
+    {
+      "id": "ST-262",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (design-only)",
+      "note": "QUEUE@c3b7290: DONE (design-only)"
+    },
+    {
+      "id": "ST-263",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (chờ A0 chốt hợp đồng)",
+      "note": "QUEUE@c3b7290: DONE (chờ A0 chốt hợp đồng)"
+    },
+    {
+      "id": "ST-264",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (prototype, chưa nối runtime)",
+      "note": "QUEUE@c3b7290: DONE (prototype, chưa nối runtime)"
+    },
+    {
+      "id": "ST-265",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-266",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (draft, chờ A0 chốt)",
+      "note": "QUEUE@c3b7290: DONE (draft, chờ A0 chốt)"
+    },
+    {
+      "id": "ST-267",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-268",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-269",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-270",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-271",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-272",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-273",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-274",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-275",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-276",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "DONE (subset, chưa bật default)",
+      "note": "QUEUE@c3b7290: DONE (subset, chưa bật default)"
+    },
+    {
+      "id": "ST-277",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-278",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-279",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-280",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-281",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-282",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-283",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-284",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-285",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-286",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-287",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-288",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-289",
+      "status": "DONE",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-290",
+      "status": "DONE",
+      "commits": [
+        "3627f3bc",
+        "a48d5b8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-291",
+      "status": "DONE",
+      "commits": [
+        "269ff71",
+        "8cc3588"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-292",
+      "status": "DONE",
+      "commits": [
+        "eca4e82",
+        "e47b3ca"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-293",
+      "status": "DONE",
+      "commits": [
+        "82064e9",
+        "6d6bfe9"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-294",
+      "status": "DONE",
+      "commits": [
+        "39cc81cc",
+        "e35dcf6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-295",
+      "status": "DONE",
+      "commits": [
+        "ba4023f",
+        "cd76da5"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296",
+      "status": "DONE",
+      "commits": [
+        "8696edc",
+        "c2accdf"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296d-tools",
+      "status": "DONE",
+      "commits": [
+        "b36f8a5",
+        "4b2484f"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296a",
+      "status": "DONE",
+      "commits": [
+        "53990c0",
+        "e04d051"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296b",
+      "status": "DONE",
+      "commits": [
+        "067e1a5",
+        "1b27cb8"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296c",
+      "status": "DONE",
+      "commits": [
+        "ab8d393",
+        "044b289"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-296d",
+      "status": "DONE",
+      "commits": [
+        "a1730c5",
+        "90844bc"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: DONE"
+    },
+    {
+      "id": "ST-297",
+      "status": "DONE",
+      "commits": [
+        "f4cb136"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE f4cb136: gate 3660/4; Windows 3x full 3611/0/3; #149 đóng"
+    },
+    {
+      "id": "ST-298",
+      "status": "DONE",
+      "commits": [
+        "4ec8f96",
+        "3daff62"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE: v0.4.5 tag @3daff62; soak 4h Windows 985 vòng/0 fail; Tier 1"
+    },
+    {
+      "id": "ST-299a",
+      "status": "DONE",
+      "commits": [
+        "5cc1903",
+        "060a744"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE 5cc1903/060a744: WasiHost wasm32-wasip1; wasm 26/26"
+    },
+    {
+      "id": "ST-299b",
+      "status": "DONE",
+      "commits": [
+        "3b8049c",
+        "aab5ffa"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE 3b8049c/aab5ffa: vis-loader đa tệp; native 29/29, wasm 28/28"
+    },
+    {
+      "id": "ST-300",
+      "status": "DONE",
+      "commits": [
+        "3581c9a",
+        "8286caf",
+        "b3a9742",
+        "84e8eb6"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE: vis-wasm-sem 388/390 eligible = 99,5%; 2 stack-overflow interp (#193)"
+    },
+    {
+      "id": "ST-300b",
+      "status": "DONE",
+      "commits": [
+        "5675a7f",
+        "770fdf7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE 770fdf7: tách vis-host-native/vis-pkg; main.rs 225 dòng"
+    },
+    {
+      "id": "ST-300m1",
+      "status": "DONE",
+      "commits": [
+        "24ee56e",
+        "2cbbed0",
+        "d6aa839",
+        "c3b7290"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "queue": "READY",
+      "note": "DONE c3b7290 (merge): Darwin errno, #137 đóng; gate 3672/4; mps quick PASS; release arm64 PASS"
+    },
+    {
+      "id": "ST-300m2",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: CHƯA chạy trên mps rảnh — không có kết quả đo; chờ bin/vis-lock"
+    },
+    {
+      "id": "ST-300m3",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: CHƯA chạy 3x full + soak 4h trên mps — không tuyên bố Tier 1 macOS"
+    },
+    {
+      "id": "ST-301",
+      "status": "DONE",
+      "commits": [
+        "3e8c2cc",
+        "2bc6be7"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE 2bc6be7: lambda annot + T?? + #192/#155; fuzz 1h 0 vi phạm"
+    },
+    {
+      "id": "ST-302",
+      "status": "REVIEW",
+      "commits": [
+        "d444c9c",
+        "d3ea467"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "queue": "READY",
+      "note": "REVIEW d3ea467 (local, chưa merge): async impl/cmd #13 + derives Json #8; gate 3676/4; diff 100k lech=0"
+    },
+    {
+      "id": "ST-303",
+      "status": "DONE",
+      "commits": [
+        "728a5bc",
+        "a114e38"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "DONE a114e38: vis new/doc/repl; gate 3671/4"
+    },
+    {
+      "id": "ST-304",
+      "status": "REVIEW",
+      "commits": [
+        "32b921d",
+        "6e0675a"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "queue": "READY",
+      "note": "REVIEW 6e0675a (local, chưa merge): vish-edit; gate 3679/4; 8/8 test; warm 50 us"
+    },
+    {
+      "id": "ST-304b",
+      "status": "REVIEW",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "BLOCKED",
+      "note": "REVIEW: đang chạy; chưa có commit/kết quả trong repo"
+    },
+    {
+      "id": "ST-305",
+      "status": "REVIEW",
+      "commits": [
+        "b64e925",
+        "fa1a70b"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "queue": "BLOCKED",
+      "note": "REVIEW fa1a70b (local): LSP hover generic + completion std.* + VS Code; gate 3674/4; release v0.5.0 chờ"
+    },
+    {
+      "id": "ST-306",
+      "status": "REVIEW",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "queue": "BLOCKED",
+      "note": "REVIEW: đang chạy; chưa có commit/kết quả trong repo"
+    },
+    {
+      "id": "ST-307",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: BLOCKED"
+    },
+    {
+      "id": "ST-308",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: BLOCKED"
+    },
+    {
+      "id": "ST-309",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "QUEUE@c3b7290: BLOCKED"
+    }
+  ],
+  "gates": {
+    "fast": "PASS",
+    "full": "—",
+    "nightly": "—"
+  },
+  "sim": {
+    "seeds": 0,
+    "failures": 0,
+    "diff_seeds": [
+      20261115
+    ],
+    "note": "ST-302 (nhánh): diff 100k seed 20261115 lech=0 (84,6 s); R36 chưa chạy lại toàn ma trận"
+  },
+  "coverage": {
+    "tokens": 0,
+    "fixtures": 525,
+    "note": "test/sem 525 (475 .vis + 50 .vish); WASI kế thừa R35 388/390 eligible = 99,5%"
+  },
+  "mutants": {
+    "measured": false,
+    "killed": null,
+    "alive": null
+  },
+  "perf": {
+    "head_do": "c3b7290751aaa9ab131eb89ba8829d4f78078e47",
+    "baseline": "Giai đoạn 3 v0.5.0 — R36 QA prep, chưa tag",
+    "host": "ps (Linux; rustc 1.93.1)",
+    "linux_gate": "PASS @c3b7290: 3672/4 (m1); nhánh: ST-302 3676/4, ST-304 3679/4, ST-305 3674/4",
+    "release_linux": "chưa chạy release v0.5.0",
+    "linux_soak": "chưa chạy QA R36 (xem JOURNAL/v050-qa-matrix.md)",
+    "windows_full": "chưa chạy QA R36",
+    "windows_soak": "chưa chạy QA R36",
+    "macos": "m1 quick PASS trên mps + release aarch64-apple-darwin PASS; m2/m3 BLOCKED, chưa có kết quả",
+    "wasi": "kế thừa R35: 388/390 eligible = 99,5%; chưa chạy lại R36",
+    "tags": "v0.4.0 @c2accdf; v0.4.1 @90844bc; v0.4.5 @3daff62; v0.5.0 chưa tag",
+    "note": "Số QA 3-OS/soak R36 chỉ điền sau khi chạy đủ ma trận JOURNAL/v050-qa-matrix.md; không placeholder trong JSON"
+  },
+  "blocked": [
+    {
+      "id": "ST-300m2",
+      "question": "Chưa chạy trên mps rảnh (không có kết quả #147/#152); chờ bin/vis-lock"
+    },
+    {
+      "id": "ST-300m3",
+      "question": "Chưa chạy 3x vis-gate-macos --full + soak 4h; chưa công bố macOS Tier 1"
+    },
+    {
+      "id": "ST-302",
+      "question": "d3ea467 local chưa merge; Windows/macOS quick chưa chạy"
+    },
+    {
+      "id": "ST-304",
+      "question": "6e0675a local chưa merge; Windows/macOS chưa chạy"
+    },
+    {
+      "id": "ST-304b",
+      "question": "Đang chạy; chưa có commit để nghiệm thu"
+    },
+    {
+      "id": "ST-305",
+      "question": "fa1a70b local; còn release v0.5.0 + QA 3-OS + R36"
+    },
+    {
+      "id": "ST-306",
+      "question": "Đang chạy; chưa có commit để nghiệm thu"
+    },
+    {
+      "id": "ST-307",
+      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
+    },
+    {
+      "id": "ST-308",
+      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
+    },
+    {
+      "id": "ST-309",
+      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
+    }
+  ]
+}
