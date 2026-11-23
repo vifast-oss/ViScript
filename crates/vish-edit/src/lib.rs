@@ -11,14 +11,18 @@
 
 #![forbid(unsafe_code)]
 
+pub mod completion;
 pub mod editor;
 pub mod history;
+pub mod job;
 pub mod key;
 pub mod render;
 pub mod run;
 pub mod term;
 
+pub use completion::{complete, Candidate, CandidateKind, CompletionContext};
 pub use editor::{Action, Editor};
 pub use history::History;
+pub use job::{parse_command, JobCommand, JobControl, JobInfo, JobState};
 pub use key::{parse_keys, read_key, Key};
 pub use run::{read_line, Outcome};
