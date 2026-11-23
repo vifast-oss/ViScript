@@ -4014,6 +4014,19 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
    - **`ST-311d`** (W4): gom 6 tệp phẳng `vis-interp/src/builtin_*.rs` vào `builtin/`; chia 10 tệp sản phẩm > 1.150 LOC (`tyck/mod.rs`, `codegen/than.rs`, `lex/mod.rs`, `vistest.rs`, `sqlite/mod.rs`, `hir.rs`, `run_cmd.rs`, `parse/mod.rs`, `http_client/mod.rs`, `lower/trait_impl.rs`) về **≤ 1.150 LOC**; thử nghiệm `-zstack-size` WASI cho `#193` (không chặn).
 4. **Chốt Pha C (`ST-309`)**: sau khi `ST-311a..ST-311d` xong và `#194`/`#195` đóng, bump **`0.6.0`** chốt commit `H`, chạy lại đủ ma trận Phase C trên `H` (Linux fresh + Windows/macOS 3× full + soak 4h + soak Linux 24h + fuzz parser 8h + verifier 100M + watchdog 2h + diff 5×100k = 0 + WASI), xuất `R37-viscript.{md,json,json.license}` (`check_report.py --all` PASS) rồi trình A0 tag **`v0.6.0`** & **`v1.0.0-rc1`**.
 
+### VD-287 · Quy trình Điều độ Công việc theo Khung giờ DeepSeek (Cao điểm = Chạy nặng 0-LLM · Thấp điểm = Phát triển) — A0, 2026-11-23
+
+> **Kích hoạt**: Chỉ đạo trực tiếp của người dùng về tối ưu hoá chi phí token DeepSeek API và thông lượng máy 24/7; cập nhật thành luật thường trực tại `AGENTS.md` §5 và `agent/ACTIVE.md` §5.
+
+1. **Phân khung giờ chuẩn (UTC là nguồn sự thật; đối chiếu DeepSeek API Docs)**:
+   - **Giờ Cao điểm (giá 2× — 7 giờ/ngày T2–T6, trừ ngày lễ TQ)**: **`01:00–04:00 UTC`** (`10:00–13:00 JST` / `08:00–11:00 ICT`) và **`06:00–10:00 UTC`** (`15:00–19:00 JST` / `13:00–17:00 ICT`).
+   - **Giờ Thấp điểm (giá 0,5× — 17 giờ/ngày T2–T6 + toàn bộ T7/CN & lễ TQ = ~79% tuần)**: **`04:00–06:00 UTC`** (`13:00–15:00 JST` / `11:00–13:00 ICT`), **`10:00–01:00 UTC`** (`19:00–10:00 JST` / `17:00–08:00 ICT`), và cuối tuần liên tục **T6 `10:00 UTC` → T2 `01:00 UTC`** (63 giờ).
+2. **Luật phân tải bắt buộc**:
+   - **Cao điểm = Chỉ chạy tải nặng tự trị 0-LLM** (`vis-gate-macos/windows --full` ×3, soak 4h `psvn`/`mps`, soak 24h nền `ps`, fuzz parser 3h–4h, VM watchdog 2h `fuzz_mutate`, verifier 100M, `vis-diff` 5×100k). Kích hoạt trước phút `:55` (`00:55`/`05:55 UTC`) qua `nohup`/`tmux`, ghi log ngoài repo kèm `sha256sum`; **cấm** phát triển tính năng mới và **cấm** vòng lặp LLM polling trong giờ cao điểm.
+   - **Thấp điểm = Phát triển tính năng, refactor kiến trúc, sửa lỗi, code review & xuất báo cáo `R<n>`** (áp dụng ngay cho `ST-311b`, `ST-311d` và các giai đoạn sau).
+3. **Kỷ luật tối ưu Prompt Cache & Tầng mô hình**: giữ prefix ngắn/ổn định (`AGENTS.md` + `agent/ACTIVE.md`; không nạp toàn văn `DECISIONS.md`/`QUEUE.md`); ưu tiên `deepseek-flash` cho tác vụ cơ học (chia tệp, `fmt`/clippy, tổng hợp bảng) và `deepseek-v4-pro` cho thiết kế/bảo mật/VM/typechecker.
+
+
 
 
 

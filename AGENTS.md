@@ -43,3 +43,30 @@ QD thắng tài liệu thiết kế.
 `bin/vis-linux` (đồng bộ + chạy trên host Linux) và `bin/vis-remote` (chạy một lệnh trên
 `mps`/`psvn`; máy chủ đạo **`ps`** chạy tại chỗ — ST-259) vẫn dùng được; danh sách đồng bộ là
 `SYNC_DIRS`/`SYNC_FILES` ở đầu `bin/vis-linux`.
+
+## 5. Điều độ Công việc theo Khung giờ DeepSeek (`VD-287`)
+
+Mục tiêu: **tối ưu 50% chi phí token** và giữ thông lượng máy 24/7 bằng cách tách tuyệt đối
+**chạy nặng tự trị (0 token LLM)** vào giờ cao điểm và **phát triển / refactor** vào giờ thấp điểm.
+
+### Khung giờ chuẩn (theo lịch chính thức DeepSeek API — nguồn gốc là **UTC**)
+
+| Chế độ | Khung giờ **UTC** | Quy đổi **JST (UTC+9)** | Quy đổi **ICT / VN (UTC+7)** | Giá token | Loại việc bắt buộc |
+|---|---|---|---|---|---|
+| **Cao điểm 1** *(3h, T2–T6)* | `01:00–04:00` | `10:00–13:00` | `08:00–11:00` | **2×** | **Chỉ chạy nặng 0-LLM**: `vis-gate-macos`/`windows --full` ×3, VM watchdog 2h (`fuzz_mutate`), fuzz parser 3h, verifier 100M, `vis-diff` 5×100k |
+| **Thấp điểm trưa** *(2h, T2–T6)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | **0,5×** | Đọc kết quả log Khung 1, vá lỗi ngắn / refactor gọn, chuẩn bị commit sạch & xếp job 4h cho Cao điểm 2 |
+| **Cao điểm 2** *(4h, T2–T6)* | `06:00–10:00` | `15:00–19:00` | `13:00–17:00` | **2×** | **Chỉ chạy nặng 0-LLM**: soak **4h** `psvn` (Windows) & `mps` (macOS), fuzz parser **4h** (`ps`), duy trì soak **24h** nền trên `ps` |
+| **Thấp điểm chính** *(15h, T2–T6)* | `10:00–01:00` | `19:00–10:00` | `17:00–08:00` | **0,5×** | **Phát triển tính năng, refactor kiến trúc đa luồng (`W1..W4`)**, viết test mới, code review, tổng hợp báo cáo `R<n>` |
+| **Cuối tuần & lễ TQ** *(63h liên tục)* | T6 `10:00` → T2 `01:00` | T6 `19:00` → T2 `10:00` | T6 `17:00` → T2 `08:00` | **0,5×** | Toàn thời gian thấp điểm — ưu tiên phát triển tính năng & refactor lớn, kết hợp soak 24h chạy nền song song |
+
+*(Lưu ý: ngày lễ công cộng Trung Quốc cả ngày là thấp điểm theo quy định DeepSeek API; mốc giờ trên tính theo UTC, không đổi theo mùa.)*
+
+### Quy tắc vận hành bắt buộc cho Agent 2
+
+1. **T−5 phút trước giờ Cao điểm** (`00:55` / `05:55 UTC`): hoàn tất chỉnh sửa hiện tại, commit gọn (không bỏ dở biên dịch, **không** kill tiến trình nền đang chạy), kích hoạt **một** chuỗi lệnh nặng tự trị (`nohup`/`tmux`, ghi log ra ngoài repo `/home/ps/vislogs/` kèm `sha256sum` ở cuối), rồi **dừng gọi LLM** cho đến đầu khung thấp điểm kế tiếp.
+2. **Trong giờ Cao điểm**: **cấm** mở phát triển tính năng/refactor mới bằng LLM và **cấm** vòng lặp LLM polling trạng thái tiến trình nền (`sleep` + gọi lại đốt token). Nếu đang dở tác vụ code lúc chạm giờ cao điểm ⇒ commit checkpoint sạch vào nhánh làm việc, ghi ngắn vào `agent/JOURNAL/`, chuyển máy sang chạy tải nặng không LLM.
+3. **Trong giờ Thấp điểm**: tập trung tối đa cho thiết kế, viết mã, sửa lỗi, refactor và tổng hợp báo cáo. Khi đọc log từ đợt chạy nặng, chỉ đọc dòng kết luận cuối + `sha256` để tiết kiệm ngữ cảnh.
+4. **Tối ưu Prompt Cache & Chọn tầng mô hình**:
+   - Chỉ nạp `agent/ACTIVE.md` + phần đuôi liên quan của `agent/QUEUE.md`/`agent/DECISIONS.md` (**không** đọc toàn tệp > 350 KB mỗi lượt) để giữ prefix ổn định và đạt tỷ lệ cache-hit tối đa.
+   - Tác vụ cơ học (chia tệp, sửa import, `fmt`/clippy, gom bảng báo cáo, kiểm R1..R9) ưu tiên mô hình nhanh/rẻ (`deepseek-flash`); chỉ dùng mô hình suy luận sâu (`deepseek-v4-pro`) cho bài toán kiến trúc, hệ kiểu, VM/async và bảo mật (`openat2`/`statat`).
+

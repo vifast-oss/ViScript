@@ -31,3 +31,13 @@ Sau khi `ST-311a..ST-311d` merge xanh và `#194`/`#195` đóng:
 - **KHÔNG** kill tiến trình nền đang sống (`ps`/`psvn`/`mps`); **KHÔNG** `git reset --hard` worktree bận; dùng `bin/vis-lock` khi đo độc quyền.
 - **CPU & Đĩa**: `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`, đĩa trống > 10 GB (`bin/vis-gc-targets`).
 - **Luật cứng**: **0 `unsafe`** (R2), R1 ≤ 1.500 (mục tiêu mềm ≤ 1.150), R5 (`SO-NO` §8 == §4), R7 (không `.log`/`.txt` > 50 KB trong `agent/JOURNAL/`), R8/R9, không `.github/workflows/`.
+
+## 5. Lịch Tác chiến theo Khung giờ DeepSeek (`VD-287`, chuẩn `AGENTS.md` §5)
+
+| Khung giờ | UTC | JST (UTC+9) | ICT (UTC+7) | Tác chiến ưu tiên cho đợt hiện tại (`ST-311b/d` → `v0.6.0`) |
+|---|---|---|---|---|
+| **Cao điểm 1** *(3h, 2×)* | `01:00–04:00` | `10:00–13:00` | `08:00–11:00` | **0-LLM**: chạy `vis-gate-windows/macos --full` ×3 (xác nhận `ST-311a..d` / `H`), VM watchdog **2h** (`VBC_FUZZ_PHUT=120`), fuzz parser **3h**, `vis-diff` 5×100k, verifier 100M |
+| **Thấp điểm trưa** *(2h, 0,5×)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | Thu log + sha256 Khung 1, vá lỗi ngắn/chốt PR `ST-311b`/`ST-311d`, chuẩn bị & bấm nút chạy soak 4h cho Khung 2 lúc `05:55 UTC` |
+| **Cao điểm 2** *(4h, 2×)* | `06:00–10:00` | `15:00–19:00` | `13:00–17:00` | **0-LLM**: **soak 4h** trên `psvn` (Windows) & `mps` (macOS), **fuzz parser 4h** trên `ps`, duy trì **soak 24h** nền trên `ps` |
+| **Thấp điểm chính** *(15h, 0,5×)* & **Cuối tuần** | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | **Phát triển & Refactor**: triển khai **`ST-311b`** (`#194` `statat`/`openat`/`readlinkat` + test đua 100k) & **`ST-311d`** (chia 10 tệp > 1.150 LOC + `builtin/` + thử `#193`), bump `0.6.0`, viết `R37` md/json |
+
