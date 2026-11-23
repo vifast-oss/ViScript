@@ -1,8 +1,8 @@
 {
   "project": "viscript",
   "round": 36,
-  "head": "c3b7290751aaa9ab131eb89ba8829d4f78078e47",
-  "build_id": "gd3-v050-r36-c3b7290-20261123",
+  "head": "e9c62cb11eae2725a024a833ec9aa3de257cb248",
+  "build_id": "gd3-v050-r36-e9c62cb-20261123",
   "tasks": [
     {
       "id": "ST-01",
@@ -11,7 +11,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-02a",
@@ -20,7 +20,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-02b",
@@ -29,7 +29,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-03",
@@ -38,7 +38,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-11",
@@ -47,7 +47,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-12",
@@ -56,7 +56,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-12b",
@@ -65,7 +65,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-13",
@@ -74,7 +74,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-14",
@@ -83,7 +83,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-15b",
@@ -92,7 +92,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-15",
@@ -101,7 +101,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-16",
@@ -110,7 +110,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-18",
@@ -119,7 +119,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-19",
@@ -128,7 +128,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-20b",
@@ -137,7 +137,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-20",
@@ -146,7 +146,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-21",
@@ -155,7 +155,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-22",
@@ -164,7 +164,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-23",
@@ -173,7 +173,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-25",
@@ -182,7 +182,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-26",
@@ -191,7 +191,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-27",
@@ -200,7 +200,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-28",
@@ -209,7 +209,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-29",
@@ -218,7 +218,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-30",
@@ -227,7 +227,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-30b",
@@ -236,7 +236,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-32",
@@ -245,7 +245,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-33",
@@ -254,7 +254,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-34",
@@ -263,7 +263,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-35",
@@ -272,7 +272,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-36",
@@ -281,7 +281,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-37",
@@ -290,7 +290,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-38",
@@ -299,7 +299,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-39",
@@ -308,7 +308,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-40a",
@@ -317,7 +317,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-40b",
@@ -326,7 +326,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-41",
@@ -335,7 +335,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-42",
@@ -344,7 +344,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-43",
@@ -353,7 +353,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-44",
@@ -362,7 +362,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-45",
@@ -371,7 +371,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-46",
@@ -380,7 +380,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-47",
@@ -389,7 +389,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-48",
@@ -398,7 +398,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-49",
@@ -407,7 +407,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-50",
@@ -416,7 +416,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-51",
@@ -425,7 +425,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-52",
@@ -434,7 +434,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-53",
@@ -443,7 +443,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-54",
@@ -452,7 +452,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-55",
@@ -461,7 +461,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-56",
@@ -470,7 +470,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-56b",
@@ -479,7 +479,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-57",
@@ -488,7 +488,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-58",
@@ -497,7 +497,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-59",
@@ -506,7 +506,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-60",
@@ -515,7 +515,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-60b",
@@ -524,7 +524,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-60c",
@@ -533,7 +533,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-61",
@@ -542,7 +542,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-62",
@@ -551,7 +551,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-63",
@@ -560,7 +560,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-64",
@@ -569,7 +569,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-65",
@@ -578,7 +578,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-66",
@@ -587,7 +587,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-67",
@@ -596,7 +596,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-68",
@@ -605,7 +605,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-69",
@@ -614,7 +614,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-70",
@@ -623,7 +623,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-71",
@@ -632,7 +632,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-72",
@@ -641,7 +641,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-72b",
@@ -650,7 +650,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-73",
@@ -659,7 +659,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-74",
@@ -668,7 +668,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-75",
@@ -677,7 +677,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-76",
@@ -686,7 +686,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-77",
@@ -695,7 +695,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-78",
@@ -704,7 +704,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-79",
@@ -713,7 +713,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-80",
@@ -722,7 +722,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-81",
@@ -731,7 +731,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-82",
@@ -740,7 +740,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-83",
@@ -749,7 +749,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-84",
@@ -758,7 +758,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-85",
@@ -767,7 +767,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-85b",
@@ -776,7 +776,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-86",
@@ -785,7 +785,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-87",
@@ -794,7 +794,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-87b",
@@ -803,7 +803,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-88",
@@ -812,7 +812,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-89",
@@ -821,7 +821,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-90",
@@ -830,7 +830,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-91",
@@ -839,7 +839,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-92",
@@ -848,7 +848,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-93",
@@ -857,7 +857,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-93b",
@@ -866,7 +866,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-94",
@@ -875,7 +875,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-95",
@@ -884,7 +884,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-96",
@@ -893,7 +893,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-97",
@@ -902,7 +902,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-98",
@@ -911,7 +911,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-99",
@@ -920,7 +920,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-100",
@@ -929,7 +929,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-101",
@@ -938,7 +938,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-101b",
@@ -947,7 +947,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-102",
@@ -956,7 +956,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-103",
@@ -965,7 +965,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-104",
@@ -974,7 +974,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-105",
@@ -983,7 +983,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-106",
@@ -992,7 +992,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-107",
@@ -1001,7 +1001,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-108",
@@ -1010,7 +1010,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-109",
@@ -1019,7 +1019,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-110",
@@ -1028,7 +1028,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-111",
@@ -1037,7 +1037,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-112",
@@ -1046,7 +1046,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-113",
@@ -1055,7 +1055,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-114a",
@@ -1064,7 +1064,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-114b",
@@ -1073,7 +1073,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-115",
@@ -1082,7 +1082,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-116",
@@ -1091,7 +1091,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-116b",
@@ -1100,7 +1100,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-117",
@@ -1109,7 +1109,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-118",
@@ -1118,7 +1118,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-119",
@@ -1127,7 +1127,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-120",
@@ -1136,7 +1136,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-121",
@@ -1145,7 +1145,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-122",
@@ -1154,7 +1154,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-123",
@@ -1163,7 +1163,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-124",
@@ -1172,7 +1172,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-125",
@@ -1181,7 +1181,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-126",
@@ -1190,7 +1190,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-127",
@@ -1199,7 +1199,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-128",
@@ -1208,7 +1208,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-129",
@@ -1217,7 +1217,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-130",
@@ -1226,7 +1226,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-131",
@@ -1235,7 +1235,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-132",
@@ -1244,7 +1244,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-132b",
@@ -1253,7 +1253,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-133",
@@ -1262,7 +1262,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-134",
@@ -1271,7 +1271,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-135",
@@ -1280,7 +1280,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-136",
@@ -1289,7 +1289,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-137",
@@ -1298,7 +1298,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-138",
@@ -1307,7 +1307,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-139",
@@ -1316,7 +1316,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-138b",
@@ -1325,7 +1325,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-140",
@@ -1334,7 +1334,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-141",
@@ -1343,7 +1343,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-142",
@@ -1352,7 +1352,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-143",
@@ -1361,7 +1361,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-144",
@@ -1370,7 +1370,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-145",
@@ -1379,7 +1379,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-146",
@@ -1388,7 +1388,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-147",
@@ -1397,7 +1397,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-148",
@@ -1406,7 +1406,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-149",
@@ -1415,7 +1415,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-150",
@@ -1424,7 +1424,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-151",
@@ -1433,7 +1433,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-152",
@@ -1442,7 +1442,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-153",
@@ -1451,7 +1451,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-154",
@@ -1460,7 +1460,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-155",
@@ -1469,7 +1469,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-156",
@@ -1478,7 +1478,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-157",
@@ -1487,7 +1487,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-158",
@@ -1496,7 +1496,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-159",
@@ -1505,7 +1505,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-160",
@@ -1514,7 +1514,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-161",
@@ -1523,7 +1523,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-162",
@@ -1532,7 +1532,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-163",
@@ -1541,7 +1541,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-164",
@@ -1550,7 +1550,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-165",
@@ -1559,7 +1559,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-166",
@@ -1568,7 +1568,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-167",
@@ -1577,7 +1577,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-173",
@@ -1586,7 +1586,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-174",
@@ -1595,7 +1595,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-175",
@@ -1604,7 +1604,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-176",
@@ -1613,7 +1613,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-168",
@@ -1622,7 +1622,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-169",
@@ -1631,7 +1631,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-170",
@@ -1640,7 +1640,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-171",
@@ -1649,7 +1649,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-178",
@@ -1658,7 +1658,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-179",
@@ -1667,7 +1667,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-180",
@@ -1676,7 +1676,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-181",
@@ -1685,7 +1685,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-182",
@@ -1694,7 +1694,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-183",
@@ -1703,7 +1703,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-184",
@@ -1712,7 +1712,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-185",
@@ -1721,7 +1721,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-186",
@@ -1730,7 +1730,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-187",
@@ -1739,7 +1739,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-188",
@@ -1748,7 +1748,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-189",
@@ -1757,7 +1757,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-190",
@@ -1766,7 +1766,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-191",
@@ -1775,7 +1775,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-192",
@@ -1784,7 +1784,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-193",
@@ -1793,7 +1793,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-194",
@@ -1802,7 +1802,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-195",
@@ -1811,7 +1811,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-196",
@@ -1820,7 +1820,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-197",
@@ -1829,7 +1829,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-198",
@@ -1838,7 +1838,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-199",
@@ -1847,7 +1847,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-200",
@@ -1856,7 +1856,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-215",
@@ -1866,7 +1866,7 @@
         "fast"
       ],
       "queue": "DONE (gộp vào ST-203 của dòng kia)",
-      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+      "note": "QUEUE@e9c62cb: DONE (gộp vào ST-203 của dòng kia)"
     },
     {
       "id": "ST-217",
@@ -1875,7 +1875,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-202b",
@@ -1885,7 +1885,7 @@
         "fast"
       ],
       "queue": "DONE (gộp vào ST-203 của dòng kia)",
-      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+      "note": "QUEUE@e9c62cb: DONE (gộp vào ST-203 của dòng kia)"
     },
     {
       "id": "ST-218",
@@ -1895,7 +1895,7 @@
         "fast"
       ],
       "queue": "DONE (gộp vào ST-203 của dòng kia)",
-      "note": "QUEUE@c3b7290: DONE (gộp vào ST-203 của dòng kia)"
+      "note": "QUEUE@e9c62cb: DONE (gộp vào ST-203 của dòng kia)"
     },
     {
       "id": "ST-216",
@@ -1904,7 +1904,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-205",
@@ -1914,7 +1914,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)",
-      "note": "QUEUE@c3b7290: DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-222 proxy A0-uỷ quyền; R4a..R4c cả hai đường; `vd_205.rs` 10/10; `vd_223.rs` 5/5)"
     },
     {
       "id": "ST-206",
@@ -1924,7 +1924,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)",
-      "note": "QUEUE@c3b7290: DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-222 điểm 5 → **VD-231**: `AnyError` = alias bản ghi `Error` (RecId(0)); `?` giữ nguyên cơ chế; không có `dyn Error` machinery)"
     },
     {
       "id": "ST-207",
@@ -1934,7 +1934,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)",
-      "note": "QUEUE@c3b7290: DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-222 → **VD-231**: mọi std fns trả `Result[T, Error]`; bản ghi dựng sẵn `Error`; `print(e)` = `{message}`; ca chuẩn xanh cả hai đường)"
     },
     {
       "id": "ST-208",
@@ -1943,7 +1943,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-209",
@@ -1953,7 +1953,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)",
-      "note": "QUEUE@c3b7290: DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-224/uỷ quyền proxy: `--b` hợp lệ mọi hàm theo docs §5.1 — VD-223(i) huỷ, **VS0209**; VD-223(ii) giữ ⇒ **VS0211** + docs спецмодуль heading-pin; merge `4dd7201`, `65982e6`, `f3ea321`)"
     },
     {
       "id": "ST-214",
@@ -1963,7 +1963,7 @@
         "fast"
       ],
       "queue": "PS-DONE; mac BLOCK",
-      "note": "QUEUE@c3b7290: PS-DONE; mac BLOCK"
+      "note": "QUEUE@e9c62cb: PS-DONE; mac BLOCK"
     },
     {
       "id": "ST-219",
@@ -1972,7 +1972,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-220",
@@ -1981,7 +1981,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-210",
@@ -1991,7 +1991,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225",
-      "note": "QUEUE@c3b7290: DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225"
+      "note": "QUEUE@e9c62cb: DONE** (VD-225, A0-proxy uỷ quyền: pha 1 đóng trên **ps** tại HEAD `3bcfede`; cổng clone sạch ps PASS 10/10; 16/16 dấu `[SỬA]` VD-194 kiểm thực sự (vs3-qd-1..6/vs-ergo/CHEAT-SHEET/st169 — checklist trong `JOURNAL/st178-bao-cao.md`, mọi mục đều có tệp:dòng khớp); R30 giữ khung cũ + addendum ở `BAO-CAO-A0-2026-11-19-0900.md` (bảng old→new→mã VD-208/212/213/222/216/218/223/224); **mac: không đo được**, ghi waiver (VD-225 điểm 3); **A0 ratify VD-221..225"
     },
     {
       "id": "ST-211",
@@ -2001,7 +2001,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-225, proxy A0-uỷ quyền)",
-      "note": "QUEUE@c3b7290: DONE** (VD-225, proxy A0-uỷ quyền)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-225, proxy A0-uỷ quyền)"
     },
     {
       "id": "ST-212",
@@ -2010,7 +2010,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: READY"
+      "note": "QUEUE@e9c62cb: READY"
     },
     {
       "id": "ST-228",
@@ -2020,7 +2020,7 @@
         "fast"
       ],
       "queue": "DONE (proxy VD-225, chưa ratify)",
-      "note": "QUEUE@c3b7290: DONE (proxy VD-225, chưa ratify)"
+      "note": "QUEUE@e9c62cb: DONE (proxy VD-225, chưa ratify)"
     },
     {
       "id": "ST-229",
@@ -2030,7 +2030,7 @@
         "fast"
       ],
       "queue": "DONE (proxy VD-225, chưa ratify)",
-      "note": "QUEUE@c3b7290: DONE (proxy VD-225, chưa ratify)"
+      "note": "QUEUE@e9c62cb: DONE (proxy VD-225, chưa ratify)"
     },
     {
       "id": "ST-230",
@@ -2039,7 +2039,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-231",
@@ -2048,7 +2048,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-232",
@@ -2057,7 +2057,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-233",
@@ -2066,7 +2066,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-234",
@@ -2075,7 +2075,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-235",
@@ -2084,7 +2084,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-226",
@@ -2094,7 +2094,7 @@
         "fast"
       ],
       "queue": "DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)",
-      "note": "QUEUE@c3b7290: DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)"
+      "note": "QUEUE@e9c62cb: DONE** (VD-225/VD-222 điểm 7 — merge `ba9173e`)"
     },
     {
       "id": "ST-213",
@@ -2103,7 +2103,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-201",
@@ -2112,7 +2112,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-202",
@@ -2121,7 +2121,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-203",
@@ -2130,7 +2130,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-204",
@@ -2139,7 +2139,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-172",
@@ -2148,7 +2148,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-172a",
@@ -2157,7 +2157,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-172b",
@@ -2166,7 +2166,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-31",
@@ -2175,7 +2175,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-24",
@@ -2184,7 +2184,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-17",
@@ -2193,7 +2193,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-04",
@@ -2202,7 +2202,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-05",
@@ -2211,7 +2211,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-06",
@@ -2220,7 +2220,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-07",
@@ -2229,7 +2229,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-08",
@@ -2238,7 +2238,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-09",
@@ -2247,7 +2247,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-10",
@@ -2256,7 +2256,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-236",
@@ -2265,7 +2265,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-237",
@@ -2274,7 +2274,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-238",
@@ -2283,7 +2283,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-239",
@@ -2292,7 +2292,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-240",
@@ -2301,7 +2301,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-241",
@@ -2310,7 +2310,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: READY"
+      "note": "QUEUE@e9c62cb: READY"
     },
     {
       "id": "ST-242",
@@ -2319,7 +2319,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-243",
@@ -2328,7 +2328,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: READY"
+      "note": "QUEUE@e9c62cb: READY"
     },
     {
       "id": "ST-244",
@@ -2337,7 +2337,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-245",
@@ -2346,7 +2346,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-246",
@@ -2355,7 +2355,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-247",
@@ -2364,7 +2364,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-248",
@@ -2373,7 +2373,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: READY"
+      "note": "QUEUE@e9c62cb: READY"
     },
     {
       "id": "ST-249",
@@ -2382,7 +2382,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-250",
@@ -2391,7 +2391,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-251",
@@ -2400,7 +2400,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-252",
@@ -2409,7 +2409,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-253",
@@ -2418,7 +2418,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-254",
@@ -2427,7 +2427,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-255",
@@ -2436,7 +2436,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-257",
@@ -2445,7 +2445,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-258",
@@ -2454,7 +2454,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-259",
@@ -2463,7 +2463,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-260",
@@ -2472,7 +2472,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-261",
@@ -2482,7 +2482,7 @@
         "fast"
       ],
       "queue": "DONE (design-only)",
-      "note": "QUEUE@c3b7290: DONE (design-only)"
+      "note": "QUEUE@e9c62cb: DONE (design-only)"
     },
     {
       "id": "ST-262",
@@ -2492,7 +2492,7 @@
         "fast"
       ],
       "queue": "DONE (design-only)",
-      "note": "QUEUE@c3b7290: DONE (design-only)"
+      "note": "QUEUE@e9c62cb: DONE (design-only)"
     },
     {
       "id": "ST-263",
@@ -2502,7 +2502,7 @@
         "fast"
       ],
       "queue": "DONE (chờ A0 chốt hợp đồng)",
-      "note": "QUEUE@c3b7290: DONE (chờ A0 chốt hợp đồng)"
+      "note": "QUEUE@e9c62cb: DONE (chờ A0 chốt hợp đồng)"
     },
     {
       "id": "ST-264",
@@ -2512,7 +2512,7 @@
         "fast"
       ],
       "queue": "DONE (prototype, chưa nối runtime)",
-      "note": "QUEUE@c3b7290: DONE (prototype, chưa nối runtime)"
+      "note": "QUEUE@e9c62cb: DONE (prototype, chưa nối runtime)"
     },
     {
       "id": "ST-265",
@@ -2521,7 +2521,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-266",
@@ -2531,7 +2531,7 @@
         "fast"
       ],
       "queue": "DONE (draft, chờ A0 chốt)",
-      "note": "QUEUE@c3b7290: DONE (draft, chờ A0 chốt)"
+      "note": "QUEUE@e9c62cb: DONE (draft, chờ A0 chốt)"
     },
     {
       "id": "ST-267",
@@ -2540,7 +2540,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-268",
@@ -2549,7 +2549,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-269",
@@ -2558,7 +2558,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-270",
@@ -2567,7 +2567,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-271",
@@ -2576,7 +2576,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-272",
@@ -2585,7 +2585,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-273",
@@ -2594,7 +2594,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-274",
@@ -2603,7 +2603,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-275",
@@ -2612,7 +2612,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-276",
@@ -2622,7 +2622,7 @@
         "fast"
       ],
       "queue": "DONE (subset, chưa bật default)",
-      "note": "QUEUE@c3b7290: DONE (subset, chưa bật default)"
+      "note": "QUEUE@e9c62cb: DONE (subset, chưa bật default)"
     },
     {
       "id": "ST-277",
@@ -2631,7 +2631,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-278",
@@ -2640,7 +2640,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-279",
@@ -2649,7 +2649,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-280",
@@ -2658,7 +2658,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-281",
@@ -2667,7 +2667,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-282",
@@ -2676,7 +2676,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-283",
@@ -2685,7 +2685,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-284",
@@ -2694,7 +2694,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-285",
@@ -2703,7 +2703,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-286",
@@ -2712,7 +2712,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-287",
@@ -2721,7 +2721,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-288",
@@ -2730,7 +2730,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-289",
@@ -2739,7 +2739,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-290",
@@ -2751,7 +2751,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-291",
@@ -2763,7 +2763,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-292",
@@ -2775,7 +2775,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-293",
@@ -2787,7 +2787,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-294",
@@ -2799,7 +2799,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-295",
@@ -2811,7 +2811,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296",
@@ -2823,7 +2823,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296d-tools",
@@ -2835,7 +2835,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296a",
@@ -2847,7 +2847,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296b",
@@ -2859,7 +2859,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296c",
@@ -2871,7 +2871,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-296d",
@@ -2883,7 +2883,7 @@
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: DONE"
+      "note": "QUEUE@e9c62cb: DONE"
     },
     {
       "id": "ST-297",
@@ -2970,26 +2970,32 @@
       "gates": [
         "fast"
       ],
-      "queue": "READY",
       "note": "DONE c3b7290 (merge): Darwin errno, #137 đóng; gate 3672/4; mps quick PASS; release arm64 PASS"
     },
     {
       "id": "ST-300m2",
-      "status": "BLOCKED",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "101a4ad",
+        "5741d23"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "BLOCKED: CHƯA chạy trên mps rảnh — không có kết quả đo; chờ bin/vis-lock"
+      "note": "DONE 101a4ad/5741d23: mps soak 10 vòng 379,7 s vs ps 517,1 s = 0,73x; A/B 24 cặp interp 1,0385 / VM 1,0626; #147/#152 đóng"
     },
     {
       "id": "ST-300m3",
       "status": "BLOCKED",
-      "commits": [],
+      "commits": [
+        "c1c125e",
+        "c4337ce"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "BLOCKED: CHƯA chạy 3x full + soak 4h trên mps — không tuyên bố Tier 1 macOS"
+      "queue": "READY",
+      "note": "ĐANG CHẠY trên mps: 3x vis-gate-macos --full + soak 4h + vis-wasm-sem; Tier 1 macOS CHƯA công bố — chặn tag v0.5.0"
     },
     {
       "id": "ST-301",
@@ -3005,16 +3011,17 @@
     },
     {
       "id": "ST-302",
-      "status": "REVIEW",
+      "status": "DONE",
       "commits": [
-        "d444c9c",
-        "d3ea467"
+        "d3ea467",
+        "b79ae3a",
+        "204af84",
+        "6bc4ac3"
       ],
       "gates": [
         "fast"
       ],
-      "queue": "READY",
-      "note": "REVIEW d3ea467 (local, chưa merge): async impl/cmd #13 + derives Json #8; gate 3676/4; diff 100k lech=0"
+      "note": "DONE d3ea467 + merge b79ae3a/6bc4ac3: async impl/cmd #13 + derives Json #8 + spawn method; gate 3689/4"
     },
     {
       "id": "ST-303",
@@ -3030,76 +3037,147 @@
     },
     {
       "id": "ST-304",
-      "status": "REVIEW",
+      "status": "DONE",
       "commits": [
-        "32b921d",
-        "6e0675a"
+        "6e0675a",
+        "8e73e81"
       ],
       "gates": [
         "fast"
       ],
-      "queue": "READY",
-      "note": "REVIEW 6e0675a (local, chưa merge): vish-edit; gate 3679/4; 8/8 test; warm 50 us"
+      "note": "DONE 6e0675a + merge 8e73e81: vish-edit raw mode da nền, CST, history; gate 3679/4"
     },
     {
       "id": "ST-304b",
-      "status": "REVIEW",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "426d636",
+        "1eb2768"
+      ],
       "gates": [
         "fast"
       ],
-      "queue": "BLOCKED",
-      "note": "REVIEW: đang chạy; chưa có commit/kết quả trong repo"
+      "note": "DONE 426d636 + merge 1eb2768: completion theo kiểu + POSIX job control; 17/17, gate 3688/4"
     },
     {
       "id": "ST-305",
       "status": "REVIEW",
       "commits": [
-        "b64e925",
-        "fa1a70b"
+        "fa1a70b",
+        "374b4e8",
+        "60d64e2",
+        "75e5a53",
+        "7b79769"
       ],
       "gates": [
         "fast"
       ],
-      "queue": "BLOCKED",
-      "note": "REVIEW fa1a70b (local): LSP hover generic + completion std.* + VS Code; gate 3674/4; release v0.5.0 chờ"
+      "queue": "READY",
+      "note": "REVIEW: code merged 374b4e8 + v0.5.0 prep 75e5a53; R36 final2 @e9c62cb: Linux gate 3754/4, release 3753/0/5 @c4337ce, Windows full 3701/0/4 @f9e7503; tag v0.5.0 chờ macOS m3"
     },
     {
       "id": "ST-306",
-      "status": "REVIEW",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "90b2964",
+        "6093aef"
+      ],
       "gates": [
         "fast"
       ],
-      "queue": "BLOCKED",
-      "note": "REVIEW: đang chạy; chưa có commit/kết quả trong repo"
+      "note": "DONE 90b2964 + merge 6093aef: VIS_PLUGIN_ABI_V1 + macros; parity interp-VM"
     },
     {
       "id": "ST-307",
-      "status": "BLOCKED",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "3d247c4",
+        "ab6beb7",
+        "b5aa40b"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: BLOCKED"
+      "note": "DONE 3d247c4 + merge ab6beb7/b5aa40b: plugin động WASI, 3 lớp ABI, sandbox cap; Windows test hardening"
     },
     {
       "id": "ST-308",
-      "status": "BLOCKED",
-      "commits": [],
+      "status": "DONE",
+      "commits": [
+        "79a6d52",
+        "a9eef01"
+      ],
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: BLOCKED"
+      "note": "DONE 79a6d52 + merge a9eef01: vish-term Terminal trait + AnsiPosix/WinConsole/ViTermFramed"
     },
     {
       "id": "ST-309",
       "status": "BLOCKED",
+      "commits": [
+        "5902887",
+        "51e937d",
+        "f9e7503"
+      ],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED 2/3 DONE: SPEC 51e937d/f9e7503 + security F1/F2 5902887; QA dài 623f3ba mới một phần (parser/decode/diff PASS, fuzz_mutate chưa xong — #195; nhánh plan/st309-qa, chưa merge); 1/3 cuối chờ ST-310f/v0.5.5; nợ #194"
+    },
+    {
+      "id": "ST-310a",
+      "status": "BLOCKED",
       "commits": [],
       "gates": [
         "fast"
       ],
-      "note": "QUEUE@c3b7290: BLOCKED"
+      "note": "BLOCKED: chờ tag v0.5.0; trích crates/vis-core, gỡ coupling vis-interp, đóng #112"
+    },
+    {
+      "id": "ST-310b",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: chờ ST-310a; đấu nối ViShell vish-term ← vish-edit ← vis-cli"
+    },
+    {
+      "id": "ST-310c",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: chờ ST-310a; tách vis-plugin-abi vs vis-plugin-host, thống nhất openat2, rà #194"
+    },
+    {
+      "id": "ST-310d",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: chờ ST-310a/310c; làm mỏng Cargo.toml vis-cli (7 dep thừa)"
+    },
+    {
+      "id": "ST-310e",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: chờ ST-310d; gom vis-cli/tests 27 → ≤ 12 binary + cổng chống phình"
+    },
+    {
+      "id": "ST-310f",
+      "status": "BLOCKED",
+      "commits": [],
+      "gates": [
+        "fast"
+      ],
+      "note": "BLOCKED: chờ ST-310b/310e; tổ chức thư mục, vệ sinh agent/CHANGELOG, tag v0.5.5"
     }
   ],
   "gates": {
@@ -3108,17 +3186,21 @@
     "nightly": "—"
   },
   "sim": {
-    "seeds": 0,
+    "seeds": 5,
     "failures": 0,
     "diff_seeds": [
-      20261115
+      20261221,
+      20261222,
+      20261223,
+      20261224,
+      20261225
     ],
-    "note": "ST-302 (nhánh): diff 100k seed 20261115 lech=0 (84,6 s); R36 chưa chạy lại toàn ma trận"
+    "note": "QA @c4337ce (plan/st309-qa 623f3ba): diff 100k x5 seed 20261221..25 lech=0 (500.000 chương trình); soak Linux @e9c62cb 10/10, 650 s, diff 100k x3 lech=0 (chưa có .md tổng kết)"
   },
   "coverage": {
     "tokens": 0,
     "fixtures": 525,
-    "note": "test/sem 525 (475 .vis + 50 .vish); WASI kế thừa R35 388/390 eligible = 99,5%"
+    "note": "test/sem 525 (475 .vis + 50 .vish); WASI local Node @c4337ce: vis-wasm-sem 388/390 eligible = 99,5%, vis-wasm-suite 28/28; 2 stack-overflow interp known gap (#193)"
   },
   "mutants": {
     "measured": false,
@@ -3126,59 +3208,55 @@
     "alive": null
   },
   "perf": {
-    "head_do": "c3b7290751aaa9ab131eb89ba8829d4f78078e47",
-    "baseline": "Giai đoạn 3 v0.5.0 — R36 QA prep, chưa tag",
-    "host": "ps (Linux; rustc 1.93.1)",
-    "linux_gate": "PASS @c3b7290: 3672/4 (m1); nhánh: ST-302 3676/4, ST-304 3679/4, ST-305 3674/4",
-    "release_linux": "chưa chạy release v0.5.0",
-    "linux_soak": "chưa chạy QA R36 (xem JOURNAL/v050-qa-matrix.md)",
-    "windows_full": "chưa chạy QA R36",
-    "windows_soak": "chưa chạy QA R36",
-    "macos": "m1 quick PASS trên mps + release aarch64-apple-darwin PASS; m2/m3 BLOCKED, chưa có kết quả",
-    "wasi": "kế thừa R35: 388/390 eligible = 99,5%; chưa chạy lại R36",
-    "tags": "v0.4.0 @c2accdf; v0.4.1 @90844bc; v0.4.5 @3daff62; v0.5.0 chưa tag",
-    "note": "Số QA 3-OS/soak R36 chỉ điền sau khi chạy đủ ma trận JOURNAL/v050-qa-matrix.md; không placeholder trong JSON"
+    "head_do": "e9c62cb11eae2725a024a833ec9aa3de257cb248",
+    "baseline": "Giai đoạn 3 v0.5.0 — QA cuối trên main e9c62cb; chưa tag",
+    "host": "ps (Linux x86_64, 12 CPU); rustc/cargo 1.100.0",
+    "linux_gate": "PASS @e9c62cb: 3754 passed / 4 skipped (nextest) x3 (100,969 / 70,450 / 68,886 s); check fmt+clippy+R1..R7 PASS",
+    "release_linux": "PASS @c4337ce (fresh clone): workspace release 3753/0/5 (126 binary); host 54/54; vis 0.5.0",
+    "linux_soak": "PASS theo log @e9c62cb: 10/10, 650 s, exit 0 — gate 3754/4 x3, diff 100k lech=0 x3, host 54/54 x2, cache 5/5 x2; CHƯA có /home/ps/vislogs/final-linux-e9c62cb.md",
+    "windows_full": "PASS @f9e7503 (psvn worktree riêng): 3701/0/4 (128 block), host 54/54, targets 18/18 + 17/1, 550 s",
+    "windows_soak": "Kế thừa ST-298: 4 h / 985 vòng / 0 fail @3daff62 (v0.4.5); R36 chưa soak lại Windows",
+    "macos": "m1/m2 DONE; m3 ĐANG CHẠY trên mps (3x vis-gate-macos --full + soak 4h + vis-wasm-sem) — Tier 1 macOS CHƯA công bố",
+    "wasi": "Local Node @c4337ce: 388/390 eligible = 99,5% (2 stack-overflow interp known gap #193); suite 28/28; m3 sẽ chạy lại trên mps",
+    "tags": "v0.4.0 @c2accdf; v0.4.1 @90844bc; v0.4.5 @3daff62; v0.5.0 CHƯA tag (chờ macOS m3 + A0)",
+    "note": "Security F1/F2 vá @5902887; SPEC @51e937d/f9e7503; QA parser 1h 286.313.039 ca/0, decode 1h 2.517.069.629 ca/0, diff 5x100k=0 @623f3ba (pre-security/pre-SPEC, mốc c4337ce); nợ #194 (metadata TOCTOU), đề xuất #195 (VM back-edge O(n^2)/fuel wall-clock). Log ngoài repo + sha256 trong JOURNAL; tag message v0.5.0 + checklist 5 điều kiện tại JOURNAL/tag-v050.md, chưa tag"
   },
   "blocked": [
     {
-      "id": "ST-300m2",
-      "question": "Chưa chạy trên mps rảnh (không có kết quả #147/#152); chờ bin/vis-lock"
-    },
-    {
       "id": "ST-300m3",
-      "question": "Chưa chạy 3x vis-gate-macos --full + soak 4h; chưa công bố macOS Tier 1"
-    },
-    {
-      "id": "ST-302",
-      "question": "d3ea467 local chưa merge; Windows/macOS quick chưa chạy"
-    },
-    {
-      "id": "ST-304",
-      "question": "6e0675a local chưa merge; Windows/macOS chưa chạy"
-    },
-    {
-      "id": "ST-304b",
-      "question": "Đang chạy; chưa có commit để nghiệm thu"
+      "question": "ĐANG CHẠY trên mps: 3x vis-gate-macos --full + soak 4h + vis-wasm-sem; Tier 1 macOS chưa công bố — chặn duy nhất của tag v0.5.0"
     },
     {
       "id": "ST-305",
-      "question": "fa1a70b local; còn release v0.5.0 + QA 3-OS + R36"
-    },
-    {
-      "id": "ST-306",
-      "question": "Đang chạy; chưa có commit để nghiệm thu"
-    },
-    {
-      "id": "ST-307",
-      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
-    },
-    {
-      "id": "ST-308",
-      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
+      "question": "Code merged 374b4e8/75e5a53 + R36 final2 xong; tag v0.5.0 chờ macOS m3 xanh và A0 phê duyệt (chưa tag)"
     },
     {
       "id": "ST-309",
-      "question": "QUEUE@c3b7290 đang BLOCKED; xem QUEUE/ACTIVE"
+      "question": "2/3 DONE (SPEC + security + QA fuzz/diff); 1/3 cuối chờ ST-310f/v0.5.5: fresh-clone 3-OS Tier 1 + WASI + diff 100k ×5 + soak 24h + fuzz 8h + R37"
+    },
+    {
+      "id": "ST-310a",
+      "question": "Chờ tag v0.5.0; trích crates/vis-core, gỡ coupling vis-interp, đóng #112"
+    },
+    {
+      "id": "ST-310b",
+      "question": "Chờ ST-310a; đấu nối ViShell vish-term ← vish-edit ← vis-cli"
+    },
+    {
+      "id": "ST-310c",
+      "question": "Chờ ST-310a; tách vis-plugin-abi vs vis-plugin-host, thống nhất openat2, rà #194"
+    },
+    {
+      "id": "ST-310d",
+      "question": "Chờ ST-310a/310c; làm mỏng Cargo.toml vis-cli (7 dep thừa)"
+    },
+    {
+      "id": "ST-310e",
+      "question": "Chờ ST-310d; gom vis-cli/tests 27 → ≤ 12 binary + cổng chống phình"
+    },
+    {
+      "id": "ST-310f",
+      "question": "Chờ ST-310b/310e; tổ chức thư mục, vệ sinh agent/CHANGELOG, tag v0.5.5"
     }
   ]
 }
