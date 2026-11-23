@@ -5,6 +5,8 @@
 //!
 //! Chỉ Linux (Landlock). Nền khác: `--sandbox` trả 3 theo VD-132 — ca giữ nhánh riêng.
 
+#![cfg(target_os = "linux")]
+
 use std::path::{Path, PathBuf};
 use std::process::Command;
 

@@ -326,7 +326,10 @@ fn dich_khong_utf8_la_err() {
 
     let d = tam("khong-utf8");
     let ten = std::ffi::OsStr::from_bytes(b"tep-\xff.txt");
-    std::fs::write(d.join(ten), "x").expect("ghi tệp tên không UTF-8");
+    if let Err(e) = std::fs::write(d.join(ten), "x") {
+        eprintln!("bỏ qua: nền không ghi được tên không UTF-8 ({e})");
+        return;
+    }
     if let Err(e) = tao_link_tep(Path::new(ten), &d.join("link-khong-utf8")) {
         eprintln!("bỏ qua: nền không tạo được symlink ({e})");
         return;

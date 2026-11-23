@@ -431,7 +431,10 @@ fn cwd_khong_utf8_la_err_khong_trap() {
     let d = tam("cwd-khong-utf8");
     let ten = std::ffi::OsStr::from_bytes(b"cwd-\xff");
     let cwd = d.join(ten);
-    std::fs::create_dir_all(&cwd).expect("mkdir cwd không UTF-8");
+    if let Err(e) = std::fs::create_dir_all(&cwd) {
+        eprintln!("bỏ qua: nền không tạo được cwd không UTF-8 ({e})");
+        return;
+    }
     let prog = d.join("p.vis");
     viet_tep(
         &prog,
