@@ -1,0 +1,42 @@
+{
+  "name": "viscript",
+  "displayName": "ViScript",
+  "description": "Hỗ trợ ngôn ngữ ViScript: TextMate grammar + client LSP tới `vis lsp --stdio`",
+  "version": "0.1.0",
+  "publisher": "vifast-oss",
+  "license": "MIT OR Apache-2.0",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:viscript"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "viscript",
+        "aliases": ["ViScript", "viscript"],
+        "extensions": [".vis", ".vish"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "viscript",
+        "scopeName": "source.viscript",
+        "path": "./syntaxes/viscript.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "ViScript",
+      "properties": {
+        "viscript.serverPath": {
+          "type": "string",
+          "default": "vis",
+          "description": "Đường dẫn tới binary `vis` (dùng `vis lsp --stdio`)."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

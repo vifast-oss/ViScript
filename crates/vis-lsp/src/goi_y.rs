@@ -130,6 +130,27 @@ fn goi_y_thanh_vien(kq: &KetQua, byte: usize, tien_to: &str) -> Option<Vec<GoiY>
 /// xử lý trước nên không bị ghi đè.
 fn goi_y_module(byte: usize, tien_to: &str, text: &str) -> Option<Vec<GoiY>> {
     let ten = nhan_sau_cham(text, byte)?;
+    // **ST-305**: `std.` ⇒ gợi ý **module** (`fs`, `str`, `list`, …), không chỉ hàm sau `fs.`.
+    if ten == "std" {
+        let mut ds: Vec<GoiY> = Vec::new();
+        let mut da = HashSet::new();
+        for f in vis_types::stdlib::FUNCS {
+            let Some((module, _)) = f.name.split_once('.') else {
+                continue;
+            };
+            if !module.starts_with(tien_to) || !da.insert(module.to_string()) {
+                continue;
+            }
+            ds.push(GoiY {
+                label: module.to_string(),
+                kind: 9, // CompletionItemKind::Module
+                detail: Some(format!("std.{module}")),
+            });
+        }
+        ds.sort_by(|a, b| a.label.as_bytes().cmp(b.label.as_bytes()));
+        ds.truncate(200);
+        return (!ds.is_empty()).then_some(ds);
+    }
     let mut ds: Vec<GoiY> = vis_types::stdlib::FUNCS
         .iter()
         .filter_map(|f| {

@@ -90,7 +90,18 @@ pub(crate) fn chu_ky_fn(f: &vis_types::HFn, tbl: &TypeTable) -> String {
             }
         })
         .collect();
-    format!("fn {}({}) -> {}", f.name, ps.join(", "), tbl.show(&f.ret))
+    let gen = if f.generics.is_empty() {
+        String::new()
+    } else {
+        format!("[{}]", f.generics.join(", "))
+    };
+    format!(
+        "fn {}{}({}) -> {}",
+        f.name,
+        gen,
+        ps.join(", "),
+        tbl.show(&f.ret)
+    )
 }
 
 pub(crate) fn goi_y_item(it: &HItem, tbl: &TypeTable) -> Option<GoiY> {

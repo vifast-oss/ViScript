@@ -1,0 +1,49 @@
+{
+  "name": "ViScript",
+  "scopeName": "source.viscript",
+  "fileTypes": ["vis", "vish"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#functions" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.number-sign.viscript", "match": "#.*$" }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        { "name": "string.quoted.double.viscript", "begin": "\"", "end": "\"", "patterns": [
+          { "name": "constant.character.escape.viscript", "match": "\\\\." }
+        ] }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        { "name": "constant.numeric.viscript", "match": "\\b[0-9]+(\\.[0-9]+)?\\b" }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "name": "keyword.control.viscript", "match": "\\b(if|else|elif|for|while|match|return|break|continue|in|await|async|spawn|panic|assert)\\b" },
+        { "name": "keyword.other.viscript", "match": "\\b(fn|cmd|test|let|var|type|record|enum|trait|impl|use|pub|extern|with|where|as|derives)\\b" },
+        { "name": "constant.language.viscript", "match": "\\b(true|false|none|None|Some|Ok|Err)\\b" }
+      ]
+    },
+    "types": {
+      "patterns": [
+        { "name": "storage.type.viscript", "match": "\\b(int|float|bool|str|list|map|tuple|cap|Result|Option|Json)\\b" }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        { "name": "entity.name.function.viscript", "match": "\\b(fn|cmd|test)\\s+([A-Za-z_][A-Za-z0-9_]*)" , "captures": { "2": { "name": "entity.name.function.viscript" } } }
+      ]
+    }
+  }
+}

@@ -291,3 +291,25 @@ fn lsp_document_highlight_dem_hai() {
         "phải có 2 highlight: {body}"
     );
 }
+
+// ===== ST-305: completion `std.` (module) =====
+
+/// Ca — `std.` ⇒ gợi ý module (`fs`, `str`, …), không chỉ hàm sau `fs.`.
+#[test]
+fn lsp_completion_sau_std_lieu_module() {
+    let text = "use std.fs\n\nstd.";
+    let vao = format!(
+        "{}{}{}",
+        khung(&init()),
+        khung(&did_open(URI, text)),
+        khung(&completion(2, URI, 2, 4))
+    );
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "stderr: {err}");
+    let body = frame_cuoi(&out);
+    assert!(body.contains(r#""label":"fs""#), "thiếu module fs: {body}");
+    assert!(
+        body.contains(r#""label":"str""#),
+        "thiếu module str: {body}"
+    );
+}
