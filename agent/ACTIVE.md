@@ -2,6 +2,16 @@
 
 > **Toàn văn quyết định & kế hoạch refactor**: `agent/JOURNAL/quyet-dinh-a0-2026-11-23-vd285.md` · `agent/DECISIONS.md` (`VD-285`).
 
+## 0. Trạng thái hiện hành — 2026-11-23 (`plan/v055-prep`)
+
+- **`v0.5.5` CHƯA tag**: nhánh `plan/v055-prep` tạo từ **`b591e4d`** (`plan/v055-integration2` —
+  Phase B `ST-310a..f` + hop `main` `8906c70`). **Chưa merge `main`**, chưa push, chưa tag.
+- Workspace bump **0.5.5** (mọi crate `version.workspace = true`); `PHIEN_BAN` thêm
+  `+v055-release-2026-11-23`, khoá cache **`903995a7…`** (`assert_ne` khoá 0.5.0 `fc20a811…`);
+  `Cargo.lock` + `vis-host-wasm/Cargo.lock` đồng bộ 0.5.5.
+- `./vis-dev gate --fast`: **3773 passed / 0 failed / 4 skipped**; `bin/vis-targets` **18/18**.
+- **`v0.5.0` vẫn CHƯA tag** — macOS arm64 Tier 1 còn chờ bằng chứng `ST-300m3`.
+
 ## 1. Trạng thái Thực tế tại `f9e7503d` (`APPROVED VD-285`)
 
 - **GĐ 2 (`v0.4.5` @ `3daff62`)**: 5/5 **DONE** — **Windows Tier 1** (`ST-298`), WASI Preview 1 (`ST-299a/b`, `ST-300` 388/390 = 99,5%), `R35` PASS.
@@ -23,6 +33,9 @@
 ### Pha B — Đợt Refactor Kiến trúc 4 Tầng & Tối ưu Kho **`v0.5.5`** (`ST-310a..ST-310f`, ~3–4 ngày)
 
 > **Chỉ mở merge vào `main` SAU khi tag `v0.5.0` đã push** (có thể tạo nhánh chuẩn bị trước nếu luồng rảnh, tuyệt đối không đụng `mps` khi `ST-300m3` đang đo!).
+>
+> **Hiện tại**: `ST-310a..f` đã tích hợp thử trên **`b591e4d`** (`plan/v055-integration2`, đã hop
+> `main` `8906c70`); `plan/v055-prep` bump **0.5.5** từ mốc đó — **chưa merge `main`, chưa tag**.
 
 | Luồng | Lát việc | Thứ tự | Phạm vi & KPI cứng (`VD-285`) |
 |---|---|---|---|

@@ -1,7 +1,21 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **TRẠNG THÁI HIỆN HÀNH — 2026-11-23 (`main` `f2d3e73`; prep `plan/v050-prep`). Đọc khối này trước.**
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-23 (`plan/v055-prep` từ `b591e4d`). Đọc khối này trước.**
+> - **`v0.5.5` CHƯA tag, CHƯA merge `main`**: nhánh `plan/v055-prep` tạo từ **`b591e4d`**
+>   (`plan/v055-integration2`: Phase B `ST-310a..f` + hop `main` `8906c70`). Workspace bump
+>   **0.5.5** (mọi crate `version.workspace = true`); `vis --version` ⇒ **`vis 0.5.5`**;
+>   `PHIEN_BAN` thêm `+v055-release-2026-11-23`, khoá cache mới
+>   `903995a78ed8585f360005df18a81a0be3a970c5fdaf2a3f7401cc90ec2100d9`; `assert_ne` khoá 0.5.0
+>   `fc20a811…` ⇒ cache cũ tự vô hiệu; `Cargo.lock` + `vis-host-wasm/Cargo.lock` đồng bộ 0.5.5.
+>   Gate Linux **3.773/4**; `bin/vis-targets` **18/18**; `#194` **mở**, `#195` **đề xuất**.
+> - **`v0.5.0` vẫn CHƯA tag** — macOS arm64 Tier 1 còn chờ bằng chứng `ST-300m3` (3× full + soak 4 h).
+> - **Tag hiện có**: `v0.4.5` @ `3daff62`, `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`.
+> - **Crate**: **18 crate thành viên** (thêm `vis-core`, `vis-plugin-host` ở Phase B);
+>   `vis-host-linux`/`vis-host-wasm` là **workspace riêng**.
+> - Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (VD-142).
+
+> **TRẠNG THÁI 2026-11-23 (`main` `f2d3e73`; prep `plan/v050-prep`) — lịch sử trước Pha B.**
 > - **`main` `f2d3e73`**: GĐ 3 đã tích hợp — `ST-300m2` (`5741d23`), `ST-302` (`b79ae3a`),
 >   `ST-302b` (`6bc4ac3`), `ST-304` (`8e73e81`), `ST-304b` (`1eb2768`), `ST-305` (`374b4e8`),
 >   `ST-306` (`6093aef`), `ST-307` (`ab6beb7`/`b5aa40b`), `ST-308` (`a9eef01`).
@@ -34,6 +48,16 @@
 > `ST-306`/`307` (plugin tĩnh/WASI, Windows quick **91/91**), `ST-308` (`vish-term`).
 > **macOS Tier 1 chờ `ST-300m3`** — không tuyên bố trước khi có 3× full + soak 4 h.
 > **Chưa tạo tag, chưa merge `plan/v050-prep`.**
+
+> **`v0.5.5` prep — 2026-11-23 (ST-310f, chưa tag)** — workspace bump **0.5.5**; cache `PHIEN_BAN`
+> `+v055-release-2026-11-23`, khoá mới
+> `903995a78ed8585f360005df18a81a0be3a970c5fdaf2a3f7401cc90ec2100d9`; `assert_ne` khoá 0.5.0
+> `fc20a811…` ⇒ cache cũ tự vô hiệu; `Cargo.lock` + `vis-host-wasm/Cargo.lock` đồng bộ 0.5.5.
+> Bằng chứng Phase B (`b591e4d`): `ST-310a` (`vis-core`, 4 crate 0 dep `vis-interp`, đóng `#112`),
+> `ST-310b` (`vish-term`/`vish-edit`), `ST-310c` (`vis-plugin-host`, `cap_fs.rs` xoá),
+> `ST-310d` (vis-cli 0 dep OS/TLS/SQLite trực tiếp), `ST-310e` (test 27 → 8 binary, R8/R9),
+> `ST-310f` (repo cleanup, `vis-targets` 18/18); gate Linux **3.773/4**.
+> **`v0.5.5` chưa tag, chưa merge `main`**; `v0.5.0` cũng chưa tag (macOS Tier 1 chờ `ST-300m3`).
 
 > **`v0.4.5` — 2026-11-23 (ST-298/VD-283, tag trên commit R35)** — workspace bump **0.4.5**;
 > cache `PHIEN_BAN` `+v045-release-2026-11-23`, khoá mới
