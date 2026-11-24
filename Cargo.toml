@@ -10,6 +10,7 @@ resolver = "2"
 exclude = ["vis-host-wasm"]
 members = [
     "crates/vis-core",
+    "crates/vis-http",
     "crates/vis-diag",
     "crates/vis-syntax",
     "crates/vis-cli",

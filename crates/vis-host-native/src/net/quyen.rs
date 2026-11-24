@@ -48,7 +48,7 @@ impl NetHost for NetGuard<'_> {
     fn tra_http(&mut self, tay: &str, giu_lai: bool) -> Result<(), String> {
         self.trong.tra_http(tay, giu_lai)
     }
-    fn cookie_jar(&mut self) -> Option<&mut vis_core::http_client::CookieJar> {
+    fn cookie_jar(&mut self) -> Option<&mut vis_core::cookie::CookieJar> {
         self.trong.cookie_jar()
     }
     /// **VS3-4b2**: HTTP/2 cũng là truy cập mạng ⇒ kiểm `cap[Net]` trước khi host mở TLS.

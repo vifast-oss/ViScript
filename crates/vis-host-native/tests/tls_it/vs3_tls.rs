@@ -21,8 +21,8 @@ use std::time::{Duration, Instant};
 
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::{ServerConfig, ServerConnection, StreamOwned};
-use vis_core::http_client::{http_get, http_head};
 use vis_host_native::net::Net;
+use vis_http::{http_get, http_head};
 
 const CERT_LOCALHOST: &[u8] =
     include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");

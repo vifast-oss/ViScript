@@ -19,7 +19,7 @@ use http::Request;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use vis_core::host::KetQuaHttp2;
-use vis_core::http_client::MAX_HTTP;
+use vis_http::MAX_HTTP;
 
 /// Cap header phản hồi HTTP/2 (cùng ngưỡng HTTP/1.1 64 KiB) để server không làm phình bộ nhớ.
 pub(super) const MAX_HEADER: usize = 64 * 1024;

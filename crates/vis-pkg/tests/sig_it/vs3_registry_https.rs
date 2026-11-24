@@ -5,7 +5,7 @@
 //! Bản debug có hook `VIS_TLS_TEST_ROOT_DER` (một chứng chỉ DER) để tiến trình `vis` tin cert fixture;
 //! bản release không có hook, nên test thành công được bỏ qua ở `--release` (xem `tls::mac_dinh`).
 
-#![cfg(all(feature = "tls", not(target_arch = "wasm32")))]
+#![cfg(not(target_arch = "wasm32"))]
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};

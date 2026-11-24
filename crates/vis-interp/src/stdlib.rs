@@ -62,7 +62,7 @@ use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset
 use vis_core::json::json;
 pub(crate) use vis_core::reactor::{
     frame_net_set_write, frame_net_take_write, frame_net_write_timeout, FRAME_NET_CONNECT,
-    FRAME_NET_WRITE, FRAME_TLS_CONNECT,
+    FRAME_NET_WRITE,
 };
 use vis_core::reactor::{frame_unit_result, gioi_han_net_read};
 

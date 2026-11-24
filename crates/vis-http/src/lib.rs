@@ -22,10 +22,7 @@
 use std::net::IpAddr;
 use std::time::{Duration, Instant};
 
-pub mod cookie;
-pub use cookie::CookieJar;
-
-use crate::host::NetHost;
+use vis_core::host::NetHost;
 
 /// Cap **phản hồi** (8 MiB, mẫu `MAX_STDIN` của ST-34) — vượt ⇒ `Err`, không OOM.
 pub const MAX_HTTP: usize = 8 * 1024 * 1024;
@@ -575,7 +572,7 @@ fn xu_ly_h2(
     net: &mut dyn NetHost,
     u: &UrlHttp,
     path: &str,
-    kq: crate::host::KetQuaHttp2,
+    kq: vis_core::host::KetQuaHttp2,
     so: &mut u8,
     hien_tai: &mut String,
     da_thu_lai: &mut bool,
@@ -975,3 +972,7 @@ pub fn http_head(
 
 #[cfg(test)]
 mod tests;
+
+pub mod async_http;
+pub use async_http::{http_get_async, http_head_async, xoa_trang_thai_frame, AsyncHttpEnv};
+pub use vis_core::reactor::{FrameReactorBackend, ReactorH2Response, ReactorOp};

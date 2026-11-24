@@ -48,7 +48,7 @@ release-bins = ["vis"]
 [features]
 default = ["sqlite", "tls", "pkg-sig", "http2", "async-h2"]
 sqlite = ["vis-host-native/sqlite"]
-tls = ["vis-host-native/tls", "vis-pkg/tls"]
+tls = ["vis-host-native/tls"]
 pkg-sig = ["vis-pkg/pkg-sig"]
 # **VS3-4b2 (VD-271)** — HTTP/2 qua TLS + ALPN. Bật mặc định qua `async-h2`; vẫn có thể
 # `--no-default-features --features …` để build core không h2. `h2`/`tokio`/`http`/`bytes`
@@ -66,6 +66,7 @@ async-h2 = ["http2", "tls", "vis-host-native/async-h2"]
 # `vis-loader`, `vis-plugin-abi`); `vis-cli/tests/` còn 8 binary, cổng `bin/vis-dev` chặn > 15.
 
 [dependencies]
+vis-http = { path = "../vis-http" }
 vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }

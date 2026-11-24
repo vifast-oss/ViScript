@@ -18,15 +18,60 @@ use std::time::Instant;
 use vis_diag::COMMAND_CODES;
 use vis_syntax::Span;
 
-use crate::builtin::Host;
-use crate::interp::{Abort, Trap, R};
-use crate::stdlib::{DAU_QUYEN, FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT};
-use crate::value::Value;
-
-use vis_core::http_client::{
-    con_lai_ms, doc_header_day_du, ghep_chunked, header_h2, noi_location, tach_url, tim_header,
-    DauHttp, GiaoThuc, UrlHttp, MAX_HEADER, MAX_HTTP,
+use vis_core::host::{NetHost, DAU_QUYEN};
+use vis_core::reactor::{
+    frame_net_set_write, frame_net_take_write, ReactorH2Response, ReactorOp, FRAME_NET_CONNECT,
+    FRAME_NET_WRITE, FRAME_TLS_CONNECT,
 };
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::Value;
+
+use crate::{
+    con_lai_ms, doc_header_day_du, ghep_chunked, header_h2, noi_location, tach_url, tim_header,
+    DauHttp, FrameReactorBackend, GiaoThuc, UrlHttp, MAX_HEADER, MAX_HTTP,
+};
+
+/// **ST-312d (VD-289)** — môi trường scheduler + host mạng cho HTTP async.
+///
+/// `vis-http` không biết `vis-interp`/`vis-vm`; tầng trên cài trait này để state machine
+/// vẫn dùng reactor frame (`Pending` khi kernel chưa sẵn sàng) mà không kéo theo engine.
+pub trait AsyncHttpEnv {
+    fn frame_current(&self) -> u32;
+    fn frame_backend(&self) -> Option<std::rc::Rc<std::cell::RefCell<dyn FrameReactorBackend>>>;
+    fn note_handle(&mut self, handle: &str);
+    fn cancel_handle(&mut self, handle: &str);
+    fn poll_io(
+        &mut self,
+        op: ReactorOp,
+        handle: &str,
+        max: usize,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Value>;
+    fn poll_bytes(
+        &mut self,
+        handle: &str,
+        max: usize,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Result<Vec<u8>, String>>;
+    fn h2_send(
+        &mut self,
+        handle: &str,
+        method: &str,
+        target: &str,
+        headers: &[(String, String)],
+    ) -> Result<u64, String>;
+    fn h2_poll(
+        &mut self,
+        handle: &str,
+        id: u64,
+        timeout_ms: i64,
+        span: Span,
+    ) -> R<Result<ReactorH2Response, String>>;
+    fn h2_cancel(&mut self, handle: &str, id: u64);
+    fn net(&mut self) -> Option<&mut dyn NetHost>;
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum PhuongThuc {
@@ -76,7 +121,7 @@ thread_local! {
 /// Backend đã đóng tay (`cancel_task_handles`) trước khi gọi hàm này; ở đây chỉ quên state để
 /// frame id tái dùng không `dong()` lần hai (h2 đếm user/`RST_STREAM` đúng một lần). Không đóng
 /// tay, không đổi policy language handle.
-pub(crate) fn xoa_trang_thai_frame(id: u32) {
+pub fn xoa_trang_thai_frame(id: u32) {
     DANG_CHAY.with(|m| {
         m.borrow_mut().remove(&id);
     });
@@ -88,8 +133,8 @@ enum Buoc {
     ChuyenHuong,
 }
 
-pub(crate) fn http_get_async(
-    host: &mut dyn Host,
+pub fn http_get_async(
+    host: &mut dyn AsyncHttpEnv,
     url: &str,
     timeout_ms: u64,
     span: Span,
@@ -97,8 +142,8 @@ pub(crate) fn http_get_async(
     chay(host, PhuongThuc::Get, url, timeout_ms, span)
 }
 
-pub(crate) fn http_head_async(
-    host: &mut dyn Host,
+pub fn http_head_async(
+    host: &mut dyn AsyncHttpEnv,
     url: &str,
     timeout_ms: u64,
     span: Span,
@@ -107,13 +152,13 @@ pub(crate) fn http_head_async(
 }
 
 fn chay(
-    host: &mut dyn Host,
+    host: &mut dyn AsyncHttpEnv,
     phuong_thuc: PhuongThuc,
     url: &str,
     timeout_ms: u64,
     span: Span,
 ) -> R<Value> {
-    let id = host.sched().borrow().frame.current;
+    let id = host.frame_current();
     let cu = DANG_CHAY.with(|m| m.borrow_mut().remove(&id));
     let mut st = match cu {
         Some(s) if s.phuong_thuc == phuong_thuc && s.url_goc == url => {
@@ -174,8 +219,8 @@ impl HttpAsync {
     }
 
     /// Đóng handle/kết nối đang treo; huỷ mọi đăng ký reactor còn lại (timeout/lỗi).
-    fn dong(&mut self, host: &mut dyn Host) {
-        let backend = host.sched().borrow().frame.backend.clone();
+    fn dong(&mut self, host: &mut dyn AsyncHttpEnv) {
+        let backend = host.frame_backend();
         let Some(b) = backend else {
             self.handle = None;
             self.dang_noi = None;
@@ -184,25 +229,22 @@ impl HttpAsync {
         if let Some(h) = self.handle.take() {
             if h.starts_with('H') {
                 if let Some(id) = self.h2_id.take() {
-                    host.sched().borrow_mut().frame_reactor_h2_cancel(&h, id);
+                    host.h2_cancel(&h, id);
                 }
             }
             let wk = format!("{FRAME_NET_WRITE}{h}");
-            {
-                let mut sc = host.sched().borrow_mut();
-                sc.frame_reactor_cancel_handle(&h);
-                sc.frame_reactor_cancel_handle(&wk);
-            }
+            host.cancel_handle(&h);
+            host.cancel_handle(&wk);
             let _ = b.borrow_mut().close(&h);
         }
         if let Some(k) = self.dang_noi.take() {
-            host.sched().borrow_mut().frame_reactor_cancel_handle(&k);
+            host.cancel_handle(&k);
             let _ = b.borrow_mut().close(&k);
         }
     }
 }
 
-fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>> {
+fn drive(host: &mut dyn AsyncHttpEnv, st: &mut HttpAsync, span: Span) -> R<Option<Value>> {
     'ngoai: loop {
         if st.handle.is_none() {
             let u = match tach_url(&st.url) {
@@ -219,14 +261,8 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
                 format!("{FRAME_NET_CONNECT}{}|{}", u.dia_chi(), st.khoa)
             };
             st.dang_noi = Some(key.clone());
-            host.sched().borrow_mut().frame_reactor_note_handle(&key);
-            let v = host.sched().borrow_mut().frame_reactor_poll_io(
-                crate::rt::ReactorOp::Read,
-                &key,
-                0,
-                con as i64,
-                span,
-            )?;
+            host.note_handle(&key);
+            let v = host.poll_io(ReactorOp::Read, &key, 0, con as i64, span)?;
             let Some(h) = nhan_ok(&v) else {
                 if la_het_gio(&v) {
                     return Ok(Some(het_gio(st)));
@@ -235,7 +271,7 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             };
             st.dang_noi = None;
             st.handle = Some(h.to_string());
-            host.sched().borrow_mut().frame_reactor_note_handle(h);
+            host.note_handle(h);
             st.dat_lai_sau_chuyen_huong();
         }
         let handle = st.handle.clone().expect("handle vừa có");
@@ -254,19 +290,13 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             ghi_log(host, st.phuong_thuc, &u);
             let req = yeu_cau(st.phuong_thuc, &u.target, &u.authority(), auth, cookie);
             let wk = format!("{FRAME_NET_WRITE}{handle}");
-            crate::stdlib::frame_net_set_write(&wk, req.as_bytes());
+            frame_net_set_write(&wk, req.as_bytes());
             let Some(con) = con_lai_ms(st.han) else {
-                crate::stdlib::frame_net_take_write(&wk);
+                frame_net_take_write(&wk);
                 return Ok(Some(het_gio(st)));
             };
-            let r = host.sched().borrow_mut().frame_reactor_poll_io(
-                crate::rt::ReactorOp::Read,
-                &wk,
-                req.len(),
-                con as i64,
-                span,
-            );
-            crate::stdlib::frame_net_take_write(&wk);
+            let r = host.poll_io(ReactorOp::Read, &wk, req.len(), con as i64, span);
+            frame_net_take_write(&wk);
             let v = r?;
             if nhan_ok(&v).is_none() {
                 if la_het_gio(&v) {
@@ -286,12 +316,7 @@ fn drive(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<Option<Value>
             let Some(con) = con_lai_ms(st.han) else {
                 return Ok(Some(het_gio(st)));
             };
-            match host.sched().borrow_mut().frame_reactor_poll_bytes(
-                &handle,
-                16 * 1024,
-                con.clamp(1, 2_000) as i64,
-                span,
-            ) {
+            match host.poll_bytes(&handle, 16 * 1024, con.clamp(1, 2_000) as i64, span) {
                 Ok(Ok(bytes)) => {
                     if bytes.is_empty() {
                         return Ok(Some(ket_thuc_eof(st)));
@@ -312,7 +337,7 @@ enum H2Buoc {
 }
 
 /// **VS3-W2** — lái request h2 trên handle `H<n>` bằng meta có cấu trúc.
-fn drive_h2(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
+fn drive_h2(host: &mut dyn AsyncHttpEnv, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
     let handle = st.handle.clone().expect("handle h2");
     if st.h2_id.is_none() {
         if con_lai_ms(st.han).is_none() {
@@ -325,12 +350,7 @@ fn drive_h2(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
         let (auth, cookie) = thong_tin(host, &u);
         ghi_log(host, st.phuong_thuc, &u);
         let hs = header_h2(auth.as_deref(), cookie.as_deref());
-        let id = match host.sched().borrow_mut().frame_reactor_h2_send(
-            &handle,
-            st.phuong_thuc.ten(),
-            &u.target,
-            &hs,
-        ) {
+        let id = match host.h2_send(&handle, st.phuong_thuc.ten(), &u.target, &hs) {
             Ok(id) => id,
             Err(e) => return Ok(H2Buoc::Xong(loi_http(e))),
         };
@@ -339,23 +359,16 @@ fn drive_h2(host: &mut dyn Host, st: &mut HttpAsync, span: Span) -> R<H2Buoc> {
     }
     let id = st.h2_id.expect("vừa gửi");
     let Some(con) = con_lai_ms(st.han) else {
-        host.sched()
-            .borrow_mut()
-            .frame_reactor_h2_cancel(&handle, id);
+        host.h2_cancel(&handle, id);
         return Ok(H2Buoc::Xong(het_gio(st)));
     };
     // Một lần poll h2 bao cả response (nhiều frame), không phải một chunk như h1;
     // dùng trọn thời gian còn lại để không cắt body lớn giữa chừng.
-    let kq =
-        host.sched()
-            .borrow_mut()
-            .frame_reactor_h2_poll(&handle, id, con.max(1) as i64, span)?;
+    let kq = host.h2_poll(&handle, id, con.max(1) as i64, span)?;
     let resp = match kq {
         Ok(r) => r,
         Err(e) if e.contains("thời gian") => {
-            host.sched()
-                .borrow_mut()
-                .frame_reactor_h2_cancel(&handle, id);
+            host.h2_cancel(&handle, id);
             return Ok(H2Buoc::Xong(het_gio(st)));
         }
         Err(e) => {
@@ -418,7 +431,7 @@ fn ket_qua_head_meta(status: u16, headers: &[(String, String)]) -> Value {
     ]))
 }
 
-fn kiem_tra(st: &mut HttpAsync, host: &mut dyn Host) -> Result<Buoc, String> {
+fn kiem_tra(st: &mut HttpAsync, host: &mut dyn AsyncHttpEnv) -> Result<Buoc, String> {
     if st.dau.is_none() {
         let Some(i) = tim_header(&st.du) else {
             if st.du.len() > MAX_HEADER {
@@ -587,7 +600,7 @@ fn la_het_gio(v: &Value) -> bool {
     false
 }
 
-fn kiem_quyen(host: &mut dyn Host, dia_chi: &str, span: Span) -> R<()> {
+fn kiem_quyen(host: &mut dyn AsyncHttpEnv, dia_chi: &str, span: Span) -> R<()> {
     let r = host.net().map(|n| n.check_net(dia_chi)).unwrap_or(Ok(()));
     match r {
         Ok(()) => Ok(()),
@@ -598,7 +611,7 @@ fn kiem_quyen(host: &mut dyn Host, dia_chi: &str, span: Span) -> R<()> {
     }
 }
 
-fn thong_tin(host: &mut dyn Host, u: &UrlHttp) -> (Option<String>, Option<String>) {
+fn thong_tin(host: &mut dyn AsyncHttpEnv, u: &UrlHttp) -> (Option<String>, Option<String>) {
     let auth = u.authorization();
     let path = u.target.split('?').next().unwrap_or("/");
     let secure = u.giao_thuc == GiaoThuc::Https;
@@ -609,7 +622,7 @@ fn thong_tin(host: &mut dyn Host, u: &UrlHttp) -> (Option<String>, Option<String
 }
 
 /// **VS3-W2** — lưu `Set-Cookie` của response vào jar async (giống `xu_ly_h2` sync).
-fn luu_set_cookie(host: &mut dyn Host, u: &UrlHttp, headers: &[(String, String)]) {
+fn luu_set_cookie(host: &mut dyn AsyncHttpEnv, u: &UrlHttp, headers: &[(String, String)]) {
     let set_cookie: Vec<String> = headers
         .iter()
         .filter(|(k, _)| k.eq_ignore_ascii_case("set-cookie"))
@@ -626,7 +639,7 @@ fn luu_set_cookie(host: &mut dyn Host, u: &UrlHttp, headers: &[(String, String)]
     }
 }
 
-fn ghi_log(host: &mut dyn Host, phuong_thuc: PhuongThuc, u: &UrlHttp) {
+fn ghi_log(host: &mut dyn AsyncHttpEnv, phuong_thuc: PhuongThuc, u: &UrlHttp) {
     if let Some(n) = host.net() {
         n.ghi_nhat_ky(&format!(
             "NET {} {} {}{}",

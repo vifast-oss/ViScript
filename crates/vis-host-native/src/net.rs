@@ -18,8 +18,8 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::time::{Duration, Instant};
 
+use vis_core::cookie::CookieJar;
 use vis_core::host::NetHost;
-use vis_core::http_client::CookieJar;
 
 #[cfg(all(feature = "http2", not(target_arch = "wasm32")))]
 pub(crate) mod h2;

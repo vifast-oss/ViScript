@@ -672,6 +672,7 @@ dependencies = [
  "vis-hir",
  "vis-host-linux",
  "vis-host-native",
+ "vis-http",
  "vis-interp",
  "vis-loader",
  "vis-lsp",
@@ -735,11 +736,21 @@ dependencies = [
  "vis-core",
  "vis-diag",
  "vis-hir",
+ "vis-http",
  "vis-interp",
  "vis-syntax",
  "vis-types",
  "vis-vm",
  "webpki-roots",
+]
+
+[[package]]
+name = "vis-http"
+version = "0.6.0"
+dependencies = [
+ "vis-core",
+ "vis-diag",
+ "vis-syntax",
 ]
 
 [[package]]
@@ -749,6 +760,7 @@ dependencies = [
  "vis-core",
  "vis-diag",
  "vis-hir",
+ "vis-http",
  "vis-syntax",
  "vis-types",
  "vish-term",
@@ -788,7 +800,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
- "vis-host-native",
+ "vis-http",
  "vis-loader",
 ]
 

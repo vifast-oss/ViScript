@@ -43,7 +43,7 @@ use super::{
     bam, chuan_hoa, chuoi, doc_tat_ca, giai_roots, kiem_path, la_hex64, lay, lay_chuoi,
     manifest_tu_gia_tri, GoiCai, Manifest,
 };
-use vis_host_native::net::Net;
+use vis_core::host::NetHost;
 
 /// Hạn mỗi lời gọi HTTP của registry (connect + đọc) — đủ cho mạng cục bộ, không treo CLI.
 const TIMEOUT_MS: u64 = 30_000;
@@ -99,10 +99,10 @@ pub(super) fn tai_va_giai(
     entry_override: Option<(&str, &str)>,
     khoa_cong: &[[u8; 32]],
     uu_tien: &BTreeMap<String, Version>,
+    net: &mut dyn NetHost,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
-    let mut net = Net::moi(false);
     let url = format!("{}/index.json", base.trim_end_matches('/'));
-    let body = vis_core::http_client::http_get(&mut net, &url, TIMEOUT_MS)
+    let body = vis_http::http_get(net, &url, TIMEOUT_MS)
         .map_err(|e| format!("không tải được index registry `{url}`: {e}"))?;
     let index = doc_index(&body)?;
     let tmp = ThuMucTam::moi()?;
@@ -116,7 +116,7 @@ pub(super) fn tai_va_giai(
             Some((t, e)) if t == ten.as_str() => Some(e),
             _ => None,
         };
-        tai_goi(&mut net, base, muc, tmp.path(), eo, khoa_cong)?;
+        tai_goi(net, base, muc, tmp.path(), eo, khoa_cong)?;
     }
     let ds = doc_tat_ca(tmp.path(), &giai, entry_override)?;
     Ok((giai, ds))
@@ -187,7 +187,7 @@ fn doc_index(body: &str) -> Result<Index, String> {
 
 /// Tải + kiểm + giải **một** tarball vào `<tạm>/<tên>/<ver>/` (chỉ tệp khai trong manifest).
 fn tai_goi(
-    net: &mut Net,
+    net: &mut dyn NetHost,
     base: &str,
     muc: &Muc,
     goc: &Path,
@@ -220,7 +220,7 @@ fn tai_goi(
         kiem_chu_ky(muc, &manifest, &tar_sha, khoa_cong)?;
     }
     let url = format!("{}/{}", base.trim_end_matches('/'), tar_path);
-    let body = vis_core::http_client::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
+    let body = vis_http::http_get(net, &url, TIMEOUT_MS).map_err(|e| {
         format!(
             "không tải được tarball `{}@{}` từ `{url}`: {e}",
             muc.ten, muc.version_s
@@ -358,5 +358,74 @@ impl ThuMucTam {
 impl Drop for ThuMucTam {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **ST-312d (VD-289)** — chứng minh `vis-pkg` không tự mở mạng: mọi byte đi qua
+    /// `NetHost` được tiêm. Mock trả index rỗng một lần rồi EOF; không socket thật.
+    struct MockNet {
+        body: Vec<u8>,
+        da_doc: bool,
+    }
+
+    impl NetHost for MockNet {
+        fn connect(&mut self, _dia_chi: &str, _timeout_ms: u64) -> Result<String, String> {
+            Ok("mock-http".to_string())
+        }
+        fn listen(&mut self, _dia_chi: &str) -> Result<String, String> {
+            Err("mock không listen".to_string())
+        }
+        fn accept(&mut self, _tay: &str, _timeout_ms: u64) -> Result<String, String> {
+            Err("mock không accept".to_string())
+        }
+        fn read(
+            &mut self,
+            _tay: &str,
+            _toi_da: usize,
+            _timeout_ms: u64,
+        ) -> Result<Vec<u8>, String> {
+            if std::mem::replace(&mut self.da_doc, true) {
+                Ok(Vec::new())
+            } else {
+                Ok(std::mem::take(&mut self.body))
+            }
+        }
+        fn write(&mut self, _tay: &str, _du_lieu: &[u8]) -> Result<(), String> {
+            Ok(())
+        }
+        fn close(&mut self, _tay: &str) -> Result<(), String> {
+            Ok(())
+        }
+        fn local_addr(&mut self, _tay: &str) -> Result<String, String> {
+            Ok("127.0.0.1:0".to_string())
+        }
+    }
+
+    #[test]
+    fn tai_va_giai_dung_nethost_tiem() {
+        let than = br#"{"format":"vispkg-http1","packages":{}}"#;
+        let mut mock = MockNet {
+            body: [
+                format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n", than.len()).as_bytes(),
+                than,
+            ]
+            .concat(),
+            da_doc: false,
+        };
+        let (giai, ds) = tai_va_giai(
+            "http://127.0.0.1:9",
+            &BTreeMap::new(),
+            None,
+            &[],
+            &BTreeMap::new(),
+            &mut mock,
+        )
+        .expect("index rỗng phải giải được qua mock NetHost");
+        assert!(giai.is_empty());
+        assert!(ds.is_empty());
     }
 }

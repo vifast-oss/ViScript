@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use vis_cli::net::Net;
-use vis_core::http_client::http_get;
+use vis_http::http_get;
 
 /// Đọc một request tới `\r\n\r\n`; `None` = EOF/lỗi.
 fn doc_yeu_cau(s: &mut TcpStream) -> Option<String> {
@@ -229,8 +229,8 @@ fn head_hai_lan_cung_mot_ket_noi() {
     });
     let mut net = Net::moi(false);
     let u = format!("http://{}/x", s.dia_chi);
-    let (st1, h1) = vis_core::http_client::http_head(&mut net, &u, 3_000).expect("HEAD 1");
-    let (st2, h2) = vis_core::http_client::http_head(&mut net, &u, 3_000).expect("HEAD 2");
+    let (st1, h1) = vis_http::http_head(&mut net, &u, 3_000).expect("HEAD 1");
+    let (st2, h2) = vis_http::http_head(&mut net, &u, 3_000).expect("HEAD 2");
     assert_eq!((st1, st2), (204, 204));
     assert!(h1.iter().any(|(k, v)| k == "x-lan" && v == "1"));
     assert!(h2.iter().any(|(k, v)| k == "x-lan" && v == "2"));

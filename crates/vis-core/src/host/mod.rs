@@ -110,7 +110,7 @@ pub trait NetHost {
 
     /// **VS3-4b (VD-271)**: cookie jar của host (nếu có). Mặc định `None` ⇒ `http.get/head` không
     /// gửi/lưu cookie; host hỗ trợ trả jar để tầng HTTP đọc/ghi. Không phải API ngôn ngữ.
-    fn cookie_jar(&mut self) -> Option<&mut crate::http_client::CookieJar> {
+    fn cookie_jar(&mut self) -> Option<&mut crate::cookie::CookieJar> {
         None
     }
 

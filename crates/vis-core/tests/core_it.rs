@@ -5,7 +5,7 @@
 //! lượng), `json` (một nguồn `esc` duy nhất đóng `#112` + roundtrip), `CookieJar`, và
 //! định vị `pos`/`Trap`.
 
-use vis_core::http_client::CookieJar;
+use vis_core::cookie::CookieJar;
 use vis_core::json::{decode, esc, json};
 use vis_core::value::{eq, parse_duration, parse_size, show, Value};
 use vis_core::{pos, Trap};

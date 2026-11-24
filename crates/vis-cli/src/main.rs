@@ -225,7 +225,12 @@ fn main() -> ExitCode {
         // ST-67 (VD-102): server LSP tối thiểu trên stdio (khung + JSON-RPC).
         Some("lsp") => vis_lsp::run(&args[1..]),
         // ST-70 (VD-101): registry **local** cho gói ViScript.
-        Some("pkg") => pkg::run(&args[1..]),
+        Some("pkg") => {
+            // **ST-312d (VD-289)**: `vis-pkg` không còn phụ thuộc `vis-host-native`;
+            // CLI tiêm host mạng thật tại biên.
+            let mut net = vis_host_native::net::Net::moi(false);
+            pkg::run(&args[1..], &mut net)
+        }
         Some("fmt") => cli::fmt::run_fmt(&args[1..]),
         _ => usage(),
     }

@@ -45,8 +45,8 @@ pub(crate) use vis_loader::lock_meta::{
 };
 
 /// Chạy `vis pkg …`; lỗi ⇒ `vis pkg: …` + exit **2** (mẫu `vis cache`, không mã mới).
-pub fn run(args: &[String]) -> ExitCode {
-    match chay(args) {
+pub fn run(args: &[String], net: &mut dyn vis_core::host::NetHost) -> ExitCode {
+    match chay(args, net) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("vis pkg: {e}");
@@ -59,14 +59,14 @@ fn dung() -> &'static str {
     "dùng: vis pkg add <tên>[@<ver>] [--entry <path>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]... | vis pkg install | vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]... | vis pkg list [--json] | vis pkg remove <tên> | vis pkg gc [--dry-run] [--lock <path>]... [--root <dir>]... | vis pkg migrate"
 }
 
-fn chay(args: &[String]) -> Result<(), String> {
+fn chay(args: &[String], net: &mut dyn vis_core::host::NetHost) -> Result<(), String> {
     let Some(lenh) = args.first() else {
         return Err(dung().to_string());
     };
     match lenh.as_str() {
-        "add" => lenh_add(&args[1..]),
+        "add" => lenh_add(&args[1..], net),
         "install" => lenh_install(&args[1..]),
-        "update" => lenh_update(&args[1..]),
+        "update" => lenh_update(&args[1..], net),
         "list" => lenh_list(&args[1..]),
         "remove" => lenh_remove(&args[1..]),
         "gc" => gc::lenh(&args[1..]),
@@ -765,11 +765,12 @@ fn nap_goi(
     entry_override: Option<(&str, &str)>,
     khoa_cong: &[[u8; 32]],
     uu_tien: &BTreeMap<String, Version>,
+    net: &mut dyn vis_core::host::NetHost,
 ) -> Result<(BTreeMap<String, Version>, Vec<GoiCai>), String> {
     match reg {
         Registry::CucBo(p) => giai_va_doc(p, roots, entry_override, uu_tien),
         Registry::Http(base) => {
-            registry_http::tai_va_giai(base, roots, entry_override, khoa_cong, uu_tien)
+            registry_http::tai_va_giai(base, roots, entry_override, khoa_cong, uu_tien, net)
         }
     }
 }
@@ -786,7 +787,7 @@ fn cwd() -> Result<PathBuf, String> {
 /// **ST-129**: ghi `vis.lock` **định dạng 2** — `roots` (ràng buộc **gốc**) + `version_req` của
 /// từng gói (ràng buộc **hiệu lực** = AND của mọi ràng buộc trỏ tới nó). Không ghi `@` ⇒ root là
 /// `^<phiên bản đã chọn>` (giống "lấy bản mới nhất, ở lại major đó").
-fn lenh_add(args: &[String]) -> Result<(), String> {
+fn lenh_add(args: &[String], net: &mut dyn vis_core::host::NetHost) -> Result<(), String> {
     let TuyChon {
         ten,
         reg,
@@ -813,6 +814,7 @@ fn lenh_add(args: &[String]) -> Result<(), String> {
         entry_override.as_deref().map(|e| (ten.as_str(), e)),
         &khoa_cong,
         &BTreeMap::new(),
+        net,
     )?;
     // Root **ghi vào lock**: `@req` ⇒ đúng req đó; không `@` ⇒ `^<phiên bản đã chọn>`.
     if req_nguoi_dung.is_none() {
@@ -911,7 +913,7 @@ fn lenh_install(args: &[String]) -> Result<(), String> {
 /// trước* bản đó để gói không liên quan giữ nguyên, nhưng **không** ghim cứng `=<version>`: nếu
 /// manifest của gói được update đòi nâng một dep chung thì dep đó được nâng trong phạm vi ràng buộc
 /// (thay vì báo `VS0704`/bỏ qua bản mới). Gói không liên quan vẫn giữ phiên bản.
-fn lenh_update(args: &[String]) -> Result<(), String> {
+fn lenh_update(args: &[String], net: &mut dyn vis_core::host::NetHost) -> Result<(), String> {
     let TuyChon {
         ten,
         reg,
@@ -944,7 +946,7 @@ fn lenh_update(args: &[String]) -> Result<(), String> {
         }
     }
     // Giải **lại** toàn bộ (tất định) rồi so với lock cũ để biết gói nào đổi.
-    let (giai, ds) = nap_goi(&reg, &roots, None, &khoa_cong, &uu_tien)?;
+    let (giai, ds) = nap_goi(&reg, &roots, None, &khoa_cong, &uu_tien, net)?;
     let cu: BTreeMap<&str, &GoiKhoa> = khoa_cu.goi.iter().map(|g| (g.name.as_str(), g)).collect();
     let mut doi = khoa_cu.can_migrate() || khoa_cu.roots.is_empty();
     let mut can_cai: Vec<GoiCai> = Vec::new();

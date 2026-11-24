@@ -9,14 +9,14 @@
 //! - [`json`] — decoder/encoder + **một** bộ `json_esc` duy nhất (đóng nợ #112);
 //! - [`host`] — trait `Ngoai`/`FsHost`/`NetHost`/`DbHost`;
 //! - [`reactor`] — trait adapter selector (`FrameReactorBackend`) + trạng thái `net.write`;
-//! - [`http_client`] — HTTP/1.1 đồng bộ trên [`host::NetHost`] + cookie jar;
+//! - [`cookie`] — cookie jar dùng chung cho trait `NetHost` (HTTP protocol ở `vis-http`);
 //! - [`trap`] — `Trap`/`Abort`/`R`/`pos` dùng chung.
 
 #![forbid(unsafe_code)]
 
+pub mod cookie;
 pub mod frame;
 pub mod host;
-pub mod http_client;
 pub mod json;
 pub mod reactor;
 pub mod run;

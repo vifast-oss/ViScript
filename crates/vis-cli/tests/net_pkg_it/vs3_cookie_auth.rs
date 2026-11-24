@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use vis_cli::net::Net;
-use vis_core::http_client::http_get;
+use vis_http::http_get;
 
 fn tam(tag: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("vis-cookie-{tag}-{}", std::process::id()));
@@ -342,7 +342,7 @@ fn head_cung_luu_cookie() {
         _ => dap("500 Internal Server Error", "", ""),
     });
     let mut net = Net::moi(false);
-    let (st, _) = vis_core::http_client::http_head(&mut net, &s.url("/h"), 3_000).expect("HEAD");
+    let (st, _) = vis_http::http_head(&mut net, &s.url("/h"), 3_000).expect("HEAD");
     assert_eq!(st, 204);
     assert_eq!(
         http_get(&mut net, &s.url("/get"), 3_000).expect("get"),

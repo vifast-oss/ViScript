@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VS3-5a (VD-271)** — base64 + tar **ustar** tối giản cho tarball registry HTTP.
 //!
-//! Client HTTP hiện có (`vis_core::http_client::http_get`) trả `str`, nên tarball đi qua **base64** trên
+//! Client HTTP hiện có (`vis_http::http_get`) trả `str`, nên tarball đi qua **base64** trên
 //! dây; sau giải mã, byte tar được băm **SHA-256** và kiểm **trước khi** ghi bất cứ thứ gì vào
 //! `.vis/`. Không crate mới, không `unsafe`.
 //!

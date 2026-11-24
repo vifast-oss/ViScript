@@ -279,14 +279,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "vis-http"
+version = "0.6.0"
+dependencies = [
+ "vis-core",
+ "vis-diag",
+ "vis-syntax",
+]
+
+[[package]]
 name = "vis-interp"
 version = "0.6.0"
 dependencies = [
  "vis-core",
  "vis-diag",
  "vis-hir",
+ "vis-http",
  "vis-syntax",
- "vis-types",
  "vish-term",
 ]
 

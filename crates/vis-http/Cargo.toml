@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# `vis-http` — HTTP/1.1 sans-IO + redirect + state machine async trên trait `NetHost`
+# (ST-312d/VD-289). Tầng 1 của DAG: chỉ phụ thuộc `vis-core`.
+[package]
+name = "vis-http"
+rust-version.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "HTTP/1.1 sans-IO cho ViScript: client sync/async, cookie qua NetHost — ST-312d"
+
+[dependencies]
+vis-core = { path = "../vis-core" }
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }
