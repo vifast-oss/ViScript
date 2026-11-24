@@ -11,7 +11,6 @@
 3. [`reports/`](reports/) — báo cáo vòng mới nhất đã chốt (`R36`, `v0.5.0`) và khung Phase C (`R37`, `v0.6.0`); [`QUEUE.md`](QUEUE.md) — hàng việc.
 4. [`DECISIONS.md`](DECISIONS.md) / [`DECISIONS-INDEX.md`](DECISIONS-INDEX.md) — quyết định và chỉ mục.
 
-> **Mốc hiện hành (2026-11-24, `VD-288`)**: **3-OS Tier 1 chính thức** (Linux, Windows x86_64 từ `v0.4.5` @ `3daff62`, macOS arm64 từ `v0.5.0` @ `c06d7c6f`) + WASI Preview 1 runtime (`vis-host-wasm`) + kiến trúc 4 tầng (`v0.5.5` @ `3d85bd2c`, 18 crate workspace + 2 host workspace độc lập).
-> `ST-311a..f` đã DONE trên `main`; mã nguồn đóng băng cho Phase C (`ST-309`) tại **`H4 = db67eab`** (version **`0.6.0`**, `#194`/`#190` đóng, `#195` chờ watchdog 2h trên `H4`, `#196` mở non-blocking).
-> **Chưa tag `v0.6.0` / `v1.0.0-rc1`** — chờ hoàn tất ma trận Phase C trên `H4` + chốt `R37-viscript.{md,json}`.
-> Không có số liệu mới trong tệp này — số liệu đo nằm trong `JOURNAL/`/`reports/` và `ACTIVE.md`.
+> **Chế độ hiện hành (2026-11-24, `VD-289`)**: **Phát triển Kiến trúc Tối ưu** (đã hủy/tạm dừng vô thời hạn kế hoạch phát hành `v0.6.0`/`v1.0.0-rc1` và soak 24h; `ST-309` → `BLOCKED`).
+> Tập trung hoàn tất **Kiến trúc Đích 5 Tầng DAG** (`ST-312a..ST-313d`: `vis-hir`, `vis-http`, `vis-runtime`, `vis-host-linux` vào workspace, stdlib `StdId` 1 nguồn sự thật + chia miền, `vis-conformance` dữ liệu).
+> Nền lịch sử đã đạt: 3-OS Tier 1 (`v0.4.5`/`v0.5.0`), kiến trúc 4 tầng (`v0.5.5`), bảo mật `#190`/`#194`/vá `#195` (`ST-311a..f`). Số liệu đo chi tiết nằm trong `JOURNAL/` và `ACTIVE.md`.

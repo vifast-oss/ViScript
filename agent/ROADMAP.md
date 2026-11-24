@@ -1,31 +1,12 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **TRẠNG THÁI HIỆN HÀNH — 2026-11-24 (`VD-288`, `H4 = db67eab`, version **0.6.0** đóng băng Phase C; tag `v0.5.5` @ `3d85bd2`; `v0.5.0` @ `c06d7c6`; `v0.4.5` @ `3daff62`).
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-24 (`VD-289` — CHẾ ĐỘ PHÁT TRIỂN KIẾN TRÚC TỐI ƯU; hủy kế hoạch phát hành cũ `v0.6.0`/`v1.0.0-rc1`; `ST-309` tạm dừng vô thời hạn).
 > Đọc khối này trước.**
-> - **3-OS Tier 1**: **Linux** (runtime), **Windows x86_64** (`ST-298`), **macOS arm64**
->   (`ST-300m3`, chứng nhận `aarch64-apple-darwin`) — cả 3 nền chính thức đều **Tier 1**;
->   WASI `wasm32-wasip1` là **runtime có phạm vi**.
-> - **macOS arm64 @ `7930e90`** (tag `v0.5.0` @ `c06d7c6`): **3× `bin/vis-gate-macos --full` PASS** — wall
->   **220/216/210 s**; mỗi lần nextest **3.745/3 skip/0 fail**, doc-test **5/0/1**,
->   host-wasm **29/29**, WASI **28/28**, dirty **0**; **soak 4 h 1.878 vòng / 0 lỗi sản phẩm**
->   (RSS/fd phẳng, dirty 0); `vis-wasm-sem` **388/390**. **Tier 1 CHÍNH THỨC** với caveat:
->   **không Landlock kernel**, chỉ chứng nhận **arm64**, **chưa đo Intel x86_64**.
->   Cổng `--full` dùng **nextest + doc-test** (libtest-only `lat256_net::t3` là khác biệt harness,
->   không phải lỗi sản phẩm — `st300m3-final5-macos-blocker.md`).
-> - **`v0.5.5` Phase B**: `ST-310a..f` đã merge; gate **3773/4**, targets 38/38 + 37/1 (18/18 crate), diff 100k **0**;
->   Windows full **3720/0/4**, macOS full **3764/3 + sem 388/390**, Linux fresh QA **3778/0/5** + diff 5 seed 0;
->   **tag `v0.5.5` @ `3d85bd2`**.
-> - **Tiền-`v0.6.0` (`ST-311a..f` — 6/6 DONE, `VD-288`)**: đóng **`#190`** (`pop_frame`) & **`#194`** (metadata FS Unix theo `fd`, đua 100k **0 rò** Linux+macOS); vá mã **`#195`** (VM `loop_ends` O(1) + `deadline` + watchdog); gom binary integration **78→37** (R8 ≤ 40); chia 10 tệp >1.150 LOC + `builtin/`; vá clippy Windows (`ST-311e`) & race soak `lat0_suspend` (`ST-311f`); gate Linux **3.782/4**; đóng băng **`H4 = db67eab`** (version **0.6.0**).
-> - **Phase C cuối (`ST-309` READY trên `H4 = db67eab`)**: chờ đủ ma trận trên `H4` (Linux fresh + watchdog 2h đóng `#195` + fuzz parser 8h + soak 24h; Windows/macOS 3× `--full` + soak 4h) và chốt `R37-viscript.{md,json}`; **chưa tag `v0.6.0` / `v1.0.0-rc1`**.
-> - **Tag đã chốt**: `v0.5.5` @ `3d85bd2`, `v0.5.0` @ `c06d7c6` (`R36`), `v0.4.5` @ `3daff62` (`R35`), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (`VD-142`).
-> - **WASI `wasm32-wasip1`: có runner runtime** (`bin/vis-wasm-sem` 388/390 eligible,
->   `bin/vis-wasm-suite` 28/28) — không còn “chỉ cargo check”.
-> - **Crate**: **18 crate thành viên** trên `main` (`vis-core`, `vis-plugin-host`, `vis-plugin-abi`,
->   `vis-plugin-macros`, `vis-host-native`, `vis-pkg`, `vis-loader`, `vis-lsp`, `vish-edit`, `vish-term`, …);
->   `vis-host-linux`/`vis-host-wasm` là **2 workspace riêng** (tổng 20 crate).
-> - **Công cụ**: `bin/vis-gate-macos`, `bin/vis-gate-windows`, `bin/vis-wasm-sem`,
->   `bin/vis-wasm-suite`, `bin/vis-lock`, `bin/vis-gc-targets`.
+> - **Trọng tâm hiện tại (`ST-312a..ST-313d`, 4 Sóng song song `W1..W4`)**: đưa toàn repo về **Kiến trúc Đích 5 Tầng DAG** (`vis-hir`, `vis-core` mỏng, `vis-http` + cắt `vis-pkg → vis-host-native`, `vis-runtime` tách khỏi `vis-interp` + cắt `vis-vm → vis-interp`, `vis-host-linux` vào workspace, 1 nguồn sự thật stdlib `StdId` + chia `stdlib/` theo miền, `vis-conformance` dữ liệu). Cổng nhẹ: `gate --fast` + `vis-diff 100k` mỗi lát, 1× clippy 3-OS + `vis-targets` cuối mỗi Sóng (**không** soak 4h/24h, **không** fuzz 8h, **không** tag mới cho tới khi mở lại pha phát hành).
+> - **Nền kỹ thuật đã đạt trước `VD-289`**: **3-OS Tier 1** (Linux, Windows x86_64 `ST-298`, macOS arm64 `ST-300m3`), WASI `wasm32-wasip1` runtime (`vis-wasm-suite` 28/28, `vis-wasm-sem` 388/390), kiến trúc 4 tầng `v0.5.5` (`3d85bd2`), bảo mật & hygiene `ST-311a..f` (đóng `#190`/`#194`, vá `#195`, 0 `unsafe`, R1..R9 PASS, gate Linux 3.782/4).
+> - **Tag lịch sử đã chốt**: `v0.5.5` @ `3d85bd2`, `v0.5.0` @ `c06d7c6` (`R36`), `v0.4.5` @ `3daff62` (`R35`), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (`VD-142`).
+> - **Đọc chi tiết hiện hành**: [`ACTIVE.md`](ACTIVE.md), [`QUEUE.md`](QUEUE.md) (`ST-312a..ST-313d`), [`JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md`](JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md).
 
 > **`v0.5.0` prep — 2026-11-23 (ST-305, chưa tag)** — workspace bump **0.5.0** (mọi crate
 > `version.workspace = true`); `vis --version` ⇒ **`vis 0.5.0`**; `PHIEN_BAN`
