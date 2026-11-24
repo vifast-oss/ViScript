@@ -80,3 +80,6 @@ mod api_dong_bang;
 mod so_ma;
 #[path = "misc_api_it/vs3_coverage_matrix.rs"]
 mod vs3_coverage_matrix;
+
+#[path = "misc_api_it/version_workspace.rs"]
+mod version_workspace;
