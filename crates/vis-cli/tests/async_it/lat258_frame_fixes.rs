@@ -20,7 +20,7 @@ use vis_core::frame::{FakeEvent, ReactorEvent, ReactorOutcome};
 use vis_core::frame::{FrameConfig, FrameOutput};
 use vis_core::Value;
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, run_frame_for_test as run_v,

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use vis_core::RunOutput;
-use vis_interp::rt::fee::SharedBudget;
+use vis_runtime::rt::fee::SharedBudget;
 use vis_syntax::{lex, parse, Mode};
 
 fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {

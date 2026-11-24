@@ -20,7 +20,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use vis_core::RunOutput;
-use vis_interp::rt::fee::{BudgetSnapshot, SharedBudget};
+use vis_runtime::rt::fee::{BudgetSnapshot, SharedBudget};
 use vis_syntax::{lex, parse, Mode};
 
 const SOAK_MAC_DINH_SECS: u64 = 1800;

@@ -51,6 +51,7 @@ vis-types = { path = "../vis-types" }
 vis-vm = { path = "../vis-vm" }
 
 [dependencies]
+vis-runtime = { path = "../vis-runtime" }
 vis-http = { path = "../vis-http" }
 vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }

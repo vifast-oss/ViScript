@@ -9,7 +9,7 @@
 //! giữ `VS0505`, ngân sách `VS0510`. `chan(0)`/frame async parity là P4, không phải P1.
 
 use vis_core::RunOutput;
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 
 fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {

@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use vis_interp::value::worker::{SendValue, WorkerPool};
+use vis_runtime::worker::{SendValue, WorkerPool};
 
 fn median(mut v: Vec<f64>) -> f64 {
     v.sort_by(|a, b| a.total_cmp(b));

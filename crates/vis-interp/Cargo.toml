@@ -10,9 +10,10 @@ description = "Thông dịch cây trên HIR cho ViScript VS0 (ST-13)"
 [features]
 # **VS3-3b/W5 prototype** (default off): mirror `Value` với `Task(TaskId)` + chuyển đổi.
 # Không đổi enum `Value`/ABI; bật ở test/CLI khi thử hook evaluator.
-taskid-proto = []
+taskid-proto = ["vis-runtime/taskid-proto"]
 
 [dependencies]
+vis-runtime = { path = "../vis-runtime" }
 vis-http = { path = "../vis-http" }
 vis-hir = { path = "../vis-hir" }
 vis-core = { path = "../vis-core" }

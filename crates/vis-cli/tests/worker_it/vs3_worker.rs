@@ -13,11 +13,11 @@ use std::time::{Duration, Instant};
 
 use vis_core::value::Value;
 use vis_core::value::{Task, TrangThai};
-use vis_interp::rt::fee::SharedBudget;
-use vis_interp::value::worker::{
+use vis_interp::value::TaskId;
+use vis_runtime::rt::fee::SharedBudget;
+use vis_runtime::worker::{
     EnvMap, SendValue, TaskWaitBoard, ToSend, WaitError, WorkerError, WorkerPool,
 };
-use vis_interp::value::TaskId;
 use vis_syntax::Span;
 
 fn env() -> EnvMap {
@@ -30,14 +30,14 @@ fn env() -> EnvMap {
     m
 }
 
-fn base_of(ctx: &vis_interp::value::worker::WorkerCtx) -> i64 {
+fn base_of(ctx: &vis_runtime::worker::WorkerCtx) -> i64 {
     match ctx.get("base") {
         Some(SendValue::Int(v)) => *v,
         _ => -1,
     }
 }
 
-fn data_len(ctx: &vis_interp::value::worker::WorkerCtx) -> usize {
+fn data_len(ctx: &vis_runtime::worker::WorkerCtx) -> usize {
     match ctx.get("data") {
         Some(SendValue::List(xs)) => xs.len(),
         _ => 0,
@@ -500,7 +500,7 @@ fn stress_dai_5x10k_cancel_budget_print_cross() {
 #[test]
 fn taskid_proto_value_show_eq_roundtrip() {
     use vis_core::value::Name;
-    use vis_interp::value::worker::ProtoValue;
+    use vis_runtime::worker::ProtoValue;
 
     let vals = vec![
         Value::Int(7),

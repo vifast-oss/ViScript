@@ -1,121 +1,23 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **VS3-3b/W5 (P1/P2)** — chế độ evaluator `Local` (W=1) và `Parallel(n)` (W>1).
+//! **ST-313a (VD-289)** — orchestration worker của interp.
 //!
-//! `Off` mặc định đi nguyên văn đường cũ. `Local` chạy trên caller, shared env (P1).
-//! `Parallel` chạy task CPU trên `WorkerPool`: mỗi job dựng `Interp` riêng từ `Arc<HirImage>`,
-//! nạp snapshot top-level (`SendValue::Map`), in vào buffer rồi merge **spawn order**, lease
-//! `SharedBudget` theo task, cancel hợp tác và từ chối ghi top-level (cross-write).
-#![allow(dead_code)]
+//! Chuyển từ `vis-interp/src/rt/exec.rs`; trạng thái `ExecState`/pool nằm ở `vis-runtime`,
+//! ở đây chỉ còn phần cần runner cây (`chay_than_worker`) và proxy theo engine.
 
-use std::collections::HashMap;
-use std::fmt;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use vis_hir::{Hir, Symbols, TypeTable};
+use vis_core::trap::{Trap, R};
+use vis_core::value::{Task, Value};
 use vis_syntax::Span;
 
-use crate::builtin::Host;
-use crate::interp::{Interp, Trap, R, RT};
-use crate::rt::fee::SharedBudget;
-use crate::rt::Task;
-use crate::value::worker::{
-    OutcomeBoard, SendValue, TaskHandle, TaskId, ToSend, WorkerCtx, WorkerError, WorkerPool,
-};
-use crate::value::Value;
+use vis_runtime::builtin::Host;
 
-/// Ảnh chương trình **bất biến** chia sẻ cho mọi worker (P2).
-#[derive(Debug)]
-pub(crate) struct HirImage {
-    pub(crate) hir: Hir,
-    pub(crate) symbols: Symbols,
-    pub(crate) types: TypeTable,
-    /// Nguồn để chẩn đoán (worker hiện chỉ dùng cho tương lai; không đổi semantics).
-    pub(crate) text: Arc<str>,
-}
-
-/// Chế độ evaluator. `Parallel` chỉ nhận task **CPU thuần** trong P2.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) enum WorkerMode {
-    #[default]
-    Off,
-    Local,
-    Parallel(usize),
-}
-
-/// Proxy `Task.id` (main) ↔ job của pool.
-pub(crate) struct TaskProxy {
-    pub(crate) task: Rc<Task>,
-    pub(crate) pool_id: TaskId,
-    pub(crate) handle: TaskHandle,
-    /// Output đã append vào `host.out` (flush đúng một lần).
-    pub(crate) flushed: bool,
-    /// **ST-292 (P4)**: outcome đã được pump lấy (output/dirty nằm trong proxy).
-    pub(crate) done: bool,
-    pub(crate) output: String,
-    pub(crate) dirty: Vec<String>,
-    pub(crate) cancelled: bool,
-}
-
-/// **ST-291 (P2b-1)** — job đã tạo `Task` nhưng **chưa gửi** pool.
-///
-/// Snapshot top-level vẫn chụp tại thời điểm `spawn` (đúng semantics P2); chỉ việc gửi
-/// xuống `WorkerPool` được hoãn tới `await`/final join để gửi **một lô**.
-pub(crate) struct PendingJob {
-    pub(crate) task: Rc<Task>,
-    pub(crate) than: u32,
-    pub(crate) args: Vec<SendValue>,
-    pub(crate) snap: Arc<SendValue>,
-    pub(crate) span: Span,
-}
-
-/// Trạng thái điều phối tác vụ của một `Scheduler`.
-#[derive(Default)]
-pub(crate) struct ExecState {
-    pub(crate) mode: WorkerMode,
-    /// `Task.id` theo thứ tự spawn.
-    pub(crate) order: Vec<u32>,
-    /// Ảnh HIR dùng cho runner worker; dựng một lần mỗi lần chạy.
-    pub(crate) image: Option<Arc<HirImage>>,
-    /// Ngân sách atomic (P2); `None` ⇒ không charge.
-    pub(crate) budget: Option<Arc<SharedBudget>>,
-    /// Test hook: huỷ mọi task trước khi worker chạy (P2 cancel pre-run).
-    pub(crate) cancel_before: bool,
-    /// Test hook: huỷ các task đang chạy sau mốc thời gian (P2 cancel-after).
-    pub(crate) cancel_deadline: Option<Instant>,
-    pool: Option<WorkerPool>,
-    pub(crate) outcome_board: Option<Arc<OutcomeBoard>>,
-    /// **ST-291 (P2b-2)**: proxy theo `Task.id` (dày, bắt đầu từ 1) — thay `HashMap`.
-    pub(crate) proxy: Vec<Option<TaskProxy>>,
-    /// **ST-291 (P2b-1)**: job đã tạo `Task` nhưng chưa gửi pool.
-    pub(crate) pending: Vec<PendingJob>,
-    /// **ST-291 (P2b-2)**: `Task.id` theo đúng thứ tự gửi pool — thay `HashMap` task↔pool.
-    pub(crate) pool_order: Vec<u32>,
-    /// **ST-292 (P4)**: `Task.id` là worker task (spawn từ **main frame**) — fallback frame
-    /// không được dựng frame chạy lại thân.
-    pub(crate) worker_ids: Vec<bool>,
-}
-
-impl fmt::Debug for ExecState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ExecState")
-            .field("mode", &self.mode)
-            .field("order_len", &self.order.len())
-            .field(
-                "proxy_len",
-                &self.proxy.iter().filter(|p| p.is_some()).count(),
-            )
-            .field("pending_len", &self.pending.len())
-            .field("pool_order_len", &self.pool_order.len())
-            .field(
-                "worker_ids",
-                &self.worker_ids.iter().filter(|w| **w).count(),
-            )
-            .field("budget", &self.budget.is_some())
-            .finish()
-    }
-}
+use crate::interp::Interp;
+use vis_runtime::codes::RT;
+pub(crate) use vis_runtime::rt::exec_state::{HirImage, PendingJob, TaskProxy, WorkerMode};
+use vis_runtime::worker::{SendValue, TaskId, ToSend, WorkerCtx, WorkerError};
 
 fn loi(msg: impl Into<String>, span: Span) -> Trap {
     Trap::new(RT, msg.into(), span)
@@ -123,24 +25,6 @@ fn loi(msg: impl Into<String>, span: Span) -> Trap {
 
 fn loi_pool(e: WorkerError, span: Span) -> Trap {
     loi(format!("worker pool: {e:?}"), span)
-}
-
-impl ExecState {
-    fn ensure_pool(&mut self) -> Result<(), String> {
-        if self.pool.is_some() {
-            return Ok(());
-        }
-        let WorkerMode::Parallel(n) = self.mode else {
-            return Ok(());
-        };
-        let mut pool =
-            WorkerPool::new(n, HashMap::new()).map_err(|e| format!("worker pool: {e:?}"))?;
-        let board = Arc::new(OutcomeBoard::new());
-        pool.attach_outcome_board(Arc::clone(&board));
-        self.pool = Some(pool);
-        self.outcome_board = Some(board);
-        Ok(())
-    }
 }
 
 /// Tạo tác vụ theo đúng đường cũ (`Scheduler::spawn`), ghi order khi `Local`.
@@ -301,7 +185,7 @@ fn loi_task(task: &Task, m: String) -> Trap {
 }
 
 /// **ST-292 (P4)**: áp một outcome vào proxy + cache `Task`; **không** flush output.
-fn apply_outcome(s: &mut crate::rt::Scheduler, o: crate::value::worker::TaskOutcome) {
+fn apply_outcome(s: &mut crate::rt::Scheduler, o: vis_runtime::worker::TaskOutcome) {
     let Some(main_id) = s.exec.pool_order.get(o.id.as_u64() as usize).copied() else {
         return;
     };

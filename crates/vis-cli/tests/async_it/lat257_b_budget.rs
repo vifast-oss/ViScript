@@ -5,7 +5,7 @@
 //! `budget_enable_for_test`. Không thêm CLI flag, không đổi API công, không bật budget mặc định.
 //! Năm quy tắc chốt ở `vd252-charging-final.md` giữ nguyên; bảng trọng số v1 vẫn **thử nghiệm**.
 
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 

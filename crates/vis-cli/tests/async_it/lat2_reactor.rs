@@ -181,7 +181,7 @@ fn r3_duplicate_and_stale_wake_do_not_rerun() {
 #[test]
 fn r3b_duplicate_fire_direct() {
     use vis_core::value::Wait;
-    use vis_interp::rt::{Scheduler, Waiter};
+    use vis_runtime::rt::{Scheduler, Waiter};
     let mut s = Scheduler::new();
     s.frame_enable_for_test(vec![], vec![]);
     s.frame.current = 1;

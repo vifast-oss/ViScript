@@ -45,33 +45,34 @@
 //! ```
 
 /// **ST-312a (VD-289)**: kiểu/trait lõi dùng trực tiếp từ `vis_core`; re-export nội bộ `pub(crate)`.
-pub(crate) use vis_core::json::derive as json_derive;
 mod gan;
 mod host;
-pub(crate) mod lift;
-pub mod net;
-pub mod render;
 pub mod rt;
-pub mod stdlib;
 pub mod value;
 
 /// Tên ngắn cho **bảng ngữ nghĩa dùng chung** (ST-20): `ops::bin`, `ops::un`.
 pub mod ops {
-    pub use crate::builtin::{bin, un};
+    pub use vis_runtime::builtin::{bin, un};
 }
 
-pub mod builtin;
+/// **ST-313a (VD-289)**: `builtin`/`stdlib`/`render`/`Host` nay ở `vis-runtime`; giữ
+/// re-export tại gốc để API `vis_interp::{SIGS, Host}` cũ không đổi trong giai đoạn chuyển.
+pub use vis_runtime::builtin;
 /// **ST-311d (VD-286)** — 6 tệp phẳng `builtin_*.rs` nay ở `builtin/`; re-export giữ nguyên
 /// đường dẫn công khai cũ (`builtin_assert`/`builtin_list`/`builtin_panic`).
-pub use builtin::{assert as builtin_assert, list as builtin_list, panic as builtin_panic};
+pub use vis_runtime::builtin::{
+    assert as builtin_assert, list as builtin_list, panic as builtin_panic,
+};
 /// **ST-267/VD-251 (chỉ test/debug)** — frame scheduler nối vào đường interp thật.
 #[doc(hidden)]
 pub mod frame;
 pub mod interp;
 mod pat;
 
-pub use builtin::{BuiltinSig, SIGS};
 pub(crate) use value::Value;
+pub use vis_runtime::builtin::{BuiltinSig, Host, SIGS};
+/// **ST-313a**: tiện ích thuần nay ở `vis-runtime`; alias nội bộ cho đường gọi cũ.
+pub(crate) use vis_runtime::lift;
 
 use std::sync::Arc;
 
@@ -98,7 +99,7 @@ pub fn run_with_ngoai<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
 ) -> RunOutput {
     run_with_hosts(text, hir, symbols, types, args, ngoai, None, None)
 }
@@ -112,9 +113,9 @@ pub fn run_with_hosts<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
 ) -> RunOutput {
     run_with_hosts_caps(text, hir, symbols, types, args, ngoai, fs, net, None, &[])
 }
@@ -129,10 +130,10 @@ pub fn run_with_hosts_caps<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     run_with_hosts_caps_mode(
@@ -162,10 +163,10 @@ fn run_with_hosts_caps_mode<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
     mode: crate::rt::exec::WorkerMode,
     budget: Option<Arc<crate::rt::fee::SharedBudget>>,
@@ -275,10 +276,10 @@ pub fn run_workers_local_with_hosts_caps<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     run_with_hosts_caps_mode(
@@ -328,10 +329,10 @@ pub fn run_workers_parallel_with_hosts_caps<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
     workers: usize,
     budget: Option<Arc<crate::rt::fee::SharedBudget>>,
@@ -459,10 +460,10 @@ pub fn run_async_with_hosts_caps<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     run_async_with_hosts_caps_backend(
@@ -480,10 +481,10 @@ pub fn run_async_with_hosts_caps_backend<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
     backend: Option<std::rc::Rc<std::cell::RefCell<dyn crate::rt::FrameReactorBackend>>>,
 ) -> RunOutput {
@@ -536,10 +537,10 @@ pub fn run_async_workers_with_hosts_caps<'a>(
     symbols: &'a Symbols,
     types: &'a TypeTable,
     args: &[String],
-    ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
-    fs: Option<&'a mut dyn crate::builtin::FsHost>,
-    net: Option<&'a mut dyn crate::builtin::NetHost>,
-    db: Option<&'a mut dyn crate::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
     workers: usize,
     budget: Option<Arc<crate::rt::fee::SharedBudget>>,

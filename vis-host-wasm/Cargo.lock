@@ -295,6 +295,7 @@ dependencies = [
  "vis-diag",
  "vis-hir",
  "vis-http",
+ "vis-runtime",
  "vis-syntax",
  "vish-term",
 ]
@@ -309,6 +310,18 @@ dependencies = [
  "vis-hir",
  "vis-syntax",
  "vis-types",
+]
+
+[[package]]
+name = "vis-runtime"
+version = "0.6.0"
+dependencies = [
+ "vis-core",
+ "vis-diag",
+ "vis-hir",
+ "vis-http",
+ "vis-syntax",
+ "vish-term",
 ]
 
 [[package]]
@@ -337,7 +350,7 @@ dependencies = [
  "vis-core",
  "vis-diag",
  "vis-hir",
- "vis-interp",
+ "vis-runtime",
  "vis-syntax",
 ]
 

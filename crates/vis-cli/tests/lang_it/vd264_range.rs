@@ -21,7 +21,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use vis_core::frame::FrameConfig;
 use vis_interp::frame::run_frame_for_test as run_frame_i;
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 use vis_vm::vm_frame::run_frame_for_test as run_frame_v;

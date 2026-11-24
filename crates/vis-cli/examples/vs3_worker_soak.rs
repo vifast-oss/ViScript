@@ -15,8 +15,8 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use vis_interp::rt::fee::SharedBudget;
-use vis_interp::value::worker::{EnvMap, SendValue, WorkerError, WorkerPool};
+use vis_runtime::rt::fee::SharedBudget;
+use vis_runtime::worker::{EnvMap, SendValue, WorkerError, WorkerPool};
 
 fn env() -> EnvMap {
     let mut m = EnvMap::new();
@@ -184,7 +184,7 @@ fn mixed_move_payload() -> SendValue {
 }
 
 fn mixed_body(
-    ctx: &mut vis_interp::value::worker::WorkerCtx,
+    ctx: &mut vis_runtime::worker::WorkerCtx,
     i: usize,
     mode: MixedMode,
     payload: MixedPayload<'_>,
@@ -250,7 +250,7 @@ fn mixed_spawn(
     i: usize,
     payloads: &MixedPayloads,
     action: MixedAction,
-) -> Result<vis_interp::value::worker::TaskHandle, WorkerError> {
+) -> Result<vis_runtime::worker::TaskHandle, WorkerError> {
     let mode = MixedMode::of(i);
     match mode {
         MixedMode::SharedMap => {

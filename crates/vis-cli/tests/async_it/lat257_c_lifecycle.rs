@@ -20,7 +20,7 @@ use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, Reacto
 use vis_core::value::Wait;
 use vis_core::Value;
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::{
+use vis_runtime::rt::{
     frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test, Scheduler, Waiter,
 };
 use vis_syntax::{lex, parse, Mode, Span};

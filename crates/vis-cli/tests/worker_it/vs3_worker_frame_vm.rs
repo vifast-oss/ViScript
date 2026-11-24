@@ -169,7 +169,7 @@ fn vm_p4a_w2_w4_byte_identical_20_vong() {
 #[test]
 fn vm_p4b_cancel_worker_qua_trigger_frame() {
     use vis_core::frame::FrameConfig;
-    use vis_interp::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
+    use vis_runtime::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
     let src = r#"async fn src1() -> int:
     0
 

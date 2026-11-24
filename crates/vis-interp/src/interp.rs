@@ -20,7 +20,6 @@ mod core_types;
 mod eval;
 #[path = "interp/gan_long.rs"]
 pub(crate) mod gan_long;
-mod lit;
 #[path = "interp/opt_method.rs"]
 mod opt_method;
 mod stmt;
@@ -29,7 +28,8 @@ mod stmt;
 pub(crate) mod worker;
 use core_types::goi::{opt_depth_ty, opt_lift_maybe, ty_là_opt};
 pub use core_types::*;
-pub use lit::*;
+pub(crate) use vis_runtime::lit::{builtin_name, MAX_CALL_DEPTH};
+pub use vis_runtime::lit::{dinh_dang, lit_value};
 
 /// **VD-267** — khoá cache tên enum theo vị trí nguồn `(file, start, end)`.
 type EnumTagKey = (u16, usize, usize);
@@ -81,13 +81,13 @@ pub(crate) struct Interp<'a> {
     #[allow(dead_code)]
     symbols: &'a Symbols,
     /// Host chương trình ngoài (ST-27); `None` ⇒ `VS0604` — interp **không** biết OS.
-    pub(crate) ngoai: Option<&'a mut dyn crate::builtin::Ngoai>,
+    pub(crate) ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
     /// Host hệ thống tệp (ST-33); `None` ⇒ `VS0604` — interp **không** biết `std::fs`.
-    pub(crate) fs: Option<&'a mut dyn crate::builtin::FsHost>,
+    pub(crate) fs: Option<&'a mut dyn vis_core::host::FsHost>,
     /// **ST-63 (VD-105)**: host mạng; `None` ⇒ `VS0604` — interp **không** biết `std::net`.
-    pub(crate) net: Option<&'a mut dyn crate::builtin::NetHost>,
+    pub(crate) net: Option<&'a mut dyn vis_core::host::NetHost>,
     /// **VD-241 (Gate 1)**: host cơ sở dữ liệu; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
-    pub(crate) db: Option<&'a mut dyn crate::builtin::DbHost>,
+    pub(crate) db: Option<&'a mut dyn vis_core::host::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` (một `Scheduler` cho mỗi lần chạy).
     pub(crate) sched: std::cell::RefCell<crate::rt::Scheduler>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)` theo thứ tự khai.
@@ -166,25 +166,25 @@ impl<'a> Interp<'a> {
 
     /// Gắn host chương trình ngoài (ST-27) — chỉ dùng trong crate (`run_with_ngoai`).
     #[allow(dead_code)]
-    pub(crate) fn set_ngoai(&mut self, n: &'a mut dyn crate::builtin::Ngoai) {
+    pub(crate) fn set_ngoai(&mut self, n: &'a mut dyn vis_core::host::Ngoai) {
         self.ngoai = Some(n);
     }
 
     /// Gắn host hệ thống tệp (ST-33) — chỉ dùng trong crate (`run_with_hosts`).
     #[allow(dead_code)]
-    pub(crate) fn set_fs(&mut self, f: &'a mut dyn crate::builtin::FsHost) {
+    pub(crate) fn set_fs(&mut self, f: &'a mut dyn vis_core::host::FsHost) {
         self.fs = Some(f);
     }
 
     /// **ST-63 (VD-105)**: gắn host mạng — chỉ dùng trong crate (`run_with_hosts`).
     #[allow(dead_code)]
-    pub(crate) fn set_net(&mut self, n: &'a mut dyn crate::builtin::NetHost) {
+    pub(crate) fn set_net(&mut self, n: &'a mut dyn vis_core::host::NetHost) {
         self.net = Some(n);
     }
 
     /// **VD-241 (Gate 1)**: gắn host cơ sở dữ liệu — chỉ dùng trong crate (`run_with_hosts…`).
     #[allow(dead_code)]
-    pub(crate) fn set_db(&mut self, d: &'a mut dyn crate::builtin::DbHost) {
+    pub(crate) fn set_db(&mut self, d: &'a mut dyn vis_core::host::DbHost) {
         self.db = Some(d);
     }
 

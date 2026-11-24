@@ -10,8 +10,8 @@ use vis_bytecode::Module;
 use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{Value, VmFunc};
 use vis_core::RunOutput;
-use vis_interp::builtin::{self, Host};
-use vis_interp::interp::RT;
+use vis_runtime::builtin::{self, Host};
+use vis_runtime::codes::RT;
 use vis_syntax::Span;
 
 use super::Vm;
@@ -159,7 +159,7 @@ impl Host for Vm<'_> {
             .map(|n| (**n).chay_day_du(ten, args, stdin, span))
     }
 
-    fn sched(&self) -> &std::cell::RefCell<vis_interp::rt::Scheduler> {
+    fn sched(&self) -> &std::cell::RefCell<vis_runtime::Scheduler> {
         &self.sched
     }
 

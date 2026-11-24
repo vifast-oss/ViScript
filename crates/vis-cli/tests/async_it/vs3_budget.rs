@@ -14,7 +14,7 @@
 //! `vs3_budget_default.rs`). Các ca ở đây vẫn bật **hook nội bộ** với hạn nhỏ để đo biên
 //! chính xác; hook tường minh thắng chính sách mặc định.
 
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 

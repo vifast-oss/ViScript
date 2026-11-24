@@ -21,7 +21,7 @@ use vis_core::frame::{FrameConfig, FrameOutput};
 use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
 use vis_core::value::Wait;
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::{Scheduler, Waiter};
+use vis_runtime::rt::{Scheduler, Waiter};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

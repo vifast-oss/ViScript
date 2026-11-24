@@ -11,8 +11,8 @@ use std::rc::Rc;
 use vis_bytecode::{Instr, BI_MATCH_NO_ARM, BI_MAU_LIST_GE, BI_MAU_LIST_TAIL, GLOBAL_SLOT_BASE};
 use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{self, Value, VmFunc};
-use vis_interp::builtin::{self, Host};
-use vis_interp::interp::RT;
+use vis_runtime::builtin::{self, Host};
+use vis_runtime::codes::RT;
 use vis_syntax::Span;
 
 use super::vm_helpers::*;
@@ -484,7 +484,7 @@ impl<'m> Th<'m> {
                         Value::Str(s) => s,
                         _ => return Err(vm.hong(VmError::BadIdx(i), span)),
                     };
-                    let s = vis_interp::interp::dinh_dang(&v, &spec, span)?;
+                    let s = vis_runtime::lit::dinh_dang(&v, &spec, span)?;
                     self.st.push(Value::Str(s));
                 }
                 Instr::IterInit => {
@@ -518,7 +518,7 @@ impl<'m> Th<'m> {
                         }
                     }
                     let it = self.pop(vm, span)?;
-                    let items = vis_interp::value::iter_items(it, span)?;
+                    let items = vis_runtime::iter_items(it, span)?;
                     self.iters.push(items);
                 }
                 Instr::IterNext(d) => {

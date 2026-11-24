@@ -678,6 +678,7 @@ dependencies = [
  "vis-lsp",
  "vis-pkg",
  "vis-plugin-host",
+ "vis-runtime",
  "vis-syntax",
  "vis-types",
  "vis-vm",
@@ -738,6 +739,7 @@ dependencies = [
  "vis-hir",
  "vis-http",
  "vis-interp",
+ "vis-runtime",
  "vis-syntax",
  "vis-types",
  "vis-vm",
@@ -761,6 +763,7 @@ dependencies = [
  "vis-diag",
  "vis-hir",
  "vis-http",
+ "vis-runtime",
  "vis-syntax",
  "vis-types",
  "vish-term",
@@ -833,6 +836,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vis-runtime"
+version = "0.6.0"
+dependencies = [
+ "vis-core",
+ "vis-diag",
+ "vis-hir",
+ "vis-http",
+ "vis-syntax",
+ "vish-term",
+]
+
+[[package]]
 name = "vis-syntax"
 version = "0.6.0"
 dependencies = [
@@ -859,6 +874,7 @@ dependencies = [
  "vis-diag",
  "vis-hir",
  "vis-interp",
+ "vis-runtime",
  "vis-syntax",
  "vis-types",
 ]

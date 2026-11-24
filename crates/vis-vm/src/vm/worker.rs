@@ -10,7 +10,7 @@
 //! `WorkerState.mode == Parallel`.
 #![allow(dead_code)]
 
-use vis_interp::value::worker::ToSend;
+use vis_runtime::worker::ToSend;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -22,12 +22,10 @@ use vis_bytecode::Module;
 use vis_core::trap::{Abort, Trap};
 use vis_core::value::Task;
 use vis_core::value::Value;
-use vis_interp::builtin::Host;
-use vis_interp::interp::{RT, TASK_ERR};
-use vis_interp::rt::fee::SharedBudget;
-use vis_interp::value::worker::{
-    OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerError, WorkerPool,
-};
+use vis_runtime::builtin::Host;
+use vis_runtime::codes::{RT, TASK_ERR};
+use vis_runtime::rt::fee::SharedBudget;
+use vis_runtime::worker::{OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerError, WorkerPool};
 use vis_syntax::Span;
 
 use super::Vm;
@@ -230,7 +228,7 @@ fn loi_task(task: &Task, m: String) -> Trap {
 }
 
 /// Áp outcome vào proxy + cache `Task`; **không** flush output.
-fn apply_outcome(vm: &mut Vm<'_>, o: vis_interp::value::worker::TaskOutcome) {
+fn apply_outcome(vm: &mut Vm<'_>, o: vis_runtime::worker::TaskOutcome) {
     let mut w = vm.worker.borrow_mut();
     let Some(main_id) = w.pool_to_task.get(&o.id).copied() else {
         return;
@@ -358,7 +356,7 @@ pub(crate) fn await_task(vm: &mut Vm<'_>, t: &Rc<Task>, span: Span) -> vis_core:
         )
     };
     if !has_proxy {
-        return vis_interp::rt::await_task(vm, t, span);
+        return vis_runtime::rt::await_task_off(vm, t, span);
     }
     if frame_on && !done {
         return Err(Abort::Pending(vis_core::value::Pending {
@@ -486,7 +484,7 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
 pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
     // Non-frame default: giữ nguyên `join_all` cũ (kể cả task không ai await).
     if vm.worker.borrow().mode == Mode::Off {
-        return vis_interp::rt::join_all(vm);
+        return vis_runtime::rt::join_all_off(vm);
     }
     final_join(vm)
 }
@@ -518,7 +516,7 @@ fn chay_than_vm(
     fi: u32,
     args: Vec<SendValue>,
     span: Span,
-    ctx: &mut vis_interp::value::worker::WorkerCtx,
+    ctx: &mut vis_runtime::worker::WorkerCtx,
     snap: &SendValue,
     deadline: Option<Instant>,
 ) -> Result<SendValue, String> {

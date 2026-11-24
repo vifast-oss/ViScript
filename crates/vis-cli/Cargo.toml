@@ -66,6 +66,7 @@ async-h2 = ["http2", "tls", "vis-host-native/async-h2"]
 # `vis-loader`, `vis-plugin-abi`); `vis-cli/tests/` còn 8 binary, cổng `bin/vis-dev` chặn > 15.
 
 [dependencies]
+vis-runtime = { path = "../vis-runtime" }
 vis-http = { path = "../vis-http" }
 vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }

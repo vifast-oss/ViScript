@@ -12,35 +12,12 @@ use std::time::Instant;
 use vis_hir::hir::{HPat, HStmt};
 use vis_syntax::Span;
 
-use crate::builtin::Host;
-use crate::interp::{Abort, Interp, Trap, R, RT};
-use crate::rt::exec::HirImage;
+use crate::interp::{Abort, Interp, Trap, RT};
 use crate::rt::fee::{BudgetLease, SharedBudget};
-use crate::value::worker::{SendValue, ToSend, WorkerCtx};
 use crate::value::Value;
-
-/// Chạy thân một tác vụ **trên caller** (W=1). Không snapshot/buffer/thread; mọi ghi đi vào env
-/// chung của host. `ten` dùng cho thông điệp `VS0506`.
-pub(crate) fn chay_than_local(
-    host: &mut dyn Host,
-    than: u32,
-    args: Vec<Value>,
-    ten: &str,
-    span: Span,
-) -> R<Value> {
-    match host.goi_than(than, args, span) {
-        Ok(v) => Ok(v),
-        // `return` trong thân tác vụ: `Abort::Ret` là kết quả bình thường.
-        Err(Abort::Ret(v)) => Ok(v),
-        Err(Abort::Trap(goc)) => Err(Abort::Trap(crate::rt::wrap_task_error(ten, goc, span))),
-        // Đường frame không đi qua Local (P1 non-frame); phòng thủ thay vì panic.
-        Err(Abort::Pending(_)) => Err(Abort::Trap(crate::rt::wrap_task_error(
-            ten,
-            Trap::new(RT, "pending trong thân tác vụ", span),
-            span,
-        ))),
-    }
-}
+use vis_runtime::builtin::Host;
+use vis_runtime::rt::exec_state::HirImage;
+use vis_runtime::worker::{SendValue, ToSend, WorkerCtx};
 
 /// **P2**: gom `sym` của mọi binding cấp tệp (Var/Let, kể cả pattern lồng) — snapshot worker
 /// chỉ lấy các binding này, **không** lấy tham số/local của `main`.

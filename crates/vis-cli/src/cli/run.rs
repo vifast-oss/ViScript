@@ -46,8 +46,8 @@ pub(crate) fn doc_gioi_han(s: &str) -> Result<u64, String> {
 pub(crate) fn ap_ngan_sach(chon: NganSach) {
     match chon {
         NganSach::MacDinh => {}
-        NganSach::GioiHan(n) => vis_interp::rt::fee::dat_gioi_han(n),
-        NganSach::KhongGioiHan => vis_interp::rt::fee::bo_gioi_han(),
+        NganSach::GioiHan(n) => vis_runtime::rt::fee::dat_gioi_han(n),
+        NganSach::KhongGioiHan => vis_runtime::rt::fee::bo_gioi_han(),
     }
 }
 

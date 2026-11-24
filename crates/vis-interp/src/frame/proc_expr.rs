@@ -615,7 +615,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             Ok(())
         }
         Work::ApplyAssignVar { sym, op, span } => {
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
             let rhs = frame.pop_val()?;
@@ -735,7 +735,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                 opt_depth,
             } = apply;
             // Một E_ASSIGN cho cả đường (mirror codegen: sau vế phải, trước ghi ô).
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
             let rhs = frame.pop_val()?;

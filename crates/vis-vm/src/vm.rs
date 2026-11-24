@@ -15,9 +15,9 @@ use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{self, Value, VmFunc};
 use vis_core::RunOutput;
 use vis_hir::hir::LitKind;
-use vis_interp::builtin::Host;
-use vis_interp::interp::{IDX, RT};
-use vis_interp::value::ForIter;
+use vis_runtime::builtin::Host;
+use vis_runtime::codes::{IDX, RT};
+use vis_runtime::ForIter;
 use vis_syntax::Span;
 
 use crate::vm_frame::MethodLoop;
@@ -96,8 +96,8 @@ pub struct Vm<'a> {
     /// **VD-241 (Gate 1)**: host **cơ sở dữ liệu** — VM **không** biết backend native; `None` ⇒
     /// `std.sqlite.*` ⇒ `VS0604`.
     pub(crate) db: Option<&'a mut dyn vis_core::host::DbHost>,
-    /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_interp::rt`).
-    pub(crate) sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
+    /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_runtime`).
+    pub(crate) sched: std::cell::RefCell<vis_runtime::Scheduler>,
     /// **VS3-3b/W5 (P3)**: evaluator worker VM (CPU-only, opt-in); mặc định Off.
     pub(crate) worker: std::cell::RefCell<crate::vm::worker::WorkerState>,
     /// **ST-72b (VD-103/VD-106)**: quyền `main` — `(chỉ số tham số, giá trị)`.
@@ -149,7 +149,7 @@ impl<'a> Vm<'a> {
             net: None,
             db: None,
             ngoai: None,
-            sched: std::cell::RefCell::new(vis_interp::rt::Scheduler::new()),
+            sched: std::cell::RefCell::new(vis_runtime::Scheduler::new()),
             worker: std::cell::RefCell::new(Default::default()),
             caps: Vec::new(),
             globals: Vec::new(),
@@ -435,7 +435,7 @@ impl<'a> Vm<'a> {
             kind,
             text: c.text.clone(),
         };
-        vis_interp::interp::lit_value(&lit)
+        vis_runtime::lit::lit_value(&lit)
             .map_err(|e| Abort::Trap(Trap::new(&vis_diag::TYPE_CODES[0], e, span)))
     }
 

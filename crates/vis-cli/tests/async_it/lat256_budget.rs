@@ -11,7 +11,7 @@
 
 use vis_core::frame::FrameConfig;
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 use vis_vm::vm_frame::run_frame_for_test as run_v;
@@ -177,7 +177,7 @@ fn budget_va_safety_fuel_co_chan_doan_rieng() {
         vis_bytecode::fee::VM_SAFETY_FUEL
     );
     assert_eq!(
-        vis_interp::rt::fee::VM_SAFETY_FUEL,
+        vis_runtime::rt::fee::VM_SAFETY_FUEL,
         vis_bytecode::fee::VM_SAFETY_FUEL,
         "interp và compiler/VM phải thấy cùng một hằng số"
     );

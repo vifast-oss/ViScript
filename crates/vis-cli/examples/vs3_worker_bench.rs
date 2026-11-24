@@ -15,8 +15,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use vis_interp::rt::fee::SharedBudget;
-use vis_interp::value::worker::{SendValue, WorkerError, WorkerPool};
+use vis_runtime::rt::fee::SharedBudget;
+use vis_runtime::worker::{SendValue, WorkerError, WorkerPool};
 
 fn tmp_env() -> HashMap<String, SendValue> {
     HashMap::new()

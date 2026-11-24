@@ -27,6 +27,9 @@ use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
 use crate::rt;
 use crate::value::{Env, ForIter, Name, Value};
 
+mod charge;
+pub(crate) use charge::frame_charge;
+
 mod expr;
 mod params;
 mod proc;

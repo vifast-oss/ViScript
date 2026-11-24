@@ -15,7 +15,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
         e,
         HExpr::Call { .. } | HExpr::Spawn { .. } | HExpr::Await { .. }
     ) {
-        if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Expr, e.span()) {
+        if let Some(a) = crate::frame::frame_charge(it, FeeKind::Expr, e.span()) {
             return Err(a);
         }
     }
@@ -125,14 +125,14 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             } else {
                 FeeKind::Call
             };
-            if let Some(a) = crate::rt::fee::frame_charge(it, call_kind, *span) {
+            if let Some(a) = crate::frame::frame_charge(it, call_kind, *span) {
                 return Err(a);
             }
             // Interp đánh giá callee dạng Var/Field như một GIÁ TRỊ ⇒ có E_EXPR
             // riêng (codegen cũng charge thêm để parity). Các dạng callee khác đã
             // được `Work::Eval(callee)` ở dưới charge — không cộng đôi.
             if matches!(&**callee, HExpr::Var { .. } | HExpr::Field { .. }) {
-                if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Expr, callee.span()) {
+                if let Some(a) = crate::frame::frame_charge(it, FeeKind::Expr, callee.span()) {
                     return Err(a);
                 }
             }
@@ -184,7 +184,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             span,
         } => {
             // VD-252/VD-256: `$spawn` nội bộ chỉ mang E_SPAWN, KHÔNG cộng E_BUILTIN.
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Spawn, *span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Spawn, *span) {
                 return Err(a);
             }
             match &**callee {
@@ -221,7 +221,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
         HExpr::Await { expr, .. } => {
             // VD-252 quy tắc 5: charge TRƯỚC suspend; pc/continuation lưu SAU điểm
             // charge ⇒ resume (ApplyAwait) không charge lại.
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Await, e.span()) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Await, e.span()) {
                 return Err(a);
             }
             frame.cur().work.push(Work::ApplyAwait(e.span()));
@@ -427,7 +427,7 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
 pub(super) fn exec_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, s: &'a HStmt) -> R<()> {
     // **VD-257/D** — mirror `interp.rs:232`: E_STMT một lần mỗi câu, trước khi
     // đẩy continuation. Resume không chạy lại `exec_work` của câu đã xong.
-    if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Stmt, s.span()) {
+    if let Some(a) = crate::frame::frame_charge(it, FeeKind::Stmt, s.span()) {
         return Err(a);
     }
     match s {

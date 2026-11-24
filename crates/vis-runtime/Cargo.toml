@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# `vis-runtime` — scheduler/builtin/stdlib/render dùng chung interp + VM (ST-313a/VD-289).
+# Tầng 2 của DAG: phụ thuộc `vis-core`/`vis-hir`/`vis-http`; **không** phụ thuộc `vis-interp`.
+[package]
+name = "vis-runtime"
+rust-version.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Runtime ViScript: scheduler tác vụ, worker pool, builtin/stdlib, render — ST-313a"
+
+[features]
+# **VS3-3b/W5 prototype** (default off): mirror `Value` + `Task(TaskId)` trong worker.
+taskid-proto = []
+
+[dependencies]
+vis-core = { path = "../vis-core" }
+vis-hir = { path = "../vis-hir" }
+vis-http = { path = "../vis-http" }
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }
+vish-term = { path = "../vish-term" }

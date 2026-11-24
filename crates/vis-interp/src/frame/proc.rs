@@ -87,7 +87,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             span,
         } => {
             // VD-257/D — E_ASSIGN ở điểm RHS đã xong, TRƯỚC khi ghi (VD-252 §3).
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
             let v = frame.pop_val()?;
@@ -102,7 +102,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             opt_depth,
             span,
         } => {
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
             let v = frame.pop_val()?;
@@ -148,7 +148,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             opt_depth,
             span,
         } => {
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Assign, span) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Assign, span) {
                 return Err(a);
             }
             let v = frame.pop_val()?;
@@ -310,7 +310,7 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             // VD-252 quy tắc 4: E_LOOP MỘT lần cho mỗi lần thử tiến vòng, GỒM
             // lần cuối sai. `LoopStep` chạy đúng một lần mỗi lần thử guard.
             let lspan = frame.cur().loops.last().expect("loop state").span;
-            if let Some(a) = crate::rt::fee::frame_charge(it, FeeKind::Loop, lspan) {
+            if let Some(a) = crate::frame::frame_charge(it, FeeKind::Loop, lspan) {
                 return Err(a);
             }
             enum Step<'x> {

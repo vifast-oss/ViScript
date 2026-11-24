@@ -7,11 +7,5 @@
 
 pub(crate) use vis_core::value::*;
 
-mod iter;
-pub use iter::{iter_items, ForIter};
-
-/// **VS3-3b/W5** — worker pool thử nghiệm (chỉ test/opt-in), đường dẫn cũ
-/// `vis_interp::value::worker::*`.
-#[doc(hidden)]
-pub mod worker;
-pub use worker::TaskId;
+pub use vis_runtime::iter::{iter_items, ForIter};
+pub use vis_runtime::worker::TaskId;

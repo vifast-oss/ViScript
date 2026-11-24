@@ -21,10 +21,8 @@ use std::hint::black_box;
 use std::sync::Arc;
 use std::time::Instant;
 
-use vis_interp::rt::Scheduler;
-use vis_interp::value::worker::{
-    OutcomeBoard, SendValue, TaskId, TaskOutcome, WorkerCtx, WorkerPool,
-};
+use vis_runtime::rt::Scheduler;
+use vis_runtime::worker::{OutcomeBoard, SendValue, TaskId, TaskOutcome, WorkerCtx, WorkerPool};
 use vis_syntax::{lex, parse, Mode, Span};
 use vis_vm::Vm;
 

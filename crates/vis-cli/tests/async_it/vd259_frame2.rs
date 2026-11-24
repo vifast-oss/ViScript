@@ -20,7 +20,7 @@ use vis_core::reactor::ReactorOp;
 use vis_core::value::TrangThai;
 use vis_core::Value;
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::{fee as ifee, ReactorReg, Scheduler};
+use vis_runtime::rt::{fee as ifee, ReactorReg, Scheduler};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, frame_quota_yields_for_test,
@@ -206,14 +206,14 @@ fn main():
     let c = fake_cfg(&[("src1", 1)], vec![ev(0, 1, 0, Value::Int(7))]);
     let (hir, syms, tys) = tien_trinh(src);
     // Trigger huỷ là thread-local và bị drain khi bật frame ⇒ đăng ký lại cho từng engine.
-    vis_interp::rt::frame_cancel_clear_triggers_for_test();
-    vis_interp::rt::frame_cancel_on_seq_for_test(0, 1);
+    vis_runtime::rt::frame_cancel_clear_triggers_for_test();
+    vis_runtime::rt::frame_cancel_on_seq_for_test(0, 1);
     let i = run_i(src, &hir, &syms, &tys, &[], c.clone());
-    vis_interp::rt::frame_cancel_clear_triggers_for_test();
-    vis_interp::rt::frame_cancel_on_seq_for_test(0, 1);
+    vis_runtime::rt::frame_cancel_clear_triggers_for_test();
+    vis_runtime::rt::frame_cancel_on_seq_for_test(0, 1);
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
     let v = run_v(&m, src, &[], c);
-    vis_interp::rt::frame_cancel_clear_triggers_for_test();
+    vis_runtime::rt::frame_cancel_clear_triggers_for_test();
     for (name, o) in [("interp", &i), ("vm", &v)] {
         assert_eq!(o.exit, 0, "{name}: {:?}", o.diagnostics);
         assert_eq!(o.stdout, "main\nV:pre\n", "{name}: chạy tiếp sau huỷ");

@@ -9,24 +9,6 @@ use vis_syntax::Span;
 use crate::interp::{Abort, Interp, Trap, R, RT};
 use crate::value::Value;
 
-/// **VS3-3b** — buffer `print` của **một task** (worker pool opt-in). Task chỉ ghi vào buffer
-/// riêng; worker pool merge theo **thứ tự spawn** để W=1/W>1 byte-identical (VD-271 B3).
-#[doc(hidden)]
-#[derive(Debug, Default)]
-pub(crate) struct TaskOutput {
-    buf: String,
-}
-
-impl TaskOutput {
-    pub(crate) fn push_str(&mut self, s: &str) {
-        self.buf.push_str(s);
-    }
-
-    pub(crate) fn into_string(self) -> String {
-        self.buf
-    }
-}
-
 impl crate::builtin::Host for Interp<'_> {
     fn out(&mut self) -> &mut String {
         &mut self.out
@@ -72,24 +54,24 @@ impl crate::builtin::Host for Interp<'_> {
         crate::rt::join_all(self)
     }
 
-    fn fs(&mut self) -> Option<&mut dyn crate::builtin::FsHost> {
+    fn fs(&mut self) -> Option<&mut dyn vis_core::host::FsHost> {
         self.fs
             .as_mut()
-            .map(|f| &mut **f as &mut dyn crate::builtin::FsHost)
+            .map(|f| &mut **f as &mut dyn vis_core::host::FsHost)
     }
 
     /// **ST-63 (VD-105)**: host mạng (TCP) của CLI; `None` ⇒ `std.net.*` ⇒ `VS0604`.
-    fn net(&mut self) -> Option<&mut dyn crate::builtin::NetHost> {
+    fn net(&mut self) -> Option<&mut dyn vis_core::host::NetHost> {
         self.net
             .as_mut()
-            .map(|n| &mut **n as &mut dyn crate::builtin::NetHost)
+            .map(|n| &mut **n as &mut dyn vis_core::host::NetHost)
     }
 
     /// **VD-241 (Gate 1)**: host cơ sở dữ liệu của CLI; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
-    fn db(&mut self) -> Option<&mut dyn crate::builtin::DbHost> {
+    fn db(&mut self) -> Option<&mut dyn vis_core::host::DbHost> {
         self.db
             .as_mut()
-            .map(|d| &mut **d as &mut dyn crate::builtin::DbHost)
+            .map(|d| &mut **d as &mut dyn vis_core::host::DbHost)
     }
 
     fn ngoai(
@@ -110,7 +92,7 @@ impl crate::builtin::Host for Interp<'_> {
         args: &[String],
         stdin: &str,
         span: Span,
-    ) -> Option<Result<crate::builtin::KetQua, Abort>> {
+    ) -> Option<Result<vis_core::host::KetQua, Abort>> {
         let n = self.ngoai.as_mut()?;
         Some(n.chay_day_du(ten, args, stdin, span))
     }

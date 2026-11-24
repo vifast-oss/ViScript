@@ -188,9 +188,9 @@ fn guard_scheduler_trap_ro_khong_treo() {
     // (production vẫn 200_000, hook chỉ test).
     let src = "async fn spin() -> int:\n    let t = spawn spin()\n    await t\n\nfn main():\n    print(await spin())\n";
     let (hir, syms, tys) = tien_trinh(src);
-    vis_interp::rt::frame_set_max_turns_for_test(Some(100));
+    vis_runtime::rt::frame_set_max_turns_for_test(Some(100));
     let fi = run_i(src, &hir, &syms, &tys, &[], FrameConfig::default());
-    vis_interp::rt::frame_set_max_turns_for_test(None);
+    vis_runtime::rt::frame_set_max_turns_for_test(None);
     assert_ne!(fi.exit, 0, "guard phải trap");
     assert!(
         fi.diagnostics
@@ -201,9 +201,9 @@ fn guard_scheduler_trap_ro_khong_treo() {
     );
 
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
-    vis_interp::rt::frame_set_max_turns_for_test(Some(100));
+    vis_runtime::rt::frame_set_max_turns_for_test(Some(100));
     let fv = run_v(&m, src, &[], FrameConfig::default());
-    vis_interp::rt::frame_set_max_turns_for_test(None);
+    vis_runtime::rt::frame_set_max_turns_for_test(None);
     assert_ne!(fv.exit, 0, "guard VM phải trap");
     assert!(
         fv.diagnostics

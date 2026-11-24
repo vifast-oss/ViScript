@@ -4,7 +4,7 @@
 
 use vis_core::frame::{FrameConfig, FrameOutput};
 use vis_interp::frame::run_frame_for_test as run_i;
-use vis_interp::rt::{frame_cancel_after_turns_for_test, frame_cancel_clear_triggers_for_test};
+use vis_runtime::rt::{frame_cancel_after_turns_for_test, frame_cancel_clear_triggers_for_test};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

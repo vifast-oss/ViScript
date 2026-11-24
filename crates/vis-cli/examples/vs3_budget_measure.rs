@@ -9,7 +9,7 @@
 //! In cost ngữ nghĩa, số lệnh VM và tỷ lệ bước/lệnh cho các workload đại diện. Không bật ngân
 //! sách làm mặc định; không đổi runtime.
 
-use vis_interp::rt::fee as ifee;
+use vis_runtime::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 

@@ -68,7 +68,7 @@ pub fn run_workers_parallel_vm_with_budget(
     text: &str,
     args: &[String],
     workers: usize,
-    budget: std::sync::Arc<vis_interp::rt::fee::SharedBudget>,
+    budget: std::sync::Arc<vis_runtime::rt::fee::SharedBudget>,
 ) -> RunOutput {
     run_workers_parallel_vm_mode(m, text, args, workers, Some(budget), None)
 }
@@ -86,7 +86,7 @@ pub fn run_workers_parallel_vm_with_full_hosts_caps<'a>(
     db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, vis_core::value::Value)],
     workers: usize,
-    budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+    budget: Option<std::sync::Arc<vis_runtime::rt::fee::SharedBudget>>,
 ) -> RunOutput {
     let mut vm = vm::Vm::new(m, text);
     vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), budget, None);
@@ -125,7 +125,7 @@ fn run_workers_parallel_vm_mode(
     text: &str,
     args: &[String],
     workers: usize,
-    budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
+    budget: Option<std::sync::Arc<vis_runtime::rt::fee::SharedBudget>>,
     cancel_after_ms: Option<u64>,
 ) -> RunOutput {
     assert!(workers >= 2, "P3 cần W>=2; W=1 dùng run_workers_local_vm");

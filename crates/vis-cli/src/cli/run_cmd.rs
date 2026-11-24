@@ -318,8 +318,8 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
     // **ST-292 (P4)**: N>1 nối **cùng** giới hạn phiên vào `SharedBudget` của pool;
     // `--unlimited-budget` ⇒ `None` (không charge). N=1 không tạo budget (đường cũ).
     let worker_budget = if workers > 1 {
-        vis_interp::rt::fee::gioi_han_phien()
-            .map(|n| std::sync::Arc::new(vis_interp::rt::fee::SharedBudget::new(n, 256)))
+        vis_runtime::rt::fee::gioi_han_phien()
+            .map(|n| std::sync::Arc::new(vis_runtime::rt::fee::SharedBudget::new(n, 256)))
     } else {
         None
     };
@@ -897,9 +897,9 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     let used = if dung_vm {
                         vis_vm::vm_frame::da_dung_gan_nhat().max(0) as u64
                     } else {
-                        vis_interp::rt::fee::da_dung_phien()
+                        vis_runtime::rt::fee::da_dung_phien()
                     };
-                    match vis_interp::rt::fee::gioi_han_phien() {
+                    match vis_runtime::rt::fee::gioi_han_phien() {
                         Some(limit) => eprintln!("# budget: used={used} limit={limit} file={tep}"),
                         None => eprintln!("# budget: used={used} limit=unlimited file={tep}"),
                     }
