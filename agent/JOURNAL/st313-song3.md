@@ -34,7 +34,8 @@
   - `frame_it/`: `vd260_frame3`, `vd265_frame`, `vd284_async_impl`, `vd284_spawn_method` (41 test);
   - `worker_api_it/`: 5 tệp worker pool (53 test);
   - `async_api_it/`: 22 tệp frame/async (212 test, 3 ignored).
-  - Tổng **306 test** chuyển nguyên assertion; `vis-cli/tests` giảm 27 tệp.
+  - Thêm 3 tệp API (`api_dong_bang`, `so_ma`, `vs3_coverage_matrix`) → **323 test**.
+  - Tổng **323 test** chuyển nguyên assertion; `vis-cli/tests` giảm **30 tệp**.
 - Các tệp còn lại giữ nguyên (đều dùng CLI `Command`/TAP) — chờ A0 duyệt chiến lược giảm trùng lặp.
 - `#193`: **vẫn mở** — `vis-wasm-sem` 388/390, 2 ca `ham/de-quy-*` tràn stack trên WASI;
   chưa có bằng chứng đóng.

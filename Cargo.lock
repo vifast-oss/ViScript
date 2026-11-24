@@ -694,6 +694,7 @@ dependencies = [
  "rustix",
  "vis-bytecode",
  "vis-core",
+ "vis-diag",
  "vis-fmt",
  "vis-hir",
  "vis-interp",

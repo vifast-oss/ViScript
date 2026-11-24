@@ -6,8 +6,6 @@
 
 mod common;
 
-#[path = "cli_it/api_dong_bang.rs"]
-mod api_dong_bang;
 #[path = "cli_it/cache_fastpath.rs"]
 mod cache_fastpath;
 #[path = "cli_it/chan_doan_da_tep.rs"]
@@ -52,8 +50,6 @@ mod pipeline;
 mod render;
 #[path = "cli_it/repl_term.rs"]
 mod repl_term;
-#[path = "cli_it/so_ma.rs"]
-mod so_ma;
 #[path = "cli_it/soak_script.rs"]
 mod soak_script;
 #[path = "cli_it/span_tep.rs"]

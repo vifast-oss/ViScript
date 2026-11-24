@@ -11,6 +11,7 @@ description = "Conformance dữ liệu interp ↔ VM (+ WASI) cho ViScript — S
 
 [dependencies]
 vis-core = { path = "../vis-core" }
+vis-diag = { path = "../vis-diag" }
 vis-hir = { path = "../vis-hir" }
 vis-types = { path = "../vis-types" }
 vis-fmt = { path = "../vis-fmt" }

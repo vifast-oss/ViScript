@@ -65,3 +65,10 @@ mod vs3_worker_eval_parallel;
 mod vs3_worker_eval_vm;
 #[path = "worker_api_it/vs3_worker_frame_vm.rs"]
 mod vs3_worker_frame_vm;
+
+#[path = "misc_api_it/api_dong_bang.rs"]
+mod api_dong_bang;
+#[path = "misc_api_it/so_ma.rs"]
+mod so_ma;
+#[path = "misc_api_it/vs3_coverage_matrix.rs"]
+mod vs3_coverage_matrix;

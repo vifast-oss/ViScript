@@ -22,8 +22,6 @@ mod pkg_resolver;
 mod siet_caps_pkg;
 #[path = "net_pkg_it/vs3_cookie_auth.rs"]
 mod vs3_cookie_auth;
-#[path = "net_pkg_it/vs3_coverage_matrix.rs"]
-mod vs3_coverage_matrix;
 #[path = "net_pkg_it/vs3_default.rs"]
 mod vs3_default;
 #[path = "net_pkg_it/vs3_keepalive.rs"]
