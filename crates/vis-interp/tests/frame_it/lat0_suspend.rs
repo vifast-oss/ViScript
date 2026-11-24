@@ -1004,20 +1004,25 @@ fn baseline_matches_current_vis() {
         home,
         std::env::var("PATH").unwrap_or_default()
     );
-    // **SỬA KÈM LÝ DO (verify mps/psvn)**: đường dẫn tuyệt đối `/home/ps/...` chỉ có trên
-    // máy ps ⇒ ca này đỏ oan trên mps/psvn. Dò gốc repo từ CARGO_MANIFEST_DIR (có trên
-    // mọi nền); trên Windows gọi shim `vis` (bash script) qua `bash`.
+    // **SỬA KÈM LÝ DO (verify mps/psvn + soak)**: đường dẫn tuyệt đối `/home/ps/...` chỉ có
+    // trên máy ps ⇒ ca này đỏ oan trên mps/psvn. Dùng **binary đã build** trong target, KHÔNG
+    // gọi shim `repo/vis` (shim chạy `cargo run`, có thể relink `target/debug/vis` trong lúc
+    // nextest chạy song song ⇒ Windows "Access is denied", macOS ENOENT ở `cache_khong_che`).
     let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let vis = repo.join("vis");
+    let target = std::env::var_os("CARGO_TARGET_DIR")
+        .map(std::path::PathBuf::from)
+        .map(|p| if p.is_absolute() { p } else { repo.join(p) })
+        .unwrap_or_else(|| repo.join("target"));
+    let ten = if cfg!(windows) { "vis.exe" } else { "vis" };
+    let vis = target.join("debug").join(ten);
+    assert!(
+        vis.is_file(),
+        "thiếu binary `{}` — build `vis` trước (vis-dev gate tự build)",
+        vis.display()
+    );
 
     for extra in [vec![], vec!["--vm", "--no-cache"]] {
-        let mut cmd = if cfg!(windows) {
-            let mut c = Command::new("bash");
-            c.arg(&vis);
-            c
-        } else {
-            Command::new(&vis)
-        };
+        let mut cmd = Command::new(&vis);
         cmd.arg("run");
         for e in &extra {
             cmd.arg(e);
