@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-313c (VD-289)** — khoá DAG 5 tầng: kiểm các cạnh **cấm** giữa crate.
+#
+# Dùng `cargo metadata --no-deps` (không build); lỗi ⇒ exit 2 kèm cạnh vi phạm.
+# Gọi từ `bin/vis-targets` (cổng cuối Sóng) để hồi quy kiến trúc không lọt.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
+command -v "$CARGO" >/dev/null 2>&1 || CARGO=cargo
+
+META="$(mktemp "${TMPDIR:-/tmp}/vis-dag-meta.XXXXXX")"
+trap 'rm -f "$META"' EXIT
+if ! "$CARGO" metadata --manifest-path "$ROOT/Cargo.toml" --no-deps --format-version 1 >"$META" 2>/dev/null; then
+    echo "vis-dag-check: không đọc được cargo metadata" >&2
+    exit 2
+fi
+VIS_DAG_META="$META" python3 - <<'PY'
+import json, os, sys
+
+with open(os.environ["VIS_DAG_META"], encoding="utf-8") as f:
+    data = json.load(f)
+# Chỉ cạnh **sản phẩm** (`kind` null = normal); dev/build không tính vào DAG.
+deps = {
+    p["name"]: {d["name"] for d in p["dependencies"] if d.get("kind") in (None, "normal")}
+    for p in data["packages"]
+}
+
+# Cạnh **cấm** (trái→phải): tầng dưới không được kéo tầng trên/ngang sai DAG.
+CAM = {
+    "vis-core":      {"vis-types", "vis-http", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
+    "vis-hir":       {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
+    "vis-http":      {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg", "vis-host-native"},
+    "vis-bytecode":  {"vis-types", "vis-interp", "vis-vm", "vis-runtime"},
+    "vis-vm":        {"vis-types", "vis-interp"},
+    "vis-runtime":   {"vis-types", "vis-interp", "vis-vm"},
+    "vis-pkg":       {"vis-host-native"},
+}
+loi = []
+for crate, cam in CAM.items():
+    co = deps.get(crate)
+    if co is None:
+        loi.append(f"thiếu crate `{crate}` trong workspace")
+        continue
+    for d in sorted(cam & co):
+        loi.append(f"{crate} -> {d}")
+if loi:
+    print("vis-dag-check: VI PHẠM DAG:", file=sys.stderr)
+    for x in loi:
+        print(f"  {x}", file=sys.stderr)
+    sys.exit(2)
+print(f"vis-dag-check: OK — {len(CAM)} crate tầng dưới không kéo tầng trên")
+PY

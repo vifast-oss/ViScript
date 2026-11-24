@@ -60,6 +60,12 @@ check_workspace_coverage() {
 }
 check_workspace_coverage || exit 2
 
+# **ST-313c (VD-289)** — khoá DAG 5 tầng: cạnh sản phẩm cấm (xem `bin/vis-dag-check`).
+if ! CARGO="$CARGO" "$ROOT/bin/vis-dag-check"; then
+  echo "vis-targets: DAG 5 tầng bị vi phạm" >&2
+  exit 2
+fi
+
 CORE_LABEL="core (vis-cli --no-default-features)"
 SQLITE_LABEL="sqlite (vis-cli default, cấu hình cũ)"
 LY_DO="#156 (sqlite) + VS3-4a ring: libsqlite3-sys/ring cần C toolchain (cc-rs: thiếu lib.exe / cc) — chỉ CHECK, chưa chạy; xem agent/TARGET-MATRIX-2026-11-20.md"
