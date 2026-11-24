@@ -4026,11 +4026,21 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
    - **Thấp điểm = Phát triển tính năng, refactor kiến trúc, sửa lỗi, code review & xuất báo cáo `R<n>`** (áp dụng ngay cho `ST-311b`, `ST-311d` và các giai đoạn sau).
 3. **Kỷ luật tối ưu Prompt Cache & Tầng mô hình**: giữ prefix ngắn/ổn định (`AGENTS.md` + `agent/ACTIVE.md`; không nạp toàn văn `DECISIONS.md`/`QUEUE.md`); ưu tiên `deepseek-flash` cho tác vụ cơ học (chia tệp, `fmt`/clippy, tổng hợp bảng) và `deepseek-v4-pro` cho thiết kế/bảo mật/VM/typechecker.
 
+### VD-288 · Phê chuẩn `ST-311b/d/e/f`, Chốt `H4 = db67eab` (`0.6.0`), Tối ưu Quy trình Đóng băng/QA 3-OS & Chính sách Dọn Nhánh/Worktree — A0, 2026-11-24
 
+> **Căn cứ**: `main` `HEAD` = `db67eab` (`0.6.0`, `./vis-dev rules` PASS R1..R9, 0 `unsafe` R2), `JOURNAL/st311b-metadata.md`, `JOURNAL/st311d-split.md`, `JOURNAL/st311e-win-clippy.md`, `JOURNAL/st311f-soak-race.md`, kiểm tra trực tiếp `git ls-remote --heads origin` và đối chiếu `commits[]` của `R35`/`R36`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-24-vd288.md`.
 
-
-
-
-
-
+1. **Phê chuẩn chính thức (`APPROVED 2026-11-24 Agent 0`)**:
+   - Đóng **`DONE`** trên `agent/QUEUE.md`: **`ST-311b`** (`61bf4e1`/merge `ad961bc`, đóng blocker **`#194`** — metadata FS Unix theo `fd`, đua 100.000 vòng **0 rò** Linux+macOS, `quyen/mod.rs` 1.197→675), **`ST-311d`** (`7383e58`/`7b7144b`/merge `415d205` + bump `0.6.0` `478aa9f`, chia 10 tệp > 1.150 LOC + `builtin/` + thử `-zstack-size` WASI `#193`), **`ST-311e`** (`d76e257`, `76d2121`, vá 3 lỗi clippy Windows-only), **`ST-311f`** (`db67eab`, vá race soak `lat0_suspend` dùng binary đã build thay vì shim `cargo run`).
+   - Đăng ký nợ **`#196`** (`mở`, **không chặn** `v0.6.0`/`v1.0.0-rc1`, xếp hậu-RC1) trong `agent/SO-NO.md`: `vis_core::value::parse_duration("sai")` trả `Some(0)` thay vì `None` (`ST-311d` §5; R5: **197 dòng = 81 mở / 97 đóng / 16 VS3 / 2 không làm / 1 điều hướng**).
+2. **Đóng băng `H_code = H4 = db67eabadd1a4b51f8721a242015bb3130479bbf` & Không làm hỏng bằng chứng đang chạy**:
+   - Commit `[ST-00]` `VD-288` là **100% docs/governance-only** (`git diff db67eab..HEAD -- crates/ vis-host-*/ bin/ test/ Cargo.*` rỗng) ⇒ **KHÔNG restart** soak/fuzz/full-gate đang chạy hoặc đã đo trên `H4 = db67eab`. Cấm đổi mã/test/script cho tới sau tag `v0.6.0` & `v1.0.0-rc1` (gộp `clippy -D warnings` vào `bin/vis-gate-windows --full` và xử `#196`/`#193` xếp hậu-RC1; `--round 37` của `gen_report_json.py` thêm khi xuất `R37`).
+3. **Bổ sung quy trình chuẩn vào `AGENTS.md` §6**:
+   - **Pre-Freeze 3-OS**: bắt buộc `cargo clippy --workspace --all-targets -- -D warnings` trên **cả 3 OS** + **smoke soak 1 chu kỳ** trên 3 OS trước khi mở soak dài 4h/24h.
+   - **Lịch chạy song song 3 máy trên `H4`**: `ps` (nhóm nhanh + verifier 100M + diff 5×100k → watchdog 2h đóng `#195` → fuzz parser 8h → soak 24h) || `psvn` (clippy + 3× `--full` + soak 4h) || `mps` (3× `--full` + WASI sem + soak 4h), tuân thủ khung giờ `VD-287`.
+4. **Phê duyệt dọn dẹp 83 nhánh `plan/*` + 54 worktree & Luật quản trị nhánh (`AGENTS.md` §6)**:
+   - **Đợt 1 (DUYỆT NGAY)**: xóa 23 nhánh đã merge không worktree bằng `git branch -d` + `git push origin --delete` (gồm `plan/st311b-fd-metadata`, `plan/st311d-split` nếu rảnh) + `git fetch --prune`.
+   - **Đợt 2 (DUYỆT CÓ ĐIỀU KIỆN RẢNH)**: với 43 nhánh đã merge có worktree, kiểm `ps`/`lsof` trống + `status` sạch rồi `git worktree remove` (không `--force` nếu dirty) → `git branch -d` → xóa trên `origin` → `git worktree prune` + `bin/vis-gc-targets`.
+   - **Đợt 3 (17 nhánh chưa merge)**: **GIỮ `origin/plan/st309-qa` (`623f3ba`)** tới sau tag `v1.0.0-rc1` (bằng chứng `#195` trong `R36`/`R37`, không merge); **DUYỆT XÓA** 4 nhánh `origin` đã xác nhận trùng/hết hiệu lực (`plan/win-full-f9e7503` diff=0 với `main`, `plan/phasec-qa-plan` đã thay bởi `r37-phasec.md`, `plan/win-full-c4337ce`, `plan/win-quick-v055b`) + `fix/macos-v045-tests` (đã có nguyên văn trong `main`); **12 nhánh local-only** còn lại tự duyệt xóa nếu `git cherry -v main` + `git diff --name-only main...<branch>` xác nhận chỉ chứa docs/journal cũ của mốc đã tag (sao `.md` độc nhất ra `/home/ps/vislogs/archive-journals/` trước), **DỪNG và báo A0** nếu có bất kỳ diff mã nguồn/test nào chưa vào `main`.
+   - **Luật thường trực**: merge xong dọn worktree + nhánh local/origin trong 24h; trần **≤ 8 worktree** hoạt động; không push nhánh chỉ chứa 1 tệp journal trung gian lên `origin`.
 

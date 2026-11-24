@@ -8,13 +8,10 @@
 **Đọc trạng thái hiện hành theo thứ tự**:
 1. [`ACTIVE.md`](ACTIVE.md) — bảng điều khiển nhanh (≤ 100 dòng), tag và luồng đang chạy.
 2. [`ROADMAP.md`](ROADMAP.md) — 8 hạng mục × mức thật.
-3. [`reports/`](reports/) — báo cáo vòng mới nhất (`R35`); [`QUEUE.md`](QUEUE.md) — hàng việc.
+3. [`reports/`](reports/) — báo cáo vòng mới nhất đã chốt (`R36`, `v0.5.0`) và khung Phase C (`R37`, `v0.6.0`); [`QUEUE.md`](QUEUE.md) — hàng việc.
 4. [`DECISIONS.md`](DECISIONS.md) / [`DECISIONS-INDEX.md`](DECISIONS-INDEX.md) — quyết định và chỉ mục.
 
-> **Mốc (2026-11-23)**: `v0.4.5` đã tag @ `3daff62` (**Windows Tier 1** đã công bố + WASI
-> Preview 1), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`. **macOS arm64 đã verify `v0.4.5`**
-> trên `mps` (gate 3631/0/3, workspace 3636/0/3, host 54/54, WASI 28/28, `vis-wasm-sem`
-> 388/390) nhưng **Tier 1 chưa công bố** — chờ `ST-300m3` (3× `--full` + soak 4 h).
-> `ST-300m1` đã merge (`c3b7290`); **`ST-300m2`/`ST-300m3` đang chờ**. Các crate
-> `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` còn ở nhánh riêng, **chưa merge**.
+> **Mốc hiện hành (2026-11-24, `VD-288`)**: **3-OS Tier 1 chính thức** (Linux, Windows x86_64 từ `v0.4.5` @ `3daff62`, macOS arm64 từ `v0.5.0` @ `c06d7c6f`) + WASI Preview 1 runtime (`vis-host-wasm`) + kiến trúc 4 tầng (`v0.5.5` @ `3d85bd2c`, 18 crate workspace + 2 host workspace độc lập).
+> `ST-311a..f` đã DONE trên `main`; mã nguồn đóng băng cho Phase C (`ST-309`) tại **`H4 = db67eab`** (version **`0.6.0`**, `#194`/`#190` đóng, `#195` chờ watchdog 2h trên `H4`, `#196` mở non-blocking).
+> **Chưa tag `v0.6.0` / `v1.0.0-rc1`** — chờ hoàn tất ma trận Phase C trên `H4` + chốt `R37-viscript.{md,json}`.
 > Không có số liệu mới trong tệp này — số liệu đo nằm trong `JOURNAL/`/`reports/` và `ACTIVE.md`.

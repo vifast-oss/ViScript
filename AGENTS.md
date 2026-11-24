@@ -70,3 +70,13 @@ Mục tiêu: **tối ưu 50% chi phí token** và giữ thông lượng máy 24/
    - Chỉ nạp `agent/ACTIVE.md` + phần đuôi liên quan của `agent/QUEUE.md`/`agent/DECISIONS.md` (**không** đọc toàn tệp > 350 KB mỗi lượt) để giữ prefix ổn định và đạt tỷ lệ cache-hit tối đa.
    - Tác vụ cơ học (chia tệp, sửa import, `fmt`/clippy, gom bảng báo cáo, kiểm R1..R9) ưu tiên mô hình nhanh/rẻ (`deepseek-flash`); chỉ dùng mô hình suy luận sâu (`deepseek-v4-pro`) cho bài toán kiến trúc, hệ kiểu, VM/async và bảo mật (`openat2`/`statat`).
 
+## 6. Quản trị Nhánh, Worktree & Đóng băng Mốc Nghiệm thu (`VD-288`)
+
+1. **Vòng đời Nhánh & Worktree (chống phình nhánh/đĩa)**:
+   - Ngay sau khi nhánh `plan/*` đã merge vào `main` (hoặc ngay sau khi Agent 0 duyệt `DONE`), **bắt buộc dọn trong vòng 24h**: kiểm tra không còn tiến trình chạy & `status` sạch → `git worktree remove <wt>` → `git branch -d <branch>` (dùng `-d` thường) → `git push origin --delete <branch>` → `git fetch --prune` & `git worktree prune`.
+   - **Trần thường trực**: tối đa **≤ 8 worktree** hoạt động cùng lúc (`W1..W4` + QA/soak); **0 nhánh `plan/*` đã merge** tồn đọng trên `origin` quá 24h; chạy `bin/vis-gc-targets` định kỳ giữ đĩa trống > 10 GB.
+   - **Không tạo/push nhánh dài ngày chỉ cho 1 tệp journal trung gian**: nhật ký QA sau khi merge/cherry-pick vào `main` thì xóa nhánh ngay; nháp chưa chốt lưu tại `/home/ps/vislogs/` (luật R7). Nhánh chưa merge chỉ được xóa sau khi kiểm `git cherry -v main` + `git diff --name-only main...<branch>` xác nhận không mất mã sản phẩm và không cắt đứt tham chiếu trong `agent/reports/R<n>-viscript.{md,json}`.
+2. **Quy trình Pre-Freeze 3-OS trước khi đóng băng mốc `H` cho soak dài**:
+   - **Cross-OS Clippy Gate**: bắt buộc chạy `cargo clippy --workspace --all-targets -- -D warnings` trên **cả Linux (`ps`), Windows (`psvn`) và macOS (`mps`)** trước khi mở soak 4h/24h (tránh lỗi OS-only lọt qua `vis-gate-windows --full`).
+   - **Smoke Soak 1 chu kỳ (~10–15 phút) trên cả 3 OS**: chạy trước khi mở soak 4h/24h để phát hiện sớm race song song của harness/TMPDIR/lock.
+   - **Tách rạch ròi `[ST-00]` docs-only khỏi `H_code`**: commit `[ST-00]` sau khi đóng băng `H_code` chỉ sửa `AGENTS.md`/`agent/**` (`git diff H_code..HEAD -- crates/ vis-host-*/ bin/ test/ Cargo.*` rỗng) nên **không vô hiệu hoá** bằng chứng soak/fuzz/full-gate đang chạy hoặc đã đo trên `H_code`.

@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-284`, 2026-11-23). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-288`, 2026-11-24). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **273** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **277** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -280,6 +280,10 @@
 | VD-282 | Duyệt `ST-293`/`ST-295`, Đóng 12 Nợ Sổ, Luật R7, Cơ chế Zero-Idle & Kế hoạch Chạy Đêm 22–23/11 | đã chốt | 3887 |
 | VD-283 | Phê chuẩn `v0.4.0`/`v0.4.1`, Chốt `P2b-3/4 NO-GO` & WASI Runtime, Điều kiện Tag `v0.4.5` (`R35`), & Mở Zero-Idle GĐ 3 (`v0.5.0`) | đã chốt | 3917 |
 | VD-284 | Phê chuẩn `v0.4.5` & `ST-300b/301/303`, Mở Chính thức Hỗ trợ macOS arm64 (`mps` Tier 1) & Điều phối GĐ 3 (`v0.5.0` — 3-OS Tier 1) | đã chốt | 3957 |
+| VD-285 | Phê chuẩn Đợt tính năng GĐ 3–4, Mở Đợt Refactor Kiến trúc & Cấu trúc Kho `v0.5.5` (`ST-310a..ST-310f`) & Trình tự `v0.5.0 → v0.5.5 → v1.0.0-rc1` | đã chốt | 3984 |
+| VD-286 | Phê chuẩn `v0.5.0` & `v0.5.5`, Đăng ký `#195` (VM O(n²)) & Mở Đợt Hoàn thiện Tiền-`v0.6.0` (`ST-311a..ST-311d`) | đã chốt | 4002 |
+| VD-287 | Quy trình Điều độ Công việc theo Khung giờ DeepSeek (Cao điểm = Chạy nặng 0-LLM · Thấp điểm = Phát triển) | đã chốt | 4017 |
+| VD-288 | Phê chuẩn `ST-311b/d/e/f`, Chốt `H4 = db67eab` (`0.6.0`), Tối ưu Quy trình Đóng băng/QA 3-OS & Chính sách Dọn Nhánh/Worktree | đã chốt | 4029 |
 
 ## Ghi chú
 
