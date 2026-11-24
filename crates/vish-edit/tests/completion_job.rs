@@ -4,7 +4,9 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use vish_edit::completion::{CandidateKind, CompletionContext};
-use vish_edit::job::{parse_command, JobCommand, JobControl};
+#[cfg(unix)]
+use vish_edit::job::JobControl;
+use vish_edit::job::{parse_command, JobCommand};
 
 static DEM: AtomicU32 = AtomicU32::new(0);
 

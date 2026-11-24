@@ -9,6 +9,10 @@
 //! Các ca `..`, thiếu `cap`, `--strict-caps`, preopen WASI đã có ở `strict_caps.rs`, `cap.rs`,
 //! `vs3_plugin.rs`; tệp này bổ sung đúng phần kiểm toán ST-309.
 
+// Toàn bộ ca trong tệp chỉ chạy trên Unix/Linux (symlink + Landlock); trên Windows module rỗng
+// để clippy `-D warnings` không bắt dead_code cho các helper.
+#![cfg(unix)]
+
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
