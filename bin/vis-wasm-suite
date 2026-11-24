@@ -27,6 +27,11 @@ ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
 TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
 WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
+# **#193 / ST-313c (VD-289)**: WASI cần **hai** trần stack — `-zstack-size` cho module
+# (12 MiB đủ cho 2.000 khung ngôn ngữ) và `--stack-size` cho V8 `node:wasi` (4096 KiB).
+# Override bằng `VIS_WASM_STACK_MB` / `VIS_WASM_NODE_STACK_KB` khi đo trên runtime khác.
+WASM_STACK_MB = int(os.environ.get("VIS_WASM_STACK_MB", "12"))
+NODE_STACK_KB = int(os.environ.get("VIS_WASM_NODE_STACK_KB", "4096"))
 
 NODE_DRIVER = r"""
 import { WASI } from 'node:wasi';
@@ -251,6 +256,10 @@ def build(force: bool) -> None:
     env = os.environ.copy()
     env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
     env.setdefault("CARGO_BUILD_JOBS", "3")
+    env.setdefault(
+        "RUSTFLAGS",
+        f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}",
+    )
     env.setdefault("CARGO_PROFILE_DEV_DEBUG", "0")
     env.setdefault("TMPDIR", "/home/ps/tmp")
     cmd = [
@@ -347,6 +356,7 @@ def run_case(rt, exe, driver, work: Path, case, engine: str):
         cmd = [
             exe,
             "--no-warnings",
+            f"--stack-size={NODE_STACK_KB}",
             str(driver),
             str(WASM),
             guest,

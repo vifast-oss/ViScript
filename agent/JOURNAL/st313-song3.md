@@ -37,8 +37,12 @@
   - Thêm 3 tệp API (`api_dong_bang`, `so_ma`, `vs3_coverage_matrix`) → **323 test**.
   - Tổng **323 test** chuyển nguyên assertion; `vis-cli/tests` giảm **30 tệp**.
 - Các tệp còn lại giữ nguyên (đều dùng CLI `Command`/TAP) — chờ A0 duyệt chiến lược giảm trùng lặp.
-- `#193`: **vẫn mở** — `vis-wasm-sem` 388/390, 2 ca `ham/de-quy-*` tràn stack trên WASI;
-  chưa có bằng chứng đóng.
+- **`#193` — ĐÓNG**: WASI cần **hai** trần stack:
+  - `-zstack-size` cho module (12 MiB đủ cho 2.000 khung ngôn ngữ; 8 MiB vẫn tràn);
+  - `--stack-size=4096` cho V8 `node:wasi` (V8 mặc định ~1 MiB chặn trước).
+  Đã đưa vào `bin/vis-wasm-suite` và `bin/vis-wasm-sem` (mặc định 12 MiB/4096 KiB,
+  override `VIS_WASM_STACK_MB`/`VIS_WASM_NODE_STACK_KB`). Đo lại: **sem 390/390**,
+  **suite 28/28**.
 
 ## Cổng (Sóng 3)
 
@@ -49,7 +53,7 @@
 | `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 |
 | clippy `--workspace --all-targets -D warnings` | Linux PASS · Windows (`psvn`) PASS · **macOS bỏ qua** (mps bận) |
 | `vis-wasm-suite --build` | **28/28** |
-| `vis-wasm-sem` | **388/390** (2 đỏ = `#193`) |
+| `vis-wasm-sem` | **390/390** (#193 đóng) |
 | conformance corpus | **420/420** |
 | test API đã dời | **323** (frame/worker/async/api) |
 

@@ -27,6 +27,11 @@ ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
 TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
 WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
+# **#193 / ST-313c (VD-289)**: WASI cần **hai** trần stack — `-zstack-size` cho module
+# (12 MiB đủ cho 2.000 khung ngôn ngữ) và `--stack-size` cho V8 `node:wasi` (4096 KiB).
+# Override bằng `VIS_WASM_STACK_MB` / `VIS_WASM_NODE_STACK_KB` khi đo trên runtime khác.
+WASM_STACK_MB = int(os.environ.get("VIS_WASM_STACK_MB", "12"))
+NODE_STACK_KB = int(os.environ.get("VIS_WASM_NODE_STACK_KB", "4096"))
 SEM = ROOT / "test/sem"
 ORACLE = Path("/home/ps/vislogs/sem-native-baseline.tsv")
 ORACLE_SHA = "482b35c276d76fca9200770f78b3cba891535b09b65dbce0fc52bce6379a308d"
@@ -92,6 +97,10 @@ def cargo() -> str:
 def build_wasm() -> None:
     env = os.environ.copy()
     env.setdefault("CARGO_BUILD_JOBS", "3")
+    env.setdefault(
+        "RUSTFLAGS",
+        f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}",
+    )
     env.setdefault("TMPDIR", "/home/ps/tmp")
     env["CARGO_TARGET_DIR"] = str(WS / "target")
     cmd = [
@@ -197,7 +206,16 @@ def run_wasm(rt, exe, driver, wasm: Path, work: Path, f: Path, engine: str):
     elif rt == "python":
         cmd = [exe, str(driver), str(wasm), guest, str(root), *args]
     else:
-        cmd = [exe, "--no-warnings", str(driver), str(wasm), guest, str(root), *args]
+        cmd = [
+            exe,
+            "--no-warnings",
+            f"--stack-size={NODE_STACK_KB}",
+            str(driver),
+            str(wasm),
+            guest,
+            str(root),
+            *args,
+        ]
     r = subprocess.run(cmd, cwd=work, capture_output=True, text=True, timeout=120)
     return r.returncode, r.stdout, r.stderr
 
