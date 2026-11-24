@@ -56,12 +56,17 @@
 | `net_pkg_it` | 156/156 |
 | `async_it` | 339/339 (3 ignored) |
 | `vis-pkg --lib` | 28/28 |
-| `cargo clippy --workspace --all-targets -- -D warnings` | Linux PASS · macOS (`mps`) PASS · Windows (`psvn`) — xem mục 6 |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **Linux PASS · macOS (`mps`) PASS · Windows (`psvn`) PASS** |
+| `bin/vis-wasm-suite --build` | **28/28** · runtime=node |
+| `bin/vis-wasm-sem` | **388/390** PASS — 2 đỏ là nợ `#193` (đệ quy sâu: `ham/de-quy-1000`, `de-quy-vo-han`), đúng sàn A0 |
 
 ## 6. Ghi chú cho A0
 
 - Sóng 2 (`ST-313a`/`ST-313b`) vẫn `BLOCKED` chờ A0 duyệt mở sau khi REVIEW Sóng 0–1.
-- Windows clippy chạy trên `psvn` tại `/c/Users/ps/viscript-moi` @ `4e6f810`; log
-  `/home/ps/vislogs/clippy-psvn-312.log` (kết quả ghi ở báo cáo gửi A0).
+- Clippy 3 OS chạy trên cây `4e6f810`: `psvn` `/c/Users/ps/viscript-moi` (log
+  `/home/ps/vislogs/clippy-psvn-312.log`), `mps` `/Users/mps/dvchd/ViScript` (log
+  `/home/ps/vislogs/clippy-mps-312.log`) — cả hai exit 0.
+- `vis-wasm-suite` lần đầu đỏ 2 ca `da_tep` vì dùng **binary wasm cũ**; `--build` lại từ
+  `vis-host-wasm` @ `4e6f810` ⇒ 28/28, xác nhận không phải hồi quy.
 - `docs/ViScript-thiet-ke.md:927` còn câu "vis-host-linux ngoài workspace chính" — tài liệu
   thiết kế thuộc quyền A0, chưa sửa; đề nghị A0 cập nhật khi chốt kiến trúc.
