@@ -26,6 +26,10 @@ pub struct Case {
     pub exit: i32,
     /// `.err` có mặt ⇒ ca **lỗi tĩnh** (parse/lower/tyck phải chứa các mã này).
     pub loi_tinh: bool,
+    /// `.fmt` có mặt ⇒ `vis_fmt` phải **bất động** trên nguồn (format 2 lần bằng 1 lần).
+    pub kiem_fmt: bool,
+    /// `.out_prefix` có mặt ⇒ stdout chỉ cần **bắt đầu bằng** nội dung này.
+    pub out_prefix: Option<String>,
 }
 
 /// Gốc repo (thư mục chứa `test/conformance`).
@@ -64,6 +68,8 @@ fn duyet(goc: &Path, dir: &Path, out: &mut Vec<Case>) {
                 .and_then(|s| s.trim().parse().ok())
                 .unwrap_or(0);
             let loi_tinh = p.with_extension("err").exists();
+            let kiem_fmt = p.with_extension("fmt").exists();
+            let out_prefix = doc_phu(&p, "out_prefix");
             let ten = p
                 .strip_prefix(goc)
                 .unwrap_or(&p)
@@ -78,6 +84,8 @@ fn duyet(goc: &Path, dir: &Path, out: &mut Vec<Case>) {
                 ma_loi,
                 exit,
                 loi_tinh,
+                kiem_fmt,
+                out_prefix,
             });
         }
     }
@@ -131,9 +139,23 @@ pub fn khang_dinh(case: &Case) {
         case.ten, i.exit, i.stdout, ma_i, v.exit, v.stdout, ma_v
     );
     assert_eq!(i.exit, case.exit, "{}: exit sai", case.ten);
-    assert_eq!(i.stdout, case.stdout, "{}: stdout sai", case.ten);
+    match &case.out_prefix {
+        Some(pre) => assert!(
+            i.stdout.starts_with(pre),
+            "{}: stdout phải bắt đầu bằng {:?}, được {:?}",
+            case.ten,
+            pre,
+            i.stdout
+        ),
+        None => assert_eq!(i.stdout, case.stdout, "{}: stdout sai", case.ten),
+    }
     let mong: Vec<&str> = case.ma_loi.iter().map(String::as_str).collect();
     assert_eq!(ma_i, mong, "{}: mã chẩn đoán sai", case.ten);
+    if case.kiem_fmt {
+        let a = vis_fmt::format(&case.src).expect("fmt lần 1");
+        let b = vis_fmt::format(&a).expect("fmt lần 2");
+        assert_eq!(a, b, "{}: format không bất động", case.ten);
+    }
 }
 
 /// Ca lỗi tĩnh: `parse`+`lower`+`tyck` phải chứa **lần lượt** các mã trong `.err`.

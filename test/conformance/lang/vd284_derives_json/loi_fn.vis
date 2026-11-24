@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type F derives Json:
+    f: fn(int) -> int
+fn main():
+    print(1)

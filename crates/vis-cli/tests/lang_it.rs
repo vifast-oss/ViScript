@@ -96,12 +96,8 @@ mod vd270_matches;
 mod vd270_r5c_sugar;
 #[path = "lang_it/vd270_sugar_arity.rs"]
 mod vd270_sugar_arity;
-#[path = "lang_it/vd283_lambda_annot.rs"]
-mod vd283_lambda_annot;
 #[path = "lang_it/vd284_async_impl.rs"]
 mod vd284_async_impl;
-#[path = "lang_it/vd284_derives_json.rs"]
-mod vd284_derives_json;
 #[path = "lang_it/vd284_spawn_method.rs"]
 mod vd284_spawn_method;
 #[path = "lang_it/vd_204.rs"]

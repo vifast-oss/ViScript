@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type A derives Json:
+    a: int
+type B derives Json:
+    a: int
+    b: int
+fn main():
+    let a: A = {a: 1}
+    print(B.from_json(a.to_json()))

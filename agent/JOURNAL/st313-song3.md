@@ -24,7 +24,13 @@
   - **118** ca `tu_choi(tag, src, mã)` → `.vis` + `.err`.
 - Tổng **415 ca**, tất cả xanh, interp ↔ VM byte-identical.
 - SPDX R3: thêm header cho toàn bộ `.vis`.
-- **Không xóa tệp gốc** (0 assertion mất); việc giảm trùng lặp chờ A0 duyệt.
+- **Đã di dời thật 2 tệp bảng `CASES`**:
+  - `lang_it/vd283_lambda_annot.rs` → 22 ca + `.fmt` (kiểm format bất động) — **xóa tệp gốc**;
+  - `lang_it/vd284_derives_json.rs` → 15 ca (2 ca `Err(` dùng `.out_prefix`) + 3 ca lỗi tĩnh
+    (`.err = VS0412`) — **xóa tệp gốc**.
+  - Tổng corpus: **420 ca**; 0 assertion mất (parity/stdout/codes/fmt/static đều được tái lập).
+- Các tệp còn lại giữ nguyên (nhiều ca còn assertion CLI-level như TAP/check) — chờ A0 duyệt
+  chiến lược giảm trùng lặp.
 - `#193`: **vẫn mở** — `vis-wasm-sem` 388/390, 2 ca `ham/de-quy-*` tràn stack trên WASI;
   chưa có bằng chứng đóng.
 

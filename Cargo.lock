@@ -692,6 +692,7 @@ version = "0.6.0"
 dependencies = [
  "vis-bytecode",
  "vis-core",
+ "vis-fmt",
  "vis-hir",
  "vis-interp",
  "vis-syntax",
