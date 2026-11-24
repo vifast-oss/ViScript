@@ -43,6 +43,9 @@ struct Job {
 
 #[derive(Debug, Default)]
 pub struct JobControl {
+    // Trên Windows, `spawn` bị `cfg(not(unix))` chặn nên `next` không được đọc; giữ trường để
+    // cấu trúc/`Default` đồng nhất, chỉ tắt dead_code trên nền không-Unix (clippy `-D warnings`).
+    #[cfg_attr(not(unix), allow(dead_code))]
     next: u32,
     jobs: Vec<Job>,
 }
