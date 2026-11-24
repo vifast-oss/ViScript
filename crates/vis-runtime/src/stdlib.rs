@@ -17,45 +17,32 @@ use crate::builtin::Host;
 use crate::rt::ReactorOp;
 use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{eq, Value};
+use vis_hir::stdlib::StdId;
 
 mod fs_net;
 mod fs_net_d;
 mod helper;
-mod list_a;
-mod list_b;
-mod path_a;
-mod path_b;
-mod path_c;
-mod path_d;
-mod sqlite_a;
-mod sqlite_b;
-mod sqlite_c;
-mod sqlite_d;
-mod sqlite_e;
-mod str_a;
-mod str_b;
-mod str_c;
-mod str_d;
-mod str_e;
+mod list;
+mod path;
+mod sqlite;
+mod str;
 pub(crate) use fs_net::{
     fsbytes, fscanonicalize, fscurrentdir, fsissymlink, fsmkdirall, fsreadlink,
 };
 pub(crate) use helper::{bisect, chung, flatten, indexof};
-pub(crate) use list_a::{listchunksexact, listcontains, listmath, listmean};
-pub(crate) use list_b::{listmedian, listminmaxfloat, listsumfloat, mapcontainskey};
-pub(crate) use path_a::{pathancestors, pathcomponents, pathisabs, pathjoinall};
-pub(crate) use path_b::{pathnorm, pathrel, pathrelbool, pathstripprefix};
-pub(crate) use path_c::{pathwithext, pathwithfilename, pathwithstem};
-pub(crate) use sqlite_a::{sqliteappid, sqlitecols, sqlitedataver};
-pub(crate) use sqlite_b::{sqlitedblist, sqliteexists, sqliteidx};
-pub(crate) use sqlite_c::sqliteidxcols;
-pub(crate) use sqlite_d::{sqliteidxexists, sqlitejournal, sqlitepk, sqliteschema};
-pub(crate) use sqlite_e::{sqlite_explain, sqliteschemaver, sqlitetables, sqliteuserver};
-pub(crate) use str_a::{strascii, strasciipreds, strcharat, strfind, strisblank};
-pub(crate) use str_b::{strlen, strmatches, strpad, strparse, strparsefloat};
-pub(crate) use str_c::{strreplace, strreplacelast, strreplacen, strrsplit, strrsplitonce};
-pub(crate) use str_d::{strsplitincl, strsplitn, strsplitonce};
-pub(crate) use str_e::{strsplitterm, strstrip, strtitle, strtrim};
+pub(crate) use list::math::{listchunksexact, listcontains, listmath, listmean};
+pub(crate) use list::stats::{listmedian, listminmaxfloat, listsumfloat, mapcontainskey};
+pub(crate) use path::dispatch as path_d;
+pub(crate) use sqlite::explain::{sqlite_explain, sqliteschemaver, sqlitetables, sqliteuserver};
+pub(crate) use sqlite::index::sqliteidxcols;
+pub(crate) use sqlite::introspect::{sqlitedblist, sqliteexists, sqliteidx};
+pub(crate) use sqlite::pragma::{sqliteappid, sqlitecols, sqlitedataver};
+pub(crate) use sqlite::schema::{sqliteidxexists, sqlitejournal, sqlitepk, sqliteschema};
+pub(crate) use str::parse::{strlen, strmatches, strpad, strparse, strparsefloat};
+pub(crate) use str::replace::{strreplace, strreplacelast, strreplacen, strrsplit, strrsplitonce};
+pub(crate) use str::scan::{strascii, strasciipreds, strcharat, strfind, strisblank};
+pub(crate) use str::split::{strsplitincl, strsplitn, strsplitonce};
+pub(crate) use str::trim::{strsplitterm, strstrip, strtitle, strtrim};
 
 pub(crate) use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
@@ -91,9 +78,22 @@ use vis_core::reactor::{frame_unit_result, gioi_han_net_read};
 /// Gọi một hàm `std.*` theo tên đầy đủ.
 pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<Value> {
     kiem(name, &args, span)?;
-    match name {
+    // **ST-313b (VD-289)** — dispatch O(1): tên → `StdId` một lần, rồi match enum.
+    let id = StdId::from_name(name).ok_or_else(|| {
+        loi(
+            format!("`std.{name}` không có trong bảng chữ ký `FUNCS`"),
+            span,
+        )
+    })?;
+    call_by_id(host, id, args, span)
+}
+
+/// Dispatch theo `StdId` — `match` vét cạn, O(1) (không so chuỗi trong từng nhánh).
+pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) -> R<Value> {
+    let name = id.as_str();
+    match id {
         // ----- std.str -----
-        "str.split" => {
+        StdId::StrSplit => {
             let s = chuoi(name, &args[0], 0, span)?;
             let sep = chuoi(name, &args[1], 1, span)?;
             let ds: Vec<Value> = if sep.is_empty() {
@@ -108,49 +108,49 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `str::split_once`: `split_once("a,b,c", ",")` ⇒ `Some(["a", "b,c"])`; không khớp ⇒
         // `None`; `sep` rỗng ⇒ `Some(["", s])`; `s` rỗng + `sep` khác rỗng ⇒ `None`. `Some`
         // luôn có **đúng 2** phần, không trap; lõi ở `stdlib/strsplitonce.rs`.
-        "str.split_once" => strsplitonce::goi(name, &args, span),
+        StdId::StrSplitOnce => strsplitonce::goi(name, &args, span),
         // **VD-270 (rsplit)**: tách **phải → trái**, trả các phần theo **thứ tự ngược** (phần
         // cuối trước), đúng nghĩa Rust `str::rsplit`: `rsplit("a,b,c", ",")` ⇒ `["c", "b", "a"]`.
         // Không khớp ⇒ `[s]`; `s` rỗng + `sep` khác rỗng ⇒ `[""]`; dấu cuối sinh phần rỗng
         // **đầu**, dấu đầu sinh phần rỗng **cuối**; chồng lấn không khớp lại (`"aaa"` cắt `"aa"`
         // ⇒ `["", "a"]`); `sep` rỗng theo **đúng** nghĩa Rust (khác `str.split` của VS); lõi ở
         // `stdlib/strrsplit.rs`.
-        "str.rsplit" => strrsplit::goi(name, &args, span),
+        StdId::StrRsplit => strrsplit::goi(name, &args, span),
         // **VD-270 (rsplit-once)**: tách tại **lần xuất hiện cuối** của `sep`, đúng nghĩa Rust
         // `str::rsplit_once`: `rsplit_once("a,b,c", ",")` ⇒ `Some(["a,b", "c"])`; không khớp ⇒
         // `None`; `sep` rỗng ⇒ `Some([s, ""])`; `s` rỗng + `sep` khác rỗng ⇒ `None`. `Some`
         // luôn có **đúng 2** phần, không trap; lõi ở `stdlib/strrsplitonce.rs`.
-        "str.rsplit_once" => strrsplitonce::goi(name, &args, span),
+        StdId::StrRsplitOnce => strrsplitonce::goi(name, &args, span),
         // **VD-270 (split-inclusive)**: tách tại mỗi lần xuất hiện **không chồng** của `sep`,
         // **giữ** dấu phân cách ở cuối mỗi phần: `split_inclusive("a,b,c", ",")` ⇒
         // `["a,", "b,", "c"]`; không khớp ⇒ `[s]`; dấu cuối **không** sinh phần rỗng thêm; `sep`
         // rỗng theo **đúng** nghĩa Rust (`"abc"` ⇒ `["", "a", "b", "c"]`); `s` rỗng + `sep` khác
         // rỗng ⇒ `[]` (probe Rust 1.100.0, khác `str.split` của VS); lõi ở
         // `stdlib/strsplitincl.rs`.
-        "str.split_inclusive" => strsplitincl::goi(name, &args, span),
+        StdId::StrSplitInclusive => strsplitincl::goi(name, &args, span),
         // **VD-270 (split-terminator)**: như `str.split` nhưng **không** sinh phần rỗng cuối
         // khi `s` kết thúc bằng `sep`: `split_terminator("a,b,", ",")` ⇒ `["a", "b"]`;
         // chỉ bỏ **một** phần rỗng cuối (`","` ⇒ `[""]`, `",,"` ⇒ `["", ""]`); `s` rỗng +
         // `sep` khác rỗng ⇒ `[]` (probe Rust 1.100.0); `sep` rỗng theo **đúng** nghĩa Rust
         // (`"abc"` ⇒ `["", "a", "b", "c"]`, `""` ⇒ `[""]`); không đụng
         // `str.split`/`str.splitn`/`str.split_inclusive`; lõi ở `stdlib/strsplitterm.rs`.
-        "str.split_terminator" => strsplitterm::goi(name, &args, span),
+        StdId::StrSplitTerminator => strsplitterm::goi(name, &args, span),
         // **VD-270 (splitn)**: tối đa `n` phần, tách trái→phải; **phần cuối** giữ nguyên phần
         // còn lại (kể cả dấu phân cách): `splitn("a,b,c", ",", 2)` ⇒ `["a", "b,c"]`.
         // `n == 0` ⇒ `[]`, `n == 1` ⇒ `[s]`, `n > số phần` ⇒ như `str.split`; `sep` rỗng theo
         // **đúng** nghĩa Rust `str::splitn` (khác `str.split` của VS: rỗng ⇒ tách theo scalar,
         // không sinh phần rỗng đầu/cuối). `n < 0` ⇒ trap `VS0501`; lõi ở `stdlib/strsplitn.rs`.
-        "str.splitn" => strsplitn::goi(name, &args, span),
+        StdId::StrSplitn => strsplitn::goi(name, &args, span),
         // **VD-265**: `lines` theo nghĩa Rust — tách ở `\n`, bỏ `\r` ngay trước `\n`; dấu
         // xuống dòng cuối **không** sinh dòng rỗng. `split_whitespace` tách theo
         // `char::is_whitespace` (Unicode), bỏ khoảng trắng đầu/cuối và gộp nhiều khoảng liền.
-        "str.lines" => {
+        StdId::StrLines => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(Value::List(
                 s.lines().map(|x| Value::Str(x.to_string())).collect(),
             ))
         }
-        "str.split_whitespace" => {
+        StdId::StrSplitWhitespace => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(Value::List(
                 s.split_whitespace()
@@ -158,7 +158,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                     .collect(),
             ))
         }
-        "str.join" => {
+        StdId::StrJoin => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let sep = chuoi(name, &args[1], 1, span)?;
             let mut phan: Vec<String> = Vec::with_capacity(xs.len());
@@ -175,7 +175,11 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
             Ok(Value::Str(phan.join(sep)))
         }
-        "str.trim" | "str.trim_start" | "str.trim_end" | "str.upper" | "str.lower" => {
+        StdId::StrTrim
+        | StdId::StrTrimStart
+        | StdId::StrTrimEnd
+        | StdId::StrUpper
+        | StdId::StrLower => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(match name {
                 "str.trim" => s.trim().to_string(),
@@ -187,15 +191,15 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (str-title)**: hoa **scalar đầu** mỗi từ, thường phần còn lại; biên từ là
         // **khoảng trắng Unicode** (giữ nguyên từng scalar), dấu câu không mở từ mới; `ß` ⇒ `SS`.
-        "str.title" => {
+        StdId::StrTitle => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(Value::Str(strtitle::title(s)))
         }
         // **VD-270 (strtrim)**: cắt theo **tập** scalar `chars`; rỗng ⇒ giữ nguyên, hết ⇒ `""`.
-        "str.trim_matches" | "str.trim_start_matches" | "str.trim_end_matches" => {
+        StdId::StrTrimMatches | StdId::StrTrimStartMatches | StdId::StrTrimEndMatches => {
             strtrim::goi(name, &args, span)
         }
-        "str.starts_with" | "str.ends_with" | "str.contains" => {
+        StdId::StrStartsWith | StdId::StrEndsWith | StdId::StrContains => {
             let s = chuoi(name, &args[0], 0, span)?;
             let p = chuoi(name, &args[1], 1, span)?;
             let ok = match name {
@@ -209,12 +213,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `Some(phần còn lại)`, không khớp ⇒ `None`; affix rỗng ⇒ `Some(s)` (nghĩa Rust
         // `strip_prefix`/`strip_suffix`). Đơn vị khớp theo byte nhưng biên luôn là ranh giới
         // scalar Unicode; lõi ở `stdlib/strstrip.rs`.
-        "str.strip_prefix" | "str.strip_suffix" => {
+        StdId::StrStripPrefix | StdId::StrStripSuffix => {
             let s = chuoi(name, &args[0], 0, span)?;
             let moc = chuoi(name, &args[1], 1, span)?;
             Ok(strstrip::goi(name, s, moc))
         }
-        "str.repeat" => {
+        StdId::StrRepeat => {
             let s = chuoi(name, &args[0], 0, span)?;
             let n = so(name, &args[1], 1, span)?;
             if n < 0 {
@@ -233,7 +237,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
             Ok(Value::Str(s.repeat(n as usize)))
         }
-        "str.replace" => {
+        StdId::StrReplace => {
             let s = chuoi(name, &args[0], 0, span)?;
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
@@ -242,7 +246,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (replace-first)**: chỉ thay **lần đầu** (Rust `replacen(…, 1)`), cùng đơn vị
         // scalar Unicode với `str.replace`/`find`; `from` rỗng ⇒ chèn `to` một lần ở đầu;
         // không khớp ⇒ `s` nguyên vẹn. Lõi ở `stdlib/strreplace.rs`.
-        "str.replace_first" => {
+        StdId::StrReplaceFirst => {
             let s = chuoi(name, &args[0], 0, span)?;
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
@@ -251,7 +255,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (replace-last)**: chỉ thay **lần cuối** (Rust `rfind` + ghép), cùng đơn vị
         // scalar Unicode với `str.replace`/`replace_first`/`rfind`; `from` rỗng ⇒ nối `to`
         // một lần ở cuối; không khớp ⇒ `s` nguyên vẹn. Lõi ở `stdlib/strreplacelast.rs`.
-        "str.replace_last" => {
+        StdId::StrReplaceLast => {
             let s = chuoi(name, &args[0], 0, span)?;
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
@@ -262,7 +266,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // tất cả; `from` rỗng ⇒ chèn tại mọi biên scalar theo `n`; `n < 0` ⇒ trap `VS0501`
         // (kiểm **trước** khi thay, cùng mẫu `str.splitn`/`str.repeat`). Lõi ở
         // `stdlib/strreplacen.rs`.
-        "str.replace_n" => {
+        StdId::StrReplaceN => {
             let s = chuoi(name, &args[0], 0, span)?;
             let tu = chuoi(name, &args[1], 1, span)?;
             let den = chuoi(name, &args[2], 2, span)?;
@@ -278,19 +282,19 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             Ok(Value::Str(strreplacen::replace_n(s, tu, den, n)))
         }
         // **VD-270 (parse-int)**: chuỗi thập phân **chặt** → `int?`; sai cú pháp/tràn ⇒ `None`.
-        "str.parse_int" => {
+        StdId::StrParseInt => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strparse::goi(s))
         }
         // **VD-270 (parse-float)**: cú pháp thập phân Rust (`f64::from_str`: dấu, `.5`/`5.`,
         // mũ) rồi **từ chối non-finite** (`inf`/`NaN`/tràn) ⇒ `None`; underflow `±0.0` vẫn
         // `Some`; sai cú pháp ⇒ `None`, không trap.
-        "str.parse_float" => {
+        StdId::StrParseFloat => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strparsefloat::goi(s))
         }
         // **VD-270 (strfind)**: offset scalar Unicode; `find`/`rfind` ⇒ `int?`, `count` ⇒ `int`.
-        "str.find" | "str.rfind" | "str.count" => {
+        StdId::StrFind | StdId::StrRfind | StdId::StrCount => {
             let s = chuoi(name, &args[0], 0, span)?;
             let needle = chuoi(name, &args[1], 1, span)?;
             Ok(strfind::goi(name, s, needle))
@@ -298,9 +302,9 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (matches)**: **các chuỗi con** khớp `pat` theo đúng `str::matches` của Rust —
         // khớp **không chồng**, trái → phải, `pat` rỗng khớp tại mọi biên scalar; không trap;
         // lõi ở `stdlib/strmatches.rs`.
-        "str.matches" => strmatches::goi(name, &args, span),
+        StdId::StrMatches => strmatches::goi(name, &args, span),
         // **VD-269**: đệm theo **scalar** Unicode; `fill` rỗng ⇒ trap; `center` dư bên phải.
-        "str.pad_left" | "str.pad_right" | "str.center" => {
+        StdId::StrPadLeft | StdId::StrPadRight | StdId::StrCenter => {
             let s = chuoi(name, &args[0], 0, span)?;
             let rong = so(name, &args[1], 1, span)?;
             let fill = chuoi(name, &args[2], 2, span)?;
@@ -308,14 +312,14 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (strlen)**: độ dài **byte UTF-8** (`str::len`), số **scalar Unicode**
         // (`chars().count()` — không phải grapheme), và rỗng. Không cấp phát.
-        "str.byte_len" | "str.char_count" | "str.is_empty" => {
+        StdId::StrByteLen | StdId::StrCharCount | StdId::StrIsEmpty => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strlen::goi(name, s))
         }
         // **VD-270 (str-is-ascii)**: `true` ⇔ **mọi byte** thuộc `0x00..=0x7F`; rỗng ⇒
         // `true`, scalar non-ASCII ⇒ `false`; không trap, O(độ dài byte). Lõi ở
         // `stdlib/strascii.rs`.
-        "str.is_ascii" => {
+        StdId::StrIsAscii => {
             let s = chuoi(name, &args[0], 0, span)?;
             Ok(strascii::goi(s))
         }
@@ -323,33 +327,33 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // scalar** là ASCII thuộc nhóm (`char::is_ascii_*`); rỗng ⇒ `false` (khác
         // `str.is_ascii("")` ⇒ `true`); không trap, O(số scalar). Lõi ở
         // `stdlib/strasciipreds.rs`.
-        "str.is_ascii_digit" => Ok(strasciipreds::goi(
+        StdId::StrIsAsciiDigit => Ok(strasciipreds::goi(
             strasciipreds::Nhom::Digit,
             chuoi(name, &args[0], 0, span)?,
         )),
-        "str.is_ascii_alphabetic" => Ok(strasciipreds::goi(
+        StdId::StrIsAsciiAlphabetic => Ok(strasciipreds::goi(
             strasciipreds::Nhom::Alphabetic,
             chuoi(name, &args[0], 0, span)?,
         )),
-        "str.is_ascii_alphanumeric" => Ok(strasciipreds::goi(
+        StdId::StrIsAsciiAlphanumeric => Ok(strasciipreds::goi(
             strasciipreds::Nhom::Alphanumeric,
             chuoi(name, &args[0], 0, span)?,
         )),
-        "str.is_ascii_whitespace" => Ok(strasciipreds::goi(
+        StdId::StrIsAsciiWhitespace => Ok(strasciipreds::goi(
             strasciipreds::Nhom::Whitespace,
             chuoi(name, &args[0], 0, span)?,
         )),
         // **VD-270 (char-at)**: scalar Unicode thứ `i` (zero-based); âm/quá dài/rỗng ⇒ `None`.
-        "str.char_at" => strcharat::goi(name, &args, span),
+        StdId::StrCharAt => strcharat::goi(name, &args, span),
         // **VD-270 (is-blank)**: rỗng hoặc **mọi scalar** `char::is_whitespace` ⇒ `true`.
-        "str.is_blank" => Ok(strisblank::goi(chuoi(name, &args[0], 0, span)?)),
+        StdId::StrIsBlank => Ok(strisblank::goi(chuoi(name, &args[0], 0, span)?)),
         // ----- std.list -----
         // **VD-270 (strlen)**: danh sách rỗng (0 phần tử) ⇒ `bool`.
-        "list.is_empty" => {
+        StdId::ListIsEmpty => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(Value::Bool(xs.is_empty()))
         }
-        "list.sort" => {
+        StdId::ListSort => {
             let xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             let mut ds = xs.clone();
             // Phần tử đơn cũng phải kiểm: `sort_by` không gọi comparator cho danh sách 1 phần tử.
@@ -381,7 +385,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // ST-53: **cùng lõi** `sap_xep_theo_khoa` với shell `sort_by`; ST-56: khoá nhận **`int`
         // hoặc `str`** (một kiểu trong cả lần gọi) — ca `int` cũ **không đổi**.
-        "list.sort_by" => {
+        StdId::ListSortBy => {
             let xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             crate::builtin::sap_xep_theo_khoa(
                 host,
@@ -393,12 +397,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        "list.reverse" => {
+        StdId::ListReverse => {
             let mut xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             xs.reverse();
             Ok(Value::List(xs))
         }
-        "list.unique" => {
+        StdId::ListUnique => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let mut out: Vec<Value> = Vec::new();
             for x in xs {
@@ -408,7 +412,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
             Ok(Value::List(out))
         }
-        "list.concat" => {
+        StdId::ListConcat => {
             let a = danh_sach(name, &args[0], 0, span)?.to_vec();
             let b = danh_sach(name, &args[1], 1, span)?;
             let mut out = a;
@@ -416,11 +420,11 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             Ok(Value::List(out))
         }
         // **VD-270 (flatten)**: nối một cấp, giữ thứ tự; phần tử vốn là list giữ nguyên. Lõi ở `stdlib/flatten.rs`.
-        "list.flatten" => {
+        StdId::ListFlatten => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             flatten::goi(name, xs).map_err(|m| loi(m, span))
         }
-        "list.chunk" => {
+        StdId::ListChunk => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let n = so(name, &args[1], 1, span)?;
             if n <= 0 {
@@ -437,12 +441,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (chunks-exact)**: nhóm **đúng `n`** phần tử, **bỏ phần dư** cuối (khác
         // `list.chunk` giữ nhóm cuối ngắn). `n <= 0` ⇒ trap `VS0501` kiểm **trước khi chia**
         // (kể cả `xs` rỗng); `n > len`/rỗng ⇒ `[]`. Lõi ở `stdlib/listchunksexact.rs`.
-        "list.chunks_exact" => listchunksexact::goi(name, &args, span),
+        StdId::ListChunksExact => listchunksexact::goi(name, &args, span),
         // **VD-270**: cửa sổ **trượt** độ dài `n`, bước 1 (chồng nhau `n-1` phần tử), theo thứ
         // tự. Khác `list.chunk` (nhóm rời). `n <= 0` ⇒ trap `VS0501` — kiểm **trước** dữ liệu
         // nên `list.windows([], 0)` cũng trap; `n > len(xs)` ⇒ `[]`; `n == len(xs)` ⇒ một cửa
         // sổ; `xs` rỗng (với `n > 0`) ⇒ `[]`.
-        "list.windows" => {
+        StdId::ListWindows => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let n = so(name, &args[1], 1, span)?;
             if n <= 0 {
@@ -461,25 +465,25 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (indexof)**: vị trí **0-based** đầu/cuối theo `eq` cấu trúc (như `==`);
         // không có/`xs` rỗng ⇒ `None`.
-        "list.index_of" | "list.last_index_of" => {
+        StdId::ListIndexOf | StdId::ListLastIndexOf => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(indexof::goi(name, xs, &args[1]))
         }
         // **VD-270 (list-contains)**: `true` iff có phần tử `==` `value` — **đúng** phép so
         // cấu trúc của `index_of` (`Value::eq_value`); rỗng/không có ⇒ `false`, không trap.
         // Lõi ở `stdlib/listcontains.rs`.
-        "list.contains" => {
+        StdId::ListContains => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(listcontains::goi(xs, &args[1]))
         }
         // **VD-270 (binary-search)**: `xs` **đã sắp tăng** theo `cmp_value` (cùng thứ tự
         // `list.sort`/`min`); trả **biên dưới** `Some(vị trí đầu của cụm bằng)` / `None`;
         // không kiểm lại thứ tự, không trap. Lõi ở `stdlib/bisect.rs`.
-        "list.binary_search" => {
+        StdId::ListBinarySearch => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             Ok(bisect::goi(xs, &args[1]))
         }
-        "list.take" | "list.drop" => {
+        StdId::ListTake | StdId::ListDrop => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let n = so(name, &args[1], 1, span)?;
             let n = n.max(0) as usize;
@@ -493,7 +497,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-265**: ghép cặp theo vị trí, **dừng ở danh sách ngắn hơn** (zip của Python/
         // Rust); danh sách rỗng ở một bên ⇒ `[]`. Cặp là **list 2 phần tử** (cùng biểu diễn
         // với `enumerate`) để không cần kiểu tuple mới.
-        "list.zip" => {
+        StdId::ListZip => {
             let a = danh_sach(name, &args[0], 0, span)?;
             let b = danh_sach(name, &args[1], 1, span)?;
             Ok(Value::List(
@@ -506,7 +510,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-265**: `min`/`max` gộp theo `cmp_value` (cùng thứ tự với `list.sort`); danh sách
         // **rỗng** là trap `VS0501` (dữ liệu không có phần tử), không panic; phần tử không so
         // được (NaN/kiểu lạ) cũng là trap như `sort` — không trả kết quả nửa vời.
-        "list.min" | "list.max" => {
+        StdId::ListMin | StdId::ListMax => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             let Some(dau) = xs.first() else {
                 return Err(loi(
@@ -545,20 +549,20 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // rỗng ⇒ `0`/`1`; tràn ở bất kỳ bước nào ⇒ `VS0507` (không wrap). Lõi ở
         // `stdlib/listmath.rs` — **một** hiện thực cho interp + VM. `xs.sum()` vẫn đi phương
         // thức lõi (đứng trước R5c); với `list[int]` ngữ nghĩa trùng, `list[float]` giữ nguyên.
-        "list.sum" | "list.product" => {
+        StdId::ListSum | StdId::ListProduct => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmath::goi(name, xs, span)
         }
         // **VD-270 (list-mean)**: trung bình `list[float]`; rỗng ⇒ `None`; gộp trái→phải
         // `f64` (IEEE: NaN/inf lan truyền, không trap). Lõi `stdlib/listmean.rs`.
-        "list.mean" => {
+        StdId::ListMean => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmean::goi(xs, span)
         }
         // **VD-270 (list-median)**: trung vị `list[float]`; rỗng ⇒ `None`; sao chép rồi sắp
         // tăng (`-inf` < hữu hạn < `+inf`), lẻ ⇒ giữa, chẵn ⇒ `(a + b) / 2.0`; có `NaN` ⇒
         // `None` tất định, không trap. Lõi `stdlib/listmedian.rs`.
-        "list.median" => {
+        StdId::ListMedian => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listmedian::goi(xs, span)
         }
@@ -566,26 +570,26 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // ở bất kỳ vị trí ⇒ `None` tất định (cùng chính sách `median`); `±inf` so bình thường;
         // phần tử bằng nhau (kể cả `±0.0`) giữ **đầu tiên** theo thứ tự danh sách. Lõi
         // `stdlib/listminmaxfloat.rs`; sugar R5c `xs.min_float()`/`xs.max_float()`.
-        "list.min_float" | "list.max_float" => {
+        StdId::ListMinFloat | StdId::ListMaxFloat => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listminmaxfloat::goi(name, xs, span)
         }
         // **VD-270 (list-sum-float)**: tổng `list[float]`, hạt giống `+0.0` (rỗng ⇒ `0`); cộng
         // trái→phải `f64` (IEEE: NaN/±inf lan truyền, tràn ⇒ ±inf, không trap — kể cả mọi tổng
         // bằng 0 đều `+0.0`). Lõi `stdlib/listsumfloat.rs`; sugar R5c `xs.sum_float()`.
-        "list.sum_float" => {
+        StdId::ListSumFloat => {
             let xs = danh_sach(name, &args[0], 0, span)?;
             listsumfloat::goi(xs, span)
         }
         // ----- std.map -----
         // **VD-270 (strlen)**: map rỗng (0 cặp) ⇒ `bool`.
-        "map.is_empty" => {
+        StdId::MapIsEmpty => {
             let kv = ban_do(name, &args[0], 0, span)?;
             Ok(Value::Bool(kv.is_empty()))
         }
         // **VD-270 (map-contains-key)**: khoá có mặt theo `eq` cấu trúc như `map.has`.
-        "map.contains_key" => mapcontainskey::goi(name, &args, span),
-        "map.keys" | "map.values" => {
+        StdId::MapContainsKey => mapcontainskey::goi(name, &args, span),
+        StdId::MapKeys | StdId::MapValues => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let out: Vec<Value> = if name == "map.keys" {
                 kv.iter().map(|(k, _)| k.clone()).collect()
@@ -594,7 +598,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             };
             Ok(Value::List(out))
         }
-        "map.merge" => {
+        StdId::MapMerge => {
             let a = ban_do(name, &args[0], 0, span)?.to_vec();
             let b = ban_do(name, &args[1], 1, span)?;
             let mut out = a;
@@ -606,7 +610,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
             Ok(Value::Map(out))
         }
-        "map.get_or" => {
+        StdId::MapGetOr => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let k = chuoi(name, &args[1], 1, span)?;
             let mac_dinh = args[2].clone();
@@ -617,7 +621,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 .map(|(_, v)| v.clone())
                 .unwrap_or(mac_dinh))
         }
-        "map.remove" => {
+        StdId::MapRemove => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let k = chuoi(name, &args[1], 1, span)?;
             let kvk = Value::Str(k.to_string());
@@ -625,22 +629,22 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 kv.iter().filter(|(k0, _)| !eq(k0, &kvk)).cloned().collect(),
             ))
         }
-        name if name.starts_with("path.") => path_d::goi(name, &args, span),
+        id if id.as_str().starts_with("path.") => path_d::goi(id.as_str(), &args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
-        "time.now_ms" => {
+        StdId::TimeNowMs => {
             let ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0);
             Ok(Value::Int(ms))
         }
-        "time.monotonic_ms" => {
+        StdId::TimeMonotonicMs => {
             static GOC: OnceLock<Instant> = OnceLock::new();
             let goc = GOC.get_or_init(Instant::now);
             Ok(Value::Int(goc.elapsed().as_millis() as i64))
         }
         // ----- std.json (encode + decode — ST-33) -----
-        "json.decode" => {
+        StdId::JsonDecode => {
             let s = chuoi(name, &args[0], 0, span)?;
             // **ST-240 / VD-242 §3.5 (nợ #175)**: `01` phải bị từ chối. Lỗi là **dữ liệu**
             // (`Result.Err` của chương trình), không phải trap — cùng mẫu với lỗi cú pháp JSON
@@ -655,7 +659,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
             }
         }
-        "json.encode" | "json.encode_pretty" => {
+        StdId::JsonEncode | StdId::JsonEncodePretty => {
             // **ST-238 / VD-242 (nợ #169, Q4b, §3.5)**: NaN/vô cực (kể cả `Percent`) ⇒ **lỗi**,
             // không xuất token `inf`/`NaN` và không tự đổi `null`. Kiểm đệ thuỳ trước khi mã hoá.
             if vis_core::json::co_so_phi_huu_han(&args[0]) {
@@ -668,22 +672,23 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             json(&args[0], name.ends_with("_pretty"), &mut s);
             Ok(Value::Str(s))
         }
-        name if name.starts_with("fs.")
-            || name.starts_with("net.")
-            || name.starts_with("http.") =>
+        id if {
+            let ten = id.as_str();
+            ten.starts_with("fs.") || ten.starts_with("net.") || ten.starts_with("http.")
+        } =>
         {
-            fs_net_d::goi(host, name, &args, span)
+            fs_net_d::goi(host, id.as_str(), &args, span)
         }
         // ----- std.sqlite (VD-241, Gate 1) — **chỉ qua `Host::db`**, không backend trong crate này.
         // Thiếu host ⇒ `VS0604`; mọi lỗi host (handle/SQL/params/giới hạn/authorizer/timeout/lỗi
         // SQLite) ⇒ `Err(Error)` dữ liệu (VD-241 pre-merge §1). -----
-        "sqlite.open" => {
+        StdId::SqliteOpen => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             // Mặc định `create = true` (A0 I); busy mặc định 5 s (hữu hạn ≤ 60 s host kẹp).
             hop_nhat_fs(host.db_open(p, true, 5_000).map(Value::Str), span)
         }
-        "sqlite.open_with" => {
+        StdId::SqliteOpenWith => {
             let p = chuoi(name, &args[0], 0, span)?;
             let Value::Bool(create) = &args[1] else {
                 return Err(loi(
@@ -696,12 +701,12 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_open(p, create, busy).map(Value::Str), span)
         }
-        "sqlite.close" => {
+        StdId::SqliteClose => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_close(h).map(|()| Value::Unit), span)
         }
-        "sqlite.execute" => {
+        StdId::SqliteExecute => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;
             let params = danh_sach(name, &args[2], 2, span)?;
@@ -710,13 +715,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (db-batch)** — nhiều câu DDL/DML, **không** params; host tách an toàn rồi chạy
         // từng câu qua đúng đường `db_execute` (authorizer/limit/timeout/cap/map lỗi).
-        "sqlite.execute_batch" => {
+        StdId::SqliteExecuteBatch => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_execute_batch(h, sql).map(Value::Int), span)
         }
-        "sqlite.query" => {
+        StdId::SqliteQuery => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;
             let params = danh_sach(name, &args[2], 2, span)?;
@@ -727,7 +732,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             }
         }
         // **VD-266** — cùng chính sách `query` nhưng tối đa **một** hàng (host dừng sau hàng đầu).
-        "sqlite.query_one" => {
+        StdId::SqliteQueryOne => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;
             let params = danh_sach(name, &args[2], 2, span)?;
@@ -740,7 +745,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (db-explain)** — chỉ nhận `SELECT`/`WITH` sau khoảng trắng/comment đầu; chạy
         // `EXPLAIN QUERY PLAN <sql>` qua **đúng** đường `db_query` (cùng authorizer/chỉ đọc/
         // trần/timeout/cache/bind params) rồi trả `RowSet` kế hoạch.
-        "sqlite.explain" => {
+        StdId::SqliteExplain => {
             let h = chuoi(name, &args[0], 0, span)?;
             let sql = chuoi(name, &args[1], 1, span)?;
             let params = danh_sach(name, &args[2], 2, span)?;
@@ -752,7 +757,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-tables)** — tên bảng/view schema chính, sắp byte, bỏ `sqlite_%`; qua
         // `db_query`; lỗi handle/host/kết quả ⇒ `Err(Error)` dữ liệu, DB rỗng ⇒ `Ok([])`.
-        "sqlite.tables" => {
+        StdId::SqliteTables => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
@@ -763,7 +768,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-table-exists)** — bảng/view tên đúng trong schema chính; tên bind;
         // thiếu ⇒ `Ok(false)`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu.
-        "sqlite.table_exists" => {
+        StdId::SqliteTableExists => {
             let h = chuoi(name, &args[0], 0, span)?;
             let ten = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -771,7 +776,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-index-exists)** — index tên đúng trong schema chính; tên bind;
         // thiếu/rỗng ⇒ `Ok(false)`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu.
-        "sqlite.index_exists" => {
+        StdId::SqliteIndexExists => {
             let h = chuoi(name, &args[0], 0, span)?;
             let ten = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -779,7 +784,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-columns)** — tên cột bảng/view schema chính theo **thứ tự khai báo**
         // (`cid`); tên đối tượng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.
-        "sqlite.columns" => {
+        StdId::SqliteColumns => {
             let h = chuoi(name, &args[0], 0, span)?;
             let table = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -791,7 +796,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-indexes)** — tên index người dùng tạo của bảng schema chính, sắp byte,
         // bỏ autoindex; tên bảng bind; bảng/view thiếu ⇒ `Ok([])`, lỗi ⇒ `Err(Error)` dữ liệu.
-        "sqlite.indexes" => {
+        StdId::SqliteIndexes => {
             let h = chuoi(name, &args[0], 0, span)?;
             let table = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -803,7 +808,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-schema-sql)** — văn bản SQL khai báo của đối tượng schema chính tra
         // theo tên bind, phân biệt hoa/thường; thiếu/`sql` NULL ⇒ `Ok(None)`, lỗi ⇒ `Err`.
-        "sqlite.schema_sql" => {
+        StdId::SqliteSchemaSql => {
             let h = chuoi(name, &args[0], 0, span)?;
             let ten = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -815,7 +820,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // **VD-270 (sqlite-index-columns)** — tên cột index schema chính theo thứ tự index
         // (`seqno`), tra theo tên bind qua `sqlite_master.sql`; thiếu/autoindex ⇒ `Ok([])`,
         // mục biểu thức bị bỏ qua; handle/host/kết quả lỗi ⇒ `Err(Error)` dữ liệu.
-        "sqlite.index_columns" => {
+        StdId::SqliteIndexColumns => {
             let h = chuoi(name, &args[0], 0, span)?;
             let index = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -827,7 +832,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         }
         // **VD-270 (sqlite-primary-keys)** — tên cột khoá chính của bảng schema chính theo **thứ
         // tự khoá** (`pk` 1..N); tên bảng bind; không PK/view/thiếu ⇒ `Ok([])`, lỗi ⇒ `Err`.
-        "sqlite.primary_keys" => {
+        StdId::SqlitePrimaryKeys => {
             let h = chuoi(name, &args[0], 0, span)?;
             let table = chuoi(name, &args[1], 1, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
@@ -841,7 +846,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `PRAGMA data_version`; tăng khi connection **khác** commit vào **cùng** DB, không đổi
         // vì ghi/DDL của chính connection; `:memory:` mỗi connection một DB riêng; ngoài
         // `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
-        "sqlite.data_version" => {
+        StdId::SqliteDataVersion => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqlitedataver::chay(host, h).map(Value::Int), span)
@@ -850,7 +855,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // chính** (`main`), chỉ đọc qua `PRAGMA schema_version`; mỗi lời gọi đọc lại nên DDL trên
         // cùng connection làm **tăng** giá trị; lỗi handle/host/kết quả sai hình dạng ⇒
         // `Err(Error)` dữ liệu, không trap.
-        "sqlite.schema_version" => {
+        StdId::SqliteSchemaVersion => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteschemaver::chay(host, h).map(Value::Int), span)
@@ -859,7 +864,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // header tệp DB), chỉ đọc qua `PRAGMA user_version`; DDL/ghi dữ liệu **không** đổi, giá
         // trị lưu theo tệp; ngoài `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒
         // `Err(Error)` dữ liệu, không trap.
-        "sqlite.user_version" => {
+        StdId::SqliteUserVersion => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteuserver::chay(host, h).map(Value::Int), span)
@@ -868,7 +873,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // tệp DB), chỉ đọc qua `PRAGMA application_id`; DDL/ghi dữ liệu **không** đổi, giá trị
         // lưu theo tệp; ngoài `0..=i32::MAX`, lỗi handle/host/kết quả sai hình dạng ⇒
         // `Err(Error)` dữ liệu, không trap.
-        "sqlite.application_id" => {
+        StdId::SqliteApplicationId => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqliteappid::chay(host, h).map(Value::Int), span)
@@ -877,7 +882,7 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `PRAGMA journal_mode` (không tham số); `:memory:` mới ⇒ `memory`, tệp mới ⇒ `delete`,
         // đọc lặp **không** đổi mode; ghi `PRAGMA journal_mode = …` bị authorizer chối; lỗi
         // handle/host/kết quả sai hình dạng ⇒ `Err(Error)` dữ liệu, không trap.
-        "sqlite.journal_mode" => {
+        StdId::SqliteJournalMode => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqlitejournal::chay(host, h).map(Value::Str), span)
@@ -886,33 +891,33 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
         // `PRAGMA database_list` (câu hằng, không bind); **mỗi hàng** thành một `RowSet`
         // `seq,name,file`, sắp theo `seq`; lỗi handle/host/kết quả sai hình dạng ⇒ `Err(Error)`
         // dữ liệu, không trap. ATTACH/DETACH vẫn bị authorizer chặn.
-        "sqlite.database_list" => {
+        StdId::SqliteDatabaseList => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(sqlitedblist::chay(host, h).map(Value::List), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
-        "sqlite.last_insert_rowid" => {
+        StdId::SqliteLastInsertRowid => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_last_insert_rowid(h).map(Value::Int), span)
         }
-        "sqlite.changes" => {
+        StdId::SqliteChanges => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_changes(h).map(Value::Int), span)
         }
-        "sqlite.begin" => {
+        StdId::SqliteBegin => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_execute(h, "BEGIN", &[]).map(|_| Value::Unit), span)
         }
-        "sqlite.commit" => {
+        StdId::SqliteCommit => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_execute(h, "COMMIT", &[]).map(|_| Value::Unit), span)
         }
-        "sqlite.rollback" => {
+        StdId::SqliteRollback => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
@@ -920,13 +925,13 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
                 span,
             )
         }
-        "sqlite.in_transaction" => {
+        StdId::SqliteInTransaction => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_in_transaction(h).map(Value::Bool), span)
         }
-        other => Err(loi(
-            format!("`std.{other}` chưa cài (bảng chữ ký có nhưng tầng chạy thiếu)"),
+        _ => Err(loi(
+            format!("`std.{name}` chưa cài (bảng chữ ký có nhưng tầng chạy thiếu)"),
             span,
         )),
     }
@@ -934,3 +939,5 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
 
 #[cfg(test)]
 mod st238_tests;
+#[cfg(test)]
+mod stdid_tests;

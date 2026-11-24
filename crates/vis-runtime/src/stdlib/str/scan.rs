@@ -359,8 +359,8 @@ pub(crate) mod strcharat {
 
     /// Dispatch chung: kiểm kiểu lúc chạy (sai ⇒ `VS0501`) rồi trả `str?`.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let i = super::super::so(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let i = super::super::super::so(name, &args[1], 1, span)?;
         Ok(Value::opt(char_at(s, i).map(|c| Value::Str(c.to_string()))))
     }
 

@@ -48,8 +48,8 @@ pub(crate) mod strsplitterm {
 
     /// Dispatch `str.split_terminator`: luôn `list[str]`; không trap.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let sep = super::super::chuoi(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::List(
             tach(s, sep).into_iter().map(Value::Str).collect(),
         ))
@@ -447,8 +447,8 @@ pub(crate) mod strtrim {
 
     /// Dispatch chung cho ba hàm; `name` là tên đầy đủ `"str.trim*_matches"`.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let chars = super::super::chuoi(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let chars = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::Str(cat(name, s, chars)))
     }
 

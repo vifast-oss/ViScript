@@ -30,7 +30,7 @@ pub(crate) mod listmedian {
     use vis_core::trap::Abort;
     use vis_core::value::Value;
 
-    use super::super::chung::loi;
+    use super::super::super::chung::loi;
 
     /// Trung vị `xs`; `Err` là trap `VS0501` khi phần tử không phải `float`.
     pub(crate) fn goi(xs: &[Value], span: Span) -> Result<Value, Abort> {
@@ -219,7 +219,7 @@ pub(crate) mod listminmaxfloat {
     use vis_core::trap::Abort;
     use vis_core::value::Value;
 
-    use super::super::chung::loi;
+    use super::super::super::chung::loi;
 
     /// Cực trị `xs` theo `name` (`list.min_float`/`list.max_float`); `Err` là trap `VS0501` khi
     /// phần tử không phải `float`.
@@ -450,7 +450,7 @@ pub(crate) mod listsumfloat {
     use vis_core::trap::Abort;
     use vis_core::value::Value;
 
-    use super::super::chung::loi;
+    use super::super::super::chung::loi;
 
     /// Tổng `xs` theo thứ tự **trái → phải**, hạt giống `+0.0`; `Err` là trap `VS0501` khi phần tử
     /// không phải `float`.
@@ -585,11 +585,11 @@ pub(crate) mod mapcontainskey {
     //!
     //! `key` **không** bị ép kiểu ở tầng chạy: checker đã buộc `K` từ `m`; lời gọi thủ công vẫn
     //! so **cấu trúc** (khác kiểu ⇒ thường `false`, không trap). `m` không phải map ⇒ lỗi dữ liệu
-    //! `VS0501` qua [`super::super::chung::ban_do`].
+    //! `VS0501` qua [`super::super::super::chung::ban_do`].
 
     use vis_syntax::Span;
 
-    use super::super::chung::ban_do;
+    use super::super::super::chung::ban_do;
     use vis_core::trap::R;
     use vis_core::value::{eq, Value};
 

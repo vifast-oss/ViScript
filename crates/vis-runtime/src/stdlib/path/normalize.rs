@@ -32,7 +32,7 @@ pub(crate) mod pathnorm {
     use vis_core::value::Value;
 
     /// Tách **từ vựng** `p` thành `(tuyệt_đối, thành_phần)` — cùng một hiện thực cho
-    /// [`chuan_hoa`] và `path.relative` (`super::super::pathrel`), nên hai hàm không bao giờ lệch quy tắc.
+    /// [`chuan_hoa`] và `path.relative` (`super::super::super::pathrel`), nên hai hàm không bao giờ lệch quy tắc.
     ///
     /// Thành phần đã bỏ `/` lặp và `.`; `..` đã phân giải với thành phần **thường** đứng trước (hoặc
     /// bị bỏ ở gốc tuyệt đối, hoặc được giữ ở đầu chuỗi tương đối). Đầu vào rỗng ⇒ `(false, [])`.
@@ -77,7 +77,7 @@ pub(crate) mod pathnorm {
     /// Dispatch `std.path.normalize`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`, như mọi hàm `std.str`
     /// nhận `str`), rồi gọi [`chuan_hoa`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.normalize", &args[0], 0, span)?;
+        let p = super::super::super::chuoi("path.normalize", &args[0], 0, span)?;
         Ok(Value::Str(chuan_hoa(p)))
     }
 
@@ -126,7 +126,7 @@ pub(crate) mod pathrel {
     //! **VD-270 (path.relative)** — đường dẫn **tương đối** từ `from` tới `to`, **thuần từ vựng
     //! POSIX**: không chạm đĩa, không đọc `cwd`, không phân giải symlink, không kiểm tra tồn tại.
     //!
-    //! Hai đối số được tách bằng **đúng** helper của `path.normalize` ([`super::super::pathnorm::tach`]),
+    //! Hai đối số được tách bằng **đúng** helper của `path.normalize` ([`super::super::super::pathnorm::tach`]),
     //! nên mọi quy tắc chuẩn hoá (`/` lặp, `.`, `..`, `/` cuối) trùng khớp tuyệt đối.
     //!
     //! Hợp đồng (một hiện thực dùng chung interp + VM):
@@ -159,7 +159,7 @@ pub(crate) mod pathrel {
     use vis_core::trap::R;
     use vis_core::value::Value;
 
-    use super::super::pathnorm::{chuan_hoa, tach};
+    use super::pathnorm::{chuan_hoa, tach};
 
     /// Đường dẫn tương đối **từ** `from` **tới** `to` theo bảng ở đầu tệp.
     pub(crate) fn tuong_doi(from: &str, to: &str) -> String {
@@ -192,8 +192,8 @@ pub(crate) mod pathrel {
     /// Dispatch `std.path.relative`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), rồi gọi
     /// [`tuong_doi`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let from = super::super::chuoi("path.relative", &args[0], 0, span)?;
-        let to = super::super::chuoi("path.relative", &args[1], 1, span)?;
+        let from = super::super::super::chuoi("path.relative", &args[0], 0, span)?;
+        let to = super::super::super::chuoi("path.relative", &args[1], 1, span)?;
         Ok(Value::Str(tuong_doi(from, to)))
     }
 
@@ -303,7 +303,7 @@ pub(crate) mod pathrelbool {
     /// Dispatch `std.path.is_relative`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), rồi gọi
     /// [`la_tuong_doi`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.is_relative", &args[0], 0, span)?;
+        let p = super::super::super::chuoi("path.is_relative", &args[0], 0, span)?;
         Ok(Value::Bool(la_tuong_doi(p)))
     }
 
@@ -490,8 +490,8 @@ pub(crate) mod pathstripprefix {
     /// Dispatch `std.path.strip_prefix`: kiểm kiểu **động** `str` cho **cả hai** tham số (sai ⇒
     /// `VS0501`, như mọi hàm `std.path` nhận `str`), rồi gọi [`bo_tien_to`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.strip_prefix", &args[0], 0, span)?;
-        let base = super::super::chuoi("path.strip_prefix", &args[1], 1, span)?;
+        let p = super::super::super::chuoi("path.strip_prefix", &args[0], 0, span)?;
+        let base = super::super::super::chuoi("path.strip_prefix", &args[1], 1, span)?;
         Ok(Value::opt(
             bo_tien_to(p, base).map(|x| Value::Str(x.to_string())),
         ))

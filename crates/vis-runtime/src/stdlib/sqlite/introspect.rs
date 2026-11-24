@@ -38,7 +38,7 @@ pub(crate) mod sqlitedblist {
     //! TEXT) cũng là `Err` dữ liệu, không panic. Host trả **0 hàng** ⇒ `Ok([])` (không có database
     //! nào để mô tả); hình dạng cột vẫn được kiểm.
 
-    use super::super::chung::rowset_record;
+    use super::super::super::chung::rowset_record;
     use crate::builtin::DbHost;
     use vis_core::value::Value;
 

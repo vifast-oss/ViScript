@@ -38,10 +38,10 @@ pub(crate) mod listchunksexact {
     /// Dispatch `list.chunks_exact`: kiểm `n` **trước khi chia** (kể cả `xs` rỗng), rồi trả
     /// `list[list[T]]` với các nhóm là list mới.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let xs = super::super::danh_sach(name, &args[0], 0, span)?;
-        let n = super::super::so(name, &args[1], 1, span)?;
+        let xs = super::super::super::danh_sach(name, &args[0], 0, span)?;
+        let n = super::super::super::so(name, &args[1], 1, span)?;
         if n <= 0 {
-            return Err(super::super::loi(
+            return Err(super::super::super::loi(
                 format!("`{name}`: kích thước khối phải ≥ 1, được {n}"),
                 span,
             ));
@@ -165,7 +165,7 @@ pub(crate) mod listcontains {
     //! Hợp đồng (một hiện thực dùng chung interp + VM):
     //! - `true` khi có **ít nhất một** phần tử `==` `value`; `false` khi không có hoặc `xs` rỗng
     //!   (không trap).
-    //! - So bằng [`super::super::indexof::tim`] — **đúng** phép so của `index_of`/`last_index_of`
+    //! - So bằng [`super::super::super::indexof::tim`] — **đúng** phép so của `index_of`/`last_index_of`
     //!   (`Value::eq_value`: cấu trúc, list/map/record/enum lồng nhau; `int` ↔ `float` theo tỉ lệ
     //!   như `==`), nên `contains(xs, v) == index_of(xs, v).is_some()`.
     //! - Quét tuyến tính, dừng ở phần tử đầu tiên bằng; không cấp phát.
@@ -173,7 +173,7 @@ pub(crate) mod listcontains {
     //! `value` **không** bị ép kiểu ở tầng chạy: checker đã buộc `T` từ `xs`; lời gọi thủ công vẫn
     //! so **cấu trúc** (khác kiểu ⇒ thường `false`, không trap).
 
-    use super::super::indexof;
+    use super::super::super::indexof;
     use vis_core::value::Value;
 
     /// `true` iff có phần tử `==` `value`; rỗng ⇒ `false`.
@@ -283,7 +283,7 @@ pub(crate) mod listmath {
     use vis_core::trap::{Abort, Trap};
     use vis_core::value::Value;
 
-    use super::super::chung::loi;
+    use super::super::super::chung::loi;
 
     /// Gộp `xs` bằng `+`/`*` checked; `name` là `"list.sum"` hoặc `"list.product"`.
     ///
@@ -422,7 +422,7 @@ pub(crate) mod listmean {
     use vis_core::trap::Abort;
     use vis_core::value::Value;
 
-    use super::super::chung::loi;
+    use super::super::super::chung::loi;
 
     /// Trung bình cộng `xs`; `Err` là trap `VS0501` khi phần tử không phải `float`.
     pub(crate) fn goi(xs: &[Value], span: Span) -> Result<Value, Abort> {

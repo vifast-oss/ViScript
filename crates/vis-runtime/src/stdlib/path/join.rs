@@ -95,7 +95,7 @@ pub(crate) mod pathancestors {
     /// Dispatch `std.path.ancestors`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), rồi gọi
     /// [`to_tien`] và đóng gói thành `list[str]`.
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.ancestors", &args[0], 0, span)?;
+        let p = super::super::super::chuoi("path.ancestors", &args[0], 0, span)?;
         let ds = to_tien(p)
             .into_iter()
             .map(|x| Value::Str(x.to_string()))
@@ -229,7 +229,7 @@ pub(crate) mod pathcomponents {
     /// Dispatch `std.path.components`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), rồi gọi
     /// [`thanh_phan`] và đóng gói thành `list[str]`.
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.components", &args[0], 0, span)?;
+        let p = super::super::super::chuoi("path.components", &args[0], 0, span)?;
         let ds = thanh_phan(p)
             .into_iter()
             .map(|x| Value::Str(x.to_string()))
@@ -342,7 +342,7 @@ pub(crate) mod pathisabs {
     /// Dispatch `std.path.is_absolute`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), rồi gọi
     /// [`tuyet_doi`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.is_absolute", &args[0], 0, span)?;
+        let p = super::super::super::chuoi("path.is_absolute", &args[0], 0, span)?;
         Ok(Value::Bool(tuyet_doi(p)))
     }
 
@@ -476,13 +476,13 @@ pub(crate) mod pathjoinall {
     /// Dispatch `std.path.join_all`: kiểm **động** `list` (sai ⇒ `VS0501`), kiểm từng phần tử `str`,
     /// rồi gọi [`noi_tat_ca`] với `cfg!(windows)` — cùng nền tảng `path.join`.
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let parts = super::super::danh_sach("path.join_all", &args[0], 0, span)?;
+        let parts = super::super::super::danh_sach("path.join_all", &args[0], 0, span)?;
         let mut ds: Vec<&str> = Vec::with_capacity(parts.len());
         for (i, v) in parts.iter().enumerate() {
             match v {
                 Value::Str(s) => ds.push(s),
                 other => {
-                    return Err(super::super::loi(
+                    return Err(super::super::super::loi(
                         format!(
                             "`path.join_all`: phần tử {i} cần `str`, được `{}`",
                             other.show()

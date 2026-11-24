@@ -129,8 +129,8 @@ pub(crate) mod strmatches {
 
     /// Dispatch `str.matches`: luôn `list[str]`; không trap.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let pat = super::super::chuoi(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let pat = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::List(
             khop(s, pat).into_iter().map(Value::Str).collect(),
         ))
@@ -249,7 +249,7 @@ pub(crate) mod strpad {
 
     use vis_syntax::Span;
 
-    use super::super::loi;
+    use super::super::super::loi;
     use vis_core::trap::Abort;
 
     /// Trần số scalar **thêm vào** (không tính `s`) — như `str.repeat` (10^7).

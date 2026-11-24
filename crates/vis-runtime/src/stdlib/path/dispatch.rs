@@ -10,11 +10,10 @@ use crate::builtin::ls::{
 use vis_core::trap::R;
 use vis_core::value::Value;
 
-use super::chung::chuoi;
-use super::{
-    pathancestors, pathcomponents, pathisabs, pathjoinall, pathnorm, pathrel, pathrelbool,
-    pathstripprefix, pathwithext, pathwithfilename, pathwithstem,
-};
+use super::super::chung::chuoi;
+use super::ext::{pathwithext, pathwithfilename, pathwithstem};
+use super::join::{pathancestors, pathcomponents, pathisabs, pathjoinall};
+use super::normalize::{pathnorm, pathrel, pathrelbool, pathstripprefix};
 
 /// Gọi một hàm `path.*` theo tên đầy đủ.
 pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {

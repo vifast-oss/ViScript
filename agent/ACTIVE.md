@@ -20,7 +20,7 @@
 | **1** | **`ST-312c`** | **W3** | `REVIEW` | Tách **`crates/vis-hir`** (dữ liệu HIR/Type/`TypeTable`/bảng `stdlib`) khỏi `vis-types` → `vis-core`/`vis-bytecode`/`vis-vm` **0 dep `vis-types`** |
 | **1** | **`ST-312d`** | **W2** | `REVIEW` | Tách **`crates/vis-http`** (sans-IO HTTP/1.1 + cookie + async state machine) khỏi `vis-core`/`vis-interp`; cắt `vis-pkg → vis-host-native` (tiêm `NetHost` + mock test) |
 | **2** | **`ST-313a`** | **W1+W3** | `REVIEW` | Tách **`crates/vis-runtime`** khỏi `vis-interp` (`WorkerRunner` trait); cắt **`vis-vm → vis-interp`**; giữ `vis-interp` ~8,6k; chia `vm_frame.rs` < 1.000 LOC |
-| **2** | **`ST-313b`** | **W2+W4** | `BLOCKED` | 1 nguồn sự thật stdlib (**`StdId`** O(1) + test song ánh 1–1 `FUNCS` ↔ dispatch) + tổ chức `stdlib/` theo miền (xóa hết 20 tệp `_a.._e`) |
+| **2** | **`ST-313b`** | **W2+W4** | `REVIEW` | 1 nguồn sự thật stdlib (**`StdId`** O(1) + test song ánh 1–1 `FUNCS` ↔ dispatch) + tổ chức `stdlib/` theo miền (xóa hết 20 tệp `_a.._e`) |
 | **3** | **`ST-313c`** | **W1+W2** | `BLOCKED` | Dời test API thư viện khỏi `vis-cli/tests/` về crate chủ + dựng **`crates/vis-conformance`** (dữ liệu `.vis`/`.out`/`.err` chạy tự động `interp ↔ VM` + WASI) |
 | **3** | **`ST-313d`** | **W3+W4** | `BLOCKED` | Chuyển `lang_it`/`stdlib_it` sang `test/conformance/` (0 mất assertion), cập nhật R8 nếu cần, đánh giá đóng `#193` (WASI interp trên `vis-interp` mỏng) |
 

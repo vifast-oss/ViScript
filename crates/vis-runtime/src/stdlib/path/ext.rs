@@ -87,8 +87,8 @@ pub(crate) mod pathwithext {
     /// Dispatch `std.path.with_extension`: kiểm kiểu **động** `str` cho **cả hai** tham số (sai ⇒
     /// `VS0501`, như mọi hàm `std.path` nhận `str`), rồi gọi [`voi_phan_mo_rong`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.with_extension", &args[0], 0, span)?;
-        let ext = super::super::chuoi("path.with_extension", &args[1], 1, span)?;
+        let p = super::super::super::chuoi("path.with_extension", &args[0], 0, span)?;
+        let ext = super::super::super::chuoi("path.with_extension", &args[1], 1, span)?;
         Ok(Value::Str(voi_phan_mo_rong(p, ext, cfg!(windows))))
     }
 
@@ -302,8 +302,8 @@ pub(crate) mod pathwithfilename {
     /// Dispatch `std.path.with_file_name`: kiểm kiểu **động** `str` cho **cả hai** tham số (sai ⇒
     /// `VS0501`, như mọi hàm `std.path` nhận `str`), rồi gọi [`voi_ten_tep`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.with_file_name", &args[0], 0, span)?;
-        let name = super::super::chuoi("path.with_file_name", &args[1], 1, span)?;
+        let p = super::super::super::chuoi("path.with_file_name", &args[0], 0, span)?;
+        let name = super::super::super::chuoi("path.with_file_name", &args[1], 1, span)?;
         Ok(Value::Str(voi_ten_tep(p, name, cfg!(windows))))
     }
 
@@ -517,8 +517,8 @@ pub(crate) mod pathwithstem {
     /// Dispatch `std.path.with_stem`: kiểm kiểu **động** `str` cho **cả hai** tham số (sai ⇒
     /// `VS0501`, như mọi hàm `std.path` nhận `str`), rồi gọi [`voi_than`].
     pub(crate) fn goi(args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi("path.with_stem", &args[0], 0, span)?;
-        let stem = super::super::chuoi("path.with_stem", &args[1], 1, span)?;
+        let p = super::super::super::chuoi("path.with_stem", &args[0], 0, span)?;
+        let stem = super::super::super::chuoi("path.with_stem", &args[1], 1, span)?;
         Ok(Value::Str(voi_than(p, stem, cfg!(windows))))
     }
 

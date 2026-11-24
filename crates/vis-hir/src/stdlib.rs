@@ -12,6 +12,7 @@ mod funcs_misc;
 mod funcs_net_http;
 mod funcs_sqlite;
 mod funcs_str;
+mod std_id;
 mod ty;
 
 pub use api::{
@@ -20,4 +21,5 @@ pub use api::{
 pub use bang::FUNCS;
 pub use builtin::BUILTIN_FUNCS;
 pub use dinh_nghia::{StdFn, MODULES, MODULES_HOAN};
+pub use std_id::StdId;
 pub use ty::{ten_bien, Ty};

@@ -42,8 +42,8 @@ pub(crate) mod strsplitincl {
 
     /// Dispatch `str.split_inclusive`: luôn `list[str]`; không trap.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let sep = super::super::chuoi(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::List(
             tach(s, sep).into_iter().map(Value::Str).collect(),
         ))
@@ -180,11 +180,11 @@ pub(crate) mod strsplitn {
 
     /// Dispatch `str.splitn`; `n < 0` ⇒ trap `VS0501` (cùng mẫu `str.repeat`/`list.windows`).
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let sep = super::super::chuoi(name, &args[1], 1, span)?;
-        let n = super::super::so(name, &args[2], 2, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
+        let n = super::super::super::so(name, &args[2], 2, span)?;
         if n < 0 {
-            return Err(super::super::loi(
+            return Err(super::super::super::loi(
                 format!("`{name}`: số phần `n` phải ≥ 0, được {n}"),
                 span,
             ));
@@ -283,8 +283,8 @@ pub(crate) mod strsplitonce {
 
     /// Dispatch `str.split_once`: `Some(list)` với **đúng 2** phần, hoặc `None`; không trap.
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> vis_core::trap::R<Value> {
-        let s = super::super::chuoi(name, &args[0], 0, span)?;
-        let sep = super::super::chuoi(name, &args[1], 1, span)?;
+        let s = super::super::super::chuoi(name, &args[0], 0, span)?;
+        let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::opt(tach(s, sep).map(|(dau, sau)| {
             Value::List(vec![
                 Value::Str(dau.to_string()),
