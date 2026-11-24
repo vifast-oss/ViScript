@@ -341,6 +341,6 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             });
             hop_nhat_fs(kq, span)
         }
-        _ => unreachable!("fs_net_d::goi chỉ nhận tên fs.*/net.*"),
+        _ => unreachable!("dispatch `fs_net` chỉ nhận tên fs.*/net.*"),
     }
 }
