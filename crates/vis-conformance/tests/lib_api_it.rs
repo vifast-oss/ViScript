@@ -49,6 +49,8 @@ mod vd284_async_impl;
 mod vd284_spawn_method;
 #[path = "async_api_it/vs3_budget.rs"]
 mod vs3_budget;
+#[path = "async_api_it/vs3_budget_default_lib.rs"]
+mod vs3_budget_default_lib;
 #[path = "async_api_it/vs3_cancel.rs"]
 mod vs3_cancel;
 #[path = "async_api_it/vs3_chan0.rs"]
