@@ -15,3 +15,9 @@ mod vd263_ctrl;
 mod vd270_map_eq;
 #[path = "interp_it/vd270_map_eq_diff.rs"]
 mod vd270_map_eq_diff;
+
+// ST-313c: frame/suspend tách từ binary `frame_it` (R8).
+#[path = "frame_it/lat0_suspend.rs"]
+mod lat0_suspend;
+#[path = "frame_it/lat1_frame.rs"]
+mod lat1_frame;

@@ -57,7 +57,7 @@
 | `vis-wasm-sem` | **390/390** |
 | conformance corpus | **420/420** |
 | R1..R9 | PASS |
-| R8 | **38** binary (trần 40) |
+| R8 | **36** binary (trần 40) |
 
 ## Ghi chú vận hành
 

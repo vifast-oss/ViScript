@@ -19,6 +19,8 @@ mod method_ret;
 mod names;
 #[path = "types_it/stdlib_strmatches.rs"]
 mod stdlib_strmatches;
+#[path = "types_it/stdlib_ty.rs"]
+mod stdlib_ty;
 #[path = "types_it/trait.rs"]
 mod r#trait;
 #[path = "types_it/tyck.rs"]
