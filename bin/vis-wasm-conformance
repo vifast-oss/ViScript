@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""**ST-313c (VD-289)** — chạy corpus `test/conformance/**` trên WASI (`wasm32-wasip1`).
+
+Mỗi ca `.vis` (có `.out`, không `.err`) chạy **cả interp và VM** qua `vis-wasm-run.wasm`
+(runtime `node:wasi`), so stdout với `.out` và rc=0. Bỏ qua ca dùng host fs/net/sqlite/proc
+(giống `vis-wasm-sem`) và ca lỗi tĩnh.
+
+Cùng cấu hình stack với `vis-wasm-suite`: `-zstack-size=12 MiB` + `node --stack-size=4096`
+(env `VIS_WASM_STACK_MB`/`VIS_WASM_NODE_STACK_KB`).
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WS = ROOT / "vis-host-wasm"
+TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
+WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
+CORPUS = ROOT / "test/conformance"
+WASM_STACK_MB = int(os.environ.get("VIS_WASM_STACK_MB", "12"))
+NODE_STACK_KB = int(os.environ.get("VIS_WASM_NODE_STACK_KB", "4096"))
+BO_QUA = ("use std.fs", "use std.net", "use std.sqlite", "use std.proc", "use pkg.", "use ./")
+
+NODE_DRIVER = r"""
+import { WASI } from 'node:wasi';
+import { readFile } from 'node:fs/promises';
+const [wasmPath, guest, host, ro, ...args] = process.argv.slice(2);
+const env = { VIS_WASM_PREOPENS: guest + (ro === '1' ? '@ro' : '') };
+const wasi = new WASI({
+  version: 'preview1',
+  args: ['vis-wasm-run', ...args],
+  env,
+  preopens: { [guest]: host },
+});
+const wasm = await WebAssembly.compile(await readFile(wasmPath));
+const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
+const code = wasi.start(instance);
+process.exit(code);
+"""
+
+
+def cargo() -> str:
+    p = Path.home() / ".cargo/bin/cargo"
+    return str(p) if p.is_file() else (shutil.which("cargo") or "cargo")
+
+
+def build() -> None:
+    env = os.environ.copy()
+    env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
+    env.setdefault("CARGO_BUILD_JOBS", "3")
+    env.setdefault("CARGO_PROFILE_DEV_DEBUG", "0")
+    env.setdefault("TMPDIR", "/home/ps/tmp")
+    env.setdefault("RUSTFLAGS", f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}")
+    cmd = [cargo(), "build", "--release", "--target", "wasm32-wasip1",
+           "--manifest-path", str(WS / "Cargo.toml")]
+    print("# build:", " ".join(cmd), file=sys.stderr)
+    if subprocess.run(cmd, cwd=ROOT, env=env).returncode != 0 or not WASM.is_file():
+        print("BLOCKED-ENV: build wasm32-wasip1 lỗi", file=sys.stderr)
+        sys.exit(2)
+
+
+def chay(driver: Path, root: Path, engine: str) -> subprocess.CompletedProcess:
+    node = shutil.which("node")
+    if not node:
+        print("BLOCKED-ENV: không có node:wasi", file=sys.stderr)
+        sys.exit(2)
+    cmd = [node, "--no-warnings", f"--stack-size={NODE_STACK_KB}", str(driver),
+           str(WASM), "/data", str(root), f"--{engine}", "/data/prog.vis"]
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+
+def main() -> int:
+    build()
+    cases = []
+    for p in sorted(CORPUS.rglob("*.vis")):
+        if p.with_suffix(".err").exists():
+            continue
+        if not p.with_suffix(".out").exists() and not p.with_suffix(".out_prefix").exists():
+            continue
+        src = p.read_text(encoding="utf-8")
+        if any(x in src for x in BO_QUA):
+            continue
+        cases.append(p)
+    print(f"# {len(cases)} ca hợp lệ trên WASI", file=sys.stderr)
+    work = Path(tempfile.mkdtemp(prefix="vis-wasm-conformance-",
+                                 dir=os.environ.get("TMPDIR") or None))
+    driver = work / "node-driver.mjs"
+    driver.write_text(NODE_DRIVER, encoding="utf-8")
+    hong = []
+    try:
+        for i, p in enumerate(cases, 1):
+            root = work / f"c{i}"
+            root.mkdir()
+            shutil.copyfile(p, root / "prog.vis")
+            khop = lambda s: s.startswith(
+                p.with_suffix(".out_prefix").read_text(encoding="utf-8")
+            ) if p.with_suffix(".out_prefix").exists() else s == p.with_suffix(".out").read_text(
+                encoding="utf-8"
+            )
+            for engine in ("interp", "vm"):
+                r = chay(driver, root, engine)
+                if r.returncode != 0 or not khop(r.stdout):
+                    hong.append(f"{p.relative_to(ROOT)} [{engine}] rc={r.returncode} "
+                                f"stdout={r.stdout!r} stderr={r.stderr[:120]!r}")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    print(f"# tổng: {len(cases)} ca x 2 engine, {len(hong)} hỏng", file=sys.stderr)
+    for x in hong[:30]:
+        print("not ok -", x, file=sys.stderr)
+    return 1 if hong else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

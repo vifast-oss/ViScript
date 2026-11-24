@@ -34,6 +34,12 @@
   sửa doc rot; gộp `vis-fmt/moi → fmt`, `vish-edit/completion_job → editor`.
 - **R8**: tổng **38** binary (vis-cli 8/15, còn 2 slot tổng).
 
+## Tái dùng corpus cho WASI (`bin/vis-wasm-conformance`)
+
+- Chạy `test/conformance/**` (ca `.out`/`.out_prefix`, bỏ `.err` + host fs/net/sqlite/proc)
+  trên `wasm32-wasip1`, **cả interp và VM**, cùng stack 12 MiB + node 4096.
+- Kết quả: **299 ca × 2 engine, 0 hỏng**.
+
 ## `#193` — ĐÓNG
 
 - WASI cần **hai** trần stack:
@@ -54,6 +60,7 @@
 | `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 · `vis-dag-check` OK |
 | clippy `--workspace --all-targets -D warnings` | Linux PASS · Windows (`psvn`) PASS · **macOS bỏ qua** (`mps` bận) |
 | `vis-wasm-suite --build` | **28/28** |
+| `bin/vis-wasm-conformance` (mới) | **299 ca × 2 engine, 0 hỏng** |
 | `vis-wasm-sem` | **390/390** |
 | conformance corpus | **420/420** |
 | R1..R9 | PASS |
