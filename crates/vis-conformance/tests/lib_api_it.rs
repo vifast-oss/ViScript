@@ -53,6 +53,8 @@ mod vs3_budget;
 mod vs3_cancel;
 #[path = "async_api_it/vs3_chan0.rs"]
 mod vs3_chan0;
+#[path = "async_api_it/vs3_chan_cap_lib.rs"]
+mod vs3_chan_cap_lib;
 #[path = "async_api_it/vs3_chan_timeout.rs"]
 mod vs3_chan_timeout;
 #[path = "async_api_it/vs3_select.rs"]
