@@ -42,9 +42,6 @@ const LOOP_100K: &str =
 /// Đường **frame/async** (interp frame + VM frame): phải charge cùng ngân sách, không né phí.
 const ASYNC_LOOP_100K: &str = "async fn t() -> int:\n    var n = 0\n    for i in 0..100_000:\n        n = n + 1\n    n\nfn main():\n    print(await t())\n";
 
-const LOOP_2M: &str =
-    "fn main():\n    var n = 0\n    for i in 0..2_000_000:\n        n = n + 1\n    print(n)\n";
-
 static DEM: AtomicUsize = AtomicUsize::new(0);
 
 /// Tệp nguồn tạm **riêng** cho mỗi lần gọi (test chạy song song).
