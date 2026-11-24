@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# `vis-hir` — dữ liệu thuần HIR/Type/TypeTable + bảng chữ ký `stdlib` (ST-312c/VD-289).
+# Tầng 1 của DAG: chỉ phụ thuộc `vis-diag` + `vis-syntax`; **không** kéo `vis-types`.
+[package]
+name = "vis-hir"
+rust-version.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+vis-diag = { path = "../vis-diag" }
+vis-syntax = { path = "../vis-syntax" }

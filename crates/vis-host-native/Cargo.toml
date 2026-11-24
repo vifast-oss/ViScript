@@ -51,6 +51,7 @@ vis-types = { path = "../vis-types" }
 vis-vm = { path = "../vis-vm" }
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-core = { path = "../vis-core" }

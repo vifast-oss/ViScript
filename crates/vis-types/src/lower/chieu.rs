@@ -136,22 +136,22 @@ impl<'a> Lowerer<'a> {
                     default: None,
                 }],
                 ret: ty,
-                body: crate::hir::HBody::Expr(Box::new(e)),
+                body: vis_hir::hir::HBody::Expr(Box::new(e)),
                 span,
             };
             self.pop_frame();
             return Some(lam);
         } else {
-            let fields_def: Vec<crate::ty::FieldDef> = truong
+            let fields_def: Vec<vis_hir::ty::FieldDef> = truong
                 .iter()
-                .map(|(n, t, _)| crate::ty::FieldDef {
+                .map(|(n, t, _)| vis_hir::ty::FieldDef {
                     name: n.clone(),
                     ty: t.clone(),
                     span,
                     has_default: false,
                 })
                 .collect();
-            let id = self.tbl.push_rec(crate::ty::RecDef {
+            let id = self.tbl.push_rec(vis_hir::ty::RecDef {
                 name: None,
                 fields: fields_def,
                 span,
@@ -184,7 +184,7 @@ impl<'a> Lowerer<'a> {
                 HExpr::Record { ty, .. } => ty.clone(),
                 _ => Type::Error,
             },
-            body: crate::hir::HBody::Expr(Box::new(expr)),
+            body: vis_hir::hir::HBody::Expr(Box::new(expr)),
             span,
         };
         self.pop_frame();

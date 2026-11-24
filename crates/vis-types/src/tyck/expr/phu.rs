@@ -2,17 +2,17 @@
 //! **ST-61**: phụ trợ nhỏ của `tyck/expr.rs` — tách ra để `expr.rs` giữ **R1** ≤ 1.500 dòng.
 //! Đây là các hàm **thuần** (không trạng thái), chuyển nguyên văn từ `expr.rs`.
 
-use crate::ty::Type;
+use vis_hir::ty::Type;
 
 /// **ST-239 (VD-242 Q4a + §3.4)**: dạng chuẩn của **khoá map literal xác định được tĩnh**.
 /// Chỉ nhận literal — mọi biểu thức khác trả `None` và để runtime last-wins xử lý. Tuyệt đối
 /// **không gọi mã người dùng** ở checker. Số `int`/`float` cùng giá trị (VD-17: `1 == 1.0`)
 /// dùng chung một dạng để bắt cả cặp trùng `1` / `1.0`.
-pub(super) fn static_key(e: &crate::hir::HExpr) -> Option<String> {
-    let crate::hir::HExpr::Lit { lit, .. } = e else {
+pub(super) fn static_key(e: &vis_hir::hir::HExpr) -> Option<String> {
+    let vis_hir::hir::HExpr::Lit { lit, .. } = e else {
         return None;
     };
-    use crate::hir::LitKind;
+    use vis_hir::hir::LitKind;
     let key = match lit.kind {
         LitKind::Int => match lit.text.parse::<i64>() {
             Ok(n) => format!("n:{n}"),
@@ -75,7 +75,11 @@ pub(super) fn builtin_value_ty(name: &str) -> Type {
 }
 
 /// **R6c (VD-178)**: kiểm `{expr:spec}` — kiểu biểu thức + spec (`.N`, N ≤ 17).
-pub(super) fn kiem_expr_spec(c: &mut super::super::Checker, expr: &crate::hir::HExpr, spec: &str) {
+pub(super) fn kiem_expr_spec(
+    c: &mut super::super::Checker,
+    expr: &vis_hir::hir::HExpr,
+    spec: &str,
+) {
     let t = c.kiem_expr(expr);
     if !matches!(t, Type::Int | Type::Float | Type::Str | Type::Error) {
         c.diag(
@@ -108,14 +112,14 @@ fn spec_hop_le(spec: &str) -> bool {
 }
 
 /// **R6c (VD-178)**: kiểm **từng** mảnh của chuỗi nội suy (ST-14 + `{expr:spec}`).
-pub(super) fn kiem_interp(c: &mut super::super::Checker, parts: &[crate::hir::InterpPart]) {
+pub(super) fn kiem_interp(c: &mut super::super::Checker, parts: &[vis_hir::hir::InterpPart]) {
     for p in parts {
         match p {
-            crate::hir::InterpPart::Expr(e) => {
+            vis_hir::hir::InterpPart::Expr(e) => {
                 c.kiem_expr(e);
             }
-            crate::hir::InterpPart::ExprSpec { expr, spec } => kiem_expr_spec(c, expr, spec),
-            crate::hir::InterpPart::Str(_) => {}
+            vis_hir::hir::InterpPart::ExprSpec { expr, spec } => kiem_expr_spec(c, expr, spec),
+            vis_hir::hir::InterpPart::Str(_) => {}
         }
     }
 }
@@ -123,7 +127,7 @@ pub(super) fn kiem_interp(c: &mut super::super::Checker, parts: &[crate::hir::In
 /// **R17 (VD-178)**: `is_empty()` — 0 đối số, trả `bool` (list/map/str).
 pub(super) fn is_empty(
     c: &mut super::super::Checker,
-    args: &[crate::hir::HExpr],
+    args: &[vis_hir::hir::HExpr],
     name: &str,
     span: vis_syntax::Span,
 ) -> Type {
@@ -134,8 +138,8 @@ pub(super) fn is_empty(
 /// **R8 (VD-178)**: `xs[i]?` — chỉ số **có kiểm tra** ⇒ `T?` (không cần hàm trả `T?`).
 pub(super) fn kiem_index_opt(
     c: &mut super::super::Checker,
-    base: &crate::hir::HExpr,
-    index: &crate::hir::HExpr,
+    base: &vis_hir::hir::HExpr,
+    index: &vis_hir::hir::HExpr,
     span: vis_syntax::Span,
 ) -> Type {
     let bt = c.kiem_expr(base);
@@ -167,10 +171,10 @@ pub(super) fn kiem_index_opt(
 /// **R8 (VD-178) + §4.4**: `?` — `xs[i]?` là chỉ số có kiểm tra; còn lại đòi hàm trả `T?`/`Result`.
 pub(super) fn kiem_try(
     c: &mut super::super::Checker,
-    expr: &crate::hir::HExpr,
+    expr: &vis_hir::hir::HExpr,
     span: vis_syntax::Span,
 ) -> Type {
-    if let crate::hir::HExpr::Index { base, index, .. } = expr {
+    if let vis_hir::hir::HExpr::Index { base, index, .. } = expr {
         return kiem_index_opt(c, base, index, span);
     }
     let t = c.kiem_expr(expr);
@@ -259,7 +263,7 @@ pub(crate) fn kiem_std_method(
     c: &mut super::super::Checker,
     recv: &Type,
     name: &str,
-    args: &[crate::hir::HExpr],
+    args: &[vis_hir::hir::HExpr],
     span: vis_syntax::Span,
 ) -> Option<Type> {
     let m = match recv {
@@ -269,11 +273,11 @@ pub(crate) fn kiem_std_method(
         _ => return None,
     };
     // **VD-270 (path.normalize)**: `s.normalize()` là sugar của `path.normalize`, không phải `str`.
-    let m = crate::stdlib::module_sugar(m, name).unwrap_or(m);
+    let m = vis_hir::stdlib::module_sugar(m, name).unwrap_or(m);
     let full = format!("{m}.{name}");
     let f = vis_types_stdlib_sig(&full)?;
     let gens: Vec<String> = (0..3)
-        .map(|i| crate::stdlib::ten_bien(i as u8).to_string())
+        .map(|i| vis_hir::stdlib::ten_bien(i as u8).to_string())
         .collect();
     let mut bang: Vec<(String, Type)> = Vec::new();
     let want = f.params.first()?.sang_type();
@@ -308,7 +312,7 @@ pub(crate) fn kiem_std_method(
 pub(super) fn hop_ve_literal(
     c: &mut super::super::Checker,
     acc: &mut Type,
-    e: &crate::hir::HExpr,
+    e: &vis_hir::hir::HExpr,
     t: &Type,
     what: &str,
 ) {
@@ -347,7 +351,7 @@ pub(super) fn hop_ve_literal(
 /// **VD-258** — kiểu chung của dãy phần tử `list`/`set` (gọi từ `tyck/expr.rs`).
 pub(super) fn unify_all(
     c: &mut super::super::Checker,
-    items: &[crate::hir::HExpr],
+    items: &[vis_hir::hir::HExpr],
     what: &str,
     _span: vis_syntax::Span,
 ) -> Type {
@@ -408,10 +412,10 @@ pub(super) fn unify_branch(
 pub(super) fn kiem_builtin_sig(
     c: &mut super::super::Checker<'_>,
     name: &str,
-    args: &[crate::hir::HExpr],
+    args: &[vis_hir::hir::HExpr],
     span: vis_syntax::Span,
 ) -> Option<Type> {
-    let sig = crate::stdlib::sig_builtin(name)?;
+    let sig = vis_hir::stdlib::sig_builtin(name)?;
     let mut tys = Vec::with_capacity(args.len());
     for a in args {
         tys.push(c.kiem_expr(a));
@@ -447,7 +451,7 @@ pub(super) fn kiem_builtin_sig(
 /// (HIR dựng tay) ⇒ `VS0412`.
 pub(super) fn kiem_truong_ban_ghi(
     c: &mut super::super::Checker,
-    fields: &[(String, crate::hir::HExpr)],
+    fields: &[(String, vis_hir::hir::HExpr)],
     ty: &Type,
 ) {
     let Type::Record(id) = ty else {
@@ -496,7 +500,7 @@ pub(super) fn ten_duoc_mien(c: &super::super::Checker<'_>, name: &str) -> bool {
     if crate::lower::BUILTIN_VALUE_NAMES.contains(&name) {
         return true;
     }
-    if crate::stdlib::MODULES.contains(&name) {
+    if vis_hir::stdlib::MODULES.contains(&name) {
         return true;
     }
     if matches!(
@@ -532,9 +536,9 @@ pub(super) fn ten_duoc_mien(c: &super::super::Checker<'_>, name: &str) -> bool {
 /// **VD-260** — gọi/dựng bản ghi: chỉ nhận **trường có tên**; `U(1)`/`U()` bị từ chối tĩnh.
 pub(super) fn kiem_goi_ban_ghi(
     c: &mut super::super::Checker<'_>,
-    id: crate::ty::RecId,
-    args: &[crate::hir::HExpr],
-    named: &[(String, crate::hir::HExpr)],
+    id: vis_hir::ty::RecId,
+    args: &[vis_hir::hir::HExpr],
+    named: &[(String, vis_hir::hir::HExpr)],
     span: vis_syntax::Span,
 ) {
     if !args.is_empty() {
@@ -577,7 +581,7 @@ pub(super) fn kiem_goi_ban_ghi(
 /// **VD-260** — `with` trùng trường không được lặng lẽ last-wins.
 pub(super) fn kiem_with_trung(
     c: &mut super::super::Checker<'_>,
-    fields: &[(String, crate::hir::HExpr)],
+    fields: &[(String, vis_hir::hir::HExpr)],
     span: vis_syntax::Span,
 ) {
     let mut da_thay: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
@@ -593,8 +597,8 @@ pub(super) fn kiem_with_trung(
 }
 
 /// Tách riêng để `phu.rs` không phải `use` cả crate `stdlib` ở đầu tệp.
-fn vis_types_stdlib_sig(name: &str) -> Option<&'static crate::stdlib::StdFn> {
-    crate::stdlib::sig_of(name)
+fn vis_types_stdlib_sig(name: &str) -> Option<&'static vis_hir::stdlib::StdFn> {
+    vis_hir::stdlib::sig_of(name)
 }
 
 /// **ST-72 (VD-106)**: kiểu quyền `cap[...]` — chuyển từ `expr.rs` để giữ R1.

@@ -19,11 +19,9 @@ use vis_diag::{MODULE_CODES, SYNTAX_CODES};
 use crate::lock_meta::{
     bam as bam_noi_dung, chuan_hoa as chuan_hoa_noi_dung, doc_khoa_cua, GoiKhoa,
 };
+use vis_hir::{HExpr, HItem, HStmt, Hir, ModInfo, Symbols, Type, TypeTable};
 use vis_syntax::{Diagnostic, Mode, NodeKind, Span};
-use vis_types::{
-    check, lower_into, HExpr, HItem, HStmt, Hir, LowerOptions, ModInfo, NamePolicy, Symbols,
-    TraitSig, Type, TypeTable,
-};
+use vis_types::{check, lower_into, LowerOptions, NamePolicy, TraitSig};
 
 /// Một tệp đã nạp.
 #[derive(Debug, Clone)]
@@ -585,7 +583,7 @@ impl Nap {
             // ST-26: `use std.<module>` — module **trong Rust**, không phải tệp.
             if seg.first().map(String::as_str) == Some("std") {
                 let m2 = seg.get(1).cloned().unwrap_or_default();
-                if vis_types::stdlib::module_ho_tro(&m2) {
+                if vis_hir::stdlib::module_ho_tro(&m2) {
                     if std_mods.contains(&m2) {
                         self.bao(
                             &rel,
@@ -603,7 +601,7 @@ impl Nap {
                         "`std.fs` chưa có — ST-27 (cần host)".to_string(),
                         span,
                     );
-                } else if vis_types::stdlib::MODULES_HOAN.contains(&m2.as_str()) {
+                } else if vis_hir::stdlib::MODULES_HOAN.contains(&m2.as_str()) {
                     self.bao(
                         &rel,
                         &MODULE_CODES[4],

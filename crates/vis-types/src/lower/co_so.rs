@@ -35,7 +35,7 @@ impl<'a> Lowerer<'a> {
             enum_tmpl: Vec::new(),
             inst_cache: Vec::new(),
             sym_generic: false,
-            cmd_sigs: crate::cmdsig::BuiltinSigs::mac_dinh().sigs().to_vec(),
+            cmd_sigs: vis_hir::cmdsig::BuiltinSigs::mac_dinh().sigs().to_vec(),
             tam_n: 0,
             file_long: None,
             prelude_recs: Vec::new(),
@@ -102,7 +102,7 @@ impl<'a> Lowerer<'a> {
             // ST-48: thân `cmd` **lệnh** thay bằng `()` trong bản sao tiền tố (giữ nguyên byte).
             // **ST-134**: phân loại thân cần biết **tên lệnh** (bảng chuẩn + `cmd` khai trong tệp)
             // để một dòng `ls /tmp/x` là **lệnh**, không bị đọc thành phép chia `tmp` (lỗi ca iv).
-            let mut ten_lenh = crate::cmdsig::ten_mac_dinh();
+            let mut ten_lenh = vis_hir::cmdsig::ten_mac_dinh();
             ten_lenh.extend(khai::ten_cmd_khai(self.text));
             let ds_than = khai::than_cmd(self.text, &ten_lenh);
             let tien_to = khai::filler(self.text, &ds_than);

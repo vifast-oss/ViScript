@@ -33,9 +33,9 @@ const BUDGET_CHUNK: i64 = 256;
 const RSS_DAO_DONG_KB: u64 = 65_536;
 
 struct Anh {
-    hir: vis_types::Hir,
-    syms: vis_types::Symbols,
-    tys: vis_types::TypeTable,
+    hir: vis_hir::Hir,
+    syms: vis_hir::Symbols,
+    tys: vis_hir::TypeTable,
 }
 
 fn dung_anh(src: &str) -> Anh {

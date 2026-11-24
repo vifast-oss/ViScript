@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
+use vis_hir::hir::{HPat, HStmt};
 use vis_syntax::Span;
-use vis_types::hir::{HPat, HStmt};
 
 use crate::builtin::Host;
 use crate::interp::{Abort, Interp, Trap, R, RT};

@@ -3,7 +3,7 @@
 //!
 //! | tệp | nguồn | một dòng |
 //! |---|---|---|
-//! | `viscript/agent/API-STD.txt` | `vis_types::stdlib::FUNCS` | `tên<TAB>chữ ký` |
+//! | `viscript/agent/API-STD.txt` | `vis_hir::stdlib::FUNCS` | `tên<TAB>chữ ký` |
 //! | `viscript/agent/API-CODES.txt` | `vis_diag::all_codes()` | `mã<TAB>mức: câu ngắn` |
 //! | `viscript/agent/API-VBC1.txt` | `vis_bytecode::format::TEN_THE` + `Instr::tag()` | `số thẻ<TAB>tên` |
 //!
@@ -116,8 +116,8 @@ fn so_khop(ten: &str, mo_ta: &str, code: DanhSach) {
 
 // ----- 1) API-STD.txt -----
 
-fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
-    use vis_types::stdlib::Ty;
+fn kieu_ty(t: &vis_hir::stdlib::Ty) -> String {
+    use vis_hir::stdlib::Ty;
     match t {
         Ty::Int => "int".to_string(),
         Ty::Str => "str".to_string(),
@@ -163,7 +163,7 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
         // **VD-270 (sqlite-schema-sql)**: `Result[str?, Error]` (`sqlite.schema_sql`).
         Ty::ResultOptStrErr => "Result[str?, Error]".to_string(),
         // Biến kiểu: `T`/`K`/`V` — **cùng** tên với `Ty::sang_type` để chữ ký không mơ hồ.
-        Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
+        Ty::Var(i) => vis_hir::stdlib::ten_bien(*i).to_string(),
         Ty::List(t) => format!("list[{}]", kieu_ty(t)),
         Ty::Map(k, v) => format!("map[{}, {}]", kieu_ty(k), kieu_ty(v)),
     }
@@ -171,7 +171,7 @@ fn kieu_ty(t: &vis_types::stdlib::Ty) -> String {
 
 fn ds_std() -> DanhSach {
     let mut ds = DanhSach::new();
-    for f in vis_types::stdlib::FUNCS.iter() {
+    for f in vis_hir::stdlib::FUNCS.iter() {
         let mut chu_ky = String::from("(");
         for (i, p) in f.params.iter().enumerate() {
             if i > 0 {
@@ -231,7 +231,7 @@ fn api_codes_khop_code() {
 /// lệnh là test đỏ ngay, đúng VD-129.
 fn moi_lenh() -> Vec<vis_bytecode::Instr> {
     use vis_bytecode::Instr as I;
-    use vis_types::{BinOp, UnOp};
+    use vis_hir::{BinOp, UnOp};
     vec![
         I::Const(0),
         I::LoadLocal(0),

@@ -238,8 +238,8 @@ version = "0.6.0"
 dependencies = [
  "sha2",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
- "vis-types",
 ]
 
 [[package]]
@@ -247,13 +247,21 @@ name = "vis-core"
 version = "0.6.0"
 dependencies = [
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
- "vis-types",
 ]
 
 [[package]]
 name = "vis-diag"
 version = "0.6.0"
+
+[[package]]
+name = "vis-hir"
+version = "0.6.0"
+dependencies = [
+ "vis-diag",
+ "vis-syntax",
+]
 
 [[package]]
 name = "vis-host-wasm"
@@ -262,6 +270,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-interp",
  "vis-loader",
  "vis-syntax",
@@ -275,6 +284,7 @@ version = "0.6.0"
 dependencies = [
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
  "vis-types",
  "vish-term",
@@ -287,6 +297,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
  "vis-types",
 ]
@@ -305,6 +316,7 @@ name = "vis-types"
 version = "0.6.0"
 dependencies = [
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
 ]
 
@@ -315,9 +327,9 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-interp",
  "vis-syntax",
- "vis-types",
 ]
 
 [[package]]

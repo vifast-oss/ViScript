@@ -3,14 +3,14 @@
 //!
 //! Hai nguồn, cùng **một** hình dạng markdown:
 //! 1. [`PHUONG_LOI`] — bảng chép **đúng** nhánh `tyck::kiem_method` (phần lõi này **không** nằm
-//!    trong `vis_types::stdlib::FUNCS` vì không phải `std.*`). Chữ ký ghi tham số **gồm** người nhận.
-//! 2. **Sugar R5c** (`x.f(a) ≡ std.<module>.f(x, a)`) — lấy từ [`FUNCS`](vis_types::stdlib::FUNCS),
+//!    trong `vis_hir::stdlib::FUNCS` vì không phải `std.*`). Chữ ký ghi tham số **gồm** người nhận.
+//! 2. **Sugar R5c** (`x.f(a) ≡ std.<module>.f(x, a)`) — lấy từ [`FUNCS`](vis_hir::stdlib::FUNCS),
 //!    chỉ nhận khi tham số đầu khớp kiểu người nhận (vd `str.join` có tham số đầu `list[str]` ⇒
 //!    `s.join(…)` **không** có hover, đúng như tyck từ chối).
 //!
 //! Không thêm gì vào completion: đây chỉ là tra cứu theo **kiểu tĩnh** của người nhận.
 
-use vis_types::stdlib::Ty;
+use vis_hir::stdlib::Ty;
 
 /// Một phương thức lõi: tên đầy đủ + tham số hiển thị (**gồm** người nhận) + kiểu trả.
 struct ChuKy {
@@ -201,7 +201,7 @@ fn chu_ky_loi(module: &str, ten: &str) -> Option<String> {
 /// còn lại dùng [`Ty::ten`].
 fn ten_ty(t: &Ty) -> String {
     match t {
-        Ty::Var(i) => vis_types::stdlib::ten_bien(*i).to_string(),
+        Ty::Var(i) => vis_hir::stdlib::ten_bien(*i).to_string(),
         Ty::List(x) => format!("list[{}]", ten_ty(x)),
         Ty::Map(k, v) => format!("map[{}, {}]", ten_ty(k), ten_ty(v)),
         _ => t.ten().to_string(),
@@ -221,7 +221,7 @@ fn khop_nhan(module: &str, dau: &Ty) -> bool {
 
 /// Chữ ký **sugar** `std.<module>.<ten>` nếu tham số đầu khớp người nhận.
 fn chu_ky_sugar(module: &str, ten: &str) -> Option<String> {
-    let f = vis_types::stdlib::sig_of(&format!("{module}.{ten}"))?;
+    let f = vis_hir::stdlib::sig_of(&format!("{module}.{ten}"))?;
     if !khop_nhan(module, f.params.first()?) {
         return None;
     }

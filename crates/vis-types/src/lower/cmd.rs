@@ -4,16 +4,16 @@
 //! sẵn có; ở đây chỉ thêm **bảng chữ ký** + **khe ống** + 4 mã `06xx`.
 
 use super::*;
-use crate::cmdsig::{hop_nhat_cmd, CmdSig};
-use crate::hir::Lit;
 use vis_diag::{COMMAND_CODES, TYPE_CODES};
+use vis_hir::cmdsig::{hop_nhat_cmd, CmdSig};
+use vis_hir::hir::Lit;
 
 mod doc;
 mod hop;
 
 /// Tên kiểu ngắn để đưa vào thông điệp `VS0602`/`VS0603`.
 /// **ST-122 (VD-127)**: giá trị `default` của builtin được dựng **một lần** trong
-/// [`crate::cmdsig::BuiltinSigs::mac_dinh`] với `Span::new(0, 0)` (`file = 0`). Khi **chép** nó vào
+/// [`vis_hir::cmdsig::BuiltinSigs::mac_dinh`] với `Span::new(0, 0)` (`file = 0`). Khi **chép** nó vào
 /// HIR của một tệp, node đó là **node tổng hợp của tệp đang hạ** ⇒ phải mang `file` của tệp ấy.
 /// Giữ nguyên `start/end` (giá trị mặc định **không có** vị trí nguồn — chỉ `file` là thông tin đúng).
 fn mac_dinh_theo_tep(e: HExpr, file: u16) -> HExpr {
@@ -893,7 +893,7 @@ impl<'a> Lowerer<'a> {
                             (lam.as_ref(), &ty)
                         {
                             let khoa = match (body, params.first()) {
-                                (crate::hir::HBody::Expr(e), Some(p)) => match e.as_ref() {
+                                (vis_hir::hir::HBody::Expr(e), Some(p)) => match e.as_ref() {
                                     HExpr::Var { name, .. } if *name == p.name => {
                                         Some(p.ty.clone())
                                     }

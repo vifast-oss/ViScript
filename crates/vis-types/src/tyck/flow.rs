@@ -5,8 +5,8 @@
 
 use vis_syntax::Span;
 
-use crate::hir::{HCond, HExpr, HStmt};
-use crate::ty::Type;
+use vis_hir::hir::{HCond, HExpr, HStmt};
+use vis_hir::ty::Type;
 
 use super::{vd238, Checker, MISMATCH, RANGE_KHONG_INT};
 
@@ -74,7 +74,7 @@ impl<'a> Checker<'a> {
         let at = body.last().map(HStmt::span).unwrap_or(span);
         // **VD-238**: `fn f() -> int: None` — thân cuối là `None` trần ⇒ lỗi tĩnh khi lớp **ngoài cùng** của `want` không phải `Option`.
         let last_is_none =
-            matches!(body.last(), Some(crate::hir::HStmt::Expr(e)) if vd238::la_none_bare(e));
+            matches!(body.last(), Some(vis_hir::hir::HStmt::Expr(e)) if vd238::la_none_bare(e));
         let t = self.than_value(body);
         // **VD-241 §7 (A0, 2026-11-19)**: `None` trả về hợp lệ khi `want` **ngoài cùng** là `Option`.
         if last_is_none && !vd238::la_none_dich_opt(want) {
@@ -217,7 +217,7 @@ fn expr_luon_thoat(e: &HExpr) -> bool {
     }
 }
 
-fn match_luon_thoat(arms: &[crate::hir::HArm]) -> bool {
+fn match_luon_thoat(arms: &[vis_hir::hir::HArm]) -> bool {
     !arms.is_empty()
         && arms.iter().all(|a| than_luon_thoat(&a.body))
         && arms.iter().any(|a| a.guard.is_none())

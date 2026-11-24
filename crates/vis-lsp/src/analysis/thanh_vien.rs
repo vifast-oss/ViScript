@@ -6,8 +6,9 @@
 
 use std::collections::HashSet;
 
+use vis_hir::{HExpr, HItem, HPat, HStmt, Symbols, TypeTable};
 use vis_syntax::Mode;
-use vis_types::{lower_into, HExpr, HItem, HPat, HStmt, LowerOptions, Symbols, TypeTable};
+use vis_types::{lower_into, LowerOptions};
 
 use super::phan_tich::{chu_ky_fn, GoiY};
 
@@ -157,7 +158,7 @@ pub fn tu_van_ban_sua(text: &str, byte: usize) -> ThanhVien {
 }
 
 /// Gom thành viên từ HIR; **tất định** theo thứ tự khai.
-pub fn gom(hir: &vis_types::Hir, syms: &Symbols, tbl: &TypeTable) -> ThanhVien {
+pub fn gom(hir: &vis_hir::Hir, syms: &Symbols, tbl: &TypeTable) -> ThanhVien {
     let mut tv = ThanhVien::default();
     let rec: HashSet<String> = hir
         .items

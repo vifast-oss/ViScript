@@ -4,7 +4,7 @@
 //!
 //! # Hợp đồng
 //!
-//! - Đầu vào: HIR đã hạ ([`crate::hir::Hir`]) + [`crate::lower::Symbols`] + [`crate::TypeTable`].
+//! - Đầu vào: HIR đã hạ ([`vis_hir::hir::Hir`]) + [`crate::lower::Symbols`] + [`crate::TypeTable`].
 //! - **Không** panic trên HIR hợp lệ; `Type::Error` lan truyền **im lặng** (thiết kế §14.3) và
 //!   tương thích với mọi kiểu.
 //! - Mã: `VS0401` sai số/thứ tự đối số, `VS0402` `match` không xét hết, `VS0403` trường/kiểu
@@ -34,9 +34,9 @@ use sig::FnSig;
 use vis_diag::{NAME_CODES, TYPE_CODES};
 use vis_syntax::{Diagnostic, Span};
 
-use crate::hir::{HExpr, HFn, HItem, HStmt, Hir};
 use crate::lower::Symbols;
-use crate::ty::{EnumId, RecId, Type, TypeTable};
+use vis_hir::hir::{HExpr, HFn, HItem, HStmt, Hir};
+use vis_hir::ty::{EnumId, RecId, Type, TypeTable};
 
 /// Mã `VS0401` — sai số lượng/thứ tự đối số.
 pub(crate) const ARG_COUNT: &vis_diag::Code = &TYPE_CODES[0];
@@ -156,7 +156,7 @@ pub(crate) fn thay_gen(ty: &Type, bang: &[(String, Type)]) -> Type {
 pub fn check(hir: &Hir, symbols: &Symbols, types: &TypeTable) -> CheckOutput {
     // **VD-269**: bảng phương thức `impl` (kiểu nhận + tên → `sym`) để `recv?.m(…)` phân giải
     // được phương thức — lowering **không** dispatch callee `Field` optional.
-    let mret = crate::MethodRet::from_hir_voi_bang(hir, types);
+    let mret = vis_hir::MethodRet::from_hir_voi_bang(hir, types);
     let mut c = Checker::new(symbols, types, mret);
     c.run(hir);
     c.finish()
@@ -193,11 +193,11 @@ pub(crate) struct Checker<'a> {
     /// đích nên lượt này lược chẩn đoán gán để không báo trùng (vẫn kiểm biểu thức hai bên).
     bo_qua_gan_pt: bool,
     /// **VD-269** — bảng phương thức người dùng (`impl`) theo kiểu nhận + tên.
-    mret: crate::MethodRet,
+    mret: vis_hir::MethodRet,
 }
 
 impl<'a> Checker<'a> {
-    fn new(symbols: &'a Symbols, types: &'a TypeTable, mret: crate::MethodRet) -> Self {
+    fn new(symbols: &'a Symbols, types: &'a TypeTable, mret: vis_hir::MethodRet) -> Self {
         let n = symbols.syms.len();
         Self {
             generic_scope: Vec::new(),
@@ -251,8 +251,8 @@ impl<'a> Checker<'a> {
     /// **VD-266**: literal `int` phải biểu diễn được trong `i64` **sau khi gộp dấu**. Lexer cho
     /// qua độ lớn `2^63` để `-2^63` thành `i64::MIN`; literal **dương** `2^63` (không dấu, hoặc
     /// bị `--` đảo lại) vẫn là `VS0104` **tĩnh** — cả `vis check` lẫn hai engine dừng trước runtime.
-    pub(crate) fn kiem_int_lit(&mut self, lit: &crate::hir::Lit, span: Span) {
-        if lit.kind == crate::hir::LitKind::Int
+    pub(crate) fn kiem_int_lit(&mut self, lit: &vis_hir::hir::Lit, span: Span) {
+        if lit.kind == vis_hir::hir::LitKind::Int
             && vis_syntax::lit::decode_signed_int(&lit.text).is_err()
         {
             self.diag(INT_LIT, vis_diag::CODES[3].message_vi, span);
@@ -413,7 +413,7 @@ impl<'a> Checker<'a> {
             HItem::Fn(f) => {
                 // **VD-284/ST-302 (#13)**: `async` cho method `impl` và `cmd` đã hỗ trợ;
                 // trait method async vẫn ngoài phạm vi (không có trait async).
-                if f.is_async && f.kind == crate::hir::FnKind::TraitMethod {
+                if f.is_async && f.kind == vis_hir::hir::FnKind::TraitMethod {
                     self.diag(
                         ASYNC_SAI_CHO,
                         "`async` chưa hỗ trợ cho phương thức trait (chỉ `fn`/`impl`/`cmd`)",
@@ -521,7 +521,7 @@ impl<'a> Checker<'a> {
                 // `let x = r else:` (tên trần) vẫn nhận kiểu đã bóc theo R3b.
                 let pat_subj = if matches!(
                     pat,
-                    crate::hir::HPat::Bind { .. } | crate::hir::HPat::Wild { .. }
+                    vis_hir::hir::HPat::Bind { .. } | vis_hir::hir::HPat::Wild { .. }
                 ) {
                     declared.clone()
                 } else if else_.is_some() {
@@ -607,24 +607,24 @@ impl<'a> Checker<'a> {
                 let got = self.kiem_expr(value);
                 let _ = span;
                 match op {
-                    crate::hir::AssignOp::Set => {
+                    vis_hir::hir::AssignOp::Set => {
                         self.coerce_e(value, &got, &wanted, "gán");
                     }
                     _ => {
                         // `+=` … ⇒ kiểm như `target + value` rồi ép về kiểu đích.
                         let op2 = match op {
-                            crate::hir::AssignOp::Add => crate::hir::BinOp::Add,
-                            crate::hir::AssignOp::Sub => crate::hir::BinOp::Sub,
-                            crate::hir::AssignOp::Mul => crate::hir::BinOp::Mul,
-                            crate::hir::AssignOp::Div => crate::hir::BinOp::Div,
+                            vis_hir::hir::AssignOp::Add => vis_hir::hir::BinOp::Add,
+                            vis_hir::hir::AssignOp::Sub => vis_hir::hir::BinOp::Sub,
+                            vis_hir::hir::AssignOp::Mul => vis_hir::hir::BinOp::Mul,
+                            vis_hir::hir::AssignOp::Div => vis_hir::hir::BinOp::Div,
                             // **R7-fix (VD-178)**: `//=` kiểm như `//` (trước đây rơi vào `%`).
-                            crate::hir::AssignOp::FloorDiv => crate::hir::BinOp::FloorDiv,
-                            _ => crate::hir::BinOp::Rem,
+                            vis_hir::hir::AssignOp::FloorDiv => vis_hir::hir::BinOp::FloorDiv,
+                            _ => vis_hir::hir::BinOp::Rem,
                         };
                         let v_lit = vd238::is_int_lit(value);
                         if let Some(res) = num::so_hoc(op2, &wanted, &got, false, v_lit) {
                             self.coerce(&res, &wanted, value.span(), "gán ghép");
-                        } else if op2 == crate::hir::BinOp::FloorDiv {
+                        } else if op2 == vis_hir::hir::BinOp::FloorDiv {
                             // **R7-fix (VD-178)**: `//=` chỉ có cho `int` — kiểu khác ⇒ `VS0414`.
                             self.diag(
                                 TOAN_TU,

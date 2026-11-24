@@ -22,7 +22,7 @@ use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 use vis_vm::vm_frame::run_frame_for_test as run_frame_v;
 
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);

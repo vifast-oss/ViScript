@@ -8,8 +8,12 @@ license.workspace = true
 description = "VBC1 — định dạng bytecode nội bộ của ViScript (ST-19, VD-52)"
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 # ST-30: SHA-256 thật cho hash nguồn (VD-54 (1), QD §9.3 — `sha2` = MIT OR Apache-2.0, Agent 0 duyệt).
 sha2 = { workspace = true }
 vis-syntax = { path = "../vis-syntax" }
-vis-types = { path = "../vis-types" }
 vis-diag = { path = "../vis-diag" }
+
+[dev-dependencies]
+# Test tích hợp cần hạ HIR từ nguồn; crate sản phẩm **không** phụ thuộc `vis-types`.
+vis-types = { path = "../vis-types" }

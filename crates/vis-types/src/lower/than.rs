@@ -2,10 +2,10 @@
 //! **ST-48**: thân `cmd` bằng **pipeline lệnh** — hạ vào cùng `HIR` bằng Lowerer **con** dùng chung
 //! `Symbols`/`TypeTable`; tách khỏi `lower.rs`/`cmd.rs` cho luật R1 (≤1.500 dòng/tệp).
 
-use crate::cmdsig::CmdSig;
-use crate::hir::{FnKind, HExpr, HItem, HStmt};
 use crate::lower::{FrameKind, HFrame, LowerOptions, Lowerer, Symbols};
-use crate::ty::{RecId, Type, TypeTable};
+use vis_hir::cmdsig::CmdSig;
+use vis_hir::hir::{FnKind, HExpr, HItem, HStmt};
+use vis_hir::ty::{RecId, Type, TypeTable};
 use vis_syntax::{Cst, Diagnostic, Elem, LexOutput, Node, NodeKind, Span};
 
 /// **ST-48**: kết quả hạ **thân `cmd` lệnh**.
@@ -19,8 +19,8 @@ pub(crate) struct ThanOut {
 /// chạy prelude/khai báo lại; trả biểu thức của **pipeline duy nhất**.
 pub(crate) struct ThanCtx {
     /// **ST-60b**: tham số của `cmd` (khai trong Lowerer con để thân `KhaiLenh` thấy chúng).
-    pub params: Vec<crate::hir::HParam>,
-    pub sigs: Vec<crate::cmdsig::CmdSig>,
+    pub params: Vec<vis_hir::hir::HParam>,
+    pub sigs: Vec<vis_hir::cmdsig::CmdSig>,
     pub file_long: Option<RecId>,
     /// Bản ghi đã biết ở Lowerer cha (prelude + item) — để sugar `where`/`it` thấy **trường**.
     pub recs: Vec<(String, RecId)>,
@@ -259,11 +259,11 @@ impl<'a> super::Lowerer<'a> {
         if ds.is_empty() {
             return;
         }
-        let sigs: Vec<crate::cmdsig::CmdSig> = self
+        let sigs: Vec<vis_hir::cmdsig::CmdSig> = self
             .items
             .iter()
             .filter_map(|it| match it {
-                HItem::Fn(f) if f.kind == FnKind::Cmd => Some(crate::cmdsig::CmdSig {
+                HItem::Fn(f) if f.kind == FnKind::Cmd => Some(vis_hir::cmdsig::CmdSig {
                     name: f.name.clone(),
                     sym: Some(f.sym),
                     generics: f.generics.clone(),
@@ -454,7 +454,7 @@ impl<'a> super::Lowerer<'a> {
     }
 
     /// **ST-60b**: tham số của `cmd` theo **tên** (item đã hạ) — khai trong Lowerer con.
-    fn than_params(&self, ten: &str) -> Vec<crate::hir::HParam> {
+    fn than_params(&self, ten: &str) -> Vec<vis_hir::hir::HParam> {
         self.items
             .iter()
             .find_map(|it| match it {

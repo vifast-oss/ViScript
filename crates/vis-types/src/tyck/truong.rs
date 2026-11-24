@@ -2,8 +2,8 @@
 //! **ST-50**: truy cập **trường**/chỉ số — tách khỏi `expr.rs` cho luật R1 (≤1.500 dòng/tệp).
 //! `kiem_field` là nơi **duy nhất** phát `VS0405` ("không có trường" của bản ghi).
 
-use crate::hir::HExpr;
-use crate::ty::Type;
+use vis_hir::hir::HExpr;
+use vis_hir::ty::Type;
 
 use super::{Checker, MISMATCH, NO_FIELD};
 
@@ -185,7 +185,7 @@ impl<'a> Checker<'a> {
 ///
 /// **VD-260**: trùng tên trường trong cùng khai báo ⇒ `VS0412` (trước đây `field()` lấy trường
 /// đầu, runtime/interp lại lấy trường cuối).
-pub(super) fn kiem_khai_rec(c: &mut Checker<'_>, r: &crate::hir::HRec) {
+pub(super) fn kiem_khai_rec(c: &mut Checker<'_>, r: &vis_hir::hir::HRec) {
     let mut da_thay: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
     for f in &r.fields {
         if !da_thay.insert(f.name.as_str()) {
@@ -202,7 +202,7 @@ pub(super) fn kiem_khai_rec(c: &mut Checker<'_>, r: &crate::hir::HRec) {
     kiem_default_rec(c, r);
 }
 
-pub(super) fn kiem_default_rec(c: &mut Checker<'_>, r: &crate::hir::HRec) {
+pub(super) fn kiem_default_rec(c: &mut Checker<'_>, r: &vis_hir::hir::HRec) {
     let luu = std::mem::take(&mut c.generic_scope);
     c.generic_scope = r.generics.clone();
     for f in &r.fields {
@@ -218,7 +218,7 @@ pub(super) fn kiem_default_rec(c: &mut Checker<'_>, r: &crate::hir::HRec) {
 
 /// **VD-260** — khai báo enum: trùng **biến thể** hoặc trùng **tên trường** trong một biến thể
 /// ⇒ `VS0412`. Không chạy thêm kiểm thân (enum không có default).
-pub(super) fn kiem_khai_enum(c: &mut Checker<'_>, e: &crate::hir::HEnum) {
+pub(super) fn kiem_khai_enum(c: &mut Checker<'_>, e: &vis_hir::hir::HEnum) {
     let mut da_thay: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
     for v in &e.variants {
         if !da_thay.insert(v.name.as_str()) {
@@ -248,7 +248,7 @@ pub(super) fn kiem_khai_enum(c: &mut Checker<'_>, e: &crate::hir::HEnum) {
 }
 
 /// **VD-258** — kiểm `const Name: T = value` (tách khỏi `mod.rs` để giữ R1).
-pub(super) fn kiem_const(c: &mut Checker<'_>, h: &crate::hir::HConst) {
+pub(super) fn kiem_const(c: &mut Checker<'_>, h: &vis_hir::hir::HConst) {
     let want = c.resolve_ann(&h.ty, h.span);
     let got = c.kiem_expr(&h.value);
     // **VD-258**: `const` chưa có biên nâng Option ở runtime (interp/codegen inline nguyên

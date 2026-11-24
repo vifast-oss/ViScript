@@ -20,7 +20,7 @@ use vis_vm::vm_frame::{
     run_frame_for_test as run_v, run_frame_for_test_with_budget as run_v_budget,
 };
 
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);
@@ -66,9 +66,9 @@ fn tat_hooks() {
 /// Chạy interp frame path với instrumentation + (tuỳ chọn) quota.
 fn chay_i(
     src: &str,
-    hir: &vis_types::Hir,
-    syms: &vis_types::Symbols,
-    tys: &vis_types::TypeTable,
+    hir: &vis_hir::Hir,
+    syms: &vis_hir::Symbols,
+    tys: &vis_hir::TypeTable,
     c: FrameConfig,
     budget: u64,
     quota: Option<u64>,

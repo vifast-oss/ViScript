@@ -654,6 +654,7 @@ version = "0.6.0"
 dependencies = [
  "sha2",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
  "vis-types",
 ]
@@ -668,6 +669,7 @@ dependencies = [
  "vis-core",
  "vis-diag",
  "vis-fmt",
+ "vis-hir",
  "vis-host-linux",
  "vis-host-native",
  "vis-interp",
@@ -687,8 +689,8 @@ name = "vis-core"
 version = "0.6.0"
 dependencies = [
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
- "vis-types",
 ]
 
 [[package]]
@@ -699,6 +701,14 @@ version = "0.6.0"
 name = "vis-fmt"
 version = "0.6.0"
 dependencies = [
+ "vis-syntax",
+]
+
+[[package]]
+name = "vis-hir"
+version = "0.6.0"
+dependencies = [
+ "vis-diag",
  "vis-syntax",
 ]
 
@@ -724,6 +734,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-interp",
  "vis-syntax",
  "vis-types",
@@ -737,6 +748,7 @@ version = "0.6.0"
 dependencies = [
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
  "vis-types",
  "vish-term",
@@ -749,6 +761,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
  "vis-types",
 ]
@@ -760,6 +773,7 @@ dependencies = [
  "vis-core",
  "vis-diag",
  "vis-fmt",
+ "vis-hir",
  "vis-loader",
  "vis-syntax",
  "vis-types",
@@ -820,6 +834,7 @@ name = "vis-types"
 version = "0.6.0"
 dependencies = [
  "vis-diag",
+ "vis-hir",
  "vis-syntax",
 ]
 
@@ -830,6 +845,7 @@ dependencies = [
  "vis-bytecode",
  "vis-core",
  "vis-diag",
+ "vis-hir",
  "vis-interp",
  "vis-syntax",
  "vis-types",

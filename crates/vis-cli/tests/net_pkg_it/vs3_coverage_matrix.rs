@@ -27,7 +27,7 @@ use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);
@@ -326,10 +326,10 @@ fn cmd_block_tu_choi_ro() {
 
 /// **Điều kiện 1d (đề xuất)**: chỉ chọn frame runtime khi HIR có ít nhất một `async fn`.
 /// Chương trình sync không có `async fn` ⇒ giữ `Interp::run`/`Vm::run` nguyên vẹn.
-fn co_async(hir: &vis_types::Hir) -> bool {
+fn co_async(hir: &vis_hir::Hir) -> bool {
     hir.items
         .iter()
-        .any(|it| matches!(it, vis_types::hir::HItem::Fn(f) if f.is_async))
+        .any(|it| matches!(it, vis_hir::hir::HItem::Fn(f) if f.is_async))
 }
 
 #[test]

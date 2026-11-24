@@ -53,7 +53,7 @@ pub(crate) fn builtin_name(name: &str) -> Option<&'static str> {
     if name.starts_with("std.") {
         return name
             .strip_prefix("std.")
-            .and_then(vis_types::stdlib::sig_of)
+            .and_then(vis_hir::stdlib::sig_of)
             .map(|f| f.name);
     }
     match name {

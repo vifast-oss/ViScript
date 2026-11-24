@@ -8,8 +8,8 @@
 //! sum join`; `str`: `len upper lower split chars contains`; `map`: `len get has keys values`. Ngoài
 //! tập này ⇒ **`VS0501` "chưa hỗ trợ ở VS0"** (không panic).
 
+use vis_hir::hir::BinOp;
 use vis_syntax::Span;
-use vis_types::hir::BinOp;
 
 pub(crate) use vis_core::host::{DbHost, FsHost, KetQua, MucFs, NetHost, Ngoai};
 
@@ -408,9 +408,9 @@ fn arith(op: BinOp, l: Value, r: Value, span: Span) -> crate::interp::R<Value> {
     }
 }
 
-pub fn un(op: vis_types::hir::UnOp, v: Value, span: Span) -> crate::interp::R<Value> {
+pub fn un(op: vis_hir::hir::UnOp, v: Value, span: Span) -> crate::interp::R<Value> {
     match op {
-        vis_types::hir::UnOp::Neg => match v {
+        vis_hir::hir::UnOp::Neg => match v {
             Value::Int(i) => i
                 .checked_neg()
                 .map(Value::Int)
@@ -422,7 +422,7 @@ pub fn un(op: vis_types::hir::UnOp, v: Value, span: Span) -> crate::interp::R<Va
                 span,
             )),
         },
-        vis_types::hir::UnOp::Not => Ok(Value::Bool(!v.truthy(span)?)),
+        vis_hir::hir::UnOp::Not => Ok(Value::Bool(!v.truthy(span)?)),
     }
 }
 

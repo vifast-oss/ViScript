@@ -8,7 +8,7 @@
 use vis_syntax::{Node, NodeKind};
 
 use super::Lowerer;
-use crate::ty::{EnumId, RecId, Type};
+use vis_hir::ty::{EnumId, RecId, Type};
 
 /// Thay `TypeRef{T}` bằng kiểu cụ thể (bản sao cục bộ của `tyck::thay_gen`, không phụ thuộc tyck).
 pub(crate) fn thay(ty: &Type, bang: &[(String, Type)]) -> Type {

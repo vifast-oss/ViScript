@@ -383,7 +383,7 @@ fn explain_perms_in_fs_nhat_ky() {
 
 // ---------- không host ⇒ VS0604 ở **CẢ HAI** đường (in-process) ----------
 
-fn hir_cua(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn hir_cua(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let text = format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}");
     let lexed = vis_syntax::lex(&text, vis_syntax::Mode::Script);
     let parsed = vis_syntax::parse(&text, vis_syntax::Mode::Script);

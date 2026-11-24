@@ -13,8 +13,8 @@
 //! Ngữ nghĩa runtime là **giá trị** (đọc bản sao, dựng lại từng tầng) nên không aliasing; xem
 //! `vis-interp::gan` và `vis-bytecode::codegen::gan_long`.
 
-use crate::hir::{AssignOp, HExpr};
-use crate::ty::Type;
+use vis_hir::hir::{AssignOp, HExpr};
+use vis_hir::ty::Type;
 
 use super::phuong_thuc::{GAN_PHAN_TU_LET, GAN_TRUONG_LET};
 use super::{Checker, GAN_BAT_BIEN, MISMATCH};

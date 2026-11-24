@@ -72,7 +72,7 @@ impl<'a> Interp<'a> {
                         });
                     }
                     // `print`/`len`/`str`/`Ok`/... **có** `sym` (ST-11 khai 8 tên dựng sẵn) ⇒ tra tên.
-                    if self.symbols.kind_of(*id) == Some(vis_types::lower::SymKind::Builtin) {
+                    if self.symbols.kind_of(*id) == Some(vis_hir::SymKind::Builtin) {
                         let n = self.symbols.name_of(*id).unwrap_or_default();
                         // **R2a (VD-178)**: `None` là **biến thể** của `Option`, không phải hàm.
                         if n == "None" {
@@ -215,7 +215,7 @@ impl<'a> Interp<'a> {
             HExpr::Record { fields, ty, span } => {
                 let name = self.type_name(ty);
                 let rec_id = match ty {
-                    vis_types::Type::Record(id) => Some(*id),
+                    vis_hir::Type::Record(id) => Some(*id),
                     _ => None,
                 };
                 let mut out = Vec::with_capacity(fields.len());
@@ -245,7 +245,7 @@ impl<'a> Interp<'a> {
                 // **VD-267**: `EnumLit` nóng — nhớ tên theo **vị trí nguồn** (span), xác minh
                 // nội dung rồi chỉ clone `Name`; không tra bảng tên mỗi vòng. Giữ **đúng**
                 // fallback cũ: tên kiểu rỗng/không có ⇒ `type_name` rồi `path.first()`.
-                if let vis_types::Type::Enum(id) = ty {
+                if let vis_hir::Type::Enum(id) = ty {
                     if let Some(e) = self.types.enum_def(*id) {
                         if !e.name.is_empty() {
                             let key = (span.file, span.start, span.end);
@@ -484,13 +484,13 @@ impl<'a> Interp<'a> {
                 let mut out = String::new();
                 for p in parts {
                     match p {
-                        vis_types::InterpPart::Str(t) => out.push_str(t),
-                        vis_types::InterpPart::Expr(e) => {
+                        vis_hir::InterpPart::Str(t) => out.push_str(t),
+                        vis_hir::InterpPart::Expr(e) => {
                             let v = self.eval(e)?;
                             out.push_str(&v.show());
                         }
                         // **R6c (VD-178)**: `{expr:spec}` — định dạng lúc chạy.
-                        vis_types::InterpPart::ExprSpec { expr, spec } => {
+                        vis_hir::InterpPart::ExprSpec { expr, spec } => {
                             let v = self.eval(expr)?;
                             out.push_str(&dinh_dang(&v, spec, expr.span())?);
                         }

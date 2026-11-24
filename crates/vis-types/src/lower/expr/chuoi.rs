@@ -214,7 +214,7 @@ impl<'a> Lowerer<'a> {
         // Mảnh phải là **đúng một** câu lệnh biểu thức.
         match con.as_slice() {
             [child] => match self.lower_stmt(child) {
-                Some(crate::hir::HStmt::Expr(expr)) => ket_qua = Some(expr),
+                Some(vis_hir::hir::HStmt::Expr(expr)) => ket_qua = Some(expr),
                 _ => self.diag(
                     &vis_diag::SYNTAX_CODES[0],
                     "nội suy `{…}` chỉ nhận **một biểu thức**",

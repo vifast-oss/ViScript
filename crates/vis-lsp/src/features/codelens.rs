@@ -6,9 +6,9 @@
 //! `impl`/`trait`; giữ **thứ tự nguồn**, tối đa **200** lens.
 
 use vis_core::value::Value;
+use vis_hir::hir::{HItem, Hir};
+use vis_hir::FnKind;
 use vis_syntax::Span;
-use vis_types::hir::{HItem, Hir};
-use vis_types::FnKind;
 
 use super::jsonrpc::{m, phan_hoi, s};
 use super::phan_tich::KetQua;

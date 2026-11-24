@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **`vis-interp` — thông dịch cây trên HIR (ST-13, VS0).**
 //!
-//! Chạy chương trình đã hạ (`vis_types::hir::Hir`) theo ngữ nghĩa VD-43: `let` bất biến / `var` gán
+//! Chạy chương trình đã hạ (`vis_hir::hir::Hir`) theo ngữ nghĩa VD-43: `let` bất biến / `var` gán
 //! được; `if/while/for/match`; `return`; `?` (Result/Option, trả sớm); `??`; `|>`; `with`; chỉ số;
 //! gọi hàm (tham số tên `--b` + mặc định), closure; 8 tên dựng sẵn + bộ phương thức lõi.
 //!
@@ -76,9 +76,9 @@ pub(crate) use value::Value;
 use std::sync::Arc;
 
 use vis_core::RunOutput;
-use vis_types::hir::Hir;
-use vis_types::lower::Symbols;
-use vis_types::TypeTable;
+use vis_hir::hir::Hir;
+use vis_hir::Symbols;
+use vis_hir::TypeTable;
 
 /// Chạy một chương trình đã hạ. `RunOutput` nay ở `vis_core` (ST-312a/VD-289).
 pub fn run(

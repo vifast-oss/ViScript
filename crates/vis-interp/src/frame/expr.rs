@@ -762,7 +762,7 @@ pub(super) fn is_builtin_name(name: &str) -> bool {
     crate::builtin::SIGS.iter().any(|s| s.name == name)
         || name
             .strip_prefix("std.")
-            .and_then(vis_types::stdlib::sig_of)
+            .and_then(vis_hir::stdlib::sig_of)
             .is_some()
 }
 

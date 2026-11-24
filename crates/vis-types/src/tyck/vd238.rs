@@ -24,7 +24,7 @@ pub(super) fn la_none_dich_opt(to: &Type) -> bool {
 
 /// `true` nếu biểu thức là **literal số nguyên** (§3.5: chỉ literal được nâng `int → float`).
 pub(crate) fn is_int_lit(e: &HExpr) -> bool {
-    matches!(e, HExpr::Lit { lit, .. } if lit.kind == crate::hir::LitKind::Int)
+    matches!(e, HExpr::Lit { lit, .. } if lit.kind == vis_hir::hir::LitKind::Int)
 }
 
 /// Kiểu **không thuộc VS0** (VD-48(a)) — vẫn `VS0301` nhưng thông điệp nêu rõ vis-std/vòng 2.

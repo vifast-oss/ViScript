@@ -45,7 +45,7 @@ impl<'a> Interp<'a> {
                 // thức (mirror codegen), tránh list chứa giá trị plain trong ô `T?`.
                 let push_depth = if name == "push" {
                     match self.expr_ty(base, &recv) {
-                        Some(vis_types::Type::List(el)) if el.is_opt() => opt_depth_ty(&el),
+                        Some(vis_hir::Type::List(el)) if el.is_opt() => opt_depth_ty(&el),
                         _ => 0,
                     }
                 } else {

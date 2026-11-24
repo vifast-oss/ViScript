@@ -8,6 +8,7 @@ license.workspace = true
 description = "Language server (LSP/JSON-RPC) của ViScript — tách khỏi vis-cli (ST-296b)"
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }

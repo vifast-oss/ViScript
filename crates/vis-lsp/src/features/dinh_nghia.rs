@@ -10,8 +10,8 @@
 //! (`KetQua::text`), đúng quy ước completion/hover.
 
 use vis_core::value::Value;
+use vis_hir::hir::{HCond, HItem, HPat, HStmt, Hir};
 use vis_syntax::Span;
-use vis_types::hir::{HCond, HItem, HPat, HStmt, Hir};
 
 use super::jsonrpc::{m, phan_hoi, s};
 use super::phan_tich::KetQua;
@@ -70,7 +70,7 @@ fn cond(c: &HCond, out: &mut Vec<DinhNghia>) {
     }
 }
 
-fn fn_decl(f: &vis_types::HFn, out: &mut Vec<DinhNghia>) {
+fn fn_decl(f: &vis_hir::HFn, out: &mut Vec<DinhNghia>) {
     them(out, &f.name, f.span);
     for p in &f.params {
         them(out, &p.name, p.span);

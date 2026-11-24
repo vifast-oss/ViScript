@@ -8,6 +8,7 @@ license.workspace = true
 description = "Nạp đa tệp + metadata vis.lock thuần (ST-296b) — không OS/TLS/SQLite"
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-types = { path = "../vis-types" }

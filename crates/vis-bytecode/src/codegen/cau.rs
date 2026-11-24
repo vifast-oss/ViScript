@@ -66,7 +66,7 @@ impl Emit<'_> {
             } => {
                 if let HExpr::Var { sym: Some(id), .. } = target {
                     match op {
-                        vis_types::AssignOp::Set => {
+                        vis_hir::AssignOp::Set => {
                             self.expr(value)?;
                             self.lift_assign_set(target, *span)?; // gán lại `var` annot Optional: nâng một lớp; `None` giữ nguyên
                         }
@@ -85,7 +85,7 @@ impl Emit<'_> {
                 }
                 // **ST-56b (VD-97)** + **VD-268**: đích `trường/phần tử` — gốc `var` (tyck chặn
                 // trước). Đường sâu/gán ghép lá qua `gan_long::gan_duong`; dạng một tầng giữ nguyên.
-                if !matches!(op, vis_types::AssignOp::Set) || !gan_long::mot_tang(target) {
+                if !matches!(op, vis_hir::AssignOp::Set) || !gan_long::mot_tang(target) {
                     return self.gan_duong(target, *op, value, *span);
                 }
                 // `a[i] = v` ⇒ `Set` (3→1) rồi **ghi lại ô** (`Assign`) — trước chỉ `Pop` nên VM

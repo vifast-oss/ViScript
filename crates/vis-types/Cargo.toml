@@ -11,4 +11,5 @@ repository.workspace = true
 
 [dependencies]
 vis-diag = { path = "../vis-diag" }
+vis-hir = { path = "../vis-hir" }
 vis-syntax = { path = "../vis-syntax" }

@@ -10,10 +10,9 @@
 //! - **11 tên giá trị dựng sẵn** khoá bằng test (VD-44 #3: thêm/bớt phải qua Agent 0; **ST-18**
 //!   thêm `echo`/`lines`/`take` — 3 lệnh chế độ lệnh, **đã được Agent 0 duyệt** trong báo cáo trước code).
 
+use vis_hir::{HExpr, HItem, HPat, HStmt, SymKind};
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{
-    lower_with, HExpr, HItem, HPat, HStmt, HirOutput, LowerOptions, SymKind, BUILTIN_VALUE_NAMES,
-};
+use vis_types::{lower_with, HirOutput, LowerOptions, BUILTIN_VALUE_NAMES};
 
 fn lower_src(src: &str, opts: LowerOptions) -> HirOutput {
     let p = parse(src, Mode::Script);
@@ -81,7 +80,7 @@ fn bong_ten_trong_khoi_hop_le_va_phan_giai_dung() {
         "shadowing ở khối trong phải hợp lệ, thật {:?}",
         h.codes()
     );
-    let xs: Vec<&vis_types::HSym> = h.symbols.all_named("x").collect();
+    let xs: Vec<&vis_hir::HSym> = h.symbols.all_named("x").collect();
     assert_eq!(xs.len(), 2, "phải có 2 khai báo `x` (ngoài + trong)");
     assert_ne!(
         xs[0].frame, xs[1].frame,
@@ -106,7 +105,7 @@ fn tham_so_thay_trong_than_ham() {
         panic!("phải là hàm");
     };
     assert_eq!(f.params.len(), 1);
-    assert_eq!(f.params[0].ty, vis_types::Type::Int);
+    assert_eq!(f.params[0].ty, vis_hir::Type::Int);
     let HStmt::Expr(HExpr::Var { name, sym, .. }) = &f.body[0] else {
         panic!("thân hàm phải là biểu thức `a`");
     };
@@ -192,7 +191,7 @@ fn for_bind_if_let_match_arm_va_lambda() {
     let HStmt::If { cond, then, .. } = &h.hir.stmts[0] else {
         panic!("phải là `if`");
     };
-    let vis_types::HCond::Let { pat, .. } = cond else {
+    let vis_hir::HCond::Let { pat, .. } = cond else {
         panic!("`if let` phải là HCond::Let");
     };
     let HPat::Bind { name, .. } = pat else {
@@ -231,7 +230,7 @@ fn for_bind_if_let_match_arm_va_lambda() {
         panic!("phải là `let` với lambda");
     };
     assert_eq!(params.len(), 1);
-    let vis_types::HBody::Expr(e) = body else {
+    let vis_hir::HBody::Expr(e) = body else {
         panic!("lambda một biểu thức");
     };
     let HExpr::Bin { lhs, .. } = &**e else {
@@ -398,7 +397,7 @@ fn let_ha_gia_tri_truoc_khi_khai_ten() {
     // (b) shadow trong khối: RHS trỏ `x` **khung ngoài**, thân khối trỏ `x` mới.
     let h = free("let x = 1\nif true:\n    let x = x + 1\n    x\n");
     assert!(h.is_clean(), "{:?}", h.codes());
-    let xs: Vec<&vis_types::HSym> = h.symbols.all_named("x").collect();
+    let xs: Vec<&vis_hir::HSym> = h.symbols.all_named("x").collect();
     assert_eq!(xs.len(), 2, "phải có 2 khai báo `x`");
     let outer_frame = xs[0].frame;
     let inner_frame = xs[1].frame;

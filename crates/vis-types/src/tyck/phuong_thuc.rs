@@ -12,7 +12,7 @@
 
 use std::collections::HashSet;
 
-use crate::hir::{HExpr, HImpl, HStmt};
+use vis_hir::hir::{HExpr, HImpl, HStmt};
 
 use super::{pat, vd238, Checker, GAN_BAT_BIEN, MISMATCH};
 

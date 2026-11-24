@@ -2,8 +2,8 @@
 // **ST-276 (VD-256)**: prelude lõi của `interp` tách sang tệp riêng để giữ R1 ≤ 1500 dòng.
 // Nội dung chuyển Nguyên văn; `interp.rs` `pub use` lại ⇒ API `crate::interp::*` không đổi.
 use vis_diag::{Code, RUNTIME_CODES, TYPE_CODES};
+use vis_hir::hir::*;
 use vis_syntax::Span;
-use vis_types::hir::*;
 
 use crate::interp::Interp;
 use crate::value::Value;

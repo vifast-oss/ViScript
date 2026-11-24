@@ -10,8 +10,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use vis_hir::{HItem, TypeTable};
 use vis_syntax::Mode;
-use vis_types::{HItem, TypeTable};
 
 use super::phan_tich::{self, GoiY, KetQua};
 
@@ -75,7 +75,7 @@ fn ten_nguon(rel: &str) -> String {
 }
 
 /// Tên hiển thị gọn cho `Ty` (`list[str]`, `Result[(), str]`, …) — dùng cho detail hàm `std.*`.
-fn ten_ty(t: vis_types::stdlib::Ty) -> &'static str {
+fn ten_ty(t: vis_hir::stdlib::Ty) -> &'static str {
     t.ten()
 }
 
@@ -96,7 +96,7 @@ fn goi_y_module(it: &HItem, tbl: &TypeTable, nguon: &str) -> Option<GoiY> {
 }
 
 /// Hàm `std.<m>.<tên>` đã `use` ⇒ gợi ý (kind 3), detail `std.<m>: fn <tên>(…​) -> …`.
-fn goi_y_std(m: &str, f: &vis_types::stdlib::StdFn) -> Option<GoiY> {
+fn goi_y_std(m: &str, f: &vis_hir::stdlib::StdFn) -> Option<GoiY> {
     let label = f.name.strip_prefix(&format!("{m}."))?;
     let ps: Vec<String> = f
         .params
@@ -166,7 +166,7 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
         }
     }
     for m in mod_std {
-        for f in vis_types::stdlib::FUNCS.iter() {
+        for f in vis_hir::stdlib::FUNCS.iter() {
             if !f.name.starts_with(&format!("{m}.")) {
                 continue;
             }

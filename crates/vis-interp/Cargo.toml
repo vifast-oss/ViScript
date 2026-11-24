@@ -13,6 +13,7 @@ description = "Thông dịch cây trên HIR cho ViScript VS0 (ST-13)"
 taskid-proto = []
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 vis-core = { path = "../vis-core" }
 # **ST-310b (VD-285)**: `Render` hạ bảng/bản ghi qua `vish-term` (một tầng Terminal/Render duy nhất).
 vish-term = { path = "../vish-term" }

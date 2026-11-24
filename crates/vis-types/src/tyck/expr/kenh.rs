@@ -5,8 +5,8 @@
 //! `impl Checker` đặt trong **mô-đun con** của `tyck::expr` nên dùng chung `diag`/`coerce`/`arity`
 //! của cha — **một** nguồn kiểu, không nhân bản luật.
 
-use crate::hir::HExpr;
-use crate::ty::Type;
+use vis_hir::hir::HExpr;
+use vis_hir::ty::Type;
 use vis_syntax::Span;
 
 use super::super::{Checker, MISMATCH};

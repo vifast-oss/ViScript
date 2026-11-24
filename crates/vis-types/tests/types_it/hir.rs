@@ -23,8 +23,9 @@
 
 use std::path::{Path, PathBuf};
 
+use vis_hir::{HExpr, HItem, HStmt, LitKind, Type};
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{lower, HExpr, HItem, HStmt, HirOutput, LitKind, Type};
+use vis_types::{lower, HirOutput};
 
 // ---------------------------------------------------------------------------
 // Hạ một nguồn
@@ -194,7 +195,7 @@ fn ha_15_khoi_tai_lieu_0_chan_doan_va_dung_so_khai_bao() {
             .symbols
             .syms
             .iter()
-            .filter(|s| s.kind != vis_types::SymKind::Builtin)
+            .filter(|s| s.kind != vis_hir::SymKind::Builtin)
             .count();
         assert_eq!(
             (h.hir.items.len(), h.hir.stmts.len(), decls),
@@ -599,7 +600,7 @@ fn khong_panic_tren_7_khoi_loai_tru_va_rac() {
     );
     match &h.hir.stmts[0] {
         HStmt::Let {
-            pat: vis_types::HPat::Bind { name, .. },
+            pat: vis_hir::HPat::Bind { name, .. },
             ..
         } => assert_eq!(name, "x"),
         other => panic!("ca đối chứng: phải là `let x`, thật {other:?}"),

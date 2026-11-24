@@ -499,7 +499,7 @@ impl<'a> super::Lowerer<'a> {
     pub(crate) fn ha_tien_to_khai(
         &mut self,
         moc: usize,
-        prelude: &[(String, crate::ty::RecId)],
+        prelude: &[(String, vis_hir::ty::RecId)],
         prefix: &str,
     ) {
         let prefix = &prefix[..moc.min(prefix.len())];
@@ -522,7 +522,7 @@ impl<'a> super::Lowerer<'a> {
         let mut opts = self.opts.clone();
         for (n, id) in prelude {
             opts.imported_types
-                .push((n.clone(), crate::ty::Type::Record(*id)));
+                .push((n.clone(), vis_hir::ty::Type::Record(*id)));
         }
         let out = crate::lower::lower_into(self.symbols, self.tbl, &po.cst, &lex, opts);
         self.items.extend(out.hir.items);

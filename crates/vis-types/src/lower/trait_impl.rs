@@ -9,8 +9,8 @@ use vis_diag::TYPE_CODES;
 use vis_syntax::{Node, NodeKind};
 
 use super::{FrameKind, ImplDangKy, Lowerer, SymKind};
-use crate::hir::{BinOp, HExpr, HFn, HImpl, HItem, HParam, HStmt, InterpPart, Lit, LitKind};
-use crate::ty::{RecId, Type};
+use vis_hir::hir::{BinOp, HExpr, HFn, HImpl, HItem, HParam, HStmt, InterpPart, Lit, LitKind};
+use vis_hir::ty::{RecId, Type};
 
 mod sieu;
 
@@ -515,7 +515,7 @@ impl<'a> Lowerer<'a> {
             ty: &Type,
             defs: &HashMap<String, Def>,
             recs: &[(String, RecId)],
-            enums: &[(String, crate::ty::EnumId)],
+            enums: &[(String, vis_hir::ty::EnumId)],
             depth: usize,
         ) -> String {
             if depth > 16 {

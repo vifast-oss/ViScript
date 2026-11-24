@@ -10,7 +10,7 @@
 
 use vis_diag::Severity;
 use vis_syntax::{Diagnostic, NodeKind};
-use vis_types::hir::HItem;
+use vis_hir::hir::HItem;
 
 use crate::{Preopen, WasiHost};
 
@@ -81,7 +81,7 @@ fn in_chan_doan(ra: &mut String, ten: &str, ds: &[Diagnostic]) -> bool {
 }
 
 /// HIR có `async fn` (hoặc phương thức async của `impl`/`trait`) ⇒ dùng frame scheduler.
-fn co_async(h: &vis_types::Hir) -> bool {
+fn co_async(h: &vis_hir::Hir) -> bool {
     h.items.iter().any(|it| match it {
         HItem::Fn(f) => f.is_async,
         HItem::Impl(i) => i.methods.iter().any(|f| f.is_async),
@@ -108,7 +108,7 @@ fn std_mods(cst: &vis_syntax::Cst, text: &str) -> Vec<String> {
         };
         if seg.first() == Some(&"std") {
             if let Some(m2) = seg.get(1) {
-                if vis_types::stdlib::module_ho_tro(m2) && !ra.iter().any(|x| x == m2) {
+                if vis_hir::stdlib::module_ho_tro(m2) && !ra.iter().any(|x| x == m2) {
                     ra.push((*m2).to_string());
                 }
             }
@@ -141,7 +141,7 @@ fn ma_thoat(out: &vis_core::RunOutput) -> u8 {
 }
 
 /// **ST-299b** — bỏ `main` khi chạy `.vish` có câu lệnh cấp tệp (cùng luật CLI).
-fn loc_main(hir: &mut vis_types::Hir, mode: vis_syntax::Mode) {
+fn loc_main(hir: &mut vis_hir::Hir, mode: vis_syntax::Mode) {
     if mode == vis_syntax::Mode::Command
         && !hir.stmts.is_empty()
         && hir
@@ -159,9 +159,9 @@ fn loc_main(hir: &mut vis_types::Hir, mode: vis_syntax::Mode) {
 fn chay_hir(
     ten: &str,
     nguon: &str,
-    hir: &vis_types::Hir,
-    symbols: &vis_types::Symbols,
-    types: &vis_types::TypeTable,
+    hir: &vis_hir::Hir,
+    symbols: &vis_hir::Symbols,
+    types: &vis_hir::TypeTable,
     args: &[String],
     engine: Engine,
     preopens: &[Preopen],

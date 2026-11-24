@@ -143,7 +143,7 @@ impl<'m> Th<'m> {
                     // **VS3-1d**: `Pipe` (`l |> f`) gọi **giá trị** `f` với `l`, khớp interp
                     // (`eval` nhánh `BinOp::Pipe`). Trước đây rơi vào `builtin::bin` ⇒
                     // `VS0501 "phải xử lý ở tầng biểu thức"`; codegen không đổi opcode.
-                    let v = if op == vis_types::BinOp::Pipe {
+                    let v = if op == vis_hir::BinOp::Pipe {
                         vm.call(&r, vec![l], span)?
                     } else {
                         builtin::bin(op, l, r, span)?

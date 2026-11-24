@@ -8,9 +8,13 @@ license.workspace = true
 description = "Máy ảo VBC1 cho ViScript — ngữ nghĩa trùng interp (ST-20, VD-54)"
 
 [dependencies]
+vis-hir = { path = "../vis-hir" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-core = { path = "../vis-core" }
 vis-diag = { path = "../vis-diag" }
 vis-interp = { path = "../vis-interp" }
 vis-syntax = { path = "../vis-syntax" }
+
+[dev-dependencies]
+# Test tích hợp cần hạ HIR từ nguồn; crate sản phẩm **không** phụ thuộc `vis-types`.
 vis-types = { path = "../vis-types" }

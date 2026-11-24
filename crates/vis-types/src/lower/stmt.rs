@@ -4,8 +4,8 @@
 use vis_syntax::{Elem, Kind, Node, NodeKind, Span};
 
 use super::{FrameKind, Lowerer, SymKind, NAME_CODES};
-use crate::hir::{AssignOp, HArm, HCond, HElse, HExpr, HPat, HStmt};
-use crate::ty::Type;
+use vis_hir::hir::{AssignOp, HArm, HCond, HElse, HExpr, HPat, HStmt};
+use vis_hir::ty::Type;
 
 impl<'a> Lowerer<'a> {
     // ----- câu lệnh -----

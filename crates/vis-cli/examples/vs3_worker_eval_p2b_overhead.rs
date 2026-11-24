@@ -64,9 +64,9 @@ const RONG: &str = r#"fn main():
 "#;
 
 struct Image {
-    hir: vis_types::Hir,
-    syms: vis_types::Symbols,
-    tys: vis_types::TypeTable,
+    hir: vis_hir::Hir,
+    syms: vis_hir::Symbols,
+    tys: vis_hir::TypeTable,
     module: vis_bytecode::Module,
     src: String,
 }

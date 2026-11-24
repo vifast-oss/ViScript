@@ -413,9 +413,9 @@ impl<'a> Checker<'a> {
         // **VD-222** — Json=EnumId(0)·Error=RecId(0)·AnyError=RecId(0) (VD-231).
         if args.is_empty() {
             match name {
-                "Json" => return Type::Enum(crate::ty::EnumId(0)),
-                "Error" => return Type::Record(crate::ty::RecId(0)),
-                "AnyError" => return Type::Record(crate::ty::RecId(0)), // VD-231 alias Error
+                "Json" => return Type::Enum(vis_hir::ty::EnumId(0)),
+                "Error" => return Type::Record(vis_hir::ty::RecId(0)),
+                "AnyError" => return Type::Record(vis_hir::ty::RecId(0)), // VD-231 alias Error
                 _ => {}
             }
         }

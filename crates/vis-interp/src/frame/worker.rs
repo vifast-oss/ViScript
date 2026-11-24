@@ -16,9 +16,9 @@ use crate::rt::Waiter;
 pub(crate) fn run_frame_driver<'a>(
     it: &mut Interp<'a>,
     text: &str,
-    hir: &'a vis_types::hir::Hir,
-    symbols: &'a vis_types::lower::Symbols,
-    _types: &'a vis_types::TypeTable,
+    hir: &'a vis_hir::hir::Hir,
+    symbols: &'a vis_hir::Symbols,
+    _types: &'a vis_hir::TypeTable,
     args: &[String],
     config: FrameConfig,
 ) -> FrameOutput {

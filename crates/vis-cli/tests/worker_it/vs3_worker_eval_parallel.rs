@@ -12,7 +12,7 @@ use vis_core::RunOutput;
 use vis_interp::rt::fee::SharedBudget;
 use vis_syntax::{lex, parse, Mode};
 
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);
@@ -30,20 +30,15 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
     (h.hir, h.symbols, h.types)
 }
 
-fn local(
-    src: &str,
-    hir: &vis_types::Hir,
-    s: &vis_types::Symbols,
-    t: &vis_types::TypeTable,
-) -> RunOutput {
+fn local(src: &str, hir: &vis_hir::Hir, s: &vis_hir::Symbols, t: &vis_hir::TypeTable) -> RunOutput {
     vis_interp::run_workers_local(src, hir, s, t, &[])
 }
 
 fn parallel(
     src: &str,
-    hir: &vis_types::Hir,
-    s: &vis_types::Symbols,
-    t: &vis_types::TypeTable,
+    hir: &vis_hir::Hir,
+    s: &vis_hir::Symbols,
+    t: &vis_hir::TypeTable,
     w: usize,
 ) -> RunOutput {
     vis_interp::run_workers_parallel(src, hir, s, t, &[], w)

@@ -134,7 +134,7 @@ fn goi_y_module(byte: usize, tien_to: &str, text: &str) -> Option<Vec<GoiY>> {
     if ten == "std" {
         let mut ds: Vec<GoiY> = Vec::new();
         let mut da = HashSet::new();
-        for f in vis_types::stdlib::FUNCS {
+        for f in vis_hir::stdlib::FUNCS {
             let Some((module, _)) = f.name.split_once('.') else {
                 continue;
             };
@@ -151,7 +151,7 @@ fn goi_y_module(byte: usize, tien_to: &str, text: &str) -> Option<Vec<GoiY>> {
         ds.truncate(200);
         return (!ds.is_empty()).then_some(ds);
     }
-    let mut ds: Vec<GoiY> = vis_types::stdlib::FUNCS
+    let mut ds: Vec<GoiY> = vis_hir::stdlib::FUNCS
         .iter()
         .filter_map(|f| {
             let (module, ham) = f.name.split_once('.')?;

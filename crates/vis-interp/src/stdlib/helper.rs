@@ -116,8 +116,8 @@ pub(crate) mod chung {
     //! Helper dùng chung cho `stdlib` (tách khỏi `stdlib.rs` để giữ R1).
 
     use vis_diag::{COMMAND_CODES, RUNTIME_CODES};
+    use vis_hir::stdlib::{sig_of, Ty};
     use vis_syntax::Span;
-    use vis_types::stdlib::{sig_of, Ty};
 
     use crate::interp::{Abort, Trap};
     use crate::value::Value;

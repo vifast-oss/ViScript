@@ -16,7 +16,7 @@
 //! # VS0405 … `Hop` không có phương thức `lay` (VD-269 — kiểm tra `impl`/tên)
 //! ```
 //!
-//! Bản sửa: (a) [`vis_types::MethodRet`] đăng ký được `impl` trên **instantiation**
+//! Bản sửa: (a) [`vis_hir::MethodRet`] đăng ký được `impl` trên **instantiation**
 //! (`impl Hop[int]`) và checker tra sym **kèm `TypeTable`**; (b) VM có **fallback theo tên
 //! phương thức duy nhất** khi kiểu nhận vẫn chưa biết (lambda/generic/kênh), khớp fallback
 //! theo tên `Value` của interp. Không đổi `recv.m()` (không optional), không đổi kiểm số đối

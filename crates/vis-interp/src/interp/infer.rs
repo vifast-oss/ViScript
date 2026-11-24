@@ -199,7 +199,7 @@ pub(crate) fn infer_ty(
                     _ => mret.ret(&bt, name, types)?,
                 };
                 Some(if *optional {
-                    vis_types::nang_optional(ret)
+                    vis_hir::nang_optional(ret)
                 } else {
                     ret
                 })

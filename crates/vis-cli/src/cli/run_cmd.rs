@@ -473,11 +473,11 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
         && h.hir
             .items
             .iter()
-            .any(|it| matches!(it, vis_types::HItem::Fn(f) if f.name == "main"))
+            .any(|it| matches!(it, vis_hir::HItem::Fn(f) if f.name == "main"))
     {
         h.hir
             .items
-            .retain(|it| !matches!(it, vis_types::HItem::Fn(f) if f.name == "main"));
+            .retain(|it| !matches!(it, vis_hir::HItem::Fn(f) if f.name == "main"));
     }
     // ST-54: chẩn đoán front end (parse/hạ/tyck) cho **cửa codegen** — defense-in-depth.
     let chan_doan: Vec<vis_syntax::Diagnostic> =
@@ -969,11 +969,11 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
 
 /// **VS3-1d (VD-271)** — chọn frame runtime khi HIR có `async fn`. Chương trình sync không có
 /// `async fn` ⇒ giữ nguyên `Interp::run`/`Vm::run` (byte-identical). Không cần cờ CLI.
-pub(crate) fn hir_co_async(h: &vis_types::Hir) -> bool {
+pub(crate) fn hir_co_async(h: &vis_hir::Hir) -> bool {
     h.items.iter().any(|it| match it {
-        vis_types::hir::HItem::Fn(f) => f.is_async,
-        vis_types::hir::HItem::Impl(i) => i.methods.iter().any(|f| f.is_async),
-        vis_types::hir::HItem::Trait(t) => t.methods.iter().any(|f| f.is_async),
+        vis_hir::hir::HItem::Fn(f) => f.is_async,
+        vis_hir::hir::HItem::Impl(i) => i.methods.iter().any(|f| f.is_async),
+        vis_hir::hir::HItem::Trait(t) => t.methods.iter().any(|f| f.is_async),
         _ => false,
     })
 }

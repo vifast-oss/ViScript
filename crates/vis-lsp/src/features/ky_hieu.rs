@@ -6,8 +6,8 @@
 //! Không có HIR (tệp chưa mở/hỏng) ⇒ mảng rỗng.
 
 use vis_core::value::Value;
+use vis_hir::hir::{HField, HItem, Hir};
 use vis_syntax::Span;
-use vis_types::hir::{HField, HItem, Hir};
 
 use super::dinh_nghia::thu_hep_ten;
 use super::jsonrpc::{m, phan_hoi, s};

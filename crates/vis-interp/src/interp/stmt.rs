@@ -195,7 +195,7 @@ impl<'a> Interp<'a> {
                             let want = self
                                 .sym_ty
                                 .get(id)
-                                .filter(|t| matches!(t, vis_types::Type::Opt(_)))
+                                .filter(|t| matches!(t, vis_hir::Type::Opt(_)))
                                 .cloned();
                             match want {
                                 Some(t) => opt_lift_maybe(rhs, opt_depth_ty(&t)),

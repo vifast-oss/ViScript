@@ -11,7 +11,7 @@
 //!    `self` để **đỏ-trước** đúng lỗ đó (trước bản sửa: exit 2, VS0403, không chạy được).
 //! 2. Khi HIR vẫn còn callee `HExpr::Field` (`recv.m`), `infer_ty` chỉ biết method dựng sẵn
 //!    (`list.get/first/last/find`, `map.get`); phương thức người dùng trả `None`. Bảng
-//!    `vis_types::MethodRet` (VD-265) bổ sung nhánh này + thay generic cho instantiation;
+//!    `vis_hir::MethodRet` (VD-265) bổ sung nhánh này + thay generic cho instantiation;
 //!    chứng minh đỏ-trước ở unit test `goi::tests` (interp) và `than::tests` (bytecode).
 //!    Lưu ý phạm vi: chương trình **hợp lệ** hiện luôn dispatch tĩnh (`Call(Var)`), còn dạng
 //!    `recv?.m()` do **VD-269** mở (checker + interp + VM tra `MethodRet::sym`); nhánh `Field`

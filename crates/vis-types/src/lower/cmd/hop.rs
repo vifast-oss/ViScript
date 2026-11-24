@@ -2,8 +2,8 @@
 //! Hạ **pipeline/nhóm/stage type** của `cmd` (ST-106 tách từ `cmd.rs`; thuần refactor).
 
 use super::super::*;
-use crate::cmdsig::CmdSig;
 use vis_diag::COMMAND_CODES;
+use vis_hir::cmdsig::CmdSig;
 
 impl<'a> Lowerer<'a> {
     /// Chạy hạ chế độ lệnh: item (`cmd`/`fn`/`extern`) trước, rồi từng dòng lệnh thành `HStmt`.

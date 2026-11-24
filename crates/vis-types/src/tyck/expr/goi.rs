@@ -5,8 +5,8 @@
 //! Mô-đun con của `tyck::expr` nên dùng chung `diag`/`coerce`/`kiem_expr`/`phu` của cha.
 //! `kiem_args`/`kiem_method` giữ `pub(crate)` vì `tyck/tuy_chon.rs` gọi trực tiếp.
 
-use crate::hir::HExpr;
-use crate::ty::Type;
+use vis_hir::hir::HExpr;
+use vis_hir::ty::Type;
 
 use super::super::sig::FnSig;
 use super::super::{Checker, ARG_COUNT, MISMATCH};
@@ -30,7 +30,7 @@ impl<'a> Checker<'a> {
         // Hàm dựng sẵn: kiểm **chữ ký** (ST-12b BLOCKER #3) — cả khi `sym = None` lẫn khi `sym`
         // trỏ tới ký hiệu `SymKind::Builtin` (ST-11 khai 8 tên dựng sẵn).
         if let HExpr::Var { name, sym, .. } = callee {
-            // ST-26: `std.<module>.<fn>` — kiểm chữ ký theo bảng `vis_types::stdlib`.
+            // ST-26: `std.<module>.<fn>` — kiểm chữ ký theo bảng `vis_hir::stdlib`.
             if let Some(t) = self.kiem_std(name, args, named, span) {
                 return t;
             }

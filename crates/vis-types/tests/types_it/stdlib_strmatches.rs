@@ -3,8 +3,8 @@
 //!
 //! Tách khỏi `stdlib_ty.rs` để tệp đó giữ dưới luật R1 (1500 dòng).
 
-use vis_types::stdlib::{sig_of, Ty};
-use vis_types::Type;
+use vis_hir::stdlib::{sig_of, Ty};
+use vis_hir::Type;
 
 #[test]
 fn strmatches_kieu_str_str_list_str_va_sugar() {
@@ -23,5 +23,5 @@ fn strmatches_kieu_str_str_list_str_va_sugar() {
     assert_eq!(f.so_doi(), 2, "`str.matches`: số đối số");
     assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "matches"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "matches"), None);
 }

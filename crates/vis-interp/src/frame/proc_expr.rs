@@ -761,12 +761,12 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             } else {
                 let old = crate::gan::doc_duong(&root, &duong, span)?;
                 let bop = match op {
-                    AssignOp::Add => vis_types::hir::BinOp::Add,
-                    AssignOp::Sub => vis_types::hir::BinOp::Sub,
-                    AssignOp::Mul => vis_types::hir::BinOp::Mul,
-                    AssignOp::Div => vis_types::hir::BinOp::Div,
-                    AssignOp::FloorDiv => vis_types::hir::BinOp::FloorDiv,
-                    AssignOp::Rem => vis_types::hir::BinOp::Rem,
+                    AssignOp::Add => vis_hir::hir::BinOp::Add,
+                    AssignOp::Sub => vis_hir::hir::BinOp::Sub,
+                    AssignOp::Mul => vis_hir::hir::BinOp::Mul,
+                    AssignOp::Div => vis_hir::hir::BinOp::Div,
+                    AssignOp::FloorDiv => vis_hir::hir::BinOp::FloorDiv,
+                    AssignOp::Rem => vis_hir::hir::BinOp::Rem,
                     AssignOp::Set => unreachable!("Set đã xử lý ở nhánh trên"),
                 };
                 let new = crate::builtin::bin(bop, old, rhs, span)?;

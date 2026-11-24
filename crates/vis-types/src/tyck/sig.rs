@@ -2,7 +2,7 @@
 //! **ST-60b**: `FnSig` — chữ ký đầy đủ của hàm khai trong tệp (tách khỏi `expr.rs` cho luật **R1**
 //! ≤1.500 dòng/tệp). Nội dung/ngữ nghĩa **không** đổi.
 
-use crate::ty::Type;
+use vis_hir::ty::Type;
 
 /// Chữ ký một hàm **khai trong tệp** (giữ tên tham số + có giá trị mặc định hay không).
 #[derive(Debug, Clone)]

@@ -3,7 +3,7 @@
 //! refactor, không đổi logic/chẩn đoán).
 
 use super::super::*;
-use crate::hir::Lit;
+use vis_hir::hir::Lit;
 
 /// Tách **từ** của một stage lệnh, tôn trọng nháy đơn/nháy kép (ST-27).
 fn tach_tu(s: &str) -> Vec<String> {
@@ -135,8 +135,8 @@ impl<'a> Lowerer<'a> {
         self.pop_frame();
         self.diags.extend(out.diagnostics);
         let init = match out.hir.stmts.first() {
-            Some(crate::hir::HStmt::Let { init, .. }) => init.clone(),
-            Some(crate::hir::HStmt::Expr(e)) => e.clone(),
+            Some(vis_hir::hir::HStmt::Let { init, .. }) => init.clone(),
+            Some(vis_hir::hir::HStmt::Expr(e)) => e.clone(),
             _ => return None,
         };
         Some(HExpr::Lambda {
@@ -152,7 +152,7 @@ impl<'a> Lowerer<'a> {
                 default: None,
             }],
             ret: rty,
-            body: crate::hir::HBody::Expr(Box::new(init)),
+            body: vis_hir::hir::HBody::Expr(Box::new(init)),
             span: g.span,
         })
     }

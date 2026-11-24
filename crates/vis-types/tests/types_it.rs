@@ -13,6 +13,8 @@ mod generic;
 mod generic_that;
 #[path = "types_it/hir.rs"]
 mod hir;
+#[path = "types_it/method_ret.rs"]
+mod method_ret;
 #[path = "types_it/names.rs"]
 mod names;
 #[path = "types_it/stdlib_strmatches.rs"]

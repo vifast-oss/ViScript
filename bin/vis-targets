@@ -6,14 +6,14 @@
 #   * `sqlite (vis-cli default, cấu hình cũ)` — giữ kết quả lịch sử; ô `vis-cli` × msvc/wasm32
 #     đỏ vì C toolchain ⇒ in `EXPECTED_RED` + lý do (nợ #156).
 #
-# **ST-310f**: phủ **100% crate workspace** (19/19 − vis-cli là ô có kỳ vọng riêng) thay vì
+# **ST-310f**: phủ **100% crate workspace** (20/20 − vis-cli là ô có kỳ vọng riêng) thay vì
 # 8 crate lõi; thêm `vis-core`, `vis-host-native`, `vis-pkg`, `vis-loader`, `vis-lsp`, `vish-edit`,
 # `vis-plugin-abi`, `vis-plugin-host`, `vis-plugin-macros`, `vish-term`.
-# **ST-312b (VD-289)**: `vis-host-linux` nay là thành viên workspace (kiểm như mọi crate);
-# chỉ `vis-host-wasm` còn ở khối `EXTRA`.
+# **ST-312b/ST-312c (VD-289)**: `vis-host-linux` + `vis-hir` nay là thành viên workspace
+# (kiểm như mọi crate); chỉ `vis-host-wasm` còn ở khối `EXTRA`.
 #
 # Mức bằng chứng: **chỉ CHECK biên dịch chéo**; KHÔNG chạy trên Windows/wasm.
-# 19 crate × 2 target + 1 crate phụ = 39 ô mỗi cấu hình. `std::process`/`std::net`/`std::fs`
+# 20 crate × 2 target + 1 crate phụ = 41 ô mỗi cấu hình. `std::process`/`std::net`/`std::fs`
 # vẫn **biên dịch** cho wasm32 nhưng KHÔNG chạy được (wasm32-unknown-unknown không có
 # tiến trình/socket/FS); CHECK xanh không phải bằng chứng hỗ trợ runtime.
 # Exit 0 chỉ khi **mỗi** cấu hình đạt kỳ vọng riêng; ô đỏ đúng nợ cũ phải là EXPECTED_RED
@@ -29,7 +29,7 @@ CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
 TARGETS=(x86_64-pc-windows-msvc wasm32-unknown-unknown)
 # **ST-310a/ST-310c (VD-285)** — thêm `vis-core` (tầng đáy DAG) và `vis-plugin-host`
 # (host loader WASI) vào ma trận; hai crate này xuất hiện sau khi ST-310f viết danh sách 16 crate.
-CRATES=(vis-core vis-diag vis-syntax vis-types vis-bytecode vis-fmt vis-interp vis-vm vis-cli \
+CRATES=(vis-core vis-hir vis-diag vis-syntax vis-types vis-bytecode vis-fmt vis-interp vis-vm vis-cli \
         vis-host-native vis-pkg vis-loader vis-lsp vish-edit vis-plugin-abi \
         vis-plugin-host vis-plugin-macros vish-term vis-host-linux)
 EXTRA=("vis-host-wasm wasm32-unknown-unknown")

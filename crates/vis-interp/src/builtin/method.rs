@@ -2,8 +2,8 @@
 //! **ST-310a (VD-285)** — bộ phương thức lõi (`list`/`str`/`map`/`chan`), tách khỏi
 //! `builtin.rs` để giữ tệp dưới 1.150 dòng. Chuyển **nguyên văn**, không đổi ngữ nghĩa.
 
+use vis_hir::hir::BinOp;
 use vis_syntax::Span;
-use vis_types::hir::BinOp;
 
 use crate::interp::{Abort, OVERFLOW, RT};
 use crate::value::Value;
@@ -29,9 +29,9 @@ pub fn method(
     };
     if !m.is_empty() && !loi.split(' ').any(|x| x == name) {
         // **VD-270 (path.normalize)**: `s.normalize()` là sugar của `path.normalize`.
-        let m = vis_types::stdlib::module_sugar(m, name).unwrap_or(m);
+        let m = vis_hir::stdlib::module_sugar(m, name).unwrap_or(m);
         let ngan = format!("{m}.{name}");
-        if vis_types::stdlib::sig_of(&ngan).is_some() {
+        if vis_hir::stdlib::sig_of(&ngan).is_some() {
             let mut all = vec![recv.clone()];
             all.extend(args.clone());
             return call(host, &format!("std.{ngan}"), all, span);

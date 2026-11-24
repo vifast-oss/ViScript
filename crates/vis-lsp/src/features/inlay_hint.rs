@@ -16,8 +16,8 @@
 use std::collections::HashMap;
 
 use vis_core::value::Value;
-use vis_types::hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir};
-use vis_types::{Symbols, Type, TypeTable};
+use vis_hir::hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir};
+use vis_hir::{Symbols, Type, TypeTable};
 
 use super::jsonrpc::{m, phan_hoi, s};
 use super::phan_tich::KetQua;
@@ -132,7 +132,7 @@ impl<'a> Suy<'a> {
                     .or_else(|| self.syms.get(id).and_then(|s| s.ty.clone()))
             }
             HExpr::Bin { op, lhs, rhs, .. } => {
-                use vis_types::BinOp;
+                use vis_hir::BinOp;
                 match op {
                     BinOp::Add
                     | BinOp::Sub
@@ -164,8 +164,8 @@ impl<'a> Suy<'a> {
                 }
             }
             HExpr::Un { op, expr, .. } => match op {
-                vis_types::UnOp::Neg => self.kieu(expr),
-                vis_types::UnOp::Not => Some(Type::Bool),
+                vis_hir::UnOp::Neg => self.kieu(expr),
+                vis_hir::UnOp::Not => Some(Type::Bool),
             },
             HExpr::Call {
                 callee,
@@ -572,9 +572,9 @@ impl<'a> Suy<'a> {
             HExpr::Interp { parts, .. } => {
                 for p in parts {
                     match p {
-                        vis_types::InterpPart::Str(_) => {}
-                        vis_types::InterpPart::Expr(x)
-                        | vis_types::InterpPart::ExprSpec { expr: x, .. } => self.duyet_expr(x),
+                        vis_hir::InterpPart::Str(_) => {}
+                        vis_hir::InterpPart::Expr(x)
+                        | vis_hir::InterpPart::ExprSpec { expr: x, .. } => self.duyet_expr(x),
                     }
                 }
             }

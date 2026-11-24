@@ -6,16 +6,16 @@
 //!
 //! 1. Bóc **đúng một** lớp `Option` của base; base không phải `Option` ⇒ `VS0412` (kể cả
 //!    `Result` — `?.` chỉ có nghĩa trên `Option`).
-//! 2. Phương thức `impl` trước (bảng [`crate::MethodRet`]), rồi phương thức lõi `list`/`str`/
+//! 2. Phương thức `impl` trước (bảng [`vis_hir::MethodRet`]), rồi phương thức lõi `list`/`str`/
 //!    `map`/`Chan`, rồi `std.<module>.<fn>` (R5c). Thiếu phương thức trên bản ghi/enum ⇒
 //!    `VS0405`; kiểu khác ⇒ `VS0403`.
-//! 3. Kiểu kết quả = [`crate::nang_optional`]: `U` ⇒ `U?`, `U?` ⇒ `U?` (không hai lớp),
+//! 3. Kiểu kết quả = [`vis_hir::nang_optional`]: `U` ⇒ `U?`, `U?` ⇒ `U?` (không hai lớp),
 //!    `()`/`{error}`/`never` giữ nguyên.
 //!
 //! Đối số được kiểm **một lần** đúng nhánh phân giải được (không kiểm trùng).
 
-use crate::hir::HExpr;
-use crate::ty::Type;
+use vis_hir::hir::HExpr;
+use vis_hir::ty::Type;
 use vis_syntax::Span;
 
 use super::{Checker, MISMATCH, NO_FIELD};
@@ -143,6 +143,6 @@ impl<'a> Checker<'a> {
             );
             return Type::Error;
         };
-        crate::nang_optional(ret)
+        vis_hir::nang_optional(ret)
     }
 }

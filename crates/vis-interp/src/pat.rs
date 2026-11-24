@@ -3,7 +3,7 @@
 
 use crate::interp::{lit_value, Interp};
 use crate::value::Value;
-use vis_types::HPat;
+use vis_hir::HPat;
 
 impl<'a> Interp<'a> {
     pub(crate) fn bind_pat(&mut self, pat: &HPat, v: &Value) {

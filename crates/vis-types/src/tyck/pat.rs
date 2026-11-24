@@ -10,8 +10,8 @@ use std::collections::BTreeSet;
 
 use vis_syntax::Span;
 
-use crate::hir::{HArm, HBody, HCond, HExpr, HPat, HStmt, InterpPart, LitKind};
-use crate::ty::{Type, TypeTable};
+use vis_hir::hir::{HArm, HBody, HCond, HExpr, HPat, HStmt, InterpPart, LitKind};
+use vis_hir::ty::{Type, TypeTable};
 
 use super::{Checker, ARG_COUNT, MISMATCH, NON_EXHAUSTIVE, NO_FIELD};
 
@@ -300,7 +300,7 @@ impl<'a> Checker<'a> {
 
     fn kiem_ctor_args(
         &mut self,
-        fields: &[crate::ty::FieldDef],
+        fields: &[vis_hir::ty::FieldDef],
         args: &[HPat],
         span: Span,
         name: &str,

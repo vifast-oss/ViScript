@@ -183,7 +183,7 @@ pub(super) fn infer_ty(
                     _ => mret.ret_voi_types(&bt, name)?,
                 };
                 Some(if *optional {
-                    vis_types::nang_optional(ret)
+                    vis_hir::nang_optional(ret)
                 } else {
                     ret
                 })

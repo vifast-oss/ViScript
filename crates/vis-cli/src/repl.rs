@@ -15,9 +15,10 @@
 use std::io::{self, BufRead, IsTerminal, Write};
 use std::process::ExitCode;
 
+use vis_hir::Type;
 use vis_loader::modules;
 use vis_syntax::Diagnostic;
-use vis_types::{check, Type};
+use vis_types::check;
 use vish_edit::{read_line_from, History, Outcome};
 use vish_term::{AnsiPosix, ColorMode, Severity, Terminal, ViTermFramed};
 

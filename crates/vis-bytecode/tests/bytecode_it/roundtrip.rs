@@ -14,7 +14,7 @@ use vis_bytecode::{compile, decode, encode};
 
 /// **VD-241 Gate 1** — hạ một tệp với `std_mods` quét từ chính nguồn (`use std.<tên>`), đúng
 /// cách `vis-cli/src/modules.rs` làm: nhờ vậy test/sem chạy được ca `use std.*` (trước Gate 1
-/// không có ca nào). Chỉ nhận module std hợp lệ (`vis_types::stdlib::module_ho_tro`).
+/// không có ca nào). Chỉ nhận module std hợp lệ (`vis_hir::stdlib::module_ho_tro`).
 fn pha_std(text: &str) -> Vec<String> {
     let mut ds = Vec::new();
     for line in text.lines() {
@@ -27,7 +27,7 @@ fn pha_std(text: &str) -> Vec<String> {
             continue;
         }
         let m = seg.next().unwrap_or_default();
-        if vis_types::stdlib::module_ho_tro(m) && !ds.contains(&m.to_string()) {
+        if vis_hir::stdlib::module_ho_tro(m) && !ds.contains(&m.to_string()) {
             ds.push(m.to_string());
         }
     }

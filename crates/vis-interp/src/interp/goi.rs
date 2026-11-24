@@ -7,8 +7,11 @@
 
 use std::collections::HashMap;
 
+use vis_hir::hir::*;
+use vis_hir::ty::Type;
+use vis_hir::Symbols;
+use vis_hir::{MethodRet, TypeTable};
 use vis_syntax::Span;
-use vis_types::{hir::*, lower::Symbols, ty::Type, MethodRet, TypeTable};
 
 use crate::interp::{builtin_name, Abort, Args, Ctrl, Interp, Trap, MAX_CALL_DEPTH, R, RT};
 use crate::value::*;
@@ -41,8 +44,8 @@ static CTRL_CONTINUE: vis_diag::Code = vis_diag::Code {
 };
 
 /// `true` khi `let x: T? = …` (chú thích `Optional` — mọi lớp). Chuyển từ `interp.rs` để R1.
-pub(crate) fn ty_là_opt(t: Option<&vis_types::ty::Type>) -> bool {
-    matches!(t, Some(vis_types::ty::Type::Opt(_)))
+pub(crate) fn ty_là_opt(t: Option<&vis_hir::ty::Type>) -> bool {
+    matches!(t, Some(vis_hir::ty::Type::Opt(_)))
 }
 
 impl<'a> Interp<'a> {
@@ -304,7 +307,7 @@ impl<'a> Interp<'a> {
     /// **VD-258** — nâng giá trị vào trường `T?` của bản ghi theo `RecId` đã biết.
     pub(crate) fn lift_truong_ban_ghi(
         &self,
-        rec_id: Option<vis_types::ty::RecId>,
+        rec_id: Option<vis_hir::ty::RecId>,
         name: &str,
         v: Value,
     ) -> Value {
@@ -321,7 +324,7 @@ impl<'a> Interp<'a> {
     /// **VD-258** — nâng đối số vào trường `T?` của biến thể enum.
     pub(crate) fn lift_doi_so_bien_the(
         &self,
-        enum_id: Option<vis_types::ty::EnumId>,
+        enum_id: Option<vis_hir::ty::EnumId>,
         variant: &str,
         i: usize,
         v: Value,
@@ -338,9 +341,9 @@ impl<'a> Interp<'a> {
 
     /// **VD-263** — `RecId` **tĩnh** của biểu thức gốc (`Box[int?]` từ annot), để `with` nâng
     /// trường theo instantiation thay vì bản khai báo đã xoá `T`.
-    pub(crate) fn rec_id_tinh(&self, e: &HExpr, root: &Value) -> Option<vis_types::ty::RecId> {
+    pub(crate) fn rec_id_tinh(&self, e: &HExpr, root: &Value) -> Option<vis_hir::ty::RecId> {
         match self.expr_ty(e, root) {
-            Some(vis_types::Type::Record(id)) => Some(id),
+            Some(vis_hir::Type::Record(id)) => Some(id),
             _ => None,
         }
     }
@@ -355,10 +358,10 @@ pub(crate) fn opt_lift_maybe(v: Value, depth_target: usize) -> Value {
 }
 
 /// Số lớp `Opt` của một **đích kiểu** (đếm từ ngoài vào).
-pub(in crate::interp) fn opt_depth_ty(t: &vis_types::Type) -> usize {
+pub(in crate::interp) fn opt_depth_ty(t: &vis_hir::Type) -> usize {
     let mut d = 0;
     let mut cur = t;
-    while let vis_types::Type::Opt(inner) = cur {
+    while let vis_hir::Type::Opt(inner) = cur {
         d += 1;
         cur = inner;
     }
@@ -732,7 +735,7 @@ mod tests {
             }
         }
         assert!(found, "phải đổi được lời gọi `r.io()` thành callee Field");
-        let mret = vis_types::MethodRet::from_hir_voi_bang(&h.hir, &h.types);
+        let mret = vis_hir::MethodRet::from_hir_voi_bang(&h.hir, &h.types);
         let fn_rets = HashMap::new(); // cố ý rỗng: chỉ bảng phương thức quyết định
         let sym = collect_sym_tys(&h.hir, &h.symbols, &h.types, &fn_rets, &mret);
         let got = h

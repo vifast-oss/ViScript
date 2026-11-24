@@ -16,7 +16,7 @@ use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "{:?}", p.diagnostics);
     let l = lex(src, Mode::Script);

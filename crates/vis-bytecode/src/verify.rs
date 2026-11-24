@@ -13,7 +13,7 @@
 
 use crate::decode::DecodeError;
 use crate::format::{Instr, Module, VERSION};
-use vis_types::{BinOp, UnOp};
+use vis_hir::{BinOp, UnOp};
 
 /// Lỗi xác minh — **không** panic, luôn nêu hàm + `pc` khi có.
 #[derive(Debug, Clone, PartialEq, Eq)]

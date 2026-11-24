@@ -5,8 +5,8 @@
 //! và `duration / duration` cho `float`; trộn đơn vị ⇒ `None` (caller báo `VS0412`).
 //! Chia/mũ cho 0 hay tràn là **runtime** (ST-13) — ở đây **không** xét.
 
-use crate::hir::BinOp;
-use crate::ty::Type;
+use vis_hir::hir::BinOp;
+use vis_hir::ty::Type;
 
 /// Nâng `int → float` **chỉ khi** phía `int` là **literal số nguyên** (thiết kế §3.5 — ngoại lệ
 /// duy nhất; ST-12b BLOCKER #2: biến `int` **không** được nâng).

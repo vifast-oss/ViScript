@@ -13,8 +13,8 @@
 
 use std::path::{Path, PathBuf};
 
+use vis_hir::{HArm, HBody, HCond, HExpr, HItem, HPat, HStmt};
 use vis_syntax::Span;
-use vis_types::{HArm, HBody, HCond, HExpr, HItem, HPat, HStmt};
 
 use crate::modules;
 
@@ -188,7 +188,7 @@ fn thu_expr(e: &HExpr, v: &mut Vec<Nut>) {
         HExpr::ChanNew { cap, .. } => thu_expr(cap, v),
         HExpr::Interp { parts, .. } => {
             for p in parts {
-                if let vis_types::InterpPart::Expr(x) = p {
+                if let vis_hir::InterpPart::Expr(x) = p {
                     thu_expr(x, v);
                 }
             }

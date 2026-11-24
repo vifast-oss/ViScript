@@ -322,7 +322,7 @@ impl Emit<'_> {
     pub(super) fn let_else(
         &mut self,
         pat: &HPat,
-        e: &vis_types::hir::HElse,
+        e: &vis_hir::hir::HElse,
         span: Span,
     ) -> Result<(), CodegenError> {
         // **VD-260**: pattern không phải tên trần khớp trên **kiểu đầy đủ**; chỉ `let x = … else`
@@ -347,7 +347,7 @@ impl Emit<'_> {
         let c_some = self.g.cst_str("Some");
         self.f.push(Instr::Dup, span, 1);
         self.f.push(Instr::TestCtor(c_ok, 1), span, 0);
-        self.f.push(Instr::Un(vis_types::hir::UnOp::Not), span, 0);
+        self.f.push(Instr::Un(vis_hir::hir::UnOp::Not), span, 0);
         let j_ok = self.f.here();
         self.f.push(Instr::JumpIfFalse(0), span, -1);
         self.f.push(Instr::Dup, span, 1);
@@ -375,7 +375,7 @@ impl Emit<'_> {
     fn else_binder(
         &mut self,
         pat: &HPat,
-        e: &vis_types::hir::HElse,
+        e: &vis_hir::hir::HElse,
         span: Span,
     ) -> Result<(), CodegenError> {
         let Some(sym) = e.bind_sym else {
@@ -418,7 +418,7 @@ impl Emit<'_> {
     pub(super) fn record_lit(
         &mut self,
         fields: &[(String, HExpr)],
-        ty: &vis_types::Type,
+        ty: &vis_hir::Type,
         span: Span,
     ) -> Result<(), CodegenError> {
         for (n, v) in fields {
@@ -426,7 +426,7 @@ impl Emit<'_> {
             self.f.push(Instr::Const(c), span, 1);
             self.expr(v)?;
             // **VD-258**: trường `T?` nhận giá trị plain ⇒ nâng ở biên dựng bản ghi.
-            if let vis_types::Type::Record(id) = ty {
+            if let vis_hir::Type::Record(id) = ty {
                 if let Some(ft) = self.g.rec_fields.get(&(id.0, n.clone())).cloned() {
                     let depth = super::than::opt_depth(&ft);
                     if depth > 0 {
@@ -436,7 +436,7 @@ impl Emit<'_> {
             }
         }
         let ten = match ty {
-            vis_types::Type::Record(id) => self.g.recs.get(&id.0).cloned().unwrap_or_default(),
+            vis_hir::Type::Record(id) => self.g.recs.get(&id.0).cloned().unwrap_or_default(),
             _ => String::new(),
         };
         let t = self.g.cst_str(&ten);

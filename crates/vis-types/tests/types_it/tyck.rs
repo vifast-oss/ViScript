@@ -17,8 +17,9 @@
 //!
 //! Ca nào cố ý dùng tên **giá trị** tự do thì ghi lý do trong comment (VD-45: Permissive).
 
+use vis_hir::TypeTable;
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{check, lower, CheckOutput, TypeTable};
+use vis_types::{check, lower, CheckOutput};
 
 /// Hạ + kiểm một nguồn; ca phải **parse sạch** và **hạ sạch** (chẩn đoán chỉ được đến từ tyck).
 fn run(src: &str) -> (CheckOutput, TypeTable) {

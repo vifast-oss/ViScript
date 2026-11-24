@@ -12,7 +12,7 @@ use super::*;
 /// khi khai báo trap; `Abort::Ret`/`Pending` (không hợp lệ ở cấp tệp) giữ hợp đồng cũ ⇒ `None`.
 pub(super) fn khoi_tao_bien_cap_tep_frame<'a>(
     it: &mut Interp<'a>,
-    hir: &vis_types::hir::Hir,
+    hir: &vis_hir::hir::Hir,
     globals: &Env,
     mutable: &Rc<RefCell<HashSet<u32>>>,
 ) -> Option<Trap> {
@@ -31,10 +31,10 @@ pub(super) fn khoi_tao_bien_cap_tep_frame<'a>(
 }
 
 /// Số lớp `Opt` của một kiểu (dùng ở biên `let`/`var`/tham số/trả về).
-pub(super) fn opt_depth_ty(t: &vis_types::Type) -> usize {
+pub(super) fn opt_depth_ty(t: &vis_hir::Type) -> usize {
     let mut d = 0;
     let mut cur = t;
-    while let vis_types::Type::Opt(inner) = cur {
+    while let vis_hir::Type::Opt(inner) = cur {
         d += 1;
         cur = inner;
     }
@@ -81,7 +81,7 @@ pub(super) fn env_for_params<'a>(
             },
         };
         let v = match &p.ty {
-            vis_types::Type::Opt(_) => crate::lift::lift_opt(v, opt_depth_ty(&p.ty)),
+            vis_hir::Type::Opt(_) => crate::lift::lift_opt(v, opt_depth_ty(&p.ty)),
             _ => v,
         };
         if p.is_var_self {

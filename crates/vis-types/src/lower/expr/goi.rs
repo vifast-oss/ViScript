@@ -437,7 +437,7 @@ impl<'a> Lowerer<'a> {
                             }
                         }
                         if let Some(rec) = self.items.iter().find_map(|it| match it {
-                            crate::hir::HItem::Rec(r) if r.id == base_rid => Some(r.clone()),
+                            vis_hir::hir::HItem::Rec(r) if r.id == base_rid => Some(r.clone()),
                             _ => None,
                         }) {
                             for f in &rec.fields {

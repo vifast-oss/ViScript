@@ -31,7 +31,7 @@
 //! đối `i32`**; mỗi hàm ghi `arity`/`nparams`/`nlocals`/`max_stack`. ST-21 **kiểm lại độc lập từ
 //! byte stream** (không tin `max_stack` ghi trong tệp).
 
-use vis_types::{BinOp, UnOp};
+use vis_hir::{BinOp, UnOp};
 
 /// Bốn byte nhận dạng: `VBC1` — **không đổi** ở ST-246/VD-244 (trường `VERSION` đủ để phân biệt).
 pub const MAGIC: [u8; 4] = *b"VBC1";
@@ -151,9 +151,9 @@ pub enum Instr {
     LoadCaptured(u16),
     /// Bỏ giá trị đỉnh — 1→0.
     Pop,
-    /// Toán tử nhị phân (`vis_types::BinOp`) — 2→1.
+    /// Toán tử nhị phân (`vis_hir::BinOp`) — 2→1.
     Bin(BinOp),
-    /// Toán tử một ngôi (`vis_types::UnOp`) — 1→1.
+    /// Toán tử một ngôi (`vis_hir::UnOp`) — 1→1.
     Un(UnOp),
     /// Gọi hàm `f` với `n` đối số — n→1.
     Call(u32, u16),

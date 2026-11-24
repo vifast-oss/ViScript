@@ -5,7 +5,7 @@
 
 use super::*;
 use crate::fee::FeeKind;
-use vis_types::Type;
+use vis_hir::Type;
 
 mod infer;
 
@@ -42,11 +42,11 @@ pub(super) fn call_fee(g: &Gen, callee: &HExpr) -> (FeeKind, bool) {
 /// **ST-248 (VD-242 §3.3)** — gom kiểu trường bản ghi `RecId → (tên trường → kiểu)` từ HIR.
 /// Dùng để biết kiểu đích của `u.f = v` mà không cần `TypeTable` (API `compile` giữ nguyên).
 ///
-/// **VD-263**: khi có [`vis_types::TypeTable`] (`compile_voi_bang`), bảng này là **nguồn đầy đủ** — gồm cả
+/// **VD-263**: khi có [`vis_hir::TypeTable`] (`compile_voi_bang`), bảng này là **nguồn đầy đủ** — gồm cả
 /// các `RecId` **instantiation** (`Box[int?]`) với trường đã thay `T`; HIR chỉ có bản khai báo.
 pub(super) fn collect_rec_fields(
     hir: &Hir,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
 ) -> HashMap<(u32, String), Type> {
     let mut m = HashMap::new();
     for it in &hir.items {
@@ -72,7 +72,7 @@ pub(super) fn collect_rec_fields(
 /// **VD-263**: như [`collect_rec_fields`], có `TypeTable` ⇒ gồm cả enum **instantiation**.
 pub(super) fn collect_enum_fields(
     hir: &Hir,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
 ) -> HashMap<(u32, String, usize), Type> {
     let mut m = HashMap::new();
     for it in &hir.items {
@@ -122,14 +122,14 @@ pub(super) fn collect_fn_rets(hir: &Hir) -> HashMap<u32, Type> {
 
 /// **VD-265** — bảng kiểu trả phương thức người dùng; kèm `TypeTable` (nếu có) để thay generic
 /// cho instantiation. Tách hàm để `Gen` khởi tạo một dòng và giữ `codegen.rs` ≤ R1.
-pub(super) fn collect_mret(hir: &Hir, types: Option<&vis_types::TypeTable>) -> MethodRet {
+pub(super) fn collect_mret(hir: &Hir, types: Option<&vis_hir::TypeTable>) -> MethodRet {
     types
         .map(|t| MethodRet::from_hir_voi_bang(hir, t))
         .unwrap_or_else(|| MethodRet::from_hir(hir))
 }
 
 /// **VD-265** — gọi [`do_match`] với các bảng của `Gen` (một dòng ở `codegen.rs`, giữ R1).
-pub(super) fn do_match_emit(g: &Gen, arms: &[vis_types::hir::HArm]) -> (usize, usize) {
+pub(super) fn do_match_emit(g: &Gen, arms: &[vis_hir::hir::HArm]) -> (usize, usize) {
     do_match(arms, &g.sym_ty, &g.rec_fields, &g.fn_rets, &g.mret)
 }
 
@@ -231,7 +231,7 @@ fn infer_if(
 }
 
 fn infer_match(
-    arms: &[vis_types::hir::HArm],
+    arms: &[vis_hir::hir::HArm],
     sym: &HashMap<u32, Type>,
     fn_rets: &HashMap<u32, Type>,
     mret: &MethodRet,
@@ -373,7 +373,7 @@ fn walk_stmts(
 pub(super) fn collect_sym_tys(
     hir: &Hir,
     symbols: &Symbols,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
 ) -> HashMap<u32, Type> {
     let mut m: HashMap<u32, Type> = crate::util::sym_annot_map(symbols)
         .into_iter()
@@ -430,10 +430,10 @@ pub(super) fn collect_sym_tys(
 }
 
 /// Số lớp `Opt` của một **đích kiểu** — đếm từ ngoài vào (mirror vis-interp `opt_depth_ty`).
-pub(super) fn opt_depth(t: &vis_types::Type) -> usize {
+pub(super) fn opt_depth(t: &vis_hir::Type) -> usize {
     let mut d = 0;
     let mut cur = t;
-    while let vis_types::Type::Opt(inner) = cur {
+    while let vis_hir::Type::Opt(inner) = cur {
         d += 1;
         cur = inner;
     }
@@ -445,7 +445,7 @@ impl Emit<'_> {
     /// `$lift-opt`, interp/VM dùng chung; người dùng không viết được tên `$…`).
     /// Stack trước: [v] → sau: [v'] với `v'` có tối thiểu `depth` lớp `Opt` từ ngoài vào.
     pub(super) fn lift_opt(&mut self, depth: usize, span: Span) -> Result<(), CodegenError> {
-        let d = self.g.cst(vis_types::LitKind::Int, &depth.to_string());
+        let d = self.g.cst(vis_hir::LitKind::Int, &depth.to_string());
         self.f.push(Instr::Const(d), span, 1);
         let n = self.g.cst_str("$lift-opt");
         self.f.push(Instr::CallBuiltin(n, 2), span, -1);
@@ -464,7 +464,7 @@ impl Emit<'_> {
     /// ô cục bộ tham số ⇒ gói `Some(…)` (mirror interp ở `call_hfn_trong`).
     pub(super) fn lift_params_opt(
         &mut self,
-        params: &[vis_types::HParam],
+        params: &[vis_hir::HParam],
         span: Span,
     ) -> Result<(), CodegenError> {
         for p in params {
@@ -514,7 +514,7 @@ impl Emit<'_> {
     /// giữ nguyên bởi `lift_opt` (bước 1 — không bọc).
     pub(super) fn lift_to_annot(
         &mut self,
-        ty: Option<&vis_types::Type>,
+        ty: Option<&vis_hir::Type>,
         span: Span,
     ) -> Result<(), CodegenError> {
         if let Some(t) = ty {
@@ -537,9 +537,9 @@ impl Emit<'_> {
     /// `Opt(Record)`), `Index`, `Call` trả về, `Try`, `With`, `If`/`Match`, tuple/list literal.
     /// Trước đây nhánh `Var`/`Field`/`Index` riêng không bóc `Opt` cho `Field`, và `Call` là
     /// fallback nên `make().push(x)`/`lay()?.b` mù kiểu.
-    pub(super) fn base_ty(&self, e: &vis_types::HExpr) -> Option<Type> {
+    pub(super) fn base_ty(&self, e: &vis_hir::HExpr) -> Option<Type> {
         match e {
-            vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
+            vis_hir::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
             other => infer_ty(
                 other,
                 &self.g.sym_ty,
@@ -684,7 +684,7 @@ pub(super) fn do_if(
 
 /// **VD-258** — `(min, max)` lớp `Option` của các nhánh `match`.
 pub(super) fn do_match(
-    arms: &[vis_types::hir::HArm],
+    arms: &[vis_hir::hir::HArm],
     sym_ty: &HashMap<u32, Type>,
     rec_fields: &HashMap<(u32, String), Type>,
     fn_rets: &HashMap<u32, Type>,
@@ -718,7 +718,7 @@ impl Emit<'_> {
 
     /// **VD-258** — field của `?.` có kiểu `T?` không. Chỉ dựa vào kiểu tĩnh đã biết
     /// (`base_ty`); field optional thật ⇒ `MakeSome` vô điều kiện, field thường ⇒ `lift_opt` cũ.
-    pub(super) fn field_la_opt(&self, base: &vis_types::HExpr, name: &str) -> bool {
+    pub(super) fn field_la_opt(&self, base: &vis_hir::HExpr, name: &str) -> bool {
         let Some(bt) = self.base_ty(base) else {
             return false;
         };
@@ -740,7 +740,7 @@ impl Emit<'_> {
     /// ⇒ `lift_opt(1)` như cũ (giá trị hợp lệ không-Option).
     pub(super) fn field_optional_boc(
         &mut self,
-        base: &vis_types::HExpr,
+        base: &vis_hir::HExpr,
         name: &str,
         span: Span,
     ) -> Result<(), CodegenError> {
@@ -753,7 +753,7 @@ impl Emit<'_> {
     }
 
     /// **VD-258** — số lớp `Opt` của phần tử `list` khi gọi `push` (`0` nếu không phải list/Opt).
-    pub(super) fn push_elem_depth(&self, base: &vis_types::HExpr) -> usize {
+    pub(super) fn push_elem_depth(&self, base: &vis_hir::HExpr) -> usize {
         match self.base_ty(base) {
             Some(Type::List(el)) if el.is_opt() => opt_depth(&el),
             _ => 0,
@@ -763,7 +763,7 @@ impl Emit<'_> {
     /// **VD-258** — nâng đối số `i` của biến thể enum tới đủ lớp `Opt` của trường khai báo.
     pub(super) fn lift_enum_arg(
         &mut self,
-        enum_id: Option<vis_types::EnumId>,
+        enum_id: Option<vis_hir::EnumId>,
         variant: &str,
         i: usize,
         span: Span,
@@ -788,7 +788,7 @@ impl Emit<'_> {
     /// **VD-258** — nâng giá trị cập nhật `with` vào trường `T?` của bản ghi đã biết.
     pub(super) fn lift_with_field(
         &mut self,
-        rec_id: Option<vis_types::RecId>,
+        rec_id: Option<vis_hir::RecId>,
         name: &str,
         span: Span,
     ) -> Result<(), CodegenError> {
@@ -806,9 +806,9 @@ impl Emit<'_> {
     /// **ST-248 (VD-242 §3.3)** — số lớp `Opt` của **đích gán** (0 ⇒ giữ nguyên).
     /// `Var` dùng kiểu biến (không đổi theo từng lần gán); `Field`/`Index` dùng kiểu khai báo
     /// của trường/phần tử. `lift_opt` tự dừng ở đủ lớp ⇒ không nâng nhiều lớp, `None` giữ nguyên.
-    pub(super) fn assign_target_depth(&self, t: &vis_types::HExpr) -> usize {
+    pub(super) fn assign_target_depth(&self, t: &vis_hir::HExpr) -> usize {
         let ty = match t {
-            vis_types::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
+            vis_hir::HExpr::Var { sym: Some(id), .. } => self.g.sym_ty.get(id).cloned(),
             other => self.base_ty(other),
         };
         ty.as_ref().map(opt_depth).unwrap_or(0)
@@ -818,7 +818,7 @@ impl Emit<'_> {
     /// `Opt` của kiểu đích; đích không-Opt giữ nguyên.
     pub(super) fn lift_assign_set(
         &mut self,
-        target: &vis_types::HExpr,
+        target: &vis_hir::HExpr,
         span: Span,
     ) -> Result<(), CodegenError> {
         let depth = self.assign_target_depth(target);
@@ -836,12 +836,12 @@ impl Emit<'_> {
     /// `None` nhảy thẳng tới cuối, không đánh giá đối số; hai đường đều còn **một** giá trị.
     pub(super) fn goi_phuong_thuc_tuy_chon(
         &mut self,
-        callee: &vis_types::HExpr,
-        args: &[vis_types::HExpr],
-        named: &[(String, vis_types::HExpr)],
+        callee: &vis_hir::HExpr,
+        args: &[vis_hir::HExpr],
+        named: &[(String, vis_hir::HExpr)],
         span: Span,
     ) -> Result<(), CodegenError> {
-        let vis_types::HExpr::Field {
+        let vis_hir::HExpr::Field {
             base,
             name,
             optional: true,
@@ -934,7 +934,7 @@ impl Emit<'_> {
         // trị* để hai engine khớp kể cả khi kiểu trả của phương thức chưa chốt (`{error}`).
         self.f.push(Instr::Dup, span, 1);
         self.f.push(Instr::IsUnit, span, 0);
-        self.f.push(Instr::Un(vis_types::UnOp::Not), span, 0);
+        self.f.push(Instr::Un(vis_hir::UnOp::Not), span, 0);
         let jskip = self.f.here();
         self.f.push(Instr::JumpIfFalse(0), span, -1);
         self.lift_opt(1, span)?;

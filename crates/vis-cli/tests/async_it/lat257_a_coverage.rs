@@ -21,7 +21,7 @@ use vis_vm::vm_frame::{
 };
 
 /// Nguồn thật → lower → check. `check().is_clean()` ở đây là bằng chứng checker KHÔNG thu hẹp.
-fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(src: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);

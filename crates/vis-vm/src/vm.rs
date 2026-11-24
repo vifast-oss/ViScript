@@ -14,11 +14,11 @@ use vis_bytecode::{Func, Instr, Module, GLOBAL_SLOT_BASE};
 use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{self, Value, VmFunc};
 use vis_core::RunOutput;
+use vis_hir::hir::LitKind;
 use vis_interp::builtin::Host;
 use vis_interp::interp::{IDX, RT};
 use vis_interp::value::ForIter;
 use vis_syntax::Span;
-use vis_types::hir::LitKind;
 
 use crate::vm_frame::MethodLoop;
 
@@ -431,7 +431,7 @@ impl<'a> Vm<'a> {
             .get(i as usize)
             .ok_or_else(|| self.hong(VmError::BadIdx(i), span))?;
         let kind = lit_kind(c.kind).ok_or_else(|| self.hong(VmError::BadIdx(i), span))?;
-        let lit = vis_types::hir::Lit {
+        let lit = vis_hir::hir::Lit {
             kind,
             text: c.text.clone(),
         };

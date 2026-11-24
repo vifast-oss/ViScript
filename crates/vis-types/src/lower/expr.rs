@@ -8,10 +8,10 @@
 use vis_syntax::{lex, parse, Cst, Elem, Kind, LexOutput, Mode, Node, NodeKind, Span};
 
 use super::{bin_op, lit_kind, un_op, Lowerer};
-use crate::hir::{BinOp, HBody, HCond, HExpr, HParam, InterpPart, Lit, LitKind};
-use crate::stdlib as vis_types_stdlib;
-use crate::ty::{EnumId, FieldDef, RecDef, RecId, Type};
 use vis_diag::{NAME_CODES, TYPE_CODES};
+use vis_hir::hir::{BinOp, HBody, HCond, HExpr, HParam, InterpPart, Lit, LitKind};
+use vis_hir::stdlib as vis_types_stdlib;
+use vis_hir::ty::{EnumId, FieldDef, RecDef, RecId, Type};
 
 mod chuoi;
 mod goi;
@@ -80,7 +80,7 @@ impl<'a> Lowerer<'a> {
                     .next()
                     .map(|t| t.text.clone())
                     .unwrap_or_default();
-                let op = un_op(&op_text).unwrap_or(crate::hir::UnOp::Neg);
+                let op = un_op(&op_text).unwrap_or(vis_hir::hir::UnOp::Neg);
                 let expr = node
                     .children()
                     .next()
@@ -90,7 +90,7 @@ impl<'a> Lowerer<'a> {
                 // `i64::MAX + 1` (để `-9223372036854775808` thành `i64::MIN`), nên nếu không gộp
                 // thì literal dương 2^63 sẽ bị checker từ chối oan. Chỉ chạm đúng biên: literal
                 // thường vẫn giữ `HExpr::Un` như trước.
-                if op == crate::hir::UnOp::Neg {
+                if op == vis_hir::hir::UnOp::Neg {
                     if let HExpr::Lit { lit, .. } = &expr {
                         if lit.kind == LitKind::Int {
                             if let Some(text) = vis_syntax::lit::fold_neg_min_int(&lit.text) {

@@ -19,9 +19,9 @@
 use std::collections::HashSet;
 
 use vis_core::value::Value;
+use vis_hir::hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir};
+use vis_hir::{EnumId, RecId, Symbols, Type, TypeTable};
 use vis_syntax::Span;
-use vis_types::hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir};
-use vis_types::{EnumId, RecId, Symbols, Type, TypeTable};
 
 use super::dinh_nghia::thu_hep_ten;
 use super::goi_y::tu_tai;
@@ -458,9 +458,9 @@ impl Gom<'_> {
             HExpr::Interp { parts, .. } => {
                 for p in parts {
                     match p {
-                        vis_types::InterpPart::Str(_) => {}
-                        vis_types::InterpPart::Expr(x)
-                        | vis_types::InterpPart::ExprSpec { expr: x, .. } => self.expr(x),
+                        vis_hir::InterpPart::Str(_) => {}
+                        vis_hir::InterpPart::Expr(x)
+                        | vis_hir::InterpPart::ExprSpec { expr: x, .. } => self.expr(x),
                     }
                 }
             }

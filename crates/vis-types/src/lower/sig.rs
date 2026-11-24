@@ -18,8 +18,8 @@
 use vis_syntax::{Node, NodeKind};
 
 use super::Lowerer;
-use crate::hir::FnKind;
-use crate::ty::{FieldDef, Type, VariantDef};
+use vis_hir::hir::FnKind;
+use vis_hir::ty::{FieldDef, Type, VariantDef};
 
 impl<'a> Lowerer<'a> {
     /// Chạy **một** pre-pass trên item cấp tệp; gọi từ [`Lowerer::run`] sau lượt khai báo trước.

@@ -12,8 +12,8 @@
 //! Ngữ nghĩa **giá trị**: `With`/`Set` của VM clone rồi dựng lại (không aliasing), khớp
 //! `vis-interp::gan::gan_duong`.
 
+use vis_hir::{AssignOp, HExpr};
 use vis_syntax::Span;
-use vis_types::{AssignOp, HExpr};
 
 use crate::cerr::CodegenError;
 use crate::fee::FeeKind;

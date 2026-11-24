@@ -7,8 +7,9 @@
 
 use std::path::{Path, PathBuf};
 
+use vis_hir::{FnKind, HExpr, HFn, HItem, HStmt, Hir, Lit, LitKind, Symbols, Type};
 use vis_syntax::{Diagnostic, Span};
-use vis_types::{check, lower, FnKind, HExpr, HFn, HItem, HStmt, Hir, Lit, LitKind, Symbols, Type};
+use vis_types::{check, lower};
 
 const SAI_KIEU: vis_diag::Code = vis_diag::Code {
     id: 412,

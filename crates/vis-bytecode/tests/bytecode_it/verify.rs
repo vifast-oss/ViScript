@@ -5,7 +5,7 @@
 
 use vis_bytecode::verify::{load_verified, need_stack, verify, LoadError, VerifyError};
 use vis_bytecode::{encode, Const, Func, Instr, Module, Span, HASH_LEN, VERSION};
-use vis_types::{BinOp, UnOp};
+use vis_hir::{BinOp, UnOp};
 
 fn f(code: Vec<Instr>, nlocals: u16, max_stack: u16) -> Func {
     let n = code.len();

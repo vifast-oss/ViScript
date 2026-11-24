@@ -20,8 +20,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use vis_hir::hir::*;
 use vis_syntax::Span;
-use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
 use crate::rt;
@@ -707,14 +707,14 @@ fn index_of(b: Value, i: Value, span: Span) -> R<Value> {
 }
 
 /// Tên kiểu record/enum từ `TypeTable` (mirror `Interp::type_name`).
-fn type_name(it: &Interp<'_>, ty: &vis_types::Type) -> String {
+fn type_name(it: &Interp<'_>, ty: &vis_hir::Type) -> String {
     match ty {
-        vis_types::Type::Record(id) => it
+        vis_hir::Type::Record(id) => it
             .types
             .rec(*id)
             .and_then(|r| r.name.clone())
             .unwrap_or_default(),
-        vis_types::Type::Enum(id) => it
+        vis_hir::Type::Enum(id) => it
             .types
             .enum_def(*id)
             .map(|e| e.name.clone())
@@ -728,9 +728,9 @@ fn type_name(it: &Interp<'_>, ty: &vis_types::Type) -> String {
 #[doc(hidden)]
 pub fn run_frame_for_test<'a>(
     text: &str,
-    hir: &'a vis_types::hir::Hir,
-    symbols: &'a vis_types::lower::Symbols,
-    types: &'a vis_types::TypeTable,
+    hir: &'a vis_hir::hir::Hir,
+    symbols: &'a vis_hir::Symbols,
+    types: &'a vis_hir::TypeTable,
     args: &[String],
     config: FrameConfig,
 ) -> FrameOutput {
@@ -924,13 +924,13 @@ mod tests {
     /// treo không bị lần gọi khác ghi đè/xoá. Trước đây mọi lần gọi dùng chung `Closure.env`.
     #[test]
     fn closure_moi_lan_goi_env_rieng() {
-        let hir = vis_types::Hir {
+        let hir = vis_hir::Hir {
             items: Vec::new(),
             stmts: Vec::new(),
             span: Span::new(0, 0),
         };
-        let symbols = vis_types::Symbols::default();
-        let types = vis_types::TypeTable::default();
+        let symbols = vis_hir::Symbols::default();
+        let types = vis_hir::TypeTable::default();
         let mut it = Interp::new(&hir, &symbols, &types);
 
         let env: Env = Rc::new(RefCell::new(HashMap::new()));
@@ -990,13 +990,13 @@ mod tests {
     /// không có `main` — phải trap "chưa định nghĩa" như runtime mặc định.
     #[test]
     fn ten_khong_ton_tai_khong_nhan_argv() {
-        let hir = vis_types::Hir {
+        let hir = vis_hir::Hir {
             items: Vec::new(),
             stmts: Vec::new(),
             span: Span::new(0, 0),
         };
-        let symbols = vis_types::Symbols::default();
-        let types = vis_types::TypeTable::default();
+        let symbols = vis_hir::Symbols::default();
+        let types = vis_hir::TypeTable::default();
         let mut it = Interp::new(&hir, &symbols, &types);
         let env: Env = Rc::new(RefCell::new(HashMap::new()));
         env.borrow_mut()

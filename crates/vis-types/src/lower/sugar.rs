@@ -8,8 +8,8 @@ use vis_syntax::{Node, Span};
 
 use super::cmd::ten_kieu;
 use super::{FrameKind, SymKind};
-use crate::hir::HExpr;
-use crate::ty::Type;
+use vis_hir::hir::HExpr;
+use vis_hir::ty::Type;
 
 impl<'a> super::Lowerer<'a> {
     /// **ST-53**: stage `to json` (`--pretty`) — hạ thành `std.json.encode[_pretty]`
@@ -94,10 +94,10 @@ impl<'a> super::Lowerer<'a> {
     }
 
     /// ST-40a: đăng ký `FileEntry`/`ProcEntry` vào bảng kiểu của tệp `.vish` **và** bảng tên.
-    pub(crate) fn dang_ky_prelude(&mut self) -> Vec<(String, crate::ty::RecId)> {
+    pub(crate) fn dang_ky_prelude(&mut self) -> Vec<(String, vis_hir::ty::RecId)> {
         let mut file_id = None;
         let mut ds = Vec::new();
-        for (ten, id) in crate::prelude::dang_ky_vish(self.tbl) {
+        for (ten, id) in vis_hir::prelude::dang_ky_vish(self.tbl) {
             if ten == "FileEntry" {
                 file_id = Some(id);
             }
@@ -317,7 +317,7 @@ impl<'a> super::Lowerer<'a> {
         self.pop_frame();
         self.diags.extend(out.diagnostics);
         let init = match out.hir.stmts.first() {
-            Some(crate::hir::HStmt::Let { init, .. }) => init.clone(),
+            Some(vis_hir::hir::HStmt::Let { init, .. }) => init.clone(),
             _ => return None,
         };
         match init {

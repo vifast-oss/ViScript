@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **Tuỳ chọn hạ** — tách khỏi `lower.rs` cho luật R1 (≤ 1.500 dòng/tệp) ở **ST-57**.
 
-use crate::ty::Type;
+use vis_hir::ty::Type;
 
 use super::TraitSig;
 

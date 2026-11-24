@@ -7,8 +7,8 @@
 //! 2. 16 chữ ký đã đổi có **đúng hình dạng** (`list[T]`, `map[K,V]`, trả `T`/`list[K]`/…).
 //! 3. `sang_type()` **tổng** (không `Option`): `Var(i)` → `TypeRef` tên `T`/`K`/`V`.
 
-use vis_types::stdlib::{sig_builtin, sig_of, Ty, FUNCS};
-use vis_types::Type;
+use vis_hir::stdlib::{sig_builtin, sig_of, Ty, FUNCS};
+use vis_hir::Type;
 
 /// Tên biến kiểu theo chỉ số (VD-99 (1): `0=T, 1=K, 2=V`).
 const TEN_BIEN: [&str; 3] = ["T", "K", "V"];
@@ -70,7 +70,7 @@ fn fs_mkdir_all_kieu_str_result_va_khong_sugar() {
         Type::Result(Box::new(Type::Unit), Box::new(Ty::Error.sang_type())),
         "`fs.mkdir_all`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "mkdir_all"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "mkdir_all"), None);
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn fs_is_symlink_kieu_str_result_va_khong_sugar() {
         Type::Result(Box::new(Type::Bool), Box::new(Ty::Error.sang_type())),
         "`fs.is_symlink`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "is_symlink"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "is_symlink"), None);
 }
 
 #[test]
@@ -110,7 +110,7 @@ fn fs_read_link_kieu_str_result_va_khong_sugar() {
         Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
         "`fs.read_link`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "read_link"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "read_link"), None);
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn fs_current_dir_params_rong_result_va_khong_sugar() {
         "`fs.current_dir`: hạ kiểu trả"
     );
     assert_eq!(f.ret.ten(), "Result[str, Error]");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "current_dir"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "current_dir"), None);
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn fs_canonicalize_kieu_str_result_va_khong_sugar() {
         Type::Result(Box::new(Type::Str), Box::new(Ty::Error.sang_type())),
         "`fs.canonicalize`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "canonicalize"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "canonicalize"), None);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn splitn_kieu_str_str_int_va_sugar() {
         "`str.splitn`: hạ kiểu trả"
     );
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "splitn"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "splitn"), None);
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn split_once_kieu_str_str_va_sugar() {
     );
     assert_eq!(f.ret.ten(), "list[str]?", "`str.split_once`: tên hiển thị");
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "split_once"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "split_once"), None);
 }
 
 #[test]
@@ -210,7 +210,7 @@ fn rsplit_once_kieu_str_str_va_sugar() {
     assert_eq!(f.ret.ten(), "list[str]?", "`str.rsplit_once`: tên hiển thị");
     assert_eq!(f.ret, sig_of("str.split_once").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit_once"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "rsplit_once"), None);
 }
 
 #[test]
@@ -229,7 +229,7 @@ fn rsplit_kieu_str_str_list_str_va_sugar() {
     assert_eq!(f.ret.ten(), "list[str]", "`str.rsplit`: tên hiển thị");
     assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "rsplit"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "rsplit"), None);
 }
 
 #[test]
@@ -253,7 +253,7 @@ fn split_inclusive_kieu_str_str_list_str_va_sugar() {
     assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "split_inclusive"),
+        vis_hir::stdlib::module_sugar("str", "split_inclusive"),
         None
     );
 }
@@ -279,7 +279,7 @@ fn split_terminator_kieu_str_str_list_str_va_sugar() {
     assert_eq!(f.ret, sig_of("str.split").unwrap().ret);
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "split_terminator"),
+        vis_hir::stdlib::module_sugar("str", "split_terminator"),
         None
     );
 }
@@ -343,7 +343,7 @@ fn chunks_exact_kieu_list_long_va_khong_bien_the_ty_moi() {
         "`list.chunks_exact` phải cùng kiểu trả với `list.chunk`"
     );
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "chunks_exact"),
+        vis_hir::stdlib::module_sugar("str", "chunks_exact"),
         None,
         "sugar `chunks_exact` thuộc `list`, không phải `str`"
     );
@@ -361,8 +361,8 @@ fn path_ancestors_kieu_str_sang_list_str_va_khong_sugar() {
         Type::List(Box::new(Type::Str)),
         "`path.ancestors`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "ancestors"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "ancestors"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "ancestors"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "ancestors"), None);
 }
 
 #[test]
@@ -377,8 +377,8 @@ fn path_components_kieu_str_sang_list_str_va_khong_sugar() {
         Type::List(Box::new(Type::Str)),
         "`path.components`: hạ kiểu trả"
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "components"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "components"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "components"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "components"), None);
 }
 
 #[test]
@@ -390,11 +390,11 @@ fn path_normalize_kieu_str_sang_str_va_sugar() {
     assert_eq!(f.ret, Ty::Str, "`path.normalize`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.normalize`: hạ kiểu");
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "normalize"),
+        vis_hir::stdlib::module_sugar("str", "normalize"),
         Some("path")
     );
-    assert_eq!(vis_types::stdlib::module_sugar("str", "upper"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("str", "join"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "upper"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "join"), None);
 }
 
 #[test]
@@ -406,8 +406,8 @@ fn path_is_absolute_kieu_str_sang_bool_va_khong_sugar() {
     assert_eq!(f.params, &[Ty::Str], "`path.is_absolute`: tham số");
     assert_eq!(f.ret, Ty::Bool, "`path.is_absolute`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Bool, "`path.is_absolute`: hạ kiểu");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "is_absolute"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "is_absolute"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "is_absolute"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "is_absolute"), None);
 }
 
 #[test]
@@ -418,8 +418,8 @@ fn path_is_relative_kieu_str_sang_bool_va_khong_sugar() {
     assert_eq!(f.params, &[Ty::Str], "`path.is_relative`: tham số");
     assert_eq!(f.ret, Ty::Bool, "`path.is_relative`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Bool, "`path.is_relative`: hạ kiểu");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "is_relative"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "is_relative"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "is_relative"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "is_relative"), None);
 }
 
 #[test]
@@ -430,8 +430,8 @@ fn path_relative_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.params, &[Ty::Str, Ty::Str], "`path.relative`: tham số");
     assert_eq!(f.ret, Ty::Str, "`path.relative`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.relative`: hạ kiểu");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "relative"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "relative"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "relative"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "relative"), None);
 }
 
 #[test]
@@ -450,12 +450,9 @@ fn path_with_extension_hai_tham_so_va_khong_sugar() {
         Type::Str,
         "`path.with_extension`: hạ kiểu"
     );
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "with_extension"), None);
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "with_extension"),
-        None
-    );
-    assert_eq!(
-        vis_types::stdlib::module_sugar("path", "with_extension"),
+        vis_hir::stdlib::module_sugar("path", "with_extension"),
         None
     );
 }
@@ -468,8 +465,8 @@ fn path_with_stem_hai_tham_so_va_khong_sugar() {
     assert_eq!(f.params, &[Ty::Str, Ty::Str], "`path.with_stem`: tham số");
     assert_eq!(f.ret, Ty::Str, "`path.with_stem`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.with_stem`: hạ kiểu");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "with_stem"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("path", "with_stem"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "with_stem"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "with_stem"), None);
 }
 
 #[test]
@@ -490,14 +487,11 @@ fn path_strip_prefix_hai_tham_so_optstr_va_khong_sugar() {
         "`path.strip_prefix`: hạ kiểu `str?`"
     );
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "strip_prefix"),
+        vis_hir::stdlib::module_sugar("str", "strip_prefix"),
         None,
         "`strip_prefix` không được ánh xạ sang `path`"
     );
-    assert_eq!(
-        vis_types::stdlib::module_sugar("path", "strip_prefix"),
-        None
-    );
+    assert_eq!(vis_hir::stdlib::module_sugar("path", "strip_prefix"), None);
     // `str.strip_prefix` vẫn là hàm `str` độc lập (sugar receiver `str` không đổi).
     assert!(sig_of("str.strip_prefix").is_some());
 }
@@ -518,12 +512,9 @@ fn path_with_file_name_hai_tham_so_va_khong_sugar() {
         Type::Str,
         "`path.with_file_name`: hạ kiểu"
     );
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "with_file_name"), None);
     assert_eq!(
-        vis_types::stdlib::module_sugar("str", "with_file_name"),
-        None
-    );
-    assert_eq!(
-        vis_types::stdlib::module_sugar("path", "with_file_name"),
+        vis_hir::stdlib::module_sugar("path", "with_file_name"),
         None
     );
 }
@@ -542,8 +533,8 @@ fn path_join_all_list_str_sang_str_va_khong_sugar() {
         "`path.join_all`: hạ kiểu tham số"
     );
     assert_eq!(f.ret.sang_type(), Type::Str, "`path.join_all`: hạ kiểu trả");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "join_all"), None);
-    assert_eq!(vis_types::stdlib::module_sugar("list", "join_all"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "join_all"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("list", "join_all"), None);
 }
 
 #[test]
@@ -608,7 +599,7 @@ fn map_contains_key_kieu_map_k_bool() {
     assert_eq!(f.ret, Ty::Bool, "`map.contains_key`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Bool, "`map.contains_key`: hạ kiểu");
     assert_eq!(f.so_doi(), 2, "`map.contains_key`: arity");
-    assert_eq!(vis_types::stdlib::module_sugar("map", "contains_key"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("map", "contains_key"), None);
 }
 
 #[test]
@@ -620,7 +611,7 @@ fn str_is_ascii_kieu_str_bool() {
     assert_eq!(f.ret, Ty::Bool, "`str.is_ascii`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_ascii`: hạ kiểu");
     assert_eq!(f.so_doi(), 1, "`str.is_ascii`: arity");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "is_ascii"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "is_ascii"), None);
 }
 
 #[test]
@@ -632,7 +623,7 @@ fn str_is_blank_kieu_str_bool() {
     assert_eq!(f.ret, Ty::Bool, "`str.is_blank`: kiểu trả");
     assert_eq!(f.ret.sang_type(), Type::Bool, "`str.is_blank`: hạ kiểu");
     assert_eq!(f.so_doi(), 1, "`str.is_blank`: arity");
-    assert_eq!(vis_types::stdlib::module_sugar("str", "is_blank"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "is_blank"), None);
 }
 
 #[test]
@@ -651,11 +642,7 @@ fn str_is_ascii_preds_kieu_str_bool() {
         assert_eq!(f.ret.sang_type(), Type::Bool, "`{ten}`: hạ kiểu");
         assert_eq!(f.so_doi(), 1, "`{ten}`: arity");
         let (m, n) = ten.split_once('.').expect("tên có dấu chấm");
-        assert_eq!(
-            vis_types::stdlib::module_sugar(m, n),
-            None,
-            "`{ten}`: sugar"
-        );
+        assert_eq!(vis_hir::stdlib::module_sugar(m, n), None, "`{ten}`: sugar");
     }
 }
 
@@ -769,7 +756,7 @@ fn title_kieu_str_sang_str() {
     assert_eq!(f.ret.sang_type(), Type::Str, "hạ kiểu trả");
     assert_eq!(f.so_doi(), 1, "số đối số");
     // Không cần bảng `module_sugar`: module mặc định của người nhận `str` đã là `str`.
-    assert_eq!(vis_types::stdlib::module_sugar("str", "title"), None);
+    assert_eq!(vis_hir::stdlib::module_sugar("str", "title"), None);
 }
 
 #[test]
@@ -1150,7 +1137,7 @@ fn sqlite_database_list_kieu_str_va_result_list_rowset() {
     assert_eq!(
         f.ret.sang_type(),
         Type::Result(
-            Box::new(Type::List(Box::new(Type::Record(vis_types::ty::RecId(1))))),
+            Box::new(Type::List(Box::new(Type::Record(vis_hir::ty::RecId(1))))),
             Box::new(Ty::Error.sang_type())
         ),
         "`sqlite.database_list`: hạ kiểu trả"

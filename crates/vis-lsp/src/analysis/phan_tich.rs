@@ -10,8 +10,9 @@
 //! 1-based/scalar/tab=4 nên **không dùng** ở đây.
 
 use vis_diag::Severity;
+use vis_hir::{HItem, HPat, HStmt, Symbols, TypeTable};
 use vis_syntax::{Diagnostic, Mode, Span};
-use vis_types::{check, lower_into, HItem, HPat, HStmt, LowerOptions, Symbols, TypeTable};
+use vis_types::{check, lower_into, LowerOptions};
 
 /// Một chẩn đoán đã chuẩn hoá cho LSP.
 pub struct ChanDoan {
@@ -76,7 +77,7 @@ pub struct KetQua {
 }
 
 /// Chữ ký `fn` cho `detail`/hover: `fn add(a: int, b: int) -> int`.
-pub(crate) fn chu_ky_fn(f: &vis_types::HFn, tbl: &TypeTable) -> String {
+pub(crate) fn chu_ky_fn(f: &vis_hir::HFn, tbl: &TypeTable) -> String {
     let ps: Vec<String> = f
         .params
         .iter()
@@ -235,7 +236,7 @@ pub fn phan_tich(text: &str, mode: Mode) -> KetQua {
 
 /// **VD-270**: gom phương thức của `impl` + `trait` (chữ ký đầy đủ + span khai báo) cho hover;
 /// khử trùng theo `(chủ sở hữu, tên, chữ ký)` — hai `impl` trùng không nhân đôi, khác chủ vẫn giữ.
-fn gom_phuong(hir: &vis_types::Hir, tbl: &TypeTable) -> Vec<Phuong> {
+fn gom_phuong(hir: &vis_hir::Hir, tbl: &TypeTable) -> Vec<Phuong> {
     let mut out: Vec<Phuong> = Vec::new();
     for it in &hir.items {
         let (chu, ds, impl_span) = match it {

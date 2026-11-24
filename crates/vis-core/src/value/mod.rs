@@ -18,7 +18,7 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use vis_types::hir::{HBody, HPat};
+use vis_hir::hir::{HBody, HPat};
 
 mod runtime;
 mod show_eq;

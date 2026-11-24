@@ -9,8 +9,9 @@
 //! `list`, `map`, …) ⇒ **bắt buộc `_`**; bản ghi ⇒ đủ **mọi** trường, không `..`; **guard không tính**;
 //! or-pattern tính cả hai vế.
 
+use vis_hir::TypeTable;
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{check, lower, CheckOutput, TypeTable};
+use vis_types::{check, lower, CheckOutput};
 
 fn run(src: &str) -> (CheckOutput, TypeTable) {
     let p = parse(src, Mode::Script);

@@ -14,9 +14,9 @@ use vis_syntax::{lex, parse, Mode};
 fn anh(
     src: &str,
 ) -> (
-    vis_types::Hir,
-    vis_types::Symbols,
-    vis_types::TypeTable,
+    vis_hir::Hir,
+    vis_hir::Symbols,
+    vis_hir::TypeTable,
     vis_bytecode::Module,
 ) {
     let p = parse(src, Mode::Script);
@@ -40,9 +40,9 @@ fn anh(
 fn interp_w(
     src: &str,
     a: &(
-        vis_types::Hir,
-        vis_types::Symbols,
-        vis_types::TypeTable,
+        vis_hir::Hir,
+        vis_hir::Symbols,
+        vis_hir::TypeTable,
         vis_bytecode::Module,
     ),
     w: usize,
@@ -57,9 +57,9 @@ fn interp_w(
 fn vm_w(
     src: &str,
     a: &(
-        vis_types::Hir,
-        vis_types::Symbols,
-        vis_types::TypeTable,
+        vis_hir::Hir,
+        vis_hir::Symbols,
+        vis_hir::TypeTable,
         vis_bytecode::Module,
     ),
     w: usize,

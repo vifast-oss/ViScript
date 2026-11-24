@@ -5,8 +5,8 @@
 //! đánh giá chỉ số/khoá **một lần** theo thứ tự đường, đọc lá cũ (nếu gán ghép), rồi
 //! `gan::gan_duong` dựng lại từng tầng — khớp `With`/`Set` của VM và không aliasing.
 
+use vis_hir::hir::{AssignOp, BinOp, HExpr};
 use vis_syntax::Span;
-use vis_types::hir::{AssignOp, BinOp, HExpr};
 
 use crate::gan::{doc_chi_so, doc_duong, doc_truong, gan_duong, Buoc};
 use crate::interp::{Abort, Interp, Trap, MISMATCH, R, RT};

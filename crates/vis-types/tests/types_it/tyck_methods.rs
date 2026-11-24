@@ -6,8 +6,9 @@
 //! Quy ước như `tests/tyck.rs`: mỗi ca `(chương trình tự chứa, kỳ vọng)` với `// kỳ vọng: ok(<kiểu>)`
 //! hoặc `// kỳ vọng: !VSxxxx` ghi **trên** ca; `ok(...)` = 0 chẩn đoán + `value_type()` đúng.
 
+use vis_hir::TypeTable;
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{check, lower, CheckOutput, TypeTable};
+use vis_types::{check, lower, CheckOutput};
 
 fn run(src: &str) -> (CheckOutput, TypeTable) {
     let p = parse(src, Mode::Script);

@@ -9,7 +9,7 @@
 //! `decode` — hash nguồn chỉ là khoá cache, **không** phải bằng chứng an toàn.
 
 use crate::format::{Const, Func, Instr, Module, Span, HASH_LEN, MAGIC, VERSION};
-use vis_types::{BinOp, UnOp};
+use vis_hir::{BinOp, UnOp};
 
 /// Lỗi giải mã — **9 biến thể** (module/const/func/code/span).
 #[derive(Debug, Clone, PartialEq, Eq)]

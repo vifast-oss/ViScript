@@ -13,7 +13,7 @@
 use vis_bytecode::{compile, Func, Instr, Module, Span, GLOBAL_SLOT_BASE, HASH_LEN, VERSION};
 use vis_core::RunOutput;
 
-fn tien_trinh(text: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
+fn tien_trinh(text: &str) -> (vis_hir::Hir, vis_hir::Symbols, vis_hir::TypeTable) {
     let parsed = vis_syntax::parse(text, vis_syntax::Mode::Script);
     assert!(
         parsed.diagnostics.is_empty(),

@@ -2,7 +2,7 @@
 //! Hạ **HIR** (`vis-types`) xuống [`Module`] của VBC1 (ST-19).
 //!
 //! Nguyên tắc:
-//! - **Không** chép ngữ nghĩa toán tử: `Bin`/`Un` mang **chính** `vis_types::BinOp`/`UnOp` — VM
+//! - **Không** chép ngữ nghĩa toán tử: `Bin`/`Un` mang **chính** `vis_hir::BinOp`/`UnOp` — VM
 //!   (ST-20) sẽ dùng chung bảng ngữ nghĩa với `vis-interp`.
 //! - `match` hạ thành **chuỗi test + nhảy** (VM không cần biết pattern).
 //! - Closure **chụp snapshot** cả khung hiện tại (VD-51): `MakeClosure(fidx, nfree)` với
@@ -20,9 +20,9 @@ mod than;
 
 use std::collections::HashMap;
 
+use vis_hir::MethodRet;
+use vis_hir::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir, InterpPart, LitKind, Symbols};
 use vis_syntax::Span;
-use vis_types::MethodRet;
-use vis_types::{HBody, HCond, HExpr, HFn, HItem, HPat, HStmt, Hir, InterpPart, LitKind, Symbols};
 
 pub use crate::cerr::CodegenError;
 use crate::fee::{FeeEntry, FeeKind, FeeTable};
@@ -54,12 +54,12 @@ struct Gen {
     cho: Vec<Cho>,
     /// `sym` dựng sẵn → tên dựng sẵn (`print`, `Ok`, …).
     builtins: HashMap<u32, String>,
-    sym_ty: HashMap<u32, vis_types::Type>,
-    fn_rets: HashMap<u32, vis_types::Type>, // VD-260: sym hàm → kiểu trả về (lớp Option)
-    rec_fields: HashMap<(u32, String), vis_types::Type>, // ST-248: kiểu trường bản ghi
+    sym_ty: HashMap<u32, vis_hir::Type>,
+    fn_rets: HashMap<u32, vis_hir::Type>, // VD-260: sym hàm → kiểu trả về (lớp Option)
+    rec_fields: HashMap<(u32, String), vis_hir::Type>, // ST-248: kiểu trường bản ghi
     /// **VD-258**: kiểu trường biến thể enum `(EnumId, biến thể, vị trí)`.
-    enum_fields: HashMap<(u32, String, usize), vis_types::Type>,
-    mret: vis_types::MethodRet, // VD-265: kiểu trả phương thức người dùng (theo kiểu nhận + tên)
+    enum_fields: HashMap<(u32, String, usize), vis_hir::Type>,
+    mret: vis_hir::MethodRet, // VD-265: kiểu trả phương thức người dùng (theo kiểu nhận + tên)
     /// **ST-60**: chỉ số hàm của các `async fn` — call-site async hạ thành `$tac_vu`.
     async_fns: std::collections::HashSet<u32>,
     /// **ST-238 (VD-242, ca 3)**: `sym` của biến `let`/`var` cấp tệp → ô trong vùng
@@ -73,7 +73,7 @@ struct Gen {
 
 struct Cho {
     idx: u32,
-    params: Vec<vis_types::HParam>,
+    params: Vec<vis_hir::HParam>,
     body: HBody,
     captured: Vec<(u32, u16)>,
     name: String,
@@ -124,12 +124,12 @@ pub fn compile_kiem(
     compile_kiem_voi_bang(hir, symbols, None, text, chan_doan)
 }
 
-/// **VD-263** — như [`compile_kiem`] nhưng nhận thêm [`vis_types::TypeTable`] để codegen thấy trường của
+/// **VD-263** — như [`compile_kiem`] nhưng nhận thêm [`vis_hir::TypeTable`] để codegen thấy trường của
 /// **instantiation** generic (`Box[int?]`) khi nâng `Option` ở `?.`/`with`/gán trường.
 pub fn compile_kiem_voi_bang(
     hir: &Hir,
     symbols: &Symbols,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
     text: &str,
     chan_doan: &[vis_syntax::Diagnostic],
 ) -> Result<Module, CodegenError> {
@@ -141,7 +141,7 @@ pub fn compile_kiem_voi_bang(
 pub fn compile_kiem_voi_bang_co_phi(
     hir: &Hir,
     symbols: &Symbols,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
     text: &str,
     chan_doan: &[vis_syntax::Diagnostic],
 ) -> Result<(Module, FeeTable), CodegenError> {
@@ -165,11 +165,11 @@ pub fn compile(hir: &Hir, symbols: &Symbols, text: &str) -> Result<Module, Codeg
     compile_with_fee(hir, symbols, text).map(|(m, _)| m)
 }
 
-/// **VD-263** — như [`compile`] nhưng có [`vis_types::TypeTable`] (instantiation generic).
+/// **VD-263** — như [`compile`] nhưng có [`vis_hir::TypeTable`] (instantiation generic).
 pub fn compile_voi_bang(
     hir: &Hir,
     symbols: &Symbols,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
     text: &str,
 ) -> Result<Module, CodegenError> {
     compile_with_fee_voi_bang(hir, symbols, types, text).map(|(m, _)| m)
@@ -185,11 +185,11 @@ pub fn compile_with_fee(
     compile_with_fee_voi_bang(hir, symbols, None, text)
 }
 
-/// **VD-263** — như [`compile_with_fee`] nhưng nhận [`vis_types::TypeTable`] (instantiation generic).
+/// **VD-263** — như [`compile_with_fee`] nhưng nhận [`vis_hir::TypeTable`] (instantiation generic).
 pub fn compile_with_fee_voi_bang(
     hir: &Hir,
     symbols: &Symbols,
-    types: Option<&vis_types::TypeTable>,
+    types: Option<&vis_hir::TypeTable>,
     text: &str,
 ) -> Result<(Module, FeeTable), CodegenError> {
     let mut g = Gen {
@@ -494,7 +494,7 @@ impl<'g> Emit<'g> {
                 Ok(())
             }
             HExpr::Bin { op, lhs, rhs, span } => {
-                use vis_types::BinOp;
+                use vis_hir::BinOp;
                 match op {
                     // `and`/`or`/`??` **đoản mạch** — không gọi bảng ngữ nghĩa (interp cũng vậy).
                     BinOp::And => {
@@ -511,7 +511,7 @@ impl<'g> Emit<'g> {
                     BinOp::Or => {
                         self.expr(lhs)?;
                         self.f.push(Instr::Dup, *span, 1);
-                        self.f.push(Instr::Un(vis_types::UnOp::Not), *span, 0);
+                        self.f.push(Instr::Un(vis_hir::UnOp::Not), *span, 0);
                         let j = self.f.here();
                         self.f.push(Instr::JumpIfFalse(0), *span, -1);
                         self.f.push(Instr::Pop, *span, -1);
@@ -842,7 +842,7 @@ impl<'g> Emit<'g> {
             HExpr::With { base, fields, span } => {
                 self.expr(base)?;
                 let rec_id = match self.base_ty(base) {
-                    Some(vis_types::Type::Record(id)) => Some(id),
+                    Some(vis_hir::Type::Record(id)) => Some(id),
                     _ => None,
                 };
                 for (n, v) in fields {
@@ -1049,11 +1049,11 @@ impl<'g> Emit<'g> {
 }
 
 /// `binop_tag` của lệnh `Bin` — tiện cho test.
-pub fn bin_tag(op: vis_types::BinOp) -> u8 {
+pub fn bin_tag(op: vis_hir::BinOp) -> u8 {
     binop_tag(op)
 }
 
 /// `unop_tag` của lệnh `Un` — tiện cho test.
-pub fn un_tag(op: vis_types::UnOp) -> u8 {
+pub fn un_tag(op: vis_hir::UnOp) -> u8 {
     unop_tag(op)
 }

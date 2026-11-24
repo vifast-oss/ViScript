@@ -7,7 +7,7 @@
 use vis_diag::TYPE_CODES;
 use vis_syntax::{Kind, Node, NodeKind, Token};
 
-use crate::ty::Type;
+use vis_hir::ty::Type;
 
 impl<'a> super::Lowerer<'a> {
     /// **ST-72 (VD-106 (2))**: kiểm `@` + `(write)` trên tham số theo loại `cap[...]`.

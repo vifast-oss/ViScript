@@ -13,8 +13,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use vis_hir::{Hir, Symbols, TypeTable};
 use vis_syntax::Span;
-use vis_types::{Hir, Symbols, TypeTable};
 
 use crate::builtin::Host;
 use crate::interp::{Interp, Trap, R, RT};

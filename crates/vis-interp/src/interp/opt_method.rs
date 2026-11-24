@@ -5,14 +5,15 @@
 //! 1. đánh giá base **một lần**;
 //! 2. `None` ⇒ trả `None` **trước khi đánh giá đối số** (đoản mạch);
 //! 3. `Some(v)` ⇒ gọi phương thức lõi (`list`/`str`/`map`/`Chan`) hoặc phương thức `impl`
-//!    (bảng [`vis_types::MethodRet`]) với `v` làm `self`;
+//!    (bảng [`vis_hir::MethodRet`]) với `v` làm `self`;
 //! 4. nâng kết quả **một lớp** ([`crate::lift::lift_opt`]): plain → `Some`, `Option` giữ
-//!    nguyên (không bọc hai lớp), `()` giữ `()` (xem [`vis_types::nang_optional`]).
+//!    nguyên (không bọc hai lớp), `()` giữ `()` (xem [`vis_hir::nang_optional`]).
 //!
 //! Tách khỏi `goi.rs` để giữ luật R1 (≤ 1.500 dòng/tệp).
 
+use vis_hir::hir::HExpr;
+use vis_hir::Type;
 use vis_syntax::Span;
-use vis_types::{hir::HExpr, Type};
 
 use crate::interp::{Abort, Interp, R, RT};
 use crate::value::Value;

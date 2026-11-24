@@ -9,7 +9,7 @@
 use vis_syntax::{Elem, Kind, Node, Span, Token};
 
 use super::{lit_kind, Lowerer, SymKind};
-use crate::hir::{HPat, Lit, LitKind};
+use vis_hir::hir::{HPat, Lit, LitKind};
 
 impl<'a> Lowerer<'a> {
     pub(super) fn lower_pat(&mut self, node: &Node) -> HPat {

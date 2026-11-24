@@ -7,10 +7,10 @@ use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
+use vis_hir::hir::*;
+use vis_hir::Symbols;
+use vis_hir::TypeTable;
 use vis_syntax::Span;
-use vis_types::hir::*;
-use vis_types::lower::Symbols;
-use vis_types::TypeTable;
 
 use crate::gan::{gan_chi_so, gan_truong};
 use crate::value::*;
@@ -46,12 +46,12 @@ pub(crate) struct Interp<'a> {
     pub(crate) env: Env,
     /// **VD-260** — kiểu tĩnh suy từ annot + initializer (mirror codegen `collect_sym_tys`);
     /// dùng cho đích gán `var`/field/index và nâng nhánh `if`/`match`.
-    pub(crate) sym_ty: HashMap<u32, vis_types::Type>,
+    pub(crate) sym_ty: HashMap<u32, vis_hir::Type>,
     /// **VD-260** — `sym` hàm/phương thức → kiểu trả về (suy lớp Option của lời gọi).
-    pub(crate) fn_rets: HashMap<u32, vis_types::Type>,
+    pub(crate) fn_rets: HashMap<u32, vis_hir::Type>,
     /// **VD-265** — bảng kiểu trả của phương thức người dùng theo kiểu nhận + tên (cho lời gọi
     /// còn dạng `HExpr::Field` và cho thay generic ở instantiation).
-    pub(crate) mret: vis_types::MethodRet,
+    pub(crate) mret: vis_hir::MethodRet,
     pub(crate) mutable: HashSet<u32>,
     pub(crate) out: String,
     pub steps: usize,
@@ -129,7 +129,7 @@ impl<'a> Interp<'a> {
             }
         }
         let fn_rets = core_types::goi::collect_fn_rets(&fns);
-        let mret = vis_types::MethodRet::from_hir_voi_bang(hir, types);
+        let mret = vis_hir::MethodRet::from_hir_voi_bang(hir, types);
         let sym_ty = core_types::goi::collect_sym_tys(hir, symbols, types, &fn_rets, &mret);
         Self {
             fns,
@@ -283,14 +283,14 @@ impl<'a> Interp<'a> {
         Ok(Ctrl::Normal)
     }
 
-    fn type_name(&self, ty: &vis_types::Type) -> String {
+    fn type_name(&self, ty: &vis_hir::Type) -> String {
         match ty {
-            vis_types::Type::Record(id) => self
+            vis_hir::Type::Record(id) => self
                 .types
                 .rec(*id)
                 .and_then(|r| r.name.clone())
                 .unwrap_or_default(),
-            vis_types::Type::Enum(id) => self
+            vis_hir::Type::Enum(id) => self
                 .types
                 .enum_def(*id)
                 .map(|e| e.name.clone())

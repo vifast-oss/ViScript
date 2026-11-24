@@ -13,8 +13,9 @@
 //! 6. `percent` so sánh `float` **theo tỉ lệ** (§3.1/§3.6)
 //! 7. `match` trên `unit`/tuple **hữu hạn** ⇒ không đòi `_` oan (§4.3)
 
+use vis_hir::TypeTable;
 use vis_syntax::{lex, parse, Mode};
-use vis_types::{check, lower, CheckOutput, TypeTable};
+use vis_types::{check, lower, CheckOutput};
 
 fn run(src: &str) -> (CheckOutput, TypeTable) {
     let p = parse(src, Mode::Script);

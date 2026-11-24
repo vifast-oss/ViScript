@@ -81,7 +81,7 @@ fn dung(tag: &str, src: &str, stdout: &str) {
 
 /// Biên dịch + tyck nguồn rồi bọc `HExpr::With` quanh **initializer** của `let` đầu tiên trong
 /// `main` (dùng cho gốc `if`/`match` — parser nguồn chưa nhận `(if …)`/`(match …)`).
-fn boc_with_trong_main(src: &str, tag: &str) -> vis_types::Hir {
+fn boc_with_trong_main(src: &str, tag: &str) -> vis_hir::Hir {
     let p = vis_syntax::parse(src, vis_syntax::Mode::Script);
     assert!(
         p.diagnostics.is_empty(),
@@ -96,28 +96,28 @@ fn boc_with_trong_main(src: &str, tag: &str) -> vis_types::Hir {
     let mut hir = h.hir;
     let mut da_boc = false;
     for it in &mut hir.items {
-        let vis_types::HItem::Fn(f) = it else {
+        let vis_hir::HItem::Fn(f) = it else {
             continue;
         };
         if f.name != "main" {
             continue;
         }
         for s in &mut f.body {
-            let vis_types::HStmt::Let { init, span, .. } = s else {
+            let vis_hir::HStmt::Let { init, span, .. } = s else {
                 continue;
             };
             let span = *span;
-            let base = std::mem::replace(init, vis_types::HExpr::Error { span });
-            *init = vis_types::HExpr::With {
+            let base = std::mem::replace(init, vis_hir::HExpr::Error { span });
+            *init = vis_hir::HExpr::With {
                 base: Box::new(base),
                 fields: vec![(
                     "f".to_string(),
-                    vis_types::HExpr::Lit {
-                        lit: vis_types::hir::Lit {
-                            kind: vis_types::LitKind::Int,
+                    vis_hir::HExpr::Lit {
+                        lit: vis_hir::hir::Lit {
+                            kind: vis_hir::LitKind::Int,
                             text: "5".to_string(),
                         },
-                        ty: vis_types::Type::Int,
+                        ty: vis_hir::Type::Int,
                         span,
                     },
                 )],
@@ -132,7 +132,7 @@ fn boc_with_trong_main(src: &str, tag: &str) -> vis_types::Hir {
 }
 
 /// Chạy **cả hai** engine trên cùng HIR đã sửa (interp + VM) và so byte stdout/kỳ vọng.
-fn chay_hir_hai_duong(src: &str, hir: &vis_types::Hir, tag: &str, stdout: &str) {
+fn chay_hir_hai_duong(src: &str, hir: &vis_hir::Hir, tag: &str, stdout: &str) {
     let p = vis_syntax::parse(src, vis_syntax::Mode::Script);
     let l = vis_syntax::lex(src, vis_syntax::Mode::Script);
     let h = vis_types::lower_with(&p.cst, &l, vis_types::LowerOptions::default());

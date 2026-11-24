@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! Kiểu của **biểu thức** (ST-12) — số học, so sánh, gọi hàm, trường, chỉ số, bản ghi/enum.
 
-use crate::hir::{BinOp, HCond, HExpr, HPat, HStmt, UnOp};
-use crate::ty::{EnumId, Type};
+use vis_hir::hir::{BinOp, HCond, HExpr, HPat, HStmt, UnOp};
+use vis_hir::ty::{EnumId, Type};
 
 use super::{num, thay_gen, Checker, ARG_COUNT, MISMATCH, NO_FIELD, NO_TYPE};
 
@@ -310,14 +310,14 @@ impl<'a> Checker<'a> {
                 let saved_value = std::mem::replace(&mut self.in_value, false);
                 let saved_gan = std::mem::replace(&mut self.bo_qua_gan_pt, false);
                 let saved_uses = match body {
-                    crate::hir::HBody::Stmts(st) => {
+                    vis_hir::hir::HBody::Stmts(st) => {
                         std::mem::replace(&mut self.fn_uses, super::pat::than_uses(st))
                     }
-                    crate::hir::HBody::Expr(_) => std::mem::take(&mut self.fn_uses),
+                    vis_hir::hir::HBody::Expr(_) => std::mem::take(&mut self.fn_uses),
                 };
                 let body_ty = match body {
-                    crate::hir::HBody::Expr(e) => self.kiem_expr(e),
-                    crate::hir::HBody::Stmts(st) => self.than_value(st),
+                    vis_hir::hir::HBody::Expr(e) => self.kiem_expr(e),
+                    vis_hir::hir::HBody::Stmts(st) => self.than_value(st),
                 };
                 self.fn_uses = saved_uses;
                 self.in_value = saved_value;
@@ -456,7 +456,7 @@ impl<'a> Checker<'a> {
                 let vt = self.kiem_expr(value);
                 // **R3a (VD-178)**: `if let` nhận **pattern** kiểm theo **kiểu đầy đủ** (`T?`),
                 // không bóc sẵn — `if let Some(v) = o:` mới đúng; `if let v = o:` (luôn khớp) ⇒ lỗi.
-                if matches!(pat, crate::hir::HPat::Bind { .. })
+                if matches!(pat, vis_hir::hir::HPat::Bind { .. })
                     && matches!(vt, Type::Opt(_) | Type::Result(..))
                 {
                     self.diag(
@@ -687,7 +687,7 @@ impl<'a> Checker<'a> {
         span: vis_syntax::Span,
     ) -> Option<Type> {
         let ngan = name.strip_prefix("std.")?;
-        let sig = crate::stdlib::sig_of(ngan)?;
+        let sig = vis_hir::stdlib::sig_of(ngan)?;
         // **ST-60b**: `std.*` **chỉ** có đối số **vị trí** — `--desc` (hay bất kỳ `--tên` nào) trước
         // đây bị **bỏ im lặng** (kết quả vẫn tăng dù xin giảm) ⇒ nay **từ chối** `VS0401`, nêu tên.
         if let Some((ten, a)) = named.first() {
@@ -709,12 +709,12 @@ impl<'a> Checker<'a> {
             );
         }
         let gens: Vec<String> = (0..3)
-            .map(|i| crate::stdlib::ten_bien(i as u8).to_string())
+            .map(|i| vis_hir::stdlib::ten_bien(i as u8).to_string())
             .collect();
         let mut bang: Vec<(String, Type)> = Vec::new();
         for (i, (that, mong)) in tys.iter().zip(sig.params.iter()).enumerate() {
             // Ngoại lệ **có ghi**: khoá `sort_by` (lambda chưa chú thích) — tầng chạy kiểm (ST-56).
-            if matches!(mong, crate::stdlib::Ty::FnKhoa) {
+            if matches!(mong, vis_hir::stdlib::Ty::FnKhoa) {
                 continue;
             }
             self.hop_nhat(
@@ -778,8 +778,8 @@ impl<'a> Checker<'a> {
             if let Some(f) = args.get(1) {
                 body_ty = match f {
                     HExpr::Lambda { body, .. } => match body {
-                        crate::hir::HBody::Expr(e) => self.kiem_expr(e),
-                        crate::hir::HBody::Stmts(_) => Type::Unit,
+                        vis_hir::hir::HBody::Expr(e) => self.kiem_expr(e),
+                        vis_hir::hir::HBody::Stmts(_) => Type::Unit,
                     },
                     other => self.kiem_expr(other),
                 };
@@ -806,8 +806,8 @@ impl<'a> Checker<'a> {
             if let Some(f) = args.get(1) {
                 let kt = match f {
                     HExpr::Lambda { body, .. } => match body {
-                        crate::hir::HBody::Expr(e) => self.kiem_expr(e),
-                        crate::hir::HBody::Stmts(_) => Type::Unit,
+                        vis_hir::hir::HBody::Expr(e) => self.kiem_expr(e),
+                        vis_hir::hir::HBody::Stmts(_) => Type::Unit,
                     },
                     other => self.kiem_expr(other),
                 };
@@ -862,8 +862,8 @@ impl<'a> Checker<'a> {
                         self.set_ty(p.sym, t);
                     }
                     match body {
-                        crate::hir::HBody::Expr(e) => self.kiem_expr(e),
-                        crate::hir::HBody::Stmts(_) => Type::Unit,
+                        vis_hir::hir::HBody::Expr(e) => self.kiem_expr(e),
+                        vis_hir::hir::HBody::Stmts(_) => Type::Unit,
                     }
                 }
                 f => self.kiem_expr(f),
