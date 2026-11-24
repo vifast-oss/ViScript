@@ -55,7 +55,7 @@
 |---|---|
 | `./vis-dev gate --fast` | **PASS** (3800 test) |
 | `cargo test --workspace --no-fail-fast` (fallback libtest) | **3805 pass / 0 fail** |
-| Windows (`psvn`): conformance | corpus 420 ca OK; `lib_api_it` 329 pass + 3 ignored (`cfg(unix)` gate đúng) |
+| Windows (`psvn`): conformance | corpus 420 ca OK; `lib_api_it` 337 pass + 3 ignored (`cfg(unix)` gate đúng); `net_cookie_it` 9/9 |
 | `VIS_DIFF_N=100000` | `lech=0` (54,4 s, 1838/s tại code freeze) |
 | `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 · `vis-dag-check` OK |
 | clippy `--workspace --all-targets -D warnings` | Linux PASS · Windows (`psvn`) PASS · **macOS bỏ qua** (`mps` bận) |
