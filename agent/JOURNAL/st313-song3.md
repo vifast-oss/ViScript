@@ -44,6 +44,18 @@
 
 | Cổng | Kết quả |
 |---|---|
+| `./vis-dev gate --fast` | PASS (3800 test; R8 = 40 binary) |
+| `VIS_DIFF_N=100000` | `lech=0` (55,8 s, 1791/s) |
+| `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 |
+| clippy `--workspace --all-targets -D warnings` | Linux PASS · Windows (`psvn`) PASS · **macOS bỏ qua** (mps bận) |
+| `vis-wasm-suite --build` | **28/28** |
+| `vis-wasm-sem` | **388/390** (2 đỏ = `#193`) |
+| conformance corpus | **420/420** |
+| test API đã dời | **323** (frame/worker/async/api) |
+
+
+| Cổng | Kết quả |
+|---|---|
 | `./vis-dev gate --fast` | PASS (gồm conformance + 3804 test) |
 | `VIS_DIFF_N=100000` | `lech=0` (55,8 s, 1791/s) |
 | `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 |
