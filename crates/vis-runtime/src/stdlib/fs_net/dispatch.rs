@@ -2,7 +2,7 @@
 //! **ST-310a (VD-285)** — dispatch `std.fs.*` + `std.net.*` (chỉ qua `Host`), tách khỏi
 //! `stdlib.rs` để giữ tệp dưới 1.150 dòng. Chuyển **nguyên văn**, không đổi ngữ nghĩa.
 
-use super::*;
+use super::super::*;
 
 /// Gọi một hàm `fs.*`/`net.*` theo tên đầy đủ.
 pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -> R<Value> {

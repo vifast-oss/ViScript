@@ -41,6 +41,8 @@ mod vd260_frame3;
 mod vd265_frame;
 #[path = "async_api_it/vd270_frame_add_assign.rs"]
 mod vd270_frame_add_assign;
+#[path = "async_api_it/vd270_frame_nested_lib.rs"]
+mod vd270_frame_nested_lib;
 #[path = "frame_it/vd284_async_impl.rs"]
 mod vd284_async_impl;
 #[path = "frame_it/vd284_spawn_method.rs"]

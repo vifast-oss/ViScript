@@ -20,13 +20,12 @@ use vis_core::value::{eq, Value};
 use vis_hir::stdlib::StdId;
 
 mod fs_net;
-mod fs_net_d;
 mod helper;
 mod list;
 mod path;
 mod sqlite;
 mod str;
-pub(crate) use fs_net::{
+pub(crate) use fs_net::fs::{
     fsbytes, fscanonicalize, fscurrentdir, fsissymlink, fsmkdirall, fsreadlink,
 };
 pub(crate) use helper::{bisect, chung, flatten, indexof};
@@ -677,7 +676,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             ten.starts_with("fs.") || ten.starts_with("net.") || ten.starts_with("http.")
         } =>
         {
-            fs_net_d::goi(host, id.as_str(), &args, span)
+            fs_net::dispatch::goi(host, id.as_str(), &args, span)
         }
         // ----- std.sqlite (VD-241, Gate 1) — **chỉ qua `Host::db`**, không backend trong crate này.
         // Thiếu host ⇒ `VS0604`; mọi lỗi host (handle/SQL/params/giới hạn/authorizer/timeout/lỗi

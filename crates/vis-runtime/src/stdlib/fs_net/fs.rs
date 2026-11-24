@@ -9,7 +9,7 @@ pub(crate) mod fsbytes {
     //! **cùng** hàm này (một ngữ nghĩa, byte-identical).
     //!
     //! - `read_bytes`: mọi lỗi host (thiếu tệp, thư mục, lỗi đọc) ⇒ `Err(Error)` dữ liệu, **không**
-    //!   trap; dấu [`DAU_QUYEN`](super::super::super::super::chung::DAU_QUYEN) vẫn được `hop_nhat_fs` nâng thành `VS0604`.
+    //!   trap; dấu [`DAU_QUYEN`](super::super::super::super::super::super::chung::DAU_QUYEN) vẫn được `hop_nhat_fs` nâng thành `VS0604`.
     //! - `write_bytes`: **kiểm toàn bộ** phần tử trước khi chạm đĩa — phần tử không phải `int` hoặc
     //!   ngoài `0..=255` ⇒ `Err(Error)`, không tạo/cắt tệp, không ghi một phần. Sau đó host tạo mới
     //!   hoặc cắt rồi ghi đúng từng byte.
@@ -56,14 +56,14 @@ pub(crate) mod fsbytes {
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
         match ten {
             "fs.read_bytes" => {
-                let p = super::super::chuoi(ten, &args[0], 0, span)?;
+                let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
                 let host = host
                     .fs()
-                    .ok_or_else(|| super::super::khong_host(ten, span))?;
-                super::super::hop_nhat_fs(host.read_bytes(p).map(ds_byte), span)
+                    .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+                super::super::super::hop_nhat_fs(host.read_bytes(p).map(ds_byte), span)
             }
             "fs.write_bytes" => {
-                let p = super::super::chuoi(ten, &args[0], 0, span)?;
+                let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
                 // **Kiểm hết trước khi lấy host/ghi** — dữ liệu sai không được tạo hay cắt tệp.
                 let ds = match thanh_byte(ten, &args[1]) {
                     Ok(ds) => ds,
@@ -71,10 +71,13 @@ pub(crate) mod fsbytes {
                 };
                 let host = host
                     .fs()
-                    .ok_or_else(|| super::super::khong_host(ten, span))?;
-                super::super::hop_nhat_fs(host.write_bytes(p, &ds).map(|()| Value::Unit), span)
+                    .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+                super::super::super::hop_nhat_fs(
+                    host.write_bytes(p, &ds).map(|()| Value::Unit),
+                    span,
+                )
             }
-            _ => Err(super::super::loi(
+            _ => Err(super::super::super::loi(
                 format!("hàm byte thô không xác định: `{ten}`"),
                 span,
             )),
@@ -113,11 +116,11 @@ pub(crate) mod fscanonicalize {
     /// Dispatch `std.fs.canonicalize`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), gọi host, rồi
     /// chuyển `Err` của host thành `Err(Error)` **dữ liệu** (dấu quyền ⇒ `VS0604`, như mọi hàm fs).
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi(ten, &args[0], 0, span)?;
+        let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
         let host = host
             .fs()
-            .ok_or_else(|| super::super::khong_host(ten, span))?;
-        super::super::hop_nhat_fs(host.canonicalize(p).map(Value::Str), span)
+            .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+        super::super::super::hop_nhat_fs(host.canonicalize(p).map(Value::Str), span)
     }
 }
 
@@ -150,8 +153,8 @@ pub(crate) mod fscurrentdir {
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, _args: &[Value], span: Span) -> R<Value> {
         let host = host
             .fs()
-            .ok_or_else(|| super::super::khong_host(ten, span))?;
-        super::super::hop_nhat_fs(host.current_dir().map(Value::Str), span)
+            .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+        super::super::super::hop_nhat_fs(host.current_dir().map(Value::Str), span)
     }
 }
 
@@ -182,11 +185,11 @@ pub(crate) mod fsissymlink {
     /// Dispatch `std.fs.is_symlink`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), gọi host, rồi
     /// chuyển `Err` của host thành `Err(Error)` **dữ liệu** (dấu quyền ⇒ `VS0604`, như mọi hàm fs).
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi(ten, &args[0], 0, span)?;
+        let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
         let host = host
             .fs()
-            .ok_or_else(|| super::super::khong_host(ten, span))?;
-        super::super::hop_nhat_fs(host.is_symlink(p).map(Value::Bool), span)
+            .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+        super::super::super::hop_nhat_fs(host.is_symlink(p).map(Value::Bool), span)
     }
 }
 
@@ -209,16 +212,18 @@ pub(crate) mod fsmkdirall {
 
     /// Dispatch hai hàm tạo thư mục (interp ↔ VM dùng chung).
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi(ten, &args[0], 0, span)?;
+        let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
         let host = host
             .fs()
-            .ok_or_else(|| super::super::khong_host(ten, span))?;
+            .ok_or_else(|| super::super::super::khong_host(ten, span))?;
         match ten {
-            "fs.mkdir" => super::super::hop_nhat_fs(host.mkdir(p).map(|()| Value::Unit), span),
-            "fs.mkdir_all" => {
-                super::super::hop_nhat_fs(host.mkdir_all(p).map(|()| Value::Unit), span)
+            "fs.mkdir" => {
+                super::super::super::hop_nhat_fs(host.mkdir(p).map(|()| Value::Unit), span)
             }
-            _ => Err(super::super::loi(
+            "fs.mkdir_all" => {
+                super::super::super::hop_nhat_fs(host.mkdir_all(p).map(|()| Value::Unit), span)
+            }
+            _ => Err(super::super::super::loi(
                 format!("hàm tạo thư mục không xác định: `{ten}`"),
                 span,
             )),
@@ -253,10 +258,10 @@ pub(crate) mod fsreadlink {
     /// Dispatch `std.fs.read_link`: kiểm kiểu **động** `str` (sai ⇒ `VS0501`), gọi host, rồi
     /// chuyển `Err` của host thành `Err(Error)` **dữ liệu** (dấu quyền ⇒ `VS0604`, như mọi hàm fs).
     pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
-        let p = super::super::chuoi(ten, &args[0], 0, span)?;
+        let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
         let host = host
             .fs()
-            .ok_or_else(|| super::super::khong_host(ten, span))?;
-        super::super::hop_nhat_fs(host.read_link(p).map(Value::Str), span)
+            .ok_or_else(|| super::super::super::khong_host(ten, span))?;
+        super::super::super::hop_nhat_fs(host.read_link(p).map(Value::Str), span)
     }
 }
