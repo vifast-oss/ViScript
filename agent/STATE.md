@@ -12,5 +12,6 @@
 4. [`DECISIONS.md`](DECISIONS.md) / [`DECISIONS-INDEX.md`](DECISIONS-INDEX.md) — quyết định và chỉ mục.
 
 > **Chế độ hiện hành (2026-11-24, `VD-289`)**: **Phát triển Kiến trúc Tối ưu** (đã hủy/tạm dừng vô thời hạn kế hoạch phát hành `v0.6.0`/`v1.0.0-rc1` và soak 24h; `ST-309` → `BLOCKED`).
+> **Sóng 0–1 xong 2026-11-24** (`ST-312a..d`, commit `4e6f810`): `vis-hir` + `vis-http` đã tách, `vis-host-linux` vào workspace, `#196` đóng; Sóng 2 (`ST-313a/b`) chờ A0 duyệt mở. Chi tiết `JOURNAL/st312-songs01.md`.
 > Tập trung hoàn tất **Kiến trúc Đích 5 Tầng DAG** (`ST-312a..ST-313d`: `vis-hir`, `vis-http`, `vis-runtime`, `vis-host-linux` vào workspace, stdlib `StdId` 1 nguồn sự thật + chia miền, `vis-conformance` dữ liệu).
 > Nền lịch sử đã đạt: 3-OS Tier 1 (`v0.4.5`/`v0.5.0`), kiến trúc 4 tầng (`v0.5.5`), bảo mật `#190`/`#194`/vá `#195` (`ST-311a..f`). Số liệu đo chi tiết nằm trong `JOURNAL/` và `ACTIVE.md`.

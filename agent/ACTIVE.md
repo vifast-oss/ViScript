@@ -8,16 +8,17 @@
 - **ĐƯỢC PHÉP DỪNG** các tiến trình soak/fuzz dài ngày của `H4` đang chạy nền (nếu có) để giải phóng máy cho tái kiến trúc.
 - **Mục tiêu duy nhất hiện tại**: đưa ViScript về **Kiến trúc Đích 5 Tầng DAG** (`vis-hir`, `vis-core` mỏng, `vis-http`, `vis-runtime` tách khỏi `vis-interp`, `vis-vm` 0 dep `vis-interp`/`vis-types`, `vis-pkg` 0 dep `vis-host-native`, `vis-host-linux` vào workspace, stdlib 1 nguồn sự thật `StdId` + chia miền, `vis-conformance` dữ liệu).
 - **Nền đã xanh**: `ST-311a..f` DONE (`#190`/`#194` đóng, `#195` đã vá mã), `./vis-dev rules` R1..R9 PASS, 0 `unsafe` (R2).
+- **Tiến độ 2026-11-24 (Sóng 0–1 xong, chờ A0 duyệt mở Sóng 2)**: kho sạch (2 nhánh local, 1 worktree); `ST-312a`/`ST-312b`/`ST-312c`/`ST-312d` = `REVIEW` với commit `65ea2a0`/`02e881e`/`cd007f9`/`4e6f810`. Kết quả: 9 shim `vis_interp→vis_core` đã xóa; `vis-host-linux` vào workspace (21 crate); `crates/vis-hir` tách xong (`vis-core`/`vis-bytecode`/`vis-vm` **0 dep** `vis-types`); `crates/vis-http` tách xong (`vis-core` 0 HTTP protocol; `vis-pkg` 0 dep `vis-host-native`, tiêm `NetHost` + mock test); đóng `#196`.
 
 ## 2. Chương trình Tái kiến trúc 4 Sóng (`ST-312a..ST-313d` — Chạy song song `W1..W4`)
 
 | Sóng | Lát | Luồng | Trạng thái | Mục tiêu & KPI |
 |---|---|---|---|---|
-| **0** | Dọn nhánh (`VD-288` §4) | **W4** | `READY` | Dọn Đợt 1–3 (83 nhánh → `main` + `st309-qa`; worktree ≤ 8) + `bin/vis-gc-targets` |
-| **0** | **`ST-312a`** | **W1** | `READY` | Xóa 9 shim re-export `vis_interp → vis_core`; chuyển `Abort`/`Trap`/`R`/`RunOutput`/`FrameConfig`/`FrameOutput` về `vis-core` |
-| **0** | **`ST-312b`** | **W4** | `READY` | Đưa `vis-host-linux` vào workspace chính (1 `Cargo.lock`, `version.workspace = true`); gộp `clippy -D warnings` vào `bin/vis-gate-windows --full`; vá `#196` (`parse_duration`) |
-| **1** | **`ST-312c`** | **W3** | `READY` | Tách **`crates/vis-hir`** (dữ liệu HIR/Type/`TypeTable`/bảng `stdlib`) khỏi `vis-types` → `vis-core`/`vis-bytecode`/`vis-vm` **0 dep `vis-types`** |
-| **1** | **`ST-312d`** | **W2** | `READY` | Tách **`crates/vis-http`** (sans-IO HTTP/1.1 + cookie + async state machine) khỏi `vis-core`/`vis-interp`; cắt `vis-pkg → vis-host-native` (tiêm `NetHost` + mock test) |
+| **0** | Dọn nhánh (`VD-288` §4) | **W4** | `DONE` | Dọn Đợt 1–3 (83 nhánh → `main` + `st309-qa`; worktree ≤ 8) + `bin/vis-gc-targets` |
+| **0** | **`ST-312a`** | **W1** | `REVIEW` | Xóa 9 shim re-export `vis_interp → vis_core`; chuyển `Abort`/`Trap`/`R`/`RunOutput`/`FrameConfig`/`FrameOutput` về `vis-core` |
+| **0** | **`ST-312b`** | **W4** | `REVIEW` | Đưa `vis-host-linux` vào workspace chính (1 `Cargo.lock`, `version.workspace = true`); gộp `clippy -D warnings` vào `bin/vis-gate-windows --full`; vá `#196` (`parse_duration`) |
+| **1** | **`ST-312c`** | **W3** | `REVIEW` | Tách **`crates/vis-hir`** (dữ liệu HIR/Type/`TypeTable`/bảng `stdlib`) khỏi `vis-types` → `vis-core`/`vis-bytecode`/`vis-vm` **0 dep `vis-types`** |
+| **1** | **`ST-312d`** | **W2** | `REVIEW` | Tách **`crates/vis-http`** (sans-IO HTTP/1.1 + cookie + async state machine) khỏi `vis-core`/`vis-interp`; cắt `vis-pkg → vis-host-native` (tiêm `NetHost` + mock test) |
 | **2** | **`ST-313a`** | **W1+W3** | `BLOCKED` | Tách **`crates/vis-runtime`** khỏi `vis-interp` (`WorkerRunner` trait); cắt **`vis-vm → vis-interp`**; giữ `vis-interp` ~8,6k; chia `vm_frame.rs` < 1.000 LOC |
 | **2** | **`ST-313b`** | **W2+W4** | `BLOCKED` | 1 nguồn sự thật stdlib (**`StdId`** O(1) + test song ánh 1–1 `FUNCS` ↔ dispatch) + tổ chức `stdlib/` theo miền (xóa hết 20 tệp `_a.._e`) |
 | **3** | **`ST-313c`** | **W1+W2** | `BLOCKED` | Dời test API thư viện khỏi `vis-cli/tests/` về crate chủ + dựng **`crates/vis-conformance`** (dữ liệu `.vis`/`.out`/`.err` chạy tự động `interp ↔ VM` + WASI) |
