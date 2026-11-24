@@ -2,7 +2,8 @@
 //! **ST-283 / VD-257** — khép các ô coverage còn ghi thiếu trong `vd255-coverage-report.md`:
 //! `Set`, `Map`, `EnumLit`, interpolation, tuple — chạy **source thật** qua 4 đường, không fallback.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

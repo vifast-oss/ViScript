@@ -36,7 +36,7 @@ pub const BUDGET: &Code = &RUNTIME_CODES[9];
 pub(crate) mod goi;
 
 /// **ST-310a**: `Trap`/`Abort`/`R`/`pos` chuyển sang `vis-core` (dùng chung với host/reactor).
-pub use vis_core::trap::{pos, Abort, Trap, R};
+pub(crate) use vis_core::trap::{Abort, Trap, R};
 
 /// Đối số đã eval: (vị trí, có tên).
 pub(crate) type Args = (Vec<Value>, Vec<(String, Value)>);

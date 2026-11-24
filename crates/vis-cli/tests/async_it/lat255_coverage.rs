@@ -4,9 +4,10 @@
 //! trình nguồn thật (không gọi helper dựng HIR tay), suspend/tiếp tục qua reactor giả ở
 //! các vị trí khó (điều kiện, đối số, toán hạng, thân vòng, closure). Runtime mặc định
 //! (`vis run`) không đổi, checker không thu hẹp, golden không cập nhật hàng loạt.
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{DiagSnapshot, FakeEvent};
-use vis_interp::Value;
+use vis_core::frame::{DiagSnapshot, FakeEvent};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

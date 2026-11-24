@@ -537,7 +537,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 #[cfg(any(unix, windows))]
                 let mut async_host = vis_cli::async_net::AsyncNetHost {
                     inner: async_rc.clone(),
-                    cookie: vis_interp::cookie::CookieJar::new(),
+                    cookie: vis_core::http_client::cookie::CookieJar::new(),
                 };
                 #[cfg(any(unix, windows))]
                 let mut async_guard = quyen::NetGuard {
@@ -546,7 +546,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 };
                 #[cfg(any(unix, windows))]
                 let async_backend: Option<
-                    std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>,
+                    std::rc::Rc<std::cell::RefCell<dyn vis_core::reactor::FrameReactorBackend>>,
                 > = Some(async_rc);
                 let out = if dung_vm {
                     // ST-20: đường **VM** — cùng `Show`/builtin/bảng ngữ nghĩa với interp.
@@ -590,7 +590,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                     if dump {
                         eprintln!("{}", vis_vm::dump::dump(&m));
                     }
-                    let ngoai_host: Option<&mut dyn vis_interp::builtin::Ngoai> =
+                    let ngoai_host: Option<&mut dyn vis_core::host::Ngoai> =
                         if co_ngoai { Some(&mut runner) } else { None };
                     do_luong_chay(do_thoi_gian, || {
                         if la_async {
@@ -906,7 +906,7 @@ pub(crate) fn run_run(rest: &[String]) -> ExitCode {
                 }
                 // **VD-241 §9**: kết thúc **phiên** Host ⇒ đóng mọi connection còn mở
                 // (**không** auto-commit); rò chỉ cảnh báo ở chế độ diagnostics.
-                let con_mo = vis_interp::builtin::DbHost::db_cleanup(&mut dbg).unwrap_or(0);
+                let con_mo = vis_core::host::DbHost::db_cleanup(&mut dbg).unwrap_or(0);
                 if explain_perms && con_mo > 0 {
                     eprintln!(
                         "SQLITE leak: {con_mo} connection chưa đóng (đã đóng khi kết thúc phiên)"

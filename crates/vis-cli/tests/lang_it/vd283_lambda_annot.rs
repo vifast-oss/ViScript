@@ -6,7 +6,7 @@
 
 use vis_syntax::{lex, parse, Mode};
 
-fn chay(ten: &str, src: &str) -> (vis_interp::RunOutput, vis_interp::RunOutput) {
+fn chay(ten: &str, src: &str) -> (vis_core::RunOutput, vis_core::RunOutput) {
     let p = parse(src, Mode::Script);
     assert!(
         p.diagnostics.is_empty(),

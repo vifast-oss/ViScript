@@ -11,12 +11,13 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use vis_core::value::Value;
+use vis_core::value::{Task, TrangThai};
 use vis_interp::rt::fee::SharedBudget;
-use vis_interp::rt::{Task, TrangThai};
 use vis_interp::value::worker::{
     EnvMap, SendValue, TaskWaitBoard, ToSend, WaitError, WorkerError, WorkerPool,
 };
-use vis_interp::value::{TaskId, Value};
+use vis_interp::value::TaskId;
 use vis_syntax::Span;
 
 fn env() -> EnvMap {
@@ -498,8 +499,8 @@ fn stress_dai_5x10k_cancel_budget_print_cross() {
 /// **VS3-3b/W5 prototype**: `Value` ↔ `ProtoValue` (Task = `TaskId`), `Show`/eq giữ nguyên.
 #[test]
 fn taskid_proto_value_show_eq_roundtrip() {
+    use vis_core::value::Name;
     use vis_interp::value::worker::ProtoValue;
-    use vis_interp::value::Name;
 
     let vals = vec![
         Value::Int(7),

@@ -16,7 +16,8 @@
 //! frame VM; đòi exit/stdout byte-khớp và đúng kỳ vọng. Phần cuối khoá luôn pattern list
 //! `[a, ..]`/`[a, ..r]`/`[]` và `()` trên đường frame để không lệch với hai engine chính.
 
-use vis_interp::frame::{run_frame_for_test as run_frame_i, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_frame_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 use vis_vm::vm_frame::run_frame_for_test as run_frame_v;

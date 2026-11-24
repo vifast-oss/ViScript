@@ -11,7 +11,7 @@
 //! nhưng cùng cơ chế; phép đo 10k nguyên vẫn nằm ở `vis-cli/tests/async_10k.rs`.
 
 use vis_bytecode::{compile, Func, Instr, Module, Span, GLOBAL_SLOT_BASE, HASH_LEN, VERSION};
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 fn tien_trinh(text: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {
     let parsed = vis_syntax::parse(text, vis_syntax::Mode::Script);

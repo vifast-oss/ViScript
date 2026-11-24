@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! ST-267 / VD-251 — LÁT 1 (interp): source → tyck → đường frame thật.
-use vis_interp::frame::{run_frame_for_test, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test;
 use vis_syntax::{lex, parse, Mode};
 
-fn frame_run(src: &str, cfg: FrameConfig) -> vis_interp::frame::FrameOutput {
+fn frame_run(src: &str, cfg: FrameConfig) -> vis_core::frame::FrameOutput {
     let p = parse(src, Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = lex(src, Mode::Script);
@@ -41,11 +42,11 @@ fn main():
 "#;
     let cfg = FrameConfig {
         fake_sources: vec![("ext_src".into(), 1)],
-        events: vec![vis_interp::rt::FakeEvent {
+        events: vec![vis_core::frame::FakeEvent {
             seq: 0,
             key: 1,
             gen: 0,
-            value: vis_interp::Value::Int(40),
+            value: vis_core::Value::Int(40),
         }],
         ..Default::default()
     };

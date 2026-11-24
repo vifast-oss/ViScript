@@ -201,8 +201,8 @@ fn run(args: &[String]) -> ExitCode {
     let ham = yc.ham.expect("run có hàm");
     match p.goi(&ham, &yc.args) {
         Ok(v) => {
-            let v = sang_value(v).unwrap_or(vis_interp::value::Value::Unit);
-            println!("{}", vis_interp::value::show(&v));
+            let v = sang_value(v).unwrap_or(vis_core::value::Value::Unit);
+            println!("{}", vis_core::value::show(&v));
             ExitCode::SUCCESS
         }
         Err(e) => in_loi(&e),

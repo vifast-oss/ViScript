@@ -14,12 +14,16 @@
 
 #![forbid(unsafe_code)]
 
+pub mod frame;
 pub mod host;
 pub mod http_client;
 pub mod json;
 pub mod reactor;
+pub mod run;
 pub mod trap;
 pub mod value;
 
+pub use frame::{DiagSnapshot, FakeEvent, FrameConfig, FrameOutput, ReactorEvent, ReactorOutcome};
+pub use run::RunOutput;
 pub use trap::{pos, Abort, Trap, R};
 pub use value::{exit_code, show, Closure, Name, Value};

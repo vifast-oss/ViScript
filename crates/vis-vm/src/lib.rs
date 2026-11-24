@@ -32,7 +32,7 @@
 //! dựng sẵn trần qua `Value::Builtin`, ví dụ `<builtin Some>`), LSP hover/`print(f)` giữ nguyên,
 //! và disassemble (`vis run --dump-bytecode`) ẩn tiền tố (in `<builtin Some>`).
 
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 pub mod dump;
 pub mod vm;
@@ -80,11 +80,11 @@ pub fn run_workers_parallel_vm_with_full_hosts_caps<'a>(
     m: &'a vis_bytecode::Module,
     text: &'a str,
     args: &[String],
-    ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
-    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
-    caps: &[(u32, vis_interp::value::Value)],
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
+    caps: &[(u32, vis_core::value::Value)],
     workers: usize,
     budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
 ) -> RunOutput {

@@ -665,6 +665,7 @@ dependencies = [
  "mio",
  "rustix",
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-fmt",
  "vis-host-linux",
@@ -827,6 +828,7 @@ name = "vis-vm"
 version = "0.6.0"
 dependencies = [
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-interp",
  "vis-syntax",

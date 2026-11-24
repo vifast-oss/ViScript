@@ -70,6 +70,7 @@ vis-diag = { path = "../vis-diag" }
 vis-syntax = { path = "../vis-syntax" }
 vis-fmt = { path = "../vis-fmt" }
 vis-types = { path = "../vis-types" }
+vis-core = { path = "../vis-core" }
 vis-interp = { path = "../vis-interp", features = ["taskid-proto"] }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-vm = { path = "../vis-vm" }

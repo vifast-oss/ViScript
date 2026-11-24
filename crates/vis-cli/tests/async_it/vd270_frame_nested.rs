@@ -23,7 +23,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use vis_interp::frame::{run_frame_for_test as run_frame_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_interp::frame::run_frame_for_test as run_frame_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;
 use vis_vm::vm_frame::run_frame_for_test as run_frame_v;

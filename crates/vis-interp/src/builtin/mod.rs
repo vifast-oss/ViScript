@@ -11,10 +11,7 @@
 use vis_syntax::Span;
 use vis_types::hir::BinOp;
 
-pub use vis_core::host::{
-    chia_dong, DbHost, DocQuaHandle, DuongDanHandle, FsHost, KetQua, KetQuaHttp2, MucFs, NetHost,
-    Ngoai,
-};
+pub(crate) use vis_core::host::{DbHost, FsHost, KetQua, MucFs, NetHost, Ngoai};
 
 mod method;
 pub use method::*;

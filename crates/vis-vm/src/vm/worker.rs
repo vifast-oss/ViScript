@@ -19,14 +19,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use vis_bytecode::Module;
+use vis_core::trap::{Abort, Trap};
+use vis_core::value::Task;
+use vis_core::value::Value;
 use vis_interp::builtin::Host;
-use vis_interp::interp::{Abort, Trap, RT, TASK_ERR};
+use vis_interp::interp::{RT, TASK_ERR};
 use vis_interp::rt::fee::SharedBudget;
-use vis_interp::rt::Task;
 use vis_interp::value::worker::{
     OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerError, WorkerPool,
 };
-use vis_interp::value::Value;
 use vis_syntax::Span;
 
 use super::Vm;
@@ -155,7 +156,7 @@ pub(crate) fn spawn_task(
     args: Vec<Value>,
     ten: String,
     span: Span,
-) -> vis_interp::interp::R<Value> {
+) -> vis_core::trap::R<Value> {
     let mode = vm.worker.borrow().mode;
     // **ST-292 (P4a)**: chỉ main frame đẩy spawn lên pool; frame task chạy local.
     let frame_task = vm.sched.borrow().frame.current != 0;
@@ -248,12 +249,12 @@ fn apply_outcome(vm: &mut Vm<'_>, o: vis_interp::value::worker::TaskOutcome) {
         Err(m) => Err(loi_task(&task, m)),
     };
     *task.kq.borrow_mut() = Some(ket.clone());
-    task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
+    task.trang_thai.set(vis_core::value::TrangThai::Xong);
     vm.sched.borrow_mut().frame_task_done(main_id, ket);
 }
 
 /// **ST-292 (P4)**: rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa 50 ms.
-pub(crate) fn pump(vm: &mut Vm<'_>, block: bool) -> vis_interp::interp::R<usize> {
+pub(crate) fn pump(vm: &mut Vm<'_>, block: bool) -> vis_core::trap::R<usize> {
     let (board, ids) = {
         let w = vm.worker.borrow();
         let Some(board) = w.board.clone() else {
@@ -307,7 +308,7 @@ pub(crate) fn cancel_worker(vm: &mut Vm<'_>, id: u32) {
 }
 
 /// Flush output của proxy đúng một lần; dirty ⇒ `VS0509`, cancelled ⇒ `VS0506`.
-fn flush_proxy(vm: &mut Vm<'_>, id: u32, span: Span) -> vis_interp::interp::R<()> {
+fn flush_proxy(vm: &mut Vm<'_>, id: u32, span: Span) -> vis_core::trap::R<()> {
     let (output, dirty, cancelled, ten) = {
         let mut w = vm.worker.borrow_mut();
         let Some(p) = w.proxy.get_mut(&id) else {
@@ -346,11 +347,7 @@ fn flush_proxy(vm: &mut Vm<'_>, id: u32, span: Span) -> vis_interp::interp::R<()
 }
 
 /// `$await` của VM: frame mode ⇒ suspend; non-frame chờ board; flush output tại tiêu thụ.
-pub(crate) fn await_task(
-    vm: &mut Vm<'_>,
-    t: &Rc<Task>,
-    span: Span,
-) -> vis_interp::interp::R<Value> {
+pub(crate) fn await_task(vm: &mut Vm<'_>, t: &Rc<Task>, span: Span) -> vis_core::trap::R<Value> {
     let (frame_on, has_proxy, done) = {
         let w = vm.worker.borrow();
         let p = w.proxy.get(&t.id);
@@ -364,7 +361,7 @@ pub(crate) fn await_task(
         return vis_interp::rt::await_task(vm, t, span);
     }
     if frame_on && !done {
-        return Err(Abort::Pending(vis_interp::rt::Pending {
+        return Err(Abort::Pending(vis_core::value::Pending {
             task: Some(Rc::clone(t)),
             wait: None,
             span,
@@ -398,7 +395,7 @@ pub(crate) fn await_task(
 }
 
 /// Final join VM: chờ pool, cache task chưa await, flush output theo spawn order.
-pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
+pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
     let (pool, mut proxy, map) = {
         let mut w = vm.worker.borrow_mut();
         if w.mode == Mode::Off {
@@ -453,7 +450,7 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
                 Err(m) => Err(loi_task(&task, m)),
             };
             *task.kq.borrow_mut() = Some(ket);
-            task.trang_thai.set(vis_interp::rt::TrangThai::Xong);
+            task.trang_thai.set(vis_core::value::TrangThai::Xong);
         }
         if !p.flushed {
             p.flushed = true;
@@ -486,7 +483,7 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
 }
 
 /// Alias cũ.
-pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_interp::interp::R<()> {
+pub(crate) fn join_tasks(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
     // Non-frame default: giữ nguyên `join_all` cũ (kể cả task không ai await).
     if vm.worker.borrow().mode == Mode::Off {
         return vis_interp::rt::join_all(vm);

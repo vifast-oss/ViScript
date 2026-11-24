@@ -4,7 +4,7 @@
 //! Đây là test **khoá** (không phải đỏ-trước): Agent 0 chốt các dạng ở VD-47; đổi bất kỳ dòng nào
 //! dưới đây là **thay đổi ngữ nghĩa** ⇒ phải có VD mới.
 
-use vis_interp::Value;
+use vis_core::Value;
 
 fn f(v: Value) -> String {
     v.show()

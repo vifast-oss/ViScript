@@ -16,14 +16,16 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 use std::time::Duration;
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::frame::{ReactorEvent, ReactorOutcome};
+use vis_core::reactor::{frame_net_set_write, frame_net_take_write};
+use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
+use vis_core::value::Wait;
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{
-    frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test, FrameReactorBackend,
-    ReactorEvent, ReactorIoOutcome, ReactorOp, ReactorOutcome, ReactorRawEvent, Scheduler, Wait,
-    Waiter,
+    frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test, Scheduler, Waiter,
 };
-use vis_interp::stdlib::{frame_net_set_write, frame_net_take_write};
-use vis_interp::Value;
 use vis_syntax::{lex, parse, Mode, Span};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -49,8 +51,8 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
     (h.hir, h.symbols, h.types)
 }
 
-fn baseline() -> vis_interp::rt::DiagSnapshot {
-    vis_interp::rt::DiagSnapshot {
+fn baseline() -> vis_core::frame::DiagSnapshot {
+    vis_core::frame::DiagSnapshot {
         live_tasks: 0,
         frames: 0,
         waiters: 0,
@@ -101,7 +103,10 @@ struct KetQua {
     closes: Vec<String>,
 }
 
-fn cfg_scripted(sb: &Rc<RefCell<Scripted>>, events: Vec<vis_interp::rt::FakeEvent>) -> FrameConfig {
+fn cfg_scripted(
+    sb: &Rc<RefCell<Scripted>>,
+    events: Vec<vis_core::frame::FakeEvent>,
+) -> FrameConfig {
     FrameConfig {
         events,
         backend: Some(sb.clone()),
@@ -118,7 +123,7 @@ fn dat_trigger(cancels: &[(u64, u32)]) {
 
 fn chay_i_scripted(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     cancels: &[(u64, u32)],
 ) -> KetQua {
     let (hir, syms, tys) = tien_trinh(src);
@@ -137,7 +142,7 @@ fn chay_i_scripted(
 
 fn chay_v_scripted(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     cancels: &[(u64, u32)],
 ) -> KetQua {
     let (hir, syms, _tys) = tien_trinh(src);
@@ -159,7 +164,7 @@ fn chay_v_scripted(
 /// trạng thái cleanup. Đây là assert chéo engine, không chỉ một engine.
 fn chay_hai_scripted(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     cancels: &[(u64, u32)],
 ) -> (KetQua, KetQua) {
     let i = chay_i_scripted(src, events.clone(), cancels);
@@ -176,8 +181,8 @@ fn chay_hai_scripted(
 
 const TRIGGER: u64 = 999;
 
-fn trigger_event() -> vis_interp::rt::FakeEvent {
-    vis_interp::rt::FakeEvent {
+fn trigger_event() -> vis_core::frame::FakeEvent {
+    vis_core::frame::FakeEvent {
         seq: 0,
         key: TRIGGER,
         gen: 0,
@@ -310,7 +315,7 @@ fn cancel_timer_hai_engine() {
 /// Chạy cả hai engine với reactor giả (không adapter), giống `chay` của lat257_c.
 fn chay_hai_fake(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     reactors: Vec<ReactorEvent>,
     cancels: &[(u64, u32)],
 ) -> (FrameOutput, FrameOutput) {
@@ -361,7 +366,7 @@ fn sch() -> (Scheduler, Rc<RefCell<Scripted>>) {
     (s, b)
 }
 
-fn tao_task(s: &mut Scheduler, ten: &str) -> Rc<vis_interp::rt::Task> {
+fn tao_task(s: &mut Scheduler, ten: &str) -> Rc<vis_core::value::Task> {
     s.tao(0, vec![], ten.into(), Span::new(0, 0))
 }
 

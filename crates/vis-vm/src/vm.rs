@@ -11,10 +11,12 @@ use std::rc::Rc;
 
 use vis_bytecode::fee::{FeeEntry, FeeTable};
 use vis_bytecode::{Func, Instr, Module, GLOBAL_SLOT_BASE};
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::{self, Value, VmFunc};
+use vis_core::RunOutput;
 use vis_interp::builtin::Host;
-use vis_interp::interp::{Abort, Trap, IDX, R, RT};
-use vis_interp::value::{self, Value, VmFunc};
-use vis_interp::RunOutput;
+use vis_interp::interp::{IDX, RT};
+use vis_interp::value::ForIter;
 use vis_syntax::Span;
 use vis_types::hir::LitKind;
 
@@ -85,15 +87,15 @@ pub struct Vm<'a> {
     /// Độ sâu ngăn xếp giá trị **lớn nhất đã dùng** (bất biến của fuzz ST-21).
     pub(crate) dinh: usize,
     /// Host hệ thống tệp (ST-33); `None` ⇒ `VS0604` — VM **không** biết `std::fs`.
-    pub(crate) fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
+    pub(crate) fs: Option<&'a mut dyn vis_core::host::FsHost>,
     /// **ST-63 (VD-105)**: host mạng; `None` ⇒ `VS0604` — VM **không** biết `std::net`.
-    pub(crate) net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    pub(crate) net: Option<&'a mut dyn vis_core::host::NetHost>,
     /// **ST-89 (VD-110)**: host **chương trình ngoài** — VM **không** gọi `std::process`, chỉ qua
     /// trait của `vis-interp`; `None` ⇒ `exec.*` ⇒ `VS0604`.
-    pub(crate) ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
+    pub(crate) ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
     /// **VD-241 (Gate 1)**: host **cơ sở dữ liệu** — VM **không** biết backend native; `None` ⇒
     /// `std.sqlite.*` ⇒ `VS0604`.
-    pub(crate) db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
+    pub(crate) db: Option<&'a mut dyn vis_core::host::DbHost>,
     /// **ST-60**: hàng đợi tác vụ `async` — cùng runtime với interp (`vis_interp::rt`).
     pub(crate) sched: std::cell::RefCell<vis_interp::rt::Scheduler>,
     /// **VS3-3b/W5 (P3)**: evaluator worker VM (CPU-only, opt-in); mặc định Off.
@@ -518,7 +520,7 @@ pub(crate) struct Th<'m> {
     pub(crate) frames: Vec<Frame>,
     pub(crate) st: Vec<Value>,
     /// **VD-264**: bộ lặp dùng chung với interp — range duyệt lười (không còn `Vec<Value>`).
-    pub(crate) iters: Vec<value::ForIter>,
+    pub(crate) iters: Vec<ForIter>,
     /// **VD-258**: các vòng callback đang mở (chỉ khác rỗng trên đường frame test).
     pub(crate) methods: Vec<MethodLoop>,
 }

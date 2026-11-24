@@ -4,7 +4,7 @@
 //! (b) kết quả **đúng** theo căn cứ đã ghi (không nhận parity nếu cả hai cùng sai — VD-242 §3.1).
 
 use vis_bytecode::compile;
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 fn chay_interp(text: &str) -> RunOutput {
     let parsed = vis_syntax::parse(text, vis_syntax::Mode::Script);

@@ -11,7 +11,7 @@ use vis_bytecode::verify::{load_verified, verify, VerifyError};
 use vis_bytecode::{
     decode, encode, Const, Func, Instr, Module, Span, GLOBAL_SLOT_BASE, HASH_LEN, VERSION,
 };
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 const BASE: u16 = GLOBAL_SLOT_BASE;
 
@@ -52,7 +52,7 @@ fn cbool(text: &str) -> Const {
 }
 
 fn show(out: &RunOutput) -> Option<String> {
-    out.value.as_ref().map(vis_interp::show)
+    out.value.as_ref().map(vis_core::show)
 }
 
 /// Khẳng định đây là **trap runtime chưa khởi tạo**, có chẩn đoán xác định và `exit != 0`.

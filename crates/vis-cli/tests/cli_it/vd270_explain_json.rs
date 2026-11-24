@@ -7,7 +7,7 @@
 
 use std::process::Command;
 
-use vis_interp::value::Value;
+use vis_core::value::Value;
 
 fn vis(args: &[&str]) -> (i32, String, String) {
     let o = Command::new(env!("CARGO_BIN_EXE_vis"))
@@ -106,7 +106,7 @@ fn list_json_dung_hinh_dang_va_du_so_ma() {
     assert!(out.ends_with("]}\n"), "{out}");
     assert!(!out.contains("body"), "list không có body: {out}");
 
-    let v = vis_interp::json::decode(out.trim_end()).expect("JSON hợp lệ");
+    let v = vis_core::json::decode(out.trim_end()).expect("JSON hợp lệ");
     let Value::Map(kv) = v else {
         panic!("không phải object: {v:?}")
     };

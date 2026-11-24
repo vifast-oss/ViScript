@@ -38,7 +38,7 @@ mod mau {
     }
 }
 
-fn chay_ca_hai(src: &str) -> (vis_interp::RunOutput, vis_interp::RunOutput) {
+fn chay_ca_hai(src: &str) -> (vis_core::RunOutput, vis_core::RunOutput) {
     let p = vis_syntax::parse(src, vis_syntax::Mode::Script);
     assert!(p.diagnostics.is_empty(), "parse: {:?}", p.diagnostics);
     let l = vis_syntax::lex(src, vis_syntax::Mode::Script);
@@ -200,8 +200,8 @@ fn so_tham_sai_tra_loi_khong_panic() {
 
 #[test]
 fn chuyen_doi_khong_nuot_kieu_la() {
-    let e = tu_value(vis_interp::value::Value::Builtin("in"))
-        .expect_err("builtin không qua biên plugin");
+    let e =
+        tu_value(vis_core::value::Value::Builtin("in")).expect_err("builtin không qua biên plugin");
     assert_eq!(e.code, "VS0501");
     let _ = Error::new("VS0501", "x");
 }

@@ -20,11 +20,10 @@ use vis_syntax::Span;
 use crate::interp::{Abort, Trap, R};
 use crate::value::Value;
 
-pub use vis_core::reactor::{
+pub(crate) use vis_core::reactor::{
     FrameReactorBackend, ReactorH2Outcome, ReactorH2Response, ReactorIoOutcome, ReactorOp,
-    ReactorRawEvent,
 };
-pub use vis_core::value::{Chan, ChanSend, ChanSendState, Pending, Task, TrangThai, Wait};
+pub(crate) use vis_core::value::{Chan, ChanSend, ChanSendState, Pending, Task, TrangThai, Wait};
 
 pub(crate) mod chan;
 /// **VS3-3b/W5 (P1)** — chế độ evaluator W=1 (`Off`/`Local`); P2 thêm pool.

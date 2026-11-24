@@ -13,7 +13,8 @@
 //! Mọi ca phải **parse + hạ + kiểm kiểu sạch** trước khi chạy (tyck ST-12 là cổng của pipeline);
 //! riêng test `phuong_thuc_ngoai_tap_bao_vs0501` cố ý **bỏ** tyck để kiểm phòng thủ của interp.
 
-use vis_interp::{run, RunOutput};
+use vis_core::RunOutput;
+use vis_interp::run;
 use vis_syntax::{lex, parse, Mode};
 use vis_types::{check, lower};
 

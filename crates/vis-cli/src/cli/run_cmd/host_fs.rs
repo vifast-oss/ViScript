@@ -11,7 +11,7 @@ pub(super) enum HostFs {
     Mock(fsmock::FsMock),
 }
 
-impl vis_interp::builtin::FsHost for HostFs {
+impl vis_core::host::FsHost for HostFs {
     /// **ST-295 (VD-276)**: chỉ host **hệ tệp thật** mới mở được bằng `openat` từ fd gốc; mock
     /// không có không gian tên ⇒ giữ đường cũ (và mọi test mock vẫn tất định).
     #[cfg(unix)]
@@ -34,7 +34,7 @@ impl vis_interp::builtin::FsHost for HostFs {
     }
     /// **ST-137 (VD-141)**: host **thật** báo được đường dẫn thật của handle (Linux `/proc`);
     /// mock không có không gian tên ⇒ default của trait (`KhongCo`) ⇒ tầng quyền giữ bước ST-124.
-    fn read_theo_handle(&mut self, p: &str) -> Result<vis_interp::builtin::DocQuaHandle, String> {
+    fn read_theo_handle(&mut self, p: &str) -> Result<vis_core::host::DocQuaHandle, String> {
         match self {
             HostFs::That(r) => r.read_theo_handle(p),
             HostFs::Mock(m) => m.read_theo_handle(p),
@@ -171,7 +171,7 @@ impl vis_interp::builtin::FsHost for HostFs {
             HostFs::Mock(m) => m.list(p),
         }
     }
-    fn list_entries(&mut self, p: &str) -> Result<Vec<vis_interp::builtin::MucFs>, String> {
+    fn list_entries(&mut self, p: &str) -> Result<Vec<vis_core::host::MucFs>, String> {
         match self {
             HostFs::That(r) => r.list_entries(p),
             HostFs::Mock(m) => m.list_entries(p),

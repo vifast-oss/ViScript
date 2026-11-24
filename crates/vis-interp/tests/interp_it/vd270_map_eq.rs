@@ -6,7 +6,7 @@
 //! lồng/enum/unit/range. Map nhỏ (dưới ngưỡng nội bộ 200 entry) đi logic cũ, nên ca biên nhỏ
 //! được **đệm** khoá vô hướng để chắc chắn chạy đường nhanh.
 
-use vis_interp::value::{eq, Value};
+use vis_core::value::{eq, Value};
 
 fn m(kv: Vec<(Value, Value)>) -> Value {
     Value::Map(kv)

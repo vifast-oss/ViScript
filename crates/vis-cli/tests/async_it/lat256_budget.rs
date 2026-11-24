@@ -9,7 +9,8 @@
 //! riêng ở `vis-bytecode/tests/fee_side_table.rs`; test ở đây không nhận bảng phụ là bằng chứng
 //! instrumentation đầy đủ.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;

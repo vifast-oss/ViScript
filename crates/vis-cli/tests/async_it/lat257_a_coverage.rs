@@ -10,9 +10,11 @@
 
 use std::collections::HashSet;
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{fee as ifee, DiagSnapshot, FakeEvent};
-use vis_interp::Value;
+use vis_core::frame::{DiagSnapshot, FakeEvent};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     run_frame_for_test as run_v, run_frame_for_test_with_budget as run_v_budget,

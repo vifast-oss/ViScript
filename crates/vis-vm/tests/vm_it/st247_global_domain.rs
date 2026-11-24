@@ -144,7 +144,7 @@ fn q5_codegen_ghi_roi_doc_tra_gia_tri_dung() {
     let out = vis_vm::run(&modu, "", &[]);
     assert!(out.is_clean(), "diag: {:?}", out.diagnostics);
     assert_eq!(
-        out.value.as_ref().map(vis_interp::show).as_deref(),
+        out.value.as_ref().map(vis_core::show).as_deref(),
         Some("42"),
         "đọc sau ghi phải trả 42"
     );

@@ -4,7 +4,7 @@
 //! chương trình **không hợp lệ** phải bị từ chối — parity giữa hai engine cùng sai không tính đạt.
 
 use vis_bytecode::compile;
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 fn chay_interp(text: &str) -> RunOutput {
     let parsed = vis_syntax::parse(text, vis_syntax::Mode::Script);

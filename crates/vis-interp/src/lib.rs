@@ -44,13 +44,10 @@
 //! assert_eq!(out.exit, 1);
 //! ```
 
-/// **ST-310a**: `DbHost`/`FsHost` nay ở `vis_core::host`; `builtin` re-export giữ API.
+/// **ST-312a (VD-289)**: kiểu/trait lõi dùng trực tiếp từ `vis_core`; re-export nội bộ `pub(crate)`.
 pub(crate) use vis_core::json::derive as json_derive;
-/// **VS3-4b (VD-271)** — cookie jar nội bộ cho `http.get/head` (không API ngôn ngữ).
-pub mod cookie;
 mod gan;
 mod host;
-pub mod json;
 pub(crate) mod lift;
 pub mod net;
 pub mod render;
@@ -73,46 +70,17 @@ pub mod frame;
 pub mod interp;
 mod pat;
 
-pub use builtin::{BuiltinSig, Host, SIGS};
-pub use interp::{pos, Abort, Trap, R};
-pub use value::{exit_code, show, Closure, Value};
+pub use builtin::{BuiltinSig, SIGS};
+pub(crate) use value::Value;
 
 use std::sync::Arc;
 
-use vis_syntax::Diagnostic;
+use vis_core::RunOutput;
 use vis_types::hir::Hir;
 use vis_types::lower::Symbols;
 use vis_types::TypeTable;
 
-/// Kết quả một lần chạy.
-#[derive(Debug, Clone, Default)]
-pub struct RunOutput {
-    /// Toàn bộ `stdout` đã in (`print`).
-    pub stdout: String,
-    /// Chẩn đoán runtime (`VS05xx`), tối đa một cái — lỗi đầu tiên dừng chương trình.
-    pub diagnostics: Vec<Diagnostic>,
-    /// Giá trị `main` trả (hoặc biểu thức cấp tệp cuối).
-    pub value: Option<Value>,
-    /// Mã thoát: `0` nếu sạch; `main` trả `Result::Err` ⇒ `1`; `int` của `main` **không**
-    /// phải mã thoát (VD-242 §7 / quyết định A0 2026-11-19).
-    pub exit: i32,
-    /// Số bước đã chạy — **chống xanh-giả** trong test (`out("")` vẫn phải chạy thật).
-    pub steps: usize,
-}
-
-impl RunOutput {
-    /// `true` nếu không có chẩn đoán.
-    pub fn is_clean(&self) -> bool {
-        self.diagnostics.is_empty()
-    }
-
-    /// Mã chẩn đoán theo thứ tự.
-    pub fn codes(&self) -> Vec<&'static str> {
-        self.diagnostics.iter().map(|d| d.code.short).collect()
-    }
-}
-
-/// Chạy một chương trình đã hạ.
+/// Chạy một chương trình đã hạ. `RunOutput` nay ở `vis_core` (ST-312a/VD-289).
 pub fn run(
     text: &str,
     hir: &Hir,

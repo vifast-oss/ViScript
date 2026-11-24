@@ -19,7 +19,8 @@ use std::process::Command;
 #[cfg(any(unix, windows))]
 use std::thread;
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -337,7 +338,7 @@ fn server_mot_lan(noi_dung: &'static [u8]) -> String {
 #[test]
 fn async_net_khong_ro_ri_tay_sau_200_vong() {
     use vis_cli::async_net::AsyncNet;
-    use vis_interp::builtin::NetHost;
+    use vis_core::host::NetHost;
 
     let mut net = AsyncNet::new(false);
     let l = NetHost::listen(&mut net, "127.0.0.1:0").expect("listen");

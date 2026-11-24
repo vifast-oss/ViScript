@@ -260,23 +260,23 @@ fn list_json_co_version_req() {
     let (c2, o, e2) = vis(&d, &["pkg", "list", "--json"]);
     assert_eq!(c2, 0, "stderr: {e2}");
     assert_eq!(o.lines().count(), 1, "một dòng JSON: {o}");
-    let v = vis_interp::json::decode(&o).expect("JSON hợp lệ");
-    let vis_interp::value::Value::Map(kv) = v else {
+    let v = vis_core::json::decode(&o).expect("JSON hợp lệ");
+    let vis_core::value::Value::Map(kv) = v else {
         panic!("không phải object")
     };
-    let Some(vis_interp::value::Value::List(ps)) = kv.iter().find_map(|(k, v)| {
-        matches!(k, vis_interp::value::Value::Str(s) if s == "packages").then_some(v)
+    let Some(vis_core::value::Value::List(ps)) = kv.iter().find_map(|(k, v)| {
+        matches!(k, vis_core::value::Value::Str(s) if s == "packages").then_some(v)
     }) else {
         panic!("thiếu packages")
     };
     let mut thay = 0;
     for p in ps {
-        let vis_interp::value::Value::Map(m) = p else {
+        let vis_core::value::Value::Map(m) = p else {
             panic!("package không phải object")
         };
         let lay = |k: &str| {
             m.iter().find_map(|(kk, vv)| match (kk, vv) {
-                (vis_interp::value::Value::Str(x), vis_interp::value::Value::Str(y)) if x == k => {
+                (vis_core::value::Value::Str(x), vis_core::value::Value::Str(y)) if x == k => {
                     Some(y.clone())
                 }
                 _ => None,

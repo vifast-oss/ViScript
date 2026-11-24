@@ -20,11 +20,11 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use vis_syntax::{Diagnostic, Span};
+use vis_syntax::Span;
 use vis_types::hir::*;
 
 use crate::interp::{lit_value, Abort, Interp, Trap, R, RT};
-use crate::rt::{self, DiagSnapshot, FakeEvent, FrameReactorBackend, ReactorEvent};
+use crate::rt;
 use crate::value::{Env, ForIter, Name, Value};
 
 mod expr;
@@ -37,34 +37,7 @@ use expr::{call_value, dispatch, eval_work, exec_work};
 use params::{env_for_params, khoi_tao_bien_cap_tep_frame, opt_depth_ty};
 use proc::process_work;
 
-/// Cấu hình frame test — `fake_sources`: `(tên hàm async, khóa event)`; `events`: trace.
-#[doc(hidden)]
-#[derive(Debug, Default, Clone)]
-pub struct FrameConfig {
-    pub fake_sources: Vec<(String, u64)>,
-    pub events: Vec<FakeEvent>,
-    /// **Lát 2**: trace reactor giả (read/accept/timer). `seq` quyết định thứ tự fire.
-    #[doc(hidden)]
-    pub reactors: Vec<ReactorEvent>,
-    /// **Lát 2**: `true` ⇒ khi rảnh, ngủ một lần tới deadline monotonic gần nhất (đo B1).
-    #[doc(hidden)]
-    pub timer_real_wait: bool,
-    /// **Lát 3 (chỉ test)**: adapter selector thật. `None` ⇒ đường reactor giả Lát 2.
-    #[doc(hidden)]
-    pub backend: Option<std::rc::Rc<std::cell::RefCell<dyn FrameReactorBackend>>>,
-}
-
-/// Kết quả frame test — kèm log scheduler (tất định) + snapshot ownership.
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct FrameOutput {
-    pub stdout: String,
-    pub diagnostics: Vec<Diagnostic>,
-    pub value: Option<Value>,
-    pub exit: i32,
-    pub log: Vec<String>,
-    pub snapshot: DiagSnapshot,
-}
+pub(crate) use vis_core::frame::{FrameConfig, FrameOutput};
 
 /// Một work-item của IFrame phải làm tiếp. `Eval`/`Exec` đẩy continuation,
 /// các biến thể `Apply*` là continuation tiêu thụ giá trị trên `vals`.

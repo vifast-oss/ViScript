@@ -6,7 +6,8 @@
 //! Không đổi runtime mặc định: ngoài frame, timeout trả lỗi rõ (W1 1d sẽ flip async default).
 //! Timer dùng reactor timer hiện có, `timer_real_wait=false` để test tất định/không ngủ.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -61,7 +62,7 @@ fn cap1_recv_timeout_rong_roi_co_gia_tri() {
     let (i, v) = chay_hai(src);
     for out in [&i, &v] {
         ok(out, "None\nSome(7)\n");
-        assert_eq!(out.snapshot, vis_interp::rt::DiagSnapshot::default());
+        assert_eq!(out.snapshot, vis_core::frame::DiagSnapshot::default());
         assert!(
             out.log.iter().any(|l| l.starts_with("chwtimer:")),
             "{:?}",
@@ -384,7 +385,7 @@ fn timer_real_wait_khong_treo() {
     );
     assert_eq!(i.stdout, "None\n");
     assert!(t0.elapsed() >= std::time::Duration::from_millis(1));
-    assert_eq!(i.snapshot, vis_interp::rt::DiagSnapshot::default());
+    assert_eq!(i.snapshot, vis_core::frame::DiagSnapshot::default());
 
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
     let v = run_v(
@@ -397,5 +398,5 @@ fn timer_real_wait_khong_treo() {
         },
     );
     assert_eq!(v.stdout, "None\n");
-    assert_eq!(v.snapshot, vis_interp::rt::DiagSnapshot::default());
+    assert_eq!(v.snapshot, vis_core::frame::DiagSnapshot::default());
 }

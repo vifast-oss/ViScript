@@ -2,8 +2,8 @@
 //! **ST-311d (VD-286)** — test đơn vị của `vis test` (`vistest.rs`), tách ra cùng thư mục.
 
 use super::*;
-use vis_interp::json;
-use vis_interp::value::Value;
+use vis_core::json;
+use vis_core::value::Value;
 
 /// Đo đỏ ST-101b: newline/tab/control trong `message` làm JSON **không parse được**.
 #[test]

@@ -14,12 +14,13 @@
 //! | `reclaim_*`, `task_done_*` | `dead_keys` tính sau `retain`; `frame_task_done` nuốt `kq` |
 //! | `quota_*` | `u64 → i64` quay âm với hạn lớn |
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{
-    fee as ifee, FakeEvent, ReactorEvent, ReactorOp, ReactorOutcome, ReactorReg, Scheduler,
-    TrangThai,
-};
-use vis_interp::Value;
+use vis_core::frame::{FakeEvent, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::reactor::ReactorOp;
+use vis_core::value::TrangThai;
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::{fee as ifee, ReactorReg, Scheduler};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, frame_quota_yields_for_test,
@@ -121,9 +122,9 @@ fn closure_body_chi_dung_mot_lan_cho_moi_closure() {
         i = i + 1
     print(tong)
 "#;
-    vis_interp::value::frame_body_builds_reset_for_test();
+    vis_core::value::frame_body_builds_reset_for_test();
     let (i, v) = chay(src, FrameConfig::default());
-    let builds = vis_interp::value::frame_body_builds_for_test();
+    let builds = vis_core::value::frame_body_builds_for_test();
     for (name, o) in [("interp", &i), ("vm", &v)] {
         assert_eq!(o.exit, 0, "{name}: {:?}", o.diagnostics);
         assert_eq!(o.stdout, "2001000\n", "{name}: hành vi closure sai");

@@ -21,8 +21,8 @@ use std::time::{Duration, Instant};
 
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::{ServerConfig, ServerConnection, StreamOwned};
+use vis_core::http_client::{http_get, http_head};
 use vis_host_native::net::Net;
-use vis_interp::net::{http_get, http_head};
 
 const CERT_LOCALHOST: &[u8] =
     include_bytes!("../../../../test/fixtures/vs3_tls/localhost.cert.der");
@@ -808,10 +808,10 @@ fn async_https_timeout_doc_than_hai_engine() {
 #[cfg(any(unix, windows))]
 #[test]
 fn async_net_backend_tls_doc_ghi_qua_reactor() {
+    use vis_core::host::NetHost;
+    use vis_core::reactor::{frame_net_set_write, frame_net_take_write};
+    use vis_core::reactor::{FrameReactorBackend, ReactorOp};
     use vis_host_native::async_net::AsyncNet;
-    use vis_interp::builtin::NetHost;
-    use vis_interp::rt::{FrameReactorBackend, ReactorOp};
-    use vis_interp::stdlib::{frame_net_set_write, frame_net_take_write};
 
     let _k = kho();
     let s = may_chu_tls(
@@ -832,12 +832,12 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
     let mut da_dang_ky = false;
     for _ in 0..50 {
         match <AsyncNet as FrameReactorBackend>::try_read(&mut net, &wk, req.len()) {
-            vis_interp::rt::ReactorIoOutcome::Data(b) => {
+            vis_core::reactor::ReactorIoOutcome::Data(b) => {
                 assert!(b.is_empty(), "write TLS phải trả Data rỗng");
                 da_ghi = true;
                 break;
             }
-            vis_interp::rt::ReactorIoOutcome::WouldBlock => {
+            vis_core::reactor::ReactorIoOutcome::WouldBlock => {
                 if !da_dang_ky {
                     net.register(1, &wk, ReactorOp::Read)
                         .expect("register TLS write");
@@ -846,8 +846,8 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
                 net.wait(Duration::from_millis(100))
                     .expect("wait write TLS");
             }
-            vis_interp::rt::ReactorIoOutcome::Err(e) => panic!("write TLS lỗi: {e}"),
-            vis_interp::rt::ReactorIoOutcome::Accepted(h) => panic!("write TLS nhận `{h}`"),
+            vis_core::reactor::ReactorIoOutcome::Err(e) => panic!("write TLS lỗi: {e}"),
+            vis_core::reactor::ReactorIoOutcome::Accepted(h) => panic!("write TLS nhận `{h}`"),
         }
     }
     assert!(da_ghi, "write TLS chưa hoàn tất");
@@ -861,7 +861,7 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
     let mut all = Vec::new();
     for _ in 0..50 {
         match <AsyncNet as FrameReactorBackend>::try_read(&mut net, &handle, 1024) {
-            vis_interp::rt::ReactorIoOutcome::Data(b) => {
+            vis_core::reactor::ReactorIoOutcome::Data(b) => {
                 if b.is_empty() {
                     break;
                 }
@@ -870,11 +870,11 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
                     break;
                 }
             }
-            vis_interp::rt::ReactorIoOutcome::WouldBlock => {
+            vis_core::reactor::ReactorIoOutcome::WouldBlock => {
                 net.wait(Duration::from_millis(100)).expect("wait read TLS");
             }
-            vis_interp::rt::ReactorIoOutcome::Err(e) => panic!("read TLS lỗi: {e}"),
-            vis_interp::rt::ReactorIoOutcome::Accepted(h) => panic!("read TLS nhận `{h}`"),
+            vis_core::reactor::ReactorIoOutcome::Err(e) => panic!("read TLS lỗi: {e}"),
+            vis_core::reactor::ReactorIoOutcome::Accepted(h) => panic!("read TLS nhận `{h}`"),
         }
     }
     net.deregister(1, &handle, ReactorOp::Read)
@@ -888,8 +888,8 @@ fn async_net_backend_tls_doc_ghi_qua_reactor() {
 #[cfg(any(unix, windows))]
 #[test]
 fn async_net_backend_tls_connect_qua_reactor() {
+    use vis_core::reactor::{FrameReactorBackend, ReactorOp};
     use vis_host_native::async_net::AsyncNet;
-    use vis_interp::rt::{FrameReactorBackend, ReactorOp};
 
     let _k = kho();
     let s = may_chu_tls(
@@ -903,19 +903,19 @@ fn async_net_backend_tls_connect_qua_reactor() {
     let mut handle = None;
     for _ in 0..100 {
         match <AsyncNet as FrameReactorBackend>::try_read(&mut net, &key, 0) {
-            vis_interp::rt::ReactorIoOutcome::Accepted(h) => {
+            vis_core::reactor::ReactorIoOutcome::Accepted(h) => {
                 handle = Some(h);
                 break;
             }
-            vis_interp::rt::ReactorIoOutcome::WouldBlock => {
+            vis_core::reactor::ReactorIoOutcome::WouldBlock => {
                 net.register(1, &key, ReactorOp::Read)
                     .expect("register TLS connect");
                 let _ = net.wait(Duration::from_millis(100));
                 net.deregister(1, &key, ReactorOp::Read)
                     .expect("deregister TLS connect");
             }
-            vis_interp::rt::ReactorIoOutcome::Err(e) => panic!("TLS connect lỗi: {e}"),
-            vis_interp::rt::ReactorIoOutcome::Data(b) => {
+            vis_core::reactor::ReactorIoOutcome::Err(e) => panic!("TLS connect lỗi: {e}"),
+            vis_core::reactor::ReactorIoOutcome::Data(b) => {
                 panic!("TLS connect trả Data {}", b.len())
             }
         }
@@ -931,9 +931,9 @@ fn async_net_backend_tls_connect_qua_reactor() {
 #[cfg(windows)]
 #[test]
 fn host_tls_tren_socket_reactor_tra_loi_ro() {
+    use vis_core::host::NetHost;
+    use vis_core::reactor::{FrameReactorBackend, ReactorOp};
     use vis_host_native::async_net::AsyncNet;
-    use vis_interp::builtin::NetHost;
-    use vis_interp::rt::{FrameReactorBackend, ReactorOp};
 
     let _k = kho();
     let s = may_chu_tls(

@@ -17,10 +17,11 @@ use std::time::{Duration, Instant};
 use mio::net::{TcpListener as MioListener, TcpStream as MioStream};
 use mio::{Events, Interest, Poll, Token};
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{
-    FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent, Scheduler, Wait, Waiter,
-};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
+use vis_core::value::Wait;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::{Scheduler, Waiter};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -73,7 +74,7 @@ impl FrameReactorBackend for Reactor {
         let Some(s) = self.streams.get_mut(handle) else {
             return ReactorIoOutcome::Err(format!("tay mạng `{handle}` không tồn tại (đã đóng)"));
         };
-        let mut buf = vec![0u8; max.min(vis_interp::stdlib::NET_READ_CAP as usize)];
+        let mut buf = vec![0u8; max.min(vis_core::reactor::NET_READ_CAP as usize)];
         match s.read(&mut buf) {
             Ok(0) => ReactorIoOutcome::Data(Vec::new()), // EOF
             Ok(n) => {
@@ -283,8 +284,8 @@ fn chay_duoi_engine(
     (chay_i(src, mk()), chay_v(src, mk()))
 }
 
-fn baseline() -> vis_interp::rt::DiagSnapshot {
-    vis_interp::rt::DiagSnapshot {
+fn baseline() -> vis_core::frame::DiagSnapshot {
+    vis_core::frame::DiagSnapshot {
         live_tasks: 0,
         frames: 0,
         waiters: 0,

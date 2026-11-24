@@ -57,13 +57,12 @@ pub(crate) use str_c::{strreplace, strreplacelast, strreplacen, strrsplit, strrs
 pub(crate) use str_d::{strsplitincl, strsplitn, strsplitonce};
 pub(crate) use str_e::{strsplitterm, strstrip, strtitle, strtrim};
 
-pub use crate::json::json;
-pub use chung::DAU_QUYEN;
+pub(crate) use chung::DAU_QUYEN;
 use chung::{ban_do, chuoi, danh_sach, hop_nhat_fs, khong_host, kiem, loi, rowset, so};
-pub use vis_core::reactor::{
-    frame_net_set_write, frame_net_set_write_timeout, frame_net_take_write,
-    frame_net_write_timeout, FRAME_NET_CONNECT, FRAME_NET_WRITE, FRAME_TLS_CONNECT,
-    FRAME_WRITE_TIMEOUT_MS, NET_READ_CAP,
+use vis_core::json::json;
+pub(crate) use vis_core::reactor::{
+    frame_net_set_write, frame_net_take_write, frame_net_write_timeout, FRAME_NET_CONNECT,
+    FRAME_NET_WRITE, FRAME_TLS_CONNECT,
 };
 use vis_core::reactor::{frame_unit_result, gioi_han_net_read};
 
@@ -645,21 +644,21 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
             let s = chuoi(name, &args[0], 0, span)?;
             // **ST-240 / VD-242 §3.5 (nợ #175)**: `01` phải bị từ chối. Lỗi là **dữ liệu**
             // (`Result.Err` của chương trình), không phải trap — cùng mẫu với lỗi cú pháp JSON
-            // của `crate::json::decode`.
-            if let Some(off) = crate::json::zero_dau(s) {
+            // của `vis_core::json::decode`.
+            if let Some(off) = vis_core::json::zero_dau(s) {
                 let e = format!("JSON không hợp lệ ở byte {off}: số có số 0 đầu");
                 return Ok(Value::err(Value::ban_ghi_error(e, None)));
             }
-            match crate::json::decode(s) {
+            match vis_core::json::decode(s) {
                 // **VD-222 (điểm 4)**: trả `Result[Json, Error]` — bọc cây JSON vào enum `Json`.
-                Ok(v) => Ok(Value::ok(crate::json::boc(v))),
+                Ok(v) => Ok(Value::ok(vis_core::json::boc(v))),
                 Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),
             }
         }
         "json.encode" | "json.encode_pretty" => {
             // **ST-238 / VD-242 (nợ #169, Q4b, §3.5)**: NaN/vô cực (kể cả `Percent`) ⇒ **lỗi**,
             // không xuất token `inf`/`NaN` và không tự đổi `null`. Kiểm đệ thuỳ trước khi mã hoá.
-            if crate::json::co_so_phi_huu_han(&args[0]) {
+            if vis_core::json::co_so_phi_huu_han(&args[0]) {
                 return Err(loi(
                     "json.encode: giá trị số không hữu hạn (NaN/inf) không được mã hoá",
                     span,

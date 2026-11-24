@@ -7,12 +7,13 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use crate::interp::Trap;
-use crate::value::Value;
 
 use super::{
     select, FrameReactorBackend, ReactorOp, Wait, FRAME_CANCEL_BYTES, FRAME_CANCEL_TEST,
     FRAME_CANCEL_TURNS,
 };
+
+pub(crate) use vis_core::frame::{DiagSnapshot, FakeEvent, ReactorEvent, ReactorOutcome};
 
 // ===========================================================================
 // ST-267 / VD-251 — LÁT 1: frame scheduler cho đường test nội bộ.
@@ -22,18 +23,6 @@ use super::{
 // mọi nhánh cũ trong tệp này chạy y hệt trước. Không reactor, không socket,
 // không opcode/bytecode/VERSION/cache-key mới, không `unsafe`, không dependency.
 // ===========================================================================
-
-/// **Chỉ test**: một sự kiện giả trong trace. `seq` là khóa thứ tự **được ghi trong
-/// trace** — tie-break tất định, không dùng hash-map/memory address. `gen` là thế hệ
-/// đăng ký; event có `gen` lệch thế hệ hiện hành bị bỏ (stale wake).
-#[doc(hidden)]
-#[derive(Debug, Clone)]
-pub struct FakeEvent {
-    pub seq: u64,
-    pub key: u64,
-    pub gen: u64,
-    pub value: Value,
-}
 
 /// **VD-260 (chỉ test)**: số frame sẵn sàng liên tiếp tối đa trước khi scheduler buộc giao
 /// **một** event kế tiếp (fake/reactor, đúng `seq`). Bộ đếm tất định (không phải thời gian)
@@ -51,20 +40,6 @@ pub struct Waiter {
     pub gen: u64,
 }
 
-/// **Chỉ test**: snapshot chẩn đoán (không fd/timer thật).
-#[doc(hidden)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct DiagSnapshot {
-    pub live_tasks: usize,
-    pub frames: usize,
-    pub waiters: usize,
-    pub ready: usize,
-    /// **Lát 2**: số đăng ký reactor còn sống (`read`/`accept` đang treo).
-    pub regs: usize,
-    /// **Lát 2**: số timer monotonic còn sống (sự kiện có deadline).
-    pub timers: usize,
-}
-
 // ===========================================================================
 // ST-268 / VD-252 — LÁT 2: reactor giả **tất định** + timer monotonic (chỉ test).
 //
@@ -75,36 +50,6 @@ pub struct DiagSnapshot {
 // tới deadline monotonic gần nhất). Mọi thao tác ghi log tất định để hai engine
 // so sánh byte-with-byte. Không `unsafe`, không dependency, không CLI/API mới.
 // ===========================================================================
-
-/// **Chỉ test (Lát 2)**: kết quả một sự kiện reactor giả.
-#[doc(hidden)]
-#[derive(Debug, Clone)]
-pub enum ReactorOutcome {
-    /// Dữ liệu sẵn sàng — `Value::ok(...)` cho `read`, handle cho `accept`.
-    Ready(Value),
-    /// Thức giả (spurious): retry gặp `WouldBlock` ⇒ re-arm với `gen` mới (không spin).
-    Spurious,
-    /// EOF — `read` trả `""`, bỏ đăng ký đúng một lần.
-    Eof,
-    /// Lỗi dữ liệu — `read`/`accept` trả `Result.Err`.
-    Error(String),
-    /// Tay bị đóng khi đang chờ — hủy đăng ký + vô hiệu event cũ.
-    Close,
-}
-
-/// **Chỉ test (Lát 2)**: một sự kiện trong trace reactor. `seq` khóa thứ tự fire;
-/// `key` là khóa đăng ký (0 = khớp mọi đăng ký, dùng cho timer gần nhất); `gen` là
-/// thế hệ đăng ký; `deadline_ms` (nếu có) là deadline monotonic tương đối kể từ
-/// lúc bật frame — dùng để chọn timer gần nhất khi scheduler rảnh.
-#[doc(hidden)]
-#[derive(Debug, Clone)]
-pub struct ReactorEvent {
-    pub seq: u64,
-    pub key: u64,
-    pub gen: u64,
-    pub outcome: ReactorOutcome,
-    pub deadline_ms: Option<u64>,
-}
 
 /// **Chỉ test (Lát 2)**: một đăng ký chờ đang sống trong reactor giả.
 #[doc(hidden)]

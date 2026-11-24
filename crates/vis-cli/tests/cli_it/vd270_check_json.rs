@@ -89,7 +89,7 @@ fn kiem_json(out: &str) {
         1,
         "JSON phải đúng một dòng (mọi newline trong chuỗi đã escape): {out:?}"
     );
-    vis_interp::json::decode(out.trim_end_matches('\n')).expect("JSON phải parse được");
+    vis_core::json::decode(out.trim_end_matches('\n')).expect("JSON phải parse được");
 }
 
 // Các mẩu chẩn đoán **nguyên văn** (raw string giữ đúng dấu `\` của JSON đã escape).

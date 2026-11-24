@@ -3,10 +3,11 @@
 //! hai engine (interp + VM). Không model/harness độc lập: dùng `Interp`/`Vm` thật
 //! qua API test-only (`vis_interp::frame`, `vis_vm::vm_frame`). Runtime mặc định
 //! (`vis run`) không bị chạm.
-use vis_interp::frame::FrameOutput;
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
-use vis_interp::rt::{DiagSnapshot, FakeEvent};
-use vis_interp::Value;
+use vis_core::frame::FrameConfig;
+use vis_core::frame::FrameOutput;
+use vis_core::frame::{DiagSnapshot, FakeEvent};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

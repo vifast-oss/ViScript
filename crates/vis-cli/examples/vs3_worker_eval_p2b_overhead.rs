@@ -101,7 +101,7 @@ fn median(mut v: Vec<f64>) -> f64 {
     v[v.len() / 2]
 }
 
-fn chay_interp(a: &Image, w: usize) -> vis_interp::RunOutput {
+fn chay_interp(a: &Image, w: usize) -> vis_core::RunOutput {
     if w == 1 {
         vis_interp::run_workers_local(&a.src, &a.hir, &a.syms, &a.tys, &[])
     } else {
@@ -109,7 +109,7 @@ fn chay_interp(a: &Image, w: usize) -> vis_interp::RunOutput {
     }
 }
 
-fn chay_vm(a: &Image, w: usize) -> vis_interp::RunOutput {
+fn chay_vm(a: &Image, w: usize) -> vis_core::RunOutput {
     if w == 1 {
         vis_vm::run_workers_local_vm(&a.module, &a.src, &[])
     } else {

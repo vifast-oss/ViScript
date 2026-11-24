@@ -6,7 +6,7 @@
 //! kiểu phải bị tyck từ chối (không được sửa VM để nuốt lỗi).
 
 use vis_bytecode::compile;
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 fn chay_interp(text: &str) -> RunOutput {
     let parsed = vis_syntax::parse(text, vis_syntax::Mode::Script);

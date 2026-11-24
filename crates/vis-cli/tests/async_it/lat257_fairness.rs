@@ -9,9 +9,11 @@
 //! (2) quota RIÊNG, reset mỗi turn, hết ⇒ yield đuôi ready (KHÔNG trap), (3) quét Q — KHÔNG chọn
 //! default, (4) vòng đời đa sóng qua `diag_snapshot()`.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{fee as ifee, DiagSnapshot, FakeEvent, ReactorEvent, ReactorOutcome};
-use vis_interp::Value;
+use vis_core::frame::{DiagSnapshot, FakeEvent, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, frame_quota_yields_for_test,

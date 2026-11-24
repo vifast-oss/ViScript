@@ -15,8 +15,9 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use vis_core::frame::{FrameConfig, FrameOutput};
 use vis_host_native::async_net::AsyncNet;
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{
     frame_cancel_after_bytes_for_test, frame_cancel_after_turns_for_test,
     frame_cancel_clear_triggers_for_test,
@@ -237,8 +238,8 @@ fn chay_v(src: &str, net: &Rc<RefCell<AsyncNet>>, id: u32) -> FrameOutput {
     out
 }
 
-fn baseline() -> vis_interp::rt::DiagSnapshot {
-    vis_interp::rt::DiagSnapshot {
+fn baseline() -> vis_core::frame::DiagSnapshot {
+    vis_core::frame::DiagSnapshot {
         live_tasks: 0,
         frames: 0,
         waiters: 0,

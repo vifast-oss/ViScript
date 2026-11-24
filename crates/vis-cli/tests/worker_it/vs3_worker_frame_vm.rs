@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-292 (P4a/P4b)** — parity interp↔VM cho frame + evaluator worker (W=1/2/4).
 
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 use vis_syntax::{lex, parse, Mode};
 
 struct Anh {
@@ -168,7 +168,7 @@ fn vm_p4a_w2_w4_byte_identical_20_vong() {
 /// VM `--workers 4`: task bị huỷ tại safe point, không chạy tiếp `V:post`, không treo.
 #[test]
 fn vm_p4b_cancel_worker_qua_trigger_frame() {
-    use vis_interp::frame::FrameConfig;
+    use vis_core::frame::FrameConfig;
     use vis_interp::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
     let src = r#"async fn src1() -> int:
     0
@@ -191,11 +191,11 @@ fn main():
     frame_cancel_on_seq_for_test(0, 1);
     let cfg = FrameConfig {
         fake_sources: vec![("src1".into(), 1)],
-        events: vec![vis_interp::rt::FakeEvent {
+        events: vec![vis_core::frame::FakeEvent {
             seq: 0,
             key: 1,
             gen: 0,
-            value: vis_interp::Value::Int(7),
+            value: vis_core::Value::Int(7),
         }],
         ..Default::default()
     };

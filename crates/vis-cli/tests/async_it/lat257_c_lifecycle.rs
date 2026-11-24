@@ -14,13 +14,15 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{DiagSnapshot, FakeEvent, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
+use vis_core::value::Wait;
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{
-    frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test, DiagSnapshot, FakeEvent,
-    FrameReactorBackend, ReactorEvent, ReactorIoOutcome, ReactorOp, ReactorOutcome,
-    ReactorRawEvent, Scheduler, Wait, Waiter,
+    frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test, Scheduler, Waiter,
 };
-use vis_interp::Value;
 use vis_syntax::{lex, parse, Mode, Span};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

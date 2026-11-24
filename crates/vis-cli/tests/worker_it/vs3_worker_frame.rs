@@ -5,7 +5,7 @@
 //! `run_async_workers_with_hosts_caps`. Kỳ vọng: output/exit/codes byte-identical, task chỉ
 //! chạy **một lần**, final join theo spawn order, cross-write `VS0509`, budget `VS0510`.
 
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 use vis_syntax::{lex, parse, Mode};
 
 fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {

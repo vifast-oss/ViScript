@@ -8,7 +8,7 @@
 
 use vis_bytecode::verify::{load_verified, verify, VerifyError};
 use vis_bytecode::{compile, decode, encode, Const, Func, Instr, Module, Span, HASH_LEN, VERSION};
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 fn func(name: &str, code: Vec<Instr>, nparams: u16, nlocals: u16, max_stack: u16) -> Func {
     Func {
@@ -33,7 +33,7 @@ fn m(funcs: Vec<Func>, consts: Vec<Const>) -> Module {
 }
 
 fn show(out: &RunOutput) -> Option<String> {
-    out.value.as_ref().map(vis_interp::show)
+    out.value.as_ref().map(vis_core::show)
 }
 
 /// Khẳng định đây là **trap/chặn thật**, có chẩn đoán `VS0501`, `exit != 0`, không trả giá trị.

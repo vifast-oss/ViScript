@@ -7,7 +7,8 @@
 //! dùng chương trình có `match`/`with`/`?` để ghi nhận ranh giới đó thay vì giả vờ parity đầy đủ.
 //! Không mở tính năng, không hạ tiêu chí của test cũ.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm::Vm;

@@ -306,7 +306,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
-                crate::net::http_get(host, url, timeout.max(0) as u64).map(Value::Str),
+                vis_core::http_client::http_get(host, url, timeout.max(0) as u64).map(Value::Str),
                 span,
             )
         }
@@ -328,17 +328,19 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
                 )));
             }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
-            let kq = crate::net::http_head(host, url, timeout.max(0) as u64).map(|(st, hs)| {
-                let headers = Value::Map(
-                    hs.into_iter()
-                        .map(|(k, v)| (Value::Str(k), Value::Str(v)))
-                        .collect(),
-                );
-                Value::Map(vec![
-                    (Value::Str("status".to_string()), Value::Int(st as i64)),
-                    (Value::Str("headers".to_string()), headers),
-                ])
-            });
+            let kq = vis_core::http_client::http_head(host, url, timeout.max(0) as u64).map(
+                |(st, hs)| {
+                    let headers = Value::Map(
+                        hs.into_iter()
+                            .map(|(k, v)| (Value::Str(k), Value::Str(v)))
+                            .collect(),
+                    );
+                    Value::Map(vec![
+                        (Value::Str("status".to_string()), Value::Int(st as i64)),
+                        (Value::Str("headers".to_string()), headers),
+                    ])
+                },
+            );
             hop_nhat_fs(kq, span)
         }
         _ => unreachable!("fs_net_d::goi chỉ nhận tên fs.*/net.*"),

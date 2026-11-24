@@ -16,9 +16,11 @@
 //! | `exit_*` | `Result.Err` từ `main` bị bỏ qua (exit 0); `main -> int` **không** phải mã thoát (VD-259) |
 //! | `closure_*` | mỗi lần gọi closure dùng chung env ⇒ tham số bị lần gọi khác xoá |
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{fee as ifee, FakeEvent, ReactorEvent, ReactorOutcome};
-use vis_interp::Value;
+use vis_core::frame::{FakeEvent, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::fee as ifee;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, run_frame_for_test as run_v,

@@ -8,9 +8,10 @@
 
 use std::process::Command;
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
-use vis_interp::Value;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -34,7 +35,7 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
 
 fn chay_hai(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     cancels: &[(u64, u32)],
 ) -> (FrameOutput, FrameOutput) {
     let (hir, syms, tys) = tien_trinh(src);
@@ -75,8 +76,8 @@ fn chay_hai(
     (i, v)
 }
 
-fn trigger_event() -> vis_interp::rt::FakeEvent {
-    vis_interp::rt::FakeEvent {
+fn trigger_event() -> vis_core::frame::FakeEvent {
+    vis_core::frame::FakeEvent {
         seq: 0,
         key: 999,
         gen: 0,

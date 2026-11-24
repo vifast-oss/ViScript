@@ -24,11 +24,12 @@ use std::time::Duration;
 use mio::net::{TcpListener as MioListener, TcpStream as MioStream};
 use mio::{Events, Interest, Poll, Token};
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{
-    FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent, Scheduler, Wait, Waiter,
-};
-use vis_interp::stdlib::{FRAME_NET_CONNECT, FRAME_NET_WRITE};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::reactor::{FrameReactorBackend, ReactorIoOutcome, ReactorOp, ReactorRawEvent};
+use vis_core::reactor::{FRAME_NET_CONNECT, FRAME_NET_WRITE};
+use vis_core::value::Wait;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::{Scheduler, Waiter};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -196,7 +197,7 @@ impl Net2 {
     fn try_write(&mut self, key: &str) -> ReactorIoOutcome {
         let tay = &key[FRAME_NET_WRITE.len()..];
         if !self.writes.contains_key(key) {
-            let Some(data) = vis_interp::stdlib::frame_net_take_write(key) else {
+            let Some(data) = vis_core::reactor::frame_net_take_write(key) else {
                 // Tay bị đóng khi đang ghi: registry cũ đã bị stdlib dọn ⇒ Err rõ.
                 return ReactorIoOutcome::Err(format!("tay `{tay}` đã đóng khi đang ghi"));
             };
@@ -273,7 +274,7 @@ impl FrameReactorBackend for Net2 {
                         "tay mạng `{handle}` không tồn tại (đã đóng)"
                     ));
                 };
-                let mut buf = vec![0u8; max.min(vis_interp::stdlib::NET_READ_CAP as usize)];
+                let mut buf = vec![0u8; max.min(vis_core::reactor::NET_READ_CAP as usize)];
                 match s.read(&mut buf) {
                     Ok(0) => ReactorIoOutcome::Data(Vec::new()),
                     Ok(n) => {
@@ -496,8 +497,8 @@ fn assert_ok(out: &FrameOutput) {
         out.stdout, out.diagnostics
     );
 }
-fn baseline() -> vis_interp::rt::DiagSnapshot {
-    vis_interp::rt::DiagSnapshot {
+fn baseline() -> vis_core::frame::DiagSnapshot {
+    vis_core::frame::DiagSnapshot {
         live_tasks: 0,
         frames: 0,
         waiters: 0,
@@ -951,7 +952,7 @@ fn main():
 // ===========================================================================
 #[test]
 fn t8_write_timeout_is_bounded_and_cleans_up() {
-    vis_interp::stdlib::frame_net_set_write_timeout(Some(300));
+    vis_core::reactor::frame_net_set_write_timeout(Some(300));
     // 4 MiB sinh bởi `str.repeat` ⇒ chắc chắn vượt send buffer dù peer không đọc.
     let src = r#"use std.net
 use std.str
@@ -978,7 +979,7 @@ fn main():
     let t0 = std::time::Instant::now();
     let (i, v) = chay_duoi_engine(src, mk);
     let elapsed = t0.elapsed();
-    vis_interp::stdlib::frame_net_set_write_timeout(None);
+    vis_core::reactor::frame_net_set_write_timeout(None);
     assert!(
         elapsed < Duration::from_secs(3),
         "phải thoát theo deadline, không treo vô hạn: {elapsed:?}"
@@ -1027,7 +1028,7 @@ fn t9_token_generation_connect_write_deterministic() {
     assert!(deadline0.is_some(), "connect có deadline riêng");
 
     // write: handle KHÁC ⇒ key 1, token 1 — không dùng lại token của connect.
-    vis_interp::stdlib::frame_net_set_write("W:C1", b"X");
+    vis_core::reactor::frame_net_set_write("W:C1", b"X");
     let _ = s
         .frame_reactor_poll_io(ReactorOp::Read, "W:C1", 1, 1000, span)
         .unwrap_err();
@@ -1089,5 +1090,5 @@ fn t9_token_generation_connect_write_deterministic() {
     s.frame_reactor_shutdown();
     assert!(s.frame.token_map.is_empty());
     assert!(s.frame.reactor.regs.is_empty());
-    let _ = vis_interp::stdlib::frame_net_take_write("W:C1");
+    let _ = vis_core::reactor::frame_net_take_write("W:C1");
 }

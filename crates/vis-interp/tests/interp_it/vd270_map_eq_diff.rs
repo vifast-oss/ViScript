@@ -3,7 +3,7 @@
 //! của `Value::Map` với **logic O(n²) cũ** trên cùng dữ liệu: khoá vô hướng lẫn phức tạp, trùng
 //! khoá, `NaN`, `±0.0`, `Int`/`Float`/`Percent` không bắc cầu, map đảo thứ tự. Mỗi map được
 //! **đệm** 120 khoá vô hướng để chắc chắn vượt ngưỡng đường nhanh (≥ 200 entry hai vế).
-use vis_interp::value::{eq, Value};
+use vis_core::value::{eq, Value};
 
 /// Nguyên văn `gop` + phép so map cũ (oracle độc lập với `value.rs`).
 fn gop(xs: &[(Value, Value)]) -> Vec<&(Value, Value)> {

@@ -7,8 +7,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
+use vis_core::RunOutput;
 use vis_interp::rt::fee::SharedBudget;
-use vis_interp::RunOutput;
 use vis_syntax::{lex, parse, Mode};
 
 fn anh(

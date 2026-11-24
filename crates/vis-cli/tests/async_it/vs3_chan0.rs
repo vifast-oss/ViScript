@@ -5,9 +5,10 @@
 //! `select`/timeout (VS3-2b), không VERSION/bytecode. `chan(n≥1)` giữ nguyên ngữ nghĩa
 //! run-to-completion + `VS0505` khi hết task (test hồi quy ở đây và `lat257_a_coverage::b3`).
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{frame_cancel_clear_triggers_for_test, frame_cancel_on_seq_for_test};
-use vis_interp::Value;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 
@@ -29,8 +30,8 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
     (h.hir, h.symbols, h.types)
 }
 
-fn baseline() -> vis_interp::rt::DiagSnapshot {
-    vis_interp::rt::DiagSnapshot {
+fn baseline() -> vis_core::frame::DiagSnapshot {
+    vis_core::frame::DiagSnapshot {
         live_tasks: 0,
         frames: 0,
         waiters: 0,
@@ -51,7 +52,7 @@ fn dat_trigger(cancels: &[(u64, u32)]) {
 /// trigger huỷ; không có adapter/reactor.
 fn chay_hai(
     src: &str,
-    events: Vec<vis_interp::rt::FakeEvent>,
+    events: Vec<vis_core::frame::FakeEvent>,
     cancels: &[(u64, u32)],
 ) -> (FrameOutput, FrameOutput) {
     let (hir, syms, tys) = tien_trinh(src);
@@ -383,8 +384,8 @@ fn chan0_close_idempotent_va_recv_none() {
 // (6) cancellation gỡ sender/receiver khỏi wait-set đúng một lần.
 // ---------------------------------------------------------------------------
 
-fn trigger_event() -> vis_interp::rt::FakeEvent {
-    vis_interp::rt::FakeEvent {
+fn trigger_event() -> vis_core::frame::FakeEvent {
+    vis_core::frame::FakeEvent {
         seq: 0,
         key: 999,
         gen: 0,

@@ -21,8 +21,9 @@
 //! **VS3-1d đã flip** theo VD-271: chương trình có `async fn` dùng frame scheduler, sync giữ
 //! runtime cũ. `vs3_default.rs` kiểm entry/cache/guard; file này giữ ma trận coverage.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
-use vis_interp::rt::DiagSnapshot;
+use vis_core::frame::DiagSnapshot;
+use vis_core::frame::FrameConfig;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
 

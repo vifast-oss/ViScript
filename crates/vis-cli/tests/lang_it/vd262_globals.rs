@@ -265,7 +265,8 @@ fn doc_cheo_trong_luc_khoi_tao_trap() {
 
 #[test]
 fn frame_interp_va_frame_vm_cung_khoi_tao_global() {
-    use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig};
+    use vis_core::frame::FrameConfig;
+    use vis_interp::frame::run_frame_for_test as run_i;
     use vis_vm::vm_frame::run_frame_for_test as run_v;
 
     let src = "let a = 2\nlet b = a + 1\nvar c = 4\nfn main():\n    c = c + b\n    print(c)\n";

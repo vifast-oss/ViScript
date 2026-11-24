@@ -135,15 +135,15 @@ fn json_mot_dong_dung_khoa_va_parse_duoc() {
     assert_eq!(ra.matches('\n').count(), 1, "đúng một dòng: {ra:?}");
     assert!(ra.ends_with('\n'), "JSON phải kết thúc bằng newline");
 
-    let v = vis_interp::json::decode(ra.trim_end_matches('\n')).expect("JSON phải parse được");
-    let vis_interp::value::Value::Map(kv) = v else {
+    let v = vis_core::json::decode(ra.trim_end_matches('\n')).expect("JSON phải parse được");
+    let vis_core::value::Value::Map(kv) = v else {
         panic!("JSON phải là object");
     };
     assert_eq!(kv.len(), 5, "đúng 5 khoá: {kv:?}");
     let khoa: Vec<&str> = kv
         .iter()
         .map(|(k, _)| match k {
-            vis_interp::value::Value::Str(s) => s.as_str(),
+            vis_core::value::Value::Str(s) => s.as_str(),
             _ => panic!("khoá phải là chuỗi"),
         })
         .collect();
@@ -154,33 +154,33 @@ fn json_mot_dong_dung_khoa_va_parse_duoc() {
     );
     let tim = |ten: &str| {
         kv.iter()
-            .find(|(k, _)| matches!(k, vis_interp::value::Value::Str(s) if s == ten))
+            .find(|(k, _)| matches!(k, vis_core::value::Value::Str(s) if s == ten))
             .map(|(_, v)| v)
             .unwrap_or_else(|| panic!("thiếu khoá {ten}"))
     };
-    let vis_interp::value::Value::Str(version) = tim("version") else {
+    let vis_core::value::Value::Str(version) = tim("version") else {
         panic!("version phải là chuỗi");
     };
     assert_eq!(version.as_str(), env!("CARGO_PKG_VERSION"));
-    let vis_interp::value::Value::Str(os) = tim("os") else {
+    let vis_core::value::Value::Str(os) = tim("os") else {
         panic!("os phải là chuỗi");
     };
     assert_eq!(os.as_str(), std::env::consts::OS);
-    let vis_interp::value::Value::Str(arch) = tim("arch") else {
+    let vis_core::value::Value::Str(arch) = tim("arch") else {
         panic!("arch phải là chuỗi");
     };
     assert_eq!(arch.as_str(), std::env::consts::ARCH);
-    let vis_interp::value::Value::Bool(sqlite) = tim("sqlite") else {
+    let vis_core::value::Value::Bool(sqlite) = tim("sqlite") else {
         panic!("sqlite phải là bool");
     };
     assert_eq!(*sqlite, sqlite_bat());
-    let vis_interp::value::Value::List(f) = tim("features") else {
+    let vis_core::value::Value::List(f) = tim("features") else {
         panic!("features phải là mảng");
     };
     let f: Vec<String> = f
         .iter()
         .map(|v| match v {
-            vis_interp::value::Value::Str(s) => s.clone(),
+            vis_core::value::Value::Str(s) => s.clone(),
             _ => panic!("features phải chứa chuỗi"),
         })
         .collect();

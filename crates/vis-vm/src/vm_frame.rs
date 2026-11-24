@@ -15,12 +15,13 @@ use std::rc::Rc;
 
 use vis_bytecode::fee::{FeeEntry, FeeTable};
 use vis_bytecode::Instr;
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::{Value, VmFunc};
 use vis_interp::builtin;
 use vis_interp::builtin::Host;
-use vis_interp::frame::{FrameConfig, FrameOutput};
-use vis_interp::interp::{Abort, Trap, BUDGET, R, RT};
+use vis_interp::interp::{BUDGET, RT};
 use vis_interp::rt::{self, Waiter};
-use vis_interp::value::{Value, VmFunc};
 use vis_syntax::{Diagnostic, Span};
 
 use crate::vm::{Frame, Th, Vm, MAX_FRAMES};
@@ -463,7 +464,7 @@ pub(crate) fn call_builtin_frame(
     ten: &str,
     args: Vec<Value>,
     span: Span,
-) -> vis_interp::R<Value> {
+) -> vis_core::R<Value> {
     if !vm.sched.borrow().frame.enabled {
         return builtin::call(vm, ten, args, span);
     }
@@ -494,7 +495,7 @@ pub(crate) fn call_method_frame(
     args: Vec<Value>,
     ten: &str,
     span: Span,
-) -> vis_interp::R<Value> {
+) -> vis_core::R<Value> {
     match builtin::method(vm, recv.clone(), ten, args.clone(), span) {
         Ok(v) => Ok(v),
         Err(Abort::Pending(p)) => {
@@ -561,12 +562,12 @@ pub fn run_async_with_full_hosts_caps<'m>(
     m: &'m vis_bytecode::Module,
     text: &'m str,
     args: &[String],
-    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
-    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
-    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    ngoai: Option<&'m mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'m mut dyn vis_core::host::FsHost>,
+    net: Option<&'m mut dyn vis_core::host::NetHost>,
+    db: Option<&'m mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
-) -> vis_interp::RunOutput {
+) -> vis_core::RunOutput {
     run_async_with_full_hosts_caps_backend(m, text, args, ngoai, fs, net, db, caps, None)
 }
 
@@ -577,13 +578,13 @@ pub fn run_async_with_full_hosts_caps_backend<'m>(
     m: &'m vis_bytecode::Module,
     text: &'m str,
     args: &[String],
-    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
-    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
-    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    ngoai: Option<&'m mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'m mut dyn vis_core::host::FsHost>,
+    net: Option<&'m mut dyn vis_core::host::NetHost>,
+    db: Option<&'m mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
-    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>>,
-) -> vis_interp::RunOutput {
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_core::reactor::FrameReactorBackend>>>,
+) -> vis_core::RunOutput {
     let mut vm = Vm::new(m, text);
     if let Some(n) = ngoai {
         vm.set_ngoai(n);
@@ -611,7 +612,7 @@ pub fn run_async_with_full_hosts_caps_backend<'m>(
         },
         None,
     );
-    vis_interp::RunOutput {
+    vis_core::RunOutput {
         stdout: fo.stdout,
         diagnostics: fo.diagnostics,
         value: fo.value,
@@ -627,15 +628,15 @@ pub fn run_async_workers_with_full_hosts_caps<'m>(
     m: &'m vis_bytecode::Module,
     text: &'m str,
     args: &[String],
-    ngoai: Option<&'m mut dyn vis_interp::builtin::Ngoai>,
-    fs: Option<&'m mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'m mut dyn vis_interp::builtin::NetHost>,
-    db: Option<&'m mut dyn vis_interp::builtin::DbHost>,
+    ngoai: Option<&'m mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'m mut dyn vis_core::host::FsHost>,
+    net: Option<&'m mut dyn vis_core::host::NetHost>,
+    db: Option<&'m mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
     workers: usize,
     budget: Option<std::sync::Arc<vis_interp::rt::fee::SharedBudget>>,
-    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_interp::rt::FrameReactorBackend>>>,
-) -> vis_interp::RunOutput {
+    backend: Option<std::rc::Rc<std::cell::RefCell<dyn vis_core::reactor::FrameReactorBackend>>>,
+) -> vis_core::RunOutput {
     let mut vm = Vm::new(m, text);
     crate::vm::worker::cau_hinh(&mut vm, m, text, workers.max(2), budget, None);
     if let Some(n) = ngoai {
@@ -664,7 +665,7 @@ pub fn run_async_workers_with_full_hosts_caps<'m>(
         },
         None,
     );
-    vis_interp::RunOutput {
+    vis_core::RunOutput {
         stdout: fo.stdout,
         diagnostics: fo.diagnostics,
         value: fo.value,
@@ -791,7 +792,7 @@ fn run_frame_vm_driver<'m>(
                 .find(|t| t.id == current)
                 .cloned()
             {
-                t.trang_thai.set(rt::TrangThai::DangChay);
+                t.trang_thai.set(vis_core::value::TrangThai::DangChay);
             }
         }
         // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng budget tổng).
@@ -807,7 +808,7 @@ fn run_frame_vm_driver<'m>(
                     let id = current;
                     if let Some(t) = vm.sched.borrow().tasks.iter().find(|t| t.id == id).cloned() {
                         *t.kq.borrow_mut() = Some(Ok(v));
-                        t.trang_thai.set(rt::TrangThai::Xong);
+                        t.trang_thai.set(vis_core::value::TrangThai::Xong);
                     }
                     vm.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
                 }
@@ -829,7 +830,7 @@ fn run_frame_vm_driver<'m>(
                 let wrapped = rt::wrap_task_error_for_test(&ten, t, span);
                 if let Some(tk) = vm.sched.borrow().tasks.iter().find(|t| t.id == id).cloned() {
                     *tk.kq.borrow_mut() = Some(Err(wrapped.clone()));
-                    tk.trang_thai.set(rt::TrangThai::Xong);
+                    tk.trang_thai.set(vis_core::value::TrangThai::Xong);
                 }
                 vm.sched.borrow_mut().frame_task_done(id, Err(wrapped));
             }
@@ -841,7 +842,7 @@ fn run_frame_vm_driver<'m>(
                     let id = current;
                     if let Some(t) = vm.sched.borrow().tasks.iter().find(|t| t.id == id).cloned() {
                         *t.kq.borrow_mut() = Some(Ok(v));
-                        t.trang_thai.set(rt::TrangThai::Xong);
+                        t.trang_thai.set(vis_core::value::TrangThai::Xong);
                     }
                     vm.sched.borrow_mut().frame_task_done(id, Ok(Value::Unit));
                 }
@@ -850,7 +851,8 @@ fn run_frame_vm_driver<'m>(
                 let quota_yield = p.task.is_none() && p.wait.is_none();
                 // **VD-258**: `await` chính tác vụ đang chạy ⇒ deadlock rõ, không exit 0.
                 if let Some(t) = &p.task {
-                    if t.id == current || t.trang_thai.get() == rt::TrangThai::DangChay {
+                    if t.id == current || t.trang_thai.get() == vis_core::value::TrangThai::DangChay
+                    {
                         trap = Some(Trap::new(
                             vis_interp::interp::DEADLOCK,
                             "deadlock: tác vụ đang chờ chính nó (await chính tác vụ đang chạy)",
@@ -868,7 +870,7 @@ fn run_frame_vm_driver<'m>(
                         .find(|t| t.id == current)
                         .cloned()
                     {
-                        t.trang_thai.set(rt::TrangThai::Pending);
+                        t.trang_thai.set(vis_core::value::TrangThai::Pending);
                     }
                 }
                 // Lát 2: reactor mang wait trực tiếp (`p.wait`); Lát 1: task.
@@ -931,7 +933,7 @@ fn run_frame_vm_driver<'m>(
                     let s = vm.sched.borrow();
                     s.tasks
                         .iter()
-                        .filter(|t| t.trang_thai.get() == rt::TrangThai::Moi)
+                        .filter(|t| t.trang_thai.get() == vis_core::value::TrangThai::Moi)
                         .filter(|t| !s.frame.external.contains_key(&t.id))
                         .filter(|t| !vm.worker_is_task(t.id))
                         .map(|t| t.id)
@@ -1047,7 +1049,12 @@ fn purge_terminal_frames<V>(
             s.tasks
                 .iter()
                 .find(|t| t.id == *id)
-                .map(|t| matches!(t.trang_thai.get(), rt::TrangThai::Xong | rt::TrangThai::Huy))
+                .map(|t| {
+                    matches!(
+                        t.trang_thai.get(),
+                        vis_core::value::TrangThai::Xong | vis_core::value::TrangThai::Huy
+                    )
+                })
                 .unwrap_or(true)
         })
         .collect();
@@ -1061,7 +1068,7 @@ fn frame_output(
     vm: &Vm<'_>,
     value: Option<Value>,
     trap: Option<Trap>,
-    snapshot: vis_interp::rt::DiagSnapshot,
+    snapshot: vis_core::frame::DiagSnapshot,
 ) -> FrameOutput {
     let mut log = vm.sched.borrow().frame.log.clone();
     log.extend(vm.sched.borrow().frame.reactor.log.clone());
@@ -1073,7 +1080,7 @@ fn frame_output(
     // **VD-258**: exit theo giá trị cuối của `main` (`int`/`Result.Err`), không luôn 0.
     let exit = match (&trap, &value) {
         (Some(_), _) => 1,
-        (None, Some(v)) => vis_interp::value::exit_code(v),
+        (None, Some(v)) => vis_core::value::exit_code(v),
         (None, None) => 0,
     };
     FrameOutput {
@@ -1099,7 +1106,7 @@ pub fn task_requires_capture(m: &vis_bytecode::Module, fi: u32) -> bool {
 
 /// Dựng `Th` cho thân task async từ **chỉ số hàm bytecode thật**.
 /// Từ chối rõ (Trap có span) nếu thân cần capture — không dựng rỗng rồi chạy sai.
-fn task_th<'m>(vm: &Vm<'m>, fi: u32, args: Vec<Value>) -> vis_interp::R<Th<'m>> {
+fn task_th<'m>(vm: &Vm<'m>, fi: u32, args: Vec<Value>) -> vis_core::R<Th<'m>> {
     let f = vm.func(fi)?;
     if task_requires_capture(vm.m, fi) {
         return Err(Abort::Trap(Trap::new(
@@ -1121,7 +1128,7 @@ fn task_th<'m>(vm: &Vm<'m>, fi: u32, args: Vec<Value>) -> vis_interp::R<Th<'m>> 
 }
 
 /// Dựng `Th` cho `main` — cùng logic chọn entry với `Vm::chay_chuong_trinh` (VD-156).
-fn main_th<'m>(vm: &Vm<'m>, argv: &Value) -> vis_interp::R<Th<'m>> {
+fn main_th<'m>(vm: &Vm<'m>, argv: &Value) -> vis_core::R<Th<'m>> {
     let entry = vm.m.entry;
     let vo = vm.func(entry)?;
     let fi = match vo.code.as_slice() {

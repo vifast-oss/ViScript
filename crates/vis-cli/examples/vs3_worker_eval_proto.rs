@@ -37,9 +37,9 @@ use std::hint::black_box;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use vis_core::RunOutput;
 use vis_interp::rt::fee::{BudgetSnapshot, SharedBudget};
 use vis_interp::value::worker::{SendValue, WorkerCtx, WorkerError, WorkerPool};
-use vis_interp::RunOutput;
 use vis_syntax::{lex, parse, Mode};
 use vis_types::{Hir, Symbols, TypeTable};
 use vis_vm::vm::Vm;

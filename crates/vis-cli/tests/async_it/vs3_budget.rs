@@ -49,12 +49,12 @@ fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::Type
     (h.hir, h.symbols, h.types)
 }
 
-fn chay_interp(src: &str) -> vis_interp::RunOutput {
+fn chay_interp(src: &str) -> vis_core::RunOutput {
     let (hir, syms, tys) = tien_trinh(src);
     vis_interp::run(src, &hir, &syms, &tys, &[])
 }
 
-fn chay_vm(src: &str) -> vis_interp::RunOutput {
+fn chay_vm(src: &str) -> vis_core::RunOutput {
     let (hir, syms, _tys) = tien_trinh(src);
     let m = vis_bytecode::compile(&hir, &syms, src).expect("compile");
     let mut vm = Vm::new(&m, src);

@@ -2,9 +2,10 @@
 //! **ST-268 / VD-252 — LÁT 2**: reactor giả (read/accept/timer) nối vào **đường frame
 //! test thật** của cả interp lẫn VM. Cùng một trace ⇒ stdout / chẩn đoán / log /
 //! snapshot **byte-identical** giữa hai engine. Runtime mặc định (`vis run`) không bị chạm.
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{DiagSnapshot, ReactorEvent, ReactorOutcome};
-use vis_interp::Value;
+use vis_core::frame::{DiagSnapshot, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::{run_frame_for_test as run_v, task_requires_capture};
 
@@ -179,13 +180,14 @@ fn r3_duplicate_and_stale_wake_do_not_rerun() {
 /// chỉ wake một lần — kiểm trực tiếp trên `Scheduler` (cả hai engine dùng chung).
 #[test]
 fn r3b_duplicate_fire_direct() {
-    use vis_interp::rt::{Scheduler, Wait, Waiter};
+    use vis_core::value::Wait;
+    use vis_interp::rt::{Scheduler, Waiter};
     let mut s = Scheduler::new();
     s.frame_enable_for_test(vec![], vec![]);
     s.frame.current = 1;
     let _pending = s
         .frame_reactor_poll(
-            vis_interp::rt::ReactorOp::Read,
+            vis_core::reactor::ReactorOp::Read,
             "C1",
             1000,
             vis_syntax::Span::new(0, 0),

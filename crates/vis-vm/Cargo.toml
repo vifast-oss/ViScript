@@ -9,6 +9,7 @@ description = "Máy ảo VBC1 cho ViScript — ngữ nghĩa trùng interp (ST-20
 
 [dependencies]
 vis-bytecode = { path = "../vis-bytecode" }
+vis-core = { path = "../vis-core" }
 vis-diag = { path = "../vis-diag" }
 vis-interp = { path = "../vis-interp" }
 vis-syntax = { path = "../vis-syntax" }

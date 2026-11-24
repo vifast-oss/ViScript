@@ -8,8 +8,8 @@
 //! Phủ: sync + print/order, nested `spawn`/`await`, 10.000 task, lỗi thân `VS0506`, `chan(0)`
 //! giữ `VS0505`, ngân sách `VS0510`. `chan(0)`/frame async parity là P4, không phải P1.
 
+use vis_core::RunOutput;
 use vis_interp::rt::fee as ifee;
-use vis_interp::RunOutput;
 use vis_syntax::{lex, parse, Mode};
 
 fn tien_trinh(src: &str) -> (vis_types::Hir, vis_types::Symbols, vis_types::TypeTable) {

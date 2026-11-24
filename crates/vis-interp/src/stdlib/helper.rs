@@ -124,7 +124,7 @@ pub(crate) mod chung {
 
     /// `Err(String)` của host ⇒ `Result` của VS0 (`Err(msg)`), **không** phải trap.
     /// **ST-310a**: dấu quyền dùng chung, nay ở `vis_core::host::DAU_QUYEN`.
-    pub use vis_core::host::DAU_QUYEN;
+    pub(crate) use vis_core::host::DAU_QUYEN;
 
     pub(crate) fn hop_nhat_fs(r: Result<Value, String>, span: Span) -> Result<Value, Abort> {
         match r {

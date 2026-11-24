@@ -7,10 +7,11 @@
 use std::rc::Rc;
 
 use vis_bytecode::Module;
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::{Value, VmFunc};
+use vis_core::RunOutput;
 use vis_interp::builtin::{self, Host};
-use vis_interp::interp::{Abort, Trap, R, RT};
-use vis_interp::value::{Value, VmFunc};
-use vis_interp::RunOutput;
+use vis_interp::interp::RT;
 use vis_syntax::Span;
 
 use super::Vm;
@@ -20,7 +21,7 @@ pub fn run_with_fs<'a>(
     m: &'a Module,
     text: &'a str,
     args: &[String],
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
 ) -> RunOutput {
     run_with_hosts(m, text, args, fs, None)
 }
@@ -31,8 +32,8 @@ pub fn run_with_hosts<'a>(
     m: &'a Module,
     text: &'a str,
     args: &[String],
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
 ) -> RunOutput {
     run_with_hosts_caps(m, text, args, fs, net, &[])
 }
@@ -44,25 +45,25 @@ pub fn run_with_hosts_caps<'a>(
     m: &'a Module,
     text: &'a str,
     args: &[String],
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     run_with_full_hosts_caps(m, text, args, None, fs, net, None, caps)
 }
 
 /// **ST-89 (VD-110)**: như [`run_with_hosts_caps`] nhưng nhận **cả** host chương trình ngoài — cùng
-/// trait `vis_interp::builtin::Ngoai` mà interp dùng; VM **không** gọi `std::process`.
+/// trait `vis_core::host::Ngoai` mà interp dùng; VM **không** gọi `std::process`.
 /// **VD-241 (Gate 1)**: nhận thêm **host cơ sở dữ liệu** (`None` ⇒ `std.sqlite.*` ⇒ `VS0604`).
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_full_hosts_caps<'a>(
     m: &'a Module,
     text: &'a str,
     args: &[String],
-    ngoai: Option<&'a mut dyn vis_interp::builtin::Ngoai>,
-    fs: Option<&'a mut dyn vis_interp::builtin::FsHost>,
-    net: Option<&'a mut dyn vis_interp::builtin::NetHost>,
-    db: Option<&'a mut dyn vis_interp::builtin::DbHost>,
+    ngoai: Option<&'a mut dyn vis_core::host::Ngoai>,
+    fs: Option<&'a mut dyn vis_core::host::FsHost>,
+    net: Option<&'a mut dyn vis_core::host::NetHost>,
+    db: Option<&'a mut dyn vis_core::host::DbHost>,
     caps: &[(u32, Value)],
 ) -> RunOutput {
     let mut vm = Vm::new(m, text);
@@ -86,22 +87,22 @@ pub fn run_with_full_hosts_caps<'a>(
 
 impl<'a> Vm<'a> {
     /// Gắn host hệ thống tệp (ST-33) — chỉ dùng qua [`crate::run_with_fs`].
-    pub fn set_fs(&mut self, f: &'a mut dyn vis_interp::builtin::FsHost) {
+    pub fn set_fs(&mut self, f: &'a mut dyn vis_core::host::FsHost) {
         self.fs = Some(f);
     }
 
     /// **ST-63 (VD-105)**: gắn host mạng — chỉ dùng qua [`crate::run_with_hosts`].
-    pub fn set_net(&mut self, n: &'a mut dyn vis_interp::builtin::NetHost) {
+    pub fn set_net(&mut self, n: &'a mut dyn vis_core::host::NetHost) {
         self.net = Some(n);
     }
 
     /// **VD-241 (Gate 1)**: gắn host cơ sở dữ liệu — VM chỉ gọi qua trait, không biết native.
-    pub fn set_db(&mut self, d: &'a mut dyn vis_interp::builtin::DbHost) {
+    pub fn set_db(&mut self, d: &'a mut dyn vis_core::host::DbHost) {
         self.db = Some(d);
     }
 
     /// **ST-89 (VD-110)**: gắn host chương trình ngoài — VM chỉ gọi qua trait, không chạm OS.
-    pub fn set_ngoai(&mut self, n: &'a mut dyn vis_interp::builtin::Ngoai) {
+    pub fn set_ngoai(&mut self, n: &'a mut dyn vis_core::host::Ngoai) {
         self.ngoai = Some(n);
     }
 }
@@ -111,24 +112,24 @@ impl Host for Vm<'_> {
         &mut self.out
     }
 
-    fn fs(&mut self) -> Option<&mut dyn vis_interp::builtin::FsHost> {
+    fn fs(&mut self) -> Option<&mut dyn vis_core::host::FsHost> {
         self.fs
             .as_mut()
-            .map(|f| &mut **f as &mut dyn vis_interp::builtin::FsHost)
+            .map(|f| &mut **f as &mut dyn vis_core::host::FsHost)
     }
 
     /// **ST-63 (VD-105)**: host mạng; `None` ⇒ `std.net.*` ⇒ `VS0604`.
-    fn net(&mut self) -> Option<&mut dyn vis_interp::builtin::NetHost> {
+    fn net(&mut self) -> Option<&mut dyn vis_core::host::NetHost> {
         self.net
             .as_mut()
-            .map(|n| &mut **n as &mut dyn vis_interp::builtin::NetHost)
+            .map(|n| &mut **n as &mut dyn vis_core::host::NetHost)
     }
 
     /// **VD-241 (Gate 1)**: host cơ sở dữ liệu; `None` ⇒ `std.sqlite.*` ⇒ `VS0604`.
-    fn db(&mut self) -> Option<&mut dyn vis_interp::builtin::DbHost> {
+    fn db(&mut self) -> Option<&mut dyn vis_core::host::DbHost> {
         self.db
             .as_mut()
-            .map(|d| &mut **d as &mut dyn vis_interp::builtin::DbHost)
+            .map(|d| &mut **d as &mut dyn vis_core::host::DbHost)
     }
 
     /// **ST-89 (VD-110)**: chương trình ngoài; `None` ⇒ `VS0604`.
@@ -152,7 +153,7 @@ impl Host for Vm<'_> {
         args: &[String],
         stdin: &str,
         span: Span,
-    ) -> Option<Result<vis_interp::builtin::KetQua, vis_interp::interp::Abort>> {
+    ) -> Option<Result<vis_core::host::KetQua, vis_core::trap::Abort>> {
         self.ngoai
             .as_mut()
             .map(|n| (**n).chay_day_du(ten, args, stdin, span))
@@ -195,7 +196,7 @@ impl Host for Vm<'_> {
         crate::vm::worker::spawn_task(self, fi, args, ten, span)
     }
 
-    fn await_task(&mut self, t: &std::rc::Rc<vis_interp::rt::Task>, span: Span) -> R<Value> {
+    fn await_task(&mut self, t: &std::rc::Rc<vis_core::value::Task>, span: Span) -> R<Value> {
         crate::vm::worker::await_task(self, t, span)
     }
 

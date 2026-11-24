@@ -2,6 +2,7 @@
 //! **ST-310a** — test R1 tách khỏi `stdlib.rs` (nguyên văn).
 
 use super::*;
+use vis_core::reactor::NET_READ_CAP;
 
 #[test]
 fn net_read_ky_so_vao_khong_duoc_cap_phat() {
@@ -21,17 +22,19 @@ fn net_read_ky_so_vao_khong_duoc_cap_phat() {
 
 #[test]
 fn json_non_finite_bi_phat_hien() {
-    assert!(crate::json::co_so_phi_huu_han(&Value::Float(f64::NAN)));
-    assert!(crate::json::co_so_phi_huu_han(&Value::Float(f64::INFINITY)));
-    assert!(crate::json::co_so_phi_huu_han(&Value::Percent(
+    assert!(vis_core::json::co_so_phi_huu_han(&Value::Float(f64::NAN)));
+    assert!(vis_core::json::co_so_phi_huu_han(&Value::Float(
+        f64::INFINITY
+    )));
+    assert!(vis_core::json::co_so_phi_huu_han(&Value::Percent(
         f64::NEG_INFINITY
     )));
-    assert!(crate::json::co_so_phi_huu_han(&Value::List(vec![
+    assert!(vis_core::json::co_so_phi_huu_han(&Value::List(vec![
         Value::Int(1),
         Value::Float(f64::NAN)
     ])));
-    assert!(!crate::json::co_so_phi_huu_han(&Value::Float(1.5)));
-    assert!(!crate::json::co_so_phi_huu_han(&Value::Int(1)));
+    assert!(!vis_core::json::co_so_phi_huu_han(&Value::Float(1.5)));
+    assert!(!vis_core::json::co_so_phi_huu_han(&Value::Int(1)));
 }
 
 // ------------------------------------------------------------------
@@ -55,7 +58,7 @@ fn json_num_float_giu_dau_va_roundtrip() {
     assert_eq!(ma_hoa(&json_num(1.5)), "1.5");
     for f in [1.0_f64, 1.5, 1e20, 1e300, f64::MAX, 5e-324, 1e-320] {
         let s = ma_hoa(&json_num(f));
-        let v = crate::json::decode(&s)
+        let v = vis_core::json::decode(&s)
             .unwrap_or_else(|e| panic!("encode({f}) = {s:?} không decode lại được: {e}"));
         match v {
             Value::Float(g) => {

@@ -9,9 +9,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use vis_bytecode::{Instr, BI_MATCH_NO_ARM, BI_MAU_LIST_GE, BI_MAU_LIST_TAIL, GLOBAL_SLOT_BASE};
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::{self, Value, VmFunc};
 use vis_interp::builtin::{self, Host};
-use vis_interp::interp::{Abort, Trap, R, RT};
-use vis_interp::value::{self, Value, VmFunc};
+use vis_interp::interp::RT;
 use vis_syntax::Span;
 
 use super::vm_helpers::*;
@@ -517,7 +518,7 @@ impl<'m> Th<'m> {
                         }
                     }
                     let it = self.pop(vm, span)?;
-                    let items = value::iter_items(it, span)?;
+                    let items = vis_interp::value::iter_items(it, span)?;
                     self.iters.push(items);
                 }
                 Instr::IterNext(d) => {
@@ -701,7 +702,7 @@ impl<'m> Th<'m> {
             if vm.quota_take_hit() {
                 let cur = vm.sched.borrow().frame.current;
                 vm.sched.borrow_mut().frame.log.push(format!("quota:{cur}"));
-                return Err(Abort::Pending(vis_interp::rt::Pending {
+                return Err(Abort::Pending(vis_core::value::Pending {
                     task: None,
                     wait: None,
                     span,

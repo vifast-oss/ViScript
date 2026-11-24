@@ -12,12 +12,13 @@
 //! | `frame_huy_bi_bo_*` | frame bị huỷ vẫn nằm trong map driver tới cuối chương trình |
 //! | `quota_*` | yield quota không được làm mất ngân sách event (timer vẫn phải tới) |
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
-use vis_interp::rt::{
-    fee as ifee, FakeEvent, ReactorEvent, ReactorOp, ReactorOutcome, Scheduler, TrangThai, Wait,
-    Waiter, FRAME_READY_BUDGET,
-};
-use vis_interp::Value;
+use vis_core::frame::{FakeEvent, ReactorEvent, ReactorOutcome};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_core::reactor::ReactorOp;
+use vis_core::value::{TrangThai, Wait};
+use vis_core::Value;
+use vis_interp::frame::run_frame_for_test as run_i;
+use vis_interp::rt::{fee as ifee, Scheduler, Waiter, FRAME_READY_BUDGET};
 use vis_syntax::{lex, parse, Mode, Span};
 use vis_vm::vm_frame::{
     frame_budget_disable_for_test, frame_budget_enable_for_test, frame_quota_yields_for_test,

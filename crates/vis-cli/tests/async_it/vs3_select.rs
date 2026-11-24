@@ -2,7 +2,8 @@
 //! **ST-293 (VD-274/VD-280)** — `select_recv*`/`select_send*` trên frame scheduler: cả hai
 //! engine, byte-identical; fairness xoay vòng; timeout/closed; wait-set nhiều kênh.
 
-use vis_interp::frame::{run_frame_for_test as run_i, FrameConfig, FrameOutput};
+use vis_core::frame::{FrameConfig, FrameOutput};
+use vis_interp::frame::run_frame_for_test as run_i;
 use vis_interp::rt::{frame_cancel_after_turns_for_test, frame_cancel_clear_triggers_for_test};
 use vis_syntax::{lex, parse, Mode};
 use vis_vm::vm_frame::run_frame_for_test as run_v;
@@ -40,7 +41,7 @@ fn ok(out: &FrameOutput, stdout: &str) {
     assert_eq!(out.stdout, stdout, "log={:?}", out.log);
     assert_eq!(
         out.snapshot,
-        vis_interp::rt::DiagSnapshot::default(),
+        vis_core::frame::DiagSnapshot::default(),
         "{:?}",
         out.log
     );
@@ -475,7 +476,7 @@ fn main():
         assert!(out.log.iter().any(|l| l == "cancel:1"), "{:?}", out.log);
         assert_eq!(
             out.snapshot,
-            vis_interp::rt::DiagSnapshot::default(),
+            vis_core::frame::DiagSnapshot::default(),
             "{:?}",
             out.log
         );

@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use vis_bytecode::compile;
-use vis_interp::RunOutput;
+use vis_core::RunOutput;
 
 /// **VD-241 Gate 1** — hạ một tệp với `std_mods` quét từ chính nguồn (`use std.<tên>`), đúng
 /// cách `vis-cli/src/modules.rs` làm: nhờ vậy test/sem chạy được ca `use std.*` (trước Gate 1

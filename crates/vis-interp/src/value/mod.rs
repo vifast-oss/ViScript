@@ -2,9 +2,10 @@
 //! **ST-310a (VD-285)** — `Value` chuyển sang `vis-core`; mô-đun này giữ phần **chỉ interp/VM**
 //! dùng: bộ lặp `for` (cần trap runtime + trần vòng) và worker pool opt-in.
 //!
-//! Đường dẫn công khai `vis_interp::value::*` **không đổi**.
+//! **ST-312a (VD-289)**: re-export `vis_core::value` chỉ còn `pub(crate)` — crate ngoài
+//! dùng trực tiếp `vis_core::value::*`; tại đây chỉ còn `iter`/`worker` là API của interp.
 
-pub use vis_core::value::*;
+pub(crate) use vis_core::value::*;
 
 mod iter;
 pub use iter::{iter_items, ForIter};

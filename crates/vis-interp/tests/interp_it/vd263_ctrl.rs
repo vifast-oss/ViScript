@@ -9,7 +9,8 @@
 //! Mọi ca phải **check sạch** (đúng luật VD-259: `break`/`continue` không phải câu cuối
 //! của nhánh cần giá trị), chạy sạch, `steps > 0`, và stdout đúng.
 
-use vis_interp::{run, RunOutput};
+use vis_core::RunOutput;
+use vis_interp::run;
 use vis_syntax::{lex, parse, Mode};
 use vis_types::{check, lower};
 
