@@ -323,3 +323,6 @@ fn dong_chi_chu_thich_va_dong_noi_giu_nguyen() {
     assert_eq!(f, src, "dòng chú thích + dòng nối phải được giữ nguyên");
     assert_eq!(format_ok(&f), f, "idempotent");
 }
+
+#[path = "fmt_it/moi.rs"]
+mod moi;

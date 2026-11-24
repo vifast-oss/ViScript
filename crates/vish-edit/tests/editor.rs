@@ -149,3 +149,6 @@ fn panic_giu_editor_va_history() {
 fn windows_parse_ctrl_c_va_arrow() {
     assert_eq!(parse_keys(b"\x03\x1b[A"), vec![Key::CtrlC, Key::Up]);
 }
+
+#[path = "edit_it/completion_job.rs"]
+mod completion_job;
