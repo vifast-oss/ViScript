@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("excl")
+    for i in 0..5:
+        print(i)
+    print("incl")
+    for i in 0..=5:
+        print(i)
+    print("neg")
+    for i in -3..2:
+        print(i)
+    print("empty")
+    for i in 3..3:
+        print(i)
+    for i in 3..2:
+        print(i)
+    for i in 2..=1:
+        print(i)
+    print("max")
+    for i in 9223372036854775805..=9223372036854775807:
+        print(i)
+    print("var")
+    let r = 1..4
+    for i in r:
+        print(i)

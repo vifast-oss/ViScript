@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs = [1, 2, 2, 2, 2, 3, 5, 5, 9]
+    print(list.binary_search(xs, 2))
+    print(list.binary_search(xs, 5))
+    print(list.binary_search(xs, 1))
+    print(list.binary_search(xs, 9))
+    let cung = [4, 4, 4, 4]
+    print(list.binary_search(cung, 4))
+    print(list.binary_search(cung, 3))
+    print(list.binary_search(cung, 5))

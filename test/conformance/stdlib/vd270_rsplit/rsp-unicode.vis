@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.rsplit("đ😀x😀", "😀"))
+    print(str.join(str.rsplit("đ😀x😀", "😀"), "|"))
+    print(str.rsplit("a😀b😀c", "😀"))
+    print(str.rsplit("a::b::c", "::"))
+    print(str.rsplit("👨‍👩‍👧x", "👩"))
+    print(str.join(str.rsplit("👨‍👩‍👧x", "👩"), "|"))
+    print(str.rsplit("👨‍👩‍👧", "👨‍👩‍👧"))
+    print(str.rsplit("đ😀", ""))

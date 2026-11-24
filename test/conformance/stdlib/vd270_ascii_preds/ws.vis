@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii_whitespace(" "))
+    print(str.is_ascii_whitespace("\t"))
+    print(str.is_ascii_whitespace("\n"))
+    print(str.is_ascii_whitespace("\r"))
+    print(str.is_ascii_whitespace("\u{000C}"))
+    print(str.is_ascii_whitespace(" \t\r\n\u{000C}"))
+    print(str.is_ascii_whitespace("\u{000B}"))
+    print(str.is_ascii_whitespace("\u{000B} "))
+    print(str.is_ascii_whitespace("a"))
+    print(str.is_ascii_whitespace(" a"))
+    print(str.is_ascii_whitespace("a "))
+    print(str.is_ascii_whitespace("a b"))
+    print(str.is_ascii_whitespace("\u{00A0}"))
+    print(str.is_ascii_whitespace("\u{3000}"))
+    let s = "\r\n\t"
+    print(str.is_ascii_whitespace(s))

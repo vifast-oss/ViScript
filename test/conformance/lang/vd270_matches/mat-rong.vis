@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a = str.matches("", "")
+    print(len(a))
+    print(str.join(a, "|"))
+    let b = str.matches("abc", "")
+    print(len(b))
+    print(str.join(b, "|"))
+    let c = str.matches("", "a")
+    print(len(c))
+    print(str.join(c, "|"))
+    let d = str.matches("đ😀x😀", "")
+    print(len(d))
+    print(str.join(d, "|"))

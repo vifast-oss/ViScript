@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    for xs in [[], [7], [1, 2], [1, 2, 3]]:
+        match xs:
+            []: print("empty")
+            [a, ..r]: print("{a}|{r}")
+            _: print("other")
+    let ys = [1, 2]
+    if let [a, ..] = ys:
+        print("head {a}")
+    let zs = []
+    if let [a, ..r] = zs:
+        print("bad")
+    else:
+        print("no-empty")

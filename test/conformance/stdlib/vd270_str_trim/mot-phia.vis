@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.trim_start_matches("  x  ", " "))
+    print(str.trim_end_matches("  x  ", " "))
+    print(str.trim_matches("  x  ", " "))
+    print(str.trim_start_matches("xx", "x"))
+    print(str.trim_end_matches("xx", "x"))

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn f() -> int?:
+    Some(1)
+
+fn main():
+    var x = if false: f() else: 2
+    x = 7
+    print(x)
+    var y = match 2:
+        1: f()
+        _: 2
+    y = 8
+    print(y)

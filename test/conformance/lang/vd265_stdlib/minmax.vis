@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.min([3, 1, 2]))
+    print(list.max([3, 1, 2]))
+    print(list.min([-5, -2, -9]))
+    print(list.max([-5, -2, -9]))
+    print(list.min([7]))
+    print(list.max([7]))
+    print(list.min([4, 4, 4]))
+    print(list.max([4, 4, 4]))
+    print(list.min([2.5, 1.25, 9.0]))
+    print(list.max([2.5, 1.25, 9.0]))
+    print(list.min(["b", "a", "c"]))
+    print(list.max(["b", "a", "c"]))

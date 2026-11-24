@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("--x--".trim_matches("-"))
+    let xs = [1, 2, 3]
+    print(xs.binary_search(2))
+    print(xs.binary_search(9))
+    let zs: list[list[int]] = [[1], [2, 3], []]
+    print(zs.flatten())
+    print("a//./b/../c".normalize())

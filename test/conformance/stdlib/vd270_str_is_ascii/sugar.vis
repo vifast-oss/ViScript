@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("abc".is_ascii())
+    print("".is_ascii())
+    print("đ".is_ascii())
+    print("a😀b".is_ascii())
+    let s = "abc"
+    print(s.is_ascii())
+    let t = "đ😀"
+    print(t.is_ascii())
+    let b: bool = s.is_ascii()
+    print(b)

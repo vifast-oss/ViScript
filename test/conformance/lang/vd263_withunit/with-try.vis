@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    f: int?
+
+fn maybe() -> U?:
+    Some(U(f: None))
+
+fn lay() -> U?:
+    let r = maybe()? with f: 5
+    Some(r)
+
+fn main():
+    match lay():
+        Some(r): print(r)
+        None: print("none")

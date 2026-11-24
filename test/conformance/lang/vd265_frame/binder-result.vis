@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let r: Result[int, str] = Err("bad")
+    let x = r else e:
+        print(e)
+        return
+    print(x)

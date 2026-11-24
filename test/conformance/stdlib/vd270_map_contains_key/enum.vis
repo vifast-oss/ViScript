@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+enum E:
+    A(x: int)
+    B
+
+fn main():
+    let m: map[E, str] = {(E.A(1)): "a", (E.A(2)): "b", (E.B): "c"}
+    print(map.contains_key(m, E.A(1)))
+    print(map.contains_key(m, E.A(2)))
+    print(map.contains_key(m, E.B))
+    print(map.contains_key(m, E.A(3)))

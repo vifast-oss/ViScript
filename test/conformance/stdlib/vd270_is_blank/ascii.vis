@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_blank(""))
+    print(str.is_blank(" "))
+    print(str.is_blank("   "))
+    print(str.is_blank("\t"))
+    print(str.is_blank("\n"))
+    print(str.is_blank("\r"))
+    print(str.is_blank("\r\n"))
+    print(str.is_blank("\t \r\n"))
+    print(str.is_blank("\r\n\t "))
+    print(str.is_blank("\u{000B}"))
+    print(str.is_blank("\u{000C}"))
+    let s = "  \t\n "
+    print(str.is_blank(s))

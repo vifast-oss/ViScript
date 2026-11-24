@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let s: str = "a,b,c"
+    print(str.split_inclusive(s, ","))
+    print(s.split_inclusive(","))
+    print(str.split_inclusive("abc", ","))
+    print(str.split_inclusive("a,b,", ","))
+    print(str.split_inclusive("", ","))
+    print(len(str.split_inclusive("", ",")))
+    print(str.split_inclusive("", ""))
+    print(len(str.split_inclusive("", "")))
+    print(str.split_inclusive("abc", ""))
+    print(str.split_inclusive("aaa", "aa"))
+    print(str.split_inclusive("a--b--", "--"))
+    print(str.split_inclusive("a,b,,c", ",").join("|"))
+    print(str.split_inclusive("đ😀x😀", "😀").join("|"))
+    print(str.split_inclusive("👨‍👩‍👧x", "👩"))
+    print(str.split_inclusive("héllo,🌍,👨‍👩‍👧‍👦", ","))
+    let t: list[str] = "a,b,c".split_inclusive(",")
+    print(t)
+    print(str.split_inclusive("a\tb\t", "\t").join("|"))

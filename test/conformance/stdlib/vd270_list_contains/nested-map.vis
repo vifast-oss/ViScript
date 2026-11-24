@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs: list[map[str, int]] = [{"a": 1}, {"b": 2}, {"a": 1, "c": 3}]
+    print(list.contains(xs, {"b": 2}))
+    print(list.contains(xs, {"c": 3, "a": 1}))
+    print(list.contains(xs, {"a": 2}))
+    print(list.contains(xs, {"a": 1, "c": 4}))
+    print(list.contains(xs, {}))

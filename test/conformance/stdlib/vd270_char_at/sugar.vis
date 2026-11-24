@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "đ😀x"
+    print(s.char_at(0))
+    print(s.char_at(1))
+    print(s.char_at(2))
+    print(s.char_at(3))
+    print("abc".char_at(1))
+    print("abc".char_at(-1))
+    print("".char_at(0))
+    let c: str? = s.char_at(1)
+    print(c)

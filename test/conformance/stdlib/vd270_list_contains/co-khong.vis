@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs = [10, 20, 30, 20, 10]
+    print(list.contains(xs, 10))
+    print(list.contains(xs, 20))
+    print(list.contains(xs, 30))
+    print(list.contains(xs, 40))
+    let r: list[int] = []
+    print(list.contains(r, 1))
+    let moi: list[int] = [7, 7, 7]
+    print(list.contains(moi, 7))
+    print(list.contains(moi, 8))
+    print(list.contains(["a", "b"], "b"))
+    print(list.contains(["a", "b"], "z"))

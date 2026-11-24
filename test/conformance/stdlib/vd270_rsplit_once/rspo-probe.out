@@ -1,0 +1,26 @@
+Some([a,b, c])
+None
+Some([abc, ])
+None
+Some([, ])
+None
+Some([a::b, c])
+Some([đ, x])
+Some([👨‍, ‍👧x])
+Some([aXb, c])
+Some([ab, ])
+Some([, bc])
+None
+Some([, ])
+Some([a, b])
+Some([aa, ])
+Some([a, ])
+Some([đ,😀, x])
+Some([a😀b, c])
+Some([, ])
+Some([, ])
+Some([,a, ])
+Some([a, c])
+Some([bana, ])
+a,b|c
+none

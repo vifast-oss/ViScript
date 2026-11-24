@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "a,b,c"
+    print(s.split_once(","))
+    print("a,b,c".split_once("x"))
+    print(s.split_once(""))
+    let o: list[str]? = s.split_once(",")
+    print(o)
+    print("abc".split_once("b"))
+    print("đ😀x😀".split_once("😀"))
+    match "đ😀x😀".split_once("😀"):
+        Some(xs): print(xs.join("|"))
+        None: print("none")

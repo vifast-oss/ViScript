@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let f = (x: int?) => x
+    let g = (h: fn(int?) -> int?) => h
+    print(g(f)(5))

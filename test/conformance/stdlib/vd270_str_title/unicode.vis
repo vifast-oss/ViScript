@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title("đẶNG văn hÙNG"))
+    print(str.title("XIN CHÀO THẾ GIỚI"))
+    print(str.title("😀abc 😀dEF"))
+    print(str.title("👨‍👩‍👧 FAMILY"))
+    print(str.char_count(str.title("😀ABC")))

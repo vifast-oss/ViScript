@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a: bool = str.is_ascii("")
+    let b: bool = str.is_ascii("đ")
+    let c: bool = "abc".is_ascii()
+    print(a)
+    print(b)
+    print(c)

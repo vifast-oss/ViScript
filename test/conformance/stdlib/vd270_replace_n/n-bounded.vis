@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_n("aaaa", "a", "b", 0))
+    print(str.replace_n("aaaa", "a", "b", 1))
+    print(str.replace_n("aaaa", "a", "b", 2))
+    print(str.replace_n("aaaa", "a", "b", 3))
+    print(str.replace_n("aaaa", "a", "b", 4))
+    print(str.replace_n("aaaa", "a", "b", 5))
+    print(str.replace_n("banana", "na", "X", 1))
+    print(str.replace_n("banana", "na", "X", 2))
+    print(str.replace_n("banana", "na", "X", 99))
+    print(str.replace_n("ababab", "ab", "X", 2))
+    print(str.replace_n("x.y.z", ".", "/", 1))
+    print(str.replace_n("x.y.z", ".", "/", 2))
+    let n: int = 2
+    print(str.replace_n("aaaa", "a", "b", n))
+    print(str.replace_n("aaaa", "a", "b", 9223372036854775807))

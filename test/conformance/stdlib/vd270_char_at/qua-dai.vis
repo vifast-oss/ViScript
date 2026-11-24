@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.char_at("abc", 3))
+    print(str.char_at("abc", 4))
+    print(str.char_at("abc", 9223372036854775807))
+    print(str.char_at("đ😀x", 3))
+    print(str.char_at("x", 1))
+    let i: int = 100
+    print(str.char_at("abc", i))

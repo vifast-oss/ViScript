@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    n: int
+    f: int?
+
+fn main():
+    let a = U(n: 0, f: None) with n: 5
+    print(a)
+    let b = U(n: 0, f: None) with f: None
+    print(b)
+    print(b.f)

@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_first("aaa", "a", "b"))
+    print(str.replace_first("banana", "na", "X"))
+    print(str.replace_first("ababab", "ab", "X"))
+    print(str.replace_first("hello world hello", "hello", "hi"))
+    print(str.replace_first("x.y.z", ".", "/"))
+    print(str.replace_first("aaaa", "a", "bb"))

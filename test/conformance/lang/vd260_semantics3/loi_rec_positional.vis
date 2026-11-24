@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    a: int
+
+fn main():
+    let u = U(1)
+    print(u)

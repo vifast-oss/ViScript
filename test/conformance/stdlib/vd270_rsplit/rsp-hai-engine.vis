@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let s: str = "a,b,c"
+    print(str.rsplit(s, ","))
+    print(s.rsplit(","))
+    print(str.rsplit("a,b,", ","))
+    print(str.rsplit(",a", ","))
+    print(str.rsplit("a,,b", ","))
+    print(str.rsplit("abc", ","))
+    print(len(str.rsplit("", ",")))
+    print(str.rsplit("abc", ""))
+    print(str.rsplit("", ""))
+    print(str.rsplit("aaa", "aa"))
+    print(str.rsplit("banana", "ana"))
+    print(str.rsplit("đ😀x😀", "😀"))
+    print(str.rsplit("👨‍👩‍👧x", "👩"))
+    print(str.rsplit("a::b::c", "::"))
+    print(str.split("a,b,c", ","))
+    print(str.splitn("a,b,c", ",", 2))
+    print(str.rsplit_once("a,b,c", ","))

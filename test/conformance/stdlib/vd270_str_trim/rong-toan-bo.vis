@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.char_count(str.trim_matches("abc", "")))
+    print(str.char_count(str.trim_start_matches("abc", "")))
+    print(str.char_count(str.trim_end_matches("abc", "")))
+    print(str.trim_matches("abc", ""))
+    print(str.trim_matches("aaa", "a"))
+    print(str.char_count(str.trim_matches("aaa", "a")))
+    print(str.trim_start_matches("aaa", "a"))
+    print(str.char_count(str.trim_end_matches("😀😀", "😀")))
+    print(str.trim_matches("", "abc"))
+    print(str.trim_start_matches("", ""))

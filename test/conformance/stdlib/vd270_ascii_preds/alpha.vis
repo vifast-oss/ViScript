@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii_alphabetic("a"))
+    print(str.is_ascii_alphabetic("Z"))
+    print(str.is_ascii_alphabetic("abcXYZ"))
+    let s = "Hello"
+    print(str.is_ascii_alphabetic(s))
+    print(str.is_ascii_alphabetic("aZ0"))
+    print(str.is_ascii_alphabetic("0a"))
+    print(str.is_ascii_alphabetic("a-b"))
+    print(str.is_ascii_alphabetic("a b"))
+    print(str.is_ascii_alphabetic("_"))
+    print(str.is_ascii_alphabetic("đ"))
+    print(str.is_ascii_alphabetic("Σ"))

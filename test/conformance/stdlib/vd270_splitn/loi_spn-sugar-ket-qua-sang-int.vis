@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let x: int = "a,b".splitn(",", 2)
+    print(x)

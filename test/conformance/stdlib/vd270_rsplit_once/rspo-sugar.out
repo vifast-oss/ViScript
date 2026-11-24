@@ -1,0 +1,7 @@
+Some([a,b, c])
+None
+Some([a,b,c, ])
+Some([a,b, c])
+Some([a, c])
+Some([đ😀x, ])
+đ😀x|

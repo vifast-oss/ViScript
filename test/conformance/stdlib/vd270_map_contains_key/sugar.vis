@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type P:
+    x: int
+
+enum E:
+    A(x: int)
+
+fn main():
+    let m = {"a": 1, "b": 2}
+    print(m.contains_key("a"))
+    print(m.contains_key("z"))
+    let r: map[str, int] = {}
+    print(r.contains_key("a"))
+    let ml: map[list[int], str] = {([1, 2]): "a"}
+    print(ml.contains_key([1, 2]))
+    print(ml.contains_key([2, 1]))
+    let mm: map[map[str, int], str] = {({"k": 1}): "a"}
+    print(mm.contains_key({"k": 1}))
+    let mp: map[P, str] = {({x: 1}): "a"}
+    print(mp.contains_key({x: 1}))
+    let me: map[E, str] = {(E.A(1)): "a"}
+    print(me.contains_key(E.A(1)))
+    print(me.contains_key(E.A(2)))
+    let b: bool = m.contains_key("b")
+    print(b)

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.splitn("abc", "", 2))
+    print(str.splitn("abc", "", 1))
+    print(str.splitn("abc", "", 3))
+    print(str.splitn("abc", "", 9))
+    print(str.splitn("", "", 2))
+    print(str.splitn("", "", 1))
+    print(len(str.splitn("", "", 1)))
+    print(len(str.splitn("", "", 2)))
+    print(str.splitn("", "", 6))
+    print(str.splitn("a", "", 2))
+    print(str.splitn("a", "", 3))
+    print(str.splitn("a", "", 4))
+    print(str.splitn("đ😀", "", 3))
+    print(str.splitn("đ😀", "", 4))

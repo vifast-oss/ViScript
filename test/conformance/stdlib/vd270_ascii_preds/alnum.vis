@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii_alphanumeric("abc123"))
+    print(str.is_ascii_alphanumeric("A1z"))
+    print(str.is_ascii_alphanumeric("0"))
+    print(str.is_ascii_alphanumeric("z"))
+    print(str.is_ascii_alphanumeric("ABCxyz019"))
+    print(str.is_ascii_alphanumeric("abc-123"))
+    print(str.is_ascii_alphanumeric("a_b"))
+    print(str.is_ascii_alphanumeric("a b"))
+    print(str.is_ascii_alphanumeric("abc!"))
+    print(str.is_ascii_alphanumeric("đ1"))
+    print(str.is_ascii_alphanumeric("١٢٣"))

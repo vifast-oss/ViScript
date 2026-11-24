@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let x = 99
+    let r: Result[int, str] = Ok(5)
+    let Ok(x) = r else e:
+        print("else {e}")
+        return
+    print(x)

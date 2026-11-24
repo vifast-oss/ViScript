@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs = [[1, 2], [3, 4], [1, 2]]
+    print(list.contains(xs, [1, 2]))
+    print(list.contains(xs, [4, 3]))
+    print(list.contains(xs, [1, 2, 3]))
+    print(list.contains(xs, []))
+    print(list.contains([], [1]))

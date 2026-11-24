@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_n("aaaa", "aa", "b", 1))
+    print(str.replace_n("aaaa", "aa", "b", 2))
+    print(str.replace_n("aaaa", "aa", "b", 3))
+    print(str.replace_n("aaa", "aa", "b", 2))
+    print(str.replace_n("ababa", "aba", "X", 2))
+    print(str.replace_n("aaa", "a", "aa", 1))
+    print(str.replace_n("aaa", "a", "aa", 2))
+    print(str.replace_n("aaa", "a", "aa", 9))
+    print(str.replace_n("aaa", "aa", "", 9))

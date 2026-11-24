@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.char_at("abc", 0))
+    print(str.char_at("abc", 1))
+    print(str.char_at("abc", 2))
+    print(str.char_at("x", 0))
+    let x: str? = str.char_at("abc", 1)
+    match x:
+        Some(c): print(c)
+        None: print("none")

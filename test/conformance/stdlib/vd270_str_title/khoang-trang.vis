@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title("a  b\tc\nd"))
+    print(str.title("  a\r\n b  "))
+    print(str.title("a\u{00A0}b\u{3000}c"))
+    print(str.byte_len(str.title("\r\n")))

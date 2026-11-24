@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "a,b,c"
+    print(s.rsplit(","))
+    print("a,b,c".rsplit(","))
+    let t: list[str] = s.rsplit(",")
+    print(t)
+    print("a,b,".rsplit(",").join("|"))
+    print("abc".rsplit(""))
+    print("đ😀x😀".rsplit("😀"))

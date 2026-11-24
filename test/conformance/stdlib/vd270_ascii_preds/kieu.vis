@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a: bool = str.is_ascii_digit("7")
+    let b: bool = str.is_ascii_alphabetic("x")
+    let c: bool = str.is_ascii_alphanumeric("x7")
+    let d: bool = str.is_ascii_whitespace("\n")
+    let e: bool = "9".is_ascii_digit()
+    print(a)
+    print(b)
+    print(c)
+    print(d)
+    print(e)

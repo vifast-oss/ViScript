@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs: list[float] = [3.0, 1.0, 2.0]
+    print(list.min_float(xs))
+    print(list.max_float(xs))
+    print(xs)
+    print(list.min_float([-1.0, -5.0, -3.0]))
+    print(list.max_float([-1.0, -5.0, -3.0]))
+    print(list.min_float([10.0, -2.5, 3.5, 0.0]))
+    print(list.max_float([10.0, -2.5, 3.5, 0.0]))
+    print(list.min_float([2.0, 2.0, 2.0]))
+    print(list.max_float([2.0, 2.0, 2.0]))

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    f: int?
+
+impl U:
+    fn set(var self) -> ():
+        self.f = 5
+        print(self.f)
+        match self.f:
+            Some(v): print(v)
+            None: print("none")
+
+fn main():
+    let u: U = U(f: Some(1))
+    u.set()
+    print(u.f)

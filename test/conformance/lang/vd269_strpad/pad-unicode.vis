@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print("[" + str.pad_left("đ", 3, "-") + "]")
+    print("[" + str.pad_right("đ", 4, "·") + "]")
+    print("[" + str.pad_left("a", 5, "xy") + "]")
+    print("[" + str.center("a", 4, "xy") + "]")
+    print("[" + str.center("a", 5, "xy") + "]")
+    print("[" + str.pad_left("a", 4, "😀x") + "]")
+    print("[" + str.pad_right("😀", 3, "😀") + "]")
+    print("[" + str.pad_left("e\u{301}", 3, "-") + "]")
+    print(str.pad_left("đ", 4, "-").len())
+    print(str.pad_right("😀", 3, "-").len())
+    print(str.center("đ", 5, "·").len())

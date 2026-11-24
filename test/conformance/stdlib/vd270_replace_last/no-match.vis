@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_last("abc", "z", "X"))
+    print(str.replace_last("abc", "abcd", "X"))
+    print(str.replace_last("", "a", "b"))
+    print(str.replace_last("đ😀x", "d", "D"))
+    print(str.replace_last("abc", "ABC", "X"))

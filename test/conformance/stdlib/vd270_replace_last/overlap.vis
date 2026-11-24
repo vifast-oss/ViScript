@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_last("aaa", "aa", "b"))
+    print(str.replace_last("aaaa", "aa", "b"))
+    print(str.replace_last("aaa", "a", "aa"))
+    print(str.replace_last("aaaa", "aaa", "b"))
+    print(str.replace_last("ababa", "aba", "X"))
+    print(str.replace_last("aaa", "aa", ""))

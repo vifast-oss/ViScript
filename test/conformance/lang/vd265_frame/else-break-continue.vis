@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let o: int? = None
+    var i = 0
+    while i < 3:
+        let Some(x) = o else:
+            break
+        print(x)
+        i += 1
+    print("while {i}")
+    var dem = 0
+    for k in 0..3:
+        let Some(x) = o else:
+            continue
+        print(k)
+        dem += 1
+    print("for {dem}")

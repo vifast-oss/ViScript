@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs: list[int] = [2, 3, 4]
+    print(xs.sum())
+    print(xs.product())
+    print([5, 6].product())
+    print([5, 6].sum())
+    let a: int = xs.sum()
+    let b: int = xs.product()
+    print(a + b)

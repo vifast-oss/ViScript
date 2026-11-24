@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U derives Json:
+    xs: list[int]
+fn main():
+    let u: U = {xs: [1, 2, 3]}
+    print(U.from_json(u.to_json()))

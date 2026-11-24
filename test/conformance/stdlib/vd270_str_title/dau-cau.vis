@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title("hello-world"))
+    print(str.title("hello, world!"))
+    print(str.title("don't STOP"))
+    print(str.title("foo_bar-baz"))

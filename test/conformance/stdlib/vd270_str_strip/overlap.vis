@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.strip_prefix("aaa", "a"))
+    print(str.strip_suffix("aaa", "a"))
+    print(str.strip_prefix("aaa", "aa"))
+    print(str.strip_suffix("aaa", "aa"))
+    print(str.strip_prefix("aaa", "aaa"))
+    print(str.strip_suffix("aaa", "aaa"))
+    print(str.strip_prefix("aaaa", "aa"))
+    print(str.strip_suffix("aaaa", "aa"))
+    print(str.strip_prefix("aaa", "aaaa"))
+    print(str.strip_suffix("aaa", "aaaa"))

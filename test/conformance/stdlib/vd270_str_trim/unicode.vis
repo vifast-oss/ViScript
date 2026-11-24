@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.trim_matches("đ😀đxđ😀đ", "đ😀"))
+    print(str.trim_start_matches("đ😀đabc", "đ😀"))
+    print(str.trim_end_matches("abcđ😀đ", "đ😀"))
+    print(str.trim_matches("ếếchàoếế", "ế"))
+    print(str.char_count(str.trim_start_matches("👨‍👩‍👧", "👨")))
+    print(str.char_count(str.trim_matches("👨‍👩‍👧", "👨👧")))
+    print(str.trim_matches("😀a😀", "😀"))

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.split_once("abc", ""))
+    print(str.split_once("", ""))
+    print(str.split_once("", "a"))
+    print(str.split_once("", "ab"))
+    print(str.split_once("đ😀", ""))

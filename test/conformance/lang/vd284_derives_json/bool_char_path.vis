@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type B derives Json:
+    b: bool
+    c: char
+    p: path
+fn main():
+    let x: B = {b: true, c: 'z', p: p"./a"}
+    print(B.from_json(x.to_json()))

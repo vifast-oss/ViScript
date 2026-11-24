@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.rsplit("aaa", "aa"))
+    print(str.rsplit("aaaa", "aa"))
+    print(str.rsplit("abab", "aba"))
+    print(str.rsplit("banana", "ana"))
+    print(str.join(str.rsplit("aaa", "aa"), "|"))
+    print(str.join(str.rsplit("banana", "ana"), "|"))

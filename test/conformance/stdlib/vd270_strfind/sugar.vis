@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "banana"
+    print(s.find("na"))
+    print(s.rfind("na"))
+    print(s.count("na"))
+    let o: int? = s.find("na")
+    let n: int = s.count("na")
+    print(o)
+    print(n)
+    print("đ😀x".find("x"))
+    print("😀a😀".rfind("😀"))
+    print("aaaa".count("aa"))

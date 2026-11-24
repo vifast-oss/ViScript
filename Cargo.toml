@@ -9,6 +9,7 @@ resolver = "2"
 # phải `exclude` để cargo không báo "multiple workspace roots".
 exclude = ["vis-host-wasm"]
 members = [
+    "crates/vis-conformance",
     "crates/vis-core",
     "crates/vis-http",
     "crates/vis-runtime",

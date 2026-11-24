@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.matches("đ😀x😀", "😀"))
+    print(str.join(str.matches("đ😀x😀", "😀"), "|"))
+    print(str.matches("a😀b😀c", "😀"))
+    print(str.matches("👨‍👩‍👧x", "👩"))
+    print(str.join(str.matches("👨‍👩‍👧x", "👩"), "|"))
+    print(str.matches("👨‍👩‍👧‍👦x👨‍👩‍👧‍👦", "👨‍👩‍👧‍👦"))
+    print(str.join(str.matches("👨‍👩‍👧‍👦x👨‍👩‍👧‍👦", "👨‍👩‍👧‍👦"), "|"))
+    print(len(str.matches("đ😀x😀", "")))

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn do_dai(c: str?) -> int:
+    match c:
+        Some(x): str.byte_len(x)
+        None: 0
+
+fn main():
+    print(str.char_at("đ😀x", 0))
+    print(str.char_at("đ😀x", 1))
+    print(str.char_at("đ😀x", 2))
+    print(do_dai(str.char_at("đ😀x", 0)))
+    print(do_dai(str.char_at("đ😀x", 1)))
+    print(do_dai(str.char_at("e\u{301}", 0)))
+    print(do_dai(str.char_at("e\u{301}", 1)))
+    print(do_dai(str.char_at("👨‍👩‍👧", 0)))
+    print(do_dai(str.char_at("👨‍👩‍👧", 1)))
+    print(do_dai(str.char_at("👨‍👩‍👧", 2)))
+    print(do_dai(str.char_at("👨‍👩‍👧", 3)))
+    print(do_dai(str.char_at("👨‍👩‍👧", 4)))

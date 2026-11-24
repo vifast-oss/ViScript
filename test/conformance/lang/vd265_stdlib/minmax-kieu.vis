@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let n: int = list.min([3, 1, 2])
+    let s: str = list.max(["b", "a"])
+    let f: float = list.max([1.5, 2.5])
+    print(n)
+    print(s)
+    print(f)

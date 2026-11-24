@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+type P:
+    x: int
+    y: int
+
+fn main():
+    let ps: list[P] = [{x: 1, y: 2}, {x: 3, y: 4}, {x: 1, y: 2}]
+    print(list.contains(ps, {x: 3, y: 4}))
+    print(list.contains(ps, {x: 4, y: 3}))
+    print(list.contains(ps, {x: 1, y: 2}))
+    print(list.contains(ps, {x: 9, y: 9}))

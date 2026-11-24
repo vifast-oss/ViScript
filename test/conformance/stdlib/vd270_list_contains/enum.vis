@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+enum E:
+    A(x: int)
+    B
+
+fn main():
+    let xs: list[E] = [E.A(1), E.B, E.A(2)]
+    print(list.contains(xs, E.A(1)))
+    print(list.contains(xs, E.A(2)))
+    print(list.contains(xs, E.B))
+    print(list.contains(xs, E.A(3)))

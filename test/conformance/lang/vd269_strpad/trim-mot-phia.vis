@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print("[" + str.trim_start("  x  ") + "]")
+    print("[" + str.trim_end("  x  ") + "]")
+    print("[" + str.trim_start("\t\n x") + "]")
+    print("[" + str.trim_end("x \r\n\t") + "]")
+    print("[" + str.trim_start("\u{00a0}\u{3000}x") + "]")
+    print("[" + str.trim_end("x\u{00a0}\u{3000}") + "]")
+    print("[" + str.trim_start("") + "]")
+    print("[" + str.trim_end("   ") + "]")
+    print("[" + str.trim_start("x y") + "]")
+    print("[" + str.trim_end("x y") + "]")
+    print("[" + str.trim("  x  ") + "]")

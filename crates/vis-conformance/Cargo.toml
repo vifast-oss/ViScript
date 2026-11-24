@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# `vis-conformance` — harness dữ liệu `test/conformance/**` chạy CẢ interp và VM (ST-313c/VD-289).
+[package]
+name = "vis-conformance"
+rust-version.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Conformance dữ liệu interp ↔ VM (+ WASI) cho ViScript — ST-313c"
+
+[dependencies]
+vis-core = { path = "../vis-core" }
+vis-hir = { path = "../vis-hir" }
+vis-types = { path = "../vis-types" }
+vis-syntax = { path = "../vis-syntax" }
+vis-bytecode = { path = "../vis-bytecode" }
+vis-interp = { path = "../vis-interp" }
+vis-vm = { path = "../vis-vm" }

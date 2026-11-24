@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii(""))
+    print(str.is_ascii("abc"))
+    print(str.is_ascii("ABCxyz"))
+    print(str.is_ascii("0123456789"))
+    print(str.is_ascii("!@#$%^&*()_+-=[]{{}};':\",./<>?`~|\\"))
+    print(str.is_ascii(" \t\r\n"))
+    print(str.is_ascii("\0"))
+    print(str.is_ascii("\n"))
+    print(str.is_ascii("\t"))
+    print(str.is_ascii("\u{7f}"))
+    print(str.is_ascii("a\0b\nc\u{7f}d"))
+    let s = "abc"
+    print(str.is_ascii(s))
+    let u = "đ"
+    print(str.is_ascii(u))

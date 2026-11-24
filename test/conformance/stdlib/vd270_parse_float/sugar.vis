@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "2.5"
+    print(s.parse_float())
+    print("1e3".parse_float())
+    print("-0.0".parse_float())
+    print("x".parse_float())
+    let o: float? = s.parse_float()
+    print(o)
+    match "banana".parse_float():
+        Some(v): print(v)
+        None: print("none")
+    match "0.125".parse_float():
+        Some(v): print(v)
+        None: print("none")

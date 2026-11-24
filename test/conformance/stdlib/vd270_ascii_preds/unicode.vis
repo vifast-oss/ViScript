@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii_digit("đ"))
+    print(str.is_ascii_alphabetic("đ"))
+    print(str.is_ascii_alphanumeric("đ"))
+    print(str.is_ascii_whitespace("đ"))
+    print(str.is_ascii_digit("١"))
+    print(str.is_ascii_alphabetic("Σ"))
+    print(str.is_ascii_alphanumeric("１２３"))
+    print(str.is_ascii_whitespace("\u{00A0}"))
+    print(str.is_ascii_whitespace("\u{3000}"))
+    print(str.is_ascii_digit("😀"))
+    print(str.is_ascii_alphabetic("😀"))
+    print(str.is_ascii_alphanumeric("😀"))
+    print(str.is_ascii_whitespace("😀"))
+    print(str.is_ascii_digit("\0"))
+    print(str.is_ascii_alphabetic("\0"))
+    print(str.is_ascii_alphanumeric("\0"))
+    print(str.is_ascii_whitespace("\0"))
+    print(str.is_ascii_digit("12\0"))
+    print(str.is_ascii_alphabetic("a\0"))
+    print(str.is_ascii_alphanumeric("a1\0"))
+    print(str.is_ascii_whitespace(" \0"))
+    print(str.is_ascii_digit("\0😀"))

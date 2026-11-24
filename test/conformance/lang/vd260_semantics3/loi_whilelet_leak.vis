@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    var o: int? = Some(1)
+    while let Some(v) = o:
+        print(v)
+        o = None
+    print(v)

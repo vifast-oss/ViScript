@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii("abcđ"))
+    print(str.is_ascii("đabc"))
+    print(str.is_ascii("a😀b"))
+    print(str.is_ascii("abc def\nđ"))
+    print(str.is_ascii("\0😀"))
+    print(str.is_ascii("0\u{80}1"))

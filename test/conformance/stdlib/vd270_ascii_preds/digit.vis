@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii_digit("0"))
+    print(str.is_ascii_digit("9"))
+    print(str.is_ascii_digit("0123456789"))
+    let s = "42"
+    print(str.is_ascii_digit(s))
+    print(str.is_ascii_digit("12a"))
+    print(str.is_ascii_digit("a12"))
+    print(str.is_ascii_digit("1 2"))
+    print(str.is_ascii_digit(" 12"))
+    print(str.is_ascii_digit("-1"))
+    print(str.is_ascii_digit("1.0"))
+    print(str.is_ascii_digit("!"))
+    print(str.is_ascii_digit("١٢٣"))
+    print(str.is_ascii_digit("１２３"))

@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "a,b,c"
+    print(s.split_terminator(","))
+    print("a,b,".split_terminator(","))
+    print(s.split_terminator(",").join("|"))
+    print("a,b,".split_terminator(",").join("|"))
+    print("abc".split_terminator(""))
+    print(len("abc".split_terminator("")))
+    print("đ😀x😀".split_terminator("😀"))
+    let t: list[str] = s.split_terminator(",")
+    print(t)
+    print(len("".split_terminator(",")))
+    print("".split_terminator(","))

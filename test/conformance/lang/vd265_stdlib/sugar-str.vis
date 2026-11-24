@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print("a\r\nb\n".lines())
+    print("  x  y ".split_whitespace())
+    print("ab".repeat(3))

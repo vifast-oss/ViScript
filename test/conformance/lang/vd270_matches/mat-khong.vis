@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.matches("abc", "z"))
+    print(str.matches("abc", "abcd"))
+    print(str.matches("", "a"))
+    print(len(str.matches("abc", "z")))
+    print(len(str.matches("", "a")))
+    print(str.join(str.matches("abc", "z"), "|"))

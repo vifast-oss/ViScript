@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.zip([1, 2, 3], [10, 20, 30]))
+    print(list.zip([1, 2, 3], [10, 20]))
+    print(list.zip([1], [10, 20, 30]))
+    print(list.zip([], [1, 2]))
+    print(list.zip([1, 2], []))
+    print(list.zip([], []))
+    print(list.zip(["a", "b"], ["x", "y"]))
+    print(list.zip([1.5, 2.5], [3.5, 4.5]))

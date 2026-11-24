@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [4.0, 1.0, 3.0, 2.0]
+    let a: float? = xs.median()
+    print(a)
+    print(xs.median())
+    print([1.0].median())
+    print([0.1, 0.2].median())
+    print([].median())
+    match xs.median():
+        Some(m): print(m)
+        None: print("none")
+    let r: list[float] = []
+    match r.median():
+        Some(_): print("some")
+        None: print("none")

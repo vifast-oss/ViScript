@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs: list[int] = [1, 2, 3]
+    let r: list[int] = []
+    print(list.index_of(xs, 9))
+    print(list.last_index_of(xs, 9))
+    print(list.index_of(r, 1))
+    print(list.last_index_of(r, 1))
+    print(list.index_of(["a", "b"], "b"))
+    print(list.last_index_of(["a", "b"], "z"))

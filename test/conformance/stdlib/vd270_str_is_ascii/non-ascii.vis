@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_ascii("đ"))
+    print(str.is_ascii("xin chào"))
+    print(str.is_ascii("😀"))
+    print(str.is_ascii("👨‍👩‍👧"))
+    print(str.is_ascii("e\u{301}"))
+    print(str.is_ascii("\u{80}"))
+    print(str.is_ascii("\u{10FFFF}"))

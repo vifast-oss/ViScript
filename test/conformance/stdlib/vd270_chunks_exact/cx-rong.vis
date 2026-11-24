@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.chunks_exact([1, 2, 3], 4))
+    print(list.chunks_exact([1], 2))
+    let r: list[int] = []
+    print(list.chunks_exact(r, 1))
+    print(list.chunks_exact(r, 9))
+    let rs: list[str] = []
+    print(list.chunks_exact(rs, 3))

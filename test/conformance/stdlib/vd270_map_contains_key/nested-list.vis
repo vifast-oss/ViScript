@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+fn main():
+    let m: map[list[int], str] = {([1, 2]): "a", ([3, 4]): "b"}
+    print(map.contains_key(m, [1, 2]))
+    print(map.contains_key(m, [3, 4]))
+    print(map.contains_key(m, [2, 1]))
+    print(map.contains_key(m, [1, 2, 3]))
+    print(map.contains_key(m, []))

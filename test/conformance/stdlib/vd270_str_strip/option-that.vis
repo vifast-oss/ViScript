@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    match str.strip_prefix("banana", "ban"):
+        Some(r): print(r)
+        None: print("none")
+    match str.strip_prefix("banana", "zz"):
+        Some(_): print("some")
+        None: print("none")
+    match str.strip_suffix("banana", "ana"):
+        Some(r): print(r)
+        None: print("none")
+    match str.strip_suffix("banana", "zz"):
+        Some(_): print("some")
+        None: print("none")
+    let a: str? = str.strip_prefix("abc", "a")
+    let b: str? = str.strip_suffix("abc", "c")
+    print(a)
+    print(b)

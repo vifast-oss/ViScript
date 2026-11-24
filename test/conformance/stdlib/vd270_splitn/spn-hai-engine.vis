@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let s: str = "a,b,c"
+    print(str.splitn(s, ",", 2))
+    print(s.splitn(",", 2))
+    print(str.splitn(s, ",", 0))
+    print(str.splitn(s, ",", 1))
+    print(str.splitn(s, ",", 9))
+    print(str.join(str.splitn("a,b,", ",", 3), "|"))
+    print(str.splitn("abc", "", 2))
+    print(str.splitn("", "", 2))
+    print(str.splitn("a", "", 3))
+    print(str.splitn("đ😀x😀", "😀", 2))

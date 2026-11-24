@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let a: int??? = Some(Some(Some(2)))
+    print(a)

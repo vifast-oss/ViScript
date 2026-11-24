@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("".is_blank())
+    print("   ".is_blank())
+    print("\t\r\n".is_blank())
+    print("\u{00A0}\u{3000}".is_blank())
+    print("a".is_blank())
+    print(" a ".is_blank())
+    let s = " \n\t "
+    print(s.is_blank())
+    let t = "đ"
+    print(t.is_blank())
+    let b: bool = s.is_blank()
+    print(b)

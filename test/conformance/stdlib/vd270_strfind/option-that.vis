@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    match str.find("banana", "na"):
+        Some(i): print(i)
+        None: print("none")
+    match str.find("banana", "zz"):
+        Some(_): print("some")
+        None: print("none")
+    match str.rfind("abcabc", "abc"):
+        Some(i): print(i)
+        None: print("none")
+    let a: int? = str.find("abc", "b")
+    let b: int = str.count("abc", "b")
+    print(a)
+    print(b)

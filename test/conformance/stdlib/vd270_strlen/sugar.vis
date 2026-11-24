@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s = "đ😀x"
+    print(s.byte_len())
+    print(s.char_count())
+    print(s.is_empty())
+    let xs: list[int] = []
+    print(xs.is_empty())
+    let ys: list[str] = ["a"]
+    print(ys.is_empty())
+    let m: map[str, int] = {}
+    print(m.is_empty())
+    print("".is_empty())
+    print("😀".char_count())
+    let n: int = s.char_count()
+    let b: bool = xs.is_empty()
+    print(n)
+    print(b)

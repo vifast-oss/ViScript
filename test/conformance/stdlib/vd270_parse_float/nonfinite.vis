@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.parse_float("inf"))
+    print(str.parse_float("-inf"))
+    print(str.parse_float("+inf"))
+    print(str.parse_float("infinity"))
+    print(str.parse_float("-infinity"))
+    print(str.parse_float("NaN"))
+    print(str.parse_float("nan"))
+    print(str.parse_float("-NaN"))
+    print(str.parse_float("1e400"))
+    print(str.parse_float("-1e400"))
+    print(str.parse_float("1.8e308"))
+    print(str.parse_float("1e999999"))

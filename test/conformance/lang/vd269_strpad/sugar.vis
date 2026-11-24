@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("[" + "a".pad_left(3, "-") + "]")
+    print("[" + "a".pad_right(3, "-") + "]")
+    print("[" + "ab".center(5, "-") + "]")
+    print("[" + "  x  ".trim_start() + "]")
+    print("[" + "  x  ".trim_end() + "]")
+    print("[" + "đ".pad_left(3, "·") + "]")

@@ -1,0 +1,10 @@
+Some([a, b,c])
+Some([a, bXc])
+Some([a, b::c])
+Some([, aa])
+Some([, bc])
+Some([ab, ])
+None
+None
+None
+a|b,c

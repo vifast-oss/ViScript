@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U derives Json:
+    name: str
+    age: int
+fn main():
+    let u: U = {name: "An", age: 1}
+    print(U.from_json(u.to_json()))

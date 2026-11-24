@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type I derives Json:
+    x: int
+type O derives Json:
+    i: I
+    tag: str
+fn main():
+    let o: O = {i: {x: 3}, tag: "t"}
+    print(O.from_json(o.to_json()))

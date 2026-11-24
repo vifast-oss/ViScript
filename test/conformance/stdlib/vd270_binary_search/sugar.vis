@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [10, 20, 20, 30]
+    let a: int? = xs.binary_search(20)
+    print(a)
+    print(xs.binary_search(10))
+    print(xs.binary_search(30))
+    print(xs.binary_search(99))
+    print([1, 2, 2, 3].binary_search(2))
+    print(["a", "b"].binary_search("b"))
+    match xs.binary_search(20):
+        Some(i): print(i)
+        None: print("none")
+    match xs.binary_search(77):
+        Some(_): print("some")
+        None: print("none")

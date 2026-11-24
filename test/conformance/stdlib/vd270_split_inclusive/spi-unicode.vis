@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.split_inclusive("đ,😀,x", ","))
+    print(str.split_inclusive("đ,😀,x", ",").join("|"))
+    print(str.split_inclusive("a😀b😀c", "😀"))
+    print(str.split_inclusive("a🌍b🌍", "🌍"))
+    print(str.split_inclusive("héllo,🌍,👨‍👩‍👧‍👦", ","))
+    print(str.split_inclusive("👨‍👩‍👧x", "👩"))
+    print(str.split_inclusive("👨‍👩‍👧x", "👩").join("|"))
+    print(str.split_inclusive("👨‍👩‍👧‍👦x", "x"))
+    print(str.split_inclusive("đ😀x", "😀a"))
+    print(str.split_inclusive("a\tb\t", "\t"))
+    print(str.split_inclusive("a\tb\t", "\t").join("|"))

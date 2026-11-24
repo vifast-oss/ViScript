@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "banana"
+    print(s.replace_n("na", "X", 1))
+    print(s.replace_n("na", "X", 2))
+    print("aaaa".replace_n("a", "b", 2))
+    print("abc".replace_n("", "-", 2))
+    print(s.replace_n("z", "X", 3))
+    let t: str = s.replace_n("ban", "BAN", 1)
+    print(t)
+    print("đ😀x😀".replace_n("😀", "Z", 2))
+    print("aaaa".replace_n("aa", "b", 2))

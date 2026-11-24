@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type P:
+    a: int
+    b: int
+
+fn main():
+    let p = P(a: 1, b: 2)
+    let {a, a, b} = p
+    print(a, b)

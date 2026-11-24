@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    match ():
+        (): print("unit")
+        _: print("bad")
+    match []:
+        []: print("empty-list")
+        _: print("bad")
+    match [1]:
+        []: print("bad")
+        _: print("nonempty")

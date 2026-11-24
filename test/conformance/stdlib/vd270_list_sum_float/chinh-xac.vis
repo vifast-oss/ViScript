@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.sum_float([0.1, 0.2]))
+    print(list.sum_float([0.1, 0.2, 0.3]))
+    print(list.sum_float([1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]))
+    print(list.sum_float([1.0, -1.0, 1e-16]))
+    print(list.sum_float([1e-16, 1.0, -1.0]))

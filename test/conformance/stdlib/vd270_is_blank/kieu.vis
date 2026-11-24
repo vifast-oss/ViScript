@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a: bool = str.is_blank("")
+    let b: bool = str.is_blank("x")
+    let c: bool = " \t ".is_blank()
+    print(a)
+    print(b)
+    print(c)

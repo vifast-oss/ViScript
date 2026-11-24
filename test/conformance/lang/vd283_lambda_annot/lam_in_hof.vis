@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn h(f: fn(int?) -> int?) -> int?:
+    f(1)
+fn main():
+    print(h((x: int?) => x))

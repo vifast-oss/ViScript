@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.find("banana", "na"))
+    print(str.find("banana", "x"))
+    print(str.find("xin chào thế giới", "chào"))
+    print(str.find("😀a😀b", "b"))
+    print(str.find("đ😀x", "x"))
+    print(str.rfind("banana", "na"))
+    print(str.rfind("aXaXa", "a"))
+    print(str.rfind("😀a😀", "😀"))

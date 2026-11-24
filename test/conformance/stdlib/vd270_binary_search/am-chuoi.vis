@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let am = [-100, -9, -5, -5, -1, 0, 3]
+    print(list.binary_search(am, -100))
+    print(list.binary_search(am, -5))
+    print(list.binary_search(am, 0))
+    print(list.binary_search(am, -6))
+    print(list.binary_search(am, 2))
+    let chu = ["a", "b", "b", "đ", "😀"]
+    print(list.binary_search(chu, "a"))
+    print(list.binary_search(chu, "b"))
+    print(list.binary_search(chu, "đ"))
+    print(list.binary_search(chu, "c"))

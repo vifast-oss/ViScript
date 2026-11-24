@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title(""))
+    print(str.title("   "))
+    print(str.title("\t\n\r"))
+    print(str.char_count(str.title("   ")))
+    print(str.char_count(str.title("\t\n\r")))

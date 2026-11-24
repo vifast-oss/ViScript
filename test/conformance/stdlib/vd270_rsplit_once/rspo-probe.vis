@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.rsplit_once("a,b,c", ","))
+    print(str.rsplit_once("a,b,c", "x"))
+    print(str.rsplit_once("abc", ""))
+    print(str.rsplit_once("", "a"))
+    print(str.rsplit_once("", ""))
+    print(str.rsplit_once("abc", "abcd"))
+    print(str.rsplit_once("a::b::c", "::"))
+    print(str.rsplit_once("đ😀x", "😀"))
+    print(str.rsplit_once("👨‍👩‍👧x", "👩"))
+    print(str.rsplit_once("aXbXc", "X"))
+    print(str.rsplit_once("abc", "c"))
+    print(str.rsplit_once("abc", "a"))
+    print(str.rsplit_once("", "ab"))
+    print(str.rsplit_once("đ", "đ"))
+    print(str.rsplit_once("ađb", "đ"))
+    print(str.rsplit_once("aaaa", "aa"))
+    print(str.rsplit_once("aaa", "aa"))
+    print(str.rsplit_once("đ,😀,x", ","))
+    print(str.rsplit_once("a😀b😀c", "😀"))
+    print(str.rsplit_once("👨‍👩‍👧", "👨‍👩‍👧"))
+    print(str.rsplit_once(",", ","))
+    print(str.rsplit_once(",a,", ","))
+    print(str.rsplit_once("abc", "b"))
+    print(str.rsplit_once("banana", "na"))
+    match str.rsplit_once("a,b,c", ","):
+        Some(xs): print(str.join(xs, "|"))
+        None: print("none")
+    match str.rsplit_once("a,b,c", "x"):
+        Some(xs): print(str.join(xs, "|"))
+        None: print("none")

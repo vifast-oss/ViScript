@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+type P:
+    x: int
+    y: int
+
+fn main():
+    let m: map[P, str] = {({x: 1, y: 2}): "a", ({x: 3, y: 4}): "b"}
+    print(map.contains_key(m, {x: 1, y: 2}))
+    print(map.contains_key(m, {y: 2, x: 1}))
+    print(map.contains_key(m, {x: 4, y: 3}))
+    print(map.contains_key(m, {x: 9, y: 9}))

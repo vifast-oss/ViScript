@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a: float? = str.parse_float("2.5")
+    print(a)
+    let b: float? = str.parse_float("x")
+    print(b)
+    match a:
+        Some(v): print(v)
+        None: print("none")
+    match b:
+        Some(v): print(v)
+        None: print("none")

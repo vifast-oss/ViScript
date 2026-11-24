@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    var xs = [None]
+    xs[0] = 5
+    print(xs[0])

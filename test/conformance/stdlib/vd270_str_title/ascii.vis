@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title("hello world"))
+    print(str.title("hello"))
+    print(str.title("a b c"))
+    print(str.title("hELLo wORLD"))
+    print(str.title("mIxEd CaSe TeXt"))

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+use std.map
+
+fn main():
+    let a: list[int] = []
+    let b: list[int] = [1]
+    print(list.is_empty(a))
+    print(list.is_empty(b))
+    print(list.is_empty([]))
+    print(list.is_empty([1, 2]))
+    print(list.is_empty(["a"]))
+    print(list.is_empty([[]]))
+    let m: map[str, int] = {}
+    let n: map[str, int] = {"a": 1}
+    print(map.is_empty(m))
+    print(map.is_empty(n))
+    print(map.is_empty({}))
+    print(map.is_empty({"a": 1}))
+    print(map.is_empty({"a": 1, "b": 2}))

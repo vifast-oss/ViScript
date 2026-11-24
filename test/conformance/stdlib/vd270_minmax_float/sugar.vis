@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [3.0, 1.0, 2.0]
+    let a: float? = xs.min_float()
+    let b: float? = xs.max_float()
+    print(a)
+    print(b)
+    print([4.0, 1.0].min_float())
+    print([4.0, 1.0].max_float())
+    print([].min_float())
+    print([].max_float())
+    match xs.min_float():
+        Some(m): print(m)
+        None: print("none")
+    match [].max_float():
+        Some(_): print("some")
+        None: print("none")

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.is_blank("a"))
+    print(str.is_blank(" a"))
+    print(str.is_blank("a "))
+    print(str.is_blank(" a "))
+    print(str.is_blank("a b"))
+    print(str.is_blank(" \t\n0\r\n"))
+    print(str.is_blank("  x  "))
+    print(str.is_blank(" - "))
+    print(str.is_blank("\u{200B}"))
+    print(str.is_blank("\u{FEFF}"))
+    print(str.is_blank("\u{180E}"))
+    print(str.is_blank("\u{0301}"))
+    print(str.is_blank(" \u{0301} "))
+    print(str.is_blank("\0"))

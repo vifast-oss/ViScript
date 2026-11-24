@@ -687,6 +687,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "vis-conformance"
+version = "0.6.0"
+dependencies = [
+ "vis-bytecode",
+ "vis-core",
+ "vis-hir",
+ "vis-interp",
+ "vis-syntax",
+ "vis-types",
+ "vis-vm",
+]
+
+[[package]]
 name = "vis-core"
 version = "0.6.0"
 dependencies = [

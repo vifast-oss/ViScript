@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let xs = [5, 6]
+    let a: int? = list.index_of(xs, 6)
+    let b: int? = list.last_index_of(xs, 6)
+    print(a)
+    print(b)
+    match list.index_of(xs, 5):
+        Some(i): print(i)
+        None: print("none")
+    match list.index_of(xs, 7):
+        Some(_): print("some")
+        None: print("none")

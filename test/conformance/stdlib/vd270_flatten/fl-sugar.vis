@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs: list[list[int]] = [[1, 2], [], [3]]
+    print(xs.flatten())
+    let r: list[int] = xs.flatten()
+    print(r)
+    print([["a"], ["b", "c"]].flatten())
+    let xss: list[list[list[int]]] = [[[1], [2]], [[3]]]
+    let p: list[list[int]] = xss.flatten()
+    print(p)

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn dau(v: float?) -> str:
+    match v:
+        Some(m):
+            if 1.0 / m < 0.0:
+                return "-0"
+            return "+0"
+        None:
+            return "none"
+
+fn main():
+    print(dau(list.min_float([-0.0])))
+    print(dau(list.max_float([-0.0])))
+    print(dau(list.min_float([0.0])))
+    print(dau(list.max_float([0.0])))
+    print(dau(list.min_float([1.0, -0.0])))
+    print(dau(list.max_float([-1.0, -0.0])))
+    print(dau(list.min_float([1.0, 0.0])))
+    print(dau(list.max_float([-1.0, 0.0])))
+    print(dau(list.min_float([-0.0, 0.0])))
+    print(dau(list.max_float([-0.0, 0.0])))
+    print(dau(list.min_float([0.0, -0.0])))
+    print(dau(list.max_float([0.0, -0.0])))
+    print(dau([0.0, -0.0].min_float()))
+    print(dau([-0.0, 0.0].max_float()))

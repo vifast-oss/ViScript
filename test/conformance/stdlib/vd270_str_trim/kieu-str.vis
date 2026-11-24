@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let a: str = str.trim_matches("--x--", "-")
+    let b: str = str.trim_start_matches("--x--", "-")
+    let c: str = str.trim_end_matches("--x--", "-")
+    let d: str = "--y--".trim_matches("-")
+    print(a)
+    print(b)
+    print(c)
+    print(d)

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6], 1))
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6], 2))
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6], 3))
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6], 6))
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6, 7], 2))
+    print(list.chunks_exact([1, 2, 3, 4, 5, 6, 7], 3))
+    print(list.chunks_exact([1, 2, 3, 4, 5], 2))
+    print(list.chunks_exact(["a", "b", "c", "d"], 3))
+    print(list.chunks_exact([1, 2, 3], 4))

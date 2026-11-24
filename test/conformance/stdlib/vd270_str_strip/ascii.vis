@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.strip_prefix("banana", "ban"))
+    print(str.strip_prefix("banana", "x"))
+    print(str.strip_prefix("banana", "ana"))
+    print(str.strip_prefix("abc", "abcd"))
+    print(str.strip_suffix("banana", "ana"))
+    print(str.strip_suffix("banana", "x"))
+    print(str.strip_suffix("banana", "ban"))
+    print(str.strip_suffix("abc", "abcd"))
+    print(str.strip_prefix("banana", "banana"))
+    print(str.strip_suffix("banana", "banana"))

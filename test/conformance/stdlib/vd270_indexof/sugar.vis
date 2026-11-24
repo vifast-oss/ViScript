@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs: list[int] = [10, 20, 30, 20]
+    print(xs.index_of(20))
+    print(xs.last_index_of(20))
+    print(xs.index_of(99))
+    print([1, 2, 1].last_index_of(1))
+    print(["a", "b"].index_of("b"))
+    let o: int? = xs.index_of(30)
+    print(o)
+    print([[1], [2], [1]].last_index_of([1]))

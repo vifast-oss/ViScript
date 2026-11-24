@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.char_at("", 0))
+    print(str.char_at("", 1))
+    print(str.char_at("", 999))
+    let s: str = ""
+    print(s.char_at(0))

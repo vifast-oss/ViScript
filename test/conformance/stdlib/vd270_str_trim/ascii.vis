@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.trim_matches("--x--", "-"))
+    print(str.trim_start_matches("--x--", "-"))
+    print(str.trim_end_matches("--x--", "-"))
+    print(str.trim_matches("abbaHELLOabba", "ab"))
+    print(str.trim_matches("abbaHELLOabba", "ba"))
+    print(str.trim_matches("a-b", "-a"))
+    print(str.trim_matches("xyx", "xy"))

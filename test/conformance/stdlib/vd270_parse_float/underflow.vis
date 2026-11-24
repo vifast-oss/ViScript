@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.parse_float("1e-400"))
+    print(str.parse_float("-1e-400"))
+    print(str.parse_float("1e-999"))
+    print(str.parse_float("-2.4e-324"))

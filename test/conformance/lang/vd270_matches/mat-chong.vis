@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(len(str.matches("aaaa", "aa")))
+    print(len(str.matches("aaa", "aa")))
+    print(len(str.matches("ababa", "aba")))
+    print(len(str.matches("abcabc", "abc")))
+    print(len(str.matches("aaaaa", "aa")))
+    print(str.matches("aaaaa", "aa"))
+    print(str.count("aaaa", "aa"))

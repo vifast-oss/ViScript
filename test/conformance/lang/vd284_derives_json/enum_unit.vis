@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+enum E derives Json:
+    A
+    B
+fn main():
+    let a: E = E.A
+    print(a.to_json())

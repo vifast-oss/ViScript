@@ -1,0 +1,9 @@
+Some([đ,😀, x])
+đ,😀|x
+Some([a😀b, c])
+Some([đ, x])
+Some([ađb, c])
+Some([👨‍, ‍👧x])
+👨‍|‍👧x
+Some([, ])
+None

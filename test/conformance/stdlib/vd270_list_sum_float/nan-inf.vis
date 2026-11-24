@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    let nan = 0.0 / 0.0
+    let inf = 1.0 / 0.0
+    print(list.sum_float([nan, 1.0]))
+    print(list.sum_float([1.0, nan]))
+    print(list.sum_float([inf, 1.0]))
+    print(list.sum_float([-inf, 1.0]))
+    print(list.sum_float([inf, -inf]))
+    print(list.sum_float([inf, inf]))
+    print(list.sum_float([-inf, -inf]))
+    print(list.sum_float([1.0e308, 1.0e308]))

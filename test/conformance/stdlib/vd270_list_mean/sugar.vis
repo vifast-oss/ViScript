@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [2.0, 4.0]
+    let a: float? = xs.mean()
+    print(a)
+    print(xs.mean())
+    print([1.0].mean())
+    print([0.1, 0.2].mean())
+    print([].mean())
+    match xs.mean():
+        Some(m): print(m)
+        None: print("none")
+    let r: list[float] = []
+    match r.mean():
+        Some(_): print("some")
+        None: print("none")

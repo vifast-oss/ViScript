@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    f: int?
+
+impl U:
+    fn make(self) -> U:
+        U(f: None)
+
+fn main():
+    let u: U = U(f: Some(1))
+    let r = u.make() with f: 5
+    print(r)
+    print(r.f)

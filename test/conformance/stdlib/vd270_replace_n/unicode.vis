@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_n("đ😀x😀", "😀", "Z", 1))
+    print(str.replace_n("đ😀x😀", "😀", "Z", 2))
+    print(str.replace_n("đađ", "đ", "Đ", 2))
+    print(str.replace_n("😀😀😀", "😀", "🙂", 2))
+    print(str.replace_n("đ😀x", "đ😀", "Q", 1))
+    print(str.replace_n("đ😀x", "x", "đ", 1))
+    print(str.replace_n("👨‍👩‍👧x", "👩", "M", 1))
+    print(str.replace_n("đ😀xđ😀y", "đ😀", "Q", 2))

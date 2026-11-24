@@ -1,0 +1,13 @@
+Some([a,b, c])
+Some([a,b, c])
+None
+Some([abc, ])
+Some([, ])
+None
+Some([, bc])
+Some([ab, ])
+Some([aXb, c])
+Some([đ😀x, ])
+Some([👨‍, ‍👧x])
+2
+a,b|c

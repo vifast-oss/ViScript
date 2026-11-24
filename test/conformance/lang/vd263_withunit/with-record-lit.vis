@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+type U:
+    f: int?
+
+fn main():
+    let r = U(f: None) with f: 5
+    print(r)
+    print(r.f)
+    match r.f:
+        Some(v): print(v)
+        None: print("none")

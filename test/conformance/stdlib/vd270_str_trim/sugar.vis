@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "--x--"
+    print(s.trim_matches("-"))
+    print(s.trim_start_matches("-"))
+    print(s.trim_end_matches("-"))
+    let t: str = "đ😀đx".trim_matches("đ😀")
+    print(t)
+    print("  x  ".trim_matches(" "))
+    print("ab".trim_matches(""))

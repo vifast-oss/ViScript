@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "hELLo wORLD"
+    print(s.title())
+    print("hello-world".title())
+    print("".title())
+    let t: str = "ok".title()
+    print(t)

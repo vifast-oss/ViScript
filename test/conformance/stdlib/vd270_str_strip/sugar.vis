@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let s: str = "banana"
+    print(s.strip_prefix("ban"))
+    print(s.strip_suffix("ana"))
+    print(s.strip_prefix("x"))
+    let o: str? = s.strip_prefix("ban")
+    print(o)
+    print("đ😀x".strip_prefix("đ"))
+    print("đ😀x".strip_suffix("😀x"))
+    print("aaa".strip_prefix("a"))
+    print("aaa".strip_suffix("aa"))
+    match "banana".strip_suffix("ana"):
+        Some(r): print(r)
+        None: print("none")

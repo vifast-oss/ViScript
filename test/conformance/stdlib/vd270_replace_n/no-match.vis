@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.replace_n("abc", "z", "X", 0))
+    print(str.replace_n("abc", "z", "X", 2))
+    print(str.replace_n("abc", "abcd", "X", 5))
+    print(str.replace_n("", "a", "b", 3))
+    print(str.replace_n("đ😀x", "d", "D", 1))
+    print(str.replace_n("abc", "ABC", "X", 9))
