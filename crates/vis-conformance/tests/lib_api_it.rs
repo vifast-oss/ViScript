@@ -63,6 +63,8 @@ mod vs3_worker_eval_local;
 mod vs3_worker_eval_parallel;
 #[path = "worker_api_it/vs3_worker_eval_vm.rs"]
 mod vs3_worker_eval_vm;
+#[path = "worker_api_it/vs3_worker_frame_lib.rs"]
+mod vs3_worker_frame_lib;
 #[path = "worker_api_it/vs3_worker_frame_vm.rs"]
 mod vs3_worker_frame_vm;
 
