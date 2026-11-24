@@ -27,7 +27,7 @@
   - `vd283_lambda_annot` (22 ca + `.fmt`) và `vd284_derives_json` (15 ca + 3 lỗi tĩnh)
     → xoá tệp gốc, 0 assertion mất;
   - 27 tệp frame/worker/async/API → `vis-conformance/tests/lib_api_it.rs`
-    (**353 test**: 350 pass + 3 ignored);
+    (**362 test**: 359 pass + 3 ignored);
   - `vs3_keepalive` (8 test) → `vis-host-native/tests/net_it.rs`;
   - tách 10 test API khỏi `vs3_worker_frame` (giữ 2 test CLI).
 - Dọn dẹp: xoá `mod common;` chết ở 6 aggregator + `vis-cli/tests/common/`;
@@ -64,7 +64,7 @@
 | `vis-wasm-sem` | **390/390** |
 | conformance corpus | **420/420** |
 | R1..R9 | PASS |
-| R8 | **36** binary (trần 40) |
+| R8 | **37** binary (trần 40) |
 
 ## Ghi chú vận hành
 
