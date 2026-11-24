@@ -12,7 +12,7 @@
 //! thêm mới **chỉ** khi có VD nêu đích danh tên được thêm.
 //!
 //! **Sinh lại tệp** (chỉ Agent 0, sau khi đã có VD nêu đích danh mục thêm/xoá/đổi):
-//! `VIS_FREEZE_REGEN=1 ~/.cargo/bin/cargo test -p vis-cli --test api_dong_bang`.
+//! `VIS_FREEZE_REGEN=1 ~/.cargo/bin/cargo test -p vis-conformance --test lib_api_it api_dong_bang`.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;

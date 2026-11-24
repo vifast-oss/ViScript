@@ -4,8 +4,6 @@
 //! Các tệp ca gốc nằm trong thư mục cùng tên; `#[path]` giữ nguyên nội dung, không copy test.
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-mod common;
-
 #[path = "stdlib_it/sort_by_str.rs"]
 mod sort_by_str;
 #[path = "stdlib_it/stdlib.rs"]

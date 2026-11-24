@@ -4,8 +4,6 @@
 //! Các tệp ca gốc nằm trong thư mục cùng tên; `#[path]` giữ nguyên nội dung, không copy test.
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-mod common;
-
 #[path = "host_it/std_fs_json.rs"]
 mod std_fs_json;
 #[path = "host_it/vd266_fs.rs"]

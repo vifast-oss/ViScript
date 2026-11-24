@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-310e** — binary gộp miền: worker pool/eval/frame (W1..W5).
 //!
-//! Sáu tệp ca gốc nằm trong thư mục `worker_it/`; soak dài hạn nằm ở
+//! Các tệp ca worker còn lại nằm trong thư mục `worker_it/` (5 tệp API đã sang
+//! `vis-conformance/tests/worker_api_it/`); soak dài hạn nằm ở
 //! `examples/vs3_worker_soak.rs` và được gọi lại bằng một ca gate bên dưới (không mất ca).
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 

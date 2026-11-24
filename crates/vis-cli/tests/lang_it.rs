@@ -4,8 +4,6 @@
 //! Các tệp ca gốc nằm trong thư mục cùng tên; `#[path]` giữ nguyên nội dung, không copy test.
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-mod common;
-
 #[path = "lang_it/ban_ghi_an_danh_ten.rs"]
 mod ban_ghi_an_danh_ten;
 #[path = "lang_it/generic_cli.rs"]

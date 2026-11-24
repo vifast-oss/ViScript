@@ -4,8 +4,6 @@
 //! Các tệp ca gốc nằm trong thư mục cùng tên; `#[path]` giữ nguyên nội dung, không copy test.
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-mod common;
-
 #[path = "cli_it/cache_fastpath.rs"]
 mod cache_fastpath;
 #[path = "cli_it/chan_doan_da_tep.rs"]

@@ -4,8 +4,6 @@
 //! Các tệp ca gốc nằm trong thư mục cùng tên; `#[path]` giữ nguyên nội dung, không copy test.
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-mod common;
-
 #[path = "net_pkg_it/http.rs"]
 mod http;
 #[path = "net_pkg_it/net.rs"]
@@ -24,8 +22,6 @@ mod siet_caps_pkg;
 mod vs3_cookie_auth;
 #[path = "net_pkg_it/vs3_default.rs"]
 mod vs3_default;
-#[path = "net_pkg_it/vs3_keepalive.rs"]
-mod vs3_keepalive;
 #[path = "net_pkg_it/vs3_pkg_gc.rs"]
 mod vs3_pkg_gc;
 #[path = "net_pkg_it/vs3_pkg_gc_multi.rs"]

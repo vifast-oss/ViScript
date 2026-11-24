@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use vis_cli::net::Net;
+use vis_host_native::net::Net;
 use vis_http::http_get;
 
 /// Đọc một request tới `\r\n\r\n`; `None` = EOF/lỗi.
