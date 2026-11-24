@@ -24,8 +24,8 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use vis_interp::builtin::{chia_dong, FsHost, MucFs};
-use vis_interp::stdlib::DAU_QUYEN;
+use vis_core::host::{chia_dong, FsHost, MucFs};
+use vis_core::host::DAU_QUYEN;
 
 use crate::preopen::{chuan_hoa_tuyet_doi, chuan_hoa_yeu_cau, hien, trong_goc};
 

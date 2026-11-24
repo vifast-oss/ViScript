@@ -260,6 +260,7 @@ name = "vis-host-wasm"
 version = "0.1.0"
 dependencies = [
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-interp",
  "vis-loader",
@@ -312,6 +313,7 @@ name = "vis-vm"
 version = "0.6.0"
 dependencies = [
  "vis-bytecode",
+ "vis-core",
  "vis-diag",
  "vis-interp",
  "vis-syntax",

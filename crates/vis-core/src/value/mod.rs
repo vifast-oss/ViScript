@@ -693,11 +693,13 @@ pub fn parse_duration(text: &str) -> Option<i64> {
     let mut total: i64 = 0;
     let mut num = String::new();
     let mut unit = String::new();
+    let mut co_cap = false;
     let mut chars = text.trim().chars().peekable();
     while let Some(c) = chars.next() {
         if c.is_ascii_digit() || c == '_' {
             if !unit.is_empty() {
                 total = total.checked_add(scale_duration(&num, &unit)?)?;
+                co_cap = true;
                 num.clear();
                 unit.clear();
             }
@@ -709,6 +711,7 @@ pub fn parse_duration(text: &str) -> Option<i64> {
                     // hết một cặp số+đơn vị (đơn vị không thể dài quá 2 ký tự)
                     if unit.len() >= 2 {
                         total = total.checked_add(scale_duration(&num, &unit)?)?;
+                        co_cap = true;
                         num.clear();
                         unit.clear();
                     }
@@ -718,8 +721,15 @@ pub fn parse_duration(text: &str) -> Option<i64> {
     }
     if !num.is_empty() && !unit.is_empty() {
         total = total.checked_add(scale_duration(&num, &unit)?)?;
+        co_cap = true;
     }
-    Some(total)
+    // **#196 / ST-312b**: chuỗi không có **cặp** `<số><đơn vị>` nào (`"sai"`, `""`, `"250"`)
+    // không phải literal `duration` hợp lệ ⇒ `None` (trước đây trả `Some(0)`).
+    if co_cap {
+        Some(total)
+    } else {
+        None
+    }
 }
 
 fn scale_duration(num: &str, unit: &str) -> Option<i64> {

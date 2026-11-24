@@ -3,7 +3,8 @@
 # **ST-296d-tools / VD-282(3)** — `vis-gate-windows --quick|--full` trên `psvn` qua `vis-remote`.
 #
 #   --quick : suite trọng yếu (cancel/select/h2/pkg), nhanh
-#   --full  : `cargo test --workspace --no-fail-fast` + host conformance + targets
+#   --full  : clippy (`--workspace --all-targets -D warnings`) + `cargo test --workspace
+#             --no-fail-fast` + host conformance + targets
 #
 # Mặc định dùng repo sạch trên psvn; có thể đổi bằng `VIS_GATE_WINDOWS_REPO` (đường dẫn Windows/
 # Git Bash) và `VIS_GATE_WINDOWS_REMOTE` (mặc định `psvn`). `VIS_GATE_WINDOWS_TMPDIR` mặc định
@@ -34,7 +35,7 @@ if [ "$MODE" = "--quick" ]; then
     # **ST-296a / ST-311c**: `vs3_http_cancel` nay thuộc `vis-host-native --test http2_it`.
     body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test -p vis-cli --test net_pkg_it pkg:: -- --skip siet_caps_pkg && cargo test -p vis-host-native --features http2,async-h2 --test http2_it && cargo test -p vis-cli --test async_it vs3_select::"
 else
-    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo test --workspace --no-fail-fast && cargo test -p vis-cli --test host_conformance -- --nocapture && bash bin/vis-targets"
+    body="export TMPDIR='$TMP' TMP='$TMP' TEMP='$TMP'; cd '$DEST' && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace --no-fail-fast && cargo test -p vis-cli --test host_conformance -- --nocapture && bash bin/vis-targets"
 fi
 echo "vis-gate-windows: mode=${MODE#--} remote=$REMOTE repo=$DEST tmp=$TMP" >&2
 if [ "$DRY" -eq 1 ]; then

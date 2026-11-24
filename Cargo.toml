@@ -4,10 +4,10 @@
 # (HIR + giải tên, ST-11), `vis-cli` và `vish-term` (Terminal/ViTerm, ST-308).
 [workspace]
 resolver = "2"
-# **ST-171**: `vis-host-linux`/`vis-host-wasm` là workspace RIÊNG (giữ nguyên như bản gốc
-# `ViFastOs`, nơi chúng nằm ngoài `viscript/`). Nay gốc repo là cây ViScript nên chúng nằm
-# trong cây — phải `exclude` để cargo không báo "multiple workspace roots".
-exclude = ["vis-host-linux", "vis-host-wasm"]
+# **ST-312b (VD-289)**: `vis-host-linux` đã vào workspace chính (1 `Cargo.lock`, 1 toolchain).
+# `vis-host-wasm` vẫn là workspace riêng (target wasm32, giữ nguyên như bản gốc `ViFastOs`);
+# phải `exclude` để cargo không báo "multiple workspace roots".
+exclude = ["vis-host-wasm"]
 members = [
     "crates/vis-core",
     "crates/vis-diag",
@@ -27,6 +27,7 @@ members = [
     "crates/vis-plugin-host",
     "crates/vis-plugin-macros",
     "crates/vish-term",
+    "vis-host-linux",
 ]
 
 [workspace.package]
@@ -50,6 +51,9 @@ unicode-ident = "1"
 rusqlite = { version = "=0.37.0", default-features = false, features = ["bundled", "hooks", "limits"] }
 # ST-295 (VD-276): openat/openat2 an toàn cho đường đọc+ghi Unix.
 rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std", "termios"] }
+# **ST-312b (VD-289)**: `landlock` (Linux-only) vào một nguồn workspace; `vis-host-linux` dùng
+# `{ workspace = true }` trong bảng phụ thuộc `cfg(target_os = "linux")`.
+landlock = "=0.4.7"
 # VS3-4a/4b2 (VD-271): TLS + HTTP/2, ring thay aws-lc-rs; chỉ target không phải wasm32.
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"] }
 webpki-roots = "=1.0.11"

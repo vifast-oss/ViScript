@@ -6,9 +6,9 @@
 //! khả năng bị từ chối. Không `unsafe`, không dependency, không chạm OS.
 
 use vis_diag::COMMAND_CODES;
-use vis_interp::builtin::{DbHost, KetQua, NetHost, Ngoai};
-use vis_interp::interp::{Abort, Trap, R};
-use vis_interp::value::Value;
+use vis_core::host::{DbHost, KetQua, NetHost, Ngoai};
+use vis_core::trap::{Abort, Trap, R};
+use vis_core::value::Value;
 use vis_syntax::Span;
 
 /// Thông điệp từ chối mạng (`std.net.*`, HTTP, TLS).
@@ -49,7 +49,7 @@ impl NetHost for TuChoiNet {
         _method: &str,
         _headers: &[(String, String)],
         _timeout_ms: u64,
-    ) -> Result<Option<vis_interp::builtin::KetQuaHttp2>, String> {
+    ) -> Result<Option<vis_core::host::KetQuaHttp2>, String> {
         Err(LY_DO_MANG.to_string())
     }
 

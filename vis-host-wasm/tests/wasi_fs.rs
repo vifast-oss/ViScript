@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use vis_host_wasm::runner::{chay, Engine, YeuCau};
 use vis_host_wasm::{Preopen, Stdio, WasiFs};
-use vis_interp::builtin::FsHost;
+use vis_core::host::FsHost;
 
 static DEM: AtomicU64 = AtomicU64::new(0);
 

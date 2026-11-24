@@ -38,7 +38,7 @@ fn json_roundtrip_va_escape_duy_nhat() {
 #[test]
 fn value_parse_size_duration_va_exit_code() {
     // **ST-311b (vá test ST-311c lệch hợp đồng)**: `parse_size` phân biệt SI (`kb`=1000) và IEC
-    // (`kib`=1024); `parse_duration` trả **nanosecond**; chuỗi không có chữ số ⇒ `Some(0)`.
+    // (`kib`=1024); `parse_duration` trả **nanosecond**; chuỗi không có cặp `<số><đơn vị>` ⇒ `None` (#196).
     assert_eq!(parse_size("5kb"), Some(5 * 1000));
     assert_eq!(parse_size("5kib"), Some(5 * 1024));
     assert_eq!(parse_size("2mb"), Some(2 * 1_000_000));
@@ -46,7 +46,9 @@ fn value_parse_size_duration_va_exit_code() {
 
     assert_eq!(parse_duration("250ms"), Some(250_000_000));
     assert_eq!(parse_duration("3s"), Some(3_000_000_000));
-    assert_eq!(parse_duration("sai"), Some(0));
+    assert_eq!(parse_duration("sai"), None);
+    assert_eq!(parse_duration(""), None);
+    assert_eq!(parse_duration("250"), None);
 
     assert_eq!(vis_core::exit_code(&Value::Unit), 0);
     assert_eq!(vis_core::exit_code(&Value::ok(Value::Int(1))), 0);

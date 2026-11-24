@@ -12,6 +12,7 @@ description = "Host WASI cho ViScript (ST-299a): FS preopen, clock, stdout/stder
 [workspace]
 
 [dependencies]
+vis-core = { path = "../crates/vis-core" }
 vis-diag = { path = "../crates/vis-diag" }
 vis-syntax = { path = "../crates/vis-syntax" }
 vis-types = { path = "../crates/vis-types" }

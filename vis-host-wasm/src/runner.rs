@@ -117,7 +117,7 @@ fn std_mods(cst: &vis_syntax::Cst, text: &str) -> Vec<String> {
     ra
 }
 
-fn ma_thoat(out: &vis_interp::RunOutput) -> u8 {
+fn ma_thoat(out: &vis_core::RunOutput) -> u8 {
     if out.diagnostics.is_empty() {
         return (out.exit & 0xff) as u8;
     }
