@@ -695,6 +695,7 @@ dependencies = [
  "vis-fmt",
  "vis-hir",
  "vis-interp",
+ "vis-runtime",
  "vis-syntax",
  "vis-types",
  "vis-vm",

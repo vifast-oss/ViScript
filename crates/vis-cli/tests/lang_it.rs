@@ -32,8 +32,6 @@ mod stage_dau;
 mod trait_cli;
 #[path = "lang_it/vd258_checker.rs"]
 mod vd258_checker;
-#[path = "lang_it/vd260_frame3.rs"]
-mod vd260_frame3;
 #[path = "lang_it/vd260_parity3.rs"]
 mod vd260_parity3;
 #[path = "lang_it/vd260_rest_pattern.rs"]
@@ -56,8 +54,6 @@ mod vd263_withunit;
 mod vd264_infer;
 #[path = "lang_it/vd264_range.rs"]
 mod vd264_range;
-#[path = "lang_it/vd265_frame.rs"]
-mod vd265_frame;
 #[path = "lang_it/vd265_genericres.rs"]
 mod vd265_genericres;
 #[path = "lang_it/vd265_methodret.rs"]
@@ -96,10 +92,6 @@ mod vd270_matches;
 mod vd270_r5c_sugar;
 #[path = "lang_it/vd270_sugar_arity.rs"]
 mod vd270_sugar_arity;
-#[path = "lang_it/vd284_async_impl.rs"]
-mod vd284_async_impl;
-#[path = "lang_it/vd284_spawn_method.rs"]
-mod vd284_spawn_method;
 #[path = "lang_it/vd_204.rs"]
 mod vd_204;
 #[path = "lang_it/vd_205.rs"]

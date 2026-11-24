@@ -29,8 +29,10 @@
   - `lang_it/vd284_derives_json.rs` → 15 ca (2 ca `Err(` dùng `.out_prefix`) + 3 ca lỗi tĩnh
     (`.err = VS0412`) — **xóa tệp gốc**.
   - Tổng corpus: **420 ca**; 0 assertion mất (parity/stdout/codes/fmt/static đều được tái lập).
-- Các tệp còn lại giữ nguyên (nhiều ca còn assertion CLI-level như TAP/check) — chờ A0 duyệt
-  chiến lược giảm trùng lặp.
+- **Di dời 4 tệp test API thư viện** khỏi `vis-cli/tests/lang_it` sang
+  `vis-conformance/tests/frame_it` (41 test, nguyên assertion):
+  `vd260_frame3`, `vd265_frame`, `vd284_async_impl`, `vd284_spawn_method`.
+- Các tệp còn lại giữ nguyên (đều dùng CLI `Command`/TAP) — chờ A0 duyệt chiến lược giảm trùng lặp.
 - `#193`: **vẫn mở** — `vis-wasm-sem` 388/390, 2 ca `ham/de-quy-*` tràn stack trên WASI;
   chưa có bằng chứng đóng.
 

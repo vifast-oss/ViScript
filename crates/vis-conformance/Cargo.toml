@@ -18,3 +18,4 @@ vis-syntax = { path = "../vis-syntax" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-interp = { path = "../vis-interp" }
 vis-vm = { path = "../vis-vm" }
+vis-runtime = { path = "../vis-runtime" }
