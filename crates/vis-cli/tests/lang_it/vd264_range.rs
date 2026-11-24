@@ -3,7 +3,7 @@
 //!
 //! Trước bản sửa, `for i in 0..2_000_000` vật chất hoá **toàn bộ** range thành `Vec<Value>`
 //! (đo được ~146 MB RSS @2M, ~70 B/phần tử) trước khi chạy thân vòng. Nay interp/VM/frame dùng
-//! chung `ForIter` (`crates/vis-interp/src/value.rs`): range giữ con trỏ `i64` + cận, không cấp
+//! chung `ForIter` (`crates/vis-runtime/src/iter.rs`): range giữ con trỏ `i64` + cận, không cấp
 //! phát N phần tử; list/str/map vẫn vật chất hoá như cũ.
 //!
 //! Hợp đồng được khoá ở đây:

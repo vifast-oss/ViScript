@@ -24,7 +24,7 @@
 //!   không có bề mặt injection.
 //! - Handle thiếu/đã đóng/sai dạng hoặc lỗi SQL/host ⇒ `Err(Error)` **dữ liệu**, không trap.
 //!   Kết quả sai hình dạng/ngoài `0..=i32::MAX` cũng là `Err` dữ liệu — kiểm ở unit test host giả
-//!   của `crates/vis-interp/src/stdlib/sqlitedataver.rs` (không quan sát được qua tệp DB vì
+//!   của `crates/vis-runtime/src/stdlib/sqlite/pragma.rs` (không quan sát được qua tệp DB vì
 //!   `data_version` là bộ đếm runtime, không nằm trong header).
 //!
 //! Mọi ca dương chạy **cả hai** engine (interp + `--vm --no-cache`), so **từng byte**

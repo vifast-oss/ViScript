@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-310a (VD-285)** — trait **reactor** dùng chung + trạng thái `net.write` của đường frame.
 //!
-//! Chuyển **nguyên văn** từ `vis-interp/src/rt.rs` (trait adapter selector) và
-//! `stdlib/fs_net.rs` (hằng số + kênh write). Adapter thật (`mio`, TLS, h2) nằm ở host; crate
+//! Nguồn gốc lịch sử: `vis-interp/src/rt.rs` (trait adapter selector) và
+//! `stdlib/fs_net.rs` (hằng số + kênh write) — nay `vis-runtime/src/rt/`. Adapter thật (`mio`, TLS, h2) nằm ở host; crate
 //! này **zero-dep** và không bao giờ biết fd/socket thật.
 
 use std::cell::RefCell;

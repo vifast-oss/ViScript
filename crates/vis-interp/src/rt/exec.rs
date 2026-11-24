@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-313a (VD-289)** — orchestration worker của interp.
 //!
-//! Chuyển từ `vis-interp/src/rt/exec.rs`; trạng thái `ExecState`/pool nằm ở `vis-runtime`,
-//! ở đây chỉ còn phần cần runner cây (`chay_than_worker`) và proxy theo engine.
+//! Tách từ tệp cùng tên thời ST-306: **trạng thái** `ExecState`/pool/`WorkerMode` đã sang
+//! `vis-runtime/src/rt/exec_state.rs`; ở đây chỉ còn orchestration cần runner cây
+//! (`chay_than_worker`) và proxy theo engine.
 
 use std::rc::Rc;
 use std::sync::Arc;

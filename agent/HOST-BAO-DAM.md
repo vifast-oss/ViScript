@@ -18,6 +18,15 @@
 >   **chỉ chứng nhận arm64**, **chưa đo Intel x86_64**; Tier 1 là mức hỗ trợ sản phẩm.
 > Mọi câu “macOS chưa công bố Tier 1 / chưa verify” bên dưới là **lịch sử**.
 
+> **ĐÍNH CHÍNH 2026-11-25 (`ST-313d` / VD-289): WASI `#193` ĐÃ ĐÓNG — `vis-wasm-sem` 390/390.**
+> Hai ca `ham/de-quy-1000` và `de-quy-vo-han` nay PASS trên `wasm32-wasip1` khi build với
+> `-C link-arg=-zstack-size=12 MiB` **và** chạy `node:wasi` với `--stack-size=4096` (V8 mặc định
+> ~1 MiB chặn trước; 8 MiB module stack vẫn chưa đủ, 12 MiB đủ cho 2.000 khung ngôn ngữ).
+> Đã mặc định trong `bin/vis-wasm-{suite,sem}` (override `VIS_WASM_STACK_MB` /
+> `VIS_WASM_NODE_STACK_KB`). Các số **388/390** bên dưới là **bằng chứng lịch sử tại mốc ghi**,
+> không phải trạng thái hiện hành. Chính sách ngôn từ: được nói WASI **390/390**, vẫn phải kèm
+> caveat “runtime có phạm vi, không sandbox kernel, không full host”.
+
 > **ĐÍNH CHÍNH 2026-11-23 (ST-305, rà tài liệu) — đọc khối này trước.** Các khối dated bên dưới là
 > **lịch sử**; số cũ giữ nguyên (VD-142).
 > - **macOS arm64**: **đã verify `v0.4.5`** trên `mps` (macOS 27.0.1 / Darwin 27.0.0 arm64, Rust
@@ -105,7 +114,7 @@ Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 | Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/archive/journal-pre-v040/st295-verify.log`) |
 | Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/archive/journal-pre-v040/st295-verify.log`) |
 | Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136`; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
-| wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **388/390 eligible** (2 stack-overflow interp); không tuyên bố full (`ST-299a/b`, `ST-300`) |
+| wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **390/390** (`#193` đóng 2026-11-25: stack 12 MiB + node 4096); vẫn không tuyên bố full host (`ST-299a/b`, `ST-300`, `ST-313d`) |
 
 > **Windows (VD-186/VD-283)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
 > danh tính tệp** ⇒ mức bảo đảm **thấp hơn** macOS/Linux. Từ `v0.4.5`, Windows là **Tier 1** (mức hỗ trợ sản phẩm),
@@ -134,12 +143,12 @@ kỳ vọng ghi trong script).
 | 7 crate lõi (`vis-diag`, `vis-syntax`, `vis-types`, `vis-bytecode`, `vis-fmt`, `vis-interp`, `vis-vm`) | check xanh | check xanh | **check** |
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
-| `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` 388/390 eligible (`ST-299a/b`, `ST-300`) |
+| `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` **390/390** (`ST-299a/b`, `ST-300`; `#193` đóng 2026-11-25) |
 | `vis-host-*` chạy thật | **Tier 1** (host suite 54/54 @ `f4cb136`; 3× full 3611/0/3; soak 4 h 985/0) | `wasm32-wasip1`: **chạy thật** (suite 28/28); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`vis-host-linux` 18/18 từ ST-295; host suite 54/54); wasm: **runtime có phạm vi** |
 
 Bảng đầy đủ (18 ô) + log: `agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
 “wasm32-unknown-unknown chạy được”; đúng là “**check** biên dịch chéo” cho `wasm32-unknown-unknown`,
-và “**runtime `wasm32-wasip1`** — coverage 388/390 eligible” cho WASI.
+và “**runtime `wasm32-wasip1`** — coverage **390/390**” cho WASI (sau ST-313d).
 
 ## Bộ hợp chuẩn host — chạy THẬT trên Linux, Windows và macOS (ST-75, ST-131/ST-142/ST-298)
 
@@ -159,7 +168,7 @@ Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu
 `st137-host-suite-ps.log`, `st142-*`, `st144-host-suite.log` (Windows cũ), `st300m1-macos.md`.
 **Linux: 54/54** (ST-142 — bằng chứng hiện hành). **Windows: 54/54** (ST-298, Tier 1; số 39/54 là
 đo cũ 20/11). **macOS: 54/54** (verify `v0.4.5`; soak `ST-300m3` **187/187 lượt** host 54/54; **Tier 1 arm64** từ `ST-300m3`).
-**wasm: không nằm trong 54 ca host** — bằng chứng WASI là smoke suite 28/28 + `vis-wasm-sem` 388/390.
+**wasm: không nằm trong 54 ca host** — bằng chứng WASI là smoke suite 28/28 + `vis-wasm-sem` **390/390** (2026-11-25).
 
 ## Cấm ngôn từ
 
@@ -169,8 +178,9 @@ Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu
 
 - Cấm nói "async song song", "chạy đồng thời", "rendezvous", "sandbox kernel" khi mô tả **VS2**
   (VD-122, VD-123, VD-120); riêng **HTTPS** đã có từ VS3-4a (`https://` qua TLS), không còn là “chưa có”.
-- Cấm nói "hỗ trợ đầy đủ wasm" khi chỉ có `vis-wasm-sem` **388/390 eligible** + suite 28/28
-  (VD-121/VD-277). **Đúng (2026-11-24, `ST-300m3`)**: “**macOS arm64 Tier 1** — chứng nhận
+- Cấm nói "hỗ trợ đầy đủ wasm" kể cả khi `vis-wasm-sem` **390/390** + suite 28/28: WASI vẫn là
+  runtime **có phạm vi** (không host net/proc/fs tùy ý, không sandbox kernel) (VD-121/VD-277,
+  đính chính 2026-11-25). **Đúng (2026-11-24, `ST-300m3`)**: “**macOS arm64 Tier 1** — chứng nhận
   `aarch64-apple-darwin`” (3× full + soak 4 h **1.878 vòng** + `vis-wasm-sem` 388/390) — luôn kèm caveat
   **không Landlock** và **chưa đo Intel x86_64**; cấm nói “macOS có sandbox kernel”.
 - **Sai (2026-11-23)**: “macOS chưa verify” (đã verify `v0.4.5`); “Windows chưa hỗ trợ” (đã **Tier 1**
@@ -179,7 +189,7 @@ Lệnh: `bin/vis-host-suite` (in bảng `ca → PASS/FAIL`, exit 1 nếu thiếu
 - **Đúng (2026-11-23)**: “**đường đọc + đường ghi** đã đóng khe symlink trên **Unix/Linux**
   (`#146`/`#140`/`#109b`; ST-174 + ST-295), **macOS đã verify `v0.4.5`**”; “**hardlink** là **giới hạn
   chính sách**”; “**Windows Tier 1** — mức hỗ trợ sản phẩm, caveat `FsGuard` (chỉ kiểm theo đường dẫn)”;
-  “**WASI `wasm32-wasip1`** — runtime có phạm vi, 388/390 eligible”.
+  “**WASI `wasm32-wasip1`** — runtime có phạm vi, **390/390** (2026-11-25, `#193` đóng)”.
 
 ## Điều kiện để có Landlock thật (VD-107 (4))
 

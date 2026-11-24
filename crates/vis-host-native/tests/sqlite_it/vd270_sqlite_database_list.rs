@@ -18,7 +18,7 @@
 //!   VD-241/VD-259: cấm ATTACH/DETACH ở **mọi** chế độ). Vì vậy test `attach_bi_chan...` khoá
 //!   **hợp đồng bảo mật hiện có**: attach bị chặn, danh sách **không đổi**. Đường `database_list`
 //!   vẫn xử lý đúng hàng `aux` khi host trả về (unit test host giả trong
-//!   `crates/vis-interp/src/stdlib/sqlitedblist.rs`). Đây là **gap có chủ ý** giữa yêu cầu task và
+//!   `crates/vis-runtime/src/stdlib/sqlite/introspect.rs`). Đây là **gap có chủ ý** giữa yêu cầu task và
 //!   chính sách host, không phải lỗi hàm.
 //! - **Probe authorizer**: trước khi mở, `PRAGMA database_list` bị từ chối «quyền (authorizer)
 //!   (mã SQLite 23)», TVF `pragma_database_list` cũng bị từ chối (cùng kiểm tra `SQLITE_PRAGMA`).

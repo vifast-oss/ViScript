@@ -2,8 +2,9 @@
 //! **ST-310a (VD-285)** — trait **host** dùng chung: chương trình ngoài, hệ tệp, mạng, cơ sở dữ
 //! liệu. `vis-core` **không** biết OS; host thật cài các trait này (native/CLI/test).
 //!
-//! Chuyển **nguyên văn** từ `vis-interp/src/builtin.rs`, `builtin_fs.rs`, `builtin_db.rs`. Trait
-//! `Host` nội bộ của interpreter (có `Scheduler`) vẫn ở `vis-interp` — nó không phải bề mặt host.
+//! Nguồn gốc lịch sử: `vis-interp/src/builtin.rs`, `builtin_fs.rs`, `builtin_db.rs` (đã tách).
+//! Trait `Host` của engine (có `Scheduler`) nay ở `vis-runtime/src/builtin/mod.rs`; `impl Host`
+//! cho interp ở `vis-interp/src/host.rs`. `vis-core` chỉ giữ **bề mặt host** (FS/net/db/proc).
 
 use vis_syntax::Span;
 

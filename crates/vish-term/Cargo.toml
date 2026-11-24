@@ -12,7 +12,7 @@ name = "vish_term"
 path = "src/lib.rs"
 
 [dependencies]
-# NFC cho độ rộng cột — **cùng quy tắc** `Render` ST-41 (`vis-interp/src/render.rs`).
+# NFC cho độ rộng cột — **cùng quy tắc** `Render` ST-41 (`vis-runtime/src/render.rs`).
 # Giấy phép: (MIT OR Apache-2.0) AND Unicode-3.0; đã có trong workspace/lock, không dep mới.
 unicode-normalization = { workspace = true }
 

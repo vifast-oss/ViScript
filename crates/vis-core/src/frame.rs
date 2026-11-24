@@ -2,7 +2,7 @@
 //! **ST-312a (VD-289)** — kiểu cấu hình/kết quả frame test dùng chung.
 //!
 //! Chuyển **nguyên văn** từ `vis-interp/src/frame.rs` (`FrameConfig`/`FrameOutput`) và
-//! `vis-interp/src/rt/frame_test.rs` (`FakeEvent`/`ReactorOutcome`/`ReactorEvent`/`DiagSnapshot`).
+//! `vis-runtime/src/rt/frame_test.rs` (`FakeEvent`/`ReactorOutcome`/`ReactorEvent`/`DiagSnapshot`).
 //! Toàn bộ là **harness test** (`#[doc(hidden)]`, không CLI, không ngôn ngữ); nằm ở đây để
 //! `vis-vm` và các test tích hợp đọc trực tiếp `vis-core` mà không cần phụ thuộc `vis-interp`.
 

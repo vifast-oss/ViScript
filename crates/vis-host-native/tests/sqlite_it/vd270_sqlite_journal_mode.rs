@@ -23,7 +23,7 @@
 //! - Handle thiếu/đã đóng/sai dạng hoặc lỗi SQL/host ⇒ `Err(Error)` **dữ liệu**, không trap.
 //!   Kết quả sai hình dạng (không đúng một cột/hàng, ô không phải `SqlValue.Text`) cũng là
 //!   `Err` dữ liệu — kiểm ở unit test host giả của
-//!   `crates/vis-interp/src/stdlib/sqlitejournal.rs`.
+//!   `crates/vis-runtime/src/stdlib/sqlite/schema.rs`.
 //!
 //! Mọi ca dương chạy **cả hai** engine (interp + `--vm --no-cache`), so **từng byte**
 //! stdout/stderr/exit; ca dùng tệp DB thì mỗi engine một tệp riêng.

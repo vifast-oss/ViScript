@@ -171,4 +171,4 @@ fn ca170_runtime_last_wins_va_equality() {
 
 // Chú thích: `json.decode` last-wins được kiểm qua fixture `test/sem/map/trung-khoa-json.vis`
 // (cần `use std.json`, chỉ CLI xử lý `use`). Đây là **lựa chọn của ViScript**, không phải luật
-// JSON bắt buộc — ghi rõ ở tài liệu `Value::Map` (`crates/vis-interp/src/value.rs`).
+// JSON bắt buộc — ghi rõ ở tài liệu `Value::Map` (`crates/vis-core/src/value/mod.rs`).

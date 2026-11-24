@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VD-257 / stream C — cancellation hợp tác & lifecycle/cleanup** trên **đường frame
 //! test nội bộ** của cả hai engine (interp + VM). Không API ngôn ngữ, không CLI flag,
-//! không đổi runtime mặc định (`vis run`). Mọi cơ chế huỷ nằm ở `vis_interp::rt`
-//! (`frame_cancel_*`, `TrangThai::Huy`), dùng chung bởi hai engine.
+//! không đổi runtime mặc định (`vis run`). Mọi cơ chế huỷ nằm ở `vis_runtime::rt`
+//! (`frame_cancel_*`, `TrangThai::Huy`); `vis_interp::rt` chỉ là cầu nối nội bộ, dùng chung hai engine.
 //!
 //! Trigger huỷ được ghi vào thread-local (`frame_cancel_on_seq_for_test`) TRƯỚC khi chạy
 //! engine; `frame_enable_for_test` drains vào `FrameTest.cancel_on_seq`. Khi event có `seq`

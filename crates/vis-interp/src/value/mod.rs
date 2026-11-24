@@ -3,7 +3,7 @@
 //! dùng: bộ lặp `for` (cần trap runtime + trần vòng) và worker pool opt-in.
 //!
 //! **ST-312a (VD-289)**: re-export `vis_core::value` chỉ còn `pub(crate)` — crate ngoài
-//! dùng trực tiếp `vis_core::value::*`; tại đây chỉ còn `iter`/`worker` là API của interp.
+//! dùng trực tiếp `vis_core::value::*`; tại đây chỉ còn `iter` + re-export `TaskId` (`worker` đã sang `vis-runtime`).
 
 pub(crate) use vis_core::value::*;
 

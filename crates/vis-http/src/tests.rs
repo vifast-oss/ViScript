@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-311d (VD-286)** — test đơn vị của HTTP client (`http_client/mod.rs`), tách ra cùng thư mục.
+//! **ST-311d (VD-286)** — test đơn vị của HTTP client (`crates/vis-http/src/{lib,async_http}.rs`).
 
 use super::{
     chuan_hoa_target, doc_header, doc_header_day_du, ghep_chunked, noi_location, tach_url, GiaoThuc,

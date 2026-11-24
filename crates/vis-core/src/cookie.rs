@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VS3-4b (VD-271)** — cookie jar **nội bộ** của HTTP client.
 //!
-//! Không phải API ngôn ngữ: `http.get/head` dùng qua [`crate::builtin::NetHost::cookie_jar`]; mỗi
+//! Không phải API ngôn ngữ: `http.get/head` dùng qua [`crate::host::NetHost::cookie_jar`]; mỗi
 //! host giữ một jar cho một tiến trình. Chỉ hỗ trợ phần tối thiểu của RFC 6265:
 //! `name=value`, `Path`, `Domain`, `Secure`, `HttpOnly`, `Max-Age`, `Expires` (IMF-fixdate).
 //! Không cookie store ra đĩa, không API JS, không gửi cross-host (domain-match RFC).

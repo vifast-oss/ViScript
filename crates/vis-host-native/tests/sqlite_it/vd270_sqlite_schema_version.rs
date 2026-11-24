@@ -23,7 +23,7 @@
 //!   Câu SQL là **hằng**, không bind tham số — không có bề mặt injection.
 //! - Handle thiếu/đã đóng/sai dạng hoặc lỗi SQL/host ⇒ `Err(Error)` **dữ liệu**, không trap.
 //!   Kết quả sai hình dạng (không đúng một cột/hàng, ô không phải INTEGER) cũng là `Err` dữ
-//!   liệu — kiểm ở unit test host giả của `crates/vis-interp/src/stdlib/sqliteschemaver.rs`.
+//!   liệu — kiểm ở unit test host giả của `crates/vis-runtime/src/stdlib/sqlite/pragma.rs`.
 //!
 //! Mọi ca dương chạy **cả hai** engine (interp + `--vm --no-cache`), so **từng byte**
 //! stdout/stderr/exit.

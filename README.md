@@ -603,8 +603,8 @@ Bản hiện tại: **`v0.4.5`** (workspace `0.4.5`, tag @ `3daff62`). ViScript 
 | Method người dùng (`impl P:`) | ✅ ĐÃ CÓ (VD-265/VD-269; kể cả `recv?.m()`) |
 | `.lazy()` iterator | 🔜 DỰ KIẾN (R24); `for` trên range đã lười (VD-264) |
 | **Windows x86_64 — Tier 1** | ✅ ĐÃ CÓ (`v0.4.5`; caveat `FsGuard`: chỉ kiểm theo đường dẫn tệp) |
-| **macOS arm64** | ✅ ĐÃ VERIFY `v0.4.5` (host 54/54, WASI 28/28); **chưa công bố Tier 1** — chờ `ST-300m3` |
-| **WASI Preview 1 (`wasm32-wasip1`)** | ✅ CÓ RUNNER: `vis-wasm-sem` **388/390 eligible**, smoke suite **28/28** |
+| **macOS arm64** | ✅ **Tier 1** (`ST-300m3`, 2026-11-24; 3× full PASS + soak 4 h; không Landlock) |
+| **WASI Preview 1 (`wasm32-wasip1`)** | ✅ CÓ RUNNER: `vis-wasm-sem` **390/390**, smoke suite **28/28** (`#193` đóng: stack 12 MiB + `node --stack-size=4096`) |
 
 Danh sách đầy đủ 24 quy tắc công thái học: [`agent/archive/journal-pre-v040/vs-ergo.md`](agent/archive/journal-pre-v040/vs-ergo.md).
 
@@ -642,7 +642,7 @@ Danh sách đầy đủ 24 quy tắc công thái học: [`agent/archive/journal-
 ## Cấu trúc repo
 
 ```text
-crates/    12 crate Rust: từ vựng, kiểu, thông dịch, máy ảo, CLI, host native, gói, loader, LSP…
+crates/    23 crate Rust: lõi/HIR/HTTP/runtime, kiểu, interp/VM, CLI, host native, gói, loader, LSP…
 bin/       công cụ shell: vis, vis-dev, vis-remote, vis-linux, vis-soak, vis-targets, vis-diff,
            vis-gate-{macos,windows}, vis-wasm-{sem,suite}, vis-lock…
 test/      bộ kiểm: ví dụ chạy được, fixture, báo cáo
@@ -653,9 +653,10 @@ resources/ tài nguyên thương hiệu: icon ViScript + ViShell (brand/)
 infra/     hạ tầng: host Linux/Windows, sync, setup, runbooks
 ```
 
-> Bốn crate `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` đang nằm trên nhánh
-> riêng (`plan/w3-st304-vish`, `plan/w3b-st308-term`, `plan/w4-st306-plugin-abi`…), **chưa merge**
-> vào `main`. Bản `main` hiện có 12 crate ở trên.
+> Toàn bộ crate đã merge vào `main` (**23 crate** workspace, `0.6.0`), gồm `vish-edit`,
+> `vish-term`, `vis-plugin-abi`, `vis-plugin-host`, `vis-plugin-macros`, `vis-core`, `vis-hir`,
+> `vis-http`, `vis-runtime`, `vis-conformance` và `vis-host-linux`. Chỉ `vis-host-wasm` là
+> workspace riêng (target `wasm32-wasip1`).
 
 ## Góp ý / phát triển
 

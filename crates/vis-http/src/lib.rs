@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-64 (VD-100/VD-105)** — **giao thức HTTP client** nằm trong `vis-interp` (không ở CLI):
+//! **ST-64 (VD-100/VD-105)** — **giao thức HTTP client** nằm trong `vis-http` (không ở CLI):
 //! socket thô qua [`NetHost`], tự dựng/đọc **HTTP/1.1**. Nhờ vậy interp ↔ VM **cùng byte** và codegen
 //! **không** phải sửa (`std.http.*` hạ theo tên như mọi `std.*`).
 //!

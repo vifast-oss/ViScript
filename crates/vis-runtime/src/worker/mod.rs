@@ -4,7 +4,7 @@
 //! atomic + chunk reservation.
 //!
 //! **ST-310a (VD-285)**: tách khỏi `include!("rt/worker.rs")` thành mô-đun thật
-//! `value::worker` (giữ nguyên đường dẫn API `vis_interp::value::worker::*`); chia `proto`
+//! `vis-runtime/src/worker` (API công khai `vis_runtime::worker::*`); chia `proto`
 //! (handle/chuyển đổi) và `pool` (bảng kết quả/WorkerPool) để mỗi tệp < 1.150 dòng.
 //!
 //! **Không bật mặc định.** `WorkerPool` chỉ được tạo tường minh bởi test/opt-in; runtime

@@ -29,7 +29,7 @@
 
 use crate::format::{Instr, Module};
 
-// MỘT nguồn định nghĩa sự kiện: include chung với vis-interp/src/frame/fee.rs.
+// MỘT nguồn định nghĩa sự kiện: include chung với vis-runtime/src/rt/fee.rs.
 include!("fee_shared.rs");
 
 /// Bảng phụ S: một danh sách **có thứ tự** sự kiện cho mỗi hàm (theo chỉ số hàm trong `Module`).

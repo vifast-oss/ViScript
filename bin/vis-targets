@@ -138,11 +138,11 @@ fi
 echo
 echo "=== wasm32-wasip1 (runtime) ==="
 printf '%-24s %-28s %s\n' hạng-mục target kết-quả
-printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "388/390 eligible = 99.5%"
+printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "390/390 = 100% (stack 12 MiB + node 4096)"
 printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "28/28 (14 ca x interp/VM)"
-printf '%-24s %-28s %s\n' known-gap wasm32-wasip1 "2 stack-overflow interp: ham/de-quy-1000, ham/de-quy-vo-han (VM pass)"
+printf '%-24s %-28s %s\n' known-gap wasm32-wasip1 "không còn (đóng #193: -zstack-size=12 MiB + node --stack-size=4096)"
 printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
-echo "wasm32-wasip1: coverage 388/390 eligible (99.5%), suite 28/28; known gap 2 stack-overflow interp; không full"
+echo "wasm32-wasip1: coverage 390/390, suite 28/28; #193 đã đóng bằng stack module + V8"
 echo
 echo "=== aarch64-apple-darwin (native) ==="
 printf '%-24s %-28s %s\n' hạng-mục target kết-quả
