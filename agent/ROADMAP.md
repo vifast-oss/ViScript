@@ -6,6 +6,11 @@
 > - **Trọng tâm hiện tại (`ST-312a..ST-313d`, 4 Sóng song song `W1..W4`)**: đưa toàn repo về **Kiến trúc Đích 5 Tầng DAG** (`vis-hir`, `vis-core` mỏng, `vis-http` + cắt `vis-pkg → vis-host-native`, `vis-runtime` tách khỏi `vis-interp` + cắt `vis-vm → vis-interp`, `vis-host-linux` vào workspace, 1 nguồn sự thật stdlib `StdId` + chia `stdlib/` theo miền, `vis-conformance` dữ liệu). Cổng nhẹ: `gate --fast` + `vis-diff 100k` mỗi lát, 1× clippy 3-OS + `vis-targets` cuối mỗi Sóng (**không** soak 4h/24h, **không** fuzz 8h, **không** tag mới cho tới khi mở lại pha phát hành).
 > - **Nền kỹ thuật đã đạt trước `VD-289`**: **3-OS Tier 1** (Linux, Windows x86_64 `ST-298`, macOS arm64 `ST-300m3`), WASI `wasm32-wasip1` runtime (`vis-wasm-suite` 28/28, `vis-wasm-sem` 388/390), kiến trúc 4 tầng `v0.5.5` (`3d85bd2`), bảo mật & hygiene `ST-311a..f` (đóng `#190`/`#194`, vá `#195`, 0 `unsafe`, R1..R9 PASS, gate Linux 3.782/4).
 > - **Tag lịch sử đã chốt**: `v0.5.5` @ `3d85bd2`, `v0.5.0` @ `c06d7c6` (`R36`), `v0.4.5` @ `3daff62` (`R35`), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (`VD-142`).
+> - **Cập nhật 2026-11-25 (Sóng 0–3 xong, chờ A0 duyệt)**: 5 tầng DAG đã đạt — `vis-hir`,
+>   `vis-http`, `vis-runtime`, `vis-conformance`; `vis-vm` **0 dep** `vis-interp`/`vis-types`,
+>   `vis-pkg` 0 dep `vis-host-native`, `vis-core` 0 HTTP; **23 crate**; `vis-interp` 8.792 LOC;
+>   `StdId` 167 hàm O(1); conformance **420 ca** + **353 test API** dời khỏi CLI; **`#193` đóng**
+>   (WASI `vis-wasm-sem` **390/390**, suite 28/28). Chi tiết `JOURNAL/review-a0-vd289-2026-11-25.md`.
 > - **Đọc chi tiết hiện hành**: [`ACTIVE.md`](ACTIVE.md), [`QUEUE.md`](QUEUE.md) (`ST-312a..ST-313d`), [`JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md`](JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md).
 
 > **`v0.5.0` prep — 2026-11-23 (ST-305, chưa tag)** — workspace bump **0.5.0** (mọi crate
