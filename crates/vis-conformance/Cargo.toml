@@ -18,4 +18,9 @@ vis-syntax = { path = "../vis-syntax" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-interp = { path = "../vis-interp" }
 vis-vm = { path = "../vis-vm" }
-vis-runtime = { path = "../vis-runtime" }
+vis-runtime = { path = "../vis-runtime", features = ["taskid-proto"] }
+
+[dev-dependencies]
+# Test frame/async adapter thật (mio/rustix) chuyển từ `vis-cli/tests/async_it`.
+mio = { workspace = true }
+rustix = { workspace = true }

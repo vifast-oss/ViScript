@@ -690,6 +690,8 @@ dependencies = [
 name = "vis-conformance"
 version = "0.6.0"
 dependencies = [
+ "mio",
+ "rustix",
  "vis-bytecode",
  "vis-core",
  "vis-fmt",

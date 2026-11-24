@@ -5,18 +5,8 @@
 //! `examples/vs3_worker_soak.rs` và được gọi lại bằng một ca gate bên dưới (không mất ca).
 //! Tổng số ca/assertion không đổi — chỉ đổi crate test binary.
 
-#[path = "worker_it/vs3_worker.rs"]
-mod vs3_worker;
-#[path = "worker_it/vs3_worker_eval_local.rs"]
-mod vs3_worker_eval_local;
-#[path = "worker_it/vs3_worker_eval_parallel.rs"]
-mod vs3_worker_eval_parallel;
-#[path = "worker_it/vs3_worker_eval_vm.rs"]
-mod vs3_worker_eval_vm;
 #[path = "worker_it/vs3_worker_frame.rs"]
 mod vs3_worker_frame;
-#[path = "worker_it/vs3_worker_frame_vm.rs"]
-mod vs3_worker_frame_vm;
 #[path = "../examples/vs3_worker_soak.rs"]
 mod vs3_worker_soak;
 
