@@ -27,7 +27,7 @@
 ## 3. Cổng Kiểm tra Gọn (Chế độ Phát triển — KHÔNG soak/fuzz nặng)
 
 - **Cuối mỗi lát**: `./vis-dev gate --fast` PASS + `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0` cho lát chạm compiler/runtime/VM).
-- **Cuối mỗi Sóng**: 1× `cargo clippy --workspace --all-targets -- -D warnings` trên 3 OS (`ps`/`psvn`/`mps`) + 1× `bin/vis-targets` + 1× WASI smoke (`vis-wasm-suite` / `vis-wasm-sem`).
+- **Cuối mỗi Sóng**: 1× `cargo clippy --workspace --all-targets -- -D warnings` trên 3 OS (`ps`/`psvn`/`mps`) + 1× `bin/vis-targets` + 1× WASI smoke (`vis-wasm-suite` / `vis-wasm-sem` / `vis-wasm-conformance`).
 - **Luật cứng giữ nguyên**: 0 `unsafe` (R2), R1 ≤ 1.500 (mục tiêu mềm ≤ 1.150), R5 (`SO-NO`), R7 (log ≤ 50 KB), R8/R9, không `.github/workflows/`.
 - **Quản trị nhánh (`AGENTS.md` §6)**: merge xong xóa worktree + nhánh local (`-d`) + nhánh `origin` trong 24h; giữ **≤ 8 worktree** hoạt động; `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`, đĩa trống > 10 GB.
 
