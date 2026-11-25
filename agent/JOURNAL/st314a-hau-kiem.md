@@ -210,3 +210,9 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   crate thứ 24 chưa khai tầng), gọi trong `vis-dev check`/`gate --fast`. Chạy trực tiếp:
   `ok - vis-dag-check bắt 2 cạnh cấm + crate chưa khai tầng`, exit 0.
 - `bin/vis-dag-check` header ghi rõ nay được gọi từ cả `vis-targets` và `vis-dev check`.
+
+- **Bằng chứng tích hợp**: `./vis-dev check` @`d25f50dc` → `--- DAG 5 tầng: OK`,
+  `--- DAG self-test: OK`, `vis-dev check: PASS`, `EXIT=0`
+  (`/home/ps/vislogs/st314a-lp3-check-dag.log`, sha `30c648e5103c73c5cbc65df260bdaf8c042d1455033b48fdea5230a7671d858c`).
+- **Windows/Git Bash**: `test/gate/dag-check-self-test.sh` @`d25f50dc` trên `psvn` → `ok …`,
+  `self_test_exit=0` (log phiên `vis-remote-20261125T042248Z`).
