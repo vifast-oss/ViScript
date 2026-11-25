@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 """**ST-313c (VD-289)** — chạy corpus `test/conformance/**` trên WASI (`wasm32-wasip1`).
 
-Mỗi ca `.vis` (có `.out`/`.out_prefix`, không `.err`, không `.trap`) chạy **cả interp và VM**
+Mỗi ca `.vis` (có `.out`/`.out_prefix` **hoặc** `.trap`) chạy **cả interp và VM**
 qua `vis-wasm-run.wasm` (runtime `node:wasi`), so stdout và rc=0. Bỏ qua:
 - ca dùng host fs/net/sqlite/proc (giống `vis-wasm-sem`) và ca lỗi tĩnh (`.err`);
-- ca lỗi **lúc chạy** (`.trap`, chứa mã chẩn đoán — cần assertion trap riêng, chưa hỗ trợ ở đây);
+- ca lỗi **lúc chạy** (`.trap`) được assert riêng: exit ≠ 0, stdout khớp `.out` (nếu có) và stderr
+  chứa **đủ từng mã** trong `.trap`;
 - ca `lang/async/` + `lang/kenh/` (chưa có backend scheduler trên WASI, như `vis-wasm-sem`).
 Corpus rỗng ⇒ FAIL (không coi 0 ca là PASS).
 
@@ -205,6 +206,7 @@ def main() -> int:
     kiem_node()
     build()
     cases = []
+    cases_trap = []
     bo_qua = 0
     so_err = 0
     so_trap = 0
@@ -213,7 +215,24 @@ def main() -> int:
         # **ST-314a (hậu-kiểm low-peak)**: `.trap` = lỗi lúc chạy (file chứa mã chẩn đoán);
         # cần assertion trap riêng, chưa chạy như ca `.out`/rc=0 được.
         if p.with_suffix(".trap").exists():
+            # **ST-314a (hậu-kiểm low-peak)**: ca trap chạy được trên WASI (không cần host) —
+            # assert riêng ở vòng dưới (exit ≠ 0 + stdout + mã trong stderr), không trộn ca `.out`.
             so_trap += 1
+            rel_t = p.relative_to(CORPUS)
+            if len(rel_t.parts) >= 2 and rel_t.parts[0] == "lang" and rel_t.parts[1] in (
+                "async",
+                "kenh",
+            ):
+                so_async += 1
+                continue
+            src_t = p.read_text(encoding="utf-8")
+            if any(x in src_t for x in BO_QUA):
+                bo_qua += 1
+                continue
+            # Đệ quy sâu: ngưỡng stack WASI khác native — không so mã trap ở đây.
+            if "de-quy-qua-sau" in p.name:
+                continue
+            cases_trap.append(p)
             continue
         if p.with_suffix(".err").exists():
             so_err += 1
@@ -236,12 +255,12 @@ def main() -> int:
     print(
         f"# {len(cases)} ca hợp lệ trên WASI "
         f"(bỏ qua {bo_qua} ca host/đa tệp + {so_async} ca async/kenh chưa chạy WASI "
-        f"+ {so_err} ca lỗi tĩnh + {so_trap} ca trap lúc chạy)",
+        f"+ {so_err} ca lỗi tĩnh; {len(cases_trap)}/{so_trap} ca trap assert riêng)",
         file=sys.stderr,
     )
     # **ST-314a (hậu-kiểm low-peak)**: corpus rỗng (hoặc bị bộ lọc loại hết) không được coi là PASS —
     # trước đây in `0 ca` rồi `return 0`, tức cổng xanh mà không chạy gì.
-    if not cases:
+    if not cases and not cases_trap:
         print(
             "KHÔNG có ca conformance hợp lệ nào — tính là FAIL, không phải PASS",
             file=sys.stderr,
@@ -271,9 +290,48 @@ def main() -> int:
                 if r.returncode != 0 or not khop(r.stdout):
                     hong.append(f"{p.relative_to(ROOT)} [{engine}] rc={r.returncode} "
                                 f"stdout={r.stdout!r} stderr={r.stderr[:120]!r}")
+        # **ST-314a (hậu-kiểm low-peak)**: ca `.trap` — exit ≠ 0, stdout khớp, đủ mã trong stderr.
+        for j, p in enumerate(cases_trap, 1):
+            root = work / f"t{j}"
+            root.mkdir()
+            shutil.copyfile(p, root / "prog.vis")
+            mong = [
+                x.strip()
+                for x in p.with_suffix(".trap").read_text(encoding="utf-8").splitlines()
+                if x.strip()
+            ]
+            out_p = p.with_suffix(".out")
+            out_mong = out_p.read_text(encoding="utf-8") if out_p.exists() else ""
+            for engine in ("interp", "vm"):
+                try:
+                    r = chay(driver, root, f"--{engine}", "/data/prog.vis")
+                except subprocess.TimeoutExpired:
+                    hong.append(f"{p.relative_to(ROOT)} [{engine}] trap timeout > 120s")
+                    continue
+                if r.returncode == 0:
+                    hong.append(
+                        f"{p.relative_to(ROOT)} [{engine}] trap nhưng rc=0 "
+                        f"stdout={r.stdout!r}"
+                    )
+                elif r.stdout != out_mong:
+                    hong.append(
+                        f"{p.relative_to(ROOT)} [{engine}] trap stdout={r.stdout!r} "
+                        f"chờ {out_mong!r}"
+                    )
+                for ma in mong:
+                    if ma not in r.stderr:
+                        hong.append(
+                            f"{p.relative_to(ROOT)} [{engine}] thiếu mã {ma} trong stderr "
+                            f"{r.stderr[:160]!r}"
+                        )
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    print(f"# tổng: {len(cases)} ca x 2 engine, {len(hong)} hỏng", file=sys.stderr)
+    tong = len(cases) + len(cases_trap)
+    print(
+        f"# tổng: {tong} ca x 2 engine ({len(cases)} .out + {len(cases_trap)} .trap), "
+        f"{len(hong)} hỏng",
+        file=sys.stderr,
+    )
     for x in hong[:30]:
         print("not ok -", x, file=sys.stderr)
     return 1 if hong else 0

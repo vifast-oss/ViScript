@@ -28,7 +28,7 @@ Quy ước: mọi script có header SPDX `#`, log mang mã task (`ST-##`), khôn
 
 **Mã thoát & chống PASS giả (`ST-314a`, 2026-11-25)**: `vis-wasm-sem` exit **1** khi có ca FAIL
 hoặc khi `--filter` không khớp ca nào (`--allow-fail` chỉ để ghi nhận nợ đã biết, không dùng cho
-cổng); `vis-wasm-suite`/`vis-wasm-conformance` coi **0 ca chạy** là FAIL; `vis-wasm-suite` chỉ định
+cổng); `vis-wasm-suite`/`vis-wasm-conformance` coi **0 ca chạy** là FAIL; `vis-wasm-conformance` assert cả ca `.trap` (exit ≠ 0 + stdout + mã trong stderr); `vis-gate-windows` so HEAD repo máy đích với HEAD cục bộ (lệch ⇒ exit 6, `VIS_GATE_WINDOWS_ALLOW_HEAD_MISMATCH=1` để override); `vis-wasm-suite` chỉ định
 `--runtime <tên>` mà thiếu runtime ⇒ exit **2**; `vis-remote` xoá marker `.exit` cũ trước mỗi lần
 chạy và chỉ đọc marker trong phần log mới; `vis-gc-targets`/`vis-jobs` từ chối dọn/OK khi `df`/`ps`
 lỗi; `vis-dev` từ chối cờ lạ thay vì bỏ qua.

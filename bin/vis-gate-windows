@@ -50,4 +50,24 @@ if [ "$DRY" -eq 1 ]; then
     echo "vis-remote $REMOTE --require-clean --log $LOG -- bash -lc '$body'"
     exit 0
 fi
+# **ST-314a (hậu-kiểm low-peak)**: HEAD GUARD — `vis-remote` KHÔNG đồng bộ cây nguồn, nên trước
+# đây cổng có thể chạy trên commit CŨ ở `$DEST` mà vẫn exit 0 (bằng chứng sai HEAD). So HEAD thật
+# của repo trên máy đích với HEAD cục bộ; lệch ⇒ từ chối (exit 6), trừ khi người dùng chấp nhận rõ
+# bằng `VIS_GATE_WINDOWS_ALLOW_HEAD_MISMATCH=1` (chỉ dùng khi cố ý đo commit khác).
+if [ "${VIS_GATE_WINDOWS_ALLOW_HEAD_MISMATCH:-0}" != "1" ]; then
+    local_head="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || true)"
+    probe="$("$REPO/bin/vis-remote" "$REMOTE" --check 2>/dev/null || true)"
+    remote_head="$(printf '%s\n' "$probe" | sed -n 's/^head_full: //p' | head -1)"
+    if [ -z "$remote_head" ] || [ "$remote_head" = "?" ]; then
+        echo "vis-gate-windows: không đọc được HEAD của repo trên '$REMOTE' — từ chối chạy (BLOCKED-ENV)" >&2
+        exit 3
+    fi
+    if [ -n "$local_head" ] && [ "$local_head" != "$remote_head" ]; then
+        echo "vis-gate-windows: HEAD LỆCH — local ${local_head:0:12}, $REMOTE ${remote_head:0:12}" >&2
+        echo "vis-gate-windows: đồng bộ trước: bin/vis-remote $REMOTE -- git -C $DEST pull --ff-only" >&2
+        echo "vis-gate-windows: (hoặc VIS_GATE_WINDOWS_ALLOW_HEAD_MISMATCH=1 nếu cố ý đo commit khác)" >&2
+        exit 6
+    fi
+    echo "vis-gate-windows: HEAD khớp ${local_head:0:12}" >&2
+fi
 exec "$REPO/bin/vis-remote" "$REMOTE" --require-clean --log "$LOG" -- bash -lc "$body"
