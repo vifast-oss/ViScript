@@ -231,14 +231,16 @@ fn ha_quyen_ro(d: &Path) -> Result<()> {
             .map_err(|e| Error::io(format!("lỗi kiểu tệp `{}`: {e}", p.display())))?;
         if loai.is_dir() {
             ha_quyen_ro(&p)?;
-            fs::set_permissions(&p, fs::Permissions::from_mode(0o555))
+            fs::set_permissions(&p, fs::Permissions::from_mode(0o700))
                 .map_err(|e| Error::io(format!("không hạ quyền `{}`: {e}", p.display())))?;
         } else {
-            fs::set_permissions(&p, fs::Permissions::from_mode(0o444))
+            fs::set_permissions(&p, fs::Permissions::from_mode(0o400))
                 .map_err(|e| Error::io(format!("không hạ quyền `{}`: {e}", p.display())))?;
         }
     }
-    fs::set_permissions(d, fs::Permissions::from_mode(0o555))
+    // **ST-314a (W3 M3)**: thư mục 0700 + tệp 0400 (chỉ owner) — bản sao cap bí mật không còn
+    // world-readable; 0700 vẫn cho owner dọn khi lỗi.
+    fs::set_permissions(d, fs::Permissions::from_mode(0o700))
         .map_err(|e| Error::io(format!("không hạ quyền `{}`: {e}", d.display())))?;
     Ok(())
 }

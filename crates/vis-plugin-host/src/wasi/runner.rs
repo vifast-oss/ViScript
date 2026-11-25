@@ -294,10 +294,26 @@ pub(crate) fn chay_mot(
     let tam = std::env::temp_dir();
     let out = tam.join(format!("vis-plugin-{}-{dem}.out", std::process::id()));
     let err = tam.join(format!("vis-plugin-{}-{dem}.err", std::process::id()));
-    let fout = fs::File::create(&out)
+    // **ST-314a (W3 M3/L2)**: `create_new` (O_EXCL) để không đi theo symlink cũ; sau đó hạ
+    // quyền 0600 (owner) — output plugin không còn world-readable.
+    let _ = fs::remove_file(&out);
+    let _ = fs::remove_file(&err);
+    let mut oo = fs::OpenOptions::new();
+    oo.write(true).create_new(true);
+    let fout = oo
+        .open(&out)
         .map_err(|e| Error::io(format!("không tạo được `{}`: {e}", out.display())))?;
-    let ferr = fs::File::create(&err)
+    let ferr = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&err)
         .map_err(|e| Error::io(format!("không tạo được `{}`: {e}", err.display())))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fout.set_permissions(fs::Permissions::from_mode(0o600));
+        let _ = ferr.set_permissions(fs::Permissions::from_mode(0o600));
+    }
     cmd.stdin(Stdio::null()).stdout(fout).stderr(ferr);
 
     let mut child = cmd
