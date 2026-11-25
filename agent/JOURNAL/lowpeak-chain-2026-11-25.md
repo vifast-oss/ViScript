@@ -34,4 +34,7 @@
   Vòng 25–30 (15:55–16:53): **600.000, cả 6 vòng lech=0**; vòng 28 gate rc=0; vòng 30 **WASI
   suite 28/28 + sem 390/390 + conformance 379×2, cả 3 rc=0**. Tổng: **30 vòng = 3,0 M chương
   trình, 0 lệch**; 7× gate, 5× WASI.
+  Vòng 31–36 (17:03–18:03): **600.000, cả 6 vòng lech=0**; vòng 32 **gate + clippy rc=0**; vòng 36
+  **gate + `vis-targets --wasm` + host 54/54 + DAG, tất cả rc=0**. Tổng: **36 vòng = 3,6 M chương
+  trình diff, 0 lệch**; 9× gate, 4× clippy, 7× WASI/targets, 4× host/DAG.
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
