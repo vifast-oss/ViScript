@@ -1,9 +1,10 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # SPEC — Đặc tả ngôn ngữ ViScript
 
-**Trạng thái:** bản ST-309 (`REVIEW`), sinh từ cây mã **`c4337ce`** ngày **2026-11-23**, workspace
-**`0.5.0`**. Tệp này mô tả **hành vi đã hợp nhất trên `main`** tại mốc đó. Tính năng chỉ có trên
-nhánh chưa merge **không** thuộc đặc tả này; chúng được liệt kê ở §12.
+**Trạng thái:** bản gốc ST-309 sinh từ cây mã **`c4337ce`** (`0.5.0`, 2026-11-23), đã được Agent 0
+đồng bộ phần nền tảng & kiểm chứng theo kiến trúc 5 tầng DAG (**`0.6.0`**, `VD-289`/`VD-290`,
+2026-11-25, freeze `90fd24de`). Tệp này mô tả **hành vi đã hợp nhất trên `main`**; tính năng chỉ có
+trên nhánh chưa merge hoặc chỉ là thiết kế **không** thuộc đặc tả chuẩn tắc và được liệt kê ở §12.
 
 **Thứ tự nguồn sự thật** (khi tệp này lệch): (1) mã + test trong repo; (2) [`SPEC-lex.md`](SPEC-lex.md)
 cho từ vựng; (3) tệp này; (4) [`ViScript-thiet-ke.md`](ViScript-thiet-ke.md) (đích thiết kế).
@@ -669,17 +670,18 @@ fn main(data: cap[Dir] @ p"./data", out: cap[Dir] @ p"./out" (write), net: cap[N
   Nền khác Linux: `--sandbox` không cưỡng chế được ⇒ exit **3**.
 - `--sandbox-check` in 3 dòng (landlock / cưỡng chế runtime / cap điều kiện) và thoát `0` (Linux có
   Landlock), `3` (không có/nền khác), `4` (không đọc được LSM), không chạy chương trình.
-- Đường đọc/ghi trên Unix dùng `openat`/`openat2` để đóng khe TOCTOU; Windows chỉ kiểm theo đường
-  dẫn (`FsGuard`), không có danh tính tệp.
+- Đường đọc, ghi và truy vấn siêu dữ liệu (`size`/`list`/`exists`/`walk`/`read_link`/`canonicalize`)
+  trên Unix dùng `openat`/`openat2` + `statat`/`readlinkat` theo `fd` (`ST-295`/`ST-311b`, `#194` đóng);
+  Windows chỉ kiểm theo đường dẫn (`FsGuard`), không có danh tính tệp.
 
 ### 6.4 Mức bảo đảm theo nền
 
 | Nền | Cưỡng chế runtime | Kernel sandbox | Trạng thái |
 |---|---|---|---|
-| Linux (`ps`) | `FsGuard`/`NetGuard`, `VS0604` | Landlock (`--sandbox`, `landlock` crate) | chạy thật, host suite 54/54; `vis-host-linux` 18/18 |
+| Linux (`ps`) | `FsGuard`/`NetGuard` (`openat2`/`statat`), `VS0604` | Landlock (`--sandbox`, `landlock` crate; `vis-host-linux` trong workspace) | chạy thật, host suite 54/54; `vis-host-linux` 18/18 |
 | Windows x86_64 | cùng mã, **chỉ theo đường dẫn** | không | **Tier 1** từ `v0.4.5`; caveat `FsGuard` |
-| macOS arm64 | cùng mã | không (Darwin không có Landlock) | **đã verify `v0.4.5`** (host 54/54, WASI 28/28); **chưa công bố Tier 1** — chờ ST-300m3 |
-| `wasm32-wasip1` | `WasiHost` preopen; từ chối net/proc/sqlite | preopen của runtime | runner thật; suite 28/28, `vis-wasm-sem` 388/390 eligible |
+| macOS arm64 | cùng mã (`openat`/`statat`, `FsGuard`/`NetGuard`) | không (Darwin không có Landlock) | **Tier 1 đã công bố** từ `v0.5.0` (`ST-300m3`: 3× full + soak 4 h 1.878 vòng, host 54/54); chỉ arm64 |
+| `wasm32-wasip1` | `WasiHost` preopen; từ chối net/proc/sqlite | preopen của runtime | runner thật (runtime có phạm vi); suite 28/28, `vis-wasm-sem` **390/390** (`#193` đóng với `-zstack-size=12 MiB` + `node --stack-size=4096`) |
 | `wasm32-unknown-unknown` | — | — | **chỉ `cargo check` biên dịch chéo**, không chạy |
 
 Không được viết "macOS/Windows có Landlock" hoặc "wasm32-unknown-unknown chạy được".
@@ -972,19 +974,21 @@ liên kết tĩnh:
 
 ### 11.1 Bảng nền tảng
 
-Xem §6.4. Tóm tắt: Linux chạy thật + Landlock; Windows Tier 1 (path-only guard); macOS đã verify
-`v0.4.5` nhưng chưa công bố Tier 1; WASI preopen; `wasm32-unknown-unknown` chỉ check.
+Xem §6.4. Tóm tắt: Linux chạy thật + Landlock (`vis-host-linux` trong workspace); Windows Tier 1
+(path-only guard); macOS arm64 Tier 1 (không Landlock); WASI preopen (runtime có phạm vi,
+`vis-wasm-sem` 390/390 với stack 12 MiB + Node 4096 KiB); `wasm32-unknown-unknown` chỉ check.
 
 ### 11.2 Bộ kiểm trong repo
 
 | Bộ | Nội dung |
 |---|---|
 | `test/sem/**` | ca ngữ nghĩa `.vis`/`.vish` + `.out`/`.err`, chạy cả interp và VM |
+| `test/conformance/**` & `crates/vis-conformance` | corpus kiểm chuẩn dữ liệu `.vis` (+ `.out`/`.out_prefix`/`.err`/`.exit`/`.fmt`), chạy thẳng API thư viện cả interp và VM (+ WASI) |
 | `test/expr`, `crates/vis-syntax/tests` | golden từ vựng/parser/biểu thức; NFC, cột scalar, lỗi đầu |
 | `test/doc-examples` | mọi khối `vis`/`vish-session` trong `docs/*.md` phải parse/check được (trừ allowlist) |
 | `test/cmd`, `test/modules`, `test/pkg`, `test/plugin-wasi` | chế độ lệnh, module, gói, plugin WASI |
-| `crates/*/tests` | unit/integration từng crate, host conformance, LSP, security |
-| `./vis-dev gate --fast` | fmt + clippy + luật + self-test + build + doc-examples + L0 |
+| `crates/*/tests`, `vis-host-linux/tests` | unit/integration từng crate, host conformance, LSP, security, Landlock |
+| `./vis-dev gate --fast` | fmt + clippy + luật R1..R9 + self-test + build + doc-examples + L0 |
 | `./vis-dev nightly` | gate + fuzz parser + vòng tròn fmt |
 
 ### 11.3 Cách kiểm chứng bản đặc tả này
@@ -993,8 +997,10 @@ Xem §6.4. Tóm tắt: Linux chạy thật + Landlock; Windows Tier 1 (path-only
   `PUNCTS` 39) và `docs/SPEC-lex.md`.
 - Cú pháp đối chiếu `crates/vis-syntax/src/parse/{mod,expr,khai_bao,cmd}.rs`; mọi EBNF ở §3 có
   luật sinh tương ứng trong parser (trừ các mục ghi “cú pháp nhưng tyck từ chối”).
-- Ngữ nghĩa đối chiếu `crates/vis-types/src/tyck/**`, `crates/vis-interp/src/**`,
-  `crates/vis-bytecode/src/**`, `test/sem/**`.
+- Ngữ nghĩa đối chiếu `crates/vis-hir/src/**` (HIR/Type/`StdId`+`FUNCS`), `crates/vis-types/src/tyck/**`,
+  `crates/vis-core/src/**`, `crates/vis-http/src/**`, `crates/vis-runtime/src/**`,
+  `crates/vis-interp/src/**`, `crates/vis-bytecode/src/**`, `crates/vis-vm/src/**`,
+  `test/sem/**` và `test/conformance/**`.
 - `./vis-dev doc-examples` chạy trên toàn bộ khối `vis`/`vish-session` của `docs/` (kết quả ghi ở
   journal ST-309); các ví dụ trong tệp này cũng được `vis check` trong cổng đó.
 - `python3 test/report/check_report.py --all` kiểm báo cáo vòng (không sửa báo cáo).

@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-289`, 2026-11-24). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-290`, 2026-11-25). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **278** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **279** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -285,6 +285,7 @@
 | VD-287 | Quy trình Điều độ Công việc theo Khung giờ DeepSeek (Cao điểm = Chạy nặng 0-LLM · Thấp điểm = Phát triển) | đã chốt | 4017 |
 | VD-288 | Phê chuẩn `ST-311b/d/e/f`, Chốt `H4 = db67eab` (`0.6.0`), Tối ưu Quy trình Đóng băng/QA 3-OS & Chính sách Dọn Nhánh/Worktree | đã chốt | 4029 |
 | VD-289 | Chuyển sang Chế độ Phát triển Kiến trúc Tối ưu (Hủy Kế hoạch Phát hành Cũ & Mở Đợt Tái kiến trúc `ST-312a..ST-313d`) | đã chốt | 4047 |
+| VD-290 | Phê chuẩn Sóng 0–3 Tái kiến trúc 5 Tầng DAG (`ST-312a..ST-313d`), Chốt 5 Quyết định Gói Duyệt & Mở Lát Hậu-kiểm `ST-314a` | đã chốt | 4064 |
 
 ## Ghi chú
 

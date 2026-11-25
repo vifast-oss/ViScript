@@ -79,3 +79,6 @@ Mục tiêu: **tối ưu 50% chi phí token** và giữ thông lượng máy 24/
 2. **Chế độ Cổng theo Giai đoạn (`VD-289` — Phát triển Kiến trúc vs Phát hành)**:
    - **Chế độ hiện hành — Phát triển Kiến trúc (`VD-289`)**: ưu tiên tối ưu kiến trúc, **không** chạy soak 4h/24h, **không** chạy fuzz 8h, **không** lặp 3× full gate. Cổng bắt buộc mỗi lát là `./vis-dev gate --fast` + `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0` nếu chạm compiler/runtime/VM); cuối mỗi Sóng chạy 1× `cargo clippy --workspace --all-targets -- -D warnings` (3 OS) + `bin/vis-targets` + WASI smoke.
    - **Khi mở lại Pha Phát hành (`Pre-Freeze 3-OS`, `VD-288`)**: trước khi đóng băng mốc `H` cho soak dài mới bắt buộc `clippy --all-targets -D warnings` 3 OS + **smoke soak 1 chu kỳ** 3 OS + tách `[ST-00]` docs-only khỏi `H_code`.
+3. **Luật R8 chống phình Test Binary (`VD-290`)**:
+   - Giữ trần cứng `crates/vis-cli/tests ≤ 15` và tổng số tệp `.rs` cấp 1 trong toàn workspace (`crates/*/tests/` + `vis-host-linux/tests/`) `≤ 40`.
+   - **Mọi ca test tích hợp mới bắt buộc đặt vào thư mục con `tests/<domain>/` + khai `#[path]` trong aggregator cấp 1 đã có**; cấm tạo tệp `.rs` cấp 1 mới trừ khi bắt buộc cách ly process đo tài nguyên (như `worker_leak_it.rs`) kèm lý do rõ ở đầu tệp và được Agent 0 duyệt (hoặc gộp 1 binary cũ tương ứng).

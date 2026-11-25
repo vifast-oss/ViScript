@@ -921,14 +921,13 @@ nguồn (.vis / .vish / dòng lệnh)
 | `vishell` | shell | cli, edit |
 | `vis-plugin` | macro + ABI plugin Rust | vm |
 
-> **Hiện trạng crate ở `main` (2026-11-23, `v0.4.5`)**: bảng trên là **đích thiết kế**. Cây thật có
-> **12 crate**: `vis-diag`, `vis-syntax`, `vis-types`, `vis-interp`, `vis-bytecode`, `vis-vm`, `vis-fmt`,
-> `vis-cli`, `vis-host-native`, `vis-pkg`, `vis-loader`, `vis-lsp`; hai workspace riêng
-> `vis-host-linux`/`vis-host-wasm` vẫn nằm trong repo nhưng ngoài workspace chính. `vish-edit`
-> (nhánh `plan/w3-st304-vish`), `vish-term` (`plan/w3b-st308-term`), `vis-plugin-abi` +
-> `vis-plugin-macros` (`plan/w4-st306-plugin-abi`, `plan/w4b-st307-plugin-wasi`) **chưa merge**;
-> `vishell`/`vis-plugin` chưa tồn tại dưới tên đó. `vis-host-native` giữ host native (quyền/FS/net/TLS/SQLite)
-> sau `ST-300b`; `vis-loader` giữ module/cache, `vis-pkg` giữ gói, `vis-lsp` giữ language server.
+> **Hiện trạng crate ở `main` (2026-11-25, mốc `0.6.0`, `VD-289`/`VD-290`)**: bảng trên là **đích thiết kế gốc**. Cây thật đã hoàn tất **Kiến trúc 5 Tầng DAG** với **23 crate trong workspace chính** (chung 1 `Cargo.lock`, `version.workspace = true`) + **1 workspace riêng** `vis-host-wasm` (target `wasm32-wasip1`):
+> - **Tầng 0** (nền tảng thuần, 0 OS, 0 `unsafe`): `vis-diag`, `vis-syntax`, `vis-fmt`, `vis-plugin-abi`, `vish-term`.
+> - **Tầng 1** (IR, lõi dữ liệu & giao thức thuần): `vis-hir` (dữ liệu HIR/Type/`TypeTable`/`StdId`+`FUNCS`), `vis-core` (`Value`/JSON/traits/lỗi, 0 HTTP), `vis-http` (HTTP/1.1 sans-IO + async state machine trên `NetHost`).
+> - **Tầng 2** (biên dịch & thực thi, 0 coupling chéo): `vis-types` (chỉ `lower`+`tyck`), `vis-bytecode` (0 dep `vis-types`), `vis-runtime` (`builtin`/`stdlib` chia miền theo `StdId`/scheduler/chan/worker/render), `vis-interp` (tree-walker mỏng), `vis-vm` (0 dep `vis-interp` & `vis-types`).
+> - **Tầng 3** (hạ tầng ứng dụng & host): `vis-loader`, `vis-lsp`, `vis-pkg` (tiêm `NetHost`, 0 dep `vis-host-native`), `vis-host-native` (FS `openat2`/`statat`, net/TLS/H2, SQLite), **`vis-host-linux`** (Landlock Linux-only, **đã nằm trong workspace chính** từ `ST-312b`), `vis-plugin-host`, `vis-plugin-macros`, `vish-edit`.
+> - **Tầng 4** (đóng gói & kiểm chuẩn): `vis-cli` (vỏ mỏng, chỉ feature-forwarding), `vis-conformance` (harness dữ liệu `test/conformance/**` chạy tự động parity interp↔VM), và workspace riêng `vis-host-wasm`.
+> Tên gọi `vishell`/`vis-plugin` ở bảng đích được tách thành `vish-edit` + `vish-term` (đấu nối qua `vis repl`) và `vis-plugin-{abi,host,macros}`.
 
 - **`vis-host-vifast` KHÔNG nằm trong `viscript/`** (QD §7.5 ST-01): nó ở **workspace ngoài** vì phụ thuộc IDL của ViFastOs; `viscript/` chỉ chứa crate thuần (lõi + 3 backend còn lại + mock). Cổng ST-01 kiểm điều này bằng case âm.
 - **SPDX theo loại tệp** (QD §9.3): `//` cho Rust/asm, `#` cho `.vis .vish .vidl .toml`; tệp không có chú thích dùng sidecar `.license`; tệp sinh do generator phát header.
@@ -1028,9 +1027,9 @@ Mã lỗi ổn định (`VS` + 4 chữ số, quy tắc cấp ở `ST-02b`), `vis
 | `vis new`, `vis add` | tạo gói, thêm phụ thuộc |
 | `vis repl` / `vish` | REPL thuần / ViShell |
 
-> **Hiện trạng `v0.4.5`**: `vis` có `run`, `check`, `fmt`, `test`, `doc`, `explain`, `lsp`, `pkg`,
-> `new`, `repl`, `doctor`, `cache`, `version`; **chưa** có `vis add` hay binary `vish` (ViShell mới ở
-> nhánh `vish-edit`/`vish-term`). Thêm gói bằng `vis pkg add`.
+> **Hiện trạng `0.6.0` (`VD-290`)**: `vis` có `run`, `check`, `fmt`, `test`, `doc`, `explain`,
+> `lsp`, `pkg`, `plugin`, `new`, `repl` (đã đấu nối `vish-edit` + `vish-term`, hỗ trợ `--format viterm`),
+> `doctor`, `cache`, `version`; **chưa** có `vis add` hay binary riêng `vish`. Thêm gói bằng `vis pkg add`.
 
 ---
 
@@ -1616,12 +1615,12 @@ fn tính_tổng(danh_sách: list[int]) -> int:
 - **Registry CỤC BỘ** (thư mục; mặc định `./registry`, đổi bằng `--registry`): **không** mạng, **không**
   tải theo đường dẫn, **không** meta tag, **không** sổ hash, **không** proxy.
 - **Registry HTTP(S) — VS3-5a + VS3-4a (VD-271)**: `--registry http://host:port[/đường]` (loopback)
-  hoặc `https://host[:port][/path]` (mọi host, TLS/root store/deadline của `vis-cli::net`) tải
+  hoặc `https://host[:port][/path]` (mọi host, TLS/root store/deadline qua `vis-http` + `NetHost`) tải
   `index.json`, chọn phiên bản bằng **resolver semver hiện có**, rồi **chỉ** tải tarball của phiên
   bản đã chọn; kiểm **SHA-256 tarball** và **SHA-256 từng tệp** (canonical hoá như registry cục bộ)
   **trước khi** ghi `.vis`; lỗi hash là **`VS0707`**, không giải được ràng buộc là **`VS0704`**.
-  Tarball là tar ustar đi qua base64 vì client HTTP hiện có trả `str`. TLS dùng cùng client với
-  `http.get` (HTTP/2 chỉ khi bật feature `http2`, mặc định tắt; không proxy/cookie); `http://` vẫn chỉ loopback.
+  Tarball là tar ustar đi qua base64 vì client HTTP hiện có trả `str`. TLS dùng cùng client `vis-http`
+  + `NetHost` (HTTP/2 chỉ khi bật feature `http2`, mặc định tắt cho pkg; không proxy/cookie); `http://` vẫn chỉ loopback.
 - **Chữ ký + GC + migrate — VS3-5b (VD-271)**: `--registry-key`/`VIS_REGISTRY_KEY` bật **bắt buộc**
   chữ ký **Ed25519** (`ring` đã có trong cây, feature `pkg-sig`): mọi phiên bản được chọn phải có
   `signature_ed25519` trên thông điệp chuẩn `vispkg-sig1` (phủ name/version/entry/deps/files/
@@ -1635,23 +1634,22 @@ fn tính_tổng(danh_sách: list[int]) -> int:
 - Chọn phiên bản: **bộ giải ràng buộc** semver (`^`/`~`/so sánh), **không** phải MVS.
 - **Chưa** có: tải theo đường dẫn, MVS, `sum.vifast.org`, `VIS_SUMDB`, `VIS_PRIVATE`, `VIS_PROXY`,
   proxy vận hành thật, sổ hash và chữ ký **bắt buộc theo sổ** (Ed25519 theo khoá cấu hình đã có, ST-288).
-- Nợ liên quan: **#142** (`pkg update X` ghim mọi gói khác), **#143** (`NamePolicy::Strict`), **#125**
-  (sổ hash/proxy vận hành thật).
+- Nợ liên quan: **#142** (đã đóng ở ST-288), **#143** (`NamePolicy::Strict`), **#125** (đã đóng Landlock Execute ở ST-295).
 
-## Mức hiện thực VS2 (đồng bộ 2026-11-23, ST-305)
+## Mức hiện thực hiện hành (đồng bộ 2026-11-25, `VD-290` / `0.6.0`)
 
 Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong `agent/reports/` và `agent/JOURNAL/`. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
 
-> **Đồng bộ 2026-11-23 (ST-305, sau `v0.4.5`)**: phiên bản workspace là **0.4.5**, mọi crate thành viên dùng `version.workspace = true` (một nguồn ở `Cargo.toml`); `vis --version` in `vis 0.4.5`. Mục này cập nhật theo HEAD `c3b7290` (sau `ST-300m1`); **`ST-300m2`/`ST-300m3` còn chờ**, nên macOS **chưa** được tuyên bố Tier 1. Các crate `vish-edit`, `vish-term`, `vis-plugin-abi`, `vis-plugin-macros` đang ở nhánh riêng, **chưa merge** vào `main`.
+> **Đồng bộ 2026-11-25 (`VD-289`/`VD-290`, mốc `0.6.0`, code freeze `90fd24de`)**: phiên bản workspace là **0.6.0** (chế độ phát triển kiến trúc tối ưu, chưa gắn tag `v0.6.0`; tag lịch sử gần nhất là `v0.5.5`), mọi crate thành viên dùng `version.workspace = true` (một nguồn ở `Cargo.toml`); `vis --version` in `vis 0.6.0`. Toàn bộ **23 crate** trong workspace chính (kể cả `vis-host-linux`, `vish-edit`, `vish-term`, `vis-plugin-{abi,host,macros}`, `vis-hir`, `vis-core`, `vis-http`, `vis-runtime`, `vis-conformance`) đã hợp nhất theo **Kiến trúc 5 Tầng DAG** (`./bin/vis-dag-check` PASS), chỉ còn `vis-host-wasm` là workspace riêng.
 
-- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với `--strict-caps`. Cưỡng chế ở biên host (tầng runtime), vi phạm báo `VS0604` exit 2. **Landlock đã có trên Linux** (ST-132/ST-150/ST-166/ST-173), bật bằng `--sandbox`; `--sandbox-check` báo trạng thái. Đường **đọc và đường ghi** đã đóng khe kiểm-rồi-mở trên **Unix/Linux** bằng `openat`/`openat2` (ST-174, ST-295; `#146`/`#140`/`#109b` đóng); **macOS đã verify `v0.4.5`**, **Windows** chỉ kiểm theo đường dẫn nên mức bảo đảm thấp hơn.
-- **Async**: chương trình **có** `async` được chạy trên runtime frame (chọn theo HIR — `hir_co_async`, cả interp và VM); chương trình không `async` giữ tuần tự, một luồng, run-to-completion. Runtime đã có suspend/resume, reactor read/accept + timer, cancellation; **worker song song vẫn opt-in**, không phải mặc định. GC/song song thật và `select` là đích VS3 (ST-291..ST-293).
-- **Kênh**: `chan(n)` với n ≥ 1 có send/recv/close. `chan(0)` bị từ chối lúc tạo bằng `VS0505`. Rendezvous, select và timeout là đích VS3. Đường test frame đã phủ đầy/rỗng/đóng nhưng không đổi ngữ nghĩa mặc định.
+- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với `--strict-caps` (mặc định siết khi dùng `use pkg.*`). Cưỡng chế ở biên host (tầng runtime), vi phạm báo `VS0604` exit 2. **Landlock đã có trên Linux** (`vis-host-linux` nằm trong workspace chính từ `ST-312b`), bật bằng `--sandbox`; `--sandbox-check` báo trạng thái. Trên **Unix (Linux & macOS)**, cả đường **đọc, ghi và truy vấn siêu dữ liệu** (`size`/`list`/`exists`/`walk`/`read_link`/`canonicalize`) đều đi qua `openat`/`openat2` + `statat`/`readlinkat` theo `fd` (`ST-295`, `ST-309`, `ST-311b`; `#146`/`#140`/`#109b`/`#194` đóng, 0 `unsafe`, R9); **Windows** chỉ kiểm theo đường dẫn (`FsGuard`) nên mức bảo đảm thấp hơn.
+- **Async & Ngân sách**: chương trình **có** `async` chạy trên runtime frame (`hir_co_async`, cả interp và VM) với suspend/resume, reactor read/accept/connect/write + timer, cancellation (kể cả giữa HTTP h1/h2 — `ST-287`), `async fn` trong `impl` và `async cmd` (`ST-302`, `#13` đóng); chương trình không `async` giữ tuần tự một luồng. **Ngân sách mặc định 40M** (`ST-290`, `VS0509`/`VS0510`, cache `VFEE`) và VM `Frame::loop_ends` `O(1)` + `MAX_ITER_DEPTH` + `deadline` (`ST-311a`, `#190` đóng, `#195` đã vá mã chờ watchdog 2h khi mở lại pha phát hành). **Worker song song (`--workers`)** có pool affine + `SharedBudget` (`ST-291`/`ST-292`/`ST-301`), vẫn opt-in.
+- **Kênh**: `chan(n)` với n ≥ 1 có `send`/`recv`/`close`, `recv_timeout`/`send_timeout` (`VS3-2b`), `select_recv*`/`select_send*` (`ST-293`) và wait-set/`chan(0)` trên đường frame (`VS3-2a`); đường đồng bộ mặc định vẫn từ chối `chan(0)` bằng `VS0505`.
 - **assert <điều kiện>**: có từ ST-83.
 - **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
-- **HTTP**: HTTP/1.1; `http://` **chỉ loopback** và `https://` (TLS client, VS3-4a) cho host bất kỳ qua `cap[Net]`; có chunked, redirect GET có giới hạn, HEAD, timeout đọc. Có **deadline tổng** cho toàn lời gọi (ST-265/VD-250): connect/handshake/redirect/đọc dùng chung một hạn monotonic, mỗi bước chờ dùng thời gian còn lại, không reset theo hop. **VS3-4b** có keep-alive HTTP/1.1 (pool 8 idle / 15 s, thử lại một lần khi idle chết), **cookie jar nội bộ** (Path/Domain/Secure/HttpOnly/Max-Age/Expires; không ra đĩa) và **Basic auth qua userinfo** (không log credential, không chuyển auth sang host khác). **VS3-4b2** có HTTP/2 trong feature **`http2` default-on** từ `v0.3.0` (ALPN; server không chọn h2 ⇒ fallback HTTP/1.1 cùng kết nối; một request/kết nối, không multiplex); `async-h2` vẫn **default-off** và Unix-only tới ST-294.
-- **Gói**: `vis pkg add|install|update|list|remove|gc|migrate` trên **registry cục bộ** (thư mục, `--registry`) và **registry HTTP(S)** (VS3-5a + VS3-4a: `http://` loopback hoặc `https://` mọi host; index + tarball, SHA-256 tarball/từng tệp trước khi cài; TLS dùng cùng client `vis-cli::net`, không HTTP/2/proxy/cookie), **chữ ký Ed25519 tuỳ chọn/bắt buộc** theo khoá cấu hình (VS3-5b), `vis.lock` có SHA-256, chọn phiên bản bằng **bộ giải ràng buộc** semver; **GC store + migrate lock** (VS3-5b). **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
-- **LSP**: publish chẩn đoán cho **tài liệu đang mở** (VD-126); **VS3-7 (VD-271)** mở rộng: khi một **tệp module phụ** đổi/mở/đóng, publish lại chẩn đoán module-aware cho **mọi tài liệu đang mở phụ thuộc** (trực tiếp/gián tiếp), mỗi URI tối đa một frame mỗi sự kiện; buffer đang mở làm **overlay** cho phân tích module của tài liệu khác (kể cả chưa ghi đĩa), `didClose` quay lại đĩa. Đã có definition, documentSymbol, references, rename + prepareRename, signatureHelp, foldingRange, workspace/symbol, documentHighlight, selectionRange, formatting, typeDefinition, implementation, hover (biến/trường/enum/method/builtin) và completion `std.*`; cache phân tích theo `(uri, text)` + cache module bị xoá khi văn bản đổi. **Incremental sync** (VS3-7): `textDocumentSync = {openClose:true, change:2}`; `didChange` áp **mọi** `contentChanges` theo thứ tự, range **UTF-16 0-based** (emoji ngoài BMP = 2 code unit, dòng `\r\n`/`\r`/`\n`), không range = full. **Còn mở**: publish chẩn đoán cho tệp phụ **không mở**.
-- **Nền tảng**: **Linux chạy thật** (`ps`; host suite 54/54, Landlock 18/18). **Windows x86_64**: **Tier 1 đã công bố** từ `v0.4.5` (`ST-298`: 3× `vis-gate-windows --full` 3611/0/3, soak 4 h 985 vòng / 0 fail; caveat `FsGuard` chỉ kiểm theo đường dẫn). **macOS arm64**: **đã verify `v0.4.5`** trên `mps` (gate 3631/0/3, workspace 3636/0/3, host 54/54, WASI 28/28, `vis-wasm-sem` 388/390) nhưng **chưa công bố Tier 1** — chờ `ST-300m3` (3× `--full` + soak 4 h). **wasm32-wasip1**: **có runner runtime** (`bin/vis-wasm-sem` 388/390 eligible, `bin/vis-wasm-suite` 28/28); `wasm32-unknown-unknown` vẫn chỉ `cargo check`.
-- **Ngôn ngữ đã hiện thực thêm**: `let … else` (buộc thoát mọi nhánh, `VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, khởi tạo top-level `let`/`var` trước `fn main`, gán lồng `x.f.g`/`x[i][j]`, literal `i64::MIN`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.
-- **Thư viện chuẩn**: `std.fs/path/str/list/map/sqlite/json/net/time/...`; SQLite là **feature tùy chọn** (`default = ["sqlite"]`; bản core từ chối `std.sqlite` rõ ràng). API std đóng băng có kiểm bằng `agent/API-STD.txt`.
+- **HTTP**: tách thành crate thuần sans-IO **`crates/vis-http`** (`ST-312d`) trên `NetHost`/`AsyncHttpEnv`. Hỗ trợ HTTP/1.1 (`http://` chỉ loopback, `https://` TLS mọi host qua `cap[Net]`), chunked, redirect GET có giới hạn, HEAD, deadline tổng monotonic (`ST-265`), keep-alive HTTP/1.1, cookie jar nội bộ, Basic auth, HTTP/2 (`http2` default-on từ `v0.3.0`) và **`async-h2` default-on trên non-wasm** (`ST-294`, Linux + Windows + macOS).
+- **Gói**: `vis pkg add|install|update|list|remove|gc|migrate` (`crates/vis-pkg`, 0 dep `vis-host-native`, tiêm `&mut dyn NetHost` từ `ST-312d`) trên **registry cục bộ** (`--registry`) và **registry HTTP(S)** (`http://` loopback hoặc `https://` mọi host; index + tarball, SHA-256 tarball/từng tệp trước khi cài), **chữ ký Ed25519 tuỳ chọn/bắt buộc** (`VS0708`), `vis.lock` có SHA-256, resolver semver, GC store + migrate lock. **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
+- **LSP**: `crates/vis-lsp` + extension VS Code (`editors/vscode/`, `ST-305`); publish chẩn đoán module-aware cho mọi tài liệu đang mở phụ thuộc (overlay buffer, `didClose` quay lại đĩa), incremental sync (`change:2` UTF-16), definition/references/rename/signatureHelp/folding/workspaceSymbol/formatting/typeDefinition/implementation/hover/completion `std.*`. **Còn mở**: publish chẩn đoán cho tệp phụ **không mở**.
+- **Nền tảng**: **3-OS Tier 1** — **Linux** (`ps`; host suite 54/54, Landlock `vis-host-linux` 18/18), **Windows x86_64** (`Tier 1` từ `v0.4.5`/`ST-298`; caveat `FsGuard` chỉ kiểm đường dẫn), **macOS arm64** (`Tier 1` đã công bố từ `v0.5.0`/`ST-300m3`; caveat không Landlock, chỉ arm64; nợ chạy bù clippy Sóng 2–3 sau tái kiến trúc 23 crate ở `ST-314a`). **`wasm32-wasip1`**: **có runner runtime có phạm vi** (`bin/vis-wasm-suite` 28/28, `bin/vis-wasm-sem` **390/390** sau khi đóng `#193` ở `ST-313d` với `-zstack-size=12 MiB` + `node --stack-size=4096`); `wasm32-unknown-unknown` vẫn chỉ `cargo check`.
+- **Ngôn ngữ & Hệ sinh thái đã hiện thực thêm**: `let … else` (`VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, lambda param/return annotation (`ST-301`), `derives Json` codegen thật (`ST-302`, `#8` đóng), `async` method/`cmd` (`ST-302`), plugin tĩnh Rust (`vis-plugin-abi`/`vis-plugin-macros`) & plugin động WASI sandbox (`vis-plugin-host`, `ST-306`/`ST-307`/`ST-310c`), ViShell/REPL + ViTerm (`vish-edit`/`vish-term`, `ST-304`/`ST-308`/`ST-310b`), khởi tạo top-level `let`/`var` trước `fn main`, gán lồng `x.f.g`/`x[i][j]`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.
+- **Thư viện chuẩn & Kiểm chuẩn**: `std.fs/path/str/list/map/sqlite/json/net/time/...` (167 hàm định danh một nguồn qua `StdId` trong `vis-hir`, tổ chức theo miền trong `vis-runtime/src/stdlib/`, 0 tệp `_a.._e`); SQLite là **feature tùy chọn** (`default = ["sqlite"]`). API std đóng băng kiểm bằng `agent/API-STD.txt`; bộ kiểm chuẩn dữ liệu `crates/vis-conformance` + `test/conformance/**` chạy tự động parity `interp ↔ VM`.
