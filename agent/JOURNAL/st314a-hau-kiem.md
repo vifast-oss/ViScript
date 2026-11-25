@@ -185,3 +185,17 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `bin/vis-wasm-sem` @`a7cf2533` | **390/390, 0 fail, coverage 100%** (525 total) | `/home/ps/vislogs/st314a-lp2-wasm-sem.log`, sha `41777564ef6cf9232076571dd75db09f0fde33ea5552a987cf49596842b4d203` |
 | `bin/vis-wasm-suite` @`a7cf2533` | **28/28, 0 hỏng** (runtime=node) | `/home/ps/vislogs/st314a-lp2-wasm-suite.log`, sha `53e789db050a355b3aba9629f8412f8281acd66384267000c93497f9fe22a3ff` |
 | `bin/vis-targets` @`a7cf2533` (gồm `vis-dag-check` mới) | **PASS** — core `47/0/0`, sqlite `45/2/0`; dag-check `OK — 23 crate / 5 tầng` | `/home/ps/vislogs/st314a-lp2-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe` |
+| `./vis-dev core-test` (no-default-features) | **PASS** — 1.804/0 (12 binary), target riêng | `/home/ps/vislogs/st314a-lp2-core-test.log`, sha `ec5ab3afdaa212d38f60712586799607c99e7c70262e05b6714966f6d8808834` |
+
+## 11. Audit docs `SPEC.md` + thiết kế (subagent) — đề xuất cho Agent 0
+
+Audit đối chiếu cây thật tại `aaf4fa83`: **6 dòng `docs/SPEC.md`** và **16 dòng
+`docs/ViScript-thiet-ke.md`** còn lệch (phiên bản CLI `0.5.0`, tên backend cũ
+`vis-host-posix/-windows/-mock`, danh sách `unsafe` cũ, bảng lệnh `vis-dev`, đường dẫn
+`viscript/...`, `crates/vis-cli/src/pkg.rs`). Theo `AGENTS.md` §1, `SPEC.md` và tài liệu thiết kế
+**không sửa trực tiếp** ở đây; đề xuất đầy đủ (file:line + thay thế) tại
+[`de-xuat-dong-bo-docs-2026-11-25.md`](de-xuat-dong-bo-docs-2026-11-25.md).
+
+Đã xác minh tại chỗ: `docs/doc-examples-allow.txt` tồn tại; `crates/vis-cli/src/pkg.rs` không còn
+(`crates/vis-pkg/src/pkg.rs`); R2 danh sách đóng **rỗng**; `vish-term` có dep `rustix`/`crossterm`
+theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguyên.
