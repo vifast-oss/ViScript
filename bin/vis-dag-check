@@ -3,7 +3,8 @@
 # **ST-313c (VD-289)** — khoá DAG 5 tầng: kiểm các cạnh **cấm** giữa crate.
 #
 # Dùng `cargo metadata --no-deps` (không build); lỗi ⇒ exit 2 kèm cạnh vi phạm.
-# Gọi từ `bin/vis-targets` (cổng cuối Sóng) để hồi quy kiến trúc không lọt.
+# Gọi từ `bin/vis-targets` (cổng cuối Sóng) và `vis-dev check`/`gate --fast` (ST-314a) để hồi quy
+# kiến trúc không lọt.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"

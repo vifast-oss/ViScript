@@ -485,6 +485,18 @@ do_check() {
         echo "--- luật R1..R9: FAIL" >&2; return 1
     fi
     echo "--- luật R1..R9: OK"
+    # **ST-314a low-peak**: khoá DAG 5 tầng ngay trong `check`/`gate --fast` (trước đây chỉ
+    # `bin/vis-targets` gọi). Chỉ đọc `cargo metadata`, không build.
+    if ! CARGO="$CARGO" bash "$VIS_ROOT/bin/vis-dag-check"; then
+        echo "--- DAG 5 tầng: FAIL" >&2
+        return 1
+    fi
+    echo "--- DAG 5 tầng: OK"
+    if ! bash "$VIS_ROOT/test/gate/dag-check-self-test.sh"; then
+        echo "--- DAG self-test: FAIL" >&2
+        return 1
+    fi
+    echo "--- DAG self-test: OK"
     # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
     # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
     if ! bash "$VIS_ROOT/test/toolchain/run.sh"; then

@@ -200,3 +200,13 @@ Audit đối chiếu cây thật tại `aaf4fa83`: **6 dòng `docs/SPEC.md`** v�
 Đã xác minh tại chỗ: `docs/doc-examples-allow.txt` tồn tại; `crates/vis-cli/src/pkg.rs` không còn
 (`crates/vis-pkg/src/pkg.rs`); R2 danh sách đóng **rỗng**; `vish-term` có dep `rustix`/`crossterm`
 theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguyên.
+
+## 12. Đưa DAG guard vào `check` + bổ sung README công cụ
+
+- `vis-dev check` (và do đó `gate --fast`) nay gọi `bin/vis-dag-check` sau R1..R9 — trước đây chỉ
+  `bin/vis-targets` gọi, nên lỗi kiến trúc có thể lọt qua gate thường.
+- `bin/README.md` bổ sung hai công cụ bị thiếu: `vis-dag-check` và `vis-wasm-conformance`.
+- Thêm `test/gate/dag-check-self-test.sh` — case âm thường trực (metadata giả: 2 cạnh cấm +
+  crate thứ 24 chưa khai tầng), gọi trong `vis-dev check`/`gate --fast`. Chạy trực tiếp:
+  `ok - vis-dag-check bắt 2 cạnh cấm + crate chưa khai tầng`, exit 0.
+- `bin/vis-dag-check` header ghi rõ nay được gọi từ cả `vis-targets` và `vis-dev check`.
