@@ -85,6 +85,25 @@ for wt in ${worktrees[@]+"${worktrees[@]}"}; do
         echo "SKIP (đang dùng): $wt_real"
         continue
     fi
+    # **ST-314a (hậu-kiểm low-peak)**: `cargo`/`rustc` chạy với **cwd** trong worktree thường
+    # KHÔNG có path trong args ⇒ lần trước vẫn có thể xoá `target` đang dùng. Trên Linux kiểm
+    # thêm `/proc/<pid>/cwd` (quyền đọc tiến trình khác có thể bị từ chối — bỏ qua an toàn).
+    if [ -d /proc ]; then
+        dang_dung=0
+        for pc in /proc/[0-9]*/cwd; do
+            cwd="$(readlink "$pc" 2>/dev/null)" || continue
+            case "$cwd" in
+                "$wt_real" | "$wt_real"/*)
+                    dang_dung=1
+                    break
+                    ;;
+            esac
+        done
+        if [ "$dang_dung" = 1 ]; then
+            echo "SKIP (cwd đang dùng): $wt_real"
+            continue
+        fi
+    fi
     merged=0
     head="$(git -C "$wt" rev-parse HEAD 2>/dev/null || true)"
     if [ -n "$head" ] && git -C "$REPO" merge-base --is-ancestor "$head" "$MAIN" 2>/dev/null; then merged=1; fi

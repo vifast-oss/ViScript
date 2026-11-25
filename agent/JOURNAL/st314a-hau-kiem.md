@@ -461,10 +461,9 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - Negative control từng lỗi ở `/home/ps/vislogs/st314a-bin-audit-evidence.log` (248 dòng);
   báo cáo đầy đủ `/home/ps/vislogs/st314a-bin-audit-2026-11-25.md`
   (sha `7749cba7babe07a8d609939213807f1c9dcfaedebe84f6984d74ec99f78a88da`).
-- **Đã đóng tiếp 5 nghi vấn** (xem §22.9); **còn 1 nghi vấn** cần A0/đo dài: `vis-gc-targets`
-  grep `ps args` theo path có thể sót tiến trình cargo không chứa path trong args. Ghi chú thêm:
-  ngưỡng stack WASI của ca đệ quy sâu (`de-quy-qua-sau`) khác native nên ca đó **không** chạy
-  assert trên WASI (25/26 ca trap được assert).
+- **Đã đóng 6 nghi vấn** (xem §22.9); không còn nghi vấn audit nào Agent 2 tự quyết được. Ghi chú
+  cho A0: ngưỡng stack WASI của ca đệ quy sâu (`de-quy-qua-sau`) khác native nên ca đó **không**
+  chạy assert trên WASI (25/26 ca trap được assert).
 
 ### 22.7 Đo hiệu năng + đề xuất trục kế tiếp
 
@@ -505,7 +504,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - **Lần chạy Windows ĐẦU** (`st314a-lp32-win-full.log`) đo **HEAD cũ** `88539274` (vis-remote
   không đồng bộ cây nguồn) ⇒ **bị loại khỏi bằng chứng**; đã pull `92440689` rồi chạy lại, nay
   `vis-gate-windows` có HEAD guard (lệch ⇒ exit 6). Số đúng: **3.737/0** (không phải 3.730).
-- **Chưa chạy lại sau thay đổi**: fuzz parser dài, macOS full (`mps` bận theo chỉ đạo người dùng).
+- **Chưa chạy lại sau thay đổi**: macOS full (`mps` bận theo chỉ đạo người dùng).
   Chuỗi 0-LLM low-peak chạy tiếp tới sát 01:00 UTC 2026-11-26
   (`/home/ps/vislogs/lowpeak-chain-2026-11-25/`, log + `SHA256SUMS` + `REPORT.md` ngoài repo).
 
@@ -518,3 +517,4 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `vis-remote` | stem log `tag-<giây>` — hai lần cùng tag/giây tranh `.exit` | stem thêm `-$$`; `--check local` OK |
 | `vis-wasm-suite`/`vis-wasm-sem` | dùng wasm có sẵn bất kể tuổi; sem oracle lệch chỉ WARN | tự build khi wasm **thiếu hoặc cũ hơn** `vis-host-wasm/src` + `crates/**`; thêm `--no-build`; sem `--allow-oracle-drift` (mặc định **FAIL**): test oracle sửa 1 byte ⇒ exit **1**, có cờ ⇒ 0; suite 28/28 (tự rebuild) |
 | `vis-targets` | in hằng số `390/390`, `28/28` như vừa đo | mặc định in **“chưa đo lượt này; lần cuối 2026-11-25”**; `--wasm` đo lại thật và in `# SUMMARY`/`# tổng` của 3 harness, lỗi ⇒ exit 1. Test: mặc định exit 0, in đúng mốc; `--wasm` chạy 3 harness |
+| `vis-gc-targets` | chỉ grep `ps args` theo path — cargo chạy với **cwd** trong worktree nhưng args không chứa path ⇒ có thể xoá `target` đang dùng | thêm kiểm `/proc/<pid>/cwd` (Linux; quyền bị từ chối thì bỏ qua an toàn) ⇒ `SKIP (cwd đang dùng)` |
