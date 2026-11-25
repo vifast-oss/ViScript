@@ -228,18 +228,26 @@ pub trait FsHost {
     }
 }
 
+/// **VD-270 / ST-314a** — ba phép metadata **chỉ đọc**; enum thay chuỗi để dispatch
+/// compile-time (thêm biến thể mà quên xử lý ⇒ lỗi biên dịch).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MetadataOp {
+    Size,
+    IsFile,
+    IsDir,
+}
+
 /// **VD-270** — gọi một trong ba helper metadata **chỉ đọc** của host. Giữ nhánh dispatch ở **một**
 /// chỗ cho interp ↔ VM (cùng `stdlib::call`) và để `stdlib.rs` không vượt luật R1.
 pub fn goi_metadata(
     host: &mut dyn FsHost,
-    ten: &str,
+    op: MetadataOp,
     p: &str,
 ) -> Result<crate::value::Value, String> {
-    match ten {
-        "fs.size" => host.size(p).map(crate::value::Value::Int),
-        "fs.is_file" => host.is_file(p).map(crate::value::Value::Bool),
-        "fs.is_dir" => host.is_dir(p).map(crate::value::Value::Bool),
-        _ => Err(format!("metadata không xác định: `{ten}`")),
+    match op {
+        MetadataOp::Size => host.size(p).map(crate::value::Value::Int),
+        MetadataOp::IsFile => host.is_file(p).map(crate::value::Value::Bool),
+        MetadataOp::IsDir => host.is_dir(p).map(crate::value::Value::Bool),
     }
 }
 

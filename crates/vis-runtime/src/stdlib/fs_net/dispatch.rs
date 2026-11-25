@@ -64,7 +64,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.append(p, v).map(|()| Value::Unit), span)
         }
-        StdId::FsMkdir | StdId::FsMkdirAll => fsmkdirall::goi(host, name, args, span),
+        StdId::FsMkdir | StdId::FsMkdirAll => fsmkdirall::goi(host, id, args, span),
         StdId::FsRemove => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
@@ -119,7 +119,13 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
         StdId::FsSize | StdId::FsIsFile | StdId::FsIsDir => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
-            hop_nhat_fs(vis_core::host::goi_metadata(host, name, p), span)
+            let op = match id {
+                StdId::FsSize => vis_core::host::MetadataOp::Size,
+                StdId::FsIsFile => vis_core::host::MetadataOp::IsFile,
+                StdId::FsIsDir => vis_core::host::MetadataOp::IsDir,
+                _ => unreachable!("nhóm metadata chỉ nhận 3 biến thể trên"),
+            };
+            hop_nhat_fs(vis_core::host::goi_metadata(host, op, p), span)
         }
         // **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là symlink (theo `symlink_metadata`,
         // **không** đi theo): symlink tới tệp/thư mục/**đích thiếu** ⇒ `true` (khác `exists`);
@@ -139,7 +145,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
         StdId::FsCurrentDir => fscurrentdir::goi(host, name, args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
-        StdId::FsReadBytes | StdId::FsWriteBytes => fsbytes::goi(host, name, args, span),
+        StdId::FsReadBytes | StdId::FsWriteBytes => fsbytes::goi(host, id, args, span),
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
         StdId::NetConnect | StdId::NetConnectTimeout => {

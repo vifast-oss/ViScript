@@ -15,7 +15,7 @@ pub mod db;
 pub mod fs;
 
 pub use db::DbHost;
-pub use fs::{chia_dong, goi_metadata, DocQuaHandle, DuongDanHandle, FsHost, MucFs};
+pub use fs::{chia_dong, goi_metadata, DocQuaHandle, DuongDanHandle, FsHost, MetadataOp, MucFs};
 
 /// **ST-72b (VD-103/VD-106)**: dấu **cưỡng chế quyền** trong `Err` của host — `hop_nhat_fs` đổi
 /// thành trap `VS0604` (không bắt được), thay vì `Err(str)` dữ liệu (vượt quyền là lỗi **môi

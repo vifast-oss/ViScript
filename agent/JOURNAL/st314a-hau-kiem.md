@@ -43,8 +43,8 @@ sha256 567b75c5f4619c18d673157443791ab5673dfae738058fdf3d42f1f983bc701e
 - `stdlib/path/dispatch.rs` + `stdlib/fs_net/dispatch.rs`: nhận `StdId` (không nhận `&str`),
   match theo biến thể enum; tên chỉ dùng cho thông điệp lỗi (`id.as_str()`). Không còn
   `match name`/`starts_with` ở **đường dispatch vào**; ba helper lá cùng nhóm (`fsbytes`,
-  `fsmkdirmall`, `goi_metadata`) vẫn nhận tên để chọn biến thể nội bộ — đã khoá bởi test song ánh
-  `stdid_tests`, không phải fallback dispatch.
+  `fsmkdirmall`, `goi_metadata`) nay cũng nhận `StdId`/`MetadataOp` (không còn chọn hàm theo
+  chuỗi); `id.as_str()` chỉ còn cho thông điệp lỗi.
 - Hai module con giữ nhánh `_ => unreachable!("...")` **phòng vệ** cho biến thể ngoài miền
   (không thể tới từ top-level); đây không phải fallback im lặng.
 
@@ -218,3 +218,18 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   (`/home/ps/vislogs/st314a-lp3-check-dag.log`, sha `30c648e5103c73c5cbc65df260bdaf8c042d1455033b48fdea5230a7671d858c`).
 - **Windows/Git Bash**: `test/gate/dag-check-self-test.sh` @`d25f50dc` trên `psvn` → `ok …`,
   `self_test_exit=0` (log phiên `vis-remote-20261125T042248Z`).
+
+
+## 13. Leaf dispatch `StdId` hoá (F3 — audit review mã)
+
+- `fs_net/fs.rs`: `fsbytes::goi(host, StdId, …)` match `FsReadBytes`/`FsWriteBytes`;
+  `fsmkdirmall::goi(host, StdId, …)` match `FsMkdir`/`FsMkdirAll`.
+- `vis-core`: thêm `MetadataOp { Size, IsFile, IsDir }`; `goi_metadata(host, op, p)`; dispatch
+  `vis-runtime` map `StdId::FsSize/FsIsFile/FsIsDir` → op. Không còn `match ten`/`match name`
+  trong các đường này.
+- Đo cục bộ: `cargo check -p vis-runtime` OK; `cargo test -p vis-runtime -p vis-core` →
+  **283 + 20 + 3 passed, 0 failed**; `cargo fmt --all -- --check` OK.
+- Test tích hợp đích: `host_it vd270_fsbytes` **7/7**, `vd270_mkdir_all` **7/7**, `vd266_fs` **11/11**.
+- `./vis-dev check` @working tree: **PASS**, `EXIT=0`
+  (`/home/ps/vislogs/st314a-lp3-check-leaf.log`, sha `9240367d135324948d465180fe1f9e40cfca26d73cf38519bfd47f713a7c4572`).
+- Chờ `gate --fast` cuối (fuzz nền đang chạy) để chốt bằng chứng đầy đủ.

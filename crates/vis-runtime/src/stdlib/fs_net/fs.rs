@@ -19,6 +19,7 @@ pub(crate) mod fsbytes {
     use crate::builtin::Host;
     use vis_core::trap::R;
     use vis_core::value::Value;
+    use vis_hir::stdlib::StdId;
 
     /// `list[int]` (mỗi phần tử `0..=255`) → `Vec<u8>`. Kiểm **hết** trước khi trả về; lỗi là **dữ
     /// liệu** (chuỗi thông điệp), caller bọc thành `Err(Error)` — không trap.
@@ -53,16 +54,17 @@ pub(crate) mod fsbytes {
     }
 
     /// Dispatch hai hàm `std.fs.*` byte thô (interp ↔ VM dùng chung).
-    pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
-        match ten {
-            "fs.read_bytes" => {
+    pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) -> R<Value> {
+        let ten = id.as_str();
+        match id {
+            StdId::FsReadBytes => {
                 let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
                 let host = host
                     .fs()
                     .ok_or_else(|| super::super::super::khong_host(ten, span))?;
                 super::super::super::hop_nhat_fs(host.read_bytes(p).map(ds_byte), span)
             }
-            "fs.write_bytes" => {
+            StdId::FsWriteBytes => {
                 let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
                 // **Kiểm hết trước khi lấy host/ghi** — dữ liệu sai không được tạo hay cắt tệp.
                 let ds = match thanh_byte(ten, &args[1]) {
@@ -209,18 +211,20 @@ pub(crate) mod fsmkdirall {
     use crate::builtin::Host;
     use vis_core::trap::R;
     use vis_core::value::Value;
+    use vis_hir::stdlib::StdId;
 
     /// Dispatch hai hàm tạo thư mục (interp ↔ VM dùng chung).
-    pub(crate) fn goi(host: &mut dyn Host, ten: &str, args: &[Value], span: Span) -> R<Value> {
+    pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) -> R<Value> {
+        let ten = id.as_str();
         let p = super::super::super::chuoi(ten, &args[0], 0, span)?;
         let host = host
             .fs()
             .ok_or_else(|| super::super::super::khong_host(ten, span))?;
-        match ten {
-            "fs.mkdir" => {
+        match id {
+            StdId::FsMkdir => {
                 super::super::super::hop_nhat_fs(host.mkdir(p).map(|()| Value::Unit), span)
             }
-            "fs.mkdir_all" => {
+            StdId::FsMkdirAll => {
                 super::super::super::hop_nhat_fs(host.mkdir_all(p).map(|()| Value::Unit), span)
             }
             _ => Err(super::super::super::loi(
