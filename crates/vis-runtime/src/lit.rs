@@ -94,3 +94,30 @@ pub fn dinh_dang(v: &Value, spec: &str, span: Span) -> Result<String, Abort> {
         other => other.show(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::builtin_name;
+    use crate::builtin::SIGS;
+
+    /// **ST-314a hậu-kiểm (low-peak 2026-11-25)** — **một nguồn**: mọi tên trong `SIGS` (gồm 4
+    /// `select_*`) phải được `builtin_name` nhận. Trước đây `lit.rs` chép tay 23 tên và thiếu
+    /// `select_*`, khiến interp đường đồng bộ báo "tên … chưa hỗ trợ ở VS0" còn VM báo đúng
+    /// "cần đường frame". Nếu ai tách danh sách lần nữa, test này đỏ.
+    #[test]
+    fn moi_sig_deu_la_builtin_name() {
+        for s in SIGS {
+            assert_eq!(
+                builtin_name(s.name),
+                Some(s.name),
+                "thiếu builtin `{}`",
+                s.name
+            );
+        }
+        assert_eq!(builtin_name("khong_co_builtin_nay"), None);
+        assert!(
+            builtin_name("std.str.upper").is_some(),
+            "std.* phải đi qua bảng chữ ký"
+        );
+    }
+}
