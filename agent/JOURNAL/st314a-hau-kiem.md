@@ -77,3 +77,14 @@ crates/vis-runtime/src/stdlib/fs_net/dispatch.rs
 crates/vis-runtime/src/stdlib/path/dispatch.rs
 crates/vis-types/tests/types_it/hir.rs
 ```
+
+## 7. Bổ sung bằng chứng khung cao điểm (0-LLM, `VD-287`)
+
+Sau khi nộp `REVIEW`, chạy tiếp các việc nặng 0-LLM tới sát giờ thấp điểm:
+
+| Việc | Kết quả | Bằng chứng |
+|---|---|---|
+| Windows full @`5d857b84` (`vis-gate-windows --full`) | `cargo test --workspace`: **3.729 passed / 0 failed / 4 ignored** (90 binary); `host_conformance` **54 ca / 120 lượt, 0 lệch, VM 54/54**; `vis-targets` **23 crate** PASS (core 47/0/0, sqlite 46/1 EXPECTED_RED/0); `vis-dag-check` OK | `/home/ps/vislogs/st314a-win-full.log`, sha `84f1593a7d3bf45454d8b060face61e262dd2b2e2b30a2abf24f958d1fc2cead` |
+| 5× `vis-diff 100k` (seed `20261125/101/202/303/404`) | cả 5 **lech=0** (93.767–93.771 chương trình chạy/lượt) | `st314a-diff-<seed>.log` |
+| +3× `vis-diff 100k` (seed `505/606/707`) | cả 3 **lech=0** | `st314a-diff-<seed>.log` |
+| Fuzz parser 115 phút (`vis-dev nightly --skip-gate`) | **959.027.870 ca / 21.766.452.334 token, 0 vi phạm**; vòng tròn fmt 475 tệp bất động | `/home/ps/vislogs/st314a-fuzz-115m.log`, sha `b145989a698f5cc5da77b0542faceddb0b6bda55f87321179a5c82bc6fec92c4` |
