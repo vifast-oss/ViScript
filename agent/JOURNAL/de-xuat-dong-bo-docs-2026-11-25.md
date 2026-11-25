@@ -67,3 +67,20 @@ mới nhất `VD-290`; `docs/doc-examples-allow.txt` tồn tại (không phải 
 - Các dòng `0.4.5` trong `docs/SPEC.md`/`HOST-BAO-DAM.md` là **mốc lịch sử Windows Tier 1**, giữ nguyên.
 - `agent/HOST-BAO-DAM.md` đã được Agent 2 cập nhật trực tiếp ở low-peak (ma trận 23 crate/5 tầng,
   47 ô/cấu hình, số đo 3.730/0/4, 390/390, 28/28, 299×2) — không nằm trong phạm vi A0-only.
+
+## 5. Bổ sung (low-peak đợt 3, 2026-11-25) — `docs/ViScript-thiet-ke.md` §3.6 lệch **so với mã + SPEC**
+
+Đối chiếu cây thật tại `1691eb68` (cùng ngày), đo bằng `./vis run` / `./vis run --vm` (hai engine
+**cùng** kết quả). Đề nghị A0 sửa **bảng phép số học** trong `docs/ViScript-thiet-ke.md`:
+
+| Dòng | Hiện tại (thiết kế) | Thực tế + `docs/SPEC.md` | Đo |
+|---|---|---|---|
+| ~288 | `` `int % int` → `int`; dấu theo **số bị chia** (C/Rust: `-7 % 2 == -1`) `` | `docs/SPEC.md:551`: dấu theo **số chia** (`-7 % 2 == 1`, `7 % -2 == -1`) | `-7 % 2` → **1**; `7 % -2` → **-1**; `-7 % 3` → **2** |
+| ~289 | `` `int / int` → `int`; cắt về 0 `` | `docs/SPEC.md:539`: `/` **luôn `float`**; `int/0` ⇒ `VS0502`; `float/0.0` ⇒ IEEE | `7 / 2` → **3.5**; `7 / 0` → **VS0502**; `7.0 / 0.0` → **inf** |
+| — | (thiếu) | `//` (chia nguyên, làm tròn xuống) có trong SPEC:551 | `7 // 2` → **3**; `-7 // 2` → **-4**; `7 // 0` → **VS0502** |
+
+Ngoài ra, ghi nhận **không phải bug** (để tránh mở nợ sai): `-1 + 2.0` báo `VS0414`, nhưng
+`1 + 2.0` hợp lệ — đúng luật đã chốt ở `docs/ViScript-thiet-ke.md:274` ("ngoại lệ duy nhất: literal
+số nguyên ở vị trí `float`"): `-1` là **biểu thức** `Un(Neg, literal)`, không phải literal. Không
+cần sửa mã; nếu A0 muốn nới (coi `-<literal>` là literal) thì phải sửa cả ba tầng
+`lower`/`tyck`/`codegen` và thêm ca — đề nghị **giữ nguyên**.

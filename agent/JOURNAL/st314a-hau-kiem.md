@@ -370,3 +370,127 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
   `REPORT-final.md` sha `f878529ab013d850d2de440d1d7e3cfb080809af1b3654a65a50039fcf475d91`.
   Ghi chú: `SHA256SUMS` cũ có 1 dòng FAILED do `psvn-final.log` còn mở lúc wave 4 chốt sha —
   artifact thời điểm, đã thay bằng `SHA256SUMS.final` sau khi mọi job đóng.
+
+## 22. Low-peak 2026-11-25 (đợt 3, từ 10:00 UTC) — bốn luồng song song
+
+> `ST-314a` vẫn `REVIEW`; A0 chưa mở lát mới (`VD-290` §4). Đợt này **chỉ hậu-kiểm + bằng chứng +
+> đề xuất**; thay đổi mã duy nhất là đồng bộ **thông điệp lỗi** interp↔VM (có test khoá) và hạ tầng
+> test/harness. Không đổi ngữ nghĩa chương trình hợp lệ.
+
+### 22.1 Vá 2 lệch **thông điệp** interp ↔ VM (audit của Agent 2)
+
+| Ca | Trước | Sau | Vá |
+|---|---|---|---|
+| `str.join(...)` **thiếu** `use std.str` | interp `` `<builtin str>` không có **trường** `join` `` / VM ``… không có **phương thức** `join` `` | cả hai: `không có phương thức` | `crates/vis-interp/src/interp/goi_ham.rs` — **mọi** callee `Field` đi `builtin::method` (đúng opcode `CallMethod` của VM) thay vì rơi vào đường truy cập trường; đối số cũng được đánh giá trước trap như VM |
+| `select_recv` trên **đường đồng bộ** | interp ``tên `select_recv` chưa hỗ trợ ở VS0`` / VM `` `select_recv` cần đường frame test/async … `` | cả hai: `cần đường frame test/async` | `crates/vis-runtime/src/lit.rs` — `builtin_name` gộp về **một nguồn** `SIGS` (27 tên, gồm 4 `select_*`) thay vì danh sách chép tay 23 tên |
+
+- Test khoá: `crates/vis-vm/tests/vm_it/vs_interp.rs` + `goi_module_thieu_use_khop_ca_thong_diep`,
+  `select_duong_dong_bo_khop_thong_diep` (so **cả** mã, exit, stdout **và message** hai engine).
+  `vis-vm --test vm_it` **53/53 PASS**.
+
+### 22.2 Harness conformance: `.trap`, so thông điệp, stack 256 MiB
+
+- `crates/vis-conformance/src/lib.rs`: thêm `<tên>.trap` = ca **lỗi lúc chạy** (mỗi dòng một mã;
+  exit ≠ 0 hoặc đúng `.exit`), **loại trừ** `.err` (lỗi tĩnh). Ca `.out`/`.trap` giờ so **cả
+  thông điệp** giữa hai engine (trước chỉ so mã) — lớp lỗi §22.1 bị bắt tự động.
+- `<tên>.skip-windows` = ca kỳ vọng **POSIX** (`/`, `is_abs("/")`): bỏ qua trên Windows, corpus in
+  số bỏ qua (6 ca `edge_path/`; Windows đã có `test/std` với `{SEP}`/`{IS_ABS_ROOT}`).
+- `crates/vis-conformance/tests/corpus.rs`: chạy trong luồng **256 MiB** như `vis run` — ca đệ quy
+  sâu chạm `VS0501` có kiểm soát thay vì tràn stack luồng test 2 MiB.
+- Meta-test negative control `tests/misc_api_it/conformance_trap.rs` (4 ca: đúng mã; **sai mã**;
+  **không khai mã**; `.exit 0` — 3 `should_panic`).
+- **26 ca `.trap`** (14 của đợt này + 12 của luồng edge): `chia-du-0` VS0502; `chi-so-am`/
+  `chi-so-ngoai-pham-vi`/`map-khoa-thieu`/`nan-thu-tu-trap` VS0503/VS0501; `tran-i64`/
+  `tran-i64-cong`/`tran-i64-nhan`/`tran-i64-mod`/`tran-duration` VS0507; `panic`/`assert-that-bai`/
+  `chan-dung-luong-am`/`de-quy-qua-sau`/`select-duong-dong-bo`/`min-max-rong`/`sort-nan`/
+  `windows-0`/`chunk-0`/`repeat-am`/`pad-fill-rong`/`encode-nan` VS0501; `send-sau-close` VS0504;
+  `recv-deadlock`/`send-deadlock` VS0505.
+
+### 22.3 Differential **stdlib thuần** 1.000.000 chương trình
+
+- `crates/vis-vm/tests/vm_it/stdlib_diff.rs` (khai `#[path]` trong `vm_it.rs` — hợp R8): sinh
+  chương trình **tất định** gọi **73 hàm `std.*` thuần** (`str`/`list`/`path`/`json`) với đầu vào
+  biên (Unicode/rỗng/`{`/`}` phải nhân đôi trong nội suy, số âm, list rỗng, map, JSON hỏng), chạy
+  **cả hai engine**, so `stdout`/`exit`/mã/**thông điệp**.
+- Cổng mặc định **400** chương trình (~0,1 s); `VIS_STDLIB_DIFF_N=1000000` cho lượt lớn:
+  **1.000.000 chương trình, 1.000.000 chạy được, 0 bỏ qua, 0 lệch**, 251 s
+  (`/home/ps/vislogs/st314a-lp21-stdlib-diff-1m.log`, `EXIT=0`).
+
+### 22.4 Corpus async/kenh (subagent)
+
+- **41 ca** mới: `test/conformance/lang/async/` 21 (17 chạy + 4 lỗi tĩnh), `lang/kenh/` 20
+  (16 + 4), 3 ca `.fmt`: FIFO spawn/await, async gọi async, đệ quy async, task trả
+  `Result`/`Option`/record/list/str, kênh cap>0, close ⇒ `None`, `Chan` qua hàm/task, nhiều
+  producer một consumer tất định.
+- Hạn chế ghi nhận: `select_*`/`recv_timeout` chỉ chạy trên **đường frame** (harness gọi
+  `vis_interp::run`/`vis_vm::run` đồng bộ) ⇒ không đưa vào corpus; `send` sau `close` là lỗi
+  **lúc chạy**, trước đây không biểu diễn được — nay có `.trap`.
+
+### 22.5 Corpus edge số/chuỗi/list/map/json/path (subagent)
+
+- **69 ca** mới: `edge_num` 14, `edge_str` 14, `edge_list` 15, `edge_map` 5, `edge_json` 10,
+  `edge_path` 6, `edge_fmt` 5 (`.fmt`). Phủ float `inf`/`NaN`/`-0.0`, parse số/float biên, `%`
+  dấu theo số chia, Unicode (`ß`, `İ`, `Σ`, tổ hợp), `split`/`replace`/`pad` biên, sort ổn định +
+  NaN, `median`/`mean` rỗng, JSON escape/surrogate/trùng khoá/lồng 100, path `..`/`//`/`.bashrc`.
+- **Tổng corpus: 420 → 544 ca** (420 + 69 edge + 41 async/kenh + 14 trap), **544/544 xanh** trên
+  `ps` (so cả stdout/exit/mã/**thông điệp**).
+- Quan sát **không phải bug** (ghi để khỏi mở nợ sai): `-1 + 2.0` ⇒ `VS0414` nhưng `1 + 2.0` hợp lệ
+  — đúng luật `docs/ViScript-thiet-ke.md:274` ("ngoại lệ: literal số nguyên ở vị trí `float`");
+  `-1` là biểu thức `Un(Neg, literal)`, không phải literal. Đề nghị giữ nguyên.
+
+### 22.6 Audit **PASS giả** ở `bin/*` (subagent) — 12 lỗi, 11 tệp
+
+| # | Tệp | Lỗi (before → after) |
+|---|---|---|
+| F1 | `vis-remote` | lệnh chết trước khi ghi `.exit` đọc marker cũ ⇒ `exit=0`; xoá marker trước mỗi lần chạy + chỉ đọc dòng log mới (**0 → 3**) |
+| F2 | `vis-gate-windows` | `async_it vs3_select::` khớp **0 ca** (đã chuyển sang `vis-conformance/lib_api_it`, 25 test) ⇒ quick gate xanh giả; thêm guard `f()` đòi `N passed ≥ 1` |
+| F3 | `vis-gate-macos` | quick lọc `async_it lat` (0 ca); self-test đòi chuỗi không còn tồn tại ⇒ **luôn đỏ**; chuyển `lib_api_it --no-tests=fail lat` (124 test), self-test **1 → 0** (13 kiểm) |
+| F4 | `vis-wasm-suite` | `--filter` 0 ca / `--runtime node` thiếu node ⇒ exit 0; nay **0 → 1** và **0 → 2** |
+| F5 | `vis-wasm-sem` | in FAIL nhưng `return 0`; `--filter` rỗng ⇒ 0; coverage sai mẫu số; nay strict exit 1, thêm `--allow-fail` |
+| F6 | `vis-wasm-conformance` | 0 ca ⇒ PASS; `.trap` bị chạy như ca thường; async/kenh bị đem chạy WASI; nay bỏ qua + đếm riêng, 0 ca ⇒ 1 |
+| F7 | `vis-gc-targets` | `df`/`ps`/`git worktree` lỗi ⇒ coi như đủ đĩa/không tiến trình rồi dọn; nay từ chối `exit 3` |
+| F8 | `vis-jobs` | `ps` lỗi ⇒ danh sách rỗng ⇒ `--check` in OK; nay `exit 3` |
+| F9 | `vis-host-suite` | suite rỗng ⇒ `0/0` exit 0; nay `exit 1` |
+| F10 | `vis-linux` | `run --` không lệnh chạy ssh rỗng ⇒ exit 0; nay `exit 2` |
+| F11 | `vis-dev` | bỏ qua cờ lạ/thiếu giá trị ở `rules`/`doc-examples`, `gate --fast --foo`; fuzz dùng binary cũ nếu đã có; nay luôn build + `exit 2` |
+| F12 | `vis-gate-windows` | `--quick --full` last-wins; nay `exit 2` |
+
+- Negative control từng lỗi ở `/home/ps/vislogs/st314a-bin-audit-evidence.log` (248 dòng);
+  báo cáo đầy đủ `/home/ps/vislogs/st314a-bin-audit-2026-11-25.md`
+  (sha `7749cba7babe07a8d609939213807f1c9dcfaedebe84f6984d74ec99f78a88da`).
+- **9 nghi vấn không sửa** (cần A0): `vis-targets` in hằng số wasm không đo lại; `vis-wasm-sem`
+  oracle SHA lệch chỉ WARN; wasm cũ nếu không `--build`; `vis-release --out-dir` có thể `rm -rf`
+  gốc repo; `vis-linux sync_tree` bỏ qua mục thiếu; `vis-gate-windows` không có HEAD guard;
+  `vis-gc-targets` grep `ps args` có thể sót; stem log `vis-remote` trùng giây; `.trap` chưa được
+  WASI assert.
+
+### 22.7 Đo hiệu năng + đề xuất trục kế tiếp
+
+- `opt-bench` (debug, n=15): interp **886 ms**, VM mặc định **1236 ms**, VM `--unlimited-budget`
+  **858 ms** ⇒ VM **+39,5 %** khi charge ngân sách, **−3,2 %** khi tắt = `budget_charge` quét
+  tuyến tính **mỗi lệnh** ≈ **30,6 %** thời gian VM (378 ms/2,0 M lệnh).
+- `map` = `Vec` tra tuyến tính: N=79 khoá ⇒ **~58 %** thời gian interp; N=316 ⇒ 2387 ms.
+- Đề xuất A0: `JOURNAL/de-xuat-truc-ke-tiep-2026-11-25.md` — Phương án A (chỉ mục `pc → range`
+  dựng một lần trong `budget_enable`, 0 đổi ngữ nghĩa, ~25–30 % VM) và Phương án B (map index giữ
+  thứ tự chèn, cần A0 chốt 3 câu hỏi ngữ nghĩa `eq_value`/last-wins/`Show`).
+
+### 22.8 Cổng & bằng chứng (low-peak đợt 3)
+
+| Cổng | Kết quả | Log |
+|---|---|---|
+| `./vis-dev gate --fast` | **PASS — 3812/3812, 4 skipped**; DAG 5 tầng + self-test OK | `st314a-lp28-gate.log` (`EXIT=0`) |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (Linux) | `st314a-lp29-clippy-linux.log` |
+| `vis-conformance` corpus | **544/544** | `edge-conformance-final2.log` + `st314a-lp25-conformance-all.log` |
+| `vis-vm --test vm_it` | **53/53** | — |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` ×4 | seed `202611251000/1100/1200/1300`: **lech=0** (93.766–93.769 chạy/lượt) | `st314a-lp23-diff-100k.log`, `st314a-lp26-diff-*.log` |
+| Stdlib diff 1M | **0 lệch** (73 hàm, 251 s) | `st314a-lp21-stdlib-diff-1m.log` |
+| `test/sem` parity (CLI interp vs VM) | **475/475, 0 lệch** (stdout+stderr+exit) | `st314a-lp24-sem-parity.log` |
+| `./bin/vis-host-suite` | **54/54** + host POSIX real PASS | `st314a-lp27-host-suite.log` |
+| `./bin/vis-wasm-sem` | **390/390, 0 fail, 100 %** (exit 0, strict mới) | `st314a-lp30-wasm-sem.log` |
+| `./bin/vis-wasm-suite` | **28/28, 0 hỏng** | `st314a-bin-audit-evidence.log` |
+| `./bin/vis-wasm-conformance` | **354 ca × 2 engine, 0 hỏng** (bỏ qua 33 async/kenh + 131 lỗi tĩnh + 26 trap) | `st314a-bin-audit-evidence.log` |
+| `./bin/vis-dag-check` + `./vis-dev rules` | **OK** (23 crate/5 tầng; R1..R9) | — |
+
+- **Chưa chạy lại sau thay đổi** (đưa vào chuỗi 0-LLM giờ cao điểm): Windows full (`psvn`),
+  `bin/vis-targets` ma trận 3 target, fuzz parser dài. macOS `mps` vẫn bận dự án khác (theo chỉ
+  đạo người dùng) ⇒ không chạy full gate.
