@@ -13,7 +13,7 @@ VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-echo "1..17"
+echo "1..18"
 n=0; bad=0
 expect_fail() {
     n=$((n + 1))
@@ -185,5 +185,15 @@ printf '// SPDX-License-Identifier: MIT OR Apache-2.0\nfn mo() { let _ = openat2
 : > "$tmp/17/test/gate/r9-openat2-ngoai-le.txt"
 : > "$tmp/17/test/gate/r9-openat2-ngoai-le.txt.license"
 expect_fail_dev "R9: openat2 ngoài vis-host-native bị bắt" "R9" bash "$DEV" rules --root "$tmp/17"
+# 18) R8 (ST-314a): tổng > 40 kể cả vis-host-linux/tests ⇒ đỏ
+mkdir -p "$tmp/18/crates/a/tests" "$tmp/18/crates/b/tests" "$tmp/18/vis-host-linux/tests"
+i=0
+while [ "$i" -lt 20 ]; do
+    printf '// SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/18/crates/a/tests/t$i.rs"
+    printf '// SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/18/crates/b/tests/t$i.rs"
+    i=$((i + 1))
+done
+printf '// SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/18/vis-host-linux/tests/landlock.rs"
+expect_fail "R8: tổng > 40 (gồm vis-host-linux) bị bắt" "R8" "$tmp/18"
 if [ "$bad" -ne 0 ]; then echo "# fixtures: FAIL ($bad)"; exit 1; fi
 echo "# fixtures: PASS (cây sạch phải xanh)"

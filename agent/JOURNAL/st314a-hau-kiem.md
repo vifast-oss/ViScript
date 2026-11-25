@@ -210,6 +210,8 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   crate thứ 24 chưa khai tầng), gọi trong `vis-dev check`/`gate --fast`. Chạy trực tiếp:
   `ok - vis-dag-check bắt 2 cạnh cấm + crate chưa khai tầng`, exit 0.
 - `bin/vis-dag-check` header ghi rõ nay được gọi từ cả `vis-targets` và `vis-dev check`.
+- `test/fixtures/run_fixtures.sh` thêm **case 18** (TAP 1..18): tổng > 40 binary **gồm
+  `vis-host-linux/tests`** phải bị R8 bắt; chạy `bash test/fixtures/run_fixtures.sh` → `ok 18`, PASS.
 
 - **Bằng chứng tích hợp**: `./vis-dev check` @`d25f50dc` → `--- DAG 5 tầng: OK`,
   `--- DAG self-test: OK`, `vis-dev check: PASS`, `EXIT=0`
