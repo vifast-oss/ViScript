@@ -84,3 +84,25 @@ Ngoài ra, ghi nhận **không phải bug** (để tránh mở nợ sai): `-1 + 
 số nguyên ở vị trí `float`"): `-1` là **biểu thức** `Un(Neg, literal)`, không phải literal. Không
 cần sửa mã; nếu A0 muốn nới (coi `-<literal>` là literal) thì phải sửa cả ba tầng
 `lower`/`tyck`/`codegen` và thêm ca — đề nghị **giữ nguyên**.
+
+## 6. Audit W2 (2026-11-26) — 15 nhóm lệch mới / 22 điểm; 5 mục nghiêm trọng
+
+> Báo cáo đầy đủ: `/home/ps/vislogs/w2-docs-audit-2026-11-26.md` (R7). Đã đối chiếu mã + probe
+> bằng `target/release/vis` (0.6.0). Không lặp các mục §1–§5 ở trên.
+
+| # | Tệp:dòng | Hiện tại | Thực tế (bằng chứng) | Đề xuất |
+|---|---|---|---|---|
+| 1 | `ViScript-thiet-ke.md:1251-1441` (Phụ lục A) | `file := item*`; `use` không `./`; `cmd` thiếu `async`; còn `alias/newtype`; thiếu `spawn`/`&`; `shell_item` thiếu 8 loại | parser nhận cả `stmt` cấp tệp (`parse/mod.rs:310`), `use ./` (`parse/expr.rs:529-545`), `async cmd` (`parse/cmd.rs:35,584`) | đồng bộ Phụ lục A theo parser thật |
+| 2 | `…:319` | `let` khai lại cùng scope là lỗi | `let x=1; let x="a"` → `vis check` **ok**; `var` mới `VS0302`; SPEC:578 nói `let` che tên | sửa thành "`let` che tên; `var` cùng scope ⇒ VS0302" |
+| 3 | `…:249` | bản ghi bắt buộc named arg khi **>2 trường** | `U(1)`, `U(1,2)`, `U(1,2,3)` đều `VS0412`; luôn cần named (`tyck/expr/phu.rs:548`) | sửa "mọi bản ghi cần trường có tên" |
+| 4 | `…:245/251` | `type Email(str)` là kiểu mới, không chuyển đổi | `type Email(str); let e=Email("a@b"); let s: str=e` **chạy**; SPEC:453/463 nói trong suốt | sửa "newtype trong suốt; annotation `Email` còn `VS0303` (hạn chế code)" |
+| 5 | `SPEC.md:119-120` vs `SPEC-lex.md:44` | `-9223372036854775808` hợp lệ | code gộp dấu âm ⇒ `i64::MIN` hợp lệ; `9223372036854775808` ⇒ `VS0104`; SPEC-lex nói tràn | chốt một nguồn (đề nghị sửa SPEC-lex: literal âm hợp lệ) |
+
+Đáng chú ý thêm:
+- `SPEC.md:986` thiếu `.trap` (27 file) + `.skip-windows` (6 file) + **544 → 563** ca native, và
+  `bin/vis-wasm-conformance` **393×2** (366 `.out` + 27 `.trap`) — cập nhật sau đợt 2026-11-26.
+- `SPEC.md:593-596`: show `cap <cap[Kind] root>` nhưng `print(cap)` bị `VS0412`; `str(cap)` mới in.
+- `SPEC.md:928`: `doctor --json` có **6 khoá** (thêm `version`), không "cùng khoá" 5 dòng text.
+- `ViScript-thiet-ke.md:171`: `set{1,2}` thực tế là **list khử trùng**, không phải `set[int]`.
+- `…:125`: danh sách từ khoá 38 từ, thiếu `alias/newtype/none`, có `test`; code **40**.
+- `…:667` nói `cmd` tự sinh `--help`, `SPEC:1040` nói **chưa có** — chốt một nguồn.
