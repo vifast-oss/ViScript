@@ -564,3 +564,21 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 - **Corpus 544 → 563 ca**, `563/563` xanh (harness so cả message interp↔VM); gate **3816/3816**.
 - Ghi chú: 66 hàm host vẫn ngoài corpus; `.skip-windows` giữ 3-OS.
+
+## 24. Audit tiếp `bin/*` (subagent W4) — 19 phát hiện, vá 6 mục chặn/cao
+
+> Báo cáo: `/home/ps/vislogs/w4-bin-audit-2026-11-26.md` (617 dòng, R7). Không sửa gì trong lúc
+> audit; Agent 2 vá các mục chặn/cao dưới đây.
+
+| # | Mức | Lỗi | Vá |
+|---|---|---|---|
+| F1 | **chặn** | `vis-release --out-dir <repo>/crates --force` **xoá source** rồi in PASS; `$HOME` cha, `/tmp` cũng lọt | trong repo **chỉ cho `target/`**; chặn tổ tiên `$HOME`, danh sách thư mục hệ thống; `--force` chỉ xoá thư mục **release cũ** (chỉ BINS+licenses) — test giả lập 6 mục âm |
+| F2 | **chặn** | `vis-lock` wrapper chết ⇒ khoá mất trong khi lệnh còn chạy; mã signal sai (247/241) | truyền fd khoá sang con (`pass_fds`), forward INT/TERM/HUP, exit `128+signum` ⇒ **137/143**; test SIGKILL wrapper ⇒ lần 2 **124** |
+| F3 | cao | `vis-gc-targets` bỏ sót `CARGO_TARGET_DIR=<worktree>/target` (cwd ngoài) | đọc `/proc/<pid>/environ`, xử lý cả đường tương đối |
+| F4 | cao | `vis-targets --wasm` in `FAIL (exit 0)` nhưng vẫn “đo lại OK” exit 0 | suite gọi `--require-runtime`; thiếu summary bất kỳ ⇒ **exit 1** |
+| F5 | cao | `vis-remote --require-clean`: `git status || true` biến lỗi thành “cây SẠCH”; `head_full: ?` vẫn chạy | git lỗi ⇒ exit 3; HEAD phải khớp `^[0-9a-f]{7,}$` |
+| F6 | cao | `vis-linux` trong git worktree (`.git` là **tệp**) ⇒ `--check-sync` đủ 14/14 nhưng rsync chết | bỏ qua `.git` khi là tệp + cảnh báo; test `sync_list_lib` vẫn xanh |
+| F7–F19 | trung bình/nhẹ | log soak mặc định trong repo, phạm vi `--out-dir`, `.git --delete`, … | **đề xuất A0** (không tự đổi hành vi) |
+
+- Cổng sau vá: `gate --fast` **3816/3816** (`st314a-lp49-gate-bin3.log`), `test/release` PASS toàn bộ,
+  `vis-lock` signal 137/143 + mutual exclusion SIGKILL, `vis-gc-targets` syntax/logic.

@@ -101,10 +101,35 @@ case "$repo_abs/" in
         ;;
 esac
 home_abs="$(cd "$HOME" 2>/dev/null && pwd -P || true)"
-if [ -n "$home_abs" ] && [ "$out_abs" = "$home_abs" ]; then
-    echo "vis-release: --out-dir '$OUT_DIR' là \$HOME — từ chối" >&2
-    exit 1
+if [ -n "$home_abs" ]; then
+    if [ "$out_abs" = "$home_abs" ]; then
+        echo "vis-release: --out-dir '$OUT_DIR' là \$HOME — từ chối" >&2
+        exit 1
+    fi
+    # **ST-314a (W4 F1)**: chặn cả **tổ tiên** của $HOME (vd `/home` khi repo ngoài HOME).
+    case "$home_abs/" in
+        "$out_abs/"*)
+            echo "vis-release: --out-dir '$OUT_DIR' là tổ tiên của \$HOME — từ chối" >&2
+            exit 1
+            ;;
+    esac
 fi
+# **ST-314a (W4 F1)**: trong repo chỉ cho phép dưới `<repo>/target/` — trước đây
+# `--out-dir <repo>/crates --force` xoá source rồi in PASS.
+case "$out_abs/" in
+    "$repo_abs/target/"*) ;;
+    "$repo_abs/"*)
+        echo "vis-release: --out-dir '$OUT_DIR' nằm trong repo nhưng ngoài '$VIS_ROOT/target/' — từ chối" >&2
+        exit 1
+        ;;
+esac
+# Thư mục hệ thống: không bao giờ là đích stage (tránh `rm -rf /tmp` khi repo ngoài /tmp).
+for _d in /tmp /var /var/tmp /usr /usr/local /etc /opt /root /dev /proc /sys /boot /srv /mnt /media /run /home; do
+    if [ "$out_abs" = "$_d" ]; then
+        echo "vis-release: --out-dir '$OUT_DIR' là thư mục hệ thống ($_d) — từ chối" >&2
+        exit 1
+    fi
+done
 
 # Đọc mảng `release-bins = ["vis"]` trong `[package.metadata.vis]` (một nguồn sự thật).
 release_bins() {
@@ -213,6 +238,24 @@ if [ -e "$OUT_DIR" ]; then
     if [ "$FORCE" -eq 0 ] && [ -n "$(ls -A "$OUT_DIR" 2>/dev/null)" ]; then
         echo "vis-release: $OUT_DIR không trống — dùng --force để tạo lại" >&2
         exit 1
+    fi
+    # **ST-314a (W4 F1)**: `--force` chỉ được xoá **thư mục release cũ** (chỉ chứa binary trong
+    # `release-bins` + 2 giấy phép). Trước đây `--force` xoá bất kỳ thư mục nào (source, home…).
+    if [ "$FORCE" -eq 1 ] && [ -n "$(ls -A "$OUT_DIR" 2>/dev/null)" ]; then
+        while IFS= read -r _ten; do
+            [ -n "$_ten" ] || continue
+            case "$_ten" in
+                LICENSE-APACHE | LICENSE-MIT) continue ;;
+            esac
+            _ok=0
+            for _b in "${BINS[@]}"; do
+                [ "$_ten" = "$_b" ] && _ok=1
+            done
+            if [ "$_ok" -eq 0 ]; then
+                echo "vis-release: $OUT_DIR chứa '$_ten' — không phải thư mục release cũ; từ chối --force" >&2
+                exit 1
+            fi
+        done < <(ls -A "$OUT_DIR" 2>/dev/null)
     fi
     rm -rf "$OUT_DIR"
 fi

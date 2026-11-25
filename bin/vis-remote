@@ -258,7 +258,17 @@ set -o pipefail
 # ---------- ST-175 (VD-177 §4): TỪ CHỐI CÂY BẨN TRƯỚC KHI ĐO ----------
 # `git status --porcelain` đã bỏ qua tệp bị `.gitignore`; rỗng = cây khớp commit.
 if [ "${VIS_DIRTY_POLICY:-skip}" = check ]; then
-    _vr_dirty="$(git -C "$VIS_REPO" status --porcelain 2>/dev/null || true)"
+    # **ST-314a (W4 F5)**: `|| true` từng biến lỗi git (repo hỏng/quyền) thành "cây SẠCH".
+    if ! _vr_dirty="$(git -C "$VIS_REPO" status --porcelain 2>/dev/null)"; then
+        {
+            printf '# ---------- ST-175: KHONG DOC DUOC CAY ----------\n'
+            printf '# git status loi tren %s (repo %s) — tu choi do: khong chung minh duoc cay sach\n' \
+                "$VIS_HOST" "$VIS_REPO"
+            printf '# ma thoat=3 (BLOCKED-ENV)\n'
+        } | tee -a "$VIS_LOG"
+        printf '%s\n' 3 >"$VIS_LOG.exit"
+        exit 3
+    fi
     if [ -n "$_vr_dirty" ]; then
         _vr_n="$(printf '%s\n' "$_vr_dirty" | grep -c . || true)"
         {
@@ -332,8 +342,9 @@ run_once() {
     [ $# -gt 0 ] || die 2 "run: cần lệnh"
     argv="$(argv_literal "$@")"
     probe="$(probe_host "$host")" || die 3 "dò môi trường '$host' thất bại (BLOCKED-ENV)"
-    printf '%s\n' "$probe" | grep -q '^head_full: ' ||
-        die 3 "dò môi trường '$host' không trả HEAD — ssh hỏng? (BLOCKED-ENV)"
+    # **ST-314a (W4 F5)**: `head_full: ?` (git rev-parse lỗi) không được coi là HEAD hợp lệ.
+    printf '%s\n' "$probe" | grep -Eq '^head_full: [0-9a-f]{7,}$' ||
+        die 3 "dò môi trường '$host' không trả HEAD hợp lệ — ssh/repo hỏng? (BLOCKED-ENV)"
     rhome="$(remote_home "$host" "$probe")" || exit 3
     rlog="$rhome/vislogs/$stem.log"
     script="$TMPDIR_VR/run-$host-$stem.sh"

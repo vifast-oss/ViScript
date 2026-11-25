@@ -83,6 +83,27 @@ out="$(PATH="$FAKE_PATH" "$REL" --out-dir "$TMP/out-safe" --dry-run 2>&1)"
 rc=$?
 [ "$rc" -eq 0 ]; check $? '--out-dir ngoài repo ⇒ dry-run 0 (thật: '"$rc"')'
 
+# 3c) **ST-314a (W4 F1)**: guard chặt — trong repo chỉ cho `target/`; `--force` chỉ xoá release cũ.
+FAKE="$TMP/fake-repo"
+mkdir -p "$FAKE/bin" "$FAKE/crates/vis-cli" "$FAKE/crates/vis-core/src" "$TMP/reltarget"
+cp "$REL" "$FAKE/bin/vis-release"
+cp "$ROOT/bin/_vis-toolchain.sh" "$FAKE/bin/_vis-toolchain.sh"
+cp "$ROOT/Cargo.toml" "$FAKE/Cargo.toml"
+cp "$CLI" "$FAKE/crates/vis-cli/Cargo.toml"
+echo 'sentinel-source' >"$FAKE/crates/vis-core/src/lib.rs"
+out="$(PATH="$FAKE_PATH" "$FAKE/bin/vis-release" --out-dir "$FAKE/crates" --force 2>&1)"
+rc=$?
+[ "$rc" -ne 0 ]; check $? '--out-dir <repo>/crates --force ⇒ bị từ chối (thật: '"$rc"')'
+[ -e "$FAKE/crates/vis-core/src/lib.rs" ]; check $? 'source trong repo còn nguyên (guard trước rm -rf)'
+printf '%s' "$out" | grep -q 'ngoài'; check $? 'thông báo nêu ngoài target/'
+mkdir -p "$TMP/foreign"
+echo 'du-lieu-khac' >"$TMP/foreign/ghi-chu.txt"
+out="$(CARGO_TARGET_DIR="$TMP/reltarget" PATH="$FAKE_PATH" "$FAKE/bin/vis-release" --out-dir "$TMP/foreign" --force 2>&1)"
+rc=$?
+[ "$rc" -ne 0 ]; check $? '--force trên thư mục không phải release cũ ⇒ bị từ chối'
+[ -e "$TMP/foreign/ghi-chu.txt" ]; check $? 'tệp lạ trong --out-dir còn nguyên'
+printf '%s' "$out" | grep -q 'không phải thư mục release'; check $? 'thông báo nêu lý do'
+
 # 4) Metadata có test-child ⇒ từ chối trước khi build.
 sed 's/release-bins = \["vis"\]/release-bins = ["vis", "test-child"]/' "$CLI" >"$TMP/Cargo.toml"
 out="$(VIS_RELEASE_CLI_MANIFEST="$TMP/Cargo.toml" PATH="$FAKE_PATH" "$REL" --dry-run 2>&1)"

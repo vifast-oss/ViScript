@@ -168,7 +168,8 @@ if [ "$WASM_DO" = 1 ]; then
   echo "=== wasm32-wasip1 (runtime) — ĐO LẠI trong lượt này ==="
   printf '%-24s %-28s %s\n' hạng-mục target kết-quả
   sem_out="$(cd "$ROOT" && ./bin/vis-wasm-sem 2>&1)"; sem_rc=$?
-  suite_out="$(cd "$ROOT" && ./bin/vis-wasm-suite 2>&1)"; suite_rc=$?
+  # `--require-runtime`: thiếu runtime là exit 2, không được coi là "đo xong" (W4 F4).
+  suite_out="$(cd "$ROOT" && ./bin/vis-wasm-suite --require-runtime 2>&1)"; suite_rc=$?
   conf_out="$(cd "$ROOT" && ./bin/vis-wasm-conformance 2>&1)"; conf_rc=$?
   sem_sum="$(printf '%s\n' "$sem_out" | sed -n 's/^# SUMMARY /sem /p' | tail -1)"
   suite_sum="$(printf '%s\n' "$suite_out" | sed -n 's/^# tổng: /suite /p' | tail -1)"
@@ -177,6 +178,12 @@ if [ "$WASM_DO" = 1 ]; then
   printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "${suite_sum:-FAIL (exit $suite_rc)}"
   printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "${conf_sum:-FAIL (exit $conf_rc)}"
   printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
+  # **ST-314a (W4 F4)**: thiếu summary (harness tự skip/BLOCKED-ENV) cũng là FAIL — trước đây
+  # chỉ in "FAIL (exit 0)" rồi vẫn "đo lại OK" và exit 0.
+  if [ -z "$sem_sum" ] || [ -z "$suite_sum" ] || [ -z "$conf_sum" ]; then
+    echo "vis-targets: thiếu summary WASI (sem='$sem_sum' suite='$suite_sum' conf='$conf_sum') — coi là FAIL" >&2
+    exit 1
+  fi
   if [ "$sem_rc" -ne 0 ] || [ "$suite_rc" -ne 0 ] || [ "$conf_rc" -ne 0 ]; then
     echo "vis-targets: đo WASI có lỗi (sem=$sem_rc suite=$suite_rc conformance=$conf_rc)" >&2
     exit 1

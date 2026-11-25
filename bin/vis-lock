@@ -115,7 +115,7 @@ fi
 # Thong diep tieng Viet ra stderr: ep UTF-8 de khong phu thuoc locale cua phien background.
 PYCODE=$(
     cat <<'PY'
-import errno, fcntl, os, platform, subprocess, sys, time
+import errno, fcntl, os, platform, signal, subprocess, sys, time
 
 
 def msg(s):
@@ -208,7 +208,13 @@ def main(argv):
     t1 = time.monotonic()
     ma = 0
     try:
-        ma = subprocess.call(cmd)
+        # **ST-314a (W4 F2)**: (a) truyền fd khoá sang con để khoá sống suốt lệnh kể cả khi
+        # wrapper Python chết; (b) forward SIGINT/SIGTERM/SIGHUP; (c) mã thoát theo shell
+        # chuẩn 128+signum (trước đây `ma & 0xFF` cho 247/241 thay vì 137/143).
+        child = subprocess.Popen(cmd, pass_fds=(fh.fileno(),))
+        for _s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            signal.signal(_s, lambda signum, _f: child.send_signal(signum))
+        ma = child.wait()
     except OSError as e:
         msg("khong chay duoc lenh: %s" % e)
         ma = 127
@@ -223,7 +229,9 @@ def main(argv):
         'thoi_diem="%s"'
         % (pid, ma, giay, load(), time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())),
     )
-    return ma & 0xFF
+    if ma < 0:
+        return 128 - ma  # bị signal: shell chuẩn 128+signum (SIGKILL => 137, SIGTERM => 143)
+    return ma
 
 
 if __name__ == "__main__":

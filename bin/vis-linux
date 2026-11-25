@@ -112,6 +112,12 @@ sync_tree() {
     # ở gốc repo: cần cho ST-132 (Landlock thật) và ma trận `bin/vis-targets` — ST-134.
     for d in $SYNC_DIRS; do
         [ -e "$REPO_ROOT/$d" ] || continue
+        # **ST-314a (W4 F6)**: trong git worktree `.git` là **tệp**; rsync `/.git/` cũ gây
+        # "Not a directory" exit 3 dù `--check-sync` báo đủ. Bỏ qua `.git` (máy đích giữ .git riêng).
+        if [ "$d" = ".git" ] && [ -f "$REPO_ROOT/$d" ]; then
+            say "bỏ qua .git (worktree: .git là tệp) — dùng .git riêng trên máy đích"
+            continue
+        fi
         rsync -a --delete --exclude 'target/' --exclude '*.rlib' \
             "$REPO_ROOT/$d/" "$SSH_TARGET:$LINUX_DIR/$d/" ||
             die 3 "rsync '$d' thất bại (BLOCKED-ENV)"

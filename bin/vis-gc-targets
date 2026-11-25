@@ -98,6 +98,33 @@ for wt in ${worktrees[@]+"${worktrees[@]}"}; do
                     break
                     ;;
             esac
+            # **ST-314a (W4 F3)**: cargo chạy cwd ngoài worktree nhưng đặt
+            # `CARGO_TARGET_DIR=<worktree>/target` — phải đọc environ, nếu không `--apply`
+            # sẽ xoá target đang build.
+            pid="${pc#/proc/}"
+            pid="${pid%/cwd}"
+            td="$(tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | sed -n 's/^CARGO_TARGET_DIR=//p' | head -1)"
+            case "$td" in
+                "")
+                    ;;
+                /*)
+                    case "$td" in
+                        "$wt_real" | "$wt_real"/*)
+                            dang_dung=1
+                            break
+                            ;;
+                    esac
+                    ;;
+                *)
+                    # Đường tương đối: cargo resolve theo cwd của tiến trình.
+                    case "$cwd/$td" in
+                        "$wt_real" | "$wt_real"/*)
+                            dang_dung=1
+                            break
+                            ;;
+                    esac
+                    ;;
+            esac
         done
         if [ "$dang_dung" = 1 ]; then
             echo "SKIP (cwd đang dùng): $wt_real"
