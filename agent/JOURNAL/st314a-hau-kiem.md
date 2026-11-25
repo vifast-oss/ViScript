@@ -1,7 +1,7 @@
 # ST-314a — Hậu-kiểm `VD-290` (W1/W4)
 
 > **Trạng thái**: `REVIEW` · **Ngày**: 2026-11-25 · **Phụ thuộc**: `ST-313d` / `VD-290`
-> **Commit lát**: `311d2288` (mã + test) + follow-up `a7cf2533`, `d25f50dc`, `c34e8b44`, `da66418a`, `423b4d3e` · **Phạm vi**: 4 phát hiện kiểm toán của Agent 0
+> **Commit lát**: `311d2288` (mã + test) + follow-up `a7cf2533`, `d25f50dc`, `c34e8b44`, `da66418a`, `57d72b15`, `423b4d3e`, `c783ee79`, `933dce82`, `9a3bb70b` · **Phạm vi**: 4 phát hiện kiểm toán của Agent 0
 > + 1 lỗi cổng phát sinh khi chạy lại `gate --fast` trên `d8857694`.
 
 ## 1. Vá lỗi thật `bin/vis-wasm-conformance` (chạy thật 2 engine)
@@ -65,7 +65,7 @@ khối `vis` cuối dịch dòng, trong khi `DOC_BLOCKS` còn ghim 1481/1528.
 | `vis-wasm-conformance` | **299 × 2 engine, 0 hỏng** (self-check cờ lạ OK) | `/home/ps/vislogs/st314a-wasm-conformance.log`, sha `567b75c5f4619c18d673157443791ab5673dfae738058fdf3d42f1f983bc701e` |
 | clippy Linux (trong `gate --fast`) | **PASS** `--workspace --all-targets -D warnings` | gate log |
 | clippy Windows `psvn` @`311d2288` | **PASS** — `vis-remote-exit=0` | `/home/ps/vislogs/st314a-clippy-psvn.log` |
-| clippy macOS `mps` | **PASS @`311d2288`** (`vis-remote-exit=0`), nhưng **không chạy lại/full gate** theo chỉ đạo người dùng (`mps` bận dự án khác) | `/home/ps/vislogs/st314a-clippy-mps.log`, sha `aa588dd0…` |
+| clippy macOS `mps` | **PASS @`311d2288`** (`vis-remote-exit=0`), nhưng **không chạy lại/full gate** theo chỉ đạo người dùng (`mps` bận dự án khác) | `/home/ps/vislogs/st314a-clippy-mps.log`, sha toàn tệp `aa588dd0…` |
 
 ## 6. Tệp thay đổi trong `311d2288`
 
@@ -86,7 +86,7 @@ Sau khi nộp `REVIEW`, chạy tiếp các việc nặng 0-LLM tới sát giờ 
 
 | Việc | Kết quả | Bằng chứng |
 |---|---|---|
-| Windows full @`5d857b84` (`vis-gate-windows --full`) | `cargo test --workspace`: **3.729 passed / 0 failed / 4 ignored** (90 binary); `host_conformance` **54 ca / 120 lượt, 0 lệch, VM 54/54**; `vis-targets` **23 crate** PASS (core 47/0/0, sqlite 46/1 EXPECTED_RED/0); `vis-dag-check` OK (guard 7 crate lúc đó) | `/home/ps/vislogs/st314a-win-full.log`, sha `84f1593a7d3bf45454d8b060face61e262dd2b2e2b30a2abf24f958d1fc2cead` |
+| Windows full @`5d857b84` (`vis-gate-windows --full`) | `cargo test --workspace`: **3.729 passed / 0 failed / 4 ignored** (90 binary); `host_conformance` **54 ca / 120 lượt, 0 lệch, VM 54/54**; `vis-targets` **23 crate** PASS (core 47/0/0, sqlite 46/1 EXPECTED_RED/0); `vis-dag-check` OK (guard 7 crate lúc đó) | `/home/ps/vislogs/st314a-win-full.log`, sha toàn tệp `84f1593a7d3bf45454d8b060face61e262dd2b2e2b30a2abf24f958d1fc2cead` |
 | 5× `vis-diff 100k` (seed `20261125/101/202/303/404`) | cả 5 **lech=0** (93.767–93.771 chương trình chạy/lượt) | `st314a-diff-<seed>.log` |
 | +3× `vis-diff 100k` (seed `505/606/707`) | cả 3 **lech=0** | `st314a-diff-<seed>.log` |
 | Fuzz parser 115 phút (`vis-dev nightly --skip-gate`) | **959.027.870 ca / 21.766.452.334 token, 0 vi phạm**; vòng tròn fmt 475 tệp bất động | `/home/ps/vislogs/st314a-fuzz-115m.log`, sha `b145989a698f5cc5da77b0542faceddb0b6bda55f87321179a5c82bc6fec92c4` |
@@ -104,7 +104,7 @@ stdout **không** chứa `SELF-CHECK-LEAK`, và stderr chứa tên cờ lạ.
 | Bản | Kết quả | Bằng chứng |
 |---|---|---|
 | Bản sao tái tạo lỗi `ro` + guard cũ | **LỌT** — `exit 0`, chạy 299 × 2, 0 hỏng | `/home/ps/vislogs/st314a-selfcheck-negative.log` |
-| Bản sao tái tạo lỗi `ro` + guard mới | **BẮT** — `exit 2`, `SELF-CHECK … stdout='SELF-CHECK-LEAK\n'` | `/home/ps/vislogs/st314a-selfcheck-negative-fixed.log`, sha `bfe90799a381977b387499d388c6ae6d2692d4e32cd7326617686e6766e0d5b4` |
+| Bản sao tái tạo lỗi `ro` + guard mới | **BẮT** — `exit 2`, `SELF-CHECK … stdout='SELF-CHECK-LEAK\n'` | `/home/ps/vislogs/st314a-selfcheck-negative-fixed.log`, sha toàn tệp `bfe90799a381977b387499d388c6ae6d2692d4e32cd7326617686e6766e0d5b4` |
 | Bản thật + guard mới | **299 ca × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp-wasm-conformance-fixed.log`, sha `0d55130e4c2fe11faf9415f00b959100aba812586576b2c8e1b41602901dfdee` |
 
 Commit vá: `b663d89c`.
@@ -186,7 +186,7 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `bin/vis-wasm-suite` @`a7cf2533` | **28/28, 0 hỏng** (runtime=node) | `/home/ps/vislogs/st314a-lp2-wasm-suite.log`, sha `53e789db050a355b3aba9629f8412f8281acd66384267000c93497f9fe22a3ff` |
 | `bin/vis-targets` @`a7cf2533` (gồm `vis-dag-check` mới) | **PASS** — core `47/0/0`, sqlite `45/2/0`; dag-check `OK — 23 crate / 5 tầng` | `/home/ps/vislogs/st314a-lp2-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe` |
 | `./vis-dev core-test` (no-default-features) | **PASS** — 1.804/0 (12 binary), target riêng | `/home/ps/vislogs/st314a-lp2-core-test.log`, sha `ec5ab3afdaa212d38f60712586799607c99e7c70262e05b6714966f6d8808834` |
-| Windows full @`a7cf2533` (`psvn`) | **3.729/0/4 ignored** (90 binary); host conformance **54 ca/120 lượt, 0 lệch**; `vis-targets` core `47/0/0`, sqlite `46/1/0`; `vis-dag-check OK` | `/home/ps/vislogs/st314a-lp-win-full.log`, sha `31237fe79645729ac3f6af9169de6e901c9d3594a89ac29b2bbd318003e807e6` (sha log máy đích `6eb165cd…`) |
+| Windows full @`a7cf2533` (`psvn`) | **3.729/0/4 ignored** (90 binary); host conformance **54 ca/120 lượt, 0 lệch**; `vis-targets` core `47/0/0`, sqlite `46/1/0`; `vis-dag-check OK` | `/home/ps/vislogs/st314a-lp-win-full.log`, sha toàn tệp `31237fe79645729ac3f6af9169de6e901c9d3594a89ac29b2bbd318003e807e6` (sha log máy đích `6eb165cd…`) |
 | Fuzz parser 20 phút @`psvn` | **92.966.091 ca / 2.109.956.381 token, 0 vi phạm** | `/home/ps/vislogs/st314a-lp3-fuzz-psvn.log` |
 | `vis-wasm-conformance` @`da66418a` (sau leaf refactor) | **299 × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp4-wasm-conformance.log`, sha `3ad77dc556e0ec78b6088ba1564f6198c81ee187bb1e4abb61055ced6a867fdd` |
 
@@ -239,7 +239,7 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   (`/home/ps/vislogs/st314a-lp4-core-test.log`, sha ghi trong log `ff54f3bb672b948a0a976734ecbb1bb8adf8762723f44c6e5580655330997b55`; xem quy ước §18).
 - `./vis-dev check` @working tree: **PASS**, `EXIT=0`
   (`/home/ps/vislogs/st314a-lp3-check-leaf.log`, sha `9240367d135324948d465180fe1f9e40cfca26d73cf38519bfd47f713a7c4572`).
-- `gate --fast` cuối @HEAD: **PASS 3804/3804**, DAG + self-test OK — §17.
+- `gate --fast` cuối @`933dce82`: **PASS 3805/3805**, DAG + self-test OK — §17.
 
 ## 14. Audit ma trận host (subagent) — sửa `agent/HOST-BAO-DAM.md`
 
@@ -288,16 +288,16 @@ Bằng chứng:
 | Negative bỏ `--vm` trong driver | `exit 1`, `--vm không tới runner/không chọn Vm` |
 | `vis-wasm-sem` sau F6 | **390/390, 0 fail, 100%** | `/home/ps/vislogs/st314a-lp6-wasm-sem.log`, sha `41777564ef6cf9232076571dd75db09f0fde33ea5552a987cf49596842b4d203` |
 | `vis-wasm-suite` sau F6 | **28/28, 0 hỏng** | `/home/ps/vislogs/st314a-lp6-wasm-suite.log`, sha `858670cd5224ea6d87a8287426e41bdbfacb109b526355a7fd69f497d11af002` |
-| Windows full @`da66418a` (`psvn`, sau leaf refactor) | **3.729/0/4 ignored** (90 binary); host **54/120, 0 lệch**; targets core `47/0/0`, sqlite `46/1/0` | `/home/ps/vislogs/st314a-lp4-win-full.log`, sha `0d7f99c9dddd23aabd0377ecc92abd78774c7f1779c007c44b33fd05746cbecb` (máy đích `d3a27fc4…`) |
+| Windows full @`da66418a` (`psvn`, sau leaf refactor) | **3.729/0/4 ignored** (90 binary); host **54/120, 0 lệch**; targets core `47/0/0`, sqlite `46/1/0` | `/home/ps/vislogs/st314a-lp4-win-full.log`, sha toàn tệp `0d7f99c9dddd23aabd0377ecc92abd78774c7f1779c007c44b33fd05746cbecb` (máy đích `d3a27fc4…`) |
 
 ## 17. Cổng cuối @HEAD (sau toàn bộ hardening)
 
 | Cổng | Kết quả | Bằng chứng |
 |---|---|---|
-| `./vis-dev gate --fast` | **PASS** — 3804/3804 (4 skip); `DAG 5 tầng: OK`; `DAG self-test: OK` | `/home/ps/vislogs/st314a-lp6-gate.log`, sha `e5aa183e7c2eb48048f800daf82f558a5718629e75372c864bbbacd78b8fdc05` |
+| `./vis-dev gate --fast` @`423b4d3e` (trước test mới) | **PASS** — 3804/3804 (4 skip); `DAG 5 tầng: OK`; `DAG self-test: OK` | `/home/ps/vislogs/st314a-lp6-gate.log`, sha `e5aa183e7c2eb48048f800daf82f558a5718629e75372c864bbbacd78b8fdc05` |
 | `vis-wasm-sem` sau F6 | **390/390, 0 fail, 100%** | `/home/ps/vislogs/st314a-lp6-wasm-sem.log`, sha `41777564…` |
 | `vis-wasm-suite` sau F6 | **28/28, 0 hỏng** | `/home/ps/vislogs/st314a-lp6-wasm-suite.log`, sha `858670cd…` |
-| Windows full @`933dce82` (gồm test cắt tệp mới) | **3.730/0/4 ignored** (90 binary); host **54/120, 0 lệch**; targets core `47/0/0`, sqlite `46/1/0` | `/home/ps/vislogs/st314a-lp7-win-full.log`, sha `e0d7fc3dda32af8bc3b074f84a78e6bdb41288651d5aa17367da4a5e45ac5bab` (máy đích `539be087…`) |
+| Windows full @`933dce82` (gồm test cắt tệp mới) | **3.730/0/4 ignored** (90 binary); host **54/120, 0 lệch**; targets core `47/0/0`, sqlite `46/1/0` | `/home/ps/vislogs/st314a-lp7-win-full.log`, sha toàn tệp `e0d7fc3dda32af8bc3b074f84a78e6bdb41288651d5aa17367da4a5e45ac5bab` (máy đích `539be087…`) |
 | `./vis-dev gate --fast` @`933dce82` | **3805/3805 passed**, 4 skipped; DAG 5 tầng + self-test OK | `/home/ps/vislogs/st314a-lp8-gate.log`, sha `5285d6e288fe0a32b183a92e863ef702c573a789d7ca44b0baab785037a2c81c` |
 
 ## 18. Quy ước sha log

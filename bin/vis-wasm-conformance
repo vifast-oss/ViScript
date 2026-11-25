@@ -56,15 +56,21 @@ def cargo() -> str:
 
 def build() -> None:
     env = os.environ.copy()
-    env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
+    env["PATH"] = f"{Path.home() / '.cargo/bin'}{os.pathsep}{env.get('PATH', '')}"
     env.setdefault("CARGO_BUILD_JOBS", "3")
     env.setdefault("CARGO_PROFILE_DEV_DEBUG", "0")
-    env.setdefault("RUSTFLAGS", f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}")
+    stack = f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}"
+    env["RUSTFLAGS"] = (env.get("RUSTFLAGS", "") + " " + stack).strip()
     cmd = [cargo(), "build", "--release", "--target", "wasm32-wasip1",
            "--manifest-path", str(WS / "Cargo.toml")]
     print("# build:", " ".join(cmd), file=sys.stderr)
-    if subprocess.run(cmd, cwd=ROOT, env=env).returncode != 0 or not WASM.is_file():
-        print("BLOCKED-ENV: build wasm32-wasip1 lỗi", file=sys.stderr)
+    try:
+        r = subprocess.run(cmd, cwd=ROOT, env=env)
+    except OSError as e:
+        print(f"BLOCKED-ENV: không chạy được cargo: {e}", file=sys.stderr)
+        sys.exit(2)
+    if r.returncode != 0 or not WASM.is_file():
+        print("BLOCKED-ENV: build wasm32-wasip1 lỗi/không thấy wasm", file=sys.stderr)
         sys.exit(2)
 
 
@@ -78,9 +84,14 @@ def chay(
     cmd = [node, "--no-warnings", f"--stack-size={NODE_STACK_KB}", str(driver),
            str(WASM), "/data", str(root), *runner_args]
     e = os.environ.copy()
+    for k in ("VIS_WASM_TRACE_ARGV", "VIS_WASM_TRACE_ENGINE"):
+        e.pop(k, None)
     if env:
         e.update(env)
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=e)
+    return subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=120, env=e,
+    )
 
 
 def kiem_node() -> None:
@@ -90,7 +101,11 @@ def kiem_node() -> None:
         print("BLOCKED-ENV: không có node:wasi", file=sys.stderr)
         sys.exit(2)
     r = subprocess.run(
-        [node, "-e", "require('node:wasi')"], capture_output=True, text=True
+        [node, "-e", "const {WASI}=require('node:wasi'); new WASI({version:'preview1'});"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if r.returncode != 0:
         print(
@@ -117,7 +132,9 @@ def tu_kiem(driver: Path, root: Path) -> None:
     trace = {"VIS_WASM_TRACE_ARGV": "1", "VIS_WASM_TRACE_ENGINE": "1"}
     r = chay(driver, root, "--co-khong-ton-tai", "/data/prog.vis", env=trace)
     argv_la = "ARGV=" + json.dumps(
-        ["--co-khong-ton-tai", "/data/prog.vis"], separators=(",", ":")
+        ["--co-khong-ton-tai", "/data/prog.vis"],
+        separators=(",", ":"),
+        ensure_ascii=False,
     )
     if (
         r.returncode != 2
@@ -135,7 +152,9 @@ def tu_kiem(driver: Path, root: Path) -> None:
     for engine, ten in (("interp", "Interp"), ("vm", "Vm")):
         p = chay(driver, root, f"--{engine}", "/data/prog.vis", env=trace)
         argv = "ARGV=" + json.dumps(
-            [f"--{engine}", "/data/prog.vis"], separators=(",", ":")
+            [f"--{engine}", "/data/prog.vis"],
+            separators=(",", ":"),
+            ensure_ascii=False,
         )
         if (
             p.returncode != 0
@@ -149,6 +168,24 @@ def tu_kiem(driver: Path, root: Path) -> None:
                 file=sys.stderr,
             )
             sys.exit(1)
+    # Token sau `--` phải tới runner nguyên văn và **không** đổi engine.
+    tail_args = ["--interp", "/data/prog.vis", "--", "--vm", "arg1"]
+    p = chay(driver, root, *tail_args, env=trace)
+    argv = "ARGV=" + json.dumps(
+        tail_args, separators=(",", ":"), ensure_ascii=False
+    )
+    if (
+        p.returncode != 0
+        or "SELF-CHECK-LEAK" not in p.stdout
+        or argv not in p.stderr
+        or "engine=Interp" not in p.stderr
+    ):
+        print(
+            f"SELF-CHECK: token sau `--` không tới runner/đổi engine "
+            f"(rc={p.returncode}, stdout={p.stdout[:120]!r}, stderr={p.stderr[:200]!r})",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def main() -> int:
@@ -162,12 +199,14 @@ def main() -> int:
     except SystemExit as e:
         # `--help` vẫn 0; cờ lạ của harness là lỗi sử dụng (1), không phải BLOCKED-ENV (2).
         return 0 if e.code == 0 else 1
-    build()
     kiem_node()
+    build()
     cases = []
     bo_qua = 0
+    so_err = 0
     for p in sorted(CORPUS.rglob("*.vis")):
         if p.with_suffix(".err").exists():
+            so_err += 1
             continue
         if not p.with_suffix(".out").exists() and not p.with_suffix(".out_prefix").exists():
             continue
@@ -177,7 +216,8 @@ def main() -> int:
             continue
         cases.append(p)
     print(
-        f"# {len(cases)} ca hợp lệ trên WASI (bỏ qua {bo_qua} ca host/async)",
+        f"# {len(cases)} ca hợp lệ trên WASI "
+        f"(bỏ qua {bo_qua} ca host/đa tệp + {so_err} ca lỗi tĩnh)",
         file=sys.stderr,
     )
     work = Path(tempfile.mkdtemp(prefix="vis-wasm-conformance-"))
@@ -196,7 +236,11 @@ def main() -> int:
                 encoding="utf-8"
             )
             for engine in ("interp", "vm"):
-                r = chay(driver, root, f"--{engine}", "/data/prog.vis")
+                try:
+                    r = chay(driver, root, f"--{engine}", "/data/prog.vis")
+                except subprocess.TimeoutExpired:
+                    hong.append(f"{p.relative_to(ROOT)} [{engine}] timeout > 120s")
+                    continue
                 if r.returncode != 0 or not khop(r.stdout):
                     hong.append(f"{p.relative_to(ROOT)} [{engine}] rc={r.returncode} "
                                 f"stdout={r.stdout!r} stderr={r.stderr[:120]!r}")

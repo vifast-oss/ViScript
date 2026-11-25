@@ -7,8 +7,15 @@
 # kiến trúc không lọt.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
-command -v "$CARGO" >/dev/null 2>&1 || CARGO=cargo
+if [ -n "${CARGO:-}" ]; then
+    if ! command -v "$CARGO" >/dev/null 2>&1; then
+        echo "vis-dag-check: CARGO không chạy được: $CARGO" >&2
+        exit 2
+    fi
+else
+    CARGO="$HOME/.cargo/bin/cargo"
+    command -v "$CARGO" >/dev/null 2>&1 || CARGO=cargo
+fi
 # Cùng thứ tự dò Python với `bin/vis-dev`; hỗ trợ host chỉ có python3.12/3.11.
 PYTHON="${PYTHON:-}"
 if [ -z "$PYTHON" ]; then

@@ -465,6 +465,20 @@ do_readme_examples() {
     fi
 }
 
+# **ST-314a**: DAG 5 tầng + case âm, dùng chung `check`/`gate --fast`/`nightly --skip-gate`.
+do_dag_guard() {
+    if ! CARGO="$CARGO" bash "$VIS_ROOT/bin/vis-dag-check"; then
+        echo "--- DAG 5 tầng: FAIL" >&2
+        return 1
+    fi
+    echo "--- DAG 5 tầng: OK"
+    if ! bash "$VIS_ROOT/test/gate/dag-check-self-test.sh"; then
+        echo "--- DAG self-test: FAIL" >&2
+        return 1
+    fi
+    echo "--- DAG self-test: OK"
+}
+
 do_check() {
     echo "== vis-dev check =="
     PY=""
@@ -485,18 +499,7 @@ do_check() {
         echo "--- luật R1..R9: FAIL" >&2; return 1
     fi
     echo "--- luật R1..R9: OK"
-    # **ST-314a low-peak**: khoá DAG 5 tầng ngay trong `check`/`gate --fast` (trước đây chỉ
-    # `bin/vis-targets` gọi). Chỉ đọc `cargo metadata`, không build.
-    if ! CARGO="$CARGO" bash "$VIS_ROOT/bin/vis-dag-check"; then
-        echo "--- DAG 5 tầng: FAIL" >&2
-        return 1
-    fi
-    echo "--- DAG 5 tầng: OK"
-    if ! bash "$VIS_ROOT/test/gate/dag-check-self-test.sh"; then
-        echo "--- DAG self-test: FAIL" >&2
-        return 1
-    fi
-    echo "--- DAG self-test: OK"
+    do_dag_guard || return 1
     # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
     # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
     if ! bash "$VIS_ROOT/test/toolchain/run.sh"; then
@@ -712,7 +715,8 @@ do_nightly() {
     if [ "$bo_qua_gate" -eq 0 ]; then
         do_gate_fast || return 1
     else
-        echo "--- gate --fast: BỎ QUA (--skip-gate; fuzz + vòng tròn fmt vẫn chạy)"
+        echo "--- gate --fast: BỎ QUA (--skip-gate; DAG + fuzz + vòng tròn fmt vẫn chạy)"
+        do_dag_guard || return 1
     fi
     do_fuzz_parser "$phut" || return 1
     do_vong_tron_fmt || return 1
