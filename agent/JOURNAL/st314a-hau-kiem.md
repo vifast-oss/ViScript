@@ -188,6 +188,7 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `./vis-dev core-test` (no-default-features) | **PASS** — 1.804/0 (12 binary), target riêng | `/home/ps/vislogs/st314a-lp2-core-test.log`, sha `ec5ab3afdaa212d38f60712586799607c99e7c70262e05b6714966f6d8808834` |
 | Windows full @`a7cf2533` (`psvn`) | **3.729/0/4 ignored** (90 binary); host conformance **54 ca/120 lượt, 0 lệch**; `vis-targets` core `47/0/0`, sqlite `46/1/0`; `vis-dag-check OK` | `/home/ps/vislogs/st314a-lp-win-full.log`, sha `31237fe79645729ac3f6af9169de6e901c9d3594a89ac29b2bbd318003e807e6` (máy đích `6eb165cd…`) |
 | Fuzz parser 20 phút @`psvn` | **92.966.091 ca / 2.109.956.381 token, 0 vi phạm** | `/home/ps/vislogs/st314a-lp3-fuzz-psvn.log` |
+| `vis-wasm-conformance` @`da66418a` (sau leaf refactor) | **299 × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp4-wasm-conformance.log`, sha `3ad77dc556e0ec78b6088ba1564f6198c81ee187bb1e4abb61055ced6a867fdd` |
 
 ## 11. Audit docs `SPEC.md` + thiết kế (subagent) — đề xuất cho Agent 0
 
@@ -249,3 +250,15 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   @`a7cf2533c`: 3729/0/4**; các dòng `18/18 + 17/1` cũ đánh dấu "mốc cũ; nay 47 ô".
 - `docs/SPEC.md:683` (macOS caveat `0.6.0`) vẫn là đề xuất A0-only trong
   `de-xuat-dong-bo-docs-2026-11-25.md`.
+
+## 15. Audit DAG self-test (subagent) — vá các lỗ hổng
+
+- **High**: self-test cũ chỉ có 2 cạnh **ngược tầng** nên không chứng minh `CAM_NGANG`. Nay thêm
+  cạnh **cùng tầng** `vis-vm → vis-interp`; tự kiểm đòi đủ 3 chẩn đoán + crate chưa khai tầng,
+  và thêm **positive control**: metadata sạch 23 crate phải `OK`.
+- **Medium**: `CAM_NGANG` nay được kiểm khoá/đích lạ; thêm chính sách cùng tầng cho `vis-types`
+  (`→ vis-bytecode/runtime/interp/vm`); sửa cascade báo sai "cùng tầng" khi đích chưa khai tầng.
+- **Portability**: dò `python3.12/3.11/3` như `vis-dev`; truyền metadata qua **argv** thay
+  `VIS_DAG_META` (an toàn Windows); self-test dùng `PYTHON` tương tự.
+- Bằng chứng: `./test/gate/dag-check-self-test.sh` → `ok - … 3 cạnh cấm + crate chưa khai tầng;
+  metadata sạch xanh`; `./bin/vis-dag-check` → `OK — 23 crate / 5 tầng, 0 cạnh cấm`.

@@ -9,6 +9,17 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
 command -v "$CARGO" >/dev/null 2>&1 || CARGO=cargo
+# Cùng thứ tự dò Python với `bin/vis-dev`; hỗ trợ host chỉ có python3.12/3.11.
+PYTHON="${PYTHON:-}"
+if [ -z "$PYTHON" ]; then
+    for c in python3.12 python3.11 python3; do
+        if command -v "$c" >/dev/null 2>&1; then PYTHON="$c"; break; fi
+    done
+fi
+if [ -z "$PYTHON" ]; then
+    echo "vis-dag-check: không thấy python3/python3.12" >&2
+    exit 2
+fi
 
 META="$(mktemp "${TMPDIR:-/tmp}/vis-dag-meta.XXXXXX")"
 trap 'rm -f "$META"' EXIT
@@ -16,15 +27,15 @@ if ! "$CARGO" metadata --manifest-path "$ROOT/Cargo.toml" --no-deps --format-ver
     echo "vis-dag-check: không đọc được cargo metadata" >&2
     exit 2
 fi
-VIS_DAG_META="$META" python3 - <<'PY'
-import json, os, sys
+"$PYTHON" - "$META" <<'PY'
+import json, sys
 
 # Windows console mặc định cp1252 — ép UTF-8 để in thông điệp tiếng Việt không lỗi.
 for s in (sys.stdout, sys.stderr):
     if hasattr(s, "reconfigure"):
         s.reconfigure(encoding="utf-8", errors="replace")
 
-with open(os.environ["VIS_DAG_META"], encoding="utf-8") as f:
+with open(sys.argv[1], encoding="utf-8") as f:
     data = json.load(f)
 # Chỉ cạnh **sản phẩm** (`kind` null = normal); dev/build không tính vào DAG.
 deps = {
@@ -35,10 +46,13 @@ deps = {
 # Cạnh **cấm** (trái→phải): tầng dưới không được kéo tầng trên/ngang sai DAG.
 # **ST-314a low-peak**: ngoài bảng cùng tầng bên dưới, kiểm **toàn bộ 23 crate** theo 5 tầng
 # (`docs/ViScript-thiet-ke.md` §14) — mọi cạnh xuôi lên tầng trên đều bị chặn, không chỉ 7 crate.
+# Các mục **ngược tầng** trong CAM_NGANG là tài liệu chính sách (bảng tầng đã bắt); các mục
+# **cùng tầng** mới là ràng buộc bổ sung thực sự.
 CAM_NGANG = {
     "vis-core":      {"vis-types", "vis-http", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
     "vis-hir":       {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
     "vis-http":      {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg", "vis-host-native"},
+    "vis-types":     {"vis-bytecode", "vis-runtime", "vis-interp", "vis-vm"},
     "vis-bytecode":  {"vis-types", "vis-interp", "vis-vm", "vis-runtime"},
     "vis-vm":        {"vis-types", "vis-interp"},
     "vis-runtime":   {"vis-types", "vis-interp", "vis-vm"},
@@ -74,6 +88,10 @@ for crate in sorted(set(TANG_CUA) - set(deps)):
     loi.append(f"thiếu crate `{crate}` trong workspace")
 for crate in sorted(set(deps) - set(TANG_CUA)):
     loi.append(f"crate `{crate}` chưa khai tầng trong TANG_CUA")
+for crate in sorted(set(CAM_NGANG) - set(TANG_CUA)):
+    loi.append(f"CAM_NGANG: crate lạ `{crate}`")
+for dich in sorted(set().union(*CAM_NGANG.values()) - set(TANG_CUA)):
+    loi.append(f"CAM_NGANG: đích lạ `{dich}`")
 for crate, co in sorted(deps.items()):
     t = TANG_CUA.get(crate)
     if t is None:
@@ -85,7 +103,7 @@ for crate, co in sorted(deps.items()):
     # Cạnh cùng tầng còn lại (các cạnh ngược tầng đã bị bảng tầng bắt ở trên).
     for d in sorted(CAM_NGANG.get(crate, set()) & co):
         td = TANG_CUA.get(d)
-        if td is None or td <= t:
+        if td is not None and td <= t:
             loi.append(f"{crate} -> {d} (cùng tầng/sai DAG)")
 if loi:
     print("vis-dag-check: VI PHẠM DAG:", file=sys.stderr)
