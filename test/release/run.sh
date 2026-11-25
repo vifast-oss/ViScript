@@ -63,6 +63,26 @@ printf '%s' "$out" | grep -q -- '--bin vis'; check $? 'dry-run: có `--bin vis`'
 printf '%s' "$out" | grep -q -- '--bins'; [ $? -ne 0 ]; check $? 'dry-run: KHÔNG dùng `--bins`'
 printf '%s' "$out" | grep -q -- '--bin test-child'; [ $? -ne 0 ]; check $? 'dry-run: không có `--bin test-child`'
 
+# 3b) **ST-314a**: `--out-dir` vào gốc repo / tổ tiên / $HOME phải bị từ chối **trước** `rm -rf`.
+out="$(PATH="$FAKE_PATH" "$REL" --out-dir "$ROOT" --dry-run 2>&1)"
+rc=$?
+[ "$rc" -ne 0 ]; check $? '--out-dir gốc repo ⇒ bị từ chối (thật: '"$rc"')'
+printf '%s' "$out" | grep -q 'gốc repo hoặc tổ tiên'; check $? 'thông báo nêu gốc repo/tổ tiên'
+out="$(PATH="$FAKE_PATH" "$REL" --out-dir "$ROOT/.." --dry-run 2>&1)"
+rc=$?
+[ "$rc" -ne 0 ]; check $? '--out-dir tổ tiên repo ⇒ bị từ chối (thật: '"$rc"')'
+out="$(PATH="$FAKE_PATH" "$REL" --out-dir "$HOME" --dry-run 2>&1)"
+rc=$?
+home_real="$(cd "$HOME" && pwd -P)"
+repo_real="$(cd "$ROOT" && pwd -P)"
+case "$repo_real/" in
+    "$home_real/"*) [ "$rc" -ne 0 ]; check $? '--out-dir $HOME ⇒ bị từ chối khi repo nằm trong HOME' ;;
+    *) check 0 "--out-dir \$HOME: repo ngoài HOME — bỏ qua (HOME=$home_real)" ;;
+esac
+out="$(PATH="$FAKE_PATH" "$REL" --out-dir "$TMP/out-safe" --dry-run 2>&1)"
+rc=$?
+[ "$rc" -eq 0 ]; check $? '--out-dir ngoài repo ⇒ dry-run 0 (thật: '"$rc"')'
+
 # 4) Metadata có test-child ⇒ từ chối trước khi build.
 sed 's/release-bins = \["vis"\]/release-bins = ["vis", "test-child"]/' "$CLI" >"$TMP/Cargo.toml"
 out="$(VIS_RELEASE_CLI_MANIFEST="$TMP/Cargo.toml" PATH="$FAKE_PATH" "$REL" --dry-run 2>&1)"
