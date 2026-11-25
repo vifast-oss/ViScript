@@ -11,6 +11,7 @@ exclude = ["vis-host-wasm"]
 members = [
     "crates/vis-conformance",
     "crates/vis-core",
+    "crates/vis-hir",
     "crates/vis-http",
     "crates/vis-runtime",
     "crates/vis-diag",

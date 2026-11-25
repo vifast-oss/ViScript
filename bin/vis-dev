@@ -232,10 +232,11 @@ rule_journal_logs() {
     return "$found"
 }
 
-# R8 (ST-310e / ST-311c): chống phình test binary — (a) tối đa 15 tệp `.rs` cấp 1 ở
-# `crates/vis-cli/tests/`, và (b) tổng số tệp `.rs` cấp 1 trong mọi `crates/*/tests/` ≤ 40
-# (sau ST-311c giảm từ 78 → 34; ST-313c gộp `vis-fmt/moi` + `vish-edit/completion_job`
-# ⇒ **38**). Ca mới nên vào `tests/<domain>/` + `#[path]` trong aggregator cấp 1.
+# R8 (ST-310e / ST-311c / ST-314a): chống phình test binary — (a) tối đa 15 tệp `.rs` cấp 1 ở
+# `crates/vis-cli/tests/`, và (b) tổng số tệp `.rs` cấp 1 trong mọi `crates/*/tests/` **và**
+# `vis-host-linux/tests/` ≤ 40 (sau ST-311c giảm từ 78 → 34; ST-313c gộp `vis-fmt/moi` +
+# `vish-edit/completion_job` ⇒ **38** + 1 `vis-host-linux/tests/landlock.rs` = **39**).
+# Ca mới nên vào `tests/<domain>/` + `#[path]` trong aggregator cấp 1.
 # Không có `crates/` (cây self-test R1..R4) ⇒ bỏ qua.
 rule_test_binaries() {
     local root="$1"
@@ -251,8 +252,13 @@ rule_test_binaries() {
     if [ -d "$root/crates" ]; then
         local tot
         tot=$(find "$root/crates" -mindepth 3 -maxdepth 3 -path '*/tests/*.rs' -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [ -d "$root/vis-host-linux/tests" ]; then
+            local host
+            host=$(find "$root/vis-host-linux/tests" -maxdepth 1 -type f -name '*.rs' 2>/dev/null | wc -l | tr -d ' ')
+            tot=$((tot + host))
+        fi
         if [ "${tot:-0}" -gt 40 ]; then
-            echo "R8 crates/*/tests: tổng $tot binary > 40 (ST-311c: gom test binary theo miền)" >&2
+            echo "R8 crates/*/tests + vis-host-linux/tests: tổng $tot binary > 40 (ST-311c: gom test binary theo miền)" >&2
             return 1
         fi
     fi

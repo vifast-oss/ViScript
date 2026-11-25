@@ -29,8 +29,8 @@ BO_QUA = ("use std.fs", "use std.net", "use std.sqlite", "use std.proc", "use pk
 NODE_DRIVER = r"""
 import { WASI } from 'node:wasi';
 import { readFile } from 'node:fs/promises';
-const [wasmPath, guest, host, ro, ...args] = process.argv.slice(2);
-const env = { VIS_WASM_PREOPENS: guest + (ro === '1' ? '@ro' : '') };
+const [wasmPath, guest, host, ...args] = process.argv.slice(2);
+const env = { VIS_WASM_PREOPENS: guest };
 const wasi = new WASI({
   version: 'preview1',
   args: ['vis-wasm-run', ...args],
@@ -64,17 +64,39 @@ def build() -> None:
         sys.exit(2)
 
 
-def chay(driver: Path, root: Path, engine: str) -> subprocess.CompletedProcess:
+def chay(driver: Path, root: Path, *runner_args: str) -> subprocess.CompletedProcess:
     node = shutil.which("node")
     if not node:
         print("BLOCKED-ENV: không có node:wasi", file=sys.stderr)
         sys.exit(2)
     cmd = [node, "--no-warnings", f"--stack-size={NODE_STACK_KB}", str(driver),
-           str(WASM), "/data", str(root), f"--{engine}", "/data/prog.vis"]
+           str(WASM), "/data", str(root), *runner_args]
     return subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
 
+def tu_kiem(driver: Path, root: Path) -> None:
+    """**ST-314a (VD-290)**: chứng minh cờ runner **không bị nuốt**.
+
+    Cờ lạ phải tới `vis-wasm-run` và bị từ chối với exit 2. Nếu `NODE_DRIVER` lệch tham số
+    (như lỗi `ro` cũ), cờ bị nuốt ⇒ runner chạy chương trình ⇒ self-check fail ngay.
+    """
+    root.mkdir()
+    r = chay(driver, root, "--co-khong-ton-tai", "/data/prog.vis")
+    if r.returncode != 2:
+        print(
+            f"SELF-CHECK: cờ lạ không tới `vis-wasm-run` (rc={r.returncode}, "
+            f"stdout={r.stdout[:120]!r}, stderr={r.stderr[:120]!r})",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+
 def main() -> int:
+    import argparse
+
+    argparse.ArgumentParser(
+        description="Chạy corpus conformance trên WASI (interp + VM)"
+    ).parse_args()
     build()
     cases = []
     for p in sorted(CORPUS.rglob("*.vis")):
@@ -91,6 +113,7 @@ def main() -> int:
                                  dir=os.environ.get("TMPDIR") or None))
     driver = work / "node-driver.mjs"
     driver.write_text(NODE_DRIVER, encoding="utf-8")
+    tu_kiem(driver, work / "self-check")
     hong = []
     try:
         for i, p in enumerate(cases, 1):
@@ -103,7 +126,7 @@ def main() -> int:
                 encoding="utf-8"
             )
             for engine in ("interp", "vm"):
-                r = chay(driver, root, engine)
+                r = chay(driver, root, f"--{engine}", "/data/prog.vis")
                 if r.returncode != 0 or not khop(r.stdout):
                     hong.append(f"{p.relative_to(ROOT)} [{engine}] rc={r.returncode} "
                                 f"stdout={r.stdout!r} stderr={r.stderr[:120]!r}")

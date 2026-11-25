@@ -90,6 +90,8 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     // **SỬA KÈM LÝ DO (ST-57)**: `derives Eq, Show` **sinh** `impl` ⇒ +1 item (`HImpl`) và +5
     // khai báo (`User.show` + `self`, `User.eq` + `self` + `other`).
     // **ST-60c**: `enum Shape derives Show` nay **sinh** `impl` thật ⇒ +1 item, +2 sym (show + self).
+    // **ST-314a (VD-290)**: A0 đồng bộ bảng crate §14 gọn 1 dòng (net -1) ⇒ hai khối sau
+    // dịch -1: 1481 → **1480**, 1528 → **1527**.
     (233, 7, 0, 15), // type User derives Eq/Show + enum Shape derives Show + alias + newtype
     // **VD-215 (2026-11-18)**: +12 dòng bảng quy tắc `{…}` sau bảng kiểu ⇒ mọi khối sau dịch +12.
     (258, 1, 0, 4),  // fn total + R + rows + r (lambda)
@@ -105,9 +107,9 @@ const DOC_BLOCKS: [(usize, usize, usize, usize); FULL_BODIED] = [
     (622, 0, 0, 0),  // chỉ có `#!` + `#|` (chú thích)
     (735, 1, 0, 5),  // backup_big + ctx + dir + files + f
     (749, 1, 0, 7),  // fetch_all + net + urls + s (scope) + tasks + u + t
-    (1528, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
+    (1527, 1, 0, 4), // tính_tổng + danh_sách + tổng + số
     // **R11 (VD-178)**: khối 1435 (`Entry(path: …)`) nay parse sạch ⇒ thêm vào bảng.
-    (1481, 7, 0, 18), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
+    (1480, 7, 0, 18), // use ×2 + type Entry + fn main + test fn + ... (đo thật) — moved with VD-222 note
 ];
 
 fn doc_path() -> PathBuf {

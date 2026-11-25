@@ -5,7 +5,7 @@ name = "vis-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Lõi dùng chung của ViScript: Value, JSON, trait host/reactor, HTTP client — ST-310a"
+description = "Lõi dùng chung của ViScript: Value, JSON, trait host/reactor — ST-310a"
 
 [dependencies]
 vis-hir = { path = "../vis-hir" }

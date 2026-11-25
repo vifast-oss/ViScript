@@ -628,7 +628,25 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
                 kv.iter().filter(|(k0, _)| !eq(k0, &kvk)).cloned().collect(),
             ))
         }
-        id if id.as_str().starts_with("path.") => path_d::goi(id.as_str(), &args, span),
+        // **ST-314a (VD-290)**: `StdId` đi thẳng vào dispatch con — không còn `starts_with`
+        // chuỗi; thêm biến thể mới mà quên route ⇒ **lỗi biên dịch** (match vét cạn).
+        id @ (StdId::PathAncestors
+        | StdId::PathBasename
+        | StdId::PathComponents
+        | StdId::PathDirname
+        | StdId::PathExt
+        | StdId::PathIsAbs
+        | StdId::PathIsAbsolute
+        | StdId::PathIsRelative
+        | StdId::PathJoin
+        | StdId::PathJoinAll
+        | StdId::PathNormalize
+        | StdId::PathRelative
+        | StdId::PathStem
+        | StdId::PathStripPrefix
+        | StdId::PathWithExtension
+        | StdId::PathWithFileName
+        | StdId::PathWithStem) => path_d::goi(id, &args, span),
         // ----- std.time (đọc đồng hồ trong Rust; **không** qua Host) -----
         StdId::TimeNowMs => {
             let ms = SystemTime::now()
@@ -671,13 +689,43 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             json(&args[0], name.ends_with("_pretty"), &mut s);
             Ok(Value::Str(s))
         }
-        id if {
-            let ten = id.as_str();
-            ten.starts_with("fs.") || ten.starts_with("net.") || ten.starts_with("http.")
-        } =>
-        {
-            fs_net::dispatch::goi(host, id.as_str(), &args, span)
-        }
+        // **ST-314a (VD-290)**: như `path.*` — `StdId` đi thẳng xuống `fs_net`, match vét cạn.
+        id @ (StdId::FsAppend
+        | StdId::FsCanonicalize
+        | StdId::FsCopy
+        | StdId::FsCurrentDir
+        | StdId::FsExists
+        | StdId::FsGlob
+        | StdId::FsIsDir
+        | StdId::FsIsFile
+        | StdId::FsIsSymlink
+        | StdId::FsList
+        | StdId::FsMkdir
+        | StdId::FsMkdirAll
+        | StdId::FsRead
+        | StdId::FsReadBytes
+        | StdId::FsReadLines
+        | StdId::FsReadLink
+        | StdId::FsRemove
+        | StdId::FsRename
+        | StdId::FsSize
+        | StdId::FsWalk
+        | StdId::FsWrite
+        | StdId::FsWriteBytes
+        | StdId::HttpGet
+        | StdId::HttpGetTimeout
+        | StdId::HttpHead
+        | StdId::HttpHeadTimeout
+        | StdId::NetAccept
+        | StdId::NetAcceptTimeout
+        | StdId::NetClose
+        | StdId::NetCloseListen
+        | StdId::NetConnect
+        | StdId::NetConnectTimeout
+        | StdId::NetListen
+        | StdId::NetLocalAddr
+        | StdId::NetRead
+        | StdId::NetWrite) => fs_net::dispatch::goi(host, id, &args, span),
         // ----- std.sqlite (VD-241, Gate 1) — **chỉ qua `Host::db`**, không backend trong crate này.
         // Thiếu host ⇒ `VS0604`; mọi lỗi host (handle/SQL/params/giới hạn/authorizer/timeout/lỗi
         // SQLite) ⇒ `Err(Error)` dữ liệu (VD-241 pre-merge §1). -----
@@ -929,10 +977,6 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.db_in_transaction(h).map(Value::Bool), span)
         }
-        _ => Err(loi(
-            format!("`std.{name}` chưa cài (bảng chữ ký có nhưng tầng chạy thiếu)"),
-            span,
-        )),
     }
 }
 

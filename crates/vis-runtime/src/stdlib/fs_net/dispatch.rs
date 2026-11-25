@@ -3,23 +3,25 @@
 //! `stdlib.rs` để giữ tệp dưới 1.150 dòng. Chuyển **nguyên văn**, không đổi ngữ nghĩa.
 
 use super::super::*;
+use vis_hir::stdlib::StdId;
 
 /// Gọi một hàm `fs.*`/`net.*` theo tên đầy đủ.
-pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -> R<Value> {
-    match name {
+pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) -> R<Value> {
+    let name = id.as_str();
+    match id {
         // ----- std.fs (ST-33) — **chỉ qua `Host`**, không OS trong crate này -----
-        "fs.read" => {
+        StdId::FsRead => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.read(p).map(Value::Str), span)
         }
-        "fs.write" => {
+        StdId::FsWrite => {
             let p = chuoi(name, &args[0], 0, span)?;
             let v = chuoi(name, &args[1], 1, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.write(p, v).map(|()| Value::Unit), span)
         }
-        "fs.exists" => {
+        StdId::FsExists => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             // **ST-83**: `exists` trả **bool** (không phải Result) nhưng vẫn **trap `VS0604`** khi
@@ -36,7 +38,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
                 },
             }
         }
-        "fs.list" => {
+        StdId::FsList => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
@@ -47,7 +49,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         }
         // **VD-266**: bốn helper thực dụng — cùng mẫu `std.fs` (host ⇒ `VS0604`; lỗi dữ liệu ⇒
         // `Err(Error)`), không OS trong crate này.
-        "fs.read_lines" => {
+        StdId::FsReadLines => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
@@ -56,27 +58,27 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
                 span,
             )
         }
-        "fs.append" => {
+        StdId::FsAppend => {
             let p = chuoi(name, &args[0], 0, span)?;
             let v = chuoi(name, &args[1], 1, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.append(p, v).map(|()| Value::Unit), span)
         }
-        "fs.mkdir" | "fs.mkdir_all" => fsmkdirall::goi(host, name, args, span),
-        "fs.remove" => {
+        StdId::FsMkdir | StdId::FsMkdirAll => fsmkdirall::goi(host, name, args, span),
+        StdId::FsRemove => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.remove(p).map(|()| Value::Unit), span)
         }
         // **VD-269**: sao chép/đổi tên tệp — thiếu host ⇒ `VS0604`; lỗi dữ liệu (nguồn thiếu,
         // đích đã tồn tại, thư mục/symlink) ⇒ `Err(Error)`, không trap.
-        "fs.copy" => {
+        StdId::FsCopy => {
             let tu = chuoi(name, &args[0], 0, span)?;
             let den = chuoi(name, &args[1], 1, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.copy(tu, den).map(|()| Value::Unit), span)
         }
-        "fs.rename" => {
+        StdId::FsRename => {
             let tu = chuoi(name, &args[0], 0, span)?;
             let den = chuoi(name, &args[1], 1, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
@@ -84,7 +86,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         }
         // **VD-268**: duyệt đệ quy — đường dẫn tương đối, thư mục kèm `/`; thiếu host ⇒ `VS0604`,
         // lỗi dữ liệu ⇒ `Err(Error)` (cùng `hop_nhat_fs`).
-        "fs.walk" => {
+        StdId::FsWalk => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
@@ -97,7 +99,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         // host ⇒ host thật, `--fs-mock`, interp và VM khớp byte). `walk` vẫn đi qua `FsGuard`
         // trước, nên root ngoài `cap[Dir]` ⇒ `VS0604` và symlink vẫn bị bỏ. Mẫu sai ⇒
         // `Err(Error)` dữ liệu, không trap.
-        "fs.glob" => {
+        StdId::FsGlob => {
             let goc = chuoi(name, &args[0], 0, span)?;
             let mau = chuoi(name, &args[1], 1, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
@@ -114,7 +116,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         }
         // **VD-270**: metadata **chỉ đọc** — `symlink_metadata` (không theo symlink); thiếu path ⇒
         // `size` `Err(Error)`, predicate `Ok(false)`; ngoài cap ⇒ `VS0604` qua `FsGuard`.
-        "fs.size" | "fs.is_file" | "fs.is_dir" => {
+        StdId::FsSize | StdId::FsIsFile | StdId::FsIsDir => {
             let p = chuoi(name, &args[0], 0, span)?;
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(vis_core::host::goi_metadata(host, name, p), span)
@@ -122,25 +124,25 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         // **VD-270 (fs-is-symlink)**: `true` ⇔ **chính** `p` là symlink (theo `symlink_metadata`,
         // **không** đi theo): symlink tới tệp/thư mục/**đích thiếu** ⇒ `true` (khác `exists`);
         // tệp/thư mục thường, path thiếu ⇒ `false`; lỗi metadata khác ⇒ `Err(Error)`.
-        "fs.is_symlink" => fsissymlink::goi(host, name, args, span),
+        StdId::FsIsSymlink => fsissymlink::goi(host, name, args, span),
 
         // **VD-270 (fs-read-link)**: đọc **đích** symlink, **không** đi theo link (dangling vẫn
         // `Ok`); tệp/thư mục/thiếu/lỗi khác ⇒ `Err(Error)` dữ liệu, không trap.
-        "fs.read_link" => fsreadlink::goi(host, name, args, span),
+        StdId::FsReadLink => fsreadlink::goi(host, name, args, span),
         // **VD-270 (fs-canonicalize)**: đường dẫn tuyệt đối đã phân giải symlink/`..` bằng
         // `std::fs::canonicalize` (**chạm đĩa** + đọc `cwd`, khác `path.normalize`); `p` phải tồn
         // tại, thiếu/rỗng/lỗi ⇒ `Err(Error)` dữ liệu, không trap; ngoài cap ⇒ `VS0604`.
-        "fs.canonicalize" => fscanonicalize::goi(host, name, args, span),
+        StdId::FsCanonicalize => fscanonicalize::goi(host, name, args, span),
         // **VD-270 (fs-current-dir)**: `() -> Result[str, Error]` — cwd **tuyệt đối** + UTF-8,
         // đọc môi trường; **không** có path người dùng nên **không** kiểm `cap`/`FsGuard`; cwd
         // xoá/không truy cập/không UTF-8 ⇒ `Err(Error)` dữ liệu, không trap.
-        "fs.current_dir" => fscurrentdir::goi(host, name, args, span),
+        StdId::FsCurrentDir => fscurrentdir::goi(host, name, args, span),
         // **VD-270 (fsbytes)**: byte thô `list[int]` — helper riêng (R1), cùng một ngữ nghĩa cho
         // interp ↔ VM; lỗi dữ liệu ⇒ `Err(Error)`, ngoài cap ⇒ `VS0604` qua `FsGuard`.
-        "fs.read_bytes" | "fs.write_bytes" => fsbytes::goi(host, name, args, span),
+        StdId::FsReadBytes | StdId::FsWriteBytes => fsbytes::goi(host, name, args, span),
         // ----- std.net (ST-63, VD-100/VD-105) — **chỉ qua `Host::net`**, không OS trong crate này.
         // Thiếu host ⇒ `VS0604`; lỗi mạng ⇒ `Err(str)` (dữ liệu, **không** trap). -----
-        "net.connect" | "net.connect_timeout" => {
+        StdId::NetConnect | StdId::NetConnectTimeout => {
             let dia_chi = chuoi(name, &args[0], 0, span)?;
             let timeout = if args.len() == 2 {
                 so(name, &args[1], 1, span)?
@@ -167,7 +169,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             let r = host.connect(dia_chi, timeout.max(0) as u64);
             hop_nhat_fs(r.map(Value::Str), span)
         }
-        "net.read" => {
+        StdId::NetRead => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let toi_da = so(name, &args[1], 1, span)?;
             let timeout = so(name, &args[2], 2, span)?;
@@ -202,7 +204,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
                 span,
             )
         }
-        "net.write" => {
+        StdId::NetWrite => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let du = chuoi(name, &args[1], 1, span)?;
             // ST-277/VD-256: đường frame có adapter thật ⇒ partial-write có offset.
@@ -227,7 +229,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.write(tay, du.as_bytes()).map(|()| Value::Unit), span)
         }
-        "net.close" => {
+        StdId::NetClose => {
             let tay = chuoi(name, &args[0], 0, span)?;
             // Lát 3: trên đường frame có adapter thật ⇒ đóng socket + vô hiệu mọi
             // đăng ký/stale event của tay này, không cần host mạng mặc định.
@@ -246,17 +248,17 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
         }
         // **ST-65 (VD-100/VD-105)**: server TCP — `listen`/`local_addr`/`accept(_timeout)`/
         // `close_listen`; host giữ listener thật; thiếu host ⇒ `VS0604`; `accept` không timeout = chặn.
-        "net.listen" => {
+        StdId::NetListen => {
             let dia_chi = chuoi(name, &args[0], 0, span)?;
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.listen(dia_chi).map(Value::Str), span)
         }
-        "net.local_addr" => {
+        StdId::NetLocalAddr => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.local_addr(tay).map(Value::Str), span)
         }
-        "net.accept" | "net.accept_timeout" => {
+        StdId::NetAccept | StdId::NetAcceptTimeout => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let timeout = if args.len() == 2 {
                 so(name, &args[1], 1, span)?
@@ -279,14 +281,14 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
                 span,
             )
         }
-        "net.close_listen" => {
+        StdId::NetCloseListen => {
             let tay = chuoi(name, &args[0], 0, span)?;
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(host.close(tay).map(|()| Value::Unit), span)
         }
         // **ST-64 (VD-100/VD-105)**: giao thức HTTP **trong crate này** (`net.rs`), socket qua host.
         // Lỗi HTTP/mạng là `Err(str)` (dữ liệu); thiếu host ⇒ `VS0604`. Mặc định 5000 ms.
-        "http.get" | "http.get_timeout" => {
+        StdId::HttpGet | StdId::HttpGetTimeout => {
             let url = chuoi(name, &args[0], 0, span)?;
             let timeout = if args.len() == 2 {
                 so(name, &args[1], 1, span)?
@@ -311,7 +313,7 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             )
         }
         // **ST-109**: `http.head` — chỉ header, không đọc thân; không theo redirect.
-        "http.head" | "http.head_timeout" => {
+        StdId::HttpHead | StdId::HttpHeadTimeout => {
             let url = chuoi(name, &args[0], 0, span)?;
             let timeout = if args.len() == 2 {
                 so(name, &args[1], 1, span)?
@@ -341,6 +343,6 @@ pub(crate) fn goi(host: &mut dyn Host, name: &str, args: &[Value], span: Span) -
             });
             hop_nhat_fs(kq, span)
         }
-        _ => unreachable!("dispatch `fs_net` chỉ nhận tên fs.*/net.*"),
+        _ => unreachable!("fs_net::dispatch::goi chỉ nhận StdId::Fs*/Net*/Http*"),
     }
 }
