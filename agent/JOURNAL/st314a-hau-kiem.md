@@ -330,6 +330,8 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
   **25× 100k lech=0** (`st314a-lp15-diff-<seed>.log`).
 - **+5× `vis-diff 100k`** (seed `7070/7171/7272/7373/7474`): cả 5 **lech=0** ⇒ tổng low-peak
   **30× 100k lech=0** (`st314a-lp17-diff-<seed>.log`).
+- **+3× `vis-diff 100k`** (seed `8080/8181/8282`): cả 3 **lech=0** ⇒ tổng low-peak **33× 100k lech=0**
+  (`st314a-lp18-diff-<seed>.log`).
 - **Fuzz parser 15 phút**: **103.981.377 ca / 2.359.969.111 token, 0 vi phạm**; fmt 475 tệp
   bất động; `vis-dev nightly: PASS` (`/home/ps/vislogs/st314a-lp16-fuzz-15m.log`, sha
   `78f38b77b9280f7a65b66d38b84845105d3e30788aa8503c5b7842ecb5788912`).
