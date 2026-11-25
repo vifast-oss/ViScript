@@ -13,7 +13,7 @@
 | 683 | ô macOS kết thúc `… host 54/54); chỉ arm64` | thêm `; **chưa chạy lại full/clippy trên \`0.6.0\`** (\`mps\` bỏ qua 2026-11-25)` |
 | 930 | `\`vis 0.5.0\` hoặc \`{"name":"vis","version":"0.5.0"}\`` | `\`vis 0.6.0\` hoặc \`{"name":"vis","version":"0.6.0"}\`` |
 | 1016 | `(VD/R1..R24)` | `(VD-01..VD-290, R1..R37)` |
-| 1022 | `đã kiểm tra tại \`c4337ce\`:` | `đã kiểm tra tại \`90fd24de\` (\`0.6.0\`):` |
+| 1022 | `đã kiểm tra tại \`c4337ce\`:` | **cân nhắc**: chỉ đổi thành `90fd24de` nếu A0 đã thực sự rà lại §12 tại `0.6.0`; nếu §12 vẫn là mốc kiểm tra gốc thì **giữ nguyên** (header ghi bản gốc sinh từ `c4337ce`). |
 | 1031 | `Không có \`select\`/\`timeout\`/cancel cây` | `Có timeout kênh + \`select_recv*\`/\`select_send*\`; không có \`select\` tổng quát/cancel cây` |
 
 ## 2. `docs/ViScript-thiet-ke.md`
@@ -43,6 +43,11 @@
 - `StdId` 167, `stdlib/` chia miền (0 tệp `_a.._e`), R8 **39 (38+1) ≤ 40**.
 - WASI **390/390**, suite **28/28**, conformance **299×2**; `#193`/`#194`/`#196` đóng.
 - Không còn `vis-cli::net`, “HTTP client trong vis-core”, “12 crate”, “chưa công bố Tier 1”.
+
+**Đã kiểm chứng lại tại `ae9600a6`**: `./vis version` → `vis 0.6.0`; `./vis version --json` →
+`{"name":"vis","version":"0.6.0"}`; `recv_timeout`/`send_timeout`/`select_recv*`/`select_send*` có
+trong `crates/vis-types/src/tyck/expr/kenh.rs:36,58,64,83-85`; báo cáo mới nhất `R37`, quyết định
+mới nhất `VD-290`; `docs/doc-examples-allow.txt` tồn tại (không phải `docs/viscript/...`).
 
 ## 4. Ghi chú
 
