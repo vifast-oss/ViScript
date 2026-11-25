@@ -291,6 +291,8 @@ cmd_probe() {
 cmd_run() {
     [ $# -gt 0 ] || die 2 "run: cần lệnh"
     [ "$1" = "--" ] && shift
+    # **ST-314a (hậu-kiểm low-peak)**: `run --` (không có lệnh) từng chạy `ssh ... &&` rỗng ⇒ exit 0 giả.
+    [ $# -gt 0 ] || die 2 "run: cần lệnh sau '--'"
     pick_backend
     case "$BE" in
         ssh)

@@ -10,10 +10,11 @@ cây trên `mps` phải **sạch** và **cùng HEAD** với cây gọi (nếu l�
     bin/vis-gate-macos --full  [--dry-run]
     bin/vis-gate-macos --self-test
 
-`--quick`: `cargo check --workspace` + `quyen_st174`/`quyen_st295` (unit) + `async_it lat`
-           (mio/kqueue thật). `--full`: thêm `./vis-dev check`, `./vis-dev gate --fast`,
-           `cargo test --workspace --no-fail-fast`, host native `vis-host-wasm`, và
-           `bin/vis-wasm-suite --build --runtime node` (WASI tối thiểu).
+`--quick`: `cargo check --workspace` + `quyen_st174`/`quyen_st295` (unit, đòi >0 test) +
+           `vis-conformance/lib_api_it lat` (mio/kqueue thật, `--no-tests=fail`).
+           `--full`: thêm `./vis-dev check`, `./vis-dev gate --fast`,
+           `cargo nextest run --workspace`, `cargo test --doc`, host native
+           `vis-host-wasm`, và `bin/vis-wasm-suite --build --runtime node` (WASI tối thiểu).
 
 Log mặc định `~/vislogs/vis-gate-macos-<mode>-<UTC>.log` (ngoài repo); đổi bằng
 `VIS_GATE_MACOS_LOG`. Biến môi trường: `VIS_GATE_MACOS_REMOTE` (mặc định `mps`),
@@ -60,12 +61,25 @@ def head():
     return out.stdout.strip()
 
 
+def dem_test(cmd):
+    """**ST-314a (hậu-kiểm low-peak)**: libtest trả exit 0 khi filter không khớp ca nào (0 test) — phải đòi
+    `test result: ok. N passed` với N ≥ 1, nếu không cổng xanh mà không chạy gì."""
+    return (
+        'out="$(%s 2>&1)" && printf "%%s\\n" "$out" '
+        '&& printf "%%s\\n" "$out" | grep -Eq "test result: ok\\. [1-9][0-9]* passed" '
+        '|| { rc=$?; printf "%%s\\n" "$out" >&2; exit "$rc"; }' % cmd
+    )
+
+
 def commands(mode):
     if mode == "quick":
         return [
             "cargo check --workspace",
-            "cargo test -p vis-host-native --lib quyen_st",
-            "cargo nextest run -p vis-cli --test async_it lat",
+            dem_test("cargo test -p vis-host-native --lib quyen_st"),
+            # **ST-314a (hậu-kiểm low-peak)**: test `lat*` đã chuyển sang `vis-conformance/tests/lib_api_it.rs`;
+            # filter cũ `-p vis-cli --test async_it lat` khớp 0 ca. `--no-tests=fail`
+            # biến "0 ca" thành đỏ trên mọi bản nextest hỗ trợ cờ này (mps: 0.9.152).
+            "cargo nextest run -p vis-conformance --test lib_api_it --no-tests=fail lat",
         ]
     return [
         "./vis-dev check",
@@ -124,10 +138,13 @@ def self_test():
     quick, full = body("quick"), body("full")
     checks = [
         ("quick: quyền", "quyen_st" in quick),
-        ("quick: lat/kqueue", "async_it lat" in quick),
+        ("quick: quyền >0 test", "test result: ok" in quick),
+        ("quick: lat/kqueue", "lib_api_it" in quick and " lat" in quick),
+        ("quick: lat 0-test", "--no-tests=fail" in quick),
         ("full: check", "./vis-dev check" in full),
         ("full: gate", "./vis-dev gate --fast" in full),
-        ("full: workspace", "cargo test --workspace --no-fail-fast" in full),
+        ("full: workspace", "cargo nextest run --workspace" in full),
+        ("full: doc-test", "cargo test --doc" in full),
         ("full: host", "vis-host-wasm" in full),
         ("full: wasm", "vis-wasm-suite --build --runtime node" in full),
         ("lock", "bin/vis-lock" in quick and "bin/vis-lock" in full),
@@ -144,7 +161,7 @@ def self_test():
             sys.exit("vis-gate-macos: self-test FAIL: log trong repo")
         except ValueError:
             pass
-    print("vis-gate-macos: self-test OK (10 kiểm, Python %d.%d)" % sys.version_info[:2])
+    print("vis-gate-macos: self-test OK (%d kiểm, Python %d.%d)" % (len(checks), sys.version_info[0], sys.version_info[1]))
 
 
 def main():

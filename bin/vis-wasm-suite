@@ -10,7 +10,8 @@ Thứ tự chọn runtime:
 1. `wasmtime` CLI (được duyệt ở VD-277) — `WASMTIME` hoặc `PATH`.
 2. Python package `wasmtime` chính thức (nếu đã cài).
 3. Node built-in `node:wasi` (Node ≥ 20; không tải gì thêm).
-4. Không có ⇒ in `BLOCKED-ENV`, exit 0 (trừ `--require-runtime`).
+4. Không có ⇒ in `BLOCKED-ENV`, exit 0 khi `--runtime auto`; nếu người gọi chỉ định
+   `--runtime <tên>` hoặc `--require-runtime` ⇒ exit 2 (không coi skip là xanh).
 
 Không tự tải binary nguồn lạ. Build wasm bằng `cargo` của rustup 1.100 (nếu có).
 """
@@ -414,7 +415,9 @@ def main() -> int:
             "BLOCKED-ENV: không có wasmtime CLI, Python wasmtime, hay node:wasi — "
             "không chạy được wasm (không tự tải binary nguồn lạ)"
         )
-        return 2 if a.require_runtime else 0
+        # **ST-314a (hậu-kiểm low-peak)**: chỉ `auto` mới được phép skip-rồi-exit-0; người gọi đã chỉ định
+        # `--runtime node|python|wasmtime` thì thiếu runtime là FAIL, không phải PASS.
+        return 2 if (a.require_runtime or a.runtime != "auto") else 0
 
     work = Path(tempfile.mkdtemp(prefix="vis-wasm-suite-"))
     driver = None
@@ -446,6 +449,13 @@ def main() -> int:
                 else:
                     print(f"ok {tong} - {case['name']} [{engine}]")
         print(f"# tổng: {tong} ca, {hong} hỏng, runtime={rt}")
+        # **ST-314a (hậu-kiểm low-peak)**: 0 ca (filter không khớp / CASES rỗng) KHÔNG phải bằng chứng xanh.
+        if tong == 0:
+            print(
+                f"# KHÔNG chạy ca nào (filter={a.filter!r}) — tính là FAIL, không phải PASS",
+                file=sys.stderr,
+            )
+            return 1
         return 0 if hong == 0 else 1
     finally:
         if not a.keep:

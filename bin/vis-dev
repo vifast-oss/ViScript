@@ -668,11 +668,15 @@ do_fuzz_parser() {
     # **VD-283 / ST-298**: tôn trọng `CARGO_TARGET_DIR` (nightly trước đây gọi cứng
     # `target/release/...` nên đỏ khi target dir là đường khác — `nightly-8286caf.md` §2).
     local bin="${CARGO_TARGET_DIR:-$VIS_ROOT/target}/release/vis-parse-fuzz"
+    # **ST-314a (hậu-kiểm low-peak)**: luôn build (cargo incremental). Trước đây chỉ build khi
+    # thiếu binary ⇒ sau khi sửa parser, nightly có thể fuzz **binary cũ** rồi báo PASS.
+    if ! "$CARGO" build --release --manifest-path "$MANIFEST" -p vis-syntax --bin vis-parse-fuzz; then
+        echo "--- fuzz parser: FAIL (không build được)" >&2
+        return 1
+    fi
     if [ ! -x "$bin" ]; then
-        if ! "$CARGO" build --release --manifest-path "$MANIFEST" -p vis-syntax --bin vis-parse-fuzz; then
-            echo "--- fuzz parser: FAIL (không build được)" >&2
-            return 1
-        fi
+        echo "--- fuzz parser: FAIL (build xong nhưng thiếu $bin)" >&2
+        return 1
     fi
     local giay=$((phut * 60))
     echo "--- fuzz parser: ${phut} phút (${giay}s)"
@@ -728,7 +732,9 @@ case "${1:-}" in
     check) do_check ;;
     core-test) do_core_test ;;
     gate)
-        [ "${2:-}" = "--fast" ] || { echo "vis-dev: chỉ 'gate --fast' ở vòng 1" >&2; exit 2; }
+        # **ST-314a (hậu-kiểm low-peak)**: không im lặng bỏ qua cờ thừa (`gate --fast --foo`).
+        [ "$#" -eq 2 ] && [ "${2:-}" = "--fast" ] ||
+            { echo "vis-dev: chỉ 'gate --fast' ở vòng 1" >&2; exit 2; }
         do_gate_fast
         ;;
     nightly)
@@ -740,8 +746,21 @@ case "${1:-}" in
         i=2
         while [ "$i" -le "$#" ]; do
             case "${!i}" in
-                --root) i=$((i + 1)); root="${!i:-}" ;;
+                --root)
+                    i=$((i + 1))
+                    if [ -z "${!i:-}" ]; then
+                        echo "vis-dev: doc-examples --root cần <thư mục>" >&2
+                        exit 2
+                    fi
+                    root="${!i}"
+                    ;;
                 --temp-root) temp="--temp-root" ;;
+                *)
+                    # **ST-314a (hậu-kiểm low-peak)**: cờ lạ (vd. gõ nhầm `--rooot`) không được lặng lẽ bỏ qua
+                    # rồi chạy trên cây mặc định — đó là PASS sai đối tượng.
+                    echo "vis-dev: doc-examples không hiểu \`${!i}\`" >&2
+                    exit 2
+                    ;;
             esac
             i=$((i + 1))
         done
@@ -751,8 +770,27 @@ case "${1:-}" in
         fi
         ;;
     rules)
+        # **ST-314a (hậu-kiểm low-peak)**: `rules --root` thiếu giá trị hoặc cờ lạ từng bị bỏ qua ⇒ chạy trên
+        # `$VIS_ROOT` và in OK, dù người gọi tưởng đang kiểm cây khác. Parse tường minh.
         root="$VIS_ROOT"
-        if [ "${2:-}" = "--root" ] && [ -n "${3:-}" ]; then root="$3"; fi
+        i=2
+        while [ "$i" -le "$#" ]; do
+            case "${!i}" in
+                --root)
+                    i=$((i + 1))
+                    if [ -z "${!i:-}" ]; then
+                        echo "vis-dev: rules --root cần <thư mục>" >&2
+                        exit 2
+                    fi
+                    root="${!i}"
+                    ;;
+                *)
+                    echo "vis-dev: rules không hiểu \`${!i}\`" >&2
+                    exit 2
+                    ;;
+            esac
+            i=$((i + 1))
+        done
         run_rules "$root" && echo "--- rules: OK"
         ;;
     *) usage ;;

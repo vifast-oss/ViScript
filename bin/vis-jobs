@@ -35,8 +35,12 @@ SELF=$$
 PARENT=$PPID
 # `ps -eo` trên Linux/macOS; chỉ khớp **tên chương trình** (token đầu/cuối script), không khớp
 # chuỗi nằm trong `-c "…"` của tiến trình khác (ví dụ tailscaled chứa chữ `rustc` trong probe).
-jobs="$(ps -eo pid=,ppid=,etime=,stat=,args= 2>/dev/null |
-    awk -v self="$SELF" -v parent="$PARENT" -v protect="$PROTECT" '
+# **ST-314a (hậu-kiểm low-peak)**: `ps` lỗi từng cho ra danh sách rỗng ⇒ `--check` in "OK" (PASS giả).
+if ! ps_out="$(ps -eo pid=,ppid=,etime=,stat=,args= 2>/dev/null)"; then
+    echo "vis-jobs: ps lỗi — không đọc được danh sách tiến trình (BLOCKED-ENV)" >&2
+    exit 3
+fi
+if ! jobs="$(printf '%s\n' "$ps_out" | awk -v self="$SELF" -v parent="$PARENT" -v protect="$PROTECT" '
         function protected(p,   a, i, n) { n = split(protect, a, " "); for (i = 1; i <= n; i++) if (a[i] == p) return 1; return 0 }
         function base(s) { sub(/.*\//, "", s); return s }
         {
@@ -50,7 +54,10 @@ jobs="$(ps -eo pid=,ppid=,etime=,stat=,args= 2>/dev/null |
           if (cmd ~ /vis-jobs/) next
           if (protected(pid)) { mark = "PROTECTED" } else { mark = "-" }
           printf "%s\t%s\t%s\t%s\t%s\n", pid, ppid, $3, mark, substr(cmd, 1, 120)
-        }')"
+        }')"; then
+    echo "vis-jobs: awk lỗi — không đọc được danh sách tiến trình (BLOCKED-ENV)" >&2
+    exit 3
+fi
 
 count=$(printf '%s\n' "$jobs" | grep -c . || true)
 if [ "$JSON" -eq 1 ]; then

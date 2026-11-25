@@ -26,6 +26,13 @@
 
 Quy ước: mọi script có header SPDX `#`, log mang mã task (`ST-##`), không ghi đè log cũ.
 
+**Mã thoát & chống PASS giả (`ST-314a`, 2026-11-25)**: `vis-wasm-sem` exit **1** khi có ca FAIL
+hoặc khi `--filter` không khớp ca nào (`--allow-fail` chỉ để ghi nhận nợ đã biết, không dùng cho
+cổng); `vis-wasm-suite`/`vis-wasm-conformance` coi **0 ca chạy** là FAIL; `vis-wasm-suite` chỉ định
+`--runtime <tên>` mà thiếu runtime ⇒ exit **2**; `vis-remote` xoá marker `.exit` cũ trước mỗi lần
+chạy và chỉ đọc marker trong phần log mới; `vis-gc-targets`/`vis-jobs` từ chối dọn/OK khi `df`/`ps`
+lỗi; `vis-dev` từ chối cờ lạ thay vì bỏ qua.
+
 **Phát hành (VD-259)**: `crates/vis-cli` có bin test-support `test-child`; Cargo không cho ẩn bin
 khỏi `cargo build --release`/`cargo install` mà vẫn giữ `CARGO_BIN_EXE_test-child`. Vì vậy **không**
 phát hành bằng `cargo build --release` trần. Dùng `./bin/vis-release` (hoặc tường minh

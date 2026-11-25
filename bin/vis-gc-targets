@@ -36,6 +36,14 @@ case "$MIN_FREE_GB$TARGET_FREE_GB$AGE_DAYS" in *[!0-9]*) echo "vis-gc-targets: t
 
 free_gb() { df -Pk "$REPO" 2>/dev/null | awk 'NR==2 { printf "%d", $4 / 1024 / 1024 }'; }
 free="$(free_gb)"
+# **ST-314a (hậu-kiểm low-peak)**: `df` lỗi/không đọc được ⇒ `free` rỗng; trước đây `[ "" -ge 10 ]` chỉ in
+# "integer expected" rồi tiếp tục (kể cả `--apply`) như thể đĩa đã đủ. Từ chối rõ.
+case "$free" in
+    '' | *[!0-9]*)
+        echo "vis-gc-targets: không đọc được dung lượng trống của $REPO (df lỗi) — từ chối dọn" >&2
+        exit 3
+        ;;
+esac
 echo "vis-gc-targets: repo=$REPO free=${free}G (min=${MIN_FREE_GB}G, target=${TARGET_FREE_GB}G)"
 if [ "$free" -ge "$MIN_FREE_GB" ] && [ "$FORCE" -eq 0 ]; then
     echo "vis-gc-targets: OK — đĩa trên ngưỡng, không cần dọn (dùng --force để xét)"
@@ -52,7 +60,11 @@ fi
 
 # Danh sách worktree (một dòng "worktree <path>").
 worktrees=()
-while IFS= read -r wt; do [ -n "$wt" ] && worktrees+=("$wt"); done < <(git -C "$REPO" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')
+if ! wt_out="$(git -C "$REPO" worktree list --porcelain 2>/dev/null)"; then
+    echo "vis-gc-targets: git worktree list lỗi — không xác định được worktree; từ chối dọn" >&2
+    exit 3
+fi
+while IFS= read -r wt; do [ -n "$wt" ] && worktrees+=("$wt"); done < <(printf '%s\n' "$wt_out" | sed -n 's/^worktree //p')
 proj="$free"
 freed=0
 removed=0
@@ -64,7 +76,12 @@ for wt in ${worktrees[@]+"${worktrees[@]}"}; do
     t="$wt/target"
     [ -d "$t" ] || continue
     # Bỏ qua worktree đang được dùng bởi tiến trình (cargo/rustc/vis-*).
-    if ps -eo args= 2>/dev/null | grep -F -- "$wt_real" | grep -vq 'vis-gc-targets'; then
+    # **ST-314a (hậu-kiểm low-peak)**: `ps` lỗi KHÔNG được coi là "không có tiến trình" rồi xoá target đang dùng.
+    if ! ps_args="$(ps -eo args= 2>/dev/null)"; then
+        echo "vis-gc-targets: ps lỗi — không kiểm được worktree đang dùng; từ chối dọn" >&2
+        exit 3
+    fi
+    if printf '%s\n' "$ps_args" | grep -F -- "$wt_real" | grep -vq 'vis-gc-targets'; then
         echo "SKIP (đang dùng): $wt_real"
         continue
     fi

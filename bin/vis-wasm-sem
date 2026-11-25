@@ -7,7 +7,12 @@ Oracle: `/home/ps/vislogs/sem-native-baseline.tsv` (475/475 native):
 Không chạy lại native; mỗi ca wasm so **rc + sha256(stdout)** với oracle tương ứng.
 
 Phân loại WASI: chạy được (ngôn ngữ + stdlib lõi) vs loại trừ có lý do (`sqlite`, `net`/`proc`/
-`fs` host, `async`/`kenh`, `cap`, `.vish` command). Coverage = pass / eligible; mục tiêu >=85%.
+`fs` host, `async`/`kenh`, `cap`, `.vish` command). Coverage = pass / **số ca thực chạy**;
+mục tiêu >=85%.
+
+Mã thoát — **ST-314a (hậu-kiểm low-peak)**: 0 = không có ca FAIL; 1 = có ít nhất một ca FAIL hoặc `--filter` không
+khớp ca nào (trước đây in FAIL vẫn exit 0). `--allow-fail` giữ chế độ đo lịch sử (exit 0 dù
+có FAIL) — chỉ dùng để ghi nhận nợ đã biết, không dùng cho cổng.
 
 Runtime: wasmtime CLI → Python `wasmtime` → Node `node:wasi` (như ST-299a/b).
 """
@@ -230,6 +235,11 @@ def main() -> int:
     ap.add_argument("--oracle", default=str(ORACLE), help="TSV baseline native W1")
     ap.add_argument("--filter", default="")
     ap.add_argument("--require-target", action="store_true", help="coverage <85%% ⇒ exit 1")
+    ap.add_argument(
+        "--allow-fail",
+        action="store_true",
+        help="exit 0 dù có ca FAIL (chế độ đo lịch sử; không dùng cho cổng)",
+    )
     a = ap.parse_args()
     if a.build:
         build_wasm()
@@ -279,9 +289,11 @@ def main() -> int:
             )
         print("file\tcategory\tnative_rc\twasm_interp_rc\twasm_vm_rc\tstdout_sha256\tstatus")
         passed = failed = 0
+        da_chay = 0
         for f, cat, rel in eligible:
             if a.filter and a.filter not in rel:
                 continue
+            da_chay += 1
             ocat, irc, ihash, vrc, vhash = oracle[rel]
             wi_rc, wi_out, wi_err = run_wasm(
                 rt, exe, driver, WASM, work / (f.stem + "-i"), f, "interp"
@@ -316,14 +328,31 @@ def main() -> int:
                     f"hash={wv_hash[:16]} chờ {vhash[:16]}; err={wv_err[:200]!r}"
                 )
         eligible_n = len(eligible)
-        cov = (passed * 100.0 / eligible_n) if eligible_n else 0.0
+        # Coverage tính trên **số ca thực chạy** (tôn trọng --filter), không chia cho
+        # toàn bộ eligible — trước đây `--filter` làm mẫu số sai.
+        cov = (passed * 100.0 / da_chay) if da_chay else 0.0
         print(
-            f"# SUMMARY total={total} eligible={eligible_n} excluded={len(excluded)} "
-            f"pass={passed} fail={failed} coverage={cov:.1f}% target=85%"
+            f"# SUMMARY total={total} eligible={eligible_n} chay={da_chay} "
+            f"excluded={len(excluded)} pass={passed} fail={failed} "
+            f"coverage={cov:.1f}% target=85%"
         )
         for f, cat, why in excluded:
             print(f"# EXCLUDE {f.relative_to(ROOT)}\t{cat}\t{why}")
+        # **ST-314a (hậu-kiểm low-peak)**: 0 ca khớp (filter rỗng/eligible rỗng) là FAIL, không phải PASS.
+        if da_chay == 0:
+            print(
+                "# KHÔNG có ca nào được chạy (filter/eligible rỗng) — tính là FAIL",
+                file=sys.stderr,
+            )
+            return 1
         if a.require_target and cov < 85.0:
+            return 1
+        if failed and not a.allow_fail:
+            print(
+                f"# FAIL: {failed}/{da_chay} ca khác oracle native — exit 1 "
+                "(dùng --allow-fail nếu chỉ ghi nhận nợ đã biết)",
+                file=sys.stderr,
+            )
             return 1
         return 0
     finally:

@@ -240,8 +240,19 @@ emit_run_script() { # $1 tệp · $2 host · $3 cargo hint · $4 repo · $5 log 
         printf 'VIS_ARGV=%s\n' "$argv"
         printf '%s\n' "$COMMON_HEAD"
         cat <<'EOS'
-cd "$VIS_REPO" || { echo "vis-remote: không vào được cây nguồn '$VIS_REPO'" >&2; exit 3; }
-mkdir -p "$(dirname "$VIS_LOG")" || { echo "vis-remote: không tạo được thư mục log '$(dirname "$VIS_LOG")'" >&2; exit 3; }
+# **ST-314a (hậu-kiểm low-peak)**: xoá `.exit` cũ **cùng stem** trước khi chạy. Nếu lệnh chết trước khi ghi
+# (vd. `cd` lỗi), fallback đọc `.exit` không được thấy bằng chứng của lần chạy trước.
+rm -f "$VIS_LOG.exit" 2>/dev/null || true
+cd "$VIS_REPO" || {
+    echo "vis-remote: không vào được cây nguồn '$VIS_REPO'" >&2
+    printf '3\n' >"$VIS_LOG.exit" 2>/dev/null || true
+    exit 3
+}
+mkdir -p "$(dirname "$VIS_LOG")" || {
+    echo "vis-remote: không tạo được thư mục log '$(dirname "$VIS_LOG")'" >&2
+    printf '3\n' >"$VIS_LOG.exit" 2>/dev/null || true
+    exit 3
+}
 set -u
 set -o pipefail
 # ---------- ST-175 (VD-177 §4): TỪ CHỐI CÂY BẨN TRƯỚC KHI ĐO ----------
@@ -317,7 +328,7 @@ remote_home() { # $1 = host, $2 = các dòng probe
 # $1 host · $2 tệp log cục bộ · $3 stem log trên máy đích · $4.. argv
 run_once() {
     local host="$1" log="$2" stem="$3"; shift 3
-    local argv script probe rhome rlog out rc marker
+    local argv script probe rhome rlog out rc marker truoc
     [ $# -gt 0 ] || die 2 "run: cần lệnh"
     argv="$(argv_literal "$@")"
     probe="$(probe_host "$host")" || die 3 "dò môi trường '$host' thất bại (BLOCKED-ENV)"
@@ -356,9 +367,13 @@ run_once() {
         printf '# ---------- HET ST-242 ----------\n'
     } >>"$log" || die 3 "không ghi được log '$log'"
 
+    truoc="$(wc -l <"$log" 2>/dev/null | tr -d ' ')"
+    case "$truoc" in '' | *[!0-9]*) truoc=0 ;; esac
     transport_run "$host" "$script" 2>&1 | tee -a "$log"
     rc=$?                                   # mã của `tee`/ssh: CHỈ để chẩn đoán, không phải bằng chứng
-    marker="$(printf '%s\n' "$(tail -40 "$log")" | tr -d '\r' | sed -n 's/^vis-remote-exit=//p' | tail -1)"
+    # **ST-314a (hậu-kiểm low-peak)**: chỉ đọc marker trong **phần log mới của lần chạy này** — không quét lại
+    # marker của lần trước khi `--log` được dùng lại (trước đây `tail -40` có thể đọc marker cũ).
+    marker="$(tail -n +"$((truoc + 1))" "$log" 2>/dev/null | tr -d '\r' | sed -n 's/^vis-remote-exit=//p' | tail -1)"
     if [ -z "$marker" ]; then
         # Không thấy dấu đọc-từ-tệp: đọc `.exit` bằng một lần ssh riêng (vẫn là đọc TỆP, không `$?`).
         marker="$(read_exit_file "$host" "$rlog.exit")"
@@ -369,6 +384,14 @@ run_once() {
         VR_EXIT=4
         return 4
     }
+    case "$marker" in
+        *[!0-9]*)
+            printf '# [exit=?] marker/.exit không phải số (marker=%s)\n' "$marker" >>"$log"
+            say "[exit=?] marker/.exit không phải số — BLOCKED-ENV"
+            VR_EXIT=4
+            return 4
+            ;;
+    esac
     {
         printf '# ---------- KET ----------\n'
         printf '# thoi_diem_ket_thuc=%s\n' "$(utc_iso)"

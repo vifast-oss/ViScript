@@ -20,6 +20,13 @@ if [ ! -f "$SUITE" ]; then
   exit 1
 fi
 so_ca=$(grep -c -v -E '^#|^$' "$SUITE")
+# **ST-314a (hậu-kiểm low-peak)**: suite rỗng (hoặc grep lỗi) từng cho `0/0` rồi exit 0.
+case "$so_ca" in
+  '' | *[!0-9]* | 0)
+    echo "vis-host-suite: suite '$SUITE' không có ca nào — tính là FAIL" >&2
+    exit 1
+    ;;
+esac
 if ! "$CARGO" test --manifest-path "$ROOT/Cargo.toml" -p vis-cli --test host_conformance -- --nocapture >"$LOG" 2>&1; then
   grep -E '^not ok' "$LOG" | sed 's/^/  /' >&2
   echo "vis-host-suite: HỎNG (log: $LOG)" >&2
