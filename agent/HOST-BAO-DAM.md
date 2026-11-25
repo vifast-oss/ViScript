@@ -90,7 +90,7 @@
 
 > **Windows Tier 1 — CHÍNH THỨC (2026-11-23, ST-298 / VD-283)** — đã đủ điều kiện; giữ caveat `FsGuard`.
 > Bằng chứng đã có: **3× `bin/vis-gate-windows --full` PASS liên tiếp** @ `f4cb136`
-> (**3611 passed / 0 failed / 3 ignored** mỗi lần; host 54/54; targets 18/18 + 17/1; dirty 0).
+> (**3611 passed / 0 failed / 3 ignored** mỗi lần; host 54/54; targets 18/18 + 17/1 — mốc cũ, nay **47 ô**; dirty 0).
 > Soak 4h cùng worktree đang chạy; số liệu do A0/W4 điền sau:
 > **`985` vòng / fail `0` / flake `1`; fd/handle `free RAM 8204–8766 MB; proc/threads 0/0 sau mỗi vòng; fd/handle không đo được sau soak (NO_PROC; không còn tiến trình vis/cargo/rustc); dirty cuối 0`;
 > free RAM `8204–8766 MB`; dirty cuối `0`; ETA `đã xong`**.
@@ -112,8 +112,7 @@ Cập nhật phụ: 2026-11-18 (giữ nguyên) — 2026-11-20 xem dòng đầu.
 |---|---|---|---|
 | macOS (mps) — **Tier 1 arm64** (`aarch64-apple-darwin`) | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant` | **Không có** — nhân Darwin không có Landlock; suite `vis-host-linux` **cfg-out** (0 ca, ST-173) | **Darwin 27.0.1 arm64 @ `7930e90`, 2026-11-24**: 3× gate full PASS (220/216/210 s; nextest 3.745/3/0, doc-test 5/0/1, host-wasm 29/29, WASI 28/28); soak 4 h **1.878 vòng / 0 fail**, RSS/fd phẳng; `vis-wasm-sem` **388/390**; `JOURNAL/st300m3-macos-tier1.md`. |
 | Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/archive/journal-pre-v040/st295-verify.log`) |
-| Linux | **Có** — cùng mã `vis-cli` (host native ở `vis-host-native`) | **Có** — crate `landlock =0.4.7` cưỡng chế bằng kernel (ST-132); suite **18/18 ca** trên `ps` (ST-295 thêm 3 ca `Execute`/lib) | `cargo test -p vis-host-linux --test landlock` → `18 passed` (log `agent/archive/journal-pre-v040/st295-verify.log`) |
-| Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136`; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
+| Windows x86_64 — **Tier 1** | **Có theo mã** — `FsGuard`/`NetGuard`, `VS0604`, `--grant`; **chỉ kiểm theo đường dẫn**, không danh tính tệp | **Không có** | **3× full 3611/0/3** @ `f4cb136` (chứng nhận `v0.4.5`); **đo lại @`a7cf2533c`: 3729/0/4**; soak 4 h **985 vòng / 0 fail**; host 54/54; caveat `FsGuard` (`VD-283`/`ST-298`) |
 | wasm32-wasip1 | **Có** — `WasiHost` preopen; từ chối `net`/`proc`/`sqlite` | **Không áp dụng** | suite **28/28**, `vis-wasm-sem` **390/390** (`#193` đóng 2026-11-25: stack 12 MiB + node 4096); vẫn không tuyên bố full host (`ST-299a/b`, `ST-300`, `ST-313d`) |
 
 > **Windows (VD-186/VD-283)**: `FsGuard` **có chạy** trên Windows nhưng **chỉ kiểm theo đường dẫn** và **không có
@@ -140,14 +139,17 @@ kỳ vọng ghi trong script).
 
 | Nhóm | `x86_64-pc-windows-msvc` | `wasm32-unknown-unknown` | Mức bằng chứng |
 |---|---|---|---|
-| 23 crate workspace / 5 tầng DAG (T0–T4) | check xanh (cấu hình `core`; `vis-cli` × sqlite xem dòng dưới) | check xanh; `vis-cli` × sqlite `wasm32` = **EXPECTED_RED** #156 (C toolchain) | **check** biên dịch chéo |
+| 23 crate workspace / 5 tầng DAG (T0–T4) | check xanh (cấu hình `core`; sqlite: `vis-cli` × msvc đỏ trên `ps` vì thiếu C toolchain, xanh trên `psvn`) | check xanh; `vis-cli` × sqlite `wasm32` = **EXPECTED_RED** #156 (`ps`: C toolchain/ring; `psvn`: `getrandom` js) | **check** biên dịch chéo |
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
-| `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
+| `vis-host-linux` | check xanh (crate rỗng `cfg(target_os = "linux")`, 0 ca) | check xanh (rỗng, 0 ca) | check biên dịch chéo; 18/18 ca Landlock chỉ trên Linux (ST-173/ST-295) |
 | `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` **390/390**, conformance **299×2** (`ST-299a/b`, `ST-300`, `ST-314a`; `#193` đóng 2026-11-25) |
-| `vis-host-*` chạy thật | **Tier 1** — Windows full @`5d857b84` **3.729/0/4 ignored**; host suite **54/54** (120 lượt) | `wasm32-wasip1`: **chạy thật** (suite 28/28, sem 390/390); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`gate --fast` 3.804/0); wasm: **runtime có phạm vi** |
+| `vis-host-*` chạy thật | **Tier 1** — Windows full @`5d857b84` **3.729 passed / 0 failed / 4 ignored** (90 binary; tái lập @`a7cf2533c`); host suite **54/54** (120 lượt) | `wasm32-wasip1`: **chạy thật** (suite 28/28, sem 390/390); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`gate --fast` 3.804 passed / 4 skipped); wasm: **runtime có phạm vi** |
 
-Bảng đầy đủ (**47 ô/cấu hình**: 23 crate × 2 target + `vis-host-wasm` × wasm32; core `PASS=47`,
-sqlite `PASS=45 + 2 EXPECTED_RED`): `agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
+Bảng đầy đủ (**47 ô/cấu hình** = 23 crate × 2 target + `vis-host-wasm` × wasm32; `core` **PASS=47**
+trên cả `ps`/`psvn`; `sqlite` **45+2 trên `ps`**, **46+1 trên `psvn`** — ô `vis-cli` × msvc phụ
+thuộc C toolchain của host): `/home/ps/vislogs/st314a-lp2-vis-targets.log` (`ps`),
+`/home/ps/vislogs/st314a-lp-win-full.log` (`psvn`); log lịch sử 18 ô:
+`agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
 “wasm32-unknown-unknown chạy được”; đúng là “**check** biên dịch chéo” cho `wasm32-unknown-unknown`,
 và “**runtime `wasm32-wasip1`** — coverage **390/390**” cho WASI (sau ST-313d).
 
@@ -307,7 +309,7 @@ vì đây là **giới hạn chính sách**, **không** phải lỗi đua (TOCTO
   hơn** Unix, không hẹp hơn.
 - **Không có Landlock:** Landlock **chỉ Linux** (mục cuối tệp) ⇒ không có lớp kernel nào bù.
 - **Số đo (Tier 1, `v0.4.5`)**: 3× `bin/vis-gate-windows --full` **3611/0/3** @ `f4cb136`; host suite
-  **54/54**; `bin/vis-targets` **18/18 + 17/1**; soak 4 h **985 vòng / 0 fail**; self-test **12/12**.
+  **54/54**; `bin/vis-targets` **18/18 + 17/1** (mốc cũ; nay **47 ô**); soak 4 h **985 vòng / 0 fail**; self-test **12/12**.
   Số cũ 20/11 (host 39/54, `cargo test` 1053/100, L0 dừng ở `cap_proc`) là **lịch sử** —
   `agent/reports/R26-viscript.md` §3.3, `st144-host-suite.log`, `st153-gate-psvn.log`.
 - **Phạm vi Tier 1:** mức hỗ trợ sản phẩm (compiler/interp/VM/module/LSP/host suite) — **không** suy rộng

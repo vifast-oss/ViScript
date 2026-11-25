@@ -187,6 +187,7 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `bin/vis-targets` @`a7cf2533` (gồm `vis-dag-check` mới) | **PASS** — core `47/0/0`, sqlite `45/2/0`; dag-check `OK — 23 crate / 5 tầng` | `/home/ps/vislogs/st314a-lp2-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe` |
 | `./vis-dev core-test` (no-default-features) | **PASS** — 1.804/0 (12 binary), target riêng | `/home/ps/vislogs/st314a-lp2-core-test.log`, sha `ec5ab3afdaa212d38f60712586799607c99e7c70262e05b6714966f6d8808834` |
 | Windows full @`a7cf2533` (`psvn`) | **3.729/0/4 ignored** (90 binary); host conformance **54 ca/120 lượt, 0 lệch**; `vis-targets` core `47/0/0`, sqlite `46/1/0`; `vis-dag-check OK` | `/home/ps/vislogs/st314a-lp-win-full.log`, sha `31237fe79645729ac3f6af9169de6e901c9d3594a89ac29b2bbd318003e807e6` (máy đích `6eb165cd…`) |
+| Fuzz parser 20 phút @`psvn` | **92.966.091 ca / 2.109.956.381 token, 0 vi phạm** | `/home/ps/vislogs/st314a-lp3-fuzz-psvn.log` |
 
 ## 11. Audit docs `SPEC.md` + thiết kế (subagent) — đề xuất cho Agent 0
 
@@ -230,6 +231,21 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
 - Đo cục bộ: `cargo check -p vis-runtime` OK; `cargo test -p vis-runtime -p vis-core` →
   **283 + 20 + 3 passed, 0 failed**; `cargo fmt --all -- --check` OK.
 - Test tích hợp đích: `host_it vd270_fsbytes` **7/7**, `vd270_mkdir_all` **7/7**, `vd266_fs` **11/11**.
+- `./vis-dev core-test` sau refactor: **1.804/0** (12 binary), PASS
+  (`/home/ps/vislogs/st314a-lp4-core-test.log`, sha `0c59ad99601f854e703d83c7cb9e646ddaf62f2c1146d908427636f0bc58c2b9`).
 - `./vis-dev check` @working tree: **PASS**, `EXIT=0`
   (`/home/ps/vislogs/st314a-lp3-check-leaf.log`, sha `9240367d135324948d465180fe1f9e40cfca26d73cf38519bfd47f713a7c4572`).
 - Chờ `gate --fast` cuối (fuzz nền đang chạy) để chốt bằng chứng đầy đủ.
+
+## 14. Audit ma trận host (subagent) — sửa `agent/HOST-BAO-DAM.md`
+
+- Xác nhận **47 ô/cấu hình** = 23 crate × 2 target + `vis-host-wasm` × wasm32; `core` 47 PASS cả
+  `ps`/`psvn`; `sqlite` **45+2 trên `ps`**, **46+1 trên `psvn`** (ô `vis-cli` × msvc phụ thuộc C
+  toolchain của host).
+- Đã sửa: bỏ **dòng Linux trùng**; `vis-host-linux` không còn `— | —` (check PASS cả 2 target,
+  0 ca vì crate rỗng trên host khác); đoạn "47 ô" dẫn log hiện hành `st314a-lp2-vis-targets.log`
+  (`ps`) + `st314a-lp-win-full.log` (`psvn`), log 18 ô cũ ghi rõ là **lịch sử**.
+- Số Windows `3611/0/3 @f4cb136` nay ghi rõ là **chứng nhận `v0.4.5`**, kèm **đo lại
+  @`a7cf2533c`: 3729/0/4**; các dòng `18/18 + 17/1` cũ đánh dấu "mốc cũ; nay 47 ô".
+- `docs/SPEC.md:683` (macOS caveat `0.6.0`) vẫn là đề xuất A0-only trong
+  `de-xuat-dong-bo-docs-2026-11-25.md`.
