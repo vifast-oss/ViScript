@@ -316,3 +316,17 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - `bin/vis-targets`: dò `python3.12/3.11/3` như các script khác.
 - Bằng chứng: `py_compile` OK; `vis-wasm-suite` **28/28** (sha `858670cd…`);
   `vis-wasm-conformance` **299×2, 0 hỏng**, `EXIT=0` (sha ghi trong log `st314a-lp10-wasm-conformance.log`).
+
+## 20. Vòng nặng low-peak 2
+
+- **20× `vis-diff 100k`** (seed `2121…3030` + `4040…4949`): **cả 20 lượt lech=0**
+  (93.765–93.773 chương trình chạy/lượt); log `st314a-lp3-diff-<seed>.log`,
+  `st314a-lp6-diff-<seed>.log`.
+- `gate --fast` cuối @`3f56be36`: **3805/3805**, 4 skipped; DAG 5 tầng + self-test OK
+  (`/home/ps/vislogs/st314a-lp13-gate.log`, sha `c0df0496db6956de11e474b40969868ae666b632885dd54b2119304b03481614`).
+- **Fuzz parser 20 phút**: **147.256.563 ca / 3.342.079.396 token, 0 vi phạm**; fmt 475 tệp
+  bất động (`st314a-lp6-fuzz-20m.log`). Log gốc ghi `EXIT=2` vì `bin/vis-dev` bị sửa **trong lúc**
+  job đang đọc tệp (artifact, không phải lỗi sản phẩm); rerun sạch ngay sau đó:
+  `./vis-dev nightly --skip-gate --fuzz-minutes 1` → **PASS**, DAG 5 tầng + self-test OK,
+  fuzz 1 phút OK, fmt OK, `EXIT=0`
+  (`/home/ps/vislogs/st314a-lp14-nightly-1m-clean.log`, sha `1ab2e3a49d9231d378663e2e6deccfafd03b383dbb64c242c538405562e27431`).
