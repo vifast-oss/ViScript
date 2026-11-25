@@ -89,3 +89,6 @@ mod sync_list_lib;
 
 #[path = "net_pkg_it/vs3_default_lib.rs"]
 mod vs3_default_lib;
+
+#[path = "misc_api_it/repl_lib.rs"]
+mod repl_lib;

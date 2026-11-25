@@ -693,6 +693,7 @@ dependencies = [
  "mio",
  "rustix",
  "vis-bytecode",
+ "vis-cli",
  "vis-core",
  "vis-diag",
  "vis-fmt",
@@ -702,6 +703,7 @@ dependencies = [
  "vis-syntax",
  "vis-types",
  "vis-vm",
+ "vish-edit",
 ]
 
 [[package]]
