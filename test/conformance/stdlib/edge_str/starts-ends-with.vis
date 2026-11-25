@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.starts_with("", ""))
+    print(str.starts_with("abc", ""))
+    print(str.starts_with("đ😀", "đ"))
+    print(str.starts_with("abc", "abcd"))
+    print(str.ends_with("", ""))
+    print(str.ends_with("abc", ""))
+    print(str.ends_with("đ😀", "😀"))
+    print(str.ends_with("abc", "zabc"))
+    print("abc".starts_with("a"))
+    print("abc".starts_with("z"))
+    print("abc".ends_with("c"))
+    print("abc".ends_with("z"))

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.with_stem("a/b.txt", "c"))
+    print(path.with_stem("a/b.tar.gz", "c"))
+    print(path.with_stem("a/b", "c"))
+    print(path.with_stem(".gitignore", "c"))
+    print(path.with_stem("a/.gitignore", "c"))
+    print(path.with_stem(".a.b", "c"))
+    print(path.with_stem("foo.", "c"))
+    print("[" + path.with_stem("a/b.txt", "") + "]")
+    print("[" + path.with_stem("a/b", "") + "]")
+    print("[" + path.with_stem(".gitignore", "") + "]")
+    print(path.with_stem("a/b/", "c"))
+    print(path.with_stem("a//b", "c"))
+    print(path.with_stem("a/./b.txt", "c"))
+    print(path.with_stem("thư/tệp.txt", "mới"))
+    print(path.with_stem("a/b", "x/y"))
+    print(path.with_stem("a/b.txt", "c.d"))

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.contains("", ""))
+    print(str.contains("abc", ""))
+    print(str.contains("", "a"))
+    print(str.contains("đ😀x", "😀"))
+    print(str.contains("aaa", "aa"))
+    print(str.contains("đ😀x", "😀x"))
+    print("abc".contains("b"))
+    print("abc".contains("z"))
+    print("đ😀".contains("😀"))

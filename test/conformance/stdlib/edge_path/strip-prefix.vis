@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.strip_prefix("a/b/c", "a"))
+    print(path.strip_prefix("a/b/c", "a/b"))
+    print(path.strip_prefix("a/b", "a/b"))
+    print(path.strip_prefix("abc", "ab"))
+    print(path.strip_prefix("a/bc", "a/b"))
+    print(path.strip_prefix("a/b", "a///"))
+    print(path.strip_prefix("/a/b", "/"))
+    print(path.strip_prefix("//a", "/"))
+    print(path.strip_prefix("///a", "//"))
+    print(path.strip_prefix("a", "/"))
+    print(path.strip_prefix("a//b", "a"))
+    print(path.strip_prefix("a/b", "a//b"))
+    print(path.strip_prefix("a/./b", "a"))
+    print(path.strip_prefix("a", ""))

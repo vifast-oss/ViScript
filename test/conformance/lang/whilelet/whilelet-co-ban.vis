@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [10, 20, 30, 40]
+    var i = 0
+    while let Some(v) = xs.get(i):
+        print(v)
+        i = i + 1
+    print("het")
+    print(i)

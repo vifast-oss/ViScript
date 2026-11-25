@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.with_file_name("a/b.txt", "c"))
+    print(path.with_file_name("a/b.tar.gz", "c"))
+    print(path.with_file_name("./a", "x"))
+    print(path.with_file_name("../a.txt", "x"))
+    print(path.with_file_name("//srv/share/x", "c"))
+    print(path.with_file_name("a//b", "c"))
+    print(path.with_file_name("a/./b", "c"))
+    print(path.with_file_name("a/b//", "c"))
+    print("[" + path.with_file_name("a/b.txt", "") + "]")
+    print("[" + path.with_file_name("a", "") + "]")
+    print("[" + path.with_file_name("", "x") + "]")
+    print("[" + path.with_file_name("/", "x") + "]")
+    print("[" + path.with_file_name("a/..", "x") + "]")
+    print("[" + path.with_file_name("a/b/..", "x") + "]")
+    print(path.with_file_name("a/b.txt", "c.d"))
+    print(path.with_file_name("a/b.txt", "x/y"))
+    print("[" + path.with_file_name("a/b.txt", "/x") + "]")
+    print(path.with_file_name("thư/tệp.txt", "mới"))

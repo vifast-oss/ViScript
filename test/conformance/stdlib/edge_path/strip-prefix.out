@@ -1,0 +1,14 @@
+Some(b/c)
+Some(c)
+Some()
+None
+None
+Some(b)
+Some(a/b)
+Some(/a)
+Some(//a)
+None
+Some(/b)
+Some()
+Some(./b)
+Some(a)

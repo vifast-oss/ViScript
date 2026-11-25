@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    var x: int? = Some(7)
+    while let Some(v) = x:
+        print(v)
+        x = None
+    print("xong")
+    var n = 0
+    var y: int? = None
+    while let Some(v) = y:
+        n = n + 1
+    print(n)

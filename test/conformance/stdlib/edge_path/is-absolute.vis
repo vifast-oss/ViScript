@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.is_absolute(""))
+    print(path.is_absolute("a"))
+    print(path.is_absolute("/"))
+    print(path.is_absolute("//"))
+    print(path.is_absolute("/a"))
+    print(path.is_absolute("a/b"))
+    print(path.is_abs("/a") == path.is_absolute("/a"))
+    print(path.is_abs("a/b") == path.is_absolute("a/b"))
