@@ -25,7 +25,12 @@ fn quyen_dir(root: &Path) -> Quyen {
         moc: vec![QuyenCap {
             pos: 0,
             kind: "Dir".to_string(),
-            root: root.display().to_string(),
+            // **ST-314a (H2)**: `QuyenCap.root` phải là root **đã canonicalize** (như `tao`);
+            // `kiem_canon` không canonicalize lại mỗi lần kiểm để chống đổi gốc thành symlink.
+            root: std::fs::canonicalize(root)
+                .unwrap_or_else(|_| root.to_path_buf())
+                .display()
+                .to_string(),
             write: false,
             allow: Vec::new(),
         }],
