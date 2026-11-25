@@ -360,3 +360,45 @@ fn hai_duong_cung_so_chan_doan() {
         .join()
         .expect("luồng lỗi");
 }
+
+/// **ST-314a hậu-kiểm (low-peak 2026-11-25)** — gọi **phương thức trên giá trị module** khi thiếu
+/// `use std.<mod>` (vd `str.join(...)`): cả hai engine phải trả **cùng mã + cùng thông điệp**.
+///
+/// Trước bản vá, interp rơi vào đường truy cập trường ⇒ `` `<builtin str>` không có trường `join` ``,
+/// còn VM đi `CallMethod` ⇒ `` `<builtin str>` không có phương thức `join` `` — lệch **thông điệp**
+/// (mã `VS0501` và exit vẫn khớp). Ca này khoá parity mức thông điệp cho lớp lỗi đó.
+#[test]
+fn goi_module_thieu_use_khop_ca_thong_diep() {
+    let src = "fn main():\n    print(str.join(\"/\", [\"a\", \"b\"]))\n";
+    let a = chay_interp(src, vis_syntax::Mode::Script).expect("interp phải chạy tới runtime");
+    let b = chay_vm(src, vis_syntax::Mode::Script).expect("vm phải chạy tới runtime");
+    assert_eq!(a.exit, b.exit, "exit lệch: {}", mo_ta(&a));
+    assert_eq!(mo_ta(&a), mo_ta(&b), "chẩn đoán lệch giữa hai engine");
+    assert_eq!(a.codes(), vec!["VS0501"]);
+    assert_eq!(a.diagnostics.len(), 1);
+    assert!(
+        a.diagnostics[0].message.contains("không có phương thức"),
+        "thông điệp: {}",
+        a.diagnostics[0].message
+    );
+}
+
+/// **ST-314a hậu-kiểm (low-peak 2026-11-25)** — `select_recv` trên **đường đồng bộ** (không có
+/// `async fn`): cả hai engine phải báo **cùng** thông điệp "cần đường frame test/async".
+///
+/// Trước bản vá, `lit::builtin_name` chép tay thiếu 4 tên `select_*` ⇒ interp rơi vào nhánh
+/// "tên … chưa hỗ trợ ở VS0", còn VM đi `builtin::call` → `rt::select` và báo thông điệp cụ thể.
+#[test]
+fn select_duong_dong_bo_khop_thong_diep() {
+    let src = "fn main():\n    let c = chan[int](1)\n    print(select_recv([c]))\n";
+    let a = chay_interp(src, vis_syntax::Mode::Script).expect("interp phải chạy tới runtime");
+    let b = chay_vm(src, vis_syntax::Mode::Script).expect("vm phải chạy tới runtime");
+    assert_eq!(a.exit, b.exit, "exit lệch: {}", mo_ta(&a));
+    assert_eq!(mo_ta(&a), mo_ta(&b), "chẩn đoán lệch giữa hai engine");
+    assert_eq!(a.codes(), vec!["VS0501"]);
+    assert!(
+        a.diagnostics[0].message.contains("cần đường frame"),
+        "thông điệp: {}",
+        a.diagnostics[0].message
+    );
+}

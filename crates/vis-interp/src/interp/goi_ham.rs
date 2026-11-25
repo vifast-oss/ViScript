@@ -26,7 +26,11 @@ impl<'a> Interp<'a> {
         {
             return self.goi_tuy_chon(base, name, args, named, span);
         }
-        // 1) Phương thức trên list/str/map: `xs.push(1)`, `s.upper()`.
+        // 1) Phương thức: `xs.push(1)`, `s.upper()` — **mọi** `recv` đi cùng một hiện thực
+        // `builtin::method`, đúng như opcode `CallMethod` của VM. Ca `recv` không phải
+        // list/str/map/chan (vd `str.join` thiếu `use std.str`) vì thế cũng trả **cùng mã +
+        // cùng thông điệp** `không có phương thức` ở hai engine (trước đây interp rơi vào
+        // đường truy cập trường ⇒ `không có trường`, lệch thông điệp với VM).
         if let HExpr::Field {
             base,
             name,
@@ -35,43 +39,36 @@ impl<'a> Interp<'a> {
         } = callee
         {
             let recv = self.eval(base)?;
-            // **ST-61 (VD-96)**: kênh cũng đi **một** nhánh `builtin::method` (như list/str/map) ⇒
-            // interp ↔ VM cùng một hiện thực `send`/`recv`/`close`.
-            if matches!(
-                recv,
-                Value::List(_) | Value::Str(_) | Value::Map(_) | Value::Chan(_)
-            ) {
-                // **VD-258**: `xs.push(v)` với `xs: list[T?]` — nâng `v` plain ở biên phương
-                // thức (mirror codegen), tránh list chứa giá trị plain trong ô `T?`.
-                let push_depth = if name == "push" {
-                    match self.expr_ty(base, &recv) {
-                        Some(vis_hir::Type::List(el)) if el.is_opt() => opt_depth_ty(&el),
-                        _ => 0,
-                    }
-                } else {
-                    0
-                };
-                let mut vs = Vec::with_capacity(args.len());
-                for a in args {
-                    let mut vv = self.eval(a)?;
-                    if push_depth > 0 {
-                        vv = crate::lift::lift_opt(vv, push_depth);
-                    }
-                    vs.push(vv);
+            // **VD-258**: `xs.push(v)` với `xs: list[T?]` — nâng `v` plain ở biên phương
+            // thức (mirror codegen), tránh list chứa giá trị plain trong ô `T?`.
+            let push_depth = if name == "push" {
+                match self.expr_ty(base, &recv) {
+                    Some(vis_hir::Type::List(el)) if el.is_opt() => opt_depth_ty(&el),
+                    _ => 0,
                 }
-                let kq = crate::builtin::method(self, recv, name, vs, span)?;
-                // ST-15b (mục 1, §7.1 ngữ nghĩa giá trị + CoW): `push` trên **`var`** phải **ghi lại**
-                // biến (bản thân list đổi), không chỉ trả list mới. `push` trên `let`/biểu thức tạm
-                // vẫn "trả list mới" (không có lvalue để ghi) — ghi rõ trong JOURNAL.
-                if name == "push" {
-                    if let HExpr::Var { sym: Some(id), .. } = &**base {
-                        if self.mutable.contains(id) {
-                            self.env.borrow_mut().insert(*id, kq.clone());
-                        }
-                    }
+            } else {
+                0
+            };
+            let mut vs = Vec::with_capacity(args.len());
+            for a in args {
+                let mut vv = self.eval(a)?;
+                if push_depth > 0 {
+                    vv = crate::lift::lift_opt(vv, push_depth);
                 }
-                return Ok(kq);
+                vs.push(vv);
             }
+            let kq = crate::builtin::method(self, recv, name, vs, span)?;
+            // ST-15b (mục 1, §7.1 ngữ nghĩa giá trị + CoW): `push` trên **`var`** phải **ghi lại**
+            // biến (bản thân list đổi), không chỉ trả list mới. `push` trên `let`/biểu thức tạm
+            // vẫn "trả list mới" (không có lvalue để ghi) — ghi rõ trong JOURNAL.
+            if name == "push" {
+                if let HExpr::Var { sym: Some(id), .. } = &**base {
+                    if self.mutable.contains(id) {
+                        self.env.borrow_mut().insert(*id, kq.clone());
+                    }
+                }
+            }
+            return Ok(kq);
         }
         // 2) Gọi thẳng hàm khai trong tệp (kể cả đệ quy) — theo `sym`.
         if let HExpr::Var { sym: Some(id), .. } = callee {

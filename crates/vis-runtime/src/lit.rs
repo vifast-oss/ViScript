@@ -65,34 +65,11 @@ pub fn builtin_name(name: &str) -> Option<&'static str> {
             .and_then(vis_hir::stdlib::sig_of)
             .map(|f| f.name);
     }
-    match name {
-        "print" => Some("print"),
-        "assert" => Some("assert"),
-        "panic" => Some("panic"),
-        "len" => Some("len"),
-        "str" => Some("str"),
-        "Ok" => Some("Ok"),
-        "Err" => Some("Err"),
-        "Some" => Some("Some"),
-        "None" => Some("None"),
-        "ref" => Some("ref"),
-        // ST-18: 3 lệnh builtin của chế độ lệnh (VS0) — chữ ký ở `vis-types/lower/cmd.rs`.
-        "echo" => Some("echo"),
-        "lines" => Some("lines"),
-        "take" => Some("take"),
-        // ST-38: closure-arg của chế độ lệnh.
-        "sort_by" => Some("sort_by"),
-        "render" => Some("render"),
-        "ls" => Some("ls"),
-        "open" => Some("open"),
-        "get" => Some("get"),
-        "select" => Some("select"),
-        "where" => Some("where"),
-        "each" => Some("each"),
-        "first" => Some("first"),
-        "count" => Some("count"),
-        _ => None,
-    }
+    // **ST-314a hậu-kiểm (low-peak 2026-11-25)**: một nguồn duy nhất với `SIGS` (frame + VM đã
+    // dùng). Trước đây danh sách này chép tay và thiếu 4 tên `select_*`, khiến interp ở đường
+    // đồng bộ báo ``tên `select_recv` chưa hỗ trợ ở VS0`` trong khi VM báo đúng
+    // `` `select_recv` cần đường frame test/async … `` — lệch **thông điệp** giữa hai engine.
+    crate::builtin::builtin_name(name)
 }
 /// **R6c (VD-178)**: định dạng `{expr:spec}` — hiện hỗ trợ `.N` (N chữ số thập phân).
 pub fn dinh_dang(v: &Value, spec: &str, span: Span) -> Result<String, Abort> {
