@@ -484,7 +484,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 | Cổng | Kết quả | Log |
 |---|---|---|
-| `./vis-dev gate --fast` | **PASS — 3814/3814, 4 skipped** (thêm sugar + unit SIGS); DAG 5 tầng + self-test OK | `st314a-lp42-gate-sugar.log` (3813), `st314a-lp45-gate-final2.log` (3814) |
+| `./vis-dev gate --fast` | **PASS — 3817/3817, 4 skipped** (sugar + SIGS + const + plugin); DAG 5 tầng + self-test OK | `st314a-lp45-gate-final2.log` (3814), `st314a-lp51-gate-m3.log` (3817) |
 | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (Linux) | `st314a-lp29-clippy-linux.log` |
 | `vis-conformance` corpus | **544/544** | `edge-conformance-final2.log` + `st314a-lp25-conformance-all.log` |
 | `vis-vm --test vm_it` | **54/54** (thêm dạng phương thức) | — |
@@ -494,7 +494,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `./bin/vis-host-suite` | **54/54** + host POSIX real PASS | `st314a-lp27-host-suite.log` |
 | `./bin/vis-wasm-sem` | **390/390, 0 fail, 100 %** (exit 0, strict mới) | `st314a-lp30-wasm-sem.log` |
 | `./bin/vis-wasm-suite` | **28/28, 0 hỏng** | `st314a-bin-audit-evidence.log` |
-| `./bin/vis-wasm-conformance` | **379 ca × 2 engine, 0 hỏng** (354 `.out` + 25 `.trap`; bỏ qua 33 async/kenh + 131 lỗi tĩnh + 1 ca đệ quy sâu) | `st314a-lp33-wasm-conformance-trap.log` |
+| `./bin/vis-wasm-conformance` | **393 ca × 2 engine, 0 hỏng** (366 `.out` + 27 `.trap`; corpus 563) | `st314a-lp53-targets-final.log`, chain `r060` |
 | `./bin/vis-dag-check` + `./vis-dev rules` | **OK** (23 crate/5 tầng; R1..R9) | — |
 | `./bin/vis-targets` | **PASS** — core `47/0/0`, sqlite `45/2/0` (cross-check 3 target) | `st314a-lp31-vis-targets.log` |
 | `./bin/vis-targets --wasm` | **đo lại**: sem **390/390**, suite **28/28**, conformance **379×2** | `st314a-lp37-targets-wasm.log` |
