@@ -582,3 +582,21 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 - Cổng sau vá: `gate --fast` **3816/3816** (`st314a-lp49-gate-bin3.log`), `test/release` PASS toàn bộ,
   `vis-lock` signal 137/143 + mutual exclusion SIGKILL, `vis-gc-targets` syntax/logic.
+
+## 25. Audit bảo mật (subagent W3) — 22 phát hiện, vá 5 lỗi (2 chặn, 2 cao, 1 trung bình)
+
+> Báo cáo: `/home/ps/vislogs/w3-security-2026-11-26.md` (repro thật bằng binary release; R7).
+
+| # | Mức | Lỗi | Vá + bằng chứng |
+|---|---|---|---|
+| **C1** | **chặn** | Landlock `ABI::V1` không handle `Truncate` ⇒ tiến trình con `truncate(2)` được tệp trong `cap[Dir]` **chỉ-đọc** | chuyển **ABI::V3** (Truncate/Refer); repro: `os.truncate` bị **EACCES**, `bimat.txt` nguyên 14 byte; landlock **18/18**, dòng `ABI=3` |
+| **C2** | **chặn** | `cap[Proc]`: kiểm allowlist phân giải PATH lần 1, `Command::new(ten)` tra PATH lần 2 ⇒ TOCTOU đổi symlink/PATH chạy binary ngoài allowlist | phân giải **một lần**, exec **đường tuyệt đối đã kiểm**; bỏ `khop_lenh`; clippy sạch |
+| **H1** | cao | URL chứa `\r\n` chèn header/request thứ hai vào `request-target` (smuggling) | `tach_url` từ chối **mọi CTL** trong URL; test 3 ca CRLF/CTL |
+| **H2** | cao | đổi **gốc** `cap[Dir]` thành symlink `/etc` ⇒ `ls` đọc metadata ngoài vùng (Linux; Windows biến thể H3 chưa đo) | `kiem_canon` dùng **gốc canonical lúc khởi động**, không canonicalize lại; repro root→/etc ⇒ **VS0604**, không liệt kê |
+| **M1** | trung bình | plugin codec không giới hạn độ sâu: file **875 byte** lồng 200.000 cấp làm host **stack overflow/SIGABRT** | `MAX_SAU = 64` + test; `vis plugin run deep.wasm` ⇒ `VS0501: lồng quá sâu (> 64 cấp)`, exit 2 |
+| M2/M3 + 14 mục khác | trung bình/nhẹ | stdout/stderr plugin không trần; quyền tệp cap/plugin; ioctl; … | **đề xuất A0** (báo cáo W3 §4) |
+
+- Cổng sau vá: `gate --fast` **3817/3817** (`st314a-lp50-gate-sec.log`); `vis-http` 8/8,
+  `vis-host-native` lib 31/31, `vis-host-linux` landlock 18/18, `vis-plugin-host` 8/8.
+- **Lưu ý 3-OS**: C1 chỉ Linux; Windows/macOS dùng host khác. Nếu kernel Landlock < ABI 3,
+  `--sandbox` **fail-closed** (từ chối tạo ruleset) thay vì chạy sandbox yếu.
