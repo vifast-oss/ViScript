@@ -330,59 +330,6 @@ fn rss_kb() -> Option<u64> {
     None
 }
 
-const NHO: &str = r#"async fn t(n: int) -> int:
-    n * 2
-
-fn main():
-    var s = 0
-    var i = 0
-    while i < 8:
-        let x = spawn t(i)
-        s = s + await x
-        i = i + 1
-    print(s)
-"#;
-
-#[test]
-fn muoi_vong_threads_fd_rss_khong_ro() {
-    let (hir, syms, tys) = tien_trinh(NHO);
-    let t0 = dem_thread();
-    let f0 = dem_fd();
-    let r0 = rss_kb();
-    let t_bat = Instant::now();
-    for vong in 0..10 {
-        let out = parallel(NHO, &hir, &syms, &tys, 4);
-        assert_eq!(out.exit, 0, "vòng {vong}: {:?}", out.diagnostics);
-        assert_eq!(out.stdout, "56\n");
-    }
-    // Thread của pool có thể chưa được OS thu hồi ngay sau join (nhất là khi gate chạy tải
-    // cao). Chờ tối đa 500 ms cho về mức nền trước khi kết luận rò; nếu vẫn cao hơn mới fail.
-    if let Some(t0) = t0 {
-        let mut t1 = dem_thread().unwrap_or(t0);
-        let han = Instant::now() + std::time::Duration::from_millis(500);
-        while t1 > t0 + 1 && Instant::now() < han {
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            t1 = dem_thread().unwrap_or(t1);
-        }
-        assert!(t1 <= t0 + 1, "rò thread: {t0} -> {t1}");
-    }
-    if let (Some(f0), Some(f1)) = (f0, dem_fd()) {
-        assert!(f1 <= f0 + 4, "rò fd: {f0} -> {f1}");
-    }
-    if let (Some(r0), Some(r1)) = (r0, rss_kb()) {
-        assert!(r1 <= r0 + 65_536, "RSS tăng quá 64 MB: {r0} -> {r1}");
-    }
-    if std::env::var("VS3_W5_MEASURE").is_ok() {
-        eprintln!(
-            "MEASURE_10_VONG\tms={:.1}\tthreads={:?}\tfd={:?}\trss_kb={:?}",
-            t_bat.elapsed().as_secs_f64() * 1000.0,
-            dem_thread(),
-            dem_fd(),
-            rss_kb()
-        );
-    }
-}
-
 const CPU_NANG: &str = r#"async fn nang(n: int) -> int:
     var s = 0
     var i = 0

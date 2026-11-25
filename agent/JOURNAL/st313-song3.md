@@ -65,7 +65,8 @@
 | `vis-wasm-sem` | **390/390** |
 | conformance corpus | **420/420** |
 | R1..R9 | PASS |
-| R8 | **37** binary (trần 40) |
+| R8 | **38** binary (trần 40) |
+| Fallback sau tách `worker_leak_it` | **3809 pass / 0 fail** |
 
 ## Chốt audit tệp lai (00:40)
 
