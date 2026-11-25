@@ -10,6 +10,7 @@ Cùng cấu hình stack với `vis-wasm-suite`: `-zstack-size=12 MiB` + `node --
 (env `VIS_WASM_STACK_MB`/`VIS_WASM_NODE_STACK_KB`).
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -30,7 +31,9 @@ NODE_DRIVER = r"""
 import { WASI } from 'node:wasi';
 import { readFile } from 'node:fs/promises';
 const [wasmPath, guest, host, ...args] = process.argv.slice(2);
+if (process.env.VIS_WASM_TRACE_ARGV === '1') console.error('ARGV=' + JSON.stringify(args));
 const env = { VIS_WASM_PREOPENS: guest };
+if (process.env.VIS_WASM_TRACE_ENGINE === '1') env.VIS_WASM_TRACE_ENGINE = '1';
 const wasi = new WASI({
   version: 'preview1',
   args: ['vis-wasm-run', ...args],
@@ -64,60 +67,104 @@ def build() -> None:
         sys.exit(2)
 
 
-def chay(driver: Path, root: Path, *runner_args: str) -> subprocess.CompletedProcess:
+def chay(
+    driver: Path, root: Path, *runner_args: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess:
     node = shutil.which("node")
     if not node:
         print("BLOCKED-ENV: không có node:wasi", file=sys.stderr)
         sys.exit(2)
     cmd = [node, "--no-warnings", f"--stack-size={NODE_STACK_KB}", str(driver),
            str(WASM), "/data", str(root), *runner_args]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    e = os.environ.copy()
+    if env:
+        e.update(env)
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=e)
+
+
+def kiem_node() -> None:
+    """**ST-314a**: phân biệt 'node thiếu node:wasi' (BLOCKED-ENV) với lỗi harness."""
+    node = shutil.which("node")
+    if not node:
+        print("BLOCKED-ENV: không có node:wasi", file=sys.stderr)
+        sys.exit(2)
+    r = subprocess.run(
+        [node, "-e", "require('node:wasi')"], capture_output=True, text=True
+    )
+    if r.returncode != 0:
+        print(
+            "BLOCKED-ENV: node không có module `node:wasi` "
+            f"({r.stderr.strip()[:120]})",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 
 def tu_kiem(driver: Path, root: Path) -> None:
-    """**ST-314a (VD-290)**: chứng minh cờ runner **không bị nuốt**.
+    """**ST-314a (VD-290)**: chứng minh argv và engine **không bị nuốt**.
 
-    Cờ lạ phải tới `vis-wasm-run` và bị từ chối với exit 2 **trước khi chạy chương trình**.
-    Nếu `NODE_DRIVER` lệch tham số (như lỗi `ro` cũ), cờ bị nuốt ⇒ chương trình chạy và in
-    `SELF-CHECK-LEAK` ⇒ self-check fail ngay. Chương trình hợp lệ là bắt buộc: nếu để thư mục
-    rỗng, lỗi "thiếu tệp" cũng trả exit 2 và sẽ che đúng lỗi nuốt cờ.
+    - Cờ lạ phải tới `vis-wasm-run`, bị từ chối `[USAGE-UNKNOWN]` + exit 2 **trước khi chạy**.
+    - `--interp`/`--vm` phải tới runner **nguyên vị trí** (trace ARGV) và chọn đúng
+      `Engine::Interp`/`Engine::Vm` (trace engine, env-gated).
+    - Chương trình hợp lệ in `SELF-CHECK-LEAK`: nếu cờ bị nuốt (lỗi `ro` cũ), chương trình chạy
+      và self-check fail ngay. Thư mục rỗng không đủ vì lỗi "thiếu tệp" cũng trả exit 2.
     """
     root.mkdir()
     (root / "prog.vis").write_text(
         'fn main():\n    print("SELF-CHECK-LEAK")\n', encoding="utf-8"
     )
-    r = chay(driver, root, "--co-khong-ton-tai", "/data/prog.vis")
+    trace = {"VIS_WASM_TRACE_ARGV": "1", "VIS_WASM_TRACE_ENGINE": "1"}
+    r = chay(driver, root, "--co-khong-ton-tai", "/data/prog.vis", env=trace)
+    argv_la = "ARGV=" + json.dumps(
+        ["--co-khong-ton-tai", "/data/prog.vis"], separators=(",", ":")
+    )
     if (
         r.returncode != 2
         or "SELF-CHECK-LEAK" in r.stdout
-        or "--co-khong-ton-tai" not in r.stderr
+        or "[USAGE-UNKNOWN]" not in r.stderr
+        or argv_la not in r.stderr
     ):
         print(
             f"SELF-CHECK: cờ lạ không tới `vis-wasm-run` hoặc bị nuốt (rc={r.returncode}, "
-            f"stdout={r.stdout[:120]!r}, stderr={r.stderr[:120]!r})",
+            f"stdout={r.stdout[:120]!r}, stderr={r.stderr[:200]!r})",
             file=sys.stderr,
         )
-        sys.exit(2)
-    # Cờ engine phải tới runner và chạy được chương trình; bắt lỗi truyền `engine` thiếu `--`.
-    for engine in ("interp", "vm"):
-        p = chay(driver, root, f"--{engine}", "/data/prog.vis")
-        if p.returncode != 0 or "SELF-CHECK-LEAK" not in p.stdout:
+        sys.exit(1)
+    # Cờ engine phải tới runner đúng vị trí và chọn đúng engine.
+    for engine, ten in (("interp", "Interp"), ("vm", "Vm")):
+        p = chay(driver, root, f"--{engine}", "/data/prog.vis", env=trace)
+        argv = "ARGV=" + json.dumps(
+            [f"--{engine}", "/data/prog.vis"], separators=(",", ":")
+        )
+        if (
+            p.returncode != 0
+            or "SELF-CHECK-LEAK" not in p.stdout
+            or argv not in p.stderr
+            or f"engine={ten}" not in p.stderr
+        ):
             print(
-                f"SELF-CHECK: `--{engine}` không tới runner/không chạy "
-                f"(rc={p.returncode}, stdout={p.stdout[:120]!r}, stderr={p.stderr[:120]!r})",
+                f"SELF-CHECK: `--{engine}` không tới runner/không chọn `{ten}` "
+                f"(rc={p.returncode}, stdout={p.stdout[:120]!r}, stderr={p.stderr[:200]!r})",
                 file=sys.stderr,
             )
-            sys.exit(2)
+            sys.exit(1)
 
 
 def main() -> int:
     import argparse
 
-    argparse.ArgumentParser(
+    ap = argparse.ArgumentParser(
         description="Chạy corpus conformance trên WASI (interp + VM)"
-    ).parse_args()
+    )
+    try:
+        ap.parse_args()
+    except SystemExit as e:
+        # `--help` vẫn 0; cờ lạ của harness là lỗi sử dụng (1), không phải BLOCKED-ENV (2).
+        return 0 if e.code == 0 else 1
     build()
+    kiem_node()
     cases = []
+    bo_qua = 0
     for p in sorted(CORPUS.rglob("*.vis")):
         if p.with_suffix(".err").exists():
             continue
@@ -125,16 +172,20 @@ def main() -> int:
             continue
         src = p.read_text(encoding="utf-8")
         if any(x in src for x in BO_QUA):
+            bo_qua += 1
             continue
         cases.append(p)
-    print(f"# {len(cases)} ca hợp lệ trên WASI", file=sys.stderr)
+    print(
+        f"# {len(cases)} ca hợp lệ trên WASI (bỏ qua {bo_qua} ca host/async)",
+        file=sys.stderr,
+    )
     work = Path(tempfile.mkdtemp(prefix="vis-wasm-conformance-",
                                  dir=os.environ.get("TMPDIR") or None))
     driver = work / "node-driver.mjs"
     driver.write_text(NODE_DRIVER, encoding="utf-8")
-    tu_kiem(driver, work / "self-check")
     hong = []
     try:
+        tu_kiem(driver, work / "self-check")
         for i, p in enumerate(cases, 1):
             root = work / f"c{i}"
             root.mkdir()

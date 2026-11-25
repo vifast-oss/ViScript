@@ -93,7 +93,7 @@ fn main() -> ExitCode {
                 }
             }
             x if x.starts_with('-') && x != "-" => {
-                eprintln!("vis-wasm-run: không hỗ trợ cờ `{x}`");
+                eprintln!("vis-wasm-run: [USAGE-UNKNOWN] không hỗ trợ cờ `{x}`");
                 return ExitCode::from(2);
             }
             _ => {
@@ -139,6 +139,11 @@ fn main() -> ExitCode {
                 return ExitCode::from(2);
             }
         }
+    }
+    // **ST-314a low-peak**: hook chẩn đoán cho harness — chỉ in khi env được bật, không đổi
+    // hành vi mặc định. Dùng để chứng minh `--vm` thực sự chọn `Engine::Vm`.
+    if std::env::var_os("VIS_WASM_TRACE_ENGINE").is_some() {
+        eprintln!("engine={engine:?}");
     }
     let kq = if stdin_ra {
         let mode = vis_syntax::Mode::Script;

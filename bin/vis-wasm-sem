@@ -102,7 +102,6 @@ def build_wasm() -> None:
         f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}",
     )
     env.setdefault("TMPDIR", "/home/ps/tmp")
-    env["CARGO_TARGET_DIR"] = str(WS / "target")
     cmd = [
         cargo(),
         "build",

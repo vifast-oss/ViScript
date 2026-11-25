@@ -262,3 +262,24 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
   `VIS_DAG_META` (an toàn Windows); self-test dùng `PYTHON` tương tự.
 - Bằng chứng: `./test/gate/dag-check-self-test.sh` → `ok - … 3 cạnh cấm + crate chưa khai tầng;
   metadata sạch xanh`; `./bin/vis-dag-check` → `OK — 23 crate / 5 tầng, 0 cạnh cấm`.
+
+## 16. Audit wasm conformance (subagent) — vá F1..F8
+
+- **F1 exit code**: self-check/argparse sai ⇒ `exit 1`; `2` chỉ còn BLOCKED-ENV (build/node).
+- **F2 argv trace**: `NODE_DRIVER` in `ARGV=<json>` khi `VIS_WASM_TRACE_ARGV=1`; `tu_kiem` đòi
+  **đúng** `["--interp","/data/prog.vis"]` / `["--vm","/data/prog.vis"]`, bắt cả token thừa.
+- **F3 engine trace**: `vis-wasm-run` in `engine=Interp|Vm` khi `VIS_WASM_TRACE_ENGINE=1`
+  (env được driver chuyển vào WASI); `tu_kiem` đòi đúng engine ⇒ **chứng minh `--vm` chọn VM**,
+  không chỉ "chạy được".
+- **F4** marker `[USAGE-UNKNOWN]` thay phụ thuộc nguyên văn thông điệp.
+- **F5** kiểm `node -e "require('node:wasi')"` trước khi chạy ⇒ BLOCKED-ENV rõ.
+- **F6** bỏ ép `CARGO_TARGET_DIR` trong `bin/vis-wasm-sem` (tôn trọng env như suite).
+- **F7** `tu_kiem` nằm trong `try` ⇒ không rò thư mục tạm khi self-check đỏ.
+- **F8** in số ca bỏ qua (`bỏ qua 0 ca host/async`).
+
+Bằng chứng:
+| Kiểm | Kết quả |
+|---|---|
+| Positive `vis-wasm-conformance` | **299 × 2 engine, 0 hỏng**, `EXIT=0`, sha `4b49d823…` |
+| Negative tái tạo `ro` | `exit 1`, trace `ARGV=["/data/prog.vis"]`, `engine=Interp` |
+| Negative bỏ `--vm` trong driver | `exit 1`, `--vm không tới runner/không chọn Vm` |
