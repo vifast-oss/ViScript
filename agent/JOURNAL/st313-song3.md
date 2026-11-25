@@ -55,6 +55,7 @@
 |---|---|
 | `./vis-dev gate --fast` | **PASS** (3800 test) |
 | `cargo test --workspace --no-fail-fast` (fallback libtest) | **3805 pass / 0 fail** |
+| Windows `vis-gate-windows --full` (`psvn`) | **3725 pass / 0 fail**, host 54/54, targets 23 crate |
 | Windows (`psvn`): conformance | corpus 420 ca OK; `lib_api_it` 337 pass + 3 ignored (`cfg(unix)` gate đúng); `net_cookie_it` 9/9 |
 | `VIS_DIFF_N=100000` | `lech=0` (54,4 s, 1838/s tại code freeze) |
 | `bin/vis-targets` | 100% **23 crate** · PASS=47/45 · FAIL=0 · `vis-dag-check` OK |
