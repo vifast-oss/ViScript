@@ -26,5 +26,9 @@
   390/390, suite 28/28, conformance 379×2), **host-suite 54/54**, **DAG OK** — tất cả exit 0;
   vòng 13–16 (13:37–14:12): mỗi vòng 100.000 **lech=0**; vòng 16 thêm **gate + clippy rc=0**;
   vòng 17–18 (14:23–14:36): 100.000 lech=0; vòng 18 **WASI suite 28/28 + sem 390/390 +
-  conformance 379×2, cả 3 exit 0** (`r018-wasm-*.log`).
+  conformance 379×2, cả 3 exit 0** (`r018-wasm-*.log`);
+  vòng 19–24 (14:46–15:45): **600.000 chương trình, cả 6 vòng lech=0**; vòng 20 gate rc=0;
+  vòng 24 **gate + clippy + `vis-targets --wasm` (sem 390/390, suite 28/28, conformance 379×2) +
+  host-suite 54/54 + DAG, tất cả rc=0** (`r024-*.log`). Tổng tới đây: **24 vòng = 2,4 M chương
+  trình diff, 0 lệch**; 6× gate, 3× clippy, 3× WASI (18, 24, 12 targets), 2× host/DAG.
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
