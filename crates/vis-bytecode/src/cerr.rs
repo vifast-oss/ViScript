@@ -13,6 +13,9 @@ pub enum CodegenError {
     TooMany(u16),
     /// Module không có hàm `main`.
     NoEntry,
+    /// **ST-314a (hậu-kiểm 2026-11-26)**: chu trình `const` khi inline — trước đây đệ quy vô hạn
+    /// làm **stack overflow/SIGABRT** ở VM; nay trả lỗi codegen.
+    ConstCycle(Span),
     /// **ST-54**: front end đã báo lỗi ⇒ codegen **từ chối** (mã + dòng:cột + thông điệp).
     ChanDoan {
         short: &'static str,
@@ -36,6 +39,11 @@ impl core::fmt::Display for CodegenError {
             }
             CodegenError::TooMany(n) => write!(f, "quá nhiều ô cục bộ/đối số: {n}"),
             CodegenError::NoEntry => write!(f, "không có hàm `main`"),
+            CodegenError::ConstCycle(s) => write!(
+                f,
+                "chu trình `const` tại byte {}..{} — không inline được (khai báo vòng)",
+                s.start, s.end
+            ),
             CodegenError::ChanDoan {
                 short,
                 dong,

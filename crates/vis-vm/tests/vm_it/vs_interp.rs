@@ -402,3 +402,34 @@ fn select_duong_dong_bo_khop_thong_diep() {
         a.diagnostics[0].message
     );
 }
+
+/// **ST-314a hậu-kiểm (2026-11-26)** — `const` tham chiếu **phía trước**: interp từng duyệt
+/// `HashMap` nên `const A = B + 1` khai trước `const B` lúc chạy được lúc báo `tên B chưa có
+/// giá trị` (không tất định); VM inline nên luôn đúng. Nay interp nạp lazy theo phụ thuộc.
+#[test]
+fn const_tham_chieu_truoc_khop_hai_duong() {
+    let src = "const A: int = B + 1\nconst B: int = 1\nfn main():\n    print(A)\n";
+    let a = chay_interp(src, vis_syntax::Mode::Script).expect("interp chạy");
+    let b = chay_vm(src, vis_syntax::Mode::Script).expect("vm chạy");
+    assert_eq!(a.stdout, "2\n");
+    assert_eq!(mo_ta(&a), mo_ta(&b), "interp ↔ VM lệch");
+}
+
+/// **ST-314a hậu-kiểm (2026-11-26)** — chu trình `const` không còn làm VM **stack overflow/SIGABRT**:
+/// codegen trả `ConstCycle`, interp trả `VS0501` "chu trình" (cả hai đều lỗi có kiểm soát).
+#[test]
+fn const_chu_trinh_khong_panic() {
+    let src = "const A: int = B + 1\nconst B: int = A + 1\nfn main():\n    print(A)\n";
+    let a = chay_interp(src, vis_syntax::Mode::Script).expect("interp chạm runtime");
+    assert_eq!(a.codes(), vec!["VS0501"]);
+    assert!(
+        a.diagnostics[0].message.contains("chu trình"),
+        "interp: {}",
+        a.diagnostics[0].message
+    );
+    // `chay_vm` trả `None` khi codegen từ chối — điều quan trọng là **không panic/abort**.
+    assert!(
+        chay_vm(src, vis_syntax::Mode::Script).is_none(),
+        "VM phải từ chối chu trình ở codegen"
+    );
+}

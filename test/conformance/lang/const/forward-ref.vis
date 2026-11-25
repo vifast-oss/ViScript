@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+const A: int = B + 1
+const B: int = 1
+
+fn main():
+    print(A)

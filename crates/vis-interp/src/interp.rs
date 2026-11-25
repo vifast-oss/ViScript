@@ -39,6 +39,11 @@ type EnumTag = (Name, Name);
 pub(crate) struct Interp<'a> {
     pub(crate) fns: HashMap<u32, &'a HFn>,
     consts: HashMap<u32, &'a HExpr>,
+    /// **ST-314a (hậu-kiểm 2026-11-26)**: thứ tự **khai báo** của `const` — nạp theo phụ thuộc,
+    /// không theo thứ tự `HashMap` (trước đây tham chiếu `const` về phía trước lúc được lúc lỗi).
+    const_order: Vec<(u32, Span)>,
+    /// **ST-314a**: các `const` đang được đánh giá — bắt chu trình, không đệ quy vô hạn.
+    const_dang: HashSet<u32>,
     /// `enum`/`type` khai trong tệp: `sym → (tên, là_enum)` để `E.A`/`User(...)` có "thẻ kiểu".
     pub(crate) tags: HashMap<u32, (String, bool)>,
     main: Option<&'a HFn>,
@@ -100,6 +105,7 @@ impl<'a> Interp<'a> {
     pub(crate) fn new(hir: &'a Hir, symbols: &'a Symbols, types: &'a TypeTable) -> Self {
         let mut fns = HashMap::new();
         let mut consts = HashMap::new();
+        let mut const_order = Vec::new();
         let mut tags = HashMap::new();
         let mut main = None;
         for item in &hir.items {
@@ -112,6 +118,7 @@ impl<'a> Interp<'a> {
                 }
                 HItem::Const(c) => {
                     consts.insert(c.sym, &c.value);
+                    const_order.push((c.sym, c.span));
                 }
                 HItem::Enum(e) => {
                     tags.insert(e.sym, (e.name.clone(), true));
@@ -134,6 +141,8 @@ impl<'a> Interp<'a> {
         Self {
             fns,
             consts,
+            const_order,
+            const_dang: HashSet::new(),
             tags,
             main,
             stmts: &hir.stmts,
@@ -211,11 +220,12 @@ impl<'a> Interp<'a> {
     }
 
     fn run_program_than(&mut self, args: &[String]) -> R<Option<Value>> {
-        // Hằng cấp tệp trước (mọi khai báo item là "hoisted").
-        let consts: Vec<(u32, &'a HExpr)> = self.consts.iter().map(|(k, v)| (*k, *v)).collect();
-        for (sym, e) in consts {
-            let v = self.eval(e)?;
-            self.env.borrow_mut().insert(sym, v);
+        // Hằng cấp tệp trước (mọi khai báo item là "hoisted"), **theo thứ tự khai báo + phụ
+        // thuộc** (lazy đệ quy) — trước đây duyệt `HashMap` nên `const A = B + 1` khai trước
+        // `const B` lúc chạy được lúc báo `tên B chưa có giá trị` (không tất định).
+        let order = self.const_order.clone();
+        for (sym, span) in order {
+            self.gia_tri_const(sym, span)?;
         }
         if let Some(f) = self.main {
             self.khoi_tao_bien_cap_tep()?; // VD-262: biến cấp tệp trước `main`.

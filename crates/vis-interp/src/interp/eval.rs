@@ -4,6 +4,32 @@
 
 use super::*;
 impl<'a> Interp<'a> {
+    /// **ST-314a (hậu-kiểm 2026-11-26)** — giá trị một `const` cấp tệp, **lazy + memo**:
+    /// đánh giá phụ thuộc trước, chèn vào `env`, và bắt **chu trình** (`const A = B`, `const B = A`)
+    /// bằng `const_dang` thay vì để interp chạy vào trạng thái không tất định.
+    pub(crate) fn gia_tri_const(&mut self, sym: u32, span: Span) -> R<Value> {
+        if let Some(v) = self.env.borrow().get(&sym).cloned() {
+            return Ok(v);
+        }
+        if !self.const_dang.insert(sym) {
+            let ten = self.symbols.name_of(sym).unwrap_or("<const>").to_string();
+            return Err(Abort::Trap(Trap::new(
+                RT,
+                format!("chu trình `const` tại `{ten}`"),
+                span,
+            )));
+        }
+        let Some(e) = self.consts.get(&sym).copied() else {
+            self.const_dang.remove(&sym);
+            return Err(Abort::Trap(Trap::new(RT, "hằng chưa có giá trị", span)));
+        };
+        let kq = self.eval(e);
+        self.const_dang.remove(&sym);
+        let v = kq?;
+        self.env.borrow_mut().insert(sym, v.clone());
+        Ok(v)
+    }
+
     pub(crate) fn eval_cond(&mut self, c: &HCond) -> R<bool> {
         match c {
             HCond::Expr(e) => {
@@ -51,6 +77,10 @@ impl<'a> Interp<'a> {
                 Some(id) => {
                     if let Some(v) = self.env.borrow().get(id).cloned() {
                         return Ok(v);
+                    }
+                    // **ST-314a**: `const` chưa nạp ⇒ nạp lazy (xử lý tham chiếu phía trước).
+                    if self.consts.contains_key(id) {
+                        return self.gia_tri_const(*id, *span);
                     }
                     if let Some(f) = self.fns.get(id) {
                         return Ok(Value::Fn(Rc::new(Closure {

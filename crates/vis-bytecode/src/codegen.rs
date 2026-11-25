@@ -68,6 +68,8 @@ struct Gen {
     /// **ST-238 (VD-242, ca 4)**: `sym` của `const` cấp tệp → biểu thức giá trị (inline tại
     /// mỗi chỗ dùng, như interp nạp hằng lúc load).
     hconsts: HashMap<u32, HExpr>,
+    /// **ST-314a**: các `const` đang inline — chặn chu trình (trước đây đệ quy vô hạn).
+    hconsts_dang: std::collections::HashSet<u32>,
     hash: [u8; HASH_LEN],
 }
 
@@ -205,6 +207,7 @@ pub fn compile_with_fee_voi_bang(
         async_fns: std::collections::HashSet::new(),
         globals: HashMap::new(),
         hconsts: HashMap::new(),
+        hconsts_dang: std::collections::HashSet::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
         // **VD-263**: `types` bổ sung trường của mọi instantiation generic vào bảng kiểu tĩnh.
         sym_ty: than::collect_sym_tys(hir, symbols, types),
@@ -465,7 +468,14 @@ impl<'g> Emit<'g> {
                 // **ST-238 (VD-242, ca 4)**: `const` cấp tệp — inline giá trị như interp nạp lúc load.
                 if let Some(id) = sym {
                     if let Some(v) = self.g.hconsts.get(id).cloned() {
-                        return self.expr(&v);
+                        // **ST-314a**: `const A = B + 1` / `const B = A + 1` từng đệ quy vô hạn
+                        // (VM stack overflow). Theo dõi đường inline; gặp lại ⇒ lỗi codegen.
+                        if !self.g.hconsts_dang.insert(*id) {
+                            return Err(CodegenError::ConstCycle(*span));
+                        }
+                        let kq = self.expr(&v);
+                        self.g.hconsts_dang.remove(id);
+                        return kq;
                     }
                 }
                 match sym {
