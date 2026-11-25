@@ -499,7 +499,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `./bin/vis-targets` | **PASS** — core `47/0/0`, sqlite `45/2/0` (cross-check 3 target) | `st314a-lp31-vis-targets.log` |
 | `./bin/vis-targets --wasm` | **đo lại**: sem **390/390**, suite **28/28**, conformance **379×2** | `st314a-lp37-targets-wasm.log` |
 | `./vis-dev nightly --skip-gate --fuzz-minutes 30` | **PASS** — fuzz **257.279.156 ca / 5.839.236.341 token / 0 vi phạm**; fmt 475 tệp bất động | `st314a-lp44-fuzz-30m.log` |
-| `./bin/vis-gate-windows --full` (psvn) | **3.737/0** @`92440689`; **3.738/0** @`3f276228` (90 binary, HEAD khớp; vm_it 54 gồm sugar; corpus 544/544 + `.skip-windows`; clippy+host+targets OK) | `st314a-lp34-win-full-synced.log`, `st314a-lp43-win-full-final.log` |
+| `./bin/vis-gate-windows --full` (psvn) | **3.737/0** @`92440689`; **3.738/0** @`3f276228`; **3.739/0** @`541b3bea` (90 binary, HEAD khớp; vm_it 54 gồm sugar + unit SIGS; corpus 544/544 + `.skip-windows`; clippy+host+targets OK) | `st314a-lp34-…`, `st314a-lp43-…`, `st314a-lp46-win-full-541b3bea.log` |
 
 - **Sự cố môi trường `lp38`** (không phải lỗi sản phẩm): `/tmp` (tmpfs 7,2 GB) còn **~5 GB rác**
   từ test (`6.073` thư mục `vis-*` + `1.203` `vs3-*`) ⇒ 3 ca `landlock` báo `EDQUOT`/`ld` bus error
