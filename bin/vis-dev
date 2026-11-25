@@ -628,7 +628,7 @@ do_vong_tron_fmt() {
     local n=0 bad=0 bo_qua=0 copied=0
     local tmp f rel name
     tmp="$(mktemp -d "${TMPDIR:-/tmp}/visfmt.XXXXXX")" || return 1
-    trap 'rm -rf "$tmp"' EXIT INT TERM
+    trap 'rm -rf "${tmp:-}"' EXIT INT TERM
     while IFS= read -r -d '' f; do
         n=$((n + 1))
         # Ca **cố ý hỏng cú pháp** (có `.err`) thì `vis fmt` phải lỗi — bỏ qua, không tính là hỏng.

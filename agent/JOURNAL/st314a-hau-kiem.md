@@ -324,6 +324,18 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
   `st314a-lp6-diff-<seed>.log`.
 - `gate --fast` cuối @`3f56be36`: **3805/3805**, 4 skipped; DAG 5 tầng + self-test OK
   (`/home/ps/vislogs/st314a-lp13-gate.log`, sha `c0df0496db6956de11e474b40969868ae666b632885dd54b2119304b03481614`).
+- `vis-targets` @`cba2b300`: **PASS** — core `47/0/0`, sqlite `45/2/0` (ps); `vis-dag-check: OK — 23 crate / 5 tầng`
+  (`/home/ps/vislogs/st314a-lp15-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe`).
+- **+5× `vis-diff 100k`** (seed `6060/6161/6262/6363/6464`): cả 5 **lech=0** ⇒ tổng low-peak
+  **25× 100k lech=0** (`st314a-lp15-diff-<seed>.log`).
+- **+5× `vis-diff 100k`** (seed `7070/7171/7272/7373/7474`): cả 5 **lech=0** ⇒ tổng low-peak
+  **30× 100k lech=0** (`st314a-lp17-diff-<seed>.log`).
+- **Fuzz parser 15 phút**: **103.981.377 ca / 2.359.969.111 token, 0 vi phạm**; fmt 475 tệp
+  bất động; `vis-dev nightly: PASS` (`/home/ps/vislogs/st314a-lp16-fuzz-15m.log`, sha
+  `78f38b77b9280f7a65b66d38b84845105d3e30788aa8503c5b7842ecb5788912`).
+  Log có dòng `tmp: unbound variable` từ EXIT-trap dùng biến `local`; đã sửa trap thành
+  `${tmp:-}` và rerun `nightly --skip-gate --fuzz-minutes 1` sạch (không còn unbound), `EXIT=0`
+  (`st314a-lp18-nightly-trap.log`).
 - **Fuzz parser 20 phút**: **147.256.563 ca / 3.342.079.396 token, 0 vi phạm**; fmt 475 tệp
   bất động (`st314a-lp6-fuzz-20m.log`). Log gốc ghi `EXIT=2` vì `bin/vis-dev` bị sửa **trong lúc**
   job đang đọc tệp (artifact, không phải lỗi sản phẩm); rerun sạch ngay sau đó:
