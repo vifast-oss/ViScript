@@ -86,3 +86,6 @@ mod version_workspace;
 
 #[path = "misc_api_it/sync_list_lib.rs"]
 mod sync_list_lib;
+
+#[path = "net_pkg_it/vs3_default_lib.rs"]
+mod vs3_default_lib;
