@@ -473,7 +473,9 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - **Release** (`target/release/vis`, n=9): interp **331 ms**, VM **610 ms**, VM `--unlimited-budget`
   **342 ms** ⇒ VM **+84 %** khi charge, **−3 %** khi tắt = `budget_charge` quét tuyến tính **mỗi
   lệnh** ≈ **44 %** thời gian VM (268 ms/2,0 M lệnh, ~134 ns/lệnh). `trim-matches`: 33/27/27 ms.
-- `map` = `Vec` tra tuyến tính: N=79 khoá ⇒ **~58 %** thời gian interp; N=316 ⇒ 2387 ms.
+- `map` = `Vec` tra tuyến tính (release): N=1/8/79/316 ⇒ interp **47/82/374/1429 ms**,
+  VM unlimited **62/76/417/1530 ms** ⇒ tại N=79 quét map ≈ **87 %** thời gian interp; VM N=1 đã
+  392 ms vì overhead `budget_charge`, lớn hơn cả map.
 - Đề xuất A0: `JOURNAL/de-xuat-truc-ke-tiep-2026-11-25.md` — Phương án A (chỉ mục `pc → range`
   dựng một lần trong `budget_enable`, 0 đổi ngữ nghĩa, ~25–30 % VM) và Phương án B (map index giữ
   thứ tự chèn, cần A0 chốt 3 câu hỏi ngữ nghĩa `eq_value`/last-wins/`Show`).

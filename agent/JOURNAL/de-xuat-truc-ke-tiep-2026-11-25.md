@@ -88,9 +88,21 @@ Phương án A không cần giả định đó.
 chèn"); tra cứu tuyến tính ở `crates/vis-runtime/src/builtin/method.rs:208-215` (`map.get`),
 `crates/vis-interp/src/gan.rs:134`, `crates/vis-vm/src/vm/vm_helpers.rs:88,167` (index/`get`).
 
-Đo quét N khoá (cùng 100.000 lần `get`, interp): N=1 → 376 ms; N=8 → 427; N=79 → **889**;
-N=316 → **2387**. ⇒ ~66 ns mỗi so sánh; tại N=79 **~58 % thời gian interp** là quét map. Đây là
-nút thắt **lớn hơn** mọi tối ưu engine và ảnh hưởng mọi chương trình thật.
+Đo quét N khoá (cùng 100.000 lần `get`). **Debug** (số cũ): N=1 → 376 ms; N=8 → 427; N=79 →
+**889**; N=316 → **2387**. **Release** (`target/release/vis`, 1 mẫu/lượt, chương trình
+`/tmp/opencode/mapbench/mN.vis`):
+
+| N khoá | interp | VM | VM `--unlimited-budget` |
+|---:|---:|---:|---:|
+| 1 | 47 ms | 392 ms | 62 ms |
+| 8 | 82 ms | 392 ms | 76 ms |
+| 79 | **374 ms** | 724 ms | 417 ms |
+| 316 | **1429 ms** | 1847 ms | 1530 ms |
+
+⇒ Trên release, phần **quét map** (N=79 so với N=1) chiếm **~327 ms ≈ 87 %** thời gian interp
+(47 → 374 ms); N=316 tăng tuyến tính (~1429 ms). Đây là nút thắt **lớn hơn** mọi tối ưu engine và
+ảnh hưởng mọi chương trình thật. Lưu ý: với N nhỏ, overhead `budget_charge` của VM (392 ms ở N=1)
+còn lớn hơn cả map — càng củng cố thứ tự ưu tiên A trước B.
 
 ### Phương án đề nghị — chỉ mục băm **giữ thứ tự chèn** (kiểu indexmap), không đổi ngữ nghĩa
 
