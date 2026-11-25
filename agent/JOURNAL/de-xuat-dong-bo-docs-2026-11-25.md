@@ -9,12 +9,15 @@
 
 | Dòng | Hiện tại | Đề xuất |
 |---|---|---|
+| 610 | `Mô hình hiện tại **một luồng, run-to-completion**` | `Mô hình mặc định một luồng; chương trình `async` dùng runtime frame suspend/resume + reactor/timer` |
 | 611 | `không có \`select\`/\`timeout\`;` | `không có \`select\` tổng quát; kênh có \`recv_timeout\`/\`send_timeout\` + \`select_recv*\`/\`select_send*\`;` |
-| 683 | ô macOS kết thúc `… host 54/54); chỉ arm64` | thêm `; **chưa chạy lại full/clippy trên \`0.6.0\`** (\`mps\` bỏ qua 2026-11-25)` |
+| 617 | `\`chan(0)\` bị từ chối ...` | `\`chan(0)\` bị từ chối ở đường thường; đường frame hỗ trợ rendezvous (xem §12/thiết kế)` |
+| 683 | ô macOS kết thúc `… host 54/54); chỉ arm64` | thêm `; clippy **PASS @311d2288**; **chưa chạy lại full gate trên \`0.6.0\`** (mps bỏ qua theo chỉ đạo)` |
 | 930 | `\`vis 0.5.0\` hoặc \`{"name":"vis","version":"0.5.0"}\`` | `\`vis 0.6.0\` hoặc \`{"name":"vis","version":"0.6.0"}\`` |
 | 1016 | `(VD/R1..R24)` | `(VD-01..VD-290, R1..R37)` |
-| 1022 | `đã kiểm tra tại \`c4337ce\`:` | **cân nhắc**: chỉ đổi thành `90fd24de` nếu A0 đã thực sự rà lại §12 tại `0.6.0`; nếu §12 vẫn là mốc kiểm tra gốc thì **giữ nguyên** (header ghi bản gốc sinh từ `c4337ce`). |
+| 1022 | `đã kiểm tra tại \`c4337ce\`:` | **cân nhắc**: chỉ đổi thành `90fd24de` nếu A0 đã thực sự rà lại §12 tại `0.6.0`; nếu §12 vẫn là mốc kiểm tra gốc thì **giữ nguyên**. |
 | 1031 | `Không có \`select\`/\`timeout\`/cancel cây` | `Có timeout kênh + \`select_recv*\`/\`select_send*\`; không có \`select\` tổng quát/cancel cây` |
+| 1032 | `\`chan(0)\` rendezvous | Bị từ chối \`VS0505\`` | `\`chan(0)\`: đường thường \`VS0505\`; đường frame hỗ trợ rendezvous` |
 
 ## 2. `docs/ViScript-thiet-ke.md`
 
@@ -23,9 +26,9 @@
 | 11 | link `../QUYET-DINH-sau-review.md`; `docs/viscript/SPEC-lex.md` | `` `docs/QUYET-DINH-sau-review.md` (repo ViFastOs) ``; `docs/SPEC-lex.md` |
 | 852 | `vis-host-posix`, `vis-host-windows`, `vis-host-wasm`, `vis-host-vifast`, `vis-host-mock` | `vis-host-native` (Linux/macOS/Windows), `vis-host-linux` (Landlock), `vis-host-wasm` (workspace riêng, `wasm32-wasip1`); `vis-host-vifast` ở repo ViFastOs |
 | 925 | `Tầng 0 (nền tảng thuần, 0 OS, 0 unsafe)` | `Tầng 0 (nền tảng thuần, 0 unsafe; riêng vish-term có dep termios/crossterm theo target)` |
-| 932 | `viscript/ chỉ chứa crate thuần (lõi + 3 backend còn lại + mock)` | `repo này chỉ có lõi/thư viện thuần + vis-host-native/vis-host-linux + workspace riêng vis-host-wasm` |
-| 935 | `unsafe chỉ trong danh sách crate đóng (vis-vm cho heap, vis-plugin cho ABI)` | `unsafe bị cấm toàn workspace (#![forbid(unsafe_code)], R2 danh sách đóng rỗng, 0 unsafe tại 0.6.0)` |
-| 1081 | `lập lịch tất định theo seed trong vis-host-mock` | `lập lịch tất định theo seed trong crates/vis-runtime/src/rt/frame_test.rs + crates/vis-conformance/tests/async_api_it` |
+| 932 | `viscript/ chỉ chứa crate thuần (lõi + 3 backend còn lại + mock)` | `repo này chứa lõi/thư viện + \`vis-host-native\`/\`vis-host-linux\` + workspace riêng \`vis-host-wasm\`; \`vish-term\` có dep OS theo target` |
+| 935 | `unsafe chỉ trong danh sách crate đóng (vis-vm cho heap, vis-plugin cho ABI)` | `unsafe bị cấm theo R2 (danh sách đóng rỗng, 0 unsafe tại 0.6.0); attribute \`#![forbid(unsafe_code)]\` mới có ở 11/23 crate — không tuyên bố attribute toàn workspace` |
+| 1081 | `lập lịch tất định theo seed trong vis-host-mock` | `lập lịch tất định theo trace/seq trong \`crates/vis-runtime/src/rt/frame_test.rs\` + \`crates/vis-conformance/tests/async_api_it\`; chỉ \`lat257_fairness\` dùng seed` |
 | 1097 | `L0 crate bị chạm` | `fmt, clippy, luật R1..R9, self-test, report-check, build, doc-examples (không chạy L0)` |
 | 1098 | `fmt, clippy, build wasm32 cho crate lõi, …, L0, L1` | `vis-dev check + L0 test (nextest + doc-test); không build wasm32, chưa có L1` |
 | 1099 | `vis-dev gate \| + L2` | `vis-dev gate \| không tồn tại — chỉ gate --fast (thiếu --fast ⇒ exit 2)` |
@@ -34,7 +37,11 @@
 | 1113, 1133, 1137 | `viscript/agent/QUEUE.md`, `viscript/agent/` | `agent/QUEUE.md`, `agent/` |
 | 1222 | `docs/viscript/SPEC-lex.md` | `docs/SPEC-lex.md` |
 | 1614 | `crates/vis-cli/src/pkg.rs` | `crates/vis-pkg/src/pkg.rs`; `vis-cli` tái xuất `vis_pkg::pkg` |
-| 1641 | `Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo.` | `Mục này mô tả ngữ nghĩa đã hiện thực; số đo chi tiết nằm trong agent/reports + JOURNAL (chỉ giữ tại chỗ mốc kiểm chứng tối thiểu).` |
+| 1641 | `Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo.` | **CONDITIONAL**: câu này vẫn đúng nửa đầu, nhưng §1653-1655 lại chứa 54/54, 18/18, 390/390, 28/28, 167. Thống nhất: hoặc bỏ số khỏi mục này, hoặc đổi thành `Mục này mô tả ngữ nghĩa đã hiện thực; số đo chi tiết nằm trong agent/reports + JOURNAL (chỉ giữ tại chỗ mốc kiểm chứng tối thiểu).` |
+| 914–915 | `vis-host`, `vis-host-mock`, `vis-host-{posix,windows,wasm}` | `vis-host-native`, `vis-host-linux`, `vis-host-wasm` (workspace riêng); mock nằm trong test/frame |
+| 1063, 1080 | `L4 ... Miri` / `Miri` | bỏ/tách: `vis-dev nightly` không có L4/Miri; Miri chưa cấu hình trong repo |
+| 1115, 1117 | `vis-host-posix`/`vis-host-windows` | `vis-host-native` (Linux/macOS/Windows) |
+| 1145 | `Workspace \`viscript/\` + \`viscript/agent/\`` | `repo ViScript (gốc) + \`agent/\`` |
 
 ## 3. Đã kiểm tra là **khớp** (không cần sửa)
 
@@ -42,7 +49,9 @@
   `vis-host-linux`; `vis-host-wasm` workspace riêng.
 - `StdId` 167, `stdlib/` chia miền (0 tệp `_a.._e`), R8 **39 (38+1) ≤ 40**.
 - WASI **390/390**, suite **28/28**, conformance **299×2**; `#193`/`#194`/`#196` đóng.
-- Không còn `vis-cli::net`, “HTTP client trong vis-core”, “12 crate”, “chưa công bố Tier 1”.
+- 23 crate / 5 tầng; không còn “12 crate”, “chưa công bố Tier 1”. **Lưu ý**: `vis-cli::net` **vẫn còn**
+  (shim/compat trong `crates/vis-cli/src/lib.rs:15-17`); chỉ **hiện thực HTTP** đã chuyển sang
+  `vis-http`, và `vis-core` không còn protocol HTTP.
 
 **Đã kiểm chứng lại tại `ae9600a6`**: `./vis version` → `vis 0.6.0`; `./vis version --json` →
 `{"name":"vis","version":"0.6.0"}`; `recv_timeout`/`send_timeout`/`select_recv*`/`select_send*` có
