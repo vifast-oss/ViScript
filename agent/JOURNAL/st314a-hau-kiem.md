@@ -415,6 +415,9 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - Cổng mặc định **400** chương trình (~0,1 s); `VIS_STDLIB_DIFF_N=1000000` cho lượt lớn:
   **1.000.000 chương trình, 1.000.000 chạy được, 0 bỏ qua, 0 lệch**, 251 s
   (`/home/ps/vislogs/st314a-lp21-stdlib-diff-1m.log`, `EXIT=0`).
+- **Dạng phương thức** (`recv.f(rest)` ⇒ `CallMethod`): `VIS_STDLIB_SUGAR_N=100000` ⇒
+  **100.000 chương trình, 78.080 chạy được, 21.920 bỏ (frontend không có dạng phương thức),
+  0 lệch** (21,4 s); cổng mặc định 200 chương trình (~0,05 s).
 
 ### 22.4 Corpus async/kenh (subagent)
 
@@ -466,8 +469,10 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 ### 22.7 Đo hiệu năng + đề xuất trục kế tiếp
 
 - `opt-bench` (debug, n=15): interp **886 ms**, VM mặc định **1236 ms**, VM `--unlimited-budget`
-  **858 ms** ⇒ VM **+39,5 %** khi charge ngân sách, **−3,2 %** khi tắt = `budget_charge` quét
-  tuyến tính **mỗi lệnh** ≈ **30,6 %** thời gian VM (378 ms/2,0 M lệnh).
+  **858 ms** ⇒ VM **+39,5 %** khi charge ngân sách, **−3,2 %** khi tắt.
+- **Release** (`target/release/vis`, n=9): interp **331 ms**, VM **610 ms**, VM `--unlimited-budget`
+  **342 ms** ⇒ VM **+84 %** khi charge, **−3 %** khi tắt = `budget_charge` quét tuyến tính **mỗi
+  lệnh** ≈ **44 %** thời gian VM (268 ms/2,0 M lệnh, ~134 ns/lệnh). `trim-matches`: 33/27/27 ms.
 - `map` = `Vec` tra tuyến tính: N=79 khoá ⇒ **~58 %** thời gian interp; N=316 ⇒ 2387 ms.
 - Đề xuất A0: `JOURNAL/de-xuat-truc-ke-tiep-2026-11-25.md` — Phương án A (chỉ mục `pc → range`
   dựng một lần trong `budget_enable`, 0 đổi ngữ nghĩa, ~25–30 % VM) và Phương án B (map index giữ
@@ -477,10 +482,10 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 | Cổng | Kết quả | Log |
 |---|---|---|
-| `./vis-dev gate --fast` | **PASS — 3812/3812, 4 skipped**; DAG 5 tầng + self-test OK (2 lần: `lp28`, `lp39`) | `st314a-lp28-gate.log`, `st314a-lp39-gate-clean.log` (`EXIT=0`) |
+| `./vis-dev gate --fast` | **PASS — 3813/3813, 4 skipped** (thêm test dạng phương thức); DAG 5 tầng + self-test OK | `st314a-lp39-gate-clean.log` (3812), `st314a-lp42-gate-sugar.log` (3813) |
 | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (Linux) | `st314a-lp29-clippy-linux.log` |
 | `vis-conformance` corpus | **544/544** | `edge-conformance-final2.log` + `st314a-lp25-conformance-all.log` |
-| `vis-vm --test vm_it` | **53/53** | — |
+| `vis-vm --test vm_it` | **54/54** (thêm dạng phương thức) | — |
 | `VIS_DIFF_N=100000 ./bin/vis-diff` ×4 | seed `202611251000/1100/1200/1300`: **lech=0** (93.766–93.769 chạy/lượt) | `st314a-lp23-diff-100k.log`, `st314a-lp26-diff-*.log` |
 | Stdlib diff 1M | **0 lệch** (73 hàm, 251 s) | `st314a-lp21-stdlib-diff-1m.log` |
 | `test/sem` parity (CLI interp vs VM) | **475/475, 0 lệch** (stdout+stderr+exit) | `st314a-lp24-sem-parity.log` |

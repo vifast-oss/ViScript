@@ -27,6 +27,23 @@
 - Chênh tuyệt đối giữa hai phiên đo cùng ngày ~8 % nhưng **tỉ lệ VM/interp ổn định** (1,383 → 1,395)
   ⇒ kết luận theo tỉ lệ là đáng tin.
 
+### 1b. Release `target/release/vis` (2026-11-25 11:20 UTC, binary 12.035.808 B, n=9)
+
+| Tổ hợp | min | median | p90 |
+|---|---:|---:|---:|
+| `opt-bench` · interp | 328 ms | **331 ms** | 334 ms |
+| `opt-bench` · VM | 607 ms | **610 ms** | 615 ms |
+| `opt-bench` · VM `--unlimited-budget` | 340 ms | **342 ms** | 360 ms |
+| `trim-matches` · interp | 30 ms | **33 ms** | 33 ms |
+| `trim-matches` · VM | 26 ms | **27 ms** | 29 ms |
+| `trim-matches` · VM `--unlimited-budget` | 26 ms | 27 ms | 28 ms |
+| Khởi động runtime (1 dòng `print(1)`) | 0,044 ms | **0,050 ms** | 0,056 ms |
+
+⇒ Trên **release**, VM mặc định chậm hơn interp **+84 %** trên `opt-bench`; tắt charge ngân sách
+còn **342 ms** (ngang interp, −3 %). Chênh **268 ms** trên 2,0 M lệnh = **~44 % thời gian VM**
+(~134 ns/lệnh) — xác nhận nút thắt §2 **không phải nhiễu debug**. `trim-matches` (ít lệnh) VM nhanh
+hơn 18 %, `--unlimited-budget` không đổi.
+
 ## 2. Nút thắt 1 — `budget_charge` quét tuyến tính **mỗi lệnh** (ROI cao nhất)
 
 **Mã**: `crates/vis-vm/src/vm_frame/budget.rs:176-228` (gọi từ `crates/vis-vm/src/vm/exec.rs:57`).
@@ -39,7 +56,8 @@ Mỗi lệnh, khi ngân sách bật (mặc định CLI **40M**), hàm:
 3. mới xử lý các entry khớp.
 
 Hệ quả đo được: `opt-bench` có thân vòng lặp 20 lệnh × 100.000 = **2,0 M lệnh**; chênh
-`--unlimited-budget` 1236 → 858 ms ⇒ **378 ms ≈ 30,6 % thời gian VM**, ~**189 ns/lệnh** (debug).
+`--unlimited-budget` **1236 → 858 ms** (debug) ⇒ **378 ms ≈ 30,6 %**; trên **release 610 → 342 ms**
+⇒ **268 ms ≈ 44 %** thời gian VM (~134 ns/lệnh).
 Chi phí là **O(số entry phí của hàm)** cho **mỗi** lệnh ⇒ hàm càng lớn càng tệ (tuyến tính theo
 kích thước hàm), dù bảng phí chỉ vài chục–vài trăm entry.
 

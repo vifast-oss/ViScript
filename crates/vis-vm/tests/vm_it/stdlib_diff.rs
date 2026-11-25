@@ -283,3 +283,91 @@ fn stdlib_thuan_khop_interp_vm() {
         "quá nhiều chương trình bị bỏ ({da_chay}/{n})"
     );
 }
+
+/// **ST-314a hậu-kiểm (low-peak 2026-11-25)** — differential dạng **phương thức**
+/// (`recv.f(rest)`): cùng 73 hàm thuần, nhưng callee là `Field` ⇒ đi opcode `CallMethod`/nhánh
+/// `f(a) ≡ std.<mod>.f(recv, a)` thay vì `CallBuiltin`. Sinh **tất định**; chương trình mà frontend
+/// từ chối (hàm không có dạng phương thức) bị bỏ qua và đếm riêng.
+///
+/// Số chương trình: `VIS_STDLIB_SUGAR_N` (mặc định **200** cho cổng).
+#[test]
+fn stdlib_thuan_dang_phuong_thuc_khop_interp_vm() {
+    let n = std::env::var("VIS_STDLIB_SUGAR_N")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(200);
+    let ds: Vec<&vis_hir::stdlib::StdFn> = FUNCS
+        .iter()
+        .filter(|f| thuan_va_sinh_duoc(f))
+        .filter(|f| {
+            matches!(
+                f.params.first(),
+                Some(Ty::Str | Ty::ListStr | Ty::List(_) | Ty::Map(_, _))
+            )
+        })
+        .collect();
+    assert!(
+        ds.len() >= 30,
+        "chỉ còn {} hàm có dạng phương thức — bảng chữ ký đổi bất thường?",
+        ds.len()
+    );
+    let mut rng = Lcg(0x5EED_2026_1126);
+    let mut da_chay = 0usize;
+    let mut bo_qua = 0usize;
+    let mut lech: Vec<String> = Vec::new();
+    for i in 0..n {
+        let f = ds[i % ds.len()];
+        let module = f.name.split('.').next().unwrap_or("");
+        let ten_ngan = f.name.split('.').nth(1).unwrap_or("");
+        let Some((recv, rest)) = f.params.split_first() else {
+            continue;
+        };
+        let Some(recv_src) = sinh(&mut rng, *recv) else {
+            bo_qua += 1;
+            continue;
+        };
+        let Some(args) = rest
+            .iter()
+            .map(|t| sinh(&mut rng, *t))
+            .collect::<Option<Vec<_>>>()
+        else {
+            bo_qua += 1;
+            continue;
+        };
+        let src = format!(
+            "use std.{module}\n\nfn main():\n    print({recv_src}.{ten_ngan}({}))\n",
+            args.join(", ")
+        );
+        let kq = catch_unwind(AssertUnwindSafe(|| chay_hai(&src)));
+        match kq {
+            Err(_) => lech.push(format!("#{i} PANIC {} \n{src}", f.name)),
+            Ok(None) => bo_qua += 1,
+            Ok(Some((a, b))) => {
+                da_chay += 1;
+                if mo_ta(&a) != mo_ta(&b) {
+                    lech.push(format!(
+                        "#{i} LỆCH {} (dạng phương thức)\ninterp: {}\nvm    : {}\n{src}",
+                        f.name,
+                        mo_ta(&a),
+                        mo_ta(&b)
+                    ));
+                }
+            }
+        }
+    }
+    eprintln!(
+        "stdlib_sugar: {} hàm, {n} chương trình, {da_chay} chạy được, {bo_qua} bỏ qua (frontend), {} lệch",
+        ds.len(),
+        lech.len()
+    );
+    assert!(
+        lech.is_empty(),
+        "{} chương trình lệch/panic (tối đa 5):\n{}",
+        lech.len(),
+        lech.iter().take(5).cloned().collect::<Vec<_>>().join("\n")
+    );
+    assert!(
+        da_chay > n / 4,
+        "quá nhiều chương trình dạng phương thức bị bỏ ({da_chay}/{n})"
+    );
+}
