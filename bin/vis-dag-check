@@ -18,6 +18,11 @@ fi
 VIS_DAG_META="$META" python3 - <<'PY'
 import json, os, sys
 
+# Windows console mặc định cp1252 — ép UTF-8 để in thông điệp tiếng Việt không lỗi.
+for s in (sys.stdout, sys.stderr):
+    if hasattr(s, "reconfigure"):
+        s.reconfigure(encoding="utf-8", errors="replace")
+
 with open(os.environ["VIS_DAG_META"], encoding="utf-8") as f:
     data = json.load(f)
 # Chỉ cạnh **sản phẩm** (`kind` null = normal); dev/build không tính vào DAG.
