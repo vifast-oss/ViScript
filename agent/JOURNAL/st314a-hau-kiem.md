@@ -522,3 +522,45 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `vis-wasm-suite`/`vis-wasm-sem` | dùng wasm có sẵn bất kể tuổi; sem oracle lệch chỉ WARN | tự build khi wasm **thiếu hoặc cũ hơn** `vis-host-wasm/src` + `crates/**`; thêm `--no-build`; sem `--allow-oracle-drift` (mặc định **FAIL**): test oracle sửa 1 byte ⇒ exit **1**, có cờ ⇒ 0; suite 28/28 (tự rebuild) |
 | `vis-targets` | in hằng số `390/390`, `28/28` như vừa đo | mặc định in **“chưa đo lượt này; lần cuối 2026-11-25”**; `--wasm` đo lại thật và in `# SUMMARY`/`# tổng` của 3 harness, lỗi ⇒ exit 1. Test: mặc định exit 0, in đúng mốc; `--wasm` chạy 3 harness |
 | `vis-gc-targets` | chỉ grep `ps args` theo path — cargo chạy với **cwd** trong worktree nhưng args không chứa path ⇒ có thể xoá `target` đang dùng | thêm kiểm `/proc/<pid>/cwd` (Linux; quyền bị từ chối thì bỏ qua an toàn) ⇒ `SKIP (cwd đang dùng)` |
+
+## 23. Audit phủ conformance (subagent W1) — 18 ca mới + **P0 `const`**
+
+> Nguồn: `/home/ps/vislogs/w1-conformance-cases/` (ma trận 167 dòng + 18 ca đã kiểm 2 engine).
+> Đợt này **phát hiện lỗi đúng/sai + crash thật**, không chỉ là phủ test.
+
+### 23.1 P0 — `const` (đã vá + test)
+
+| Lỗi | Trước | Sau |
+|---|---|---|
+| **F1** tham chiếu `const` phía trước | interp duyệt `HashMap` ⇒ `const A = B + 1` khai trước `B` **7/12 lần đúng, 5/12 lần** `VS0501: tên B chưa có giá trị`; VM luôn đúng | interp nạp **lazy theo phụ thuộc + memo** (`const_order`/`const_dang`) ⇒ **20/20 đúng**, khớp VM |
+| **F2** chu trình `const` | VM **stack overflow / SIGABRT** (exit 134) vì codegen đệ quy vô hạn; interp `VS0501`; `vis check` **xanh** | codegen theo dõi đường inline ⇒ `CodegenError::ConstCycle` (exit 1, không crash); interp `VS0501: chu trình \`const\``; test `const_chu_trinh_khong_panic` |
+| **F3** (nhẹ, chưa sửa) | `const N = 1` bị `VS0204` dù RHS literal; thông điệp nói "R7 cho suy kiểu" còn SPEC:226 ghi `VS0201` | **đề xuất A0** chốt (không tự đổi mã) |
+
+- Test khoá: `const_tham_chieu_truoc_khop_hai_duong`, `const_chu_trinh_khong_panic`
+  (`vm_it/vs_interp.rs`) + ca corpus `lang/const/forward-ref` (`2\n`, `.fmt`).
+- **Còn lại cho A0**: `vis check` **vẫn xanh** với chu trình `const` (lỗi chỉ ở codegen/interp).
+  Muốn bắt tĩnh cần **mã chẩn đoán mới** (hoặc dùng mã hiện có) + bước kiểm phụ thuộc trong
+  `vis-types`; Agent 2 không tự cấp mã.
+
+### 23.2 Ma trận phủ (167 hàm `std.*` ↔ corpus)
+
+- **167** hàm; **92** (55,1 %) có ≥1 ca gọi `mod.fn(`; **75** không có ca — trong đó **66** là
+  host/không tất định (`fs` 22, `sqlite` 28, `net` 10, `http` 4, `time` 2), **9 hàm thuần** thiếu:
+  `path.ancestors`/`is_absolute`/`with_extension`/`with_file_name`/`with_stem`/`strip_prefix`,
+  `str.contains`/`starts_with`/`ends_with`.
+- `list.chunks_exact(0)` và `json.encode_pretty(NaN)` có ca hạnh phúc nhưng **thiếu nhánh trap**.
+- **0 ca `const`**; `while let` chỉ có 1 ca lỗi (không có ca dương).
+- 66 hàm host cần **harness host riêng** (tệp tạm + host giả lập), không nhét vào corpus đồng bộ;
+  đề xuất A0 mở hướng này sau.
+
+### 23.3 18 ca mới (W1) — đã tích hợp
+
+| Nhóm | Ca | Ghi chú |
+|---|---|---|
+| `path` | `ancestors`, `is-absolute`, `with-extension`, `with-file-name`, `with-stem`, `strip-prefix` (+2 lỗi tĩnh) | `.skip-windows` (POSIX) |
+| `str` | `contains`, `starts-ends-with` (+1 lỗi tĩnh) | |
+| `trap` | `chunks-exact-0` (VS0501), `encode-pretty-nan` (VS0501) | assert mã trên WASI |
+| `lang` | `const-co-ban`, `loi_const-sai-kieu`, `loi_const-gan`, `whilelet-co-ban`, `whilelet-dung` | |
+
+- **Corpus 544 → 563 ca**, `563/563` xanh (harness so cả message interp↔VM); gate **3816/3816**.
+- Ghi chú: 66 hàm host vẫn ngoài corpus; `.skip-windows` giữ 3-OS.
