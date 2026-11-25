@@ -77,14 +77,23 @@ def chay(driver: Path, root: Path, *runner_args: str) -> subprocess.CompletedPro
 def tu_kiem(driver: Path, root: Path) -> None:
     """**ST-314a (VD-290)**: chứng minh cờ runner **không bị nuốt**.
 
-    Cờ lạ phải tới `vis-wasm-run` và bị từ chối với exit 2. Nếu `NODE_DRIVER` lệch tham số
-    (như lỗi `ro` cũ), cờ bị nuốt ⇒ runner chạy chương trình ⇒ self-check fail ngay.
+    Cờ lạ phải tới `vis-wasm-run` và bị từ chối với exit 2 **trước khi chạy chương trình**.
+    Nếu `NODE_DRIVER` lệch tham số (như lỗi `ro` cũ), cờ bị nuốt ⇒ chương trình chạy và in
+    `SELF-CHECK-LEAK` ⇒ self-check fail ngay. Chương trình hợp lệ là bắt buộc: nếu để thư mục
+    rỗng, lỗi "thiếu tệp" cũng trả exit 2 và sẽ che đúng lỗi nuốt cờ.
     """
     root.mkdir()
+    (root / "prog.vis").write_text(
+        'fn main():\n    print("SELF-CHECK-LEAK")\n', encoding="utf-8"
+    )
     r = chay(driver, root, "--co-khong-ton-tai", "/data/prog.vis")
-    if r.returncode != 2:
+    if (
+        r.returncode != 2
+        or "SELF-CHECK-LEAK" in r.stdout
+        or "--co-khong-ton-tai" not in r.stderr
+    ):
         print(
-            f"SELF-CHECK: cờ lạ không tới `vis-wasm-run` (rc={r.returncode}, "
+            f"SELF-CHECK: cờ lạ không tới `vis-wasm-run` hoặc bị nuốt (rc={r.returncode}, "
             f"stdout={r.stdout[:120]!r}, stderr={r.stderr[:120]!r})",
             file=sys.stderr,
         )
