@@ -17,5 +17,6 @@
 - **Kết quả cuối**: cập nhật vào mục này sau 00:55 UTC (số vòng, số lỗi, sha log).
 - **Đã chạy (cập nhật dần)**: vòng 1 `11:18–11:19` seed `202611260001`: **100.000, lech=0, 72,3 s**
   (`r001-diff-202611260001.log`); vòng 2 `11:29–11:31` seed `202611260002`: **100.000, lech=0, 68,5 s**
-  (`r002-diff-202611260002.log`).
+  (`r002-diff-202611260002.log`); vòng 3 `11:41–11:42` seed `202611260003`: 100.000, lech=0
+  (`r003-...`); vòng 4 `11:52–11:54` seed `202611260004`: 100.000, lech=0 + **gate rc=0** (`r004-...`).
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
