@@ -27,6 +27,10 @@ fn tach_url_dung_va_chan_ngoai_loopback() {
     );
     assert!(tach_url("http://example.com/").is_err());
     assert!(tach_url("http://127.0.0.1:99999/").is_err());
+    // **ST-314a (W3 H1)**: CRLF trong URL không được vào request-target.
+    assert!(tach_url("http://127.0.0.1/x\r\nHost: evil").is_err());
+    assert!(tach_url("http://127.0.0.1/x\nY: z").is_err());
+    assert!(tach_url("http://127.0.0.1/x\r\n\r\nGET / HTTP/1.1").is_err());
     assert!(tach_url("ftp://127.0.0.1/").is_err());
     assert!(tach_url("http://user@127.0.0.1/").is_err());
     assert!(tach_url("http://[::1]:8080/").is_ok());

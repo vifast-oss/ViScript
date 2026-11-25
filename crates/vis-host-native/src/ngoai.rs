@@ -44,17 +44,6 @@ fn loi(ma: &'static vis_diag::Code, msg: impl Into<String>, span: Span) -> Abort
     Abort::Trap(Trap::new(ma, msg, span))
 }
 
-/// **ST-123 (VD-130c)**: lệnh `ten` khớp grant `g` ⇔ **đường dẫn tuyệt đối đã canonicalize bằng
-/// nhau**. `g` đã được phân giải **một lần lúc khởi động** (`quyen::tao`); `ten` phân giải theo
-/// **cùng** luật tại thời điểm chạy. **Không** còn so **basename** — bản sao cùng tên ở thư mục khác
-/// (**ST-123** red) bị chặn; tên trần (`echo`) khớp `/bin/echo` qua `PATH`, không qua tên.
-fn khop_lenh(ten: &str, g: &str) -> bool {
-    match crate::quyen::chuan_lenh(ten) {
-        Some(d) => d.as_path() == std::path::Path::new(g),
-        None => false,
-    }
-}
-
 /// Cap **stdin** mỗi stage ngoài (ST-34): 8 MiB. Vượt ⇒ `VS0501` **trước khi spawn**.
 pub const MAX_STDIN: usize = 8 * 1024 * 1024;
 
@@ -84,8 +73,19 @@ impl Runner {
         // ⇒ không giới hạn (tương thích).
         // **ST-123 (VD-130c)**: khớp theo **đường dẫn tuyệt đối đã canonicalize** (hai phía), không
         // theo basename.
+        // **ST-314a (W3 C2)**: phân giải `ten` qua PATH **một lần**, kiểm allowlist, rồi
+        // **exec chính đường tuyệt đối đó**. Trước đây `Command::new(ten)` tra PATH lần hai ⇒
+        // đổi symlink/PATH giữa hai lần tra chạy được binary ngoài allowlist (TOCTOU).
+        let mut duong_chay: Option<std::path::PathBuf> = None;
         if let Some(ds) = &self.allow_proc {
-            if !ds.iter().any(|g| khop_lenh(ten, g)) {
+            let Some(d) = crate::quyen::chuan_lenh(ten) else {
+                return Err(loi(
+                    &COMMAND_CODES[3],
+                    format!("[quyền] không phân giải được lệnh `{ten}` để kiểm allowlist"),
+                    span,
+                ));
+            };
+            if !ds.iter().any(|g| d.as_path() == std::path::Path::new(g)) {
                 return Err(loi(
                     &COMMAND_CODES[3],
                     format!(
@@ -95,6 +95,7 @@ impl Runner {
                     span,
                 ));
             }
+            duong_chay = Some(d);
         }
         if stdin.len() > MAX_STDIN {
             return Err(loi(
@@ -112,7 +113,10 @@ impl Runner {
                 eprintln!("PIPE stdin {ten} ({} byte)", stdin.len());
             }
         }
-        let mut cmd = Command::new(ten);
+        let mut cmd = match &duong_chay {
+            Some(p) => Command::new(p),
+            None => Command::new(ten),
+        };
         cmd.args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

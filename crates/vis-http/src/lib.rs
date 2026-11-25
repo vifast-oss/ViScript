@@ -204,6 +204,11 @@ fn la_host_loopback(host: &str) -> bool {
 /// cho host bất kỳ (TLS + `cap[Net]`).
 #[doc(hidden)]
 pub fn tach_url(url: &str) -> Result<UrlHttp, String> {
+    // **ST-314a (W3 H1)**: URL chứa CR/LF/CTL từng chèn được header/request thứ hai vào
+    // `request-target` (CRLF injection / request smuggling). Từ chối sớm toàn bộ CTL.
+    if url.bytes().any(|b| b < 0x20 || b == 0x7f) {
+        return Err("URL chứa ký tự điều khiển (CR/LF/CTL) — từ chối".to_string());
+    }
     let (giao_thuc, rest) = if let Some(r) = url.strip_prefix("http://") {
         (GiaoThuc::Http, r)
     } else if let Some(r) = url.strip_prefix("https://") {

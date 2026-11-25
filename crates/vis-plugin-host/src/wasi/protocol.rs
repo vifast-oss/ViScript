@@ -356,6 +356,7 @@ pub fn giai_ma(s: &str) -> Result<PluginValue> {
     let mut d = Doc {
         b: s.as_bytes(),
         i: 0,
+        sau: 0,
     };
     let v = d.gia_tri()?;
     if d.i != d.b.len() {
@@ -367,9 +368,14 @@ pub fn giai_ma(s: &str) -> Result<PluginValue> {
     Ok(v)
 }
 
+/// **ST-314a (W3 M1)**: trần độ sâu giá trị plugin — input `875 byte` lồng 200.000 cấp từng làm
+/// host **stack overflow/SIGABRT**; vượt trần ⇒ `VS0501` có kiểm soát.
+const MAX_SAU: usize = 64;
+
 struct Doc<'a> {
     b: &'a [u8],
     i: usize,
+    sau: usize,
 }
 
 impl Doc<'_> {
@@ -426,6 +432,19 @@ impl Doc<'_> {
     }
 
     fn gia_tri(&mut self) -> Result<PluginValue> {
+        if self.sau >= MAX_SAU {
+            return Err(Error::new(
+                "VS0501",
+                format!("giá trị plugin: lồng quá sâu (> {MAX_SAU} cấp)"),
+            ));
+        }
+        self.sau += 1;
+        let kq = self.gia_tri_sau();
+        self.sau -= 1;
+        kq
+    }
+
+    fn gia_tri_sau(&mut self) -> Result<PluginValue> {
         let tag = self.ky_tu()?;
         self.cham()?;
         match tag {
@@ -587,6 +606,18 @@ mod tests {
         for sai in ["", "x:", "i:abc:", "s:2:61", "l:2:i:1:", "c:1:44"] {
             assert!(giai_ma(sai).is_err(), "phải lỗi: `{sai}`");
         }
+    }
+
+    /// **ST-314a (W3 M1)**: input lồng sâu không được làm host stack overflow.
+    #[test]
+    fn giai_ma_tu_choi_long_qua_sau() {
+        let mut s = String::new();
+        for _ in 0..1000 {
+            s.push_str("l:1:");
+        }
+        s.push_str("u:");
+        let e = giai_ma(&s).expect_err("phải lỗi");
+        assert!(format!("{e}").contains("lồng quá sâu"), "thông điệp: {e}");
     }
 
     #[test]

@@ -384,8 +384,11 @@ impl Quyen {
             if q.kind != "Dir" && q.kind != "File" {
                 continue;
             }
-            let r = chuan(Path::new(&q.root));
-            if c.starts_with(&r) {
+            // **ST-314a (W3 H2)**: `q.root` đã canonicalize **một lần lúc khởi động**; KHÔNG
+            // canonicalize lại mỗi lần kiểm — nếu gốc cap bị đổi thành symlink, cả `c` lẫn `r`
+            // sẽ "di chuyển" ra ngoài và `starts_with` vẫn đúng (thoát vùng cấp).
+            let r = Path::new(&q.root);
+            if c.starts_with(r) {
                 trong_root = true;
                 if !can_write || q.write {
                     return Ok(());

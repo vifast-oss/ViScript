@@ -8,8 +8,9 @@
 //!
 //! Ghi chú thiết kế:
 //! - Chỉ **hệ tệp** (Dir/File). `cap[Net]` vẫn cưỡng chế ở **runtime** (`NetGuard`) như VD-120.
-//! - Dùng `ABI::V1` để tập quyền ổn định trên mọi kernel có Landlock (≥ 5.13). Kernel mới hơn
-//!   vẫn chấp nhận ruleset V1.
+//! - Dùng **`ABI::V3`** (Linux ≥ 5.19) để **xử lý cả `Truncate`** — W3 C1: ruleset V1 không
+//!   handle `Truncate` nên tiến trình con vẫn `truncate(2)` được tệp trong `cap[Dir]` chỉ-đọc.
+//!   Kernel cũ hơn (ABI < 3) sẽ **từ chối tạo ruleset** (fail-closed: không chạy sandbox yếu).
 //! - Quyền của **tệp** và của **thư mục** khác nhau: `ReadDir` chỉ hợp lệ trên thư mục, nên tệp
 //!   chỉ xin `ReadFile` (+`WriteFile` khi có quyền ghi). Xin sai ⇒ `add_rule` trả `EINVAL`.
 //! - `restrict_self()` trả [`RestrictionStatus`]: `NotEnforced` ⇒ nền **không** cưỡng chế được
@@ -47,7 +48,7 @@ pub enum Muc {
 /// Kết quả áp sandbox.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KetQua {
-    /// ABI Landlock đã dùng (1 với VS2).
+    /// ABI Landlock đã dùng (3: có `Truncate`/`Refer`).
     pub abi: u8,
     /// Mức cưỡng chế.
     pub muc: Muc,
@@ -139,7 +140,8 @@ pub fn ap_dung(cho: &[ChoPhep]) -> Result<KetQua, LoiSandbox> {
 /// **ST-295 (VD-276 §3)** — như [`ap_dung`] nhưng có/không **xử lý `Execute`**. `vis run --sandbox`
 /// bật `true` **chỉ khi** có `cap[Proc]` + `--grant`; đường cũ/test giữ `false`.
 pub fn ap_dung_voi_execute(cho: &[ChoPhep], execute: bool) -> Result<KetQua, LoiSandbox> {
-    let abi = ABI::V1;
+    // **ST-314a (W3 C1)**: V3 xử lý `Truncate` (+`Refer`); V1 bỏ sót ⇒ lỗ hổng ghi tệp chỉ-đọc.
+    let abi = ABI::V3;
     let mut ruleset = Ruleset::default();
     // Bắt buộc: chỉ định rõ tập quyền **xử lý**; quyền không xử lý vẫn theo quyền cũ của tiến trình.
     ruleset = ruleset
@@ -167,7 +169,7 @@ pub fn ap_dung_voi_execute(cho: &[ChoPhep], execute: bool) -> Result<KetQua, Loi
         RulesetStatus::NotEnforced => Muc::Khong,
     };
     Ok(KetQua {
-        abi: 1,
+        abi: abi as u8,
         muc,
         so_luat,
         no_new_privs: tt.no_new_privs,

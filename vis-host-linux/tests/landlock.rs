@@ -53,10 +53,10 @@ fn doc_trong_thu_muc_duoc_phep() {
         ghi: false,
         la_tep: false,
     }]);
-    assert_eq!(kq.abi, 1);
+    assert_eq!(kq.abi, 3, "abi thực: {}", kq.dong());
     assert_eq!(kq.so_luat, 1);
     assert_eq!(doc(&f).expect("đọc trong phạm vi phải được"), "xin chao\n");
-    assert!(kq.dong().starts_with("sandbox: landlock ABI=1 mức=đầy đủ"));
+    assert!(kq.dong().starts_with("sandbox: landlock ABI=3 mức=đầy đủ"));
     let _ = fs::remove_dir_all(&d);
 }
 
