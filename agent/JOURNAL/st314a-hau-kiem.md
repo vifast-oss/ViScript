@@ -346,3 +346,27 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
   `./vis-dev nightly --skip-gate --fuzz-minutes 1` → **PASS**, DAG 5 tầng + self-test OK,
   fuzz 1 phút OK, fmt OK, `EXIT=0`
   (`/home/ps/vislogs/st314a-lp14-nightly-1m-clean.log`, sha `1ab2e3a49d9231d378663e2e6deccfafd03b383dbb64c242c538405562e27431`).
+
+## 21. Vòng nặng cao điểm 2 — 06:00–10:00 UTC 2026-11-25 (`ps` + `psvn`, 0-LLM)
+
+- **`ps`**: 4 wave nối tiếp tới 09:54:48Z, tất cả exit 0, 0 job `SKIP-deadline`.
+  - **52 lượt `vis-diff 100k` lech=0** (20 + 20 + 1 + 11), mỗi lượt ~93.765 chương trình
+    (`/home/ps/vislogs/peak2-2026-11-25/diff*.log`).
+  - **Fuzz parser 3 khúc**: 45 phút **385.224.262 ca** + 90 phút **795.614.339 ca** + 41 phút
+    **362.644.427 ca** ⇒ **1.543.483.028 ca / 0 vi phạm**, cả 3 `nightly: PASS`.
+  - **4× `gate --fast` 3805/3805, 4 skipped** (`gate-fast`, `gate-final`, `gate-final3`, `gate-final4`).
+  - WASI: suite **28/28**, sem **390/390 coverage 100%**, conformance **299×2, 0 hỏng**;
+    `vis-targets` PASS 23 crate; clippy Linux exit 0; `gc-targets` OK.
+- **`psvn`**: chain 06:18–09:45:10Z, `[exit=0]`, **0 bước EXIT≠0**:
+  **15 lượt `vis-diff 100k` lech=0**, **30 vòng `cargo test --workspace`** (gồm `--test-threads=1`),
+  tổng **111.976 test-case ok**, host conformance **54 ca/120 lượt 0 lệch**, targets 23 crate.
+  Lượt cuối 09:52–09:57:09Z (`psvn-final.log`) cũng `[exit=0]`, 3.729 test ok.
+  Windows full đầu cao điểm 06:02–06:07Z: `[exit=0]`, 3.730 test ok, host conformance ok.
+- **Tổng 2 máy**: **67 lượt `vis-diff 100k` lech=0** (≈ 6,28 triệu chương trình 100k so interp↔VM);
+  **1.543.483.028 ca fuzz / 0 vi phạm**; GitHub Actions không dùng; `mps` bỏ qua theo chỉ đạo.
+- **Bằng chứng**: `/home/ps/vislogs/peak2-2026-11-25/` — `summary.tsv`, `summary-wave{2,3,4}.tsv`,
+  `win-full.log`, `psvn-chain.log`, `psvn-final.log`, `REPORT-final.md`,
+  `SHA256SUMS.final` (**71/71 log OK**; sha `3b7fd28ad2906171b71a6b0b9da6a091aba6053022da05c52532b54ddc8d2df8`),
+  `REPORT-final.md` sha `f878529ab013d850d2de440d1d7e3cfb080809af1b3654a65a50039fcf475d91`.
+  Ghi chú: `SHA256SUMS` cũ có 1 dòng FAILED do `psvn-final.log` còn mở lúc wave 4 chốt sha —
+  artifact thời điểm, đã thay bằng `SHA256SUMS.final` sau khi mọi job đóng.
