@@ -67,6 +67,15 @@
 | R1..R9 | PASS |
 | R8 | **37** binary (trần 40) |
 
+## Chốt audit tệp lai (00:40)
+
+- Đã kiểm bằng call-graph (không chỉ grep): các test “API” còn lại đều gọi helper CLI
+  (`chay_vis`/`dung`/`chay_ca_hai`/`vis`) hoặc là harness đặc thù (`diag_cmp` gắn `test/sem`
+  + `test-child`; `pkg`/`net`/`repl` CLI).
+- `repl_term` 4 test PTY đã về unit test `vis-cli/src/repl.rs`; 4 CLI giữ.
+- `sync_list` 4 test API đã dời; 5 CLI giữ.
+- Tổng: **384 test API** (380 integration + 4 unit), 0 assertion mất.
+
 ## Ghi chú vận hành
 
 - Một lần `gate --fast` dưới tải có 2 ca `vis-cli::vis_test` đỏ; chạy lại **PASS**
