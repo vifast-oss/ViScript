@@ -83,3 +83,6 @@ mod vs3_coverage_matrix;
 
 #[path = "misc_api_it/version_workspace.rs"]
 mod version_workspace;
+
+#[path = "misc_api_it/sync_list_lib.rs"]
+mod sync_list_lib;
