@@ -447,7 +447,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | F3 | `vis-gate-macos` | quick lọc `async_it lat` (0 ca); self-test đòi chuỗi không còn tồn tại ⇒ **luôn đỏ**; chuyển `lib_api_it --no-tests=fail lat` (124 test), self-test **1 → 0** (13 kiểm) |
 | F4 | `vis-wasm-suite` | `--filter` 0 ca / `--runtime node` thiếu node ⇒ exit 0; nay **0 → 1** và **0 → 2** |
 | F5 | `vis-wasm-sem` | in FAIL nhưng `return 0`; `--filter` rỗng ⇒ 0; coverage sai mẫu số; nay strict exit 1, thêm `--allow-fail` |
-| F6 | `vis-wasm-conformance` | 0 ca ⇒ PASS; `.trap` bị chạy như ca thường; async/kenh bị đem chạy WASI; nay bỏ qua + đếm riêng, 0 ca ⇒ 1 |
+| F6 | `vis-wasm-conformance` | 0 ca ⇒ PASS; `.trap` bị chạy như ca thường; async/kenh bị đem chạy WASI; nay **assert `.trap` trên WASI** (exit ≠ 0, stdout khớp, đủ mã trong stderr), loại async/kenh, 0 ca ⇒ 1 |
 | F7 | `vis-gc-targets` | `df`/`ps`/`git worktree` lỗi ⇒ coi như đủ đĩa/không tiến trình rồi dọn; nay từ chối `exit 3` |
 | F8 | `vis-jobs` | `ps` lỗi ⇒ danh sách rỗng ⇒ `--check` in OK; nay `exit 3` |
 | F9 | `vis-host-suite` | suite rỗng ⇒ `0/0` exit 0; nay `exit 1` |
@@ -458,11 +458,10 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 - Negative control từng lỗi ở `/home/ps/vislogs/st314a-bin-audit-evidence.log` (248 dòng);
   báo cáo đầy đủ `/home/ps/vislogs/st314a-bin-audit-2026-11-25.md`
   (sha `7749cba7babe07a8d609939213807f1c9dcfaedebe84f6984d74ec99f78a88da`).
-- **9 nghi vấn không sửa** (cần A0): `vis-targets` in hằng số wasm không đo lại; `vis-wasm-sem`
-  oracle SHA lệch chỉ WARN; wasm cũ nếu không `--build`; `vis-release --out-dir` có thể `rm -rf`
-  gốc repo; `vis-linux sync_tree` bỏ qua mục thiếu; `vis-gate-windows` không có HEAD guard;
-  `vis-gc-targets` grep `ps args` có thể sót; stem log `vis-remote` trùng giây; `.trap` chưa được
-  WASI assert.
+- **Đã đóng tiếp 5 nghi vấn** (xem §22.9); **còn 1 nghi vấn** cần A0/đo dài: `vis-gc-targets`
+  grep `ps args` theo path có thể sót tiến trình cargo không chứa path trong args. Ghi chú thêm:
+  ngưỡng stack WASI của ca đệ quy sâu (`de-quy-qua-sau`) khác native nên ca đó **không** chạy
+  assert trên WASI (25/26 ca trap được assert).
 
 ### 22.7 Đo hiệu năng + đề xuất trục kế tiếp
 
@@ -478,7 +477,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 | Cổng | Kết quả | Log |
 |---|---|---|
-| `./vis-dev gate --fast` | **PASS — 3812/3812, 4 skipped**; DAG 5 tầng + self-test OK | `st314a-lp28-gate.log` (`EXIT=0`) |
+| `./vis-dev gate --fast` | **PASS — 3812/3812, 4 skipped**; DAG 5 tầng + self-test OK (2 lần: `lp28`, `lp39`) | `st314a-lp28-gate.log`, `st314a-lp39-gate-clean.log` (`EXIT=0`) |
 | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (Linux) | `st314a-lp29-clippy-linux.log` |
 | `vis-conformance` corpus | **544/544** | `edge-conformance-final2.log` + `st314a-lp25-conformance-all.log` |
 | `vis-vm --test vm_it` | **53/53** | — |
@@ -488,9 +487,29 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `./bin/vis-host-suite` | **54/54** + host POSIX real PASS | `st314a-lp27-host-suite.log` |
 | `./bin/vis-wasm-sem` | **390/390, 0 fail, 100 %** (exit 0, strict mới) | `st314a-lp30-wasm-sem.log` |
 | `./bin/vis-wasm-suite` | **28/28, 0 hỏng** | `st314a-bin-audit-evidence.log` |
-| `./bin/vis-wasm-conformance` | **354 ca × 2 engine, 0 hỏng** (bỏ qua 33 async/kenh + 131 lỗi tĩnh + 26 trap) | `st314a-bin-audit-evidence.log` |
+| `./bin/vis-wasm-conformance` | **379 ca × 2 engine, 0 hỏng** (354 `.out` + 25 `.trap`; bỏ qua 33 async/kenh + 131 lỗi tĩnh + 1 ca đệ quy sâu) | `st314a-lp33-wasm-conformance-trap.log` |
 | `./bin/vis-dag-check` + `./vis-dev rules` | **OK** (23 crate/5 tầng; R1..R9) | — |
+| `./bin/vis-targets` | **PASS** — core `47/0/0`, sqlite `45/2/0` (cross-check 3 target) | `st314a-lp31-vis-targets.log` |
+| `./bin/vis-targets --wasm` | **đo lại**: sem **390/390**, suite **28/28**, conformance **379×2** | `st314a-lp37-targets-wasm.log` |
+| `./bin/vis-gate-windows --full` (psvn, **HEAD khớp** `92440689`) | **3.737 passed / 0 failed** (90 binary); corpus 544/544 gồm `.skip-windows`; clippy + host + targets OK | `st314a-lp34-win-full-synced.log` (vm_it **53** ca gồm `stdlib_diff`, lib_api gồm 4 `conformance_trap`) |
 
-- **Chưa chạy lại sau thay đổi** (đưa vào chuỗi 0-LLM giờ cao điểm): Windows full (`psvn`),
-  `bin/vis-targets` ma trận 3 target, fuzz parser dài. macOS `mps` vẫn bận dự án khác (theo chỉ
-  đạo người dùng) ⇒ không chạy full gate.
+- **Sự cố môi trường `lp38`** (không phải lỗi sản phẩm): `/tmp` (tmpfs 7,2 GB) còn **~5 GB rác**
+  từ test (`6.073` thư mục `vis-*` + `1.203` `vs3-*`) ⇒ 3 ca `landlock` báo `EDQUOT`/`ld` bus error
+  và 1 ca `json esc fuzz` báo `QuotaExceeded`. Đã dọn; chạy lại targeted **18/18** landlock +
+  **1/1** json esc; gate sạch `lp39` **3812/3812**. Chuỗi 0-LLM có bước dọn `/tmp` mỗi vòng.
+- **Lần chạy Windows ĐẦU** (`st314a-lp32-win-full.log`) đo **HEAD cũ** `88539274` (vis-remote
+  không đồng bộ cây nguồn) ⇒ **bị loại khỏi bằng chứng**; đã pull `92440689` rồi chạy lại, nay
+  `vis-gate-windows` có HEAD guard (lệch ⇒ exit 6). Số đúng: **3.737/0** (không phải 3.730).
+- **Chưa chạy lại sau thay đổi**: fuzz parser dài, macOS full (`mps` bận theo chỉ đạo người dùng).
+  Chuỗi 0-LLM low-peak chạy tiếp tới sát 01:00 UTC 2026-11-26
+  (`/home/ps/vislogs/lowpeak-chain-2026-11-25/`, log + `SHA256SUMS` + `REPORT.md` ngoài repo).
+
+### 22.9 Vá tiếp 5 nghi vấn audit (sau báo cáo subagent)
+
+| Mục | Trước | Sau (kiểm chứng) |
+|---|---|---|
+| `vis-release --out-dir` | chỉ loại `''`/`/`/`.`/`..`; `--out-dir "$VIS_ROOT"` hoặc `"$HOME"` ⇒ `rm -rf` cây nguồn | canonical hoá (python3 realpath); từ chối gốc repo/tổ tiên/`$HOME`/`/`. Test: `--out-dir /home/ps/ViScript`, `/home/ps`, `/` ⇒ **exit 1**; `/tmp/opencode/release-test` ⇒ 0 |
+| `vis-linux sync_tree` | mục thiếu trong `SYNC_DIRS`/`SYNC_FILES` bị bỏ qua im lặng ⇒ máy đích chạy cây thiếu | kiểm đủ trước rsync; thiếu ⇒ `exit 3`, chỉ bỏ qua khi `VIS_LINUX_ALLOW_MISSING_SYNC=1`; `--check-sync` vẫn 14/14 |
+| `vis-remote` | stem log `tag-<giây>` — hai lần cùng tag/giây tranh `.exit` | stem thêm `-$$`; `--check local` OK |
+| `vis-wasm-suite`/`vis-wasm-sem` | dùng wasm có sẵn bất kể tuổi; sem oracle lệch chỉ WARN | tự build khi wasm **thiếu hoặc cũ hơn** `vis-host-wasm/src` + `crates/**`; thêm `--no-build`; sem `--allow-oracle-drift` (mặc định **FAIL**): test oracle sửa 1 byte ⇒ exit **1**, có cờ ⇒ 0; suite 28/28 (tự rebuild) |
+| `vis-targets` | in hằng số `390/390`, `28/28` như vừa đo | mặc định in **“chưa đo lượt này; lần cuối 2026-11-25”**; `--wasm` đo lại thật và in `# SUMMARY`/`# tổng` của 3 harness, lỗi ⇒ exit 1. Test: mặc định exit 0, in đúng mốc; `--wasm` chạy 3 harness |

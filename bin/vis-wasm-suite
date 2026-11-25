@@ -248,14 +248,45 @@ def cargo_exe() -> str:
     return str(p) if p.is_file() else (shutil.which("cargo") or "cargo")
 
 
+def moi_hon(wasm: Path) -> bool:
+    """**ST-314a (hậu-kiểm low-peak)**: wasm cũ hơn nguồn Rust ⇒ phải build lại.
+
+    Trước đây `build(force=False)` dùng wasm có sẵn **bất kể tuổi**, nên sau khi sửa
+    `vis-host-wasm`/`vis-cli` suite có thể chạy binary cũ rồi báo xanh.
+    """
+    try:
+        t = wasm.stat().st_mtime
+    except OSError:
+        return True
+    for g in (WS / "src", ROOT / "crates", ROOT / "Cargo.toml", ROOT / "Cargo.lock"):
+        try:
+            if g.is_file():
+                if g.stat().st_mtime > t:
+                    return True
+            elif g.is_dir():
+                for base, dirs, files in os.walk(g):
+                    dirs[:] = [d for d in dirs if d not in ("target", ".git")]
+                    for f in files:
+                        try:
+                            if os.path.getmtime(os.path.join(base, f)) > t:
+                                return True
+                        except OSError:
+                            pass
+        except OSError:
+            pass
+    return False
+
+
 def build(force: bool) -> None:
-    if WASM.is_file() and not force:
+    if WASM.is_file() and not force and not moi_hon(WASM):
         try:
             rel = WASM.relative_to(ROOT)
         except ValueError:
             rel = WASM
-        print(f"# dùng wasm có sẵn: {rel}")
+        print(f"# dùng wasm có sẵn (mới hơn nguồn): {rel}")
         return
+    if WASM.is_file() and not force:
+        print("# wasm cũ hơn nguồn Rust — build lại")
     env = os.environ.copy()
     env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
     env.setdefault("CARGO_BUILD_JOBS", "3")
@@ -387,7 +418,8 @@ def run_case(rt, exe, driver, work: Path, case, engine: str):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Smoke suite vis-host-wasm (ST-299a)")
-    ap.add_argument("--build", action="store_true", help="build lại wasm")
+    ap.add_argument("--build", action="store_true", help="build lại wasm (mặc định: chỉ khi thiếu/cũ)")
+    ap.add_argument("--no-build", action="store_true", help="dùng wasm có sẵn, không build")
     ap.add_argument(
         "--runtime",
         choices=["auto", "wasmtime", "python", "node"],
@@ -402,8 +434,18 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="giữ thư mục tạm")
     ap.add_argument("--filter", default="", help="chỉ chạy ca có tên chứa chuỗi này")
     a = ap.parse_args()
+    if a.build and a.no_build:
+        print("--build và --no-build loại trừ nhau", file=sys.stderr)
+        return 2
 
-    build(a.build)
+    if not a.no_build:
+        build(a.build)
+    if not WASM.is_file():
+        print(
+            f"BLOCKED-ENV: thiếu wasm `{WASM}` và đang `--no-build` (bỏ cờ để build)",
+            file=sys.stderr,
+        )
+        return 2
     try:
         rel = WASM.relative_to(ROOT)
     except ValueError:

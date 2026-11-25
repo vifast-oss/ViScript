@@ -23,6 +23,22 @@
 # `test/sem` eligible + suite runtime + known gaps, để không tuyên bố "full" khi còn 2 stack
 # overflow interp. Row này **không** tham gia PASS/FAIL của hai ma trận check.
 set -u
+# **ST-314a (hậu-kiểm low-peak)**: `--wasm` đo lại runtime WASI; mặc định chỉ in **mốc lần đo cuối**
+# (trước đây in hằng số 390/390, 28/28 như thể vừa đo — bằng chứng sai thời điểm).
+WASM_DO=0
+for _arg in "$@"; do
+  case "$_arg" in
+    --wasm) WASM_DO=1 ;;
+    -h | --help)
+      sed -n '2,30p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "vis-targets: không hiểu \`$_arg\` (dùng --wasm để đo lại WASI)" >&2
+      exit 2
+      ;;
+  esac
+done
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MANIFEST="$ROOT/Cargo.toml"
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
@@ -148,13 +164,33 @@ if [ "$core_bad" -ne 0 ] || [ "$sqlite_bad" -ne 0 ]; then
   exit 1
 fi
 echo
-echo "=== wasm32-wasip1 (runtime) ==="
-printf '%-24s %-28s %s\n' hạng-mục target kết-quả
-printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "390/390 = 100% (stack 12 MiB + node 4096)"
-printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "28/28 (14 ca x interp/VM)"
-printf '%-24s %-28s %s\n' known-gap wasm32-wasip1 "không còn (đóng #193: -zstack-size=12 MiB + node --stack-size=4096)"
-printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
-echo "wasm32-wasip1: coverage 390/390, suite 28/28; #193 đã đóng bằng stack module + V8"
+if [ "$WASM_DO" = 1 ]; then
+  echo "=== wasm32-wasip1 (runtime) — ĐO LẠI trong lượt này ==="
+  printf '%-24s %-28s %s\n' hạng-mục target kết-quả
+  sem_out="$(cd "$ROOT" && ./bin/vis-wasm-sem 2>&1)"; sem_rc=$?
+  suite_out="$(cd "$ROOT" && ./bin/vis-wasm-suite 2>&1)"; suite_rc=$?
+  conf_out="$(cd "$ROOT" && ./bin/vis-wasm-conformance 2>&1)"; conf_rc=$?
+  sem_sum="$(printf '%s\n' "$sem_out" | sed -n 's/^# SUMMARY /sem /p' | tail -1)"
+  suite_sum="$(printf '%s\n' "$suite_out" | sed -n 's/^# tổng: /suite /p' | tail -1)"
+  conf_sum="$(printf '%s\n' "$conf_out" | sed -n 's/^# tổng: /conformance /p' | tail -1)"
+  printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "${sem_sum:-FAIL (exit $sem_rc)}"
+  printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "${suite_sum:-FAIL (exit $suite_rc)}"
+  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "${conf_sum:-FAIL (exit $conf_rc)}"
+  printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
+  if [ "$sem_rc" -ne 0 ] || [ "$suite_rc" -ne 0 ] || [ "$conf_rc" -ne 0 ]; then
+    echo "vis-targets: đo WASI có lỗi (sem=$sem_rc suite=$suite_rc conformance=$conf_rc)" >&2
+    exit 1
+  fi
+  echo "wasm32-wasip1: đo lại OK (sem/suite/conformance ở trên); #193 đã đóng bằng stack module + V8"
+else
+  echo "=== wasm32-wasip1 (runtime) — CHƯA ĐO trong lượt này ==="
+  printf '%-24s %-28s %s\n' hạng-mục target kết-quả
+  printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25 (ST-314a §22): 390/390"
+  printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25: 28/28"
+  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25: 379×2 (354 .out + 25 .trap)"
+  printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
+  echo "wasm32-wasip1: mốc lần cuối 2026-11-25; chạy \`bin/vis-targets --wasm\` để đo lại"
+fi
 echo
 echo "=== aarch64-apple-darwin (native) ==="
 printf '%-24s %-28s %s\n' hạng-mục target kết-quả

@@ -12,10 +12,10 @@
 | `vis-lock` | giữ khoá `~/.vifast-measure.lock` khi đo thời gian (macOS không có `flock`) | đo hiệu năng |
 | `vis-remote` | chạy lệnh trên máy `mps`/`psvn` qua ssh (máy chủ đạo `ps` chạy tại chỗ), log ngoài repo, đọc mã thoát từ tệp | đo đa nền |
 | `vis-linux` | chạy cổng trong container Linux | đo đa nền |
-| `vis-targets` | kiểm crate `vis-host-*` theo nền (gồm dòng `wasm32-wasip1 (runtime)` và `aarch64-apple-darwin (native)`) | kiểm thử |
+| `vis-targets` | kiểm crate `vis-host-*` theo nền; `--wasm` đo lại runtime WASI (mặc định chỉ in mốc lần cuối, không giả vờ vừa đo) | kiểm thử |
 | `vis-host-suite` | bộ kiểm host (Linux/Windows) | kiểm thử |
-| `vis-wasm-sem` | chạy bộ ngữ nghĩa `test/sem` trên `wasm32-wasip1` bằng runtime WASI (Node/wasmtime) | kiểm thử |
-| `vis-wasm-suite` | smoke suite `vis-host-wasm` trên `wasm32-wasip1` (preopen/quyền/đồng hồ/argv) | kiểm thử |
+| `vis-wasm-sem` | chạy bộ ngữ nghĩa `test/sem` trên `wasm32-wasip1` (tự build khi wasm thiếu/cũ; `--allow-fail`/`--allow-oracle-drift` chỉ để ghi nợ) | kiểm thử |
+| `vis-wasm-suite` | smoke suite `vis-host-wasm` trên `wasm32-wasip1` (tự build khi wasm thiếu/cũ; `--no-build` để dùng bản có sẵn) | kiểm thử |
 | `vis-wasm-conformance` | chạy `test/conformance/**` trên `wasm32-wasip1` cho **cả interp + VM** (self-check cờ lạ/engine) | kiểm thử |
 | `vis-gc-targets` | canh đĩa ≥10/15 GB, dọn `target/` worktree đã merge/cũ (mặc định dry-run) | vận hành |
 | `vis-jobs` | liệt kê/kiểm tiến trình nền; `--protect <pid>` khi cố ý giữ | vận hành |

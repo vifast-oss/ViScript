@@ -94,6 +94,20 @@ pick_backend() {
 sync_tree() {
     if [ "$no_sync" = 1 ]; then say "bỏ đồng bộ (VIS_LINUX_NO_SYNC=1)"; return 0; fi
     local d
+    # **ST-314a (hậu-kiểm low-peak)**: trước đây mục thiếu trong `SYNC_DIRS`/`SYNC_FILES` bị bỏ qua
+    # im lặng ⇒ máy đích chạy cây **thiếu tệp** mà vẫn xanh. Kiểm đủ trước khi rsync; chỉ cho phép
+    # bỏ qua tường minh bằng `VIS_LINUX_ALLOW_MISSING_SYNC=1`.
+    local thieu=""
+    for d in $SYNC_DIRS $SYNC_FILES; do
+        [ -e "$REPO_ROOT/$d" ] || thieu="$thieu $d"
+    done
+    if [ -n "$thieu" ]; then
+        if [ "${VIS_LINUX_ALLOW_MISSING_SYNC:-0}" = 1 ]; then
+            say "CẢNH BÁO: thiếu mục đồng bộ:$thieu (bỏ qua do VIS_LINUX_ALLOW_MISSING_SYNC=1)"
+        else
+            die 3 "thiếu mục đồng bộ:$thieu — từ chối đồng bộ một phần (VIS_LINUX_ALLOW_MISSING_SYNC=1 để bỏ qua)"
+        fi
+    fi
     # `vis-host-linux` (thành viên workspace từ ST-312b) và `vis-host-wasm` (workspace riêng)
     # ở gốc repo: cần cho ST-132 (Landlock thật) và ma trận `bin/vis-targets` — ST-134.
     for d in $SYNC_DIRS; do

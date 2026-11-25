@@ -557,7 +557,9 @@ main() {
     [ "$require_clean" = 1 ] && DIRTY_POLICY=check
     [ "$check" = 1 ] && DIRTY_POLICY=skip   # `--check` là chẩn đoán môi trường, không phải phép đo
 
-    local stem; stem="$tag-$(utc_stem)"
+    # **ST-314a (hậu-kiểm low-peak)**: thêm PID — hai lần chạy cùng tag trong cùng một giây
+    # không còn tranh cùng tệp log/`.exit` (trước đây stem chỉ có giây).
+    local stem; stem="$tag-$(utc_stem)-$$"
     if [ -z "$log" ]; then
         log="$HOME/vislogs/$stem.log"
     else

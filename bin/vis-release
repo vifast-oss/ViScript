@@ -73,6 +73,39 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
+# **ST-314a (hậu-kiểm low-peak)**: chặn `--out-dir` trỏ vào **gốc repo hoặc tổ tiên** của repo.
+# Trước đây chỉ loại `'' | '/' | '.' | '..'`, nên `--out-dir "$VIS_ROOT"` (hoặc `"$HOME"` khi repo
+# nằm trong HOME) lọt tới `rm -rf` và xoá cả cây nguồn/`$HOME`. Canonical hoá rồi từ chối sớm.
+out_abs="$OUT_DIR"
+if command -v python3 >/dev/null 2>&1; then
+    out_abs="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$OUT_DIR" 2>/dev/null || printf '%s' "$OUT_DIR")"
+elif [ -d "$OUT_DIR" ]; then
+    out_abs="$(cd "$OUT_DIR" && pwd -P)"
+fi
+repo_abs="$(cd "$VIS_ROOT" && pwd -P)"
+case "$out_abs" in
+    /*) ;;
+    *)
+        echo "vis-release: không canonical hoá được --out-dir '$OUT_DIR' (cần python3 hoặc đường tuyệt đối) — từ chối" >&2
+        exit 1
+        ;;
+esac
+if [ "$out_abs" = "/" ]; then
+    echo "vis-release: --out-dir '$OUT_DIR' là gốc hệ thống — từ chối" >&2
+    exit 1
+fi
+case "$repo_abs/" in
+    "$out_abs/"*)
+        echo "vis-release: --out-dir '$OUT_DIR' là gốc repo hoặc tổ tiên của repo — từ chối (rm -rf nguy hiểm)" >&2
+        exit 1
+        ;;
+esac
+home_abs="$(cd "$HOME" 2>/dev/null && pwd -P || true)"
+if [ -n "$home_abs" ] && [ "$out_abs" = "$home_abs" ]; then
+    echo "vis-release: --out-dir '$OUT_DIR' là \$HOME — từ chối" >&2
+    exit 1
+fi
+
 # Đọc mảng `release-bins = ["vis"]` trong `[package.metadata.vis]` (một nguồn sự thật).
 release_bins() {
     awk '
