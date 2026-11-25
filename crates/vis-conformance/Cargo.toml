@@ -19,8 +19,6 @@ vis-syntax = { path = "../vis-syntax" }
 vis-bytecode = { path = "../vis-bytecode" }
 vis-interp = { path = "../vis-interp" }
 vis-vm = { path = "../vis-vm" }
-vis-cli = { path = "../vis-cli" }
-vish-edit = { path = "../vish-edit" }
 vis-runtime = { path = "../vis-runtime", features = ["taskid-proto"] }
 
 [dev-dependencies]
