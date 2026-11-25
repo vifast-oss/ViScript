@@ -17,6 +17,8 @@ mod st248_field_lift;
 mod st250_global_init;
 #[path = "vm_it/st252_capture_local.rs"]
 mod st252_capture_local;
+#[path = "vm_it/stdlib_diff.rs"]
+mod stdlib_diff;
 #[path = "vm_it/vm_neg.rs"]
 mod vm_neg;
 #[path = "vm_it/vs_interp.rs"]

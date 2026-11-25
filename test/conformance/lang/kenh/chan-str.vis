@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let c = chan[str](2)
+    let _ = c.send("mot")
+    let _ = c.send("hai")
+    print(c.recv())
+    print(c.recv())

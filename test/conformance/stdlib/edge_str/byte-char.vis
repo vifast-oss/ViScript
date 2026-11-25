@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    let s = "a😀é"
+    print(str.byte_len(s))
+    print(str.char_count(s))
+    print(str.char_at(s, 0))
+    print(str.char_at(s, 1))
+    print(str.char_at(s, 2))
+    print(str.char_at(s, 3))
+    print(str.char_at(s, -1))
+    print(str.byte_len(""))
+    print(str.char_count(""))
+    print(str.char_at("", 0))
+    let c = "e\u{301}"
+    print(str.byte_len(c))
+    print(str.char_count(c))

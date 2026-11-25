@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn main():
+    print(json.encode("đ😀"))
+    print(json.encode("a\nb\tc\"d\\e"))
+    print(json.encode("\u{0000}\u{001f}\u{007f}"))
+    print(json.encode(""))
+    print(json.encode("😀/"))

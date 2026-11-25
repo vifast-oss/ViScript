@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn gap_doi(n: int) -> int:
+    n * 2
+
+fn main():
+    let a = spawn gap_doi(1)
+    let b = spawn gap_doi(2)
+    let c = spawn gap_doi(3)
+    let d = spawn gap_doi(4)
+    let sa = await a
+    let sb = await b
+    let sc = await c
+    let sd = await d
+    print(sa + sb + sc + sd)

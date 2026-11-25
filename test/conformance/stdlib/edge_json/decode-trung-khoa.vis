@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn hien(s: str):
+    match json.decode(s):
+        Ok(v): print("OK " + json.encode(v))
+        Err(e): print("ERR " + e.message)
+
+fn main():
+    hien("{{\"a\":1,\"a\":2}}")
+    hien("{{\"b\":1,\"a\":2,\"b\":3}}")
+    hien("[]")
+    hien("{{}}")
+    hien("  [ 1 , 2 ]  ")
+    hien("[{{\"a\":1}},{{\"b\":2}}]")

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn hien(s: str):
+    match json.decode(s):
+        Ok(v): print("OK " + json.encode(v))
+        Err(e): print("ERR " + e.message)
+
+fn main():
+    hien("nul")
+    hien("")
+    hien("[1,]")
+    hien("{{\"a\":}}")
+    hien("01")
+    hien("1e999")
+    hien("123456789012345678901234567890")
+    hien("[1,2]x")
+    hien("{{\"a\":1}} ")
+    hien("-")
+    hien("tru")
+    hien("truex")

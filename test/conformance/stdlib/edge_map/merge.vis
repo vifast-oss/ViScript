@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+fn main():
+    print(map.merge({"a": 1, "b": 2}, {"b": 20, "c": 30}))
+    print(map.merge({"x": 1}, {}))
+    print(map.merge({}, {"y": 2}))
+    print(map.merge({}, {}))
+    print(map.merge({"a": 1}, {"a": 2}))

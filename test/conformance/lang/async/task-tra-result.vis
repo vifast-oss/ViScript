@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn chia(a: int, b: int) -> Result[int, str]:
+    if b == 0:
+        Err("chia cho 0")
+    else:
+        Ok(a / b)
+
+fn main():
+    match await chia(9, 3):
+        Ok(v): print(v)
+        Err(e): print(e)
+    match await chia(1, 0):
+        Ok(v): print(v)
+        Err(e): print(e)

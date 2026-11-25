@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.repeat("ab", 0))
+    print("[" + str.repeat("", 5) + "]")
+    print(str.repeat("xy", 3))
+    print(str.repeat("đ", 2))
+    print(str.byte_len(str.repeat("😀", 2)))

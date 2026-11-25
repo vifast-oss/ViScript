@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn binh(n: int) -> int:
+    n * n
+
+fn main():
+    var tong = 0
+    for i in [1, 2, 3, 4]:
+        let t = spawn binh(i)
+        tong = tong + await t
+    print(tong)

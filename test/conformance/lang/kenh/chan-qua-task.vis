@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn gui(c: Chan[int], n: int) -> ():
+    let _ = c.send(n * 10)
+
+fn main():
+    let c = chan[int](2)
+    let t = spawn gui(c, 4)
+    let _ = await t
+    print(c.recv())

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn viec(n: int) -> ():
+    print("viec {n}")
+
+fn main():
+    let t = spawn viec(5)
+    let _ = await t
+    print("xong")

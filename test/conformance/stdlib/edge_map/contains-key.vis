@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+fn main():
+    let e: map[str, int] = {}
+    print(map.contains_key(e, "x"))
+    let m = {"a": 1}
+    print(map.contains_key(m, "a"))
+    print(map.contains_key(m, "b"))
+    let n = {1: "a", 2: "b"}
+    print(n)
+    print(map.keys(n))
+    print(map.values(n))
+    print(map.contains_key(n, 1))
+    print(map.contains_key(n, 3))

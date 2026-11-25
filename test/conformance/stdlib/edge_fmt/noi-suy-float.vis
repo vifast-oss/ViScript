@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print("f={1.5} g={0.0} h={-0.0}")
+    let nan = 0.0 / 0.0
+    print("nan={nan}")
+    print("inf={1.0 / 0.0}")
+    print("chinht={0.1 + 0.2}")

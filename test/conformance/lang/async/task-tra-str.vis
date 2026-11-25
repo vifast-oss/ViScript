@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn chao(ten: str) -> str:
+    "xin chao {ten}"
+
+fn main():
+    let t = spawn chao("ViScript")
+    print(await t)

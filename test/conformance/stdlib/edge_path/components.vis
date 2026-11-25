@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.components("a//b/./c/../d"))
+    print(path.components("/"))
+    print(path.components(""))
+    print(path.components("a/b/"))
+    print(path.components("//srv/share"))
+    print(path.is_abs("/a"))
+    print(path.is_abs("a"))
+    print(path.is_relative("a"))

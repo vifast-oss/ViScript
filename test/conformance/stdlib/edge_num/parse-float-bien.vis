@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.parse_float(""))
+    print(str.parse_float("+"))
+    print(str.parse_float(" 1"))
+    print(str.parse_float("1_0"))
+    print(str.parse_float("0x10"))
+    print(str.parse_float("1e999"))
+    print(str.parse_float("-1e999"))
+    print(str.parse_float("inf"))
+    print(str.parse_float("NaN"))
+    print(str.parse_float(".5"))
+    print(str.parse_float("5."))
+    print(str.parse_float("9223372036854775808"))
+    print(str.parse_float("1.5e308"))
+    print(str.parse_float("-0.0"))
+    print(str.parse_float("1e-999"))

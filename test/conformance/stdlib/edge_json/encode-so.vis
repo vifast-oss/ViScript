@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn main():
+    print(json.encode(-0.0))
+    print(json.encode(0.1 + 0.2))
+    print(json.encode(1.0e20))
+    print(json.encode(1.0e-7))
+    print(json.encode(9223372036854775807))
+    print(json.encode(-9223372036854775808))
+    print(json.encode(1.0))
+    print(json.encode(2.5))

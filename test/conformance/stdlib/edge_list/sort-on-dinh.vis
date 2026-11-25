@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+type P:
+    k: int
+    ten: str
+
+fn main():
+    let ps = [P(k: 1, ten: "a"), P(k: 0, ten: "b"), P(k: 1, ten: "c"), P(k: 0, ten: "d")]
+    let s = list.sort_by(ps, p => p.k)
+    for p in s:
+        print("{p.ten}{p.k}")

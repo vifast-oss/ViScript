@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.lines("a\r\nb\r\nc"))
+    print(str.lines("a\r\nb\r\n"))
+    print(str.lines("a\nb\n"))
+    print(str.lines(""))
+    print(str.lines("\n"))
+    print(str.lines("a"))
+    print(str.lines("a\r\n\r\nb"))
+    print(str.lines("\r\n\r\n"))
+    print(str.lines("a\r\nb\nc"))

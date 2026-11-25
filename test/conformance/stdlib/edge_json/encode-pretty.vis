@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn main():
+    print(json.encode_pretty([1, 2]))
+    print(json.encode_pretty([]))
+    print(json.encode_pretty({}))
+    print(json.encode_pretty([[1], [2, 3]]))
+    print(json.encode_pretty({"a": 1, "b": 2}))
+    print(json.encode_pretty([true, false]))

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.find("aaa", "aa"))
+    print(str.rfind("aaa", "aa"))
+    print(str.count("aaa", "aa"))
+    print(str.count("", ""))
+    print(str.find("abc", ""))
+    print(str.rfind("abc", ""))
+    print(str.find("abc", "z"))
+    print(str.rfind("abc", "z"))
+    print(str.matches("aaa", "aa"))
+    print(str.count("😀😀", "😀"))
+    print(str.find("đ😀", "😀"))
+    print(str.rfind("đ😀😀", "😀"))

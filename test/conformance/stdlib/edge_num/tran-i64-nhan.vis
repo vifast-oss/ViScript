@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let a = 3037000500
+    print(a * a)

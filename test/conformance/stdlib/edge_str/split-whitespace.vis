@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.split_whitespace(" a\tb\nc\u{00a0}d "))
+    print(str.split_whitespace("\t\n\r\u{000b}\u{000c}"))
+    print(str.split_whitespace("   "))
+    print(str.split_whitespace(""))
+    print(str.split_whitespace("đ😀 x"))
+    print(str.split_whitespace("a\u{2003}b"))

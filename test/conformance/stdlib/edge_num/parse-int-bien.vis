@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.parse_int(""))
+    print(str.parse_int("+"))
+    print(str.parse_int("-"))
+    print(str.parse_int(" 1"))
+    print(str.parse_int("1 "))
+    print(str.parse_int("1_0"))
+    print(str.parse_int("0x10"))
+    print(str.parse_int("+42"))
+    print(str.parse_int("-0"))
+    print(str.parse_int("007"))
+    print(str.parse_int("9223372036854775807"))
+    print(str.parse_int("9223372036854775808"))
+    print(str.parse_int("-9223372036854775808"))
+    print(str.parse_int("-9223372036854775809"))
+    print(str.parse_int("1e3"))

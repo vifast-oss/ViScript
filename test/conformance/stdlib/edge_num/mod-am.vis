@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    print(5 % 3)
+    print(-5 % 3)
+    print(5 % -3)
+    print(-5 % -3)
+    print(-6 % 3)
+    print(6 % -3)
+    print(7 % 7)
+    print(0 % 5)

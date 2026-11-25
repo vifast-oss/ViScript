@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn thuong(n: int) -> int:
+    n
+
+fn main():
+    let t = spawn thuong(1)
+    print(await t)

@@ -1,0 +1,12 @@
+ERR JSON không hợp lệ ở byte 0: literal không hợp lệ (chờ `true`/`false`/`null`)
+ERR JSON không hợp lệ ở byte 0: hết chuỗi khi đang chờ giá trị
+ERR JSON không hợp lệ ở byte 3: ký tự không mở đầu giá trị JSON hợp lệ
+ERR JSON không hợp lệ ở byte 5: ký tự không mở đầu giá trị JSON hợp lệ
+ERR JSON không hợp lệ ở byte 0: số có số 0 đầu
+ERR JSON không hợp lệ ở byte 0: số thực tràn (không hữu hạn)
+ERR JSON không hợp lệ ở byte 0: số nguyên tràn i64
+ERR JSON không hợp lệ ở byte 5: còn ký tự thừa sau giá trị
+OK {"a":1}
+ERR JSON không hợp lệ ở byte 1: số thiếu chữ số
+ERR JSON không hợp lệ ở byte 0: literal không hợp lệ (chờ `true`/`false`/`null`)
+ERR JSON không hợp lệ ở byte 4: còn ký tự thừa sau giá trị

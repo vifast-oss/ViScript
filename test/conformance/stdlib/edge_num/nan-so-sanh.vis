@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let nan = 0.0 / 0.0
+    print(nan == nan)
+    print(nan != nan)
+    print(nan == 1.0)
+    print(nan != 1.0)
+    print(nan == 0.0 / 0.0)
+    print(-0.0 == 0.0)
+    print(-0.0 < 0.0)
+    print(0.0 <= -0.0)
+    print(1.0 / -0.0)
+    print(1.0 / 0.0)
+    print(0.0 / -0.0)

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+fn dat() -> int:
+    print("dat")
+    99
+
+fn main():
+    let m = {"b": 2}
+    print(map.get_or(m, "b", dat()))
+    print(map.get_or(m, "zz", dat()))
+    let e: map[str, int] = {}
+    print(map.get_or(e, "x", 0))

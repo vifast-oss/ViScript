@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.relative("/a/b", "/a/c"))
+    print(path.relative("a/b/c", "a"))
+    print(path.relative("/a", "/a"))
+    print(path.relative("a", "b"))
+    print(path.relative("a/b", "a/b/c"))
+    print("[" + path.relative("", "") + "]")
+    print(path.relative("../a", "../b"))

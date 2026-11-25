@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.json
+
+fn hien(s: str):
+    match json.decode(s):
+        Ok(v): print("OK " + json.encode(v))
+        Err(e): print("ERR " + e.message)
+
+fn main():
+    hien("\"\\u00e9\"")
+    hien("\"\\ud83d\\ude00\"")
+    hien("\"\\ud800\"")
+    hien("\"\\udc00\"")
+    hien("\"a\\u0000b\"")
+    hien("\"\\\\\"")
+    hien("\"a\\\"b\"")

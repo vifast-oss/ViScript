@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.map
+
+fn main():
+    let m = {"b": 2, "a": 1, "c": 3}
+    print(m)
+    print(map.keys(m))
+    print(map.values(m))
+    let e: map[str, int] = {}
+    print(e)
+    print(map.keys(e))
+    print(map.values(e))
+    print(map.is_empty(e))
+    print(map.is_empty(m))

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn f(n: int) -> str:
+    if n > 0: "pos" else: "neg"
+
+fn main():
+    let b = true
+    print("b={b}")
+    print("{f(1)} {f(-1)}")
+    print("lst={[[1], [2]]}")

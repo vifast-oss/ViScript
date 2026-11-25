@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn binh_phuong(n: int) -> int:
+    n * n
+
+fn main():
+    let goi = true
+    let t = spawn binh_phuong(7)
+    if goi:
+        print(await t)
+    else:
+        print("skip")

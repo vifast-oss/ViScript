@@ -4,6 +4,7 @@
 | Thư mục / tệp | Nội dung |
 |---|---|
 | `std/` | ví dụ + kết quả mong đợi cho thư viện chuẩn (`.vis` + `.out`) |
+| `conformance/` | corpus **dữ liệu** chạy cả interp và VM byte-by-byte (`crates/vis-conformance`): `.vis` + `.out` (stdout chính xác) / `.err` (ca lỗi **tĩnh**, mã chẩn đoán) / `.trap` (ca lỗi **lúc chạy**, mã chẩn đoán, exit ≠ 0) / `.exit` (mã thoát) / `.fmt` (fmt bất động). `.err` và `.trap` loại trừ nhau; `.skip-windows` = ca có kỳ vọng POSIX, bỏ qua trên Windows (corpus đếm riêng) |
 | `doc-examples/` | khối ví dụ sinh từ `docs/ViScript-thiet-ke.md` (kiểm bằng `vis-dev doc-examples`); tên fixture là **slug ổn định** `doc-<tài-liệu>-<tiêu-đề>-<số-thứ-tự>.<ext>` (#151/ST-289), không theo số dòng |
 | `report/` | `check_report.py` + `gen_report_json.py` (sinh `R35`/`R36` từ `QUEUE@head`) + fixture cho báo cáo đợt (`agent/reports/R##-viscript.json`) |
 | `wasm/` | `st300-sem-native-baseline.sh` — tái lập baseline interp↔VM native cho `test/sem` (ST-300) |

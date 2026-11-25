@@ -1,0 +1,1 @@
+kỳ vọng POSIX: `/` + `is_abs("/")`; Windows đã có test/std với {SEP}

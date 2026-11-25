@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print("[" + str.pad_left("đ", 4, "😀") + "]")
+    print("[" + str.pad_right("đ", 5, "ab") + "]")
+    print("[" + str.center("đ", 6, "😀") + "]")
+    print(str.pad_left("đ", 4, "😀").len())
+    print(str.byte_len(str.pad_left("đ", 4, "😀")))
+    print("[" + str.pad_left("😀", 2, "đ") + "]")
+    print("[" + str.center("abc", 10, "·") + "]")

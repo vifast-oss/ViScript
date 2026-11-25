@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.path
+
+fn main():
+    print(path.ext("a/b.tar.gz"))
+    print("[" + path.ext(".bashrc") + "]")
+    print("[" + path.ext("a/b.") + "]")
+    print("[" + path.ext("") + "]")
+    print(path.stem(".bashrc"))
+    print(path.stem("a/b.tar.gz"))
+    print(path.stem("a/b."))
+    print("[" + path.stem("") + "]")
+    print(path.dirname("a/b/c"))
+    print(path.dirname("a"))

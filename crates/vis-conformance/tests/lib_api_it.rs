@@ -76,6 +76,8 @@ mod vs3_worker_frame_vm;
 
 #[path = "misc_api_it/api_dong_bang.rs"]
 mod api_dong_bang;
+#[path = "misc_api_it/conformance_trap.rs"]
+mod conformance_trap;
 #[path = "misc_api_it/so_ma.rs"]
 mod so_ma;
 #[path = "misc_api_it/vs3_coverage_matrix.rs"]

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+fn main():
+    let xs = [1, 2]
+    print("xs={xs}")
+    let m = {"a": 1, "b": 2}
+    print("m={m}")
+    let t = (1, "a", true)
+    print("t={t}")

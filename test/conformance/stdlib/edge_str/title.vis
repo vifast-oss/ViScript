@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.str
+
+fn main():
+    print(str.title("hello wORLD"))
+    print(str.title("straße ist"))
+    print(str.title("ßa ß"))
+    print(str.title("ǆa"))
+    print(str.title(""))
+    print(str.title("a"))
+    print(str.title("a-b c_d"))
+    print(str.title("élan vital"))

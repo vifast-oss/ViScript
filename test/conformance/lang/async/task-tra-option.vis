@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+async fn tim(n: int) -> int?:
+    if n > 0:
+        Some(n * 2)
+    else:
+        None
+
+fn main():
+    match await tim(2):
+        Some(v): print(v)
+        None: print("khong")
+    match await tim(0):
+        Some(v): print(v)
+        None: print("khong")

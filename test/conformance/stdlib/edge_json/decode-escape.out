@@ -1,0 +1,7 @@
+OK "é"
+OK "😀"
+ERR JSON không hợp lệ ở byte 7: surrogate cao đơn (thiếu nửa thấp)
+ERR JSON không hợp lệ ở byte 7: surrogate thấp đơn (thiếu nửa cao)
+OK "a\u0000b"
+OK "\\"
+OK "a\"b"

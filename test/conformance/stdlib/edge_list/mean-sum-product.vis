@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+use std.list
+
+fn main():
+    print(list.mean([]))
+    print(list.mean([1.0, 2.5]))
+    print(list.mean([1.0, 1.0 / 0.0]))
+    print(list.sum([]))
+    print(list.product([]))
+    print(list.sum([1, -2, 3]))
+    print(list.product([2, -3, 4]))
+    print(list.sum_float([]))
+    print(list.sum_float([1.5, 2.5]))
+    print(list.sum_float([1.0, 0.0 / 0.0]))
