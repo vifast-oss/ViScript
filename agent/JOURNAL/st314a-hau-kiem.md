@@ -232,6 +232,8 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
 - Đo cục bộ: `cargo check -p vis-runtime` OK; `cargo test -p vis-runtime -p vis-core` →
   **283 + 20 + 3 passed, 0 failed**; `cargo fmt --all -- --check` OK.
 - Test tích hợp đích: `host_it vd270_fsbytes` **7/7**, `vd270_mkdir_all` **7/7**, `vd266_fs` **11/11**.
+- Thêm test **cắt tệp cũ dài hơn**: `vd270_fsbytes::write_bytes_cat_tep_dai_hon` — ghi 3 byte
+  lên tệp 8 byte, đòi tệp còn đúng `[1,2,3]` trên đĩa; PASS cả interp + VM.
 - `./vis-dev core-test` sau refactor: **1.804/0** (12 binary), PASS
   (`/home/ps/vislogs/st314a-lp4-core-test.log`, sha ghi trong log `ff54f3bb672b948a0a976734ecbb1bb8adf8762723f44c6e5580655330997b55`; xem quy ước §18).
 - `./vis-dev check` @working tree: **PASS**, `EXIT=0`

@@ -138,6 +138,33 @@ fn roundtrip_du_256_byte_gom_00_va_ff() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
+// ---------- cắt tệp cũ dài hơn ----------
+
+/// `write_bytes` ghi **3 byte** lên tệp cũ **8 byte**: tệp phải bị **cắt** còn đúng 3 byte
+/// (không giữ đuôi cũ); đọc lại đúng `[1, 2, 3]`. Hai đường khớp.
+#[test]
+fn write_bytes_cat_tep_dai_hon() {
+    let d = tam("cat");
+    let p = d.join("dai.bin");
+    std::fs::write(&p, [9u8; 8]).expect("tệp cũ 8 byte");
+    let o = hai_duong(
+        &d,
+        "cat",
+        &format!(
+            "use std.fs\nfn main() -> ():\n    match fs.write_bytes(\"{}\", [1, 2, 3]):\n        Ok(_):\n            print(\"w-ok\")\n        Err(e):\n            print(\"w-err\")\n    match fs.read_bytes(\"{}\"):\n        Ok(xs):\n            print(xs.len())\n            for b in xs:\n                print(b)\n        Err(e):\n            print(\"r-err\")\n",
+            duong(&p),
+            duong(&p)
+        ),
+    );
+    assert_eq!(o, "w-ok\n3\n1\n2\n3\n");
+    assert_eq!(
+        std::fs::read(&p).expect("đọc lại tệp"),
+        vec![1u8, 2, 3],
+        "write_bytes phải cắt đuôi cũ, không giữ 5 byte 9"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}
+
 // ---------- rỗng + ghi rồi đọc ----------
 
 /// `write_bytes` với danh sách rỗng tạo tệp **0 byte** (không phải lỗi); `read_bytes` tệp rỗng
