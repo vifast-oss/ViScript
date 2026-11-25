@@ -615,7 +615,9 @@ do_gate_fast() {
 # mục tạm rồi dùng **đúng 2 lệnh**: `fmt --write <tmp>` cho `a := fmt(f)`, `fmt --check <tmp>`
 # so `fmt(a)` với `a`. Phép kiểm/ngưỡng/số tệp/câu chữ giữ nguyên; chỉ giảm số lần spawn.
 do_vong_tron_fmt() {
-    local vis="$VIS_ROOT/target/debug/vis"
+    local tgt="${CARGO_TARGET_DIR:-$VIS_ROOT/target}"
+    case "$tgt" in /*) ;; *) tgt="$PWD/$tgt" ;; esac
+    local vis="$tgt/debug/vis"
     if [ ! -x "$vis" ]; then
         echo "--- vòng tròn fmt: FAIL (chưa có $vis — chạy build trước)" >&2
         return 1
@@ -623,6 +625,7 @@ do_vong_tron_fmt() {
     local n=0 bad=0 bo_qua=0 copied=0
     local tmp f rel name
     tmp="$(mktemp -d "${TMPDIR:-/tmp}/visfmt.XXXXXX")" || return 1
+    trap 'rm -rf "$tmp"' EXIT INT TERM
     while IFS= read -r -d '' f; do
         n=$((n + 1))
         # Ca **cố ý hỏng cú pháp** (có `.err`) thì `vis fmt` phải lỗi — bỏ qua, không tính là hỏng.

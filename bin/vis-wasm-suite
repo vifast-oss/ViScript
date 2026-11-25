@@ -26,6 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
 TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
+if not TARGET.is_absolute():
+    TARGET = ROOT / TARGET
 WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
 # **#193 / ST-313c (VD-289)**: WASI cần **hai** trần stack — `-zstack-size` cho module
 # (12 MiB đủ cho 2.000 khung ngôn ngữ) và `--stack-size` cho V8 `node:wasi` (4096 KiB).
@@ -261,7 +263,6 @@ def build(force: bool) -> None:
         f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}",
     )
     env.setdefault("CARGO_PROFILE_DEV_DEBUG", "0")
-    env.setdefault("TMPDIR", "/home/ps/tmp")
     cmd = [
         cargo_exe(),
         "build",
@@ -415,7 +416,7 @@ def main() -> int:
         )
         return 2 if a.require_runtime else 0
 
-    work = Path(tempfile.mkdtemp(prefix="vis-wasm-suite-", dir=os.environ.get("TMPDIR") or None))
+    work = Path(tempfile.mkdtemp(prefix="vis-wasm-suite-"))
     driver = None
     try:
         if rt == "node":

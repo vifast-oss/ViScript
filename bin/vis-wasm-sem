@@ -26,6 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WS = ROOT / "vis-host-wasm"
 TARGET = Path(os.environ.get("CARGO_TARGET_DIR") or (WS / "target"))
+if not TARGET.is_absolute():
+    TARGET = ROOT / TARGET
 WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
 # **#193 / ST-313c (VD-289)**: WASI cần **hai** trần stack — `-zstack-size` cho module
 # (12 MiB đủ cho 2.000 khung ngôn ngữ) và `--stack-size` cho V8 `node:wasi` (4096 KiB).
@@ -33,7 +35,9 @@ WASM = TARGET / "wasm32-wasip1/release/vis-wasm-run.wasm"
 WASM_STACK_MB = int(os.environ.get("VIS_WASM_STACK_MB", "12"))
 NODE_STACK_KB = int(os.environ.get("VIS_WASM_NODE_STACK_KB", "4096"))
 SEM = ROOT / "test/sem"
-ORACLE = Path("/home/ps/vislogs/sem-native-baseline.tsv")
+ORACLE = Path(
+    os.environ.get("VIS_SEM_ORACLE") or "/home/ps/vislogs/sem-native-baseline.tsv"
+)
 ORACLE_SHA = "482b35c276d76fca9200770f78b3cba891535b09b65dbce0fc52bce6379a308d"
 
 EXCLUDE_GROUP = {
@@ -91,7 +95,8 @@ except Exception as e:
 
 
 def cargo() -> str:
-    return str(Path.home() / ".cargo/bin/cargo")
+    p = Path.home() / ".cargo/bin/cargo"
+    return str(p) if p.is_file() else (shutil.which("cargo") or "cargo")
 
 
 def build_wasm() -> None:
@@ -101,7 +106,6 @@ def build_wasm() -> None:
         "RUSTFLAGS",
         f"-C link-arg=-zstack-size={WASM_STACK_MB * 1024 * 1024}",
     )
-    env.setdefault("TMPDIR", "/home/ps/tmp")
     cmd = [
         cargo(),
         "build",
@@ -242,7 +246,7 @@ def main() -> int:
     if rt is None:
         print("BLOCKED-ENV: không có wasmtime/Python wasmtime/node:wasi", file=sys.stderr)
         return 2
-    work = Path(tempfile.mkdtemp(prefix="vis-wasm-sem-", dir=os.environ.get("TMPDIR") or None))
+    work = Path(tempfile.mkdtemp(prefix="vis-wasm-sem-"))
     driver = None
     try:
         if rt == "node":

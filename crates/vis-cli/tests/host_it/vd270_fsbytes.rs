@@ -141,27 +141,43 @@ fn roundtrip_du_256_byte_gom_00_va_ff() {
 // ---------- cắt tệp cũ dài hơn ----------
 
 /// `write_bytes` ghi **3 byte** lên tệp cũ **8 byte**: tệp phải bị **cắt** còn đúng 3 byte
-/// (không giữ đuôi cũ); đọc lại đúng `[1, 2, 3]`. Hai đường khớp.
+/// (không giữ đuôi cũ); kiểm **riêng từng engine** — trước mỗi lượt phục hồi tệp 8 byte để
+/// VM cũng thực sự gặp tệp dài, không thừa hưởng kết quả đã cắt của interp.
 #[test]
 fn write_bytes_cat_tep_dai_hon() {
+    use std::ffi::OsStr;
+
     let d = tam("cat");
     let p = d.join("dai.bin");
-    std::fs::write(&p, [9u8; 8]).expect("tệp cũ 8 byte");
-    let o = hai_duong(
-        &d,
-        "cat",
+    let prog = d.join("cat.vis");
+    viet_tep(
+        &prog,
         &format!(
             "use std.fs\nfn main() -> ():\n    match fs.write_bytes(\"{}\", [1, 2, 3]):\n        Ok(_):\n            print(\"w-ok\")\n        Err(e):\n            print(\"w-err\")\n    match fs.read_bytes(\"{}\"):\n        Ok(xs):\n            print(xs.len())\n            for b in xs:\n                print(b)\n        Err(e):\n            print(\"r-err\")\n",
             duong(&p),
             duong(&p)
         ),
     );
-    assert_eq!(o, "w-ok\n3\n1\n2\n3\n");
-    assert_eq!(
-        std::fs::read(&p).expect("đọc lại tệp"),
-        vec![1u8, 2, 3],
-        "write_bytes phải cắt đuôi cũ, không giữ 5 byte 9"
-    );
+    let mut outs = Vec::new();
+    for (ten, vm) in [("interp", false), ("vm", true)] {
+        std::fs::write(&p, [9u8; 8]).expect("tệp cũ 8 byte trước mỗi engine");
+        let mut args: Vec<&OsStr> = vec![OsStr::new("run")];
+        if vm {
+            args.push(OsStr::new("--vm"));
+            args.push(OsStr::new("--no-cache"));
+        }
+        args.push(prog.as_os_str());
+        let (c, o, e) = vis(&args);
+        assert_eq!(c, 0, "[{ten}] exit {c}: {e}");
+        assert_eq!(o, "w-ok\n3\n1\n2\n3\n", "[{ten}] stdout: {e}");
+        assert_eq!(
+            std::fs::read(&p).expect("đọc lại tệp"),
+            vec![1u8, 2, 3],
+            "[{ten}] write_bytes phải cắt đuôi cũ, không giữ 5 byte 9"
+        );
+        outs.push(o);
+    }
+    assert_eq!(outs[0], outs[1], "interp và VM phải khớp");
     let _ = std::fs::remove_dir_all(&d);
 }
 

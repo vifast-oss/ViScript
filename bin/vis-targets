@@ -36,12 +36,24 @@ EXTRA=("vis-host-wasm wasm32-unknown-unknown")
 LOG="${TMPDIR:-/tmp}/vis-targets.$$.log"
 trap 'rm -f "$LOG"' EXIT
 
+# Cùng thứ tự dò Python với `bin/vis-dev`/`bin/vis-dag-check`.
+PYTHON="${PYTHON:-}"
+if [ -z "$PYTHON" ]; then
+  for c in python3.12 python3.11 python3; do
+    if command -v "$c" >/dev/null 2>&1; then PYTHON="$c"; break; fi
+  done
+fi
+if [ -z "$PYTHON" ]; then
+  echo "vis-targets: không thấy python3/python3.12" >&2
+  exit 2
+fi
+
 # **ST-310f** — canh `CRATES` khớp **100%** `[workspace].members` của `Cargo.toml`.
 # Thêm/bớt crate mà quên cập nhật ma trận ⇒ FAIL rõ, không lặng lẽ bỏ sót.
 check_workspace_coverage() {
   local actual
   actual=$("$CARGO" metadata --manifest-path "$MANIFEST" --no-deps --format-version 1 2>/dev/null \
-    | python3 -c 'import json,sys; print("\n".join(sorted(p["name"] for p in json.load(sys.stdin)["packages"])))' \
+    | "$PYTHON" -c 'import json,sys; print("\n".join(sorted(p["name"] for p in json.load(sys.stdin)["packages"])))' \
     | tr -d '\r')
   if [ -z "$actual" ]; then
     echo "vis-targets: không đọc được workspace metadata từ $MANIFEST" >&2

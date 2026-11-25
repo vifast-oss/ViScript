@@ -232,8 +232,9 @@ theo target. Các dòng `0.4.5` là mốc lịch sử Windows Tier 1, giữ nguy
 - Đo cục bộ: `cargo check -p vis-runtime` OK; `cargo test -p vis-runtime -p vis-core` →
   **283 + 20 + 3 passed, 0 failed**; `cargo fmt --all -- --check` OK.
 - Test tích hợp đích: `host_it vd270_fsbytes` **7/7**, `vd270_mkdir_all` **7/7**, `vd266_fs` **11/11**.
-- Thêm test **cắt tệp cũ dài hơn**: `vd270_fsbytes::write_bytes_cat_tep_dai_hon` — ghi 3 byte
-  lên tệp 8 byte, đòi tệp còn đúng `[1,2,3]` trên đĩa; PASS cả interp + VM.
+- Thêm test **cắt tệp cũ dài hơn**: `vd270_fsbytes::write_bytes_cat_tep_dai_hon` — phục hồi tệp
+  8 byte **trước từng engine**, ghi 3 byte, đòi tệp còn đúng `[1,2,3]` trên đĩa; PASS riêng
+  interp + VM (audit chỉ ra bản đầu chạy interp trước làm VM không còn thấy tệp dài).
 - `./vis-dev core-test` sau refactor: **1.804/0** (12 binary), PASS
   (`/home/ps/vislogs/st314a-lp4-core-test.log`, sha ghi trong log `ff54f3bb672b948a0a976734ecbb1bb8adf8762723f44c6e5580655330997b55`; xem quy ước §18).
 - `./vis-dev check` @working tree: **PASS**, `EXIT=0`
@@ -296,9 +297,22 @@ Bằng chứng:
 | `./vis-dev gate --fast` | **PASS** — 3804/3804 (4 skip); `DAG 5 tầng: OK`; `DAG self-test: OK` | `/home/ps/vislogs/st314a-lp6-gate.log`, sha `e5aa183e7c2eb48048f800daf82f558a5718629e75372c864bbbacd78b8fdc05` |
 | `vis-wasm-sem` sau F6 | **390/390, 0 fail, 100%** | `/home/ps/vislogs/st314a-lp6-wasm-sem.log`, sha `41777564…` |
 | `vis-wasm-suite` sau F6 | **28/28, 0 hỏng** | `/home/ps/vislogs/st314a-lp6-wasm-suite.log`, sha `858670cd…` |
+| Windows full @`933dce82` (gồm test cắt tệp mới) | **3.730/0/4 ignored** (90 binary); host **54/120, 0 lệch**; targets core `47/0/0`, sqlite `46/1/0` | `/home/ps/vislogs/st314a-lp7-win-full.log`, sha `e0d7fc3dda32af8bc3b074f84a78e6bdb41288651d5aa17367da4a5e45ac5bab` (máy đích `539be087…`) |
+| `./vis-dev gate --fast` @`933dce82` | **3805/3805 passed**, 4 skipped; DAG 5 tầng + self-test OK | `/home/ps/vislogs/st314a-lp8-gate.log`, sha `5285d6e288fe0a32b183a92e863ef702c573a789d7ca44b0baab785037a2c81c` |
 
 ## 18. Quy ước sha log
 
 Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **trước khi** nối chính dòng đó
 (vì vậy `sha256sum` lại cả tệp sẽ khác). Journal trích **trị ghi trong log**; ngoại lệ whole-file
 được ghi rõ. Không có số liệu tự đặt.
+
+## 19. Audit portability `CARGO_TARGET_DIR` / `TMPDIR` / Python
+
+- `vis-wasm-sem`/`suite`/`conformance`: chuẩn hoá `CARGO_TARGET_DIR` **tương đối** theo `ROOT`;
+  bỏ `TMPDIR=/home/ps/tmp` (không tồn tại trên `psvn`/`mps`); `mkdtemp` để `tempfile` tự chọn
+  TMP/TEMP; `vis-wasm-sem` thêm `VIS_SEM_ORACLE` + fallback `cargo` như suite.
+- `vis-wasm-conformance`: driver tạo **trong** `try` (không rò thư mục nếu lỗi).
+- `bin/vis-dev` vòng tròn fmt: tôn trọng `CARGO_TARGET_DIR` + `trap` dọn thư mục.
+- `bin/vis-targets`: dò `python3.12/3.11/3` như các script khác.
+- Bằng chứng: `py_compile` OK; `vis-wasm-suite` **28/28** (sha `858670cd…`);
+  `vis-wasm-conformance` **299×2, 0 hỏng**, `EXIT=0` (sha ghi trong log `st314a-lp10-wasm-conformance.log`).
