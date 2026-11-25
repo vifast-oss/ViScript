@@ -45,7 +45,8 @@ pub(crate) fn goi(id: StdId, args: &[Value], span: Span) -> R<Value> {
                 StdId::PathBasename => basename_voi(p, cfg!(windows)),
                 StdId::PathDirname => dirname_voi(p, cfg!(windows)),
                 StdId::PathExt => ext_voi(p, cfg!(windows)),
-                _ => stem_voi(p, cfg!(windows)),
+                StdId::PathStem => stem_voi(p, cfg!(windows)),
+                _ => unreachable!("nhóm basename/dirname/ext/stem chỉ nhận 4 biến thể trên"),
             }))
         }
         StdId::PathIsAbs => {

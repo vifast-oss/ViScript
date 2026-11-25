@@ -140,13 +140,14 @@ kỳ vọng ghi trong script).
 
 | Nhóm | `x86_64-pc-windows-msvc` | `wasm32-unknown-unknown` | Mức bằng chứng |
 |---|---|---|---|
-| 7 crate lõi (`vis-diag`, `vis-syntax`, `vis-types`, `vis-bytecode`, `vis-fmt`, `vis-interp`, `vis-vm`) | check xanh | check xanh | **check** |
+| 23 crate workspace / 5 tầng DAG (T0–T4) | check xanh (cấu hình `core`; `vis-cli` × sqlite xem dòng dưới) | check xanh; `vis-cli` × sqlite `wasm32` = **EXPECTED_RED** #156 (C toolchain) | **check** biên dịch chéo |
 | `vis-cli` | check xanh | check xanh **nhưng KHÔNG chạy được**: `std::process::Command`, `std::net`, `std::fs`, thread không có OS sau wasm32-unknown-unknown | **check** — không phải hỗ trợ runtime |
 | `vis-host-linux` | — | — | `x86_64-unknown-linux-gnu` check (ST-73) |
-| `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` **390/390** (`ST-299a/b`, `ST-300`; `#193` đóng 2026-11-25) |
-| `vis-host-*` chạy thật | **Tier 1** (host suite 54/54 @ `f4cb136`; 3× full 3611/0/3; soak 4 h 985/0) | `wasm32-wasip1`: **chạy thật** (suite 28/28); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`vis-host-linux` 18/18 từ ST-295; host suite 54/54); wasm: **runtime có phạm vi** |
+| `vis-host-wasm` | — | check xanh; **runner thật trên `wasm32-wasip1`** (`WasiHost` preopen/quyền) | **runtime WASI** — suite 28/28, `vis-wasm-sem` **390/390**, conformance **299×2** (`ST-299a/b`, `ST-300`, `ST-314a`; `#193` đóng 2026-11-25) |
+| `vis-host-*` chạy thật | **Tier 1** — Windows full @`5d857b84` **3.729/0/4 ignored**; host suite **54/54** (120 lượt) | `wasm32-wasip1`: **chạy thật** (suite 28/28, sem 390/390); `wasm32-unknown-unknown`: **chỉ check** | Windows: **Tier 1**; Linux: **chạy thật** (`gate --fast` 3.804/0); wasm: **runtime có phạm vi** |
 
-Bảng đầy đủ (18 ô) + log: `agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
+Bảng đầy đủ (**47 ô/cấu hình**: 23 crate × 2 target + `vis-host-wasm` × wasm32; core `PASS=47`,
+sqlite `PASS=45 + 2 EXPECTED_RED`): `agent/archive/journal-pre-v040/st74-matrix.log`. **Cấm** viết “hỗ trợ đầy đủ wasm” hoặc
 “wasm32-unknown-unknown chạy được”; đúng là “**check** biên dịch chéo” cho `wasm32-unknown-unknown`,
 và “**runtime `wasm32-wasip1`** — coverage **390/390**” cho WASI (sau ST-313d).
 

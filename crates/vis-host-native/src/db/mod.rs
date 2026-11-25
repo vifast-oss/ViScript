@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **VD-242 Q6 / ST-156** — host `std.sqlite` của CLI, tách theo feature `sqlite`.
 //!
-//! Hai cấu hình được đặt tên rõ (xem `agent/TARGET-MATRIX-2026-11-20.md`):
+//! Hai cấu hình được đặt tên rõ (xem `agent/archive/reports/TARGET-MATRIX-2026-11-20.md`):
 //!
 //! - **`sqlite` (mặc định, cấu hình cũ)** — [`sqlite`] chứa toàn bộ triển khai `rusqlite`
 //!   bundled nguyên vẹn (VD-241); hành vi không đổi.

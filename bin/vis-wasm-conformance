@@ -98,6 +98,16 @@ def tu_kiem(driver: Path, root: Path) -> None:
             file=sys.stderr,
         )
         sys.exit(2)
+    # Cờ engine phải tới runner và chạy được chương trình; bắt lỗi truyền `engine` thiếu `--`.
+    for engine in ("interp", "vm"):
+        p = chay(driver, root, f"--{engine}", "/data/prog.vis")
+        if p.returncode != 0 or "SELF-CHECK-LEAK" not in p.stdout:
+            print(
+                f"SELF-CHECK: `--{engine}` không tới runner/không chạy "
+                f"(rc={p.returncode}, stdout={p.stdout[:120]!r}, stderr={p.stderr[:120]!r})",
+                file=sys.stderr,
+            )
+            sys.exit(2)
 
 
 def main() -> int:

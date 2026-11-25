@@ -42,7 +42,9 @@ sha256 567b75c5f4619c18d673157443791ab5673dfae738058fdf3d42f1f983bc701e
   thêm biến thể mới mà quên route ⇒ **lỗi biên dịch**.
 - `stdlib/path/dispatch.rs` + `stdlib/fs_net/dispatch.rs`: nhận `StdId` (không nhận `&str`),
   match theo biến thể enum; tên chỉ dùng cho thông điệp lỗi (`id.as_str()`). Không còn
-  `match name` chọn hàm, không còn `starts_with`.
+  `match name`/`starts_with` ở **đường dispatch vào**; ba helper lá cùng nhóm (`fsbytes`,
+  `fsmkdirmall`, `goi_metadata`) vẫn nhận tên để chọn biến thể nội bộ — đã khoá bởi test song ánh
+  `stdid_tests`, không phải fallback dispatch.
 - Hai module con giữ nhánh `_ => unreachable!("...")` **phòng vệ** cho biến thể ngoài miền
   (không thể tới từ top-level); đây không phải fallback im lặng.
 
@@ -88,3 +90,94 @@ Sau khi nộp `REVIEW`, chạy tiếp các việc nặng 0-LLM tới sát giờ 
 | 5× `vis-diff 100k` (seed `20261125/101/202/303/404`) | cả 5 **lech=0** (93.767–93.771 chương trình chạy/lượt) | `st314a-diff-<seed>.log` |
 | +3× `vis-diff 100k` (seed `505/606/707`) | cả 3 **lech=0** | `st314a-diff-<seed>.log` |
 | Fuzz parser 115 phút (`vis-dev nightly --skip-gate`) | **959.027.870 ca / 21.766.452.334 token, 0 vi phạm**; vòng tròn fmt 475 tệp bất động | `/home/ps/vislogs/st314a-fuzz-115m.log`, sha `b145989a698f5cc5da77b0542faceddb0b6bda55f87321179a5c82bc6fec92c4` |
+
+## 8. Hậu-kiểm khung thấp điểm: self-check cờ lạ từng cho lọt đúng lỗi cũ
+
+Kiểm chứng `tu_kiem` bằng cách **tái tạo lỗi cũ** trên bản sao tạm (thêm lại `ro` vào
+destructure `NODE_DRIVER`): self-check **PASS sai** (`exit 0`) rồi harness chạy tiếp
+**299 ca × 2 engine, 0 hỏng** — đúng triệu chứng "chạy interp 2 lần". Nguyên nhân: thư mục
+self-check rỗng nên `vis-wasm-run` thiếu tệp cũng trả `exit 2`, trùng mã đang mong đợi.
+
+**Vá**: self-check tạo `prog.vis` hợp lệ in `SELF-CHECK-LEAK`; yêu cầu đồng thời `rc == 2`,
+stdout **không** chứa `SELF-CHECK-LEAK`, và stderr chứa tên cờ lạ.
+
+| Bản | Kết quả | Bằng chứng |
+|---|---|---|
+| Bản sao tái tạo lỗi `ro` + guard cũ | **LỌT** — `exit 0`, chạy 299 × 2, 0 hỏng | `/home/ps/vislogs/st314a-selfcheck-negative.log` |
+| Bản sao tái tạo lỗi `ro` + guard mới | **BẮT** — `exit 2`, `SELF-CHECK … stdout='SELF-CHECK-LEAK\n'` | `/home/ps/vislogs/st314a-selfcheck-negative-fixed.log`, sha `bfe90799a381977b387499d388c6ae6d2692d4e32cd7326617686e6766e0d5b4` |
+| Bản thật + guard mới | **299 ca × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp-wasm-conformance-fixed.log`, sha `0d55130e4c2fe11faf9415f00b959100aba812586576b2c8e1b41602901dfdee` |
+
+Commit vá: `b663d89c`.
+
+## 9. Việc song song khung thấp điểm `2026-11-25 04:00–06:00 UTC`
+
+Chạy song song 1 chuỗi cổng nặng 0-LLM + 3 audit độc lập (subagent), không chồng cargo:
+
+| Việc | Kết quả | Bằng chứng |
+|---|---|---|
+| `./vis-dev gate --fast` @`dd2b147c` | **3804/3804 passed**, 4 skipped, `EXIT=0` | `/home/ps/vislogs/st314a-lp-gate.log`, sha `fb7fccc872e1ebb04047c92111fafd028188e0433d59fc1db9f983985c151fe0` |
+| `bin/vis-wasm-sem` @HEAD | **390/390 eligible, 0 fail, coverage 100%** (525 total, 135 excluded) | `/home/ps/vislogs/st314a-lp-wasm-sem.log`, sha `41777564ef6cf9232076571dd75db09f0fde33ea5552a987cf49596842b4d203` |
+| `bin/vis-wasm-suite` @HEAD | **28/28, 0 hỏng** (runtime=node) | `/home/ps/vislogs/st314a-lp-wasm-suite.log`, sha `584a6aa2510897a13a5cbf9464e89c658aaac77d26b6551f419e777de9b881bf` |
+| `bin/vis-wasm-conformance` (guard mới) | **299 × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp-wasm-conformance-fixed.log` |
+
+### 9.1 `vis-targets` @HEAD và vá đường dẫn tài liệu
+
+- Baseline trước vá: `core PASS=47/0/0`; `sqlite PASS=45/2 EXPECTED_RED/0`; `EXIT=0`
+  (`/home/ps/vislogs/st314a-lp-vis-targets-before.log`, sha `778aedff…`).
+- Ô `vis-cli × x86_64-pc-windows-msvc` **phụ thuộc máy**: trên `psvn` (Windows, có CC) PASS và in
+  advisory #156; trên `ps` cross-check vẫn `EXPECTED_RED` (thiếu `lib.exe`/`cc`). Vì vậy **giữ nguyên
+  `expected_red()`** (msvc + wasm32), không đổi kỳ vọng cổng.
+- Vá thật: `LY_DO` trỏ `agent/TARGET-MATRIX-2026-11-20.md` (không tồn tại) → đúng
+  `agent/archive/reports/TARGET-MATRIX-2026-11-20.md`. Commit `6245bf12`.
+- Sau vá: `core 47/0/0`, `sqlite 45/2/0`, `EXIT=0`
+  (`/home/ps/vislogs/st314a-lp-vis-targets-after.log`, sha `553c6f60…`).
+
+## 10. Audit song song khung thấp điểm & vá phát hiện
+
+### 10.1 `vis-dag-check` — mở rộng từ 7 → 23 crate / 5 tầng
+
+Audit tooling: bảng `CAM` cũ chỉ phủ **7/23** crate; **185 cạnh xuôi tầng** (lower→upper) chưa
+được chặn, gồm cả `vis-core → vis-host-native`, `vis-syntax → vis-types`, `vis-interp → vis-vm`.
+Đã thay bằng:
+- `TANG_CUA`: đủ 23 crate × 5 tầng (`T0` nền → `T4` CLI/conformance);
+- `CAM_NGANG`: giữ nguyên các cạnh **cùng tầng** đã có (không nới, không thêm chính sách mới);
+- cạnh ngược tầng bị bắt một lần, cạnh cùng tầng báo riêng; thiếu crate trong bảng tầng ⇒ lỗi.
+
+| Kiểm | Kết quả |
+|---|---|
+| Thật @HEAD | `vis-dag-check: OK — 23 crate / 5 tầng, 0 cạnh cấm`, exit 0 |
+| Giả lập 2 cạnh cấm (`vis-core→vis-host-native`, `vis-syntax→vis-types`) qua `CARGO` giả | exit 2, in đúng `vis-core[T1] -> vis-host-native[T3]` và `vis-syntax[T0] -> vis-types[T2]` |
+
+### 10.2 Self-check `vis-wasm-conformance` — thêm probe engine
+
+- Lỗi F1 (self-check cũ lọt lỗi `ro`) đã vá ở `b663d89c`; audit độc lập xác nhận.
+- Bổ sung probe **dương** cho `--interp`/`--vm`: chạy `prog.vis` hợp lệ, đòi `rc=0` + stdout có
+  `SELF-CHECK-LEAK`, bắt lỗi caller truyền `engine` thiếu `--`.
+- Kiểm âm: tái tạo lỗi `ro` ⇒ **exit 2**; bỏ `--` ở probe engine ⇒ **exit 2**
+  (`SELF-CHECK: --interp không tới runner/không chạy`).
+- Kiểm dương: **299 ca × 2 engine, 0 hỏng**.
+
+### 10.3 Nit `path` dispatch
+
+`match id` nội bộ nhóm `basename/dirname/ext/stem` bỏ `_ => stem_voi`; nay `StdId::PathStem`
+tường minh + `_ => unreachable!` phòng vệ, tránh biến thể mới âm thầm thành `path.stem`.
+
+### 10.4 R8
+
+Giới hạn đúng: `vis-cli` **8/15**, tổng **38 + 1 = 39/40**. Ghi rõ trong comment: `vis-host-wasm`
+là **workspace riêng** nên ngoài trần AGENTS §6.3; `tests/<domain>/*.rs` là module `#[path]`, không
+phải binary cấp 1; `[[test]] path=…` lồng nhau (chưa có) là điểm mù đã biết.
+
+### 10.5 `vis-targets`
+
+Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc máy**: `psvn` có CC ⇒ msvc PASS
+(in advisory), `ps` cross-check ⇒ msvc `EXPECTED_RED`. Chỉ vá đường dẫn tài liệu cũ (commit
+`6245bf12`); baseline/sau vá: `core 47/0/0`, `sqlite 45/2/0`, `EXIT=0`.
+
+### 10.6 Cổng batch low-peak 2 (@HEAD sau vá)
+
+| Cổng | Kết quả | Bằng chứng |
+|---|---|---|
+| `bin/vis-dag-check` | **OK — 23 crate / 5 tầng, 0 cạnh cấm**; negative giả lập exit 2 | log phiên |
+| `vis-wasm-conformance` (guard + engine probe) | **299 ca × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp2-wasm-conformance.log`, sha `a2ddd230fd86b53760ddcd2eae0a5dcd94ae6ec97fea60ad37cd8d041078cf75` |
+| `./vis-dev gate --fast` | **3804/3804 passed**, 4 skipped, `EXIT=0` | `/home/ps/vislogs/st314a-lp2-gate.log`, sha `0c90814f5fffc3f118bd6a01bf21ebefdbb610fddf571ff4a37e1c5acaf4b078` |

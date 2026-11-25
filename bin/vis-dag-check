@@ -32,7 +32,9 @@ deps = {
 }
 
 # Cạnh **cấm** (trái→phải): tầng dưới không được kéo tầng trên/ngang sai DAG.
-CAM = {
+# **ST-314a low-peak**: ngoài bảng cùng tầng bên dưới, kiểm **toàn bộ 23 crate** theo 5 tầng
+# (`docs/ViScript-thiet-ke.md` §14) — mọi cạnh xuôi lên tầng trên đều bị chặn, không chỉ 7 crate.
+CAM_NGANG = {
     "vis-core":      {"vis-types", "vis-http", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
     "vis-hir":       {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg"},
     "vis-http":      {"vis-types", "vis-runtime", "vis-interp", "vis-vm", "vis-pkg", "vis-host-native"},
@@ -41,18 +43,51 @@ CAM = {
     "vis-runtime":   {"vis-types", "vis-interp", "vis-vm"},
     "vis-pkg":       {"vis-host-native"},
 }
+TANG_CUA = {
+    "vis-diag": 0,
+    "vis-syntax": 0,
+    "vis-fmt": 0,
+    "vis-plugin-abi": 0,
+    "vish-term": 0,
+    "vis-hir": 1,
+    "vis-core": 1,
+    "vis-http": 1,
+    "vis-types": 2,
+    "vis-bytecode": 2,
+    "vis-runtime": 2,
+    "vis-interp": 2,
+    "vis-vm": 2,
+    "vis-loader": 3,
+    "vis-lsp": 3,
+    "vis-pkg": 3,
+    "vis-host-native": 3,
+    "vis-host-linux": 3,
+    "vis-plugin-host": 3,
+    "vis-plugin-macros": 3,
+    "vish-edit": 3,
+    "vis-cli": 4,
+    "vis-conformance": 4,
+}
 loi = []
-for crate, cam in CAM.items():
-    co = deps.get(crate)
-    if co is None:
-        loi.append(f"thiếu crate `{crate}` trong workspace")
+for crate in sorted(set(TANG_CUA) - set(deps)):
+    loi.append(f"thiếu crate `{crate}` trong workspace")
+for crate, co in sorted(deps.items()):
+    t = TANG_CUA.get(crate)
+    if t is None:
         continue
-    for d in sorted(cam & co):
-        loi.append(f"{crate} -> {d}")
+    for d in sorted(co):
+        td = TANG_CUA.get(d)
+        if td is not None and td > t:
+            loi.append(f"{crate}[T{t}] -> {d}[T{td}] (ngược tầng)")
+    # Cạnh cùng tầng còn lại (các cạnh ngược tầng đã bị bảng tầng bắt ở trên).
+    for d in sorted(CAM_NGANG.get(crate, set()) & co):
+        td = TANG_CUA.get(d)
+        if td is None or td <= t:
+            loi.append(f"{crate} -> {d} (cùng tầng/sai DAG)")
 if loi:
     print("vis-dag-check: VI PHẠM DAG:", file=sys.stderr)
     for x in loi:
         print(f"  {x}", file=sys.stderr)
     sys.exit(2)
-print(f"vis-dag-check: OK — {len(CAM)} crate tầng dưới không kéo tầng trên")
+print(f"vis-dag-check: OK — {len(TANG_CUA)} crate / 5 tầng, 0 cạnh cấm")
 PY
