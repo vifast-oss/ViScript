@@ -9,7 +9,7 @@
 > - **Cập nhật 2026-11-25 (Sóng 0–3 xong, chờ A0 duyệt)**: 5 tầng DAG đã đạt — `vis-hir`,
 >   `vis-http`, `vis-runtime`, `vis-conformance`; `vis-vm` **0 dep** `vis-interp`/`vis-types`,
 >   `vis-pkg` 0 dep `vis-host-native`, `vis-core` 0 HTTP; **23 crate**; `vis-interp` 8.792 LOC;
->   `StdId` 167 hàm O(1); conformance **420 ca** + **380 test API** dời khỏi CLI; **`#193` đóng**
+>   `StdId` 167 hàm O(1); conformance **420 ca** + **384 test API** dời khỏi CLI; **`#193` đóng**
 >   (WASI `vis-wasm-sem` **390/390**, suite 28/28). Chi tiết `JOURNAL/review-a0-vd289-2026-11-25.md`.
 > - **Đọc chi tiết hiện hành**: [`ACTIVE.md`](ACTIVE.md), [`QUEUE.md`](QUEUE.md) (`ST-312a..ST-313d`), [`JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md`](JOURNAL/quyet-dinh-a0-2026-11-24-vd289.md).
 
