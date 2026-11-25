@@ -46,4 +46,6 @@
   Vòng 57–64 (22:01–23:24): **800.000, 0 lệch**; vòng 60 **gate + targets --wasm (sem 390/390,
   suite 28/28, conformance 393×2) + host 54/54 + DAG rc=0**; vòng 64 **gate + clippy rc=0**.
   Tổng: **64 vòng = 6,4 M chương trình diff, 0 lệch**; 16× gate, 8× clippy, 13× WASI/targets.
+  Vòng 65–66 (23:33–23:47): 100.000 lech=0; vòng 66 **WASI suite 28/28 + sem 390/390 +
+  conformance 393×2 (366 `.out` + 27 `.trap`), cả 3 rc=0** trên mã đã vá bảo mật.
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
