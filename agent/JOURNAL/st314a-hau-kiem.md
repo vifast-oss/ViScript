@@ -173,7 +173,7 @@ phải binary cấp 1; `[[test]] path=…` lồng nhau (chưa có) là điểm m
 
 Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc máy**: `psvn` có CC ⇒ msvc PASS
 (in advisory), `ps` cross-check ⇒ msvc `EXPECTED_RED`. Chỉ vá đường dẫn tài liệu cũ (commit
-`6245bf12`); baseline/sau vá: `core 47/0/0`, `sqlite 45/2/0`, `EXIT=0`.
+`6245bf12`); baseline/sau vá: `core 47/0/0`, `sqlite 45/2/0`, `EXIT=0`. Trên `psvn`: sqlite **46 PASS + 1 EXPECTED_RED** (msvc PASS, wasm32 đỏ vì `getrandom`); trên `ps`: **45 + 2** (msvc đỏ vì thiếu C toolchain, wasm32 đỏ) — càng khẳng định phải giữ cả hai ô trong `expected_red`.
 
 ### 10.6 Cổng batch low-peak 2 (@HEAD sau vá)
 
@@ -186,6 +186,7 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `bin/vis-wasm-suite` @`a7cf2533` | **28/28, 0 hỏng** (runtime=node) | `/home/ps/vislogs/st314a-lp2-wasm-suite.log`, sha `53e789db050a355b3aba9629f8412f8281acd66384267000c93497f9fe22a3ff` |
 | `bin/vis-targets` @`a7cf2533` (gồm `vis-dag-check` mới) | **PASS** — core `47/0/0`, sqlite `45/2/0`; dag-check `OK — 23 crate / 5 tầng` | `/home/ps/vislogs/st314a-lp2-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe` |
 | `./vis-dev core-test` (no-default-features) | **PASS** — 1.804/0 (12 binary), target riêng | `/home/ps/vislogs/st314a-lp2-core-test.log`, sha `ec5ab3afdaa212d38f60712586799607c99e7c70262e05b6714966f6d8808834` |
+| Windows full @`a7cf2533` (`psvn`) | **3.729/0/4 ignored** (90 binary); host conformance **54 ca/120 lượt, 0 lệch**; `vis-targets` core `47/0/0`, sqlite `46/1/0`; `vis-dag-check OK` | `/home/ps/vislogs/st314a-lp-win-full.log`, sha `31237fe79645729ac3f6af9169de6e901c9d3594a89ac29b2bbd318003e807e6` (máy đích `6eb165cd…`) |
 
 ## 11. Audit docs `SPEC.md` + thiết kế (subagent) — đề xuất cho Agent 0
 
