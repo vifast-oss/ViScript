@@ -385,8 +385,9 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 | `select_recv` trên **đường đồng bộ** | interp ``tên `select_recv` chưa hỗ trợ ở VS0`` / VM `` `select_recv` cần đường frame test/async … `` | cả hai: `cần đường frame test/async` | `crates/vis-runtime/src/lit.rs` — `builtin_name` gộp về **một nguồn** `SIGS` (27 tên, gồm 4 `select_*`) thay vì danh sách chép tay 23 tên |
 
 - Test khoá: `crates/vis-vm/tests/vm_it/vs_interp.rs` + `goi_module_thieu_use_khop_ca_thong_diep`,
-  `select_duong_dong_bo_khop_thong_diep` (so **cả** mã, exit, stdout **và message** hai engine).
-  `vis-vm --test vm_it` **53/53 PASS**.
+  `select_duong_dong_bo_khop_thong_diep` (so **cả** mã, exit, stdout **và message** hai engine);
+  unit `vis-runtime` `lit::tests::moi_sig_deu_la_builtin_name` (chống tái phát danh sách chép tay).
+  `vis-vm --test vm_it` **54/54**, `vis-runtime --lib` **284/284** PASS.
 
 ### 22.2 Harness conformance: `.trap`, so thông điệp, stack 256 MiB
 
@@ -481,7 +482,7 @@ Các dòng `sha256sum` ở **cuối log** được tính trên nội dung log **
 
 | Cổng | Kết quả | Log |
 |---|---|---|
-| `./vis-dev gate --fast` | **PASS — 3813/3813, 4 skipped** (thêm test dạng phương thức); DAG 5 tầng + self-test OK | `st314a-lp39-gate-clean.log` (3812), `st314a-lp42-gate-sugar.log` (3813) |
+| `./vis-dev gate --fast` | **PASS — 3814/3814, 4 skipped** (thêm sugar + unit SIGS); DAG 5 tầng + self-test OK | `st314a-lp42-gate-sugar.log` (3813), `st314a-lp45-gate-final2.log` (3814) |
 | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (Linux) | `st314a-lp29-clippy-linux.log` |
 | `vis-conformance` corpus | **544/544** | `edge-conformance-final2.log` + `st314a-lp25-conformance-all.log` |
 | `vis-vm --test vm_it` | **54/54** (thêm dạng phương thức) | — |

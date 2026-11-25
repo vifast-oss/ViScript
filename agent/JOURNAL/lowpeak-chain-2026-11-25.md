@@ -15,3 +15,6 @@
   `disk.log`, `REPORT.md` + `SHA256SUMS` khi kết thúc.
 - **Kiểm tra nhanh**: `cat /home/ps/vislogs/lowpeak-chain-2026-11-25/heartbeat.txt`.
 - **Kết quả cuối**: cập nhật vào mục này sau 00:55 UTC (số vòng, số lỗi, sha log).
+- **Đã chạy (cập nhật dần)**: vòng 1 `2026-11-25T11:18–11:19` seed `202611260001`:
+  **100.000 chương trình, lech=0, 72,3 s, rc=0** (`r001-diff-202611260001.log`).
+  Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
