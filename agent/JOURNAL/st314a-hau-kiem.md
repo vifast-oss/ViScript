@@ -147,6 +147,7 @@ Audit tooling: bảng `CAM` cũ chỉ phủ **7/23** crate; **185 cạnh xuôi t
 |---|---|
 | Thật @HEAD | `vis-dag-check: OK — 23 crate / 5 tầng, 0 cạnh cấm`, exit 0 |
 | Giả lập 2 cạnh cấm (`vis-core→vis-host-native`, `vis-syntax→vis-types`) qua `CARGO` giả | exit 2, in đúng `vis-core[T1] -> vis-host-native[T3]` và `vis-syntax[T0] -> vis-types[T2]` |
+| Giả lập crate thứ 24 chưa khai tầng | exit 2, in `crate `vis-la` chưa khai tầng trong TANG_CUA` |
 
 ### 10.2 Self-check `vis-wasm-conformance` — thêm probe engine
 
@@ -181,3 +182,6 @@ Giữ nguyên `expected_red` (msvc + wasm32) vì kết quả **phụ thuộc má
 | `bin/vis-dag-check` | **OK — 23 crate / 5 tầng, 0 cạnh cấm**; negative giả lập exit 2 | log phiên |
 | `vis-wasm-conformance` (guard + engine probe) | **299 ca × 2 engine, 0 hỏng**, `EXIT=0` | `/home/ps/vislogs/st314a-lp2-wasm-conformance.log`, sha `a2ddd230fd86b53760ddcd2eae0a5dcd94ae6ec97fea60ad37cd8d041078cf75` |
 | `./vis-dev gate --fast` | **3804/3804 passed**, 4 skipped, `EXIT=0` | `/home/ps/vislogs/st314a-lp2-gate.log`, sha `0c90814f5fffc3f118bd6a01bf21ebefdbb610fddf571ff4a37e1c5acaf4b078` |
+| `bin/vis-wasm-sem` @`a7cf2533` | **390/390, 0 fail, coverage 100%** (525 total) | `/home/ps/vislogs/st314a-lp2-wasm-sem.log`, sha `41777564ef6cf9232076571dd75db09f0fde33ea5552a987cf49596842b4d203` |
+| `bin/vis-wasm-suite` @`a7cf2533` | **28/28, 0 hỏng** (runtime=node) | `/home/ps/vislogs/st314a-lp2-wasm-suite.log`, sha `53e789db050a355b3aba9629f8412f8281acd66384267000c93497f9fe22a3ff` |
+| `bin/vis-targets` @`a7cf2533` (gồm `vis-dag-check` mới) | **PASS** — core `47/0/0`, sqlite `45/2/0`; dag-check `OK — 23 crate / 5 tầng` | `/home/ps/vislogs/st314a-lp2-vis-targets.log`, sha `bd8309ddcbf5b29579394adb804b44def1f8238522cdc87bf09c40a203fb5afe` |

@@ -71,6 +71,8 @@ TANG_CUA = {
 loi = []
 for crate in sorted(set(TANG_CUA) - set(deps)):
     loi.append(f"thiếu crate `{crate}` trong workspace")
+for crate in sorted(set(deps) - set(TANG_CUA)):
+    loi.append(f"crate `{crate}` chưa khai tầng trong TANG_CUA")
 for crate, co in sorted(deps.items()):
     t = TANG_CUA.get(crate)
     if t is None:
