@@ -20,5 +20,8 @@
   (`r002-diff-202611260002.log`); vòng 3 `11:41–11:42` seed `202611260003`: 100.000, lech=0
   (`r003-...`); vòng 4 `11:52–11:54` seed `202611260004`: 100.000, lech=0 + **gate rc=0** (`r004-...`);
   vòng 5 `12:04–12:05` seed `202611260005`: 100.000, lech=0; vòng 6 `12:15–12:18` seed `202611260006`:
-  100.000, lech=0 + **WASI suite 28/28, sem 390/390, conformance 379×2, cả 3 exit 0** (`r006-*.log`).
+  100.000, lech=0 + **WASI suite 28/28, sem 390/390, conformance 379×2, cả 3 exit 0** (`r006-*.log`);
+  vòng 7–11 (12:28–13:14): mỗi vòng 100.000, **lech=0**; vòng 8 thêm **gate rc=0 + clippy rc=0**;
+  vòng 12 (13:24–13:28): 100.000 lech=0, **gate rc=0**, **`vis-targets --wasm` rc=0** (đo lại sem
+  390/390, suite 28/28, conformance 379×2), **host-suite 54/54**, **DAG OK** — tất cả exit 0.
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
