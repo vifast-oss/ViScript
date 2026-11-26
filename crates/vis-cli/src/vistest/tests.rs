@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-311d (VD-286)** — test đơn vị của `vis test` (`vistest.rs`), tách ra cùng thư mục.
 
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
 use super::*;
 use vis_core::json;
 use vis_core::value::Value;
