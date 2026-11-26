@@ -98,7 +98,12 @@ pub(crate) fn run_frame_driver<'a>(
         }
         // **VD-259**: không có `main` ⇒ chạy câu lệnh cấp tệp như runtime mặc định, KHÔNG
         // gắn argv vào một ô `u32::MAX` (fallback cũ khiến mọi tên lạ nhận danh sách args).
-        None => Rc::new(RefCell::new(globals.borrow().clone())),
+        // **ST-318a (#203)**: thân cấp tệp chạy **trực tiếp** trên `globals` (không clone) để
+        // biến top-level là ô chung với task frame — cùng ngữ nghĩa interp non-frame/VM.
+        None => {
+            it.env = globals.clone();
+            globals.clone()
+        }
     };
     frames.insert(0, IFrame::new(body, main_env, &globals, mutable.clone()));
 
@@ -495,7 +500,153 @@ fn step_frame<'a>(
     frames: &mut HashMap<u32, IFrame<'a>>,
 ) -> R<Option<Value>> {
     let mut frame = frames.remove(&frame_id).expect("frame hiện tại");
-    let res = step_frame_owned(it, &mut frame);
+    nap_bien_cap_tep(it, &mut frame);
+    let res = buoc_frame_dong_bo(it, &mut frame);
     frames.insert(frame_id, frame);
     res
+}
+
+// ---------------------------------------------------------------------------
+// **ST-318a (#203)** — biến cấp tệp (`let`/`var` top-level) là **một ô chung** giữa các
+// frame, khớp interp non-frame (`env` chung) và VM (mảng `globals`): frame W=1 trước đây giữ
+// `Env` **riêng** (clone lúc dựng) nên `var` ghi trong task không thấy ở main — interp in `0`
+// còn VM in `1` trên cùng chương trình. `it.env` (globals, do `khoi_tao_bien_cap_tep_frame`
+// gắn) là nguồn chung cho các `sym` **đã có** trong đó; tham số/`let` trong thân (sym riêng,
+// không có trong globals) vẫn ở `Env` của frame.
+// ---------------------------------------------------------------------------
+
+/// Nạp giá trị mới nhất của biến cấp tệp vào **mọi** khung gọi đang treo của `frame`.
+fn nap_bien_cap_tep(it: &Interp<'_>, frame: &mut IFrame<'_>) {
+    let globals = it.env.clone();
+    let cap: Vec<(u32, Value)> = globals
+        .borrow()
+        .iter()
+        .map(|(k, v)| (*k, v.clone()))
+        .collect();
+    if cap.is_empty() {
+        return;
+    }
+    let envs: Vec<Env> = frame.calls.iter().map(|cf| cf.env.clone()).collect();
+    for env in envs {
+        if Rc::ptr_eq(&env, &globals) {
+            continue;
+        }
+        let mut e = env.borrow_mut();
+        for (k, v) in &cap {
+            // Chỉ cập nhật ô mà frame đã có — không kéo biến top-level vào env vốn không thấy nó.
+            if e.contains_key(k) {
+                e.insert(*k, v.clone());
+            }
+        }
+    }
+}
+
+/// `sym` mà work-item **có thể ghi** vào env hiện tại (gán biến, gán đường, writeback `push`).
+///
+/// Chỉ ba đường này ghi được biến cấp tệp: `let`/`var` top-level đã chạy trước `main` (và khi
+/// không có `main` thì env chính **là** globals), còn bind pattern trong thân là sym cục bộ.
+fn sym_ghi_cua(w: &Work<'_>) -> Option<u32> {
+    match w {
+        Work::ApplyAssignVar { sym, .. } => Some(*sym),
+        Work::ApplyAssignPath(a) => Some(a.sym),
+        Work::ApplyMethod {
+            base_var: Some(sym),
+            ..
+        } => Some(*sym),
+        _ => None,
+    }
+}
+
+/// Ghi **một** biến cấp tệp vừa đổi về `it.env` (globals) rồi cập nhật mọi khung gọi đang treo
+/// của cùng frame — nhờ vậy `print(g)` ngay sau `tang()` (cùng một step) vẫn thấy giá trị mới,
+/// và frame khác (task/main) thấy được khi resume.
+fn dong_bo_bien_cap_tep(it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32) {
+    let globals = it.env.clone();
+    let env = frame.cur().env.clone();
+    if Rc::ptr_eq(&env, &globals) {
+        return;
+    }
+    let Some(v) = env.borrow().get(&sym).cloned() else {
+        return;
+    };
+    // Sym cục bộ (tham số/`let` trong thân) không có trong globals ⇒ không đụng.
+    if !globals.borrow().contains_key(&sym) {
+        return;
+    }
+    globals.borrow_mut().insert(sym, v.clone());
+    let envs: Vec<Env> = frame.calls.iter().map(|cf| cf.env.clone()).collect();
+    for e in envs {
+        if Rc::ptr_eq(&e, &globals) {
+            continue;
+        }
+        let mut e = e.borrow_mut();
+        if e.contains_key(&sym) {
+            e.insert(sym, v.clone());
+        }
+    }
+}
+
+/// **ST-318a (#203)** — bản sao `step_frame_owned` (`frame.rs`) có đồng bộ biến cấp tệp sau
+/// từng work-item. Mọi nhánh còn lại giữ nguyên hành vi bản gốc (ngân sách ⇒ `Pending`, pop
+/// khung ⇒ merge closure/hoàn nguyên tham số, hết work ⇒ trả `vals`).
+fn buoc_frame_dong_bo<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>) -> R<Option<Value>> {
+    loop {
+        if frame.done() {
+            return Ok(frame.vals.pop());
+        }
+        // **VD-257/D**: hết hạn ngạch — yield về đuôi ready, không trap, không chạy lại item.
+        if crate::rt::fee::quota_take_hit() {
+            let cur = it.sched.borrow().frame.current;
+            it.sched.borrow_mut().frame.log.push(format!("quota:{cur}"));
+            return Err(Abort::Pending(crate::rt::Pending {
+                task: None,
+                wait: None,
+                span: Span::new(0, 0),
+            }));
+        }
+        let w = frame.cur().work.pop();
+        match w {
+            Some(w) => {
+                let sym_ghi = sym_ghi_cua(&w);
+                // Đồng bộ **kể cả khi item lỗi** — side-effect đã xảy ra trước trap vẫn phải
+                // thấy được ở frame khác (final join/báo lỗi), đúng như env chung non-frame.
+                let res = super::process_work(it, frame, w);
+                if let Some(sym) = sym_ghi {
+                    dong_bo_bien_cap_tep(it, frame, sym);
+                }
+                res?;
+            }
+            None => {
+                // Hết work ⇒ kết thúc khung con: hoàn nguyên tham số, nâng ret, đẩy giá trị.
+                let cf = frame.calls.pop().expect("khung");
+                let mut v = cf.last.unwrap_or(Value::Unit);
+                if cf.ret_depth > 0 {
+                    v = crate::lift::lift_opt(v, cf.ret_depth);
+                }
+                // **VD-258**: closure có env riêng cho lần gọi này — gộp các biến bắt
+                // về env gốc của closure (tham số bị loại ⇒ lần gọi khác không bị đè).
+                if let Some(dich) = &cf.merge {
+                    let params: Vec<u32> = cf.restore.iter().map(|(s, _)| *s).collect();
+                    let snapshot = cf.env.borrow().clone();
+                    let mut den = dich.borrow_mut();
+                    for (sym, val) in snapshot {
+                        if !params.contains(&sym) {
+                            den.insert(sym, val);
+                        }
+                    }
+                }
+                for (sym, old) in cf.restore {
+                    match old {
+                        Some(old) => {
+                            cf.env.borrow_mut().insert(sym, old);
+                        }
+                        None => {
+                            cf.env.borrow_mut().remove(&sym);
+                        }
+                    }
+                }
+                frame.vals.push(v);
+            }
+        }
+    }
 }
