@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn doc_co_tran_vuot_nguong_cat_dung_tran_va_bat_co() {
-        let du = vec![b'x'; super::MAX_PLUGIN_OUT + 10];
+        let du = vec![b'x'; super::MAX_PLUGIN_OUT + 1];
         let tran = Arc::new(AtomicBool::new(false));
         let got = super::doc_co_tran(Cursor::new(du), Arc::clone(&tran)).expect("đọc");
         assert_eq!(got.len(), super::MAX_PLUGIN_OUT);

@@ -2,14 +2,22 @@
 //! **ST-315d (VD-291 §3.4)** — kiểm **tĩnh** chu trình phụ thuộc `const` (`VS0304`).
 //!
 //! Đồ thị cạnh `const A → const B` khi biểu thức giá trị của `A` **đánh giá ngay** một tham chiếu
-//! tới `B`. Thân `lambda` bị bỏ qua (đánh giá sau, không phải phụ thuộc lúc tính hằng). Chu trình
-//! được báo **một lần cho mỗi `const`** trong chu trình, tại `span` khai báo; hàng rào runtime
-//! (`ConstCycle`/trap của interp) vẫn giữ nguyên cho artifact không qua `vis check`.
+//! tới `B`. Thân `lambda` bị bỏ qua (đánh giá sau, không phải phụ thuộc lúc tính hằng). Đây là
+//! **xấp xỉ trên** (over-approximation) theo hướng an toàn: nhánh chết như `if false: B` vẫn tính;
+//! tham chiếu `const` **bên trong thân hàm** được gọi từ giá trị hằng có thể lọt (false negative) —
+//! hàng rào runtime `ConstCycle`/trap interp vẫn bắt.
+//!
+//! Dùng **Tarjan lặp** (stack tường minh) — chuỗi phụ thuộc 100k không tràn stack. Với SCC nhỏ
+//! (≤ 8 hằng) báo **một chẩn đoán mỗi `const`**; SCC lớn chỉ báo **một chẩn đoán** có trần tên
+//! (tránh O(N²) bộ nhớ/thời gian khi in). Thứ tự chẩn đoán theo `span` nguồn.
 
 use std::collections::HashMap;
 
 use vis_hir::hir::{HCond, HExpr, HItem, HStmt, Hir, InterpPart};
 use vis_syntax::Diagnostic;
+
+/// Số tên tối đa in trong một chẩn đoán SCC lớn.
+const TEN_TOI_DA: usize = 8;
 
 /// Thêm chẩn đoán `VS0304` cho mọi `const` nằm trong một chu trình phụ thuộc.
 pub(super) fn kiem(hir: &Hir, diags: &mut Vec<Diagnostic>) {
@@ -35,26 +43,8 @@ pub(super) fn kiem(hir: &Hir, diags: &mut Vec<Diagnostic>) {
             v
         })
         .collect();
-    let mut chi_so = vec![usize::MAX; ds.len()];
-    let mut low = vec![0usize; ds.len()];
-    let mut tren_ngan_xep = vec![false; ds.len()];
-    let mut ngan_xep: Vec<usize> = Vec::new();
-    let mut dem = 0usize;
-    let mut sccs: Vec<Vec<usize>> = Vec::new();
-    for i in 0..ds.len() {
-        if chi_so[i] == usize::MAX {
-            tarjan(
-                i,
-                &canh,
-                &mut chi_so,
-                &mut low,
-                &mut tren_ngan_xep,
-                &mut ngan_xep,
-                &mut dem,
-                &mut sccs,
-            );
-        }
-    }
+    let sccs = tinh_scc(&canh);
+    let mut them: Vec<Diagnostic> = Vec::new();
     for scc in sccs {
         let tu_thanh = scc.len() > 1 || canh[scc[0]].contains(&scc[0]);
         if !tu_thanh {
@@ -63,55 +53,95 @@ pub(super) fn kiem(hir: &Hir, diags: &mut Vec<Diagnostic>) {
         let mut ds_scc = scc;
         ds_scc.sort_unstable();
         let ten: Vec<&str> = ds_scc.iter().map(|&i| ds[i].name.as_str()).collect();
-        let duong = ten.join(" → ");
-        for i in ds_scc {
-            diags.push(Diagnostic {
+        if ten.len() <= TEN_TOI_DA {
+            let ds_ten = ten.join(", ");
+            for i in ds_scc {
+                them.push(Diagnostic {
+                    code: super::CONST_CYCLE,
+                    message: format!("chu trình phụ thuộc hằng số (`const`): {ds_ten}"),
+                    span: ds[i].span,
+                    line: 0,
+                    col: 0,
+                });
+            }
+        } else {
+            // SCC lớn: **một** chẩn đoán, tên có trần — không nhân bản message N lần.
+            let dau = ten[..TEN_TOI_DA].join(", ");
+            let i = ds_scc[0];
+            them.push(Diagnostic {
                 code: super::CONST_CYCLE,
-                message: format!("chu trình phụ thuộc hằng số (`const`): {duong}"),
+                message: format!(
+                    "chu trình phụ thuộc hằng số (`const`) gồm {} hằng: {dau} …",
+                    ten.len()
+                ),
                 span: ds[i].span,
                 line: 0,
                 col: 0,
             });
         }
     }
+    // Thứ tự theo nguồn — ổn định, không phụ thuộc thứ tự hoàn tất SCC.
+    them.sort_by_key(|d| (d.span.start, d.span.end));
+    diags.extend(them);
 }
 
-#[allow(clippy::too_many_arguments)]
-fn tarjan(
-    u: usize,
-    canh: &[Vec<usize>],
-    chi_so: &mut [usize],
-    low: &mut [usize],
-    tren_ngan_xep: &mut [bool],
-    ngan_xep: &mut Vec<usize>,
-    dem: &mut usize,
-    sccs: &mut Vec<Vec<usize>>,
-) {
-    chi_so[u] = *dem;
-    low[u] = *dem;
-    *dem += 1;
-    ngan_xep.push(u);
-    tren_ngan_xep[u] = true;
-    for &v in &canh[u] {
-        if chi_so[v] == usize::MAX {
-            tarjan(v, canh, chi_so, low, tren_ngan_xep, ngan_xep, dem, sccs);
-            low[u] = low[u].min(low[v]);
-        } else if tren_ngan_xep[v] {
-            low[u] = low[u].min(chi_so[v]);
+/// Tarjan **lặp** (stack tường minh): trả các SCC; không đệ quy theo độ sâu phụ thuộc.
+fn tinh_scc(canh: &[Vec<usize>]) -> Vec<Vec<usize>> {
+    let n = canh.len();
+    let mut chi_so = vec![usize::MAX; n];
+    let mut low = vec![0usize; n];
+    let mut tren_ngan_xep = vec![false; n];
+    let mut ngan_xep: Vec<usize> = Vec::new();
+    let mut dem = 0usize;
+    let mut sccs: Vec<Vec<usize>> = Vec::new();
+    let mut goi: Vec<(usize, usize)> = Vec::new();
+    for start in 0..n {
+        if chi_so[start] != usize::MAX {
+            continue;
         }
-    }
-    if low[u] == chi_so[u] {
-        let mut scc = Vec::new();
-        loop {
-            let w = ngan_xep.pop().expect("ngăn xếp Tarjan không rỗng");
-            tren_ngan_xep[w] = false;
-            scc.push(w);
-            if w == u {
-                break;
+        chi_so[start] = dem;
+        low[start] = dem;
+        dem += 1;
+        ngan_xep.push(start);
+        tren_ngan_xep[start] = true;
+        goi.push((start, 0));
+        while let Some(&(u, i_con)) = goi.last() {
+            if i_con < canh[u].len() {
+                if let Some(top) = goi.last_mut() {
+                    top.1 += 1;
+                }
+                let v = canh[u][i_con];
+                if chi_so[v] == usize::MAX {
+                    chi_so[v] = dem;
+                    low[v] = dem;
+                    dem += 1;
+                    ngan_xep.push(v);
+                    tren_ngan_xep[v] = true;
+                    goi.push((v, 0));
+                } else if tren_ngan_xep[v] {
+                    low[u] = low[u].min(chi_so[v]);
+                }
+            } else {
+                goi.pop();
+                if let Some(&(p, _)) = goi.last() {
+                    low[p] = low[p].min(low[u]);
+                }
+                if low[u] == chi_so[u] {
+                    let mut scc = Vec::new();
+                    loop {
+                        let w = ngan_xep.pop().expect("ngăn xếp Tarjan không rỗng");
+                        tren_ngan_xep[w] = false;
+                        scc.push(w);
+                        if w == u {
+                            break;
+                        }
+                    }
+                    sccs.push(scc);
+                }
             }
         }
-        sccs.push(scc);
     }
+    sccs
 }
 
 fn thu_cond(c: &HCond, chi_so: &HashMap<u32, usize>, ra: &mut Vec<usize>) {
@@ -314,5 +344,31 @@ fn thu_expr(e: &HExpr, chi_so: &HashMap<u32, usize>, ra: &mut Vec<usize>) {
         | HExpr::Var { sym: None, .. }
         | HExpr::CmdBlock { .. }
         | HExpr::Error { .. } => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tinh_scc;
+
+    /// **ST-315d review F1** — Tarjan lặp không được tràn stack theo độ sâu phụ thuộc.
+    #[test]
+    fn chuoi_100k_canh_sau_khong_tran_stack() {
+        let n = 100_000usize;
+        let canh: Vec<Vec<usize>> = (0..n)
+            .map(|i| if i + 1 < n { vec![i + 1] } else { Vec::new() })
+            .collect();
+        let scc = tinh_scc(&canh);
+        assert_eq!(scc.len(), n, "chuỗi 100k phải là 100k SCC đơn");
+    }
+
+    /// Vòng 100k đỉnh ⇒ **một** SCC (đường lặp, không đệ quy).
+    #[test]
+    fn vong_100k_dinh_la_mot_scc() {
+        let n = 100_000usize;
+        let canh: Vec<Vec<usize>> = (0..n).map(|i| vec![(i + 1) % n]).collect();
+        let scc = tinh_scc(&canh);
+        assert_eq!(scc.len(), 1);
+        assert_eq!(scc[0].len(), n);
     }
 }

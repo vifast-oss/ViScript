@@ -419,6 +419,25 @@ fn const_chu_trinh_bi_bat_tinh_voi_vs0304() {
     );
 }
 
+#[test]
+fn const_scc_lon_chi_mot_chan_doan_co_tran() {
+    // **ST-315d review F2** — SCC > 8 hằng chỉ một chẩn đoán, message có trần tên.
+    let n = 20usize;
+    let mut src = String::new();
+    for i in 0..n {
+        src.push_str(&format!("const A{i:02}: int = A{:02} + 1\n", (i + 1) % n));
+    }
+    src.push_str("fn main():\n    print(A00)\n");
+    let (out, _) = run(&src);
+    assert_eq!(out.codes(), vec!["VS0304"], "SCC lớn chỉ một chẩn đoán");
+    assert!(
+        out.diags[0].message.len() < 300,
+        "message phải có trần, thật {} byte: {}",
+        out.diags[0].message.len(),
+        out.diags[0].message
+    );
+}
+
 /// Tổng số ca phải ≥ 80 (tiêu chí ST-12) — giảm là đỏ.
 #[test]
 fn du_80_ca() {

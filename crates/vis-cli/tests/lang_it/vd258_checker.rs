@@ -508,6 +508,23 @@ fn const_chu_trinh_bi_vis_check_bat_voi_vs0304() {
 }
 
 #[test]
+fn const_thieu_kieu_goi_y_moi_khong_con_cau_suy_kieu() {
+    // **ST-315d review F7** — gợi ý `VS0204` phải nói "cần ghi kiểu tường minh", không còn
+    // "R7 cho suy kiểu từ literal" (câu cũ sai vì `const` luôn cần `: type`).
+    let (c, out, err) = check_src("const_no_type", "const A = 1\nfn main():\n    print(A)\n");
+    assert_ne!(c, 0, "phải đỏ; stdout: {out}");
+    let text = format!("{out}{err}");
+    assert!(
+        text.contains("cần ghi kiểu tường minh"),
+        "thiếu gợi ý mới: {text}"
+    );
+    assert!(
+        !text.contains("R7 cho suy kiểu"),
+        "còn câu gợi ý sai: {text}"
+    );
+}
+
+#[test]
 fn literal_list_tron_option_va_plain_bi_tu_choi() {
     assert_reject(
         "list_mix",
