@@ -549,6 +549,16 @@ của `bin/vis-targets` (mục 1).
 
 ## 7. Việc còn chờ máy (để `ST-316c` chuyển `DONE`)
 
+- [ ] **Chuỗi 0-LLM cao điểm 01:00 UTC 27/11**: script
+      `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (ngoài repo, **CHƯA CHẠY**; sha256
+      `14c0073730859a971afc25780fa2cc20004615a3d77186bc76d057c6858b1fe0`); đã `bash -n`
+      + `--dry-run` **exit 0** (log `/home/ps/vislogs/peak1-dryrun-final.log`, sha256
+      `9fa9f3e0e3307fc31955d89c1d4c54d04082a2ac0b63e65fbc1267ca5d027405`). Script có 18 dòng
+      bước: `ps` gate/diff/wasm/clippy tuần tự; `psvn`/`mps` sync + clippy + full gate; bench
+      3-OS; timeout 3600/2400/1800; exit 0 chỉ khi mọi bước bắt buộc PASS, 3 nếu có SKIP, 1 nếu
+      FAIL, 2 nếu preflight (HEAD/dirty/đĩa) hỏng.
+      Script tách `vis-remote` fetch/checkout khỏi wrapper `bin/vis-gate-*` (wrapper chạy tại `ps`
+      và tự gọi `vis-remote`), không lồng wrapper vào một `vis-remote ... bash -lc` khác.
 - [ ] `mps` fetch/checkout **`29a7b254`** + `cargo clippy --workspace --all-targets -- -D warnings`
       exit 0 (log + sha256).
 - [ ] `mps` `bin/vis-gate-macos --full` exit 0 (log + sha256).
