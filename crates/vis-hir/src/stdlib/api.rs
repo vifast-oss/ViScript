@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-296c** — API tra cứu chữ ký (`sig_of`/`sig_builtin`/`la_std`/`hoan`/…).
 
-use super::bang::FUNCS;
 use super::builtin::BUILTIN_FUNCS;
-use super::dinh_nghia::{StdFn, MODULES};
+use super::dinh_nghia::StdFn;
+use super::registry::{FUNCS, MODULES};
 
 /// Tra chữ ký **builtin trần** theo tên (`panic`).
 pub fn sig_builtin(name: &str) -> Option<&'static StdFn> {
