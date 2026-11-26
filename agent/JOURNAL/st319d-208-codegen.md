@@ -1,0 +1,83 @@
+<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
+# ST-319d — `#208` codegen thiếu tập **mutable**: `push` trên `var` ghi ô ở mọi vị trí
+
+- **Nhánh**: `plan/st319d`, nền `plan/st319a` = `7f209dfb` (đã có closure capture by-value +
+  `slot_cua`/`Var`/`Lambda` của ST-319a); worktree `/home/ps/viswt/st319d`.
+- **Lane**: `crates/vis-bytecode/src/codegen/**` + test async. **Không** chạm `vis-vm`, `vis-interp`,
+  `vis-core/value`, `vis-hir`, `vis-diag`, `vis-types`, `vis-loader`; không sửa SPEC/QUEUE/DECISIONS/ACTIVE.
+- **Chẩn đoán**: `agent/JOURNAL/st319c-208-codegen.md`; **thiết kế**: `/home/ps/vislogs/design-208-codegen.md`.
+- **Quy trình**: VD-279 — commit `[ST-319d]` sản phẩm; nghiệm thu (gate/diff) ở mục §3 dưới đây.
+
+## 1. Patch (đúng thiết kế §3–§4, không thêm opcode/tag, `VERSION` VBC1 giữ 2)
+
+| Tệp | Thay đổi |
+|---|---|
+| `crates/vis-bytecode/src/codegen.rs` | `Gen.mutables: HashSet<u32>` (+ doc); init; **nạp 3 điểm**: biến cấp tệp `var` (vòng cấp ô global), `var self` của hàm, `var self` của closure |
+| `crates/vis-bytecode/src/codegen/cau.rs` | `HStmt::Var`: `mutables.insert(sym)` (trừ `sym == 0`); **xoá** đặc cách `push` trong `HStmt::Expr` (−31 dòng) ⇒ mọi biểu thức đi `expr()` + `Pop` |
+| `crates/vis-bytecode/src/codegen/expr.rs` | nhánh `HExpr::Call`/`HExpr::Field`: base `Var` + `name == "push"` + `mutables.contains` ⇒ `LoadLocal(slot)` thay `expr(base)`; sau `CallMethod` phát **`Assign(slot)` NGAY** + `LoadLocal(slot)` (giữ `tach_dich` O(1)) |
+
+Bỏ qua đúng các ca không được ghi: base không `Var`, `?.push` (nhánh `optional` riêng ở trên),
+`insert`/phương thức khác, `let`/param thường (không có trong `mutables`). Không đụng `slot_cua`.
+
+Hình dạng VBC (`/home/ps/vislogs/st319d-dump.log`):
+- `var xs` + `let y = xs.push(2)`: `CallMethod; Assign(0); LoadLocal(0); StoreLocal(1)` — `Assign`
+  **ngay sau** `CallMethod`;
+- `let xs` + `xs.push(2)` câu lệnh: `CallMethod; Pop` — **không** writeback.
+
+## 2. Test — 6 ca mới cuối `crates/vis-conformance/tests/async_api_it/st317b_worker_orchestrate.rs`
+
+`w19_push_var_bieu_thuc_cuoi` (tail push var, W=1 interp↔VM **và** frame W=1 interp↔VM ⇒ `[1, 2]`),
+`w20_push_var_ham_sync` (`[1, 2]`), `w21_push_let_khong_ghi_lai` (`[1]`), `w22_push_var_trong_let`
+(`[1, 2]` ×2), `w23_push_var_w2_ghi_cheo_vs0509` (W=1 `[1, 2]`; W=2/4 `VS0509` cả 2 engine),
+`w24_map_insert_parity` (`VS0506` + `` `map.insert()` chưa hỗ trợ ``, exit 1 cả 2). Không `ignore`.
+
+Kết quả: 6/6 PASS (`/home/ps/vislogs/st319d-tests6.log`), cả module `st317b_worker_orchestrate`
+**26/26 PASS** (`/home/ps/vislogs/st319d-st317b.log`).
+
+## 3. Cổng đã chạy
+
+| Cổng | Kết quả | Log |
+|---|---|---|
+| `cargo fmt --all` | sạch (diff chỉ 4 tệp sản phẩm/test) | — |
+| `./vis-dev gate --fast` | **PASS**, 3921/3921 test (4 skip), clippy + R1..R10 + self-test OK | `/home/ps/vislogs/st319d-gate-fast.log` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (94425 chạy, 99,1 s, seed `3523158054`) | `/home/ps/vislogs/st319d-diff100k.log` |
+| `cargo clippy -p vis-bytecode --all-targets -- -D warnings` | **OK** | `/home/ps/vislogs/st319d-clippy.log` |
+| `api_dong_bang` (3 ca) | **OK**; `agent/API-VBC1.txt` **không đổi** | `/home/ps/vislogs/st319d-api-vbc1.log` |
+| R8 | `crates/vis-cli/tests` = **8** (≤15); tổng `.rs` cấp 1 = **39** (≤40) — **không tệp mới** | — |
+
+sha256 log: tests6 `da7d09e760348a69087590bffaed6e0b46db0e7a1f7c41770edf13b49064b190`;
+st317b `872787cb09382c734ae8f6d87a73e978511b2789bd89e974b83956c19f91c084`;
+gate `e80013700cf0ff3fc48e26c1989e0abb9ad9ad452e69ccf47a8554e2fc51917d`;
+diff `1cd4b07a428e173314409753b4d76ebb3dd188ffb8bd7a3d7d58ca69976caef2`;
+clippy `2e97b353706fa951c28f788fcadf2d9aa963ce7a160a33b3eb5a1013b28d38ae`;
+api `126b487efdc4bf541465823890e52421df49d073d4a069f2b7e743aca7bb45b3`;
+repro `b99c452a6150468117e29c2deddd056781ecf2041a4a7273c914c48d8b1e87ab`;
+dump `d06e87eaa3544838b61de287663b901743f8dd0add6d428f695d2797c712be23`.
+
+## 4. Tái lập CLI (`/home/ps/vislogs/st319d-repro.log`) — `vis run` / `vis run --vm`
+
+| Ca | interp | VM |
+|---|---|---|
+| a `var`+push tail task | `[1, 2]` | `[1, 2]` |
+| c hàmsync `xs.push(2)` | `[1, 2]` | `[1, 2]` |
+| d push câu lệnh trên `var` | `[1, 2]` | `[1, 2]` |
+| e `let y = xs.push` | xs `[1, 2]`, y `[1, 2]` | y hệt |
+| f push rồi `print` trong task | `[1, 2]`×2 | `[1, 2]`×2 |
+| h `let`+push câu lệnh | `[1]` | `[1]` |
+| j task `m.insert` | `VS0506`/`VS0501` exit 101 | y hệt |
+| a W=2/4 | `VS0509` exit 101 | `VS0509` exit 101 (message khác tên biến `s14`/`g0`, đúng thiết kế) |
+
+**Cảnh báo cache (Q5 của thiết kế)**: lần chạy đầu `c.vis` cho `[1]` vì **VBC cache cũ** cùng
+`source_hash` (khoá `cache.rs` = source + `PHIEN_BAN`, không phủ danh tính codegen). Chạy lại với
+nội dung khác 1 byte ⇒ đúng `[1, 2]`. Đây là rủi ro hệ thống có thật khi phát hành binary mới mà
+không bump `PHIEN_BAN` (ngoài lane `vis-loader` — A0 quyết, xem §5).
+
+## 5. Việc còn lại / đề nghị
+
+1. **Agent 1 nghiệm thu** theo VD-279: `gate --fast` + diff 100k + 6 ca + API-VBC1 (log ở §3).
+2. **Q5 thiết kế** (cache `PHIEN_BAN`, `vis-loader` — ngoài lane): cân nhắc bump nhãn ở mốc merge
+   release để tránh VBC cache cũ (bằng chứng §4).
+3. **Q4 thiết kế** (nhóm mẫu `vis-diff` `PushBien`): tuỳ chọn, **commit riêng** sau merge (vùng
+   `DS_NHOM` chồng ST-319a) — không làm trong lát này.
+4. `var self` + push (Q6): patch đã nạp `is_var_self`; **chưa có ca test** (khó dựng `impl`+list) —
+   tuỳ chọn.

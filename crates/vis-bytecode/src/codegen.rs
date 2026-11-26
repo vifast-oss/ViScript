@@ -72,6 +72,9 @@ struct Gen {
     hconsts: HashMap<u32, HExpr>,
     /// **ST-314a**: các `const` đang inline — chặn chu trình (trước đây đệ quy vô hạn).
     hconsts_dang: std::collections::HashSet<u32>,
+    /// **ST-319d (#208)**: `sym` khai `var` ở **bất kỳ thân nào** (+ tham số `var self`) —
+    /// mirror `Interp.mutable` / `IFrame.mutable`. Quyết định `push` có ghi lại ô (VD-51).
+    mutables: std::collections::HashSet<u32>,
     hash: [u8; HASH_LEN],
 }
 
@@ -210,6 +213,7 @@ pub fn compile_with_fee_voi_bang(
         globals: HashMap::new(),
         hconsts: HashMap::new(),
         hconsts_dang: std::collections::HashSet::new(),
+        mutables: std::collections::HashSet::new(),
         builtins: crate::util::tinh_cac_builtin(symbols),
         // **VD-263**: `types` bổ sung trường của mọi instantiation generic vào bảng kiểu tĩnh.
         sym_ty: than::collect_sym_tys(hir, symbols, types),
@@ -274,7 +278,13 @@ pub fn compile_with_fee_voi_bang(
                         }
                     }
                 }
-                HStmt::Var { sym, .. } => syms.push(*sym),
+                HStmt::Var { sym, .. } => {
+                    // **ST-319d (#208)**: biến cấp tệp khai `var` ⇒ `push` được ghi lại ô.
+                    if *sym != 0 {
+                        g.mutables.insert(*sym);
+                    }
+                    syms.push(*sym)
+                }
                 _ => {}
             }
         }
@@ -309,6 +319,10 @@ pub fn compile_with_fee_voi_bang(
             st.f.nparams = f.params.len() as u16;
             for p in &f.params {
                 st.f.slot(p.sym, p.span)?;
+                // **ST-319d (#208)**: `var self` là tham số **duy nhất** gán được (SPEC §4.7).
+                if p.is_var_self {
+                    st.g.mutables.insert(p.sym);
+                }
             }
             // Tham số có `default`: nếu ô còn `()` (không được truyền) ⇒ gán default.
             for p in &f.params {
@@ -390,6 +404,10 @@ pub fn compile_with_fee_voi_bang(
             let s = st.f.nlocals;
             st.f.nlocals += 1;
             st.f.locals.insert(p.sym, s);
+            // **ST-319d (#208)**: `var self` của closure cũng mutable (SPEC §4.7).
+            if p.is_var_self {
+                st.g.mutables.insert(p.sym);
+            }
         }
         // **ST-60b (hồi quy `dd04afb`)**: biến bắt **theo giá trị** ⇒ cấp **ô cục bộ riêng** cho
         // từng biến bắt và **copy** ở đầu thân (`LoadCaptured(i)` + `Assign(slot)`). Nhờ vậy **đọc
