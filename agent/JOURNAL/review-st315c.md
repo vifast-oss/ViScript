@@ -9,6 +9,9 @@
 > (`runner.rs:412`), trái cam kết “không panic trên dữ liệu người dùng” (`wasi/mod.rs:15`).
 > Vá 1 dòng + 1 ca hồi quy là đủ để duyệt lại; các mục còn lại chỉ có finding L.
 
+> **CẬP NHẬT RE-AUDIT (2026-11-26, sau `801719e9`)**: F1–F3 đã vá và tôi kiểm lại độc lập —
+> xem **§8**. Kết luận hiện hành: **PASS**; §0–§7 giữ nguyên làm bản gốc.
+
 ## 0. Bảng phán quyết
 
 | Hạng mục | Kết quả | Bằng chứng |
@@ -202,3 +205,75 @@ Windows `/home/ps/vislogs/st315c-win-full-c2b051c9.log` (và `.out`):
 - Không sửa mã, không push/merge; mọi thí nghiệm chạy trong bản sao tạm `/tmp/opencode/r315c-*`.
 - 117 thư mục `vis-plugin-wasi-driver-*` rác có sẵn trong `/tmp` (mtime 09:54/12:12) là di sản
   của mã **trước** vá; có thể dọn một lần bằng tay, không phải lỗi của lát này.
+
+## 8. Re-audit sau vá (2026-11-26)
+
+> **Bối cảnh**: Agent 2 vá F1–F3 tại `801719e9` trên `main`; báo cáo review cũ merge ở `86df7ea6`.
+> Worktree `review/r315c` fast-forward `d2bab2fa → c9f28526` (main tip; `801719e9` là tổ tiên).
+> §0–§7 giữ nguyên. **Kết luận re-audit: PASS.**
+
+### 8.1 Đồng bộ và phạm vi vá
+
+```text
+$ git -C /home/ps/ViScript-r315c fetch /home/ps/ViScript main
+$ git merge --ff-only FETCH_HEAD
+Updating d2bab2fa..c9f28526   (Fast-forward, 12 tệp)
+```
+
+`801719e9` chỉ chạm `runner.rs` (+58/−15), doc `sandbox.rs`, `st315c-w3.md`, `QUEUE.md`; **không**
+đổi hành vi Landlock/`#197` hay `bin/vis-soak` (kiểm lại bên dưới).
+
+### 8.2 F1 — đúng repro cũ, qua `chay_mot`
+
+Harness độc lập **ngoài repo**: `/tmp/opencode/r315c-reaudit` = `git archive HEAD` + module test
+nối thêm; runtime giả ghi `799×'a' + "ệ" + 50×'b'` ra stderr rồi `exit 1`:
+
+| Kiểm | Kết quả |
+|---|---|
+| `catch_unwind(chay_mot(…))` | **không panic** |
+| mã lỗi | `VS0501` |
+| thông điệp | `plugin thoát 1 …` + `…`; **không** còn đuôi `bbbb` |
+| biên 800 ASCII + `ệ`×3 | `800×'a' + '…'` (803 byte), không panic |
+| toàn `ệ` (900 byte) | cắt về 798 + `…` (801 byte) |
+
+`cat_thong_diep` (`runner.rs:285-296`) lùi tới `is_char_boundary` trước khi `truncate`; đúng,
+không đổi thông điệp với chuỗi ngắn hoặc đúng 800 byte.
+
+### 8.3 F2 / F3
+
+- **F2**: guard tạo ngay sau `create_dir_all` (`runner.rs:256`). Test độc lập: ép thư mục kế
+  tiếp mode `0555` ⇒ `thu_muc_driver()` trả `Err` và **thư mục biến mất** (ca này đỏ trước vá).
+- **F3**: cả hai nhánh `stdout.take()`/`stderr.take()` `None` đều `kill()+wait()`
+  (`runner.rs:361-376`). Nhánh **không thể kích hoạt từ ngoài** (`Stdio::piped()` bảo đảm
+  `Some`) ⇒ xác minh bằng đọc mã.
+
+### 8.4 Biên 8 MiB (đúng +1, không chỉ +10)
+
+| Đầu vào | Kết quả |
+|---|---|
+| đúng `MAX_PLUGIN_OUT` = 8.388.608 | `Ok`, `len == 8 MiB`, không bật cờ |
+| 8.388.609 (= trần + 1) | `VS0501` “vượt trần”, kill < 3 s, `/proc/<pid>` mất |
+| trong repo: `MAX + 10` | vẫn xanh |
+
+### 8.5 Cổng (target dùng chung đã rebuild)
+
+```text
+cargo test -p vis-plugin-host                 lib 12 + parity 7 + vs3 7 + cli 4 = 30/30
+cargo test -p vis-host-linux --test landlock  19/19
+./vis-dev gate --fast                         PASS (clippy OK, R1..R9, DAG, L0), rc=0
+```
+
+Ghi chú: `cargo build` còn in `warning: unused dependency 'vis-runtime'` tại
+`crates/vis-host-native/Cargo.toml:54` — có từ `aa816e46` (ST-313a), **ngoài** ST-315c, không
+làm cổng đỏ.
+
+### 8.6 Tồn đọng không chặn
+
+- Câu chữ `801719e9`/`st315c-w3.md` nói “test đúng biên 8 MiB **và 8 MiB+1**”, nhưng test
+  trong repo là đúng 8 MiB và **+10**; chưa có ca `MAX+1` chính xác. Hành vi đã được tôi kiểm
+  ngoài repo; muốn khớp câu chữ thì đổi `MAX+10` thành `MAX+1` (1 dòng) — không bắt buộc.
+- F4 (kill chỉ giết con trực tiếp) và F5 (chưa có e2e cap/kill trong CI; chưa có ca truncate
+  tệp có sẵn trong `cap[Dir]` chỉ-đọc) vẫn như cũ, mức **L**.
+
+> **Phán quyết cuối: PASS** — đủ điều kiện để A0 duyệt `ST-315c`; F1–F3 đã đóng, các mục L
+> ghi nợ/không chặn.
