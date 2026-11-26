@@ -7,7 +7,6 @@
 
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Duration;
 
 use vis_core::trap::{Trap, R};
 use vis_core::value::{Task, Value};
@@ -170,22 +169,8 @@ pub(crate) fn await_local(host: &mut dyn Host, t: &Rc<Task>, span: Span) -> R<Va
     crate::rt::await_task_off(host, t, span)
 }
 
-/// Mã **VS0509** — ghi chéo worker (ST-290 cấp, ST-292 dùng).
-fn code_cross() -> &'static vis_diag::Code {
-    &vis_diag::RUNTIME_CODES[8]
-}
-
-/// Trap từ lỗi chuỗi của worker: **luôn** bọc `VS0506`, giữ mã gốc trong message (kể cả
-/// `VS0510`) — cùng hợp đồng task-error với W=1.
-fn loi_task(task: &Task, m: String) -> Trap {
-    Trap::new(
-        crate::interp::TASK_ERR,
-        format!("tác vụ `{}` lỗi: {m}", task.ten),
-        task.span,
-    )
-}
-
-/// **ST-292 (P4)**: áp một outcome vào proxy + cache `Task`; **không** flush output.
+/// **ST-292 (P4)/ST-317b**: áp outcome qua nguồn chung `vis_runtime::worker`, rồi báo
+/// `frame_task_done` theo scheduler của interp.
 fn apply_outcome(s: &mut crate::rt::Scheduler, o: vis_runtime::worker::TaskOutcome) {
     let Some(main_id) = s.exec.pool_order.get(o.id.as_u64() as usize).copied() else {
         return;
@@ -198,57 +183,26 @@ fn apply_outcome(s: &mut crate::rt::Scheduler, o: vis_runtime::worker::TaskOutco
     else {
         return;
     };
-    p.done = true;
-    p.output = o.output.clone();
-    p.dirty = o.dirty.clone();
-    p.cancelled = o.cancelled;
-    let task = Rc::clone(&p.task);
-    let ket = match o.result {
-        Ok(sv) => Ok(sv.to_value()),
-        Err(m) => Err(loi_task(&task, m)),
-    };
-    *task.kq.borrow_mut() = Some(ket.clone());
-    task.trang_thai.set(crate::rt::TrangThai::Xong);
-    s.frame_task_done(main_id, ket);
+    let (id, ket) = vis_runtime::worker::ap_dung_outcome(p, o);
+    s.frame_task_done(id, ket);
 }
 
 /// Flush output của proxy đúng **một lần**; dirty ⇒ `VS0509`, cancelled ⇒ `VS0506`.
 fn flush_proxy(host: &mut dyn Host, id: u32, span: Span) -> R<()> {
-    let (output, dirty, cancelled, ten) = {
+    let Some((output, loi)) = ({
         let mut s = host.sched().borrow_mut();
         let Some(p) = s.exec.proxy.get_mut(id as usize).and_then(|p| p.as_mut()) else {
             return Ok(());
         };
-        if p.flushed {
-            return Ok(());
-        }
-        p.flushed = true;
-        (
-            std::mem::take(&mut p.output),
-            std::mem::take(&mut p.dirty),
-            p.cancelled,
-            p.task.ten.clone(),
-        )
+        vis_runtime::worker::flush_proxy(p, span)
+    }) else {
+        return Ok(());
     };
     host.out().push_str(&output);
-    if !dirty.is_empty() {
-        return Err(crate::interp::Abort::Trap(Trap::new(
-            code_cross(),
-            format!(
-                "ghi chéo worker (W>1): biến {} (task `{ten}`)",
-                dirty.join(", ")
-            ),
-            span,
-        )));
+    match loi {
+        Some(t) => Err(crate::interp::Abort::Trap(t)),
+        None => Ok(()),
     }
-    if cancelled {
-        return Err(crate::interp::Abort::Trap(Trap::new(
-            crate::interp::TASK_ERR,
-            "tác vụ bị huỷ".to_string(),
-            span,
-        )));
-    }
-    Ok(())
 }
 
 /// **ST-292 (P4)**: rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa 50 ms. Trả số task vừa
@@ -272,24 +226,10 @@ pub(crate) fn pump(host: &mut dyn Host, block: bool) -> R<usize> {
     if ids.is_empty() {
         return Ok(0);
     }
-    let mut outs = Vec::new();
-    if block {
-        if let Ok((_, o)) = board.wait_any_timeout(&ids, Duration::from_millis(50)) {
-            outs.push(o);
-        }
-    }
-    for id in &ids {
-        if let Some(o) = board.try_take(*id) {
-            outs.push(o);
-        }
-    }
-    let n = outs.len();
-    if n > 0 {
+    let n = vis_runtime::worker::pump(&board, &ids, block, |o| {
         let mut s = host.sched().borrow_mut();
-        for o in outs {
-            apply_outcome(&mut s, o);
-        }
-    }
+        apply_outcome(&mut s, o);
+    });
     Ok(n)
 }
 
@@ -388,7 +328,7 @@ pub(crate) fn final_join(host: &mut dyn Host) -> R<()> {
         Ok(r) => r.outcomes,
         Err(WorkerError::CrossWrite { vars, tasks }) => {
             return Err(crate::interp::Abort::Trap(Trap::new(
-                code_cross(),
+                vis_runtime::worker::ma_ghi_cheo(),
                 format!(
                     "ghi chéo worker (W>1): biến {} (task {:?})",
                     vars.join(", "),
@@ -411,44 +351,11 @@ pub(crate) fn final_join(host: &mut dyn Host) -> R<()> {
         let Some(p) = proxy.get_mut(main_id as usize).and_then(|p| p.as_mut()) else {
             continue;
         };
-        if !p.done {
-            p.done = true;
-            p.output = o.output.clone();
-            p.dirty = o.dirty.clone();
-            p.cancelled = o.cancelled;
-            let task = Rc::clone(&p.task);
-            let ket = match o.result {
-                Ok(sv) => Ok(sv.to_value()),
-                Err(m) => Err(loi_task(&task, m)),
-            };
-            *task.kq.borrow_mut() = Some(ket.clone());
-            task.trang_thai.set(crate::rt::TrangThai::Xong);
-        }
-        // Flush output **một lần**, kể cả task đã được pump (done) nhưng chưa ai await.
-        if !p.flushed {
-            p.flushed = true;
-            let output = std::mem::take(&mut p.output);
-            let dirty = std::mem::take(&mut p.dirty);
-            let cancelled = p.cancelled;
-            let ten = p.task.ten.clone();
-            let span = p.task.span;
+        // Áp outcome (nếu chưa) + flush output **một lần**, kể cả task đã pump nhưng chưa await.
+        if let Some((output, loi)) = vis_runtime::worker::ap_va_flush(p, Some(o)) {
             host.out().push_str(&output);
-            if !dirty.is_empty() {
-                return Err(crate::interp::Abort::Trap(Trap::new(
-                    code_cross(),
-                    format!(
-                        "ghi chéo worker (W>1): biến {} (task `{ten}`)",
-                        dirty.join(", ")
-                    ),
-                    span,
-                )));
-            }
-            if cancelled {
-                return Err(crate::interp::Abort::Trap(Trap::new(
-                    crate::interp::TASK_ERR,
-                    "tác vụ bị huỷ".to_string(),
-                    span,
-                )));
+            if let Some(t) = loi {
+                return Err(crate::interp::Abort::Trap(t));
             }
         }
     }

@@ -95,3 +95,6 @@ mod sync_list_lib;
 
 #[path = "net_pkg_it/vs3_default_lib.rs"]
 mod vs3_default_lib;
+
+#[path = "async_api_it/st317b_worker_orchestrate.rs"]
+mod st317b_worker_orchestrate;

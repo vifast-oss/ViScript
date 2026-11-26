@@ -23,3 +23,6 @@ pub const OVERFLOW: &Code = &RUNTIME_CODES[6];
 /// **ST-290 (VD-273)** — `VS0510`: vượt **ngân sách thực thi ngữ nghĩa**, tách hẳn khỏi
 /// `VS0501` (trap nội bộ) và khỏi fuel `SAFETY_FUEL` của VM.
 pub const BUDGET: &Code = &RUNTIME_CODES[9];
+
+/// **VS0509** — worker W>1 ghi biến top-level (ghi chéo) — ST-290/ST-292/ST-317b.
+pub const CROSS: &Code = &RUNTIME_CODES[8];

@@ -23,9 +23,10 @@ use vis_core::trap::{Abort, Trap};
 use vis_core::value::Task;
 use vis_core::value::Value;
 use vis_runtime::builtin::Host;
-use vis_runtime::codes::{RT, TASK_ERR};
+use vis_runtime::codes::RT;
+use vis_runtime::rt::exec_state::TaskProxy;
 use vis_runtime::rt::fee::SharedBudget;
-use vis_runtime::worker::{OutcomeBoard, SendValue, TaskHandle, TaskId, WorkerError, WorkerPool};
+use vis_runtime::worker::{OutcomeBoard, SendValue, TaskId, WorkerError, WorkerPool};
 use vis_syntax::Span;
 
 use super::Vm;
@@ -45,18 +46,6 @@ pub(crate) enum Mode {
     Parallel(usize),
 }
 
-struct Proxy {
-    task: Rc<Task>,
-    pool_id: TaskId,
-    handle: TaskHandle,
-    flushed: bool,
-    /// **ST-292 (P4)**: outcome đã pump; output/dirty chờ flush tại await/final.
-    done: bool,
-    output: String,
-    dirty: Vec<String>,
-    cancelled: bool,
-}
-
 /// Trạng thái evaluator worker của một `Vm`. `Vm` không `Send`; pool/board là opt-in.
 #[derive(Default)]
 pub(crate) struct WorkerState {
@@ -71,7 +60,7 @@ pub(crate) struct WorkerState {
     pub(crate) task_deadline: Option<Instant>,
     pool: Option<WorkerPool>,
     board: Option<Arc<OutcomeBoard>>,
-    proxy: HashMap<u32, Proxy>,
+    proxy: HashMap<u32, TaskProxy>,
     pool_to_task: HashMap<TaskId, u32>,
 }
 
@@ -196,7 +185,7 @@ pub(crate) fn spawn_task(
     w.pool_to_task.insert(pool_id, t.id);
     w.proxy.insert(
         t.id,
-        Proxy {
+        TaskProxy {
             task: Rc::clone(&t),
             pool_id,
             handle,
@@ -210,24 +199,12 @@ pub(crate) fn spawn_task(
     Ok(Value::Task(t))
 }
 
-fn code_cross() -> &'static vis_diag::Code {
-    &vis_diag::RUNTIME_CODES[8]
-}
-
 fn code_budget() -> &'static vis_diag::Code {
     &vis_diag::RUNTIME_CODES[9]
 }
 
-/// Trap từ lỗi worker: **luôn** bọc `VS0506`, giữ mã gốc trong message (kể cả `VS0510`).
-fn loi_task(task: &Task, m: String) -> Trap {
-    Trap::new(
-        TASK_ERR,
-        format!("tác vụ `{}` lỗi: {m}", task.ten),
-        task.span,
-    )
-}
-
-/// Áp outcome vào proxy + cache `Task`; **không** flush output.
+/// **ST-317b**: áp outcome qua nguồn chung `vis_runtime::worker`, rồi báo `frame_task_done`
+/// theo scheduler của VM.
 fn apply_outcome(vm: &mut Vm<'_>, o: vis_runtime::worker::TaskOutcome) {
     let mut w = vm.worker.borrow_mut();
     let Some(main_id) = w.pool_to_task.get(&o.id).copied() else {
@@ -236,19 +213,9 @@ fn apply_outcome(vm: &mut Vm<'_>, o: vis_runtime::worker::TaskOutcome) {
     let Some(p) = w.proxy.get_mut(&main_id) else {
         return;
     };
-    p.done = true;
-    p.output = o.output.clone();
-    p.dirty = o.dirty.clone();
-    p.cancelled = o.cancelled;
-    let task = Rc::clone(&p.task);
+    let (id, ket) = vis_runtime::worker::ap_dung_outcome(p, o);
     drop(w);
-    let ket = match o.result {
-        Ok(sv) => Ok(sv.to_value()),
-        Err(m) => Err(loi_task(&task, m)),
-    };
-    *task.kq.borrow_mut() = Some(ket.clone());
-    task.trang_thai.set(vis_core::value::TrangThai::Xong);
-    vm.sched.borrow_mut().frame_task_done(main_id, ket);
+    vm.sched.borrow_mut().frame_task_done(id, ket);
 }
 
 /// **ST-292 (P4)**: rút outcome đã sẵn sàng; `block` ⇒ chờ tối đa 50 ms.
@@ -269,21 +236,7 @@ pub(crate) fn pump(vm: &mut Vm<'_>, block: bool) -> vis_core::trap::R<usize> {
     if ids.is_empty() {
         return Ok(0);
     }
-    let mut outs = Vec::new();
-    if block {
-        if let Ok((_, o)) = board.wait_any_timeout(&ids, Duration::from_millis(50)) {
-            outs.push(o);
-        }
-    }
-    for id in &ids {
-        if let Some(o) = board.try_take(*id) {
-            outs.push(o);
-        }
-    }
-    let n = outs.len();
-    for o in outs {
-        apply_outcome(vm, o);
-    }
+    let n = vis_runtime::worker::pump(&board, &ids, block, |o| apply_outcome(vm, o));
     Ok(n)
 }
 
@@ -307,41 +260,20 @@ pub(crate) fn cancel_worker(vm: &mut Vm<'_>, id: u32) {
 
 /// Flush output của proxy đúng một lần; dirty ⇒ `VS0509`, cancelled ⇒ `VS0506`.
 fn flush_proxy(vm: &mut Vm<'_>, id: u32, span: Span) -> vis_core::trap::R<()> {
-    let (output, dirty, cancelled, ten) = {
+    let Some((output, loi)) = ({
         let mut w = vm.worker.borrow_mut();
         let Some(p) = w.proxy.get_mut(&id) else {
             return Ok(());
         };
-        if p.flushed {
-            return Ok(());
-        }
-        p.flushed = true;
-        (
-            std::mem::take(&mut p.output),
-            std::mem::take(&mut p.dirty),
-            p.cancelled,
-            p.task.ten.clone(),
-        )
+        vis_runtime::worker::flush_proxy(p, span)
+    }) else {
+        return Ok(());
     };
     vm.out.push_str(&output);
-    if !dirty.is_empty() {
-        return Err(Abort::Trap(Trap::new(
-            code_cross(),
-            format!(
-                "ghi chéo worker (W>1): biến {} (task `{ten}`)",
-                dirty.join(", ")
-            ),
-            span,
-        )));
+    match loi {
+        Some(t) => Err(Abort::Trap(t)),
+        None => Ok(()),
     }
-    if cancelled {
-        return Err(Abort::Trap(Trap::new(
-            TASK_ERR,
-            "tác vụ bị huỷ".to_string(),
-            span,
-        )));
-    }
-    Ok(())
 }
 
 /// `$await` của VM: frame mode ⇒ suspend; non-frame chờ board; flush output tại tiêu thụ.
@@ -414,7 +346,7 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
         Ok(r) => r.outcomes,
         Err(WorkerError::CrossWrite { vars, tasks }) => {
             return Err(Abort::Trap(Trap::new(
-                code_cross(),
+                vis_runtime::worker::ma_ghi_cheo(),
                 format!(
                     "ghi chéo worker (W>1): biến {} (task {:?})",
                     vars.join(", "),
@@ -437,43 +369,10 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
         let Some(p) = proxy.get_mut(&main_id) else {
             continue;
         };
-        if !p.done {
-            p.done = true;
-            p.output = o.output.clone();
-            p.dirty = o.dirty.clone();
-            p.cancelled = o.cancelled;
-            let task = Rc::clone(&p.task);
-            let ket = match o.result {
-                Ok(sv) => Ok(sv.to_value()),
-                Err(m) => Err(loi_task(&task, m)),
-            };
-            *task.kq.borrow_mut() = Some(ket);
-            task.trang_thai.set(vis_core::value::TrangThai::Xong);
-        }
-        if !p.flushed {
-            p.flushed = true;
-            let output = std::mem::take(&mut p.output);
-            let dirty = std::mem::take(&mut p.dirty);
-            let cancelled = p.cancelled;
-            let ten = p.task.ten.clone();
-            let span = p.task.span;
+        if let Some((output, loi)) = vis_runtime::worker::ap_va_flush(p, Some(o)) {
             vm.out.push_str(&output);
-            if !dirty.is_empty() {
-                return Err(Abort::Trap(Trap::new(
-                    code_cross(),
-                    format!(
-                        "ghi chéo worker (W>1): biến {} (task `{ten}`)",
-                        dirty.join(", ")
-                    ),
-                    span,
-                )));
-            }
-            if cancelled {
-                return Err(Abort::Trap(Trap::new(
-                    TASK_ERR,
-                    "tác vụ bị huỷ".to_string(),
-                    span,
-                )));
+            if let Some(t) = loi {
+                return Err(Abort::Trap(t));
             }
         }
     }

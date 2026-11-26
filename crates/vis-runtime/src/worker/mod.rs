@@ -15,8 +15,10 @@
 //! `SendValue` là dạng Sendable của dữ liệu (không có `Rc`/`RefCell`). Đây là mô hình worker
 //! thật nhưng chưa nối vào evaluator ViScript (W1 hook).
 
+mod orchestrate;
 mod pool;
 mod proto;
 
+pub use orchestrate::*;
 pub use pool::*;
 pub use proto::*;
