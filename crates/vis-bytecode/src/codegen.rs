@@ -10,6 +10,7 @@
 //! - `max_stack`: đếm **bảo thủ** trong lúc phát (upper bound ≥ độ sâu thật). **ST-21 kiểm lại
 //!   độc lập từ byte stream** — không tin giá trị này.
 
+mod bien_tu_do;
 mod builtin_value;
 mod cau;
 mod expr;

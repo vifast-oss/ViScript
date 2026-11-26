@@ -54,11 +54,15 @@ impl<'g> Emit<'g> {
                         self.f.push(Instr::MakeClosure(fi, 0), *span, 1);
                     }
                     Some(id) => {
-                        if let Some(s) = self.g.globals.get(id).copied() {
-                            self.f.push(Instr::LoadLocal(s), *span, 1);
-                        } else if let Some(s) = self.captured.get(id) {
-                            let s = *s;
+                        // **ST-319a (#206)**: closure đã chụp global thành **ô cục bộ riêng**
+                        // ⇒ ưu tiên ô cục bộ (đọc theo by-value tại điểm tạo closure); ngoài
+                        // closure, biến cấp tệp vẫn dùng ô chung như VD-242.
+                        if let Some(s) = self.captured.get(id).copied() {
                             self.f.push(Instr::LoadCaptured(s), *span, 1);
+                        } else if let Some(s) = self.f.locals.get(id).copied() {
+                            self.f.push(Instr::LoadLocal(s), *span, 1);
+                        } else if let Some(s) = self.g.globals.get(id).copied() {
+                            self.f.push(Instr::LoadLocal(s), *span, 1);
                         } else {
                             let slot = self.f.slot(*id, *span)?;
                             self.f.push(Instr::LoadLocal(slot), *span, 1);
@@ -523,6 +527,21 @@ impl<'g> Emit<'g> {
                 // snapshot **cả khung hiện tại** (VD-51) — thứ tự ô = thứ tự slot.
                 let mut pair: Vec<(u32, u16)> =
                     self.f.locals.iter().map(|(k, v)| (*k, *v)).collect();
+                // **ST-319a (#206)**: biến cấp tệp **có xuất hiện trong thân** cũng được chụp
+                // theo **giá trị tại điểm tạo closure** (SPEC §4.7) — thân closure không còn đọc
+                // ô global live. Sym đã nằm trong `f.locals` (closure ngoài đã chụp) giữ ô cục bộ
+                // đó, không chụp lại từ kho global.
+                let mut tham_chieu = std::collections::BTreeSet::new();
+                super::bien_tu_do::quet_body(body, &mut tham_chieu);
+                let mut da_co: std::collections::HashSet<u32> =
+                    pair.iter().map(|(s, _)| *s).collect();
+                for sym in tham_chieu {
+                    if let Some(s) = self.g.globals.get(&sym).copied() {
+                        if da_co.insert(sym) {
+                            pair.push((sym, s));
+                        }
+                    }
+                }
                 pair.sort_by_key(|(_, v)| *v);
                 for (_sym, slot) in &pair {
                     let s = *slot;
