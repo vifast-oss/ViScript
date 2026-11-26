@@ -81,3 +81,41 @@ không bump `PHIEN_BAN` (ngoài lane `vis-loader` — A0 quyết, xem §5).
    `DS_NHOM` chồng ST-319a) — không làm trong lát này.
 4. `var self` + push (Q6): patch đã nạp `is_var_self`; **chưa có ca test** (khó dựng `impl`+list) —
    tuỳ chọn.
+
+## 6. F1 — merge `main` + bump `PHIEN_BAN` (cache) + repro **có cache**
+
+- **Merge `main`**: `plan/st319d` merge `main` (lúc mở `07a5e2b3`; `main` tiến thêm 2 commit
+  **docs-only** `2ad4ac93` VD-302 + `e4c9f6f9` đóng `#206`/319a trong lúc làm ⇒ merge lại
+  `main e4c9f6f9`). **Sạch, 0 conflict** — merge commit cuối **`fd11558b`**; F1 nằm **trên** merge
+  commit đó. Nhánh này chỉ sửa `codegen/**` + test + journal + `cache.rs` nên
+  `cache.rs`/`STATE.md`/`diff_100k.rs` của `main` được giữ nguyên (không hunk chồng).
+  `git diff main..HEAD` cuối cùng đúng **6 tệp**: 3 codegen + 1 test + `cache.rs` + journal ST-319d.
+- **Nhãn cache**: thêm `+st319d-push-mutable-2026-11-27` vào `PHIEN_BAN`
+  (`crates/vis-loader/src/cache.rs`), kèm doc-comment ca thật (`[1]` thay vì `[1, 2]`).
+  `khoa_cache_ghim`: ghim hash mới
+  **`27a1e2c287e16db790b06b55b196ae05859188e119eda1fc36aaaab2eae8728e`**; thêm
+  `assert_ne` hash cũ **`de308705a335d3da380dc8ff57b57b50f2ffccbf281af4f1a3bc45eb2e117bba`**
+  (nền F2 ST-319a); giữ các `assert_ne` cũ. `VERSION` VBC1/ABI/định dạng **không đổi**.
+- **Repro có cache** (không `--no-cache`, cùng `XDG_CACHE_HOME`):
+  1. binary **trước 319d** (`/home/ps/ViScript/target/debug/vis`, `main 07a5e2b3`) chạy
+     `run --vm c.vis` **2 lần** ⇒ `[1]` cả 2, sinh cache `dbcda781…vbc`
+     (`/home/ps/vislogs/st319d-cache-old-poison.log`);
+  2. binary **sau 319d** (nhãn mới) chạy **cùng cache dir** ⇒ **`[1, 2]`** ngay lần đầu, sinh
+     thêm entry `a0b969c0…vbc` (`/home/ps/vislogs/st319d-cache-repro.log`) — cache cũ **không**
+     được tái dùng.
+- **Cổng lại** (trên cây cuối, mã trùng cây đã đo): `cargo test -p vis-loader` 24+5 PASS (log
+  `st319d-cache-loader.log`); `st317b` **26/26**; `./vis-dev gate --fast` **PASS 3923/3923**
+  (4 skip; clippy + R1..R10 + self-test OK); `VIS_DIFF_N=100000` **`lech=0`** (94425 chạy,
+  139,0 s, seed `3523158054`); `cargo clippy -p vis-loader -p vis-bytecode --all-targets --
+  -D warnings` **OK**.
+- sha256 log F1 (tái sinh trên cây cuối): hash
+  `7bc25d7fbd4b5df3fbf810be9c26ffddf616ba35ac162ae69314590367cca0e6`;
+  poison `9b891f44dac07d141422a1a819fcfc679dc4d89b069f60296c72afec1b882c1e`;
+  repro `ad1c0c5ec212fa2ddbaae00b7192b448d6ceddcc3b5040c49afb29c2700ae154`;
+  loader `7007ef7a18726f0bd77893cb0a170ebe3e2aa2ab8bdb4a3c7661e7bccd7dda1b`;
+  st317b `a6b90ab375a8d9d16dca833e76c5c6f6396c93aa9f03dda1688cfdb1300263ba`;
+  gate `1977959dbbe6928a263463dbb4ca0849d3068160852815da771d8152f16018c8`;
+  diff `6e383ae484589046ea15dbd7d49771582866432845131509aff63d38d8ba264c`;
+  clippy `8abdd304d22d1693ed4a34bbccd3142973536a8958503283dfdd09d002cbe0ea`.
+- ⇒ Q5 của thiết kế **đã đóng** trong lát này; Q4 (`PushBien` cho `vis-diff`) vẫn tuỳ chọn, commit
+  riêng sau merge.
