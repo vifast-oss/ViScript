@@ -588,7 +588,17 @@ impl DongBo {
     }
 
     /// Ghi biến cấp tệp vừa đổi (giá trị đã nằm trong globals) và đánh dấu dirty.
+    ///
+    /// **ST-319c2 (#206)**: trong thân closure bắt biến **theo giá trị** (SPEC §4.7) biến cấp
+    /// tệp chỉ là bản snapshot của `env` khung gọi ⇒ lệnh ghi là **cục bộ**, không đụng
+    /// `globals`, không đánh dirty, không đồng bộ sang frame khác. Khung **hàm tên** (kể cả
+    /// hàm được closure gọi) vẫn xuyên như `#203` nhờ `by_value = false`.
     fn ghi(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32, id: u32) {
+        // Chỉ khung **đang thực thi** mới quyết định: hàm tên được closure gọi vẫn là khung
+        // hàm tên (ghi xuyên như F2/F3, `#203`), còn thân closure là ô snapshot cục bộ.
+        if frame.cur().by_value {
+            return;
+        }
         if !ghi_bien_cap_tep(it, frame, sym) {
             return;
         }
@@ -613,9 +623,19 @@ impl DongBo {
     }
 }
 
-/// Chép `cap` (sym → giá trị mới) vào **mọi** khung gọi của `frame` (bỏ qua env chính là globals).
+/// Chép `cap` (sym → giá trị mới) vào các khung gọi **không cô lập** của `frame` (bỏ qua env
+/// chính là globals).
+///
+/// **ST-319c2 (#206)**: khung closure bắt biến theo giá trị và mọi khung lồng bên trong nó
+/// cũng sống trên snapshot đó ⇒ **không** nạp ghi cấp tệp của frame khác vào. Chỉ các khung
+/// phía ngoài closure (frame chính/hàm tên/task) mới nhận đồng bộ F2/F3.
 fn nap_vao_env(frame: &mut IFrame<'_>, globals: &Env, cap: &[(u32, Value)]) {
-    let envs: Vec<Env> = frame.calls.iter().map(|cf| cf.env.clone()).collect();
+    let envs: Vec<Env> = match frame.calls.iter().position(|cf| cf.by_value) {
+        // Có closure đang treo: chỉ đồng bộ các khung **phía ngoài** nó.
+        Some(i) => frame.calls[..i].iter().map(|cf| cf.env.clone()).collect(),
+        // Không có closure: giữ nguyên F2/F3 — mọi khung gọi đều nhận.
+        None => frame.calls.iter().map(|cf| cf.env.clone()).collect(),
+    };
     for env in envs {
         if Rc::ptr_eq(&env, globals) {
             continue;

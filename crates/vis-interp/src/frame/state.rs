@@ -41,6 +41,11 @@ pub(super) struct CallFrame<'a> {
     /// **VD-258**: env đích để gộp thay đổi của closure sau khi khung xong (mỗi lần gọi
     /// có env riêng ⇒ tham số không đè lên lần gọi đang treo khác).
     pub(super) merge: Option<Env>,
+    /// **ST-319c2 (#206)** — khung gọi closure **bắt biến theo giá trị** (SPEC §4.7):
+    /// biến cấp tệp trong `env` là **bản snapshot**, không phải ô chung với `globals` ⇒
+    /// lệnh ghi trong thân closure **không** được xuyên ra ngoài. Khung hàm tên giữ `false`
+    /// (ghi `var` cấp tệp phải xuyên như F2/F3 — `#203`).
+    pub(super) by_value: bool,
 }
 
 /// **Frame thật của interp trên heap** (đối trọng với `Th` của VM).
@@ -69,6 +74,7 @@ impl<'a> IFrame<'a> {
                 loops: Vec::new(),
                 restore: Vec::new(),
                 merge: None,
+                by_value: false,
             }],
             vals: Vec::new(),
             mutable,
@@ -87,6 +93,7 @@ impl<'a> IFrame<'a> {
                 loops: Vec::new(),
                 restore: Vec::new(),
                 merge: None,
+                by_value: false,
             }],
             vals: Vec::new(),
             mutable,

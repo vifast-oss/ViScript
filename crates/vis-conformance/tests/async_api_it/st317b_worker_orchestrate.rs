@@ -715,3 +715,71 @@ fn w18_frame_w1_main_ghi_nhieu_var_roi_await() {
     assert_eq!(v.exit, 0);
     so_khop(&i, &v, "main ghi nhiều var rồi await");
 }
+
+// ---------------------------------------------------------------------------
+// **ST-319c2 (#206)** — closure bắt biến cấp tệp **theo giá trị** (SPEC §4.7) trên đường
+// **frame/async**: lệnh ghi trong thân closure chỉ đổi ô snapshot của closure, **không**
+// xuyên ra `globals`. Trước bản vá, `DongBo::ghi` đồng bộ mọi lệnh ghi global kể cả trong
+// closure ⇒ frame interp in `5\n5` còn frame VM in `5\n0`.
+// ---------------------------------------------------------------------------
+
+/// Closure tạo **trước** task, ghi global **sau** `await`: frame interp ↔ VM đều `5\n0`
+/// (closure đọc bản của nó, global ngoài không đổi).
+const CLOSURE_GHI_GLOBAL_FRAME: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn main():
+    let f = fn() -> int:
+        g = 5
+        g
+    let t = spawn dummy()
+    await t
+    print(f())
+    print(g)
+"#;
+
+#[test]
+fn w19_frame_w1_closure_ghi_global_khong_xuyen() {
+    let a = anh(CLOSURE_GHI_GLOBAL_FRAME);
+    let i = frame_1(CLOSURE_GHI_GLOBAL_FRAME, &a);
+    let v = frame_vm_1(CLOSURE_GHI_GLOBAL_FRAME, &a);
+    assert_eq!(i.stdout, "5\n0\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n0\n", "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure ghi global trong frame W=1");
+}
+
+/// Closure **đọc lại sau ghi** qua nhiều lần gọi; task `async` ghi cùng global ở giữa:
+/// closure thấy snapshot của nó tăng `5 → 10`, còn global ngoài giữ giá trị task ghi (`3`).
+const CLOSURE_DOC_SAU_GHI_FRAME: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn main():
+    let f = fn() -> int:
+        g = g + 5
+        print(g)
+        g
+    let t = spawn dat()
+    await t
+    print(f())
+    print(f())
+    print(g)
+"#;
+
+#[test]
+fn w20_frame_w1_closure_doc_sau_ghi_task_ghi_global() {
+    let a = anh(CLOSURE_DOC_SAU_GHI_FRAME);
+    let i = frame_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
+    let v = frame_vm_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
+    assert_eq!(i.stdout, "5\n5\n10\n10\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure đọc sau ghi + task ghi global");
+}
