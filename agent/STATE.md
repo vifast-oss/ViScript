@@ -11,7 +11,7 @@
 3. [`reports/`](reports/) — báo cáo vòng mới nhất đã chốt (`R36`, `v0.5.0`) và khung Phase C (`R37`, `v0.6.0`); [`QUEUE.md`](QUEUE.md) — hàng việc.
 4. [`DECISIONS.md`](DECISIONS.md) / [`DECISIONS-INDEX.md`](DECISIONS-INDEX.md) — quyết định và chỉ mục.
 
-> **Chế độ hiện hành (2026-11-27, `VD-289`/`VD-299`)**: **Phát triển Kiến trúc Tối ưu** (tiếp tục tạm dừng vô thời hạn kế hoạch phát hành `v0.6.0`/`v1.0.0-rc1` và soak 24h; `ST-309` = `BLOCKED`). Không soak 4h/24h, không fuzz 8h, không 3× full lặp, không tag mới.
+> **Chế độ hiện hành (2026-11-27, `VD-289`/`VD-301`)**: **Phát triển Kiến trúc Tối ưu** (tiếp tục tạm dừng vô thời hạn kế hoạch phát hành `v0.6.0`/`v1.0.0-rc1` và soak 24h; `ST-309` = `BLOCKED`). Không soak 4h/24h, không fuzz 8h, không 3× full lặp, không tag mới.
 
 ## 1. Sóng 5, 6, 7 — `DONE`
 
@@ -25,17 +25,24 @@
 > - **R1 mềm (`ST-318c/d/e/f/g`)**: tách 10 tệp > 1.000 dòng của `vis-types`, `vis-hir`, `vis-diag`, `vis-bytecode`, `vis-cli`, `vis-syntax`, `vis-loader`, `vis-runtime` → **0 tệp > 1.000** (max **1000**, `vis-cli/src/cli/run_cmd.rs`; `frame.rs` 159). **`ST-318i`**: 4 rustdoc link `vis-hir` sạch (`cargo doc -D warnings` exit 0). **`ST-318b`**: `#202` đóng, ca `host_parity::net_http` **20/20**.
 > - **Cổng cuối `main` `2cda3a68`**: `GATE_EXIT=0` — **3912/3912 (4 skip)**; `DIFF_EXIT=0` 100k `lech=0` (84,9 s); `CLIPPY_EXIT=0`; `RULES_EXIT=0`; **R8 39/40**, 0 `unsafe`; 0 tệp > 1.500.
 
-## 2. Việc còn lại — `ST-316c` (W4) `BLOCKED`
+## 2. Trục hiện hành — Sóng 8 (b DONE, a/c REVIEW, c2/d đang chạy) + `ST-316c` `BLOCKED`
 
-- **Đã xong trên `ps`**: `vis-targets --wasm` + WASI **395×2** (368 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`29a7b254` (log `/home/ps/vislogs/st316c-wasm-20261126T1613Z.log`).
-- **Chờ máy**: chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**) cho `mps` @`311d2288` + `psvn` @`fe3446d2`; còn `cargo clippy --workspace --all-targets -- -D warnings` + `bin/vis-gate-macos --full` và đối chuẩn `bin/vis-bench` 3-OS. **Không** tuyên bố 3-OS khi chưa có log `mps`.
+- **Sóng 8 — “Đóng nợ parity/rustdoc hậu Sóng 7” (`VD-300`/`VD-301`, `main` @ `40925ea6`)**: `ST-319b` `DONE`; `ST-319c` `REVIEW (chẩn đoán)`; `ST-319a` `REVIEW` (PASS có điều kiện, vá cache); `ST-319c2`/`ST-319d` đang chạy; lane không xung đột tệp:
+  - **`ST-319a` (W1, `#206`, `REVIEW` — audit PASS có điều kiện `7f209dfb`, vá cache; `plan/st319a` @ `ae0089c0`)** — closure cấp tệp: giữ **by-value** (`SPEC` §4.7), **sửa VM** (không sửa interp/SPEC); lane `vis-bytecode/codegen/**`, `vis-vm/vm/**` (trừ `worker.rs`), test conformance; KPI repro **`0/0`** hai engine + closure ghi global parity + `vis-diff 100k lech=0`; có thể trả branch chưa merge.
+  - **`ST-319b` (W2, `#207` `DONE`)** — merge `eb7f5830`, PASS `4dff8b31`; rustdoc `vis-interp` link `[`Interp`]` (`frame.rs:5`); chỉ doc comment; KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-interp --no-deps` exit 0.
+  - **`ST-319c` (W3, `REVIEW (chẩn đoán)` — journal `b1249172`, merge `5408290a`)** — **`#208` vẫn `mở`**: root cause **`vis-bytecode/src/codegen/**` thiếu tập `mutable`** (push ở biểu thức không phát `Assign`; ngoài lane frame/worker); chưa sửa mã.
+  - **`ST-319c2` (W3b, `#209`, đang chạy `plan/st319c2` @ `ef0f213d`, nền `ST-319a`)** — frame/async closure ghi global (interp `5\n5` vs VM `5\n0`); lane `vis-interp/src/frame/**`; KPI parity W=1 + `vis-diff 100k lech=0`; chưa commit riêng.
+  - **`ST-319d` (W4, `#208`, đang chạy `plan/st319d` @ `7f209dfb`)** — codegen tập `mutable` theo thiết kế `/home/ps/vislogs/design-208-codegen.md`: xoá đặc cách `push` (`cau.rs`), thêm `Gen.mutables` + writeback `CallMethod; Assign; LoadLocal` (`expr.rs`), **không đổi VBC1**; lane `vis-bytecode/codegen/**`; test 6 ca `st317b_worker_orchestrate.rs`; gate + diff 100k + clippy.
+
+- **Đã xong trên `ps`**: `vis-targets --wasm` + WASI **398×2** (371 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`d97773de` (log `/home/ps/vislogs/st316c-wasm-final-20261126T1958Z.log:125–127`, sha256 `c7d90f60…da82957`).
+- **Chờ máy**: chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**) cho `mps` @`311d2288` + `psvn` @`fe3446d2`; còn `cargo clippy --workspace --all-targets -- -D warnings` + `bin/vis-gate-macos --full` và đối chuẩn `bin/vis-bench` 3-OS. **Không** tuyên bố 3-OS khi chưa có log `mps`. **Checklist `ps`**: verify WASI trên `main` cuối **`d97773de`** (không phải task DONE).
 
 ## 3. Nợ và quyết định
 
 - **Đóng trong Sóng 7**: **`#202` đóng ở `ST-318b`** (merge `fb725479`, PASS `001a9ffb`, 20/20); **`#203`/`#204` đóng ở `ST-318a`** (audit F3 PASS `5e79bf54`, merge `2cda3a68`).
-- **Nợ mới (`VD-299`, `mở`, VS3/correctness-test)**: **`#206`** closure interp snapshot vs VM global live (repro `0` vs `1`; `SPEC` §4.7 by-value ⇒ interp đúng, VM lệch; `vis-diff` không sinh mẫu); **`#207`** rustdoc `vis-interp` link `[Interp]` pre-existing; **`#208`** `xs.push` trong task frame VM W=1 chưa thấy writeback (interp `2` vs VM `1`, cần tái lập độc lập). **`#205` không cấp** (gap có chủ đích, không có nguồn).
-- Sổ nợ hiện tại: **208 = 85 mở + 104 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh; dải 1..208, thiếu `#205`).
-- Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd299.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd299.md); trước đó `VD-298` (đợt 3), `VD-297` (đợt 2), `VD-296` (đợt 1), `VD-295` (đóng Sóng 6), `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
+- **Nợ Sóng 8 (`VD-300`)**: **`#207` đã `đóng ở ST-319b`** (merge `eb7f5830`, PASS `4dff8b31`); **`#206`** đang xử lý (`ST-319a`, giữ by-value — sửa VM); **`#208`** vẫn `mở` — root cause **`vis-bytecode/src/codegen/**` thiếu tập `mutable`** (đã tái lập 10 ca, journal `st319c-208-codegen.md`, `b1249172`), cần lane codegen; **`#209`** frame/async closure ghi global (`5\n5` vs `5\n0`, đang sửa `ST-319c2`); **`#210`** closure gọi hàm tên đọc/ghi global (`1,0`/`5,0` vs `0,1`/`5,5`, VS3/correctness — A0 chốt ngữ nghĩa). **`#205` không cấp** (gap có chủ đích, không có nguồn).
+- Sổ nợ hiện tại: **210 = 86 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh; dải 1..210, thiếu `#205`).
+- Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd300.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd300.md); trước đó `VD-299` (chốt Sóng 7), `VD-298` (đợt 3), `VD-297` (đợt 2), `VD-296` (đợt 1), `VD-295` (đóng Sóng 6), `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
 
 ## 4. Nền lịch sử
 

@@ -4,7 +4,7 @@
 - **Ngày**: 2026-11-27 (giờ thấp điểm) · **Vai**: Builder (Agent 2) · **Nhánh**: `plan/st319a`
 - **Nền**: `main` @ `d97773de` (`VD-299`, Sóng 7 `DONE`)
 - **Worktree**: `/home/ps/viswt/st319a` — không chạm repo chính.
-- **Trạng thái**: **WIP checkpoint** — phần mã + test đã xanh trên cổng nhanh; chưa tuyên bố `DONE`.
+- **Trạng thái**: **F2** — đã vá cache version + bổ sung test bền/lồng; chưa tuyên bố `DONE`.
 
 ## 0. TL;DR
 
@@ -46,3 +46,60 @@ closure đọc/ghi **bản snapshot**; **không đổi VBC1**, không đổi `vi
   **thuộc lane 319c / bị cấm ở 319a** ⇒ không sửa; đề xuất A0 giao 319c hoặc mở nợ mới.
 - Khi hoàn tất: chạy lại `gate --fast` + `vis-diff 100k` sau journal/commit cuối, rồi báo A0
   nghiệm thu (chưa tự tuyên bố `DONE`).
+
+## 4. F2 — audit `7f209dfb` (PASS có điều kiện)
+
+### 4.1 Cache version (`crates/vis-loader/src/cache.rs`)
+
+Nhãn mới cuối `PHIEN_BAN`: **`+st319a-closure-cap-tep-2026-11-27`** (giữ nguyên `CARGO_PKG_VERSION`,
+`VERSION` VBC1/ABI/định dạng). Ghim lại `cache::tests::khoa_cache_ghim`:
+`de308705a335d3da380dc8ff57b57b50f2ffccbf281af4f1a3bc45eb2e117bba`, kèm `assert_ne` khoá cũ
+`c5c4d5ac…` (“cache sinh trước closure-capture-by-value không được tái dùng”).
+
+**Repro có cache** (`/tmp/st319a-repro.vis`, `vis run --vm`, `XDG_CACHE_HOME` riêng):
+
+| Bước | Binary | Cache dir | stdout | `.vbc` |
+|---|---|---|---|---|
+| Trước | pre-fix (`ae0089c0^`) | rỗng | `0,1` | 1 |
+| Trước (tái dùng) | post-fix codegen, **PHIEN_BAN cũ** | còn `.vbc` pre-fix | **`0,1`** (lỗi audit) | 1 |
+| Sau | post-fix, **PHIEN_BAN mới** | vẫn dir trên | **`0,0`** | 2 |
+| Sau (cache hit) | post-fix | dir trên | **`0,0`** | 2 |
+
+### 4.2 Test bền / lambda lồng ghi (audit bắt gap)
+
+- `ghi_global_qua_closure_ben_qua_nhieu_lan_goi`: `g = g + 1; g`, gọi 2 lần, `print(g)` ⇒
+  **`1\n2\n0\n`** (ca `g = 5` cũ idempotent không chứng minh state bền).
+- `lambda_long_ghi_global`: `ngoai` tạo ở `g=0`, sau `g=7`, inner `g = g + 1; g` gọi 2 lần +
+  `print(g)` ⇒ **`1\n2\n7\n`**.
+- Generator `vis-vm/tests/diff_100k.rs` thêm mẫu thứ 4 `g = g + 1` (bắt lớp reset-env).
+- `st319a_closure_cap_tep`: **5/5** PASS (mỗi ca 4 đường interp/VM default + W=1).
+
+### 4.3 Nợ mới (không sửa — pre-existing, ngoài lane 319a)
+
+**Closure gọi hàm cấp tệp đọc/ghi global** vẫn lệch (interp dùng env **động** của closure,
+VM đọc/ghi global **live**):
+
+```vis
+var g = 0
+fn doc() -> int: g
+fn main():
+    let f = fn() -> int: doc()
+    g = 9
+    print(f())          # interp 0, VM 9
+```
+
+```vis
+var g = 0
+fn ghi() -> int:
+    g = 5
+    g
+fn main():
+    let f = fn() -> int: ghi()
+    print(f())          # interp 5, VM 5
+    print(g)            # interp 0, VM 5
+```
+
+Không do ST-319a (có trước, `vis-diff` không sinh mẫu). Đề xuất A0 cấp **nợ mới** lane
+`vis-interp` (cùng họ `#206`), hướng: chốt SPEC “hàm gọi trong closure thấy global live hay
+snapshot”, rồi sửa một phía + ca parity.
+

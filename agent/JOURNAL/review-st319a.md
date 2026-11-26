@@ -186,3 +186,69 @@ SPEC §4.7, hàm cấp tệp không phải closure nên VM mới đúng. Đề n
   `nested_w.vis`, `mix.vis`, `ret_fn.vis`, `cau.vis`, `frame_ghi.vis`, `indirect_{r,w}.vis`,
   `cache_repro.vis`, dump `before/after.dump`, `cap_{before,after}.dump`).
 - Không sửa mã sản phẩm; worktree sạch trước commit review này. Đĩa còn **15 GB** (> ngưỡng 6 GB).
+
+---
+
+# Addendum F2 — commit `5d1d12e8` (vá điều kiện F1)
+
+- **Ngày**: 2026-11-27 (giờ thấp điểm) · **Vai**: Gatekeeper (audit addendum, không sửa mã)
+- **Phạm vi**: `7f209dfb..5d1d12e8` — 1 commit, 4 tệp, **+117/−4**: `vis-loader/src/cache.rs` (14),
+  `st319a_closure_cap_tep.rs` (+36), `vis-vm/tests/diff_100k.rs` (12), journal Builder (59).
+  **Không** chạm `crates/vis-bytecode/**`, `crates/vis-vm/src/**`, `crates/vis-interp/**`,
+  `frame/worker.rs`; `agent/API-VBC1.txt` không đổi; `STATE.md` không đổi (WIP).
+- **Kết luận addendum**: **PASS** — điều kiện F1 (cache) đã đóng đúng quy ước; F2 (`#209`) và F3
+  (interp env) vẫn ngoài lane, không đổi.
+
+## A1. Cache `PHIEN_BAN` — đã vá, tái lập bằng cache thật
+
+- Nhãn cuối `PHIEN_BAN`: **`+st319a-closure-cap-tep-2026-11-27`**; `CARGO_PKG_VERSION`/`VERSION`
+  VBC1/ABI/định dạng giữ nguyên.
+- `cache::tests::khoa_cache_ghim`: ghim khoá mới `de308705a335d3da380dc8ff57b57b50f2ffccbf281af4f1a3bc45eb2e117bba`
+  + `assert_ne!` khoá cũ `c5c4d5ac27f3e67f0d0d7c6f5fb2afea1fa1e80ba4332594c949d49898755b66`
+  (“cache sinh trước closure-capture-by-value không được tái dùng”).
+- `cargo test -p vis-loader`: **24 unit + 5 integration PASS** (0 fail), gồm `khoa_cache_ghim`.
+- **Repro cache thật** (không `--no-cache`; `XDG_CACHE_HOME` riêng sạch, tệp nguồn mới):
+
+| Bước | Binary | `.vbc` sau bước | stdout |
+|---|---|---|---|
+| ghi cache | pre-fix (`main` cũ) | **1** | **`0 / 1`** |
+| đọc cache dir cũ | bản vá (PHIEN_BAN mới) | **2** (miss → biên dịch lại) | **`0 / 0`** |
+| chạy lần 2 | bản vá | 2 (hit) | `0 / 0` |
+
+⇒ Cache pre-fix **không** còn tái dùng; bản vá có hiệu lực ngay cả khi máy đã có cache cũ.
+
+## A2. Test bền / lambda lồng ghi — 5/5
+
+- `st319a_closure_cap_tep`: **5/5 PASS**, không `#[ignore]` (409 skipped khi filter).
+- Ca mới `ghi_global_qua_closure_ben_qua_nhieu_lan_goi`: `g=g+1` gọi 2 lần + `print(g)` ⇒
+  **`1 / 2 / 0`** cả interp lẫn VM (độc lập qua CLI, cả `--stdin`).
+- Ca mới `lambda_long_ghi_global`: `ngoai` tạo ở `g=0`, `g=7` sau đó, inner `g=g+1` gọi 2 lần ⇒
+  **`1 / 2 / 7`** cả hai engine.
+- Generator `diff_100k`: `duoi(4)` + mẫu thứ 4 `g = g + 1` (bắt lớp reset env / state không bền).
+
+## A3. Cổng lại
+
+| Cổng | Kết quả | Log (sha256) |
+|---|---|---|
+| `./vis-dev gate --fast` (TMPDIR đĩa) | **PASS 3917/3917** (4 skip), fmt/clippy/R1..R10 OK | `review-st319a-f2-gate.log` — `730d0f43401468d2132c547cb1fcb30e7fde1d6e4f5b4d49ab42cfa14279ef00` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`tong=100000 chay=94425 lech=0`** (150,0 s do 319c2 chạy diff song song) | `review-st319a-f2-diff100k.log` — `06d637434dcacedfd0fd5bbe6fb9bc428bbe3d40201954742925e1fc05af45ec` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit 0 | `review-st319a-f2-clippy.log` — `1bae07428b61b6aabcf456a4a0751300b7d01c0ebe87cc5d72f66cb5265121fc` |
+| `cargo test -p vis-loader` | 24 + 5 PASS | `review-st319a-f2-loader.log` — `d08cb24570d112a4fca765975244b6d93fc49620990aba9e60f77c02ef00fc06` |
+| Repro cache | `0/1` → `0/0`, `.vbc` 1→2 | `review-st319a-f2-cache.log` — `8b0cbfd0f157e9632c921c654b7966b458f4ea44b5373d82738969189eb83355` |
+
+`3917 = 3915 + 2` ca mới — khớp.
+
+## A4. Hợp nhất
+
+- `git merge-tree --write-tree main HEAD` (main `2e243561`, mới hơn `5408290a`) → **exit 0**,
+  tree `7ba3ecc0e8070d1521bab140b7eb5ff1a11e4504`, **0 xung đột**.
+- Hợp nhất kéo **13 tệp** từ `main` (`ACTIVE/DECISIONS*/QUEUE/ROADMAP/SO-NO/STATE`, 3 journal,
+  `bin/vis-targets`, `vis-interp/src/frame.rs` docs-only); `STATE.md` merge tự động, không tệp nào
+  trùng tệp nhánh sửa.
+
+## A5. Còn lại cho A0
+
+1. `#206` **chưa đóng** chỉ với 319a: chờ `#209`/`ST-319c2` (frame/async interp `5,5` vs VM `5,0`).
+2. F3 (closure gọi hàm cấp tệp đọc/ghi global: interp `0`/`5,0` vs VM `9`/`5,5`) vẫn cần nợ mới
+   lane `vis-interp`.
+3. F1 đã đóng — có thể merge `plan/st319a` khi A0 chốt cách đóng `#206`.
