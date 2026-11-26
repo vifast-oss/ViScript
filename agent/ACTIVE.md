@@ -10,7 +10,7 @@
   - **`ST-317b` (W2)** — **`VD-295`** (`main` @ `4e03a19c`): tách `vis-pkg/pkg.rs` 1151→max 377, `rt/sched.rs` 1189→max 279, `tyck/pat.rs` 1140→max 321; `vis-lsp/lib.rs` 1056→**236**; `value/mod.rs` 1415→**748** (+`lit` 403, `ten` 291); `sqlite/mod.rs` 1132→**282** (+6 tệp); **worker orchestration một nguồn** `vis-runtime/src/worker/orchestrate.rs` **135** dòng (`ap_dung_outcome`/`flush_proxy`/`pump`/`ap_va_flush`, `codes::CROSS`), `exec.rs` 461→368, `vm/worker.rs` 586→485, **10 test W1..W10**; dedup `opt_depth_ty`/`loi_arity`. Audit `e1fe1733` + `ef3e6928` + `4e03a19c` **PASS**; gate **3906/3906 (5 ignored)** ≡ 3901/3901+4 skip, diff 100k `lech=0` (56,5 s), clippy 0 warning.
   - **`ST-317c` (W3)** — `VD-294`: StdId registry **167** hàm một nguồn, R10 `API-CODES.txt` ↔ `SPEC.md` `#75`, `AnalysisHost` `#81`/`#66`; facility gate **3885/3885**, `lsp_it` **158/158**, `API-STD.txt` không đổi.
 - **Cổng cuối `main` `ee8f252d`** (log `/home/ps/vislogs/final-main-ee8f252d.log`, sha256 `904d45a6…5569f`): `GATE_EXIT=0` — **3934/3934 passed, 4 skipped**; `DIFF_EXIT=0` (100.000, `lech=0`, 79,7 s); `CLIPPY_EXIT=0`; `RULES_EXIT=0`; **R8 39/40**; R1 **0 tệp > 1.000**; `API-VBC1.txt` rỗng.
-- **HEAD: `ee8f252d`** (merge `ST-319d`/`ST-319e`; docs `VD-303`): **WASI 398×2 (371+27)** @`d97773de`; Sóng 7 **9/9 `DONE`**; Sóng 8: `ST-319b` `DONE`, `ST-319c` `DONE (chẩn đoán)`, `ST-319a` `DONE`, `ST-319c2`/`ST-319d`/`ST-319e` đang chạy.
+- **HEAD: code `ee8f252d` (đóng băng), docs `d1254b05`; chain armed 01:00 UTC** (Sóng 8 đóng): **WASI 398×2 (371+27)** @`d97773de`; Sóng 7 **9/9 `DONE`**; Sóng 8: `ST-319b` `DONE`, `ST-319c` `DONE (chẩn đoán)`, `ST-319a` `DONE`, `ST-319c2`/`ST-319d`/`ST-319e` đang chạy.
 - **SÓNG 7 — ĐÓNG 9/9 `DONE` (`VD-296`..`VD-299`, main `2cda3a68`): đóng nợ correctness & R1 mềm**:
   - **Trạng thái**: **cả 9 lát `DONE`** — `ST-318a` (audit F3 PASS `5e79bf54`), `ST-318b/c/d/e/f/g/i` (audit PASS từng lát), `ST-318h` (audit PASS `03c1dc1f`); merge cuối `2cda3a68`.
   - **`ST-318a` (W1, `DONE`)** — đóng **`#203`** (W2 frame W=1: interp stdout `0` vs VM `1`, exit 0) + **`#204`** (non-frame `run_workers_parallel*`/`_vm*` W≥2 nuốt lỗi task) bằng surface **`VS0506`** + parity interp↔VM; lane `vis-interp/{frame/worker.rs,rt/exec.rs}`, `vis-vm/vm/worker.rs`, `vis-runtime/worker/orchestrate.rs`; test trong `tests/{frame_it,worker_api_it,async_api_it}/**` (0 tệp cấp 1 mới).
@@ -29,6 +29,12 @@
   - **`ST-319d` (W4, `DONE` — merge `ee8f252d`, PASS `64e84b25`)** — **`#208`** theo thiết kế `/home/ps/vislogs/design-208-codegen.md`: xoá đặc cách `push` (`cau.rs`), thêm `Gen.mutables` + writeback `CallMethod; Assign; LoadLocal` (`expr.rs`), **không đổi VBC1**; lane `vis-bytecode/src/codegen/**`; test **6 ca** trong `st317b_worker_orchestrate.rs`; cổng gate + diff 100k + clippy.
   - **`ST-319e` (W5, `DONE` — merge `a9c02abb`, PASS `4baa4d2d`)** — **`#210`** closure gọi **hàm tên** cấp tệp: **interp non-frame** thừa hưởng env snapshot closure, phải dùng **env module**; **VM/frame đã đúng**; lane `vis-interp/src/interp/**`; test **A/B/C2/E/P5** + diff generator; cổng gate + diff 100k + clippy.
   - **Trạng thái**: `ST-319b`/`ST-319a`/`ST-319c2`/`ST-319d`/`ST-319e` `DONE`; `ST-319c` `DONE (chẩn đoán)`. **KPI**: `#206`/`#207`/`#208`/`#209`/`#210` **đóng**; R1 **0 tệp > 1.000**; R8 **39/40**.
+
+
+- **SÓNG 9 NHỎ — ĐANG CHẠY (`VD-304`): `ST-320a` + `ST-320b`**:
+  - **`ST-320a` (W1)** — `var self` + `push`: test **4 đường** (interp/VM × W=1/non-frame), **chỉ sửa codegen nếu đỏ**; lane `vis-bytecode/src/codegen/**`; nhánh `plan/st320a` @ `d1254b05`.
+  - **`ST-320b` (W2)** — frame env module cho **hàm tên** nhận **giá trị** trong closure (P2-2 `319c2`, repro `1,1,1` vs `0,0,1`); lane `vis-interp/src/frame/**`; test **w25**; nhánh `plan/st320b` @ `d1254b05`.
+  - **Bất biến**: main code **`ee8f252d`** đóng băng trong lúc chain; `ST-316c`/`ST-309` `BLOCKED`; R8 **39/40**; không sửa chain.
 
 - **`ST-316c` (W4, Sóng 5) — giữ `BLOCKED`**: phần `ps` **đã xong** — WASI **398×2** (371 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`d97773de`; chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**). `mps` @`311d2288`, `psvn` @`fe3446d2` vẫn lệch — **không** tuyên bố 3-OS khi chưa có log `mps`. **Checklist `ps`**: WASI đo thật @`d97773de`, hiện `main` `2ad4ac93` — chạy lại verify khi có slot (không phải task DONE).
 - **Nợ Sóng 8**: **`#202` đóng ở `ST-318b`**; **`#203`/`#204` đóng ở `ST-318a`**; **`#207` đóng ở `ST-319b`**; **`#206` đóng ở `ST-319a`**; **`#208` đóng ở `ST-319d`** (merge `ee8f252d`, PASS `64e84b25`); **`#209` đóng ở `ST-319c2`** (merge `1ec1105a`, PASS `afed0250`); **`#210` đóng ở `ST-319e`** (merge `a9c02abb`, PASS `4baa4d2d`). Sổ nợ: **210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (gap `#205` không cấp).
@@ -60,6 +66,8 @@
 | **8** | **`ST-319c2`** | **W3b** | **`DONE`** | `VD-300`: merge `1ec1105a`, PASS `afed0250`; **`#209` đóng**; frame closure by-value, P2-1 `nap_vao_env` `0caa9184`; test w19–w24, 26/26, gate 3921, w24 `3\n3` |
 | **8** | **`ST-319d`** | **W4** | **`DONE`** | `VD-301`: **`#208`** codegen tập `mutable` + writeback `push` theo design (audit); xoá đặc cách `cau.rs`, thêm `Gen.mutables` + `CallMethod; Assign; LoadLocal` (`expr.rs`), **không đổi VBC1**;  test 6 ca `st317b_worker_orchestrate.rs`; gate + diff 100k + clippy |
 | **8** | **`ST-319e`** | **W5** | **`DONE`** | `VD-302`: **`#210`** closure gọi hàm tên — interp non-frame dùng env module (VM/frame đã đúng);  lane `vis-interp/src/interp/**`; test A/B/C2/E/P5 + diff generator (audit); gate + diff 100k + clippy |
+| **9** | **`ST-320a`** | **W1** | **`READY`** | `VD-304`: `var self` + `push`, test 4 đường, chỉ sửa codegen nếu đỏ; lane `vis-bytecode/codegen/**`; nhánh `plan/st320a` @ `d1254b05` |
+| **9** | **`ST-320b`** | **W2** | **`READY`** | `VD-304`: frame env module cho hàm tên qua giá trị trong closure (P2-2, repro `1,1,1` vs `0,0,1`); test w25; nhánh `plan/st320b` @ `d1254b05` |
 
 ## 3. Cổng Kiểm tra Gọn (Chế độ Phát triển — KHÔNG soak/fuzz nặng)
 

@@ -4249,3 +4249,13 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 4. **Sổ nợ §8**: **210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (đếm thật 210 hàng; `#206`/`#207`/`#208`/`#209`/`#210` đóng).
 5. **Cổng cuối `ee8f252d`**: gate **3934/3934** (4 skip), diff 100k `lech=0` 79,7 s, clippy/rules exit 0; R1 **0 tệp > 1.000** (`frame.rs` 159; max 1000 `run_cmd.rs`); R8 **39/40**, 0 `unsafe`; `API-VBC1.txt` không đổi.
 6. **Đồng bộ (docs-only)**: `QUEUE` (`319c` DONE-chẩn đoán, `319d`/`319e` DONE; chain sha `e239c317…`), `ACTIVE`/`STATE`/`ROADMAP` (HEAD `ee8f252d`, gate 3934, Sóng 8 DONE), `SO-NO` (`#208`/`#210` đóng), `DECISIONS-INDEX`. **Không** sửa mã, không đụng worktree/nhánh; `ST-316c`/`ST-309` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
+
+### VD-304 · Mở Sóng 9 nhỏ — `ST-320a` (`var self`+`push`) & `ST-320b` (frame env module) — A0, 2026-11-27
+
+> **Căn cứ**: `main` = **`d1254b05`** (docs R38), **code đóng băng `ee8f252d`**, `origin` sync; chain 0-LLM `e239c317…` **armed 01:00 UTC**; `ST-319c2` P2-2 (frame env module) và P3 `var self` push còn lại. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd304.md`.
+
+1. **Mở `ST-320a` (W1, `READY`)**: `var self` + `push` — test **4 đường** (interp/VM × W=1/non-frame); **chỉ sửa codegen nếu đỏ**; lane `crates/vis-bytecode/src/codegen/**`; nhánh `plan/st320a` @ `d1254b05`; cổng gate + diff 100k nếu chạm runtime.
+2. **Mở `ST-320b` (W2, `READY`)**: frame env module cho **hàm tên** nhận **giá trị** trong closure (P2-2 `319c2`; repro `1,1,1` vs `0,0,1`); lane `crates/vis-interp/src/frame/**`; test **w25** trong `st317b_worker_orchestrate`; nhánh `plan/st320b` @ `d1254b05`; cổng gate + diff.
+3. **Chain/đóng băng**: chain `e239c317…` armed **01:00 UTC**; **main code giữ `ee8f252d`** (không sửa mã trong lúc chain), docs được tiến; **không** sửa chain.
+4. **Bất biến**: `ST-316c`/`ST-309` vẫn `BLOCKED`; `#200/#201` vẫn `mở`; R8 **39/40**; 0 `unsafe`; không tag.
+5. **Đồng bộ (docs-only)**: `QUEUE` 2 hàng `ST-320a/b` `READY`; `ACTIVE`/`STATE`/`ROADMAP` Sóng 9 nhỏ + chain armed; `DECISIONS-INDEX`. **Không** sửa mã, không đụng worktree `st320a/b`.
