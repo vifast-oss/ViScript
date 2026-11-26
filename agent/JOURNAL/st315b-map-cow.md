@@ -137,3 +137,20 @@ Máy `ps` có tải song song từ luồng khác, nên đo **A/B xen kẽ** vớ
 - `SendValue::Map` vẫn là `Vec` snapshot — **không** đổi ABI worker; `ST-316a` (CoW cho
   `Value::List`) có thể dùng lại khuôn `VisMap`/`MapIndex`.
 - Không còn hạng mục KPI nào treo cho `ST-315b`.
+
+## 6. Đo độc lập sau merge (main `b61a03f7`, máy êm load 1,66, n=15)
+
+Binary `target/release/vis` sha256 `dff3d6295e69fc8447eed3c644c532c0792c514718c6b2a9fce1095e93526b22`
+(`# time:` chỉ runtime, 1 lần warm cache; log `/home/ps/vislogs/st315b-main-bench-quiet.txt`):
+
+| Tổ hợp | median | p90 | min |
+|---|---:|---:|---:|
+| `opt-bench` interp | **45 ms** | 49 | 41 |
+| `opt-bench` VM | **42 ms** | 48 | 40 |
+| `mapbench` N=1 interp / VM | 43 / 45 ms | 46 / 48 | 37 / 41 |
+| `mapbench` N=8 interp / VM | 44 / 46 ms | 50 / 50 | 39 / 44 |
+| `mapbench` N=79 interp / VM | 46 / 47 ms | 52 / 50 | 43 / 44 |
+| `mapbench` N=316 interp / VM | **48 / 50 ms** | 52 / 56 | 46 / 47 |
+
+KPI: opt-bench ≤ 120 ms **PASS**; N=316 ≥ 10× nền 1.328 ms (≈27×) **PASS**; N=1 không hồi quy
+so nền 44,5 ms (43 ms) **PASS**; phẳng N=8→316. Số này khớp bảng A/B của W2 (sai lệch ≤ 3 ms).
