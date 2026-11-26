@@ -41,6 +41,6 @@
 
 ## 5. Vận hành Cao điểm 2 — 2026-11-26 (Đang chạy nền 0-LLM)
 
-- **`ps`**: chuỗi 0-LLM `cargo clean` → `gate --fast` **PASS** → clippy **PASS** → `vis-diff 100k` ×3 seed **`lech=0`** → fuzz parser 130' → `fuzz_mutate` 25'; log `/home/ps/vislogs/peak2-20261126T0622Z.log` (+`.sha256`). Đọc 3 dòng cuối + sha256 vào đầu thấp điểm `10:00 UTC`.
+- **`ps`**: chuỗi 0-LLM **HOÀN TẤT 09:00:12Z, mọi bước exit 0** — `cargo clean` → `gate --fast` PASS → clippy PASS → `vis-diff 100k` ×3 seed `lech=0` (≈1730 chương trình/s) → fuzz parser 130' OK (fmt 475 tệp bất động) → `fuzz_mutate` 25' `vi_pham=0` (31,5 M ca); log `/home/ps/vislogs/peak2-20261126T0622Z.log` (`sha256 fd32dbb5…`), `HEAD=9ff0659e dirty=0`.
 - **`psvn`**: `7014fb7b → fe3446d2` (docs-only, ff) và chạy `vis-gate-windows --full` từ 06:35Z; log `/home/ps/vislogs/win-full-20261126T0636Z.log`. **KẾT QUẢ: PASS 3.779/0/4, exit 0 @06:40Z** (`sha256 e46b5831…`); `vis-targets` core `47/0`, sqlite `46+1/0`. `C:` còn 14 GB — nếu lượt sau đỏ do đĩa thì ghi `BLOCKED-ENV`, không mở task mã.
 - **`mps`**: **không dùng** (đang thuộc dự án khác); cổng macOS giữ nguyên ở `ST-316c`.
