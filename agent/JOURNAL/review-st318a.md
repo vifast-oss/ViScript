@@ -227,3 +227,139 @@ mở lane. **P3** (đã ghi nợ trong journal Builder).
    đăng ký 2 nợ mới (ngoài `#204`) với repro + ngưỡng trong §6, và ghi rõ `#203`/`#204` chỉ đóng
    **kỹ thuật**, chưa đóng nợ hiệu năng/mất output.
 3. Cập nhật `SO-NO.md`/`QUEUE.md`/`STATE.md` theo quy trình; không cần sửa mã trong worktree này.
+
+---
+
+## 8. Addendum F1 (`640180e0`) — kiểm toán vá P2-A/P2-B
+
+> **Người kiểm**: Gatekeeper (Agent 1), 2026-11-27 (giờ thấp điểm), tiếp audit `7d754309`.
+> **Đối tượng**: HEAD **`640180e0`** (code `0a493f92`, journal `640180e0`), nền audit trước
+> `7d754309`; nhánh `plan/st318a`. **Không sửa mã**, không push, không `cargo clean`.
+> **`main` đối chiếu**: **`9045dd78`** (`[REVIEW] merge ST-318e`). Binary `main` dùng đo là
+> `/home/ps/ViScript/target/debug/vis` (dựng @ `fb725479`; các commit tới `9045dd78` chỉ tách
+> module/move nguyên văn, không đổi runtime).
+> **Hạ tầng**: `CARGO_BUILD_JOBS=2`; **`TMPDIR=/home/ps/vislogs/tmp`** cho mọi cargo/gate/diff
+> (bài học `QuotaExceeded` tmpfs ở gate Builder); đĩa `/home` **18 → 19 GB** trống (> 6 GB).
+>
+> **Kết luận: PASS** — **0 P1**; **P2-A đạt đúng kịch bản 20k `const` + 2k `await`** (~1,0× `main`,
+> không còn 20 s), **P2-B fixed** (stdout `sau\nb` + trap đầu, mọi W/engine), test **15/15**.
+> **1 P2-C mới/còn lại**: `nap` vẫn quét **toàn bộ `frame.mutable`** mỗi turn ⇒ chương trình nhiều
+> `var` top-level + nhiều `await` vẫn chậm 13–33×; cần dirty-set hoặc đăng ký nợ trước hợp nhất.
+
+### 8.1 Phạm vi
+
+```
+640180e0 [ST-318a] F1 journal: so do perf truoc/sau + gate 3906/3906 + diff 100k lech=0
+0a493f92 [ST-318a] F1: perf nap bien (chi var) + flush het stdout truoc trap final_join
+```
+
+`git diff --stat 7d754309..640180e0` — **5 tệp, +163/−12**: `frame/worker.rs` +23/−2,
+`rt/exec.rs` +13/−2, `vm/worker.rs` +13/−2, test W +64, journal Builder +62.
+`git status --short` **rỗng** trước/sau phiên (journal review này là ngoại lệ duy nhất, được commit).
+**`crates/vis-runtime/src/worker/orchestrate.rs` KHÔNG đổi** (`git diff --name-only` kiểm exact);
+không chạm `vis-types`/`vis-hir`/`vis-diag`/`vis-core`/`host_parity`; 0 tệp `.rs` cấp 1 mới,
+0 `unsafe`, `git diff --check` sạch.
+
+### 8.2 P2-A — `nap_bien_cap_tep` chỉ quét `frame.mutable`
+
+Code (`frame/worker.rs:518-540`): `ds = frame.mutable` (sym `var`), `filter_map` chỉ giữ sym có
+trong `globals` (loại sym local), clone **chỉ các giá trị đó**; `ds` rỗng ⇒ return sớm. Không còn
+clone toàn bộ `globals` (const/let bất biến bị bỏ). Semantics `#203` giữ nguyên (5 ca §8.4).
+
+**Đo lại đúng kịch bản** `perf20k.vis` = 20.000 `const Ci: int = i` + 2.000 `s = s + await spawn tang(i)`,
+debug, `vis run --workers 1`, xen kẽ main/F1 cùng lượt (load ~2–3):
+
+| Binary | 3 lần (ms) | Median | Tỉ lệ |
+|---|---|---|---|
+| `main` `fb725479` | 1.975 / 2.217 / 1.678 | **1.975 ms** | 1,00× |
+| HEAD **trước F1** (`7d754309`; audit đầu + log Builder) | 20.379 (audit, 3 lần) / 20.173 (Builder) | **~20,3 s** | **~10,3×** |
+| HEAD **sau F1** (`640180e0`) | 1.658 / 2.411 / 1.968 | **1.968 ms** | **0,996×** |
+
+Đối chứng thêm trên `many_const20k.vis` (20k const + 2k await dạng vòng lặp, 10 lượt xen kẽ):
+main median **2.264 ms**, F1 median **2.510 ms** (1,11× do 5 lượt đầu tải cao); 5 lượt cuối
+cùng cửa sổ: main **2.143 ms** vs F1 **2.146 ms** = **1,001×**. Kết luận: **đạt kỳ vọng ≤ ~2×**,
+không còn 20 s. Log: `/home/ps/vislogs/review-st318a-f1-perf.log`.
+
+### 8.3 P2-C — `nap` vẫn O(số `var` × số turn): var-heavy còn 13–33×
+
+`frame.mutable` chứa **mọi** `var` (kể cả var không bao giờ đổi); mỗi turn vẫn duyệt + clone
+**toàn bộ** các var có trong `globals` rồi insert lại. Chương trình nhiều `var` top-level + nhiều
+`await` vì thế vẫn rất chậm (cùng máy, debug, `vis run --workers 1`, load ~2–3):
+
+| Chương trình | `main` | F1 `640180e0` | Tỉ lệ |
+|---|---|---|---|
+| 20.000 `var` + 2.000 await (`many_var20k.vis`) | 1.347 / 1.849 ms | 44.946 / 45.085 ms | **~24–33×** |
+| 5.000 `var` + 1.000 await (`many_var5k.vis`) | 385 ms | 7.325 ms | **19×** |
+| 1.000 `var` + 10.000 await (`many_var1k_10kawait.vis`) | 1.161 ms | 15.297 ms | **13×** |
+| 20.000 `var` + 0 await (đối chứng) | 705 ms | 682 ms | ~1,0× |
+
+Đối chứng 0-await chứng minh overhead nằm ở **mỗi turn `nap`**, không phải khởi tạo/parse. Đây là
+hệ quả trực tiếp của thiết kế "đồng bộ cả bộ mutable mỗi turn"; repro + số đo ở log perf.
+**Đề xuất**: dirty-set các sym vừa ghi (`dong_bo_bien_cap_tep` đẩy vào set, `nap` chỉ áp set rồi
+clear) hoặc version counter; thêm regression nhỏ (1k var + 10k await) vào bộ đo. **P2** (không sai
+kết quả; nếu A0 coi hiệu năng var-heavy là chặn merge thì phải vá tiếp).
+
+### 8.4 Semantics `#203` — 5 ca Builder nêu, interp ↔ VM
+
+Chạy thật `/tmp/opencode/w2*.vis` (binary HEAD), cả `vis run` và `vis run --vm`:
+
+| Ca | File | Kỳ vọng | interp | VM |
+|---|---|---|---|---|
+| `w2` cơ bản | `w2.vis` | `1`, exit 0 | **1** | **1** |
+| ghi qua hàm | `w2nested.vis` | `1`, exit 0 | **1** | **1** |
+| 2 task cộng dồn | `w2two.vis` | `2`, exit 0 | **2** | **2** |
+| main ghi trước `await` | `w2read.vis` | `5`, exit 0 | **5** | **5** |
+| không `main` | `w2nomain.vis` | `1`, exit 0 | **1** | **1** |
+
+Thêm `w2loop.vis` (vòng lặp top-level, `tong=14`): interp/VM đều **14**. Test khoá:
+`w11_frame_w1_no_main_ghi_bien_cap_tep` mới PASS. Log: `review-st318a-f1-semantics.log`.
+
+### 8.5 P2-B — `final_join` giữ trap đầu + flush hết output
+
+Code (`rt/exec.rs:347-368`, `vm/worker.rs:365-386`): `let mut trap = None`; mỗi outcome vẫn
+`push_str(output)`; `if trap.is_none() { trap = loi; }`; sau vòng lặp mới `Err(trap)`. Không đổi
+message/mã/span; outcome đã flush (`flushed`) vẫn bỏ qua qua `ap_va_flush → flush_proxy` trả `None`.
+
+Repro `hong` lỗi trước + `ok` in `b` sau (`/tmp/opencode/st318a/two.vis`) — **tất cả** đều
+stdout **`sau\nb`**, exit **101**, `VS0506: tác vụ \`hong\` lỗi: VS0502: lấy dư cho 0`:
+
+| Engine | W=1 | W=2 | W=4 |
+|---|---|---|---|
+| interp (`vis run`) | `sau\nb` | `sau\nb` | `sau\nb` |
+| VM (`vis run --vm`) | `sau\nb` | `sau\nb` | `sau\nb` |
+
+`w13_final_join_flush_het_output_truoc_trap` chạy thật PASS: frame W=1 + non-frame W=2/4 cả hai
+engine, assert `sau\nb\n`, exit 1, `VS0506` `hong`. (Trước F1 W=2 = `sau\n` — test này đỏ đúng
+như Builder ghi.)
+
+### 8.6 Cổng lại (log ngoài repo)
+
+| Cổng | Kết quả | Log / sha256 |
+|---|---|---|
+| `st317b_worker_orchestrate` | **15/15** pass, 0 ignore | `review-st318a-f1-test.log` — `cfd95f92…5da99` |
+| `./vis-dev gate --fast` (`TMPDIR` đĩa) | **PASS** — nextest **3906/3906** (4 skip, 66,9 s); fmt/clippy/R1..R10/DAG 23-5-0/self-test/doc-examples OK; R8 39/40 | `review-st318a-f1-gate.log` — `a1464d55…a84a9` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 100.000 sinh, **93.768 chạy**, **85,7 s**, seed `3523158054` | `review-st318a-f1-diff.log` — `c247eb6b…cb300` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **exit 0**, 5,19 s | `review-st318a-f1-clippy.log` — `271025c2…01212` |
+
+Gate lần này **không** gặp `QuotaExceeded` nhờ `TMPDIR=/home/ps/vislogs/tmp` (ghi rõ theo yêu cầu).
+File sau F1: `frame/worker.rs` **663**, `rt/exec.rs` **375**, `vm/worker.rs` **492**, test **565**
+dòng — đều < 1.500 (R1); R8 vẫn 39/40 (0 tệp cấp 1 mới).
+
+### 8.7 Hợp nhất
+
+```
+git merge-tree --write-tree main HEAD     # main = 9045dd78
+c211a39575e5e3140759eb1378ad573d4df1e123
+CONFLICT (content): agent/STATE.md   (stage 1/2/3)
+```
+
+**Chỉ** `agent/STATE.md`; 0 tệp mã/test xung đột.
+
+### 8.8 Kết luận addendum
+
+- **PASS** cho phạm vi F1: P2-B fixed hoàn toàn; P2-A đạt đúng kịch bản được giao (20k const +
+  2k await: **1,968 s** vs main **1,975 s**, ~1,0×; trước F1 ~20,3 s); semantics 5 ca + 15/15 test;
+  gate/diff/clippy sạch; merge-tree chỉ `STATE.md`.
+- **P2-C phải được xử lý**: var-heavy (1k–20k `var` + 1k–10k await) còn **13–33×**; nếu chưa vá
+  ngay, A0 đăng ký nợ mới kèm repro `many_var1k_10kawait.vis` (13×) / `many_var20k.vis` (24–33×)
+  và ngưỡng đo. Không có P1, không sai ngữ nghĩa `#203`/`#204`.

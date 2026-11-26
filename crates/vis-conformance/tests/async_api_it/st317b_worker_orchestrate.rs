@@ -87,6 +87,23 @@ fn frame_vm_1(src: &str, a: &Anh) -> RunOutput {
     vis_vm::run_async_with_full_hosts_caps(&a.3, src, &[], None, None, None, None, &[])
 }
 
+/// Frame W=2/4 của **VM** (production `vis run --vm --workers N` cho chương trình async).
+fn frame_vm_w(src: &str, a: &Anh, w: usize) -> RunOutput {
+    vis_vm::run_async_workers_with_full_hosts_caps(
+        &a.3,
+        src,
+        &[],
+        None,
+        None,
+        None,
+        None,
+        &[],
+        w,
+        None,
+        None,
+    )
+}
+
 fn so_khop(a: &RunOutput, b: &RunOutput, nhan: &str) {
     assert_eq!(a.stdout, b.stdout, "{nhan}: stdout");
     assert_eq!(a.exit, b.exit, "{nhan}: exit");
@@ -562,4 +579,139 @@ fn w13_final_join_flush_het_output_truoc_trap() {
             );
         }
     }
+}
+
+/// **F2 (P2-C)** — dirty-set: nhiều `var` top-level (200) nhưng chỉ 3 sym bị ghi trong task;
+/// cả 3 phải thấy ở `main` (và 1 sym không ghi giữ nguyên), parity interp ↔ VM.
+#[test]
+fn w14_frame_w1_dirty_set_nhieu_var() {
+    let mut src = String::new();
+    for i in 0..200 {
+        src.push_str(&format!("var v{i} = {i}\n"));
+    }
+    src.push_str(
+        r#"
+async fn tang_a():
+    v0 = v0 + 1
+    v7 = v7 + 10
+
+async fn tang_b():
+    v199 = v199 + 2
+
+fn main():
+    let a = spawn tang_a()
+    let b = spawn tang_b()
+    await a
+    await b
+    print(v0)
+    print(v7)
+    print(v199)
+    print(v100)
+"#,
+    );
+    let a = anh(&src);
+    let i = frame_1(&src, &a);
+    let v = frame_vm_1(&src, &a);
+    assert_eq!(i.stdout, "1\n17\n201\n100\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "dirty-set nhiều var");
+}
+
+/// **P2-A khoá** — hai task cộng dồn **cùng** `var` top-level (task nọ thấy ghi của task kia);
+/// frame W=1 interp ↔ VM đều `2`.
+const HAI_TASK_TANG: &str = r#"var g = 0
+
+async fn tang():
+    g = g + 1
+
+fn main():
+    let a = spawn tang()
+    let b = spawn tang()
+    await a
+    await b
+    print(g)
+"#;
+
+#[test]
+fn w15_frame_w1_hai_task_cong_don() {
+    let a = anh(HAI_TASK_TANG);
+    let i = frame_1(HAI_TASK_TANG, &a);
+    let v = frame_vm_1(HAI_TASK_TANG, &a);
+    assert_eq!(i.stdout, "2\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "2\n", "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "hai task cộng dồn");
+}
+
+/// **P2-A khoá** — main ghi `var` **sau khi spawn** rồi task đọc: task thấy giá trị mới (`5`),
+/// frame W=1 interp ↔ VM.
+const MAIN_GHI_TRUOC_AWAIT: &str = r#"var g = 0
+
+async fn doc() -> int:
+    g
+
+fn main():
+    let t = spawn doc()
+    g = 5
+    print(await t)
+"#;
+
+#[test]
+fn w16_frame_w1_main_ghi_truoc_await() {
+    let a = anh(MAIN_GHI_TRUOC_AWAIT);
+    let i = frame_1(MAIN_GHI_TRUOC_AWAIT, &a);
+    let v = frame_vm_1(MAIN_GHI_TRUOC_AWAIT, &a);
+    assert_eq!(i.stdout, "5\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n", "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "main ghi trước await");
+}
+
+/// **P2-C (F2)** — frame **VM W=2/4**: task lỗi không ai `await` phải surface `VS0506`, exit 1,
+/// output sạch của main giữ nguyên (`sau\n`).
+#[test]
+fn w17_frame_vm_w2_w4_loi_task_khong_await() {
+    let a = anh(LOI_KHONG_AWAIT);
+    for w in [2usize, 4] {
+        let out = frame_vm_w(LOI_KHONG_AWAIT, &a, w);
+        assert_eq!(out.exit, 1, "VM frame W={w}: {:?}", out.diagnostics);
+        assert_eq!(out.stdout, "sau\n", "VM frame W={w}: stdout");
+        assert!(
+            out.diagnostics
+                .iter()
+                .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+            "VM frame W={w}: {:?}",
+            out.diagnostics
+        );
+    }
+}
+
+/// **F3 (P2-1)** — main ghi **nhiều** `var` top-level rồi `await` nhiều task rỗng: sau turn đầu
+/// `dirty` phải co lại (prune) nhưng giá trị vẫn đúng; frame W=1 interp ↔ VM.
+#[test]
+fn w18_frame_w1_main_ghi_nhieu_var_roi_await() {
+    let mut src = String::new();
+    for i in 0..100 {
+        src.push_str(&format!("var v{i} = {i}\n"));
+    }
+    src.push_str("\nasync fn rong() -> int:\n    1\n\nfn main():\n");
+    for i in 0..100 {
+        src.push_str(&format!("    v{i} = {i} + 1\n"));
+    }
+    for _ in 0..50 {
+        src.push_str("    await spawn rong()\n");
+    }
+    src.push_str("    print(v0)\n    print(v99)\n");
+    let a = anh(&src);
+    let i = frame_1(&src, &a);
+    let v = frame_vm_1(&src, &a);
+    assert_eq!(i.stdout, "1\n100\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "main ghi nhiều var rồi await");
 }
