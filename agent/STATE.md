@@ -30,6 +30,11 @@
 
 ## 3. Nợ và quyết định
 
+- **`ST-318b` (W2 · Sóng 7, chờ A0 duyệt) — `#202` `mở → đóng`**: test
+  `host_parity::net_http::http_bon_ham_parity` chuẩn hoá `sau <N> ms` (bộ `chuan_hoa_ms` + unit
+  test) trước khi so interp↔VM; vẫn giữ assert hết giờ/7 dòng/12 request. Ca đích **20/20**,
+  `gate --fast` PASS (`lib_api_it` **399**), `rules` OK; commit `68aeb4b3`, test-only 0 chạm sản
+  phẩm (`JOURNAL/st318b-on-dinh-net-http.md`). Sổ nợ chờ A0 cập nhật khi nghiệm thu.
 - **`VD-295`** đăng ký **`#203`** (`mở`, W2 frame W=1 lệch interp↔VM: stdout `0` vs `1`, exit 0) và **`#204`** (`mở`, non-frame `run_workers_parallel*`/`_vm*` W≥2 nuốt lỗi task không await, cả 2 engine) — giao **VS3/correctness**; phát hiện từ audit `ST-317b`, không chặn `DONE`.
 - Sổ nợ hiện tại: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh).
 - Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd295.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd295.md); trước đó `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
