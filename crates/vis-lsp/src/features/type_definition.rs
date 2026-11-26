@@ -612,5 +612,5 @@ pub fn tra_loi(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Vec<u8> {
             ])
         })
         .collect();
-    phan_hoi(id, Value::List(locs))
+    phan_hoi(id, Value::list(locs))
 }

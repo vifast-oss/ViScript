@@ -108,7 +108,7 @@ fn thanh_value(text: &str, k: &KyHieu) -> Value {
     if !k.con.is_empty() {
         kv.push((
             "children",
-            Value::List(k.con.iter().map(|c| thanh_value(text, c)).collect()),
+            Value::list(k.con.iter().map(|c| thanh_value(text, c)).collect()),
         ));
     }
     m(kv)
@@ -121,5 +121,5 @@ pub fn tra_loi_document_symbol(kq: &KetQua, id: &Value) -> Vec<u8> {
         .iter()
         .map(|k| thanh_value(&kq.text, k))
         .collect();
-    phan_hoi(id, Value::List(ds))
+    phan_hoi(id, Value::list(ds))
 }

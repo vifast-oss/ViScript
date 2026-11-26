@@ -50,7 +50,7 @@ pub(crate) mod strsplitterm {
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
-        Ok(Value::List(
+        Ok(Value::list(
             tach(s, sep).into_iter().map(Value::Str).collect(),
         ))
     }

@@ -78,7 +78,7 @@ impl FsMock {
                     return Err(format!("`--fs-mock`: `dirs[{p}]` phải là mảng"));
                 };
                 let mut muc = Vec::new();
-                for it in items {
+                for it in items.iter() {
                     let Some(ten) = lay(it, "name").and_then(|x| chuoi(&x)) else {
                         return Err(format!("`--fs-mock`: mục trong `{p}` thiếu `name`"));
                     };

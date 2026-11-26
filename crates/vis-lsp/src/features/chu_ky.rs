@@ -143,9 +143,9 @@ pub fn tra_loi_signature(kq: &KetQua, byte: usize, mode: Mode, id: &Value) -> Ve
         m(vec![
             (
                 "signatures",
-                Value::List(vec![m(vec![
+                Value::list(vec![m(vec![
                     ("label", s(detail)),
-                    ("parameters", Value::List(params)),
+                    ("parameters", Value::list(params)),
                 ])]),
             ),
             ("activeSignature", Value::Int(0)),

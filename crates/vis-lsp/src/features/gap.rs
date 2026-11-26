@@ -40,5 +40,5 @@ fn gom(text: &str, ds: &[super::ky_hieu::KyHieu], out: &mut Vec<Value>) {
 pub fn tra_loi_folding(kq: &KetQua, id: &Value) -> Vec<u8> {
     let mut out = Vec::new();
     gom(&kq.text, &kq.ky_hieu, &mut out);
-    phan_hoi(id, Value::List(out))
+    phan_hoi(id, Value::list(out))
 }

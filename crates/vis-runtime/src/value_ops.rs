@@ -175,7 +175,7 @@ pub fn dat(base: &mut Value, idx: &Value, v: Value, span: Span) -> R<()> {
     match (base, idx) {
         (Value::List(xs), Value::Int(i)) => {
             if *i >= 0 && (*i as usize) < xs.len() {
-                xs[*i as usize] = v;
+                Rc::make_mut(xs)[*i as usize] = v;
                 Ok(())
             } else {
                 Err(Abort::Trap(Trap::new(
@@ -277,7 +277,7 @@ pub fn gan_duong(base: &mut Value, duong: &[Buoc], v: Value, span: Span) -> R<()
             gan_duong(&mut slot.1, rest, v, span)
         }
         (Buoc::ChiSo(Value::Int(i)), Value::List(xs)) if *i >= 0 && (*i as usize) < xs.len() => {
-            gan_duong(&mut xs[*i as usize], rest, v, span)
+            gan_duong(&mut Rc::make_mut(xs)[*i as usize], rest, v, span)
         }
         (Buoc::ChiSo(k), Value::Map(kv)) => {
             let mut con = kv.get(k).cloned().ok_or_else(|| {

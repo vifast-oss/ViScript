@@ -63,7 +63,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
         Work::BuildList { n } => {
             let mut vs = pop_n(frame, n)?;
             vs.reverse();
-            frame.push_val(Value::List(vs));
+            frame.push_val(Value::list(vs));
             Ok(())
         }
         Work::BuildSet { n } => {
@@ -75,13 +75,13 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                     out.push(v);
                 }
             }
-            frame.push_val(Value::List(out));
+            frame.push_val(Value::list(out));
             Ok(())
         }
         Work::BuildTuple { n } => {
             let mut vs = pop_n(frame, n)?;
             vs.reverse();
-            frame.push_val(Value::List(vs));
+            frame.push_val(Value::list(vs));
             Ok(())
         }
         Work::BuildMap { n } => {
@@ -477,7 +477,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                     frame.cur().work.push(Work::MethodLoop {
                         kind,
                         f,
-                        items: items.clone(),
+                        items: items.to_vec(),
                         idx: 0,
                         acc: Vec::new(),
                         awaiting: false,
@@ -566,7 +566,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             if idx >= items.len() {
                 let out = match kind {
                     MethodKind::Each => Value::Unit,
-                    MethodKind::Map | MethodKind::Filter => Value::List(acc),
+                    MethodKind::Map | MethodKind::Filter => Value::list(acc),
                 };
                 frame.push_val(out);
                 return Ok(());

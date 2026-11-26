@@ -73,7 +73,7 @@ pub fn tra_loi_rename(
     if edits.is_empty() {
         return phan_hoi(id, Value::none());
     }
-    phan_hoi(id, m(vec![("changes", m(vec![(uri, Value::List(edits))]))]))
+    phan_hoi(id, m(vec![("changes", m(vec![(uri, Value::list(edits))]))]))
 }
 
 /// **ST-280**: `textDocument/prepareRename` — trả `{range, placeholder}` nếu từ tại con trỏ là

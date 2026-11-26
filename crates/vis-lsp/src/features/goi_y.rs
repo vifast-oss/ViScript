@@ -393,7 +393,7 @@ pub fn tra_loi_completion(kq: &KetQua, byte: usize, id: &Value) -> Vec<u8> {
             m(kv)
         })
         .collect();
-    phan_hoi(id, Value::List(items))
+    phan_hoi(id, Value::list(items))
 }
 
 /// Phản hồi `textDocument/hover` (`contents` markdown + `range`), hoặc `result:null`.

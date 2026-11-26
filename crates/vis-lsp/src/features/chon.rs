@@ -180,5 +180,5 @@ pub fn tra_loi_selection(kq: &KetQua, mode: Mode, vi_tris: &[(u32, u32)], id: &V
             chuoi_json(&xep_chuoi(ung))
         })
         .collect();
-    phan_hoi(id, Value::List(ds))
+    phan_hoi(id, Value::list(ds))
 }

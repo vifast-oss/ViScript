@@ -884,7 +884,7 @@ fn list_json_parse_duoc_dung_thu_tu() {
         panic!("thiếu packages")
     };
     let mut ten = Vec::new();
-    for p in ps {
+    for p in ps.iter() {
         let vis_core::value::Value::Map(m) = p else {
             panic!("package không phải object")
         };

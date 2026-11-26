@@ -30,7 +30,7 @@ fn json_bool(b: bool) -> Value {
 }
 
 fn json_arr(xs: Vec<Value>) -> Value {
-    Value::Enum("Json".into(), "Arr".into(), vec![Value::List(xs)])
+    Value::Enum("Json".into(), "Arr".into(), vec![Value::list(xs)])
 }
 
 fn json_obj(kv: Vec<(Value, Value)>) -> Value {
@@ -143,7 +143,7 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
             skip_desc(p)?;
             let sub = std::str::from_utf8(&p.s[st..p.i]).map_err(|_| "descriptor lỗi")?;
             let mut out = Vec::with_capacity(xs.len());
-            for x in xs {
+            for x in xs.iter() {
                 out.push(to_json(x, sub)?);
             }
             json_arr(out)
@@ -335,7 +335,7 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             Value::Enum(e, v, a) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
                 Value::List(xs) => {
                     let mut out = Vec::with_capacity(xs.len());
-                    for x in xs {
+                    for x in xs.iter() {
                         let Value::Enum(_, _, ax) = x else {
                             return Err(loi("bytes", j));
                         };
@@ -389,10 +389,10 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                 Value::Enum(e, v, a) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
                     Value::List(xs) => {
                         let mut out = Vec::with_capacity(xs.len());
-                        for x in xs {
+                        for x in xs.iter() {
                             out.push(from_json(x, sub)?);
                         }
-                        Value::List(out)
+                        Value::list(out)
                     }
                     _ => return Err(loi("list", j)),
                 },

@@ -65,7 +65,7 @@ impl Iterator for ForIter {
 /// trap trước mọi thân vòng và trước `E_LOOP` đầu tiên.
 pub fn iter_items(it: Value, span: vis_syntax::Span) -> vis_core::trap::R<ForIter> {
     let kind = match it {
-        Value::List(xs) => ForIterKind::Items(xs.into_iter()),
+        Value::List(xs) => ForIterKind::Items(std::rc::Rc::unwrap_or_clone(xs).into_iter()),
         Value::Range(a, b, incl) => {
             let n: i128 = if incl {
                 if a > b {
@@ -106,7 +106,7 @@ pub fn iter_items(it: Value, span: vis_syntax::Span) -> vis_core::trap::R<ForIte
             ForIterKind::Items(
                 entries
                     .into_iter()
-                    .map(|(k, v)| Value::List(vec![k, v]))
+                    .map(|(k, v)| Value::list(vec![k, v]))
                     .collect::<Vec<_>>()
                     .into_iter(),
             )

@@ -97,8 +97,8 @@ pub(crate) mod bisect {
         #[test]
         fn khong_so_duoc_tra_none_khong_trap() {
             // List lồng nhau không có thứ tự trong `cmp_value` ⇒ `None`, không panic.
-            let xs = vec![Value::List(vec![Value::Int(1)])];
-            assert_eq!(tim(&xs, &Value::List(vec![Value::Int(1)])), None);
+            let xs = vec![Value::list(vec![Value::Int(1)])];
+            assert_eq!(tim(&xs, &Value::list(vec![Value::Int(1)])), None);
         }
 
         #[test]
@@ -150,8 +150,8 @@ pub(crate) mod chung {
     /// **VD-270 (sqlite-database-list)** — dựng **một** bản ghi `RowSet` (không bọc `Ok`) để dùng
     /// trong danh sách `list[RowSet]`; cùng hình dạng `columns` + `rows` với [`rowset`].
     pub(crate) fn rowset_record(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
-        let columns = Value::List(columns.into_iter().map(Value::Str).collect());
-        let rows = Value::List(rows.into_iter().map(Value::List).collect());
+        let columns = Value::list(columns.into_iter().map(Value::Str).collect());
+        let rows = Value::list(rows.into_iter().map(Value::list).collect());
         Value::Record(
             "RowSet".into(),
             vec![("columns".into(), columns), ("rows".into(), rows)],
@@ -329,6 +329,234 @@ pub(crate) mod chung {
             )),
         }
     }
+
+    /// **ST-316a F5** — bóc `Rc<VisMap>` **sở hữu** khỏi `v` (thay bằng [`Value::Unit`]).
+    ///
+    /// `std.map.remove`/`std.map.merge` cần `&mut VisMap` để gọi **thẳng** `VisMap::remove`/
+    /// `VisMap::merge`; `args` của `stdlib::call_by_id` là **sở hữu** nên map không chia sẻ được
+    /// sửa **tại chỗ** qua `Rc::make_mut` (0 chép `Vec`, giữ chỉ mục băm), map đang chia sẻ ⇒
+    /// chép **một** lần rồi sửa. Sai kiểu ⇒ `VS0501` như [`ban_do`].
+    pub(crate) fn ban_do_so_huu(
+        name: &str,
+        v: &mut Value,
+        i: usize,
+        span: Span,
+    ) -> Result<std::rc::Rc<vis_core::value::VisMap>, Abort> {
+        match v {
+            Value::Map(_) => match std::mem::replace(v, Value::Unit) {
+                Value::Map(rc) => Ok(rc),
+                _ => unreachable!("`v` vừa khớp `Value::Map`"),
+            },
+            other => Err(loi(
+                format!(
+                    "`{name}`: đối số {} cần `map`, được `{}`",
+                    i + 1,
+                    other.show()
+                ),
+                span,
+            )),
+        }
+    }
+
+    /// **ST-316a F5** — `std.map.remove`: gọi thẳng [`vis_core::value::VisMap::remove`] trên map
+    /// **sở hữu** (CoW tại chỗ khi không chia sẻ), giữ thứ tự chèn Q3 + chỉ mục băm đồng bộ.
+    pub(crate) fn map_remove(name: &str, args: &mut [Value], span: Span) -> Result<Value, Abort> {
+        let mut a = ban_do_so_huu(name, &mut args[0], 0, span)?;
+        let k = Value::Str(chuoi(name, &args[1], 1, span)?.to_string());
+        std::rc::Rc::make_mut(&mut a).remove(&k);
+        Ok(Value::Map(a))
+    }
+
+    /// **ST-316a F5** — `std.map.merge`: gọi thẳng [`vis_core::value::VisMap::merge`] trên map
+    /// `a` **sở hữu** — last-wins, giữ vị trí `a` cho khoá đã có, nối cuối cho khoá mới (Q3).
+    pub(crate) fn map_merge(name: &str, args: &mut [Value], span: Span) -> Result<Value, Abort> {
+        let mut a = ban_do_so_huu(name, &mut args[0], 0, span)?;
+        let b = ban_do(name, &args[1], 1, span)?;
+        std::rc::Rc::make_mut(&mut a).merge(b);
+        Ok(Value::Map(a))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use std::rc::Rc;
+
+        fn map(kv: Vec<(Value, Value)>) -> Value {
+            Value::map(kv)
+        }
+
+        fn s(x: &str) -> Value {
+            Value::Str(x.into())
+        }
+
+        /// 10 entry "thường": 6 khoá `str` + 4 khoá `int` phân biệt (đủ ngưỡng chỉ mục băm,
+        /// kể cả sau khi xoá 1 entry vẫn còn ≥ 8 nên chỉ mục không bị bỏ).
+        fn tam_khoa() -> Value {
+            map(vec![
+                (s("a"), Value::Int(1)),
+                (s("b"), Value::Int(2)),
+                (s("c"), Value::Int(3)),
+                (s("d"), Value::Int(4)),
+                (s("e"), Value::Int(5)),
+                (s("f"), Value::Int(6)),
+                (Value::Int(1), Value::Int(10)),
+                (Value::Int(2), Value::Int(20)),
+                (Value::Int(3), Value::Int(30)),
+                (Value::Int(4), Value::Int(40)),
+            ])
+        }
+
+        /// **Khoá không bắc cầu** (băm trùng, `==` khác): `Int(1)` và `Percent(1.0)` cùng băm
+        /// miền số (`Float(1.0)` khớp cả hai) nhưng `eq_value(Int, Percent)` **sai**; 6 khoá đệm
+        /// ⇒ 8 entry, đủ ngưỡng chỉ mục băm nên bucket thật sự chứa cả hai khoá.
+        fn khong_bac_cau() -> Value {
+            let mut kv = vec![
+                (Value::Int(1), Value::Int(10)),
+                (Value::Percent(1.0), Value::Int(20)),
+            ];
+            for i in 0..6 {
+                kv.push((Value::Int(100 + i), Value::Int(i)));
+            }
+            map(kv)
+        }
+
+        /// Địa chỉ cấp phát `VisMap` (dùng `Rc::as_ptr` — **không** tạo `Weak`, vì `Weak` làm
+        /// `Rc::make_mut` coi là "không duy nhất" và luôn chép, che mất đường sửa tại chỗ).
+        fn dia_chi(v: &Value) -> usize {
+            match v {
+                Value::Map(rc) => Rc::as_ptr(rc) as usize,
+                other => panic!("phải là map, được {other:?}"),
+            }
+        }
+
+        fn la_map(v: &Value) -> &Rc<vis_core::value::VisMap> {
+            match v {
+                Value::Map(rc) => rc,
+                other => panic!("phải là map, được {other:?}"),
+            }
+        }
+
+        #[test]
+        fn remove_goi_thang_vis_map_sua_tai_cho_va_giu_thu_tu() {
+            let v = tam_khoa();
+            let dia_chi_truoc = dia_chi(&v);
+            let mut args = [v, s("c")];
+            let out = map_remove("map.remove", &mut args, Span::default()).expect("hợp lệ");
+            assert_eq!(
+                dia_chi(&out),
+                dia_chi_truoc,
+                "map **không chia sẻ** phải sửa tại chỗ (gọi thẳng `VisMap::remove`)"
+            );
+            let rc = la_map(&out);
+            assert_eq!(rc.len(), 9);
+            assert_eq!(
+                rc.keys().map(Value::show).collect::<Vec<_>>(),
+                ["a", "b", "d", "e", "f", "1", "2", "3", "4"],
+                "xoá giữ nguyên thứ tự chèn của các entry còn lại (Q3)"
+            );
+            assert!(rc.get(&s("c")).is_none());
+            assert_eq!(rc.get(&s("d")).map(Value::show), Some("4".to_string()));
+            assert!(rc.co_chi_muc(), "remove phải giữ chỉ mục băm đồng bộ");
+        }
+
+        #[test]
+        fn merge_goi_thang_vis_map_sua_tai_cho_last_wins_va_noi_cuoi() {
+            let v = tam_khoa();
+            let dia_chi_truoc = dia_chi(&v);
+            let mut args = [
+                v,
+                map(vec![
+                    (s("b"), Value::Int(200)),
+                    (s("g"), Value::Int(7)),
+                    (Value::Int(1), Value::Int(100)),
+                ]),
+            ];
+            let out = map_merge("map.merge", &mut args, Span::default()).expect("hợp lệ");
+            assert_eq!(
+                dia_chi(&out),
+                dia_chi_truoc,
+                "map **không chia sẻ** phải sửa tại chỗ (gọi thẳng `VisMap::merge`)"
+            );
+            let rc = la_map(&out);
+            assert_eq!(rc.len(), 11, "2 khoá cũ cập nhật + 1 khoá mới");
+            assert_eq!(
+                rc.keys().map(Value::show).collect::<Vec<_>>(),
+                ["a", "b", "c", "d", "e", "f", "1", "2", "3", "4", "g"],
+                "khoá đã có giữ vị trí, khoá mới nối cuối (Q3)"
+            );
+            assert_eq!(
+                rc.get(&s("b")).map(Value::show),
+                Some("200".to_string()),
+                "last-wins"
+            );
+            assert_eq!(
+                rc.get(&Value::Int(1)).map(Value::show),
+                Some("100".to_string())
+            );
+        }
+
+        #[test]
+        fn merge_khoa_khong_bac_cau_khong_gop_nham_entry() {
+            // `Float(1.0)` và `Percent(1.0)` **eq nhau** ⇒ không nằm chung một map `b` được
+            // (`from_pairs` last-wins sẽ gộp) — tách **hai** lần merge để kiểm từng đường.
+            let mut args = [
+                khong_bac_cau(),
+                map(vec![
+                    (Value::Float(1.0), Value::Int(99)),
+                    (Value::Int(200), Value::Int(7)),
+                ]),
+            ];
+            let out = map_merge("map.merge", &mut args, Span::default()).expect("hợp lệ");
+            let mut args = [out, map(vec![(Value::Percent(1.0), Value::Int(88))])];
+            let out = map_merge("map.merge", &mut args, Span::default()).expect("hợp lệ");
+            let rc = la_map(&out);
+            assert_eq!(rc.len(), 9, "không thêm entry cho 2 khoá băm trùng");
+            // `Float(1.0)` khớp **cả** `Int(1)` lẫn `Percent(1.0)` ⇒ cập nhật entry **chèn trước**
+            // (`Int(1)`), đúng `find`/`tim` tuyến tính cũ; `Percent(1.0)` chỉ cập nhật chính nó.
+            assert_eq!(
+                rc.get(&Value::Int(1)).map(Value::show),
+                Some("99".to_string())
+            );
+            assert_eq!(
+                rc.get(&Value::Percent(1.0)).map(Value::show),
+                Some("88".to_string())
+            );
+            assert_eq!(
+                rc.get(&Value::Float(1.0)).map(Value::show),
+                Some("99".to_string()),
+                "`get(Float)` trả entry cũ nhất còn khớp"
+            );
+            assert_eq!(
+                rc.keys().map(Value::show).collect::<Vec<_>>(),
+                ["1", "100pct", "100", "101", "102", "103", "104", "105", "200"],
+                "thứ tự chèn giữ nguyên, khoá mới nối cuối"
+            );
+        }
+
+        #[test]
+        fn sai_kieu_bao_vs0501_nhu_ban_do() {
+            let mut args = [Value::Int(1), s("a")];
+            let Abort::Trap(e) = map_remove("map.remove", &mut args, Span::default()).unwrap_err()
+            else {
+                panic!("phải là trap VS0501");
+            };
+            assert!(
+                e.msg.contains("cần `map`, được `1`"),
+                "thông điệp sai: {}",
+                e.msg
+            );
+            let mut args = [tam_khoa(), Value::Int(9)];
+            let Abort::Trap(e) = map_merge("map.merge", &mut args, Span::default()).unwrap_err()
+            else {
+                panic!("phải là trap VS0501");
+            };
+            assert!(
+                e.msg.contains("cần `map`, được `9`"),
+                "thông điệp sai: {}",
+                e.msg
+            );
+        }
+    }
 }
 
 pub(crate) mod flatten {
@@ -364,7 +592,7 @@ pub(crate) mod flatten {
                 }
             }
         }
-        Ok(Value::List(out))
+        Ok(Value::list(out))
     }
 
     /// Độ dài dự phòng cho cấp phát: list con ⇒ số phần tử, còn lại ⇒ 0 (sẽ báo lỗi sau).
@@ -380,12 +608,12 @@ pub(crate) mod flatten {
         use super::*;
 
         fn ds(xs: &[i64]) -> Value {
-            Value::List(xs.iter().copied().map(Value::Int).collect())
+            Value::list(xs.iter().copied().map(Value::Int).collect())
         }
 
         fn phang(xs: Vec<Value>) -> Vec<Value> {
             match goi("list.flatten", &xs).expect("flatten hợp lệ") {
-                Value::List(out) => out,
+                Value::List(out) => std::rc::Rc::unwrap_or_clone(out),
                 other => panic!("phải trả list, được {other:?}"),
             }
         }
@@ -426,8 +654,8 @@ pub(crate) mod flatten {
         fn chi_mot_cap_khong_de_quy() {
             // `[[[1], [2]], [[3]]]` ⇒ `[[1], [2], [3]]`: phần tử list được giữ nguyên.
             let out = phang(vec![
-                Value::List(vec![ds(&[1]), ds(&[2])]),
-                Value::List(vec![ds(&[3])]),
+                Value::list(vec![ds(&[1]), ds(&[2])]),
+                Value::list(vec![ds(&[3])]),
             ]);
             bang(&out, &[ds(&[1]), ds(&[2]), ds(&[3])]);
         }
@@ -503,11 +731,11 @@ pub(crate) mod indexof {
             // Cùng `eq_value` với `==`: list lồng nhau và record so theo **trường**, không theo
             // thứ tự khai báo.
             let xs = vec![
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
-                Value::List(vec![Value::Int(3), Value::Int(4)]),
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(3), Value::Int(4)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
             ];
-            let can = Value::List(vec![Value::Int(1), Value::Int(2)]);
+            let can = Value::list(vec![Value::Int(1), Value::Int(2)]);
             assert_eq!(tim(&xs, &can, false), Some(0));
             assert_eq!(tim(&xs, &can, true), Some(2));
 

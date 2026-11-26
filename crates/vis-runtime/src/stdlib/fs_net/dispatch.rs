@@ -43,7 +43,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 host.list(p)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -54,7 +54,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 host.read_lines(p)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -91,7 +91,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
             let host = host.fs().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 host.walk(p)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -108,7 +108,7 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
                 Err(e) => return hop_nhat_fs(Err(e), span),
             };
             match vis_core::host::fs::loc_glob(&muc, mau) {
-                Ok(xs) => Ok(Value::ok(Value::List(
+                Ok(xs) => Ok(Value::ok(Value::list(
                     xs.into_iter().map(Value::Str).collect(),
                 ))),
                 Err(e) => Ok(Value::err(Value::ban_ghi_error(e, None))),

@@ -199,7 +199,7 @@ impl<'m> Th<'m> {
             if m.idx >= m.items.len() {
                 let out = match m.kind {
                     MethodKind::Each => Value::Unit,
-                    MethodKind::Map | MethodKind::Filter => Value::List(std::mem::take(&mut m.acc)),
+                    MethodKind::Map | MethodKind::Filter => Value::list(std::mem::take(&mut m.acc)),
                 };
                 self.st.push(out);
                 continue;
@@ -521,7 +521,7 @@ fn run_frame_vm_driver<'m>(
     }
     LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = 0);
     vm.init_globals();
-    let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
+    let argv = Value::list(args.iter().map(|s| Value::Str(s.clone())).collect());
     let main_th = match main_th(vm, &argv) {
         Ok(t) => t,
         Err(Abort::Trap(t)) => {

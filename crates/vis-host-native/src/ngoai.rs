@@ -232,7 +232,7 @@ fn tach_dong(s: &str) -> Value {
             dong.push(Value::Str(d.to_string()));
         }
     }
-    Value::List(dong)
+    Value::list(dong)
 }
 
 /// **ST-137 (VD-141)**: mở tệp **một lần**, lấy **đường dẫn thật của chính handle** rồi **đọc từ

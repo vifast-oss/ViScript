@@ -31,7 +31,7 @@ pub(crate) mod listchunksexact {
     pub(crate) fn chia(xs: &[Value], n: usize) -> Vec<Value> {
         debug_assert!(n >= 1, "chia: n phải >= 1 (caller đã kiểm)");
         xs.chunks_exact(n)
-            .map(|c| Value::List(c.to_vec()))
+            .map(|c| Value::list(c.to_vec()))
             .collect()
     }
 
@@ -46,7 +46,7 @@ pub(crate) mod listchunksexact {
                 span,
             ));
         }
-        Ok(Value::List(chia(xs, n as usize)))
+        Ok(Value::list(chia(xs, n as usize)))
     }
 
     #[cfg(test)]
@@ -59,18 +59,18 @@ pub(crate) mod listchunksexact {
         }
 
         fn l(xs: &[i64]) -> Value {
-            Value::List(ds(xs))
+            Value::list(ds(xs))
         }
 
         fn goi_ok(name: &str, xs: &[Value], n: i64) -> Vec<Value> {
             match goi(
                 name,
-                &[Value::List(xs.to_vec()), Value::Int(n)],
+                &[Value::list(xs.to_vec()), Value::Int(n)],
                 Span::default(),
             )
             .expect("chunks_exact hợp lệ")
             {
-                Value::List(out) => out,
+                Value::List(out) => std::rc::Rc::unwrap_or_clone(out),
                 other => panic!("phải trả list, được {other:?}"),
             }
         }
@@ -123,10 +123,10 @@ pub(crate) mod listchunksexact {
             bang(&g, &[l(&[1, 2]), l(&[3, 4])]);
 
             // Phần tử vốn là list được giữ nguyên (không làm phẳng/đệ quy).
-            let long = vec![Value::List(ds(&[1, 2])), Value::List(ds(&[3]))];
+            let long = vec![Value::list(ds(&[1, 2])), Value::list(ds(&[3]))];
             bang(
                 &goi_ok("list.chunks_exact", &long, 2),
-                &[Value::List(long.clone())],
+                &[Value::list(long.clone())],
             );
         }
 
@@ -135,7 +135,7 @@ pub(crate) mod listchunksexact {
             for n in [0, -1, i64::MIN] {
                 match goi(
                     "list.chunks_exact",
-                    &[Value::List(ds(&[1, 2, 3])), Value::Int(n)],
+                    &[Value::list(ds(&[1, 2, 3])), Value::Int(n)],
                     Span::default(),
                 ) {
                     Err(Abort::Trap(t)) => {
@@ -149,7 +149,7 @@ pub(crate) mod listchunksexact {
             // `n <= 0` thắng cả khi `xs` rỗng (kiểm trước khi chia).
             match goi(
                 "list.chunks_exact",
-                &[Value::List(Vec::new()), Value::Int(0)],
+                &[Value::list(Vec::new()), Value::Int(0)],
                 Span::default(),
             ) {
                 Err(Abort::Trap(t)) => assert_eq!(t.code.short, "VS0501"),
@@ -223,11 +223,11 @@ pub(crate) mod listcontains {
         #[test]
         fn cau_truc_long_nhau_va_khac_kieu() {
             let xs = vec![
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
-                Value::List(vec![Value::Int(3), Value::Int(4)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(3), Value::Int(4)]),
             ];
-            assert!(co(&xs, &Value::List(vec![Value::Int(1), Value::Int(2)])));
-            assert!(khong(&xs, &Value::List(vec![Value::Int(2), Value::Int(1)])));
+            assert!(co(&xs, &Value::list(vec![Value::Int(1), Value::Int(2)])));
+            assert!(khong(&xs, &Value::list(vec![Value::Int(2), Value::Int(1)])));
 
             let a = Value::Record(
                 "P".into(),

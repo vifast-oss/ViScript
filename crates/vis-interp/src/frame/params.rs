@@ -58,7 +58,7 @@ pub(super) fn env_for_params<'a>(
     for (i, p) in params.iter().enumerate() {
         if p.variadic {
             let con: Vec<Value> = positional.iter().skip(i).cloned().collect();
-            env.borrow_mut().insert(p.sym, Value::List(con));
+            env.borrow_mut().insert(p.sym, Value::list(con));
             continue;
         }
         let v = positional.get(i).cloned().or_else(|| {

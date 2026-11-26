@@ -15,10 +15,10 @@ pub fn duyet_nang_cao(
     span: Span,
 ) -> R<Value> {
     match name {
-        "enumerate" => Ok(Value::List(
+        "enumerate" => Ok(Value::list(
             xs.iter()
                 .enumerate()
-                .map(|(i, x)| Value::List(vec![Value::Int(i as i64), x.clone()]))
+                .map(|(i, x)| Value::list(vec![Value::Int(i as i64), x.clone()]))
                 .collect(),
         )),
         "any" => {

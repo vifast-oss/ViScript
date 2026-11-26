@@ -80,7 +80,7 @@ fn thanh_value(text: &str, uri: &str, t: &TestFn) -> Value {
             m(vec![
                 ("title", s(&format!("Chạy test {}", t.ten))),
                 ("command", s("vis.test.run")),
-                ("arguments", Value::List(vec![s(uri), s(&t.ten)])),
+                ("arguments", Value::list(vec![s(uri), s(&t.ten)])),
             ]),
         ),
     ])
@@ -94,5 +94,5 @@ pub fn tra_loi_code_lens(kq: &KetQua, uri: &str, id: &Value) -> Vec<u8> {
         .take(TOI_DA)
         .map(|t| thanh_value(&kq.text, uri, t))
         .collect();
-    phan_hoi(id, Value::List(ds))
+    phan_hoi(id, Value::list(ds))
 }

@@ -29,7 +29,7 @@ fn json_non_finite_bi_phat_hien() {
     assert!(vis_core::json::co_so_phi_huu_han(&Value::Percent(
         f64::NEG_INFINITY
     )));
-    assert!(vis_core::json::co_so_phi_huu_han(&Value::List(vec![
+    assert!(vis_core::json::co_so_phi_huu_han(&Value::list(vec![
         Value::Int(1),
         Value::Float(f64::NAN)
     ])));

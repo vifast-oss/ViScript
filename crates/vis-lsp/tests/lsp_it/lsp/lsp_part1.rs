@@ -222,7 +222,7 @@ pub(crate) fn did_change(uri: &str, text: &str) -> String {
                 ),
                 (
                     "contentChanges",
-                    Value::List(vec![m(vec![("text", s(text))])]),
+                    Value::list(vec![m(vec![("text", s(text))])]),
                 ),
             ]),
         ),

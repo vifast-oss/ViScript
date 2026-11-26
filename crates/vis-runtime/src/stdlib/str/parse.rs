@@ -131,7 +131,7 @@ pub(crate) mod strmatches {
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let pat = super::super::super::chuoi(name, &args[1], 1, span)?;
-        Ok(Value::List(
+        Ok(Value::list(
             khop(s, pat).into_iter().map(Value::Str).collect(),
         ))
     }

@@ -81,7 +81,7 @@ fn vi_tri(text: &str, start: usize, end: usize) -> Value {
 /// Phản hồi `workspace/symbol` (`SymbolInformation[]`).
 pub fn tra_loi_symbol(root: Option<&Path>, query: &str, id: &Value) -> Vec<u8> {
     let Some(root) = root else {
-        return phan_hoi(id, Value::List(Vec::new()));
+        return phan_hoi(id, Value::list(Vec::new()));
     };
     let mut files = Vec::new();
     gom(root, &mut files, 0);
@@ -120,7 +120,7 @@ pub fn tra_loi_symbol(root: Option<&Path>, query: &str, id: &Value) -> Vec<u8> {
             break;
         }
     }
-    phan_hoi(id, Value::List(out))
+    phan_hoi(id, Value::list(out))
 }
 
 /// **ST-278**: fallback định nghĩa xuyên tệp — quét `*.vis`/`*.vish` dưới `root` tìm item cấp tệp
@@ -162,7 +162,7 @@ pub fn tra_loi_definition(root: Option<&Path>, ten: &str, id: &Value) -> Vec<u8>
     if locs.is_empty() {
         phan_hoi(id, Value::none())
     } else {
-        phan_hoi(id, Value::List(locs))
+        phan_hoi(id, Value::list(locs))
     }
 }
 

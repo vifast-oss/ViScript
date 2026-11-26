@@ -275,7 +275,7 @@ fn lsp_code_action_sua_khi_can_format() {
             2,
             URI,
             khoang(0, 0, 2, 0),
-            m(vec![("diagnostics", Value::List(vec![]))])
+            m(vec![("diagnostics", Value::list(vec![]))])
         ))
     );
     let (code, out, err) = chay(&vao);
@@ -417,8 +417,8 @@ fn lsp_code_action_bo_qua_range_va_context() {
             URI,
             khoang(99, 42, 100, 7),
             m(vec![
-                ("only", Value::List(vec![s("quickfix")])),
-                ("diagnostics", Value::List(vec![])),
+                ("only", Value::list(vec![s("quickfix")])),
+                ("diagnostics", Value::list(vec![])),
             ])
         ))
     );

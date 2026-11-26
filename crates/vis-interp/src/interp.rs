@@ -101,6 +101,15 @@ pub(crate) struct Interp<'a> {
     // (thread-local, mặc định tắt) — Interp không giữ trạng thái; hành vi mặc định y hệt cũ.
 }
 
+/// **ST-316a** — con trỏ `Rc` trong `Map`/`List` (nhận diện ô chia sẻ, không chép dữ liệu).
+fn ptr_rc(v: &Value) -> Option<*const ()> {
+    match v {
+        Value::Map(k) => Some(std::rc::Rc::as_ptr(k) as *const ()),
+        Value::List(x) => Some(std::rc::Rc::as_ptr(x) as *const ()),
+        _ => None,
+    }
+}
+
 impl<'a> Interp<'a> {
     pub(crate) fn new(hir: &'a Hir, symbols: &'a Symbols, types: &'a TypeTable) -> Self {
         let mut fns = HashMap::new();
@@ -229,7 +238,7 @@ impl<'a> Interp<'a> {
         }
         if let Some(f) = self.main {
             self.khoi_tao_bien_cap_tep()?; // VD-262: biến cấp tệp trước `main`.
-            let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
+            let argv = Value::list(args.iter().map(|s| Value::Str(s.clone())).collect());
             let v = if f.params.is_empty() {
                 self.call_hfn(f, Vec::new(), Vec::new(), f.span)?
             } else if self.caps.is_empty() {
@@ -322,17 +331,25 @@ impl<'a> Interp<'a> {
             .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))
     }
 
+    /// **ST-316a** — lấy giá trị **ra khỏi** ô (giữ `strong_count == 1` cho method sửa tại chỗ).
+    /// Lỗi giữa chừng thì chương trình abort nên không cần trả lại ô.
+    pub(crate) fn lay_o(&mut self, id: u32, span: Span) -> R<Value> {
+        self.env
+            .borrow_mut()
+            .remove(&id)
+            .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))
+    }
+
     /// **ST-316a (VD-292 §3.1)** — tạm tách ô `id` khỏi `Rc` **khi** ô còn trỏ cùng map với giá
     /// trị đang ghi (ô = `Unit` trong lúc ghi). Nhờ đó `Rc::make_mut` thấy `strong_count == 1`
     /// và cập nhật **tại chỗ O(1)**; trả `true` nếu đã tách để [`Self::tra_o`] khôi phục.
     pub(crate) fn tach_o(&mut self, id: u32, base: &Value) -> bool {
-        let Value::Map(kv) = base else {
+        let Some(ptr) = ptr_rc(base) else {
             return false;
         };
-        let ptr = std::rc::Rc::as_ptr(kv);
         let mut env = self.env.borrow_mut();
-        match env.get(&id) {
-            Some(Value::Map(k)) if std::rc::Rc::as_ptr(k) == ptr => {
+        match env.get(&id).and_then(ptr_rc) {
+            Some(p) if p == ptr => {
                 env.insert(id, Value::Unit);
                 true
             }

@@ -198,7 +198,7 @@ pub fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
         return Err("`vis.lock` hỏng: thiếu `packages`".to_string());
     };
     let mut out = Vec::new();
-    for p in ps {
+    for p in ps.iter() {
         let Value::Map(p) = p else {
             return Err("`vis.lock` hỏng: `packages[]` phải là object".to_string());
         };
@@ -216,7 +216,7 @@ pub fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
             return Err("`vis.lock` hỏng: package thiếu `files`".to_string());
         };
         let mut files = Vec::new();
-        for f in fs {
+        for f in fs.iter() {
             let Value::Map(f) = f else {
                 return Err("`vis.lock` hỏng: `files[]` phải là object".to_string());
             };

@@ -439,7 +439,7 @@ fn dong_cua(s: &str) -> Value {
             dong.push(Value::Str(d.to_string()));
         }
     }
-    Value::List(dong)
+    Value::list(dong)
 }
 
 /// Record `{stdout: list[str], stderr: list[str], code: int}` cho `| complete` (ST-34).
@@ -530,7 +530,7 @@ pub(crate) fn sap_xep_theo_khoa(
             o
         }
     });
-    Ok(Value::List(cap.into_iter().map(|(_, v)| v).collect()))
+    Ok(Value::list(cap.into_iter().map(|(_, v)| v).collect()))
 }
 
 pub fn call(
@@ -750,7 +750,7 @@ pub fn call(
             if matches!(ds.last(), Some(Value::Str(x)) if x.is_empty()) {
                 ds.pop();
             }
-            Ok(Value::List(ds))
+            Ok(Value::list(ds))
         }
         "take" => {
             if args.len() != 2 {
@@ -760,7 +760,7 @@ pub fn call(
                 return Err(trap(RT, "`take` cần `list[str]` và `int`", span));
             };
             let n = (*n).max(0) as usize;
-            Ok(Value::List(xs.iter().take(n).cloned().collect()))
+            Ok(Value::list(xs.iter().take(n).cloned().collect()))
         }
         // ST-42: `ls`/`open` qua `FsHost` (thật hoặc `--fs-mock`).
         "ls" => {
@@ -793,7 +793,7 @@ pub fn call(
             // **Sắp theo tên (byte)** — ổn định giữa hệ tệp.
             ds.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
             let long = matches!(args.get(2), Some(Value::Bool(true)));
-            Ok(Value::List(
+            Ok(Value::list(
                 ds.into_iter()
                     .map(|m| {
                         // **ST-240 / VD-242 §4 (nợ #171)**: host ép `SystemTime` (u128 ns) sang
@@ -872,10 +872,10 @@ pub fn call(
             };
             let f = f.clone();
             let mut out: Vec<Value> = Vec::with_capacity(xs.len());
-            for x in xs.clone() {
+            for x in xs.iter().cloned() {
                 out.push(host.call(&f, vec![x], span)?);
             }
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         // ST-39: `sort_by` — khoá `int/size/duration/percent/str`; **ổn định** cả hai chiều (đảo
         // comparator, `sort_by` của Rust ổn định), `--desc` mặc định `false`.
@@ -908,7 +908,7 @@ pub fn call(
             };
             let f = args[1].clone();
             let mut out: Vec<Value> = Vec::new();
-            for x in xs.clone() {
+            for x in xs.iter().cloned() {
                 match host.call(&f, vec![x.clone()], span)? {
                     Value::Bool(true) => out.push(x),
                     Value::Bool(false) => {}
@@ -921,7 +921,7 @@ pub fn call(
                     }
                 }
             }
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         "each" => {
             if args.len() != 2 {
@@ -931,7 +931,7 @@ pub fn call(
                 return Err(trap(RT, "`each` cần `list`", span));
             };
             let f = args[1].clone();
-            for x in xs.clone() {
+            for x in xs.iter().cloned() {
                 host.call(&f, vec![x], span)?;
             }
             Ok(Value::Unit)

@@ -109,7 +109,7 @@ pub fn than(uri: &str, text: Option<&str>, mode: Mode) -> Vec<u8> {
     };
     thong_bao(
         "textDocument/publishDiagnostics",
-        m(vec![("uri", s(uri)), ("diagnostics", Value::List(ds))]),
+        m(vec![("uri", s(uri)), ("diagnostics", Value::list(ds))]),
     )
 }
 

@@ -25,13 +25,13 @@ const LOAI: &str = "source.fixAll";
 
 /// `codeActionProvider` của `initialize`: chỉ quảng cáo đúng loại action mình sinh.
 pub fn provider() -> Value {
-    m(vec![("codeActionKinds", Value::List(vec![s(LOAI)]))])
+    m(vec![("codeActionKinds", Value::list(vec![s(LOAI)]))])
 }
 
 /// Phản hồi `textDocument/codeAction` (`CodeAction[]`).
 pub fn tra_loi(kq: &KetQua, uri: &str, mode: Mode, id: &Value) -> Vec<u8> {
     let Some(edit) = edit_toan_tep(kq, mode) else {
-        return phan_hoi(id, Value::List(Vec::new()));
+        return phan_hoi(id, Value::list(Vec::new()));
     };
     let action = m(vec![
         ("title", s(TIEU_DE)),
@@ -40,9 +40,9 @@ pub fn tra_loi(kq: &KetQua, uri: &str, mode: Mode, id: &Value) -> Vec<u8> {
             "edit",
             m(vec![(
                 "changes",
-                Value::map(vec![kv(uri, Value::List(vec![edit]))]),
+                Value::map(vec![kv(uri, Value::list(vec![edit]))]),
             )]),
         ),
     ]);
-    phan_hoi(id, Value::List(vec![action]))
+    phan_hoi(id, Value::list(vec![action]))
 }

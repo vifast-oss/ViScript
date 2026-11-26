@@ -557,7 +557,7 @@ fn bind_pat_env(pat: &HPat, v: &Value, env: &Env) -> bool {
                     }
                 }
                 if let Some(r) = rest {
-                    let tail = Value::List(xs[items.len()..].to_vec());
+                    let tail = Value::list(xs[items.len()..].to_vec());
                     bind_pat_env(r, &tail, env)
                 } else {
                     xs.len() == items.len()
@@ -999,7 +999,7 @@ mod tests {
         let mut it = Interp::new(&hir, &symbols, &types);
         let env: Env = Rc::new(RefCell::new(HashMap::new()));
         env.borrow_mut()
-            .insert(u32::MAX, Value::List(vec![Value::Str("argv".into())]));
+            .insert(u32::MAX, Value::list(vec![Value::Str("argv".into())]));
         let mut frame = IFrame::expr_frame(&env, Rc::new(RefCell::new(HashSet::new())));
         let e = HExpr::Var {
             name: "khong_ton_tai".into(),

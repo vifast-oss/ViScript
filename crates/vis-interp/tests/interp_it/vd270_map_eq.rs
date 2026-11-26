@@ -330,19 +330,19 @@ fn gia_tri_khac_va_gia_tri_long() {
         &p(Value::Int(1), Value::Int(1)),
         &p(Value::Int(1), Value::Float(1.0)),
     );
-    let ds = || Value::List(vec![Value::Int(1), Value::Str("x".into())]);
+    let ds = || Value::list(vec![Value::Int(1), Value::Str("x".into())]);
     bang(
         &p(Value::Int(1), ds()),
         &p(
             Value::Int(1),
-            Value::List(vec![Value::Int(1), Value::Str("x".into())]),
+            Value::list(vec![Value::Int(1), Value::Str("x".into())]),
         ),
     );
     khac(
         &p(Value::Int(1), ds()),
         &p(
             Value::Int(1),
-            Value::List(vec![Value::Int(1), Value::Str("y".into())]),
+            Value::list(vec![Value::Int(1), Value::Str("y".into())]),
         ),
     );
     bang(
@@ -356,21 +356,21 @@ fn fallback_khoa_list_record_map_long_enum_unit_range() {
     // List.
     bang(
         &m(vec![(
-            Value::List(vec![Value::Int(1), Value::Int(2)]),
+            Value::list(vec![Value::Int(1), Value::Int(2)]),
             Value::Int(9),
         )]),
         &m(vec![(
-            Value::List(vec![Value::Int(1), Value::Int(2)]),
+            Value::list(vec![Value::Int(1), Value::Int(2)]),
             Value::Int(9),
         )]),
     );
     khac(
         &m(vec![(
-            Value::List(vec![Value::Int(1), Value::Int(2)]),
+            Value::list(vec![Value::Int(1), Value::Int(2)]),
             Value::Int(9),
         )]),
         &m(vec![(
-            Value::List(vec![Value::Int(1), Value::Int(3)]),
+            Value::list(vec![Value::Int(1), Value::Int(3)]),
             Value::Int(9),
         )]),
     );
@@ -410,16 +410,16 @@ fn fallback_khoa_list_record_map_long_enum_unit_range() {
 
     // Trùng khoá phức tạp: last-wins vẫn đúng ở fallback.
     let dup = m(vec![
-        (Value::List(vec![Value::Int(1)]), Value::Int(10)),
-        (Value::List(vec![Value::Int(1)]), Value::Int(20)),
+        (Value::list(vec![Value::Int(1)]), Value::Int(10)),
+        (Value::list(vec![Value::Int(1)]), Value::Int(20)),
     ]);
     bang(
         &dup,
-        &m(vec![(Value::List(vec![Value::Int(1)]), Value::Int(20))]),
+        &m(vec![(Value::list(vec![Value::Int(1)]), Value::Int(20))]),
     );
     khac(
         &dup,
-        &m(vec![(Value::List(vec![Value::Int(1)]), Value::Int(10))]),
+        &m(vec![(Value::list(vec![Value::Int(1)]), Value::Int(10))]),
     );
 
     // Enum / Unit / Range.
@@ -449,10 +449,10 @@ fn fallback_khoa_list_record_map_long_enum_unit_range() {
     // Trộn khoá vô hướng + phức tạp, đảo thứ tự toàn map.
     let hon = m(vec![
         (Value::Int(1), Value::Int(10)),
-        (Value::List(vec![Value::Int(2)]), Value::Int(20)),
+        (Value::list(vec![Value::Int(2)]), Value::Int(20)),
     ]);
     let hon_dao = m(vec![
-        (Value::List(vec![Value::Int(2)]), Value::Int(20)),
+        (Value::list(vec![Value::Int(2)]), Value::Int(20)),
         (Value::Int(1), Value::Int(10)),
     ]);
     bang(&hon, &hon_dao);
@@ -461,9 +461,9 @@ fn fallback_khoa_list_record_map_long_enum_unit_range() {
     let mut lon = (0..200)
         .map(|i| (Value::Int(i), Value::Int(i)))
         .collect::<Vec<_>>();
-    lon.push((Value::List(vec![Value::Int(1)]), Value::Int(9)));
+    lon.push((Value::list(vec![Value::Int(1)]), Value::Int(9)));
     let mut lon_dao = lon.iter().rev().cloned().collect::<Vec<_>>();
     bang(&m(lon.clone()), &m(lon_dao.clone()));
-    lon_dao[0].0 = Value::List(vec![Value::Int(3)]);
+    lon_dao[0].0 = Value::list(vec![Value::Int(3)]);
     khac(&m(lon), &m(lon_dao));
 }

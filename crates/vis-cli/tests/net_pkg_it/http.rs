@@ -706,3 +706,83 @@ fn http148_timeout_mot_deadline_qua_moi_hop_redirect() {
     }
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// ===== VD-292 §2.1 (ST-316a): `res.headers` map last-wins + cookie jar đủ 2 `Set-Cookie` =====
+
+/// Giá trị header đầu tiên của `ten` trong request thô (tên không phân biệt hoa thường).
+fn header_cua<'a>(req: &'a str, ten: &str) -> Option<&'a str> {
+    req.lines().find_map(|l| {
+        let (k, v) = l.split_once(':')?;
+        if k.eq_ignore_ascii_case(ten) {
+            Some(v.trim())
+        } else {
+            None
+        }
+    })
+}
+
+/// **ST-316a (VD-292 §2.1)** — server gửi **hai** header `Set-Cookie` (`a=1`, `b=2`):
+/// - `res.headers` là `map[str, str]` (bất biến `VisMap`, `VD-242`) ⇒ khoá `set-cookie`
+///   **last-wins**: giá trị phải là của header **thứ hai** (`b=2`), không phải `a=1`;
+/// - cookie jar nội bộ đọc **toàn bộ** `Vec` `Set-Cookie` thô ⇒ request kế tiếp (`http.get`)
+///   phải gửi lại **cả hai** cookie — đây là lý do hợp đồng last-wins không phá cookie.
+#[test]
+fn http_head_hai_set_cookie_map_last_wins_jar_du_hai() {
+    let _k = kho();
+    let d = tam("head-2-set-cookie");
+    let thay = Arc::new(Mutex::new(Vec::<String>::new()));
+    let thay2 = Arc::clone(&thay);
+    // 4 kết nối: interp + `--vm --no-cache`, mỗi đường 2 request (HEAD rồi GET).
+    let addr = server_theo_duong(4, move |req, _| {
+        thay2.lock().expect("log").push(req.to_string());
+        if req.starts_with("HEAD /mot ") {
+            b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nSet-Cookie: a=1; Path=/\r\n\
+              Set-Cookie: b=2; Path=/\r\nConnection: close\r\n\r\n"
+                .to_vec()
+        } else if req.starts_with("GET /hai ") {
+            dap_ung("200 OK", b"hai", 3)
+        } else {
+            dap_ung("500 Internal Server Error", b"", 0)
+        }
+    });
+    let src = format!(
+        "use std.http\n\
+         match http.head(\"http://{addr}/mot\"):\n\
+         \x20   Ok(m):\n\
+         \x20       print(m[\"status\"])\n\
+         \x20       print(m[\"headers\"][\"set-cookie\"])\n\
+         \x20   Err(e): print(e)\n\
+         match http.get(\"http://{addr}/hai\"):\n\
+         \x20   Ok(s): print(s)\n\
+         \x20   Err(e): print(e)\n"
+    );
+    let (code, out, err) = ca(&d, "hai-set-cookie", &src);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(
+        out, "200\nb=2; Path=/\nhai\n",
+        "res.headers[set-cookie] phải last-wins (header thứ hai) và jar gửi lại đủ hai cookie: {out:?}"
+    );
+    let logs = thay.lock().expect("log");
+    assert_eq!(
+        logs.len(),
+        4,
+        "2 đường × 2 request, thực tế {}:",
+        logs.len()
+    );
+    for (i, cap) in logs.chunks(2).enumerate() {
+        assert!(cap[0].starts_with("HEAD /mot "), "lượt {i}: {:?}", cap[0]);
+        assert_eq!(
+            header_cua(&cap[0], "cookie"),
+            None,
+            "lượt {i}: request đầu chưa có cookie"
+        );
+        assert!(cap[1].starts_with("GET /hai "), "lượt {i}: {:?}", cap[1]);
+        assert_eq!(
+            header_cua(&cap[1], "cookie"),
+            Some("a=1; b=2"),
+            "lượt {i}: jar phải gửi đủ CẢ HAI cookie"
+        );
+    }
+    drop(logs);
+    let _ = std::fs::remove_dir_all(&d);
+}

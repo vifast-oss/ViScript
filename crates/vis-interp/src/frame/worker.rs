@@ -59,7 +59,7 @@ pub(crate) fn run_frame_driver<'a>(
         }
     }
     let body: &'a [HStmt] = main_fn.map(|f| f.body.as_slice()).unwrap_or(&hir.stmts);
-    let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
+    let argv = Value::list(args.iter().map(|s| Value::Str(s.clone())).collect());
     // **VD-259**: `main` dùng **cùng** helper tham số/default với `dispatch`. Bản cũ chỉ đưa
     // argv cho tham số 1 và `Unit` cho mọi tham số còn lại ⇒ `b: int = 7` bị `Unit`.
     let main_env = match main_fn {
