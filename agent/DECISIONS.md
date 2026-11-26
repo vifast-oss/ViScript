@@ -4217,3 +4217,14 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 6. **`ST-316c` vẫn `BLOCKED`** (chờ `mps`/`psvn`); thêm checklist `ps`-side **verify WASI trên `main` cuối `d97773de`** (không phải task DONE). Chain 0-LLM giữ nguyên, không sửa.
 7. **Điều kiện đóng Sóng 8**: `#206`/`#207`/`#208` → `đóng`; `cargo doc -D warnings -p vis-interp` xanh; parity repro + `vis-diff 100k lech=0`; R8 **39/40**; 0 `unsafe`; `SO-NO` §8 cập nhật đếm thật (dự kiến **208 = 82 mở + 107 đóng + 16 VS3 + 2 + 1**, kiểm lại khi đóng). Chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
 8. **Đồng bộ (docs-only)**: `QUEUE.md` 3 hàng `ST-319a..c` `READY`; `ACTIVE.md` Sóng 8; `STATE.md` trục; `ROADMAP.md` 1 dòng; `DECISIONS-INDEX.md`. **Không** sửa mã sản phẩm, `docs/SPEC*.md`, nhánh/worktree.
+
+### VD-301 · Mở `ST-319d` (đóng `#208` theo thiết kế codegen) & Đăng ký `#210` — A0, 2026-11-27
+
+> **Căn cứ**: `main` @ **`40925ea6`**; thiết kế `/home/ps/vislogs/design-208-codegen.md` (đọc **read-only**, không sửa repo); `ST-319c` chẩn đoán (`JOURNAL/st319c-208-codegen.md`, `b1249172`); `plan/st319a` audit PASS có điều kiện **`7f209dfb`** (đang vá cache), `plan/st319c2` @ **`ef0f213d`**, `plan/st319d` @ **`7f209dfb`** (mới); `SO-NO` max thật **#209**.
+
+1. **Mở `ST-319d` (W4, `READY`) — đóng `#208` theo thiết kế codegen**: lane `crates/vis-bytecode/src/codegen/**`; **xoá đặc cách `push`** trong `cau.rs` (khoảng dòng 151–184), thêm `Gen.mutables: HashSet<u32>` (nạp biến cấp tệp `var` + `p.is_var_self`) và writeback `CallMethod; Assign; LoadLocal` ở `expr.rs`; **không đổi VBC1** (`VERSION` 2, `API-VBC1.txt` không đổi); test **6 ca** trong `crates/vis-conformance/tests/async_api_it/st317b_worker_orchestrate.rs` (0 tệp cấp 1 mới); cổng `gate --fast` + `VIS_DIFF_N=100000 ./bin/vis-diff` **`lech=0`** + clippy. Nhánh `plan/st319d` @ `7f209dfb`, đang chạy.
+2. **`ST-319c2` (W3b, `#209`)**: cập nhật nhánh **`ef0f213d`** (checkpoint riêng), đang chạy; KPI parity W=1 `5\n5` interp↔VM + `vis-diff 100k`.
+3. **`ST-319a` (W1, `#206`)**: audit **PASS có điều kiện `7f209dfb`**, đang vá cache ⇒ trạng thái **`REVIEW`** (không phải READY).
+4. **Đăng ký `#210` (`mở`, VS3/correctness)**: closure **gọi hàm tên** đọc/ghi global — non-frame interp `1,0`/`5,0` vs VM `0,1`/`5,5`; pre-existing; `SPEC` §4.7 **chưa nói** env hàm tên khi gọi từ closure; lane `vis-interp` / A0 chốt ngữ nghĩa.
+5. **Sổ §8**: **210 = 86 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (đếm thật 210 hàng; dải 1..210, thiếu `#205`, `#109` tách `a`/`b`).
+6. **Ràng buộc**: docs-only; **không** tạo worktree/nhánh, **không** đụng `st319a`/`st319c2`/`st319d`, không sửa mã/`docs/SPEC*.md`; `ST-316c` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).

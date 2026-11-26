@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-300`, 2026-11-27). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-301`, 2026-11-27). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **289** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **290** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -296,6 +296,7 @@
 | VD-298 | Mở đợt 3 Sóng 7 — `ST-318h` (R1 `vis-interp/frame.rs`) & `ST-318i` (rustdoc `vis-hir`) | đã chốt | 4184 |
 | VD-299 | Phê chuẩn `ST-318a`/`ST-318h` `DONE`, Chốt Sóng 7 9/9, Đăng ký `#206`/`#207`/`#208` | đã chốt | 4195 |
 | VD-300 | Mở Sóng 8 — Đóng nợ Parity/Rustdoc hậu Sóng 7 (`ST-319a`/`ST-319b`/`ST-319c`) | đã chốt | 4208 |
+| VD-301 | Mở `ST-319d` (đóng `#208` theo thiết kế codegen) & Đăng ký `#210` | đã chốt | 4221 |
 
 ## Ghi chú
 
