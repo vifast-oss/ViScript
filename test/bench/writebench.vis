@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-316a (VD-292 §4.1 (5)) — writebench: map 10 000 khoá rồi 100 lần ghi khoá **mới**.
+# Đo đúng đường `m[k] = v` từng chép sâu cả `VisMap` O(N) trước `ST-315b`/`ST-316a`:
+# bản nền `5cbb7853` 2 392–2 540 ms → `4ff443c6` (CoW tại chỗ) 8–11 ms (JOURNAL/st316a-valueops.md §2).
+# Giữ nguyên mã nguồn mẫu để số liệu còn so sánh. Kỳ vọng: 10100.
+# Chạy: `vis run --time --no-cache [--vm] test/bench/writebench.vis`.
+var m = {}
+for i in 0..10000: m[i] = i
+for j in 0..100: m[10000 + j] = j
+print(m.len())

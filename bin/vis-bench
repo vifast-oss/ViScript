@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-316a (VD-292 §4.1 (5)) — `bin/vis-bench`: đo 5 chương trình trong `test/bench/` trên
+# **binary release trực tiếp** (không qua `cargo run`), cả interp (mặc định) lẫn `--vm`.
+#
+#   ./bin/vis-bench                          # 5 chương trình × 2 engine × 5 lần, bảng người đọc
+#   ./bin/vis-bench --runs 3 --json          # JSON ổn định khoá (schema_version = 1)
+#   ./bin/vis-bench --only mapbench,writebench --bin target/release/vis
+#
+# Mỗi mẫu lấy **hai** số:
+#   - `*_ms` / `median_ms` / `p90_ms`: thời gian **runtime** do `vis run --time` in ra
+#     (`# time:`, loại parse/tyck/codegen; đơn vị lẻ là µs được đổi sang ms float);
+#   - `wall_*`: đồng hồ tường của **cả tiến trình** (Python `perf_counter`), gồm khởi động,
+#     parse/tyck/codegen — dùng `--no-cache` nên VM trả giá codegen mỗi lần.
+# Cả hai engine chạy **warmup 1 lần** (không tính) trước N mẫu; mọi mẫu phải exit 0 và in ra
+# **cùng một stdout**, nếu không công cụ exit 1 (chống "nhanh vì sai kết quả").
+# p90 = percentile bậc thang (nearest-rank, `ceil(0.9*N)`), N=5 ⇒ p90 là mẫu lớn nhất.
+# Không ghim CPU: số đo chịu ảnh hưởng tải máy — ghi kèm `host`/`runs`/`generated_at` để đối chiếu.
+# Mã thoát: 0 PASS · 1 lỗi chạy/lệch kết quả · 2 lỗi dùng/thiếu binary-chương trình.
+"""Đo benchmark ViScript trên binary release, in median/p90 (ms) + sha256.
+
+Chương trình đo nằm trong `test/bench/` (repo-relative) và không phụ thuộc `/tmp`.
+"""
+
+import argparse
+import hashlib
+import json
+import math
+import os
+import platform
+import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+SCHEMA_VERSION = 1
+TOOL = "vis-bench"
+DEFAULT_RUNS = 5
+WARMUP_RUNS = 1
+TIMEOUT_S = 900
+ROOT = Path(__file__).resolve().parent.parent
+
+# (tên, đường dẫn repo-relative) — giữ thứ tự này trong JSON/bảng.
+PROGRAMS = [
+    ("opt-bench", "test/bench/opt-bench.vis"),
+    ("trim-matches", "test/bench/trim-matches.vis"),
+    ("mapbench", "test/bench/mapbench.vis"),
+    ("listbench", "test/bench/listbench.vis"),
+    ("writebench", "test/bench/writebench.vis"),
+]
+ENGINES = [("interp", []), ("vm", ["--vm"])]
+
+TIME_RE = re.compile(r"^# time: (\d+) (ms|us)$")
+
+
+class BenchError(Exception):
+    """Lỗi chạy benchmark (exit 1) — khác lỗi dùng (exit 2)."""
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def resolve_binary(raw):
+    """`--bin` > `$VIS_BENCH_BIN` > `<repo>/target/release/vis`; tên trần tra PATH."""
+    if raw is None:
+        raw = os.environ.get("VIS_BENCH_BIN") or str(ROOT / "target" / "release" / "vis")
+    if "/" not in raw and os.sep not in raw:
+        found = shutil.which(raw)
+        if found:
+            return Path(found).resolve()
+    p = Path(raw).expanduser()
+    if not p.is_absolute():
+        p = Path.cwd() / p
+    return p.resolve()
+
+
+def resolve_programs(only):
+    """Trả danh sách (tên, Path) theo `--only` (tên chính xác, hỗ trợ dấu phẩy)."""
+    names = [name for name, _ in PROGRAMS]
+    if not only:
+        return [(name, ROOT / rel) for name, rel in PROGRAMS]
+    want = []
+    for item in only:
+        want.extend(part.strip() for part in item.split(",") if part.strip())
+    unknown = [w for w in want if w not in names]
+    if unknown:
+        raise BenchError(
+            "--only không biết: %s (hợp lệ: %s)"
+            % (", ".join(unknown), ", ".join(names))
+        )
+    if not want:
+        raise BenchError("--only cần ít nhất một tên chương trình")
+    seen = set()
+    out = []
+    for name, rel in PROGRAMS:
+        if name in want and name not in seen:
+            seen.add(name)
+            out.append((name, ROOT / rel))
+    return out
+
+
+def run_once(binary, program, engine_args):
+    """Chạy một mẫu; trả (runtime_ms, wall_ms, stdout)."""
+    cmd = [str(binary), "run", "--time", "--no-cache"] + engine_args + [str(program)]
+    t0 = time.perf_counter()
+    try:
+        cp = subprocess.run(
+            cmd,
+            cwd=str(ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        raise BenchError("quá hạn %d s: %s" % (TIMEOUT_S, " ".join(cmd)))
+    wall_ms = (time.perf_counter() - t0) * 1000.0
+    stdout = cp.stdout.decode("utf-8", "replace")
+    stderr = cp.stderr.decode("utf-8", "replace")
+    if cp.returncode != 0:
+        raise BenchError(
+            "lệnh `%s` exit %d\n--- stderr ---\n%s"
+            % (" ".join(cmd), cp.returncode, stderr.rstrip())
+        )
+    runtime_ms = None
+    for line in stderr.splitlines():
+        m = TIME_RE.match(line.strip())
+        if m:
+            value = float(m.group(1))
+            runtime_ms = value if m.group(2) == "ms" else value / 1000.0
+    if runtime_ms is None:
+        raise BenchError(
+            "không thấy dòng `# time:` trong stderr của `%s`\n--- stderr ---\n%s"
+            % (" ".join(cmd), stderr.rstrip())
+        )
+    return runtime_ms, wall_ms, stdout
+
+
+def percentile(values, p):
+    """Percentile bậc thang (nearest-rank): `ceil(p*N)` phần tử đã sắp."""
+    s = sorted(values)
+    k = max(1, int(math.ceil(p * len(s))))
+    return s[k - 1]
+
+
+def median(values):
+    s = sorted(values)
+    n = len(s)
+    if n % 2:
+        return s[n // 2]
+    return (s[n // 2 - 1] + s[n // 2]) / 2.0
+
+
+def summarize(values):
+    return {
+        "samples_ms": [round(v, 3) for v in values],
+        "median_ms": round(median(values), 3),
+        "p90_ms": round(percentile(values, 0.90), 3),
+        "min_ms": round(min(values), 3),
+        "max_ms": round(max(values), 3),
+    }
+
+
+def measure_program(binary, name, path, runs):
+    if not path.is_file():
+        raise BenchError("thiếu chương trình đo: %s" % path)
+    program_sha = sha256_file(path)
+    engines = {}
+    stdouts = {}
+    for engine, engine_args in ENGINES:
+        # Warmup: không tính vào mẫu; cũng là lượt kiểm exit 0 + có `# time:`.
+        warm_rt, warm_wall, _warm_out = run_once(binary, path, engine_args)
+        runtime_samples = []
+        wall_samples = []
+        outputs = []
+        for i in range(runs):
+            rt, wall, out = run_once(binary, path, engine_args)
+            runtime_samples.append(rt)
+            wall_samples.append(wall)
+            outputs.append(out)
+        for i, out in enumerate(outputs):
+            if out != outputs[0]:
+                raise BenchError(
+                    "%s/%s: stdout lần %d khác lần 1 (mẫu không tất định)"
+                    % (name, engine, i + 1)
+                )
+        stdouts[engine] = outputs[0]
+        entry = summarize(runtime_samples)
+        entry.update(
+            {
+                "wall_samples_ms": [round(v, 3) for v in wall_samples],
+                "wall_median_ms": round(median(wall_samples), 3),
+                "wall_p90_ms": round(percentile(wall_samples, 0.90), 3),
+                "warmup_runtime_ms": round(warm_rt, 3),
+                "warmup_wall_ms": round(warm_wall, 3),
+            }
+        )
+        engines[engine] = entry
+    if stdouts.get("interp") != stdouts.get("vm"):
+        raise BenchError(
+            "%s: interp và vm in khác nhau (interp=%r, vm=%r)"
+            % (name, stdouts.get("interp"), stdouts.get("vm"))
+        )
+    out = stdouts.get("interp", "")
+    return {
+        "name": name,
+        "path": str(path.relative_to(ROOT)),
+        "sha256": program_sha,
+        "stdout": out,
+        "stdout_sha256": hashlib.sha256(out.encode("utf-8")).hexdigest(),
+        "engines": engines,
+    }
+
+
+def binary_version(binary):
+    try:
+        cp = subprocess.run(
+            [str(binary), "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if cp.returncode != 0:
+        return None
+    return cp.stdout.decode("utf-8", "replace").strip().splitlines()[0]
+
+
+def human_report(doc):
+    lines = []
+    lines.append(
+        "%s  schema=%d  runs=%d  warmup=%d"
+        % (TOOL, doc["schema_version"], doc["runs"], doc["warmup"])
+    )
+    lines.append("binary   %s" % doc["binary"]["path"])
+    lines.append("sha256   %s" % doc["binary"]["sha256"])
+    lines.append("version  %s" % (doc["binary"]["version"] or "(không đọc được)"))
+    lines.append("host     %s/%s" % (doc["host"]["system"], doc["host"]["machine"]))
+    lines.append(
+        "ms       runtime `vis run --time` (không gồm parse/tyck/codegen); wall_med = cả tiến trình"
+    )
+    lines.append("")
+    head = "%-14s %-7s %9s %9s %9s %9s %10s" % (
+        "program",
+        "engine",
+        "median",
+        "p90",
+        "min",
+        "max",
+        "wall_med",
+    )
+    unit = "%-14s %-7s %9s %9s %9s %9s %10s" % (
+        "",
+        "",
+        "ms",
+        "ms",
+        "ms",
+        "ms",
+        "ms",
+    )
+    lines.append(head)
+    lines.append(unit)
+    for prog in doc["programs"]:
+        for engine, _ in ENGINES:
+            e = prog["engines"][engine]
+            lines.append(
+                "%-14s %-7s %9.3f %9.3f %9.3f %9.3f %10.3f"
+                % (
+                    prog["name"],
+                    engine,
+                    e["median_ms"],
+                    e["p90_ms"],
+                    e["min_ms"],
+                    e["max_ms"],
+                    e["wall_median_ms"],
+                )
+            )
+    lines.append("")
+    lines.append("program sha256 (stdout sha256):")
+    for prog in doc["programs"]:
+        lines.append(
+            "  %-14s %s  (%s)"
+            % (prog["name"], prog["sha256"], prog["stdout_sha256"])
+        )
+    return "\n".join(lines)
+
+
+def main(argv):
+    ap = argparse.ArgumentParser(
+        prog="vis-bench",
+        description="Đo test/bench/*.vis trên binary release: interp + --vm, median/p90, sha256.",
+    )
+    ap.add_argument(
+        "--bin",
+        default=None,
+        metavar="<vis>",
+        help="binary vis release (mặc định $VIS_BENCH_BIN hoặc target/release/vis)",
+    )
+    ap.add_argument(
+        "--runs",
+        type=int,
+        default=DEFAULT_RUNS,
+        metavar="N",
+        help="số mẫu mỗi engine (mặc định %d)" % DEFAULT_RUNS,
+    )
+    ap.add_argument("--json", action="store_true", help="in JSON ổn định khoá ra stdout")
+    ap.add_argument(
+        "--only",
+        action="append",
+        default=None,
+        metavar="<tên>",
+        help="chỉ chạy chương trình này (lặp lại hoặc ngăn cách bởi dấu phẩy)",
+    )
+    args = ap.parse_args(argv)
+    if args.runs < 1:
+        ap.error("--runs phải >= 1")
+
+    binary = resolve_binary(args.bin)
+    if not binary.is_file():
+        ap.error(
+            "không thấy binary `%s` (dựng bằng: cargo build --release -p vis-cli --bin vis)"
+            % binary
+        )
+    if not os.access(str(binary), os.X_OK):
+        ap.error("binary không chạy được: %s" % binary)
+    try:
+        programs = resolve_programs(args.only)
+    except BenchError as e:
+        ap.error(str(e))
+
+    try:
+        results = []
+        for name, path in programs:
+            results.append(measure_program(binary, name, path, args.runs))
+    except BenchError as e:
+        print("%s: LỖI: %s" % (TOOL, e), file=sys.stderr)
+        return 1
+
+    doc = {
+        "schema_version": SCHEMA_VERSION,
+        "tool": TOOL,
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "runs": args.runs,
+        "warmup": WARMUP_RUNS,
+        "host": {
+            "system": platform.system(),
+            "machine": platform.machine(),
+            "release": platform.release(),
+            "python": platform.python_version(),
+            "cpu_count": os.cpu_count(),
+        },
+        "binary": {
+            "path": str(binary),
+            "sha256": sha256_file(binary),
+            "version": binary_version(binary),
+        },
+        "programs": results,
+    }
+    if args.json:
+        print(json.dumps(doc, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(human_report(doc))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print("%s: ngắt bởi người dùng" % TOOL, file=sys.stderr)
+        sys.exit(130)

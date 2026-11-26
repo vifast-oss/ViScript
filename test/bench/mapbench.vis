@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-316a (VD-292 §4.1 (5)) — mapbench: map N=316 khoá rồi 100 000 lượt `get` xen kẽ.
+# Bản gốc dùng để đo chỉ mục băm lười `VisMap` (`ST-315b`, JOURNAL/st315b-map-cow.md §4):
+# nền tuyến tính 1 328 ms → 47–50 ms. Giữ nguyên N/độ dài vòng lặp để số liệu còn so sánh.
+# Kỳ vọng: 15737616 (316 chu kỳ đầy 0..315 = 15 727 320, cộng 0..143 = 10 296).
+# Chạy: `vis run --time --no-cache [--vm] test/bench/mapbench.vis`.
+fn main():
+    var m: map[str, int] = {}
+    var i = 0
+    while i < 316:
+        m["k{i}"] = i
+        i += 1
+    var s = 0
+    var j = 0
+    while j < 100000:
+        s += m["k{j % 316}"]
+        j += 1
+    print(s)
