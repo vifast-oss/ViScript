@@ -2,13 +2,16 @@
 # ST-315b — Kiểm toán độc lập (Gatekeeper/Agent 1), 2026-11-26
 
 - **Verdict: PASS** — hợp đồng `VD-291` §3.2 (Q1–Q3, CoW `Value::Map(Rc<VisMap>)`,
-  chỉ mục băm lười, `size_of::<Value>() == 64`, `SendValue` ABI) đạt; 6 finding **không chặn**
-  (F1 hành vi API, F2/F4/F6 bộ nhớ, F3 hiệu năng sau CoW, F5 coverage).
-- **Nhánh kiểm**: `review/r315b` @ `8ca08441` (nền `2fc47130`); lát cần kiểm `7dc21cf2`
+  chỉ mục băm lười, `size_of::<Value>() == 64`, `SendValue` ABI) đạt; 6 finding ban đầu;
+  **F3 đã vá, F5 phần lớn đã vá trên `main` @ `79f1fcee`** (fix `085546d0`) — recheck §11;
+  còn F1/F2/F4/F6 không chặn.
+- **Nhánh kiểm**: `review/r315b`; audit gốc @ `8ca08441` (nền `2fc47130`), recheck sau
+  `git merge main` @ `79f1fcee`; lát gốc `7dc21cf2`
   (`[ST-315b] core: Value::Map(Rc<VisMap>) CoW + chi muc bam luoi`).
 - **Worktree**: `/home/ps/ViScript-r315b`; **target riêng** `/home/ps/ViScript-r315b/target`;
-  `CARGO_BUILD_JOBS=3`, `CARGO_PROFILE_DEV_DEBUG=0`; không dùng `mps`; không sửa mã nguồn,
-  không push/merge. Chỉ tạo tệp này.
+  `CARGO_BUILD_JOBS=3`, `CARGO_PROFILE_DEV_DEBUG=0`; không dùng `mps`; không sửa mã nguồn;
+  audit gốc không push/merge; recheck chỉ `git merge main` fast-forward theo yêu cầu.
+  Chỉ tạo/cập nhật tệp này.
 - **Diff kiểm**: `git diff 2fc47130..8ca08441` (49 tệp) + đọc trực tiếp `map.rs`,
   `show_eq.rs`, `value/mod.rs`, `json/{mod,derive}.rs`, `runtime`, `interp`, `vm`, `lsp`,
   `pkg`, `plugin`, `http`, `fsmock`, test `st315b_map_cow.rs`, `core_it.rs`, journal gốc.
@@ -193,12 +196,14 @@ Binary mới (`8ca08441`): `sha256 dff3d6295e69fc8447eed3c644c532c0792c514718c6b
 - **Mức**: **Thấp** (chỉ bộ nhớ, không sai ngữ nghĩa); nên dựng index khi gặp khoá vô hướng
   đầu tiên hoặc chỉ cấp `dau` theo số khoá vô hướng.
 
-### F3 — Index rơi sau CoW: ghi đè khoá cũ không dựng lại; ghi khoá mới dựng lại O(N) — **Thấp (hiệu năng)**
+### F3 — Index rơi sau CoW: ghi đè khoá cũ không dựng lại; ghi khoá mới dựng lại O(N) — **Thấp (hiệu năng) — đã vá @79f1fcee, recheck §11**
 
 - **Vị trí**: `crates/vis-core/src/value/map.rs:120-128` (`Clone` bỏ index),
   `:257-268` (`insert` chỉ dựng index ở nhánh **khoá mới**; nhánh cập nhật giá trị trả sớm),
   `:275` (`remove` dựng lại toàn bộ).
-- **Hệ quả 1 (đọc)**: `let b = a` (Rc chia sẻ) rồi `b["k"] = v` với `k` **đã có**:
+- **Đã vá (`085546d0`)**: `map.rs:257-262` dựng lại index trước `vi_tri` khi
+  `index.is_none() && len >= NGUONG_CHI_MUC`; test F3/F5 chạm đúng đường này (§11).
+- **Hệ quả 1 (đọc) — trước vá**: `let b = a` (Rc chia sẻ) rồi `b["k"] = v` với `k` **đã có**:
   `doc_o` clone → `Rc::make_mut` gọi `VisMap::clone` (index None) → `insert` tìm tuyến tính,
   cập nhật, **không** dựng index. Mọi `b.get(...)` sau đó quét N cho tới khi có insert khoá
   mới/remove. Không hồi quy so nền cũ (nền cũ luôn tuyến tính), nhưng mất lợi ích index mới.
@@ -206,9 +211,10 @@ Binary mới (`8ca08441`): `sha256 dff3d6295e69fc8447eed3c644c532c0792c514718c6b
   `writebench` (khởi tạo + 100 lần ghi) N=10 000: nền 2 869 ms → mới 3 285 ms (**+14,5 %**);
   N=5 000 × 200: 756 → 877 ms (**+16 %**). Phần lớn là chi phí copy CoW sẵn có; index làm
   tăng hằng số. Không nằm trong KPI đọc.
-- **Mức**: **Thấp** (không sai; ngoài KPI 4.1/4.2). Nếu A0 muốn map ghi nhiều/đọc sau CoW
-  vẫn O(1): dựng index ở nhánh cập nhật khi `index.is_none() && len >= NGUONG`, hoặc cho
-  `get`/`vi_tri` tự dựng (cần `&mut`/`RefCell` — cân nhắc).
+- **Mức**: **Thấp** (không sai; ngoài KPI 4.1/4.2). Sau vá §11: đường đọc sau cập nhật khoá
+  cũ đã O(1); chi phí ghi khoá **mới** sau CoW vẫn còn (3 164→3 508 ms N=10k; 800→917 ms
+  N=5k), chấp nhận ngoài KPI. Nếu muốn tối ưu thêm: giữ index qua `Clone`/dựng lười khi đọc
+  (cần `&mut`/`RefCell` — cân nhắc).
 
 ### F4 — `json.decode` đệm **mọi** cặp trùng trước khi gộp — **Thấp (bộ nhớ, đầu vào đối kháng)**
 
@@ -222,18 +228,17 @@ Binary mới (`8ca08441`): `sha256 dff3d6295e69fc8447eed3c644c532c0792c514718c6b
 - **Khuyến nghị**: gộp ngay bằng `VisMap` tạm trong decoder, hoặc ghi nhận trade-off trong
   journal (đổi O(N²) thời gian lấy O(N) bộ nhớ đỉnh).
 
-### F5 — Khoảng trống test + claim journal — **Thông tin**
+### F5 — Khoảng trống test + claim journal — **Thông tin — phần lớn đã vá @79f1fcee, recheck §11**
 
-- `crates/vis-interp/tests/interp_it/st315b_map_cow.rs:94` dùng 64 khoá **trùng** `"k"` ⇒
-  last-wins còn **1 entry**, nên test CoW này **không** chạm map có index; `core_it.rs:72`
-  CoW dùng 2 khoá; `map.rs:357` ca Int/Percent không bắc cầu dùng 2 khoá. Chưa có test
-  CoW + index (clone map 64 khoá, sửa khoá có/không có, đọc lại toàn bộ), chưa có test
-  non-transitive ở ≥ 8 entry.
+- **Đã vá (`085546d0`)**: `st315b_map_cow.rs:94-123` dùng 64 khoá **phân biệt**, assert
+  `truoc == 64`, `co_chi_muc()` sau khi sửa khoá **đã có** `k0`, đọc lại `k0`/`k63`;
+  `core_it.rs:70-75` assert `size_of::<Value>() == 64` trên 64-bit. Cả hai pass (§11).
+- Còn: `map.rs:359` ca Int/Percent không bắc cầu chỉ 2 khoá (chưa có bản ≥ 8); chưa có
+  test non-transitive ở ≥ 8 entry. Các điểm `remove`/`merge` dưới đây vẫn nguyên.
 - `VisMap::remove`/`VisMap::merge` **không** được `std.map.remove`/`std.map.merge` gọi
   (`stdlib.rs:619-626` lọc + `Value::map`; `:600-609` `from_pairs` + `insert`), nên đường
   dựng lại index của `remove`/prebuild của `merge` chỉ được harness ngoài kiểm; journal §1.2
   ghi "xoá/gộp qua `remove`/`merge`" là chưa khớp mã.
-- Test kích thước dùng `<= 64` chứ không `== 64`; đo thực tế đúng 64.
 - Không có test header trùng (F1).
 
 ### F6 — Mỗi map cấp thêm `Rc` + `VisMap` trên heap (kể cả map rỗng) — **Thông tin (bộ nhớ)**
@@ -278,10 +283,47 @@ ST-315b; sửa trong lát này sẽ phá parity đã khoá.
   trên interp ↔ VM; `vis-diff` 100k lệch 0.
 - LSP/pkg/plugin/http/fsmock/worker: biên dịch + test cổng; chỉ F1 là thay đổi hành vi.
 
-## 11. Tuyên bố
+## 11. Recheck F3/F5 sau vá `main` (`79f1fcee`, fix `085546d0`)
 
-- Không sửa mã nguồn, SPEC, DECISIONS, QUEUE, STATE; chỉ tạo tệp này.
-- Không push, không merge, không dùng `mps`.
+- **Merge**: `git merge main` trong `/home/ps/ViScript-r315b` là **fast-forward**
+  `04163a7c..79f1fcee`; báo cáo cũ giữ nguyên. `main` gồm fix `085546d0`
+  (`map.rs` +5, `core_it` +6, `st315b_map_cow` +19/−9; docs/STATE/QUEUE đi kèm).
+- **F3 — nguồn**: `crates/vis-core/src/value/map.rs:257-262` dựng `MapIndex::dung` trước
+  `vi_tri` khi `index.is_none() && entries.len() >= NGUONG_CHI_MUC`; sau đó mới cập nhật
+  khoá cũ (`:263-265`) hoặc push + `them` (`:266-271`). Không đổi last-wins/thứ tự.
+- **F3 — kiểm độc lập** (`/tmp/opencode/r315b/f3_recheck.rs`, link rlib hiện tại):
+  - map 64 khoá → `a.clone()` (`Rc::ptr_eq`); `Rc::make_mut` cho `VisMap` index None;
+    `insert("k0", 100)` ⇒ `co_chi_muc() == true`, `get("k0")==100`, `get("k63")==63`,
+    bản gốc `a` vẫn `k0=0`.
+  - `VisMap::clone` của map 64 khoá có index None; `insert` khoá cũ ⇒ index true;
+    `insert` khoá **mới** ⇒ index true, `len 65`, tra được cả cũ/mới.
+  - Ngưỡng: clone 7 khoá + insert khoá cũ ⇒ vẫn **không** index; 8 khoá ⇒ **có** index.
+  - **Đo** (`f3_bench.rs`, N=10 000): 10 000 `get` trên bản clone **không** index = 259,20 ms;
+    sau `insert` khoá cũ (index dựng lại), 1 000 000 `get` = 102,62 ms (~0,10 µs/get so
+    25,9 µs/get tuyến tính).
+- **F5 — kiểm độc lập**: `cargo test -p vis-interp --test interp_it st315b` ⇒ **6/6 pass**
+  (gồm `co_chep_khi_chia_se_va_ghi_tai_cho_khi_doc` mới, assert index); `cargo test -p vis-core`
+  ⇒ **26 unit + 4 `core_it` pass**, gồm `value_kich_thuoc_va_map_cow` với `==64` trên 64-bit.
+  Gate L0 **3 856 test/66 binary, 0 fail, 4 skip**; clippy `-D warnings` exit 0.
+- **Fuzz §2 chạy lại trên mã sau vá**: 200 chuỗi × 400 thao tác + 20 000 ca eq + 2 000 ca
+  merge = **0 lệch** (kể cả clone + insert khoá cũ/mới).
+- **Chi phí ghi còn lại** (không phải KPI): AB 5 cặp `writebench` N=10 000×100:
+  nền 3 164 ms → mới 3 508 ms (+10,9 %); N=5 000×200: 800 → 917 ms (+14,6 %). Nguyên nhân:
+  mỗi lần CoW + chèn **khoá mới** vẫn dựng lại `HashMap` O(N); fix F3 chỉ giữ index cho
+  đường đọc sau cập nhật khoá cũ. Chấp nhận được (ngoài KPI; CoW copy chi phối).
+- **KPI sau vá** (release mới `sha256 1bcc54b9f02a3d51179a605966e0ae9c63afb8d8112eeaff279e05813152eda0`):
+  AB `opt-bench` interp 340 → **49 ms**, VM 350 → **45 ms**; AB `mapbench` N=1 44 → **41 ms**,
+  N=316 1 257 → **47 ms** (**26,7×** nền A/B; 30,4× nền 1 429 ms); 15 mẫu N=8/79 = 44/44 ms.
+  KPI ≤120 ms, ≥10×, N=1 không hồi quy: **PASS**.
+- **F1** (header trùng) vẫn nguyên: đã ghi nhận là thay đổi hành vi cần A0/CHANGELOG, không
+  sửa trong lát này. F2/F4/F6 vẫn low/info.
+- **Kết luận recheck: PASS** — F3 đóng; F5 phần lớn đóng (còn ghi chú coverage `remove`/`merge` và non-transitive ≥ 8); không phát hiện hồi quy mới từ fix.
+
+## 12. Tuyên bố
+
+- Không sửa mã nguồn, SPEC, DECISIONS, QUEUE, STATE; chỉ tạo/cập nhật tệp này.
+- Không push; chỉ merge `main` vào nhánh review theo yêu cầu recheck (fast-forward), không merge ngược vào `main`; không dùng `mps`.
 - Commit review trên `review/r315b` (`git log -1` — không push).
-- **PASS** với các finding không chặn F1–F6; F1 cần được ghi nhận công khai trước khi phát
-  hành (nếu A0 coi map header là đa trị thì phải sửa/wontfix tường minh).
+- **PASS**; F3 đã vá, F5 phần lớn đã vá và recheck @79f1fcee (§11); F1/F2/F4/F6 vẫn là finding không chặn.
+  F1 cần được ghi nhận công khai trước khi phát hành (nếu A0 coi map header là đa trị thì
+  phải sửa/wontfix tường minh).
