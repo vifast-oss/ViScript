@@ -265,7 +265,7 @@ pub const SYNTAX_CODES: [Code; 9] = [
 ///
 /// Cấp tối thiểu theo VD-42: `VS0301` tên không tồn tại (ST-11 dùng cho **tên giá trị**; tên kiểu
 /// để ST-12), `VS0302` khai báo trùng trong **cùng** phạm vi.
-pub const NAME_CODES: [Code; 3] = [
+pub const NAME_CODES: [Code; 4] = [
     Code {
         id: 301,
         short: "VS0301",
@@ -289,6 +289,15 @@ pub const NAME_CODES: [Code; 3] = [
         message_vi: "kiểu không tồn tại",
         message_en: "type does not exist",
         message_ja: "型が存在しません",
+        severity: Severity::Error,
+    },
+    // **ST-315d (VD-291 §3.4)**: chu trình phụ thuộc `const` bắt **tĩnh** ở `vis-types`.
+    Code {
+        id: 304,
+        short: "VS0304",
+        message_vi: "chu trình phụ thuộc hằng số (`const`)",
+        message_en: "constant (`const`) dependency cycle",
+        message_ja: "定数（`const`）の依存関係が循環しています",
         severity: Severity::Error,
     },
 ];
@@ -862,9 +871,10 @@ mod tests {
     #[test]
     fn so_ten_03xx_khoa_theo_vd42() {
         let ids: Vec<u16> = NAME_CODES.iter().map(|c| c.id).collect();
-        assert_eq!(ids, vec![301, 302, 303]);
+        assert_eq!(ids, vec![301, 302, 303, 304]);
         assert_eq!(NAME_CODES[0].short, "VS0301");
         assert_eq!(NAME_CODES[1].short, "VS0302");
+        assert_eq!(NAME_CODES[3].short, "VS0304");
         // **SỬA KÈM LÝ DO (ST-18)**: ST-18 cấp sổ thứ **sáu** `06xx` (4 mã chế độ lệnh) ⇒
         // 10 + 2 + 2 + 4 + 3 + 4 = **25** mã, **6** sổ; `lookup(601)` nay **có**, mã chưa cấp là `701`.
         // **SỬA KÈM LÝ DO (ST-25)**: sổ thứ bảy `07xx` (module) đã cấp ⇒ 25 + 3 = **28** mã,
@@ -886,7 +896,8 @@ mod tests {
         // **VD-223 (proxy A0)**: +**VS0211** ⇒ 53; **VD-224 (proxy A0)**: huỷ VS0209.
         // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **54** mã.
         // **ST-290 (VD-273)**: +**VS0509**/**VS0510** ⇒ **56** mã.
-        assert_eq!(all_codes().count(), 56);
+        // **ST-315d (VD-291)**: +**VS0304** (chu trình `const`) ⇒ **57** mã.
+        assert_eq!(all_codes().count(), 57);
         assert_eq!(BOOKS.len(), 7);
         for id in [601u16, 602, 603, 604] {
             assert!(

@@ -295,12 +295,12 @@ impl<'a> Parser<'a> {
         let mut elems = mods;
         elems.push(self.expect_kw("const")?);
         elems.push(self.expect_ident()?);
-        // **R9 (VD-178)**: gợi ý cho mẫu `const A = …` (VS0204 khi RHS không literal; R7 cho
-        // suy kiểu từ literal).
+        // **R9 (VD-178)**: gợi ý cho mẫu `const A = …`; `const` **luôn** cần kiểu tường minh
+        // (`VS0204`), không suy kiểu từ literal.
         if !self.at_punct(":") {
             return Err(self.err_code(
                 &vis_diag::SYNTAX_CODES[3],
-                "`const` cần kiểu khi vế phải không phải literal — gợi ý: `const A: int = 1` (R7 cho suy kiểu từ literal)",
+                "`const` cần ghi kiểu tường minh — gợi ý: `const A: int = 1`",
             ));
         }
         elems.push(self.expect_punct(":")?);

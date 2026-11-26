@@ -477,7 +477,8 @@ fn snapshot_12_ca_so_module_07xx() {
     // **VD-224 (uỷ quyền A0-proxy, huỷ VS0209)**: +**VS0211** (tên trùng module std đã import, cảnh báo) ⇒ **53** mã.
     // **ST-288 (VD-273)**: +**VS0708** (chữ ký/khoá tin cậy registry) ⇒ **54** mã.
     // **ST-290 (VD-273)**: +**VS0509**/**VS0510** (ghi chéo worker, ngân sách) ⇒ **56** mã.
-    assert_eq!(vis_diag::all_codes().count(), 56);
+    // **ST-315d (VD-291)**: +**VS0304** (chu trình `const`) ⇒ **57** mã.
+    assert_eq!(vis_diag::all_codes().count(), 57);
     assert_eq!(vis_diag::next_block(), 801, "khối kế tiếp là 08xx");
 }
 

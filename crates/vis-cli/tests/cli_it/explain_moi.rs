@@ -2,6 +2,7 @@
 //! **ST-78** — `vis explain` cho 3 mã runtime mới (`VS0504`/`VS0505`/`VS0506`) đủ **3 ngôn ngữ**,
 //! `--list` phủ **toàn bộ sổ** đúng thứ tự, lỗi rõ cho mã/ngôn ngữ sai, và trợ giúp nêu đúng **số mã**.
 //! **ST-290 (VD-273)**: sổ 54 → **56** mã (`VS0509` ghi chéo worker, `VS0510` ngân sách).
+//! **ST-315d (VD-291)**: +**VS0304** (chu trình `const`) ⇒ **57** mã.
 
 use std::process::Command;
 
@@ -38,15 +39,15 @@ fn ba_ma_runtime_du_ba_ngon_ngu() {
     }
 }
 
-/// `--list` đúng **56 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
+/// `--list` đúng **57 dòng**, đúng thứ tự id của `all_codes()`, mỗi dòng có câu khác rỗng.
 #[test]
-fn list_du_56_dong_dung_thu_tu() {
+fn list_du_57_dong_dung_thu_tu() {
     let (code, out, err) = vis(&["explain", "--list"]);
     assert_eq!(code, 0, "{err}");
     let dong: Vec<&str> = out.lines().collect();
-    assert_eq!(dong.len(), 56, "phải đúng 56 mã: {}", dong.len()); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510
+    assert_eq!(dong.len(), 57, "phải đúng 57 mã: {}", dong.len()); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510; ST-315d: +VS0304
     let muon: Vec<String> = vis_diag::all_codes().map(|c| c.short.to_string()).collect();
-    assert_eq!(muon.len(), 56);
+    assert_eq!(muon.len(), 57);
     for (i, d) in dong.iter().enumerate() {
         let ma = d.split_whitespace().next().unwrap_or("");
         assert_eq!(ma, muon[i], "dòng {i} sai thứ tự");
@@ -85,11 +86,11 @@ fn tro_giup_neu_du_so_ma() {
     assert_eq!(code, 2, "thiếu tham số ⇒ 2");
     let text = format!("{out}{err}");
     assert!(text.contains("dùng:"), "{text}");
-    assert!(text.contains("56"), "phải nêu 56 mã: {text}"); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510
+    assert!(text.contains("57"), "phải nêu 57 mã: {text}"); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510; ST-315d: +VS0304
     assert!(text.contains("7 khối"), "phải nêu 7 khối: {text}");
 }
 
-/// Quét **toàn bộ** sổ: cả 56 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
+/// Quét **toàn bộ** sổ: cả 57 mã có `message_vi/en/ja` **không rỗng** và **khác nhau** (không
 /// copy-paste lẫn ngôn ngữ).
 #[test]
 fn toan_bo_so_du_ba_ngon_ngu() {
@@ -107,5 +108,5 @@ fn toan_bo_so_du_ba_ngon_ngu() {
         assert_ne!(c.message_en, c.message_ja, "{} en == ja", c.short);
         n += 1;
     }
-    assert_eq!(n, 56, "sổ phải đúng 56 mã"); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510
+    assert_eq!(n, 57, "sổ phải đúng 57 mã"); // R1a: +VS0111; VD-215: +VS0207/VS0208; VD-224: +VS0211; ST-288: +VS0708; ST-290: +VS0509/VS0510; ST-315d: +VS0304
 }

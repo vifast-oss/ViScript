@@ -29,6 +29,7 @@ VS0211	warning: tên `X` là module std đã import — `X.xxx(...)` được hi
 VS0301	error: tên không tồn tại
 VS0302	error: khai báo trùng trong cùng phạm vi
 VS0303	error: kiểu không tồn tại
+VS0304	error: chu trình phụ thuộc hằng số (`const`)
 VS0401	error: sai số lượng hoặc thứ tự đối số
 VS0402	error: `match` không xét hết trường hợp
 VS0403	error: trường, kiểu hoặc phương thức không tồn tại

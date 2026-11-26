@@ -420,16 +420,23 @@ fn const_tham_chieu_truoc_khop_hai_duong() {
 #[test]
 fn const_chu_trinh_khong_panic() {
     let src = "const A: int = B + 1\nconst B: int = A + 1\nfn main():\n    print(A)\n";
-    let a = chay_interp(src, vis_syntax::Mode::Script).expect("interp chạm runtime");
+    // **ST-315d (VD-291)** — chu trình bị bắt **tĩnh** (`VS0304`) trước runtime.
+    let parsed = vis_syntax::parse(src, vis_syntax::Mode::Script);
+    let lexed = vis_syntax::lex(src, vis_syntax::Mode::Script);
+    let h = ha_std(&parsed.cst, &lexed, src);
+    let t = vis_types::check(&h.hir, &h.symbols, &h.types);
+    assert_eq!(t.codes(), vec!["VS0304", "VS0304"]);
+    // Hàng rào sâu vẫn giữ: **bỏ qua** checker, interp vẫn trap runtime `VS0501` "chu trình".
+    let a = vis_interp::run(src, &h.hir, &h.symbols, &h.types, &[]);
     assert_eq!(a.codes(), vec!["VS0501"]);
     assert!(
         a.diagnostics[0].message.contains("chu trình"),
         "interp: {}",
         a.diagnostics[0].message
     );
-    // `chay_vm` trả `None` khi codegen từ chối — điều quan trọng là **không panic/abort**.
+    // VM codegen vẫn từ chối chu trình — điều quan trọng là **không panic/abort**.
     assert!(
-        chay_vm(src, vis_syntax::Mode::Script).is_none(),
+        compile(&h.hir, &h.symbols, src).is_err(),
         "VM phải từ chối chu trình ở codegen"
     );
 }

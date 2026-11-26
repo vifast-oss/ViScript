@@ -365,6 +365,30 @@ fn ham_doi_so_va_optional() {
     kiem_nhom("hàm", HAM);
 }
 
+#[test]
+fn const_chu_trinh_bi_bat_tinh_voi_vs0304() {
+    // **ST-315d (VD-291 §3.4)** — chu trình `const` hai chiều và tự tham chiếu bị bắt tĩnh.
+    let (out, _) = run("const A: int = B\nconst B: int = A\nfn main():\n    print(A)\n");
+    assert_eq!(
+        out.codes(),
+        vec!["VS0304", "VS0304"],
+        "mỗi const trong chu trình phải một chẩn đoán VS0304"
+    );
+    let (tu, _) = run("const A: int = A\nfn main():\n    print(A)\n");
+    assert_eq!(
+        tu.codes(),
+        vec!["VS0304"],
+        "tự tham chiếu cũng là chu trình"
+    );
+    // Không báo nhầm chuỗi phụ thuộc hợp lệ.
+    let (ok, _) = run("const A: int = 1\nconst B: int = A + 1\nfn main():\n    print(B)\n");
+    assert!(
+        ok.is_clean(),
+        "chuỗi hợp lệ không được báo: {:?}",
+        ok.codes()
+    );
+}
+
 /// Tổng số ca phải ≥ 80 (tiêu chí ST-12) — giảm là đỏ.
 #[test]
 fn du_80_ca() {

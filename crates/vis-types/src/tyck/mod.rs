@@ -15,6 +15,7 @@
 //!
 //! [`mod`]: khung/môi trường/câu lệnh · [`num`]: bảng toán tử số học/so sánh · [`expr`]: biểu thức · [`pat`]: pattern + **xét hết** · [`hop`]: hợp nhất/so khớp/tự nâng kiểu + phân giải tên kiểu (ST-311d).
 
+mod const_cycle;
 mod expr;
 mod flow;
 mod gan;
@@ -50,6 +51,8 @@ pub(crate) const MISMATCH: &vis_diag::Code = &TYPE_CODES[4];
 pub(crate) const NO_TYPE: &vis_diag::Code = &NAME_CODES[0];
 /// Mã `VS0303` — **kiểu** không tồn tại (R9/VD-178: tách khỏi `VS0301` tên giá trị).
 pub(crate) const NO_TYPE_NAME: &vis_diag::Code = &NAME_CODES[2];
+/// Mã `VS0304` — **chu trình phụ thuộc `const`** (ST-315d/VD-291 §3.4), bắt tĩnh ở `vis-types`.
+pub(crate) const CONST_CYCLE: &vis_diag::Code = &NAME_CODES[3];
 /// Mã `VS0413` — gán vào ràng buộc bất biến (`let`/tham số) — R9 (VD-178).
 pub(crate) const GAN_BAT_BIEN: &vis_diag::Code = &TYPE_CODES[5];
 /// Mã `VS0414` — toán tử không hỗ trợ cho kiểu — R9 (VD-178).
@@ -159,6 +162,9 @@ pub fn check(hir: &Hir, symbols: &Symbols, types: &TypeTable) -> CheckOutput {
     let mret = vis_hir::MethodRet::from_hir_voi_bang(hir, types);
     let mut c = Checker::new(symbols, types, mret);
     c.run(hir);
+    // **ST-315d (VD-291 §3.4)** — `const` phụ thuộc vòng bị bắt **tĩnh** (`VS0304`); hàng rào
+    // runtime (`ConstCycle`/trap) vẫn giữ cho artifact không qua `vis check`.
+    const_cycle::kiem(hir, &mut c.diags);
     c.finish()
 }
 

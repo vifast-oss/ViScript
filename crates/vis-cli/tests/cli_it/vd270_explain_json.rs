@@ -117,7 +117,11 @@ fn list_json_dung_hinh_dang_va_du_so_ma() {
 
     let muon: Vec<&vis_diag::Code> = vis_diag::all_codes().collect();
     assert_eq!(ds.len(), muon.len(), "độ dài mảng phải bằng sổ");
-    assert_eq!(ds.len(), 56, "sổ hiện có 56 mã (ST-290: +VS0509/VS0510)");
+    assert_eq!(
+        ds.len(),
+        57,
+        "sổ hiện có 57 mã (ST-290: +VS0509/VS0510; ST-315d: +VS0304)"
+    );
     for (i, (p, c)) in ds.iter().zip(muon.iter()).enumerate() {
         let Value::Map(m) = p else {
             panic!("phần tử {i} không phải object: {p:?}")
@@ -132,7 +136,7 @@ fn list_json_dung_hinh_dang_va_du_so_ma() {
         );
     }
     // Đếm thô: mỗi phần tử đúng một `"code"`, không dòng người đọc nào lọt vào.
-    assert_eq!(out.matches("{\"code\":\"").count(), 56, "{out}");
+    assert_eq!(out.matches("{\"code\":\"").count(), 57, "{out}");
 }
 
 /// `--list --json --lang en`: `title` theo ngôn ngữ, thứ tự không đổi.
@@ -148,8 +152,8 @@ fn list_json_theo_ngon_ngu() {
     );
     assert_eq!(
         out.matches("{\"code\":\"").count(),
-        56,
-        "vẫn đủ 56 mã: {out}"
+        57,
+        "vẫn đủ 57 mã: {out}"
     );
 }
 
@@ -211,7 +215,7 @@ fn khong_json_giu_nguyen_che_do_nguoi_doc() {
     let (code, out, err) = vis(&["explain", "--list"]);
     assert_eq!(code, 0);
     assert!(err.is_empty(), "{err:?}");
-    assert_eq!(out.lines().count(), 56, "{out}");
+    assert_eq!(out.lines().count(), 57, "{out}");
     assert!(!out.contains("{\"code\":"), "không lẫn JSON: {out}");
     let dau = out.lines().next().unwrap_or("");
     assert!(

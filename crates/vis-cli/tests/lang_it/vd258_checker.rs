@@ -493,6 +493,21 @@ fn const_khong_tu_nang_option_bi_tu_choi() {
 }
 
 #[test]
+fn const_chu_trinh_bi_vis_check_bat_voi_vs0304() {
+    // **ST-315d (VD-291 §3.4)** — `vis check` bắt chu trình `const` **trước runtime**.
+    assert_reject(
+        "const_cycle",
+        "const A: int = B\nconst B: int = A\nfn main():\n    print(A)\n",
+        "VS0304",
+    );
+    assert_reject(
+        "const_self_cycle",
+        "const A: int = A\nfn main():\n    print(A)\n",
+        "VS0304",
+    );
+}
+
+#[test]
 fn literal_list_tron_option_va_plain_bi_tu_choi() {
     assert_reject(
         "list_mix",
