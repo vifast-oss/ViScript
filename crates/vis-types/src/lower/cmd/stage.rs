@@ -35,47 +35,7 @@ impl<'a> Lowerer<'a> {
         // ST-34: `| complete` — stage **giả**, chỉ dùng sau chương trình ngoài; nó **đổi tên** callee
         // của stage trước thành `exec.complete.<ten>` (không thêm biến thể HIR ⇒ codegen không đổi).
         if self.ten_lenh(node).as_deref() == Some("complete") {
-            if node.child(NodeKind::CmdGroup).is_some() || node.elems.len() > 1 {
-                // `complete` không nhận đối số.
-                self.diag(&COMMAND_CODES[1], "`complete` không nhận đối số", node.span);
-                return None;
-            }
-            let Some((up, _)) = truoc else {
-                self.diag(
-                    &COMMAND_CODES[1],
-                    "complete chỉ dùng sau chương trình ngoài",
-                    node.span,
-                );
-                return None;
-            };
-            if let HExpr::Call {
-                callee,
-                args,
-                named,
-                span,
-            } = up
-            {
-                if let HExpr::Var { name, sym, .. } = *callee {
-                    if let Some(con) = name.strip_prefix("exec.") {
-                        return Some(HExpr::Call {
-                            callee: Box::new(HExpr::Var {
-                                name: format!("exec.complete.{con}"),
-                                sym,
-                                span,
-                            }),
-                            args,
-                            named,
-                            span,
-                        });
-                    }
-                }
-            }
-            self.diag(
-                &COMMAND_CODES[1],
-                "complete chỉ dùng sau chương trình ngoài",
-                node.span,
-            );
-            return None;
+            return self.ha_complete(node, &truoc);
         }
         // ST-46: chỉ khi **phần tử đầu** là nhóm ⇒ stage-biểu-thức (`( ls … )`); nhóm làm **đối số**
         // (`take ( … )`) do vòng đối số xử lý.

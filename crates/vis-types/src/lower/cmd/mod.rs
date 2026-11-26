@@ -4,11 +4,12 @@
 //! sẵn có; ở đây chỉ thêm **bảng chữ ký** + **khe ống** + 4 mã `06xx`.
 //!
 //! **ST-318c** — tách tệp theo trách nhiệm (0 đổi hành vi/API): `text` (văn bản/kiểu literal),
-//! `stage` (`ha_stage`), `args` (dựng đối số cuối stage), `doc`/`hop` (đã tách từ ST-106).
+//! `stage` (`ha_stage`), `complete` (stage `| complete`), `args` (dựng đối số cuối stage), `doc`/`hop` (đã tách từ ST-106).
 
 use super::*;
 
 mod args;
+mod complete;
 mod doc;
 mod hop;
 mod stage;
