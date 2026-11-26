@@ -337,3 +337,70 @@ cargo clippy --workspace --all-targets -- -D warnings   # CLIPPY_RC=0
   xanh; R8/R1/R2/R7 đạt.
 - **Không sửa mã** trong lượt re-audit; chỉ cập nhật tệp này và commit trên `review/rparity`
   (không push/merge).
+
+---
+
+## 7. Re-audit lần 2 (2026-11-26)
+
+> **Merge**: `main` `347e9cae` (F-R2 `cwd-khop` + F-R4 journal) vào `review/rparity` tại
+> **`78965856`**; báo cáo cũ giữ nguyên. **Target**: `/home/ps/ViScript-rparity/target` (riêng).
+> **Kết luận: `PASS`** — F-R2 đóng trên Linux (Windows sẽ có **R-Win2** chạy full); **F-R1** là
+> **caveat chấp nhận** theo hợp đồng meta-test; 5×1 + 2×8 + gate + clippy xanh; không có lệch
+> interp↔VM.
+
+### 7.1 F-R2 — `cwd-khop` canonicalize **cả hai vế** (đóng trên Linux)
+
+- **Mã**: `SRC_FS:496-504` — `p = fs.current_dir()`, `cp = fs.canonicalize(p)`,
+  `q = fs.canonicalize(".")`, in `cp == q`; expected `cwd-khop=true` (`:619`).
+- **Lý do đúng**: trên Windows cả `cp` và `q` đều ở dạng extended-length `\\?\C:\…` nên khớp;
+  trên Linux cả hai là cùng đường dẫn vật lý. Không còn so `current_dir` thô với canonicalize.
+- **Kiểm Linux**: 5 lượt `--test-threads=1` + 2 lượt `--test-threads=8` đều **12/12**; riêng
+  `fs_20_ham_parity_tren_tempdir` xanh, `cwd-khop=true` (đã có trong stdout kỳ vọng).
+- **Windows**: chưa chạy trong lượt này (không `mps`); theo kế hoạch **R-Win2** chạy full trên
+  `psvn`. Đây là điều kiện 3-OS còn lại, không phải lỗi Linux.
+
+### 7.2 F-R1 — **caveat chấp nhận**, không chặn
+
+- **Hợp đồng meta-test** (theo chỉ đạo): mỗi hàm cần **≥ 1 lời gọi thật** trong script; xoá
+  **toàn bộ** lời gọi của một hàm ⇒ đỏ; xoá **một bản trùng** trong khi bản khác còn ⇒ xanh là
+  **hợp lệ**, vì mất hành vi sẽ bị test hành vi (`fs_20`) bắt.
+- **Bằng chứng mutation** (`/home/ps/vislogs/rparity-final-mutations.log`, sha256
+  `86d900a1…d29c10`):
+  | Mutation | `moi_ham…` (66/66) | `fs_20` (hành vi) |
+  |---|---|---|
+  | A. xoá **một** block `fs.read_bytes` trong `SRC_FS` | **xanh** (hợp lệ) | **đỏ** — thiếu `bytes=true` |
+  | B. xoá **cả 2** block thành công trong `SRC_FS` | **xanh** (hợp lệ — còn bản lỗi) | **đỏ** — thiếu `bytes=true`/`write_bytes-noi-dung=true` |
+  | C. xoá **toàn bộ 3** lời gọi `fs.read_bytes` | **đỏ** `["fs.read_bytes"]` | — |
+  | D. khôi phục | **12/12** | 12/12 |
+- **Kết luận**: F-R1 **không còn là finding chặn**; câu “một lời gọi phải đỏ” ở lượt trước là
+  **quá chặt** so với hợp đồng function-level. Ghi thành caveat chấp nhận.
+- **Residual L**: doc `moi_ham…` (`:321-322`) vẫn nhắc chú thích Rust `// fs.read_bytes(`; bộ bóc
+  chỉ hiểu `#` của ViScript. Không ảnh hưởng hợp đồng hiện tại (mutation dùng `#`), chỉ nên sửa
+  câu chữ/doc comment khi có dịp.
+
+### 7.3 F-R4 — journal đã khớp
+
+- `st315d-parity.md:55`: “trừ `time` — chỉ bất biến `>= 0`, không có nhánh lỗi” (không còn
+  “không nhóm nào 0 ca lỗi”).
+- `st315d-parity.md:59`: “**các nhánh lỗi** net” (không còn con số 8 cứng).
+- Hàng F4 có **hợp đồng** ≥ 1 lời gọi/hàm; khớp mã và mutation ở §7.2.
+
+### 7.4 Bằng chứng chạy lại
+
+| Lệnh | Kết quả |
+|---|---|
+| `cargo test … host_parity -- --test-threads=1` **×5** | **12/12** mỗi lượt; 1,04–1,07 s; log `rparity-final-5x.log` sha256 `d1c867ed…e5a677` |
+| `--test-threads=8` **×2** | **12/12** mỗi lượt; 0,62 s |
+| `./vis-dev gate --fast` | **PASS** — check + L0 **3.856 passed / 0 failed** + doc-test; 12/12 `host_parity`; `GATE_RC=0` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **rc=0** (`CLIPPY_RC=0`) |
+| Mutation A/B/C/D | đúng hợp đồng §7.2 |
+| Tempdir sau tất cả | **0** `/tmp/vis-host-parity-*` |
+| R8 / R1 / R2 / R7 | 39/40 · **1.455** dòng · 0 `unsafe` · journal < 50 KB; `./vis-dev rules` OK |
+
+### 7.5 Phán quyết lần 2
+
+- **PASS** — F1/F2/F3/F5/F7/F8/F9/F10 giữ nguyên đóng; **F-R2 đóng trên Linux**; **F-R1 chấp
+  nhận làm caveat** (function-level, behavior do `fs_20` bắt); F-R4 khớp.
+- **Còn lại**: **R-Win2** chạy `cargo test … host_parity` + gate trên `psvn` để đóng 3-OS; F-R3
+  (doc `//`) và F-R6 (1.455/1.500 dòng) là **L không chặn**.
+- Không sửa mã; chỉ cập nhật tệp này và commit trên `review/rparity` (không push/merge).
