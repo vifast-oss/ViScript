@@ -18,6 +18,8 @@ mod lsp_da_tep;
 mod lsp_extra;
 #[path = "lsp_it/lsp_format.rs"]
 mod lsp_format;
+#[path = "lsp_it/lsp_host.rs"]
+mod lsp_host;
 #[path = "lsp_it/lsp_hover_builtin.rs"]
 mod lsp_hover_builtin;
 #[path = "lsp_it/lsp_hover_method.rs"]

@@ -16,9 +16,15 @@ use super::vi_tri;
 /// giữ chẩn đoán của **tệp chính** (`rel` == tên tệp). Chẩn đoán tệp phụ **không** publish vào
 /// tài liệu chính (LSP một tài liệu); lỗi thiếu module được `modules` gán cho tệp chính nên **vẫn**
 /// hiện. Trả `None` nếu nạp lỗi ⇒ rơi về đường một tệp.
-fn chan_doan_module(path: &Path, text: &str) -> Option<Vec<ChanDoan>> {
+fn chan_doan_module(
+    path: &Path,
+    text: &str,
+    load: &mut vis_loader::modules::LoadState,
+) -> Option<Vec<ChanDoan>> {
     let ten = path.file_name()?.to_string_lossy().to_string();
-    let l = vis_loader::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
+    let l =
+        vis_loader::modules::load_full_voi_text_trang_thai(path.to_str()?, text, true, true, load)
+            .ok()?;
     let mut ds: Vec<ChanDoan> = l
         .diags
         .iter()
@@ -50,11 +56,17 @@ fn chuan(p: &Path) -> PathBuf {
 /// Ưu tiên cây module thật (`Loaded.files`, đã canonical hoá, gồm cả phụ thuộc bắc cầu và buffer
 /// đang mở ở overlay VS3-7). Nếu nạp lỗi (syntax/cycle/mất tệp) ⇒ quét `use ./…` **trực tiếp** để
 /// vẫn phát hiện quan hệ tối thiểu — không publish nhầm tài liệu không liên quan.
-fn phu_thuoc(main_uri: &str, text: &str, target: &Path) -> bool {
+fn phu_thuoc(
+    main_uri: &str,
+    text: &str,
+    target: &Path,
+    load: &mut vis_loader::modules::LoadState,
+) -> bool {
     let Some(main) = super::uri_thanh_duong(main_uri) else {
         return false;
     };
-    if let Ok(l) = vis_loader::modules::load_full_voi_text(&main, text, true, true) {
+    if let Ok(l) = vis_loader::modules::load_full_voi_text_trang_thai(&main, text, true, true, load)
+    {
         if l.files.iter().any(|f| chuan(&f.path) == *target) {
             return true;
         }
@@ -68,7 +80,11 @@ fn phu_thuoc(main_uri: &str, text: &str, target: &Path) -> bool {
 /// **VS3-7 (VD-271)**: URI các tài liệu **đang mở** phụ thuộc vào tài liệu `thay_doi_uri` (bị đổi/
 /// mở/đóng) — cần publish lại chẩn đoán module-aware. Trả danh sách **sắp theo URI**, không gồm
 /// chính `thay_doi_uri`, không trùng.
-pub fn uri_lien_quan(thay_doi_uri: &str, van_ban: &HashMap<String, String>) -> Vec<String> {
+pub fn uri_lien_quan(
+    thay_doi_uri: &str,
+    van_ban: &HashMap<String, String>,
+    load: &mut vis_loader::modules::LoadState,
+) -> Vec<String> {
     let Some(p) = super::uri_thanh_duong(thay_doi_uri) else {
         return Vec::new();
     };
@@ -78,7 +94,7 @@ pub fn uri_lien_quan(thay_doi_uri: &str, van_ban: &HashMap<String, String>) -> V
         if uri == thay_doi_uri {
             continue;
         }
-        if phu_thuoc(uri, text, &target) {
+        if phu_thuoc(uri, text, &target, load) {
             out.push(uri.clone());
         }
     }
@@ -87,12 +103,17 @@ pub fn uri_lien_quan(thay_doi_uri: &str, van_ban: &HashMap<String, String>) -> V
 }
 
 /// Notification chẩn đoán; `text = None` ⇒ `diagnostics:[]` (đóng tệp).
-pub fn than(uri: &str, text: Option<&str>, mode: Mode) -> Vec<u8> {
+pub fn than(
+    uri: &str,
+    text: Option<&str>,
+    mode: Mode,
+    load: &mut vis_loader::modules::LoadState,
+) -> Vec<u8> {
     let ds = match text {
         None => Vec::new(),
         Some(t) => match super::uri_thanh_duong(uri)
             .filter(|p| Path::new(p).is_file())
-            .and_then(|p| chan_doan_module(Path::new(&p), t))
+            .and_then(|p| chan_doan_module(Path::new(&p), t, load))
         {
             // **ST-240 / VD-242 §4 (nợ #179)**: `span` của chẩn đoán trỏ vào văn bản đã chuẩn hoá
             // CRLF→LF. Dùng đúng bản đó để tính range — nếu dùng `t` thô, mỗi CRLF trước span làm

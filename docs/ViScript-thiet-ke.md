@@ -1094,7 +1094,7 @@ Mỗi lỗi sửa có `tests/regress/<mã>.vis`. Ca lệch từ vi sai được 
 
 | Lệnh | Nội dung |
 |---|---|
-| `vis-dev check` | fmt, clippy, R1..R9, **DAG 5 tầng + self-test**, toolchain, release, fixtures, report-check, build, doc-examples, readme-examples (không chạy L0) |
+| `vis-dev check` | fmt, clippy, R1..R10, **DAG 5 tầng + self-test**, toolchain, release, fixtures, report-check, build, doc-examples, readme-examples (không chạy L0) |
 | `vis-dev gate --fast` | `vis-dev check` + L0 test (nextest + doc-test); không build wasm32, chưa có L1 |
 | `vis-dev gate` | chỉ nhận `gate --fast`; không có full gate/L2 (thiếu `--fast` ⇒ exit 2) |
 | `vis-dev nightly` | `gate --fast` + fuzz parser (`--fuzz-minutes`, mặc định 2) + vòng tròn fmt; không L4/benchmark |

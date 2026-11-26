@@ -708,7 +708,8 @@ tệp.vis:dòng:cột: error VS0412: kiểu không khớp
 
 ### 7.2 Sổ mã
 
-Sổ đóng băng **57 mã** đồng bộ theo `VD-292` (nguồn máy đọc: `agent/API-CODES.txt`):
+Sổ đóng băng **57 mã** đồng bộ theo `VD-292` (nguồn máy đọc: `agent/API-CODES.txt`; luật `R10`
+của `vis-dev` đối chiếu bảng này ↔ tệp, gồm mức và số lượng — `ST-317c`/`#75`):
 
 | Mã | Mức | Nghĩa ngắn |
 |---|---|---|
@@ -995,7 +996,7 @@ Xem §6.4. Tóm tắt: Linux chạy thật + Landlock (`vis-host-linux` trong wo
 | `test/doc-examples` | mọi khối `vis`/`vish-session` trong `docs/*.md` phải parse/check được (trừ allowlist) |
 | `test/cmd`, `test/modules`, `test/pkg`, `test/plugin-wasi` | chế độ lệnh, module, gói, plugin WASI |
 | `crates/*/tests`, `vis-host-linux/tests` | unit/integration từng crate, host conformance, LSP, security, Landlock |
-| `./vis-dev gate --fast` | fmt + clippy + luật R1..R9 + DAG 5 tầng + self-test + build + doc-examples + L0 |
+| `./vis-dev gate --fast` | fmt + clippy + luật R1..R10 + DAG 5 tầng + self-test + build + doc-examples + L0 |
 | `./vis-dev nightly` | gate + fuzz parser + vòng tròn fmt |
 
 ### 11.3 Cách kiểm chứng bản đặc tả này

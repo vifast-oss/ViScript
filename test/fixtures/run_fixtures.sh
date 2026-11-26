@@ -13,7 +13,7 @@ VIS_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="$VIS_ROOT/bin/vis-dev"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-echo "1..18"
+echo "1..20"
 n=0; bad=0
 expect_fail() {
     n=$((n + 1))
@@ -195,5 +195,25 @@ while [ "$i" -lt 20 ]; do
 done
 printf '// SPDX-License-Identifier: MIT OR Apache-2.0\n' > "$tmp/18/vis-host-linux/tests/landlock.rs"
 expect_fail "R8: tổng > 40 (gồm vis-host-linux) bị bắt" "R8" "$tmp/18"
+# 19) R10 (ST-317c, #75): API-CODES.txt ↔ bảng §7.2 SPEC.md lệch mức/thiếu mã ⇒ đỏ
+mkdir -p "$tmp/19/agent" "$tmp/19/docs" "$tmp/19/test/gate"
+printf '# SPDX-License-Identifier: MIT OR Apache-2.0\nVS0101\terror: chuỗi chưa đóng\nVS0102\twarning: escape\n' \
+    > "$tmp/19/agent/API-CODES.txt"
+: > "$tmp/19/agent/API-CODES.txt.license"
+: > "$tmp/19/test/gate/cu-cam.txt"
+: > "$tmp/19/test/gate/cu-cam.txt.license"
+printf '# spec\n\n### 7.2 Sổ mã\n\nSổ đóng băng **1 mã** đồng bộ.\n\n| Mã | Mức | Nghĩa ngắn |\n|---|---|---|\n| `VS0101` | error | chuỗi chưa đóng |\n\n### 7.3 Mã thoát\n' \
+    > "$tmp/19/docs/SPEC.md"
+expect_fail_dev "R10: API-CODES lệch SPEC §7.2 bị bắt" "R10" bash "$DEV" rules --root "$tmp/19"
+# 20) R10: cùng một mã ở cả hai nguồn, đúng mức + đúng số khai báo ⇒ xanh
+mkdir -p "$tmp/20/agent" "$tmp/20/docs" "$tmp/20/test/gate"
+printf '# SPDX-License-Identifier: MIT OR Apache-2.0\nVS0101\terror: chuỗi chưa đóng\n' \
+    > "$tmp/20/agent/API-CODES.txt"
+: > "$tmp/20/agent/API-CODES.txt.license"
+: > "$tmp/20/test/gate/cu-cam.txt"
+: > "$tmp/20/test/gate/cu-cam.txt.license"
+printf '# spec\n\n### 7.2 Sổ mã\n\nSổ đóng băng **1 mã** đồng bộ.\n\n| Mã | Mức | Nghĩa ngắn |\n|---|---|---|\n| `VS0101` | error | chuỗi chưa đóng |\n\n### 7.3 Mã thoát\n' \
+    > "$tmp/20/docs/SPEC.md"
+expect_ok_dev "R10: API-CODES khớp SPEC §7.2" "$tmp/20"
 if [ "$bad" -ne 0 ]; then echo "# fixtures: FAIL ($bad)"; exit 1; fi
 echo "# fixtures: PASS (cây sạch phải xanh)"

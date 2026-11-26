@@ -31,6 +31,9 @@ mod vi_tri;
 // `analysis/` — mô hình phân tích, module/overlay, chẩn đoán, thành viên, workspace.
 #[path = "analysis/chan_doan.rs"]
 mod chan_doan;
+/// **ST-317c (#81/#66)** — trạng thái phiên LSP tiêm được (`AnalysisHost`), không `thread_local!`.
+#[path = "analysis/host.rs"]
+mod host;
 #[path = "analysis/module.rs"]
 mod module;
 #[path = "analysis/phan_tich.rs"]
@@ -70,34 +73,14 @@ mod thuc_thi;
 #[path = "features/type_definition.rs"]
 mod type_definition;
 
-use std::collections::HashMap;
 use std::io::{self, BufReader};
 use std::process::ExitCode;
-use std::rc::Rc;
 
 use vis_core::json;
 use vis_core::value::Value;
 use vis_syntax::Mode;
 
-use phan_tich::KetQua;
-
-/// **ST-283**: cache kết quả phân tích theo `(uri, text)` trong một phiên LSP. Mọi thay đổi
-/// văn bản (didOpen/didChange/didClose) **xoá cả cache** để không phục vụ module/dependency cũ.
-fn phan_tich_cache(
-    cache: &mut HashMap<String, (String, Rc<KetQua>)>,
-    uri: &str,
-    text: &str,
-    mode: Mode,
-) -> Rc<KetQua> {
-    if let Some((cu, kq)) = cache.get(uri) {
-        if cu == text {
-            return kq.clone();
-        }
-    }
-    let kq = Rc::new(module::phan_tich_uri(uri, text, mode));
-    cache.insert(uri.to_string(), (text.to_string(), kq.clone()));
-    kq
-}
+pub use host::{AnalysisHost, ThongKeCache};
 
 /// Chạy server LSP tới khi `exit` hoặc **EOF stdin**. Chỉ nhận `--stdio` (mặc định cũng là stdio).
 pub fn run(args: &[String]) -> ExitCode {
@@ -116,12 +99,9 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut out = stdout.lock();
     let mut da_khoi_tao = false;
     let mut da_shutdown = false;
-    // **ST-69**: văn bản gần nhất theo URI (didOpen/didChange) — request completion/hover đọc lại.
-    let mut van_ban: HashMap<String, String> = HashMap::new();
-    // **ST-277**: thư mục gốc từ `initialize.params.rootUri` (workspace/symbol).
-    let mut root: Option<std::path::PathBuf> = None;
-    // **ST-283**: cache phân tích của tệp đang mở (xoá khi văn bản đổi).
-    let mut kq_cache: HashMap<String, (String, Rc<KetQua>)> = HashMap::new();
+    // **ST-317c (#81/#66)**: toàn bộ trạng thái phiên (buffer, cache phân tích/module, overlay
+    // loader, rootUri) nằm trong **một** `AnalysisHost` tiêm được — không còn `thread_local!`.
+    let mut host = AnalysisHost::new();
 
     // Ghi frame; lỗi ghi (stdout đóng) ⇒ dừng với mã 1 (không panic).
     macro_rules! gui {
@@ -135,10 +115,10 @@ pub fn run(args: &[String]) -> ExitCode {
     // **VS3-7**: publish lại chẩn đoán cho mọi tài liệu **đang mở** phụ thuộc tài liệu vừa đổi.
     // Dùng macro để mượn `gui!`/`out` của `run`; mỗi URI tối đa một frame mỗi sự kiện.
     macro_rules! publish_lien_quan {
-        ($uri:expr, $vb:expr) => {
-            for u in chan_doan::uri_lien_quan($uri, $vb) {
-                if let Some(t) = $vb.get(&u) {
-                    gui!(chan_doan::than(&u, Some(t.as_str()), mode_cua(&u)));
+        ($uri:expr) => {
+            for u in host.uri_lien_quan($uri) {
+                if let Some(f) = host.chan_doan_tai_lieu(&u) {
+                    gui!(f);
                 }
             }
         };
@@ -200,7 +180,7 @@ pub fn run(args: &[String]) -> ExitCode {
         match method.as_str() {
             "initialize" => {
                 da_khoi_tao = true;
-                root = jsonrpc::lay_params(kv)
+                let root = jsonrpc::lay_params(kv)
                     .and_then(|p| match p {
                         Value::Map(p) => jsonrpc::lay(p, "rootUri"),
                         _ => None,
@@ -208,6 +188,7 @@ pub fn run(args: &[String]) -> ExitCode {
                     .and_then(jsonrpc::chuoi)
                     .and_then(uri_thanh_duong)
                     .map(std::path::PathBuf::from);
+                host.dat_root(root);
                 if let Some(id) = id {
                     gui!(jsonrpc::phan_hoi(&id, ket_qua_khoi_tao()));
                 }
@@ -217,26 +198,26 @@ pub fn run(args: &[String]) -> ExitCode {
             // **ST-68**: văn bản mở/đổi (full sync) ⇒ tính lại chẩn đoán + `publishDiagnostics`.
             "textDocument/didOpen" => {
                 if let Some((uri, text)) = jsonrpc::van_ban_mo(kv) {
-                    dat_overlay(&uri, &text);
-                    van_ban.insert(uri.clone(), text.clone());
-                    xoa_cache_phan_tich(&mut kq_cache);
-                    gui!(chan_doan::than(&uri, Some(&text), mode_cua(&uri)));
-                    publish_lien_quan!(&uri, &van_ban);
+                    host.mo(&uri, &text);
+                    if let Some(f) = host.chan_doan_tai_lieu(&uri) {
+                        gui!(f);
+                    }
+                    publish_lien_quan!(&uri);
                 }
             }
             "textDocument/didChange" => {
                 if let Some((uri, thay_doi)) = jsonrpc::thay_doi_van_ban(kv) {
                     // Tài liệu chưa mở: bỏ qua (không tự tạo buffer từ chênh lệch).
-                    if let Some(cu) = van_ban.get(&uri).cloned() {
+                    if let Some(cu) = host.van_ban(&uri).map(str::to_string) {
                         match sua::ap_dung(&cu, &thay_doi) {
                             // Không đổi byte (change rỗng) ⇒ không publish thừa.
                             Ok(moi) if moi == cu => {}
                             Ok(moi) => {
-                                dat_overlay(&uri, &moi);
-                                van_ban.insert(uri.clone(), moi.clone());
-                                xoa_cache_phan_tich(&mut kq_cache);
-                                gui!(chan_doan::than(&uri, Some(&moi), mode_cua(&uri)));
-                                publish_lien_quan!(&uri, &van_ban);
+                                host.mo(&uri, &moi);
+                                if let Some(f) = host.chan_doan_tai_lieu(&uri) {
+                                    gui!(f);
+                                }
+                                publish_lien_quan!(&uri);
                             }
                             // Range hỏng/ngược: bỏ qua sự kiện, giữ buffer cũ (không panic).
                             Err(_) => {}
@@ -246,13 +227,12 @@ pub fn run(args: &[String]) -> ExitCode {
             }
             "textDocument/didClose" => {
                 if let Some(uri) = jsonrpc::uri_cua(kv) {
-                    van_ban.remove(&uri);
-                    xoa_cache_phan_tich(&mut kq_cache);
-                    xoa_overlay(&uri);
-                    // **ST-100**: dọn cache nạp module; URI khác vẫn dùng lại bình thường.
-                    gui!(chan_doan::than(&uri, None, mode_cua(&uri)));
+                    // **ST-100**: dọn cache phân tích/module/tệp phụ của host này; URI khác vẫn
+                    // dùng lại bình thường; overlay buffer của tài liệu vừa đóng được bỏ.
+                    host.dong(&uri);
+                    gui!(host.chan_doan_dong(&uri));
                     // **VS3-7**: tài liệu khác đang mở phụ thuộc tệp vừa đóng ⇒ đọc lại từ đĩa.
-                    publish_lien_quan!(&uri, &van_ban);
+                    publish_lien_quan!(&uri);
                 }
             }
             // **ST-69**: completion + hover (dùng văn bản đã lưu; chưa mở ⇒ rỗng).
@@ -266,11 +246,10 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             // Chưa mở ⇒ nội dung rỗng ⇒ `[]` (không lỗi).
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(goi_y::tra_loi_completion(&kq, byte, &id));
                             }
@@ -288,10 +267,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(goi_y::tra_loi_hover(&kq, byte, &id));
                             }
@@ -310,16 +288,15 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_definition(
                                     &kq,
                                     &uri,
                                     byte,
-                                    root.as_deref(),
+                                    host.root(),
                                     &id
                                 ));
                             }
@@ -338,10 +315,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(type_definition::tra_loi(&kq, &uri, byte, &id));
                             }
@@ -360,10 +336,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(thuc_thi::tra_loi_implementation(&kq, &uri, byte, &id));
                             }
@@ -382,10 +357,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(chu_ky::tra_loi_signature(&kq, byte, mode_cua(&uri), &id));
                             }
@@ -404,10 +378,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(doi_ten::tra_loi_prepare(&kq, byte, &id));
                             }
@@ -431,9 +404,8 @@ pub fn run(args: &[String]) -> ExitCode {
                             _ => None,
                         });
                         let ten_moi = ten_moi.and_then(jsonrpc::chuoi);
-                        match (ten_moi, van_ban.get(&uri)) {
-                            (Some(ten_moi), Some(text)) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                        match (ten_moi, host.phan_tich(&uri)) {
+                            (Some(ten_moi), Some(kq)) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(doi_ten::tra_loi_rename(
                                     &kq,
@@ -460,10 +432,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, vi_tris)) = jsonrpc::vi_tri_nhieu(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(chon::tra_loi_selection(&kq, mode_cua(&uri), &vi_tris, &id));
                             }
                         }
@@ -483,10 +454,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_highlights(
                                     &kq,
@@ -510,10 +480,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
                                 gui!(dinh_nghia::tra_loi_references(&kq, &uri, byte, &id));
                             }
@@ -532,10 +501,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(ky_hieu::tra_loi_document_symbol(&kq, &id));
                             }
                         }
@@ -553,10 +521,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(codelens::tra_loi_code_lens(&kq, &uri, &id));
                             }
                         }
@@ -574,7 +541,7 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             // Không mở/URI lạ ⇒ lỗi chuẩn (InvalidParams), không đoán nội dung.
                             None => gui!(jsonrpc::loi(
                                 &id,
@@ -582,8 +549,7 @@ pub fn run(args: &[String]) -> ExitCode {
                                 "tài liệu chưa mở",
                                 Value::Str(uri),
                             )),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(semantic_tokens::tra_loi(&kq, &id));
                             }
                         }
@@ -601,11 +567,10 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             // Tệp chưa mở ⇒ `null` (khác các method theo vị trí trả `[]`).
                             None => gui!(jsonrpc::phan_hoi(&id, Value::none())),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(inlay_hint::tra_loi(&kq, &id));
                             }
                         }
@@ -623,10 +588,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(gap::tra_loi_folding(&kq, &id));
                             }
                         }
@@ -651,7 +615,7 @@ pub fn run(args: &[String]) -> ExitCode {
                             })
                             .and_then(jsonrpc::chuoi)
                             .unwrap_or("");
-                        gui!(workspace::tra_loi_symbol(root.as_deref(), query, &id));
+                        gui!(workspace::tra_loi_symbol(host.root(), query, &id));
                     }
                 }
             }
@@ -667,15 +631,14 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::loi(
                                 &id,
                                 -32602,
                                 "tài liệu chưa mở",
                                 Value::Str(uri),
                             )),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(code_action::tra_loi(&kq, &uri, mode_cua(&uri), &id));
                             }
                         }
@@ -693,10 +656,9 @@ pub fn run(args: &[String]) -> ExitCode {
                             Value::none()
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
-                        match van_ban.get(&uri) {
+                        match host.phan_tich(&uri) {
                             None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
-                            Some(text) => {
-                                let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
+                            Some(kq) => {
                                 gui!(dinh_dang::tra_loi_format(&kq, mode_cua(&uri), &id));
                             }
                         }
@@ -932,28 +894,6 @@ fn percent_giai_ma(s: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
-/// **VS3-7**: đăng ký buffer LSP làm nội dung module phụ (thắng đĩa tới khi `didClose`).
-fn dat_overlay(uri: &str, text: &str) {
-    if let Some(p) = uri_thanh_duong(uri) {
-        vis_loader::modules::dat_noi_dung_mo(std::path::Path::new(&p), text);
-    }
-}
-
-/// **VS3-7**: bỏ overlay buffer của tài liệu vừa đóng.
-fn xoa_overlay(uri: &str) {
-    if let Some(p) = uri_thanh_duong(uri) {
-        vis_loader::modules::xoa_noi_dung_mo(std::path::Path::new(&p));
-    }
-}
-
-/// **VS3-7**: mọi thay đổi văn bản ⇒ xoá cache phân tích + cache module/tệp phụ. Nhờ vậy chẩn đoán
-/// của **tài liệu khác** không phục vụ item/nội dung module cũ (kể cả buffer chưa ghi đĩa).
-fn xoa_cache_phan_tich(cache: &mut HashMap<String, (String, Rc<KetQua>)>) {
-    cache.clear();
-    vis_loader::modules::xoa_cache_phu();
-    module::xoa_cache_module();
-}
-
 /// `didOpen`: `params.textDocument.{uri,text}`.
 /// `didChange` full sync: lấy `contentChanges[last].text`.
 /// Chế độ phân tích theo đuôi URI (`.vish` ⇒ Command).
@@ -967,35 +907,7 @@ fn mode_cua(uri: &str) -> Mode {
 
 #[cfg(test)]
 mod vd258_tests {
-    use super::{percent_giai_ma, phan_tich_cache, uri_thanh_duong_voi};
-    use std::collections::HashMap;
-    use std::rc::Rc;
-    use vis_syntax::Mode;
-
-    #[test]
-    fn cache_phan_tich_theo_text() {
-        let mut c: HashMap<String, (String, Rc<crate::phan_tich::KetQua>)> = HashMap::new();
-        let a = phan_tich_cache(
-            &mut c,
-            "file:///x.vis",
-            "fn main():\n    print(1)\n",
-            Mode::Script,
-        );
-        let b = phan_tich_cache(
-            &mut c,
-            "file:///x.vis",
-            "fn main():\n    print(1)\n",
-            Mode::Script,
-        );
-        assert!(Rc::ptr_eq(&a, &b), "cùng text phải dùng lại cache");
-        let c2 = phan_tich_cache(
-            &mut c,
-            "file:///x.vis",
-            "fn main():\n    print(2)\n",
-            Mode::Script,
-        );
-        assert!(!Rc::ptr_eq(&a, &c2), "text đổi phải phân tích lại");
-    }
+    use super::{percent_giai_ma, uri_thanh_duong_voi};
 
     #[test]
     fn uri_percent_drive_windows() {

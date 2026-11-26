@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-296c** — `StdFn`, danh sách module hỗ trợ/hoãn.
+//! **ST-296c** — `StdFn` (một hàm `std.*`: tên + chữ ký).
+//!
+//! **ST-317c**: `MODULES`/`MODULES_HOAN` chuyển sang `registry.rs` (cùng nguồn với bảng hàm).
 
 use super::ty::Ty;
 
@@ -17,13 +19,3 @@ impl StdFn {
         self.params.len()
     }
 }
-
-/// Module `std` được hỗ trợ ở ST-26 (mỗi phần tử là tên ngắn).
-pub const MODULES: [&str; 10] = [
-    "str", "list", "map", "path", "time", "json", "fs", "net", "http",
-    // **VD-241 (Gate 1)** — `std.sqlite` MVP (prototype nội bộ, chưa freeze API).
-    "sqlite",
-];
-
-/// `std.io` **chưa** làm — giữ tên để thông điệp rõ (ST-33: `std.fs` **đã có**).
-pub const MODULES_HOAN: [&str; 1] = ["io"];
