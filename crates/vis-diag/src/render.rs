@@ -13,7 +13,7 @@ pub struct Diag {
 }
 
 impl Diag {
-    /// Chỉ nhận `Code` lấy từ [`lookup`]/[`CODES`] — không có đường tạo mã ngoài sổ.
+    /// Chỉ nhận `Code` lấy từ [`lookup`](crate::lookup)/[`CODES`](crate::CODES) — không có đường tạo mã ngoài sổ.
     pub fn new(code: &'static Code, msg: impl Into<String>, offset: usize) -> Self {
         Self {
             code: code.short,

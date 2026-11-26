@@ -566,7 +566,7 @@ pub const MODULE_CODES: [Code; 8] = [
 
 /// **Năm sổ** mã lỗi đã cấp ở ST-13: từ vựng `01xx`, cú pháp `02xx`, tên `03xx`, kiểu `04xx`,
 /// runtime `05xx` (VD-27/VD-35/VD-42). Nay **mọi** khối dành trước đều đã có mã; `06xx` là khối
-/// kế tiếp chưa cấp nên [`next_block`] vẫn trả **601**.
+/// kế tiếp chưa cấp nên [`next_block`](crate::next_block) vẫn trả **601**.
 pub const BOOKS: [&[Code]; 7] = [
     &CODES,
     &SYNTAX_CODES,
@@ -578,7 +578,7 @@ pub const BOOKS: [&[Code]; 7] = [
 ];
 
 /// Khối mã **đã dành trước** theo sơ đồ VD-27 (`01xx`..`06xx`); VD-42 cấp `04xx` ở ST-12, `05xx` ở
-/// ST-13, ST-18 cấp `06xx`. Dùng cho [`next_block`] để khối kế không rơi vào khối đã dành.
+/// ST-13, ST-18 cấp `06xx`. Dùng cho [`next_block`](crate::next_block) để khối kế không rơi vào khối đã dành.
 pub const BLOCKS_RESERVED: [u16; 7] = [1, 2, 3, 4, 5, 6, 7];
 
 /// Duyệt **cả bốn sổ** đã cấp, theo đúng thứ tự khối.

@@ -51,6 +51,7 @@ entry; **không** sửa dòng code/thông điệp nào.
 | `cargo clippy --workspace --all-targets -- -D warnings` | **exit 0** | `/home/ps/vislogs/st318d-clippy.log` (`1b06c206…`) |
 | R8 | **39/40**, `vis-cli/tests` **8/15** — không tạo tệp test cấp 1 | — |
 | `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (100.000; 100,0 s) | `/home/ps/vislogs/st318d-visdiff.log` (`d0765152…`) |
+| `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-diag --no-deps` | **exit 0** | `/home/ps/vislogs/st318d-rustdoc-fix.log` (`11d399f5…`) |
 
 ## 4. Commit
 
@@ -58,6 +59,29 @@ entry; **không** sửa dòng code/thông điệp nào.
 - `7be2eabc` — `[ST-318d] vis-diag: tach lib.rs 1070 dong ...`
 - commit journal này (thứ 3).
 
+## 4b. Vá P2 rustdoc sau audit `accf421e`
+
+Audit PASS nhưng `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-diag --no-deps` exit 101 với **6**
+intra-doc link hỏng do tách module (đích dời sang module khác). Vá **chỉ doc link**, giữ nguyên
+chữ hiển thị bằng dạng `[`tên`](đường-dẫn)`:
+
+| Tệp | Link cũ | Link mới |
+|---|---|---|
+| `books.rs:569,581` | `[`next_block`]` | `[`next_block`](crate::next_block)` |
+| `render.rs:16` | `[`lookup`]`/`[`CODES`]` | `[`lookup`](crate::lookup)`/`[`CODES`](crate::CODES)` |
+| `tra_cuu.rs:11` | `[`CODES`]`/`[`SYNTAX_CODES`]` | `[`CODES`](crate::CODES)`/`[`SYNTAX_CODES`](crate::SYNTAX_CODES)` |
+
+`cargo doc -p vis-diag --no-deps` nay **exit 0**. `-p vis-hir` vẫn exit 101 nhưng **lỗi có sẵn từ
+nền**, ngoài lane `hir*`: `stdlib.rs:4,5` (link tới `registry`/`ty` private) + `stdlib/ty.rs:64`
+(`BUILTIN_FUNCS`) + `symbols.rs:32` (`BUILTIN_VALUE_NAMES`) — các tệp này **không bị ST-318d chạm**
+(`git diff 2b5ccb51..HEAD` chỉ có `hir.rs` + `hir/*`, `vis-diag/src/*`), nên không sửa trong lượt
+này (cần task/lane riêng).
+
+Lại cổng: `cargo fmt --all` OK · `cargo test -p vis-diag -p vis-hir` **11+12+10** pass ·
+`./vis-dev gate --fast` **PASS** L0 `3901/3901` (4 skipped, 72,6 s).
+
 ## 5. Việc còn lại
 
-- Không. Chờ Agent 0/Gatekeeper nghiệm thu; nếu cần có thể chạy lại `./vis-dev check` độc lập.
+- Không cho `vis-diag`. `cargo doc -p vis-hir -D warnings` còn 4 lỗi **có sẵn từ nền** ở
+  `stdlib.rs`/`stdlib/ty.rs`/`symbols.rs` (ngoài lane) — đề nghị A0 mở task riêng nếu muốn xanh.
+- Chờ Agent 0/Gatekeeper nghiệm thu; nếu cần có thể chạy lại `./vis-dev check` độc lập.

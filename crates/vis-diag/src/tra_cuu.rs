@@ -8,7 +8,7 @@ use super::codes::Code;
 ///
 /// Tra **cả bốn sổ** đã cấp (VD-42): từ vựng `01xx`, cú pháp `02xx`, tên `03xx`, kiểu `04xx`.
 /// Nay đủ **sáu sổ** (`01xx`..`06xx`); `lookup(701)` mới là `None`.
-/// [`CODES`]/[`SYNTAX_CODES`] vẫn nguyên vẹn nên test "khớp SPEC-lex §7" không đổi.
+/// [`CODES`](crate::CODES)/[`SYNTAX_CODES`](crate::SYNTAX_CODES) vẫn nguyên vẹn nên test "khớp SPEC-lex §7" không đổi.
 pub fn lookup(id: u16) -> Option<&'static Code> {
     all_codes().find(|c| c.id == id)
 }
