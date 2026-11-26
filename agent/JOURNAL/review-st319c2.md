@@ -9,6 +9,7 @@
   (`nap_vao_env` bỏ sót khung hàm tên nằm trên closure by-value); **P2-2 là nợ sẵn có** của
   `#206` (hàm tên qua giá trị tạo *trong* closure); 2 P3 về nhãn commit/assert test.
   Không sửa mã sản phẩm trong lượt review; chỉ thêm tệp nhật ký này.
+  **Addendum F1 (`0caa9184`, §8): P2-1 đã vá và đóng — PASS; P2-2 vẫn là nợ riêng không chặn.**
 
 ## 0. TL;DR
 
@@ -163,3 +164,82 @@ hash `5d1d12e8` thay ref. Dự kiến xung đột `STATE.md`/journal **không** 
 3. P3: sửa tiền tố commit `[ST-319c2]`; bổ sung assert `diagnostics.is_empty()` cho w19/w20/w23
    và literal VM riêng cho w20.
 4. Sau khi vá P2-1: chạy lại `gate --fast` + `vis-diff 100k` + `st317b` trước khi A0 chốt.
+
+## 8. Addendum F1 (`0caa9184`) — vá P2-1
+
+> **Kết luận addendum: PASS** — **P2-1 đã đóng**; repro gốc `3\n3` cả frame-interp và frame-VM;
+> `st317b` **26/26** (thêm `w24`); gate/diff/clippy xanh; merge-tree với main sạch.
+> P2-2 (hàm tên qua giá trị *trong* closure) **vẫn còn nhưng là nợ sẵn có trên nền**, không do
+> F1 gây ra và không chặn phạm vi vá P2-1.
+
+### 8.1 Phạm vi
+
+`672ccf5b..HEAD` đúng 1 commit `0caa9184` (`[ST-319c2] F1: nap_vao_env sync frame ham ten + test`),
+3 tệp:
+
+```
+M agent/JOURNAL/st319c2-frame-closure-ghi-global.md
+M crates/vis-conformance/tests/async_api_it/st317b_worker_orchestrate.rs
+M crates/vis-interp/src/frame/worker.rs
+```
+
+Không chạm `vis-vm`/`vis-bytecode`/`vis-core/value`/`vis-hir`/`vis-diag`/`vis-types`; working tree
+sạch. (P3-1 cũ vẫn còn: 2 commit nền mang nhãn `[ST-319a]`.)
+
+### 8.2 Logic
+
+`nap_vao_env` bỏ **tiền tố** `calls[..position(by_value)]`, đổi thành lọc từng khung:
+
+```rust
+frame.calls.iter().filter(|cf| !cf.by_value).map(|cf| cf.env.clone())
+```
+
+⇒ chỉ khung closure snapshot (`by_value`) bị bỏ; **mọi** khung hàm tên/thường — kể cả khung hàm
+tên nằm *trên* closure — nhận sync F2/F3. Đúng chẩn đoán P2-1: khung hàm tên do `dispatch` dựng
+env từ `globals`, không sống trên snapshot closure. Closure by-value vẫn được bảo vệ (w19/w20/w23
+giữ nguyên).
+
+### 8.3 Repro P2-1 + test
+
+- `stale.vis` (bản gốc của audit: closure `f` → hàm tên `doc` → closure `h` có `await dat()` →
+  `doc` đọc global): trước F1 frame `0\n3`; **sau F1 frame `3\n3`**, VM `3\n3` (nền cũng `3\n3`).
+- `w24_frame_w1_ham_ten_tren_closure_nap_van_sync`: `doc()` gọi từ closure, tự `await dat()`, đọc
+  `g`; assert literal **`3\n3\n`** cho **cả** interp + VM frame W=1, `diagnostics` rỗng, exit 0,
+  `so_khop`; không `#[ignore]`.
+- w19/w20/w23 đã thêm `diagnostics.is_empty()`; w20 assert stdout VM bằng literal riêng ⇒ đóng P3-2.
+- `cargo test ... st317b_worker_orchestrate`: **26/26 PASS** (392 filtered out), 0 ignore.
+- Output giữ nguyên: w19 `5,0`; w20 `5,5,10,10,3`; w21 `5,3`; w22 `5,0,1`; w23 `1` (frame = VM).
+
+### 8.4 Cổng độc lập
+
+| Cổng | Kết quả | Log / hash |
+|---|---|---|
+| `./vis-dev gate --fast` | **PASS**, L0 OK, fmt/clippy/R1..R10 OK | `/home/ps/vislogs/review-st319c2-f1-gate.log` · `a76e02c0…` |
+| `cargo nextest run --workspace` | **3921/3921 PASS, 4 skipped**, 79,8 s | `review-st319c2-f1-nextest.log` · `24bc025d…` |
+| gate fallback `cargo test --workspace` | **3926 passed, 5 ignored** (gồm 5 doc-test; nextest không có trên PATH mặc định) | `review-st319c2-f1-gate.log` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`**, `chay=94425`, 95,5 s, seed `3523158054` | `review-st319c2-f1-diff.log` · `4d6c3c86…` |
+| clippy `--workspace --all-targets -D warnings` | **PASS** | `review-st319c2-f1-clippy.log` · `2bc683fb…` |
+
+Số **3921/3921** xác nhận bằng nextest trực tiếp (`cargo-nextest 0.9.152`); gate chạy fallback
+`cargo test` khi nextest không có trên PATH nên tổng 3926 gồm thêm 5 doc-test — không phải sai lệch.
+
+### 8.5 Merge-tree
+
+`merge-tree HEAD main` với main **`e4c9f6f9`** (và cũng là main hiện tại): **sạch**, tree
+`521f8906` (`ec=0`). Tệp khác biệt dự kiến từ main: `STATE.md`, `QUEUE.md`, `ROADMAP.md`,
+`DECISIONS*.md`, journal 319a/319b/319c/VD-300/VD-302, `bin/vis-targets`,
+`crates/vis-interp/src/frame.rs` (rustdoc 319b), test/cache 319a — **không** xung đột với 3 tệp F1.
+
+### 8.6 Tồn đọng
+
+- **P2-2 (không chặn F1)**: hàm tên qua giá trị tạo *trong* closure vẫn lệch VM do `merge` chép
+  ngược vào snapshot. Write-only: frame `1,1,1` vs VM `0,0,1`; read-only + await: frame
+  `903,203,303,403` vs VM `903,200,300,403`. F1 cho kết quả **trùng nền main** ở cả hai ca (nền
+  cũng lệch VM), nên không phải hồi quy của F1; cần lane riêng cho quy tắc env hàm tên qua giá
+  trị (kèm test `w25`).
+- P3-1 (nhãn commit nền `[ST-319a]`) vẫn mở; không ảnh hưởng kỹ thuật.
+
+### 8.7 Đề nghị
+
+1. **Chấp nhận PASS cho F1/P2-1** và merge `plan/st319c2`.
+2. Mở nợ riêng P2-2 (hàm tên qua giá trị trong closure) trước khi tuyên bố đóng trọn `#206`.
