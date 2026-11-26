@@ -64,8 +64,8 @@ Test mới/cập nhật (`crates/vis-runtime/src/stdlib/stdid_tests.rs`):
     cache host B. (Trước ST-317c `PHU_MO` thread-local ⇒ đỏ.)
   - `tests/lsp_it/lsp_host.rs` — 2 ca in-process: cùng URI khác buffer (chẩn đoán riêng) và hai
     host dựng **song song** mỗi thread. Tệp nằm trong `tests/lsp_it/` + `#[path]` ⇒ **R8 không đổi**.
-- Kích thước: `vis-lsp/src/lib.rs` 1.144 → **1.058** dòng (vẫn > 1.000; việc chia nhỏ là `ST-317b`,
-  không làm ở đây theo lane). `analysis/host.rs` 213 dòng; `vis-loader/modules.rs` 986 → 1.034.
+- Kích thước: `vis-lsp/src/lib.rs` 1.144 → **1.056** dòng (vẫn > 1.000; việc chia nhỏ là `ST-317b`,
+  không làm ở đây theo lane). `analysis/host.rs` 231 dòng; `vis-loader/modules.rs` 986 → 1.043.
 
 ## 3. Lane điều chỉnh (BỔ SUNG từ phân tích xung đột)
 
@@ -98,10 +98,10 @@ Test mới/cập nhật (`crates/vis-runtime/src/stdlib/stdid_tests.rs`):
 
 | Cổng | Kết quả |
 |---|---|
-| `./vis-dev gate --fast` (`CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`) | **PASS**, exit 0 — nextest **3885/3885 passed, 4 skipped** + doc-test OK; `check` gồm fmt/clippy/R1..R10/DAG/toolchain/release/fixtures 20/report/build/doc-examples/readme-examples đều OK. Log `/home/ps/vislogs/st317c-gate-fast.log`, sha256 `0ca31f3ed9924d8cb0bcbc92fb779671d8c7cf4656393fe2756b4b6c25d0eefe`. |
+| `./vis-dev gate --fast` (`CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`) | **PASS**, exit 0 — nextest **3885/3885 passed, 4 skipped** + doc-test OK; `check` gồm fmt/clippy/R1..R10/DAG/toolchain/release/fixtures 20/report/build/doc-examples/readme-examples đều OK. Log cuối `/home/ps/vislogs/st317c-gate-fast-final.log`, sha256 `c5353713ad92d82421a91e16e21f2b28c7902621c622eb50282c300648570fa7` (log trước `st317c-gate-fast.log`, sha256 `0ca31f3e…d0eefe`). |
 | `VIS_DIFF_N=100000 ./bin/vis-diff` | **PASS** — `DIFF tong=100000 loi_tinh=6232 chay=93768 lech=0 giay=126.7` (+ 2k: `lech=0`); log `/home/ps/vislogs/st317c-diff100k.log`, sha256 `74af9ecc782af8505c5fc52bebcc5accf9ea55d067769230e8812ee25b1c38dc`. |
 | R8 | 38 `crates/*/tests/*.rs` cấp 1 + 1 `vis-host-linux/tests/landlock.rs` = **39/40** (không tạo tệp cấp 1 mới). |
-| R1 | `vis-lsp/src/lib.rs` 1.058 · `analysis/host.rs` 213 · `vis-loader/modules.rs` 1.034 · `vis-runtime/src/stdlib.rs` 976 (không đổi) — mọi tệp ≤ 1.500. |
+| R1 | `vis-lsp/src/lib.rs` 1.056 · `analysis/host.rs` 231 · `vis-loader/modules.rs` 1.043 · `vis-runtime/src/stdlib.rs` 976 (không đổi) · `vis-hir/stdlib/registry.rs` 304 — mọi tệp ≤ 1.500. |
 
 ## 6. Việc còn lại / bàn giao
 
