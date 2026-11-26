@@ -31,6 +31,7 @@
 ## 3. Nợ và quyết định
 
 - **`VD-295`** đăng ký **`#203`** (`mở`, W2 frame W=1 lệch interp↔VM: stdout `0` vs `1`, exit 0) và **`#204`** (`mở`, non-frame `run_workers_parallel*`/`_vm*` W≥2 nuốt lỗi task không await, cả 2 engine) — giao **VS3/correctness**; phát hiện từ audit `ST-317b`, không chặn `DONE`.
+- **`ST-318a`** (Builder, `plan/st318a`, 2026-11-27): đóng **kỹ thuật** `#203` (frame W=1 interp in `1` như VM; test parity `w11_*`) + `#204` (`ap_va_flush` surface `VS0506` cho non-frame W=2/4 cả 2 engine; test `w12_*`); gate **3904/3904** (4 skip), clippy 0, R8 **39/40**. Chờ A0 cập nhật `SO-NO.md`/`QUEUE` (Builder không sửa).
 - Sổ nợ hiện tại: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh).
 - Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd295.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd295.md); trước đó `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
 
