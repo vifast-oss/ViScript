@@ -247,3 +247,90 @@ Tất cả đặt trong aggregator đã có (gợi ý `crates/vis-interp/tests/f
 | `crates/vis-host-native/src/db/sqlite/mod.rs` (1.130) | `ST-317a` hợp nhất (4 điểm `Value::Enum` trong tệp) |
 | `crates/vis-runtime/src/worker/proto.rs` + worker orchestration (`worker/orchestrate.rs`, 10 test W1..W10 §4.4) | `ST-317a` hợp nhất |
 | Khử trùng lặp `vis-interp/src/{interp,frame}/**` | `ST-317a` hợp nhất |
+
+---
+
+# Phần 2b — mở khoá toàn bộ sau `ST-317a` PASS (`main` @ `426b83a3`)
+
+- **Nền**: `plan/st317b` fast-forward lên `426b83a3` (317a Value 32 B merged). Không chạm lại `worker/proto.rs` trừ `codes.rs`/orchestrate (xem §2b.3).
+- **Thứ tự thi công**: value → sqlite → worker orchestration → dedup interp → cổng cuối.
+
+## 2b.1 `crates/vis-core/src/value/mod.rs` — 1.415 → **748**
+
+| Tệp | Dòng | Trách nhiệm |
+|---|---:|---|
+| `value/mod.rs` | **748** | `enum Value` + payload (`VisRecord`/`EnumArgs`/`VisEnum`/`CapVal`/`VmFunc`), constructor/public API, `Env`/`Closure`, `truthy`, `exit_code/show/eq/cmp`, test layout |
+| `value/lit.rs` | **403** | hiển thị/đọc literal (`show_*`, `parse_*`, `pct_hop_le`, `PCT_GIOI_I64`, escape) + `tests_show_char` |
+| `value/ten.rs` | **291** | `Fnv`, `Name` + bảng tên thread-local + cache, `Tags`, singleton `None`/map rỗng + `tests_name` |
+
+- Re-export giữ API: `value::{Name, pct_hop_le, parse_*, PCT_GIOI_I64}`; `show_eq.rs` vẫn dùng helper qua glob `super::*` (`pub(crate) use lit::{show_*}`); `map.rs`/`show_eq.rs` dùng `Fnv` qua `pub(crate) use ten::Fnv`.
+- **`size_of::<Value>() == 32` vẫn xanh** (`tests_value_32`), `cargo test -p vis-core` 35 test pass. Commit **`3dd51026`**.
+
+## 2b.2 `crates/vis-host-native/src/db/sqlite/mod.rs` — 1.132 → **282**
+
+| Tệp | Dòng | Trách nhiệm |
+|---|---:|---|
+| `sqlite/mod.rs` | **282** | doc hợp đồng + `MAX_*` + `GioiHan`/`Muc` + `Db` + khai báo/re-export |
+| `sqlite/host.rs` | **261** | `impl DbHost for Db` (open/close/execute/query/batch/metadata) |
+| `sqlite/truy_van.rs` | **309** | kiểm/chuyển param, `Lenh`/cache statement, `thuc_thi`, `truy_van`, cap hàng/ô/cột |
+| `sqlite/token.rs` | **78** | token `db:<32 hex>` + nguồn OS/fallback |
+| `sqlite/chuyen_doi.rs` | **90** | ô↔`Value`, param `SqlValue`→rusqlite, `SQLITE_LIMIT_LENGTH` |
+| `sqlite/loi.rs` | **106** | map lỗi SQLite (không lộ raw SQL/bound/path) |
+| `sqlite/guard.rs` | **67** | `DbGuard` (chặn file-backed khi có cap) |
+
+- `Db`/`DbGuard`/`MAX_*` vẫn qua `pub use sqlite::*`; `schema.rs` chỉ đổi 1 dòng import (`super::loi::loi_sqlite`); test cũ `use super::*` chạy nguyên (thêm `#[cfg(test)] use` cho tên chỉ test dùng). `cargo test -p vis-host-native` 128 test pass. Commit **`7a33d996`**.
+
+## 2b.3 Worker orchestration — **đã move dùng chung + 10 test W1..W10**
+
+`crates/vis-runtime/src/worker/orchestrate.rs` (**135 dòng**) — một nguồn:
+`ma_ghi_cheo()` (nay `codes::CROSS` = `RUNTIME_CODES[8]`), `loi_task` (`VS0506` bọc mã gốc), `ap_dung_outcome`
+(proxy + cache `Task` + `TrangThai::Xong`, trả `(main_id, ket)`), `flush_proxy` (output đúng một lần;
+`VS0509`/`VS0506`), `ap_va_flush` (final join), `rut_outcome` + `pump` (board 50 ms, closure áp outcome —
+**không** giữ borrow `RefCell` qua lúc chờ).
+
+| Tệp | Trước | Sau | Ghi chú |
+|---|---:|---:|---|
+| `vis-interp/src/rt/exec.rs` | 461 | **368** | `apply_outcome`/`flush_proxy`/`pump`/`final_join` gọi nguồn chung; xoá `code_cross`/`loi_task` cục bộ |
+| `vis-vm/src/vm/worker.rs` | 586 | **485** | xoá `struct Proxy` (dùng `TaskProxy` chung), `apply_outcome`/`flush_proxy`/`pump`/`final_join` gọi nguồn chung |
+| `vis-runtime/src/codes.rs` | — | +3 | thêm `pub const CROSS` |
+
+**10 test đặc tả W1..W10** tại `crates/vis-conformance/tests/async_api_it/st317b_worker_orchestrate.rs` (405 dòng), khai `#[path]` trong `lib_api_it.rs` (**0 binary R8 mới**):
+
+| # | Ca | Kết quả |
+|---|---|---|
+| W1 | output nhiều task theo spawn order + parity interp/VM W=2/4 | PASS |
+| W2 | ghi top-level W>1 ⇒ `VS0509` cả 2 engine; W=1 đúng | PASS |
+| W3 | huỷ giữa chừng (`cancel_after`) ⇒ `VS0506` cả 2 engine | PASS |
+| W4 | **program-level** `VS0508`: đối số là giá trị hàm (spawn) + kết quả task là hàm (await) | PASS |
+| W5 | await cùng task 2 lần ⇒ chạy/flush một lần, cache ổn định | PASS |
+| W6 | **lỗi thân task không await** (`%0`): W=1 surface cả 2 engine; W≥2 parity hiện hữu (exit 0 — khoá không hồi quy) | PASS |
+| W7 | **frame mode** thật: `run_async_workers_with_hosts_caps` W=2/4 suspend/resume, byte-identical W=1, `steps>0` | PASS |
+| W8 | `Local`/`Off` giữ đường cũ (cùng stdout/exit) | PASS |
+| W9 | parity interp↔VM W=1/2/4 (stdout/exit/codes/giá trị cuối) | PASS |
+| W10 | **cancel idempotent trên cùng handle**: 2 lần sau khi xong (giữ kết quả) + 2 lần trước join (một outcome `cancelled`) | PASS |
+
+Commit **`9fc06efb`**. *Ghi nhận*: W6 cho thấy `run_workers_parallel*` W≥2 **không** surface lỗi task không ai await ở **cả hai** engine (exit 0) — hành vi có trước, test khoá parity; nợ riêng, không sửa trong lát này.
+
+## 2b.4 Dedup interp
+
+- `opt_depth_ty`: **một nguồn** `interp::goi::opt_depth_ty` (`pub(crate)`); `frame/params.rs` re-export `pub(super)` cho `frame.rs` — xoá bản sao.
+- `call_value`: thân khác bản chất (frame dựng `Work` vs interp trả `Value`) nên **không** gộp thân; gom phần dùng chung thật: `loi_arity` + `loi_khong_phai_ham` là **free fn `pub(crate)`** trong `interp/goi_ham.rs`, re-export qua `goi` (đúng chỗ plan cảnh báo), dùng ở cả hai đường — message/span không đổi.
+- `thu_duong`: **đã một nguồn từ trước** (`interp::gan_long::thu_duong`); `frame/expr.rs` chỉ là wrapper chuyển `HExpr` → `NutGan` (env semantics khác) — **không gộp thêm** theo plan.
+
+Commit **`a92fdb2f`**.
+
+## 2b.5 Cổng cuối (số thật)
+
+| Cổng | Kết quả | Log + sha256 |
+|---|---|---|
+| `./vis-dev check` | **PASS** | `st317b-p2b-check-final.log` · `0e64c7dd…c2b0` |
+| `./vis-dev gate --fast` | **PASS** — nextest **3901/3901**, 4 skipped (41,1 s) | `st317b-p2b-gate-final.log` · `ec9a3719…665b` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 100.000 chương trình, 56,5 s, 1.771/s | `st317b-p2b-diff.log` · `050f34a0…29f5` |
+| `./vis-dev rules` | **OK** — R1..R9, **R8 = 38+1 = 39/40** | `st317b-p2b-rules.log` · `812aacb2…3414` |
+| `vis-dag-check` | **OK** — 23 crate / 5 tầng / 0 cạnh cấm | `st317b-p2b-dag.log` · `5ee0d7f4…af4d` |
+
+## 2b.6 Còn lại
+
+- `ST-317b` **hoàn tất phần tách tệp + worker + dedup** trong phạm vi Sóng 6. Không còn tệp sản phẩm > 1.100 LOC thuộc lane W2.
+- Nợ ghi nhận (ngoài phạm vi): (a) W≥2 không surface lỗi task không await (parity interp/VM); (b) `thu_duong` wrapper frame vẫn cần vì env semantics khác.
+- `Worktree`/nhánh dọn theo `AGENTS.md` §6 sau khi A0 duyệt `DONE`.
