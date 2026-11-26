@@ -252,7 +252,21 @@ impl<'g> Emit<'g> {
                         }
                     }
                     HExpr::Field { base, name, .. } => {
-                        self.expr(base)?;
+                        // **ST-319d (#208)**: `push` trên **`var`** phải ghi lại ô ở **mọi** ngữ
+                        // cảnh (biểu thức cuối, đối số, `let y = …`), không chỉ câu lệnh; và đọc
+                        // **thẳng ô** như `lay_o` của interp (không charge `E_EXPR` cho receiver).
+                        let dich = match (&**base, name.as_str()) {
+                            (HExpr::Var { sym: Some(id), .. }, "push")
+                                if self.g.mutables.contains(id) =>
+                            {
+                                Some(self.slot_cua(*id)?)
+                            }
+                            _ => None,
+                        };
+                        match dich {
+                            Some(slot) => self.f.push(Instr::LoadLocal(slot), *span, 1),
+                            None => self.expr(base)?,
+                        }
                         for a in args {
                             self.expr(a)?;
                             if push_depth > 0 {
@@ -261,6 +275,13 @@ impl<'g> Emit<'g> {
                         }
                         let c = self.g.cst_str(name);
                         self.f.push(Instr::CallMethod(c, n), *span, -i32::from(n));
+                        // **Assign NGAY sau `CallMethod`** để `tach_dich` (vm.rs:580-604) tách
+                        // đúng ô ⇒ `push` **tại chỗ O(1)** (ST-316a/VD-292); `LoadLocal` giữ hợp
+                        // đồng "expr() để lại đúng 1 giá trị".
+                        if let Some(slot) = dich {
+                            self.f.push(Instr::Assign(slot), *span, -1);
+                            self.f.push(Instr::LoadLocal(slot), *span, 1);
+                        }
                     }
                     other => {
                         // Gọi **kết quả biểu thức** (vd `f(1)(2)`) ⇒ đẩy hàm trước, rồi đối số.

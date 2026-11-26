@@ -42,9 +42,12 @@ use std::path::PathBuf;
 // **ST-319a (#206, 2026-11-27)**: codegen closure chụp **biến cấp tệp theo giá trị** tại điểm tạo
 // (trước đây thân closure đọc ô global live) ⇒ cùng nguồn, bytecode đổi ngữ nghĩa nhưng `VERSION`
 // VBC1 không đổi; nhãn buộc cache cũ tự vô hiệu (ca thật: cache pre-fix cho `0,1` thay vì `0,0`).
+// **ST-319d (#208, 2026-11-27)**: codegen `push` trên `var` ghi lại ô ở **mọi** vị trí (trước đây
+// chỉ câu lệnh, và ghi bừa cả `let`) ⇒ cùng nguồn, bytecode đổi ngữ nghĩa nhưng `VERSION` VBC1
+// không đổi; nhãn buộc cache cũ tự vô hiệu (ca thật: cache pre-fix cho `[1]` thay vì `[1, 2]`).
 pub const PHIEN_BAN: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23+st302-derives-json-async-impl-2026-11-23+v050-release-2026-11-23+v055-release-2026-11-23+v060-release-2026-11-24+st319a-closure-cap-tep-2026-11-27"
+    "+vd241-coercion-2026-11-19+st248-field-index-lift-2026-11-20+st250-global-init-trap-2026-11-20+vd256-fee-side-table-v4-2026-11-20+vd257-b-four-version-axes-2026-11-20+vd258-checker-option-record-none-2026-11-20+vd260-rest-parity-option-2026-11-21+vd263-letelse-generic-range-2026-11-21+vd265-266-methodret-genericres-intlit-2026-11-21+vd268-nestassign-2026-11-21+vd269-optmethod-2026-11-21+vd273-budget-default-40m-2026-11-22+v040-release-2026-11-23+v041-release-2026-11-23+v045-release-2026-11-23+st302-derives-json-async-impl-2026-11-23+v050-release-2026-11-23+v055-release-2026-11-23+v060-release-2026-11-24+st319a-closure-cap-tep-2026-11-27+st319d-push-mutable-2026-11-27"
 );
 
 /// Thư mục cache: `$XDG_CACHE_HOME/vifast/vis` hoặc `~/.cache/vifast/vis`.
@@ -272,9 +275,16 @@ mod tests {
         // **ST-319a (#206, 2026-11-27)**: codegen chụp biến cấp tệp theo **giá trị tại điểm tạo
         // closure** ⇒ nhãn `st319a-closure-cap-tep` buộc cache pre-fix tự vô hiệu (trước bump,
         // cache cũ vẫn trả `0,1` thay vì `0,0` dù binary đã sửa); `VERSION` VBC1 không đổi.
+        // **ST-319d (#208, 2026-11-27)**: codegen `push` trên `var` ghi ô ở **mọi** vị trí (trước
+        // chỉ câu lệnh, và ghi bừa cả `let`) ⇒ nhãn `st319d-push-mutable` buộc cache pre-fix tự vô
+        // hiệu (trước bump, cache cũ vẫn trả `[1]` thay vì `[1, 2]` dù binary đã sửa).
         assert_eq!(
-            k, "de308705a335d3da380dc8ff57b57b50f2ffccbf281af4f1a3bc45eb2e117bba",
+            k, "27a1e2c287e16db790b06b55b196ae05859188e119eda1fc36aaaab2eae8728e",
             "khoá cache đã đổi — VD-129: đổi khoá là thay đổi **có chủ ý**, phải ghim lại kèm VD"
+        );
+        assert_ne!(
+            k, "de308705a335d3da380dc8ff57b57b50f2ffccbf281af4f1a3bc45eb2e117bba",
+            "ST-319d: cache sinh trước push-mutable (nền F2 ST-319a) không được tái dùng"
         );
         assert_ne!(
             k, "c5c4d5ac27f3e67f0d0d7c6f5fb2afea1fa1e80ba4332594c949d49898755b66",

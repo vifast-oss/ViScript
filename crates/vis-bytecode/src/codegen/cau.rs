@@ -56,6 +56,10 @@ impl Emit<'_> {
                                                        // lại lấy ô global ⇒ `()` (hồi quy 10k async task).
                 let slot = self.slot_cua(*sym)?;
                 self.f.push(Instr::StoreLocal(slot), *span, -1);
+                // **ST-319d (#208)**: `var` ⇒ `push` trên nó phải ghi lại ô (VD-51).
+                if *sym != 0 {
+                    self.g.mutables.insert(*sym);
+                }
                 self.net_stack(*span)
             }
             HStmt::Assign {
@@ -148,40 +152,10 @@ impl Emit<'_> {
                 }
             }
             HStmt::Expr(e) => {
-                // `x.push(v)` — interp ghi **trả lại** ô (CoW, VD-51): `x = List([...])`.
-                if let HExpr::Call {
-                    callee,
-                    args,
-                    named,
-                    span,
-                } = e
-                {
-                    if let HExpr::Field { base, name, .. } = &**callee {
-                        if name == "push" {
-                            if let HExpr::Var { sym: Some(id), .. } = &**base {
-                                let slot = self.slot_cua(*id)?;
-                                // **VD-258**: nâng đối số plain cho `list[T?]`.
-                                let push_depth = self.push_elem_depth(base);
-                                self.f.push(Instr::LoadLocal(slot), *span, 1);
-                                for a in args {
-                                    self.expr(a)?;
-                                    if push_depth > 0 {
-                                        self.lift_opt(push_depth, *span)?;
-                                    }
-                                }
-                                let c = self.g.cst_str(name);
-                                self.f.push(
-                                    Instr::CallMethod(c, args.len() as u16),
-                                    *span,
-                                    -i32::from(args.len() as u16),
-                                );
-                                let _ = named;
-                                self.f.push(Instr::Assign(slot), *span, -1);
-                                return self.net_stack(*span);
-                            }
-                        }
-                    }
-                }
+                // **ST-319d (#208)**: bỏ đặc cách `push` — ngữ nghĩa `push`/`var` (VD-51) nằm ở
+                // `expr()` (một đường cho mọi ngữ cảnh). Nhờ vậy: `var` ghi lại ô ở cả biểu thức
+                // cuối; `let` **không** ghi (trước đây ghi sai); `E_BUILTIN` của lời gọi phương
+                // thức được charge đúng như interp (ST-276).
                 self.expr(e)?;
                 self.f.push(Instr::Pop, e.span(), -1);
                 self.net_stack(e.span())

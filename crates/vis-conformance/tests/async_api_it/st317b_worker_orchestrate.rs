@@ -717,6 +717,140 @@ fn w18_frame_w1_main_ghi_nhieu_var_roi_await() {
 }
 
 // ---------------------------------------------------------------------------
+// **ST-319d** — đóng `#208`: codegen thiếu tập **mutable** nên `push` trên `var`
+// không ghi lại ô ở vị trí biểu thức, còn `push` trên `let` ở câu lệnh lại ghi bừa.
+// Oracle = interp (`VD-51`: `var` ghi ô, `let`/tạm trả list mới).
+// ---------------------------------------------------------------------------
+
+/// (a)+(b) `#208`: push là **biểu thức cuối** của `async fn` ⇒ có `Assign` ô global.
+/// W=1 cả 2 engine + **frame** (đường production `vis run --workers 1`).
+const PUSH_VAR_DUOI: &str = r#"var xs = [1]
+
+async fn them():
+    xs.push(2)
+
+fn main():
+    let t = spawn them()
+    await t
+    print(xs)
+"#;
+
+#[test]
+fn w19_push_var_bieu_thuc_cuoi() {
+    let a = anh(PUSH_VAR_DUOI);
+    let i = interp(PUSH_VAR_DUOI, &a, 1);
+    let v = vm(PUSH_VAR_DUOI, &a, 1);
+    assert_eq!(i.stdout, "[1, 2]\n", "interp W=1: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[1, 2]\n", "VM W=1: {:?}", v.diagnostics);
+    so_khop(&i, &v, "push var W=1");
+    let fi = frame_1(PUSH_VAR_DUOI, &a);
+    let fv = frame_vm_1(PUSH_VAR_DUOI, &a);
+    assert_eq!(fi.stdout, "[1, 2]\n", "frame interp: {:?}", fi.diagnostics);
+    assert_eq!(fv.stdout, "[1, 2]\n", "frame VM: {:?}", fv.diagnostics);
+    so_khop(&fi, &fv, "push var frame W=1");
+}
+
+/// (c) hàm **sync** — loại trừ task/frame khỏi phương trình.
+const PUSH_VAR_SYNC: &str = r#"var xs = [1]
+fn them(): xs.push(2)
+fn main():
+    them()
+    print(xs)
+"#;
+#[test]
+fn w20_push_var_ham_sync() {
+    let a = anh(PUSH_VAR_SYNC);
+    let i = interp(PUSH_VAR_SYNC, &a, 1);
+    let v = vm(PUSH_VAR_SYNC, &a, 1);
+    assert_eq!(i.stdout, "[1, 2]\n");
+    assert_eq!(v.stdout, "[1, 2]\n", "VM: {:?}", v.diagnostics);
+    so_khop(&i, &v, "push var sync");
+}
+
+/// (h) `let` + push **câu lệnh** ⇒ **không** ghi lại (trước đây VM ghi ⇒ `[1, 2]`).
+const PUSH_LET_CAU_LENH: &str = r#"fn main():
+    let xs = [1]
+    xs.push(2)
+    print(xs)
+"#;
+#[test]
+fn w21_push_let_khong_ghi_lai() {
+    let a = anh(PUSH_LET_CAU_LENH);
+    let i = interp(PUSH_LET_CAU_LENH, &a, 1);
+    let v = vm(PUSH_LET_CAU_LENH, &a, 1);
+    assert_eq!(i.stdout, "[1]\n");
+    assert_eq!(v.stdout, "[1]\n", "VM: {:?}", v.diagnostics);
+    so_khop(&i, &v, "push let");
+}
+
+/// (e) `let y = xs.push(2)` trên `var xs` ⇒ **cả hai** `[1, 2]`.
+const PUSH_VAR_GAN: &str = r#"fn main():
+    var xs = [1]
+    let y = xs.push(2)
+    print(xs)
+    print(y)
+"#;
+#[test]
+fn w22_push_var_trong_let() {
+    let a = anh(PUSH_VAR_GAN);
+    let i = interp(PUSH_VAR_GAN, &a, 1);
+    let v = vm(PUSH_VAR_GAN, &a, 1);
+    assert_eq!(i.stdout, "[1, 2]\n[1, 2]\n");
+    assert_eq!(v.stdout, "[1, 2]\n[1, 2]\n", "VM: {:?}", v.diagnostics);
+    so_khop(&i, &v, "push var trong let");
+}
+
+/// (W=2) push trên `var` top-level trong task ⇒ `VS0509` **cả hai** engine (W=1 vẫn `[1, 2]`).
+#[test]
+fn w23_push_var_w2_ghi_cheo_vs0509() {
+    let a = anh(PUSH_VAR_DUOI);
+    for out in [interp(PUSH_VAR_DUOI, &a, 1), vm(PUSH_VAR_DUOI, &a, 1)] {
+        assert_eq!(out.exit, 0, "W=1: {:?}", out.diagnostics);
+        assert_eq!(out.stdout, "[1, 2]\n");
+    }
+    for w in [2usize, 4] {
+        for (nhan, out) in [
+            ("interp", interp(PUSH_VAR_DUOI, &a, w)),
+            ("vms", vm(PUSH_VAR_DUOI, &a, w)),
+        ] {
+            assert_eq!(out.exit, 1, "{nhan} W={w} phải lỗi");
+            assert!(
+                out.diagnostics
+                    .iter()
+                    .any(|d| d.code.short == "VS0509" && d.message.contains("ghi chéo worker")),
+                "{nhan} W={w}: {:?}",
+                out.diagnostics
+            );
+        }
+    }
+}
+
+/// (j) `map.insert` (chưa hỗ trợ) — parity 2 engine, chống patch ghi bừa cho `insert`.
+const PUSH_MAP_INSERT: &str = r#"var m = {"a": 1}
+async fn them(): m.insert("b", 2)
+fn main():
+    let t = spawn them()
+    await t
+    print(m)
+"#;
+#[test]
+fn w24_map_insert_parity() {
+    let a = anh(PUSH_MAP_INSERT);
+    let i = interp(PUSH_MAP_INSERT, &a, 1);
+    let v = vm(PUSH_MAP_INSERT, &a, 1);
+    assert_eq!(i.exit, 1, "interp: {:?}", i.diagnostics);
+    assert_eq!(v.exit, 1, "VM: {:?}", v.diagnostics);
+    assert!(
+        v.diagnostics
+            .iter()
+            .any(|d| d.code.short == "VS0506" && d.message.contains("`map.insert()` chưa hỗ trợ")),
+        "{:?}",
+        v.diagnostics
+    );
+    so_khop(&i, &v, "map.insert parity");
+}
+
+// ---------------------------------------------------------------------------
 // **ST-319c2 (#206)** — closure bắt biến cấp tệp **theo giá trị** (SPEC §4.7) trên đường
 // **frame/async**: lệnh ghi trong thân closure chỉ đổi ô snapshot của closure, **không**
 // xuyên ra `globals`. Trước bản vá, `DongBo::ghi` đồng bộ mọi lệnh ghi global kể cả trong
