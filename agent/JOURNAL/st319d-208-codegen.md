@@ -119,3 +119,27 @@ không bump `PHIEN_BAN` (ngoài lane `vis-loader` — A0 quyết, xem §5).
   clippy `8abdd304d22d1693ed4a34bbccd3142973536a8958503283dfdd09d002cbe0ea`.
 - ⇒ Q5 của thiết kế **đã đóng** trong lát này; Q4 (`PushBien` cho `vis-diff`) vẫn tuỳ chọn, commit
   riêng sau merge.
+
+## 7. Merge `main` `d2b2b69a` (ST-319c2 `#209` DONE) — resolve 1 conflict thật
+
+- `git merge main` (`d2b2b69a`, sau `1ec1105a` merge ST-319c2): **đúng 1 conflict**
+  `crates/vis-conformance/tests/async_api_it/st317b_worker_orchestrate.rs` — add/add **cuối tệp**:
+  `main`/c2 thêm block `ST-319c2 (#206)` (6 test closure frame `w19..w24_frame_*`), nhánh d thêm
+  block `ST-319d (#208)` (6 test push `w19..w24_*`). Tên hàm **khác nhau**, không trùng.
+- **Resolve**: giữ **cả hai block** theo thứ tự d → c2, mỗi block giữ header + separator riêng;
+  **không đổi tên** `w19..w24` của d (log cũ còn hiệu lực); c2 giữ nguyên `w19..w24_frame_*`.
+  Kết quả: `st317b_worker_orchestrate` **32 test** (`+6` so với 26 trước merge), 0 marker conflict,
+  0 tên hàm trùng.
+- **Docs**: `agent/STATE.md` (c2 `DONE`, `#209` đóng) và toàn bộ `agent/*` giữ **bản `main`** —
+  `git diff main -- agent/STATE.md agent/SO-NO.md agent/QUEUE.md agent/ROADMAP.md agent/ACTIVE.md
+  agent/DECISIONS.md` **rỗng**; chỉ journal ST-319d là tệp mới của nhánh. `crates/vis-interp`
+  (frame `expr.rs`/`state.rs`) lấy nguyên bản `main`.
+- **Cổng sau merge**: `st317b` **32/32** (`st319d-merge-st317b.log`, sha256
+  `25cc406a6be44d3161804c0b4ec873cd82ee0029e914cd6015fc8cc11d3dc494`); `./vis-dev gate --fast`
+  **PASS 3929/3929** (4 skip; clippy + R1..R10 + self-test OK; sha256
+  `5427337a9b9b4474ee87ca2242ea0969f51a0c3e426df8502b01bc2a73518068`);
+  `VIS_DIFF_N=100000` **`lech=0`** (94425 chạy, 85,4 s, seed `3523158054`; sha256
+  `609172b10f6e1e50ab983cac862e27de1ab1e3c3b0050209162020965d6634a1`);
+  `cargo clippy -p vis-loader -p vis-bytecode -p vis-interp --all-targets -- -D warnings` **OK**
+  (sha256 `17ea336ccab8550d626b8fdc7e84f9f3640a28f0463505f9d0bab4e05f536480`).
+  `agent/API-VBC1.txt` không đổi.

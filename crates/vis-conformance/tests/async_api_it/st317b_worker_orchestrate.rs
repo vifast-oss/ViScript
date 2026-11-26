@@ -849,3 +849,201 @@ fn w24_map_insert_parity() {
     );
     so_khop(&i, &v, "map.insert parity");
 }
+
+// ---------------------------------------------------------------------------
+// **ST-319c2 (#206)** — closure bắt biến cấp tệp **theo giá trị** (SPEC §4.7) trên đường
+// **frame/async**: lệnh ghi trong thân closure chỉ đổi ô snapshot của closure, **không**
+// xuyên ra `globals`. Trước bản vá, `DongBo::ghi` đồng bộ mọi lệnh ghi global kể cả trong
+// closure ⇒ frame interp in `5\n5` còn frame VM in `5\n0`.
+// ---------------------------------------------------------------------------
+
+/// Closure tạo **trước** task, ghi global **sau** `await`: frame interp ↔ VM đều `5\n0`
+/// (closure đọc bản của nó, global ngoài không đổi).
+const CLOSURE_GHI_GLOBAL_FRAME: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn main():
+    let f = fn() -> int:
+        g = 5
+        g
+    let t = spawn dummy()
+    await t
+    print(f())
+    print(g)
+"#;
+
+#[test]
+fn w19_frame_w1_closure_ghi_global_khong_xuyen() {
+    let a = anh(CLOSURE_GHI_GLOBAL_FRAME);
+    let i = frame_1(CLOSURE_GHI_GLOBAL_FRAME, &a);
+    let v = frame_vm_1(CLOSURE_GHI_GLOBAL_FRAME, &a);
+    assert_eq!(i.stdout, "5\n0\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n0\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure ghi global trong frame W=1");
+}
+
+/// Closure **đọc lại sau ghi** qua nhiều lần gọi; task `async` ghi cùng global ở giữa:
+/// closure thấy snapshot của nó tăng `5 → 10`, còn global ngoài giữ giá trị task ghi (`3`).
+const CLOSURE_DOC_SAU_GHI_FRAME: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn main():
+    let f = fn() -> int:
+        g = g + 5
+        print(g)
+        g
+    let t = spawn dat()
+    await t
+    print(f())
+    print(f())
+    print(g)
+"#;
+
+#[test]
+fn w20_frame_w1_closure_doc_sau_ghi_task_ghi_global() {
+    let a = anh(CLOSURE_DOC_SAU_GHI_FRAME);
+    let i = frame_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
+    let v = frame_vm_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
+    assert_eq!(i.stdout, "5\n5\n10\n10\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n5\n10\n10\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure đọc sau ghi + task ghi global");
+}
+
+/// **w21** — closure **treo giữa chừng** (`await dat()` trong thân): khi resume, `nap_vao_env`
+/// chỉ đồng bộ khung ngoài closure ⇒ snapshot `g=0` không bị ghi `g=3` của task đè lên; closure
+/// cộng `5` trên bản của nó, global ngoài giữ `3`.
+#[test]
+fn w21_frame_w1_closure_await_ghi_global_sau_resume() {
+    const SRC: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn main():
+    let f = fn() -> int:
+        await dat()
+        g = g + 5
+        g
+    print(f())
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "5\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure await rồi ghi global");
+}
+
+/// **w22** — closure **bên trong task**: ghi global chỉ đổi snapshot của closure (in `5`),
+/// `g` trong task vẫn `0`, kết quả task `1`; main `await` + in kết quả.
+#[test]
+fn w22_frame_w1_closure_ghi_global_trong_task() {
+    const SRC: &str = r#"var g = 0
+
+async fn chay() -> int:
+    let f = fn() -> int:
+        g = 5
+        g
+    print(f())
+    print(g)
+    1
+
+fn main():
+    let t = spawn chay()
+    print(await t)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "5\n0\n1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n0\n1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "closure ghi global trong task");
+}
+
+/// **w23** — khoá heuristic `c.name.is_empty()`: **hàm tên** truyền qua giá trị (`let h = tang`)
+/// vẫn là env chia sẻ ⇒ `h()` ghi global **xuyên** như F2/F3 (`1`), không bị nhầm thành closure.
+#[test]
+fn w23_frame_w1_ham_ten_qua_gia_tri_van_xuyen_global() {
+    const SRC: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang():
+    g = g + 1
+
+fn main():
+    let h = tang
+    let t = spawn dummy()
+    await t
+    h()
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "hàm tên qua giá trị vẫn xuyên global");
+}
+
+/// **w24 (P2-1 audit)** — **khung hàm tên nằm TRÊN closure** trong stack (`doc()` gọi từ closure
+/// và tự `await dat()`): `nap_vao_env` chỉ được bỏ khung `by_value`, không được cắt cả khung
+/// hàm tên (env dựng từ `globals`). Trước bản vá, hồi quy cho `0\n3` (interp) trong khi VM và
+/// non-frame là `3\n3`.
+#[test]
+fn w24_frame_w1_ham_ten_tren_closure_nap_van_sync() {
+    const SRC: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn doc() -> int:
+    await dat()
+    g
+
+fn main():
+    let f = fn() -> int:
+        doc()
+    print(f())
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "3\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "3\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "hàm tên trên closure vẫn sync global");
+}
