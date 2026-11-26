@@ -255,6 +255,11 @@ impl VisMap {
     /// Chèn/cập nhật **last-wins**: khoá trùng ⇒ giá trị tại chỗ, giữ khoá gốc + vị trí đầu.
     /// Trả giá trị cũ nếu có.
     pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> {
+        // **ST-315b review F3**: sau `Rc::make_mut` bản sao mất chỉ mục; nếu đang cập nhật khoá
+        // **đã có**, dựng lại chỉ mục trước khi tra để các lần `get` sau không quét N.
+        if self.index.is_none() && self.entries.len() >= NGUONG_CHI_MUC {
+            self.index = MapIndex::dung(&self.entries);
+        }
         if let Some(i) = self.vi_tri(&k) {
             return Some(std::mem::replace(&mut self.entries[i].1, v));
         }

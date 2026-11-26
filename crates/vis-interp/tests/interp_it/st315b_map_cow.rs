@@ -91,26 +91,36 @@ fn q3_remove_roi_set_lai_chen_cuoi() {
 
 #[test]
 fn co_chep_khi_chia_se_va_ghi_tai_cho_khi_doc() {
-    let a = map((0..64).map(|i| ("k", Value::Int(i))).collect());
-    // 64 lần "k" last-wins ⇒ một entry.
-    assert_eq!(a.show(), "{\"k\": 63}");
-
+    // 64 khoá **phân biệt** ⇒ map đủ ngưỡng, có chỉ mục băm.
+    let a = Value::map(
+        (0..64)
+            .map(|i| (s(&format!("k{i}")), Value::Int(i)))
+            .collect(),
+    );
     let mut b = a.clone();
-    // Đọc trên bản chia sẻ không nhân bản entry (chỉ tăng refcount).
     let truoc = match (&a, &b) {
         (Value::Map(ra), Value::Map(rb)) => {
+            // Đọc trên bản chia sẻ không nhân bản entry (chỉ tăng refcount).
             assert!(std::rc::Rc::ptr_eq(ra, rb));
             ra.len()
         }
         _ => unreachable!(),
     };
+    assert_eq!(truoc, 64);
     if let Value::Map(rc) = &mut b {
         let m = std::rc::Rc::make_mut(rc);
-        assert_eq!(m.len(), truoc);
-        m.insert(s("k"), Value::Int(1));
+        assert_eq!(m.len(), 64);
+        // Ghi **khoá đã có** trên bản clone: index phải được dựng lại (review F3).
+        m.insert(s("k0"), Value::Int(100));
+        assert!(m.co_chi_muc(), "clone + sửa khoá cũ phải dựng lại chỉ mục");
     }
-    assert_eq!(a.show(), "{\"k\": 63}");
-    assert_eq!(b.show(), "{\"k\": 1}");
+    let lay = |v: &Value, k: &str| match v {
+        Value::Map(m) => m.get(&s(k)).map(Value::show),
+        _ => None,
+    };
+    assert_eq!(lay(&a, "k0"), Some("0".to_string()), "bản gốc không đổi");
+    assert_eq!(lay(&b, "k0"), Some("100".to_string()));
+    assert_eq!(lay(&b, "k63"), Some("63".to_string()));
 }
 
 #[test]

@@ -34,8 +34,8 @@ giá trị, test khoá 66/66 chỉ tìm chuỗi trong cả tệp. Báo cáo:
 
 ## 2. Harness hiện tại
 
-- **12 `#[test]`** trong `host_parity`; mọi ca chạy **cả hai đường** `vis run` và
-  `vis run --vm --no-cache` trên cùng tệp, reset fixture trước **mỗi** đường. `hai_duong_*` đòi
+- **12 `#[test]`** trong `host_parity`: **9 ca** chạy **cả hai đường** `vis run` và
+  `vis run --vm --no-cache`; 3 test còn lại khoá bảng `HOST_66`/bộ bóc chú thích. `hai_duong_*` đòi
   **exit 0**, stdout/stderr **từng byte** (sau chuẩn hoá khai báo rõ nếu có).
 - **66/66 hàm host** được gọi trong **script thật** (`SRC_PHU`), không tính bảng/chú thích:
   | Test | Hàm phủ | Số hàm |
@@ -119,7 +119,6 @@ Kiểm **hàng rào F4** (mutation tạm, đã khôi phục):
 
 ## 6. Kết luận
 
-- **66/66** hàm host (Linux) có ca chạy thật; **12 test**; mỗi nhóm có ca lỗi in thông điệp thật;
-  8 hàm `fs` trước đây chỉ gọi nay đã assert giá trị/nội dung.
+- **66/66** hàm host (Linux) có ca chạy thật; **12 test** (9 ca hai đường + 3 meta); mỗi nhóm có ca lỗi in thông điệp thật **trừ `time`** (chỉ bất biến `>= 0`); **20 hàm `fs`** đều assert giá trị/nội dung.
 - Sẵn sàng để Gatekeeper nghiệm thu lại; phần còn lại của `ST-315d` (mã `VS0304`, gợi ý `VS0204`)
   đã xong ở `JOURNAL/st315d-vs0304.md`.

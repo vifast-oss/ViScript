@@ -154,3 +154,19 @@ Binary `target/release/vis` sha256 `dff3d6295e69fc8447eed3c644c532c0792c514718c6
 
 KPI: opt-bench ≤ 120 ms **PASS**; N=316 ≥ 10× nền 1.328 ms (≈27×) **PASS**; N=1 không hồi quy
 so nền 44,5 ms (43 ms) **PASS**; phẳng N=8→316. Số này khớp bảng A/B của W2 (sai lệch ≤ 3 ms).
+
+## 7. Hậu-kiểm R-B (`review/r315b`, `04163a7c`) — PASS, finding thấp
+
+- R-B tái lập độc lập: differential/fuzz `VisMap` ↔ `Vec` cũ **0 lệch** (200 chuỗi × 400 thao tác,
+  2.000 merge, 20.000 `eq_value`, NaN/±0.0/Int/Float/Percent/list/record/enum); gate **3.852/0**,
+  clippy PASS, `vis-diff 100k lech=0`; benchmark target riêng: opt-bench **49/45 ms**, N=316
+  **47 ms** (A/B **26,9×**, KPI ~30,4× nền 1.429 ms); `size_of::<Value>()=64`, `VisMap=32`.
+- **F1 (chấp nhận, cần A0 ghi CHANGELOG/wontfix)**: `Value::map` gộp last-wins nên 3 điểm dựng
+  header HTTP (`vis-http/async_http.rs`, `fs_net/dispatch.rs`) **mất header trùng tên**
+  (`Set-Cookie`…); trước giữ đủ cặp, `get` trả first. Đây là thay đổi hành vi API; chưa sửa vì
+  `map[str,str]` không biểu diễn được nhiều giá trị/khoá — cần quyết định A0 (đổi kiểu/CHANGELOG).
+- **F3 (đã vá + test)**: `VisMap::insert` dựng lại index trước khi cập nhật khoá **đã có** trên bản
+  clone (trước đó `b=a; b["k"]=v` để index rỗng ⇒ `get` quét N). Test CoW dùng 64 khoá phân biệt
+  và assert `co_chi_muc()` sau ghi.
+- **F5 (đã siết)**: `core_it` assert `size_of::<Value>() == 64` trên 64-bit (vẫn ≤ 64 nền tảng khác).
+- F2/F4/F6 (bộ nhớ index cho khoá phức tạp; JSON đệm cặp trùng; +48 B/map rỗng) ghi nhận **không chặn**.
