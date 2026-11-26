@@ -149,3 +149,84 @@ git merge-tree --write-tree fa74f294 HEAD                               # 69b894
 ```
 
 **Không sửa mã.** Chỉ thêm tệp journal này và commit `[REVIEW]`.
+
+---
+
+# Addendum F1 — audit `a801ccc6` + `d56b96f1` (2026-11-27)
+
+- **HEAD audit**: `d56b96f1` · **Merge**: `a801ccc6` (parents `ef3e6928` + `fa74f294`) · **`main`**: `fa74f294`.
+- **Kết luận: FAIL (P2 tài liệu)** — mã/test/cổng đều PASS; **P2-B ghi nợ sai** và **bỏ sót nợ thật**
+  (W2 frame W=1), nên chưa thể chuyển A0 đăng ký nợ. Không sửa mã.
+
+## F1.1 Bảng kiểm
+
+| # | Hạng mục | Kết quả | Bằng chứng |
+|---|---|---|---|
+| 1 | `git status` sạch; merge main; docs VD-294 | **PASS** | status rỗng; `main` là ancestor; `merge-tree main HEAD` = **`f5957db`** = tree HEAD, **0 conflict**; `git diff main..HEAD -- ACTIVE/QUEUE/DECISIONS/SO-NO/ROADMAP/DECISIONS-INDEX` **0 tệp**; VD-294 còn (ACTIVE 7 dòng) |
+| 2 | W6 frame API + assert | **PASS** | `frame_1` (`run_async_with_hosts_caps`) W=1, `frame_w` (`run_async_workers_with_hosts_caps`) W=2/4; assert `exit == 1` + `code.short == "VS0506"` + `message.contains("hong")`; 0 `#[ignore]` |
+| 3 | P2-B chỉ ghi nợ, không sửa code/test giả | **PASS cơ học / FAIL nội dung** | `git diff ef3e6928..HEAD` không có `frame/worker.rs`/`frame/*`; không thêm test P2-B; nhưng nội dung nợ §2b.7:351–354 **sai** (F1.3) |
+| 4 | P3 W3/W7/LOC; W2 | **PASS một phần** | W3 assert `VS0506`; W7 không thêm assert `Pending` giả; LOC **312/111** khớp; W2 nguồn dùng `counter` nhưng diagnostic vẫn `s14` (F1.4) |
+| 5 | Cổng lại | **PASS** | gate **3906 passed / 0 failed / 5 ignored** (3901/3901 + 4 skip); diff 100k **lech=0** 56,5 s; clippy 0 warning; W **10/10** |
+| 6 | `merge-tree main HEAD` | **PASS** | `f5957db…`, **0 conflict**; nhánh đã chứa `fa74f294` |
+
+## F1.2 Số thật (log `/home/ps/vislogs/`)
+
+| Cổng | Kết quả | Log · sha256 |
+|---|---|---|
+| `./vis-dev gate --fast` | **exit 0** — 3906 passed / 0 failed / 5 ignored | `review-st317b-p2b-f1-gate.log` · `b2f123bd…b5ca7` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **exit 0 — `lech=0`**, 100.000, 56,5 s, 1.769/s | `review-st317b-p2b-f1-diff.log` · `94b02241…1c493` |
+| clippy `--workspace --all-targets -D warnings` | **exit 0**, 0 warning | `review-st317b-p2b-f1-clippy.log` · `63622df7…830cc` |
+| W1..W10 | **10/10**, 0 ignored, 388 filtered | `review-st317b-p2b-f1-w10.log` · `5731f1f8…ee2ab` |
+
+W6 output thật (frame, `--workers`):
+
+```text
+--workers 1/2/4: error VS0506: tác vụ `hong` lỗi: VS0502: lấy dư cho 0 (`%0`); exit=101
+```
+
+## F1.3 FAIL — P2-B ghi sai, bỏ sót nợ thật
+
+Vị trí: `agent/JOURNAL/st317b-tach-tep.md` §2b.7 **`### P2-B` dòng 351–354**:
+
+> “production frame W=1 lệch interp (exit 0) vs VM (exit 1) cho cùng kịch bản lỗi task không await;
+> … interp phải surface `VS0506` như VM”
+
+Đo lại **cùng HEAD**, kịch bản lỗi task không await (`w6.vis`):
+
+```text
+vis run w6.vis              -> error VS0506 ... `hong` ...; exit=101
+vis run --vm w6.vis         -> error VS0506 ... `hong` ...; exit=101
+vis run --workers 1/2/4     -> error VS0506 ...; exit=101
+```
+
+⇒ **không có** lệch frame W=1 interp 0 vs VM 1 cho task-error; nợ ghi trong journal là **không tồn tại**.
+
+Nợ **thật** của P2-B vẫn còn nguyên (W2 toàn cục, frame W=1):
+
+```text
+vis run w2.vis              -> stdout "0"; exit=0
+vis run --vm w2.vis         -> stdout "1"; exit=0
+```
+
+Ngoài ra, nợ **non-frame W6 W≥2** (final join nuốt lỗi task không await) chỉ còn một dòng trỏ
+“xem nợ P2-B bên dưới”, nhưng P2-B lại mô tả kịch bản frame task-error — nên nợ này **không được
+đăng ký đúng**. Đề nghị:
+1. Sửa §2b.7 P2-B thành đúng nợ W2 frame W=1: interp stdout `0` vs VM `1` (cùng exit 0), globals
+   top-level không ghi xuyên frame; `frame/worker.rs` ngoài lane.
+2. Đăng ký **riêng** nợ non-frame `run_workers_parallel*` W≥2 nuốt lỗi task không await (hoặc giữ
+   một ca test nợ có tên rõ, không assert thành “đúng”).
+3. Không cần sửa mã cho addendum này; sửa journal rồi audit lại.
+
+## F1.4 P3 — W2 chưa đóng
+
+- Test W2 **nguồn** dùng `counter` (đúng), nhưng diagnostic thực tế vẫn là symbol nội bộ:
+  `error VS0509: ghi chéo worker (W>1): biến s14 (task \`tang\`)`.
+- Journal §2b.7 dòng 358 ghi “W2: đã dùng `counter` (không phải `s14`) — không cần đổi” là **sai**
+  với diagnostic. Đây là P3 (không chặn), nhưng cần sửa câu chữ hoặc ánh xạ symbol→tên nguồn.
+
+## F1.5 Kết luận addendum
+
+- **PASS kỹ thuật**: W6 đã đúng frame API + `VS0506` cho W=1/2/4; W3 code; W7 không assert giả;
+  LOC khớp; merge main sạch; gate/diff/clippy/W xanh.
+- **FAIL điều kiện P2-B**: nợ ghi trong §2b.7 sai kịch bản và bỏ sót nợ thật (W2 frame W=1 +
+  non-frame W6 W≥2). Chỉ cần sửa journal builder, không sửa mã; sau đó audit lại.
