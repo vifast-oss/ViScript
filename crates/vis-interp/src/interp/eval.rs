@@ -215,7 +215,7 @@ impl<'a> Interp<'a> {
                 for it in items {
                     vs.push(self.eval(it)?);
                 }
-                Ok(Value::List(vs))
+                Ok(Value::list(vs))
             }
             HExpr::Set { items, .. } => {
                 let mut vs: Vec<Value> = Vec::new();
@@ -225,7 +225,7 @@ impl<'a> Interp<'a> {
                         vs.push(v);
                     }
                 }
-                Ok(Value::List(vs))
+                Ok(Value::list(vs))
             }
             HExpr::Map { entries, .. } => {
                 // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins — mỗi khoá một entry,
@@ -413,7 +413,7 @@ impl<'a> Interp<'a> {
                 frame_body: std::cell::OnceCell::new(),
             }))),
             HExpr::Tuple { items, .. } => {
-                // **VD-258**: `()` là `unit` duy nhất — empty tuple không được là `Value::List([])`
+                // **VD-258**: `()` là `unit` duy nhất — empty tuple không được là `Value::list([])`
                 // (trước đây `()` in `[]`, khác `return` trần in `()`).
                 if items.is_empty() {
                     return Ok(Value::Unit);
@@ -422,7 +422,7 @@ impl<'a> Interp<'a> {
                 for it in items {
                     vs.push(self.eval(it)?);
                 }
-                Ok(Value::List(vs))
+                Ok(Value::list(vs))
             }
             // **ST-61 (VD-96)**: `chan[T](n)` ⇒ `$kenh(n)` (một hiện thực ở `builtin`, dùng chung
             // cho cả interp lẫn VM).

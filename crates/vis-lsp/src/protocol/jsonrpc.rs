@@ -150,7 +150,7 @@ pub fn thay_doi_van_ban(kv: &[(Value, Value)]) -> Option<(String, Vec<ThayDoi>)>
         return None;
     };
     let mut out = Vec::with_capacity(xs.len());
-    for x in xs {
+    for x in xs.iter() {
         let Value::Map(c) = x else {
             return None;
         };
@@ -187,7 +187,7 @@ pub fn vi_tri_nhieu(kv: &[(Value, Value)]) -> Option<(String, Vec<(u32, u32)>)> 
         return None;
     };
     let mut out = Vec::with_capacity(xs.len());
-    for x in xs {
+    for x in xs.iter() {
         let Value::Map(pos) = x else {
             return None;
         };

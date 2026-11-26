@@ -409,9 +409,9 @@ mod tests {
 
         let mut m =
             VisMap::from_pairs((0..NGUONG_CHI_MUC).map(|i| (Value::Int(i as i64), Value::Int(0))));
-        m.insert(Value::List(vec![Value::Int(1)]), Value::Int(7));
+        m.insert(Value::list(vec![Value::Int(1)]), Value::Int(7));
         assert!(m
-            .get(&Value::List(vec![Value::Int(1)]))
+            .get(&Value::list(vec![Value::Int(1)]))
             .is_some_and(|v| v.eq_value(&Value::Int(7))));
         assert_eq!(m.len(), NGUONG_CHI_MUC + 1);
     }

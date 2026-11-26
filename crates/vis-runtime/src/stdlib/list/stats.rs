@@ -634,11 +634,11 @@ pub(crate) mod mapcontainskey {
         fn cau_truc_long_nhau_va_khac_kieu() {
             // List làm khoá: cùng cấu trúc, khác thứ tự ⇒ false.
             let m = VisMap::from_pairs(vec![(
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
                 Value::Int(1),
             )]);
-            assert!(co(&m, &Value::List(vec![Value::Int(1), Value::Int(2)])));
-            assert!(!co(&m, &Value::List(vec![Value::Int(2), Value::Int(1)])));
+            assert!(co(&m, &Value::list(vec![Value::Int(1), Value::Int(2)])));
+            assert!(!co(&m, &Value::list(vec![Value::Int(2), Value::Int(1)])));
 
             // Bản ghi: so theo trường, không theo thứ tự khai báo.
             let m = VisMap::from_pairs(vec![(

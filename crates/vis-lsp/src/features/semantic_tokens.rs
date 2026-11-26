@@ -67,8 +67,8 @@ pub fn provider() -> Value {
         (
             "legend",
             m(vec![
-                ("tokenTypes", Value::List(types)),
-                ("tokenModifiers", Value::List(Vec::new())),
+                ("tokenTypes", Value::list(types)),
+                ("tokenModifiers", Value::list(Vec::new())),
             ]),
         ),
         ("full", Value::Bool(true)),
@@ -389,7 +389,7 @@ fn ma_hoa(ds: &[SemTok]) -> Value {
         dong_truoc = t.dong;
         cot_truoc = t.cot;
     }
-    Value::List(data)
+    Value::list(data)
 }
 
 /// Phản hồi `textDocument/semanticTokens/full`: `{ "data": [...] }`.
@@ -502,7 +502,7 @@ mod tests {
         let Value::List(ds) = v else {
             panic!("phải là list");
         };
-        let so: Vec<i64> = ds
+        let so: Vec<i64> = std::rc::Rc::unwrap_or_clone(ds)
             .into_iter()
             .map(|v| match v {
                 Value::Int(n) => n,

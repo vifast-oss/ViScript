@@ -140,11 +140,11 @@ fn chi_muc_bam_luoi_dung_tu_nguong() {
             .get(&Value::Int(i as i64))
             .is_some_and(|v| v.eq_value(&Value::Int(i as i64 + 100))));
     }
-    lon.insert(Value::List(vec![Value::Int(1)]), Value::Int(7));
+    lon.insert(Value::list(vec![Value::Int(1)]), Value::Int(7));
     assert!(lon
-        .get(&Value::List(vec![Value::Int(1)]))
+        .get(&Value::list(vec![Value::Int(1)]))
         .is_some_and(|v| v.eq_value(&Value::Int(7))));
-    assert!(lon.get(&Value::List(vec![Value::Int(2)])).is_none());
+    assert!(lon.get(&Value::list(vec![Value::Int(2)])).is_none());
 
     // `remove` giữ chỉ mục đồng bộ: xoá một khoá rồi tra lại.
     assert!(lon

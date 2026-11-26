@@ -268,7 +268,7 @@ pub fn run(args: &[String]) -> ExitCode {
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
                         match van_ban.get(&uri) {
                             // Chưa mở ⇒ nội dung rỗng ⇒ `[]` (không lỗi).
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
@@ -461,7 +461,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some((uri, vi_tris)) = jsonrpc::vi_tri_nhieu(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(chon::tra_loi_selection(&kq, mode_cua(&uri), &vi_tris, &id));
@@ -484,7 +484,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
@@ -511,7 +511,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some((uri, line, ch)) = jsonrpc::vi_tri_van_ban(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 let byte = vi_tri::byte_tu_vi_tri(&kq.text, line, ch);
@@ -533,7 +533,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(ky_hieu::tra_loi_document_symbol(&kq, &id));
@@ -624,7 +624,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(gap::tra_loi_folding(&kq, &id));
@@ -694,7 +694,7 @@ pub fn run(args: &[String]) -> ExitCode {
                         ));
                     } else if let Some(uri) = jsonrpc::uri_cua(kv) {
                         match van_ban.get(&uri) {
-                            None => gui!(jsonrpc::phan_hoi(&id, Value::List(Vec::new()))),
+                            None => gui!(jsonrpc::phan_hoi(&id, Value::list(Vec::new()))),
                             Some(text) => {
                                 let kq = phan_tich_cache(&mut kq_cache, &uri, text, mode_cua(&uri));
                                 gui!(dinh_dang::tra_loi_format(&kq, mode_cua(&uri), &id));
@@ -756,7 +756,7 @@ pub fn run(args: &[String]) -> ExitCode {
 fn ket_qua_khoi_tao() -> Value {
     let completion = Value::map(vec![jsonrpc::kv(
         "triggerCharacters",
-        Value::List(vec![Value::Str(".".to_string())]),
+        Value::list(vec![Value::Str(".".to_string())]),
     )]);
     let capabilities = Value::map(vec![
         jsonrpc::kv(
@@ -792,7 +792,7 @@ fn ket_qua_khoi_tao() -> Value {
             "signatureHelpProvider",
             jsonrpc::m(vec![(
                 "triggerCharacters",
-                Value::List(vec![Value::Str("(".into()), Value::Str(",".into())]),
+                Value::list(vec![Value::Str("(".into()), Value::Str(",".into())]),
             )]),
         ),
         jsonrpc::kv("completionProvider", completion),

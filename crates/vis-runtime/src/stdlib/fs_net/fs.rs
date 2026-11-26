@@ -50,7 +50,7 @@ pub(crate) mod fsbytes {
 
     /// `Vec<u8>` → `list[int]` (mỗi byte thành một `int`).
     fn ds_byte(ds: Vec<u8>) -> Value {
-        Value::List(ds.into_iter().map(|b| Value::Int(i64::from(b))).collect())
+        Value::list(ds.into_iter().map(|b| Value::Int(i64::from(b))).collect())
     }
 
     /// Dispatch hai hàm `std.fs.*` byte thô (interp ↔ VM dùng chung).

@@ -97,8 +97,8 @@ pub(crate) mod bisect {
         #[test]
         fn khong_so_duoc_tra_none_khong_trap() {
             // List lồng nhau không có thứ tự trong `cmp_value` ⇒ `None`, không panic.
-            let xs = vec![Value::List(vec![Value::Int(1)])];
-            assert_eq!(tim(&xs, &Value::List(vec![Value::Int(1)])), None);
+            let xs = vec![Value::list(vec![Value::Int(1)])];
+            assert_eq!(tim(&xs, &Value::list(vec![Value::Int(1)])), None);
         }
 
         #[test]
@@ -150,8 +150,8 @@ pub(crate) mod chung {
     /// **VD-270 (sqlite-database-list)** — dựng **một** bản ghi `RowSet` (không bọc `Ok`) để dùng
     /// trong danh sách `list[RowSet]`; cùng hình dạng `columns` + `rows` với [`rowset`].
     pub(crate) fn rowset_record(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
-        let columns = Value::List(columns.into_iter().map(Value::Str).collect());
-        let rows = Value::List(rows.into_iter().map(Value::List).collect());
+        let columns = Value::list(columns.into_iter().map(Value::Str).collect());
+        let rows = Value::list(rows.into_iter().map(Value::list).collect());
         Value::Record(
             "RowSet".into(),
             vec![("columns".into(), columns), ("rows".into(), rows)],
@@ -364,7 +364,7 @@ pub(crate) mod flatten {
                 }
             }
         }
-        Ok(Value::List(out))
+        Ok(Value::list(out))
     }
 
     /// Độ dài dự phòng cho cấp phát: list con ⇒ số phần tử, còn lại ⇒ 0 (sẽ báo lỗi sau).
@@ -380,12 +380,12 @@ pub(crate) mod flatten {
         use super::*;
 
         fn ds(xs: &[i64]) -> Value {
-            Value::List(xs.iter().copied().map(Value::Int).collect())
+            Value::list(xs.iter().copied().map(Value::Int).collect())
         }
 
         fn phang(xs: Vec<Value>) -> Vec<Value> {
             match goi("list.flatten", &xs).expect("flatten hợp lệ") {
-                Value::List(out) => out,
+                Value::List(out) => std::rc::Rc::unwrap_or_clone(out),
                 other => panic!("phải trả list, được {other:?}"),
             }
         }
@@ -426,8 +426,8 @@ pub(crate) mod flatten {
         fn chi_mot_cap_khong_de_quy() {
             // `[[[1], [2]], [[3]]]` ⇒ `[[1], [2], [3]]`: phần tử list được giữ nguyên.
             let out = phang(vec![
-                Value::List(vec![ds(&[1]), ds(&[2])]),
-                Value::List(vec![ds(&[3])]),
+                Value::list(vec![ds(&[1]), ds(&[2])]),
+                Value::list(vec![ds(&[3])]),
             ]);
             bang(&out, &[ds(&[1]), ds(&[2]), ds(&[3])]);
         }
@@ -503,11 +503,11 @@ pub(crate) mod indexof {
             // Cùng `eq_value` với `==`: list lồng nhau và record so theo **trường**, không theo
             // thứ tự khai báo.
             let xs = vec![
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
-                Value::List(vec![Value::Int(3), Value::Int(4)]),
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
+                Value::list(vec![Value::Int(3), Value::Int(4)]),
+                Value::list(vec![Value::Int(1), Value::Int(2)]),
             ];
-            let can = Value::List(vec![Value::Int(1), Value::Int(2)]);
+            let can = Value::list(vec![Value::Int(1), Value::Int(2)]);
             assert_eq!(tim(&xs, &can, false), Some(0));
             assert_eq!(tim(&xs, &can, true), Some(2));
 

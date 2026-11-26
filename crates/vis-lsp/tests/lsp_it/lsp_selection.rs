@@ -115,7 +115,7 @@ fn selection(id: i64, uri: &str, vi_tris: &[(i64, i64)]) -> String {
             "params",
             m(vec![
                 ("textDocument", m(vec![("uri", s(uri))])),
-                ("positions", Value::List(ds)),
+                ("positions", Value::list(ds)),
             ]),
         ),
     ]))

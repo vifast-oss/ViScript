@@ -166,7 +166,7 @@ impl ProtoValue {
             Self::Bytes(b) => V::Bytes(b.clone()),
             Self::Char(c) => V::Char(*c),
             Self::Path(s) => V::Path(s.clone()),
-            Self::List(xs) => V::List(
+            Self::List(xs) => V::list(
                 xs.iter()
                     .map(Self::to_value)
                     .collect::<Result<Vec<_>, _>>()?,
@@ -293,7 +293,7 @@ impl SendValue {
             SendValue::Char(c) => vis_core::value::Value::Char(*c),
             SendValue::Path(s) => vis_core::value::Value::Path(s.clone()),
             SendValue::List(xs) => {
-                vis_core::value::Value::List(xs.iter().map(SendValue::to_value).collect())
+                vis_core::value::Value::list(xs.iter().map(SendValue::to_value).collect())
             }
             SendValue::Map(kv) => vis_core::value::Value::map(
                 kv.iter()

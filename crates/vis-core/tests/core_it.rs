@@ -26,7 +26,7 @@ fn json_roundtrip_va_escape_duy_nhat() {
         (Value::Str("ok".into()), Value::Bool(true)),
         (
             Value::Str("ds".into()),
-            Value::List(vec![Value::Int(1), Value::Int(2), Value::none()]),
+            Value::list(vec![Value::Int(1), Value::Int(2), Value::none()]),
         ),
     ]);
     let mut encoded = String::new();

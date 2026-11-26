@@ -355,7 +355,7 @@ fn match_unit_khong_khop_list_rong() {
 }
 
 /// `()` vẫn khớp pattern tuple rỗng `():` ở cả hai engine. Giống interp, pattern tuple rỗng
-/// cũng khớp `[]` (list rỗng) — `Value::List([])` được cả hai coi là "tuple rỗng" tại runtime;
+/// cũng khớp `[]` (list rỗng) — `Value::list([])` được cả hai coi là "tuple rỗng" tại runtime;
 /// điểm sửa VD-263 chỉ là `[]` **không** được khớp `Unit`.
 #[test]
 fn match_unit_khop_tuple_rong() {

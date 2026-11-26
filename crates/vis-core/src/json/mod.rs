@@ -132,7 +132,7 @@ impl<'a> P<'a> {
         self.khoang_trang();
         if self.b.get(self.i) == Some(&b']') {
             self.i += 1;
-            return Ok(Value::List(xs));
+            return Ok(Value::list(xs));
         }
         loop {
             self.khoang_trang();
@@ -144,7 +144,7 @@ impl<'a> P<'a> {
                 }
                 Some(b']') => {
                     self.i += 1;
-                    return Ok(Value::List(xs));
+                    return Ok(Value::list(xs));
                 }
                 _ => return Err(self.loi("thiếu `,` hoặc `]` trong array")),
             }
@@ -311,7 +311,9 @@ pub fn boc(v: Value) -> Value {
         Value::List(xs) => Value::Enum(
             "Json".into(),
             "Arr".into(),
-            vec![Value::List(xs.into_iter().map(boc).collect())],
+            vec![Value::list(
+                Rc::unwrap_or_clone(xs).into_iter().map(boc).collect(),
+            )],
         ),
         Value::Map(kv) => {
             let entries = match Rc::try_unwrap(kv) {

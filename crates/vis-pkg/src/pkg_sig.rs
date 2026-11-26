@@ -80,9 +80,9 @@ pub fn thong_diep_ky(
     let mut fs = files.to_vec();
     fs.sort();
     let cap = |ds: Vec<(String, String)>| {
-        Value::List(
+        Value::list(
             ds.into_iter()
-                .map(|(a, b)| Value::List(vec![Value::Str(a), Value::Str(b)]))
+                .map(|(a, b)| Value::list(vec![Value::Str(a), Value::Str(b)]))
                 .collect(),
         )
     };

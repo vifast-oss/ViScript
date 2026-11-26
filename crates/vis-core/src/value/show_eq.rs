@@ -108,7 +108,7 @@ impl Value {
             (Value::Bytes(a), Value::Bytes(b)) => a == b,
             (Value::Unit, Value::Unit) => true,
             (Value::List(a), Value::List(b)) => {
-                a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_value(y))
+                a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| x.eq_value(y))
             }
             (Value::Map(a), Value::Map(b)) => {
                 // **ST-239 (VD-242 §3.4)**: so **ánh xạ khoá → giá trị**, không phụ thuộc entry

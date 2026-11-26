@@ -638,7 +638,7 @@ fn da_tep_sqlvalue_ctor_duoi_strict() {
 }
 
 /// **VD-258** — `()` chỉ có một biểu diễn runtime: empty tuple = `Value::Unit`,
-/// không phải `Value::List([])`; `return` trần và `()` phải bằng nhau.
+/// không phải `Value::list([])`; `return` trần và `()` phải bằng nhau.
 #[test]
 fn unit_empty_tuple_va_return_tron_cung_bieu_dien() {
     let [a, _b] = chay_ca_hai(

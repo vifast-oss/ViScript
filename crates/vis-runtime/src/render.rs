@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn bang_can_phai_cot_so() {
-        let v = Value::List(vec![ban_ghi("aa", 6), ban_ghi("bb", 1)]);
+        let v = Value::list(vec![ban_ghi("aa", 6), ban_ghi("bb", 1)]);
         assert_eq!(
             in_gia_tri(&v, false).unwrap(),
             "name  n\naa    6\nbb    1\n"
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn list_rong_chi_khi_co_ban_ghi() {
-        let v = Value::List(Vec::new());
+        let v = Value::list(Vec::new());
         assert_eq!(in_gia_tri(&v, false), None);
         assert_eq!(in_gia_tri(&v, true).as_deref(), Some("(rỗng)\n"));
     }

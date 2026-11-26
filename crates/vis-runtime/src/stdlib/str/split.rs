@@ -44,7 +44,7 @@ pub(crate) mod strsplitincl {
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
-        Ok(Value::List(
+        Ok(Value::list(
             tach(s, sep).into_iter().map(Value::Str).collect(),
         ))
     }
@@ -189,7 +189,7 @@ pub(crate) mod strsplitn {
                 span,
             ));
         }
-        Ok(Value::List(
+        Ok(Value::list(
             phan(s, sep, n).into_iter().map(Value::Str).collect(),
         ))
     }
@@ -286,7 +286,7 @@ pub(crate) mod strsplitonce {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::opt(tach(s, sep).map(|(dau, sau)| {
-            Value::List(vec![
+            Value::list(vec![
                 Value::Str(dau.to_string()),
                 Value::Str(sau.to_string()),
             ])
@@ -353,7 +353,7 @@ pub(crate) mod strsplitonce {
         fn goi_tra_option_that_hai_phan() {
             use vis_core::value::eq;
             let some = |a: &str, b: &str| {
-                Value::opt(Some(Value::List(vec![
+                Value::opt(Some(Value::list(vec![
                     Value::Str(a.into()),
                     Value::Str(b.into()),
                 ])))

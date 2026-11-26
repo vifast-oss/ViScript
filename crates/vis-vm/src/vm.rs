@@ -24,6 +24,15 @@ use crate::vm_frame::MethodLoop;
 /// **VD-267** — cặp `(tên enum, tên biến thể)` đã nội bộ hoá cho cache `MakeEnum`.
 type EnumTag = (value::Name, value::Name);
 
+/// **ST-316a** — con trỏ `Rc` bên trong `Map`/`List` (nhận diện ô chia sẻ, không chép dữ liệu).
+fn ptr_rc(v: &Value) -> Option<*const ()> {
+    match v {
+        Value::Map(k) => Some(Rc::as_ptr(k) as *const ()),
+        Value::List(x) => Some(Rc::as_ptr(x) as *const ()),
+        _ => None,
+    }
+}
+
 /// Chạy một module VBC1 (đường tắt tiện dụng).
 pub fn run(m: &Module, text: &str, args: &[String]) -> RunOutput {
     Vm::new(m, text).run(args)
@@ -236,7 +245,7 @@ impl<'a> Vm<'a> {
         // Mọi ô bắt đầu `None` (chưa khởi tạo) — lần chạy trước không thể che lỗi lần sau, và kích
         // thước bị chặn bởi miền đã verify (không grow không giới hạn theo chỉ số bytecode).
         self.init_globals();
-        let argv = Value::List(args.iter().map(|s| Value::Str(s.clone())).collect());
+        let argv = Value::list(args.iter().map(|s| Value::Str(s.clone())).collect());
         // **ST-60 (VD-90/VD-95)**: join mọi tác vụ **theo thứ tự tạo**, **chỉ khi main thành công**
         // (và **trước** `take_stdout` ⇒ thân tác vụ in vẫn vào stdout, đúng thứ tự).
         let kq = match self.chay_chuong_trinh(&argv) {
@@ -578,10 +587,7 @@ impl<'m> Th<'m> {
     /// biến khác đang chia sẻ cùng map vẫn giữ bản cũ (ngữ nghĩa giá trị), còn biến không chia sẻ
     /// thì `Rc::make_mut` thấy `strong_count == 1` và cập nhật **tại chỗ O(1)**, 0 đổi VBC1.
     pub(crate) fn tach_dich(&mut self, vm: &mut Vm<'_>, base: &Value) -> Option<(u8, usize)> {
-        let Value::Map(kv) = base else {
-            return None;
-        };
-        let ptr = Rc::as_ptr(kv);
+        let ptr = ptr_rc(base)?;
         let ke = self.f().code.get(self.frames.last()?.pc).copied();
         let s = match ke {
             Some(Instr::Assign(s)) | Some(Instr::StoreLocal(s)) => s as usize,
@@ -591,15 +597,15 @@ impl<'m> Th<'m> {
         if s >= base_global {
             let i = s - base_global;
             let o = vm.globals.get(i)?;
-            if matches!(o, Some(Value::Map(k)) if Rc::as_ptr(k) == ptr) {
+            if o.as_ref().and_then(ptr_rc) == Some(ptr) {
                 vm.globals[i] = None;
                 return Some((2, i));
             }
             return None;
         }
         let fr = self.frames.last_mut()?;
-        match fr.locals.get(s) {
-            Some(Value::Map(k)) if Rc::as_ptr(k) == ptr => {
+        match fr.locals.get(s).and_then(ptr_rc) {
+            Some(p) if p == ptr => {
                 fr.locals[s] = Value::Unit;
                 Some((0, s))
             }

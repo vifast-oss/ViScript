@@ -247,7 +247,7 @@ fn value_task_show_va_taskid_khong_doi_abi() {
     assert_eq!(v.show(), "<tác vụ>");
     assert!(v.to_send().is_err(), "Task không Sendable (VS0508)");
 
-    let goc = Value::List(vec![
+    let goc = Value::list(vec![
         Value::Int(1),
         Value::Str("x".into()),
         Value::some(Value::Int(2)),
@@ -505,10 +505,10 @@ fn taskid_proto_value_show_eq_roundtrip() {
     let vals = vec![
         Value::Int(7),
         Value::Str("x".into()),
-        Value::List(vec![Value::Int(1), Value::Bool(true)]),
+        Value::list(vec![Value::Int(1), Value::Bool(true)]),
         Value::map(vec![
             (Value::Str("k".into()), Value::Int(1)),
-            (Value::Str("k2".into()), Value::List(vec![])),
+            (Value::Str("k2".into()), Value::list(vec![])),
         ]),
         Value::Record("R".to_string(), vec![("a".to_string(), Value::Int(1))]),
         Value::Enum(Name::new("E"), Name::new("A"), vec![Value::Int(1)]),

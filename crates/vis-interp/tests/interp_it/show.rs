@@ -107,7 +107,7 @@ fn snapshot_show_percent() {
 /// Tập hợp + kiểu người dùng (VD-47 #3).
 #[test]
 fn snapshot_show_hop_va_kieu_nguoi_dung() {
-    assert_eq!(f(Value::List(vec![Value::Int(1), Value::Int(2)])), "[1, 2]");
+    assert_eq!(f(Value::list(vec![Value::Int(1), Value::Int(2)])), "[1, 2]");
     assert_eq!(
         f(Value::map(vec![
             (Value::Str("a".into()), Value::Int(1)),

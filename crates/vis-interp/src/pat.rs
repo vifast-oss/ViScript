@@ -84,7 +84,7 @@ impl<'a> Interp<'a> {
                         }
                     }
                     if let Some(r) = rest {
-                        let tail = Value::List(xs[items.len()..].to_vec());
+                        let tail = Value::list(xs[items.len()..].to_vec());
                         return self.bind_pat_bool(r, &tail);
                     }
                     xs.len() == items.len()

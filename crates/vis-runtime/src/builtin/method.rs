@@ -39,7 +39,7 @@ pub fn method(
         }
     }
     match recv {
-        Value::List(xs) => list_method(host, xs, name, args, span),
+        Value::List(xs) => list_method(host, std::rc::Rc::unwrap_or_clone(xs), name, args, span),
         Value::Str(s) => str_method(host, s, name, args, span),
         Value::Map(kv) => map_method(host, kv, name, args, span),
         // **ST-61 (VD-96)**: `send`/`recv`/`close` — **một** hiện thực cho cả interp lẫn VM.
@@ -93,7 +93,7 @@ fn list_method(
             }
             let mut out = xs;
             out.push(args[0].clone());
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         "map" => {
             let f = args.first().cloned().unwrap_or(Value::Unit);
@@ -101,7 +101,7 @@ fn list_method(
             for x in xs {
                 out.push(host.call(&f, vec![x], span)?);
             }
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         "filter" => {
             let f = args.first().cloned().unwrap_or(Value::Unit);
@@ -112,7 +112,7 @@ fn list_method(
                     out.push(x);
                 }
             }
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         "each" => {
             let f = args.first().cloned().unwrap_or(Value::Unit);
@@ -163,7 +163,7 @@ fn str_method(
         "is_empty" => Ok(Value::Bool(s.is_empty())),
         "upper" => Ok(Value::Str(s.to_uppercase())),
         "lower" => Ok(Value::Str(s.to_lowercase())),
-        "chars" => Ok(Value::List(
+        "chars" => Ok(Value::list(
             s.chars().map(|c| Value::Str(c.to_string())).collect(),
         )),
         "contains" => {
@@ -179,7 +179,7 @@ fn str_method(
             if sep.is_empty() {
                 return Err(trap(RT, "`split` cần dấu ngăn khác rỗng", span));
             }
-            Ok(Value::List(
+            Ok(Value::list(
                 s.split(sep.as_str())
                     .map(|p| Value::Str(p.to_string()))
                     .collect(),
@@ -218,8 +218,8 @@ fn map_method(
             };
             Ok(Value::Bool(kv.contains_key(k)))
         }
-        "keys" => Ok(Value::List(kv.keys().cloned().collect())),
-        "values" => Ok(Value::List(kv.values().cloned().collect())),
+        "keys" => Ok(Value::list(kv.keys().cloned().collect())),
+        "values" => Ok(Value::list(kv.values().cloned().collect())),
         other => Err(trap(
             RT,
             format!("`map.{other}()` chưa hỗ trợ (danh sách: len get has keys values)"),

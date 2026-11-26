@@ -270,7 +270,7 @@ fn list_json_co_version_req() {
         panic!("thiếu packages")
     };
     let mut thay = 0;
-    for p in ps {
+    for p in ps.iter() {
         let vis_core::value::Value::Map(m) = p else {
             panic!("package không phải object")
         };

@@ -23,7 +23,12 @@ pub fn tu_value(v: Value) -> Result<PluginValue> {
         Value::Char(c) => PluginValue::Str(c.to_string()),
         Value::Path(s) => PluginValue::Str(s),
         Value::Bytes(b) => PluginValue::Bytes(b),
-        Value::List(xs) => PluginValue::List(xs.into_iter().map(tu_value).collect::<Result<_>>()?),
+        Value::List(xs) => PluginValue::List(
+            std::rc::Rc::unwrap_or_clone(xs)
+                .into_iter()
+                .map(tu_value)
+                .collect::<Result<_>>()?,
+        ),
         Value::Map(kv) => {
             let entries = match std::rc::Rc::try_unwrap(kv) {
                 Ok(m) => m.into_entries(),
@@ -74,7 +79,7 @@ pub fn sang_value(v: PluginValue) -> Result<Value> {
         PluginValue::Str(s) => Value::Str(s),
         PluginValue::Bytes(b) => Value::Bytes(b),
         PluginValue::List(xs) => {
-            Value::List(xs.into_iter().map(sang_value).collect::<Result<_>>()?)
+            Value::list(xs.into_iter().map(sang_value).collect::<Result<_>>()?)
         }
         PluginValue::Map(kv) => Value::map(
             kv.into_iter()
@@ -109,7 +114,7 @@ mod tests {
 
     #[test]
     fn tron_vong_qua_bien_giu_gia_tri() {
-        let v = Value::List(vec![Value::Int(1), Value::Str("x".into())]);
+        let v = Value::list(vec![Value::Int(1), Value::Str("x".into())]);
         let p = tu_value(v.clone()).expect("sang PluginValue");
         let lai = sang_value(p).expect("về Value");
         assert_eq!(show(&lai), show(&v));

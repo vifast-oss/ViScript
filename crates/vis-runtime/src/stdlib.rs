@@ -101,7 +101,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             } else {
                 s.split(sep).map(|x| Value::Str(x.to_string())).collect()
             };
-            Ok(Value::List(ds))
+            Ok(Value::list(ds))
         }
         // **VD-270 (split-once)**: tách tại **lần xuất hiện đầu** của `sep`, đúng nghĩa Rust
         // `str::split_once`: `split_once("a,b,c", ",")` ⇒ `Some(["a", "b,c"])`; không khớp ⇒
@@ -145,13 +145,13 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
         // `char::is_whitespace` (Unicode), bỏ khoảng trắng đầu/cuối và gộp nhiều khoảng liền.
         StdId::StrLines => {
             let s = chuoi(name, &args[0], 0, span)?;
-            Ok(Value::List(
+            Ok(Value::list(
                 s.lines().map(|x| Value::Str(x.to_string())).collect(),
             ))
         }
         StdId::StrSplitWhitespace => {
             let s = chuoi(name, &args[0], 0, span)?;
-            Ok(Value::List(
+            Ok(Value::list(
                 s.split_whitespace()
                     .map(|x| Value::Str(x.to_string()))
                     .collect(),
@@ -380,7 +380,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
                     span,
                 ));
             }
-            Ok(Value::List(ds))
+            Ok(Value::list(ds))
         }
         // ST-53: **cùng lõi** `sap_xep_theo_khoa` với shell `sort_by`; ST-56: khoá nhận **`int`
         // hoặc `str`** (một kiểu trong cả lần gọi) — ca `int` cũ **không đổi**.
@@ -399,7 +399,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
         StdId::ListReverse => {
             let mut xs = danh_sach(name, &args[0], 0, span)?.to_vec();
             xs.reverse();
-            Ok(Value::List(xs))
+            Ok(Value::list(xs))
         }
         StdId::ListUnique => {
             let xs = danh_sach(name, &args[0], 0, span)?;
@@ -409,14 +409,14 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
                     out.push(x.clone());
                 }
             }
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         StdId::ListConcat => {
             let a = danh_sach(name, &args[0], 0, span)?.to_vec();
             let b = danh_sach(name, &args[1], 1, span)?;
             let mut out = a;
             out.extend_from_slice(b);
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         // **VD-270 (flatten)**: nối một cấp, giữ thứ tự; phần tử vốn là list giữ nguyên. Lõi ở `stdlib/flatten.rs`.
         StdId::ListFlatten => {
@@ -433,8 +433,8 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
                 ));
             }
             let n = n as usize;
-            Ok(Value::List(
-                xs.chunks(n).map(|c| Value::List(c.to_vec())).collect(),
+            Ok(Value::list(
+                xs.chunks(n).map(|c| Value::list(c.to_vec())).collect(),
             ))
         }
         // **VD-270 (chunks-exact)**: nhóm **đúng `n`** phần tử, **bỏ phần dư** cuối (khác
@@ -456,10 +456,10 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             }
             let n = n as usize;
             if n > xs.len() {
-                return Ok(Value::List(Vec::new()));
+                return Ok(Value::list(Vec::new()));
             }
-            Ok(Value::List(
-                xs.windows(n).map(|c| Value::List(c.to_vec())).collect(),
+            Ok(Value::list(
+                xs.windows(n).map(|c| Value::list(c.to_vec())).collect(),
             ))
         }
         // **VD-270 (indexof)**: vị trí **0-based** đầu/cuối theo `eq` cấu trúc (như `==`);
@@ -491,7 +491,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             } else {
                 xs.iter().skip(n).cloned().collect()
             };
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         // **VD-265**: ghép cặp theo vị trí, **dừng ở danh sách ngắn hơn** (zip của Python/
         // Rust); danh sách rỗng ở một bên ⇒ `[]`. Cặp là **list 2 phần tử** (cùng biểu diễn
@@ -499,10 +499,10 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
         StdId::ListZip => {
             let a = danh_sach(name, &args[0], 0, span)?;
             let b = danh_sach(name, &args[1], 1, span)?;
-            Ok(Value::List(
+            Ok(Value::list(
                 a.iter()
                     .zip(b.iter())
-                    .map(|(x, y)| Value::List(vec![x.clone(), y.clone()]))
+                    .map(|(x, y)| Value::list(vec![x.clone(), y.clone()]))
                     .collect(),
             ))
         }
@@ -595,7 +595,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             } else {
                 kv.iter().map(|(_, v)| v.clone()).collect()
             };
-            Ok(Value::List(out))
+            Ok(Value::list(out))
         }
         StdId::MapMerge => {
             let a = ban_do(name, &args[0], 0, span)?;
@@ -805,7 +805,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqlitetables::chay(host, h)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -833,7 +833,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqlitecols::chay(host, h, table)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -845,7 +845,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqliteidx::chay(host, h, table)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -869,7 +869,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqliteidxcols::chay(host, h, index)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -881,7 +881,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
             hop_nhat_fs(
                 sqlitepk::chay(host, h, table)
-                    .map(|xs| Value::List(xs.into_iter().map(Value::Str).collect())),
+                    .map(|xs| Value::list(xs.into_iter().map(Value::Str).collect())),
                 span,
             )
         }
@@ -937,7 +937,7 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
         StdId::SqliteDatabaseList => {
             let h = chuoi(name, &args[0], 0, span)?;
             let host = host.db().ok_or_else(|| khong_host(name, span))?;
-            hop_nhat_fs(sqlitedblist::chay(host, h).map(Value::List), span)
+            hop_nhat_fs(sqlitedblist::chay(host, h).map(Value::list), span)
         }
         // **VD-266** — metadata chỉ đọc của connection; lỗi host ⇒ `Err(Error)` dữ liệu.
         StdId::SqliteLastInsertRowid => {

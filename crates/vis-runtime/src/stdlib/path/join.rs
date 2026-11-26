@@ -100,7 +100,7 @@ pub(crate) mod pathancestors {
             .into_iter()
             .map(|x| Value::Str(x.to_string()))
             .collect();
-        Ok(Value::List(ds))
+        Ok(Value::list(ds))
     }
 
     #[cfg(test)]
@@ -234,7 +234,7 @@ pub(crate) mod pathcomponents {
             .into_iter()
             .map(|x| Value::Str(x.to_string()))
             .collect();
-        Ok(Value::List(ds))
+        Ok(Value::list(ds))
     }
 
     #[cfg(test)]

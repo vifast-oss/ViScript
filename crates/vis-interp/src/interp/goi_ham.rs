@@ -38,7 +38,14 @@ impl<'a> Interp<'a> {
             ..
         } = callee
         {
-            let recv = self.eval(base)?;
+            // **ST-316a**: `xs.push(v)` trên `var` — lấy hẳn giá trị ra khỏi ô để `push` nối
+            // **tại chỗ** (không `Rc::make_mut` chép cả list); kết quả được ghi lại bên dưới.
+            let recv = match (&**base, name.as_str()) {
+                (HExpr::Var { sym: Some(id), .. }, "push") if self.mutable.contains(id) => {
+                    self.lay_o(*id, span)?
+                }
+                _ => self.eval(base)?,
+            };
             // **VD-258**: `xs.push(v)` với `xs: list[T?]` — nâng `v` plain ở biên phương
             // thức (mirror codegen), tránh list chứa giá trị plain trong ô `T?`.
             let push_depth = if name == "push" {
@@ -273,7 +280,7 @@ impl<'a> Interp<'a> {
             // ST-27: `...rest` gom **mọi** đối số vị trí còn lại thành `list[str]`.
             if p.variadic {
                 let con: Vec<Value> = pos.iter().skip(i).cloned().collect();
-                self.env.borrow_mut().insert(p.sym, Value::List(con));
+                self.env.borrow_mut().insert(p.sym, Value::list(con));
                 continue;
             }
             let v = if let Some(v) = pos.get(i) {

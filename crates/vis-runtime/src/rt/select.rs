@@ -62,7 +62,7 @@ fn chans_tu_value(v: Value, ten: &str, span: Span) -> Result<Vec<Rc<RefCell<Chan
         ));
     }
     let mut out = Vec::with_capacity(xs.len());
-    for x in xs {
+    for x in xs.iter().cloned() {
         match x {
             Value::Chan(c) => out.push(c),
             other => {

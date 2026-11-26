@@ -141,7 +141,7 @@ fn manifest_tu_gia_tri(
     };
     let mut files = Vec::new();
     let mut da = BTreeSet::new();
-    for it in ds {
+    for it in ds.iter() {
         let Value::Map(f) = it else {
             return Err(format!("{nguon}: mỗi `files[]` phải là object"));
         };
@@ -310,7 +310,7 @@ fn gia_tri_khoa(khoa: &Khoa) -> Value {
                 kv.push((Value::Str("entry".into()), Value::Str(e.clone())));
             }
             kv.push((Value::Str("sha256".into()), Value::Str(p.sha256.clone())));
-            kv.push((Value::Str("files".into()), Value::List(fs)));
+            kv.push((Value::Str("files".into()), Value::list(fs)));
             Value::map(kv)
         })
         .collect();
@@ -325,7 +325,7 @@ fn gia_tri_khoa(khoa: &Khoa) -> Value {
             Value::Int(i64::from(LOCK_PHIEN_BAN)),
         ),
         (Value::Str("roots".into()), Value::map(rm)),
-        (Value::Str("packages".into()), Value::List(ps)),
+        (Value::Str("packages".into()), Value::list(ps)),
     ])
 }
 

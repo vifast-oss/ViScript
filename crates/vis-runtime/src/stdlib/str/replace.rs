@@ -347,7 +347,7 @@ pub(crate) mod strrsplit {
     pub(crate) fn goi(name: &str, args: &[Value], span: Span) -> R<Value> {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
-        Ok(Value::List(
+        Ok(Value::list(
             phan(s, sep).into_iter().map(Value::Str).collect(),
         ))
     }
@@ -414,7 +414,7 @@ pub(crate) mod strrsplit {
             use vis_core::value::eq;
             let args = |s: &str, sep: &str| vec![Value::Str(s.into()), Value::Str(sep.into())];
             let span = Span::new(0, 0);
-            let ky_vong = Value::List(vec![
+            let ky_vong = Value::list(vec![
                 Value::Str("c".into()),
                 Value::Str("b".into()),
                 Value::Str("a".into()),
@@ -423,7 +423,7 @@ pub(crate) mod strrsplit {
                 &goi("str.rsplit", &args("a,b,c", ","), span).unwrap(),
                 &ky_vong
             ));
-            let rong = Value::List(vec![Value::Str("".into())]);
+            let rong = Value::list(vec![Value::Str("".into())]);
             assert!(eq(&goi("str.rsplit", &args("", ","), span).unwrap(), &rong));
         }
     }
@@ -464,7 +464,7 @@ pub(crate) mod strrsplitonce {
         let s = super::super::super::chuoi(name, &args[0], 0, span)?;
         let sep = super::super::super::chuoi(name, &args[1], 1, span)?;
         Ok(Value::opt(tach(s, sep).map(|(dau, sau)| {
-            Value::List(vec![
+            Value::list(vec![
                 Value::Str(dau.to_string()),
                 Value::Str(sau.to_string()),
             ])
@@ -533,7 +533,7 @@ pub(crate) mod strrsplitonce {
         fn goi_tra_option_that_hai_phan() {
             use vis_core::value::eq;
             let some = |a: &str, b: &str| {
-                Value::opt(Some(Value::List(vec![
+                Value::opt(Some(Value::list(vec![
                     Value::Str(a.into()),
                     Value::Str(b.into()),
                 ])))

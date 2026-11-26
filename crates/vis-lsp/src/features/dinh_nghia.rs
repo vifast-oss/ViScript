@@ -225,7 +225,7 @@ fn thu_hep(text: &str, d: &DinhNghia) -> Span {
 pub fn tra_loi_references(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Vec<u8> {
     let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
     if start == end {
-        return phan_hoi(id, Value::List(Vec::new()));
+        return phan_hoi(id, Value::list(Vec::new()));
     }
     let ten = &kq.text[start..end];
     let mut spans: Vec<Span> = Vec::new();
@@ -263,7 +263,7 @@ pub fn tra_loi_references(kq: &KetQua, uri: &str, byte: usize, id: &Value) -> Ve
             ])
         })
         .collect();
-    phan_hoi(id, Value::List(locs))
+    phan_hoi(id, Value::list(locs))
 }
 
 pub fn tra_loi_definition(
@@ -304,7 +304,7 @@ pub fn tra_loi_definition(
             ])
         })
         .collect();
-    phan_hoi(id, Value::List(locs))
+    phan_hoi(id, Value::list(locs))
 }
 
 /// **ST-282**: `textDocument/documentHighlight` — mọi token định danh trùng từ tại con trỏ trong
@@ -312,7 +312,7 @@ pub fn tra_loi_definition(
 pub fn tra_loi_highlights(kq: &KetQua, byte: usize, mode: vis_syntax::Mode, id: &Value) -> Vec<u8> {
     let (start, end) = super::goi_y::tu_tai(&kq.text, byte);
     if start == end {
-        return phan_hoi(id, Value::List(Vec::new()));
+        return phan_hoi(id, Value::list(Vec::new()));
     }
     let ten = &kq.text[start..end];
     let lexed = vis_syntax::lex(&kq.text, mode);
@@ -339,5 +339,5 @@ pub fn tra_loi_highlights(kq: &KetQua, byte: usize, mode: vis_syntax::Mode, id: 
             break;
         }
     }
-    phan_hoi(id, Value::List(locs))
+    phan_hoi(id, Value::list(locs))
 }

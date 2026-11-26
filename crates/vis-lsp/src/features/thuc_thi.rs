@@ -102,5 +102,5 @@ pub fn tra_loi_implementation(kq: &KetQua, uri: &str, byte: usize, id: &Value) -
     if locs.is_empty() {
         return phan_hoi(id, Value::none());
     }
-    phan_hoi(id, Value::List(locs))
+    phan_hoi(id, Value::list(locs))
 }

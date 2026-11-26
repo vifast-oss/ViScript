@@ -41,5 +41,5 @@ pub fn edit_toan_tep(kq: &KetQua, mode: Mode) -> Option<Value> {
 /// Phản hồi `textDocument/formatting` (`TextEdit[]`).
 pub fn tra_loi_format(kq: &KetQua, mode: Mode, id: &Value) -> Vec<u8> {
     let edits = edit_toan_tep(kq, mode).into_iter().collect();
-    phan_hoi(id, Value::List(edits))
+    phan_hoi(id, Value::list(edits))
 }

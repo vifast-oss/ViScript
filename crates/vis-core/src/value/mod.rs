@@ -342,7 +342,7 @@ pub enum Value {
     Bytes(Vec<u8>),
     Char(char),
     Path(String),
-    List(Vec<Value>),
+    List(Rc<Vec<Value>>),
     /// Giữ **thứ tự chèn** để `keys()`/`Show` ổn định.
     ///
     /// **ST-239 (VD-242 §3.4, ca 170)**: map là ánh xạ **khoá → giá trị**, mỗi khoá **một**
@@ -396,6 +396,16 @@ pub struct VmFunc {
 }
 
 impl Value {
+    /// **ST-316a (VD-292 §4.1)** — dựng `Value::List` từ `Vec` (bọc `Rc` một lần).
+    pub fn list(v: Vec<Value>) -> Value {
+        Value::List(Rc::new(v))
+    }
+
+    /// Dựng `Value::List` khi đã có sẵn `Rc` (không cấp phát thêm).
+    pub fn list_rc(v: Rc<Vec<Value>>) -> Value {
+        Value::List(v)
+    }
+
     /// `true` nếu là `()` — tiện cho `each`.
     pub fn is_unit(&self) -> bool {
         matches!(self, Value::Unit)

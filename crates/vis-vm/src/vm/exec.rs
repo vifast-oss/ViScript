@@ -215,7 +215,7 @@ impl<'m> Th<'m> {
                         let v = match args.as_slice() {
                             [Value::List(xs), Value::Int(n)] => {
                                 let n = (*n).max(0) as usize;
-                                Value::List(xs.iter().skip(n).cloned().collect())
+                                Value::list(xs.iter().skip(n).cloned().collect())
                             }
                             _ => Value::Unit,
                         };
@@ -245,7 +245,7 @@ impl<'m> Th<'m> {
                             self.methods.push(MethodLoop {
                                 kind,
                                 f,
-                                items: items.clone(),
+                                items: items.to_vec(),
                                 idx: 0,
                                 acc: Vec::new(),
                                 item: None,
@@ -257,11 +257,15 @@ impl<'m> Th<'m> {
                             continue;
                         }
                     }
+                    // **ST-316a**: `xs.push(v)`/`m.insert(k,v)` trả giá trị mới rồi `Assign`
+                    // ghi lại đúng ô — tách ô đích trước khi gọi để method sửa **tại chỗ O(1)**.
+                    let da = self.tach_dich(vm, &recv);
                     let v = if vm.sched.borrow().frame.enabled {
                         crate::vm_frame::call_method_frame(self, vm, recv, args, &ten, span)?
                     } else {
                         builtin::method(vm, recv, &ten, args, span)?
                     };
+                    self.tra_dich(vm, &v, da);
                     self.st.push(v);
                 }
                 Instr::Jump(d) => {
@@ -344,7 +348,7 @@ impl<'m> Th<'m> {
                 }
                 Instr::MakeList(n) | Instr::MakeTuple(n) => {
                     let items = self.pop_n(vm, n as usize, span)?;
-                    self.st.push(Value::List(items));
+                    self.st.push(Value::list(items));
                 }
                 // **ST-239 (VD-242 §4, ca 10)**: `set{…}` là **tập** — giữ phần tử đầu mỗi
                 // giá trị, bỏ phần tử trùng (interp đã làm vậy; VM trước đây giữ cả).
@@ -356,7 +360,7 @@ impl<'m> Th<'m> {
                             uniq.push(v);
                         }
                     }
-                    self.st.push(Value::List(uniq));
+                    self.st.push(Value::list(uniq));
                 }
                 Instr::MakeMap(n) => {
                     // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins, khớp interp —
