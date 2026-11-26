@@ -1208,10 +1208,10 @@ fn tcp_server(
                     let mut rac = [0u8; 64];
                     while matches!(s.read(&mut rac), Ok(k) if k > 0) {}
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    std::thread::sleep(Duration::from_millis(5));
-                }
-                Err(_) => break,
+                // **R-Win2**: `accept` có thể trả lỗi tạm (`ConnectionAborted`/`Reset`/`Interrupted`)
+                // khi client trước vừa đóng trên Windows. Trước đây `break` giết server ⇒ kết nối
+                // kế tiếp bị RST (`os error 10053`). Loopback: bỏ qua lỗi tạm, chờ tới hạn 8 s.
+                Err(_) => std::thread::sleep(Duration::from_millis(5)),
             }
         }
         nhan
@@ -1344,10 +1344,10 @@ fn http_server(
                         let _ = s.shutdown(Shutdown::Both);
                     }));
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    std::thread::sleep(Duration::from_millis(5));
-                }
-                Err(_) => break,
+                // **R-Win2**: `accept` có thể trả lỗi tạm (`ConnectionAborted`/`Reset`/`Interrupted`)
+                // khi client trước vừa đóng trên Windows. Trước đây `break` giết server ⇒ kết nối
+                // kế tiếp bị RST (`os error 10053`). Loopback: bỏ qua lỗi tạm, chờ tới hạn 8 s.
+                Err(_) => std::thread::sleep(Duration::from_millis(5)),
             }
         }
         for t in tra_loi {
