@@ -167,3 +167,107 @@ symlink trên mọi nền tảng). Đề nghị Agent 0: chuyển Builder vá 1 
 lại `--full` để lấy mốc xanh đầy đủ (kèm `vis-targets`).
 
 Blocker: **1 test harness** — test-only, không chặn kiến trúc; **chưa** đủ điều kiện nghiệm thu Windows.
+
+---
+
+# Lượt 2 — sau khi vá `walk_n=10` (`f5f3f06f`), đo lại trên `psvn`
+
+> **Ngày đo**: 2026-11-26. **Commit vá**: `f5f3f06f081b993ca71139d6c3dd0aa0adcd6641`
+> (`[ST-315d] fix test: walk-n=10 ca hai nen tang`). **Kết quả: vẫn FAIL, nhưng khác lỗi** —
+> `walk_n` **đã xanh** (`fs_20…` PASS); thủ phạm mới là **flaky loopback Windows**
+> `net_client_toi_server_rust_parity` (`os error 10053`), 10/10 lượt chạy riêng **PASS**.
+
+## 8. Đồng bộ và HEAD
+
+```bash
+# local: merge main (giữ báo cáo cũ), main tip = 79f1fcee = f5f3f06f + 2 journal docs-only
+git fetch /home/ps/ViScript main && git merge FETCH_HEAD --no-edit   # ba4a69c8
+git diff --stat f5f3f06f 79f1fcee    # CHỈ 2 tệp journal (488 dòng), 0 mã/test
+
+# psvn
+bin/vis-remote psvn -- git -C /c/Users/ps/viscript-moi pull --ff-only
+# → 79f1fcee9e15… (origin/main tip lúc đo), KHÔNG phải f5f3f06f trần:
+#   `git diff --stat f5f3f06f 79f1fcee` = review-song4-final-docs.md + review-st315b.md,
+#   đúng 0 thay đổi mã/test ⇒ cây đo tương đương f5f3f06f về hành vi.
+```
+
+- Gate in `HEAD khớp 79f1fcee9e15`. Để cổng HEAD-guard khớp **chính xác** mà không dùng
+  `VIS_GATE_WINDOWS_ALLOW_HEAD_MISMATCH=1`, worktree local được `git checkout --detach 79f1fcee`
+  trong lúc đo (nhánh `review/rwin2` giữ nguyên báo cáo, checkout lại sau khi đo).
+- Repo `psvn` sạch trước/sau (`git status --porcelain` rỗng), HEAD không đổi `79f1fcee`.
+
+## 9. Kết quả lượt 2
+
+| Hạng mục | Kết quả | Ghi chú |
+|---|---|---|
+| `bin/vis-gate-windows --full` | **exit 101** | wall **290 s** (`05:30:24Z` → `05:35:14Z`) |
+| clippy `-D warnings` | **PASS** | tiếp tục sang `cargo test` |
+| `cargo test --workspace` | **3777 passed / 1 failed / 4 ignored**, 89 block | vẫn đúng 1 failure |
+| `lib_api_it` | **362 passed / 1 failed / 3 ignored** | |
+| `fs_20_ham_parity_tren_tempdir` | **PASS** ✅ | vá `walk_n=10` **hiệu quả**; assert `cwd-khop=true` đã qua |
+| `host_parity` Windows | **11/12 hiện diện, 10 passed / 1 FAILED** | `fs_symlink_parity` vẫn `#[cfg(unix)]` ⇒ **64/66 hàm** |
+| `vis-targets` (chuỗi gate) | **KHÔNG CHẠY** | `&&` dừng sau test fail (lần 2 liên tiếp) |
+| `vis-targets` (chạy riêng) | **core 47/0, sqlite 46 + 1 EXPECTED_RED, FAIL=0**; phủ 23 crate; dag OK | xem §10 |
+
+### 9.1. Lỗi lượt 2 (nguyên văn)
+
+```
+---- host_parity::net_client_toi_server_rust_parity stdout ----
+thread 'host_parity::net_client_toi_server_rust_parity' panicked at
+crates\vis-conformance\tests\misc_api_it\host_parity.rs:239:5:
+assertion `left == right` failed: [net-rust] stdout lệch sau chuẩn hoá: vm []
+  left  (interp): "ghi1 ok\ndoc1=hi\ndong1 ok\nghi2 ok\ndoc2=hi\ndong2 ok\n"
+  right (vm)    : "ghi1 ok\ndoc1=lỗi đọc từ `C1`: An established connection was aborted
+                   by the software in your host machine. (os error 10053)\ndong1 ok\n…"
+```
+
+- Chỉ **một** dòng lệch: lần đọc đầu của **VM** bị Windows abort (`WSAECONNABORTED 10053`);
+  interp đọc `hi` bình thường; các dòng còn lại giống nhau.
+- **Không phải hồi quy `walk_n`/`cwd-khop`**: `fs_20` PASS; `cwd-khop=true` nằm trong assert đã qua.
+
+### 9.2. Chẩn đoán flake (không retry mù)
+
+- `git diff 347e9cae f5f3f06f -- host_parity.rs` = **đúng 4 dòng** `walk_n` (không chạm
+  `tcp_server`/`SRC_NET_CLIENT`); cùng test này **đã PASS** trong cổng `347e9cae` trước đó.
+- Chạy **riêng** ca này trên `psvn` **10 lượt** (`cargo test -p vis-conformance --test lib_api_it
+  host_parity::net_client_toi_server_rust_parity -- --exact`): **10/10 PASS** (0,06–0,09 s/lượt).
+- ⇒ Flake **dưới tải song song** của `lib_api_it` trên Windows. Điểm yếu harness: `tcp_server`
+  `Err(_) => break` (một lỗi `accept` thoáng qua giết cả server, RST mọi kết nối đang chờ) và
+  vòng drain dùng `read_timeout` 500 ms rồi drop; dưới tải dễ sinh `10053` phía client.
+- **Đề xuất (test-only)**: cho `tcp_server` bỏ qua `ErrorKind::ConnectionAborted/ConnectionReset`
+  thay vì `break`, và/hoặc mỗi kết nối một thread + đọc tới khi đủ byte; có thể thêm 1 lần retry
+  cho `10053` ở client. Không chạm mã sản phẩm.
+
+## 10. `vis-targets` chạy riêng (lượt 2)
+
+```
+vis-targets: phủ 100% workspace (23 crate)
+vis-dag-check: OK — 23 crate / 5 tầng, 0 cạnh cấm
+core   (vis-cli --no-default-features): PASS=47 EXPECTED_RED=0 FAIL=0
+sqlite (vis-cli default, cấu hình cũ) : PASS=46 EXPECTED_RED=1 FAIL=0
+```
+
+Đúng kỳ vọng (core 47/0; sqlite 46 + 1 EXPECTED_RED nợ #156). `wasm32-wasip1`/`aarch64-apple-darwin`
+không đo lượt này (ngoài `--full`). Lưu ý: vì cổng `&&` dừng ở test fail, **bằng chứng targets
+không đến từ chuỗi gate** mà từ lượt chạy riêng này.
+
+## 11. Log và sha256 lượt 2
+
+| Bản | Đường dẫn | sha256 |
+|---|---|---|
+| Local | `/home/ps/vislogs/st315d-parity-win-full-f5f3f06f.log` (245 945 B) | `1e0a9c33a4f808b28bd14db469dfb10ba62be31280fa1eac4163ecf704d2932c` |
+| Remote | `/c/Users/ps/vislogs/vis-remote-20261126T053023Z-3453459.log` (242 792 B) | `9a32025ec1946b5ebf8511a519f90387af1f1b2b71a0c841d77e07541fa10737` |
+
+Sha remote khớp footer `# sha256(log_tren_may_dich)` và đã đọc lại độc lập trên `psvn`; sha local
+khác do header/footer `vis-remote` (như lượt 1). Log chạy riêng ca net và `vis-targets`:
+`/home/ps/vislogs/vis-remote-20261126T060119Z-3522688.log`,
+`/home/ps/vislogs/vis-remote-20261126T060147Z-3522937.log`.
+
+## 12. Kết luận lượt 2
+
+**FAIL (1/3778 test)** — vá `walk_n=10` **đã xác nhận đúng** (`fs_20` xanh trên Windows,
+`cwd-khop=true`), nhưng cổng vẫn đỏ vì **flake loopback** `net_client_toi_server_rust_parity`
+(`os error 10053` ở lần đọc đầu của VM), 10/10 lượt riêng đều xanh ⇒ không phải lỗi sản phẩm,
+không phải `walk_n`. `vis-targets` chạy riêng đạt kỳ vọng (47/0; 46+1). Đề nghị Agent 0:
+chuyển Builder làm bền `tcp_server` (test-only), rồi Gatekeeper chạy lại `--full` **một** lần
+để lấy mốc xanh có `vis-targets` trong cùng chuỗi. Blocker hiện tại: **1 test harness flaky**.
