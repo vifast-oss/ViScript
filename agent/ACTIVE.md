@@ -37,3 +37,9 @@
 | **Cao điểm 1 & 2** *(2×)* | `01:00–04:00` · `06:00–10:00` | `10:00–13:00` · `15:00–19:00` | `08:00–11:00` · `13:00–17:00` | **0-LLM**: chạy kiểm cổng (`vis-diff 100k`, `stdlib_diff`, release bench, Windows full, `vis-targets --wasm`, `vis-gc-targets`) hoặc nghỉ gọi LLM |
 | **Thấp điểm trưa** *(0,5×)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | Triển khai nhanh `ST-315a` (0,5 ngày) & khởi động `ST-315c` (`#197` + W3 M2) |
 | **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | Triển khai song song `ST-315b` (`Rc<VisMap>` CoW), `ST-315d` (`VS0304` + 66 hàm host), hoàn tất Sóng 4 & nộp `REVIEW` |
+
+## 5. Vận hành Cao điểm 2 — 2026-11-26
+
+- **`ps`**: chuỗi 0-LLM `cargo clean` → `gate --fast` **PASS** → clippy **PASS** → `vis-diff 100k` ×3 seed **`lech=0`** → fuzz parser 130' → `fuzz_mutate` 25'; log `/home/ps/vislogs/peak2-20261126T0622Z.log` (+`.sha256`). Sự cố 06:16Z là **cache `target/` cũ** (không phải mã đỏ) — xem `JOURNAL/peak2-2026-11-26.md` §1.
+- **`psvn`**: `7014fb7b → fe3446d2` (docs-only, ff) và chạy `vis-gate-windows --full` từ 06:35Z; log `/home/ps/vislogs/win-full-20261126T0636Z.log`. `C:` chỉ còn 14 GB ⇒ nếu đỏ do đĩa thì ghi `BLOCKED-ENV`, không mở task mã.
+- **`mps`**: **không dùng** (đang thuộc dự án khác); cổng macOS giữ nguyên ở `ST-316c`.
