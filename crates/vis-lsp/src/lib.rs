@@ -229,10 +229,8 @@ pub fn run(args: &[String]) -> ExitCode {
                 if let Some(uri) = jsonrpc::uri_cua(kv) {
                     // **ST-100**: dọn cache phân tích/module/tệp phụ của host này; URI khác vẫn
                     // dùng lại bình thường; overlay buffer của tài liệu vừa đóng được bỏ.
-                    let f = host.dong(&uri).map(|_| host.chan_doan_dong(&uri));
-                    if let Some(f) = f {
-                        gui!(f);
-                    }
+                    host.dong(&uri);
+                    gui!(host.chan_doan_dong(&uri));
                     // **VS3-7**: tài liệu khác đang mở phụ thuộc tệp vừa đóng ⇒ đọc lại từ đĩa.
                     publish_lien_quan!(&uri);
                 }
