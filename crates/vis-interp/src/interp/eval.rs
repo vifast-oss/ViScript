@@ -55,19 +55,28 @@ impl<'a> Interp<'a> {
     // Biểu thức
     // ---------------------------------------------------------------------
 
-    pub(crate) fn eval(&mut self, e: &HExpr) -> R<Value> {
+    /// **ST-317a F2** — bookkeeping đầu **mỗi nút biểu thức** (`steps`, `worker_tick`,
+    /// `E_EXPR` trừ call/spawn/await). Tách ra để fast-path `r = r with …` (trong `stmt.rs`)
+    /// dùng **đúng cùng** prologue với [`Self::eval`] — trước F2 fast-path bỏ qua prologue nên
+    /// interp rẻ hơn VM 1 đơn vị mỗi vòng (P1 audit `cd7325b6`).
+    pub(crate) fn vao_expr(&mut self, e: &HExpr) -> Option<Abort> {
         self.steps += 1;
         if let Some(a) = self.worker_tick(e.span()) {
-            return Err(a);
+            return Some(a);
         }
         // ST-276: E_EXPR cho nút nguồn; call/spawn/await có sự kiện riêng.
         if !matches!(
             e,
             HExpr::Call { .. } | HExpr::Spawn { .. } | HExpr::Await { .. }
         ) {
-            if let Some(a) = self.charge(crate::rt::fee::FeeKind::Expr, e.span()) {
-                return Err(a);
-            }
+            return self.charge(crate::rt::fee::FeeKind::Expr, e.span());
+        }
+        None
+    }
+
+    pub(crate) fn eval(&mut self, e: &HExpr) -> R<Value> {
+        if let Some(a) = self.vao_expr(e) {
+            return Err(a);
         }
         match e {
             HExpr::Lit { lit, span, .. } => {

@@ -379,16 +379,24 @@ impl<'a> Interp<'a> {
         }
     }
 
+    /// **ST-317a F2 (P3a)** — kiểm quyền ghi **trước** khi tách ô; một nguồn thông điệp cho
+    /// `lvalue_set` và fast-path `with` (tránh mất ô khi ghi vào `let`).
+    fn kiem_ghi_duoc(&self, id: u32, span: Span) -> R<()> {
+        if self.mutable.contains(&id) {
+            Ok(())
+        } else {
+            Err(Abort::Trap(Trap::new(
+                MISMATCH,
+                "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
+                span,
+            )))
+        }
+    }
+
     fn lvalue_set(&mut self, target: &HExpr, v: Value, span: Span) -> R<()> {
         match target {
             HExpr::Var { sym: Some(id), .. } => {
-                if !self.mutable.contains(id) {
-                    return Err(Abort::Trap(Trap::new(
-                        MISMATCH,
-                        "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
-                        span,
-                    )));
-                }
+                self.kiem_ghi_duoc(*id, span)?;
                 self.env.borrow_mut().insert(*id, v);
                 Ok(())
             }

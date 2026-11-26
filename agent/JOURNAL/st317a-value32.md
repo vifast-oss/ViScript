@@ -166,3 +166,44 @@ Nền `ec4d7fc6` (binary `8abf6519…`), sau F1 `a6d55492…`; cùng máy `ps`, 
   khỏi ô — fast path mới rút ô đích trước khi áp.
 - Bench này **không** thêm vào `bin/vis-bench` (giữ 5 chương trình chuẩn); chương trình sinh
   nằm ngoài repo, số đo chỉ để chứng minh F1, không phải KPI phát hành.
+
+## 8. F2 — P1 audit `cd7325b6`: charge ngân sách fast-path `with` + parity test
+
+**Lỗi**: fast-path `r = r with f: v` gọi thẳng `value_ops::voi` mà **không** chạy prologue của
+`Interp::eval` cho nút `HExpr::With` (`steps += 1`, `worker_tick`, `charge(E_EXPR)` — codegen
+cũng charge tại `codegen.rs:448`). Mỗi vòng interp rẻ hơn VM 1 đơn vị; tại
+`--max-budget 11500`: interp exit 0, VM `VS0510 (E_ASSIGN)` (log `review-st317a-f1-budget-parity.log`).
+
+**Vá**:
+- Tách `Interp::vao_expr` (prologue một nguồn: `steps`, `worker_tick`, `E_EXPR` trừ
+  call/spawn/await); `Interp::eval` và fast-path `with` **dùng chung**.
+- Fast-path nay **luôn** xử lý khi đích = gốc (không fallback): thứ tự đúng đường thường
+  `lvalue_get` (kiểm ô, 0 charge) → `vao_expr(With)` → eval base/trường (mỗi nút tự charge) →
+  `E_ASSIGN` → `lvalue_set`; lỗi Record/thiếu trường giữ **đúng chuỗi + span** như
+  `HExpr::With`.
+- **P3a**: `kiem_ghi_duoc` kiểm quyền ghi **trước** khi rút ô (một nguồn thông điệp với
+  `lvalue_set`); `voi` lỗi (phòng thủ) trả ô lại `env` trước khi trả lỗi.
+- **P3b**: nhánh global `Th::tach_dich` dùng `tach_neu_cung_rc` thay vì tự so pointer.
+- **P3c**: `Instr::With`/`Instr::Set` end-to-end đã phủ bởi conformance `record-with-gan.vis`
+  + `record-cow.vis` (cả 2 engine); test pointer VM gọi thẳng `tach_dich`.
+
+**Test mới** `crates/vis-conformance/tests/async_api_it/st317a_f2_budget.rs` (khai `#[path]`
+trong `lib_api_it.rs`, **0 tệp `.rs` cấp 1 mới**): tìm ngưỡng ngân sách **nhỏ nhất** chạy được
+bằng tìm kiếm nhị phân cho `FAST` (`r = r with f: i`) và `CONTROL` (`q = r with f: i`), assert
+interp == VM **từng đơn vị**, và tại `ngưỡng − 1` cả hai cùng `VS0510`.
+
+**Ngưỡng budget** (log `/home/ps/vislogs/st317a-f2-budget-parity.log`, binary `647a796b…`→
+`2c3ef7ec…`):
+
+| Chương trình | Engine | Trước F2 | Sau F2 |
+|---|---|---:|---:|
+| A `r = r with f: i` (fast) | interp | **11018** | **12018** |
+| A `r = r with f: i` (fast) | `--vm` | 12018 | **12018** |
+| D `q = r with f: i` (control) | interp | 12022 | **12022** |
+| D `q = r with f: i` (control) | `--vm` | 12022 | **12022** |
+
+⇒ A lệch **1000** trước F2 (đúng 1 đơn vị × 1000 vòng), **0** sau F2; D vẫn 0.
+
+**Cổng F2**: `cargo fmt --all` PASS · `cargo test -p vis-core -p vis-runtime -p vis-interp
+-p vis-vm` PASS · `./vis-dev gate --fast` **PASS 3.886/4 skip** · `VIS_DIFF_N=100000` **lech=0**
+(93.768 chạy, 60,1 s, 1.665/s) · `cargo clippy --workspace --all-targets -- -D warnings` PASS.
