@@ -344,6 +344,10 @@ pub(crate) fn final_join(host: &mut dyn Host) -> R<()> {
             )))
         }
     };
+    // **ST-318a F1/P2-B**: flush **hết** output của mọi task (kể cả task đứng sau task lỗi)
+    // rồi mới trả trap **đầu** theo spawn order — trước đây `return` ngay ở trap đầu làm mất
+    // stdout của các task phía sau. Mã/message/span của trap giữ nguyên.
+    let mut trap = None;
     for o in outcomes {
         let Some(main_id) = pool_order.get(o.id.as_u64() as usize).copied() else {
             continue;
@@ -354,12 +358,15 @@ pub(crate) fn final_join(host: &mut dyn Host) -> R<()> {
         // Áp outcome (nếu chưa) + flush output **một lần**, kể cả task đã pump nhưng chưa await.
         if let Some((output, loi)) = vis_runtime::worker::ap_va_flush(p, Some(o)) {
             host.out().push_str(&output);
-            if let Some(t) = loi {
-                return Err(crate::interp::Abort::Trap(t));
+            if trap.is_none() {
+                trap = loi;
             }
         }
     }
-    Ok(())
+    match trap {
+        Some(t) => Err(crate::interp::Abort::Trap(t)),
+        None => Ok(()),
+    }
 }
 
 /// Alias cũ (non-frame `join_all` gọi tên này).

@@ -98,9 +98,16 @@ pub(crate) fn run_frame_driver<'a>(
         }
         // **VD-259**: không có `main` ⇒ chạy câu lệnh cấp tệp như runtime mặc định, KHÔNG
         // gắn argv vào một ô `u32::MAX` (fallback cũ khiến mọi tên lạ nhận danh sách args).
-        None => Rc::new(RefCell::new(globals.borrow().clone())),
+        // **ST-318a (#203)**: thân cấp tệp chạy **trực tiếp** trên `globals` (không clone) để
+        // biến top-level là ô chung với task frame — cùng ngữ nghĩa interp non-frame/VM.
+        None => {
+            it.env = globals.clone();
+            globals.clone()
+        }
     };
     frames.insert(0, IFrame::new(body, main_env, &globals, mutable.clone()));
+    let mut dong_bo = DongBo::default();
+    dong_bo.tao(0);
 
     it.sched
         .borrow_mut()
@@ -135,6 +142,7 @@ pub(crate) fn run_frame_driver<'a>(
         // lại/cache kết quả (kể cả khi frame id còn sót trong hàng đợi do race nền).
         if current != 0 && it.sched.borrow().frame.cancelled.contains(&current) {
             frames.remove(&current);
+            dong_bo.xoa(current);
             continue;
         }
         it.sched.borrow_mut().frame.current = current;
@@ -159,12 +167,13 @@ pub(crate) fn run_frame_driver<'a>(
         }
         // VD-257/D — reset hạn ngạch ĐẦU MỖI TURN (không đụng ngân sách tổng).
         crate::rt::fee::quota_reset_for_test();
-        let outcome = step_frame(it, current, &mut frames);
+        let outcome = step_frame(it, current, &mut frames, &mut dong_bo);
         match outcome {
             Ok(v) => {
                 // **VD-259**: frame đã terminal ⇒ bỏ khỏi map ngay (không giữ `IFrame`/env
                 // của nó tới cuối chương trình).
                 frames.remove(&current);
+                dong_bo.xoa(current);
                 if current == 0 {
                     final_value = v;
                     // Không `break`: main xong ⇒ final join các task không ai await.
@@ -181,11 +190,13 @@ pub(crate) fn run_frame_driver<'a>(
             Err(Abort::Trap(t)) => {
                 if current == 0 {
                     frames.remove(&current);
+                    dong_bo.xoa(0);
                     trap = Some(t);
                     break;
                 }
                 let id = current;
                 frames.remove(&id);
+                dong_bo.xoa(id);
                 let wrapped = rt::wrap_task_error_for_test(
                     &it.sched
                         .borrow()
@@ -211,6 +222,7 @@ pub(crate) fn run_frame_driver<'a>(
             }
             Err(Abort::Ret(v)) => {
                 frames.remove(&current);
+                dong_bo.xoa(current);
                 if current == 0 {
                     // `return`/`?` ở `main` vẫn phải final-join các task còn lại (không bỏ).
                     final_value = Some(v);
@@ -333,6 +345,10 @@ pub(crate) fn run_frame_driver<'a>(
                 s.frame.log.push(format!("purge:{}", id));
             }
             s.frame.live_frames = frames.len();
+            drop(s);
+            for id in &purged {
+                dong_bo.xoa(*id);
+            }
         }
         match next {
             Some(n) => {
@@ -342,6 +358,7 @@ pub(crate) fn run_frame_driver<'a>(
                         match build_task_frame(it, n, &globals, &mutable) {
                             Ok(Some((body, env))) => {
                                 e.insert(IFrame::new(body, env, &globals, mutable.clone()));
+                                dong_bo.tao(n);
                             }
                             Ok(None) => {
                                 // Nguồn giả / task ngoài — không có thân để dựng frame. Bỏ qua,
@@ -395,6 +412,8 @@ pub(crate) fn run_frame_driver<'a>(
     }
     it.sched.borrow_mut().frame.live_frames = frames.len();
     frames.clear();
+    dong_bo.frame_seq.clear();
+    dong_bo.dirty.clear();
     it.sched.borrow_mut().frame_drain_events();
     // **ST-278 (VD-256)**: lỗi task cache ở final join phải surfaced (cùng hợp đồng VS0506).
     // **ST-292 (P4)**: chờ worker pool, cache task chưa await, flush output theo spawn order.
@@ -493,9 +512,243 @@ fn step_frame<'a>(
     it: &mut Interp<'a>,
     frame_id: u32,
     frames: &mut HashMap<u32, IFrame<'a>>,
+    dong_bo: &mut DongBo,
 ) -> R<Option<Value>> {
     let mut frame = frames.remove(&frame_id).expect("frame hiện tại");
-    let res = step_frame_owned(it, &mut frame);
+    dong_bo.nap(it, &mut frame, frame_id);
+    let res = buoc_frame_dong_bo(it, &mut frame, frame_id, dong_bo);
     frames.insert(frame_id, frame);
     res
+}
+
+// ---------------------------------------------------------------------------
+// **ST-318a (#203)** — biến cấp tệp (`let`/`var` top-level) là **một ô chung** giữa các
+// frame, khớp interp non-frame (`env` chung) và VM (mảng `globals`): frame W=1 trước đây giữ
+// `Env` **riêng** (clone lúc dựng) nên `var` ghi trong task không thấy ở main — interp in `0`
+// còn VM in `1` trên cùng chương trình. `it.env` (globals, do `khoi_tao_bien_cap_tep_frame`
+// gắn) là nguồn chung cho các `sym` **đã có** trong đó; tham số/`let` trong thân (sym riêng,
+// không có trong globals) vẫn ở `Env` của frame.
+// ---------------------------------------------------------------------------
+
+/// **ST-318a F2 (P2-C)** — sổ **dirty-set** cho biến cấp tệp.
+///
+/// Chỉ đánh dấu **sym thực sự bị ghi** (sau mỗi work-item ghi) kèm số thứ tự tăng đơn điệu;
+/// mỗi frame nhớ `seq` đã đồng bộ. Nhờ vậy `nap` chỉ chép các sym đổi kể từ lần chạy trước của
+/// frame — **không** quét `frame.mutable` (20k `var` khai báo nhưng không ghi gần như miễn phí).
+#[derive(Default)]
+struct DongBo {
+    /// Số thứ tự lần ghi gần nhất (tăng đơn điệu).
+    seq: u64,
+    /// `sym → seq` lần ghi gần nhất; giá trị thật luôn ở `it.env` (globals).
+    dirty: HashMap<u32, u64>,
+    /// `frame id → seq` frame đã đồng bộ xong.
+    frame_seq: HashMap<u32, u64>,
+}
+
+impl DongBo {
+    /// Frame mới: env vừa clone globals hiện tại ⇒ coi như đã thấy tới `seq`.
+    fn tao(&mut self, id: u32) {
+        self.frame_seq.insert(id, self.seq);
+    }
+
+    /// Frame terminal bị bỏ: quên mốc seq của nó (dọn `dirty` sẽ làm ở `nap` kế tiếp).
+    fn xoa(&mut self, id: u32) {
+        self.frame_seq.remove(&id);
+    }
+
+    /// Nạp các sym dirty kể từ lần chạy trước của frame `id` vào mọi khung gọi của nó.
+    fn nap(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, id: u32) {
+        let fs = self.frame_seq.get(&id).copied().unwrap_or(0);
+        if !self.dirty.is_empty() {
+            let mut ds: Vec<u32> = self
+                .dirty
+                .iter()
+                .filter(|(_, s)| **s > fs)
+                .map(|(k, _)| *k)
+                .collect();
+            if !ds.is_empty() {
+                ds.sort_unstable();
+                let globals = it.env.clone();
+                let cap: Vec<(u32, Value)> = {
+                    let g = globals.borrow();
+                    ds.into_iter()
+                        .filter_map(|s| g.get(&s).map(|v| (s, v.clone())))
+                        .collect()
+                };
+                if !cap.is_empty() {
+                    nap_vao_env(frame, &globals, &cap);
+                }
+            }
+        }
+        self.frame_seq.insert(id, self.seq);
+        // **F3 (P2-1)**: dọn **mọi** nhánh — kể cả khi `ds` rỗng (frame đã thấy hết) —
+        // nếu không, `dirty` do chính frame vừa ghi 20k sym sẽ không bao giờ co lại và bị
+        // duyệt O(#sym) mỗi turn. `prune` tự no-op khi sổ < 64 mục.
+        self.prune();
+    }
+
+    /// Ghi biến cấp tệp vừa đổi (giá trị đã nằm trong globals) và đánh dấu dirty.
+    fn ghi(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32, id: u32) {
+        if !ghi_bien_cap_tep(it, frame, sym) {
+            return;
+        }
+        self.seq += 1;
+        self.dirty.insert(sym, self.seq);
+        // Env của chính frame vừa được cập nhật đủ ⇒ nó đã "thấy" mốc này.
+        self.frame_seq.insert(id, self.seq);
+    }
+
+    /// Bỏ mục mà **mọi** frame sống đã đồng bộ — chỉ chạy khi sổ ≥ 64 mục để amortize O(#frame).
+    fn prune(&mut self) {
+        if self.dirty.len() < 64 {
+            return;
+        }
+        if self.frame_seq.is_empty() {
+            self.dirty.clear();
+            return;
+        }
+        if let Some(min) = self.frame_seq.values().copied().min() {
+            self.dirty.retain(|_, s| *s > min);
+        }
+    }
+}
+
+/// Chép `cap` (sym → giá trị mới) vào **mọi** khung gọi của `frame` (bỏ qua env chính là globals).
+fn nap_vao_env(frame: &mut IFrame<'_>, globals: &Env, cap: &[(u32, Value)]) {
+    let envs: Vec<Env> = frame.calls.iter().map(|cf| cf.env.clone()).collect();
+    for env in envs {
+        if Rc::ptr_eq(&env, globals) {
+            continue;
+        }
+        let mut e = env.borrow_mut();
+        for (k, v) in cap {
+            // Chỉ cập nhật ô mà frame đã có — không kéo biến top-level vào env vốn không thấy nó.
+            if e.contains_key(k) {
+                e.insert(*k, v.clone());
+            }
+        }
+    }
+}
+
+/// `sym` mà work-item **có thể ghi** vào env hiện tại (gán biến, gán đường, writeback `push`).
+///
+/// Chỉ ba đường này ghi được biến cấp tệp: `let`/`var` top-level đã chạy trước `main` (và khi
+/// không có `main` thì env chính **là** globals), còn bind pattern trong thân là sym cục bộ.
+///
+/// **F3 (P3-1/P3-2)**: `ApplyMethod`/`RedispatchMethod` chỉ **writeback** với `push`
+/// (`method_writeback`), nên method chỉ đọc (`len`/`get`/`keys`/`first`/…) không đánh dirty.
+fn sym_ghi_cua(w: &Work<'_>) -> Option<u32> {
+    match w {
+        Work::ApplyAssignVar { sym, .. } => Some(*sym),
+        Work::ApplyAssignPath(a) => Some(a.sym),
+        Work::ApplyMethod {
+            name,
+            base_var: Some(sym),
+            ..
+        }
+        | Work::RedispatchMethod {
+            name,
+            base_var: Some(sym),
+            ..
+        } if name.as_str() == "push" => Some(*sym),
+        _ => None,
+    }
+}
+
+/// Ghi **một** biến cấp tệp vừa đổi về `it.env` (globals) rồi cập nhật mọi khung gọi đang treo
+/// của cùng frame — nhờ vậy `print(g)` ngay sau `tang()` (cùng một step) vẫn thấy giá trị mới,
+/// và frame khác (task/main) thấy được khi resume.
+///
+/// Trả `true` nếu đúng là biến cấp tệp (đã ghi globals và cần đánh dấu dirty); `false` với tham
+/// số/`let` cục bộ. Khi env chính **là** globals (chương trình không có `main`) thì lệnh ghi đã
+/// vào globals từ trước, nhưng vẫn phải trả `true` để task frame khác nhận được ở lần resume.
+fn ghi_bien_cap_tep(it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32) -> bool {
+    let globals = it.env.clone();
+    let env = frame.cur().env.clone();
+    let Some(v) = env.borrow().get(&sym).cloned() else {
+        return false;
+    };
+    // Sym cục bộ (tham số/`let` trong thân) không có trong globals ⇒ không đụng.
+    if !globals.borrow().contains_key(&sym) {
+        return false;
+    }
+    if !Rc::ptr_eq(&env, &globals) {
+        globals.borrow_mut().insert(sym, v.clone());
+        let cap = [(sym, v)];
+        nap_vao_env(frame, &globals, &cap);
+    }
+    true
+}
+
+/// **ST-318a (#203)** — bản sao `step_frame_owned` (`frame.rs`) có đồng bộ biến cấp tệp sau
+/// từng work-item. Mọi nhánh còn lại giữ nguyên hành vi bản gốc (ngân sách ⇒ `Pending`, pop
+/// khung ⇒ merge closure/hoàn nguyên tham số, hết work ⇒ trả `vals`).
+///
+/// ⚠️ **Giữ khớp từng nhánh** với `frame.rs::step_frame_owned`: loop gốc đổi thứ tự/thêm nhánh
+/// thì phải sửa tệp này ngay (đây là bản sao **có chủ đích** để chèn đồng bộ giữa các item).
+fn buoc_frame_dong_bo<'a>(
+    it: &mut Interp<'a>,
+    frame: &mut IFrame<'a>,
+    frame_id: u32,
+    dong_bo: &mut DongBo,
+) -> R<Option<Value>> {
+    loop {
+        if frame.done() {
+            return Ok(frame.vals.pop());
+        }
+        // **VD-257/D**: hết hạn ngạch — yield về đuôi ready, không trap, không chạy lại item.
+        if crate::rt::fee::quota_take_hit() {
+            let cur = it.sched.borrow().frame.current;
+            it.sched.borrow_mut().frame.log.push(format!("quota:{cur}"));
+            return Err(Abort::Pending(crate::rt::Pending {
+                task: None,
+                wait: None,
+                span: Span::new(0, 0),
+            }));
+        }
+        let w = frame.cur().work.pop();
+        match w {
+            Some(w) => {
+                let sym_ghi = sym_ghi_cua(&w);
+                // Đồng bộ **kể cả khi item lỗi** — side-effect đã xảy ra trước trap vẫn phải
+                // thấy được ở frame khác (final join/báo lỗi), đúng như env chung non-frame.
+                let res = super::process_work(it, frame, w);
+                if let Some(sym) = sym_ghi {
+                    dong_bo.ghi(it, frame, sym, frame_id);
+                }
+                res?;
+            }
+            None => {
+                // Hết work ⇒ kết thúc khung con: hoàn nguyên tham số, nâng ret, đẩy giá trị.
+                let cf = frame.calls.pop().expect("khung");
+                let mut v = cf.last.unwrap_or(Value::Unit);
+                if cf.ret_depth > 0 {
+                    v = crate::lift::lift_opt(v, cf.ret_depth);
+                }
+                // **VD-258**: closure có env riêng cho lần gọi này — gộp các biến bắt
+                // về env gốc của closure (tham số bị loại ⇒ lần gọi khác không bị đè).
+                if let Some(dich) = &cf.merge {
+                    let params: Vec<u32> = cf.restore.iter().map(|(s, _)| *s).collect();
+                    let snapshot = cf.env.borrow().clone();
+                    let mut den = dich.borrow_mut();
+                    for (sym, val) in snapshot {
+                        if !params.contains(&sym) {
+                            den.insert(sym, val);
+                        }
+                    }
+                }
+                for (sym, old) in cf.restore {
+                    match old {
+                        Some(old) => {
+                            cf.env.borrow_mut().insert(sym, old);
+                        }
+                        None => {
+                            cf.env.borrow_mut().remove(&sym);
+                        }
+                    }
+                }
+                frame.vals.push(v);
+            }
+        }
+    }
 }

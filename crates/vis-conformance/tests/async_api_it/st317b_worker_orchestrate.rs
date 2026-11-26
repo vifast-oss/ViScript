@@ -82,6 +82,28 @@ fn frame_w(src: &str, a: &Anh, w: usize) -> RunOutput {
     )
 }
 
+/// Frame W=1 của **VM** (production `vis run --vm` cho chương trình async).
+fn frame_vm_1(src: &str, a: &Anh) -> RunOutput {
+    vis_vm::run_async_with_full_hosts_caps(&a.3, src, &[], None, None, None, None, &[])
+}
+
+/// Frame W=2/4 của **VM** (production `vis run --vm --workers N` cho chương trình async).
+fn frame_vm_w(src: &str, a: &Anh, w: usize) -> RunOutput {
+    vis_vm::run_async_workers_with_full_hosts_caps(
+        &a.3,
+        src,
+        &[],
+        None,
+        None,
+        None,
+        None,
+        &[],
+        w,
+        None,
+        None,
+    )
+}
+
 fn so_khop(a: &RunOutput, b: &RunOutput, nhan: &str) {
     assert_eq!(a.stdout, b.stdout, "{nhan}: stdout");
     assert_eq!(a.exit, b.exit, "{nhan}: exit");
@@ -416,4 +438,280 @@ fn w10_cancel_idempotent_tren_cung_handle() {
     let kq = pool.join().expect("join");
     assert_eq!(kq.outcomes.len(), 1, "cancel 2 lần không nhân đôi outcome");
     assert!(kq.outcomes[0].cancelled, "task bị huỷ trước khi chạy");
+}
+
+// ---------------------------------------------------------------------------
+// **ST-318a** — đóng nợ `#203` (frame W=1 ghi biến cấp tệp) + `#204` (non-frame W≥2
+// nuốt lỗi task không await).
+// ---------------------------------------------------------------------------
+
+/// **#203** — cùng `GHI_CHEO` (task ghi `var` top-level rồi main đọc): **frame W=1** của hai
+/// engine phải in `1` + exit 0. Trước ST-318a interp giữ `Env` riêng nên in `0`, VM in `1`.
+#[test]
+fn w11_frame_w1_parity_ghi_bien_cap_tep() {
+    let a = anh(GHI_CHEO);
+    let i = frame_1(GHI_CHEO, &a);
+    let v = frame_vm_1(GHI_CHEO, &a);
+    assert_eq!(i.stdout, "1\n", "interp frame W=1: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "1\n", "VM frame W=1: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp frame W=1 exit");
+    assert_eq!(v.exit, 0, "VM frame W=1 exit");
+    so_khop(&i, &v, "frame W=1");
+}
+
+/// **#203** — như trên nhưng lệnh ghi nằm trong **hàm được gọi** (env tạm bị pop): vẫn phải
+/// chung một ô top-level, kể cả khi đọc lại ngay trong cùng step của main.
+#[test]
+fn w11_frame_w1_ghi_qua_ham_duoc_goi() {
+    const SRC: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang():
+    g = g + 1
+
+fn main():
+    let t = spawn dummy()
+    await t
+    tang()
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "1\n", "interp frame W=1: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "1\n", "VM frame W=1: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "frame W=1 qua hàm");
+}
+
+/// **#203 (P3)** — chương trình **không có `main`**: thân cấp tệp chạy trên cùng `globals` với
+/// task frame, `var` top-level task ghi thấy ngay ở lệnh `print` cấp tệp — parity interp ↔ VM.
+#[test]
+fn w11_frame_w1_no_main_ghi_bien_cap_tep() {
+    const SRC: &str = r#"var g = 0
+
+async fn tang():
+    g = g + 1
+
+let t = spawn tang()
+await t
+print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "1\n", "interp frame no-main: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "1\n", "VM frame no-main: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "frame W=1 no-main");
+}
+
+/// **#204** — non-frame `run_workers_parallel*`/`run_workers_parallel_vm*` W=2/4: lỗi thân task
+/// **không ai await** phải được `final_join` surface `VS0506` (cùng message/span như frame W=1),
+/// không còn exit 0 + diagnostics rỗng. Output sạch của main vẫn giữ nguyên thứ tự.
+#[test]
+fn w12_non_frame_loi_task_khong_await_w2_w4() {
+    let a = anh(LOI_KHONG_AWAIT);
+    let frame = frame_1(LOI_KHONG_AWAIT, &a);
+    let msg_frame = frame
+        .diagnostics
+        .iter()
+        .find(|d| d.code.short == "VS0506")
+        .map(|d| d.message.clone())
+        .expect("frame W=1 phải có VS0506");
+    for w in [2usize, 4] {
+        for (nhan, out) in [
+            ("interp", interp(LOI_KHONG_AWAIT, &a, w)),
+            ("vm", vm(LOI_KHONG_AWAIT, &a, w)),
+        ] {
+            assert_eq!(out.exit, 1, "{nhan} W={w} phải lỗi");
+            assert_eq!(out.stdout, "sau\n", "{nhan} W={w}: output trước trap");
+            let d = out
+                .diagnostics
+                .iter()
+                .find(|d| d.code.short == "VS0506" && d.message.contains("hong"))
+                .unwrap_or_else(|| panic!("{nhan} W={w}: {:?}", out.diagnostics));
+            assert_eq!(d.message, msg_frame, "{nhan} W={w}: message như frame W=1");
+        }
+    }
+}
+
+/// **P2-B (ST-318a F1)** — task lỗi đứng **trước**, task sạch in `b` đứng **sau**: `final_join`
+/// phải flush output **mọi** task rồi mới trả trap đầu — không được cắt stdout của task sau.
+const LOI_TRUOC_OK_SAU: &str = r#"async fn hong() -> int:
+    let a = 10
+    let b = 0
+    a % b
+
+async fn ok() -> int:
+    print("b")
+    1
+
+fn main():
+    let _t = spawn hong()
+    let _u = spawn ok()
+    print("sau")
+"#;
+
+#[test]
+fn w13_final_join_flush_het_output_truoc_trap() {
+    let a = anh(LOI_TRUOC_OK_SAU);
+    let f = frame_1(LOI_TRUOC_OK_SAU, &a);
+    assert_eq!(f.stdout, "sau\nb\n", "frame W=1: {:?}", f.diagnostics);
+    assert_eq!(f.exit, 1);
+    for w in [2usize, 4] {
+        for (nhan, out) in [
+            ("interp", interp(LOI_TRUOC_OK_SAU, &a, w)),
+            ("vm", vm(LOI_TRUOC_OK_SAU, &a, w)),
+        ] {
+            assert_eq!(out.stdout, "sau\nb\n", "{nhan} W={w}: stdout");
+            assert_eq!(out.exit, 1, "{nhan} W={w} phải lỗi");
+            assert!(
+                out.diagnostics
+                    .iter()
+                    .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+                "{nhan} W={w}: {:?}",
+                out.diagnostics
+            );
+        }
+    }
+}
+
+/// **F2 (P2-C)** — dirty-set: nhiều `var` top-level (200) nhưng chỉ 3 sym bị ghi trong task;
+/// cả 3 phải thấy ở `main` (và 1 sym không ghi giữ nguyên), parity interp ↔ VM.
+#[test]
+fn w14_frame_w1_dirty_set_nhieu_var() {
+    let mut src = String::new();
+    for i in 0..200 {
+        src.push_str(&format!("var v{i} = {i}\n"));
+    }
+    src.push_str(
+        r#"
+async fn tang_a():
+    v0 = v0 + 1
+    v7 = v7 + 10
+
+async fn tang_b():
+    v199 = v199 + 2
+
+fn main():
+    let a = spawn tang_a()
+    let b = spawn tang_b()
+    await a
+    await b
+    print(v0)
+    print(v7)
+    print(v199)
+    print(v100)
+"#,
+    );
+    let a = anh(&src);
+    let i = frame_1(&src, &a);
+    let v = frame_vm_1(&src, &a);
+    assert_eq!(i.stdout, "1\n17\n201\n100\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "dirty-set nhiều var");
+}
+
+/// **P2-A khoá** — hai task cộng dồn **cùng** `var` top-level (task nọ thấy ghi của task kia);
+/// frame W=1 interp ↔ VM đều `2`.
+const HAI_TASK_TANG: &str = r#"var g = 0
+
+async fn tang():
+    g = g + 1
+
+fn main():
+    let a = spawn tang()
+    let b = spawn tang()
+    await a
+    await b
+    print(g)
+"#;
+
+#[test]
+fn w15_frame_w1_hai_task_cong_don() {
+    let a = anh(HAI_TASK_TANG);
+    let i = frame_1(HAI_TASK_TANG, &a);
+    let v = frame_vm_1(HAI_TASK_TANG, &a);
+    assert_eq!(i.stdout, "2\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "2\n", "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "hai task cộng dồn");
+}
+
+/// **P2-A khoá** — main ghi `var` **sau khi spawn** rồi task đọc: task thấy giá trị mới (`5`),
+/// frame W=1 interp ↔ VM.
+const MAIN_GHI_TRUOC_AWAIT: &str = r#"var g = 0
+
+async fn doc() -> int:
+    g
+
+fn main():
+    let t = spawn doc()
+    g = 5
+    print(await t)
+"#;
+
+#[test]
+fn w16_frame_w1_main_ghi_truoc_await() {
+    let a = anh(MAIN_GHI_TRUOC_AWAIT);
+    let i = frame_1(MAIN_GHI_TRUOC_AWAIT, &a);
+    let v = frame_vm_1(MAIN_GHI_TRUOC_AWAIT, &a);
+    assert_eq!(i.stdout, "5\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "5\n", "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "main ghi trước await");
+}
+
+/// **P2-C (F2)** — frame **VM W=2/4**: task lỗi không ai `await` phải surface `VS0506`, exit 1,
+/// output sạch của main giữ nguyên (`sau\n`).
+#[test]
+fn w17_frame_vm_w2_w4_loi_task_khong_await() {
+    let a = anh(LOI_KHONG_AWAIT);
+    for w in [2usize, 4] {
+        let out = frame_vm_w(LOI_KHONG_AWAIT, &a, w);
+        assert_eq!(out.exit, 1, "VM frame W={w}: {:?}", out.diagnostics);
+        assert_eq!(out.stdout, "sau\n", "VM frame W={w}: stdout");
+        assert!(
+            out.diagnostics
+                .iter()
+                .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+            "VM frame W={w}: {:?}",
+            out.diagnostics
+        );
+    }
+}
+
+/// **F3 (P2-1)** — main ghi **nhiều** `var` top-level rồi `await` nhiều task rỗng: sau turn đầu
+/// `dirty` phải co lại (prune) nhưng giá trị vẫn đúng; frame W=1 interp ↔ VM.
+#[test]
+fn w18_frame_w1_main_ghi_nhieu_var_roi_await() {
+    let mut src = String::new();
+    for i in 0..100 {
+        src.push_str(&format!("var v{i} = {i}\n"));
+    }
+    src.push_str("\nasync fn rong() -> int:\n    1\n\nfn main():\n");
+    for i in 0..100 {
+        src.push_str(&format!("    v{i} = {i} + 1\n"));
+    }
+    for _ in 0..50 {
+        src.push_str("    await spawn rong()\n");
+    }
+    src.push_str("    print(v0)\n    print(v99)\n");
+    let a = anh(&src);
+    let i = frame_1(&src, &a);
+    let v = frame_vm_1(&src, &a);
+    assert_eq!(i.stdout, "1\n100\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "main ghi nhiều var rồi await");
 }

@@ -85,14 +85,28 @@ pub fn flush_proxy(p: &mut TaskProxy, span: Span) -> Option<(String, Option<Trap
 /// Áp outcome (nếu có) rồi flush proxy — dùng chung cho `final_join` hai engine.
 ///
 /// Không đụng stdout: trả `Some((output, Option<Trap>))` để engine tự ghi output của mình.
+///
+/// **ST-318a (#204)**: nếu outcome mang `Err(..)` (lỗi thân task mà **không ai await**), trap
+/// `VS0506` đã cache trong `task.kq` được trả kèm — cùng message/mã/span như đường frame
+/// (`frame_final_join` quét `kq`). Trap `dirty` (`VS0509`)/`cancelled` của `flush_proxy` vẫn
+/// **thắng** để giữ thứ tự cũ; proxy đã flush (đã await) không bị báo lại.
 pub fn ap_va_flush(p: &mut TaskProxy, o: Option<TaskOutcome>) -> Option<(String, Option<Trap>)> {
+    let mut loi_ket = None;
     if let Some(o) = o {
         if !p.done {
-            let _ = ap_dung_outcome(p, o);
+            let (_, ket) = ap_dung_outcome(p, o);
+            loi_ket = ket.err();
         }
     }
+    if loi_ket.is_none() {
+        loi_ket = match p.task.kq.borrow().as_ref() {
+            Some(Err(t)) => Some(t.clone()),
+            _ => None,
+        };
+    }
     let span = p.task.span;
-    flush_proxy(p, span)
+    let (output, loi) = flush_proxy(p, span)?;
+    Some((output, loi.or(loi_ket)))
 }
 
 /// Rút outcome đã sẵn sàng từ `OutcomeBoard`; `block` ⇒ chờ tối đa **50 ms** (như P4 cũ).

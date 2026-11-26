@@ -362,6 +362,10 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
             ))
         }
     };
+    // **ST-318a F1/P2-B**: flush **hết** output của mọi task (kể cả task đứng sau task lỗi)
+    // rồi mới trả trap **đầu** theo spawn order — trước đây `return` ngay ở trap đầu làm mất
+    // stdout của các task phía sau. Mã/message/span của trap giữ nguyên.
+    let mut trap = None;
     for o in outcomes {
         let Some(main_id) = map.get(&o.id).copied() else {
             continue;
@@ -371,12 +375,15 @@ pub(crate) fn final_join(vm: &mut Vm<'_>) -> vis_core::trap::R<()> {
         };
         if let Some((output, loi)) = vis_runtime::worker::ap_va_flush(p, Some(o)) {
             vm.out.push_str(&output);
-            if let Some(t) = loi {
-                return Err(Abort::Trap(t));
+            if trap.is_none() {
+                trap = loi;
             }
         }
     }
-    Ok(())
+    match trap {
+        Some(t) => Err(Abort::Trap(t)),
+        None => Ok(()),
+    }
 }
 
 /// Alias cũ.
