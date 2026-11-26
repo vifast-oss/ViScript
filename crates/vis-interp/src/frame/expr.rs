@@ -695,14 +695,10 @@ pub(super) fn call_value<'a>(
     match f {
         Value::Fn(c) => {
             if pos.len() != c.params.len() {
-                return Err(Abort::Trap(Trap::new(
-                    RT,
-                    format!(
-                        "hàm `{}` cần {} đối số, được {}",
-                        if c.name.is_empty() { "<fn>" } else { &c.name },
-                        c.params.len(),
-                        pos.len()
-                    ),
+                return Err(Abort::Trap(crate::interp::goi::loi_arity(
+                    &c.name,
+                    c.params.len(),
+                    pos.len(),
                     span,
                 )));
             }
@@ -748,10 +744,8 @@ pub(super) fn call_value<'a>(
         }
         other => {
             let _ = named;
-            Err(Abort::Trap(Trap::new(
-                RT,
-                format!("`{}` không phải hàm", other.show()),
-                span,
+            Err(Abort::Trap(crate::interp::goi::loi_khong_phai_ham(
+                &other, span,
             )))
         }
     }

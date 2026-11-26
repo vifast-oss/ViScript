@@ -4,6 +4,7 @@
 //! Tách khỏi `frame.rs` để giữ luật R1 (≤1500 dòng/tệp). Đây là module con của `frame` nên
 //! thấy `Interp`/`IFrame`/`eval_expr_in`/`Env` qua `super::*`; API không đổi.
 use super::*;
+pub(super) use crate::interp::goi::opt_depth_ty;
 
 /// **VD-262**: khởi tạo `let`/`var` cấp tệp trước `fn main` ở đường frame.
 ///
@@ -28,17 +29,6 @@ pub(super) fn khoi_tao_bien_cap_tep_frame<'a>(
         }
     }
     loi
-}
-
-/// Số lớp `Opt` của một kiểu (dùng ở biên `let`/`var`/tham số/trả về).
-pub(super) fn opt_depth_ty(t: &vis_hir::Type) -> usize {
-    let mut d = 0;
-    let mut cur = t;
-    while let vis_hir::Type::Opt(inner) = cur {
-        d += 1;
-        cur = inner;
-    }
-    d
 }
 
 /// **VD-259**: gắn tham số + default vào một env mới — **một** helper dùng chung cho hàm tên

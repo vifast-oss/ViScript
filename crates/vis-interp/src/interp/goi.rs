@@ -17,6 +17,8 @@ use crate::interp::{builtin_name, Abort, Args, Ctrl, Interp, Trap, MAX_CALL_DEPT
 use crate::value::*;
 
 mod goi_ham;
+
+pub(crate) use goi_ham::{loi_arity, loi_khong_phai_ham};
 mod infer;
 pub(crate) use infer::*;
 
@@ -368,7 +370,7 @@ pub(crate) fn opt_lift_maybe(v: Value, depth_target: usize) -> Value {
 }
 
 /// Số lớp `Opt` của một **đích kiểu** (đếm từ ngoài vào).
-pub(in crate::interp) fn opt_depth_ty(t: &vis_hir::Type) -> usize {
+pub(crate) fn opt_depth_ty(t: &vis_hir::Type) -> usize {
     let mut d = 0;
     let mut cur = t;
     while let vis_hir::Type::Opt(inner) = cur {

@@ -135,11 +135,7 @@ impl<'a> Interp<'a> {
             }
             other => {
                 let _ = named;
-                Err(Abort::Trap(Trap::new(
-                    RT,
-                    format!("`{}` không phải hàm", other.show()),
-                    span,
-                )))
+                Err(Abort::Trap(loi_khong_phai_ham(&other, span)))
             }
         }
     }
@@ -166,14 +162,10 @@ impl<'a> Interp<'a> {
 
     fn call_closure_trong(&mut self, c: &Closure, pos: Vec<Value>, span: Span) -> R<Value> {
         if pos.len() != c.params.len() {
-            return Err(Abort::Trap(Trap::new(
-                RT,
-                format!(
-                    "hàm `{}` cần {} đối số, được {}",
-                    if c.name.is_empty() { "<fn>" } else { &c.name },
-                    c.params.len(),
-                    pos.len()
-                ),
+            return Err(Abort::Trap(loi_arity(
+                &c.name,
+                c.params.len(),
+                pos.len(),
                 span,
             )));
         }
@@ -337,4 +329,23 @@ impl<'a> Interp<'a> {
             Err(t) => Err(t),
         }
     }
+}
+
+/// **ST-317b** — thông điệp arity **một nguồn** cho interp + frame evaluator.
+pub(crate) fn loi_arity(ten: &str, can: usize, got: usize, span: Span) -> Trap {
+    Trap::new(
+        RT,
+        format!(
+            "hàm `{}` cần {} đối số, được {}",
+            if ten.is_empty() { "<fn>" } else { ten },
+            can,
+            got
+        ),
+        span,
+    )
+}
+
+/// **ST-317b** — thông điệp "không phải hàm" **một nguồn** cho interp + frame evaluator.
+pub(crate) fn loi_khong_phai_ham(v: &Value, span: Span) -> Trap {
+    Trap::new(RT, format!("`{}` không phải hàm", v.show()), span)
 }
