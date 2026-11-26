@@ -300,3 +300,46 @@ fn derives_enum_eq_sinh_phuong_thuc_that() {
         "Or.eq",
     );
 }
+
+// ---------------------------------------------------------------------------
+// **ST-316b (`#7`)** — `co_float_sau` soi **bản ghi/enum lồng** cho `derives Eq`, có tập
+// `đã thăm` chống đệ quy vô hạn với kiểu tự quy chiếu.
+// ---------------------------------------------------------------------------
+
+/// Bản ghi lồng khai **trước** có trường `float` ⇒ `derives Eq` của bản ghi ngoài bị `VS0403`
+/// (trước lát này chỉ soi trường trực tiếp nên lọt).
+#[test]
+fn derives_eq_ban_ghi_long_float_bao_vs0403() {
+    co(
+        "type Trong:\n    x: float\n\ntype Ngoai derives Eq:\n    t: Trong\n",
+        "VS0403",
+    );
+}
+
+/// Enum lồng có biến thể mang `float` ⇒ `derives Eq` của bản ghi ngoài bị `VS0403`.
+#[test]
+fn derives_eq_enum_long_float_bao_vs0403() {
+    co(
+        "enum E:\n    A(x: float)\n    B\n\ntype Ngoai derives Eq:\n    e: E\n",
+        "VS0403",
+    );
+}
+
+/// Bản ghi **tự quy chiếu** (`next: Node?`) không làm `co_float_sau` đệ quy vô hạn; không có
+/// `float` ⇒ `derives Eq` sinh bình thường, **0 chẩn đoán**.
+#[test]
+fn derives_eq_ban_ghi_tu_quy_chieu_khong_lap() {
+    sach("type Node derives Eq:\n    gia_tri: int\n    next: Node?\n");
+}
+
+/// Enum **tự quy chiếu** (biến thể chứa chính nó) cũng dừng nhờ tập `đã thăm`.
+#[test]
+fn derives_eq_enum_tu_quy_chieu_khong_lap() {
+    sach("enum Cay derives Eq:\n    La\n    Nhanh(a: Cay, b: Cay)\n");
+}
+
+/// Hai bản ghi **vòng** nhau (`A ⇄ B`) vẫn dừng và sinh được `Eq` (không tràn stack).
+#[test]
+fn derives_eq_hai_ban_ghi_vong_nhau_khong_lap() {
+    sach("type A derives Eq:\n    b: B?\n\ntype B derives Eq:\n    a: A?\n");
+}

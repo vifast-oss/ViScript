@@ -220,7 +220,10 @@ struct Lowerer<'a> {
     /// **R12a (VD-178)**: tên `type Email(str)` — newtype **trong suốt** (dựng/mở = chính giá trị).
     newtypes: Vec<String>,
     /// Tên item cấp tệp → chỉ số ký hiệu (khai ở lượt 1).
-    item_syms: Vec<(String, u32)>,
+    ///
+    /// **ST-316b (`#199`)**: `HashMap` thay `Vec<(String, u32)>` + quét ngược — tra `item_sym`
+    /// `O(1)`, bản ghi **sau** ghi đè bản trước (đúng "lần khai cuối" như cũ).
+    item_syms: std::collections::HashMap<String, u32>,
     /// Đang hạ vế sau của or-pattern: khai tên đã có thì **dùng lại**, không báo `VS0302`.
     suppress_dup: bool,
     /// Đang hạ **đích gán**: hoãn `VS0301` của [`Lowerer::lower_var_use`] để `lower_assign` báo

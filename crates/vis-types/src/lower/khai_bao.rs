@@ -19,7 +19,7 @@ impl<'a> Lowerer<'a> {
                         *p = true;
                     }
                 }
-                self.item_syms.push((name.clone(), id));
+                self.item_syms.insert(name.clone(), id);
                 let rid = RecId(self.tbl.recs().len() as u32);
                 self.tbl.push_rec(RecDef {
                     name: Some(name.clone()),
@@ -39,7 +39,7 @@ impl<'a> Lowerer<'a> {
                         *p = true;
                     }
                 }
-                self.item_syms.push((name.clone(), id));
+                self.item_syms.insert(name.clone(), id);
                 let eid = EnumId(self.tbl.enums().len() as u32);
                 self.tbl.push_enum(EnumDef {
                     name: name.clone(),
@@ -81,7 +81,7 @@ impl<'a> Lowerer<'a> {
                             *p = true;
                         }
                     }
-                    self.item_syms.push((name, id));
+                    self.item_syms.insert(name, id);
                 }
             }
             _ => {}
@@ -460,6 +460,8 @@ impl<'a> Lowerer<'a> {
             name,
             span: node.span,
             sym,
+            // **ST-316b (`#48`)**: giữ cờ `pub` để LSP lọc item công khai của module.
+            is_pub: self.has_token(node, "pub"),
             generics: self.generics_of(node),
             fields,
             derives,
@@ -528,6 +530,8 @@ impl<'a> Lowerer<'a> {
             name,
             span: node.span,
             sym,
+            // **ST-316b (`#48`)**: giữ cờ `pub` để LSP lọc item công khai của module.
+            is_pub: self.has_token(node, "pub"),
             generics: self.generics_of(node),
             variants,
             derives,
@@ -572,6 +576,8 @@ impl<'a> Lowerer<'a> {
             name,
             span: node.span,
             sym,
+            // **ST-316b (`#48`)**: giữ cờ `pub` để LSP lọc item công khai của module.
+            is_pub: self.has_token(node, "pub"),
             ty,
             is_newtype,
         }))
@@ -594,6 +600,8 @@ impl<'a> Lowerer<'a> {
             name,
             span: node.span,
             sym,
+            // **ST-316b (`#48`)**: giữ cờ `pub` để LSP lọc item công khai của module.
+            is_pub: self.has_token(node, "pub"),
             ty,
             value,
         }))
@@ -615,6 +623,8 @@ impl<'a> Lowerer<'a> {
             name,
             span: node.span,
             sym,
+            // **ST-316b (`#48`)**: giữ cờ `pub` để LSP lọc item công khai của module.
+            is_pub: self.has_token(node, "pub"),
             supertraits,
             methods,
         }))

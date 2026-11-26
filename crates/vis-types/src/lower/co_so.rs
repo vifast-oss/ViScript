@@ -60,7 +60,7 @@ impl<'a> Lowerer<'a> {
             variant_index: Vec::new(),
             aliases,
             newtypes: Vec::new(),
-            item_syms: Vec::new(),
+            item_syms: std::collections::HashMap::new(),
             suppress_dup: false,
             suppress_name_diag: false,
             expect: None,
@@ -277,7 +277,7 @@ impl<'a> Lowerer<'a> {
             return;
         }
         for name in BUILTIN_VALUE_NAMES {
-            self.symbols.syms.push(HSym {
+            self.symbols.push_sym(HSym {
                 name: name.to_string(),
                 kind: SymKind::Builtin,
                 frame: 0,
@@ -622,8 +622,7 @@ impl<'a> Lowerer<'a> {
                 self.diag(&NAME_CODES[1], msg, span);
             }
         }
-        let id = self.symbols.syms.len() as u32;
-        self.symbols.syms.push(HSym {
+        let id = self.symbols.push_sym(HSym {
             name: name.to_string(),
             kind,
             frame,
@@ -639,13 +638,9 @@ impl<'a> Lowerer<'a> {
     /// báo `VS0302` (các vế or-pattern dùng chung một binding — §4.3).
     pub(crate) fn declare_or_reuse(&mut self, name: &str, span: Span) -> u32 {
         let frame = self.current_frame();
-        if let Some(i) = self
-            .symbols
-            .syms
-            .iter()
-            .rposition(|s| s.frame == frame && s.name == name)
-        {
-            return i as u32;
+        // **ST-316b (`#199`)**: tra chỉ mục `(khung, tên)` thay vì quét ngược cả `syms`.
+        if let Some(i) = self.symbols.last_id_in_frame(frame, name) {
+            return i;
         }
         self.declare(name, SymKind::PatBind, span, None)
     }
@@ -654,11 +649,22 @@ impl<'a> Lowerer<'a> {
     ///
     /// ST-25: tên thuộc **module khác** chỉ thấy khi tệp hiện tại `use` module đó **và** mục có `pub`
     /// (mô hình "chỉ `pub`", §7.10). Tên dựng sẵn (`mod_of == u16::MAX`) luôn thấy.
+    ///
+    /// **ST-316b (`#199`)**: tra chỉ mục `(khung, tên)` — `O(1)` thay cho quét ngược toàn bộ
+    /// `syms` ở mỗi lần dùng tên. Chỉ mục giữ bản **cuối**; nếu bản cuối không nằm trong tầm
+    /// nhìn (module khác, không `pub`) mới quét lại đúng khung đó để tìm bản gần nhất thấy được
+    /// — kết quả y hệt đường cũ.
     pub(crate) fn resolve(&self, name: &str) -> Option<u32> {
         for frame in self.scope.iter().rev() {
-            for (i, s) in self.symbols.syms.iter().enumerate().rev() {
-                if s.frame == *frame && s.name == name && self.duoc_thay(i) {
-                    return Some(i as u32);
+            let Some(i) = self.symbols.last_id_in_frame(*frame, name) else {
+                continue;
+            };
+            if self.duoc_thay(i as usize) {
+                return Some(i);
+            }
+            for (k, s) in self.symbols.syms.iter().enumerate().rev() {
+                if s.frame == *frame && s.name == name && self.duoc_thay(k) {
+                    return Some(k as u32);
                 }
             }
         }
@@ -752,12 +758,8 @@ impl<'a> Lowerer<'a> {
     }
 
     pub(crate) fn item_sym(&self, name: &str) -> u32 {
-        self.item_syms
-            .iter()
-            .rev()
-            .find(|(n, _)| n == name)
-            .map(|(_, id)| *id)
-            .unwrap_or(0)
+        // **ST-316b (`#199`)**: tra `HashMap` thay quét ngược `Vec` (cùng ngữ nghĩa "bản cuối").
+        self.item_syms.get(name).copied().unwrap_or(0)
     }
 
     // ----- kiểu -----

@@ -179,9 +179,9 @@ fn lower_than_khai_lenh(
     // **đúng sym** của `HFn` (đổi `frame` sang khung con) — không `declare` lại, nếu không HIR trỏ
     // sym mới còn lúc chạy lại bind sym cũ (`tên … chưa có giá trị`).
     for p in &params {
-        if let Some(s) = l.symbols.syms.get_mut(p.sym as usize) {
-            s.frame = khung;
-        }
+        // **ST-316b (`#199`)**: đổi khung qua `Symbols::doi_khung` để chỉ mục `(khung, tên)`
+        // không trỏ khoá cũ (trước: sửa thẳng `s.frame` làm chỉ mục lệch ⇒ `resolve` mất tên).
+        l.symbols.doi_khung(p.sym, khung);
         if !matches!(p.ty, Type::Error) {
             l.type_env.insert(p.sym, p.ty.clone());
         }

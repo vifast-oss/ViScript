@@ -726,3 +726,70 @@ fn lsp_signature_help_builtin_null() {
         format!("{}{}{}", khung(INIT), khung(&publish_rong(URI)), khung(tra))
     );
 }
+
+// ---------------------------------------------------------------------------
+// **ST-316b (`#48`)** — completion module chỉ gợi ý item `pub` (mọi loại: fn/type/enum/alias/
+// const/trait), không gợi ý item nội bộ của module khác.
+// ---------------------------------------------------------------------------
+
+const UTIL_PUB: &str = "\
+pub fn cong(x: int) -> int:
+    return x + 1
+
+fn bi_mat_fn(x: int) -> int:
+    return x + 2
+
+pub type P:
+    x: int
+
+type Q:
+    y: int
+
+pub enum E:
+    A
+    B
+
+enum F:
+    C
+
+pub trait Hien:
+    fn hien(self) -> int
+
+trait An:
+    fn an(self) -> int
+
+pub const HANG_PUB: int = 1
+
+const HANG_KIN: int = 2
+
+pub type TAPUB = int
+
+type TAKIN = int
+";
+
+/// Chỉ item `pub` của `./util` xuất hiện trong completion; item không `pub` **không** lọt.
+#[test]
+fn lsp_completion_module_chi_item_pub() {
+    let d = thu_muc("mod-pub");
+    ghi(&d, "util.vis", UTIL_PUB);
+    let src = "use ./util\n\nfn main():\n    print(1)\n";
+    let f = ghi(&d, "main.vis", src);
+    let uri = uri_f(&f);
+    let vao = format!("{}{}", mo_uri(&f, src), khung(&completion(2, &uri, 3, 4)));
+    let (code, out, err) = chay(&vao);
+    assert_eq!(code, 0, "{err}");
+    let body = frame_cuoi(&out);
+    for ten in ["cong", "P", "E", "Hien", "HANG_PUB", "TAPUB"] {
+        assert!(
+            body.contains(&format!("\"label\":\"{ten}\"")),
+            "thiếu item pub `{ten}`: {body}"
+        );
+    }
+    for ten in ["bi_mat_fn", "Q", "F", "An", "HANG_KIN", "TAKIN"] {
+        assert!(
+            !body.contains(&format!("\"label\":\"{ten}\"")),
+            "item không `pub` `{ten}` không được gợi ý: {body}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}

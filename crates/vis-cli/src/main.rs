@@ -31,35 +31,12 @@ fn usage() -> ExitCode {
 
 /// **ST-78/ST-83**: trợ giúp riêng của `vis explain` — đúng số khối/số mã (đếm động) và **theo
 /// `--lang`** (vi/en/ja); không viết cứng số.
+///
+/// **ST-316b (`#47`)**: chuỗi vi/en/ja nằm **một nguồn** trong `vis_diag::explain_help`; CLI chỉ in.
 fn usage_explain(lang: Lang) -> ExitCode {
-    let khoi = vis_diag::BLOCKS_RESERVED.len();
-    let ma = vis_diag::all_codes().count();
-    match lang {
-        Lang::Vi => {
-            eprintln!(
-                "dùng: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
-            );
-            eprintln!(
-                "sổ mã: {khoi} khối, {ma} mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc"
-            );
-        }
-        Lang::En => {
-            eprintln!(
-                "usage: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
-            );
-            eprintln!(
-                "code book: {khoi} blocks, {ma} codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line"
-            );
-        }
-        Lang::Ja => {
-            eprintln!(
-                "使い方: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
-            );
-            eprintln!(
-                "コード帳: {khoi} ブロック、{ma} コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行"
-            );
-        }
-    }
+    let h = vis_diag::explain_help(lang);
+    eprintln!("{}", h.usage);
+    eprintln!("{}", h.book);
     ExitCode::from(2)
 }
 

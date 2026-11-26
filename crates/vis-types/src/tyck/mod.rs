@@ -36,7 +36,7 @@ use vis_diag::{NAME_CODES, TYPE_CODES};
 use vis_syntax::{Diagnostic, Span};
 
 use crate::lower::Symbols;
-use vis_hir::hir::{HExpr, HFn, HItem, HStmt, Hir};
+use vis_hir::hir::{HExpr, HFn, HItem, HPat, HStmt, Hir};
 use vis_hir::ty::{EnumId, RecId, Type, TypeTable};
 
 /// Mã `VS0401` — sai số lượng/thứ tự đối số.
@@ -176,6 +176,10 @@ pub(crate) struct Checker<'a> {
     env: Vec<Option<Type>>,
     /// `mutable[sym]` = gán được (`var`, `var self`).
     mutable: Vec<bool>,
+    /// **ST-316b (`#186`)** — `sym` là ràng buộc **`let` cấp tệp** (bất biến). Cần cờ riêng vì
+    /// thân hàm được kiểm **trước** câu lệnh cấp tệp ⇒ `ty_of(sym)` còn `{error}`; nếu chỉ dựa
+    /// vào `mutable`/kiểu thì phép gán trong `fn main` lọt qua (interp mới trap lúc chạy).
+    let_cap_tep: Vec<bool>,
     types_of_expr: Vec<Type>,
     file_expr_types: Vec<Type>,
     item_types: Vec<(String, Type)>,
@@ -212,6 +216,7 @@ impl<'a> Checker<'a> {
             diags: Vec::new(),
             env: vec![None; n],
             mutable: vec![false; n],
+            let_cap_tep: vec![false; n],
             types_of_expr: Vec::new(),
             file_expr_types: Vec::new(),
             item_types: Vec::new(),
@@ -304,6 +309,14 @@ impl<'a> Checker<'a> {
         self.quiet += 1;
         self.khai_bao_item(hir);
         self.quiet -= 1;
+        // **ST-316b (`#186`)**: đánh dấu ràng buộc `let` **cấp tệp** trước khi kiểm thân hàm —
+        // để `x = 2` trong `fn main` (x khai `let` ở cấp tệp) bị `VS0413` **tĩnh**, cùng mã/
+        // thông điệp/vị trí với đường interp, thay vì interp trap lúc chạy còn VM im lặng ghi.
+        for stmt in &hir.stmts {
+            if let HStmt::Let { pat, .. } = stmt {
+                ghi_nhan_let_cap_tep(pat, &mut self.let_cap_tep);
+            }
+        }
         for item in &hir.items {
             self.kiem_item(item);
         }
@@ -775,5 +788,47 @@ impl<'a> Checker<'a> {
     /// Kiểm thân khối **bỏ giá trị cuối** (vòng lặp — ST-13b mục 3).
     pub(crate) fn kiem_than_bo(&mut self, body: &[HStmt]) {
         let _ = self.kiem_than_ngu_canh(body, false);
+    }
+}
+
+/// **ST-316b (`#186`)** — đánh dấu mọi `sym` do pattern của `let` cấp tệp ràng buộc.
+fn ghi_nhan_let_cap_tep(pat: &HPat, ra: &mut [bool]) {
+    match pat {
+        HPat::Bind { sym, .. } => {
+            if let Some(slot) = ra.get_mut(*sym as usize) {
+                *slot = true;
+            }
+        }
+        HPat::Ctor { args, .. } | HPat::Tuple { items: args, .. } => {
+            for p in args {
+                ghi_nhan_let_cap_tep(p, ra);
+            }
+        }
+        HPat::List { items, rest, .. } => {
+            for p in items {
+                ghi_nhan_let_cap_tep(p, ra);
+            }
+            if let Some(r) = rest {
+                ghi_nhan_let_cap_tep(r, ra);
+            }
+        }
+        HPat::Record { fields, .. } => {
+            for (_, p) in fields {
+                if let Some(p) = p {
+                    ghi_nhan_let_cap_tep(p, ra);
+                }
+            }
+        }
+        HPat::Range { lo, hi, .. } => {
+            for p in [lo, hi].into_iter().flatten() {
+                ghi_nhan_let_cap_tep(p, ra);
+            }
+        }
+        HPat::Or { alts, .. } => {
+            for p in alts {
+                ghi_nhan_let_cap_tep(p, ra);
+            }
+        }
+        HPat::Wild { .. } | HPat::Lit { .. } | HPat::Rest { .. } => {}
     }
 }
