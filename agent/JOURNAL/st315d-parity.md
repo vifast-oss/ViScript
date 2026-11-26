@@ -122,3 +122,16 @@ Kiểm **hàng rào F4** (mutation tạm, đã khôi phục):
 - **66/66** hàm host (Linux) có ca chạy thật; **12 test** (9 ca hai đường + 3 meta); mỗi nhóm có ca lỗi in thông điệp thật **trừ `time`** (chỉ bất biến `>= 0`); **20 hàm `fs`** đều assert giá trị/nội dung.
 - Sẵn sàng để Gatekeeper nghiệm thu lại; phần còn lại của `ST-315d` (mã `VS0304`, gợi ý `VS0204`)
   đã xong ở `JOURNAL/st315d-vs0304.md`.
+
+
+## 8. Windows full (`psvn`) — PASS @`7014fb7b`
+
+- **3.779 passed / 0 failed / 4 ignored** (90 block; workspace 3.778 + host riêng 1);
+  `host_parity` Windows **11/11** hiện diện (`fs_symlink_parity` `#[cfg(unix)]` ⇒ **64/66 hàm**),
+  `cwd-khop=true`, `walk-n=10`, `net_client_toi_server_rust_parity` ok.
+- `vis-targets` trong chuỗi: core **47/0**, sqlite **46 + 1 EXPECTED_RED**, FAIL=0, 23 crate, dag OK;
+  clippy `-D warnings` PASS.
+- Hai vá test-only sau R-Win2: `walk_n = 10` cho cả hai nền tảng (`fs.walk` bỏ symlink), và
+  `accept` loopback bỏ qua lỗi tạm thay vì `break` (hết flake RST `10053`).
+- Log local `/home/ps/vislogs/st315d-parity-win-full-7014fb7b.log` sha256 `4ac8b34c…3696f743`;
+  remote sha256 `7e488909…4895deec`.
