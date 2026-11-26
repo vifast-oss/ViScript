@@ -7,6 +7,7 @@
 | `vis-dev` | cổng phát triển: `check`, `gate --fast`, `core-test`, `nightly`, `doc-examples`, `rules` | người đóng góp |
 | `vis-release` | build + stage artifact phát hành **chỉ** `vis` (không `test-child`) | phát hành |
 | `vis-diff` | so sánh kết quả hai lần chạy (differential) | kiểm thử |
+| `vis-bench` | đo `test/bench/*.vis` trên binary release: interp + `--vm`, median/p90 + sha256, `--json` | đo hiệu năng |
 | `vis-dag-check` | khoá DAG 5 tầng: cấm cạnh xuôi tầng / cùng tầng sai DAG (23 crate) | kiểm thử / kiến trúc |
 | `vis-soak` | chạy lặp nhiều vòng để tìm lỗi chập chờn | kiểm thử |
 | `vis-lock` | giữ khoá `~/.vifast-measure.lock` khi đo thời gian (macOS không có `flock`) | đo hiệu năng |
