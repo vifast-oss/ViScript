@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # vis-dev — cổng của dòng ViScript (ST-01).
-#   check      : fmt + clippy + luật R1..R9 + self-test case âm + build
+#   check      : fmt + clippy + luật R1..R10 + self-test case âm + build
 #   gate --fast: check + L0 test
 #   nightly    : gate --fast + fuzz parser (--fuzz-minutes, mặc định 2) + vòng tròn fmt (idempotent)
 set -u
@@ -296,7 +296,69 @@ rule_openat2() {
     return "$found"
 }
 
-# R1..R9 trên một cây bất kỳ (dùng cho self-test với --root).
+# R10 (ST-317c, nợ #75): sổ mã `agent/API-CODES.txt` phải khớp bảng **§7.2 `docs/SPEC.md`**:
+#   cùng tập mã, cùng mức (error/warning), không trùng hàng, và câu "Sổ đóng băng **N mã**"
+#   phải bằng số hàng thật. `API-CODES.txt` ↔ code đã có test `api_dong_bang` (vis-conformance);
+#   đây là vế còn thiếu của #75 (code ↔ tài liệu đặc tả). Không có một trong hai tệp ⇒ bỏ qua
+#   (cây tạm self-test); có `docs/SPEC.md` mà thiếu bảng §7.2 ⇒ đỏ.
+rule_api_codes() {
+    local root="$1"
+    local api="$root/agent/API-CODES.txt"
+    local spec="$root/docs/SPEC.md"
+    [ -f "$api" ] && [ -f "$spec" ] || return 0
+    local kq
+    kq="$(awk '
+        function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+        BEGIN { n = 0; trong = 0; so = 0; khai = -1; bad = "" }
+        FILENAME == ARGV[1] {
+            if ($0 ~ /^[ \t]*($|#)/) next
+            split($0, a, "\t")
+            code = trim(a[1])
+            if (code == "") next
+            if (code in muc) { bad = bad code ": trùng trong API-CODES; "; next }
+            sev = ""
+            if (index(a[2], ":") > 0) sev = trim(substr(a[2], 1, index(a[2], ":") - 1))
+            muc[code] = sev
+            api[++n] = code
+            next
+        }
+        {
+            if ($0 ~ /^###[ \t]+7\.2([ \t]|$)/) { trong = 1; next }
+            if (trong && $0 ~ /^#{2,3}[ \t]/) { trong = 0; next }
+            if (!trong) next
+            if (khai < 0 && $0 ~ /đóng băng/ && $0 ~ /mã/) {
+                if (match($0, /[0-9]+/)) khai = substr($0, RSTART, RLENGTH) + 0
+            }
+            if ($0 !~ /^[ \t]*\|/) next
+            line = $0
+            sub(/^[ \t]*\|/, "", line)
+            sub(/[ \t]*\|[ \t]*$/, "", line)
+            m = split(line, c, "|")
+            if (m < 2) next
+            c1 = trim(c[1]); gsub(/`/, "", c1)
+            if (c1 !~ /^VS[0-9]+$/) next
+            sev = trim(c[2])
+            if (c1 in seen) { bad = bad c1 ": trùng hàng §7.2; "; next }
+            seen[c1] = 1
+            so++
+            if (!(c1 in muc)) bad = bad c1 ": có ở SPEC §7.2 nhưng thiếu API-CODES; "
+            else if (muc[c1] != sev) bad = bad c1 ": mức SPEC `" sev "` ≠ API-CODES `" muc[c1] "`; "
+        }
+        END {
+            for (i = 1; i <= n; i++) if (!(api[i] in seen)) bad = bad api[i] ": có ở API-CODES nhưng thiếu SPEC §7.2; "
+            if (khai < 0) bad = bad "thiếu câu số lượng `đóng băng … mã` ở §7.2; "
+            else if (khai != so) bad = bad "số khai báo " khai " ≠ số hàng thật " so "; "
+            if (bad != "") { print "BAD " bad; exit }
+            print "OK"
+        }' "$api" "$spec" 2>/dev/null)" || kq="BAD không đọc được $api / $spec"
+    case "$kq" in
+        OK*) return 0 ;;
+        "BAD "*) echo "R10 $(relpath "$api") ↔ $(relpath "$spec") §7.2: ${kq#BAD }" >&2; return 1 ;;
+        *) echo "R10: máy kiểm API-CODES ↔ SPEC §7.2 không chạy được ($kq)" >&2; return 1 ;;
+    esac
+}
+
+# R1..R10 trên một cây bất kỳ (dùng cho self-test với --root).
 # **SỬA KÈM LÝ DO (VD-182, nợ #147)**: bản cũ tạo **một tiến trình cho mỗi tệp** — `wc`+`tr` cho R1,
 # `awk` cho R2, `head`+`grep` cho R3 — và **ba** lượt `find` đi qua cả `target/` (2,2 GB, 433 000 tệp).
 # macOS phạt tạo tiến trình 9,6× nên `rules` chậm 8,3× so với Linux. Nay: **một** lượt `find` (prune
@@ -417,6 +479,8 @@ run_rules() {
     rule_test_binaries "$root" || found=1
     # R9: bản sao openat2 ngoài vis-host-native (ST-310e).
     rule_openat2 "$root" || found=1
+    # R10: sổ mã API-CODES ↔ bảng §7.2 SPEC.md (ST-317c, nợ #75).
+    rule_api_codes "$root" || found=1
     return "$found"
 }
 
@@ -496,9 +560,9 @@ do_check() {
     fi
     echo "--- clippy: OK"
     if ! run_rules "$VIS_ROOT"; then
-        echo "--- luật R1..R9: FAIL" >&2; return 1
+        echo "--- luật R1..R10: FAIL" >&2; return 1
     fi
-    echo "--- luật R1..R9: OK"
+    echo "--- luật R1..R10: OK"
     do_dag_guard || return 1
     # **VD-258** — pin toolchain/hạ tầng phải khớp `Cargo.toml`; test này từng không được cổng
     # gọi nên `1.99.1` lệch workspace `1.100.0` vẫn xanh.
@@ -614,7 +678,7 @@ do_gate_fast() {
 
 # Vòng tròn fmt: `vis fmt` phải **bất động** (fmt(fmt(x)) == fmt(x)) trên mọi ca ngữ nghĩa.
 # **TỐI ƯU (ST-257)**: bản cũ gọi `vis fmt` **2 lần cho mỗi tệp** — 475 tệp ⇒ ~950 lần spawn
-# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R9 ở đầu tệp). Nay copy ca vào một thư
+# tiến trình (macOS phạt spawn ~9,6×, xem comment R1..R10 ở đầu tệp). Nay copy ca vào một thư
 # mục tạm rồi dùng **đúng 2 lệnh**: `fmt --write <tmp>` cho `a := fmt(f)`, `fmt --check <tmp>`
 # so `fmt(a)` với `a`. Phép kiểm/ngưỡng/số tệp/câu chữ giữ nguyên; chỉ giảm số lần spawn.
 do_vong_tron_fmt() {
