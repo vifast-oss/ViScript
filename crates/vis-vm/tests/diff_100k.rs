@@ -324,7 +324,7 @@ impl Gen {
     }
 
     fn nhom_closure_cap_tep(&mut self) -> String {
-        match self.rng.duoi(3) {
+        match self.rng.duoi(4) {
             0 => r#"var g = 0
 fn main():
     let f = fn() -> int: g
@@ -338,6 +338,16 @@ fn main():
     let f = fn() -> int:
         g = 5
         g
+    print(f())
+    print(g)
+"#
+            .to_string(),
+            2 => r#"var g = 0
+fn main():
+    let f = fn() -> int:
+        g = g + 1
+        g
+    print(f())
     print(f())
     print(g)
 "#

@@ -103,6 +103,23 @@ fn main():
     assert_eq!(bon_duong("ghi-global", SRC), "5\n0\n5\n");
 }
 
+/// **ST-319a F2 (audit)**: `g = 5` là idempotent nên không chứng minh state của closure **bền**
+/// qua nhiều lần gọi; `g = g + 1` buộc lần gọi 2 phải thấy `g` của lần 1 trong **ô riêng** của
+/// closure, còn global ngoài vẫn `0`.
+#[test]
+fn ghi_global_qua_closure_ben_qua_nhieu_lan_goi() {
+    const SRC: &str = r#"var g = 0
+fn main():
+    let f = fn() -> int:
+        g = g + 1
+        g
+    print(f())
+    print(f())
+    print(g)
+"#;
+    assert_eq!(bon_duong("ghi-global-ben", SRC), "1\n2\n0\n");
+}
+
 // ---------------------------------------------------------------------------
 // Ca 3 — lambda **lồng**: closure ngoài chụp global lúc tạo, lambda trong chụp lại **bản
 // snapshot của closure ngoài** (không đọc global live khi nó được tạo muộn hơn).
@@ -120,4 +137,23 @@ fn main():
     print(g)
 "#;
     assert_eq!(bon_duong("lambda-long", SRC), "0\n7\n");
+}
+
+/// **ST-319a F2 (audit)**: lambda lồng **ghi** `g = g + 1` — inner thấy snapshot `g=0` của
+/// `ngoai` (tạo trước khi `g = 7`), state bền qua hai lần gọi, global ngoài vẫn `7`.
+#[test]
+fn lambda_long_ghi_global() {
+    const SRC: &str = r#"var g = 0
+fn main():
+    let ngoai = fn() -> fn() -> int:
+        fn() -> int:
+            g = g + 1
+            g
+    g = 7
+    let trong = ngoai()
+    print(trong())
+    print(trong())
+    print(g)
+"#;
+    assert_eq!(bon_duong("lambda-long-ghi", SRC), "1\n2\n7\n");
 }
