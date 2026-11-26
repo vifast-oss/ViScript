@@ -729,6 +729,10 @@ pub(super) fn call_value<'a>(
                 loops: Vec::new(),
                 restore,
                 merge: Some(c.env.clone()),
+                // **ST-319c2 (#206)**: lambda (`name` rỗng, tạo bởi `MakeLambda`) bắt biến
+                // theo **giá trị** — khung này cô lập với `globals`. Giá trị hàm của **hàm
+                // tên** (`let f = tang`) vẫn giữ env chia sẻ như interp/VM ⇒ `false`.
+                by_value: c.name.is_empty(),
             });
             Ok(())
         }
@@ -878,6 +882,7 @@ pub(super) fn dispatch<'a>(
                 loops: Vec::new(),
                 restore: Vec::new(),
                 merge: None,
+                by_value: false,
             });
             Ok(())
         }
