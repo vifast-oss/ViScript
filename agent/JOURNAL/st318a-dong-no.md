@@ -77,7 +77,13 @@ Không `#[ignore]`; 13/13 test của tệp PASS.
 
 ## 5. Việc còn lại / ghi chú
 
+- **Đính chính lane (`VD-296`)**: `crates/vis-runtime/src/rt/exec.rs` không tồn tại — `final_join`
+  non-frame nằm ở `crates/vis-interp/src/rt/exec.rs`. Lát này **không phải sửa** tệp đó vì cả hai
+  engine gọi chung `vis_runtime::worker::ap_va_flush`; sửa một nơi là đủ cho interp + VM.
 - `frame/worker.rs` **652** dòng, `orchestrate.rs` **149**, test **501** — đều < 1.500 (R1).
 - 0 `unsafe`; không tạo tệp `.rs` cấp 1 (R8 giữ 39/40).
 - Loop sao lặp `buoc_frame_dong_bo` là điểm nợ kỹ thuật đã ghi: gộp vào `frame.rs` khi lane mở
   (cần callback/hook giữa các work-item), tránh drift nếu `step_frame_owned` đổi.
+- Ghi chú hạ tầng: `cargo test` thường (một process, chạy song song trong binary) có thể làm ca
+  `vs3_worker_eval_vm::vm_khong_tao_them_thread_sau_khi_join` đỏ do **đếm thread toàn process**;
+  chạy riêng hoặc qua `nextest` (mỗi ca một process — cổng chuẩn) PASS. Không phải regression.
