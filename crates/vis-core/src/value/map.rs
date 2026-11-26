@@ -398,6 +398,93 @@ mod tests {
     }
 
     #[test]
+    fn remove_va_merge_khoa_khong_bac_cau_n8() {
+        // **ST-316a F5** (đóng finding `ST-315b` F5): 8 entry, trong đó `Int(1)` và
+        // `Percent(1.0)` **băm trùng** (cùng miền số với `Float(1.0)`) nhưng `eq_value` **sai**
+        // (không bắc cầu) ⇒ phải là **hai** entry; bucket chỉ mục chứa cả hai nên `get`/`remove`/
+        // `merge` phải trả đúng entry như quét tuyến tính cũ, không gộp nham.
+        let mut m = VisMap::new();
+        m.insert(Value::Int(1), Value::Int(10));
+        m.insert(Value::Percent(1.0), Value::Int(20));
+        for i in 0..6 {
+            m.insert(Value::Int(100 + i), Value::Int(i));
+        }
+        assert_eq!(m.len(), 8);
+        assert!(m.co_chi_muc(), "8 entry phải dựng chỉ mục băm");
+        assert_eq!(
+            m.keys().map(Value::show).collect::<Vec<_>>(),
+            ["1", "100pct", "100", "101", "102", "103", "104", "105"]
+        );
+        // `Float(1.0)` khớp cả hai khoá băm trùng ⇒ trả entry **chèn trước** (`Int(1)`).
+        assert_eq!(
+            m.get(&Value::Float(1.0)).map(Value::show),
+            Some("10".to_string())
+        );
+        assert_eq!(
+            m.get(&Value::Int(1)).map(Value::show),
+            Some("10".to_string())
+        );
+        assert_eq!(
+            m.get(&Value::Percent(1.0)).map(Value::show),
+            Some("20".to_string())
+        );
+
+        // `remove(Int(1))` chỉ bỏ đúng entry đó; `Percent(1.0)` còn nguyên, thứ tự giữ (Q3).
+        assert!(m
+            .remove(&Value::Int(1))
+            .is_some_and(|v| v.eq_value(&Value::Int(10))));
+        assert_eq!(m.len(), 7);
+        assert!(m.get(&Value::Int(1)).is_none());
+        assert_eq!(
+            m.get(&Value::Percent(1.0)).map(Value::show),
+            Some("20".to_string())
+        );
+        assert_eq!(
+            m.get(&Value::Float(1.0)).map(Value::show),
+            Some("20".to_string()),
+            "`Float` còn khớp entry cũ nhất còn lại (Percent)"
+        );
+        assert_eq!(
+            m.keys().map(Value::show).collect::<Vec<_>>(),
+            ["100pct", "100", "101", "102", "103", "104", "105"]
+        );
+        // Chèn lại `Int(1)` ⇒ **cuối** (Q3), vẫn tách khỏi `Percent(1.0)`.
+        m.insert(Value::Int(1), Value::Int(11));
+        assert_eq!(m.len(), 8);
+        assert_eq!(
+            m.keys().last().map(Value::show),
+            Some("1".to_string()),
+            "remove rồi set lại phải chèn cuối"
+        );
+
+        // `merge` với `Float(1.0)` cập nhật entry **cũ nhất** (`Percent`), **không** đụng `Int(1)`;
+        // khoá mới nối cuối, khoá đã có giữ vị trí.
+        let other = VisMap::from_pairs(vec![
+            (Value::Float(1.0), Value::Int(99)),
+            (Value::Int(7), Value::Int(70)),
+        ]);
+        m.merge(&other);
+        assert_eq!(m.len(), 9);
+        assert_eq!(
+            m.get(&Value::Percent(1.0)).map(Value::show),
+            Some("99".to_string())
+        );
+        assert_eq!(
+            m.get(&Value::Int(1)).map(Value::show),
+            Some("11".to_string()),
+            "`Int(1)` tách khỏi `Float`/`Percent`, không bị `merge` ghi đè"
+        );
+        assert_eq!(
+            m.keys().map(Value::show).collect::<Vec<_>>(),
+            ["100pct", "100", "101", "102", "103", "104", "105", "1", "7"]
+        );
+        assert_eq!(
+            show(&m.thanh_gia_tri()),
+            "{100pct: 99, 100: 0, 101: 1, 102: 2, 103: 3, 104: 4, 105: 5, 1: 11, 7: 70}"
+        );
+    }
+
+    #[test]
     fn chi_muc_dung_tu_nguong_va_khoa_phuc_tap_fallback() {
         let nho = VisMap::from_pairs(
             (0..NGUONG_CHI_MUC - 1).map(|i| (Value::Int(i as i64), Value::Int(0))),

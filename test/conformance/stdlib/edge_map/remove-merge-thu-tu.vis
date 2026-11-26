@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-316a F5** — `map.remove`/`map.merge` giữ **thứ tự chèn** (Q3) + last-wins, và **không**
+# sửa map đầu vào (map là giá trị: `remove`/`merge` trả map mới).
+use std.map
+
+fn main():
+    let m = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
+    print(m)
+    let r = map.remove(m, "d")
+    print(r)
+    print(map.keys(r))
+    print(m)
+    let a = {"x": 1, "y": 2}
+    let b = {"y": 20, "z": 30}
+    let g = map.merge(a, b)
+    print(g)
+    print(a)
+    print(b)
+    print(map.merge(g, {"y": 200, "w": 0}))
+    print(map.keys(map.merge(g, {"y": 200, "w": 0})))

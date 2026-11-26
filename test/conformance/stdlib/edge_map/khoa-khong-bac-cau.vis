@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# **ST-316a F5** — khoá "băm trùng nhưng `==` khác" (`Int 1` vs `Percent 100pct`) với N ≥ 8:
+# `map.merge` last-wins đúng entry, `get`/index trả entry **chèn trước**, thứ tự chèn giữ (Q3),
+# `map.remove` chỉ bỏ đúng khoá `str` và không xáo thứ tự.
+#
+# Khoá đi qua `id(...)` (kiểu `{error}`, "lan truyền im lặng") — đường duy nhất trong ngôn ngữ
+# tạo được map khoá hỗn hợp; literal trực tiếp `{1: .., 100pct: ..}` bị checker chặn VS0412.
+# Lưu ý: `Float(1.0)` và `Percent(1.0)` **eq nhau** nên mỗi map `b` chỉ mang **một** trong hai.
+use std.map
+
+fn main():
+    let id = fn(x): x
+    let m = {
+        id(1): 10,
+        id(100pct): 20,
+        id(2): 2,
+        id(3): 3,
+        id(4): 4,
+        id(5): 5,
+        id(6): 6,
+        id(7): 7,
+        id("k"): 9,
+    }
+    print(m)
+    print(map.keys(m))
+    print(m[id(1.0)])
+    print(m[id(1)])
+    print(m[id(100pct)])
+    let c = map.merge(m, {id(1.0): 99})
+    print(c)
+    print(map.keys(c))
+    let d = map.merge(c, {id(100pct): 88, id(8): 8})
+    print(d)
+    print(map.keys(d))
+    print(d[id(1.0)])
+    print(d[id(100pct)])
+    print(m)
+    print(map.remove(d, "k"))
+    print(map.keys(map.remove(d, "k")))
