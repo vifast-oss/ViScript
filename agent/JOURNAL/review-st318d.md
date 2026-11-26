@@ -132,3 +132,32 @@ không chặn cổng hiện hành); **1 P3** (journal ghi "0 đổi thứ tự" 
   dag, R8, kích thước, merge-tree, rustdoc.
 - Chưa kiểm: soak 4h/24h, 3-OS (theo `VD-289` chế độ Phát triển Kiến trúc — không bắt buộc).
 - Không sửa mã, không push, không `cargo clean`; đĩa còn **9,2 GB** (>6 GB).
+
+## 7. Addendum F1 — vá P2 rustdoc (`2ae1eb2e`)
+
+**Kết luận addendum: PASS** — P2 rustdoc đã đóng; P3 câu chữ journal vẫn chỉ là ghi chú.
+
+- `git log --oneline accf421e..2ae1eb2e`: đúng **1** commit `[ST-318d] fix rustdoc links sau tach module`.
+- `git diff --stat accf421e..2ae1eb2e`: **4 tệp, +29/−5** = 4 dòng `///` (books.rs **2**,
+  render.rs **1**, tra_cuu.rs **1**) + journal (`+25/−1`). **0 dòng code.**
+- Kiểm 4 dòng doc: tất cả là `///`; bỏ phần target `(crate::…)` khỏi link thì **4/4 dòng chữ hiển thị
+  giống hệt** bản trước; chỉ thêm đích rustdoc, không đổi thông điệp/tên link.
+- `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-diag --no-deps`: **exit 0, 0 warning**
+  (`/home/ps/vislogs/review-st318d-rustdoc.log`, sha256 `b55d8a6b…`).
+- `cargo test -p vis-diag -p vis-hir`: **exit 0** — **11 + 12 + 10** pass
+  (`review-st318d-test-f1.log`, `660d3b80…`).
+- `./vis-dev gate --fast`: **PASS — 3901/3901**, 4 skipped (`review-st318d-gate-f1.log`,
+  `fbd1b951…`).
+- `git merge-tree --write-tree main HEAD` (main `baa2dbd3`, VD-297): **exit 0**, tree
+  `daa896e5…`, **0 conflict**. Nhánh không chạm `agent/STATE.md` nên dự kiến conflict
+  `STATE.md` **không xảy ra**; `main` chỉ thêm docs/STATE + `tests/misc_api_it/host_parity/net_http.rs`,
+  không overlap `vis-diag`/`vis-hir`.
+- `cargo doc -p vis-hir` vẫn **4 lỗi có sẵn từ nền** (không phải của 318d):
+  `stdlib.rs:4` (`registry` private), `stdlib.rs:5` (`ty` private), `stdlib/ty.rs:64`
+  (`BUILTIN_FUNCS`), `symbols.rs:32` (`BUILTIN_VALUE_NAMES`). Nền `2b5ccb51` cho **cùng 4 lỗi**
+  (`review-st318d-rustdoc-hir-base.log`, `1c1b3bc2…`); các tệp này **không** bị ST-318d chạm.
+  Không tính FAIL cho 318d — đề xuất mở **nợ riêng** (task doc-link `vis-hir`) nếu muốn
+  `-D warnings` xanh toàn workspace.
+- Log addendum: `review-st318d-rustdoc.log` `b55d8a6b…`, `review-st318d-test-f1.log` `660d3b80…`,
+  `review-st318d-gate-f1.log` `fbd1b951…`, `review-st318d-rustdoc-hir.log` `6b5b686f…`.
+- Không sửa mã, không push, không `cargo clean`; đĩa còn **12 GB** (>6 GB).
