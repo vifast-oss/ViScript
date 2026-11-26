@@ -266,3 +266,104 @@ PASS (bảng trên).
 - **PASS/FAIL**: **FAIL** (không đạt cổng an toàn tài nguyên; chức năng/registry/test đạt).
 - **Chặn `DONE`**: F1, F2. **Follow-up**: F3–F8.
 - **Không sửa mã** trong lượt review này; chỉ tạo tệp này và commit `[ST-315d] review: …`.
+
+## Re-audit sau vá (2026-11-26)
+
+> **Kết luận re-audit: `PASS`.** F1/F2 đã được vá đúng; F3/F7/F8 đạt; các ca `types_it`/`lang_it`/
+> `api_dong_bang` + `gate --fast` (3.839 test) + clippy `-D warnings` xanh. Báo cáo FAIL cũ giữ
+> nguyên làm lịch sử; mục này là kết luận hiện hành.
+
+### R1. Snapshot và phạm vi
+
+- `review/r315d` fast-forward `91ab818e → 2fc47130` (merge `main`), gồm fix `d2b7eda8`
+  “Tarjan lặp + chẩn đoán SCC có trần (hậu-kiểm R-D)”.
+- `git diff 91ab818e..HEAD -- agent/JOURNAL/review-st315d.md` = **0 dòng** ⇒ báo cáo cũ không bị sửa.
+- Đọc lại toàn bộ `crates/vis-types/src/tyck/const_cycle.rs` bản mới (374 dòng, gồm test), diff
+  `91ab818e..d2b7eda8`, và test mới `types_it`/`lang_it`.
+
+### R2. F1 — Tarjan lặp, không còn tràn stack
+
+Mã mới `tinh_scc` dùng `goi: Vec<(usize, usize)>` (stack tường minh), không còn `tarjan(v, …)`
+đệ quy. Đo lại:
+
+| Ca | Kết quả |
+|---|---|
+| Unit `tyck::const_cycle::tests::chuoi_100k_canh_sau_khong_tran_stack` | **PASS** (0,02 s) |
+| Unit `tyck::const_cycle::tests::vong_100k_dinh_la_mot_scc` | **PASS** (0,02 s) |
+| E2E đúng repro cũ: 25.000 `const` chuỗi sâu, `vis check --json` | **exit 0**, 8,83 s, RSS 88.820 KB, JSON 66 B — **không abort** (trước: exit 134/43 s) |
+| E2E 100.000 `const`, `vis check --json` | **exit 0**, 474,88 s, RSS 324.364 KB, JSON 67 B — **không abort** |
+
+Tarjan lặp được đối chiếu **độc lập** với Kosaraju trên **120 đồ thị ngẫu nhiên** (10–20 đỉnh,
+có self-loop/cạnh chéo/SCC lớn): **0 lệch** về tập dòng VS0304; 60 đồ thị kiểm thêm thứ tự span:
+**0 lệch**.
+
+### R3. F2 — SCC lớn: đúng 1 chẩn đoán, message có trần
+
+Repro cũ 5.000 hằng vòng:
+
+| Số đo | Trước vá | Sau vá |
+|---|---|---|
+| Số VS0304 | 5.000 | **1** |
+| JSON | 234 MB | **232 B** |
+| Thời gian `--json` | 213 s | **0,43 s** |
+| RSS | 737 MB | **26.056 KB** |
+| Message | 38.926 B × 5.000 | **85 B**, 8 tên + `…` |
+
+Message thực tế:
+`chu trình phụ thuộc hằng số (`const`) gồm 5000 hằng: A0, A1, A2, A3, A4, A5, A6, A7 …`
+
+Biên ngưỡng: SCC **8** ⇒ 8 chẩn đoán (JSON 1.222 B, tên không `…`); SCC **9** ⇒ **1** chẩn đoán
+(JSON 226 B, 8 tên + `…`); hai SCC lớn 9+10 ⇒ **2** chẩn đoán theo span (dòng 1 và 10, JSON 398 B).
+`vis check` TAP 5.000 hằng: **1** dòng `# VS0304`, 160 B, 1,98 s.
+
+### R4. F3 — message dùng dấu phẩy
+
+`const A: int = B + C; const B: int = A; const C: int = B` ⇒
+`chu trình phụ thuộc hằng số (`const`): A, B, C` — không còn `A → B → C` (SCC không phải đường đi).
+
+### R5. F7 — test gợi ý `VS0204`
+
+- Test mới `lang_it::vd258_checker::const_thieu_kieu_goi_y_moi_khong_con_cau_suy_kieu`: **PASS**.
+- `vis check` `const A = 1`: `VS0204` câu mới “`const` cần ghi kiểu tường minh — gợi ý:
+  `const A: int = 1`”; không còn “R7 cho suy kiểu”.
+- `agent/API-CODES.txt`/`vis explain VS0204` vẫn câu đóng băng cũ (đúng `VD-291` §3.4.2); đây là
+  lệch tài liệu người dùng đã ghi nhận, cần `VD` sau — **không chặn** re-audit.
+
+### R6. F8 — thứ tự theo span
+
+`A→C, B→D, C→A, D→B` ⇒ output đúng thứ tự nguồn **A(1), B(2), C(3), D(4)** (trước: A,C,B,D).
+120 đồ thị ngẫu nhiên: danh sách dòng VS0304 luôn không giảm; 60 ca so khớp Kosaraju: 0 lệch.
+Chưa có test riêng khoá thứ tự trong repo — nên thêm nếu muốn chống hồi quy (ghi nhận, không chặn).
+
+### R7. Cổng và test
+
+| Lệnh | Kết quả |
+|---|---|
+| `cargo test -p vis-types --lib` | **2/2 PASS** (`chuoi_100k…`, `vong_100k…`) |
+| `cargo test -p vis-types --test types_it` | **215/215 PASS** (gồm `const_scc_lon_chi_mot_chan_doan_co_tran`) |
+| `cargo test -p vis-cli --test lang_it const_chu_trinh` | **1/1 PASS** |
+| `cargo test -p vis-cli --test lang_it const_thieu_kieu` | **1/1 PASS** |
+| `cargo test -p vis-conformance --test lib_api_it api_dong_bang` | **3/3 PASS** |
+| `./vis-dev gate --fast` | **PASS** — 3.839/3.839 test, 4 skip (nextest) |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** |
+| `cargo fmt --all -- --check` | **PASS** |
+
+### R8. Ghi nhận còn lại (không chặn)
+
+- **F4/F5**: over-approximation nhánh chết (`if false: B` vẫn báo) và false negative qua thân hàm/IIFE
+  vẫn đúng như cũ; module doc mới đã ghi rõ (dòng 5–8), runtime vẫn trap `VS0501`. Chấp nhận.
+- **F6**: `QUEUE.md:2231` còn câu lịch sử “DFS 3 màu” nhưng ngay sau đó đã ghi “thay bằng Tarjan SCC”;
+  không còn tài liệu nào khẳng định hiện hành là DFS 3 màu. Có thể dọn lịch sử khi tiện.
+- **F8**: hành vi đúng, nhưng chưa có test riêng khoá thứ tự; nên bổ sung ca 2 SCC rời xen kẽ.
+- **Phạm vi commit**: `d2b7eda8` có kèm **2 dòng** `vis-plugin-host/src/wasi/runner.rs` (RAII guard
+  ST-315c) không thuộc VS0304; thay đổi lành tính, chỉ là scope/traceability.
+- **Hiệu năng 100k E2E**: 474,88 s chủ yếu ở `lower` O(N²) có từ trước (25k = 8,83 s; 100k ≈ 54×),
+  **không phải Tarjan**; unit 100k 0,02 s. Nên ghi nợ riêng, không chặn F1.
+
+### R9. Phiếu trả lời re-audit
+
+- **PASS/FAIL**: **PASS**.
+- **F1**: PASS — iterative, 25k E2E exit 0, 100k E2E exit 0, unit 100k chain/cycle pass.
+- **F2**: PASS — 5.000 hằng = 1 chẩn đoán/232 B/0,43 s/26 MB, 8 tên + `…`.
+- **F3/F7/F8**: PASS (F7 `explain` đóng băng ghi nhận; F8 chưa có test riêng).
+- **Commit re-audit**: commit kế tiếp trên `review/r315d` (xem `git log`).
