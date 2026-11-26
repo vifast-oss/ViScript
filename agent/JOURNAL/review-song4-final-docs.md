@@ -9,6 +9,10 @@
 > `SO-NO` còn **số liệu cũ** (10 test thay vì 12, plugin-host 28/28 thay vì 30/30); bản re-audit
 > R-Parity `FAIL (nhẹ)` trên nhánh `review/rparity` chưa được phản ánh. Không phát hiện lỗi mã sản
 > phẩm mới.
+>
+> **Cập nhật re-audit 2026-11-26 (sau merge `main` `79f1fcee`)**: 5 mục FAIL cũ đã PASS — xem §9.
+> Kết luận hiện hành: **PASS (tài liệu)**; Windows vẫn **chờ R-Win2** sau `walk-n=10` (`f5f3f06f`),
+> chưa chốt 3-OS cho tới khi có log cuối.
 
 ## 0. Bảng kiểm tổng
 
@@ -22,6 +26,9 @@
 | 6 | Bằng chứng Windows (`ST-315b`, `ST-315c`) | **PASS** | Log tồn tại, sha local/remote khớp; **3777/0/4** + host 54/54; **3747/0/4** + host 54/54. Xem caveat: cả hai chạy trước harness 12 test cuối. |
 | 7 | `JOURNAL/st315d-parity.md` — R-Parity, không overclaim | **FAIL (nhẹ)** | 17 ca lỗi `fs`, message `net`, 66/66 **đúng**; nhưng còn 3 câu overclaim và bỏ qua re-audit `FAIL (nhẹ)` trên `review/rparity`. |
 | 8 | Cổng máy bắt buộc | **PASS** | `vis-dag-check`, `vis-dev rules`, `check_report.py --all`, `git diff --check` đều xanh. |
+
+> *Bảng §0 là bản gốc của lượt đầu (FAIL tài liệu). Trạng thái sau đồng bộ `main` `79f1fcee`
+> nằm ở **§9** — kết luận hiện hành: **PASS (tài liệu)**, Windows còn chờ R-Win2.*
 
 ## 1. Trạng thái và số liệu `QUEUE` (mục 1–2)
 
@@ -199,3 +206,72 @@ $ git diff --check
   snapshot docs đứng trước `347e9cae`.
 - **Không có lỗi mã sản phẩm mới** trong phạm vi tài liệu này; các sai lệch đều sửa được bằng
   cập nhật tài liệu/ánh xạ bằng chứng, trừ quyết định hợp đồng F-R1 và lượt Windows cuối.
+
+## 9. Re-audit sau đồng bộ (`main` `79f1fcee`, 2026-11-26)
+
+> **Bối cảnh**: `git merge main` trong `review/rdocs2` là **fast-forward** `41413c6c..79f1fcee`
+> (không đổi báo cáo cũ). `main` gồm báo cáo R-Docs2 (`79f1fcee`), R-B (`b75f603a`), sửa
+> `ST-315b` (`085546d0`), vá `walk-n=10` (`f5f3f06f`) và R-Parity re-audit 2 (`b61a03f7`).
+> **Kết luận re-audit: PASS (tài liệu)** cho 5 mục cũ; **Windows PENDING** (R-Win2 đang chạy).
+
+### 9.1 Năm mục FAIL cũ — kiểm lại
+
+| # | Mục cũ | Kết quả mới | Bằng chứng |
+|---|---|---|---|
+| 1 | `QUEUE.md:2231` — `ST-315d` còn 10 test/10/10 | **PASS** | Hàng nay ghi **12 test** (9 ca hai đường + 3 meta), `merge c9f28526` + vá `a45438e6`/`25790c97`, `host_parity` **12/12**, R-Parity re-audit **PASS** `b61a03f7` (F-R1 caveat, F-R2 vá `347e9cae`). Không còn “10 test”/“10/10” trong hàng `ST-315d`. |
+| 2 | `STATE.md:16` / `SO-NO.md:20` — plugin-host 28/28 | **PASS** | `STATE` ghi **30/30**; `SO-NO` ghi **30/30** (lib 12 + tích hợp 18). Khớp `review-st315c.md` re-audit R-C và `QUEUE` (`30/30`). |
+| 3 | `JOURNAL/st315d-parity.md` — overclaim | **PASS** | `:37` **9 ca hai đường + 3 meta**; `:55` “trừ `time` — không có nhánh lỗi”; `:59` “**các nhánh lỗi** net”; `:122` “12 test (9+3), trừ `time`, **20 hàm `fs`** assert”. Không còn 3 câu overclaim cũ. |
+| 4 | R-Parity FAIL / chưa phản ánh | **PASS (Linux)** | `b61a03f7` thêm §7 “Re-audit lần 2”, kết luận **PASS**: F-R2 đóng trên Linux; F-R1 chấp nhận caveat function-level (mutation A/B/C/D trong `/home/ps/vislogs/rparity-final-mutations.log`); `host_parity` **12/12** ×5 + ×2, gate **3.856/0**. Header §0 vẫn giữ FAIL cũ làm lịch sử — đúng quy ước “giữ báo cáo cũ”. |
+| 5 | Snapshot docs đứng trước `main` | **PASS** | `review/rdocs2` nay ở `79f1fcee` (chứa toàn bộ `main`); `merge-base --is-ancestor main HEAD` đúng. `review-st315b.md` (R-B) và báo cáo R-Docs2 đã có trong cây. |
+
+### 9.2 R-Win2 — Windows chưa chốt
+
+- Lượt trước trên `review/rwin2` (`e3130491`): Windows full @`347e9cae` —
+  **3777 passed / 1 failed / 4 ignored**; thủ phạm duy nhất `host_parity::fs_20…` với
+  `walk-n` kỳ vọng **9** nhưng thực tế **10** (test-only); `cwd-khop=true` ở cả interp và VM
+  (F-R2 đã đóng trên Windows); clippy PASS; `vis-targets` không chạy vì chuỗi `&&` dừng sau test đỏ.
+- `f5f3f06f` sửa `walk_n = 10` cho **cả hai nền tảng** (`fs.walk` bỏ symlink trên mọi nền);
+  `main` `79f1fcee` đã chứa fix này.
+- **Đang chạy lại**: `/home/ps/vislogs/st315d-parity-win-full-f5f3f06f.log` (+ `.stdout.log`)
+  được tạo lúc **14:30**, tiến trình `vis-gate-windows --full` còn sống tại thời điểm kiểm.
+  **Chưa có kết quả cuối** ⇒ không chốt Windows 3-OS, không dùng log dở làm bằng chứng PASS.
+- Điều kiện chốt: log cuối phải có `3777/0/4` (hoặc giải thích số ignored), host **54/54**,
+  `vis-targets` chạy tới cuối; nếu còn đỏ thì mở finding mới, không sửa kỳ vọng mù.
+
+### 9.3 Cổng máy chạy lại tại `79f1fcee`
+
+```text
+$ ./bin/vis-dag-check
+vis-dag-check: OK — 23 crate / 5 tầng, 0 cạnh cấm
+
+$ ./vis-dev rules
+vis-dev: chọn cargo /home/ps/.cargo/bin/cargo (1.100.0; yêu cầu ≥ 1.100.0)
+--- rules: OK
+
+$ python3 test/report/check_report.py --all
+report-check: PASS (35 báo cáo, 361 hàng QUEUE phủ đủ)
+
+$ git diff --check
+(không lỗi; exit 0)
+```
+
+### 9.4 Tồn dư nhỏ (không chặn 5 mục cũ)
+
+- `JOURNAL/st315d-vs0304.md:5` vẫn `READY (phần 1 xong; còn harness parity 66 hàm host)` và
+  `:41` còn “10 test parity”; parity nay đã xong **12 test**. Nên sửa câu chữ khi có dịp.
+- `JOURNAL/st315b-map-cow.md:111` vẫn ghi nền KPI **1.429 ms** trong khi bảng `:109` là
+  **1.328 ms** và `QUEUE` dùng ~27×; số 1.429 là mốc cũ, không ảnh hưởng KPI.
+- `JOURNAL/st315d-parity.md:7` còn `Trạng thái: READY` (bản gốc trước merge); trạng thái hiện
+  hành của task là `REVIEW` trong `QUEUE`. Không phải overclaim số liệu.
+- `review-st315d-parity.md` giữ header `FAIL (nhẹ)` lịch sử; kết luận hiện hành §7.5 là **PASS**.
+- `QUEUE` hàng `ST-315c` có đoạn lịch sử “lib 10/10 + tích hợp 18/18” trước khi re-audit R-C
+  nâng thành **30/30** ngay sau đó; đọc theo trình tự, không phải mâu thuẫn hiện hành.
+- Worktree hiện tại **4** (`ViScript`, `r315b`, `rdocs2`, `rwin2`) ≤ 8; `plan/st309-qa` vẫn
+  chưa merge (đúng `ST-309` `BLOCKED`); `review/rwin2` chưa merge (đang chạy R-Win2).
+
+### 9.5 Phán quyết re-audit
+
+- **PASS (tài liệu)** — 5 mục FAIL cũ đã đóng; `QUEUE`/`STATE`/`SO-NO`/`st315d-parity.md` khớp
+  bản cuối; R-Parity PASS trên Linux (`b61a03f7`); snapshot đã đồng bộ `main` `79f1fcee`.
+- **PENDING Windows** — chờ log R-Win2 sau `f5f3f06f`; chỉ chốt 3-OS/`DONE` khi log cuối xanh.
+- Không sửa mã sản phẩm; chỉ merge fast-forward + cập nhật báo cáo này.
