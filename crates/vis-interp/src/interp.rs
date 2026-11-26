@@ -322,6 +322,31 @@ impl<'a> Interp<'a> {
             .ok_or_else(|| Abort::Trap(Trap::new(RT, "tên chưa có giá trị", span)))
     }
 
+    /// **ST-316a (VD-292 §3.1)** — tạm tách ô `id` khỏi `Rc` **khi** ô còn trỏ cùng map với giá
+    /// trị đang ghi (ô = `Unit` trong lúc ghi). Nhờ đó `Rc::make_mut` thấy `strong_count == 1`
+    /// và cập nhật **tại chỗ O(1)**; trả `true` nếu đã tách để [`Self::tra_o`] khôi phục.
+    pub(crate) fn tach_o(&mut self, id: u32, base: &Value) -> bool {
+        let Value::Map(kv) = base else {
+            return false;
+        };
+        let ptr = std::rc::Rc::as_ptr(kv);
+        let mut env = self.env.borrow_mut();
+        match env.get(&id) {
+            Some(Value::Map(k)) if std::rc::Rc::as_ptr(k) == ptr => {
+                env.insert(id, Value::Unit);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Khôi phục ô đã tách bằng chính giá trị vừa ghi (cùng `Rc`, không chép map).
+    pub(crate) fn tra_o(&mut self, id: u32, base: &Value, da_tach: bool) {
+        if da_tach {
+            self.env.borrow_mut().insert(id, base.clone());
+        }
+    }
+
     /// **ST-56b** — ghi lại **ô** của biến; chỉ `var`/`var self` (tyck đã chặn trước, đây là chốt 2).
     fn ghi_o(&mut self, id: u32, v: Value, span: Span) -> R<()> {
         if !self.mutable.contains(&id) {

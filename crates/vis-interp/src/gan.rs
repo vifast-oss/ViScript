@@ -1,189 +1,43 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! **ST-56b (VD-97)**: gán **trường** / **chỉ số** — tách khỏi `interp.rs` cho luật **R1**.
+//! **ST-56b (VD-97)** gán trường/chỉ số, **VD-268** gán đường.
 //!
-//! Ngữ nghĩa **đúng** như `Instr::With`/`Instr::Set` của VM (cùng thông điệp ⇒ interp ↔ `--vm`
-//! **cùng byte**); thiếu trường / sai kiểu / ngoài phạm vi ⇒ `VS0501`.
+//! **ST-316a (VD-292 §4.1)**: toàn bộ ngữ nghĩa đã chuyển về **một nguồn**
+//! [`vis_runtime::value_ops`]; tệp này chỉ còn lớp mỏng để `vis-interp` giữ API cũ.
+//! Nhờ đó chuỗi `VS0501`/`VS0503` không còn hai bản phải sửa tay.
 
 use vis_syntax::Span;
 
-use crate::interp::{Abort, Trap, IDX, R, RT};
+use crate::interp::R;
 use crate::value::Value;
 
-/// **ST-56b (VD-97)**: `x.f = v` ⇒ `x = x with f: v` — **đúng** ngữ nghĩa `Instr::With` của VM
-/// (cùng thông điệp để interp ↔ `--vm` **cùng byte**); thiếu trường/không phải bản ghi ⇒ `VS0501`.
-pub(crate) fn gan_truong(base: Value, name: &str, v: Value, span: Span) -> R<Value> {
-    match base {
-        Value::Record(ten, mut fs) => match fs.iter_mut().find(|(k, _)| k == name) {
-            Some(slot) => {
-                slot.1 = v;
-                Ok(Value::Record(ten, fs))
-            }
-            None => Err(Abort::Trap(Trap::new(
-                RT,
-                format!("bản ghi `{ten}` không có trường `{name}`"),
-                span,
-            ))),
-        },
-        other => Err(Abort::Trap(Trap::new(
-            RT,
-            format!("`with` không dùng được cho `{}`", other.show()),
-            span,
-        ))),
-    }
+pub(crate) use vis_runtime::value_ops::Buoc;
+
+/// `x.f = v` — sửa **tại chỗ** (không chép cả bản ghi); thiếu trường ⇒ `VS0501`.
+pub(crate) fn gan_truong(base: &mut Value, name: &str, v: Value, span: Span) -> R<()> {
+    vis_runtime::value_ops::dat_truong(base, name, v, span)
 }
 
-/// **ST-56b (VD-97)**: `x[i] = v` — **đúng** ngữ nghĩa `Instr::Set` của VM (list: tại chỗ theo chỉ
-/// số, ngoài phạm vi ⇒ `VS0501`; map: thay khoá **hoặc thêm** khoá mới).
-pub(crate) fn gan_chi_so(base: Value, idx: Value, v: Value, span: Span) -> R<Value> {
-    match (base, idx) {
-        (Value::List(mut xs), Value::Int(i)) => {
-            if (i as usize) < xs.len() {
-                xs[i as usize] = v;
-                Ok(Value::List(xs))
-            } else {
-                Err(Abort::Trap(Trap::new(
-                    RT,
-                    format!("chỉ số {i} ngoài phạm vi"),
-                    span,
-                )))
-            }
-        }
-        (Value::Map(mut kv), k) => {
-            // **ST-315b**: `Rc::make_mut` — chỉ chép map khi đang chia sẻ; thêm/cập nhật
-            // last-wins tại chỗ qua chỉ mục băm (Q1).
-            std::rc::Rc::make_mut(&mut kv).insert(k, v);
-            Ok(Value::Map(kv))
-        }
-        _ => Err(Abort::Trap(Trap::new(RT, "gán chỉ số không hợp lệ", span))),
-    }
+/// `x[i] = v` — sửa **tại chỗ**; list ngoài phạm vi ⇒ `VS0501`, map last-wins.
+pub(crate) fn gan_chi_so(base: &mut Value, idx: Value, v: Value, span: Span) -> R<()> {
+    vis_runtime::value_ops::dat(base, &idx, v, span)
 }
 
-// ---------------------------------------------------------------------------
-// **VD-268** — gán **đường** (`a.b.f`, `xs[0].f`, `m["k"].f`, `a.bs[i].f`, …)
-// ---------------------------------------------------------------------------
-
-/// Một bước của đường gán, từ **gốc** ra **lá**; chỉ số/khoá đã đánh giá **một lần**.
-pub(crate) enum Buoc {
-    Truong(String),
-    ChiSo(Value),
-}
-
-/// Đọc trường — **nguồn duy nhất** cho cả truy cập thường lẫn đường gán (VD-268), để thông điệp
-/// `VS0501` không lệch giữa hai đường.
+/// Đọc trường — cùng nguồn với VM.
 pub(crate) fn doc_truong(b: Value, name: &str, span: Span) -> R<Value> {
-    match b {
-        Value::Record(_, fields) => fields
-            .into_iter()
-            .find(|(n, _)| n == name)
-            .map(|(_, v)| v)
-            .ok_or_else(|| {
-                Abort::Trap(Trap::new(
-                    RT,
-                    format!("bản ghi không có trường `{name}`"),
-                    span,
-                ))
-            }),
-        // **VD-204 (1)**: `Some(v)` truy cập trường như `v` (tương thích `Value::Opt` cũ).
-        Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
-            let mut args = args;
-            doc_truong(args.pop().expect("Some luôn có một đối số"), name, span)
-        }
-        // **Parity interp ↔ VM**: field trên `Enum` ⇒ `VS0501`; ngoại lệ atom biến thể rỗng.
-        Value::Enum(en, variant, args) => {
-            if variant.is_empty() && args.is_empty() {
-                Ok(Value::Enum(en, crate::value::Name::new(name), Vec::new()))
-            } else {
-                Err(Abort::Trap(Trap::new(
-                    RT,
-                    format!("`{name}` không phải trường"),
-                    span,
-                )))
-            }
-        }
-        other => Err(Abort::Trap(Trap::new(
-            RT,
-            format!("`{}` không có trường `{name}`", other.show()),
-            span,
-        ))),
-    }
+    vis_runtime::value_ops::doc_truong(b, name, span)
 }
 
-/// Đọc chỉ số — **cùng mã/thông điệp** như đọc thường (`VS0503`: âm/ngoài phạm vi/khoá thiếu).
+/// Đọc chỉ số — cùng nguồn với VM.
 pub(crate) fn doc_chi_so(b: Value, i: Value, span: Span) -> R<Value> {
-    match (b, i) {
-        (Value::List(xs), Value::Int(n)) => {
-            let len = xs.len() as i64;
-            if n < 0 {
-                return Err(Abort::Trap(Trap::new(
-                    IDX,
-                    format!("chỉ số âm `{n}` (dùng `.last()` hoặc `xs[i]?`)"),
-                    span,
-                )));
-            }
-            xs.get(n as usize).cloned().ok_or_else(|| {
-                Abort::Trap(Trap::new(
-                    IDX,
-                    format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
-                    span,
-                ))
-            })
-        }
-        (Value::Map(kv), k) => kv.get(&k).cloned().ok_or_else(|| {
-            Abort::Trap(Trap::new(
-                IDX,
-                format!("khoá `{}` không có trong map", k.show()),
-                span,
-            ))
-        }),
-        (Value::Bytes(bs), Value::Int(n)) => {
-            let len = bs.len() as i64;
-            if n < 0 || n >= len {
-                return Err(Abort::Trap(Trap::new(
-                    IDX,
-                    format!("chỉ số {n} ngoài phạm vi (độ dài {len})"),
-                    span,
-                )));
-            }
-            Ok(Value::Int(bs[n as usize] as i64))
-        }
-        (other, idx) => Err(Abort::Trap(Trap::new(
-            RT,
-            format!("không chỉ số được `{}` bằng `{}`", other.show(), idx.show()),
-            span,
-        ))),
-    }
+    vis_runtime::value_ops::chi_so(&b, &i, span)
 }
 
-/// Đọc **lá** của đường (dùng cho gán ghép: `a.b.n += 1` đọc `n` cũ trước vế phải).
+/// Đọc lá của đường gán.
 pub(crate) fn doc_duong(base: &Value, duong: &[Buoc], span: Span) -> R<Value> {
-    let mut cur = base.clone();
-    for b in duong {
-        cur = match b {
-            Buoc::Truong(n) => doc_truong(cur, n, span)?,
-            Buoc::ChiSo(i) => doc_chi_so(cur, i.clone(), span)?,
-        };
-    }
-    Ok(cur)
+    vis_runtime::value_ops::doc_duong(base, duong, span)
 }
 
-/// Ghi **lá** rồi dựng lại **từng tầng** (giá trị): trả gốc mới. Không aliasing với bản sao cũ.
-pub(crate) fn gan_duong(base: Value, duong: &[Buoc], v: Value, span: Span) -> R<Value> {
-    let Some((b, rest)) = duong.split_first() else {
-        return Ok(v);
-    };
-    if rest.is_empty() {
-        return match b {
-            Buoc::Truong(n) => gan_truong(base, n, v, span),
-            Buoc::ChiSo(i) => gan_chi_so(base, i.clone(), v, span),
-        };
-    }
-    let con = match b {
-        Buoc::Truong(n) => doc_truong(base.clone(), n, span)?,
-        Buoc::ChiSo(i) => doc_chi_so(base.clone(), i.clone(), span)?,
-    };
-    let moi = gan_duong(con, rest, v, span)?;
-    match b {
-        Buoc::Truong(n) => gan_truong(base, n, moi, span),
-        Buoc::ChiSo(i) => gan_chi_so(base, i.clone(), moi, span),
-    }
+/// Ghi lá rồi dựng lại từng tầng (tầng đầu sửa tại chỗ khi có thể).
+pub(crate) fn gan_duong(base: &mut Value, duong: &[Buoc], v: Value, span: Span) -> R<()> {
+    vis_runtime::value_ops::gan_duong(base, duong, v, span)
 }

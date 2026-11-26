@@ -120,10 +120,16 @@ impl<'a> Interp<'a> {
                                 let cu = self.doc_o(*id, target.span())?;
                                 let dep = self.assign_depth(target, &cu); // ST-248: đích trường Opt
                                 let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
-                                let moi = gan_truong(cu, name, rhs, *span)?;
                                 if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span)
                                 {
                                     return Err(a);
+                                }
+                                // **ST-316a**: tách ô khỏi `Rc` để ghi tại chỗ O(1).
+                                let mut moi = cu;
+                                let da_tach = self.tach_o(*id, &moi);
+                                if let Err(e) = gan_truong(&mut moi, name, rhs, *span) {
+                                    self.tra_o(*id, &moi, da_tach);
+                                    return Err(e);
                                 }
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
@@ -135,10 +141,16 @@ impl<'a> Interp<'a> {
                                 let dep = self.assign_depth(target, &cu); // ST-248: đích phần tử Opt
                                 let i = self.eval(index)?;
                                 let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
-                                let moi = gan_chi_so(cu, i, rhs, *span)?;
                                 if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, *span)
                                 {
                                     return Err(a);
+                                }
+                                // **ST-316a**: tách ô khỏi `Rc` để ghi tại chỗ O(1).
+                                let mut moi = cu;
+                                let da_tach = self.tach_o(*id, &moi);
+                                if let Err(e) = gan_chi_so(&mut moi, i, rhs, *span) {
+                                    self.tra_o(*id, &moi, da_tach);
+                                    return Err(e);
                                 }
                                 self.ghi_o(*id, moi, *span)?;
                                 return Ok(Ctrl::Normal);
@@ -156,9 +168,11 @@ impl<'a> Interp<'a> {
                                     let truong = self.field_of(cu, name, *span)?;
                                     let i = self.eval(index)?;
                                     let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
-                                    let moi_truong = gan_chi_so(truong, i, rhs, *span)?;
+                                    let mut truong = truong;
+                                    gan_chi_so(&mut truong, i, rhs, *span)?;
                                     let cu2 = self.doc_o(*id, target.span())?;
-                                    let moi = gan_truong(cu2, name, moi_truong, *span)?;
+                                    let mut moi = cu2;
+                                    gan_truong(&mut moi, name, truong, *span)?;
                                     if let Some(a) =
                                         self.charge(crate::rt::fee::FeeKind::Assign, *span)
                                     {

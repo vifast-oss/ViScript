@@ -451,9 +451,13 @@ impl<'m> Th<'m> {
                 Instr::Set => {
                     let v = self.pop(vm, span)?;
                     let idx = self.pop(vm, span)?;
-                    let base = self.pop(vm, span)?;
-                    let v = set(&base, &idx, v, span)?;
-                    self.st.push(v);
+                    let mut base = self.pop(vm, span)?;
+                    // **ST-316a**: tách ô khỏi `Rc` để ghi tại chỗ O(1) (0 đổi VBC1).
+                    let da = self.tach_dich(vm, &base);
+                    let kq = set(&mut base, &idx, v, span);
+                    self.tra_dich(vm, &base, da);
+                    kq?;
+                    self.st.push(base);
                 }
                 Instr::With(n) => {
                     let flat = self.pop_n(vm, 2 * n as usize, span)?;
@@ -462,9 +466,12 @@ impl<'m> Th<'m> {
                     while let (Some(k), Some(v)) = (it.next(), it.next()) {
                         pairs.push((k.show(), v));
                     }
-                    let base = self.pop(vm, span)?;
-                    let v = with(&base, pairs, span)?;
-                    self.st.push(v);
+                    let mut base = self.pop(vm, span)?;
+                    let da = self.tach_dich(vm, &base);
+                    let kq = with(&mut base, pairs, span);
+                    self.tra_dich(vm, &base, da);
+                    kq?;
+                    self.st.push(base);
                 }
                 Instr::Interp(n) => {
                     let parts = self.pop_n(vm, n as usize, span)?;

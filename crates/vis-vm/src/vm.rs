@@ -14,9 +14,8 @@ use vis_bytecode::{Func, Instr, Module, GLOBAL_SLOT_BASE};
 use vis_core::trap::{Abort, Trap, R};
 use vis_core::value::{self, Value, VmFunc};
 use vis_core::RunOutput;
-use vis_hir::hir::LitKind;
 use vis_runtime::builtin::Host;
-use vis_runtime::codes::{IDX, RT};
+use vis_runtime::codes::RT;
 use vis_runtime::ForIter;
 use vis_syntax::Span;
 
@@ -571,6 +570,60 @@ impl<'m> Th<'m> {
         self.st
             .pop()
             .ok_or_else(|| vm.hong(VmError::StackUnderflow, span))
+    }
+
+    /// **ST-316a (VD-292 §3.1)** — tạm tách **đúng ô đích** khỏi `Rc` khi ghi `x[k] = v`.
+    ///
+    /// Chỉ ô mà instruction **kế tiếp** ghi lại (`Assign`/`StoreLocal`) mới được tách — nhờ vậy
+    /// biến khác đang chia sẻ cùng map vẫn giữ bản cũ (ngữ nghĩa giá trị), còn biến không chia sẻ
+    /// thì `Rc::make_mut` thấy `strong_count == 1` và cập nhật **tại chỗ O(1)**, 0 đổi VBC1.
+    pub(crate) fn tach_dich(&mut self, vm: &mut Vm<'_>, base: &Value) -> Option<(u8, usize)> {
+        let Value::Map(kv) = base else {
+            return None;
+        };
+        let ptr = Rc::as_ptr(kv);
+        let ke = self.f().code.get(self.frames.last()?.pc).copied();
+        let s = match ke {
+            Some(Instr::Assign(s)) | Some(Instr::StoreLocal(s)) => s as usize,
+            _ => return None,
+        };
+        let base_global = GLOBAL_SLOT_BASE as usize;
+        if s >= base_global {
+            let i = s - base_global;
+            let o = vm.globals.get(i)?;
+            if matches!(o, Some(Value::Map(k)) if Rc::as_ptr(k) == ptr) {
+                vm.globals[i] = None;
+                return Some((2, i));
+            }
+            return None;
+        }
+        let fr = self.frames.last_mut()?;
+        match fr.locals.get(s) {
+            Some(Value::Map(k)) if Rc::as_ptr(k) == ptr => {
+                fr.locals[s] = Value::Unit;
+                Some((0, s))
+            }
+            _ => None,
+        }
+    }
+
+    /// Khôi phục **đúng ô đích** đã tách bằng chính giá trị vừa ghi (cùng `Rc`, không chép map).
+    pub(crate) fn tra_dich(&mut self, vm: &mut Vm<'_>, base: &Value, da: Option<(u8, usize)>) {
+        match da {
+            Some((2, i)) => {
+                if let Some(s) = vm.globals.get_mut(i) {
+                    *s = Some(base.clone());
+                }
+            }
+            Some((0, i)) => {
+                if let Some(fr) = self.frames.last_mut() {
+                    if let Some(s) = fr.locals.get_mut(i) {
+                        *s = base.clone();
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     pub(super) fn pop_n(&mut self, vm: &Vm<'_>, n: usize, span: Span) -> R<Vec<Value>> {
