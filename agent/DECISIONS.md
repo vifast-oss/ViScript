@@ -4238,3 +4238,14 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 3. **Trạng thái Sóng 8**: `ST-319a` **`REVIEW`** (đã merge `07a5e2b3`, PASS `b2033ebd`, chờ A0 phê chuẩn `DONE`); `ST-319b` `DONE`; `ST-319c` `REVIEW (chẩn đoán)`; `ST-319c2`/`ST-319d`/`ST-319e` đang chạy.
 4. **`#210` vẫn `mở`** (đang sửa ở `ST-319e`); sổ **210 = 86 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** — không đổi đếm.
 5. **Ràng buộc**: docs-only; **không** tạo worktree/nhánh, **không** đụng `st319c2`/`st319d`/`st319e`, `plan/st309-qa`; không sửa mã/`docs/SPEC*.md`; `ST-316c` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
+
+### VD-303 · Phê chuẩn `ST-319d`/`ST-319e` `DONE`, Chốt Sóng 8 5/5, Đóng `#208`/`#210` — A0, 2026-11-27
+
+> **Căn cứ**: `main` @ **`ee8f252d`** (sạch, ahead `origin` 11); `ST-319d` audit **PASS `64e84b25`**, merge `ee8f252d` — codegen tập `mutable` + writeback `push` (`#208`), **32 test** `st317b`, gate **3929**, diff 0; `ST-319e` audit **PASS `4baa4d2d`**, merge `a9c02abb` — env module cho hàm tên trong closure (`#210`), **A/B/C2/E/P5** 4 đường, gate **3922**, diff 0; cổng cuối `/home/ps/vislogs/final-main-ee8f252d.log` sha256 **`904d45a6…5569f`**: `GATE_EXIT=0` (**3934/3934**, 4 skip), `DIFF_EXIT=0` (100k, `lech=0`, 79,7 s), `CLIPPY_EXIT=0`, `RULES_EXIT=0`; R1 **0 tệp > 1.000**, R8 **39/40**, `API-VBC1.txt` rỗng. Chain 0-LLM hiện hành sha256 **`e239c317…`** (thay `14c00737…` cũ trong `QUEUE`).
+
+1. **Phê chuẩn `DONE` — `ST-319d` (W4)**: đóng **`#208`** (codegen `mutables` + writeback `CallMethod; Assign; LoadLocal`, không đổi VBC1); audit PASS `64e84b25`, merge `ee8f252d`; 32 test, gate 3929, diff 0.
+2. **Phê chuẩn `DONE` — `ST-319e` (W5)**: đóng **`#210`** (interp non-frame dùng env module cho hàm tên; VM/frame đã đúng); audit PASS `4baa4d2d`, merge `a9c02abb`; A/B/C2/E/P5 4 đường, gate 3922, diff 0.
+3. **`ST-319c` → `DONE (chẩn đoán)`** (A0 chốt), **Sóng 8 đóng 5/5** (`ST-319a/b/c2/d/e` + c chẩn đoán).
+4. **Sổ nợ §8**: **210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (đếm thật 210 hàng; `#206`/`#207`/`#208`/`#209`/`#210` đóng).
+5. **Cổng cuối `ee8f252d`**: gate **3934/3934** (4 skip), diff 100k `lech=0` 79,7 s, clippy/rules exit 0; R1 **0 tệp > 1.000** (`frame.rs` 159; max 1000 `run_cmd.rs`); R8 **39/40**, 0 `unsafe`; `API-VBC1.txt` không đổi.
+6. **Đồng bộ (docs-only)**: `QUEUE` (`319c` DONE-chẩn đoán, `319d`/`319e` DONE; chain sha `e239c317…`), `ACTIVE`/`STATE`/`ROADMAP` (HEAD `ee8f252d`, gate 3934, Sóng 8 DONE), `SO-NO` (`#208`/`#210` đóng), `DECISIONS-INDEX`. **Không** sửa mã, không đụng worktree/nhánh; `ST-316c`/`ST-309` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
