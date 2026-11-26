@@ -290,6 +290,7 @@
 | VD-292 | Phê chuẩn Sóng 4 (`ST-315a..ST-315d` `DONE`), Phán quyết F1/F-R1, Đăng ký `#198`/`#199` & Tối ưu Kế hoạch Sóng 5–6 hướng Kiến trúc Sạch – Dễ Bảo trì – Dễ Mở rộng | đã chốt | 4096 |
 | VD-293 | Phê chuẩn Sóng 5 (`ST-316a`/`ST-316b`/`ST-316d` `DONE`), Đăng ký `#200`/`#201` & Mở Sóng 6 (`ST-317a`/`ST-317c` song song, `ST-317b` chờ tệp) | đã chốt | 4118 |
 | VD-294 | Phê chuẩn `ST-317a`/`ST-317c` `DONE`, Giữ `ST-317b` `READY` (P2b đang chạy), `ST-316c` `BLOCKED` & Đăng ký `#202` | đã chốt | 4135 |
+| VD-295 | Phê chuẩn `ST-317b` `DONE`, Chốt Sóng 6 (`ST-317a`/`ST-317b`/`ST-317c`) `DONE`, Giữ `ST-316c` `BLOCKED` & Đăng ký `#203`/`#204` | đã chốt | 4147 |
 
 ## Ghi chú
 
