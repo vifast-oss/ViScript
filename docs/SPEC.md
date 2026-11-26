@@ -2,9 +2,9 @@
 # SPEC — Đặc tả ngôn ngữ ViScript
 
 **Trạng thái:** bản gốc ST-309 sinh từ cây mã **`c4337ce`** (`0.5.0`, 2026-11-23), đã được Agent 0
-đồng bộ phần nền tảng & kiểm chứng theo kiến trúc 5 tầng DAG (**`0.6.0`**, `VD-289`/`VD-290`,
-2026-11-25, freeze `90fd24de`). Tệp này mô tả **hành vi đã hợp nhất trên `main`**; tính năng chỉ có
-trên nhánh chưa merge hoặc chỉ là thiết kế **không** thuộc đặc tả chuẩn tắc và được liệt kê ở §12.
+đồng bộ theo kiến trúc 5 tầng DAG (**`0.6.0`**, `VD-289`/`VD-290`/`VD-291`, 2026-11-26, nền
+`6ea63df`). Tệp này mô tả **hành vi đã hợp nhất trên `main`**; tính năng chỉ có trên nhánh chưa
+merge hoặc chỉ là thiết kế **không** thuộc đặc tả chuẩn tắc và được liệt kê ở §12.
 
 **Thứ tự nguồn sự thật** (khi tệp này lệch): (1) mã + test trong repo; (2) [`SPEC-lex.md`](SPEC-lex.md)
 cho từ vựng; (3) tệp này; (4) [`ViScript-thiet-ke.md`](ViScript-thiet-ke.md) (đích thiết kế).
@@ -223,7 +223,7 @@ Ghi chú cú pháp:
 - `pub`/`async` đứng trước `fn/cmd/type/enum/trait/const`; `async` trên `type`/`enum`/`trait`/
   `const` bị kiểm kiểu từ chối (`VS0415`). `async` được hỗ trợ cho `fn` cấp tệp, `fn` trong `impl`
   và `cmd`.
-- `const` **bắt buộc** ghi kiểu (`const N = 1` là `VS0201`).
+- `const` **bắt buộc** ghi kiểu (`const N = 1` là `VS0204`, chốt ở `VD-291`).
 - `test fn` không nhận tham số, không có kiểu trả; thân là `suite`.
 - Trường bản ghi bất biến; `= expr` là giá trị mặc định.
 - Biến thể enum có thể mang trường **vị trí** (`Circle(float)`) hoặc **có tên** (`Circle(r: float)`);
@@ -591,9 +591,10 @@ Ngữ nghĩa số:
 - Đánh giá trái sang phải: toán hạng, phần tử literal, trường bản ghi, đối số (vị trí trước, tên sau).
 - `and`/`or`/`??` ngắn mạch; toán hạng phải không được đánh giá khi trái quyết định.
 - `print(a, b, …)` in từng giá trị bằng `show`, cách nhau **một** dấu cách; `print()` in dòng trống.
+  `print(cap)` bị kiểm kiểu từ chối `VS0412` (`VD-106`); dùng `str(cap)` nếu cần chuỗi hiển thị.
 - `show`: `str` in nguyên văn; `char` bọc `'…'` và escape điều khiển; `bytes` bọc `b"…"`;
   list `[a, b]`; map `{k: v}`; record `Tên(f: v, …)`; enum `BiếnThể(v, …)`; `Error` chỉ in
-  `message`; task `<tác vụ>`, kênh `<kênh>`, cap `<cap[Kind] root>`.
+  `message`; task `<tác vụ>`, kênh `<kênh>`, cap `<cap[Kind] root>` (qua `str(cap)`).
 
 ---
 
@@ -606,17 +607,19 @@ Ngữ nghĩa số:
 - Gọi `async fn` **không chạy thân**; trả `Task[T]`. `await t` chạy/hoàn tất task và trả `T`.
 - `spawn f(args)` / `spawn obj.m(args)` tạo task đã đăng ký; chỉ nhận hàm/phương thức `async`.
   `async fn` không dùng làm **giá trị** (không có `Future`).
-- Mô hình hiện tại **một luồng, run-to-completion**: task được enqueue; task chạy khi `await`,
-  khi kênh chặn, hoặc ở join cuối; thứ tự chạy theo thứ tự tạo/await; kênh FIFO.
-- `Task` không huỷ được từ ngôn ngữ; không có `select`/`timeout`; `scope` chưa phải structured
-  concurrency (xem §12).
+- Mô hình mặc định một luồng; chương trình có `async` chạy trên **runtime frame suspend/resume +
+  reactor/timer** (cả interp và VM); thứ tự khởi tạo/enqueue tất định, kênh FIFO.
+- `Task` không huỷ được từ ngôn ngữ; không có cú pháp `select` tổng quát (kênh có `recv_timeout`/
+  `send_timeout` + `select_recv*`/`select_send*`); `scope` chưa phải structured concurrency (§12).
 - Lỗi trong thân task bọc `VS0506` (kèm mã gốc); `await`/join ném lại.
 
 ### 5.2 Kênh
 
-- `chan[T](n)` trả `Chan[T]`; `n >= 1`; `chan(0)` bị từ chối `VS0505`.
-- Method: `send(v)`, `recv() -> T?`, `close()`; gửi sau `close` là `VS0504`; recv sau close trả
-  hết hàng rồi `None`.
+- `chan[T](n)` trả `Chan[T]`; `n >= 1` trên đường đồng bộ; `chan(0)` bị từ chối `VS0505` ở đường
+  thường và hỗ trợ rendezvous trên đường frame `async` (xem §12/thiết kế).
+- Method/hàm kênh: `send(v)`, `recv() -> T?`, `close()`, `recv_timeout`/`send_timeout`, và
+  `select_recv*`/`select_send*` (đường frame); gửi sau `close` là `VS0504`; recv sau close trả hết
+  hàng rồi `None`.
 - Kênh đầy/rỗng mà không còn task chạy được ⇒ deadlock `VS0505` (không treo).
 - Kênh truyền được qua tham số/`Chan[T]`; giá trị gửi phải `Sendable`; vi phạm `VS0508`.
 
@@ -678,10 +681,10 @@ fn main(data: cap[Dir] @ p"./data", out: cap[Dir] @ p"./out" (write), net: cap[N
 
 | Nền | Cưỡng chế runtime | Kernel sandbox | Trạng thái |
 |---|---|---|---|
-| Linux (`ps`) | `FsGuard`/`NetGuard` (`openat2`/`statat`), `VS0604` | Landlock (`--sandbox`, `landlock` crate; `vis-host-linux` trong workspace) | chạy thật, host suite 54/54; `vis-host-linux` 18/18 |
+| Linux (`ps`) | `FsGuard`/`NetGuard` (`openat2`/`statat`), `VS0604` | Landlock `ABI::V3` (`--sandbox`, `vis-host-linux` trong workspace; nợ `#197` cho tệp đơn `(write)`) | chạy thật, host suite 54/54; `vis-host-linux` 18/18 |
 | Windows x86_64 | cùng mã, **chỉ theo đường dẫn** | không | **Tier 1** từ `v0.4.5`; caveat `FsGuard` |
-| macOS arm64 | cùng mã (`openat`/`statat`, `FsGuard`/`NetGuard`) | không (Darwin không có Landlock) | **Tier 1 đã công bố** từ `v0.5.0` (`ST-300m3`: 3× full + soak 4 h 1.878 vòng, host 54/54); chỉ arm64 |
-| `wasm32-wasip1` | `WasiHost` preopen; từ chối net/proc/sqlite | preopen của runtime | runner thật (runtime có phạm vi); suite 28/28, `vis-wasm-sem` **390/390** (`#193` đóng với `-zstack-size=12 MiB` + `node --stack-size=4096`) |
+| macOS arm64 | cùng mã (`openat`/`statat`, `FsGuard`/`NetGuard`) | không (Darwin không có Landlock) | **Tier 1 đã công bố** từ `v0.5.0` (`ST-300m3`: 3× full + soak 4 h 1.878 vòng, host 54/54); chỉ arm64; clippy **PASS @`311d2288`**; **chưa chạy lại full gate trên `0.6.0`** (`mps` bỏ qua theo chỉ đạo, bù ở `ST-316c`) |
+| `wasm32-wasip1` | `WasiHost` preopen; từ chối net/proc/sqlite | preopen của runtime | runner thật (runtime có phạm vi); suite 28/28, `vis-wasm-sem` **390/390** (`#193` đóng với `-zstack-size=12 MiB` + `node --stack-size=4096`), `vis-wasm-conformance` **393×2** |
 | `wasm32-unknown-unknown` | — | — | **chỉ `cargo check` biên dịch chéo**, không chạy |
 
 Không được viết "macOS/Windows có Landlock" hoặc "wasm32-unknown-unknown chạy được".
@@ -925,9 +928,9 @@ Xem §8.2. Mọi lỗi gói là `vis pkg: …` + exit 2 (trừ lỗi ngôn ngữ
 - `vis lsp --stdio`: JSON-RPC, incremental sync UTF-16; completion/hover/definition/references/
   rename/signatureHelp/foldingRange/workspace symbol/highlight/selectionRange/formatting/
   typeDefinition/implementation/semanticTokens (theo README).
-- `vis doctor [--json]`: 5 dòng tất định `vis/os/arch/sqlite/features` hoặc object JSON cùng khoá;
-  không đọc môi trường/tệp/mạng.
-- `vis version [--json]`: `vis 0.5.0` hoặc `{"name":"vis","version":"0.5.0"}`.
+- `vis doctor [--json]`: 5 dòng tất định `vis/os/arch/sqlite/features` hoặc object JSON 5 khoá
+  `version/os/arch/sqlite/features`; không đọc môi trường/tệp/mạng.
+- `vis version [--json]`: `vis 0.6.0` hoặc `{"name":"vis","version":"0.6.0"}`.
 - `vis explain`: xem §7.1.
 
 ---
@@ -983,12 +986,12 @@ Xem §6.4. Tóm tắt: Linux chạy thật + Landlock (`vis-host-linux` trong wo
 | Bộ | Nội dung |
 |---|---|
 | `test/sem/**` | ca ngữ nghĩa `.vis`/`.vish` + `.out`/`.err`, chạy cả interp và VM |
-| `test/conformance/**` & `crates/vis-conformance` | corpus kiểm chuẩn dữ liệu `.vis` (+ `.out`/`.out_prefix`/`.err`/`.exit`/`.fmt`), chạy thẳng API thư viện cả interp và VM (+ WASI) |
+| `test/conformance/**` & `crates/vis-conformance` | corpus kiểm chuẩn dữ liệu `.vis` (+ `.out`/`.out_prefix`/`.err`/`.trap`/`.exit`/`.fmt`/`.skip-windows`), chạy thẳng API thư viện cả interp và VM (563 ca native; `vis-wasm-conformance` 393×2 WASI) |
 | `test/expr`, `crates/vis-syntax/tests` | golden từ vựng/parser/biểu thức; NFC, cột scalar, lỗi đầu |
 | `test/doc-examples` | mọi khối `vis`/`vish-session` trong `docs/*.md` phải parse/check được (trừ allowlist) |
 | `test/cmd`, `test/modules`, `test/pkg`, `test/plugin-wasi` | chế độ lệnh, module, gói, plugin WASI |
 | `crates/*/tests`, `vis-host-linux/tests` | unit/integration từng crate, host conformance, LSP, security, Landlock |
-| `./vis-dev gate --fast` | fmt + clippy + luật R1..R9 + self-test + build + doc-examples + L0 |
+| `./vis-dev gate --fast` | fmt + clippy + luật R1..R9 + DAG 5 tầng + self-test + build + doc-examples + L0 |
 | `./vis-dev nightly` | gate + fuzz parser + vòng tròn fmt |
 
 ### 11.3 Cách kiểm chứng bản đặc tả này
@@ -1013,13 +1016,13 @@ Bản này **không** thay thế:
 - `docs/SPEC-lex.md` — chuẩn từ vựng chi tiết (bảng token, 60 golden, mã `VS01xx`).
 - `agent/API-STD.txt` — chữ ký std đóng băng (167 hàm tại mốc này); §8.3 chỉ liệt kê tên nhóm.
 - `agent/API-VBC1.txt` — bảng thẻ bytecode VBC1; định dạng nhị phân không thuộc đặc tả ngôn ngữ.
-- `agent/DECISIONS.md` — lịch sử quyết định (VD/R1..R24) và các nợ đã biết.
+- `agent/DECISIONS.md` — lịch sử quyết định (`VD-01..VD-291`, `R1..R37`) và các nợ đã biết.
 
 ---
 
 ## 12. Phần chưa đặc tả đầy đủ / chỉ có thiết kế
 
-Mục này **không** mô tả tính năng như đã có. Đây là các khoảng trống đã kiểm tra tại `c4337ce`:
+Mục này **không** mô tả tính năng như đã có. Đây là các khoảng trống đã kiểm tra tại `c4337ce` (đồng bộ thêm ở `VD-291`):
 
 | Hạng mục | Trạng thái thực tế | Ghi chú |
 |---|---|---|
@@ -1028,8 +1031,8 @@ Mục này **không** mô tả tính năng như đã có. Đây là các khoản
 | `stream[T]`, `Future[T]`, `Iterator[T]`, `.lazy()` | Không có; `VS0303` | `for` trên range **được tối ưu lười**, nhưng không có kiểu iterator |
 | `dyn Trait`, trait object | Không có; `dyn` là từ khoá nhưng parser báo `VS0201` | Không có `impl Trait` động |
 | `datetime`, `instant` | Không có trong `Type::builtin`; `VS0303` | `std.time` chỉ có `now_ms`/`monotonic_ms` |
-| `scope` structured concurrency | `scope` chỉ là khối có nhãn; task không bị huỷ theo scope | Không có `select`/`timeout`/cancel cây |
-| `chan(0)` rendezvous | Bị từ chối `VS0505` | Kênh phải có dung lượng ≥ 1 |
+| `scope` structured concurrency | `scope` chỉ là khối có nhãn; task không bị huỷ theo scope | Có timeout kênh + `select_recv*`/`select_send*`; không có `select` tổng quát/cancel cây |
+| `chan(0)` rendezvous | Đường thường bị từ chối `VS0505`; đường frame `async` hỗ trợ rendezvous | Kênh đường đồng bộ phải có dung lượng ≥ 1 |
 | `async`/`Future` lười | Không có `Future`; gọi `async fn` trả `Task[T]` ngay | Task chạy theo scheduler một luồng |
 | `spawn` biểu thức phức tạp | Chỉ nhận lời gọi hàm/phương thức `async` | `spawn f` không gọi là lỗi cú pháp/kiểu |
 | `async` trait method | Bị từ chối `VS0415` | Chỉ `fn` cấp tệp/`impl`/`cmd` |

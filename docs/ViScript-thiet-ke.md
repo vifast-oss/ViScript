@@ -8,7 +8,7 @@ Nhãn: `[V1:CODE]`, `[V1:ĐO]`, `[V1:DOC]` = lấy từ dossier v1, giữ độ 
 
 ## Thay đổi sau review (2026-11-12)
 
-Bản này đã vá theo [`docs/QUYET-DINH-sau-review.md`](../QUYET-DINH-sau-review.md) (gọi tắt **QD**) — nguồn sự thật; chỗ nào QD nói khác tài liệu này thì **QD thắng**. Đặc tả từ vựng chi tiết (bảng token, escape, đơn vị, maximal munch, golden token) nằm ở `docs/viscript/SPEC-lex.md` — **đã có**; ST-02a duyệt/bổ sung. Phụ lục A dưới đây là **EBNF tự chứa** và là chuẩn tắc cho parser.
+Bản này đã vá theo `docs/QUYET-DINH-sau-review.md` (repo ViFastOs, gọi tắt **QD**) — nguồn sự thật; chỗ nào QD nói khác tài liệu này thì **QD thắng**. Đặc tả từ vựng chi tiết (bảng token, escape, đơn vị, maximal munch, golden token) nằm ở `docs/SPEC-lex.md` — **đã có**; ST-02a duyệt/bổ sung. Phụ lục A dưới đây là **EBNF tự chứa** gốc; chuẩn tắc hiện hành nằm ở `docs/SPEC.md` §3.
 
 | # | Nhóm đã vá | Mục |
 |---|---|---|
@@ -20,7 +20,7 @@ Bản này đã vá theo [`docs/QUYET-DINH-sau-review.md`](../QUYET-DINH-sau-rev
 | 6 | Lỗi: `trait Error: Show`, `AnyError`, `?` tự chuyển; **bảng mã thoát**; panic payload + arena lệnh | 6 |
 | 7 | Chế độ lệnh: metachar, `$env.NAME`, `;`/`&`/`--`/`-5`, closure-arg, `shell_item`, `from json[T]`, `complete` | 9 |
 | 8 | Host/ViShell: proc suspend/resume/cancel + wait; shell sở hữu tty, con nhận pipe, pty để sau | 12, 15 |
-| 9 | Crate/plugin/cổng: `vis-host-vifast` ngoài `viscript/`; plugin động tắt ở chế độ hạn chế; cổng **doc-examples parse** | 14.2, 17, 18.4 |
+| 9 | Crate/plugin/cổng: `vis-host-vifast` ở repo ViFastOs; plugin động tắt ở chế độ hạn chế; cổng **doc-examples parse** | 14.2, 17, 18.4 |
 | 10 | **Phụ lục A viết lại** thành EBNF tự chứa; Phụ lục B sửa ví dụ; thêm VD-11..VD-20 | A, B, 22 |
 
 Ba quyết định lớn ảnh hưởng thi công: (a) QD §1 **Q-D** — parse chế độ lệnh hai pha; `VT06` cũ chỉ làm `CmdCST` + golden, `cmd_lower` là task vòng 2; (b) QD §7.4 — **ST-02a chặn ST-04..ST-09**; (c) QD §7.3 — **`|` không bao giờ là toán tử nhị phân trong biểu thức**, pattern vẫn dùng `|`.
@@ -122,7 +122,7 @@ Phụ lục B. Chương trình mẫu
 - Phần mở rộng `.vis` (script), `.vish` (tệp ở chế độ lệnh, xem 9.1). UTF-8 bắt buộc. Dòng đầu tuỳ chọn `#!/usr/bin/env vis`.
 - **Chuẩn hoá NFC trước khi lex** (QD §7.1): **toàn bộ** tệp nguồn được chuẩn hoá Unicode NFC **trước** khi lex. Hệ quả: định danh, literal `str`/`char` và **cột chẩn đoán** đều tính trên dạng NFC; `'ố'` gõ dạng tổ hợp hay dựng sẵn đều là **một** Unicode scalar và là một literal `char` hợp lệ; `số_lượng` viết dạng tổ hợp (NFD) và dạng dựng sẵn (NFC) là **cùng một** tên. `vis fmt` ghi ra NFC. Vị trí báo lỗi vẫn trỏ được về tệp gốc vì cả lexer và editor cùng chuẩn hoá một cách tất định.
 - **Từ khoá tiếng Anh** (giống Python, Rust, JS/TS). Danh sách:
-  `let var const fn cmd type enum trait impl pub use if elif else match for in while loop break continue return and or not true false self async await scope test extern derives with has dyn ref`
+  `alias and async await break cmd const continue derives dyn elif else enum extern false fn for has if impl in let loop match newtype not or pub ref return scope self trait true type use var while with` (39 mục + dạng viết thường của `None` trong `KEYWORDS` 40 mục; `test` theo ngữ cảnh; `alias`/`newtype`/dạng viết thường của `None` báo `VS0203`)
   - **Thêm `const`** (dùng cho `const_decl`, Phụ lục A).
   - **Bỏ `as`**: bản này không có cú pháp alias trong `use`; `as` là định danh bình thường.
   - **`test` là từ khoá theo ngữ cảnh**: chỉ là từ khoá khi đứng đầu item và ngay sau là `fn` (`test fn name():`). Ở vị trí khác `test` là định danh, nên `test.run()` hợp lệ.
@@ -168,7 +168,7 @@ Phụ lục B. Chương trình mẫu
 | Đường dẫn | `p"./data/a.txt"` (script), `./data/a.txt` (chế độ lệnh, từ trần) | `path` |
 | List | `[1, 2, 3]` | `list[int]` |
 | Map | `{"a": 1, "b": 2}` | `map[str, int]` |
-| Set | `set{1, 2}` | `set[int]` |
+| Set | `set{1, 2}` | `list[int]` khử trùng (kiểu `set[T]` chưa hiện thực — xem `SPEC.md` §12) |
 | Tuple | `(1, "a")` | `(int, str)` |
 | Bản ghi ẩn danh | `{name: "An", age: 20}` | `{name: str, age: int}` |
 
@@ -246,10 +246,10 @@ type Email(str)                 # kiểu mới, không tự chuyển đổi vớ
 ```
 
 - `derives` sinh cài đặt trait chuẩn: `Eq`, `Show`, `Json` (chỉ 3 trait có sẵn trong implementation; `Ord`/`Hash`/`Default` chưa có). Kiểu chứa `float` **không** derive được `Eq`/`Hash` (3.6).
-- Tạo bản ghi: `User(name: "An", age: 20)`; tham số có tên bắt buộc khi bản ghi có hơn 2 trường.
+- Tạo bản ghi: `User(name: "An", age: 20)`; **mọi bản ghi bắt buộc truyền trường có tên** (đối số vị trí ⇒ `VS0412`, `VD-260`).
 - Cập nhật: `u with age: 21` trả bản ghi mới. Trường **bất biến** ở bản này (không có `var` cho trường).
-- `type X = T` là tên khác của cùng kiểu; `type Email(str)` là kiểu mới, phải chuyển đổi tường minh
-  (`Email(s)` / `let Email(s) = e`). **R12a (VD-178)**: `alias`/`newtype` **đã bỏ** ⇒ `VS0203`.
+- `type X = T` là alias trong suốt; `type Email(str)` hiện thực là **newtype trong suốt** (`SPEC.md` §3.1/§4.1; đích danh nghĩa để sau);
+  **R12a (VD-178)**: `alias`/`newtype` **đã bỏ** ⇒ `VS0203`.
 
 ### 3.3 Kiểu cấu trúc cho dữ liệu bảng
 
@@ -281,15 +281,15 @@ Không chuyển đổi ngầm giữa số. `float(x)`, `int.trunc(f)`, `int.pars
 
 ### 3.6 Ngữ nghĩa số
 
-Bảng bắt buộc (QD §7.3, chấp nhận bảng D điểm 3):
+Bảng bắt buộc (QD §7.3; đã đồng bộ thực tế `R7`/`SPEC.md` §4.5 ở `VD-291`):
 
 | Biểu thức | Kiểu | Luật |
 |---|---|---|
-| `int / int` | `int` | cắt về 0; `/0` **panic**; có `div_floor`, `div_euclid`, `checked_div -> int?` |
-| `int % int` | `int` | dấu theo **số bị chia** (C/Rust: `-7 % 2 == -1`); `%0` **panic**; có `rem_euclid`, `mod_floor` |
+| `int / int`, `int // int` | `float` / `int` | `/` **luôn trả `float`** (`7 / 2 == 3.5`, `int / 0` ⇒ `VS0502`); `//` chia nguyên **làm tròn xuống** (`-7 // 2 == -4`, `// 0` ⇒ `VS0502`) |
+| `int % int` | `int` | dấu theo **số chia** (`-7 % 2 == 1`, `7 % -2 == -1`, `SPEC.md` §4.5); `% 0` ⇒ `VS0502` |
 | `int ** int` | `int` | **kết hợp phải**, **cao hơn** `*`; mũ âm **panic**; tràn **panic**; có `checked_pow -> int?` |
 | `float` cơ bản | `float` | f64; `/0.0` theo IEEE 754 (±inf/NaN), **không panic** |
-| NaN | — | `==` trả `false` (kể cả `nan == nan`); float **không** có `Eq`; kiểu chứa `float` không `derives Eq`; sắp xếp dùng `total_cmp` |
+| NaN | — | `==` trả `false` (kể cả `nan == nan`); float **không** có `Eq`; kiểu chứa float không `derives Eq`; sắp xếp dùng `total_cmp` |
 | Bit | `int` | `bit_and bit_or bit_xor bit_not shl shr ushr` trên 64 bit có dấu (`bit_not(0) == -1`); `shr` **số học** (giữ dấu), `ushr` **logic**; số đếm ngoài `0..63` **panic**; có `checked_shl`, `checked_shr` |
 | `size ± size` | `size` | tràn panic; `size * int`, `size / int`; `size / size -> float` |
 | `duration ± duration` | `duration` | `duration * int`, `duration / int`, `duration / duration -> float` |
@@ -316,7 +316,7 @@ let {name, age} = user
 ```
 
 - `let` bất biến, `var` biến đổi được; `count += 1` là `count = count + 1`.
-- **Shadowing** (QD §7.3): được **che tên ở scope trong** — `let x = 1` ngoài, `let x = "a"` trong khối là hợp lệ, **kiểu được phép khác**. **Khai lại cùng một scope là lỗi** kiểm kiểu, kể cả khi kiểu giống hệt.
+- **Shadowing** (`R16`/`SPEC.md` §4.7): **`let` được phép che tên** cả trong cùng scope lẫn scope trong (`let x = 1; let x = "a"` hợp lệ); **`var` khai lại trong cùng scope là lỗi `VS0302`**.
 - Tham số, biến `for`, binding của arm `match` và `if let` cũng là khai báo: chúng che tên ngoài, không khai lại trong cùng scope.
 - Gán cho `let` hoặc cho tham số là lỗi; `var self` là ngoại lệ duy nhất cho tham số (5.4).
 
@@ -664,7 +664,7 @@ pub cmd ls(path: path = p".", --all: bool = false, --long: bool = false) -> stre
     ...
 ```
 
-- `cmd` là hàm bình thường, cộng thêm: tự sinh `--help`, gọi được bằng cú pháp lệnh, tham số `--x` thành cờ, `bool` thành cờ không giá trị.
+- `cmd` là hàm bình thường, gọi được bằng cú pháp lệnh, tham số `--x` thành cờ, `bool` thành cờ không giá trị *(tự sinh `--help` là đích thiết kế, chưa hiện thực — `SPEC.md` §12)*.
 - Lệnh nhận `ctx: Ctx` ngầm (thư mục hiện tại, môi trường, terminal, quyền của phiên). Hàm thường không có `ctx`.
 - Tham số mặc định kiểu `path` viết `p"."` (3.5), không viết `"."`.
 
@@ -849,7 +849,7 @@ pub trait Host: Send + Sync {
 - **pty chưa có** ở bản này; pty + controlling terminal để **tty server** sau (15.1). Vì vậy chương trình toàn màn hình chưa hứa chạy.
 - **Trên ViFastOs**, các thao tác tiến trình ở trên là **RPC tới `procsrv`**, không phải syscall: kernel chỉ có `Exit` (syscall 14) và `Tcb.Suspend/Resume`. Đừng đi tìm syscall `wait`.
 - Đường dẫn trong lõi là `VPath` (luôn `/`, UTF-8; tên không UTF-8 giữ dạng bytes thoát). Backend chuyển sang đường dẫn gốc.
-- Backend: `vis-host-posix` (Linux, macOS, BSD), `vis-host-windows`, `vis-host-wasm`, `vis-host-vifast` (workspace ngoài `viscript/`), `vis-host-mock` (test, tất định).
+- Backend thực tế: `vis-host-native` (Linux/macOS/Windows), `vis-host-linux` (Landlock), `vis-host-wasm` (workspace riêng, `wasm32-wasip1`); `vis-host-vifast` ở repo ViFastOs.
 - **Shell sở hữu tty**; tiến trình con nhận pipe. Chương trình toàn màn hình (vim/less) để sau với tty server riêng (QD §3.1).
 - **Bộ hợp chuẩn Host** chạy giống nhau trên mọi backend (mục 18).
 
@@ -911,8 +911,8 @@ nguồn (.vis / .vish / dòng lệnh)
 | `vis-interp` | interpreter cây trên HIR (mô hình tham chiếu, đơn giản) | types |
 | `vis-bytecode` | định dạng bytecode, sinh mã, xác minh | types |
 | `vis-vm` | VM, heap RC/CoW, scheduler task, FFI | bytecode |
-| `vis-host` | trait Host + `vis-host-mock` | |
-| `vis-host-{posix,windows,wasm}` | backend | host |
+| `vis-host` *(gốc)* | trait `Host` (nay ở `vis-runtime`) + mock FS (`vis-host-native::fsmock`) | |
+| `vis-host-{native,linux,wasm}` | backend thực tế (thay tên gốc `posix`/`windows`) | host |
 | `vis-std` | thư viện chuẩn (.vis + Rust) | vm, host |
 | `vis-fmt` | định dạng mã từ CST | syntax |
 | `vis-lsp` | language server | types, fmt |
@@ -921,18 +921,18 @@ nguồn (.vis / .vish / dòng lệnh)
 | `vishell` | shell | cli, edit |
 | `vis-plugin` | macro + ABI plugin Rust | vm |
 
-> **Hiện trạng crate ở `main` (2026-11-25, mốc `0.6.0`, `VD-289`/`VD-290`)**: bảng trên là **đích thiết kế gốc**. Cây thật đã hoàn tất **Kiến trúc 5 Tầng DAG** với **23 crate trong workspace chính** (chung 1 `Cargo.lock`, `version.workspace = true`) + **1 workspace riêng** `vis-host-wasm` (target `wasm32-wasip1`):
-> - **Tầng 0** (nền tảng thuần, 0 OS, 0 `unsafe`): `vis-diag`, `vis-syntax`, `vis-fmt`, `vis-plugin-abi`, `vish-term`.
+> **Hiện trạng crate ở `main` (2026-11-26, mốc `0.6.0`, `VD-289`/`VD-291`)**: bảng trên là **đích thiết kế gốc**. Cây thật đã hoàn tất **Kiến trúc 5 Tầng DAG** với **23 crate trong workspace chính** (chung 1 `Cargo.lock`, `version.workspace = true`) + **1 workspace riêng** `vis-host-wasm` (target `wasm32-wasip1`):
+> - **Tầng 0** (nền tảng thuần, 0 `unsafe`; riêng `vish-term` có dep `rustix`/`crossterm` theo target): `vis-diag`, `vis-syntax`, `vis-fmt`, `vis-plugin-abi`, `vish-term`.
 > - **Tầng 1** (IR, lõi dữ liệu & giao thức thuần): `vis-hir` (dữ liệu HIR/Type/`TypeTable`/`StdId`+`FUNCS`), `vis-core` (`Value`/JSON/traits/lỗi, 0 HTTP), `vis-http` (HTTP/1.1 sans-IO + async state machine trên `NetHost`).
 > - **Tầng 2** (biên dịch & thực thi, 0 coupling chéo): `vis-types` (chỉ `lower`+`tyck`), `vis-bytecode` (0 dep `vis-types`), `vis-runtime` (`builtin`/`stdlib` chia miền theo `StdId`/scheduler/chan/worker/render), `vis-interp` (tree-walker mỏng), `vis-vm` (0 dep `vis-interp` & `vis-types`).
 > - **Tầng 3** (hạ tầng ứng dụng & host): `vis-loader`, `vis-lsp`, `vis-pkg` (tiêm `NetHost`, 0 dep `vis-host-native`), `vis-host-native` (FS `openat2`/`statat`, net/TLS/H2, SQLite), **`vis-host-linux`** (Landlock Linux-only, **đã nằm trong workspace chính** từ `ST-312b`), `vis-plugin-host`, `vis-plugin-macros`, `vish-edit`.
 > - **Tầng 4** (đóng gói & kiểm chuẩn): `vis-cli` (vỏ mỏng, chỉ feature-forwarding), `vis-conformance` (harness dữ liệu `test/conformance/**` chạy tự động parity interp↔VM), và workspace riêng `vis-host-wasm`.
 > Tên gọi `vishell`/`vis-plugin` ở bảng đích được tách thành `vish-edit` + `vish-term` (đấu nối qua `vis repl`) và `vis-plugin-{abi,host,macros}`.
 
-- **`vis-host-vifast` KHÔNG nằm trong `viscript/`** (QD §7.5 ST-01): nó ở **workspace ngoài** vì phụ thuộc IDL của ViFastOs; `viscript/` chỉ chứa crate thuần (lõi + 3 backend còn lại + mock). Cổng ST-01 kiểm điều này bằng case âm.
+- **`vis-host-vifast` ở repo `ViFastOs`** (QD §7.5 ST-01): repo này chứa lõi/thư viện + `vis-host-native`/`vis-host-linux` + workspace riêng `vis-host-wasm`; `vish-term` có dep OS theo target.
 - **SPDX theo loại tệp** (QD §9.3): `//` cho Rust/asm, `#` cho `.vis .vish .vidl .toml`; tệp không có chú thích dùng sidecar `.license`; tệp sinh do generator phát header.
 - **Giấy phép (D2-21)**: MIT OR Apache-2.0; phụ thuộc qua `cargo-deny` với allowlist MIT, Apache-2.0, BSD-2/3-Clause, ISC, 0BSD, Zlib, Unicode-3.0, Unicode-DFS-2016; cấm MPL/GPL/LGPL; `THIRD-PARTY.md` sinh tự động; LICENSE-MIT/APACHE một bản ở gốc repo; **không** tạo NOTICE.
-- Luật: `vis-syntax`, `vis-types`, `vis-bytecode`, `vis-vm` không phụ thuộc hệ điều hành (cổng build target wasm32). **Tệp không quá 1.500 dòng** [TK]. `unsafe` chỉ trong **danh sách crate đóng** (`vis-vm` cho heap, `vis-plugin` cho ABI), có Miri; **mỗi luật có case âm** chứng minh cổng bắt được vi phạm.
+- Luật: `vis-syntax`, `vis-types`, `vis-bytecode`, `vis-vm` không phụ thuộc hệ điều hành (cổng build target wasm32). **Tệp không quá 1.500 dòng** [TK]. **`unsafe` bị cấm theo R2 (danh sách đóng rỗng, 0 `unsafe` tại `0.6.0`; attribute `#![forbid(unsafe_code)]` hiện có ở 11/23 crate)**; **mỗi luật có case âm** chứng minh cổng bắt được vi phạm.
 
 ### 14.3 Kiểm kiểu
 
@@ -1060,7 +1060,7 @@ mod image {
 | L1 | bộ test ngữ nghĩa `.vis` trên interpreter và VM | < 60 s |
 | L2 | vi sai interpreter/VM trên chương trình sinh ngẫu nhiên; fuzz parser/typechecker; hợp chuẩn Host trên máy hiện tại | < 5 phút |
 | L3 | ma trận Linux, macOS, Windows, wasm (và ViFastOs khi có) | CI |
-| L4 | fuzz dài, benchmark, Miri | đêm |
+| L4 | fuzz dài, benchmark *(Miri chưa cấu hình trong repo)* | đêm |
 
 ### 18.2 Theo từng phần
 
@@ -1073,12 +1073,12 @@ mod image {
 | Kiểm kiểu | tệp `.vis` có chú thích kỳ vọng `# error: VS0412` hoặc `# ok`; mỗi mã lỗi có ca dương và ca âm; snapshot thông báo lỗi |
 | Xét hết match | so với bộ liệt kê vét cạn trên enum nhỏ sinh ngẫu nhiên; **guard không tính**, **kiểu vô hạn cần `_`** |
 | Optional | `T → T?` tự nâng; `T??` = `Option[Option[T]]` lồng hợp lệ (không làm phẳng; bảng giá trị — 4.4); `?` trên `T?`; `if let`; `.get/.last` khi rỗng; `xs[i]?` |
-| Số | `%` dấu theo số bị chia; `%0` panic; `**` phải-kết-hợp; mũ âm panic; bit count ≥ 64 panic; NaN `==` false |
+| Số | `%` dấu theo số chia (`SPEC.md` §4.5); `%0` `VS0502`; `**` phải-kết-hợp; mũ âm panic; bit count ≥ 64 panic; NaN `==` false |
 | Interpreter | mô hình tham chiếu, giữ đơn giản |
 | Bytecode + VM | **vi sai**: bộ sinh chương trình đúng kiểu theo seed, chạy trên interpreter và VM, so đầu ra, mã thoát, lỗi; tự thu nhỏ ca lệch |
 | Trình xác minh | đột biến bytecode hợp lệ phải bị từ chối hoặc vẫn an toàn |
-| Heap RC/CoW | Miri; test rò rỉ (đối tượng sống về 0); test ngữ nghĩa giá trị |
-| async/scope | lập lịch tất định theo seed trong `vis-host-mock`; không task mồ côi; huỷ lan đúng; **panic trong scope huỷ anh em rồi lan** |
+| Heap RC/CoW | test rò rỉ (đối tượng sống về 0); test ngữ nghĩa giá trị *(0 `unsafe` R2; Miri chưa cấu hình)* |
+| async/scope | lập lịch tất định theo trace/seq trong `crates/vis-runtime/src/rt/frame_test.rs` + `crates/vis-conformance/tests/async_api_it` (`lat257_fairness` dùng seed) |
 | Host | **bộ hợp chuẩn**: cùng tệp test chạy trên mọi backend; khác biệt hợp lệ khai báo rõ; `wait -> {code, how}`; suspend/resume/cancel |
 | Quyền | test âm: `..`, symlink ra ngoài, dẫn xuất rộng hơn đều phải bị chặn; consent theo **hash closure** mất hiệu lực khi phụ thuộc đổi |
 | Thư viện chuẩn | test `.vis` + so với triển khai tham chiếu trên host (ví dụ json với serde_json) |
@@ -1094,14 +1094,14 @@ Mỗi lỗi sửa có `tests/regress/<mã>.vis`. Ca lệch từ vi sai được 
 
 | Lệnh | Nội dung |
 |---|---|
-| `vis-dev check` | L0 crate bị chạm |
-| `vis-dev gate --fast` | fmt, clippy, build wasm32 cho crate lõi, header SPDX **theo loại tệp**, **doc-examples parse**, luật 1.500 dòng + `unsafe` (có case âm), L0, L1 |
-| `vis-dev gate` | + L2 |
-| `vis-dev nightly` | L4 + benchmark + báo cáo |
+| `vis-dev check` | fmt, clippy, R1..R9, **DAG 5 tầng + self-test**, toolchain, release, fixtures, report-check, build, doc-examples, readme-examples (không chạy L0) |
+| `vis-dev gate --fast` | `vis-dev check` + L0 test (nextest + doc-test); không build wasm32, chưa có L1 |
+| `vis-dev gate` | chỉ nhận `gate --fast`; không có full gate/L2 (thiếu `--fast` ⇒ exit 2) |
+| `vis-dev nightly` | `gate --fast` + fuzz parser (`--fuzz-minutes`, mặc định 2) + vòng tròn fmt; không L4/benchmark |
 
 Không retry. Không `#[ignore]` để qua cổng.
 
-- **Cổng "doc-examples parse"** (QD §7.4): trích **mọi** khối mã nhãn `vis`/`vish-session` trong `docs/`, chạy `vis check`; **danh sách ngoại lệ phải khai báo tường minh** trong `docs/viscript/doc-examples-allow.txt` — dự kiến: khối sơ đồ ASCII, Rust, EBNF và các khối cố ý sai. Không có ngoại lệ ngầm.
+- **Cổng "doc-examples parse"** (QD §7.4): trích **mọi** khối mã nhãn `vis`/`vish-session` trong `docs/`, chạy `vis check`; **danh sách ngoại lệ phải khai báo tường minh** trong `docs/doc-examples-allow.txt` — dự kiến: khối sơ đồ ASCII, Rust, EBNF và các khối cố ý sai. Không có ngoại lệ ngầm.
 - **Tiêu chí lossless của ST-07**: (a) `fmt` in lại **đúng văn bản gốc** trên 100 % fixture đã đúng chuẩn (lossless CST→text); (b) `fmt` **idempotent** — `fmt(fmt(x)) == fmt(x)`; (c) tệp có tab: `fmt` sửa thành 4 dấu cách; (d) tệp có lỗi cú pháp: `fmt` **không sửa**, báo lỗi, mã thoát 2.
 
 ---
@@ -1110,11 +1110,11 @@ Không retry. Không `#[ignore]` để qua cổng.
 
 | Mốc | Nội dung | Tiêu chí xong | Phụ thuộc |
 |---|---|---|---|
-| VS-SPEC | **Áp errata S1..S11/L1..L8 + APPROVED** cho `SPEC-lex.md` + **Phụ lục A** + bảng ưu tiên (Agent 1 soạn) + sổ mã lỗi (`ST-02b`); 60 golden token chuyển ST-04, 30 golden biểu thức chuyển ST-05 | `APPROVED <ngày> Agent 0` trong `viscript/agent/QUEUE.md`; 60 golden token + 30 golden biểu thức; mọi khối mã trong tài liệu parse được (ngoại lệ khai báo) | |
+| VS-SPEC | **Áp errata S1..S11/L1..L8 + APPROVED** cho `SPEC-lex.md` + **Phụ lục A** + bảng ưu tiên (Agent 1 soạn) + sổ mã lỗi (`ST-02b`); 60 golden token chuyển ST-04, 30 golden biểu thức chuyển ST-05 | `APPROVED <ngày> Agent 0` trong `agent/QUEUE.md`; 60 golden token + 30 golden biểu thức; mọi khối mã trong tài liệu parse được (ngoại lệ khai báo) | |
 | VS0 | syntax 2 chế độ + diag + types (kiểu cơ bản, bản ghi, enum, `T?`, Result, list/map, match xét hết, hàm, closure) + interpreter + bộ test ngữ nghĩa | ≥ 300 test `.vis`; fuzz parser 1 giờ không panic; vòng tròn fmt; **100 % fixture tài liệu parse** | VS-SPEC |
-| VS1 | generic, trait, module, bytecode + VM + xác minh + cache, vis-std lõi, vis-host-posix, `vis run/check/fmt/test`, `cmd_lower` | vi sai interp/VM 100.000 chương trình 0 lệch; khởi động ấm < 20 ms [ƯL] | VS0 |
+| VS1 | generic, trait, module, bytecode + VM + xác minh + cache, `vis-runtime`, `vis-host-native`, `vis run/check/fmt/test`, `cmd_lower` | vi sai interp/VM 100.000 chương trình 0 lệch; khởi động ấm < 20 ms [ƯL] | VS0 |
 | VSH1 | ViShell trên Linux/macOS: chế độ lệnh đầy đủ, stream, chương trình ngoài, gợi ý theo kiểu, lịch sử, job (chưa chương trình toàn màn hình) | dùng hằng ngày được; test pty xanh | VS1 |
-| VS2 | async có cấu trúc, kênh, net/http, quyền + Landlock, vis-host-windows, vis-host-wasm, LSP, gói | bộ hợp chuẩn Host xanh 4 nền tảng | VS1 |
+| VS2 | async có cấu trúc, kênh, net/http, quyền + Landlock, `vis-host-native` (Linux/macOS/Windows), `vis-host-wasm`, LSP, gói | bộ hợp chuẩn Host xanh 4 nền tảng | VS1 |
 | VSH2 | ViShell trên ViFastOs + vis-host-vifast (workspace ngoài) + binding IDL | thay shell tạm của ViFastOs | VS2, ViFastOs U1 |
 | VS3 | plugin Rust, thread song song, binding toolkit, ViTerm hiển thị có cấu trúc | ứng dụng desktop nhỏ viết bằng ViScript | VS2, ViFastOs G3 |
 
@@ -1130,11 +1130,11 @@ VS-SPEC tới VS2 không phụ thuộc ViFastOs, chạy song song với kernel.
 
 Dùng nguyên quy trình mục 11 tài liệu ViFastOs (QUEUE, STATE, JOURNAL, BLOCKED, DECISIONS, báo cáo MD + JSON, vòng 8 bước, luật cấm, ngân sách, chạy qua đêm), với các điểm riêng:
 
-- Thư mục điều khiển `viscript/agent/`; `vifast-agentctl --project viscript`. Hai dòng có QUEUE riêng, không giẫm nhau.
+- Thư mục điều khiển `agent/` (gốc repo ViScript); hai dòng có QUEUE riêng, không giẫm nhau.
 - Lệnh cổng là **`vis-dev ...`** thay cho `v2 ...` (`vis-dev check`, `vis-dev gate --fast`, `vis-dev nightly`).
 - Thay đổi ngữ nghĩa ngôn ngữ (cú pháp, quy tắc kiểu) **luôn** qua Agent 0; Agent 2 cài đặt theo tài liệu này, `SPEC-lex.md` và Phụ lục A. Chỗ chưa rõ: ghi BLOCKED kèm đề xuất + ví dụ, làm task khác.
 - Lỗi phát hiện từ fuzz/vi sai: thu nhỏ, ghi `tests/regress/`, test đỏ trước rồi mới sửa.
-- Duyệt **chỉ** bằng dòng `APPROVED <YYYY-MM-DD> Agent 0` trong `viscript/agent/QUEUE.md` + một mục VD mới; không duyệt bằng chat (QD §4, D2-22).
+- Duyệt **chỉ** bằng dòng `APPROVED <YYYY-MM-DD> Agent 0` trong `agent/QUEUE.md` + một mục VD mới; không duyệt bằng chat (QD §4, D2-22).
 
 ### 20.2 Giao việc vòng 1
 
@@ -1142,7 +1142,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 
 | ID | Task | Phụ thuộc | Ngân sách | Trạng thái | Tiêu chí xong |
 |---|---|---|---|---|---|
-| ST-01 | Workspace `viscript/` + `viscript/agent/` (không ghi đè) + SPDX **theo loại tệp** + cổng 1.500 dòng/`unsafe` có case âm + **`vis-host-vifast` không nằm trong `viscript/`** | — | 3 h | READY | cổng chạy; 3 case âm; `cargo build` workspace rỗng xanh |
+| ST-01 | Repo ViScript (gốc) + `agent/` (không ghi đè) + SPDX **theo loại tệp** + cổng 1.500 dòng/`unsafe` có case âm + **`vis-host-vifast` ở repo ViFastOs** | — | 3 h | READY | cổng chạy; 3 case âm; `cargo build` workspace rỗng xanh |
 | ST-02a | **Áp errata mục 3 + APPROVED** (Agent 1 soạn SPEC-lex/Phụ lục A/bảng ưu tiên) | — | 3 h (2 phiên) | **REVIEW** | errata áp xong; `APPROVED <ngày> Agent 0`; sau APPROVED là **DONE** |
 | ST-02b | Sổ mã lỗi `VS` + 4 chữ số + quy tắc cấp | ST-01 | 2 h | READY | bảng mã; `vis explain` được |
 | ST-03 | `vis-diag`: cột theo **Unicode scalar**, render, bảng vi/en/ja | ST-01 | 3 h | BLOCKED | snapshot 20 ca, có tiếng Việt/emoji; cột LSP đổi UTF-16 ở biên |
@@ -1219,7 +1219,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 | VD-20 | Lỗi: `trait Error: Show { message, source, span }`; `AnyError` là kiểu xoá; mọi `E: Error` tự chuyển sang `AnyError` qua `?`; `main -> Result[(), AnyError]`; tên phía plugin Rust là `vis::Error`. Mã thoát: 0 ok, 1 lỗi từ main, 2 lỗi dùng/kiểu, 101 panic, 126 không chạy được, 127 không tìm thấy, 130 bị huỷ. |
 | VD-21 | Chế độ lệnh (QD §7.2): metachar là khoảng trắng, `( ) [ ] { } ; & $ ' " |`, `#` ở đầu từ; `"..."` có nội suy, `'...'` thô; `$x` biến phiên, `$env.NAME` môi trường; `;` tách pipeline; `&` nền chỉ khi là token cuối có khoảng trắng phía trước; `--` kết thúc cờ; `-5` là số nếu tham số kiểu số, ngược lại là cờ; `.vish`/REPL: `shell_item := use | let | fn | cmd | pipeline`. |
 | VD-22 | Parse chế độ lệnh **hai pha**: `vis-syntax` sinh `CmdCST` (từ trần chưa định kiểu) → `cmd_lower` trong `vis-types` dùng bảng chữ ký → **HIR**. Tiêu chí "cùng AST" đọc thành **"cùng HIR"**; vòng 1 chỉ làm `CmdCST` + golden, `cmd_lower` là task vòng 2. |
-| VD-23 | `docs/viscript/SPEC-lex.md` + **Phụ lục A** là nguồn từ vựng/cú pháp duy nhất; Agent 0 duyệt qua errata; ST-02a DONE sau APPROVED. |
+| VD-23 | `docs/SPEC-lex.md` + `docs/SPEC.md` §3 là nguồn từ vựng/cú pháp chuẩn tắc (Phụ lục A dưới đây giữ bản EBNF v1 lịch sử); ST-02a DONE sau APPROVED. |
 | VD-24 | **Shell sở hữu tty**; tiến trình con nhận pipe, không nhận `cap[Term]`; chương trình toàn màn hình để sau với tty server. |
 | VD-25 | `from json` không tham số trả `Json`; `where`/`get` trên `Json` là lỗi kiểu gợi ý `from json[T]`; SIGPIPE/`take` không phải lỗi; `| complete` trả `{stdout,stderr,code,how}`. |
 | VD-26 | Consent và cache dùng chung **hash closure** (nguồn + phụ thuộc + phiên bản compiler). |
@@ -1243,7 +1243,7 @@ Nhãn task đổi **VT → ST** (QD §2.1); cột Trạng thái dùng `READY | B
 
 ## Phụ lục A. EBNF tự chứa (chế độ script + chế độ lệnh)
 
-Đây là **văn phạm chuẩn tắc**, không phải "giả ngữ pháp": mọi luật dưới đây là điều kiện cần và đủ để parser của `ST-05`/`ST-06` chấp nhận đúng các ví dụ trong tài liệu. Token viết HOA (`IDENT`, `INT`, `STRING`, `WORD`, `NAME`, `NEWLINE`, `INDENT`, `DEDENT`...) do `vis-syntax` sinh theo `SPEC-lex.md`; mọi ký tự còn lại là terminal của ngôn ngữ. `(* ... *)` là chú thích của văn phạm.
+Đây là **bản EBNF gốc v1** (`ST-05`/`ST-06`, giữ nguyên để bảo toàn chỉ mục khối mẫu tài liệu); **văn phạm chuẩn tắc hiện hành `0.6.0`** (gồm `stmt` cấp tệp, `use ./`, `async cmd`, `spawn`, `while let`, `let … else`, `shell_item` mở rộng, bỏ `alias`/`newtype`) nằm tại **`docs/SPEC.md` §3**. Token viết HOA do `vis-syntax` sinh theo `SPEC-lex.md`.
 
 ```
 (* ===== A.1 Khung tệp và item ===== *)
@@ -1571,7 +1571,7 @@ fn tính_tổng(danh_sách: list[int]) -> int:
   thiểu** đó. Hai phụ thuộc cùng cần `X` `v1.2` và `v1.4` ⇒ chọn **`v1.4`**, **không** chọn `v1.9` dù có.
   Major khác nhau = **đường dẫn khác** (`/v2`) ⇒ cùng tồn tại được.
 - **`pkg update X`** chỉ đổi **X và phụ thuộc bắt buộc của X**; `pkg update` không đối số cập nhật tất cả
-  (nợ **#142**).
+  (`#142` đã đóng ở ST-288 — xem §C.2).
 - **Tin cậy — thay khoá ký registry**: `vis.lock` ghi **sha256 của cây tệp chuẩn hoá** (đường dẫn tương
   đối sắp theo byte + nội dung + bit thực thi 0/1; **không** mtime, **không** quyền đầy đủ, **không**
   `.git`/`target`). **`sum.vifast.org`** = sổ hash công khai **chỉ ghi thêm** (giai đoạn đầu là repo git
@@ -1603,7 +1603,7 @@ fn tính_tổng(danh_sách: list[int]) -> int:
   ⇒ build chạy.
 - **Ngoài phạm vi VS3**: proxy chạy thật, `pkg.vifast.org` (tìm kiếm/tài liệu), yank/thu hồi phiên bản.
 
-### C.2 Trạng thái hiện tại của `vis pkg` (mã đang chạy, 2026-11-23)
+### C.2 Trạng thái hiện tại của `vis pkg` (mã đang chạy, 2026-11-26)
 
 **Không** phải mô hình C.1. Cái **đang có**:
 
@@ -1611,7 +1611,7 @@ fn tính_tổng(danh_sách: list[int]) -> int:
   [--registry-key <64-hex>]`, `vis pkg install`,
   `vis pkg update [<tên>] [--registry <dir|http://host:port|https://host[:port][/path]>] [--registry-key <64-hex>]`,
   `vis pkg list [--json]`, `vis pkg remove <tên>`, `vis pkg gc [--dry-run]`, `vis pkg migrate`
-  (`crates/vis-cli/src/pkg.rs`).
+  (`crates/vis-pkg/src/pkg.rs`; `vis-cli` dùng nội bộ qua `pub(crate) use vis_pkg::pkg`).
 - **Registry CỤC BỘ** (thư mục; mặc định `./registry`, đổi bằng `--registry`): **không** mạng, **không**
   tải theo đường dẫn, **không** meta tag, **không** sổ hash, **không** proxy.
 - **Registry HTTP(S) — VS3-5a + VS3-4a (VD-271)**: `--registry http://host:port[/đường]` (loopback)
@@ -1636,20 +1636,20 @@ fn tính_tổng(danh_sách: list[int]) -> int:
   proxy vận hành thật, sổ hash và chữ ký **bắt buộc theo sổ** (Ed25519 theo khoá cấu hình đã có, ST-288).
 - Nợ liên quan: **#142** (đã đóng ở ST-288), **#143** (`NamePolicy::Strict`), **#125** (đã đóng Landlock Execute ở ST-295).
 
-## Mức hiện thực hiện hành (đồng bộ 2026-11-25, `VD-290` / `0.6.0`)
+## Mức hiện thực hiện hành (đồng bộ 2026-11-26, `VD-291` / `0.6.0`)
 
-Mục này mô tả ngữ nghĩa đã hiện thực, không chứa số đo. Số đo nằm trong `agent/reports/` và `agent/JOURNAL/`. Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
+Mục này mô tả ngữ nghĩa đã hiện thực; số đo chi tiết nằm trong `agent/reports/` và `agent/JOURNAL/` (chỉ giữ tại chỗ mốc kiểm chứng tối thiểu). Khi mục này khác phần thiết kế phía trên, mục này đúng với code hiện tại; phần phía trên là đích thiết kế.
 
-> **Đồng bộ 2026-11-25 (`VD-289`/`VD-290`, mốc `0.6.0`, code freeze `90fd24de`)**: phiên bản workspace là **0.6.0** (chế độ phát triển kiến trúc tối ưu, chưa gắn tag `v0.6.0`; tag lịch sử gần nhất là `v0.5.5`), mọi crate thành viên dùng `version.workspace = true` (một nguồn ở `Cargo.toml`); `vis --version` in `vis 0.6.0`. Toàn bộ **23 crate** trong workspace chính (kể cả `vis-host-linux`, `vish-edit`, `vish-term`, `vis-plugin-{abi,host,macros}`, `vis-hir`, `vis-core`, `vis-http`, `vis-runtime`, `vis-conformance`) đã hợp nhất theo **Kiến trúc 5 Tầng DAG** (`./bin/vis-dag-check` PASS), chỉ còn `vis-host-wasm` là workspace riêng.
+> **Đồng bộ 2026-11-26 (`VD-289`/`VD-290`/`VD-291`, mốc `0.6.0`, nền `6ea63df` / mã `577405f`)**: phiên bản workspace là **0.6.0** (chế độ phát triển kiến trúc tối ưu, chưa gắn tag `v0.6.0`; tag lịch sử gần nhất là `v0.5.5`), mọi crate thành viên dùng `version.workspace = true` (một nguồn ở `Cargo.toml`); `vis --version` in `vis 0.6.0`. Toàn bộ **23 crate** trong workspace chính (kể cả `vis-host-linux`, `vish-edit`, `vish-term`, `vis-plugin-{abi,host,macros}`, `vis-hir`, `vis-core`, `vis-http`, `vis-runtime`, `vis-conformance`) đã hợp nhất theo **Kiến trúc 5 Tầng DAG** (`./bin/vis-dag-check` + self-test nằm trong `./vis-dev check`), chỉ còn `vis-host-wasm` là workspace riêng. `ST-314a` đã `DONE`; Sóng 4 (`ST-315a..ST-315d`) đang mở.
 
-- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với `--strict-caps` (mặc định siết khi dùng `use pkg.*`). Cưỡng chế ở biên host (tầng runtime), vi phạm báo `VS0604` exit 2. **Landlock đã có trên Linux** (`vis-host-linux` nằm trong workspace chính từ `ST-312b`), bật bằng `--sandbox`; `--sandbox-check` báo trạng thái. Trên **Unix (Linux & macOS)**, cả đường **đọc, ghi và truy vấn siêu dữ liệu** (`size`/`list`/`exists`/`walk`/`read_link`/`canonicalize`) đều đi qua `openat`/`openat2` + `statat`/`readlinkat` theo `fd` (`ST-295`, `ST-309`, `ST-311b`; `#146`/`#140`/`#109b`/`#194` đóng, 0 `unsafe`, R9); **Windows** chỉ kiểm theo đường dẫn (`FsGuard`) nên mức bảo đảm thấp hơn.
+- **Quyền cap[...]**: là kiểu thật từ vòng 11 (VD-106). Chỉ cưỡng chế khi chương trình khai báo, hoặc khi chạy với `--strict-caps` (mặc định siết khi dùng `use pkg.*`). Cưỡng chế ở biên host (tầng runtime), vi phạm báo `VS0604` exit 2. **Landlock `ABI::V3`** (`ST-314a`, `Truncate`/`Refer`; nợ `#197` cho tệp đơn `(write)` giao `ST-315c`) đã có trên Linux (`vis-host-linux` nằm trong workspace chính từ `ST-312b`), bật bằng `--sandbox`; `--sandbox-check` báo trạng thái. Trên **Unix (Linux & macOS)**, cả đường **đọc, ghi và truy vấn siêu dữ liệu** (`size`/`list`/`exists`/`walk`/`read_link`/`canonicalize`) đều đi qua `openat`/`openat2` + `statat`/`readlinkat` theo `fd` (`ST-295`, `ST-309`, `ST-311b`; `#146`/`#140`/`#109b`/`#194` đóng, 0 `unsafe`, R9), `cap[Proc]` phân giải `PATH` một lần (`#108` đóng ở `ST-314a`); **Windows** chỉ kiểm theo đường dẫn (`FsGuard`) nên mức bảo đảm thấp hơn.
 - **Async & Ngân sách**: chương trình **có** `async` chạy trên runtime frame (`hir_co_async`, cả interp và VM) với suspend/resume, reactor read/accept/connect/write + timer, cancellation (kể cả giữa HTTP h1/h2 — `ST-287`), `async fn` trong `impl` và `async cmd` (`ST-302`, `#13` đóng); chương trình không `async` giữ tuần tự một luồng. **Ngân sách mặc định 40M** (`ST-290`, `VS0509`/`VS0510`, cache `VFEE`) và VM `Frame::loop_ends` `O(1)` + `MAX_ITER_DEPTH` + `deadline` (`ST-311a`, `#190` đóng, `#195` đã vá mã chờ watchdog 2h khi mở lại pha phát hành). **Worker song song (`--workers`)** có pool affine + `SharedBudget` (`ST-291`/`ST-292`/`ST-301`), vẫn opt-in.
 - **Kênh**: `chan(n)` với n ≥ 1 có `send`/`recv`/`close`, `recv_timeout`/`send_timeout` (`VS3-2b`), `select_recv*`/`select_send*` (`ST-293`) và wait-set/`chan(0)` trên đường frame (`VS3-2a`); đường đồng bộ mặc định vẫn từ chối `chan(0)` bằng `VS0505`.
 - **assert <điều kiện>**: có từ ST-83.
 - **.vish và fn main**: trong tệp .vish, fn main chỉ dùng để khai báo cap; thân có câu lệnh thì báo VS0201 (ST-93b). Thụt lề cấp tệp trong .vish có ngữ nghĩa; vis fmt không chuẩn hoá thụt lề .vish.
-- **HTTP**: tách thành crate thuần sans-IO **`crates/vis-http`** (`ST-312d`) trên `NetHost`/`AsyncHttpEnv`. Hỗ trợ HTTP/1.1 (`http://` chỉ loopback, `https://` TLS mọi host qua `cap[Net]`), chunked, redirect GET có giới hạn, HEAD, deadline tổng monotonic (`ST-265`), keep-alive HTTP/1.1, cookie jar nội bộ, Basic auth, HTTP/2 (`http2` default-on từ `v0.3.0`) và **`async-h2` default-on trên non-wasm** (`ST-294`, Linux + Windows + macOS).
+- **HTTP**: tách thành crate thuần sans-IO **`crates/vis-http`** (`ST-312d`, từ chối CRLF/CTL trong URL ở `ST-314a`) trên `NetHost`/`AsyncHttpEnv`. Hỗ trợ HTTP/1.1 (`http://` chỉ loopback, `https://` TLS mọi host qua `cap[Net]`), chunked, redirect GET có giới hạn, HEAD, deadline tổng monotonic (`ST-265`), keep-alive HTTP/1.1, cookie jar nội bộ, Basic auth, HTTP/2 (`http2` default-on từ `v0.3.0`) và **`async-h2` default-on trên non-wasm** (`ST-294`, Linux + Windows + macOS).
 - **Gói**: `vis pkg add|install|update|list|remove|gc|migrate` (`crates/vis-pkg`, 0 dep `vis-host-native`, tiêm `&mut dyn NetHost` từ `ST-312d`) trên **registry cục bộ** (`--registry`) và **registry HTTP(S)** (`http://` loopback hoặc `https://` mọi host; index + tarball, SHA-256 tarball/từng tệp trước khi cài), **chữ ký Ed25519 tuỳ chọn/bắt buộc** (`VS0708`), `vis.lock` có SHA-256, resolver semver, GC store + migrate lock. **Chưa** có tải theo đường dẫn, MVS, sổ hash `sum.vifast.org`, proxy — mô hình đó là **`[thiết kế VS3-6, chưa triển khai]`** (Phụ lục C).
 - **LSP**: `crates/vis-lsp` + extension VS Code (`editors/vscode/`, `ST-305`); publish chẩn đoán module-aware cho mọi tài liệu đang mở phụ thuộc (overlay buffer, `didClose` quay lại đĩa), incremental sync (`change:2` UTF-16), definition/references/rename/signatureHelp/folding/workspaceSymbol/formatting/typeDefinition/implementation/hover/completion `std.*`. **Còn mở**: publish chẩn đoán cho tệp phụ **không mở**.
-- **Nền tảng**: **3-OS Tier 1** — **Linux** (`ps`; host suite 54/54, Landlock `vis-host-linux` 18/18), **Windows x86_64** (`Tier 1` từ `v0.4.5`/`ST-298`; caveat `FsGuard` chỉ kiểm đường dẫn), **macOS arm64** (`Tier 1` đã công bố từ `v0.5.0`/`ST-300m3`; caveat không Landlock, chỉ arm64; nợ chạy bù clippy Sóng 2–3 sau tái kiến trúc 23 crate ở `ST-314a`). **`wasm32-wasip1`**: **có runner runtime có phạm vi** (`bin/vis-wasm-suite` 28/28, `bin/vis-wasm-sem` **390/390** sau khi đóng `#193` ở `ST-313d` với `-zstack-size=12 MiB` + `node --stack-size=4096`); `wasm32-unknown-unknown` vẫn chỉ `cargo check`.
-- **Ngôn ngữ & Hệ sinh thái đã hiện thực thêm**: `let … else` (`VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, lambda param/return annotation (`ST-301`), `derives Json` codegen thật (`ST-302`, `#8` đóng), `async` method/`cmd` (`ST-302`), plugin tĩnh Rust (`vis-plugin-abi`/`vis-plugin-macros`) & plugin động WASI sandbox (`vis-plugin-host`, `ST-306`/`ST-307`/`ST-310c`), ViShell/REPL + ViTerm (`vish-edit`/`vish-term`, `ST-304`/`ST-308`/`ST-310b`), khởi tạo top-level `let`/`var` trước `fn main`, gán lồng `x.f.g`/`x[i][j]`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.
-- **Thư viện chuẩn & Kiểm chuẩn**: `std.fs/path/str/list/map/sqlite/json/net/time/...` (167 hàm định danh một nguồn qua `StdId` trong `vis-hir`, tổ chức theo miền trong `vis-runtime/src/stdlib/`, 0 tệp `_a.._e`); SQLite là **feature tùy chọn** (`default = ["sqlite"]`). API std đóng băng kiểm bằng `agent/API-STD.txt`; bộ kiểm chuẩn dữ liệu `crates/vis-conformance` + `test/conformance/**` chạy tự động parity `interp ↔ VM`.
+- **Nền tảng**: **3-OS Tier 1** — **Linux** (`ps`; host suite 54/54, Landlock `vis-host-linux` 18/18), **Windows x86_64** (`Tier 1` từ `v0.4.5`/`ST-298`; caveat `FsGuard` chỉ kiểm đường dẫn), **macOS arm64** (`Tier 1` đã công bố từ `v0.5.0`/`ST-300m3`; caveat không Landlock, chỉ arm64; clippy macOS **PASS @`311d2288`**; full gate `0.6.0` hoãn theo chỉ đạo khi `mps` bận, bù ở `ST-316c`). **`wasm32-wasip1`**: **có runner runtime có phạm vi** (`bin/vis-wasm-suite` 28/28, `bin/vis-wasm-sem` **390/390** sau khi đóng `#193` ở `ST-313d` với `-zstack-size=12 MiB` + `node --stack-size=4096`, `bin/vis-wasm-conformance` **393×2** thật 2 engine); `wasm32-unknown-unknown` vẫn chỉ `cargo check`.
+- **Ngôn ngữ & Hệ sinh thái đã hiện thực thêm**: `let … else` (`VS0206`), list rest pattern `[a, ..]`/`[a, ..r]`, lambda param/return annotation (`ST-301`), `derives Json` codegen thật (`ST-302`, `#8` đóng), `async` method/`cmd` (`ST-302`), plugin tĩnh Rust (`vis-plugin-abi`/`vis-plugin-macros`) & plugin động WASI sandbox (`vis-plugin-host`, `ST-306`/`ST-307`/`ST-310c`, giới hạn độ sâu codec 64 cấp & quyền tệp 0700/0400/0600 ở `ST-314a`), ViShell/REPL + ViTerm (`vish-edit`/`vish-term`, `ST-304`/`ST-308`/`ST-310b`), khởi tạo top-level `let`/`var` trước `fn main`, `const` nạp lazy + chặn chu trình (`ST-314a`), gán lồng `x.f.g`/`x[i][j]`, `panic(msg)` kiểu `never`, `recv?.m()`, generic field instantiation.
+- **Thư viện chuẩn & Kiểm chuẩn**: `std.fs/path/str/list/map/sqlite/json/net/time/...` (167 hàm định danh một nguồn qua `StdId` trong `vis-hir`, match vét cạn 167/167 tại `vis-runtime/src/stdlib/`, 0 tệp `_a.._e`); SQLite là **feature tùy chọn** (`default = ["sqlite"]`). API std đóng băng kiểm bằng `agent/API-STD.txt`; bộ kiểm chuẩn dữ liệu `crates/vis-conformance` + `test/conformance/**` (**563 ca**, có `.trap` + so cả thông điệp) chạy tự động parity `interp ↔ VM`.

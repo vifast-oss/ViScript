@@ -41,7 +41,7 @@ Quy ước: "scalar" = Unicode scalar value; mọi offset tính bằng byte, c�
 - `FLOAT` là `f64`; `NaN`/`inf` không có literal; dùng `float.nan`/`float.inf`.
 - `_` chỉ giữa hai chữ số: `1_000` đúng; `_1`, `1_`, `1__0` sai.
 - `..`/`..=` thắng `.` khi gặp `1..2`; `1.2..3.4` là `FLOAT RANGE FLOAT`.
-- `-` là toán tử một ngôi, không thuộc literal; `-9223372036854775808` = `-(922...)` và **tràn** ⇒ lỗi; viết `i64.min`.
+- `-` là toán tử một ngôi; tuy nhiên lexer cho qua độ lớn `2^63` để `-9223372036854775808` (và `-0x8000000000000000`) được gộp thành `i64::MIN` hợp lệ (khớp `docs/SPEC.md` §2.5, `VD-270`/`VD-291`), còn literal dương `9223372036854775808` và mọi độ lớn > `2^63` vẫn bị từ chối `VS0104`.
 
 ## 3. Chuỗi, escape, nội suy
 
