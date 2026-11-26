@@ -174,7 +174,7 @@ fn manifest_tu_gia_tri(
         let Value::Map(dm) = dv else {
             return Err(format!("{nguon}: `deps` phải là object"));
         };
-        for (k, v) in dm {
+        for (k, v) in dm.iter() {
             let Some(dn) = chuoi(k) else {
                 return Err(format!("{nguon}: tên dep phải là chuỗi"));
             };
@@ -290,7 +290,7 @@ fn gia_tri_khoa(khoa: &Khoa) -> Value {
                 .files
                 .iter()
                 .map(|f| {
-                    Value::Map(vec![
+                    Value::map(vec![
                         (Value::Str("path".into()), Value::Str(f.path.clone())),
                         (Value::Str("sha256".into()), Value::Str(f.sha256.clone())),
                     ])
@@ -311,7 +311,7 @@ fn gia_tri_khoa(khoa: &Khoa) -> Value {
             }
             kv.push((Value::Str("sha256".into()), Value::Str(p.sha256.clone())));
             kv.push((Value::Str("files".into()), Value::List(fs)));
-            Value::Map(kv)
+            Value::map(kv)
         })
         .collect();
     let rm: Vec<(Value, Value)> = khoa
@@ -319,12 +319,12 @@ fn gia_tri_khoa(khoa: &Khoa) -> Value {
         .iter()
         .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
         .collect();
-    Value::Map(vec![
+    Value::map(vec![
         (
             Value::Str("lock".into()),
             Value::Int(i64::from(LOCK_PHIEN_BAN)),
         ),
-        (Value::Str("roots".into()), Value::Map(rm)),
+        (Value::Str("roots".into()), Value::map(rm)),
         (Value::Str("packages".into()), Value::List(ps)),
     ])
 }

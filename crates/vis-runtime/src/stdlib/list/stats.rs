@@ -581,7 +581,8 @@ pub(crate) mod mapcontainskey {
     //! - So bằng [`vis_core::value::eq`] — **đúng** phép so của `map.has`/`map.get`
     //!   (`Value::eq_value`: cấu trúc, list/map/record/enum lồng nhau; `int` ↔ `float` theo tỉ lệ
     //!   như `==`), nên `contains_key(m, k)` khớp `m.has(k)`.
-    //! - Quét tuyến tính, dừng ở khoá đầu tiên bằng; không cấp phát.
+    //! - Tra qua [`vis_core::value::VisMap::contains_key`]: chỉ mục băm khi map đủ lớn, quét
+    //!   tuyến tính cho map nhỏ/khoá phức tạp; không cấp phát.
     //!
     //! `key` **không** bị ép kiểu ở tầng chạy: checker đã buộc `K` từ `m`; lời gọi thủ công vẫn
     //! so **cấu trúc** (khác kiểu ⇒ thường `false`, không trap). `m` không phải map ⇒ lỗi dữ liệu
@@ -591,11 +592,11 @@ pub(crate) mod mapcontainskey {
 
     use super::super::super::chung::ban_do;
     use vis_core::trap::R;
-    use vis_core::value::{eq, Value};
+    use vis_core::value::{Value, VisMap};
 
     /// `true` iff có khoá `==` `key`; map rỗng ⇒ `false`.
-    pub(crate) fn co(m: &[(Value, Value)], key: &Value) -> bool {
-        m.iter().any(|(k, _)| eq(k, key))
+    pub(crate) fn co(m: &VisMap, key: &Value) -> bool {
+        m.contains_key(key)
     }
 
     /// Điểm vào `std.map.contains_key` — kiểm `m` là map rồi so khoá.
@@ -608,10 +609,11 @@ pub(crate) mod mapcontainskey {
     mod tests {
         use super::*;
 
-        fn bd(kv: &[(&str, i64)]) -> Vec<(Value, Value)> {
-            kv.iter()
-                .map(|(k, v)| (Value::Str((*k).into()), Value::Int(*v)))
-                .collect()
+        fn bd(kv: &[(&str, i64)]) -> VisMap {
+            VisMap::from_pairs(
+                kv.iter()
+                    .map(|(k, v)| (Value::Str((*k).into()), Value::Int(*v))),
+            )
         }
 
         #[test]
@@ -624,28 +626,28 @@ pub(crate) mod mapcontainskey {
 
         #[test]
         fn map_rong_la_false() {
-            assert!(!co(&[], &Value::Str("a".into())));
-            assert!(!co(&[], &Value::Int(1)));
+            assert!(!co(&VisMap::new(), &Value::Str("a".into())));
+            assert!(!co(&VisMap::new(), &Value::Int(1)));
         }
 
         #[test]
         fn cau_truc_long_nhau_va_khac_kieu() {
             // List làm khoá: cùng cấu trúc, khác thứ tự ⇒ false.
-            let m = vec![(
+            let m = VisMap::from_pairs(vec![(
                 Value::List(vec![Value::Int(1), Value::Int(2)]),
                 Value::Int(1),
-            )];
+            )]);
             assert!(co(&m, &Value::List(vec![Value::Int(1), Value::Int(2)])));
             assert!(!co(&m, &Value::List(vec![Value::Int(2), Value::Int(1)])));
 
             // Bản ghi: so theo trường, không theo thứ tự khai báo.
-            let m = vec![(
+            let m = VisMap::from_pairs(vec![(
                 Value::Record(
                     "P".into(),
                     vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
                 ),
                 Value::Int(1),
-            )];
+            )]);
             let k = Value::Record(
                 "P".into(),
                 vec![("y".into(), Value::Int(2)), ("x".into(), Value::Int(1))],
@@ -653,7 +655,7 @@ pub(crate) mod mapcontainskey {
             assert!(co(&m, &k));
 
             // Khác kiểu (`int` vs `str`) chỉ là `false`, không trap.
-            let m = vec![(Value::Int(1), Value::Int(1))];
+            let m = VisMap::from_pairs(vec![(Value::Int(1), Value::Int(1))]);
             assert!(!co(&m, &Value::Str("1".into())));
         }
     }

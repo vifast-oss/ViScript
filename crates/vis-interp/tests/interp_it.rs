@@ -7,6 +7,8 @@ mod interp_v2;
 mod run;
 #[path = "interp_it/show.rs"]
 mod show;
+#[path = "interp_it/st315b_map_cow.rs"]
+mod st315b_map_cow;
 #[path = "interp_it/vd211_enum_eq.rs"]
 mod vd211_enum_eq;
 #[path = "interp_it/vd263_ctrl.rs"]

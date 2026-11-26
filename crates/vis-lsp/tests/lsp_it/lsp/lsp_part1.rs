@@ -172,7 +172,7 @@ pub(crate) fn s(x: &str) -> Value {
     Value::Str(x.to_string())
 }
 pub(crate) fn m(kv: Vec<(&str, Value)>) -> Value {
-    Value::Map(
+    Value::map(
         kv.into_iter()
             .map(|(k, v)| (Value::Str(k.to_string()), v))
             .collect(),

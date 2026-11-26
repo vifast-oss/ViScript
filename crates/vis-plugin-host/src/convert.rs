@@ -24,11 +24,18 @@ pub fn tu_value(v: Value) -> Result<PluginValue> {
         Value::Path(s) => PluginValue::Str(s),
         Value::Bytes(b) => PluginValue::Bytes(b),
         Value::List(xs) => PluginValue::List(xs.into_iter().map(tu_value).collect::<Result<_>>()?),
-        Value::Map(kv) => PluginValue::Map(
-            kv.into_iter()
-                .map(|(k, v)| Ok((tu_value(k)?, tu_value(v)?)))
-                .collect::<Result<_>>()?,
-        ),
+        Value::Map(kv) => {
+            let entries = match std::rc::Rc::try_unwrap(kv) {
+                Ok(m) => m.into_entries(),
+                Err(rc) => rc.iter().cloned().collect(),
+            };
+            PluginValue::Map(
+                entries
+                    .into_iter()
+                    .map(|(k, v)| Ok((tu_value(k)?, tu_value(v)?)))
+                    .collect::<Result<_>>()?,
+            )
+        }
         Value::Record(_, fs) => PluginValue::Map(
             fs.into_iter()
                 .map(|(k, v)| Ok((PluginValue::Str(k), tu_value(v)?)))
@@ -69,7 +76,7 @@ pub fn sang_value(v: PluginValue) -> Result<Value> {
         PluginValue::List(xs) => {
             Value::List(xs.into_iter().map(sang_value).collect::<Result<_>>()?)
         }
-        PluginValue::Map(kv) => Value::Map(
+        PluginValue::Map(kv) => Value::map(
             kv.into_iter()
                 .map(|(k, v)| Ok((sang_value(k)?, sang_value(v)?)))
                 .collect::<Result<_>>()?,

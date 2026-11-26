@@ -72,17 +72,17 @@ impl FsMock {
             let Value::Map(ds) = dirs else {
                 return Err("`--fs-mock`: `dirs` phải là object".into());
             };
-            for (k, dsach) in ds {
-                let Some(p) = chuoi(&k) else { continue };
+            for (k, dsach) in ds.iter() {
+                let Some(p) = chuoi(k) else { continue };
                 let Value::List(items) = dsach else {
                     return Err(format!("`--fs-mock`: `dirs[{p}]` phải là mảng"));
                 };
                 let mut muc = Vec::new();
                 for it in items {
-                    let Some(ten) = lay(&it, "name").and_then(|x| chuoi(&x)) else {
+                    let Some(ten) = lay(it, "name").and_then(|x| chuoi(&x)) else {
                         return Err(format!("`--fs-mock`: mục trong `{p}` thiếu `name`"));
                     };
-                    let size = match lay(&it, "size") {
+                    let size = match lay(it, "size") {
                         Some(Value::Int(n)) => n,
                         Some(Value::Size(n)) => n,
                         Some(Value::Str(s)) => {
@@ -92,7 +92,7 @@ impl FsMock {
                         }
                         _ => 0,
                     };
-                    let modified = match lay(&it, "modified") {
+                    let modified = match lay(it, "modified") {
                         Some(Value::Duration(d)) => d,
                         Some(Value::Int(n)) => n,
                         Some(Value::Str(s)) => {
@@ -102,14 +102,14 @@ impl FsMock {
                         }
                         _ => 0,
                     };
-                    let is_file = matches!(lay(&it, "is_file"), Some(Value::Bool(true)));
+                    let is_file = matches!(lay(it, "is_file"), Some(Value::Bool(true)));
                     // ST-46: `mode` = chuỗi `rw-r--r--` (hoặc số), `mtime` = duration từ epoch.
-                    let mode = match lay(&it, "mode") {
+                    let mode = match lay(it, "mode") {
                         Some(Value::Int(n)) => n.max(0) as u32,
                         Some(Value::Str(s)) => mode_tu_chuoi(&s),
                         _ => 0,
                     };
-                    let modified_ns = match lay(&it, "mtime") {
+                    let modified_ns = match lay(it, "mtime") {
                         Some(Value::Duration(d)) => d,
                         Some(Value::Int(n)) => n,
                         Some(Value::Str(s)) => {
@@ -135,9 +135,9 @@ impl FsMock {
             let Value::Map(fs) = files else {
                 return Err("`--fs-mock`: `files` phải là object".into());
             };
-            for (k, v) in fs {
-                let Some(p) = chuoi(&k) else { continue };
-                let Some(nd) = chuoi(&v) else {
+            for (k, v) in fs.iter() {
+                let Some(p) = chuoi(k) else { continue };
+                let Some(nd) = chuoi(v) else {
                     return Err(format!("`--fs-mock`: `files[{p}]` phải là chuỗi"));
                 };
                 mock.files.push((p, nd.into_bytes()));

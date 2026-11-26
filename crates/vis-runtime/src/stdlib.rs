@@ -598,33 +598,29 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             Ok(Value::List(out))
         }
         StdId::MapMerge => {
-            let a = ban_do(name, &args[0], 0, span)?.to_vec();
+            let a = ban_do(name, &args[0], 0, span)?;
             let b = ban_do(name, &args[1], 1, span)?;
-            let mut out = a;
+            // **ST-315b**: gộp qua `VisMap` — last-wins, giữ vị trí `a` cho khoá đã có,
+            // nối cuối cho khoá mới (đúng `map.merge` cũ), tra O(1) khi map đủ lớn.
+            let mut out = vis_core::value::VisMap::from_pairs(a.iter().cloned());
             for (k, v) in b {
-                match out.iter_mut().find(|(k0, _)| eq(k0, k)) {
-                    Some(slot) => slot.1 = v.clone(),
-                    None => out.push((k.clone(), v.clone())),
-                }
+                out.insert(k.clone(), v.clone());
             }
-            Ok(Value::Map(out))
+            Ok(Value::map_tu(out))
         }
         StdId::MapGetOr => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let k = chuoi(name, &args[1], 1, span)?;
             let mac_dinh = args[2].clone();
             let kvk = Value::Str(k.to_string());
-            Ok(kv
-                .iter()
-                .find(|(k0, _)| eq(k0, &kvk))
-                .map(|(_, v)| v.clone())
-                .unwrap_or(mac_dinh))
+            // **ST-315b**: tra qua `VisMap::get` — dùng chỉ mục băm khi map đủ lớn.
+            Ok(kv.get(&kvk).cloned().unwrap_or(mac_dinh))
         }
         StdId::MapRemove => {
             let kv = ban_do(name, &args[0], 0, span)?;
             let k = chuoi(name, &args[1], 1, span)?;
             let kvk = Value::Str(k.to_string());
-            Ok(Value::Map(
+            Ok(Value::map(
                 kv.iter().filter(|(k0, _)| !eq(k0, &kvk)).cloned().collect(),
             ))
         }

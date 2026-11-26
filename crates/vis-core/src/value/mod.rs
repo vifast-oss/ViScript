@@ -20,9 +20,11 @@ use std::rc::Rc;
 
 use vis_hir::hir::{HBody, HPat};
 
+mod map;
 mod runtime;
 mod show_eq;
 
+pub use map::{MapIndex, VisMap, NGUONG_CHI_MUC};
 pub use runtime::{Chan, ChanSend, ChanSendState, Pending, Task, TrangThai, Wait};
 
 thread_local! {
@@ -349,7 +351,11 @@ pub enum Value {
     /// `json.decode` chọn last-wins là **lựa chọn của ViScript, KHÔNG phải luật JSON bắt buộc**
     /// (JSON chỉ khuyến nghị unique key; decoder của ngôn ngữ khác có thể lấy đầu hoặc báo lỗi).
     /// Literal có khoá trùng **xác định được tĩnh** bị checker từ chối (không phải sửa ở runtime).
-    Map(Vec<(Value, Value)>),
+    ///
+    /// **ST-315b (VD-291 §3.2)**: `Rc<VisMap>` — đọc `m.get(k)` chỉ tăng refcount (không chép
+    /// sâu N cặp), ghi dùng `Rc::make_mut` (CoW). `VisMap` giữ hợp đồng thứ tự/last-wins và có
+    /// chỉ mục băm lười cho map đủ lớn (xem [`VisMap`]).
+    Map(Rc<VisMap>),
     /// Tên kiểu (rỗng nếu ẩn danh) + trường theo thứ tự khai.
     Record(String, Vec<(String, Value)>),
     /// Tên enum + tên biến thể + đối số.
@@ -393,6 +399,19 @@ impl Value {
     /// `true` nếu là `()` — tiện cho `each`.
     pub fn is_unit(&self) -> bool {
         matches!(self, Value::Unit)
+    }
+
+    /// Dựng `Value::Map` từ các cặp — **nguồn duy nhất** cho mọi literal/JSON/snapshot.
+    ///
+    /// **ST-315b (VD-291 Q1/Q2)**: last-wins **tại chỗ** (giữ khoá gốc + vị trí chèn đầu), gói
+    /// trong `Rc<VisMap>` để `Value::clone` không chép sâu toàn map.
+    pub fn map(pairs: Vec<(Value, Value)>) -> Value {
+        Value::Map(Rc::new(VisMap::from_pairs(pairs)))
+    }
+
+    /// Dựng `Value::Map` từ `VisMap` đã có (không sao chép entry).
+    pub fn map_tu(m: VisMap) -> Value {
+        Value::Map(Rc::new(m))
     }
 
     /// `Some(v)` — enum `Option` thật (VD-204 (1)).

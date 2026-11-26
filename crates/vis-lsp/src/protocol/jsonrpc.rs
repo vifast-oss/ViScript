@@ -9,7 +9,7 @@ use vis_core::value::Value;
 
 /// Dựng `Value::Map` từ danh sách khoá–giá trị (giữ thứ tự).
 pub fn m(kv: Vec<(&str, Value)>) -> Value {
-    Value::Map(
+    Value::map(
         kv.into_iter()
             .map(|(k, v)| (Value::Str(k.to_string()), v))
             .collect(),
@@ -40,7 +40,7 @@ pub fn id_null() -> Value {
 
 /// Phản hồi thành công: `{"jsonrpc":"2.0","id":<id>,"result":<result>}`.
 pub fn phan_hoi(id: &Value, result: Value) -> Vec<u8> {
-    let m = Value::Map(vec![
+    let m = Value::map(vec![
         kv("jsonrpc", Value::Str("2.0".to_string())),
         kv("id", id.clone()),
         kv("result", result),
@@ -50,12 +50,12 @@ pub fn phan_hoi(id: &Value, result: Value) -> Vec<u8> {
 
 /// Phản hồi lỗi: `{"jsonrpc":"2.0","id":<id>,"error":{"code":…,"message":…,"data":…}}`.
 pub fn loi(id: &Value, code: i64, message: &str, data: Value) -> Vec<u8> {
-    let err = Value::Map(vec![
+    let err = Value::map(vec![
         kv("code", Value::Int(code)),
         kv("message", Value::Str(message.to_string())),
         kv("data", data),
     ]);
-    let m = Value::Map(vec![
+    let m = Value::map(vec![
         kv("jsonrpc", Value::Str("2.0".to_string())),
         kv("id", id.clone()),
         kv("error", err),
@@ -65,7 +65,7 @@ pub fn loi(id: &Value, code: i64, message: &str, data: Value) -> Vec<u8> {
 
 /// Notification (không `id`): `{"jsonrpc":"2.0","method":…,"params":…}`.
 pub fn thong_bao(method: &str, params: Value) -> Vec<u8> {
-    let m = Value::Map(vec![
+    let m = Value::map(vec![
         kv("jsonrpc", Value::Str("2.0".to_string())),
         kv("method", Value::Str(method.to_string())),
         kv("params", params),

@@ -86,7 +86,7 @@ pub fn thong_diep_ky(
                 .collect(),
         )
     };
-    let v = Value::Map(vec![
+    let v = Value::map(vec![
         (Value::Str("deps".into()), cap(ds)),
         (Value::Str("entry".into()), Value::Str(entry.into())),
         (Value::Str("files".into()), cap(fs)),

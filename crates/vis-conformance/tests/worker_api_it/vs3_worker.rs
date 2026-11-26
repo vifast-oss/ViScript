@@ -506,7 +506,7 @@ fn taskid_proto_value_show_eq_roundtrip() {
         Value::Int(7),
         Value::Str("x".into()),
         Value::List(vec![Value::Int(1), Value::Bool(true)]),
-        Value::Map(vec![
+        Value::map(vec![
             (Value::Str("k".into()), Value::Int(1)),
             (Value::Str("k2".into()), Value::List(vec![])),
         ]),

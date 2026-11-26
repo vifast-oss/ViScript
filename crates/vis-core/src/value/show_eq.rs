@@ -115,9 +115,15 @@ impl Value {
                 // trùng hay thứ tự chèn. Gộp last-wins hai vế rồi so từng khoá một.
                 // **VD-270 (perf-map-eq)**: khoá vô hướng + map đủ lớn ⇒ chỉ mục băm O(n);
                 // còn lại ⇒ nguyên logic O(n²) cũ.
-                match eq_map_vo_huong(a, b) {
-                    Some(kq) => kq,
-                    None => eq_map_cham(a, b),
+                // **ST-315b**: hai vế đều có chỉ mục băm (map đủ lớn, khoá vô hướng) ⇒ tra
+                // thẳng bucket O(1)/khoá; bất biến "một khoá một entry" cho phép so độ dài.
+                if a.co_chi_muc() && b.co_chi_muc() {
+                    a.len() == b.len() && a.iter().all(|(k, v)| b.co_cap(k, v))
+                } else {
+                    match eq_map_vo_huong(a.as_slice(), b.as_slice()) {
+                        Some(kq) => kq,
+                        None => eq_map_cham(a.as_slice(), b.as_slice()),
+                    }
                 }
             }
             (Value::Record(_ta, a), Value::Record(_tb, b)) => {
@@ -202,7 +208,10 @@ fn bam_raw(tag: u8, bs: &[u8]) -> u64 {
 
 /// Băm khoá vô hướng **nhất quán với `eq_value`**: `Size`/`Duration`, `Str`/`Path`,
 /// `Bool`/`Char`/`Bytes` mỗi loại tag riêng; trùng băm (collision/khác kiểu) do bucket quyết.
-fn bam_khoa_vo_huong(v: &Value) -> Option<u64> {
+///
+/// **ST-315b**: `pub(super)` để [`super::map::MapIndex`] dùng **cùng** hợp đồng băm với đường
+/// so map — một nguồn, không nhân bản luật.
+pub(super) fn bam_khoa_vo_huong(v: &Value) -> Option<u64> {
     Some(match v {
         Value::Int(i) => bam_so(*i as f64),
         Value::Float(f) | Value::Percent(f) => bam_so(*f),
