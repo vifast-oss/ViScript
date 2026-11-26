@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-290`, 2026-11-25). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-294`, 2026-11-27). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
 > Có **279** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
@@ -289,6 +289,7 @@
 | VD-291 | Phê chuẩn `ST-314a` (`DONE`), Đồng bộ SPEC/Thiết kế, Đăng ký `#197` & Mở Chương trình Tối ưu – Cứng hoá Sóng 4–5 (`ST-315a..ST-316c`) | đã chốt | 4081 |
 | VD-292 | Phê chuẩn Sóng 4 (`ST-315a..ST-315d` `DONE`), Phán quyết F1/F-R1, Đăng ký `#198`/`#199` & Tối ưu Kế hoạch Sóng 5–6 hướng Kiến trúc Sạch – Dễ Bảo trì – Dễ Mở rộng | đã chốt | 4096 |
 | VD-293 | Phê chuẩn Sóng 5 (`ST-316a`/`ST-316b`/`ST-316d` `DONE`), Đăng ký `#200`/`#201` & Mở Sóng 6 (`ST-317a`/`ST-317c` song song, `ST-317b` chờ tệp) | đã chốt | 4118 |
+| VD-294 | Phê chuẩn `ST-317a`/`ST-317c` `DONE`, Giữ `ST-317b` `READY` (P2b đang chạy), `ST-316c` `BLOCKED` & Đăng ký `#202` | đã chốt | 4135 |
 
 ## Ghi chú
 

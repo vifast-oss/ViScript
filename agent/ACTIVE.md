@@ -1,17 +1,16 @@
-# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-293`, 2026-11-26)
+# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-294`, 2026-11-27)
 
-> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-26-vd293.md` · `agent/DECISIONS.md` (`VD-293`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`.
+> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd294.md` · `agent/DECISIONS.md` (`VD-294`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`/`VD-293`.
 
-## 1. CHẾ ĐỘ HIỆN HÀNH — PHÁT TRIỂN KIẾN TRÚC TỐI ƯU (`VD-289` / `VD-293`)
+## 1. CHẾ ĐỘ HIỆN HÀNH — PHÁT TRIỂN KIẾN TRÚC TỐI ƯU (`VD-289` / `VD-294`)
 
 - **TIẾP TỤC TẠM DỪNG VÔ THỜI HẠN** kế hoạch phát hành cũ (`ST-309` = `BLOCKED`, **không** soak 24h/4h, **không** fuzz 8h, **không** 3× full lặp lại, **không** `R37` JSON, **không** tag mới).
 - **ĐÃ DUYỆT `DONE` (`VD-293`, 2026-11-26, tích hợp `review/song5` @ `882b7ffa`)**: đóng trọn **Sóng 5 (`ST-316a`, `ST-316b`, `ST-316d` DONE)** — `vis_runtime::value_ops` một nguồn + true O(1) in-place CoW `Rc::ptr_eq` cho `Map`/`List` (0 đổi VBC1); release `vis-bench`: **writebench ~240×**, **listbench 13–21×**; đóng **`#199`** (25k `const` 1,604 → 0,196 s), **`#48`**, **`#7`**, **`#186`**, **`#145`**, **`#47`**; DAG cấm `vis-host-native → vis-runtime` (+self-test, 4 cạnh cấm), đóng **`#198`** (0 binary R8 mới), tách `host_parity.rs` 1.457 → 4 tệp < 500 dòng. Tích hợp: gate **3.880/3.880 (4 skip)**, clippy `--all-targets -D warnings` **exit 0**, `vis-diff 100k lech=0` (60,2 s), DAG **23 crate/5 tầng**, **R8 39/40**.
-- **Đăng ký nợ từ audit `ST-316b` (`VD-293`)**: **`#200`** (`mở`, P2 — `fn main(a: int, b: int)`: interp `VS0501`/exit 101 vs VM exit 0) & **`#201`** (`mở`, P3 — `fn main(a: int)` gán `argv` vào tham số `int` không kiểm kiểu), giao **VS3/correctness**. Sổ nợ: **202 = 82 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng**.
-- **TRỤC HIỆN HÀNH — SÓNG 6 (`ST-317a` W1 + `ST-317c` W3 `READY` mở ngay; `ST-317b` W2 `READY` nhưng chờ tệp; `ST-316c` giữ `BLOCKED` vì `mps`)**:
-  - **`ST-317a` (W1)**: nén `Value` **64 B → 32 B** (`Cap(Box)`, `Record(Rc<VisRecord>)` CoW, `Enum(Box/Rc)`) + singleton `Rc<VisMap>` cho `{}` (đóng F6 `ST-315b`). Lane: `crates/vis-core/src/value/**`, `bin/vis-bench`.
-  - **`ST-317c` (W3, song song)**: bảng `StdId` một nguồn + kiểm máy `API-CODES.txt`↔`SPEC.md` (`#75`) + `vis-lsp` `AnalysisHost` (`#81`/`#66`). Lane: `crates/vis-lsp/**`, `vis-hir/src/stdlib/**`, `vis-diag/**`, `API-CODES.txt`.
-  - **`ST-317b` (W2)**: khử trùng lặp `vis-interp` sync↔frame + worker orchestration về `vis-runtime`, chia 6 tệp > 1.100 LOC về < 1.000 — **cấm chạm `crates/vis-core/src/value/mod.rs` và `crates/vis-lsp/src/lib.rs`** tới khi 317a/317c hợp nhất.
-  - **`ST-316c` (W4)**: được làm trước trên `ps` — `vis-targets --wasm` + hồ sơ Go/No-Go; phần `mps` chờ máy rảnh, **không** tuyên bố 3-OS khi chưa có log.
+- **ĐÃ DUYỆT `DONE` (`VD-294`, 2026-11-27, `main` @ `426b83a3`)**: **`ST-317a`** (nén `Value` **64 → 32 B**, `Record` CoW in-place qua `ptr_rc`, singleton `{}`; gate **3886/3886**, diff 100k `lech=0` 60,1 s, conformance **568/568**, `size_of::<Value>() == 32`, VBC1 rỗng, 0 `unsafe`) và **`ST-317c`** (StdId registry **167**, R10 `API-CODES.txt`↔`SPEC.md` `#75`, `AnalysisHost` `#81`/`#66`; gate **3885/3885**, diff 0, `lsp_it` **158/158**, `API-STD.txt` không đổi). Flake P2 `host_parity::net_http` (stdout chứa ms thật) đăng ký nợ **`#202`** (VS3/test hygiene).
+- **Đăng ký nợ từ audit `ST-316b` (`VD-293`)**: **`#200`** (`mở`, P2 — `fn main(a: int, b: int)`: interp `VS0501`/exit 101 vs VM exit 0) & **`#201`** (`mở`, P3 — `fn main(a: int)` gán `argv` vào tham số `int` không kiểm kiểu), giao **VS3/correctness**. Sổ nợ hiện tại (`VD-294`): **203 = 83 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng**.
+- **TRỤC HIỆN HÀNH — SÓNG 6 (`ST-317a`/`ST-317c` `DONE`; `ST-317b` `READY` P2b đang chạy; `ST-316c` giữ `BLOCKED` vì `mps`)**:
+  - **`ST-317b` (W2)**: P1 (`pkg.rs`, `rt/sched.rs`, `tyck/pat.rs`) + P2a (`vis-lsp/lib.rs`) đã `DONE`/merged; **P2b đang thi công** — `value/mod.rs`, `sqlite/mod.rs`, worker orchestration + khử trùng lặp `vis-interp` sync↔frame; chưa DONE/REVIEW.
+  - **`ST-316c` (W4)**: `ps` **đã xong** — WASI **395×2** (368 `.out` + 27 `.trap`), sem **390/390**, suite **28/28**; chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` sẵn sàng (dry-run exit 0, chưa chạy). Phần `mps`/`psvn` vẫn `BLOCKED` (`mps` @`311d2288`, `psvn` @`fe3446d2`), **không** tuyên bố 3-OS khi chưa có log.
 
 ## 2. Bảng Trạng thái Sóng 4–6 (`ST-315a..ST-317c`)
 
@@ -21,10 +20,10 @@
 | **5** | **`ST-316a`** | **W1+W2** | **`DONE`** | APPROVED `VD-293` (`882b7ffa`): `value_ops` một nguồn + true O(1) CoW `Map`/`List` + `Value::List(Rc<Vec>)` + F1/F2/F4/F5 + `bin/vis-bench`; **writebench ~240×**, **listbench 13–21×**, `size_of::<Value>() == 64`, diff 100k `lech=0` |
 | **5** | **`ST-316b`** | **W3** | **`DONE`** | APPROVED `VD-293` (`da5590e3`, audit `089b9f4c`): `#199` 25k `const` 1,604 → **0,196 s**, `#48`/`#7`/`#186`/`#145`/`#47`; Gatekeeper **PASS 6/6** |
 | **5** | **`ST-316d`** | **W4** | **`DONE`** | APPROVED `VD-293` (`ecdb0660`): DAG cấm `vis-host-native → vis-runtime` (+self-test), `#198` (`worker_leak_it.rs`, 0 binary mới), `host_parity` 4 tệp < 500 dòng, tồn dư test Sóng 4 |
-| **5** | **`ST-316c`** | **W4** | `BLOCKED` | *(chờ `mps`)* Được làm trước trên `ps`: `vis-targets --wasm` + hồ sơ Go/No-Go; phần `mps`: `clippy --all-targets` + `vis-gate-macos --full` + đối chuẩn `vis-bench` 3-OS |
-| **6** | **`ST-317a`** | **W1** | **`READY`** | Nén `Value` **64 B → 32 B** (`Box`/`Rc` cho `Cap`/`Record`/`Enum`), CoW `Record` & singleton `{}` (đóng `ST-315b` F6); lane `vis-core/src/value/**` |
-| **6** | **`ST-317b`** | **W2** | **`READY` (chờ tệp)** | Khử trùng lặp `vis-interp` sync↔frame & worker về `vis-runtime` + 6 tệp > 1.100 LOC → **< 1.000**; **cấm chạm `vis-core/src/value/mod.rs` & `vis-lsp/src/lib.rs`** tới khi 317a/317c merge |
-| **6** | **`ST-317c`** | **W3** | **`READY`** | Bảng `StdId` một nguồn, kiểm máy `API-CODES.txt`↔`SPEC.md` (`#75`), `vis-lsp` `AnalysisHost` (`#81`/`#66`); lane `vis-lsp/**` |
+| **5** | **`ST-316c`** | **W4** | `BLOCKED` | *(chờ `mps`/`psvn`)* **`ps` đã xong**: WASI **395×2** (368 `.out` + 27 `.trap`), sem **390/390**, suite **28/28** @`29a7b254`; chain 0-LLM `peak1-2026-11-27-chain.sh` (dry-run exit 0, chưa chạy); `mps` @`311d2288`, `psvn` @`fe3446d2` vẫn lệch |
+| **6** | **`ST-317a`** | **W1** | **`DONE`** | APPROVED `VD-294` (merge `426b83a3`): Value **64 → 32 B**, `Record` CoW in-place, singleton `{}`; `size_of::<Value>() == 32`, conformance **568/568**, gate **3886/3886**, diff 100k `lech=0` (60,1 s), 0 `unsafe`, VBC1 rỗng |
+| **6** | **`ST-317b`** | **W2** | **`READY` (P2b đang chạy)** | P1 (`pkg.rs`/`rt/sched.rs`/`tyck/pat.rs`, audit `e1fe1733` PASS, merge `f8f155d0`) + P2a (`29a7b254`, tách `vis-lsp/lib.rs`, `lsp_it` 158/158) DONE/merged; P2b: `value/mod.rs`, `sqlite/mod.rs`, worker + khử trùng lặp `vis-interp` sync↔frame |
+| **6** | **`ST-317c`** | **W3** | **`DONE`** | APPROVED `VD-294` (merge `aecb266c`): StdId **167**, R10 `#75`, `AnalysisHost` `#81`/`#66`; gate **3885/3885**, diff 0, `lsp_it` **158/158**, `API-STD.txt` không đổi; flake P2 → `#202` |
 
 ## 3. Cổng Kiểm tra Gọn (Chế độ Phát triển — KHÔNG soak/fuzz nặng)
 
@@ -39,7 +38,7 @@
 |---|---|---|---|---|
 | **Cao điểm 1 & 2** *(2×)* | `01:00–04:00` · `06:00–10:00` | `10:00–13:00` · `15:00–19:00` | `08:00–11:00` · `13:00–17:00` | **0-LLM**: giữ chuỗi chạy nền `peak2-2026-11-26.md`, kiểm cổng (`vis-diff 100k`, `stdlib_diff`, release `vis-bench`, Windows full, `vis-targets --wasm`) |
 | **Thấp điểm trưa** *(0,5×)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | Đọc log cao điểm, vá lỗi ngắn / refactor gọn, chuẩn bị commit sạch cho Sóng 6 |
-| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | Triển khai song song `ST-317a` (W1) + `ST-317c` (W3); `ST-317b` (W2) chỉ sau khi 317a/317c merge (tệp khoá); phần `ps` của `ST-316c`; kiểm độc lập & nộp `REVIEW` |
+| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | Hoàn tất `ST-317b` P2b (`value/mod.rs`, `sqlite/mod.rs`, worker, `vis-interp` dedup) → `REVIEW`; kiểm độc lập `ST-317a`/`ST-317c` (đã `DONE`); phần `ps` của `ST-316c` đã xong — chạy chain 0-LLM khi `mps`/`psvn` rảnh |
 
 ## 5. Vận hành Cao điểm 2 — 2026-11-26 (Đang chạy nền 0-LLM)
 
