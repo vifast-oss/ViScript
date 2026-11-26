@@ -230,3 +230,32 @@ Ngoài ra, nợ **non-frame W6 W≥2** (final join nuốt lỗi task không awai
   LOC khớp; merge main sạch; gate/diff/clippy/W xanh.
 - **FAIL điều kiện P2-B**: nợ ghi trong §2b.7 sai kịch bản và bỏ sót nợ thật (W2 frame W=1 +
   non-frame W6 W≥2). Chỉ cần sửa journal builder, không sửa mã; sau đó audit lại.
+
+---
+
+# Addendum F2 — audit `7a1d7ea7` (sửa journal P2-B/P3-B)
+
+- **HEAD**: `7a1d7ea7` · **Commit cha**: `63535b33` (Addendum F1) · `main`: `fa74f294`.
+- **Kết luận: PASS** — chỉ journal, 3 mục đã sửa đúng bản chất; không đổi mã/test.
+- `git show --stat 7a1d7ea7`: **1 tệp** `agent/JOURNAL/st317b-tach-tep.md`, **+12/−5**.
+  `git diff --name-only 63535b33..7a1d7ea7` = chỉ tệp journal; **0 tệp mã/test**.
+  (`git diff d56b96f1..7a1d7ea7` gồm thêm commit review F1 `63535b33` của Gatekeeper — không phải
+  Builder sửa mã.)
+- `git status` sạch; `git merge-base --is-ancestor main HEAD` **đúng**.
+
+## F2.1 Ba mục đã kiểm
+
+| Mục | Nội dung hiện tại | Kết quả |
+|---|---|---|
+| P2-B | W2 **frame W=1**: `vis run w2.vis` → stdout `0`, exit 0; `vis run --vm w2.vis` → stdout `1`, exit 0; nêu rõ **không phải** task-error W6 (W6 frame: cả hai `VS0506`, exit 101) | **ĐÚNG** — khớp đo lại ở F1 |
+| Nợ non-frame W6 W≥2 | Mục **riêng** “Nợ non-frame W6 W≥2”: `run_workers_parallel*`/`run_workers_parallel_vm*` nuốt lỗi task không await, exit 0, cả 2 engine; W6 frame không phủ đường này; đề xuất nợ VS3/correctness | **ĐÚNG** — tách khỏi P2-B, không còn trỏ sai |
+| P3-B | Diagnostic W2 vẫn dùng symbol `s14` (không phải `counter`), chưa đổi, không chặn | **ĐÚNG bản chất** — test nguồn dùng `counter` nhưng diagnostic vẫn `s14`; câu “test W2 in/đối chiếu s14” hơi rộng (test chỉ kiểm “ghi chéo worker”), không ảnh hưởng kết luận |
+
+- LOC vẫn đúng: `sqlite/truy_van.rs` **312**, `sqlite/loi.rs` **111**.
+- Không còn câu P2-B sai (task-error frame W=1) và không còn câu P3-B “đã dùng counter, không phải s14”.
+
+## F2.2 Kết luận
+
+**PASS** — điều kiện P2-B đã đóng ở mức journal; nợ thật (W2 frame W=1 interp↔VM) và nợ non-frame
+W6 W≥2 đã được ghi đúng, tách riêng. Không cần chạy lại gate (không đổi mã/test); các cổng F1 vẫn
+hiệu lực cho HEAD sản phẩm `d56b96f1` (gate 3906/0/5, diff 100k `lech=0`, clippy 0, W 10/10).
