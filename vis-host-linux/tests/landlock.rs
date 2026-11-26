@@ -170,6 +170,39 @@ fn tep_don_ghi_truncate_duoc_con_chi_doc_thi_khong() {
     let _ = fs::remove_dir_all(&d);
 }
 
+#[test]
+fn truncate_tep_co_san_trong_thu_muc_chi_doc_bi_chan() {
+    // **ST-316d (ST-315c F5)** — tệp **có sẵn** trong `cap[Dir]` chỉ-đọc: `O_TRUNC` (qua
+    // `OpenOptions::truncate`) và `fs::write` (cũng `O_TRUNC`) đều phải bị kernel chặn, nội dung
+    // giữ nguyên. Ca #19 chỉ phủ luật **tệp đơn**; ca này phủ luật **thư mục**.
+    let d = tam("ro-tran");
+    let f = d.join("co.txt");
+    fs::write(&f, "giu nguyen\n").expect("tệp mẫu");
+    ap(&[ChoPhep {
+        duong: d.clone(),
+        ghi: false,
+        la_tep: false,
+    }]);
+    let e = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&f)
+        .expect_err("O_TRUNC tệp trong thư mục chỉ-đọc phải bị chặn");
+    assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied, "thật {e:?}");
+    let e2 = fs::write(&f, "de\n").expect_err("ghi đè tệp trong thư mục chỉ-đọc phải bị chặn");
+    assert_eq!(
+        e2.kind(),
+        std::io::ErrorKind::PermissionDenied,
+        "thật {e2:?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&f).unwrap(),
+        "giu nguyen\n",
+        "nội dung tệp phải nguyên vẹn sau khi bị chặn"
+    );
+    let _ = fs::remove_dir_all(&d);
+}
+
 // **ĐO ĐƯỢC (ST-132), ghi lại thay vì giấu**: trên kernel `7.0.0-43-generic` (Landlock ABI 8),
 // mọi `execve` **bên trong** một domain Landlock đều trả `EACCES` — đo 4 biến thể: (a) không xử lý
 // `Execute`; (b) xử lý `Execute` + cấp trên thư mục chứa; (c) cấp `Execute` trên `/`; (d) chạy tệp

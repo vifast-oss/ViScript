@@ -506,6 +506,46 @@ mod tests {
         assert!(!tran.load(Ordering::Relaxed));
     }
 
+    /// **ST-316d (ST-315c F5)** — e2e biên **`MAX+1`**: "runtime" giả bơm stdout vượt trần đúng
+    /// 1 byte ⇒ `chay_mot` phải kill tiến trình con và trả `VS0501`. Ca unit ở trên chỉ khoá hàm
+    /// đọc; ca này khoá cả đường `chay_mot` (nhánh cờ bật lúc tiến trình vừa thoát).
+    #[cfg(unix)]
+    #[test]
+    fn chay_mot_vuot_tran_max_cong_1_byte_tra_vs0501() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let d = std::env::temp_dir().join(format!(
+            "vis-plugin-tran-{}-{}",
+            std::process::id(),
+            super::DEM.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tạo thư mục tạm");
+        let stub = d.join("runtime-gia.sh");
+        std::fs::write(
+            &stub,
+            format!(
+                "#!/bin/sh\nhead -c {} /dev/zero\n",
+                super::MAX_PLUGIN_OUT + 1
+            ),
+        )
+        .expect("ghi runtime giả");
+        let mut quyen = std::fs::metadata(&stub).expect("metadata").permissions();
+        quyen.set_mode(0o700);
+        std::fs::set_permissions(&stub, quyen).expect("chmod runtime giả");
+        let wasm = d.join("gia.wasm");
+        std::fs::write(&wasm, b"\0asm").expect("wasm giả");
+        let e = super::chay_mot(&super::Runtime::Wasmtime(stub), &wasm, &[], "call", &[])
+            .expect_err("vượt trần MAX+1 phải là VS0501");
+        assert_eq!(e.code, "VS0501", "mã sai: {}", e.message);
+        assert!(
+            e.message.contains("vượt trần output"),
+            "thông điệp phải nêu vượt trần: {}",
+            e.message
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
     #[test]
     fn cat_thong_diep_khong_panic_giua_utf8() {
         // 799 byte ASCII + 'ệ' (3 byte) + 50 byte ⇒ mốc 800 rơi **giữa** 'ệ'.
