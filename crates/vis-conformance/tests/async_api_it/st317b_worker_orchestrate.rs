@@ -1130,3 +1130,36 @@ fn main():
         "read-only + await: hàm tên qua giá trị trong closure",
     );
 }
+
+/// **w26 (ST-320b F1 / #212, P2-1 audit)** — **hàm tên trong `const`** + free HOF:
+/// vòng `const` chạy trước các điểm sync `env_module` cũ, nên `const H: fn(int) -> bool = lay`
+/// từng chụp map rỗng của `Interp::new`; `where([1], H)` gọi callback qua `c.env` ⇒ frame trap
+/// `VS0501` trong khi VM in `[1]`. F1 sync `it.env`/`env_module` vào `globals` **trước** const.
+#[test]
+fn w26_frame_w1_const_ham_ten_qua_hof() {
+    const SRC: &str = r#"var g = 1
+
+async fn dummy() -> int:
+    1
+
+fn lay(x: int) -> bool:
+    g > 0
+
+const H: fn(int) -> bool = lay
+
+fn main():
+    let t = spawn dummy()
+    await t
+    print(where([1], H))
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "[1]\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[1]\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "const hàm tên qua HOF trong frame");
+}

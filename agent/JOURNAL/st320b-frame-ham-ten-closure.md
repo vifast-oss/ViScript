@@ -105,3 +105,80 @@ không `cargo clean`.
   của review 319e — ngoài phạm vi brief; W>1 chỉ kiểm tay, không thêm ca.
 - Không chạm cache/`PHIEN_BAN`/VBC1 (interp-only), không đổi output non-frame.
 - **Chưa merge/push** — chờ A0; nhánh `plan/st320b` giữ checkpoint này.
+
+## 7. F1 — vá P2-1 audit: sync `env_module` **trước** vòng `const` + test HOF
+
+> **Kết luận F1**: P2-1 (hồi quy hẹp `const` hàm tên + free HOF) **đã đóng**; `w26` đỏ trước →
+> xanh sau; `st317b` **34/34**; gate **3936/3936**; diff **`lech=0`**; clippy exit 0.
+
+### 7.1 Nguyên nhân
+
+`frame/worker.rs` đánh giá `const` (dòng 31-47) **trước** hai điểm sync `env_module`
+(`params.rs` và nhánh không `main`). Vì vậy `const H: fn(int) -> bool = lay` chụp
+`it.env_module()` = map **rỗng** của `Interp::new`. Gọi trực tiếp `H()` không lộ (vì `call_value`
+đọc `it.env_module()` lúc gọi), nhưng free HOF (`where`/`each`/`sort_by`/…) gọi callback qua
+`host.call → Interp::call_value → call_closure` dùng `c.env` ⇒ trap `VS0501: tên 'g' chưa có giá
+trị lúc chạy`.
+
+### 7.2 Sửa
+
+Ngay sau `let globals = …`, **trước** vòng `const`:
+
+```rust
+it.env = globals.clone();
+it.dat_env_module(globals.clone());
+```
+
+Hai sync cũ (`params.rs:23`, `worker.rs` nhánh không `main`) giữ nguyên (idempotent). Đặt
+`it.env` sớm cũng làm callback non-frame trong lúc đánh giá `const` thấy `globals` (khớp
+`run_program` non-frame), không chỉ riêng `env_module`.
+
+### 7.3 Repro trước/sau
+
+```viscript
+var g = 1
+
+async fn dummy() -> int:
+    1
+
+fn lay(x: int) -> bool:
+    g > 0
+
+const H: fn(int) -> bool = lay
+
+fn main():
+    let t = spawn dummy()
+    await t
+    print(where([1], H))
+```
+
+| Engine | Trước F1 (`2192291e`) | Sau F1 |
+|---|---|---|
+| frame interp | **VS0501**, exit **101** | **`[1]`**, exit 0 |
+| frame VM | `[1]`, exit 0 | `[1]`, exit 0 |
+
+Red-first thật với test `w26` (stash `worker.rs`, giữ test): `left: ""`, diagnostics chứa
+`VS0501` tại `line 7, col 5` — `/home/ps/vislogs/st320b-f1-w26-red.log`.
+
+### 7.4 Test & cổng
+
+`w26_frame_w1_const_ham_ten_qua_hof` — frame interp + frame VM W=1, assert **literal riêng**
+`"[1]\n"`, `diagnostics.is_empty()`, `exit == 0`, `so_khop`; không `#[ignore]`; nằm trong tệp
+con/aggregator sẵn có (R8 không đổi).
+
+| Cổng | Kết quả | Log · SHA-256 |
+|---|---|---|
+| `st317b_worker_orchestrate` | **34/34 PASS**, 0 ignore | `/home/ps/vislogs/st320b-f1-st317b.log` · `1b9694b112298360b700a9d2af98cf4496d1c944198d3a5d77ae277c79b36a4a` |
+| `./vis-dev gate --fast` | **PASS** — nextest **3936/3936** (4 skip), fmt/clippy/R1..R10 | `/home/ps/vislogs/st320b-f1-gate-fast.log` · `cd4b13bae14dc31e633306bfe9449b31b6dadb1e01663c5240b6b477b71476d2` |
+| `VIS_DIFF_N=100000` | **`lech=0`** — `tong=100000 chay=94425 giay=89.6 seed=3523158054` | `/home/ps/vislogs/st320b-f1-diff100k.log` · `a5a46ebefda633d7465039e5ddaea2a37964a07135d993a5c4e5a1716f5c8527` |
+| clippy `--workspace --all-targets -D warnings` | **exit 0** | `/home/ps/vislogs/st320b-f1-clippy.log` · `5cdcaebcafc8b8367221029f061607d42e3958af456a858fc97740c8acb84d9f` |
+| red-first `w26` | FAIL đúng dự kiến (`VS0501`, `left ""`) | `/home/ps/vislogs/st320b-f1-w26-red.log` · `2418c550a899ea891843106adf7fd0f8d57ad8b9ff93a68a8d7d422fc80c74ce` |
+
+### 7.5 Rủi ro / ghi chú
+
+- `it.env = globals` sớm chỉ **mở rộng** phạm vi nhìn thấy của callback non-frame trong lúc đánh
+  giá `const` (trước là map rỗng) — khớp `run_program` non-frame; gate/diff 100k không đổi.
+- **P2-2 audit** (free HOF **ghi** global không đánh `Dirty`; `where([1], H)` với `lay` ghi `g`
+  cho frame `[1], g=0` vs VM `[1], g=1`) **vẫn mở** — nợ riêng, không chặn `#212`; không thêm
+  test cho ca ghi trong F1.
+- Lambda/closure, `#203`, cache/VBC1 không đổi. **Chưa merge/push**.

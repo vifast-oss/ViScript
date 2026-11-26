@@ -27,6 +27,13 @@ pub(crate) fn run_frame_driver<'a>(
     // **VD-255 / Group B**: hằng cấp tệp được đánh giá trước main (khớp `interp.rs:229`).
     // Dùng chung một `Env` để const sau thấy const trước; mỗi frame con clone env làm gốc.
     let globals: Env = Rc::new(RefCell::new(HashMap::new()));
+    // **ST-320b F1 (#212, P2-1 audit)**: const chạy **trước** hai điểm sync cũ
+    // (`params.rs`/nhánh không `main`) — phải trỏ `env`/`env_module` vào `globals` ngay từ đầu,
+    // nếu không `Value::Fn` hàm tên trong `const` giữ map rỗng của `Interp::new`; free HOF
+    // (`where`/`each`/`sort_by`) gọi callback qua `c.env` ⇒ trap `VS0501`. Hai sync cũ giữ
+    // nguyên (idempotent).
+    it.env = globals.clone();
+    it.dat_env_module(globals.clone());
     let mutable: Rc<RefCell<HashSet<u32>>> = Rc::new(RefCell::new(HashSet::new()));
     let consts: Vec<(u32, &'a HExpr)> = hir
         .items
