@@ -98,3 +98,22 @@ interp/VM) đều in `20` rồi `10` — `b` giữ bản cũ.
 - Chưa merge/push; commit trên `plan/st316a`. Không sửa `docs/SPEC*`, `agent/DECISIONS*`,
   `QUEUE*`, `SO-NO*` (Agent 0 sở hữu).
 - `mps` không dùng. Không tạo tệp `.rs` cấp 1 mới (R8 giữ 39/40).
+
+## 6. Đo lại bằng harness chính thức `bin/vis-bench` (sau khi merge `98d37ef1`)
+
+`./bin/vis-bench --bin <release> --runs 5 --json` (JSON: `/home/ps/vislogs/st316a-bench-list.json`,
+binary sha256 `2def425297ab…`; máy có tải nền nên chỉ so trong cùng lượt):
+
+| Chương trình | interp median/p90 (ms) | VM median/p90 (ms) | stdout |
+|---|---:|---:|---|
+| opt-bench | 47 / 47 | 39 / 43 | 38995450 |
+| trim-matches | 33 / 34 | 28 / 30 | 1000009 3 1500003 … |
+| mapbench | 46 / 48 | 45 / 47 | 15737616 |
+| **listbench** | **32 / 34** | **20 / 22** | 16242400 |
+| writebench | 5 / 6 | 3 / 4 | 10100 |
+
+`listbench` trên cùng chương trình, binary nền (trước List CoW, báo cáo bench `98d37ef1`):
+**411 / 422 ms** ⇒ **~13× interp, ~19–21× VM** (KPI ≥ 10×). Bản `--runs 3` đó chạy lúc load 1,70;
+lượt này có tải nền khác nên tỷ lệ là **thận trọng**, không phóng đại.
+
+Đã merge vào `plan/st316a`: F1 (`213c8ca9`), bench (`6d1d65c1`).
