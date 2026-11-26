@@ -9,6 +9,14 @@
   động + preflight `git fetch`/`merge-base --is-ancestor` để chặn trường hợp quên push. Đo WASI
   lịch sử ở §0.2 vẫn là
   `29a7b254`.
+- **Đo lại `ps` 2026-11-26T19:58:34Z→20:04:00Z @`d97773de`**: `bin/vis-targets --wasm` **exit 0** —
+  sem **390/390**, suite **28/28**, conformance **398×2 (371 `.out` + 27 `.trap`), 0 hỏng**, core
+  **47/0**, sqlite **45 PASS + 2 EXPECTED_RED**; log `st316c-wasm-final-20261126T1958Z.log`, sha256
+  **`c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957`**. Sóng 6 (ST-317a) thêm 3 ca
+  `lang/st317a_value32/*` nên 395→398, không phải lỗi harness. Lúc kết thúc `main` đã tiến docs-only
+  `151f2029` (VD-300); `git diff --stat d97773de 151f2029 -- crates test bin Cargo.toml vis-host-wasm`
+  rỗng nên số đo vẫn ứng với cây mã `d97773de`. Header log ghi `dirty=5` do 5 tệp `agent/*.md` của A0
+  đang chờ commit `151f2029` — không có tệp mã nào bẩn.
 - **Trạng thái task**: **`BLOCKED`** (không đổi). Tài liệu này chỉ là **đầu vào để A0 quyết định**;
   không tuyên bố `DONE`, không tuyên bố 3-OS khi chưa có log `mps`.
 - **Phạm vi**: chỉ **đọc** + sửa **phần hiển thị** `bin/vis-targets`; lượt đầu không build/remote,
@@ -21,7 +29,7 @@
 
 | Máy | HEAD | Repo / SSH | Đĩa | Trạng thái | Cần làm trước khi đo |
 |---|---|---|---|---|---|
-| **`ps`** (Linux x86_64) | **`c02050c0`** — local `main` lúc đo (trước commit tài liệu này), **14 commit trước `origin/main` `baa2dbd3`** (2026-11-26T18:38Z; các commit tài liệu/audit sau đó cộng thêm) | `/home/ps/ViScript`; chạy tại chỗ (`vis-remote ps`) | `/` còn **~9 GiB** (97 %) — **dưới ngưỡng 10 GiB**; `/tmp` tmpfs 7,2 G còn ~3 G | sạch (`dirty=0`) | **A0 phải push `main`** và **dọn đĩa > 10 GiB** trước peak; chain preflight `fetch` + `merge-base --is-ancestor "$HEAD" origin/main` sẽ `exit 2` nếu HEAD chưa lên origin, và `ps-disk` exit 2 nếu < 10 GiB. Đo WASI lịch sử @`29a7b254` vẫn dùng được |
+| **`ps`** (Linux x86_64) | **`d97773de`** — HEAD lúc đo lại WASI (2026-11-26T19:58Z); `main` nay `151f2029` (docs-only `VD-300`, `origin/main` khớp) | `/home/ps/ViScript`; chạy tại chỗ (`vis-remote ps`) | `/` còn **21 GiB trước → 16 GiB sau** lúc đo (93 %); `/tmp` tmpfs 7,2 G còn ~2 G | sạch mã (`dirty=0` trước đo; A0 stage 5 tệp docs trong lúc chạy) | Đo lại **xong** @`d97773de` (§0.2); không cần dọn đĩa thêm (≥ 10 GiB) |
 | **`mps`** (macOS arm64) | **`311d2288`** — *lệch* | `/Users/mps/dvchd/ViScript`; SSH **chỉ** `mps@mps` (`ssh mps` bị tailnet từ chối) | `/` còn **37 GiB** (snapshot lane plan 2026-11-27) | sạch (0 tệp bẩn, snapshot) | fetch `origin/main` → checkout **HEAD động** (lúc soạn `c02050c0`); kiểm `bin/vis-lock` rảnh; chạy clippy + full gate |
 | **`psvn`** (Windows x86_64, Git Bash) | **`fe3446d2`** — *lệch* | `/c/Users/ps/viscript-moi`; SSH `psvn` (mặc định) | `C:` còn **14 GiB** (98 %, snapshot) | sạch (snapshot) | fetch → checkout **HEAD động** (lúc soạn `c02050c0`); dọn `target/` nếu cần; chạy `--full` + build release cho bench |
 
@@ -30,6 +38,10 @@
 bằng `git rev-parse HEAD`, `git status --porcelain`, `df -h` lúc **2026-11-26T18:33Z**.
 
 ### 0.1 Chặn cứng hiện tại (theo thứ tự)
+
+> **Cập nhật 2026-11-26T20:04Z**: mục 1 và 4 **đã hết** — `main` đã push (`origin/main` =
+> `151f2029`), đĩa `ps` còn **16 GiB** sau đo (≥ 10 GiB). Các mục còn lại (`mps`/`psvn` lệch HEAD)
+> vẫn nguyên.
 
 1. **`main` local tại lúc đo `c02050c0` đang trước `origin/main` `baa2dbd3` 14 commit** (sau commit
    tài liệu này là 15) — chain lấy HEAD động rồi remote `git checkout --detach` sẽ fail nếu object
@@ -51,23 +63,28 @@ bằng `git rev-parse HEAD`, `git status --porcelain`, `df -h` lúc **2026-11-26
    `psvn` (xem §5). Kiểm `python3 --version` trước; thiếu Python ⇒ ghi `BLOCKED-ENV` cho bench,
    **không** thay bằng số ước lượng.
 
-### 0.2 Xác minh mốc WASI `379×2` → `393×2` → `395×2`
+### 0.2 Xác minh mốc WASI `379×2` → `393×2` → `395×2` → `398×2`
 
-Cả ba số đều **có bằng chứng thật**, ứng với ba cây corpus khác nhau:
+Cả bốn số đều **có bằng chứng thật**, ứng với bốn cây corpus khác nhau:
 
 | Mốc | Số | Cây / thời điểm | Bằng chứng |
 |---|---|---|---|
 | Cũ | **379×2** = 354 `.out` + 25 `.trap` | trước `fbb0ae4f`, r006..r054 (2026-11-25T21:29Z) | `lowpeak-chain-2026-11-25/r006..r054-*.log`; `st314a-lp33-wasm-conformance-trap.log`; `st314a-lp37-targets-wasm.log` |
 | Trung gian | **393×2** = 366 `.out` + 27 `.trap` | r072 (2026-11-26T00:55:01Z→00:56:50Z), **trước Sóng 5**: 412 `.out` | `lowpeak-chain-2026-11-25/r072-targets.log:112-114`, sha256 **`484809535024051f1906754b33094d052d0b25be34a5b5107ab1c31fffda7486`**; bản sao `st314a-lp53-targets-final.log`; `chain.log:336-337` ghi `rc=0` |
-| **Hiện hành** | **395×2** = **368 `.out` + 27 `.trap`** | **`29a7b254`**, đo thật **2026-11-26T16:13:30Z → 16:16:38Z**, 414 `.out` | `/home/ps/vislogs/st316c-wasm-20261126T1613Z.log:121-123`, sha256 **`c751f871e3ca7204241ebbe912d47d65fc70a222a85af660559954d3228c07b3`**, exit 0 |
-| Sem/suite | **390/390**, **28/28** | cùng log `st316c-wasm-20261126T1613Z.log` | dòng 121-122 |
+| `29a7b254` | **395×2** = **368 `.out` + 27 `.trap`** | `29a7b254`, đo thật **2026-11-26T16:13:30Z → 16:16:38Z**, 414 `.out` | `/home/ps/vislogs/st316c-wasm-20261126T1613Z.log:121-123`, sha256 **`c751f871e3ca7204241ebbe912d47d65fc70a222a85af660559954d3228c07b3`**, exit 0 |
+| **Hiện hành** | **398×2** = **371 `.out` + 27 `.trap`** | **`d97773de`**, đo thật **2026-11-26T19:58:34Z → 20:04:00Z**, 415 `.out` | `/home/ps/vislogs/st316c-wasm-final-20261126T1958Z.log:125-127`, sha256 **`c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957`**, exit 0 |
+| Sem/suite | **390/390**, **28/28** | cả hai log trên | dòng 121-122 (`29a7b254`); dòng 125-126 (`d97773de`) |
 
 Nguyên nhân lệch:
 - `fbb0ae4f` (`[ST-314a] test: +18 ca conformance… 2 trap`) đẩy 379 → 393: các ca async/kênh không
   chạy WASI nên `.out` +12, `.trap` +2.
 - `3da5a1ea` (`[ST-316a] F5`) thêm đúng **2** ca `.out` `stdlib/edge_map/khoa-khong-bac-cau` +
   `remove-merge-thu-tu` (412 → 414 `.out`) ⇒ 393 → **395**; `.trap` giữ 27. **Không phải lỗi
-  harness**, và `bin/vis-targets` đã cập nhật **395×2 + nguồn log**; logic đo `--wasm` không đổi.
+  harness**, và `bin/vis-targets` khi đó đã cập nhật **395×2 + nguồn log**; logic đo `--wasm` không đổi.
+- Sóng 6 (`ST-317a`: `fcecb5e6` thêm `map-rong-singleton`, `record-cow`; `2e4090e2` thêm
+  `record-with-gan`) thêm đúng **3** ca `.out` `lang/st317a_value32/*` (414 → 415 `.out`) ⇒
+  395 → **398**; `.trap` giữ 27. Cả 3 ca đều chạy được WASI (không host import), **không phải lỗi
+  harness**; `bin/vis-targets` nay hiển thị **398×2 (371+27)** + nguồn log mới.
 
 ---
 
@@ -233,14 +250,22 @@ sha256sum "$LOG"
 ```
 
 **PASS**: exit 0; có **đủ 3 summary** (thiếu summary = FAIL, `bin/vis-targets:183-190`):
-`sem total=… pass=390 fail=0`, `suite 28 ca, 0 hỏng`, `conformance 395 ca x 2 engine
-(368 .out + 27 .trap), 0 hỏng`. Nếu corpus đổi trong Sóng 6, **ghi số thật**; điều kiện cứng là
-`fail=0`/`0 hỏng`, không phải đúng 395. Ma trận core/sqlite phải `FAIL=0` (trên `ps`, nền này:
+`sem total=… pass=390 fail=0`, `suite 28 ca, 0 hỏng`, `conformance 398 ca x 2 engine
+(371 .out + 27 .trap), 0 hỏng`. Nếu corpus đổi trong Sóng 6, **ghi số thật**; điều kiện cứng là
+`fail=0`/`0 hỏng`, không phải đúng 398. Ma trận core/sqlite phải `FAIL=0` (trên `ps`, nền này:
 core 47 PASS; sqlite 45 PASS + 2 EXPECTED_RED; trên `psvn` có thể khác cấu hình — chỉ cần `FAIL=0`).
 
-**Kết quả thật 2026-11-26 (đã chạy, không phải mẫu)**: HEAD `29a7b254`, `dirty=0`, **exit 0**;
-sem **390/390**, suite **28/28**, conformance **395×2 (368+27), 0 hỏng**; đĩa `/` **13 GiB**
-trước/sau; log `st316c-wasm-20261126T1613Z.log`, sha256 `c751f871…c07b3`.
+**Kết quả thật (đã chạy, không phải mẫu)**:
+
+- `29a7b254` (2026-11-26T16:13:30Z→16:16:38Z): HEAD `29a7b254`, `dirty=0`, **exit 0**;
+  sem **390/390**, suite **28/28**, conformance **395×2 (368+27), 0 hỏng**; đĩa `/` **13 GiB**
+  trước/sau; log `st316c-wasm-20261126T1613Z.log`, sha256 `c751f871…c07b3`.
+- **`d97773de`** (2026-11-26T19:58:34Z→20:04:00Z, đo lại trên `main` Sóng 7): **exit 0**;
+  sem **390/390** (`eligible=390/525`), suite **28/28**, conformance **398×2 (371 `.out` +
+  27 `.trap`), 0 hỏng**; core **47 PASS / 0 FAIL**, sqlite **45 PASS + 2 EXPECTED_RED / 0 FAIL**;
+  đĩa `/` **21 GiB → 16 GiB**, `/tmp` 2,0 G trước/sau; log
+  `st316c-wasm-final-20261126T1958Z.log`, sha256
+  **`c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957`**.
 
 > `--wasm` chạy **cả** ma trận `cargo check` chéo trước, rồi mới đo WASI; đây là lệnh nặng.
 > Kiểm đĩa trước; không chạy trên `mps` (thiếu `wasm32-unknown-unknown`).
@@ -364,7 +389,7 @@ sha256**; đổi chương trình ⇒ baseline mới.
 | G2 | macOS clippy | `cargo clippy --workspace --all-targets -- -D warnings` **exit 0**, 0 warning, @HEAD hiện hành | `st316c-macos-clippy.log` + sha256 |
 | G3 | macOS full | `bin/vis-gate-macos --full` **exit 0**, đủ `vis-dev check` + `gate --fast` + nextest workspace + doc + WASI suite | `st316c-macos-full.log` + sha256 |
 | G4 | Windows full | `bin/vis-gate-windows --full` **exit 0**, clippy 0 warning, test **0 failed**, `vis-targets` `FAIL=0` | `st316c-windows-full.log` + sha256 |
-| G5 | WASI | `bin/vis-targets --wasm` **exit 0**, đủ 3 summary: sem **390/390**, suite **28/28**, conformance **395×2 (368+27), 0 hỏng** — hoặc số hiện hành nếu corpus đổi, miễn `fail=0` | `st316c-wasm-20261126T1613Z.log` + sha256 |
+| G5 | WASI | `bin/vis-targets --wasm` **exit 0**, đủ 3 summary: sem **390/390**, suite **28/28**, conformance **398×2 (371+27), 0 hỏng** — hoặc số hiện hành nếu corpus đổi, miễn `fail=0` | `st316c-wasm-final-20261126T1958Z.log` + sha256 |
 | G6 | Bench 3-OS | Mỗi chương trình/engine: **median hồi quy ≤ 10 %**, **p90 ≤ 15 %** so baseline **cùng máy/OS**; stdout interp = VM (công cụ tự chặn); không có mẫu exit ≠ 0 | 3 JSON baseline + 3 JSON sau + `binary.sha256` mỗi OS |
 | G7 | R8/R1/R2 | R8 tổng **≤ 40** (hiện 39/40), `crates/vis-cli/tests` **≤ 15** (hiện 8); R1 max **≤ 1.500** dòng (hiện 1.189); R2 **0 `unsafe`** | `vis-dev check` log / `bin/vis-dev rules` |
 | G8 | Nợ & quyền | `#200`/`#201` có trạng thái rõ trong `SO-NO`; **mở lại `ST-309` cần người dùng cho phép** | `agent/SO-NO.md` + quyết định A0 |
@@ -445,7 +470,7 @@ Có sẵn **baseline hợp lệ về mặt mã** tại `882b7ffa` (= `3e828393` 
 
 | Vị trí | Giả định / hành vi | Rủi ro & cách xử lý |
 |---|---|---|
-| `:197-204` | Mốc “lần cuối” in khi **không** có `--wasm` | **Đã sửa** theo số đo thật: 379×2 → 393×2 → **395×2 (368+27), 2026-11-26**, nguồn `st316c-wasm-20261126T1613Z.log:123` (HEAD `29a7b254`, exit 0, sha256 `c751f871…c07b3`); thêm dòng `nguồn-wasm`. 393 là r072 trên cây **trước Sóng 5** (412 `.out`); ST-316a thêm 2 ca `edge_map` → 414 `.out` → 395. Không đổi logic đo. |
+| `:195-206` | Mốc “lần cuối” in khi **không** có `--wasm` | **Đã sửa** theo số đo thật: 379×2 → 393×2 → 395×2 → **398×2 (371+27), 2026-11-26**, nguồn `st316c-wasm-final-20261126T1958Z.log:127` (HEAD `d97773de`, exit 0, sha256 `c7d90f60…da82957`); thêm dòng `nguồn-wasm`. 393 là r072 trên cây **trước Sóng 5** (412 `.out`); ST-316a thêm 2 ca `edge_map` → 414 `.out` → 395 @`29a7b254`; Sóng 6 (ST-317a) thêm 3 ca `lang/st317a_value32/*` → 415 `.out` → **398**. Không đổi logic đo. |
 | `:167-191` | `--wasm` đo thật; thiếu summary ⇒ FAIL | Đúng; không được “vá” số hiển thị để khớp log đỏ. |
 | `:45-51` | Ma trận cần **cả** `x86_64-pc-windows-msvc` + `wasm32-unknown-unknown` | **Không chạy trên `mps`** (thiếu `wasm32-unknown-unknown`); chạy `ps`/`psvn`. |
 | `:212` | Câu kết “chưa chạy trên Windows/wasm” | Chỉ là nhãn mức bằng chứng; khi chạy trên `psvn` câu này vẫn in — **không** dùng làm bằng chứng runtime Windows. Không sửa (ngoài phạm vi hiển thị “lần cuối”). |
@@ -532,6 +557,26 @@ Log:
   **`ba0ec3d0b000ce0f292ccc53b83576c212f74b9d7c189944ff4d2404490f623e`** (HEAD/`df`, sha nguồn
   `379×2`/`393×2`, các kiểm script).
 
+Lượt đo lại `--wasm` trên `ps` (**2026-11-26T19:58:34Z→20:04:00Z, HEAD `d97773de`**,
+`TMPDIR=/home/ps/vislogs/tmp`; header log ghi `dirty=5` = 5 tệp `agent/*.md` A0 đang chờ commit
+`151f2029`, **0 tệp mã**):
+
+```text
+CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 TMPDIR=/home/ps/vislogs/tmp \
+  ./bin/vis-targets --wasm  -> exit 0
+sem total=525 eligible=390 chay=390 excluded=135 pass=390 fail=0 coverage=100.0%
+suite 28 ca, 0 hỏng, runtime=node
+conformance 398 ca x 2 engine (371 .out + 27 .trap), 0 hỏng
+core PASS=47 EXPECTED_RED=0 FAIL=0; sqlite PASS=45 EXPECTED_RED=2 FAIL=0
+df /: 21 GiB -> 16 GiB; /tmp: 2,0 G truoc/sau
+```
+
+Log: `/home/ps/vislogs/st316c-wasm-final-20261126T1958Z.log`, sha256
+**`c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957`**; script runner
+`/home/ps/vislogs/st316c-wasm-final-run.sh`, sha256
+`95d170ededcd5e0fef60dec926b0d52087a897ce854a6117c181ac99cd3d30b9`. `git diff --stat d97773de
+151f2029 -- crates test bin Cargo.toml vis-host-wasm` rỗng (commit A0 chỉ `agent/*.md`).
+
 **Không có lỗi hard-code rõ ràng** trong 3 script gate; các đường dẫn/user đều có biến môi trường
 override và đã khớp snapshot. **Không sửa** logic gate. Thay đổi duy nhất: hiển thị “lần cuối”
 của `bin/vis-targets` (mục 1).
@@ -545,8 +590,8 @@ của `bin/vis-targets` (mục 1).
 | R1 | `mps` lệch HEAD `311d2288` | `vis-gate-macos` exit 4; clippy cũ chỉ @`311d2288`, không dùng cho `c02050c0` | sync §1.1; log clippy mới; ghi HEAD trong log |
 | R2 | `psvn` lệch `fe3446d2`, `C:` 14 GiB | gate exit 6; full test/build release có thể đầy đĩa | sync §1.2; `df` trước/sau; dọn `target/`; đỏ đĩa = `BLOCKED-ENV` |
 | R3 | `ps` từng còn 8,7 GiB (< 10 GB), `/tmp` tmpfs 3,3 G | `vis-targets --wasm`/release build có thể fail giữa chừng | `bin/vis-gc-targets`; log ra `/home/ps/vislogs`; `TMPDIR` ngoài `/tmp` nếu cần |
-| R4 | Số `vis-targets` cũ 379×2 / 393×2 | Báo cáo sai mốc “lần cuối” | **đã sửa** 395×2 + nguồn log; `--wasm` vẫn là nguồn duy nhất khi đo thật |
-| R5 | corpus đổi trong Sóng 6 | 395×2 không còn đúng | điều kiện là `fail=0` + đủ summary; ghi số thật, không ép 395 |
+| R4 | Số `vis-targets` cũ 379×2 / 393×2 / 395×2 | Báo cáo sai mốc “lần cuối” | **đã sửa** 398×2 + nguồn log @`d97773de`; `--wasm` vẫn là nguồn duy nhất khi đo thật |
+| R5 | corpus đổi trong Sóng 6 | 395×2 không còn đúng (nay 398×2 do ST-317a +3 `.out`) | điều kiện là `fail=0` + đủ summary; ghi số thật, không ép 395/398 |
 | R6 | `bin/vis-bench` cần Python trên `mps`/`psvn`; chưa từng chạy remote | bench 3-OS có thể `BLOCKED-ENV` | kiểm `python3`/`py -3`; ghi interpreter; thiếu ⇒ No-Go 3-OS, không bịa |
 | R7 | p90 N=5 = max, máy không ghim CPU | kết luận hồi quy sai do nhiễu | median là chính; p90 phụ; ghi load; đo lại nếu load cao |
 | R8 | `mps` thiếu `wasm32-unknown-unknown` | `vis-targets` đầy đủ fail trên `mps` | không chạy `vis-targets` trên `mps`; chỉ `vis-gate-macos` (WASI) |
@@ -579,9 +624,11 @@ của `bin/vis-targets` (mục 1).
 - [ ] `mps` `bin/vis-gate-macos --full` exit 0 (log + sha256).
 - [ ] `psvn` fetch/checkout **HEAD động** (lúc soạn `c02050c0`) + `bin/vis-gate-windows --full`
       exit 0 (log + sha256).
-- [x] `ps` `bin/vis-targets --wasm` **exit 0** @`29a7b254`: sem 390/390, suite 28/28,
-      conformance **395×2 (368+27), 0 hỏng**; log `st316c-wasm-20261126T1613Z.log` sha256
-      `c751f871…c07b3`.
+- [x] `ps` `bin/vis-targets --wasm` **exit 0** @`d97773de`: sem **390/390**, suite **28/28**,
+      conformance **398×2 (371 `.out` + 27 `.trap`), 0 hỏng**, core **47/0**, sqlite **45 + 2
+      EXPECTED_RED**; log `st316c-wasm-final-20261126T1958Z.log` sha256
+      `c7d90f60…da82957`. (Mốc trước @`29a7b254`: 395×2 = 368+27, log
+      `st316c-wasm-20261126T1613Z.log` sha256 `c751f871…c07b3`.)
 - [ ] `bin/vis-bench --runs 5 --json` trên **3 OS**, cùng chương trình sha256; baseline + after;
       median/p90 + `binary.sha256`; so hồi quy theo §3.1.
 - [ ] Điền bảng §3.1 + quyết định §3.2; A0 duyệt; **chưa** tag, **chưa** mở `ST-309` nếu chưa

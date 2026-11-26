@@ -192,14 +192,16 @@ if [ "$WASM_DO" = 1 ]; then
 else
   echo "=== wasm32-wasip1 (runtime) — CHƯA ĐO trong lượt này ==="
   printf '%-24s %-28s %s\n' hạng-mục target kết-quả
-  # **ST-316c**: mốc dưới đây lấy từ log THẬT `st316c-wasm-20261126T1613Z.log`
-  # (HEAD `29a7b254`, `--wasm` exit 0, 2026-11-26T16:16:38Z). Lịch sử: 379×2 (354+25) trước
-  # `fbb0ae4f`; 393×2 (366+27) là r072 trên cây **trước Sóng 5** (412 `.out`); ST-316a thêm 2 ca
-  # `stdlib/edge_map` (414 `.out`) ⇒ 395×2 (368+27), không phải lỗi harness.
+  # **ST-316c**: mốc dưới đây lấy từ log THẬT `st316c-wasm-final-20261126T1958Z.log`
+  # (HEAD `d97773de`, `--wasm` exit 0, 2026-11-26T19:58:34Z→20:04:00Z). Lịch sử: 379×2 (354+25)
+  # trước `fbb0ae4f`; 393×2 (366+27) là r072 trên cây **trước Sóng 5** (412 `.out`); ST-316a thêm
+  # 2 ca `stdlib/edge_map` (414 `.out`) ⇒ 395×2 (368+27) @`29a7b254`; Sóng 6 (ST-317a
+  # `fcecb5e6`/`2e4090e2`) thêm 3 ca `lang/st317a_value32/*` (415 `.out`) ⇒ **398×2 (371+27)**,
+  # không phải lỗi harness.
   printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 390/390"
   printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 28/28"
-  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 395×2 (368 .out + 27 .trap)"
-  printf '%-24s %-28s %s\n' nguồn-wasm wasm32-wasip1 "st316c-wasm-20261126T1613Z.log:123 (HEAD 29a7b254, exit 0)"
+  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 398×2 (371 .out + 27 .trap)"
+  printf '%-24s %-28s %s\n' nguồn-wasm wasm32-wasip1 "st316c-wasm-final-20261126T1958Z.log:127 (HEAD d97773de, exit 0)"
   printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
   echo "wasm32-wasip1: mốc lần cuối 2026-11-26; chạy \`bin/vis-targets --wasm\` để đo lại"
 fi
