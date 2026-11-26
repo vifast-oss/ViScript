@@ -53,18 +53,45 @@ interp/VM) đều in `20` rồi `10` — `b` giữ bản cũ.
 - `VIS_DIFF_N=100000 ./bin/vis-diff` → **`lech=0`** (93.768 chương trình chạy, 72,1 s).
 - `cargo check --workspace --all-targets` → sạch.
 
-## 4. Chưa xong (phần 2)
+## 4. Phần 2 — `Value::List(Rc<Vec<Value>>)` + handoff đích (đã xong)
 
-1. `Value::List(Rc<Vec<Value>>)` + `Value::list(...)`: đã thử đổi enum, phát sinh **83 lỗi** trên
-   ~86 tệp (chủ yếu `for x in xs`, `.into_iter()` trên `Rc`, chỗ dựng `Value::List(vec)`), nên
-   **revert** để giữ cây xanh. Cần một lượt riêng, sửa theo cụm và chạy lại `gate --fast` +
-   `vis-diff 100k` sau từng cụm.
-2. **listbench** (đọc/pass O(1) ≥ 10×) phụ thuộc mục 1.
-3. F1 (2× `Set-Cookie` last-wins), F2 (0 alloc `HashMap` khi khoá phức tạp), F4 (`json.decode`
-   gộp trực tiếp `VisMap`), F5 (`std.map.remove`/`merge` + non-transitive `N ≥ 8`).
-4. `bin/vis-bench` (release, JSON median/p90, sha256) cho `opt-bench`/`trim-matches`/`mapbench`/
-   `listbench`/`writebench`.
-5. Sau khi xong: `gate --fast`, `vis-diff 100k`, clippy 3 OS (Linux + `psvn`), rồi `REVIEW`.
+- Enum đổi `List(Vec<Value>)` → `List(Rc<Vec<Value>>)`; thêm `Value::list(Vec)` / `Value::list_rc(Rc)`.
+  Toàn workspace sửa theo cụm: mẫu khớp giữ `Value::List(rc)`, chỗ dựng đổi `Value::list(vec)`,
+  vòng lặp đổi `.iter()`, chỗ cần `Vec` dùng `Rc::unwrap_or_clone`.
+- **Handoff mở rộng cho List** (cùng cơ chế Map): `tach_dich` (VM) nhận diện `Rc` của **Map hoặc
+  List**, chỉ tách ô đích khi instruction kế là `Assign/StoreLocal` cùng con trỏ.
+  - `Instr::CallMethod`: tách ô đích **trước** khi gọi method rồi trả lại kết quả ⇒ `xs.push(v)`
+    nối tại chỗ (không chép list).
+  - Interp: `Interp::lay_o` lấy hẳn giá trị khỏi ô cho `push` trên `var`; `tach_o` mở rộng cho List
+    ở đường `x[i] = v`.
+- Sự cố nhỏ đã vá: sed toàn cục `Value::List(` → `Value::list(` lỡ đổi `SendValue::List`,
+  `PluginValue::List`, `ProtoValue::List` và các **mẫu khớp** → đã hoàn lại đúng từng chỗ
+  (compiler bắt hết; không còn `unsafe`, không đổi hành vi).
+
+### Số đo phần 2 (release, 3 lần, `listbench` = list 10k + 10k đọc + 10k ghi)
+
+| Bản | interp | `--vm` |
+|---|---|---|
+| `5cbb7853` (nền) | 3.351–3.726 ms | 3.944–4.536 ms |
+| `9983c82b` | **21–22 ms** | **14–18 ms** |
+
+⇒ **~165×** interp, **~250×** VM (KPI `listbench ≥ 10×`). `push` riêng: 10k 1.228 ms → **9 ms**,
+20k 4.434 ms → **13 ms** (tuyến tính). Alias list `b = a; a[0]=9` ⇒ `a=9, b=1` cả 2 engine.
+`writebench` phần 1 giữ nguyên 9–11 ms.
+
+### Cổng phần 2
+
+- `./vis-dev gate --fast` → **PASS** (3.856 test, 4 skip).
+- `VIS_DIFF_N=100000 ./bin/vis-diff` → **`lech=0`** (93.768 chạy, 60,9 s, 1.642/s).
+- Đã merge nhánh F1 (`b61ec663`, test 2× `Set-Cookie`) vào `plan/st316a` (`213c8ca9`).
+
+## 5. Chưa xong (phần 3, đang chạy song song)
+
+1. F2 (chỉ mục map không alloc khi khoá phức tạp) + F4 (`json.decode` gộp trực tiếp `VisMap`) —
+   subagent nhánh `plan/st316a-f24`.
+2. F5 (`std.map.remove`/`merge` qua `VisMap` + test non-transitive `N ≥ 8`) — nhánh `plan/st316a-f5`.
+3. `bin/vis-bench` (JSON median/p90 + sha256) — nhánh `plan/st316a-bench`.
+4. Audit độc lập `ST-316b` — nhánh `review/st316b-audit`.
 
 ## 5. Tuyên bố
 
