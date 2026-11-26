@@ -87,7 +87,7 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 | Clippy `--all-targets -D warnings` | **exit 0 / 0 warning** | gate cuối + mọi lát audit |
 | R10 (`API-CODES` ↔ `SPEC` §7.2) | **57 mã**, fixtures **20/20** | `review-st317c.md` §2 |
 | Rules / DAG | R1..R10 OK; DAG **23 crate/5 tầng/0 cạnh cấm** | gate log |
-| `report-check --all` | **PASS — 36 báo cáo, 380 hàng QUEUE @`4caa600e`** (hiện tại **382 @HEAD**) | `main` `977a61b0` |
+| `report-check --all` | **PASS — 36 báo cáo, 382 hàng QUEUE @HEAD** (lịch sử: 35/380 @`4caa600e`) | `main` `d37cab2a` |
 
 **Ghi chú đếm**: số test tăng theo lát (319a +5, 319c2 +5, 319d +6, 319e +2) nên 3912 → 3917 →
 3921 → 3922 → 3929 → **3934** là các cây khác nhau, không phải hồi quy.
@@ -213,5 +213,5 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 - [x] R1 **0 tệp sản phẩm > 1.000** (6 tệp test >1.000 không tính; trần 1.500 PASS); R8 **39/40**; 0 `unsafe`; `API-VBC1.txt` không đổi.
 - [x] Sổ **210 = 82 mở + 109 đóng + 16 VS3 + 2 + 1**; `#206`–`#210` đóng; `#200/#201` mở.
 - [x] WASI **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): 398×2, sem 390/390, suite 28/28.
-- [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (36 báo cáo, **380 hàng QUEUE @`4caa600e`; hiện tại 382 @HEAD**).
+- [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (**36 báo cáo, 382 hàng QUEUE @HEAD**; lịch sử 35/380 @`4caa600e`).
 - [ ] `ST-316c` 3-OS + chain thật (giữ `BLOCKED`).
