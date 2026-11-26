@@ -64,6 +64,9 @@ CAM_NGANG = {
     "vis-vm":        {"vis-types", "vis-interp"},
     "vis-runtime":   {"vis-types", "vis-interp", "vis-vm"},
     "vis-pkg":       {"vis-host-native"},
+    # **ST-316d (VD-292 §4.1)** — tầng Host không được kéo tầng Runtime: `src/` của
+    # `vis-host-native` có 0 tham chiếu `vis-runtime` (chỉ test HTTP/2 dùng ⇒ dev-dependency).
+    "vis-host-native": {"vis-runtime"},
 }
 TANG_CUA = {
     "vis-diag": 0,

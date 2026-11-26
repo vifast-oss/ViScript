@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # **ST-314a low-peak** — case âm + dương cho `bin/vis-dag-check`:
-# - metadata giả có **3 cạnh cấm**: 2 ngược tầng (`vis-core→vis-host-native`,
-#   `vis-syntax→vis-types`) + 1 cùng tầng (`vis-vm→vis-interp`) + **1 crate chưa khai tầng**;
+# - metadata giả có **4 cạnh cấm**: 2 ngược tầng (`vis-core→vis-host-native`,
+#   `vis-syntax→vis-types`) + 2 cùng tầng/sai DAG (`vis-vm→vis-interp`,
+#   `vis-host-native→vis-runtime` — ST-316d) + **1 crate chưa khai tầng**;
 # - metadata thiếu crate thành viên phải báo `thiếu crate ...`;
 # - metadata sạch (23 crate, không cạnh) phải xanh.
 # Chạy trong `vis-dev check`/`gate --fast`/`nightly`; chỉ `cargo metadata` giả, không build.
@@ -38,6 +39,7 @@ extra = {
     "vis-core": ["vis-host-native"],   # T1 -> T3
     "vis-syntax": ["vis-types"],       # T0 -> T2
     "vis-vm": ["vis-interp"],          # cùng T2 (CAM_NGANG)
+    "vis-host-native": ["vis-runtime"],  # T3 -> T2, cấm tường minh (ST-316d)
 }
 bad = [
     {"name": n, "dependencies": [{"name": d} for d in extra.get(n, [])]}
@@ -68,6 +70,7 @@ for want in \
     'vis-core[T1] -> vis-host-native[T3]' \
     'vis-syntax[T0] -> vis-types[T2]' \
     'vis-vm -> vis-interp (cùng tầng/sai DAG)' \
+    'vis-host-native -> vis-runtime (cùng tầng/sai DAG)' \
     'chưa khai tầng trong TANG_CUA'
 do
     if ! grep -qF "$want" "$OUT"; then
@@ -98,4 +101,4 @@ if ! grep -qF 'vis-dag-check: OK — 23 crate / 5 tầng' "$OUT_OK"; then
     exit 1
 fi
 
-echo "ok - vis-dag-check bắt 3 cạnh cấm + crate chưa khai tầng + thiếu crate; metadata sạch xanh"
+echo "ok - vis-dag-check bắt 4 cạnh cấm + crate chưa khai tầng + thiếu crate; metadata sạch xanh"

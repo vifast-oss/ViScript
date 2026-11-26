@@ -78,7 +78,7 @@ mod vs3_worker_frame_vm;
 mod api_dong_bang;
 #[path = "misc_api_it/conformance_trap.rs"]
 mod conformance_trap;
-#[path = "misc_api_it/host_parity.rs"]
+#[path = "misc_api_it/host_parity/mod.rs"]
 mod host_parity;
 #[path = "misc_api_it/so_ma.rs"]
 mod so_ma;

@@ -49,9 +49,12 @@ vis-bytecode = { path = "../vis-bytecode" }
 vis-interp = { path = "../vis-interp" }
 vis-types = { path = "../vis-types" }
 vis-vm = { path = "../vis-vm" }
+# **ST-316d** — chỉ `tests/http2_it/vs3_http_cancel.rs` dùng; `src/` có 0 tham chiếu nên hạ
+# xuống dev-dependency (diệt `warning: unused dependency` trên Linux & Windows) và tách hẳn
+# tầng Host khỏi tầng Runtime (cạnh cấm trong `bin/vis-dag-check`).
+vis-runtime = { path = "../vis-runtime" }
 
 [dependencies]
-vis-runtime = { path = "../vis-runtime" }
 vis-http = { path = "../vis-http" }
 vis-hir = { path = "../vis-hir" }
 vis-diag = { path = "../vis-diag" }
