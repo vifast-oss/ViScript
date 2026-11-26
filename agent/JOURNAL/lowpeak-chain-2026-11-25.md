@@ -49,3 +49,14 @@
   Vòng 65–66 (23:33–23:47): 100.000 lech=0; vòng 66 **WASI suite 28/28 + sem 390/390 +
   conformance 393×2 (366 `.out` + 27 `.trap`), cả 3 rc=0** trên mã đã vá bảo mật.
   Song song ngoài chuỗi: Windows full `psvn` @`92440689` **3.737/0**, release bench, fuzz 30 phút.
+
+## KẾT QUẢ CUỐI (2026-11-26T00:56:52Z, trước giờ cao điểm 01:00)
+
+- **72 vòng, 0 lần lỗi**; dừng đúng hạn `00:55`, không chạm giờ cao điểm.
+- **72× `vis-diff 100000` = 7.200.000 chương trình, 0 lệch** (mọi log `lech=0`).
+- **18× `gate --fast`** (3817/3817), **9× clippy workspace**, **6× WASI suite/sem/conformance**
+  (lần cuối: suite 28/28, sem 390/390, conformance **393×2** = 366 `.out` + 27 `.trap`, 0 hỏng),
+  **6× `vis-targets --wasm` + host-suite 54/54 + DAG OK**, tất cả exit 0.
+- Báo cáo: `/home/ps/vislogs/lowpeak-chain-2026-11-25/REPORT.md`
+  (sha256 `e2385c0f16194bdb82fd8534341c5e8050d45180b1afcfe8a6675ae3a58f5c3e`),
+  `SHA256SUMS` **137 log**, tổng 7,8 MB (ngoài repo, R7).
