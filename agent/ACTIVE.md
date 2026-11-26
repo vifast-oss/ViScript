@@ -1,6 +1,6 @@
-# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-297`, 2026-11-27)
+# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-298`, 2026-11-27)
 
-> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd297.md` · `agent/DECISIONS.md` (`VD-297`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`/`VD-293` · Sóng 6: `VD-294`/`VD-295` · Sóng 7: `VD-296`/`VD-297`.
+> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd298.md` · `agent/DECISIONS.md` (`VD-298`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`/`VD-293` · Sóng 6: `VD-294`/`VD-295` · Sóng 7: `VD-296`..`VD-298`.
 
 ## 1. CHẾ ĐỘ HIỆN HÀNH — PHÁT TRIỂN KIẾN TRÚC TỐI ƯU (`VD-289` / `VD-295`)
 
@@ -16,11 +16,12 @@
   - **`ST-318c` (W3)** — R1 mềm `vis-types`: `lower/trait_impl.rs` **1152**, `lower/cmd.rs` **1115**, `tyck/expr.rs` **1079** → **< 700** (mục tiêu), move nguyên văn, API/HIR giữ nguyên.
   - **`ST-318d` (W4)** — R1 mềm `vis-hir` + `vis-diag`: `hir.rs` **1088**, `vis-diag/src/lib.rs` **1070** → **< 1.000** (mục tiêu < 700), move nguyên văn.
   - **Đợt 2 (`VD-297`, 3 lát `READY`, lane không xung đột đợt 1)**: **`ST-318e` (W5)** — `vis-bytecode/src/codegen.rs` **1069** + `vis-cli/src/vistest.rs` **1061** → **< 700** (cổng `cargo test -p vis-bytecode -p vis-cli` + gate + diff 100k, chạm codegen); **`ST-318f` (W6)** — `vis-syntax/src/parse/mod.rs` **1049**, `lex/mod.rs` **1033**, `parse/cmd.rs` **1007** → **< 700** (cổng `cargo test -p vis-syntax` + gate + diff 100k); **`ST-318g` (W7)** — `vis-loader/src/modules.rs` **1043** + `vis-runtime/src/builtin/mod.rs` **1006** → **< 700** (cổng `cargo test -p vis-loader -p vis-runtime` + gate); **KHÔNG** chạm `vis-interp/src/frame.rs` — để `ST-318h` sau khi `ST-318a` hợp nhất, tránh xung đột `frame/`.
-  - **KPI đóng Sóng**: `#202`/`#203`/`#204` → `đóng`; tệp sản phẩm > 1.000 dòng **13 → 1** (đợt 1: 13 → 8; đợt 2: 8 → 1, còn `vis-interp/src/frame.rs` **1030**); R8 giữ **39/40**; 0 `unsafe` mới. Mỗi lát: `gate --fast`; a/c/d/e/f thêm `vis-diff 100k lech=0`; b thêm **20×**; g chỉ gate + `cargo test`.
+  - **Đợt 3 (`VD-298`, 2 lát cuối)**: **`ST-318h` (W8)** — R1 mềm `vis-interp/src/frame.rs` **1030** → **< 700** theo trách nhiệm (frame state, loop/step, host/call, helper), giữ API `Frame`/`step_frame_owned`; **`READY (chờ ST-318a)`** — chỉ mở sau khi `ST-318a` hợp nhất (tránh xung đột `frame/worker.rs`); cổng `cargo test -p vis-interp` + gate + diff 100k. **`ST-318i` (W9)** — đóng nợ rustdoc `vis-hir`: 4 intra-doc link hỏng (`stdlib.rs:4,5`; `stdlib/ty.rs:64`; `symbols.rs:32`), KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-hir --no-deps` **exit 0**; **độc lập — chạy ngay**, cổng `cargo test -p vis-hir` + gate.
+  - **KPI đóng Sóng**: `#202`/`#203`/`#204` → `đóng`; tệp sản phẩm > 1.000 dòng **13 → 0** (đợt 1: 13 → 8; đợt 2: 8 → 1; đợt 3 `ST-318h`: 1 → 0) + 4 rustdoc link `vis-hir` sạch; R8 giữ **39/40**; 0 `unsafe` mới. Mỗi lát: `gate --fast`; a/c/d/e/f thêm `vis-diff 100k lech=0`; b thêm **20×**; g chỉ gate + `cargo test`; h thêm diff 100k; i thêm `cargo doc -D warnings`.
 - **`ST-316c` (W4, Sóng 5) — giữ `BLOCKED`**: phần `ps` **đã xong** — WASI **395×2** (368 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`29a7b254`; chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**). `mps` @`311d2288`, `psvn` @`fe3446d2` vẫn lệch — **không** tuyên bố 3-OS khi chưa có log `mps`.
 - **Nợ Sóng 7 (`VD-296`)**: **`#203`** (`mở`, W2 frame W=1 lệch interp↔VM) & **`#204`** (`mở`, non-frame W≥2 nuốt lỗi task) do **`ST-318a`** đóng; **`#202`** (`mở`, flake `host_parity::net_http`) do **`ST-318b`** đóng. Sổ nợ hiện tại: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (dự kiến khi đóng Sóng 7: 205 = 82 mở + 104 đóng + 16 VS3 + 2 + 1 — kiểm lại thật).
 
-## 2. Bảng Trạng thái Sóng 4–7 (`ST-315a..ST-318g`)
+## 2. Bảng Trạng thái Sóng 4–7 (`ST-315a..ST-318i`)
 
 | Sóng | Lát | Luồng | Trạng thái | Mục tiêu & KPI nghiệm thu |
 |---|---|---|---|---|
@@ -39,12 +40,14 @@
 | **7** | **`ST-318e`** | **W5** | **`READY`** | `VD-297` (đợt 2): R1 mềm `vis-bytecode` + `vis-cli` — `codegen.rs` **1069**, `vistest.rs` **1061** → **< 700**; move nguyên văn, API/VBC1 giữ nguyên; cổng `cargo test -p vis-bytecode -p vis-cli` + gate + diff 100k |
 | **7** | **`ST-318f`** | **W6** | **`READY`** | `VD-297` (đợt 2): R1 mềm `vis-syntax` — `parse/mod.rs` **1049**, `lex/mod.rs` **1033**, `parse/cmd.rs` **1007** → **< 700**; token/AST/CST không đổi; cổng `cargo test -p vis-syntax` + gate + diff 100k |
 | **7** | **`ST-318g`** | **W7** | **`READY`** | `VD-297` (đợt 2): R1 mềm `vis-loader` + `vis-runtime` — `modules.rs` **1043**, `builtin/mod.rs` **1006** → **< 700**; **không** chạm `vis-interp/src/frame.rs`; cổng `cargo test -p vis-loader -p vis-runtime` + gate |
+| **7** | **`ST-318h`** | **W8** | **`READY (chờ ST-318a)`** | `VD-298` (đợt 3): R1 mềm `vis-interp/src/frame.rs` **1030** → **< 700** (frame state/loop-step/host-call/helper); giữ API `Frame`/`step_frame_owned`; chỉ mở sau `ST-318a` hợp nhất; cổng `cargo test -p vis-interp` + gate + diff 100k |
+| **7** | **`ST-318i`** | **W9** | **`READY`** | `VD-298` (đợt 3): đóng nợ rustdoc `vis-hir` — 4 intra-doc link hỏng (`stdlib.rs:4,5`; `stdlib/ty.rs:64`; `symbols.rs:32`); KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-hir --no-deps` exit 0; độc lập, cổng `cargo test -p vis-hir` + gate |
 
 ## 3. Cổng Kiểm tra Gọn (Chế độ Phát triển — KHÔNG soak/fuzz nặng)
 
 - **Cuối mỗi lát**: `./vis-dev gate --fast` PASS + `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0` cho lát chạm compiler/runtime/VM) + số đo release có sha256.
 - **Cuối Sóng 6**: 1× `cargo clippy --workspace --all-targets -- -D warnings` trên Linux + Windows (`psvn`, và `mps` khi rảnh) + 1× `bin/vis-targets --wasm` — Linux đã xanh (`CLIPPY_EXIT=0`); Windows/macOS bù ở `ST-316c` khi máy rảnh.
-- **Sóng 7 (`VD-296` + `VD-297`)**: mỗi lát `./vis-dev gate --fast` PASS; `ST-318a/c/d/e/f` thêm `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0`); `ST-318b` ca đích **20×**; `ST-318g` chỉ gate + `cargo test`; cuối Sóng 1× `rules` + đếm lại tệp > 1.000 (KPI **13 → 1**), **không** soak/fuzz nặng.
+- **Sóng 7 (`VD-296`..`VD-298`)**: mỗi lát `./vis-dev gate --fast` PASS; `ST-318a/c/d/e/f/h` thêm `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0`); `ST-318b` ca đích **20×**; `ST-318i` thêm `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-hir --no-deps`; cuối Sóng 1× `rules` + đếm lại tệp > 1.000 (KPI **13 → 0**), **không** soak/fuzz nặng.
 - **Luật cứng**: 0 `unsafe` (R2), R1 ≤ 1.500 (mục tiêu mềm < 1.000 đã đạt ở lane W2), R5 (`SO-NO`), R7 (log ≤ 50 KB), **R8 ĐANG CHẠM 39/40 — CẤM TẠO TỆP `.rs` CẤP 1 MỚI** (mọi test mới vào `tests/<domain>/` + `#[path]`, hoặc `worker_leak_it.rs` cho test cách ly), R9, R10 (`API-CODES.txt` ↔ `SPEC.md`), không `.github/workflows/`.
 - **Quản trị nhánh (`AGENTS.md` §6)**: merge xong xóa worktree + nhánh local (`-d`) + `origin` trong 24h; ≤ 8 worktree; `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`, đĩa trống > 10 GB.
 
@@ -54,7 +57,7 @@
 |---|---|---|---|---|
 | **Cao điểm 1 & 2** *(2×)* | `01:00–04:00` · `06:00–10:00` | `10:00–13:00` · `15:00–19:00` | `08:00–11:00` · `13:00–17:00` | **0-LLM**: chạy chain `/home/ps/vislogs/peak1-2026-11-27-chain.sh` khi `mps`/`psvn` rảnh (18 bước, dry-run exit 0) — phục vụ `ST-316c`; kiểm `vis-targets --wasm`, Windows full, `vis-diff 100k` |
 | **Thấp điểm trưa** *(0,5×)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | Đọc log cao điểm, vá lỗi ngắn, chuẩn bị hồ sơ Go/No-Go cho `ST-316c` |
-| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | **Sóng 7 (`VD-296`/`VD-297`)**: ưu tiên a/b correctness, kế đến đợt 2 e → f → g song song nếu đủ slot; mỗi lát gate + diff; đóng `#202`/`#203`/`#204`; `ST-318h` (`frame.rs`) chỉ mở sau khi `ST-318a` hợp nhất; nếu `mps`/`psvn` rảnh mới chạy chain cho `ST-316c` |
+| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | **Sóng 7 (`VD-296`..`VD-298`)**: a/b correctness → đợt 2 e/f/g → đợt 3 `ST-318i` (chạy ngay) + `ST-318h` (sau khi `ST-318a` hợp nhất); mỗi lát gate + diff; đóng `#202`/`#203`/`#204`; nếu `mps`/`psvn` rảnh mới chạy chain cho `ST-316c` |
 
 ## 5. Vận hành Cao điểm 2 — 2026-11-26 (Đã xong nền 0-LLM)
 
