@@ -124,6 +124,15 @@ pub struct Vm<'a> {
     pub(crate) budget_hit: bool,
     /// **ST-290 (VD-273)** — chỉ test-hook mới lưu trace; chạy mặc định (40M) **không** lưu.
     pub(crate) budget_trace_on: bool,
+    /// **ST-315a (VD-291)** — chỉ mục `hàm → pc → (start, len)` vào [`Self::budget_flat`], dựng
+    /// **một lần** lúc `budget_enable`; `budget_charge` tra O(1) thay vì quét toàn bộ entry của hàm.
+    pub(crate) budget_idx: Vec<Vec<(u32, u32)>>,
+    /// Vùng phẳng các sự kiện phí; mỗi `(start, len)` trỏ vào đây, giữ nguyên thứ tự gốc trong
+    /// từng `pc` (bằng chứng `budget_trace_for_test` không đổi).
+    pub(crate) budget_flat: Vec<FeeEntry>,
+    /// **ST-315a (VD-291)** — tổng đơn vị đã charge trong lần chạy; flush TLS **một lần** lúc thoát
+    /// `run()`/`run_frame*` thay vì ghi TLS mỗi sự kiện.
+    pub(crate) budget_used: i64,
     // VD-257/D — hạn ngạch lượt THỬ NGHIỆM (test-hook), RIÊNG khỏi budget tổng.
     // `quota_active = false` (mặc định) ⇒ mọi thao tác quota là no-op.
     pub(crate) quota_active: bool,
@@ -162,6 +171,9 @@ impl<'a> Vm<'a> {
             budget_trace: Vec::new(),
             budget_hit: false,
             budget_trace_on: false,
+            budget_idx: Vec::new(),
+            budget_flat: Vec::new(),
+            budget_used: 0,
             quota_active: false,
             quota_limit: 0,
             quota_remaining: 0,
@@ -198,8 +210,11 @@ impl<'a> Vm<'a> {
 
     /// Chạy `main` của module.
     pub fn run(&mut self, args: &[String]) -> RunOutput {
+        // **ST-315a (VD-291)**: bộ đếm ngân sách theo **lần chạy**; flush TLS một lần lúc thoát.
+        self.budget_used = 0;
         // **Bắt buộc** xác minh trước khi chạy (VD-52 #3): bytecode có thể đến từ cache.
         if let Err(e) = vis_bytecode::verify(self.m) {
+            self.ket_thuc_ngan_sach();
             return RunOutput {
                 stdout: String::new(),
                 diagnostics: vec![vis_syntax::Diagnostic {
@@ -232,7 +247,7 @@ impl<'a> Vm<'a> {
             },
             Err(e) => Err(e),
         };
-        match kq {
+        let out = match kq {
             Ok(v) => {
                 let exit = value::exit_code(&v);
                 RunOutput {
@@ -269,7 +284,9 @@ impl<'a> Vm<'a> {
                 exit: 1,
                 steps: self.steps,
             },
-        }
+        };
+        self.ket_thuc_ngan_sach();
+        out
     }
 
     fn chay_chuong_trinh(&mut self, argv: &Value) -> R<Value> {

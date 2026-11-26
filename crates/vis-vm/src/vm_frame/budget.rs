@@ -60,6 +60,7 @@ fn phi_va_gioi_han() -> Option<(FeeTable, u64)> {
 /// Bật ngân sách VM từ bảng phí của lần chạy nếu caller chưa đặt ngân sách tường minh.
 pub(crate) fn bat_dau_ngan_sach_vm(vm: &mut Vm<'_>) {
     DUNG_GAN_NHAT.with(|n| n.set(0));
+    vm.budget_used = 0;
     if vm.budget_fee.is_none() {
         if let Some((fee, limit)) = phi_va_gioi_han() {
             vm.budget_enable(fee, limit);
@@ -103,6 +104,8 @@ impl<'a> Vm<'a> {
         self.budget_trace.clear();
         self.budget_hit = false;
         self.budget_trace_on = false;
+        self.budget_used = 0;
+        self.dung_chi_muc_phi();
     }
 
     /// Bật ngân sách ngữ nghĩa bằng bảng phụ S (internal test hook).
@@ -121,6 +124,66 @@ impl<'a> Vm<'a> {
     /// Dãy sự kiện **có thứ tự** đã charge (so với trace của compiler/interp).
     pub fn budget_trace_for_test(&self) -> &[FeeEntry] {
         &self.budget_trace
+    }
+
+    /// **ST-315a (VD-291)** — dựng chỉ mục tra phí `hàm → pc → (start, len)` **một lần**.
+    /// Giữ nguyên thứ tự entry **cùng pc** (kể cả trần `MAX_PER_PC`) để dãy
+    /// `budget_trace_for_test` và điểm trap `VS0510` không đổi.
+    fn dung_chi_muc_phi(&mut self) {
+        let Some(fee) = self.budget_fee.as_ref() else {
+            self.budget_flat.clear();
+            self.budget_idx.clear();
+            return;
+        };
+        let mut flat: Vec<FeeEntry> = Vec::with_capacity(fee.total());
+        let mut idx: Vec<Vec<(u32, u32)>> = Vec::with_capacity(fee.funcs.len());
+        for (fi, entries) in fee.funcs.iter().enumerate() {
+            let n_code = self.m.funcs.get(fi).map_or(0, |f| f.code.len());
+            if n_code == 0 || entries.is_empty() {
+                idx.push(vec![(0, 0); n_code]);
+                continue;
+            }
+            // Đếm theo pc, chặn đúng trần `MAX_PER_PC` như đường cũ (entry thừa bị bỏ).
+            let mut dem = vec![0u32; n_code];
+            for e in entries {
+                if let Some(c) = dem.get_mut(e.pc as usize) {
+                    if *c < vis_bytecode::fee::MAX_PER_PC as u32 {
+                        *c += 1;
+                    }
+                }
+            }
+            let base = flat.len() as u32;
+            let mut bat_dau = vec![0u32; n_code];
+            let mut acc = 0u32;
+            for pc in 0..n_code {
+                bat_dau[pc] = acc;
+                acc += dem[pc];
+            }
+            // Cấp vùng phẳng của hàm rồi đặt từng entry theo con trỏ pc — giữ thứ tự gốc.
+            flat.resize(flat.len() + acc as usize, entries[0]);
+            let mut con_tro = vec![0u32; n_code];
+            for e in entries {
+                let pc = e.pc as usize;
+                if pc < n_code && con_tro[pc] < dem[pc] {
+                    let vi_tri = (base + bat_dau[pc] + con_tro[pc]) as usize;
+                    flat[vi_tri] = *e;
+                    con_tro[pc] += 1;
+                }
+            }
+            idx.push(
+                (0..n_code)
+                    .map(|pc| (base + bat_dau[pc], dem[pc]))
+                    .collect(),
+            );
+        }
+        self.budget_flat = flat;
+        self.budget_idx = idx;
+    }
+
+    /// **ST-315a (VD-291)** — flush **một lần** tổng đơn vị đã charge vào TLS báo cáo,
+    /// thay cho ghi TLS từng sự kiện trên đường nóng.
+    pub(crate) fn ket_thuc_ngan_sach(&self) {
+        DUNG_GAN_NHAT.with(|n| n.set(self.budget_used));
     }
 
     // ---- VD-257/D — quota lượt (RIÊNG khỏi budget tổng, test-only) ----
@@ -180,31 +243,17 @@ impl<'a> Vm<'a> {
         if self.budget_fee.is_none() {
             return Ok(());
         }
-        // `MAX_PER_PC` = 16 (đã verify): gom tại chỗ, không cấp phát `Vec` mỗi lệnh — đường chạy
-        // mặc định (ngân sách 40M) charge hàng chục triệu lần.
-        let mut ev: [Option<FeeEntry>; vis_bytecode::fee::MAX_PER_PC] =
-            [None; vis_bytecode::fee::MAX_PER_PC];
-        let mut n = 0usize;
-        if let Some(v) = self
-            .budget_fee
-            .as_ref()
-            .and_then(|f| f.funcs.get(fi as usize))
-        {
-            for e in v.iter().filter(|e| e.pc as usize == pc) {
-                if n == ev.len() {
-                    break;
-                }
-                ev[n] = Some(*e);
-                n += 1;
-            }
-        }
-        if n == 0 {
-            return Ok(());
-        }
-        for e in ev[..n].iter().flatten() {
+        // **ST-315a (VD-291)** — tra O(1) qua chỉ mục dựng sẵn; không còn quét toàn bộ entry của
+        // hàm hay cấp phát `[None; MAX_PER_PC]` mỗi lệnh.
+        let (start, len) = match self.budget_idx.get(fi as usize).and_then(|v| v.get(pc)) {
+            Some(&(start, len)) if len != 0 => (start as usize, len as usize),
+            _ => return Ok(()),
+        };
+        for k in start..start + len {
+            let e = self.budget_flat[k];
             let w = vis_bytecode::fee::standard_weight(e.kind) as i64;
             if self.budget_trace_on {
-                self.budget_trace.push(*e);
+                self.budget_trace.push(e);
             }
             if w > self.budget_remaining {
                 self.budget_hit = true;
@@ -220,7 +269,7 @@ impl<'a> Vm<'a> {
                 )));
             }
             self.budget_remaining -= w;
-            DUNG_GAN_NHAT.with(|n| n.set(n.get() + w));
+            self.budget_used += w;
             // VD-257/D — MỘT sự kiện trừ CẢ HAI bộ đếm; quota KHÔNG trap.
             self.quota_charge(w);
         }

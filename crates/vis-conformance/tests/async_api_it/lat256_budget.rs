@@ -124,6 +124,44 @@ fn nhieu_su_kien_cung_pc_giu_thu_tu_khi_charge() {
     );
 }
 
+#[test]
+fn chi_muc_phi_giu_thu_tu_giua_cac_pc() {
+    // **ST-315a (VD-291)**: bảng phí xen kẽ nhiều pc ⇒ chỉ mục `(start, len)` phải giữ đúng
+    // thứ tự **trong từng pc** và đúng thứ tự thực thi giữa các pc; bộ đếm `Vm.budget_used`
+    // flush TLS một lần lúc thoát `run()`.
+    use vis_bytecode::fee::{standard_weight, FeeEntry, FeeKind, FeeTable};
+    let src = "let a = 1\nprint(a)\n";
+    let (hir, syms, _tys) = tien_trinh(src);
+    let (m, _fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap();
+    // Hàm 0 là vỏ `Call(main, 0); Halt` ⇒ pc 0 rồi pc 1 chắc chắn thực thi, theo thứ tự.
+    let mut fee = FeeTable::new(m.funcs.len());
+    fee.push(0, FeeEntry::new(1, FeeKind::Expr, 201));
+    fee.push(0, FeeEntry::new(0, FeeKind::Assign, 202));
+    fee.push(0, FeeEntry::new(1, FeeKind::Call, 203));
+    fee.push(0, FeeEntry::new(0, FeeKind::Expr, 204));
+    let mut vm = Vm::new(&m, src);
+    vm.budget_enable_for_test(fee, 1_000_000);
+    let o = vm.run(&[]);
+    assert_eq!(o.exit, 0, "VM: {:?}", o.diagnostics);
+    let got: Vec<u32> = vm.budget_trace_for_test().iter().map(|e| e.site).collect();
+    assert_eq!(
+        got,
+        vec![202, 204, 201, 203],
+        "thứ tự nhóm theo pc sai: {:?}",
+        labels!(vm.budget_trace_for_test())
+    );
+    let dung: i64 = vm
+        .budget_trace_for_test()
+        .iter()
+        .map(|e| standard_weight(e.kind) as i64)
+        .sum();
+    assert_eq!(
+        vis_vm::vm_frame::da_dung_gan_nhat(),
+        dung,
+        "bộ đếm `Vm.budget_used` phải được flush TLS đúng một lần lúc thoát"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Resume / double-charge — bắt bằng **runtime test**, không tuyên bố verifier bắt hết.
 // ---------------------------------------------------------------------------

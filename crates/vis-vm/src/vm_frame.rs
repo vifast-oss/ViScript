@@ -482,7 +482,10 @@ fn run_frame_vm_driver<'m>(
     config: FrameConfig,
     budget: Option<(FeeTable, u64)>,
 ) -> (FrameOutput, Vec<FeeEntry>) {
+    // **ST-315a (VD-291)**: bộ đếm ngân sách theo lần chạy; flush TLS một lần ở mọi lối ra.
+    vm.budget_used = 0;
     if let Err(e) = vis_bytecode::verify(m) {
+        vm.ket_thuc_ngan_sach();
         return (
             FrameOutput {
                 stdout: String::new(),
@@ -522,16 +525,18 @@ fn run_frame_vm_driver<'m>(
     let main_th = match main_th(vm, &argv) {
         Ok(t) => t,
         Err(Abort::Trap(t)) => {
+            vm.ket_thuc_ngan_sach();
             return (
                 frame_output(vm, None, Some(t), Default::default()),
                 vm.budget_trace_for_test().to_vec(),
-            )
+            );
         }
         Err(_) => {
+            vm.ket_thuc_ngan_sach();
             return (
                 frame_output(vm, None, None, Default::default()),
                 vm.budget_trace_for_test().to_vec(),
-            )
+            );
         }
     };
 
@@ -815,6 +820,7 @@ fn run_frame_vm_driver<'m>(
     // Lát 2: reactor về baseline sau khi handle test thả.
     vm.sched.borrow_mut().frame_reactor_shutdown();
     LAST_QUOTA_YIELDS.with(|n| *n.borrow_mut() = vm.quota_yields_for_test());
+    vm.ket_thuc_ngan_sach();
     (
         frame_output(vm, final_value, trap, snapshot),
         vm.budget_trace_for_test().to_vec(),
