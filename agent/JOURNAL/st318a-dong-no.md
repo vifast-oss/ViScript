@@ -235,3 +235,13 @@ Median 5 lần, xen kẽ, binary debug cùng máy (`/home/ps/vislogs/st318a-fix3
 
 - Thêm `w18_frame_w1_main_ghi_nhieu_var_roi_await` (100 `var`, main ghi hết rồi 50 await task
   rỗng): `1\n100\n`, parity interp ↔ VM. `st317b_worker_orchestrate`: **20/20 PASS**.
+
+### Cổng lại sau F3
+
+| Cổng | Kết quả | Log |
+|---|---|---|
+| `cargo fmt --all` | sạch | — |
+| `st317b_worker_orchestrate` | **20/20 PASS** (`w18` mới) | — |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit 0 | `/home/ps/vislogs/st318a-fix3-clippy.log` |
+| `./vis-dev gate --fast` (`TMPDIR` trên đĩa) | **PASS** — nextest **3911/3911**, 4 skipped (91,1 s) | `/home/ps/vislogs/st318a-fix3-gate.log` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 100.000 chương trình (93.768 chạy), 159,2 s (có fuzz nền) | `/home/ps/vislogs/st318a-fix3-diff.log` |
