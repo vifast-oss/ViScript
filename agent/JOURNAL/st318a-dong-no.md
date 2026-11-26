@@ -180,3 +180,21 @@ Không `#[ignore]`; 13/13 test của tệp PASS.
 
 (Máy có tải nền ~10–13 load; số tuyệt đối cao hơn lúc rảnh, nhưng main/F1/F2 đo xen kẽ cùng
 lượt nên tỉ lệ là đối chứng. Log: `/home/ps/vislogs/st318a-fix2-perf2.log`.)
+
+### Cổng lại sau F2
+
+| Cổng | Kết quả | Log |
+|---|---|---|
+| `cargo fmt --all` | sạch | — |
+| `st317b_worker_orchestrate` | **19/19 PASS** (`w14..w17` mới) | `st318a-fix2-clippy.log` liên quan; test chạy trong gate |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit 0 | `/home/ps/vislogs/st318a-fix2-clippy.log` |
+| `./vis-dev gate --fast` (`TMPDIR` trên đĩa) | **PASS** — nextest **3910/3910**, 4 skipped (80,6 s) | `/home/ps/vislogs/st318a-fix2-gate3.log` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 100.000 chương trình (93.768 chạy), 89,2 s | `/home/ps/vislogs/st318a-fix2-diff.log` |
+
+- Hai lần gate đầu đỏ **cùng một ca** `host_parity::net_http::http_bon_ham_parity` do timer lệch
+  **1 ms** (`78 ms` vs `79 ms`, dưới tải nền); chạy riêng PASS, gate lại khi tải hạ PASS toàn bộ.
+  Không liên quan mã `ST-318a` (lane `host_parity` bị cấm chạm).
+- `w17` dùng API VM frame W≥2 có sẵn (`run_async_workers_with_full_hosts_caps`) — không phải
+  bỏ qua ca nào.
+- `bin/vis-bench --runs 2 --bin target/debug/vis`: **PASS** (stdout sha256 khớp, 5 chương trình ×
+  2 engine; log `/home/ps/vislogs/st318a-fix2-visbench.log`).
