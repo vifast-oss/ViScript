@@ -4,8 +4,8 @@
 - **Ngày**: 2026-11-27 (giờ thấp điểm) · **Vai**: Builder (Agent 2)
 - **Nhánh**: `plan/st319c2` · **Worktree**: `/home/ps/viswt/st319c2`
 - **Nền**: `plan/st319a` @ `ae0089c0` (closure capture by-value phần lõi)
-- **Trạng thái**: **WIP checkpoint** — mã + test xanh trên `check`/target; chưa chạy `gate --fast`,
-  `vis-diff 100k`, clippy. **Chưa DONE.**
+- **Trạng thái**: mã + 5 ca test xanh; `gate --fast`, `vis-diff 100k` (`lech=0`), clippy đều PASS.
+  **Chờ A0 nghiệm thu — chưa tự tuyên bố DONE.**
 
 ## 0. TL;DR
 
@@ -42,6 +42,12 @@ Repro: `var g=0`; `let f = fn() -> int: g = 5; g`; `spawn dummy` + `await`; `pri
 |---|---|---|
 | `w19_frame_w1_closure_ghi_global_khong_xuyen` | repro trên, frame W=1 interp + VM | `5\n0\n`, exit 0, `so_khop` |
 | `w20_frame_w1_closure_doc_sau_ghi_task_ghi_global` | task ghi `g=3` giữa 2 lần gọi closure; closure `g = g + 5` + `print(g)` | `5\n5\n10\n10\n3\n`, parity interp ↔ VM |
+| `w21_frame_w1_closure_await_ghi_global_sau_resume` | closure `await dat()` (task ghi `g=3`) rồi `g = g + 5` | `5\n3\n` — chạm `nap_vao_env` lúc resume |
+| `w22_frame_w1_closure_ghi_global_trong_task` | closure trong thân task ghi `g=5`, task in `f()` rồi `g`, trả `1` | `5\n0\n1\n` |
+| `w23_frame_w1_ham_ten_qua_gia_tri_van_xuyen_global` | `let h = tang`; `h()` ghi global trong frame | `1\n` — khoá heuristic `c.name.is_empty()` |
+
+Mỗi ca assert stdout **literal từng engine** (interp + VM frame W=1), `diagnostics` rỗng,
+`exit == 0`, và `so_khop`; không `#[ignore]`.
 
 ## 3. Cổng đã chạy
 
@@ -50,13 +56,16 @@ Repro: `var g=0`; `let f = fn() -> int: g = 5; g`; `spawn dummy` + `await`; `pri
 | `cargo fmt --all` | sạch |
 | `cargo check --workspace --all-targets` | **PASS** (34,65 s) |
 | `cargo test -p vis-interp` | **PASS** 55 + 2 doc-test |
-| `cargo test -p vis-conformance --test lib_api_it st317b_worker_orchestrate` | **PASS** 22/22 (có w19/w20) |
+| `cargo test -p vis-conformance --test lib_api_it st317b_worker_orchestrate` | **PASS 25/25** (w19..w23) |
+| `./vis-dev gate --fast` | **PASS** (L0 test OK) |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (`chay=94425`, 127,6 s, seed `3523158054`) |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (20,5 s) |
 
 ## 4. Còn lại / rủi ro
 
-- Chạy `./vis-dev gate --fast`, `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0`), clippy trước khi
-  báo A0 nghiệm thu.
+- Sẵn sàng A0 nghiệm thu; **chưa tự tuyên bố DONE**. Không push/merge.
+- `w22` in `5\n0\n1\n` đúng literal audit: main chỉ `print(await t)` (kết quả task `1`); nếu
+  muốn main đọc thêm global thì phải thêm dòng `print(g)` ⇒ `5\n0\n1\n0\n`.
 - Phát hiện ngoài phạm vi (không sửa): gọi **hàm tên** trong closure mà hàm đó ghi global —
   non-frame interp `1,0` vs VM `0,1` (lệch sẵn giữa hai engine mặc định). Frame path hiện theo
   VM/`ghi` xuyên (`0,1`); đầy đủ cần đổi env hàm tên theo caller + merge, nên tách nợ riêng.
-- ETA: gate + diff + clippy ~40–60 phút, commit sạch sau đó.
