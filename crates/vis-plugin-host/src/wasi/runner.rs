@@ -251,12 +251,15 @@ fn thu_muc_driver() -> Result<ThuMucDriver> {
             d.display()
         ))
     })?;
+    // **ST-315c review F2**: tạo guard **ngay** sau `create_dir_all` — lỗi ghi driver cũng dọn
+    // thư mục, không chỉ lỗi sau khi guard đã tồn tại.
+    let guard = ThuMucDriver(d);
     for (ten, noi_dung) in [("driver.mjs", DRIVER_MJS), ("driver.py", DRIVER_PY)] {
-        let p = d.join(ten);
+        let p = guard.duong().join(ten);
         fs::write(&p, noi_dung)
             .map_err(|e| Error::io(format!("không ghi được driver `{}`: {e}", p.display())))?;
     }
-    Ok(ThuMucDriver(d))
+    Ok(guard)
 }
 
 /// Đọc một ống tới trần [`MAX_PLUGIN_OUT`] + 1 byte; vượt trần ⇒ cắt còn trần và bật cờ
@@ -275,6 +278,21 @@ fn join_doc<T>(t: std::thread::JoinHandle<std::io::Result<T>>, ten: &str) -> Res
     t.join()
         .map_err(|_| Error::io(format!("luồng đọc {ten} của plugin panic")))?
         .map_err(|e| Error::io(format!("đọc {ten} của plugin: {e}")))
+}
+
+/// **ST-315c review F1** — cắt thông điệp lỗi tối đa **800 byte** nhưng luôn ở **biên UTF-8**
+/// (stderr plugin là dữ liệu không tin cậy; `String::truncate` giữa ký tự nhiều byte sẽ panic).
+fn cat_thong_diep(s: &str) -> String {
+    let mut t = s.trim().to_string();
+    if t.len() > 800 {
+        let mut cat = 800;
+        while cat > 0 && !t.is_char_boundary(cat) {
+            cat -= 1;
+        }
+        t.truncate(cat);
+        t.push('…');
+    }
+    t
 }
 
 /// Chạy một lượt `abi`/`manifest`/`call`; trả stdout, lỗi thoát/hạn chờ là `VS0501`.
@@ -340,14 +358,22 @@ pub(crate) fn chay_mot(
     let mut child = cmd
         .spawn()
         .map_err(|e| Error::io(format!("không chạy được runtime {}: {e}", runtime.ten())))?;
-    let stdout_pipe = child
-        .stdout
-        .take()
-        .ok_or_else(|| Error::io("không lấy được ống stdout của plugin"))?;
-    let stderr_pipe = child
-        .stderr
-        .take()
-        .ok_or_else(|| Error::io("không lấy được ống stderr của plugin"))?;
+    let stdout_pipe = match child.stdout.take() {
+        Some(p) => p,
+        None => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(Error::io("không lấy được ống stdout của plugin"));
+        }
+    };
+    let stderr_pipe = match child.stderr.take() {
+        Some(p) => p,
+        None => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(Error::io("không lấy được ống stderr của plugin"));
+        }
+    };
     let tran = Arc::new(AtomicBool::new(false));
     let t_out = std::thread::spawn({
         let tran = Arc::clone(&tran);
@@ -407,11 +433,7 @@ pub(crate) fn chay_mot(
     let stdout = String::from_utf8_lossy(&stdout_b).into_owned();
     let stderr = String::from_utf8_lossy(&stderr_b).into_owned();
     if !trang_thai.success() {
-        let mut thong_diep = stderr.trim().to_string();
-        if thong_diep.len() > 800 {
-            thong_diep.truncate(800);
-            thong_diep.push('…');
-        }
+        let thong_diep = cat_thong_diep(&stderr);
         return Err(Error::new(
             "VS0501",
             format!(
@@ -472,5 +494,26 @@ mod tests {
         let got = super::doc_co_tran(Cursor::new(du), Arc::clone(&tran)).expect("đọc");
         assert_eq!(got.len(), super::MAX_PLUGIN_OUT);
         assert!(tran.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn doc_co_tran_dung_bang_tran_khong_bat_co() {
+        // Đúng 8 MiB là hợp lệ; chỉ byte thứ 8 MiB + 1 mới vượt trần.
+        let du = vec![b'x'; super::MAX_PLUGIN_OUT];
+        let tran = Arc::new(AtomicBool::new(false));
+        let got = super::doc_co_tran(Cursor::new(du), Arc::clone(&tran)).expect("đọc");
+        assert_eq!(got.len(), super::MAX_PLUGIN_OUT);
+        assert!(!tran.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn cat_thong_diep_khong_panic_giua_utf8() {
+        // 799 byte ASCII + 'ệ' (3 byte) + 50 byte ⇒ mốc 800 rơi **giữa** 'ệ'.
+        let s = format!("{}{}{}", "a".repeat(799), "ệ", "b".repeat(50));
+        let out = super::cat_thong_diep(&s);
+        assert!(out.starts_with(&"a".repeat(799)), "phần đầu: {out:?}");
+        assert!(out.ends_with('…'), "phải có dấu cắt: {out:?}");
+        assert_eq!(out.len(), 799 + '…'.len_utf8());
+        assert_eq!(super::cat_thong_diep("ngắn"), "ngắn");
     }
 }

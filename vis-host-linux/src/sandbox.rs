@@ -12,7 +12,7 @@
 //!   handle `Truncate` nên tiến trình con vẫn `truncate(2)` được tệp trong `cap[Dir]` chỉ-đọc.
 //!   Kernel cũ hơn (ABI < 3) sẽ **từ chối tạo ruleset** (fail-closed: không chạy sandbox yếu).
 //! - Quyền của **tệp** và của **thư mục** khác nhau: `ReadDir` chỉ hợp lệ trên thư mục, nên tệp
-//!   chỉ xin `ReadFile` (+`WriteFile` khi có quyền ghi). Xin sai ⇒ `add_rule` trả `EINVAL`.
+//!   chỉ xin `ReadFile` (+`WriteFile`+`Truncate` khi có quyền ghi). Xin sai ⇒ `add_rule` trả `EINVAL`.
 //! - `restrict_self()` trả [`RestrictionStatus`]: `NotEnforced` ⇒ nền **không** cưỡng chế được
 //!   (kernel cũ / LSM tắt) — người gọi phải coi là "chưa có sandbox", không được coi là xong.
 
