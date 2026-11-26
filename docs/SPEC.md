@@ -2,8 +2,8 @@
 # SPEC — Đặc tả ngôn ngữ ViScript
 
 **Trạng thái:** bản gốc ST-309 sinh từ cây mã **`c4337ce`** (`0.5.0`, 2026-11-23), đã được Agent 0
-đồng bộ theo kiến trúc 5 tầng DAG (**`0.6.0`**, `VD-289`/`VD-290`/`VD-291`, 2026-11-26, nền
-`6ea63df`). Tệp này mô tả **hành vi đã hợp nhất trên `main`**; tính năng chỉ có trên nhánh chưa
+đồng bộ theo kiến trúc 5 tầng DAG và hậu Sóng 4 (**`0.6.0`**, `VD-289`..`VD-292`, 2026-11-26, nền
+`8ff19b42` / mã `7014fb7b`). Tệp này mô tả **hành vi đã hợp nhất trên `main`**; tính năng chỉ có trên nhánh chưa
 merge hoặc chỉ là thiết kế **không** thuộc đặc tả chuẩn tắc và được liệt kê ở §12.
 
 **Thứ tự nguồn sự thật** (khi tệp này lệch): (1) mã + test trong repo; (2) [`SPEC-lex.md`](SPEC-lex.md)
@@ -223,7 +223,8 @@ Ghi chú cú pháp:
 - `pub`/`async` đứng trước `fn/cmd/type/enum/trait/const`; `async` trên `type`/`enum`/`trait`/
   `const` bị kiểm kiểu từ chối (`VS0415`). `async` được hỗ trợ cho `fn` cấp tệp, `fn` trong `impl`
   và `cmd`.
-- `const` **bắt buộc** ghi kiểu (`const N = 1` là `VS0204`, chốt ở `VD-291`).
+- `const` **bắt buộc** ghi kiểu (`const N = 1` là `VS0204`, chốt ở `VD-291`); chu trình phụ thuộc
+  giữa các `const` bị bắt tĩnh bằng **`VS0304`** (`ST-315d`, Tarjan lặp; runtime vẫn giữ hàng rào sâu).
 - `test fn` không nhận tham số, không có kiểu trả; thân là `suite`.
 - Trường bản ghi bất biến; `= expr` là giá trị mặc định.
 - Biến thể enum có thể mang trường **vị trí** (`Circle(float)`) hoặc **có tên** (`Circle(r: float)`);
@@ -585,8 +586,10 @@ Ngữ nghĩa số:
 
 - Mọi kiểu trừ `cap`/`chan`/`task`/`fn` có **ngữ nghĩa giá trị**; gán/sao chép độc lập về ngữ nghĩa.
 - Cài đặt RC + copy-on-write; không GC truy vết; không có chu trình qua giá trị thường.
-- `map` giữ **thứ tự chèn**; khoá trùng trong literal tĩnh là `VS0412`, khoá tính toán trùng thì
-  runtime **last-wins** (giữ vị trí chèn đầu). So sánh map theo ánh xạ, không theo thứ tự.
+- `map` giữ **thứ tự chèn** (`Value::Map(Rc<VisMap>)` CoW + chỉ mục băm lười từ `ST-315b`); khoá
+  trùng trong literal tĩnh là `VS0412`, khoá tính toán trùng thì runtime **last-wins** (giữ khoá gốc
+  và vị trí chèn đầu; `remove` giữ thứ tự còn lại, `set` lại chèn cuối). So sánh map theo ánh xạ,
+  không theo thứ tự.
 - `set{…}` khử trùng theo `==`, nhưng kiểu là `list[T]` (xem §12).
 - Đánh giá trái sang phải: toán hạng, phần tử literal, trường bản ghi, đối số (vị trí trước, tên sau).
 - `and`/`or`/`??` ngắn mạch; toán hạng phải không được đánh giá khi trái quyết định.
@@ -681,7 +684,7 @@ fn main(data: cap[Dir] @ p"./data", out: cap[Dir] @ p"./out" (write), net: cap[N
 
 | Nền | Cưỡng chế runtime | Kernel sandbox | Trạng thái |
 |---|---|---|---|
-| Linux (`ps`) | `FsGuard`/`NetGuard` (`openat2`/`statat`), `VS0604` | Landlock `ABI::V3` (`--sandbox`, `vis-host-linux` trong workspace; nợ `#197` cho tệp đơn `(write)`) | chạy thật, host suite 54/54; `vis-host-linux` 18/18 |
+| Linux (`ps`) | `FsGuard`/`NetGuard` (`openat2`/`statat`), `VS0604` | Landlock `ABI::V3` (`--sandbox`, `vis-host-linux` trong workspace; `ReadFile\|WriteFile\|Truncate` cho tệp đơn `(write)`, `#197` đóng ở `ST-315c`) | chạy thật, host suite 54/54; `vis-host-linux` 19/19 |
 | Windows x86_64 | cùng mã, **chỉ theo đường dẫn** | không | **Tier 1** từ `v0.4.5`; caveat `FsGuard` |
 | macOS arm64 | cùng mã (`openat`/`statat`, `FsGuard`/`NetGuard`) | không (Darwin không có Landlock) | **Tier 1 đã công bố** từ `v0.5.0` (`ST-300m3`: 3× full + soak 4 h 1.878 vòng, host 54/54); chỉ arm64; clippy **PASS @`311d2288`**; **chưa chạy lại full gate trên `0.6.0`** (`mps` bỏ qua theo chỉ đạo, bù ở `ST-316c`) |
 | `wasm32-wasip1` | `WasiHost` preopen; từ chối net/proc/sqlite | preopen của runtime | runner thật (runtime có phạm vi); suite 28/28, `vis-wasm-sem` **390/390** (`#193` đóng với `-zstack-size=12 MiB` + `node --stack-size=4096`), `vis-wasm-conformance` **393×2** |
@@ -705,7 +708,7 @@ tệp.vis:dòng:cột: error VS0412: kiểu không khớp
 
 ### 7.2 Sổ mã
 
-Sổ đóng băng tại `c4337ce` (nguồn máy đọc: `agent/API-CODES.txt`):
+Sổ đóng băng **57 mã** đồng bộ theo `VD-292` (nguồn máy đọc: `agent/API-CODES.txt`):
 
 | Mã | Mức | Nghĩa ngắn |
 |---|---|---|
@@ -723,7 +726,7 @@ Sổ đóng băng tại `c4337ce` (nguồn máy đọc: `agent/API-CODES.txt`):
 | `VS0201` | error | lỗi cú pháp: token không mong đợi/thiếu vế |
 | `VS0202` | error | `%` dùng như phần trăm — viết `50pct` |
 | `VS0203` | error | từ khoá đã bỏ — dùng cú pháp mới |
-| `VS0204` | error | `const` cần ghi kiểu khi RHS không phải literal |
+| `VS0204` | error | `const` cần ghi kiểu tường minh *(chuỗi sổ đóng băng `API-CODES.txt` giữ theo `VD-129`)* |
 | `VS0205` | error | dựng bản ghi bằng `{…}` — dùng `Tên(trường: …)` hoặc khoá chuỗi |
 | `VS0206` | error | khối `else` của `let … else` phải thoát |
 | `VS0207` | error | trộn loại khoá trong `{…}` |
@@ -732,6 +735,7 @@ Sổ đóng băng tại `c4337ce` (nguồn máy đọc: `agent/API-CODES.txt`):
 | `VS0301` | error | tên không tồn tại |
 | `VS0302` | error | khai báo trùng trong cùng phạm vi |
 | `VS0303` | error | kiểu không tồn tại |
+| `VS0304` | error | chu trình phụ thuộc hằng số (`const`) *(cấp ở `VD-291`/`ST-315d`)* |
 | `VS0401` | error | sai số lượng hoặc thứ tự đối số |
 | `VS0402` | error | `match` không xét hết trường hợp |
 | `VS0403` | error | trường, kiểu hoặc phương thức không tồn tại |
@@ -824,7 +828,7 @@ các nhóm hiện có:
 | `std.json` | `encode decode encode_pretty` |
 | `std.time` | `now_ms monotonic_ms` |
 | `std.net` | `listen connect read write accept close close_listen local_addr accept_timeout connect_timeout` |
-| `std.http` | `get head get_timeout head_timeout` (HTTP/1.1; `http://` chỉ loopback, `https://` qua TLS) |
+| `std.http` | `get head get_timeout head_timeout` (HTTP/1.1 & HTTP/2; `http://` chỉ loopback, `https://` qua TLS; `res.headers` kiểu `map[str, str]` áp **last-wins** cho header trùng tên theo `VD-292`, cookie jar nội bộ vẫn xử lý đủ toàn bộ `Set-Cookie` thô) |
 | `std.sqlite` | `open open_with close execute execute_batch query query_one explain tables table_exists index_exists columns indexes index_columns primary_keys schema_sql data_version schema_version user_version application_id journal_mode database_list last_insert_rowid changes begin commit rollback in_transaction` |
 
 Method sugar (`s.f(args)` ≡ `str.f(s, args)` cho hàm nhận `str` đầu) có cho `str`, `list`, `map`;
@@ -1016,13 +1020,13 @@ Bản này **không** thay thế:
 - `docs/SPEC-lex.md` — chuẩn từ vựng chi tiết (bảng token, 60 golden, mã `VS01xx`).
 - `agent/API-STD.txt` — chữ ký std đóng băng (167 hàm tại mốc này); §8.3 chỉ liệt kê tên nhóm.
 - `agent/API-VBC1.txt` — bảng thẻ bytecode VBC1; định dạng nhị phân không thuộc đặc tả ngôn ngữ.
-- `agent/DECISIONS.md` — lịch sử quyết định (`VD-01..VD-291`, `R1..R37`) và các nợ đã biết.
+- `agent/DECISIONS.md` — lịch sử quyết định (`VD-01..VD-292`, `R1..R37`) và các nợ đã biết.
 
 ---
 
 ## 12. Phần chưa đặc tả đầy đủ / chỉ có thiết kế
 
-Mục này **không** mô tả tính năng như đã có. Đây là các khoảng trống đã kiểm tra tại `c4337ce` (đồng bộ thêm ở `VD-291`):
+Mục này **không** mô tả tính năng như đã có. Đây là các khoảng trống đã kiểm tra tại `c4337ce` (đồng bộ thêm ở `VD-291`/`VD-292`):
 
 | Hạng mục | Trạng thái thực tế | Ghi chú |
 |---|---|---|
