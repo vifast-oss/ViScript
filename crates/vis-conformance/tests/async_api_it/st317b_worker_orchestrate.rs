@@ -1047,3 +1047,86 @@ fn main():
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "hàm tên trên closure vẫn sync global");
 }
+
+/// **w25 (ST-320b / #212, P2-2 ST-319c2)** — **hàm tên qua giá trị tạo TRONG closure**:
+/// `let h = tang`/`let h = doc` phải chạy trên **env module** (như `call_hfn` non-frame
+/// ST-319e), không thừa hưởng snapshot closure. Trước bản vá, frame chụp `frame.cur().env` rồi
+/// `merge` chép ngược vào snapshot:
+/// - write-only: frame `1,1,1` vs VM `0,0,1` — closure thấy global vừa ghi qua `h()`;
+/// - read-only + `await`: frame `900,200,300,400` vs VM `903,203,303,403` — `h()` đọc snapshot
+///   `g=0` thay vì global `g=3`.
+#[test]
+fn w25_frame_w1_ham_ten_qua_gia_tri_trong_closure() {
+    // Write-only: `tang` ghi `g`, closure trả `g` (snapshot) — global chỉ đổi ngoài closure.
+    const GHI: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang():
+    g = 1
+
+fn main():
+    let f = fn() -> int:
+        let h = tang
+        h()
+        g
+    let t = spawn dummy()
+    await t
+    print(f())
+    print(f())
+    tang()
+    print(g)
+"#;
+    let a = anh(GHI);
+    let i = frame_1(GHI, &a);
+    let v = frame_vm_1(GHI, &a);
+    assert_eq!(i.stdout, "0\n0\n1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "0\n0\n1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "write-only: hàm tên qua giá trị trong closure");
+
+    // Read-only + await: closure tạo trước task ghi `g=3`; `h = doc` (chỉ đọc) gọi sau `await`
+    // phải thấy global `3` (env module), không phải snapshot `0` của closure.
+    const DOC: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn doc() -> int:
+    g
+
+fn main():
+    let f = fn():
+        let h = doc
+        let t = spawn dat()
+        await t
+        print(900 + h())
+        print(200 + h())
+        print(300 + h())
+        print(400 + h())
+    f()
+"#;
+    let a = anh(DOC);
+    let i = frame_1(DOC, &a);
+    let v = frame_vm_1(DOC, &a);
+    assert_eq!(
+        i.stdout, "903\n203\n303\n403\n",
+        "interp: {:?}",
+        i.diagnostics
+    );
+    assert_eq!(v.stdout, "903\n203\n303\n403\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(
+        &i,
+        &v,
+        "read-only + await: hàm tên qua giá trị trong closure",
+    );
+}

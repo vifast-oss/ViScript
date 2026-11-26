@@ -102,6 +102,8 @@ pub(crate) fn run_frame_driver<'a>(
         // biến top-level là ô chung với task frame — cùng ngữ nghĩa interp non-frame/VM.
         None => {
             it.env = globals.clone();
+            // **ST-320b (#212)**: giữ `env_module` cùng handle với `globals` (xem `params.rs`).
+            it.dat_env_module(globals.clone());
             globals.clone()
         }
     };

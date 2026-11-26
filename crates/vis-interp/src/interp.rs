@@ -217,6 +217,24 @@ impl<'a> Interp<'a> {
         &self.caps
     }
 
+    /// **ST-320b (#212)** — đồng bộ `env_module` khi entry point **gán lại** `it.env`.
+    ///
+    /// Đường frame dựng `globals` riêng rồi gán `it.env = globals` (trước `main` hoặc chế độ
+    /// không `main`); `Interp::new` đã trỏ `env_module` vào map rỗng nên phải cập nhật cùng lúc —
+    /// nếu không, `Value::Fn` của hàm tên (`let h = tang`) chụp nhầm map rỗng, lệch VM
+    /// (ST-319e P2-2 / #212).
+    pub(crate) fn dat_env_module(&mut self, env: Env) {
+        self.env_module = env;
+    }
+
+    /// **ST-320b (#212)** — env **module** hiện hành cho `Value::Fn` của hàm tên.
+    ///
+    /// Hàm tên gọi qua giá trị phải đọc/ghi env module (khớp `call_hfn` non-frame ST-319e);
+    /// closure lambda vẫn dùng snapshot `c.env` riêng (#206/#209).
+    pub(crate) fn env_module(&self) -> Env {
+        self.env_module.clone()
+    }
+
     pub(crate) fn take_stdout(&mut self) -> String {
         std::mem::take(&mut self.out)
     }
