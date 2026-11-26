@@ -170,6 +170,13 @@ impl<'a> Interp<'a> {
             )));
         }
         let saved_env = self.env.clone();
+        // **ST-319e (#210)**: closure **ngoài cùng** cho biết env module thật — non-frame là env
+        // cấp tệp, frame là `globals` (frame gán `it.env`). Closure lồng nhau **không** ghi đè:
+        // `saved_env` lúc đó là env của closure ngoài, không phải module.
+        if self.closure_dong == 0 {
+            self.env_module = saved_env.clone();
+        }
+        self.closure_dong += 1;
         self.env = c.env.clone();
         let mut old = Vec::with_capacity(c.params.len());
         for (i, p) in c.params.iter().enumerate() {
@@ -194,6 +201,7 @@ impl<'a> Interp<'a> {
             }
         }
         self.env = saved_env;
+        self.closure_dong -= 1;
         match r {
             Ok(v) => {
                 if c.ret_depth > 0 {
@@ -245,7 +253,33 @@ impl<'a> Interp<'a> {
         kq
     }
 
+    /// **ST-319e (#210)** — hàm tên **luôn** chạy trên env module: closure đang gọi chỉ là
+    /// caller, không truyền snapshot của nó sang thân hàm. Ở độ sâu closure `0`, `self.env`
+    /// **chính là** env module (non-frame: env cấp tệp; frame: `globals`) nên chỉ đồng bộ
+    /// handle; ở độ sâu `> 0`, tạm đổi `env` sang `env_module` và khôi phục trên **mọi** nhánh
+    /// thoát (`Ok`, `Abort::Ret`, trap/abort).
     fn call_hfn_trong(
+        &mut self,
+        f: &'a HFn,
+        pos: Vec<Value>,
+        named: Vec<(String, Value)>,
+        span: Span,
+    ) -> R<Value> {
+        let saved_env = if self.closure_dong > 0 {
+            Some(std::mem::replace(&mut self.env, self.env_module.clone()))
+        } else {
+            self.env_module = self.env.clone();
+            None
+        };
+        let kq = self.call_hfn_than(f, pos, named, span);
+        if let Some(env) = saved_env {
+            self.env = env;
+        }
+        kq
+    }
+
+    /// Thân [`Self::call_hfn_trong`] — chạy trên env **đã chọn** (env module, #210).
+    fn call_hfn_than(
         &mut self,
         f: &'a HFn,
         pos: Vec<Value>,

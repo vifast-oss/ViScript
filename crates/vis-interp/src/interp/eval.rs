@@ -97,7 +97,10 @@ impl<'a> Interp<'a> {
                             params: f.params.iter().map(|p| p.sym).collect(),
                             param_depths: f.params.iter().map(|p| opt_depth_ty(&p.ty)).collect(),
                             body: HBody::Stmts(f.body.clone()),
-                            env: self.env.clone(),
+                            // **ST-319e (#210)**: giá trị hàm tên mang **env module**, không phải
+                            // env caller — `let h = tang` trong closure rồi `h()` vẫn đọc/ghi
+                            // global cấp tệp.
+                            env: self.env_module.clone(),
                             ret_depth: opt_depth_ty(&f.ret),
                             frame_body: std::cell::OnceCell::new(),
                         })));

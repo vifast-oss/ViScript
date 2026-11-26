@@ -49,6 +49,13 @@ pub(crate) struct Interp<'a> {
     main: Option<&'a HFn>,
     stmts: &'a [HStmt],
     pub(crate) env: Env,
+    /// **ST-319e (#210)** — env **module** (env gốc của chương trình): hàm tên cấp tệp gọi từ
+    /// closure phải đọc/ghi env này, không thừa hưởng snapshot `c.env` của closure. `call_hfn`
+    /// tạm chuyển `env` sang đây; `HExpr::Var` trỏ hàm tên chụp handle này cho `Value::Fn`.
+    env_module: Env,
+    /// **ST-319e (#210)** — độ sâu closure non-frame đang chạy. `0` ⇒ `env` **là** env module
+    /// (kể cả `globals` frame gán vào `it.env`); `> 0` ⇒ `env_module` mới là env module.
+    closure_dong: u32,
     /// **VD-260** — kiểu tĩnh suy từ annot + initializer (mirror codegen `collect_sym_tys`);
     /// dùng cho đích gán `var`/field/index và nâng nhánh `if`/`match`.
     pub(crate) sym_ty: HashMap<u32, vis_hir::Type>,
@@ -138,6 +145,7 @@ impl<'a> Interp<'a> {
         let fn_rets = core_types::goi::collect_fn_rets(&fns);
         let mret = vis_hir::MethodRet::from_hir_voi_bang(hir, types);
         let sym_ty = core_types::goi::collect_sym_tys(hir, symbols, types, &fn_rets, &mret);
+        let env: Env = Rc::new(RefCell::new(HashMap::new()));
         Self {
             fns,
             consts,
@@ -146,7 +154,9 @@ impl<'a> Interp<'a> {
             tags,
             main,
             stmts: &hir.stmts,
-            env: Rc::new(std::cell::RefCell::new(HashMap::new())),
+            env: env.clone(),
+            env_module: env,
+            closure_dong: 0,
             sym_ty,
             fn_rets,
             mret,
