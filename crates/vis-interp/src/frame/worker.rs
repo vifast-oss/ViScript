@@ -626,16 +626,16 @@ impl DongBo {
 /// Chép `cap` (sym → giá trị mới) vào các khung gọi **không cô lập** của `frame` (bỏ qua env
 /// chính là globals).
 ///
-/// **ST-319c2 (#206)**: khung closure bắt biến theo giá trị và mọi khung lồng bên trong nó
-/// cũng sống trên snapshot đó ⇒ **không** nạp ghi cấp tệp của frame khác vào. Chỉ các khung
-/// phía ngoài closure (frame chính/hàm tên/task) mới nhận đồng bộ F2/F3.
+/// **ST-319c2 (#206)**: chỉ khung **closure bắt biến theo giá trị** (`by_value`) sống trên
+/// snapshot nên **không** nhận ghi cấp tệp của frame khác. Khung hàm tên/thường — kể cả khung
+/// hàm tên nằm **trên** closure trong stack và env dựng từ `globals` — vẫn đồng bộ F2/F3.
 fn nap_vao_env(frame: &mut IFrame<'_>, globals: &Env, cap: &[(u32, Value)]) {
-    let envs: Vec<Env> = match frame.calls.iter().position(|cf| cf.by_value) {
-        // Có closure đang treo: chỉ đồng bộ các khung **phía ngoài** nó.
-        Some(i) => frame.calls[..i].iter().map(|cf| cf.env.clone()).collect(),
-        // Không có closure: giữ nguyên F2/F3 — mọi khung gọi đều nhận.
-        None => frame.calls.iter().map(|cf| cf.env.clone()).collect(),
-    };
+    let envs: Vec<Env> = frame
+        .calls
+        .iter()
+        .filter(|cf| !cf.by_value)
+        .map(|cf| cf.env.clone())
+        .collect();
     for env in envs {
         if Rc::ptr_eq(&env, globals) {
             continue;

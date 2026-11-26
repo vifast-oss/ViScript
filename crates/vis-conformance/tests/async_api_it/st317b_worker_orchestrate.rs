@@ -747,6 +747,8 @@ fn w19_frame_w1_closure_ghi_global_khong_xuyen() {
     let v = frame_vm_1(CLOSURE_GHI_GLOBAL_FRAME, &a);
     assert_eq!(i.stdout, "5\n0\n", "interp: {:?}", i.diagnostics);
     assert_eq!(v.stdout, "5\n0\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
     assert_eq!(i.exit, 0, "interp exit");
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "closure ghi global trong frame W=1");
@@ -778,7 +780,9 @@ fn w20_frame_w1_closure_doc_sau_ghi_task_ghi_global() {
     let i = frame_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
     let v = frame_vm_1(CLOSURE_DOC_SAU_GHI_FRAME, &a);
     assert_eq!(i.stdout, "5\n5\n10\n10\n3\n", "interp: {:?}", i.diagnostics);
-    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(v.stdout, "5\n5\n10\n10\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
     assert_eq!(i.exit, 0, "interp exit");
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "closure đọc sau ghi + task ghi global");
@@ -874,4 +878,38 @@ fn main():
     assert_eq!(i.exit, 0, "interp exit");
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "hàm tên qua giá trị vẫn xuyên global");
+}
+
+/// **w24 (P2-1 audit)** — **khung hàm tên nằm TRÊN closure** trong stack (`doc()` gọi từ closure
+/// và tự `await dat()`): `nap_vao_env` chỉ được bỏ khung `by_value`, không được cắt cả khung
+/// hàm tên (env dựng từ `globals`). Trước bản vá, hồi quy cho `0\n3` (interp) trong khi VM và
+/// non-frame là `3\n3`.
+#[test]
+fn w24_frame_w1_ham_ten_tren_closure_nap_van_sync() {
+    const SRC: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn doc() -> int:
+    await dat()
+    g
+
+fn main():
+    let f = fn() -> int:
+        doc()
+    print(f())
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "3\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "3\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "hàm tên trên closure vẫn sync global");
 }

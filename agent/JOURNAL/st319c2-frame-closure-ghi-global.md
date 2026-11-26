@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
-# ST-319c2 — `#206` vế frame/async: closure ghi global **không xuyên** (WIP checkpoint)
+# ST-319c2 — `#206` vế frame/async: closure ghi global **không xuyên** + vá P2-1
 
 - **Ngày**: 2026-11-27 (giờ thấp điểm) · **Vai**: Builder (Agent 2)
 - **Nhánh**: `plan/st319c2` · **Worktree**: `/home/ps/viswt/st319c2`
 - **Nền**: `plan/st319a` @ `ae0089c0` (closure capture by-value phần lõi)
-- **Trạng thái**: mã + 5 ca test xanh; `gate --fast`, `vis-diff 100k` (`lech=0`), clippy đều PASS.
-  **Chờ A0 nghiệm thu — chưa tự tuyên bố DONE.**
+- **Trạng thái**: mã + 6 ca test xanh (`w19..w24`); `gate --fast` 3921/3921, `vis-diff 100k`
+  (`lech=0`), clippy đều PASS sau vá P2-1. **Chờ A0 nghiệm thu — chưa tự tuyên bố DONE.**
 
 ## 0. TL;DR
 
@@ -30,8 +30,10 @@ Repro: `var g=0`; `let f = fn() -> int: g = 5; g`; `spawn dummy` + `await`; `pri
 - `frame/worker.rs`:
   - `DongBo::ghi`: khung **đang thực thi** là closure ⇒ trả sớm, không ghi `globals`, không
     đánh dirty, không đổi `frame_seq`. Hàm tên vẫn xuyên như F2/F3 (`#203`).
-  - `nap_vao_env`: có closure trong stack ⇒ chỉ đồng bộ các khung **phía ngoài** closure;
-    không nạp ghi global của frame khác vào snapshot closure đang treo.
+  - `nap_vao_env`: chỉ bỏ qua khung `by_value` (closure snapshot); **mọi** khung hàm tên/thường
+    — kể cả khung hàm tên nằm **trên** closure trong stack — vẫn nhận đồng bộ F2/F3.
+    (Bản checkpoint đầu cắt cả đoạn từ closure trở lên ⇒ hồi quy P2-1: hàm tên gọi closure có
+    `await` rồi đọc global ra `0\n3` thay vì `3\n3`; audit bắt, đã vá.)
 - Không đổi `vis-vm`, không đổi VBC1, giữ semantics `#203`.
 
 ## 2. Test
@@ -45,21 +47,23 @@ Repro: `var g=0`; `let f = fn() -> int: g = 5; g`; `spawn dummy` + `await`; `pri
 | `w21_frame_w1_closure_await_ghi_global_sau_resume` | closure `await dat()` (task ghi `g=3`) rồi `g = g + 5` | `5\n3\n` — chạm `nap_vao_env` lúc resume |
 | `w22_frame_w1_closure_ghi_global_trong_task` | closure trong thân task ghi `g=5`, task in `f()` rồi `g`, trả `1` | `5\n0\n1\n` |
 | `w23_frame_w1_ham_ten_qua_gia_tri_van_xuyen_global` | `let h = tang`; `h()` ghi global trong frame | `1\n` — khoá heuristic `c.name.is_empty()` |
+| `w24_frame_w1_ham_ten_tren_closure_nap_van_sync` | **hồi quy P2-1**: `doc()` gọi từ closure, tự `await dat()` rồi đọc `g` | `3\n3\n` (trước vá `0\n3`) |
 
 Mỗi ca assert stdout **literal từng engine** (interp + VM frame W=1), `diagnostics` rỗng,
 `exit == 0`, và `so_khop`; không `#[ignore]`.
 
-## 3. Cổng đã chạy
+## 3. Cổng đã chạy (sau vá P2-1)
 
 | Cổng | Kết quả |
 |---|---|
 | `cargo fmt --all` | sạch |
-| `cargo check --workspace --all-targets` | **PASS** (34,65 s) |
 | `cargo test -p vis-interp` | **PASS** 55 + 2 doc-test |
-| `cargo test -p vis-conformance --test lib_api_it st317b_worker_orchestrate` | **PASS 25/25** (w19..w23) |
-| `./vis-dev gate --fast` | **PASS** (L0 test OK) |
-| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (`chay=94425`, 127,6 s, seed `3523158054`) |
-| `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (20,5 s) |
+| `cargo test -p vis-conformance --test lib_api_it st317b_worker_orchestrate` | **PASS 26/26** (w19..w24) |
+| `./vis-dev gate --fast` | **PASS** — nextest **3921/3921** (4 skipped), L0 OK |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (`chay=94425`, 183,0 s, seed `3523158054`) |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **PASS** (3,85 s incremental) |
+
+Log: `/home/ps/vislogs/st319c2-fix-{st317b,gate-fast,diff100k,clippy}.log` (+ `.sha256`).
 
 ## 4. Còn lại / rủi ro
 
