@@ -162,6 +162,46 @@ fn chi_muc_phi_giu_thu_tu_giua_cac_pc() {
     );
 }
 
+#[test]
+fn chi_muc_phi_chan_max_per_pc_va_trap_giua_nhom() {
+    // **ST-315a review F2** — khoá trần `MAX_PER_PC=16` và trap giữa nhóm: entry thứ 17 bị bỏ
+    // (đường cũ cũng bỏ), entry làm vượt ngân sách vẫn vào trace trước khi trap.
+    use vis_bytecode::fee::{FeeEntry, FeeKind, FeeTable};
+    let src = "let a = 1\nprint(a)\n";
+    let (hir, syms, _tys) = tien_trinh(src);
+    let (m, _fee) = vis_bytecode::compile_with_fee(&hir, &syms, src).unwrap();
+    let mut fee = FeeTable::new(m.funcs.len());
+    for i in 0..17 {
+        fee.push(0, FeeEntry::new(1, FeeKind::Expr, 300 + i));
+    }
+    let mut vm = Vm::new(&m, src);
+    vm.budget_enable_for_test(fee, 16);
+    let o = vm.run(&[]);
+    assert_eq!(o.exit, 0, "17 entry nhưng chỉ 16 entry được charge");
+    assert_eq!(vm.budget_trace_for_test().len(), 16, "trần MAX_PER_PC");
+    assert_eq!(vis_vm::vm_frame::da_dung_gan_nhat(), 16);
+
+    let mut fee = FeeTable::new(m.funcs.len());
+    for i in 0..3 {
+        fee.push(0, FeeEntry::new(1, FeeKind::Expr, 400 + i));
+    }
+    let mut vm = Vm::new(&m, src);
+    vm.budget_enable_for_test(fee, 1);
+    let o = vm.run(&[]);
+    assert_ne!(o.exit, 0, "ngân sách 1 phải trap ở entry thứ hai");
+    assert!(o.codes().contains(&"VS0510"), "mã trap: {:?}", o.codes());
+    assert_eq!(
+        vm.budget_trace_for_test().len(),
+        2,
+        "entry làm vượt ngân sách vẫn vào trace trước trap"
+    );
+    assert_eq!(
+        vis_vm::vm_frame::da_dung_gan_nhat(),
+        1,
+        "chỉ entry đầu bị trừ"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Resume / double-charge — bắt bằng **runtime test**, không tuyên bố verifier bắt hết.
 // ---------------------------------------------------------------------------
