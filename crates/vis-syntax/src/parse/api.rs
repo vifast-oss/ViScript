@@ -5,7 +5,10 @@
 //! Tách **nguyên văn** khỏi `parse/mod.rs` để giữ mỗi tệp ≤ 1.150 dòng; đường dẫn công khai
 //! `vis_syntax::parse::*` không đổi (re-export ở `parse/mod.rs`).
 
-use super::*;
+use super::{ParseOutput, Parser};
+use crate::cst::{Cst, Elem, Node};
+use crate::lex::token::Token;
+use crate::lex::{self, LexOutput, Mode};
 
 /// **ST-48**: parse với **token đã lex sẵn** (span tuyệt đối) — dùng cho thân `cmd` lệnh: lex
 /// phần thân đã bỏ thụt rồi **dịch span** về vị trí thật trong tệp, giữ `text` = văn bản tệp.
