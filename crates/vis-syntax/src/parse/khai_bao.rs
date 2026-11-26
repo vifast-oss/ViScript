@@ -2,9 +2,134 @@
 //! **ST-116**: nhóm khai báo cấp tệp của parser (A.1) — tách khỏi `parse/mod.rs` cho luật R1.
 //! Chỉ **di chuyển** mã; logic/thứ tự/API không đổi (ST-114a `file` vẫn do lex/parse gắn).
 
-use super::*;
+use super::{PResult, Parser};
+use crate::cst::{Elem, Node, NodeKind};
+use crate::lex::token::Kind;
 
 impl<'a> Parser<'a> {
+    /// `file := NEWLINE* (item | stmt)* EOF`.
+    ///
+    /// A.1 viết `item*`, nhưng ví dụ tài liệu chạy được (dòng 290/342/535/549) đặt **câu lệnh**
+    /// ở cấp tệp — script ViScript chạy được như vậy; nên cấp tệp nhận cả `stmt` của A.2.
+    pub(super) fn file(&mut self) -> PResult<Node> {
+        let mut elems = Vec::new();
+        while self.at_kind(Kind::Newline) {
+            elems.push(self.bump());
+        }
+        while !self.at_eof() {
+            if self.at_item_start() {
+                let it = self.item()?;
+                Self::push_node(&mut elems, it);
+            } else {
+                let s = self.stmt()?;
+                Self::push_node(&mut elems, s);
+            }
+            self.require_line_end(&mut elems)?;
+        }
+        Ok(self.node(NodeKind::Program, elems))
+    }
+
+    /// Token bắt đầu một item A.1 (khác với câu lệnh).
+    fn at_item_start(&self) -> bool {
+        if self.at_ident("test") && self.peek_kw(1, "fn") {
+            return true;
+        }
+        [
+            "use", "fn", "cmd", "type", "enum", "trait", "impl", "alias", "newtype", "const",
+            "extern", "pub", "async",
+        ]
+        .iter()
+        .any(|k| self.at_kw(k))
+    }
+
+    fn item(&mut self) -> PResult<Node> {
+        if self.at_ident("test") && self.peek_kw(1, "fn") {
+            return self.test_decl();
+        }
+        let mut mods: Vec<Elem> = Vec::new();
+        while self.at_kw("pub") || self.at_kw("async") {
+            mods.push(self.bump());
+        }
+        if self.at_kw("fn") {
+            return self.fn_decl(mods);
+        }
+        if self.at_kw("cmd") {
+            return self.cmd_decl(mods);
+        }
+        if self.at_kw("type") {
+            return self.type_decl(mods);
+        }
+        if self.at_kw("enum") {
+            return self.enum_decl(mods);
+        }
+        if self.at_kw("trait") {
+            return self.trait_decl(mods);
+        }
+        if self.at_kw("const") {
+            return self.const_decl(mods);
+        }
+        if !mods.is_empty() {
+            return Err(self.err_here(format!(
+                "`pub`/`async` phải đứng trước fn/cmd/type/enum/trait/const, thật `{}`",
+                self.tok().text
+            )));
+        }
+        if self.at_kw("use") {
+            return self.use_decl();
+        }
+        if self.at_kw("impl") {
+            return self.impl_decl();
+        }
+        // **R12a (VD-178)**: `alias`/`newtype` **đã bỏ** — dùng `type X = T` / `type Email(str)`.
+        if self.at_kw("alias") {
+            return Err(self.err_code(
+                &vis_diag::SYNTAX_CODES[2],
+                "`alias` đã bỏ — dùng `type X = T`",
+            ));
+        }
+        if self.at_kw("newtype") {
+            return Err(self.err_code(
+                &vis_diag::SYNTAX_CODES[2],
+                "`newtype` đã bỏ — dùng `type Email(str)`",
+            ));
+        }
+        if self.at_kw("extern") {
+            return self.extern_decl();
+        }
+        Err(self.err_here(format!(
+            "mong khai báo (use/fn/cmd/type/enum/trait/impl/alias/newtype/const/test/extern), thật `{}`",
+            self.tok().text
+        )))
+    }
+
+    fn use_decl(&mut self) -> PResult<Node> {
+        let mut elems = vec![self.expect_kw("use")?];
+        let p = self.dotted_path()?;
+        Self::push_node(&mut elems, p);
+        Ok(self.node(NodeKind::UseDecl, elems))
+    }
+
+    /// Đường dẫn `use`: `std.fs` (chấm) **hoặc** `./util`, `./a/b` (tương đối — ST-25).
+    ///
+    /// Cho phép `.`/`/` làm dấu phân cách; mở đầu bằng `.` (và tuỳ chọn `/`) nghĩa là **tệp tương đối**
+    /// so với tệp đang `use`. Mọi dấu đều nằm trong node `DottedPath` ⇒ hạ đọc lại được văn bản gốc.
+    pub(super) fn dotted_path(&mut self) -> PResult<Node> {
+        let mut elems = Vec::new();
+        // Mở đầu tương đối: `.` hoặc `./`
+        if self.at_punct(".") {
+            elems.push(self.bump());
+            if self.at_punct("/") {
+                elems.push(self.bump());
+            }
+        }
+        elems.push(self.expect_ident()?);
+        while self.at_punct(".") || self.at_punct("/") {
+            elems.push(self.bump());
+            elems.push(self.expect_ident()?);
+        }
+        Ok(self.node(NodeKind::DottedPath, elems))
+    }
+
     pub(super) fn fn_decl(&mut self, mods: Vec<Elem>) -> PResult<Node> {
         let mut elems = mods;
         elems.push(self.expect_kw("fn")?);

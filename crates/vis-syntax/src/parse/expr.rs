@@ -6,7 +6,8 @@
 //! `**` (phải) → postfix → primary. `**` cao hơn `-` một ngôi nên `-2 ** 2` = `-(2 ** 2)`;
 //! `**` kết hợp phải nên `2 ** 3 ** 2` = `2 ** (3 ** 2)` (A.5, §4.5).
 
-use super::{Elem, Node, NodeKind, PResult, Parser};
+use super::{PResult, Parser};
+use crate::cst::{Elem, Node, NodeKind};
 use crate::lex::token::Kind;
 
 /// **VD-215 (2026-11-18)**: phân loại khoá của một entry trong `{…}` — chế độ literal quyết theo
