@@ -363,3 +363,125 @@ CONFLICT (content): agent/STATE.md   (stage 1/2/3)
 - **P2-C phải được xử lý**: var-heavy (1k–20k `var` + 1k–10k await) còn **13–33×**; nếu chưa vá
   ngay, A0 đăng ký nợ mới kèm repro `many_var1k_10kawait.vis` (13×) / `many_var20k.vis` (24–33×)
   và ngưỡng đo. Không có P1, không sai ngữ nghĩa `#203`/`#204`.
+
+---
+
+## 9. Addendum F2 (`fcae15df`) — dirty-set cho `nap` (P2-C)
+
+> **Người kiểm**: Gatekeeper (Agent 1), 2026-11-27. **Audit đúng commit `fcae15df`** (F2);
+> tại thời điểm kiểm, Builder đã bắt đầu/chèn **F3** (`5e79bf54`/`c09a69e9`) trên cùng nhánh —
+> **F3 sẽ audit riêng**, mọi số liệu dưới đây lấy tại `fcae15df` (file đọc bằng `git show`).
+> **Không sửa mã**, không push. `TMPDIR=/home/ps/vislogs/tmp`, `CARGO_BUILD_JOBS=2`, đĩa > 6 GB.
+>
+> **Kết luận: PASS** — **0 P1, 0 P2 trong phạm vi F2**. Dirty-set đúng đường ghi/không sync local/
+> prune an toàn; perf var-heavy về ~main; **19/19 test**; gate/diff/clippy độc lập PASS.
+> **1 P3**: `prune` không được gọi ở hai nhánh `ds` rỗng ⇒ write-all lớn còn ~1,4×; Builder đã mở
+> **F3** đúng điểm này (chưa tính vào F2). 1 ghi chú **P2 ngoài lane có sẵn** (VM method writeback).
+
+### 9.1 Phạm vi tại `fcae15df`
+
+```
+3e6f3468 [ST-318a] F2: dirty-set nap bien + test w2two/w2read/frame VM
+fcae15df [ST-318a] F2 journal/STATE: dirty-set var-heavy ~main, gate 3910/3910, diff 100k lech=0
+```
+
+`git diff --stat 991b89b6..fcae15df` — **4 tệp, +298/−40**: `frame/worker.rs` +161/−40,
+test W +126, journal Builder +49, `STATE.md` ±1. `git status` sạch lúc bắt đầu; **không** chạm
+`rt/exec.rs`, `vm/worker.rs`, `orchestrate.rs`, `vis-types`/`vis-hir`/`vis-diag`/`vis-core`/
+`host_parity`; 0 tệp `.rs` cấp 1 mới, 0 `unsafe`, `git diff --check` sạch.
+File: `frame/worker.rs` **746** dòng, test **691** (< 1.500, R1); R8 giữ 39/40.
+
+### 9.2 Dirty-set — đọc và kiểm từng đường
+
+`DongBo` (`frame/worker.rs:539-616`): `seq: u64`, `dirty: sym→seq`, `frame_seq: frame→seq`.
+
+| Thành phần | Kiểm | Kết quả |
+|---|---|---|
+| `tao(id)` | main `tao(0)` sau dựng frame; mỗi task mới sau `IFrame::new` | **Đúng** — env vừa clone globals hiện tại ⇒ `frame_seq = seq` |
+| `xoa(id)` | mọi `frames.remove` (cancel, Ok, Trap, Ret, purge) + `frames.clear` | **Đủ** — đã đối chiếu 7 điểm xoá; không còn entry mồ côi |
+| `ghi` | gọi sau `process_work` cho `sym_ghi_cua` | **Đúng** — ghi globals + mọi call-frame hiện tại, `seq++`, `frame_seq[id]=seq` |
+| `nap` | `fs=frame_seq[id]`; lọc `seq > fs`; sort; chép qua `nap_vao_env`; cập nhật `fs` | **Đúng** — kể cả frame đang tạm rút khỏi `frames` trong `step_frame` (entry frame_seq vẫn còn) |
+| `prune` | `min(frame_seq)`; giữ `seq > min`; ngưỡng 64 | **Logic đúng** — nhưng **không gọi** ở hai nhánh `dirty.is_empty()`/`ds.is_empty()` (P3, F3) |
+| `ghi_bien_cap_tep` | trả `true` cả khi env chính là globals (no-main); false với sym local | **Đúng** — local bị lọc bằng `globals.contains_key` |
+| `nap_vao_env` | chỉ update key đã có, bỏ env là globals | **Đúng** — không kéo biến vào env không thấy nó |
+
+**Không bỏ sót đường ghi**: `sym_ghi_cua` gồm `ApplyAssignVar` (mọi `=`, `+=`, …), `ApplyAssignPath`
+(Field/Index), `ApplyMethod { base_var }` (writeback). `Work::SetVar` chỉ là **khai báo** `let/var`
+(`frame/expr.rs:463-472`), không phải gán lại biến cấp tệp; no-main khai báo ghi trực tiếp globals
+(và `ghi` trả `true` cho lần ghi sau). Không thấy đường ghi global nào khác trong frame driver.
+
+**Đọc lại trong cùng step**: `ghi` gọi `nap_vao_env` cho **chính frame** ngay sau khi ghi; w11b
+(`tang(); print(g)` trong một step) và w16 (`main` ghi rồi task đọc) PASS.
+
+**Prune**: khi được gọi, `min(frame_seq)` là mốc an toàn — frame mới clone globals + `tao=seq`,
+frame bị xoá không còn trong sổ; kiểm thêm chuỗi 100 task ghi/đọc xen kẽ (`prune_seq.vis`) cho
+`1..100` đúng cả interp/VM. **Thiếu gọi prune** khi `ds` rỗng ⇒ sổ giữ tới #sym đã ghi và bị quét
+lại mỗi turn; đo write-all bên dưới. Builder **F3** (`5e79bf54` "prune dirty khi ds rong") đúng
+hướng này.
+
+### 9.3 Perf (median, debug, cùng máy; log Builder `st318a-fix2-perf2.log`)
+
+| Kịch bản | main | F1 | **F2** | F2/main |
+|---|---|---|---|---|
+| 20k `var` + 2k await | 2.688 ms | 54.400 ms (1 lần) | **2.775 ms** | **1,03×** |
+| 5k `var` + 1k await | 428 ms | 6.332 ms | **442 ms** | **1,03×** |
+| 1k `var` + 10k await | 1.936 ms | 12.162 ms | **2.065 ms** | **1,07×** |
+| 20k `var` + 0 await | 635 ms | 601 ms | **625 ms** | 0,98× |
+| 20k `const` + 2k await | 2.389 ms | 2.371 ms | **2.400 ms** | **1,005×** |
+
+Độc lập (build `fcae15df`, 2 lượt xen kẽ, load ~7,5): 5k var main 294/337 ms vs F2 **318/334 ms**
+(~1,03×); 20k var main 1.759/1.897 ms vs F2 2.727/1.680 ms (median ~1,2× do nhiễu tải, **không
+phải 45 s**). Log `/home/ps/vislogs/review-st318a-f2-perf.log` (`0415f95a…e319`).
+
+**Residual write-all** (P3): 5k var + 1k await + ghi cả 5k: main 763 ms vs F2 762 ms (1,0×);
+20k var + 2k await + ghi cả 20k: main 3.609 ms vs F2 **5.126 ms (1,42×)** — do `dirty` 20k mục
+không được prune khi `ds` rỗng. F3 xử lý; không tính P2 F2.
+
+### 9.4 Semantics + test
+
+5 ca `#203` (interp = VM, exit 0): `w2` **1/1**, `w2nested` **1/1**, `w2two` **2/2**,
+`w2read` **5/5**, `w2nomain` **1/1**. Test khoá mới chạy thật **19/19**:
+`w14` (200 var, 3 sym ghi: `1/17/201/100`), `w15` (2 task cộng dồn = `2`), `w16` (main ghi trước
+await = `5`), `w17` (**frame VM W=2/4** task lỗi không await: stdout `sau\n`, exit 1, `VS0506`
+`hong`). 0 `#[ignore]`. Log `/home/ps/vislogs/review-st318a-f2-test.log` (`eed10265…33cc`).
+
+### 9.5 Cổng (audit trong **worktree tạm detached tại `fcae15df`**, không chạm cây F3)
+
+| Cổng | Kết quả | Log / sha256 |
+|---|---|---|
+| `st317b_worker_orchestrate` | **19/19 PASS** | `review-st318a-f2-test.log` |
+| `./vis-dev gate --fast` (`TMPDIR` đĩa, target ngoài `/tmp`) | **PASS** — `cargo test` workspace **3915 passed** (gồm 5 doc-test) + 5 ignored; fmt/clippy/R1..R10/DAG/self-test OK; R8 39/40. Builder nextest: **3910/3910**, 4 skip | `review-st318a-f2-gate.log` — `8151035f…8ba73` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 93.768 chạy, **157,9 s** (tải cao, F3 build song song) | `review-st318a-f2-diff.log` — `aa9373af…3ef9` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **exit 0** | `review-st318a-f2-clippy.log` — `6f54bf31…3bb2` |
+
+Ghi chú hạ tầng: lần gate đầu trong `/tmp/opencode` bị `rustc-LLVM ERROR: IO failure ... Disk
+quota exceeded` do target nằm trên **tmpfs 7,2 GB** (không phải lỗi mã); chuyển target sang đĩa
+`/home/ps/vislogs` + `TMPDIR` đĩa ⇒ PASS. Builder ghi 2 lần gate F2 đỏ **cùng ca**
+`host_parity::net_http::http_bon_ham_parity` lệch 1 ms (nhánh chưa có fix `#202`), gate3 PASS;
+lần chạy độc lập của Gatekeeper **không gặp** flake này.
+
+### 9.6 Hợp nhất
+
+Với **baseline nêu trong yêu cầu**:
+```
+git merge-tree --write-tree 9689250c fcae15df   -> 34b9fd06…  CONFLICT agent/STATE.md (chỉ STATE)
+git merge-tree --write-tree d65f0c3d fcae15df   -> 47eca740…  CONFLICT agent/STATE.md (chỉ STATE)
+```
+Với **main/st318h hiện hành** (đã hợp nhất F2/F3):
+```
+main       2cda3a68 -> merge-tree a6a443e9…  0 conflict (fcae15df đã là tổ tiên)
+plan/st318h 824a04e0 -> merge-tree 2b636ea8…  0 conflict
+```
+Không có xung đột mã/test; `STATE.md` chỉ xung đột khi hợp nhất với baseline cũ chưa có F2.
+
+### 9.7 Kết luận / đề nghị
+
+- **PASS F2**: dirty-set **đúng** (3 đường ghi + no-main, lọc local, same-step, `tao/xoa/prune`
+  an toàn); perf var-heavy ~main (1,01–1,07×; independent 5k ~1,03×, 20k không còn 45 s);
+  19/19; gate/diff/clippy PASS; merge chỉ `STATE.md` với baseline cũ, sạch với main hiện hành.
+- **P3 (F3 đang xử lý)**: gọi `prune` cả khi `ds` rỗng; residual write-all 20k ~1,42×. Audit F3
+  riêng sau `c09a69e9`.
+- **Ghi chú ngoài lane (P2 có sẵn, không do F2)**: frame **VM W=1** không thấy writeback phương
+  thức của task trên `var` list — repro `var xs=[1]; async fn tang(): xs.push(2); main: spawn +
+  await + print(xs)` ⇒ interp `[1, 2]`, VM `[1]`; `main` `fb725479` cũng `[1]` (có sẵn). Đề nghị
+  A0 đăng ký nợ riêng nếu chưa có.
