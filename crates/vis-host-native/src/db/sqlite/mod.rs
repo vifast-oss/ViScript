@@ -71,34 +71,42 @@
 //!   `Error::SqlInputError`). `--sqlite-debug` (CLI, opt-in) in thông điệp thô.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
 
+use rusqlite::Connection;
+
+mod chuyen_doi;
+mod guard;
+mod host;
+mod kiem;
+mod loi;
+mod pragma_doc;
+mod schema;
+mod tach_cau;
+mod token;
+mod truy_van;
+
+pub use guard::DbGuard;
+
+#[cfg(test)]
+use kiem::mo_ta;
+use kiem::thong_tin_sqlite;
+#[cfg(test)]
+use pragma_doc::la_pragma_journal_mode_chi_doc;
 #[cfg(test)]
 use rusqlite::hooks::{AuthAction, Authorization};
-use rusqlite::limits::Limit;
-use rusqlite::types::ValueRef;
-use rusqlite::{Connection, OpenFlags};
-
-use vis_core::host::DbHost;
-use vis_core::host::DAU_QUYEN;
-use vis_core::value::Value;
-
-mod tach_cau;
-use tach_cau::TachCau;
-
-mod kiem;
-use kiem::*;
-
-mod pragma_doc;
-use pragma_doc::la_pragma_journal_mode_chi_doc;
-
-/// **ST-286 (R0c)** — pragma/schema tách khỏi tệp này để giữ R1 (≤ 1500 dòng/tệp);
-/// nhập lại đúng tên cũ để test con (`use super::*`) và `db_open` không đổi.
-mod schema;
 #[cfg(test)]
-use schema::schema_scans_for_test;
-use schema::{chinh_sach, kiem_schema_neu_doi, HOST_PRAGMAS};
+use schema::{chinh_sach, schema_scans_for_test, HOST_PRAGMAS};
+#[cfg(test)]
+use std::time::{Duration, Instant};
+use token::token_dung_dang;
+#[cfg(test)]
+use token::{ngau_nhien_du_phong, ngau_nhien_os};
+#[cfg(test)]
+use vis_core::host::DbHost;
+#[cfg(test)]
+use vis_core::host::DAU_QUYEN;
+#[cfg(test)]
+use vis_core::value::Value;
 
 /// max hàng mỗi query — vượt ⇒ `Err` (không trả dữ liệu cắt).
 pub const MAX_ROWS: usize = 10_000;
@@ -154,16 +162,16 @@ const STMT_CACHE_CAP: usize = 16;
 /// Trần tài nguyên của một `Db` — tách thành struct để test ép cap thấp mà không phải tạo
 /// dữ liệu khổng lồ (mặc định = các hằng `MAX_*` ở trên).
 #[derive(Clone, Copy, Debug)]
-struct GioiHan {
-    rows: usize,
-    cells: usize,
-    columns: usize,
-    ten_cot_bytes: usize,
-    row_bytes: usize,
+pub(super) struct GioiHan {
+    pub(super) rows: usize,
+    pub(super) cells: usize,
+    pub(super) columns: usize,
+    pub(super) ten_cot_bytes: usize,
+    pub(super) row_bytes: usize,
     /// Trần cứng `SQLITE_LIMIT_LENGTH` (mặc định [`MAX_CELL_HARD_BYTES`]).
-    hard_cell_bytes: usize,
-    total_bytes: usize,
-    handles: usize,
+    pub(super) hard_cell_bytes: usize,
+    pub(super) total_bytes: usize,
+    pub(super) handles: usize,
 }
 
 impl Default for GioiHan {
@@ -182,105 +190,31 @@ impl Default for GioiHan {
 }
 
 /// Handle cơ sở dữ liệu trong phiên.
-struct Muc {
+pub(super) struct Muc {
     /// `":memory:"` hoặc đường dẫn đã mở (cho diagnostics leak).
-    path: String,
+    pub(super) path: String,
     /// `None` khi đã đóng (tombstone — giữ để báo "handle đã đóng").
-    conn: Option<Connection>,
+    pub(super) conn: Option<Connection>,
     /// **VD-261 (tối ưu)** + **VD-268**: `(schema_version, data_version, temp.schema_version)`
     /// tại lần kiểm gần nhất. Chỉ quét `sqlite_master` khi `schema_version` hoặc `data_version`
     /// đổi (như VD-261); cache statement bị xả khi `schema_version` **hoặc temp schema** đổi —
     /// DDL trên bảng TEMP không làm đổi schema cookie của main.
-    schema_ver: Option<(i64, i64, i64)>,
+    pub(super) schema_ver: Option<(i64, i64, i64)>,
 }
-
-/// Token ngẫu nhiên 128 bit (`db:` + 32 hex thường). Hai nửa 64-bit lấy từ **nguồn OS**:
-/// Unix đọc 16 byte `/dev/urandom`; nền tảng khác/không đọc được ⇒ fallback **không-crate**
-/// dùng `RandomState` của std (cũng được seed từ OS) băm SipHash hai miền tách biệt, kèm bộ đếm.
-/// Token chỉ là **handle mờ trong phiên**, không phải bí mật xác thực: host luôn khớp toàn bộ
-/// token trong `bang` của chính phiên, tombstone chặn tái dùng; không dùng làm mật khẩu/capability
-/// liên phiên. Không đoán được từ output, không tái sử dụng trong phiên.
-fn token_ngau_nhien() -> String {
-    static BO_DEM: AtomicU64 = AtomicU64::new(0);
-    let dem = BO_DEM.fetch_add(1, Ordering::Relaxed);
-    let (a, b) = ngau_nhien_os().unwrap_or_else(|| ngau_nhien_du_phong(dem));
-    let token128 = ((a as u128) << 64) | (b as u128);
-    format!("db:{token128:032x}")
-}
-
-/// 16 byte entropy từ OS trên Unix (`/dev/urandom`). Không dùng `unsafe`/crate ngoài; lỗi mở/đọc
-/// ⇒ `None` để caller dùng fallback (không panic, không chặn mở db).
-#[cfg(unix)]
-fn ngau_nhien_os() -> Option<(u64, u64)> {
-    use std::io::Read;
-    let mut b = [0u8; 16];
-    std::fs::File::open("/dev/urandom")
-        .ok()?
-        .read_exact(&mut b)
-        .ok()?;
-    Some((
-        u64::from_le_bytes(b[0..8].try_into().ok()?),
-        u64::from_le_bytes(b[8..16].try_into().ok()?),
-    ))
-}
-
-/// Không có `/dev/urandom` (Windows/nền tảng khác) — fallback trong `token_ngau_nhien`.
-#[cfg(not(unix))]
-fn ngau_nhien_os() -> Option<(u64, u64)> {
-    None
-}
-
-/// Fallback **không thêm dependency**: `RandomState` của std được seed từ OS cho mỗi thread
-/// (Unix: getrandom; Windows: OS entropy), rồi SipHash hai miền tách biệt lấy 2×64 bit. Không
-/// phải CSPRNG và không hứa 128 bit entropy độc lập tuyệt đối — chấp nhận được vì token là
-/// handle mờ trong phiên (xem [`token_ngau_nhien`]); bộ đếm bảo đảm không lặp trong cùng tiến
-/// trình ngay cả khi nguồn OS lỗi.
-fn ngau_nhien_du_phong(dem: u64) -> (u64, u64) {
-    use std::collections::hash_map::RandomState;
-    use std::hash::{BuildHasher, Hasher};
-    let t = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos() as u64)
-        .unwrap_or(0);
-    let pid = std::process::id() as u64;
-    let chao: u64 = 0;
-    let dia_chi = &chao as *const u64 as usize as u64;
-    let rs = RandomState::new();
-    let bam = |mien: u8| {
-        let mut h = rs.build_hasher();
-        h.write_u8(mien);
-        h.write_u64(t);
-        h.write_u64(pid);
-        h.write_u64(dem);
-        h.write_u64(dia_chi);
-        h.finish()
-    };
-    (bam(0xA1), bam(0x5C))
-}
-
-/// Token đúng dạng? `db:` + đúng 32 ký tự hex thường — mọi dạng khác (`db:0`, `db:00`, `db:2`,
-/// `db:1x`, `db:`…) đều bị từ chối **trước** khi tra bảng.
-fn token_dung_dang(h: &str) -> bool {
-    match h.strip_prefix("db:") {
-        Some(hex) => hex.len() == 32 && hex.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f')),
-        None => false,
-    }
-}
-
 /// Host SQLite của CLI. `--explain-perms` ⇒ log version/compile options + thao tác ra **stderr**;
 /// mặc định **không** in (leak warning cũng vậy — chỉ diagnostics, VD-241 §9).
 pub struct Db {
-    giai_thich: bool,
+    pub(super) giai_thich: bool,
     /// Wall-clock mỗi câu (`execute`/`query`), ms; `progress_handler` ngắt khi vượt.
     /// Nguyên từ `Instant::now()` **trước** `prepare` tới khi đọc xong hàng — không cộng dồn
     /// busy-wait ngoài deadline. Chỉ thay đổi qua [`Db::moi_voi_query_ms`] (tests/debug).
-    query_ms: u64,
+    pub(super) query_ms: u64,
     /// `--sqlite-debug`: in thông điệp thô từ SQLite (có thể chứa SQL fragment/bound values).
-    sqlite_debug: bool,
+    pub(super) sqlite_debug: bool,
     /// Trần hàng/ô/byte/tên cột/handle của phiên (mặc định là các hằng `MAX_*`).
-    gioi_han: GioiHan,
+    pub(super) gioi_han: GioiHan,
     /// Bảng mọi handle của phiên (kể cả tombstone đã đóng) — tra cứu O(1) theo token.
-    bang: HashMap<String, Muc>,
+    pub(super) bang: HashMap<String, Muc>,
 }
 
 impl Db {
@@ -315,14 +249,14 @@ impl Db {
         self.sqlite_debug = on;
     }
 
-    fn dang_mo(&self) -> usize {
+    pub(super) fn dang_mo(&self) -> usize {
         self.bang.values().filter(|m| m.conn.is_some()).count()
     }
 
     /// Tra handle trong **phiên này**; handle lạ/sai loại/sai dạng/đã đóng ⇒ `Err`.
     /// Khớp **toàn bộ** token (không phần nào được diễn giải); handle đã đóng **không** trỏ sang
     /// connection mới (tombstone + token một lần).
-    fn tim(&mut self, h: &str) -> Result<&mut Muc, String> {
+    pub(super) fn tim(&mut self, h: &str) -> Result<&mut Muc, String> {
         if !token_dung_dang(h) {
             return Err("handle sai dạng — cần `db:<32 hex thường>`".to_string());
         }
@@ -336,790 +270,6 @@ impl Db {
         Ok(m)
     }
 }
-
-/// Trần `SQLITE_LIMIT_LENGTH` cho **đường đọc** (`query`/`query_one`): không cần lớn hơn trần một
-/// hàng kết quả vì ô đơn > trần hàng chắc chắn bị [`truy_van`] từ chối; cũng không vượt trần cứng.
-fn tran_o_doc(gh: &GioiHan) -> usize {
-    gh.row_bytes.min(gh.hard_cell_bytes)
-}
-
-/// Đặt `SQLITE_LIMIT_LENGTH` = trần cứng một string/blob/row **trước** SQL người dùng.
-///
-/// `zeroblob(N)`/text lớn được SQLite cấp phát **trước** khi host kịp thấy `ValueRef` để đếm
-/// `raw_bytes`; không có limit này, `zeroblob(536870912)` làm RSS tăng ~500 MB rồi mới bị cap
-/// hàng từ chối. Limit cũng chặn text/blob > trần ngay tại bước step (lỗi dữ liệu `TOOBIG`,
-/// không cắt im lặng). `Connection::set_limit` chỉ hạ được trần (không nâng quá compile default).
-fn dat_gioi_han_o(conn: &Connection, max_cell_bytes: usize) -> Result<(), String> {
-    let m = i32::try_from(max_cell_bytes)
-        .map_err(|_| "giới hạn ô vượt i32 — từ chối cấu hình".to_string())?;
-    conn.set_limit(Limit::SQLITE_LIMIT_LENGTH, m)
-        .map_err(|e| format!("không đặt được SQLITE_LIMIT_LENGTH: {e}"))?;
-    let hien = conn
-        .limit(Limit::SQLITE_LIMIT_LENGTH)
-        .map_err(|e| format!("không đọc lại được SQLITE_LIMIT_LENGTH: {e}"))?;
-    if hien != m {
-        return Err(format!(
-            "SQLITE_LIMIT_LENGTH không áp dụng được (muốn {m}, hiện {hien}) — từ chối mở"
-        ));
-    }
-    Ok(())
-}
-
-/// Ô SQLite → `Value::enum_val("SqlValue", …)`. UTF-8 hỏng ⇒ lỗi (dữ liệu, không phải dữ liệu cắt).
-fn o_sqlite(v: ValueRef<'_>) -> Result<Value, String> {
-    let mk = |variant: &str, args: Vec<Value>| Value::enum_val("SqlValue", variant, args);
-    match v {
-        ValueRef::Null => Ok(mk("Null", Vec::new())),
-        ValueRef::Integer(i) => Ok(mk("Integer", vec![Value::Int(i)])),
-        // REAL không finite (NaN/±Inf) — SQLite chấp nhận doubles; giữ nguyên (ghi nhận trong báo cáo).
-        ValueRef::Real(f) => Ok(mk("Real", vec![Value::Float(f)])),
-        ValueRef::Text(t) => match std::str::from_utf8(t) {
-            Ok(s) => Ok(mk("Text", vec![Value::Str(s.to_string())])),
-            Err(_) => Err("TEXT không phải UTF-8 hợp lệ — không đọc được".to_string()),
-        },
-        ValueRef::Blob(b) => Ok(mk("Blob", vec![Value::Bytes(b.to_vec())])),
-    }
-}
-
-/// Kích thước byte thô của ô (text/blob là byte thật; int/float/bool tính theo biểu diễn) —
-/// cho giới hạn; đọc từ raw ref **trước** khi clone/allocate.
-fn raw_bytes(v: ValueRef<'_>) -> usize {
-    match v {
-        ValueRef::Null => 0,
-        ValueRef::Integer(_) | ValueRef::Real(_) => 8,
-        ValueRef::Text(t) => t.len(),
-        ValueRef::Blob(b) => b.len(),
-    }
-}
-
-/// Tham số `Value::Enum("SqlValue", …)` → `types::Value` của rusqlite.
-/// `Real(NaN)` ⇒ `Err` (**không** map vào NULL — người dùng muốn NULL thì dùng `SqlValue.Null()`);
-/// `±Inf` **được phép** bind/lưu/đăng nhập lại. Ô lạ ⇒ `Err`.
-fn o_nhap(v: &Value) -> Result<rusqlite::types::Value, String> {
-    let Some((e, va, ag)) = v.as_enum() else {
-        return Err(format!("tham số phải là `SqlValue`, được `{}`", v.show()));
-    };
-    if e != "SqlValue" {
-        return Err(format!("tham số phải là `SqlValue`, được enum `{e}`"));
-    }
-    match (va.as_str(), ag) {
-        ("Null", []) => Ok(rusqlite::types::Value::Null),
-        ("Integer", [Value::Int(n)]) => Ok(rusqlite::types::Value::Integer(*n)),
-        ("Real", [Value::Float(f)]) => {
-            if f.is_nan() {
-                return Err("Real(NaN) — dùng `SqlValue.Null()` nếu muốn giá trị NULL".to_string());
-            }
-            Ok(rusqlite::types::Value::Real(*f))
-        }
-        ("Text", [Value::Str(s)]) => Ok(rusqlite::types::Value::Text(s.clone())),
-        ("Blob", [Value::Bytes(b)]) => Ok(rusqlite::types::Value::Blob(b.clone())),
-        _ => Err(format!("`SqlValue.{va}` sai đối số ({} đối số)", ag.len())),
-    }
-}
-
-/// Lỗi từ SQLite: **không** kèm raw message/SQL fragment/bound values/path. Trả về **mã SQLite
-/// (integer `extended_code`)** + tên **lớp** lỗi (`ErrorCode` — không phải văn bản SQL) +
-/// `offset` (byte, chỉ có từ `Error::SqlInputError` ở đường prepare). Chi tiết đầy đủ chỉ khi
-/// người dùng chủ động bật `--sqlite-debug` (`sqlite_debug = true`).
-fn loi_sqlite(ctx: &str, e: rusqlite::Error, sqlite_debug: bool) -> String {
-    if sqlite_debug {
-        return format!("{ctx}: {e}");
-    }
-    match &e {
-        rusqlite::Error::SqliteFailure(err, _) => {
-            // `ErrorCode::Unknown` là `SQLITE_ERROR` (1) — mã lỗi SQL chung, không phải "không rõ".
-            let ten = if matches!(err.code, rusqlite::ffi::ErrorCode::Unknown) {
-                "SqlError".to_string()
-            } else {
-                format!("{:?}", err.code)
-            };
-            if err.code == rusqlite::ffi::ErrorCode::AuthorizationForStatementDenied {
-                // Authorizer từ chối — thông điệp **tĩnh** (không lấy msg thô của SQLite).
-                format!(
-                    "{ctx} bị từ chối bởi quyền (authorizer) (mã SQLite {})",
-                    err.extended_code
-                )
-            } else {
-                format!("{ctx} (mã SQLite {} — {ten})", err.extended_code)
-            }
-        }
-        rusqlite::Error::SqlInputError { error, offset, .. } => {
-            let ten = if matches!(error.code, rusqlite::ffi::ErrorCode::Unknown) {
-                "SqlError".to_string()
-            } else {
-                format!("{:?}", error.code)
-            };
-            format!(
-                "{ctx} (mã SQLite {} — {ten}, offset {offset})",
-                error.extended_code
-            )
-        }
-        rusqlite::Error::ExecuteReturnedResults => {
-            "câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`".to_string()
-        }
-        rusqlite::Error::MultipleStatement => {
-            format!("{ctx}: chỉ được **một** câu SQL mỗi lời gọi (multi-statement bị từ chối)")
-        }
-        rusqlite::Error::InvalidParameterCount(n, can) => {
-            format!("SQL cần {can} tham số, được {n}")
-        }
-        _ => format!("{ctx} (lỗi SQLite ngoài lớp đã biết)"),
-    }
-}
-
-impl DbHost for Db {
-    fn db_open(&mut self, path: &str, create: bool, busy_ms: i64) -> Result<String, String> {
-        if path.is_empty() {
-            return Err("tên rỗng — cần `\":memory:\"` hoặc đường dẫn tệp".to_string());
-        }
-        if path != ":memory:" {
-            let s = path.to_ascii_lowercase();
-            if s.starts_with("file:") {
-                return Err(
-                    "URI filename `file:…` không được hỗ trợ (từ chối rõ, §8 VD-241)".to_string(),
-                );
-            }
-            if s.starts_with(":memory:") {
-                return Err(format!(
-                    "`{path}` bắt đầu bằng `:memory:` nhưng không phải `:memory:` — từ chối"
-                ));
-            }
-        }
-        if !(0..=MAX_BUSY_MS).contains(&busy_ms) {
-            return Err(format!(
-                "busy_timeout_ms = {busy_ms} ngoài khoảng 0..={MAX_BUSY_MS}"
-            ));
-        }
-        if self.dang_mo() >= MAX_CONNECTIONS {
-            return Err(format!(
-                "quá {MAX_CONNECTIONS} connection trong một phiên — đóng bớt (close) trước"
-            ));
-        }
-        if self.bang.len() >= self.gioi_han.handles {
-            return Err(format!(
-                "quá {} handle trong một phiên (kể cả handle đã đóng) — mở phiên mới nếu cần thêm",
-                self.gioi_han.handles
-            ));
-        }
-        let la_memory = path == ":memory:";
-        let flags = if create {
-            OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE
-        } else {
-            OpenFlags::SQLITE_OPEN_READ_WRITE
-        };
-        // **Không** SQLITE_OPEN_URI — `file:…` không bao giờ được diễn giải URI dù lọt qua kiểm tra trên.
-        let conn = Connection::open_with_flags(path, flags).map_err(|e| {
-            if la_memory {
-                format!("không tạo được in-memory database: {e}")
-            } else if !create && e.to_string().contains("unable to open") {
-                format!(
-                    "không mở được `{}` (create = false, tệp chưa tồn tại?)",
-                    mo_ta(path)
-                )
-            } else {
-                format!("không mở được `{}`", mo_ta(path))
-            }
-        })?;
-        // **VD-268** — cache statement LRU bounded cho **connection này** (mặc định rusqlite
-        // cũng 16; đặt tường minh để hợp đồng không phụ thuộc default của crate).
-        conn.set_prepared_statement_cache_capacity(STMT_CACHE_CAP);
-        conn.busy_timeout(Duration::from_millis(busy_ms as u64))
-            .map_err(|e| format!("không đặt busy_timeout: {e}"))?;
-        // Trần cứng một string/blob/row **trước** mọi câu SQL người dùng (chặn `zeroblob`/text
-        // lớn materialize trước khi host kịp đếm).
-        dat_gioi_han_o(&conn, self.gioi_han.hard_cell_bytes)?;
-        // Tạm trong bộ nhớ (§8 VD-241) + trusted_schema=OFF + cache trang **2 MiB** (N7 —
-        // `PRAGMA cache_size = -2048` nghĩa là 2048 KiB) — **trước** authorizer. Không được nuốt
-        // lỗi: nếu PRAGMA này không áp dụng được, từ chối mở để §8 không bị im lặng.
-        conn.execute_batch(HOST_PRAGMAS)
-            .map_err(|e| format!("không đặt PRAGMA temp_store/trusted_schema/cache_size: {e}"))?;
-        // Authorizer cài **trước khi** prepare SQL người dùng. Schema không-UTF-8 đã bị
-        // `kiem_schema_utf8` chặn trước mỗi prepare (hook rusqlite panic nếu gặp chuỗi hỏng).
-        conn.authorizer(Some(chinh_sach));
-        let mut token = token_ngau_nhien();
-        while self.bang.contains_key(&token) {
-            token = token_ngau_nhien();
-        }
-        self.bang.insert(
-            token.clone(),
-            Muc {
-                path: mo_ta(path),
-                conn: Some(conn),
-                schema_ver: None,
-            },
-        );
-        if self.giai_thich {
-            eprintln!("DB open {token} {}", mo_ta(path));
-        }
-        Ok(token)
-    }
-
-    fn db_close(&mut self, h: &str) -> Result<(), String> {
-        if !token_dung_dang(h) {
-            return Err("handle sai dạng — cần `db:<32 hex thường>`".to_string());
-        }
-        let Some(m) = self.bang.get_mut(h) else {
-            return Err("handle không tồn tại (chưa mở trong phiên này)".to_string());
-        };
-        if m.conn.is_none() {
-            return Err("handle đã đóng".to_string());
-        }
-        // **Không** auto-commit — `Connection::close` drop; transaction dở bị SQLite huỷ, không commit.
-        let c = m.conn.take().expect("vừa kiểm is_some");
-        match c.close() {
-            Ok(()) => {
-                if self.giai_thich {
-                    eprintln!("DB close {h}");
-                }
-                Ok(())
-            }
-            Err((c, e)) => {
-                if let Some(m) = self.bang.get_mut(h) {
-                    m.conn = Some(c);
-                }
-                // **F-B (2026-11-19)**: thông điệp lỗi không được echo full token 128-bit.
-                Err(format!(
-                    "không đóng được connection SQL (chi tiết đã định vị tại phiên chạy): {e}"
-                ))
-            }
-        }
-    }
-
-    fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String> {
-        kiem_sql(sql)?;
-        kiem_params(params)?;
-        let debug = self.sqlite_debug;
-        let ngan_sach = Duration::from_millis(self.query_ms);
-        let tran_cung = self.gioi_han.hard_cell_bytes;
-        let m = self.tim(h)?;
-        kiem_schema_neu_doi(m, debug)?;
-        let conn = m.conn.as_mut().expect("tim() đã kiểm");
-        // **Đường ghi**: trần cứng 17 MiB (đủ params 16 MiB + row 1 MiB). Đặt lại mỗi lời gọi vì
-        // `query` trước đó có thể đã hạ xuống trần đọc.
-        dat_gioi_han_o(conn, tran_cung)?;
-        let params = chuan_bi_tham_so(params)?;
-        // Progress handler cài **trước** `prepare` — từ đó tới hết đọc hàng; reset trên cả
-        // đường thành công lẫn lỗi.
-        let vao = Instant::now();
-        conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
-        let ket = thuc_thi(conn, sql, &params, debug);
-        conn.progress_handler(1_000, None::<fn() -> bool>);
-        ket
-    }
-
-    /// **VD-270 (db-batch)** — chạy batch nhiều câu, **không** params. Handle được kiểm **kể cả**
-    /// batch rỗng (không im lặng nuốt handle sai/đã đóng). Mỗi câu đi qua [`Self::db_execute`]
-    /// nguyên vẹn — `TachCau` chỉ tách từ vựng, không thay đổi văn bản. Dừng ở lỗi đầu tiên:
-    /// các câu trước đã thực thi (**không** transaction ngầm, **không** rollback hộ).
-    fn db_execute_batch(&mut self, h: &str, sql: &str) -> Result<i64, String> {
-        self.tim(h)?;
-        let mut n: i64 = 0;
-        for cau in TachCau::new(sql) {
-            self.db_execute(h, cau, &[])?;
-            n += 1;
-        }
-        Ok(n)
-    }
-
-    fn db_query(
-        &mut self,
-        h: &str,
-        sql: &str,
-        params: &[Value],
-    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-        kiem_sql(sql)?;
-        kiem_params(params)?;
-        let debug = self.sqlite_debug;
-        let ngan_sach = Duration::from_millis(self.query_ms);
-        let gh = self.gioi_han;
-        let m = self.tim(h)?;
-        kiem_schema_neu_doi(m, debug)?;
-        let conn = m.conn.as_mut().expect("tim() đã kiểm");
-        // **Đường đọc**: hạ trần cứng về trần hàng (mặc định 1 MiB) **trước** prepare/step để
-        // cell 1–17 MiB không materialize rồi mới bị cap hàng từ chối. `execute` đặt lại 17 MiB.
-        dat_gioi_han_o(conn, tran_o_doc(&gh))?;
-        let params = chuan_bi_tham_so(params)?;
-        let vao = Instant::now();
-        conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
-        let ket = truy_van(conn, sql, &params, debug, &gh, ToiDaHang::TatCa);
-        conn.progress_handler(1_000, None::<fn() -> bool>);
-        ket
-    }
-
-    /// **VD-266** — y hệt [`Self::db_query`] (cùng `kiem_sql`/`kiem_params`/schema/authorizer/
-    /// read-only/timeout/cap hàng) nhưng dừng sau **hàng đầu**; không materialize/scan phần còn
-    /// lại. 0 hàng ⇒ `RowSet` rỗng; nhiều hàng ⇒ đúng 1 hàng.
-    fn db_query_one(
-        &mut self,
-        h: &str,
-        sql: &str,
-        params: &[Value],
-    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-        kiem_sql(sql)?;
-        kiem_params(params)?;
-        let debug = self.sqlite_debug;
-        let ngan_sach = Duration::from_millis(self.query_ms);
-        let gh = self.gioi_han;
-        let m = self.tim(h)?;
-        kiem_schema_neu_doi(m, debug)?;
-        let conn = m.conn.as_mut().expect("tim() đã kiểm");
-        // Cùng trần đọc như `query` — ô > trần hàng bị từ chối **trước** khi materialize.
-        dat_gioi_han_o(conn, tran_o_doc(&gh))?;
-        let params = chuan_bi_tham_so(params)?;
-        let vao = Instant::now();
-        conn.progress_handler(1_000, Some(move || vao.elapsed() > ngan_sach));
-        let ket = truy_van(conn, sql, &params, debug, &gh, ToiDaHang::Mot);
-        conn.progress_handler(1_000, None::<fn() -> bool>);
-        ket
-    }
-
-    /// **VD-266** — `rowid` của lần INSERT gần nhất; metadata chỉ đọc, không prepare SQL.
-    fn db_last_insert_rowid(&mut self, h: &str) -> Result<i64, String> {
-        let m = self.tim(h)?;
-        let conn = m.conn.as_ref().expect("tim() đã kiểm");
-        Ok(conn.last_insert_rowid())
-    }
-
-    /// **VD-266** — số hàng bị INSERT/UPDATE/DELETE gần nhất; metadata chỉ đọc.
-    fn db_changes(&mut self, h: &str) -> Result<i64, String> {
-        let m = self.tim(h)?;
-        let conn = m.conn.as_ref().expect("tim() đã kiểm");
-        i64::try_from(conn.changes()).map_err(|_| "số hàng thay đổi vượt i64 — từ chối".to_string())
-    }
-
-    fn db_in_transaction(&mut self, h: &str) -> Result<bool, String> {
-        let m = self.tim(h)?;
-        let conn = m.conn.as_mut().expect("tim() đã kiểm");
-        Ok(!conn.is_autocommit())
-    }
-
-    fn db_cleanup(&mut self) -> Result<u64, String> {
-        let mut n = 0u64;
-        for m in self.bang.values_mut() {
-            if let Some(c) = m.conn.take() {
-                // Đóng best-effort; **không** auto-commit (SQLite huỷ transaction dở khi đóng).
-                let _ = c.close();
-                n += 1;
-            }
-        }
-        Ok(n)
-    }
-
-    fn db_path_of(&mut self, h: &str) -> Result<String, String> {
-        let m = self.tim(h)?;
-        Ok(m.path.clone())
-    }
-}
-
-fn kiem_params(params: &[Value]) -> Result<(), String> {
-    if params.len() > MAX_PARAMS {
-        return Err(format!(
-            "quá {} tham số > giới hạn {MAX_PARAMS} — chia nhỏ lời gọi",
-            params.len()
-        ));
-    }
-    for (i, p) in params.iter().enumerate() {
-        let Some((e, _, _)) = p.as_enum() else {
-            return Err(format!(
-                "tham số {} phải là `SqlValue`, được `{}`",
-                i + 1,
-                p.show()
-            ));
-        };
-        if e != "SqlValue" {
-            return Err(format!(
-                "tham số {} phải là `SqlValue`, được enum `{e}`",
-                i + 1
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// Kiểm + chuyển tham số. Giới hạn byte (**text/blob payload**, metadata **không** tính):
-/// ≤ [`MAX_PARAM_BYTES`] mỗi tham số, ≤ [`MAX_PARAMS_TOTAL_BYTES`] cộng dồn mỗi lời gọi —
-/// kiểm **trước** khi clone/bind; cộng dồn dùng `checked_add` (tràn ⇒ `Err`, không im lặng).
-fn chuan_bi_tham_so(params: &[Value]) -> Result<Vec<rusqlite::types::Value>, String> {
-    let mut out = Vec::with_capacity(params.len());
-    let mut tong: usize = 0;
-    for (i, p) in params.iter().enumerate() {
-        let payload = match p {
-            Value::Enum(en) if en.enum_name == "SqlValue" => {
-                match (en.variant.as_str(), en.args.as_slice()) {
-                    ("Text", [Value::Str(s)]) => s.len(),
-                    ("Blob", [Value::Bytes(b)]) => b.len(),
-                    _ => 0,
-                }
-            }
-            _ => 0, // sai kiểu — `kiem_params`/`o_nhap` báo lỗi cụ thể
-        };
-        if payload > MAX_PARAM_BYTES {
-            return Err(format!(
-                "tham số {} vượt giới hạn {MAX_PARAM_BYTES} byte mỗi tham số (text/blob; metadata không tính vào giới hạn) — cắt nhỏ dữ liệu hoặc lưu qua đường khác",
-                i + 1
-            ));
-        }
-        tong = tong
-            .checked_add(payload)
-            .ok_or_else(|| "tổng payload params tràn — từ chối".to_string())?;
-        if tong > MAX_PARAMS_TOTAL_BYTES {
-            return Err(format!(
-                "tổng payload params vượt giới hạn {MAX_PARAMS_TOTAL_BYTES} byte mỗi lời gọi (text/blob; metadata không tính vào giới hạn) — chia nhỏ lời gọi"
-            ));
-        }
-        out.push(o_nhap(p)?);
-    }
-    Ok(out)
-}
-
-/// **VD-268** — "câu lệnh đã chuẩn bị": lấy từ cache LRU của connection hoặc prepare thường
-/// (nhánh thường chỉ dùng cho SQL đặc biệt — xem [`chuan_bi_lenh`]). Cả hai `Deref` về
-/// [`rusqlite::Statement`] nên phần còn lại của host không đổi.
-enum Lenh<'a> {
-    Thuong(rusqlite::Statement<'a>),
-    Cache(rusqlite::CachedStatement<'a>),
-}
-
-impl<'a> std::ops::Deref for Lenh<'a> {
-    type Target = rusqlite::Statement<'a>;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Lenh::Thuong(s) => s,
-            Lenh::Cache(s) => s,
-        }
-    }
-}
-
-impl std::ops::DerefMut for Lenh<'_> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            Lenh::Thuong(s) => s,
-            Lenh::Cache(s) => s,
-        }
-    }
-}
-
-/// **VD-268** — lấy statement cho `sql` từ **cache statement của connection** (cùng chuỗi SQL),
-/// trừ trường hợp `sql.trim()` rỗng nhưng `kiem_sql` vẫn thấy token: whitespace **không-ASCII**
-/// (ví dụ U+00A0) không bị `kiem_sql` coi là khoảng trắng, còn `prepare_cached` trim bằng
-/// `str::trim` của Rust ⇒ statement rỗng/NULL (khác hành vi prepare nguyên văn). Nhánh đó dùng
-/// `prepare` thường để **giữ nguyên** kết quả/lỗi như trước.
-///
-/// Cache key là `sql.trim()`; caller truyền [`lech_loi_prepare`] vào lỗi prepare để `offset`
-/// giữ đúng vị trí byte trong chuỗi người dùng (nhánh `prepare` thường không cộng).
-fn chuan_bi_lenh<'a>(conn: &'a Connection, sql: &str) -> Result<Lenh<'a>, rusqlite::Error> {
-    if sql.trim().is_empty() {
-        return Ok(Lenh::Thuong(conn.prepare(sql)?));
-    }
-    conn.prepare_cached(sql).map(Lenh::Cache)
-}
-
-/// Số **byte** whitespace Unicode bị `trim` ở đầu `sql` — bù `offset` lỗi prepare vì cache dùng
-/// `sql.trim()` (xem [`chuan_bi_lenh`]).
-fn lech_trim_dau(sql: &str) -> usize {
-    sql.len() - sql.trim_start().len()
-}
-
-/// Bù offset **thực tế** cho lỗi prepare: chỉ có tác dụng khi statement đi qua cache (nhánh
-/// `sql.trim()` rỗng dùng `prepare` nguyên văn, offset đã đúng — không cộng thêm).
-fn lech_loi_prepare(sql: &str) -> usize {
-    if sql.trim().is_empty() {
-        0
-    } else {
-        lech_trim_dau(sql)
-    }
-}
-
-/// `execute`: bind đủ số lượng → chạy → số dòng ảnh hưởng. Câu **trả hàng** (sau `prepare`,
-/// **trước** khi execute) ⇒ `Err` **không** bước nào bên trong — không side effect. Mọi lỗi
-/// SQLite ⇒ `Result.Err` (VD-241 pre-merge §1).
-fn thuc_thi(
-    conn: &Connection,
-    sql: &str,
-    params: &[rusqlite::types::Value],
-    sqlite_debug: bool,
-) -> Result<i64, String> {
-    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version; VD-268
-    // xả cache statement khi schema_version đổi).
-    let lech = lech_loi_prepare(sql);
-    let mut stmt =
-        chuan_bi_lenh(conn, sql).map_err(|e| loi_prepare("execute", e, sqlite_debug, lech))?;
-    // **Trước** mọi side effect: câu có cột kết quả ⇒ không execute, không insert/update nào chạy.
-    if stmt.column_count() > 0 {
-        return Err("câu lệnh trả hàng — dùng `sqlite.query` thay vì `sqlite.execute`".to_string());
-    }
-    kiem_so_luong(&stmt, params.len())?;
-    let r = stmt
-        .execute(rusqlite::params_from_iter(params.iter()))
-        .map_err(|e| loi_sqlite("lỗi khi thực thi", e, sqlite_debug))?;
-    Ok(r as i64)
-}
-
-/// **VD-266** — chế độ đọc của [`truy_van`]: tất cả hàng (`query`) hoặc dừng sau hàng đầu
-/// (`query_one`).
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ToiDaHang {
-    TatCa,
-    Mot,
-}
-
-/// **VD-270 (sqlite-journal-mode)** — `PRAGMA journal_mode` **không giá trị** là truy vấn **chỉ
-/// đọc**, nhưng SQLite đánh dấu statement là **không** read-only ở `sqlite3_stmt_readonly` (cùng
-/// một câu có thể đổi mode khi có giá trị). Host chỉ mở **đúng dạng hằng** này cho `db_query`
-/// qua [`la_pragma_journal_mode_chi_doc`] (xem `pragma_doc.rs`); dạng có giá trị/khác vẫn rơi về
-/// kiểm read-only (và authorizer đã chặn ghi pragma).
-///
-/// **VD-270 (sqlite-database-list)** — `PRAGMA database_list` là read-only thật
-/// (`sqlite3_stmt_readonly` = true), chỉ cần authorizer mở mục đọc; **không** thêm ngoại lệ ở đây.
-/// `query`: **chỉ đọc** — phân loại **sau** `prepare`, **trước** mọi step (VD-242 §3.6): câu ghi
-/// ⇒ `Err`, câu không trả hàng ⇒ `Err`; không thực thi rồi mới phát hiện ghi. Sau đó bind đủ số
-/// lượng → đọc tới hết (hoặc tới giới hạn) → `(columns, rows)`.
-/// Giới hạn (mặc định, xem [`GioiHan`]): ≤ [`MAX_ROWS`] hàng, ≤ [`MAX_CELLS`] ô, ≤
-/// [`MAX_COLUMNS`] cột, ≤ [`MAX_COLUMN_NAME_BYTES`] tên cột, payload mỗi hàng ≤
-/// [`MAX_ROW_BYTES`], tổng payload + overhead ô ≤ [`MAX_TOTAL_BYTES`]. Kiểm **trước** khi
-/// clone/allocate ô (cộng dồn `checked_add`). Mọi lỗi SQLite ⇒ `Result.Err`.
-///
-/// **VD-266**: `toi_da = Mot` dừng ngay sau hàng đầu — **không** gọi `next()` thêm, nên không
-/// materialize/scan phần còn lại (cap hàng [`MAX_ROWS`] không áp cho `query_one`).
-fn truy_van(
-    conn: &Connection,
-    sql: &str,
-    params: &[rusqlite::types::Value],
-    sqlite_debug: bool,
-    gh: &GioiHan,
-    toi_da: ToiDaHang,
-) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-    // Schema UTF-8 đã được `kiem_schema_neu_doi` kiểm trước khi gọi (cache schema_version; VD-268
-    // xả cache statement khi schema_version đổi — metadata cột bên dưới không được cũ).
-    let lech = lech_loi_prepare(sql);
-    let mut stmt =
-        chuan_bi_lenh(conn, sql).map_err(|e| loi_prepare("query", e, sqlite_debug, lech))?;
-    // **VD-242 §3.6 / VD-259**: `query` chỉ đọc. `sqlite3_stmt_readonly` phân loại statement thật
-    // sau prepare — không dựa vào tên/keyword, không chạy thử rồi mới phát hiện ghi. Câu ghi phải
-    // đi qua `execute` (nơi có trần ghi 17 MiB); câu không trả hàng (`BEGIN`/`COMMIT`/SAVEPOINT)
-    // cũng phải đi qua `execute`.
-    // **VD-270 (sqlite-journal-mode)**: `PRAGMA journal_mode` (không giá trị) là truy vấn chỉ đọc
-    // nhưng SQLite đánh dấu không read-only — chỉ mở **đúng dạng hằng** qua
-    // [`la_pragma_journal_mode_chi_doc`]; dạng có giá trị/khác vẫn rơi về kiểm read-only (và
-    // authorizer đã chặn ghi pragma).
-    if !stmt.readonly() && !la_pragma_journal_mode_chi_doc(sql) {
-        return Err(
-            "câu lệnh ghi — `sqlite.query` chỉ đọc, dùng `sqlite.execute` thay vì `sqlite.query`"
-                .to_string(),
-        );
-    }
-    if stmt.column_count() == 0 {
-        return Err(
-            "câu lệnh không trả hàng — dùng `sqlite.execute` thay vì `sqlite.query`".to_string(),
-        );
-    }
-    kiem_so_luong(&stmt, params.len())?;
-    let col_n = stmt.column_count();
-    // Tên cột: schema đã được kiểm UTF-8 ở trên nên `column_name` không panic vì encoding;
-    // vẫn map `Err` (index ngoài miền) thành lỗi dữ liệu. Cap số cột + tổng byte tên cột.
-    if col_n > gh.columns {
-        return Err(format!(
-            "kết quả có {col_n} cột > giới hạn {} cột — chọn ít cột hơn",
-            gh.columns
-        ));
-    }
-    let mut columns: Vec<String> = Vec::with_capacity(col_n);
-    let mut tong_ten: usize = 0;
-    for i in 0..col_n {
-        let ten = stmt
-            .column_name(i)
-            .map_err(|_| "không đọc được tên cột".to_string())?;
-        tong_ten = tong_ten
-            .checked_add(ten.len())
-            .ok_or_else(|| "tổng tên cột tràn — từ chối".to_string())?;
-        if tong_ten > gh.ten_cot_bytes {
-            return Err(format!(
-                "tổng tên cột vượt giới hạn {} byte — chọn ít cột hơn",
-                gh.ten_cot_bytes
-            ));
-        }
-        columns.push(ten.to_string());
-    }
-    // **Metadata** (tên cột) **không** tính vào cap byte payload (có trần riêng ở trên).
-    let mut tong: usize = 0;
-    let mut rows = stmt
-        .query(rusqlite::params_from_iter(params.iter()))
-        .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
-    let mut out_rows: Vec<Vec<Value>> = Vec::new();
-    // Overhead **mỗi ô** (Enum + 2 String + Vec + allocator) — cố định theo số cột, cộng vào
-    // cap tổng mỗi hàng. Nếu chỉ đếm payload, 100k ô `NULL` lọt cap 16 MiB nhưng vẫn tốn RAM.
-    let overhead_moi_hang = col_n
-        .checked_mul(CELL_OVERHEAD)
-        .ok_or_else(|| "overhead ô tràn — từ chối".to_string())?;
-    loop {
-        let next = rows
-            .next()
-            .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
-        let Some(row) = next else { break };
-        if toi_da == ToiDaHang::TatCa && out_rows.len() >= gh.rows {
-            return Err(format!(
-                "kết quả vượt giới hạn {} hàng — cắt nhỏ kết quả (LIMIT), không trả dữ liệu cắt",
-                gh.rows
-            ));
-        }
-        // Cap **ô** (hàng × cột): chặn 10k × 2k ô NULL (mỗi ô vẫn có overhead `Value::Enum`).
-        let da_co = out_rows.len().saturating_mul(col_n);
-        if da_co.saturating_add(col_n) > gh.cells {
-            return Err(format!(
-                "kết quả vượt giới hạn {} ô (hàng × cột) — chọn ít cột hơn hoặc cắt nhỏ kết quả (LIMIT)",
-                gh.cells
-            ));
-        }
-        // Lượt 1 (thô, không clone): giữ `ValueRef` của cả hàng (Copy, trỏ vào bộ nhớ SQLite)
-        // để đếm kích thước **và** chuyển đổi mà không gọi `get_ref` hai lần.
-        let mut o: Vec<ValueRef<'_>> = Vec::with_capacity(col_n);
-        let mut row_bytes: usize = 0;
-        for i in 0..col_n {
-            let v = row
-                .get_ref(i)
-                .map_err(|e| loi_doc_ket_qua(e, gh, sqlite_debug))?;
-            row_bytes = row_bytes
-                .checked_add(raw_bytes(v))
-                .ok_or_else(|| "một hàng tràn kích thước — từ chối".to_string())?;
-            o.push(v);
-        }
-        if row_bytes > gh.row_bytes {
-            return Err(loi_hang_qua_lon(gh.row_bytes));
-        }
-        tong = tong
-            .checked_add(row_bytes)
-            .and_then(|x| x.checked_add(overhead_moi_hang))
-            .ok_or_else(|| "tổng kích thước kết quả tràn — từ chối".to_string())?;
-        if tong > gh.total_bytes {
-            return Err(format!(
-                "tổng kích thước kết quả vượt giới hạn {} byte (text+blob + overhead ô; tên cột không tính) — cắt nhỏ kết quả (LIMIT)",
-                gh.total_bytes
-            ));
-        }
-        // Lượt 2 (allocate): kích thước đã kiểm ⇒ clone an toàn.
-        let mut r = Vec::with_capacity(col_n);
-        for v in o {
-            r.push(o_sqlite(v)?);
-        }
-        out_rows.push(r);
-        // **VD-266**: `query_one` dừng ngay — không step thêm hàng nào.
-        if toi_da == ToiDaHang::Mot {
-            break;
-        }
-    }
-    Ok((columns, out_rows))
-}
-
-/// `true` nếu lỗi SQLite là `SQLITE_TOOBIG` — cell vượt `SQLITE_LIMIT_LENGTH` (đã đặt bằng
-/// [`dat_gioi_han_o`]). Trả thông điệp **cùng dạng** với cap hàng để caller thấy giới hạn ổn định.
-fn la_toobig(e: &rusqlite::Error) -> bool {
-    matches!(
-        e,
-        rusqlite::Error::SqliteFailure(err, _)
-            if err.code == rusqlite::ffi::ErrorCode::TooBig
-    )
-}
-
-fn loi_hang_qua_lon(max: usize) -> String {
-    format!(
-        "một hàng vượt giới hạn {max} byte (text+blob; metadata không tính vào giới hạn) — chọn ít cột hơn hoặc cắt nhỏ dữ liệu"
-    )
-}
-
-/// Lỗi khi step/đọc ô: `TOOBIG` (cell > limit) ⇒ thông điệp cap hàng, còn lại ⇒ `loi_sqlite`.
-fn loi_doc_ket_qua(e: rusqlite::Error, gh: &GioiHan, sqlite_debug: bool) -> String {
-    if la_toobig(&e) {
-        loi_hang_qua_lon(gh.row_bytes)
-    } else {
-        loi_sqlite("lỗi khi đọc kết quả", e, sqlite_debug)
-    }
-}
-
-/// Map lỗi prepare: multi-statement ⇒ `Err`; còn lại ⇒ `loi_sqlite` (mã SQLite + offset,
-/// không raw fragment). `lech_dau` bù số byte whitespace bị cache trim ở đầu SQL để `offset`
-/// giữ đúng vị trí trong chuỗi người dùng (VD-268).
-fn loi_prepare(ctx: &str, mut e: rusqlite::Error, sqlite_debug: bool, lech_dau: usize) -> String {
-    if lech_dau > 0 {
-        if let rusqlite::Error::SqlInputError { offset, .. } = &mut e {
-            *offset = offset.saturating_add(i32::try_from(lech_dau).unwrap_or(i32::MAX));
-        }
-    }
-    match e {
-        rusqlite::Error::MultipleStatement => {
-            format!("{ctx}: chỉ được **một** câu SQL mỗi lời gọi (multi-statement bị từ chối)")
-        }
-        other => loi_sqlite(&format!("lỗi SQL ({ctx})"), other, sqlite_debug),
-    }
-}
-
-/// Số tham số phải khớp chính xác — thiếu/thừa ⇒ `Err`.
-fn kiem_so_luong(stmt: &rusqlite::Statement, n: usize) -> Result<(), String> {
-    let can = stmt.parameter_count();
-    if n != can {
-        return Err(format!("SQL cần {can} tham số, được {n}"));
-    }
-    Ok(())
-}
-
-/// Path **có** `cap[...]` (hoặc `--strict-caps`) trong phiên — file-backed bị từ chối (chỉ
-/// `:memory:`): I/O của SQLite (journal/WAL/temp) chưa được kiểm soát đủ (VD-241 §8).
-pub struct DbGuard<'a> {
-    pub trong: &'a mut Db,
-    pub quyen: &'a crate::quyen::Quyen,
-}
-
-impl DbHost for DbGuard<'_> {
-    fn db_open(&mut self, path: &str, create: bool, busy_ms: i64) -> Result<String, String> {
-        if path != ":memory:" && self.quyen.bat {
-            return Err(format!(
-                "{DAU_QUYEN}[quyền] std.sqlite file-backed chưa có bằng chứng kiểm soát I/O (journal/WAL/temp) \u{2014} từ chối khi có `cap` khai báo hoặc `--strict-caps`; chỉ `:memory:` được phép (VD-241 §8)"
-            ));
-        }
-        self.trong.db_open(path, create, busy_ms)
-    }
-    fn db_close(&mut self, h: &str) -> Result<(), String> {
-        self.trong.db_close(h)
-    }
-    fn db_execute(&mut self, h: &str, sql: &str, params: &[Value]) -> Result<i64, String> {
-        self.trong.db_execute(h, sql, params)
-    }
-    fn db_execute_batch(&mut self, h: &str, sql: &str) -> Result<i64, String> {
-        self.trong.db_execute_batch(h, sql)
-    }
-    fn db_query(
-        &mut self,
-        h: &str,
-        sql: &str,
-        params: &[Value],
-    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-        self.trong.db_query(h, sql, params)
-    }
-    fn db_query_one(
-        &mut self,
-        h: &str,
-        sql: &str,
-        params: &[Value],
-    ) -> Result<(Vec<String>, Vec<Vec<Value>>), String> {
-        self.trong.db_query_one(h, sql, params)
-    }
-    fn db_last_insert_rowid(&mut self, h: &str) -> Result<i64, String> {
-        self.trong.db_last_insert_rowid(h)
-    }
-    fn db_changes(&mut self, h: &str) -> Result<i64, String> {
-        self.trong.db_changes(h)
-    }
-    fn db_in_transaction(&mut self, h: &str) -> Result<bool, String> {
-        self.trong.db_in_transaction(h)
-    }
-    fn db_cleanup(&mut self) -> Result<u64, String> {
-        self.trong.db_cleanup()
-    }
-    fn db_path_of(&mut self, h: &str) -> Result<String, String> {
-        self.trong.db_path_of(h)
-    }
-}
-
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

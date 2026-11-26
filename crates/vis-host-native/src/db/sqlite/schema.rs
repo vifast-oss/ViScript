@@ -10,7 +10,8 @@ use rusqlite::hooks::{AuthAction, Authorization};
 use rusqlite::types::ValueRef;
 use rusqlite::Connection;
 
-use super::{loi_sqlite, Muc};
+use super::loi::loi_sqlite;
+use super::Muc;
 
 /// PRAGMA host đặt **trước authorizer** (mọi chế độ): tạm trong RAM + `trusted_schema=OFF`
 /// và page cache **2 MiB** (N7) — dùng đúng một chuỗi cho cả `db_open` lẫn probe test,
