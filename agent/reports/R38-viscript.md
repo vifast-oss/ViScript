@@ -22,7 +22,7 @@
 | `ST-316a` | **DONE** (tích hợp `882b7ffa`) | `value_ops` một nguồn; true O(1) in-place CoW `Map`/`List`; `Value::List(Rc<Vec<Value>>)`; F1/F2/F4/F5; `bin/vis-bench`: **writebench ~240×**, **listbench 13–21×** |
 | `ST-316b` | **DONE** (audit `089b9f4c`) | `#199` lowering `O(N²)→O(N)` (25k `const` 1,604 → **0,196 s**); `#48/#7/#186/#145/#47` |
 | `ST-316d` | **DONE** (`ecdb0660`) | DAG cấm `vis-host-native → vis-runtime` (+self-test); `#198` dời `worker_leak_it`; `host_parity` 4 tệp < 500 dòng |
-| `ST-316c` | **BLOCKED** | Phần `ps` xong: WASI **398×2 (371+27)**, sem **390/390**, suite **28/28** @`d97773de`; `mps` @`311d2288`, `psvn` @`fe3446d2` lệch; chain 0-LLM **chưa chạy** |
+| `ST-316c` | **BLOCKED** | Phần `ps` xong: WASI **398×2 (371+27)**, sem **390/390**, suite **28/28** — **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`); `mps` @`311d2288`, `psvn` @`fe3446d2` lệch; chain 0-LLM **chưa chạy** |
 
 Cổng Sóng 5 (`review/song5` @`882b7ffa`): gate **3.880/3.880** (4 skip), clippy exit 0,
 `vis-diff 100k` **`lech=0`** (60,2 s), DAG 23 crate/5 tầng/0 cạnh cấm, **R8 39/40**.
@@ -103,7 +103,7 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 | `StdId` | **167/167** khớp `API-STD.txt`; dispatcher không `_ =>` | `ST-317c` | test đếm + ca âm |
 | `lsp_it` | **158/158**; `vis-lsp --lib` **29/29** | `ST-317c` | 0 `thread_local!` thật |
 | Conformance | **568/568** | `ST-317a` | sau nén `Value` |
-| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28** | `d97773de` | log `dirty=5` = **5 tệp `agent/*.md`**, 0 tệp mã; chưa đo lại trên `ee8f252d` |
+| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28**; core **47/0**, sqlite **45+2** | **final2 @`8c883a16`** (code `ee8f252d`) | `st316c-wasm-final2-20261126T2130Z.log` sha256 `60064a5c…996bbb`, `dirty=0`; binary wasm build lại **4.037.106 B** |
 | Worker W1..W24 | **32 test** `st317b_worker_orchestrate` | `ST-319d` | 0 `#[ignore]` |
 | Rustdoc | `vis-hir` + `vis-interp` `-D warnings` **exit 0** | 318i/319b | 0 warning |
 | R1 | **0 tệp sản phẩm `*/src/*` > 1.000** (max **1000**, `run_cmd.rs`; `frame.rs` 159); toàn bộ `.rs` có **6 tệp test >1.000** (max `stdlib_ty.rs` 1275); R1 cứng ≤1.500 **PASS** | `ee8f252d` | KPI Sóng 7 13 → 0 (phạm vi sản phẩm) |
@@ -138,7 +138,7 @@ Sổ hiện tại (`4caa600e`): **210 = 82 mở + 109 đóng + 16 VS3 + 2 không
 | # | Việc / rủi ro | Mức | Cách xử lý |
 |---|---|---|---|
 | 1 | **`ST-316c` BLOCKED**: thiếu log `mps`/`psvn` 3-OS + chain thật | P1 | Chạy chain `e239c317…` trong cao điểm; chỉ tuyên bố 3-OS khi có log |
-| 2 | **WASI 398×2 đo @`d97773de`**, chưa đo lại `ee8f252d` | P2 | Chạy `vis-targets --wasm` + conformance khi có slot; không tuyên bố số mới |
+| 2 | **WASI 398×2** — **đã đo lại final2 @`8c883a16`** (code `ee8f252d`) | — | PASS; log `st316c-wasm-final2-20261126T2130Z.log`, `dirty=0` |
 | 3 | **`#200`/`#201`** còn mở | P1 correctness | Sóng 9: chuẩn hoá arity/kiểu argv 2 engine + ca conformance |
 | 4 | **P3 còn lại**: `var self` push, closure W>1, `PushBien` diff | P3 | Ghi nhận, xử khi mở lane codegen/closure tiếp theo |
 | 5 | **R1 sát ngưỡng**: `run_cmd.rs` đúng **1000** dòng (phạm vi sản phẩm `*/src/*`; 6 tệp test >1.000 không tính R1 sản phẩm, trần cứng 1.500 vẫn PASS) | P2 | Không tăng; tách khi chạm 1.001 |
@@ -163,7 +163,8 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 | `st319c2-fix-gate-fast.log` | 412.274 | `263543a3658a66b857aa566f8c174401a2bac2884b096bb444a8725455952a5a` | 319c2 vá P2-1: 3921/3921 |
 | `review-st319d-merge-gate.log` | 412.211 | `f5bc7456407ee2b8f81354210b2138a6cfa7bca05705741f9d403e5ecd5f5c14` | 319d hợp nhất (`c9521ea7`): **3929/3929** |
 | `review-st319e-gate.log` | 411.309 | `d44b541cccb624611bedcc34843918ec835704c6246b5bc57ed1338c5d508081` | 319e: **3922/3922**, 4 skip |
-| `st316c-wasm-final-20261126T1958Z.log` | 7.736 | `c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957` | WASI 398×2 (371+27) @`d97773de` |
+| `st316c-wasm-final-20261126T1958Z.log` | 7.736 | `c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957` | WASI 398×2 (371+27) @`d97773de` (lượt trước) |
+| `st316c-wasm-final2-20261126T2130Z.log` | 7.659 | `60064a5cc1fba281b2aece59315bc4d7445a5dd10a0a42c5107543e9a5996bbb` | **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): sem 390/390, suite 28/28, conformance 398×2, core 47/0, sqlite 45+2 |
 | `peak1-2026-11-27-chain.sh` | 25.762 | `e239c317b29f6a0b4e75167d423889e659860bceaec15ca448c15a4aa593fa1c` | chain 18 bước, **CHƯA CHẠY** |
 
 ## 6. Đề xuất kế tiếp
@@ -182,5 +183,6 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 - [x] Cổng cuối `ee8f252d`: **3934/3934** (4 skip), diff 100k `lech=0`, clippy/rules 0.
 - [x] R1 **0 tệp sản phẩm > 1.000** (6 tệp test >1.000 không tính; trần 1.500 PASS); R8 **39/40**; 0 `unsafe`; `API-VBC1.txt` không đổi.
 - [x] Sổ **210 = 82 mở + 109 đóng + 16 VS3 + 2 + 1**; `#206`–`#210` đóng; `#200/#201` mở.
+- [x] WASI **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): 398×2, sem 390/390, suite 28/28.
 - [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (36 báo cáo, 380 hàng QUEUE).
 - [ ] `ST-316c` 3-OS + chain thật (giữ `BLOCKED`).

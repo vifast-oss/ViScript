@@ -3471,7 +3471,8 @@
     "host": "ps (Linux x86_64); cargo 1.100.0",
     "linux_gate": "PASS @ee8f252d: 3934/3934 (4 skip); diff 100k lech=0 79,7 s; clippy 0; rules 0; R8 39/40",
     "kpi": "Value 32B; Record CoW ~34×; writebench ~240×; listbench 13–21×; StdId 167; WASI 398×2; worker 32 test",
-    "so_no": "210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng"
+    "so_no": "210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng",
+    "wasi": "398×2 (371+27) final2 @8c883a16 (code ee8f252d); sem 390/390; suite 28/28; core 47/0; sqlite 45+2; dirty=0"
   },
   "blocked": [
     {
