@@ -6,8 +6,8 @@
   (`git diff --stat 882b7ffa 3e828393 -- crates test bin Cargo.toml` rỗng). **Cập nhật
   2026-11-26T18:38Z** (trước commit tài liệu này): `main` local = **`c02050c0`**, **14 commit trước
   `origin/main` `baa2dbd3`** (chưa push; commit tài liệu này làm thành 15); chain cao điểm dùng HEAD
-  động + preflight
-  `git fetch`/`branch -r --contains` để chặn trường hợp quên push. Đo WASI lịch sử ở §0.2 vẫn là
+  động + preflight `git fetch`/`merge-base --is-ancestor` để chặn trường hợp quên push. Đo WASI
+  lịch sử ở §0.2 vẫn là
   `29a7b254`.
 - **Trạng thái task**: **`BLOCKED`** (không đổi). Tài liệu này chỉ là **đầu vào để A0 quyết định**;
   không tuyên bố `DONE`, không tuyên bố 3-OS khi chưa có log `mps`.
@@ -21,7 +21,7 @@
 
 | Máy | HEAD | Repo / SSH | Đĩa | Trạng thái | Cần làm trước khi đo |
 |---|---|---|---|---|---|
-| **`ps`** (Linux x86_64) | **`c02050c0`** — local `main` lúc đo (trước commit tài liệu này), **14 commit trước `origin/main` `baa2dbd3`** (2026-11-26T18:38Z; +1 khi commit tài liệu) | `/home/ps/ViScript`; chạy tại chỗ (`vis-remote ps`) | `/` còn **9,9 GiB** (96 %) — **dưới ngưỡng 10 GiB**; `/tmp` tmpfs 7,2 G còn ~3 G | sạch (`dirty=0`) | **A0 phải push `main`** và **dọn đĩa > 10 GiB** trước peak; chain preflight `fetch` + `branch -r --contains` sẽ `exit 2` nếu HEAD chưa lên origin, và `ps-disk` exit 2 nếu < 10 GiB. Đo WASI lịch sử @`29a7b254` vẫn dùng được |
+| **`ps`** (Linux x86_64) | **`c02050c0`** — local `main` lúc đo (trước commit tài liệu này), **14 commit trước `origin/main` `baa2dbd3`** (2026-11-26T18:38Z; các commit tài liệu/audit sau đó cộng thêm) | `/home/ps/ViScript`; chạy tại chỗ (`vis-remote ps`) | `/` còn **~9 GiB** (97 %) — **dưới ngưỡng 10 GiB**; `/tmp` tmpfs 7,2 G còn ~3 G | sạch (`dirty=0`) | **A0 phải push `main`** và **dọn đĩa > 10 GiB** trước peak; chain preflight `fetch` + `merge-base --is-ancestor "$HEAD" origin/main` sẽ `exit 2` nếu HEAD chưa lên origin, và `ps-disk` exit 2 nếu < 10 GiB. Đo WASI lịch sử @`29a7b254` vẫn dùng được |
 | **`mps`** (macOS arm64) | **`311d2288`** — *lệch* | `/Users/mps/dvchd/ViScript`; SSH **chỉ** `mps@mps` (`ssh mps` bị tailnet từ chối) | `/` còn **37 GiB** (snapshot lane plan 2026-11-27) | sạch (0 tệp bẩn, snapshot) | fetch `origin/main` → checkout **HEAD động** (lúc soạn `c02050c0`); kiểm `bin/vis-lock` rảnh; chạy clippy + full gate |
 | **`psvn`** (Windows x86_64, Git Bash) | **`fe3446d2`** — *lệch* | `/c/Users/ps/viscript-moi`; SSH `psvn` (mặc định) | `C:` còn **14 GiB** (98 %, snapshot) | sạch (snapshot) | fetch → checkout **HEAD động** (lúc soạn `c02050c0`); dọn `target/` nếu cần; chạy `--full` + build release cho bench |
 
@@ -34,14 +34,15 @@ bằng `git rev-parse HEAD`, `git status --porcelain`, `df -h` lúc **2026-11-26
 1. **`main` local tại lúc đo `c02050c0` đang trước `origin/main` `baa2dbd3` 14 commit** (sau commit
    tài liệu này là 15) — chain lấy HEAD động rồi remote `git checkout --detach` sẽ fail nếu object
    chưa có trên origin. **A0 phải push `main` trước peak**; preflight chain chạy `git fetch origin main` +
-   `git branch -r --contains "$HEAD"` và **exit 2** nếu rỗng. Lúc đo **0 dòng contains**.
-   Đĩa `ps` cũng đang **9,9 GiB < 10 GiB**: phải `bin/vis-gc-targets`/dọn trước peak.
+   `git merge-base --is-ancestor "$HEAD" origin/main` và **exit 2** nếu trả false. Lúc đo **false**
+   (HEAD chưa phải tổ tiên origin/main).
+   Đĩa `ps` cũng đang **~9 GiB < 10 GiB**: phải `bin/vis-gc-targets`/dọn trước peak.
 2. `mps` @ `311d2288` ⇒ `bin/vis-gate-macos` sẽ **exit 4** ở HEAD guard. Phải fetch/checkout
    **HEAD động** (lúc soạn `c02050c0`) **trước**.
 3. `psvn` @ `fe3446d2` ⇒ `bin/vis-gate-windows` sẽ **exit 6** ở HEAD guard. Phải fetch/checkout
    **HEAD động** (lúc soạn `c02050c0`) **trước**. `C:` 14 GiB là đủ cho test nhưng **không** dư cho
    build release + test cùng lúc; theo dõi đĩa, đỏ vì đĩa ⇒ ghi `BLOCKED-ENV`, **không** mở task mã.
-4. `ps` hiện **9,9 GiB** (96 %, dưới ngưỡng 10 GiB; trước đó từng 13 GiB). Phải chạy
+4. `ps` hiện **~9 GiB** (97 %, dưới ngưỡng 10 GiB; trước đó từng 13 GiB). Phải chạy
    `bin/vis-gc-targets` (dry-run trước, `--apply` khi cần) để > 10 GiB trước peak; nếu không
    `ps-disk` sẽ `exit 2` và không build.
 5. `mps` **không** có target `wasm32-unknown-unknown` (chỉ `wasm32-wasip1`) ⇒ **không** chạy
@@ -189,8 +190,8 @@ grep -nE '^--- (fmt|clippy|luật|DAG|toolchain|rules):|Summary \[|gate --fast:|
 Luồng thật của `--full` (`bin/vis-gate-macos:84-95`): `./vis-dev check` → `./vis-dev gate --fast`
 → `cargo nextest run --workspace` → `cargo test --doc` → `cargo test --manifest-path
 vis-host-wasm/Cargo.toml` → `bin/vis-wasm-suite --build --runtime node`. Toàn bộ bọc trong
-`bin/vis-lock --timeout 7200` trên `mps`; HEAD guard ở `:115` so **full 40 ký tự** với HEAD cây gọi,
-lệch ⇒ **exit 4**.
+`bin/vis-lock --timeout 7200` trên `mps`; chain cao điểm bọc **outer timeout 9000** để lock không bó
+budget. HEAD guard ở `:115` so **full 40 ký tự** với HEAD cây gọi, lệch ⇒ **exit 4**.
 
 **PASS**: exit 0 + `--- clippy: OK` + `gate --fast: PASS` + nextest `0 failed` + doc-test 0 failed +
 WASI suite 0 hỏng. **Không** chấp nhận “exit 0 nhưng thiếu summary”.
@@ -559,18 +560,20 @@ của `bin/vis-targets` (mục 1).
 
 - [ ] **Chuỗi 0-LLM cao điểm 01:00 UTC 27/11**: script
       `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (ngoài repo, **CHƯA CHẠY**; sha256
-      `9ed9b83fea01572378ac9494fbf74293cb94a37e4c36a8bdff1b1f1b8aec7148`); đã `bash -n`
-      + `--dry-run` **exit 0** (log `/home/ps/vislogs/peak1-dryrun-hardened-final.log`, sha256
-      `486e522aa69b5add78c2e7a7f82279f466479cbaddd3809c610f23fa8d8343bc`). Script có 18 dòng
+      `e239c317b29f6a0b4e75167d423889e659860bceaec15ca448c15a4aa593fa1c`); đã `bash -n`
+      + `--dry-run` **exit 0** (log `/home/ps/vislogs/peak1-dryrun-audit2.log`, sha256
+      `a84e80a6c7b7b0a03bccef6821cebf14510411083e176de10225343ec0c9e961`). Script có 18 dòng
       bước: `ps` gate/diff/wasm/clippy tuần tự (khoá HEAD từng bước); `psvn`/`mps` sync + clippy +
-      full gate; bench 3-OS; timeout gate **7200**, build 2400, bench 1800; exit 0 chỉ khi mọi bước
-      bắt buộc PASS, 3 nếu có SKIP, 1 nếu FAIL, 2 nếu preflight (HEAD/dirty/đĩa/**HEAD chưa push**)
-      hỏng.
+      full gate; bench 3-OS; timeout gate **9000** (ngoài `vis-lock` 7200), build 2400, bench 1800;
+      exit 0 chỉ khi mọi bước bắt buộc PASS, 3 nếu có SKIP, 1 nếu FAIL, 2 nếu preflight
+      (HEAD/dirty/đĩa/**HEAD chưa push**) hỏng. `bench-ps` ghi `HEAD_lock expected/actual` trước
+      build và trước bench; lệch ⇒ FAIL (R2).
       Script tách `vis-remote` fetch/checkout khỏi wrapper `bin/vis-gate-*` (wrapper chạy tại `ps`
       và tự gọi `vis-remote`), không lồng wrapper vào một `vis-remote ... bash -lc` khác.
-      **P0 guard**: preflight `git fetch origin main` + `git branch -r --contains "$HEAD"` ⇒ hiện
-      `main` local `c02050c0` **chưa push** (0 dòng contains) nên chạy thật sẽ `exit 2` cho tới khi
-      A0 push; đĩa `ps` **9,9 GiB** cũng làm `ps-disk` exit 2 cho tới khi dọn > 10 GiB.
+      **P0 guard**: preflight `git fetch origin main` +
+      `git merge-base --is-ancestor "$HEAD" origin/main` ⇒ hiện **false** (main local `c02050c0`
+      chưa push) nên chạy thật sẽ `exit 2` cho tới khi A0 push; đĩa `ps` **9,9 GiB** cũng làm
+      `ps-disk` exit 2 cho tới khi dọn > 10 GiB (hiện ~9 GiB).
 - [ ] `mps` fetch/checkout **HEAD động** (lúc soạn `c02050c0`) +
       `cargo clippy --workspace --all-targets -- -D warnings` exit 0 (log + sha256).
 - [ ] `mps` `bin/vis-gate-macos --full` exit 0 (log + sha256).
