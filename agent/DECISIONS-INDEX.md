@@ -288,6 +288,7 @@
 | VD-290 | Phê chuẩn Sóng 0–3 Tái kiến trúc 5 Tầng DAG (`ST-312a..ST-313d`), Chốt 5 Quyết định Gói Duyệt & Mở Lát Hậu-kiểm `ST-314a` | đã chốt | 4064 |
 | VD-291 | Phê chuẩn `ST-314a` (`DONE`), Đồng bộ SPEC/Thiết kế, Đăng ký `#197` & Mở Chương trình Tối ưu – Cứng hoá Sóng 4–5 (`ST-315a..ST-316c`) | đã chốt | 4081 |
 | VD-292 | Phê chuẩn Sóng 4 (`ST-315a..ST-315d` `DONE`), Phán quyết F1/F-R1, Đăng ký `#198`/`#199` & Tối ưu Kế hoạch Sóng 5–6 hướng Kiến trúc Sạch – Dễ Bảo trì – Dễ Mở rộng | đã chốt | 4096 |
+| VD-293 | Phê chuẩn Sóng 5 (`ST-316a`/`ST-316b`/`ST-316d` `DONE`), Đăng ký `#200`/`#201` & Mở Sóng 6 (`ST-317a`/`ST-317c` song song, `ST-317b` chờ tệp) | đã chốt | 4118 |
 
 ## Ghi chú
 
