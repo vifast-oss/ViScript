@@ -25,21 +25,21 @@
 > - **R1 mềm (`ST-318c/d/e/f/g`)**: tách 10 tệp > 1.000 dòng của `vis-types`, `vis-hir`, `vis-diag`, `vis-bytecode`, `vis-cli`, `vis-syntax`, `vis-loader`, `vis-runtime` → **0 tệp > 1.000** (max **1000**, `vis-cli/src/cli/run_cmd.rs`; `frame.rs` 159). **`ST-318i`**: 4 rustdoc link `vis-hir` sạch (`cargo doc -D warnings` exit 0). **`ST-318b`**: `#202` đóng, ca `host_parity::net_http` **20/20**.
 > - **Cổng cuối `main` `2cda3a68`**: `GATE_EXIT=0` — **3912/3912 (4 skip)**; `DIFF_EXIT=0` 100k `lech=0` (84,9 s); `CLIPPY_EXIT=0`; `RULES_EXIT=0`; **R8 39/40**, 0 `unsafe`; 0 tệp > 1.500.
 
-## 2. Trục hiện hành — Sóng 8 (3 lát `READY`) + `ST-316c` `BLOCKED`
+## 2. Trục hiện hành — Sóng 8 (b/c xong, a đang chạy) + `ST-316c` `BLOCKED`
 
-- **Sóng 8 — “Đóng nợ parity/rustdoc hậu Sóng 7” (`VD-300`, `main` @ `d97773de`)**: 3 lát `READY`, lane không xung đột tệp:
-  - **`ST-319a` (W1, `#206`)** — closure cấp tệp: giữ **by-value** (`SPEC` §4.7), **sửa VM** (không sửa interp/SPEC); lane `vis-bytecode/codegen/**`, `vis-vm/vm/**` (trừ `worker.rs`), test conformance; KPI repro **`0/0`** hai engine + closure ghi global parity + `vis-diff 100k lech=0`; có thể trả branch chưa merge.
-  - **`ST-319b` (W2, `#207`)** — rustdoc `vis-interp` link `[`Interp`]` (`frame.rs:5`); chỉ doc comment; KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-interp --no-deps` exit 0.
-  - **`ST-319c` (W3, `#208`)** — `xs.push` trong task: frame VM W=1 thiếu writeback (interp `[1,2]` vs VM `[1]`); lane `frame/worker.rs`, `vm/worker.rs`, test async; KPI parity `[1,2]` + diff 100k; root cause ngoài lane ⇒ dừng + báo.
+- **Sóng 8 — “Đóng nợ parity/rustdoc hậu Sóng 7” (`VD-300`, `main` @ `5408290a`)**: `ST-319b`/`ST-319c` xong, `ST-319a` đang chạy; lane không xung đột tệp:
+  - **`ST-319a` (W1, `#206`, đang chạy `plan/st319a` @ `d97773de`)** — closure cấp tệp: giữ **by-value** (`SPEC` §4.7), **sửa VM** (không sửa interp/SPEC); lane `vis-bytecode/codegen/**`, `vis-vm/vm/**` (trừ `worker.rs`), test conformance; KPI repro **`0/0`** hai engine + closure ghi global parity + `vis-diff 100k lech=0`; có thể trả branch chưa merge.
+  - **`ST-319b` (W2, `#207` `DONE`)** — merge `eb7f5830`, PASS `4dff8b31`; rustdoc `vis-interp` link `[`Interp`]` (`frame.rs:5`); chỉ doc comment; KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-interp --no-deps` exit 0.
+  - **`ST-319c` (W3, `DONE (chẩn đoán)` — journal `b1249172`, merge `5408290a`)** — **`#208` vẫn `mở`**: root cause **`vis-bytecode/src/codegen/**` thiếu tập `mutable`** (push ở biểu thức không phát `Assign`; ngoài lane frame/worker); chưa sửa mã.
 
-- **Đã xong trên `ps`**: `vis-targets --wasm` + WASI **395×2** (368 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`29a7b254` (log `/home/ps/vislogs/st316c-wasm-20261126T1613Z.log`).
+- **Đã xong trên `ps`**: `vis-targets --wasm` + WASI **398×2** (371 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`d97773de` (log `/home/ps/vislogs/st316c-wasm-20261126T1613Z.log`).
 - **Chờ máy**: chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**) cho `mps` @`311d2288` + `psvn` @`fe3446d2`; còn `cargo clippy --workspace --all-targets -- -D warnings` + `bin/vis-gate-macos --full` và đối chuẩn `bin/vis-bench` 3-OS. **Không** tuyên bố 3-OS khi chưa có log `mps`. **Checklist `ps`**: verify WASI trên `main` cuối **`d97773de`** (không phải task DONE).
 
 ## 3. Nợ và quyết định
 
 - **Đóng trong Sóng 7**: **`#202` đóng ở `ST-318b`** (merge `fb725479`, PASS `001a9ffb`, 20/20); **`#203`/`#204` đóng ở `ST-318a`** (audit F3 PASS `5e79bf54`, merge `2cda3a68`).
-- **Nợ đang xử lý trong Sóng 8 (`VD-300`)**: **`#206`** (closure by-value — `ST-319a`), **`#207`** (rustdoc `vis-interp` `[Interp]` — `ST-319b`), **`#208`** (`xs.push` task frame VM W=1 — `ST-319c`). **`#205` không cấp** (gap có chủ đích, không có nguồn).
-- Sổ nợ hiện tại: **208 = 85 mở + 104 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh; dải 1..208, thiếu `#205`).
+- **Nợ Sóng 8 (`VD-300`)**: **`#207` đã `đóng ở ST-319b`** (merge `eb7f5830`, PASS `4dff8b31`); **`#206`** đang xử lý (`ST-319a`, giữ by-value — sửa VM); **`#208`** vẫn `mở` — root cause **`vis-bytecode/src/codegen/**` thiếu tập `mutable`** (journal `st319c-208-codegen.md`, `b1249172`), cần lane codegen. **`#205` không cấp** (gap có chủ đích, không có nguồn).
+- Sổ nợ hiện tại: **208 = 84 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh; dải 1..208, thiếu `#205`).
 - Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd300.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd300.md); trước đó `VD-299` (chốt Sóng 7), `VD-298` (đợt 3), `VD-297` (đợt 2), `VD-296` (đợt 1), `VD-295` (đóng Sóng 6), `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
 
 ## 4. Nền lịch sử
