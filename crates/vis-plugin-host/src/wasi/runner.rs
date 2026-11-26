@@ -3,13 +3,16 @@
 //!
 //! Thứ tự dò giữ nguyên VD-283: `wasmtime` CLI → Python `wasmtime` → Node `node:wasi`;
 //! `VIS_WASI_RUNTIME` ghim lựa chọn. Mỗi lượt chạy dùng thư mục driver **riêng** (pid + số thứ
-//! tự) để hai test song song không đọc driver đang bị truncate; stdout/stderr qua tệp tạm, có
-//! hạn chờ và kill.
+//! tự) để hai test song song không đọc driver đang bị truncate; **ST-315c (W3 M2)**: stdout/stderr
+//! qua **ống có trần** [`MAX_PLUGIN_OUT`] mỗi luồng (vượt ⇒ kill + `VS0501`), thư mục driver tự
+//! dọn bằng RAII — không còn tệp `.out`/`.err` tạm.
 
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use vis_plugin_abi::{Error, Result};
@@ -18,6 +21,10 @@ use super::GUEST_CAP_PREFIX;
 
 /// Hạn chờ mặc định cho một lượt chạy plugin (ms).
 pub const HAN_MAC_DINH_MS: u64 = 20_000;
+
+/// **ST-315c (W3 M2)** — trần output **mỗi luồng** (stdout/stderr) của plugin: 8 MiB.
+/// Vượt trần ⇒ kill tiến trình con và trả `VS0501` (không để plugin bơm bộ nhớ vô hạn).
+pub const MAX_PLUGIN_OUT: usize = 8 * 1024 * 1024;
 
 const DRIVER_MJS: &str = r#"import { WASI } from 'node:wasi';
 import { readFile } from 'node:fs/promises';
@@ -212,7 +219,23 @@ fn tim_python_wasmtime() -> Option<PathBuf> {
     None
 }
 
-fn thu_muc_driver() -> Result<PathBuf> {
+/// **ST-315c (W3 M2)** — thư mục driver WASI tự dọn khi ra khỏi phạm vi (RAII), hết rò
+/// `vis-plugin-wasi-driver-*` trong thư mục tạm kể cả khi lỗi/return sớm.
+struct ThuMucDriver(PathBuf);
+
+impl ThuMucDriver {
+    fn duong(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl Drop for ThuMucDriver {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+fn thu_muc_driver() -> Result<ThuMucDriver> {
     // **ST-300m3/QA**: mỗi lần gọi một thư mục riêng. Trước đây dùng chung
     // `vis-plugin-wasi-driver` + ghi đè `driver.mjs`; hai test plugin chạy song song
     // có thể đọc driver đang bị truncate ⇒ stdout rỗng/VS0501. Tên kèm pid + số thứ tự.
@@ -233,7 +256,25 @@ fn thu_muc_driver() -> Result<PathBuf> {
         fs::write(&p, noi_dung)
             .map_err(|e| Error::io(format!("không ghi được driver `{}`: {e}", p.display())))?;
     }
-    Ok(d)
+    Ok(ThuMucDriver(d))
+}
+
+/// Đọc một ống tới trần [`MAX_PLUGIN_OUT`] + 1 byte; vượt trần ⇒ cắt còn trần và bật cờ
+/// `tran` để caller kill tiến trình con. **0 `unsafe`**.
+fn doc_co_tran<R: Read>(r: R, tran: Arc<AtomicBool>) -> std::io::Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    r.take(MAX_PLUGIN_OUT as u64 + 1).read_to_end(&mut buf)?;
+    if buf.len() > MAX_PLUGIN_OUT {
+        buf.truncate(MAX_PLUGIN_OUT);
+        tran.store(true, Ordering::Relaxed);
+    }
+    Ok(buf)
+}
+
+fn join_doc<T>(t: std::thread::JoinHandle<std::io::Result<T>>, ten: &str) -> Result<T> {
+    t.join()
+        .map_err(|_| Error::io(format!("luồng đọc {ten} của plugin panic")))?
+        .map_err(|e| Error::io(format!("đọc {ten} của plugin: {e}")))
 }
 
 /// Chạy một lượt `abi`/`manifest`/`call`; trả stdout, lỗi thoát/hạn chờ là `VS0501`.
@@ -255,6 +296,7 @@ pub(crate) fn chay_mot(
         })
         .collect();
 
+    let mut _driver: Option<ThuMucDriver> = None;
     let mut cmd = match runtime {
         Runtime::Wasmtime(p) => {
             let mut c = Command::new(p);
@@ -268,21 +310,23 @@ pub(crate) fn chay_mot(
         Runtime::Node(p) => {
             let d = thu_muc_driver()?;
             let mut c = Command::new(p);
-            c.arg(d.join("driver.mjs")).arg(wasm);
+            c.arg(d.duong().join("driver.mjs")).arg(wasm);
             for (guest, host) in &preopens {
                 c.arg("--preopen").arg(format!("{guest}::{host}"));
             }
             c.arg("--").arg(mode);
+            _driver = Some(d);
             c
         }
         Runtime::Python(p) => {
             let d = thu_muc_driver()?;
             let mut c = Command::new(p);
-            c.arg(d.join("driver.py")).arg(wasm);
+            c.arg(d.duong().join("driver.py")).arg(wasm);
             for (guest, host) in &preopens {
                 c.arg("--preopen").arg(format!("{guest}::{host}"));
             }
             c.arg("--").arg(mode);
+            _driver = Some(d);
             c
         }
     };
@@ -290,45 +334,51 @@ pub(crate) fn chay_mot(
         cmd.arg(a);
     }
 
-    let dem = DEM.fetch_add(1, Ordering::Relaxed);
-    let tam = std::env::temp_dir();
-    let out = tam.join(format!("vis-plugin-{}-{dem}.out", std::process::id()));
-    let err = tam.join(format!("vis-plugin-{}-{dem}.err", std::process::id()));
-    // **ST-314a (W3 M3/L2)**: `create_new` (O_EXCL) để không đi theo symlink cũ; sau đó hạ
-    // quyền 0600 (owner) — output plugin không còn world-readable.
-    let _ = fs::remove_file(&out);
-    let _ = fs::remove_file(&err);
-    let mut oo = fs::OpenOptions::new();
-    oo.write(true).create_new(true);
-    let fout = oo
-        .open(&out)
-        .map_err(|e| Error::io(format!("không tạo được `{}`: {e}", out.display())))?;
-    let ferr = fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&err)
-        .map_err(|e| Error::io(format!("không tạo được `{}`: {e}", err.display())))?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fout.set_permissions(fs::Permissions::from_mode(0o600));
-        let _ = ferr.set_permissions(fs::Permissions::from_mode(0o600));
-    }
-    cmd.stdin(Stdio::null()).stdout(fout).stderr(ferr);
-
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     let mut child = cmd
         .spawn()
         .map_err(|e| Error::io(format!("không chạy được runtime {}: {e}", runtime.ten())))?;
+    let stdout_pipe = child
+        .stdout
+        .take()
+        .ok_or_else(|| Error::io("không lấy được ống stdout của plugin"))?;
+    let stderr_pipe = child
+        .stderr
+        .take()
+        .ok_or_else(|| Error::io("không lấy được ống stderr của plugin"))?;
+    let tran = Arc::new(AtomicBool::new(false));
+    let t_out = std::thread::spawn({
+        let tran = Arc::clone(&tran);
+        move || doc_co_tran(stdout_pipe, tran)
+    });
+    let t_err = std::thread::spawn({
+        let tran = Arc::clone(&tran);
+        move || doc_co_tran(stderr_pipe, tran)
+    });
     let han = Duration::from_millis(han_tu_moi_truong());
     let bat_dau = Instant::now();
     let trang_thai = loop {
         match child.try_wait() {
             Ok(Some(s)) => break s,
+            Ok(None) if tran.load(Ordering::Relaxed) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = t_out.join();
+                let _ = t_err.join();
+                return Err(Error::new(
+                    "VS0501",
+                    format!(
+                        "plugin vượt trần output {MAX_PLUGIN_OUT} byte trên một luồng (đã kill)"
+                    ),
+                ));
+            }
             Ok(None) if bat_dau.elapsed() >= han => {
                 let _ = child.kill();
                 let _ = child.wait();
-                let _ = fs::remove_file(&out);
-                let _ = fs::remove_file(&err);
+                let _ = t_out.join();
+                let _ = t_err.join();
                 return Err(Error::new(
                     "VS0501",
                     format!("plugin quá hạn {} ms (đã kill)", han.as_millis()),
@@ -336,17 +386,26 @@ pub(crate) fn chay_mot(
             }
             Ok(None) => std::thread::sleep(Duration::from_millis(5)),
             Err(e) => {
-                let _ = fs::remove_file(&out);
-                let _ = fs::remove_file(&err);
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = t_out.join();
+                let _ = t_err.join();
                 return Err(Error::io(format!("lỗi chờ plugin: {e}")));
             }
         }
     };
 
-    let stdout = fs::read_to_string(&out).unwrap_or_default();
-    let stderr = fs::read_to_string(&err).unwrap_or_default();
-    let _ = fs::remove_file(&out);
-    let _ = fs::remove_file(&err);
+    let stdout_b = join_doc(t_out, "stdout")?;
+    let stderr_b = join_doc(t_err, "stderr")?;
+    // Cờ có thể bật đúng lúc tiến trình vừa thoát (byte thứ trần+1) ⇒ vẫn phải `VS0501`.
+    if tran.load(Ordering::Relaxed) {
+        return Err(Error::new(
+            "VS0501",
+            format!("plugin vượt trần output {MAX_PLUGIN_OUT} byte trên một luồng (đã kill)"),
+        ));
+    }
+    let stdout = String::from_utf8_lossy(&stdout_b).into_owned();
+    let stderr = String::from_utf8_lossy(&stderr_b).into_owned();
     if !trang_thai.success() {
         let mut thong_diep = stderr.trim().to_string();
         if thong_diep.len() > 800 {
@@ -381,12 +440,37 @@ static DEM: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+
     #[test]
-    fn moi_lan_goi_thu_muc_driver_rieng() {
+    fn moi_lan_goi_thu_muc_driver_rieng_va_tu_don() {
         let a = super::thu_muc_driver().expect("driver a");
         let b = super::thu_muc_driver().expect("driver b");
-        assert_ne!(a, b, "driver phải riêng mỗi lần gọi");
-        assert!(a.join("driver.mjs").is_file());
-        assert!(b.join("driver.mjs").is_file());
+        assert_ne!(a.duong(), b.duong(), "driver phải riêng mỗi lần gọi");
+        assert!(a.duong().join("driver.mjs").is_file());
+        assert!(b.duong().join("driver.py").is_file());
+        let pa = a.duong().to_path_buf();
+        drop(a);
+        assert!(!pa.exists(), "RAII phải dọn thư mục driver");
+    }
+
+    #[test]
+    fn doc_co_tran_duoi_nguong_khong_bat_co() {
+        let du = vec![b'x'; 1024];
+        let tran = Arc::new(AtomicBool::new(false));
+        let got = super::doc_co_tran(Cursor::new(du), Arc::clone(&tran)).expect("đọc");
+        assert_eq!(got.len(), 1024);
+        assert!(!tran.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn doc_co_tran_vuot_nguong_cat_dung_tran_va_bat_co() {
+        let du = vec![b'x'; super::MAX_PLUGIN_OUT + 10];
+        let tran = Arc::new(AtomicBool::new(false));
+        let got = super::doc_co_tran(Cursor::new(du), Arc::clone(&tran)).expect("đọc");
+        assert_eq!(got.len(), super::MAX_PLUGIN_OUT);
+        assert!(tran.load(Ordering::Relaxed));
     }
 }

@@ -124,6 +124,52 @@ fn ghi_trong_thu_muc_chi_doc_bi_chan() {
     let _ = fs::remove_dir_all(&d);
 }
 
+#[test]
+fn tep_don_ghi_truncate_duoc_con_chi_doc_thi_khong() {
+    // **ST-315c (#197)** — ABI::V3 xử lý `Truncate`: tệp đơn `(write)` phải ghi + truncate được;
+    // tệp đơn chỉ-đọc phải bị kernel từ chối `O_TRUNC`. Trước vá, `fs::write` ở (1) trả EACCES.
+    let d = tam("tep-don-truncate");
+    let f_ghi = d.join("ghi.txt");
+    let f_ro = d.join("ro.txt");
+    fs::write(&f_ghi, "noi dung cu\n").expect("tệp ghi mẫu");
+    fs::write(&f_ro, "khong duoc sua\n").expect("tệp ro mẫu");
+    let kq = ap(&[
+        ChoPhep {
+            duong: f_ghi.clone(),
+            ghi: true,
+            la_tep: true,
+        },
+        ChoPhep {
+            duong: f_ro.clone(),
+            ghi: false,
+            la_tep: true,
+        },
+    ]);
+    assert_eq!(kq.abi, 3);
+    assert_eq!(kq.so_luat, 2);
+    // (1) `fs::write` dùng `O_TRUNC` ⇒ cần cả `WriteFile` + `Truncate`.
+    fs::write(&f_ghi, "moi\n").expect("tệp đơn (write) phải ghi + truncate được");
+    assert_eq!(fs::read_to_string(&f_ghi).unwrap(), "moi\n");
+    // (2) `truncate(2)` qua `set_len` cũng phải được.
+    let fh = fs::OpenOptions::new()
+        .write(true)
+        .open(&f_ghi)
+        .expect("mở tệp ghi");
+    fh.set_len(0)
+        .expect("truncate(2) trên tệp đơn (write) phải được");
+    drop(fh);
+    assert_eq!(fs::metadata(&f_ghi).unwrap().len(), 0);
+    // (3) Tệp chỉ-đọc: mở với `O_TRUNC` bị `EACCES`, nội dung giữ nguyên.
+    let e = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&f_ro)
+        .expect_err("tệp đơn chỉ-đọc KHÔNG được truncate");
+    assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied, "thật {e:?}");
+    assert_eq!(fs::read_to_string(&f_ro).unwrap(), "khong duoc sua\n");
+    let _ = fs::remove_dir_all(&d);
+}
+
 // **ĐO ĐƯỢC (ST-132), ghi lại thay vì giấu**: trên kernel `7.0.0-43-generic` (Landlock ABI 8),
 // mọi `execve` **bên trong** một domain Landlock đều trả `EACCES` — đo 4 biến thể: (a) không xử lý
 // `Execute`; (b) xử lý `Execute` + cấp trên thư mục chứa; (c) cấp `Execute` trên `/`; (d) chạy tệp

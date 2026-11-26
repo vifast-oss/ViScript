@@ -6,9 +6,10 @@
 # ST-141/VD-147(5) — log bằng chứng KHÔNG ghi đè:
 #   Cách dùng: bin/vis-soak [--log <tệp>] [--append] [--dry-run]
 #              VIS_SOAK_LOG=<tệp> VIS_SOAK_APPEND=1 bin/vis-soak
-#   Chọn tệp log (ưu tiên giảm dần): `--log <tệp>` > `VIS_SOAK_LOG` > mặc định theo ID task:
-#     · có `VIS_TASK_ID` ⇒ `agent/JOURNAL/st<ID>-soak.log` (ví dụ ST-143 ⇒ `st143-soak.log`);
-#     · không có ID    ⇒ `agent/JOURNAL/soak-<YYYYmmddTHHMMSSZ>.log` (mốc UTC, không trùng lần chạy khác).
+#   Chọn tệp log (ưu tiên giảm dần): `--log <tệp>` > `VIS_SOAK_LOG` > mặc định **NGOÀI REPO** (R7):
+#     · thư mục `VIS_SOAK_LOG_DIR` (nếu đặt) > `$HOME/vislogs`;
+#     · có `VIS_TASK_ID` ⇒ `<thư mục>/st<ID>-soak.log` (ví dụ ST-143 ⇒ `st143-soak.log`);
+#     · không có ID    ⇒ `<thư mục>/soak-<YYYYmmddTHHMMSSZ>.log` (mốc UTC, không trùng lần chạy khác).
 #   Tệp đích đã tồn tại và KHÁC RỖNG ⇒ in lỗi ra stderr, exit 2, **không** truncate, **không** ghi gì;
 #   chỉ ghi tiếp khi có `--append` (hoặc `VIS_SOAK_APPEND=1`).
 #   `--dry-run` in đúng 10 tên vòng ra stdout, KHÔNG chạy soak, KHÔNG tạo/ghi tệp log — nhưng vẫn kiểm
@@ -54,11 +55,14 @@ while [ $# -gt 0 ]; do
     shift
 done
 # Mặc định KHÔNG trùng log của task khác (VD-147(5)): ưu tiên --log > VIS_SOAK_LOG > tên theo ID task.
+# **ST-315c (W3 W4)**: mặc định ra **ngoài repo** (`VIS_SOAK_LOG_DIR` > `$HOME/vislogs`) — R7 cấm
+# log bằng chứng nằm trong cây nguồn.
 if [ -z "$LOG" ]; then
+    LOG_DIR=${VIS_SOAK_LOG_DIR:-${HOME:-/tmp}/vislogs}
     if [ -n "${VIS_TASK_ID:-}" ]; then
-        LOG="agent/JOURNAL/st${VIS_TASK_ID}-soak.log"
+        LOG="$LOG_DIR/st${VIS_TASK_ID}-soak.log"
     else
-        LOG="agent/JOURNAL/soak-$(date -u +%Y%m%dT%H%M%SZ).log"
+        LOG="$LOG_DIR/soak-$(date -u +%Y%m%dT%H%M%SZ).log"
     fi
 fi
 

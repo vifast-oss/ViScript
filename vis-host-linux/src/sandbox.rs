@@ -116,9 +116,11 @@ fn chi_doc(abi: ABI, execute: bool) -> landlock::BitFlags<AccessFs> {
 /// Tập quyền cho một mục: tệp chỉ xin quyền hợp lệ trên tệp; thư mục xin cả cây.
 fn quyen(c: &ChoPhep, abi: ABI, execute: bool) -> landlock::BitFlags<AccessFs> {
     let mut q = match (c.la_tep, c.ghi) {
-        // Tệp: chỉ ReadFile/WriteFile hợp lệ (ReadDir trên tệp ⇒ EINVAL).
+        // Tệp: chỉ ReadFile/WriteFile/Truncate hợp lệ (ReadDir trên tệp ⇒ EINVAL).
+        // **ST-315c (#197)**: ABI::V3 xử lý `Truncate`; thiếu quyền này ⇒ `fs::write`/`O_TRUNC`/
+        // `truncate(2)` trên tệp đơn được cấp `(write)` bị kernel trả `EACCES`.
         (true, false) => AccessFs::ReadFile.into(),
-        (true, true) => AccessFs::ReadFile | AccessFs::WriteFile,
+        (true, true) => AccessFs::ReadFile | AccessFs::WriteFile | AccessFs::Truncate,
         // Thư mục: đọc = ReadFile|ReadDir; ghi = toàn bộ tập quyền.
         (false, false) => chi_doc(abi, execute),
         (false, true) => toan_bo(abi, execute),
