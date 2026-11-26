@@ -53,7 +53,7 @@ diff 100k `lech=0` (61,9 s), clippy/rules 0, R8 **39/40**.
 | `ST-318i` | **DONE** — merge `8e8b2887`; audit `c2e155da` | 4 intra-doc link `vis-hir`; `cargo doc -D warnings` exit 0 |
 
 **Cổng chốt Sóng 7 (`2cda3a68`)**: gate **3912/3912** (4 skip); diff 100k `lech=0` 84,9 s;
-clippy/rules 0; R8 **39/40**; **R1 0 tệp > 1.000**; 0 `unsafe`.
+clippy/rules 0; R8 **39/40**; **R1 0 tệp sản phẩm > 1.000**; 0 `unsafe`.
 
 ### 1.4 Sóng 8 — **`DONE` 5/5** (`ST-319a/b/c2/d/e`; `ST-319c` chẩn đoán, `VD-300`..`VD-303`)
 
@@ -68,7 +68,7 @@ clippy/rules 0; R8 **39/40**; **R1 0 tệp > 1.000**; 0 `unsafe`.
 
 **Cổng cuối `main` `ee8f252d`** (`final-main-ee8f252d.log`, sha256 `904d45a6…5569f`):
 gate **3934/3934** (4 skip), diff 100k **`lech=0`** 79,7 s, `CLIPPY_EXIT=0`, `RULES_EXIT=0`;
-R1 **0 tệp > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` không đổi.
+R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` không đổi.
 
 ## 2. Bảng số đo chính
 
@@ -79,7 +79,7 @@ R1 **0 tệp > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` không đổi.
 | Gate chốt Sóng 7 | **3912/3912**, 4 skip | `2cda3a68` — `final-main-2cda3a68.log` |
 | Gate `319a` (F2 + cache) | **3917/3917**, 4 skip | `b2033ebd`/`5d1d12e8` |
 | Gate `319c2` (vá P2-1) | **3921/3921**, 4 skip | cây vá — `st319c2-fix-gate-fast.log` |
-| Gate `319d` | **3929/3929** | `64e84b25` — `review-st319d-gate.log` |
+| Gate `319d` | **3929/3929** | `64e84b25` / cây `c9521ea7` — `review-st319d-merge-gate.log` (sha256 `f5bc7456…5c14`) |
 | Gate `319e` | **3922/3922** | `4baa4d2d` — `review-st319e-gate.log` |
 | **Gate cuối `ee8f252d`** | **3934/3934**, 4 skip | `final-main-ee8f252d.log` — sha256 `904d45a6…5569f` |
 | `vis-diff 100k` | **`lech=0`** toàn bộ; cuối **79,7 s** | `ee8f252d` |
@@ -103,10 +103,10 @@ R1 **0 tệp > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` không đổi.
 | `StdId` | **167/167** khớp `API-STD.txt`; dispatcher không `_ =>` | `ST-317c` | test đếm + ca âm |
 | `lsp_it` | **158/158**; `vis-lsp --lib` **29/29** | `ST-317c` | 0 `thread_local!` thật |
 | Conformance | **568/568** | `ST-317a` | sau nén `Value` |
-| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28** | `d97773de` | chưa đo lại trên `ee8f252d` |
+| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28** | `d97773de` | log `dirty=5` = **5 tệp `agent/*.md`**, 0 tệp mã; chưa đo lại trên `ee8f252d` |
 | Worker W1..W24 | **32 test** `st317b_worker_orchestrate` | `ST-319d` | 0 `#[ignore]` |
 | Rustdoc | `vis-hir` + `vis-interp` `-D warnings` **exit 0** | 318i/319b | 0 warning |
-| R1 | **0 tệp > 1.000** (max **1000**, `run_cmd.rs`; `frame.rs` 159); 0 tệp > 1.500 | `ee8f252d` | KPI Sóng 7 13 → 0 |
+| R1 | **0 tệp sản phẩm `*/src/*` > 1.000** (max **1000**, `run_cmd.rs`; `frame.rs` 159); toàn bộ `.rs` có **6 tệp test >1.000** (max `stdlib_ty.rs` 1275); R1 cứng ≤1.500 **PASS** | `ee8f252d` | KPI Sóng 7 13 → 0 (phạm vi sản phẩm) |
 | R8 | **39/40**; `vis-cli/tests` **8/15** | mọi gate | 38 + `vis-host-linux/tests` 1 |
 
 ## 3. Nợ và sổ `SO-NO.md`
@@ -141,8 +141,8 @@ Sổ hiện tại (`4caa600e`): **210 = 82 mở + 109 đóng + 16 VS3 + 2 không
 | 2 | **WASI 398×2 đo @`d97773de`**, chưa đo lại `ee8f252d` | P2 | Chạy `vis-targets --wasm` + conformance khi có slot; không tuyên bố số mới |
 | 3 | **`#200`/`#201`** còn mở | P1 correctness | Sóng 9: chuẩn hoá arity/kiểu argv 2 engine + ca conformance |
 | 4 | **P3 còn lại**: `var self` push, closure W>1, `PushBien` diff | P3 | Ghi nhận, xử khi mở lane codegen/closure tiếp theo |
-| 5 | **R1 sát ngưỡng**: `run_cmd.rs` đúng **1000** dòng | P2 | Không tăng; tách khi chạm 1.001 |
-| 6 | **Worktree `st319d`/`st319e`** còn tồn | P2 hành chính | Dọn sau khi audit/merge xong (`worktree remove` + `branch -d`) |
+| 5 | **R1 sát ngưỡng**: `run_cmd.rs` đúng **1000** dòng (phạm vi sản phẩm `*/src/*`; 6 tệp test >1.000 không tính R1 sản phẩm, trần cứng 1.500 vẫn PASS) | P2 | Không tăng; tách khi chạm 1.001 |
+| 6 | **Worktree `st319d`/`st319e`** — **đã dọn 06:20**, chỉ còn `main` | — | Không còn việc; giữ `plan/st309-qa` |
 | 7 | **Chain 0-LLM chưa chạy**; `mps` @`311d2288`, `psvn` @`fe3446d2` lệch | P1 cho 316c | Chạy trong cao điểm; không sửa chain |
 
 **Không tuyên bố**: 3-OS khi chưa có log `mps`/`psvn`; phát hành/tag (`VD-289`); “API-VBC1 rỗng”
@@ -160,9 +160,9 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 | `review-song5-final.log` | 408.708 | `7254b07a982878b86dc00841867dd281308538ace023c5f43859c1c4e2260e22` | Sóng 5: 3880/3880 |
 | `st318h-merged-gate.log` | 411.386 | `db96ce21da7cc8486514229bac3c2f2835648991e9547d552e547fb7575ee37f` | hợp nhất 318a+318h: 3911/3911 |
 | `review-st319a-f2-gate.log` | 410.671 | `730d0f43401468d2132c547cb1fcb30e7fde1d6e4f5b4d49ab42cfa14279ef00` | 319a F2: 3917/3917 |
-| `st319c2-fix-gate-fast.log` | 150.062 | `263543a3658a66b857aa566f8c174401a2bac2884b096bb444a8725455952a5a` | 319c2 vá P2-1: 3921/3921 |
-| `review-st319d-gate.log` | — | (log audit 319d) | 319d: **3929/3929** |
-| `review-st319e-gate.log` | — | (log audit 319e) | 319e: **3922/3922** |
+| `st319c2-fix-gate-fast.log` | 412.274 | `263543a3658a66b857aa566f8c174401a2bac2884b096bb444a8725455952a5a` | 319c2 vá P2-1: 3921/3921 |
+| `review-st319d-merge-gate.log` | 412.211 | `f5bc7456407ee2b8f81354210b2138a6cfa7bca05705741f9d403e5ecd5f5c14` | 319d hợp nhất (`c9521ea7`): **3929/3929** |
+| `review-st319e-gate.log` | 411.309 | `d44b541cccb624611bedcc34843918ec835704c6246b5bc57ed1338c5d508081` | 319e: **3922/3922**, 4 skip |
 | `st316c-wasm-final-20261126T1958Z.log` | 7.736 | `c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957` | WASI 398×2 (371+27) @`d97773de` |
 | `peak1-2026-11-27-chain.sh` | 25.762 | `e239c317b29f6a0b4e75167d423889e659860bceaec15ca448c15a4aa593fa1c` | chain 18 bước, **CHƯA CHẠY** |
 
@@ -172,15 +172,15 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
    `BLOCKED` khi có log thật.
 2. **Sóng 9 — correctness còn lại**: `#200`/`#201` (arity/kiểu `argv` 2 engine), P3 còn lại
    (`var self` push, closure W>1, `PushBien` diff), dọn rustdoc toàn workspace.
-3. **R1**: giữ 0 tệp > 1.000; theo dõi `run_cmd.rs` đúng **1000** — tách khi vượt.
-4. **Dọn worktree** `st319d`/`st319e`; giữ `plan/st309-qa`; `worktree ≤ 8`.
+3. **R1**: giữ 0 tệp sản phẩm > 1.000; theo dõi `run_cmd.rs` đúng **1000** — tách khi vượt.
+4. **Worktree** `st319d`/`st319e` **đã dọn** (chỉ còn `main`); giữ `plan/st309-qa`; `worktree ≤ 8`.
 5. **Không** mở lại Pha Phát hành (`ST-309`) trừ khi người dùng quyết định; giữ `VD-289`.
 
 ## 7. Checklist chốt R38
 
 - [x] Sóng 5/6/7/8 `DONE` (Sóng 8: 5/5 + `319c` chẩn đoán).
 - [x] Cổng cuối `ee8f252d`: **3934/3934** (4 skip), diff 100k `lech=0`, clippy/rules 0.
-- [x] R1 **0 tệp > 1.000**; R8 **39/40**; 0 `unsafe`; `API-VBC1.txt` không đổi.
+- [x] R1 **0 tệp sản phẩm > 1.000** (6 tệp test >1.000 không tính; trần 1.500 PASS); R8 **39/40**; 0 `unsafe`; `API-VBC1.txt` không đổi.
 - [x] Sổ **210 = 82 mở + 109 đóng + 16 VS3 + 2 + 1**; `#206`–`#210` đóng; `#200/#201` mở.
 - [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (36 báo cáo, 380 hàng QUEUE).
 - [ ] `ST-316c` 3-OS + chain thật (giữ `BLOCKED`).
