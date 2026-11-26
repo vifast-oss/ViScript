@@ -24,13 +24,9 @@ use crate::vm_frame::MethodLoop;
 /// **VD-267** — cặp `(tên enum, tên biến thể)` đã nội bộ hoá cho cache `MakeEnum`.
 type EnumTag = (value::Name, value::Name);
 
-/// **ST-316a** — con trỏ `Rc` bên trong `Map`/`List` (nhận diện ô chia sẻ, không chép dữ liệu).
+/// **ST-316a** — con trỏ `Rc` bên trong `Map`/`List`/`Record` (nguồn: `vis_runtime::value_ops`).
 fn ptr_rc(v: &Value) -> Option<*const ()> {
-    match v {
-        Value::Map(k) => Some(Rc::as_ptr(k) as *const ()),
-        Value::List(x) => Some(Rc::as_ptr(x) as *const ()),
-        _ => None,
-    }
+    vis_runtime::value_ops::ptr_rc(v)
 }
 
 /// Chạy một module VBC1 (đường tắt tiện dụng).
@@ -604,12 +600,11 @@ impl<'m> Th<'m> {
             return None;
         }
         let fr = self.frames.last_mut()?;
-        match fr.locals.get(s).and_then(ptr_rc) {
-            Some(p) if p == ptr => {
-                fr.locals[s] = Value::Unit;
-                Some((0, s))
-            }
-            _ => None,
+        let slot = fr.locals.get_mut(s)?;
+        if vis_runtime::value_ops::tach_neu_cung_rc(slot, base) {
+            Some((0, s))
+        } else {
+            None
         }
     }
 

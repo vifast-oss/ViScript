@@ -3,7 +3,61 @@
 //! Chuyển **nguyên văn**, không đổi ngữ nghĩa.
 
 use super::*;
+/// **ST-317a F1** — `e` là chính biến `id` (`HExpr::Var`).
+fn cung_bien(e: &HExpr, id: u32) -> bool {
+    matches!(e, HExpr::Var { sym: Some(gid), .. } if *gid == id)
+}
+
 impl<'a> Interp<'a> {
+    /// **ST-317a F1** — `r = r with f: v` (đích và gốc **cùng** biến): ghi tại chỗ `O(1)`.
+    ///
+    /// VM đã làm việc này tự động: `Instr::With` gọi `tach_dich` trước khi áp nên
+    /// `Rc::make_mut` thấy `strong_count == 1`. Interp đánh giá `with` như **biểu thức**
+    /// (clone khỏi ô) nên trước F1 luôn chép sâu; ở đây đánh giá gốc + vế phải **trước**
+    /// (đúng thứ tự quan sát), rồi **rút ô đích** và áp qua `value_ops::voi` (cùng nguồn với
+    /// VM). Alias còn sống ⇒ `strong_count >= 2` ⇒ `make_mut` tự CoW, bản cũ không đổi.
+    ///
+    /// Trả `false` khi không đủ điều kiện tối ưu (không phải Record/thiếu trường) — chỗ gọi
+    /// rơi về đường cũ và **không** đánh giá vế phải lần hai.
+    fn gan_with_tai_cho(
+        &mut self,
+        id: u32,
+        base: &HExpr,
+        fields: &[(String, HExpr)],
+        wspan: Span,
+        span: Span,
+    ) -> R<bool> {
+        let b = self.eval(base)?;
+        let Some(rec) = b.as_record() else {
+            return Ok(false);
+        };
+        if fields
+            .iter()
+            .any(|(n, _)| !rec.fields.iter().any(|(f, _)| f == n))
+        {
+            return Ok(false);
+        }
+        let rec_id = self.rec_id_tinh(base, &b);
+        let mut pairs = Vec::with_capacity(fields.len());
+        for (n, v) in fields {
+            let nv = self.eval(v)?;
+            pairs.push((n.clone(), self.lift_truong_ban_ghi(rec_id, n, nv)));
+        }
+        if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, span) {
+            return Err(a);
+        }
+        // Rút ô đích: hết refcount từ `env` ⇒ `Rc::make_mut` ghi tại chỗ nếu không alias.
+        self.env.borrow_mut().remove(&id);
+        let mut moi = b;
+        vis_runtime::value_ops::voi(&mut moi, pairs, wspan)?;
+        let moi = match self.sym_ty.get(&id) {
+            Some(t) if matches!(t, vis_hir::Type::Opt(_)) => opt_lift_maybe(moi, opt_depth_ty(t)),
+            _ => moi,
+        };
+        self.ghi_o(id, moi, span)?;
+        Ok(true)
+    }
+
     pub(crate) fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
         self.steps += 1;
         if let Some(a) = self.worker_tick(s.span()) {
@@ -114,6 +168,22 @@ impl<'a> Interp<'a> {
                 // (nạp ô → chỉ số → giá trị) và kết quả **ghi lại ô** (giá trị, không aliasing).
                 // Chỉ `=`; gán ghép trên trường/phần tử đã bị tyck chặn trước.
                 if matches!(op, AssignOp::Set) {
+                    // **ST-317a F1**: `r = r with f: v` — tách ô đích trước khi áp để `Record`
+                    // ghi tại chỗ `O(1)` (cùng cơ chế handoff với VM `Instr::With`).
+                    if let HExpr::Var { sym: Some(id), .. } = target {
+                        if let HExpr::With {
+                            base,
+                            fields,
+                            span: wspan,
+                        } = value
+                        {
+                            if cung_bien(base, *id)
+                                && self.gan_with_tai_cho(*id, base, fields, *wspan, *span)?
+                            {
+                                return Ok(Ctrl::Normal);
+                            }
+                        }
+                    }
                     match target {
                         HExpr::Field { base, name, .. } => {
                             if let HExpr::Var { sym: Some(id), .. } = &**base {

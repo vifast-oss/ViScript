@@ -31,6 +31,36 @@ pub enum Buoc {
     ChiSo(Value),
 }
 
+/// **ST-317a F1** — con trỏ `Rc` nội bộ của **Map/List/Record** — nhận diện ô chia sẻ
+/// (không chép dữ liệu).
+///
+/// Là **một nguồn** cho cả `vis-interp` (`Interp::tach_o`) và `vis-vm` (`Th::tach_dich`);
+/// trước F1 chỉ có `Map`/`List` nên `Record` luôn bị `Rc::make_mut` chép sâu mỗi lần ghi.
+pub fn ptr_rc(v: &Value) -> Option<*const ()> {
+    match v {
+        Value::Map(m) => Some(Rc::as_ptr(m) as *const ()),
+        Value::List(l) => Some(Rc::as_ptr(l) as *const ()),
+        Value::Record(r) => Some(Rc::as_ptr(r) as *const ()),
+        _ => None,
+    }
+}
+
+/// **ST-317a F1** — tạm tách ô `o` khỏi `Rc` **khi** ô còn trỏ cùng giá trị với `base`
+/// (ô = `Unit` trong lúc ghi). Nhờ đó `Rc::make_mut` thấy `strong_count == 1` và cập nhật
+/// **tại chỗ O(1)**; trả `true` nếu đã tách để chỗ gọi khôi phục ô sau khi ghi.
+///
+/// Ô **không** chia sẻ với `base` (ví dụ biến alias `b = a`) trả `false` và giữ nguyên —
+/// đúng ngữ nghĩa giá trị: chỉ ô đích bị tách, alias vẫn giữ bản cũ.
+pub fn tach_neu_cung_rc(o: &mut Value, base: &Value) -> bool {
+    if let (Some(a), Some(b)) = (ptr_rc(o), ptr_rc(base)) {
+        if a == b {
+            *o = Value::Unit;
+            return true;
+        }
+    }
+    false
+}
+
 fn loi_truong(name: &str, span: Span) -> Abort {
     Abort::Trap(Trap::new(
         RT,

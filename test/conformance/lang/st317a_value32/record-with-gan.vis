@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-317a F1 — `r = r with f: v` (đích và gốc cùng biến) + alias.
+type P:
+    x: int
+    y: int
+
+fn main():
+    var a = P(x: 1, y: 2)
+    var b = a
+    a = a with x: 9
+    print(a)
+    print(b)
+    var c = a
+    a = a with x: 3
+    print(a)
+    print(c)
