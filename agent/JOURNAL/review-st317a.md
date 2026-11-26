@@ -4,6 +4,7 @@
 **Worktree**: `/home/ps/viswt/st317a` · nhánh `plan/st317a` · HEAD `87985b7e` (mã `fcecb5e6`) · nền `882b7ffa`.
 **Kết luận bản gốc (`ec4d7fc6`)**: **PASS** — 0 finding P1; 1 finding P2 (hiệu năng/tài liệu, **không sai ngữ nghĩa**); 3 ghi chú P3.
 **Addendum F1 (`2e4090e2`)**: **FAIL** — 1 finding **P1** mới: fast path `r = r with …` bỏ một charge `FeeKind::Expr` (và `steps`/`worker_tick`) nên ngân sách/`--max-budget` lệch interp↔VM. Xem §9.
+**Addendum F2 (`e79b9247`)**: **PASS** — F2 dùng chung `vao_expr`; ngưỡng `--max-budget` FAST **12018/12018**, CONTROL **12022/12022**, `ngưỡng−1` cả hai `VS0510`; gate **3886/3886**, diff `lech=0`, clippy 0 warning. Xem §10.
 Không sửa mã sản phẩm trong lượt review này; chỉ thêm tệp này.
 
 ## 0. Phạm vi & hợp nhất — PASS
@@ -254,3 +255,78 @@ Sau đó thêm ca budget parity A/D (ngưỡng phải bằng nhau) và chạy l�
 **FAIL** vì P1 ngân sách (interp↔VM khác nhau trên `--max-budget`), dù phần pointer/CoW, alias,
 conformance 568/568, gate 3885, diff 0 và clippy đều đạt. Không sửa mã; chờ Builder vá
 bookkeeping rồi audit lại F1.
+
+## 10. Addendum F2 (`e79b9247`) — **PASS**
+
+**Phạm vi**: `git log --oneline cd7325b6..e79b9247` → `e79b9247`; `git diff --stat` →
+**8 tệp, +287/−55**; cây sạch; chỉ chạm `vis-interp/`, `vis-vm/`, test conformance, journal,
+`STATE.md`; `crates/vis-codegen` + `agent/API-VBC1.txt` **rỗng**; 0 `unsafe` mới; R8 **39/40**;
+không tệp > 1.500 dòng.
+
+### 10.1 Thiết kế — đúng
+
+- `Interp::vao_expr` (`interp/eval.rs:62`) tách prologue `steps += 1` → `worker_tick` →
+  `charge(E_EXPR, e.span())` (trừ call/spawn/await). `Interp::eval` gọi `vao_expr` ở đầu
+  (`eval.rs:78`); fast-path `gan_with_tai_cho` gọi **cùng** hàm cho nút `HExpr::With`
+  (`stmt.rs:47`).
+- Fast-path **không fallback** khi đích = gốc: `vao_expr(value)` đúng **một lần**; không gọi
+  `eval(value)` nên không double-charge; lỗi trước khi vào fast-path thì đường thường chỉ chạy
+  một lần. Thứ tự: kiểm ô (`contains_key`, tương đương `lvalue_get`) → `vao_expr(With)` →
+  `eval(base)`/từng field (mỗi nút tự charge) → `E_ASSIGN` → `kiem_ghi_duoc` → rút ô →
+  `voi` → opt-lift → `lvalue_set`; khớp đường thường (`lvalue_get` → `eval(With)` →
+  `E_ASSIGN` → `lvalue_set`).
+- **P3a**: `kiem_ghi_duoc` (`interp.rs:384`) kiểm quyền ghi **trước** `env.remove`; nếu `voi`
+  lỗi thì `env.insert(id, moi)` khôi phục ô trước khi trả lỗi. **P3b**: nhánh global
+  `Th::tach_dich` dùng `tach_neu_cung_rc` (`vm.rs:587-592`), không tự so pointer; `Instr::With`
+  giữ nguyên.
+- Kiểm thủ công thứ tự field: `a = a with x: tao(10), y: tao(20)` in `field 10`, `field 20`
+  rồi kết quả; control `q = b with …` giống hệt; interp/VM identical.
+
+### 10.2 Test parity ngân sách — PASS
+
+`crates/vis-conformance/tests/async_api_it/st317a_f2_budget.rs` (150 dòng, khai `#[path]` trong
+`lib_api_it.rs`; **không** tạo tệp `.rs` cấp 1):
+`cargo test -p vis-conformance --test lib_api_it st317a_f2_budget -- --nocapture` →
+**1 passed**. Test chạy `FAST` qua `vis_interp::run` và `CONTROL` qua `Vm` với
+`budget_enable_measure_for_test(fee)`, tìm ngưỡng nhỏ nhất bằng nhị phân, assert
+**interp == VM từng đơn vị** và tại `ngưỡng−1` cả hai `VS0510`.
+
+Số đo thủ công bằng binary release F2 **`2c3ef7ec653c8ec89f5ef57795e48ecba75692b9e242e94acb48fb0fd2e05c1e`**
+(log `/home/ps/vislogs/review-st317a-f2-budget-parity.log`, sha256
+`073441d0b952cc326e5de64a422876fa5c0cbedae770cadf6cd2cd9c82ca42a3`):
+
+| Chương trình | Interp | `--vm` | `ngưỡng−1` |
+|---|---:|---:|---|
+| FAST `r = r with f: i` (1000 vòng) | **12018** | **12018** | cả hai `VS0510` |
+| CONTROL `q = r with f: i` | **12022** | **12022** | cả hai `VS0510` |
+
+Trước F2 (audit `cd7325b6`): FAST interp **11018** / VM **12018** (lệch 1000). Sau F2: **0**.
+Tại `11018`/`11500`/`12017`: FAST cả hai đều `VS0510`; tại `12018`: cả hai exit 0 in `999`.
+Tại `12021`: CONTROL cả hai `VS0510`; tại `12022`: cả hai exit 0 — đúng bảng trên.
+
+### 10.3 Cổng F2
+
+| Cổng | Kết quả | Log / sha256 |
+|---|---|---|
+| `./vis-dev gate --fast` | **3886/3886 passed, 4 skipped**, `PASS`, exit 0 | `/home/ps/vislogs/review-st317a-f2-gate.log` — `bea88a50e2ab0e68479b44ce4b24c77073e0610c4d5d20ce66bf0ef03022f2cd` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | `tong=100000 … chay=93768 **lech=0**`, 60,1 s, exit 0 | `/home/ps/vislogs/review-st317a-f2-visdiff.log` — `e494954becf7780e6e08ea8c8afb5555b349705a75fb7dc91bde6a75fb54f675` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit **0**, 0 warning | `/home/ps/vislogs/review-st317a-f2-clippy.log` — `a6a380aad33321042721f7e45839a1b66971b28730a1207253d15b1d35d78af8` |
+| Pointer tests (F1) | interp 2/2, VM 1/1 | `/home/ps/vislogs/review-st317a-f2-pointer-tests.log` — `10b4307d9071056c86879a23b8e5309311d3cd99b49ec612587bbe9c55ede1cd` |
+| `record-with-gan.vis` | interp + `--vm` identical, khớp golden | — |
+| `recordbench` F2 | stdout `199999`; **0,05–0,06 s** (256 trường × 200k vòng) | — |
+| `git merge-tree main HEAD` (`main` = `9731d33e`) | **chỉ xung đột `agent/STATE.md`** (3 bản văn bản) | — |
+
+### 10.4 Ghi chú
+
+- Không còn P1/P2. P3 còn lại: test parity dùng hook `enable_measure_for_test` (API) thay vì
+  CLI `--max-budget`; tôi đã tái lập thủ công bằng CLI đúng binary, nên chỉ là lớp test bổ sung
+  nếu muốn khoá cả CLI. `gan_with_tai_cho` vẫn không có nhánh `rec_id_tinh.or_else(rec_by_name)`
+  như đường `With` thường, nhưng `with` bị tyck đòi `Type::Record` và base là `Var` nên nhánh
+  fallback không tới được; không phải lỗi đã thấy.
+- `vao_expr` là một nguồn cho `eval` và fast-path; không double-charge, không bỏ charge; ngưỡng
+  budget khớp VM từng đơn vị.
+
+### 10.5 Kết luận Addendum F2
+
+**PASS** — F2 vá đúng P1 của F1, giữ nguyên ngữ nghĩa CoW/alias và hiệu năng; cổng 3886/3886,
+`vis-diff` 0 lệch, clippy sạch. Chỉ còn ghi chú P3 không chặn.
