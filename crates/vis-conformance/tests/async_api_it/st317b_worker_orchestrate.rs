@@ -470,6 +470,29 @@ fn main():
     so_khop(&i, &v, "frame W=1 qua hàm");
 }
 
+/// **#203 (P3)** — chương trình **không có `main`**: thân cấp tệp chạy trên cùng `globals` với
+/// task frame, `var` top-level task ghi thấy ngay ở lệnh `print` cấp tệp — parity interp ↔ VM.
+#[test]
+fn w11_frame_w1_no_main_ghi_bien_cap_tep() {
+    const SRC: &str = r#"var g = 0
+
+async fn tang():
+    g = g + 1
+
+let t = spawn tang()
+await t
+print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "1\n", "interp frame no-main: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "1\n", "VM frame no-main: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "frame W=1 no-main");
+}
+
 /// **#204** — non-frame `run_workers_parallel*`/`run_workers_parallel_vm*` W=2/4: lỗi thân task
 /// **không ai await** phải được `final_join` surface `VS0506` (cùng message/span như frame W=1),
 /// không còn exit 0 + diagnostics rỗng. Output sạch của main vẫn giữ nguyên thứ tự.
@@ -496,6 +519,47 @@ fn w12_non_frame_loi_task_khong_await_w2_w4() {
                 .find(|d| d.code.short == "VS0506" && d.message.contains("hong"))
                 .unwrap_or_else(|| panic!("{nhan} W={w}: {:?}", out.diagnostics));
             assert_eq!(d.message, msg_frame, "{nhan} W={w}: message như frame W=1");
+        }
+    }
+}
+
+/// **P2-B (ST-318a F1)** — task lỗi đứng **trước**, task sạch in `b` đứng **sau**: `final_join`
+/// phải flush output **mọi** task rồi mới trả trap đầu — không được cắt stdout của task sau.
+const LOI_TRUOC_OK_SAU: &str = r#"async fn hong() -> int:
+    let a = 10
+    let b = 0
+    a % b
+
+async fn ok() -> int:
+    print("b")
+    1
+
+fn main():
+    let _t = spawn hong()
+    let _u = spawn ok()
+    print("sau")
+"#;
+
+#[test]
+fn w13_final_join_flush_het_output_truoc_trap() {
+    let a = anh(LOI_TRUOC_OK_SAU);
+    let f = frame_1(LOI_TRUOC_OK_SAU, &a);
+    assert_eq!(f.stdout, "sau\nb\n", "frame W=1: {:?}", f.diagnostics);
+    assert_eq!(f.exit, 1);
+    for w in [2usize, 4] {
+        for (nhan, out) in [
+            ("interp", interp(LOI_TRUOC_OK_SAU, &a, w)),
+            ("vm", vm(LOI_TRUOC_OK_SAU, &a, w)),
+        ] {
+            assert_eq!(out.stdout, "sau\nb\n", "{nhan} W={w}: stdout");
+            assert_eq!(out.exit, 1, "{nhan} W={w} phải lỗi");
+            assert!(
+                out.diagnostics
+                    .iter()
+                    .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+                "{nhan} W={w}: {:?}",
+                out.diagnostics
+            );
         }
     }
 }

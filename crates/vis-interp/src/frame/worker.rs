@@ -515,14 +515,22 @@ fn step_frame<'a>(
 // không có trong globals) vẫn ở `Env` của frame.
 // ---------------------------------------------------------------------------
 
-/// Nạp giá trị mới nhất của biến cấp tệp vào **mọi** khung gọi đang treo của `frame`.
+/// Nạp giá trị mới nhất của **biến cấp tệp đổi được** vào mọi khung gọi đang treo của `frame`.
+///
+/// **P2-A (ST-318a F1)**: chỉ quét `frame.mutable` (`var` cấp tệp) — `const`/`let` bất biến nên
+/// không bao giờ đổi; quét toàn bộ `globals` mỗi turn làm chương trình 20k `const` chậm ~13×.
 fn nap_bien_cap_tep(it: &Interp<'_>, frame: &mut IFrame<'_>) {
     let globals = it.env.clone();
-    let cap: Vec<(u32, Value)> = globals
-        .borrow()
-        .iter()
-        .map(|(k, v)| (*k, v.clone()))
-        .collect();
+    let ds: Vec<u32> = frame.mutable.borrow().iter().copied().collect();
+    if ds.is_empty() {
+        return;
+    }
+    let cap: Vec<(u32, Value)> = {
+        let g = globals.borrow();
+        ds.into_iter()
+            .filter_map(|s| g.get(&s).map(|v| (s, v.clone())))
+            .collect()
+    };
     if cap.is_empty() {
         return;
     }
@@ -589,6 +597,9 @@ fn dong_bo_bien_cap_tep(it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32) {
 /// **ST-318a (#203)** — bản sao `step_frame_owned` (`frame.rs`) có đồng bộ biến cấp tệp sau
 /// từng work-item. Mọi nhánh còn lại giữ nguyên hành vi bản gốc (ngân sách ⇒ `Pending`, pop
 /// khung ⇒ merge closure/hoàn nguyên tham số, hết work ⇒ trả `vals`).
+///
+/// ⚠️ **Giữ khớp từng nhánh** với `frame.rs::step_frame_owned`: loop gốc đổi thứ tự/thêm nhánh
+/// thì phải sửa tệp này ngay (đây là bản sao **có chủ đích** để chèn đồng bộ giữa các item).
 fn buoc_frame_dong_bo<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>) -> R<Option<Value>> {
     loop {
         if frame.done() {
