@@ -84,9 +84,9 @@ pub(crate) mod sqliteidxcols {
     pub fn chay(host: &mut dyn DbHost, h: &str, index: &str) -> Result<Vec<String>, String> {
         // Tên index là **dữ liệu**, không phải SQL: bind `SqlValue.Text`. Host kiểm/giới hạn param
         // (≤ 1 MiB text) và bind qua rusqlite; không có đường nối chuỗi nào ở đây.
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(index.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU, &tham_so)?;
@@ -116,26 +116,46 @@ pub(crate) mod sqliteidxcols {
         };
         match o {
             // Autoindex không có `sql` ⇒ không có định nghĩa cột trong đường đọc được phép.
-            Value::Enum(e, v, args) if e == "SqlValue" && v == "Null" && args.is_empty() => {
-                Ok(Vec::new())
+            Value::Enum(__en)
+                if {
+                    let e = &__en.enum_name;
+                    let v = &__en.variant;
+                    let args = &__en.args;
+                    e == "SqlValue" && v == "Null" && args.is_empty()
+                } =>
+            {
+                let (_e, _v, _args) = (&__en.enum_name, &__en.variant, &__en.args);
+                {
+                    Ok(Vec::new())
+                }
             }
-            Value::Enum(e, v, args) if e == "SqlValue" && v == "Text" && args.len() == 1 => {
-                match &args[0] {
-                    Value::Str(sql) => {
-                        let (bang, muc) = cot_tu_sql(sql)?;
-                        let khai = doc_cot_bang(host, h, &bang)?;
-                        if khai.is_empty() {
-                            return Err(format!(
+            Value::Enum(__en)
+                if {
+                    let e = &__en.enum_name;
+                    let v = &__en.variant;
+                    let args = &__en.args;
+                    e == "SqlValue" && v == "Text" && args.len() == 1
+                } =>
+            {
+                let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                {
+                    match &args[0] {
+                        Value::Str(sql) => {
+                            let (bang, muc) = cot_tu_sql(sql)?;
+                            let khai = doc_cot_bang(host, h, &bang)?;
+                            if khai.is_empty() {
+                                return Err(format!(
                                 "`sqlite.index_columns`: bảng `{bang}` của index không có cột đọc \
                              được trong schema chính"
                             ));
+                            }
+                            Ok(loc_cot(&muc, &khai))
                         }
-                        Ok(loc_cot(&muc, &khai))
+                        _ => Err(
+                            "`sqlite.index_columns`: hàng 1 — `SqlValue.Text` không mang `str`"
+                                .to_string(),
+                        ),
                     }
-                    _ => Err(
-                        "`sqlite.index_columns`: hàng 1 — `SqlValue.Text` không mang `str`"
-                            .to_string(),
-                    ),
                 }
             }
             _ => Err(
@@ -323,9 +343,9 @@ pub(crate) mod sqliteidxcols {
     /// Đọc tên cột **đã khai** của bảng đích qua [`CAU_COT`] (cùng hình dạng chặt như
     /// `sqlite.columns`: đúng một cột, mỗi hàng đúng một ô `SqlValue.Text`).
     fn doc_cot_bang(host: &mut dyn DbHost, h: &str, bang: &str) -> Result<Vec<String>, String> {
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(bang.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU_COT, &tham_so)?;
@@ -345,14 +365,24 @@ pub(crate) mod sqliteidxcols {
                 ));
             };
             match o {
-                Value::Enum(e, v, args) if e == "SqlValue" && v == "Text" && args.len() == 1 => {
-                    match &args[0] {
-                        Value::Str(s) => ds.push(s.clone()),
-                        _ => {
-                            return Err(format!(
+                Value::Enum(__en)
+                    if {
+                        let e = &__en.enum_name;
+                        let v = &__en.variant;
+                        let args = &__en.args;
+                        e == "SqlValue" && v == "Text" && args.len() == 1
+                    } =>
+                {
+                    let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                    {
+                        match &args[0] {
+                            Value::Str(s) => ds.push(s.clone()),
+                            _ => {
+                                return Err(format!(
                         "`sqlite.index_columns`: hàng cột {} — `SqlValue.Text` không mang `str`",
                         i + 1
                     ))
+                            }
                         }
                     }
                 }

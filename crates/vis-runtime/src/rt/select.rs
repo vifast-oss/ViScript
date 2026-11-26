@@ -149,7 +149,7 @@ pub(crate) fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span
 }
 
 fn record(index: usize, value: Value) -> Value {
-    Value::Record(
+    Value::record(
         String::new(),
         vec![
             ("index".to_string(), Value::Int(index as i64)),
@@ -335,7 +335,7 @@ fn chon(
                 Ok(v) => {
                     let mut some = None;
                     let mut la_none = false;
-                    if let Value::Enum(_, var, mut args) = v {
+                    if let Some((_, var, mut args)) = v.into_enum() {
                         if var.as_str() == "Some" {
                             some = args.pop();
                         } else {

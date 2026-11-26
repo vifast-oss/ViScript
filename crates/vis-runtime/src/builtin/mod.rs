@@ -444,7 +444,7 @@ fn dong_cua(s: &str) -> Value {
 
 /// Record `{stdout: list[str], stderr: list[str], code: int}` cho `| complete` (ST-34).
 fn nha_ket_qua(kq: KetQua) -> Value {
-    Value::Record(
+    Value::record(
         String::new(),
         vec![
             ("stdout".into(), dong_cua(&kq.stdout)),
@@ -822,7 +822,7 @@ pub fn call(
                         } else {
                             "FileEntry"
                         };
-                        Value::Record(ten.to_string(), truong)
+                        Value::record(ten, truong)
                     })
                     .collect(),
             ))

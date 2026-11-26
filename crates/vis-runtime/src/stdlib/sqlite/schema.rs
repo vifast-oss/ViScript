@@ -58,9 +58,9 @@ pub(crate) mod sqliteidxexists {
     pub fn chay(host: &mut dyn DbHost, h: &str, name: &str) -> Result<bool, String> {
         // Tên index là **dữ liệu**, không phải SQL: bind `SqlValue.Text`. Host kiểm/giới hạn param
         // (≤ 1 MiB text) và bind qua rusqlite; không có đường nối chuỗi nào ở đây.
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(name.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU, &tham_so)?;
@@ -81,20 +81,36 @@ pub(crate) mod sqliteidxexists {
                     ));
                 };
                 match o {
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue"
-                            && v == "Integer"
-                            && matches!(args.as_slice(), [Value::Int(1)]) =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue"
+                                && v == "Integer"
+                                && matches!(args.as_slice(), [Value::Int(1)])
+                        } =>
                     {
-                        Ok(true)
+                        let (_e, _v, _args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            Ok(true)
+                        }
                     }
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue" && v == "Integer" && args.len() == 1 =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue" && v == "Integer" && args.len() == 1
+                        } =>
                     {
-                        Err(format!(
-                            "`sqlite.index_exists`: hằng truy vấn là `{}` (cần `1`)",
-                            args[0].show()
-                        ))
+                        let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            Err(format!(
+                                "`sqlite.index_exists`: hằng truy vấn là `{}` (cần `1`)",
+                                args[0].show()
+                            ))
+                        }
                     }
                     _ => Err(
                         "`sqlite.index_exists`: `SELECT 1` không trả `SqlValue.Integer(1)`"
@@ -162,7 +178,7 @@ pub(crate) mod sqliteidxexists {
         }
 
         fn mot() -> Value {
-            Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(1)])
+            Value::enum_val("SqlValue", "Integer", vec![Value::Int(1)])
         }
 
         #[test]
@@ -181,10 +197,18 @@ pub(crate) mod sqliteidxexists {
                 "truy vấn phải lọc đúng `type = 'index'`"
             );
             match &h.tham_so.as_deref() {
-                Some([Value::Enum(e, v, args)]) if e == "SqlValue" && v == "Text" => {
+                Some([o]) => {
+                    let Some((e, v, args)) = o.as_enum() else {
+                        panic!("param phải là `SqlValue.Text(tên)`, được {o:?}")
+                    };
+                    assert_eq!(
+                        (e.as_str(), v.as_str()),
+                        ("SqlValue", "Text"),
+                        "tên phải bind `SqlValue.Text(\"i\")`, được {o:?}"
+                    );
                     assert!(
-                        matches!(args.as_slice(), [Value::Str(s)] if s == "i"),
-                        "tên phải bind `SqlValue.Text(\"i\")`, được {args:?}"
+                        matches!(args, [Value::Str(s)] if s == "i"),
+                        "tên phải bind `SqlValue.Text(\"i\")`, được {o:?}"
                     );
                 }
                 khac => panic!("param phải là `SqlValue.Text(tên)`, được {khac:?}"),
@@ -198,9 +222,10 @@ pub(crate) mod sqliteidxexists {
             assert!(
                 matches!(
                     h.tham_so.as_deref(),
-                    Some([Value::Enum(e, v, args)])
-                        if e == "SqlValue" && v == "Text"
-                            && matches!(args.as_slice(), [Value::Str(s)] if s == "thieu")
+                    Some([o])
+                        if matches!(o.as_enum(), Some((e, v, args))
+                            if e == "SqlValue" && v == "Text"
+                                && matches!(args, [Value::Str(s)] if s == "thieu"))
                 ),
                 "tên thiếu vẫn bind `SqlValue.Text(\"thieu\")`, được {:?}",
                 h.tham_so
@@ -224,9 +249,9 @@ pub(crate) mod sqliteidxexists {
             assert!(chay(&mut h, "db:x", "i").is_err(), "ô int trần ⇒ Err");
             let mut h = host(
                 &["1"],
-                Ok(vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Integer".into(),
+                Ok(vec![vec![Value::enum_val(
+                    "SqlValue",
+                    "Integer",
                     vec![Value::Int(0)],
                 )]]),
             );
@@ -308,15 +333,25 @@ pub(crate) mod sqlitejournal {
                     ));
                 };
                 match o {
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue"
-                            && v == "Text"
-                            && matches!(args.as_slice(), [Value::Str(_)]) =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue"
+                                && v == "Text"
+                                && matches!(args.as_slice(), [Value::Str(_)])
+                        } =>
                     {
-                        let [Value::Str(s)] = args.as_slice() else {
-                            unreachable!("mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Str`")
-                        };
-                        Ok(s.clone())
+                        let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            let [Value::Str(s)] = args.as_slice() else {
+                                unreachable!(
+                                    "mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Str`"
+                                )
+                            };
+                            Ok(s.clone())
+                        }
                     }
                     _ => Err("`sqlite.journal_mode`: `journal_mode` không phải TEXT".to_string()),
                 }
@@ -381,15 +416,11 @@ pub(crate) mod sqlitejournal {
         }
 
         fn text(s: &str) -> Value {
-            Value::Enum(
-                "SqlValue".into(),
-                "Text".into(),
-                vec![Value::Str(s.to_string())],
-            )
+            Value::enum_val("SqlValue", "Text", vec![Value::Str(s.to_string())])
         }
 
         fn int(n: i64) -> Value {
-            Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
+            Value::enum_val("SqlValue", "Integer", vec![Value::Int(n)])
         }
 
         #[test]
@@ -446,11 +477,7 @@ pub(crate) mod sqlitejournal {
             assert!(chay(&mut h, "db:x").is_err(), "Integer ⇒ Err");
             let mut h = host(
                 &["journal_mode"],
-                vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Null".into(),
-                    Vec::new(),
-                )]],
+                vec![vec![Value::enum_val("SqlValue", "Null", Vec::new())]],
             );
             assert!(chay(&mut h, "db:x").is_err(), "Null ⇒ Err");
             let mut h = host(&["journal_mode"], vec![vec![Value::Str("delete".into())]]);
@@ -460,27 +487,23 @@ pub(crate) mod sqlitejournal {
             );
             let mut h = host(
                 &["journal_mode"],
-                vec![vec![Value::Enum(
-                    "Other".into(),
-                    "Text".into(),
+                vec![vec![Value::enum_val(
+                    "Other",
+                    "Text",
                     vec![Value::Str("delete".into())],
                 )]],
             );
             assert!(chay(&mut h, "db:x").is_err(), "enum khác ⇒ Err");
             let mut h = host(
                 &["journal_mode"],
-                vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Text".into(),
-                    Vec::new(),
-                )]],
+                vec![vec![Value::enum_val("SqlValue", "Text", Vec::new())]],
             );
             assert!(chay(&mut h, "db:x").is_err(), "Text thiếu đối số ⇒ Err");
             let mut h = host(
                 &["journal_mode"],
-                vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Text".into(),
+                vec![vec![Value::enum_val(
+                    "SqlValue",
+                    "Text",
                     vec![Value::Int(1)],
                 )]],
             );
@@ -531,9 +554,9 @@ pub(crate) mod sqlitepk {
     pub fn chay(host: &mut dyn DbHost, h: &str, table: &str) -> Result<Vec<String>, String> {
         // Tên đối tượng là **dữ liệu**, không phải SQL: bind `SqlValue.Text`. Host kiểm/giới hạn
         // param (≤ 1 MiB text) và bind qua rusqlite; không có đường nối chuỗi nào ở đây.
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(table.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU, &tham_so)?;
@@ -553,14 +576,24 @@ pub(crate) mod sqlitepk {
                 ));
             };
             match o {
-                Value::Enum(e, v, args) if e == "SqlValue" && v == "Text" && args.len() == 1 => {
-                    match &args[0] {
-                        Value::Str(s) => ten.push(s.clone()),
-                        _ => {
-                            return Err(format!(
+                Value::Enum(__en)
+                    if {
+                        let e = &__en.enum_name;
+                        let v = &__en.variant;
+                        let args = &__en.args;
+                        e == "SqlValue" && v == "Text" && args.len() == 1
+                    } =>
+                {
+                    let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                    {
+                        match &args[0] {
+                            Value::Str(s) => ten.push(s.clone()),
+                            _ => {
+                                return Err(format!(
                                 "`sqlite.primary_keys`: hàng {} — `SqlValue.Text` không mang `str`",
                                 i + 1
                             ))
+                            }
                         }
                     }
                 }
@@ -639,9 +672,9 @@ pub(crate) mod sqliteschema {
     pub fn chay(host: &mut dyn DbHost, h: &str, name: &str) -> Result<Option<String>, String> {
         // Tên đối tượng là **dữ liệu**, không phải SQL: bind `SqlValue.Text`. Host kiểm/giới hạn
         // param (≤ 1 MiB text) và bind qua rusqlite; không có đường nối chuỗi nào ở đây.
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(name.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU, &tham_so)?;
@@ -663,19 +696,33 @@ pub(crate) mod sqliteschema {
                 };
                 match o {
                     // `sql` NULL (index tự động, đối tượng SQLite tự sinh) ⇒ không có văn bản.
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue" && v == "Null" && args.is_empty() =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue" && v == "Null" && args.is_empty()
+                        } =>
                     {
-                        Ok(None)
+                        let (_e, _v, _args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            Ok(None)
+                        }
                     }
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue" && v == "Text" && args.len() == 1 =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue" && v == "Text" && args.len() == 1
+                        } =>
                     {
-                        match &args[0] {
-                            Value::Str(s) => Ok(Some(s.clone())),
-                            _ => {
-                                Err("`sqlite.schema_sql`: `SqlValue.Text` không mang `str`"
-                                    .to_string())
+                        let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            match &args[0] {
+                                Value::Str(s) => Ok(Some(s.clone())),
+                                _ => Err("`sqlite.schema_sql`: `SqlValue.Text` không mang `str`"
+                                    .to_string()),
                             }
                         }
                     }
@@ -742,15 +789,11 @@ pub(crate) mod sqliteschema {
         }
 
         fn text(s: &str) -> Value {
-            Value::Enum(
-                "SqlValue".into(),
-                "Text".into(),
-                vec![Value::Str(s.to_string())],
-            )
+            Value::enum_val("SqlValue", "Text", vec![Value::Str(s.to_string())])
         }
 
         fn null() -> Value {
-            Value::Enum("SqlValue".into(), "Null".into(), Vec::new())
+            Value::enum_val("SqlValue", "Null", Vec::new())
         }
 
         #[test]
@@ -766,10 +809,18 @@ pub(crate) mod sqliteschema {
                 "phải chạy đúng câu sqlite_master"
             );
             match &h.tham_so.as_deref() {
-                Some([Value::Enum(e, v, args)]) if e == "SqlValue" && v == "Text" => {
+                Some([o]) => {
+                    let Some((e, v, args)) = o.as_enum() else {
+                        panic!("param phải là `SqlValue.Text(tên)`, được {o:?}")
+                    };
+                    assert_eq!(
+                        (e.as_str(), v.as_str()),
+                        ("SqlValue", "Text"),
+                        "tên phải bind `SqlValue.Text(\"t\")`, được {o:?}"
+                    );
                     assert!(
-                        matches!(args.as_slice(), [Value::Str(s)] if s == "t"),
-                        "tên phải bind `SqlValue.Text(\"t\")`, được {args:?}"
+                        matches!(args, [Value::Str(s)] if s == "t"),
+                        "tên phải bind `SqlValue.Text(\"t\")`, được {o:?}"
                     );
                 }
                 khac => panic!("param phải là `SqlValue.Text(tên)`, được {khac:?}"),

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-317a — `Record` CoW: `with` không làm đổi bản ghi được alias.
+type P:
+    x: int
+    y: int
+
+fn main():
+    let a = P(x: 1, y: 2)
+    let b = a
+    let c = a with x: 9
+    print(a)
+    print(b)
+    print(c)
+    print(a.x)
+    print(c.x)

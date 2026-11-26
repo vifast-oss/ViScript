@@ -116,8 +116,8 @@ fn snapshot_show_hop_va_kieu_nguoi_dung() {
         "{\"a\": 1, \"b\": 2}"
     );
     assert_eq!(
-        f(Value::Record(
-            "User".into(),
+        f(Value::record(
+            "User",
             vec![
                 ("name".into(), Value::Str("An".into())),
                 ("age".into(), Value::Int(20)),
@@ -126,17 +126,10 @@ fn snapshot_show_hop_va_kieu_nguoi_dung() {
         "User(name: An, age: 20)"
     );
     assert_eq!(
-        f(Value::Enum(
-            "Shape".into(),
-            "Circle".into(),
-            vec![Value::Float(2.0)]
-        )),
+        f(Value::enum_val("Shape", "Circle", vec![Value::Float(2.0)])),
         "Circle(2)"
     );
-    assert_eq!(
-        f(Value::Enum("Shape".into(), "Empty".into(), vec![])),
-        "Empty"
-    );
+    assert_eq!(f(Value::enum_val("Shape", "Empty", vec![])), "Empty");
     // **VD-204 (1)**: `Option`/`Result` là enum std — hiển thị qua cùng luật `Enum`.
     assert_eq!(f(Value::none()), "None");
     assert_eq!(f(Value::some(Value::Int(5))), "Some(5)");

@@ -365,9 +365,9 @@ fn dat_gioi_han_o(conn: &Connection, max_cell_bytes: usize) -> Result<(), String
     Ok(())
 }
 
-/// Ô SQLite → `Value::Enum("SqlValue", …)`. UTF-8 hỏng ⇒ lỗi (dữ liệu, không phải dữ liệu cắt).
+/// Ô SQLite → `Value::enum_val("SqlValue", …)`. UTF-8 hỏng ⇒ lỗi (dữ liệu, không phải dữ liệu cắt).
 fn o_sqlite(v: ValueRef<'_>) -> Result<Value, String> {
-    let mk = |variant: &str, args: Vec<Value>| Value::Enum("SqlValue".into(), variant.into(), args);
+    let mk = |variant: &str, args: Vec<Value>| Value::enum_val("SqlValue", variant, args);
     match v {
         ValueRef::Null => Ok(mk("Null", Vec::new())),
         ValueRef::Integer(i) => Ok(mk("Integer", vec![Value::Int(i)])),
@@ -396,13 +396,13 @@ fn raw_bytes(v: ValueRef<'_>) -> usize {
 /// `Real(NaN)` ⇒ `Err` (**không** map vào NULL — người dùng muốn NULL thì dùng `SqlValue.Null()`);
 /// `±Inf` **được phép** bind/lưu/đăng nhập lại. Ô lạ ⇒ `Err`.
 fn o_nhap(v: &Value) -> Result<rusqlite::types::Value, String> {
-    let Value::Enum(e, va, ag) = v else {
+    let Some((e, va, ag)) = v.as_enum() else {
         return Err(format!("tham số phải là `SqlValue`, được `{}`", v.show()));
     };
     if e != "SqlValue" {
         return Err(format!("tham số phải là `SqlValue`, được enum `{e}`"));
     }
-    match (va.as_str(), ag.as_slice()) {
+    match (va.as_str(), ag) {
         ("Null", []) => Ok(rusqlite::types::Value::Null),
         ("Integer", [Value::Int(n)]) => Ok(rusqlite::types::Value::Integer(*n)),
         ("Real", [Value::Float(f)]) => {
@@ -719,7 +719,7 @@ fn kiem_params(params: &[Value]) -> Result<(), String> {
         ));
     }
     for (i, p) in params.iter().enumerate() {
-        let Value::Enum(e, _, _) = p else {
+        let Some((e, _, _)) = p.as_enum() else {
             return Err(format!(
                 "tham số {} phải là `SqlValue`, được `{}`",
                 i + 1,
@@ -744,11 +744,13 @@ fn chuan_bi_tham_so(params: &[Value]) -> Result<Vec<rusqlite::types::Value>, Str
     let mut tong: usize = 0;
     for (i, p) in params.iter().enumerate() {
         let payload = match p {
-            Value::Enum(e, va, ag) if e == "SqlValue" => match (va.as_str(), ag.as_slice()) {
-                ("Text", [Value::Str(s)]) => s.len(),
-                ("Blob", [Value::Bytes(b)]) => b.len(),
-                _ => 0,
-            },
+            Value::Enum(en) if en.enum_name == "SqlValue" => {
+                match (en.variant.as_str(), en.args.as_slice()) {
+                    ("Text", [Value::Str(s)]) => s.len(),
+                    ("Blob", [Value::Bytes(b)]) => b.len(),
+                    _ => 0,
+                }
+            }
             _ => 0, // sai kiểu — `kiem_params`/`o_nhap` báo lỗi cụ thể
         };
         if payload > MAX_PARAM_BYTES {

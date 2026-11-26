@@ -254,13 +254,7 @@ fn value_task_show_va_taskid_khong_doi_abi() {
     ]);
     let send = goc.to_send().expect("Sendable");
     assert_eq!(send.to_value().show(), goc.show());
-    assert!(Value::Cap {
-        kind: "Dir".into(),
-        root: "./x".into(),
-        write: false
-    }
-    .to_send()
-    .is_err());
+    assert!(Value::cap("Dir", "./x", false).to_send().is_err());
     assert_eq!(format!("{}", TaskId::from_raw(7)), "#7");
 }
 
@@ -372,8 +366,8 @@ fn taskid_proto_value_show_eq_roundtrip() {
             (Value::Str("k".into()), Value::Int(1)),
             (Value::Str("k2".into()), Value::list(vec![])),
         ]),
-        Value::Record("R".to_string(), vec![("a".to_string(), Value::Int(1))]),
-        Value::Enum(Name::new("E"), Name::new("A"), vec![Value::Int(1)]),
+        Value::record("R".to_string(), vec![("a".to_string(), Value::Int(1))]),
+        Value::enum_val(Name::new("E"), Name::new("A"), vec![Value::Int(1)]),
         Value::Range(1, 5, false),
     ];
     for v in &vals {

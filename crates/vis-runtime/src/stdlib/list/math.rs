@@ -229,12 +229,12 @@ pub(crate) mod listcontains {
             assert!(co(&xs, &Value::list(vec![Value::Int(1), Value::Int(2)])));
             assert!(khong(&xs, &Value::list(vec![Value::Int(2), Value::Int(1)])));
 
-            let a = Value::Record(
-                "P".into(),
+            let a = Value::record(
+                "P",
                 vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
             );
-            let b = Value::Record(
-                "P".into(),
+            let b = Value::record(
+                "P",
                 vec![("y".into(), Value::Int(2)), ("x".into(), Value::Int(1))],
             );
             assert!(co(&[a], &b));

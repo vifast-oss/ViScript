@@ -376,20 +376,20 @@ fn fallback_khoa_list_record_map_long_enum_unit_range() {
     );
 
     // Record (đảo thứ tự trường vẫn bằng theo đa tập cũ).
-    let r1 = Value::Record(
-        "U".into(),
+    let r1 = Value::record(
+        "U",
         vec![("a".into(), Value::Int(1)), ("b".into(), Value::Int(2))],
     );
-    let r2 = Value::Record(
-        "U".into(),
+    let r2 = Value::record(
+        "U",
         vec![("b".into(), Value::Int(2)), ("a".into(), Value::Int(1))],
     );
     bang(
         &m(vec![(r1.clone(), Value::Int(9))]),
         &m(vec![(r2, Value::Int(9))]),
     );
-    let r3 = Value::Record(
-        "U".into(),
+    let r3 = Value::record(
+        "U",
         vec![("a".into(), Value::Int(1)), ("b".into(), Value::Int(3))],
     );
     khac(&m(vec![(r1, Value::Int(9))]), &m(vec![(r3, Value::Int(9))]));

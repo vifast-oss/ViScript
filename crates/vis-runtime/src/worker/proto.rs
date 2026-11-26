@@ -120,16 +120,18 @@ impl ProtoValue {
                     .map(|(k, v)| Ok((Self::from_value(k)?, Self::from_value(v)?)))
                     .collect::<Result<Vec<_>, String>>()?,
             ),
-            V::Record(n, fs) => Self::Record(
-                n.clone(),
-                fs.iter()
+            V::Record(r) => Self::Record(
+                r.name.clone(),
+                r.fields
+                    .iter()
                     .map(|(k, v)| Ok((k.clone(), Self::from_value(v)?)))
                     .collect::<Result<Vec<_>, String>>()?,
             ),
-            V::Enum(a, b, args) => Self::Enum(
-                a.as_ref().to_string(),
-                b.as_ref().to_string(),
-                args.iter()
+            V::Enum(e) => Self::Enum(
+                e.enum_name.as_ref().to_string(),
+                e.variant.as_ref().to_string(),
+                e.args
+                    .iter()
                     .map(Self::from_value)
                     .collect::<Result<Vec<_>, _>>()?,
             ),
@@ -143,10 +145,10 @@ impl ProtoValue {
                 )
             }
             V::Chan(c) => Self::Chan(Rc::clone(c)),
-            V::Cap { kind, root, write } => Self::Cap {
-                kind: kind.clone(),
-                root: root.clone(),
-                write: *write,
+            V::Cap(c) => Self::Cap {
+                kind: c.kind.clone(),
+                root: c.root.clone(),
+                write: c.write,
             },
         })
     }
@@ -176,13 +178,13 @@ impl ProtoValue {
                     .map(|(k, v)| Ok((Self::to_value(k)?, Self::to_value(v)?)))
                     .collect::<Result<Vec<_>, String>>()?,
             ),
-            Self::Record(n, fs) => V::Record(
+            Self::Record(n, fs) => V::record(
                 n.clone(),
                 fs.iter()
                     .map(|(k, v)| Ok((k.clone(), Self::to_value(v)?)))
                     .collect::<Result<Vec<_>, String>>()?,
             ),
-            Self::Enum(a, b, args) => V::Enum(
+            Self::Enum(a, b, args) => V::enum_val(
                 vis_core::value::Name::new(a),
                 vis_core::value::Name::new(b),
                 args.iter()
@@ -199,11 +201,7 @@ impl ProtoValue {
                 )
             }
             Self::Chan(c) => V::Chan(Rc::clone(c)),
-            Self::Cap { kind, root, write } => V::Cap {
-                kind: kind.clone(),
-                root: root.clone(),
-                write: *write,
-            },
+            Self::Cap { kind, root, write } => V::cap(kind.clone(), root.clone(), *write),
         })
     }
 
@@ -300,11 +298,11 @@ impl SendValue {
                     .map(|(k, v)| (k.to_value(), v.to_value()))
                     .collect(),
             ),
-            SendValue::Record(n, fs) => vis_core::value::Value::Record(
+            SendValue::Record(n, fs) => vis_core::value::Value::record(
                 n.clone(),
                 fs.iter().map(|(k, v)| (k.clone(), v.to_value())).collect(),
             ),
-            SendValue::Enum(a, b, args) => vis_core::value::Value::Enum(
+            SendValue::Enum(a, b, args) => vis_core::value::Value::enum_val(
                 vis_core::value::Name::new(a),
                 vis_core::value::Name::new(b),
                 args.iter().map(SendValue::to_value).collect(),
@@ -342,16 +340,20 @@ impl ToSend for vis_core::value::Value {
                     .map(|(k, v)| Ok((k.to_send()?, v.to_send()?)))
                     .collect::<Result<_, String>>()?,
             )),
-            vis_core::value::Value::Record(n, fs) => Ok(SendValue::Record(
-                n.clone(),
-                fs.iter()
+            vis_core::value::Value::Record(r) => Ok(SendValue::Record(
+                r.name.clone(),
+                r.fields
+                    .iter()
                     .map(|(k, v)| Ok((k.clone(), v.to_send()?)))
                     .collect::<Result<_, String>>()?,
             )),
-            vis_core::value::Value::Enum(a, b, args) => Ok(SendValue::Enum(
-                a.as_ref().to_string(),
-                b.as_ref().to_string(),
-                args.iter().map(ToSend::to_send).collect::<Result<_, _>>()?,
+            vis_core::value::Value::Enum(e) => Ok(SendValue::Enum(
+                e.enum_name.as_ref().to_string(),
+                e.variant.as_ref().to_string(),
+                e.args
+                    .iter()
+                    .map(ToSend::to_send)
+                    .collect::<Result<_, _>>()?,
             )),
             vis_core::value::Value::Range(_, _, _) => {
                 Err("`Range` nội bộ không gửi được sang worker (VS0508)".to_string())
@@ -361,7 +363,7 @@ impl ToSend for vis_core::value::Value {
             | vis_core::value::Value::Vm(_)
             | vis_core::value::Value::Task(_)
             | vis_core::value::Value::Chan(_)
-            | vis_core::value::Value::Cap { .. } => {
+            | vis_core::value::Value::Cap(_) => {
                 Err("giá trị không Sendable (VS0508): closure/handle/Task/cap".to_string())
             }
         }

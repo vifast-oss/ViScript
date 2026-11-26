@@ -41,30 +41,42 @@ pub fn tu_value(v: Value) -> Result<PluginValue> {
                     .collect::<Result<_>>()?,
             )
         }
-        Value::Record(_, fs) => PluginValue::Map(
-            fs.into_iter()
-                .map(|(k, v)| Ok((PluginValue::Str(k), tu_value(v)?)))
-                .collect::<Result<_>>()?,
-        ),
-        Value::Enum(ten, bien, args) => match (ten.as_ref(), bien.as_ref()) {
-            ("Option", "Some") if args.len() == 1 => PluginValue::Option(Some(Box::new(tu_value(
-                args.into_iter().next().expect("len == 1"),
-            )?))),
-            ("Option", "None") if args.is_empty() => PluginValue::Option(None),
-            ("Result", "Ok") if args.len() == 1 => PluginValue::Result(Ok(Box::new(tu_value(
-                args.into_iter().next().expect("len == 1"),
-            )?))),
-            ("Result", "Err") if args.len() == 1 => {
-                PluginValue::Result(Err(Box::new(Error::io(show(&args[0])))))
+        Value::Record(rc) => {
+            let (_, fs) = Value::Record(rc)
+                .into_record()
+                .expect("vừa khớp Value::Record");
+            PluginValue::Map(
+                fs.into_iter()
+                    .map(|(k, v)| Ok((PluginValue::Str(k), tu_value(v)?)))
+                    .collect::<Result<_>>()?,
+            )
+        }
+        Value::Enum(e) => {
+            let (ten, bien, args) = (&e.enum_name, &e.variant, e.args.as_slice());
+            match (ten.as_ref(), bien.as_ref()) {
+                ("Option", "Some") if args.len() == 1 => {
+                    PluginValue::Option(Some(Box::new(tu_value(args[0].clone())?)))
+                }
+                ("Option", "None") if args.is_empty() => PluginValue::Option(None),
+                ("Result", "Ok") if args.len() == 1 => {
+                    PluginValue::Result(Ok(Box::new(tu_value(args[0].clone())?)))
+                }
+                ("Result", "Err") if args.len() == 1 => {
+                    PluginValue::Result(Err(Box::new(Error::io(show(&args[0])))))
+                }
+                _ => {
+                    return Err(Error::type_mismatch(
+                        "giá trị thuần (không enum tuỳ ý)",
+                        &format!("{ten}::{bien}"),
+                    ))
+                }
             }
-            _ => {
-                return Err(Error::type_mismatch(
-                    "giá trị thuần (không enum tuỳ ý)",
-                    &format!("{ten}::{bien}"),
-                ))
-            }
+        }
+        Value::Cap(c) => PluginValue::Cap {
+            kind: c.kind.clone(),
+            root: c.root.clone(),
+            write: c.write,
         },
-        Value::Cap { kind, root, write } => PluginValue::Cap { kind, root, write },
         other => return Err(Error::type_mismatch("giá trị thuần", &show(&other))),
     })
 }
@@ -87,24 +99,24 @@ pub fn sang_value(v: PluginValue) -> Result<Value> {
                 .collect::<Result<_>>()?,
         ),
         PluginValue::Option(None) => {
-            Value::Enum(Name::from("Option"), Name::from("None"), Vec::new())
+            Value::enum_val(Name::from("Option"), Name::from("None"), Vec::new())
         }
-        PluginValue::Option(Some(x)) => Value::Enum(
+        PluginValue::Option(Some(x)) => Value::enum_val(
             Name::from("Option"),
             Name::from("Some"),
             vec![sang_value(*x)?],
         ),
-        PluginValue::Result(Ok(x)) => Value::Enum(
+        PluginValue::Result(Ok(x)) => Value::enum_val(
             Name::from("Result"),
             Name::from("Ok"),
             vec![sang_value(*x)?],
         ),
-        PluginValue::Result(Err(e)) => Value::Enum(
+        PluginValue::Result(Err(e)) => Value::enum_val(
             Name::from("Result"),
             Name::from("Err"),
             vec![Value::Str(e.message)],
         ),
-        PluginValue::Cap { kind, root, write } => Value::Cap { kind, root, write },
+        PluginValue::Cap { kind, root, write } => Value::cap(kind, root, write),
     })
 }
 
@@ -128,7 +140,7 @@ mod tests {
 
     #[test]
     fn option_va_result_dung_enum_chuan() {
-        let some = Value::Enum(
+        let some = Value::enum_val(
             Name::from("Option"),
             Name::from("Some"),
             vec![Value::Int(2)],
@@ -136,13 +148,13 @@ mod tests {
         let ve = sang_value(tu_value(some).expect("option")).expect("về Value");
         assert_eq!(
             show(&ve),
-            show(&Value::Enum(
+            show(&Value::enum_val(
                 Name::from("Option"),
                 Name::from("Some"),
                 vec![Value::Int(2)]
             ))
         );
-        let la = Value::Enum(Name::from("Khac"), Name::from("Some"), vec![Value::Int(2)]);
+        let la = Value::enum_val(Name::from("Khac"), Name::from("Some"), vec![Value::Int(2)]);
         assert!(tu_value(la).is_err());
     }
 }

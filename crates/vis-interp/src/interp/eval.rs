@@ -96,9 +96,9 @@ impl<'a> Interp<'a> {
                     // `enum`/`type` khai trong tệp: thẻ kiểu để `E.A` / `User(...)` chạy được.
                     if let Some((n, is_enum)) = self.tags.get(id).cloned() {
                         return Ok(if is_enum {
-                            Value::Enum(n.into(), Name::new(""), Vec::new())
+                            Value::enum_val(n, Name::new(""), Vec::new())
                         } else {
-                            Value::Record(n, Vec::new())
+                            Value::record(n, Vec::new())
                         });
                     }
                     // `print`/`len`/`str`/`Ok`/... **có** `sym` (ST-11 khai 8 tên dựng sẵn) ⇒ tra tên.
@@ -250,7 +250,7 @@ impl<'a> Interp<'a> {
                     out.push((n.clone(), self.lift_truong_ban_ghi(rec_id, n, vv)));
                     let _ = span;
                 }
-                Ok(Value::Record(name, out))
+                Ok(Value::record(name, out))
             }
             HExpr::EnumLit {
                 enum_id,
@@ -278,7 +278,7 @@ impl<'a> Interp<'a> {
                             if let Some((n, v)) = hit {
                                 // Hai `EnumLit` khác nhau lỡ trùng span ⇒ xác minh nội dung.
                                 if n.as_str() == e.name && v.as_str() == variant.as_str() {
-                                    return Ok(Value::Enum(n, v, vs));
+                                    return Ok(Value::enum_val(n, v, vs));
                                 }
                             }
                             let ten = Name::new(&e.name);
@@ -286,7 +286,7 @@ impl<'a> Interp<'a> {
                             self.enum_tags
                                 .borrow_mut()
                                 .insert(key, (ten.clone(), bien_the.clone()));
-                            return Ok(Value::Enum(ten, bien_the, vs));
+                            return Ok(Value::enum_val(ten, bien_the, vs));
                         }
                     }
                 }
@@ -297,7 +297,7 @@ impl<'a> Interp<'a> {
                     Name::new(&name)
                 };
                 let _ = span;
-                Ok(Value::Enum(name, Name::new(variant), vs))
+                Ok(Value::enum_val(name, Name::new(variant), vs))
             }
             HExpr::Opt { value, .. } => match value {
                 None => Ok(Value::none()),
@@ -335,17 +335,23 @@ impl<'a> Interp<'a> {
             HExpr::Try { expr, .. } => match self.eval(expr)? {
                 // **VD-204 (1)**: `Option`/`Result` thật — `?` bóc `Some(v)`/`Ok(v)`, đẩy `None`/`Err(e)`
                 // về làm giá trị trả sớm; `?` trên kiểu khác ⇒ lỗi như cũ.
-                Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
-                    Ok(ag.into_iter().next().expect("Some luôn có một đối số"))
+                Value::Enum(e)
+                    if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 =>
+                {
+                    Ok(e.args.get(0).expect("Some luôn có một đối số").clone())
                 }
-                Value::Enum(ea, va, ag) if ea == "Option" && va == "None" => {
-                    Err(Abort::Ret(Value::Enum(ea, va, ag)))
+                Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => {
+                    Err(Abort::Ret(Value::Enum(e)))
                 }
-                Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
-                    Ok(ag.into_iter().next().expect("Ok luôn có một đối số"))
+                Value::Enum(e)
+                    if e.enum_name == "Result" && e.variant == "Ok" && e.args.len() == 1 =>
+                {
+                    Ok(e.args.get(0).expect("Ok luôn có một đối số").clone())
                 }
-                Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
-                    Err(Abort::Ret(Value::Enum(ea, va, ag)))
+                Value::Enum(e)
+                    if e.enum_name == "Result" && e.variant == "Err" && e.args.len() == 1 =>
+                {
+                    Err(Abort::Ret(Value::Enum(e)))
                 }
                 other => Err(Abort::Trap(Trap::new(
                     RT,
@@ -358,7 +364,10 @@ impl<'a> Interp<'a> {
                 // **VD-263**: ưu tiên `RecId` instantiation từ kiểu tĩnh của gốc (annot).
                 let rec_id_tinh = self.rec_id_tinh(base, &b);
                 match b {
-                    Value::Record(name, mut cur) => {
+                    Value::Record(rc) => {
+                        let (name, mut cur) = Value::Record(rc)
+                            .into_record()
+                            .expect("vừa khớp Value::Record");
                         // **VD-258**: `with` nâng trường `T?` như biên dựng bản ghi.
                         let rec_id = rec_id_tinh.or_else(|| self.types.rec_by_name(&name));
                         for (n, v) in fields {
@@ -375,7 +384,7 @@ impl<'a> Interp<'a> {
                                 }
                             }
                         }
-                        Ok(Value::Record(name, cur))
+                        Ok(Value::record(name, cur))
                     }
                     other => Err(Abort::Trap(Trap::new(
                         RT,

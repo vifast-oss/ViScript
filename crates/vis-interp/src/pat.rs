@@ -40,11 +40,14 @@ impl<'a> Interp<'a> {
                     // theo **đúng tên biến thể**, phân biệt hoa thường (VD-212).
                     // **VD-241 §3 (A0, 2026-11-19)**: pattern khớp **theo cấu trúc giá trị thật** —
                     // KHÔNG bọc ngầm giá trị trần vào `Option`/`Result` (bỏ luật "match-some trần").
-                    Value::Enum(_, variant, vargs) => {
-                        if variant != &name {
-                            return false;
+                    Value::Enum(__en) => {
+                        let (_, variant, vargs) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            if variant != &name {
+                                return false;
+                            }
+                            self.bind_all(args, vargs)
                         }
-                        self.bind_all(args, vargs)
                     }
                     Value::Bool(b) => match low.as_str() {
                         "true" => *b,
@@ -92,7 +95,8 @@ impl<'a> Interp<'a> {
                 _ => false,
             },
             HPat::Record { fields, .. } => match v {
-                Value::Record(_, vfields) => {
+                Value::Record(r) => {
+                    let vfields = &r.fields;
                     for (n, sub) in fields {
                         if n.is_empty() {
                             continue;

@@ -20,7 +20,7 @@ pub fn panic_builtin(args: &[Value], span: Span) -> R<Value> {
         Value::Str(s) => s.clone(),
         // **VD-222**: bản ghi `Error` dựng sẵn (hoặc bản ghi có `message` do annot `Error` tạo
         // ở dạng ẩn danh) — dùng `message` làm thông điệp.
-        Value::Record(_, fields) => match fields.iter().find(|(n, _)| n == "message") {
+        Value::Record(r) => match r.fields.iter().find(|(n, _)| n == "message") {
             Some((_, v)) => v.show(),
             None => {
                 return Err(trap(

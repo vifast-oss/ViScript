@@ -14,18 +14,18 @@ use vis_core::value::Value;
 pub(crate) fn opt_depth_val(v: &Value) -> usize {
     let mut d = 0;
     let mut cur = v;
-    while let Value::Enum(ea, va, args) = cur {
-        if ea != "Option" {
+    while let Value::Enum(e) = cur {
+        if e.enum_name != "Option" {
             break;
         }
-        match va.as_str() {
+        match e.variant.as_str() {
             "None" => {
                 d += 1;
                 break;
             }
-            "Some" if args.len() == 1 => {
+            "Some" if e.args.len() == 1 => {
                 d += 1;
-                cur = &args[0];
+                cur = e.args.get(0).expect("độ dài 1");
             }
             _ => break,
         }
@@ -35,7 +35,7 @@ pub(crate) fn opt_depth_val(v: &Value) -> usize {
 
 /// `true` nếu `v` là **`None` trần ở lớp ngoài cùng** (Option ngoài để vacant).
 fn la_none_tran(v: &Value) -> bool {
-    matches!(v, Value::Enum(ea, va, ag) if ea == "Option" && va == "None" && ag.is_empty())
+    matches!(v, Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" && e.args.is_empty())
 }
 
 /// Nâng `v` tới ít nhất `depth` lớp `Opt` (bọc `Value::some` các lớp còn thiếu).

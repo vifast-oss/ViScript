@@ -42,7 +42,7 @@ fn json_non_finite_bi_phat_hien() {
 // ------------------------------------------------------------------
 
 fn json_num(f: f64) -> Value {
-    Value::Enum("Json".into(), "Num".into(), vec![Value::Float(f)])
+    Value::enum_val("Json", "Num", vec![Value::Float(f)])
 }
 
 fn ma_hoa(v: &Value) -> String {

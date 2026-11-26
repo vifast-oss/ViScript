@@ -73,22 +73,32 @@ pub(crate) mod sqliteappid {
                     ));
                 };
                 match o {
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue"
-                            && v == "Integer"
-                            && matches!(args.as_slice(), [Value::Int(_)]) =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue"
+                                && v == "Integer"
+                                && matches!(args.as_slice(), [Value::Int(_)])
+                        } =>
                     {
-                        let [Value::Int(n)] = args.as_slice() else {
-                            unreachable!("mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Int`")
-                        };
-                        if !(0..=i64::from(i32::MAX)).contains(n) {
-                            return Err(format!(
-                                "`sqlite.application_id`: giá trị {n} ngoài phạm vi 0..={} \
+                        let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            let [Value::Int(n)] = args.as_slice() else {
+                                unreachable!(
+                                    "mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Int`"
+                                )
+                            };
+                            if !(0..=i64::from(i32::MAX)).contains(n) {
+                                return Err(format!(
+                                    "`sqlite.application_id`: giá trị {n} ngoài phạm vi 0..={} \
                              (application_id là số 32-bit có dấu)",
-                                i32::MAX
-                            ));
+                                    i32::MAX
+                                ));
+                            }
+                            Ok(*n)
                         }
-                        Ok(*n)
                     }
                     _ => Err(
                         "`sqlite.application_id`: `application_id` không phải INTEGER".to_string(),
@@ -155,7 +165,7 @@ pub(crate) mod sqliteappid {
         }
 
         fn int(n: i64) -> Value {
-            Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
+            Value::enum_val("SqlValue", "Integer", vec![Value::Int(n)])
         }
 
         #[test]
@@ -198,11 +208,7 @@ pub(crate) mod sqliteappid {
             assert!(chay(&mut h, "db:x").is_err(), "2 ô ⇒ Err");
             let mut h = host(
                 &["application_id"],
-                vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Text".into(),
-                    Vec::new(),
-                )]],
+                vec![vec![Value::enum_val("SqlValue", "Text", Vec::new())]],
             );
             assert!(chay(&mut h, "db:x").is_err(), "Text ⇒ Err");
             let mut h = host(&["application_id"], vec![vec![Value::Int(1)]]);
@@ -266,9 +272,9 @@ pub(crate) mod sqlitecols {
     pub fn chay(host: &mut dyn DbHost, h: &str, table: &str) -> Result<Vec<String>, String> {
         // Tên đối tượng là **dữ liệu**, không phải SQL: bind `SqlValue.Text`. Host kiểm/giới hạn
         // param (≤ 1 MiB text) và bind qua rusqlite; không có đường nối chuỗi nào ở đây.
-        let tham_so = [Value::Enum(
-            "SqlValue".into(),
-            "Text".into(),
+        let tham_so = [Value::enum_val(
+            "SqlValue",
+            "Text",
             vec![Value::Str(table.to_string())],
         )];
         let (cot, hang) = host.db_query(h, CAU, &tham_so)?;
@@ -288,14 +294,24 @@ pub(crate) mod sqlitecols {
                 ));
             };
             match o {
-                Value::Enum(e, v, args) if e == "SqlValue" && v == "Text" && args.len() == 1 => {
-                    match &args[0] {
-                        Value::Str(s) => ten.push(s.clone()),
-                        _ => {
-                            return Err(format!(
-                                "`sqlite.columns`: hàng {} — `SqlValue.Text` không mang `str`",
-                                i + 1
-                            ))
+                Value::Enum(__en)
+                    if {
+                        let e = &__en.enum_name;
+                        let v = &__en.variant;
+                        let args = &__en.args;
+                        e == "SqlValue" && v == "Text" && args.len() == 1
+                    } =>
+                {
+                    let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                    {
+                        match &args[0] {
+                            Value::Str(s) => ten.push(s.clone()),
+                            _ => {
+                                return Err(format!(
+                                    "`sqlite.columns`: hàng {} — `SqlValue.Text` không mang `str`",
+                                    i + 1
+                                ))
+                            }
                         }
                     }
                 }
@@ -385,22 +401,32 @@ pub(crate) mod sqlitedataver {
                     ));
                 };
                 match o {
-                    Value::Enum(e, v, args)
-                        if e == "SqlValue"
-                            && v == "Integer"
-                            && matches!(args.as_slice(), [Value::Int(_)]) =>
+                    Value::Enum(__en)
+                        if {
+                            let e = &__en.enum_name;
+                            let v = &__en.variant;
+                            let args = &__en.args;
+                            e == "SqlValue"
+                                && v == "Integer"
+                                && matches!(args.as_slice(), [Value::Int(_)])
+                        } =>
                     {
-                        let [Value::Int(n)] = args.as_slice() else {
-                            unreachable!("mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Int`")
-                        };
-                        if !(0..=i64::from(i32::MAX)).contains(n) {
-                            return Err(format!(
-                                "`sqlite.data_version`: giá trị {n} ngoài phạm vi 0..={} \
+                        let (_e, _v, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            let [Value::Int(n)] = args.as_slice() else {
+                                unreachable!(
+                                    "mẫu `matches!` ở trên đã bảo đảm đúng một `Value::Int`"
+                                )
+                            };
+                            if !(0..=i64::from(i32::MAX)).contains(n) {
+                                return Err(format!(
+                                    "`sqlite.data_version`: giá trị {n} ngoài phạm vi 0..={} \
                              (bộ đếm data_version là số 32-bit có dấu)",
-                                i32::MAX
-                            ));
+                                    i32::MAX
+                                ));
+                            }
+                            Ok(*n)
                         }
-                        Ok(*n)
                     }
                     _ => {
                         Err("`sqlite.data_version`: `data_version` không phải INTEGER".to_string())
@@ -467,7 +493,7 @@ pub(crate) mod sqlitedataver {
         }
 
         fn int(n: i64) -> Value {
-            Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
+            Value::enum_val("SqlValue", "Integer", vec![Value::Int(n)])
         }
 
         #[test]
@@ -505,11 +531,7 @@ pub(crate) mod sqlitedataver {
             assert!(chay(&mut h, "db:x").is_err(), "2 ô ⇒ Err");
             let mut h = host(
                 &["data_version"],
-                vec![vec![Value::Enum(
-                    "SqlValue".into(),
-                    "Text".into(),
-                    Vec::new(),
-                )]],
+                vec![vec![Value::enum_val("SqlValue", "Text", Vec::new())]],
             );
             assert!(chay(&mut h, "db:x").is_err(), "Text ⇒ Err");
             let mut h = host(&["data_version"], vec![vec![Value::Int(1)]]);

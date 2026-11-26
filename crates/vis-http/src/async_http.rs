@@ -570,10 +570,10 @@ fn het_gio(st: &HttpAsync) -> Value {
 }
 
 fn nhan_ok(v: &Value) -> Option<&str> {
-    if let Value::Enum(ea, va, ag) = v {
+    if let Some((ea, va, ag)) = v.as_enum() {
         if ea == "Result" && va == "Ok" {
             if let Some(Value::Str(s)) = ag.first() {
-                return Some(s);
+                return Some(s.as_str());
             }
         }
     }
@@ -582,11 +582,11 @@ fn nhan_ok(v: &Value) -> Option<&str> {
 
 /// Bóc `message` của `Err(Error)` để nhận diện timeout do lớp reactor trả.
 fn la_het_gio(v: &Value) -> bool {
-    if let Value::Enum(ea, va, ag) = v {
+    if let Some((ea, va, ag)) = v.as_enum() {
         if ea == "Result" && va == "Err" {
-            if let Some(Value::Record(ten, fields)) = ag.first() {
-                if ten == "Error" {
-                    for (k, val) in fields {
+            if let Some(Value::Record(rec)) = ag.first() {
+                if rec.name == "Error" {
+                    for (k, val) in &rec.fields {
                         if k == "message" {
                             if let Value::Str(s) = val {
                                 return s.contains("quá thời gian");

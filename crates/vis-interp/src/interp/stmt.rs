@@ -47,12 +47,12 @@ impl<'a> Interp<'a> {
                 if let Some(e) = else_ {
                     let matched = if matches!(pat, HPat::Bind { .. }) {
                         match &v {
-                            Value::Enum(ea, va, ag)
-                                if ((ea == "Result" && va == "Ok")
-                                    || (ea == "Option" && va == "Some"))
-                                    && ag.len() == 1 =>
+                            Value::Enum(e)
+                                if ((e.enum_name == "Result" && e.variant == "Ok")
+                                    || (e.enum_name == "Option" && e.variant == "Some"))
+                                    && e.args.len() == 1 =>
                             {
-                                let payload = ag[0].clone();
+                                let payload = e.args.get(0).expect("độ dài 1").clone();
                                 self.bind_pat(pat, &payload);
                                 true
                             }

@@ -10,31 +10,31 @@
 use crate::value::Value;
 
 fn json_null() -> Value {
-    Value::Enum("Json".into(), "Null".into(), Vec::new())
+    Value::enum_val("Json", "Null", Vec::new())
 }
 
 fn json_num_int(n: i64) -> Value {
-    Value::Enum("Json".into(), "Num".into(), vec![Value::Int(n)])
+    Value::enum_val("Json", "Num", vec![Value::Int(n)])
 }
 
 fn json_num_float(f: f64) -> Value {
-    Value::Enum("Json".into(), "Num".into(), vec![Value::Float(f)])
+    Value::enum_val("Json", "Num", vec![Value::Float(f)])
 }
 
 fn json_str(s: String) -> Value {
-    Value::Enum("Json".into(), "Str".into(), vec![Value::Str(s)])
+    Value::enum_val("Json", "Str", vec![Value::Str(s)])
 }
 
 fn json_bool(b: bool) -> Value {
-    Value::Enum("Json".into(), "Bool".into(), vec![Value::Bool(b)])
+    Value::enum_val("Json", "Bool", vec![Value::Bool(b)])
 }
 
 fn json_arr(xs: Vec<Value>) -> Value {
-    Value::Enum("Json".into(), "Arr".into(), vec![Value::list(xs)])
+    Value::enum_val("Json", "Arr", vec![Value::list(xs)])
 }
 
 fn json_obj(kv: Vec<(Value, Value)>) -> Value {
-    Value::Enum("Json".into(), "Obj".into(), vec![Value::map(kv)])
+    Value::enum_val("Json", "Obj", vec![Value::map(kv)])
 }
 
 struct P<'a> {
@@ -125,12 +125,12 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
             _ => return Err(format!("to_json: cần percent, được {}", v.show())),
         },
         b'j' => v.clone(),
-        b'O' => match v {
-            Value::Enum(ea, va, ag) if ea == "Option" && va == "None" && ag.is_empty() => {
+        b'O' => match v.as_enum() {
+            Some((ea, va, ag)) if ea == "Option" && va == "None" && ag.is_empty() => {
                 skip_desc(p)?;
                 json_null()
             }
-            Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
+            Some((ea, va, ag)) if ea == "Option" && va == "Some" && ag.len() == 1 => {
                 to_json_p(&ag[0], p)?
             }
             _ => return Err(format!("to_json: cần Option, được {}", v.show())),
@@ -167,7 +167,7 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
             json_obj(out)
         }
         b'R' => {
-            let Value::Enum(ea, va, ag) = v else {
+            let Some((ea, va, ag)) = v.as_enum() else {
                 return Err(format!("to_json: cần Result, được {}", v.show()));
             };
             if ea != "Result" || ag.len() != 1 {
@@ -182,9 +182,10 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
         b'T' => {
             let name = p.name(b"{")?;
             p.eat(b'{')?;
-            let Value::Record(_rn, fields) = v else {
+            let Some(rec) = v.as_record() else {
                 return Err(format!("to_json: cần record {name}, được {}", v.show()));
             };
+            let fields = &rec.fields;
             let mut out = Vec::new();
             while *p.s.get(p.i).unwrap_or(&b'}') != b'}' {
                 let fn_ = p.name(b":")?;
@@ -203,7 +204,7 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
         b'E' => {
             let name = p.name(b"{")?;
             p.eat(b'{')?;
-            let Value::Enum(en, va, ag) = v else {
+            let Some((en, va, ag)) = v.as_enum() else {
                 return Err(format!("to_json: cần enum {name}, được {}", v.show()));
             };
             if en != &name {
@@ -307,36 +308,36 @@ fn loi(kind: &str, got: &Value) -> String {
 fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
     let t = p.tag()?;
     Ok(match t {
-        b'i' | b'z' | b'd' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
+        b'i' | b'z' | b'd' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
                 Value::Int(n) => Value::Int(*n),
                 Value::Float(f) if f.fract() == 0.0 => Value::Int(*f as i64),
                 _ => return Err(loi("int", j)),
             },
             _ => return Err(loi("int", j)),
         },
-        b'f' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
+        b'f' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
                 Value::Int(n) => Value::Float(*n as f64),
                 Value::Float(f) => Value::Float(*f),
                 _ => return Err(loi("float", j)),
             },
             _ => return Err(loi("float", j)),
         },
-        b's' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Str" && a.len() == 1 => a[0].clone(),
+        b's' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Str" && a.len() == 1 => a[0].clone(),
             _ => return Err(loi("str", j)),
         },
-        b'b' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Bool" && a.len() == 1 => a[0].clone(),
+        b'b' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Bool" && a.len() == 1 => a[0].clone(),
             _ => return Err(loi("bool", j)),
         },
-        b'y' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
+        b'y' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
                 Value::List(xs) => {
                     let mut out = Vec::with_capacity(xs.len());
                     for x in xs.iter() {
-                        let Value::Enum(_, _, ax) = x else {
+                        let Some((_, _, ax)) = x.as_enum() else {
                             return Err(loi("bytes", j));
                         };
                         let Value::Int(n) = ax.first().cloned().unwrap_or(Value::Unit) else {
@@ -350,23 +351,23 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             },
             _ => return Err(loi("bytes", j)),
         },
-        b'h' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Str" && a.len() == 1 => match &a[0] {
+        b'h' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Str" && a.len() == 1 => match &a[0] {
                 Value::Str(s) => Value::Path(s.clone()),
                 _ => return Err(loi("path", j)),
             },
             _ => return Err(loi("path", j)),
         },
-        b'c' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Str" && a.len() == 1 => match &a[0] {
+        b'c' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Str" && a.len() == 1 => match &a[0] {
                 Value::Str(s) if s.chars().count() == 1 => Value::Char(s.chars().next().unwrap()),
                 _ => return Err(loi("char", j)),
             },
             _ => return Err(loi("char", j)),
         },
         b'u' => Value::Unit,
-        b'p' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
+        b'p' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Num" && a.len() == 1 => match &a[0] {
                 Value::Int(n) => Value::Percent(*n as f64),
                 Value::Float(f) => Value::Percent(*f),
                 _ => return Err(loi("percent", j)),
@@ -374,8 +375,8 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             _ => return Err(loi("percent", j)),
         },
         b'j' => j.clone(),
-        b'O' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Null" && a.is_empty() => {
+        b'O' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Null" && a.is_empty() => {
                 skip_desc(p)?;
                 Value::none()
             }
@@ -385,8 +386,8 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             let st = p.i;
             skip_desc(p)?;
             let sub = std::str::from_utf8(&p.s[st..p.i]).map_err(|_| "descriptor lỗi")?;
-            match j {
-                Value::Enum(e, v, a) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
+            match j.as_enum() {
+                Some((e, v, a)) if e == "Json" && v == "Arr" && a.len() == 1 => match &a[0] {
                     Value::List(xs) => {
                         let mut out = Vec::with_capacity(xs.len());
                         for x in xs.iter() {
@@ -406,8 +407,8 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             let st = p.i;
             skip_desc(p)?;
             let vs = std::str::from_utf8(&p.s[st..p.i]).map_err(|_| "descriptor lỗi")?;
-            match j {
-                Value::Enum(e, v, a) if e == "Json" && v == "Obj" && a.len() == 1 => match &a[0] {
+            match j.as_enum() {
+                Some((e, v, a)) if e == "Json" && v == "Obj" && a.len() == 1 => match &a[0] {
                     Value::Map(kv) => {
                         let mut out = Vec::with_capacity(kv.len());
                         for (k, val) in kv.iter() {
@@ -422,11 +423,11 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                 _ => return Err(loi("map", j)),
             }
         }
-        b'R' => match j {
-            Value::Enum(e, v, a) if e == "Json" && v == "Obj" && a.len() == 1 => match &a[0] {
+        b'R' => match j.as_enum() {
+            Some((e, v, a)) if e == "Json" && v == "Obj" && a.len() == 1 => match &a[0] {
                 Value::Map(kv) if kv.len() == 1 => {
                     let (k, val) = &kv[0];
-                    let Value::Enum(_, kvn, _) = k else {
+                    let Some((_, kvn, _)) = k.as_enum() else {
                         return Err(loi("Result", j));
                     };
                     if kvn == "Ok" {
@@ -442,7 +443,7 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
         b'T' => {
             let name = p.name(b"{")?;
             p.eat(b'{')?;
-            let Value::Enum(e, v, a) = j else {
+            let Some((e, v, a)) = j.as_enum() else {
                 return Err(loi(&name, j));
             };
             if e != "Json" || v != "Obj" || a.len() != 1 {
@@ -456,7 +457,7 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                 let fn_ = p.name(b":")?;
                 p.eat(b':')?;
                 let Some((_, jv)) = kv.iter().find(|(k, _)| {
-                    matches!(k, Value::Enum(e, v, a)
+                    matches!(k.as_enum(), Some((e, v, a))
                         if e == "Json" && v == "Str" && a.len() == 1 && matches!(&a[0], Value::Str(s) if s == &fn_))
                 }) else {
                     // trường Option thiếu ⇒ None (hợp đồng default); trường khác ⇒ lỗi.
@@ -477,7 +478,7 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                 }
             }
             p.eat(b'}')?;
-            Value::Record(String::new(), out)
+            Value::record(String::new(), out)
         }
         b'E' => {
             let name = p.name(b"{")?;
@@ -507,14 +508,14 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
             }
             p.eat(b'}')?;
             // `Json.Str("Variant")` cho unit; `Json.Obj({"Variant": payload})` cho có payload.
-            match j {
-                Value::Enum(e, v, a) if e == "Json" && v == "Str" && a.len() == 1 => {
+            match j.as_enum() {
+                Some((e, v, a)) if e == "Json" && v == "Str" && a.len() == 1 => {
                     let Value::Str(vn) = &a[0] else {
                         return Err(loi(&name, j));
                     };
-                    Value::Enum(name.into(), vn.as_str().into(), Vec::new())
+                    Value::enum_val(name.clone(), vn.as_str(), Vec::new())
                 }
-                Value::Enum(e, v, a) if e == "Json" && v == "Obj" && a.len() == 1 => {
+                Some((e, v, a)) if e == "Json" && v == "Obj" && a.len() == 1 => {
                     let Value::Map(kv) = &a[0] else {
                         return Err(loi(&name, j));
                     };
@@ -522,7 +523,7 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                         return Err(loi(&name, j));
                     }
                     let (k, val) = &kv[0];
-                    let Value::Enum(_, kvn, ka) = k else {
+                    let Some((_, kvn, ka)) = k.as_enum() else {
                         return Err(loi(&name, j));
                     };
                     if kvn != "Str" || ka.len() != 1 {
@@ -534,9 +535,10 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                     // Tìm descriptor biến thể trong enum descriptor.
                     let desc = std::str::from_utf8(p.s).map_err(|_| "descriptor lỗi")?;
                     let sub = variant_desc(desc, vn)?;
-                    let val = if matches!(val, Value::Enum(e, v, _) if e == "Json" && v == "Arr") {
-                        match val {
-                            Value::Enum(_, _, xs) => match &xs[0] {
+                    let val = if matches!(val.as_enum(), Some((e, v, _)) if e == "Json" && v == "Arr")
+                    {
+                        match val.as_enum() {
+                            Some((_, _, xs)) => match &xs[0] {
                                 Value::List(items) => {
                                     let parts: Vec<&str> = sub.split('|').collect();
                                     let mut out = Vec::new();
@@ -546,14 +548,14 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                                             parts.get(i).copied().unwrap_or("_"),
                                         )?);
                                     }
-                                    Value::Enum(name.into(), vn.as_str().into(), out)
+                                    Value::enum_val(name.clone(), vn.as_str(), out)
                                 }
                                 _ => return Err(loi(&name, j)),
                             },
                             _ => return Err(loi(&name, j)),
                         }
                     } else {
-                        Value::Enum(name.into(), vn.as_str().into(), vec![from_json(val, &sub)?])
+                        Value::enum_val(name.clone(), vn.as_str(), vec![from_json(val, &sub)?])
                     };
                     val
                 }
