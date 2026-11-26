@@ -22,7 +22,7 @@ giá trị, test khoá 66/66 chỉ tìm chuỗi trong cả tệp. Báo cáo:
 | **F1** `fs` 0 ca lỗi | **Đóng**: `fs_loi_moi_ham_parity` — **17 ca lỗi** in nguyên văn `e.message` |
 | **F2** `net` chỉ so nhãn | **Đóng**: mọi nhánh `Err` in `e.message`; timeout/handle xuất hiện trong chuỗi ghim |
 | **F3** 8 hàm `fs` không assert | **Đóng**: cả 20 hàm `fs` assert giá trị; nội dung sau `write`/`write_bytes`/`append`/`copy` được đọc lại và so |
-| **F4** khoá 66/66 tìm chuỗi cả tệp | **Đóng**: chỉ xét **script thật** trong `SRC_PHU`, bỏ chú thích `#`; có self-test |
+| **F4** khoá 66/66 tìm chuỗi cả tệp | **Đóng**: chỉ xét **script thật** trong `SRC_PHU`, bỏ chú thích `#`; có self-test. **Hợp đồng**: mỗi hàm cần ≥ 1 lời gọi thật; xoá **toàn bộ** lời gọi của một hàm ⇒ đỏ, xoá một bản trùng vẫn xanh nhưng test hành vi `fs_20`/nhóm tương ứng sẽ đỏ nếu mất hành vi |
 | **F5** journal khai quá mức | **Đóng**: tệp này thay bản cũ |
 | **F7** dọn tempdir khi đỏ | **Đóng**: `struct Tam` + `Drop` (RAII) |
 | **F8** cổng cố định `127.0.0.1:1` | **Đóng**: bind `:0` rồi `drop` cho mọi ca "cổng đóng" (net + http) |
@@ -52,11 +52,11 @@ giá trị, test khoá 66/66 chỉ tìm chuỗi trong cả tệp. Báo cáo:
   | `phu_du_66_ham_host` | `HOST_66` ↔ `StdId::ALL` | khoá 66 |
   | `moi_ham_host_co_loi_goi_trong_harness` | 66 tên phải có lời gọi trong `SRC_PHU` (đã bỏ chú thích) | khoá 66 |
   | `bo_chu_thich_vis_khong_tinh_lenh_bi_comment` | self-test bộ bóc chú thích | — |
-- **Ca lỗi từng nhóm** (không còn nhóm nào 0 ca lỗi):
+- **Ca lỗi từng nhóm** (trừ `time` — chỉ bất biến `>= 0`, không có nhánh lỗi):
   - `fs`: 17 ca, Unix ghim **toàn bộ** thông điệp sau khi thay tempdir bằng `<W>` (ví dụ
     `read=không đọc được `<W>/khong-co.txt`: No such file or directory (os error 2)`,
     `append=… Is a directory (os error 21)`); nền tảng khác đòi 17 nhãn + thông điệp chứa `<W>`.
-  - `net`: 8 nhánh lỗi in **nguyên văn** `e.message` (listen trùng cổng, `accept_timeout` 80 ms,
+  - `net`: **các nhánh lỗi** in **nguyên văn** `e.message` (listen trùng cổng, `accept_timeout` 80 ms,
     đọc/ghi sau `close`, `close_listen` lần 2, `accept`/`local_addr` sau đóng, tay `C99`, connect
     bị từ chối). Cổng ephemeral chuẩn hoá thành `127.0.0.1:<P>`; phần còn lại ghim từng byte.
   - `sqlite`: SQL sai, thiếu/thừa tham số, `begin` lồng, `commit` ngoài transaction, handle sau

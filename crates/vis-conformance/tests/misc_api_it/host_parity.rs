@@ -496,9 +496,12 @@ fn main():
     match fs.current_dir():
         Ok(p):
             print("cwd-khong-rong=" + str(p.len() > 0))
-            match fs.canonicalize("."):
-                Ok(q): print("cwd-khop=" + str(p == q))
-                Err(e): print("cwd-khop loi=" + e.message)
+            match fs.canonicalize(p):
+                Ok(cp):
+                    match fs.canonicalize("."):
+                        Ok(q): print("cwd-khop=" + str(cp == q))
+                        Err(e): print("cwd-khop loi=" + e.message)
+                Err(e): print("cwd-canon loi=" + e.message)
         Err(e): print("cwd loi=" + e.message)
     match fs.remove(d + "/mv.txt"):
         Ok(_): print("remove ok")
