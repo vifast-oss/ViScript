@@ -171,7 +171,7 @@ impl ProtoValue {
                     .map(Self::to_value)
                     .collect::<Result<Vec<_>, _>>()?,
             ),
-            Self::Map(kv) => V::Map(
+            Self::Map(kv) => V::map(
                 kv.iter()
                     .map(|(k, v)| Ok((Self::to_value(k)?, Self::to_value(v)?)))
                     .collect::<Result<Vec<_>, String>>()?,
@@ -295,7 +295,7 @@ impl SendValue {
             SendValue::List(xs) => {
                 vis_core::value::Value::List(xs.iter().map(SendValue::to_value).collect())
             }
-            SendValue::Map(kv) => vis_core::value::Value::Map(
+            SendValue::Map(kv) => vis_core::value::Value::map(
                 kv.iter()
                     .map(|(k, v)| (k.to_value(), v.to_value()))
                     .collect(),

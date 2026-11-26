@@ -181,7 +181,7 @@ pub fn doc_lock(duong: &Path, bat_buoc: bool) -> Result<Khoa, String> {
         let Value::Map(rm) = rv else {
             return Err("`vis.lock` hỏng: `roots` phải là object".to_string());
         };
-        for (k, v) in rm {
+        for (k, v) in rm.iter() {
             let Some(ten) = chuoi(k) else {
                 return Err("`vis.lock` hỏng: tên trong `roots` phải là chuỗi".to_string());
             };

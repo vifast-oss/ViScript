@@ -85,17 +85,13 @@ pub(super) fn index(base: &Value, idx: &Value, span: Span) -> R<Value> {
             }
             Ok(Value::Int(bs[*i as usize] as i64))
         }
-        (Value::Map(kv), k) => kv
-            .iter()
-            .find(|(kk, _)| value::eq(kk, k))
-            .map(|(_, v)| v.clone())
-            .ok_or_else(|| {
-                Abort::Trap(Trap::new(
-                    IDX,
-                    format!("khoá `{}` không có trong map", k.show()),
-                    span,
-                ))
-            }),
+        (Value::Map(kv), k) => kv.get(k).cloned().ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                IDX,
+                format!("khoá `{}` không có trong map", k.show()),
+                span,
+            ))
+        }),
         (other, idx) => Err(Abort::Trap(Trap::new(
             RT,
             format!("không chỉ số được `{}` bằng `{}`", other.show(), idx.show()),
@@ -120,12 +116,9 @@ pub(super) fn set(base: &Value, idx: &Value, v: Value, span: Span) -> R<Value> {
             }
         }
         (Value::Map(kv), k) => {
+            // **ST-315b**: `Rc::make_mut` — chỉ chép map khi đang chia sẻ; last-wins tại chỗ.
             let mut kv = kv.clone();
-            if let Some(e) = kv.iter_mut().find(|(kk, _)| value::eq(kk, k)) {
-                e.1 = v;
-            } else {
-                kv.push((k.clone(), v));
-            }
+            std::rc::Rc::make_mut(&mut kv).insert(k.clone(), v);
             Ok(Value::Map(kv))
         }
         _ => Err(Abort::Trap(Trap::new(RT, "gán chỉ số không hợp lệ", span))),
@@ -164,11 +157,7 @@ pub(super) fn index_opt(base: &Value, idx: &Value) -> Value {
         (Value::Bytes(bs), Value::Int(i)) if *i >= 0 => {
             Value::opt(bs.get(*i as usize).map(|b| Value::Int(*b as i64)))
         }
-        (Value::Map(kv), k) => Value::opt(
-            kv.iter()
-                .find(|(kk, _)| kk.eq_value(k))
-                .map(|(_, v)| v.clone()),
-        ),
+        (Value::Map(kv), k) => Value::opt(kv.get(k).cloned()),
         _ => Value::none(),
     }
 }

@@ -34,7 +34,7 @@ fn json_arr(xs: Vec<Value>) -> Value {
 }
 
 fn json_obj(kv: Vec<(Value, Value)>) -> Value {
-    Value::Enum("Json".into(), "Obj".into(), vec![Value::Map(kv)])
+    Value::Enum("Json".into(), "Obj".into(), vec![Value::map(kv)])
 }
 
 struct P<'a> {
@@ -159,7 +159,7 @@ fn to_json_p(v: &Value, p: &mut P<'_>) -> Result<Value, String> {
             skip_desc(p)?;
             let vs = std::str::from_utf8(&p.s[st..p.i]).map_err(|_| "descriptor lỗi")?;
             let mut out = Vec::with_capacity(kv.len());
-            for (k, val) in kv {
+            for (k, val) in kv.iter() {
                 let kj = to_json(k, ks)?;
                 let vj = to_json(val, vs)?;
                 out.push((kj, vj));
@@ -410,12 +410,12 @@ fn from_json_p(j: &Value, p: &mut P<'_>) -> Result<Value, String> {
                 Value::Enum(e, v, a) if e == "Json" && v == "Obj" && a.len() == 1 => match &a[0] {
                     Value::Map(kv) => {
                         let mut out = Vec::with_capacity(kv.len());
-                        for (k, val) in kv {
+                        for (k, val) in kv.iter() {
                             let k = from_json(k, ks)?;
                             let val = from_json(val, vs)?;
                             out.push((k, val));
                         }
-                        Value::Map(out)
+                        Value::map(out)
                     }
                     _ => return Err(loi("map", j)),
                 },

@@ -42,3 +42,13 @@
 - Trước vá: VM **610 ms** (cùng máy, `de-xuat-truc-ke-tiep-2026-11-25.md` §1b) ⇒ giảm **44 %**;
   overhead charge còn **~2 ms** so với `--unlimited-budget`.
 - KPI `VM ≤ interp + 5%` (≤ 345,45 ms): **PASS** (344 ms). Log: `/home/ps/vislogs/st315a_opt_bench.md`.
+
+## 4. Hậu-kiểm R-A (`review/r315a`, `96c6ad45`)
+
+- **PASS** — differential 25 bảng phí ngẫu nhiên so thuật toán cũ khớp 100 %; 11 mốc trap
+  (`VS0510`, trace đúng tiền tố, `budget_used` loại đúng sự kiện bị trap); `MAX_PER_PC=16`;
+  pc vượt `code.len()`; stale index khi `budget_enable` lại; frame/async `spawn`/`await`;
+  `budget_fee=None`; verify lỗi; nhiều lần chạy cùng Vm.
+- Engine-only 45 cặp xen kẽ: interp 312,3 / VM 320,1 ms ⇒ **+2,7 %**, overhead charge +3,9 ms.
+- **F2 (đã bổ sung `54597d30`)**: ca `chi_muc_phi_chan_max_per_pc_va_trap_giua_nhom`.
+- F1 (bộ nhớ `budget_idx` 8 B/lệnh) và F3 (báo cáo 0 cho lần không phí) là ghi nhận **không chặn**.

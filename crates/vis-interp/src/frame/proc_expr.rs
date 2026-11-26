@@ -87,16 +87,14 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
         Work::BuildMap { n } => {
             let mut flat = pop_n(frame, n * 2)?;
             flat.reverse();
-            let mut kv: Vec<(Value, Value)> = Vec::new();
+            // **ST-315b**: gộp last-wins **một nguồn** ở `VisMap::from_pairs` (bỏ quét O(N²));
+            // thứ tự chèn và khoá gốc giữ nguyên như `Vec` cũ.
             let mut it = flat.into_iter();
+            let mut kv: Vec<(Value, Value)> = Vec::with_capacity(it.len() / 2);
             while let (Some(k), Some(v)) = (it.next(), it.next()) {
-                if let Some(e) = kv.iter_mut().find(|(kk, _)| kk.eq_value(&k)) {
-                    e.1 = v;
-                } else {
-                    kv.push((k, v));
-                }
+                kv.push((k, v));
             }
-            frame.push_val(Value::Map(kv));
+            frame.push_val(Value::map(kv));
             Ok(())
         }
         Work::EvalRecordFields { fields, idx, span } => {
@@ -816,11 +814,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                 (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => {
                     Value::opt(bs.get(*n as usize).map(|x| Value::Int(*x as i64)))
                 }
-                (Value::Map(kv), k) => Value::opt(
-                    kv.iter()
-                        .find(|(kk, _)| kk.eq_value(k))
-                        .map(|(_, v)| v.clone()),
-                ),
+                (Value::Map(kv), k) => Value::opt(kv.get(k).cloned()),
                 _ => Value::none(),
             };
             let _ = span;

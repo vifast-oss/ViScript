@@ -9,7 +9,7 @@
 use vis_core::value::{eq, Value};
 
 fn m(kv: Vec<(Value, Value)>) -> Value {
-    Value::Map(kv)
+    Value::map(kv)
 }
 
 /// Đệm 120 khoá Int phân biệt (`100_000 + i`) để tổng entry hai vế vượt ngưỡng đường nhanh.

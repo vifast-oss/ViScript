@@ -7,7 +7,7 @@ use vis_syntax::Span;
 
 use crate::codes::{OVERFLOW, RT};
 use vis_core::trap::Abort;
-use vis_core::value::Value;
+use vis_core::value::{Value, VisMap};
 
 use super::{bin, call, trap, Host};
 
@@ -197,7 +197,7 @@ fn str_method(
 
 fn map_method(
     _host: &mut dyn Host,
-    kv: Vec<(Value, Value)>,
+    kv: std::rc::Rc<VisMap>,
     name: &str,
     args: Vec<Value>,
     span: Span,
@@ -209,20 +209,17 @@ fn map_method(
             let Some(k) = args.first() else {
                 return Err(trap(RT, "`get` cần 1 khoá", span));
             };
-            Ok(Value::opt(
-                kv.iter()
-                    .find(|(kk, _)| kk.eq_value(k))
-                    .map(|(_, v)| v.clone()),
-            ))
+            // **ST-315b**: tra chỉ mục băm O(1) khi map đủ lớn (không chép map, không quét N).
+            Ok(Value::opt(kv.get(k).cloned()))
         }
         "has" => {
             let Some(k) = args.first() else {
                 return Err(trap(RT, "`has` cần 1 khoá", span));
             };
-            Ok(Value::Bool(kv.iter().any(|(kk, _)| kk.eq_value(k))))
+            Ok(Value::Bool(kv.contains_key(k)))
         }
-        "keys" => Ok(Value::List(kv.into_iter().map(|(k, _)| k).collect())),
-        "values" => Ok(Value::List(kv.into_iter().map(|(_, v)| v).collect())),
+        "keys" => Ok(Value::List(kv.keys().cloned().collect())),
+        "values" => Ok(Value::List(kv.values().cloned().collect())),
         other => Err(trap(
             RT,
             format!("`map.{other}()` chưa hỗ trợ (danh sách: len get has keys values)"),

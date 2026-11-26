@@ -337,12 +337,12 @@ pub(crate) fn goi(host: &mut dyn Host, id: StdId, args: &[Value], span: Span) ->
             }
             let host = host.net().ok_or_else(|| khong_host(name, span))?;
             let kq = vis_http::http_head(host, url, timeout.max(0) as u64).map(|(st, hs)| {
-                let headers = Value::Map(
+                let headers = Value::map(
                     hs.into_iter()
                         .map(|(k, v)| (Value::Str(k), Value::Str(v)))
                         .collect(),
                 );
-                Value::Map(vec![
+                Value::map(vec![
                     (Value::Str("status".to_string()), Value::Int(st as i64)),
                     (Value::Str("headers".to_string()), headers),
                 ])

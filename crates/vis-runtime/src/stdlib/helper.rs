@@ -316,7 +316,7 @@ pub(crate) mod chung {
         v: &'a Value,
         i: usize,
         span: Span,
-    ) -> Result<&'a [(Value, Value)], Abort> {
+    ) -> Result<&'a vis_core::value::VisMap, Abort> {
         match v {
             Value::Map(kv) => Ok(kv),
             other => Err(loi(

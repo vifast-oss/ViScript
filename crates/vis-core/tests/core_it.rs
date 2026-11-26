@@ -20,7 +20,7 @@ fn json_roundtrip_va_escape_duy_nhat() {
     let decoded = decode(&da_esc).expect("json::esc phải giải mã được bằng json::decode");
     assert!(eq(&decoded, &Value::Str(mau.to_string())));
 
-    let obj = Value::Map(vec![
+    let obj = Value::map(vec![
         (Value::Str("ten".into()), Value::Str(mau.into())),
         (Value::Str("so".into()), Value::Int(42)),
         (Value::Str("ok".into()), Value::Bool(true)),
@@ -56,6 +56,34 @@ fn value_parse_size_duration_va_exit_code() {
         vis_core::exit_code(&Value::err(Value::Str("lỗi".into()))),
         1
     );
+}
+
+#[test]
+fn value_kich_thuoc_va_map_cow() {
+    // **ST-315b (VD-291 §3.2 / VD-03)**: khoá kích thước `Value` — `Map` chỉ giữ một `Rc`
+    // (8 B), không nhúng `Vec` (24 B) vào biến thể.
+    assert!(
+        std::mem::size_of::<Value>() <= 64,
+        "Value phình: {} B",
+        std::mem::size_of::<Value>()
+    );
+
+    // CoW: `Value::clone` chỉ tăng refcount; ghi qua `Rc::make_mut` không đụng bản gốc.
+    let a = Value::map(vec![
+        (Value::Str("a".into()), Value::Int(1)),
+        (Value::Str("b".into()), Value::Int(2)),
+    ]);
+    let b = a.clone();
+    match (&a, &b) {
+        (Value::Map(ra), Value::Map(rb)) => assert!(std::rc::Rc::ptr_eq(ra, rb)),
+        _ => panic!("phải là map"),
+    }
+    let mut bm = b;
+    if let Value::Map(rc) = &mut bm {
+        std::rc::Rc::make_mut(rc).insert(Value::Str("a".into()), Value::Int(9));
+    }
+    assert_eq!(show(&a), "{\"a\": 1, \"b\": 2}");
+    assert_eq!(show(&bm), "{\"a\": 9, \"b\": 2}");
 }
 
 #[test]

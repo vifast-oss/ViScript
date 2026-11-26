@@ -96,12 +96,21 @@ pub fn iter_items(it: Value, span: vis_syntax::Span) -> vis_core::trap::R<ForIte
         Value::Str(s) => {
             ForIterKind::Items(s.chars().map(Value::Char).collect::<Vec<_>>().into_iter())
         }
-        Value::Map(kv) => ForIterKind::Items(
-            kv.into_iter()
-                .map(|(k, v)| Value::List(vec![k, v]))
-                .collect::<Vec<_>>()
-                .into_iter(),
-        ),
+        Value::Map(kv) => {
+            // **ST-315b**: `Rc<VisMap>` — bóc khi không chia sẻ để khỏi chép entry, còn lại
+            // chép N cặp **một lần** cho vòng `for` (như `Vec` cũ).
+            let entries = match std::rc::Rc::try_unwrap(kv) {
+                Ok(m) => m.into_entries(),
+                Err(rc) => rc.iter().cloned().collect(),
+            };
+            ForIterKind::Items(
+                entries
+                    .into_iter()
+                    .map(|(k, v)| Value::List(vec![k, v]))
+                    .collect::<Vec<_>>()
+                    .into_iter(),
+            )
+        }
         other => {
             return Err(vis_core::trap::Abort::Trap(vis_core::trap::Trap::new(
                 crate::codes::RT,

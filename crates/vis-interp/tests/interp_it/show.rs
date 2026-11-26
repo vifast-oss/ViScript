@@ -109,7 +109,7 @@ fn snapshot_show_percent() {
 fn snapshot_show_hop_va_kieu_nguoi_dung() {
     assert_eq!(f(Value::List(vec![Value::Int(1), Value::Int(2)])), "[1, 2]");
     assert_eq!(
-        f(Value::Map(vec![
+        f(Value::map(vec![
             (Value::Str("a".into()), Value::Int(1)),
             (Value::Str("b".into()), Value::Int(2)),
         ])),

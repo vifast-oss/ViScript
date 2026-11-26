@@ -362,16 +362,13 @@ impl<'m> Th<'m> {
                     // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins, khớp interp —
                     // mỗi khoá một entry (giữ giá trị cuối, vị trí chèn đầu).
                     let flat = self.pop_n(vm, 2 * n as usize, span)?;
-                    let mut pairs: Vec<(Value, Value)> = Vec::with_capacity(n as usize);
+                    // **ST-315b**: gộp last-wins **một nguồn** ở `VisMap::from_pairs`.
                     let mut it = flat.into_iter();
+                    let mut pairs: Vec<(Value, Value)> = Vec::with_capacity(n as usize);
                     while let (Some(k), Some(v)) = (it.next(), it.next()) {
-                        if let Some(e) = pairs.iter_mut().find(|(kk, _)| value::eq(kk, &k)) {
-                            e.1 = v;
-                        } else {
-                            pairs.push((k, v));
-                        }
+                        pairs.push((k, v));
                     }
-                    self.st.push(Value::Map(pairs));
+                    self.st.push(Value::map(pairs));
                 }
                 Instr::MakeRecord(t, n) => {
                     let ten = vm.ten(t, span)?;

@@ -230,17 +230,12 @@ impl<'a> Interp<'a> {
             HExpr::Map { entries, .. } => {
                 // **ST-239 (VD-242 §3.4, ca 170)**: runtime last-wins — mỗi khoá một entry,
                 // giữ giá trị cuối và vị trí chèn đầu. Khoá trùng **tĩnh** đã bị checker chặn.
-                let mut kv: Vec<(Value, Value)> = Vec::new();
+                // **ST-315b**: gộp last-wins **một nguồn** ở `VisMap::from_pairs` (bỏ quét O(N²)).
+                let mut kv: Vec<(Value, Value)> = Vec::with_capacity(entries.len());
                 for (k, v) in entries {
-                    let kk = self.eval(k)?;
-                    let vv = self.eval(v)?;
-                    if let Some(e) = kv.iter_mut().find(|(kk2, _)| kk2.eq_value(&kk)) {
-                        e.1 = vv;
-                    } else {
-                        kv.push((kk, vv));
-                    }
+                    kv.push((self.eval(k)?, self.eval(v)?));
                 }
-                Ok(Value::Map(kv))
+                Ok(Value::map(kv))
             }
             HExpr::Record { fields, ty, span } => {
                 let name = self.type_name(ty);
@@ -333,11 +328,7 @@ impl<'a> Interp<'a> {
                     (Value::Bytes(bs), Value::Int(n)) if *n >= 0 => {
                         Value::opt(bs.get(*n as usize).map(|x| Value::Int(*x as i64)))
                     }
-                    (Value::Map(kv), k) => Value::opt(
-                        kv.iter()
-                            .find(|(kk, _)| kk.eq_value(k))
-                            .map(|(_, v)| v.clone()),
-                    ),
+                    (Value::Map(kv), k) => Value::opt(kv.get(k).cloned()),
                     _ => Value::none(),
                 })
             }

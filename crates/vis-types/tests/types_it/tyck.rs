@@ -438,6 +438,21 @@ fn const_scc_lon_chi_mot_chan_doan_co_tran() {
     );
 }
 
+#[test]
+fn const_hai_scc_roi_chan_doan_theo_thu_tu_nguon() {
+    // **ST-315d review F8** — hai SCC rời xen kẽ (A↔C ở dòng 1/3, B↔D ở dòng 2/4);
+    // chẩn đoán phải theo **span nguồn** A, B, C, D — không theo thứ tự hoàn tất SCC.
+    let (out, _) = run(
+        "const A: int = C\nconst B: int = D\nconst C: int = A\nconst D: int = B\nfn main():\n    print(A + B)\n",
+    );
+    assert_eq!(out.diags.len(), 4, "hai SCC rời phải 4 chẩn đoán");
+    let spans: Vec<usize> = out.diags.iter().map(|d| d.span.start).collect();
+    let mut sap = spans.clone();
+    sap.sort_unstable();
+    assert_eq!(spans, sap, "chẩn đoán phải tăng theo span nguồn: {spans:?}");
+    assert_eq!(out.codes(), vec!["VS0304", "VS0304", "VS0304", "VS0304"]);
+}
+
 /// Tổng số ca phải ≥ 80 (tiêu chí ST-12) — giảm là đỏ.
 #[test]
 fn du_80_ca() {

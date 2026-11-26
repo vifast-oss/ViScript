@@ -87,7 +87,7 @@ fn gia_tri_mau() -> Vec<Value> {
         Value::Str("x".into()),
         Value::Bytes(vec![1, 2]),
         Value::List(vec![Value::Int(1), Value::Int(2)]),
-        Value::Map(vec![(Value::Int(1), Value::Int(2))]),
+        Value::map(vec![(Value::Int(1), Value::Int(2))]),
         Value::Record("R".into(), vec![("f".into(), Value::Int(1))]),
         Value::Unit,
         Value::Bool(true),
@@ -113,7 +113,7 @@ fn tao_map(lcg: &mut Lcg, ks: &[Value], vs: &[Value]) -> Value {
             )
         })
         .collect();
-    Value::Map(dem(kv))
+    Value::map(dem(kv))
 }
 
 #[test]
@@ -132,7 +132,9 @@ fn duong_nhanh_khop_logic_cu_tren_5000_ca_ngau_nhien() {
         // Đảo thứ tự entry của một vế: ánh xạ không đổi, kết quả phải không đổi.
         if lcg.next().is_multiple_of(2) {
             if let Value::Map(kv) = &mut b {
-                kv.reverse();
+                let mut entries = kv.as_slice().to_vec();
+                entries.reverse();
+                *kv = std::rc::Rc::new(vis_core::value::VisMap::from_pairs(entries));
             }
         }
         let cu = eq_map_cu(&a, &b);
