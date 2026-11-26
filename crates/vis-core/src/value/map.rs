@@ -15,9 +15,10 @@
 //!
 //! # Chỉ mục băm
 //!
-//! [`MapIndex`] chỉ dựng khi `entries.len() >= NGUONG_CHI_MUC` (map nhỏ như JSON-RPC của LSP
-//! không cấp phát thêm). Chỉ mục chỉ phủ khoá **vô hướng** — cùng hợp đồng băm với
-//! `bam_khoa_vo_huong` ở [`super::show_eq`] (`Int`/`Float`/`Percent` cùng miền số, `-0.0 ==
+//! [`MapIndex`] chỉ dựng khi `entries.len() >= NGUONG_CHI_MUC` **và** có ít nhất một khoá vô
+//! hướng (map nhỏ như JSON-RPC của LSP không cấp phát thêm; map toàn khoá phức tạp cũng **0
+//! alloc chỉ mục** — ST-315b review F2). Chỉ mục chỉ phủ khoá **vô hướng** — cùng hợp đồng băm
+//! với `bam_khoa_vo_huong` ở [`super::show_eq`] (`Int`/`Float`/`Percent` cùng miền số, `-0.0 ==
 //! +0.0`, trùng băm do bucket `eq_value` quyết). Khoá phức tạp (`List`/`Map`/`Record`/…) luôn
 //! rơi về quét tuyến tính, nên chỉ mục **không thể** trả sai.
 //!
@@ -49,13 +50,22 @@ pub struct MapIndex {
 }
 
 impl MapIndex {
-    /// Dựng chỉ mục cho `entries`; `None` khi dưới ngưỡng.
+    /// Dựng chỉ mục cho `entries`; `None` khi dưới ngưỡng **hoặc** toàn khoá không băm được
+    /// (**ST-315b review F2**): map chỉ có khoá phức tạp vẫn tra tuyến tính, nên dựng `dau`/`sau`
+    /// chỉ tốn bộ nhớ vô ích. `dau` cấp đúng số khoá vô hướng thay vì `entries.len()`.
     fn dung(entries: &[(Value, Value)]) -> Option<Box<MapIndex>> {
         if entries.len() < NGUONG_CHI_MUC {
             return None;
         }
+        let so_khoa_bam = entries
+            .iter()
+            .filter(|(k, _)| bam_khoa_vo_huong(k).is_some())
+            .count();
+        if so_khoa_bam == 0 {
+            return None;
+        }
         let mut ix = MapIndex {
-            dau: HashMap::with_capacity_and_hasher(entries.len(), BuildHasherDefault::default()),
+            dau: HashMap::with_capacity_and_hasher(so_khoa_bam, BuildHasherDefault::default()),
             sau: Vec::with_capacity(entries.len()),
         };
         for i in 0..entries.len() {
@@ -414,5 +424,59 @@ mod tests {
             .get(&Value::list(vec![Value::Int(1)]))
             .is_some_and(|v| v.eq_value(&Value::Int(7))));
         assert_eq!(m.len(), NGUONG_CHI_MUC + 1);
+    }
+
+    #[test]
+    fn toan_khoa_phuc_tap_khong_cap_chi_muc() {
+        // **ST-315b review F2**: N ≥ ngưỡng nhưng **mọi** khoá đều không băm được ⇒ tuyệt đối
+        // không dựng `dau`/`sau`; get/insert/remove vẫn đúng bằng quét tuyến tính.
+        let mut m =
+            VisMap::from_pairs((0..16).map(|i| (Value::list(vec![Value::Int(i)]), Value::Int(i))));
+        assert_eq!(m.len(), 16);
+        assert!(
+            !m.co_chi_muc(),
+            "toàn khoá phức tạp không được cấp phát chỉ mục"
+        );
+        assert!(m
+            .get(&Value::list(vec![Value::Int(3)]))
+            .is_some_and(|v| v.eq_value(&Value::Int(3))));
+        assert!(m
+            .insert(Value::list(vec![Value::Int(3)]), Value::Int(99))
+            .is_some_and(|v| v.eq_value(&Value::Int(3))));
+        assert_eq!(m.len(), 16, "insert khoá trùng không thêm entry");
+        assert!(
+            !m.co_chi_muc(),
+            "insert khoá phức tạp vẫn không dựng chỉ mục"
+        );
+        assert!(m
+            .remove(&Value::list(vec![Value::Int(5)]))
+            .is_some_and(|v| v.eq_value(&Value::Int(5))));
+        assert_eq!(m.len(), 15);
+        assert!(
+            !m.co_chi_muc(),
+            "remove không dựng chỉ mục cho khoá phức tạp"
+        );
+
+        // `merge` last-wins + nối cuối, vẫn không dựng chỉ mục khi mọi khoá phức tạp.
+        let khac =
+            VisMap::from_pairs((16..20).map(|i| (Value::list(vec![Value::Int(i)]), Value::Int(i))));
+        m.merge(&khac);
+        assert_eq!(m.len(), 19);
+        assert!(!m.co_chi_muc(), "merge khoá phức tạp không dựng chỉ mục");
+        assert!(m
+            .get(&Value::list(vec![Value::Int(19)]))
+            .is_some_and(|v| v.eq_value(&Value::Int(19))));
+        assert_eq!(
+            m.keys().map(Value::show).collect::<Vec<_>>()[15..],
+            ["[16]", "[17]", "[18]", "[19]"],
+            "merge nối khoá mới ở cuối, giữ thứ tự chèn"
+        );
+
+        // Có **một** khoá vô hướng ⇒ chỉ mục được dựng (không tắt chỉ mục vĩnh viễn).
+        m.insert(Value::Str("k".into()), Value::Int(1));
+        assert!(m.co_chi_muc(), "có khoá băm được phải dựng chỉ mục");
+        assert!(m
+            .get(&Value::Str("k".into()))
+            .is_some_and(|v| v.eq_value(&Value::Int(1))));
     }
 }
