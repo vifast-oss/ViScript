@@ -346,16 +346,23 @@ Commit **`a92fdb2f`**.
 ### P2-A — W6 đặc tả sai (đã sửa)
 - Trước: `w6_loi_task_khong_await_duoc_surface` chạy `run_workers_parallel*` (non-frame) và assert `exit == 0` cho W=2/4 — **trái đặc tả** (`final_join` phải surface `VS0506`).
 - Sau: `w6_loi_task_khong_await_frame_final_join` dùng **frame API** (`run_async_with_hosts_caps` W=1, `run_async_workers_with_hosts_caps` W=2/4 — đúng đường production `vis run --workers`), assert `exit == 1` + `code.short == "VS0506"` + message chứa `hong` cho **mọi** W. **PASS**.
-- Ghi chú: đường **non-frame** `run_workers_parallel*` W≥2 (không phải production frame) vẫn không surface lỗi task không await — hành vi có trước; không assert thành "đúng" nữa (xem nợ P2-B bên dưới, cùng gốc join).
+- Ghi chú: đường **non-frame** `run_workers_parallel*` W≥2 (không phải production frame) vẫn không surface lỗi task không await — nợ **riêng** (xem “Nợ non-frame W6” bên dưới), không phải P2-B.
 
-### P2-B — nợ ghi nhận (không sửa trong lane này)
-- Audit: **production frame W=1** lệch interp (exit 0) vs VM (exit 1) cho cùng kịch bản lỗi task không await; `crates/vis-interp/src/frame/worker.rs` **không thuộc lane W2** của lát này.
-- Đề xuất A0 đăng ký **nợ mới** (VS3/correctness): chuẩn hoá `final_join` cho frame W=1 hai engine (interp phải surface `VS0506` như VM), khoá bằng ca frame parity. Không thêm test giả xanh.
+### P2-B — nợ ghi nhận: production **W2 frame W=1** lệch interp ↔ VM
+- Audit addendum đo lại đúng HEAD trên kịch bản **W2** (`w2.vis`): `vis run w2.vis` ⇒ stdout **`0`**, exit **0** (interp frame W=1); `vis run --vm w2.vis` ⇒ stdout **`1`**, exit **0** (VM). Hai engine lệch **giá trị/stdout**, không phải kịch bản task-error W6 (W6 frame đã đúng: cả hai engine `VS0506`, exit 101).
+- `crates/vis-interp/src/frame/worker.rs` **không thuộc lane W2** của lát này ⇒ **không sửa** trong `ST-317b`.
+- Đề xuất A0 đăng ký **nợ mới** (VS3/correctness): chuẩn hoá **W2 frame W=1** interp ↔ VM + ca parity frame W=1 trong `async_api_it`/`frame_it` (khoá stdout/exit, không chỉ task-error). Không thêm test giả xanh.
+
+### Nợ non-frame W6 W≥2 (đăng ký riêng)
+- `vis_interp::run_workers_parallel` / `run_workers_parallel_cancel_after` và `vis_vm::run_workers_parallel_vm*` (non-frame) **nuốt lỗi task không ai await** ở W≥2: exit 0, diagnostics rỗng — **cả hai** engine (đo trên `async_api_it` cũ; hành vi có trước ST-317b).
+- W6 hiện chuyển sang **frame API**, nên **không phủ** đường non-frame này. Đề xuất nợ VS3/correctness: cho `final_join` non-frame W≥2 surface `VS0506` (interp: `rt::exec::final_join`; VM: `vm/worker::final_join`), test tương lai khoá song song `run_workers_parallel*` + `run_workers_parallel_vm*` W=2/4 (không thay W6 frame).
+
+### P3-B — diagnostic W2 vẫn dùng `s14` (chưa đổi, không chặn)
+- Ghi đúng: test W2 hiện **vẫn** in/đối chiếu symbol nội bộ `s14` (không phải `counter`); đây là hiển thị nội bộ, **chưa đổi trong lát này, không chặn** (muốn đổi cần ánh xạ tên trong chẩn đoán — ngoài phạm vi P2b).
 
 ### P3 — rẻ, đã làm
 - W3: assert thêm `code.short == "VS0506"` (không chỉ message "huỷ").
 - W7: giữ `steps > 0` + byte-identical W=1/W=2/4 (Pending/`frame_next` wake là nội bộ `Abort::Pending`; không lộ qua `RunOutput`, đã ghi chú — không thêm assert giả).
-- W2: đã dùng `counter` (không phải `s14`) — không cần đổi.
 - LOC journal: `sqlite/truy_van.rs` **312**, `sqlite/loi.rs` **111** (sau `cargo fmt`).
 
 ### Cổng lại (số thật, log mới)
