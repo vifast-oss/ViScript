@@ -689,3 +689,29 @@ fn w17_frame_vm_w2_w4_loi_task_khong_await() {
         );
     }
 }
+
+/// **F3 (P2-1)** — main ghi **nhiều** `var` top-level rồi `await` nhiều task rỗng: sau turn đầu
+/// `dirty` phải co lại (prune) nhưng giá trị vẫn đúng; frame W=1 interp ↔ VM.
+#[test]
+fn w18_frame_w1_main_ghi_nhieu_var_roi_await() {
+    let mut src = String::new();
+    for i in 0..100 {
+        src.push_str(&format!("var v{i} = {i}\n"));
+    }
+    src.push_str("\nasync fn rong() -> int:\n    1\n\nfn main():\n");
+    for i in 0..100 {
+        src.push_str(&format!("    v{i} = {i} + 1\n"));
+    }
+    for _ in 0..50 {
+        src.push_str("    await spawn rong()\n");
+    }
+    src.push_str("    print(v0)\n    print(v99)\n");
+    let a = anh(&src);
+    let i = frame_1(&src, &a);
+    let v = frame_vm_1(&src, &a);
+    assert_eq!(i.stdout, "1\n100\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, i.stdout, "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0);
+    assert_eq!(v.exit, 0);
+    so_khop(&i, &v, "main ghi nhiều var rồi await");
+}

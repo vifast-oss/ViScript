@@ -559,32 +559,31 @@ impl DongBo {
     /// Nạp các sym dirty kể từ lần chạy trước của frame `id` vào mọi khung gọi của nó.
     fn nap(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, id: u32) {
         let fs = self.frame_seq.get(&id).copied().unwrap_or(0);
-        if self.dirty.is_empty() {
-            self.frame_seq.insert(id, self.seq);
-            return;
-        }
-        let mut ds: Vec<u32> = self
-            .dirty
-            .iter()
-            .filter(|(_, s)| **s > fs)
-            .map(|(k, _)| *k)
-            .collect();
-        if ds.is_empty() {
-            self.frame_seq.insert(id, self.seq);
-            return;
-        }
-        ds.sort_unstable();
-        let globals = it.env.clone();
-        let cap: Vec<(u32, Value)> = {
-            let g = globals.borrow();
-            ds.into_iter()
-                .filter_map(|s| g.get(&s).map(|v| (s, v.clone())))
-                .collect()
-        };
-        if !cap.is_empty() {
-            nap_vao_env(frame, &globals, &cap);
+        if !self.dirty.is_empty() {
+            let mut ds: Vec<u32> = self
+                .dirty
+                .iter()
+                .filter(|(_, s)| **s > fs)
+                .map(|(k, _)| *k)
+                .collect();
+            if !ds.is_empty() {
+                ds.sort_unstable();
+                let globals = it.env.clone();
+                let cap: Vec<(u32, Value)> = {
+                    let g = globals.borrow();
+                    ds.into_iter()
+                        .filter_map(|s| g.get(&s).map(|v| (s, v.clone())))
+                        .collect()
+                };
+                if !cap.is_empty() {
+                    nap_vao_env(frame, &globals, &cap);
+                }
+            }
         }
         self.frame_seq.insert(id, self.seq);
+        // **F3 (P2-1)**: dọn **mọi** nhánh — kể cả khi `ds` rỗng (frame đã thấy hết) —
+        // nếu không, `dirty` do chính frame vừa ghi 20k sym sẽ không bao giờ co lại và bị
+        // duyệt O(#sym) mỗi turn. `prune` tự no-op khi sổ < 64 mục.
         self.prune();
     }
 
@@ -635,14 +634,23 @@ fn nap_vao_env(frame: &mut IFrame<'_>, globals: &Env, cap: &[(u32, Value)]) {
 ///
 /// Chỉ ba đường này ghi được biến cấp tệp: `let`/`var` top-level đã chạy trước `main` (và khi
 /// không có `main` thì env chính **là** globals), còn bind pattern trong thân là sym cục bộ.
+///
+/// **F3 (P3-1/P3-2)**: `ApplyMethod`/`RedispatchMethod` chỉ **writeback** với `push`
+/// (`method_writeback`), nên method chỉ đọc (`len`/`get`/`keys`/`first`/…) không đánh dirty.
 fn sym_ghi_cua(w: &Work<'_>) -> Option<u32> {
     match w {
         Work::ApplyAssignVar { sym, .. } => Some(*sym),
         Work::ApplyAssignPath(a) => Some(a.sym),
         Work::ApplyMethod {
+            name,
             base_var: Some(sym),
             ..
-        } => Some(*sym),
+        }
+        | Work::RedispatchMethod {
+            name,
+            base_var: Some(sym),
+            ..
+        } if name.as_str() == "push" => Some(*sym),
         _ => None,
     }
 }

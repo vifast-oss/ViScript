@@ -198,3 +198,40 @@ lượt nên tỉ lệ là đối chứng. Log: `/home/ps/vislogs/st318a-fix2-pe
   bỏ qua ca nào.
 - `bin/vis-bench --runs 2 --bin target/debug/vis`: **PASS** (stdout sha256 khớp, 5 chương trình ×
   2 engine; log `/home/ps/vislogs/st318a-fix2-visbench.log`).
+
+## 8. F3 — prune dirty khi `ds` rỗng (+ method chỉ đọc) — P2-1/P3-1/P3-2
+
+- **P2-1**: `DongBo::nap` khi `dirty` khác rỗng nhưng **mọi `seq ≤ frame_seq`** (frame đã thấy hết,
+  vd chính nó vừa ghi 20k global) vẫn duyệt toàn bộ `dirty` rồi `return` ở nhánh `ds.is_empty()`
+  **mà không `prune`** ⇒ `dirty` không co, O(#sym × #turn).
+- **Vá**: `nap` không còn `return` sớm — sau khi cập nhật `frame_seq[id] = self.seq` **luôn** gọi
+  `self.prune()`. `prune` giữ `s > min(frame_seq)` (mục mà **mọi** frame sống đã thấy bị bỏ; frame
+  đứng sau vẫn còn mục cần). `prune` vẫn tự no-op khi sổ < 64 mục.
+- **P3-1**: `sym_ghi_cua` chỉ trả `Some(base_var)` cho `ApplyMethod` khi `name == "push"` —
+  `method_writeback` (proc.rs) chỉ ghi ngược với `push`; method chỉ đọc (`len`/`get`/`keys`/
+  `first`/…) không còn đánh dirty.
+- **P3-2**: thêm nhánh `Work::RedispatchMethod { base_var: Some(sym), .. }` cùng điều kiện
+  `push` — nhánh resume sau `Pending` **có** gọi `method_writeback` nên an toàn và cần thiết.
+
+### Đo lại write-heavy (`20k var` + main gán 20k biến = 1 + 2.000 await task rỗng)
+
+Median 5 lần, xen kẽ, binary debug cùng máy (`/home/ps/vislogs/st318a-fix3-perf-write.log`):
+
+| Binary | Lần đo (ms) | Median |
+|---|---|---|
+| `main` `2b5ccb51` | 1810 / 2538 / 2892 / 3427 / 3521 | 2892 |
+| F2 (`fcae15df`) | 3410 / 4069 / 5718 / 5253 / 4992 | 4992 |
+| **F3** | 2269 / 2565 / 3785 / 3507 / 2835 | **2835** (~0,98× main, ~1,76× → ~1,0× so F2) |
+
+### Đối chứng không hồi quy (median 3 lần, F2 → F3)
+
+| Kịch bản | F2 (ms) | F3 (ms) |
+|---|---|---|
+| 20k `var` + 2k await | 2861 | 2893 |
+| 20k `const` + 2k await | 3010 | 2647 |
+| 5k `var` + 1k await | 534 | 559 |
+
+### Test
+
+- Thêm `w18_frame_w1_main_ghi_nhieu_var_roi_await` (100 `var`, main ghi hết rồi 50 await task
+  rỗng): `1\n100\n`, parity interp ↔ VM. `st317b_worker_orchestrate`: **20/20 PASS**.
