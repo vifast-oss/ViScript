@@ -98,3 +98,6 @@ mod vs3_default_lib;
 
 #[path = "async_api_it/st317b_worker_orchestrate.rs"]
 mod st317b_worker_orchestrate;
+
+#[path = "misc_api_it/st319a_closure_cap_tep.rs"]
+mod st319a_closure_cap_tep;

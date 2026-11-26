@@ -405,12 +405,18 @@ impl Emit<'_> {
     }
 
     pub(super) fn slot_cua(&mut self, sym: u32) -> Result<u16, CodegenError> {
+        // **ST-319a (#206)**: closure chụp global thành ô cục bộ ⇒ đọc/ghi đều đi ô **riêng của
+        // closure** (by-value), không xuyên ra kho global. Xét ô cục bộ trước biến cấp tệp; sym
+        // là duy nhất nên nhánh này chỉ đổi hành vi đúng các global đã được chụp.
+        if let Some(s) = self.captured.get(&sym) {
+            return Ok(*s);
+        }
+        if let Some(s) = self.f.locals.get(&sym).copied() {
+            return Ok(s);
+        }
         // **ST-238 (VD-242, ca 3)**: biến cấp tệp dùng ô chung (VM ánh xạ tới `Vm::globals`).
         if let Some(s) = self.g.globals.get(&sym).copied() {
             return Ok(s);
-        }
-        if let Some(s) = self.captured.get(&sym) {
-            return Ok(*s);
         }
         self.f.slot(sym, Span::new(0, 0))
     }

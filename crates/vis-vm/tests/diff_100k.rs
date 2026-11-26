@@ -246,9 +246,12 @@ enum Nhom {
     /// Lỗi **tĩnh** (frontend): `send` sai kiểu `VS0412`, `await` không phải Task `VS0412`, thiếu cap
     /// `VS0401`.
     LoiTinh,
+    /// **ST-319a (#206)**: closure đọc/ghi **biến cấp tệp** — bắt buộc **by-value** tại điểm tạo
+    /// closure (SPEC §4.7); trước đây VM đọc ô global live nên lệch interp (không mẫu nào bắt).
+    ClosureCapTep,
 }
 
-const DS_NHOM: [Nhom; 8] = [
+const DS_NHOM: [Nhom; 9] = [
     Nhom::Async,
     Nhom::Chan,
     Nhom::Cap,
@@ -257,6 +260,7 @@ const DS_NHOM: [Nhom; 8] = [
     Nhom::Assert,
     Nhom::LoiChay,
     Nhom::LoiTinh,
+    Nhom::ClosureCapTep,
 ];
 
 impl Gen {
@@ -319,6 +323,49 @@ impl Gen {
         }
     }
 
+    fn nhom_closure_cap_tep(&mut self) -> String {
+        match self.rng.duoi(4) {
+            0 => r#"var g = 0
+fn main():
+    let f = fn() -> int: g
+    print(f())
+    g = 1
+    print(f())
+"#
+            .to_string(),
+            1 => r#"var g = 0
+fn main():
+    let f = fn() -> int:
+        g = 5
+        g
+    print(f())
+    print(g)
+"#
+            .to_string(),
+            2 => r#"var g = 0
+fn main():
+    let f = fn() -> int:
+        g = g + 1
+        g
+    print(f())
+    print(f())
+    print(g)
+"#
+            .to_string(),
+            _ => r#"var g = 0
+fn main():
+    let ngoai = fn() -> fn() -> int:
+        fn() -> int:
+            g
+    g = 7
+    let f = ngoai()
+    print(f())
+    print(g)
+"#
+            .to_string(),
+        }
+    }
+
     fn theo_nhom(&mut self, nhom: Nhom) -> String {
         match nhom {
             Nhom::Async => self.nhom_async(),
@@ -329,6 +376,7 @@ impl Gen {
             Nhom::Assert => self.nhom_assert(),
             Nhom::LoiChay => self.nhom_loi_chay(),
             Nhom::LoiTinh => self.nhom_loi_tinh(),
+            Nhom::ClosureCapTep => self.nhom_closure_cap_tep(),
         }
     }
 
