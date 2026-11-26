@@ -1,14 +1,14 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # ROADMAP bàn giao — dòng ViScript
 
-> **TRẠNG THÁI HIỆN HÀNH — 2026-11-27 (`VD-289`/`VD-298` — CHẾ ĐỘ PHÁT TRIỂN KIẾN TRÚC TỐI ƯU; `ST-309` tạm dừng vô thời hạn).
+> **TRẠNG THÁI HIỆN HÀNH — 2026-11-27 (`VD-289`/`VD-299` — CHẾ ĐỘ PHÁT TRIỂN KIẾN TRÚC TỐI ƯU; `ST-309` tạm dừng vô thời hạn).
 > Đọc khối này trước.**
 > - **Đã duyệt `DONE` (`VD-290` + `VD-291` + `VD-292` + `VD-293` + `VD-294` + `VD-295`, 2026-11-25..27, nền `8ff19b42` / mã `7014fb7b` / tích hợp Sóng 5 `882b7ffa` / `main` @`4e03a19c`)**: hoàn tất Kiến trúc 5 Tầng DAG (`ST-312a..ST-313d`), hậu-kiểm `ST-314a`, trọn **Sóng 4 (`ST-315a..ST-315d DONE`)**, trọn **Sóng 5 (`ST-316a`, `ST-316b`, `ST-316d` DONE)** và **trọn Sóng 6 (`ST-317a`/`ST-317b`/`ST-317c` `DONE`)** — 23 crate/5 tầng (`vis-dag-check` + self-test), R1..R10 PASS (0 `unsafe`, R8 `39 ≤ 40`), `StdId` **167/167**, corpus **568/568** + WASI **395×2** + sem **390/390**; `vis_runtime::value_ops` một nguồn + true O(1) CoW `Rc::ptr_eq` cho `Map`/`List` (0 đổi VBC1), release `vis-bench` **writebench ~240×** / **listbench 13–21×**; đóng `#199` (25k `const` 1,604 → **0,196 s**), `#48`, `#7`, `#186`, `#145`, `#47`; DAG cấm `vis-host-native → vis-runtime` (+self-test), đóng `#198` (0 binary R8 mới), tách `host_parity.rs` 1.457 → 4 tệp < 500 dòng. Tích hợp gate **3.880/3.880 (4 skip)** + clippy exit 0 + `vis-diff 100k lech=0`; Windows full gần nhất **3.779/0/4 @`7014fb7b`**; macOS full `mps` còn nợ ở `ST-316c`. Sổ nợ: **`#200`** (P2 lệch interp↔VM `main` nhiều tham số `int`) & **`#201`** (P3 `argv` gán vào tham số `int` không kiểm kiểu) còn `mở`, VS3/correctness; **`VD-294`** phê chuẩn **`ST-317a`** (Value **64 → 32 B**, gate **3886/3886**, conformance **568/568**, `size_of::<Value>() == 32`) và **`ST-317c`** (StdId **167**, `lsp_it` **158/158**, `API-STD.txt` không đổi) `DONE`; đăng ký **`#202`** (P2 flake `host_parity::net_http`, stdout chứa ms thật); **`VD-295`** phê chuẩn **`ST-317b`** (worker orchestration một nguồn `orchestrate.rs` **135**, `value/mod.rs` **748**, `sqlite/mod.rs` **282**, `vis-lsp/lib.rs` **236**; gate **3906/3906 (5 ignored)** ≡ 3901/3901+4 skip, diff 100k `lech=0` 56,5 s, clippy 0 warning, W **10/10**) — **Sóng 6 đủ 3/3 `DONE`**; đăng ký **`#203`** (W2 frame W=1 lệch interp↔VM) & **`#204`** (non-frame W≥2 nuốt lỗi task) — sổ **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng**.
-> - **Sóng 7 đang đóng (`VD-296`..`VD-298`, `main` @ `7900a308` — docs; mã `8e8b2887`)**: **7/9 lát `DONE`** — `ST-318b` (`#202` đóng, merge `fb725479`, PASS `001a9ffb`, 20/20), `ST-318c` (merge `c02050c0`, PASS `4b952956`, max **680**), `ST-318d` (merge `82d77e77`, PASS `76ca2925` + rustdoc `2ae1eb2e`), `ST-318e` (merge `9045dd78`, PASS `ad404637`), `ST-318f` (merge `bfe165e2`, PASS `683d7a4f`), `ST-318g` (merge `328a0bad`, PASS `634da5c4`), `ST-318i` (merge `8e8b2887`, PASS `c2e155da`, 4 rustdoc link sạch); **`ST-318a` `REVIEW`** (F1 đang audit lại, nhánh `991b89b6`; `#203`/`#204` vẫn `mở`); **`ST-318h` đang chạy** (`plan/st318h` @ `d65f0c3d`, chờ `ST-318a`). KPI: tệp > 1.000 dòng hiện **1** (chỉ `vis-interp/src/frame.rs` 1030) → mục tiêu **0** sau `ST-318h`; sổ **84 mở / 102 đóng**; R8 **39/40**, 0 `unsafe`; chưa có gate tích hợp mới sau `4e03a19c`.
-> - **Trục hiện hành — `ST-316c` `BLOCKED` + Sóng 7 còn `ST-318a`/`ST-318h`** (Sóng 6 đã đóng 3/3 `DONE`)**: `ST-317b` đã `DONE` theo `VD-295` (P1 `pkg.rs`/`rt/sched.rs`/`tyck/pat.rs` + P2a `vis-lsp/lib.rs` + P2b `value/mod.rs`/`sqlite/mod.rs`/worker một nguồn/dedup + 2 vòng audit PASS); `ST-316c` đã xong phần `ps` — WASI **395×2** (368 `.out` + 27 `.trap`), sem **390/390**, suite **28/28**, chain 0-LLM `peak1-2026-11-27-chain.sh` sẵn sàng (dry-run exit 0, chưa chạy), phần `mps` @`311d2288`/`psvn` @`fe3446d2` vẫn chờ máy rảnh — **không** tuyên bố 3-OS khi chưa có log.
+> - **Sóng 7 — `DONE` 9/9 (`VD-296`..`VD-299`, `main` @ `2cda3a68`)**: `ST-318a` (đóng `#203`/`#204`; frame W=1 parity + non-frame W≥2 `VS0506`; audit F3 PASS `5e79bf54`) + `ST-318h` (`vis-interp/src/frame.rs` 1030→**159** + 4 tệp; audit PASS `03c1dc1f`) + `ST-318b/c/d/e/f/g/i` (audit PASS từng lát); **R1: 0 tệp > 1.000** (max **1000**, `vis-cli/src/cli/run_cmd.rs`), 0 tệp > 1.500; sổ **208 = 85 mở / 104 đóng / 16 VS3 / 2 không làm / 1 điều hướng**; cổng cuối `main` **3912/3912 (4 skip)**, diff 100k `lech=0` 84,9 s, clippy/rules exit 0, R8 **39/40**, 0 `unsafe`; nợ mới `#206`/`#207`/`#208` (`VD-299`).
+> - **Trục hiện hành — chỉ còn `ST-316c` `BLOCKED` + chain cao điểm 0-LLM**: phần `ps` đã xong (WASI **395×2**, sem **390/390**, suite **28/28** @`29a7b254`); chain `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, dry-run exit 0, **chưa chạy**) chờ `mps` @`311d2288`/`psvn` @`fe3446d2` — **không** tuyên bố 3-OS khi chưa có log.
 > - **Nền kỹ thuật đã đạt trước `VD-289`**: **3-OS Tier 1** (Linux, Windows x86_64 `ST-298`, macOS arm64 `ST-300m3`), WASI `wasm32-wasip1` runtime, kiến trúc 4 tầng `v0.5.5` (`3d85bd2`), bảo mật & hygiene `ST-311a..f` (đóng `#190`/`#194`, vá `#195`, 0 `unsafe`, R1..R9 PASS).
 > - **Tag lịch sử đã chốt**: `v0.5.5` @ `3d85bd2`, `v0.5.0` @ `c06d7c6` (`R36`), `v0.4.5` @ `3daff62` (`R35`), `v0.4.1` @ `90844bc`, `v0.4.0` @ `c2accdf`. Các khối dated bên dưới là **lịch sử**, số cũ giữ nguyên (`VD-142`).
-> - **Đọc chi tiết hiện hành**: [`ACTIVE.md`](ACTIVE.md), [`QUEUE.md`](QUEUE.md) (`ST-315a..ST-317c`), [`JOURNAL/quyet-dinh-a0-2026-11-27-vd298.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd298.md).
+> - **Đọc chi tiết hiện hành**: [`ACTIVE.md`](ACTIVE.md), [`QUEUE.md`](QUEUE.md) (`ST-315a..ST-318i`), [`JOURNAL/quyet-dinh-a0-2026-11-27-vd299.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd299.md).
 
 > **`v0.5.0` prep — 2026-11-23 (ST-305, chưa tag)** — workspace bump **0.5.0** (mọi crate
 > `version.workspace = true`); `vis --version` ⇒ **`vis 0.5.0`**; `PHIEN_BAN`
@@ -106,7 +106,7 @@ nơi đọc và lệnh chạy. Không mục nào “xong” nếu chưa đạt c
 | 7 | Đa nền tảng | Linux: ST-121, ST-131. Windows, wasm: chỉ check trong VS2 (VD-121) | ST-121, ST-131 |
 | 8 | Hợp chuẩn host | Nền thứ hai = Linux qua ST-131 | ST-131 |
 
-R1 cứng ≤1.500 dòng/tệp (VD-128); **mục tiêu nội bộ Sóng 7 <1.000** — hiện còn 1 tệp `vis-interp/src/frame.rs` **1030**; dự kiến **0** sau `ST-318h`.
+R1 cứng ≤1.500 dòng/tệp (VD-128); **mục tiêu nội bộ Sóng 7 <1.000 đã đóng**: **0 tệp > 1.000** (max **1000**, `vis-cli/src/cli/run_cmd.rs`; `vis-interp/src/frame.rs` **159**).
 
 ## B. Lệnh chạy (tuần tự, **không** song song build/cổng khác — AGENTS §6)
 
@@ -140,13 +140,13 @@ target/release/vis-parse-fuzz --seconds 60 --seed 20261115 # 0 vi phạm
 5. **Async song song thật** + wait-set/rendezvous `chan(0)` (hoặc tuyên bố vĩnh viễn có văn bản).
 6. **Siết mặc định caps** + sandbox tiến trình con; cập nhật host suite.
 7. **Resolver/registry HTTP/ký số** cho gói + GC store.
-8. **R1 nội bộ <1.000 (Sóng 7)**: hiện chỉ còn `vis-interp/src/frame.rs` **1030**; `lower/cmd` đã tách (max **680**),
-   `parse/mod.rs` **69**, `parse/cmd` **39** (mod); **0 tệp > 1.500** (luật R1 cứng); mục tiêu **0 tệp > 1.000** sau `ST-318h`.
+8. **R1 nội bộ <1.000 (Sóng 7, `DONE`)**: **0 tệp > 1.000** — max **1000** (`vis-cli/src/cli/run_cmd.rs`), `vis-interp/src/frame.rs` **1030 → 159**
+   (+4 tệp, max 366); `lower/cmd` max **680**, `parse/mod.rs` **69**, `parse/cmd` **39**; **0 tệp > 1.500** (luật R1 cứng).
 9. **100 nợ R21** + nợ mới đóng hết; **R23** xác nhận lại toàn bộ số đo.
 
 **Hiện trạng R22**: **1066 test**, sem **447/22**, `--vm` **0 SKIP**, parity **398+49**, diff **0 lệch**,
 cache **520×4 0 lệch**, host **54/54 ×2**, soak **10/10 (1297 s)**, fuzz **0 vi phạm**, `FUNCS` **52**,
-`all_codes` **32**, `VBC1` **53**, targets **18/18 check**, R1 max **1030** (R22 lịch sử: 1060). **VS2 chưa đóng** — 9 điều kiện.
+`all_codes` **32**, `VBC1` **53**, targets **18/18 check**, R1 max **1000** (R22 lịch sử: 1060). **VS2 chưa đóng** — 9 điều kiện.
 
 ## E. Nơi đọc
 
