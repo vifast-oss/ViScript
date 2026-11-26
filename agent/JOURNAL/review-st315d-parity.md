@@ -230,3 +230,110 @@ cargo clippy --workspace --all-targets -- -D warnings   # CLIPPY_RC=0
   và clippy đạt.
 - **Không sửa mã** trong lượt review này; chỉ tạo tệp này và commit
   `[ST-315d] review parity: …` trên `review/rparity` (không push/merge).
+
+---
+
+## 6. Re-audit sau vá (2026-11-26)
+
+> **Merge**: `main` `25790c97` (vá `a45438e6`) vào `review/rparity` tại **`fc85a0c5`**; báo cáo
+> `FAIL` cũ giữ nguyên. **Target**: `/home/ps/ViScript-rparity/target` (riêng, không dùng
+> `/home/ps/ViScript/target`); **không dùng `mps`**.
+>
+> **Kết luận re-audit: `FAIL` (nhẹ)** — F1/F2/F3/F5/F7/F8/F9/F10 đã đóng và kiểm được trên Linux;
+> **F4 đóng ở mức “mỗi hàm có ≥ 1 lời gọi”** (bọc **cả 3** lời gọi `fs.read_bytes(` thì đỏ), nhưng
+> **mutation một lời gọi trong `SRC_FS` vẫn xanh** (F-R1) — đúng câu chữ yêu cầu của lượt này.
+> Thêm **F-R2**: `cwd-khop` của F3 có nguy cơ đỏ trên Windows do `std::fs::canonicalize` trả
+> `\\?\…` còn `current_dir` thì không (chưa chạy `psvn`). Không có lệch engine; cổng xanh.
+
+### 6.1 Các mục đã đóng (bằng chứng)
+
+| Mục | Trạng thái | Bằng chứng |
+|---|---|---|
+| **F1** `fs` 0 ca lỗi | **ĐÓNG (Linux)** | `SRC_FS_LOI` 17 ca (`host_parity.rs:511-566`); `fs_loi_moi_ham_parity` ghim **nguyên văn** 17 thông điệp Unix (`:670-688`), nền tảng khác đòi 17 nhãn + `<W>`; test xanh |
+| **F2** `net` bỏ message | **ĐÓNG** | Mọi nhánh `Err(e)` in `e.message` (`:1038-1111`); `chuan_hoa_cong` thay `127.0.0.1:<cổng>` bằng `<P>` (`:244-259`); mutation `80→100` làm `net_loopback_parity` **đỏ** tại `:1144` (đã chạy) |
+| **F3** 8 hàm `fs` thiếu assert | **ĐÓNG (Linux)** | `SRC_FS` in giá trị thật cho **20/20** hàm; `fs_20_ham_parity_tren_tempdir` so **toàn bộ** stdout (`:578-620`), gồm nội dung sau `write`/`write_bytes`/`append`/`copy` |
+| **F4** khoá 66/66 tìm chuỗi | **ĐÓNG một phần** | Chỉ xét `SRC_PHU` (`:99-109`) + bỏ chú thích `#` (`bo_chu_thich_vis`, `:263-297`); self-test `:351-361`; bọc **cả 3** `fs.read_bytes(` ⇒ **đỏ** `["fs.read_bytes"]`. Nhưng một lời gọi trong `SRC_FS` ⇒ **xanh** (F-R1) |
+| **F5** journal khai quá mức | **ĐÓNG phần lớn** | `st315d-parity.md` đã viết lại; còn 2 câu quá rộng (F-R4) |
+| **F7** dọn tempdir | **ĐÓNG** | `struct Tam` + `Drop` (`:111-131`); sau 5×1 + 2×8 + mutation net **đỏ**, `/tmp/vis-host-parity-*` = **0** |
+| **F8** cổng cố định 1 | **ĐÓNG** | `net` bind `:0` rồi `drop` (`:1118-1121`); `http` giữ bind-rồi-drop (`:1390-1393`) |
+| **F9** `vis_bin` | **ĐÓNG** | `CARGO_TARGET_DIR` tương đối hiểu theo gốc workspace; profile theo `debug_assertions` (`:148-174`) |
+| **F10** exit 0 | **ĐÓNG** | `assert_eq!(c1, 0)` trong `hai_duong_chuan_hoa` (`:230-234`); 12/12 test xanh |
+| **R8/R1/R2/R7** | **ĐẠT** | 38 + 1 = **39 ≤ 40**; `vis-cli/tests` **8**; tệp **1.452** dòng ≤ 1.500; **0** `unsafe`; journal ≤ 50 KB; `git status` sạch |
+
+### 6.2 F-R1 — `[M · theo đúng tiêu chí mutation]` một lời gọi `fs.read_bytes(` trong `SRC_FS` **không** làm 66/66 đỏ
+
+- **Vị trí**: `SRC_FS` có **2** lời gọi (`:425` đọc `bytes.bin`, `:438` đọc lại sau `write_bytes`);
+  `SRC_FS_LOI` có **1** (`:557`). `moi_ham_host_co_loi_goi_trong_harness` chỉ đòi **ít nhất một**
+  lời gọi trong **bất kỳ** script `SRC_PHU` (`:329-340`), không đòi từng script.
+- **Repro đã chạy** (`/home/ps/vislogs/rparity-mutations.log`, sha256 `df1533b1…4ae2b5`):
+  1. Comment **một** dòng `:425` (`# match fs.read_bytes(...)`) ⇒
+     `moi_ham_host_co_loi_goi_trong_harness` **ok** (1 passed) — không đỏ như yêu cầu.
+  2. Đổi tên **cả 2** lời gọi trong `SRC_FS` (giữ `SRC_FS_LOI`) ⇒ vẫn **ok** — script lỗi vẫn
+     “che” hàm.
+  3. Đổi tên **cả 3** lời gọi ⇒ **đỏ** `thiếu lời gọi host trong script được chạy:
+     ["fs.read_bytes"]` — đúng như journal W4 §3 đã làm.
+- **Bù lại**: `fs_20_ham_parity_tren_tempdir` so **toàn bộ stdout** nên xóa 2 lời gọi thành công
+  làm test này **đỏ** (đã kiểm: thiếu `bytes=true`/`write_bytes-noi-dung=true`). Vì vậy **full
+  suite** vẫn bắt regression; chỉ **meta-test 66/66** là không bắt.
+- **Đề xuất**: nếu hợp đồng là “mỗi hàm có ≥ 1 lời gọi thật ở đâu đó” thì mutation một lời gọi
+  là **không hợp lệ** — sửa câu chữ yêu cầu/journal; nếu muốn chặt hơn, thêm bảng
+  `(tên, tag)` hoặc đòi `SRC_FS` có đủ 20 lời gọi thành công và `SRC_FS_LOI` đủ 17 lời gọi lỗi.
+
+### 6.3 F-R2 — `[M · Windows]` `cwd-khop` có nguy cơ đỏ trên Windows
+
+- **Vị trí**: `SRC_FS:496-501` — `p = fs.current_dir()`, `q = fs.canonicalize(".")`, in
+  `p == q`; expected **`cwd-khop=true`** (`:616`).
+- **Lý do**: host thật dùng trực tiếp `std::fs::canonicalize` (`crates/vis-host-native/src/ngoai.rs:672`)
+  và `std::env::current_dir` (`:577`). Trên Windows, `std::fs::canonicalize` trả đường dẫn
+  **verbatim** `\\?\C:\…` (tài liệu Rust), còn `current_dir` trả `C:\…`; so chuỗi `==` ⇒ `false`.
+  `fs_20` không có `#[cfg(unix)]`, nên Windows full gate sẽ đỏ (chưa chạy `psvn` trong lượt này;
+  log Windows `c6724b46` là harness **cũ 10 test**, không có `fs_loi`/`bo_chu_thich`/`cwd-khop`).
+- **Đề xuất**: so `path.is_absolute(p)` + `q.ends_with(path.basename(p))`, hoặc bỏ tiền tố `\\?\`
+  trước khi so, hoặc `#[cfg(unix)]` cho đẳng thức (và expected theo nền tảng). Cần chạy lại
+  `cargo test -p vis-conformance --test lib_api_it host_parity` trên `psvn` trước `DONE` 3-OS.
+
+### 6.4 Finding nhỏ / caveat
+
+- **F-R3 [L]**: doc của `moi_ham...` (`:321-322`) nói chú thích Rust `// fs.read_bytes(` cũng làm
+  test đỏ; thực tế bộ bóc chỉ hiểu `#` của ViScript, còn `//` nằm trong raw string vẫn bị tính
+  (dương tính giả nếu ai đó dùng `//`). Self-test `:351-361` chỉ phủ `#`; sửa doc hoặc bóc thêm
+  `//` (nhưng `//` không phải cú pháp ViScript — nên sửa doc là đủ).
+- **F-R4 [L]**: `st315d-parity.md:55` “không còn nhóm nào 0 ca lỗi” — `time` (2 hàm) không có
+  nhánh lỗi (đồng hồ không lỗi dữ liệu); `:59` nói “8 nhánh lỗi net” trong khi script in nhiều
+  nhánh hơn. Sửa câu chữ.
+- **F-R5 [L]**: F1/F2 ghim **nguyên văn** chỉ trên `#[cfg(unix)]`; Windows chỉ đòi nhãn/đường dẫn/
+  cổng — journal đã ghi, chấp nhận được, nhưng F3 `cwd-khop` chưa có caveat tương ứng.
+- **F-R6 [L]**: tệp **1.452/1.500** dòng — chỉ còn 48 dòng trước trần R1; thêm ca phải tách tệp
+  hoặc giữ ngắn.
+- **F-R7 [caveat]**: `walk-n` (10 Unix/9 Windows), `glob-n=4`, `cwd-khop` phụ thuộc fixture/cwd;
+  Linux xanh; macOS/Windows cần chạy thật. `time` chỉ kiểm `now_ms > 0`, `monotonic` không giảm
+  (đúng F11).
+
+### 6.5 Bằng chứng chạy lại
+
+| Lệnh | Kết quả |
+|---|---|
+| `cargo test … host_parity -- --test-threads=1` **×5** | **12/12** mỗi lượt; 1,06–1,09 s; log `rparity-reaudit-5x.log` sha256 `efb3ff65…c491975` |
+| `--test-threads=8` **×2** | **12/12** mỗi lượt; 0,62 s |
+| `./vis-dev gate --fast` | **PASS** — check + L0 **3.856 passed / 0 failed** + doc-test; 12/12 `host_parity`; `GATE_RC=0` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **rc=0** (`CLIPPY_RC=0`) |
+| 4 tiến trình test song song (sau rebuild) | **48/48** — 12 test/tiến trình, 1,07–1,08 s; tempdir 0 |
+| Mutation 1 (một lời gọi) | **xanh** (F-R1) |
+| Mutation 2 (cả 3 lời gọi) | **đỏ** `["fs.read_bytes"]` |
+| Mutation 3 (`accept_timeout` 80→100) | **đỏ** tại `:1144` (chuỗi `sau 100 ms` lệch `sau 80 ms`) |
+| Tempdir sau các lượt | **0** `/tmp/vis-host-parity-*` (RAII, kể cả lượt mutation net đỏ) |
+| R8 / R1 / R2 / R7 | 39/40 · 1.452 dòng · 0 `unsafe` · journal < 50 KB; `git status` sạch |
+
+### 6.6 Phán quyết re-audit
+
+- **FAIL (nhẹ)** theo **đúng tiêu chí mutation của lượt này** (F-R1: một lời gọi `fs.read_bytes(`
+  trong `SRC_FS` **không** làm 66/66 đỏ) và **F-R2** (Windows `cwd-khop` có nguy cơ đỏ; chưa có
+  bằng chứng `psvn` cho harness mới).
+- **Nếu** hợp đồng chỉ là “mỗi hàm có ≥ 1 lời gọi thật **ở đâu đó**” + chỉ Linux, thì F-R1 là
+  **caveat** (full suite vẫn bắt qua `fs_20`), F-R2 cần chạy Windows; khi đó có thể `PASS`.
+  Tôi giữ **FAIL** vì yêu cầu nguyên văn “test 66/66 phải đỏ” chưa đạt và F3 chưa được chứng minh
+  3-OS.
+- Các vá F1/F2/F3/F5/F7/F8/F9/F10 **đạt** trên Linux; **không có lệch interp↔VM**; cổng/clippy
+  xanh; R8/R1/R2/R7 đạt.
+- **Không sửa mã** trong lượt re-audit; chỉ cập nhật tệp này và commit trên `review/rparity`
+  (không push/merge).
