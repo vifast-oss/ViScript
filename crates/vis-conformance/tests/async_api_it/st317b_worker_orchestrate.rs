@@ -60,6 +60,28 @@ fn vm(src: &str, a: &Anh, w: usize) -> RunOutput {
     }
 }
 
+fn frame_1(src: &str, a: &Anh) -> RunOutput {
+    vis_interp::run_async_with_hosts_caps(src, &a.0, &a.1, &a.2, &[], None, None, None, None, &[])
+}
+
+fn frame_w(src: &str, a: &Anh, w: usize) -> RunOutput {
+    vis_interp::run_async_workers_with_hosts_caps(
+        src,
+        &a.0,
+        &a.1,
+        &a.2,
+        &[],
+        None,
+        None,
+        None,
+        None,
+        &[],
+        w,
+        None,
+        None,
+    )
+}
+
 fn so_khop(a: &RunOutput, b: &RunOutput, nhan: &str) {
     assert_eq!(a.stdout, b.stdout, "{nhan}: stdout");
     assert_eq!(a.exit, b.exit, "{nhan}: exit");
@@ -158,7 +180,9 @@ fn w3_huy_giua_chung_vs0506() {
     for (nhan, out) in [("interp", i), ("vm", v)] {
         assert_eq!(out.exit, 1, "{nhan}: phải dừng khi huỷ");
         assert!(
-            out.diagnostics.iter().any(|d| d.message.contains("huỷ")),
+            out.diagnostics
+                .iter()
+                .any(|d| d.code.short == "VS0506" && d.message.contains("huỷ")),
             "{nhan}: {:?}",
             out.diagnostics
         );
@@ -250,26 +274,30 @@ fn main():
     print("sau")
 "#;
 
-/// **W6** — task lỗi **không ai await** vẫn được final join surface (không exit 0 im lặng).
+/// **W6** — **lỗi thân task không await** phải được `final_join` surface (`VS0506`) trên
+/// **frame API** (production `vis run --workers` dùng đúng đường này), cả W=1 và W=2/4.
 #[test]
-fn w6_loi_task_khong_await_duoc_surface() {
+fn w6_loi_task_khong_await_frame_final_join() {
     let a = anh(LOI_KHONG_AWAIT);
-    // W=1: cả hai engine surface lỗi task không await (join cũ).
-    for (nhan, out) in [
-        ("interp", interp(LOI_KHONG_AWAIT, &a, 1)),
-        ("vm", vm(LOI_KHONG_AWAIT, &a, 1)),
-    ] {
-        assert_eq!(out.exit, 1, "{nhan} W=1: {:?}", out.diagnostics);
-        assert!(!out.diagnostics.is_empty(), "{nhan} W=1");
-    }
-    // W>=2: **cả hai** engine hiện không surface lỗi task không await (exit 0). Đây là hành vi
-    // có trước ST-317b; test khoá parity + không hồi quy (nợ riêng, không sửa trong lát này).
+    let w1 = frame_1(LOI_KHONG_AWAIT, &a);
+    assert_eq!(w1.exit, 1, "W=1: {:?}", w1.diagnostics);
+    assert!(
+        w1.diagnostics
+            .iter()
+            .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+        "W=1: {:?}",
+        w1.diagnostics
+    );
     for w in [2usize, 4] {
-        let i = interp(LOI_KHONG_AWAIT, &a, w);
-        let v = vm(LOI_KHONG_AWAIT, &a, w);
-        assert_eq!(i.exit, 0, "interp W={w}: {:?}", i.diagnostics);
-        assert_eq!(v.exit, 0, "VM W={w}: {:?}", v.diagnostics);
-        so_khop(&i, &v, &format!("W={w}"));
+        let out = frame_w(LOI_KHONG_AWAIT, &a, w);
+        assert_eq!(out.exit, 1, "frame W={w}: {:?}", out.diagnostics);
+        assert!(
+            out.diagnostics
+                .iter()
+                .any(|d| d.code.short == "VS0506" && d.message.contains("hong")),
+            "frame W={w}: {:?}",
+            out.diagnostics
+        );
     }
 }
 
@@ -305,21 +333,7 @@ fn main():
     );
     assert_eq!(w1.stdout, "499500\n499501\n");
     for w in [2usize, 4] {
-        let out = vis_interp::run_async_workers_with_hosts_caps(
-            SRC,
-            &a.0,
-            &a.1,
-            &a.2,
-            &[],
-            None,
-            None,
-            None,
-            None,
-            &[],
-            w,
-            None,
-            None,
-        );
+        let out = frame_w(SRC, &a, w);
         assert_eq!(out.stdout, w1.stdout, "frame W={w}");
         assert_eq!(out.exit, w1.exit, "frame W={w}");
         assert!(out.steps > 0, "chống xanh-giả frame W={w}");

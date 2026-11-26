@@ -272,10 +272,10 @@ Tất cả đặt trong aggregator đã có (gợi ý `crates/vis-interp/tests/f
 |---|---:|---|
 | `sqlite/mod.rs` | **282** | doc hợp đồng + `MAX_*` + `GioiHan`/`Muc` + `Db` + khai báo/re-export |
 | `sqlite/host.rs` | **261** | `impl DbHost for Db` (open/close/execute/query/batch/metadata) |
-| `sqlite/truy_van.rs` | **309** | kiểm/chuyển param, `Lenh`/cache statement, `thuc_thi`, `truy_van`, cap hàng/ô/cột |
+| `sqlite/truy_van.rs` | **312** | kiểm/chuyển param, `Lenh`/cache statement, `thuc_thi`, `truy_van`, cap hàng/ô/cột |
 | `sqlite/token.rs` | **78** | token `db:<32 hex>` + nguồn OS/fallback |
 | `sqlite/chuyen_doi.rs` | **90** | ô↔`Value`, param `SqlValue`→rusqlite, `SQLITE_LIMIT_LENGTH` |
-| `sqlite/loi.rs` | **106** | map lỗi SQLite (không lộ raw SQL/bound/path) |
+| `sqlite/loi.rs` | **111** | map lỗi SQLite (không lộ raw SQL/bound/path) |
 | `sqlite/guard.rs` | **67** | `DbGuard` (chặn file-backed khi có cap) |
 
 - `Db`/`DbGuard`/`MAX_*` vẫn qua `pub use sqlite::*`; `schema.rs` chỉ đổi 1 dòng import (`super::loi::loi_sqlite`); test cũ `use super::*` chạy nguyên (thêm `#[cfg(test)] use` cho tên chỉ test dùng). `cargo test -p vis-host-native` 128 test pass. Commit **`7a33d996`**.
@@ -303,13 +303,13 @@ Tất cả đặt trong aggregator đã có (gợi ý `crates/vis-interp/tests/f
 | W3 | huỷ giữa chừng (`cancel_after`) ⇒ `VS0506` cả 2 engine | PASS |
 | W4 | **program-level** `VS0508`: đối số là giá trị hàm (spawn) + kết quả task là hàm (await) | PASS |
 | W5 | await cùng task 2 lần ⇒ chạy/flush một lần, cache ổn định | PASS |
-| W6 | **lỗi thân task không await** (`%0`): W=1 surface cả 2 engine; W≥2 parity hiện hữu (exit 0 — khoá không hồi quy) | PASS |
+| W6 | **lỗi thân task không await** (`%0`) trên **frame API**: W=1 + W=2/4 ⇒ `VS0506` (message chứa `hong`), exit 1 | PASS |
 | W7 | **frame mode** thật: `run_async_workers_with_hosts_caps` W=2/4 suspend/resume, byte-identical W=1, `steps>0` | PASS |
 | W8 | `Local`/`Off` giữ đường cũ (cùng stdout/exit) | PASS |
 | W9 | parity interp↔VM W=1/2/4 (stdout/exit/codes/giá trị cuối) | PASS |
 | W10 | **cancel idempotent trên cùng handle**: 2 lần sau khi xong (giữ kết quả) + 2 lần trước join (một outcome `cancelled`) | PASS |
 
-Commit **`9fc06efb`**. *Ghi nhận*: W6 cho thấy `run_workers_parallel*` W≥2 **không** surface lỗi task không ai await ở **cả hai** engine (exit 0) — hành vi có trước, test khoá parity; nợ riêng, không sửa trong lát này.
+Commit **`9fc06efb`**; W6 vá theo audit ở §2b.7.
 
 ## 2b.4 Dedup interp
 
@@ -334,3 +334,34 @@ Commit **`a92fdb2f`**.
 - `ST-317b` **hoàn tất phần tách tệp + worker + dedup** trong phạm vi Sóng 6. Không còn tệp sản phẩm > 1.100 LOC thuộc lane W2.
 - Nợ ghi nhận (ngoài phạm vi): (a) W≥2 không surface lỗi task không await (parity interp/VM); (b) `thu_duong` wrapper frame vẫn cần vì env semantics khác.
 - `Worktree`/nhánh dọn theo `AGENTS.md` §6 sau khi A0 duyệt `DONE`.
+
+
+## 2b.7 Vá theo audit `ef3e6928` (P2b PASS có điều kiện)
+
+### P2-C — đồng bộ `main` (bắt buộc)
+- `git merge main` (main @ `fa74f294`, VD-294) vào `plan/st317b`, **không conflict** (chỉ docs `agent/*`; giữ cả VD-294 + P2b).
+- Merge commit **`a801ccc6`** `[ST-317b] merge main (VD-294) truoc khi hop nhat`.
+- `git merge-base --is-ancestor main HEAD` ⇒ **đúng**.
+
+### P2-A — W6 đặc tả sai (đã sửa)
+- Trước: `w6_loi_task_khong_await_duoc_surface` chạy `run_workers_parallel*` (non-frame) và assert `exit == 0` cho W=2/4 — **trái đặc tả** (`final_join` phải surface `VS0506`).
+- Sau: `w6_loi_task_khong_await_frame_final_join` dùng **frame API** (`run_async_with_hosts_caps` W=1, `run_async_workers_with_hosts_caps` W=2/4 — đúng đường production `vis run --workers`), assert `exit == 1` + `code.short == "VS0506"` + message chứa `hong` cho **mọi** W. **PASS**.
+- Ghi chú: đường **non-frame** `run_workers_parallel*` W≥2 (không phải production frame) vẫn không surface lỗi task không await — hành vi có trước; không assert thành "đúng" nữa (xem nợ P2-B bên dưới, cùng gốc join).
+
+### P2-B — nợ ghi nhận (không sửa trong lane này)
+- Audit: **production frame W=1** lệch interp (exit 0) vs VM (exit 1) cho cùng kịch bản lỗi task không await; `crates/vis-interp/src/frame/worker.rs` **không thuộc lane W2** của lát này.
+- Đề xuất A0 đăng ký **nợ mới** (VS3/correctness): chuẩn hoá `final_join` cho frame W=1 hai engine (interp phải surface `VS0506` như VM), khoá bằng ca frame parity. Không thêm test giả xanh.
+
+### P3 — rẻ, đã làm
+- W3: assert thêm `code.short == "VS0506"` (không chỉ message "huỷ").
+- W7: giữ `steps > 0` + byte-identical W=1/W=2/4 (Pending/`frame_next` wake là nội bộ `Abort::Pending`; không lộ qua `RunOutput`, đã ghi chú — không thêm assert giả).
+- W2: đã dùng `counter` (không phải `s14`) — không cần đổi.
+- LOC journal: `sqlite/truy_van.rs` **312**, `sqlite/loi.rs` **111** (sau `cargo fmt`).
+
+### Cổng lại (số thật, log mới)
+| Cổng | Kết quả | Log + sha256 |
+|---|---|---|
+| `cargo clippy --workspace --all-targets -- -D warnings` | **exit 0** | `st317b-p2b-fix-clippy.log` · `d02ad1dc…e096` |
+| `./vis-dev gate --fast` | **PASS — 3901/3901**, 4 skipped (40,9 s) | `st317b-p2b-fix-gate.log` · `b16b5845…6bc9` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** (56,4 s, 1.774/s) | `st317b-p2b-fix-diff.log` · `5573f67b…2e9a` |
+| `cargo test -p vis-conformance --test lib_api_it st317b_worker_orchestrate` | **10/10 PASS** | — |
