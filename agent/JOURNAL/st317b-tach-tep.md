@@ -203,3 +203,47 @@ Tất cả đặt trong aggregator đã có (gợi ý `crates/vis-interp/tests/f
 | Tách `crates/vis-lsp/src/lib.rs` | sau `ST-317c` | A0 báo |
 | Hiện thực gom worker orchestration (`worker/orchestrate.rs`) + 10 test §4.4 | sau `ST-317a` | thiết kế đã chốt trong tệp này |
 | `vis-interp` sync↔frame khử trùng lặp (phần còn lại của mô tả `ST-317b`) | sau `ST-317a` | lượt này mới làm phần tách tệp + worker design; `vis-interp/src/{interp,frame}/**` chưa bị đụng vì trùng vùng `Value` |
+
+---
+
+# Phần 2a — tách `crates/vis-lsp/src/lib.rs` (mở khoá sau `ST-317c` PASS, `main` @ `aecb266c`)
+
+- **Nhánh** `plan/st317b` đã `git merge --ff-only main` ⇒ nền `aecb266c` (gồm ST-317b phần 1 `e1fe1733` + ST-317c `53df9090` PASS + ST-316c prep).
+- **Phạm vi**: chỉ `crates/vis-lsp/src/lib.rs` → `server/`. **Không sửa** `analysis/host.rs` (317c vừa audit PASS), không đổi wire protocol/JSON, không đổi `vis_lsp::run`/`AnalysisHost`/`ThongKeCache`.
+
+## 2a.1 LOC trước/sau (`wc -l` thật)
+
+| Trước | Sau | Dòng | Trách nhiệm |
+|---|---|---|---|
+| `vis-lsp/src/lib.rs` | **1056** | — | — |
+| | `src/lib.rs` | **236** | doc + `#![forbid(unsafe_code)]` + khai báo `mod` + `pub use host::{AnalysisHost, ThongKeCache}` + `pub use server::run` + re-export `pub(crate) uri_thanh_duong/duong_thanh_uri/mode_cua` + test URI `vd258_tests` (3 test cũ) |
+| | `src/server/mod.rs` | **11** | khai báo + `pub use run::run` |
+| | `src/server/run.rs` | **651** | `run`: cờ `--stdio`, vòng lặp frame stdin, dispatch JSON-RPC (initialize/initialized/shutdown/exit + 24 method `textDocument/*`/`workspace/*`), publish chẩn đoán phụ thuộc |
+| | `src/server/khoi_tao.rs` | **60** | `ket_qua_khoi_tao` — capabilities cố định (snapshot tất định) |
+| | `src/server/uri.rs` | **143** | `uri_thanh_duong(_voi)`, `duong_thanh_uri`, `percent_giai_ma`, `mode_cua` (giữ nguyên luật ST-80/ST-297/VD-258) |
+
+`lib.rs` 1.056 → **236** (< 500, mục tiêu 500–800 cho tệp lớn nhất: `server/run.rs` 651). Mọi tệp < 1.000, R1 ≤ 1.500.
+
+**API giữ nguyên**: `vis_lsp::run` (re-export từ `server::run`, cùng chữ ký `fn(&[String]) -> ExitCode`), `pub use host::{AnalysisHost, ThongKeCache}`, các module `protocol/features/analysis` giữ nguyên `#[path]` + tên phẳng. `analysis/*` dùng `super::uri_thanh_duong`/`super::duong_thanh_uri`/`super::mode_cua` vẫn chạy qua re-export `pub(crate)` ở `lib.rs`. **0 dòng logic bị sửa** — move nguyên văn, chỉ thêm `use`/`pub(crate)`/`pub(crate) mod uri`.
+
+## 2a.2 Bằng chứng test/cổng
+
+| Cổng | Kết quả | Log + sha256 |
+|---|---|---|
+| `cargo test -p vis-lsp --lib` | **29 passed**, 0 failed | — |
+| `cargo test -p vis-lsp --test lsp_it` | **158/158 passed**, 0 failed | — |
+| `./vis-dev gate --fast` | **PASS** — nextest **3885/3885 passed, 4 skipped** (51,2 s) | `/home/ps/vislogs/st317b-p2a-gate.log` · `0e67dde2…984f3` |
+| `./vis-dev rules` R1..R9 | **OK** — R8 **38 + 1 = 39/40**, `vis-cli/tests` 8/15; R1 mọi tệp ≤ 1.500 | `/home/ps/vislogs/st317b-p2a-rules.log` · `812aacb2…793414` |
+| `./bin/vis-dag-check` | **OK** — 23 crate / 5 tầng / 0 cạnh cấm | `/home/ps/vislogs/st317b-p2a-dag.log` · `5ee0d7f4…c4af4d` |
+| `vis-diff 100k` | **không chạy** — thuần move code LSP, 0 đổi hành vi/wire protocol (theo chỉ đạo) | — |
+
+**Commit**: `[ST-317b] tach vis-lsp/lib.rs …` (cùng commit với mục này).
+
+## 2a.3 Còn lại (chờ `ST-317a`)
+
+| Việc | Điều kiện |
+|---|---|
+| `crates/vis-core/src/value/mod.rs` (1.0xx dòng) | `ST-317a` hợp nhất |
+| `crates/vis-host-native/src/db/sqlite/mod.rs` (1.130) | `ST-317a` hợp nhất (4 điểm `Value::Enum` trong tệp) |
+| `crates/vis-runtime/src/worker/proto.rs` + worker orchestration (`worker/orchestrate.rs`, 10 test W1..W10 §4.4) | `ST-317a` hợp nhất |
+| Khử trùng lặp `vis-interp/src/{interp,frame}/**` | `ST-317a` hợp nhất |
