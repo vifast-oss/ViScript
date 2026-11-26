@@ -93,6 +93,44 @@ fn value_kich_thuoc_va_map_cow() {
 }
 
 #[test]
+fn json_decode_gop_truc_tiep_vis_map_last_wins() {
+    // **ST-315b review F4**: decoder gộp thẳng vào `VisMap` (last-wins, giữ vị trí đầu), không
+    // đệm mọi cặp trùng. Object 100 000 cặp cùng khoá `"a"` ⇒ đúng 1 entry, giá trị cuối.
+    let n = 100_000usize;
+    let mut s = String::with_capacity(n * 10 + 2);
+    s.push('{');
+    for i in 0..n {
+        if i > 0 {
+            s.push(',');
+        }
+        s.push_str("\"a\":");
+        s.push_str(&i.to_string());
+    }
+    s.push('}');
+    let v = decode(&s).expect("100k cặp trùng khoá phải decode được");
+    match &v {
+        Value::Map(m) => {
+            assert_eq!(
+                m.len(),
+                1,
+                "trùng khoá phải gộp còn 1 entry, không giữ 100k cặp"
+            );
+            assert!(
+                m.get(&Value::Str("a".into()))
+                    .is_some_and(|x| x.eq_value(&Value::Int((n - 1) as i64))),
+                "giá trị phải là giá trị cuối"
+            );
+        }
+        _ => panic!("object JSON phải decode thành map"),
+    }
+    assert_eq!(show(&v), format!("{{\"a\": {}}}", n - 1));
+
+    // Thứ tự: khoá trùng giữ vị trí **đầu**, không dời về cuối.
+    let v = decode(r#"{"x":1,"y":2,"x":3,"z":4}"#).expect("object nhỏ phải decode được");
+    assert_eq!(show(&v), "{\"x\": 3, \"y\": 2, \"z\": 4}");
+}
+
+#[test]
 fn cookie_jar_va_trap_pos() {
     let mut jar = CookieJar::new();
     jar.nhan_set_cookie(

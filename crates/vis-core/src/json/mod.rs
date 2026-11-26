@@ -11,7 +11,7 @@
 
 use std::rc::Rc;
 
-use crate::value::Value;
+use crate::value::{Value, VisMap};
 
 pub mod derive;
 pub mod esc;
@@ -89,12 +89,15 @@ impl<'a> P<'a> {
     }
 
     fn doi_tuong(&mut self, depth: usize) -> Result<Value, String> {
+        // **ST-315b review F4**: gộp **trực tiếp** vào `VisMap` khi gặp từng cặp — last-wins,
+        // giữ vị trí chèn đầu — nên đỉnh bộ nhớ là O(số khoá unique), không O(số cặp) kể cả
+        // object đối kháng lặp một khoá 100k lần.
         self.i += 1; // `{`
-        let mut kv: Vec<(Value, Value)> = Vec::new();
+        let mut m = VisMap::new();
         self.khoang_trang();
         if self.b.get(self.i) == Some(&b'}') {
             self.i += 1;
-            return Ok(Value::map(kv));
+            return Ok(Value::map(Vec::new()));
         }
         loop {
             self.khoang_trang();
@@ -109,9 +112,7 @@ impl<'a> P<'a> {
             self.i += 1;
             self.khoang_trang();
             let v = self.gia_tri(depth + 1)?;
-            // **ST-315b (VD-291 Q2)**: đẩy **mọi** cặp; `VisMap::from_pairs` gộp last-wins
-            // (giá trị cuối, vị trí đầu) trong O(1) khấu hao nhờ chỉ mục — bỏ vòng quét O(N²).
-            kv.push((Value::Str(k), v));
+            m.insert(Value::Str(k), v);
             self.khoang_trang();
             match self.b.get(self.i) {
                 Some(b',') => {
@@ -119,7 +120,7 @@ impl<'a> P<'a> {
                 }
                 Some(b'}') => {
                     self.i += 1;
-                    return Ok(Value::map(kv));
+                    return Ok(Value::map_tu(m));
                 }
                 _ => return Err(self.loi("thiếu `,` hoặc `}` trong object")),
             }
