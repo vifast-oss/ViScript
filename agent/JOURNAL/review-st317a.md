@@ -2,7 +2,8 @@
 # Review ST-317a — Gatekeeper (Agent 1) độc lập
 
 **Worktree**: `/home/ps/viswt/st317a` · nhánh `plan/st317a` · HEAD `87985b7e` (mã `fcecb5e6`) · nền `882b7ffa`.
-**Kết luận**: **PASS** — 0 finding P1; 1 finding P2 (hiệu năng/tài liệu, **không sai ngữ nghĩa**); 3 ghi chú P3.
+**Kết luận bản gốc (`ec4d7fc6`)**: **PASS** — 0 finding P1; 1 finding P2 (hiệu năng/tài liệu, **không sai ngữ nghĩa**); 3 ghi chú P3.
+**Addendum F1 (`2e4090e2`)**: **FAIL** — 1 finding **P1** mới: fast path `r = r with …` bỏ một charge `FeeKind::Expr` (và `steps`/`worker_tick`) nên ngân sách/`--max-budget` lệch interp↔VM. Xem §9.
 Không sửa mã sản phẩm trong lượt review này; chỉ thêm tệp này.
 
 ## 0. Phạm vi & hợp nhất — PASS
@@ -179,3 +180,77 @@ ngữ nghĩa, `Debug` vỡ snapshot, hay hồi quy `Enum` bất thường. `enum
 **PASS** — đủ điều kiện hợp nhất sau khi xử lý xung đột văn bản `agent/STATE.md` (giữ cả khối
 `ST-317a`, `ST-317b` phần 1, `ST-317c`). P2 là vấn đề hiệu năng/tài liệu, không chặn hợp nhất;
 3 P3 là ghi chú/hardening. Không sửa mã sản phẩm trong review này.
+
+## 9. Addendum F1 (`2e4090e2`) — **FAIL (P1 ngân sách interp↔VM)**
+
+**Phạm vi**: `git log --oneline ec4d7fc6..2e4090e2` → `2e4090e2`; `git diff --stat` → **9 tệp,
++336/−41**. Cây sạch; không `unsafe` mới; `git diff ec4d7fc6..2e4090e2 -- crates/vis-codegen
+agent/API-VBC1.txt` **rỗng**; R8 vẫn **39/40**; không tệp > 1.500 dòng.
+
+### 9.1 Phần vá đúng
+
+- `vis_runtime::value_ops::ptr_rc` (`value_ops.rs:39`) nhận thêm `Value::Record(r)`; `value_ops::tach_neu_cung_rc`
+  (`:54`) so con trỏ và đặt ô = `Unit`. `Interp::tach_o` (`interp.rs:337`) dùng helper; `Th::tach_dich`
+  (`vm.rs:585`) dùng helper cho ô **local**; VM `Instr::With` giữ nguyên.
+- Fast path interp `r = r with f: v` (`stmt.rs:22`, gọi tại `:173-185`): đánh giá base + từng
+  field (đúng thứ tự), kiểm đủ trường, rồi `remove` ô đích và áp `value_ops::voi`. Alias còn sống
+  ⇒ `Rc::make_mut` CoW; alias giữ bản cũ. Conformance `record-with-gan.vis` (interp + `--vm`) và
+  2 ca pointer interp + 1 ca pointer VM **PASS**, đọc test xác nhận đúng: không chia sẻ ⇒ cùng
+  `Rc::as_ptr`; có alias ⇒ pointer mới, alias pointer cũ.
+- `recordbench` (cùng binary `a6d55492…`): chạy lại `record-fieldbench`/`record-withbench`
+  (256 trường × 200k vòng) cho stdout **199999**, wall **0,05–0,06 s** cho cả interp và `--vm`
+  (log Builder 54–62 ms) ⇒ số đo **không sai**; nền 1,9 s là thật.
+
+### 9.2 Cổng F1 (độc lập)
+
+| Cổng | Kết quả | Log / sha256 (sau khi ghi log) |
+|---|---|---|
+| `./vis-dev gate --fast` | **3885/3885 passed, 4 skipped**, `vis-dev gate --fast: PASS`, exit 0 | `/home/ps/vislogs/review-st317a-f1-gate.log` — `64e295ad0fa62ce3e29ac400d83fa2a34f058e7d9294835d90bb7d6f1b662a29` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | `tong=100000 … chay=93768 **lech=0**`, 60,0 s, exit 0 | `/home/ps/vislogs/review-st317a-f1-visdiff.log` — `5215f176cc3ade81551ae0cf8ba2e20730eca2bc4745b1ce3c88c29b72e4e3f6` |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit **0**, 0 warning | `/home/ps/vislogs/review-st317a-f1-clippy.log` — `d5f7068adfaebad02eb97a8cbfb34e7a3e99dc55f1ef8a7408c9e6cd127023cb` |
+| Pointer tests | interp **2 passed**, VM **1 passed** | `/home/ps/vislogs/review-st317a-f1-pointer-tests.log` — `016724fe62ba36afcaeae026cbd09e40a25371129ac37b2ca565305c574914ab` |
+| Conformance corpus | **568/568** ca xanh | `/home/ps/vislogs/review-st317a-f1-conformance.log` — `3d7aaade4e7496782e5c5efa22b95eb92bde568cf77f9cd6be32bbafdbf82ee5` |
+| `git merge-tree --write-tree main HEAD` (`main` = `d4861fc7`) | **chỉ xung đột `agent/STATE.md`** (văn bản; 3 bản), exit 1 | — |
+
+### 9.3 Finding **P1** — fast path bỏ charge ngân sách, lệch interp↔VM
+
+`HExpr::With` bình thường đi qua `Interp::eval` (`interp/eval.rs:58-69`): tăng `steps`, gọi
+`worker_tick`, và **charge `FeeKind::Expr`** (cùng node codegen charge tại `codegen.rs:448`).
+Fast path `gan_with_tai_cho` chỉ gọi `eval(base)` + `eval` từng field, **không** charge cho node
+`With` (và không tăng `steps`/`worker_tick`). Vì vậy mỗi vòng `r = r with f: i` interp rẻ hơn VM
+**1 đơn vị**; `--max-budget` (VS0510) là hành vi người dùng thấy được.
+
+Chương trình tái lập (200k/1000 vòng; bản A dùng fast path, bản D đổi đích `q` để **không** fast
+path):
+- A: `r = r with f: i`; D: `q = r with f: i`.
+- Ngưỡng budget nhỏ nhất chạy được: **A interp 11018**, **A VM 12018**, **D interp 12022**,
+  **D VM 12022** (lệch đúng 1000 = số vòng).
+- Tại `--max-budget 11500`: A **interp exit 0, in 999**; A **VM exit 101**
+  `VS0510 … (E_ASSIGN): cần 1, còn 0`; D **cả hai exit 101**.
+  Tại `12017`: A interp exit 0, A VM exit 101 (`E_EXPR`); D cả hai exit 101.
+Log: `/home/ps/vislogs/review-st317a-f1-budget-parity.log` —
+`4af42dba324896ad1b10312fce2e4aa44467024440c77eb01e96e6b5b21a77b8`.
+Đây là **regression mới của F1** (trước F1 cả A và D đều đi qua `eval(With)`), không phải nợ cũ.
+
+**Đề xuất**: trong `gan_with_tai_cho`, trước khi đánh giá base (hoặc tại đúng điểm `eval(With)`
+sẽ làm), cộng bookkeeping `self.steps += 1`, `worker_tick(wspan/value.span)` và
+`self.charge(FeeKind::Expr, value.span())`; hoặc tách helper chung để fast path không bỏ sự kiện.
+Sau đó thêm ca budget parity A/D (ngưỡng phải bằng nhau) và chạy lại `gate --fast` + `vis-diff`.
+
+### 9.4 Ghi chú P3 (không chặn riêng, nhưng nên vá cùng F1)
+
+- Fast path `self.env.borrow_mut().remove(&id)` **trước** `voi`/`ghi_o`; nếu `voi` lỗi bất ngờ
+  hoặc `ghi_o` từ chối `let`/ô không hợp lệ, ô biến mất. Precheck trường làm `voi` gần như
+  infallible và tyck chặn `let`, nhưng nên `tra_o`/khôi phục ô trong nhánh lỗi để phòng thủ.
+- `Th::tach_dich` nhánh **global** vẫn tự so `ptr_rc`/đặt `None` thay vì gọi
+  `tach_neu_cung_rc` (nhánh local đã gọi). Hành vi đúng nhưng "một nguồn" chưa trọn; nên dùng
+  helper cho cả global.
+- Test pointer VM gọi trực tiếp `tach_dich` + `voi`, **không** chạy `Instr::With`/`Instr::Set`
+  end-to-end; conformance chỉ chứng minh output. Nên thêm ca chạy `Instr::With` thật (hoặc
+  chấp nhận vì `record-with-gan` đã phủ output hai engine).
+
+### 9.5 Kết luận Addendum
+
+**FAIL** vì P1 ngân sách (interp↔VM khác nhau trên `--max-budget`), dù phần pointer/CoW, alias,
+conformance 568/568, gate 3885, diff 0 và clippy đều đạt. Không sửa mã; chờ Builder vá
+bookkeeping rồi audit lại F1.
