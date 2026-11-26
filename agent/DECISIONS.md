@@ -4228,3 +4228,13 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 4. **Đăng ký `#210` (`mở`, VS3/correctness)**: closure **gọi hàm tên** đọc/ghi global — non-frame interp `1,0`/`5,0` vs VM `0,1`/`5,5`; pre-existing; `SPEC` §4.7 **chưa nói** env hàm tên khi gọi từ closure; lane `vis-interp` / A0 chốt ngữ nghĩa.
 5. **Sổ §8**: **210 = 86 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (đếm thật 210 hàng; dải 1..210, thiếu `#205`, `#109` tách `a`/`b`).
 6. **Ràng buộc**: docs-only; **không** tạo worktree/nhánh, **không** đụng `st319a`/`st319c2`/`st319d`, không sửa mã/`docs/SPEC*.md`; `ST-316c` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
+
+### VD-302 · Mở `ST-319e` — đóng `#210` (closure gọi hàm tên, interp non-frame) — A0, 2026-11-27
+
+> **Căn cứ**: `main` @ **`07a5e2b3`** (merge `ST-319a` PASS `b2033ebd`), sạch, `origin` sync; `SO-NO` `#210` `mở`; `plan/st319e` @ **`07a5e2b3`** (đang chạy); `plan/st319c2` @ `2629fef0`, `plan/st319d` @ `307da9da`. Toàn văn: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd302.md`.
+
+1. **Mở `ST-319e` (W5, `READY`) — đóng `#210`**: closure gọi **hàm tên cấp tệp** đọc/ghi global; **interp non-frame thừa hưởng env snapshot closure** thay vì **env module**; **VM/frame đã đúng** ⇒ sửa interp non-frame theo hành vi VM/frame, **không đổi SPEC**, không đụng `vis-bytecode`/`vis-vm`/`vis-interp/src/frame/**`. Lane `crates/vis-interp/src/interp/**`; nhánh `plan/st319e` @ `07a5e2b3`, đang chạy.
+2. **Test & KPI**: **A/B/C2/E/P5** + **diff generator** (0 tệp test cấp 1 mới); parity interp non-frame ↔ VM cho repro `#210` (`1,0`/`5,0` vs `0,1`/`5,5`); `VIS_DIFF_N=100000 ./bin/vis-diff` **`lech=0`**; `gate --fast` PASS; clippy 0.
+3. **Trạng thái Sóng 8**: `ST-319a` **`REVIEW`** (đã merge `07a5e2b3`, PASS `b2033ebd`, chờ A0 phê chuẩn `DONE`); `ST-319b` `DONE`; `ST-319c` `REVIEW (chẩn đoán)`; `ST-319c2`/`ST-319d`/`ST-319e` đang chạy.
+4. **`#210` vẫn `mở`** (đang sửa ở `ST-319e`); sổ **210 = 86 mở + 105 đóng + 16 VS3 + 2 không làm + 1 điều hướng** — không đổi đếm.
+5. **Ràng buộc**: docs-only; **không** tạo worktree/nhánh, **không** đụng `st319c2`/`st319d`/`st319e`, `plan/st309-qa`; không sửa mã/`docs/SPEC*.md`; `ST-316c` vẫn `BLOCKED`; chế độ `VD-289` tiếp diễn (không soak/fuzz nặng, không tag).
