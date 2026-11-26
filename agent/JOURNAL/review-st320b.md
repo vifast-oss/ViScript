@@ -8,6 +8,7 @@
 - **Kết luận**: **PASS có điều kiện** cho phạm vi `#212` (red-first thật, 33/33, gate/diff/clippy
   xanh, merge-tree sạch). **Chưa merge nguyên trạng**: phát hiện **P2-1 là hồi quy mới, hẹp**
   (`const` giữ hàm tên + HOF free trong frame ⇒ trap `VS0501`), cần vá 1 dòng sync trước khi merge.
+  **Addendum F1 (`7c807ba8`, §10): P2-1 đã vá và đóng — PASS; P2-2/P3 vẫn là nợ không chặn.**
 
 ## 0. TL;DR
 
@@ -193,3 +194,87 @@ callback, đánh dirty các sym top-level đã đổi (hoặc cho đọc top-lev
 1. Builder vá P2-1 + thêm ca test (cùng tệp `st317b_worker_orchestrate.rs`), chạy lại cổng.
 2. A0 cập nhật `#212`/`SO-NO` sau khi merge; dọn worktree/nhánh theo `VD-288`.
 3. Mở nợ riêng cho P2-2 (free HOF ghi global trong frame) và P3-2 (test W>1 read-only).
+
+## 10. Addendum F1 (`7c807ba8`) — vá P2-1: sync `env_module` trước vòng `const`
+
+> **Kết luận addendum: PASS** — P2-1 đã đóng; repro gốc `VS0501`/exit 101 → **`[1]`/exit 0**;
+> `w26` đỏ trước → xanh; `st317b` **34/34**; gate **3936/3936**; diff **`lech=0`**; clippy 0;
+> merge-tree với `main` `417ef426` **sạch**. P2-2/P3 giữ nguyên là nợ không chặn.
+
+### 10.1 Phạm vi
+
+- `git status --porcelain` **rỗng** tại `7c807ba8` trước khi ghi addendum này.
+- `git log --oneline 2192291e..HEAD` = **1 commit**:
+  `7c807ba8 [ST-320b] F1: sync env_module truoc const + test HOF`.
+- `git diff --stat 2192291e..HEAD`: **3 tệp, +117/−0** — `frame/worker.rs` (+7),
+  `tests/async_api_it/st317b_worker_orchestrate.rs` (+33), journal Builder (+77).
+  **Không** chạm VM/bytecode/loader/cache/SPEC; `git diff --check` sạch; 0 `unsafe`.
+
+### 10.2 Logic
+
+- `frame/worker.rs:35-36` (ngay sau `let globals`, **trước** khối `const`: gom dòng 38-45, vòng
+  `for` dòng 46-54): `it.env = globals.clone(); it.dat_env_module(globals.clone());`.
+- Hai sync cũ giữ nguyên và idempotent: `params.rs:20-23` (đường có `main`) và
+  `worker.rs:111-113` (không `main`). `grep 'it\.env *='` chỉ còn **3** điểm, tất cả đều đi kèm
+  `dat_env_module` (2 điểm cũ + điểm mới).
+- Đặt `it.env` sớm chỉ mở rộng tầm nhìn của callback non-frame trong lúc đánh giá `const`
+  (trước là map rỗng) — cùng ngữ nghĩa `run_program` non-frame; biến top-level `var` chưa được
+  khởi tạo ở giai đoạn này nên không đổi kết quả const hợp lệ.
+- Không đổi `call_value`, `HExpr::Var`, `MakeLambda`, `DongBo`/`nap_vao_env` ⇒ `#203/#206/#209/#210`
+  và `w19..w25` không bị tác động (xác nhận bằng 34/34 + gate).
+
+### 10.3 Repro + test `w26`
+
+`review-const-readonly.vis` (đúng ca P2-1 §6.1):
+
+| Engine | `2192291e` (trước F1) | `7c807ba8` (sau F1) |
+|---|---|---|
+| frame interp | **VS0501 `tên 'g' chưa có giá trị`, exit 101** | **`[1]`, exit 0, diagnostics rỗng** |
+| frame VM | `[1]`, exit 0 | `[1]`, exit 0 |
+
+- Red-first thật: `/home/ps/vislogs/st320b-f1-w26-red.log` (sha256 `2418c550…74ce`, khớp journal
+  Builder) — stash `worker.rs`, giữ test; `w26` panic tại dòng `1158`, `left: ""`,
+  diagnostics `VS0501` dòng 7 cột 5.
+- `w26_frame_w1_const_ham_ten_qua_hof` chạy **frame interp W=1 + frame VM W=1**, assert **literal
+  riêng** `"[1]\n"`, `diagnostics.is_empty()`, `exit == 0`, `so_khop`; không `#[ignore]`;
+  cùng tệp con/aggregator ⇒ R8 giữ **38/40** (0 tệp cấp 1 mới).
+- `st317b_worker_orchestrate` (audit chạy lại): **34 passed, 0 failed, 0 ignored, 399 filtered**
+  (`/home/ps/vislogs/review-st320b-f1-st317b.log`, sha `b7b2cb80…3999`) — gồm `w25`, `w26` và
+  toàn bộ `w19..w24`.
+
+### 10.4 Cổng máy (audit chạy độc lập)
+
+| Cổng | Kết quả | Log · SHA-256 (audit) |
+|---|---|---|
+| `st317b_worker_orchestrate` | **34/34 PASS**, 0 ignore | `review-st320b-f1-st317b.log` · `b7b2cb80…3999` |
+| `./vis-dev gate --fast` | **PASS** — nextest **3936/3936 (4 skip)**, fmt/clippy/R1..R10 | `/home/ps/vislogs/review-st320b-f1-gate.log` · `5f63ad40…21f8` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — `chay=94425 giay=90.2 seed=3523158054` | `/home/ps/vislogs/review-st320b-f1-diff.log` · `4f3931c7…25c4` |
+| clippy `--workspace --all-targets -D warnings` | **exit 0** | `/home/ps/vislogs/review-st320b-f1-clippy.log` · `c92508a2…0549` |
+
+Tái lập: `PATH=$HOME/.cargo/bin:$PATH`, `CARGO_BUILD_JOBS=2`,
+`TMPDIR=/home/ps/vislogs/tmp-st320b`, không `cargo clean`; đĩa **16 GB** trống.
+
+### 10.5 Hợp nhất `main`
+
+- `git merge-tree --write-tree 417ef426 HEAD` → tree **`5ab3a4b1…`**, exit 0, **0 xung đột**.
+- `main` từ `d1254b05` chỉ sửa **docs** (ACTIVE/DECISIONS/QUEUE/ROADMAP/STATE/reports) — không
+  sửa tệp test (main **32** test, nhánh **34** = `w25` + `w26`) và không có
+  `agent/JOURNAL/review-st320b.md`. Không có xung đột `STATE.md`/test như dự kiến brief; giữ
+  **cả hai** tự nhiên, không cần resolve tay.
+- `git diff --name-status 417ef426 <tree>`: 2 `A` journal + 5 `M` đúng phạm vi `#212`/F1.
+
+### 10.6 Rủi ro còn lại
+
+- **P2-2 (không do F1)**: free HOF **ghi** global trong frame không đánh `Dirty` ⇒ frame peers
+  giữ cache cũ (repro `review-manual-hof-frame2.vis`: frame `[3],3,0,0` vs VM `[3],3,0,3`).
+  Không đổi sau F1; nợ riêng, không chặn `#212`.
+- **P3-1**: bất biến ngầm `name.is_empty()` (lambda vs hàm tên) — không đổi.
+- **P3-2**: vẫn thiếu test W>1 read-only; W=2/4 write-only khớp VM, read-only trap `VS0509` hai
+  engine (nhãn sym khác nhau — có sẵn trên main).
+- **P2-1 của review 319e** (rò tham số khi trap sớm) vẫn ngoài phạm vi.
+
+### 10.7 Kết luận addendum
+
+**PASS.** P2-1 đã đóng đúng cách (sync sớm, 1 dòng + test khoá), không hồi quy `w19..w25`, toàn bộ
+cổng bắt buộc xanh, merge-tree sạch. Đủ điều kiện merge theo `VD-288`; chỉ còn P2-2/P3 là nợ
+không chặn.
