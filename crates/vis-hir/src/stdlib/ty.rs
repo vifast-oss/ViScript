@@ -61,7 +61,8 @@ pub enum Ty {
     /// lớp `Result`.
     ResultListRowSetErr,
     /// **VD-267** — `never`: kiểu của biểu thức **không bao giờ cho giá trị** (`panic(…)`).
-    /// Chỉ dùng cho chữ ký builtin trần ([`BUILTIN_FUNCS`]); `std.*` chưa có hàm nào trả `never`.
+    /// Chỉ dùng cho chữ ký builtin trần ([`crate::stdlib::BUILTIN_FUNCS`]); `std.*` chưa có hàm nào
+    /// trả `never`.
     Never,
     /// **VD-270 (strfind)** — `int?` = `Option[int]`: kiểu trả của `std.str.find`/`rfind`
     /// (vị trí **scalar** Unicode, không khớp ⇒ `None`).

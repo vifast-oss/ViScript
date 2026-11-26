@@ -44,6 +44,11 @@
   `gate --fast` PASS (`lib_api_it` **399**), `rules` OK; commit `68aeb4b3`, test-only 0 chạm sản
   phẩm (`JOURNAL/st318b-on-dinh-net-http.md`). Gatekeeper `001a9ffb` PASS.
 - **`VD-297`** mở **đợt 2** Sóng 7: 3 lát `READY` (`ST-318e..g`) hạ thêm 7 tệp R1 (8 → 1, còn `vis-interp/src/frame.rs` 1030 — `ST-318h` sau `ST-318a`). **`VD-296`** mở Sóng 7 đợt 1: 4 lát `READY` (`ST-318a..d`) đóng **`#202`**/**`#203`**/**`#204`** và hạ 5 tệp R1 (13 → 8). **`VD-295`** đăng ký **`#203`**/**`#204`**; **`VD-294`** đăng ký **`#202`**.
+- **`ST-318i` (nợ rustdoc `vis-hir`, chờ A0 duyệt)**: đóng 4 intra-doc link hỏng phát hiện từ audit
+  `ST-318d` — 2 link private (`registry`/`ty`) → code span, `BUILTIN_FUNCS` → `crate::stdlib::BUILTIN_FUNCS`,
+  `BUILTIN_VALUE_NAMES` → code span (item ở `vis-types`, ngoài dependency); 0 đổi code/API/visibility.
+  `cargo doc -p vis-hir --no-deps` **exit 0, 0 warning**; `cargo test -p vis-hir` **10/10**;
+  `gate --fast` **PASS** (`TMPDIR` trên đĩa vì `/tmp` tmpfs đầy) — `JOURNAL/st318i-rustdoc-vis-hir.md`.
 - Sổ nợ hiện tại: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (`SO-NO.md` §8; R5 xanh). Dự kiến khi đóng Sóng 7: **205 = 82 mở + 104 đóng + 16 VS3 + 2 + 1** (kiểm lại thật khi đóng nợ).
 - Quyết định gần nhất: [`JOURNAL/quyet-dinh-a0-2026-11-27-vd297.md`](JOURNAL/quyet-dinh-a0-2026-11-27-vd297.md); trước đó `VD-296` (Sóng 7 đợt 1), `VD-295` (đóng Sóng 6), `VD-294` (Sóng 6 phần 1), `VD-293` (Sóng 5), `VD-292` (Sóng 4).
 
