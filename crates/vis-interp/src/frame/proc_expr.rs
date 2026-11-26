@@ -755,7 +755,9 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             // dựng lại đường. `=` giữ nguyên đường nâng `Option` như cũ.
             let moi = if matches!(op, AssignOp::Set) {
                 let rhs = crate::lift::lift_opt(rhs, opt_depth);
-                crate::gan::gan_duong(root, &duong, rhs, span)?
+                let mut moi = root;
+                crate::gan::gan_duong(&mut moi, &duong, rhs, span)?;
+                moi
             } else {
                 let old = crate::gan::doc_duong(&root, &duong, span)?;
                 let bop = match op {
@@ -768,7 +770,9 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                     AssignOp::Set => unreachable!("Set đã xử lý ở nhánh trên"),
                 };
                 let new = crate::builtin::bin(bop, old, rhs, span)?;
-                crate::gan::gan_duong(root, &duong, new, span)?
+                let mut moi = root;
+                crate::gan::gan_duong(&mut moi, &duong, new, span)?;
+                moi
             };
             frame.cur().env.borrow_mut().insert(sym, moi);
             Ok(())

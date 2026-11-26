@@ -14,6 +14,7 @@ pub mod net;
 pub mod render;
 pub mod rt;
 pub mod stdlib;
+pub mod value_ops;
 pub mod worker;
 
 pub use builtin::Host;

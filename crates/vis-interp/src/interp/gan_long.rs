@@ -90,11 +90,12 @@ impl<'a> Interp<'a> {
                 _ => {}
             }
         }
-        let moi = if matches!(op, AssignOp::Set) {
+        // **ST-316a**: tính lá mới **trước**, rồi tách ô gốc khỏi `Rc` (nếu đang chia sẻ) để
+        // `Rc::make_mut` cập nhật tại chỗ `O(1)`; lỗi giữa chừng thì trả ô như cũ.
+        let thay = if matches!(op, AssignOp::Set) {
             // Cùng biên nâng `Option` như gán một tầng (`x.f = …`, `x[i] = …`).
             let dep = self.assign_depth(target, &cu);
-            let rhs = crate::lift::lift_opt(self.eval(value)?, dep);
-            gan_duong(cu, &duong, rhs, span)?
+            crate::lift::lift_opt(self.eval(value)?, dep)
         } else {
             // Gán ghép: đọc **lá cũ** trước vế phải, rồi `lá = lá <op> v`.
             let old = doc_duong(&cu, &duong, span)?;
@@ -109,11 +110,16 @@ impl<'a> Interp<'a> {
                 AssignOp::Rem => BinOp::Rem,
                 AssignOp::Set => unreachable!("Set đã xử lý ở nhánh trên"),
             };
-            let new = crate::builtin::bin(bop, old, rhs, span)?;
-            gan_duong(cu, &duong, new, span)?
+            crate::builtin::bin(bop, old, rhs, span)?
         };
         if let Some(a) = self.charge(FeeKind::Assign, span) {
             return Err(a);
+        }
+        let mut moi = cu;
+        let da_tach = self.tach_o(id, &moi);
+        if let Err(e) = gan_duong(&mut moi, &duong, thay, span) {
+            self.tra_o(id, &moi, da_tach);
+            return Err(e);
         }
         self.ghi_o(id, moi, span)
     }
