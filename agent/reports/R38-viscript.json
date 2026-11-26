@@ -3473,7 +3473,17 @@
     "kpi": "Value 32B; Record CoW ~34×; writebench ~240×; listbench 13–21×; StdId 167; WASI 398×2; worker 32 test",
     "so_no": "210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng",
     "wasi": "398×2 (371+27) final2 @8c883a16 (code ee8f252d); sem 390/390; suite 28/28; core 47/0; sqlite 45+2; dirty=0",
-    "wasi_final2": "398×2 (371+27) @8c883a16 (code ee8f252d), dirty=0; sem 390/390; suite 28/28; core 47/0; sqlite 45+2"
+    "wasi_final2": "398×2 (371+27) @8c883a16 (code ee8f252d), dirty=0; sem 390/390; suite 28/28; core 47/0; sqlite 45+2",
+    "final_bench": {
+      "head": "4caa600e",
+      "code": "ee8f252d",
+      "binary_sha256": "a47b583e1252909b878514bcd9839421167b9c23e670b9e7905031b37c5179be",
+      "report_sha256": "e6a0380405a89697aea74b2eb309c344d28a2a1a5032b0b593bd5f50d78737f7",
+      "runs5_json_sha256": "3ca403ff0ecb950aa0755ec493c6914de06dbaded9ed66c56ee48fd7565ce953",
+      "kpi": "median <=10%; p90 <=15%",
+      "raw": "--runs 3 nhiem host (control 77e64bc0 cung cham ~2x) - khong dung KPI",
+      "ab": "ghim 1 E-core 5 vong x 5 mau: khong median tang; p90 te nhat +7.4% (<15%); trung vi paired -7.4%; stdout 5/5; khong hoi quy 319d/319e"
+    }
   },
   "blocked": [
     {

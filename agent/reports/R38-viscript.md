@@ -110,6 +110,26 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 | R1 | **0 tệp sản phẩm `*/src/*` > 1.000** (max **1000**, `run_cmd.rs`; `frame.rs` 159); toàn bộ `.rs` có **6 tệp test >1.000** (max `stdlib_ty.rs` 1275); R1 cứng ≤1.500 **PASS** | `ee8f252d` | KPI Sóng 7 13 → 0 (phạm vi sản phẩm) |
 | R8 | **39/40**; `vis-cli/tests` **8/15** | mọi gate | 38 + `vis-host-linux/tests` 1 |
 
+### 2.3 Bench cuối Sóng 8 — A/B kiểm soát (không hồi quy)
+
+- **Mốc**: HEAD docs `4caa600e` (mã `ee8f252d`), binary `target/release/vis` sha256 **`a47b583e…5179be`** (`vis 0.6.0`); report `/home/ps/vislogs/final-bench-report.md` sha256 `e6a03804…737f7`; JSON `final-bench-runs5-20261126T213803Z.json` sha256 **`3ca403ff…ce953`**.
+- **Raw `--runs 3` KHÔNG dùng làm KPI**: cả 10 ô đều “chậm” nhưng do **nhiễu host** (load 2,2–5,6, governor `powersave`, P-core chia SMT, tiến trình khác). Chứng minh: dựng lại **binary nền bit-identical `77e64bc0…26b96b`** từ `882b7ffa` — cùng binary đó hôm nay cũng chậm **~2×** (opt-bench interp 97 ms vs 50 ms ghi sẵn). Program sha256 + `[profile.release]` không đổi.
+- **A/B xen kẽ có kiểm soát**: ghim **1 E-core** (`taskset -c 4`), **5 vòng × 5 mẫu = 25 mẫu/engine/binary**, đảo thứ tự vòng chẵn/lẻ. **Không ô nào tăng median**; **p90 tệ nhất +7,4 %** (<15 %); **trung vị 90 tỉ lệ paired −7,4 %** (final nhanh hơn); stdout sha **5/5 khớp baseline** (interp = vm).
+- **Ngưỡng KPI**: median **≤10 %**, p90 **≤15 %** (so nền `882b7ffa`). Kết luận: **không hồi quy** từ `ST-319d`/`ST-319e`.
+
+| Chương trình | Engine | Δmedian | Δp90 | Tỉ lệ paired |
+|---|---:|---:|---:|---:|
+| opt-bench | interp | −7,9 % | −11,1 % | −8,0 % |
+| opt-bench | vm | −5,1 % | −17,1 % | −6,8 % |
+| trim-matches | interp | −4,3 % | −6,2 % | −2,2 % |
+| trim-matches | vm | 0,0 % | 0,0 % | 0,0 % |
+| mapbench | interp | −12,7 % | −12,3 % | −12,7 % |
+| mapbench | vm | −5,6 % | −6,8 % | −5,6 % |
+| listbench | interp | −11,5 % | −1,9 % | −11,5 % |
+| listbench | vm | −3,8 % | **+7,4 %** | −7,4 % |
+| writebench | interp | −20,0 % | 0,0 % | −20,0 % |
+| writebench | vm | −33,3 % | 0,0 % | −33,3 % |
+
 ## 3. Nợ và sổ `SO-NO.md`
 
 Sổ hiện tại (`4caa600e`): **210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng**
@@ -167,6 +187,10 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 | `st316c-wasm-final-20261126T1958Z.log` | 7.736 | `c7d90f60ec6bbe6e2ead3b682cc8df1270018ea93c0a14ca6dbb2c328da82957` | WASI 398×2 (371+27) @`d97773de` (lượt trước) |
 | `st316c-wasm-final2-20261126T2130Z.log` | 7.659 | `60064a5cc1fba281b2aece59315bc4d7445a5dd10a0a42c5107543e9a5996bbb` | **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): sem 390/390, suite 28/28, conformance 398×2, core 47/0, sqlite 45+2 |
 | `peak1-2026-11-27-chain.sh` | 25.762 | `e239c317b29f6a0b4e75167d423889e659860bceaec15ca448c15a4aa593fa1c` | chain 18 bước, **CHƯA CHẠY** |
+| `final-bench-report.md` | 6.944 | `e6a0380405a89697aea74b2eb309c344d28a2a1a5032b0b593bd5f50d78737f7` | bench cuối Sóng 8: raw nhiễu host + A/B 5×5 ghim E-core |
+| `final-bench-runs5-20261126T213803Z.json` | 7.532 | `3ca403ff0ecb950aa0755ec493c6914de06dbaded9ed66c56ee48fd7565ce953` | 25 mẫu/engine/binary; binary `a47b583e…` |
+| `final-bench-build.log` | 3.535 | `3c38cda746c7151da1b9be28b533f069841c77e6785614b0b62b34261418cd11` | build release `a47b583e…` (1m47s) |
+| `final-bench-base882b-build.log` | 3.640 | `483b874f0724d84b4025abbcc49cdfd3c0b8e9f009ed08d876fad19ccd591caa` | control `882b7ffa` → binary `77e64bc0…` |
 
 ## 6. Đề xuất kế tiếp
 
