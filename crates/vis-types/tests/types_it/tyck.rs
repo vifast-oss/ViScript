@@ -380,6 +380,19 @@ fn const_chu_trinh_bi_bat_tinh_voi_vs0304() {
         vec!["VS0304"],
         "tự tham chiếu cũng là chu trình"
     );
+    // Chu trình đi qua thân `if` (không chỉ biểu thức trực tiếp).
+    let (ifc, _) =
+        run("const A: int = if true: B else: 0\nconst B: int = A\nfn main():\n    print(A)\n");
+    assert_eq!(ifc.codes(), vec!["VS0304", "VS0304"], "chu trình qua `if`");
+    // Hình kim cương `A→B,C; B,C→D` không phải chu trình.
+    let (diamond, _) = run(
+        "const D: int = 1\nconst B: int = D\nconst C: int = D\nconst A: int = B + C\nfn main():\n    print(A)\n",
+    );
+    assert!(
+        diamond.is_clean(),
+        "kim cương không được báo: {:?}",
+        diamond.codes()
+    );
     // Không báo nhầm chuỗi phụ thuộc hợp lệ.
     let (ok, _) = run("const A: int = 1\nconst B: int = A + 1\nfn main():\n    print(B)\n");
     assert!(
