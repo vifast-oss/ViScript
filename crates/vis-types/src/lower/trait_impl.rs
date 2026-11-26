@@ -265,7 +265,11 @@ impl<'a> Lowerer<'a> {
             if d == "Eq" {
                 for t in field_tys {
                     // **ST-60c (B5)**: đệ quy **sâu** (list/map/opt/result/tuple/generic).
-                    if co_float_sau(t) {
+                    // **ST-316b (`#7`)**: đệ quy cả **bản ghi/enum lồng** qua [`TypeTable`], có tập
+                    // `đã thăm` chống vòng (kiểu tự quy chiếu `type Node: next: Node?`).
+                    let mut da_tham = Vec::new();
+                    let co = co_float_sau(t, self.tbl, &mut da_tham);
+                    if co {
                         self.diag(
                             &TYPE_CODES[2],
                             format!(
@@ -751,7 +755,7 @@ impl<'a> Lowerer<'a> {
                 sinh_show = true;
             }
         }
-        if src.derives.iter().any(|d| d == "Eq") && !co_truong_khong_eq(&src.truong) {
+        if src.derives.iter().any(|d| d == "Eq") && !co_truong_khong_eq(&src.truong, self.tbl) {
             if let Some(f) = self.sinh_eq(src.ty.clone(), &src.ten, span) {
                 methods.push(f);
                 sinh_eq = true;
@@ -1102,21 +1106,47 @@ pub(super) struct PtSinh<'a> {
     span: vis_syntax::Span,
 }
 
-/// **ST-60c (B5)**: kiểu có chứa **`float`/hàm** ở **bất kỳ độ sâu** không — `Eq` đòi so sánh
-/// **toàn phần** nên đệ quy qua `List`/`Map`/`Opt`/`Result`/`Tuple`/`TypeRef` (generic) (VD-93 (3)).
-fn co_float_sau(t: &Type) -> bool {
+/// **ST-60c (B5)** + **ST-316b (`#7`)** — kiểu có chứa **`float`/hàm** ở **bất kỳ độ sâu** không
+/// (`Eq` đòi so sánh **toàn phần**). Đệ quy qua `List`/`Map`/`Opt`/`Result`/`Tuple`/`TypeRef`
+/// (generic) **và** bản ghi/enum lồng qua [`TypeTable`]; `da_tham` giữ các `RecId`/`EnumId` đã
+/// soi để kiểu **tự quy chiếu** (`type Node: next: Node?`) không đệ quy vô hạn.
+fn co_float_sau(t: &Type, tbl: &vis_hir::ty::TypeTable, da_tham: &mut Vec<(u8, u32)>) -> bool {
     match t {
         Type::Float | Type::Fn(..) => true,
-        Type::List(x) | Type::Opt(x) => co_float_sau(x),
-        Type::Map(k, v) | Type::Result(k, v) => co_float_sau(k) || co_float_sau(v),
+        Type::List(x) | Type::Opt(x) => co_float_sau(x, tbl, da_tham),
+        Type::Map(k, v) | Type::Result(k, v) => {
+            co_float_sau(k, tbl, da_tham) || co_float_sau(v, tbl, da_tham)
+        }
         // `TypeRef` = `tuple` nhiều phần tử, `Task[T]`, generic chưa thay ⇒ soi **mọi** đối số.
-        Type::TypeRef { args, .. } => args.iter().any(co_float_sau),
-        // Bản ghi lồng: cần `TypeTable` ⇒ ngoài tầm hàm thuần (nợ, xem JOURNAL).
+        Type::TypeRef { args, .. } => args.iter().any(|a| co_float_sau(a, tbl, da_tham)),
+        Type::Record(id) => {
+            if da_tham.contains(&(0, id.0)) {
+                return false;
+            }
+            da_tham.push((0, id.0));
+            tbl.rec(*id)
+                .is_some_and(|d| d.fields.iter().any(|f| co_float_sau(&f.ty, tbl, da_tham)))
+        }
+        Type::Enum(id) => {
+            if da_tham.contains(&(1, id.0)) {
+                return false;
+            }
+            da_tham.push((1, id.0));
+            tbl.enum_def(*id).is_some_and(|d| {
+                d.variants
+                    .iter()
+                    .any(|v| v.fields.iter().any(|f| co_float_sau(&f.ty, tbl, da_tham)))
+            })
+        }
         _ => false,
     }
 }
 
-/// Kiểu của một trường có **so sánh toàn phần** không (đệ quy **sâu** — ST-60c).
-fn co_truong_khong_eq(truong: &[(String, Type)]) -> bool {
-    truong.iter().any(|(_, t)| co_float_sau(t))
+/// Kiểu của một trường có **so sánh toàn phần** không (đệ quy **sâu** — ST-60c; `#7`: cả
+/// bản ghi/enum lồng).
+fn co_truong_khong_eq(truong: &[(String, Type)], tbl: &vis_hir::ty::TypeTable) -> bool {
+    truong.iter().any(|(_, t)| {
+        let mut da_tham = Vec::new();
+        co_float_sau(t, tbl, &mut da_tham)
+    })
 }

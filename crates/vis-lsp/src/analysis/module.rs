@@ -81,18 +81,29 @@ fn ten_ty(t: vis_hir::stdlib::Ty) -> &'static str {
 
 /// Gợi ý cho một item **không** thuộc tệp chính; `None` nếu không phải item công khai/không hỗ trợ.
 fn goi_y_module(it: &HItem, tbl: &TypeTable, nguon: &str) -> Option<GoiY> {
-    match it {
-        // HIR chỉ giữ `is_pub` cho `fn`; item khác coi như hiển thị được (nợ: HIR thiếu cờ pub).
-        HItem::Fn(f) if !f.is_pub => None,
-        _ => phan_tich::goi_y_item(it, tbl).map(|mut g| {
-            if let Some(d) = g.detail {
-                g.detail = Some(format!("{nguon}: {d}"));
-            } else {
-                g.detail = Some(format!("{nguon}: {}", g.label));
-            }
-            g
-        }),
+    // **ST-316b (`#48`)**: HIR nay giữ `is_pub` cho **mọi** item cấp tệp (fn/type/enum/alias/
+    // const/trait) ⇒ chỉ gợi ý item `pub` của module khác, đúng mô hình "chỉ `pub`" (§7.10).
+    // `extern`/`impl`/`use` chưa có cờ (ngoài phạm vi `#48`) — giữ như trước.
+    let la_pub = match it {
+        HItem::Fn(f) => f.is_pub,
+        HItem::Rec(r) => r.is_pub,
+        HItem::Enum(e) => e.is_pub,
+        HItem::Alias(a) => a.is_pub,
+        HItem::Const(c) => c.is_pub,
+        HItem::Trait(t) => t.is_pub,
+        HItem::Extern(_) | HItem::Impl(_) | HItem::Use(_) => true,
+    };
+    if !la_pub {
+        return None;
     }
+    phan_tich::goi_y_item(it, tbl).map(|mut g| {
+        if let Some(d) = g.detail {
+            g.detail = Some(format!("{nguon}: {d}"));
+        } else {
+            g.detail = Some(format!("{nguon}: {}", g.label));
+        }
+        g
+    })
 }
 
 /// Hàm `std.<m>.<tên>` đã `use` ⇒ gợi ý (kind 3), detail `std.<m>: fn <tên>(…​) -> …`.

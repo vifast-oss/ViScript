@@ -184,6 +184,8 @@ pub struct HRec {
     pub name: String,
     pub span: Span,
     pub sym: u32,
+    /// **ST-316b (`#48`)** — có `pub` không (LSP chỉ gợi ý item `pub` của module khác).
+    pub is_pub: bool,
     /// Tham số kiểu (`type Hop[T]`) — **xoá kiểu** ở VS0 (ST-28), chưa instantiation thật.
     pub generics: Vec<String>,
     pub fields: Vec<HField>,
@@ -197,6 +199,8 @@ pub struct HEnum {
     pub name: String,
     pub span: Span,
     pub sym: u32,
+    /// **ST-316b (`#48`)** — có `pub` không (LSP chỉ gợi ý item `pub` của module khác).
+    pub is_pub: bool,
     /// Tham số kiểu (`enum Or[A, B]`) — xoá kiểu ở VS0 (ST-28).
     pub generics: Vec<String>,
     pub variants: Vec<HVariant>,
@@ -217,6 +221,8 @@ pub struct HAlias {
     pub name: String,
     pub span: Span,
     pub sym: u32,
+    /// **ST-316b (`#48`)** — có `pub` không (LSP chỉ gợi ý item `pub` của module khác).
+    pub is_pub: bool,
     pub ty: Type,
     pub is_newtype: bool,
 }
@@ -227,6 +233,8 @@ pub struct HConst {
     pub name: String,
     pub span: Span,
     pub sym: u32,
+    /// **ST-316b (`#48`)** — có `pub` không (LSP chỉ gợi ý item `pub` của module khác).
+    pub is_pub: bool,
     pub ty: Type,
     pub value: HExpr,
 }
@@ -244,6 +252,8 @@ pub struct HTrait {
     pub name: String,
     pub span: Span,
     pub sym: u32,
+    /// **ST-316b (`#48`)** — có `pub` không (LSP chỉ gợi ý item `pub` của module khác).
+    pub is_pub: bool,
     pub supertraits: Vec<String>,
     pub methods: Vec<HFn>,
 }

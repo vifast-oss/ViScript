@@ -55,7 +55,11 @@ impl<'a> Checker<'a> {
                 ..
             } => {
                 let ty = self.ty_of(*id);
-                if !self.is_mutable(*id) && !ty.is_error() {
+                // **ST-316b (`#186`)**: `let` **cấp tệp** được đánh dấu trước khi kiểm thân hàm
+                // ⇒ báo `VS0413` dù `ty_of` còn `{error}` (thân hàm kiểm trước câu lệnh cấp tệp).
+                // Thông điệp/mã/vị trí trùng đường interp (`lvalue_set`).
+                let let_cap_tep = self.let_cap_tep.get(*id as usize).copied().unwrap_or(false);
+                if !self.is_mutable(*id) && (!ty.is_error() || let_cap_tep) {
                     let kind = self.symbols.get(*id).map(|s| s.kind);
                     if !matches!(kind, Some(crate::lower::SymKind::Var)) {
                         self.diag(

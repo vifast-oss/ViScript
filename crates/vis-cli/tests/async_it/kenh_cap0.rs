@@ -205,3 +205,34 @@ fn drain_100_task_thu_tu_tat_dinh() {
     }
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// (11) **ST-316b (`#145`)** — chốt lại **đường chặn** `chan(0)`: **tyck không** kiểm `cap`
+/// (`vis check` **xanh**), **runtime** mới từ chối `VS0505` ở **cả hai** engine (exit 101).
+/// Trước đây chú thích `rt/ops.rs` nói tyck chặn (exit 2) — ca này khoá hành vi thật.
+#[test]
+fn check_khong_chan_runtime_moi_tu_choi() {
+    let d = tam("check0");
+    let src =
+        "# SPDX-License-Identifier: MIT OR Apache-2.0\nfn main():\n    let c = chan[int](0)\n";
+    let f = d.join("c0.vis");
+    std::fs::write(&f, src).expect("ghi");
+    let o = Command::new(env!("CARGO_BIN_EXE_vis"))
+        .current_dir(&d)
+        .args(["check", "c0.vis"])
+        .output()
+        .expect("chạy vis check");
+    assert_eq!(o.status.code(), Some(0), "tyck KHÔNG được chặn `cap == 0`");
+    let out = String::from_utf8_lossy(&o.stdout);
+    assert!(out.contains("ok 1"), "{out}");
+    assert!(
+        !out.contains("VS0505"),
+        "VS0505 là lỗi runtime, không phải tĩnh: {out}"
+    );
+    let (a, _) = ca(&d, "c0", "fn main():\n    let c = chan[int](0)\n");
+    assert_eq!(a.0, 101, "runtime: lỗi chạy có mã ⇒ 101: {:?}", a);
+    assert!(
+        a.2.contains("VS0505") && a.2.contains("capacity 0"),
+        "{a:?}"
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}

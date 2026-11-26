@@ -40,10 +40,12 @@ pub fn tao_kenh(host: &mut dyn Host, cap: i64, span: Span) -> R<Value> {
             span,
         )));
     }
-    // **ST-94 (VD-112)**: capacity 0 (rendezvous) **không thể** trên scheduler một luồng
-    // mặc định. **VS3-2a**: riêng đường frame test đã có wait-set `chan(0)` (send chờ recv và
-    // ngược lại) ⇒ cho phép tạo; runtime mặc định (`frame.enabled == false`) vẫn từ chối.
-    // tyck **không** kiểm `cap` (VD-154 (c)): `kiem_chan_new` chỉ đòi `n` là `int`.
+    // **ST-94 (VD-112)** / **ST-316b (`#145`)** — `chan(0)` (rendezvous) **không** chạy được trên
+    // scheduler một luồng mặc định. Tyck **không** kiểm `cap`: `kiem_chan_new` chỉ đòi `n` là
+    // `int` (VD-154 (c)) ⇒ `vis check` **xanh**; **runtime** mới từ chối bằng `VS0505` (exit 101 —
+    // lỗi chạy có mã theo R9/C1, **không** phải lỗi tĩnh exit 2). **VS3-2a**: riêng đường frame
+    // test đã có wait-set `chan(0)` (send chờ recv và ngược lại) ⇒ cho phép tạo; runtime mặc định
+    // (`frame.enabled == false`) vẫn từ chối.
     if cap == 0 && !host.sched().borrow().frame.enabled {
         return Err(Abort::Trap(Trap::new(
             DEADLOCK,

@@ -274,10 +274,7 @@ impl<'a> Lowerer<'a> {
 
     /// Sym **item cấp tệp** theo tên; `None` nếu chưa khai (không dùng fallback `0`).
     fn item_sym_cua(&self, name: &str) -> Option<u32> {
-        self.item_syms
-            .iter()
-            .rev()
-            .find(|(n, _)| n == name)
-            .map(|(_, id)| *id)
+        // **ST-316b (`#199`)**: `HashMap` — cùng ngữ nghĩa "lần khai cuối".
+        self.item_syms.get(name).copied()
     }
 }

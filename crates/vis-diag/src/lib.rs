@@ -647,6 +647,43 @@ pub fn all_codes() -> impl Iterator<Item = &'static Code> {
     BOOKS.iter().flat_map(|b| b.iter())
 }
 
+/// **ST-316b (`#47`)** — trợ giúp `vis explain` theo ngôn ngữ: **một nguồn** trong `vis-diag`
+/// (`vis-cli` chỉ in ra, không giữ bản sao chuỗi). Số khối/mã **đếm động**, không viết cứng.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExplainHelp {
+    /// Dòng cú pháp (`dùng:`/`usage:`/`使い方:`).
+    pub usage: String,
+    /// Dòng số khối/mã + gợi ý `--list`/`--json`.
+    pub book: String,
+}
+
+/// Trợ giúp `vis explain` cho `lang` (vi/en/ja) — nguồn duy nhất của 3 ngôn ngữ.
+pub fn explain_help(lang: Lang) -> ExplainHelp {
+    let khoi = BLOCKS_RESERVED.len();
+    let ma = all_codes().count();
+    let (usage, book) = match lang {
+        Lang::Vi => (
+            "dùng: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]".to_string(),
+            format!(
+                "sổ mã: {khoi} khối, {ma} mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc"
+            ),
+        ),
+        Lang::En => (
+            "usage: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]".to_string(),
+            format!(
+                "code book: {khoi} blocks, {ma} codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line"
+            ),
+        ),
+        Lang::Ja => (
+            "使い方: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]".to_string(),
+            format!(
+                "コード帳: {khoi} ブロック、{ma} コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行"
+            ),
+        ),
+    };
+    ExplainHelp { usage, book }
+}
+
 /// Tra một mã theo số (ví dụ `103` ⇒ `VS0103`). `None` nếu chưa cấp.
 ///
 /// Tra **cả bốn sổ** đã cấp (VD-42): từ vựng `01xx`, cú pháp `02xx`, tên `03xx`, kiểu `04xx`.
@@ -988,5 +1025,46 @@ mod tests {
         let d = Diag::new(&CODES[2], "token lạ", 7);
         assert_eq!(d.msg, "token lạ");
         assert_eq!(d.offset, 7);
+    }
+
+    /// **ST-316b (`#47`)** — trợ giúp `vis explain` vi/en/ja: **một nguồn** trong `vis-diag`;
+    /// chuỗi khớp **nguyên văn** bản cũ ở `vis-cli/src/main.rs` (CLI chỉ in).
+    #[test]
+    fn explain_help_khop_chuoi_cu() {
+        let khoi = BLOCKS_RESERVED.len();
+        let ma = all_codes().count();
+        let vi = explain_help(Lang::Vi);
+        assert_eq!(
+            vi.usage,
+            "dùng: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
+        );
+        assert_eq!(
+            vi.book,
+            format!(
+                "sổ mã: {khoi} khối, {ma} mã — `vis explain --list` in toàn bộ (mã + câu ngắn); `--json` in một dòng máy đọc"
+            )
+        );
+        let en = explain_help(Lang::En);
+        assert_eq!(
+            en.usage,
+            "usage: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
+        );
+        assert_eq!(
+            en.book,
+            format!(
+                "code book: {khoi} blocks, {ma} codes — `vis explain --list` prints all (code + short text); `--json` prints one machine-readable line"
+            )
+        );
+        let ja = explain_help(Lang::Ja);
+        assert_eq!(
+            ja.usage,
+            "使い方: vis explain [--json] <VSxxxx> [--lang vi|en|ja] | vis explain --list [--json] [--lang vi|en|ja]"
+        );
+        assert_eq!(
+            ja.book,
+            format!(
+                "コード帳: {khoi} ブロック、{ma} コード — `vis explain --list` で全件表示（コード + 短い説明）、`--json` は機械可読な1行"
+            )
+        );
     }
 }
