@@ -87,3 +87,65 @@ Không `#[ignore]`; 13/13 test của tệp PASS.
 - Ghi chú hạ tầng: `cargo test` thường (một process, chạy song song trong binary) có thể làm ca
   `vs3_worker_eval_vm::vm_khong_tao_them_thread_sau_khi_join` đỏ do **đếm thread toàn process**;
   chạy riêng hoặc qua `nextest` (mỗi ca một process — cổng chuẩn) PASS. Không phải regression.
+
+## 6. F1 — vá audit sau `7d754309` (P2-A/P2-B/P3)
+
+### P2-A — `nap_bien_cap_tep` quét toàn bộ globals mỗi turn (perf)
+
+- **Nguyên nhân**: frame W=1 clone **mọi** `globals` (gồm cả `const`) rồi insert lại vào mỗi env mỗi
+  turn; chương trình 20k `const` + 2k `await` ⇒ 2k × 20k clone → ~13×.
+- **Vá**: chỉ nạp **`frame.mutable`** (`var` cấp tệp — `const`/`let` bất biến, không bao giờ đổi;
+  sym cục bộ không có trong globals bị lọc). Không đổi semantics `#203` (ghi `var` top-level
+  trong task/closure vẫn thấy; `await` lồng vẫn đúng — test W11/W12 giữ nguyên).
+- **Đo lại đúng kịch bản** (20.000 `const` + 2.000 `await`, debug, cùng máy, `vis run`):
+
+| Binary | Lần đo (s) | Nhận xét |
+|---|---|---|
+| `main` `2b5ccb51` | 1,475 / 1,483 / 1,532 / 1,575 / 1,475 | median **1,507** |
+| HEAD trước F1 (`7d754309`) | 19,394 / 20,173 / 20,190 | median **20,17** — ~**13,4×** main (khớp audit ~20,4 s) |
+| HEAD sau F1 | 1,961 / 1,963 (cửa sổ tải thấp) | ~**1,3×** main; dưới tải nặng min 2,249 vs main min 2,555 **cùng lượt** ⇒ không còn overhead đo được |
+
+- Đối chứng tách thành phần (binary C = loop gốc `step_frame_owned`, B = loop sao không sync):
+  min cùng lượt dưới tải: main 2,555 / C 2,374 / B 2,326 / F1 2,249 s — F1 ≤ đối chứng.
+
+### P2-B — `final_join` trả trap đầu làm mất stdout task sau
+
+- **Vá** (`vis-interp/src/rt/exec.rs`, `vis-vm/src/vm/worker.rs`): vòng outcome **gom** trap đầu
+  (`Option<Trap>`, `if trap.is_none()`), **flush hết** output mọi task theo spawn order rồi mới
+  trả trap. Message/mã/span giữ nguyên (`VS0506` của task lỗi đầu tiên).
+- **Repro** (`hong` lỗi trước + `ok` in `b` sau):
+  - Trước F1 (W=2): `sau` — test mới **đỏ** `left "sau\n" / right "sau\nb\n"`.
+  - Sau F1: `vis run` / `--vm` / `--workers 2/4` / `--vm --workers 2/4` đều stdout
+    **`sau\nb`**, exit **101**, `VS0506: tác vụ \`hong\` lỗi: VS0502: lấy dư cho 0 (%)`.
+
+### P3
+
+- Comment `buoc_frame_dong_bo` thêm cảnh báo ⚠️ **giữ khớp từng nhánh** với
+  `frame.rs::step_frame_owned`.
+- Thêm test **không `main`**: `w11_frame_w1_no_main_ghi_bien_cap_tep` — task ghi `var` top-level,
+  lệnh cấp tệp đọc lại; interp ↔ VM đều `1\n`, exit 0.
+
+### Test khoá mới
+
+| Test | Phủ |
+|---|---|
+| `w13_final_join_flush_het_output_truoc_trap` | P2-B: frame W=1 + non-frame W=2/4 hai engine — stdout `sau\nb\n`, exit 1, `VS0506` `hong` |
+| `w11_frame_w1_no_main_ghi_bien_cap_tep` | P3: no-main parity frame W=1 |
+
+`st317b_worker_orchestrate`: **15/15 PASS**.
+
+### Cổng lại sau F1
+
+| Cổng | Kết quả | Log |
+|---|---|---|
+| `cargo fmt --all` | sạch | — |
+| `st317b_worker_orchestrate` | **15/15 PASS** | `/home/ps/vislogs/st318a-fix-test-st317b.log` |
+| module worker liên quan | 12/10/7/13/8/10 PASS | — |
+| `cargo clippy --workspace --all-targets -- -D warnings` | exit 0 | `/home/ps/vislogs/st318a-fix-clippy.log` · `0cb19ec3…91b1` |
+| `./vis-dev gate --fast` | **PASS** — nextest **3906/3906**, 4 skipped (77,9 s) | `/home/ps/vislogs/st318a-fix-gate2.log` · `38bad8e5…31de` |
+| `VIS_DIFF_N=100000 ./bin/vis-diff` | **`lech=0`** — 100.000 chương trình (93.768 chạy), 102,4 s | `/home/ps/vislogs/st318a-fix-diff.log` |
+
+- Lần gate 1 (`st318a-fix-gate.log`): 3 ca `vis-host-native` đỏ vì `Os { code: 122, kind:
+  QuotaExceeded }` khi `/tmp` (tmpfs) đầy 6,1/7,2 GB do cache binary `vs3-w2-bin-cache-*` của
+  nhiều tiến trình; chạy lại 2 ca `quyen*` với `TMPDIR` trên đĩa ⇒ **PASS**. Gate lại đặt
+  `TMPDIR=/home/ps/vislogs/tmp` (đĩa còn > 6 GB).
