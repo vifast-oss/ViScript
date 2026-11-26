@@ -291,6 +291,7 @@
 | VD-293 | Phê chuẩn Sóng 5 (`ST-316a`/`ST-316b`/`ST-316d` `DONE`), Đăng ký `#200`/`#201` & Mở Sóng 6 (`ST-317a`/`ST-317c` song song, `ST-317b` chờ tệp) | đã chốt | 4118 |
 | VD-294 | Phê chuẩn `ST-317a`/`ST-317c` `DONE`, Giữ `ST-317b` `READY` (P2b đang chạy), `ST-316c` `BLOCKED` & Đăng ký `#202` | đã chốt | 4135 |
 | VD-295 | Phê chuẩn `ST-317b` `DONE`, Chốt Sóng 6 (`ST-317a`/`ST-317b`/`ST-317c`) `DONE`, Giữ `ST-316c` `BLOCKED` & Đăng ký `#203`/`#204` | đã chốt | 4147 |
+| VD-296 | Mở Sóng 7 — Đóng nợ Correctness (`#202`/`#203`/`#204`) & R1 mềm (`ST-318a..d`) | đã chốt | 4159 |
 
 ## Ghi chú
 

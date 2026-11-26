@@ -1,6 +1,6 @@
-# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-295`, 2026-11-27)
+# agent/ACTIVE.md — Bảng điều khiển tác chiến hiện hành (`VD-289` / `VD-296`, 2026-11-27)
 
-> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd295.md` · `agent/DECISIONS.md` (`VD-295`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`/`VD-293` · Sóng 6: `VD-294`/`VD-295`.
+> **Quyết định mới nhất**: `agent/JOURNAL/quyet-dinh-a0-2026-11-27-vd296.md` · `agent/DECISIONS.md` (`VD-296`) · Kiến trúc 5 tầng DAG: `VD-289`/`VD-290` · Gói Sóng 4: `VD-291` · Sóng 5: `VD-292`/`VD-293` · Sóng 6: `VD-294`/`VD-295` · Sóng 7: `VD-296`.
 
 ## 1. CHẾ ĐỘ HIỆN HÀNH — PHÁT TRIỂN KIẾN TRÚC TỐI ƯU (`VD-289` / `VD-295`)
 
@@ -10,8 +10,14 @@
   - **`ST-317b` (W2)** — **`VD-295`** (`main` @ `4e03a19c`): tách `vis-pkg/pkg.rs` 1151→max 377, `rt/sched.rs` 1189→max 279, `tyck/pat.rs` 1140→max 321; `vis-lsp/lib.rs` 1056→**236**; `value/mod.rs` 1415→**748** (+`lit` 403, `ten` 291); `sqlite/mod.rs` 1132→**282** (+6 tệp); **worker orchestration một nguồn** `vis-runtime/src/worker/orchestrate.rs` **135** dòng (`ap_dung_outcome`/`flush_proxy`/`pump`/`ap_va_flush`, `codes::CROSS`), `exec.rs` 461→368, `vm/worker.rs` 586→485, **10 test W1..W10**; dedup `opt_depth_ty`/`loi_arity`. Audit `e1fe1733` + `ef3e6928` + `4e03a19c` **PASS**; gate **3906/3906 (5 ignored)** ≡ 3901/3901+4 skip, diff 100k `lech=0` (56,5 s), clippy 0 warning.
   - **`ST-317c` (W3)** — `VD-294`: StdId registry **167** hàm một nguồn, R10 `API-CODES.txt` ↔ `SPEC.md` `#75`, `AnalysisHost` `#81`/`#66`; facility gate **3885/3885**, `lsp_it` **158/158**, `API-STD.txt` không đổi.
 - **Cổng tích hợp cuối `main` `4e03a19c`** (log `/home/ps/vislogs/final-main-20261126T1747Z.log`, sha256 `b0044754…f75dd`): `GATE_EXIT=0` (L0 **3901/3901**, 4 skipped), `DIFF_EXIT=0` (100.000, `lech=0`, 61,9 s), `CLIPPY_EXIT=0`, `RULES_EXIT=0`; **R8 39/40**, `vis-cli/tests` **8/15**.
-- **TRỤC HIỆN HÀNH — CHỈ CÒN `ST-316c` (W4) `BLOCKED`**: phần `ps` **đã xong** — WASI **395×2** (368 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`29a7b254`; chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**). Phần `mps`/`psvn` vẫn `BLOCKED` (`mps` @`311d2288`, `psvn` @`fe3446d2`), **không** tuyên bố 3-OS khi chưa có log. Không mở task mã mới khi chưa có quyết định A0.
-- **Nợ mới từ audit `ST-317b` (`VD-295`)**: **`#203`** (`mở`, W2 frame W=1 lệch interp↔VM: stdout `0` vs `1`, exit 0) & **`#204`** (`mở`, non-frame `run_workers_parallel*`/`_vm*` W≥2 nuốt lỗi task không await, cả 2 engine), giao **VS3/correctness**. Sổ nợ: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng**.
+- **TRỤC HIỆN HÀNH — SÓNG 7 (4 lát `READY`, `VD-296`): Đóng nợ Correctness & R1 mềm (~7 h thấp điểm)**:
+  - **`ST-318a` (W1)** — đóng **`#203`** (W2 frame W=1: interp stdout `0` vs VM `1`, exit 0) + **`#204`** (non-frame `run_workers_parallel*`/`_vm*` W≥2 nuốt lỗi task) bằng surface **`VS0506`** + parity interp↔VM; lane `vis-interp/{frame/worker.rs,rt/exec.rs}`, `vis-vm/vm/worker.rs`, `vis-runtime/worker/orchestrate.rs`; test trong `tests/{frame_it,worker_api_it,async_api_it}/**` (0 tệp cấp 1 mới).
+  - **`ST-318b` (W2)** — đóng **`#202`**: chuẩn hoá output `host_parity::net_http` (bỏ số ms thật, token ổn định), ca đích **20×** xanh; lane `tests/misc_api_it/host_parity/net_http.rs`.
+  - **`ST-318c` (W3)** — R1 mềm `vis-types`: `lower/trait_impl.rs` **1152**, `lower/cmd.rs` **1115**, `tyck/expr.rs` **1079** → **< 700** (mục tiêu), move nguyên văn, API/HIR giữ nguyên.
+  - **`ST-318d` (W4)** — R1 mềm `vis-hir` + `vis-diag`: `hir.rs` **1088**, `vis-diag/src/lib.rs` **1070** → **< 1.000** (mục tiêu < 700), move nguyên văn.
+  - **KPI đóng Sóng**: `#202`/`#203`/`#204` → `đóng`; tệp sản phẩm > 1.000 dòng **13 → 8**; R8 giữ **39/40**; 0 `unsafe` mới. Mỗi lát: `gate --fast`; a/c/d thêm `vis-diff 100k lech=0`; b thêm **20×**.
+- **`ST-316c` (W4, Sóng 5) — giữ `BLOCKED`**: phần `ps` **đã xong** — WASI **395×2** (368 `.out` + 27 `.trap`), `vis-wasm-sem` **390/390**, `vis-wasm-suite` **28/28** @`29a7b254`; chain 0-LLM `/home/ps/vislogs/peak1-2026-11-27-chain.sh` (18 bước, `--dry-run` exit 0, **chưa chạy**). `mps` @`311d2288`, `psvn` @`fe3446d2` vẫn lệch — **không** tuyên bố 3-OS khi chưa có log `mps`.
+- **Nợ Sóng 7 (`VD-296`)**: **`#203`** (`mở`, W2 frame W=1 lệch interp↔VM) & **`#204`** (`mở`, non-frame W≥2 nuốt lỗi task) do **`ST-318a`** đóng; **`#202`** (`mở`, flake `host_parity::net_http`) do **`ST-318b`** đóng. Sổ nợ hiện tại: **205 = 85 mở + 101 đóng + 16 VS3 + 2 không làm + 1 điều hướng** (dự kiến khi đóng Sóng 7: 205 = 82 mở + 104 đóng + 16 VS3 + 2 + 1 — kiểm lại thật).
 
 ## 2. Bảng Trạng thái Sóng 4–6 (`ST-315a..ST-317c`)
 
@@ -25,11 +31,16 @@
 | **6** | **`ST-317a`** | **W1** | **`DONE`** | APPROVED `VD-294` (merge `426b83a3`): Value **64 → 32 B**, `Record` CoW in-place, singleton `{}`; `size_of::<Value>() == 32`, conformance **568/568**, gate **3886/3886**, diff 100k `lech=0` (60,1 s), 0 `unsafe`, VBC1 rỗng |
 | **6** | **`ST-317b`** | **W2** | **`DONE`** | APPROVED **`VD-295`** (`main` @ `4e03a19c`): P1+P2a+P2b + audit `e1fe1733`/`ef3e6928`/`4e03a19c` PASS; **worker một nguồn** `orchestrate.rs` 135, `value/mod.rs` **748**, `sqlite/mod.rs` **282**, `vis-lsp/lib.rs` **236**; gate **3906/3906 (5 ignored)**, diff 100k `lech=0`, clippy 0, W **10/10**, R8 **39/40** |
 | **6** | **`ST-317c`** | **W3** | **`DONE`** | APPROVED `VD-294` (merge `aecb266c`): StdId **167**, R10 `#75`, `AnalysisHost` `#81`/`#66`; gate **3885/3885**, diff 0, `lsp_it` **158/158**, `API-STD.txt` không đổi; flake P2 → `#202` |
+| **7** | **`ST-318a`** | **W1** | **`READY`** | `VD-296`: đóng **`#203`** (W2 frame W=1 parity) + **`#204`** (non-frame W≥2 `VS0506`); lane `vis-interp/{frame/worker.rs,rt/exec.rs}`, `vis-vm/vm/worker.rs`, `vis-runtime/worker/orchestrate.rs`; test `tests/{frame_it,worker_api_it,async_api_it}/**` (0 tệp cấp 1 mới); cổng gate + diff 100k `lech=0` |
+| **7** | **`ST-318b`** | **W2** | **`READY`** | `VD-296`: đóng **`#202`** — chuẩn hoá output `host_parity::net_http` (token ổn định, giữ assert timeout), ca đích **20×**; lane `tests/misc_api_it/host_parity/net_http.rs`; cổng gate + rules |
+| **7** | **`ST-318c`** | **W3** | **`READY`** | `VD-296`: R1 mềm `vis-types` — `lower/trait_impl.rs` **1152**, `lower/cmd.rs` **1115**, `tyck/expr.rs` **1079** → **< 700**; move nguyên văn, API/HIR giữ nguyên; cổng check + gate + diff 100k |
+| **7** | **`ST-318d`** | **W4** | **`READY`** | `VD-296`: R1 mềm `vis-hir` + `vis-diag` — `hir.rs` **1088**, `vis-diag/src/lib.rs` **1070** → **< 1.000** (mục tiêu < 700); move nguyên văn; cổng check + gate + diff 100k |
 
 ## 3. Cổng Kiểm tra Gọn (Chế độ Phát triển — KHÔNG soak/fuzz nặng)
 
 - **Cuối mỗi lát**: `./vis-dev gate --fast` PASS + `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0` cho lát chạm compiler/runtime/VM) + số đo release có sha256.
 - **Cuối Sóng 6**: 1× `cargo clippy --workspace --all-targets -- -D warnings` trên Linux + Windows (`psvn`, và `mps` khi rảnh) + 1× `bin/vis-targets --wasm` — Linux đã xanh (`CLIPPY_EXIT=0`); Windows/macOS bù ở `ST-316c` khi máy rảnh.
+- **Sóng 7 (`VD-296`)**: mỗi lát `./vis-dev gate --fast` PASS; `ST-318a/c/d` thêm `VIS_DIFF_N=100000 ./bin/vis-diff` (`lech=0`); `ST-318b` ca đích **20×**; cuối Sóng 1× `rules` + đếm lại tệp > 1.000 (KPI **13 → 8**), **không** soak/fuzz nặng.
 - **Luật cứng**: 0 `unsafe` (R2), R1 ≤ 1.500 (mục tiêu mềm < 1.000 đã đạt ở lane W2), R5 (`SO-NO`), R7 (log ≤ 50 KB), **R8 ĐANG CHẠM 39/40 — CẤM TẠO TỆP `.rs` CẤP 1 MỚI** (mọi test mới vào `tests/<domain>/` + `#[path]`, hoặc `worker_leak_it.rs` cho test cách ly), R9, R10 (`API-CODES.txt` ↔ `SPEC.md`), không `.github/workflows/`.
 - **Quản trị nhánh (`AGENTS.md` §6)**: merge xong xóa worktree + nhánh local (`-d`) + `origin` trong 24h; ≤ 8 worktree; `CARGO_BUILD_JOBS=3 CARGO_PROFILE_DEV_DEBUG=0`, đĩa trống > 10 GB.
 
@@ -39,7 +50,7 @@
 |---|---|---|---|---|
 | **Cao điểm 1 & 2** *(2×)* | `01:00–04:00` · `06:00–10:00` | `10:00–13:00` · `15:00–19:00` | `08:00–11:00` · `13:00–17:00` | **0-LLM**: chạy chain `/home/ps/vislogs/peak1-2026-11-27-chain.sh` khi `mps`/`psvn` rảnh (18 bước, dry-run exit 0) — phục vụ `ST-316c`; kiểm `vis-targets --wasm`, Windows full, `vis-diff 100k` |
 | **Thấp điểm trưa** *(0,5×)* | `04:00–06:00` | `13:00–15:00` | `11:00–13:00` | Đọc log cao điểm, vá lỗi ngắn, chuẩn bị hồ sơ Go/No-Go cho `ST-316c` |
-| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | Tổng hợp kết quả chain → đóng `ST-316c` nếu đủ log 3-OS; nếu chưa, giữ `BLOCKED` và chỉ xử nợ `#203`/`#204` khi A0 mở VS3 |
+| **Thấp điểm chính & Cuối tuần** *(0,5×)* | `10:00–01:00` (+ T7–CN) | `19:00–10:00` | `17:00–08:00` | **Sóng 7 (`VD-296`)**: a → b → c → d theo lane rời nhau (a/b correctness, c/d R1 mềm); mỗi lát gate + diff; đóng `#202`/`#203`/`#204`; nếu `mps`/`psvn` rảnh mới chạy chain cho `ST-316c` |
 
 ## 5. Vận hành Cao điểm 2 — 2026-11-26 (Đã xong nền 0-LLM)
 
