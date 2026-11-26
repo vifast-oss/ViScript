@@ -754,11 +754,11 @@ pub fn run(args: &[String]) -> ExitCode {
 
 /// Kết quả `initialize` — **cố định** (không version/rootUri) để snapshot tất định.
 fn ket_qua_khoi_tao() -> Value {
-    let completion = Value::Map(vec![jsonrpc::kv(
+    let completion = Value::map(vec![jsonrpc::kv(
         "triggerCharacters",
         Value::List(vec![Value::Str(".".to_string())]),
     )]);
-    let capabilities = Value::Map(vec![
+    let capabilities = Value::map(vec![
         jsonrpc::kv(
             "textDocumentSync",
             jsonrpc::m(vec![
@@ -798,8 +798,8 @@ fn ket_qua_khoi_tao() -> Value {
         jsonrpc::kv("completionProvider", completion),
         jsonrpc::kv("semanticTokensProvider", semantic_tokens::provider()),
     ]);
-    let server_info = Value::Map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);
-    Value::Map(vec![
+    let server_info = Value::map(vec![jsonrpc::kv("name", Value::Str("vis".to_string()))]);
+    Value::map(vec![
         jsonrpc::kv("capabilities", capabilities),
         jsonrpc::kv("serverInfo", server_info),
     ])

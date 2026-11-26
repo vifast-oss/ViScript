@@ -132,19 +132,19 @@ fn doc_index(body: &str) -> Result<Index, String> {
     let Value::Map(kv) = &v else {
         return Err("index registry hỏng: phải là object".to_string());
     };
-    let dinh_dang =
-        lay_chuoi(kv, "format").ok_or_else(|| "index registry hỏng: thiếu `format`".to_string())?;
+    let dinh_dang = lay_chuoi(kv.as_slice(), "format")
+        .ok_or_else(|| "index registry hỏng: thiếu `format`".to_string())?;
     if dinh_dang != "vispkg-http1" {
         return Err(format!(
             "index registry hỏng: `format` `{dinh_dang}` — cần `vispkg-http1`"
         ));
     }
-    let Some(Value::Map(pkgs)) = lay(kv, "packages") else {
+    let Some(Value::Map(pkgs)) = lay(kv.as_slice(), "packages") else {
         return Err("index registry hỏng: thiếu `packages` (object)".to_string());
     };
     let mut ds = Vec::new();
     let mut da = BTreeSet::new();
-    for (k_ten, v_ban) in pkgs {
+    for (k_ten, v_ban) in pkgs.iter() {
         let Some(ten) = chuoi(k_ten) else {
             return Err("index registry hỏng: tên gói phải là chuỗi".to_string());
         };
@@ -152,7 +152,7 @@ fn doc_index(body: &str) -> Result<Index, String> {
         let Value::Map(ban) = v_ban else {
             return Err(format!("index registry hỏng: `{ten}` phải là object"));
         };
-        for (k_ver, v_muc) in ban {
+        for (k_ver, v_muc) in ban.iter() {
             let Some(ver_s) = chuoi(k_ver) else {
                 return Err(format!(
                     "index registry hỏng: phiên bản của `{ten}` phải là chuỗi"
@@ -167,7 +167,7 @@ fn doc_index(body: &str) -> Result<Index, String> {
             let Value::Map(muc) = v_muc else {
                 return Err(format!("{nguon}: phải là object"));
             };
-            let Some(manifest) = lay(muc, "manifest") else {
+            let Some(manifest) = lay(muc.as_slice(), "manifest") else {
                 return Err(format!("{nguon}: thiếu `manifest`"));
             };
             ds.push(Muc {
@@ -175,9 +175,9 @@ fn doc_index(body: &str) -> Result<Index, String> {
                 version,
                 version_s: ver_s.to_string(),
                 manifest: manifest.clone(),
-                tar: lay_chuoi(muc, "tarball"),
-                tar_sha: lay_chuoi(muc, "tarball_sha256"),
-                signature: lay_chuoi(muc, "signature_ed25519"),
+                tar: lay_chuoi(muc.as_slice(), "tarball"),
+                tar_sha: lay_chuoi(muc.as_slice(), "tarball_sha256"),
+                signature: lay_chuoi(muc.as_slice(), "signature_ed25519"),
             });
         }
     }

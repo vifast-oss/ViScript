@@ -40,7 +40,7 @@ pub fn tra_loi(kq: &KetQua, uri: &str, mode: Mode, id: &Value) -> Vec<u8> {
             "edit",
             m(vec![(
                 "changes",
-                Value::Map(vec![kv(uri, Value::List(vec![edit]))]),
+                Value::map(vec![kv(uri, Value::List(vec![edit]))]),
             )]),
         ),
     ]);

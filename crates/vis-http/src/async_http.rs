@@ -419,13 +419,13 @@ fn tim_header_gia_tri(headers: &[(String, String)], ten: &str) -> Option<String>
 }
 
 fn ket_qua_head_meta(status: u16, headers: &[(String, String)]) -> Value {
-    let headers = Value::Map(
+    let headers = Value::map(
         headers
             .iter()
             .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
             .collect(),
     );
-    Value::ok(Value::Map(vec![
+    Value::ok(Value::map(vec![
         (Value::Str("status".to_string()), Value::Int(status as i64)),
         (Value::Str("headers".to_string()), headers),
     ]))
@@ -527,13 +527,13 @@ fn ket_thuc_eof(st: &HttpAsync) -> Value {
 }
 
 fn ket_qua_head(d: &DauHttp) -> Value {
-    let headers = Value::Map(
+    let headers = Value::map(
         d.headers
             .iter()
             .map(|(k, v)| (Value::Str(k.clone()), Value::Str(v.clone())))
             .collect(),
     );
-    Value::ok(Value::Map(vec![
+    Value::ok(Value::map(vec![
         (
             Value::Str("status".to_string()),
             Value::Int(d.status as i64),

@@ -7,7 +7,6 @@
 use vis_syntax::Span;
 
 use crate::interp::{Abort, Trap, IDX, R, RT};
-use crate::value::eq;
 use crate::value::Value;
 
 /// **ST-56b (VD-97)**: `x.f = v` ⇒ `x = x with f: v` — **đúng** ngữ nghĩa `Instr::With` của VM
@@ -50,11 +49,9 @@ pub(crate) fn gan_chi_so(base: Value, idx: Value, v: Value, span: Span) -> R<Val
             }
         }
         (Value::Map(mut kv), k) => {
-            if let Some(e) = kv.iter_mut().find(|(kk, _)| eq(kk, &k)) {
-                e.1 = v;
-            } else {
-                kv.push((k, v));
-            }
+            // **ST-315b**: `Rc::make_mut` — chỉ chép map khi đang chia sẻ; thêm/cập nhật
+            // last-wins tại chỗ qua chỉ mục băm (Q1).
+            std::rc::Rc::make_mut(&mut kv).insert(k, v);
             Ok(Value::Map(kv))
         }
         _ => Err(Abort::Trap(Trap::new(RT, "gán chỉ số không hợp lệ", span))),
@@ -131,17 +128,13 @@ pub(crate) fn doc_chi_so(b: Value, i: Value, span: Span) -> R<Value> {
                 ))
             })
         }
-        (Value::Map(kv), k) => kv
-            .iter()
-            .find(|(kk, _)| kk.eq_value(&k))
-            .map(|(_, v)| v.clone())
-            .ok_or_else(|| {
-                Abort::Trap(Trap::new(
-                    IDX,
-                    format!("khoá `{}` không có trong map", k.show()),
-                    span,
-                ))
-            }),
+        (Value::Map(kv), k) => kv.get(&k).cloned().ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                IDX,
+                format!("khoá `{}` không có trong map", k.show()),
+                span,
+            ))
+        }),
         (Value::Bytes(bs), Value::Int(n)) => {
             let len = bs.len() as i64;
             if n < 0 || n >= len {

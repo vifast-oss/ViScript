@@ -679,17 +679,13 @@ fn index_of(b: Value, i: Value, span: Span) -> R<Value> {
                 ))
             })
         }
-        (Value::Map(kv), k) => kv
-            .iter()
-            .find(|(kk, _)| kk.eq_value(&k))
-            .map(|(_, v)| v.clone())
-            .ok_or_else(|| {
-                Abort::Trap(Trap::new(
-                    crate::interp::IDX,
-                    format!("khoá `{}` không có trong map", k.show()),
-                    span,
-                ))
-            }),
+        (Value::Map(kv), k) => kv.get(&k).cloned().ok_or_else(|| {
+            Abort::Trap(Trap::new(
+                crate::interp::IDX,
+                format!("khoá `{}` không có trong map", k.show()),
+                span,
+            ))
+        }),
         (Value::Bytes(bs), Value::Int(n)) => {
             let len = bs.len() as i64;
             if n < 0 || n >= len {

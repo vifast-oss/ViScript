@@ -9,6 +9,8 @@
 //!
 //! Lỗi ⇒ `Err("JSON không hợp lệ ở byte N: …")`, `N` là **byte** trong chuỗi gốc (không phải char).
 
+use std::rc::Rc;
+
 use crate::value::Value;
 
 pub mod derive;
@@ -92,7 +94,7 @@ impl<'a> P<'a> {
         self.khoang_trang();
         if self.b.get(self.i) == Some(&b'}') {
             self.i += 1;
-            return Ok(Value::Map(kv));
+            return Ok(Value::map(kv));
         }
         loop {
             self.khoang_trang();
@@ -107,15 +109,9 @@ impl<'a> P<'a> {
             self.i += 1;
             self.khoang_trang();
             let v = self.gia_tri(depth + 1)?;
-            // Trùng khoá: **giá trị cuối**, giữ **vị trí đầu** (thứ tự xuất hiện).
-            if let Some(slot) = kv.iter_mut().find(|(kk, _)| match kk {
-                Value::Str(a) => a == &k,
-                _ => false,
-            }) {
-                slot.1 = v;
-            } else {
-                kv.push((Value::Str(k), v));
-            }
+            // **ST-315b (VD-291 Q2)**: đẩy **mọi** cặp; `VisMap::from_pairs` gộp last-wins
+            // (giá trị cuối, vị trí đầu) trong O(1) khấu hao nhờ chỉ mục — bỏ vòng quét O(N²).
+            kv.push((Value::Str(k), v));
             self.khoang_trang();
             match self.b.get(self.i) {
                 Some(b',') => {
@@ -123,7 +119,7 @@ impl<'a> P<'a> {
                 }
                 Some(b'}') => {
                     self.i += 1;
-                    return Ok(Value::Map(kv));
+                    return Ok(Value::map(kv));
                 }
                 _ => return Err(self.loi("thiếu `,` hoặc `}` trong object")),
             }
@@ -317,13 +313,19 @@ pub fn boc(v: Value) -> Value {
             "Arr".into(),
             vec![Value::List(xs.into_iter().map(boc).collect())],
         ),
-        Value::Map(kv) => Value::Enum(
-            "Json".into(),
-            "Obj".into(),
-            vec![Value::Map(
-                kv.into_iter().map(|(k, v)| (k, boc(v))).collect(),
-            )],
-        ),
+        Value::Map(kv) => {
+            let entries = match Rc::try_unwrap(kv) {
+                Ok(m) => m.into_entries(),
+                Err(rc) => rc.iter().cloned().collect(),
+            };
+            Value::Enum(
+                "Json".into(),
+                "Obj".into(),
+                vec![Value::map(
+                    entries.into_iter().map(|(k, v)| (k, boc(v))).collect(),
+                )],
+            )
+        }
         // `null` (cây cũ dùng `Option.None`) ⇒ biến thể `Null`.
         Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
             Value::Enum("Json".into(), "Null".into(), vec![])
