@@ -192,11 +192,16 @@ if [ "$WASM_DO" = 1 ]; then
 else
   echo "=== wasm32-wasip1 (runtime) — CHƯA ĐO trong lượt này ==="
   printf '%-24s %-28s %s\n' hạng-mục target kết-quả
-  printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25 (ST-314a §22): 390/390"
-  printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25: 28/28"
-  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-25: 379×2 (354 .out + 25 .trap)"
+  # **ST-316c**: mốc dưới đây lấy từ log THẬT `lowpeak-chain-2026-11-25/r072-targets.log`
+  # (`chain.log`: `START r072-targets` 2026-11-26T00:55:01Z, `END … rc=0` 00:56:50Z; bản sao
+  # `st314a-lp53-targets-final.log` cùng số). Số 379×2 (354+25) cũ hơn, đo trước `fbb0ae4f`
+  # (+18 ca conformance); 393×2 (366+27) là mốc sau khi corpus/assert `.trap` đã cập nhật.
+  printf '%-24s %-28s %s\n' vis-wasm-sem wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 390/390"
+  printf '%-24s %-28s %s\n' vis-wasm-suite wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 28/28"
+  printf '%-24s %-28s %s\n' vis-wasm-conformance wasm32-wasip1 "chưa đo lượt này; lần cuối 2026-11-26: 393×2 (366 .out + 27 .trap)"
+  printf '%-24s %-28s %s\n' nguồn-wasm wasm32-wasip1 "lowpeak-chain-2026-11-25/r072-targets.log (2026-11-26T00:56Z, exit 0)"
   printf '%-24s %-28s %s\n' coverage-note wasm32-wasip1 "eligible only; KHÔNG tuyên bố full support"
-  echo "wasm32-wasip1: mốc lần cuối 2026-11-25; chạy \`bin/vis-targets --wasm\` để đo lại"
+  echo "wasm32-wasip1: mốc lần cuối 2026-11-26; chạy \`bin/vis-targets --wasm\` để đo lại"
 fi
 echo
 echo "=== aarch64-apple-darwin (native) ==="
